@@ -265,6 +265,12 @@ label.tg{display:block;font-size:20px;margin:8px 0}
 .bbk{flex:none;width:58px;height:58px;padding:4px;background:#fff;border-radius:14px;position:relative}.bbk canvas{width:44px;height:44px;display:block;margin:auto}
 .bbk.on{box-shadow:0 0 0 4px #f59e0b;transform:translateY(-3px)}.bbk.lock canvas{filter:grayscale(1) brightness(.7)}.bbk i{position:absolute;bottom:1px;left:0;right:0;font-size:10px;font-style:normal;font-weight:700;background:#000a;color:#fff;border-radius:6px}
 @media (orientation:landscape) and (max-height:560px){.bbwrap{flex-direction:row}.bbpal{flex-direction:column;overflow-y:auto;overflow-x:hidden;width:70px}}
+.lvgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px;margin:10px 0}
+.lvb{display:flex;flex-direction:column;align-items:center;padding:10px 4px;background:linear-gradient(180deg,#fff,#fef3c7);border-radius:18px;min-height:96px}
+.lvb b{font-size:30px;line-height:1}.lvb .lvs{font-size:16px;letter-spacing:1px}.lvb small{font-size:11px;color:#78716c}.lvb.lock{opacity:.5;background:#e7e5e4}.lvb.done{background:linear-gradient(180deg,#fff,#bbf7d0)}
+.lvhead{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-radius:18px;color:#fff;font-size:20px;text-shadow:0 2px 4px #0006;margin-top:8px}
+.lvstars{font-size:56px;margin:4px 0 8px}.lvstar{display:inline-block;filter:grayscale(1) opacity(.3);transform:scale(.6)}.lvstar.on{animation:lvpop .5s both;filter:none}
+@keyframes lvpop{0%{transform:scale(0) rotate(-60deg)}70%{transform:scale(1.3)}100%{transform:scale(1)}}
 .tipcard{background:#fff;border-radius:16px;padding:10px 14px;margin:10px 0;font-size:15px;box-shadow:0 2px 6px #0001;line-height:1.4}
 .cbgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:10px}
 .cbitem{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;font-size:16px}.cbitem img{width:96px;height:96px;border-radius:10px;image-rendering:pixelated;box-shadow:0 2px 6px #0002}
@@ -1231,17 +1237,23 @@ function garageS(){const g=S.garage||(S.garage={});Object.assign(g,Object.assign
   if(!g.missions||g.missions.length<3){g.missions=g.missions||[];while(g.missions.length<3){const m=pick(MISSIONS.filter(m=>!g.missions.some(x=>x.t==m[2])));g.missions.push({k:m[0],goal:m[1],t:m[2],r:m[3],p:0,done:false})}}return g}
 const bestAll=()=>Math.max(...Object.values(garageS().best));
 function rng(seed){return()=>{seed=(seed*16807)%2147483647;return(seed-1)/2147483646}}
+let HCLV=null;
+const LVN=8,STKEYS=['meadow','desert','snow','moon'];
+function lvDef(st,i){const si=STKEYS.indexOf(st),dist=240+i*105+si*70;return{id:st+i,st,i,si,dist,fx:100+dist*20,amp:Math.min(1.3,.5+i*.1+si*.06),haz:Math.min(.95,.3+i*.09+si*.04),pits:i>=2||si>0,lvf:Math.min(1,(i+si*2)/9),par:Math.round(dist/13)+8}}
+function lvS(st){const g=garageS();g.lv=g.lv||{};return g.lv[st]=g.lv[st]||[]}
+function lvOpen(st,i){if(i>0)return(lvS(st)[i-1]||0)>0;const si=STKEYS.indexOf(st);return bestAll()>=STAGES[st].need||si==0||(lvS(STKEYS[si-1])[LVN-1]||0)>0}
 const FEAT={};
-function feats(st){if(FEAT[st])return FEAT[st];const r=rng({meadow:4242,desert:991,snow:3131,moon:777}[st]),out=[],S0=STAGES[st];let x=2600;
-  while(x<400000){const lv=Math.min(1,x/50000),t=r(),cp=(x-100)%2000;
+function feats(st){const key=st+(HCLV?'|'+HCLV.id:'');if(FEAT[key])return FEAT[key];const r=rng({meadow:4242,desert:991,snow:3131,moon:777}[st]+(HCLV?HCLV.i*977+13:0)),out=[],S0=STAGES[st];let x=HCLV?1250:2600;
+  while(x<(HCLV?HCLV.fx+3000:400000)){const lv=HCLV?HCLV.lvf:Math.min(1,x/50000),t=r(),cp=(x-100)%2000;
+    if(HCLV&&(r()>HCLV.haz||Math.abs(x-HCLV.fx)<500)){x+=480;continue}
     if(cp>1500||cp<300){x+=420;continue}
     if(t<.34){const n=r()<.3+lv*.3?2:1;for(let i=0;i<n;i++)out.push({t:'rock',x:x+i*90,w:46+r()*34,h:18+r()*20*(.6+lv)});x+=520+r()*620}
     else if(t<.58&&S0.soft){const w=340+r()*360;out.push({t:'soft',x,w});x+=w+520+r()*500}
-    else if(t<.86){const w=x<16000?55+r()*25:75+r()*40+lv*40;if(cp<900||cp+w>1700||Math.abs(baseH(x,st)-baseH(x-500,st))>55){x+=300;continue}out.push({t:'pit',x,w,d:st=='moon'?150:175});x+=w+900+r()*800}
+    else if(t<.86){if(HCLV&&!HCLV.pits){x+=300;continue}const w=HCLV?55+r()*25+lv*50:x<16000?55+r()*25:75+r()*40+lv*40;if(cp<900||cp+w>1700||Math.abs(baseH(x,st)-baseH(x-500,st))>55){x+=300;continue}out.push({t:'pit',x,w,d:st=='moon'?150:175});x+=w+900+r()*800}
     else x+=520}
-  return FEAT[st]=out}
+  return FEAT[key]=out}
 function featAt(x,st){const F=feats(st);let lo=0,hi=F.length-1;while(lo<hi){const m=(lo+hi+1)>>1;if(F[m].x<=x+200)lo=m;else hi=m-1}return[F[lo-1],F[lo],F[lo+1]].filter(Boolean)}
-function baseH(x,st){if(x<350)return 0;const d=x-350,r=Math.min(1,d/500),S0=STAGES[st],A=Math.min(22+d*.0042,S0.amp)*r;
+function baseH(x,st){if(x<350)return 0;const d=x-350,r=Math.min(1,d/500),S0=STAGES[st],A=Math.min(22+d*.0042*(HCLV?2.6:1),S0.amp)*r*(HCLV?HCLV.amp:1);
   if(st=='desert')return A*(Math.sin(d*.0032)*1+Math.sin(d*.0081+1.1)*.35+Math.sin(d*.019+2)*.1*Math.min(1,d/4000));
   if(st=='snow')return A*(Math.sin(d*.0046)*.85+Math.abs(Math.sin(d*.0068+.5))*.5-.25+Math.sin(d*.022+2.1)*.12*Math.min(1,d/4000));
   const k=st=='moon'?1.2:1;return A*(Math.sin(d*.0042*k)*.9+Math.sin(d*.0105*k+1.3)*.42+Math.sin(d*.021+2.1)*.12*Math.min(1,d/4000))+(st=='moon'?Math.max(0,Math.sin(d*.0021))*40*r:0)}
@@ -1271,14 +1283,15 @@ function garage(){const gs=garageS(),left=ptLeft(),v=VEH[gs.veh];
   <h2>🎯 Missions</h2><div class="games">${gs.missions.map((m,i)=>`<div class="btn game upg mis" style="background:${m.done?'#dcfce7':'#fff'}"><span class="gi"><span class="gt" style="font-size:18px">${m.done?'✅':'🎯'} ${m.t}</span>
     <span class="meter" style="display:block;margin:4px 0;background:#f5f5f4"><span style="display:block;height:100%;width:${Math.min(100,m.p/m.goal*100)}%;background:linear-gradient(90deg,#22c55e,#14b8a6);border-radius:9px"></span></span></span>
     ${m.done?`<button class="btn sm" data-claim="${i}" style="background:#22c55e;color:#fff">Get 🔩${m.r}</button>`:`<b class="small">🔩 ${m.r}</b>`}</div>`).join('')}</div>
-  <h2>Pick a place</h2><div class="games">${Object.entries(STAGES).map(([k,s])=>{const ok=bestAll()>=s.need;return`<button class="btn game ${ok?'':'soon'}" data-st="${k}" style="background:linear-gradient(135deg,${s.sky[1]},${s.top[0]})">
+  <button class="btn game" id="hclv" style="background:linear-gradient(135deg,#fde68a,#f59e0b)"><span class="ge">🏆</span><span class="gi"><span class="gt">Levels</span><span class="small">${STKEYS.reduce((a,k)=>a+lvS(k).reduce((p,q)=>p+(q||0),0),0)} / ${STKEYS.length*LVN*3} ⭐ · 32 tracks with a finish line</span></span><span class="go">▶</span></button>
+  <h2>Free Drive</h2><div class="games">${Object.entries(STAGES).map(([k,s])=>{const ok=bestAll()>=s.need;return`<button class="btn game ${ok?'':'soon'}" data-st="${k}" style="background:linear-gradient(135deg,${s.sky[1]},${s.top[0]})">
     <span class="ge">${s.e}</span><span class="gi"><span class="gt">${s.n}</span><span class="small">${ok?`Best: ${gs.best[k]} m`:`Drive ${s.need} m anywhere to unlock`}</span></span><span class="go">${ok?(left>0?'▶':'🎟️'):'🔒'}</span></button>`}).join('')}</div>
   <h2>Vehicles</h2><div class="vehs">${Object.entries(VEH).map(([k,V])=>`<button class="btn veh ${gs.veh==k?'on':''}" data-v="${k}"><canvas width="160" height="96" data-vc="${k}"></canvas><b>${V.n}</b><span class="small">${V.d}</span><div>${gs.vehs[k]?(gs.veh==k?'✅ Driving':'Tap to drive'):'🔩 '+V.cost}</div></button>`).join('')}</div>
   <h2>Upgrades</h2><div class="games">${UPG.map(([k,t,d])=>{const lv=gs.up[k],cost=UPCOST[lv];return`<div class="btn game upg" style="background:#fff"><span class="gi"><span class="gt" style="font-size:20px">${t} <span class="lv">${'★'.repeat(lv)}${'☆'.repeat(5-lv)}</span></span><span class="small">${d}</span></span>
     ${lv<5?`<button class="btn sm" data-up="${k}" style="background:${gs.bolts>=cost?'#22c55e':'#e7e5e4'};color:${gs.bolts>=cost?'#fff':'#78716c'}">🔩 ${cost}</button>`:'<b>MAX</b>'}</div>`}).join('')}</div>
   <h2>Paint</h2><div class="paints">${PAINTS.map(([c,n,cost])=>`<button class="btn paint ${gs.paint==c?'on':''}" data-pc="${c}"><span style="background:${c}"></span>${gs.paints[c]?(gs.paint==c?'✅':n):'🔩 '+cost}</button>`).join('')}</div>
   <p class="small" style="text-align:center">Collect 🔩 bolts while you drive. Spend them here.</p></div>`);
-  $('#back').onclick=gameRoom;drawTruckPreview();
+  $('#back').onclick=gameRoom;drawTruckPreview();$('#hclv').onclick=()=>{SFX.whoosh();hcLevels(STKEYS.filter(k=>lvOpen(k,0)).pop()||'meadow')};
   $$('[data-vc]').forEach(c=>{const x=c.getContext('2d');x.fillStyle='#16a34a';x.fillRect(0,84,160,12);const V=VEH[c.dataset.vc];drawVehicle(x,c.dataset.vc,80,84-V.R*.62-(V.R+6)*.62,0,.62,gs.paint,0,0,0)});
   $$('[data-st]').forEach(b=>b.onclick=()=>{const s=STAGES[b.dataset.st];if(bestAll()<s.need){SFX.wrong();anim(b,'sad');fb(`Drive ${s.need} m first!`,'warn');return}
     if(ptLeft()<=0){SFX.wrong();fb('🎟️ '+ptWhyNot(),'warn long',3000);return}SFX.whoosh();hcStart(b.dataset.st)});
@@ -1332,7 +1345,7 @@ function wheel(x,sx,sy,ang,sc,ox,oy,rot,paint,R=21){const c=Math.cos(-ang),s=Mat
   x.fillStyle='#52525b';for(let i=0;i<5;i++){x.beginPath();x.arc(Math.cos(i*1.256)*r*.23,Math.sin(i*1.256)*r*.23,1.5*sc,0,7);x.fill()}x.restore()}
 
 function stopHC(){if(!HC)return;cancelAnimationFrame(HC.raf);if(HC.eng){try{HC.eng.o.stop();HC.eng.o2.stop()}catch(e){}}removeEventListener('keydown',HC.kd);removeEventListener('keyup',HC.ku);HC=null}
-function hcStart(stage){const gs=garageS(),up=gs.up,V=VEH[gs.veh],R=V.R,L=V.L,y0=terrH(100,stage)+R+2;
+function hcStart(stage,lvi){HCLV=lvi==null?null:lvDef(stage,lvi);const gs=garageS(),up=gs.up,V=VEH[gs.veh],R=V.R,L=V.L,y0=terrH(100,stage)+R+2;
   view(`<div class="hc" id="hc"><canvas id="hcv"></canvas>
    <div class="hchud"><button class="btn sm" id="hcx">✕</button><div class="hcfuel"><span>⛽</span><div><div id="hcf"></div></div></div>
     <div class="stars" id="hcd">0 m</div><div class="stars" id="hcb">🔩 0</div><div class="stars" id="hct">🎟️ ${fmtT(ptLeft())}</div></div>
@@ -1341,7 +1354,7 @@ function hcStart(stage){const gs=garageS(),up=gs.up,V=VEH[gs.veh],R=V.R,L=V.L,y0
   HC={veh:gs.veh,prevBest:bestAll(),best:gs.best[stage],stage,R,L,acc:(820+up.engine*150)*V.acc,maxV:(420+up.engine*75)*V.maxV,grip:(.9+up.tires*.12)*V.grip,tireUp:up.tires,lift:(5+up.engine*.12)*V.lift*(stage=='moon'?.6:1),tankSec:17+up.tank*9,fuel:100,
     w1:{x:100,y:y0,px:100,py:y0,rot:0,g:true},w2:{x:100+L,y:y0,px:100+L,py:y0,rot:0,g:true},gas:false,brake:false,bolts:0,maxX:100,cp:100,crashT:0,safeT:0,stuckT:0,over:false,
     took:new Set(),camX:140,camY:y0,zoom:1,shake:0,t:0,saveT:0,timeUp:false,graceT:0,parts:[],lastCp:0,raf:0,ptIn:{},air:0,airRot:0,lastAng:0,flips:0,perfect:0,airs:0,wheelieT:0,wheelies:0,crashes:0,wasAir:false,acu:0,slip:0,
-    bob:0,bobV:0,combo:0,comboT:0,pops:[],g1t:-1,g2t:-1,fuelK:0};
+    bob:0,bobV:0,combo:0,comboT:0,pops:[],g1t:-1,g2t:-1,fuelK:0,lv:HCLV,lockT:HCLV?2.6:0};if(HCLV)HC.best=0;
   const cv=$('#hcv'),ctx=cv.getContext('2d'),dpr=Math.min(1.5,devicePixelRatio||1);
   const size=()=>{cv.width=cv.clientWidth*dpr;cv.height=cv.clientHeight*dpr};size();HC.size=size;
   const hc=$('#hc');
@@ -1353,7 +1366,7 @@ function hcStart(stage){const gs=garageS(),up=gs.up,V=VEH[gs.veh],R=V.R,L=V.L,y0
   $('#hcx').onclick=()=>hcEnd('quit');
   if(S.sound){try{const a=ac(),o=a.createOscillator(),o2=a.createOscillator(),f=a.createBiquadFilter(),g=a.createGain();o.type='sawtooth';o2.type='square';f.type='lowpass';f.frequency.value=420;g.gain.value=.03;
     o.connect(f);o2.connect(f);f.connect(g).connect(MG);o.frequency.value=46;o2.frequency.value=23.3;o.start();o2.start();HC.eng={o,o2,g,f}}catch(e){}}
-  hcMsg(`${STAGES[stage].e} ${STAGES[stage].n} · ${HC.best?'Beat '+HC.best+' m!':'Go go go!'}`,2400);if(S.voice)say(`Let's climb, ${S.name}!`);
+  if(HCLV){const L=HCLV;hcMsg(`${STAGES[stage].e} Level ${L.i+1} · Reach ${L.dist} m`,900);[['3',900],['2',1500],['1',2100],['GO!',2600]].forEach(([t,ms])=>setTimeout(()=>{if(HC&&HC.lv===L){hcMsg(t,t=='GO!'?700:500);t=='GO!'?SFX.fanfare():tone(520,.12,0,'square',.12)}},ms))}else hcMsg(`${STAGES[stage].e} ${STAGES[stage].n} · ${HC.best?'Beat '+HC.best+' m!':'Go go go!'}`,2400);if(S.voice)say(`Let's climb, ${S.name}!`);
   let last=0;const loop=ts=>{if(!HC)return;const dt=last?Math.min(.05,(ts-last)/1000):0;last=ts;
     if(!document.hidden&&!HC.over){HC.acu+=dt;let n=0;while(HC&&!HC.over&&HC.acu>=1/120&&n<8){hcStep(1/120);HC.acu-=1/120;n++}if(HC){HC.acu=Math.min(HC.acu,1/120);if(!HC.over)hcTime(dt)}}
     if(HC){hcDraw(ctx,cv.width,cv.height,dpr);HC.raf=requestAnimationFrame(loop)}};HC.raf=requestAnimationFrame(loop)}
@@ -1371,7 +1384,7 @@ function rotPts(H,a){const w=[H.w1,H.w2],c=Math.cos(a),s=Math.sin(a),cx=(H.w1.x+
 function hcStep(dt){const H=HC,st=STAGES[H.stage],R=H.R,L=H.L,w=[H.w1,H.w2];
   H.bobV+=(-H.bob*260-H.bobV*14)*dt;H.bob+=H.bobV*dt;
   if(H.crashT>0){H.crashT-=dt;hcParts(dt);if(H.crashT<=0)hcRespawn();return}
-  const gas=H.gas&&H.fuel>0,brk=H.brake;
+  if(H.lockT>0)H.lockT-=dt;const gas=H.gas&&H.fuel>0&&H.lockT<=0,brk=H.brake||H.lockT>0;
   for(const p of w){const vx=(p.x-p.px)*.9994,vy=(p.y-p.py)*.9994;p.px=p.x;p.py=p.y;p.x+=vx;p.y+=vy-st.g*dt*dt}
   for(let i=0;i<4;i++){const dx=H.w2.x-H.w1.x,dy=H.w2.y-H.w1.y,d=Math.hypot(dx,dy)||1,f=(d-L)/d*.5;H.w1.x+=dx*f;H.w1.y+=dy*f;H.w2.x-=dx*f;H.w2.y-=dy*f}
   let ground=0,landV=0;H.slip=0;
@@ -1410,6 +1423,7 @@ function hcStep(dt){const H=HC,st=STAGES[H.stage],R=H.R,L=H.L,w=[H.w1,H.w2];
   else if(hy<terrH(hx,H.stage)+5||(Math.abs(ang-slopeB)>2.4&&ground))return hcCrash(pit||pitAt(hx,H.stage)||pitAt(cx+50,H.stage)?'pit':'flip');
   H.fuel=Math.max(0,H.fuel-dt*100/H.tankSec*(gas?1:.25));
   if(cx>H.maxX)H.maxX=cx;
+  if(H.lv&&cx>=H.lv.fx)return hcWin();
   if(H.best>20&&!H.passedBest&&(cx-100)/20>H.best){H.passedBest=true;hcPop('🏆 NEW RECORD!');SFX.fanfare();confetti(20)}
   const cpi=Math.floor((cx-100)/2000);if(cpi>H.lastCp){H.lastCp=cpi;H.cp=100+cpi*2000;H.bolts+=5;SFX.fanfare();hcMsg(`🚩 ${cpi*100} m! +5 🔩`);if(S.voice&&cpi%2==0)say(`${cpi*100} meters!`)}
   for(let k=H.fuelK;k<H.fuelK+3;k++){const fx=fuelX(k,H.stage);if(fx<cx-60){if(k==H.fuelK)H.fuelK++;continue}if(fx>cx+60)break;if(H.took.has('f'+k))continue;H.took.add('f'+k);H.fuel=100;SFX.magic();hcPop('⛽ FULL TANK!')}
@@ -1438,9 +1452,10 @@ function hcMissions(H,m){const gs=garageS(),done=[];for(const ms of gs.missions)
   const run={dist:m,bolts:H.bolts}[ms.k];
   if(run!==undefined)ms.p=Math.max(ms.p,run);else if(ms.k=='stage'){if(H.stage!='meadow'&&m>=200)ms.p=1}else ms.p+=({flips:H.flips,perfect:H.perfect,wheelie:H.wheelies,air:H.airs}[ms.k]||0);
   if(ms.p>=ms.goal){ms.p=ms.goal;ms.done=true;done.push(ms)}}return done}
-function hcEnd(why){const H=HC;if(!H||H.over)return;H.over=true;const gs=garageS(),m=Math.floor((H.maxX-100)/20),rec=m>gs.best[H.stage];
+function hcEnd(why){const H=HC;if(!H||H.over)return;H.over=true;const gs=garageS(),m=Math.floor((H.maxX-100)/20),rec=!H.lv&&m>gs.best[H.stage];
   if(rec)gs.best[H.stage]=m;gs.bolts+=H.bolts;const mdone=hcMissions(H,m);save();if(H.eng){try{H.eng.g.gain.setTargetAtTime(0,ac().currentTime,.1)}catch(e){}}
-  if(why=='quit'){stopHC();return garage()}
+  if(why=='quit'){stopHC();return H.lv?hcLevels(H.stage):garage()}
+  if(H.lv)return hcLvFail(H,why,m,mdone);
   rec&&m>20?(SFX.fanfare(),confetti(30)):SFX.magic();
   const unl=Object.entries(STAGES).filter(([k,s])=>H.prevBest<s.need&&bestAll()>=s.need).map(([k,s])=>`${s.e} ${s.n}`);
   const o=document.createElement('div');o.className='ovl';
@@ -1454,6 +1469,31 @@ function hcEnd(why){const H=HC;if(!H||H.over)return;H.over=true;const gs=garageS
   if(o.querySelector('#hlearn'))o.querySelector('#hlearn').onclick=()=>go(()=>home());
   o.querySelector('#hgar').onclick=()=>go(garage)}
 
+function hcLvCard(H,html,btns){const o=document.createElement('div');o.className='ovl';o.innerHTML=`<div class="endcard">${html}<div class="rowh">${btns}</div></div>`;document.body.appendChild(o);
+  const go=f=>{o.remove();stopHC();f()};o.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{const a=b.dataset.go;if(a=='retry')go(()=>hcStart(H.stage,H.lv.i));else if(a=='next')go(()=>H.lv.i+1<LVN?hcStart(H.stage,H.lv.i+1):hcLevels(STKEYS[STKEYS.indexOf(H.stage)+1]||H.stage));else if(a=='learn')go(home);else go(()=>hcLevels(H.stage))})}
+function hcWin(){const H=HC;if(H.over)return;H.over=true;const L=H.lv,gs=garageS(),arr=lvS(H.stage),stars=1+(H.crashes<=1?1:0)+(H.crashes==0&&H.t<=L.par?1:0),old=arr[L.i]||0,gain=Math.max(0,stars-old)*15*(L.si+1);
+  arr[L.i]=Math.max(old,stars);gs.bolts+=H.bolts+gain;const mdone=hcMissions(H,L.dist);save();if(H.eng){try{H.eng.g.gain.setTargetAtTime(0,ac().currentTime,.1)}catch(e){}}
+  SFX.fanfare();confetti(50);if(S.voice)say(stars==3?'Three stars! Amazing!':'You made it!');const tm=Math.round(H.t);
+  const st=[1,2,3].map(k=>`<span class="lvstar ${k<=stars?'on':''}" style="animation-delay:${k*.25}s">⭐</span>`).join('');
+  setTimeout(()=>{for(let k=1;k<=stars;k++)setTimeout(()=>SFX.coin(k+2),k*250)},100);
+  const last=L.i+1>=LVN,nextSt=STKEYS[STKEYS.indexOf(H.stage)+1];
+  hcLvCard(H,`<h1>🏁 Level ${L.i+1} done!</h1><div class="lvstars">${st}</div>
+   <div class="endstats"><div><b>${tm}s</b><span>${H.crashes==0&&tm<=L.par?'⚡ under '+L.par+'s':'3⭐ = no crashes, under '+L.par+'s'}</span></div><div><b>+${H.bolts+gain}</b><span>🔩 bolts</span></div><div><b>${H.crashes}</b><span>crashes</span></div><div><b>${H.flips}</b><span>flips</span></div></div>
+   ${mdone.map(x=>`<div class="msg">🎯 Mission done: ${x.t}!</div>`).join('')}${last&&nextSt?`<div class="msg">🔓 ${STAGES[nextSt].e} ${STAGES[nextSt].n} levels unlocked!</div>`:''}`,
+   `${ptLeft()>0?`<button class="btn big" data-go="next">${last?'Next world ▶':'Next level ▶'}</button>`:'<button class="btn big" data-go="learn">📚 Earn more game time</button>'}<button class="btn" data-go="retry">↻ Retry</button><button class="btn" data-go="list">☰</button>`)}
+function hcLvFail(H,why,m,mdone){SFX.magic();const L=H.lv,togo=Math.max(0,L.dist-m);if(S.voice)say(why=='time'?`Game time is up!`:`So close! Try again!`);
+  hcLvCard(H,`<div style="font-size:60px">${why=='time'?'⏰':'⛽'}</div><h1>${why=='time'?"Game time's up!":'Out of gas!'}</h1><div class="hcprog" style="position:relative;left:0;right:0;top:0;margin:10px 0;transform:none;width:auto"><div style="width:${Math.min(100,m/L.dist*100)}%"></div></div>
+   <div class="msg">Only <b>${togo} m</b> to the finish! Tip: grab the ⛽ cans and don't waste gas in the air.</div>${mdone.map(x=>`<div class="msg">🎯 Mission done: ${x.t}!</div>`).join('')}`,
+   `${why=='time'||ptLeft()<=0?'<button class="btn big" data-go="learn">📚 Earn more game time</button>':'<button class="btn big" data-go="retry">↻ Try again</button>'}<button class="btn" data-go="list">☰ Levels</button>`)}
+function hcLevels(st='meadow'){const gs=garageS(),left=ptLeft();const tot=STKEYS.reduce((a,k)=>a+lvS(k).reduce((p,q)=>p+(q||0),0),0);
+  view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title">🏆 Levels</div><div class="sp"></div><div class="stars">⭐ ${tot}/${STKEYS.length*LVN*3}</div><div class="stars">🎟️ ${fmtT(left)}</div></div>
+  <div class="tabs">${STKEYS.map(k=>`<button class="btn sm tab ${k==st?'on':''}" data-t="${k}">${STAGES[k].e}</button>`).join('')}</div>
+  <div class="scroll"><div class="lvhead" style="background:linear-gradient(135deg,${STAGES[st].sky[0]},${STAGES[st].top[0]})"><b>${STAGES[st].n}</b><span>${lvS(st).reduce((p,q)=>p+(q||0),0)} / ${LVN*3} ⭐</span></div>
+  <div class="lvgrid">${[...Array(LVN)].map((_,i)=>{const L=lvDef(st,i),ok=lvOpen(st,i),sv=lvS(st)[i]||0;return`<button class="btn lvb ${ok?'':'lock'} ${sv?'done':''}" data-l="${i}"><b>${ok?i+1:'🔒'}</b><span class="lvs">${[1,2,3].map(k=>k<=sv?'⭐':'☆').join('')}</span><small>${L.dist} m${L.pits?' · 🕳️':''}</small></button>`}).join('')}</div>
+  <p class="small" style="text-align:center">⭐ Finish · ⭐⭐ 1 crash or less · ⭐⭐⭐ No crashes and beat the time</p></div>`);
+  $('#back').onclick=garage;$$('[data-t]').forEach(b=>b.onclick=()=>{SFX.pop(1);hcLevels(b.dataset.t)});
+  $$('[data-l]').forEach(b=>b.onclick=()=>{const i=+b.dataset.l;if(!lvOpen(st,i)){SFX.wrong();anim(b,'sad');fb(i?'Finish the level before it first!':'Finish the last world, or drive '+STAGES[st].need+' m in Free Drive!','warn long',2600);return}
+    if(ptLeft()<=0){SFX.wrong();fb('🎟️ '+ptWhyNot(),'warn long',3000);return}SFX.whoosh();hcStart(st,i)})}
 /* drawing */
 function hcProp(x,type,px,py,s,i){
   if(type=='tree'){const h=(46+(i*37)%26)*s;x.fillStyle='#78350f';x.fillRect(px-3*s,py-h*.38,6*s,h*.4);x.fillStyle=i%2?'#15803d':'#166534';x.beginPath();x.arc(px,py-h*.62,h*.3,0,7);x.arc(px-h*.18,py-h*.5,h*.22,0,7);x.arc(px+h*.18,py-h*.5,h*.22,0,7);x.fill();x.fillStyle='#22c55e66';x.beginPath();x.arc(px-h*.08,py-h*.7,h*.14,0,7);x.fill()}
@@ -1480,20 +1520,27 @@ function hcDraw(x,W,Hh,dpr){const H=HC,st=STAGES[H.stage],moon=H.stage=='moon',c
   const fog=x.createLinearGradient(0,Hh*.35,0,Hh*.65);fog.addColorStop(0,'#ffffff00');fog.addColorStop(1,moon?'#00000000':'#ffffff40');x.fillStyle=fog;x.fillRect(0,Hh*.35,W,Hh*.3);
   x.fillStyle=st.mid;x.beginPath();x.moveTo(0,Hh);for(let sx=0;sx<=W+8;sx+=8*dpr){const t=(sx/sc+H.camX*.35);x.lineTo(sx,Hh*.6-(Math.sin(t*.005)*55+Math.sin(t*.013+1)*25)*sc)}x.lineTo(W,Hh);x.fill();
   for(let i=Math.floor((H.camX*.35-W/sc)/150);i<(H.camX*.35+W/sc*1.2)/150;i++){const t=i*150+((i*73)%60),sx=(t-H.camX*.35)*sc,y=Hh*.6-(Math.sin(t*.005)*55+Math.sin(t*.013+1)*25)*sc;if(sx<-60||sx>W+60||(i*7)%3==0)continue;hcProp(x,st.prop,sx,y,sc*.8,i)}
-  const step=5*dpr,pts=[];for(let sx=-step;sx<=W+step;sx+=step){const wx=WX(sx);pts.push([sx,SY(terrH(wx,H.stage)),wx])}
-  x.beginPath();x.moveTo(-step,Hh);for(const[sx,y]of pts)x.lineTo(sx,y);x.lineTo(W+step,Hh);x.closePath();
+  const step=5*dpr,pts=[],DY=34*sc,hd=DY/2;for(let sx=-step;sx<=W+step;sx+=step){const wx=WX(sx);pts.push([sx,SY(terrH(wx,H.stage)),wx])}
+  x.beginPath();x.moveTo(-step,Hh);for(const[sx,y]of pts)x.lineTo(sx,y+hd);x.lineTo(W+step,Hh);x.closePath();
   const pat=x.createPattern(texFor(H.stage),'repeat');try{pat.setTransform(new DOMMatrix().translateSelf(SX(0)%(128*sc),SY(0)%(128*sc)).scaleSelf(sc*1.2,sc*1.2))}catch(e){}
   x.fillStyle=pat;x.fill();const dg=x.createLinearGradient(0,Hh*.4,0,Hh);dg.addColorStop(0,'#00000000');dg.addColorStop(1,'#00000055');x.fillStyle=dg;x.fill();
-  x.save();x.clip();x.strokeStyle='#0000001a';x.lineWidth=6*sc;for(const off of[46,110]){x.beginPath();pts.forEach(([sx,y],i)=>i?x.lineTo(sx,y+off*sc):x.moveTo(sx,y+off*sc));x.stroke()}x.restore();
+  x.save();x.clip();x.strokeStyle='#0000001a';x.lineWidth=6*sc;for(const off of[46,110]){x.beginPath();pts.forEach(([sx,y],i)=>i?x.lineTo(sx,y+hd+off*sc):x.moveTo(sx,y+hd+off*sc));x.stroke()}x.restore();
+  // props standing on the far edge of the road (3D depth)
+  if(st.prop){for(let i=Math.floor((WX(0)-100)/230);i<(WX(W)+100)/230;i++){if((i*13)%5<2)continue;const wx=i*230+((i*57)%90);if(pitAt(wx,H.stage)||pitAt(wx+60,H.stage)||pitAt(wx-60,H.stage)||wx<250)continue;const y=SY(terrH(wx,H.stage))-hd;hcProp(x,st.prop,SX(wx),y+2*sc,sc*1.15,i+3)}}
+  // road top surface with slope lighting
+  const tc0=st.top[0],tc1=st.top[1];for(let i=1;i<pts.length;i++){const[a,ya]=pts[i-1],[b,yb]=pts[i],sl=(yb-ya)/(b-a);x.fillStyle=shade(tc0,sl>0?-Math.min(.35,sl*.5):Math.min(.25,-sl*.35));x.beginPath();x.moveTo(a,ya+hd);x.lineTo(b+.5,yb+hd);x.lineTo(b+.5,yb-hd);x.lineTo(a,ya-hd);x.fill()}
+  x.lineJoin='round';x.beginPath();pts.forEach(([sx,y],i)=>i?x.lineTo(sx,y-hd):x.moveTo(sx,y-hd));x.strokeStyle=shade(tc1,-.1);x.lineWidth=3*sc;x.stroke();
+  x.beginPath();pts.forEach(([sx,y],i)=>i?x.lineTo(sx,y+hd):x.moveTo(sx,y+hd));x.strokeStyle=shade(tc0,.35);x.lineWidth=3*sc;x.stroke();
+  x.beginPath();pts.forEach(([sx,y],i)=>i?x.lineTo(sx,y+hd+4*sc):x.moveTo(sx,y+hd+4*sc));x.strokeStyle='#0000002a';x.lineWidth=5*sc;x.stroke();
   for(const f of feats(H.stage)){if(f.t!='pit'||f.x+f.w<WX(0)-50||f.x>WX(W)+50)continue;const b=baseH(f.x,H.stage),wl=b-f.d*.5;
     if(st.water){const wg=x.createLinearGradient(0,SY(wl),0,SY(b-f.d));wg.addColorStop(0,st.water);wg.addColorStop(1,'#0c4a6e');x.fillStyle=wg;x.beginPath();x.moveTo(SX(f.x+6),SY(b-f.d));for(let wx=f.x+6;wx<=f.x+f.w-6;wx+=6)x.lineTo(SX(wx),SY(wl+Math.sin(wx*.08+H.t*3)*3));x.lineTo(SX(f.x+f.w-6),SY(b-f.d));x.fill();
       x.strokeStyle='#e0f2fe';x.lineWidth=3*sc;x.beginPath();for(let wx=f.x+6;wx<=f.x+f.w-6;wx+=6){const y=SY(wl+Math.sin(wx*.08+H.t*3)*3);wx==f.x+6?x.moveTo(SX(wx),y):x.lineTo(SX(wx),y)}x.stroke()}
     const px=SX(f.x-200),py=SY(terrH(f.x-200,H.stage));x.fillStyle='#78350f';x.fillRect(px-2*sc,py-46*sc,4*sc,46*sc);x.fillStyle='#facc15';x.strokeStyle='#111';x.lineWidth=2*sc;x.beginPath();x.moveTo(px,py-70*sc);x.lineTo(px+16*sc,py-46*sc);x.lineTo(px-16*sc,py-46*sc);x.closePath();x.fill();x.stroke();
     x.fillStyle='#111';x.font=`bold ${14*sc}px sans-serif`;x.textAlign='center';x.textBaseline='middle';x.fillText('!',px,py-53*sc)}
-  x.lineJoin='round';x.beginPath();pts.forEach(([sx,y],i)=>i?x.lineTo(sx,y):x.moveTo(sx,y));x.strokeStyle=st.top[1];x.lineWidth=16*sc;x.stroke();x.strokeStyle=st.top[0];x.lineWidth=9*sc;x.stroke();
-  if(H.stage=='meadow'){for(let i=Math.floor(WX(0)/22);i<WX(W)/22;i++){const wx=i*22;if(softAt(wx,H.stage)||pitAt(wx,H.stage))continue;const y=SY(terrH(wx,H.stage));x.fillStyle=st.top[0];x.beginPath();x.moveTo(SX(wx)-3*sc,y-2*sc);x.lineTo(SX(wx)+(i%2?2:-2)*sc,y-11*sc);x.lineTo(SX(wx)+3*sc,y-2*sc);x.fill();
+  
+  if(H.stage=='meadow'){for(let i=Math.floor(WX(0)/22);i<WX(W)/22;i++){const wx=i*22;if(softAt(wx,H.stage)||pitAt(wx,H.stage))continue;const y=SY(terrH(wx,H.stage))-hd+2*sc;x.fillStyle=st.top[1];x.beginPath();x.moveTo(SX(wx)-3*sc,y-2*sc);x.lineTo(SX(wx)+(i%2?2:-2)*sc,y-11*sc);x.lineTo(SX(wx)+3*sc,y-2*sc);x.fill();
     if(i%9==0){x.fillStyle=['#f472b6','#facc15','#fff'][i%3];x.beginPath();x.arc(SX(wx)+4*sc,y-12*sc,3*sc,0,7);x.fill()}}}
-  if(st.soft){const so=SOFT[st.soft];for(const f of feats(H.stage)){if(f.t!='soft'||f.x+f.w<WX(0)||f.x>WX(W))continue;x.strokeStyle=so.c;x.lineWidth=14*sc;x.beginPath();for(let wx=f.x;wx<=f.x+f.w;wx+=6){const y=SY(terrH(wx,H.stage))+1*sc;wx==f.x?x.moveTo(SX(wx),y):x.lineTo(SX(wx),y)}x.stroke();
+  if(st.soft){const so=SOFT[st.soft];for(const f of feats(H.stage)){if(f.t!='soft'||f.x+f.w<WX(0)||f.x>WX(W))continue;x.strokeStyle=so.c;x.lineWidth=DY*.9;x.beginPath();for(let wx=f.x;wx<=f.x+f.w;wx+=6){const y=SY(terrH(wx,H.stage));wx==f.x?x.moveTo(SX(wx),y):x.lineTo(SX(wx),y)}x.stroke();
       if(st.soft=='ice'){x.strokeStyle='#fff';x.lineWidth=2*sc;for(let wx=f.x+15;wx<f.x+f.w;wx+=50){const y=SY(terrH(wx,H.stage));x.beginPath();x.moveTo(SX(wx),y-3*sc);x.lineTo(SX(wx+14),y-3*sc);x.stroke()}}
       else{x.fillStyle=so.c2;for(let wx=f.x+20;wx<f.x+f.w;wx+=45){const y=SY(terrH(wx,H.stage));x.beginPath();x.arc(SX(wx),y-4*sc,(3+Math.sin(H.t*2+wx)*1.5)*sc,0,7);x.fill()}}
       x.fillStyle=st.soft=='ice'?'#0369a1':'#fff';x.font=`bold ${13*sc}px sans-serif`;x.textAlign='center';x.fillText(so.label,SX(f.x+f.w/2),SY(terrH(f.x+f.w/2,H.stage)+46))}}
@@ -1508,6 +1555,11 @@ function hcDraw(x,W,Hh,dpr){const H=HC,st=STAGES[H.stage],moon=H.stage=='moon',c
     x.strokeStyle='#e7e5e4';x.lineWidth=4*sc;x.beginPath();x.moveTo(px,fy);x.lineTo(px,fy-100*sc);x.stroke();
     for(let r=0;r<3;r++)for(let c=0;c<4;c++){x.fillStyle=(r+c)%2?(k<=H.lastCp?'#22c55e':'#111'):'#fff';x.fillRect(px+c*11*sc,fy-100*sc+r*10*sc,11*sc,10*sc)}
     x.fillStyle='#fff';x.strokeStyle='#0008';x.lineWidth=3*sc;x.font=`bold ${16*sc}px sans-serif`;x.strokeText(k*100+'m',px+22*sc,fy-112*sc);x.fillText(k*100+'m',px+22*sc,fy-112*sc)}
+  if(H.lv&&H.lv.fx>left&&H.lv.fx<right+200){const fx=H.lv.fx,px=SX(fx),py=SY(terrH(fx,H.stage)),ht=150*sc,wd=DY*1.6;
+    for(const[ox,oy]of[[-wd*.3,-hd],[wd*.3,hd]]){x.fillStyle='#e5e7eb';x.fillRect(px+ox-4*sc,py+oy-ht,8*sc,ht);x.fillStyle='#9ca3af';x.fillRect(px+ox+1*sc,py+oy-ht,3*sc,ht)}
+    const by=py-ht-hd;for(let r=0;r<2;r++)for(let c=0;c<10;c++){x.fillStyle=(r+c)%2?'#111':'#fff';x.fillRect(px-50*sc+c*10*sc,by-6*sc+r*10*sc,10*sc,10*sc)}
+    x.fillStyle='#ef4444';rr(x,px-46*sc,by-34*sc,92*sc,26*sc,6*sc);x.fill();x.fillStyle='#fff';x.font=`bold ${17*sc}px sans-serif`;x.fillText('FINISH',px,by-20*sc);
+    for(let i=0;i<6;i++){const a=H.t*2+i;x.fillStyle=['#facc15','#22c55e','#3b82f6','#ec4899'][i%4];x.fillRect(px-60*sc+i*24*sc,by-44*sc+Math.sin(a)*4*sc,6*sc,9*sc)}}
   for(let k=H.fuelK;k<H.fuelK+4;k++){const fx=fuelX(k,H.stage);if(fx>right)break;if(fx<left||H.took.has('f'+k))continue;const px=SX(fx),py=SY(terrH(fx,H.stage)+H.R+22+Math.sin(H.t*3)*4);
     x.fillStyle='#fde04755';x.beginPath();x.arc(px,py,26*sc,0,7);x.fill();x.fillStyle='#dc2626';rr(x,px-12*sc,py-16*sc,24*sc,30*sc,4*sc);x.fill();x.strokeStyle='#7f1d1d';x.lineWidth=2*sc;x.stroke();x.fillStyle='#fde047';x.font=`bold ${14*sc}px sans-serif`;x.fillText('F',px,py);
     x.strokeStyle='#7f1d1d';x.lineWidth=3*sc;x.beginPath();x.moveTo(px-6*sc,py-16*sc);x.lineTo(px-6*sc,py-22*sc);x.lineTo(px+6*sc,py-22*sc);x.stroke()}
@@ -1527,8 +1579,8 @@ function hcDraw(x,W,Hh,dpr){const H=HC,st=STAGES[H.stage],moon=H.stage=='moon',c
   const na=Math.PI+Math.PI*Math.min(1,sp/(H.maxV*1.15));x.strokeStyle='#fde047';x.lineWidth=gr*.06;x.beginPath();x.moveTo(gx,gy);x.lineTo(gx+Math.cos(na)*gr*.7,gy+Math.sin(na)*gr*.7);x.stroke();
   x.fillStyle='#fff';x.font=`bold ${gr*.38}px sans-serif`;x.fillText(spd,gx,gy-gr*.28);x.font=`${gr*.18}px sans-serif`;x.fillText('km/h',gx,gy-gr*.02);
   const f=$('#hcf');if(f){f.style.width=H.fuel+'%';f.style.background=H.fuel<25?'#ef4444':'linear-gradient(90deg,#f59e0b,#22c55e)';f.parentNode.classList.toggle('low',H.fuel<25)}
-  const m=Math.floor((H.maxX-100)/20),d=$('#hcd');if(d)d.textContent=m+' m';const b=$('#hcb');if(b)b.textContent='🔩 '+H.bolts;
-  const pb=$('#hcpb'),goal=Math.max(H.best,100)*1.05;if(pb){pb.style.width=Math.min(100,m/goal*100)+'%';const bs=$('#hcbest');if(bs){bs.style.left=Math.min(100,H.best/goal*100)+'%';bs.style.display=H.best>5?'block':'none'}}}
+  const m=Math.floor((H.maxX-100)/20),d=$('#hcd');if(d)d.textContent=H.lv?`${Math.min(m,H.lv.dist)} / ${H.lv.dist} m · ${Math.floor(H.t)}s`:m+' m';const b=$('#hcb');if(b)b.textContent='🔩 '+H.bolts;
+  const pb=$('#hcpb'),goal=H.lv?H.lv.dist:Math.max(H.best,100)*1.05;if(pb){pb.style.width=Math.min(100,m/goal*100)+'%';const bs=$('#hcbest');if(bs){bs.style.left=Math.min(100,H.best/goal*100)+'%';bs.style.display=H.best>5?'block':'none'}}}
 
 /* ---------- game timer shared by pure games ---------- */
 let GT=null;
