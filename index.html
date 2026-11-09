@@ -275,6 +275,7 @@ label.tg{display:block;font-size:20px;margin:8px 0}
 .chip.eshard .sw{background:repeating-linear-gradient(45deg,#e7e5e4,#e7e5e4 4px,#fafaf9 4px,#fafaf9 8px)}.chip.eshard.found .sw{background:var(--cc)}.chip.eshard small{font-size:15px;font-weight:700}
 .chip.wide b{font-size:13px;white-space:nowrap}.cbdh{margin:14px 4px 4px;font-size:18px}
 .shwrap svg{filter:drop-shadow(0 4px 6px #0003)}
+.bbk i.bbn{font-size:9px;background:#0009;bottom:0}.bbk.hint{box-shadow:0 0 0 4px #ef4444}
 .tipcard{background:#fff;border-radius:16px;padding:10px 14px;margin:10px 0;font-size:15px;box-shadow:0 2px 6px #0001;line-height:1.4}
 .cbgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:10px}
 .cbitem{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;font-size:16px}.cbitem img{width:96px;height:96px;border-radius:10px;image-rendering:pixelated;box-shadow:0 2px 6px #0002}
@@ -1147,10 +1148,22 @@ const bbEncode=w=>btoa(String.fromCharCode(...w));
 const bbDecode=s=>{try{const b=atob(s),w=new Uint8Array(BW*BD*BH);for(let i=0;i<Math.min(b.length,w.length);i++)w[i]=b.charCodeAt(i);return w}catch(e){return bbTemplate()}};
 
 let BB=null;
-function blockBuilder(){const bs=bbS(),wd=bs.worlds[bs.cur];
-  BB={w:bbDecode(wd.d),rot:0,sel:4,tool:'build',undo:[],night:false,zoom:1,px:0,py:0,fx:[]};
-  const pal=BLOCKS.map((b,i)=>{if(!b)return'';const lock=b.need&&S.stars<b.need;return`<button class="btn bbk ${lock?'lock':''}" data-b="${i}" title="${b.n}"><canvas width="44" height="44" data-bc="${i}"></canvas>${lock?`<i>⭐${b.need}</i>`:''}</button>`}).join('');
-  view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title" style="font-size:20px">🧱 ${esc(wd.name)}</div><div class="sp"></div><div class="stars" id="gtm">🎟️ ${fmtT(ptLeft())}</div></div>
+const BBCH=[['Stone Tower','🗼',()=>[1,2,3].map(z=>[6,6,z,3])],
+ ['Brick Wall','🧱',()=>{const o=[];for(let x=4;x<=7;x++)for(let z=1;z<=2;z++)o.push([x,6,z,8]);return o}],
+ ['Tree','🌳',()=>{const o=[[6,6,1,5],[6,6,2,5],[6,6,3,5],[6,6,5,6]];for(let x=5;x<=7;x++)for(let y=5;y<=7;y++)o.push([x,y,4,6]);return o}],
+ ['Pond','🏝️',()=>{const o=[];for(let x=4;x<=7;x++)for(let y=4;y<=7;y++)o.push([x,y,1,x>4&&x<7&&y>4&&y<7?10:9]);return o}],
+ ['Snowman','⛄',()=>{const o=[];for(let x=5;x<=7;x++)for(let y=5;y<=7;y++)o.push([x,y,1,11]);for(const[x,y]of[[6,6],[5,6],[7,6],[6,5],[6,7]])o.push([x,y,2,11]);o.push([6,6,3,11],[6,6,4,13]);return o}],
+ ['Rainbow Bridge','🌈',()=>[[3,6,1,12],[4,6,2,12],[5,6,3,12],[6,6,3,12],[7,6,3,12],[8,6,2,12],[9,6,1,12],[4,6,1,13],[5,6,2,13],[7,6,2,13],[8,6,1,13],[6,6,1,10],[5,6,1,10],[7,6,1,10]]],
+ ['Little House','🏠',()=>{const o=[];for(let x=5;x<=7;x++)for(let y=5;y<=7;y++){if(x==6&&y==6)continue;for(let z=1;z<=2;z++){if(x==6&&y==7&&z==1)continue;o.push([x,y,z,x==5&&y==6&&z==2||x==7&&y==6&&z==2?7:4])}}for(let x=4;x<=8;x++)for(let y=5;y<=7;y++)o.push([x,y,3,8]);return o}],
+ ['Castle Tower','🏰',()=>{const o=[];for(let x=5;x<=7;x++)for(let y=5;y<=7;y++){if(x==6&&y==6)continue;for(let z=1;z<=3;z++)o.push([x,y,z,3]);if((x+y)%2==0)o.push([x,y,4,3])}o.push([6,6,1,14]);return o}],
+ ['Pyramid','🔺',()=>{const o=[];for(let x=4;x<=8;x++)for(let y=4;y<=8;y++)o.push([x,y,1,9]);for(let x=5;x<=7;x++)for(let y=5;y<=7;y++)o.push([x,y,2,9]);o.push([6,6,3,14]);return o}],
+ ['Diamond Palace','💎',()=>{const o=[];for(let x=3;x<=8;x++)for(let y=3;y<=8;y++){const edge=x==3||x==8||y==3||y==8;if(!edge)continue;const corner=(x==3||x==8)&&(y==3||y==8);for(let z=1;z<=(corner?4:2);z++)o.push([x,y,z,corner?3:(z==2&&(x==5||x==6||y==5||y==6)?7:8)])}for(let z=1;z<=3;z++)o.push([5,5,z,15]);o.push([5,5,4,16]);return o}]];
+function bbChS(){const b=bbS();return b.ch=b.ch||[]}
+function blockBuilder(ci){const bs=bbS(),CH=ci==null?null:BBCH[ci],wd=CH?{name:CH[1]+' '+CH[0]}:bs.worlds[bs.cur];
+  BB={w:CH?bbFlat():bbDecode(wd.d),rot:0,sel:4,tool:'build',undo:[],night:false,zoom:1,px:0,py:0,fx:[],ch:ci==null?null:ci,goal:null,miss:0,drop:null};
+  let need=null;if(CH){BB.goal=new Map(CH[2]().map(([a,b,z,v])=>[bbI(a,b,z),v]));need=new Set(BB.goal.values());BB.sel=[...need][0];BB.total=BB.goal.size}
+  const pal=BLOCKS.map((b,i)=>{if(!b||(need&&!need.has(i)))return'';if(need)return`<button class="btn bbk" data-b="${i}" title="${b.n}"><canvas width="44" height="44" data-bc="${i}"></canvas><i class="bbn">${b.n}</i></button>`;const lock=b.need&&S.stars<b.need;return`<button class="btn bbk ${lock?'lock':''}" data-b="${i}" title="${b.n}"><canvas width="44" height="44" data-bc="${i}"></canvas>${lock?`<i>⭐${b.need}</i>`:''}</button>`}).join('');
+  view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title" style="font-size:20px">🧱 ${esc(wd.name)}</div><div class="sp"></div>${CH?'<div class="stars" id="bbprog"></div>':''}<div class="stars" id="gtm">🎟️ ${fmtT(ptLeft())}</div></div>
    <div class="bbwrap"><div class="bbcv"><canvas id="bbc"></canvas>
      <div class="bbtools"><button class="btn sm on" data-tool="build">🔨 Build</button><button class="btn sm" data-tool="break">⛏️ Break</button><button class="btn sm" id="bbundo">↩️</button><button class="btn sm" id="bbrl">⟲</button><button class="btn sm" id="bbrr">⟳</button><button class="btn sm" id="bbzoom">🔍</button><button class="btn sm" id="bbnight">🌙</button></div></div>
    <div class="bbpal">${pal}</div></div>`);
@@ -1175,25 +1188,37 @@ function blockBuilder(){const bs=bbS(),wd=bs.worlds[bs.cur];
     const c0=proj(0,0,0),c1=proj(BW,0,0),c2=proj(BW,BD,0),c3=proj(0,BD,0);x.fillStyle='#0000001f';x.beginPath();x.moveTo(c0[0],c0[1]+BB.a*.5);x.lineTo(c1[0],c1[1]+BB.a*.5);x.lineTo(c2[0],c2[1]+BB.a*.5);x.lineTo(c3[0],c3[1]+BB.a*.5);x.fill();
     x.strokeStyle='#ffffff55';x.lineWidth=1;for(let i=0;i<=BW;i++){const p=proj(i,0,0),q=proj(i,BD,0);x.beginPath();x.moveTo(...p);x.lineTo(...q);x.stroke()}for(let j=0;j<=BD;j++){const p=proj(0,j,0),q=proj(BW,j,0);x.beginPath();x.moveTo(...p);x.lineTo(...q);x.stroke()}
     faces=[];
-    for(let s=0;s<=BW+BD-2;s++)for(let rx=0;rx<BW;rx++){const ry=s-rx;if(ry<0||ry>=BD)continue;for(let z=0;z<BH;z++){const v=getR(rx,ry,z);if(!v)continue;const B=BLOCKS[v];
-      const T=proj(rx,ry,z+1),R1=proj(rx+1,ry,z+1),C=proj(rx+1,ry+1,z+1),L1=proj(rx,ry+1,z+1),Cb=proj(rx+1,ry+1,z),Lb=proj(rx,ry+1,z),Rb=proj(rx+1,ry,z);
+    for(let s=0;s<=BW+BD-2;s++)for(let rx=0;rx<BW;rx++){const ry=s-rx;if(ry<0||ry>=BD)continue;for(let z=0;z<BH;z++){const v=getR(rx,ry,z);
+      if(!v){if(BB.goal){const[ga,gb]=unrot(rx,ry),gv=BB.goal.get(bbI(ga,gb,z));if(gv)ghost(rx,ry,z,gv)}continue}const B=BLOCKS[v];
+      let dz=0;if(BB.drop){const[da,db]=unrot(rx,ry);if(bbI(da,db,z)==BB.drop.i){const p=Math.min(1,(performance.now()-BB.drop.t)/170);dz=(1-p)*(1-p)*1.4;if(p>=1)BB.drop=null;else BB.dropping=1}}
+      const T=proj(rx,ry,z+1+dz),R1=proj(rx+1,ry,z+1+dz),C=proj(rx+1,ry+1,z+1+dz),L1=proj(rx,ry+1,z+1+dz),Cb=proj(rx+1,ry+1,z+dz),Lb=proj(rx,ry+1,z+dz),Rb=proj(rx+1,ry,z+dz);
       if(B.deco){const p=proj(rx+.5,ry+.5,z);x.globalAlpha=1;x.fillStyle='#000';x.font=`${BB.a*1.15}px sans-serif`;x.textAlign='center';x.textBaseline='bottom';x.fillText(B.deco=='pet'?petE():B.deco,p[0],p[1]+BB.a*.15);
         faces.push({rx,ry,z,f:'top',poly:[[p[0]-BB.a*.5,p[1]-BB.a],[p[0]+BB.a*.5,p[1]-BB.a],[p[0]+BB.a*.5,p[1]],[p[0]-BB.a*.5,p[1]]]});continue}
       const tex=bbTex(B.k),see=B.see;
-      if(!opaque(getR(rx,ry,z+1))||see){face(tex.top,T,[R1[0]-T[0],R1[1]-T[1]],[L1[0]-T[0],L1[1]-T[1]],BB.night?.35:0);faces.push({rx,ry,z,f:'top',poly:[T,R1,C,L1]})}
+      if(!opaque(getR(rx,ry,z+1))||see){face(tex.top,T,[R1[0]-T[0],R1[1]-T[1]],[L1[0]-T[0],L1[1]-T[1]],(BB.night?.35:0)+(opaque(getR(rx-1,ry,z+1))||opaque(getR(rx,ry-1,z+1))?.2:0)+(opaque(getR(rx-1,ry-1,z+1))?.08:0));faces.push({rx,ry,z,f:'top',poly:[T,R1,C,L1]})}
       if(!opaque(getR(rx,ry+1,z))||see){face(tex.side,L1,[C[0]-L1[0],C[1]-L1[1]],[Lb[0]-L1[0],Lb[1]-L1[1]],BB.night?.5:.18);faces.push({rx,ry,z,f:'left',poly:[L1,C,Cb,Lb]})}
-      if(!opaque(getR(rx+1,ry,z))||see){face(tex.side,C,[R1[0]-C[0],R1[1]-C[1]],[Cb[0]-C[0],Cb[1]-C[1]],BB.night?.6:.34);faces.push({rx,ry,z,f:'right',poly:[C,R1,Rb,Cb]})}}}}
+      if(!opaque(getR(rx+1,ry,z))||see){face(tex.side,C,[R1[0]-C[0],R1[1]-C[1]],[Cb[0]-C[0],Cb[1]-C[1]],BB.night?.6:.34);faces.push({rx,ry,z,f:'right',poly:[C,R1,Rb,Cb]})}}}
+    if(BB.dropping){BB.dropping=0;requestAnimationFrame(()=>{if($('#bbc'))draw()})}}
+  function ghost(rx,ry,z,gv){const[ga,gb]=unrot(rx,ry),bl=bbI(ga,gb,z-1),later=BB.goal.has(bl)&&!BB.w[bl],tex=bbTex(BLOCKS[gv].k),T=proj(rx,ry,z+1),R1=proj(rx+1,ry,z+1),C=proj(rx+1,ry+1,z+1),L1=proj(rx,ry+1,z+1),Cb=proj(rx+1,ry+1,z),Lb=proj(rx,ry+1,z),Rb=proj(rx+1,ry,z);
+    x.globalAlpha=later?.14:.45;face(tex.top,T,[R1[0]-T[0],R1[1]-T[1]],[L1[0]-T[0],L1[1]-T[1]],0);face(tex.side,L1,[C[0]-L1[0],C[1]-L1[1]],[Lb[0]-L1[0],Lb[1]-L1[1]],.15);face(tex.side,C,[R1[0]-C[0],R1[1]-C[1]],[Cb[0]-C[0],Cb[1]-C[1]],.3);x.globalAlpha=1;
+    if(later)return;x.strokeStyle='#ffffffcc';x.lineWidth=Math.max(1,BB.a*.05);x.setLineDash([BB.a*.15,BB.a*.1]);x.beginPath();x.moveTo(...T);x.lineTo(...R1);x.lineTo(...Rb);x.lineTo(...Cb);x.lineTo(...Lb);x.lineTo(...L1);x.closePath();x.moveTo(...C);x.lineTo(...R1);x.moveTo(...C);x.lineTo(...L1);x.moveTo(...C);x.lineTo(...Cb);x.stroke();x.setLineDash([]);
+    faces.push({rx,ry,z,f:'top',ghost:1,poly:[T,R1,Rb,Cb,Lb,L1]})}
   function puff(cp,B){if(!B||B.deco)return;const t=bbTex(B.k).top,img=x.getImageData?null:null,ps=[...Array(10)].map(()=>({x:cp[0],y:cp[1],vx:(Math.random()-.5)*BB.a*.25,vy:-Math.random()*BB.a*.25,s:BB.a*(.15+Math.random()*.15),sx:Math.floor(Math.random()*12),sy:Math.floor(Math.random()*12)}));let f=0;const st=()=>{if(!$('#bbc'))return;draw();ps.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=BB.a*.03;x.imageSmoothingEnabled=false;x.drawImage(t,p.sx,p.sy,4,4,p.x,p.y,p.s,p.s)});if(++f<22)requestAnimationFrame(st);else draw()};st()}
   function hit(px,py){for(let i=faces.length-1;i>=0;i--)if(inPoly(px,py,faces[i].poly))return faces[i];
     for(let rx=0;rx<BW;rx++)for(let ry=0;ry<BD;ry++){const P=[proj(rx,ry,0),proj(rx+1,ry,0),proj(rx+1,ry+1,0),proj(rx,ry+1,0)];if(inPoly(px,py,P))return{rx,ry,z:-1,f:'top',ground:1}}return null}
   function act(h){if(!h)return;const save1=()=>{BB.undo.push(BB.w.slice());if(BB.undo.length>30)BB.undo.shift()};
-    if(BB.tool=='break'){if(h.ground)return;const[a,b]=unrot(h.rx,h.ry);if(!get(a,b,h.z))return;save1();const kk=BLOCKS[BB.w[bbI(a,b,h.z)]],cp=proj(h.rx+.5,h.ry+.5,h.z+.5);BB.w[bbI(a,b,h.z)]=0;SFX.hit();bbSave();draw();puff(cp,kk);return}
-    let rx=h.rx,ry=h.ry,z=h.z;if(h.f=='top')z++;else if(h.f=='left')ry++;else rx++;
+    if(BB.tool=='break'){if(h.ground||h.ghost||(BB.goal&&h.z==0))return;const[a,b]=unrot(h.rx,h.ry);if(!get(a,b,h.z))return;save1();const kk=BLOCKS[BB.w[bbI(a,b,h.z)]],cp=proj(h.rx+.5,h.ry+.5,h.z+.5);BB.w[bbI(a,b,h.z)]=0;SFX.hit();bbSave();draw();puff(cp,kk);return}
+    let rx=h.rx,ry=h.ry,z=h.z;if(h.ghost){}else if(h.f=='top')z++;else if(h.f=='left')ry++;else rx++;
+    if(BB.goal){if(rx<0||ry<0||rx>=BW||ry>=BD||z<1||z>=BH){SFX.wrong();fb('Build on the see-through blocks! 👻','warn');return}const[a,b]=unrot(rx,ry),gi=bbI(a,b,z),want=BB.goal.get(gi);
+      if(!want||get(a,b,z)){SFX.wrong();fb('Build on the see-through blocks! 👻','warn');return}
+      {const bl=bbI(a,b,z-1);if(BB.goal.has(bl)&&!BB.w[bl]){SFX.wrong();fb('Build from the bottom up! ⬇️','warn');return}}
+      if(BB.sel!=want){BB.miss++;SFX.wrong();fb(`Oops! That spot needs ${BLOCKS[want].n}`,'warn');const q=$(`[data-b="${want}"]`);if(q){anim(q,'pulse');q.classList.add('hint');setTimeout(()=>q.classList.remove('hint'),1500)}bbProg();return}
+      save1();BB.w[gi]=want;BB.drop={i:gi,t:performance.now()};tone(300+z*60,.08,0,'square',.08);tone(600+z*60,.06,.04,'sine',.1);draw();bbProg();if([...BB.goal].every(([i,v])=>BB.w[i]==v))setTimeout(bbWin,350);return}
     if(BLOCKS[getR(h.rx,h.ry,h.z)]&&BLOCKS[getR(h.rx,h.ry,h.z)].deco&&!h.ground){z=h.z;rx=h.rx;ry=h.ry;return}
     if(rx<0||ry<0||rx>=BW||ry>=BD||z<0||z>=BH){SFX.wrong();fb('Too far!','warn');return}const[a,b]=unrot(rx,ry);if(get(a,b,z))return;
     const B=BLOCKS[BB.sel];if(B.deco&&z>0&&!opaque(get(a,b,z-1))&&get(a,b,z-1)!=10){SFX.wrong();fb('Put it on top of a block!','warn');return}
     if(BB.sel==19)for(let i=0;i<BB.w.length;i++)if(BB.w[i]==19)BB.w[i]=0;
-    save1();BB.w[bbI(a,b,z)]=BB.sel;tone(300+z*60,.08,0,'square',.08);tone(600+z*60,.06,.04,'sine',.1);bbSave();draw()}
+    save1();BB.w[bbI(a,b,z)]=BB.sel;BB.drop={i:bbI(a,b,z),t:performance.now()};tone(300+z*60,.08,0,'square',.08);tone(600+z*60,.06,.04,'sine',.1);bbSave();draw()}
   let pd=null;cv.addEventListener('pointerdown',e=>{e.preventDefault();cv.setPointerCapture(e.pointerId);pd={x:e.clientX,y:e.clientY,px:BB.px,py:BB.py,mv:0}});cv.addEventListener('pointermove',e=>{if(!pd)return;const dx=e.clientX-pd.x,dy=e.clientY-pd.y;if(Math.hypot(dx,dy)>12)pd.mv=1;if(pd.mv&&BB.zoom>1){BB.px=pd.px+dx;BB.py=pd.py+dy;draw()}});cv.addEventListener('pointerup',e=>{if(!pd)return;const m=pd.mv;pd=null;if(m)return;const r=cv.getBoundingClientRect();act(hit((e.clientX-r.left)*dpr,(e.clientY-r.top)*dpr))});cv.addEventListener('pointercancel',()=>pd=null);
   $$('[data-b]').forEach(b=>b.onclick=()=>{const i=+b.dataset.b,B=BLOCKS[i];if(B.need&&S.stars<B.need){SFX.wrong();anim(b,'sad');fb(`Earn ${B.need} ⭐ to unlock ${B.n}!`,'warn long',2500);return}
     BB.sel=i;$$('[data-b]').forEach(q=>q.classList.toggle('on',q==b));setTool('build');SFX.pop(2)});
@@ -1203,10 +1228,19 @@ function blockBuilder(){const bs=bbS(),wd=bs.worlds[bs.cur];
   $('#bbrl').onclick=()=>{BB.rot=(BB.rot+3)%4;SFX.whoosh();draw()};$('#bbrr').onclick=()=>{BB.rot=(BB.rot+1)%4;SFX.whoosh();draw()};
   $('#bbzoom').onclick=e=>{BB.zoom=BB.zoom>1?1:1.8;BB.px=BB.py=0;e.currentTarget.classList.toggle('on',BB.zoom>1);SFX.whoosh();draw();if(BB.zoom>1)fb('Drag to look around!','ok',1500)};$('#bbnight').onclick=e=>{BB.night=!BB.night;e.currentTarget.textContent=BB.night?'☀️':'🌙';draw()};
   $('#back').onclick=()=>{bbSave();gtStop();bbMenu()};
+  function bbProg(){const p=$('#bbprog');if(!p)return;const n=[...BB.goal].filter(([i,v])=>BB.w[i]==v).length;p.textContent=`🧱 ${n}/${BB.total}${BB.miss?' · ❌'+BB.miss:''}`}
+  if(BB.goal)bbProg();
+  BB.api={act,hit,get faces(){return faces}};
   $(`[data-b="${BB.sel}"]`).classList.add('on');
   size();BB.size=size;if(!window._bbrs){window._bbrs=1;let rs;addEventListener('resize',()=>{clearTimeout(rs);rs=setTimeout(()=>{if($('#bbc')&&BB&&BB.size)BB.size()},120)})}
-  gtStart('#gtm',()=>{bbSave();timeUpOverlay()});if(S.voice)setTimeout(()=>say('Pick a block and tap to build!'),300)}
-function bbSave(){if(!BB)return;const bs=bbS();bs.worlds[bs.cur].d=bbEncode(BB.w);save()}
+  gtStart('#gtm',()=>{bbSave();timeUpOverlay()});if(S.voice)setTimeout(()=>say(CH?`Build the ${CH[0]}! Fill in the see-through blocks.`:'Pick a block and tap to build!'),300)}
+function bbFlat(){const w=new Uint8Array(BW*BD*BH);for(let x=0;x<BW;x++)for(let y=0;y<BD;y++)w[bbI(x,y,0)]=1;return w}
+function bbWin(){if(!BB||BB.ch==null||!$('#bbc'))return;const ci=BB.ch,arr=bbChS(),st=BB.miss<=1?3:BB.miss<=4?2:1,old=arr[ci]||0;arr[ci]=Math.max(old,st);const coins=Math.max(0,st-old)*3+1;S.coins+=coins;save();
+  SFX.fanfare();confetti(60);if(S.voice)say(st==3?'Perfect build! Three stars!':'You built it!');const o=document.createElement('div');o.className='ovl';
+  o.innerHTML=`<div class="endcard"><div style="font-size:56px">${BBCH[ci][1]}</div><h1>${BBCH[ci][0]} built!</h1><div class="lvstars">${[1,2,3].map(k=>`<span class="lvstar ${k<=st?'on':''}" style="animation-delay:${k*.25}s">⭐</span>`).join('')}</div>
+   <div class="msg">${BB.miss?`${BB.miss} wrong block${BB.miss>1?'s':''}. `:'No mistakes! '}+${coins} 🪙</div><div class="rowh">${ci+1<BBCH.length?'<button class="btn big" id="bbnx">Next build ▶</button>':''}<button class="btn" id="bbre">↻ Again</button><button class="btn" id="bbls">☰</button></div></div>`;
+  document.body.appendChild(o);const go=f=>{o.remove();f()};if(o.querySelector('#bbnx'))o.querySelector('#bbnx').onclick=()=>go(()=>blockBuilder(ci+1));o.querySelector('#bbre').onclick=()=>go(()=>blockBuilder(ci));o.querySelector('#bbls').onclick=()=>go(()=>{gtStop();bbMenu()})}
+function bbSave(){if(!BB||BB.ch!=null)return;const bs=bbS();bs.worlds[bs.cur].d=bbEncode(BB.w);save()}
 function bbIcon(x,i,sz){const B=BLOCKS[i];x.clearRect(0,0,sz,sz);if(B.deco){x.font=`${sz*.7}px sans-serif`;x.textAlign='center';x.textBaseline='middle';x.fillText(B.deco=='pet'?petE():B.deco,sz/2,sz/2+2);return}
   const t=bbTex(B.k),a=sz*.42,cx=sz/2,top=sz*.1,f=(tex,O,U,V,sh)=>{x.save();x.beginPath();x.moveTo(...O);x.lineTo(O[0]+U[0],O[1]+U[1]);x.lineTo(O[0]+U[0]+V[0],O[1]+U[1]+V[1]);x.lineTo(O[0]+V[0],O[1]+V[1]);x.closePath();x.clip();
     x.setTransform(U[0]/16,U[1]/16,V[0]/16,V[1]/16,O[0],O[1]);x.imageSmoothingEnabled=false;x.drawImage(tex,0,0);x.setTransform(1,0,0,1,0,0);if(sh){x.fillStyle=`rgba(0,0,0,${sh})`;x.fill()}x.restore()};
@@ -1214,9 +1248,11 @@ function bbIcon(x,i,sz){const B=BLOCKS[i];x.clearRect(0,0,sz,sz);if(B.deco){x.fo
 function bbMenu(){const bs=bbS();
   view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title">🧱 Block Builder</div><div class="sp"></div><div class="stars">🎟️ ${fmtT(ptLeft())}</div></div>
   <div class="scroll"><div class="tipcard">Build anything! Pick a block, then tap the top or side of a block to stack it. ⛏️ Break removes blocks. ⟲ ⟳ spins your world. Earn ⭐ in learning games to unlock <b>Gold</b>, <b>Diamond</b> and <b>Rainbow</b> blocks!</div>
+  <h2>🏗️ Build Challenges <span class="small">${bbChS().reduce((a,b)=>a+(b||0),0)}/${BBCH.length*3} ⭐</span></h2><div class="lvgrid">${BBCH.map(([n,e],i)=>{const ok=i==0||(bbChS()[i-1]||0)>0,sv=bbChS()[i]||0;return`<button class="btn lvb ${ok?'':'lock'} ${sv?'done':''}" data-ch="${i}"><b>${ok?e:'🔒'}</b><span class="lvs">${[1,2,3].map(k=>k<=sv?'⭐':'☆').join('')}</span><small>${i+1}. ${n}</small></button>`}).join('')}</div>
   <h2>My Worlds</h2><div class="games">${bs.worlds.map((w,i)=>`<button class="btn game" data-w="${i}" style="background:linear-gradient(135deg,#bbf7d0,#7dd3fc)"><span class="ge">🏝️</span><span class="gi"><span class="gt">${esc(w.name)}</span><span class="small">${bbDecode(w.d).filter(v=>v).length} blocks</span></span><span class="go">▶</span></button>`).join('')}
    ${bs.worlds.length<3?'<button class="btn game" id="bbnew" style="background:#fff"><span class="ge">➕</span><span class="gi"><span class="gt">New World</span><span class="small">Start a fresh island</span></span></button>':''}</div></div>`);
   $('#back').onclick=gameRoom;
+  $$('[data-ch]').forEach(b=>b.onclick=()=>{const i=+b.dataset.ch;if(i>0&&!(bbChS()[i-1]>0)){SFX.wrong();anim(b,'sad');fb('Finish the build before it first!','warn');return}if(ptLeft()<=0){SFX.wrong();fb('🎟️ '+ptWhyNot(),'warn long',3000);return}SFX.whoosh();blockBuilder(i)});
   $$('[data-w]').forEach(b=>b.onclick=()=>{if(ptLeft()<=0){SFX.wrong();fb('🎟️ '+ptWhyNot(),'warn long',3000);return}bs.cur=+b.dataset.w;save();SFX.whoosh();blockBuilder()});
   if($('#bbnew'))$('#bbnew').onclick=()=>{const w=new Uint8Array(BW*BD*BH);for(let x=0;x<BW;x++)for(let y=0;y<BD;y++)w[bbI(x,y,0)]=1;bs.worlds.push({name:['Castle Land','Sky Island','Dream World'][bs.worlds.length-1]||'New World',d:bbEncode(w)});save();bbMenu()}}
 
