@@ -235,6 +235,12 @@ label.tg{display:block;font-size:20px;margin:8px 0}
 .cbar{display:flex;align-items:center;gap:10px;margin:6px 0;font-weight:700}.cbar span{width:90px}.cbar .meter{flex:1;margin:0;background:#f5f5f4}.cbar b{width:48px;text-align:right}
 .thought{position:absolute;top:-10px;right:-18px;background:#fff;border-radius:16px;padding:2px 8px;font-size:22px;box-shadow:0 2px 6px #0002;animation:bob 1.6s infinite}
 .dot{position:absolute;top:4px;right:8px;background:#ef4444;color:#fff;font-style:normal;border-radius:50%;width:22px;height:22px;font-size:15px;display:flex;align-items:center;justify-content:center}
+.stage{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;border-radius:0 0 28px 28px;padding:10px 12px 12px;margin:0 -14px 6px;position:relative;overflow:hidden;box-shadow:0 4px 10px #0001}
+.stage.sticky{position:sticky;top:0;z-index:5}
+.stage .petbig{font-size:clamp(100px,24vmin,180px);padding:.38em .5em .05em;line-height:1}
+.stage .hname{font-size:clamp(20px,3.4vh,28px);margin-top:2px}.stage .htxt{font-size:16px}
+.stage.dark{color:#fff}.stage.dark .htxt{color:#fde68a}
+.sdeco{position:absolute;font-size:clamp(28px,6vmin,48px);opacity:.55;pointer-events:none}
 </style>
 </head>
 <body>
@@ -735,11 +741,13 @@ function book(){const have=STK.filter(s=>S.stickers[s]).length;
   $$('.st[data-s]').forEach(b=>b.onclick=()=>{anim(b,'jump');SFX.pop(R(0,5));const r=b.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,[b.dataset.s])})}
 
 /* ---------- pet shop ---------- */
+function stageHTML(sc,title,sub,sticky){return`<div class="stage ${sc[0]=='space'?'dark':''} ${sticky?'sticky':''}" style="background:${sc[3]}" id="stage">
+  <span class="sdeco" style="left:14px;top:12px">${sc[2]}</span><span class="sdeco" style="right:14px;bottom:12px">${sc[2]}</span>
+  <div class="petbig ${petAura()}" id="pet">${petHTML()}</div><div class="hname">${title}</div>${sub?`<div class="htxt">${sub}</div>`:''}</div>`}
 let shopTab='hat';
 function shop(){const sc=sceneOf(),items=shopTab=='hat'?SHOP.hat.concat(BPRIZE.filter(h=>S.owned[h]).map(h=>[h,0,'boss'])):SHOP[shopTab];
   view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title">🛍️ Pet Shop</div><div class="sp"></div><div class="stars" id="coinc">🪙 ${S.coins}</div></div>
-  <div class="scroll"><div class="hero ${sc[0]=='space'?'dark':''}" style="background:${sc[3]};justify-content:center"><div class="petbig ${petAura()}" id="pet">${petHTML()}</div>
-   <div class="hinfo" style="flex:none"><div class="hname">${esc(petN())}</div><div class="htxt">Earn coins by playing. Buy fun stuff!</div></div></div>
+  <div class="scroll" style="padding-top:0">${stageHTML(sc,esc(petN()),'Tap an item to try it on!',true)}
   <div class="tabs">${[['hat','🎩 Hats'],['toy','🧸 Toys'],['scene','🏝️ Places']].map(([k,l])=>`<button class="btn sm tab ${k==shopTab?'on':''}" data-t="${k}">${l}</button>`).join('')}</div>
   <div class="shopgrid">${items.map(it=>{const id=it[0],own=S.owned[id],wear=shopTab=='scene'?S.wear.scene==id:S.wear[shopTab]==id;
     return`<button class="btn item ${own?'own':''} ${wear?'wear':''}" data-id="${id}"><span>${shopTab=='scene'?it[2]:id}</span>${shopTab=='scene'?it[4]:''}<div>${wear?'✅ On':own?'Tap to use':'🪙 '+it[1]}</div></button>`}).join('')}</div></div>`);
@@ -1009,7 +1017,7 @@ function care(){const c=careTick();save();const pn=esc(petN()),sc=sceneOf();
   const mood=c.food<30?`${pn} is hungry! 🍖`:c.clean<30?`${pn} needs a bath! 🛁`:c.fun<30?`${pn} wants to play! 🎾`:Math.min(c.food,c.clean,c.fun)>=80?`${pn} is super happy! 💖`:`${pn} is doing great!`;
   const bar=(l,v,col)=>`<div class="cbar"><span>${l}</span><div class="meter"><div style="width:${v}%;background:${col}"></div></div><b>${Math.round(v)}%</b></div>`;
   view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title">🐾 Pet Care</div><div class="sp"></div><div class="stars" id="coinc">🪙 ${S.coins}</div></div>
-  <div class="scroll"><div class="hero ${sc[0]=='space'?'dark':''}" style="background:${sc[3]};justify-content:center;flex-direction:column;position:relative" id="stage"><div class="petbig ${petAura()}" id="pet" style="font-size:110px">${petHTML()}</div><div class="hname">${mood}</div></div>
+  <div class="scroll">${stageHTML(sc,mood,'',false)}
   <div class="card">${bar('🍖 Food',c.food,'linear-gradient(90deg,#f59e0b,#ef4444)')}${bar('🛁 Clean',c.clean,'linear-gradient(90deg,#38bdf8,#3b82f6)')}${bar('🎾 Fun',c.fun,'linear-gradient(90deg,#a3e635,#22c55e)')}</div>
   <h2>Snacks</h2><div class="shopgrid">${SNACKS.map(([e,cost,v],i)=>`<button class="btn item" data-f="${i}"><span>${e}</span><div>🪙 ${cost}</div></button>`).join('')}</div>
   <div class="actions" style="grid-template-columns:1fr 1fr"><button class="btn act" id="bath"><span>🛁</span>Bath time (free)</button><button class="btn act" id="play"><span>🎾</span>Play (free)</button></div></div>`);
