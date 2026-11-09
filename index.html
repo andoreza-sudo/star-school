@@ -201,6 +201,20 @@ label.tg{display:block;font-size:20px;margin:8px 0}
 .talking{background:#dbeafe;animation:bump .6s infinite}
 .fb.long{font-size:clamp(18px,4.5vw,26px)}
 .vline{display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px dashed #f0ebe3}.vtxt{flex:1;font-size:16px}.btn.rec{background:#fee2e2}
+
+.games{display:flex;flex-direction:column;gap:12px}
+.game{display:flex;align-items:center;gap:14px;text-align:left;padding:14px 16px;border-radius:24px}
+.ge{font-size:52px;line-height:1}.gi{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}.gt{font-size:24px}
+.game .meter{display:block;background:#fff9}.game .go{font-size:28px;color:#16a34a}
+.swatch{display:inline-block;width:1em;height:1em;border-radius:50%;background:var(--sw);border:4px solid #0002;box-shadow:inset -6px -6px 0 #0001;vertical-align:middle}
+.numpic{display:inline-flex;align-items:center;justify-content:center;min-width:1.2em;height:1.2em;padding:0 .15em;border-radius:.3em;background:#fff;border:4px solid #93c5fd;font-weight:700;font-size:.8em;line-height:1;color:#1d4ed8}
+.pcap{display:inline-flex;flex-direction:column;align-items:center;line-height:1.05}.pcap small{font-size:.3em;font-weight:700;color:var(--muted)}
+.choices.pics .ch .pcap small{font-size:.32em}
+.lgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px}
+.lcard{display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 6px}.lcard .lp{font-size:54px;line-height:1.1}.lcard b{font-size:22px;color:#1d4ed8}.lcard small{font-size:15px;color:var(--muted)}
+.lcard.heard{background:#dcfce7}
+.node.es{background:#bbf7d0}
+.ovl .grow,.ovl .grown{font-size:min(160px,30vh)!important}.ovl h1{font-size:min(34px,7vh)}
 </style>
 </head>
 <body>
@@ -215,7 +229,7 @@ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 const KEY='starschool-v2';
 let S;try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
 if(!S)S={name:'',pet:'dragon',petName:'',buddy:'',stars:0,prog:{},stickers:{},day:{},voice:true,sound:true,music:true,best:0};
-S=Object.assign({map:{},wdone:{},owned:{meadow:1},wear:{hat:'',toy:'',scene:'meadow'},unlockAll:false,coins:S.stars||0},S);
+S=Object.assign({wdone:{},owned:{meadow:1},wear:{hat:'',toy:'',scene:'meadow'},unlockAll:false,coins:S.stars||0},S);
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 function P(sk){return S.prog[sk]||(S.prog[sk]={lv:1,r:0,c:0,t:0,miss:{}})}
 const today=()=>{const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()};
@@ -272,9 +286,9 @@ document.addEventListener('pointerdown',e=>{ac();const b=e.target.closest('.btn'
 /* ---------- speech & feedback ---------- */
 const canSpeak=()=>'speechSynthesis' in window&&typeof SpeechSynthesisUtterance!='undefined';
 function noVoice(btn){fb('🔇 No voice here. Open Star School in Chrome or the installed app.','warn long',3000);if(btn){btn.classList.remove('talking');anim(btn,'sad')}}
-function say(t,btn){if(!canSpeak()){if(btn)noVoice(btn);return}
-  try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(String(t).replace(/−/g,' minus '));u.rate=.88;u.pitch=1.1;u.lang='en-US';
-  const vs=speechSynthesis.getVoices(),v=vs.find(v=>/^en[-_]US/i.test(v.lang))||vs.find(v=>/^en/i.test(v.lang));if(v)u.voice=v;
+function say(t,btn,lang){if(!canSpeak()){if(btn)noVoice(btn);return}
+  try{speechSynthesis.cancel();const es=lang=='es',u=new SpeechSynthesisUtterance(String(t).replace(/−/g,' minus '));u.rate=es?.8:.88;u.pitch=1.1;u.lang=es?'es-MX':'en-US';
+  const vs=speechSynthesis.getVoices(),v=es?(vs.find(v=>/^es[-_](MX|US)/i.test(v.lang))||vs.find(v=>/^es/i.test(v.lang))):(vs.find(v=>/^en[-_]US/i.test(v.lang))||vs.find(v=>/^en/i.test(v.lang)));if(v)u.voice=v;
   if(btn){let started=false;btn.classList.add('talking');u.onstart=()=>{started=true};u.onend=u.onerror=()=>btn.classList.remove('talking');
     setTimeout(()=>{if(!started&&!speechSynthesis.speaking)noVoice(btn)},2500)}
   speechSynthesis.speak(u)}catch(e){if(btn)noVoice(btn)}}
@@ -455,7 +469,53 @@ function genComp(lv){const [t,qq,a,d]=pick(STORIES[Math.min(lv,2)-1]);
   return{kind:'choice',cls:'wide',html:`<p class="story">${words(t)}</p><p class="story" style="color:#1d4ed8">${words(qq)}</p>`,say:t+' '+qq,auto:true,ans:a,
     choices:shuffle([a,...d]).map(x=>({l:x,v:x})),hint:{k:'say',s:'Listen to the story again. Tap any word to hear it.',w:t},label:qq}}
 
+/* ---------- Spanish ---------- */
+const SPN={
+ greet:[['hola','Hello','👋'],['adiós','Goodbye','🚶'],['gracias','Thank you','🙏'],['por favor','Please','🥺'],['buenos días','Good morning','🌅'],['buenas noches','Good night','🌙'],['sí','Yes','👍'],['no','No','👎']],
+ color:[['rojo','red','c:#ef4444'],['azul','blue','c:#3b82f6'],['verde','green','c:#22c55e'],['amarillo','yellow','c:#facc15'],['naranja','orange','c:#f97316'],['morado','purple','c:#a855f7'],['rosa','pink','c:#f9a8d4'],['negro','black','c:#1c1917'],['blanco','white','c:#ffffff'],['café','brown','c:#92400e']],
+ num:[['uno','one','n:1'],['dos','two','n:2'],['tres','three','n:3'],['cuatro','four','n:4'],['cinco','five','n:5'],['seis','six','n:6'],['siete','seven','n:7'],['ocho','eight','n:8'],['nueve','nine','n:9'],['diez','ten','n:10']],
+ teen:[['once','eleven','n:11'],['doce','twelve','n:12'],['trece','thirteen','n:13'],['catorce','fourteen','n:14'],['quince','fifteen','n:15'],['dieciséis','sixteen','n:16'],['diecisiete','seventeen','n:17'],['dieciocho','eighteen','n:18'],['diecinueve','nineteen','n:19'],['veinte','twenty','n:20']],
+ animal:[['perro','dog','🐶'],['gato','cat','🐱'],['pájaro','bird','🐦'],['pez','fish','🐟'],['vaca','cow','🐄'],['caballo','horse','🐴'],['cerdo','pig','🐷'],['pato','duck','🦆'],['oso','bear','🐻'],['conejo','rabbit','🐰'],['león','lion','🦁'],['rana','frog','🐸']],
+ food:[['manzana','apple','🍎'],['plátano','banana','🍌'],['leche','milk','🥛'],['pan','bread','🍞'],['agua','water','💧'],['queso','cheese','🧀'],['huevo','egg','🥚'],['helado','ice cream','🍦'],['galleta','cookie','🍪'],['uvas','grapes','🍇']],
+ body:[['ojos','eyes','👀'],['nariz','nose','👃'],['boca','mouth','👄'],['oreja','ear','👂'],['mano','hand','✋'],['pie','foot','🦶'],['pierna','leg','🦵'],['diente','tooth','🦷']],
+ family:[['mamá','mom','👩'],['papá','dad','👨'],['hermano','brother','👦'],['hermana','sister','👧'],['abuela','grandma','👵'],['abuelo','grandpa','👴'],['bebé','baby','👶']]};
+function picHTML(it,cap){const p=it[2];const h=p.startsWith('c:')?`<span class="swatch" style="--sw:${p.slice(2)}"></span>`:p.startsWith('n:')?`<span class="numpic">${p.slice(2)}</span>`:`<span>${p}</span>`;
+  return cap?`<span class="pcap">${h}<small>${esc(it[1])}</small></span>`:h}
+function genEs(set,lv){const sn=set=='mix'?pick(Object.keys(SPN)):set,items=SPN[sn],it=pick(items),cap=sn=='greet';
+  const opts=shuffle([it,...shuffle(items.filter(x=>x!==it)).slice(0,2)]);
+  if(lv==1)return{kind:'choice',cls:'pics',lang:'es',html:`<button class="btn hear" data-sayes="${esc(it[0])}">🔊</button><div class="sub">Tap the picture for “${esc(it[0])}”</div>`,
+    say:it[0],auto:'must',ans:it[0],choices:opts.map(x=>({l:picHTML(x,cap),v:x[0],h:1})),after:it[0],afterLang:'es',
+    hint:{k:'say',lang:'es',w:it[0],s:`“${it[0]}” means “${it[1]}”.`},label:`${it[0]} (listen)`};
+  return{kind:'choice',lang:'es',html:`<div class="emo">${picHTML(it,cap)}</div><div class="sub">How do you say it in Spanish?</div>`,ans:it[0],
+    choices:opts.map(x=>({l:x[0],v:x[0]})),after:it[0],afterLang:'es',hint:{k:'text',s:`It starts with “${it[0][0].toUpperCase()}”.`},label:`${it[0]} (read)`}}
+
+/* ---------- early reading: sounds & rhymes ---------- */
+function genSound(lv){const [w,e]=pick(lv==1?CVC.concat(BLEND.filter(x=>!/^(sh|ch|th|wh)/.test(x[0]))):CVC),ch=lv==1?w[0]:w[w.length-1];
+  const opts=shuffle([ch,...shuffle([...'bcdfghjklmnprstvw'].filter(x=>x!=ch)).slice(0,2)]);
+  return{kind:'choice',cls:'syms',html:`<div class="emo">${e}</div><div class="sub">${lv==1?'What sound does it START with?':'What sound does it END with?'}</div>`,
+    say:`${w}. What sound does ${w} ${lv==1?'start':'end'} with?`,auto:true,ans:ch,after:w,choices:opts.map(x=>({l:x,v:x})),
+    hint:{k:'say',w:`${w}... ${w}`,s:lv==1?'Say it slowly. Listen to the very first sound.':'Say it slowly. Listen to the very last sound.'},label:`${lv==1?'starts':'ends'}: ${w}`}}
+const RHY=[[['cat','🐱'],['bat','🦇'],['hat','🎩'],['rat','🐀']],[['hen','🐔'],['pen','🖊️'],['ten','🔟']],[['bug','🐛'],['mug','☕']],[['dog','🐶'],['frog','🐸']],[['fox','🦊'],['box','📦']],
+ [['cake','🎂'],['snake','🐍']],[['king','👑'],['ring','💍']],[['bee','🐝'],['tree','🌳']],[['goat','🐐'],['boat','⛵'],['coat','🧥']],[['sock','🧦'],['clock','🕐']],[['bell','🔔'],['shell','🐚']],
+ [['car','🚗'],['star','⭐']],[['moon','🌙'],['spoon','🥄']],[['mouse','🐭'],['house','🏠']]];
+function genRhyme(lv){const fi=R(0,RHY.length-1),fam=RHY[fi],[t,r]=shuffle(fam),others=shuffle(RHY.filter((_,i)=>i!=fi)).slice(0,2).map(f=>pick(f));
+  const opts=shuffle([r,...others]);
+  return{kind:'choice',cls:lv==1?'pics':'',html:`<div class="emo">${t[1]}</div><div class="sub">${lv==1?`Which picture rhymes with “${t[0]}”?`:`Which word rhymes with “${t[0]}”?`}</div>`,
+    say:`Which one rhymes with ${t[0]}?`,auto:true,ans:r[0],after:`${t[0]}, ${r[0]}!`,choices:opts.map(x=>({l:lv==1?x[1]:x[0],v:x[0]})),
+    hint:{k:'text',s:`Rhymes sound the same at the end: ${t[0].slice(-2)}…`},label:`rhyme: ${t[0]}`}}
+
 const SK={
+ es_greet:{t:'Hello & Thank You',e:'👋',area:'es',max:2,gen:lv=>genEs('greet',lv)},
+ es_color:{t:'Colors',e:'🎨',area:'es',max:2,gen:lv=>genEs('color',lv)},
+ es_num:{t:'Numbers 1–10',e:'🔟',area:'es',max:2,gen:lv=>genEs('num',lv)},
+ es_teen:{t:'Numbers 11–20',e:'2️⃣',area:'es',max:2,gen:lv=>genEs('teen',lv)},
+ es_animal:{t:'Animals',e:'🐶',area:'es',max:2,gen:lv=>genEs('animal',lv)},
+ es_food:{t:'Food',e:'🍎',area:'es',max:2,gen:lv=>genEs('food',lv)},
+ es_body:{t:'My Body',e:'👃',area:'es',max:2,gen:lv=>genEs('body',lv)},
+ es_family:{t:'Family',e:'👪',area:'es',max:2,gen:lv=>genEs('family',lv)},
+ es_mix:{t:'Big Review',e:'🏆',area:'es',max:2,gen:lv=>genEs('mix',lv)},
+ sound:{t:'Letter Sounds',e:'🔤',area:'read',max:2,gen:genSound},
+ rhyme:{t:'Rhyme Time',e:'🎵',area:'read',max:2,gen:genRhyme},
  cmp:{t:'Compare',e:'🐊',area:'math',max:3,gen:genCmp},
  time:{t:'Clocks',e:'🕒',area:'math',max:3,gen:genTime},
  coins:{t:'Coins',e:'🪙',area:'math',max:3,gen:genCoins},
@@ -477,7 +537,7 @@ const SK={
 function rod(n,c,cls='',x=0){if(n<=0)return'';let s='';for(let i=0;i<n;i++)s+=`<i class="${i>=n-x?'x':''}"></i>`;return`<span class="rod ${cls}" style="--c:${c||PAL[(n-1)%10]}">${s}</span>`}
 function hintHTML(q){const h=q.hint;if(!h)return'';
   if(h.k=='text')return esc(h.s);
-  if(h.k=='say'){setTimeout(()=>say(h.w),150);return esc(h.s)}
+  if(h.k=='say'){setTimeout(()=>say(h.w,null,h.lang),150);return esc(h.s)}
   if(h.k=='next'){const need=q.word[G.built.length],i=q.tiles.findIndex((t,j)=>t==need&&!G.built.includes(j));const el=$(`.lt[data-i="${i}"]`);if(el)el.classList.add('glow');setTimeout(()=>say(q.word),150);return'Look for the glowing letter!'}
   if(h.k=='pairs'){if(h.n>20)return'Look at the last digit. Is it 0, 2, 4, 6, or 8?';let s='<div class="pairs">';for(let i=0;i<h.n;i+=2)s+='<span><b></b>'+(i+1<h.n?'<b></b>':'')+'</span>';return s+'</div><div>Does every dot have a partner?</div>'}
   if(h.k=='emoji'){const{e,a,b,op}=h;if(op=='+')return a+b>20?'Count on with your fingers!':`<div class="emh">${e.repeat(a)} + ${e.repeat(b)}</div>`;
@@ -497,17 +557,34 @@ const view=h=>{music(false);stopBalloons();const a=$('#app');a.style.animation='
 const PET_YAY=['Yay!','Woo-hoo!','You did it!','So smart!','High five!','Awesome!','Super!'];
 const PET_OOPS=['Oops! Try again!','You can do it!','Almost!','Hmm, look again!'];
 
-/* ---------- map, shop data ---------- */
-const WORLDS=[
- {n:'Sunny Meadow',e:'🌻',c:'#dcfce7',nodes:[['add',1,'Adding to 10'],['sight',1,'Sight Words'],['cnt',1,'Count by 1s & 10s'],['pic',1,'Picture Words'],['eo',1,'Even or Odd'],['build',1,'Build a Word'],['miss',1,'Missing Number'],['sent',1,'Read & Match'],['sub',1,'Take Away'],['story',1,'Story Problems']]},
- {n:'Candy Canyon',e:'🍭',c:'#fce7f3',nodes:[['add',2,'+9 & Doubles'],['sight',2,'More Sight Words'],['big',1,'Tens & Hundreds'],['pic',2,'Blends'],['cnt',2,'Count by 2s & 5s'],['build',2,'Build Blends'],['cmp',1,'Bigger or Smaller'],['comp',1,'Story Time'],['miss',2,'Missing to 18'],['sent',2,'Read Sentences'],['sub',2,'Take Away to 18'],['story',2,'Story Problems 2']]},
- {n:'Ocean Reef',e:'🐠',c:'#e0f2fe',nodes:[['add',3,'All the Facts'],['time',1,"O'Clock"],['sight',3,'Sight Words 3'],['big',2,'2-Digit Adding'],['pic',3,'Magic E'],['coins',1,'Pennies & Nickels'],['build',3,'Build Magic E'],['eo',2,'Even/Odd to 99'],['cmp',2,'Compare to 100'],['comp',2,'Story Time 2'],['time',2,'Half Past'],['sub',3,'2-Digit Take Away'],['story',3,'Story Problems 3']]},
- {n:'Space Station',e:'🚀',c:'#ede9fe',nodes:[['big',3,'Carry the 1'],['mult',1,'Equal Groups'],['pic',4,'Vowel Teams'],['coins',2,'Dimes Too'],['cnt',3,'Skip Count Big'],['build',4,'Build Vowel Teams'],['sub',4,'Borrowing'],['time',3,'Quarter Hours'],['big',4,'3-Digit Adding'],['mult',2,'Groups to 5×5'],['cmp',3,'Compare to 999'],['coins',3,'Quarters']]}];
-const NODES=[];WORLDS.forEach((w,wi)=>w.nodes.forEach(([sk,lv,t],k)=>NODES.push({sk,lv,t,wi,last:k==w.nodes.length-1})));
-const passed=i=>(S.map[i]||0)>0;
-const unlocked=i=>S.unlockAll||i==0||passed(i-1);
-const curNode=()=>{for(let i=0;i<NODES.length;i++)if(unlocked(i)&&!passed(i))return i;return NODES.length-1};
-const worldDone=wi=>NODES.every((n,i)=>n.wi!=wi||passed(i));
+/* ---------- games (paths), maps ---------- */
+const PATHS={
+ math:{n:'Math Adventure',e:'🔢',c:'linear-gradient(135deg,#dbeafe,#bfdbfe)',worlds:[
+  {n:'Number Meadow',e:'🌻',c:'#dcfce7',nodes:[['add',1,'Adding to 10'],['cnt',1,'Count by 1s & 10s'],['eo',1,'Even or Odd'],['miss',1,'Missing Number'],['sub',1,'Take Away'],['story',1,'Story Problems']]},
+  {n:'Candy Canyon',e:'🍭',c:'#fce7f3',nodes:[['add',2,'+9 & Doubles'],['big',1,'Tens & Hundreds'],['cnt',2,'Count by 2s & 5s'],['cmp',1,'Bigger or Smaller'],['miss',2,'Missing to 18'],['sub',2,'Take Away to 18'],['story',2,'Story Problems 2']]},
+  {n:'Ocean Reef',e:'🐠',c:'#e0f2fe',nodes:[['add',3,'All the Facts'],['time',1,"O'Clock"],['big',2,'2-Digit Adding'],['coins',1,'Pennies & Nickels'],['eo',2,'Even/Odd to 99'],['cmp',2,'Compare to 100'],['time',2,'Half Past'],['sub',3,'2-Digit Take Away'],['story',3,'Story Problems 3']]},
+  {n:'Space Station',e:'🚀',c:'#ede9fe',nodes:[['big',3,'Carry the 1'],['mult',1,'Equal Groups'],['coins',2,'Dimes Too'],['cnt',3,'Skip Count Big'],['sub',4,'Borrowing'],['time',3,'Quarter Hours'],['big',4,'3-Digit Adding'],['mult',2,'Groups to 5×5'],['cmp',3,'Compare to 999'],['coins',3,'Quarters']]}]},
+ read:{n:'Reading Adventure',e:'📖',c:'linear-gradient(135deg,#fce7f3,#fbcfe8)',worlds:[
+  {n:'Letter Meadow',e:'🌻',c:'#dcfce7',nodes:[['sound',1,'First Sounds'],['sight',1,'Sight Words'],['rhyme',1,'Rhyme Time'],['pic',1,'Picture Words'],['sound',2,'Last Sounds'],['build',1,'Build a Word'],['sent',1,'Read & Match']]},
+  {n:'Candy Canyon',e:'🍭',c:'#fce7f3',nodes:[['sight',2,'More Sight Words'],['rhyme',2,'Rhyme & Read'],['pic',2,'Blends'],['build',2,'Build Blends'],['sent',2,'Read Sentences'],['comp',1,'Story Time']]},
+  {n:'Ocean Reef',e:'🐠',c:'#e0f2fe',nodes:[['sight',3,'Sight Words 3'],['pic',3,'Magic E'],['build',3,'Build Magic E'],['comp',2,'Story Time 2']]},
+  {n:'Space Station',e:'🚀',c:'#ede9fe',nodes:[['pic',4,'Vowel Teams'],['build',4,'Build Vowel Teams']]}]},
+ es:{n:'Spanish Adventure',e:'🌮',c:'linear-gradient(135deg,#dcfce7,#fef9c3)',worlds:[
+  {n:'Hola Plaza',e:'🌮',c:'#fef9c3',nodes:[['es_greet',1,'¡Hola! Listen'],['es_color',1,'Colors'],['es_num',1,'Numbers 1–10'],['es_animal',1,'Animals'],['es_greet',2,'¡Hola! Read'],['es_color',2,'Read Colors'],['es_num',2,'Read Numbers'],['es_animal',2,'Read Animals']]},
+  {n:'Fiesta Island',e:'🪅',c:'#ffedd5',nodes:[['es_food',1,'Food'],['es_body',1,'My Body'],['es_family',1,'Family'],['es_teen',1,'Numbers 11–20'],['es_food',2,'Read Food'],['es_body',2,'Read Body'],['es_family',2,'Read Family'],['es_teen',2,'Read 11–20']]},
+  {n:'Gran Repaso',e:'🏆',c:'#e0e7ff',nodes:[['es_mix',1,'Big Review: Listen'],['es_mix',2,'Big Review: Read']]}]}};
+const NODES={};for(const p in PATHS){NODES[p]=[];PATHS[p].worlds.forEach((w,wi)=>w.nodes.forEach(([sk,lv,t],k)=>NODES[p].push({sk,lv,t,wi,p,last:k==w.nodes.length-1})))}
+const passed=(p,i)=>(S.maps[p][i]||0)>0;
+const unlocked=(p,i)=>S.unlockAll||i==0||passed(p,i-1);
+const curNode=p=>{const N=NODES[p];for(let i=0;i<N.length;i++)if(unlocked(p,i)&&!passed(p,i))return i;return N.length-1};
+const worldDone=(p,wi)=>NODES[p].every((n,i)=>n.wi!=wi||passed(p,i));
+/* carry over progress from the single-map version */
+(()=>{if(S.maps)return;S.maps={math:{},read:{},es:{}};
+  const OLD='add1 sight1 cnt1 pic1 eo1 build1 miss1 sent1 sub1 story1 add2 sight2 big1 pic2 cnt2 build2 cmp1 comp1 miss2 sent2 sub2 story2 add3 time1 sight3 big2 pic3 coins1 build3 eo2 cmp2 comp2 time2 sub3 story3 big3 mult1 pic4 coins2 cnt3 build4 sub4 time3 big4 mult2 cmp3 coins3'.split(' ');
+  Object.entries(S.map||{}).forEach(([i,st])=>{const o=OLD[i];if(!o||!st)return;const sk=o.slice(0,-1),lv=+o.slice(-1);
+    for(const p in NODES)NODES[p].forEach((n,j)=>{if(n.sk==sk&&n.lv==lv)S.maps[p][j]=Math.max(S.maps[p][j]||0,st)})});
+  delete S.map;S.wdone={};save()})();
+for(const p in PATHS)S.maps[p]=S.maps[p]||{};
 const SHOP={hat:[['🧢',10],['🎀',10],['🎩',20],['⛑️',25],['🎓',40],['👑',60]],
  toy:[['🎈',10],['🍭',10],['⚽',15],['🧸',20],['🪁',30],['🪄',45],['🏆',80]],
  scene:[['meadow',0,'🌻','linear-gradient(135deg,#fef3c7,#fde68a)','Meadow'],['beach',30,'🏖️','linear-gradient(180deg,#bae6fd,#fef3c7 75%)','Beach'],['candy',40,'🍭','linear-gradient(135deg,#fbcfe8,#ddd6fe)','Candy'],
@@ -569,31 +646,52 @@ function home(first){
      <div class="rowh" style="justify-content:flex-start;gap:6px;margin:4px 0"><div class="stars" id="starc">⭐ ${S.stars}</div><div class="stars">🪙 ${S.coins}</div></div>
      <div class="meter"><div style="width:${pct}%"></div></div><div class="htxt">${growTxt}</div>
      <div class="meter m"><div style="width:${Math.min(d.r,3)/3*100}%"></div></div><div class="htxt">${d.done?"🏆 Today's mission done!":`🎯 Mission: finish 3 rounds today (${d.r}/3)`}</div></div></div>
+   <h2 style="margin:14px 4px 8px">Pick a game!</h2>
+   <div class="games">${Object.entries(PATHS).map(([k,P])=>{const N=NODES[k],np=N.filter((n,i)=>passed(k,i)).length,done=np==N.length;
+     return`<button class="btn game" data-p="${k}" style="background:${P.c}"><span class="ge">${P.e}</span><span class="gi"><span class="gt">${P.n}</span>
+      <span class="meter"><span style="display:block;height:100%;width:${np/N.length*100}%;background:linear-gradient(90deg,#f59e0b,#ef4444);border-radius:9px"></span></span>
+      <span class="small">${done?'🏆 All done! Play any stop.':np?`${np}/${N.length} stops · Next: ${esc(N[curNode(k)].t)}`:`${N.length} stops · Start here!`}</span></span><span class="go">▶</span></button>`}).join('')}</div>
    <div class="actions"><button class="btn act mix" id="mix"><span>🎯</span>${tricky?`Tricky Mix (${Math.min(tricky,10)})`:'Mixed Practice'}</button>
-    <button class="btn act" id="shop"><span>🛍️</span>Pet Shop</button><button class="btn act" id="book"><span>📒</span>Stickers</button></div>
-   <div class="map" id="map"></div></div>`);
-  drawMap();music(true);
+    <button class="btn act" id="shop"><span>🛍️</span>Pet Shop</button><button class="btn act" id="book"><span>📒</span>Stickers</button></div></div>`);
+  music(true);
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,['💖','✨','⭐']);
-    if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a stop on the map!`]))};
+    if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
+  $$('.game').forEach(b=>b.onclick=()=>{SFX.whoosh();pathMap(b.dataset.p)});
   $('#snd').onclick=()=>{S.sound=!S.sound;S.music=S.sound;save();home()};
   $('#book').onclick=book;$('#shop').onclick=shop;$('#mix').onclick=()=>{SFX.whoosh();startMix()};
   if($('#inst'))$('#inst').onclick=async()=>{try{installEvt.prompt();await installEvt.userChoice}catch(e){}installEvt=null;home()};
   let t;const g=$('#gear');g.onpointerdown=()=>{t=setTimeout(grown,1200)};g.onpointerup=g.onpointerleave=()=>clearTimeout(t);g.onclick=()=>fb('Grown-ups: hold it','warn');
-  if(!first){const c=$('.node.cur')||$(`.node[data-n="${G&&G.node>=0?G.node:curNode()}"]`);if(c)c.scrollIntoView({block:'center'})}
-  if(first&&S.voice)setTimeout(()=>say(`Hi ${S.name}! Tap the glowing stop on the map to start!`),400)}
+  if(first&&S.voice)setTimeout(()=>say(`Hi ${S.name}! Pick a game!`),400)}
 
-function drawMap(){const m=$('#map');if(!m)return;const W=m.clientWidth||360,amp=Math.min(W*.3,200),pts=[];let y=10,bands='';
-  WORLDS.forEach((w,wi)=>{const y0=y;y+=86;NODES.forEach((n,i)=>{if(n.wi!=wi)return;pts.push([W/2+Math.sin(i*1.15)*amp,y,i]);y+=106});
-    bands+=`<div class="wband" style="top:${y0}px;height:${y-y0-24}px;background:${w.c}"></div><div class="wtitle" style="top:${y0+14}px">${w.e} ${w.n}${worldDone(wi)?' ✅':''}</div>`;y+=4});
+let MAPP='math';
+function pathMap(p){MAPP=p;const P=PATHS[p];
+  view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title">${P.e} ${P.n}</div><div class="sp"></div><div class="stars">⭐ ${S.stars}</div></div>
+  <div class="scroll" id="ms"><div class="map" id="map"></div></div>`);
+  $('#back').onclick=()=>home();drawMap(p);music(true);
+  const c=$('.node.cur')||$(`.node[data-n="${G&&G.path==p&&G.node>=0?G.node:curNode(p)}"]`);if(c)c.scrollIntoView({block:'center'})}
+
+function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],W=m.clientWidth||360,amp=Math.min(W*.3,200),pts=[];let y=10,bands='';
+  PATHS[p].worlds.forEach((w,wi)=>{const y0=y;y+=86;N.forEach((n,i)=>{if(n.wi!=wi)return;pts.push([W/2+Math.sin(i*1.15)*amp,y,i]);y+=106});
+    bands+=`<div class="wband" style="top:${y0}px;height:${y-y0-24}px;background:${w.c}"></div><div class="wtitle" style="top:${y0+14}px">${w.e} ${w.n}${worldDone(p,wi)?' ✅':''}</div>`;y+=4});
   let path='';pts.forEach(([x,yy],k)=>{if(!k)path=`M${x} ${yy}`;else{const[px,py]=pts[k-1];path+=` C${px} ${py+55} ${x} ${yy-55} ${x} ${yy}`}});
-  const cur=curNode(),allDone=NODES.every((n,i)=>passed(i));
-  const nodes=pts.map(([x,yy,i])=>{const n=NODES[i],s=SK[n.sk],st=S.map[i]||0,lk=!unlocked(i);
+  const cur=curNode(p),allDone=N.every((n,i)=>passed(p,i));
+  const nodes=pts.map(([x,yy,i])=>{const n=N[i],s=SK[n.sk],st=S.maps[p][i]||0,lk=!unlocked(p,i);
     return`<button class="btn node ${s.area} ${lk?'lock':''} ${st?'done':''} ${i==cur&&!lk&&!allDone?'cur':''}" data-n="${i}" style="left:${x}px;top:${yy}px">${lk?'🔒':s.e}</button><div class="nlab" style="left:${x}px;top:${yy+42}px">${esc(n.t)}<div class="nstar">${st?'★'.repeat(st)+'☆'.repeat(3-st):''}</div></div>`}).join('');
-  const cp=pts.find(p=>p[2]==cur),side=cp[0]>W/2?-66:66;
+  const cp=pts.find(q=>q[2]==cur),side=cp[0]>W/2?-66:66;
   m.style.height=(y+(allDone?90:20))+'px';
   m.innerHTML=bands+`<svg width="${W}" height="${y+20}"><path d="${path}" fill="none" stroke="#d6c7a8" stroke-width="16" stroke-linecap="round"/><path d="${path}" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="8 10"/></svg>`+nodes
-    +`<div class="mappet ${petAura()}" style="left:${cp[0]+side}px;top:${cp[1]+18}px">${petHTML()}</div>`+(allDone?`<div class="wtitle" style="top:${y+10}px;font-size:24px">🏆 Star Champion! 🏆</div>`:'');
-  $$('.node').forEach(b=>b.onclick=()=>{const i=+b.dataset.n;if(!unlocked(i)){SFX.wrong();anim(b,'sad');fb('Finish the stop before this one!','warn');return}SFX.whoosh();start(i)})}
+    +`<div class="mappet ${petAura()}" style="left:${cp[0]+side}px;top:${cp[1]+18}px">${petHTML()}</div>`+(allDone?`<div class="wtitle" style="top:${y+10}px;font-size:24px">🏆 ${PATHS[p].n} Champion! 🏆</div>`:'');
+  $$('.node').forEach(b=>b.onclick=()=>{const i=+b.dataset.n;if(!unlocked(p,i)){SFX.wrong();anim(b,'sad');fb('Finish the stop before this one!','warn');return}SFX.whoosh();
+    const n=N[i];if(n.sk.startsWith('es_')&&n.sk!='es_mix'&&n.lv==1)learn(p,i);else start(p,i)})}
+
+function learn(p,i){const n=NODES[p][i],items=SPN[n.sk.slice(3)];
+  view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title">Let's learn!</div><div class="sp"></div><button class="btn big" id="go" style="font-size:20px;padding:10px 18px">¡Vamos! ▶</button></div>
+  <div class="scroll"><p class="sub" style="text-align:center">Tap each card to hear it in Spanish. Then tap ¡Vamos!</p>
+  <div class="lgrid">${items.map(it=>`<button class="btn lcard" data-es="${esc(it[0])}"><span class="lp">${picHTML(it,false)}</span><b>${esc(it[0])}</b><small>${esc(it[1])}</small></button>`).join('')}</div></div>`);
+  $('#back').onclick=()=>pathMap(p);$('#go').onclick=()=>{SFX.whoosh();start(p,i)};
+  $$('.lcard').forEach(b=>b.onclick=()=>{say(b.dataset.es,b,'es');anim(b,'jump');b.classList.add('heard');
+    if($$('.lcard').every(x=>x.classList.contains('heard'))){bump('#go');fb('¡Muy bien! Tap ¡Vamos!')}});
+  if(S.voice)setTimeout(()=>say('Tap each card to hear it in Spanish!'),300)}
 
 function book(){const have=STK.filter(s=>S.stickers[s]).length;
   view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title">📒 My Stickers</div><div class="sp"></div><div class="stars">${have} / ${STK.length}</div></div>
@@ -622,11 +720,13 @@ function shop(){const sc=sceneOf(),items=SHOP[shopTab];
 
 /* ---------- game ---------- */
 let G;
-const newG=o=>Object.assign({n:10,done:0,score:0,streak:0,best:0,missed:[],last:null,node:-1},o);
-function start(i){const n=NODES[i];G=newG({node:i,sk:n.sk,lv:n.lv});next()}
-function startMix(){const qs=allMiss().slice(0,7).map(m=>({...m.q})),pool=NODES.map((n,i)=>i).filter(i=>unlocked(i)&&i<=curNode());
-  while(qs.length<10){const n=NODES[pick(pool)],q=SK[n.sk].gen(n.lv);q.sk=n.sk;q.lv=n.lv;qs.push(q)}
+const newG=o=>Object.assign({n:10,done:0,score:0,streak:0,best:0,missed:[],last:null,node:-1,path:null},o);
+function start(p,i){const n=NODES[p][i];G=newG({path:p,node:i,sk:n.sk,lv:n.lv});next()}
+function startMix(){const qs=allMiss().slice(0,7).map(m=>({...m.q})),pool=[];
+  for(const p in NODES)NODES[p].forEach((n,i)=>{if(unlocked(p,i)&&i<=curNode(p))pool.push(n)});
+  while(qs.length<10){const n=pick(pool),q=SK[n.sk].gen(n.lv);q.sk=n.sk;q.lv=n.lv;qs.push(q)}
   G=newG({mix:true,pool:shuffle(qs),sk:'mix'});next()}
+const back=()=>G&&G.path?pathMap(G.path):home();
 function makeQ(){if(G.mix)return G.pool.shift();
   const p=P(G.sk),s=SK[G.sk],ms=Object.values(p.miss).filter(m=>m.n>0&&m.q&&m.q.lv==G.lv);let q;
   if(ms.length&&Math.random()<.3)q={...pick(ms).q};
@@ -639,12 +739,12 @@ function next(){if(!G||G.dead)return;
   renderQ()}
 function fit(){const qa=$('.qarea'),pr=$('#prompt');if(!qa||!pr)return;let k=1;pr.style.setProperty('--k',1);
   while(k>.42&&(qa.scrollHeight>qa.clientHeight+1||pr.scrollWidth>pr.clientWidth+1)){k-=.05;pr.style.setProperty('--k',k)}}
-let rsT;addEventListener('resize',()=>{fit();clearTimeout(rsT);rsT=setTimeout(()=>{if($('#map'))drawMap()},150)});
+let rsT;addEventListener('resize',()=>{fit();clearTimeout(rsT);rsT=setTimeout(()=>{if($('#map'))drawMap(MAPP)},150)});
 function petSay(t){const b=$('#bub');if(!b)return;b.textContent=t;const far=G&&G.done/G.n>.5;b.style.left=far?'auto':'0';b.style.right=far?'0':'auto';b.classList.add('on');clearTimeout(b._t);b._t=setTimeout(()=>b.classList.remove('on'),1400)}
 function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;
   let input='';
   if(q.kind=='num')input=`<div class="pad">${[1,2,3,4,5,6,7,8,9].map(n=>`<button class="btn k" data-k="${n}">${n}</button>`).join('')}<button class="btn k del" data-k="del">⌫</button><button class="btn k" data-k="0">0</button><button class="btn k go" data-k="go">✓</button></div>`;
-  else if(q.kind=='choice')input=`<div class="choices ${q.cls||''}">${q.choices.map((c,i)=>`<button class="btn ch" data-i="${i}">${esc(c.l)}</button>`).join('')}</div>`;
+  else if(q.kind=='choice')input=`<div class="choices ${q.cls||''}">${q.choices.map((c,i)=>`<button class="btn ch" data-i="${i}">${c.h?c.l:esc(c.l)}</button>`).join('')}</div>`;
   else input=`<div class="tiles">${q.tiles.map((t,i)=>`<button class="btn lt" data-i="${i}">${t}</button>`).join('')}</div><button class="btn sm undo" id="undo">↩ Undo</button>`;
   const pos=`calc(${G.done/G.n} * (100% - 70px))`;
   view(`<div class="top"><button class="btn sm" id="quit">✕</button>
@@ -653,8 +753,9 @@ function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;
   <div class="play"><div class="qarea"><div class="prompt" id="prompt">${q.html}</div>
   <div class="tools">${q.say?'<button class="btn sm" id="spk">🔊 Hear it</button>':''}<button class="btn sm" id="hb">💡 Help</button></div><div id="hint" class="hint"></div></div>
   <div class="inp">${input}</div></div>`);
-  $('#quit').onclick=()=>{G.dead=true;home()};
-  if($('#spk'))$('#spk').onclick=e=>say(q.say,e.currentTarget);
+  $('#quit').onclick=()=>{G.dead=true;back()};
+  if($('#spk'))$('#spk').onclick=e=>say(q.say,e.currentTarget,q.lang=='es'&&q.auto=='must'?'es':null);
+  $$('[data-sayes]').forEach(b=>b.onclick=()=>say(b.dataset.sayes,b,'es'));
   $('#hb').onclick=()=>{const h=$('#hint');h.innerHTML=hintHTML(q);h.classList.remove('pop');void h.offsetWidth;h.classList.add('pop');SFX.pop(3);fit();h.scrollIntoView({block:'nearest',behavior:'smooth'})};
   $$('[data-say]').forEach(b=>b.onclick=()=>say(b.dataset.say,b));
   $$('.w').forEach(s=>s.onclick=()=>{say(s.dataset.w);SFX.pop(1)});
@@ -670,7 +771,7 @@ function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;
   else if(G.done==0)petSay(G.mix?'Tricky mix!':"Let's go!");
   else if(G.done==G.n-1)petSay('Last one!');
   fit();if(document.fonts)document.fonts.ready.then(fit);
-  if(q.auto==='must'||(q.auto&&S.voice))setTimeout(()=>say(q.say),400)}
+  if(q.auto==='must'||(q.auto&&S.voice))setTimeout(()=>say(q.say,null,q.lang=='es'?'es':null),400)}
 function drawBuilt(){const q=G.q;[...q.word].forEach((_,i)=>{$('#ls'+i).textContent=G.built[i]!=null?q.tiles[G.built[i]]:''});
   $$('.lt').forEach(b=>{b.classList.toggle('used',G.built.includes(+b.dataset.i));b.classList.remove('glow')})}
 function addMiss(q){const p=P(q.sk),m=p.miss[q.label]||{n:0,tot:0,q};m.n++;m.tot++;m.q=q;p.miss[q.label]=m;
@@ -693,7 +794,7 @@ function check(v,el){if(G.lock)return;const q=G.q,p=P(q.sk),ok=String(v)===Strin
     if([3,5,8,10].includes(G.streak)){setTimeout(SFX.streak,350);fb(`🔥 ${G.streak} in a row!`);petSay("You're on fire!");
       if(!q.after&&!playClip('cheer')&&S.voice)say(`${G.streak} in a row! ${pick(['Amazing','Wow','Incredible','Super'])}, ${S.name}!`);wait+=300}
     else{fb(pick(PRAISE));petSay(pick(PET_YAY));if(!q.after&&Math.random()<.3&&playClip('cheer'))wait+=400}
-    if(q.after)say(q.after);save();setTimeout(next,wait);return}
+    if(q.after)say(q.after,null,q.afterLang);save();setTimeout(next,wait);return}
   G.tries++;G.streak=0;const sk=$('#stk');sk.classList.remove('on');
   SFX.wrong();anim($('#runner'),'sad');const pr=$('#prompt');pr.classList.remove('shake');void pr.offsetWidth;pr.classList.add('shake');
   if(el){el.classList.add('wrong');el.disabled=true}
@@ -707,14 +808,14 @@ function check(v,el){if(G.lock)return;const q=G.q,p=P(q.sk),ok=String(v)===Strin
   if(q.kind=='build')[...q.word].forEach((c,i)=>{$('#ls'+i).textContent=c});
   if(!G.retry){G.done++;p.t++;G.missed.push(q)}
   const run=$('#runner');run.style.left=`calc(${G.done/G.n} * (100% - 70px))`;
-  fb("Here's the answer",'warn');petSay("We'll get it next time!");say(q.after||(q.kind=='num'?`The answer is ${q.ans}`:q.ans));save();setTimeout(next,2600)}
+  fb("Here's the answer",'warn');petSay("We'll get it next time!");say(q.after||(q.kind=='num'?`The answer is ${q.ans}`:q.ans),null,q.afterLang);save();setTimeout(next,2600)}
 
 function award(){const s=pick(STK),isNew=!S.stickers[s];S.stickers[s]=(S.stickers[s]||0)+1;return{s,isNew}}
 function finish(){
-  const g=G,sc=g.score,n=g.n,best=g.best,before=S.stars,d=day(),ni=g.node,nd=NODES[ni];
+  const g=G,sc=g.score,n=g.n,best=g.best,before=S.stars,d=day(),p=g.path,ni=g.node,nd=p?NODES[p][ni]:null;
   let stars=0,newPass=false,wDone=false;
-  if(!g.mix){P(g.sk).r++;stars=sc>=10?3:sc>=8?2:sc>=7?1:0;const prev=S.map[ni]||0;S.map[ni]=Math.max(prev,stars);newPass=!prev&&stars>0;
-    if(newPass&&!S.wdone[nd.wi]&&worldDone(nd.wi)){S.wdone[nd.wi]=1;wDone=true}}
+  if(!g.mix){P(g.sk).r++;stars=sc>=10?3:sc>=8?2:sc>=7?1:0;const prev=S.maps[p][ni]||0;S.maps[p][ni]=Math.max(prev,stars);newPass=!prev&&stars>0;
+    const wk=p+nd.wi;if(newPass&&!S.wdone[wk]&&worldDone(p,nd.wi)){S.wdone[wk]=1;wDone=true}}
   const prizes=[award()];if(sc==n)prizes.push(award());
   d.r++;let mission=false;if(d.r>=3&&!d.done){d.done=true;mission=true;prizes.push(award())}
   if(wDone)prizes.push(award());
@@ -726,23 +827,23 @@ function finish(){
   setTimeout(SFX.rattle,300);const rt=setInterval(()=>{if(!$('#chest'))return clearInterval(rt);SFX.rattle()},1200);
   let opened=false;
   $('#chest').onclick=()=>{if(opened)return;opened=true;clearInterval(rt);SFX.open();confetti(sc>=7?40:16);const f=$('#fin');
-    const nextI=!g.mix&&ni+1<NODES.length&&unlocked(ni+1)?ni+1:-1;
+    const nextI=!g.mix&&ni+1<NODES[p].length&&unlocked(p,ni+1)?ni+1:-1;
     f.innerHTML=`<div id="prz"></div><div class="bigstars" id="bs"></div><h1 id="sc" style="margin:0">${sc} out of ${n}${!g.mix?` <span class="nstar" style="font-size:.8em">${'★'.repeat(stars)+'☆'.repeat(3-stars)}</span>`:''}</h1>
      <div class="rowh" id="btns" style="visibility:hidden;margin:10px 0"><button class="btn big" id="bonus" style="background:#ec4899">🎈 Bonus game!</button>
-      ${nextI>=0&&newPass?'<button class="btn big" id="nxt">Next stop ▶</button>':'<button class="btn" id="again">Play again</button>'}<button class="btn" id="menu">🏠 Map</button></div><div id="msgs"></div>`;
+      ${nextI>=0&&newPass?'<button class="btn big" id="nxt">Next stop ▶</button>':'<button class="btn" id="again">Play again</button>'}<button class="btn" id="menu">${g.mix?'🏠 Home':'🗺️ Map'}</button></div><div id="msgs"></div>`;
     const live=()=>f.isConnected;let t=0;
     prizes.forEach(pz=>{setTimeout(()=>{if(!live())return;$('#prz').insertAdjacentHTML('beforeend',`<span class="prize">${pz.s}</span>${pz.isNew?'<span class="newtag">NEW!</span>':''}`);SFX.magic()},t);t+=600});
     for(let i=0;i<sc;i++){setTimeout(()=>{if(!live())return;$('#bs').insertAdjacentHTML('beforeend','<span>⭐</span>');SFX.coin(i)},t);t+=150}
     setTimeout(()=>{if(!live())return;$('#btns').style.visibility='visible';
-      $('#bonus').onclick=()=>balloons(g.mix?pick(['math','read']):SK[g.sk].area,g);
-      if($('#nxt'))$('#nxt').onclick=()=>{SFX.whoosh();start(nextI)};
-      if($('#again'))$('#again').onclick=()=>{SFX.whoosh();g.mix?startMix():start(ni)};$('#menu').onclick=()=>home();
+      $('#bonus').onclick=()=>balloons(g.mix?pick(['math','read','es']):SK[g.sk].area,g);
+      if($('#nxt'))$('#nxt').onclick=()=>{SFX.whoosh();const nn=NODES[p][nextI];if(nn.sk.startsWith('es_')&&nn.sk!='es_mix'&&nn.lv==1)learn(p,nextI);else start(p,nextI)};
+      if($('#again'))$('#again').onclick=()=>{SFX.whoosh();g.mix?startMix():start(p,ni)};$('#menu').onclick=()=>g.mix?home():pathMap(p);
       if(grew)setTimeout(()=>growShow(before),300);else if(!playClip('done')&&S.voice)say(`You got ${sc} stars!`+(newPass?' You unlocked the next stop!':''))},t);
     t+=300;
     const msgs=[[`+${coins} 🪙 coins for the pet shop!`,null]];
     if(best>=3)msgs.push([`🔥 Best streak: ${best} in a row!`,null]);
-    if(newPass&&nextI>=0)msgs.push([`🗺️ Next stop unlocked: ${NODES[nextI].t}!`,'fanfare']);
-    if(wDone)msgs.push([`🌍 You finished ${WORLDS[nd.wi].n}! +20 🪙`,'fanfare']);
+    if(newPass&&nextI>=0)msgs.push([`🗺️ Next stop unlocked: ${NODES[p][nextI].t}!`,'fanfare']);
+    if(wDone)msgs.push([`🌍 You finished ${PATHS[p].worlds[nd.wi].n}! +20 🪙`,'fanfare']);
     if(!g.mix&&stars==0)msgs.push(['Get 7 right to open the next stop. You can do it!',null]);
     if(mission)msgs.push([`🏆 Daily mission done! +5 bonus stars!`,'fanfare']);
     if(g.mix)msgs.push(['🎯 Great practice on the tricky ones!',null]);
@@ -766,16 +867,20 @@ function balloonRule(area){
     if(r=='even'||r=='odd')return{txt:`Pop the ${r.toUpperCase()} numbers!`,say:`Pop the ${r} numbers!`,gen:()=>{const n=R(1,30);return[n,r=='even'?n%2==0:n%2==1]}};
     if(r=='sum'){const a=R(2,9),b=R(1,9),t=a+b;return{txt:`Pop every ${t}!  (${a} + ${b})`,say:`Pop every balloon that equals ${a} plus ${b}!`,gen:()=>{const n=Math.random()<.45?t:pick([t-2,t-1,t+1,t+2,R(2,18)].filter(x=>x!=t&&x>=0));return[n,n==t]}}}
     const x=pick([10,20,50]);return{txt:`Pop numbers BIGGER than ${x}!`,say:`Pop the numbers bigger than ${x}!`,gen:()=>{const n=R(Math.max(0,x-15),x+30);return[n==x?n+1:n,(n==x?n+1:n)>x]}}}
+  if(area=='es'){if(Math.random()<.5){const cs=SPN.color.slice(0,6),c=pick(cs);
+      return{txt:`Pop the “${c[0]}” balloons!`,es:c[0],say:`Pop the ${c[0]} balloons!`,gen:()=>{const x=Math.random()<.45?c:pick(cs.filter(y=>y!==c));return['',x===c,x[2].slice(2)]}}}
+    const it=pick(SPN.num);return{txt:`Pop every “${it[0]}”!`,es:it[0],say:`Pop every ${it[0]}!`,gen:()=>{const x=Math.random()<.45?it:pick(SPN.num.filter(y=>y!==it));return[x[2].slice(2),x===it]}}}
   if(Math.random()<.5){const f=pick(Object.keys(FAM)),others=Object.keys(FAM).filter(k=>k!=f);
     return{txt:`Pop words that rhyme with “${FAM[f][0]}”!`,say:`Pop the words that rhyme with ${FAM[f][0]}!`,gen:()=>Math.random()<.45?[pick(FAM[f]),true]:[pick(FAM[pick(others)]),false]}}
-  const L=DOL[R(0,1)],w=pick(L);return{txt:`Pop every “${w}”!`,say:`Pop every balloon that says ${w}!`,hear:w,gen:()=>Math.random()<.45?[w,true]:[pick(L.filter(x=>x!=w)),false]}}
+  const L=DOL[R(0,1)],w=pick(L);return{txt:`Pop every “${w}”!`,say:`Pop every balloon that says ${w}!`,gen:()=>Math.random()<.45?[w,true]:[pick(L.filter(x=>x!=w)),false]}}
 function balloons(area,g){const rule=balloonRule(area);let popped=0,left=30;
   view(`<div class="top"><div class="title" style="font-size:20px">🎈 Bonus!</div><div class="sp"></div><div class="stars" id="bpop">🪙 0</div><div class="stars" id="btime">⏱ 30</div></div>
-   <div class="rule" id="rule">${esc(rule.txt)}</div><div class="bfield" id="bf"></div>`);
-  $('#rule').onclick=()=>say(rule.say);setTimeout(()=>say(rule.say),200);
+   <div class="rule" id="rule">${esc(rule.txt)} 🔊</div><div class="bfield" id="bf"></div>`);
+  const sayRule=()=>{if(rule.es){say(rule.es,null,'es')}else say(rule.say)};
+  $('#rule').onclick=sayRule;setTimeout(sayRule,200);
   const bf=$('#bf'),cols=['#ef4444','#f59e0b','#22c55e','#3b82f6','#a855f7','#ec4899','#14b8a6'];let last=0,spawnT=0;
   BL={raf:0,tick:0,list:[]};
-  function spawn(){const[lab,ok]=rule.gen(),e=document.createElement('button');e.className='bal';e.style.setProperty('--c',pick(cols));e.textContent=lab;
+  function spawn(){const[lab,ok,col]=rule.gen(),e=document.createElement('button');e.className='bal';e.style.setProperty('--c',col||pick(cols));e.textContent=lab;
     const W=bf.clientWidth;e.style.left=R(4,Math.max(5,W-94))+'px';const b={e,ok,y:bf.clientHeight+10,v:(bf.clientHeight+130)/R(50,75)*10,dead:false};e.style.top=b.y+'px';
     e.onpointerdown=ev=>{ev.preventDefault();if(b.dead)return;
       if(b.ok){b.dead=true;popped++;S.coins++;save();SFX.pop(R(2,6));setTimeout(()=>SFX.coin(R(0,4)),60);const r=e.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,['💥','✨','🪙']);e.remove();$('#bpop').textContent='🪙 '+popped;bump('#bpop')}
@@ -787,22 +892,23 @@ function balloons(area,g){const rule=balloonRule(area);let popped=0,left=30;
   BL.raf=requestAnimationFrame(frame);
   BL.tick=setInterval(()=>{left--;const t=$('#btime');if(t)t.textContent='⏱ '+left;if(left<=3&&left>0)tone(880,.08,0,'square',.05);
     if(left<=0){stopBalloons();bf.innerHTML='';SFX.fanfare();confetti(24);
-      const o=document.createElement('div');o.className='ovl';o.innerHTML=`<div style="font-size:90px">🎈</div><h1>You popped ${popped}!</h1><h2>+${popped} 🪙 coins</h2><div class="rowh"><button class="btn big" id="bnext">${g.mix||g.node<0?'Play more':'Keep going ▶'}</button><button class="btn" id="bhome">🏠 Map</button></div>`;
+      const o=document.createElement('div');o.className='ovl';o.innerHTML=`<div style="font-size:90px">🎈</div><h1>You popped ${popped}!</h1><h2>+${popped} 🪙 coins</h2><div class="rowh"><button class="btn big" id="bnext">${g.mix||!g.path?'Play more':'Keep going ▶'}</button><button class="btn" id="bhome">${g.path?'🗺️ Map':'🏠 Home'}</button></div>`;
       document.body.appendChild(o);if(S.voice)say(`You popped ${popped} balloons!`);
-      $('#bhome').onclick=()=>{o.remove();home()};
-      $('#bnext').onclick=()=>{o.remove();if(g.mix)startMix();else{const i=g.node+1<NODES.length&&unlocked(g.node+1)&&!passed(g.node+1)?g.node+1:g.node;start(i)}}}},1000)}
+      $('#bhome').onclick=()=>{o.remove();g.path?pathMap(g.path):home()};
+      $('#bnext').onclick=()=>{o.remove();if(g.mix||!g.path)return startMix();const p=g.path,i=g.node+1<NODES[p].length&&unlocked(p,g.node+1)&&!passed(p,g.node+1)?g.node+1:g.node;
+        const nn=NODES[p][i];if(nn.sk.startsWith('es_')&&nn.sk!='es_mix'&&nn.lv==1&&i!=g.node)learn(p,i);else start(p,i)}}},1000)}
 
 /* ---------- grown-ups ---------- */
 function grown(){let armed=false;
-  const rows=[...new Set(NODES.map(n=>n.sk))].map(id=>{const p=P(id),s=SK[id],acc=p.t?Math.round(p.c/p.t*100)+'%':'–';
+  const rows=[...new Set(Object.values(NODES).flat().map(n=>n.sk))].map(id=>{const p=P(id),s=SK[id],acc=p.t?Math.round(p.c/p.t*100)+'%':'–';
     const tricky=Object.values(p.miss).sort((a,b)=>b.tot-a.tot).slice(0,3).map(m=>esc(m.q.label)).join('<br>');
     return`<tr><td>${s.e} ${s.t}</td><td>${p.r}</td><td>${acc}</td><td class="tr">${tricky}</td></tr>`}).join('');
-  const np=NODES.filter((n,i)=>passed(i)).length,canRec=!!(navigator.mediaDevices&&window.MediaRecorder);
+  const prog=Object.keys(PATHS).map(p=>`${PATHS[p].e} ${NODES[p].filter((n,i)=>passed(p,i)).length}/${NODES[p].length}`).join(' · '),canRec=!!(navigator.mediaDevices&&window.MediaRecorder);
   view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title">Grown-ups</div></div><div class="scroll">
   <div class="card"><div class="row"><b style="width:110px">Child</b><input class="name" id="nm" value="${esc(S.name)}"></div>
    <div class="row"><b style="width:110px">Pet name</b><input class="name" id="pn" value="${esc(S.petName)}" placeholder="${PETS[S.pet].def}"></div>
    <div class="row"><b style="width:110px">Buddy</b><input class="name" id="bd" value="${esc(S.buddy)}" placeholder="Sibling or friend, used in story problems"></div>
-   <div class="small">🗺️ ${np}/${NODES.length} stops passed · ⭐ ${S.stars} stars · 🪙 ${S.coins} coins · 📒 ${STK.filter(s=>S.stickers[s]).length}/${STK.length} stickers · 🔥 best streak ${S.best||0}</div>
+   <div class="small">Stops passed: ${prog}<br>⭐ ${S.stars} stars · 🪙 ${S.coins} coins · 📒 ${STK.filter(s=>S.stickers[s]).length}/${STK.length} stickers · 🔥 best streak ${S.best||0}</div>
    <label class="tg"><input type="checkbox" id="ula" ${S.unlockAll?'checked':''}> Unlock every stop on the map (let them jump ahead)</label></div>
   <div class="card"><h2 style="margin:0 0 6px">🎙️ Your voice</h2><div class="small" style="margin-bottom:8px">Tap ⏺ and say the line (up to 4 seconds). Record as many as you like. The app shuffles them so the same one doesn't play twice in a row. ${inFrame?'<b>Recording only works on the tablet app, not in this preview.</b>':!canRec?'<b>Recording isn\'t available in this browser. Use Chrome or the installed app.</b>':''}</div>
    ${CLIPKINDS.map(([k,l,tip,lines])=>{const cs=CLIPS.filter(c=>c.kind==k),extra=cs.filter(c=>c.line==null||c.line>=lines.length);
@@ -816,7 +922,7 @@ function grown(){let armed=false;
    <label class="tg"><input type="checkbox" id="snd" ${S.sound?'checked':''}> Sound effects</label>
    <label class="tg"><input type="checkbox" id="mus" ${S.music?'checked':''}> Music on the home screen</label>
    <button class="btn sm" id="test">🔊 Test voice</button> <button class="btn sm danger" id="reset">Erase everything</button></div>
-  <div class="card small"><b>How it works:</b> the map has ${NODES.length} stops in 4 worlds. Getting 7 of 10 right opens the next stop (8 = ★★, 10 = ★★★), and each world stretches further: clocks, coins, borrowing, 3-digit numbers, magic-e and vowel-team words, and story comprehension. Missed questions come back at the end of a round, in later rounds, and in the 🎯 Tricky Mix. Each right answer earns a star (grows the pet) and a coin (spent in the shop). Everything is saved on this tablet only.</div></div>`);
+  <div class="card small"><b>How it works:</b> three games (Math, Reading, Spanish), each with its own map. Getting 7 of 10 right opens the next stop (8 = ★★, 10 = ★★★), and each world stretches further: clocks, coins, borrowing, 3-digit numbers, magic-e and vowel-team words, and story comprehension. Missed questions come back at the end of a round, in later rounds, and in the 🎯 Tricky Mix. Each right answer earns a star (grows the pet) and a coin (spent in the shop). Everything is saved on this tablet only.</div></div>`);
   $('#back').onclick=()=>home(true);
   $('#nm').oninput=e=>{if(e.target.value.trim()){S.name=e.target.value.trim();save()}};
   $('#pn').oninput=e=>{S.petName=e.target.value.trim();save()};
