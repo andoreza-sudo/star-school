@@ -197,6 +197,9 @@ label.tg{display:block;font-size:20px;margin:8px 0}
 .bal{position:absolute;width:88px;height:106px;border:0;padding:0;border-radius:50% 50% 48% 52%/55% 55% 45% 45%;background:var(--c);display:flex;align-items:center;justify-content:center;font:inherit;font-size:26px;font-weight:700;color:#fff;text-shadow:0 2px 2px #0005;box-shadow:inset -10px -12px 0 #0002,inset 8px 8px 0 #fff3;cursor:pointer}
 .bal::after{content:'';position:absolute;bottom:-28px;left:50%;width:2px;height:28px;background:#0004}
 .ovl h2{margin:0 0 14px}
+.hint.pop{animation:qin .35s cubic-bezier(.5,1.6,.5,1)}
+.talking{background:#dbeafe;animation:bump .6s infinite}
+.fb.long{font-size:clamp(18px,4.5vw,26px)}
 </style>
 </head>
 <body>
@@ -266,9 +269,15 @@ function music(on){clearInterval(musT);musT=null;if(!on||!S.music)return;let i=0
 document.addEventListener('pointerdown',e=>{ac();const b=e.target.closest('.btn');if(b&&!b.matches('.k,.lt,.ch,.chestbtn'))SFX.click()},true);
 
 /* ---------- speech & feedback ---------- */
-function say(t){try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(String(t).replace(/−/g,' minus '));u.rate=.88;u.pitch=1.1;u.lang='en-US';
-  const vs=speechSynthesis.getVoices(),v=vs.find(v=>/^en[-_]US/i.test(v.lang))||vs.find(v=>/^en/i.test(v.lang));if(v)u.voice=v;speechSynthesis.speak(u)}catch(e){}}
-let fbT;function fb(t,cls=''){const e=$('#fb');e.textContent=t;e.className='fb on '+cls;clearTimeout(fbT);fbT=setTimeout(()=>e.className='fb',1000)}
+const canSpeak=()=>'speechSynthesis' in window&&typeof SpeechSynthesisUtterance!='undefined';
+function noVoice(btn){fb('🔇 No voice here. Open Star School in Chrome or the installed app.','warn long',3000);if(btn){btn.classList.remove('talking');anim(btn,'sad')}}
+function say(t,btn){if(!canSpeak()){if(btn)noVoice(btn);return}
+  try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(String(t).replace(/−/g,' minus '));u.rate=.88;u.pitch=1.1;u.lang='en-US';
+  const vs=speechSynthesis.getVoices(),v=vs.find(v=>/^en[-_]US/i.test(v.lang))||vs.find(v=>/^en/i.test(v.lang));if(v)u.voice=v;
+  if(btn){let started=false;btn.classList.add('talking');u.onstart=()=>{started=true};u.onend=u.onerror=()=>btn.classList.remove('talking');
+    setTimeout(()=>{if(!started&&!speechSynthesis.speaking)noVoice(btn)},2500)}
+  speechSynthesis.speak(u)}catch(e){if(btn)noVoice(btn)}}
+let fbT;function fb(t,cls='',ms=1000){const e=$('#fb');e.textContent=t;e.className='fb on '+cls;clearTimeout(fbT);fbT=setTimeout(()=>e.className='fb',ms)}
 function bump(sel){const e=typeof sel=='string'?$(sel):sel;if(!e)return;e.classList.remove('bump');void e.offsetWidth;e.classList.add('bump')}
 function anim(e,c){if(!e)return;e.classList.remove('jump','sad');void e.offsetWidth;e.classList.add(c);setTimeout(()=>e.classList.remove(c),550)}
 function flyStar(from){const to=$('#starc');if(!to)return;const r=from?from.getBoundingClientRect():{left:innerWidth/2,top:innerHeight/2,width:0,height:0},t=to.getBoundingClientRect();
@@ -473,6 +482,9 @@ function hintHTML(q){const h=q.hint;if(!h)return'';
   if(h.k=='emoji'){const{e,a,b,op}=h;if(op=='+')return a+b>20?'Count on with your fingers!':`<div class="emh">${e.repeat(a)} + ${e.repeat(b)}</div>`;
     return a>20?'Count back with your fingers!':`<div class="emh">${e.repeat(a-b)}<span style="opacity:.25">${e.repeat(b)}</span></div><div>${b} went away</div>`}
   if(h.k=='blocks'){const{a,b,c,op,blank}=h;if(Math.max(a,b,c)>20)return'Count on from the bigger number!';
+    if(op=='+'&&blank=='c'&&(a==0||b==0))return`<div class="rowh">${rod(a||b)}<span>+ nothing</span></div><div>Adding zero adds nothing! How many blocks?</div>`;
+    if(op=='-'&&b==0)return`<div class="rowh">${rod(a)}</div><div>Taking away zero takes nothing away!</div>`;
+    if(op=='-'&&a==b)return`<div class="rowh">${rod(a,null,'',b)}</div><div>Cross out all ${b}. How many are left?</div>`;
     if(op=='+'){if(blank=='c')return`<div class="rowh">${rod(a)}<span>+</span>${rod(b)}</div><div>Count them all!</div>`;
       const k=blank=='a'?b:a;return`<div class="rods">${rod(c,'#cbd5e1')}<div class="rowh" style="gap:0">${rod(k)}${rod(c-k,null,'dash')}</div></div><div>How many empty boxes?</div>`}
     return`<div class="rowh">${rod(a,null,'',b)}</div><div>Cross out ${b}. How many are left?</div>`}
@@ -624,9 +636,9 @@ function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;
   <div class="tools">${q.say?'<button class="btn sm" id="spk">🔊 Hear it</button>':''}<button class="btn sm" id="hb">💡 Help</button></div><div id="hint" class="hint"></div></div>
   <div class="inp">${input}</div></div>`);
   $('#quit').onclick=()=>{G.dead=true;home()};
-  if($('#spk'))$('#spk').onclick=()=>say(q.say);
-  $('#hb').onclick=()=>{$('#hint').innerHTML=hintHTML(q);SFX.pop(3);fit()};
-  $$('[data-say]').forEach(b=>b.onclick=()=>say(b.dataset.say));
+  if($('#spk'))$('#spk').onclick=e=>say(q.say,e.currentTarget);
+  $('#hb').onclick=()=>{const h=$('#hint');h.innerHTML=hintHTML(q);h.classList.remove('pop');void h.offsetWidth;h.classList.add('pop');SFX.pop(3);fit();h.scrollIntoView({block:'nearest',behavior:'smooth'})};
+  $$('[data-say]').forEach(b=>b.onclick=()=>say(b.dataset.say,b));
   $$('.w').forEach(s=>s.onclick=()=>{say(s.dataset.w);SFX.pop(1)});
   if(q.kind=='num')$$('.k').forEach(b=>b.onclick=()=>{if(G.lock)return;const k=b.dataset.k;
     if(k=='del'){G.typed=G.typed.slice(0,-1);SFX.del()}else if(k=='go'){if(G.typed)check(G.typed,null)}else if(G.typed.length<4){G.typed+=k;SFX.key(+k)}
@@ -792,7 +804,7 @@ function grown(){let armed=false;
   $('#voice').onchange=e=>{S.voice=e.target.checked;save()};
   $('#snd').onchange=e=>{S.sound=e.target.checked;save()};
   $('#mus').onchange=e=>{S.music=e.target.checked;save()};
-  $('#test').onclick=()=>say(`Hello ${S.name}! I can read to you.`);
+  $('#test').onclick=e=>say(`Hello ${S.name}! I can read to you.`,e.currentTarget);
   $$('[data-play]').forEach(b=>b.onclick=()=>{const c=CLIPS.find(x=>x.id==b.dataset.play);if(c)new Audio(c.url).play().catch(()=>{})});
   $$('[data-del]').forEach(b=>b.onclick=async()=>{await DB.del(b.dataset.del);await loadClips();grown()});
   $$('[data-rec]').forEach(b=>b.onclick=()=>record(b.dataset.rec,b));
