@@ -215,6 +215,26 @@ label.tg{display:block;font-size:20px;margin:8px 0}
 .lcard.heard{background:#dcfce7}
 .node.es{background:#bbf7d0}
 .ovl .grow,.ovl .grown{font-size:min(160px,30vh)!important}.ovl h1{font-size:min(34px,7vh)}
+
+.bossbar{flex:1;display:flex;align-items:center;gap:8px;position:relative;min-width:0}
+.bossE{font-size:44px;line-height:1;position:relative;display:inline-block}
+.bossE .bubble{top:46px}
+.bossE.hit{animation:hit .45s}
+.bossE.ko{animation:ko 1.2s forwards}
+@keyframes hit{20%{transform:translateX(-8px) scale(.85);filter:brightness(2.2) saturate(.3)}60%{transform:translateX(6px) scale(1.05)}}
+@keyframes ko{30%{transform:rotate(-30deg) scale(1.3)}100%{transform:rotate(720deg) scale(0);opacity:0}}
+.hp{flex:1;height:18px;background:#fee2e2;border-radius:10px;overflow:hidden;border:2px solid #fca5a5;min-width:40px}
+.hp div{height:100%;background:linear-gradient(90deg,#ef4444,#f97316);transition:width .4s}
+#hpn{font-size:13px;white-space:nowrap;max-width:30vw;overflow:hidden}
+.bossbig{font-size:min(140px,26vh);animation:wobble .5s infinite}
+.node.boss{background:#fecaca;width:90px;height:90px;margin:-45px 0 0 -45px;font-size:46px;border-color:#ef4444}
+.node.boss.done{border-color:#facc15}
+.tobtn{position:absolute;left:50%;transform:translateX(-50%);z-index:2;background:#fef3c7;white-space:nowrap}
+.tobtn:active{transform:translateX(-50%) translateY(3px)}
+.rtag{background:#ede9fe;color:#6d28d9;font-weight:700;font-size:16px;border-radius:12px;padding:3px 12px}
+.cbar{display:flex;align-items:center;gap:10px;margin:6px 0;font-weight:700}.cbar span{width:90px}.cbar .meter{flex:1;margin:0;background:#f5f5f4}.cbar b{width:48px;text-align:right}
+.thought{position:absolute;top:-10px;right:-18px;background:#fff;border-radius:16px;padding:2px 8px;font-size:22px;box-shadow:0 2px 6px #0002;animation:bob 1.6s infinite}
+.dot{position:absolute;top:4px;right:8px;background:#ef4444;color:#fff;font-style:normal;border-radius:50%;width:22px;height:22px;font-size:15px;display:flex;align-items:center;justify-content:center}
 </style>
 </head>
 <body>
@@ -260,6 +280,10 @@ function noise(d,t=0,vol=.15,f0=600,f1=4000){const a=ac();if(!a)return;const n=a
 const NOTE=m=>440*Math.pow(2,(m-69)/12);
 const XY=[0,2,4,5,7,9,11,12,14,16];
 const RAW={
+  hit:()=>{noise(.18,0,.32,300,1200);tone(160,.22,0,'square',.12,60)},
+  ko:()=>{[72,67,64,60,55,48].forEach((m,i)=>tone(NOTE(m),.18,i*.09,'square',.09));noise(.6,.5,.2,200,6000)},
+  chomp:()=>{for(let i=0;i<3;i++){noise(.06,i*.14,.25,500,500);tone(220,.05,i*.14,'square',.06)}},
+  splash:()=>{noise(.5,0,.2,800,300);noise(.4,.3,.12,1500,600)},
   click:()=>tone(1400,.03,0,'square',.04),
   key:d=>{tone(NOTE(72+XY[d]),.35,0,'sine',.22);tone(NOTE(84+XY[d]),.12,0,'sine',.06)},
   del:()=>tone(500,.12,0,'sine',.15,250),
@@ -553,7 +577,7 @@ function hintHTML(q){const h=q.hint;if(!h)return'';
 
 
 /* ---------- screens ---------- */
-const view=h=>{music(false);stopBalloons();const a=$('#app');a.style.animation='none';void a.offsetWidth;a.style.animation='';a.innerHTML=h};
+const view=h=>{music(false);stopBalloons();if(typeof stopRace=='function')stopRace();const a=$('#app');a.style.animation='none';void a.offsetWidth;a.style.animation='';a.innerHTML=h};
 const PET_YAY=['Yay!','Woo-hoo!','You did it!','So smart!','High five!','Awesome!','Super!'];
 const PET_OOPS=['Oops! Try again!','You can do it!','Almost!','Hmm, look again!'];
 
@@ -573,18 +597,25 @@ const PATHS={
   {n:'Hola Plaza',e:'🌮',c:'#fef9c3',nodes:[['es_greet',1,'¡Hola! Listen'],['es_color',1,'Colors'],['es_num',1,'Numbers 1–10'],['es_animal',1,'Animals'],['es_greet',2,'¡Hola! Read'],['es_color',2,'Read Colors'],['es_num',2,'Read Numbers'],['es_animal',2,'Read Animals']]},
   {n:'Fiesta Island',e:'🪅',c:'#ffedd5',nodes:[['es_food',1,'Food'],['es_body',1,'My Body'],['es_family',1,'Family'],['es_teen',1,'Numbers 11–20'],['es_food',2,'Read Food'],['es_body',2,'Read Body'],['es_family',2,'Read Family'],['es_teen',2,'Read 11–20']]},
   {n:'Gran Repaso',e:'🏆',c:'#e0e7ff',nodes:[['es_mix',1,'Big Review: Listen'],['es_mix',2,'Big Review: Read']]}]}};
-const NODES={};for(const p in PATHS){NODES[p]=[];PATHS[p].worlds.forEach((w,wi)=>w.nodes.forEach(([sk,lv,t],k)=>NODES[p].push({sk,lv,t,wi,p,last:k==w.nodes.length-1})))}
-const passed=(p,i)=>(S.maps[p][i]||0)>0;
+const BOSSES=[['👾','Gloop'],['🤖','Robo-Bonk'],['🐙','Captain Inky'],['👽','Zorp']];
+const BPRIZE=['🌼','⭐','🎉','🪐','🌈','🔥','💎','🍀','🌙','⚡','🍩','🎵'];
+const NODES={};Object.keys(PATHS).forEach((p,pi)=>{NODES[p]=[];PATHS[p].worlds.forEach((w,wi)=>{w.nodes.forEach(([sk,lv,t])=>NODES[p].push({sk,lv,t,wi,p}));
+  const B=BOSSES[wi%BOSSES.length];NODES[p].push({sk:'boss',lv:wi,t:`Boss: ${B[1]}`,wi,p,last:true,boss:B,prize:BPRIZE[(pi*4+wi)%BPRIZE.length]})})});
+const nid=n=>n.sk+n.lv;
+const getSt=(p,i)=>S.maps[p][nid(NODES[p][i])]||0,setSt=(p,i,v)=>{S.maps[p][nid(NODES[p][i])]=v};
+const passed=(p,i)=>getSt(p,i)>0;
 const unlocked=(p,i)=>S.unlockAll||i==0||passed(p,i-1);
 const curNode=p=>{const N=NODES[p];for(let i=0;i<N.length;i++)if(unlocked(p,i)&&!passed(p,i))return i;return N.length-1};
 const worldDone=(p,wi)=>NODES[p].every((n,i)=>n.wi!=wi||passed(p,i));
 /* carry over progress from the single-map version */
-(()=>{if(S.maps)return;S.maps={math:{},read:{},es:{}};
+(()=>{if(S.maps)return;S.maps={math:{},read:{},es:{}};S.mapv=2;
   const OLD='add1 sight1 cnt1 pic1 eo1 build1 miss1 sent1 sub1 story1 add2 sight2 big1 pic2 cnt2 build2 cmp1 comp1 miss2 sent2 sub2 story2 add3 time1 sight3 big2 pic3 coins1 build3 eo2 cmp2 comp2 time2 sub3 story3 big3 mult1 pic4 coins2 cnt3 build4 sub4 time3 big4 mult2 cmp3 coins3'.split(' ');
   Object.entries(S.map||{}).forEach(([i,st])=>{const o=OLD[i];if(!o||!st)return;const sk=o.slice(0,-1),lv=+o.slice(-1);
-    for(const p in NODES)NODES[p].forEach((n,j)=>{if(n.sk==sk&&n.lv==lv)S.maps[p][j]=Math.max(S.maps[p][j]||0,st)})});
+    for(const p in NODES)NODES[p].forEach(n=>{if(n.sk==sk&&n.lv==lv)S.maps[p][nid(n)]=Math.max(S.maps[p][nid(n)]||0,st)})});
   delete S.map;S.wdone={};save()})();
 for(const p in PATHS)S.maps[p]=S.maps[p]||{};
+if(!S.mapv){for(const p in PATHS){const old=NODES[p].filter(n=>n.sk!='boss'),m={};Object.entries(S.maps[p]).forEach(([k,v])=>{if(old[k])m[nid(old[k])]=v});S.maps[p]=m}S.mapv=2;save()}
+const nInfo=n=>n.sk=='boss'?{e:n.boss[0],area:'boss'}:SK[n.sk];
 const SHOP={hat:[['🧢',10],['🎀',10],['🎩',20],['⛑️',25],['🎓',40],['👑',60]],
  toy:[['🎈',10],['🍭',10],['⚽',15],['🧸',20],['🪁',30],['🪄',45],['🏆',80]],
  scene:[['meadow',0,'🌻','linear-gradient(135deg,#fef3c7,#fde68a)','Meadow'],['beach',30,'🏖️','linear-gradient(180deg,#bae6fd,#fef3c7 75%)','Beach'],['candy',40,'🍭','linear-gradient(135deg,#fbcfe8,#ddd6fe)','Candy'],
@@ -635,13 +666,13 @@ function setup(){let pet=S.pet;
 
 function home(first){
   if(!S.name)return setup();
-  const st=stage(),nextG=GROW[st+1],pn=esc(petN()),d=day(),sc=sceneOf(),tricky=allMiss().length;
+  const st=stage(),nextG=GROW[st+1],pn=esc(petN()),d=day(),sc=sceneOf(),tricky=allMiss().length,cr=careTick(),needs=Math.min(cr.food,cr.clean,cr.fun)<30;
   const growTxt=nextG==null?`${pn} is a SUPER pet! ✨`:st==0?`${nextG-S.stars} more ⭐ to hatch your egg!`:`${nextG-S.stars} more ⭐ until ${pn} grows!`;
   const pct=nextG==null?100:Math.round((S.stars-GROW[st])/(nextG-GROW[st])*100);
   view(`<div class="top"><div class="title">⭐ Star School</div><div class="sp"></div>${installEvt&&!isApp()?'<button class="btn sm" id="inst" style="background:#3b82f6;color:#fff">📲 Install</button>':''}
    <button class="btn sm" id="snd">${S.sound?'🔊':'🔇'}</button><button class="btn sm" id="gear">⚙️</button></div>
   <div class="scroll" id="hs">
-   <div class="hero ${sc[0]=='space'?'dark':''}" style="background:${sc[3]}"><div class="petbig ${petAura()}" id="pet">${petHTML()}</div>
+   <div class="hero ${sc[0]=='space'?'dark':''}" style="background:${sc[3]}"><div style="position:relative"><div class="petbig ${petAura()}" id="pet">${petHTML()}</div>${needs?`<div class="thought">${cr.food<30?'🍖':cr.clean<30?'🛁':'🎾'}?</div>`:''}</div>
     <div class="hinfo"><div class="hname">${esc(S.name)} & ${pn}</div>
      <div class="rowh" style="justify-content:flex-start;gap:6px;margin:4px 0"><div class="stars" id="starc">⭐ ${S.stars}</div><div class="stars">🪙 ${S.coins}</div></div>
      <div class="meter"><div style="width:${pct}%"></div></div><div class="htxt">${growTxt}</div>
@@ -652,13 +683,14 @@ function home(first){
       <span class="meter"><span style="display:block;height:100%;width:${np/N.length*100}%;background:linear-gradient(90deg,#f59e0b,#ef4444);border-radius:9px"></span></span>
       <span class="small">${done?'🏆 All done! Play any stop.':np?`${np}/${N.length} stops · Next: ${esc(N[curNode(k)].t)}`:`${N.length} stops · Start here!`}</span></span><span class="go">▶</span></button>`}).join('')}</div>
    <div class="actions"><button class="btn act mix" id="mix"><span>🎯</span>${tricky?`Tricky Mix (${Math.min(tricky,10)})`:'Mixed Practice'}</button>
+    <button class="btn act" id="race" style="background:#fef3c7"><span>⚡</span>Speed Race</button><button class="btn act" id="care" style="position:relative"><span>🐾</span>Pet Care${needs?'<i class="dot">!</i>':''}</button>
     <button class="btn act" id="shop"><span>🛍️</span>Pet Shop</button><button class="btn act" id="book"><span>📒</span>Stickers</button></div></div>`);
   music(true);
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,['💖','✨','⭐']);
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
   $$('.game').forEach(b=>b.onclick=()=>{SFX.whoosh();pathMap(b.dataset.p)});
   $('#snd').onclick=()=>{S.sound=!S.sound;S.music=S.sound;save();home()};
-  $('#book').onclick=book;$('#shop').onclick=shop;$('#mix').onclick=()=>{SFX.whoosh();startMix()};
+  $('#book').onclick=book;$('#shop').onclick=shop;$('#mix').onclick=()=>{SFX.whoosh();startMix()};$('#race').onclick=raceMenu;$('#care').onclick=care;
   if($('#inst'))$('#inst').onclick=async()=>{try{installEvt.prompt();await installEvt.userChoice}catch(e){}installEvt=null;home()};
   let t;const g=$('#gear');g.onpointerdown=()=>{t=setTimeout(grown,1200)};g.onpointerup=g.onpointerleave=()=>clearTimeout(t);g.onclick=()=>fb('Grown-ups: hold it','warn');
   if(first&&S.voice)setTimeout(()=>say(`Hi ${S.name}! Pick a game!`),400)}
@@ -671,18 +703,20 @@ function pathMap(p){MAPP=p;const P=PATHS[p];
   const c=$('.node.cur')||$(`.node[data-n="${G&&G.path==p&&G.node>=0?G.node:curNode(p)}"]`);if(c)c.scrollIntoView({block:'center'})}
 
 function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],W=m.clientWidth||360,amp=Math.min(W*.3,200),pts=[];let y=10,bands='';
-  PATHS[p].worlds.forEach((w,wi)=>{const y0=y;y+=86;N.forEach((n,i)=>{if(n.wi!=wi)return;pts.push([W/2+Math.sin(i*1.15)*amp,y,i]);y+=106});
-    bands+=`<div class="wband" style="top:${y0}px;height:${y-y0-24}px;background:${w.c}"></div><div class="wtitle" style="top:${y0+14}px">${w.e} ${w.n}${worldDone(p,wi)?' ✅':''}</div>`;y+=4});
+  PATHS[p].worlds.forEach((w,wi)=>{const y0=y,canTest=!worldDone(p,wi)&&(wi==0||worldDone(p,wi-1));y+=canTest?132:86;N.forEach((n,i)=>{if(n.wi!=wi)return;pts.push([W/2+Math.sin(i*1.15)*amp,y,i]);y+=106});
+    bands+=`<div class="wband" style="top:${y0}px;height:${y-y0-24}px;background:${w.c}"></div><div class="wtitle" style="top:${y0+14}px">${w.e} ${w.n}${worldDone(p,wi)?' ✅':''}</div>${canTest?`<button class="btn xs tobtn" data-w="${wi}" style="top:${y0+58}px">⚡ Already know it? Test out!</button>`:''}`;y+=4});
   let path='';pts.forEach(([x,yy],k)=>{if(!k)path=`M${x} ${yy}`;else{const[px,py]=pts[k-1];path+=` C${px} ${py+55} ${x} ${yy-55} ${x} ${yy}`}});
   const cur=curNode(p),allDone=N.every((n,i)=>passed(p,i));
-  const nodes=pts.map(([x,yy,i])=>{const n=N[i],s=SK[n.sk],st=S.maps[p][i]||0,lk=!unlocked(p,i);
+  const nodes=pts.map(([x,yy,i])=>{const n=N[i],s=nInfo(n),st=getSt(p,i),lk=!unlocked(p,i);
     return`<button class="btn node ${s.area} ${lk?'lock':''} ${st?'done':''} ${i==cur&&!lk&&!allDone?'cur':''}" data-n="${i}" style="left:${x}px;top:${yy}px">${lk?'🔒':s.e}</button><div class="nlab" style="left:${x}px;top:${yy+42}px">${esc(n.t)}<div class="nstar">${st?'★'.repeat(st)+'☆'.repeat(3-st):''}</div></div>`}).join('');
   const cp=pts.find(q=>q[2]==cur),side=cp[0]>W/2?-66:66;
   m.style.height=(y+(allDone?90:20))+'px';
   m.innerHTML=bands+`<svg width="${W}" height="${y+20}"><path d="${path}" fill="none" stroke="#d6c7a8" stroke-width="16" stroke-linecap="round"/><path d="${path}" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="8 10"/></svg>`+nodes
     +`<div class="mappet ${petAura()}" style="left:${cp[0]+side}px;top:${cp[1]+18}px">${petHTML()}</div>`+(allDone?`<div class="wtitle" style="top:${y+10}px;font-size:24px">🏆 ${PATHS[p].n} Champion! 🏆</div>`:'');
   $$('.node').forEach(b=>b.onclick=()=>{const i=+b.dataset.n;if(!unlocked(p,i)){SFX.wrong();anim(b,'sad');fb('Finish the stop before this one!','warn');return}SFX.whoosh();
-    const n=N[i];if(n.sk.startsWith('es_')&&n.sk!='es_mix'&&n.lv==1)learn(p,i);else start(p,i)})}
+    open(p,i)});
+  $$('.tobtn').forEach(b=>b.onclick=()=>testOut(p,+b.dataset.w))}
+function open(p,i){const n=NODES[p][i];if(n.sk=='boss')bossIntro(p,i);else if(n.sk.startsWith('es_')&&n.sk!='es_mix'&&n.lv==1)learn(p,i);else start(p,i)}
 
 function learn(p,i){const n=NODES[p][i],items=SPN[n.sk.slice(3)];
   view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title">Let's learn!</div><div class="sp"></div><button class="btn big" id="go" style="font-size:20px;padding:10px 18px">¡Vamos! ▶</button></div>
@@ -702,7 +736,7 @@ function book(){const have=STK.filter(s=>S.stickers[s]).length;
 
 /* ---------- pet shop ---------- */
 let shopTab='hat';
-function shop(){const sc=sceneOf(),items=SHOP[shopTab];
+function shop(){const sc=sceneOf(),items=shopTab=='hat'?SHOP.hat.concat(BPRIZE.filter(h=>S.owned[h]).map(h=>[h,0,'boss'])):SHOP[shopTab];
   view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title">🛍️ Pet Shop</div><div class="sp"></div><div class="stars" id="coinc">🪙 ${S.coins}</div></div>
   <div class="scroll"><div class="hero ${sc[0]=='space'?'dark':''}" style="background:${sc[3]};justify-content:center"><div class="petbig ${petAura()}" id="pet">${petHTML()}</div>
    <div class="hinfo" style="flex:none"><div class="hname">${esc(petN())}</div><div class="htxt">Earn coins by playing. Buy fun stuff!</div></div></div>
@@ -727,7 +761,20 @@ function startMix(){const qs=allMiss().slice(0,7).map(m=>({...m.q})),pool=[];
   while(qs.length<10){const n=pick(pool),q=SK[n.sk].gen(n.lv);q.sk=n.sk;q.lv=n.lv;qs.push(q)}
   G=newG({mix:true,pool:shuffle(qs),sk:'mix'});next()}
 const back=()=>G&&G.path?pathMap(G.path):home();
-function makeQ(){if(G.mix)return G.pool.shift();
+function worldPool(p,wi,k){const ns=NODES[p].filter(n=>n.wi==wi&&n.sk!='boss');return Array.from({length:k},()=>{const n=pick(ns),q=SK[n.sk].gen(n.lv);q.sk=n.sk;q.lv=n.lv;return q})}
+function bossIntro(p,i){const n=NODES[p][i],[e,name]=n.boss;
+  view(`<div class="center"><div class="bossbig">${e}</div><h1>${name} appears!</h1><p class="sub">Every right answer zaps ${name}. Zap 7 times to win a prize: ${n.prize}</p>
+   <div class="rowh"><button class="btn big" id="fight" style="background:#dc2626">⚔️ Let's go!</button><button class="btn" id="nope">🗺️ Map</button></div></div>`);
+  SFX.rattle();setTimeout(SFX.rattle,500);if(S.voice)say(`Oh no! ${name} appears! Answer questions to zap ${name}!`);
+  $('#nope').onclick=()=>pathMap(p);$('#fight').onclick=()=>{SFX.whoosh();G=newG({path:p,node:i,sk:'boss',boss:{e,name},hp:7,pool:worldPool(p,n.wi,10)});next()}}
+function testOut(p,wi){const w=PATHS[p].worlds[wi],o=document.createElement('div');o.className='ovl';
+  o.innerHTML=`<div style="background:#fff;color:var(--ink);border-radius:24px;padding:20px;max-width:520px;text-align:center"><div style="font-size:64px">⚡</div><h2 style="margin:4px 0">Test out of ${w.e} ${w.n}?</h2>
+   <p>10 questions from this whole world. Get <b>9 right</b> and you skip all of its stops!</p><div class="rowh"><button class="btn big" id="tgo">Let's do it!</button><button class="btn" id="tno">Not now</button></div></div>`;
+  document.body.appendChild(o);o.querySelector('#tno').onclick=()=>o.remove();
+  o.querySelector('#tgo').onclick=()=>{o.remove();SFX.whoosh();const bi=NODES[p].findIndex(n=>n.sk=='boss'&&n.wi==wi);G=newG({path:p,node:bi,sk:'test',test:{wi},pool:worldPool(p,wi,10)});next()}}
+function makeQ(){if(G.pool)return G.pool.shift();
+  if(G.path&&(G.done==3||G.done==7)){const N=NODES[G.path],old=N.filter((n,i)=>i<G.node&&n.sk!='boss'&&passed(G.path,i)&&!(n.sk==G.sk&&n.lv==G.lv));
+    if(old.length){const n=pick(old),q=SK[n.sk].gen(n.lv);q.sk=n.sk;q.lv=n.lv;q.review=1;return q}}
   const p=P(G.sk),s=SK[G.sk],ms=Object.values(p.miss).filter(m=>m.n>0&&m.q&&m.q.lv==G.lv);let q;
   if(ms.length&&Math.random()<.3)q={...pick(ms).q};
   for(let t=0;t<10&&(!q||q.label===G.last);t++)q=s.gen(G.lv);
@@ -748,9 +795,10 @@ function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;
   else input=`<div class="tiles">${q.tiles.map((t,i)=>`<button class="btn lt" data-i="${i}">${t}</button>`).join('')}</div><button class="btn sm undo" id="undo">↩ Undo</button>`;
   const pos=`calc(${G.done/G.n} * (100% - 70px))`;
   view(`<div class="top"><button class="btn sm" id="quit">✕</button>
-   <div class="track"><div class="line"></div><div class="chest">🎁</div><div class="runner ${petAura()}" id="runner" style="left:${pos}">${petHTML()}<div class="bubble" id="bub"></div></div></div>
+   ${G.boss?`<div class="bossbar"><span class="bossE" id="bossE">${G.boss.e}<div class="bubble" id="bub"></div></span><div class="hp"><div id="hpf" style="width:${G.hp/7*100}%"></div></div><b id="hpn">${'❤️'.repeat(G.hp)}</b></div>`
+    :`<div class="track"><div class="line"></div><div class="chest">${G.test?'⚡':'🎁'}</div><div class="runner ${petAura()}" id="runner" style="left:${pos}">${petHTML()}<div class="bubble" id="bub"></div></div></div>`}
    <div class="streak ${G.streak>=2?'on':''}" id="stk">🔥 ${G.streak}</div><div class="stars" id="starc">⭐ ${G.score}</div></div>
-  <div class="play"><div class="qarea"><div class="prompt" id="prompt">${q.html}</div>
+  <div class="play"><div class="qarea">${q.review?'<div class="rtag">🔁 Remember this one?</div>':''}<div class="prompt" id="prompt">${q.html}</div>
   <div class="tools">${q.say?'<button class="btn sm" id="spk">🔊 Hear it</button>':''}<button class="btn sm" id="hb">💡 Help</button></div><div id="hint" class="hint"></div></div>
   <div class="inp">${input}</div></div>`);
   $('#quit').onclick=()=>{G.dead=true;back()};
@@ -767,6 +815,7 @@ function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;
     $$('.lt').forEach(b=>b.onclick=()=>{const i=+b.dataset.i;if(G.lock||G.built.includes(i)||G.built.length>=q.word.length)return;G.built.push(i);SFX.pop(G.built.length);drawBuilt();
       if(G.built.length==q.word.length)check(G.built.map(j=>q.tiles[j]).join(''),null)});
     $('#undo').onclick=()=>{if(!G.lock&&G.built.length){G.built.pop();SFX.del();drawBuilt()}}}
+  if(q.review)petSay('Remember this?');
   if(G.retry){fb("Let's try this one again!",'warn');petSay('One more time!')}
   else if(G.done==0)petSay(G.mix?'Tricky mix!':"Let's go!");
   else if(G.done==G.n-1)petSay('Last one!');
@@ -788,17 +837,20 @@ function check(v,el){if(G.lock)return;const q=G.q,p=P(q.sk),ok=String(v)===Strin
     SFX.right(G.streak);
     if(first)setTimeout(()=>flyStar(src),150);
     const r=src.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2);
-    const run=$('#runner');run.style.left=`calc(${G.done/G.n} * (100% - 70px))`;anim(run,'jump');
+    const run=$('#runner');if(run){run.style.left=`calc(${G.done/G.n} * (100% - 70px))`;anim(run,'jump')}
+    let ko=false;if(G.boss&&!G.retry){G.hp=Math.max(0,G.hp-1);bossHit();if(G.hp==0){ko=true;G.won=true;G.asked=G.done;G.done=G.n;G.missed=[]}}
     const sk=$('#stk');sk.textContent='🔥 '+G.streak;sk.classList.toggle('on',G.streak>=2);if(G.streak>=2)bump(sk);
     let wait=q.after?1900:1200;
-    if([3,5,8,10].includes(G.streak)){setTimeout(SFX.streak,350);fb(`🔥 ${G.streak} in a row!`);petSay("You're on fire!");
+    if(ko){wait+=1500;setTimeout(bossKO,500)}
+    else if([3,5,8,10].includes(G.streak)){setTimeout(SFX.streak,350);fb(`🔥 ${G.streak} in a row!`);petSay("You're on fire!");
       if(!q.after&&!playClip('cheer')&&S.voice)say(`${G.streak} in a row! ${pick(['Amazing','Wow','Incredible','Super'])}, ${S.name}!`);wait+=300}
+    else if(G.boss){fb(pick(['ZAP! ⚡','POW! 💥','BAM! 💫','Zing! ✨']));petSay(pick(['Ouch!','Hey!','Oof!','No fair!']))}
     else{fb(pick(PRAISE));petSay(pick(PET_YAY));if(!q.after&&Math.random()<.3&&playClip('cheer'))wait+=400}
     if(q.after)say(q.after,null,q.afterLang);save();setTimeout(next,wait);return}
   G.tries++;G.streak=0;const sk=$('#stk');sk.classList.remove('on');
-  SFX.wrong();anim($('#runner'),'sad');const pr=$('#prompt');pr.classList.remove('shake');void pr.offsetWidth;pr.classList.add('shake');
+  SFX.wrong();anim($('#runner'),'sad');if(G.boss){anim($('#bossE'),'jump');setTimeout(SFX.giggle,250)}const pr=$('#prompt');pr.classList.remove('shake');void pr.offsetWidth;pr.classList.add('shake');
   if(el){el.classList.add('wrong');el.disabled=true}
-  if(G.tries==1){addMiss(q);fb('Try again!','warn');petSay(pick(PET_OOPS));if(Math.random()<.5)setTimeout(()=>playClip('oops'),300);$('#hint').innerHTML=hintHTML(q);fit();
+  if(G.tries==1){addMiss(q);fb('Try again!','warn');petSay(G.boss?pick(['Ha ha! Missed me!','Hee hee!','Try again!']):pick(PET_OOPS));if(Math.random()<.5)setTimeout(()=>playClip('oops'),300);$('#hint').innerHTML=hintHTML(q);fit();
     if(q.kind=='num'){G.typed='';if($('#slot'))$('#slot').textContent=''}
     if(q.kind=='build'){let k=0;while(k<G.built.length&&q.tiles[G.built[k]]==q.word[k])k++;G.lock=true;setTimeout(()=>{if(G.dead)return;G.lock=false;G.built=G.built.slice(0,k);drawBuilt();$('#hint').innerHTML=hintHTML(q);fit()},500)}
     save();return}
@@ -806,16 +858,23 @@ function check(v,el){if(G.lock)return;const q=G.q,p=P(q.sk),ok=String(v)===Strin
   if(q.kind=='num'){const s=$('#slot');s.textContent=q.ans;s.className='slot rev'}
   if(q.kind=='choice'){$$('.ch').forEach(b=>{if(q.choices[b.dataset.i].v==q.ans)b.classList.add('right')});if($('#slot')){$('#slot').textContent=q.ans;$('#slot').className='slot rev'}}
   if(q.kind=='build')[...q.word].forEach((c,i)=>{$('#ls'+i).textContent=c});
-  if(!G.retry){G.done++;p.t++;G.missed.push(q)}
-  const run=$('#runner');run.style.left=`calc(${G.done/G.n} * (100% - 70px))`;
+  if(!G.retry){G.done++;p.t++;if(!G.boss)G.missed.push(q)}
+  const run=$('#runner');if(run)run.style.left=`calc(${G.done/G.n} * (100% - 70px))`;
   fb("Here's the answer",'warn');petSay("We'll get it next time!");say(q.after||(q.kind=='num'?`The answer is ${q.ans}`:q.ans),null,q.afterLang);save();setTimeout(next,2600)}
 
+function bossHit(){const b=$('#bossE'),f=$('#hpf'),h=$('#hpn');if(f)f.style.width=G.hp/7*100+'%';if(h)h.textContent='❤️'.repeat(G.hp);
+  if(b){b.classList.remove('hit');void b.offsetWidth;b.classList.add('hit');const r=b.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,['💥','⚡','✨'])}SFX.hit()}
+function bossKO(){const b=$('#bossE');if(b)b.classList.add('ko');SFX.ko();confetti(40);fb(`You beat ${G.boss.name}! 🏆`);if(S.voice)say(`You beat ${G.boss.name}!`)}
 function award(){const s=pick(STK),isNew=!S.stickers[s];S.stickers[s]=(S.stickers[s]||0)+1;return{s,isNew}}
 function finish(){
   const g=G,sc=g.score,n=g.n,best=g.best,before=S.stars,d=day(),p=g.path,ni=g.node,nd=p?NODES[p][ni]:null;
   let stars=0,newPass=false,wDone=false;
-  if(!g.mix){P(g.sk).r++;stars=sc>=10?3:sc>=8?2:sc>=7?1:0;const prev=S.maps[p][ni]||0;S.maps[p][ni]=Math.max(prev,stars);newPass=!prev&&stars>0;
-    const wk=p+nd.wi;if(newPass&&!S.wdone[wk]&&worldDone(p,nd.wi)){S.wdone[wk]=1;wDone=true}}
+  let testOk=false,prize=null;
+  if(g.test){testOk=sc>=9;if(testOk){NODES[p].forEach((n,i)=>{if(n.wi==g.test.wi&&getSt(p,i)<2)setSt(p,i,2)});newPass=true}}
+  else if(!g.mix){if(g.boss)stars=g.won?(g.asked<=7?3:g.asked<=8?2:1):0;else{P(g.sk).r++;stars=sc>=10?3:sc>=8?2:sc>=7?1:0}
+    const prev=getSt(p,ni);setSt(p,ni,Math.max(prev,stars));newPass=!prev&&stars>0;
+    if(g.boss&&g.won&&!S.owned[nd.prize]){prize=nd.prize;S.owned[prize]=1;S.wear.hat=prize}}
+  if(newPass){const wk=p+nd.wi;if(!S.wdone[wk]&&worldDone(p,nd.wi)){S.wdone[wk]=1;wDone=true}}
   const prizes=[award()];if(sc==n)prizes.push(award());
   d.r++;let mission=false;if(d.r>=3&&!d.done){d.done=true;mission=true;prizes.push(award())}
   if(wDone)prizes.push(award());
@@ -828,23 +887,26 @@ function finish(){
   let opened=false;
   $('#chest').onclick=()=>{if(opened)return;opened=true;clearInterval(rt);SFX.open();confetti(sc>=7?40:16);const f=$('#fin');
     const nextI=!g.mix&&ni+1<NODES[p].length&&unlocked(p,ni+1)?ni+1:-1;
-    f.innerHTML=`<div id="prz"></div><div class="bigstars" id="bs"></div><h1 id="sc" style="margin:0">${sc} out of ${n}${!g.mix?` <span class="nstar" style="font-size:.8em">${'★'.repeat(stars)+'☆'.repeat(3-stars)}</span>`:''}</h1>
+    f.innerHTML=`<div id="prz"></div><div class="bigstars" id="bs"></div><h1 id="sc" style="margin:0">${sc} out of ${n}${!g.mix&&!g.test?` <span class="nstar" style="font-size:.8em">${'★'.repeat(stars)+'☆'.repeat(3-stars)}</span>`:''}</h1>
      <div class="rowh" id="btns" style="visibility:hidden;margin:10px 0"><button class="btn big" id="bonus" style="background:#ec4899">🎈 Bonus game!</button>
       ${nextI>=0&&newPass?'<button class="btn big" id="nxt">Next stop ▶</button>':'<button class="btn" id="again">Play again</button>'}<button class="btn" id="menu">${g.mix?'🏠 Home':'🗺️ Map'}</button></div><div id="msgs"></div>`;
     const live=()=>f.isConnected;let t=0;
     prizes.forEach(pz=>{setTimeout(()=>{if(!live())return;$('#prz').insertAdjacentHTML('beforeend',`<span class="prize">${pz.s}</span>${pz.isNew?'<span class="newtag">NEW!</span>':''}`);SFX.magic()},t);t+=600});
     for(let i=0;i<sc;i++){setTimeout(()=>{if(!live())return;$('#bs').insertAdjacentHTML('beforeend','<span>⭐</span>');SFX.coin(i)},t);t+=150}
     setTimeout(()=>{if(!live())return;$('#btns').style.visibility='visible';
-      $('#bonus').onclick=()=>balloons(g.mix?pick(['math','read','es']):SK[g.sk].area,g);
-      if($('#nxt'))$('#nxt').onclick=()=>{SFX.whoosh();const nn=NODES[p][nextI];if(nn.sk.startsWith('es_')&&nn.sk!='es_mix'&&nn.lv==1)learn(p,nextI);else start(p,nextI)};
-      if($('#again'))$('#again').onclick=()=>{SFX.whoosh();g.mix?startMix():start(p,ni)};$('#menu').onclick=()=>g.mix?home():pathMap(p);
+      $('#bonus').onclick=()=>balloons(g.mix||g.boss||g.test?(p||pick(['math','read','es'])):SK[g.sk].area,g);
+      if($('#nxt'))$('#nxt').onclick=()=>{SFX.whoosh();open(p,nextI)};
+      if($('#again'))$('#again').onclick=()=>{SFX.whoosh();g.mix?startMix():g.test?testOut(p,g.test.wi):open(p,ni)};$('#menu').onclick=()=>g.mix?home():pathMap(p);
       if(grew)setTimeout(()=>growShow(before),300);else if(!playClip('done')&&S.voice)say(`You got ${sc} stars!`+(newPass?' You unlocked the next stop!':''))},t);
     t+=300;
     const msgs=[[`+${coins} 🪙 coins for the pet shop!`,null]];
     if(best>=3)msgs.push([`🔥 Best streak: ${best} in a row!`,null]);
     if(newPass&&nextI>=0)msgs.push([`🗺️ Next stop unlocked: ${NODES[p][nextI].t}!`,'fanfare']);
     if(wDone)msgs.push([`🌍 You finished ${PATHS[p].worlds[nd.wi].n}! +20 🪙`,'fanfare']);
-    if(!g.mix&&stars==0)msgs.push(['Get 7 right to open the next stop. You can do it!',null]);
+    if(g.boss)msgs.push(g.won?[`💥 You beat ${g.boss.name}!`,'fanfare']:[`${g.boss.e} ${g.boss.name} got away! Try again, you can beat it!`,null]);
+    if(prize)msgs.push([`🎁 New costume for ${petN()}: ${prize}`,'magic']);
+    if(g.test)msgs.push(testOk?[`🚀 You tested out of ${PATHS[p].worlds[g.test.wi].n}!`,'fanfare']:['So close! Get 9 right to test out. Or play the stops one by one.',null]);
+    if(!g.mix&&!g.test&&!g.boss&&stars==0)msgs.push(['Get 7 right to open the next stop. You can do it!',null]);
     if(mission)msgs.push([`🏆 Daily mission done! +5 bonus stars!`,'fanfare']);
     if(g.mix)msgs.push(['🎯 Great practice on the tricky ones!',null]);
     msgs.push([sc>=9?'You are a superstar!':sc>=7?'Fantastic work!':sc>=5?'Good job! Keep practicing!':'Nice try! Practice makes you stronger!',null]);
@@ -862,7 +924,7 @@ function growShow(before){const o=document.createElement('div');o.className='ovl
 let BL=null;
 function stopBalloons(){if(BL){cancelAnimationFrame(BL.raf);clearInterval(BL.tick);BL=null}}
 const FAM={at:['cat','bat','hat','mat','rat','sat'],ig:['pig','big','dig','wig','fig'],un:['sun','bun','run','fun'],op:['hop','top','mop','pop'],en:['hen','ten','pen','men'],ug:['bug','hug','rug','mug']};
-function balloonRule(area){
+function balloonRule(area){if(area=='boss'||area=='test')area='math';
   if(area=='math'){const r=pick(['even','odd','sum','big']);
     if(r=='even'||r=='odd')return{txt:`Pop the ${r.toUpperCase()} numbers!`,say:`Pop the ${r} numbers!`,gen:()=>{const n=R(1,30);return[n,r=='even'?n%2==0:n%2==1]}};
     if(r=='sum'){const a=R(2,9),b=R(1,9),t=a+b;return{txt:`Pop every ${t}!  (${a} + ${b})`,say:`Pop every balloon that equals ${a} plus ${b}!`,gen:()=>{const n=Math.random()<.45?t:pick([t-2,t-1,t+1,t+2,R(2,18)].filter(x=>x!=t&&x>=0));return[n,n==t]}}}
@@ -896,11 +958,73 @@ function balloons(area,g){const rule=balloonRule(area);let popped=0,left=30;
       document.body.appendChild(o);if(S.voice)say(`You popped ${popped} balloons!`);
       $('#bhome').onclick=()=>{o.remove();g.path?pathMap(g.path):home()};
       $('#bnext').onclick=()=>{o.remove();if(g.mix||!g.path)return startMix();const p=g.path,i=g.node+1<NODES[p].length&&unlocked(p,g.node+1)&&!passed(p,g.node+1)?g.node+1:g.node;
-        const nn=NODES[p][i];if(nn.sk.startsWith('es_')&&nn.sk!='es_mix'&&nn.lv==1&&i!=g.node)learn(p,i);else start(p,i)}}},1000)}
+        if(i==g.node&&g.test)testOut(p,g.test.wi);else open(p,i)}}},1000)}
+
+/* ---------- speed race ---------- */
+let RC=null;
+function stopRace(){if(RC){clearInterval(RC.iv);RC=null}}
+const passedAny=(p,sk,lv)=>NODES[p].some((n,i)=>n.sk==sk&&n.lv>=lv&&passed(p,i));
+const RACES={math:['➕','Math Facts','Add and take away, fast!'],sight:['👀','Sight Words','Hear it, tap it!'],es:['🌮','Spanish Words','Escucha y toca!']};
+function raceMenu(){S.race=S.race||{};
+  view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title">⚡ Speed Race</div></div>
+  <div class="scroll"><p class="sub" style="text-align:center">How many can you get in 60 seconds? Beat your best score!</p>
+  <div class="games">${Object.entries(RACES).map(([k,[e,t,d]])=>`<button class="btn game" data-r="${k}" style="background:linear-gradient(135deg,#fef3c7,#fde68a)"><span class="ge">${e}</span><span class="gi"><span class="gt">${t}</span><span class="small">${d}</span></span><span class="stars">🏆 ${S.race[k]||0}</span></button>`).join('')}</div></div>`);
+  $('#back').onclick=()=>home();$$('[data-r]').forEach(b=>b.onclick=()=>race(b.dataset.r))}
+function raceQ(cat){
+  if(cat=='math'){const big=passedAny('math','add',1),sub=passedAny('math','sub',1)&&coin(),mx=big?18:10;
+    if(sub){const a=R(2,mx),b=R(Math.max(0,a-9),Math.min(a,9));return{kind:'num',html:`<div class="eq">${a} − ${b} = ${SLOT}</div>`,ans:String(a-b),say:''}}
+    const a=R(0,Math.min(9,mx)),b=R(0,Math.min(9,mx-a));return{kind:'num',html:`<div class="eq">${a} + ${b} = ${SLOT}</div>`,ans:String(a+b),say:''}}
+  if(cat=='sight'){const lv=passedAny('read','sight',3)?3:passedAny('read','sight',2)?2:1;return genSight(lv)}
+  const sets=Object.keys(SPN).filter(k=>passedAny('es','es_'+k,1));return genEs(sets.length?pick(sets):pick(['color','num']),1)}
+function race(cat){S.race=S.race||{};const best=S.race[cat]||0;
+  view(`<div class="top"><button class="btn sm" id="quit">✕</button><div class="prog"><div id="rbar" style="width:100%;background:linear-gradient(90deg,#ef4444,#f59e0b)"></div></div>
+   <div class="stars" id="rsc">⚡ 0</div><div class="stars">🏆 ${best}</div></div><div class="play" id="rplay"></div>`);
+  RC={cat,score:0,left:60,iv:0,lock:false,typed:''};
+  $('#quit').onclick=()=>{stopRace();raceMenu()};
+  const rq=()=>{if(!RC)return;const q=raceQ(cat);RC.q=q;RC.typed='';RC.lock=false;
+    $('#rplay').innerHTML=`<div class="qarea"><div class="prompt" id="prompt">${q.html}</div></div><div class="inp">${q.kind=='num'?`<div class="pad">${[1,2,3,4,5,6,7,8,9].map(n=>`<button class="btn k" data-k="${n}">${n}</button>`).join('')}<button class="btn k del" data-k="del">⌫</button><button class="btn k" data-k="0">0</button><button class="btn k go" data-k="go">✓</button></div>`
+      :`<div class="choices ${q.cls||''}">${q.choices.map((c,i)=>`<button class="btn ch" data-i="${i}">${c.h?c.l:esc(c.l)}</button>`).join('')}</div>`}</div>`;
+    fit();if(q.auto)say(q.say,null,q.lang=='es'?'es':null);
+    $$('[data-sayes]').forEach(b=>b.onclick=()=>say(b.dataset.sayes,b,'es'));
+    if(q.kind=='num')$$('.k').forEach(b=>b.onclick=()=>{if(RC.lock)return;const k=b.dataset.k;if(k=='del')RC.typed=RC.typed.slice(0,-1);else if(k=='go'){if(RC.typed)ans(RC.typed)}else if(RC.typed.length<3){RC.typed+=k;SFX.key(+k)}
+      $('#slot').textContent=RC.typed;if(RC.typed.length==q.ans.length&&RC.typed==q.ans)ans(RC.typed)});
+    else $$('.ch').forEach(b=>b.onclick=()=>ans(q.choices[b.dataset.i].v,b))};
+  const ans=(v,el)=>{if(!RC||RC.lock)return;RC.lock=true;const q=RC.q;
+    if(String(v)===String(q.ans)){RC.score++;SFX.right(RC.score%10);$('#rsc').textContent='⚡ '+RC.score;bump('#rsc');if(el)el.classList.add('right');if($('#slot'))$('#slot').classList.add('ok');setTimeout(rq,250)}
+    else{SFX.wrong();if(el)el.classList.add('wrong');if(q.kind=='num'){const s=$('#slot');s.textContent=q.ans;s.className='slot rev'}else $$('.ch').forEach(b=>{if(q.choices[b.dataset.i].v==q.ans)b.classList.add('right')});setTimeout(rq,800)}};
+  setTimeout(()=>{fb('Ready… GO! ⚡');SFX.fanfare();rq()},300);
+  RC.iv=setInterval(()=>{if(!RC)return;RC.left--;const b=$('#rbar');if(b)b.style.width=RC.left/60*100+'%';if(RC.left<=5&&RC.left>0)tone(880,.08,0,'square',.05);
+    if(RC.left<=0){const sc=RC.score,rec=sc>best;stopRace();if(rec)S.race[cat]=sc;const coins=Math.floor(sc/2)+(rec&&sc>0?5:0);S.coins+=coins;save();
+      rec&&sc>0?(SFX.fanfare(),confetti(40)):SFX.magic();
+      const o=document.createElement('div');o.className='ovl';o.innerHTML=`<div style="font-size:80px">${rec&&sc>0?'🏆':'⚡'}</div><h1>${sc} in 60 seconds!</h1><h2>${rec&&sc>0?'NEW RECORD! 🎉':`Your best: ${best}`}</h2><h2>+${coins} 🪙</h2>
+        <div class="rowh"><button class="btn big" id="ragain">Race again</button><button class="btn" id="rhome">🏠 Home</button></div>`;
+      document.body.appendChild(o);if(S.voice)say(rec&&sc>0?`New record! ${sc}!`:`You got ${sc}!`);
+      o.querySelector('#ragain').onclick=()=>{o.remove();race(cat)};o.querySelector('#rhome').onclick=()=>{o.remove();home()}}},1000)}
+
+/* ---------- pet care ---------- */
+function careTick(){const c=S.care||(S.care={food:70,clean:70,fun:70,t:Date.now(),gift:''});const h=(Date.now()-c.t)/36e5;
+  if(h>0){c.food=Math.max(0,c.food-h*4);c.clean=Math.max(0,c.clean-h*3);c.fun=Math.max(0,c.fun-h*5);c.t=Date.now()}return c}
+const SNACKS=[['🍎',3,25],['🍪',5,40],['🍕',8,60],['🎂',15,100]];
+function care(){const c=careTick();save();const pn=esc(petN()),sc=sceneOf();
+  const mood=c.food<30?`${pn} is hungry! 🍖`:c.clean<30?`${pn} needs a bath! 🛁`:c.fun<30?`${pn} wants to play! 🎾`:Math.min(c.food,c.clean,c.fun)>=80?`${pn} is super happy! 💖`:`${pn} is doing great!`;
+  const bar=(l,v,col)=>`<div class="cbar"><span>${l}</span><div class="meter"><div style="width:${v}%;background:${col}"></div></div><b>${Math.round(v)}%</b></div>`;
+  view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title">🐾 Pet Care</div><div class="sp"></div><div class="stars" id="coinc">🪙 ${S.coins}</div></div>
+  <div class="scroll"><div class="hero ${sc[0]=='space'?'dark':''}" style="background:${sc[3]};justify-content:center;flex-direction:column;position:relative" id="stage"><div class="petbig ${petAura()}" id="pet" style="font-size:110px">${petHTML()}</div><div class="hname">${mood}</div></div>
+  <div class="card">${bar('🍖 Food',c.food,'linear-gradient(90deg,#f59e0b,#ef4444)')}${bar('🛁 Clean',c.clean,'linear-gradient(90deg,#38bdf8,#3b82f6)')}${bar('🎾 Fun',c.fun,'linear-gradient(90deg,#a3e635,#22c55e)')}</div>
+  <h2>Snacks</h2><div class="shopgrid">${SNACKS.map(([e,cost,v],i)=>`<button class="btn item" data-f="${i}"><span>${e}</span><div>🪙 ${cost}</div></button>`).join('')}</div>
+  <div class="actions" style="grid-template-columns:1fr 1fr"><button class="btn act" id="bath"><span>🛁</span>Bath time (free)</button><button class="btn act" id="play"><span>🎾</span>Play (free)</button></div></div>`);
+  $('#back').onclick=()=>home();
+  const pet=$('#pet'),fly=(emo,n=1)=>{const r=pet.getBoundingClientRect();for(let i=0;i<n;i++)setTimeout(()=>burst(r.left+r.width/2,r.top+r.height/2,[emo]),i*120)};
+  const done=()=>{c.t=Date.now();if(Math.min(c.food,c.clean,c.fun)>=80&&c.gift!==today()){c.gift=today();S.coins+=5;setTimeout(()=>{SFX.fanfare();confetti(20);fb(`🎁 ${petN()} gave you 5 coins!`,'',2000)},900)}save();setTimeout(care,1300)};
+  $$('[data-f]').forEach(b=>b.onclick=()=>{const[e,cost,v]=SNACKS[+b.dataset.f];if(c.food>=100){fb(`${petN()} is full! 😋`,'warn');anim(pet,'sad');return}
+    if(S.coins<cost){SFX.wrong();anim(b,'sad');fb(`Need ${cost-S.coins} more coins!`,'warn');return}
+    S.coins-=cost;c.food=Math.min(100,c.food+v);SFX.chomp();anim(pet,'jump');fly(e,3);setTimeout(()=>fly('💖',2),400);if(S.voice)say(pick(['Yum yum!','Delicious!','Thank you!','Mmm!']));done()});
+  $('#bath').onclick=()=>{c.clean=100;SFX.splash();anim(pet,'sad');fly('💧',4);setTimeout(()=>fly('✨',3),500);if(S.voice)say(pick(['Splish splash!','So clean!','Bubbles!']));done()};
+  $('#play').onclick=()=>{c.fun=Math.min(100,c.fun+30);SFX.giggle();anim(pet,'jump');fly('🎾',2);setTimeout(()=>anim(pet,'jump'),550);if(S.voice)say(pick(['Wheee!','Again! Again!','That was fun!']));done()}}
 
 /* ---------- grown-ups ---------- */
 function grown(){let armed=false;
-  const rows=[...new Set(Object.values(NODES).flat().map(n=>n.sk))].map(id=>{const p=P(id),s=SK[id],acc=p.t?Math.round(p.c/p.t*100)+'%':'–';
+  const rows=[...new Set(Object.values(NODES).flat().map(n=>n.sk))].filter(id=>SK[id]).map(id=>{const p=P(id),s=SK[id],acc=p.t?Math.round(p.c/p.t*100)+'%':'–';
     const tricky=Object.values(p.miss).sort((a,b)=>b.tot-a.tot).slice(0,3).map(m=>esc(m.q.label)).join('<br>');
     return`<tr><td>${s.e} ${s.t}</td><td>${p.r}</td><td>${acc}</td><td class="tr">${tricky}</td></tr>`}).join('');
   const prog=Object.keys(PATHS).map(p=>`${PATHS[p].e} ${NODES[p].filter((n,i)=>passed(p,i)).length}/${NODES[p].length}`).join(' · '),canRec=!!(navigator.mediaDevices&&window.MediaRecorder);
