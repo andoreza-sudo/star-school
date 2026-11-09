@@ -274,6 +274,10 @@ label.tg{display:block;font-size:20px;margin:8px 0}
 .endstats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}.endstats div{background:#f5f5f4;border-radius:14px;padding:8px 4px;display:flex;flex-direction:column}.endstats b{font-size:22px}.endstats span{font-size:12px;color:var(--muted)}
 .vehs{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}.veh{display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 6px;font-size:15px}.veh canvas{width:150px;height:90px}.veh.on{outline:4px solid #22c55e;background:#f0fdf4}
 .mis{cursor:default}
+.shthumb{width:100px;height:100px;border-radius:10px;box-shadow:0 2px 6px #0002;background:#fff}
+.shwrap svg{width:100%;height:100%;display:block;border-radius:12px;background:#fff;box-shadow:0 4px 14px #0002;touch-action:none}
+.shwrap path{cursor:pointer;transition:fill .2s}.shl{font-family:Andika,sans-serif;font-weight:700;fill:#78716c;pointer-events:none}.shl.on{fill:#1d4ed8}
+.popfill{animation:popf .35s}@keyframes popf{50%{opacity:.6}}
 </style>
 </head>
 <body>
@@ -1078,7 +1082,7 @@ function gameRoom(){const left=ptLeft(),gs=garageS();
    <div class="small">${left>0?'Every learning round earns more. Have fun!':esc(ptWhyNot())}</div></div></div>
   <div class="games">
    <button class="btn game" id="g4x4" style="background:linear-gradient(135deg,#fed7aa,#fdba74)"><span class="ge">🚙</span><span class="gi"><span class="gt">4x4 Hill Climb</span><span class="small">Best: ${Math.max(gs.best.meadow,gs.best.moon)} m · 🔩 ${gs.bolts} bolts</span></span><span class="go">▶</span></button>
-   <button class="btn game" id="gcbn" style="background:linear-gradient(135deg,#fbcfe8,#f9a8d4)"><span class="ge">🎨</span><span class="gi"><span class="gt">Color by Number</span><span class="small">${Object.keys(cbS().done).length}/${CB_PICS.length} pictures · Free Paint</span></span><span class="go">▶</span></button>
+   <button class="btn game" id="gcbn" style="background:linear-gradient(135deg,#fbcfe8,#f9a8d4)"><span class="ge">🎨</span><span class="gi"><span class="gt">Coloring</span><span class="small">Animals, pixel art & free paint</span></span><span class="go">▶</span></button>
    <div class="btn game soon"><span class="ge">🧱</span><span class="gi"><span class="gt">Block Builder</span><span class="small">Coming soon!</span></span><span class="go">🔒</span></div></div>
   ${left>0?'':'<button class="btn big" id="learn" style="display:block;margin:18px auto">📚 Go earn game time</button>'}</div>`);
   $('#back').onclick=()=>home();if($('#learn'))$('#learn').onclick=()=>home();
@@ -1453,23 +1457,125 @@ function cbS(){return S.cbn=Object.assign({done:{},prog:{},art:[]},S.cbn||{})}
 function cbThumb(G,fill,size=96){const c=document.createElement('canvas');c.width=c.height=size;const x=c.getContext('2d'),s=size/CBN;
   G.forEach((k,i)=>{x.fillStyle=fill&&fill[i]=='1'||fill===true?CB_COL[k][0]:shade(CB_COL[k][0],.72);x.fillRect((i%CBN)*s,Math.floor(i/CBN)*s,s+.5,s+.5)});return c.toDataURL()}
 
-function colorMenu(){const cs=cbS();
-  view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title">🎨 Color by Number</div><div class="sp"></div><div class="stars" id="gtm">🎟️ ${fmtT(ptLeft())}</div></div>
-  <div class="scroll"><div class="tipcard">Pick a picture. Match the numbers to the colors. In <b>Math</b> mode, solve the fact to find the color! Or make your own art with <b>Free Paint</b>.</div>
-  <button class="btn game" id="free" style="background:linear-gradient(135deg,#fbcfe8,#c7d2fe);width:100%"><span class="ge">🖌️</span><span class="gi"><span class="gt">Free Paint</span><span class="small">${cs.art.length} saved drawing${cs.art.length==1?'':'s'}</span></span><span class="go">▶</span></button>
-  <h2>Pictures (${Object.keys(cs.done).length}/${CB_PICS.length} done)</h2><div class="cbgrid">${CB_PICS.map(([id,n])=>{const d=cbData(id),done=cs.done[id],pr=cs.prog[id],pc=pr?Math.round(pr.split('').filter(c=>c=='1').length/pr.length*100):0;
-    return`<button class="btn cbitem" data-id="${id}"><img src="${cbThumb(d.G,done?true:pr)}"><b>${n}</b><span class="small">${done?'✅ Done':pc?pc+'%':'New'}</span></button>`}).join('')}</div>
-  ${cs.art.length?`<h2>My Drawings</h2><div class="cbgrid">${cs.art.map((a,i)=>`<button class="btn cbitem" data-art="${i}"><img src="${cbThumb(a.split(',').map(k=>k||'blanco'),true)}"><b>Drawing ${i+1}</b></button>`).join('')}</div>`:''}</div>`);
-  $('#back').onclick=gameRoom;
+let CBTAB='shape';
+function modeChooser(onPick,withFree){const o=document.createElement('div');o.className='ovl';
+  o.innerHTML=`<div style="background:#fff;color:var(--ink);border-radius:24px;padding:20px;max-width:520px;width:92vw;text-align:center"><h2 style="margin:0 0 10px">How do you want to color?</h2>
+   <div class="games">${withFree?'<button class="btn game" data-m="free" style="background:#fce7f3"><span class="ge">🖌️</span><span class="gi"><span class="gt">Color It My Way</span><span class="small">Pick any colors you like</span></span></button>':''}
+   <button class="btn game" data-m="num" style="background:#dbeafe"><span class="ge">🔢</span><span class="gi"><span class="gt">Color by Number</span><span class="small">Match the number to the color</span></span></button>
+   <button class="btn game" data-m="math" style="background:#fef3c7"><span class="ge">➕</span><span class="gi"><span class="gt">Math Colors</span><span class="small">Solve the fact to find the color</span></span></button>
+   <button class="btn game" data-m="es" style="background:#dcfce7"><span class="ge">🌮</span><span class="gi"><span class="gt">Spanish Colors</span><span class="small">Hear every color in Spanish</span></span></button></div><button class="btn" id="mx" style="margin-top:10px">Cancel</button></div>`;
+  document.body.appendChild(o);o.querySelector('#mx').onclick=()=>o.remove();o.querySelectorAll('[data-m]').forEach(m=>m.onclick=()=>{o.remove();SFX.whoosh();onPick(m.dataset.m)})}
+function colorMenu(tab){if(tab)CBTAB=tab;const cs=cbS(),ss=shS();
+  const tabs=`<div class="tabs">${[['shape','🦁 Pictures'],['pixel','🟦 Pixel Art'],['paint','🖌️ Free Paint']].map(([k,l])=>`<button class="btn sm tab ${k==CBTAB?'on':''}" data-t="${k}">${l}</button>`).join('')}</div>`;
+  let body='';
+  if(CBTAB=='shape')body=`<div class="tipcard">Tap a picture. Color it <b>your way</b>, or <b>by number</b>, with <b>math facts</b>, or with <b>Spanish</b> colors!</div><h2>Pictures (${Object.keys(ss.done).length}/${SHAPES.length} done)</h2><div class="cbgrid">${shMenuItems()}</div>`;
+  else if(CBTAB=='pixel')body=`<div class="tipcard">Block pictures: match the numbers to the colors. Drag your finger to color fast!</div><h2>Pixel Art (${Object.keys(cs.done).length}/${CB_PICS.length} done)</h2><div class="cbgrid">${CB_PICS.map(([id,n])=>{const d=cbData(id),done=cs.done[id],pr=cs.prog[id],pc=pr?Math.round(pr.split('').filter(c=>c=='1').length/pr.length*100):0;
+    return`<button class="btn cbitem" data-id="${id}"><img src="${cbThumb(d.G,done?true:pr)}"><b>${n}</b><span class="small">${done?'✅ Done':pc?pc+'%':'New'}</span></button>`}).join('')}</div>`;
+  else body=`<button class="btn game" id="free" style="background:linear-gradient(135deg,#fbcfe8,#c7d2fe);width:100%"><span class="ge">🖌️</span><span class="gi"><span class="gt">New Drawing</span><span class="small">Paint anything you want, block by block</span></span><span class="go">▶</span></button>
+    ${cs.art.length?`<h2>My Drawings</h2><div class="cbgrid">${cs.art.map((a,i)=>`<button class="btn cbitem" data-art="${i}"><img src="${cbThumb(a.split(',').map(k=>k||'blanco'),true)}"><b>Drawing ${i+1}</b></button>`).join('')}</div>`:'<p class="small" style="text-align:center">Your saved drawings show up here.</p>'}`;
+  view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title">🎨 Coloring</div><div class="sp"></div><div class="stars" id="gtm">🎟️ ${fmtT(ptLeft())}</div></div><div class="scroll">${tabs}${body}</div>`);
+  $('#back').onclick=gameRoom;$$('.tab').forEach(b=>b.onclick=()=>{SFX.pop(2);colorMenu(b.dataset.t)});
   const chk=()=>{if(ptLeft()<=0){SFX.wrong();fb('🎟️ '+ptWhyNot(),'warn long',3000);return false}return true};
-  $('#free').onclick=()=>{if(chk())freePaint(-1)};
+  if($('#free'))$('#free').onclick=()=>{if(chk())freePaint(-1)};
   $$('[data-art]').forEach(b=>b.onclick=()=>{if(chk())freePaint(+b.dataset.art)});
-  $$('[data-id]').forEach(b=>b.onclick=()=>{if(!chk())return;const id=b.dataset.id,o=document.createElement('div');o.className='ovl';
-    o.innerHTML=`<div style="background:#fff;color:var(--ink);border-radius:24px;padding:20px;max-width:520px;text-align:center"><h2 style="margin:0 0 10px">How do you want to play?</h2>
-     <div class="games"><button class="btn game" data-m="num" style="background:#dbeafe"><span class="ge">🔢</span><span class="gi"><span class="gt">Numbers</span><span class="small">Match the number to the color</span></span></button>
-     <button class="btn game" data-m="math" style="background:#fef3c7"><span class="ge">➕</span><span class="gi"><span class="gt">Math Colors</span><span class="small">Solve the fact to find the color</span></span></button>
-     <button class="btn game" data-m="es" style="background:#dcfce7"><span class="ge">🌮</span><span class="gi"><span class="gt">Spanish Colors</span><span class="small">Hear every color in Spanish</span></span></button></div><button class="btn" id="mx" style="margin-top:10px">Cancel</button></div>`;
-    document.body.appendChild(o);o.querySelector('#mx').onclick=()=>o.remove();o.querySelectorAll('[data-m]').forEach(m=>m.onclick=()=>{o.remove();SFX.whoosh();colorPic(id,m.dataset.m)})})}
+  $$('[data-id]').forEach(b=>b.onclick=()=>{if(chk())modeChooser(m=>colorPic(b.dataset.id,m),false)});
+  $$('[data-sh]').forEach(b=>b.onclick=()=>{if(chk())modeChooser(m=>shapePage(b.dataset.sh,m),true)})}
+
+/* ---------- shape coloring pages (vector) ---------- */
+Object.assign(CB_COL,{'gris oscuro':['#71717a','dark gray'],'café oscuro':['#5b3416','dark brown'],'azul oscuro':['#1e3a8a','dark blue'],beige:['#fde9c4','tan'],turquesa:['#14b8a6','teal']});
+const SE=(cx,cy,rx,ry)=>`M${cx-rx},${cy}a${rx},${ry} 0 1,0 ${rx*2},0a${rx},${ry} 0 1,0 ${-rx*2},0Z`,SC=(cx,cy,r)=>SE(cx,cy,r,r),SR=(x,y,w,h,r=0)=>r?`M${x+r},${y}h${w-2*r}a${r},${r} 0 0 1 ${r},${r}v${h-2*r}a${r},${r} 0 0 1 ${-r},${r}h${-(w-2*r)}a${r},${r} 0 0 1 ${-r},${-r}v${-(h-2*r)}a${r},${r} 0 0 1 ${r},${-r}Z`:`M${x},${y}h${w}v${h}h${-w}Z`,
+  SP=pts=>'M'+pts.map(p=>p.join(',')).join('L')+'Z',
+  MIR=d=>d.replace(/([MLCQ])([^MLCQZ]*)/g,(m,c,a)=>c+a.trim().split(/[\s,]+/).map((v,i)=>i%2?v:(300-+v).toFixed(1)).join(',')),
+  WAVY=(cx,cy,r,amp,n,pts=96)=>SP(Array.from({length:pts},(_,i)=>{const a=i/pts*Math.PI*2,rr=r+amp*Math.sin(a*n);return[(cx+Math.cos(a)*rr).toFixed(1),(cy+Math.sin(a)*rr).toFixed(1)]}));
+// region: [path, colorKey, opts]  opts: {fix:true} = pre-colored decoration, {l:[x,y]} label spot
+const SHAPES=[
+ ['elephant','Elephant',()=>[[SR(0,0,300,300),'celeste'],[SC(250,52,26),'amarillo'],[SR(0,228,300,72),'verde'],
+   [SR(140,185,28,58,10),'gris oscuro'],[SR(222,182,28,60,10),'gris oscuro'],[SE(175,158,85,58),'gris'],[SR(108,188,30,62,11),'gris'],[SR(192,192,30,58,11),'gris'],
+   ['M258,150 C275,160 280,175 272,190 C268,196 262,192 265,186 C270,175 266,165 252,158 Z','gris oscuro',{l:[268,178]}],
+   [SE(130,118,36,46),'gris oscuro'],[SE(132,120,24,32),'rosa'],[SC(92,122,44),'gris'],
+   ['M60,128 C34,166 32,206 52,224 C62,232 80,226 74,213 C60,198 68,178 98,156 Z','gris',{l:[52,196]}],
+   ['M84,150 C80,172 70,180 60,178 C72,170 76,160 76,146 Z','blanco',{l:[72,168]}],[SC(84,110,5.5),'negro',{fix:1}],[SC(85.5,108.5,1.8),'blanco',{fix:1}]]],
+ ['eagle','Eagle',()=>{const wing='M150,150 C115,108 62,96 14,112 C38,122 30,132 52,138 C32,148 44,156 68,156 C52,168 70,172 94,168 C108,172 128,168 150,172 Z',tip='M14,112 C38,122 30,132 52,138 C32,148 44,156 68,156 C52,168 70,172 94,168 C80,160 60,150 46,128 C36,120 24,114 14,112 Z';
+   return[[SR(0,0,300,300),'celeste'],[SE(60,50,34,14),'blanco'],[SE(245,70,30,12),'blanco'],[SP([[0,300],[0,250],[70,190],[140,260],[210,180],[300,250],[300,300]]),'gris'],
+   [SP([[70,190],[52,206],[62,203],[70,212],[80,204],[88,206]]),'blanco'],[SP([[210,180],[190,198],[202,196],[212,206],[222,197],[232,200]]),'blanco'],
+   [wing,'café oscuro',{l:[110,140]}],[MIR(wing),'café oscuro',{l:[190,140]}],[tip,'café',{l:[56,144]}],[MIR(tip),'café',{l:[244,144]}],
+   ['M135,205 L165,205 L174,238 L150,230 L126,238 Z','blanco',{l:[150,220]}],[SE(150,168,24,42),'café'],[SC(150,118,21),'blanco'],
+   ['M139,121 L161,121 C160,132 156,140 150,144 C152,136 146,130 139,128 Z','amarillo',{l:[151,129]}],
+   ['M138,206 l-4,14 l6,-4 l2,6 l3,-8 Z','amarillo',{l:[138,212]}],['M162,206 l4,14 l-6,-4 l-2,6 l-3,-8 Z','amarillo',{l:[162,212]}],
+   [SC(143,113,3.2),'negro',{fix:1}],[SC(157,113,3.2),'negro',{fix:1}]]}],
+ ['butterfly','Butterfly',()=>{const up='M150,138 C120,62 44,46 40,100 C38,140 100,152 150,150 Z',lo='M150,152 C112,156 68,174 82,212 C96,238 140,206 150,166 Z';
+   return[[SR(0,0,300,300),'celeste'],[SR(0,250,300,50),'verde'],[SC(50,240,12),'rosa'],[SC(50,240,5),'amarillo'],[SC(255,236,12),'rojo'],[SC(255,236,5),'amarillo'],
+   [up,'naranja',{l:[70,92]}],[MIR(up),'naranja',{l:[230,92]}],[lo,'morado',{l:[118,170]}],[MIR(lo),'morado',{l:[182,170]}],
+   [SC(88,104,15),'amarillo'],[SC(212,104,15),'amarillo'],[SC(110,190,10),'rosa'],[SC(190,190,10),'rosa'],[SC(62,82,8),'blanco'],[SC(238,82,8),'blanco'],
+   [SE(150,160,8,46),'negro',{fix:1}],[SC(150,110,10),'negro',{fix:1}]]}],
+ ['turtle','Sea Turtle',()=>{const hexes=[[150,150],[118,165],[182,165],[150,182],[124,138],[176,138]];return[[SR(0,0,300,160),'celeste'],[SR(0,140,300,90),'azul'],[SR(0,222,300,78),'amarillo'],[SC(250,45,24),'amarillo'],
+   [SE(74,214,24,14),'verde'],[SE(226,214,24,14),'verde'],[SE(258,190,26,18),'verde'],[SE(278,180,10,8),'verde'],
+   ['M60,200 C60,120 240,120 240,200 Z','verde oscuro',{l:[150,128]}],
+   ...hexes.map(([x,y])=>[SP(Array.from({length:6},(_,i)=>[(x+16*Math.cos(i*Math.PI/3)).toFixed(1),(y+14*Math.sin(i*Math.PI/3)).toFixed(1)])),'verde']),
+   [SR(52,196,196,14,7),'café'],[SC(266,184,3.5),'negro',{fix:1}],[SE(60,206,6,4),'verde']]}],
+ ['owl','Night Owl',()=>[[SR(0,0,300,300),'azul oscuro'],[SC(240,60,26),'amarillo'],[SC(40,40,3),'blanco',{fix:1}],[SC(90,80,2.5),'blanco',{fix:1}],[SC(200,30,2.5),'blanco',{fix:1}],[SC(270,140,3),'blanco',{fix:1}],
+   [SR(20,232,260,18,9),'café oscuro'],[SE(60,224,22,10),'verde'],[SE(240,226,22,10),'verde'],
+   [SP([[100,70],[118,108],[90,100]]),'café'],[SP([[200,70],[182,108],[210,100]]),'café'],[SE(150,160,62,78),'café'],[SE(150,180,38,46),'beige'],
+   [SE(100,170,18,44),'café oscuro'],[SE(200,170,18,44),'café oscuro'],[SC(124,128,24),'blanco'],[SC(176,128,24),'blanco'],[SC(124,128,13),'naranja'],[SC(176,128,13),'naranja'],
+   [SC(124,128,6),'negro',{fix:1}],[SC(176,128,6),'negro',{fix:1}],[SP([[140,150],[160,150],[150,168]]),'amarillo',{l:[150,156]}],
+   [SP([[128,234],[134,246],[140,234]]),'amarillo',{l:[134,238]}],[SP([[160,234],[166,246],[172,234]]),'amarillo',{l:[166,238]}]]],
+ ['lion','Lion',()=>[[SR(0,0,300,300),'amarillo'],[SR(0,220,300,80),'verde'],[SC(240,48,22),'naranja'],
+   [WAVY(150,135,92,10,12),'naranja',{l:[150,52]}],[SC(150,140,64),'beige'],[SC(105,90,16),'beige'],[SC(195,90,16),'beige'],[SC(105,90,8),'rosa'],[SC(195,90,8),'rosa'],
+   [SE(150,170,30,22),'blanco'],['M136,150 L164,150 L150,166 Z','café',{l:[150,155]}],[SC(126,128,7),'negro',{fix:1}],[SC(174,128,7),'negro',{fix:1}],
+   [SR(118,230,22,40,9),'beige'],[SR(160,230,22,40,9),'beige']]],
+ ['whale','Whale',()=>[[SR(0,0,300,300),'celeste'],[SC(52,50,24),'amarillo'],[SR(0,160,300,140),'azul'],
+   ['M0,170 Q25,155 50,170 T100,170 T150,170 T200,170 T250,170 T300,170 L300,185 L0,185 Z','turquesa',{l:[150,176]}],
+   ['M40,190 C40,120 200,100 240,150 C255,140 270,118 290,120 C278,140 275,160 268,175 C278,185 288,205 284,220 C266,206 250,200 238,196 C210,240 70,250 40,190 Z','azul oscuro',{l:[130,160]}],
+   ['M52,200 C80,236 180,236 228,200 C190,214 100,218 52,200 Z','blanco',{l:[140,214]}],
+   ['M120,112 C110,80 96,70 86,72 C96,82 104,96 108,112 Z','celeste',{l:[100,90]}],['M132,110 C140,76 156,68 168,70 C156,80 148,94 144,112 Z','celeste',{l:[152,88]}],
+   [SC(78,176,6),'blanco',{fix:1}],[SC(79,177,3),'negro',{fix:1}]]],
+ ['dino','Dinosaur',()=>[[SR(0,0,300,300),'celeste'],[SP([[180,230],[230,120],[250,120],[300,230]]),'café'],[SP([[230,120],[250,120],[244,104],[236,104]]),'rojo'],[SE(246,86,16,12),'gris'],
+   [SR(0,226,300,74),'verde'],
+   ['M108,170 C80,170 60,184 20,200 C60,206 90,204 118,196 Z','verde oscuro',{l:[70,192]}],
+   ['M150,140 C170,120 182,80 190,48 C196,30 222,30 226,46 C230,58 214,62 204,60 C200,90 196,130 190,170 Z','verde oscuro',{l:[194,110]}],
+   [SE(150,175,62,40),'verde oscuro'],[SR(104,190,24,46,10),'verde oscuro'],[SR(168,192,24,44,10),'verde oscuro'],
+   [SC(140,160,9),'amarillo'],[SC(165,178,7),'amarillo'],[SC(122,182,6),'amarillo'],[SC(186,160,6),'amarillo'],
+   [SC(214,44,3),'negro',{fix:1}],[SE(60,240,18,7),'verde'],[SE(250,246,22,7),'verde']]]];
+function shData(id){const s=SHAPES.find(x=>x[0]==id),R=s[2]().map(([d,c,o],i)=>({d,c,o:o||{},i}));const keys=[];R.forEach(r=>{if(!r.o.fix&&!keys.includes(r.c))keys.push(r.c)});R.forEach(r=>r.n=r.o.fix?0:keys.indexOf(r.c)+1);return{id,name:s[1],R,keys}}
+function shS(){return S.cbs=Object.assign({done:{},prog:{},free:{}},S.cbs||{})}
+function shSVG(d,fills,opts={}){return`<svg viewBox="0 0 300 300" class="${opts.cls||''}" ${opts.id?`id="${opts.id}"`:''}>${d.R.map(r=>`<path d="${r.d}" data-i="${r.i}" fill="${r.o.fix?CB_COL[r.c][0]:fills[r.i]||(opts.faded?shade(CB_COL[r.c][0],.72):'#fff')}" stroke="#27272a" stroke-width="${opts.thin?1.6:2.4}" stroke-linejoin="round"/>`).join('')}${opts.labels||''}</svg>`}
+function shMenuItems(){const cs=shS();return SHAPES.map(([id,n])=>{const d=shData(id),done=cs.done[id],pr=cs.prog[id]||[],fl={};
+  if(done)d.R.forEach(r=>fl[r.i]=CB_COL[r.c][0]);else pr.forEach(i=>fl[i]=CB_COL[d.R[i].c][0]);const free=cs.free[id];
+  const tot=d.R.filter(r=>!r.o.fix).length;return`<button class="btn cbitem" data-sh="${id}">${shSVG(d,free&&!done&&!pr.length?free:fl,{thin:1,faded:!done&&!pr.length&&!free,cls:'shthumb'})}<b>${n}</b><span class="small">${done?'✅ Done':pr.length?Math.round(pr.length/tot*100)+'%':free?'🖌️ Colored':'New'}</span></button>`}).join('')}
+
+function shapePage(id,mode){const d=shData(id),cs=shS(),free=mode=='free',fills={};let sel=free?'rojo':1;
+  const filled=new Set(free?[]:(cs.prog[id]||[]));if(free){Object.assign(fills,cs.free[id]||{})}else filled.forEach(i=>fills[i]=CB_COL[d.R[i].c][0]);
+  const regs=d.R.filter(r=>!r.o.fix);
+  const facts=d.keys.map((k,i)=>{const n=i+1;if(mode!='math')return null;if(Math.random()<.35){const big=n+R(1,5);return`${big} − ${big-n}`}const a=R(0,n);return`${a} + ${n-a}`});
+  const pal=free?FP_COLS.concat(['gris oscuro','café oscuro','azul oscuro','beige','turquesa']).map(k=>`<button class="btn chip" data-k="${k}" style="--cc:${CB_COL[k][0]}"><span class="sw"></span></button>`).join('')
+    :d.keys.map((k,i)=>`<button class="btn chip" data-n="${i+1}" style="--cc:${CB_COL[k][0]}"><span class="sw"></span><b>${mode=='math'?facts[i]:i+1}</b>${mode=='es'?`<small>${k}</small>`:''}</button>`).join('');
+  view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title" style="font-size:20px">${free?'🖌️':'🎨'} ${d.name}</div><div class="sp"></div>${free?'<button class="btn sm" id="shclr">🗑️</button>':'<div class="stars" id="cbp">0%</div>'}<div class="stars" id="gtm">🎟️ ${fmtT(ptLeft())}</div></div>
+   <div class="cbwrap"><div class="cbcv shwrap" id="shw"></div><div class="cbpal ${free?'fp':''}">${pal}</div></div>`);
+  const w=$('#shw');
+  function render(){const sz=cbLayout(free?18:d.keys.length)*CBN;w.style.width=w.style.height=sz+'px';
+    const labels=free?'':regs.filter(r=>!filled.has(r.i)).map(r=>`<text data-l="${r.i}" class="shl ${r.n==sel?'on':''}" text-anchor="middle" dominant-baseline="central">${r.n}</text>`).join('');
+    w.innerHTML=shSVG(d,Object.assign({},fills,free?{}:Object.fromEntries(regs.filter(r=>!filled.has(r.i)&&r.n==sel).map(r=>[r.i,'#fef9c3']))),{id:'shsvg',labels});
+    if(!free){const svg=$('#shsvg'),sr=svg.getBoundingClientRect(),k=sr.width/300;$$('#shsvg text').forEach(t=>{const r=d.R[+t.dataset.l],p=w.querySelector(`path[data-i="${r.i}"]`),b=p.getBBox(),cx=b.x+b.width/2,cy=b.y+b.height/2;let pt=r.o.l;
+      if(!pt){let bd=1e9;for(let i=1;i<10;i++)for(let j=1;j<10;j++){const x=b.x+b.width*i/10,y=b.y+b.height*j/10;if(document.elementFromPoint(sr.left+x*k,sr.top+y*k)===p){const dd=(x-cx)**2+(y-cy)**2;if(dd<bd){bd=dd;pt=[x,y]}}}pt=pt||[cx,cy]}
+      t.setAttribute('x',pt[0]);t.setAttribute('y',pt[1]);t.setAttribute('font-size',Math.max(7,Math.min(16,Math.min(b.width,b.height)*.55)))})}
+    const p=$('#cbp');if(p)p.textContent=Math.round(filled.size/regs.length*100)+'%'}
+  const pick=v=>{sel=v;$$('.chip').forEach(c=>c.classList.toggle('on',(c.dataset.n?+c.dataset.n:c.dataset.k)==v));if(mode=='es')say(d.keys[v-1],null,'es');else if(free)say(v,null,'es');else SFX.pop(v);render()};
+  $$('.chip').forEach(c=>c.onclick=()=>pick(c.dataset.n?+c.dataset.n:c.dataset.k));
+  w.addEventListener('pointerdown',e=>{const t=e.target.closest('path');if(!t)return;const r=d.R[+t.dataset.i];if(r.o.fix)return;e.preventDefault();
+    if(free){fills[r.i]=CB_COL[sel][0];SFX.pop(R(0,5));cs.free[id]=fills;save();t.setAttribute('fill',fills[r.i]);t.classList.remove('popfill');void t.getBBox();t.classList.add('popfill');return}
+    if(filled.has(r.i))return;
+    if(r.n!=sel){SFX.wrong();t.setAttribute('fill','#fecaca');setTimeout(()=>render(),350);if(mode=='es')say(d.keys[r.n-1],null,'es');return}
+    filled.add(r.i);fills[r.i]=CB_COL[r.c][0];SFX.pop(filled.size%6);cs.prog[id]=[...filled];save();render();
+    if(regs.every(x=>filled.has(x.i)))finish()});
+  if(free)$('#shclr').onclick=()=>{for(const k in fills)delete fills[k];cs.free[id]={};save();SFX.whoosh();render()};
+  $('#back').onclick=()=>{gtStop();colorMenu('shape')};
+  function finish(){cs.done[id]=1;delete cs.prog[id];S.coins+=5;save();gtStop();SFX.fanfare();confetti(50);
+    setTimeout(()=>{const o=document.createElement('div');o.className='ovl';const all={};d.R.forEach(r=>all[r.i]=CB_COL[r.c][0]);
+      o.innerHTML=`<div style="width:min(260px,60vw);animation:spin .8s cubic-bezier(.5,1.6,.5,1);background:#fff;border-radius:18px;padding:8px">${shSVG(d,all)}</div><h1>You colored the ${d.name}!</h1><h2>+5 🪙</h2><div class="rowh"><button class="btn big" id="cbm">🎨 More pictures</button></div>`;
+      document.body.appendChild(o);if(S.voice)say(`Beautiful! You colored the ${d.name}!`);o.querySelector('#cbm').onclick=()=>{o.remove();colorMenu('shape')}},600)}
+  pick(sel);let rs;addEventListener('resize',()=>{clearTimeout(rs);rs=setTimeout(()=>{if($('#shw'))render()},120)});
+  gtStart('#gtm',()=>timeUpOverlay());
+  if(S.voice)setTimeout(()=>say(free?'Pick a color and tap to paint!':mode=='math'?'Solve the fact to find each color!':mode=='es'?'Tap a color to hear it in Spanish!':'Match the numbers to the colors!'),300)}
 
 function cbLayout(n){const land=innerWidth>innerHeight,avW=land?innerWidth-260:innerWidth-24,avH=land?innerHeight-80:innerHeight-80-(n>6?190:120);return Math.max(14,Math.floor(Math.min(avW,avH)/CBN))}
 function colorPic(id,mode){const d=cbData(id),cs=cbS(),fill=(cs.prog[id]||'0'.repeat(CBN*CBN)).split('');let sel=1,count=fill.filter(c=>c=='1').length;
@@ -1496,10 +1602,10 @@ function colorPic(id,mode){const d=cbData(id),cs=cbS(),fill=(cs.prog[id]||'0'.re
   cv.addEventListener('pointermove',e=>{if(!down)return;const i=cellAt(e);if(i!=last){if(!dragged)paint(last,false);dragged=true;last=i;paint(i,false)}});
   cv.addEventListener('pointerup',e=>{if(down&&!dragged)paint(cellAt(e),true);down=false});
   const leave=()=>{cs.prog[id]=fill.join('');save()};
-  $('#back').onclick=()=>{leave();gtStop();colorMenu()};
+  $('#back').onclick=()=>{leave();gtStop();colorMenu('pixel')};
   function finishPic(){leave();cs.done[id]=1;delete cs.prog[id];S.coins+=5;save();gtStop();draw();SFX.fanfare();confetti(50);
     setTimeout(()=>{const o=document.createElement('div');o.className='ovl';o.innerHTML=`<img src="${cbThumb(d.G,true,200)}" style="width:200px;height:200px;border-radius:16px;box-shadow:0 8px 30px #0006;image-rendering:pixelated;animation:spin .8s cubic-bezier(.5,1.6,.5,1)"><h1>You finished ${d.name}!</h1><h2>+5 🪙</h2><div class="rowh"><button class="btn big" id="cbm">🎨 More pictures</button></div>`;
-      document.body.appendChild(o);if(S.voice)say(`Beautiful! You finished ${d.name}!`);o.querySelector('#cbm').onclick=()=>{o.remove();colorMenu()}},700)}
+      document.body.appendChild(o);if(S.voice)say(`Beautiful! You finished ${d.name}!`);o.querySelector('#cbm').onclick=()=>{o.remove();colorMenu('pixel')}},700)}
   pick(1);size();let rs;const onR=()=>{clearTimeout(rs);rs=setTimeout(()=>{if($('#cbc'))size()},120)};addEventListener('resize',onR);
   gtStart('#gtm',()=>{leave();timeUpOverlay()});
   if(S.voice)setTimeout(()=>say(mode=='math'?'Solve the fact to find each color!':mode=='es'?'Tap a color to hear it in Spanish!':'Match the numbers to the colors!'),300)}
@@ -1523,7 +1629,7 @@ function freePaint(ai){const cs=cbS();const G=ai>=0?cs.art[ai].split(',').map(k=
   const doSave=()=>{const str=G.join(',');if(idx>=0)cs.art[idx]=str;else{cs.art.unshift(str);cs.art=cs.art.slice(0,12);idx=0}saved=true;save()};
   $('#fsave').onclick=()=>{doSave();SFX.fanfare();confetti(20);fb('💾 Saved to My Drawings!')};
   $('#fclear').onclick=()=>{G.fill('blanco');SFX.whoosh();saved=false;draw()};
-  $('#back').onclick=()=>{if(!saved&&G.some(k=>k!='blanco'))doSave();gtStop();colorMenu()};
+  $('#back').onclick=()=>{if(!saved&&G.some(k=>k!='blanco'))doSave();gtStop();colorMenu('paint')};
   pick('rojo');size();addEventListener('resize',()=>{if($('#cbc')&&$('.fp'))size()});
   gtStart('#gtm',()=>{if(G.some(k=>k!='blanco'))doSave();timeUpOverlay()})}
 
