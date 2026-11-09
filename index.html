@@ -256,6 +256,15 @@ label.tg{display:block;font-size:20px;margin:8px 0}
 .hcmsg{position:absolute;left:50%;top:22%;transform:translateX(-50%);background:#fffe;border-radius:18px;padding:10px 18px;font-size:clamp(18px,4vw,26px);font-weight:700;opacity:0;transition:opacity .3s;pointer-events:none;text-align:center;max-width:90vw}.hcmsg.on{opacity:1}
 .hcpop{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%) scale(.4);font-size:clamp(26px,6vw,44px);font-weight:700;color:#fde047;text-shadow:0 3px 0 #b45309,0 0 12px #0008;opacity:0;pointer-events:none;white-space:nowrap}
 .hcpop.on{animation:hcpop 1.4s ease-out}@keyframes hcpop{15%{opacity:1;transform:translate(-50%,-50%) scale(1.15) rotate(-4deg)}70%{opacity:1;transform:translate(-50%,-60%) scale(1)}100%{opacity:0;transform:translate(-50%,-80%) scale(.9)}}
+.bbwrap{flex:1;display:flex;flex-direction:column;min-height:0;gap:6px;padding:0 6px 6px}
+.bbcv{flex:1;position:relative;min-height:200px;border-radius:18px;overflow:hidden;box-shadow:0 3px 10px #0002}
+#bbc{display:block;touch-action:none;width:100%;height:100%}
+.bbtools{position:absolute;top:6px;left:6px;right:6px;display:flex;gap:5px;flex-wrap:wrap}
+.bbtools .btn{background:#ffffffe6;padding:6px 10px;font-size:16px;min-height:40px}.bbtools .btn.on{background:#fde047;box-shadow:0 0 0 3px #ca8a04 inset}
+.bbpal{display:flex;gap:6px;overflow-x:auto;padding:4px 2px;flex:none;-webkit-overflow-scrolling:touch}
+.bbk{flex:none;width:58px;height:58px;padding:4px;background:#fff;border-radius:14px;position:relative}.bbk canvas{width:44px;height:44px;display:block;margin:auto}
+.bbk.on{box-shadow:0 0 0 4px #f59e0b;transform:translateY(-3px)}.bbk.lock canvas{filter:grayscale(1) brightness(.7)}.bbk i{position:absolute;bottom:1px;left:0;right:0;font-size:10px;font-style:normal;font-weight:700;background:#000a;color:#fff;border-radius:6px}
+@media (orientation:landscape) and (max-height:560px){.bbwrap{flex-direction:row}.bbpal{flex-direction:column;overflow-y:auto;overflow-x:hidden;width:70px}}
 .tipcard{background:#fff;border-radius:16px;padding:10px 14px;margin:10px 0;font-size:15px;box-shadow:0 2px 6px #0001;line-height:1.4}
 .cbgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:10px}
 .cbitem{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;font-size:16px}.cbitem img{width:96px;height:96px;border-radius:10px;image-rendering:pixelated;box-shadow:0 2px 6px #0002}
@@ -1083,10 +1092,123 @@ function gameRoom(){const left=ptLeft(),gs=garageS();
   <div class="games">
    <button class="btn game" id="g4x4" style="background:linear-gradient(135deg,#fed7aa,#fdba74)"><span class="ge">🚙</span><span class="gi"><span class="gt">4x4 Hill Climb</span><span class="small">Best: ${Math.max(gs.best.meadow,gs.best.moon)} m · 🔩 ${gs.bolts} bolts</span></span><span class="go">▶</span></button>
    <button class="btn game" id="gcbn" style="background:linear-gradient(135deg,#fbcfe8,#f9a8d4)"><span class="ge">🎨</span><span class="gi"><span class="gt">Coloring</span><span class="small">Animals, pixel art & free paint</span></span><span class="go">▶</span></button>
-   <div class="btn game soon"><span class="ge">🧱</span><span class="gi"><span class="gt">Block Builder</span><span class="small">Coming soon!</span></span><span class="go">🔒</span></div></div>
+   <button class="btn game" id="gbb" style="background:linear-gradient(135deg,#bbf7d0,#86efac)"><span class="ge">🧱</span><span class="gi"><span class="gt">Block Builder</span><span class="small">Build your own 3D world</span></span><span class="go">▶</span></button></div>
   ${left>0?'':'<button class="btn big" id="learn" style="display:block;margin:18px auto">📚 Go earn game time</button>'}</div>`);
   $('#back').onclick=()=>home();if($('#learn'))$('#learn').onclick=()=>home();
-  $('#g4x4').onclick=()=>{SFX.whoosh();garage()};$('#gcbn').onclick=()=>{SFX.whoosh();colorMenu()}}
+  $('#g4x4').onclick=()=>{SFX.whoosh();garage()};$('#gcbn').onclick=()=>{SFX.whoosh();colorMenu()};$('#gbb').onclick=()=>{SFX.whoosh();bbMenu()}}
+
+/* ---------- block builder (isometric) ---------- */
+const BW=12,BD=12,BH=10;
+const BLOCKS=[null,
+ {k:'grass',n:'Grass'},{k:'dirt',n:'Dirt'},{k:'stone',n:'Stone'},{k:'planks',n:'Planks'},{k:'log',n:'Log'},{k:'leaves',n:'Leaves',see:1},{k:'glass',n:'Glass',see:1},
+ {k:'brick',n:'Brick'},{k:'sand',n:'Sand'},{k:'water',n:'Water',see:1},{k:'snow',n:'Snow'},{k:'wool',n:'Pink Wool'},{k:'blue',n:'Blue Wool'},
+ {k:'gold',n:'Gold',need:100},{k:'diamond',n:'Diamond',need:200},{k:'rainbow',n:'Rainbow',need:300},
+ {k:'flower',n:'Flower',deco:'🌷'},{k:'mush',n:'Mushroom',deco:'🍄'},{k:'pet',n:'My Pet',deco:'pet'}];
+const BBTEX={};
+function bbTex(k){if(BBTEX[k])return BBTEX[k];const mk=f=>{const c=document.createElement('canvas');c.width=c.height=16;const x=c.getContext('2d'),r=rng(k.length*131+(f.length||1));f(x,r);return c};
+  const noise=(x,r,cols,a=1)=>{for(let i=0;i<16;i++)for(let j=0;j<16;j++){x.globalAlpha=a;x.fillStyle=cols[Math.floor(r()*cols.length)];x.fillRect(i,j,1,1)}x.globalAlpha=1};
+  const dirt=(x,r)=>noise(x,r,['#8b5a2b','#7a4a22','#9c6b3a','#6b3f1d']);
+  let top,side;
+  switch(k){
+   case'grass':top=mk((x,r)=>noise(x,r,['#4ade80','#22c55e','#16a34a','#3fbf5f']));side=mk((x,r)=>{dirt(x,r);for(let i=0;i<16;i++){const h=3+Math.floor(r()*3);for(let j=0;j<h;j++){x.fillStyle=r()<.5?'#22c55e':'#16a34a';x.fillRect(i,j,1,1)}}});break;
+   case'dirt':top=side=mk(dirt);break;
+   case'stone':top=side=mk((x,r)=>noise(x,r,['#9ca3af','#8b919a','#a8aeb6','#7c838c']));break;
+   case'planks':top=side=mk((x,r)=>{noise(x,r,['#c08a4f','#b37d45','#c99556']);x.fillStyle='#8a5a2b';for(const y of[3,7,11,15])x.fillRect(0,y,16,1);for(const[a,b]of[[5,0],[12,4],[3,8],[10,12]])x.fillRect(a,b,1,3)});break;
+   case'log':side=mk((x,r)=>{noise(x,r,['#6b4423','#5a3a1e','#7a5030']);x.fillStyle='#4a2f17';for(let i=1;i<16;i+=3)x.fillRect(i,0,1,16)});top=mk((x,r)=>{noise(x,r,['#c08a4f','#b37d45']);x.strokeStyle='#8a5a2b';x.lineWidth=1;for(const rr of[2.5,5,7.5]){x.beginPath();x.arc(8,8,rr,0,7);x.stroke()}x.fillStyle='#6b4423';x.fillRect(0,0,16,1);x.fillRect(0,15,16,1);x.fillRect(0,0,1,16);x.fillRect(15,0,1,16)});break;
+   case'leaves':top=side=mk((x,r)=>{for(let i=0;i<16;i++)for(let j=0;j<16;j++){if(r()<.12)continue;x.fillStyle=['#15803d','#166534','#22c55e','#16a34a'][Math.floor(r()*4)];x.fillRect(i,j,1,1)}});break;
+   case'glass':top=side=mk(x=>{x.fillStyle='#e0f2fe55';x.fillRect(0,0,16,16);x.fillStyle='#f0f9ff';x.fillRect(0,0,16,1);x.fillRect(0,15,16,1);x.fillRect(0,0,1,16);x.fillRect(15,0,1,16);x.fillStyle='#ffffffaa';for(let i=0;i<4;i++)x.fillRect(3+i,9-i,1,1);x.fillRect(10,4,1,1)});break;
+   case'brick':top=side=mk((x,r)=>{x.fillStyle='#d6d3d1';x.fillRect(0,0,16,16);for(let row=0;row<4;row++)for(let c=-1;c<3;c++){x.fillStyle=['#b91c1c','#dc2626','#a3221a'][Math.floor(r()*3)];x.fillRect(c*8+(row%2)*4+1,row*4+1,7,3)}});break;
+   case'sand':top=side=mk((x,r)=>noise(x,r,['#fde68a','#fcd34d','#fbe7a1','#f5d77a']));break;
+   case'water':top=side=mk((x,r)=>{noise(x,r,['#3b82f6','#2563eb','#60a5fa'],.7);x.fillStyle='#bfdbfe99';x.fillRect(2,4,5,1);x.fillRect(9,10,5,1)});break;
+   case'snow':top=mk((x,r)=>noise(x,r,['#ffffff','#f1f5f9','#e2e8f0']));side=mk((x,r)=>{dirt(x,r);for(let i=0;i<16;i++){const h=3+Math.floor(r()*3);for(let j=0;j<h;j++){x.fillStyle=r()<.5?'#fff':'#e2e8f0';x.fillRect(i,j,1,1)}}});break;
+   case'wool':top=side=mk((x,r)=>noise(x,r,['#f9a8d4','#f472b6','#fbcfe8']));break;
+   case'blue':top=side=mk((x,r)=>noise(x,r,['#60a5fa','#3b82f6','#93c5fd']));break;
+   case'gold':top=side=mk((x,r)=>{noise(x,r,['#facc15','#eab308','#fde047']);x.fillStyle='#fef9c3';x.fillRect(2,2,4,1);x.fillRect(2,2,1,4);x.fillStyle='#a16207';x.fillRect(0,15,16,1);x.fillRect(15,0,1,16)});break;
+   case'diamond':top=side=mk((x,r)=>{noise(x,r,['#a5f3fc','#67e8f9','#22d3ee']);x.fillStyle='#fff';for(const[a,b]of[[3,3],[11,5],[6,11],[12,12]]){x.fillRect(a,b,2,2)}x.fillStyle='#0e7490';x.fillRect(0,15,16,1);x.fillRect(15,0,1,16)});break;
+   case'rainbow':top=side=mk(x=>{['#ef4444','#f97316','#facc15','#22c55e','#3b82f6','#a855f7','#ec4899','#ef4444'].forEach((c,i)=>{x.fillStyle=c;x.fillRect(0,i*2,16,2)})});break;
+   default:top=side=mk((x,r)=>noise(x,r,['#ccc']))}
+  return BBTEX[k]={top,side}}
+function bbS(){const b=S.bb=Object.assign({worlds:[],cur:0},S.bb||{});if(!b.worlds.length)b.worlds.push({name:'My Island',d:bbEncode(bbTemplate())});return b}
+function bbTemplate(){const w=new Uint8Array(BW*BD*BH);for(let x=0;x<BW;x++)for(let y=0;y<BD;y++)w[bbI(x,y,0)]=1;
+  for(let z=1;z<=3;z++)w[bbI(2,2,z)]=5;for(let x=1;x<=3;x++)for(let y=1;y<=3;y++)for(let z=4;z<=5;z++)if(!(x==2&&y==2&&z==4))w[bbI(x,y,z)]=6;w[bbI(2,2,6)]=6;
+  for(let x=8;x<=10;x++)for(let y=8;y<=10;y++)w[bbI(x,y,0)]=10;w[bbI(6,4,1)]=17;w[bbI(4,8,1)]=17;w[bbI(9,3,1)]=18;return w}
+const bbI=(x,y,z)=>(z*BD+y)*BW+x;
+const bbEncode=w=>btoa(String.fromCharCode(...w));
+const bbDecode=s=>{try{const b=atob(s),w=new Uint8Array(BW*BD*BH);for(let i=0;i<Math.min(b.length,w.length);i++)w[i]=b.charCodeAt(i);return w}catch(e){return bbTemplate()}};
+
+let BB=null;
+function blockBuilder(){const bs=bbS(),wd=bs.worlds[bs.cur];
+  BB={w:bbDecode(wd.d),rot:0,sel:4,tool:'build',undo:[],night:false,zoom:1,px:0,py:0,fx:[]};
+  const pal=BLOCKS.map((b,i)=>{if(!b)return'';const lock=b.need&&S.stars<b.need;return`<button class="btn bbk ${lock?'lock':''}" data-b="${i}" title="${b.n}"><canvas width="44" height="44" data-bc="${i}"></canvas>${lock?`<i>⭐${b.need}</i>`:''}</button>`}).join('');
+  view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title" style="font-size:20px">🧱 ${esc(wd.name)}</div><div class="sp"></div><div class="stars" id="gtm">🎟️ ${fmtT(ptLeft())}</div></div>
+   <div class="bbwrap"><div class="bbcv"><canvas id="bbc"></canvas>
+     <div class="bbtools"><button class="btn sm on" data-tool="build">🔨 Build</button><button class="btn sm" data-tool="break">⛏️ Break</button><button class="btn sm" id="bbundo">↩️</button><button class="btn sm" id="bbrl">⟲</button><button class="btn sm" id="bbrr">⟳</button><button class="btn sm" id="bbzoom">🔍</button><button class="btn sm" id="bbnight">🌙</button></div></div>
+   <div class="bbpal">${pal}</div></div>`);
+  $$('[data-bc]').forEach(c=>bbIcon(c.getContext('2d'),+c.dataset.bc,44));
+  const cv=$('#bbc'),x=cv.getContext('2d'),dpr=Math.min(2,devicePixelRatio||1);
+  const size=()=>{const r=cv.parentNode.getBoundingClientRect();cv.width=r.width*dpr;cv.height=r.height*dpr;cv.style.width=r.width+'px';cv.style.height=r.height+'px';draw()};
+  let faces=[];
+  function proj(px,py,pz){return[BB.ox+(px-py)*BB.a,BB.oy+(px+py)*BB.a/2-pz*BB.a]}
+  function rotXY(xx,yy){const r=BB.rot;return r==0?[xx,yy]:r==1?[BD-1-yy,xx]:r==2?[BW-1-xx,BD-1-yy]:[yy,BW-1-xx]}
+  function unrot(rx,ry){const r=BB.rot;return r==0?[rx,ry]:r==1?[ry,BD-1-rx]:r==2?[BW-1-rx,BD-1-ry]:[BW-1-ry,rx]}
+  const get=(xx,yy,z)=>xx<0||yy<0||z<0||xx>=BW||yy>=BD||z>=BH?0:BB.w[bbI(xx,yy,z)];
+  const getR=(rx,ry,z)=>{if(rx<0||ry<0||rx>=BW||ry>=BD)return 0;const[a,b]=unrot(rx,ry);return get(a,b,z)};
+  const opaque=v=>v&&!BLOCKS[v].see&&!BLOCKS[v].deco;
+  function face(tex,O,U,V,shadeA){x.save();x.beginPath();x.moveTo(...O);x.lineTo(O[0]+U[0],O[1]+U[1]);x.lineTo(O[0]+U[0]+V[0],O[1]+U[1]+V[1]);x.lineTo(O[0]+V[0],O[1]+V[1]);x.closePath();x.clip();
+    x.setTransform(U[0]/16,U[1]/16,V[0]/16,V[1]/16,O[0],O[1]);x.imageSmoothingEnabled=false;x.drawImage(tex,0,0);x.setTransform(1,0,0,1,0,0);
+    if(shadeA){x.fillStyle=`rgba(0,0,0,${shadeA})`;x.fill()}x.restore()}
+  function draw(){const W=cv.width,H=cv.height;const a0=Math.min(W/(BW+BD+1),H/((BW+BD)/2+BH+1.5))*.98;BB.a=a0*BB.zoom;BB.ox=W/2+BB.px*dpr;BB.oy=H-((BW+BD)/2)*a0-a0*.6+((BW+BD)/2*BB.a-(BW+BD)/2*a0)*.55+BB.py*dpr;
+    const g=x.createLinearGradient(0,0,0,H);g.addColorStop(0,BB.night?'#0f172a':'#7dd3fc');g.addColorStop(1,BB.night?'#312e81':'#e0f2fe');x.fillStyle=g;x.fillRect(0,0,W,H);
+    if(BB.night){x.fillStyle='#fff';for(let i=0;i<50;i++)x.fillRect((i*97)%W,(i*53)%(H*.5),2,2);x.font=`${BB.a*1.6}px sans-serif`;x.fillText('🌙',W*.08,H*.12)}
+    else{x.fillStyle='#fde047';x.beginPath();x.arc(W*.88,H*.12,BB.a*1.2,0,7);x.fill()}
+    // shadow under island
+    const c0=proj(0,0,0),c1=proj(BW,0,0),c2=proj(BW,BD,0),c3=proj(0,BD,0);x.fillStyle='#0000001f';x.beginPath();x.moveTo(c0[0],c0[1]+BB.a*.5);x.lineTo(c1[0],c1[1]+BB.a*.5);x.lineTo(c2[0],c2[1]+BB.a*.5);x.lineTo(c3[0],c3[1]+BB.a*.5);x.fill();
+    x.strokeStyle='#ffffff55';x.lineWidth=1;for(let i=0;i<=BW;i++){const p=proj(i,0,0),q=proj(i,BD,0);x.beginPath();x.moveTo(...p);x.lineTo(...q);x.stroke()}for(let j=0;j<=BD;j++){const p=proj(0,j,0),q=proj(BW,j,0);x.beginPath();x.moveTo(...p);x.lineTo(...q);x.stroke()}
+    faces=[];
+    for(let s=0;s<=BW+BD-2;s++)for(let rx=0;rx<BW;rx++){const ry=s-rx;if(ry<0||ry>=BD)continue;for(let z=0;z<BH;z++){const v=getR(rx,ry,z);if(!v)continue;const B=BLOCKS[v];
+      const T=proj(rx,ry,z+1),R1=proj(rx+1,ry,z+1),C=proj(rx+1,ry+1,z+1),L1=proj(rx,ry+1,z+1),Cb=proj(rx+1,ry+1,z),Lb=proj(rx,ry+1,z),Rb=proj(rx+1,ry,z);
+      if(B.deco){const p=proj(rx+.5,ry+.5,z);x.globalAlpha=1;x.fillStyle='#000';x.font=`${BB.a*1.15}px sans-serif`;x.textAlign='center';x.textBaseline='bottom';x.fillText(B.deco=='pet'?petE():B.deco,p[0],p[1]+BB.a*.15);
+        faces.push({rx,ry,z,f:'top',poly:[[p[0]-BB.a*.5,p[1]-BB.a],[p[0]+BB.a*.5,p[1]-BB.a],[p[0]+BB.a*.5,p[1]],[p[0]-BB.a*.5,p[1]]]});continue}
+      const tex=bbTex(B.k),see=B.see;
+      if(!opaque(getR(rx,ry,z+1))||see){face(tex.top,T,[R1[0]-T[0],R1[1]-T[1]],[L1[0]-T[0],L1[1]-T[1]],BB.night?.35:0);faces.push({rx,ry,z,f:'top',poly:[T,R1,C,L1]})}
+      if(!opaque(getR(rx,ry+1,z))||see){face(tex.side,L1,[C[0]-L1[0],C[1]-L1[1]],[Lb[0]-L1[0],Lb[1]-L1[1]],BB.night?.5:.18);faces.push({rx,ry,z,f:'left',poly:[L1,C,Cb,Lb]})}
+      if(!opaque(getR(rx+1,ry,z))||see){face(tex.side,C,[R1[0]-C[0],R1[1]-C[1]],[Cb[0]-C[0],Cb[1]-C[1]],BB.night?.6:.34);faces.push({rx,ry,z,f:'right',poly:[C,R1,Rb,Cb]})}}}}
+  function puff(cp,B){if(!B||B.deco)return;const t=bbTex(B.k).top,img=x.getImageData?null:null,ps=[...Array(10)].map(()=>({x:cp[0],y:cp[1],vx:(Math.random()-.5)*BB.a*.25,vy:-Math.random()*BB.a*.25,s:BB.a*(.15+Math.random()*.15),sx:Math.floor(Math.random()*12),sy:Math.floor(Math.random()*12)}));let f=0;const st=()=>{if(!$('#bbc'))return;draw();ps.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=BB.a*.03;x.imageSmoothingEnabled=false;x.drawImage(t,p.sx,p.sy,4,4,p.x,p.y,p.s,p.s)});if(++f<22)requestAnimationFrame(st);else draw()};st()}
+  function hit(px,py){for(let i=faces.length-1;i>=0;i--)if(inPoly(px,py,faces[i].poly))return faces[i];
+    for(let rx=0;rx<BW;rx++)for(let ry=0;ry<BD;ry++){const P=[proj(rx,ry,0),proj(rx+1,ry,0),proj(rx+1,ry+1,0),proj(rx,ry+1,0)];if(inPoly(px,py,P))return{rx,ry,z:-1,f:'top',ground:1}}return null}
+  function act(h){if(!h)return;const save1=()=>{BB.undo.push(BB.w.slice());if(BB.undo.length>30)BB.undo.shift()};
+    if(BB.tool=='break'){if(h.ground)return;const[a,b]=unrot(h.rx,h.ry);if(!get(a,b,h.z))return;save1();const kk=BLOCKS[BB.w[bbI(a,b,h.z)]],cp=proj(h.rx+.5,h.ry+.5,h.z+.5);BB.w[bbI(a,b,h.z)]=0;SFX.hit();bbSave();draw();puff(cp,kk);return}
+    let rx=h.rx,ry=h.ry,z=h.z;if(h.f=='top')z++;else if(h.f=='left')ry++;else rx++;
+    if(BLOCKS[getR(h.rx,h.ry,h.z)]&&BLOCKS[getR(h.rx,h.ry,h.z)].deco&&!h.ground){z=h.z;rx=h.rx;ry=h.ry;return}
+    if(rx<0||ry<0||rx>=BW||ry>=BD||z<0||z>=BH){SFX.wrong();fb('Too far!','warn');return}const[a,b]=unrot(rx,ry);if(get(a,b,z))return;
+    const B=BLOCKS[BB.sel];if(B.deco&&z>0&&!opaque(get(a,b,z-1))&&get(a,b,z-1)!=10){SFX.wrong();fb('Put it on top of a block!','warn');return}
+    if(BB.sel==19)for(let i=0;i<BB.w.length;i++)if(BB.w[i]==19)BB.w[i]=0;
+    save1();BB.w[bbI(a,b,z)]=BB.sel;tone(300+z*60,.08,0,'square',.08);tone(600+z*60,.06,.04,'sine',.1);bbSave();draw()}
+  let pd=null;cv.addEventListener('pointerdown',e=>{e.preventDefault();cv.setPointerCapture(e.pointerId);pd={x:e.clientX,y:e.clientY,px:BB.px,py:BB.py,mv:0}});cv.addEventListener('pointermove',e=>{if(!pd)return;const dx=e.clientX-pd.x,dy=e.clientY-pd.y;if(Math.hypot(dx,dy)>12)pd.mv=1;if(pd.mv&&BB.zoom>1){BB.px=pd.px+dx;BB.py=pd.py+dy;draw()}});cv.addEventListener('pointerup',e=>{if(!pd)return;const m=pd.mv;pd=null;if(m)return;const r=cv.getBoundingClientRect();act(hit((e.clientX-r.left)*dpr,(e.clientY-r.top)*dpr))});cv.addEventListener('pointercancel',()=>pd=null);
+  $$('[data-b]').forEach(b=>b.onclick=()=>{const i=+b.dataset.b,B=BLOCKS[i];if(B.need&&S.stars<B.need){SFX.wrong();anim(b,'sad');fb(`Earn ${B.need} ⭐ to unlock ${B.n}!`,'warn long',2500);return}
+    BB.sel=i;$$('[data-b]').forEach(q=>q.classList.toggle('on',q==b));setTool('build');SFX.pop(2)});
+  const setTool=t=>{BB.tool=t;$$('[data-tool]').forEach(q=>q.classList.toggle('on',q.dataset.tool==t))};
+  $$('[data-tool]').forEach(b=>b.onclick=()=>{setTool(b.dataset.tool);SFX.pop(1)});
+  $('#bbundo').onclick=()=>{if(BB.undo.length){BB.w=BB.undo.pop();bbSave();draw();SFX.del()}};
+  $('#bbrl').onclick=()=>{BB.rot=(BB.rot+3)%4;SFX.whoosh();draw()};$('#bbrr').onclick=()=>{BB.rot=(BB.rot+1)%4;SFX.whoosh();draw()};
+  $('#bbzoom').onclick=e=>{BB.zoom=BB.zoom>1?1:1.8;BB.px=BB.py=0;e.currentTarget.classList.toggle('on',BB.zoom>1);SFX.whoosh();draw();if(BB.zoom>1)fb('Drag to look around!','ok',1500)};$('#bbnight').onclick=e=>{BB.night=!BB.night;e.currentTarget.textContent=BB.night?'☀️':'🌙';draw()};
+  $('#back').onclick=()=>{bbSave();gtStop();bbMenu()};
+  $(`[data-b="${BB.sel}"]`).classList.add('on');
+  size();BB.size=size;if(!window._bbrs){window._bbrs=1;let rs;addEventListener('resize',()=>{clearTimeout(rs);rs=setTimeout(()=>{if($('#bbc')&&BB&&BB.size)BB.size()},120)})}
+  gtStart('#gtm',()=>{bbSave();timeUpOverlay()});if(S.voice)setTimeout(()=>say('Pick a block and tap to build!'),300)}
+function bbSave(){if(!BB)return;const bs=bbS();bs.worlds[bs.cur].d=bbEncode(BB.w);save()}
+function bbIcon(x,i,sz){const B=BLOCKS[i];x.clearRect(0,0,sz,sz);if(B.deco){x.font=`${sz*.7}px sans-serif`;x.textAlign='center';x.textBaseline='middle';x.fillText(B.deco=='pet'?petE():B.deco,sz/2,sz/2+2);return}
+  const t=bbTex(B.k),a=sz*.42,cx=sz/2,top=sz*.1,f=(tex,O,U,V,sh)=>{x.save();x.beginPath();x.moveTo(...O);x.lineTo(O[0]+U[0],O[1]+U[1]);x.lineTo(O[0]+U[0]+V[0],O[1]+U[1]+V[1]);x.lineTo(O[0]+V[0],O[1]+V[1]);x.closePath();x.clip();
+    x.setTransform(U[0]/16,U[1]/16,V[0]/16,V[1]/16,O[0],O[1]);x.imageSmoothingEnabled=false;x.drawImage(tex,0,0);x.setTransform(1,0,0,1,0,0);if(sh){x.fillStyle=`rgba(0,0,0,${sh})`;x.fill()}x.restore()};
+  f(t.top,[cx,top],[a,a/2],[-a,a/2],0);f(t.side,[cx-a,top+a/2],[a,a/2],[0,a],.18);f(t.side,[cx,top+a],[a,-a/2],[0,a],.34)}
+function bbMenu(){const bs=bbS();
+  view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title">🧱 Block Builder</div><div class="sp"></div><div class="stars">🎟️ ${fmtT(ptLeft())}</div></div>
+  <div class="scroll"><div class="tipcard">Build anything! Pick a block, then tap the top or side of a block to stack it. ⛏️ Break removes blocks. ⟲ ⟳ spins your world. Earn ⭐ in learning games to unlock <b>Gold</b>, <b>Diamond</b> and <b>Rainbow</b> blocks!</div>
+  <h2>My Worlds</h2><div class="games">${bs.worlds.map((w,i)=>`<button class="btn game" data-w="${i}" style="background:linear-gradient(135deg,#bbf7d0,#7dd3fc)"><span class="ge">🏝️</span><span class="gi"><span class="gt">${esc(w.name)}</span><span class="small">${bbDecode(w.d).filter(v=>v).length} blocks</span></span><span class="go">▶</span></button>`).join('')}
+   ${bs.worlds.length<3?'<button class="btn game" id="bbnew" style="background:#fff"><span class="ge">➕</span><span class="gi"><span class="gt">New World</span><span class="small">Start a fresh island</span></span></button>':''}</div></div>`);
+  $('#back').onclick=gameRoom;
+  $$('[data-w]').forEach(b=>b.onclick=()=>{if(ptLeft()<=0){SFX.wrong();fb('🎟️ '+ptWhyNot(),'warn long',3000);return}bs.cur=+b.dataset.w;save();SFX.whoosh();blockBuilder()});
+  if($('#bbnew'))$('#bbnew').onclick=()=>{const w=new Uint8Array(BW*BD*BH);for(let x=0;x<BW;x++)for(let y=0;y<BD;y++)w[bbI(x,y,0)]=1;bs.worlds.push({name:['Castle Land','Sky Island','Dream World'][bs.worlds.length-1]||'New World',d:bbEncode(w)});save();bbMenu()}}
 
 /* ---------- 4x4 hill climb ---------- */
 let HC=null;
