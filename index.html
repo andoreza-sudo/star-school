@@ -200,6 +200,7 @@ label.tg{display:block;font-size:20px;margin:8px 0}
 .hint.pop{animation:qin .35s cubic-bezier(.5,1.6,.5,1)}
 .talking{background:#dbeafe;animation:bump .6s infinite}
 .fb.long{font-size:clamp(18px,4.5vw,26px)}
+.vline{display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px dashed #f0ebe3}.vtxt{flex:1;font-size:16px}.btn.rec{background:#fee2e2}
 </style>
 </head>
 <body>
@@ -523,9 +524,26 @@ const DB={db:null,open(){return new Promise((res,rej)=>{if(this.db)return res(th
   async del(id){const d=await this.open();return new Promise(res=>{const t=d.transaction('clips','readwrite');t.objectStore('clips').delete(id);t.oncomplete=()=>res();t.onerror=()=>res()})}};
 let CLIPS=[];
 async function loadClips(){try{CLIPS.forEach(c=>URL.revokeObjectURL(c.url));CLIPS=(await DB.all()).map(c=>({...c,url:URL.createObjectURL(c.blob)}))}catch(e){CLIPS=[]}}
+const BAG={};
 function playClip(kind){const cs=CLIPS.filter(c=>c.kind==kind);if(!cs.length||!S.sound)return false;
-  try{speechSynthesis.cancel();const a=new Audio(pick(cs).url);a.play().catch(()=>{});return true}catch(e){return false}}
-const CLIPKINDS=[['cheer','Cheers','Played when they get answers right. Try: "Great job, buddy!"'],['oops','Try again','Played sometimes after a miss. Try: "That\'s okay, try again!"'],['done','Round done','Played when a round ends. Try: "I\'m so proud of you!"']];
+  let b=(BAG[kind]||[]).filter(id=>cs.some(c=>c.id==id));
+  if(!b.length){b=shuffle(cs.map(c=>c.id));if(b.length>1&&b[0]==BAG['last_'+kind])b.push(b.shift())}
+  const id=b.shift();BAG[kind]=b;BAG['last_'+kind]=id;const c=cs.find(x=>x.id==id);
+  try{speechSynthesis.cancel();const a=new Audio(c.url);a.play().catch(()=>{});return true}catch(e){return false}}
+const CLIPKINDS=[
+ ['cheer','🎉 Cheers','Played after right answers.',['Great job, {name}!','You\'re so smart!','Way to go!','Boom! You nailed it!','I\'m so proud of you!','High five!']],
+ ['oops','💪 Try again','Played sometimes after a miss.',['That\'s okay, try again!','Almost! Look again.','You can do it!','Mistakes help us learn!','Take your time, buddy.','Give it another try!']],
+ ['done','🏆 Round done','Played when a round ends.',['What a great round!','You worked so hard!','You\'re a superstar!','Wow, look at all those stars!','I love learning with you!','Let\'s do another one!']]];
+const inFrame=(()=>{try{return window.self!==window.top}catch(e){return true}})();
+function micHelp(kind){const o=document.createElement('div');o.className='ovl';o.style.padding='20px';
+  const body=kind=='frame'?`<p>Recording is turned off in this preview window. Open <b>Star School on the tablet</b> (the installed app or Chrome) and record there.</p>`
+   :kind=='none'?`<p>No microphone was found on this device.</p>`
+   :`<p>The microphone is blocked for Star School. To allow it:</p><ol style="text-align:left;max-width:520px;font-size:18px;line-height:1.5">
+     <li><b>Installed app:</b> press and hold the Star School icon → <b>App info</b> → <b>Permissions</b> → <b>Microphone</b> → <b>Allow</b>.</li>
+     <li><b>In Chrome:</b> tap the icon left of the web address → <b>Permissions</b> (or Site settings) → <b>Microphone</b> → <b>Allow</b>.</li>
+     <li>Come back here and tap ⏺ again.</li></ol>`;
+  o.innerHTML=`<div style="background:#fff;color:var(--ink);border-radius:24px;padding:20px;max-width:600px;text-align:center"><h2 style="margin:0 0 8px">🎙️ Microphone</h2>${body}<button class="btn big" id="mok">OK</button></div>`;
+  document.body.appendChild(o);o.querySelector('#mok').onclick=()=>o.remove()}
 
 function setup(){let pet=S.pet;
   view(`<div class="center setup"><h1>⭐ Star School</h1>
@@ -786,10 +804,13 @@ function grown(){let armed=false;
    <div class="row"><b style="width:110px">Buddy</b><input class="name" id="bd" value="${esc(S.buddy)}" placeholder="Sibling or friend, used in story problems"></div>
    <div class="small">🗺️ ${np}/${NODES.length} stops passed · ⭐ ${S.stars} stars · 🪙 ${S.coins} coins · 📒 ${STK.filter(s=>S.stickers[s]).length}/${STK.length} stickers · 🔥 best streak ${S.best||0}</div>
    <label class="tg"><input type="checkbox" id="ula" ${S.unlockAll?'checked':''}> Unlock every stop on the map (let them jump ahead)</label></div>
-  <div class="card"><h2 style="margin:0 0 6px">🎙️ Your voice</h2><div class="small" style="margin-bottom:8px">Record short clips (up to 4 seconds). The app plays them at random. ${canRec?'':'<b>Recording isn\'t available in this browser. Open the installed app.</b>'}</div>
-   ${CLIPKINDS.map(([k,l,tip])=>{const cs=CLIPS.filter(c=>c.kind==k);return`<div class="vrow"><b>${l}</b> <span class="small">${tip}</span><div class="rowh" style="justify-content:flex-start;margin-top:6px">
-     ${cs.map((c,i)=>`<button class="btn xs" data-play="${c.id}">▶ ${i+1}</button><button class="btn xs danger" data-del="${c.id}">🗑</button>`).join('')}
-     ${cs.length<5&&canRec?`<button class="btn sm" data-rec="${k}">⏺ Record</button>`:''}</div></div>`}).join('')}</div>
+  <div class="card"><h2 style="margin:0 0 6px">🎙️ Your voice</h2><div class="small" style="margin-bottom:8px">Tap ⏺ and say the line (up to 4 seconds). Record as many as you like. The app shuffles them so the same one doesn't play twice in a row. ${inFrame?'<b>Recording only works on the tablet app, not in this preview.</b>':!canRec?'<b>Recording isn\'t available in this browser. Use Chrome or the installed app.</b>':''}</div>
+   ${CLIPKINDS.map(([k,l,tip,lines])=>{const cs=CLIPS.filter(c=>c.kind==k),extra=cs.filter(c=>c.line==null||c.line>=lines.length);
+     const row=(txt,c,line)=>`<div class="vline"><span class="vtxt">${c?'✅':'⚪'} ${txt}</span>${c?`<button class="btn xs" data-play="${c.id}">▶</button><button class="btn xs danger" data-del="${c.id}">🗑</button>`:`<button class="btn xs rec" data-rec="${k}|${line}">⏺ Record</button>`}</div>`;
+     return`<div class="vrow"><b>${l}</b> <span class="small">${tip} (${cs.length} recorded)</span>
+       ${lines.map((t,i)=>row('“'+esc(t.replace('{name}',S.name))+'”',cs.find(c=>c.line==i),i)).join('')}
+       ${extra.map((c,i)=>row('Your own #'+(i+1),c,null)).join('')}
+       <div class="vline"><span class="vtxt small">➕ Say anything you like</span><button class="btn xs rec" data-rec="${k}|x">⏺ Record</button></div></div>`}).join('')}</div>
   <div class="card"><div class="tw"><table><tr><th>Skill</th><th>Rounds</th><th>1st try</th><th>Tricky ones</th></tr>${rows}</table></div></div>
   <div class="card"><label class="tg"><input type="checkbox" id="voice" ${S.voice?'checked':''}> Read questions out loud</label>
    <label class="tg"><input type="checkbox" id="snd" ${S.sound?'checked':''}> Sound effects</label>
@@ -807,12 +828,14 @@ function grown(){let armed=false;
   $('#test').onclick=e=>say(`Hello ${S.name}! I can read to you.`,e.currentTarget);
   $$('[data-play]').forEach(b=>b.onclick=()=>{const c=CLIPS.find(x=>x.id==b.dataset.play);if(c)new Audio(c.url).play().catch(()=>{})});
   $$('[data-del]').forEach(b=>b.onclick=async()=>{await DB.del(b.dataset.del);await loadClips();grown()});
-  $$('[data-rec]').forEach(b=>b.onclick=()=>record(b.dataset.rec,b));
+  $$('[data-rec]').forEach(b=>b.onclick=()=>{const[k,l]=b.dataset.rec.split('|');record(k,l=='x'?null:+l,b)});
   $('#reset').onclick=async e=>{if(!armed){armed=true;e.target.textContent='Tap again to erase ALL progress';return}try{localStorage.removeItem(KEY);const d=await DB.open();d.close();indexedDB.deleteDatabase('starschool')}catch(x){}location.reload()}}
-async function record(kind,btn){let st;try{st=await navigator.mediaDevices.getUserMedia({audio:true})}catch(e){fb('Microphone blocked','warn');return}
+async function record(kind,line,btn){if(inFrame)return micHelp('frame');if(!navigator.mediaDevices||!window.MediaRecorder)return micHelp('frame');
+  try{const pm=await navigator.permissions.query({name:'microphone'});if(pm.state=='denied')return micHelp('denied')}catch(e){}
+  let st;try{st=await navigator.mediaDevices.getUserMedia({audio:true})}catch(e){return micHelp(e&&e.name=='NotFoundError'?'none':'denied')}
   music(false);const mr=new MediaRecorder(st),ch=[];mr.ondataavailable=e=>{if(e.data.size)ch.push(e.data)};
   mr.onstop=async()=>{st.getTracks().forEach(t=>t.stop());const blob=new Blob(ch,{type:mr.mimeType||'audio/webm'});
-    try{await DB.put({id:String(Date.now()),kind,blob});await loadClips();const c=CLIPS.find(x=>x.blob===blob)||CLIPS[CLIPS.length-1];if(c)new Audio(c.url).play().catch(()=>{})}catch(e){fb("Couldn't save the clip",'warn')}
+    try{await DB.put({id:String(Date.now()),kind,line,blob});await loadClips();const c=CLIPS.find(x=>x.blob===blob)||CLIPS[CLIPS.length-1];if(c)new Audio(c.url).play().catch(()=>{})}catch(e){fb("Couldn't save the clip",'warn')}
     grown()};
   mr.start();let s=4;btn.textContent='🔴 Recording… '+s;btn.style.background='#fee2e2';
   const iv=setInterval(()=>{s--;if(s<=0){clearInterval(iv);if(mr.state=='recording')mr.stop()}else btn.textContent='🔴 Recording… '+s},1000);
