@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<meta name="theme-color" content="#3b82f6">
+<meta name="theme-color" content="#fff8ec">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
@@ -388,7 +388,7 @@ function home(first){
   const pct=nextG==null?100:Math.round((S.stars-GROW[st])/(nextG-GROW[st])*100);
   const tile=id=>{const s=SK[id],p=P(id);return`<button class="btn tile ${s.area}" data-s="${id}"><div class="te">${s.e}</div><div>${s.t}</div><div class="lv">${'★'.repeat(p.lv)}${'☆'.repeat(s.max-p.lv)}</div></button>`};
   const ids=a=>Object.keys(SK).filter(id=>SK[id].area==a);
-  view(`<div class="top"><div class="title">⭐ Star School</div><div class="sp"></div>
+  view(`<div class="top"><div class="title">⭐ Star School</div><div class="sp"></div>${installEvt&&!isApp()?'<button class="btn sm" id="inst" style="background:#3b82f6;color:#fff">📲 Install</button>':''}
    <button class="btn sm" id="snd">${S.sound?'🔊':'🔇'}</button><button class="btn sm" id="book">📒</button><button class="btn sm" id="gear">⚙️</button></div>
   <div class="scroll">
    <div class="hero"><div class="petbig ${petAura()}" id="pet">${petE()}</div>
@@ -402,6 +402,7 @@ function home(first){
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's learn something!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
   $('#snd').onclick=()=>{S.sound=!S.sound;S.music=S.sound;save();home()};
   $('#book').onclick=book;
+  if($('#inst'))$('#inst').onclick=async()=>{try{installEvt.prompt();await installEvt.userChoice}catch(e){}installEvt=null;home()};
   let t;const g=$('#gear');g.onpointerdown=()=>{t=setTimeout(grown,1200)};g.onpointerup=g.onpointerleave=()=>clearTimeout(t);g.onclick=()=>fb('Grown-ups: hold it','warn');
   if(first&&S.voice)setTimeout(()=>say(`Hi ${S.name}! Earn stars to hatch your egg!`),400)}
 
@@ -559,6 +560,14 @@ function grown(){let armed=false;
   $('#reset').onclick=e=>{if(!armed){armed=true;e.target.textContent='Tap again to erase ALL progress';return}try{localStorage.removeItem(KEY)}catch(x){}location.reload()}}
 
 try{speechSynthesis.getVoices();speechSynthesis.onvoiceschanged=()=>{}}catch(e){}
+/* ---------- app mode: full screen, install button ---------- */
+const isApp=()=>matchMedia('(display-mode: fullscreen),(display-mode: standalone)').matches||navigator.standalone===true;
+let installEvt=null;
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;if($('.hero'))home()});
+addEventListener('appinstalled',()=>{installEvt=null});
+document.addEventListener('pointerup',()=>{const d=document.documentElement;
+  if(!document.fullscreenElement&&d.requestFullscreen&&!matchMedia('(display-mode: fullscreen)').matches)d.requestFullscreen({navigationUI:'hide'}).catch(()=>{})},true);
+document.addEventListener('contextmenu',e=>e.preventDefault());
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
 home();
 </script>
