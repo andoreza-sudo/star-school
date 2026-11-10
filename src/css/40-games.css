@@ -69,6 +69,24 @@
 .node.boss.done{border-color:#facc15}
 .tobtn{position:absolute;left:50%;transform:translateX(-50%);z-index:2;background:#fef3c7;white-space:nowrap}
 .tobtn:active{transform:translateX(-50%) translateY(3px)}
+/* P1-05 world picker strip (one chip per world, grouped by grade), "more worlds" buttons, NEW tag on stops added later */
+.wstrip{display:flex;align-items:center;gap:var(--s-2);flex:none;overflow-x:auto;padding:var(--s-1) var(--s-3) var(--s-3);scrollbar-width:none}
+.wstrip::-webkit-scrollbar{display:none}
+.wgl{flex:none;font-size:var(--fs-1);font-weight:700;color:var(--ink-3);padding-left:var(--s-1)}
+.wchip{flex:none;display:flex;align-items:center;gap:var(--s-1);min-height:var(--tap);padding:0 var(--s-3);border:0;border-radius:var(--r-pill);
+  background:var(--surface);color:var(--ink);font:inherit;font-size:var(--fs-2);font-weight:700;white-space:nowrap;cursor:pointer;
+  box-shadow:var(--ledge) var(--line);touch-action:manipulation;transition:transform var(--t-fast)}
+.wchip:active{transform:translateY(3px)}
+.wchip .we{font-size:var(--fs-4);line-height:1}
+.wchip.lock{background:var(--surface-2);color:var(--ink-3)}
+.wchip.done .ic{color:var(--good)}
+.wchip.on{background:var(--brand);color:var(--surface);box-shadow:var(--ledge) var(--brand-shade)}
+.wchip.on .ic{color:var(--surface)}
+.wmore{position:absolute;left:50%;transform:translateX(-50%);z-index:2;display:flex;align-items:center;gap:var(--s-2);min-height:var(--tap);white-space:nowrap}
+.wmore:active{transform:translateX(-50%) translateY(3px)}
+.wmore .we{font-size:var(--fs-4);line-height:1}
+.nnew{position:absolute;transform:translateX(-50%);z-index:3;pointer-events:none;background:var(--danger);color:var(--surface);
+  font-size:var(--fs-1);font-weight:700;border-radius:var(--r-pill);padding:1px var(--s-2)}
 .rtag{background:#ede9fe;color:#6d28d9;font-weight:700;font-size:16px;border-radius:12px;padding:3px 12px}
 .cbar{display:flex;align-items:center;gap:10px;margin:6px 0;font-weight:700}.cbar span{width:90px}.cbar .meter{flex:1;margin:0;background:#f5f5f4}.cbar b{width:48px;text-align:right}
 .thought{position:absolute;top:-10px;right:-18px;background:#fff;border-radius:16px;padding:2px 8px;font-size:22px;box-shadow:0 2px 6px #0002;animation:bob 1.6s infinite}

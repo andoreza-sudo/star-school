@@ -105,11 +105,12 @@ function finish(){
   const g=G,sc=g.score,n=g.n,best=g.best,before=S.stars,d=day(),p=g.path,ni=g.node,nd=p?NODES[p][ni]:null;
   let stars=0,newPass=false,wDone=false;
   let testOk=false,prize=null;
-  if(g.test){testOk=sc>=9;if(testOk){NODES[p].forEach((n,i)=>{if(n.wi==g.test.wi&&getSt(p,i)<2)setSt(p,i,2)});newPass=true}}
+  if(g.test){testOk=sc>=9;if(testOk){NODES[p].forEach((n,i)=>{if(n.wi==g.test.wi&&getSt(p,i)<2)setSt(p,i,2)});newPass=true;
+    (S.skip=S.skip||{})[worldId(p,g.test.wi)]=1}} // a tested-out world stays finished even if stops are added to it later
   else if(!g.mix){if(g.boss)stars=g.won?(g.asked<=7?3:g.asked<=8?2:1):0;else{P(g.sk).r++;stars=sc>=n?3:sc>=Math.floor(n*.8+.01)?2:sc>=Math.floor(n*.7+.01)?1:0}
     const prev=getSt(p,ni);g.prevSt=prev;setSt(p,ni,Math.max(prev,stars));newPass=!prev&&stars>0;
     if(g.boss&&g.won&&!S.owned[nd.prize]){prize=nd.prize;S.owned[prize]=1;S.wear.hat=prize}}
-  if(newPass){const wk=p+nd.wi;if(!S.wdone[wk]&&worldDone(p,nd.wi)){S.wdone[wk]=1;wDone=true}}
+  if(newPass){const wk=nd.wid;if(!S.wdone[wk]&&worldDone(p,nd.wi)){S.wdone[wk]=1;wDone=true}}
   const prizes=[award()];if(sc==n)prizes.push(award());
   d.r++;const stk=streakTick();let mission=false;if(d.r>=3&&!d.done){d.done=true;mission=true;prizes.push(award())}
   if(wDone)prizes.push(award());
