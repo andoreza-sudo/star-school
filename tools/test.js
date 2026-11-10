@@ -895,7 +895,7 @@ run('grade: migration 4 infers a grade, setGrade never removes or re-locks anyth
     global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
     const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
     const clone=o=>JSON.parse(JSON.stringify(o));
-    if(LATEST!==5||MIGRATIONS.length!==5)bad('LATEST should be 5, MIGRATIONS '+MIGRATIONS.length);
+    if(LATEST<5||MIGRATIONS.length!==LATEST)bad('LATEST should be at least 5 and equal MIGRATIONS.length, MIGRATIONS '+MIGRATIONS.length);
     // 1. migration 4: inferred grade per fixture (highest graded world with progress), idempotent, nothing else changes
     const want={fresh:0,midway:1,maxed:2,'legacy-single-map':0,'legacy-index-maps':0};
     for(const name of Object.keys(want)){
@@ -905,13 +905,13 @@ run('grade: migration 4 infers a grade, setGrade never removes or re-locks anyth
       if(empty){ // a brand-new save has no grade until setup picks one; gradeOf() is K
         if(g!==undefined&&g!==0)bad(name+': new save grade '+g);
       }else if(g!==want[name])bad(name+': inferred grade '+g+', expected '+want[name]);
-      if(S.v!==5)bad(name+': S.v '+S.v);
+      if(S.v!==LATEST)bad(name+': S.v '+S.v);
       MIGRATIONS[4]();const once=JSON.stringify(S);migrate();MIGRATIONS[4]();if(JSON.stringify(S)!==once)bad(name+': migration 4 not idempotent');
     }
     // an existing choice is kept, not overwritten
     {const o=JSON.parse(fx('maxed'));o.v=4;o.grade=-1;load(JSON.stringify(o));if(S.grade!==-1)bad('migration 4 overwrote S.grade');}
     // a grade-less save from v46 (LATEST 4) gets one through the normal path and keeps its stars
-    {const o=JSON.parse(fx('midway'));o.v=4;load(JSON.stringify(o));if(S.v!==5||S.grade!==1||S.stars!==o.stars)bad('v4 save not migrated to 5');}
+    {const o=JSON.parse(fx('midway'));o.v=4;load(JSON.stringify(o));if(S.v!==LATEST||S.grade!==1||S.stars!==o.stars)bad('v4 save not migrated to LATEST');}
     // 2. gradeCfg values (ROADMAP 3.1)
     const cfg={'-1':[6,3,'all'],0:[8,4,'all'],1:[10,4,'auto'],2:[10,4,'tap'],3:[10,4,'tap'],4:[10,4,'tap'],5:[10,4,'tap'],6:[10,4,'tap']};
     for(const g of GRADES){
@@ -1213,7 +1213,7 @@ run('mastery: records, states, harder/easier, challenge from question 6, support
     const stops=[];
     for(const p in NODES)NODES[p].forEach((n,i)=>{if(n.sk!='boss'&&!SK[n.sk].round)stops.push([p,i])});
     // 0. API on a fresh save and on every fixture: no S.mast is fine, nothing is migrated
-    if(LATEST!==5)bad('P1-08 adds no migration; LATEST should stay 5');
+    if(LATEST!==MIGRATIONS.length)bad('LATEST should equal MIGRATIONS.length');
     for(const name of ['fresh','midway','maxed','legacy-single-map','legacy-index-maps']){
       const raw=fx(name),obj=JSON.parse(raw);load(Object.keys(obj).length?raw:null);
       const before=JSON.stringify([S.stars,S.coins,S.pet,S.maps,S.wdone]);
@@ -1417,6 +1417,223 @@ run('report card (P5-06): read-only, empty and old saves, numbers, escaping, dam
   const css=fs.readFileSync(path.join(SRC,'css','36-report.css'),'utf8');
   if(!/@media print/.test(css)||/#[0-9a-fA-F]{3,8}\b/.test(css))rerrs.push('36-report.css: print rules missing or raw hex');
   return{problems:rerrs};
+});
+
+// ---- spaced review engine and migration 5 (P5-02) ----
+run('review: migration 5 keeps progress and shrinks the save, exact rebuilds, 60-day calendar, cap, size, round slots',()=>{
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const rerrs=[],bad=m=>rerrs.push(m);
+  const body=function(){
+    const store={};
+    global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+    const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
+    const keep=o=>JSON.stringify([o.stars,o.coins,o.pet,o.petName,o.name,o.maps,o.wdone,o.owned,o.wear,o.stickers,o.mast,o.streak,o.grade]);
+    // the v53 readers of P(sk).miss: the old home count / Tricky Mix list, and the Grown-ups "Tricky ones" cell (80-grown.js)
+    const oldTricky=o=>{let k=0;for(const sk in o.prog||{})for(const m of Object.values(o.prog[sk].miss||{}))if(m&&m.n>0&&m.q)k++;return k};
+    const grownCell=()=>Object.keys(S.prog).map(sk=>Object.values(P(sk).miss).sort((a,b)=>b.tot-a.tot).slice(0,3).map(m=>esc(m.q.label)).join('<br>')).join('|');
+    const D0=20400; // a day number (2025-11-07); every scheduling call below passes its day
+    const info={};
+    // 1. migration 5 on every fixture: progress unchanged, same number of tricky items on home, no html left, smaller, idempotent
+    if(LATEST!==6||MIGRATIONS.length!==6)bad('P5-02 adds migration 5: LATEST should be 6, MIGRATIONS '+MIGRATIONS.length);
+    for(const name of ['tricky','midway','maxed','fresh','legacy-single-map','legacy-index-maps']){
+      const raw=fx(name),before=JSON.parse(raw),empty=!Object.keys(before).length;
+      if(empty){load(null);if(S.rev!==undefined)bad(name+': a new save got S.rev');continue}
+      // the same save carried to schema 5 by the old migrations only: what the child had before this release
+      loadSave(raw);for(let n=Number.isInteger(S.v)?S.v:1;n<5;n++)MIGRATIONS[n]();const v5=JSON.parse(JSON.stringify(S));
+      load(raw);
+      if(S.v!==LATEST)bad(name+': S.v '+S.v);
+      if(keep(S)!==keep(v5))bad(name+': stars, coins, pet, maps or other progress changed');
+      const want=oldTricky(before),items=REV.get().length;
+      if(items!==want)bad(name+': '+want+' tricky misses became '+items+' review items');
+      if(Math.min(allMiss().length,10)!==Math.min(want,10))bad(name+': home shows '+allMiss().length+' tricky, was '+want);
+      const sv=store[KEY];
+      if(/class=|"html"|"choices"|"ctx"/.test(sv))bad(name+': question html still in the save');
+      if(want&&sv.length>=raw.length)bad(name+': save did not shrink ('+raw.length+' -> '+sv.length+')');
+      for(const sk in S.prog)for(const [lb,m] of Object.entries(S.prog[sk].miss||{})){
+        const o=(before.prog[sk].miss||{})[lb];
+        if(Object.keys(m).join()!=='tot,q'||Object.keys(m.q).join()!=='label'||m.q.label!==lb||m.tot<1)bad(name+': tally '+JSON.stringify(m));
+        else if(o&&o.tot>0&&m.tot!==o.tot)bad(name+': tally tot changed for '+lb);
+      }
+      if(oldTricky(S)!==0)bad(name+': an older app would still find stored questions to replay');
+      try{grownCell()}catch(e){bad(name+': Grown-ups tricky cell throws '+e.message)}
+      const once=JSON.stringify(S);MIGRATIONS[5]();migrate();if(JSON.stringify(S)!==once)bad(name+': migration 5 not idempotent');
+      if(name=='tricky')info.fx=raw.length+' -> '+sv.length+' bytes, '+items+' items';
+      // every migrated item with a seed rebuilds the exact stored question; the rest give a question of the same skill and level
+      for(const it of REV.get()){
+        const o=before.prog[it.sk]&&Object.values(before.prog[it.sk].miss).find(m=>m.q&&String(m.q.label).slice(0,60)===it.label);
+        if(!o){bad(name+': no source miss for '+revKey(it));continue}
+        if(it.box!==0||it.due!==0||it.n!==o.n||it.lv!==o.q.lv)bad(name+': item fields '+JSON.stringify(it));
+        const q=revQ(it);
+        if(!q||q.sk!==it.sk||q.lv!==it.lv||q.rvk!==revKey(it))bad(name+': revQ '+revKey(it));
+        else if(o.q.seed!=null&&(q.html!==o.q.html||String(q.ans)!==String(o.q.ans)||q.label!==o.q.label))bad(name+': not the same question '+revKey(it));
+        else if(o.q.seed==null&&!('seed' in it))bad(name+': seed search did not run for '+revKey(it));
+      }
+      if(name=='tricky'){
+        // old items without a seed: a seed with the same label is found and stored, or the item stays and gets a fresh question
+        const ns=REV.get().filter(it=>!Object.values(before.prog[it.sk].miss).find(m=>m.q&&m.q.label===it.label&&m.q.seed!=null));
+        info.noseed=ns.filter(it=>Number.isInteger(it.seed)).length+' of '+ns.length+' unseeded found a seed';
+        if(ns.length!==5||ns.filter(it=>Number.isInteger(it.seed)).length<3)bad('tricky: unseeded items '+JSON.stringify(ns)); // 2 in midway's old label format, 3 not
+      }
+    }
+    // a v5 save with a bank miss keeps its bank spec; damaged miss entries are skipped without a throw
+    {
+      const o=JSON.parse(fx('tricky'));
+      o.prog.add.miss['B']={n:2,tot:2,q:{kind:'choice',label:'B',html:'<b>x</b>',sk:'add',lv:1,seed:5,bk:{id:'demo',lv:1,bi:0,s:5}}};
+      o.prog.add.miss['J']=null;o.prog.sub.miss=7;o.prog.cnt.miss['K']={n:1,q:'old'};
+      load(JSON.stringify(o));
+      const it=REV.get().find(x=>x.label=='B');
+      if(!it||JSON.stringify(it.bk)!=='{"id":"demo","lv":1,"bi":0,"s":5}')bad('bank spec not kept: '+JSON.stringify(it));
+      if(S.prog.add.miss.J!==null||S.prog.sub.miss!==7||S.prog.cnt.miss.K.q!=='old')bad('damaged miss entries were changed');
+    }
+    // more than 150 tricky misses: the 150 most missed are kept
+    {
+      const o=JSON.parse(fx('tricky'));o.prog.add.miss={};
+      for(let k=0;k<200;k++)o.prog.add.miss['L'+k]={n:1+k%7,tot:9,q:{kind:'num',label:'L'+k,html:'h',sk:'add',lv:1,seed:k}};
+      const ns=[];for(const sk in o.prog)for(const m of Object.values(o.prog[sk].miss||{}))if(m&&m.n>0&&m.q&&m.q.kind)ns.push(m.n);
+      load(JSON.stringify(o));
+      const a=REV.get(),minN=Math.min(...a.map(x=>x.n)),cut=ns.sort((x,y)=>y-x)[149];
+      if(a.length!==150||minN!==cut||a.filter(x=>x.n>cut).length!==ns.filter(n=>n>cut).length)bad('migration cap: '+a.length+' items, smallest n '+minN+', expected '+cut);
+    }
+
+    // 2. exact rebuilds: every skill and level, and bank and passage questions through bankRebuild while bank memory is live
+    load(null);
+    SK.__bk={t:'Bank',e:'x',area:'read',max:1,bank:'demo',gen:lv=>genBank('demo',lv)};
+    SK.__ps={t:'Passage',e:'x',area:'read',max:1,bank:'demo',gen:lv=>genPassage('demo',lv)};
+    bankRound(); // live play: bank choice is by least recently shown, not by seed
+    let nb=0;
+    for(const sk in SK)for(let lv=1;lv<=SK[sk].max;lv++)for(let s=1;s<=4;s++){
+      S.rev=[];
+      const q=genQ(sk,lv,s*7919+lv);
+      const it=revMiss(q,D0);
+      if(!it){bad('no item for '+sk+lv);continue}
+      const r=revQ(it);nb++;
+      if(r.html!==q.html||r.label!==q.label||JSON.stringify(r.ans)!==JSON.stringify(q.ans)||r.kind!==q.kind)bad('not rebuilt exactly: '+sk+lv+' seed '+q.seed);
+      if(JSON.stringify(it).length>200)bad('item too big: '+JSON.stringify(it));
+    }
+    bankReset();delete SK.__bk;delete SK.__ps;
+    // the generator changed (label differs): a fresh question of the same skill and level, and the item stays
+    S.rev=[{sk:'add',lv:1,seed:3,label:'old label',box:2,due:D0,n:4}];
+    {const q=revQ(S.rev[0]);if(q.sk!=='add'||q.lv!==1||q.label==='old label'||REV.get().length!==1||q.rvk!=='add|1|old label')bad('label mismatch fallback');
+     // answering that fresh question is booked to the item
+     if(!revRight(q,D0)||S.rev[0].box!==3||S.rev[0].due!==D0+7)bad('fallback answer not booked: '+JSON.stringify(S.rev[0]));
+     revMiss(q,D0+1);if(S.rev.length!==1||S.rev[0].box!==0||S.rev[0].n!==5)bad('fallback miss not booked: '+JSON.stringify(S.rev))}
+
+    // 3. Leitner rules, one item: intervals 0, 1, 3, 7, 21; due days exact; not due does not move; out after box 4
+    S.rev=[];
+    const qa=genQ('add',1,11);revMiss(qa,D0);
+    const days=[];
+    for(let d=D0;d<=D0+60;d++){
+      if(dueItems(5,null,d).length){days.push(d-D0);if(!revRight(qa,d))bad('due item not moved on day '+(d-D0))}
+      else if(revRight(qa,d))bad('item moved while not due, day '+(d-D0));
+    }
+    if(days.join()!=='0,1,4,11,32'||REV.get().length)bad('one item: due on days '+days.join()+', left '+REV.get().length);
+    // a wrong answer resets to box 0, due the same day, and counts n
+    S.rev=[];revMiss(qa,D0);revRight(qa,D0);revRight(qa,D0+1);revMiss(qa,D0+4);
+    if(JSON.stringify([S.rev[0].box,S.rev[0].due-D0,S.rev[0].n])!=='[0,4,2]')bad('reset: '+JSON.stringify(S.rev[0]));
+    // the clock set back: an item due far ahead is due now; a damaged S.rev is cleaned without a throw
+    S.rev=[{sk:'add',lv:1,seed:1,label:'x',box:1,due:D0+400,n:1}];if(dueItems(5,null,D0).length!==1)bad('clock set back: item not due');
+    S.rev='junk';if(dueItems(5,null,D0).length||!Array.isArray(S.rev))bad('S.rev junk');
+    S.rev=[null,{sk:1},{sk:'add',lv:1,label:'y',box:9,due:'a'},{sk:'nope',lv:1,label:'z',box:0,due:0,n:1}];
+    if(dueItems(5,null,D0).length!==1||REV.get().length!==2||S.rev[0].box!==0)bad('damaged S.rev: '+JSON.stringify(S.rev));
+    // a challenge question missed is not an item; questions of unknown skills are not items
+    S.rev=[];G=newG({path:'math',node:0,sk:'add',lv:1});G.mq=new Map();const qc=genQ('add',2,5);G.mq.set(qc,'ch');
+    revMiss(qc,D0);revMiss({sk:'zz_demo',lv:1,label:'d',kind:'num'},D0);if(S.rev.length)bad('challenge or demo miss stored: '+JSON.stringify(S.rev));
+    G=null;
+
+    // 4. 60-day calendar: a child misses 0-2 new facts a day and answers every due item, wrong about 1 time in 5.
+    //    An independent model of the rules says when each item is due; the engine must agree every day.
+    S.rev=[];
+    const INT=[0,1,3,7,21],model={},qs={};let seed=1,maxLen=0,reviews=0,wrongs=0,left=0;
+    const skills=Object.keys(SK).filter(sk=>!SK[sk].bank);
+    const h=(a,b)=>(Math.imul(a^0x9E3779B1,0x85EBCA6B)^Math.imul(b+7,0xC2B2AE35))>>>0;
+    for(let t=0;t<=60;t++){
+      const d=D0+t;
+      const want=Object.keys(model).filter(k=>model[k].due<=d).sort();
+      const got=dueItems(REV.CAP,null,d).map(revKey).sort();
+      if(want.join('~')!==got.join('~')){bad('day '+t+': due '+got.length+', model says '+want.length);break}
+      for(const k of want){
+        reviews++;
+        const m=model[k],q=revQ(REV.get().find(x=>revKey(x)===k));
+        if(h(t,reviews)%5==0){wrongs++;revMiss(q,d);m.box=0;m.due=d;continue}
+        if(!revRight(q,d))bad('day '+t+': right answer not booked for '+k);
+        if(m.box==4){delete model[k];left++}else{m.box++;m.due=d+INT[m.box]}
+      }
+      for(let j=0;j<t%3;j++){
+        const sk=skills[seed%skills.length],q=genQ(sk,1+seed%SK[sk].max,seed++),k=revKey(q);
+        revMiss(q,d);if(model[k]){model[k].box=0;model[k].due=d}else model[k]={box:0,due:d};qs[k]=1;
+      }
+      maxLen=Math.max(maxLen,S.rev.length);
+      if(S.rev.length!==Object.keys(model).length)bad('day '+t+': '+S.rev.length+' items, model has '+Object.keys(model).length);
+      for(const it of S.rev){const m=model[revKey(it)];if(!m||m.box!==it.box||m.due!==it.due){bad('day '+t+': item differs from the model '+JSON.stringify(it));break}}
+    }
+    if(!left||!wrongs)bad('calendar did not exercise leaving and resets');
+    info.cal=Object.keys(qs).length+' facts, '+reviews+' reviews ('+wrongs+' wrong), '+left+' learned, '+S.rev.length+' left';
+
+    // 5. cap: 250 more misses on a full list keep 150 items; the item in the highest box goes, never the new one
+    S.rev=[];
+    for(let k=0;k<150;k++)S.rev.push({sk:'add',lv:1,seed:k,label:'c'+k,box:k%5,due:D0,n:1});
+    for(let k=0;k<250;k++){
+      const boxes=REV.get().map(x=>x.box),top=Math.max(...boxes),sum=boxes.reduce((a,b)=>a+b,0);
+      revMiss({sk:'sub',lv:1,seed:k,label:'s'+k,kind:'num'},D0);
+      if(S.rev.length!==150){bad('cap: '+S.rev.length+' items');break}
+      const gone=sum-S.rev.reduce((a,x)=>a+x.box,0); // the new item is in box 0
+      if(gone!==top){bad('cap: dropped box '+gone+', highest was '+top);break}
+    }
+    if(!S.rev.some(x=>x.label=='s249'))bad('cap dropped the newest miss');
+    S.rev=[];
+    for(let k=0;k<160;k++)revMiss({sk:'es_family',lv:2,seed:4294967295-k,label:('W'+k+' ').repeat(30),kind:'choice',
+      bk:{id:'gram_long_name',lv:2,bp:99,qi:5,s:4294967295-k}},D0+99999);
+    S.rev.forEach(x=>x.n=99);
+    const worst=JSON.stringify(S.rev).length;
+    if(S.rev.length!==150||worst>=40000)bad('worst case: '+S.rev.length+' items, '+worst+' bytes');
+
+    // 6. round slots: nothing due on the path = the engine asks nothing; due items at questions 2, 4, 6, 8, once each
+    load(fx('maxed'));S.grade=1;
+    const stop=NODES.math.findIndex(n=>n.sk=='sub'&&n.lv==1);
+    const play=()=>{G=newG({path:'math',node:stop,sk:'sub',lv:1,n:10});const o=[];
+      while(G.done<G.n){const q=makeQ();o.push({rv:q.rvk||'',review:!!q.review});G.done++}return o};
+    const today=REV.day();
+    for(const setup of [()=>{S.rev=[]},()=>{S.rev=[{sk:'sub',lv:1,seed:1,label:'q',box:1,due:today+1,n:1}]},
+      ()=>{S.rev=[{sk:'sight',lv:1,seed:1,label:'r',box:0,due:today,n:1}]}]){
+      setup();
+      for(let k=0;k<10;k++){G=newG({path:'math',node:stop,sk:'sub',lv:1,n:10});G.done=k;if(revSlot())bad('revSlot asked with nothing due on this path, question '+(k+1))}
+    }
+    S.rev=[];
+    [1,2,3].map(s=>revMiss(genQ('sub',1,s),today));
+    [4,5,6].map(s=>revMiss(genQ('add',1,s),today)).forEach(x=>x.n=9); // more missed: asked first at the path slots
+    const o=play(),at=o.map((x,i)=>x.rv?i:-1).filter(i=>i>=0);
+    if(at.join()!=='1,3,5,7')bad('review slots: '+JSON.stringify(o));
+    else if(!o[1].rv.startsWith('sub|1|')||!o[5].rv.startsWith('sub|1|')||!o[3].rv.startsWith('add|1|')||!o[7].rv.startsWith('add|1|'))bad('slot owners: '+JSON.stringify(o));
+    if(new Set(at.map(i=>o[i].rv)).size!==at.length||at.some(i=>!o[i].review))bad('an item asked twice or without the review tag');
+    // boss, test out, mix and placement rounds never take review slots
+    for(const x of [{boss:{e:'x',name:'x'},pool:[]},{test:{wi:0},pool:[]},{mix:true},{nomast:true}]){
+      G=newG(Object.assign({path:'math',node:stop,sk:'sub',lv:1},x));G.done=3;if(revSlot())bad('revSlot in '+Object.keys(x)[0]+' round')}
+    // Tricky Mix: rebuilt from due items, and a right answer is booked once
+    const mq=allMiss().slice(0,7).map(revQ);
+    if(mq.length!==6||mq.some(q=>!q.rvk))bad('tricky mix questions: '+mq.length);
+    if(!revRight(mq[0],today)||revRight(mq[0],today))bad('tricky mix answer booked wrong');
+    G=null;
+    return{info,nb,worst};
+  };
+  const r=eval(js+';('+body.toString()+')()');
+  return{problems:rerrs,note:'tricky fixture '+r.info.fx+'; '+r.info.noseed+'; '+r.nb+' exact rebuilds; '+r.info.cal+'; worst 150 items = '+r.worst+' bytes'};
+});
+
+// ---- Mixed Practice / Tricky Mix never draws a boss stop (bug found merging P5-02: random crash after a boss was beaten) ----
+run('mix: Mixed Practice and Tricky Mix start without errors on every fixture, never from a boss stop',()=>{
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const out=[];
+  for(const name of ['fresh','midway','maxed','tricky','legacy-single-map','legacy-index-maps']){
+    const r=eval(js+`
+    const store={'starschool-v2':${JSON.stringify(fx(name))}};
+    localStorage.getItem=k=>k in store?store[k]:null;localStorage.setItem=(k,v)=>{store[k]=String(v)};
+    loadSave(store['starschool-v2']);migrate();
+    const bad=[];
+    for(let i=0;i<300;i++){try{const qs=mixQs();if(qs.length!==10||qs.some(q=>!q||!q.sk||q.sk=='boss'||!q.html))bad.push('bad question in the mix')}catch(e){bad.push('mixQs threw: '+e.message);break}}
+    bad;`);
+    for(const m of r)out.push(name+': '+m);
+  }
+  return{problems:[...new Set(out)]};
 });
 
 // ---- report ----

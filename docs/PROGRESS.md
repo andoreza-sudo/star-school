@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** wave 4: P5-02 (Opus) next (P5-06 done), then P5-03. Wave 5 includes P4-13; all content pictures use `picFor`.
+**Next up:** wave 4: P5-03 (Daily Review and Tricky Mix on the review engine), then wave 5 (batch A: P2-01, P2-05, P2-15, P2-19, P4-13).
 
-**Current version:** v54
+**Current version:** v55
 
 ## Chunk status
 
@@ -34,6 +34,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P1-07 v52
 - P1-08 v53
 - P5-06 v54
+- P5-02 v55
 
 ## Handoff notes
 
@@ -42,6 +43,10 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 ## Ideas and issues
 
 
+- (P5-02) Home "Tricky Mix (N)" now counts review items due today (`allMiss()` = `dueItems()`), not every item still in the system: after a child fixes items they leave the count until they are due again, and the button reads "Mixed Practice" when nothing is due. P5-03 replaces the card with "Today's review: N due".
+- (P5-02) In challenge or support rounds (P1-08) `mastQ()` comes first in `makeQ`, so the review slots at questions 6 and 8 are taken by the adapted question; a fast all-right child sees due items at questions 2 and 4 only. Daily Review (P5-03) is where a backlog gets cleared.
+- (P5-02) `P(sk).miss` stays as a small tally `{label: {tot, q: {label}}}` only because the Grown-ups "Tricky ones" cell (80-grown.js, being changed by P5-06) reads `m.q.label` and `m.tot`. P5-06 or a later cleanup can read `S.rev` / the tally and drop `q` from the tally. An older cached app (rule 9) that records a miss writes a whole question into the tally again; the new app overwrites it with `{label}` on that label's next miss (bounded at 40 per skill as before).
+- (P5-02) Items moved from saves older than v38 have no seed: `revQ` tries 120 seeds for the same label once and keeps the one it finds (`seed: null` when none; then each review is a fresh question of that skill and level). Labels whose format changed since (midway's `3 + 4` against today's add labels) never match, so those items get fresh questions until they leave the system.
 - (P5-05) Quitting a round mid-question adds no time for that question (only answered questions count), and games (Balloons, Race, Hill Climb, Art) are not logged; P5-06 can say "learning time". Sprint seconds do not add to `q`/`ok`, so Sprint does not change accuracy.
 Things noticed while working that are outside the current chunk. One line each, with the chunk that noticed it.
 
@@ -57,7 +62,7 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P5-06) The map mastery badge from the P1-08 note is still not drawn.
 - (P1-08) The roadmap mentions a small mastery badge on the map (`masteryState(nid)`); not drawn because `46-home.js` is not in the chunk's files. P4-09 (map redesign) or P5-06 can add it with one call per stop (`mastStops(p)` gives every stop's state in map order).
 - (P1-08) `ptCalc` (58-playtime.js) is unchanged: "mastered stops earn less game time on replay" already holds through 3 stars (`prev>=3`). P5-09 could also count `masteryState(nid)=='mastered'`. Forgiven challenge misses lift only the star rating: the finish screen can read "7 out of 10" with 3 stars, the game-time accuracy and "Perfect score" use the real score, and coins and stars added to the total are the real first-try count.
-- (P1-08) A missed challenge question is stored by `addMiss` under its own (harder) level, so it can come back in Tricky Mix and when the child reaches that stop; P5-02 should decide whether challenge misses become review items.
+- (P1-08, DONE in P5-02: challenge misses are not review items) A missed challenge question is stored by `addMiss` under its own (harder) level, so it can come back in Tricky Mix and when the child reaches that stop; P5-02 should decide whether challenge misses become review items.
 - (P1-08) P1-07 (placement) and any other round that must leave no trace can set `G.nomast = true` (no mastery record, no adaptation). Rounds with a `pool` (boss, test out, mix, passages, placement) never adapt but do record first tries unless `nomast` is set.
 - (P1-08) "Fast" is a fixed median of the first five answer times (12 s, 16 s for Pre-K and K, `MAST.FAST*`). Tune on real tablets; a per-stop baseline from `S.mast[nid].ms` is the obvious next step once there is data.
 - (P1-08) S.mast worst case measured at 28,991 bytes for 400 stops (today's skill ids, n 999, 365 days, every stop mastered). If later skill ids get much longer, drop `md` or store `p` in thousandths to keep under 30 KB.
@@ -74,7 +79,7 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P1-02) Fact Sprint (`57-fluency.js`) builds its own number pad (no check key) instead of `KIND.num`; P4-10 (keypad redesign) should move it onto `KIND.num.render/bind` so all pads stay alike.
 - (P1-02) `KIND.*.right/reveal` find the answer area by fixed ids (`#slot`, `#ls0..`, `.ch`), so only one question can be on screen at a time. Fine for rounds and races; a two-question layout would need a root element passed in.
 
-- (P1-01) `makeQ` in 50-round.js still reads `Math.random()<.3` to choose between a stored miss and a fresh question, and copies stored miss questions with `{...q}`; both are for P5-02 (spaced review), which should store `{sk,lv,seed}` and rebuild with `genQ`. Old stored misses have no `seed`.
+- (P1-01, DONE in P5-02) `makeQ` in 50-round.js still reads `Math.random()<.3` to choose between a stored miss and a fresh question, and copies stored miss questions with `{...q}`; both are for P5-02 (spaced review), which should store `{sk,lv,seed}` and rebuild with `genQ`. Old stored misses have no `seed`.
 - (P1-01) `makeQ` still declared an unused `s=SK[G.sk]` after the genQ change; removed in P1-02.
 - (P0-01) `node tools/smoke.js` takes about 95 s because the bot waits for the app's own 1.2 s between questions. Fine for now; a later chunk could shorten it with a fake clock.
 - (P0-01) `node tools/test.js` only prints and always exits 0 until P0-04 makes it a real check.
@@ -112,7 +117,7 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P1-11) `coinSVG` prints the value with a cent sign in Andika; if a font ever lacks it, `o.face = false` plus the generator's own text is the fallback.
 - (PRE-W5) Bank items name their picture with `pic` (an ICONS name, drawn with `ico()`); object nouns should move to `picFor` once ART exists so banks get the drawings too.
 - (P1-09) The finish screen text "Get 7 right to open the next stop" is fixed; on a 5-question passage round the pass mark is 4 (`floor(n*.7+.01)`). Reword the message from `n` when a passage skill ships (P2-25).
-- (P1-09) Stored misses in `makeQ` (`{...pick(ms).q}`) keep `q.ctx` and `q.bk`, so a missed passage question comes back with its passage; P5-02 should rebuild with `bankRebuild(q.bk)` (or `genQ`) instead of copying.
+- (P1-09, DONE in P5-02: items keep `bk`, `revQ` calls `bankRebuild`) Stored misses in `makeQ` (`{...pick(ms).q}`) keep `q.ctx` and `q.bk`, so a missed passage question comes back with its passage; P5-02 should rebuild with `bankRebuild(q.bk)` (or `genQ`) instead of copying.
 - (P1-09) Forms `order`, `match`, `multi` are validated but never drawn until P1-03/P1-04 add the kinds and register `BANKF.order/match/multi=(item,id)=>question`; the data shape in CURRICULUM section 8 (`order`, `pairs`, `a` as a list) is what the builders receive.
 - (P1-09) Passage rounds skip the "review an older stop at question 4 and 8" step of `makeQ` (the round is a fixed list). Boss, mix and test-out rounds use the skill's `gen`, which asks a single passage question with its panel.
 - (P1-09) `tools/node_modules` is not in a fresh worktree; `check.sh` runs `npm install` itself, which needs the network.
@@ -130,6 +135,22 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P1-05) Map draw with 16 fake worlds (156 stops) at 6x CPU throttle: median about 29 ms (limit 50), single runs up to about 49 ms. The strip recomputes `worldOpen`/`worldFinished` per chip and `unlocked` scans the world; a memo per draw is the next step if P4-09 adds weight.
 
 ## Log
+
+### FIX: Mixed Practice / Tricky Mix crash after a boss is beaten (in v55, 2026-11-10, Claude)
+- Cause: `startMix` filled the round from every reached stop, including boss stops, which are not skills (`SK.boss` is undefined), so a random pick of a boss stop threw and the child stayed on Home. Pre-existing since v30; found when the P5-02 smoke step started failing at random after merging.
+- Fix: the pool skips boss stops and unknown skills; picking moved into `mixQs()` so it can be tested. Merged in the same commit as P5-02 (v55).
+- Test: new named check "mix" builds 300 mixes on every fixture; proved it fails without the fix (midway, maxed, tricky).
+
+### P5-02 Spaced review engine (v55, 2026-11-10, Claude)
+- What changed: new `src/js/59-review.js`. Leitner boxes over missed questions in `S.rev = [{sk, lv, seed, label, box, due, n, bk?}]` (max 150; `bk` only for bank questions). A first wrong try (`addMiss`) puts the fact in box 0, due today; a right first try while it is due moves it up a box, due 0, 1, 3, 7, 21 days later (day numbers from `mastDay()` = `STRK.idx(today())`); right in box 4 = it leaves; wrong at any time = box 0 again. One item per fact (key `sk|lv|label`); over the cap the highest box goes first (then least missed, then oldest). Items are rebuilt, never stored as html: `bankRebuild(bk)` for bank questions, else `genQ(sk, lv, seed)`; a different label (generator changed) gives a fresh question of the same skill and level and keeps the item. Challenge misses (P1-08, harder level) do not become items.
+- In rounds: `makeQ` asks `revSlot()` after `mastQ()`: in a normal stop round, questions 4 and 8 take the most urgent due item of the path (else the old "older stop" review), questions 2 and 6 a due item of the stop itself; tag "Remember this one?"; once per item per round. This replaces the old `Math.random()<.3` stored-miss copy. Nothing due = the v53 round exactly (the smoke bot's paths are unchanged). Tricky Mix is built from `allMiss()` = due items rebuilt with `revQ`; a right answer to a due item counts as "fixed" (game time) as before.
+- API for P5-03: `dueItems(n, path, d)` (most urgent first; `dueItems().length` = due today), `revQ(it)` (question with `q.rvk`, booked to the item when answered), `revMiss(q, d)`, `revRight(q, d)`, `revDue(it, d)`, `REV.get()`, `REV.INT`, `REV.CAP`. Header of 59-review.js has the full contract.
+- Migration 5 (LATEST 5 -> 6, 00-core.js, self-contained, idempotent): every `P(sk).miss` entry holding a whole question with n > 0 becomes an item (box 0, due 0 = due now, n kept, seed and bk kept when present); each entry shrinks to the tally `{tot, q: {label}}` that the Grown-ups table reads; no `n` is left, so an older cached app finds nothing to replay. Stars, coins, pet, maps and everything else untouched.
+- Hooks in existing files: `00-core.js` LATEST 6 + MIGRATIONS[5]; `42-paths.js` `allMiss` is now `const allMiss=()=>dueItems();`; `50-round.js` startMix maps `allMiss().slice(0,7)` through `revQ`, makeQ calls `revSlot()` and drops the 30% copy, addMiss keeps the tally and calls `revMiss(q)`, check() books `revRight(q)` on a right first try (replaces the `p.miss[...].n` decrement).
+- Tests: test.js check "review" (new fixture `tools/fixtures/tricky.json`: a v53 save, schema 5, with 21 tricky misses stored as whole questions, 3 of them without seeds: 17,532 -> 5,085 bytes, 21 items, same Tricky count on home, no html, tally intact, stars/coins/pet/maps/mast/streak unchanged, idempotent, the Grown-ups cell and the v53 readers still work; all fixtures; bank spec kept; damaged entries skipped; migration cap keeps the 150 most missed; exact rebuild of 284 questions over every skill and level plus bank and passage under live bank memory; label-mismatch fallback; one item due on days 0, 1, 4, 11, 32 then gone; reset; clock set back; damaged S.rev; challenge misses; a 60-day calendar against an independent model of the rules (59 facts, 415 reviews, 77 wrong, 17 learned); cap with 250 extra misses drops the highest box every time; worst case 150 items = 31,351 bytes; round slots 2/4/6/8, once each, never in boss/test/mix/placement; Tricky Mix booking). Existing checks: the LATEST == 5 asserts in "grade" and "mastery" now read LATEST / MIGRATIONS.length. smoke.js block "P5-02" (tricky fixture migrates, home Tricky Mix (10), questions 2 and 4 of a stop round are due items with a visible tag and move to box 1 due tomorrow, Tricky Mix plays 7 rebuilt items and books 7 fixed).
+- Files: src/js/59-review.js (new), src/js/00-core.js, src/js/42-paths.js, src/js/50-round.js (hooks), tools/test.js, tools/smoke.js, tools/fixtures/tricky.json (new), tools/build.py (VER), built output.
+- Checklist 7.1: only the chunk file plus the hooks named above; VER bumped (v55, provisional); build, test.js (27 checks), smoke.js (zero console errors, no network) and sizes via check.sh (index.html 567,865 bytes); no screenshots: no new UI (the existing review tag is reused); midway keeps its stars, coins, pet and map progress (test and smoke); no new emoji, no new CSS.
+- Merge: built on a parallel branch, renumbered v54 -> v55 at merge.
 
 ### P5-06 Grown-ups report card (v54, 2026-11-10, Claude)
 - What changed: new `src/js/82-report.js` (`REP`, `report()`, `reportGrownHTML()`, `reportGrownBind()`) and `src/css/36-report.css` (tokens only, `rp-` classes, print rules). Grown-ups has a "Report card" card with one button; it opens a read-only screen with 7 sections: this week vs last week (minutes, rounds, accuracy, days played, plus a 14-day minutes chart and time by subject), where the child is working per path (8-step grade bar: filled = working level, outlined = chosen grade, with a plain sentence; Spanish shows stops passed), skills by topic (CURRICULUM section 9 strands: stacked bar and counts of mastered / practised / learning / not started), Needs practice (top 5 stops under 70% first-try over 5+ questions, with up to 2 example missed questions), Recently mastered (latest 6, "2 days ago"), Fact Sprint bests, streak. Print button uses the browser print dialog; the print stylesheet drops the buttons and flows all cards on white.
