@@ -1,0 +1,343 @@
+{
+ "pet": "dino",
+ "petName": "Rex",
+ "buddy": "Zoe",
+ "voice": false,
+ "sound": false,
+ "music": false,
+ "best": 10,
+ "stickers": {
+  "🦄": 2,
+  "🐬": 2,
+  "🦖": 2,
+  "🚀": 2,
+  "🌈": 2,
+  "🍩": 2,
+  "🎸": 2,
+  "🏆": 2,
+  "🦁": 2,
+  "🐼": 2
+ },
+ "day": {
+  "d": "2000-1-1",
+  "r": 3,
+  "done": true
+ },
+ "wdone": {
+  "math0": 1,
+  "math1": 1,
+  "math2": 1,
+  "math3": 1,
+  "read0": 1,
+  "read1": 1,
+  "read2": 1,
+  "read3": 1,
+  "es0": 1,
+  "es1": 1,
+  "es2": 1
+ },
+ "owned": {
+  "meadow": 1,
+  "beach": 1,
+  "candy": 1,
+  "rainbow": 1,
+  "space": 1,
+  "castle": 1,
+  "👑": 1,
+  "🧸": 1
+ },
+ "wear": {
+  "hat": "👑",
+  "toy": "🧸",
+  "scene": "space"
+ },
+ "unlockAll": false,
+ "prog": {
+  "es_greet": {
+   "lv": 3,
+   "r": 9,
+   "c": 90,
+   "t": 100,
+   "miss": {}
+  },
+  "es_color": {
+   "lv": 3,
+   "r": 9,
+   "c": 90,
+   "t": 100,
+   "miss": {}
+  },
+  "es_num": {
+   "lv": 3,
+   "r": 9,
+   "c": 90,
+   "t": 100,
+   "miss": {}
+  },
+  "es_teen": {
+   "lv": 3,
+   "r": 9,
+   "c": 90,
+   "t": 100,
+   "miss": {}
+  },
+  "es_animal": {
+   "lv": 3,
+   "r": 9,
+   "c": 90,
+   "t": 100,
+   "miss": {}
+  },
+  "es_food": {
+   "lv": 3,
+   "r": 9,
+   "c": 90,
+   "t": 100,
+   "miss": {}
+  },
+  "es_body": {
+   "lv": 3,
+   "r": 9,
+   "c": 90,
+   "t": 100,
+   "miss": {}
+  },
+  "es_family": {
+   "lv": 3,
+   "r": 9,
+   "c": 90,
+   "t": 100,
+   "miss": {}
+  },
+  "es_mix": {
+   "lv": 3,
+   "r": 9,
+   "c": 90,
+   "t": 100,
+   "miss": {}
+  },
+  "sound": {
+   "lv": 3,
+   "r": 9,
+   "c": 90,
+   "t": 100,
+   "miss": {}
+  },
+  "rhyme": {
+   "lv": 3,
+   "r": 9,
+   "c": 90,
+   "t": 100,
+   "miss": {}
+  },
+  "cmp": {
+   "lv": 3,
+   "r": 9,
+   "c": 90,
+   "t": 100,
+   "miss": {}
+  },
+  "time": {
+   "lv": 3,
+   "r": 9,
+   "c": 90,
+   "t": 100,
+   "miss": {}
+  },
+  "coins": {
+   "lv": 3,
+   "r": 9,
+   "c": 90,
+   "t": 100,
+   "miss": {}
+  },
+  "mult": {
+   "lv": 3,
+   "r": 9,
+   "c": 90,
+   "t": 100,
+   "miss": {}
+  },
+  "comp": {
+   "lv": 3,
+   "r": 9,
+   "c": 90,
+   "t": 100,
+   "miss": {}
+  },
+  "add": {
+   "lv": 3,
+   "r": 9,
+   "c": 90,
+   "t": 100,
+   "miss": {}
+  },
+  "miss": {
+   "lv": 3,
+   "r": 9,
+   "c": 90,
+   "t": 100,
+   "miss": {}
+  },
+  "sub": {
+   "lv": 3,
+   "r": 9,
+   "c": 90,
+   "t": 100,
+   "miss": {}
+  },
+  "big": {
+   "lv": 3,
+   "r": 9,
+   "c": 90,
+   "t": 100,
+   "miss": {}
+  },
+  "eo": {
+   "lv": 3,
+   "r": 9,
+   "c": 90,
+   "t": 100,
+   "miss": {}
+  },
+  "cnt": {
+   "lv": 3,
+   "r": 9,
+   "c": 90,
+   "t": 100,
+   "miss": {}
+  },
+  "story": {
+   "lv": 3,
+   "r": 9,
+   "c": 90,
+   "t": 100,
+   "miss": {}
+  },
+  "sight": {
+   "lv": 3,
+   "r": 9,
+   "c": 90,
+   "t": 100,
+   "miss": {}
+  },
+  "pic": {
+   "lv": 3,
+   "r": 9,
+   "c": 90,
+   "t": 100,
+   "miss": {}
+  },
+  "build": {
+   "lv": 3,
+   "r": 9,
+   "c": 90,
+   "t": 100,
+   "miss": {}
+  },
+  "sent": {
+   "lv": 3,
+   "r": 9,
+   "c": 90,
+   "t": 100,
+   "miss": {}
+  }
+ },
+ "name": "Max",
+ "stars": 400,
+ "coins": 900,
+ "pt": {
+  "bank": 1800,
+  "day": "2000-1-1",
+  "used": 0
+ },
+ "maps": {
+  "math": {
+   "add1": 3,
+   "cnt1": 3,
+   "eo1": 3,
+   "miss1": 3,
+   "sub1": 3,
+   "story1": 3,
+   "boss0": 3,
+   "add2": 3,
+   "big1": 3,
+   "cnt2": 3,
+   "cmp1": 3,
+   "miss2": 3,
+   "sub2": 3,
+   "story2": 3,
+   "boss1": 3,
+   "add3": 3,
+   "time1": 3,
+   "big2": 3,
+   "coins1": 3,
+   "eo2": 3,
+   "cmp2": 3,
+   "time2": 3,
+   "sub3": 3,
+   "story3": 3,
+   "boss2": 3,
+   "big3": 3,
+   "mult1": 3,
+   "coins2": 3,
+   "cnt3": 3,
+   "sub4": 3,
+   "time3": 3,
+   "big4": 3,
+   "mult2": 3,
+   "cmp3": 3,
+   "coins3": 3,
+   "boss3": 3
+  },
+  "read": {
+   "sound1": 3,
+   "sight1": 3,
+   "rhyme1": 3,
+   "pic1": 3,
+   "sound2": 3,
+   "build1": 3,
+   "sent1": 3,
+   "boss0": 3,
+   "sight2": 3,
+   "rhyme2": 3,
+   "pic2": 3,
+   "build2": 3,
+   "sent2": 3,
+   "comp1": 3,
+   "boss1": 3,
+   "sight3": 3,
+   "pic3": 3,
+   "build3": 3,
+   "comp2": 3,
+   "boss2": 3,
+   "pic4": 3,
+   "build4": 3,
+   "boss3": 3
+  },
+  "es": {
+   "es_greet1": 3,
+   "es_color1": 3,
+   "es_num1": 3,
+   "es_animal1": 3,
+   "es_greet2": 3,
+   "es_color2": 3,
+   "es_num2": 3,
+   "es_animal2": 3,
+   "boss0": 3,
+   "es_food1": 3,
+   "es_body1": 3,
+   "es_family1": 3,
+   "es_teen1": 3,
+   "es_food2": 3,
+   "es_body2": 3,
+   "es_family2": 3,
+   "es_teen2": 3,
+   "boss1": 3,
+   "es_mix1": 3,
+   "es_mix2": 3,
+   "boss2": 3
+  }
+ },
+ "mapv": 2
+}

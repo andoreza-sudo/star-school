@@ -2,15 +2,15 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** P0-01 (test and screenshot harness), then P0-02, P0-03, P0-04, P5-01.
+**Next up:** P0-02, P0-03, P0-04, P5-01.
 
-**Current version:** v30
+**Current version:** v31
 
 ## Chunk status
 
 Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 
-- (none yet)
+- P0-01 v31
 
 ## Handoff notes
 
@@ -20,9 +20,35 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 
 Things noticed while working that are outside the current chunk. One line each, with the chunk that noticed it.
 
-- (none yet)
+- (P0-01) `node tools/smoke.js` takes about 95 s because the bot waits for the app's own 1.2 s between questions. Fine for now; a later chunk could shorten it with a fake clock.
+- (P0-01) `node tools/test.js` only prints and always exits 0 until P0-04 makes it a real check.
+- (P0-01) `python3 tools/build.py` re-draws the icons with Pillow, so `icon-*.png` can show as modified in git after a rebuild even when nothing changed visually.
 
 ## Log
+
+### P0-01: Test and screenshot harness (v31), 2026-11-10, Claude
+- New `tools/package.json` (devDependency `playwright-core` only, uses system Chrome via `CHROME` or `/usr/bin/google-chrome`, no browser download) and `.gitignore` (`tools/node_modules`, `tools/out`).
+- `tools/lib/browser.js`: launches Chrome headless, opens built `index.html` over `file://`, seeds `localStorage['starschool-v2']` from a fixture, blocks and records all http(s) requests, collects console errors and uncaught exceptions.
+- `tools/shots.js [--fixture=name] <screen...>`: PNGs to `tools/out/` at 600x960, 1024x600, 380x780. Screens: setup, home, map, map-read, map-es, question, question-read, boss, finish, gameroom, grown, shop, stickers.
+- `tools/smoke.js`: bot does fresh setup, one full 10/10 round on each path through the real UI (reads `G.q.ans`), Game Room, Grown-ups (long press on the gear), loads the `midway` fixture and checks stars, coins, pet hat and map progress; fails on any console error, exception or network request.
+- `tools/fixtures/fresh.json`, `midway.json` (v30 save: progress in all three paths, misses, coins, wearables), `maxed.json`.
+- `tools/check.sh`: build, `test.js`, `smoke.js`, size report (fails over 1.5 MB, warns over 1.2 MB).
+- No app code changed. `VER` v30 -> v31.
+- Results: `bash tools/check.sh` exit 0; test.js 207000 generated, 0 errors; smoke OK, zero console errors, zero network requests; index.html 374,697 bytes. Looked at home 600x960, question 380x780, finish 1024x600.
+
+Checklist 7.1:
+- [x] Only the files named in the chunk were changed (plus built output).
+- [x] `VER` bumped by one.
+- [x] Build ran; `index.html`, `sw.js`, `manifest.json` rebuilt.
+- [x] `node tools/test.js` exits 0.
+- [x] `node tools/smoke.js` exits 0 with zero console errors.
+- [x] Screenshots at all three sizes taken; three looked at.
+- [x] `midway` fixture loads with the same stars, coins, pet and map progress.
+- [x] Built size printed; under 1.5 MB.
+- [x] No network requests at runtime (smoke runs with http(s) blocked and records attempts).
+- [x] No new emoji or colors in app code (no app code changed).
+- [x] PROGRESS.md entry added.
+- [x] One commit `P0-01: Test and screenshot harness (v31)`.
 
 ### Plan written (v30)
 - Added docs: ROADMAP, CURRICULUM, BRAIN_TEASERS, DESIGN_SYSTEM, CONTRIBUTING, this log.
