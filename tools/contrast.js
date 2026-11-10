@@ -19,6 +19,8 @@ for (const f of ['play', 'good']) rules.push(['surface', f, 3, 'white large text
 // shade on its tint: 4.5
 for (const s of ['math', 'read', 'es', 'disc', 'bt', 'play']) rules.push([s + '-shade', s + '-tint', 4.5, 'shade on tint']);
 rules.push(['good-ink', 'good-tint', 4.5, 'shade on tint'], ['try-ink', 'try-tint', 4.5, 'shade on tint'], ['brand-shade', 'brand-tint', 4.5, 'shade on tint']);
+// math visuals (P1-10): lines and fills that carry meaning need 3:1 against the white card (WCAG 1.4.11)
+for (const g of ['ink-2', 'ink-3', 'math', 'math-shade', 'play', 'read']) rules.push([g, 'surface', 3, 'viz graphic on surface']);
 let fail = 0;
 for (const [a, b, min, what] of rules) {
   const r = ratio(a, b), ok = r >= min;

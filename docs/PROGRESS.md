@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** wave 3: P1-03, P1-05 (Opus), P1-10 (Opus) in progress; then P1-06, P1-11.
+**Next up:** wave 3: P1-03, P1-05 (Opus) in progress; P1-11 next (builds on VIZ); then P1-06 after P1-05.
 
-**Current version:** v44
+**Current version:** v45
 
 ## Chunk status
 
@@ -24,6 +24,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - FIX number pad reveal v42
 - P1-09 v43
 - P1-04 v44
+- P1-10 v45
 
 ## Handoff notes
 
@@ -69,6 +70,10 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-02) Coin icon swapped only in chrome chips/prices (home, shop, pet care, grown-ups). `🪙` remains in `38-skills.js` (Coins skill `e`, a map node picture; P4-03 skill icons), `50-round.js` (world-finished toast "+20 🪙"; left alone because P1-02 is refactoring that file), `52-balloons.js`, and games 60/62/72 (out of scope). The other 12 risky emoji are untouched.
 - (P4-02) The `.stars` chip line in `46-home.js` (stars + coins) was edited for the coin icon; P5-04 also adds to the home stat row, so expect a one-line merge there.
 - (P4-02) The icon sheet is built inside `tools/shots.js` (no dev screen in the app). Icons are drawn for the 24 grid with the recipe in the `15-icons.js` header; `close` and `times` are nearly the same shape on purpose (times is slightly smaller).
+- (P1-10) `VIZ.clock` is not used by `genTime` yet: the old `clockSVG` (32-gen-read.js) has raw hex colours and a different look, and the chunk allows replacing it only if identical. The new clock keeps "short red hour hand, long blue minute hand", so the hint text still fits; P2-03 (Clock Tower) should switch `genTime` to `VIZ.clock` and delete `clockSVG` and the `.clock` rule in 40-games.css.
+- (P1-10) Tap visuals wider than about 340 units shrink on a 380 px phone (max-width), so their targets drop under 48 px: a fraction bar with 7-8 tap parts, or a number line with more than 6 tap values. Generators for the `tap` kind should stay within that (documented in the 23-viz.js header); P1-03/P1-04 could add a check.
+- (P1-10) Number-line hops (`jumps`, arcs for "+3" on a line) are not in VIZ yet; grade 1-2 addition on a number line (P2-03/P2-04) will want them. Small add-on to `numLine` in the same style.
+- (P1-10) `VIZ.base10(999)` is 404 units wide, so on a 380 px phone it scales to about 0.88 (cells about 5 px). Readable; a later chunk could stack flats when n > 599 if it looks small on a real phone.
 
 - (P1-09) The finish screen text "Get 7 right to open the next stop" is fixed; on a 5-question passage round the pass mark is 4 (`floor(n*.7+.01)`). Reword the message from `n` when a passage skill ships (P2-25).
 - (P1-09) Stored misses in `makeQ` (`{...pick(ms).q}`) keep `q.ctx` and `q.bk`, so a missed passage question comes back with its passage; P5-02 should rebuild with `bankRebuild(q.bk)` (or `genQ`) instead of copying.
@@ -77,6 +82,15 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P1-09) `tools/node_modules` is not in a fresh worktree; `check.sh` runs `npm install` itself, which needs the network.
 
 ## Log
+
+### P1-10 Math visuals library, core (v45, 2026-11-10, Claude)
+- What changed: new `src/js/23-viz.js` with `VIZ.tenFrame(n, total, o)`, `base10(n)`, `numLine({min, max, step, labels, marks, hide, tapValues, den, w})`, `fracBar(n, d, {unit, tap, w})`, `fracCircle(n, d, {tap})`, `clock(h, m, {nums})`, `array(rows, cols)`, `dots(n, 'row'|'ten'|'dice'|'scatter', {seed, b, fade})`. Each returns one inline `<svg class="viz">` string (viewBox in phone px, no ids, defs, filters or Math.random; same input, same markup). The visual language (structure lines in ink, quantities in `--math` with a `--math-shade` rim, second set `--play`, faded = opacity .3, unknown = dashed `--brand` "?" box, round joins) and the tap-target contract (`.vt` + `data-v`, states `.sel/.right/.wrong/.vx`, 48 units) are documented in the file header for P1-11 and Phase 2. New `src/css/32-viz.css` (tokens only): sizes by `--vw` x `--vz` (1.3 on tablets) x the prompt's `--k`; interactive visuals ignore `--k`.
+- Not used in generators (chunk Out). `clockSVG` in 32-gen-read.js left alone (not identical; see Ideas).
+- Files: src/js/23-viz.js (new), src/css/32-viz.css (new), tools/test.js (new check "viz"), tools/shots.js (`viz` sheet, `viz-q` a ten frame in a real question), tools/check.sh (hex guard covers 32-viz.css), tools/contrast.js (6 "viz graphic on surface" 3:1 pairs), tools/build.py (VER), built output.
+- Tests: check.sh ok: contrast 48 pairs / test.js 17 of 17 (viz: 893 visuals; typical inputs all under 2.5 KB, largest base10(999) 1.7 KB; tags balance, no NaN, deterministic, no filter/id/url/raw colour, tap targets at least 48x48, scatter dots never overlap over 380 layouts) / smoke ok / index.html 441,993 bytes (+22.7 KB: 23-viz.js 19.9 KB, half of it the header documentation; 32-viz.css 2.7 KB).
+- Screenshots: viz and viz-q at 600x960, 1024x600, 380x780. Looked at the viz sheet (600x960 and 380x780), a clock crop after shortening the hands, viz-q at 380x780 and 1024x600: all visuals readable at 380 px, fraction and negative labels clear, tap states distinct.
+- Checklist 7.1: all ticked (new files plus tests/tools and built output; midway fixture and no-network covered by smoke; no emoji added; no raw colours). Not pushed: built on branch P1-10-viz for merge; VER v45 is provisional.
+- Merge: built on a parallel branch, renumbered v44 -> v45 at merge.
 
 ### P1-04 New kinds B: match, tap, spell (v44, 2026-11-10, Claude)
 - What changed: three new entries at the end of `KIND` in `src/js/49-kinds.js` (marked `// ---- P1-04 kinds ----`), each with render/bind/right/retry/reveal/spoken/validate. `match`: `items` and shuffled `opts` ([{v,l,h}], 3 to 5 pairs), tap one then its partner, matched pairs get their own colour; a wrong pair submits `'!'` (first one = miss and retry, second = reveal all pairs), all pairs right submits `q.ans` (sorted values joined by `|`). `tap`: `q.html` holds elements with `data-v`; tapping submits the value (they get role=button, tabindex, Enter/Space). `spell`: `word`, optional `lang:'es'` (adds the n/accent row), `.lslots` slots in html plus a visible clue, in-app QWERTY keyboard with a backspace icon key; wrong word keeps the right start (like build). No engine change: all three use `submit(value, el)` and the existing compare.

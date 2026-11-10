@@ -85,6 +85,64 @@ const SCREENS = {
   'kb-tap-line': { run: p => kbShow(p, 'tapLine') },
   'kb-spell': { run: async p => { await kbShow(p, 'spell'); await p.evaluate(() => { $$('.sk')[10].click(); $$('.sk')[0].click(); }); } },
   'kb-spell-es': { run: p => kbShow(p, 'spellEs') },
+
+  // ---- P1-10 math visuals ----
+  // Sheet: every VIZ visual with typical and edge inputs, plus the tap states (sel, right, wrong, faded). Full page.
+  viz: {
+    full: true,
+    run: async p => {
+      await p.evaluate(() => {
+        const items = [
+          ['tenFrame(7)', VIZ.tenFrame(7)],
+          ['tenFrame(3, 5)', VIZ.tenFrame(3, 5)],
+          ['tenFrame(16, 20, {b:6, fade:2})', VIZ.tenFrame(16, 20, { b: 6, fade: 2 })],
+          ['base10(47)', VIZ.base10(47)],
+          ['base10(999)', VIZ.base10(999)],
+          ['base10(305)', VIZ.base10(305)],
+          ['numLine({max:20, marks:[13], hide:[10]})', VIZ.numLine({ max: 20, marks: [13], hide: [10] })],
+          ['numLine({min:-5, max:5, tapValues}) states', VIZ.numLine({ min: -5, max: 5, tapValues: [-4, -2, 0, 2, 4] })],
+          ['numLine({max:1, step:.25, den:4})', VIZ.numLine({ max: 1, step: 0.25, den: 4, marks: [0.75] })],
+          ['numLine({max:100, step:10})', VIZ.numLine({ max: 100, step: 10, hide: [60] })],
+          ['fracBar(3, 4, {unit:true})', VIZ.fracBar(3, 4, { unit: true })],
+          ['fracBar(5, 4)', VIZ.fracBar(5, 4)],
+          ['fracBar(0, 6, {tap:true}) states', VIZ.fracBar(0, 6, { tap: true })],
+          ['fracCircle(3, 8)', VIZ.fracCircle(3, 8)],
+          ['fracCircle(7, 4)', VIZ.fracCircle(7, 4)],
+          ['fracCircle(0, 3, {tap:true}) states', VIZ.fracCircle(0, 3, { tap: true })],
+          ['clock(3, 0)', VIZ.clock(3, 0)],
+          ['clock(10, 45)', VIZ.clock(10, 45)],
+          ['array(3, 4)', VIZ.array(3, 4)],
+          ['array(10, 10)', VIZ.array(10, 10)],
+          ["dots(8, 'row')", VIZ.dots(8, 'row')],
+          ["dots(14, 'ten')", VIZ.dots(14, 'ten')],
+          ["dots(9, 'dice')", VIZ.dots(9, 'dice')],
+          ["dots(17, 'scatter', {seed:2, b:5})", VIZ.dots(17, 'scatter', { seed: 2, b: 5 })],
+        ];
+        const cells = items.map(([t, s]) => `<div class="vzc"><div class="vzn">${t} <i>${s.length} B</i></div>${s}</div>`).join('');
+        view(`<style>.vzg{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:8px;padding:8px}
+          .vzc{background:var(--surface);border-radius:var(--r-chip);padding:8px;box-shadow:var(--shadow)}
+          .vzn{font-size:var(--fs-1);color:var(--ink-2);margin-bottom:6px}
+          #app,html,body{height:auto;overflow:visible}</style>
+          <div class="top"><div class="title">Math visuals</div></div><div class="vzg">${cells}</div>`);
+        // tap states as the tap kind will set them
+        const st = (sel, cls) => { const e = document.querySelectorAll(sel); [['sel', 0], ['right', 1], ['wrong', 2], ['vx', 3]].forEach(([c, i]) => e[i] && cls.includes(c) && e[i].classList.add(c)); };
+        const all = ['sel', 'right', 'wrong', 'vx'];
+        st('.viz-nl.vi .vt', all);
+        st('.viz-fb.vi .vt', all);
+        st('.viz-fc.vi .vt', ['sel', 'right']);
+      });
+    },
+  },
+  // A visual inside a real question prompt (fit() and --k apply), with the number pad.
+  'viz-q': {
+    run: async p => {
+      await p.evaluate(() => {
+        start('math', 0);
+        G.q = { kind: 'num', html: VIZ.tenFrame(8) + '<div class="sub">How many?</div>' + SLOT, ans: '8', say: 'How many?', label: 'viz 8', hint: { k: 'text', s: 'Count the dots.' } };
+        renderQ();
+      });
+    },
+  },
 };
 
 // Starts a demo bank question (bi = item index) or the demo passage round, through the real round engine.
