@@ -12,8 +12,8 @@ function raceQ(cat){
   if(cat=='math'){const big=passedAny('math','add',1),sub=passedAny('math','sub',1)&&coin(),mx=big?18:10;
     if(sub){const a=R(2,mx),b=R(Math.max(0,a-9),Math.min(a,9));return{kind:'num',html:`<div class="eq">${a} − ${b} = ${SLOT}</div>`,ans:String(a-b),say:''}}
     const a=R(0,Math.min(9,mx)),b=R(0,Math.min(9,mx-a));return{kind:'num',html:`<div class="eq">${a} + ${b} = ${SLOT}</div>`,ans:String(a+b),say:''}}
-  if(cat=='sight'){const lv=passedAny('read','sight',3)?3:passedAny('read','sight',2)?2:1;return genSight(lv)}
-  const sets=Object.keys(SPN).filter(k=>passedAny('es','es_'+k,1));return genEs(sets.length?pick(sets):pick(['color','num']),1)}
+  if(cat=='sight'){const lv=passedAny('read','sight',3)?3:passedAny('read','sight',2)?2:1;return genQ('sight',lv)}
+  const sets=Object.keys(SPN).filter(k=>passedAny('es','es_'+k,1));return genQ('es_'+(sets.length?pick(sets):pick(['color','num'])),1)}
 function race(cat){S.race=S.race||{};const best=S.race[cat]||0;
   view(`<div class="top"><button class="btn sm" id="quit">✕</button><div class="prog"><div id="rbar" style="width:100%;background:linear-gradient(90deg,#ef4444,#f59e0b)"></div></div>
    <div class="stars" id="rsc">⚡ 0</div><div class="stars">🏆 ${best}</div></div><div class="play" id="rplay"></div>`);
