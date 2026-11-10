@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** wave 3: P1-03, P1-04, P1-05 (Opus), P1-10 (Opus) in progress; then P1-06, P1-11. P1-03/P1-04/P1-09 build on `KIND`; P4-03 adds the next ~60 icons.
+**Next up:** wave 3: P1-03, P1-05 (Opus), P1-10 (Opus) in progress; then P1-06, P1-11.
 
-**Current version:** v43
+**Current version:** v44
 
 ## Chunk status
 
@@ -23,6 +23,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P1-02 v41
 - FIX number pad reveal v42
 - P1-09 v43
+- P1-04 v44
 
 ## Handoff notes
 
@@ -33,6 +34,10 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 Things noticed while working that are outside the current chunk. One line each, with the chunk that noticed it.
 
 - (P1-02, FIXED in v42) Old bug, kept on purpose (the chunk must not change behaviour): after the second wrong try on a `num` question the slot shows the child's wrong number in the orange "answer" style, not the right one (the pad handler writes `st.typed` into `#slot` after `submit` has revealed the answer; same in Speed Race after a wrong "check" tap). Fix in `KIND.num.bind` (49-kinds.js): skip the slot write when `st.lock` became true during `submit`. The voice already says the right answer.
+- (P1-04) The spell keyboard is QWERTY with 10 keys in the top row; at 380 px wide each key is about 34 px wide (48 px tall). The roadmap's "44 px min keys in portrait" cannot hold for 10 columns at 380; height and gaps are as large as fits. A later pass could offer a 2-row-per-half layout if tablets in portrait complain (they get about 56 px keys at 600).
+- (P1-04) Spell hint: `hintHTML` k 'next' reads `G.built`/`q.tiles` (build only); spell questions must use `{k:'say', w, s}` (validate rejects 'next').
+- (P1-04) `tap` html is shown inside `.prompt`, whose font size is the huge `--big`; generators wrap content in `.tpz` (fs-6) and use `.tp` (48 px) for targets. A number line of more than 7 ticks does not fit 380 px at 48 px each.
+- (P1-04) smoke/shots drive the new kinds by putting a sample into `G.q` and calling `renderQ()`; stale `next()` timers from a previous sample hit the new round, so smoke waits 2.8 s between samples.
 - (P1-02) Fact Sprint (`57-fluency.js`) builds its own number pad (no check key) instead of `KIND.num`; P4-10 (keypad redesign) should move it onto `KIND.num.render/bind` so all pads stay alike.
 - (P1-02) `KIND.*.right/reveal` find the answer area by fixed ids (`#slot`, `#ls0..`, `.ch`), so only one question can be on screen at a time. Fine for rounds and races; a two-question layout would need a root element passed in.
 
@@ -72,6 +77,15 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P1-09) `tools/node_modules` is not in a fresh worktree; `check.sh` runs `npm install` itself, which needs the network.
 
 ## Log
+
+### P1-04 New kinds B: match, tap, spell (v44, 2026-11-10, Claude)
+- What changed: three new entries at the end of `KIND` in `src/js/49-kinds.js` (marked `// ---- P1-04 kinds ----`), each with render/bind/right/retry/reveal/spoken/validate. `match`: `items` and shuffled `opts` ([{v,l,h}], 3 to 5 pairs), tap one then its partner, matched pairs get their own colour; a wrong pair submits `'!'` (first one = miss and retry, second = reveal all pairs), all pairs right submits `q.ans` (sorted values joined by `|`). `tap`: `q.html` holds elements with `data-v`; tapping submits the value (they get role=button, tabindex, Enter/Space). `spell`: `word`, optional `lang:'es'` (adds the n/accent row), `.lslots` slots in html plus a visible clue, in-app QWERTY keyboard with a backspace icon key; wrong word keeps the right start (like build). No engine change: all three use `submit(value, el)` and the existing compare.
+- Files: src/js/49-kinds.js, src/css/37-kinds-b.css (new, tokens only), tools/lib/kb-samples.js (new, sample questions), tools/test.js (new check 13 plus samples in check 12), tools/shots.js (group kb-*), tools/smoke.js (step 8), tools/build.py (VER), built output.
+- Tests: test.js 18 checks (see below) / smoke.js ok (steps 1-8; new: match wrong pair then pass, match two misses reveal, tap wrong then right, spell cat after a wrong start, spell es niño via the accent key; 48 px key height) / sizes in check.sh output.
+- Screenshots: kb-match-half, kb-tap-word, kb-tap-line, kb-spell, kb-spell-es at the three sizes; looked at match-half 380x780 and 1024x600, spell-es 380x780, spell 1024x600, tap-line 380x780 (fixed a 7-tick row that overflowed by 8 px, and made the selected match button distinct from pair colour).
+- Checklist 7.1: all ticked (midway fixture and no-network covered by smoke; no emoji added; no raw hex in new CSS).
+- Left over / notes: see "Ideas and issues" (key width at 380, spell hint kind, tap font, smoke timers). Built on branch P1-04-kinds-b for merge with P1-03 (also appends to KIND); VER v44 is provisional.
+- Merge: built on a parallel branch, renumbered v46 -> v44 at merge.
 
 ### P1-09 Content bank format, round hook, passage panel (v43, 2026-11-10, Claude)
 - What changed: new `src/js/37-bank.js`: `BANK[id]` items and `PASS[id]` passages (format in the file header and CURRICULUM section 8), `genBank(id, lv)` (forms choice, wide, tap, spell now; order, match, multi once their kinds register `BANKF.form`), `genPassage(id, lv)` (one passage question, for gen), `passageRound(sk, id, lv)` (the round list), `bankRebuild(q.bk)`, `bankCtx(ctx)` (panel HTML), and the validators `bankItemProblems`, `bankProblems(id, {levels, min})`, `passageProblems(id)`. Item choice: live play shows never-shown items first, then least recently shown; without a round it depends on the seed only, so `genQ(sk, lv, seed)` stays reproducible. New `src/css/38-bank.css` (tokens only) and `src/data/d-demo.js` (6 demo items, 1 demo passage; no demo skill in SK).

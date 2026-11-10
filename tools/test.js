@@ -432,6 +432,8 @@ run('kinds: every question passes KIND[q.kind].validate; unknown kind fails',()=
   const qs=[];
   for(const id in SK)for(let lv=1;lv<=SK[id].max;lv++)for(let s=1;s<=300;s++)qs.push([id+' L'+lv,genQ(id,lv,s)]);
   for(let i=0;i<300;i++)qs.push(['race math',raceQ('math')]);
+  const KBS=${JSON.stringify(require('./lib/kb-samples.js'))};
+  for(const w in KBS)qs.push(['P1-04 sample '+w,KBS[w]]);
   for(const [w,q] of qs){
     out.n++;
     if(!KIND[q.kind]){out.bad.push(w+': unknown kind '+q.kind);continue}
@@ -550,6 +552,46 @@ run('banks: demo bank and passage validate, seeded and reproducible, memory, rou
   delete PASS.__p;
   out;`);
   return{problems:uniq(out.bad),note:out.n+' questions'};
+});
+
+// ---- 14: new kinds B: match, tap, spell (P1-04) ----
+run('kinds B: sample questions of match, tap, spell pass validate and render; broken ones fail',()=>{
+  const samples=require('./lib/kb-samples.js');
+  const out=eval(js+`
+  const out={n:0,bad:[]};
+  const SAM=${JSON.stringify(samples)};
+  for(const w in SAM){
+    const q=SAM[w];out.n++;
+    if(!KIND[q.kind]){out.bad.push(w+': unknown kind');continue}
+    for(const p of kindProblems(q))out.bad.push(w+': '+p);
+    try{if(typeof KIND[q.kind].render(q)!=='string')out.bad.push(w+': render did not return a string')}catch(e){out.bad.push(w+': render threw '+e.message)}
+  }
+  for(const k of ['match','tap','spell'])if(!Object.values(SAM).some(q=>q.kind==k))out.bad.push('no sample for '+k);
+  const must=(name,q)=>{if(!kindProblems(q).length)out.bad.push('validator missed: '+name)};
+  const m=SAM.match,sp=SAM.spell,tp=SAM.tapWord;
+  must('match 2 pairs',{...m,items:m.items.slice(0,2),opts:m.opts.slice(0,2),ans:'cat|dog'});
+  must('match 6 pairs',{...m,items:[...m.items,{v:'a',l:'a'},{v:'b',l:'b'}],opts:[...m.opts,{v:'a',l:'a'},{v:'b',l:'b'}],ans:'a|b|cat|cow|dog|duck'});
+  must('match values differ',{...m,opts:m.opts.map((o,i)=>i?o:{v:'zzz',l:'x'})});
+  must('match duplicate values',{...m,items:m.items.map(c=>({...c,v:'cat'}))});
+  must('match wrong ans',{...m,ans:'cat'});
+  must('tap ans not in html',{...tp,ans:'dog'});
+  must('tap one target',{...tp,html:'<span data-v="cat">cat</span>'});
+  must('tap duplicate values',{...tp,html:'<i data-v="a"></i><i data-v="a"></i>',ans:'a'});
+  must('spell bad letters',{...sp,word:'c4t',ans:'c4t'});
+  must('spell accent without es',{...sp,word:'niño',ans:'niño'});
+  must('spell ans differs',{...sp,ans:'cut'});
+  must('spell no slots',{...sp,html:'<div class="lslots"></div>'});
+  must('spell no clue',{...sp,html:sp.html.replace('Spell the word you hear','')});
+  must('spell build-style hint',{...sp,hint:{k:'next'}});
+  // the in-app keyboard has every letter the validator allows
+  const keys=new Set();
+  for(const r of KIND.spell.ROWS)for(const c of r)keys.add(c);
+  for(const c of 'abcdefghijklmnopqrstuvwxyz')if(!keys.has(c))out.bad.push('keyboard lacks '+c);
+  const esHtml=KIND.spell.render(SAM.spellEs);
+  for(const c of 'ñáéíóúü')if(!esHtml.includes('data-ch="'+c+'"'))out.bad.push('es keyboard lacks '+c);
+  if(KIND.spell.render(SAM.spell).includes('data-ch="ñ"'))out.bad.push('accent row shown without lang es');
+  out;`);
+  return{problems:uniq(out.bad),note:out.n+' samples'};
 });
 
 // ---- report ----

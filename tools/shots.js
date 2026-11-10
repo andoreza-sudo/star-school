@@ -77,6 +77,14 @@ const SCREENS = {
   'bank-choice': { run: async p => { await bankDemo(p, 'bankdemo', 0); } },
   'bank-tap': { run: async p => { await bankDemo(p, 'bankdemo', 2); } },
   'bank-spell': { run: async p => { await bankDemo(p, 'bankdemo', 3); } },
+
+  // ---- P1-04 kinds B: sample questions shown by the real round engine (start, put the sample in G.q, renderQ) ----
+  'kb-match': { run: p => kbShow(p, 'match') },
+  'kb-match-half': { run: async p => { await kbShow(p, 'match'); await p.evaluate(() => { $$('.mb')[0].click(); $$('.mb[data-s="R"]')[2].click(); $$('.mb')[1].click(); }); } },
+  'kb-tap-word': { run: p => kbShow(p, 'tapWord') },
+  'kb-tap-line': { run: p => kbShow(p, 'tapLine') },
+  'kb-spell': { run: async p => { await kbShow(p, 'spell'); await p.evaluate(() => { $$('.sk')[10].click(); $$('.sk')[0].click(); }); } },
+  'kb-spell-es': { run: p => kbShow(p, 'spellEs') },
 };
 
 // Starts a demo bank question (bi = item index) or the demo passage round, through the real round engine.
@@ -88,6 +96,11 @@ async function bankDemo(p, sk, bi) {
     start('read', NODES.read.length - 1);
     if (bi != null) { G.q = genBank('demo', 1, { bi, s: 3 }); G.q.sk = sk; G.q.lv = 1; renderQ(); }
   }, [sk, bi]);
+}
+
+const KB = require('./lib/kb-samples.js');
+async function kbShow(p, name) {
+  await p.evaluate(q => { start('math', 0); G.q = q; renderQ(); }, KB[name]);
 }
 
 async function main() {

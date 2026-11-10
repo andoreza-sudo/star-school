@@ -233,6 +233,58 @@ async function main() {
     const stars = await page.evaluate(() => getSt('read', NODES.read.length - 1));
     if (stars !== 3) fail('passage round with 5 of 5 should earn 3 stars, got ' + stars); else step('5 of 5 on a 5-question round earns 3 stars');
 
+    // 9. new kinds B (P1-04): the bot plays a sample of each through the real round engine
+    const KB = require('./lib/kb-samples.js');
+    const kbShow = async name => {
+      await page.waitForTimeout(2800); // the engine's own pending next() from the last sample must fire before a new round starts
+      await page.evaluate(() => home());
+      await page.evaluate(q => { start('math', 0); G.q = q; renderQ(); }, KB[name]);
+    };
+    const kbState = () => page.evaluate(() => ({ lock: G.lock, tries: G.tries, ok: !!document.querySelector('.mt.ok, .tp.right, .ls.ok'), done: G.done }));
+    // match: one wrong pair is a miss and keeps the round going; then every pair right passes
+    await kbShow('match');
+    await page.click('.mb[data-s="L"][data-i="0"]');
+    await page.click('.mb[data-s="R"][data-i="0"]'); // cat with puppy: wrong
+    let st = await kbState();
+    if (st.tries !== 1 || st.lock) fail('match: a wrong pair should count one miss and stay open ' + JSON.stringify(st));
+    for (const [l, r] of [[0, 2], [1, 0], [2, 3], [3, 1]]) {
+      await page.click(`.mb[data-s="L"][data-i="${l}"]`);
+      await page.click(`.mb[data-s="R"][data-i="${r}"]`);
+    }
+    st = await kbState();
+    if (!st.lock || !st.ok || st.done !== 1) fail('match: all pairs right did not pass ' + JSON.stringify(st)); else step('match: wrong pair = miss, then all pairs right passes');
+    // match: two wrong pairs reveal every pair
+    await kbShow('match');
+    for (let t = 0; t < 2; t++) {
+      await page.waitForFunction(() => G && !G.lock, null, { timeout: 4000 });
+      await page.click('.mb[data-s="L"][data-i="0"]');
+      await page.click('.mb[data-s="R"][data-i="0"]');
+    }
+    const shown = await page.evaluate(() => document.querySelectorAll('.mb.done').length);
+    if (shown !== 8) fail('match: second miss should reveal all 8 buttons as paired, got ' + shown); else step('match: second miss reveals the pairs');
+    // tap: wrong tap marks it, right tap passes
+    await kbShow('tapWord');
+    await page.click('.tp[data-v="mat"]');
+    st = await kbState();
+    if (st.tries !== 1 || st.lock) fail('tap: wrong tap should count one miss ' + JSON.stringify(st));
+    await page.click('.tp[data-v="cat"]');
+    st = await kbState();
+    if (!st.lock || !st.ok) fail('tap: right tap did not pass ' + JSON.stringify(st)); else step('tap: wrong tap = miss, right tap passes');
+    // spell: in-app keyboard only; wrong word keeps the right start; es keyboard has the accent row
+    await kbShow('spell');
+    for (const c of 'cut') await page.click(`.sk[data-ch="${c}"]`);
+    await page.waitForFunction(() => G && !G.lock && G.typed === 'c', null, { timeout: 4000 });
+    for (const c of 'at') await page.click(`.sk[data-ch="${c}"]`);
+    st = await kbState();
+    if (!st.lock || !st.ok) fail('spell: cat did not pass ' + JSON.stringify(st));
+    await kbShow('spellEs');
+    for (const c of 'niño') await page.click(`.sk[data-ch="${c}"]`);
+    st = await kbState();
+    if (!st.lock || !st.ok) fail('spell es: niño did not pass ' + JSON.stringify(st)); else step('spell: wrong word keeps its right start; cat and niño (accent key) pass');
+    const kbBox = await page.evaluate(() => { const b = document.querySelector('.sk').getBoundingClientRect(); return b.height; });
+    if (kbBox < 48) fail('spell key shorter than 48 px: ' + kbBox);
+    await page.evaluate(() => home());
+
     for (const e of errors) fail(e);
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');
