@@ -70,7 +70,25 @@ const SCREENS = {
       });
     },
   },
+
+  // ---- P1-09 content bank: demo skills are added by hand (they are not on a map) ----
+  'bank-passage': { run: async p => { await bankDemo(p, 'passdemo'); } },
+  'bank-passage-closed': { run: async p => { await bankDemo(p, 'passdemo'); await p.click('.bctx-h'); } },
+  'bank-choice': { run: async p => { await bankDemo(p, 'bankdemo', 0); } },
+  'bank-tap': { run: async p => { await bankDemo(p, 'bankdemo', 2); } },
+  'bank-spell': { run: async p => { await bankDemo(p, 'bankdemo', 3); } },
 };
+
+// Starts a demo bank question (bi = item index) or the demo passage round, through the real round engine.
+async function bankDemo(p, sk, bi) {
+  await p.evaluate(([sk, bi]) => {
+    SK.bankdemo = { t: 'Bank demo', e: '📚', area: 'read', max: 1, bank: 'demo', gen: lv => genBank('demo', lv) };
+    SK.passdemo = { t: 'Passage demo', e: '📗', area: 'read', max: 1, bank: 'demo', gen: lv => genPassage('demo', lv), round: lv => passageRound('passdemo', 'demo', lv) };
+    NODES.read.push({ ...NODES.read[0], sk, lv: 1 });
+    start('read', NODES.read.length - 1);
+    if (bi != null) { G.q = genBank('demo', 1, { bi, s: 3 }); G.q.sk = sk; G.q.lv = 1; renderQ(); }
+  }, [sk, bi]);
+}
 
 async function main() {
   const args = process.argv.slice(2);

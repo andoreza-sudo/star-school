@@ -453,6 +453,105 @@ run('kinds: every question passes KIND[q.kind].validate; unknown kind fails',()=
   return{problems:uniq(out.bad),note:out.n+' questions'};
 });
 
+// ---- 13: content banks (P1-09) ----
+run('banks: demo bank and passage validate, seeded and reproducible, memory, round list, validator catches bad items',()=>{
+  const out=eval(js+`
+  const out={n:0,bad:[]},bad=m=>out.bad.push(m);
+  // the demo skills are not in SK (no map node); declare them the way a content chunk would
+  SK.bankdemo={t:'Bank demo',e:'📚',area:'read',max:1,bank:'demo',gen:lv=>genBank('demo',lv)};
+  SK.passdemo={t:'Passage demo',e:'📗',area:'read',max:1,bank:'demo',gen:lv=>genPassage('demo',lv),round:lv=>passageRound('passdemo','demo',lv)};
+  const strip=q=>{const c={...q};delete c.sk;delete c.lv;delete c.seed;return JSON.stringify(c)};
+  // 1. the shipped demo data passes the validator, and every question passes its kind's validator and renders
+  for(const m of bankProblems('demo',{levels:[1]}))bad(m);
+  for(const m of passageProblems('demo'))bad(m);
+  const forms=new Set(BANK.demo.map(i=>i.form||'choice'));
+  for(const f of ['choice','wide','tap','spell'])if(!forms.has(f))bad('demo bank has no '+f+' item');
+  const chk=(w,q)=>{out.n++;for(const m of kindProblems(q))bad(w+': '+m);try{KIND[q.kind].render(q)}catch(e){bad(w+': render threw '+e.message)}
+    if(!q.label||!q.say||!q.hint)bad(w+': label, say or hint missing');if(/undefined|NaN|\\[object/.test(q.html))bad(w+': bad html')};
+  BANK.demo.forEach((it,i)=>{for(let s=1;s<=20;s++)chk('demo item '+i,genBank('demo',1,{bi:i,s}))});
+  for(let s=1;s<=100;s++){chk('genQ bankdemo',genQ('bankdemo',1,s));chk('genQ passdemo',genQ('passdemo',1,s))}
+  // 2. seeded: same (sk, lv, seed) gives the same question; q.bk rebuilds it
+  for(const sk of ['bankdemo','passdemo'])for(let s=1;s<=60;s++){
+    const a=genQ(sk,1,s),b=genQ(sk,1,s);
+    if(JSON.stringify(a)!==JSON.stringify(b))bad(sk+': seed '+s+' not reproducible');
+    if(strip(bankRebuild(a.bk))!==strip(a))bad(sk+': bankRebuild differs for seed '+s);
+  }
+  { const r0=RNG;genQ('bankdemo',1,5);if(RNG!==r0)bad('RNG not restored by genBank') }
+  // 3. live memory: every item once before any repeats; then the least recently shown comes back first
+  bankReset();bankRound();
+  const bis=[];for(let i=0;i<BANK.demo.length*2;i++)bis.push(genQ('bankdemo',1).bk.bi);
+  const n=BANK.demo.length;
+  if(new Set(bis.slice(0,n)).size!==n)bad('live: first '+n+' draws repeat an item: '+bis.slice(0,n));
+  if(bis.slice(n).join()!==bis.slice(0,n).join())bad('live: second pass is not in least-recently-shown order: '+bis);
+  const pbs=[];for(let i=0;i<3;i++)pbs.push(passageRound('passdemo','demo',1)[0].bk.bp);
+  if(PASS.demo.length==1&&new Set(pbs).size!==1)bad('live: passage choice unstable');
+  bankReset();
+  { const a=genQ('bankdemo',1,7).bk.bi,b=genQ('bankdemo',1,7).bk.bi;if(a!==b)bad('after bankReset the choice is not seed-only') }
+  // 4. the round hook list: one passage, every question in order, same ctx, stamped like genQ
+  const rd=SK.passdemo.round(1);
+  if(rd.length!==PASS.demo[0].qs.length)bad('round length '+rd.length);
+  rd.forEach((q,i)=>{chk('round q'+i,q);
+    if(!q.ctx||q.ctx.text!==rd[0].ctx.text||q.ctx.title!==rd[0].ctx.title)bad('round q'+i+': ctx differs');
+    if(q.sk!=='passdemo'||q.lv!==1||q.seed==null)bad('round q'+i+': not stamped with sk, lv, seed');
+    if(q.bk.qi!==i)bad('round q'+i+': not in order');
+    if(strip(bankRebuild(q.bk))!==strip(q))bad('round q'+i+': bankRebuild differs')});
+  if(SK.bankdemo.round)bad('plain bank skill must not have a round hook');
+  // 5. the panel HTML: title and text escaped, words tap-to-hear, hear button
+  const h=bankCtx({title:'<b>T</b>',text:'It is "red" & big.'});
+  if(h.includes('<b>T'))bad('bankCtx does not escape the title');
+  if(!/<span class="w" data-w="red">/.test(h)||!h.includes('data-say="It is &quot;red&quot; &amp; big."'))bad('bankCtx words or hear button wrong: '+h.slice(0,200));
+  // 6. forms without a registered kind are never drawn
+  BANK.__t=[{lv:1,q:'Put in order.',form:'order',order:['a','b','c']},{lv:1,q:'Pick.',a:'x',d:['y','z']}];
+  for(let s=1;s<=30;s++)if(genBank('__t',1,{s}).bk.bi!==1)bad('an order item was drawn without a builder');
+  delete BANK.__t;
+  // 7. the validator must catch seeded bad items (each one alone must give at least one problem)
+  const base={lv:1,q:'Pick one.',a:'x',d:['y','z','w']};
+  const must=(name,it)=>{if(!bankItemProblems(it,'t').length)bad('validator missed: '+name)};
+  must('ok item is fine (control)',{...base,form:'bogus'});
+  if(bankItemProblems(base,'t').length)bad('validator rejects a good item: '+bankItemProblems(base,'t'));
+  must('answer missing',{lv:1,q:'Pick one.',d:['y','z']});
+  must('distractor equals answer',{...base,d:['x','z','w']});
+  must('distractors repeat',{...base,d:['y','y','w']});
+  must('distractors case repeat',{...base,d:['Y','y','w']});
+  must('one distractor',{...base,d:['y']});
+  must('four distractors',{...base,d:['y','z','w','v']});
+  must('bad word in q',{...base,q:'Who said poop?'});
+  must('bad word in a distractor',{...base,d:['y','z','kill']});
+  must('q too long',{...base,q:'a '.repeat(80)});
+  must('choice too long',{...base,d:['y','z','w'.repeat(61)]});
+  must('level not a number',{...base,lv:'1'});
+  must('no q',{lv:1,a:'x',d:['y','z']});
+  must('hint too long',{...base,hint:'h '.repeat(100)});
+  must('pic not an icon',{...base,pic:'nonexistent'});
+  must('tap word missing',{lv:1,q:'Tap it.',form:'tap',sent:'The dog runs.',a:'cat'});
+  must('tap word twice',{lv:1,q:'Tap it.',form:'tap',sent:'The dog and the dog.',a:'dog'});
+  must('spell uppercase',{lv:1,q:'Spell it.',form:'spell',a:'Cat'});
+  must('order duplicates',{lv:1,q:'Order.',form:'order',order:['a','b','a']});
+  must('order too short',{lv:1,q:'Order.',form:'order',order:['a','b']});
+  must('match too few',{lv:1,form:'match',pairs:[['a','b'],['c','d']]});
+  must('match repeats',{lv:1,form:'match',pairs:[['a','b'],['a','d'],['e','f']]});
+  must('multi one answer',{lv:1,q:'Pick all.',form:'multi',a:['x'],d:['y','z']});
+  const goodO={lv:1,q:'Order.',form:'order',order:['a','b','c']},goodM={lv:1,form:'match',pairs:[['a','b'],['c','d'],['e','f']]},goodX={lv:1,q:'All.',form:'multi',a:['x','y'],d:['z','w']};
+  for(const it of [goodO,goodM,goodX])if(bankItemProblems(it,'t').length)bad('validator rejects a good '+it.form+' item: '+bankItemProblems(it,'t'));
+  // bank level: duplicates and counts
+  BANK.__d=[base,{...base}];if(!bankProblems('__d').some(m=>/same q and a/.test(m)))bad('validator missed a duplicate q+a');
+  if(!bankProblems('__d',{levels:[1,2],min:3}).some(m=>/level 2/.test(m)))bad('validator missed a short level');
+  delete BANK.__d;
+  if(!bankProblems('__nope').length)bad('validator missed a missing bank');
+  // passages
+  PASS.__p=[{lv:1,title:'T',text:'A short text.',qs:[base,base]}];
+  if(!passageProblems('__p').some(m=>/3 to 6/.test(m)))bad('validator missed a passage with 2 questions');
+  PASS.__p=[{lv:1,title:'T',text:'He said poop.',qs:[base,{...base,q:'Two?'},{...base,q:'Three?'}]}];
+  if(!passageProblems('__p').some(m=>/bad word/.test(m)))bad('validator missed a bad word in a passage');
+  PASS.__p=[{lv:1,title:'T'.repeat(41),text:'x '.repeat(700),qs:[base,{...base,q:'Two?'},{...base,q:'Three?'}]}];
+  if(passageProblems('__p').length<2)bad('validator missed a long passage title and text');
+  PASS.__p=[{lv:1,title:'T',text:'Fine.',qs:[base,{...base,q:'Two?'},{...base,q:'Three?',form:'spell',a:'cat'}]}];
+  if(!passageProblems('__p').some(m=>/choice or wide/.test(m)))bad('validator missed a non-choice passage question');
+  delete PASS.__p;
+  out;`);
+  return{problems:uniq(out.bad),note:out.n+' questions'};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){

@@ -196,6 +196,43 @@ async function main() {
     }
     if (!numSeen) fail('number pad step: no number question in the first math round');
 
+    // 8. content bank: the round hook plays one passage with 5 questions, the passage panel opens, closes and scrolls
+    //    (demo skills are not on a map, so the step adds a node to the read path by hand)
+    await page.evaluate(() => home());
+    await page.evaluate(() => {
+      SK.passdemo = { t: 'Passage demo', e: '📗', area: 'read', max: 1, bank: 'demo', gen: lv => genPassage('demo', lv), round: lv => passageRound('passdemo', 'demo', lv) };
+      NODES.read.push({ ...NODES.read[0], sk: 'passdemo', lv: 1 });
+      start('read', NODES.read.length - 1);
+    });
+    await page.waitForSelector('.bctx');
+    const bk = await page.evaluate(() => ({ n: G.n, pool: G.pool.length + 1, open: document.querySelector('.bctx').open, words: document.querySelectorAll('.bctx-p .w').length }));
+    if (bk.n !== 5 || bk.pool !== 5) fail('passage round should have 5 questions: ' + JSON.stringify(bk));
+    if (!bk.open || bk.words < 20) fail('passage panel not open with its words: ' + JSON.stringify(bk));
+    await page.click('.bctx-p .w');
+    await page.click('.bctx-h');
+    const closed = await page.evaluate(() => !document.querySelector('.bctx').open && document.querySelector('.bctx').offsetHeight < 80);
+    if (!closed) fail('passage panel did not close');
+    await page.click('.bctx-h');
+    const text0 = await page.evaluate(() => document.querySelector('.bctx-p').textContent);
+    let asked = 0;
+    for (let guard = 0; guard < 30; guard++) {
+      const state = await page.evaluate(() => document.querySelector('#fin') ? 'fin' : (G && G.q && !G.lock ? 'ask' : 'none'));
+      if (state === 'fin') break;
+      if (state === 'none') { await page.waitForTimeout(150); continue; }
+      const same = await page.evaluate(t => document.querySelector('.bctx-p').textContent === t, text0);
+      if (!same) fail('passage text changed between questions');
+      await page.evaluate(() => { window.__q = G.q; });
+      await answer(page);
+      asked++;
+      await page.waitForFunction(() => document.querySelector('#fin') || (G && G.q !== window.__q), null, { timeout: 8000 });
+    }
+    const sc = await page.evaluate(() => G.score);
+    if (asked !== 5 || sc !== 5) fail(`passage round: asked ${asked}, score ${sc}, expected 5 and 5`);
+    else step('passage round: one passage, 5 questions, panel opens and closes, score 5/5');
+    await page.click('#chest', { timeout: 5000 }).catch(() => {});
+    const stars = await page.evaluate(() => getSt('read', NODES.read.length - 1));
+    if (stars !== 3) fail('passage round with 5 of 5 should earn 3 stars, got ' + stars); else step('5 of 5 on a 5-question round earns 3 stars');
+
     for (const e of errors) fail(e);
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');
