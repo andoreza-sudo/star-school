@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** P5-04, P1-02 (Opus), P4-02 (Opus). Then wave 3.
+**Next up:** P1-02 (Opus), P4-02 (Opus). Then wave 3.
 
-**Current version:** v38
+**Current version:** v39
 
 ## Chunk status
 
@@ -18,6 +18,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P5-01 v36
 - P4-01 v37
 - P1-01 v38
+- P5-04 v39
 
 ## Handoff notes
 
@@ -53,6 +54,16 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P0-04) `node tools/test.js` needs a built `index.html` for the size check (it fails with a message if missing); `check.sh` builds first. The size budget (warn 1.2 MB, fail 1.5 MB) lives only in `tools/test.js`.
 
 ## Log
+
+### P5-04 Streak calendar (v39, 2026-11-10, Claude)
+- What changed: new `src/js/55-streak.js` (`STRK` object: date helpers, `calc` pure streak count, `tick`, month `grid`; `streakTick()`, `streakCal(off)` screen) and `src/css/35-streak.css` (tokens only). `finish()` in 50-round.js calls `streakTick()` once per finished learning round (one line) and shows the reward line in the finish messages (one line). Home gets a flame chip (`#stkb`) beside the coins chip; tapping opens the month grid (stars on active days, moon on rest days, today outlined, back up to 4 months). Rest rule: one missed day is forgiven if the day before it was played and no other rest day is in the 7 days before it. Rewards at 3, 7, 14, 30 days: +5, +10, +20, +50 coins and a sticker, once per run (`rw` resets when the streak breaks).
+- Saved: `S.streak = {days: {'Y-M-D': rounds}, best, rw}`; days trimmed to 120; read with defaults when missing or damaged (`STRK.get()`), no migration needed (additive; LATEST stays 3). Keys use the same local-time format as `today()`; day arithmetic is UTC on the calendar date so daylight saving cannot shift a day. Future-dated keys (clock set back) are ignored, never counted.
+- Files: src/js/55-streak.js, src/css/35-streak.css, src/js/46-home.js, src/js/50-round.js, tools/test.js (new check 14), tools/smoke.js (step 6), tools/shots.js (`streak`, `streak-home`), tools/build.py (VER, provisional), docs/PROGRESS.md, built output.
+- Tests: test.js 14 of 14 ok / smoke.js ok / index.html 401 KB
+- Screenshots checked: streak (month grid) and streak-home at 380x780
+- Emoji: only 🔥 ⭐ 🌙 🪙 (all already in tools/emoji-allow.txt; allowlist unchanged)
+- Checklist 7.1: all ticked (midway fixture and no-network covered by smoke)
+- Left over: the in-round "streak" (answers in a row) and this day streak share the word; the flame chip is plain emoji until the icon system (P4-02) lands.
 
 ### P1-01 Seedable randomness and question identity (v38, 2026-11-10, Claude)
 - What changed: `mulberry32`, `let RNG`, `rnd()` in 00-core.js; `R`, `pick`, `shuffle`, `coin` now use `rnd()`. The two direct `Math.random` calls in generator files (`coin`, `genCmp` equal-roll) now use `rnd()`. New `genQ(sk,lv,seed)` in 22-qhelpers.js: seeds RNG, calls `SK[sk].gen(lv)`, restores RNG in a `finally`, stamps `q.sk`, `q.lv`, `q.seed` (uint32, random when omitted). Round engine (`startMix`, `worldPool`, review insert, `makeQ`) and Speed Race sight/Spanish questions go through `genQ`. Games, art, sound still use `Math.random`. No generator output changed; nothing in S changed (no migration).

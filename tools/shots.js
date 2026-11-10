@@ -43,6 +43,9 @@ const SCREENS = {
   grown: { run: async p => { await p.evaluate(() => grown()); } },
   shop: { run: async p => { await p.evaluate(() => shop()); } },
   stickers: { run: async p => { await p.evaluate(() => book()); } },
+  // P5-04: a 5-day streak with one rest day, then the month grid (and the home flame)
+  'streak-home': { run: async p => { await p.evaluate(() => { const T = STRK.idx(today()); S.streak = { days: {}, best: 9, rw: 3 }; [0, 1, 2, 4, 5, 6, 9, 10, 11, 12].forEach(o => { S.streak.days[STRK.key(T - o)] = 1; }); home(true); }); } },
+  streak: { run: async p => { await p.evaluate(() => { const T = STRK.idx(today()); S.streak = { days: {}, best: 9, rw: 3 }; [0, 1, 2, 4, 5, 6, 9, 10, 11, 12].forEach(o => { S.streak.days[STRK.key(T - o)] = 1; }); streakCal(0); }); } },
 };
 
 async function main() {

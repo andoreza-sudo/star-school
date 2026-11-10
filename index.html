@@ -202,6 +202,27 @@ label.tg{display:block;font-size:20px;margin:8px 0}
 @media (max-height:520px){.setup h1{font-size:24px;margin:0 0 6px}.setup .card{margin:6px 0;padding:10px}.petopt{padding:6px 4px}.petopt span{font-size:36px}.prize{font-size:64px}.chestbtn{font-size:90px}.msg{font-size:18px;margin:2px 0}h1{font-size:26px;margin:0 0 8px}.top{padding:6px 10px}.play{padding-top:8px}.tools .btn{padding:6px 10px;font-size:15px}}
 
 /* v4: map, new skills, shop, balloons */
+/* Streak flame chip and calendar (P5-04). Tokens only. */
+.stc-chip{font:inherit;font-size:var(--fs-4);font-weight:700;min-height:var(--tap);min-width:var(--tap);display:inline-flex;align-items:center;gap:var(--s-1);
+  border:0;cursor:pointer;color:var(--play-shade);background:var(--play-tint);border-radius:var(--r-btn);padding:6px 12px;box-shadow:var(--ledge) var(--shadow-ink);font-variant-numeric:tabular-nums}
+.stc-chip.off{color:var(--ink-3);background:var(--surface-2)}
+.stc-chip.off .stc-fl{opacity:.45}
+.stc-card{background:var(--surface);border-radius:var(--r-card);border:2px solid var(--line);padding:var(--s-4);max-width:520px;margin:0 auto;text-align:center}
+.stc-big{font-size:var(--fs-6);font-weight:700;color:var(--play-shade)}
+.stc-sub{font-size:var(--fs-3);margin:var(--s-1) 0;color:var(--ink-2)}
+.stc-sub.small{font-size:var(--fs-1);color:var(--ink-3)}
+.stc-nav{display:flex;align-items:center;justify-content:space-between;margin:var(--s-3) 0 var(--s-2);font-size:var(--fs-3)}
+.stc-nav .btn[disabled]{opacity:.35}
+.stc-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:var(--s-1)}
+.stc-h{font-size:var(--fs-1);font-weight:700;color:var(--ink-3);padding:var(--s-1) 0}
+.stc-d{min-height:var(--tap);border-radius:var(--r-chip);background:var(--surface-2);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1}
+.stc-d.stc-pad{background:none}
+.stc-d.on{background:var(--star-tint)}
+.stc-d.rest{background:var(--brand-tint)}
+.stc-d.now{outline:3px solid var(--brand);outline-offset:-3px}
+.stc-n{font-size:var(--fs-1);color:var(--ink-2)}
+.stc-m{font-size:var(--fs-2);min-height:1em}
+@media (max-width:420px){.stc-card{padding:var(--s-3)}.stc-grid{gap:2px}}
 .petwrap{position:relative;display:inline-block;line-height:1}
 .petwrap .hat{position:absolute;left:50%;top:-.34em;transform:translateX(-50%) rotate(-10deg);font-size:.5em}
 .petwrap .toy{position:absolute;right:-.4em;bottom:-.02em;font-size:.44em}
@@ -420,7 +441,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S));SAVE_FAILED=fals
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v38'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v39'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -853,7 +874,7 @@ function home(first){
   <div class="scroll" id="hs">
    <div class="hero ${sc[0]=='space'?'dark':''}" style="background:${sc[3]}"><div style="position:relative"><div class="petbig ${petAura()}" id="pet">${petHTML()}</div>${needs?`<div class="thought">${cr.food<30?'🍖':cr.clean<30?'🛁':'🎾'}?</div>`:''}</div>
     <div class="hinfo"><div class="hname">${esc(S.name)} & ${pn}</div>
-     <div class="rowh" style="justify-content:flex-start;gap:6px;margin:4px 0"><div class="stars" id="starc">⭐ ${S.stars}</div><div class="stars">🪙 ${S.coins}</div></div>
+     <div class="rowh" style="justify-content:flex-start;gap:6px;margin:4px 0"><div class="stars" id="starc">⭐ ${S.stars}</div><div class="stars">🪙 ${S.coins}</div><button class="stc-chip ${STRK.count()?'':'off'}" id="stkb" aria-label="Streak calendar"><span class="stc-fl">🔥</span>${STRK.count()}</button></div>
      <div class="meter"><div style="width:${pct}%"></div></div><div class="htxt">${growTxt}</div>
      <div class="meter m"><div style="width:${Math.min(d.r,3)/3*100}%"></div></div><div class="htxt">${d.done?"🏆 Today's mission done!":`🎯 Mission: finish 3 rounds today (${d.r}/3)`}</div></div></div>
    <h2 style="margin:14px 4px 8px">Pick a game!</h2>
@@ -870,10 +891,11 @@ function home(first){
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
   $$('.game').forEach(b=>b.onclick=()=>{SFX.whoosh();pathMap(b.dataset.p)});
   $('#snd').onclick=()=>{S.sound=!S.sound;S.music=S.sound;save();home()};
+  $('#stkb').onclick=()=>{SFX.whoosh();streakCal(0)};
   $('#book').onclick=book;$('#shop').onclick=shop;$('#mix').onclick=()=>{SFX.whoosh();startMix()};$('#race').onclick=raceMenu;$('#flu').onclick=()=>{SFX.whoosh();fluMenu()};$('#care').onclick=care;$('#groom').onclick=()=>{SFX.whoosh();gameRoom()};
   if($('#inst'))$('#inst').onclick=async()=>{try{installEvt.prompt();await installEvt.userChoice}catch(e){}installEvt=null;home()};
   let t;const g=$('#gear');g.onpointerdown=()=>{t=setTimeout(grown,1200)};g.onpointerup=g.onpointerleave=()=>clearTimeout(t);g.onclick=()=>fb('Grown-ups: hold it','warn');
-  {const sc=$('.scroll');if(sc)sc.insertAdjacentHTML('beforeend','<p class="small" style="text-align:center;opacity:.55;margin:14px 0 4px">Star School v38</p>')}
+  {const sc=$('.scroll');if(sc)sc.insertAdjacentHTML('beforeend','<p class="small" style="text-align:center;opacity:.55;margin:14px 0 4px">Star School v39</p>')}
   if(first&&S.voice)setTimeout(()=>say(`Hi ${S.name}! Pick a game!`),400)}
 
 let MAPP='math';
@@ -1059,7 +1081,7 @@ function finish(){
     if(g.boss&&g.won&&!S.owned[nd.prize]){prize=nd.prize;S.owned[prize]=1;S.wear.hat=prize}}
   if(newPass){const wk=p+nd.wi;if(!S.wdone[wk]&&worldDone(p,nd.wi)){S.wdone[wk]=1;wDone=true}}
   const prizes=[award()];if(sc==n)prizes.push(award());
-  d.r++;let mission=false;if(d.r>=3&&!d.done){d.done=true;mission=true;prizes.push(award())}
+  d.r++;const stk=streakTick();let mission=false;if(d.r>=3&&!d.done){d.done=true;mission=true;prizes.push(award())}
   if(wDone)prizes.push(award());
   const bonus=(mission?5:0),coins=sc+bonus+(wDone?20:0),prevSt=g.test||g.mix?0:(g.prevSt||0),PT=ptCalc(g,sc,n,stars,prevSt,newPass,testOk,nd),ptSec=PT.sec;ptEarn(ptSec);
   S.stars+=sc+bonus;S.coins+=coins;S.best=Math.max(S.best||0,best);
@@ -1091,6 +1113,7 @@ function finish(){
     if(g.test)msgs.push(testOk?[`🚀 You tested out of ${PATHS[p].worlds[g.test.wi].n}!`,'fanfare']:['So close! Get 9 right to test out. Or play the stops one by one.',null]);
     if(!g.mix&&!g.test&&!g.boss&&stars==0)msgs.push(['Get 7 right to open the next stop. You can do it!',null]);
     if(mission)msgs.push([`🏆 Daily mission done! +5 bonus stars!`,'fanfare']);
+    if(stk.msg)msgs.push([stk.msg,'fanfare']);
     if(g.mix)msgs.push(['🎯 Great practice on the tricky ones!',null]);
     msgs.push([sc>=9?'You are a superstar!':sc>=7?'Fantastic work!':sc>=5?'Good job! Keep practicing!':'Nice try! Practice makes you stronger!',null]);
     msgs.forEach(([m,s])=>{setTimeout(()=>{if(!live())return;$('#msgs').insertAdjacentHTML('beforeend',`<div class="msg">${m}</div>`);if(s)SFX[s]();if(s&&m.startsWith('🌍'))confetti(40)},t);t+=650});
@@ -1192,6 +1215,104 @@ function race(cat){S.race=S.race||{};const best=S.race[cat]||0;
       document.body.appendChild(o);if(S.voice)say(rec&&sc>0?`New record! ${sc}!`:`You got ${sc}!`);
       o.querySelector('#ragain').onclick=()=>{o.remove();race(cat)};o.querySelector('#rhome').onclick=()=>{o.remove();home()}}},1000)}
 
+/* Streak calendar (P5-04). S.streak = {days:{'Y-M-D':rounds}, best, rw}. Day keys use the same local-time format as today().
+   A day counts when at least one learning round is finished (streakTick() is called from finish() in 50-round.js).
+   Rest rule: one missed day is forgiven when the day before it was active and no other rest day sits inside the 7 days before it. */
+const STRK={
+  KEEP:120, // days of history kept
+  MILESTONES:[[3,5],[7,10],[14,20],[30,50]], // [days, coins]; each also gives a sticker
+  // 'Y-M-D' <-> whole day number. UTC arithmetic on the calendar date only, so daylight saving never shifts a day.
+  idx(k){
+    const m=/^(\d+)-(\d+)-(\d+)$/.exec(String(k));
+    return m?Math.floor(Date.UTC(+m[1],+m[2]-1,+m[3])/864e5):NaN;
+  },
+  key(i){const d=new Date(i*864e5);return d.getUTCFullYear()+'-'+(d.getUTCMonth()+1)+'-'+d.getUTCDate()},
+  // the saved object, with defaults when it is missing or damaged (not saved here)
+  get(){
+    let s=S.streak;
+    if(!s||typeof s!='object'||Array.isArray(s))s=S.streak={};
+    if(!s.days||typeof s.days!='object'||Array.isArray(s.days))s.days={};
+    if(!(s.best>=0))s.best=0;
+    if(!(s.rw>=0))s.rw=0;
+    return s;
+  },
+  // Pure: current streak from a days map and today's key. Returns {count, rests:[keys], doneToday}.
+  // Walks back from today (or yesterday while today is still to play). Future dates (clock set back) are ignored.
+  calc(days,todayKey){
+    const t=STRK.idx(todayKey),act=i=>(days&&+days[STRK.key(i)]>0)&&i<=t;
+    const out={count:0,rests:[],doneToday:false};
+    if(!(t>=0))return out;
+    out.doneToday=!!act(t);
+    let i=out.doneToday?t:t-1,lastRest=null;
+    for(let n=0;n<400;n++){
+      if(act(i)){out.count++;i--}
+      else if(act(i-1)&&(lastRest===null||lastRest-i>=7)){out.rests.push(STRK.key(i));lastRest=i;i--}
+      else break;
+    }
+    return out;
+  },
+  info(){return STRK.calc(STRK.get().days,today())},
+  count(){try{return STRK.info().count}catch(e){return 0}},
+  // Record one finished round. Returns {count, msg} where msg is a reward line (or '').
+  tick(){
+    const s=STRK.get(),k=today(),first=!(s.days[k]>0);
+    s.days[k]=(+s.days[k]||0)+1;
+    const t=STRK.idx(k);
+    for(const d in s.days)if(!(STRK.idx(d)>t-STRK.KEEP))delete s.days[d]; // trim to the last 120 days (bad keys go too)
+    const c=STRK.calc(s.days,k).count;
+    if(c>s.best)s.best=c;
+    let msg='';
+    if(c<s.rw)s.rw=0; // the streak broke and started again: milestones can be earned again
+    if(first){
+      const m=STRK.MILESTONES.filter(([n])=>n<=c&&n>s.rw).pop();
+      if(m){
+        s.rw=m[0];S.coins=(S.coins||0)+m[1];
+        const a=award();
+        msg=`🔥 ${m[0]} days in a row! +${m[1]} 🪙 and a sticker ${a.s}`;
+      }
+    }
+    return{count:c,msg};
+  },
+  // Calendar grid for a month (m = 0..11): array of weeks (Sunday first), each 7 entries of a day number or 0 for padding.
+  grid(y,m){
+    const first=new Date(Date.UTC(y,m,1)).getUTCDay(),n=new Date(Date.UTC(y,m+1,0)).getUTCDate(),cells=[];
+    for(let i=0;i<first;i++)cells.push(0);
+    for(let d=1;d<=n;d++)cells.push(d);
+    while(cells.length%7)cells.push(0);
+    const weeks=[];
+    for(let i=0;i<cells.length;i+=7)weeks.push(cells.slice(i,i+7));
+    return weeks;
+  },
+  MONTHS:['January','February','March','April','May','June','July','August','September','October','November','December'],
+};
+function streakTick(){try{return STRK.tick()}catch(e){return{count:0,msg:''}}}
+
+// Month grid screen. off = months back from this month (0 = this month).
+function streakCal(off){
+  off=Math.max(0,Math.min(off||0,4));
+  const now=new Date(),b=new Date(now.getFullYear(),now.getMonth()-off,1),y=b.getFullYear(),m=b.getMonth();
+  const s=STRK.get(),inf=STRK.info(),rest=new Set(inf.rests),tk=today();
+  let cells='';
+  for(const wk of STRK.grid(y,m))for(const d of wk){
+    if(!d){cells+='<div class="stc-d stc-pad"></div>';continue}
+    const k=y+'-'+(m+1)+'-'+d,n=+s.days[k]||0;
+    cells+=`<div class="stc-d${n?' on':''}${k===tk?' now':''}${rest.has(k)?' rest':''}" aria-label="${STRK.MONTHS[m]} ${d}${n?', played':''}">`+
+      `<span class="stc-n">${d}</span><span class="stc-m">${n?'⭐':rest.has(k)?'🌙':''}</span></div>`;
+  }
+  const msg=inf.count?`${inf.count} day${inf.count>1?'s':''} in a row!`:'Finish a round to light your flame!';
+  view(`<div class="top"><button class="btn sm" id="back" aria-label="Back">◀</button><div class="title">🔥 My Streak</div><div class="sp"></div></div>
+   <div class="scroll"><div class="stc-card">
+    <div class="stc-big">🔥 ${inf.count}</div><div class="stc-sub">${msg}</div>
+    <div class="stc-sub small">Best: ${s.best} day${s.best==1?'':'s'}. A rest day 🌙 will not break your streak.</div>
+    <div class="stc-nav"><button class="btn sm" id="stcp" aria-label="Earlier month"${off>=4?' disabled':''}>◀</button>
+     <b>${STRK.MONTHS[m]} ${y}</b><button class="btn sm" id="stcn" aria-label="Later month"${off<=0?' disabled':''}>▶</button></div>
+    <div class="stc-grid">${['S','M','T','W','T','F','S'].map(x=>`<div class="stc-h">${x}</div>`).join('')}${cells}</div>
+    <div class="stc-sub small">Next prizes: ${STRK.MILESTONES.map(x=>x[0]).join(', ')} days in a row</div>
+   </div></div>`);
+  $('#back').onclick=()=>home();
+  $('#stcp').onclick=()=>streakCal(off+1);
+  $('#stcn').onclick=()=>streakCal(off-1);
+}
 /* ---------- pet care ---------- */
 function careTick(){const c=S.care||(S.care={food:70,clean:70,fun:70,t:Date.now(),gift:''});const h=(Date.now()-c.t)/36e5;
   if(h>0){c.food=Math.max(0,c.food-h*4);c.clean=Math.max(0,c.clean-h*3);c.fun=Math.max(0,c.fun-h*5);c.t=Date.now()}return c}
@@ -2733,7 +2854,7 @@ function grown(){let armed=false;
    <div class="vline"><span class="vtxt">Give a bonus</span><button class="btn xs" id="pt5">+5 min</button><button class="btn xs danger" id="pt0">Empty bank</button></div>
    <label class="tg"><input type="checkbox" id="ptp" ${ptCfg().pause?'checked':''}> Pause game time (games locked)</label></div>
   <div class="card"><div class="tw"><table><tr><th>Skill</th><th>Rounds</th><th>1st try</th><th>Tricky ones</th></tr>${rows}</table></div></div>
-  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v38 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
+  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v39 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
    Storage: ${SAVE_FAILED?'<b style="color:#c0392b">could not save (device storage may be full)</b>':'saving OK'}${SAVE_CORRUPT?'<br><b style="color:#c0392b">The old save could not be read. A fresh start was made and the old data was kept on the device.</b>':''}<br>
    Last errors: ${(S.err||[]).length?(S.err||[]).slice().reverse().map(e=>'<br>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+' '+esc(e.msg)).join(''):'none'}</div></details>
   <div class="card"><label class="tg"><input type="checkbox" id="voice" ${S.voice?'checked':''}> Read questions out loud</label>

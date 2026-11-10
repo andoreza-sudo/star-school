@@ -297,6 +297,94 @@ run('seeded rnd: genQ(sk, lv, seed) is reproducible',()=>{
   return{problems:p,note:nq+' seeded questions, 200 seeds per skill level'};
 });
 
+run('streak calendar: rest day, month and year change, trim, clock back, missing data',()=>{
+  const p=[];
+  const bad=m=>p.push(m);
+  eval(js+`
+  const K=STRK.key,I=STRK.idx,base=I('2026-12-31'); // year change inside the sequences below
+  const mk=(offs)=>{const d={};offs.forEach(o=>d[K(base+o)]=1);return d};
+  const cnt=(offs,t)=>STRK.calc(mk(offs),K(base+t)).count;
+  // key format matches today() and survives month and year edges
+  if(K(I('2026-2-28')+1)!=='2026-3-1')bad('month change key '+K(I('2026-2-28')+1));
+  if(K(I('2024-2-28')+1)!=='2024-2-29')bad('leap day key');
+  if(K(base+1)!=='2027-1-1')bad('year change key '+K(base+1));
+  if(K(I('2026-3-8')+1)!=='2026-3-9'||K(I('2026-11-1')+1)!=='2026-11-2')bad('dst-ish dates');
+  if(STRK.key(STRK.idx(today()))!==today())bad('key/idx round trip does not match today()');
+  // plain runs
+  if(cnt([],0)!==0)bad('empty is 0');
+  if(cnt([0],0)!==1)bad('today only is 1');
+  if(cnt([-2,-1,0],0)!==3)bad('3 days in a row, got '+cnt([-2,-1,0],0));
+  if(cnt([-2,-1,0,1],1)!==4)bad('across the year change');
+  if(cnt([-3,-2,-1],0)!==3)bad('today still to play keeps the streak');
+  // rest day rule: one missed day between active days is forgiven and not counted
+  if(cnt([-4,-3,-1,0],0)!==4)bad('one rest day should not break, got '+cnt([-4,-3,-1,0],0));
+  if(cnt([-3,-2,0],0)!==3)bad('rest day yesterday, got '+cnt([-3,-2,0],0));
+  if(cnt([-4,-3,-2],0)!==3)bad('yesterday rest while today pending... got '+cnt([-4,-3,-2],0));
+  // two missed days in a row break it
+  if(cnt([-4,-3,0],0)!==1)bad('two missed days break, got '+cnt([-4,-3,0],0));
+  // only one rest day per 7: second rest 3 days after the first breaks the chain
+  if(cnt([-6,-5,-3,-2,0],0)!==3)bad('second rest within a week breaks, got '+cnt([-6,-5,-3,-2,0],0)); // 0, rest -1, -2,-3, then rest -4 refused
+  // rests 7 apart are both fine: active -1,-2,-3,-4,-5,-6, rest -7? build: rests at -1 and -8
+  if(cnt([0,-2,-3,-4,-5,-6,-7,-9],0)!==8)bad('rests 7 days apart both allowed, got '+cnt([0,-2,-3,-4,-5,-6,-7,-9],0));
+  if(cnt([0,-2,-3,-4,-5,-6,-8],0)!==6)bad('rests 6 days apart, got '+cnt([0,-2,-3,-4,-5,-6,-8],0));
+  // rests list
+  const r=STRK.calc(mk([-4,-3,-1,0]),K(base));
+  if(r.rests.join()!==K(base-2))bad('rests list '+r.rests);
+  // clock set backwards: future keys ignored, never negative, no crash
+  const fut=mk([5,6,7]);
+  if(STRK.calc(fut,K(base)).count!==0)bad('future days must not count');
+  const mixed=mk([-1,0,3]);
+  if(STRK.calc(mixed,K(base)).count!==2)bad('future ignored, past counts');
+  for(const bt of ['garbage','','0-0-0','2026-13-45',undefined,null]){const c=STRK.calc(mk([0]),bt);if(!(c.count>=0))bad('bad today key '+bt)}
+  const weird={'x':1,'2026-1-1':'abc','2026-1-2':-3,'2026-1-3':null};
+  if(!(STRK.calc(weird,'2026-1-4').count>=0))bad('weird days map');
+  // missing or damaged S.streak: defaults, no crash
+  for(const v of [undefined,null,5,'x',[],{},{days:null},{days:[]},{best:'a',days:{}},{best:-4,rw:'q'}]){
+    S.streak=v;
+    const g=STRK.get();
+    if(typeof g.days!='object'||Array.isArray(g.days)||!(g.best>=0)||!(g.rw>=0))bad('defaults for '+JSON.stringify(v));
+    if(!(STRK.count()>=0))bad('count with '+JSON.stringify(v));
+  }
+  // tick: first round of the day counts, later rounds add to it, S.coins and S.streak change
+  S.streak=undefined;S.coins=0;S.stickers={};
+  const t0=STRK.tick();
+  if(t0.count!==1||S.streak.days[today()]!==1||S.streak.best!==1)bad('first tick '+JSON.stringify(t0));
+  STRK.tick();
+  if(S.streak.days[today()]!==2||STRK.count()!==1)bad('second tick same day');
+  // milestones: build a 2-day chain ending yesterday, tick today -> 3 days -> reward once
+  const T=I(today());
+  S.streak={days:{},best:2,rw:0};S.coins=0;S.stickers={};
+  S.streak.days[K(T-1)]=1;S.streak.days[K(T-2)]=1;
+  const m3=STRK.tick();
+  if(m3.count!==3||!m3.msg||S.coins!==5||Object.keys(S.stickers).length!==1||S.streak.rw!==3)bad('3-day reward '+JSON.stringify([m3,S.coins,S.streak.rw]));
+  const again=STRK.tick();
+  if(again.msg||S.coins!==5)bad('reward must not repeat the same day');
+  // 7-day chain
+  S.streak={days:{},best:6,rw:3};S.coins=0;
+  for(let i=1;i<=6;i++)S.streak.days[K(T-i)]=1;
+  const m7=STRK.tick();
+  if(m7.count!==7||S.coins!==10||S.streak.rw!==7||S.streak.best!==7)bad('7-day reward '+JSON.stringify([m7,S.coins,S.streak]));
+  // a broken streak can earn the 3-day prize again
+  S.streak={days:{},best:7,rw:7};S.coins=0;S.streak.days[K(T-1)]=1;
+  const lo=STRK.tick();
+  if(lo.msg||S.streak.rw!==0)bad('after a break rw resets, got '+S.streak.rw);
+  // trim to 120 days; month grid; bad keys dropped
+  S.streak={days:{},best:0,rw:0};
+  for(let i=0;i<200;i++)S.streak.days[K(T-i)]=1;
+  S.streak.days['junk']=1;
+  STRK.tick();
+  const ks=Object.keys(S.streak.days);
+  if(ks.length!==STRK.KEEP||S.streak.days[K(T-STRK.KEEP)]||!S.streak.days[K(T-STRK.KEEP+1)]||S.streak.days.junk)bad('trim to 120 days kept '+ks.length);
+  const g=STRK.grid(2026,1); // Feb 2026 starts on Sunday and has 28 days: exactly 4 weeks
+  if(g.length!==4||g[0][0]!==1||g[3][6]!==28)bad('Feb 2026 grid '+JSON.stringify(g));
+  const g2=STRK.grid(2026,2); // March 2026 starts on Sunday, 31 days: 5 weeks
+  if(g2.length!==5||g2[4][2]!==31||g2[4][3]!==0)bad('Mar 2026 grid');
+  const g3=STRK.grid(2024,1); // Feb 2024: starts Thursday, 29 days
+  if(g3[0].indexOf(1)!==4||g3.flat().filter(x=>x).length!==29)bad('leap Feb grid');
+  `);
+  return{problems:p,note:'rest rule, month/year change, trim 120, clock back, missing S.streak, milestones'};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){
