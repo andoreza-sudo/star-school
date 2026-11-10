@@ -149,7 +149,8 @@ run('migrations: fixtures, backups, corrupt and newer saves',()=>{
     if(store[KEY+'-bak']!==raw)bad(name+': no backup of the old save');
     if(JSON.parse(store[KEY]).v!==LATEST)bad(name+': migrated save not stored');
     for(const p in PATHS)if(!S.maps[p])bad(name+': no map '+p);
-    if(before.maps&&before.mapv){for(const p in before.maps)if(JSON.stringify(S.maps[p])!==JSON.stringify(before.maps[p]))bad(name+': maps '+p+' changed')}
+    // every saved map key keeps its value (migration 3 only adds world-id keys next to the old ones)
+    if(before.maps&&before.mapv){for(const p in before.maps)for(const k in before.maps[p])if(S.maps[p][k]!==before.maps[p][k])bad(name+': maps '+p+' '+k+' changed')}
     const once=JSON.stringify(S);migrate();if(JSON.stringify(S)!==once)bad(name+': migrate not idempotent');
   }
   // old single map: stops 0,1,2,5 of the old list are add1 sight1 cnt1 build1 (math and read paths)
@@ -667,6 +668,121 @@ run('viz: math visuals well-formed, small, deterministic, tokens only, tap targe
     for(let i=0;i<c.length;i++)for(let j=0;j<i;j++)if(Math.hypot(c[i][0]-c[j][0],c[i][1]-c[j][1])<26.5){p.push('scatter overlap n='+n+' seed='+sd);i=c.length;break}
   }
   return{problems:uniq(p),note:(typical.length+sweep.length)+' visuals'};
+});
+
+// ---- 17: world ids, grade tags, migration 3, gating, inserted worlds (P1-05) ----
+run('worlds: ids, grade tags, migration 3 keeps every star, gating, inserted worlds never re-lock',()=>{
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const werrs=[],bad=m=>werrs.push(m);
+  // The body runs inside eval(js), so it sees the app's globals; it is a plain function to keep it readable.
+  const body=function(){
+    const store={};
+    global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+    const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
+    const clone=o=>JSON.parse(JSON.stringify(o));
+    // 1. ids and grades: unique, permanent shape, grade in range; MAP_V42 (used by migrations) matches today's maps
+    const seen=new Set();
+    for(const p in PATHS)PATHS[p].worlds.forEach((w,wi)=>{
+      if(!/^[mred]_[a-z]+$/.test(w.id||''))bad(p+' world '+wi+': bad id '+w.id);
+      if(seen.has(w.id))bad('duplicate world id '+w.id);seen.add(w.id);
+      if(!GRADES.includes(w.g))bad(w.id+': grade '+w.g);
+      if(wi&&!PATHS[p].byLevel&&w.g<PATHS[p].worlds[wi-1].g)bad(w.id+': grade lower than the world before it');
+    });
+    for(const p in MAP_V42)MAP_V42[p].forEach(([id,stops],k)=>{
+      const w=PATHS[p].worlds[k],now=w?NODES[p].filter(n=>n.wi==k&&n.sk!='boss').map(nid).join(' '):'';
+      if(!w||w.id!==id||now!==stops)bad('MAP_V42 '+p+' '+k+' does not match today ('+id+')');
+    });
+    // v42 view of a save (keys by world index): stars per stop and the old lock rule, in today's NODES order (same as v42)
+    const oldSt=(maps,p)=>NODES[p].map(n=>(maps[p]||{})[n.sk=='boss'?'boss'+n.wi:nid(n)]||0);
+    const oldOpen=(st,ula)=>st.map((s,i)=>ula||i==0||st[i-1]>0);
+    const oldCur=st=>{const o=oldOpen(st,false);for(let i=0;i<st.length;i++)if(o[i]&&!st[i])return i;return st.length-1};
+    // 2. migration 3 on every fixture: same stars on every stop, same locks and current stop, idempotent, nothing deleted
+    for(const name of ['fresh','midway','maxed','legacy-single-map','legacy-index-maps']){
+      const raw=fx(name),obj=JSON.parse(raw),empty=!Object.keys(obj).length;
+      // state just before migration 3 = what v42 had: run migrations 1-2 only
+      loadSave(empty?null:raw);const from=Number.isInteger(S.v)?S.v:1;for(let n=from;n<3;n++)MIGRATIONS[n]();
+      const pre=clone(S);
+      MIGRATIONS[3]();const once=JSON.stringify(S);MIGRATIONS[3]();
+      if(JSON.stringify(S)!==once)bad(name+': migration 3 not idempotent');
+      for(const p in pre.maps)for(const k in pre.maps[p])if(S.maps[p][k]!==pre.maps[p][k])bad(name+': '+p+' '+k+' lost');
+      for(const k in pre.wdone||{})if(!S.wdone[k])bad(name+': wdone '+k+' lost');
+      load(empty?null:raw);
+      for(const p in PATHS){
+        const was=oldSt(pre.maps,p),now=NODES[p].map((n,i)=>getSt(p,i));
+        if(JSON.stringify(was)!==JSON.stringify(now))bad(name+' '+p+': stars '+JSON.stringify(was)+' -> '+JSON.stringify(now));
+        const wo=oldOpen(was,S.unlockAll),no=NODES[p].map((n,i)=>unlocked(p,i));
+        // midway, maxed and fresh look exactly the same. Legacy saves (stops skipped by the old single map) may open more, never less.
+        if(name.startsWith('legacy')?wo.some((o,i)=>o&&!no[i]):JSON.stringify(wo)!==JSON.stringify(no))bad(name+' '+p+': locks changed');
+        if(oldCur(was)!==curNode(p))bad(name+' '+p+': current stop '+oldCur(was)+' -> '+curNode(p));
+      }
+    }
+    load(fx('midway'));
+    if(!(S.wdone.m_meadow&&S.wdone.r_meadow&&S.maps.math.boss_m_meadow===1&&S.maps.math.boss0===1))bad('midway: world keys '+JSON.stringify(S.wdone));
+    load(fx('maxed'));
+    if(Object.keys(S.wdone).filter(k=>k.includes('_')).length!==11)bad('maxed: not every world marked done');
+    load(fx('legacy-single-map'));
+    if(Object.keys(S.wdone).length)bad('legacy-single-map: a world marked done '+JSON.stringify(S.wdone));
+    // today's repeat counter: index keys were shared by all paths; each becomes every path's world key
+    load(JSON.stringify({...JSON.parse(fx('midway')),v:3,ptRep:{day:today(),n:{t0:1,boss1:2,add1:1,mix:3}}}));
+    const n=S.ptRep.n;
+    if(!(n.t_m_meadow===1&&n.t_r_meadow===1&&n.t_e_plaza===1&&n.boss_m_candy===2&&n.boss_r_candy===2&&n.boss_e_fiesta===2&&n.add1===1&&n.mix===3&&!('t0' in n)))
+      bad('ptRep re-key '+JSON.stringify(n));
+    // 3. gating by grade (ROADMAP 3.2)
+    load(null);
+    if(gradeOf()!==0)bad('no grade should count as K');
+    if(!worldOpen('math',0)||worldOpen('math',1)||!unlocked('math',0)||unlocked('math',1))bad('fresh, no grade: only the first stop open');
+    if(setGrade(7)||setGrade('2')||setGrade(1.5)||'grade' in S)bad('setGrade accepted a bad value');
+    for(const g of GRADES){
+      setGrade(g);
+      for(const p in PATHS)PATHS[p].worlds.forEach((w,wi)=>{
+        const want=wi==0||(!PATHS[p].byLevel&&w.g<=g);
+        if(worldOpen(p,wi)!==want)bad('grade '+g+': '+w.id+' open='+!want);
+        if(want&&!unlocked(p,WR[p][wi][0]))bad('grade '+g+': first stop of '+w.id+' locked');
+      });
+      const sw=PATHS.math.worlds.findIndex(w=>w.g>=g),cw=sw<0?PATHS.math.worlds.length-1:sw;
+      if(curWorld('math')!==cw)bad('grade '+g+': math opens on world '+curWorld('math')+', expected '+cw);
+      if(curWorld('es')!==0)bad('grade '+g+': Spanish should open on its first world');
+    }
+    load(null);
+    S.skip={m_candy:1};
+    if(!worldFinished('math',1)||!worldOpen('math',2)||!unlocked('math',WR.math[1][1])||!unlocked('math',WR.math[2][0]))bad('S.skip does not finish a world');
+    // "harder world" game time: with no grade it equals the old index rule; worlds below the grade give nothing
+    load(null);
+    for(const p in PATHS)PATHS[p].worlds.forEach((w,wi)=>{if(worldStep(p,wi)!==wi)bad('worldStep '+w.id+' '+worldStep(p,wi)+' (old rule '+wi+')')});
+    setGrade(2);
+    if(worldStep('math',1)!==0||worldStep('math',3)!==0||worldStep('es',2)!==2)bad('worldStep with grade 2');
+    // 4. a world inserted at index 0 (like PreK Tiny Town) and a stop added to a finished world never lock anything that was open
+    const snap=()=>{const o={};for(const p in PATHS)NODES[p].forEach((n,i)=>{o[p+' '+n.wid+' '+nid(n)]={open:unlocked(p,i),st:getSt(p,i)}});return o};
+    const ORIG={};for(const p in PATHS)ORIG[p]=PATHS[p].worlds.slice();
+    const restore=()=>{for(const p in PATHS){PATHS[p].worlds=ORIG[p].slice();buildNodes(p)}};
+    let checked=0;
+    for(const name of ['fresh','midway','maxed','legacy-single-map','legacy-index-maps'])for(const g of [null,-1,0,1,2,6]){
+      const raw=fx(name);load(Object.keys(JSON.parse(raw)).length?raw:null);if(g!==null)S.grade=g;
+      const before=snap(),hasProg={};for(const p in PATHS)hasProg[p]=NODES[p].some((n,i)=>passed(p,i));
+      for(const p in PATHS){PATHS[p].worlds.unshift({id:p[0]+'_fake',g:-1,n:'Fake',e:'',c:'',nodes:[['add',99,'Fake 1'],['sub',99,'Fake 2']]});buildNodes(p)}
+      const after=snap();
+      for(const k in before){
+        const p=k.split(' ')[0];
+        if(before[k].st!==after[k].st)bad(name+' grade '+g+': '+k+' stars changed');
+        // Allowed only on a path the child has never played, for a world above their grade or on a byLevel path: that child
+        // simply starts at the new first world. Anything they have played, or at or below their grade, must stay open.
+        const w=PATHS[p].worlds.find(x=>x.id==k.split(' ')[1]),may=!hasProg[p]&&(PATHS[p].byLevel||w.g>gradeOf());
+        if(before[k].open&&!after[k].open&&!may)bad(name+' grade '+g+': '+k+' locked after inserting a world');
+        checked++;
+      }
+      restore();
+    }
+    load(fx('midway'));
+    const curBefore=nid(NODES.math[curNode('math')]);
+    PATHS.math.worlds[0]={...ORIG.math[0],nodes:[...ORIG.math[0].nodes.slice(0,3),['add',98,'New stop'],...ORIG.math[0].nodes.slice(3)]};buildNodes('math');
+    const ni=NODES.math.findIndex(n=>n.lv==98);
+    if(!unlocked('math',ni)||!stopNew('math',ni)||!worldFinished('math',0)||!worldOpen('math',1))bad('stop added to a finished world: not open, not NEW, or the world re-opened');
+    if(nid(NODES.math[curNode('math')])!==curBefore)bad('stop added to a finished world moved the current stop');
+    restore();
+    return {checked,paths:Object.keys(PATHS).length};
+  };
+  const r=eval(js+';('+body.toString()+')()');
+  return{problems:werrs,note:r.paths+' paths, '+r.checked+' stop checks with an inserted world'};
 });
 
 // ---- report ----

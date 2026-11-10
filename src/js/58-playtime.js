@@ -12,9 +12,9 @@ function ptCalc(g,sc,n,stars,prev,newPass,testOk,nd){const per=ptCfg().per*60,L=
     if(mast)add(60,'Already mastered this one');
     else{add(Math.round(per*(acc<.5?.34:acc<.7?.67:1)),acc<.5?'Keep trying':'Round done');
       if(newPass)add(60,'New stop unlocked');else if(stars>prev&&prev>0)add(30,'Beat your old score');
-      if(nd&&nd.wi>0)add(Math.min(90,30*nd.wi),'Harder world')}
+      const hw=nd?worldStep(nd.p,nd.wi):0;if(hw>0)add(Math.min(90,30*hw),'Harder world')} // P1-05: by grade, not raw index
     if(sc==n)add(60,'Perfect score');if(g.boss&&g.won)add(120,'Beat the boss');add((g.fixed||0)*20,`Fixed ${g.fixed} old mistake${g.fixed>1?'s':''}`)}
-  const rp=S.ptRep&&S.ptRep.day==today()?S.ptRep:(S.ptRep={day:today(),n:{}}),key=g.test?'t'+g.test.wi:g.mix?'mix':nd?nid(nd):'x',r=rp.n[key]||0;rp.n[key]=r+1;
+  const rp=S.ptRep&&S.ptRep.day==today()?S.ptRep:(S.ptRep={day:today(),n:{}}),key=g.test?'t_'+worldId(g.path,g.test.wi):g.mix?'mix':nd?nid(nd):'x',r=rp.n[key]||0;rp.n[key]=r+1;
   if(r>0){const k=r==1?.6:.35,cut=Math.round(t*(1-k));t-=cut;L.push([-cut,`Played ${r+1} times today`])}
   t=Math.max(30,Math.round(t/30)*30);return{sec:t,lines:L,mast:!g.test&&!g.mix&&prev>=3&&!g.boss,rep:r}}
 function ptWhyNot(){const p=pt(),c=ptCfg();if(c.pause)return'Game time is paused by a grown-up.';if(c.max&&p.used>=c.max*60)return`That's all the game time for today (${c.max} min). Come back tomorrow!`;return'Finish a learning round to earn game time!'}

@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** wave 3: P1-03, P1-05 (Opus) in progress; P1-11 next (builds on VIZ); then P1-06 after P1-05.
+**Next up:** wave 3: P1-03 and P1-11 in progress; P1-06 next (grade pick, builds on setGrade/gradeOf from P1-05).
 
-**Current version:** v45
+**Current version:** v46
 
 ## Chunk status
 
@@ -25,6 +25,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P1-09 v43
 - P1-04 v44
 - P1-10 v45
+- P1-05 v46
 
 ## Handoff notes
 
@@ -81,7 +82,26 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P1-09) Passage rounds skip the "review an older stop at question 4 and 8" step of `makeQ` (the round is a fixed list). Boss, mix and test-out rounds use the skill's `gen`, which asks a single passage question with its panel.
 - (P1-09) `tools/node_modules` is not in a fresh worktree; `check.sh` runs `npm install` itself, which needs the network.
 
+- (P1-05) CURRICULUM 2.3 says the Spanish worlds have `g: -1` "so only order gates it", but the ROADMAP 3.2 rule (a world with `g <= S.grade` is open) would open every Spanish world for any child. Resolved with a path flag: `PATHS.es.byLevel = true` turns the grade rule off for that path (worlds open by order, progress, skip). The Discover path (P2-36) must pick one: graded (like math) or `byLevel`.
+- (P1-05) Migrations 1 and 2 now read old index keys through the frozen table `MAP_V42` (00-core.js) instead of the live `NODES`. Output is identical today (test.js checks `MAP_V42` against today's maps), but with the old code, inserting Tiny Town (P2-01) would have silently moved every legacy index-keyed save's stars to the wrong stops. ROADMAP 9 rule 3 says migrations are never edited; this edit is behaviour-preserving and the only safe fix.
+- (P1-05) Boss character and boss prize still come from the world index (`BOSSES[wi%4]`, `BPRIZE[(pi*4+wi)%12]` in 42-paths.js), so inserting a world changes which boss and prize a world shows (cosmetic; owned prizes stay owned and the stars are keyed by world id). P2-01 or P4-09 could pin a boss per world id.
+- (P1-05) Migration 3 copies `boss<k>` to `boss_<worldId>` and `math0` to `m_meadow` and keeps the old keys, so an older cached app on an offline tablet still reads the save (rule 9). A much later compaction migration may drop them.
+- (P1-05) The v42 lock rule did not open a passed stop whose previous stop was unpassed (possible only in v30 single-map saves). Passed stops are now always open, so `legacy-single-map` shows 3 more open read stops (more open, never fewer). midway, maxed and fresh are identical stop for stop.
+- (P1-05) `startMix` (50-round.js) calls `curNode(p)` once per stop (quadratic). Fine at 150 stops; hoist it if the mix screen ever feels slow.
+- (P1-05) Map draw with 16 fake worlds (156 stops) at 6x CPU throttle: median about 29 ms (limit 50), single runs up to about 49 ms. The strip recomputes `worldOpen`/`worldFinished` per chip and `unlocked` scans the world; a memo per draw is the next step if P4-09 adds weight.
+
 ## Log
+
+### P1-05 Stable world IDs, grade tags, world gating, long maps (v46, 2026-11-10, Claude)
+- What changed: every world has a permanent `id` and grade tag `g` (CURRICULUM 2: `m_meadow` K, `m_candy` 1, `m_reef` 1, `m_space` 2, `r_meadow` K, `r_candy` 1, `r_reef` 1, `r_space` 2, `e_plaza`/`e_fiesta`/`e_repaso` -1 with `byLevel`). Nodes carry `wid`; a boss is keyed `boss_<worldId>`; `S.wdone`, `S.skip` and the game-time repeat keys use world ids. Gating per ROADMAP 3.2 in 42-paths.js: a world is open if it is first, `g <= grade` (not on `byLevel` paths), skipped, the previous world is finished (boss beaten, all passed, or skipped), or it has progress; passed stops are always open; a stop behind the child's progress is never locked; unpassed stops in a world whose boss is beaten show a NEW tag. Test out also writes `S.skip`.
+- Long maps (46-home.js): a world strip above the map (one chip per world, grouped by grade label, check or lock icon, design tokens and `ico()`), the map draws only the picked world and its neighbours, "more worlds" buttons at the ends, opens on the child's current world (or the one just played). `ptCalc` "harder world" uses `worldStep()` (grade-relative; equals the old index rule when no grade is set).
+- API for P1-06 (42-paths.js header): `GRADES`, `gradeLabel(g)`, `gradeOf()` (S.grade, else 0 = K), `setGrade(g)` (validates, saves), `worldOpen`, `worldFinished`, `unlocked`, `stopNew`, `startWorld`, `curNode`, `curWorld`, `worldStep`, `worldHasProgress`, `worldId`, `buildNodes(p)` (tests).
+- Saved data: migration 3 (LATEST 4): boss stars `boss<k>` copied to `boss_<worldId>`, `S.wdone` `math0` keys copied to world ids, fully passed worlds marked done, `S.ptRep` index keys (shared by all paths) moved to every path's world key. Old keys kept (rule 9). Index k always means world k of the frozen `MAP_V42` table; migrations 1 and 2 now use the same table (identical output today).
+- Files: src/js/00-core.js, 42-paths.js, 46-home.js, 50-round.js, 58-playtime.js, src/css/40-games.css (strip rules, tokens only), tools/test.js (check 17 "worlds"; migration check compares key by key), tools/smoke.js (step 8), tools/shots.js (`map-worlds`), tools/build.py (VER), built output.
+- Tests: test.js 17 of 17 ok (worlds: every fixture keeps every stop's stars, midway/maxed/fresh keep exact locks and current stop, legacy saves only gain open stops, migration 3 idempotent, ptRep re-key, grade gating for all 8 grades, S.skip, worldStep, a fake PreK world inserted at index 0 of every path for 5 fixtures x 6 grades = 2,400 stop checks with nothing re-locked, a stop added to a finished world is open and NEW) / contrast ok / smoke.js ok (step 8: midway math map opens on Candy Canyon at stop 9 with 4 chips, chip and "more worlds" taps switch worlds, locked stop stays locked; 16 worlds, 156 stops at 6x throttle: median 29 ms) / index.html 431 KB.
+- Before/after: a scratch dump of every stop on all three maps (lock, done, current, label, stars, world titles, test-out buttons) for fresh, midway, maxed and both legacy fixtures on v42 and v46: identical for fresh, midway and maxed; legacy-single-map read gains 3 open stops (see Ideas). Screenshots map, map-read, map-es with midway and maxed at 600x960 before and after looked at side by side: same stars, locks, current stop and pet; the strip is the only new thing. Also map-worlds 380x780 and map 1024x600.
+- Checklist 7.1: only P1-05 files (plus the strip CSS rules in 40-games.css, tests, built output); VER bumped; build ran; test.js and smoke.js exit 0 with no console errors and no network; screenshots looked at; midway fixture same stars, coins, pet and map progress; 431 KB; no new emoji; no new hard-coded colours. Not pushed: branch P1-05-worlds for merge; VER v46 is provisional.
+- Merge: built on a parallel branch, renumbered v43 -> v46 at merge.
 
 ### P1-10 Math visuals library, core (v45, 2026-11-10, Claude)
 - What changed: new `src/js/23-viz.js` with `VIZ.tenFrame(n, total, o)`, `base10(n)`, `numLine({min, max, step, labels, marks, hide, tapValues, den, w})`, `fracBar(n, d, {unit, tap, w})`, `fracCircle(n, d, {tap})`, `clock(h, m, {nums})`, `array(rows, cols)`, `dots(n, 'row'|'ten'|'dice'|'scatter', {seed, b, fade})`. Each returns one inline `<svg class="viz">` string (viewBox in phone px, no ids, defs, filters or Math.random; same input, same markup). The visual language (structure lines in ink, quantities in `--math` with a `--math-shade` rim, second set `--play`, faded = opacity .3, unknown = dashed `--brand` "?" box, round joins) and the tap-target contract (`.vt` + `data-v`, states `.sel/.right/.wrong/.vx`, 48 units) are documented in the file header for P1-11 and Phase 2. New `src/css/32-viz.css` (tokens only): sizes by `--vw` x `--vz` (1.3 on tablets) x the prompt's `--k`; interactive visuals ignore `--k`.

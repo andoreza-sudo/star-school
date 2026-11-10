@@ -14,6 +14,8 @@ const SCREENS = {
   map: { run: async p => { await p.evaluate(() => pathMap('math')); } },
   'map-read': { run: async p => { await p.evaluate(() => pathMap('read')); } },
   'map-es': { run: async p => { await p.evaluate(() => pathMap('es')); } },
+  // P1-05: the world strip with a far world picked (shows the "more worlds" button above it)
+  'map-worlds': { run: async p => { await p.evaluate(() => pathMap('math', 3)); } },
   question: { run: async p => { await p.evaluate(() => start('math', 0)); } },
   'question-read': { run: async p => { await p.evaluate(() => start('read', 5)); } },
   boss: { run: async p => { await p.evaluate(() => bossIntro('math', NODES.math.findIndex(n => n.sk == 'boss'))); } },

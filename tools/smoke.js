@@ -285,6 +285,54 @@ async function main() {
     if (kbBox < 48) fail('spell key shorter than 48 px: ' + kbBox);
     await page.evaluate(() => home());
 
+    // 10. P1-05 long maps: world strip on an old save (opens on the current world, real taps switch worlds), then
+    //    map draw time with 16 fake worlds (~150 stops) at 6x CPU throttle must stay under 50 ms
+    {
+      const wm = await openApp(browser, { fixture: 'midway' });
+      const wp = wm.page;
+      await wp.evaluate(() => home());
+      await wp.click('.game[data-p="math"]');
+      await wp.waitForSelector('.wchip.on');
+      const st = await wp.evaluate(() => ({ n: PATHS.math.worlds.length, chips: document.querySelectorAll('.wchip').length, on: +document.querySelector('.wchip.on').dataset.w,
+        cur: document.querySelector('.node.cur') && +document.querySelector('.node.cur').dataset.n }));
+      if (st.chips !== st.n || st.on !== 1 || st.cur !== 9) fail('math map on midway: ' + JSON.stringify(st));
+      else step('math map opens on Candy Canyon (current stop 9) with ' + st.chips + ' world chips');
+      await wp.click('.wchip[data-w="3"]');
+      await wp.waitForSelector('.wchip.on[data-w="3"]');
+      const far = await wp.evaluate(() => ({ first: document.querySelector('.node[data-n="0"]') !== null, space: document.querySelector('.node[data-n="35"]') !== null,
+        up: document.querySelector('.wmore') && +document.querySelector('.wmore').dataset.w }));
+      if (far.first || !far.space || far.up !== 1) fail('world chip did not switch the map: ' + JSON.stringify(far));
+      await wp.click('.wmore');
+      await wp.waitForSelector('.wchip.on[data-w="1"]');
+      await wp.click('.node[data-n="10"]'); // locked stop: stays on the map
+      if (!(await wp.$('#map'))) fail('locked stop opened something');
+      else step('world chips and "more worlds" button switch worlds; locked stop stays locked');
+      const ms = await wp.evaluate(() => {
+        const base = PATHS.math.worlds.slice();
+        for (let k = 0; PATHS.math.worlds.length < 16; k++) {
+          const w = base[k % base.length];
+          PATHS.math.worlds.push({ ...w, id: 'm_fake' + k, g: Math.min(6, 2 + (k >> 1)), nodes: w.nodes.concat(w.nodes.slice(0, 1)) });
+        }
+        buildNodes('math');
+        return NODES.math.length;
+      });
+      const cdp = await wp.context().newCDPSession(wp);
+      await cdp.send('Emulation.setCPUThrottlingRate', { rate: 6 });
+      const times = await wp.evaluate(() => {
+        pathMap('math', 8);
+        const t = [];
+        for (let r = 0; r < 7; r++) { MAPW.math = 6 + (r % 4); const t0 = performance.now(); drawMap('math'); void $('#map').offsetHeight; t.push(performance.now() - t0); }
+        return t.sort((a, b) => a - b);
+      });
+      await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+      const med = times[3];
+      if (med >= 50) fail(`map draw with 16 worlds (${ms} stops) at 6x throttle: median ${med.toFixed(1)} ms (limit 50)`);
+      else step(`map draw with 16 worlds (${ms} stops) at 6x CPU throttle: median ${med.toFixed(1)} ms, worst ${times[6].toFixed(1)} ms`);
+      errors.push(...wm.errors);
+      network.push(...wm.network);
+      await wm.ctx.close();
+    }
+
     for (const e of errors) fail(e);
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');

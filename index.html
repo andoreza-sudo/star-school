@@ -405,6 +405,24 @@ label.tg{display:block;font-size:20px;margin:8px 0}
 .node.boss.done{border-color:#facc15}
 .tobtn{position:absolute;left:50%;transform:translateX(-50%);z-index:2;background:#fef3c7;white-space:nowrap}
 .tobtn:active{transform:translateX(-50%) translateY(3px)}
+/* P1-05 world picker strip (one chip per world, grouped by grade), "more worlds" buttons, NEW tag on stops added later */
+.wstrip{display:flex;align-items:center;gap:var(--s-2);flex:none;overflow-x:auto;padding:var(--s-1) var(--s-3) var(--s-3);scrollbar-width:none}
+.wstrip::-webkit-scrollbar{display:none}
+.wgl{flex:none;font-size:var(--fs-1);font-weight:700;color:var(--ink-3);padding-left:var(--s-1)}
+.wchip{flex:none;display:flex;align-items:center;gap:var(--s-1);min-height:var(--tap);padding:0 var(--s-3);border:0;border-radius:var(--r-pill);
+  background:var(--surface);color:var(--ink);font:inherit;font-size:var(--fs-2);font-weight:700;white-space:nowrap;cursor:pointer;
+  box-shadow:var(--ledge) var(--line);touch-action:manipulation;transition:transform var(--t-fast)}
+.wchip:active{transform:translateY(3px)}
+.wchip .we{font-size:var(--fs-4);line-height:1}
+.wchip.lock{background:var(--surface-2);color:var(--ink-3)}
+.wchip.done .ic{color:var(--good)}
+.wchip.on{background:var(--brand);color:var(--surface);box-shadow:var(--ledge) var(--brand-shade)}
+.wchip.on .ic{color:var(--surface)}
+.wmore{position:absolute;left:50%;transform:translateX(-50%);z-index:2;display:flex;align-items:center;gap:var(--s-2);min-height:var(--tap);white-space:nowrap}
+.wmore:active{transform:translateX(-50%) translateY(3px)}
+.wmore .we{font-size:var(--fs-4);line-height:1}
+.nnew{position:absolute;transform:translateX(-50%);z-index:3;pointer-events:none;background:var(--danger);color:var(--surface);
+  font-size:var(--fs-1);font-weight:700;border-radius:var(--r-pill);padding:1px var(--s-2)}
 .rtag{background:#ede9fe;color:#6d28d9;font-weight:700;font-size:16px;border-radius:12px;padding:3px 12px}
 .cbar{display:flex;align-items:center;gap:10px;margin:6px 0;font-weight:700}.cbar span{width:90px}.cbar .meter{flex:1;margin:0;background:#f5f5f4}.cbar b{width:48px;text-align:right}
 .thought{position:absolute;top:-10px;right:-18px;background:#fff;border-radius:16px;padding:2px 8px;font-size:22px;box-shadow:0 2px 6px #0002;animation:bob 1.6s infinite}
@@ -503,7 +521,7 @@ const pick=a=>a[Math.floor(rnd()*a.length)];
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KEY='starschool-v2';
-const LATEST=3; // newest save schema version = MIGRATIONS.length (ROADMAP section 9)
+const LATEST=4; // newest save schema version = MIGRATIONS.length (ROADMAP section 9)
 let S,SAVE_RAW=null,SAVE_CORRUPT=false,SAVE_FAILED=false;
 /* Read the save string into S. Corrupt or non-object JSON is kept in KEY-corrupt; KEY itself is untouched until the first save(). */
 function loadSave(raw){
@@ -526,17 +544,57 @@ let RAW0=null;try{RAW0=localStorage.getItem(KEY)}catch(e){}
 loadSave(RAW0);
 /* MIGRATIONS[n] upgrades S from version n to n+1. Idempotent, never edited after release (fix with a new one). A save with no S.v
    is a v30-or-older save; it runs 1 and 2, which each check their own marker, so old saves behave exactly as before. */
+/* The maps exactly as they were from v31 to v42: [world id, its stop ids in order] per path (bosses not listed). Migrations read
+   old index keys through this frozen table, never through PATHS/NODES, so worlds and stops added later cannot change what an old
+   save means. Never edit it; tools/test.js checks it against today's maps. */
+const MAP_V42={
+  math:[['m_meadow','add1 cnt1 eo1 miss1 sub1 story1'],['m_candy','add2 big1 cnt2 cmp1 miss2 sub2 story2'],
+    ['m_reef','add3 time1 big2 coins1 eo2 cmp2 time2 sub3 story3'],['m_space','big3 mult1 coins2 cnt3 sub4 time3 big4 mult2 cmp3 coins3']],
+  read:[['r_meadow','sound1 sight1 rhyme1 pic1 sound2 build1 sent1'],['r_candy','sight2 rhyme2 pic2 build2 sent2 comp1'],
+    ['r_reef','sight3 pic3 build3 comp2'],['r_space','pic4 build4']],
+  es:[['e_plaza','es_greet1 es_color1 es_num1 es_animal1 es_greet2 es_color2 es_num2 es_animal2'],
+    ['e_fiesta','es_food1 es_body1 es_family1 es_teen1 es_food2 es_body2 es_family2 es_teen2'],['e_repaso','es_mix1 es_mix2']]};
+const v42Stops=p=>(MAP_V42[p]||[]).flatMap(w=>w[1].split(' ')); // a path's non-boss stop ids in v42 order
 const MIGRATIONS=[null,
   /* 1: single-map progress (S.map) -> per-path maps (S.maps) */
   ()=>{if(S.maps)return;S.maps={math:{},read:{},es:{}};S.mapv=2;
     const OLD='add1 sight1 cnt1 pic1 eo1 build1 miss1 sent1 sub1 story1 add2 sight2 big1 pic2 cnt2 build2 cmp1 comp1 miss2 sent2 sub2 story2 add3 time1 sight3 big2 pic3 coins1 build3 eo2 cmp2 comp2 time2 sub3 story3 big3 mult1 pic4 coins2 cnt3 build4 sub4 time3 big4 mult2 cmp3 coins3'.split(' ');
-    Object.entries(S.map||{}).forEach(([i,st])=>{const o=OLD[i];if(!o||!st)return;const sk=o.slice(0,-1),lv=+o.slice(-1);
-      for(const p in NODES)NODES[p].forEach(n=>{if(n.sk==sk&&n.lv==lv)S.maps[p][nid(n)]=Math.max(S.maps[p][nid(n)]||0,st)})});
+    Object.entries(S.map||{}).forEach(([i,st])=>{const o=OLD[i];if(!o||!st)return;
+      for(const p in MAP_V42)if(v42Stops(p).includes(o))S.maps[p][o]=Math.max(S.maps[p][o]||0,st)});
     delete S.map;S.wdone={}},
   /* 2: map keys by stop index -> by stop id (S.mapv=2) */
   ()=>{
     for(const p in PATHS)S.maps[p]=S.maps[p]||{};
-    if(!S.mapv){for(const p in PATHS){const old=NODES[p].filter(n=>n.sk!='boss'),m={};Object.entries(S.maps[p]).forEach(([k,v])=>{if(old[k])m[nid(old[k])]=v});S.maps[p]=m}S.mapv=2}}
+    if(!S.mapv){for(const p in PATHS){const old=v42Stops(p),m={};Object.entries(S.maps[p]).forEach(([k,v])=>{if(old[k])m[old[k]]=v});S.maps[p]=m}S.mapv=2}},
+  /* 3 (P1-05): keys by world index -> by world id (ROADMAP decision A5). Index k always means world k of MAP_V42.
+     - Boss stars S.maps[p]['boss<k>'] are copied to 'boss_<worldId>'.
+     - S.wdone 'math0' style keys are copied to 'm_meadow' style keys, and every world whose v42 stops and boss are all passed is
+       marked done (saves from v30 lost their S.wdone in migration 1), so the +20 world prize is never paid twice.
+     - The old keys stay: they are tiny, and an older cached app on an offline tablet keeps reading this save (rule 9).
+     - S.ptRep (today's repeat counter for game time; 't<k>' and 'boss<k>' were shared by all paths) moves to 't_<worldId>' and
+       'boss_<worldId>' for world k of every path, so nothing played today earns full time twice. */
+  ()=>{
+    S.wdone=S.wdone&&typeof S.wdone=='object'?S.wdone:{};
+    for(const p in MAP_V42){
+      const m=S.maps[p]=S.maps[p]||{};
+      MAP_V42[p].forEach(([id,stops],k)=>{
+        const b=m['boss'+k];
+        if(b>0&&!(m['boss_'+id]>=b))m['boss_'+id]=b;
+        if(S.wdone[p+k])S.wdone[id]=1;
+        if(m['boss_'+id]>0&&stops.split(' ').every(s=>m[s]>0))S.wdone[id]=1;
+      });
+    }
+    const rp=S.ptRep;
+    if(rp&&rp.n&&typeof rp.n=='object'){
+      const n={};
+      for(const[k,v]of Object.entries(rp.n)){
+        const mm=/^(t|boss)(\d+)$/.exec(k);
+        if(!mm){n[k]=Math.max(n[k]||0,v);continue}
+        for(const p in MAP_V42){const w=MAP_V42[p][+mm[2]];if(w){const nk=(mm[1]=='t'?'t_':'boss_')+w[0];n[nk]=Math.max(n[nk]||0,v)}}
+      }
+      rp.n=n;
+    }
+  }
 ];
 /* Run once at load, from 42-paths.js (needs NODES, which no code before it reads). Backs up the old string first. */
 function migrate(){
@@ -552,7 +610,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S));SAVE_FAILED=fals
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v45'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v46'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -1730,29 +1788,107 @@ const PET_OOPS=['Oops! Try again!','You can do it!','Almost!','Hmm, look again!'
 /* ---------- games (paths), maps ---------- */
 const PATHS={
  math:{n:'Math Adventure',e:'🔢',c:'linear-gradient(135deg,#dbeafe,#bfdbfe)',worlds:[
-  {n:'Number Meadow',e:'🌻',c:'#dcfce7',nodes:[['add',1,'Adding to 10'],['cnt',1,'Count by 1s & 10s'],['eo',1,'Even or Odd'],['miss',1,'Missing Number'],['sub',1,'Take Away'],['story',1,'Story Problems']]},
-  {n:'Candy Canyon',e:'🍭',c:'#fce7f3',nodes:[['add',2,'+9 & Doubles'],['big',1,'Tens & Hundreds'],['cnt',2,'Count by 2s & 5s'],['cmp',1,'Bigger or Smaller'],['miss',2,'Missing to 18'],['sub',2,'Take Away to 18'],['story',2,'Story Problems 2']]},
-  {n:'Ocean Reef',e:'🐠',c:'#e0f2fe',nodes:[['add',3,'All the Facts'],['time',1,"O'Clock"],['big',2,'2-Digit Adding'],['coins',1,'Pennies & Nickels'],['eo',2,'Even/Odd to 99'],['cmp',2,'Compare to 100'],['time',2,'Half Past'],['sub',3,'2-Digit Take Away'],['story',3,'Story Problems 3']]},
-  {n:'Space Station',e:'🚀',c:'#ede9fe',nodes:[['big',3,'Carry the 1'],['mult',1,'Equal Groups'],['coins',2,'Dimes Too'],['cnt',3,'Skip Count Big'],['sub',4,'Borrowing'],['time',3,'Quarter Hours'],['big',4,'3-Digit Adding'],['mult',2,'Groups to 5×5'],['cmp',3,'Compare to 999'],['coins',3,'Quarters']]}]},
+  {id:'m_meadow',g:0,n:'Number Meadow',e:'🌻',c:'#dcfce7',nodes:[['add',1,'Adding to 10'],['cnt',1,'Count by 1s & 10s'],['eo',1,'Even or Odd'],['miss',1,'Missing Number'],['sub',1,'Take Away'],['story',1,'Story Problems']]},
+  {id:'m_candy',g:1,n:'Candy Canyon',e:'🍭',c:'#fce7f3',nodes:[['add',2,'+9 & Doubles'],['big',1,'Tens & Hundreds'],['cnt',2,'Count by 2s & 5s'],['cmp',1,'Bigger or Smaller'],['miss',2,'Missing to 18'],['sub',2,'Take Away to 18'],['story',2,'Story Problems 2']]},
+  {id:'m_reef',g:1,n:'Ocean Reef',e:'🐠',c:'#e0f2fe',nodes:[['add',3,'All the Facts'],['time',1,"O'Clock"],['big',2,'2-Digit Adding'],['coins',1,'Pennies & Nickels'],['eo',2,'Even/Odd to 99'],['cmp',2,'Compare to 100'],['time',2,'Half Past'],['sub',3,'2-Digit Take Away'],['story',3,'Story Problems 3']]},
+  {id:'m_space',g:2,n:'Space Station',e:'🚀',c:'#ede9fe',nodes:[['big',3,'Carry the 1'],['mult',1,'Equal Groups'],['coins',2,'Dimes Too'],['cnt',3,'Skip Count Big'],['sub',4,'Borrowing'],['time',3,'Quarter Hours'],['big',4,'3-Digit Adding'],['mult',2,'Groups to 5×5'],['cmp',3,'Compare to 999'],['coins',3,'Quarters']]}]},
  read:{n:'Reading Adventure',e:'📖',c:'linear-gradient(135deg,#fce7f3,#fbcfe8)',worlds:[
-  {n:'Letter Meadow',e:'🌻',c:'#dcfce7',nodes:[['sound',1,'First Sounds'],['sight',1,'Sight Words'],['rhyme',1,'Rhyme Time'],['pic',1,'Picture Words'],['sound',2,'Last Sounds'],['build',1,'Build a Word'],['sent',1,'Read & Match']]},
-  {n:'Candy Canyon',e:'🍭',c:'#fce7f3',nodes:[['sight',2,'More Sight Words'],['rhyme',2,'Rhyme & Read'],['pic',2,'Blends'],['build',2,'Build Blends'],['sent',2,'Read Sentences'],['comp',1,'Story Time']]},
-  {n:'Ocean Reef',e:'🐠',c:'#e0f2fe',nodes:[['sight',3,'Sight Words 3'],['pic',3,'Magic E'],['build',3,'Build Magic E'],['comp',2,'Story Time 2']]},
-  {n:'Space Station',e:'🚀',c:'#ede9fe',nodes:[['pic',4,'Vowel Teams'],['build',4,'Build Vowel Teams']]}]},
- es:{n:'Spanish Adventure',e:'🌮',c:'linear-gradient(135deg,#dcfce7,#fef9c3)',worlds:[
-  {n:'Hola Plaza',e:'🌮',c:'#fef9c3',nodes:[['es_greet',1,'¡Hola! Listen'],['es_color',1,'Colors'],['es_num',1,'Numbers 1–10'],['es_animal',1,'Animals'],['es_greet',2,'¡Hola! Read'],['es_color',2,'Read Colors'],['es_num',2,'Read Numbers'],['es_animal',2,'Read Animals']]},
-  {n:'Fiesta Island',e:'🪅',c:'#ffedd5',nodes:[['es_food',1,'Food'],['es_body',1,'My Body'],['es_family',1,'Family'],['es_teen',1,'Numbers 11–20'],['es_food',2,'Read Food'],['es_body',2,'Read Body'],['es_family',2,'Read Family'],['es_teen',2,'Read 11–20']]},
-  {n:'Gran Repaso',e:'🏆',c:'#e0e7ff',nodes:[['es_mix',1,'Big Review: Listen'],['es_mix',2,'Big Review: Read']]}]}};
+  {id:'r_meadow',g:0,n:'Letter Meadow',e:'🌻',c:'#dcfce7',nodes:[['sound',1,'First Sounds'],['sight',1,'Sight Words'],['rhyme',1,'Rhyme Time'],['pic',1,'Picture Words'],['sound',2,'Last Sounds'],['build',1,'Build a Word'],['sent',1,'Read & Match']]},
+  {id:'r_candy',g:1,n:'Candy Canyon',e:'🍭',c:'#fce7f3',nodes:[['sight',2,'More Sight Words'],['rhyme',2,'Rhyme & Read'],['pic',2,'Blends'],['build',2,'Build Blends'],['sent',2,'Read Sentences'],['comp',1,'Story Time']]},
+  {id:'r_reef',g:1,n:'Ocean Reef',e:'🐠',c:'#e0f2fe',nodes:[['sight',3,'Sight Words 3'],['pic',3,'Magic E'],['build',3,'Build Magic E'],['comp',2,'Story Time 2']]},
+  {id:'r_space',g:2,n:'Space Station',e:'🚀',c:'#ede9fe',nodes:[['pic',4,'Vowel Teams'],['build',4,'Build Vowel Teams']]}]},
+ es:{n:'Spanish Adventure',e:'🌮',c:'linear-gradient(135deg,#dcfce7,#fef9c3)',byLevel:true,worlds:[
+  {id:'e_plaza',g:-1,n:'Hola Plaza',e:'🌮',c:'#fef9c3',nodes:[['es_greet',1,'¡Hola! Listen'],['es_color',1,'Colors'],['es_num',1,'Numbers 1–10'],['es_animal',1,'Animals'],['es_greet',2,'¡Hola! Read'],['es_color',2,'Read Colors'],['es_num',2,'Read Numbers'],['es_animal',2,'Read Animals']]},
+  {id:'e_fiesta',g:-1,n:'Fiesta Island',e:'🪅',c:'#ffedd5',nodes:[['es_food',1,'Food'],['es_body',1,'My Body'],['es_family',1,'Family'],['es_teen',1,'Numbers 11–20'],['es_food',2,'Read Food'],['es_body',2,'Read Body'],['es_family',2,'Read Family'],['es_teen',2,'Read 11–20']]},
+  {id:'e_repaso',g:-1,n:'Gran Repaso',e:'🏆',c:'#e0e7ff',nodes:[['es_mix',1,'Big Review: Listen'],['es_mix',2,'Big Review: Read']]}]}};
 const BOSSES=[['👾','Gloop'],['🤖','Robo-Bonk'],['🐙','Captain Inky'],['👽','Zorp']];
 const BPRIZE=['🌼','⭐','🎉','🪐','🌈','🔥','💎','🍀','🌙','⚡','🍩','🎵'];
-const NODES={};Object.keys(PATHS).forEach((p,pi)=>{NODES[p]=[];PATHS[p].worlds.forEach((w,wi)=>{w.nodes.forEach(([sk,lv,t])=>NODES[p].push({sk,lv,t,wi,p}));
-  const B=BOSSES[wi%BOSSES.length];NODES[p].push({sk:'boss',lv:wi,t:`Boss: ${B[1]}`,wi,p,last:true,boss:B,prize:BPRIZE[(pi*4+wi)%BPRIZE.length]})})});
-const nid=n=>n.sk+n.lv;
+/* World ids (`id`) and grade tags (`g`) come from CURRICULUM.md section 2. An id is permanent: anything saved per world uses it,
+   never the world's index, so worlds can be inserted anywhere (decision A5). A path with byLevel is opened by order only. */
+const NODES={},WR={}; // WR[p][wi] = [first, last] stop index of world wi (the boss is last)
+/* (Re)builds NODES[p] and WR[p] from PATHS[p]. Runs once per path at load; tests call it after adding fake worlds. */
+function buildNodes(p){
+  const pi=Object.keys(PATHS).indexOf(p);
+  NODES[p]=[];WR[p]=[];
+  PATHS[p].worlds.forEach((w,wi)=>{
+    const a=NODES[p].length;
+    w.nodes.forEach(([sk,lv,t])=>NODES[p].push({sk,lv,t,wi,wid:w.id,p}));
+    const B=BOSSES[wi%BOSSES.length];
+    NODES[p].push({sk:'boss',lv:wi,t:`Boss: ${B[1]}`,wi,wid:w.id,p,last:true,boss:B,prize:BPRIZE[(pi*4+wi)%BPRIZE.length]});
+    WR[p].push([a,NODES[p].length-1]);
+  });
+}
+for(const p in PATHS)buildNodes(p);
+/* Stop id, the key of S.maps[path]. A boss is keyed by its world id (boss_m_meadow); other stops by skill + level (add1). */
+const nid=n=>n.sk=='boss'?'boss_'+n.wid:n.sk+n.lv;
 const getSt=(p,i)=>S.maps[p][nid(NODES[p][i])]||0,setSt=(p,i,v)=>{S.maps[p][nid(NODES[p][i])]=v};
 const passed=(p,i)=>getSt(p,i)>0;
-const unlocked=(p,i)=>S.unlockAll||i==0||passed(p,i-1);
-const curNode=p=>{const N=NODES[p];for(let i=0;i<N.length;i++)if(unlocked(p,i)&&!passed(p,i))return i;return N.length-1};
-const worldDone=(p,wi)=>NODES[p].every((n,i)=>n.wi!=wi||passed(p,i));
+const worldDone=(p,wi)=>{const[a,b]=WR[p][wi];for(let i=a;i<=b;i++)if(!passed(p,i))return false;return true};
+
+/* ---------- grades and world gating (P1-05; ROADMAP 3.1, 3.2) ----------
+   API for P1-06 and later:
+     GRADES, gradeLabel(g)  the 8 grade values (-1 Pre-K, 0 K, 1..6) and their short labels
+     gradeOf()              the child's grade: S.grade when set, else 0 (K), which keeps the maps exactly as they were before grades
+     setGrade(g)            stores S.grade (and saves); returns false for a value that is not a grade. Never locks anything
+     worldOpen(p, wi)       a world can be entered: first world, g <= grade (not on byLevel paths), skipped, previous world finished
+                            or skipped, the child already has progress in it, or "Unlock every stop" is on
+     worldFinished(p, wi)   boss beaten, all stops passed, or S.skip[id] (placement or test out)
+     unlocked(p, i)         a stop can be played; passed stops always can
+     stopNew(p, i)          an unpassed stop in a world whose boss is beaten (it was added later): NEW tag, never locked
+     curNode(p), curWorld(p)  where the map opens
+     worldStep(p, wi)       how much harder this world is for this child (game time bonus in ptCalc)
+   Nothing here is saved except S.grade (P1-06) and S.skip {worldId: 1}. */
+const GRADES=[-1,0,1,2,3,4,5,6];
+const gradeLabel=g=>g<0?'Pre-K':g==0?'K':['1st','2nd','3rd','4th','5th','6th'][g-1]||'';
+const gradeOf=()=>GRADES.includes(S.grade)?S.grade:0;
+function setGrade(g){if(!GRADES.includes(g))return false;S.grade=g;save();return true}
+const worldId=(p,wi)=>PATHS[p].worlds[wi].id;
+const worldSkipped=(p,wi)=>!!(S.skip&&S.skip[worldId(p,wi)]);
+function worldHasProgress(p,wi){const[a,b]=WR[p][wi];for(let i=a;i<=b;i++)if(passed(p,i))return true;return false}
+const worldFinished=(p,wi)=>passed(p,WR[p][wi][1])||worldSkipped(p,wi)||worldDone(p,wi);
+function worldOpen(p,wi){
+  if(S.unlockAll||wi==0)return true;
+  if(!PATHS[p].byLevel&&PATHS[p].worlds[wi].g<=gradeOf())return true; // nothing at or below the child's grade is locked
+  return worldSkipped(p,wi)||worldFinished(p,wi-1)||worldHasProgress(p,wi); // skipped worlds stay playable
+}
+/* Some later stop of the same world is passed (it was added later, or an old save skipped it): it stays open. */
+function stopBehind(p,i){const b=WR[p][NODES[p][i].wi][1];for(let j=i+1;j<=b;j++)if(passed(p,j))return true;return false}
+function unlocked(p,i){
+  if(S.unlockAll||passed(p,i))return true; // passed stops are always replayable
+  const wi=NODES[p][i].wi;
+  if(!worldOpen(p,wi))return false;
+  return i==WR[p][wi][0]||passed(p,i-1)||worldSkipped(p,wi)||stopBehind(p,i);
+}
+const stopNew=(p,i)=>!passed(p,i)&&passed(p,WR[p][NODES[p][i].wi][1]);
+/* The world where a child starts: the first one at or above their grade (the last world if none is). byLevel paths start at 0. */
+function startWorld(p){
+  if(PATHS[p].byLevel)return 0;
+  const ws=PATHS[p].worlds,k=ws.findIndex(w=>w.g>=gradeOf());
+  return k<0?ws.length-1:k;
+}
+/* The stop the map opens on: the first open, unpassed stop, not counting NEW stops or untouched worlds below the start world.
+   Falls back to any open unpassed stop, then to the very last stop (everything done). */
+function curNode(p){
+  const N=NODES[p],sw=startWorld(p);let any=-1;
+  for(let i=0;i<N.length;i++){
+    if(passed(p,i)||!unlocked(p,i))continue;
+    if(any<0)any=i;
+    const wi=N[i].wi;
+    if(stopNew(p,i)||(wi<sw&&!worldHasProgress(p,wi)))continue;
+    return i;
+  }
+  return any>=0?any:N.length-1;
+}
+const curWorld=p=>NODES[p][curNode(p)].wi;
+/* "Harder world" game time steps. byLevel paths: the world's place in the path. Graded paths: worlds below the child's grade
+   give 0; otherwise the number of earlier worlds at or above the grade (with no grade set this equals the old index rule). */
+function worldStep(p,wi){
+  if(PATHS[p].byLevel)return wi;
+  const ws=PATHS[p].worlds,g0=gradeOf();
+  if(ws[wi].g<g0)return 0;
+  let k=0;for(let j=0;j<wi;j++)if(ws[j].g>=g0)k++;
+  return k;
+}
 migrate(); /* save upgrades (MIGRATIONS in 00-core.js) run here: the first place NODES exists, before any other code reads S */
 for(const p in PATHS)S.maps[p]=S.maps[p]||{};
 const nInfo=n=>n.sk=='boss'?{e:n.boss[0],area:'boss'}:SK[n.sk];
@@ -1835,30 +1971,60 @@ function home(first){
   $('#book').onclick=book;$('#shop').onclick=shop;$('#mix').onclick=()=>{SFX.whoosh();startMix()};$('#race').onclick=raceMenu;$('#flu').onclick=()=>{SFX.whoosh();fluMenu()};$('#care').onclick=care;$('#groom').onclick=()=>{SFX.whoosh();gameRoom()};
   if($('#inst'))$('#inst').onclick=async()=>{try{installEvt.prompt();await installEvt.userChoice}catch(e){}installEvt=null;home()};
   let t;const g=$('#gear');g.onpointerdown=()=>{t=setTimeout(grown,1200)};g.onpointerup=g.onpointerleave=()=>clearTimeout(t);g.onclick=()=>fb('Grown-ups: hold it','warn');
-  {const sc=$('.scroll');if(sc)sc.insertAdjacentHTML('beforeend','<p class="small" style="text-align:center;opacity:.55;margin:14px 0 4px">Star School v45</p>')}
+  {const sc=$('.scroll');if(sc)sc.insertAdjacentHTML('beforeend','<p class="small" style="text-align:center;opacity:.55;margin:14px 0 4px">Star School v46</p>')}
   if(first&&S.voice)setTimeout(()=>say(`Hi ${S.name}! Pick a game!`),400)}
 
-let MAPP='math';
-function pathMap(p){MAPP=p;const P=PATHS[p];
+let MAPP='math',MAPW={}; // MAPW[path] = the world picked in the strip (this session only, not saved)
+/* Map of a path (P1-05: long maps). A strip of world chips, grouped by grade, sits above the map; the map draws only the picked
+   world and its two neighbours, so it stays fast with 16 worlds and 150 stops. pathMap(p) opens on the world the child is in
+   (or the one they just played); pathMap(p, wi) opens on world wi. */
+function pathMap(p,wi){MAPP=p;const P=PATHS[p];
+  const last=G&&G.path==p&&G.node>=0&&NODES[p][G.node]?G.node:-1;
+  MAPW[p]=wi!=null?wi:last>=0?NODES[p][last].wi:curWorld(p);
   view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title">${P.e} ${P.n}</div><div class="sp"></div><div class="stars">⭐ ${S.stars}</div></div>
+  <div class="wstrip" id="wstrip" aria-label="Worlds"></div>
   <div class="scroll" id="ms"><div class="map" id="map"></div></div>`);
   $('#back').onclick=()=>home();drawMap(p);music(true);
-  const c=$('.node.cur')||$(`.node[data-n="${G&&G.path==p&&G.node>=0?G.node:curNode(p)}"]`);if(c)c.scrollIntoView({block:'center'})}
-
-function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],W=m.clientWidth||360,amp=Math.min(W*.3,200),pts=[];let y=10,bands='';
-  PATHS[p].worlds.forEach((w,wi)=>{const y0=y,canTest=!worldDone(p,wi)&&(wi==0||worldDone(p,wi-1));y+=canTest?132:86;N.forEach((n,i)=>{if(n.wi!=wi)return;pts.push([W/2+Math.sin(i*1.15)*amp,y,i]);y+=106});
-    bands+=`<div class="wband" style="top:${y0}px;height:${y-y0-24}px;background:${w.c}"></div><div class="wtitle" style="top:${y0+14}px">${w.e} ${w.n}${worldDone(p,wi)?' ✅':''}</div>${canTest?`<button class="btn xs tobtn" data-w="${wi}" style="top:${y0+58}px">⚡ Already know it? Test out!</button>`:''}`;y+=4});
+  if(wi!=null)return mapTop(p);
+  const c=$('.node.cur')||$(`.node[data-n="${last>=0?last:curNode(p)}"]`);if(c)c.scrollIntoView({block:'center'})}
+/* Pick a world from the strip or a "more worlds" button: redraw in place (no new screen, music keeps playing). */
+function mapGo(p,wi){if(!$('#map'))return pathMap(p,wi);SFX.click();MAPW[p]=wi;drawMap(p);mapTop(p)}
+function mapTop(p){const t=$(`.wtitle[data-w="${MAPW[p]}"]`);if(t)t.scrollIntoView({block:"start"})}
+function worldStrip(p){
+  const ws=PATHS[p].worlds,cw=curWorld(p);let h='',lastG=null;
+  ws.forEach((w,wi)=>{
+    if(!PATHS[p].byLevel&&w.g!==lastG){lastG=w.g;h+=`<span class="wgl">${gradeLabel(w.g)}</span>`}
+    const open=worldOpen(p,wi),done=worldFinished(p,wi),sel=wi==MAPW[p];
+    h+=`<button class="wchip${sel?' on':''}${done?' done':''}${open?'':' lock'}${wi==cw?' cur':''}" data-w="${wi}" aria-pressed="${sel}"`
+      +` aria-label="${esc(w.n)}${done?', done':open?'':', locked'}"><span class="we">${w.e}</span>${esc(w.n)}`
+      +`${done?ico('check',18):open?'':ico('lock',18)}</button>`;
+  });
+  return h;
+}
+function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],ws=PATHS[p].worlds,W=m.clientWidth||360,amp=Math.min(W*.3,200),pts=[];
+  const sel=Math.min(Math.max(MAPW[p]|0,0),ws.length-1),w0=Math.max(0,sel-1),w1=Math.min(ws.length-1,sel+1);MAPW[p]=sel;
+  const st=$('#wstrip');if(st){st.innerHTML=worldStrip(p);$$('.wchip').forEach(b=>b.onclick=()=>mapGo(p,+b.dataset.w));
+    const on=st.querySelector('.wchip.on');if(on)st.scrollLeft=Math.max(0,on.offsetLeft-(st.clientWidth-on.offsetWidth)/2)}
+  let y=10,bands='';
+  const more=(wi,up)=>`<button class="btn wmore" data-w="${wi}" style="top:${y}px">${ico(up?'back':'go',20)}<span class="we">${ws[wi].e}</span>${esc(ws[wi].n)}</button>`;
+  if(w0>0){bands+=more(w0-1,true);y+=72}
+  for(let wi=w0;wi<=w1;wi++){const w=ws[wi],y0=y,[a,b]=WR[p][wi],canTest=worldOpen(p,wi)&&!worldFinished(p,wi);y+=canTest?132:86;
+    for(let i=a;i<=b;i++){pts.push([W/2+Math.sin(i*1.15)*amp,y,i]);y+=106}
+    bands+=`<div class="wband" style="top:${y0}px;height:${y-y0-24}px;background:${w.c}"></div><div class="wtitle" data-w="${wi}" style="top:${y0+14}px">${w.e} ${w.n}${worldFinished(p,wi)?' ✅':''}</div>${canTest?`<button class="btn xs tobtn" data-w="${wi}" style="top:${y0+58}px">⚡ Already know it? Test out!</button>`:''}`;y+=4}
   let path='';pts.forEach(([x,yy],k)=>{if(!k)path=`M${x} ${yy}`;else{const[px,py]=pts[k-1];path+=` C${px} ${py+55} ${x} ${yy-55} ${x} ${yy}`}});
-  const cur=curNode(p),allDone=N.every((n,i)=>passed(p,i));
+  const cur=curNode(p),allDone=N.every((n,i)=>passed(p,i)),end=w1==ws.length-1;
   const nodes=pts.map(([x,yy,i])=>{const n=N[i],s=nInfo(n),st=getSt(p,i),lk=!unlocked(p,i);
-    return`<button class="btn node ${s.area} ${lk?'lock':''} ${st?'done':''} ${i==cur&&!lk&&!allDone?'cur':''}" data-n="${i}" style="left:${x}px;top:${yy}px">${lk?'🔒':s.e}</button><div class="nlab" style="left:${x}px;top:${yy+42}px">${esc(n.t)}<div class="nstar">${st?'★'.repeat(st)+'☆'.repeat(3-st):''}</div></div>`}).join('');
-  const cp=pts.find(q=>q[2]==cur),side=cp[0]>W/2?-66:66;
-  m.style.height=(y+(allDone?90:20))+'px';
+    return`<button class="btn node ${s.area} ${lk?'lock':''} ${st?'done':''} ${i==cur&&!lk&&!allDone?'cur':''}" data-n="${i}" style="left:${x}px;top:${yy}px">${lk?'🔒':s.e}</button>${stopNew(p,i)?`<div class="nnew" style="left:${x}px;top:${yy-50}px">NEW</div>`:''}<div class="nlab" style="left:${x}px;top:${yy+42}px">${esc(n.t)}<div class="nstar">${st?'★'.repeat(st)+'☆'.repeat(3-st):''}</div></div>`}).join('');
+  const cp=pts.find(q=>q[2]==cur),side=cp&&cp[0]>W/2?-66:66;
+  let tail=end&&allDone?90:20;
+  if(!end){y+=8;bands+=more(w1+1,false);tail=80}
+  m.style.height=(y+tail)+'px';
   m.innerHTML=bands+`<svg width="${W}" height="${y+20}"><path d="${path}" fill="none" stroke="#d6c7a8" stroke-width="16" stroke-linecap="round"/><path d="${path}" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="8 10"/></svg>`+nodes
-    +`<div class="mappet ${petAura()}" style="left:${cp[0]+side}px;top:${cp[1]+18}px">${petHTML()}</div>`+(allDone?`<div class="wtitle" style="top:${y+10}px;font-size:24px">🏆 ${PATHS[p].n} Champion! 🏆</div>`:'');
+    +(cp?`<div class="mappet ${petAura()}" style="left:${cp[0]+side}px;top:${cp[1]+18}px">${petHTML()}</div>`:'')+(end&&allDone?`<div class="wtitle" style="top:${y+10}px;font-size:24px">🏆 ${PATHS[p].n} Champion! 🏆</div>`:'');
   $$('.node').forEach(b=>b.onclick=()=>{const i=+b.dataset.n;if(!unlocked(p,i)){SFX.wrong();anim(b,'sad');fb('Finish the stop before this one!','warn');return}SFX.whoosh();
     open(p,i)});
-  $$('.tobtn').forEach(b=>b.onclick=()=>testOut(p,+b.dataset.w))}
+  $$('.tobtn').forEach(b=>b.onclick=()=>testOut(p,+b.dataset.w));
+  $$('.wmore').forEach(b=>b.onclick=()=>mapGo(p,+b.dataset.w))}
 function open(p,i){const n=NODES[p][i];if(n.sk=='boss')bossIntro(p,i);else if(n.sk.startsWith('es_')&&n.sk!='es_mix'&&n.lv==1)learn(p,i);else start(p,i)}
 
 function learn(p,i){const n=NODES[p][i],items=SPN[n.sk.slice(3)];
@@ -2374,11 +2540,12 @@ function finish(){
   const g=G,sc=g.score,n=g.n,best=g.best,before=S.stars,d=day(),p=g.path,ni=g.node,nd=p?NODES[p][ni]:null;
   let stars=0,newPass=false,wDone=false;
   let testOk=false,prize=null;
-  if(g.test){testOk=sc>=9;if(testOk){NODES[p].forEach((n,i)=>{if(n.wi==g.test.wi&&getSt(p,i)<2)setSt(p,i,2)});newPass=true}}
+  if(g.test){testOk=sc>=9;if(testOk){NODES[p].forEach((n,i)=>{if(n.wi==g.test.wi&&getSt(p,i)<2)setSt(p,i,2)});newPass=true;
+    (S.skip=S.skip||{})[worldId(p,g.test.wi)]=1}} // a tested-out world stays finished even if stops are added to it later
   else if(!g.mix){if(g.boss)stars=g.won?(g.asked<=7?3:g.asked<=8?2:1):0;else{P(g.sk).r++;stars=sc>=n?3:sc>=Math.floor(n*.8+.01)?2:sc>=Math.floor(n*.7+.01)?1:0}
     const prev=getSt(p,ni);g.prevSt=prev;setSt(p,ni,Math.max(prev,stars));newPass=!prev&&stars>0;
     if(g.boss&&g.won&&!S.owned[nd.prize]){prize=nd.prize;S.owned[prize]=1;S.wear.hat=prize}}
-  if(newPass){const wk=p+nd.wi;if(!S.wdone[wk]&&worldDone(p,nd.wi)){S.wdone[wk]=1;wDone=true}}
+  if(newPass){const wk=nd.wid;if(!S.wdone[wk]&&worldDone(p,nd.wi)){S.wdone[wk]=1;wDone=true}}
   const prizes=[award()];if(sc==n)prizes.push(award());
   d.r++;const stk=streakTick();let mission=false;if(d.r>=3&&!d.done){d.done=true;mission=true;prizes.push(award())}
   if(wDone)prizes.push(award());
@@ -2877,9 +3044,9 @@ function ptCalc(g,sc,n,stars,prev,newPass,testOk,nd){const per=ptCfg().per*60,L=
     if(mast)add(60,'Already mastered this one');
     else{add(Math.round(per*(acc<.5?.34:acc<.7?.67:1)),acc<.5?'Keep trying':'Round done');
       if(newPass)add(60,'New stop unlocked');else if(stars>prev&&prev>0)add(30,'Beat your old score');
-      if(nd&&nd.wi>0)add(Math.min(90,30*nd.wi),'Harder world')}
+      const hw=nd?worldStep(nd.p,nd.wi):0;if(hw>0)add(Math.min(90,30*hw),'Harder world')} // P1-05: by grade, not raw index
     if(sc==n)add(60,'Perfect score');if(g.boss&&g.won)add(120,'Beat the boss');add((g.fixed||0)*20,`Fixed ${g.fixed} old mistake${g.fixed>1?'s':''}`)}
-  const rp=S.ptRep&&S.ptRep.day==today()?S.ptRep:(S.ptRep={day:today(),n:{}}),key=g.test?'t'+g.test.wi:g.mix?'mix':nd?nid(nd):'x',r=rp.n[key]||0;rp.n[key]=r+1;
+  const rp=S.ptRep&&S.ptRep.day==today()?S.ptRep:(S.ptRep={day:today(),n:{}}),key=g.test?'t_'+worldId(g.path,g.test.wi):g.mix?'mix':nd?nid(nd):'x',r=rp.n[key]||0;rp.n[key]=r+1;
   if(r>0){const k=r==1?.6:.35,cut=Math.round(t*(1-k));t-=cut;L.push([-cut,`Played ${r+1} times today`])}
   t=Math.max(30,Math.round(t/30)*30);return{sec:t,lines:L,mast:!g.test&&!g.mix&&prev>=3&&!g.boss,rep:r}}
 function ptWhyNot(){const p=pt(),c=ptCfg();if(c.pause)return'Game time is paused by a grown-up.';if(c.max&&p.used>=c.max*60)return`That's all the game time for today (${c.max} min). Come back tomorrow!`;return'Finish a learning round to earn game time!'}
@@ -4151,7 +4318,7 @@ function grown(){let armed=false;
    <div class="vline"><span class="vtxt">Give a bonus</span><button class="btn xs" id="pt5">+5 min</button><button class="btn xs danger" id="pt0">Empty bank</button></div>
    <label class="tg"><input type="checkbox" id="ptp" ${ptCfg().pause?'checked':''}> Pause game time (games locked)</label></div>
   <div class="card"><div class="tw"><table><tr><th>Skill</th><th>Rounds</th><th>1st try</th><th>Tricky ones</th></tr>${rows}</table></div></div>
-  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v45 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
+  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v46 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
    Storage: ${SAVE_FAILED?'<b style="color:#c0392b">could not save (device storage may be full)</b>':'saving OK'}${SAVE_CORRUPT?'<br><b style="color:#c0392b">The old save could not be read. A fresh start was made and the old data was kept on the device.</b>':''}<br>
    Last errors: ${(S.err||[]).length?(S.err||[]).slice().reverse().map(e=>'<br>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+' '+esc(e.msg)).join(''):'none'}</div></details>
   <div class="card"><label class="tg"><input type="checkbox" id="voice" ${S.voice?'checked':''}> Read questions out loud</label>

@@ -8,7 +8,7 @@ const pick=a=>a[Math.floor(rnd()*a.length)];
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KEY='starschool-v2';
-const LATEST=3; // newest save schema version = MIGRATIONS.length (ROADMAP section 9)
+const LATEST=4; // newest save schema version = MIGRATIONS.length (ROADMAP section 9)
 let S,SAVE_RAW=null,SAVE_CORRUPT=false,SAVE_FAILED=false;
 /* Read the save string into S. Corrupt or non-object JSON is kept in KEY-corrupt; KEY itself is untouched until the first save(). */
 function loadSave(raw){
@@ -31,17 +31,57 @@ let RAW0=null;try{RAW0=localStorage.getItem(KEY)}catch(e){}
 loadSave(RAW0);
 /* MIGRATIONS[n] upgrades S from version n to n+1. Idempotent, never edited after release (fix with a new one). A save with no S.v
    is a v30-or-older save; it runs 1 and 2, which each check their own marker, so old saves behave exactly as before. */
+/* The maps exactly as they were from v31 to v42: [world id, its stop ids in order] per path (bosses not listed). Migrations read
+   old index keys through this frozen table, never through PATHS/NODES, so worlds and stops added later cannot change what an old
+   save means. Never edit it; tools/test.js checks it against today's maps. */
+const MAP_V42={
+  math:[['m_meadow','add1 cnt1 eo1 miss1 sub1 story1'],['m_candy','add2 big1 cnt2 cmp1 miss2 sub2 story2'],
+    ['m_reef','add3 time1 big2 coins1 eo2 cmp2 time2 sub3 story3'],['m_space','big3 mult1 coins2 cnt3 sub4 time3 big4 mult2 cmp3 coins3']],
+  read:[['r_meadow','sound1 sight1 rhyme1 pic1 sound2 build1 sent1'],['r_candy','sight2 rhyme2 pic2 build2 sent2 comp1'],
+    ['r_reef','sight3 pic3 build3 comp2'],['r_space','pic4 build4']],
+  es:[['e_plaza','es_greet1 es_color1 es_num1 es_animal1 es_greet2 es_color2 es_num2 es_animal2'],
+    ['e_fiesta','es_food1 es_body1 es_family1 es_teen1 es_food2 es_body2 es_family2 es_teen2'],['e_repaso','es_mix1 es_mix2']]};
+const v42Stops=p=>(MAP_V42[p]||[]).flatMap(w=>w[1].split(' ')); // a path's non-boss stop ids in v42 order
 const MIGRATIONS=[null,
   /* 1: single-map progress (S.map) -> per-path maps (S.maps) */
   ()=>{if(S.maps)return;S.maps={math:{},read:{},es:{}};S.mapv=2;
     const OLD='add1 sight1 cnt1 pic1 eo1 build1 miss1 sent1 sub1 story1 add2 sight2 big1 pic2 cnt2 build2 cmp1 comp1 miss2 sent2 sub2 story2 add3 time1 sight3 big2 pic3 coins1 build3 eo2 cmp2 comp2 time2 sub3 story3 big3 mult1 pic4 coins2 cnt3 build4 sub4 time3 big4 mult2 cmp3 coins3'.split(' ');
-    Object.entries(S.map||{}).forEach(([i,st])=>{const o=OLD[i];if(!o||!st)return;const sk=o.slice(0,-1),lv=+o.slice(-1);
-      for(const p in NODES)NODES[p].forEach(n=>{if(n.sk==sk&&n.lv==lv)S.maps[p][nid(n)]=Math.max(S.maps[p][nid(n)]||0,st)})});
+    Object.entries(S.map||{}).forEach(([i,st])=>{const o=OLD[i];if(!o||!st)return;
+      for(const p in MAP_V42)if(v42Stops(p).includes(o))S.maps[p][o]=Math.max(S.maps[p][o]||0,st)});
     delete S.map;S.wdone={}},
   /* 2: map keys by stop index -> by stop id (S.mapv=2) */
   ()=>{
     for(const p in PATHS)S.maps[p]=S.maps[p]||{};
-    if(!S.mapv){for(const p in PATHS){const old=NODES[p].filter(n=>n.sk!='boss'),m={};Object.entries(S.maps[p]).forEach(([k,v])=>{if(old[k])m[nid(old[k])]=v});S.maps[p]=m}S.mapv=2}}
+    if(!S.mapv){for(const p in PATHS){const old=v42Stops(p),m={};Object.entries(S.maps[p]).forEach(([k,v])=>{if(old[k])m[old[k]]=v});S.maps[p]=m}S.mapv=2}},
+  /* 3 (P1-05): keys by world index -> by world id (ROADMAP decision A5). Index k always means world k of MAP_V42.
+     - Boss stars S.maps[p]['boss<k>'] are copied to 'boss_<worldId>'.
+     - S.wdone 'math0' style keys are copied to 'm_meadow' style keys, and every world whose v42 stops and boss are all passed is
+       marked done (saves from v30 lost their S.wdone in migration 1), so the +20 world prize is never paid twice.
+     - The old keys stay: they are tiny, and an older cached app on an offline tablet keeps reading this save (rule 9).
+     - S.ptRep (today's repeat counter for game time; 't<k>' and 'boss<k>' were shared by all paths) moves to 't_<worldId>' and
+       'boss_<worldId>' for world k of every path, so nothing played today earns full time twice. */
+  ()=>{
+    S.wdone=S.wdone&&typeof S.wdone=='object'?S.wdone:{};
+    for(const p in MAP_V42){
+      const m=S.maps[p]=S.maps[p]||{};
+      MAP_V42[p].forEach(([id,stops],k)=>{
+        const b=m['boss'+k];
+        if(b>0&&!(m['boss_'+id]>=b))m['boss_'+id]=b;
+        if(S.wdone[p+k])S.wdone[id]=1;
+        if(m['boss_'+id]>0&&stops.split(' ').every(s=>m[s]>0))S.wdone[id]=1;
+      });
+    }
+    const rp=S.ptRep;
+    if(rp&&rp.n&&typeof rp.n=='object'){
+      const n={};
+      for(const[k,v]of Object.entries(rp.n)){
+        const mm=/^(t|boss)(\d+)$/.exec(k);
+        if(!mm){n[k]=Math.max(n[k]||0,v);continue}
+        for(const p in MAP_V42){const w=MAP_V42[p][+mm[2]];if(w){const nk=(mm[1]=='t'?'t_':'boss_')+w[0];n[nk]=Math.max(n[nk]||0,v)}}
+      }
+      rp.n=n;
+    }
+  }
 ];
 /* Run once at load, from 42-paths.js (needs NODES, which no code before it reads). Backs up the old string first. */
 function migrate(){
