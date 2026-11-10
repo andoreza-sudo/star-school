@@ -24,14 +24,8 @@ const passed=(p,i)=>getSt(p,i)>0;
 const unlocked=(p,i)=>S.unlockAll||i==0||passed(p,i-1);
 const curNode=p=>{const N=NODES[p];for(let i=0;i<N.length;i++)if(unlocked(p,i)&&!passed(p,i))return i;return N.length-1};
 const worldDone=(p,wi)=>NODES[p].every((n,i)=>n.wi!=wi||passed(p,i));
-/* carry over progress from the single-map version */
-(()=>{if(S.maps)return;S.maps={math:{},read:{},es:{}};S.mapv=2;
-  const OLD='add1 sight1 cnt1 pic1 eo1 build1 miss1 sent1 sub1 story1 add2 sight2 big1 pic2 cnt2 build2 cmp1 comp1 miss2 sent2 sub2 story2 add3 time1 sight3 big2 pic3 coins1 build3 eo2 cmp2 comp2 time2 sub3 story3 big3 mult1 pic4 coins2 cnt3 build4 sub4 time3 big4 mult2 cmp3 coins3'.split(' ');
-  Object.entries(S.map||{}).forEach(([i,st])=>{const o=OLD[i];if(!o||!st)return;const sk=o.slice(0,-1),lv=+o.slice(-1);
-    for(const p in NODES)NODES[p].forEach(n=>{if(n.sk==sk&&n.lv==lv)S.maps[p][nid(n)]=Math.max(S.maps[p][nid(n)]||0,st)})});
-  delete S.map;S.wdone={};save()})();
+migrate(); /* save upgrades (MIGRATIONS in 00-core.js) run here: the first place NODES exists, before any other code reads S */
 for(const p in PATHS)S.maps[p]=S.maps[p]||{};
-if(!S.mapv){for(const p in PATHS){const old=NODES[p].filter(n=>n.sk!='boss'),m={};Object.entries(S.maps[p]).forEach(([k,v])=>{if(old[k])m[nid(old[k])]=v});S.maps[p]=m}S.mapv=2;save()}
 const nInfo=n=>n.sk=='boss'?{e:n.boss[0],area:'boss'}:SK[n.sk];
 const SHOP={hat:[['🧢',10],['🎀',10],['🎩',20],['⛑️',25],['🎓',40],['👑',60]],
  toy:[['🎈',10],['🍭',10],['⚽',15],['🧸',20],['🪁',30],['🪄',45],['🏆',80]],
