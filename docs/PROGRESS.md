@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** wave 5 batch A: P2-01, P2-05, P2-15 in progress; then batch B: P2-02, P2-03, P2-06, P2-18.
+**Next up:** wave 5 batch A: P2-01, P2-05 in progress; then batch B: P2-02, P2-03, P2-06, P2-18.
 
-**Current version:** v58
+**Current version:** v59
 
 ## Chunk status
 
@@ -38,6 +38,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P5-03 v56
 - P2-19 v57
 - P4-13 v58
+- P2-15 v59
 
 ## Handoff notes
 
@@ -49,6 +50,12 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - (P2-19) Story Summit, Dragon Library, Author Island and Legend Lab exist now with only a spell stop each (plus the boss). P2-20 to P2-29 should insert their stops in CURRICULUM 2.2 order; do not change the spell stop ids. Word Workshop (`r_workshop`, grade 2) between Space Station and Story Summit still has to be created by P2-18.
 - (P2-19) Spell level 1 pictures come from the existing reading emoji lists (CVC, BLEND, MAGICE, TEAMS) by word; most of the 400 spelling words have no picture, so the blanked sentence is the visible clue. P4-13+ drawings reach them through picFor.
 - (P4-13) Pictures are multi-coloured by design and ignore `color` (only eyes and details follow it); a dark mode or a high-contrast mode would need to redefine the `--a-*` roles in 21-art.css. The pig and nose are pale tints on a white page; check on a real tablet. The `bank` items still use `pic` (ico names), not `picFor` (see PRE-W5 note).
+- (P2-15) `curNode`'s last-resort fallback (42-paths.js) no longer lands in an untouched world below the start world: a maxed K child (every stop done, no ABC Beach progress) would otherwise open the map on ABC Beach. Tiny Town (P2-01, math) is covered by the same line.
+- (P2-15) Existing saves with Pre-K chosen in setup (v49+) now start in ABC Beach (first world with g >= -1); K and above never do. A K child who has stars in ABC Beach stays there (progress in a world is progress).
+- (P2-15) Adding stops to the end of finished-or-open worlds (sound 3 in Letter Meadow, sound 4 and syl 2 in Candy Canyon) puts them before the boss: a child who had passed `sent1` but not the boss must now play `sound3` first (the stop shows NEW only after the boss is beaten). Expected, listed in test.js as "behind a new stop".
+- (P2-15) abc 1/2 depend on the voice saying a letter name ("Find the big letter B."). Voices differ; the hint always prints the letter and a word ("B is for ball"). A recorded-voice clip per letter (existing clips feature) would be the fix if tablets read single letters badly.
+- (P2-15) `syl` choices show the number plus that many stars (no clap icon or clap emoji is available: the clapping-hands emoji is not in the allowlist). A `clap` icon in 15-icons.js would be nicer.
+- (P2-15) The `speak` icon (person with sound waves) is used on the big Hear button for abc and syl 2 instead of the older raw speaker emoji.
 
 - (P5-02) Home "Tricky Mix (N)" now counts review items due today (`allMiss()` = `dueItems()`), not every item still in the system: after a child fixes items they leave the count until they are due again, and the button reads "Mixed Practice" when nothing is due. P5-03 replaces the card with "Today's review: N due".
 - (P5-02) In challenge or support rounds (P1-08) `mastQ()` comes first in `makeQ`, so the review slots at questions 6 and 8 are taken by the adapted question; a fast all-right child sees due items at questions 2 and 4 only. Daily Review (P5-03) is where a backlog gets cleared.
@@ -145,6 +152,18 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P1-05) Map draw with 16 fake worlds (156 stops) at 6x CPU throttle: median about 29 ms (limit 50), single runs up to about 49 ms. The strip recomputes `worldOpen`/`worldFinished` per chip and `unlocked` scans the world; a memo per draw is the next step if P4-09 adds weight.
 
 ## Log
+
+### P2-15 Letters and early phonics: world ABC Beach (v59, 2026-11-10, Claude)
+- What changed: new first reading world `r_abc` ABC Beach (g Pre-K): abc 1 (hear a big letter, 3 look-alike choices), abc 2 (little letter, 4 choices), abc 3 (match 4 big to little), syl 1 (picture, clap count 1-3, 40 words), abc 4 (what comes after / fill the gap). Letter Meadow ends with sound 3 (middle vowel of a CVC picture word); Candy Canyon ends with sound 4 (digraph sh ch th wh ck at the start or end of a picture word) and syl 2 (printed word, 1-4 claps, 60 words). Tracing stops (trace 2, 3) come from P2-16/17. New skills `abc` (4 levels) and `syl` (2); `sound` max 2 -> 4. Letters follow the CURRICULUM order, the first 13 twice as often.
+- New: `src/css/36-abc.css` (tokens only). Added to `20-words.js` (ABCO, ABCP, LOOKU/LOOKL, LETW, CVCM, DIGR, SYLP, SYLW) and `32-gen-read.js` (`genAbc`, `genSoundB`, `genSyl`, helpers). Every picture goes through `picFor`; no new emoji; no new question kinds (choice, match, build).
+- Edits to existing files: `38-skills.js` (3 entries), `42-paths.js` (world, 3 stops appended before bosses, one-line `curNode` fallback), `tools/build.py` VER, `tools/test.js`, `tools/smoke.js`, `tools/shots.js`.
+- Test changes (old -> new): MAP_V42 check: "same index, same stops" -> every v42 world and stop exists today, in the same relative order (star-preservation checks untouched); migration 3 v42 view: indexes into today's NODES -> built from the frozen MAP_V42 (v42 stops only; a v42 stop right behind a newly added stop may wait for it, and the current stop may be a newly added stop of a v42 world); `legacy-index-maps` first read stop: `nid(first read stop)` -> `sound1`; worldStep "equals the old index rule" -> 0 below the grade (Pre-K world) else count of earlier worlds at K or above; placement "reading grade 2" `[true,2,[0,1]]` -> `[true,3,[0,1,2]]` (all indexes +1); generator fuzz now accepts the `match` kind. New checks: "ABC Beach (P2-15): letters, middle vowels, digraphs, syllables; 3,000 samples per level" and "ABC Beach (P2-15): world position, stop ids, nobody is pushed back into it". smoke.js: new `// P2-15` block (the old step 2 bot already wins abc1 as `.node[data-n="0"]`, 8/8 at K).
+- Save safety: stars are keyed by stop id and `boss_<worldId>`; `MAP_V42` is untouched; midway, maxed, legacy fixtures keep every star (test: no stars on new stops, meadow stars intact); K and older never start in or fall back into ABC Beach; Pre-K starts on abc1.
+- Screenshots looked at: abc-1, abc-2, abc-3, abc-4a, abc-4b, syl-1, syl-2, sound-3, sound-4 (380x780 composites; abc-1 and syl-1 at 600x960).
+- Checklist 7.1: [x] only named files changed (plus gating lines, tests, new CSS) [x] VER bumped [x] build [x] test.js (32 checks) [x] smoke.js [x] screenshots [x] midway fixture unchanged (test) [x] size under 1.5 MB [x] no network [x] no new emoji or hex [x] PROGRESS entry [x] one commit (not pushed).
+- Merge: built on a parallel branch, renumbered v59 -> v59 at merge.
+
+- Merge (after P2-19 and P4-13): reading worlds combined (ABC Beach first; Candy Canyon gets sound4, syl2, then spell1). A child who has passed every older reading stop now opens on the next new world (Story Summit) rather than a NEW stop in an older world; the worlds, spelling and ABC tests allow that.
 
 ### P4-13 Object art set A, 40 pictures (v58, 2026-11-10, Claude)
 - What changed: `src/js/16-art-a.js` adds 40 drawings to `ART` (apple banana cookie ball star fish duck car flower cat dog pig sun bus hat bed cup fox bat bug hen box map pen web frog crab drum ship milk tent hand gift flag cake kite bike rose bone nose), 64x64 grid, flat two-tone, 14.8 KB of source (all under 900 bytes). `picFor(word, emoji)` now returns the drawing for those words, so the picture-word and build-word questions (cat, dog, pig, sun, bus, hat, bed, cup, fox, bat, bug, hen, ... ) show drawings with no generator change.

@@ -63,6 +63,7 @@ for(const id in SK){for(let lv=1;lv<=SK[id].max;lv++)for(let i=0;i<3000;i++){
   for(const c of q.choices){if(BADHTML.test(c.l+' '+c.v))GEN.html.push(w+': choice has undefined/NaN');if(BAD.test(c.v))GEN.gen.push(w+': BAD word '+c.v)}
  }
  else if(q.kind=='build'){if(!q.tiles||q.tiles.length<q.word.length)GEN.gen.push(w+': too few tiles')}
+ else if(q.kind=='match'){if(!q.items||!q.opts||q.items.length<3||q.items.length>5)GEN.gen.push(w+': bad match pairs')}
  else if(q.kind=='spell'){for(const x of kindProblems(q))GEN.gen.push(w+': '+x)}
  else GEN.gen.push(w+': unknown kind '+q.kind);
  try{hintHTML(q)}catch(e){GEN.gen.push(w+': hintHTML threw '+e.message)}
@@ -161,7 +162,7 @@ run('migrations: fixtures, backups, corrupt and newer saves',()=>{
   // maps keyed by index become keyed by stop id
   reset(fx('legacy-index-maps'));
   const mn=NODES.math.filter(n=>n.sk!='boss');
-  if(!(S.maps.math[nid(mn[0])]===2&&S.maps.math[nid(mn[1])]===3&&S.maps.math[nid(mn[2])]===1&&S.maps.read[nid(NODES.read.filter(n=>n.sk!='boss')[0])]===1))bad('legacy-index-maps: re-keyed '+JSON.stringify(S.maps.math));
+  if(!(S.maps.math[nid(mn[0])]===2&&S.maps.math[nid(mn[1])]===3&&S.maps.math[nid(mn[2])]===1&&S.maps.read.sound1===1))bad('legacy-index-maps: re-keyed '+JSON.stringify(S.maps.math));
   // empty save: new, at the latest version, nothing to back up
   reset(null);
   if(S.v!==LATEST||S.stars!==0||S.coins!==0||!S.maps.math)bad('empty save wrong');
@@ -791,12 +792,31 @@ run('worlds: ids, grade tags, migration 3 keeps every star, gating, inserted wor
       if(!GRADES.includes(w.g))bad(w.id+': grade '+w.g);
       if(wi&&!PATHS[p].byLevel&&w.g<PATHS[p].worlds[wi-1].g)bad(w.id+': grade lower than the world before it');
     });
-    for(const p in MAP_V42)MAP_V42[p].forEach(([id,stops],k)=>{
-      const w=PATHS[p].worlds[k],now=w?NODES[p].filter(n=>n.wi==k&&n.sk!='boss').map(nid).filter(x=>stops.split(' ').includes(x)).join(' '):''; // stops added later (P2-19 spell) are not in MAP_V42
-      if(!w||w.id!==id||now!==stops)bad('MAP_V42 '+p+' '+k+' does not match today ('+id+')');
-    });
-    // v42 view of a save (keys by world index): stars per stop and the old lock rule, in today's NODES order (same as v42)
-    const oldSt=(maps,p)=>NODES[p].map(n=>(maps[p]||{})[n.sk=='boss'?'boss'+n.wi:nid(n)]||0);
+    // MAP_V42 (migrations read it, never today's maps): every v42 world and stop still exists in today's maps, in the same relative order
+    // (worlds may be inserted before, between and after; stops may be added inside a world). Ids never change meaning.
+    for(const p in MAP_V42){
+      let lastW=-1;
+      MAP_V42[p].forEach(([id,stops],k)=>{
+        const wi=PATHS[p].worlds.findIndex(x=>x.id==id);
+        if(wi<0){bad('MAP_V42 '+p+' '+k+': world '+id+' is gone');return}
+        if(wi<=lastW)bad('MAP_V42 '+p+' '+id+': worlds are out of their v42 order');
+        lastW=wi;
+        const now=NODES[p].filter(n=>n.wi==wi&&n.sk!='boss').map(nid);
+        let at=-1;
+        for(const sid of stops.split(' ')){
+          const j=now.indexOf(sid);
+          if(j<0)bad('MAP_V42 '+p+' '+id+': stop '+sid+' is gone');
+          else if(j<=at)bad('MAP_V42 '+p+' '+id+': stop '+sid+' is out of its v42 order');
+          at=Math.max(at,j);
+        }
+      });
+    }
+    // v42 view of a save (keys by world index): the v42 stops in v42 order (from the frozen MAP_V42 table, each with its index in today's NODES),
+    // stars per stop and the old lock rule. Stops and worlds added since are not part of this view.
+    const v42=p=>{const o=[];(MAP_V42[p]||[]).forEach(([wid,stops],k)=>{
+      for(const id of stops.split(' '))o.push({old:id,i:NODES[p].findIndex(n=>n.sk!='boss'&&nid(n)==id)});
+      o.push({old:'boss'+k,i:NODES[p].findIndex(n=>n.sk=='boss'&&n.wid==wid)})});return o};
+    const oldSt=(maps,p)=>v42(p).map(e=>(maps[p]||{})[e.old]||0);
     const oldOpen=(st,ula)=>st.map((s,i)=>ula||i==0||st[i-1]>0);
     const oldCur=st=>{const o=oldOpen(st,false);for(let i=0;i<st.length;i++)if(o[i]&&!st[i])return i;return st.length-1};
     // 2. migration 3 on every fixture: same stars on every stop, same locks and current stop, idempotent, nothing deleted
@@ -811,14 +831,18 @@ run('worlds: ids, grade tags, migration 3 keeps every star, gating, inserted wor
       for(const k in pre.wdone||{})if(!S.wdone[k])bad(name+': wdone '+k+' lost');
       load(empty?null:raw);
       for(const p in PATHS){
-        // only stops and worlds that existed at v42 are compared; stops and worlds added later (P2-19 spelling) are new content, checked by their own test below
-        const keep=NODES[p].map((n,i)=>i).filter(i=>NODES[p][i].sk=='boss'?NODES[p][i].wi<(MAP_V42[p]||[]).length:v42Stops(p).includes(nid(NODES[p][i])));
-        const was=keep.map(i=>oldSt(pre.maps,p)[i]),now=keep.map(i=>getSt(p,i));
+        const E=v42(p);
+        if(E.some(e=>e.i<0))bad(name+' '+p+': a v42 stop is gone');
+        const was=oldSt(pre.maps,p),now=E.map(e=>getSt(p,e.i));
         if(JSON.stringify(was)!==JSON.stringify(now))bad(name+' '+p+': stars '+JSON.stringify(was)+' -> '+JSON.stringify(now));
-        const wo=oldOpen(was,S.unlockAll),no=keep.map(i=>unlocked(p,i));
+        // a v42 stop that now sits right behind a stop added later (sound3 before the boss) waits for that new stop: not a lock bug
+        const V=new Set(E.map(e=>e.i)),behindNew=E.map(e=>{const j=e.i-1;return j>=0&&!V.has(j)&&NODES[p][j].wi==NODES[p][e.i].wi&&!passed(p,j)});
+        const wo=oldOpen(was,S.unlockAll).map((o,i)=>o&&!behindNew[i]),no=E.map((e,i)=>unlocked(p,e.i)&&!behindNew[i]);
         // maxed and fresh look exactly the same. Legacy saves (stops skipped by the old single map) and midway (P1-06 infers grade 1, which opens the grade-1 worlds) may open more, never less.
         if(name.startsWith('legacy')||name=='midway'?wo.some((o,i)=>o&&!no[i]):JSON.stringify(wo)!==JSON.stringify(no))bad(name+' '+p+': locks changed');
-        if(keep.includes(curNode(p))&&keep[oldCur(was)]!==curNode(p))bad(name+' '+p+': current stop '+keep[oldCur(was)]+' -> '+curNode(p));
+        {const oc=E[oldCur(was)].i,nc=curNode(p),addedHere=!V.has(nc)&&nc<oc&&MAP_V42[p].some(w=>w[0]==NODES[p][nc].wid), // a stop added later to a v42 world, just before the old one
+          frontier=was.every(x=>x>0)&&!MAP_V42[p].some(w=>w[0]==NODES[p][nc].wid); // every v42 stop passed: the map may open on a world added since
+        if(oc!==nc&&!addedHere&&!frontier)bad(name+' '+p+': current stop '+oc+' -> '+nc)}
       }
     }
     load(fx('midway'));
@@ -853,7 +877,8 @@ run('worlds: ids, grade tags, migration 3 keeps every star, gating, inserted wor
     if(!worldFinished('math',1)||!worldOpen('math',2)||!unlocked('math',WR.math[1][1])||!unlocked('math',WR.math[2][0]))bad('S.skip does not finish a world');
     // "harder world" game time: with no grade it equals the old index rule; worlds below the grade give nothing
     load(null);
-    for(const p in PATHS)PATHS[p].worlds.forEach((w,wi)=>{if(worldStep(p,wi)!==wi)bad('worldStep '+w.id+' '+worldStep(p,wi)+' (old rule '+wi+')')});
+    // byLevel paths: the world's place. Graded paths: 0 below the grade (no grade = K, so Pre-K worlds like ABC Beach give 0), else the earlier worlds at K or above
+    for(const p in PATHS)PATHS[p].worlds.forEach((w,wi)=>{const want=PATHS[p].byLevel?wi:w.g<0?0:PATHS[p].worlds.slice(0,wi).filter(x=>x.g>=0).length;if(worldStep(p,wi)!==want)bad('worldStep '+w.id+' '+worldStep(p,wi)+' (want '+want+')')});
     setGrade(2);
     if(worldStep('math',1)!==0||worldStep('math',3)!==0||worldStep('es',2)!==2)bad('worldStep with grade 2');
     // 4. a world inserted at index 0 (like PreK Tiny Town) and a stop added to a finished world never lock anything that was open
@@ -1083,7 +1108,7 @@ run('placement: state machine rules, scripted answers, simulated students, never
     {const{st}=run1(FAKE,3,[0,0,0,0,0]);want('all wrong from world 6: lowest asked',[st.done,st.at,st.skip],[true,2,[]])}
     {const{st}=run1(PATHS.math.worlds,0,[0]);want('not yet at the first world stops',[st.done,st.at,st.skip],[true,0,[]])}
     {const{st}=run1(PATHS.math.worlds,1,[4,4,4,4]);want('all right on math (4 worlds)',[st.done,st.at,st.all,st.skip],[true,3,true,[0,1,2,3]])}
-    {const{st}=run1(PATHS.read.worlds,2,[4,1]);want('reading grade 2: pass Candy, not yet Reef',[st.done,st.at,st.skip],[true,2,[0,1]])}
+    {const{st}=run1(PATHS.read.worlds,2,[4,1]);want('reading grade 2: pass Candy, not yet Reef',[st.done,st.at,st.skip],[true,3,[0,1,2]])}
     // step is pure: the input state is not changed
     {const a=PLACE.begin(FAKE,3,1),j=JSON.stringify(a);PLACE.step(a,4);if(JSON.stringify(a)!==j)bad('step changed its input')}
     // 3. every possible answer sequence (0..4 right per testlet), 3 path shapes, every grade: ends within 5 testlets / 20 questions
@@ -1774,7 +1799,8 @@ run('spelling P2-19: word data, 3000 questions per level, visible clue, hints, m
         if(passed('read',WR.read[NODES.read[i].wi][1])&&(!stopNew('read',i)||!unlocked('read',i)||curA==k))bad(name+' g'+g+': '+k+' in a finished world is not NEW, open and not current');
       }
       // the map opens on the same stop as before unless the old path was finished, or nothing was played yet (a new child starts at their grade, which may now be a new world)
-      if(curB!==curA&&!/^boss_/.test(curB)&&NODES.read.some((n,i)=>passed('read',i)))bad(name+' g'+g+': current stop moved '+curB+' -> '+curA);
+      // (old path finished = the old map fell back to its last boss, or to a stop added after v42 such as ABC Beach's sound3: then the next new world is the right place)
+      if(curB!==curA&&!/^boss_/.test(curB)&&v42Stops('read').includes(curB)&&NODES.read.some((n,i)=>passed('read',i)))bad(name+' g'+g+': current stop moved '+curB+' -> '+curA);
     }
     PATHS.read.worlds=CUR;buildNodes('read');
     return {checked};
@@ -1819,6 +1845,134 @@ run('art set A: 40 pictures present, size, allowed elements, tokens only, well-f
   if(PW.length<30)bad.push('only '+PW.length+' set A words are picture words');
   bad;`);
   return{problems:out.concat(p),note:NAMES.length+' pictures'};
+});
+
+// ---- P2-15: ABC Beach ----
+run('ABC Beach (P2-15): letters, middle vowels, digraphs, syllables; 3,000 samples per level',()=>{
+  const out=[];
+  const r=eval(js+`
+  S.name='Ava';S.buddy='Ben';G={built:[]};
+  const bad=[];
+  const AL='abcdefghijklmnopqrstuvwxyz';
+  const labels={};
+  // data sizes and word lists
+  if(SYLP.length!==40)bad.push('SYLP has '+SYLP.length+', want 40');
+  const sw=SYLW.reduce((a,l)=>a+l.length,0);
+  if(sw!==60)bad.push('SYLW has '+sw+', want 60');
+  for(const w of new Set([...SYLP.map(x=>x[0]),...SYLW.flat(),...DIGR.map(x=>x[0]),...CVCM.map(x=>x[0])]))if(BAD.test(w))bad.push('BAD word '+w);
+  if(new Set(SYLW.flat()).size!==60)bad.push('SYLW has a repeated word');
+  if(new Set(SYLP.map(x=>x[0])).size!==40)bad.push('SYLP has a repeated word');
+  for(const L of ABCO)if(!LETW[L])bad.push('no word for letter '+L);
+  if(ABCO.length!==26||new Set(ABCO).size!==26)bad.push('ABCO is not the 26 letters');
+  const first={},cnt={};
+  for(let lv=1;lv<=4;lv++)for(let i=0;i<3000;i++){
+    const q=SK.abc.gen(lv),w='abc L'+lv+' '+q.label;
+    (labels['abc'+lv]=labels['abc'+lv]||new Set()).add(q.label);
+    if(lv==1){
+      const vs=q.choices.map(c=>c.v);
+      if(vs.length!==3||!/^[A-Z]$/.test(q.ans)||vs.some(v=>!/^[A-Z]$/.test(v)))bad.push(w+': abc1 choices '+vs);
+      if(q.auto!=='must'||!/data-say/.test(q.html))bad.push(w+': abc1 must be spoken with a Hear button');
+      cnt[q.ans]=(cnt[q.ans]||0)+1;
+      const grp=[...new Set(LOOKU.filter(g=>g.includes(q.ans)).join('').split(''))].filter(c=>c!=q.ans);
+      if(vs.filter(v=>v!=q.ans&&grp.includes(v)).length<Math.min(2,grp.length))bad.push(w+': abc1 distractors are not look-alikes '+vs);
+    }
+    if(lv==2){
+      const vs=q.choices.map(c=>c.v);
+      if(vs.length!==4||!/^[a-z]$/.test(q.ans)||vs.some(v=>!/^[a-z]$/.test(v)))bad.push(w+': abc2 choices '+vs);
+      if('bdpq'.includes(q.ans)&&'bdpq'.split('').some(c=>!vs.includes(c)))bad.push(w+': abc2 b/d/p/q set incomplete '+vs);
+    }
+    if(lv==3){
+      if(q.kind!=='match'||q.items.length!==4||q.opts.length!==4)bad.push(w+': abc3 is 4 pairs');
+      for(const it of q.items)if(!q.opts.some(o=>o.v===it.v&&o.l===it.l.toLowerCase()))bad.push(w+': abc3 pair '+it.l);
+    }
+    if(lv==4){
+      if(q.kind=='choice'){
+        const l=q.label.replace('after ','').toLowerCase(),a=q.ans.toLowerCase();
+        if(AL.indexOf(a)!==AL.indexOf(l)+1)bad.push(w+': abc4 after '+l+' is '+a);
+        if(q.choices.length!==3)bad.push(w+': abc4 after needs 3 choices');
+      }else{
+        const m=[...q.html.matchAll(/<span class="(ab-l|ls)"[^>]*>([^<]*)<\\/span>/g)].map(x=>x[1]=='ls'?'_':x[2]);
+        const g=m.indexOf('_');
+        if(m.length!==4||g<1||g>2)bad.push(w+': abc4 gap run '+m);
+        else{const L=m.map(x=>x.toLowerCase());const s=AL.indexOf(L[g==1?0:1])-(g==1?0:1);
+          if(q.ans.toLowerCase()!==AL[s+g])bad.push(w+': abc4 gap answer '+q.ans+' in '+m);
+          if(m.some((x,k)=>k!=g&&x.toLowerCase()!==AL[s+k]))bad.push(w+': abc4 run is not in ABC order '+m)}
+        if(q.word.length!==1||q.tiles.length!==4||new Set(q.tiles).size!==4)bad.push(w+': abc4 gap tiles '+q.tiles);
+      }
+    }
+  }
+  // the first 13 letters appear about twice as often as the last 13
+  const a13=[...ABCO.slice(0,13)].reduce((a,c)=>a+(cnt[c]||0),0),b13=[...ABCO.slice(13)].reduce((a,c)=>a+(cnt[c]||0),0);
+  if(!(a13>1.6*b13&&a13<2.4*b13))bad.push('first 13 letters are not about twice as common: '+a13+' vs '+b13);
+  for(let i=0;i<3000;i++){
+    const q=SK.sound.gen(3),w='sound L3 '+q.label,wd=q.label.replace('middle: ','');
+    if(wd[1]!==q.ans||q.choices.length!==3||q.choices.some(c=>!/^[aeiou]$/.test(c.v)))bad.push(w+': middle vowel');
+    if(!CVCM.some(x=>x[0]===wd))bad.push(w+': word not from CVC');
+    const d=genSoundB(4),dm=d.label.match(/^(starts|ends) (..): (.+)$/),st=dm[1]=='starts';
+    if(!dm||(st?!dm[3].startsWith(dm[2]):!dm[3].endsWith(dm[2]))||d.ans!==dm[2])bad.push('sound L4 '+d.label+': digraph position');
+    if(d.choices.length!==4||d.choices.some(c=>!['sh','ch','th','wh','ck'].includes(c.v)))bad.push('sound L4 '+d.label+': choices');
+    if(/\\bwh\\b/.test(d.choices.map(c=>c.v).join(' '))&&!st)bad.push('sound L4 '+d.label+': wh offered at the end');
+    for(const lv of [1,2]){
+      const s=SK.syl.gen(lv),n=+s.ans;
+      if(lv==1){const e=SYLP.find(x=>x[0]===s.label.replace('claps: ',''));if(!e||e[2]!==n||s.choices.length!==3)bad.push('syl L1 '+s.label)}
+      else{const wd2=s.label.replace('syllables: ','');if(!SYLW[n-1]||!SYLW[n-1].includes(wd2)||s.choices.length!==4)bad.push('syl L2 '+s.label)}
+      if(!s.say||!s.hint)bad.push('syl L'+lv+' say or hint missing');
+    }
+  }
+  // every level has a hint and every label is not one single repeated value
+  for(const [k,sk,lv] of [['abc1','abc',1],['abc2','abc',2],['abc3','abc',3],['abc4','abc',4]]){
+    if(!SK[sk].gen(lv).hint)bad.push(k+': no hint');
+    if(labels[k].size<10)bad.push(k+': only '+labels[k].size+' distinct labels');
+  }
+  bad;`);
+  for(const m of [...new Set(r)])out.push(m);
+  return{problems:out};
+});
+
+run('ABC Beach (P2-15): world position, stop ids, nobody is pushed back into it',()=>{
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const out=[];
+  const r=eval(js+`
+  const store={};
+  localStorage.getItem=k=>k in store?store[k]:null;localStorage.setItem=(k,v)=>{store[k]=String(v)};localStorage.removeItem=k=>{delete store[k]};
+  const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
+  const bad=[],W=PATHS.read.worlds;
+  // position and content (CURRICULUM 2.2)
+  if(W[0].id!=='r_abc'||W[0].g!==-1||W[1].id!=='r_meadow')bad.push('ABC Beach must be the first reading world (Pre-K), then Letter Meadow');
+  const ids=NODES.read.filter(n=>n.wid=='r_abc'&&n.sk!='boss').map(nid).join(' ');
+  if(ids!=='abc1 abc2 abc3 syl1 abc4')bad.push('ABC Beach stops: '+ids);
+  const tail=(id,k)=>NODES.read.filter(n=>n.wid==id&&n.sk!='boss'&&n.sk!='spell').map(nid).slice(-k).join(' '); // spelling stops (P2-19) sit after these
+  if(tail('r_meadow',1)!=='sound3'||tail('r_candy',2)!=='sound4 syl2')bad.push('sound3 ends Letter Meadow; sound4 syl2 end Candy Canyon');
+  // existing stop ids keep their meaning and order inside their worlds
+  const was={r_meadow:'sound1 sight1 rhyme1 pic1 sound2 build1 sent1',r_candy:'sight2 rhyme2 pic2 build2 sent2 comp1',r_reef:'sight3 pic3 build3 comp2',r_space:'pic4 build4'};
+  for(const id in was){const now=NODES.read.filter(n=>n.wid==id&&n.sk!='boss').map(nid).slice(0,was[id].split(' ').length).join(' ');if(now!==was[id])bad.push(id+' changed: '+now)}
+  // saves: every star survives on the same stop id, and nobody gets a star they did not have
+  for(const name of ['midway','maxed','legacy-single-map','legacy-index-maps']){
+    const raw=fx(name);loadSave(raw);const pre=JSON.parse(JSON.stringify(S));
+    load(raw);
+    for(const k of ['abc1','abc2','abc3','abc4','syl1','sound3','sound4','syl2','boss_r_abc'])if(S.maps.read[k])bad.push(name+': got stars on new stop '+k);
+    if(name=='maxed'&&!(S.maps.read.sound1===3&&S.maps.read.boss_r_meadow===3))bad.push('maxed: meadow stars lost');
+    if(name=='midway'&&!(S.maps.read.sound1===1&&S.maps.read.sight1===2&&S.maps.read.rhyme1===3&&S.maps.read.sent1===1))bad.push('midway: meadow stars lost');
+  }
+  // gating: K and above start in Letter Meadow or higher and never land in ABC Beach; Pre-K starts in ABC Beach; nothing is locked by it
+  for(const name of ['fresh','midway','maxed']){
+    for(const g of [null,-1,0,1,2,6]){
+      load(fx(name).length>2?fx(name):null);if(g!==null)S.grade=g;
+      const gr=gradeOf(),cw=curWorld('read'),k=startWorld('read');
+      if(gr>=0&&cw===0&&name!=='fresh')bad.push(name+' grade '+g+': map opens in ABC Beach');
+      if(gr>=0&&(k===0||(name==='fresh'&&cw===0)))bad.push(name+' grade '+g+': a K or older child starts in ABC Beach');
+      if(gr<0&&name=='fresh'&&(k!==0||cw!==0))bad.push('fresh Pre-K must start in ABC Beach');
+      if(!worldOpen('read',0)||(gr>=0&&!worldOpen('read',1)))bad.push(name+' grade '+g+': a reading world is locked');
+    }
+  }
+  // a K child who finished every stop and has no ABC progress is not sent back to ABC Beach, but a Pre-K child plays it
+  load(fx('maxed'));S.grade=0;
+  if(curWorld('read')===0)bad.push('maxed K child sent to ABC Beach');
+  load(null);S.grade=-1;
+  if(nid(NODES.read[curNode('read')])!=='abc1')bad.push('Pre-K map should open on abc1');
+  bad;`);
+  for(const m of [...new Set(r)])out.push(m);
+  return{problems:out};
 });
 
 // ---- report ----

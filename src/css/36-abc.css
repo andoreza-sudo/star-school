@@ -1,0 +1,5 @@
+/* P2-15 ABC Beach (32-gen-read.js genAbc, genSoundB, genSyl). Tokens only. */
+.choices.syms.sym4{grid-template-columns:repeat(2,1fr)}
+.ab-l{display:flex;align-items:center;justify-content:center;font-size:calc(clamp(36px,9vmin,72px)*var(--k));font-weight:700;color:var(--ink);min-width:1.1em}
+.choices.clps .ch{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--s-1);min-height:var(--tap-pk)}
+.clp{display:flex;flex-wrap:wrap;justify-content:center;gap:var(--s-1);font-size:var(--fs-5);color:var(--star-shade)}
