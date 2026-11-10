@@ -111,6 +111,29 @@ async function main() {
     network.push(...old.network);
     await old.ctx.close();
 
+    // 5. P0-05 error guard: throw inside a round -> friendly "go home" button, error logged, shown in the App log.
+    //    The injected error is the only one allowed; it is removed from the list below, everything else still fails the run.
+    const MARK = 'P0-05 injected test error';
+    await page.evaluate(() => home());
+    await page.click('.game[data-p="math"]');
+    await page.waitForSelector('.node[data-n="0"]');
+    await page.click('.node[data-n="0"]');
+    await page.waitForSelector('#prompt');
+    await page.evaluate(m => setTimeout(() => { throw new Error(m); }, 0), MARK);
+    await page.waitForSelector('#oops', { timeout: 3000 });
+    step('injected error mid-round: friendly button shown');
+    await page.click('#oops');
+    await page.waitForSelector('.game[data-p]');
+    const logged = await page.evaluate(() => (S.err || []).map(e => e.msg));
+    if (!logged.some(m => m.includes(MARK))) fail('injected error not in S.err: ' + JSON.stringify(logged)); else step('recovered to home, error in S.err');
+    await page.evaluate(() => grown());
+    await page.waitForSelector('#applog');
+    const logTxt = await page.evaluate(() => document.querySelector('#applog').textContent);
+    if (!logTxt.includes(MARK)) fail('App log does not show the injected error'); else step('App log shows the injected error');
+    const injected = errors.filter(e => e.includes(MARK));
+    if (injected.length !== 1) fail('expected exactly 1 injected page error, saw ' + injected.length);
+    for (let i = errors.length - 1; i >= 0; i--) if (errors[i].includes(MARK)) errors.splice(i, 1);
+
     for (const e of errors) fail(e);
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');
