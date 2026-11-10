@@ -1,0 +1,314 @@
+# Star School emoji allowlist (one emoji or sequence per line; text after # is a comment).
+# tools/test.js fails if any pictographic character in src/ is not listed here.
+# Matching ignores the variation selector U+FE0F, so write each emoji once. ZWJ sequences, flags and keycaps are listed as whole sequences.
+# '# risky' marks emoji newer than Unicode 11 (2018); they may show as an empty box on old Android tablets. test.js checks that every such emoji is marked.
+# To add an emoji: add a line here in the same change that uses it, and prefer one that is not risky.
+2⃣  # digit two + combining enclosing keycap
+5⃣  # digit five + combining enclosing keycap
+6⃣  # digit six + combining enclosing keycap
+9⃣  # digit nine + combining enclosing keycap
+↩  # leftwards arrow with hook
+⏰  # alarm clock
+⏱  # stopwatch
+⏺  # black circle for record
+▶  # black right-pointing triangle
+◀  # black left-pointing triangle
+☀  # black sun with rays
+☁  # cloud
+☕  # hot beverage
+⚔  # crossed swords
+⚖  # scales
+⚙  # gear
+⚡  # high voltage sign
+⚪  # medium white circle
+⚽  # soccer ball
+⛄  # snowman without snow
+⛏  # pick
+⛑  # helmet with white cross
+⛵  # sailboat
+⛸  # ice skate
+⛺  # tent
+⛽  # fuel pump
+✅  # white heavy check mark
+✈  # airplane
+✋  # raised hand
+✏  # pencil
+✖  # heavy multiplication x
+✨  # sparkles
+✳  # eight spoked asterisk
+✴  # eight pointed black star
+❄  # snowflake
+❌  # cross mark
+❓  # black question mark ornament
+❔  # white question mark ornament
+❤  # heavy black heart
+➕  # heavy plus sign
+➖  # heavy minus sign
+⬇  # downwards black arrow
+⬛  # black large square
+⭐  # white medium star
+🆕  # squared new
+🌄  # sunrise over mountains
+🌅  # sunrise
+🌈  # rainbow
+🌉  # bridge at night
+🌊  # water wave
+🌋  # volcano
+🌌  # milky way
+🌍  # earth globe europe-africa
+🌙  # crescent moon
+🌟  # glowing star
+🌧  # cloud with rain
+🌮  # taco
+🌱  # seedling
+🌲  # evergreen tree
+🌳  # deciduous tree
+🌴  # palm tree
+🌷  # tulip
+🌸  # cherry blossom
+🌹  # rose
+🌻  # sunflower
+🌼  # blossom
+🍀  # four leaf clover
+🍃  # leaf fluttering in wind
+🍄  # mushroom
+🍇  # grapes
+🍉  # watermelon
+🍌  # banana
+🍎  # red apple
+🍑  # peach
+🍓  # strawberry
+🍕  # slice of pizza
+🍖  # meat on bone
+🍚  # cooked rice
+🍞  # bread
+🍦  # soft ice cream
+🍩  # doughnut
+🍪  # cookie
+🍬  # candy
+🍭  # lollipop
+🍽  # fork and knife with plate
+🎀  # ribbon
+🎁  # wrapped present
+🎂  # birthday cake
+🎃  # jack-o-lantern
+🎈  # balloon
+🎉  # party popper
+🎓  # graduation cap
+🎙  # studio microphone
+🎟  # admission tickets
+🎡  # ferris wheel
+🎨  # artist palette
+🎩  # top hat
+🎮  # video game
+🎯  # direct hit
+🎲  # game die
+🎵  # musical note
+🎸  # guitar
+🎺  # trumpet
+🎾  # tennis racquet and ball
+🏀  # basketball and hoop
+🏁  # chequered flag
+🏆  # trophy
+🏊  # swimmer
+🏍  # racing motorcycle
+🏎  # racing car
+🏔  # snow capped mountain
+🏖  # beach with umbrella
+🏙  # cityscape
+🏜  # desert
+🏝  # desert island
+🏠  # house building
+🏰  # european castle
+🏺  # amphora
+🐀  # rat
+🐄  # cow
+🐉  # dragon
+🐊  # crocodile
+🐌  # snail
+🐍  # snake
+🐐  # goat
+🐑  # sheep
+🐔  # chicken
+🐘  # elephant
+🐙  # octopus
+🐚  # spiral shell
+🐛  # bug
+🐜  # ant
+🐝  # honeybee
+🐞  # lady beetle
+🐟  # fish
+🐠  # tropical fish
+🐢  # turtle
+🐣  # hatching chick
+🐤  # baby chick
+🐥  # front-facing baby chick
+🐦  # bird
+🐧  # penguin
+🐬  # dolphin
+🐭  # mouse face
+🐰  # rabbit face
+🐱  # cat face
+🐲  # dragon face
+🐳  # spouting whale
+🐴  # horse face
+🐶  # dog face
+🐷  # pig face
+🐸  # frog face
+🐻  # bear face
+🐼  # panda face
+🐾  # paw prints
+👀  # eyes
+👂  # ear
+👃  # nose
+👄  # mouth
+👋  # waving hand sign
+👍  # thumbs up sign
+👎  # thumbs down sign
+👑  # crown
+👔  # necktie
+👜  # handbag
+👢  # womans boots
+👦  # boy
+👧  # girl
+👨  # man
+👩  # woman
+👪  # family
+👴  # older man
+👵  # older woman
+👶  # baby
+👸  # princess
+👻  # ghost
+👽  # extraterrestrial alien
+👾  # alien monster
+💍  # ring
+💎  # gem stone
+💖  # sparkling heart
+💡  # electric light bulb
+💣  # bomb
+💥  # collision symbol
+💦  # splashing sweat symbol
+💧  # droplet
+💪  # flexed biceps
+💫  # dizzy symbol
+💯  # hundred points symbol
+💾  # floppy disk
+📈  # chart with upwards trend
+📌  # pushpin
+📏  # straight ruler
+📐  # triangular ruler
+📒  # ledger
+📖  # open book
+📗  # green book
+📚  # books
+📦  # package
+📬  # open mailbox with raised flag
+📲  # mobile phone with rightwards arrow at left
+🔁  # clockwise rightwards and leftwards open circle arrows
+🔇  # speaker with cancellation stroke
+🔉  # speaker with one sound wave
+🔊  # speaker with three sound waves
+🔌  # electric plug
+🔍  # left-pointing magnifying glass
+🔒  # lock
+🔓  # open lock
+🔔  # bell
+🔟  # keycap ten
+🔢  # input symbol for numbers
+🔤  # input symbol for latin letters
+🔥  # fire
+🔧  # wrench
+🔨  # hammer
+🔩  # nut and bolt
+🔴  # large red circle
+🔺  # up-pointing red triangle
+🕐  # clock face one oclock
+🕒  # clock face three oclock
+🕳  # hole
+🕸  # spider web
+🖊  # lower left ballpoint pen
+🖌  # lower left paintbrush
+🖍  # lower left crayon
+🖼  # frame with picture
+🗑  # wastebasket
+🗺  # world map
+🗼  # tokyo tower
+😄  # smiling face with open mouth and smiling eyes
+😊  # smiling face with smiling eyes
+😋  # face savouring delicious food
+😎  # smiling face with sunglasses
+🙂  # slightly smiling face
+🙏  # person with folded hands
+🚀  # rocket
+🚁  # helicopter
+🚂  # steam locomotive
+🚌  # bus
+🚐  # minibus
+🚒  # fire engine
+🚗  # automobile
+🚙  # recreational vehicle
+🚚  # delivery truck
+🚜  # tractor
+🚢  # ship
+🚩  # triangular flag on post
+🚲  # bicycle
+🚶  # pedestrian
+🛁  # bathtub
+🛍  # shopping bags
+🛏  # bed
+🛞  # risky: wheel
+🛣  # motorway
+🛷  # sled
+🛸  # flying saucer
+🛻  # risky: pickup truck
+🟦  # risky: large blue square
+🟩  # risky: large green square
+🤖  # robot face
+🥁  # drum with drumsticks
+🥄  # spoon
+🥚  # egg
+🥛  # glass of milk
+🥜  # peanuts
+🥣  # bowl with spoon
+🥤  # cup with straw
+🥧  # pie
+🥫  # canned food
+🥺  # face with pleading eyes
+🦀  # crab
+🦁  # lion face
+🦄  # unicorn face
+🦅  # eagle
+🦆  # duck
+🦇  # bat
+🦈  # shark
+🦉  # owl
+🦊  # fox face
+🦋  # butterfly
+🦎  # lizard
+🦒  # giraffe face
+🦕  # sauropod
+🦖  # t-rex
+🦜  # parrot
+🦴  # bone
+🦵  # leg
+🦶  # foot
+🦷  # tooth
+🧀  # cheese wedge
+🧁  # cupcake
+🧊  # risky: ice cube
+🧢  # billed cap
+🧥  # coat
+🧦  # socks
+🧩  # jigsaw puzzle piece
+🧱  # brick
+🧸  # teddy bear
+🧼  # bar of soap
+🧽  # sponge
+🪁  # risky: kite
+🪄  # risky: magic wand
+🪅  # risky: pinata
+🪐  # risky: ringed planet
+🪙  # risky: coin
+🪞  # risky: mirror
+🪣  # risky: bucket
+🪨  # risky: rock

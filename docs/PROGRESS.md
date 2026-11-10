@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** P0-04, P5-01.
+**Next up:** P5-01. Then wave 2: P0-05, P5-04, P1-01, P1-02, P4-01, P4-02.
 
-**Current version:** v33
+**Current version:** v34
 
 ## Chunk status
 
@@ -13,6 +13,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P0-01 v31
 - P0-02 v32
 - P0-03 v33
+- P0-04 v34
 
 ## Handoff notes
 
@@ -32,8 +33,21 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P0-03) A corrupt save is kept in `starschool-v2-corrupt` and `SAVE_CORRUPT` is set, but nothing shows it yet; P0-05's App log should display it. `SAVE_FAILED` is shown in Grown-ups.
 - (P0-03) `node tools/test.js` still always exits 0 except for the new migration block, which sets exit code 1 on failure; P0-04 should fold it into named checks.
 - (P0-03) A save file that is literally `{}` (not the same as no save) would still crash `PETS[S.pet]`; not handled (pre-existing).
+- (P0-04) Known exception in `tools/test.js` KNOWN: the 9 Spanish level 2 skills (`es_greet`, `es_color`, `es_num`, `es_teen`, `es_animal`, `es_food`, `es_body`, `es_family`, `es_mix`) have no `say` on purpose (a picture asks "How do you say it in Spanish?"; speaking the word would give the answer away), so the "say present" check lists them. A later chunk could give them a `say` for the question text or add a flag for silent-on-purpose questions, then delete the KNOWN entry.
+- (P0-04) The emoji allowlist was seeded with all 309 sequences found in `src/` at v33. 13 are newer than Unicode 11 and marked `# risky` (may be empty boxes on old Android): wheel, pickup truck, large blue and green squares, ice cube, kite, magic wand, pinata, ringed planet, coin, mirror, bucket, rock. The coin (used 20 times: 38-skills, 46-home, 48-shop) is the most visible; P4-02 or P4-13+ should replace these with SVG.
+- (P0-04) The "risky" test only knows Unicode 12+ ranges from a table in `tools/test.js`; it is a safety net for new emoji, not a full emoji-version database. CSS `content:'\1F...'` escapes are not scanned (none exist today).
+- (P0-04) `node tools/test.js` needs a built `index.html` for the size check (it fails with a message if missing); `check.sh` builds first. The size budget (warn 1.2 MB, fail 1.5 MB) lives only in `tools/test.js`.
 
 ## Log
+
+### P0-04: Generator test upgrade, emoji allowlist, size budget (v34), 2026-11-10, Claude
+- `tools/test.js` restructured into 10 named checks, each returning its problems; the run prints ok/FAIL per check and exits 1 if any fails. Checks: generators (answers, choices, BAD filter, hints), label present and under 60 chars, `say` present, no undefined/NaN in html/label/say/choices, 2 to 4 choices, nodes point at an existing skill and level, every skill level reachable from a node, emoji allowlist, size budget, migrations (the P0-03 block, unchanged, now a named check). Fuzz is still 3,000 questions per skill level (207,000).
+- New `tools/emoji-allow.txt`: 309 sequences (all emoji used in `src/` at v33, matched ignoring U+FE0F; keycaps included), 13 marked `# risky` (Unicode 12 or newer). The test also fails if a Unicode 12+ emoji is listed without `# risky`.
+- Size budget lives in one place, `tools/test.js` (`SIZE_WARN` 1.2 MB, `SIZE_FAIL` 1.5 MB). `tools/check.sh` now runs `test.js` once (full output) and no longer has its own size check; it still lists sizes.
+- Known exceptions (`KNOWN` in test.js, commented): 9 Spanish level 2 skills have no `say` by design. See Ideas and issues.
+- Proved the suite fails: broke the story generator answer (`ans+'x'`): `node tools/test.js` exited 1 with 46 problems; also appended an unlisted emoji to `90-app.js`: exit 1. Both reverted; `git diff` shows no app change under `src/`.
+- Acceptance: test.js exit 0 (10 checks), smoke OK (midway intact: 85 stars, 64 coins), check.sh OK, index.html 376,570 bytes. Looked at home-600x960 (nothing visual changed).
+- 7.1 checklist: only chunk files changed [x]; VER v34 [x]; built [x]; test.js 0 [x]; smoke 0, no console errors [x]; screenshot taken and looked at [x]; midway fixture intact [x]; size under 1.5 MB [x]; no network requests (smoke) [x]; no new emoji [x]; this entry [x]; one commit, pushed [x].
 
 ### P0-03: Save schema version and migrations (v33), 2026-11-10, Claude
 - `src/js/00-core.js`: `loadSave(raw)`, `LATEST` (3), `MIGRATIONS`, `migrate()`. `S.v` is the schema version; a new save starts at 3. The inline `S.maps` and `S.mapv` migrations from 42-paths.js are now migrations 1 and 2, same code (the only addition: migration 2 first fills missing `S.maps[p]`, which the old line 33 did before it ran; their `save()` calls became one at the end of `migrate()`).
