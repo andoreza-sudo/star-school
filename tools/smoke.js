@@ -406,7 +406,7 @@ async function main() {
       const ga = await openApp(browser, { fixture: 'fresh' });
       const gp = ga.page;
       const gr = await gp.evaluate(() => ({ n: document.querySelectorAll('.gr').length, sel: document.querySelector('.gr.sel').dataset.g,
-        min: Math.min(...[...document.querySelectorAll('.gr')].map(b => b.getBoundingClientRect().height)) }));
+        min: Math.min(...[...document.querySelectorAll('.gr')].map(b => b.offsetHeight)) })); // layout height: not affected by the entrance animation's transform
       if (gr.n !== 8 || gr.sel !== '0' || gr.min < 48) fail('setup grade buttons: ' + JSON.stringify(gr));
       await gp.fill('#nm', 'Tiny');
       await gp.click('.gr[data-g="-1"]');
