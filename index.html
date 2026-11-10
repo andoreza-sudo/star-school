@@ -445,7 +445,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S));SAVE_FAILED=fals
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v40'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v41'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -1098,7 +1098,7 @@ function home(first){
   $('#book').onclick=book;$('#shop').onclick=shop;$('#mix').onclick=()=>{SFX.whoosh();startMix()};$('#race').onclick=raceMenu;$('#flu').onclick=()=>{SFX.whoosh();fluMenu()};$('#care').onclick=care;$('#groom').onclick=()=>{SFX.whoosh();gameRoom()};
   if($('#inst'))$('#inst').onclick=async()=>{try{installEvt.prompt();await installEvt.userChoice}catch(e){}installEvt=null;home()};
   let t;const g=$('#gear');g.onpointerdown=()=>{t=setTimeout(grown,1200)};g.onpointerup=g.onpointerleave=()=>clearTimeout(t);g.onclick=()=>fb('Grown-ups: hold it','warn');
-  {const sc=$('.scroll');if(sc)sc.insertAdjacentHTML('beforeend','<p class="small" style="text-align:center;opacity:.55;margin:14px 0 4px">Star School v40</p>')}
+  {const sc=$('.scroll');if(sc)sc.insertAdjacentHTML('beforeend','<p class="small" style="text-align:center;opacity:.55;margin:14px 0 4px">Star School v41</p>')}
   if(first&&S.voice)setTimeout(()=>say(`Hi ${S.name}! Pick a game!`),400)}
 
 let MAPP='math';
@@ -1160,6 +1160,186 @@ function shop(){const sc=sceneOf(),items=shopTab=='hat'?SHOP.hat.concat(BPRIZE.f
     if(shopTab=='scene')S.wear.scene=id;else S.wear[shopTab]=S.wear[shopTab]==id?'':id;
     save();shop();anim($('#pet'),'jump');if(S.voice&&Math.random()<.5)say(pick(['I love it!','So cool!','Thank you!','Looking good!']))})}
 
+/* ---------- question kinds (P1-02) ---------- */
+/* A question is a plain object made by a generator (via genQ). Fields every kind uses:
+     kind   'num' | 'choice' | 'build'   picks the entry in KIND below
+     html   prompt HTML (trusted; generators escape their own text)
+     ans    the right answer; compared as String(value) === String(q.ans)
+     say    text read by "Hear it"; auto: true | 'must' reads it on show; lang/afterLang 'es' for Spanish voice
+     label  short id of the fact (miss tracking); hint {k, ...} for hintHTML; after: text said after the answer
+     sk, lv, seed   stamped by genQ
+   Kind fields:
+     num     html holds one SLOT (span#slot); ans is a whole number as a string ('12')
+     choice  choices [{v, l, h}]: v value, l label, h true when l is HTML; cls extra class on .choices;
+             ans is one of the v values; html may hold a SLOT that shows the picked answer
+     build   word, tiles (letters, shuffled, at least word.length); html holds span#ls0..#ls(n-1) in .lslots
+   Contract of a kind K = KIND[q.kind]:
+     K.render(q)              HTML of the input area (goes inside .inp)
+     K.bind(q, st, submit, o) wires the input. st is the screen state (G in a round, RC in Speed Race): it holds
+                              st.lock (ignore taps while true) and the kind's own fields (num: st.typed, build: st.built).
+                              Calls submit(value, el); el is the tapped button, or null when the answer sits in a slot.
+                              o: {max: digits (4), auto: submit as soon as the typed answer is right, quiet: no del sound/bump}
+     K.right(q)               marks the answer area right
+     K.retry(q, st, ready)    resets the input after a first wrong try; calls ready() if it finishes later (build)
+     K.reveal(q)              shows the right answer after the last wrong try
+     K.spoken(q)              what is said when the answer is revealed (when q.after is not set)
+     K.validate(q)            list of problems (strings); used by tools/test.js
+   A new kind adds KIND.name = {...} with all of these. kindProblems(q) also catches an unknown kind. */
+const PAD_HTML=`<div class="pad">${[1,2,3,4,5,6,7,8,9].map(n=>`<button class="btn k" data-k="${n}">${n}</button>`).join('')}`
+  +'<button class="btn k del" data-k="del">⌫</button><button class="btn k" data-k="0">0</button>'
+  +'<button class="btn k go" data-k="go">✓</button></div>';
+
+const KIND={
+  num:{
+    render:q=>PAD_HTML,
+    bind(q,st,submit,o={}){
+      const max=o.max||4;
+      $$('.k').forEach(b=>b.onclick=()=>{
+        if(st.lock)return;
+        const k=b.dataset.k;
+        if(k=='del'){
+          st.typed=st.typed.slice(0,-1);
+          if(!o.quiet)SFX.del();
+        }
+        else if(k=='go'){if(st.typed)submit(st.typed,null)}
+        else if(st.typed.length<max){
+          st.typed+=k;
+          SFX.key(+k);
+        }
+        // written after submit on purpose: this is how it has always behaved (see PROGRESS.md, P1-02 note)
+        $('#slot').textContent=st.typed;
+        if(!o.quiet)bump('#slot');
+        if(o.auto&&st.typed==q.ans)submit(st.typed,null);
+      });
+    },
+    right(q){
+      const s=$('#slot');
+      if(s)s.classList.add('ok');
+    },
+    retry(q,st){
+      st.typed='';
+      if($('#slot'))$('#slot').textContent='';
+    },
+    reveal(q){
+      const s=$('#slot');
+      s.textContent=q.ans;
+      s.className='slot rev';
+    },
+    spoken:q=>`The answer is ${q.ans}`,
+    validate(q){
+      const p=[];
+      if(typeof q.ans!=='string'||!/^\d+$/.test(q.ans)||String(+q.ans)!==q.ans)p.push('num: ans must be a whole number string, got '+q.ans);
+      if(!/id="slot"/.test(q.html||''))p.push('num: html has no SLOT');
+      return p;
+    },
+  },
+
+  choice:{
+    render:q=>`<div class="choices ${q.cls||''}">`
+      +q.choices.map((c,i)=>`<button class="btn ch" data-i="${i}">${c.h?c.l:esc(c.l)}</button>`).join('')+'</div>',
+    bind(q,st,submit){
+      $$('.ch').forEach(b=>b.onclick=()=>submit(q.choices[b.dataset.i].v,b));
+    },
+    right(q){
+      const s=$('#slot');
+      if(s){
+        s.textContent=q.ans;
+        s.classList.add('ok');
+      }
+    },
+    retry(){},
+    reveal(q){
+      $$('.ch').forEach(b=>{if(q.choices[b.dataset.i].v==q.ans)b.classList.add('right')});
+      const s=$('#slot');
+      if(s){
+        s.textContent=q.ans;
+        s.className='slot rev';
+      }
+    },
+    spoken:q=>q.ans,
+    validate(q){
+      const p=[];
+      if(!Array.isArray(q.choices))return['choice: no choices'];
+      const vs=q.choices.map(c=>c&&c.v);
+      if(!vs.includes(q.ans))p.push('choice: ans not in choices');
+      if(new Set(vs.map(String)).size!==vs.length)p.push('choice: duplicate values');
+      if(q.choices.some(c=>!c||c.v==null||c.l==null||c.l===''))p.push('choice: a choice has no v or l');
+      return p;
+    },
+  },
+
+  build:{
+    render:q=>`<div class="tiles">${q.tiles.map((t,i)=>`<button class="btn lt" data-i="${i}">${t}</button>`).join('')}</div>`
+      +'<button class="btn sm undo" id="undo">↩ Undo</button>',
+    bind(q,st,submit){
+      const K=KIND.build;
+      $$('.lt').forEach(b=>b.onclick=()=>{
+        const i=+b.dataset.i;
+        if(st.lock||st.built.includes(i)||st.built.length>=q.word.length)return;
+        st.built.push(i);
+        SFX.pop(st.built.length);
+        K.draw(q,st);
+        if(st.built.length==q.word.length)submit(st.built.map(j=>q.tiles[j]).join(''),null);
+      });
+      $('#undo').onclick=()=>{
+        if(!st.lock&&st.built.length){
+          st.built.pop();
+          SFX.del();
+          K.draw(q,st);
+        }
+      };
+    },
+    // letters picked so far into the slots; used tiles greyed; hint glow cleared
+    draw(q,st){
+      [...q.word].forEach((_,i)=>{$('#ls'+i).textContent=st.built[i]!=null?q.tiles[st.built[i]]:''});
+      $$('.lt').forEach(b=>{
+        b.classList.toggle('used',st.built.includes(+b.dataset.i));
+        b.classList.remove('glow');
+      });
+    },
+    right(){
+      $$('.ls').forEach(s=>s.classList.add('ok'));
+    },
+    // keep the right start of the word, drop the rest after a short pause
+    retry(q,st,ready){
+      let k=0;
+      while(k<st.built.length&&q.tiles[st.built[k]]==q.word[k])k++;
+      st.lock=true;
+      setTimeout(()=>{
+        if(st.dead)return;
+        st.lock=false;
+        st.built=st.built.slice(0,k);
+        KIND.build.draw(q,st);
+        if(ready)ready();
+      },500);
+    },
+    reveal(q){
+      [...q.word].forEach((c,i)=>{$('#ls'+i).textContent=c});
+    },
+    spoken:q=>q.ans,
+    validate(q){
+      const p=[];
+      if(typeof q.word!=='string'||!q.word)return['build: no word'];
+      if(!Array.isArray(q.tiles)||q.tiles.length<q.word.length)return['build: too few tiles'];
+      if(q.ans!==q.word)p.push('build: ans is not the word');
+      const left=[...q.tiles];
+      for(const c of q.word){
+        const i=left.indexOf(c);
+        if(i<0){p.push('build: tiles cannot spell the word');break}
+        left.splice(i,1);
+      }
+      for(let i=0;i<q.word.length;i++)if(!(q.html||'').includes(`id="ls${i}"`)){p.push('build: html has no slot ls'+i);break}
+      return p;
+    },
+  },
+};
+
+// problems with a question as seen by its kind; an unknown kind is a problem too
+function kindProblems(q){
+  const K=q&&Object.prototype.hasOwnProperty.call(KIND,q.kind)&&KIND[q.kind];
+  if(!K)return['unknown kind '+(q&&q.kind)];
+  return K.validate(q);
+}
 /* ---------- game ---------- */
 let G;
 const newG=o=>Object.assign({n:10,done:0,score:0,streak:0,best:0,missed:[],last:null,node:-1,path:null},o);
@@ -1183,7 +1363,7 @@ function testOut(p,wi){const w=PATHS[p].worlds[wi],o=document.createElement('div
 function makeQ(){if(G.pool)return G.pool.shift();
   if(G.path&&(G.done==3||G.done==7)){const N=NODES[G.path],old=N.filter((n,i)=>i<G.node&&n.sk!='boss'&&passed(G.path,i)&&!(n.sk==G.sk&&n.lv==G.lv));
     if(old.length){const n=pick(old),q=genQ(n.sk,n.lv);q.review=1;return q}}
-  const p=P(G.sk),s=SK[G.sk],ms=Object.values(p.miss).filter(m=>m.n>0&&m.q&&m.q.lv==G.lv);let q;
+  const p=P(G.sk),ms=Object.values(p.miss).filter(m=>m.n>0&&m.q&&m.q.lv==G.lv);let q;
   if(ms.length&&Math.random()<.3)q={...pick(ms).q};
   for(let t=0;t<10&&(!q||q.label===G.last);t++)q=genQ(G.sk,G.lv);
   G.last=q.label;return q}
@@ -1197,10 +1377,9 @@ function fit(){const qa=$('.qarea'),pr=$('#prompt');if(!qa||!pr)return;let k=1;p
 let rsT;addEventListener('resize',()=>{fit();clearTimeout(rsT);rsT=setTimeout(()=>{if($('#map'))drawMap(MAPP)},150)});
 function petSay(t){const b=$('#bub');if(!b)return;b.textContent=t;const far=G&&G.done/G.n>.5;b.style.left=far?'auto':'0';b.style.right=far?'0':'auto';b.classList.add('on');clearTimeout(b._t);b._t=setTimeout(()=>b.classList.remove('on'),1400)}
 function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;
-  let input='';
-  if(q.kind=='num')input=`<div class="pad">${[1,2,3,4,5,6,7,8,9].map(n=>`<button class="btn k" data-k="${n}">${n}</button>`).join('')}<button class="btn k del" data-k="del">⌫</button><button class="btn k" data-k="0">0</button><button class="btn k go" data-k="go">✓</button></div>`;
-  else if(q.kind=='choice')input=`<div class="choices ${q.cls||''}">${q.choices.map((c,i)=>`<button class="btn ch" data-i="${i}">${c.h?c.l:esc(c.l)}</button>`).join('')}</div>`;
-  else input=`<div class="tiles">${q.tiles.map((t,i)=>`<button class="btn lt" data-i="${i}">${t}</button>`).join('')}</div><button class="btn sm undo" id="undo">↩ Undo</button>`;
+  const K=KIND[q.kind];
+  if(!K)throw new Error('unknown question kind '+q.kind);
+  const input=K.render(q);
   const pos=`calc(${G.done/G.n} * (100% - 70px))`;
   view(`<div class="top"><button class="btn sm" id="quit">✕</button>
    ${G.boss?`<div class="bossbar"><span class="bossE" id="bossE">${G.boss.e}<div class="bubble" id="bub"></div></span><div class="hp"><div id="hpf" style="width:${G.hp/7*100}%"></div></div><b id="hpn">${'❤️'.repeat(G.hp)}</b></div>`
@@ -1215,29 +1394,20 @@ function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;
   $('#hb').onclick=()=>{const h=$('#hint');h.innerHTML=hintHTML(q);h.classList.remove('pop');void h.offsetWidth;h.classList.add('pop');SFX.pop(3);fit();h.scrollIntoView({block:'nearest',behavior:'smooth'})};
   $$('[data-say]').forEach(b=>b.onclick=()=>say(b.dataset.say,b));
   $$('.w').forEach(s=>s.onclick=()=>{say(s.dataset.w);SFX.pop(1)});
-  if(q.kind=='num')$$('.k').forEach(b=>b.onclick=()=>{if(G.lock)return;const k=b.dataset.k;
-    if(k=='del'){G.typed=G.typed.slice(0,-1);SFX.del()}else if(k=='go'){if(G.typed)check(G.typed,null)}else if(G.typed.length<4){G.typed+=k;SFX.key(+k)}
-    $('#slot').textContent=G.typed;bump('#slot')});
-  if(q.kind=='choice')$$('.ch').forEach(b=>b.onclick=()=>check(q.choices[b.dataset.i].v,b));
-  if(q.kind=='build'){
-    $$('.lt').forEach(b=>b.onclick=()=>{const i=+b.dataset.i;if(G.lock||G.built.includes(i)||G.built.length>=q.word.length)return;G.built.push(i);SFX.pop(G.built.length);drawBuilt();
-      if(G.built.length==q.word.length)check(G.built.map(j=>q.tiles[j]).join(''),null)});
-    $('#undo').onclick=()=>{if(!G.lock&&G.built.length){G.built.pop();SFX.del();drawBuilt()}}}
+  K.bind(q,G,check);
   if(q.review)petSay('Remember this?');
   if(G.retry){fb("Let's try this one again!",'warn');petSay('One more time!')}
   else if(G.done==0)petSay(G.mix?'Tricky mix!':"Let's go!");
   else if(G.done==G.n-1)petSay('Last one!');
   fit();if(document.fonts)document.fonts.ready.then(fit);
   if(q.auto==='must'||(q.auto&&S.voice))setTimeout(()=>say(q.say,null,q.lang=='es'?'es':null),400)}
-function drawBuilt(){const q=G.q;[...q.word].forEach((_,i)=>{$('#ls'+i).textContent=G.built[i]!=null?q.tiles[G.built[i]]:''});
-  $$('.lt').forEach(b=>{b.classList.toggle('used',G.built.includes(+b.dataset.i));b.classList.remove('glow')})}
 function addMiss(q){const p=P(q.sk),m=p.miss[q.label]||{n:0,tot:0,q};m.n++;m.tot++;m.q=q;p.miss[q.label]=m;
   const ks=Object.keys(p.miss);if(ks.length>40){ks.sort((a,b)=>p.miss[a].tot-p.miss[b].tot);delete p.miss[ks[0]]}}
 const PRAISE=['Great job!','You got it!','Awesome!','Super!','Nice!','Yes!','Way to go!','Brilliant!','Boom! 💥','Nailed it!'];
-function check(v,el){if(G.lock)return;const q=G.q,p=P(q.sk),ok=String(v)===String(q.ans);
+function check(v,el){if(G.lock)return;const q=G.q,K=KIND[q.kind],p=P(q.sk),ok=String(v)===String(q.ans);
   const src=el||$('#slot')||$('.lslots');
   if(ok){G.lock=true;if(el)el.classList.add('right');
-    if($('#slot')){if(q.kind=='choice')$('#slot').textContent=q.ans;$('#slot').classList.add('ok')}$$('.ls').forEach(s=>s.classList.add('ok'));
+    K.right(q);
     const first=G.tries==0&&!G.retry;
     if(!G.retry){G.done++;p.t++;if(G.tries==0){G.score++;p.c++}}
     if(G.tries==0&&p.miss[q.label]){if(p.miss[q.label].n>0&&!G.retry)G.fixed=(G.fixed||0)+1;p.miss[q.label].n=Math.max(0,p.miss[q.label].n-1)}
@@ -1259,16 +1429,13 @@ function check(v,el){if(G.lock)return;const q=G.q,p=P(q.sk),ok=String(v)===Strin
   SFX.wrong();anim($('#runner'),'sad');if(G.boss){anim($('#bossE'),'jump');setTimeout(SFX.giggle,250)}const pr=$('#prompt');pr.classList.remove('shake');void pr.offsetWidth;pr.classList.add('shake');
   if(el){el.classList.add('wrong');el.disabled=true}
   if(G.tries==1){addMiss(q);fb('Try again!','warn');petSay(G.boss?pick(['Ha ha! Missed me!','Hee hee!','Try again!']):pick(PET_OOPS));if(Math.random()<.5)setTimeout(()=>playClip('oops'),300);$('#hint').innerHTML=hintHTML(q);fit();
-    if(q.kind=='num'){G.typed='';if($('#slot'))$('#slot').textContent=''}
-    if(q.kind=='build'){let k=0;while(k<G.built.length&&q.tiles[G.built[k]]==q.word[k])k++;G.lock=true;setTimeout(()=>{if(G.dead)return;G.lock=false;G.built=G.built.slice(0,k);drawBuilt();$('#hint').innerHTML=hintHTML(q);fit()},500)}
+    K.retry(q,G,()=>{$('#hint').innerHTML=hintHTML(q);fit()});
     save();return}
   G.lock=true;
-  if(q.kind=='num'){const s=$('#slot');s.textContent=q.ans;s.className='slot rev'}
-  if(q.kind=='choice'){$$('.ch').forEach(b=>{if(q.choices[b.dataset.i].v==q.ans)b.classList.add('right')});if($('#slot')){$('#slot').textContent=q.ans;$('#slot').className='slot rev'}}
-  if(q.kind=='build')[...q.word].forEach((c,i)=>{$('#ls'+i).textContent=c});
+  K.reveal(q);
   if(!G.retry){G.done++;p.t++;if(!G.boss)G.missed.push(q)}
   const run=$('#runner');if(run)run.style.left=`calc(${G.done/G.n} * (100% - 70px))`;
-  fb("Here's the answer",'warn');petSay("We'll get it next time!");say(q.after||(q.kind=='num'?`The answer is ${q.ans}`:q.ans),null,q.afterLang);save();setTimeout(next,2600)}
+  fb("Here's the answer",'warn');petSay("We'll get it next time!");say(q.after||K.spoken(q),null,q.afterLang);save();setTimeout(next,2600)}
 
 function bossHit(){const b=$('#bossE'),f=$('#hpf'),h=$('#hpn');if(f)f.style.width=G.hp/7*100+'%';if(h)h.textContent='❤️'.repeat(G.hp);
   if(b){b.classList.remove('hit');void b.offsetWidth;b.classList.add('hit');const r=b.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,['💥','⚡','✨'])}SFX.hit()}
@@ -1399,16 +1566,14 @@ function race(cat){S.race=S.race||{};const best=S.race[cat]||0;
   RC={cat,score:0,left:60,iv:0,lock:false,typed:''};
   $('#quit').onclick=()=>{stopRace();raceMenu()};
   const rq=()=>{if(!RC)return;const q=raceQ(cat);RC.q=q;RC.typed='';RC.lock=false;
-    $('#rplay').innerHTML=`<div class="qarea"><div class="prompt" id="prompt">${q.html}</div></div><div class="inp">${q.kind=='num'?`<div class="pad">${[1,2,3,4,5,6,7,8,9].map(n=>`<button class="btn k" data-k="${n}">${n}</button>`).join('')}<button class="btn k del" data-k="del">⌫</button><button class="btn k" data-k="0">0</button><button class="btn k go" data-k="go">✓</button></div>`
-      :`<div class="choices ${q.cls||''}">${q.choices.map((c,i)=>`<button class="btn ch" data-i="${i}">${c.h?c.l:esc(c.l)}</button>`).join('')}</div>`}</div>`;
+    $('#rplay').innerHTML=`<div class="qarea"><div class="prompt" id="prompt">${q.html}</div></div><div class="inp">${KIND[q.kind].render(q)}</div>`;
     fit();if(q.auto)say(q.say,null,q.lang=='es'?'es':null);
     $$('[data-sayes]').forEach(b=>b.onclick=()=>say(b.dataset.sayes,b,'es'));
-    if(q.kind=='num')$$('.k').forEach(b=>b.onclick=()=>{if(RC.lock)return;const k=b.dataset.k;if(k=='del')RC.typed=RC.typed.slice(0,-1);else if(k=='go'){if(RC.typed)ans(RC.typed)}else if(RC.typed.length<3){RC.typed+=k;SFX.key(+k)}
-      $('#slot').textContent=RC.typed;if(RC.typed.length==q.ans.length&&RC.typed==q.ans)ans(RC.typed)});
-    else $$('.ch').forEach(b=>b.onclick=()=>ans(q.choices[b.dataset.i].v,b))};
+    // same input as a round; race pads take 3 digits, answer as soon as the right number is typed, and stay quiet
+    KIND[q.kind].bind(q,RC,ans,{max:3,auto:true,quiet:true})};
   const ans=(v,el)=>{if(!RC||RC.lock)return;RC.lock=true;const q=RC.q;
-    if(String(v)===String(q.ans)){RC.score++;SFX.right(RC.score%10);$('#rsc').textContent='⚡ '+RC.score;bump('#rsc');if(el)el.classList.add('right');if($('#slot'))$('#slot').classList.add('ok');setTimeout(rq,250)}
-    else{SFX.wrong();if(el)el.classList.add('wrong');if(q.kind=='num'){const s=$('#slot');s.textContent=q.ans;s.className='slot rev'}else $$('.ch').forEach(b=>{if(q.choices[b.dataset.i].v==q.ans)b.classList.add('right')});setTimeout(rq,800)}};
+    if(String(v)===String(q.ans)){RC.score++;SFX.right(RC.score%10);$('#rsc').textContent='⚡ '+RC.score;bump('#rsc');if(el)el.classList.add('right');KIND[q.kind].right(q);setTimeout(rq,250)}
+    else{SFX.wrong();if(el)el.classList.add('wrong');KIND[q.kind].reveal(q);setTimeout(rq,800)}};
   setTimeout(()=>{fb('Ready… GO! ⚡');SFX.fanfare();rq()},300);
   RC.iv=setInterval(()=>{if(!RC)return;RC.left--;const b=$('#rbar');if(b)b.style.width=RC.left/60*100+'%';if(RC.left<=5&&RC.left>0)tone(880,.08,0,'square',.05);
     if(RC.left<=0){const sc=RC.score,rec=sc>best;stopRace();if(rec)S.race[cat]=sc;const coins=Math.floor(sc/2)+(rec&&sc>0?5:0);S.coins+=coins;if(sc>=5)ptEarn(60);save();
@@ -3057,7 +3222,7 @@ function grown(){let armed=false;
    <div class="vline"><span class="vtxt">Give a bonus</span><button class="btn xs" id="pt5">+5 min</button><button class="btn xs danger" id="pt0">Empty bank</button></div>
    <label class="tg"><input type="checkbox" id="ptp" ${ptCfg().pause?'checked':''}> Pause game time (games locked)</label></div>
   <div class="card"><div class="tw"><table><tr><th>Skill</th><th>Rounds</th><th>1st try</th><th>Tricky ones</th></tr>${rows}</table></div></div>
-  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v40 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
+  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v41 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
    Storage: ${SAVE_FAILED?'<b style="color:#c0392b">could not save (device storage may be full)</b>':'saving OK'}${SAVE_CORRUPT?'<br><b style="color:#c0392b">The old save could not be read. A fresh start was made and the old data was kept on the device.</b>':''}<br>
    Last errors: ${(S.err||[]).length?(S.err||[]).slice().reverse().map(e=>'<br>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+' '+esc(e.msg)).join(''):'none'}</div></details>
   <div class="card"><label class="tg"><input type="checkbox" id="voice" ${S.voice?'checked':''}> Read questions out loud</label>

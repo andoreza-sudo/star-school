@@ -20,16 +20,14 @@ function race(cat){S.race=S.race||{};const best=S.race[cat]||0;
   RC={cat,score:0,left:60,iv:0,lock:false,typed:''};
   $('#quit').onclick=()=>{stopRace();raceMenu()};
   const rq=()=>{if(!RC)return;const q=raceQ(cat);RC.q=q;RC.typed='';RC.lock=false;
-    $('#rplay').innerHTML=`<div class="qarea"><div class="prompt" id="prompt">${q.html}</div></div><div class="inp">${q.kind=='num'?`<div class="pad">${[1,2,3,4,5,6,7,8,9].map(n=>`<button class="btn k" data-k="${n}">${n}</button>`).join('')}<button class="btn k del" data-k="del">⌫</button><button class="btn k" data-k="0">0</button><button class="btn k go" data-k="go">✓</button></div>`
-      :`<div class="choices ${q.cls||''}">${q.choices.map((c,i)=>`<button class="btn ch" data-i="${i}">${c.h?c.l:esc(c.l)}</button>`).join('')}</div>`}</div>`;
+    $('#rplay').innerHTML=`<div class="qarea"><div class="prompt" id="prompt">${q.html}</div></div><div class="inp">${KIND[q.kind].render(q)}</div>`;
     fit();if(q.auto)say(q.say,null,q.lang=='es'?'es':null);
     $$('[data-sayes]').forEach(b=>b.onclick=()=>say(b.dataset.sayes,b,'es'));
-    if(q.kind=='num')$$('.k').forEach(b=>b.onclick=()=>{if(RC.lock)return;const k=b.dataset.k;if(k=='del')RC.typed=RC.typed.slice(0,-1);else if(k=='go'){if(RC.typed)ans(RC.typed)}else if(RC.typed.length<3){RC.typed+=k;SFX.key(+k)}
-      $('#slot').textContent=RC.typed;if(RC.typed.length==q.ans.length&&RC.typed==q.ans)ans(RC.typed)});
-    else $$('.ch').forEach(b=>b.onclick=()=>ans(q.choices[b.dataset.i].v,b))};
+    // same input as a round; race pads take 3 digits, answer as soon as the right number is typed, and stay quiet
+    KIND[q.kind].bind(q,RC,ans,{max:3,auto:true,quiet:true})};
   const ans=(v,el)=>{if(!RC||RC.lock)return;RC.lock=true;const q=RC.q;
-    if(String(v)===String(q.ans)){RC.score++;SFX.right(RC.score%10);$('#rsc').textContent='⚡ '+RC.score;bump('#rsc');if(el)el.classList.add('right');if($('#slot'))$('#slot').classList.add('ok');setTimeout(rq,250)}
-    else{SFX.wrong();if(el)el.classList.add('wrong');if(q.kind=='num'){const s=$('#slot');s.textContent=q.ans;s.className='slot rev'}else $$('.ch').forEach(b=>{if(q.choices[b.dataset.i].v==q.ans)b.classList.add('right')});setTimeout(rq,800)}};
+    if(String(v)===String(q.ans)){RC.score++;SFX.right(RC.score%10);$('#rsc').textContent='⚡ '+RC.score;bump('#rsc');if(el)el.classList.add('right');KIND[q.kind].right(q);setTimeout(rq,250)}
+    else{SFX.wrong();if(el)el.classList.add('wrong');KIND[q.kind].reveal(q);setTimeout(rq,800)}};
   setTimeout(()=>{fb('Ready… GO! ⚡');SFX.fanfare();rq()},300);
   RC.iv=setInterval(()=>{if(!RC)return;RC.left--;const b=$('#rbar');if(b)b.style.width=RC.left/60*100+'%';if(RC.left<=5&&RC.left>0)tone(880,.08,0,'square',.05);
     if(RC.left<=0){const sc=RC.score,rec=sc>best;stopRace();if(rec)S.race[cat]=sc;const coins=Math.floor(sc/2)+(rec&&sc>0?5:0);S.coins+=coins;if(sc>=5)ptEarn(60);save();

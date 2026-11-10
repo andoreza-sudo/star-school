@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** P1-02 (Opus, in progress). Then wave 3 (P4-03 adds the next ~60 icons on the P4-02 system).
+**Next up:** wave 3: P1-03, P1-04, P1-05, P1-06, P1-09, P1-10 (Opus), P1-11. P1-03/P1-04/P1-09 build on `KIND`; P4-03 adds the next ~60 icons.
 
-**Current version:** v40
+**Current version:** v41
 
 ## Chunk status
 
@@ -20,6 +20,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P1-01 v38
 - P5-04 v39
 - P4-02 v40
+- P1-02 v41
 
 ## Handoff notes
 
@@ -29,8 +30,12 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 
 Things noticed while working that are outside the current chunk. One line each, with the chunk that noticed it.
 
+- (P1-02) Old bug, kept on purpose (the chunk must not change behaviour): after the second wrong try on a `num` question the slot shows the child's wrong number in the orange "answer" style, not the right one (the pad handler writes `st.typed` into `#slot` after `submit` has revealed the answer; same in Speed Race after a wrong "check" tap). Fix in `KIND.num.bind` (49-kinds.js): skip the slot write when `st.lock` became true during `submit`. The voice already says the right answer.
+- (P1-02) Fact Sprint (`57-fluency.js`) builds its own number pad (no check key) instead of `KIND.num`; P4-10 (keypad redesign) should move it onto `KIND.num.render/bind` so all pads stay alike.
+- (P1-02) `KIND.*.right/reveal` find the answer area by fixed ids (`#slot`, `#ls0..`, `.ch`), so only one question can be on screen at a time. Fine for rounds and races; a two-question layout would need a root element passed in.
+
 - (P1-01) `makeQ` in 50-round.js still reads `Math.random()<.3` to choose between a stored miss and a fresh question, and copies stored miss questions with `{...q}`; both are for P5-02 (spaced review), which should store `{sk,lv,seed}` and rebuild with `genQ`. Old stored misses have no `seed`.
-- (P1-01) `makeQ` still declares an unused `s=SK[G.sk]` after the genQ change; harmless, remove when 50-round.js is next touched.
+- (P1-01) `makeQ` still declared an unused `s=SK[G.sk]` after the genQ change; removed in P1-02.
 - (P0-01) `node tools/smoke.js` takes about 95 s because the bot waits for the app's own 1.2 s between questions. Fine for now; a later chunk could shorten it with a fake clock.
 - (P0-01) `node tools/test.js` only prints and always exits 0 until P0-04 makes it a real check.
 - (P0-01) `python3 tools/build.py` re-draws the icons with Pillow, so `icon-*.png` can show as modified in git after a rebuild even when nothing changed visually.
@@ -59,6 +64,16 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-02) The icon sheet is built inside `tools/shots.js` (no dev screen in the app). Icons are drawn for the 24 grid with the recipe in the `15-icons.js` header; `close` and `times` are nearly the same shape on purpose (times is slightly smaller).
 
 ## Log
+
+### P1-02 Question-kind registry (v41, 2026-11-10, Claude)
+- What changed: new `src/js/49-kinds.js` with `KIND = {num, choice, build}`; each kind has `render(q)`, `bind(q, st, submit, o)`, `right(q)`, `retry(q, st, ready)`, `reveal(q)`, `spoken(q)`, `validate(q)`, and `kindProblems(q)` also reports an unknown kind. The question-object contract is documented at the top of the file. `renderQ`, `check` (right, first wrong try, reveal, spoken answer) in 50-round.js go through `KIND`; `drawBuilt` moved to `KIND.build.draw`; unused `s=SK[G.sk]` in `makeQ` removed. Speed Race (54-race.js) uses the same `render/bind/right/reveal` with options `{max:3, auto:true, quiet:true}` (its old 3-digit, auto-answer, no del sound/bump behaviour). No new kinds, no visual change, nothing in S changed.
+- Files: src/js/49-kinds.js (new), src/js/50-round.js, src/js/54-race.js, tools/test.js (new check 14 "kinds"), tools/build.py (VER), built output.
+- Tests: test.js 14 of 14 ok / smoke.js ok (math, read, es rounds 10/10) / index.html 398 KB
+- Before/after (risk R8): a scratch harness with a seeded `Math.random` captured 419 DOM + state snapshots before and after: every skill and level at two seeds (render and hint), num/choice/build flows (del, 5-digit overflow, empty check, undo, wrong, rebuild after wrong, reveal, retry, right), a boss fight and Speed Race math/sight/es. All 419 identical. Deterministic screenshots of question, question-read, question-es, build, boss, boss question, finish, race and the three reveal states at 600x960, 1024x600, 380x780: pixel-identical except the num reveal, which also differs between two runs of the old build (prompt fit timing).
+- Screenshots checked: num reveal 380x780 (before/after), build + build reveal + es question 600x960, choice reveal + race 1024x600.
+- Checklist 7.1: all ticked (midway fixture and no-network covered by smoke; no emoji added; no colours added).
+- Left over / notes: see "Ideas and issues" (num reveal shows the typed number, kept as is; Fact Sprint pad).
+- Merge: built on a parallel branch, merged after P4-02 (renumbered v39 -> v41).
 
 ### P4-02 Icon system and first 40 icons (v40, 2026-11-10, Claude)
 - What changed: new `src/js/15-icons.js`: `ICONS` (the 40 icons of DS 5.3 as SVG strings), `icoSprite()` (one hidden `<svg id="ico-sprite">` with a `<symbol id="i-name">` per icon, added before `#app` at load), and `ico(name, size=24, cls='')` returning `<svg class="ic" ...><use href="#i-name"/></svg>`. House style (header of 15-icons.js, row added to DS 5.2): solid currentColor shapes, rounded corners by stroking the inset shape, cut-outs with evenodd, second tone `var(--ic2,#fff)` only where needed. `.ic` and `.ic-coin` (gold coin: `--star-shade` with `--star-tint` face) in 20-base.css (tokens only). The risky coin emoji in chrome is now the SVG coin: home stat chip, Pet Shop chip and prices, Pet Care chip and snack prices, Grown-ups summary. Icon sheet: `node tools/shots.js icons` (every icon at 20/32/64 px on white and on `--brand`, full-page shot); shots.js gained a `care` screen and a `full` option.
