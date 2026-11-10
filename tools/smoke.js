@@ -469,6 +469,75 @@ async function main() {
       await aa.ctx.close();
     }
 
+    // P1-07 placement quiz at 380x780: a new K child sees the "Find my level" card on Home; quitting after 2 answers changes
+    //    nothing; a full run with every answer right (real taps) passes all 4 math worlds in 16 questions, shows the result,
+    //    saves S.place and the skips, keeps stars and coins, and the map opens on the last world. Grown-ups shows the result.
+    {
+      const pa = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 });
+      const pp = pa.page;
+      await pp.fill('#nm', 'Placer');
+      await pp.click('#go');
+      await pp.waitForSelector('#plcard [data-place="math"]');
+      const card = await pp.evaluate(() => [...document.querySelectorAll('#plcard .btn')].map(b => [b.offsetWidth, b.offsetHeight]));
+      if (card.length !== 3 || card.some(([w, h]) => w < 48 || h < 48)) fail('placement card buttons: ' + JSON.stringify(card));
+      const snap = () => pp.evaluate(() => {
+        const pick = o => JSON.stringify({ maps: o.maps, skip: o.skip, place: o.place, stars: o.stars, coins: o.coins, prog: o.prog, wdone: o.wdone, grade: o.grade });
+        return { mem: pick(S), disk: pick(JSON.parse(localStorage.getItem(KEY))) };
+      });
+      const s0 = await snap();
+      // the bot answers through the round helper, which reads G: point G at the quiz state while answering
+      const answerPL = async () => {
+        await pp.waitForFunction(() => PL && PL.q && !PL.lock && document.querySelector('#prompt'), null, { timeout: 8000 });
+        await pp.waitForTimeout(250);
+        await pp.evaluate(() => { window.__pq = PL.q; G = PL; });
+        await answer(pp);
+        await pp.evaluate(() => { G = null; });
+      };
+      await pp.click('#plcard [data-place="math"]');
+      await pp.waitForSelector('#plgo');
+      await pp.click('#plgo');
+      await answerPL();
+      await answerPL();
+      const ui = await pp.evaluate(() => ({ dots: document.querySelectorAll('.pl-dot').length, on: document.querySelectorAll('.pl-dot.on').length,
+        stars: !!document.querySelector('#starc'), hint: !!document.querySelector('#hb'), quit: Math.min(...['#quit', '#spk'].map(s => document.querySelector(s)).filter(Boolean).map(b => Math.min(b.offsetHeight, b.offsetWidth))),
+        wide: document.documentElement.scrollWidth }));
+      if (ui.dots !== 4 || ui.stars || ui.hint || ui.quit < 48 || ui.wide > 380) fail('placement question screen: ' + JSON.stringify(ui));
+      await pp.click('#quit');
+      await pp.waitForSelector('#plcard');
+      const s1 = await snap();
+      if (s1.mem !== s0.mem || s1.disk !== s0.disk) fail('quitting placement changed the save: ' + s1.mem);
+      else step('placement: card on Home, 4 progress dots, no stars or hints, quitting after 2 answers changes nothing');
+      // full run, every answer right
+      await pp.click('#plcard [data-place="math"]');
+      await pp.click('#plgo');
+      let n = 0;
+      for (; n < 24 && !(await pp.$('#plmap')); n++) {
+        await answerPL();
+        await pp.waitForFunction(() => document.querySelector('#plmap') || (PL && PL.q !== window.__pq), null, { timeout: 8000 });
+      }
+      await pp.waitForSelector('#plmap');
+      const res = await pp.evaluate(() => ({ place: S.place && S.place.math, skip: S.skip, stars: S.stars, coins: S.coins,
+        btn: Math.min(...[...document.querySelectorAll('.pl-in .btn')].map(b => b.offsetHeight)), wide: document.documentElement.scrollWidth }));
+      const s2 = JSON.parse((await snap()).mem);
+      if (n !== 16 || !res.place || res.place.world !== 'm_space' || res.place.asked !== 16 || res.place.right !== 16
+        || ['m_meadow', 'm_candy', 'm_reef', 'm_space'].some(id => !res.skip[id]) || s2.stars !== JSON.parse(s0.mem).stars
+        || s2.coins !== JSON.parse(s0.mem).coins || res.btn < 48 || res.wide > 380)
+        fail('placement result: ' + n + ' answers, ' + JSON.stringify(res));
+      await pp.click('#plmap');
+      await pp.waitForSelector('#map');
+      const mw = await pp.evaluate(() => ({ w: MAPW.math, cur: curWorld('math'), open: unlocked('math', WR.math[3][0]) }));
+      if (mw.w !== 3 || mw.cur !== 3 || !mw.open) fail('map after placement: ' + JSON.stringify(mw));
+      else step('placement: 16 right answers pass all 4 math worlds; result saved, stars and coins unchanged, map opens on Space Station');
+      await pp.evaluate(() => grown());
+      await pp.waitForSelector('.pl-grown [data-place="read"]');
+      const gtxt = await pp.evaluate(() => document.querySelector('.pl-grown').textContent);
+      if (!gtxt.includes('Space Station')) fail('Grown-ups does not show the placement result');
+      else step('Grown-ups: "Find my level" row shows the last result');
+      network.push(...pa.network);
+      for (const e of pa.errors) fail(e);
+      await pa.ctx.close();
+    }
+
     for (const e of errors) fail(e);
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');

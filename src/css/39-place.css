@@ -1,0 +1,28 @@
+/* Placement quiz "Find my level" (P1-07): home card, Grown-ups row, quiz dots, result. Tokens only. */
+.pl-card{background:var(--brand-tint);border-radius:var(--r-card);padding:var(--s-3) var(--s-4);margin:var(--s-4) 0 0;color:var(--ink)}
+.pl-ct{display:flex;align-items:center;gap:var(--s-2);font-size:var(--fs-3);line-height:var(--lh-3);color:var(--ink)}
+.pl-ct .ic{color:var(--brand);flex:none}
+.pl-row{display:flex;flex-wrap:wrap;gap:var(--s-2);margin-top:var(--s-2)}
+.pl-sub,.pl-no{min-height:var(--tap);font-size:var(--fs-3);font-weight:700;display:inline-flex;align-items:center;gap:var(--s-2);padding:var(--s-2) var(--s-4)}
+.pl-sub{background:var(--surface);color:var(--brand-shade)}
+.pl-no{background:transparent;box-shadow:none;color:var(--ink-2)}
+.pl-pe{font-size:1.3em;line-height:1}
+.pl-grown{margin-top:var(--s-3)}
+.pl-grown .small{margin-top:var(--s-1)}
+.pl-in{max-width:560px;margin:0 auto}
+.pl-in .rowh{flex-wrap:wrap;justify-content:center}
+.pl-big{font-size:var(--fs-7);line-height:1.2}
+.pl-done{color:var(--star-shade);line-height:1}
+.pl-res{display:inline-flex;align-items:center;gap:var(--s-2);font-size:var(--fs-5);font-weight:700;background:var(--surface);color:var(--ink);
+  border-radius:var(--r-card);padding:var(--s-3) var(--s-5);box-shadow:var(--shadow);margin:var(--s-2) 0}
+.pl-skip{display:flex;align-items:center;justify-content:center;gap:var(--s-1);color:var(--ink-2)}
+.pl-skip .ic{color:var(--good);flex:none}
+.pl-dots{display:flex;gap:var(--s-2);align-items:center}
+.pl-dot{width:18px;height:18px;border-radius:var(--r-pill);background:var(--line);transition:transform var(--t) var(--ease)}
+.pl-dot.now{background:var(--brand-tint);box-shadow:inset 0 0 0 3px var(--brand)}
+.pl-dot.on{background:var(--brand)}
+.pl-tag{font-size:var(--fs-2);font-weight:700;color:var(--ink-2);white-space:nowrap}
+.pl-pick{outline:4px solid var(--brand);outline-offset:2px}
+.fb.pl-fb{color:var(--brand)}
+@media (max-width:420px){.pl-card{padding:var(--s-3)}}
+.btn.pl-x{min-height:var(--tap);min-width:var(--tap);display:inline-flex;align-items:center;justify-content:center;gap:var(--s-1)}

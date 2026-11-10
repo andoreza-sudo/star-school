@@ -87,6 +87,7 @@ const stopNew=(p,i)=>!passed(p,i)&&passed(p,WR[p][NODES[p][i].wi][1]);
 /* The world where a child starts: the first one at or above their grade (the last world if none is). byLevel paths start at 0. */
 function startWorld(p){
   if(PATHS[p].byLevel)return 0;
+  const pw=placeWorld(p);if(pw>=0)return pw; // P1-07: a placement result taken at the current grade
   const ws=PATHS[p].worlds,k=ws.findIndex(w=>w.g>=gradeOf());
   return k<0?ws.length-1:k;
 }
@@ -98,7 +99,7 @@ function curNode(p){
     if(passed(p,i)||!unlocked(p,i))continue;
     if(any<0)any=i;
     const wi=N[i].wi;
-    if(stopNew(p,i)||(wi<sw&&!worldHasProgress(p,wi)))continue;
+    if(stopNew(p,i)||(wi<sw&&(!worldHasProgress(p,wi)||worldSkipped(p,wi))))continue; // skipped by placement: start above it
     return i;
   }
   return any>=0?any:N.length-1;
