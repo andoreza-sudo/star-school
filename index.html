@@ -386,8 +386,8 @@ document.addEventListener('pointerdown',e=>{ac();const b=e.target.closest('.btn'
 /* ---------- speech & feedback ---------- */
 const canSpeak=()=>'speechSynthesis' in window&&typeof SpeechSynthesisUtterance!='undefined';
 function noVoice(btn){fb('🔇 No voice here. Open Star School in Chrome or the installed app.','warn long',3000);if(btn){btn.classList.remove('talking');anim(btn,'sad')}}
-function say(t,btn,lang){if(!canSpeak()){if(btn)noVoice(btn);return}
-  try{speechSynthesis.cancel();const es=lang=='es',u=new SpeechSynthesisUtterance(String(t).replace(/−/g,' minus '));u.rate=es?.8:.88;u.pitch=1.1;u.lang=es?'es-MX':'en-US';
+function say(t,btn,lang,q){if(!canSpeak()){if(btn)noVoice(btn);return}
+  try{if(!q)speechSynthesis.cancel();const es=lang=='es',u=new SpeechSynthesisUtterance(String(t).replace(/−/g,' minus '));u.rate=es?.8:.88;u.pitch=1.1;u.lang=es?'es-MX':'en-US';
   const vs=speechSynthesis.getVoices(),v=es?(vs.find(v=>/^es[-_](MX|US)/i.test(v.lang))||vs.find(v=>/^es/i.test(v.lang))):(vs.find(v=>/^en[-_]US/i.test(v.lang))||vs.find(v=>/^en/i.test(v.lang)));if(v)u.voice=v;
   if(btn){let started=false;btn.classList.add('talking');u.onstart=()=>{started=true};u.onend=u.onerror=()=>btn.classList.remove('talking');
     setTimeout(()=>{if(!started&&!speechSynthesis.speaking)noVoice(btn)},2500)}
@@ -797,12 +797,12 @@ function open(p,i){const n=NODES[p][i];if(n.sk=='boss')bossIntro(p,i);else if(n.
 
 function learn(p,i){const n=NODES[p][i],items=SPN[n.sk.slice(3)];
   view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title">Let's learn!</div><div class="sp"></div><button class="btn big" id="go" style="font-size:20px;padding:10px 18px">¡Vamos! ▶</button></div>
-  <div class="scroll"><p class="sub" style="text-align:center">Tap each card to hear it in Spanish. Then tap ¡Vamos!</p>
-  <div class="lgrid">${items.map(it=>`<button class="btn lcard" data-es="${esc(it[0])}"><span class="lp">${picHTML(it,false)}</span><b>${esc(it[0])}</b><small>${esc(it[1])}</small></button>`).join('')}</div></div>`);
+  <div class="scroll"><p class="sub" style="text-align:center">Tap each card to hear it in English, then Spanish. Then tap ¡Vamos!</p>
+  <div class="lgrid">${items.map(it=>`<button class="btn lcard" data-es="${esc(it[0])}" data-en="${esc(it[1])}"><span class="lp">${picHTML(it,false)}</span><b>${esc(it[0])}</b><small>${esc(it[1])}</small></button>`).join('')}</div></div>`);
   $('#back').onclick=()=>pathMap(p);$('#go').onclick=()=>{SFX.whoosh();start(p,i)};
-  $$('.lcard').forEach(b=>b.onclick=()=>{say(b.dataset.es,b,'es');anim(b,'jump');b.classList.add('heard');
+  $$('.lcard').forEach(b=>b.onclick=()=>{say(b.dataset.en,b);say(b.dataset.es,null,'es',1);anim(b,'jump');b.classList.add('heard');
     if($$('.lcard').every(x=>x.classList.contains('heard'))){bump('#go');fb('¡Muy bien! Tap ¡Vamos!')}});
-  if(S.voice)setTimeout(()=>say('Tap each card to hear it in Spanish!'),300)}
+  if(S.voice)setTimeout(()=>say('Tap each card to hear it in English and Spanish!'),300)}
 
 function book(){const have=STK.filter(s=>S.stickers[s]).length;
   view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title">📒 My Stickers</div><div class="sp"></div><div class="stars">${have} / ${STK.length}</div></div>
