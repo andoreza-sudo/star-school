@@ -1,0 +1,206 @@
+{
+ "pet": "dragon",
+ "petName": "Sparky",
+ "buddy": "Ben",
+ "voice": false,
+ "sound": false,
+ "music": false,
+ "best": 6,
+ "stickers": {
+  "🦄": 1,
+  "🐬": 2,
+  "🚀": 1,
+  "🌈": 1,
+  "🍩": 3,
+  "🏆": 1
+ },
+ "day": {
+  "d": "2000-1-1",
+  "r": 1,
+  "done": false
+ },
+ "wdone": {
+  "math0": 1,
+  "read0": 1
+ },
+ "owned": {
+  "meadow": 1,
+  "beach": 1,
+  "🌼": 1,
+  "⭐": 1
+ },
+ "wear": {
+  "hat": "🎩",
+  "toy": "🎈",
+  "scene": "beach"
+ },
+ "unlockAll": false,
+ "prog": {
+  "add": {
+   "lv": 1,
+   "r": 2,
+   "c": 12,
+   "t": 16,
+   "miss": {
+    "3 + 4": {
+     "n": 2,
+     "tot": 3,
+     "q": {
+      "label": "3 + 4",
+      "kind": "num",
+      "html": "3 + 4 = <span class=\"slot\" id=\"slot\"></span>",
+      "ans": "7",
+      "sk": "add",
+      "lv": 1
+     }
+    }
+   }
+  },
+  "cnt": {
+   "lv": 2,
+   "r": 3,
+   "c": 15,
+   "t": 19,
+   "miss": {}
+  },
+  "eo": {
+   "lv": 1,
+   "r": 4,
+   "c": 18,
+   "t": 22,
+   "miss": {}
+  },
+  "miss": {
+   "lv": 2,
+   "r": 5,
+   "c": 21,
+   "t": 25,
+   "miss": {}
+  },
+  "sub": {
+   "lv": 1,
+   "r": 2,
+   "c": 24,
+   "t": 28,
+   "miss": {
+    "9 - 5": {
+     "n": 1,
+     "tot": 2,
+     "q": {
+      "label": "9 - 5",
+      "kind": "num",
+      "html": "9 - 5 = <span class=\"slot\" id=\"slot\"></span>",
+      "ans": "4",
+      "sk": "sub",
+      "lv": 1
+     }
+    }
+   }
+  },
+  "story": {
+   "lv": 2,
+   "r": 3,
+   "c": 27,
+   "t": 31,
+   "miss": {}
+  },
+  "sound": {
+   "lv": 1,
+   "r": 4,
+   "c": 30,
+   "t": 34,
+   "miss": {}
+  },
+  "sight": {
+   "lv": 2,
+   "r": 5,
+   "c": 33,
+   "t": 37,
+   "miss": {}
+  },
+  "rhyme": {
+   "lv": 1,
+   "r": 2,
+   "c": 36,
+   "t": 40,
+   "miss": {}
+  },
+  "pic": {
+   "lv": 2,
+   "r": 3,
+   "c": 39,
+   "t": 43,
+   "miss": {}
+  },
+  "es_greet": {
+   "lv": 1,
+   "r": 4,
+   "c": 42,
+   "t": 46,
+   "miss": {}
+  },
+  "es_color": {
+   "lv": 2,
+   "r": 5,
+   "c": 45,
+   "t": 49,
+   "miss": {}
+  },
+  "es_num": {
+   "lv": 1,
+   "r": 2,
+   "c": 48,
+   "t": 52,
+   "miss": {}
+  },
+  "es_animal": {
+   "lv": 2,
+   "r": 3,
+   "c": 51,
+   "t": 55,
+   "miss": {}
+  }
+ },
+ "name": "Ava",
+ "stars": 85,
+ "coins": 64,
+ "pt": {
+  "bank": 420,
+  "day": "2000-1-1",
+  "used": 0
+ },
+ "ptRep": {
+  "day": "2000-1-1",
+  "n": {}
+ },
+ "maps": {
+  "math": {
+   "add1": 1,
+   "cnt1": 2,
+   "eo1": 3,
+   "miss1": 1,
+   "sub1": 2,
+   "story1": 3,
+   "boss0": 1,
+   "add2": 2,
+   "big1": 3
+  },
+  "read": {
+   "sound1": 1,
+   "sight1": 2,
+   "rhyme1": 3,
+   "pic1": 1,
+   "sound2": 2,
+   "build1": 3,
+   "sent1": 1
+  },
+  "es": {
+   "es_greet1": 1,
+   "es_color1": 2,
+   "es_num1": 3,
+   "es_animal1": 1,
+   "es_greet2": 2
+  }
+ },
+ "mapv": 2
+}
