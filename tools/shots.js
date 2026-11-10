@@ -25,6 +25,20 @@ const SCREENS = {
       await p.waitForTimeout(3500);
     },
   },
+  fluency: { run: async p => { await p.evaluate(() => fluMenu()); } },
+  'fluency-modes': { run: async p => { await p.evaluate(() => fluModes('add10')); } },
+  sprint: {
+    run: async p => {
+      await p.evaluate(() => fluPlay('add10', 't60'));
+      await p.waitForSelector('.k', { timeout: 4000 });
+      await p.evaluate(() => { FL.right = 7; $('#fsc').textContent = '\u26a1 7'; });
+    },
+  },
+  'sprint-end': {
+    run: async p => {
+      await p.evaluate(() => { S.flu = { add10: { best: 9, hist: [[today(), 60, 9]] } }; fluEnd({ set: 'add10', mode: 't60', key: 'add10', timed: true, sec: 60, right: 12, rec: true, earned: 120 }); });
+    },
+  },
   gameroom: { run: async p => { await p.evaluate(() => gameRoom()); } },
   grown: { run: async p => { await p.evaluate(() => grown()); } },
   shop: { run: async p => { await p.evaluate(() => shop()); } },

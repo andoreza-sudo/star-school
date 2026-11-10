@@ -29,14 +29,14 @@ function home(first){
       <span class="small">${done?'🏆 All done! Play any stop.':np?`${np}/${N.length} stops · Next: ${esc(N[curNode(k)].t)}`:`${N.length} stops · Start here!`}</span></span><span class="go">▶</span></button>`}).join('')}</div>
    <button class="btn game" id="groom" style="background:linear-gradient(135deg,#fed7aa,#fca5a5);margin-top:12px;width:100%"><span class="ge">🎮</span><span class="gi"><span class="gt">Game Room</span><span class="small">${ptLeft()>0?`🎟️ ${fmtT(ptLeft())} of game time to spend!`:'Finish learning rounds to earn game time'}</span></span><span class="go">${ptLeft()>0?'▶':'🔒'}</span></button>
    <div class="actions"><button class="btn act mix" id="mix"><span>🎯</span>${tricky?`Tricky Mix (${Math.min(tricky,10)})`:'Mixed Practice'}</button>
-    <button class="btn act" id="race" style="background:#fef3c7"><span>⚡</span>Speed Race</button><button class="btn act" id="care" style="position:relative"><span>🐾</span>Pet Care${needs?'<i class="dot">!</i>':''}</button>
+    <button class="btn act" id="race" style="background:#fef3c7"><span>⚡</span>Speed Race</button><button class="btn act" id="flu" style="background:#dbeafe"><span>🔢</span>Fact Sprint</button><button class="btn act" id="care" style="position:relative"><span>🐾</span>Pet Care${needs?'<i class="dot">!</i>':''}</button>
     <button class="btn act" id="shop"><span>🛍️</span>Pet Shop</button><button class="btn act" id="book"><span>📒</span>Stickers</button></div></div>`);
   music(true);
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,['💖','✨','⭐']);
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
   $$('.game').forEach(b=>b.onclick=()=>{SFX.whoosh();pathMap(b.dataset.p)});
   $('#snd').onclick=()=>{S.sound=!S.sound;S.music=S.sound;save();home()};
-  $('#book').onclick=book;$('#shop').onclick=shop;$('#mix').onclick=()=>{SFX.whoosh();startMix()};$('#race').onclick=raceMenu;$('#care').onclick=care;$('#groom').onclick=()=>{SFX.whoosh();gameRoom()};
+  $('#book').onclick=book;$('#shop').onclick=shop;$('#mix').onclick=()=>{SFX.whoosh();startMix()};$('#race').onclick=raceMenu;$('#flu').onclick=()=>{SFX.whoosh();fluMenu()};$('#care').onclick=care;$('#groom').onclick=()=>{SFX.whoosh();gameRoom()};
   if($('#inst'))$('#inst').onclick=async()=>{try{installEvt.prompt();await installEvt.userChoice}catch(e){}installEvt=null;home()};
   let t;const g=$('#gear');g.onpointerdown=()=>{t=setTimeout(grown,1200)};g.onpointerup=g.onpointerleave=()=>clearTimeout(t);g.onclick=()=>fb('Grown-ups: hold it','warn');
   {const sc=$('.scroll');if(sc)sc.insertAdjacentHTML('beforeend','<p class="small" style="text-align:center;opacity:.55;margin:14px 0 4px">Star School __VER__</p>')}

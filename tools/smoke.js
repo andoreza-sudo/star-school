@@ -86,6 +86,27 @@ async function main() {
       await page.waitForSelector('#map');
     }
 
+    // 2b. Fact Sprint: play a 20-facts sprint (first answer wrong on purpose), then check the end screen and the saved record
+    await page.evaluate(() => home());
+    await page.click('#flu');
+    await page.waitForSelector('.game[data-s="add10"]');
+    await page.click('.game[data-s="add10"]');
+    await page.click('.game[data-m="n20"]');
+    for (let i = 0; i < 40; i++) {
+      await page.waitForFunction(() => document.querySelector('#fagain') || (FL && FL.f && !FL.lock), null, { timeout: 8000 });
+      if (await page.$('#fagain')) break;
+      let c = await page.evaluate(() => String(FL.f.c));
+      // one wrong answer with the same digit count (so it auto-submits): shown for 1 s, comes back later
+      if (i === 0) c = String(+c + 1).length === c.length ? String(+c + 1) : String(+c - 1);
+      for (const d of c) await page.click(`.k[data-k="${d}"]`);
+    }
+    await page.waitForSelector('#fagain', { timeout: 8000 });
+    const flu = await page.evaluate(() => ({ best: S.flu['add10-20'].best, n: S.flu['add10-20'].hist.length, paid: !!S.flu.add10.paid }));
+    if (!(flu.best > 0) || flu.n !== 1 || !flu.paid) fail('fact sprint not saved: ' + JSON.stringify(flu));
+    else step('Fact Sprint 20 facts played, saved ' + JSON.stringify(flu));
+    await page.click('#fhome');
+    await page.waitForSelector('#gear');
+
     // 3. Game Room and Grown-ups (long press on the gear, like a grown-up would)
     await page.evaluate(() => home());
     await page.click('#groom');
