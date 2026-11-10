@@ -10,6 +10,7 @@ function grown(){let armed=false;
    <div class="row"><b style="width:110px">Buddy</b><input class="name" id="bd" value="${esc(S.buddy)}" placeholder="Sibling or friend, used in story problems"></div>
    <div class="small">Stops passed: ${prog}<br>⭐ ${S.stars} stars · ${ico('coin','1.2em','ic-coin')} ${S.coins} coins · 📒 ${STK.filter(s=>S.stickers[s]).length}/${STK.length} stickers · 🔥 best streak ${S.best||0}</div>
    ${SAVE_FAILED?'<div class="small" style="color:#c0392b;font-weight:700">Could not save progress: the device storage may be full.</div>':''}
+   <div class="row" style="display:block;margin-top:12px"><b>Grade</b> <span class="small">Picks where the maps start. Nothing is ever locked or removed when you change it.</span>${gradePickHTML(gradeOf())}</div>
    <label class="tg"><input type="checkbox" id="ula" ${S.unlockAll?'checked':''}> Unlock every stop on the map (let them jump ahead)</label></div>
   <div class="card"><h2 style="margin:0 0 6px">🎙️ Your voice</h2><div class="small" style="margin-bottom:8px">Tap ⏺ and say the line (up to 4 seconds). Record as many as you like. The app shuffles them so the same one doesn't play twice in a row. ${inFrame?'<b>Recording only works on the tablet app, not in this preview.</b>':!canRec?'<b>Recording isn\'t available in this browser. Use Chrome or the installed app.</b>':''}</div>
    ${CLIPKINDS.map(([k,l,tip,lines])=>{const cs=CLIPS.filter(c=>c.kind==k),extra=cs.filter(c=>c.line==null||c.line>=lines.length);
@@ -36,6 +37,7 @@ function grown(){let armed=false;
   $('#nm').oninput=e=>{if(e.target.value.trim()){S.name=e.target.value.trim();save()}};
   $('#pn').oninput=e=>{S.petName=e.target.value.trim();save()};
   $('#bd').oninput=e=>{S.buddy=e.target.value.trim();save()};
+  gradePickBind(g=>{setGrade(g)});
   $('#ula').onchange=e=>{S.unlockAll=e.target.checked;save()};
   $$('[data-per]').forEach(b=>b.onclick=()=>{ptCfg().per=+b.dataset.per;save();grown()});
   $$('[data-max]').forEach(b=>b.onclick=()=>{ptCfg().max=+b.dataset.max;save();grown()});

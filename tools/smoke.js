@@ -43,7 +43,8 @@ async function answer(page) {
 }
 
 // Plays the round that is on screen to the end and opens the chest.
-async function playRound(page, label) {
+async function playRound(page, label, total) {
+  if (total === undefined) total = await page.evaluate(() => G.n); // 8 at the default grade (K), 6 Pre-K, 10 from 1st
   let n = 0;
   for (let guard = 0; guard < 40; guard++) {
     const state = await page.evaluate(() => document.querySelector('#fin') ? 'fin' : (G && G.q && !G.lock ? 'ask' : 'none'));
@@ -57,14 +58,14 @@ async function playRound(page, label) {
   }
   await page.waitForSelector('#chest', { timeout: 5000 });
   const score = await page.evaluate(() => G.score);
-  if (score !== 10) fail(`${label}: expected 10/10 from the bot, got ${score}`);
+  if (score !== total) fail(`${label}: expected ${total}/${total} from the bot, got ${score}`);
   await page.click('#chest');
   await page.waitForSelector('#btns', { state: 'visible', timeout: 10000 });
   // a pet growth / hatch overlay may cover the buttons: tap its Yay button when it shows up
   await page.waitForTimeout(800);
   const yay = await page.waitForSelector('#yay', { timeout: 4000 }).catch(() => null);
   if (yay) { await yay.click(); step(`${label}: pet grew, overlay dismissed`); }
-  step(`${label}: round complete (${n} answers, score ${score}/10)`);
+  step(`${label}: round complete (${n} answers, score ${score}/${total})`);
 }
 
 async function main() {
@@ -398,6 +399,51 @@ async function main() {
       await page.waitForFunction(() => document.querySelector('#fin') || (G && G.q !== window.__q), null, { timeout: 8000 });
     }
     await page.evaluate(() => home());
+
+    // 12. P1-06 grade pick: setup offers 8 grade buttons (K preselected); Pre-K is picked by a real tap and its round has 6 questions;
+    //     Grown-ups changes the grade to 3rd, the last world opens (the Pre-K progress stays) and a round has 10 questions
+    {
+      const ga = await openApp(browser, { fixture: 'fresh' });
+      const gp = ga.page;
+      const gr = await gp.evaluate(() => ({ n: document.querySelectorAll('.gr').length, sel: document.querySelector('.gr.sel').dataset.g,
+        min: Math.min(...[...document.querySelectorAll('.gr')].map(b => b.getBoundingClientRect().height)) }));
+      if (gr.n !== 8 || gr.sel !== '0' || gr.min < 48) fail('setup grade buttons: ' + JSON.stringify(gr));
+      await gp.fill('#nm', 'Tiny');
+      await gp.click('.gr[data-g="-1"]');
+      await gp.click('#go');
+      await gp.waitForSelector('.game[data-p]');
+      if ((await gp.evaluate(() => S.grade)) !== -1) fail('Pre-K tap on setup not saved');
+      await gp.click('.game[data-p="math"]');
+      await gp.waitForSelector('.node.cur');
+      await gp.click('.node.cur');
+      await gp.waitForSelector('#prompt');
+      const n6 = await gp.evaluate(() => G.n);
+      await playRound(gp, 'Pre-K math', 6);
+      if (n6 !== 6) fail('Pre-K round length ' + n6); else step('setup: 8 grade buttons, Pre-K saved, round has 6 questions');
+      await gp.evaluate(() => home());
+      await gp.waitForSelector('#gear');
+      const gb = await (await gp.$('#gear')).boundingBox();
+      await gp.mouse.move(gb.x + gb.width / 2, gb.y + gb.height / 2);
+      await gp.mouse.down();
+      await gp.waitForTimeout(1500);
+      await gp.mouse.up();
+      await gp.waitForSelector('.gr[data-g="3"]', { timeout: 3000 });
+      await gp.click('.gr[data-g="3"]');
+      if ((await gp.evaluate(() => S.grade)) !== 3) fail('Grown-ups grade change not saved');
+      const sel = await gp.evaluate(() => document.querySelector('.gr.sel').dataset.g);
+      await gp.click('#back');
+      await gp.click('.game[data-p="math"]');
+      await gp.waitForSelector('.node.cur');
+      const cw = await gp.evaluate(() => worldOpen('math', 3));
+      await gp.click('.node.cur');
+      await gp.waitForSelector('#prompt');
+      const n10 = await gp.evaluate(() => G.n);
+      if (sel !== '3' || !cw || n10 !== 10) fail('grade 3 from Grown-ups: selected ' + sel + ', world ' + cw + ', n ' + n10);
+      else step('Grown-ups: grade changed to 3rd, the last world is open (the Pre-K progress stays), round has 10 questions');
+      network.push(...ga.network);
+      for (const e of ga.errors) fail(e);
+      await ga.ctx.close();
+    }
 
     for (const e of errors) fail(e);
     for (const u of network) fail('network request: ' + u);

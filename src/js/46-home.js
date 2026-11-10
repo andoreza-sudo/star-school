@@ -1,13 +1,22 @@
-function setup(){let pet=S.pet;
+/* Grade picker (setup and Grown-ups): 8 big buttons, one per grade. Tapping reads the grade aloud and calls onPick(g). */
+function gradePickHTML(sel){
+  return`<div class="grades" role="radiogroup" aria-label="Grade">${GRADES.map(g=>`<button class="btn gr ${g==sel?'sel':''}" role="radio" aria-checked="${g==sel}" data-g="${g}">${gradeLabel(g)}</button>`).join('')}</div>`}
+function gradePickBind(onPick){
+  $$('.gr').forEach(b=>b.onclick=()=>{const g=+b.dataset.g;
+    $$('.gr').forEach(x=>{x.classList.toggle('sel',x==b);x.setAttribute('aria-checked',x==b)});
+    say(gradeSpoken(g),b);SFX.pop(1);onPick(g)})}
+function setup(){let pet=S.pet,grade=gradeOf();
   view(`<div class="center setup"><h1>⭐ Star School</h1>
   <div class="card"><div class="sub" style="margin-bottom:8px">What's your name?</div><input class="name" id="nm" value="${esc(S.name)}" placeholder="Your name"></div>
   <div class="card"><div class="sub" style="margin-bottom:8px">Pick a pet egg to hatch!</div>
    <div class="pets">${Object.entries(PETS).map(([k,p])=>`<button class="btn petopt ${k==pet?'sel':''}" data-p="${k}"><span>${p.s[3]}</span>${p.n}</button>`).join('')}</div>
    <input class="name" id="pn" style="margin-top:12px;width:100%" value="${esc(S.petName)}" placeholder="Name your pet (${PETS[pet].def})"></div>
+  <div class="card"><div class="sub" style="margin-bottom:8px">What grade? <span class="small">(Grown-ups can change this later)</span></div>${gradePickHTML(grade)}</div>
   <button class="btn big" id="go">Let's go! 🚀</button></div>`);
+  gradePickBind(g=>{grade=g});
   $$('.petopt').forEach(b=>b.onclick=()=>{pet=b.dataset.p;$$('.petopt').forEach(x=>x.classList.toggle('sel',x==b));$('#pn').placeholder=`Name your pet (${PETS[pet].def})`;SFX.giggle();anim(b.querySelector('span'),'jump')});
   $('#go').onclick=()=>{const n=$('#nm').value.trim();if(!n){fb('Type your name first!','warn');SFX.wrong();return}
-    S.name=n;S.pet=pet;S.petName=$('#pn').value.trim();save();SFX.magic();home(true)}}
+    S.name=n;S.pet=pet;S.petName=$('#pn').value.trim();setGrade(grade);SFX.magic();home(true)}}
 
 function home(first){
   if(!S.name)return setup();

@@ -55,6 +55,17 @@ const GRADES=[-1,0,1,2,3,4,5,6];
 const gradeLabel=g=>g<0?'Pre-K':g==0?'K':['1st','2nd','3rd','4th','5th','6th'][g-1]||'';
 const gradeOf=()=>GRADES.includes(S.grade)?S.grade:0;
 function setGrade(g){if(!GRADES.includes(g))return false;S.grade=g;save();return true}
+/* Spoken names for the grade buttons (say() reads them when tapped). */
+const gradeSpoken=g=>g<0?'Pre-K':g==0?'Kindergarten':['First','Second','Third','Fourth','Fifth','Sixth'][g-1]+' grade';
+/* Round rules for a grade (ROADMAP 3.1). n: questions in a normal stop round; choices: most answer buttons a generator should
+   show (3 for Pre-K, else 4); auto: 'all' = every prompt that has a spoken line is read aloud on its own, even with
+   "Read questions out loud" off (Pre-K and K); 'auto' = prompts marked auto are read when that setting is on (1st);
+   'tap' = same, the child taps the speaker for the rest (2nd and up); multi: multi-step items wanted (5th, 6th).
+   gradeCfg() with no argument uses the child's grade. */
+function gradeCfg(g){
+  g=GRADES.includes(g)?g:gradeOf();
+  return{g,n:g<0?6:g==0?8:10,choices:g<0?3:4,auto:g<=0?'all':g==1?'auto':'tap',multi:g>=5};
+}
 const worldId=(p,wi)=>PATHS[p].worlds[wi].id;
 const worldSkipped=(p,wi)=>!!(S.skip&&S.skip[worldId(p,wi)]);
 function worldHasProgress(p,wi){const[a,b]=WR[p][wi];for(let i=a;i<=b;i++)if(passed(p,i))return true;return false}

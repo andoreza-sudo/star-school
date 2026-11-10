@@ -1,7 +1,7 @@
 /* ---------- game ---------- */
 let G;
 const newG=o=>(bankRound(),Object.assign({n:10,done:0,score:0,streak:0,best:0,missed:[],last:null,node:-1,path:null},o));
-function start(p,i){const n=NODES[p][i];G=newG({path:p,node:i,sk:n.sk,lv:n.lv});
+function start(p,i){const n=NODES[p][i];G=newG({path:p,node:i,sk:n.sk,lv:n.lv,n:gradeCfg().n});
   if(SK[n.sk].round){G.pool=SK[n.sk].round(n.lv);G.n=G.pool.length}
   next()}
 function startMix(){const qs=allMiss().slice(0,7).map(m=>({...m.q})),pool=[];
@@ -60,7 +60,7 @@ function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;
   else if(G.done==0)petSay(G.mix?'Tricky mix!':"Let's go!");
   else if(G.done==G.n-1)petSay('Last one!');
   fit();if(document.fonts)document.fonts.ready.then(fit);
-  if(q.auto==='must'||(q.auto&&S.voice))setTimeout(()=>say(q.say,null,q.lang=='es'?'es':null),400)}
+  if(q.auto==='must'||(q.auto&&S.voice)||(q.say&&gradeCfg().auto==='all'))setTimeout(()=>say(q.say,null,q.lang=='es'?'es':null),400)}
 function addMiss(q){const p=P(q.sk),m=p.miss[q.label]||{n:0,tot:0,q};m.n++;m.tot++;m.q=q;p.miss[q.label]=m;
   const ks=Object.keys(p.miss);if(ks.length>40){ks.sort((a,b)=>p.miss[a].tot-p.miss[b].tot);delete p.miss[ks[0]]}}
 const PRAISE=['Great job!','You got it!','Awesome!','Super!','Nice!','Yes!','Way to go!','Brilliant!','Boom! 💥','Nailed it!'];
@@ -142,7 +142,7 @@ function finish(){
     if(g.boss)msgs.push(g.won?[`💥 You beat ${g.boss.name}!`,'fanfare']:[`${g.boss.e} ${g.boss.name} got away! Try again, you can beat it!`,null]);
     if(prize)msgs.push([`🎁 New costume for ${petN()}: ${prize}`,'magic']);
     if(g.test)msgs.push(testOk?[`🚀 You tested out of ${PATHS[p].worlds[g.test.wi].n}!`,'fanfare']:['So close! Get 9 right to test out. Or play the stops one by one.',null]);
-    if(!g.mix&&!g.test&&!g.boss&&stars==0)msgs.push(['Get 7 right to open the next stop. You can do it!',null]);
+    if(!g.mix&&!g.test&&!g.boss&&stars==0)msgs.push([`Get ${Math.floor(n*.7+.01)} right to open the next stop. You can do it!`,null]);
     if(mission)msgs.push([`🏆 Daily mission done! +5 bonus stars!`,'fanfare']);
     if(stk.msg)msgs.push([stk.msg,'fanfare']);
     if(g.mix)msgs.push(['🎯 Great practice on the tricky ones!',null]);
