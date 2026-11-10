@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** P4-01, P1-01 (done on parallel branches, merging), then P5-04, P1-02, P4-02.
+**Next up:** P1-01 (done on a parallel branch, merging), then P5-04, P1-02, P4-02.
 
-**Current version:** v36
+**Current version:** v37
 
 ## Chunk status
 
@@ -16,6 +16,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P0-04 v34
 - P0-05 v35
 - P5-01 v36
+- P4-01 v37
 
 ## Handoff notes
 
@@ -30,6 +31,10 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P0-01) `python3 tools/build.py` re-draws the icons with Pillow, so `icon-*.png` can show as modified in git after a rebuild even when nothing changed visually.
 - (P0-02) CONTRIBUTING 3.2 says boot.js is lines 2438-2439 and the CSS split is "near 58 and 162"; used 58 and 163 (line 162 is a blank line kept with 30-learn.css). All JS ranges matched the real markers. 46-home.js (734) and 00-core.js (322) have no marker comment; cut by the documented line numbers.
 - (P0-02) CONTRIBUTING 3.1/3.2 still describe the pre-split layout as "today"; a later docs pass could update the 3.1 text. `src/data/` holds only a `.gitkeep` until the first data file exists.
+- (P4-01) Fredoka (display font) not added: no network in this environment to fetch a subset woff2, so display text uses Andika 700 (`--font-display` is the single switch point for later).
+- (P4-01) `30-learn.css` (36 hex) and `40-games.css` (157 hex) still contain raw hex colours; the check.sh guard covers only 20-base.css and grows as P4 chunks migrate screens. Legacy aliases (`--bg`, `--blue`, `--green`, `--red`, `--muted`, `--card`, `--big`) remain until P4-17; old `--math`/`--read` were light tints and are now the DS base colours (`.tile.math/.read` use `-tint`).
+- (P4-01) `.petbig`/`.pet.aura` still use `filter: drop-shadow` (old code, forbidden by CONTRIBUTING 7); to be removed with the pet rig (P4-05).
+- (P4-01) `html.calm` rules exist but nothing sets the class yet; the Grown-ups toggle comes with a later chunk (P4-12 / P6-01).
 - (P0-03) ROADMAP section 9 says a missing `S.v` means 2, but both folded migrations must still run on v30 saves (single-map saves have no `S.maps`; index-keyed maps have no `S.mapv`). Code treats a missing `S.v` as 1 and runs migrations 1 and 2, each guarded by its own marker; latest is 3. A later docs pass could align section 9.
 - (P0-03) `migrate()` is called from `src/js/42-paths.js` (not 00-core.js) because the map migrations need `NODES`, which only exists there; no file before it reads `S` at load time.
 - (P0-05) A save corrupt message is now shown in the App log (resolves the P0-03 note below). Round recovery only triggers when `G` is live and `#prompt` is on screen; errors in games (Hill Climb etc.) are logged but show no overlay.
@@ -45,6 +50,14 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P0-04) `node tools/test.js` needs a built `index.html` for the size check (it fails with a message if missing); `check.sh` builds first. The size budget (warn 1.2 MB, fail 1.5 MB) lives only in `tools/test.js`.
 
 ## Log
+
+### P4-01 Tokens and base layer (v37, 2026-11-10, Claude)
+- What changed: new `src/css/00-tokens.css` (colour, subject colours, type scale, space, radius, ledge/shadow, tap sizes, motion, legacy aliases); `20-base.css` now uses tokens only (zero raw hex), adds `:focus-visible` ring, `touch-action`, safe-area padding on `#app`, tabular-nums on the stars chip, reduced-motion and `html.calm` rules (animations 0.01 ms, confetti hidden); `tools/contrast.js` checks 42 token pairs and runs from check.sh together with a no-hex guard on 20-base.css. Contrast fixes recorded in DESIGN_SYSTEM 2.1: `--math` #2D6BE4, `--read` #CD3168, `--good` #20A556, `--good-ink` #147A3C. Big green button now `--good-ink` fill for white-text contrast.
+- Files: src/css/00-tokens.css (new), src/css/20-base.css, tools/contrast.js (new), tools/check.sh, tools/build.py (VER), docs/DESIGN_SYSTEM.md (4 hex), docs/PROGRESS.md, built output.
+- Tests: test.js ok / smoke.js ok / contrast.js 42 pairs pass / index.html 379 KB
+- Screenshots checked: home and question at 600x960 before/after: same layout; text slightly bluer ink, pet meter ends in deeper red, green buttons slightly darker. Map not changed by this chunk (no base-layer rule), not viewed separately.
+- Checklist 7.1: all ticked (no-network and midway fixture covered by smoke; no emoji added). Built on a parallel branch and merged after P5-01 as v37 (no renumber needed).
+- Left over / notes: Fredoka skipped (see Ideas and issues).
 
 ### P5-01: Fact Sprint (v36), 2026-11-10, Claude
 - What changed: home button "Fact Sprint" (6th action tile). Sets by progress: add10 always, sub10 once `sub` level 1 is passed, add20 once `add` level 2, sub20 once `sub` level 2. Two modes per set: 60 seconds (most right) and 20 facts (fastest time). Big keypad, auto-submit when the digit count matches, no hints. A wrong answer shows the fact for 1 s and it returns after 3 other facts; the same fact never appears twice in a row. End screen: score, best, 7-day sparkline, "NEW RECORD!" with confetti. Game time: 1 min for the first sprint of each set per day (60 s mode needs 5 right), +1 min for any new record; extra sprints are free practice. The clock does not count time while the tab is hidden. Timers are stopped by `view()` via `stopFlu()`.
