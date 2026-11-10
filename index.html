@@ -338,6 +338,10 @@ label.tg{display:block;font-size:20px;margin:8px 0}
 .viz .vbl{fill:var(--good-tint);stroke:var(--good-ink);stroke-width:2}
 .viz .vbi{fill:none;stroke:var(--good-ink);stroke-width:1.5}
 .viz .vcb{font-size:20px;fill:var(--good-ink)}
+/* P1-08 mastery: the Challenge tag on a question from the next harder stop (51-mastery.js mastShow). Tokens only. */
+.mtag{display:inline-flex;align-items:center;gap:var(--s-1);align-self:center;background:var(--star-tint);color:var(--ink);font-weight:700;
+  font-size:var(--fs-2);border-radius:var(--r-pill);padding:var(--s-1) var(--s-3)}
+.mtag .ic{color:var(--try-ink)}
 /* Streak flame chip and calendar (P5-04). Tokens only. */
 .stc-chip{font:inherit;font-size:var(--fs-4);font-weight:700;min-height:var(--tap);min-width:var(--tap);display:inline-flex;align-items:center;gap:var(--s-1);
   border:0;cursor:pointer;color:var(--play-shade);background:var(--play-tint);border-radius:var(--r-btn);padding:6px 12px;box-shadow:var(--ledge) var(--shadow-ink);font-variant-numeric:tabular-nums}
@@ -739,7 +743,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S));SAVE_FAILED=fals
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v52'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v53'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -2741,7 +2745,7 @@ function home(first){
   $('#book').onclick=book;$('#shop').onclick=shop;$('#mix').onclick=()=>{SFX.whoosh();startMix()};$('#race').onclick=raceMenu;$('#flu').onclick=()=>{SFX.whoosh();fluMenu()};$('#care').onclick=care;$('#groom').onclick=()=>{SFX.whoosh();gameRoom()};
   if($('#inst'))$('#inst').onclick=async()=>{try{installEvt.prompt();await installEvt.userChoice}catch(e){}installEvt=null;home()};
   let t;const g=$('#gear');g.onpointerdown=()=>{t=setTimeout(grown,1200)};g.onpointerup=g.onpointerleave=()=>clearTimeout(t);g.onclick=()=>fb('Grown-ups: hold it','warn');
-  {const sc=$('.scroll');if(sc)sc.insertAdjacentHTML('beforeend','<p class="small" style="text-align:center;opacity:.55;margin:14px 0 4px">Star School v52</p>')}
+  {const sc=$('.scroll');if(sc)sc.insertAdjacentHTML('beforeend','<p class="small" style="text-align:center;opacity:.55;margin:14px 0 4px">Star School v53</p>')}
   if(first&&S.voice)setTimeout(()=>say(`Hi ${S.name}! Pick a game!`),400)}
 
 let MAPP='math',MAPW={}; // MAPW[path] = the world picked in the strip (this session only, not saved)
@@ -3473,6 +3477,7 @@ function testOut(p,wi){const w=PATHS[p].worlds[wi],o=document.createElement('div
   document.body.appendChild(o);o.querySelector('#tno').onclick=()=>o.remove();
   o.querySelector('#tgo').onclick=()=>{o.remove();SFX.whoosh();const bi=NODES[p].findIndex(n=>n.sk=='boss'&&n.wi==wi);G=newG({path:p,node:bi,sk:'test',test:{wi},pool:worldPool(p,wi,10)});next()}}
 function makeQ(){if(G.pool)return G.pool.shift();
+  {const aq=mastQ();if(aq)return aq} // P1-08: challenge / support / easier question (51-mastery.js)
   if(G.path&&(G.done==3||G.done==7)){const N=NODES[G.path],old=N.filter((n,i)=>i<G.node&&n.sk!='boss'&&passed(G.path,i)&&!(n.sk==G.sk&&n.lv==G.lv));
     if(old.length){const n=pick(old),q=genQ(n.sk,n.lv);q.review=1;return q}}
   const p=P(G.sk),ms=Object.values(p.miss).filter(m=>m.n>0&&m.q&&m.q.lv==G.lv);let q;
@@ -3512,12 +3517,14 @@ function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;
   if(G.retry){fb("Let's try this one again!",'warn');petSay('One more time!')}
   else if(G.done==0)petSay(G.mix?'Tricky mix!':"Let's go!");
   else if(G.done==G.n-1)petSay('Last one!');
+  mastShow(q); // P1-08: Challenge tag, hint before the first try, answer clock
   fit();if(document.fonts)document.fonts.ready.then(fit);
   if(q.auto==='must'||(q.auto&&S.voice)||(q.say&&gradeCfg().auto==='all'))setTimeout(()=>say(q.say,null,q.lang=='es'?'es':null),400)}
 function addMiss(q){const p=P(q.sk),m=p.miss[q.label]||{n:0,tot:0,q};m.n++;m.tot++;m.q=q;p.miss[q.label]=m;
   const ks=Object.keys(p.miss);if(ks.length>40){ks.sort((a,b)=>p.miss[a].tot-p.miss[b].tot);delete p.miss[ks[0]]}}
 const PRAISE=['Great job!','You got it!','Awesome!','Super!','Nice!','Yes!','Way to go!','Brilliant!','Boom! 💥','Nailed it!'];
 function check(v,el){if(G.lock)return;const q=G.q,K=KIND[q.kind],p=P(q.sk),ok=K.same?K.same(q,v):String(v)===String(q.ans);
+  if(G.tries==0&&!G.retry)mastTry(q,ok); // P1-08: mastery record and in-round adaptation
   const src=el||$('#slot')||$('.lslots')||$('.inp');
   if(ok){G.lock=true;if(el)el.classList.add('right');
     K.right(q);
@@ -3561,7 +3568,7 @@ function finish(){
   let testOk=false,prize=null;
   if(g.test){testOk=sc>=9;if(testOk){NODES[p].forEach((n,i)=>{if(n.wi==g.test.wi&&getSt(p,i)<2)setSt(p,i,2)});newPass=true;
     (S.skip=S.skip||{})[worldId(p,g.test.wi)]=1}} // a tested-out world stays finished even if stops are added to it later
-  else if(!g.mix){if(g.boss)stars=g.won?(g.asked<=7?3:g.asked<=8?2:1):0;else{P(g.sk).r++;stars=sc>=n?3:sc>=Math.floor(n*.8+.01)?2:sc>=Math.floor(n*.7+.01)?1:0}
+  else if(!g.mix){if(g.boss)stars=g.won?(g.asked<=7?3:g.asked<=8?2:1):0;else{P(g.sk).r++;const ss=Math.min(n,sc+(g.forgive||0));stars=ss>=n?3:ss>=Math.floor(n*.8+.01)?2:ss>=Math.floor(n*.7+.01)?1:0} // P1-08: wrong challenge answers do not cost stars
     const prev=getSt(p,ni);g.prevSt=prev;setSt(p,ni,Math.max(prev,stars));newPass=!prev&&stars>0;
     if(g.boss&&g.won&&!S.owned[nd.prize]){prize=nd.prize;S.owned[prize]=1;S.wear.hat=prize}}
   if(newPass){const wk=nd.wid;if(!S.wdone[wk]&&worldDone(p,nd.wi)){S.wdone[wk]=1;wDone=true}}
@@ -3619,6 +3626,165 @@ function roundOops(){
   o.innerHTML='<h1>Oops!</h1><button class="btn big" id="oops">Oops, let\'s go home</button>';
   document.body.appendChild(o);
   $('#oops').onclick=()=>{o.remove();home(true)};
+}
+/* ---------- mastery tracking and in-round adaptation (P1-08; ROADMAP 3.3) ----------
+   Saved data: S.mast = {nid: {n, p, ms, d, last, md}}, keyed by stop id nid() = skill + level ('add1'). Optional field:
+   read with defaults, written on the first try at a question of a stop that is on some map (any round: stop, boss, test out,
+   tricky mix, review slot). A round can opt out with G.nomast = true (no recording, no adaptation).
+     n     first tries at this stop (attempts)
+     p     first-try accuracy, 0..1: the plain average for the first 10 tries, then a moving average (weight 0.1)
+     ms    answer time of a first try, running median estimate in ms (each sample capped at 60 s)
+     d     distinct days practised
+     last  last day practised, as a day number (STRK.idx(today()); STRK.key(n) turns it back into 'Y-M-D')
+     md    day number the stop first became mastered (stays set if accuracy later drops; for "Recently mastered")
+   API for the map, spaced review (P5-02) and the report card (P5-06):
+     MAST                   the thresholds below
+     mastRec(nid)           the record, or null when the stop was never tried (read only; never creates one)
+     masteryState(nid)      'new' | 'learning' | 'practised' (>= 70% over 10+ tries) | 'mastered' (>= 90% over 20+ tries,
+                            2+ days)
+     mastStops(p)           [{i, nid, t, wi, state, rec}] for every non-boss stop of path p, in map order (one per nid)
+     harder(nd), easier(nd) next / previous stop of the same skill in path order (a NODES entry), or null
+     mastDay()              today as a day number
+   In-round adaptation (only in a normal stop round: G.path and G.node set, no pool, not boss, test, mix):
+     - after question 5, from the first tries of questions 1-5 (G.fr):
+       5 of 5 and fast (median answer time under MAST.FAST, MAST.FAST_YOUNG for Pre-K and K) -> 'challenge': every
+       remaining question comes from harder(stop) and shows a Challenge tag; a wrong first try there does not cost stars
+       (G.forgive, added to the score for the star rating only). No harder stop: the round stays normal.
+       2 or fewer of 5 -> 'support': the hint shows before the first try, and every other remaining question (6th, 8th,
+       10th) comes from easier(stop) (the stop's own level when there is none).
+       Anything else -> normal (G.mode = ''), the round is unchanged.
+     - 3 wrong first tries in a row, at any point: the pet offers a hint and the next question is an easier one (from
+       easier(stop), with the hint shown; in challenge mode, from the round's own stop). After question 5 it also steps
+       the mode down: challenge -> normal, normal -> support.
+     Star thresholds, round length, coins and locks never change. Everything is decided from the answers alone, so the
+     same answers give the same questions' stops (tests rely on it).
+   Hooks in 50-round.js: makeQ() calls mastQ() first, check() calls mastTry(q, ok) on a first try, renderQ() calls
+   mastShow(q) last, finish() adds G.forgive to the score for the star rating. */
+const MAST={
+  AT:5,              // adaptation is decided after this many questions
+  FAST:12000,        // median first-try time (ms) that counts as fast, 1st grade and up
+  FAST_YOUNG:16000,  // the same for Pre-K and K (every prompt is read aloud first)
+  SUPPORT:2,         // this many right of the first 5, or fewer, turns on support
+  RUN:3,             // wrong first tries in a row before an easier question
+  CAP:60000,         // one answer time never counts as more than this
+  ALPHA:0.1,         // weight of a new try in the accuracy average (after the first 1/ALPHA tries)
+};
+const mastDay=()=>STRK.idx(today());
+const mastRec=k=>(S.mast&&S.mast[k])||null;
+function masteryState(k){
+  const r=mastRec(k);
+  if(!r||!r.n)return'new';
+  if(r.p>=.9&&r.n>=20&&r.d>=2)return'mastered';
+  if(r.p>=.7&&r.n>=10)return'practised';
+  return'learning';
+}
+/* The first map stop with this skill and level, as {p, i}, or null (a demo skill, an old stored question). */
+function mastStop(sk,lv){
+  for(const p in NODES){const i=NODES[p].findIndex(n=>n.sk==sk&&n.lv==lv);if(i>=0)return{p,i}}
+  return null;
+}
+function mastStops(p){
+  const seen={},out=[];
+  NODES[p].forEach((n,i)=>{
+    if(n.sk=='boss')return;
+    const k=nid(n);
+    if(seen[k])return;
+    seen[k]=1;
+    out.push({i,nid:k,t:n.t,wi:n.wi,state:masteryState(k),rec:mastRec(k)});
+  });
+  return out;
+}
+function mastNear(nd,dir){
+  if(!nd||nd.sk=='boss'||!NODES[nd.p])return null;
+  const N=NODES[nd.p],i=N.findIndex(n=>n.sk==nd.sk&&n.lv==nd.lv);
+  for(let j=i+dir;i>=0&&j>=0&&j<N.length;j+=dir)if(N[j].sk==nd.sk&&N[j].lv!=nd.lv)return N[j];
+  return null;
+}
+const harder=nd=>mastNear(nd,1),easier=nd=>mastNear(nd,-1);
+
+/* Adds one first try to S.mast[k]. Returns the record. */
+function mastAdd(k,ok,ms){
+  const M=S.mast||(S.mast={}),r=M[k]||(M[k]={n:0,p:0,ms:0,d:0,last:0}),dn=mastDay();
+  ms=Math.max(0,Math.min(MAST.CAP,Math.round(ms)||0));
+  r.n++;
+  r.p=Math.round((r.p+((ok?1:0)-r.p)*Math.max(1/r.n,MAST.ALPHA))*1000)/1000;
+  // running median: step toward the new time by at most an eighth of the estimate (at least 250 ms)
+  if(r.n==1)r.ms=ms;
+  else{const step=Math.min(Math.abs(ms-r.ms),Math.max(250,r.ms/8));r.ms=Math.round((r.ms+Math.sign(ms-r.ms)*step)/10)*10}
+  if(r.last!==dn){r.d++;r.last=dn}
+  if(!r.md&&masteryState(k)=='mastered')r.md=dn;
+  return r;
+}
+
+/* ---- in-round adaptation ---- */
+const mastOn=g=>!!(g&&g.path&&g.node>=0&&!g.pool&&!g.boss&&!g.test&&!g.mix&&!g.nomast&&NODES[g.path]&&NODES[g.path][g.node]);
+const mastTag=q=>(G&&G.mq&&G.mq.get(q))||''; // 'ch' challenge, 'sup' support (easier stop), 'easy' after a wrong run
+/* Pure: the mode for a round from its first-try results [{ok, ms}] (first MAST.AT used) and grade g. */
+function mastMode(fr,g){
+  const f=fr.slice(0,MAST.AT),right=f.filter(x=>x.ok).length;
+  if(f.length<MAST.AT)return'';
+  if(right<=MAST.SUPPORT)return'support';
+  const t=f.map(x=>x.ms).sort((a,b)=>a-b),med=t[t.length>>1];
+  if(right==f.length&&med<=(g<=0?MAST.FAST_YOUNG:MAST.FAST))return'challenge';
+  return'';
+}
+/* Pure apart from G's own counters: the stop the next question comes from, as {sk, lv, tag}, or null for a normal one. */
+function mastPick(g){
+  if(!mastOn(g))return null;
+  const nd=NODES[g.path][g.node];
+  if(g.ease){
+    const own=g.ease=='own';g.ease=0;
+    const e=own?null:easier(nd);
+    return e?{sk:e.sk,lv:e.lv,tag:'easy'}:{sk:nd.sk,lv:nd.lv,tag:'easy'};
+  }
+  if(g.done<MAST.AT)return null;
+  if(g.mode===undefined)g.mode=mastMode(g.fr||[],gradeOf());
+  if(g.mode=='challenge'){const h=harder(nd);return h?{sk:h.sk,lv:h.lv,tag:'ch'}:null}
+  if(g.mode=='support'&&(g.done-MAST.AT)%2==0){const e=easier(nd);return e?{sk:e.sk,lv:e.lv,tag:'sup'}:null}
+  return null;
+}
+/* makeQ hook: a question from another stop when adaptation asks for one (or a tagged own-level one after a wrong run). */
+function mastQ(){
+  const pk=mastPick(G);
+  if(!pk)return null;
+  let q;
+  for(let t=0;t<10&&(!q||q.label===G.last);t++)q=genQ(pk.sk,pk.lv);
+  G.last=q.label;
+  (G.mq||(G.mq=new Map())).set(q,pk.tag);
+  return q;
+}
+/* check hook, on the first try at a question (not a retry). ms defaults to the time since mastShow. */
+function mastTry(q,ok,ms){
+  if(!G||G.nomast)return;
+  if(ms==null)ms=Date.now()-(G.qt||Date.now());
+  if(q&&q.sk&&mastStop(q.sk,q.lv))mastAdd(nid(q),ok,ms);
+  (G.fr||(G.fr=[])).push({ok:!!ok,ms});
+  if(!mastOn(G))return;
+  if(!ok&&mastTag(q)=='ch')G.forgive=(G.forgive||0)+1;
+  G.wrun=ok?0:(G.wrun||0)+1;
+  if(G.wrun>=MAST.RUN){
+    G.wrun=0;
+    G.ease=G.mode=='challenge'?'own':'down';
+    if(G.mode=='challenge')G.mode='';
+    else if(G.mode==='')G.mode='support';
+  }
+}
+/* True when the hint should show before the first try. */
+const mastHint=q=>mastOn(G)&&!G.retry&&(G.mode=='support'||mastTag(q)=='easy');
+/* renderQ hook: Challenge tag, hint before the first try, start the answer clock. */
+function mastShow(q){
+  G.qt=Date.now();
+  if(!mastOn(G)||G.retry)return;
+  const tag=mastTag(q),qa=$('.qarea');
+  if(tag=='ch'&&qa){
+    qa.insertAdjacentHTML('afterbegin',`<div class="mtag">${ico('bolt',18)} Challenge!</div>`);
+    petSay(pick(['Challenge time!','A tricky one!','Try a harder one!']));
+  }
+  if(mastHint(q)){
+    const h=$('#hint'),s=hintHTML(q);
+    if(h&&s)h.innerHTML=s;
+    if(tag=='easy')petSay("Here's a hint!");
+  }
 }
 /* ---------- balloon pop bonus game ---------- */
 let BL=null;
@@ -5450,7 +5616,7 @@ function grown(){let armed=false;
    <div class="vline"><span class="vtxt">Give a bonus</span><button class="btn xs" id="pt5">+5 min</button><button class="btn xs danger" id="pt0">Empty bank</button></div>
    <label class="tg"><input type="checkbox" id="ptp" ${ptCfg().pause?'checked':''}> Pause game time (games locked)</label></div>
   <div class="card"><div class="tw"><table><tr><th>Skill</th><th>Rounds</th><th>1st try</th><th>Tricky ones</th></tr>${rows}</table></div></div>
-  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v52 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
+  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v53 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
    Storage: ${SAVE_FAILED?'<b style="color:#c0392b">could not save (device storage may be full)</b>':'saving OK'}${SAVE_CORRUPT?'<br><b style="color:#c0392b">The old save could not be read. A fresh start was made and the old data was kept on the device.</b>':''}<br>
    Last errors: ${(S.err||[]).length?(S.err||[]).slice().reverse().map(e=>'<br>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+' '+esc(e.msg)).join(''):'none'}</div></details>
   <div class="card"><label class="tg"><input type="checkbox" id="voice" ${S.voice?'checked':''}> Read questions out loud</label>
