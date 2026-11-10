@@ -63,6 +63,7 @@ for(const id in SK){for(let lv=1;lv<=SK[id].max;lv++)for(let i=0;i<3000;i++){
   for(const c of q.choices){if(BADHTML.test(c.l+' '+c.v))GEN.html.push(w+': choice has undefined/NaN');if(BAD.test(c.v))GEN.gen.push(w+': BAD word '+c.v)}
  }
  else if(q.kind=='build'){if(!q.tiles||q.tiles.length<q.word.length)GEN.gen.push(w+': too few tiles')}
+ else if(q.kind=='spell'){for(const x of kindProblems(q))GEN.gen.push(w+': '+x)}
  else GEN.gen.push(w+': unknown kind '+q.kind);
  try{hintHTML(q)}catch(e){GEN.gen.push(w+': hintHTML threw '+e.message)}
 }}
@@ -791,7 +792,7 @@ run('worlds: ids, grade tags, migration 3 keeps every star, gating, inserted wor
       if(wi&&!PATHS[p].byLevel&&w.g<PATHS[p].worlds[wi-1].g)bad(w.id+': grade lower than the world before it');
     });
     for(const p in MAP_V42)MAP_V42[p].forEach(([id,stops],k)=>{
-      const w=PATHS[p].worlds[k],now=w?NODES[p].filter(n=>n.wi==k&&n.sk!='boss').map(nid).join(' '):'';
+      const w=PATHS[p].worlds[k],now=w?NODES[p].filter(n=>n.wi==k&&n.sk!='boss').map(nid).filter(x=>stops.split(' ').includes(x)).join(' '):''; // stops added later (P2-19 spell) are not in MAP_V42
       if(!w||w.id!==id||now!==stops)bad('MAP_V42 '+p+' '+k+' does not match today ('+id+')');
     });
     // v42 view of a save (keys by world index): stars per stop and the old lock rule, in today's NODES order (same as v42)
@@ -810,12 +811,14 @@ run('worlds: ids, grade tags, migration 3 keeps every star, gating, inserted wor
       for(const k in pre.wdone||{})if(!S.wdone[k])bad(name+': wdone '+k+' lost');
       load(empty?null:raw);
       for(const p in PATHS){
-        const was=oldSt(pre.maps,p),now=NODES[p].map((n,i)=>getSt(p,i));
+        // only stops and worlds that existed at v42 are compared; stops and worlds added later (P2-19 spelling) are new content, checked by their own test below
+        const keep=NODES[p].map((n,i)=>i).filter(i=>NODES[p][i].sk=='boss'?NODES[p][i].wi<(MAP_V42[p]||[]).length:v42Stops(p).includes(nid(NODES[p][i])));
+        const was=keep.map(i=>oldSt(pre.maps,p)[i]),now=keep.map(i=>getSt(p,i));
         if(JSON.stringify(was)!==JSON.stringify(now))bad(name+' '+p+': stars '+JSON.stringify(was)+' -> '+JSON.stringify(now));
-        const wo=oldOpen(was,S.unlockAll),no=NODES[p].map((n,i)=>unlocked(p,i));
+        const wo=oldOpen(was,S.unlockAll),no=keep.map(i=>unlocked(p,i));
         // maxed and fresh look exactly the same. Legacy saves (stops skipped by the old single map) and midway (P1-06 infers grade 1, which opens the grade-1 worlds) may open more, never less.
         if(name.startsWith('legacy')||name=='midway'?wo.some((o,i)=>o&&!no[i]):JSON.stringify(wo)!==JSON.stringify(no))bad(name+' '+p+': locks changed');
-        if(oldCur(was)!==curNode(p))bad(name+' '+p+': current stop '+oldCur(was)+' -> '+curNode(p));
+        if(keep.includes(curNode(p))&&keep[oldCur(was)]!==curNode(p))bad(name+' '+p+': current stop '+keep[oldCur(was)]+' -> '+curNode(p));
       }
     }
     load(fx('midway'));
@@ -1690,6 +1693,91 @@ run('daily review: card counts due items, the round asks them first, nothing due
     for(const m of r2)out.push(name+': '+m);
   }
   return{problems:out};
+});
+
+// ---- P2-19: spelling levels 1-7 (word data, generator, map stops, save safety) ----
+run('spelling P2-19: word data, 3000 questions per level, visible clue, hints, map stops, no star moves, no re-lock',()=>{
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const serrs=[],bad=m=>serrs.push(m);
+  const body=function(){
+    const want=[40,60,60,60,60,60,60];
+    if(SK.spell.max!==7)bad('SK.spell.max is '+SK.spell.max);
+    for(let lv=1;lv<=7;lv++){
+      const L=spellList(lv),ws=L.map(x=>x[0]),w2='level '+lv+': ';
+      if(L.length!==want[lv-1])bad(w2+L.length+' words, wants '+want[lv-1]);
+      if(new Set(ws).size!==ws.length)bad(w2+'duplicate word in the level');
+      for(const [w,s] of L){
+        if(!/^[a-z]{2,12}$/.test(w))bad(w2+'word "'+w+'" is not 2-12 lowercase letters');
+        if(BAD.test(w))bad(w2+'BAD word '+w);
+        if(typeof s!=='string'||s.length<8||s.length>80)bad(w2+w+': sentence length');
+        else{
+          const hits=s.match(new RegExp('\\b'+w+'\\b','gi'));
+          if(!hits||hits.length!==1)bad(w2+w+': sentence must hold the word exactly once');
+          if(s.split(/[^A-Za-z']+/).some(x=>BAD.test(x.toLowerCase())))bad(w2+w+': BAD word in the sentence');
+        }
+      }
+      // 3000 seeded questions: valid spell question, visible clue with a blank, no answer in the clue, hint that does not give the answer away
+      const seenW=new Set(),labels={};
+      for(let i=0;i<3000;i++){
+        const q=genQ('spell',lv,i+1);
+        const pr=kindProblems(q);if(pr.length)bad(w2+q.word+': '+pr.join('; '));
+        seenW.add(q.word);
+        const clue=q.html.replace(/<span[^>]*id="ls\d+"[^>]*><\/span>/g,'');
+        if(!clue.includes('_____'))bad(w2+q.word+': the clue has no blank');
+        if(new RegExp('\\b'+q.word+'\\b','i').test(clue.replace(/<[^>]*>/g,'')))bad(w2+q.word+': the word is visible in the clue');
+        if(!q.say.includes(q.word)||q.say.split(q.word).length<3)bad(w2+q.word+': say should speak the word, the sentence, the word');
+        if(!q.hint||q.hint.k!=='say'||q.hint.w!==q.word||new RegExp('\\b'+q.word+'\\b','i').test(q.hint.s.replace('starts with',''))||!q.hint.s.includes(q.word.length+' letters'))bad(w2+q.word+': hint');
+        if(labels[q.label]&&labels[q.label]!==q.word)bad(w2+'label '+q.label+' is not unique');
+        labels[q.label]=q.word;
+        if(q.label.length>=60)bad(w2+'label too long');
+        if(q.sk!=='spell'||q.lv!==lv)bad(w2+'genQ did not stamp sk/lv');
+      }
+      if(seenW.size!==ws.length)bad(w2+'3000 questions drew only '+seenW.size+' of '+ws.length+' words');
+      if(Object.keys(labels).length!==ws.length)bad(w2+'labels are not one per word');
+    }
+    // the same seed gives the same question
+    for(let lv=1;lv<=7;lv++)if(JSON.stringify(genQ('spell',lv,77))!==JSON.stringify(genQ('spell',lv,77)))bad('level '+lv+' is not reproducible');
+    // homophone pairs sit at level 5 with different sentences
+    const l5=Object.fromEntries(spellList(5));
+    for(const [a,b] of [['their','there'],['hear','here'],['to','too'],['see','sea'],['by','buy'],['week','weak'],['tail','tale'],['new','knew'],['wood','would']])
+      if(!l5[a]||!l5[b]||l5[a]===l5[b])bad('homophone pair '+a+'/'+b+' missing or same sentence');
+    // map: spell 1 to 7 each once on the reading path, in the worlds CURRICULUM section 2.2 names
+    const rd=NODES.read.filter(n=>n.sk=='spell').map(n=>n.lv+'@'+n.wid).join(' ');
+    if(rd!=='1@r_candy 2@r_reef 3@r_space 4@r_summit 5@r_library 6@r_island 7@r_legend')bad('spell stops: '+rd);
+    // save safety: fixtures at several grades; the reading path as it was at v56 against today's
+    const store={};
+    global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+    const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
+    const NEWW=new Set(['r_summit','r_library','r_island','r_legend']),CUR=PATHS.read.worlds;
+    const snap=()=>{const o={};NODES.read.forEach((n,i)=>{o[nid(n)]={st:getSt('read',i),open:unlocked('read',i)}});return o};
+    let checked=0;
+    for(const name of ['fresh','midway','maxed','legacy-single-map','legacy-index-maps','tricky'])for(const g of [null,-1,0,1,2,3,6]){
+      const raw=fx(name);load(Object.keys(JSON.parse(raw)).length?raw:null);if(g!==null)S.grade=g;
+      PATHS.read.worlds=CUR.filter(w=>!NEWW.has(w.id)).map(w=>({...w,nodes:w.nodes.filter(x=>x[0]!=='spell')}));buildNodes('read');
+      const before=snap(),curB=nid(NODES.read[curNode('read')]);
+      PATHS.read.worlds=CUR;buildNodes('read');
+      const after=snap(),curA=nid(NODES.read[curNode('read')]);
+      for(const k in before){
+        checked++;
+        if(!after[k]){bad(name+' g'+g+': stop '+k+' vanished');continue}
+        if(before[k].st!==after[k].st)bad(name+' g'+g+': '+k+' stars '+before[k].st+' -> '+after[k].st);
+        if(before[k].open&&!after[k].open)bad(name+' g'+g+': '+k+' re-locked');
+        if(before[k].st>0&&!after[k].open)bad(name+' g'+g+': passed stop '+k+' is locked');
+      }
+      // a spell stop added to a finished world is NEW, open, has no stars and is never the current stop
+      for(const k of ['spell1','spell2','spell3']){
+        const i=NODES.read.findIndex(n=>nid(n)==k);
+        if(getSt('read',i)!==0)bad(name+': '+k+' starts with stars');
+        if(passed('read',WR.read[NODES.read[i].wi][1])&&(!stopNew('read',i)||!unlocked('read',i)||curA==k))bad(name+' g'+g+': '+k+' in a finished world is not NEW, open and not current');
+      }
+      // the map opens on the same stop as before unless the old path was finished, or nothing was played yet (a new child starts at their grade, which may now be a new world)
+      if(curB!==curA&&!/^boss_/.test(curB)&&NODES.read.some((n,i)=>passed('read',i)))bad(name+' g'+g+': current stop moved '+curB+' -> '+curA);
+    }
+    PATHS.read.worlds=CUR;buildNodes('read');
+    return {checked};
+  };
+  const r=eval(js+';('+body.toString()+')()');
+  return{problems:serrs,note:'400 words, 21000 questions, '+r.checked+' stop checks over 6 fixtures x 7 grades'};
 });
 
 // ---- report ----

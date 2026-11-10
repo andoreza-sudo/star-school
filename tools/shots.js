@@ -253,7 +253,19 @@ const SCREENS = {
   'report-needs': { run: reportDemo('#rp-needs', 1) },
   'report-fresh': { fixture: 'fresh', run: async p => { await p.evaluate(() => { S.name = 'Ava'; report(); }); } },
   'report-maxed': { fixture: 'maxed', run: reportDemo('#rp-level', 3) },
+  // P2-19 spelling: one seeded question of each level in a one-question round; the 'hint' shot also opens the hint
+  ...Object.fromEntries([1, 2, 3, 4, 5, 6, 7].map(lv => ['spell-' + lv, { run: spellShot(lv, false) }])),
+  'spell-hint': { run: spellShot(7, true) },
+  'spell-pic': { run: spellShot(3, false, true) }, // a word that has a picture
 };
+
+function spellShot(lv, hint, pic) {
+  return async p => {
+    await p.evaluate(lv => { G = newG({ sk: 'spell', lv, n: 1, pool: [genQ('spell', lv, 5)] }); next(); }, lv);
+    if (pic) await p.evaluate(lv => { for (let i = 1; i < 99; i++) { const q = genQ('spell', lv, i); if (q.html.includes('class="emo"')) { G = newG({ sk: 'spell', lv, n: 1, pool: [q] }); next(); break; } } }, lv);
+    if (hint) await p.click('#hb');
+  };
+}
 
 // Starts a demo bank question (bi = item index) or the demo passage round, through the real round engine.
 async function bankDemo(p, sk, bi) {
