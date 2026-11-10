@@ -4,7 +4,7 @@ The running record of what has shipped. Newest entry first. Every chunk adds one
 
 **Next up:** wave 5 batch A: P2-01, P2-05, P2-15, P2-19, P4-13.
 
-**Current version:** v56
+**Current version:** v57
 
 ## Chunk status
 
@@ -36,6 +36,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P5-06 v54
 - P5-02 v55
 - P5-03 v56
+- P2-19 v57
 
 ## Handoff notes
 
@@ -43,6 +44,9 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 
 ## Ideas and issues
 
+- (P2-19) Spelling hint 2 ("show the word for 2 seconds, then hide", CURRICULUM E-spell) is not built: `hintHTML` has no stepped hints. A later hint chunk can add it to `genSpell` as a second hint step.
+- (P2-19) Story Summit, Dragon Library, Author Island and Legend Lab exist now with only a spell stop each (plus the boss). P2-20 to P2-29 should insert their stops in CURRICULUM 2.2 order; do not change the spell stop ids. Word Workshop (`r_workshop`, grade 2) between Space Station and Story Summit still has to be created by P2-18.
+- (P2-19) Spell level 1 pictures come from the existing reading emoji lists (CVC, BLEND, MAGICE, TEAMS) by word; most of the 400 spelling words have no picture, so the blanked sentence is the visible clue. P4-13+ drawings reach them through picFor.
 
 - (P5-02) Home "Tricky Mix (N)" now counts review items due today (`allMiss()` = `dueItems()`), not every item still in the system: after a child fixes items they leave the count until they are due again, and the button reads "Mixed Practice" when nothing is due. P5-03 replaces the card with "Today's review: N due".
 - (P5-02) In challenge or support rounds (P1-08) `mastQ()` comes first in `makeQ`, so the review slots at questions 6 and 8 are taken by the adapted question; a fast all-right child sees due items at questions 2 and 4 only. Daily Review (P5-03) is where a backlog gets cleared.
@@ -139,6 +143,18 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P1-05) Map draw with 16 fake worlds (156 stops) at 6x CPU throttle: median about 29 ms (limit 50), single runs up to about 49 ms. The strip recomputes `worldOpen`/`worldFinished` per chip and `unlocked` scans the world; a memo per draw is the next step if P4-09 adds weight.
 
 ## Log
+
+### P2-19 Spelling levels 1-7 (v57, 2026-11-10, Claude)
+- What changed: new skill `spell` (`SK.spell`, 7 levels, kind `spell`, in-app keyboard). Words and generator are in the new `src/data/d-spell.js`: `SPELL_WORDS[lv]` (one `word|sentence` per line; 40 words at level 1, 60 at levels 2-7 = 400 words), then `genSpell`, `spellList`, `spellPic` in a clearly marked block at the bottom. The child hears word, sentence, word (`say`, auto); the screen shows the sentence with the word blanked (`_____`) so it works with speech off, plus a picture (`picFor`) for words the reading lists already have an emoji for. Hint: "It has N letters and starts with X" and the word is spoken (`{k:'say'}`). A missed word comes back at the end of the round (existing engine behaviour). Seeded `pick` only.
+- Levels (CURRICULUM E-spell): 1 CVC; 2 blends, digraphs, -ck -ll -ss; 3 silent e, vowel teams, -ed/-ing; 4 r-controlled, diphthongs, doubling and drop-e, plurals, irregulars; 5 prefixes/suffixes, silent letters, homophones (their/there, hear/here, to/too, see/sea, by/buy, week/weak, tail/tale, new/knew, wood/would, each with a sentence only one fits); 6 -tion/-sion, -able/-ible, Greek/Latin, commonly misspelled; 7 academic and tricky doubles.
+- Stops: spell 1 at the end of Candy Canyon, spell 2 at the end of Ocean Reef, spell 3 at the end of Space Station (all new ids `spell1..3`, before each world's boss). Spell 4-7 needed worlds that no chunk has shipped, so this chunk creates them with one stop each, as the content recipe says: Story Summit `r_summit` (g3, spell 4), Dragon Library `r_library` (g4, spell 5), Author Island `r_island` (g5, spell 6), Legend Lab `r_legend` (g6, spell 7). Later chunks (P2-18, 20-29) insert their stops in front of / around these in the order CURRICULUM 2.2 gives; ids are permanent.
+- Edits to existing files: `38-skills.js` (one SK entry), `42-paths.js` (3 stops appended to existing read worlds, 4 new worlds appended), `tools/test.js`, `tools/smoke.js`, `tools/shots.js`, `tools/build.py` (VER).
+- Save safety: stars are keyed by stop id, so nothing moves. New stops in finished worlds show NEW and never become the current stop. Proof: new test (6 fixtures x 7 grades): the reading path of v56 against today's, every old stop keeps its stars, none re-locks, passed stops stay open, map opens on the same stop for anyone who has played. A brand-new child at grade 3 or 6 now starts in the new Story Summit / Legend Lab (start world is by grade) instead of the last old world; that is intended.
+- Test and smoke expectations changed (old -> new): test.js "worlds" check: the MAP_V42 comparison now compares only the stops and worlds that existed at v42 (stops added later are ignored; was: the whole stop list of each world had to equal v42); the migration-3 star/lock/current-stop comparison now runs over the v42 stops only (was: every node, so the 3 new spell stops changed "maxed read: locks changed" and "current stop 14 -> 26"). The generator fuzz in test.js accepts kind `spell` through `kindProblems` (was: unknown kind). smoke.js `answer()` handles kind `spell` by tapping `.sk` keys. No hard-coded stop counts in smoke needed changing.
+- Tests: test.js check "spelling P2-19" (400 words: counts, a-z, length, BAD, sentence holds the word once, homophone pairs; 3,000 seeded questions per level with zero errors, blank clue, word not visible, hint gives the length not the word, labels unique, reproducible; stops on the map; save safety above); the main fuzz also draws 3,000 per level. Smoke block "P2-19": spell stop played through the real keyboard at 380x780, keys 48 px or more, hint text, stars saved, no other stop changed.
+- Screenshots looked at: spell-1, spell-3 (600x960), spell-7, spell-hint, spell-pic at 380x780 (shots group `spell-1..7`, `spell-hint`, `spell-pic`).
+- Not done: CURRICULUM's "hint 2: show the word for 2 seconds, then hide" needs a second hint step in `hintHTML` (39-hints.js, another chunk); the hint button gives hint 1 each time. Logged below.
+- Checklist 7.1: [x] files named (plus tests, shots, map edits) [x] VER bumped (v60 on its branch, renumbered v57 at merge) [x] build [x] test.js [x] smoke.js [x] screenshots [x] midway fixture unchanged (test) [x] size under 1.5 MB [x] no network [x] no new emoji [x] this entry
 
 ### P5-03 Daily Review and Tricky Mix on the new engine (v56, 2026-11-10, Claude)
 - What changed: Home has a "Today's review" card under the hero: with items due it reads "N due" (N = `dueItems().length`, the whole backlog) and a Start button; with none it is a kind green "All caught up! Nothing to review today." with no button. Start runs `startReview()`: a round (mix-style: no stars, no map progress) holding the 10 most urgent due items (`dueItems(10)` rebuilt with `revQ`) and nothing else, so with 12 due the round asks those first, most urgent first; with 3 due it is a 3-question round. With nothing due `startReview()` falls back to Mixed Practice, so an empty round is never built. Play again on the finish screen starts the next review while items remain. Answers book through the existing `check()` hooks (right = up a box and counted as fixed for game time, wrong = box 0 again).

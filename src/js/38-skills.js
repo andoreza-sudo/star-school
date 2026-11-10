@@ -25,5 +25,6 @@ const SK={
  sight:{t:'Sight Words',e:'👀',area:'read',max:3,gen:genSight},
  pic:{t:'Picture Words',e:'🖼️',area:'read',max:4,gen:genPic},
  build:{t:'Build a Word',e:'🧩',area:'read',max:4,gen:genBuild},
- sent:{t:'Read & Match',e:'📚',area:'read',max:2,gen:genSent}};
+ sent:{t:'Read & Match',e:'📚',area:'read',max:2,gen:genSent},
+ spell:{t:'Spelling',e:'✏️',area:'read',max:7,gen:lv=>genSpell(lv)}}; // P2-19: genSpell and its words are in src/data/d-spell.js
 

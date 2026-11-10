@@ -27,6 +27,8 @@ async function answer(page) {
       if (idx < 0) throw new Error('no tile for ' + q.word[k] + ' in ' + q.word);
       await page.click(`.lt[data-i="${idx}"]`);
     }
+  } else if (q.kind === 'spell') {
+    for (const ch of q.word) await page.click(`.sk[data-ch="${ch}"]`); // in-app keyboard keys
   } else if (q.kind === 'multi') {
     const idx = await page.evaluate(() => G.q.choices.map((c, i) => G.q.ans.map(String).includes(String(c.v)) ? i : -1).filter(i => i >= 0));
     for (const i of idx) await page.click(`.mc[data-i="${i}"]`);
@@ -728,6 +730,47 @@ async function main() {
       network.push(...ra.network);
       for (const e of ra.errors) fail(e);
       await ra.ctx.close();
+    }
+
+    // P2-19 spelling: every level has a map stop; a round at 380x780 taps the in-app keyboard (keys 48 px or more); the clue shows a blank,
+    //       never the word; the hint gives the letter count; the stop earns stars; stars of old stops do not move
+    {
+      const sa = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
+      const sp = sa.page;
+      await sp.waitForSelector('.game[data-p="read"]');
+      const si = await sp.evaluate(() => {
+        const lv = NODES.read.filter(n => n.sk == 'spell').map(n => n.lv).join('');
+        const before = JSON.stringify(S.maps.read);
+        const i = NODES.read.findIndex(n => n.sk == 'spell' && n.lv == 3);
+        start('read', i);
+        return { lv, i, before };
+      });
+      if (si.lv !== '1234567') fail('spelling stops on the reading map: ' + si.lv);
+      await sp.waitForSelector('#prompt .lslots');
+      const sq = await sp.evaluate(() => {
+        const keys = [...document.querySelectorAll('.sk')];
+        const clue = document.querySelector('#prompt').textContent;
+        return { kind: G.q.kind, minKey: Math.min(...keys.map(k => k.offsetHeight)), minW: Math.min(...keys.map(k => k.offsetWidth)),
+          blank: clue.includes('_____'), shows: clue.toLowerCase().includes(G.q.word),
+          over: document.querySelector('#prompt').scrollWidth - document.querySelector('#prompt').clientWidth,
+          slots: document.querySelectorAll('.lslots .ls').length === G.q.word.length };
+      });
+      if (sq.kind !== 'spell' || !sq.blank || sq.shows || !sq.slots) fail('spelling question: ' + JSON.stringify(sq));
+      else if (sq.minKey < 48 || sq.minW < 24 || sq.over > 0) fail('spelling keyboard at 380: ' + JSON.stringify(sq));
+      else step(`spelling: keyboard keys ${sq.minKey} px high, the clue shows a blank, not the word`);
+      await sp.click('#hb');
+      const hint = await sp.evaluate(() => document.querySelector('#hint').textContent);
+      if (!/\d+ letters and starts with/.test(hint)) fail('spelling hint: ' + hint); else step('spelling: hint gives the letter count and the first letter');
+      await playRound(sp, 'P2-19 spelling');
+      const after = await sp.evaluate(i => ({ st: getSt('read', i), maps: JSON.stringify(S.maps.read) }), si.i);
+      const was = JSON.parse(si.before), now = JSON.parse(after.maps);
+      const moved = Object.keys(was).filter(k => now[k] !== was[k]);
+      if (after.st < 1 || moved.length) fail('spelling stars: ' + JSON.stringify({ st: after.st, moved }));
+      else step(`spelling: stop earned ${after.st} stars, no other stop changed`);
+      await sp.evaluate(() => { G.dead = true; home(); });
+      network.push(...sa.network);
+      for (const e of sa.errors) fail(e);
+      await sa.ctx.close();
     }
 
     for (const e of errors) fail(e);
