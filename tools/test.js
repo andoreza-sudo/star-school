@@ -594,6 +594,81 @@ run('kinds B: sample questions of match, tap, spell pass validate and render; br
   return{problems:uniq(out.bad),note:out.n+' samples'};
 });
 
+// ---- 13: math visuals (P1-10) ----
+run('viz: math visuals well-formed, small, deterministic, tokens only, tap targets 48',()=>{
+  const p=[];
+  const src=fs.readFileSync(path.join(SRC,'js','23-viz.js'),'utf8');
+  const css=fs.readFileSync(path.join(SRC,'css','32-viz.css'),'utf8');
+  const code=src.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm,'');
+  if(/Math\.random|\brnd\(|\bR\(|\bpick\(|\bshuffle\(/.test(code))p.push('23-viz.js must not use Math.random or the generator rnd()');
+  if(/#[0-9a-f]{3,8}\b/i.test(src.replace(/0x[0-9A-F]+/g,'')))p.push('23-viz.js has a raw hex colour');
+  if(/#[0-9a-f]{3,8}\b/i.test(css))p.push('32-viz.css has a raw hex colour');
+  const V=eval(src+';VIZ');
+  // typical inputs (what generators will use most): each under 2.5 KB
+  const typical=[['tenFrame',[7]],['tenFrame',[3,5]],['tenFrame',[18,20,{b:8,fade:2}]],['base10',[999]],['base10',[47]],['base10',[358]],
+    ['numLine',[{}]],['numLine',[{max:20,marks:[13],hide:[10]}]],['numLine',[{max:100,step:10}]],['numLine',[{min:-5,max:5,tapValues:[-4,-2,0,2,4]}]],
+    ['numLine',[{max:1,step:.25,den:4,tapValues:[0,.25,.5,.75,1]}]],['numLine',[{max:2,step:1/8,den:8,marks:[1.375]}]],
+    ['fracBar',[3,4,{unit:true}]],['fracBar',[7,8,{unit:true}]],['fracBar',[5,4]],['fracBar',[0,6,{tap:true}]],
+    ['fracCircle',[3,8]],['fracCircle',[7,4]],['fracCircle',[0,6,{tap:true}]],['clock',[10,45]],['clock',[12,0,{nums:false}]],
+    ['array',[10,10]],['array',[3,4]],['dots',[20,'scatter',{seed:9}]],['dots',[10,'dice']],['dots',[20,'ten']],['dots',[20,'row',{b:5,fade:3}]]];
+  // everything else: a sweep of edge inputs, checked for broken markup only
+  const sweep=[];
+  for(let n=0;n<=20;n++){sweep.push(['tenFrame',[n,20]],['tenFrame',[n,5]],['dots',[n,'row']],['dots',[n,'ten']],['dots',[n,'dice']]);
+    for(let sd=1;sd<=5;sd++)sweep.push(['dots',[n,'scatter',{seed:sd}]])}
+  for(let n=0;n<=999;n+=37)sweep.push(['base10',[n]]);
+  for(let d=1;d<=12;d++)for(let n=0;n<=2*d+1;n++)sweep.push(['fracBar',[n,d,{unit:true}]],['fracCircle',[n,d,{tap:true}]]);
+  for(let h=0;h<=12;h++)for(let m=0;m<60;m+=7)sweep.push(['clock',[h,m]]);
+  for(let r=1;r<=12;r++)for(let c=1;c<=12;c++)sweep.push(['array',[r,c]]);
+  for(const [mn,mx,st] of [[0,5,1],[0,20,1],[0,100,5],[-10,10,1],[0,1000,100],[0,3,1/3],[0,0.3,0.1]])sweep.push(['numLine',[{min:mn,max:mx,step:st}]]);
+  const big=[];
+  for(const [name,args,typ] of typical.map(t=>[...t,1]).concat(sweep)){
+    const w=name+'('+JSON.stringify(args).slice(1,-1)+')';
+    let s;
+    try{s=V[name](...args)}catch(e){p.push(w+' threw '+e.message);continue}
+    if(s!==V[name](...args))p.push(w+': not deterministic');
+    if(/NaN|undefined|Infinity|null/.test(s))p.push(w+': NaN/undefined in markup');
+    if(!/^<svg class="viz viz-[a-z0-9]+( vi)?" viewBox="0 0 [\d.]+ [\d.]+" style="--vw:[\d.]+" role="(img|group)" aria-label="[a-z ]+">/.test(s))p.push(w+': root <svg> markup');
+    if(/filter|gradient|url\(|\bid=|#[0-9a-f]{3,8}\b/i.test(s))p.push(w+': no filter, gradient, url(), id or raw colour');
+    // tags balance (every element closes or self-closes)
+    const stack=[];
+    for(const m of s.matchAll(/<(\/?)([a-z]+)[^>]*?(\/?)>/g)){
+      if(m[3])continue;
+      if(!m[1])stack.push(m[2]);
+      else if(stack.pop()!==m[2]){p.push(w+': tags do not balance at </'+m[2]+'>');break}
+    }
+    if(stack.length)p.push(w+': unclosed <'+stack[0]+'>');
+    if(typ&&s.length>=2500)big.push(w+' '+s.length+' B');
+    // tap targets at least 48 x 48 viewBox units (1 unit = 1 px on a phone)
+    if(/ vi"/.test(s)){
+      const t=[...s.matchAll(/class="vt[^"]*" data-v="([^"]+)"/g)];
+      if(!t.length)p.push(w+': interactive but no data-v targets');
+      for(const m of s.matchAll(/<rect class="vh" x="[^"]*" y="[^"]*" width="([\d.]+)" height="([\d.]+)"/g))if(+m[1]<48||+m[2]<48)p.push(w+': tap rect '+m[1]+'x'+m[2]);
+      for(const m of s.matchAll(/<rect class="vt vp[^"]*" data-v="[^"]*" role="button" aria-label="[^"]*" x="[^"]*" y="[^"]*" width="([\d.]+)" height="([\d.]+)"/g))
+        if(+m[1]<46||+m[2]<48)p.push(w+': tap part '+m[1]+'x'+m[2]);
+    }
+  }
+  p.push(...big);
+  // specific promises of the API
+  const cnt=(s,re)=>(s.match(re)||[]).length;
+  if(cnt(V.tenFrame(7),/<circle/g)!==7)p.push('tenFrame(7) does not draw 7 counters');
+  if(cnt(V.tenFrame(9,10,{b:3,fade:1}),/<g class="v2 vx">/g)!==1)p.push('tenFrame b/fade groups');
+  if(cnt(V.dots(13,'scatter',{seed:4}),/<circle/g)!==13)p.push('dots scatter count');
+  if(V.dots(13,'scatter',{seed:4})===V.dots(13,'scatter',{seed:5}))p.push('dots scatter: seed does not change the layout');
+  if(cnt(V.base10(234),/h-[\d.]+z/g)!==9)p.push('base10(234) does not draw 2 + 3 + 4 blocks');
+  if(cnt(V.fracBar(3,4),/class="vp vs"/g)!==3||cnt(V.fracBar(3,4),/class="vp"/g)!==1)p.push('fracBar(3, 4) shading');
+  if(cnt(V.fracCircle(5,4),/class="ve"/g)!==2)p.push('fracCircle(5, 4) should draw 2 circles');
+  if(cnt(V.numLine({tapValues:[1,3,5]}),/data-v=/g)!==3)p.push('numLine tapValues');
+  if(!V.numLine({hide:[4]}).includes('class="vq"'))p.push('numLine hide box');
+  if(!/>3<\/text>.*>4<\/text>/.test(V.numLine({max:1,step:.25,den:4})))p.push('numLine den labels');
+  if(!V.numLine({min:-3,max:3}).includes('−3'))p.push('numLine minus sign');
+  // scatter dots never overlap (2r = 26)
+  for(let n=2;n<=20;n++)for(let sd=1;sd<=20;sd++){
+    const c=[...V.dots(n,'scatter',{seed:sd}).matchAll(/cx="([\d.]+)" cy="([\d.]+)"/g)].map(m=>[+m[1],+m[2]]);
+    for(let i=0;i<c.length;i++)for(let j=0;j<i;j++)if(Math.hypot(c[i][0]-c[j][0],c[i][1]-c[j][1])<26.5){p.push('scatter overlap n='+n+' seed='+sd);i=c.length;break}
+  }
+  return{problems:uniq(p),note:(typical.length+sweep.length)+' visuals'};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){
