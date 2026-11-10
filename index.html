@@ -289,6 +289,8 @@ label.tg{display:block;font-size:20px;margin:8px 0}
 .bbtg{display:flex;gap:4px;flex-wrap:wrap;width:100%}.bbtg .btn{display:flex;flex-direction:column;align-items:center;line-height:1;padding:5px 7px;min-height:44px;font-size:18px}.bbtg .btn i{font-style:normal;font-size:10px;margin-top:2px}
 .bbsk span{font-size:28px;display:block;line-height:40px}.bbk{width:62px;height:62px}.bbk i.bbn{font-size:9px}
 .bbtip{position:absolute;left:50%;bottom:10px;transform:translateX(-50%) translateY(8px);background:#000b;color:#fff;font-size:14px;padding:6px 14px;border-radius:99px;opacity:0;transition:.25s;pointer-events:none;white-space:nowrap;max-width:94%;overflow:hidden;text-overflow:ellipsis}.bbtip.on{opacity:1;transform:translateX(-50%)}
+.ptlines{display:flex;flex-direction:column;font-size:14px;font-weight:600;color:#57534e;margin-top:4px;gap:1px}.ptlines .neg{color:#b91c1c}.pthint{margin-top:6px;font-size:15px;color:#7c3aed;font-weight:700}
+.ptrules{margin-top:14px;line-height:1.6}.ptrules b{color:#b45309}.ptrules div b{float:right}
 .tipcard{background:#fff;border-radius:16px;padding:10px 14px;margin:10px 0;font-size:15px;box-shadow:0 2px 6px #0001;line-height:1.4}
 .cbgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:10px}
 .cbitem{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;font-size:16px}.cbitem img{width:96px;height:96px;border-radius:10px;image-rendering:pixelated;box-shadow:0 2px 6px #0002}
@@ -770,7 +772,7 @@ function home(first){
   $('#book').onclick=book;$('#shop').onclick=shop;$('#mix').onclick=()=>{SFX.whoosh();startMix()};$('#race').onclick=raceMenu;$('#care').onclick=care;$('#groom').onclick=()=>{SFX.whoosh();gameRoom()};
   if($('#inst'))$('#inst').onclick=async()=>{try{installEvt.prompt();await installEvt.userChoice}catch(e){}installEvt=null;home()};
   let t;const g=$('#gear');g.onpointerdown=()=>{t=setTimeout(grown,1200)};g.onpointerup=g.onpointerleave=()=>clearTimeout(t);g.onclick=()=>fb('Grown-ups: hold it','warn');
-  {const sc=$('.scroll');if(sc)sc.insertAdjacentHTML('beforeend','<p class="small" style="text-align:center;opacity:.55;margin:14px 0 4px">Star School v29</p>')}
+  {const sc=$('.scroll');if(sc)sc.insertAdjacentHTML('beforeend','<p class="small" style="text-align:center;opacity:.55;margin:14px 0 4px">Star School v30</p>')}
   if(first&&S.voice)setTimeout(()=>say(`Hi ${S.name}! Pick a game!`),400)}
 
 let MAPP='math';
@@ -912,7 +914,7 @@ function check(v,el){if(G.lock)return;const q=G.q,p=P(q.sk),ok=String(v)===Strin
     if($('#slot')){if(q.kind=='choice')$('#slot').textContent=q.ans;$('#slot').classList.add('ok')}$$('.ls').forEach(s=>s.classList.add('ok'));
     const first=G.tries==0&&!G.retry;
     if(!G.retry){G.done++;p.t++;if(G.tries==0){G.score++;p.c++}}
-    if(G.tries==0&&p.miss[q.label])p.miss[q.label].n=Math.max(0,p.miss[q.label].n-1);
+    if(G.tries==0&&p.miss[q.label]){if(p.miss[q.label].n>0&&!G.retry)G.fixed=(G.fixed||0)+1;p.miss[q.label].n=Math.max(0,p.miss[q.label].n-1)}
     G.streak=G.tries==0?G.streak+1:0;G.best=Math.max(G.best,G.streak);
     SFX.right(G.streak);
     if(first)setTimeout(()=>flyStar(src),150);
@@ -952,13 +954,13 @@ function finish(){
   let testOk=false,prize=null;
   if(g.test){testOk=sc>=9;if(testOk){NODES[p].forEach((n,i)=>{if(n.wi==g.test.wi&&getSt(p,i)<2)setSt(p,i,2)});newPass=true}}
   else if(!g.mix){if(g.boss)stars=g.won?(g.asked<=7?3:g.asked<=8?2:1):0;else{P(g.sk).r++;stars=sc>=10?3:sc>=8?2:sc>=7?1:0}
-    const prev=getSt(p,ni);setSt(p,ni,Math.max(prev,stars));newPass=!prev&&stars>0;
+    const prev=getSt(p,ni);g.prevSt=prev;setSt(p,ni,Math.max(prev,stars));newPass=!prev&&stars>0;
     if(g.boss&&g.won&&!S.owned[nd.prize]){prize=nd.prize;S.owned[prize]=1;S.wear.hat=prize}}
   if(newPass){const wk=p+nd.wi;if(!S.wdone[wk]&&worldDone(p,nd.wi)){S.wdone[wk]=1;wDone=true}}
   const prizes=[award()];if(sc==n)prizes.push(award());
   d.r++;let mission=false;if(d.r>=3&&!d.done){d.done=true;mission=true;prizes.push(award())}
   if(wDone)prizes.push(award());
-  const bonus=(mission?5:0),coins=sc+bonus+(wDone?20:0),ptSec=(ptCfg().per*60)+(sc==n?60:0)+(g.boss&&g.won?120:0)+(testOk?60:0);ptEarn(ptSec);
+  const bonus=(mission?5:0),coins=sc+bonus+(wDone?20:0),prevSt=g.test||g.mix?0:(g.prevSt||0),PT=ptCalc(g,sc,n,stars,prevSt,newPass,testOk,nd),ptSec=PT.sec;ptEarn(ptSec);
   S.stars+=sc+bonus;S.coins+=coins;S.best=Math.max(S.best||0,best);
   const grew=stage(S.stars)>stage(before);save();
   view(`<div class="center" id="fin"><h1>Round complete!</h1><p class="sub">Tap the treasure chest!</p>
@@ -979,7 +981,7 @@ function finish(){
       if($('#again'))$('#again').onclick=()=>{SFX.whoosh();g.mix?startMix():g.test?testOut(p,g.test.wi):open(p,ni)};$('#menu').onclick=()=>g.mix?home():pathMap(p);
       if(grew)setTimeout(()=>growShow(before),300);else if(!playClip('done')&&S.voice)say(`You got ${sc} stars!`+(newPass?' You unlocked the next stop!':''))},t);
     t+=300;
-    const msgs=[[`🎟️ +${Math.round(ptSec/60)} min of game time!`,'coin'],[`+${coins} 🪙 coins for the pet shop!`,null]];
+    const msgs=[[`🎟️ +${fmtM(ptSec)} of game time!<div class="ptlines">${PT.lines.map(([v,l])=>`<span class="${v<0?'neg':''}">${v<0?'−':'+'}${fmtM(Math.abs(v))} ${l}</span>`).join('')}</div>${PT.mast&&nextI>=0?'<div class="pthint">💡 New stops earn way more game time!</div>':PT.rep>=1?'<div class="pthint">💡 Try a different stop to earn more!</div>':''}`,'coin'],[`+${coins} 🪙 coins for the pet shop!`,null]];
     if(best>=3)msgs.push([`🔥 Best streak: ${best} in a row!`,null]);
     if(newPass&&nextI>=0)msgs.push([`🗺️ Next stop unlocked: ${NODES[p][nextI].t}!`,'fanfare']);
     if(wDone)msgs.push([`🌍 You finished ${PATHS[p].worlds[nd.wi].n}! +20 🪙`,'fanfare']);
@@ -1108,6 +1110,19 @@ function pt(){const p=S.pt||(S.pt={bank:180,day:'',used:0});if(p.day!==today()){
 const fmtT=s=>{s=Math.max(0,Math.floor(s));return`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`};
 function ptLeft(){const p=pt(),c=ptCfg();if(c.pause)return 0;const cap=c.max?c.max*60-p.used:1e9;return Math.max(0,Math.min(p.bank,cap))}
 function ptEarn(sec){pt().bank+=sec;save()}
+const fmtM=s=>{const m=Math.round(s/30)/2;return(m%1?`${Math.floor(m)||''}½`:`${m}`)+' min'};
+function ptCalc(g,sc,n,stars,prev,newPass,testOk,nd){const per=ptCfg().per*60,L=[];let t=0;const add=(v,l)=>{if(v>0){t+=v;L.push([v,l])}};
+  if(g.test){add(testOk?per+60:60,testOk?'Tested out!':'Good try')}
+  else if(g.mix){add(Math.round(per*.6),'Practice round');add((g.fixed||0)*30,`Fixed ${g.fixed} tricky one${g.fixed>1?'s':''}`)}
+  else{const acc=sc/n,mast=prev>=3&&!g.boss;
+    if(mast)add(60,'Already mastered this one');
+    else{add(Math.round(per*(acc<.5?.34:acc<.7?.67:1)),acc<.5?'Keep trying':'Round done');
+      if(newPass)add(60,'New stop unlocked');else if(stars>prev&&prev>0)add(30,'Beat your old score');
+      if(nd&&nd.wi>0)add(Math.min(90,30*nd.wi),'Harder world')}
+    if(sc==n)add(60,'Perfect score');if(g.boss&&g.won)add(120,'Beat the boss');add((g.fixed||0)*20,`Fixed ${g.fixed} old mistake${g.fixed>1?'s':''}`)}
+  const rp=S.ptRep&&S.ptRep.day==today()?S.ptRep:(S.ptRep={day:today(),n:{}}),key=g.test?'t'+g.test.wi:g.mix?'mix':nd?nid(nd):'x',r=rp.n[key]||0;rp.n[key]=r+1;
+  if(r>0){const k=r==1?.6:.35,cut=Math.round(t*(1-k));t-=cut;L.push([-cut,`Played ${r+1} times today`])}
+  t=Math.max(30,Math.round(t/30)*30);return{sec:t,lines:L,mast:!g.test&&!g.mix&&prev>=3&&!g.boss,rep:r}}
 function ptWhyNot(){const p=pt(),c=ptCfg();if(c.pause)return'Game time is paused by a grown-up.';if(c.max&&p.used>=c.max*60)return`That's all the game time for today (${c.max} min). Come back tomorrow!`;return'Finish a learning round to earn game time!'}
 
 function gameRoom(){const left=ptLeft(),gs=garageS();
@@ -1118,7 +1133,8 @@ function gameRoom(){const left=ptLeft(),gs=garageS();
    <button class="btn game" id="g4x4" style="background:linear-gradient(135deg,#fed7aa,#fdba74)"><span class="ge">🚙</span><span class="gi"><span class="gt">4x4 Hill Climb</span><span class="small">Best: ${Math.max(gs.best.meadow,gs.best.moon)} m · 🔩 ${gs.bolts} bolts</span></span><span class="go">▶</span></button>
    <button class="btn game" id="gcbn" style="background:linear-gradient(135deg,#fbcfe8,#f9a8d4)"><span class="ge">🎨</span><span class="gi"><span class="gt">Coloring</span><span class="small">Animals, pixel art & free paint</span></span><span class="go">▶</span></button>
    <button class="btn game" id="gbb" style="background:linear-gradient(135deg,#bbf7d0,#86efac)"><span class="ge">🧱</span><span class="gi"><span class="gt">Block Builder</span><span class="small">Build your own 3D world</span></span><span class="go">▶</span></button></div>
-  ${left>0?'':'<button class="btn big" id="learn" style="display:block;margin:18px auto">📚 Go earn game time</button>'}</div>`);
+  ${left>0?'':'<button class="btn big" id="learn" style="display:block;margin:18px auto">📚 Go earn game time</button>'}
+  <div class="tipcard ptrules"><b>🎟️ How to earn MORE game time</b><div>🆕 Unlock a new stop <b>+1 min</b></div><div>💯 Get a perfect score <b>+1 min</b></div><div>🌍 Play a harder world <b>up to +1½ min</b></div><div>💥 Beat a boss <b>+2 min</b></div><div>🔁 Fix an old mistake <b>bonus seconds</b></div><div>📈 Beat your old score <b>+½ min</b></div><div class="small">Replaying a stop you already mastered, or the same stop over and over, earns less.</div></div></div>`);
   $('#back').onclick=()=>home();if($('#learn'))$('#learn').onclick=()=>home();
   $('#g4x4').onclick=()=>{SFX.whoosh();garage()};$('#gcbn').onclick=()=>{SFX.whoosh();colorMenu()};$('#gbb').onclick=()=>{SFX.whoosh();bbMenu()}}
 
