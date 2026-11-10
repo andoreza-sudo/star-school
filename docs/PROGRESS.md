@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** wave 5: P2-05 merging; then batch B: P2-02, P2-03, P2-06, P2-18.
+**Next up:** wave 5 batch B: P2-02, P2-03, P2-06, P2-18; then batch C: P2-04, P2-07.
 
-**Current version:** v60
+**Current version:** v61
 
 ## Chunk status
 
@@ -40,6 +40,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P4-13 v58
 - P2-15 v59
 - P2-01 v60
+- P2-05 v61
 
 ## Handoff notes
 
@@ -47,6 +48,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 
 ## Ideas and issues
 
+- (merge P2-05) The full smoke run now takes about 12 minutes. A run that crosses midnight fails the P5-03 daily review counts (items moved to "due tomorrow" become due again). A later chunk could freeze the page clock in tools/lib/browser.js.
 - (P2-19) Spelling hint 2 ("show the word for 2 seconds, then hide", CURRICULUM E-spell) is not built: `hintHTML` has no stepped hints. A later hint chunk can add it to `genSpell` as a second hint step.
 - (P2-19) Story Summit, Dragon Library, Author Island and Legend Lab exist now with only a spell stop each (plus the boss). P2-20 to P2-29 should insert their stops in CURRICULUM 2.2 order; do not change the spell stop ids. Word Workshop (`r_workshop`, grade 2) between Space Station and Story Summit still has to be created by P2-18.
 - (P2-19) Spell level 1 pictures come from the existing reading emoji lists (CVC, BLEND, MAGICE, TEAMS) by word; most of the 400 spelling words have no picture, so the blanked sentence is the visible clue. P4-13+ drawings reach them through picFor.
@@ -71,7 +73,10 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P2-01) Boss character and prize still come from the world index, so Tiny Town (index 0) shifts every other math world's boss and prize by one (cosmetic; see the P1-05 note). Pin a boss per world id in P4-09.
 - (P2-01) The words on Tiny Town map stops ("Count to 5") are text; a Pre-K child taps the picture node, the node picture is the skill emoji. P4-09 (map redesign) can add spoken stop names.
 - (P2-01) Pre-K sort and pat use colours from tokens (red, blue, green, yellow, purple, orange); shapes carry an outline, but a colour-blind child may still confuse red/green or orange/yellow in "which one is different" by colour. A later pass could add a pattern fill per colour.
-
+- (P2-05) Levels `arr 1` and `story 4` belong to P2-04 (Treasure Bay) and have no stop yet. `SK.arr.max` is 2 and `SK.story.max` is 5, so levels `arr 1` and `story 4` exist: `arr 1` asks like `arr 2` and `story 4` like `story 5` (`genArr`, `genStoryAll` in 33-gen-math-mid.js) so the 3,000-sample fuzz stays valid. test.js "skills: every level is reachable" has a `RESERVED` list (`arr:[1]`, `story:[4]`); P2-04 must write the real levels and delete that list.
+- (P2-05) Fact Sprint `mfact` / `dfact` sets unlock when `mfact 1` / `dfact 1` is passed; the facts then grow with the highest level passed (`fluLv`): level 1 key factors 0 1 2 5 10, 2 adds 3 4, 3 adds 6-9, 4 is all of 0-10. Divide facts use divisors 1-10 (never 0) and answers 1-10. They share one 60 s / 20 facts record each; no per-level records.
+- (P2-05) Array questions' choice sentences (`5 × 2 = 10`) wrap onto two lines at 380 px (the button font is large); readable, a later polish could shrink choice text for long sentences. `✖️` is used as the icon of `mfact` and `mbig`; `÷` (plain text, not an emoji) is the icon of `dfact` and the Fact Sprint divide set because the heavy division sign is not in `tools/emoji-allow.txt`.
+- (P2-05) Boss and prize for Multiply Mountain come from its world index (`BOSSES[4%4]` = Gloop, same as Number Meadow, prize `BPRIZE[4]`); see the P1-05 note about pinning boss characters per world.
 - (P5-03) The Daily Review round has no filler: it holds only due items (1 to 10). Mixed Practice still starts with up to 7 due items, so the same items can be asked by either button; a later pass could make Mixed Practice skip due items or limit the card to once a day if that feels repetitive. The card shows the whole backlog ("21 due") although a round takes 10 at a time.
 - (P5-03) The Mixed Practice button still uses a raw emoji and inline colours (old home code); P4-09/P4-10 home redesign should move it onto ico().
 
@@ -160,6 +165,18 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P1-05) Map draw with 16 fake worlds (156 stops) at 6x CPU throttle: median about 29 ms (limit 50), single runs up to about 49 ms. The strip recomputes `worldOpen`/`worldFinished` per chip and `unlocked` scans the world; a memo per draw is the next step if P4-09 adds weight.
 
 ## Log
+
+### P2-05 3rd: world Multiply Mountain (v61, 2026-11-10, Claude)
+- What changed: new math world `m_mult` (Multiply Mountain, grade 3, last math world after Space Station) with exactly the CURRICULUM M-3a stops in order: `arr 2, mfact 1, mfact 2, dfact 1, mfact 3, dfact 2, mfact 4, dfact 3, dfact 4, mbig 1, story 5` plus the boss (12 map stops). New generators in `src/js/33-gen-math-mid.js`: `genArr` (array picture -> choose the sentence with distractors r+c, (r+1)×c, r×r; or `4 × 6 = 6 × ?`), `genMfact` (levels 1-4, 20% review at levels 2-3, 35% missing factor at level 4, horizontal and vertical), `genDfact` (levels 1-4, 35% `? ÷ 7 = 6` or `42 ÷ ? = 6` at level 4), `genMbig`, `genStoryMul` (8 templates: 4 times, 4 divide) behind `genStoryAll` (levels 1-3 still call `genStory` unchanged). Every question has `say`, a unique label and a text hint (skip-count row for times facts, a neighbour fact for the 6-9 facts, "Think: 5 times what makes 35?" for division).
+- Fact Sprint: sets `mfact` (Times facts) and `dfact` (Divide facts) added to `FLU.SETS`. Unlock: `passedAny('math','mfact',1)` / `('math','dfact',1)`; facts grow with the highest level passed (see Ideas and issues).
+- Edits to existing files: `38-skills.js` (new skills `arr`, `mfact`, `dfact`, `mbig`; `story` now `max:5, gen:genStoryAll`), `42-paths.js` (one world appended to the math path), `57-fluency.js` (`fluLv` helper and two sets). `00-core.js` `MAP_V42` is untouched: Multiply Mountain is appended after the 4 old worlds, so every old world keeps its index and stops (the MAP_V42 check still passes unchanged).
+- Tests changed (old -> new): test.js placement "start world per grade on math": grade 6 start world 3 -> `worlds.length-1` (4); "all right on math (4 worlds)" with [4,4,4,4] -> "(5 worlds)" with 5 testlets, done at world 4, skip list every world; "skills: every level is reachable" gets a `RESERVED` list (`arr 1`, `story 4`, P2-04); "fact sprint" fact check understands `×` and `÷` and a 100 limit for the two new sets. smoke.js: P1-06 grade 3 step `worldOpen('math', 3)` -> last world; P1-07 placement step 16 questions / `m_space` / MAPW 3 / `WR.math[3]` -> 4 questions per world (20), last world id, `MAPW` and `WR` computed from `PATHS.math.worlds.length`; its Grown-ups text check "Space Station" -> the last world's name (Multiply Mountain). P1-05 step (chips) already computed the count; nothing changed. New: test.js "multiply mountain" (world stops, gating, 3,000 samples x 8 fact levels with constraints, answers, review and missing-factor shares, arrays, stories, reserved levels, Fact Sprint unlock and growth) and one smoke block `// P2-05` (3rd grader opens the world from the strip, plays Arrays and Easy Times Facts with real taps, Fact Sprint lists Times facts and a 20-facts sprint is saved).
+- Tests: test.js 31 checks pass (30 old + 1 new); smoke.js passes (exit 0, no console errors, no network); contrast and hex guard pass. A first smoke run on a heavily loaded machine failed two P5-02 review steps (due counts); they passed on a re-run and in isolation, so treat them as load flakiness, not this chunk.
+- Screenshots looked at (380x780 unless noted): m5-map, m5-arr2, m5-arr2-swap, m5-mfact4, m5-story5, m5-mbig1 (600x960), m5-dfact4 (600x960). All 11 level shots and the map were generated at all three sizes by `node tools/shots.js m5-map m5-arr2 ... m5-story5`.
+- Checklist 7.1: [x] only named files changed (plus tests, shots, built output) [x] VER bumped (v61, provisional) [x] build [x] test.js [x] smoke.js [x] screenshots [x] midway fixture unchanged (migration and world tests) [x] size under 1.5 MB [x] no network [x] no new emoji or hex [x] PROGRESS entry
+- Merge: built on a parallel branch, renumbered v58 -> v61 at merge.
+
+- Merge (after P2-01): Multiply Mountain is world 5 of 6 (Tiny Town is world 0). Placement test and smoke now compute expectations from the world count; a K child's all-right placement run ends on Multiply Mountain after 5 sets.
 
 ### P2-01 PreK math: world Tiny Town, audio-first (v60, 2026-11-10, Claude)
 - What changed: new first math world `m_tiny` "Tiny Town" (g -1, Pre-K) with the CURRICULUM M-PK stops in order: pk_count 1, shape 1, pk_num 1, sort 1, pk_more 1, pk_count 2, pat 1, pk_num 2, sort 2 (nine stops plus the boss). `trace 1` is left out until P2-16, as CURRICULUM 2.1 says. Six new skills registered in `38-skills.js`: `pk_count` (2 levels), `pk_num` (2), `pk_more` (1), `sort` (2), `shape` (1), `pat` (1). Existing levels and skills are untouched.

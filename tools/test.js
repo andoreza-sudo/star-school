@@ -91,7 +91,9 @@ run('nodes: each points at an existing skill and level',()=>{
 run('skills: every level is reachable from some node',()=>{
   const used=new Set(),p=[];
   for(const path in GEN.nodes)for(const n of GEN.nodes[path])used.add(n.sk+':'+n.lv);
-  for(const id in GEN.skills)for(let lv=1;lv<=GEN.skills[id].max;lv++)if(!used.has(id+':'+lv))p.push(id+' level '+lv+' has no map node');
+  // Levels reserved for P2-04 (Treasure Bay: arr 1, story 4). They have no stop yet; until P2-04 ships they ask like the next level up.
+  const RESERVED={arr:[1],story:[4]};
+  for(const id in GEN.skills)for(let lv=1;lv<=GEN.skills[id].max;lv++)if(!used.has(id+':'+lv)&&!(RESERVED[id]||[]).includes(lv))p.push(id+' level '+lv+' has no map node');
   return{problems:p};
 });
 
@@ -212,8 +214,9 @@ run('fact sprint: facts, requeue, records, game time, clock',()=>{
   for (const s of FLU.SETS) {
     for (let i = 0; i < 2000; i++) {
       const f = s.gen();
-      if (f.c !== (f.op == '+' ? f.a + f.b : f.a - f.b)) bad(s.id + ' wrong answer ' + FLU.fkey(f));
-      if (f.c < (s.id.startsWith('add') ? 2 : 0) || f.c > 20 || f.a < 0 || f.b < 0) bad(s.id + ' out of range ' + FLU.fkey(f));
+      if (f.c !== (f.op == '+' ? f.a + f.b : f.op == '×' ? f.a * f.b : f.op == '÷' ? f.a / f.b : f.a - f.b)) bad(s.id + ' wrong answer ' + FLU.fkey(f));
+      if (f.c < (s.id.startsWith('add') ? 2 : 0) || f.c > (s.id.endsWith('fact') ? 100 : 20) || f.a < 0 || f.b < 0) bad(s.id + ' out of range ' + FLU.fkey(f));
+      if (s.id == 'dfact' && (f.b < 1 || f.c < 1 || f.c > 10)) bad(s.id + ' bad divide fact ' + FLU.fkey(f));
       if (s.id.endsWith('10') && (f.a > 10 || f.c > 10)) bad(s.id + ' over 10 ' + FLU.fkey(f));
     }
     const st = {set: s.id, last: '', redo: []};
@@ -1098,7 +1101,7 @@ run('placement: state machine rules, scripted answers, simulated students, never
     // 1. start world: one grade below the child's grade (the first world with g >= grade - 1, else the last)
     // math worlds by grade: Tiny Town -1, Number Meadow 0, Candy Canyon 1, Ocean Reef 1, Space Station 2 (P2-01 added Tiny Town)
     if(PLACE.first(PATHS.math.worlds,0)!==0||PLACE.first(PATHS.math.worlds,1)!==1||PLACE.first(PATHS.math.worlds,2)!==2
-      ||PLACE.first(PATHS.math.worlds,3)!==4||PLACE.first(PATHS.math.worlds,6)!==4)bad('start world per grade on math');
+      ||PLACE.first(PATHS.math.worlds,3)!==4||PLACE.first(PATHS.math.worlds,6)!==PATHS.math.worlds.length-1)bad('start world per grade on math');
     if(PLACE.first(FAKE,0)!==0||PLACE.first(FAKE,3)!==6||PLACE.first(FAKE,6)!==12)bad('start world per grade on 16 worlds');
     // 2. scripted rules (right answers per testlet -> where it goes)
     const run1=(ws,g,seq)=>{let st=PLACE.begin(ws,g,7);const path=[];for(const r of seq){if(st.done)break;path.push(st.wi);st=PLACE.step(st,r)}return{st,path}};
@@ -1111,7 +1114,8 @@ run('placement: state machine rules, scripted answers, simulated students, never
     {const{st,path}=run1(FAKE,3,[4,4,4,4,4,4]);want('5 testlets max',[path.length,st.done,st.at,st.asked],[5,true,11,20])}
     {const{st}=run1(FAKE,3,[0,0,0,0,0]);want('all wrong from world 6: lowest asked',[st.done,st.at,st.skip],[true,2,[]])}
     {const{st}=run1(PATHS.math.worlds,0,[0]);want('not yet at the first world stops',[st.done,st.at,st.skip],[true,0,[]])}
-    {const{st}=run1(PATHS.math.worlds,1,[4,4,4,4]);want('all right on math (5 worlds)',[st.done,st.at,st.all,st.skip],[true,4,true,[0,1,2,3,4]])}
+    {const nw=PATHS.math.worlds.length,{st}=run1(PATHS.math.worlds,1,Array(nw-1).fill(4)); // a K child starts on world 1 (Tiny Town below is skipped too)
+     want('all right on math ('+nw+' worlds)',[st.done,st.at,st.all,st.skip],[true,nw-1,true,Array.from({length:nw},(_,i)=>i)])}
     {const{st}=run1(PATHS.read.worlds,2,[4,1]);want('reading grade 2: pass Candy, not yet Reef',[st.done,st.at,st.skip],[true,3,[0,1,2]])}
     // step is pure: the input state is not changed
     {const a=PLACE.begin(FAKE,3,1),j=JSON.stringify(a);PLACE.step(a,4);if(JSON.stringify(a)!==j)bad('step changed its input')}
@@ -2121,6 +2125,108 @@ run('Tiny Town (P2-01): CURRICULUM M-PK levels, audio-first, answers by rule, 3,
   if(/#[0-9a-fA-F]{3,8}\b/.test(gen))bad.push('31-gen-math-early.js has a raw hex colour');
   if(/Math\.random/.test(gen))bad.push('31-gen-math-early.js uses Math.random');
   return{problems:bad};
+});
+
+// ---- P2-05 Multiply Mountain: facts, arrays, stories, world and Fact Sprint sets ----
+run('multiply mountain: stops, fact rules per level, answers, unique labels, arrays, stories, Fact Sprint sets',()=>{
+  const out=eval(js+`
+  S.name='Ava';S.buddy='Ben';G={built:[]};
+  const bad=[],N=3000,mf=[],rv=n=>n.replace(/[×÷−]/g,m=>m);
+  // 1. the world: last math world, grade 3, exactly the CURRICULUM M-3a stops in order
+  const mw=PATHS.math.worlds,w=mw[mw.length-1],ids=w.nodes.map(n=>n[0]+n[1]).join(' ');
+  if(w.id!=='m_mult'||w.g!==3||ids!=='arr2 mfact1 mfact2 dfact1 mfact3 dfact2 mfact4 dfact3 dfact4 mbig1 story5')bad.push('world: '+w.id+' '+w.g+' '+ids);
+  // gating: a 3rd grader sees it open, a 2nd grader only after Space Station (grade tag, not a lock on earlier worlds)
+  {S.grade=3;if(!worldOpen('math',mw.length-1))bad.push('grade 3: Multiply Mountain should be open');
+   S.grade=2;S.maps={math:{},read:{},es:{}};if(worldOpen('math',mw.length-1))bad.push('grade 2: should wait for Space Station');}
+  // 2. every level: constraints, answers, hints, say, labels
+  const lab={},hasKey=(a,b,keys)=>keys.includes(a)||keys.includes(b);
+  const L1=MF_KEYS[0],L2=MF_KEYS[1],L3=MF_KEYS[2];
+  const count={};
+  const gen=(sk,lv)=>{const o=[];for(let i=0;i<N;i++)o.push(genQ(sk,lv,i*7919+13));return o};
+  const parse=q=>{const m=q.label.match(/^(\\?|\\d+) ([×÷]) (\\?|\\d+) = (\\?|\\d+)$/);return m&&{a:m[1],op:m[2],b:m[3],c:m[4]}};
+  for(const [sk,max] of [['mfact',4],['dfact',4]])for(let lv=1;lv<=max;lv++){
+    const qs=gen(sk,lv),w=sk+' L'+lv;let rev=0,miss=0,vert=0;
+    for(const q of qs){
+      const p=parse(q);if(!p){bad.push(w+': label '+q.label);continue}
+      const a=p.a=='?'?null:+p.a,b=p.b=='?'?null:+p.b,c=p.c=='?'?null:+p.c;
+      const A=a==null?(p.op=='×'?c/b:c*b):a,B=b==null?(p.op=='×'?c/a:a/c):b,C=c==null?(p.op=='×'?a*b:a/b):c;
+      if(![A,B,C].every(Number.isInteger)||(p.op=='×'?A*B!==C:A!==B*C))bad.push(w+': not a fact '+q.label);
+      if(String(a==null?A:b==null?B:C)!==q.ans)bad.push(w+': wrong ans '+q.label+' -> '+q.ans);
+      if(q.html.includes('veq'))vert++;
+      if(!q.hint||q.hint.k!=='text'||!q.hint.s)bad.push(w+': no hint');
+      if(a==null||b==null)miss++;
+      if(sk=='mfact'){
+        if(Math.max(A,B)>10||Math.min(A,B)<0)bad.push(w+': range '+q.label);
+        const k=lv==1?hasKey(A,B,L1):lv==2?hasKey(A,B,L2):lv==3?hasKey(A,B,L3):true;
+        if(lv==2&&!k){if(hasKey(A,B,L1))rev++;else bad.push(w+': off level '+q.label)}
+        else if(lv==3&&!k){if(hasKey(A,B,L1)||hasKey(A,B,L2))rev++;else bad.push(w+': off level '+q.label)}
+        else if(lv==1&&!k)bad.push(w+': off level '+q.label);
+        if(lv==3&&!hasKey(A,B,L3)){} else if(lv==3&&Math.min(A,B)<2&&hasKey(A,B,L3)&&!(hasKey(A,B,L1)))bad.push(w+': other factor under 2 '+q.label);
+        if(lv==4&&(a==null||b==null)&&(A<2||B<2))bad.push(w+': missing factor needs both 2+ '+q.label);
+      }else{
+        const keys=lv<4?DF_KEYS[lv-1]:[2,3,4,5,6,7,8,9,10];
+        if(!keys.includes(B))bad.push(w+': divisor '+q.label);
+        if(C<1||C>10||A>100)bad.push(w+': range '+q.label);
+      }
+      const k=q.label;if(lab[k]&&lab[k]!==q.ans)bad.push(w+': label '+k+' has two answers');lab[k]=q.ans;
+    }
+    if(sk=='mfact'&&(lv==2||lv==3)&&(rev<N*.1||rev>N*.3))bad.push(w+': review share '+rev/N);
+    if(lv==4&&(miss<N*.25||miss>N*.45))bad.push(w+': missing share '+miss/N);
+    if(lv<4&&miss)bad.push(w+': missing numbers before level 4');
+    if(sk=='mfact'&&(vert<N*.3||vert>N*.7)&&!(lv==4))bad.push(w+': vertical share '+vert/N);
+    count[w]=qs.length;
+  }
+  // mbig
+  {const qs=gen('mbig',1);let hund=0;
+   for(const q of qs){
+     const m=q.label.match(/^(\\d+) × (\\d+) = \\?$/);if(!m){bad.push('mbig label '+q.label);continue}
+     const x=+m[1],y=+m[2],d=Math.min(x,y),big=Math.max(x,y);
+     if(d<2||d>9||!(big%10==0&&big>=10&&big<=90||big%100==0&&big>=100&&big<=900))bad.push('mbig '+q.label);
+     if(big>=100)hund++;
+     if(String(x*y)!==q.ans||!q.hint||!q.hint.s)bad.push('mbig answer/hint '+q.label);}
+   if(hund<N*.35||hund>N*.65)bad.push('mbig tens/hundreds mix '+hund/N);}
+  // arr 2
+  {const qs=gen('arr',2);let ch=0;
+   for(const q of qs){
+     if(!q.hint||!q.hint.s||!/array|VIZ|<svg/.test(q.html))bad.push('arr hint/picture');
+     if(q.kind=='choice'){ch++;
+       const m=q.label.match(/^array (\\d+) × (\\d+)$/),r=+m[1],c=+m[2],want=[r+' × '+c+' = '+r*c,r+' + '+c+' = '+(r+c),(r+1)+' × '+c+' = '+(r+1)*c,r+' × '+r+' = '+r*r];
+       if(q.ans!==want[0]||r<2||r>6||c<2||c>9||r==c)bad.push('arr choice '+q.label);
+       if(!q.choices.every(x=>want.includes(x.v)))bad.push('arr distractors '+q.label);
+       if(q.choices.length<3)bad.push('arr few choices '+q.label)}
+     else{const m=q.label.match(/^(\\d+) × (\\d+) = (\\d+) × \\?$/);if(!m||m[2]!==m[3]||String(m[1])!==q.ans||+m[1]>6||+m[2]>9)bad.push('arr swap '+q.label)}}
+   if(ch<N*.35||ch>N*.65)bad.push('arr mix '+ch/N);}
+  // story 5
+  {const qs=gen('story',5);const seen=new Set();
+   for(const q of qs){
+     const m=q.label.match(/^story (\\d+) ([×÷]) (\\d+)$/);if(!m){bad.push('story label '+q.label);continue}
+     const a=+m[1],b=+m[3],ok=m[2]=='×'?String(a*b):String(a/b);
+     if(q.ans!==ok||(m[2]=='×'?a*b:a)>100||!Number.isInteger(a/b)&&m[2]=='÷')bad.push('story answer '+q.label+' '+q.ans);
+     if(q.say!==q.say.trim()||!q.hint.s||!q.html.includes('story'))bad.push('story say/hint');
+     seen.add(m[2]+q.say.replace(/\\d+/g,'#').replace(/Ava|Ben|Sam|Mia|Leo|Zoe/g,'N').replace(/apples|cookies|ducks|balls|stickers|toy cars|fish|crayons|pencils/g,'T'))}
+   if(seen.size<8)bad.push('story: only '+seen.size+' templates')}
+  // levels reserved for P2-04 still work (no crash, valid question)
+  for(const [sk,lv] of [['arr',1],['story',4]])for(let i=0;i<300;i++){const q=genQ(sk,lv,i);if(!q.say||q.ans===undefined)bad.push(sk+lv+' broken')}
+  // old story levels unchanged: same question from the same seed as genStory
+  for(let lv=1;lv<=3;lv++)for(let i=0;i<50;i++){const a=genQ('story',lv,i),b=(()=>{const pr=RNG;RNG=mulberry32(i>>>0);try{return genStory(lv)}finally{RNG=pr}})();if(a.label!==b.label||a.say!==b.say)bad.push('story '+lv+' changed')}
+  // 3. Fact Sprint sets: locked until the first stop is passed; facts grow with the level passed
+  {S.maps={math:{},read:{},es:{}};
+   const has=id=>FLU.sets().some(s=>s.id==id);
+   if(has('mfact')||has('dfact'))bad.push('sets open with nothing passed');
+   const fm=n=>{const i=NODES.math.findIndex(x=>x.sk==n.slice(0,-1)&&x.lv==+n.slice(-1));return i};
+   S.maps.math.mfact1=1;if(!has('mfact')||has('dfact'))bad.push('mfact1 should open only the times set');
+   S.maps.math.dfact1=1;if(!has('dfact'))bad.push('dfact1 should open the divide set');
+   const facts=(id,n)=>{const o=[];for(let i=0;i<n;i++)o.push(FLU.set(id).gen());return o};
+   const f1=facts('mfact',1500);if(f1.some(f=>f.op!=='×'||f.c!==f.a*f.b||!(MF_KEYS[0].includes(f.a)||MF_KEYS[0].includes(f.b))||f.a>10||f.b>10))bad.push('mfact level 1 facts');
+   S.maps.math.mfact3=1;const f3=facts('mfact',3000);
+   if(f3.some(f=>f.c!==f.a*f.b||!(hasKey(f.a,f.b,MF_KEYS[0].concat(MF_KEYS[1],MF_KEYS[2])))))bad.push('mfact level 3 facts');
+   if(!f3.some(f=>hasKey(f.a,f.b,L3)&&!hasKey(f.a,f.b,L1.concat(L2))))bad.push('mfact level 3 never asks 6-9');
+   S.maps.math.mfact4=1;const f4=facts('mfact',3000);if(!f4.some(f=>f.a==7&&f.b==8||f.a==8&&f.b==7)||f4.some(f=>f.c!==f.a*f.b))bad.push('mfact level 4 facts');
+   const d1=facts('dfact',1500);if(d1.some(f=>f.op!=='÷'||f.c*f.b!==f.a||![1,2,5,10].includes(f.b)||f.c<1||f.c>10))bad.push('dfact level 1 facts');
+   S.maps.math.dfact4=1;const d4=facts('dfact',3000);if(d4.some(f=>f.c*f.b!==f.a||f.b<1||f.c<1||f.c>10)||!d4.some(f=>f.b==7))bad.push('dfact level 4 facts');
+  }
+  ({bad,count});`);
+  return{problems:out.bad,note:Object.keys(out.count).length+' fact levels x 3,000'};
 });
 
 // ---- report ----

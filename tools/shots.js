@@ -277,6 +277,22 @@ const SCREENS = {
   'report-needs': { run: reportDemo('#rp-needs', 1) },
   'report-fresh': { fixture: 'fresh', run: async p => { await p.evaluate(() => { S.name = 'Ava'; report(); }); } },
   'report-maxed': { fixture: 'maxed', run: reportDemo('#rp-level', 3) },
+  // P2-05 Multiply Mountain: the world map, then one question of each new level (m5-<skill><level>), grade 3.
+  'm5-map': { run: async p => { await p.evaluate(() => { S.grade = 3; pathMap('math', PATHS.math.worlds.length - 1); }); } },
+  'm5-arr2-swap': { run: async p => { await p.evaluate(() => {
+    S.grade = 3; start('math', NODES.math.findIndex(n => n.sk == 'arr'));
+    let q; for (let i = 1; i < 400; i++) { q = genQ('arr', 2, i); if (q.kind == 'num') break; }
+    G.q = q; renderQ(); }); } },
+  ...Object.fromEntries([['arr', 2, /veq|<svg/], ['mfact', 1, /veq/], ['mfact', 2, /eq/], ['mfact', 3, /veq/], ['mfact', 4, /\? ×|× \?/], ['dfact', 1, /eq/],
+    ['dfact', 2, /eq/], ['dfact', 3, /eq/], ['dfact', 4, /\? ÷|÷ \?/], ['mbig', 1, /veq/], ['story', 5, /story/]].map(([sk, lv, want]) =>
+    ['m5-' + sk + lv, { run: async p => {
+      await p.evaluate(([sk, lv, want]) => {
+        S.grade = 3; S.name = 'Ava'; S.buddy = 'Ben';
+        start('math', NODES.math.findIndex(n => n.sk == sk && n.lv == lv));
+        let q; for (let i = 1; i < 400; i++) { q = genQ(sk, lv, i); if (new RegExp(want).test(q.label + ' ' + q.html)) break; }
+        G.q = q; renderQ();
+      }, [sk, lv, want.source]);
+    } }])),
 
   // P2-01 Tiny Town (Pre-K math): the map, and one question of each of the 9 stops (seed 11) as a Pre-K child; tiny-hint opens Help
   'tiny-map': { fixture: 'fresh', run: async p => { await p.evaluate(() => { S.name = 'Ava'; setGrade(-1); home(); }); await p.click('.game[data-p="math"]'); } },
