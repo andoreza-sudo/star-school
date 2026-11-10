@@ -1231,7 +1231,7 @@ function blockBuilder(ci){const bs=bbS(),CH=ci==null?null:BBCH[ci],wd=CH?{name:C
   function face(tex,O,U,V,shadeA){x.save();x.beginPath();x.moveTo(...O);x.lineTo(O[0]+U[0],O[1]+U[1]);x.lineTo(O[0]+U[0]+V[0],O[1]+U[1]+V[1]);x.lineTo(O[0]+V[0],O[1]+V[1]);x.closePath();x.clip();
     x.setTransform(U[0]/16,U[1]/16,V[0]/16,V[1]/16,O[0],O[1]);x.imageSmoothingEnabled=false;x.drawImage(tex,0,0);x.setTransform(1,0,0,1,0,0);
     if(shadeA){x.fillStyle=`rgba(0,0,0,${shadeA})`;x.fill()}x.restore()}
-  function layout(){const W=cv.width,H=cv.height;const a0=Math.min(W/(BW+BD+1),H/((BW+BD)/2+BH+1.5))*.98;BB.a=a0*BB.zoom;BB.ox=W/2+BB.px*dpr;BB.oy=H-((BW+BD)/2)*a0-a0*.6+((BW+BD)/2*BB.a-(BW+BD)/2*a0)*.55+BB.py*dpr}
+  function layout(){const W=cv.width,H=cv.height;const a0=Math.min(W/(BW+BD+1),H/((BW+BD)/2+BH+1.5))*.98;BB.a=a0*BB.zoom;BB.ox=W/2+BB.px*dpr;BB.oy=H*.62-(BW+BD)/4*BB.a+BB.py*dpr}
   function clampPan(){layout();const W=cv.width,H=cv.height,cx=BB.ox,cy=BB.oy+(BW+BD)/4*BB.a;let dx=0,dy=0;if(cx<W*.1)dx=W*.1-cx;if(cx>W*.9)dx=W*.9-cx;if(cy<H*.25)dy=H*.25-cy;if(cy>H*.95)dy=H*.95-cy;BB.px+=dx/dpr;BB.py+=dy/dpr;layout()}
   function draw(){const W=cv.width,H=cv.height;layout();
     const g=x.createLinearGradient(0,0,0,H);g.addColorStop(0,BB.night?'#0f172a':'#7dd3fc');g.addColorStop(1,BB.night?'#312e81':'#e0f2fe');x.fillStyle=g;x.fillRect(0,0,W,H);
@@ -1274,7 +1274,7 @@ function blockBuilder(ci){const bs=bbS(),CH=ci==null?null:BBCH[ci],wd=CH?{name:C
       else{const cz=topZ(Math.round(an.x),Math.round(an.y));if(cz>0&&cz!=an.z){an.z=cz}an.t-=dt;if(an.t<=0){an.t=.5+Math.random()*1.4;const[dx,dy]=pick([[1,0],[-1,0],[0,1],[0,-1]]),nx=Math.round(an.x)+dx,ny=Math.round(an.y)+dy,nz=topZ(nx,ny);
         if(nz>0&&nz<BH&&Math.abs(nz-Math.round(an.z))<=1){Object.assign(an,{fx:an.x,fy:an.y,fz:Math.round(an.z),tx:nx,ty:ny,tz:nz,hop:0})}}}}
     for(const p of FX.parts){p.l-=dt;if(p.vx!==undefined){p.x+=p.vx*dt*20;p.y+=p.vy*dt*20;if(!p.smoke)p.vy+=BB.a*dt*1.6}}FX.parts=FX.parts.filter(p=>p.l>0);
-    const busy=FX.parts.length||FX.fuses.length||BB.animals.length||FX.shake>0||BB.prev;
+    const busy=FX.parts.length||FX.fuses.length||BB.animals.length||FX.shake>0||BB.prev||BB.fp;
     if(!busy){if(FX.dirty){x.drawImage(bg,0,0);FX.dirty=0}return}FX.dirty=1;
     let sh=0;if(FX.shake>0){FX.shake-=dt;sh=(Math.random()-.5)*BB.a*.6*FX.shake}
     x.clearRect(0,0,cv.width,cv.height);x.drawImage(bg,sh,sh*.7);
@@ -1295,7 +1295,11 @@ function blockBuilder(ci){const bs=bbS(),CH=ci==null?null:BBCH[ci],wd=CH?{name:C
       else if(p.smoke){x.fillStyle='#57534e';x.globalAlpha=Math.min(.5,p.l*.4);x.beginPath();x.arc(p.x,p.y,p.s*(2-p.l*.5),0,7);x.fill()}
       else if(p.em){x.save();x.translate(p.x,p.y);x.rotate((1.4-p.l)*8);x.fillStyle='#000';x.fillText(p.em,0,0);x.restore()}
       else if(p.heart){x.fillStyle='#000';x.font=`${p.s}px sans-serif`;x.fillText('❤️',p.x,p.y);x.font=`${BB.a*1.05}px sans-serif`}
-      else{x.fillStyle=p.c;x.fillRect(p.x-p.s/2,p.y-p.s/2,p.s,p.s);x.fillStyle='#0003';x.fillRect(p.x-p.s/2,p.y,p.s,p.s/2)}}x.globalAlpha=1}
+      else{x.fillStyle=p.c;x.fillRect(p.x-p.s/2,p.y-p.s/2,p.s,p.s);x.fillStyle='#0003';x.fillRect(p.x-p.s/2,p.y,p.s,p.s/2)}}x.globalAlpha=1;
+    if(BB.fp&&BB.prev){const[fx,fy]=BB.fp,Rr=Math.min(cv.width,cv.height)*.16,src=Rr*.9,ly=fy-Rr*1.9<Rr+4?fy+Rr*1.9:fy-Rr*1.9,lx=Math.max(Rr+4,Math.min(cv.width-Rr-4,fx));
+      x.save();x.beginPath();x.arc(lx,ly,Rr,0,7);x.closePath();x.fillStyle='#bae6fd';x.fill();x.clip();x.imageSmoothingEnabled=false;x.drawImage(cv,fx-src/2,fy-src/2,src,src,lx-Rr,ly-Rr,Rr*2,Rr*2);x.restore();
+      x.strokeStyle='#fff';x.lineWidth=5*dpr;x.beginPath();x.arc(lx,ly,Rr,0,7);x.stroke();x.strokeStyle='#0006';x.lineWidth=1.5*dpr;x.beginPath();x.arc(lx,ly,Rr+3*dpr,0,7);x.stroke();
+      x.strokeStyle='#ef4444';x.lineWidth=2*dpr;x.beginPath();x.moveTo(lx-10*dpr,ly);x.lineTo(lx+10*dpr,ly);x.moveTo(lx,ly-10*dpr);x.lineTo(lx,ly+10*dpr);x.stroke()}}
   function ghost(rx,ry,z,gv){const[ga,gb]=unrot(rx,ry),bl=bbI(ga,gb,z-1),later=BB.goal.has(bl)&&!BB.w[bl],tex=bbTex(BLOCKS[gv].k),T=proj(rx,ry,z+1),R1=proj(rx+1,ry,z+1),C=proj(rx+1,ry+1,z+1),L1=proj(rx,ry+1,z+1),Cb=proj(rx+1,ry+1,z),Lb=proj(rx,ry+1,z),Rb=proj(rx+1,ry,z);
     x.globalAlpha=later?.14:.45;face(tex.top,T,[R1[0]-T[0],R1[1]-T[1]],[L1[0]-T[0],L1[1]-T[1]],0);face(tex.side,L1,[C[0]-L1[0],C[1]-L1[1]],[Lb[0]-L1[0],Lb[1]-L1[1]],.15);face(tex.side,C,[R1[0]-C[0],R1[1]-C[1]],[Cb[0]-C[0],Cb[1]-C[1]],.3);x.globalAlpha=1;
     if(later)return;x.strokeStyle='#ffffffcc';x.lineWidth=Math.max(1,BB.a*.05);x.setLineDash([BB.a*.15,BB.a*.1]);x.beginPath();x.moveTo(...T);x.lineTo(...R1);x.lineTo(...Rb);x.lineTo(...Cb);x.lineTo(...Lb);x.lineTo(...L1);x.closePath();x.moveTo(...C);x.lineTo(...R1);x.moveTo(...C);x.lineTo(...L1);x.moveTo(...C);x.lineTo(...Cb);x.stroke();x.setLineDash([]);
@@ -1336,11 +1340,11 @@ function blockBuilder(ci){const bs=bbS(),CH=ci==null?null:BBCH[ci],wd=CH?{name:C
       tone(300+top*50,.08,0,'square',.08);tone(600+top*50,.06,.04,'sine',.1);if(cells.length>3){tone(800,.08,.08,'sine',.1);tone(1000,.1,.14,'sine',.1)}}
     bbSave();draw()}
   cv.addEventListener('pointerdown',e=>{e.preventDefault();cv.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,[e.clientX,e.clientY]);
-    if(ptrs.size==2){const[p1,p2]=[...ptrs.values()];pinch={d:Math.hypot(p1[0]-p2[0],p1[1]-p2[1]),mx:(p1[0]+p2[0])/2,my:(p1[1]+p2[1])/2};pd=null;BB.prev=null;return}
+    if(ptrs.size==2){BB.fp=null;const[p1,p2]=[...ptrs.values()];pinch={d:Math.hypot(p1[0]-p2[0],p1[1]-p2[1]),mx:(p1[0]+p2[0])/2,my:(p1[1]+p2[1])/2};pd=null;BB.prev=null;return}
     if(ptrs.size>2)return;const p=cpos(e);
     const an=BB.animals.find(a=>a.sx&&Math.hypot(a.sx-p[0],a.sy-p[1])<BB.a*.6);if(an){if(an.hop>=1)Object.assign(an,{fx:an.x,fy:an.y,fz:Math.round(an.z),tx:an.x,ty:an.y,tz:Math.round(an.z),hop:0});an.dir*=-1;FX.parts.push({x:an.sx,y:an.sy-BB.a*.4,vx:0,vy:-BB.a*.05,l:1,heart:1,smoke:1,s:BB.a*.8});tone(700+Math.random()*300,.1,0,'sine',.15);pd=null;return}
     const h=hit(...p);if(BB.goal){pd={chal:h,p0:p};return}
-    pd={p0:p,mv:0};if(h&&!h.ground&&!h.ghost){const[ta,tb]=unrot(h.rx,h.ry);if(get(ta,tb,h.z)==20&&(BB.tool=='build'||BB.tool=='break')){pd.tnt=[ta,tb,h.z]}}
+    pd={p0:p,mv:0,t:performance.now()};BB.fp=p;if(h&&!h.ground&&!h.ghost){const[ta,tb]=unrot(h.rx,h.ry);if(get(ta,tb,h.z)==20&&(BB.tool=='build'||BB.tool=='break')){pd.tnt=[ta,tb,h.z]}}
     if(BB.tool=='break'){if(h&&!h.ground&&!h.ghost){const[a,b]=unrot(h.rx,h.ry);pd.t0={a,b,z:h.z}}}else pd.t0=tgt(h);
     if(!pd.t0&&h&&h.ground&&BB.tool!='break'){const[a,b]=unrot(h.rx,h.ry);pd.t0={a,b,z:0}}
     BB.prev=pd.t0?cellsFor():null});
@@ -1348,22 +1352,22 @@ function blockBuilder(ci){const bs=bbS(),CH=ci==null?null:BBCH[ci],wd=CH?{name:C
     if(pinch&&ptrs.size==2){const[p1,p2]=[...ptrs.values()],d=Math.hypot(p1[0]-p2[0],p1[1]-p2[1]),mx=(p1[0]+p2[0])/2,my=(p1[1]+p2[1])/2,r=cv.getBoundingClientRect(),sx=(mx-r.left)*dpr,sy=(my-r.top)*dpr;
       layout();const u=(sx-BB.ox)/BB.a,v=2*(sy-BB.oy)/BB.a;BB.zoom=Math.max(.8,Math.min(3.2,BB.zoom*d/pinch.d));layout();const nx=BB.ox+u*BB.a,ny=BB.oy+v*BB.a/2;
       BB.px+=(sx-nx)/dpr+(mx-pinch.mx);BB.py+=(sy-ny)/dpr+(my-pinch.my);pinch.d=d;pinch.mx=mx;pinch.my=my;clampPan();draw();return}
-    if(!pd||pd.chal!==undefined)return;const p=cpos(e);if(Math.hypot(p[0]-pd.p0[0],p[1]-pd.p0[1])>8*dpr)pd.mv=1;
+    if(!pd||pd.chal!==undefined)return;const p=cpos(e);BB.fp=p;if(Math.hypot(p[0]-pd.p0[0],p[1]-pd.p0[1])>8*dpr)pd.mv=1;
     if(BB.tool=='build'||BB.tool=='stamp'){const t=tgt(hit(...p));if(t)pd.t0=t}else if(pd.t0)pd.t1=plane(p[0],p[1],pd.t0.z);
     BB.prev=pd.t0?cellsFor():null;FX.dirty=1});
-  const up=e=>{ptrs.delete(e.pointerId);if(pinch){if(ptrs.size<2)pinch=null;pd=null;BB.prev=null;return}if(!pd)return;const P=pd;pd=null;
+  const up=e=>{ptrs.delete(e.pointerId);BB.fp=null;if(pinch){if(ptrs.size<2)pinch=null;pd=null;BB.prev=null;return}if(!pd)return;const P=pd;pd=null;
     if(P.chal!==undefined){act(P.chal);return}
     if(P.tnt&&!P.mv){BB.prev=null;light(...P.tnt,1.6);if(S.voice&&Math.random()<.4)say('Uh oh! Run!');return}
     const cells=P.t0?cellsFor.call(null,(pd=P,0)):[];pd=null;BB.prev=null;
     if(!cells.length){if(P.t0===undefined||!P.t0){SFX.wrong()}FX.dirty=1;return}
     const B=BLOCKS[BB.sel];if(BB.tool=='build'&&B.deco){const[a,b,z]=cells[0];if(z>0&&!opaque(get(a,b,z-1))&&get(a,b,z-1)!=10){SFX.wrong();fb('Put it on top of a block!','warn');return}}
     commit(cells)};
-  cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',e=>{ptrs.delete(e.pointerId);pd=null;pinch=null;BB.prev=null;FX.dirty=1});
+  cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',e=>{ptrs.delete(e.pointerId);BB.fp=null;pd=null;pinch=null;BB.prev=null;FX.dirty=1});
   $$('[data-b]').forEach(b=>b.onclick=()=>{const i=+b.dataset.b,B=BLOCKS[i];if(B.need&&S.stars<B.need){SFX.wrong();anim(b,'sad');fb(`Earn ${B.need} ⭐ to unlock ${B.n}!`,'warn long',2500);return}
     BB.sel=i;$$('[data-b]').forEach(q=>q.classList.toggle('on',q==b));if(BB.tool=='break'||BB.tool=='stamp')setTool('build');SFX.pop(2)});
   const setTool=t=>{BB.tool=t;$$('[data-tool]').forEach(q=>q.classList.toggle('on',q.dataset.tool==t));const st=$('#bbst');if(st){st.style.display=t=='stamp'?'':'none';$('#bbpal').style.display=t=='stamp'?'none':''}};
   $$('[data-stamp]').forEach(b=>b.onclick=()=>{BB.stamp=+b.dataset.stamp;$$('[data-stamp]').forEach(q=>q.classList.toggle('on',q==b));SFX.pop(2)});
-  const TIPS={build:'Tap to place a block. Hold and slide to aim.',line:'Drag to draw a line of blocks',wall:'Drag to build a wall 3 blocks tall',floor:'Drag to fill a floor',stamp:'Pick a stamp below, then tap to place it',break:'Tap a block to break it, or drag to clear an area'};
+  const TIPS={build:'Press and slide: the bubble shows exactly where the block goes. Lift to place.',line:'Drag to draw a line of blocks',wall:'Drag to build a wall 3 blocks tall',floor:'Drag to fill a floor',stamp:'Pick a stamp below, then tap to place it',break:'Tap a block to break it, or drag to clear an area'};
   const tip=t=>{let el=$('#bbtip');if(!el){el=document.createElement('div');el.id='bbtip';el.className='bbtip';cv.parentNode.appendChild(el)}el.textContent=t;el.classList.add('on');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('on'),2200)};
   $$('[data-tool]').forEach(b=>b.onclick=()=>{setTool(b.dataset.tool);SFX.pop(1);if(!BB.goal)tip(TIPS[b.dataset.tool])});
   $('#bbundo').onclick=()=>{if(BB.undo.length){BB.w=BB.undo.pop();bbSave();draw();SFX.del()}};
@@ -1374,7 +1378,7 @@ function blockBuilder(ci){const bs=bbS(),CH=ci==null?null:BBCH[ci],wd=CH?{name:C
   if(BB.goal)bbProg();
   BB.api={act,hit,get faces(){return faces}};
   $(`[data-b="${BB.sel}"]`).classList.add('on');
-  if(!CH&&cv.parentNode.clientHeight>cv.parentNode.clientWidth*1.1)BB.zoom=1.35;size();BB.size=size;requestAnimationFrame(frame);if(!CH){spawn();spawn()}if(!window._bbrs){window._bbrs=1;let rs;addEventListener('resize',()=>{clearTimeout(rs);rs=setTimeout(()=>{if($('#bbc')&&BB&&BB.size)BB.size()},120)})}
+  if(!CH)BB.zoom=cv.parentNode.clientHeight>cv.parentNode.clientWidth*1.1?1.7:1.6;size();clampPan();draw();BB.size=size;requestAnimationFrame(frame);if(!CH){spawn();spawn()}if(!window._bbrs){window._bbrs=1;let rs;addEventListener('resize',()=>{clearTimeout(rs);rs=setTimeout(()=>{if($('#bbc')&&BB&&BB.size)BB.size()},120)})}
   gtStart('#gtm',()=>{bbSave();timeUpOverlay()});if(S.voice)setTimeout(()=>say(CH?`Build the ${CH[0]}! Fill in the see-through blocks.`:'Build anything! Tap TNT to blow it up!'),300)}
 function bbFlat(){const w=new Uint8Array(BW*BD*BH);for(let x=0;x<BW;x++)for(let y=0;y<BD;y++)w[bbI(x,y,0)]=1;return w}
 function bbWin(){if(!BB||BB.ch==null||!$('#bbc'))return;const ci=BB.ch,arr=bbChS(),st=BB.miss<=1?3:BB.miss<=4?2:1,old=arr[ci]||0;arr[ci]=Math.max(old,st);const coins=Math.max(0,st-old)*3+1;S.coins+=coins;save();
