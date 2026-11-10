@@ -149,3 +149,27 @@ function revSlot(){
   g.last=q.label;
   return q;
 }
+
+// ---- P5-03 Daily Review ----
+// Home card "Today's review: N due" and the round behind it. The round asks the due items (most urgent first, up to 10) and
+// nothing else, so it can be shorter than 10; with nothing due it is never started empty (Mixed Practice runs instead).
+const REVIEW_N=10;
+function reviewQs(){
+  return dueItems(REVIEW_N).map(revQ).filter(Boolean);
+}
+function startReview(){
+  const qs=reviewQs();
+  if(!qs.length)return startMix();
+  G=newG({mix:true,daily:true,pool:qs,n:qs.length,sk:'mix'});
+  next();
+}
+function revCard(){
+  const n=dueItems().length;
+  if(!n)return`<div class="rv-card rv-done" id="revcard">${ico('check',28)}<div class="rv-tx"><b>Today's review</b><span>All caught up! Nothing to review today.</span></div></div>`;
+  return`<div class="rv-card" id="revcard">${ico('replay',28)}<div class="rv-tx"><b>Today's review</b><span><span id="revn">${n}</span> due</span></div>
+   <button class="btn rv-go" id="rev">Start</button></div>`;
+}
+function revCardBind(){
+  const b=$('#rev');
+  if(b)b.onclick=()=>{SFX.whoosh();startReview()};
+}

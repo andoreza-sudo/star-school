@@ -643,7 +643,7 @@ async function main() {
     }
 
     // P5-02 spaced review: the tricky fixture (a v53 save whose 21 tricky misses are whole stored questions) is migrated on load
-    //     (no question html left, stars and coins kept); home still offers Tricky Mix (10); a stop round asks due items at
+    //     (no question html left, stars and coins kept); home still offers Mixed Practice; a stop round asks due items at
     //     questions 2 and 4 with the "Remember this one?" tag and a right answer moves them to box 1, due tomorrow; Tricky Mix
     //     plays 7 rebuilt items and books every one as fixed
     {
@@ -654,7 +654,7 @@ async function main() {
         return { v: S.v, items: REV.get().length, due: dueItems().length, stars: S.stars, coins: S.coins, html: /class=|"html"/.test(raw),
           rev: JSON.stringify(S.rev).length, mix: document.querySelector('#mix').textContent.trim() };
       });
-      if (r0.v !== 6 || r0.items !== 21 || r0.due !== 21 || r0.stars !== 85 || r0.coins !== 64 || r0.html || !/Tricky Mix \(10\)/.test(r0.mix))
+      if (r0.v !== 6 || r0.items !== 21 || r0.due !== 21 || r0.stars !== 85 || r0.coins !== 64 || r0.html || !/Mixed Practice/.test(r0.mix))
         fail('tricky fixture after migration: ' + JSON.stringify(r0));
       else step(`tricky fixture migrated: ${r0.items} review items (${r0.rev} bytes), no html in the save, home shows "${r0.mix}"`);
       // a math stop round: log every question as it is drawn (G.q.rvk = the review item it came from)
@@ -687,6 +687,43 @@ async function main() {
       const r2 = await rp.evaluate(() => ({ fixed: G.fixed || 0, due: dueItems().length, box1: REV.get().filter(x => x.box == 1).length }));
       if (rm !== 7 || r2.fixed !== 7 || r2.due !== r1.due - 7 || r2.box1 !== r1.moved.length + 7) fail('tricky mix: ' + JSON.stringify({ rm, ...r2 }));
       else step(`Tricky Mix: ${rm} rebuilt review items, ${r2.fixed} fixed, ${r2.due} still due today`);
+      await rp.evaluate(() => { G.dead = true; home(); });
+      network.push(...ra.network);
+      for (const e of ra.errors) fail(e);
+      await ra.ctx.close();
+    }
+
+    // P5-03 Daily Review at 380x780: the tricky fixture (21 due) shows "Today's review: 21 due" with a Start button of 48 px or more and
+    //     nothing wider than the screen; Start plays a 10-question round of due items only (all rebuilt, all booked as fixed); home then says
+    //     11 due; with nothing due the card is a kind "All caught up" with no button, and startReview() still plays a normal round
+    {
+      const ra = await openApp(browser, { fixture: 'tricky', width: 380, height: 780 });
+      const rp = ra.page;
+      await rp.waitForSelector('#rev');
+      const h0 = await rp.evaluate(() => ({ btn: document.querySelector('#rev').offsetHeight, n: document.querySelector('#revn').textContent,
+        over: document.querySelector('.scroll').scrollWidth - document.querySelector('.scroll').clientWidth, card: document.querySelector('#revcard').offsetHeight }));
+      if (h0.btn < 48 || h0.n !== '21' || h0.over > 0 || h0.card < 48) fail('daily review card: ' + JSON.stringify(h0));
+      else step(`daily review card: ${h0.n} due, Start ${h0.btn} px high, nothing wider than the screen`);
+      await rp.click('#rev');
+      await rp.waitForSelector('#prompt');
+      const g0 = await rp.evaluate(() => ({ n: G.n, daily: !!G.daily, rv: G.pool.filter(q => q.rvk).length + (G.q.rvk ? 1 : 0) }));
+      if (g0.n !== 10 || !g0.daily || g0.rv !== 10) fail('daily review round: ' + JSON.stringify(g0));
+      await playRound(rp, 'P5-03 daily review');
+      const g1 = await rp.evaluate(() => ({ fixed: G.fixed || 0, due: dueItems().length }));
+      if (g1.fixed !== 10 || g1.due !== 11) fail('daily review result: ' + JSON.stringify(g1));
+      else step(`daily review: 10 due items asked first, ${g1.fixed} fixed, ${g1.due} still due`);
+      await rp.evaluate(() => { G.dead = true; home(); });
+      await rp.waitForSelector('#rev');
+      const h1 = await rp.evaluate(() => document.querySelector('#revn').textContent);
+      if (h1 !== '11') fail('home after the daily review says ' + h1 + ' due');
+      await rp.evaluate(() => { S.rev = []; save(); home(); });
+      await rp.waitForSelector('#revcard');
+      const h2 = await rp.evaluate(() => ({ btn: !!document.querySelector('#rev'), text: document.querySelector('#revcard').textContent }));
+      if (h2.btn || !/All caught up/.test(h2.text)) fail('daily review card with nothing due: ' + JSON.stringify(h2));
+      else step('daily review: nothing due shows a kind "All caught up" card with no button');
+      await rp.evaluate(() => startReview());
+      await rp.waitForSelector('#prompt');
+      await playRound(rp, 'P5-03 review with nothing due');
       await rp.evaluate(() => { G.dead = true; home(); });
       network.push(...ra.network);
       for (const e of ra.errors) fail(e);
