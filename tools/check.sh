@@ -9,16 +9,12 @@ if [ ! -d tools/node_modules/playwright-core ]; then
 fi
 echo "== build"
 python3 tools/build.py > /dev/null
-echo "== test.js"
-node tools/test.js | tail -n +1 | head -n 1
-node tools/test.js > /dev/null
+echo "== test.js (named checks; includes the size budget, which lives in tools/test.js)"
+node tools/test.js
 echo "== smoke.js"
 node tools/smoke.js
 echo "== sizes (bytes)"
 for f in index.html sw.js manifest.json icon-192.png icon-512.png; do
   [ -f "$f" ] && printf '%10d  %s\n' "$(wc -c < "$f")" "$f"
 done
-size=$(wc -c < index.html)
-if [ "$size" -gt 1500000 ]; then echo "FAIL: index.html over 1.5 MB"; exit 1; fi
-if [ "$size" -gt 1200000 ]; then echo "WARN: index.html over 1.2 MB"; fi
 echo "== check OK"

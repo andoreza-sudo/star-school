@@ -1,28 +1,137 @@
+// Star School test suite. Run: node tools/test.js   (exit 0 = all checks pass, exit 1 = at least one failed)
+// Each check is named and returns a list of problems. Known real content problems are listed in KNOWN below (each one is
+// also recorded in docs/PROGRESS.md "Ideas and issues"); a problem that matches a KNOWN entry is reported as "known", not as a failure.
 const fs=require('fs');
-const path=require('path'),SRC=path.join(__dirname,'..','src');
+const path=require('path'),ROOT=path.join(__dirname,'..'),SRC=path.join(ROOT,'src');
 const cat=d=>fs.readdirSync(path.join(SRC,d)).filter(n=>n.endsWith('.js')).sort().map(n=>fs.readFileSync(path.join(SRC,d,n),'utf8')).join('');
 const js=cat('js')+cat('data'); // all code and data, without boot.js
+
+// ---- Budgets and known exceptions: the one place to change them ----
+const SIZE_WARN=1200000,SIZE_FAIL=1500000; // bytes of the built index.html (ROADMAP risk R1)
+const KNOWN={ // check name -> exact problem strings that are known content issues, not test failures
+  // Spanish level 2 ("How do you say it in Spanish?") shows a picture and asks for the Spanish word, so it has no `say` on purpose:
+  // reading the answer aloud would give it away (genEs in src/js/34-gen-es.js). Logged in PROGRESS.md; a later chunk may add a
+  // `say` such as "How do you say it in Spanish?", or exempt silent-on-purpose questions with a flag.
+  'generators: say present for every question':[
+    'es_greet L2: no say (choice)',
+    'es_color L2: no say (choice)',
+    'es_num L2: no say (choice)',
+    'es_teen L2: no say (choice)',
+    'es_animal L2: no say (choice)',
+    'es_food L2: no say (choice)',
+    'es_body L2: no say (choice)',
+    'es_family L2: no say (choice)',
+    'es_mix L2: no say (choice)'
+  ],
+};
+
+// ---- fake browser so the source can be evaluated in Node ----
 global.localStorage={getItem:()=>null,setItem:()=>{}};
 global.document={querySelector:()=>null,querySelectorAll:()=>[],addEventListener:()=>{}};
 global.navigator={};global.addEventListener=()=>{};global.location={protocol:'file:'};
 global.speechSynthesis={getVoices:()=>[]};
-eval(js+`
-S.name='Ava';S.buddy='Ben';G={built:[]};global.setTimeout=()=>{};
-let n=0,errs=[];
-for(const id in SK){for(let lv=1;lv<=SK[id].max;lv++)for(let i=0;i<3000;i++){const q=SK[id].gen(lv);n++;
- if(!q.label||q.ans===undefined)errs.push(id+' missing');
- if(q.kind=='num'){const a=+q.ans;if(!(a>=0)||String(a)!==q.ans)errs.push(id+lv+' bad ans '+q.ans+' '+q.label)}
- if(q.kind=='choice'){const vs=q.choices.map(c=>c.v);if(!vs.includes(q.ans))errs.push(id+' ans not in choices');if(new Set(vs).size!==vs.length)errs.push(id+' dup choices '+vs);if(vs.length<2)errs.push(id+' few choices');vs.forEach(v=>{if(BAD.test(v))errs.push('BAD '+v)})}
- if(q.kind=='build'&&q.tiles.length<q.word.length)errs.push('tiles');
- hintHTML(q);
-}}
-// check story subtraction non-negative & level ranges
-console.log('generated',n,'errors',errs.length,[...new Set(errs)].slice(0,10));
-for(const id in SK)console.log(id,[1,2,3].filter(l=>l<=SK[id].max).map(l=>SK[id].gen(l).label).join(' | '));
-`);
+global.setTimeout=()=>{};
 
-// ---- P0-03: save schema version and migrations ----
-{
+const results=[]; // {name, problems, known, note}
+const run=(name,fn)=>{
+  let problems=[],note='';
+  try{const r=fn();problems=r.problems||[];note=r.note||''}catch(e){problems=['check crashed: '+(e&&e.stack||e)]}
+  const kn=new Set(KNOWN[name]||[]),known=problems.filter(p=>kn.has(p));
+  results.push({name,problems:problems.filter(p=>!kn.has(p)),known,note,unusedKnown:[...kn].filter(k=>!problems.includes(k))});
+};
+const uniq=a=>[...new Set(a)];
+
+// ---- 1-5: generators (fuzzed) ----
+let GEN=null;
+eval(js+`
+S.name='Ava';S.buddy='Ben';G={built:[]};
+GEN={n:0,gen:[],label:[],say:[],html:[],choices:[],skills:SK,paths:PATHS,nodes:NODES};
+const BADHTML=/\\bundefined\\b|\\bNaN\\b|\\[object |\\bnull\\b/;
+for(const id in SK){for(let lv=1;lv<=SK[id].max;lv++)for(let i=0;i<3000;i++){
+ const q=SK[id].gen(lv),w=id+' L'+lv;GEN.n++;
+ if(q.ans===undefined)GEN.gen.push(w+': no ans');
+ if(typeof q.label!=='string'||!q.label.trim())GEN.label.push(w+': empty label');
+ else if(q.label.length>=60)GEN.label.push(w+': label too long ('+q.label.length+')');
+ if(typeof q.say!=='string'||!q.say.trim())GEN.say.push(w+': no say ('+q.kind+')');
+ for(const [f,v] of [['html',q.html],['label',q.label],['say',q.say]])if(typeof v==='string'&&BADHTML.test(v))GEN.html.push(w+': '+f+' has undefined/NaN');
+ if(q.kind=='num'){const a=+q.ans;if(!(a>=0)||String(a)!==q.ans)GEN.gen.push(w+': bad num ans '+q.ans)}
+ else if(q.kind=='choice'){
+  const vs=q.choices.map(c=>c.v);
+  if(!vs.includes(q.ans))GEN.gen.push(w+': ans not in choices');
+  if(new Set(vs).size!==vs.length)GEN.gen.push(w+': duplicate choices');
+  if(vs.length<2||vs.length>4)GEN.choices.push(w+': '+vs.length+' choices');
+  for(const c of q.choices){if(BADHTML.test(c.l+' '+c.v))GEN.html.push(w+': choice has undefined/NaN');if(BAD.test(c.v))GEN.gen.push(w+': BAD word '+c.v)}
+ }
+ else if(q.kind=='build'){if(!q.tiles||q.tiles.length<q.word.length)GEN.gen.push(w+': too few tiles')}
+ else GEN.gen.push(w+': unknown kind '+q.kind);
+ try{hintHTML(q)}catch(e){GEN.gen.push(w+': hintHTML threw '+e.message)}
+}}
+`);
+const gp=a=>({problems:uniq(a),note:GEN.n+' questions'});
+run('generators: answers, choices, BAD filter, hints',()=>gp(GEN.gen));
+run('generators: label present and under 60 chars',()=>gp(GEN.label));
+run('generators: say present for every question',()=>gp(GEN.say));
+run('generators: no undefined/NaN in html, label, say, choices',()=>gp(GEN.html));
+run('generators: 2 to 4 choices',()=>gp(GEN.choices));
+
+// ---- 6-7: map nodes and skill levels ----
+run('nodes: each points at an existing skill and level',()=>{
+  const p=[];
+  for(const path in GEN.nodes)for(const n of GEN.nodes[path]){
+    if(n.sk=='boss')continue;
+    const s=GEN.skills[n.sk];
+    if(!s)p.push(path+': node "'+n.t+'" uses unknown skill '+n.sk);
+    else if(!Number.isInteger(n.lv)||n.lv<1||n.lv>s.max)p.push(path+': node "'+n.t+'" ('+n.sk+') level '+n.lv+' outside 1..'+s.max);
+  }
+  return{problems:p};
+});
+run('skills: every level is reachable from some node',()=>{
+  const used=new Set(),p=[];
+  for(const path in GEN.nodes)for(const n of GEN.nodes[path])used.add(n.sk+':'+n.lv);
+  for(const id in GEN.skills)for(let lv=1;lv<=GEN.skills[id].max;lv++)if(!used.has(id+':'+lv))p.push(id+' level '+lv+' has no map node');
+  return{problems:p};
+});
+
+// ---- 8: emoji allowlist ----
+run('emoji: every pictograph in src/ is in tools/emoji-allow.txt',()=>{
+  const walk=d=>fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>e.isDirectory()?walk(path.join(d,e.name)):[path.join(d,e.name)]);
+  // a pictograph with optional modifiers and ZWJ joins, a flag (two regional indicators), or a keycap (digit + U+20E3)
+  const RE=/(?:\p{Extended_Pictographic}|\p{Regional_Indicator}|[0-9#*]️?⃣)(?:️|\p{Emoji_Modifier}|⃣|\p{Regional_Indicator}|[\u{E0020}-\u{E007F}]|‍\p{Extended_Pictographic})*/gu;
+  const norm=s=>s.replace(/️/g,''); // matching ignores the variation selector
+  // Unicode 12 or newer (2019+): may be an empty box on old Android. Every one must be marked "# risky" in the allowlist.
+  const NEW=[[0x1FA70,0x1FAFF],[0x1F7E0,0x1F7EB],[0x1F6D5,0x1F6D7],[0x1F6DC,0x1F6DF],[0x1F6FA,0x1F6FC],[0x1F90C,0x1F90F],[0x1F93F,0x1F93F],
+    [0x1F971,0x1F971],[0x1F97B,0x1F97B],[0x1F9A5,0x1F9AA],[0x1F9AE,0x1F9AF],[0x1F9BA,0x1F9BF],[0x1F9C3,0x1F9CF],[0x26A7,0x26A7]];
+  const isNew=s=>[...s].some(c=>NEW.some(([a,b])=>c.codePointAt(0)>=a&&c.codePointAt(0)<=b));
+  const allow=new Map(); // sequence -> risky?
+  for(const line of fs.readFileSync(path.join(__dirname,'emoji-allow.txt'),'utf8').split('\n')){
+    if(!line.trim()||line.startsWith('#'))continue;
+    const [seq,...cm]=line.split('#');
+    allow.set(norm(seq.trim()),/^\s*risky\b/.test(cm.join('#')));
+  }
+  const p=[],seen=new Set(),show=s=>s+' (U+'+[...s].map(c=>c.codePointAt(0).toString(16).toUpperCase()).join(' U+')+')';
+  for(const f of walk(SRC)){
+    const t=fs.readFileSync(f,'utf8');
+    for(const x of t.match(RE)||[]){
+      const k=norm(x);seen.add(k);
+      if(!allow.has(k))p.push('not in emoji-allow.txt: '+show(k)+' in '+path.relative(ROOT,f));
+    }
+  }
+  for(const [k,risky] of allow)if(isNew(k)&&!risky)p.push('newer than Unicode 11 but not marked risky: '+show(k));
+  const risky=[...allow].filter(([,r])=>r).length,stale=[...allow.keys()].filter(k=>!seen.has(k)).length;
+  return{problems:uniq(p),note:allow.size+' allowed ('+risky+' risky)'+(stale?', '+stale+' unused':'')};
+});
+
+// ---- 9: size budget ----
+run('size: index.html under budget',()=>{
+  const f=path.join(ROOT,'index.html');
+  if(!fs.existsSync(f))return{problems:['index.html not built; run python3 tools/build.py first']};
+  const n=fs.statSync(f).size,kb=Math.round(n/1000)+' KB';
+  if(n>SIZE_FAIL)return{problems:['index.html is '+n+' bytes, over the '+SIZE_FAIL+' limit']};
+  return{problems:[],note:kb+(n>SIZE_WARN?'  WARN: over '+SIZE_WARN+' bytes':'')};
+});
+
+// ---- 10: save schema version and migrations (P0-03) ----
+run('migrations: fixtures, backups, corrupt and newer saves',()=>{
   const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
   let merrs=[];
   const bad=m=>merrs.push(m);
@@ -73,6 +182,17 @@ for(const id in SK)console.log(id,[1,2,3].filter(l=>l<=SK[id].max).map(l=>SK[id]
   ls.setItem=(k,v)=>{store[k]=String(v)};
   save();if(SAVE_FAILED)bad('save failure flag stuck');
   `);
-  console.log('migration tests: errors',merrs.length,merrs.slice(0,10));
-  if(merrs.length)process.exitCode=1;
+  return{problems:merrs};
+});
+
+// ---- report ----
+let failed=0;
+for(const r of results){
+  const ok=!r.problems.length;if(!ok)failed++;
+  console.log((ok?'ok    ':'FAIL  ')+r.name+(r.note?'  ['+r.note+']':'')+(r.known.length?'  ('+r.known.length+' known exception'+(r.known.length>1?'s':'')+')':''));
+  for(const p of r.problems.slice(0,10))console.log('        - '+p);
+  if(r.problems.length>10)console.log('        ... and '+(r.problems.length-10)+' more');
+  for(const k of r.unusedKnown)console.log('        note: KNOWN exception no longer needed: '+k);
 }
+console.log(failed?failed+' of '+results.length+' checks FAILED':'all '+results.length+' checks passed');
+process.exitCode=failed?1:0;
