@@ -165,4 +165,12 @@ function growShow(before){const o=document.createElement('div');o.className='ovl
     o.innerHTML=`<div class="grown ${petAura()}">${petHTML()}</div><h1>${stage()>=4?`${esc(petN())} is a SUPER pet!`:hatch?`Meet ${esc(petN())}!`:`${esc(petN())} grew up!`}</h1><button class="btn big" id="yay">Yay! 🎉</button>`;
     if(S.voice)say(hatch?`Your egg hatched! Meet ${petN()}!`:`Wow! ${petN()} grew!`);
     const y=o.querySelector('#yay');if(y)y.onclick=()=>{o.remove()}},1800)}
-
+/* Error guard hook (called from logErr in 00-core.js): if a round is on screen, show a friendly way home instead of a frozen screen. */
+function roundOops(){
+  if(!G||G.dead||!$('#prompt')||$('#oops'))return;
+  G.dead=true;
+  const o=document.createElement('div');o.className='ovl';
+  o.innerHTML='<h1>Oops!</h1><button class="btn big" id="oops">Oops, let\'s go home</button>';
+  document.body.appendChild(o);
+  $('#oops').onclick=()=>{o.remove();home(true)};
+}

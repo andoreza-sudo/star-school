@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** P5-01. Then wave 2: P0-05, P5-04, P1-01, P1-02, P4-01, P4-02.
+**Next up:** P5-01, P4-01, P1-01 (in progress on parallel branches), then P5-04, P1-02, P4-02.
 
-**Current version:** v34
+**Current version:** v35
 
 ## Chunk status
 
@@ -14,6 +14,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P0-02 v32
 - P0-03 v33
 - P0-04 v34
+- P0-05 v35
 
 ## Handoff notes
 
@@ -30,6 +31,7 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P0-02) CONTRIBUTING 3.1/3.2 still describe the pre-split layout as "today"; a later docs pass could update the 3.1 text. `src/data/` holds only a `.gitkeep` until the first data file exists.
 - (P0-03) ROADMAP section 9 says a missing `S.v` means 2, but both folded migrations must still run on v30 saves (single-map saves have no `S.maps`; index-keyed maps have no `S.mapv`). Code treats a missing `S.v` as 1 and runs migrations 1 and 2, each guarded by its own marker; latest is 3. A later docs pass could align section 9.
 - (P0-03) `migrate()` is called from `src/js/42-paths.js` (not 00-core.js) because the map migrations need `NODES`, which only exists there; no file before it reads `S` at load time.
+- (P0-05) A save corrupt message is now shown in the App log (resolves the P0-03 note below). Round recovery only triggers when `G` is live and `#prompt` is on screen; errors in games (Hill Climb etc.) are logged but show no overlay.
 - (P0-03) A corrupt save is kept in `starschool-v2-corrupt` and `SAVE_CORRUPT` is set, but nothing shows it yet; P0-05's App log should display it. `SAVE_FAILED` is shown in Grown-ups.
 - (P0-03) `node tools/test.js` still always exits 0 except for the new migration block, which sets exit code 1 on failure; P0-04 should fold it into named checks.
 - (P0-03) A save file that is literally `{}` (not the same as no save) would still crash `PETS[S.pet]`; not handled (pre-existing).
@@ -39,6 +41,16 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P0-04) `node tools/test.js` needs a built `index.html` for the size check (it fails with a message if missing); `check.sh` builds first. The size budget (warn 1.2 MB, fail 1.5 MB) lives only in `tools/test.js`.
 
 ## Log
+
+### P0-05: Error guard and on-device debug log (v35), 2026-11-10, Claude
+- `src/js/00-core.js`: `logErr(msg)` plus `error` and `unhandledrejection` listeners push `{t,msg,ver}` to `S.err` (ring of 20, message cut at 200 chars, default `[]` when absent; no schema bump needed). Nothing leaves the device.
+- `src/js/50-round.js`: `roundOops()` (called by `logErr`): if a round is live, marks it dead and shows an overlay with a big "Oops, let's go home" button that goes to `home(true)`.
+- `src/js/80-grown.js`: collapsed "App log" card: version, save size in KB, storage status (`SAVE_FAILED`, and `SAVE_CORRUPT` now shown), last errors newest first, all escaped.
+- `tools/test.js`: block `// ---- P0-05 error guard ----` (ring cap, order, shape, truncation, default). `tools/smoke.js`: step 5 throws mid-round, checks the button, recovery to home, `S.err`, App log text; that one injected page error is removed from the error list, any other console error still fails the run.
+- Tests: test.js ok / smoke.js ok / index.html 378,320 bytes
+- Screenshots checked: grown with App log open (600x960), oops overlay mid-round (600x960)
+- Checklist 7.1: all ticked
+- Left over / notes: built on a parallel branch, merged after P0-04 and renumbered v36 -> v35.
 
 ### P0-04: Generator test upgrade, emoji allowlist, size budget (v34), 2026-11-10, Claude
 - `tools/test.js` restructured into 10 named checks, each returning its problems; the run prints ok/FAIL per check and exits 1 if any fails. Checks: generators (answers, choices, BAD filter, hints), label present and under 60 chars, `say` present, no undefined/NaN in html/label/say/choices, 2 to 4 choices, nodes point at an existing skill and level, every skill level reachable from a node, emoji allowlist, size budget, migrations (the P0-03 block, unchanged, now a named check). Fuzz is still 3,000 questions per skill level (207,000).

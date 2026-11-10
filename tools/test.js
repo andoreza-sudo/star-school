@@ -185,6 +185,21 @@ run('migrations: fixtures, backups, corrupt and newer saves',()=>{
   return{problems:merrs};
 });
 
+run('error guard: S.err ring, truncation, default',()=>{
+  const gerrs=[];
+  const bad=m=>gerrs.push(m);
+  eval(js+`
+  S.err=undefined;
+  for(let i=0;i<25;i++)logErr('boom '+i);
+  if(!Array.isArray(S.err)||S.err.length!==20)bad('S.err ring not capped at 20: '+(S.err&&S.err.length));
+  else if(S.err[19].msg!=='boom 24'||S.err[0].msg!=='boom 5')bad('S.err ring order wrong');
+  if(!S.err[0].t||!('ver' in S.err[0]))bad('S.err entry shape');
+  logErr('x'.repeat(500));if(S.err[19].msg.length!==200)bad('message not truncated');
+  S.err=undefined;logErr(undefined);if(S.err.length!==1)bad('default S.err');
+  `);
+  return{problems:gerrs};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){

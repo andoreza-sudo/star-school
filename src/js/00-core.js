@@ -49,6 +49,18 @@ function migrate(){
   save();
 }
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S));SAVE_FAILED=false}catch(e){SAVE_FAILED=true}}
+/* ---------- error guard (P0-05): last 20 errors kept in S.err, on this device only; nothing is sent anywhere ---------- */
+function logErr(msg){
+  try{
+    const a=Array.isArray(S.err)?S.err:(S.err=[]);
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'__VER__'});
+    if(a.length>20)a.splice(0,a.length-20);
+    save();
+  }catch(e){}
+  try{if(typeof roundOops=='function')roundOops()}catch(e){} // friendly recovery if a round is on screen (50-round.js)
+}
+addEventListener('error',e=>logErr(e.message||(e.error&&e.error.message)||'error'));
+addEventListener('unhandledrejection',e=>{const r=e.reason;logErr('promise: '+((r&&r.message)||r))});
 function P(sk){return S.prog[sk]||(S.prog[sk]={lv:1,r:0,c:0,t:0,miss:{}})}
 const today=()=>{const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()};
 function day(){if(S.day.d!==today())S.day={d:today(),r:0,done:false};return S.day}
