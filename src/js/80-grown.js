@@ -13,6 +13,7 @@ function grown(){let armed=false;
    <div class="row" style="display:block;margin-top:12px"><b>Grade</b> <span class="small">Picks where the maps start. Nothing is ever locked or removed when you change it.</span>${gradePickHTML(gradeOf())}</div>
    ${placeGrownHTML()}
    <label class="tg"><input type="checkbox" id="ula" ${S.unlockAll?'checked':''}> Unlock every stop on the map (let them jump ahead)</label></div>
+  ${reportGrownHTML()}
   <div class="card"><h2 style="margin:0 0 6px">🎙️ Your voice</h2><div class="small" style="margin-bottom:8px">Tap ⏺ and say the line (up to 4 seconds). Record as many as you like. The app shuffles them so the same one doesn't play twice in a row. ${inFrame?'<b>Recording only works on the tablet app, not in this preview.</b>':!canRec?'<b>Recording isn\'t available in this browser. Use Chrome or the installed app.</b>':''}</div>
    ${CLIPKINDS.map(([k,l,tip,lines])=>{const cs=CLIPS.filter(c=>c.kind==k),extra=cs.filter(c=>c.line==null||c.line>=lines.length);
      const row=(txt,c,line)=>`<div class="vline"><span class="vtxt">${c?'✅':'⚪'} ${txt}</span>${c?`<button class="btn xs" data-play="${c.id}">▶</button><button class="btn xs danger" data-del="${c.id}">🗑</button>`:`<button class="btn xs rec" data-rec="${k}|${line}">⏺ Record</button>`}</div>`;
@@ -40,6 +41,7 @@ function grown(){let armed=false;
   $('#bd').oninput=e=>{S.buddy=e.target.value.trim();save()};
   gradePickBind(g=>{setGrade(g)});
   placeGrownBind();
+  reportGrownBind();
   $('#ula').onchange=e=>{S.unlockAll=e.target.checked;save()};
   $$('[data-per]').forEach(b=>b.onclick=()=>{ptCfg().per=+b.dataset.per;save();grown()});
   $$('[data-max]').forEach(b=>b.onclick=()=>{ptCfg().max=+b.dataset.max;save();grown()});

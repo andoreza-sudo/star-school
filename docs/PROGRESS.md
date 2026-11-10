@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** wave 4: P5-02 (Opus) and P5-06 next, then P5-03. Wave 5 includes P4-13; all content pictures use `picFor`.
+**Next up:** wave 4: P5-02 (Opus) next (P5-06 done), then P5-03. Wave 5 includes P4-13; all content pictures use `picFor`.
 
-**Current version:** v53
+**Current version:** v54
 
 ## Chunk status
 
@@ -33,6 +33,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P5-05 v51
 - P1-07 v52
 - P1-08 v53
+- P5-06 v54
 
 ## Handoff notes
 
@@ -50,6 +51,10 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P1-07) Bank-based skills choose items by least-recently-shown once a round has been played (BANKLIVE), so in the app a placement question from a bank skill is not exactly the seed's question; the stop list and the result rules are still deterministic. Only tests rely on exact questions.
 - (P1-07) smoke.js answers placement questions with the round helper `answer()`, which reads `G`, by pointing `G` at the quiz state `PL` for the tap. A later cleanup could pass the state into `answer()`.
 - (P1-07) The home "Find my level" card hides for the session with "Not now" (not saved), and disappears for good once a math or reading stop is passed or a placement is done.
+- (P5-06) The report card reads stored misses from `S.prog[sk].miss[label].q.label` for "Examples they missed"; if P5-02 changes that shape, `REP.data()` in 82-report.js (m.needs) is the one place to follow it. Examples are matched to the stop's level first, then any miss of the skill.
+- (P5-06) "Where they are working" is the highest world grade with any progress or a placement skip (graded paths only; Spanish shows stops passed). It is not read from `S.place`. A finished path reads "one grade below the grade chosen" when the content ends below the chosen grade; fine today, revisit when worlds above 2nd exist.
+- (P5-06) No `chart` icon exists yet (P4-03), so the Grown-ups entry uses `target`. Brain Teasers and Discover subjects fall in the "Other" subject label until their `area` names are added to `REP.AREA`. A skill missing from `REP.STRANDS` lands in "Other skills" (test.js fails when a skill has no strand).
+- (P5-06) The map mastery badge from the P1-08 note is still not drawn.
 - (P1-08) The roadmap mentions a small mastery badge on the map (`masteryState(nid)`); not drawn because `46-home.js` is not in the chunk's files. P4-09 (map redesign) or P5-06 can add it with one call per stop (`mastStops(p)` gives every stop's state in map order).
 - (P1-08) `ptCalc` (58-playtime.js) is unchanged: "mastered stops earn less game time on replay" already holds through 3 stars (`prev>=3`). P5-09 could also count `masteryState(nid)=='mastered'`. Forgiven challenge misses lift only the star rating: the finish screen can read "7 out of 10" with 3 stars, the game-time accuracy and "Perfect score" use the real score, and coins and stars added to the total are the real first-try count.
 - (P1-08) A missed challenge question is stored by `addMiss` under its own (harder) level, so it can come back in Tricky Mix and when the child reaches that stop; P5-02 should decide whether challenge misses become review items.
@@ -125,6 +130,14 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P1-05) Map draw with 16 fake worlds (156 stops) at 6x CPU throttle: median about 29 ms (limit 50), single runs up to about 49 ms. The strip recomputes `worldOpen`/`worldFinished` per chip and `unlocked` scans the world; a memo per draw is the next step if P4-09 adds weight.
 
 ## Log
+
+### P5-06 Grown-ups report card (v54, 2026-11-10, Claude)
+- What changed: new `src/js/82-report.js` (`REP`, `report()`, `reportGrownHTML()`, `reportGrownBind()`) and `src/css/36-report.css` (tokens only, `rp-` classes, print rules). Grown-ups has a "Report card" card with one button; it opens a read-only screen with 7 sections: this week vs last week (minutes, rounds, accuracy, days played, plus a 14-day minutes chart and time by subject), where the child is working per path (8-step grade bar: filled = working level, outlined = chosen grade, with a plain sentence; Spanish shows stops passed), skills by topic (CURRICULUM section 9 strands: stacked bar and counts of mastered / practised / learning / not started), Needs practice (top 5 stops under 70% first-try over 5+ questions, with up to 2 example missed questions), Recently mastered (latest 6, "2 days ago"), Fact Sprint bests, streak. Print button uses the browser print dialog; the print stylesheet drops the buttons and flows all cards on white.
+- Read-only: `REP.data()` puts `S.log` back as it was (ACT.get() would create or replace it) and reads `S.streak` directly (STRK.get() adds defaults). Tested byte for byte on every fixture, with and without the newer fields. Escapes the child's name, stop titles and example questions.
+- Edits to existing files: 80-grown.js gets one template line `${reportGrownHTML()}` (before the "Your voice" card) and one bind line `reportGrownBind();` (after `placeGrownBind();`). tools/build.py VER.
+- Tests: test.js "report card (P5-06)" (empty save, all fixtures plus old-save variants, S unchanged, exact numbers for a seeded two weeks, escaping, damaged S.log/S.mast/S.flu/S.streak, every skill has a strand, entry wiring, print CSS present). smoke.js `// P5-06` (380x780: entry button >= 48 px, 7 sections, no horizontal overflow, S unchanged, Back; a fresh save shows the empty states). shots.js: report-top, report-topics, report-needs, report-fresh, report-maxed.
+- Screenshots looked at: report-top 380 and 600, report-topics 380, report-needs 380, report-fresh 380, report-maxed 1024.
+- Checklist 7.1: [x] only named files changed [x] VER bumped [x] build [x] test.js [x] smoke.js [x] screenshots [x] midway fixture opens (test) [x] size under 1.5 MB [x] no network [x] no new emoji or hex [x] PROGRESS entry [x] one commit (not pushed).
 
 ### P1-08 Mastery tracking and in-round adaptation (v53, 2026-11-10, Claude)
 - What changed: new `src/js/51-mastery.js` (ROADMAP 3.3). Every first try at a question of a map stop (any round) updates `S.mast[nid] = {n, p, ms, d, last, md}`: attempts, first-try accuracy (plain average for 10 tries, then moving average 0.1), running median answer time (ms, capped 60 s), distinct days, last day and mastered day as day numbers (`STRK.idx`). `masteryState(nid)` = new / learning / practised (>= 70% over 10+) / mastered (>= 90% over 20+ on 2+ days). `harder(nd)` / `easier(nd)` = next / previous stop of the same skill in path order. In a normal stop round, after question 5: 5 of 5 right with a median under 12 s (16 s Pre-K, K) makes the rest Challenge questions from `harder()` (bolt "Challenge!" tag, pet line; a wrong first try is forgiven for the star rating); 2 or fewer right turns on support (hint shown before every first try, questions 6, 8, 10 from `easier()`); 3 wrong first tries in a row (any time) give an easier question with the hint shown and the pet saying "Here's a hint!", and after question 5 step the mode down (challenge -> normal, normal -> support). Middling rounds are unchanged. Star thresholds, round length, coins, locks unchanged.

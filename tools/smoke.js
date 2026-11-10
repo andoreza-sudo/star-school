@@ -595,6 +595,53 @@ async function main() {
       await ma.ctx.close();
     }
 
+    // P5-06 report card at 380x780: Grown-ups has a Report card button (48 px or more); it opens a read-only screen with seven sections,
+    // nothing wider than the screen, S unchanged; a brand-new child gets kind empty states; Back returns to Grown-ups
+    {
+      const ra = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
+      const rp = ra.page;
+      await rp.waitForSelector('.game[data-p="math"]');
+      await rp.evaluate(() => {
+        const n = STRK.idx(today()), k = d => STRK.key(n - d);
+        S.log = [{ d: k(0), sec: 600, rounds: 2, q: 20, ok: 18, by: { math: 420, read: 180 } }, { d: k(8), sec: 300, rounds: 1, q: 10, ok: 6, by: { math: 300 } }];
+        S.mast = { add1: { n: 30, p: .95, ms: 5000, d: 3, last: n, md: n - 2 }, sub1: { n: 12, p: .4, ms: 9000, d: 2, last: n, md: -1 } };
+        grown();
+      });
+      const before = await rp.evaluate(() => JSON.stringify(S));
+      const eb = await rp.evaluate(() => { const b = document.querySelector('#rp-open'); return b ? b.offsetHeight : 0; });
+      if (eb < 48) fail('report card button on Grown-ups is ' + eb + ' px high');
+      await rp.click('#rp-open');
+      await rp.waitForSelector('#rp-weeks');
+      const rr = await rp.evaluate(() => {
+        const sc = document.querySelector('.scroll');
+        return { n: document.querySelectorAll('.rp-card').length, over: sc.scrollWidth - sc.clientWidth, S: JSON.stringify(S), text: sc.textContent,
+          btn: Math.min(...[...document.querySelectorAll('.top .btn')].map(b => b.offsetHeight)), svg: document.querySelector('.rp-svg').getBoundingClientRect().width };
+      });
+      if (rr.n !== 7) fail('report card sections: ' + rr.n);
+      else if (rr.over > 0) fail('report card is ' + rr.over + ' px wider than the screen at 380');
+      else if (rr.S !== before) fail('opening the report card changed the saved data');
+      else if (rr.btn < 48) fail('report card top buttons are ' + rr.btn + ' px high');
+      else if (!/Adding to 10/.test(rr.text) || !/Needs practice/.test(rr.text) || /undefined|NaN/.test(rr.text)) fail('report card text: ' + rr.text.slice(0, 200));
+      else step('report card: 7 sections at 380x780, nothing wider than the screen, saved data unchanged');
+      await rp.click('#back');
+      await rp.waitForSelector('#rp-open');
+      step('report card: Back returns to Grown-ups');
+      network.push(...ra.network);
+      for (const e of ra.errors) fail(e);
+      await ra.ctx.close();
+      const rf = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 });
+      const fp = rf.page;
+      await fp.waitForFunction(() => typeof report == 'function');
+      await fp.evaluate(() => { S.name = 'Ava'; report(); });
+      const ft = await fp.evaluate(() => ({ text: document.querySelector('.scroll').textContent, over: document.querySelector('.scroll').scrollWidth - document.querySelector('.scroll').clientWidth }));
+      if (!/No learning time recorded yet/.test(ft.text) || !/This list fills in after a few rounds/.test(ft.text) || /undefined|NaN/.test(ft.text) || ft.over > 0)
+        fail('report card for a new child: ' + ft.text.slice(0, 200));
+      else step('report card: a new child sees kind empty states');
+      network.push(...rf.network);
+      for (const e of rf.errors) fail(e);
+      await rf.ctx.close();
+    }
+
     for (const e of errors) fail(e);
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');
