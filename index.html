@@ -711,7 +711,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S));SAVE_FAILED=fals
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v50'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v51'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -2493,7 +2493,7 @@ function home(first){
   $('#book').onclick=book;$('#shop').onclick=shop;$('#mix').onclick=()=>{SFX.whoosh();startMix()};$('#race').onclick=raceMenu;$('#flu').onclick=()=>{SFX.whoosh();fluMenu()};$('#care').onclick=care;$('#groom').onclick=()=>{SFX.whoosh();gameRoom()};
   if($('#inst'))$('#inst').onclick=async()=>{try{installEvt.prompt();await installEvt.userChoice}catch(e){}installEvt=null;home()};
   let t;const g=$('#gear');g.onpointerdown=()=>{t=setTimeout(grown,1200)};g.onpointerup=g.onpointerleave=()=>clearTimeout(t);g.onclick=()=>fb('Grown-ups: hold it','warn');
-  {const sc=$('.scroll');if(sc)sc.insertAdjacentHTML('beforeend','<p class="small" style="text-align:center;opacity:.55;margin:14px 0 4px">Star School v50</p>')}
+  {const sc=$('.scroll');if(sc)sc.insertAdjacentHTML('beforeend','<p class="small" style="text-align:center;opacity:.55;margin:14px 0 4px">Star School v51</p>')}
   if(first&&S.voice)setTimeout(()=>say(`Hi ${S.name}! Pick a game!`),400)}
 
 let MAPP='math',MAPW={}; // MAPW[path] = the world picked in the strip (this session only, not saved)
@@ -3241,6 +3241,7 @@ function fit(){const qa=$('.qarea'),pr=$('#prompt');if(!qa||!pr)return;let k=1;p
 let rsT;addEventListener('resize',()=>{fit();clearTimeout(rsT);rsT=setTimeout(()=>{if($('#map'))drawMap(MAPP)},150)});
 function petSay(t){const b=$('#bub');if(!b)return;b.textContent=t;const far=G&&G.done/G.n>.5;b.style.left=far?'auto':'0';b.style.right=far?'0':'auto';b.classList.add('on');clearTimeout(b._t);b._t=setTimeout(()=>b.classList.remove('on'),1400)}
 function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;
+  actQStart(q.sk); // P5-05
   const K=KIND[q.kind];
   if(!K)throw new Error('unknown question kind '+q.kind);
   const input=K.render(q);
@@ -3272,6 +3273,7 @@ function check(v,el){if(G.lock)return;const q=G.q,K=KIND[q.kind],p=P(q.sk),ok=K.
   const src=el||$('#slot')||$('.lslots')||$('.inp');
   if(ok){G.lock=true;if(el)el.classList.add('right');
     K.right(q);
+    actQEnd(G.tries==0&&!G.retry,G.retry); // P5-05
     const first=G.tries==0&&!G.retry;
     if(!G.retry){G.done++;p.t++;if(G.tries==0){G.score++;p.c++}}
     if(G.tries==0&&p.miss[q.label]){if(p.miss[q.label].n>0&&!G.retry)G.fixed=(G.fixed||0)+1;p.miss[q.label].n=Math.max(0,p.miss[q.label].n-1)}
@@ -3316,6 +3318,7 @@ function finish(){
     if(g.boss&&g.won&&!S.owned[nd.prize]){prize=nd.prize;S.owned[prize]=1;S.wear.hat=prize}}
   if(newPass){const wk=nd.wid;if(!S.wdone[wk]&&worldDone(p,nd.wi)){S.wdone[wk]=1;wDone=true}}
   const prizes=[award()];if(sc==n)prizes.push(award());
+  actRound(); // P5-05
   d.r++;const stk=streakTick();let mission=false;if(d.r>=3&&!d.done){d.done=true;mission=true;prizes.push(award())}
   if(wDone)prizes.push(award());
   const bonus=(mission?5:0),coins=sc+bonus+(wDone?20:0),prevSt=g.test||g.mix?0:(g.prevSt||0),PT=ptCalc(g,sc,n,stars,prevSt,newPass,testOk,nd),ptSec=PT.sec;ptEarn(ptSec);
@@ -3409,6 +3412,115 @@ function balloons(area,g){const rule=balloonRule(area);let popped=0,left=30;
       $('#bnext').onclick=()=>{o.remove();if(g.mix||!g.path)return startMix();const p=g.path,i=g.node+1<NODES[p].length&&unlocked(p,g.node+1)&&!passed(p,g.node+1)?g.node+1:g.node;
         if(i==g.node&&g.test)testOut(p,g.test.wi);else open(p,i)}}},1000)}
 
+/* Activity log (P5-05): time on task. Stays on the device; the Grown-ups report card (P5-06) reads it.
+   S.log = [{d, sec, rounds, q, ok, by}] sorted oldest first, at most 60 days.
+     d       day key 'Y-M-D' (same local format as today() and S.streak)
+     sec     active seconds that day, all subjects (always the sum of by)
+     rounds  learning rounds finished that day
+     q       questions answered that day (a question counts once, when it is finally answered right; re-asked misses do not count again)
+     ok      of those, answered right on the first try
+     by      {area: seconds}; area is the skill's area: math, read, es (later bt, disc)
+   Time rule: a question's time runs from the moment it is on screen to the moment it is answered right. Time while the tab is
+   hidden is left out, and one question counts at most 60 s, so a tablet left on a question does not pile up minutes.
+   A question that is never answered (child quits) adds no time. Fact Sprint adds its own active seconds to math.
+   Every field is read with a default, so a missing or damaged S.log never throws.
+
+   API for the report card (all safe on missing data):
+     ACT.get()                 the cleaned array (oldest first); creates S.log if needed
+     ACT.entry(key)            the entry for a day key, or null
+     ACT.sum(endKey, days)     totals {sec, rounds, q, ok, by, active} for the `days` days ending at endKey (default today(), 7).
+                               active = number of days with any time. "This week" = ACT.sum(today(),7); "last week" =
+                               ACT.sum(ACT.shift(today(),-7),7). accuracy = ok/q when q>0.
+     ACT.shift(key, n)         day key n days after key (n may be negative)
+     ACT.total()               totals over the whole kept log */
+const ACT={
+  KEEP:60,      // days kept
+  CAP:60,       // most seconds one question can count
+  cur:null,     // question on screen: {area, acc (ms counted so far), t0 (ms when it last became visible, or null while hidden)}
+  now(){return Date.now()},
+  hidden(){return typeof document!='undefined'&&!!document.hidden},
+  shift(k,n){const i=STRK.idx(k);return i>=0?STRK.key(i+n):k},
+  clean(e){ // one entry with every field a safe number; null when it has no usable day
+    if(!e||typeof e!='object'||!(STRK.idx(e.d)>=0))return null;
+    const n=v=>(v>0&&isFinite(v))?Math.round(v):0,by={};
+    if(e.by&&typeof e.by=='object'&&!Array.isArray(e.by))for(const a in e.by)if(/^[a-z]{1,8}$/.test(a)&&n(e.by[a]))by[a]=n(e.by[a]);
+    let sec=0;for(const a in by)sec+=by[a];
+    return{d:String(e.d),sec,rounds:n(e.rounds),q:n(e.q),ok:Math.min(n(e.ok),n(e.q)),by};
+  },
+  get(){
+    const out=[];
+    if(Array.isArray(S.log))for(const e of S.log){
+      const c=ACT.clean(e);
+      if(!c)continue;
+      const o=out.find(x=>x.d===c.d);
+      if(o){o.sec+=c.sec;o.rounds+=c.rounds;o.q+=c.q;o.ok+=c.ok;for(const a in c.by)o.by[a]=(o.by[a]||0)+c.by[a]}else out.push(c);
+    }
+    out.sort((a,b)=>STRK.idx(a.d)-STRK.idx(b.d));
+    return S.log=out;
+  },
+  entry(k){return ACT.get().find(e=>e.d===k)||null},
+  // Add to one day's entry (created on first use), then drop days older than KEEP days before `key`.
+  add(key,o){
+    const log=ACT.get();
+    let e=log.find(x=>x.d===key);
+    if(!e){e={d:key,sec:0,rounds:0,q:0,ok:0,by:{}};log.push(e);log.sort((a,b)=>STRK.idx(a.d)-STRK.idx(b.d))}
+    const sec=Math.max(0,Math.round(o.sec||0));
+    if(sec){const a=/^[a-z]{1,8}$/.test(o.area)?o.area:'other';e.by[a]=(e.by[a]||0)+sec;e.sec+=sec}
+    e.rounds+=o.rounds||0;e.q+=o.q||0;e.ok+=o.ok||0;
+    const t=STRK.idx(key);
+    S.log=log.filter(x=>STRK.idx(x.d)>t-ACT.KEEP&&STRK.idx(x.d)<=t+1); // old days go; so do days far in the future (clock set back)
+    return e;
+  },
+  sum(endKey,days){
+    const end=STRK.idx(endKey||today()),n=days||7,r={sec:0,rounds:0,q:0,ok:0,by:{},active:0};
+    if(!(end>=0))return r;
+    for(const e of ACT.get()){
+      const i=STRK.idx(e.d);
+      if(i>end-n&&i<=end){
+        r.sec+=e.sec;r.rounds+=e.rounds;r.q+=e.q;r.ok+=e.ok;if(e.sec)r.active++;
+        for(const a in e.by)r.by[a]=(r.by[a]||0)+e.by[a];
+      }
+    }
+    return r;
+  },
+  total(){
+    const r={sec:0,rounds:0,q:0,ok:0,by:{},active:0};
+    for(const e of ACT.get()){
+      r.sec+=e.sec;r.rounds+=e.rounds;r.q+=e.q;r.ok+=e.ok;if(e.sec)r.active++;
+      for(const a in e.by)r.by[a]=(r.by[a]||0)+e.by[a];
+    }
+    return r;
+  },
+  // A question appears. `now` and `hidden` are passed in by the tests.
+  qStart(sk,now,hidden){
+    const a=(typeof SK!='undefined'&&SK[sk]&&SK[sk].area)||'other';
+    ACT.cur={area:a,acc:0,t0:hidden?null:now};
+  },
+  // The tab was hidden or shown again.
+  vis(hidden,now){
+    const c=ACT.cur;
+    if(!c)return;
+    if(hidden&&c.t0!=null){c.acc+=now-c.t0;c.t0=null}
+    else if(!hidden&&c.t0==null)c.t0=now;
+  },
+  // The question was answered right. first = right on the first try; again = it was a re-asked miss (time counts, question does not).
+  qEnd(first,again,now,key){
+    const c=ACT.cur;
+    ACT.cur=null;
+    if(!c)return null;
+    if(c.t0!=null)c.acc+=now-c.t0;
+    const sec=Math.min(ACT.CAP,Math.max(1,Math.round(c.acc/1000)));
+    return ACT.add(key||today(),{sec,area:c.area,q:again?0:1,ok:again?0:(first?1:0)});
+  },
+  round(key){return ACT.add(key||today(),{rounds:1})},
+  flu(sec,key){return ACT.add(key||today(),{sec:Math.min(sec||0,ACT.CAP*2),area:'math'})},
+};
+// Hooks (each is called from one line in an existing file). They never throw into the game.
+function actQStart(sk){try{ACT.qStart(sk,ACT.now(),ACT.hidden())}catch(e){}}
+function actQEnd(first,again){try{ACT.qEnd(first,again,ACT.now())}catch(e){}}
+function actRound(){try{ACT.round()}catch(e){}}
+function actFlu(sec){try{ACT.flu(sec)}catch(e){}}
+if(typeof document!='undefined')document.addEventListener('visibilitychange',()=>{try{ACT.vis(ACT.hidden(),ACT.now())}catch(e){}});
 /* ---------- speed race ---------- */
 let RC=null;
 function stopRace(){if(RC){clearInterval(RC.iv);RC=null}}
@@ -3741,6 +3853,7 @@ function fluPlay(set, mode) {
     stopFlu();
     S.flu = S.flu || {};
     const r = FLU.record(S.flu, key, today(), sec, right, !timed);
+    actFlu(sec); // P5-05
     const rec = r.rec && (!timed || right > 0); // no fireworks for a first 60 s run of zero
     const earned = FLU.earn(S.flu, set, today(), rec, right, mode);
     if (earned) ptEarn(earned);
@@ -5088,7 +5201,7 @@ function grown(){let armed=false;
    <div class="vline"><span class="vtxt">Give a bonus</span><button class="btn xs" id="pt5">+5 min</button><button class="btn xs danger" id="pt0">Empty bank</button></div>
    <label class="tg"><input type="checkbox" id="ptp" ${ptCfg().pause?'checked':''}> Pause game time (games locked)</label></div>
   <div class="card"><div class="tw"><table><tr><th>Skill</th><th>Rounds</th><th>1st try</th><th>Tricky ones</th></tr>${rows}</table></div></div>
-  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v50 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
+  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v51 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
    Storage: ${SAVE_FAILED?'<b style="color:#c0392b">could not save (device storage may be full)</b>':'saving OK'}${SAVE_CORRUPT?'<br><b style="color:#c0392b">The old save could not be read. A fresh start was made and the old data was kept on the device.</b>':''}<br>
    Last errors: ${(S.err||[]).length?(S.err||[]).slice().reverse().map(e=>'<br>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+' '+esc(e.msg)).join(''):'none'}</div></details>
   <div class="card"><label class="tg"><input type="checkbox" id="voice" ${S.voice?'checked':''}> Read questions out loud</label>
