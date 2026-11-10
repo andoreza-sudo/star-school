@@ -1338,6 +1338,87 @@ run('mastery: records, states, harder/easier, challenge from question 6, support
   return{problems:merrs,note:r.rounds+' simulated rounds, '+r.ch+' challenge questions, '+r.sup+' support rounds, 400 stops = '+r.sz+' bytes'};
 });
 
+run('report card (P5-06): read-only, empty and old saves, numbers, escaping, damaged data, strands cover every skill',()=>{
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const rerrs=[],bad=m=>rerrs.push(m);
+  const body=function(){
+    const store={};
+    global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+    const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
+    const BADTXT=/\bundefined\b|\bNaN\b|\[object |\bnull\b|Infinity/;
+    // renders the whole card and checks that S did not change by one byte (not even a default added in memory)
+    const render=label=>{
+      const before=JSON.stringify(S),keys=Object.keys(S).join(',');
+      let h='';
+      try{h=REP.html(REP.data())}catch(e){bad(label+': threw '+(e&&e.stack||e));return''}
+      if(JSON.stringify(S)!==before||Object.keys(S).join(',')!==keys)bad(label+': opening the report card changed S');
+      const txt=h.replace(/<[^>]*>/g,' ');
+      if(BADTXT.test(txt))bad(label+': bad text '+(txt.match(BADTXT)||[])[0]);
+      if(!/Report card for/.test(h)||h.split('<section').length!==8)bad(label+': expected 7 sections, got '+(h.split('<section').length-1));
+      return h;
+    };
+    const now=STRK.idx(today()),dk=n=>STRK.key(now-n);
+    // 1. brand-new child: kind empty states in every section, nothing saved
+    load(null);S.name='Ava';
+    let h=render('fresh');
+    for(const t of ['No learning time recorded yet','Not started yet','This list fills in after a few rounds','No stop is mastered yet','No Fact Sprint scores yet','No streak right now'])
+      if(!h.includes(t))bad('fresh: missing empty state "'+t+'"');
+    // 2. every fixture, and each fixture as an old save without the newer fields
+    for(const n of ['fresh','midway','maxed','legacy-index-maps','legacy-single-map']){
+      load(fx(n));render(n);
+      for(const f of ['log','mast','flu','streak'])delete S[f];
+      render(n+' without log/mast/flu/streak');
+      if('log' in S)bad(n+': S.log created');
+    }
+    // 3. a week with data
+    load(null);S.name='Ava';S.grade=2;
+    S.log=[];
+    const add=(d,sec,rounds,q,ok,by)=>S.log.push({d:dk(d),sec,rounds,q,ok,by});
+    add(0,600,2,20,18,{math:420,read:180});add(2,300,1,10,8,{math:300});add(9,540,2,20,10,{read:540});add(13,60,1,5,5,{es:60});add(30,900,3,30,30,{math:900});
+    S.mast={add1:{n:30,p:.95,ms:5000,d:3,last:now,md:now-2},sub1:{n:12,p:.4,ms:9000,d:2,last:now,md:-1},cnt1:{n:6,p:.33,ms:9000,d:1,last:now,md:-1},
+      sight1:{n:25,p:.92,ms:4000,d:4,last:now-1,md:now-6}};
+    S.prog=S.prog||{};
+    S.prog.sub={lv:1,r:3,c:5,t:12,miss:{'8 − 3':{n:2,tot:4,q:{sk:'sub',lv:1,label:'8 − 3'}},'<b>x</b>':{n:1,tot:1,q:{sk:'sub',lv:1,label:'<b>x</b>'}}}};
+    S.flu={add10:{best:24,hist:[]},'add10-20':{best:31.5,hist:[]}};
+    S.streak={best:9,rw:0,days:{[dk(0)]:1,[dk(1)]:1,[dk(2)]:1}};
+    S.maps.math.add1=3;
+    const m=REP.data(),before=JSON.stringify(S);
+    if(m.cur.sec!==900||m.cur.rounds!==3||m.cur.q!==30||m.cur.ok!==26||m.cur.active!==2)bad('this week totals '+JSON.stringify(m.cur));
+    if(m.prev.sec!==600||m.prev.q!==25||m.prev.ok!==15)bad('last week totals '+JSON.stringify(m.prev));
+    if(m.days.length!==14||m.days[13].sec!==600||m.days[11].sec!==300||m.days[4].sec!==540||m.days[0].sec!==60)bad('14 days '+JSON.stringify(m.days.map(d=>d.sec)));
+    if(m.mastered.length!==2||m.mastered[0].t!=='Adding to 10'||m.mastered[0].when!=='2 days ago')bad('recently mastered '+JSON.stringify(m.mastered.map(x=>[x.t,x.when])));
+    if(m.needs.length!==2||m.needs[0].sk!=='cnt'||m.needs[1].sk!=='sub')bad('needs practice order '+JSON.stringify(m.needs.map(x=>x.sk)));
+    if(m.streak.count!==3||m.streak.best!==9||!m.streak.doneToday)bad('streak '+JSON.stringify(m.streak));
+    h=render('data');
+    for(const t of ['>15</div>','>87%</div>','>60%</div>','5 min more than last week','Adding to 10','2 days ago','3 days in a row','Best so far: 9 days','24 right','31.5 s','Examples they missed',
+      'Working at the <b>K</b> level'])
+      if(!h.includes(t))bad('data: missing "'+t+'"');
+    if(h.includes('<b>x</b>')||!h.includes('&lt;b&gt;x&lt;/b&gt;'))bad('example miss label not escaped');
+    if(JSON.stringify(S)!==before)bad('data: S changed');
+    // 4. the child's name is escaped
+    S.name='<img src=x onerror=alert(1)>';h=render('name');
+    if(h.includes('<img'))bad('name not escaped');
+    // 5. damaged data never throws and never changes S
+    load(fx('midway'));
+    S.log='x';S.mast={add1:{n:'a',p:NaN},sub1:null,zzz:{n:5,p:.1}};S.flu=5;S.streak=[];S.prog={add:{miss:5},sub:{miss:{a:{q:null},b:{q:{label:7}}}}};
+    render('damaged');
+    S.log=[null,{d:'junk'},{d:dk(1),sec:'x',by:[]}];S.mast=[];S.flu={add10:{best:'abc'}};S.streak={days:5,best:'x'};S.name=null;S.grade='x';
+    render('damaged 2');
+    // 6. every skill has a real strand (a new skill without one would land in "Other skills")
+    const other=Object.keys(SK).filter(k=>REP.strandOf(k)==='Other skills');
+    if(other.length)bad('skills without a strand: '+other.join(', '));
+    // 7. the Grown-ups entry
+    if(!/id="rp-open"/.test(reportGrownHTML()))bad('entry button missing');
+    return{h:h.length};
+  };
+  eval(js+';('+body.toString()+')()');
+  const g=fs.readFileSync(path.join(SRC,'js','80-grown.js'),'utf8');
+  if(!/\$\{reportGrownHTML\(\)\}/.test(g)||!/reportGrownBind\(\);/.test(g))rerrs.push('80-grown.js does not call reportGrownHTML/reportGrownBind');
+  const css=fs.readFileSync(path.join(SRC,'css','36-report.css'),'utf8');
+  if(!/@media print/.test(css)||/#[0-9a-fA-F]{3,8}\b/.test(css))rerrs.push('36-report.css: print rules missing or raw hex');
+  return{problems:rerrs};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){

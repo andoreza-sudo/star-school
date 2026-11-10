@@ -26,6 +26,26 @@ const mastDemo = ok => async p => {
   }, ok);
 };
 
+// P5-06 report card: seeds two weeks of activity, mastery in the first stops of math and reading (some mastered, some struggling,
+// some practised), Fact Sprint bests and a streak, then opens the card and scrolls to a section (sel).
+const reportDemo = (sel, grade) => async p => {
+  await p.evaluate(([sel, grade]) => {
+    S.name = 'Ava'; if (grade != null) S.grade = grade;
+    const n = STRK.idx(today()), k = d => STRK.key(n - d), mins = [0, 12, 9, 0, 15, 6, 20, 8, 0, 14, 10, 5, 18, 11];
+    S.log = mins.map((m, i) => ({ d: k(13 - i), sec: m * 60, rounds: m ? Math.ceil(m / 6) : 0, q: m * 2, ok: Math.round(m * 1.6), by: m ? { math: m * 40, read: m * 20 } : {} })).filter(e => e.sec);
+    S.mast = {};
+    for (const p of ['math', 'read']) mastStops(p).slice(0, 12).forEach((s, j) => {
+      S.mast[s.nid] = j < 3 ? { n: 30, p: .95, ms: 5000, d: 3, last: n, md: n - j * 2 - 1 } : j < 5 ? { n: 14, p: .4, ms: 9000, d: 2, last: n, md: -1 }
+        : j < 8 ? { n: 14, p: .8, ms: 7000, d: 2, last: n - 1, md: -1 } : { n: 4, p: .5, ms: 7000, d: 1, last: n - 2, md: -1 };
+    });
+    S.prog = S.prog || {}; S.prog.sub = { lv: 1, r: 3, c: 5, t: 12, miss: { '8 − 3': { n: 2, tot: 4, q: { sk: 'sub', lv: 1, label: '8 − 3' } }, '9 − 4': { n: 1, tot: 2, q: { sk: 'sub', lv: 1, label: '9 − 4' } } } };
+    S.flu = { add10: { best: 24, hist: [] }, 'add10-20': { best: 31.5, hist: [] } };
+    S.streak = { best: 9, rw: 0, days: { [k(0)]: 1, [k(1)]: 1, [k(2)]: 1, [k(3)]: 1 } };
+    report();
+    if (sel) document.querySelector(sel).scrollIntoView({ block: 'start' });
+  }, [sel, grade]);
+};
+
 // Each screen: { fixture, full, run(page) }. run() drives the app via its globals or real taps; full: true takes a full-page shot.
 const SCREENS = {
   setup: { fixture: 'fresh', run: async () => {} },
@@ -224,6 +244,13 @@ const SCREENS = {
   // tag on top), and of one whose first five were wrong (support: the hint shows before the first try)
   challenge: { run: mastDemo(true) },
   support: { run: mastDemo(false) },
+
+  // P5-06 grown-ups report card: with data (top, topics, needs practice), a brand-new child, and the maxed save with data
+  'report-top': { run: reportDemo(null, 1) },
+  'report-topics': { run: reportDemo('#rp-top', 1) },
+  'report-needs': { run: reportDemo('#rp-needs', 1) },
+  'report-fresh': { fixture: 'fresh', run: async p => { await p.evaluate(() => { S.name = 'Ava'; report(); }); } },
+  'report-maxed': { fixture: 'maxed', run: reportDemo('#rp-level', 3) },
 };
 
 // Starts a demo bank question (bi = item index) or the demo passage round, through the real round engine.
