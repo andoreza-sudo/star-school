@@ -1,7 +1,7 @@
 const fs=require('fs');
-const html=fs.readFileSync(require('path').join(__dirname,'..','src','src.html'),'utf8');
-let js=html.split('<script>')[1].split('</script>')[0];
-js=js.replace('loadClips();\nhome(true);','');
+const path=require('path'),SRC=path.join(__dirname,'..','src');
+const cat=d=>fs.readdirSync(path.join(SRC,d)).filter(n=>n.endsWith('.js')).sort().map(n=>fs.readFileSync(path.join(SRC,d,n),'utf8')).join('');
+const js=cat('js')+cat('data'); // all code and data, without boot.js
 global.localStorage={getItem:()=>null,setItem:()=>{}};
 global.document={querySelector:()=>null,querySelectorAll:()=>[],addEventListener:()=>{}};
 global.navigator={};global.addEventListener=()=>{};global.location={protocol:'file:'};
