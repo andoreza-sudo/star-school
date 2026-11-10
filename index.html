@@ -1812,6 +1812,80 @@ function modeChooser(onPick,withFree){const o=document.createElement('div');o.cl
    <div class="mrow" style="background:#fef3c7"><span class="ge">➕</span><span class="gt">Math Colors</span><div><button class="btn sm" data-m="math">⭐ Easy</button><button class="btn sm" data-m="math2">⭐⭐ Medium</button><button class="btn sm" data-m="math3">⭐⭐⭐ Hard</button></div></div>
    <div class="mrow" style="background:#dcfce7"><span class="ge">🌮</span><span class="gt">Spanish Colors</span><div><button class="btn sm" data-m="es">🔊 With colors</button><button class="btn sm" data-m="es2">📖 Words only</button></div></div></div><button class="btn" id="mx" style="margin-top:10px">Cancel</button></div>`;
   document.body.appendChild(o);o.querySelector('#mx').onclick=()=>o.remove();o.querySelectorAll('[data-m]').forEach(m=>m.onclick=()=>{o.remove();SFX.whoosh();onPick(m.dataset.m)})}
+/* ---------- low-poly animal art ---------- */
+const MIRP=h=>{const r=h.slice(),l=h.slice(1,-1).reverse().map(([x,y])=>[300-x,y]);return r.concat(l)};
+const PTH=p=>'M'+p.map(([x,y])=>x.toFixed(1)+','+y.toFixed(1)).join('L')+'Z';
+const ELL=(cx,cy,rx,ry,n=18)=>Array.from({length:n},(_,i)=>{const a=i/n*Math.PI*2;return[cx+Math.cos(a)*rx,cy+Math.sin(a)*ry]});
+const MIRX=p=>p.map(([x,y])=>[300-x,y]).reverse();
+const POLYART={
+ lion:{n:'Lion',bg:34,parts:[
+   {p:Array.from({length:44},(_,i)=>{const a=i/44*Math.PI*2,r=(i%2?112:140)+(i%4==0?6:0);return[150+Math.sin(a)*r*.95,150-Math.cos(a)*r]}),s:20},
+   {p:ELL(204,96,18,18,12),s:12},{p:ELL(96,96,18,18,12),s:12},
+   {p:MIRP([[150,78],[180,82],[202,100],[212,130],[208,162],[198,192],[180,214],[162,226],[150,228]]),s:15},
+   {p:MIRP([[150,166],[170,168],[186,184],[182,204],[164,214],[150,216]]),s:11}],
+  fix:[[PTH([[136,166],[164,166],[150,184]]),'#3f2a1d'],[PTH(ELL(126,138,13,7)),'#fff'],[PTH(ELL(174,138,13,7)),'#fff'],[PTH(ELL(127,138,5,6)),'#1c1917'],[PTH(ELL(173,138,5,6)),'#1c1917']]},
+ wolf:{n:'Howling Wolf',bg:34,parts:[
+   {p:ELL(96,98,68,68,30),s:14},
+   {p:[[48,48],[80,70],[96,74],[104,62],[114,38],[124,70],[134,84],[146,100],[170,130],[196,152],[222,172],[238,196],[246,214],[272,226],[290,250],[286,266],[260,262],[240,248],[242,268],[240,284],[208,286],[208,276],[218,270],[206,258],[188,250],[166,248],[164,282],[154,288],[130,288],[136,278],[140,246],[134,206],[128,186],[120,166],[110,134],[96,112],[78,98],[44,74],[62,66]],s:13}],
+  fix:[[PTH(ELL(100,82,5,3)),'#1c1917'],[PTH(ELL(52,54,5,4)),'#1c1917']]},
+ eagle:{n:'Eagle',bg:36,parts:[
+   {p:MIRP([[150,50],[164,56],[168,76],[178,96],[212,86],[242,64],[268,40],[290,28],[284,50],[292,60],[276,70],[288,82],[270,90],[280,104],[258,108],[266,122],[242,124],[248,138],[222,138],[218,150],[196,146],[182,162],[178,196],[170,216],[180,238],[172,262],[160,272],[150,278]]),s:14},
+   {p:MIRP([[150,44],[166,50],[172,70],[164,86],[150,92]]),s:9}],
+  fix:[[PTH([[143,72],[157,72],[154,84],[150,90],[146,84]]),'#f59e0b'],[PTH(ELL(139,62,4,3)),'#1c1917'],[PTH(ELL(161,62,4,3)),'#1c1917'],[PTH([[140,214],[150,226],[160,214],[156,232],[144,232]]),'#f59e0b']]},
+ stag:{n:'Stag',bg:34,parts:[
+   {p:[[166,122],[172,96],[186,74],[196,40],[204,42],[196,72],[214,56],[222,28],[230,32],[224,62],[242,50],[258,24],[266,28],[250,62],[228,82],[208,98],[196,112],[182,126]],s:10},
+   {p:MIRX([[166,122],[172,96],[186,74],[196,40],[204,42],[196,72],[214,56],[222,28],[230,32],[224,62],[242,50],[258,24],[266,28],[250,62],[228,82],[208,98],[196,112],[182,126]]),s:10},
+   {p:[[180,138],[224,118],[240,124],[218,148],[188,158]],s:10},{p:MIRX([[180,138],[224,118],[240,124],[218,148],[188,158]]),s:10},
+   {p:MIRP([[150,118],[172,124],[186,150],[182,190],[170,232],[162,262],[150,270]]),s:13}],
+  fix:[[PTH(ELL(150,258,13,9)),'#1c1917'],[PTH(ELL(132,170,6,8)),'#1c1917'],[PTH(ELL(168,170,6,8)),'#1c1917']]},
+ tiger:{n:'Tiger',bg:32,parts:[
+   {p:ELL(208,88,22,22,14),s:12},{p:ELL(92,88,22,22,14),s:12},
+   {p:MIRP([[150,72],[186,76],[216,96],[234,128],[238,160],[254,182],[234,194],[222,206],[198,226],[172,240],[150,244]]),s:15},
+   {p:MIRP([[150,168],[174,170],[192,190],[182,214],[150,222]]),s:11}],
+  fix:[[PTH([[150,82],[160,98],[150,118],[140,98]]),'#1c1917'],[PTH([[234,136],[204,144],[232,150]]),'#1c1917'],[PTH([[66,136],[96,144],[68,150]]),'#1c1917'],[PTH([[236,170],[206,174],[230,184]]),'#1c1917'],[PTH([[64,170],[94,174],[70,184]]),'#1c1917'],
+   [PTH([[184,90],[178,108],[192,96]]),'#1c1917'],[PTH([[116,90],[122,108],[108,96]]),'#1c1917'],[PTH([[138,164],[162,164],[150,178]]),'#be185d'],[PTH(ELL(124,138,12,7)),'#fde047'],[PTH(ELL(176,138,12,7)),'#fde047'],[PTH(ELL(124,138,3,6)),'#1c1917'],[PTH(ELL(176,138,3,6)),'#1c1917']]},
+ owl:{n:'Great Owl',bg:34,parts:[
+   {p:MIRP([[150,46],[172,46],[190,26],[194,56],[210,80],[218,120],[216,170],[204,214],[184,246],[162,262],[150,264]]),s:15},
+   {p:[[206,104],[230,130],[236,178],[222,224],[196,252],[188,196],[200,150]],s:12},{p:MIRX([[206,104],[230,130],[236,178],[222,224],[196,252],[188,196],[200,150]]),s:12},
+   {p:ELL(150,200,46,56,20),s:12},{p:ELL(178,110,36,34,18),s:11},{p:ELL(122,110,36,34,18),s:11}],
+  fix:[[PTH(ELL(122,110,16,16)),'#f59e0b'],[PTH(ELL(178,110,16,16)),'#f59e0b'],[PTH(ELL(122,110,8,8)),'#1c1917'],[PTH(ELL(178,110,8,8)),'#1c1917'],[PTH([[144,124],[156,124],[150,142]]),'#78350f'],[PTH([[136,262],[146,262],[142,272]]),'#f59e0b'],[PTH([[154,262],[164,262],[158,272]]),'#f59e0b']]},
+ horse:{n:'Wild Horse',bg:34,parts:[
+   {p:[[268,98],[272,114],[256,120],[238,114],[226,104],[216,124],[214,150],[220,172],[214,188],[216,232],[222,272],[230,286],[206,286],[204,274],[200,234],[196,200],[188,200],[190,236],[188,274],[194,286],[170,286],[172,272],[174,234],[170,196],[150,198],[118,198],[112,206],[118,236],[108,272],[114,286],[90,286],[92,272],[98,240],[92,218],[86,222],[84,250],[78,274],[84,286],[60,286],[62,272],[68,242],[66,206],[64,176],[60,150],[44,176],[34,214],[28,236],[20,230],[24,196],[34,160],[52,132],[70,124],[110,128],[150,130],[180,118],[196,94],[214,72],[232,58],[236,36],[246,56],[254,62],[262,74]],s:13},
+   {p:[[176,122],[190,92],[210,66],[232,54],[228,74],[214,96],[202,118],[190,134]],s:9}],
+  fix:[[PTH(ELL(244,78,4,3)),'#1c1917'],[PTH(ELL(264,104,3,2)),'#1c1917']]},
+ fox:{n:'Fox',bg:32,parts:[
+   {p:[[214,252],[256,236],[284,200],[290,160],[276,180],[256,200],[228,214],[206,222]],s:13},
+   {p:[[150,132],[176,140],[196,170],[206,212],[204,250],[214,270],[184,276],[150,278],[116,276],[86,270],[96,250],[94,212],[104,170],[124,140]],s:15},
+   {p:[[194,62],[214,22],[222,72]],s:9},{p:MIRX([[194,62],[214,22],[222,72]]),s:9},
+   {p:MIRP([[150,58],[184,62],[214,82],[232,112],[244,124],[222,138],[196,156],[166,174],[150,178]]),s:13},
+   {p:MIRP([[150,118],[164,124],[176,146],[162,166],[150,172]]),s:9}],
+  fix:[[PTH(ELL(150,168,8,6)),'#1c1917'],[PTH(ELL(124,112,6,8)),'#1c1917'],[PTH(ELL(176,112,6,8)),'#1c1917']]}};
+const POLYC={};
+function delaunay(P){const n=P.length;let mx=-1e9,my=-1e9,nx=1e9,ny=1e9;for(const[x,y]of P){mx=Math.max(mx,x);my=Math.max(my,y);nx=Math.min(nx,x);ny=Math.min(ny,y)}
+  const d=Math.max(mx-nx,my-ny)*20,cx=(mx+nx)/2,cy=(my+ny)/2,pts=P.concat([[cx-d,cy-d],[cx+d,cy-d],[cx,cy+d]]);let T=[[n,n+1,n+2]];
+  const cc=t=>{const[a,b,c]=t.map(i=>pts[i]),D=2*(a[0]*(b[1]-c[1])+b[0]*(c[1]-a[1])+c[0]*(a[1]-b[1]));if(Math.abs(D)<1e-9)return[0,0,1e18];const a2=a[0]*a[0]+a[1]*a[1],b2=b[0]*b[0]+b[1]*b[1],c2=c[0]*c[0]+c[1]*c[1];
+    const ux=(a2*(b[1]-c[1])+b2*(c[1]-a[1])+c2*(a[1]-b[1]))/D,uy=(a2*(c[0]-b[0])+b2*(a[0]-c[0])+c2*(b[0]-a[0]))/D;return[ux,uy,(a[0]-ux)**2+(a[1]-uy)**2]};
+  let C=T.map(cc);
+  for(let i=0;i<n;i++){const[x,y]=pts[i],bad=[],keepT=[],keepC=[];T.forEach((t,k)=>{const c=C[k];((x-c[0])**2+(y-c[1])**2<c[2])?bad.push(t):(keepT.push(t),keepC.push(c))});
+    const E=new Map();for(const t of bad)for(const[a,b]of[[t[0],t[1]],[t[1],t[2]],[t[2],t[0]]]){const k=a<b?a+'_'+b:b+'_'+a;E.set(k,E.has(k)?null:[a,b])}
+    T=keepT;C=keepC;for(const e of E.values())if(e){const t=[e[0],e[1],i];T.push(t);C.push(cc(t))}}
+  return T.filter(t=>t.every(i=>i<n)).map(t=>t.map(i=>P[i]))}
+function polyArt(id){if(POLYC[id])return POLYC[id];const A=POLYART[id],r=rng(id.length*7919+id.charCodeAt(0)),NS='http://www.w3.org/2000/svg',svg=document.createElementNS(NS,'svg');svg.setAttribute('viewBox','0 0 300 300');svg.style.cssText='position:absolute;width:300px;height:300px;left:-9999px;top:0';document.body.appendChild(svg);
+  const regs=[];let g=0;
+  const tri=(outline,s,cut)=>{const el=document.createElementNS(NS,'path');el.setAttribute('d',outline);svg.appendChild(el);const pts=[],L=el.getTotalLength();
+    for(let l=0;l<L;l+=s*.55){const p=el.getPointAtLength(l);pts.push([p.x,p.y])}
+    const inside=(x,y)=>{const q=svg.createSVGPoint();q.x=x;q.y=y;return el.isPointInFill(q)};
+    for(let y=s*.5;y<300;y+=s*.86)for(let x=(Math.round(y/s)%2?s*.5:0);x<300;x+=s){const px=x+(r()-.5)*s*.7,py=y+(r()-.5)*s*.7;if(inside(px,py)){let ok=true;for(const q of pts)if((q[0]-px)**2+(q[1]-py)**2<(s*.42)**2){ok=false;break}if(ok)pts.push([px,py])}}
+    for(const t of delaunay(pts)){const c=[(t[0][0]+t[1][0]+t[2][0])/3,(t[0][1]+t[1][1]+t[2][1])/3];if(!inside(...c))continue;
+      if(!t.every(p=>inside(p[0]+(c[0]-p[0])*.18,p[1]+(c[1]-p[1])*.18)))continue;if(cut&&cut(c))continue;regs.push({d:PTH(t),t:'',g:++g})}
+    el.remove()};
+  // background: big low-poly facets
+  tri('M-2,-2H302V302H-2Z',A.bg||34);
+  for(const P of A.parts){const d=PTH(P.p);if(P.fill===0)continue;tri(d,P.s||14)}
+  for(const P of A.parts){if(P.fill===0)continue;regs.push({d:PTH(P.p),t:'',g:++g,ov:1})}
+  for(const[d,c]of A.fix||[])regs.push({d,t:'',g:++g,fix:c});
+  svg.remove();return POLYC[id]=regs}
+
 /* ---------- art studio: mandalas, stained glass, animals, neon draw ---------- */
 const PALS={'🌅 Sunset':['#7f1d1d','#dc2626','#f97316','#fb923c','#fbbf24','#fde68a','#be185d','#f472b6','#4c1d95','#fff7ed'],
  '🌊 Ocean':['#082f49','#0c4a6e','#0369a1','#0ea5e9','#7dd3fc','#e0f2fe','#134e4a','#14b8a6','#5eead4','#f0fdfa'],
@@ -1846,23 +1920,23 @@ function glassArt(seed){const r=rng(seed*104729+7),pts=[],N=[6,8,10,12][Math.flo
     if(poly.length>2)regs.push({d:'M'+poly.map(v=>v[0].toFixed(1)+','+v[1].toFixed(1)).join('L')+'Z',t:'',g:grp[i]+1})});
   return regs}
 function animalArt(id){const d=shData(id);return d.R.map(r=>({d:r.d,t:'',g:r.i+1,fix:r.o.fix?CB_COL[r.c][0]:null}))}
-function artRegs(key){const[k,v]=key.split(':');return k=='m'?mandala(+v):k=='g'?glassArt(+v):animalArt(v)}
+function artRegs(key){const[k,v]=key.split(':');return k=='m'?mandala(+v):k=='g'?glassArt(+v):k=='p'?polyArt(v):animalArt(v)}
 function stS(){return S.studio=Object.assign({items:{},order:[]},S.studio||{})}
 function fillVal(v,defs){if(!v)return'#fff';const t=v[0],c=v.slice(2);if(t=='c')return c;const id=(t=='g'?'gr':'gl')+c.slice(1);
   if(!defs.has(id)){defs.add(id);defs.out.push(t=='g'?`<linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${shade(c,.5)}"/><stop offset=".55" stop-color="${c}"/><stop offset="1" stop-color="${shade(c,-.35)}"/></linearGradient>`
     :`<pattern id="${id}" width="14" height="14" patternUnits="userSpaceOnUse"><rect width="14" height="14" fill="${c}"/><circle cx="3" cy="4" r="1.3" fill="#fff" opacity=".9"/><circle cx="10" cy="9" r=".9" fill="#fff" opacity=".7"/><circle cx="6" cy="12" r=".7" fill="${shade(c,.6)}"/><circle cx="12" cy="2" r=".8" fill="${shade(c,.6)}"/></pattern>`)}return`url(#${id})`}
-function artSVG(regs,fills,o={}){const defs=new Set();defs.out=[];const body=regs.map((r,i)=>`<path d="${r.d}" ${r.t?`transform="${r.t}"`:''} data-i="${i}" fill="${r.fix&&!fills[i]?r.fix:fillVal(fills[i],defs)}" stroke="${o.glass?'#1c1917':'#27272a'}" stroke-width="${o.sw||(o.glass?2.6:1.1)}" stroke-linejoin="round"/>`).join('');
+function artSVG(regs,fills,o={}){const defs=new Set();defs.out=[];const body=regs.map((r,i)=>r.ov?`<path d="${r.d}" fill="none" stroke="#1c1917" stroke-width="2.2" stroke-linejoin="round" pointer-events="none"/>`:`<path d="${r.d}" ${r.t?`transform="${r.t}"`:''} data-i="${i}" ${r.fix?'pointer-events="none"':''} fill="${r.fix&&!fills[i]?r.fix:fillVal(fills[i],defs)}" stroke="${o.glass?'#1c1917':'#27272a'}" stroke-width="${o.sw||(o.glass?2.6:1.1)}" stroke-linejoin="round"/>`).join('');
   return`<svg viewBox="${o.vb||'0 0 300 300'}" ${o.id?`id="${o.id}"`:''} class="${o.cls||''}"><defs>${defs.out.join('')}${o.glass?'<radialGradient id="glow" cx=".5" cy=".5" r=".7"><stop offset="0" stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>':''}</defs>${body}${o.glass?'<rect width="300" height="300" fill="url(#glow)" pointer-events="none"/>':''}</svg>`}
-const artName=k=>{const[t,v]=k.split(':');return t=='m'?'Mandala':t=='g'?'Rose Window':(SHAPES.find(x=>x[0]==v)||[0,'Picture'])[1]};
+const artName=k=>{const[t,v]=k.split(':');return t=='m'?'Mandala':t=='g'?'Rose Window':t=='p'?POLYART[v].n:(SHAPES.find(x=>x[0]==v)||[0,'Picture'])[1]};
 function artPage(key){const regs=artRegs(key),st=stS(),it=st.items[key]||{f:{}},fills=Object.assign({},it.f),glass=key[0]=='g';
-  let col=PALS['🌅 Sunset'][2],pal=st.pal||'🌅 Sunset',mode='c',mirror=key[0]!='a',undo=[],vb=[0,0,300,300];
+  let col=PALS['🌅 Sunset'][2],pal=st.pal||'🌅 Sunset',mode='c',mirror=key[0]=='m'||key[0]=='g',undo=[],vb=[0,0,300,300];
   view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title" style="font-size:19px">${glass?'💎':key[0]=='m'?'✨':'🦁'} ${artName(key)}</div><div class="sp"></div>
-    <button class="btn sm" id="aundo">↩️</button>${key[0]!='a'?`<button class="btn sm on" id="amir" title="Mirror fill">🔁</button>`:''}<button class="btn sm" id="azr">🔍</button><div class="stars" id="gtm">🎟️ ${fmtT(ptLeft())}</div></div>
+    <button class="btn sm" id="aundo">↩️</button>${key[0]=='m'||key[0]=='g'?`<button class="btn sm on" id="amir" title="Mirror fill">🔁</button>`:''}<button class="btn sm" id="azr">🔍</button><div class="stars" id="gtm">🎟️ ${fmtT(ptLeft())}</div></div>
    <div class="stwrap"><div class="stcv" id="stw"></div><div class="stbar">
     <div class="stmodes"><button class="btn sm on" data-md="c">🎨 Paint</button><button class="btn sm" data-md="g">🌅 Shiny</button><button class="btn sm" data-md="s">✨ Glitter</button><button class="btn sm" data-md="e">🧽 Erase</button></div>
     <div class="stpals">${Object.keys(PALS).map(p=>`<button class="btn sm stp ${p==pal?'on':''}" data-p="${p}">${p.split(' ')[0]}</button>`).join('')}</div>
     <div class="stcols" id="stcols"></div></div></div>`);
-  const w=$('#stw');w.innerHTML=artSVG(regs,fills,{id:'stsvg',glass});const svg=$('#stsvg');
+  const w=$('#stw');w.innerHTML=artSVG(regs,fills,{id:'stsvg',glass,sw:key[0]=='p'?.7:undefined});const svg=$('#stsvg');
   const setVB=()=>svg.setAttribute('viewBox',vb.map(v=>v.toFixed(1)).join(' '));
   const cols=()=>{$('#stcols').innerHTML=PALS[pal].map(c=>`<button class="btn stc ${c==col?'on':''}" data-c="${c}" style="--cc:${c}"></button>`).join('');$$('.stc').forEach(b=>b.onclick=()=>{col=b.dataset.c;if(mode=='e')setMode('c');$$('.stc').forEach(q=>q.classList.toggle('on',q==b));SFX.pop(1)})};cols();
   const setMode=m=>{mode=m;$$('[data-md]').forEach(b=>b.classList.toggle('on',b.dataset.md==m))};
@@ -1872,17 +1946,18 @@ function artPage(key){const regs=artRegs(key),st=stS(),it=st.items[key]||{f:{}},
   const paintOne=(i,v)=>{const p=svg.querySelector(`path[data-i="${i}"]`);if(!p)return;if(v)fills[i]=v;else delete fills[i];
     const defs=new Set([...svg.querySelectorAll('defs > *')].map(e=>e.id));defs.out=[];p.setAttribute('fill',regs[i].fix&&!v?regs[i].fix:fillVal(v,defs));if(defs.out.length)svg.querySelector('defs').insertAdjacentHTML('beforeend',defs.out.join(''));
     p.classList.remove('popfill');void p.getBBox();p.classList.add('popfill')};
-  const tap=t=>{const i=+t.dataset.i,v=mode=='e'?null:mode+':'+col,grp=mirror?regs.map((r,j)=>r.g==regs[i].g?j:-1).filter(j=>j>=0):[i];
+  const tap=(t,sw)=>{const i=+t.dataset.i,v=mode=='e'?null:mode+':'+col,grp=mirror?regs.map((r,j)=>r.g==regs[i].g?j:-1).filter(j=>j>=0):[i];
     undo.push(grp.map(j=>[j,fills[j]||null]));if(undo.length>60)undo.shift();grp.forEach(j=>paintOne(j,v));
-    if(mode=='s'){SFX.magic()}else tone(380+((i*37)%9)*70,.09,0,'sine',.12);persist()};
+    if(sw){if(!tap.lt||performance.now()-tap.lt>60){tap.lt=performance.now();tone(500+((i*37)%9)*60,.05,0,'sine',.07)}}else if(mode=='s'){SFX.magic()}else tone(380+((i*37)%9)*70,.09,0,'sine',.12);clearTimeout(tap.pt);tap.pt=setTimeout(persist,250)};
   // pointer: tap = fill, drag = pan (when zoomed), pinch = zoom
   const ptrs=new Map();let start=null,pinch=null;
   const toSvg=(cx,cy)=>{const b=svg.getBoundingClientRect();return[vb[0]+(cx-b.left)/b.width*vb[2],vb[1]+(cy-b.top)/b.height*vb[3]]};
   w.addEventListener('pointerdown',e=>{e.preventDefault();w.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,[e.clientX,e.clientY]);
     if(ptrs.size==1)start={x:e.clientX,y:e.clientY,vb:vb.slice(),mv:0,t:e.target};else if(ptrs.size==2){const[a,b]=[...ptrs.values()];pinch={d:Math.hypot(a[0]-b[0],a[1]-b[1]),vb:vb.slice(),c:toSvg((a[0]+b[0])/2,(a[1]+b[1])/2)};start=null}});
   w.addEventListener('pointermove',e=>{if(!ptrs.has(e.pointerId))return;ptrs.set(e.pointerId,[e.clientX,e.clientY]);
-    if(pinch&&ptrs.size==2){const[a,b]=[...ptrs.values()],d=Math.hypot(a[0]-b[0],a[1]-b[1]),k=Math.max(.12,Math.min(1,pinch.vb[2]*pinch.d/d/300)),sz=300*k;vb=[pinch.c[0]-(pinch.c[0]-pinch.vb[0])*sz/pinch.vb[2],pinch.c[1]-(pinch.c[1]-pinch.vb[1])*sz/pinch.vb[3],sz,sz];clampVB();setVB();return}
-    if(start){const dx=e.clientX-start.x,dy=e.clientY-start.y;if(Math.hypot(dx,dy)>10)start.mv=1;if(start.mv&&vb[2]<299){const b=svg.getBoundingClientRect();vb[0]=start.vb[0]-dx/b.width*vb[2];vb[1]=start.vb[1]-dy/b.height*vb[3];clampVB();setVB()}}});
+    if(pinch&&ptrs.size==2){const[a,b]=[...ptrs.values()],d=Math.hypot(a[0]-b[0],a[1]-b[1]),k=Math.max(.12,Math.min(1,pinch.vb[2]*pinch.d/d/300)),sz=300*k,bb=svg.getBoundingClientRect(),mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2;vb=[pinch.c[0]-(mx-bb.left)/bb.width*sz,pinch.c[1]-(my-bb.top)/bb.height*sz,sz,sz];clampVB();setVB();return}
+    if(start&&ptrs.size==1){const dx=e.clientX-start.x,dy=e.clientY-start.y;if(Math.hypot(dx,dy)>8&&!start.mv){start.mv=1;start.done=new Set();const t0=start.t.closest&&start.t.closest('path[data-i]');if(t0){start.done.add(t0.dataset.i);tap(t0,1)}}
+      if(start.mv){const el=document.elementFromPoint(e.clientX,e.clientY),t=el&&el.closest&&el.closest('#stsvg path[data-i]');if(t&&!start.done.has(t.dataset.i)){start.done.add(t.dataset.i);tap(t,1)}}}});
   const up=e=>{ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;if(start&&!start.mv&&ptrs.size==0){const t=start.t.closest&&start.t.closest('path');if(t)tap(t)}if(ptrs.size==0)start=null};
   w.addEventListener('pointerup',up);w.addEventListener('pointercancel',e=>{ptrs.delete(e.pointerId);start=null;pinch=null});
   w.addEventListener('wheel',e=>{e.preventDefault();const c=toSvg(e.clientX,e.clientY),k=Math.max(.12,Math.min(1,vb[2]*(e.deltaY>0?1.15:.87)/300)),sz=300*k;vb=[c[0]-(c[0]-vb[0])*sz/vb[2],c[1]-(c[1]-vb[1])*sz/vb[3],sz,sz];clampVB();setVB()},{passive:false});
@@ -1930,13 +2005,13 @@ function neonDraw(){let sym=8,brush='neon',hue=Math.random()*360,size=6,mirror=t
 let STTAB='mandala';
 function colorMenu(tab){if(tab&&['shape','pixel','paint'].includes(tab))return classicColor(tab);if(tab)STTAB=tab;const st=stS();
   const tabs=[['mandala','✨ Mandalas'],['glass','💎 Glass'],['animal','🦁 Animals'],['neon','🌈 Neon'],['classic','🔢 Classic']];
-  const thumb=k=>{const it=st.items[k];return`<button class="btn sttile" data-k="${k}">${artSVG(artRegs(k),it?it.f:{},{glass:k[0]=='g',sw:k[0]=='g'?2:.8})}</button>`};
+  const thumb=k=>{const it=st.items[k];return`<button class="btn sttile" data-k="${k}">${artSVG(artRegs(k),it?it.f:{},{glass:k[0]=='g',sw:k[0]=='g'?2:k[0]=='p'?.5:.8})}</button>`};
   let body='';const mine=t=>st.order.filter(k=>k[0]==t);
   if(STTAB=='mandala'){const seeds=[3,17,42,77,123,256,512,999];body=`<button class="btn game" id="newm" style="background:linear-gradient(135deg,#f0abfc,#93c5fd)"><span class="ge">🎲</span><span class="gi"><span class="gt">New Mandala</span><span class="small">A brand-new design every time</span></span><span class="go">▶</span></button>
     ${mine('m').length?`<h3 class="cbdh">My Art</h3><div class="stgrid">${mine('m').map(thumb).join('')}</div>`:''}<h3 class="cbdh">Designs</h3><div class="stgrid">${seeds.filter(s=>!st.items['m:'+s]).map(s=>thumb('m:'+s)).join('')}</div>`}
   else if(STTAB=='glass'){const seeds=[5,21,64,88,130,301];body=`<button class="btn game" id="newg" style="background:linear-gradient(135deg,#fde68a,#a5f3fc)"><span class="ge">🎲</span><span class="gi"><span class="gt">New Rose Window</span><span class="small">Stained glass with hundreds of pieces</span></span><span class="go">▶</span></button>
     ${mine('g').length?`<h3 class="cbdh">My Art</h3><div class="stgrid">${mine('g').map(thumb).join('')}</div>`:''}<h3 class="cbdh">Windows</h3><div class="stgrid">${seeds.filter(s=>!st.items['g:'+s]).map(s=>thumb('g:'+s)).join('')}</div>`}
-  else if(STTAB=='animal')body=`<div class="tipcard">Color any way you like. Try ✨ Glitter and 🌅 Shiny!</div><div class="stgrid">${SHAPES.map(([id])=>thumb('a:'+id)).join('')}</div>`;
+  else if(STTAB=='animal')body=`<div class="tipcard">Geometric animals made of hundreds of facets. <b>Swipe</b> to paint lots of pieces at once. Use light and dark shades for a 3D look. Pinch with two fingers to zoom.</div><div class="stgrid">${Object.keys(POLYART).map(id=>thumb('p:'+id)).join('')}</div>`;
   else if(STTAB=='neon'){let g=[];try{g=JSON.parse(localStorage.getItem('starschool-neon')||'[]')}catch(e){}
     body=`<button class="btn game" id="newn" style="background:linear-gradient(135deg,#312e81,#be185d);color:#fff"><span class="ge">🌈</span><span class="gi"><span class="gt">Neon Kaleidoscope</span><span class="small" style="color:#fbcfe8">Glowing mirror drawing</span></span><span class="go">▶</span></button>${g.length?`<h3 class="cbdh">My Neon Art</h3><div class="stgrid">${g.map(s=>`<div class="sttile"><img src="${s}"></div>`).join('')}</div>`:''}`}
   else body=`<div class="tipcard">The original pictures, pixel art and color-by-number.</div><div class="games"><button class="btn game" data-c="shape" style="background:#fce7f3"><span class="ge">🦁</span><span class="gi"><span class="gt">Number Pictures</span></span></button><button class="btn game" data-c="pixel" style="background:#dbeafe"><span class="ge">🟦</span><span class="gi"><span class="gt">Pixel Art</span></span></button><button class="btn game" data-c="paint" style="background:#dcfce7"><span class="ge">🖌️</span><span class="gi"><span class="gt">Block Paint</span></span></button></div>`;
