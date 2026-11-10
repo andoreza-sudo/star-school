@@ -642,6 +642,57 @@ async function main() {
       await rf.ctx.close();
     }
 
+    // P5-02 spaced review: the tricky fixture (a v53 save whose 21 tricky misses are whole stored questions) is migrated on load
+    //     (no question html left, stars and coins kept); home still offers Tricky Mix (10); a stop round asks due items at
+    //     questions 2 and 4 with the "Remember this one?" tag and a right answer moves them to box 1, due tomorrow; Tricky Mix
+    //     plays 7 rebuilt items and books every one as fixed
+    {
+      const ra = await openApp(browser, { fixture: 'tricky' });
+      const rp = ra.page;
+      const r0 = await rp.evaluate(() => {
+        const raw = localStorage.getItem(KEY);
+        return { v: S.v, items: REV.get().length, due: dueItems().length, stars: S.stars, coins: S.coins, html: /class=|"html"/.test(raw),
+          rev: JSON.stringify(S.rev).length, mix: document.querySelector('#mix').textContent.trim() };
+      });
+      if (r0.v !== 6 || r0.items !== 21 || r0.due !== 21 || r0.stars !== 85 || r0.coins !== 64 || r0.html || !/Tricky Mix \(10\)/.test(r0.mix))
+        fail('tricky fixture after migration: ' + JSON.stringify(r0));
+      else step(`tricky fixture migrated: ${r0.items} review items (${r0.rev} bytes), no html in the save, home shows "${r0.mix}"`);
+      // a math stop round: log every question as it is drawn (G.q.rvk = the review item it came from)
+      await rp.evaluate(() => {
+        const orig = renderQ;
+        window.__rq = [];
+        renderQ = function () { orig(); __rq.push({ rvk: G.q.rvk || '', retry: !!G.retry, tag: (document.querySelector('.rtag') || {}).offsetHeight || 0 }); };
+        const i = NODES.math.findIndex(n => n.sk == 'sub' && n.lv == 1);
+        start('math', i);
+      });
+      await rp.waitForSelector('#prompt');
+      await playRound(rp, 'P5-02 stop round');
+      const r1 = await rp.evaluate(() => {
+        const d = REV.day(), asked = __rq.filter(x => x.rvk && !x.retry);
+        return { first: __rq.slice(0, 4).map(x => !!x.rvk), tags: asked.map(x => x.tag),
+          moved: asked.map(x => { const it = REV.get().find(y => revKey(y) === x.rvk); return it ? [it.box, it.due - d] : null; }),
+          due: dueItems().length, stars: S.stars >= 85 };
+      });
+      if (JSON.stringify(r1.first) !== '[false,true,false,true]' || r1.tags.some(h => h < 20) || r1.moved.some(m => !m || m[0] !== 1 || m[1] !== 1)
+        || r1.due !== 21 - r1.moved.length || !r1.stars)
+        fail('review in a stop round: ' + JSON.stringify(r1));
+      else step(`stop round: questions 2 and 4 were due review items with the tag (${r1.moved.length} in all), each now in box 1, due tomorrow`);
+      // Tricky Mix from home: 7 rebuilt items, all right on the first try = 7 fixed
+      await rp.evaluate(() => home());
+      await rp.waitForSelector('#mix');
+      await rp.click('#mix');
+      await rp.waitForSelector('#prompt');
+      const rm = await rp.evaluate(() => G.pool.filter(q => q.rvk).length + (G.q.rvk ? 1 : 0));
+      await playRound(rp, 'P5-02 tricky mix');
+      const r2 = await rp.evaluate(() => ({ fixed: G.fixed || 0, due: dueItems().length, box1: REV.get().filter(x => x.box == 1).length }));
+      if (rm !== 7 || r2.fixed !== 7 || r2.due !== r1.due - 7 || r2.box1 !== r1.moved.length + 7) fail('tricky mix: ' + JSON.stringify({ rm, ...r2 }));
+      else step(`Tricky Mix: ${rm} rebuilt review items, ${r2.fixed} fixed, ${r2.due} still due today`);
+      await rp.evaluate(() => { G.dead = true; home(); });
+      network.push(...ra.network);
+      for (const e of ra.errors) fail(e);
+      await ra.ctx.close();
+    }
+
     for (const e of errors) fail(e);
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');

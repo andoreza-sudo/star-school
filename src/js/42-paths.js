@@ -123,5 +123,5 @@ const SHOP={hat:[['🧢',10],['🎀',10],['🎩',20],['⛑️',25],['🎓',40],[
   ['rainbow',40,'🌈','linear-gradient(135deg,#fecaca,#fde68a,#bbf7d0,#bfdbfe,#ddd6fe)','Rainbow'],['space',50,'🌌','linear-gradient(135deg,#1e1b4b,#581c87)','Space'],['castle',60,'🏰','linear-gradient(135deg,#fae8ff,#c7d2fe)','Castle']]};
 const sceneOf=()=>SHOP.scene.find(x=>x[0]==S.wear.scene)||SHOP.scene[0];
 function petHTML(st=S.stars){const w=S.wear;return`<span class="petwrap"><span class="pe">${petE(st)}</span>${w.hat?`<span class="hat">${w.hat}</span>`:''}${w.toy?`<span class="toy">${w.toy}</span>`:''}</span>`}
-function allMiss(){const out=[];for(const sk in S.prog)for(const m of Object.values(S.prog[sk].miss||{}))if(m.n>0&&m.q){m.q.sk=m.q.sk||sk;out.push(m)}return out.sort((a,b)=>b.n-a.n)}
+const allMiss=()=>dueItems(); // P5-02: review items due today, most urgent first (59-review.js); home shows the count
 

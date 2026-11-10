@@ -715,7 +715,7 @@ const pick=a=>a[Math.floor(rnd()*a.length)];
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KEY='starschool-v2';
-const LATEST=5; // newest save schema version = MIGRATIONS.length (ROADMAP section 9)
+const LATEST=6; // newest save schema version = MIGRATIONS.length (ROADMAP section 9)
 let S,SAVE_RAW=null,SAVE_CORRUPT=false,SAVE_FAILED=false;
 /* Read the save string into S. Corrupt or non-object JSON is kept in KEY-corrupt; KEY itself is untouched until the first save(). */
 function loadSave(raw){
@@ -806,6 +806,41 @@ const MIGRATIONS=[null,
     }
     S.grade=g;
   }
+  ,
+  /* 5: P5-02. Stored misses become spaced-review items. Until v53 P(sk).miss[label] = {n, tot, q} kept the whole question
+     (html, choices, passage text). Each entry whose q is a whole question (has q.kind):
+     - n > 0 (still tricky): one item in S.rev {sk, lv, seed, label, box 0, due 0 (due at once), n}, plus bk for a bank question;
+       seed is left out when the question had none (saves older than v38; revQ in 59-review.js looks for one later).
+       At most 150 items (the most missed are kept).
+     - the entry itself shrinks to {tot, q: {label}}: the tally the Grown-ups "Tricky ones" table reads. n is dropped, so an
+       older cached app (rule 9) finds nothing to replay and cannot try to show a question without its html.
+     Self-contained (no generator or later code), idempotent (compact entries have no q.kind; items are not added twice).
+     Removes no stars, coins, map progress or anything else. */
+  ()=>{
+    const rev=Array.isArray(S.rev)?S.rev:[],add=[];
+    const key=o=>o.sk+'|'+o.lv+'|'+o.label;
+    const have=new Set(rev.map(o=>o&&key(o)));
+    const prog=S.prog&&typeof S.prog=='object'?S.prog:{};
+    for(const sk in prog){
+      const ms=prog[sk]&&prog[sk].miss;
+      if(!ms||typeof ms!='object')continue;
+      for(const lb in ms){
+        const m=ms[lb],q=m&&m.q;
+        if(!q||typeof q!='object'||!q.kind)continue;
+        const label=String(q.label!=null?q.label:lb);
+        if(m.n>0){
+          const it={sk:typeof q.sk=='string'?q.sk:sk,lv:Number.isInteger(q.lv)?q.lv:(Number.isInteger(prog[sk].lv)?prog[sk].lv:1),
+            label:label.slice(0,60),box:0,due:0,n:Math.min(99,Math.floor(m.n))};
+          if(Number.isInteger(q.seed))it.seed=q.seed;
+          if(q.bk&&typeof q.bk=='object')it.bk=q.bk;
+          if(!have.has(key(it))){have.add(key(it));add.push(it)}
+        }
+        ms[lb]={tot:Math.max(1,Math.floor(+m.tot||+m.n||1)),q:{label}};
+      }
+    }
+    add.sort((a,b)=>b.n-a.n); // stable: equal n keep save order
+    if(add.length)S.rev=rev.concat(add).slice(0,150);
+  }
 ];
 /* Run once at load, from 42-paths.js (needs NODES, which no code before it reads). Backs up the old string first. */
 function migrate(){
@@ -821,7 +856,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S));SAVE_FAILED=fals
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v54'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v55'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -2522,7 +2557,7 @@ const SHOP={hat:[['🧢',10],['🎀',10],['🎩',20],['⛑️',25],['🎓',40],[
   ['rainbow',40,'🌈','linear-gradient(135deg,#fecaca,#fde68a,#bbf7d0,#bfdbfe,#ddd6fe)','Rainbow'],['space',50,'🌌','linear-gradient(135deg,#1e1b4b,#581c87)','Space'],['castle',60,'🏰','linear-gradient(135deg,#fae8ff,#c7d2fe)','Castle']]};
 const sceneOf=()=>SHOP.scene.find(x=>x[0]==S.wear.scene)||SHOP.scene[0];
 function petHTML(st=S.stars){const w=S.wear;return`<span class="petwrap"><span class="pe">${petE(st)}</span>${w.hat?`<span class="hat">${w.hat}</span>`:''}${w.toy?`<span class="toy">${w.toy}</span>`:''}</span>`}
-function allMiss(){const out=[];for(const sk in S.prog)for(const m of Object.values(S.prog[sk].miss||{}))if(m.n>0&&m.q){m.q.sk=m.q.sk||sk;out.push(m)}return out.sort((a,b)=>b.n-a.n)}
+const allMiss=()=>dueItems(); // P5-02: review items due today, most urgent first (59-review.js); home shows the count
 
 /* ---------- your-voice clips (stored on this tablet) ---------- */
 const DB={db:null,open(){return new Promise((res,rej)=>{if(this.db)return res(this.db);const r=indexedDB.open('starschool',1);
@@ -2823,7 +2858,7 @@ function home(first){
   $('#book').onclick=book;$('#shop').onclick=shop;$('#mix').onclick=()=>{SFX.whoosh();startMix()};$('#race').onclick=raceMenu;$('#flu').onclick=()=>{SFX.whoosh();fluMenu()};$('#care').onclick=care;$('#groom').onclick=()=>{SFX.whoosh();gameRoom()};
   if($('#inst'))$('#inst').onclick=async()=>{try{installEvt.prompt();await installEvt.userChoice}catch(e){}installEvt=null;home()};
   let t;const g=$('#gear');g.onpointerdown=()=>{t=setTimeout(grown,1200)};g.onpointerup=g.onpointerleave=()=>clearTimeout(t);g.onclick=()=>fb('Grown-ups: hold it','warn');
-  {const sc=$('.scroll');if(sc)sc.insertAdjacentHTML('beforeend','<p class="small" style="text-align:center;opacity:.55;margin:14px 0 4px">Star School v54</p>')}
+  {const sc=$('.scroll');if(sc)sc.insertAdjacentHTML('beforeend','<p class="small" style="text-align:center;opacity:.55;margin:14px 0 4px">Star School v55</p>')}
   if(first&&S.voice)setTimeout(()=>say(`Hi ${S.name}! Pick a game!`),400)}
 
 let MAPP='math',MAPW={}; // MAPW[path] = the world picked in the strip (this session only, not saved)
@@ -3538,10 +3573,13 @@ const newG=o=>(bankRound(),Object.assign({n:10,done:0,score:0,streak:0,best:0,mi
 function start(p,i){const n=NODES[p][i];G=newG({path:p,node:i,sk:n.sk,lv:n.lv,n:gradeCfg().n});
   if(SK[n.sk].round){G.pool=SK[n.sk].round(n.lv);G.n=G.pool.length}
   next()}
-function startMix(){const qs=allMiss().slice(0,7).map(m=>({...m.q})),pool=[];
-  for(const p in NODES)NODES[p].forEach((n,i)=>{if(unlocked(p,i)&&i<=curNode(p))pool.push(n)});
+// The 10 questions of Tricky Mix / Mixed Practice: up to 7 due review items, then stops the child has reached (never a boss stop)
+function mixQs(){const qs=allMiss().slice(0,7).map(revQ).filter(Boolean),pool=[]; // P5-02: rebuilt from review items
+  for(const p in NODES)NODES[p].forEach((n,i)=>{if(n.sk!='boss'&&SK[n.sk]&&unlocked(p,i)&&i<=curNode(p))pool.push(n)});
+  if(!pool.length)pool.push(NODES.math[0]);
   while(qs.length<10){const n=pick(pool),q=genQ(n.sk,n.lv);qs.push(q)}
-  G=newG({mix:true,pool:shuffle(qs),sk:'mix'});next()}
+  return qs}
+function startMix(){G=newG({mix:true,pool:shuffle(mixQs()),sk:'mix'});next()}
 const back=()=>G&&G.path?pathMap(G.path):home();
 function worldPool(p,wi,k){const ns=NODES[p].filter(n=>n.wi==wi&&n.sk!='boss');return Array.from({length:k},()=>{const n=pick(ns),q=genQ(n.sk,n.lv);return q})}
 function bossIntro(p,i){const n=NODES[p][i],[e,name]=n.boss;
@@ -3556,10 +3594,10 @@ function testOut(p,wi){const w=PATHS[p].worlds[wi],o=document.createElement('div
   o.querySelector('#tgo').onclick=()=>{o.remove();SFX.whoosh();const bi=NODES[p].findIndex(n=>n.sk=='boss'&&n.wi==wi);G=newG({path:p,node:bi,sk:'test',test:{wi},pool:worldPool(p,wi,10)});next()}}
 function makeQ(){if(G.pool)return G.pool.shift();
   {const aq=mastQ();if(aq)return aq} // P1-08: challenge / support / easier question (51-mastery.js)
+  {const rq=revSlot();if(rq)return rq} // P5-02: a due review item at questions 2, 4, 6, 8 (59-review.js)
   if(G.path&&(G.done==3||G.done==7)){const N=NODES[G.path],old=N.filter((n,i)=>i<G.node&&n.sk!='boss'&&passed(G.path,i)&&!(n.sk==G.sk&&n.lv==G.lv));
     if(old.length){const n=pick(old),q=genQ(n.sk,n.lv);q.review=1;return q}}
-  const p=P(G.sk),ms=Object.values(p.miss).filter(m=>m.n>0&&m.q&&m.q.lv==G.lv);let q;
-  if(ms.length&&Math.random()<.3)q={...pick(ms).q};
+  let q;
   for(let t=0;t<10&&(!q||q.label===G.last);t++)q=genQ(G.sk,G.lv);
   G.last=q.label;return q}
 function next(){if(!G||G.dead)return;
@@ -3598,8 +3636,9 @@ function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;
   mastShow(q); // P1-08: Challenge tag, hint before the first try, answer clock
   fit();if(document.fonts)document.fonts.ready.then(fit);
   if(q.auto==='must'||(q.auto&&S.voice)||(q.say&&gradeCfg().auto==='all'))setTimeout(()=>say(q.say,null,q.lang=='es'?'es':null),400)}
-function addMiss(q){const p=P(q.sk),m=p.miss[q.label]||{n:0,tot:0,q};m.n++;m.tot++;m.q=q;p.miss[q.label]=m;
-  const ks=Object.keys(p.miss);if(ks.length>40){ks.sort((a,b)=>p.miss[a].tot-p.miss[b].tot);delete p.miss[ks[0]]}}
+function addMiss(q){const p=P(q.sk),m=p.miss[q.label]||{tot:0};m.tot=(m.tot||0)+1;m.q={label:q.label};delete m.n;p.miss[q.label]=m; // P5-02: a tally only
+  const ks=Object.keys(p.miss);if(ks.length>40){ks.sort((a,b)=>p.miss[a].tot-p.miss[b].tot);delete p.miss[ks[0]]}
+  revMiss(q)} // P5-02: the review item (59-review.js)
 const PRAISE=['Great job!','You got it!','Awesome!','Super!','Nice!','Yes!','Way to go!','Brilliant!','Boom! 💥','Nailed it!'];
 function check(v,el){if(G.lock)return;const q=G.q,K=KIND[q.kind],p=P(q.sk),ok=K.same?K.same(q,v):String(v)===String(q.ans);
   if(G.tries==0&&!G.retry)mastTry(q,ok); // P1-08: mastery record and in-round adaptation
@@ -3609,7 +3648,7 @@ function check(v,el){if(G.lock)return;const q=G.q,K=KIND[q.kind],p=P(q.sk),ok=K.
     actQEnd(G.tries==0&&!G.retry,G.retry); // P5-05
     const first=G.tries==0&&!G.retry;
     if(!G.retry){G.done++;p.t++;if(G.tries==0){G.score++;p.c++}}
-    if(G.tries==0&&p.miss[q.label]){if(p.miss[q.label].n>0&&!G.retry)G.fixed=(G.fixed||0)+1;p.miss[q.label].n=Math.max(0,p.miss[q.label].n-1)}
+    if(first&&revRight(q))G.fixed=(G.fixed||0)+1; // P5-02: a due review item moves up a box (59-review.js)
     G.streak=G.tries==0?G.streak+1:0;G.best=Math.max(G.best,G.streak);
     SFX.right(G.streak);
     if(first)setTimeout(()=>flyStar(src),150);
@@ -4438,6 +4477,157 @@ function gameRoom(){const left=ptLeft(),gs=garageS();
   $('#back').onclick=()=>home();if($('#learn'))$('#learn').onclick=()=>home();
   $('#g4x4').onclick=()=>{SFX.whoosh();garage()};$('#gcbn').onclick=()=>{SFX.whoosh();colorMenu()};$('#gbb').onclick=()=>{SFX.whoosh();bbMenu()}}
 
+/* ---------- spaced review engine (P5-02) ----------
+   Leitner boxes over missed questions. Saved data: S.rev = [{sk, lv, seed, label, box, due, n, bk?}], at most REV.CAP items.
+     sk, lv  skill and level of the question (genQ coordinates)
+     seed    genQ seed: genQ(sk, lv, seed) rebuilds the question. Absent on items moved from saves older than v38 (no seed was
+             kept then): the first rebuild looks for a seed with the same label and stores it (null when none was found).
+     bk      bank questions only: the q.bk spec; bankRebuild(bk) rebuilds the question (bank choice in live play is not by seed)
+     label   q.label, at most REV.LABEL characters: identifies the fact, and checks that a rebuilt question is still the same one
+     box     0..4. A miss puts the item in box 0 (new or not). A right first try while it is due moves it up one box; a right
+             answer in box 4 makes it leave the system.
+     due     day number (mastDay() = STRK.idx(today()), local calendar days) when it is next due. On entering box b it is due
+             REV.INT[b] days later: 0, 1, 3, 7, 21. Due when due <= today, or when due is further ahead than the longest
+             interval (the clock was set back). Items moved from old saves are due at once (due 0).
+     n       times missed (at most 99)
+   One item per fact: the key is sk|lv|label. Over the cap, the item in the highest box goes first (then the least missed,
+   then the one missed longest ago). Worst case 150 items is about 30 KB (tools/test.js checks under 40 KB).
+   Challenge questions (P1-08, harder than the stop being played) do not become items when missed: the child has not met that
+   level yet, and its own stop will teach it.
+
+   API (P5-03 Daily Review and Tricky Mix build on these):
+     REV.INT, REV.CAP       intervals per box, item cap
+     REV.get()              the cleaned S.rev array (creates it when missing; damaged entries are dropped)
+     dueItems(n, path, d)   up to n items due on day d (default today), most urgent first (oldest due, lowest box, most
+                            missed). path ('math', 'read', 'es') keeps only items whose skill and level is a stop on that path.
+                            dueItems().length is "N due today".
+     revQ(it)               the question for an item: rebuilt exactly (bankRebuild(bk) or genQ(sk, lv, seed)); when the rebuilt
+                            label differs (the generator changed) a fresh question of the same skill and level, and the item is
+                            kept. Carries q.rvk, the item key, so the answer is booked to the item.
+     revMiss(q, d)          a first wrong try (called by addMiss): item to box 0, due d, n + 1; creates it when new
+     revRight(q, d)         a right first try (called by check): when the matching item is due, up one box (or out after
+                            box 4). Returns true when an item moved (counted as "fixed" for game time).
+     revDue(it, d)          true when it is due on day d
+   In a round (makeQ calls revSlot()): normal stop rounds only (no pool, boss, test, mix, placement). Question 4 and 8 (done 3
+   and 7) ask the most urgent due item of the path, else the usual review of an older stop as before; question 2 and 6
+   (done 1 and 5) ask a due item of the stop itself, else a normal question. An item is asked at most once per round. A child
+   with nothing due gets exactly the rounds of v53. */
+const REV={
+  INT:[0,1,3,7,21], // days until due on entering box 0..4
+  CAP:150,          // most items kept
+  LABEL:60,         // characters of the label kept
+  NMAX:99,          // n stops counting here
+  FIND:120,         // seeds tried when an old item has no seed
+  SLOTS_PATH:[3,7], // done counts where a due item of the path is asked (the old "review an older stop" slots)
+  SLOTS_OWN:[1,5],  // done counts where a due item of the round's own stop is asked (was a 30% chance at any question)
+  day:()=>mastDay(),
+  get(){
+    let a=S.rev;
+    if(!Array.isArray(a))a=S.rev=[];
+    for(let i=a.length-1;i>=0;i--){
+      const it=a[i];
+      if(!it||typeof it!='object'||typeof it.sk!='string'||!Number.isInteger(it.lv)||typeof it.label!='string'){a.splice(i,1);continue}
+      if(!(it.box>=0&&it.box<REV.INT.length))it.box=0;
+      it.box=Math.floor(it.box);
+      if(!Number.isFinite(it.due))it.due=0;
+      if(!(it.n>=1))it.n=1;
+    }
+    return a;
+  },
+};
+const revLabel=l=>String(l==null?'':l).slice(0,REV.LABEL);
+const revKey=o=>o.sk+'|'+o.lv+'|'+revLabel(o.label);
+const revDue=(it,d)=>it.due<=d||it.due>d+REV.INT[REV.INT.length-1];
+const revOk=it=>!!(SK[it.sk]&&SK[it.sk].gen&&it.lv>=1&&it.lv<=(SK[it.sk].max||1));
+const revOnPath=(it,p)=>!!NODES[p]&&NODES[p].some(n=>n.sk==it.sk&&n.lv==it.lv);
+
+function dueItems(n,path,d){
+  if(d==null)d=REV.day();
+  const out=REV.get().filter(it=>revOk(it)&&revDue(it,d)&&(!path||revOnPath(it,path)));
+  out.sort((a,b)=>a.due-b.due||a.box-b.box||b.n-a.n);
+  return out.slice(0,n==null?REV.CAP:n);
+}
+
+// keeps a at the cap: highest box first, then least missed, then missed longest ago; never drops `keep`
+function revCap(a,keep){
+  while(a.length>REV.CAP){
+    let w=-1;
+    a.forEach((it,i)=>{
+      if(it===keep)return;
+      const b=w<0?null:a[w];
+      if(!b||it.box>b.box||(it.box==b.box&&(it.n<b.n||(it.n==b.n&&it.due<b.due))))w=i;
+    });
+    if(w<0)break;
+    a.splice(w,1);
+  }
+}
+
+function revMiss(q,d){
+  if(!q||!SK[q.sk]||!Number.isInteger(q.lv)||q.label==null)return null;
+  if(typeof mastTag=='function'&&mastTag(q)=='ch')return null; // a challenge question: not a review item
+  if(d==null)d=REV.day();
+  const a=REV.get(),k=q.rvk||revKey(q);
+  let it=a.find(x=>revKey(x)===k);
+  if(!it){
+    it={sk:q.sk,lv:q.lv,label:revLabel(q.label),box:0,due:d,n:0};
+    if(Number.isInteger(q.seed))it.seed=q.seed;
+    if(q.bk)it.bk=q.bk;
+    a.push(it);
+  }
+  it.box=0;
+  it.due=d;
+  it.n=Math.min(REV.NMAX,(it.n||0)+1);
+  revCap(a,it);
+  return it;
+}
+
+function revRight(q,d){
+  if(!q||!q.sk)return false;
+  if(d==null)d=REV.day();
+  const a=REV.get(),k=q.rvk||revKey(q),i=a.findIndex(x=>revKey(x)===k);
+  if(i<0||!revDue(a[i],d))return false;
+  const it=a[i];
+  if(it.box>=REV.INT.length-1)a.splice(i,1); // learned: leaves the system
+  else{it.box++;it.due=d+REV.INT[it.box]}
+  return true;
+}
+
+// the exact question again, or a fresh one of the same skill and level when the generator has changed
+function revQ(it){
+  if(!it||!revOk(it))return null;
+  let q=null;
+  try{
+    if(it.bk)q=bankRebuild(it.bk);
+    else if(Number.isInteger(it.seed))q=genQ(it.sk,it.lv,it.seed);
+    else if(!('seed' in it)&&!SK[it.sk].bank){
+      // an item from a save older than v38: look for a seed that gives the same label, once
+      it.seed=null;
+      for(let s=1;s<=REV.FIND;s++){const t=genQ(it.sk,it.lv,s);if(revLabel(t.label)===it.label){it.seed=s;q=t;break}}
+    }
+  }catch(e){q=null}
+  if(!q||revLabel(q.label)!==it.label)q=genQ(it.sk,it.lv);
+  q.sk=it.sk;
+  q.lv=it.lv;
+  q.rvk=revKey(it);
+  return q;
+}
+
+// makeQ hook: a due item at the review slots of a normal stop round, or null
+function revSlot(){
+  const g=G;
+  if(!g||!g.path||!(g.node>=0)||g.pool||g.boss||g.test||g.mix||g.nomast)return null;
+  const path=REV.SLOTS_PATH.includes(g.done),own=REV.SLOTS_OWN.includes(g.done);
+  if(!path&&!own)return null;
+  const asked=g.rvAsked||(g.rvAsked={});
+  const it=dueItems(REV.CAP,g.path).find(x=>!asked[revKey(x)]&&(path||(x.sk==g.sk&&x.lv==g.lv)));
+  if(!it)return null;
+  asked[revKey(it)]=1;
+  const q=revQ(it);
+  if(!q)return null;
+  q.review=1;
+  g.last=q.label;
+  return q;
+}
 /* ---------- block builder (isometric) ---------- */
 const BW=16,BD=16,BH=14;
 const BLOCKS=[null,
@@ -5695,7 +5885,7 @@ function grown(){let armed=false;
    <div class="vline"><span class="vtxt">Give a bonus</span><button class="btn xs" id="pt5">+5 min</button><button class="btn xs danger" id="pt0">Empty bank</button></div>
    <label class="tg"><input type="checkbox" id="ptp" ${ptCfg().pause?'checked':''}> Pause game time (games locked)</label></div>
   <div class="card"><div class="tw"><table><tr><th>Skill</th><th>Rounds</th><th>1st try</th><th>Tricky ones</th></tr>${rows}</table></div></div>
-  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v54 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
+  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v55 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
    Storage: ${SAVE_FAILED?'<b style="color:#c0392b">could not save (device storage may be full)</b>':'saving OK'}${SAVE_CORRUPT?'<br><b style="color:#c0392b">The old save could not be read. A fresh start was made and the old data was kept on the device.</b>':''}<br>
    Last errors: ${(S.err||[]).length?(S.err||[]).slice().reverse().map(e=>'<br>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+' '+esc(e.msg)).join(''):'none'}</div></details>
   <div class="card"><label class="tg"><input type="checkbox" id="voice" ${S.voice?'checked':''}> Read questions out loud</label>

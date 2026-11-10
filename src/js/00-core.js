@@ -8,7 +8,7 @@ const pick=a=>a[Math.floor(rnd()*a.length)];
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KEY='starschool-v2';
-const LATEST=5; // newest save schema version = MIGRATIONS.length (ROADMAP section 9)
+const LATEST=6; // newest save schema version = MIGRATIONS.length (ROADMAP section 9)
 let S,SAVE_RAW=null,SAVE_CORRUPT=false,SAVE_FAILED=false;
 /* Read the save string into S. Corrupt or non-object JSON is kept in KEY-corrupt; KEY itself is untouched until the first save(). */
 function loadSave(raw){
@@ -98,6 +98,41 @@ const MIGRATIONS=[null,
       });
     }
     S.grade=g;
+  }
+  ,
+  /* 5: P5-02. Stored misses become spaced-review items. Until v53 P(sk).miss[label] = {n, tot, q} kept the whole question
+     (html, choices, passage text). Each entry whose q is a whole question (has q.kind):
+     - n > 0 (still tricky): one item in S.rev {sk, lv, seed, label, box 0, due 0 (due at once), n}, plus bk for a bank question;
+       seed is left out when the question had none (saves older than v38; revQ in 59-review.js looks for one later).
+       At most 150 items (the most missed are kept).
+     - the entry itself shrinks to {tot, q: {label}}: the tally the Grown-ups "Tricky ones" table reads. n is dropped, so an
+       older cached app (rule 9) finds nothing to replay and cannot try to show a question without its html.
+     Self-contained (no generator or later code), idempotent (compact entries have no q.kind; items are not added twice).
+     Removes no stars, coins, map progress or anything else. */
+  ()=>{
+    const rev=Array.isArray(S.rev)?S.rev:[],add=[];
+    const key=o=>o.sk+'|'+o.lv+'|'+o.label;
+    const have=new Set(rev.map(o=>o&&key(o)));
+    const prog=S.prog&&typeof S.prog=='object'?S.prog:{};
+    for(const sk in prog){
+      const ms=prog[sk]&&prog[sk].miss;
+      if(!ms||typeof ms!='object')continue;
+      for(const lb in ms){
+        const m=ms[lb],q=m&&m.q;
+        if(!q||typeof q!='object'||!q.kind)continue;
+        const label=String(q.label!=null?q.label:lb);
+        if(m.n>0){
+          const it={sk:typeof q.sk=='string'?q.sk:sk,lv:Number.isInteger(q.lv)?q.lv:(Number.isInteger(prog[sk].lv)?prog[sk].lv:1),
+            label:label.slice(0,60),box:0,due:0,n:Math.min(99,Math.floor(m.n))};
+          if(Number.isInteger(q.seed))it.seed=q.seed;
+          if(q.bk&&typeof q.bk=='object')it.bk=q.bk;
+          if(!have.has(key(it))){have.add(key(it));add.push(it)}
+        }
+        ms[lb]={tot:Math.max(1,Math.floor(+m.tot||+m.n||1)),q:{label}};
+      }
+    }
+    add.sort((a,b)=>b.n-a.n); // stable: equal n keep save order
+    if(add.length)S.rev=rev.concat(add).slice(0,150);
   }
 ];
 /* Run once at load, from 42-paths.js (needs NODES, which no code before it reads). Backs up the old string first. */
