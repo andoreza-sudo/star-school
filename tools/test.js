@@ -595,6 +595,61 @@ run('kinds B: sample questions of match, tap, spell pass validate and render; br
   return{problems:uniq(out.bad),note:out.n+' samples'};
 });
 
+// ---- 15: new kinds A: num pads, multi, order (P1-03) ----
+run('kinds A: sample questions pass validate; numeric equality; validators catch broken questions',()=>{
+  const make=require('./kinds-samples').make;
+  const out=eval(js+`
+  const out={n:0,bad:[]};
+  const S2=(${make.toString()})();
+  for(const w in S2){
+    const q=S2[w];
+    out.n++;
+    for(const p of kindProblems(q))out.bad.push(w+': '+p);
+    try{KIND[q.kind].render(q)}catch(e){out.bad.push(w+': render threw '+e.message)}
+    if(!KIND[q.kind].same(q,q.ans))out.bad.push(w+': same() rejects its own answer');
+    if(q.alt&&!KIND.num.same(q,q.alt))out.bad.push(w+': same() rejects alt '+q.alt);
+  }
+  const eq=(name,a,b,want)=>{if(numEq(a,b)!==want)out.bad.push('numEq '+name+': '+a+' vs '+b+' should be '+want)};
+  eq('trailing zero','0.50','0.5',true);eq('no lead zero','.5','0.5',true);eq('half','2/4','1/2',true);eq('half dec','1/2','.5',true);
+  eq('neg','-0.50','-.5',true);eq('mixed','2 2/6','2 1/3',true);eq('R','9R2','9R2',true);eq('R differs','9R2','9R3',false);
+  eq('R vs plain','9R2','9',false);eq('different','3/4','1/2',false);eq('zero den','1/0','1/0',false);eq('junk','x','1',false);
+  eq('empty','','0',false);eq('big','999999999/1','999999999',true);
+  // exact text stays the default
+  if(KIND.num.same({ans:'0.5'},'0.50'))out.bad.push('num without eq must compare exact text');
+  if(!KIND.num.same({ans:'12'},'12'))out.bad.push('num plain same() broken');
+  const mq={choices:[{v:'a'},{v:'b'},{v:'c'}],ans:['a','c']};
+  if(!KIND.multi.same(mq,['a','c'])||KIND.multi.same(mq,['a'])||KIND.multi.same(mq,['a','b','c'])||KIND.multi.same(mq,'a,c'))out.bad.push('multi same() wrong');
+  const oq={ans:['x','y']};
+  if(!KIND.order.same(oq,['x','y'])||KIND.order.same(oq,['y','x']))out.bad.push('order same() wrong');
+  if(JSON.stringify(numParts('2 1/3',[' ','/']))!=='["2","1","3"]')out.bad.push('numParts mixed');
+  if(JSON.stringify(numParts('9R',['R']))!=='["9",""]')out.bad.push('numParts empty last');
+  if(JSON.stringify(kindSort(['b','a','10','9']))!=='["10","9","a","b"]')out.bad.push('kindSort is text order');
+  const must=(name,q)=>{if(!kindProblems(q).length)out.bad.push('validator missed: '+name)};
+  const sl=SLOT,ch=[{v:'a',l:'a'},{v:'b',l:'b'},{v:'c',l:'c'}],it=[{v:'a',l:'a'},{v:'b',l:'b'}];
+  must('num dec ans not decimal',{kind:'num',pad:'dec',html:sl,ans:'1.'});
+  must('num neg with plus',{kind:'num',pad:'neg',html:sl,ans:'+5'});
+  must('num frac zero denominator',{kind:'num',pad:'frac',html:SLOT_FRAC,ans:'1/0'});
+  must('num frac missing slot2',{kind:'num',pad:'frac',html:sl,ans:'1/2'});
+  must('num R ans shape',{kind:'num',sep:'R',html:SLOT_R,ans:'9'});
+  must('num mix missing slot3',{kind:'num',pad:'frac',sep:'mix',html:SLOT_R,ans:'2 1/3'});
+  must('num bad pad',{kind:'num',pad:'hex',html:sl,ans:'1'});
+  must('num bad eq',{kind:'num',eq:'loose',html:sl,ans:'1'});
+  must('num max 10',{kind:'num',max:10,html:sl,ans:'1'});
+  must('num ans longer than max',{kind:'num',max:2,html:sl,ans:'123'});
+  must('multi ans not array',{kind:'multi',choices:ch,ans:'a'});
+  must('multi ans empty',{kind:'multi',choices:ch,ans:[]});
+  must('multi ans not in choices',{kind:'multi',choices:ch,ans:['z']});
+  must('multi ans unsorted',{kind:'multi',choices:ch,ans:['c','a']});
+  must('multi duplicate choices',{kind:'multi',choices:[{v:'a',l:'a'},{v:'a',l:'b'}],ans:['a']});
+  must('multi one choice',{kind:'multi',choices:[{v:'a',l:'a'}],ans:['a']});
+  must('order cannot make ans',{kind:'order',items:it,ans:['a','z']});
+  must('order too few items',{kind:'order',items:it,ans:['a','b','a']});
+  must('order ans of one',{kind:'order',items:it,ans:['a']});
+  must('order item no label',{kind:'order',items:[{v:'a'},{v:'b',l:'b'}],ans:['a','b']});
+  out;`);
+  return{problems:uniq(out.bad),note:out.n+' samples'};
+});
+
 // ---- 13: math visuals (P1-10) ----
 run('viz: math visuals well-formed, small, deterministic, tokens only, tap targets 48',()=>{
   const p=[];

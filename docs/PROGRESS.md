@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** wave 3: P1-03 and P1-11 in progress; P1-06 next (grade pick, builds on setGrade/gradeOf from P1-05).
+**Next up:** wave 3: P1-06 and P1-11 in progress (last two). Then wave 4: P1-07 (Opus), P1-08 (Opus), P5-02, P5-03, P5-05, P5-06.
 
-**Current version:** v46
+**Current version:** v47
 
 ## Chunk status
 
@@ -26,6 +26,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P1-04 v44
 - P1-10 v45
 - P1-05 v46
+- P1-03 v47
 
 ## Handoff notes
 
@@ -35,6 +36,10 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 
 Things noticed while working that are outside the current chunk. One line each, with the chunk that noticed it.
 
+- (P1-03) The roadmap asks for a hidden dev skill `zz_demo` in `SK`. Not done on purpose: it would ship demo code in the app. Instead `tools/kinds-samples.js` holds 11 sample questions (all `sk:'zz_demo'`), and test.js, shots.js and smoke.js run them through the real engine (`G=newG({sk:'zz_demo',pool:[...]}); next()`). A later chunk that needs a real in-app demo can promote them.
+- (P1-03) Smoke step 7 (number pad reveal) leaves the old round's 2.6 s `next` timer running; it fires into whatever `G` exists later (it skipped a question in step 8). Step 8 now goes home and waits 3 s first. Cleaner fix: `next()` could take the round it belongs to, or `back()`/`home()` could cancel pending round timers.
+- (P1-03) `.act` (40-games.css, Art Studio) is a global class with `font-size:16px`; any new feature must not reuse short names like it. The number-pad slot highlight uses `.sl-on`.
+- (P1-03) `check()` still does the `el.classList.add('wrong'); el.disabled=true` on the tapped element; kinds that submit from a button that must stay usable (multi's Check button, order, tap, match) pass `el=null` and rely on the `.inp` fallback for the star/burst position.
 - (P1-02, FIXED in v42) Old bug, kept on purpose (the chunk must not change behaviour): after the second wrong try on a `num` question the slot shows the child's wrong number in the orange "answer" style, not the right one (the pad handler writes `st.typed` into `#slot` after `submit` has revealed the answer; same in Speed Race after a wrong "check" tap). Fix in `KIND.num.bind` (49-kinds.js): skip the slot write when `st.lock` became true during `submit`. The voice already says the right answer.
 - (P1-04) The spell keyboard is QWERTY with 10 keys in the top row; at 380 px wide each key is about 34 px wide (48 px tall). The roadmap's "44 px min keys in portrait" cannot hold for 10 columns at 380; height and gaps are as large as fits. A later pass could offer a 2-row-per-half layout if tablets in portrait complain (they get about 56 px keys at 600).
 - (P1-04) Spell hint: `hintHTML` k 'next' reads `G.built`/`q.tiles` (build only); spell questions must use `{k:'say', w, s}` (validate rejects 'next').
@@ -91,6 +96,17 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P1-05) Map draw with 16 fake worlds (156 stops) at 6x CPU throttle: median about 29 ms (limit 50), single runs up to about 49 ms. The strip recomputes `worldOpen`/`worldFinished` per chip and `unlocked` scans the world; a memo per draw is the next step if P4-09 adds weight.
 
 ## Log
+
+### P1-03 New kinds A: number pads, multi-select, order (v47, 2026-11-10, Claude)
+- What changed: `KIND.num` gets `q.pad` ('int' default, 'dec' adds `.`, 'neg' adds `±`, 'frac' two stacked slots, answer `'3/4'`), `q.sep` ('R': quotient and remainder slots, `'9R2'`; 'mix': whole + fraction in three slots, `'2 1/3'`), `q.eq:'value'` (numeric compare: `0.50` = `.5`, `2/4` = `1/2`, exact BigInt maths; the default stays exact text) and `q.max` (digits per slot, default 4, up to 9). With more than one slot the check key shows `→` and moves to the next slot, `✓` on the last slot submits, del steps back across the separator, the active slot is outlined. New kinds `multi` (choose all that apply, a Check button, `ans` = sorted array) and `order` (tap tiles into slots, tap a filled slot to take it back, auto-checks when full; generalises `build`, which is unchanged). Each has render/bind/right/retry/reveal/spoken/validate plus `same`. Existing int pad behaviour is unchanged (same HTML, same keys).
+- Engine hook (50-round.js `check`, 2 small edits): `ok=K.same?K.same(q,v):String(v)===String(q.ans)` (optional per-kind answer comparison) and the star/burst source falls back to `$('.inp')` when a kind has no slot or button to point at. Speed Race is untouched (it only plays int `num`).
+- Files: src/js/49-kinds.js, src/js/50-round.js (hook), src/css/32-kinds-a.css (new, tokens only; the chunk said 30-learn.css, a new file keeps the old hex-heavy file untouched), tools/kinds-samples.js (new, 11 sample questions), tools/test.js (check 13), tools/shots.js (group `kinds-*`), tools/smoke.js (step 8, plus `answer()` knows the new kinds), tools/build.py (VER), built output.
+- Tests: test.js 17 of 17 ok (check 13: all samples validate and render, `same()` of every kind, 14 numeric-equality cases, 20 broken questions the validators must catch) / smoke.js ok (step 8: bot answers all 11 samples right at 380x780 with every target at least 48 px and no sideways scroll, then gets dec, multi and order wrong twice and checks the reveal) / index.html 433 KB.
+- Screenshots (`node tools/shots.js kinds-dec kinds-neg kinds-frac kinds-rem kinds-mix kinds-multi kinds-order kinds-words`, 24 PNGs): looked at montages of frac, mix, multi, order, rem, neg, words at 380x780 and mix, multi at 1024x600. Found and fixed one bug: the active slot used the global class `.act`, which shrank it to 16 px.
+- Checklist 7.1: all ticked (only the chunk's files plus tests/tools; midway fixture and no-network covered by smoke; no emoji added, no raw hex in the new CSS). Not pushed: built on branch P1-03-kinds-a for merge; VER v47 is provisional.
+- Merge notes: P1-04 also appends kinds at the end of `KIND` in 49-kinds.js (conflict at the closing `};` and in the header comment; keep both blocks) and may reuse `K.same` and the `.inp` fallback. Helper functions and `SLOT_*` constants are at the end of 49-kinds.js.
+- Left over: no generator uses the new kinds yet (curriculum chunks do); `tap`/`match`/`spell` are P1-04.
+- Merge: built on a parallel branch, renumbered v45 -> v47 at merge.
 
 ### P1-05 Stable world IDs, grade tags, world gating, long maps (v46, 2026-11-10, Claude)
 - What changed: every world has a permanent `id` and grade tag `g` (CURRICULUM 2: `m_meadow` K, `m_candy` 1, `m_reef` 1, `m_space` 2, `r_meadow` K, `r_candy` 1, `r_reef` 1, `r_space` 2, `e_plaza`/`e_fiesta`/`e_repaso` -1 with `byLevel`). Nodes carry `wid`; a boss is keyed `boss_<worldId>`; `S.wdone`, `S.skip` and the game-time repeat keys use world ids. Gating per ROADMAP 3.2 in 42-paths.js: a world is open if it is first, `g <= grade` (not on `byLevel` paths), skipped, the previous world is finished (boss beaten, all passed, or skipped), or it has progress; passed stops are always open; a stop behind the child's progress is never locked; unpassed stops in a world whose boss is beaten show a NEW tag. Test out also writes `S.skip`.
