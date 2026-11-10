@@ -1,7 +1,8 @@
 /* Streak flame chip and calendar (P5-04). Tokens only. */
 .stc-chip{font:inherit;font-size:var(--fs-4);font-weight:700;min-height:var(--tap);min-width:var(--tap);display:inline-flex;align-items:center;gap:var(--s-1);
   border:0;cursor:pointer;color:var(--play-shade);background:var(--play-tint);border-radius:var(--r-btn);padding:6px 12px;box-shadow:var(--ledge) var(--shadow-ink);font-variant-numeric:tabular-nums}
-.stc-chip.off{color:var(--ink-3);background:var(--surface-2)}
+.stc-chip{--ic2:var(--play-tint)}
+.stc-chip.off{color:var(--ink-3);background:var(--surface-2);--ic2:var(--surface-2)}
 .stc-chip.off .stc-fl{opacity:.45}
 .stc-card{background:var(--surface);border-radius:var(--r-card);border:2px solid var(--line);padding:var(--s-4);max-width:520px;margin:0 auto;text-align:center}
 .stc-big{font-size:var(--fs-6);font-weight:700;color:var(--play-shade)}

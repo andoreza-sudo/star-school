@@ -178,6 +178,7 @@ Microcopy rules: short, warm, concrete. "Try again" not "Wrong". "3 more stars t
 | Size | Under 600 bytes per icon, coordinates to one decimal |
 | Feature icons | Same drawings may be shown at 48-64 px inside a tinted circle "badge" with the subject colour |
 | Naming | lowercase, hyphenated: `sound-on`, `skill-add` |
+| How (set in P4-02) | Rounded corners come from stroking the inset shape with `currentColor` (stroke-width 3 for r 1.5, 1.5 for star points); cut-outs use `fill-rule="evenodd"`; `--ic2` only where a cut-out cannot work. Full recipe in the header of `src/js/15-icons.js`; review sheet: `node tools/shots.js icons` |
 
 ### 5.3 First 40 icons (P4-02)
 

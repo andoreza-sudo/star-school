@@ -7,7 +7,7 @@ const { SIZES, launch, openApp } = require('./lib/browser');
 
 const OUT = path.join(__dirname, 'out');
 
-// Each screen: { fixture, run(page) }. run() drives the app via its globals or real taps.
+// Each screen: { fixture, full, run(page) }. run() drives the app via its globals or real taps; full: true takes a full-page shot.
 const SCREENS = {
   setup: { fixture: 'fresh', run: async () => {} },
   home: { run: async p => { await p.evaluate(() => home(true)); } },
@@ -46,6 +46,30 @@ const SCREENS = {
   // P5-04: a 5-day streak with one rest day, then the month grid (and the home flame)
   'streak-home': { run: async p => { await p.evaluate(() => { const T = STRK.idx(today()); S.streak = { days: {}, best: 9, rw: 3 }; [0, 1, 2, 4, 5, 6, 9, 10, 11, 12].forEach(o => { S.streak.days[STRK.key(T - o)] = 1; }); home(true); }); } },
   streak: { run: async p => { await p.evaluate(() => { const T = STRK.idx(today()); S.streak = { days: {}, best: 9, rw: 3 }; [0, 1, 2, 4, 5, 6, 9, 10, 11, 12].forEach(o => { S.streak.days[STRK.key(T - o)] = 1; }); streakCal(0); }); } },
+
+
+  // ---- P4-02 icons ----
+  care: { run: async p => { await p.evaluate(() => care()); } },
+  // Icon sheet (DESIGN_SYSTEM 5.1): every icon at 20, 32 and 64 px, on white (ink) and on a colour (white icon,
+  // --ic2 set to the fill). Full-page shot, so the sheet may be taller than the viewport.
+  icons: {
+    full: true,
+    run: async p => {
+      await p.evaluate(() => {
+        const sizes = [20, 32, 64];
+        const row = n => sizes.map(s => ico(n, s)).join('');
+        const cells = Object.keys(ICONS).map(n => `<div class="isc"><div class="isw">${row(n)}</div>` +
+          `<div class="isb">${row(n)}</div><div class="isn">${n}</div></div>`).join('');
+        view(`<style>.isg{display:grid;grid-template-columns:repeat(auto-fill,minmax(176px,1fr));gap:8px;padding:8px}
+          .isc{background:var(--surface);border-radius:var(--r-chip);overflow:hidden;box-shadow:var(--shadow)}
+          .isw,.isb{display:flex;align-items:center;gap:8px;padding:6px 8px;color:var(--ink)}
+          .isb{background:var(--brand);color:var(--surface);--ic2:var(--brand)}
+          .isn{font-size:var(--fs-1);padding:2px 8px 4px;color:var(--ink-2)}
+          #app,html,body{height:auto;overflow:visible}</style>
+          <div class="top"><div class="title">Icons (${Object.keys(ICONS).length})</div></div><div class="isg">${cells}</div>`);
+      });
+    },
+  },
 };
 
 async function main() {
@@ -74,7 +98,7 @@ async function main() {
         await s.run(page);
         await page.waitForTimeout(700);
         const file = path.join(OUT, `${n}-${w}x${h}.png`);
-        await page.screenshot({ path: file });
+        await page.screenshot({ path: file, fullPage: !!s.full });
         console.log('wrote ' + path.relative(process.cwd(), file));
         for (const e of errors.concat(network.map(u => 'network: ' + u))) { console.error('  ! ' + n + ' ' + w + 'x' + h + ' ' + e); bad++; }
         await ctx.close();

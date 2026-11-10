@@ -45,6 +45,9 @@ h2{font-size:24px;margin:18px 4px 10px}
 .meter div{height:100%;background:linear-gradient(90deg,var(--star-shade),var(--danger));border-radius:9px;transition:width .6s}
 .meter.m div{background:linear-gradient(90deg,var(--good),var(--disc))}
 .htxt{font-size:16px;font-weight:700;color:var(--try-ink)}
+/* icons (P4-02): ico(name,size,cls) in 15-icons.js; colour from currentColor, second tone from --ic2 */
+.ic{display:inline-block;flex:none;vertical-align:-.2em;fill:currentColor;overflow:visible;pointer-events:none}
+.ic-coin{color:var(--star-shade);--ic2:var(--star-tint)}
 /* reduced motion and calm mode (also hides confetti) */
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.conf{display:none!important}}
 html.calm *,html.calm *::before,html.calm *::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}

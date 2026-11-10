@@ -5,10 +5,10 @@ const SNACKS=[['🍎',3,25],['🍪',5,40],['🍕',8,60],['🎂',15,100]];
 function care(){const c=careTick();save();const pn=esc(petN()),sc=sceneOf();
   const mood=c.food<30?`${pn} is hungry! 🍖`:c.clean<30?`${pn} needs a bath! 🛁`:c.fun<30?`${pn} wants to play! 🎾`:Math.min(c.food,c.clean,c.fun)>=80?`${pn} is super happy! 💖`:`${pn} is doing great!`;
   const bar=(l,v,col)=>`<div class="cbar"><span>${l}</span><div class="meter"><div style="width:${v}%;background:${col}"></div></div><b>${Math.round(v)}%</b></div>`;
-  view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title">🐾 Pet Care</div><div class="sp"></div><div class="stars" id="coinc">🪙 ${S.coins}</div></div>
+  view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title">🐾 Pet Care</div><div class="sp"></div><div class="stars" id="coinc">${ico('coin','1.2em','ic-coin')} ${S.coins}</div></div>
   <div class="scroll">${stageHTML(sc,mood,'',false)}
   <div class="card">${bar('🍖 Food',c.food,'linear-gradient(90deg,#f59e0b,#ef4444)')}${bar('🛁 Clean',c.clean,'linear-gradient(90deg,#38bdf8,#3b82f6)')}${bar('🎾 Fun',c.fun,'linear-gradient(90deg,#a3e635,#22c55e)')}</div>
-  <h2>Snacks</h2><div class="shopgrid">${SNACKS.map(([e,cost,v],i)=>`<button class="btn item" data-f="${i}"><span>${e}</span><div>🪙 ${cost}</div></button>`).join('')}</div>
+  <h2>Snacks</h2><div class="shopgrid">${SNACKS.map(([e,cost,v],i)=>`<button class="btn item" data-f="${i}"><span>${e}</span><div>${ico('coin','1.2em','ic-coin')} ${cost}</div></button>`).join('')}</div>
   <div class="actions" style="grid-template-columns:1fr 1fr"><button class="btn act" id="bath"><span>🛁</span>Bath time (free)</button><button class="btn act" id="play"><span>🎾</span>Play (free)</button></div></div>`);
   $('#back').onclick=()=>home();
   const pet=$('#pet'),fly=(emo,n=1)=>{const r=pet.getBoundingClientRect();for(let i=0;i<n;i++)setTimeout(()=>burst(r.left+r.width/2,r.top+r.height/2,[emo]),i*120)};

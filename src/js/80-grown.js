@@ -8,7 +8,7 @@ function grown(){let armed=false;
   <div class="card"><div class="row"><b style="width:110px">Child</b><input class="name" id="nm" value="${esc(S.name)}"></div>
    <div class="row"><b style="width:110px">Pet name</b><input class="name" id="pn" value="${esc(S.petName)}" placeholder="${PETS[S.pet].def}"></div>
    <div class="row"><b style="width:110px">Buddy</b><input class="name" id="bd" value="${esc(S.buddy)}" placeholder="Sibling or friend, used in story problems"></div>
-   <div class="small">Stops passed: ${prog}<br>⭐ ${S.stars} stars · 🪙 ${S.coins} coins · 📒 ${STK.filter(s=>S.stickers[s]).length}/${STK.length} stickers · 🔥 best streak ${S.best||0}</div>
+   <div class="small">Stops passed: ${prog}<br>⭐ ${S.stars} stars · ${ico('coin','1.2em','ic-coin')} ${S.coins} coins · 📒 ${STK.filter(s=>S.stickers[s]).length}/${STK.length} stickers · 🔥 best streak ${S.best||0}</div>
    ${SAVE_FAILED?'<div class="small" style="color:#c0392b;font-weight:700">Could not save progress: the device storage may be full.</div>':''}
    <label class="tg"><input type="checkbox" id="ula" ${S.unlockAll?'checked':''}> Unlock every stop on the map (let them jump ahead)</label></div>
   <div class="card"><h2 style="margin:0 0 6px">🎙️ Your voice</h2><div class="small" style="margin-bottom:8px">Tap ⏺ and say the line (up to 4 seconds). Record as many as you like. The app shuffles them so the same one doesn't play twice in a row. ${inFrame?'<b>Recording only works on the tablet app, not in this preview.</b>':!canRec?'<b>Recording isn\'t available in this browser. Use Chrome or the installed app.</b>':''}</div>
