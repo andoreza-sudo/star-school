@@ -1,7 +1,11 @@
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
-const R=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
-const pick=a=>a[Math.floor(Math.random()*a.length)];
-const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+/* Seedable randomness (P1-01). Generators use only rnd(), R, pick, shuffle, coin. genQ() swaps RNG for a seeded stream so a question can be rebuilt from (sk, lv, seed). Games and art keep Math.random. */
+const mulberry32=a=>()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
+let RNG=Math.random;
+const rnd=()=>RNG();
+const R=(a,b)=>a+Math.floor(rnd()*(b-a+1));
+const pick=a=>a[Math.floor(rnd()*a.length)];
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KEY='starschool-v2';
 const LATEST=3; // newest save schema version = MIGRATIONS.length (ROADMAP section 9)

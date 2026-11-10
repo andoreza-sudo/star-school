@@ -4,10 +4,10 @@ const newG=o=>Object.assign({n:10,done:0,score:0,streak:0,best:0,missed:[],last:
 function start(p,i){const n=NODES[p][i];G=newG({path:p,node:i,sk:n.sk,lv:n.lv});next()}
 function startMix(){const qs=allMiss().slice(0,7).map(m=>({...m.q})),pool=[];
   for(const p in NODES)NODES[p].forEach((n,i)=>{if(unlocked(p,i)&&i<=curNode(p))pool.push(n)});
-  while(qs.length<10){const n=pick(pool),q=SK[n.sk].gen(n.lv);q.sk=n.sk;q.lv=n.lv;qs.push(q)}
+  while(qs.length<10){const n=pick(pool),q=genQ(n.sk,n.lv);qs.push(q)}
   G=newG({mix:true,pool:shuffle(qs),sk:'mix'});next()}
 const back=()=>G&&G.path?pathMap(G.path):home();
-function worldPool(p,wi,k){const ns=NODES[p].filter(n=>n.wi==wi&&n.sk!='boss');return Array.from({length:k},()=>{const n=pick(ns),q=SK[n.sk].gen(n.lv);q.sk=n.sk;q.lv=n.lv;return q})}
+function worldPool(p,wi,k){const ns=NODES[p].filter(n=>n.wi==wi&&n.sk!='boss');return Array.from({length:k},()=>{const n=pick(ns),q=genQ(n.sk,n.lv);return q})}
 function bossIntro(p,i){const n=NODES[p][i],[e,name]=n.boss;
   view(`<div class="center"><div class="bossbig">${e}</div><h1>${name} appears!</h1><p class="sub">Every right answer zaps ${name}. Zap 7 times to win a prize: ${n.prize}</p>
    <div class="rowh"><button class="btn big" id="fight" style="background:#dc2626">⚔️ Let's go!</button><button class="btn" id="nope">🗺️ Map</button></div></div>`);
@@ -20,11 +20,11 @@ function testOut(p,wi){const w=PATHS[p].worlds[wi],o=document.createElement('div
   o.querySelector('#tgo').onclick=()=>{o.remove();SFX.whoosh();const bi=NODES[p].findIndex(n=>n.sk=='boss'&&n.wi==wi);G=newG({path:p,node:bi,sk:'test',test:{wi},pool:worldPool(p,wi,10)});next()}}
 function makeQ(){if(G.pool)return G.pool.shift();
   if(G.path&&(G.done==3||G.done==7)){const N=NODES[G.path],old=N.filter((n,i)=>i<G.node&&n.sk!='boss'&&passed(G.path,i)&&!(n.sk==G.sk&&n.lv==G.lv));
-    if(old.length){const n=pick(old),q=SK[n.sk].gen(n.lv);q.sk=n.sk;q.lv=n.lv;q.review=1;return q}}
+    if(old.length){const n=pick(old),q=genQ(n.sk,n.lv);q.review=1;return q}}
   const p=P(G.sk),s=SK[G.sk],ms=Object.values(p.miss).filter(m=>m.n>0&&m.q&&m.q.lv==G.lv);let q;
   if(ms.length&&Math.random()<.3)q={...pick(ms).q};
-  for(let t=0;t<10&&(!q||q.label===G.last);t++)q=s.gen(G.lv);
-  q.sk=G.sk;q.lv=G.lv;G.last=q.label;return q}
+  for(let t=0;t<10&&(!q||q.label===G.last);t++)q=genQ(G.sk,G.lv);
+  G.last=q.label;return q}
 function next(){if(!G||G.dead)return;
   if(G.done<G.n){G.q=makeQ();G.retry=false}
   else if(G.missed.length){G.q=G.missed.shift();G.retry=true}

@@ -267,6 +267,36 @@ run('fact sprint: facts, requeue, records, game time, clock',()=>{
   return{problems:ferrs};
 });
 
+// ---- 11: seedable randomness (P1-01) ----
+run('seeded rnd: genQ(sk, lv, seed) is reproducible',()=>{
+  const p=[];let nq=0;
+  const out=eval(js+`
+  const out={ok:0,bad:[]},eq=require('util').isDeepStrictEqual;
+  for(const id in SK)for(let lv=1;lv<=SK[id].max;lv++){
+    let varied=new Set();
+    for(let s=1;s<=200;s++){
+      const a=genQ(id,lv,s),b=genQ(id,lv,s);out.ok++;
+      if(!eq(a,b)){out.bad.push(id+' L'+lv+': seed '+s+' gives different questions');break}
+      if(a.sk!==id||a.lv!==lv||a.seed!==s)out.bad.push(id+' L'+lv+': sk/lv/seed not stamped');
+      varied.add(a.label);
+    }
+    if(varied.size<2&&SK[id].max>0&&id!='boss')out.bad.push(id+' L'+lv+': 200 seeds gave one question');
+  }
+  const r0=RNG;genQ('add',1);if(RNG!==r0)out.bad.push('RNG not restored');
+  const sg=SK.add.gen;SK.add.gen=()=>{throw new Error('x')};try{genQ('add',1)}catch(e){}SK.add.gen=sg;
+  if(RNG!==r0)out.bad.push('RNG not restored after a throw');
+  const q1=genQ('add',1),q2=genQ('add',1,q1.seed);if(!eq(q1,q2))out.bad.push('seed stamped on q does not rebuild it');
+  for(const k of Object.keys(SPN))if(!SK['es_'+k]&&k!='mix')out.bad.push('Speed Race needs SK.es_'+k);
+  out;`);
+  nq=out.ok;p.push(...out.bad);
+  // generator files must not touch Math.random (22-qhelpers may, once, to pick a fresh seed); games, art, sound may
+  for(const f of fs.readdirSync(path.join(SRC,'js')).filter(n=>/^(20|22|3\d)-/.test(n))){
+    const n=(fs.readFileSync(path.join(SRC,'js',f),'utf8').match(/Math\.random/g)||[]).length;
+    if(n>(f.startsWith('22-')?1:0))p.push(f+': Math.random in a generator file');
+  }
+  return{problems:p,note:nq+' seeded questions, 200 seeds per skill level'};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){

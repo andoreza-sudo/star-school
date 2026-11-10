@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** P1-01 (done on a parallel branch, merging), then P5-04, P1-02, P4-02.
+**Next up:** P5-04, P1-02 (Opus), P4-02 (Opus). Then wave 3.
 
-**Current version:** v37
+**Current version:** v38
 
 ## Chunk status
 
@@ -17,6 +17,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P0-05 v35
 - P5-01 v36
 - P4-01 v37
+- P1-01 v38
 
 ## Handoff notes
 
@@ -26,6 +27,8 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 
 Things noticed while working that are outside the current chunk. One line each, with the chunk that noticed it.
 
+- (P1-01) `makeQ` in 50-round.js still reads `Math.random()<.3` to choose between a stored miss and a fresh question, and copies stored miss questions with `{...q}`; both are for P5-02 (spaced review), which should store `{sk,lv,seed}` and rebuild with `genQ`. Old stored misses have no `seed`.
+- (P1-01) `makeQ` still declares an unused `s=SK[G.sk]` after the genQ change; harmless, remove when 50-round.js is next touched.
 - (P0-01) `node tools/smoke.js` takes about 95 s because the bot waits for the app's own 1.2 s between questions. Fine for now; a later chunk could shorten it with a fake clock.
 - (P0-01) `node tools/test.js` only prints and always exits 0 until P0-04 makes it a real check.
 - (P0-01) `python3 tools/build.py` re-draws the icons with Pillow, so `icon-*.png` can show as modified in git after a rebuild even when nothing changed visually.
@@ -50,6 +53,14 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P0-04) `node tools/test.js` needs a built `index.html` for the size check (it fails with a message if missing); `check.sh` builds first. The size budget (warn 1.2 MB, fail 1.5 MB) lives only in `tools/test.js`.
 
 ## Log
+
+### P1-01 Seedable randomness and question identity (v38, 2026-11-10, Claude)
+- What changed: `mulberry32`, `let RNG`, `rnd()` in 00-core.js; `R`, `pick`, `shuffle`, `coin` now use `rnd()`. The two direct `Math.random` calls in generator files (`coin`, `genCmp` equal-roll) now use `rnd()`. New `genQ(sk,lv,seed)` in 22-qhelpers.js: seeds RNG, calls `SK[sk].gen(lv)`, restores RNG in a `finally`, stamps `q.sk`, `q.lv`, `q.seed` (uint32, random when omitted). Round engine (`startMix`, `worldPool`, review insert, `makeQ`) and Speed Race sight/Spanish questions go through `genQ`. Games, art, sound still use `Math.random`. No generator output changed; nothing in S changed (no migration).
+- Files: src/js/00-core.js, 22-qhelpers.js, 32-gen-read.js, 50-round.js, 54-race.js, tools/test.js (new check 11), tools/build.py (VER).
+- Tests: test.js 11 of 11 ok / smoke.js ok / index.html 377 KB
+- Screenshots checked: question screen
+- Checklist 7.1: all ticked
+- Left over / notes: see "Ideas and issues" (P5-02 should store sk/lv/seed). Speed Race math questions are inline (not skills) and use R/coin, so they are not seedable by genQ.
 
 ### P4-01 Tokens and base layer (v37, 2026-11-10, Claude)
 - What changed: new `src/css/00-tokens.css` (colour, subject colours, type scale, space, radius, ledge/shadow, tap sizes, motion, legacy aliases); `20-base.css` now uses tokens only (zero raw hex), adds `:focus-visible` ring, `touch-action`, safe-area padding on `#app`, tabular-nums on the stars chip, reduced-motion and `html.calm` rules (animations 0.01 ms, confetti hidden); `tools/contrast.js` checks 42 token pairs and runs from check.sh together with a no-hex guard on 20-base.css. Contrast fixes recorded in DESIGN_SYSTEM 2.1: `--math` #2D6BE4, `--read` #CD3168, `--good` #20A556, `--good-ink` #147A3C. Big green button now `--good-ink` fill for white-text contrast.
