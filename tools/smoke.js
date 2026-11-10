@@ -166,6 +166,36 @@ async function main() {
     await page.click('#back');
     await page.waitForSelector('#stkb');
 
+    // 7. number pad: after the second wrong try the slot must show the right answer, not the child's wrong number
+    await page.evaluate(() => home());
+    await page.click('.game[data-p="math"]');
+    await page.waitForSelector('.node[data-n="0"]');
+    await page.click('.node[data-n="0"]');
+    let numSeen = false;
+    for (let i = 0; i < 10 && !numSeen; i++) {
+      await page.waitForFunction(() => G && G.q && !G.lock, null, { timeout: 8000 });
+      if (await page.evaluate(() => G.q.kind !== 'num')) {
+        await page.evaluate(() => { window.__q = G.q; });
+        await answer(page);
+        await page.waitForFunction(() => document.querySelector('#fin') || (G && G.q !== window.__q), null, { timeout: 8000 });
+        if (await page.$('#fin')) break;
+        continue;
+      }
+      numSeen = true;
+      const ans = await page.evaluate(() => G.q.ans);
+      const wrong = ans === '9' ? '8' : '9';
+      for (let t = 0; t < 2; t++) {
+        await page.waitForFunction(() => G && !G.lock, null, { timeout: 8000 });
+        await page.click(`.k[data-k="${wrong}"]`);
+        await page.click('.k[data-k="go"]');
+      }
+      await page.waitForTimeout(200);
+      const slot = await page.evaluate(() => document.querySelector('#slot').textContent);
+      if (slot !== ans) fail(`number pad reveal shows "${slot}", expected the answer "${ans}"`);
+      else step('number pad: second wrong try reveals the right answer in the slot');
+    }
+    if (!numSeen) fail('number pad step: no number question in the first math round');
+
     for (const e of errors) fail(e);
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');
