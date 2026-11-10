@@ -1,0 +1,28 @@
+{
+ "pet": "dino",
+ "petName": "Rex",
+ "buddy": "Ben",
+ "name": "Mia",
+ "stars": 40,
+ "coins": 25,
+ "prog": {},
+ "stickers": {
+  "🦄": 1
+ },
+ "day": {},
+ "wdone": {},
+ "owned": {
+  "meadow": 1
+ },
+ "wear": {
+  "hat": "",
+  "toy": "",
+  "scene": "meadow"
+ },
+ "map": {
+  "0": 2,
+  "1": 3,
+  "2": 1,
+  "5": 2
+ }
+}

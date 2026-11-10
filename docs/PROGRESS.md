@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** P0-03, P0-04, P5-01.
+**Next up:** P0-04, P5-01.
 
-**Current version:** v32
+**Current version:** v33
 
 ## Chunk status
 
@@ -12,6 +12,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 
 - P0-01 v31
 - P0-02 v32
+- P0-03 v33
 
 ## Handoff notes
 
@@ -26,8 +27,23 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P0-01) `python3 tools/build.py` re-draws the icons with Pillow, so `icon-*.png` can show as modified in git after a rebuild even when nothing changed visually.
 - (P0-02) CONTRIBUTING 3.2 says boot.js is lines 2438-2439 and the CSS split is "near 58 and 162"; used 58 and 163 (line 162 is a blank line kept with 30-learn.css). All JS ranges matched the real markers. 46-home.js (734) and 00-core.js (322) have no marker comment; cut by the documented line numbers.
 - (P0-02) CONTRIBUTING 3.1/3.2 still describe the pre-split layout as "today"; a later docs pass could update the 3.1 text. `src/data/` holds only a `.gitkeep` until the first data file exists.
+- (P0-03) ROADMAP section 9 says a missing `S.v` means 2, but both folded migrations must still run on v30 saves (single-map saves have no `S.maps`; index-keyed maps have no `S.mapv`). Code treats a missing `S.v` as 1 and runs migrations 1 and 2, each guarded by its own marker; latest is 3. A later docs pass could align section 9.
+- (P0-03) `migrate()` is called from `src/js/42-paths.js` (not 00-core.js) because the map migrations need `NODES`, which only exists there; no file before it reads `S` at load time.
+- (P0-03) A corrupt save is kept in `starschool-v2-corrupt` and `SAVE_CORRUPT` is set, but nothing shows it yet; P0-05's App log should display it. `SAVE_FAILED` is shown in Grown-ups.
+- (P0-03) `node tools/test.js` still always exits 0 except for the new migration block, which sets exit code 1 on failure; P0-04 should fold it into named checks.
+- (P0-03) A save file that is literally `{}` (not the same as no save) would still crash `PETS[S.pet]`; not handled (pre-existing).
 
 ## Log
+
+### P0-03: Save schema version and migrations (v33), 2026-11-10, Claude
+- `src/js/00-core.js`: `loadSave(raw)`, `LATEST` (3), `MIGRATIONS`, `migrate()`. `S.v` is the schema version; a new save starts at 3. The inline `S.maps` and `S.mapv` migrations from 42-paths.js are now migrations 1 and 2, same code (the only addition: migration 2 first fills missing `S.maps[p]`, which the old line 33 did before it ran; their `save()` calls became one at the end of `migrate()`).
+- Before any migration runs, the old raw string is copied to `starschool-v2-bak`. Corrupt or non-object JSON is kept in `starschool-v2-corrupt`, a fresh save starts, and `starschool-v2` is not written until the first `save()`. A save newer than this app is left untouched.
+- `save()` sets `SAVE_FAILED` when storage throws (quota); `src/js/80-grown.js` shows one line in Grown-ups when it is set. Storage key unchanged.
+- `src/js/42-paths.js`: the two inline migrations removed, one `migrate();` call in their place (first point where `NODES` exists; nothing earlier reads `S` at load).
+- `tools/test.js`: new migration block with fake storage. Runs midway, maxed and two new fixtures (`tools/fixtures/legacy-single-map.json`, `legacy-index-maps.json`) plus empty, corrupt, non-object and newer saves. Checks stars, coins, pet, name unchanged, `S.v` latest, backup written, idempotent, map progress carried, corrupt kept and not overwritten, `save()` failure flag.
+- Acceptance: test.js 0 errors incl. migration tests (0); smoke OK (midway intact: 85 stars, 64 coins); check.sh OK; index.html 376,570 bytes. Looked at grown-600x960 and home-600x960.
+
+Checklist 7.1: [x] only chunk files changed (plus 2 new fixtures) [x] VER bumped v33 [x] built [x] test.js 0 [x] smoke.js 0, no console errors [x] screenshots looked at (grown, home 600x960; failure line only appears on a failed save, covered by test) [x] midway fixture intact [x] size 377 KB [x] no network requests [x] no new emoji [x] entry added [x] one commit
 
 ### P0-02: Split source into ordered files (v32), 2026-11-10, Claude
 - `src/src.html` cut by script into `src/shell.html` (two marker lines `/*@@CSS@@*/` and `/*@@JS@@*/`), `src/css/{20-base,30-learn,40-games}.css`, 31 files in `src/js/` (names and ranges from CONTRIBUTING 3.2), `src/boot.js` and an empty `src/data/` (`.gitkeep`). No code edited, renamed, reordered or reformatted.
