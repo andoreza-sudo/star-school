@@ -138,6 +138,36 @@ const SCREENS = {
           ["dots(14, 'ten')", VIZ.dots(14, 'ten')],
           ["dots(9, 'dice')", VIZ.dots(9, 'dice')],
           ["dots(17, 'scatter', {seed:2, b:5})", VIZ.dots(17, 'scatter', { seed: 2, b: 5 })],
+          // part 2 (P1-11)
+          ['numLine({max:10, hops:[[0,3],[3,7],[7,10,"?"]]})', VIZ.numLine({ max: 10, hops: [[0, 3], [3, 7], [7, 10, '?']] })],
+          ['numLine({max:20, hops:[[14,9]], marks:[9]})', VIZ.numLine({ max: 20, hops: [[14, 9]], marks: [9] })],
+          ["ruler(7, 'cm', 'pencil')", VIZ.ruler(7, 'cm', 'pencil')],
+          ["ruler(3.5, 'in')", VIZ.ruler(3.5, 'in')],
+          ['barGraph(pets, 1)', VIZ.barGraph([['Cat', 4], ['Dog', 7], ['Fish', 3], ['Bird', 5]], 1)],
+          ['barGraph(days, 5, {vals}) set 2', VIZ.barGraph([['Mon', 20], ['Tue', 35, 2], ['Wed', 15]], 5, { vals: true })],
+          ['barGraph({tap}) states', VIZ.barGraph([['A', 2], ['B', 5], ['C', 3], ['D', 4], ['E', 1], ['F', 6]], 1, { tap: true })],
+          ['pictograph(per 2)', VIZ.pictograph([['Red', 4], ['Blue', 6.5], ['Green', 3]], { per: 2 })],
+          ['linePlot(values)', VIZ.linePlot([1, 2, 2, 3, 3, 3, 5, 5])],
+          ['linePlot(den 4)', VIZ.linePlot([0.25, 0.5, 0.5, 0.75, 1, 1, 1.25], { min: 0, max: 1.5, step: 0.25, den: 4 })],
+          ...['circle', 'oval', 'square', 'rectangle', 'triangle', 'rhombus', 'trapezoid', 'pentagon', 'hexagon', 'octagon'].map(n => ["shape('" + n + "')", VIZ.shape(n, n == 'triangle' ? { rot: 20, st: 1.3, dots: true } : {})]),
+          ...['cube', 'prism', 'cylinder', 'cone', 'sphere'].map((n, i) => ["shape('" + n + "')", VIZ.shape(n, { c: i % 2 ? 2 : 1 })]),
+          ['areaGrid(5, 3, {n:8})', VIZ.areaGrid(5, 3, { n: 8 })],
+          ['areaGrid(8, 6)', VIZ.areaGrid(8, 6)],
+          ["rectSides(8, 5, {w:8, h:'?'}, {unit:'cm'})", VIZ.rectSides(8, 5, { w: 8, h: '?' }, { unit: 'cm' })],
+          ['rectSides(6, 4, all)', VIZ.rectSides(6, 4, { w: 6, h: 4 }, { all: true })],
+          ["angle(60, {label:'?'})", VIZ.angle(60, { label: '?' })],
+          ['angle(90, {rot:20})', VIZ.angle(90, { rot: 20 })],
+          ['angle(130, {proto})', VIZ.angle(130, { proto: true })],
+          ['coordGrid({points})', VIZ.coordGrid({ points: [[2, 3, 'A'], [4, 1, 'B']] })],
+          ['coordGrid({quadrants:4, join})', VIZ.coordGrid({ quadrants: 4, max: 5, points: [[-2, 3, 'A'], [4, -1], [-3, -4]], join: true, close: true })],
+          ['coordGrid({tapPts}) states', VIZ.coordGrid({ tapPts: [[1, 2], [2, 1], [4, 3], [3, 4]] })],
+          ['balance(5, 3)', VIZ.balance(5, 3)],
+          ['balance({n:3, q}, 7)', VIZ.balance({ n: 3, q: true }, 7)],
+          ['balance(14, 14)', VIZ.balance(14, 14)],
+          ['coinSVG([25,10,5,1])', VIZ.coinSVG([25, 10, 5, 1])],
+          ['coinSVG([500,100,100])', VIZ.coinSVG([500, 100, 100])],
+          ['tally(13)', VIZ.tally(13)],
+          ['tableInOut', VIZ.tableInOut([[1, 3], [2, 5], [3, '?'], ['?', 9]])],
         ];
         const cells = items.map(([t, s]) => `<div class="vzc"><div class="vzn">${t} <i>${s.length} B</i></div>${s}</div>`).join('');
         view(`<style>.vzg{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:8px;padding:8px}
@@ -151,6 +181,8 @@ const SCREENS = {
         st('.viz-nl.vi .vt', all);
         st('.viz-fb.vi .vt', all);
         st('.viz-fc.vi .vt', ['sel', 'right']);
+        st('.viz-bar.vi .vt', all);
+        st('.viz-grid.vi .vt', ['sel', 'right', 'wrong']);
       });
     },
   },

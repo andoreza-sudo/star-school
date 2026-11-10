@@ -47,3 +47,51 @@
 .viz .right .vm,.viz .vp.right{fill:var(--good);stroke:var(--good-ink)}
 .viz .wrong .vm,.viz .vp.wrong{fill:var(--try);stroke:var(--try-ink)}
 .viz .vp.sel,.viz .vp.right,.viz .vp.wrong{stroke-width:2}
+/* part 2 (P1-11) */
+.viz .vta{text-anchor:end}
+.viz .vts{text-anchor:start}
+.viz .vgl{fill:none;stroke:var(--ink-3);stroke-width:1;opacity:.6}
+.viz .vgd{fill:none;stroke:var(--ink-3);stroke-width:2;stroke-dasharray:4 4}
+.viz .vtk{fill:none;stroke:var(--ink);stroke-width:4}
+.viz .vjn{fill:none;stroke:var(--math-shade);stroke-width:3}
+.viz .vdt circle{fill:var(--ink);stroke:var(--surface);stroke-width:1.5}
+/* ruler, pencil, protractor */
+.viz .vru{fill:var(--star-tint);stroke:var(--ink-3);stroke-width:2}
+.viz .vpt{fill:var(--play-tint);stroke:var(--play-shade);stroke-width:2}
+.viz .vwg{fill:var(--math-tint);stroke:var(--math);stroke-width:2}
+/* bars: states on the group */
+.viz .vbar{stroke-width:2}
+.viz .sel .vbar{fill:var(--brand);stroke:var(--brand-shade)}
+.viz .right .vbar{fill:var(--good);stroke:var(--good-ink)}
+.viz .wrong .vbar{fill:var(--try);stroke:var(--try-ink)}
+/* rectangle, area grid cells */
+.viz .vpo{fill:var(--math-tint);stroke:var(--math-shade);stroke-width:3}
+.viz .vce{fill:none;stroke:var(--surface);stroke-linecap:butt}
+/* solids: front (s1), top or light (s2), side or shade (s3), equator (s0); .c2 is the second colour */
+.viz .vsl .s1{fill:var(--math);stroke:var(--math-shade);stroke-width:2}
+.viz .vsl .s2{fill:var(--math-tint);stroke:var(--math-shade);stroke-width:2}
+.viz .vsl .s3{fill:var(--math-shade);stroke:var(--math-shade);stroke-width:2}
+.viz .vsl .s0{fill:none;stroke:var(--math-shade);stroke-width:2}
+.viz .vsl.c2 .s1{fill:var(--play);stroke:var(--play-shade)}
+.viz .vsl.c2 .s2{fill:var(--play-tint);stroke:var(--play-shade)}
+.viz .vsl.c2 .s3,.viz .vsl.c2 .s0{fill:var(--play-shade);stroke:var(--play-shade)}
+.viz .vsl.c2 .s0{fill:none}
+/* number-line hops */
+.viz .vhop{fill:none;stroke:var(--play);stroke-width:3}
+.viz .vhoa{fill:var(--play);stroke:var(--play);stroke-width:1}
+/* balance scale */
+.viz .vst{fill:var(--surface-2);stroke:var(--ink-2);stroke-width:3}
+.viz .vsr{fill:none;stroke:var(--ink-3);stroke-width:2}
+.viz .vpan{fill:var(--surface-2);stroke:var(--ink-2);stroke-width:3}
+.viz .vbm{fill:none;stroke:var(--ink-2);stroke-width:6}
+.viz .vwl{fill:var(--math-tint);stroke:var(--math-shade);stroke-width:2}
+.viz .vwr{fill:var(--play-tint);stroke:var(--play-shade);stroke-width:2}
+/* coins (penny copper, the rest silver) and bills */
+.viz .vcu{fill:var(--play-tint);stroke:var(--play-shade);stroke-width:3}
+.viz .vsv{fill:var(--surface-2);stroke:var(--ink-3);stroke-width:3}
+.viz .vci{fill:none;stroke:var(--ink-3);stroke-width:1.5;stroke-dasharray:2 3}
+.viz .vcc{font-size:13px}
+.viz .vcp{fill:var(--play-shade)}
+.viz .vbl{fill:var(--good-tint);stroke:var(--good-ink);stroke-width:2}
+.viz .vbi{fill:none;stroke:var(--good-ink);stroke-width:1.5}
+.viz .vcb{font-size:20px;fill:var(--good-ink)}
