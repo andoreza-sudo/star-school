@@ -43,8 +43,8 @@ All tokens are CSS custom properties on `:root` in `src/css/00-tokens.css`. Afte
 | `--star` | `#FFC93C` | Stars, coins, highlights (never text on white) |
 | `--star-shade` | `#F5A800` | Star outline, ledge |
 | `--star-tint` | `#FFF1C7` | Reward backgrounds |
-| `--good` | `#22B35E` | Correct fill |
-| `--good-ink` | `#157F3F` | Correct text |
+| `--good` | `#20A556` | Correct fill |
+| `--good-ink` | `#147A3C` | Correct text |
 | `--good-tint` | `#DDF5E7` | Correct background |
 | `--try` | `#FFB020` | Try-again fill |
 | `--try-ink` | `#8A4B00` | Try-again text |
@@ -55,8 +55,8 @@ Subject colours (each has `-tint` for backgrounds and `-shade` for ledges and te
 
 | Subject | `--x` | `--x-tint` | `--x-shade` |
 |---------|-------|-----------|-------------|
-| Math `--math` | `#2F6FED` | `#E1EBFF` | `#1F4FB8` |
-| Reading `--read` | `#D6336C` | `#FFE3EC` | `#A61E4D` |
+| Math `--math` | `#2D6BE4` | `#E1EBFF` | `#1F4FB8` |
+| Reading `--read` | `#CD3168` | `#FFE3EC` | `#A61E4D` |
 | Spanish `--es` | `#17804F` | `#DDF5E7` | `#0F5F3A` |
 | Discover `--disc` | `#0E7C86` | `#D9F3F5` | `#0A5A62` |
 | Brain Teasers `--bt` | `#7C3AED` | `#EDE4FF` | `#5B21B6` |
