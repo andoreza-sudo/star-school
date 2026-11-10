@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** P5-01, P4-01, P1-01 (in progress on parallel branches), then P5-04, P1-02, P4-02.
+**Next up:** P4-01, P1-01 (done on parallel branches, merging), then P5-04, P1-02, P4-02.
 
-**Current version:** v35
+**Current version:** v36
 
 ## Chunk status
 
@@ -15,6 +15,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P0-03 v33
 - P0-04 v34
 - P0-05 v35
+- P5-01 v36
 
 ## Handoff notes
 
@@ -34,6 +35,9 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P0-05) A save corrupt message is now shown in the App log (resolves the P0-03 note below). Round recovery only triggers when `G` is live and `#prompt` is on screen; errors in games (Hill Climb etc.) are logged but show no overlay.
 - (P0-03) A corrupt save is kept in `starschool-v2-corrupt` and `SAVE_CORRUPT` is set, but nothing shows it yet; P0-05's App log should display it. `SAVE_FAILED` is shown in Grown-ups.
 - (P0-03) `node tools/test.js` still always exits 0 except for the new migration block, which sets exit code 1 on failure; P0-04 should fold it into named checks.
+- (P5-01) Speed Race (`54-race.js`) and Fact Sprint overlap (both are 60-second math facts); a later chunk could fold Race's math category into Fact Sprint. Their progress bar (`.prog` inside `.top`) also does not show at 380x780.
+- (P5-01) Game time for Fact Sprint is once per set per day (tracked in `S.flu[set].paid`), and a new record always adds +1 min even on a later sprint the same day. P5-09 should review these amounts.
+- (P5-01) `mul`/`div` sets: add entries to `FLU.SETS` in `57-fluency.js` (each has an `ok()` unlock test and a `gen()`), nothing else needed.
 - (P0-03) A save file that is literally `{}` (not the same as no save) would still crash `PETS[S.pet]`; not handled (pre-existing).
 - (P0-04) Known exception in `tools/test.js` KNOWN: the 9 Spanish level 2 skills (`es_greet`, `es_color`, `es_num`, `es_teen`, `es_animal`, `es_food`, `es_body`, `es_family`, `es_mix`) have no `say` on purpose (a picture asks "How do you say it in Spanish?"; speaking the word would give the answer away), so the "say present" check lists them. A later chunk could give them a `say` for the question text or add a flag for silent-on-purpose questions, then delete the KNOWN entry.
 - (P0-04) The emoji allowlist was seeded with all 309 sequences found in `src/` at v33. 13 are newer than Unicode 11 and marked `# risky` (may be empty boxes on old Android): wheel, pickup truck, large blue and green squares, ice cube, kite, magic wand, pinata, ringed planet, coin, mirror, bucket, rock. The coin (used 20 times: 38-skills, 46-home, 48-shop) is the most visible; P4-02 or P4-13+ should replace these with SVG.
@@ -41,6 +45,15 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P0-04) `node tools/test.js` needs a built `index.html` for the size check (it fails with a message if missing); `check.sh` builds first. The size budget (warn 1.2 MB, fail 1.5 MB) lives only in `tools/test.js`.
 
 ## Log
+
+### P5-01: Fact Sprint (v36), 2026-11-10, Claude
+- What changed: home button "Fact Sprint" (6th action tile). Sets by progress: add10 always, sub10 once `sub` level 1 is passed, add20 once `add` level 2, sub20 once `sub` level 2. Two modes per set: 60 seconds (most right) and 20 facts (fastest time). Big keypad, auto-submit when the digit count matches, no hints. A wrong answer shows the fact for 1 s and it returns after 3 other facts; the same fact never appears twice in a row. End screen: score, best, 7-day sparkline, "NEW RECORD!" with confetti. Game time: 1 min for the first sprint of each set per day (60 s mode needs 5 right), +1 min for any new record; extra sprints are free practice. The clock does not count time while the tab is hidden. Timers are stopped by `view()` via `stopFlu()`.
+- Saved: `S.flu = {key: {best, hist: [[day, sec, right]] (30)}}`; key is the set id (60 s) or set id + `-20`; `S.flu[set].paid` is the day game time was last earned. No migration: absent field reads as empty (additive, section 9 rule 6). `S.v` unchanged.
+- Files: new `src/js/57-fluency.js`; `46-home.js` (button), `40-view.js` (calls `stopFlu`), `58-playtime.js` (one line in the Game Room earn list), `tools/test.js` (block at the end, `// ---- P5-01 fact sprint ----`), `tools/smoke.js` (plays a 20-facts sprint), `tools/shots.js` (`fluency`, `fluency-modes`, `sprint`, `sprint-end`), `tools/build.py` (v36).
+- Tests: test.js 0 errors (fact ranges, no repeats, requeue gap, record logic incl. first run and ties, history trim, game-time rules, hidden-tab clock, 7-day view, missing `S.flu`); smoke.js OK incl. a sprint; check.sh OK; index.html 388,861 bytes.
+- Screenshots checked: fluency 600x960, sprint 1024x600 and 380x780, sprint-end 380x780.
+- Emoji used (all already in the source): 🔢 ⚡ ➕ ➖ 🏆 🎟️ 🎉 🏠 ◀ ⌫.
+- Checklist 7.1: all ticked (emoji allowlist check arrives with P0-04). Left over: none. Built on a parallel branch, merged after P0-05 (renumbered v35 -> v36).
 
 ### P0-05: Error guard and on-device debug log (v35), 2026-11-10, Claude
 - `src/js/00-core.js`: `logErr(msg)` plus `error` and `unhandledrejection` listeners push `{t,msg,ver}` to `S.err` (ring of 20, message cut at 200 chars, default `[]` when absent; no schema bump needed). Nothing leaves the device.

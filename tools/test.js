@@ -200,6 +200,73 @@ run('error guard: S.err ring, truncation, default',()=>{
   return{problems:gerrs};
 });
 
+run('fact sprint: facts, requeue, records, game time, clock',()=>{
+  const ferrs = [];
+  const bad = m => ferrs.push(m);
+  eval(js + `
+  // every set makes valid facts in range, none repeat back to back, misses return after 3 facts
+  for (const s of FLU.SETS) {
+    for (let i = 0; i < 2000; i++) {
+      const f = s.gen();
+      if (f.c !== (f.op == '+' ? f.a + f.b : f.a - f.b)) bad(s.id + ' wrong answer ' + FLU.fkey(f));
+      if (f.c < (s.id.startsWith('add') ? 2 : 0) || f.c > 20 || f.a < 0 || f.b < 0) bad(s.id + ' out of range ' + FLU.fkey(f));
+      if (s.id.endsWith('10') && (f.a > 10 || f.c > 10)) bad(s.id + ' over 10 ' + FLU.fkey(f));
+    }
+    const st = {set: s.id, last: '', redo: []};
+    let prev = '';
+    for (let i = 0; i < 300; i++) {
+      const f = FLU.next(st), k = FLU.fkey(f);
+      if (k == prev) bad(s.id + ' repeated back to back ' + k);
+      prev = k;
+    }
+    // a missed fact waits for 3 other facts, then comes back
+    const st2 = {set: s.id, last: '', redo: []}, m = FLU.next(st2);
+    FLU.miss(st2, m);
+    for (let i = 1; i <= 8; i++) {
+      FLU.next(st2);
+      if (i <= 3 && st2.redo.length != 1) bad(s.id + ' missed fact came back too soon');
+      if (i == 8 && st2.redo.length) bad(s.id + ' missed fact never came back');
+    }
+  }
+  // records: first run always, ties never, lower-is-better for times
+  const flu = {};
+  let r = FLU.record(flu, 'add10', '2026-1-1', 60, 12, false);
+  if (!r.rec || r.prev !== null || flu.add10.best !== 12) bad('first run should be a record');
+  r = FLU.record(flu, 'add10', '2026-1-2', 60, 12, false);
+  if (r.rec) bad('a tie is not a record');
+  r = FLU.record(flu, 'add10', '2026-1-3', 60, 11, false);
+  if (r.rec || flu.add10.best !== 12) bad('lower score is not a record');
+  r = FLU.record(flu, 'add10', '2026-1-4', 60, 13, false);
+  if (!r.rec || flu.add10.best !== 13) bad('higher score is a record');
+  r = FLU.record(flu, 'add10-20', '2026-1-1', 40.5, 20, true);
+  if (!r.rec || flu['add10-20'].best !== 40.5) bad('first time is a record');
+  if (FLU.record(flu, 'add10-20', '2026-1-2', 40.5, 20, true).rec) bad('equal time is not a record');
+  if (!FLU.record(flu, 'add10-20', '2026-1-3', 39.9, 20, true).rec) bad('faster time is a record');
+  if (FLU.record(flu, 'add10-20', '2026-1-4', 45, 20, true).rec) bad('slower time is not a record');
+  for (let i = 0; i < 40; i++) FLU.record(flu, 'add10', '2026-2-' + (i + 1), 60, 5, false);
+  if (flu.add10.hist.length !== FLU.KEEP) bad('history not trimmed to ' + FLU.KEEP);
+  // game time: once per set per day, bonus for a record, no time for a lazy 60 s run
+  const g = {};
+  if (FLU.earn(g, 'add10', 'd1', false, 3, 't60') !== 0 || (g.add10 && g.add10.paid)) bad('under 5 right should not earn');
+  if (FLU.earn(g, 'add10', 'd1', false, 8, 't60') !== 60) bad('first sprint of the day earns 1 min');
+  if (FLU.earn(g, 'add10', 'd1', false, 9, 't60') !== 0) bad('second sprint is free practice');
+  if (FLU.earn(g, 'add10', 'd1', true, 9, 'n20') !== 60) bad('record adds 1 min');
+  if (FLU.earn(g, 'add10', 'd2', true, 9, 't60') !== 120) bad('new day and record earns 2 min');
+  if (FLU.earn(g, 'sub10', 'd1', false, 20, 'n20') !== 60) bad('other set earns separately');
+  // the clock does not count time while the tab is hidden
+  const c = {ms: 0, last: 1000};
+  FLU.tick(c, 2000, false); FLU.tick(c, 2500, true); FLU.tick(c, 90000, true); FLU.tick(c, 90500, false);
+  if (c.ms !== 1500) bad('clock counted hidden time: ' + c.ms);
+  // seven-day view
+  const wk = FLU.week({hist: [['2026-11-10', 60, 9], ['2026-11-10', 60, 12], ['2026-11-8', 60, 7], ['2026-10-1', 60, 99]]}, false, new Date(2026, 10, 10).getTime());
+  if (wk.length !== 7 || wk[6] !== 12 || wk[4] !== 7 || wk[0] !== null) bad('week view ' + JSON.stringify(wk));
+  // old saves have no S.flu: reading bests must not throw
+  S.flu = undefined;
+  if (fluBest('add10', false) !== 'not yet') bad('missing S.flu should read as no best');
+  `);
+  return{problems:ferrs};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){
