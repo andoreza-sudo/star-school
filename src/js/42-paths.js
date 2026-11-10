@@ -1,6 +1,7 @@
 /* ---------- games (paths), maps ---------- */
 const PATHS={
  math:{n:'Math Adventure',e:'🔢',c:'linear-gradient(135deg,#dbeafe,#bfdbfe)',worlds:[
+  {id:'m_tiny',g:-1,n:'Tiny Town',e:'🏠',c:'#fef9c3',nodes:[['pk_count',1,'Count to 5'],['shape',1,'Find the Shape'],['pk_num',1,'Hear a Number'],['sort',1,'Which One Is Different'],['pk_more',1,'Which Has More'],['pk_count',2,'Count to 10'],['pat',1,'What Comes Next'],['pk_num',2,'Numbers to 10'],['sort',2,'Big and Small']]},
   {id:'m_meadow',g:0,n:'Number Meadow',e:'🌻',c:'#dcfce7',nodes:[['add',1,'Adding to 10'],['cnt',1,'Count by 1s & 10s'],['eo',1,'Even or Odd'],['miss',1,'Missing Number'],['sub',1,'Take Away'],['story',1,'Story Problems']]},
   {id:'m_candy',g:1,n:'Candy Canyon',e:'🍭',c:'#fce7f3',nodes:[['add',2,'+9 & Doubles'],['big',1,'Tens & Hundreds'],['cnt',2,'Count by 2s & 5s'],['cmp',1,'Bigger or Smaller'],['miss',2,'Missing to 18'],['sub',2,'Take Away to 18'],['story',2,'Story Problems 2']]},
   {id:'m_reef',g:1,n:'Ocean Reef',e:'🐠',c:'#e0f2fe',nodes:[['add',3,'All the Facts'],['time',1,"O'Clock"],['big',2,'2-Digit Adding'],['coins',1,'Pennies & Nickels'],['eo',2,'Even/Odd to 99'],['cmp',2,'Compare to 100'],['time',2,'Half Past'],['sub',3,'2-Digit Take Away'],['story',3,'Story Problems 3']]},
@@ -97,14 +98,14 @@ function startWorld(p){
   return k<0?ws.length-1:k;
 }
 /* The stop the map opens on: the first open, unpassed stop, not counting NEW stops or untouched worlds below the start world.
-   Falls back to any open unpassed stop outside those untouched worlds, then to the very last stop (everything done). */
+   Falls back to any open unpassed stop (not in an untouched world below the start world), then to the very last stop (everything done). */
 function curNode(p){
   const N=NODES[p],sw=startWorld(p);let any=-1;
   for(let i=0;i<N.length;i++){
     if(passed(p,i)||!unlocked(p,i))continue;
-    const wi=N[i].wi;
-    if(any<0&&!(wi<sw&&!worldHasProgress(p,wi)))any=i; // never fall back into an untouched world below the start world (ABC Beach for a K child)
-    if(stopNew(p,i)||(wi<sw&&(!worldHasProgress(p,wi)||worldSkipped(p,wi))))continue; // skipped by placement: start above it
+    const wi=N[i].wi,below=wi<sw&&(!worldHasProgress(p,wi)||worldSkipped(p,wi)); // an untouched world below the start world (Pre-K Tiny Town for a K child)
+    if(any<0&&!below)any=i; // a finished child is not sent back down to a world they never needed
+    if(stopNew(p,i)||below)continue; // skipped by placement: start above it
     return i;
   }
   return any>=0?any:N.length-1;

@@ -3,6 +3,7 @@ function rod(n,c,cls='',x=0){if(n<=0)return'';let s='';for(let i=0;i<n;i++)s+=`<
 function hintHTML(q){const h=q.hint;if(!h)return'';
   if(h.k=='text')return esc(h.s);
   if(h.k=='say'){setTimeout(()=>say(h.w,null,h.lang),150);return esc(h.s)}
+  if(h.k=='html'){if(h.w)setTimeout(()=>say(h.w),150);return h.html} // trusted markup from a generator (Pre-K pictures); h.w is spoken
   if(h.k=='next'){const need=q.word[G.built.length],i=q.tiles.findIndex((t,j)=>t==need&&!G.built.includes(j));const el=$(`.lt[data-i="${i}"]`);if(el)el.classList.add('glow');setTimeout(()=>say(q.word),150);return'Look for the glowing letter!'}
   if(h.k=='pairs'){if(h.n>20)return'Look at the last digit. Is it 0, 2, 4, 6, or 8?';let s='<div class="pairs">';for(let i=0;i<h.n;i+=2)s+='<span><b></b>'+(i+1<h.n?'<b></b>':'')+'</span>';return s+'</div><div>Does every dot have a partner?</div>'}
   if(h.k=='emoji'){const{e,a,b,op}=h;if(op=='+')return a+b>20?'Count on with your fingers!':`<div class="emh">${e.repeat(a)} + ${e.repeat(b)}</div>`;

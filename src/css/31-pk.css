@@ -1,0 +1,52 @@
+/* Pre-K math (P2-01, world Tiny Town): pictures first, words only inside .pktxt (hidden by html.notext, the debug flag).
+   Tokens only. Sizes follow the prompt's font size (em), so fit() shrinks pictures and text together. */
+.pkq{display:flex;flex-direction:column;align-items:center;gap:var(--s-2);max-width:100%;font-size:1.3em}
+.pkrow{display:flex;flex-wrap:wrap;justify-content:center;gap:.08em .12em;max-width:100%}
+.pko{display:inline-block;font-size:1em;line-height:1.15;min-width:1.1em;text-align:center}
+.pko .art{width:1em;height:1em}
+.pkscat{display:grid;grid-template-columns:repeat(5,1.2em);grid-template-rows:repeat(2,1.2em);justify-content:center;max-width:100%}
+.pkscat .pko{align-self:center;justify-self:center}
+.pks{display:block;width:clamp(48px,9vh,76px);height:auto;max-width:100%}
+.ch .pks{margin:0 auto}
+.pks.pkbig{width:clamp(96px,16vh,140px)}
+.pkf{fill:var(--c,var(--surface-2));stroke:var(--ink);stroke-width:2;stroke-linejoin:round}
+.pkdim{fill:var(--surface-2)}
+.pkside{fill:none;stroke:var(--play);stroke-width:5;stroke-linecap:round;opacity:.15;animation:pkside var(--T,2.4s) var(--d,0s) infinite}
+@keyframes pkside{0%,30%{opacity:1}31%,100%{opacity:.15}}
+.pulse .pko{animation:pkpulse .7s var(--d,0s) 2}
+@keyframes pkpulse{50%{transform:scale(1.4)}}
+.pkhint{display:flex;flex-direction:column;align-items:center;gap:var(--s-2);font-size:clamp(28px,6vh,44px)}
+.pkhint .sub{font-size:clamp(16px,2.8vh,20px)}
+.pkhint svg.viz{max-width:100%}
+.pkline{display:flex;gap:.1em;justify-content:flex-start;min-height:1.2em}
+.pkear{display:inline-flex;padding:var(--s-4);border-radius:var(--r-pill);background:var(--brand-tint);color:var(--brand)}
+.pkask{font-size:.9em;color:var(--brand)}
+/* more or fewer: two plates, each a tap target */
+.pkpair{display:flex;gap:var(--s-4);justify-content:center;max-width:100%}
+.pkplate{display:flex;align-items:center;justify-content:center;min-width:var(--tap-pk);min-height:calc(var(--tap-pk)*2);padding:var(--s-2);
+  border:4px solid var(--line);border-radius:var(--r-card);background:var(--surface);cursor:pointer}
+.pkplate.right{background:var(--good-tint);border-color:var(--good);animation:bump .4s}
+.pkplate.wrong{background:var(--try-tint);border-color:var(--try);opacity:.6}
+.pkpl{display:grid;grid-template-columns:repeat(3,auto);font-size:.8em;gap:.05em}
+.pkpl .pkrow{display:contents}
+/* pattern row */
+.pkpat{display:flex;flex-direction:row;gap:var(--s-2);align-items:center;justify-content:center;max-width:100%}
+.pkpat .pks{width:clamp(34px,11.5vw,64px)}
+.pkunk{display:inline-flex;align-items:center;justify-content:center;width:clamp(34px,11.5vw,64px);aspect-ratio:1;box-sizing:border-box;
+  border:3px dashed var(--brand);border-radius:var(--r-btn);color:var(--brand);font-size:.7em;font-weight:700}
+/* picture choices */
+.choices.pk2,.choices.pk4{grid-template-columns:1fr 1fr}
+.choices.pk3{grid-template-columns:repeat(3,1fr)}
+.choices.pkcol{grid-template-columns:1fr}
+.choices.pics .ch{min-height:var(--tap-pk)}
+.pkcell{display:flex;align-items:flex-end;justify-content:center;min-height:clamp(72px,12vh,100px);width:100%}
+.pkcell.pkleft{justify-content:flex-start;align-items:center;min-height:calc(var(--tap)*.9);padding-left:var(--s-3)}
+.pkscale{display:block;line-height:1}
+.pkscale .art{width:1em;height:1em}
+.pkbar{display:block;max-width:100%;height:auto}
+.pkbar .pkf{fill:var(--c)}
+/* the big replay button: the way to ask again without reading */
+.btn.pkspk{display:inline-flex;align-items:center;justify-content:center;min-width:96px;min-height:72px;padding:var(--s-2) var(--s-6);
+  color:var(--brand);border-radius:var(--r-pill)}
+/* debug flag (smoke test, "all text hidden"): html.notext */
+html.notext .pktxt{display:none}

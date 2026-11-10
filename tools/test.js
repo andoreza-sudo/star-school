@@ -63,6 +63,7 @@ for(const id in SK){for(let lv=1;lv<=SK[id].max;lv++)for(let i=0;i<3000;i++){
   for(const c of q.choices){if(BADHTML.test(c.l+' '+c.v))GEN.html.push(w+': choice has undefined/NaN');if(BAD.test(c.v))GEN.gen.push(w+': BAD word '+c.v)}
  }
  else if(q.kind=='build'){if(!q.tiles||q.tiles.length<q.word.length)GEN.gen.push(w+': too few tiles')}
+ else if(q.kind=='tap'){for(const x of kindProblems(q))GEN.gen.push(w+': '+x)}
  else if(q.kind=='match'){if(!q.items||!q.opts||q.items.length<3||q.items.length>5)GEN.gen.push(w+': bad match pairs')}
  else if(q.kind=='spell'){for(const x of kindProblems(q))GEN.gen.push(w+': '+x)}
  else GEN.gen.push(w+': unknown kind '+q.kind);
@@ -161,7 +162,7 @@ run('migrations: fixtures, backups, corrupt and newer saves',()=>{
   if(!(S.maps.math.add1===2&&S.maps.math.cnt1===1&&S.maps.read.sight1===3&&S.maps.read.build1===2))bad('legacy-single-map: map progress '+JSON.stringify(S.maps));
   // maps keyed by index become keyed by stop id
   reset(fx('legacy-index-maps'));
-  const mn=NODES.math.filter(n=>n.sk!='boss');
+  const mn=NODES.math.filter(n=>n.wid=='m_meadow'&&n.sk!='boss'); // index 0, 1, 2 of the v42 map are the first stops of Number Meadow
   if(!(S.maps.math[nid(mn[0])]===2&&S.maps.math[nid(mn[1])]===3&&S.maps.math[nid(mn[2])]===1&&S.maps.read.sound1===1))bad('legacy-index-maps: re-keyed '+JSON.stringify(S.maps.math));
   // empty save: new, at the latest version, nothing to back up
   reset(null);
@@ -859,7 +860,8 @@ run('worlds: ids, grade tags, migration 3 keeps every star, gating, inserted wor
     // 3. gating by grade (ROADMAP 3.2)
     load(null);
     if(gradeOf()!==0)bad('no grade should count as K');
-    if(!worldOpen('math',0)||worldOpen('math',1)||!unlocked('math',0)||unlocked('math',1))bad('fresh, no grade: only the first stop open');
+    const wiOf=id=>PATHS.math.worlds.findIndex(w=>w.id==id); // P2-01: Tiny Town (Pre-K) is world 0, Number Meadow (K) world 1
+    if(!worldOpen('math',0)||!worldOpen('math',wiOf('m_meadow'))||worldOpen('math',wiOf('m_candy'))||!unlocked('math',0)||unlocked('math',1)||unlocked('math',WR.math[wiOf('m_candy')][0]))bad('fresh, no grade (K): Tiny Town and Number Meadow open, Candy Canyon shut, only the first stop of a world open');
     if(setGrade(7)||setGrade('2')||setGrade(1.5)||'grade' in S)bad('setGrade accepted a bad value');
     for(const g of GRADES){
       setGrade(g);
@@ -874,7 +876,7 @@ run('worlds: ids, grade tags, migration 3 keeps every star, gating, inserted wor
     }
     load(null);
     S.skip={m_candy:1};
-    if(!worldFinished('math',1)||!worldOpen('math',2)||!unlocked('math',WR.math[1][1])||!unlocked('math',WR.math[2][0]))bad('S.skip does not finish a world');
+    {const c=wiOf('m_candy');if(!worldFinished('math',c)||!worldOpen('math',c+1)||!unlocked('math',WR.math[c][1])||!unlocked('math',WR.math[c+1][0]))bad('S.skip does not finish a world');}
     // "harder world" game time: with no grade it equals the old index rule; worlds below the grade give nothing
     load(null);
     // byLevel paths: the world's place. Graded paths: 0 below the grade (no grade = K, so Pre-K worlds like ABC Beach give 0), else the earlier worlds at K or above
@@ -904,9 +906,10 @@ run('worlds: ids, grade tags, migration 3 keeps every star, gating, inserted wor
     }
     load(fx('midway'));
     const curBefore=nid(NODES.math[curNode('math')]);
-    PATHS.math.worlds[0]={...ORIG.math[0],nodes:[...ORIG.math[0].nodes.slice(0,3),['add',98,'New stop'],...ORIG.math[0].nodes.slice(3)]};buildNodes('math');
+    const mw=ORIG.math.findIndex(w=>w.id=='m_meadow');
+    PATHS.math.worlds[mw]={...ORIG.math[mw],nodes:[...ORIG.math[mw].nodes.slice(0,3),['add',98,'New stop'],...ORIG.math[mw].nodes.slice(3)]};buildNodes('math');
     const ni=NODES.math.findIndex(n=>n.lv==98);
-    if(!unlocked('math',ni)||!stopNew('math',ni)||!worldFinished('math',0)||!worldOpen('math',1))bad('stop added to a finished world: not open, not NEW, or the world re-opened');
+    if(!unlocked('math',ni)||!stopNew('math',ni)||!worldFinished('math',mw)||!worldOpen('math',mw+1))bad('stop added to a finished world: not open, not NEW, or the world re-opened');
     if(nid(NODES.math[curNode('math')])!==curBefore)bad('stop added to a finished world moved the current stop');
     restore();
     return {checked,paths:Object.keys(PATHS).length};
@@ -1093,8 +1096,9 @@ run('placement: state machine rules, scripted answers, simulated students, never
     const FAKE=[];
     for(let k=0;k<16;k++){const src=PATHS.math.worlds[k%4];FAKE.push({id:'f_'+k,g:Math.floor(k/2)-1,n:'Fake '+k,e:'',nodes:src.nodes})}
     // 1. start world: one grade below the child's grade (the first world with g >= grade - 1, else the last)
-    if(PLACE.first(PATHS.math.worlds,0)!==0||PLACE.first(PATHS.math.worlds,1)!==0||PLACE.first(PATHS.math.worlds,2)!==1
-      ||PLACE.first(PATHS.math.worlds,3)!==3||PLACE.first(PATHS.math.worlds,6)!==3)bad('start world per grade on math');
+    // math worlds by grade: Tiny Town -1, Number Meadow 0, Candy Canyon 1, Ocean Reef 1, Space Station 2 (P2-01 added Tiny Town)
+    if(PLACE.first(PATHS.math.worlds,0)!==0||PLACE.first(PATHS.math.worlds,1)!==1||PLACE.first(PATHS.math.worlds,2)!==2
+      ||PLACE.first(PATHS.math.worlds,3)!==4||PLACE.first(PATHS.math.worlds,6)!==4)bad('start world per grade on math');
     if(PLACE.first(FAKE,0)!==0||PLACE.first(FAKE,3)!==6||PLACE.first(FAKE,6)!==12)bad('start world per grade on 16 worlds');
     // 2. scripted rules (right answers per testlet -> where it goes)
     const run1=(ws,g,seq)=>{let st=PLACE.begin(ws,g,7);const path=[];for(const r of seq){if(st.done)break;path.push(st.wi);st=PLACE.step(st,r)}return{st,path}};
@@ -1107,7 +1111,7 @@ run('placement: state machine rules, scripted answers, simulated students, never
     {const{st,path}=run1(FAKE,3,[4,4,4,4,4,4]);want('5 testlets max',[path.length,st.done,st.at,st.asked],[5,true,11,20])}
     {const{st}=run1(FAKE,3,[0,0,0,0,0]);want('all wrong from world 6: lowest asked',[st.done,st.at,st.skip],[true,2,[]])}
     {const{st}=run1(PATHS.math.worlds,0,[0]);want('not yet at the first world stops',[st.done,st.at,st.skip],[true,0,[]])}
-    {const{st}=run1(PATHS.math.worlds,1,[4,4,4,4]);want('all right on math (4 worlds)',[st.done,st.at,st.all,st.skip],[true,3,true,[0,1,2,3]])}
+    {const{st}=run1(PATHS.math.worlds,1,[4,4,4,4]);want('all right on math (5 worlds)',[st.done,st.at,st.all,st.skip],[true,4,true,[0,1,2,3,4]])}
     {const{st}=run1(PATHS.read.worlds,2,[4,1]);want('reading grade 2: pass Candy, not yet Reef',[st.done,st.at,st.skip],[true,3,[0,1,2]])}
     // step is pure: the input state is not changed
     {const a=PLACE.begin(FAKE,3,1),j=JSON.stringify(a);PLACE.step(a,4);if(JSON.stringify(a)!==j)bad('step changed its input')}
@@ -1299,14 +1303,15 @@ run('mastery: records, states, harder/easier, challenge from question 6, support
     }
     // 100% but slow: no challenge
     load(null);S.grade=1;
-    {const o=sim('math',0,()=>[true,20000]);if(G.mode!==''||o.some(x=>x.tag))bad('slow 100% bot got challenge');}
+    const AI=NODES.math.findIndex(n=>nid(n)=='add1'); // P2-01: Tiny Town now holds the first math stops
+    {const o=sim('math',AI,()=>[true,20000]);if(G.mode!==''||o.some(x=>x.tag))bad('slow 100% bot got challenge');}
     // wrong challenge answers are forgiven for the star rating; 3 wrong ones in a row step back to the round's own stop
-    {const o=sim('math',0,(k,q)=>[mastTag(q)!='ch',2000]);
+    {const o=sim('math',AI,(k,q)=>[mastTag(q)!='ch',2000]);
       const tags=o.map(x=>x.tag).join(',');
       if(tags!==',,,,,ch,ch,ch,easy,')bad('challenge then 3 wrong: tags '+tags);
       if(o[8].k!=='add1'||!o[8].hint||o[9].k!=='add1'||o[9].hint||G.mode!=='')bad('after 3 wrong challenge answers: '+JSON.stringify(o.slice(8))+' mode '+G.mode);
       if(G.forgive!==3||G.score+G.forgive!==G.n)bad('forgive '+G.forgive+' score '+G.score);}
-    {sim('math',0,k=>[k<MAST.AT||k%2==1,2000]);
+    {sim('math',AI,k=>[k<MAST.AT||k%2==1,2000]);
       if(G.forgive!==2||Math.min(G.n,G.score+G.forgive)!==G.n)bad('2 wrong challenge answers must not cost stars: forgive '+G.forgive+' score '+G.score);}
     // 4. a 30% bot gets support: hints before every remaining first try, easier stop at questions 6, 8, 10
     const rng=mulberry32(7);let sup=0,easyQ=0;
@@ -1973,6 +1978,149 @@ run('ABC Beach (P2-15): world position, stop ids, nobody is pushed back into it'
   bad;`);
   for(const m of [...new Set(r)])out.push(m);
   return{problems:out};
+});
+
+// ---- P2-01 Pre-K math: world Tiny Town (generators, audio-first, world position, saves) ----
+run('Tiny Town (P2-01): CURRICULUM M-PK levels, audio-first, answers by rule, 3,000 samples per level',()=>{
+  const bad=[];
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const body=function(){
+    const out=[],b=m=>{if(out.length<20&&!out.includes(m))out.push(m)};
+    const store={};
+    global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+    const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
+    S.name='Ava';S.buddy='Ben';G={built:[]};
+    const LEVELS=[['pk_count',2],['pk_num',2],['pk_more',1],['sort',2],['shape',1],['pat',1]];
+    // 1. world: first in the math path, Pre-K, exactly the M-PK stops in CURRICULUM order (trace 1 comes with P2-16)
+    const w0=PATHS.math.worlds[0];
+    if(w0.id!=='m_tiny'||w0.g!==-1||w0.n!=='Tiny Town')b('Tiny Town is not the first math world: '+w0.id);
+    const ids=w0.nodes.map(n=>n[0]+n[1]).join(' ');
+    if(ids!=='pk_count1 shape1 pk_num1 sort1 pk_more1 pk_count2 pat1 pk_num2 sort2')b('Tiny Town stops: '+ids);
+    for(const [sk,max] of LEVELS)if(!SK[sk]||SK[sk].max!==max||SK[sk].area!=='math')b('skill '+sk+' max '+(SK[sk]&&SK[sk].max));
+    const ltr=s=>s.replace(/<[^>]*>/g,'').replace(/[^A-Za-z]/g,''); // letters left once tags (and attributes) are gone
+    const TXT=/<div class="sub pktxt">.*?<\/div>/g;
+    const sig=h=>{ // the picture of a choice: shape signature + colour token
+      const c=/--c:var\((--[a-z]+)\)/.exec(h),p=/points="([^"]*)"/.exec(h);
+      return {c:c&&c[1],s:p?p[1]:/<circle/.test(h)?'circle':'?'};
+    };
+    const num=PK.NUM;
+    for(const [sk,max] of LEVELS)for(let lv=1;lv<=max;lv++){
+      const w=sk+' L'+lv,labels=new Set();
+      for(let i=0;i<3000;i++){
+        const q=SK[sk].gen(lv);
+        if(!q.pk||!q.auto||!q.say)b(w+': not audio-first (pk, auto, say)');
+        if(!q.hint||q.hint.k!=='html'||!q.hint.html||!q.hint.w)b(w+': hint missing');
+        else{
+          try{
+            if(!hintHTML(q))b(w+': empty hint');
+            // pictures teach; words in a hint sit in .pktxt
+            if(ltr(q.hint.html.replace(TXT,''))!=='')b(w+': hint has text outside .pktxt');
+          }catch(e){b(w+': hintHTML threw '+e.message)}
+        }
+        const prompt=q.html.replace(TXT,'');
+        if(ltr(prompt)!=='')b(w+': prompt needs reading: '+ltr(prompt));
+        if(!/pktxt/.test(q.html))b(w+': no .pktxt fallback text');
+        if(q.kind=='choice'){
+          if(q.choices.length<2||q.choices.length>4)b(w+': '+q.choices.length+' choices');
+          for(const c of q.choices)if(c.h&&ltr(c.l)!=='')b(w+': a choice has words');
+        }
+        labels.add(q.label);
+        // 2. answers by rule
+        if(sk=='pk_count'){
+          const n=+q.ans,objs=(q.html.match(/class="pko"/g)||[]).length;
+          if(objs!==n)b(w+': '+objs+' objects, answer '+n);
+          if(n<1||n>(lv==1?5:10))b(w+': count out of range '+n);
+          if(q.choices.length!==3||q.choices.some(c=>+c.v<1||+c.v>(lv==1?5:10)))b(w+': choices '+q.choices.map(c=>c.v));
+          const ds=q.choices.map(c=>Math.abs(+c.v-n)).filter(d=>d).sort();
+          if(ds[0]!==1||(lv==2&&ds[1]!==2)||(lv==1&&ds[1]<1))b(w+': distractors '+ds);
+          if(!q.say.startsWith('How many ')||!q.say.endsWith('?'))b(w+': say '+q.say);
+          if(lv==2){const cells=[...q.html.matchAll(/grid-column:(\d);grid-row:(\d)/g)].map(m=>m[1]+m[2]);if(new Set(cells).size!==n||cells.length!==n)b(w+': scattered objects share a cell')}
+        }
+        if(sk=='pk_num'){
+          const n=+q.ans;
+          if(q.auto!=='must')b(w+': listening task must be auto must');
+          if(q.choices.length!==3||!q.choices.some(c=>c.v==q.ans))b(w+': 3 choices with the answer');
+          if(q.choices.some(c=>+c.v<0||+c.v>(lv==1?5:10)))b(w+': numeral out of range');
+          if(q.say!==`Tap the number ${num[n]}.`)b(w+': say '+q.say);
+          if(lv==2){const L={6:9,9:6,1:7,7:1};if(L[n]!=null&&!q.choices.some(c=>+c.v===L[n]))b(w+': no look-alike for '+n)}
+        }
+        if(sk=='pk_more'){
+          const pl=q.html.split('class="pkplate"').slice(1).map(x=>(x.match(/class="pko"/g)||[]).length);
+          if(pl.length!==2||Math.abs(pl[0]-pl[1])<2||pl[0]<1||pl[1]<1||pl[0]>5||pl[1]>5)b(w+': groups '+pl);
+          else if(pl[q.ans=='l'?0:1]<pl[q.ans=='l'?1:0])b(w+': the answer has fewer');
+        }
+        if(sk=='sort'&&lv==1){
+          const s=q.choices.map(c=>sig(c.l)),oi=+q.ans;
+          const cnt=(k,v)=>s.filter(x=>x[k]===v).length;
+          const col3=s.some(x=>cnt('c',x.c)==3),shp3=s.some(x=>cnt('s',x.s)==3);
+          if(col3==shp3)b(w+': needs exactly one rule (colour '+col3+', shape '+shp3+')');
+          const key=col3?'c':'s',odd=s.findIndex(x=>cnt(key,x[key])==1);
+          if(odd!==oi||s.filter(x=>cnt(key,x[key])==1).length!==1)b(w+': odd one is '+odd+', answer '+oi);
+          if(q.choices.length!==4)b(w+': '+q.choices.length+' items');
+        }
+        if(sk=='sort'&&lv==2){
+          const m=/^(\w+) (\w+) ([\d.\/]+)$/.exec(q.label);
+          if(!m)b(w+': label '+q.label);
+          else{
+            const v=m[3].split('/').map(Number),max=/^(biggest|bigger|longest|longer|tallest|taller)$/.test(m[1]),
+              want=max?Math.max(...v):Math.min(...v);
+            if(v[+q.ans]!==want||new Set(v).size!==v.length||v.length!==q.choices.length||v.length<2||v.length>3)b(w+': '+q.label+' answer '+q.ans);
+          }
+        }
+        if(sk=='shape'){
+          const pts=n=>PK.SHP[n].map(p=>p.join(',')).join(' ');
+          const want={triangle:pts('triangle'),square:pts('square'),rectangle:pts('rectangle'),circle:'circle'}[q.ans];
+          const hit=q.choices.filter(c=>sig(c.l).s===want);
+          if(q.choices.length!==3||hit.length!==1||hit[0].v!==q.ans)b(w+': answer picture '+q.ans);
+          if(new Set(q.choices.map(c=>sig(c.l).c)).size!==3)b(w+': colours repeat');
+          if(q.auto!=='must')b(w+': listening task must be auto must');
+        }
+        if(sk=='pat'){
+          const shown=[...q.html.matchAll(/<svg class="pks"[^>]*>.*?<\/svg>/g)].map(m=>sig(m[0])),k=s=>s.c+'|'+s.s;
+          if(shown.length!==5||k(shown[0])!==k(shown[2])||k(shown[2])!==k(shown[4])||k(shown[1])!==k(shown[3])||k(shown[0])===k(shown[1]))b(w+': not ABABA');
+          else{
+            const a=q.choices[+q.ans];
+            if(!a||k(sig(a.l))!==k(shown[1]))b(w+': answer is not the B item');
+            if(q.choices.filter(c=>k(sig(c.l))===k(shown[1])).length!==1)b(w+': two B items');
+          }
+        }
+      }
+      if(labels.size<4)b(w+': only '+labels.size+' different labels');
+    }
+    // 3. seeded: the same seed gives the same question
+    for(const [sk,max] of LEVELS)for(let lv=1;lv<=max;lv++)for(let s=1;s<=30;s++){
+      if(JSON.stringify(genQ(sk,lv,s))!==JSON.stringify(genQ(sk,lv,s)))b(sk+lv+' seed '+s+' not reproducible');
+    }
+    // 4. grades: Pre-K starts in Tiny Town, K in Number Meadow (both open), grade 2 in Space Station
+    load(null);S.grade=-1;
+    if(curWorld('math')!==0||nid(NODES.math[curNode('math')])!=='pk_count1')b('Pre-K does not open on Tiny Town');
+    if(worldOpen('math',1))b('Pre-K: Number Meadow open before Tiny Town is done');
+    S.grade=0;
+    if(NODES.math[curNode('math')].wid!=='m_meadow')b('K does not open on Number Meadow: '+NODES.math[curNode('math')].wid);
+    if(!worldOpen('math',1)||!worldOpen('math',0))b('K: Tiny Town and Number Meadow must be open');
+    S.grade=2;
+    if(NODES.math[curNode('math')].wid!=='m_space')b('grade 2 does not open on Space Station');
+    // 5. saves: stars are keyed by stop id, so adding Tiny Town moves none (midway, maxed); the map is not sent back
+    for(const name of ['midway','maxed']){
+      load(fx(name));
+      const m=JSON.parse(JSON.stringify(S.maps.math));
+      if(NODES.math[curNode('math')].wid==='m_tiny')b(name+': map moved back to Tiny Town');
+      for(const k in m){const ix=NODES.math.findIndex(n=>nid(n)===k);if(ix>=0&&getSt('math',ix)!==m[k])b(name+': stars of '+k+' changed');if(ix<0&&!/^boss\d+$/.test(k))b(name+': a saved key matches no stop: '+k)}
+      if(JSON.stringify(S.maps.math)!==JSON.stringify(m))b(name+': map changed by loading');
+    }
+    // 6. mastery: harder/easier follow the new levels
+    const nd=(sk,lv)=>NODES.math.find(n=>n.sk===sk&&n.lv===lv);
+    if(!harder(nd('pk_count',1))||harder(nd('pk_count',1)).lv!==2||!easier(nd('pk_num',2))||easier(nd('pk_num',2)).lv!==1)b('harder/easier skip the Tiny Town levels');
+    return out;
+  };
+  const r=eval(js+';('+body.toString()+')()');
+  for(const m of r)bad.push(m);
+  // 7. new files: no raw hex colours, no Math.random in the generators
+  const css=fs.readFileSync(path.join(SRC,'css','31-pk.css'),'utf8'),gen=fs.readFileSync(path.join(SRC,'js','31-gen-math-early.js'),'utf8');
+  if(/#[0-9a-fA-F]{3,8}\b/.test(css))bad.push('31-pk.css has a raw hex colour');
+  if(/#[0-9a-fA-F]{3,8}\b/.test(gen))bad.push('31-gen-math-early.js has a raw hex colour');
+  if(/Math\.random/.test(gen))bad.push('31-gen-math-early.js uses Math.random');
+  return{problems:bad};
 });
 
 // ---- report ----

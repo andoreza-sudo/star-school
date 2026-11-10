@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** wave 5 batch A: P2-01, P2-05 in progress; then batch B: P2-02, P2-03, P2-06, P2-18.
+**Next up:** wave 5: P2-05 merging; then batch B: P2-02, P2-03, P2-06, P2-18.
 
-**Current version:** v59
+**Current version:** v60
 
 ## Chunk status
 
@@ -39,6 +39,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P2-19 v57
 - P4-13 v58
 - P2-15 v59
+- P2-01 v60
 
 ## Handoff notes
 
@@ -63,6 +64,13 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - (P5-02) Items moved from saves older than v38 have no seed: `revQ` tries 120 seeds for the same label once and keeps the one it finds (`seed: null` when none; then each review is a fresh question of that skill and level). Labels whose format changed since (midway's `3 + 4` against today's add labels) never match, so those items get fresh questions until they leave the system.
 - (P5-05) Quitting a round mid-question adds no time for that question (only answered questions count), and games (Balloons, Race, Hill Climb, Art) are not logged; P5-06 can say "learning time". Sprint seconds do not add to `q`/`ok`, so Sprint does not change accuracy.
 Things noticed while working that are outside the current chunk. One line each, with the chunk that noticed it.
+
+- (P2-01) The smoke step "P5-02 tricky mix" failed once in about three runs with `fixed` 8 instead of 7 (and passed on the rerun): the 3 non-review questions of a Mixed Practice round are random, and one can match a due item's label, which `revRight` then books as fixed. The step should compare against the items actually asked (`G.q.rvk`), not a fixed 7.
+- (P2-01) Tiny Town sort 1 shows 4 pictures although CURRICULUM 1.3 says "3 max for PK"; the M-PK table asks for 4 items (3 alike, 1 different), so the table won. `gradeCfg().choices` (3) is still unused by generators.
+- (P2-01) The placement quiz for a K child now starts in Tiny Town (one grade below) and takes 5 testlets to pass all math worlds; if that feels long, start K at Number Meadow by making `PLACE.first` use `max(grade - 1, 0)` for children above Pre-K.
+- (P2-01) Boss character and prize still come from the world index, so Tiny Town (index 0) shifts every other math world's boss and prize by one (cosmetic; see the P1-05 note). Pin a boss per world id in P4-09.
+- (P2-01) The words on Tiny Town map stops ("Count to 5") are text; a Pre-K child taps the picture node, the node picture is the skill emoji. P4-09 (map redesign) can add spoken stop names.
+- (P2-01) Pre-K sort and pat use colours from tokens (red, blue, green, yellow, purple, orange); shapes carry an outline, but a colour-blind child may still confuse red/green or orange/yellow in "which one is different" by colour. A later pass could add a pattern fill per colour.
 
 - (P5-03) The Daily Review round has no filler: it holds only due items (1 to 10). Mixed Practice still starts with up to 7 due items, so the same items can be asked by either button; a later pass could make Mixed Practice skip due items or limit the card to once a day if that feels repetitive. The card shows the whole backlog ("21 due") although a round takes 10 at a time.
 - (P5-03) The Mixed Practice button still uses a raw emoji and inline colours (old home code); P4-09/P4-10 home redesign should move it onto ico().
@@ -153,6 +161,20 @@ Things noticed while working that are outside the current chunk. One line each, 
 
 ## Log
 
+### P2-01 PreK math: world Tiny Town, audio-first (v60, 2026-11-10, Claude)
+- What changed: new first math world `m_tiny` "Tiny Town" (g -1, Pre-K) with the CURRICULUM M-PK stops in order: pk_count 1, shape 1, pk_num 1, sort 1, pk_more 1, pk_count 2, pat 1, pk_num 2, sort 2 (nine stops plus the boss). `trace 1` is left out until P2-16, as CURRICULUM 2.1 says. Six new skills registered in `38-skills.js`: `pk_count` (2 levels), `pk_num` (2), `pk_more` (1), `sort` (2), `shape` (1), `pat` (1). Existing levels and skills are untouched.
+- Generators are in the new `src/js/31-gen-math-early.js` (helper object `PK`): counting objects through `picFor` (rows for 1-5, 5x2 grid with jitter for 1-10, never overlapping), numeral choices with off-by-one/two and look-alike (6/9, 1/7, 2/5, 3/8) distractors, two plates for "which has more" (`tap` kind, difference at least 2), coloured shapes drawn as inline svg with token colours (odd one out by colour or by shape, never both; AB patterns of 5), size / length / height comparisons. Every level has a picture hint (`hint.k = 'html'`, spoken line `w`; counting pulses one object at a time, shape sides flash one by one), `say`, `after` where it helps, and a unique label. Only `rnd()` helpers are used.
+- Audio-first presentation: questions carry `pk: true` (and `auto`). The round engine (`50-round.js`, 2 small edits) speaks `q.say` on its own whenever `q.pk` is set (so a 1st grader who walks into Tiny Town gets it too, whatever the Read-aloud setting) and draws a big replay button (96 x 72 px, speaker icon) instead of the small "Hear it" button. Listening tasks (`pk_num`, `shape`) are `auto:'must'` and still show the words as a visible fallback. Every word on screen sits in `.pktxt`; the debug flag `html.notext` (class on the page, set by smoke) hides them all: prompts are pictures, answers are pictures or numerals. New hint kind `html` in `39-hints.js` (trusted markup from a generator, speaks `h.w`); no new question kinds.
+- New file `src/css/31-pk.css` (tokens only, `pk` classes).
+- Save safety: stars are keyed by stop id (`add1`, `boss_m_meadow`), the frozen `MAP_V42` still drives migrations 1-3, and Tiny Town is inserted at world index 0, so no key moves. `curNode()` (42-paths.js) no longer falls back to a stop in an untouched world below the start world: a maxed child whose only unfinished stop is the new Pre-K world keeps the map on their last stop instead of jumping back to Tiny Town. Pre-K children start in Tiny Town, K children in Number Meadow (both open), midway and maxed saves keep their stars and current stop.
+- Placement (P1-07): the quiz still starts one grade below the child's grade, so a K child now starts in Tiny Town (4 questions asked in Pre-K style) and passing every math world takes 5 testlets (20 questions) instead of 4 (16). Mastery harder/easier follow the new levels (`pk_count` 1 -> 2, `sort`, `pk_num`).
+- Edits to existing files: `38-skills.js` (6 skills), `39-hints.js` (kind `html`), `42-paths.js` (world, curNode fallback), `50-round.js` (2 edits), `tools/build.py` (VER). Tests: new named check "Tiny Town (P2-01)" (3,000 samples per level: answers by rule, picture counts equal the answer, one rule for the odd one, ABABA patterns, no letters outside `.pktxt`, hints, seeded reproducibility, world order, grades, saves, harder/easier, no hex, no Math.random). Expectations changed in existing tests and smoke (old -> new): see the commit message and the report.
+- Screenshots looked at: tiny-count1, tiny-count2, tiny-more1, tiny-sort1, tiny-sort2, tiny-pat1, tiny-shape1, tiny-hint (380x780 and 600x960).
+- Checklist 7.1: [x] only named files changed (plus new CSS, tests, shots) [x] VER bumped (provisional) [x] build [x] test.js (31 checks) [x] smoke.js [x] screenshots [x] midway/maxed unchanged (test) [x] size under 1.5 MB [x] no network [x] no new emoji or hex [x] PROGRESS entry [x] commit (not pushed).
+- Merge: built on a parallel branch, renumbered v57 -> v60 at merge.
+
+- Merge (after P2-15): curNode takes this chunk's version (skips untouched or placement-skipped worlds below the start world, also as a fallback); the save-safety test keeps P2-15's general version; the number-pad smoke step opens Number Meadow's first stop.
+
 ### P2-15 Letters and early phonics: world ABC Beach (v59, 2026-11-10, Claude)
 - What changed: new first reading world `r_abc` ABC Beach (g Pre-K): abc 1 (hear a big letter, 3 look-alike choices), abc 2 (little letter, 4 choices), abc 3 (match 4 big to little), syl 1 (picture, clap count 1-3, 40 words), abc 4 (what comes after / fill the gap). Letter Meadow ends with sound 3 (middle vowel of a CVC picture word); Candy Canyon ends with sound 4 (digraph sh ch th wh ck at the start or end of a picture word) and syl 2 (printed word, 1-4 claps, 60 words). Tracing stops (trace 2, 3) come from P2-16/17. New skills `abc` (4 levels) and `syl` (2); `sound` max 2 -> 4. Letters follow the CURRICULUM order, the first 13 twice as often.
 - New: `src/css/36-abc.css` (tokens only). Added to `20-words.js` (ABCO, ABCP, LOOKU/LOOKL, LETW, CVCM, DIGR, SYLP, SYLW) and `32-gen-read.js` (`genAbc`, `genSoundB`, `genSyl`, helpers). Every picture goes through `picFor`; no new emoji; no new question kinds (choice, match, build).
@@ -174,7 +196,7 @@ Things noticed while working that are outside the current chunk. One line each, 
 - Checklist 7.1: [x] only named files [x] VER bumped [x] build [x] test.js [x] smoke.js [x] screenshots [x] midway fixture (test) [x] size under 1.5 MB [x] no network [x] no new emoji or hex [x] PROGRESS entry [x] one commit (not pushed).
 - Merge: built on a parallel branch, renumbered v61 -> v58 at merge.
 
-### P2-19 Spelling levels 1-7 (v57, 2026-11-10, Claude)
+### P2-19 Spelling levels 1-7 (v60, 2026-11-10, Claude)
 - What changed: new skill `spell` (`SK.spell`, 7 levels, kind `spell`, in-app keyboard). Words and generator are in the new `src/data/d-spell.js`: `SPELL_WORDS[lv]` (one `word|sentence` per line; 40 words at level 1, 60 at levels 2-7 = 400 words), then `genSpell`, `spellList`, `spellPic` in a clearly marked block at the bottom. The child hears word, sentence, word (`say`, auto); the screen shows the sentence with the word blanked (`_____`) so it works with speech off, plus a picture (`picFor`) for words the reading lists already have an emoji for. Hint: "It has N letters and starts with X" and the word is spoken (`{k:'say'}`). A missed word comes back at the end of the round (existing engine behaviour). Seeded `pick` only.
 - Levels (CURRICULUM E-spell): 1 CVC; 2 blends, digraphs, -ck -ll -ss; 3 silent e, vowel teams, -ed/-ing; 4 r-controlled, diphthongs, doubling and drop-e, plurals, irregulars; 5 prefixes/suffixes, silent letters, homophones (their/there, hear/here, to/too, see/sea, by/buy, week/weak, tail/tale, new/knew, wood/would, each with a sentence only one fits); 6 -tion/-sion, -able/-ible, Greek/Latin, commonly misspelled; 7 academic and tricky doubles.
 - Stops: spell 1 at the end of Candy Canyon, spell 2 at the end of Ocean Reef, spell 3 at the end of Space Station (all new ids `spell1..3`, before each world's boss). Spell 4-7 needed worlds that no chunk has shipped, so this chunk creates them with one stop each, as the content recipe says: Story Summit `r_summit` (g3, spell 4), Dragon Library `r_library` (g4, spell 5), Author Island `r_island` (g5, spell 6), Legend Lab `r_legend` (g6, spell 7). Later chunks (P2-18, 20-29) insert their stops in front of / around these in the order CURRICULUM 2.2 gives; ids are permanent.
