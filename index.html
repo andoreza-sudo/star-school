@@ -227,6 +227,30 @@ label.tg{display:block;font-size:20px;margin:8px 0}
 .stc-n{font-size:var(--fs-1);color:var(--ink-2)}
 .stc-m{font-size:var(--fs-2);min-height:1em}
 @media (max-width:420px){.stc-card{padding:var(--s-3)}.stc-grid{gap:2px}}
+/* content banks and the passage panel (P1-09); tokens only */
+.bq{font-size:.55em;line-height:1.25}
+.bpic{display:flex;justify-content:center;margin-bottom:var(--s-2);color:var(--brand)}
+.bsent{margin-top:var(--s-2);font-size:.5em;font-weight:700;color:var(--ink-2);line-height:1.3}
+.choices.wide{grid-template-columns:1fr}
+.choices.wide .ch{font-size:clamp(20px,3.6vh,28px);padding:clamp(8px,1.6vh,14px) var(--s-3)}
+.choices.bwords{display:flex;flex-wrap:wrap;justify-content:center;gap:var(--s-2)}
+.choices.bwords .ch{font-size:clamp(20px,3.6vh,28px);padding:clamp(8px,1.6vh,14px) var(--s-4);min-height:var(--tap)}
+
+/* passage panel */
+.bctx{width:100%;max-width:760px;background:var(--surface);border-radius:var(--r-card);box-shadow:var(--shadow);text-align:left;flex:none}
+.bctx-h{display:flex;align-items:center;justify-content:space-between;gap:var(--s-3);min-height:var(--tap);padding:var(--s-2) var(--s-4);
+  cursor:pointer;list-style:none;font-weight:700;font-size:var(--fs-3);color:var(--ink);touch-action:manipulation}
+.bctx-h::-webkit-details-marker{display:none}
+.bctx-s{display:inline-flex;align-items:center;gap:var(--s-2);font-size:var(--fs-2);color:var(--brand-shade)}
+.bctx-s::after{content:'';width:10px;height:10px;border-right:3px solid currentColor;border-bottom:3px solid currentColor;
+  transform:rotate(225deg) translate(-2px,-2px);transition:transform var(--t) var(--ease)}
+.bctx:not([open]) .bctx-s::after{transform:rotate(45deg) translate(-2px,-2px)}
+.bctx[open] .bctx-show,.bctx:not([open]) .bctx-hide{display:none}
+.bctx-b{max-height:30vh;overflow:auto;padding:0 var(--s-4) var(--s-4);-webkit-overflow-scrolling:touch}
+.bctx-say{margin-bottom:var(--s-2);display:inline-flex;align-items:center;gap:var(--s-2)}
+.bctx-p{margin:0;font-size:clamp(17px,3.2vmin,24px);line-height:var(--lh-3);font-weight:600;color:var(--ink)}
+@media (orientation:landscape){.bctx-b{max-height:44vh}}
+@media (max-height:520px){.bctx-b{max-height:36vh}.bctx-h{min-height:var(--tap);padding-top:0;padding-bottom:0}}
 .petwrap{position:relative;display:inline-block;line-height:1}
 .petwrap .hat{position:absolute;left:50%;top:-.34em;transform:translateX(-50%) rotate(-10deg);font-size:.5em}
 .petwrap .toy{position:absolute;right:-.4em;bottom:-.02em;font-size:.44em}
@@ -445,7 +469,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S));SAVE_FAILED=fals
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v42'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v43'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -937,6 +961,257 @@ function genRhyme(lv){const fi=R(0,RHY.length-1),fam=RHY[fi],[t,r]=shuffle(fam),
     say:`Which one rhymes with ${t[0]}?`,auto:true,ans:r[0],after:`${t[0]}, ${r[0]}!`,choices:opts.map(x=>({l:lv==1?x[1]:x[0],v:x[0]})),
     hint:{k:'text',s:`Rhymes sound the same at the end: ${t[0].slice(-2)}…`},label:`rhyme: ${t[0]}`}}
 
+/* ---------- content banks (P1-09) ---------- */
+/* Fact content (grammar, vocabulary, passages, science) is DATA in src/data/d-*.js and is turned into questions here.
+   Data files load after all code, so a data file may do `BANK.gram=[...]` at load time, but code in this file may read
+   BANK and PASS only inside functions (at run time).
+
+   BANK[id] = [item, ...]   item (CURRICULUM.md section 8):
+     lv     skill level (whole number, 1 and up)                      required
+     q      question text; '___' marks a blank (shown as a slot)      required (not for match)
+     a      right answer (a list for form 'multi')
+     d      2 or 3 wrong answers (forms choice, wide, multi)
+     form   'choice' (default) | 'wide' | 'tap' | 'spell' | 'order' | 'match' | 'multi'
+     sent   tap: the sentence; the child taps the word that is the answer
+     order  order: the items in the right order      pairs  match: [[left, right], ...]
+     topic  strand tag for the report card   hint  teaching hint   pic  icon name from ICONS   say  text to read instead of q
+   choice and wide make a `choice` question (wide = one button per row), tap a `choice` over the words of the sentence,
+   spell a `build` question. order, match and multi need their own question kind (P1-03/P1-04): such a kind registers its
+   builder as BANKF.form=(item, id)=>question; until it does, those items are never drawn.
+
+   PASS[id] = [{lv, title, text, qs:[item, ...]}]: one passage and its questions (items as above, forms choice or wide).
+   Every question of a passage carries q.ctx = {title, text}; renderQ shows it in a collapsible, scrollable panel
+   (bankCtx) above the prompt; the words of the text are tap-to-hear.
+
+   A skill uses a bank by calling genBank in its gen. A passage skill also gives a round hook: start() in 50-round.js calls
+   SK[sk].round(lv) and plays the returned list of questions as the whole round (round length = list length).
+     SK.gram={t:'Grammar',e:'...',area:'read',max:5,bank:'gram',gen:lv=>genBank('gram',lv)}
+     SK.story={t:'Story',e:'...',area:'read',max:2,bank:'story',gen:lv=>genPassage('story',lv),round:lv=>passageRound('story','story',lv)}
+
+   Choosing an item: in live play (a round has started: BANKLIVE) the least recently shown item of the level comes first, and
+   never-shown ones before shown ones. Without a round (tests, review, race) the choice depends on the seed only, so
+   genQ(sk, lv, seed) is reproducible. Every question carries q.bk, a small spec; bankRebuild(q.bk) makes the same question again. */
+const BANK={};
+const PASS={};
+const BANKF={}; // builders for forms that need another question kind: BANKF.order=(item, id)=>question
+const BANKFORMS=['choice','wide','tap','spell','order','match','multi'];
+let BANKLIVE=false; // set by bankRound() when a round starts
+let BANKTICK=0;
+const BANKMEM={}; // 'id' or 'P:id' -> {index: tick when last shown}; this session only, never saved
+
+function bankRound(){BANKLIVE=true}
+function bankReset(){
+  BANKLIVE=false;
+  BANKTICK=0;
+  for(const k in BANKMEM)delete BANKMEM[k];
+}
+
+const bankSeed=()=>Math.floor(rnd()*4294967296)>>>0;
+const bankSub=(s,i)=>(s^Math.imul(i+1,0x9E3779B1))>>>0;
+// run fn with a private seeded random stream; the caller's stream is restored even when fn throws
+function bankWith(seed,fn){
+  const prev=RNG;
+  RNG=mulberry32(seed>>>0);
+  try{return fn()}
+  finally{RNG=prev}
+}
+// which candidate index comes next. Live: least recently shown, never-shown first. Otherwise: by the seed only.
+function bankChoose(key,cands,s){
+  const P=mulberry32(s);
+  if(!BANKLIVE)return cands[Math.floor(P()*cands.length)];
+  const mem=BANKMEM[key]||(BANKMEM[key]={});
+  const lo=Math.min(...cands.map(i=>mem[i]||0));
+  const tie=cands.filter(i=>(mem[i]||0)==lo);
+  const i=tie[Math.floor(P()*tie.length)];
+  mem[i]=++BANKTICK;
+  return i;
+}
+const bankCan=it=>it.form=='order'||it.form=='match'||it.form=='multi'?!!(BANKF[it.form]&&KIND[it.form]):true;
+const bankTxt=t=>esc(t).replace(/___/g,SLOT);
+const bankSay=t=>String(t).replace(/___/g,'blank');
+const bankWords=t=>String(t).split(/[^A-Za-z']+/).filter(Boolean);
+
+// One question from one item. Call it inside bankWith so shuffle() uses the item's own random stream.
+function bankBuild(id,it,pass){
+  const form=it.form||'choice';
+  const pic=it.pic&&ICONS[it.pic]?`<div class="bpic">${ico(it.pic,64)}</div>`:'';
+  let q;
+  if(form=='spell'){
+    const w=it.a,abc='abcdefghijklmnoprstuw';
+    const extra=shuffle([...abc].filter(c=>!w.includes(c))).slice(0,2);
+    q={kind:'build',word:w,tiles:shuffle([...w,...extra]),ans:w,hint:{k:'next'},
+      html:`${pic}<div class="bq">${esc(it.q)}</div><div class="lslots">${[...w].map((_,i)=>`<span class="ls" id="ls${i}"></span>`).join('')}</div>`};
+  }
+  else if(form=='tap'){
+    const seen=new Set();
+    const ws=bankWords(it.sent).filter(x=>!seen.has(x)&&seen.add(x));
+    q={kind:'choice',cls:'bwords',ans:it.a,choices:ws.map(x=>({v:x,l:x})),
+      html:`${pic}<div class="bq">${esc(it.q)}</div><div class="bsent">${esc(it.sent)}</div>`};
+  }
+  else if(form!='choice'&&form!='wide')q=BANKF[form](it,id);
+  else q={kind:'choice',cls:form=='wide'?'wide':'',ans:it.a,choices:shuffle([it.a,...it.d]).map(x=>({v:x,l:x})),
+    html:`${pic}<div class="bq">${bankTxt(it.q)}</div>`};
+  if(!q.hint)q.hint={k:'text',s:it.hint||'Read it again slowly. Which one fits best?'};
+  else if(it.hint&&q.hint.k=='text')q.hint.s=it.hint;
+  q.say=it.say||bankSay(it.q);
+  q.label=it.q.slice(0,60)+' = '+(Array.isArray(it.a)?it.a.join(','):it.a);
+  if(it.topic)q.topic=it.topic;
+  if(pass)q.ctx={title:pass.title,text:pass.text};
+  return q;
+}
+
+/* genBank(id, lv): one question from BANK[id] at level lv. o.bi forces the item and o.s the seed (both used by bankRebuild). */
+function genBank(id,lv,o={}){
+  const items=BANK[id]||[];
+  const s0=o.s!=null?o.s:bankSeed();
+  const cands=items.map((it,i)=>i).filter(i=>items[i].lv==lv&&bankCan(items[i]));
+  if(!cands.length)throw new Error('bank '+id+' has no usable item at level '+lv);
+  const bi=o.bi!=null?o.bi:bankChoose(id,cands,s0);
+  const q=bankWith(bankSub(s0,bi),()=>bankBuild(id,items[bi]));
+  q.bk={id,lv,bi,s:s0};
+  return q;
+}
+
+/* genPassage(id, lv): one question (with its passage as q.ctx) from a passage of level lv. Used as the skill's gen, so
+   boss fights, mixed rounds and review can ask a passage question on its own. o.bp, o.qi, o.s force passage, question, seed. */
+function genPassage(id,lv,o={}){
+  const ps=PASS[id]||[];
+  const s0=o.s!=null?o.s:bankSeed();
+  const cands=ps.map((p,i)=>i).filter(i=>ps[i].lv==lv);
+  if(!cands.length)throw new Error('passages '+id+' has none at level '+lv);
+  const bp=o.bp!=null?o.bp:bankChoose('P:'+id,cands,s0);
+  const qs=ps[bp].qs;
+  const qi=o.qi!=null?o.qi:Math.floor(mulberry32(bankSub(s0,99))()*qs.length);
+  const q=bankWith(bankSub(s0,bp*16+qi),()=>bankBuild(id,qs[qi],ps[bp]));
+  q.bk={id,lv,bp,qi,s:s0};
+  return q;
+}
+
+/* passageRound(sk, id, lv): a whole round for the SK[sk].round hook: one passage, all its questions in order. Questions are
+   stamped with sk, lv and seed like genQ does (check() reads q.sk). */
+function passageRound(sk,id,lv){
+  const ps=PASS[id]||[];
+  const s0=bankSeed();
+  const cands=ps.map((p,i)=>i).filter(i=>ps[i].lv==lv);
+  if(!cands.length)throw new Error('passages '+id+' has none at level '+lv);
+  const bp=bankChoose('P:'+id,cands,s0);
+  return ps[bp].qs.map((_,qi)=>{
+    const q=genPassage(id,lv,{bp,qi,s:s0});
+    q.sk=sk;q.lv=lv;q.seed=s0;
+    return q;
+  });
+}
+
+// the same question again from a saved q.bk
+function bankRebuild(bk){
+  return bk.qi!=null?genPassage(bk.id,bk.lv,{bp:bk.bp,qi:bk.qi,s:bk.s}):genBank(bk.id,bk.lv,{bi:bk.bi,s:bk.s});
+}
+
+/* The passage panel (q.ctx): a <details> that is open by default; the body scrolls when the text is long.
+   renderQ puts bankCtx(q.ctx) above the prompt. The words use the existing .w spans, so renderQ's tap-to-hear works.
+   The "Hear it" button uses data-say, which renderQ also binds. ontoggle re-fits the question after open/close. */
+function bankCtx(c){
+  return `<details class="bctx" open ontoggle="fit()"><summary class="bctx-h"><span class="bctx-t">${esc(c.title||'Read')}</span>`
+    +'<span class="bctx-s"><span class="bctx-hide">Hide</span><span class="bctx-show">Show</span></span></summary>'
+    +`<div class="bctx-b"><button class="btn sm bctx-say" data-say="${esc(c.text)}">${ico('speak',22)} Hear the story</button>`
+    +`<p class="bctx-p">${words(c.text)}</p></div></details>`;
+}
+
+/* ---------- validator (run by tools/test.js; reused by content chunks) ---------- */
+const BANKLIM={q:140,choice:60,hint:140,text:1200,title:40};
+function bankBadWords(t){return bankWords(t).map(w=>w.toLowerCase()).filter(w=>BAD.test(w))}
+// problems with one item; where is a label for the message
+function bankItemProblems(it,where){
+  const p=[],form=it.form||'choice',w=where+': ';
+  const str=(v,max,name)=>{
+    if(typeof v!=='string'||!v.trim()){p.push(w+name+' is not a text');return false}
+    if(v.length>max)p.push(w+name+' is longer than '+max);
+    for(const b of bankBadWords(v))p.push(w+name+' has a bad word: '+b);
+    return true;
+  };
+  if(!Number.isInteger(it.lv)||it.lv<1)p.push(w+'lv must be a whole number from 1');
+  if(!BANKFORMS.includes(form)){p.push(w+'unknown form '+form);return p}
+  if(form!='match')str(it.q,BANKLIM.q,'q');
+  if(it.hint!=null)str(it.hint,BANKLIM.hint,'hint');
+  if(it.say!=null)str(it.say,BANKLIM.q,'say');
+  if(it.pic!=null&&typeof ICONS!=='undefined'&&!ICONS[it.pic])p.push(w+'pic '+it.pic+' is not an icon');
+  const distinct=(a,name)=>{if(new Set(a.map(x=>String(x).toLowerCase())).size!==a.length)p.push(w+name+' has duplicates')};
+  if(form=='choice'||form=='wide'||form=='multi'){
+    const as=form=='multi'?it.a:[it.a];
+    if(form=='multi'&&(!Array.isArray(it.a)||it.a.length<2||it.a.length>4))p.push(w+'multi needs 2 to 4 answers in a');
+    else{
+      if(!Array.isArray(it.d)||it.d.length<2||it.d.length>3)p.push(w+'d needs 2 or 3 distractors');
+      else{
+        const all=[...as,...it.d];
+        if(all.every(x=>str(x,BANKLIM.choice,'choice "'+x+'"')))distinct(all,'a and d');
+      }
+    }
+  }
+  else if(form=='tap'){
+    str(it.sent,BANKLIM.q,'sent');
+    if(typeof it.sent==='string'&&typeof it.a==='string'){
+      const n=bankWords(it.sent).filter(x=>x==it.a).length;
+      if(n!==1)p.push(w+'a must be one word that appears exactly once in sent (found '+n+')');
+      if(bankWords(it.sent).length<2)p.push(w+'sent needs at least 2 words');
+    }
+  }
+  else if(form=='spell'){
+    if(typeof it.a!=='string'||!/^[a-z]{2,12}$/.test(it.a))p.push(w+'spell a must be 2 to 12 lowercase letters');
+    else for(const b of bankBadWords(it.a))p.push(w+'a has a bad word: '+b);
+  }
+  else if(form=='order'){
+    if(!Array.isArray(it.order)||it.order.length<3||it.order.length>6)p.push(w+'order needs 3 to 6 items');
+    else if(it.order.every(x=>str(x,BANKLIM.choice,'order item')))distinct(it.order,'order');
+  }
+  else if(form=='match'){
+    if(!Array.isArray(it.pairs)||it.pairs.length<3||it.pairs.length>5||it.pairs.some(x=>!Array.isArray(x)||x.length!==2))
+      p.push(w+'pairs needs 3 to 5 [left, right] pairs');
+    else if(it.pairs.flat().every(x=>str(x,BANKLIM.choice,'pair text'))){
+      distinct(it.pairs.map(x=>x[0]),'pair lefts');
+      distinct(it.pairs.map(x=>x[1]),'pair rights');
+    }
+  }
+  return p;
+}
+// problems with a whole bank: every item, no duplicate q+a, at least min items for each level in levels
+function bankProblems(id,o={}){
+  const items=BANK[id],p=[];
+  if(!Array.isArray(items)||!items.length)return['BANK.'+id+' is missing or empty'];
+  const seen=new Set();
+  items.forEach((it,i)=>{
+    p.push(...bankItemProblems(it,'BANK.'+id+'['+i+']'));
+    const k=(it.q||'')+'|'+JSON.stringify(it.a!=null?it.a:it.pairs||it.order);
+    if(seen.has(k))p.push('BANK.'+id+'['+i+']: same q and a as an earlier item');
+    seen.add(k);
+  });
+  for(const lv of o.levels||[]){
+    const n=items.filter(it=>it.lv==lv).length;
+    if(n<(o.min||0))p.push('BANK.'+id+' level '+lv+' has '+n+' items, needs '+(o.min));
+  }
+  return p;
+}
+// problems with the passages of one id
+function passageProblems(id){
+  const ps=PASS[id],p=[];
+  if(!Array.isArray(ps)||!ps.length)return['PASS.'+id+' is missing or empty'];
+  ps.forEach((x,i)=>{
+    const w='PASS.'+id+'['+i+']';
+    if(!Number.isInteger(x.lv)||x.lv<1)p.push(w+': lv must be a whole number from 1');
+    for(const [k,max] of [['title',BANKLIM.title],['text',BANKLIM.text]]){
+      if(typeof x[k]!=='string'||!x[k].trim())p.push(w+': '+k+' is not a text');
+      else{
+        if(x[k].length>max)p.push(w+': '+k+' is longer than '+max);
+        for(const b of bankBadWords(x[k]))p.push(w+': '+k+' has a bad word: '+b);
+      }
+    }
+    if(!Array.isArray(x.qs)||x.qs.length<3||x.qs.length>6)p.push(w+': qs needs 3 to 6 questions');
+    else x.qs.forEach((it,j)=>{
+      p.push(...bankItemProblems({lv:x.lv,...it},w+'.qs['+j+']'));
+      if(it.form&&it.form!='choice'&&it.form!='wide')p.push(w+'.qs['+j+']: passage questions use choice or wide');
+    });
+  });
+  return p;
+}
 const SK={
  es_greet:{t:'Hello & Thank You',e:'👋',area:'es',max:2,gen:lv=>genEs('greet',lv)},
  es_color:{t:'Colors',e:'🎨',area:'es',max:2,gen:lv=>genEs('color',lv)},
@@ -1098,7 +1373,7 @@ function home(first){
   $('#book').onclick=book;$('#shop').onclick=shop;$('#mix').onclick=()=>{SFX.whoosh();startMix()};$('#race').onclick=raceMenu;$('#flu').onclick=()=>{SFX.whoosh();fluMenu()};$('#care').onclick=care;$('#groom').onclick=()=>{SFX.whoosh();gameRoom()};
   if($('#inst'))$('#inst').onclick=async()=>{try{installEvt.prompt();await installEvt.userChoice}catch(e){}installEvt=null;home()};
   let t;const g=$('#gear');g.onpointerdown=()=>{t=setTimeout(grown,1200)};g.onpointerup=g.onpointerleave=()=>clearTimeout(t);g.onclick=()=>fb('Grown-ups: hold it','warn');
-  {const sc=$('.scroll');if(sc)sc.insertAdjacentHTML('beforeend','<p class="small" style="text-align:center;opacity:.55;margin:14px 0 4px">Star School v42</p>')}
+  {const sc=$('.scroll');if(sc)sc.insertAdjacentHTML('beforeend','<p class="small" style="text-align:center;opacity:.55;margin:14px 0 4px">Star School v43</p>')}
   if(first&&S.voice)setTimeout(()=>say(`Hi ${S.name}! Pick a game!`),400)}
 
 let MAPP='math';
@@ -1343,8 +1618,10 @@ function kindProblems(q){
 }
 /* ---------- game ---------- */
 let G;
-const newG=o=>Object.assign({n:10,done:0,score:0,streak:0,best:0,missed:[],last:null,node:-1,path:null},o);
-function start(p,i){const n=NODES[p][i];G=newG({path:p,node:i,sk:n.sk,lv:n.lv});next()}
+const newG=o=>(bankRound(),Object.assign({n:10,done:0,score:0,streak:0,best:0,missed:[],last:null,node:-1,path:null},o));
+function start(p,i){const n=NODES[p][i];G=newG({path:p,node:i,sk:n.sk,lv:n.lv});
+  if(SK[n.sk].round){G.pool=SK[n.sk].round(n.lv);G.n=G.pool.length}
+  next()}
 function startMix(){const qs=allMiss().slice(0,7).map(m=>({...m.q})),pool=[];
   for(const p in NODES)NODES[p].forEach((n,i)=>{if(unlocked(p,i)&&i<=curNode(p))pool.push(n)});
   while(qs.length<10){const n=pick(pool),q=genQ(n.sk,n.lv);qs.push(q)}
@@ -1386,7 +1663,7 @@ function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;
    ${G.boss?`<div class="bossbar"><span class="bossE" id="bossE">${G.boss.e}<div class="bubble" id="bub"></div></span><div class="hp"><div id="hpf" style="width:${G.hp/7*100}%"></div></div><b id="hpn">${'❤️'.repeat(G.hp)}</b></div>`
     :`<div class="track"><div class="line"></div><div class="chest">${G.test?'⚡':'🎁'}</div><div class="runner ${petAura()}" id="runner" style="left:${pos}">${petHTML()}<div class="bubble" id="bub"></div></div></div>`}
    <div class="streak ${G.streak>=2?'on':''}" id="stk">🔥 ${G.streak}</div><div class="stars" id="starc">⭐ ${G.score}</div></div>
-  <div class="play"><div class="qarea">${q.review?'<div class="rtag">🔁 Remember this one?</div>':''}<div class="prompt" id="prompt">${q.html}</div>
+  <div class="play"><div class="qarea">${q.review?'<div class="rtag">🔁 Remember this one?</div>':''}${q.ctx?bankCtx(q.ctx):''}<div class="prompt" id="prompt">${q.html}</div>
   <div class="tools">${q.say?'<button class="btn sm" id="spk">🔊 Hear it</button>':''}<button class="btn sm" id="hb">💡 Help</button></div><div id="hint" class="hint"></div></div>
   <div class="inp">${input}</div></div>`);
   $('#quit').onclick=()=>{G.dead=true;back()};
@@ -1447,7 +1724,7 @@ function finish(){
   let stars=0,newPass=false,wDone=false;
   let testOk=false,prize=null;
   if(g.test){testOk=sc>=9;if(testOk){NODES[p].forEach((n,i)=>{if(n.wi==g.test.wi&&getSt(p,i)<2)setSt(p,i,2)});newPass=true}}
-  else if(!g.mix){if(g.boss)stars=g.won?(g.asked<=7?3:g.asked<=8?2:1):0;else{P(g.sk).r++;stars=sc>=10?3:sc>=8?2:sc>=7?1:0}
+  else if(!g.mix){if(g.boss)stars=g.won?(g.asked<=7?3:g.asked<=8?2:1):0;else{P(g.sk).r++;stars=sc>=n?3:sc>=Math.floor(n*.8+.01)?2:sc>=Math.floor(n*.7+.01)?1:0}
     const prev=getSt(p,ni);g.prevSt=prev;setSt(p,ni,Math.max(prev,stars));newPass=!prev&&stars>0;
     if(g.boss&&g.won&&!S.owned[nd.prize]){prize=nd.prize;S.owned[prize]=1;S.wear.hat=prize}}
   if(newPass){const wk=p+nd.wi;if(!S.wdone[wk]&&worldDone(p,nd.wi)){S.wdone[wk]=1;wDone=true}}
@@ -3223,7 +3500,7 @@ function grown(){let armed=false;
    <div class="vline"><span class="vtxt">Give a bonus</span><button class="btn xs" id="pt5">+5 min</button><button class="btn xs danger" id="pt0">Empty bank</button></div>
    <label class="tg"><input type="checkbox" id="ptp" ${ptCfg().pause?'checked':''}> Pause game time (games locked)</label></div>
   <div class="card"><div class="tw"><table><tr><th>Skill</th><th>Rounds</th><th>1st try</th><th>Tricky ones</th></tr>${rows}</table></div></div>
-  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v42 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
+  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v43 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
    Storage: ${SAVE_FAILED?'<b style="color:#c0392b">could not save (device storage may be full)</b>':'saving OK'}${SAVE_CORRUPT?'<br><b style="color:#c0392b">The old save could not be read. A fresh start was made and the old data was kept on the device.</b>':''}<br>
    Last errors: ${(S.err||[]).length?(S.err||[]).slice().reverse().map(e=>'<br>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+' '+esc(e.msg)).join(''):'none'}</div></details>
   <div class="card"><label class="tg"><input type="checkbox" id="voice" ${S.voice?'checked':''}> Read questions out loud</label>
@@ -3270,6 +3547,29 @@ document.addEventListener('contextmenu',e=>e.preventDefault());
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>{document.addEventListener('visibilitychange',()=>{if(!document.hidden)r.update().catch(()=>{})})}).catch(()=>{});
 if('serviceWorker' in navigator&&navigator.serviceWorker.controller){let rl=0;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(rl)return;rl=1;if(!document.querySelector('#hcv,#bbc,#stsvg,#ncv'))location.reload()})}
 try{speechSynthesis.getVoices();speechSynthesis.onvoiceschanged=()=>{}}catch(e){}
+/* Demo content for the bank format (P1-09). Small on purpose: it proves the format, the validator and the passage panel.
+   Real content arrives with the Phase 2 chunks (d-gram.js, d-vocab.js, d-comp.js, ...). There is no demo skill in SK: tests,
+   smoke and screenshots register one by hand (see the skill examples in 37-bank.js). */
+BANK.demo=[
+  {lv:1,q:'One mouse, two ___.',a:'mice',d:['mouses','mices','mouse'],topic:'plurals'},
+  {lv:1,q:'The sun is ___ in the sky.',a:'high',d:['hie','hy','hi'],form:'wide',topic:'spelling'},
+  {lv:1,q:'Tap the word that tells what the dog does.',sent:'The dog runs fast.',a:'runs',form:'tap',topic:'verbs'},
+  {lv:1,q:'Spell the word for a baby cat.',a:'kitten',form:'spell',topic:'spelling'},
+  {lv:1,q:'Which one is a color?',a:'green',d:['table','jump','happy'],hint:'A color is what you see when you look at the grass or the sky.',topic:'vocabulary'},
+  {lv:1,q:'Which word means the same as big?',a:'large',d:['tiny','slow','soft'],form:'wide',topic:'vocabulary'},
+];
+PASS.demo=[
+  {lv:1,title:'The Red Kite',
+    text:'Mia has a red kite. The wind is strong today. She runs to the big hill with her dad. Up goes the kite, high above the trees. '
+      +'A little bird flies close to it. Mia laughs and waves. At the end of the day, she winds the string and goes home.',
+    qs:[
+      {q:'What color is the kite?',a:'red',d:['blue','green','yellow']},
+      {q:'Who goes to the hill with Mia?',a:'her dad',d:['her dog','her friend','her teacher'],form:'wide'},
+      {q:'Where does the kite fly?',a:'above the trees',d:['under a bridge','in a room','into the water'],form:'wide'},
+      {q:'What flies close to the kite?',a:'a little bird',d:['a big plane','a bee','a bat'],form:'wide'},
+      {q:'What does Mia do at the end of the day?',a:'goes home',d:['goes to sleep','buys a kite','swims'],form:'wide'},
+    ]},
+];
 loadClips();
 home(true);
 </script>

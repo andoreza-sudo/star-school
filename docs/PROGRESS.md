@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** wave 3: P1-03, P1-04, P1-05, P1-06, P1-09, P1-10 (Opus), P1-11. P1-03/P1-04/P1-09 build on `KIND`; P4-03 adds the next ~60 icons.
+**Next up:** wave 3: P1-03, P1-04, P1-05 (Opus), P1-10 (Opus) in progress; then P1-06, P1-11. P1-03/P1-04/P1-09 build on `KIND`; P4-03 adds the next ~60 icons.
 
-**Current version:** v42
+**Current version:** v43
 
 ## Chunk status
 
@@ -22,6 +22,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P4-02 v40
 - P1-02 v41
 - FIX number pad reveal v42
+- P1-09 v43
 
 ## Handoff notes
 
@@ -64,7 +65,22 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-02) The `.stars` chip line in `46-home.js` (stars + coins) was edited for the coin icon; P5-04 also adds to the home stat row, so expect a one-line merge there.
 - (P4-02) The icon sheet is built inside `tools/shots.js` (no dev screen in the app). Icons are drawn for the 24 grid with the recipe in the `15-icons.js` header; `close` and `times` are nearly the same shape on purpose (times is slightly smaller).
 
+- (P1-09) The finish screen text "Get 7 right to open the next stop" is fixed; on a 5-question passage round the pass mark is 4 (`floor(n*.7+.01)`). Reword the message from `n` when a passage skill ships (P2-25).
+- (P1-09) Stored misses in `makeQ` (`{...pick(ms).q}`) keep `q.ctx` and `q.bk`, so a missed passage question comes back with its passage; P5-02 should rebuild with `bankRebuild(q.bk)` (or `genQ`) instead of copying.
+- (P1-09) Forms `order`, `match`, `multi` are validated but never drawn until P1-03/P1-04 add the kinds and register `BANKF.order/match/multi=(item,id)=>question`; the data shape in CURRICULUM section 8 (`order`, `pairs`, `a` as a list) is what the builders receive.
+- (P1-09) Passage rounds skip the "review an older stop at question 4 and 8" step of `makeQ` (the round is a fixed list). Boss, mix and test-out rounds use the skill's `gen`, which asks a single passage question with its panel.
+- (P1-09) `tools/node_modules` is not in a fresh worktree; `check.sh` runs `npm install` itself, which needs the network.
+
 ## Log
+
+### P1-09 Content bank format, round hook, passage panel (v43, 2026-11-10, Claude)
+- What changed: new `src/js/37-bank.js`: `BANK[id]` items and `PASS[id]` passages (format in the file header and CURRICULUM section 8), `genBank(id, lv)` (forms choice, wide, tap, spell now; order, match, multi once their kinds register `BANKF.form`), `genPassage(id, lv)` (one passage question, for gen), `passageRound(sk, id, lv)` (the round list), `bankRebuild(q.bk)`, `bankCtx(ctx)` (panel HTML), and the validators `bankItemProblems`, `bankProblems(id, {levels, min})`, `passageProblems(id)`. Item choice: live play shows never-shown items first, then least recently shown; without a round it depends on the seed only, so `genQ(sk, lv, seed)` stays reproducible. New `src/css/38-bank.css` (tokens only) and `src/data/d-demo.js` (6 demo items, 1 demo passage; no demo skill in SK).
+- Round hook (50-round.js, 4 small edits): `newG` calls `bankRound()`; `start()` after `newG`: `if(SK[n.sk].round){G.pool=SK[n.sk].round(n.lv);G.n=G.pool.length}`; `renderQ` shows `${q.ctx?bankCtx(q.ctx):''}` above `#prompt`; `finish` star thresholds use `n` (10 / 8 / 7 of 10 unchanged; 5 / 4 / 3 of 5).
+- Tests: test.js check "banks" (validate demo data, every question through its kind validator, seed reproducibility, `bankRebuild`, memory order, round list, panel escaping, 26 seeded bad items caught); smoke step 8 (passage round of 5, panel hide/show, 5 of 5 = 3 stars).
+- Files: src/js/37-bank.js, src/js/50-round.js, src/css/38-bank.css, src/data/d-demo.js, tools/test.js, tools/smoke.js, tools/shots.js (group bank-*), tools/build.py (VER v47), built output, this file.
+- Screenshots checked: bank-passage 380x780 and 1024x600, bank-passage-closed 380x780, bank-tap 380x780 (also wrote choice, spell at all sizes).
+- Checklist 7.1: all ticked (midway fixture and no-network covered by smoke; no emoji added; no raw hex in new CSS; 437 KB).
+- Merge: built on a parallel branch, merged after the v42 fix (renumbered v47 -> v43).
 
 ### FIX: number pad reveal shows the wrong number (v42, 2026-11-10, Claude)
 - Cause: in `KIND.num.bind` (49-kinds.js) the slot was written with the typed value after `submit()`. On the second wrong try `submit()` reveals the answer, then that write put the child's wrong number back (orange "answer" style). Same in Speed Race. Pre-existing since v30; kept as-is through P1-02 on purpose.
