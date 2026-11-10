@@ -31,7 +31,7 @@ function home(first){
      <div class="rowh" style="justify-content:flex-start;gap:6px;margin:4px 0"><div class="stars" id="starc">⭐ ${S.stars}</div><div class="stars">${ico('coin','1.2em','ic-coin')} ${S.coins}</div><button class="stc-chip ${STRK.count()?'':'off'}" id="stkb" aria-label="Streak calendar"><span class="stc-fl">${ico('flame','1.2em')}</span>${STRK.count()}</button></div>
      <div class="meter"><div style="width:${pct}%"></div></div><div class="htxt">${growTxt}</div>
      <div class="meter m"><div style="width:${Math.min(d.r,3)/3*100}%"></div></div><div class="htxt">${d.done?"🏆 Today's mission done!":`🎯 Mission: finish 3 rounds today (${d.r}/3)`}</div></div></div>
-   <h2 style="margin:14px 4px 8px">Pick a game!</h2>
+   ${placeBanner()}<h2 style="margin:14px 4px 8px">Pick a game!</h2>
    <div class="games">${Object.entries(PATHS).map(([k,P])=>{const N=NODES[k],np=N.filter((n,i)=>passed(k,i)).length,done=np==N.length;
      return`<button class="btn game" data-p="${k}" style="background:${P.c}"><span class="ge">${P.e}</span><span class="gi"><span class="gt">${P.n}</span>
       <span class="meter"><span style="display:block;height:100%;width:${np/N.length*100}%;background:linear-gradient(90deg,#f59e0b,#ef4444);border-radius:9px"></span></span>
@@ -44,6 +44,7 @@ function home(first){
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,['💖','✨','⭐']);
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
   $$('.game').forEach(b=>b.onclick=()=>{SFX.whoosh();pathMap(b.dataset.p)});
+  placeBannerBind();
   $('#snd').onclick=()=>{S.sound=!S.sound;S.music=S.sound;save();home()};
   $('#stkb').onclick=()=>{SFX.whoosh();streakCal(0)};
   $('#book').onclick=book;$('#shop').onclick=shop;$('#mix').onclick=()=>{SFX.whoosh();startMix()};$('#race').onclick=raceMenu;$('#flu').onclick=()=>{SFX.whoosh();fluMenu()};$('#care').onclick=care;$('#groom').onclick=()=>{SFX.whoosh();gameRoom()};

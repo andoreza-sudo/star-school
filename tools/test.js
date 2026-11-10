@@ -1049,6 +1049,141 @@ run('activity log: idle and hidden time, 60 s cap, day boundary, 60-day trim, si
   return{problems:p};
 });
 
+run('placement: state machine rules, scripted answers, simulated students, never more than 20, saves only add',()=>{
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const perrs=[],bad=m=>perrs.push(m);
+  const css=fs.readFileSync(path.join(SRC,'css','39-place.css'),'utf8');
+  if(/#[0-9a-fA-F]{3,8}\b/.test(css))bad('39-place.css has a raw hex colour');
+  const body=function(){
+    const store={};let writes=0;
+    global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{writes++;store[k]=String(v)},removeItem:k=>{delete store[k]}};
+    const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
+    const clone=o=>JSON.parse(JSON.stringify(o));
+    const out={sims:0,within:0,maxQ:0,seqs:0,wide:0,wideIn:0};
+    // fake path: 16 worlds, 2 per grade from Pre-K to 6th, 6 stops each (real skills, so items can be generated)
+    const FAKE=[];
+    for(let k=0;k<16;k++){const src=PATHS.math.worlds[k%4];FAKE.push({id:'f_'+k,g:Math.floor(k/2)-1,n:'Fake '+k,e:'',nodes:src.nodes})}
+    // 1. start world: one grade below the child's grade (the first world with g >= grade - 1, else the last)
+    if(PLACE.first(PATHS.math.worlds,0)!==0||PLACE.first(PATHS.math.worlds,1)!==0||PLACE.first(PATHS.math.worlds,2)!==1
+      ||PLACE.first(PATHS.math.worlds,3)!==3||PLACE.first(PATHS.math.worlds,6)!==3)bad('start world per grade on math');
+    if(PLACE.first(FAKE,0)!==0||PLACE.first(FAKE,3)!==6||PLACE.first(FAKE,6)!==12)bad('start world per grade on 16 worlds');
+    // 2. scripted rules (right answers per testlet -> where it goes)
+    const run1=(ws,g,seq)=>{let st=PLACE.begin(ws,g,7);const path=[];for(const r of seq){if(st.done)break;path.push(st.wi);st=PLACE.step(st,r)}return{st,path}};
+    const want=(name,got,exp)=>{if(JSON.stringify(got)!==JSON.stringify(exp))bad(name+': got '+JSON.stringify(got)+', expected '+JSON.stringify(exp))};
+    {const{st,path}=run1(FAKE,3,[4,4,1]);want('up, up, not yet',[path,st.done,st.at,st.skip,st.asked],[[6,7,8],true,8,[0,1,2,3,4,5,6,7],12])}
+    {const{st,path}=run1(FAKE,3,[0,1,3]);want('down, down, pass',[path,st.done,st.at,st.skip.length],[[6,5,4],true,5,5])}
+    {const{st,path}=run1(FAKE,3,[2,4,0]);want('2 right repeats, 6 of 8 passes',[path,st.done,st.at,st.rec[6].t],[[6,6,7],true,7,2])}
+    {const{st,path}=run1(FAKE,3,[2,3,4]);want('2 then 5 of 8 is not yet, then a pass below stops',[path,st.done,st.at,st.skip.length],[[6,6,5],true,6,6])}
+    {const{st}=run1(FAKE,3,[2,3,2]);want('5 of 8 fails, going down',[st.rec[6].v,st.wi],['fail',5])}
+    {const{st,path}=run1(FAKE,3,[4,4,4,4,4,4]);want('5 testlets max',[path.length,st.done,st.at,st.asked],[5,true,11,20])}
+    {const{st}=run1(FAKE,3,[0,0,0,0,0]);want('all wrong from world 6: lowest asked',[st.done,st.at,st.skip],[true,2,[]])}
+    {const{st}=run1(PATHS.math.worlds,0,[0]);want('not yet at the first world stops',[st.done,st.at,st.skip],[true,0,[]])}
+    {const{st}=run1(PATHS.math.worlds,1,[4,4,4,4]);want('all right on math (4 worlds)',[st.done,st.at,st.all,st.skip],[true,3,true,[0,1,2,3]])}
+    {const{st}=run1(PATHS.read.worlds,2,[4,1]);want('reading grade 2: pass Candy, not yet Reef',[st.done,st.at,st.skip],[true,2,[0,1]])}
+    // step is pure: the input state is not changed
+    {const a=PLACE.begin(FAKE,3,1),j=JSON.stringify(a);PLACE.step(a,4);if(JSON.stringify(a)!==j)bad('step changed its input')}
+    // 3. every possible answer sequence (0..4 right per testlet), 3 path shapes, every grade: ends within 5 testlets / 20 questions
+    for(const ws of [FAKE,PATHS.math.worlds,PATHS.read.worlds])for(let g=0;g<=6;g++){
+      const walk=(st)=>{
+        if(st.done){
+          out.seqs++;out.maxQ=Math.max(out.maxQ,st.asked);
+          if(st.asked>20||st.k>5)bad('more than 20 questions');
+          if(!(st.at>=0&&st.at<ws.length))bad('bad result world '+st.at);
+          st.skip.forEach((w,i)=>{if(w!==i||w>st.at||(w==st.at&&!st.all))bad('skip list '+JSON.stringify(st.skip)+' at '+st.at)});
+          for(const w in st.rec){const r=st.rec[w];if(r.v=='pass'&&+w>=st.at&&!st.all)bad('a passed world is at or above the result')}
+          return;
+        }
+        if(st.k>=5)return bad('not done after 5 testlets');
+        for(let r=0;r<=4;r++)walk(PLACE.step(st,r));
+      };
+      walk(PLACE.begin(ws,g,3));
+    }
+    // 4. items: 4 real stops of the asked world, reproducible from the seed, and each makes a valid question
+    for(const ws of [PATHS.math.worlds,PATHS.read.worlds,FAKE])for(let s=1;s<40;s++){
+      let st=PLACE.begin(ws,1+s%6,s*977);
+      for(let t=0;t<3&&!st.done;t++){
+        const it=PLACE.items(ws,st),it2=PLACE.items(ws,clone(st));
+        if(JSON.stringify(it)!==JSON.stringify(it2))bad('items not reproducible');
+        if(it.length!==4)bad('testlet of '+it.length);
+        const keys=ws[st.wi].nodes.map(n=>n[0]+n[1]);
+        for(const x of it){
+          if(!keys.includes(x.sk+x.lv))bad('item '+x.sk+x.lv+' not in world '+st.wi);
+          const q=genQ(x.sk,x.lv,x.seed),q2=genQ(x.sk,x.lv,x.seed);
+          if(q.html!==q2.html||String(q.ans)!==String(q2.ans))bad('question not reproducible '+x.sk+x.lv);
+          const pr=kindProblems(q);if(pr.length)bad(x.sk+x.lv+': '+pr[0]);
+        }
+        if(ws[st.wi].nodes.length>=4&&new Set(it.map(x=>x.sk+x.lv)).size!==4)bad('repeated stop in a testlet of a big world');
+        st=PLACE.step(st,s%5);
+      }
+    }
+    // 5. simulated students (ROADMAP P1-07): right with p 0.95 below their level, 0.2 at or above it.
+    //    Truth L = the first world they do not know (n = knows all, which places at the last world).
+    //    Population: grade 0..6 picked at random; L from 3 worlds below the start world to 5 above (a grade pick off by about 2).
+    const R0=mulberry32(20261110),ri=(a,b)=>a+Math.floor(R0()*(b-a+1));
+    const sim=(ws,g,L)=>{const st=PLACE.sim(ws,g,ri(0,1e9),wi=>R0()<(wi<L?0.95:0.2));out.maxQ=Math.max(out.maxQ,st.asked);
+      if(st.asked>20)bad('simulation asked '+st.asked);return Math.abs(st.at-Math.min(L,ws.length-1))<=1};
+    for(let i=0;i<2000;i++){
+      const ws=i%4==0?PATHS.math.worlds:i%4==1?PATHS.read.worlds:FAKE,g=ri(0,6),s=PLACE.first(ws,g);
+      const L=ri(Math.max(0,s-3),Math.min(ws.length,s+5));
+      out.sims++;if(sim(ws,g,L))out.within++;
+    }
+    if(out.within<0.95*out.sims)bad('placed within one world of truth in '+out.within+' of '+out.sims+' runs (need 95%)');
+    // for the note only: truth anywhere on the 16-world path, whatever the grade
+    for(let i=0;i<2000;i++){out.wide++;if(sim(FAKE,ri(0,6),ri(0,16)))out.wideIn++}
+    // 6. saving: fixtures x scripted answer patterns. Only S.place and S.skip change; nothing removed or re-locked.
+    const pats={allRight:()=>true,allWrong:()=>false,mixed:wi=>wi<1};
+    for(const name of ['fresh','midway','maxed']){
+      for(const pn in pats){
+        const raw=fx(name),empty=!Object.keys(JSON.parse(raw)).length;
+        load(empty?null:raw);
+        if(empty){S.name='Kid';setGrade(1)}
+        const before=clone(S),open0={};
+        for(const p in PATHS)open0[p]=NODES[p].map((n,i)=>unlocked(p,i));
+        writes=0;
+        const p='math',st=PLACE.sim(PATHS[p].worlds,gradeOf(),99,pats[pn]);
+        if(writes||JSON.stringify(S)!==JSON.stringify(before))bad(name+' '+pn+': running the quiz saved or changed something');
+        const rec=placeApply(p,st);
+        if(writes!==1)bad(name+' '+pn+': placeApply should save once');
+        const ws=PATHS[p].worlds;
+        if(!rec||rec.world!==ws[st.at].id||rec.asked!==st.asked||rec.right!==st.right||rec.g!==gradeOf()||typeof rec.date!=='string')bad(name+' '+pn+': S.place '+JSON.stringify(rec));
+        const a=clone(S);delete a.place;delete a.skip;const b=clone(before);delete b.place;delete b.skip;
+        if(JSON.stringify(a)!==JSON.stringify(b))bad(name+' '+pn+': fields other than place and skip changed');
+        for(const k in before.skip||{})if(!S.skip[k])bad(name+' '+pn+': skip '+k+' removed');
+        st.skip.forEach(wi=>{if(!S.skip[ws[wi].id])bad(name+' '+pn+': world '+wi+' not skipped')});
+        for(const q in PATHS)NODES[q].forEach((n,i)=>{if(open0[q][i]&&!unlocked(q,i))bad(name+' '+pn+' '+q+' stop '+i+' re-locked')});
+        if(startWorld(p)!==st.at)bad(name+' '+pn+': start world '+startWorld(p)+', placed '+st.at);
+        if(!unlocked(p,curNode(p))&&!passed(p,curNode(p)))bad(name+' '+pn+': map opens on a locked stop');
+        if(name=='fresh'&&curWorld(p)!==st.at)bad('fresh '+pn+': map opens on world '+curWorld(p)+', placed '+st.at);
+        if(pn=='allRight'&&!st.all)bad(name+': all right should pass every world');
+        if(pn=='allWrong'&&(st.skip.length||st.at!==0))bad(name+': all wrong should start at the first world and skip nothing');
+        if(pn=='mixed'&&st.at!==1)bad(name+' mixed: placed at '+st.at+', expected 1');
+        // a different grade ignores the result (the skips stay); back to the same grade uses it again
+        const g0=gradeOf();setGrade(g0==6?5:g0+1);
+        if(placeWorld(p)!==-1)bad(name+' '+pn+': result used at another grade');
+        setGrade(g0);if(placeWorld(p)!==st.at)bad(name+' '+pn+': result lost');
+        // Spanish (byLevel) never offers placement
+        if(placePaths().includes('es'))bad('Spanish offers placement');
+      }
+    }
+    // a second, lower result keeps the first one's skips
+    load(fx('midway'));
+    placeApply('math',PLACE.sim(PATHS.math.worlds,1,5,()=>true));
+    const sk1=Object.keys(S.skip).length;
+    placeApply('math',PLACE.sim(PATHS.math.worlds,1,5,()=>false));
+    if(Object.keys(S.skip).length!==sk1)bad('a lower re-run removed skips');
+    // 7. not for Pre-K; the home card only for a new child who has not been placed
+    load(null);S.name='Kid';setGrade(-1);
+    if(placeOK()||placeAsk())bad('placement offered at Pre-K');
+    setGrade(0);if(!placeOK()||!placeAsk())bad('placement not offered to a new K child');
+    load(fx('midway'));if(placeAsk())bad('home card shown to a child with progress');
+    return out;
+  };
+  const r=eval(js+';('+body.toString()+')()');
+  const pc=x=>(x*100).toFixed(1)+'%';
+  return{problems:perrs,note:`${r.sims} simulated students within one world: ${pc(r.within/r.sims)}; anywhere on 16 worlds: ${pc(r.wideIn/r.wide)}; `+
+    `${r.seqs} answer sequences, most questions ${r.maxQ}`};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){

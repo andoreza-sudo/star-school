@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** wave 4: P1-07 (Opus), P1-08 (Opus) in progress; then P5-02, P5-03, P5-06. Wave 5 includes P4-13; all content pictures use `picFor`.
+**Next up:** wave 4: P1-08 (Opus) in progress; then P5-02, P5-03, P5-06. Wave 5 includes P4-13; all content pictures use `picFor`.
 
-**Current version:** v51
+**Current version:** v52
 
 ## Chunk status
 
@@ -31,6 +31,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P1-06 v49
 - PRE-W5 picFor v50
 - P5-05 v51
+- P1-07 v52
 
 ## Handoff notes
 
@@ -41,6 +42,13 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 
 - (P5-05) Quitting a round mid-question adds no time for that question (only answered questions count), and games (Balloons, Race, Hill Climb, Art) are not logged; P5-06 can say "learning time". Sprint seconds do not add to `q`/`ok`, so Sprint does not change accuracy.
 Things noticed while working that are outside the current chunk. One line each, with the chunk that noticed it.
+
+- (P1-07) The roadmap's "within one world in 95% of runs" holds when the true level is within about 2 grades of the grade picked (test.js: 97.9% of 2,000 simulated students, truth from 3 worlds below to 5 above the start world). With the truth anywhere on a 16-world path it is about 57%: 5 testlets can move at most 5 worlds. If later grade bands get long, a coarse first step (skip 2 worlds on 4 of 4) would widen the reach.
+- (P1-07) Spanish has no placement: its worlds are vocabulary sets in an order (`byLevel`), not a difficulty ladder. `placePaths()` takes every path without `byLevel`, so a graded Discover path (P2-36) gets "Find my level" for free; check its world list makes sense as a ladder.
+- (P1-07) A placement result is tied to the grade it was taken at (`S.place[p].g`): after a grade change in Grown-ups the maps start by grade again (the skips stay). Re-running "Find my level" makes it count again.
+- (P1-07) Bank-based skills choose items by least-recently-shown once a round has been played (BANKLIVE), so in the app a placement question from a bank skill is not exactly the seed's question; the stop list and the result rules are still deterministic. Only tests rely on exact questions.
+- (P1-07) smoke.js answers placement questions with the round helper `answer()`, which reads `G`, by pointing `G` at the quiz state `PL` for the tap. A later cleanup could pass the state into `answer()`.
+- (P1-07) The home "Find my level" card hides for the session with "Not now" (not saved), and disappears for good once a math or reading stop is passed or a placement is done.
 
 - (P1-03) The roadmap asks for a hidden dev skill `zz_demo` in `SK`. Not done on purpose: it would ship demo code in the app. Instead `tools/kinds-samples.js` holds 11 sample questions (all `sk:'zz_demo'`), and test.js, shots.js and smoke.js run them through the real engine (`G=newG({sk:'zz_demo',pool:[...]}); next()`). A later chunk that needs a real in-app demo can promote them.
 - (P1-03) Smoke step 7 (number pad reveal) leaves the old round's 2.6 s `next` timer running; it fires into whatever `G` exists later (it skipped a question in step 8). Step 8 now goes home and waits 3 s first. Cleaner fix: `next()` could take the round it belongs to, or `back()`/`home()` could cancel pending round timers.
@@ -110,6 +118,15 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P1-05) Map draw with 16 fake worlds (156 stops) at 6x CPU throttle: median about 29 ms (limit 50), single runs up to about 49 ms. The strip recomputes `worldOpen`/`worldFinished` per chip and `unlocked` scans the world; a memo per draw is the next step if P4-09 adds weight.
 
 ## Log
+
+### P1-07 Placement quiz "Find my level" (v52, 2026-11-10, Claude)
+- What changed: new `src/js/45-placement.js`. `PLACE.*` is a pure state machine (world list, seed, right answers per testlet in; next testlet or result out; no S, no DOM): starts at the first world with g >= grade - 1, 4-question testlets of stops from one world, 3-4 right up, 0-1 down, 2 right one more testlet (6 of 8 passes), stops when a "not yet" world sits right above a passed one, at either end, or after 5 testlets (20 questions). Result: the world above the highest passed world (the lowest world asked when none passed); the worlds below are skipped. The screen reuses the question kinds (KIND render/bind) with one try, no stars, no buzz, no hints, a neutral "Got it!" in brand blue and 4 progress dots; the X quits at any time and nothing is saved before the end. Result screen: the start world, the skipped worlds ("you can still play them"), Go to my map (opens on that world), the other subject, Home.
+- Offered on Home to a new child (K and up, no math or reading stop passed, never placed: a card with Math, Reading, Not now) and in Grown-ups ("Find my level" row under Grade, with the last result). Not for Pre-K, not for Spanish.
+- Saved data (no migration; read with defaults): `S.place[path] = {world, date, asked, right, g}` (world id, today(), grade at the time) and `S.skip[worldId] = 1` for the worlds below the result. placeApply only adds: no star, stop, coin or earlier skip is removed, nothing re-locks; a later run replaces `S.place[path]` only.
+- Edits to existing files: `42-paths.js` startWorld: one line `const pw=placeWorld(p);if(pw>=0)return pw;` (the placed world while the grade is unchanged); curNode: a world below the start world that placement skipped is passed over even if it has some progress (`||worldSkipped(p,wi)`). `46-home.js` home: `${placeBanner()}` before "Pick a game!" and `placeBannerBind();` after the game buttons. `80-grown.js`: `${placeGrownHTML()}` after the grade picker and `placeGrownBind();` after gradePickBind. New `src/css/39-place.css` (tokens only).
+- Tests: test.js check 23 "placement" (start world per grade, scripted rules incl. 2-right repeat and 6 of 8, step is pure, all 10,553 answer sequences on 3 path shapes end within 20 questions with a valid result, items are real stops of the world and reproducible and valid, 2,000 simulated students 97.9% within one world, fixtures fresh/midway/maxed x all right/all wrong/mixed: only place and skip change, no stop re-locks, start world = result, other grade ignores it, a lower re-run keeps skips, Pre-K not offered, no raw hex in the CSS). smoke.js step "P1-07" at 380x780: card on Home (48 px), quitting after 2 answers leaves S and the stored save unchanged, 16 right answers by real taps place at Space Station with all 4 math worlds skipped, stars and coins unchanged, map opens on Space Station, Grown-ups shows the result. shots.js group place-home, place-intro, place-q, place-done, place-grown.
+- Checklist 7.1: chunk files plus the two small 42-paths.js edits (needed so the map starts at the result); VER bumped (v52, provisional); build, test.js (23 checks), smoke.js and sizes via check.sh; screenshots looked at: place-home, place-q, place-done, place-intro at 380x780, place-grown at 600x960, place-q at 1024x600 (quit and Hear it buttons made 48 px after the smoke size check caught 42 px); midway keeps its stars, coins, pet and map progress (test); no new emoji, no raw hex.
+- Merge: built on a parallel branch, renumbered v51 -> v52 at merge.
 
 ### P5-05 Activity log, time on task (v51, 2026-11-10, Claude)
 - What changed: new `src/js/53-activity.js` (`ACT`). `S.log = [{d, sec, rounds, q, ok, by:{area:sec}}]`, oldest first, 60 days. A question's time runs from when it appears to when it is finally answered right, capped at 60 s, and leaves out time while the tab is hidden (own visibilitychange listener); a question never answered adds nothing. Re-asked misses add time but not a question. A finished round adds 1 round; Fact Sprint adds its active seconds to math. Subject = the skill's `area` (math, read, es; later bt, disc).

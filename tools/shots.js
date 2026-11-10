@@ -199,6 +199,16 @@ const SCREENS = {
       });
     },
   },
+  // P1-07 placement quiz "Find my level": the Home card for a new child, the intro, a question (dots), the result, Grown-ups row
+  'place-home': { fixture: 'fresh', run: async p => { await p.evaluate(() => { S.name = 'Ava'; setGrade(1); home(); }); } },
+  'place-intro': { run: async p => { await p.evaluate(() => placeIntro('math', 'home')); } },
+  'place-q': { run: async p => { await p.evaluate(() => { placeStart('math', 'home', 7); PL.qi = 1; placeQ(); }); } },
+  'place-done': { run: async p => { await p.evaluate(() => { placeStart('read', 'home', 7); PL.st = PLACE.step(PLACE.step(PL.st, 4), 1); placeDone(); }); } },
+  'place-grown': {
+    run: async p => {
+      await p.evaluate(() => { placeApply('math', PLACE.sim(PATHS.math.worlds, gradeOf(), 7, wi => wi < 2)); grown(); document.querySelector('.pl-grown').scrollIntoView({ block: 'center' }); });
+    },
+  },
 };
 
 // Starts a demo bank question (bi = item index) or the demo passage round, through the real round engine.
