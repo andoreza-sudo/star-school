@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** wave 5 batch A: P2-01, P2-05, P2-15, P2-19, P4-13.
+**Next up:** wave 5 batch A: P2-01, P2-05, P2-15 in progress; then batch B: P2-02, P2-03, P2-06, P2-18.
 
-**Current version:** v57
+**Current version:** v58
 
 ## Chunk status
 
@@ -37,6 +37,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P5-02 v55
 - P5-03 v56
 - P2-19 v57
+- P4-13 v58
 
 ## Handoff notes
 
@@ -47,6 +48,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - (P2-19) Spelling hint 2 ("show the word for 2 seconds, then hide", CURRICULUM E-spell) is not built: `hintHTML` has no stepped hints. A later hint chunk can add it to `genSpell` as a second hint step.
 - (P2-19) Story Summit, Dragon Library, Author Island and Legend Lab exist now with only a spell stop each (plus the boss). P2-20 to P2-29 should insert their stops in CURRICULUM 2.2 order; do not change the spell stop ids. Word Workshop (`r_workshop`, grade 2) between Space Station and Story Summit still has to be created by P2-18.
 - (P2-19) Spell level 1 pictures come from the existing reading emoji lists (CVC, BLEND, MAGICE, TEAMS) by word; most of the 400 spelling words have no picture, so the blanked sentence is the visible clue. P4-13+ drawings reach them through picFor.
+- (P4-13) Pictures are multi-coloured by design and ignore `color` (only eyes and details follow it); a dark mode or a high-contrast mode would need to redefine the `--a-*` roles in 21-art.css. The pig and nose are pale tints on a white page; check on a real tablet. The `bank` items still use `pic` (ico names), not `picFor` (see PRE-W5 note).
 
 - (P5-02) Home "Tricky Mix (N)" now counts review items due today (`allMiss()` = `dueItems()`), not every item still in the system: after a child fixes items they leave the count until they are due again, and the button reads "Mixed Practice" when nothing is due. P5-03 replaces the card with "Today's review: N due".
 - (P5-02) In challenge or support rounds (P1-08) `mastQ()` comes first in `makeQ`, so the review slots at questions 6 and 8 are taken by the adapted question; a fast all-right child sees due items at questions 2 and 4 only. Daily Review (P5-03) is where a backlog gets cleared.
@@ -143,6 +145,15 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P1-05) Map draw with 16 fake worlds (156 stops) at 6x CPU throttle: median about 29 ms (limit 50), single runs up to about 49 ms. The strip recomputes `worldOpen`/`worldFinished` per chip and `unlocked` scans the world; a memo per draw is the next step if P4-09 adds weight.
 
 ## Log
+
+### P4-13 Object art set A, 40 pictures (v58, 2026-11-10, Claude)
+- What changed: `src/js/16-art-a.js` adds 40 drawings to `ART` (apple banana cookie ball star fish duck car flower cat dog pig sun bus hat bed cup fox bat bug hen box map pen web frog crab drum ship milk tent hand gift flag cake kite bike rose bone nose), 64x64 grid, flat two-tone, 14.8 KB of source (all under 900 bytes). `picFor(word, emoji)` now returns the drawing for those words, so the picture-word and build-word questions (cat, dog, pig, sun, bus, hat, bed, cup, fox, bat, bug, hen, ... ) show drawings with no generator change.
+- Colour: ink details (eyes, mouths, whiskers) use `currentColor` (`.art` colour is `--ink`); every other fill is `var(--a-x)`, a palette role defined on `.art` in new `src/css/21-art.css` from design tokens only (r red, o orange, y yellow, g green, b blue, v purple, p pink, n brown, t amber/skin, w white, s grey; 2 = darker shade, 3 = light tint). Two tones per area, no outlines. The drawings keep their own colours on any background (they do not follow `color`, except the ink details).
+- Tests: test.js new "art set A" check (40 present, size, allowed elements, no ids/defs/gradients/filters/text/style, no raw hex, colours only currentColor/none/var(--a-x), one-decimal coordinates, well-formed picArt, every role defined in 21-art.css, picture questions show drawings not emoji). The "pictures" test now restores existing ART entries instead of deleting them; the review test's exact-rebuild comparison ignores the picture (a stored question may hold an emoji where the rebuild holds a drawing).
+- Screens: `node tools/shots.js art` (all 40 at 24/48/96 px on the page colour and on a tint) and `art-question` (a picture-word round). Screenshots looked at: art sheet at 1024x600, art-question at 380x780.
+- Edits: `tools/build.py` VER, `tools/test.js`, `tools/shots.js`, new `16-art-a.js` and `21-art.css`.
+- Checklist 7.1: [x] only named files [x] VER bumped [x] build [x] test.js [x] smoke.js [x] screenshots [x] midway fixture (test) [x] size under 1.5 MB [x] no network [x] no new emoji or hex [x] PROGRESS entry [x] one commit (not pushed).
+- Merge: built on a parallel branch, renumbered v61 -> v58 at merge.
 
 ### P2-19 Spelling levels 1-7 (v57, 2026-11-10, Claude)
 - What changed: new skill `spell` (`SK.spell`, 7 levels, kind `spell`, in-app keyboard). Words and generator are in the new `src/data/d-spell.js`: `SPELL_WORDS[lv]` (one `word|sentence` per line; 40 words at level 1, 60 at levels 2-7 = 400 words), then `genSpell`, `spellList`, `spellPic` in a clearly marked block at the bottom. The child hears word, sentence, word (`say`, auto); the screen shows the sentence with the word blanked (`_____`) so it works with speech off, plus a picture (`picFor`) for words the reading lists already have an emoji for. Hint: "It has N letters and starts with X" and the word is spoken (`{k:'say'}`). A missed word comes back at the end of the round (existing engine behaviour). Seeded `pick` only.

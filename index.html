@@ -101,6 +101,20 @@ h2{font-size:24px;margin:18px 4px 10px}
 html.calm *,html.calm *::before,html.calm *::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 html.calm .conf{display:none!important}
 .art{display:inline-block;vertical-align:-.125em;color:var(--ink)}
+/* Object art palette (P4-13; drawings in src/js/16-art-a.js). Roles map to design tokens; 2 = darker shade, 3 = light tint. */
+.art{
+  fill:currentColor;stroke-linecap:round;stroke-linejoin:round;
+  --a-r:var(--danger);--a-r2:var(--read-shade);
+  --a-o:var(--play);--a-o2:var(--play-shade);
+  --a-y:var(--star);--a-y2:var(--star-shade);--a-y3:var(--star-tint);
+  --a-g:var(--good);--a-g2:var(--good-ink);
+  --a-b:var(--brand);--a-b2:var(--brand-shade);--a-b3:var(--brand-tint);
+  --a-v:var(--bt);--a-v2:var(--bt-shade);
+  --a-p:var(--read);--a-p2:var(--read-tint);
+  --a-n:var(--try-ink);
+  --a-t:var(--try);--a-t2:var(--try-tint);
+  --a-w:var(--surface);--a-s:var(--ink-3);--a-s2:var(--line);
+}
 /* play */
 .track{position:relative;flex:1;height:52px;margin:0 6px}
 .track .line{position:absolute;left:0;right:30px;top:34px;border-top:5px dotted #d6cfc4}
@@ -866,7 +880,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S));SAVE_FAILED=fals
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v57'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v58'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -1171,6 +1185,97 @@ function picArt(name, size = '1em', cls = '') {
 function picFor(word, emoji = '') {
   return ART[word] ? picArt(word) : emoji;
 }
+/* ---------- object art set A: 40 pictures (P4-13; DESIGN_SYSTEM.md section 6.5) ----------
+   Each entry is the inner markup of a 64x64 drawing; picArt()/picFor() in 15-pics.js wrap it in the <svg>.
+   Style (matches the icons): flat, two tones per colour area, no outlines, front or side view, nothing thinner than 2.5 units.
+   Colour: fill/stroke are always one of
+   - currentColor: ink for eyes, mouths and small details (.art sets color to --ink; set `color` on a parent to change it);
+   - var(--a-x): a palette role defined on .art in src/css/16-art.css from the design tokens (r red, o orange, y yellow, g green,
+     b blue, v purple, p pink, n brown, t amber/skin, w white, s grey, with 2 = darker shade and 3 = light tint).
+   Only <path>, <circle>, <ellipse>, <rect>; no ids, defs, gradients, filters, text, style attributes or raw hex. Under 900 bytes each.
+   To add a picture: add an entry here, run `node tools/shots.js art` and look at tools/out/art-600x960.png; tools/test.js checks the rules. */
+Object.assign(ART, {
+  apple:
+    '<path fill="var(--a-r)" d="M32 21C25 15 11 18 11 35C11 47 20 57 27 57C30 57 31 56 32 56C33 56 34 57 37 57C44 57 53 47 53 35C53 18 39 15 32 21Z"/><path fill="var(--a-r2)" d="M47 25C54 33 52 46 43 54C50 50 56 40 53 30Z"/><path fill="var(--a-w)" d="M17 32C17 26 21 23 25 22C22 26 21 31 22 36C19 37 17 36 17 32Z"/><path fill="var(--a-n)" d="M30 22L34 22L37 8L33 8Z"/><path fill="var(--a-g)" d="M37 16C37 9 44 6 51 8C50 15 44 19 37 16Z"/>',
+  banana:
+    '<path fill="var(--a-y)" d="M12 10C10 34 24 50 52 40L56 46C26 62 2 44 6 10Z"/><path fill="none" stroke="var(--a-y2)" stroke-width="3" d="M11 16C12 34 26 46 50 42"/><path fill="var(--a-n)" d="M6 10L12 10L11 3L7 3Z"/><path fill="var(--a-n)" d="M52 40L56 46L61 44L58 38Z"/>',
+  cookie:
+    '<circle cx="32" cy="32" r="27" fill="var(--a-t)"/><path fill="var(--a-o)" d="M52 14C58 24 58 40 50 50C56 38 56 26 52 14Z"/><circle cx="22" cy="23" r="4.5" fill="var(--a-n)"/><circle cx="41" cy="21" r="4" fill="var(--a-n)"/><circle cx="31" cy="36" r="4.5" fill="var(--a-n)"/><circle cx="46" cy="38" r="4" fill="var(--a-n)"/><circle cx="20" cy="43" r="4" fill="var(--a-n)"/><circle cx="35" cy="50" r="3.5" fill="var(--a-n)"/>',
+  ball:
+    '<circle cx="32" cy="32" r="27" fill="var(--a-b)"/><path fill="var(--a-w)" d="M32 32L32 5A27 27 0 0 1 55.4 18.5Z"/><path fill="var(--a-y)" d="M32 32L8.6 45.5A27 27 0 0 1 8.6 18.5Z"/><path fill="var(--a-r)" d="M32 32L55.4 45.5A27 27 0 0 1 32 59Z"/><circle cx="32" cy="32" r="5" fill="var(--a-w)"/>',
+  star:
+    '<path fill="var(--a-y)" stroke="var(--a-y)" stroke-width="5" d="M32 10L38.2 25.5L54.8 26.6L42 37.2L46.1 53.4L32 44.5L17.9 53.4L22 37.2L9.2 26.6L25.8 25.5Z"/><path fill="var(--a-y2)" d="M32 44.5L46.1 53.4L42 37.2L50 30.5L38 31Z"/><circle cx="26" cy="35" r="2.5"/><circle cx="38" cy="35" r="2.5"/><path fill="none" stroke="currentColor" stroke-width="2.5" d="M27 41Q32 46 37 41"/>',
+  fish:
+    '<path fill="var(--a-o2)" d="M44 32L60 18L60 46Z"/><path fill="var(--a-o2)" d="M22 20L30 10L38 21Z"/><ellipse cx="28" cy="33" rx="22" ry="15" fill="var(--a-o)"/><path fill="var(--a-y3)" d="M12 38Q28 48 44 38Q38 46 28 47Q18 46 12 38Z"/><circle cx="17" cy="29" r="4" fill="var(--a-w)"/><circle cx="16" cy="29" r="2"/><path fill="none" stroke="var(--a-o2)" stroke-width="3" d="M32 22Q36 33 32 44"/>',
+  duck:
+    '<path fill="var(--a-y)" d="M50 36L61 28L59 42Z"/><ellipse cx="34" cy="44" rx="23" ry="14" fill="var(--a-y)"/><circle cx="24" cy="21" r="13" fill="var(--a-y)"/><path fill="var(--a-o)" d="M13 20L2 23L13 28Z"/><circle cx="24" cy="18" r="2.5"/><ellipse cx="37" cy="45" rx="11" ry="7" fill="var(--a-y2)"/><path fill="var(--a-b)" d="M2 56Q8 52 14 56T26 56T38 56T50 56T62 56L62 62L2 62Z"/>',
+  car:
+    '<path fill="var(--a-r)" d="M5 42L5 36Q5 31 10 31L17 31L24 20Q25 18 28 18L42 18Q45 18 47 20L53 31L56 31Q61 31 61 36L61 42Q61 46 57 46L9 46Q5 46 5 42Z"/><path fill="var(--a-b3)" d="M20 31L26 22L31 22L31 31Z"/><path fill="var(--a-b3)" d="M35 22L41 22L47 31L35 31Z"/><circle cx="18" cy="46" r="8"/><circle cx="48" cy="46" r="8"/><circle cx="18" cy="46" r="3.5" fill="var(--a-w)"/><circle cx="48" cy="46" r="3.5" fill="var(--a-w)"/><circle cx="58" cy="37" r="2.5" fill="var(--a-y)"/>',
+  flower:
+    '<rect x="30" y="34" width="4" height="25" rx="2" fill="var(--a-g)"/><path fill="var(--a-g)" d="M32 52C24 52 19 47 18 42C26 42 32 46 32 52Z"/><path fill="var(--a-g)" d="M32 48C40 48 45 43 46 38C38 38 32 42 32 48Z"/><circle cx="32" cy="13" r="9" fill="var(--a-p)"/><circle cx="43" cy="21" r="9" fill="var(--a-p)"/><circle cx="39" cy="34" r="9" fill="var(--a-p)"/><circle cx="25" cy="34" r="9" fill="var(--a-p)"/><circle cx="21" cy="21" r="9" fill="var(--a-p)"/><circle cx="32" cy="25" r="8" fill="var(--a-y)"/>',
+  cat:
+    '<path fill="var(--a-o)" d="M10 34L11 8L29 19Z"/><path fill="var(--a-o)" d="M54 34L53 8L35 19Z"/><path fill="var(--a-p2)" d="M14 26L15 15L23 20Z"/><path fill="var(--a-p2)" d="M50 26L49 15L41 20Z"/><ellipse cx="32" cy="37" rx="23" ry="20" fill="var(--a-o)"/><path fill="var(--a-o2)" d="M32 18L28 26L32 24L36 26Z"/><ellipse cx="23" cy="35" rx="3" ry="4"/><ellipse cx="41" cy="35" rx="3" ry="4"/><path fill="var(--a-p)" d="M28 42L36 42L32 47Z"/><path fill="none" stroke="currentColor" stroke-width="2" d="M32 47Q28 52 24 49M32 47Q36 52 40 49M17 44L4 42M17 48L5 52M47 44L60 42M47 48L59 52"/>',
+  dog:
+    '<path fill="var(--a-n)" d="M16 18Q3 22 5 48Q16 50 19 32Z"/><path fill="var(--a-n)" d="M48 18Q61 22 59 48Q48 50 45 32Z"/><ellipse cx="32" cy="33" rx="18" ry="22" fill="var(--a-t)"/><ellipse cx="32" cy="43" rx="11" ry="9" fill="var(--a-w)"/><ellipse cx="32" cy="38" rx="5" ry="3.5"/><path fill="none" stroke="currentColor" stroke-width="2.5" d="M32 41L32 46M32 46Q28 50 25 47M32 46Q36 50 39 47"/><circle cx="24" cy="27" r="3"/><circle cx="40" cy="27" r="3"/><path fill="var(--a-p)" d="M29 49L35 49L35 54Q32 58 29 54Z"/>',
+  pig:
+    '<path fill="var(--a-p)" d="M12 24L10 6L26 14Z"/><path fill="var(--a-p)" d="M52 24L54 6L38 14Z"/><circle cx="32" cy="34" r="24" fill="var(--a-p2)" stroke="var(--a-p)" stroke-width="3"/><ellipse cx="32" cy="41" rx="12" ry="9" fill="var(--a-p)"/><ellipse cx="27.5" cy="41" rx="2.5" ry="3.5" fill="var(--a-r2)"/><ellipse cx="36.5" cy="41" rx="2.5" ry="3.5" fill="var(--a-r2)"/><circle cx="21" cy="29" r="3"/><circle cx="43" cy="29" r="3"/>',
+  sun:
+    '<path fill="none" stroke="var(--a-y2)" stroke-width="5" d="M32 4V11M32 53V60M4 32H11M53 32H60M46.8 17.2L51.8 12.2M17.2 46.8L12.2 51.8M17.2 17.2L12.2 12.2M46.8 46.8L51.8 51.8"/><circle cx="32" cy="32" r="16" fill="var(--a-y)"/><circle cx="26" cy="29" r="2.5"/><circle cx="38" cy="29" r="2.5"/><path fill="none" stroke="currentColor" stroke-width="2.5" d="M25 36Q32 43 39 36"/>',
+  bus:
+    '<rect x="3" y="10" width="58" height="40" rx="7" fill="var(--a-y)"/><rect x="3" y="38" width="58" height="5" fill="currentColor"/><rect x="8" y="16" width="9" height="12" rx="2" fill="var(--a-b3)"/><rect x="20" y="16" width="9" height="12" rx="2" fill="var(--a-b3)"/><rect x="32" y="16" width="9" height="12" rx="2" fill="var(--a-b3)"/><rect x="45" y="16" width="11" height="12" rx="2" fill="var(--a-b3)"/><circle cx="17" cy="50" r="7"/><circle cx="47" cy="50" r="7"/><circle cx="17" cy="50" r="3" fill="var(--a-w)"/><circle cx="47" cy="50" r="3" fill="var(--a-w)"/><rect x="56" y="32" width="5" height="4" rx="1" fill="var(--a-o)"/>',
+  hat:
+    '<rect x="17" y="8" width="30" height="38" rx="4" fill="var(--a-v)"/><rect x="17" y="34" width="30" height="8" fill="var(--a-y)"/><rect x="22" y="13" width="4" height="16" rx="2" fill="var(--a-w)"/><ellipse cx="32" cy="48" rx="28" ry="8" fill="var(--a-v2)"/>',
+  bed:
+    '<rect x="5" y="12" width="7" height="42" rx="2" fill="var(--a-n)"/><rect x="52" y="26" width="7" height="28" rx="2" fill="var(--a-n)"/><rect x="8" y="42" width="52" height="8" rx="2" fill="var(--a-n)"/><rect x="12" y="32" width="40" height="11" rx="3" fill="var(--a-t2)"/><rect x="14" y="26" width="14" height="9" rx="4" fill="var(--a-w)" stroke="var(--a-s2)" stroke-width="2"/><path fill="var(--a-b)" d="M26 33H52V44H26Z"/>',
+  cup:
+    '<path fill="none" stroke="var(--a-b2)" stroke-width="5" d="M44 22H49Q57 22 57 30Q57 38 49 38H44"/><path fill="var(--a-b)" d="M10 12H46V42Q46 55 33 55H23Q10 55 10 42Z"/><rect x="10" y="22" width="36" height="7" fill="var(--a-w)"/><path fill="var(--a-b2)" d="M38 30L46 30L46 42Q46 55 33 55Q40 50 38 40Z"/>',
+  fox:
+    '<path fill="var(--a-o)" d="M6 6L24 20Q32 18 40 20L58 6Q62 30 51 46Q43 58 32 60Q21 58 13 46Q2 30 6 6Z"/><path fill="var(--a-o2)" d="M10 14L19 22L12 28Z"/><path fill="var(--a-o2)" d="M54 14L45 22L52 28Z"/><path fill="var(--a-w)" d="M13 38Q32 32 51 38Q45 56 32 60Q19 56 13 38Z"/><circle cx="23" cy="33" r="3"/><circle cx="41" cy="33" r="3"/><ellipse cx="32" cy="55" rx="4" ry="3"/>',
+  bat:
+    '<path fill="var(--a-v)" d="M32 24L22 18Q14 12 3 17Q8 24 6 33Q12 28 16 35Q20 29 26 39L32 41L38 39Q44 29 48 35Q52 28 58 33Q56 24 61 17Q50 12 42 18Z"/><path fill="var(--a-v2)" d="M27 22L27 10L32 18L37 10L37 22Q37 28 38 34Q36 46 32 46Q28 46 26 34Q27 28 27 22Z"/><circle cx="29.5" cy="26" r="2.5" fill="var(--a-w)"/><circle cx="34.5" cy="26" r="2.5" fill="var(--a-w)"/><circle cx="29.5" cy="26" r="1.2"/><circle cx="34.5" cy="26" r="1.2"/>',
+  bug:
+    '<path fill="none" stroke="currentColor" stroke-width="2.5" d="M28 11Q26 5 21 5M36 11Q38 5 43 5M13 34L6 30M13 44L5 48M51 34L58 30M51 44L59 48"/><ellipse cx="32" cy="38" rx="21" ry="19" fill="var(--a-r)"/><circle cx="32" cy="17" r="9"/><path fill="none" stroke="currentColor" stroke-width="2.5" d="M32 22V57"/><circle cx="22" cy="34" r="4"/><circle cx="42" cy="34" r="4"/><circle cx="23" cy="47" r="3.5"/><circle cx="41" cy="47" r="3.5"/><circle cx="29" cy="15" r="2" fill="var(--a-w)"/><circle cx="35" cy="15" r="2" fill="var(--a-w)"/>',
+  hen:
+    '<path fill="var(--a-o2)" d="M14 34L2 22L8 38L3 46Z"/><ellipse cx="30" cy="40" rx="21" ry="16" fill="var(--a-o)"/><circle cx="46" cy="20" r="11" fill="var(--a-o)"/><circle cx="42" cy="9" r="4.5" fill="var(--a-r)"/><circle cx="48" cy="7" r="4.5" fill="var(--a-r)"/><circle cx="53" cy="11" r="4" fill="var(--a-r)"/><path fill="var(--a-y)" d="M55 18L63 22L55 26Z"/><circle cx="54" cy="30" r="3.5" fill="var(--a-r)"/><circle cx="48" cy="18" r="2.2"/><ellipse cx="28" cy="41" rx="12" ry="8" fill="var(--a-o2)"/><path fill="none" stroke="var(--a-y2)" stroke-width="3" d="M26 55V61M35 55V61"/>',
+  box:
+    '<rect x="7" y="22" width="50" height="35" rx="3" fill="var(--a-t)"/><rect x="3" y="10" width="58" height="14" rx="3" fill="var(--a-y2)"/><rect x="26" y="10" width="12" height="22" fill="var(--a-t2)"/><rect x="7" y="50" width="50" height="7" rx="3" fill="var(--a-o)"/>',
+  map:
+    '<path fill="var(--a-g)" d="M4 14L21 8L21 52L4 58Z"/><path fill="var(--a-b3)" d="M21 8L43 14L43 58L21 52Z"/><path fill="var(--a-g)" d="M43 14L60 8L60 52L43 58Z"/><path fill="none" stroke="var(--a-r)" stroke-width="4" d="M29 28L37 38M37 28L29 38"/><path fill="none" stroke="var(--a-y2)" stroke-width="3" d="M8 40Q14 30 17 22M47 24Q52 32 56 20"/>',
+  pen:
+    '<path fill="var(--a-b)" d="M44 8L56 20L22 54L10 42Z"/><path fill="var(--a-b2)" d="M44 8L56 20L60 16L48 4Z"/><path fill="var(--a-t2)" d="M10 42L22 54L6 58Z"/><path d="M6 58L8 51L13 56Z"/><path fill="none" stroke="var(--a-b3)" stroke-width="2.5" d="M44 16L22 38"/>',
+  web:
+    '<path fill="none" stroke="currentColor" stroke-width="2.5" d="M32 5V59M5 32H59M13 13L51 51M51 13L13 51M32 14L44.7 19.3L50 32L44.7 44.7L32 50L19.3 44.7L14 32L19.3 19.3ZM32 23L38.4 25.6L41 32L38.4 38.4L32 41L25.6 38.4L23 32L25.6 25.6Z"/><circle cx="47" cy="47" r="5" fill="var(--a-v)"/><path fill="none" stroke="var(--a-v)" stroke-width="2" d="M44 43L40 40M50 43L54 40M43 50L39 54M51 50L55 54"/>',
+  frog:
+    '<ellipse cx="32" cy="39" rx="27" ry="18" fill="var(--a-g)"/><circle cx="17" cy="19" r="11" fill="var(--a-g)"/><circle cx="47" cy="19" r="11" fill="var(--a-g)"/><circle cx="17" cy="19" r="7" fill="var(--a-w)"/><circle cx="47" cy="19" r="7" fill="var(--a-w)"/><circle cx="18" cy="20" r="3.5"/><circle cx="46" cy="20" r="3.5"/><path fill="none" stroke="var(--a-g2)" stroke-width="3" d="M13 42Q32 56 51 42"/><circle cx="27" cy="33" r="1.5" fill="var(--a-g2)"/><circle cx="37" cy="33" r="1.5" fill="var(--a-g2)"/><circle cx="12" cy="40" r="4" fill="var(--a-p)"/><circle cx="52" cy="40" r="4" fill="var(--a-p)"/>',
+  crab:
+    '<path fill="none" stroke="var(--a-r2)" stroke-width="3.5" d="M14 38L4 44M16 44L8 54M20 48L14 58M50 38L60 44M48 44L56 54M44 48L50 58M17 33L9 25M47 33L55 25"/><path fill="var(--a-r)" d="M3 22Q-1 8 8 5L10 13L15 5Q24 9 15 24Q9 27 3 22Z"/><path fill="var(--a-r)" d="M61 22Q65 8 56 5L54 13L49 5Q40 9 49 24Q55 27 61 22Z"/><ellipse cx="32" cy="40" rx="21" ry="15" fill="var(--a-r)"/><path fill="none" stroke="var(--a-r2)" stroke-width="3" d="M26 27V21M38 27V21"/><circle cx="26" cy="19" r="5" fill="var(--a-w)"/><circle cx="38" cy="19" r="5" fill="var(--a-w)"/><circle cx="26" cy="19" r="2.2"/><circle cx="38" cy="19" r="2.2"/><path fill="none" stroke="var(--a-w)" stroke-width="2.5" d="M25 43Q32 48 39 43"/>',
+  drum:
+    '<rect x="9" y="24" width="46" height="30" rx="5" fill="var(--a-r)"/><path fill="none" stroke="var(--a-w)" stroke-width="3" d="M12 30L20 50L28 30L36 50L44 30L52 50"/><ellipse cx="32" cy="24" rx="23" ry="8" fill="var(--a-s2)"/><path fill="none" stroke="var(--a-n)" stroke-width="3.5" d="M14 5L38 20M50 5L26 20"/><circle cx="14" cy="5" r="3.5" fill="var(--a-y)"/><circle cx="50" cy="5" r="3.5" fill="var(--a-y)"/>',
+  ship:
+    '<rect x="30" y="4" width="3" height="20" fill="var(--a-n)"/><path fill="var(--a-r)" d="M33 4L48 10L33 16Z"/><rect x="16" y="24" width="32" height="14" rx="3" fill="var(--a-b3)"/><circle cx="24" cy="31" r="3" fill="var(--a-b)"/><circle cx="32" cy="31" r="3" fill="var(--a-b)"/><circle cx="40" cy="31" r="3" fill="var(--a-b)"/><path fill="var(--a-r)" d="M3 38H61L54 52Q52 56 47 56H17Q12 56 10 52Z"/><path fill="var(--a-w)" d="M8 44H56L54 48H10Z"/><path fill="none" stroke="var(--a-b)" stroke-width="4" d="M2 60Q8 56 14 60T26 60T38 60T50 60T62 60"/>',
+  milk:
+    '<path fill="var(--a-b2)" d="M14 24L22 9H42L50 24Z"/><rect x="22" y="3" width="20" height="7" rx="2" fill="var(--a-b2)"/><rect x="14" y="24" width="36" height="34" rx="2" fill="var(--a-b)"/><path fill="var(--a-w)" d="M32 30C32 30 24 40 24 47A8 8 0 0 0 40 47C40 40 32 30 32 30Z"/>',
+  tent:
+    '<rect x="31" y="4" width="2" height="14" fill="var(--a-n)"/><path fill="var(--a-y)" d="M33 4L45 8L33 12Z"/><path fill="var(--a-o)" d="M32 14L60 54H4Z"/><path fill="var(--a-o2)" d="M32 32L44 54H20Z"/><rect x="2" y="54" width="60" height="5" rx="2.5" fill="var(--a-g)"/>',
+  hand:
+    '<path fill="none" stroke="var(--a-t)" stroke-width="10" d="M17 47L8 33"/><rect x="12" y="15" width="9" height="30" rx="4.5" fill="var(--a-t)"/><rect x="22" y="6" width="9" height="38" rx="4.5" fill="var(--a-t)"/><rect x="32" y="4" width="9" height="40" rx="4.5" fill="var(--a-t)"/><rect x="42" y="12" width="9" height="32" rx="4.5" fill="var(--a-t)"/><rect x="12" y="30" width="39" height="28" rx="13" fill="var(--a-t)"/><ellipse cx="31" cy="46" rx="9" ry="6" fill="var(--a-t2)"/>',
+  gift:
+    '<rect x="7" y="28" width="50" height="29" rx="3" fill="var(--a-b)"/><rect x="4" y="19" width="56" height="12" rx="3" fill="var(--a-b2)"/><rect x="28" y="19" width="8" height="38" fill="var(--a-y)"/><ellipse cx="23" cy="13" rx="9" ry="6" fill="var(--a-y)"/><ellipse cx="41" cy="13" rx="9" ry="6" fill="var(--a-y)"/><circle cx="32" cy="17" r="5" fill="var(--a-y2)"/>',
+  flag:
+    '<path fill="var(--a-r)" d="M14 8H57L49 20L57 32H14Z"/><circle cx="26" cy="20" r="5" fill="var(--a-y)"/><rect x="9" y="4" width="5" height="56" rx="2.5" fill="var(--a-n)"/>',
+  cake:
+    '<rect x="3" y="55" width="58" height="5" rx="2.5" fill="var(--a-s2)"/><rect x="8" y="31" width="48" height="25" rx="4" fill="var(--a-y)"/><path fill="var(--a-p)" d="M8 36Q8 29 15 29H49Q56 29 56 36Q56 42 51 40Q47 46 43 40Q39 46 35 40Q31 46 27 40Q23 46 19 40Q10 42 8 36Z"/><rect x="30" y="13" width="4" height="16" rx="1" fill="var(--a-b)"/><path fill="var(--a-o)" d="M32 3Q37 8 32 12Q27 8 32 3Z"/><circle cx="18" cy="26" r="3.5" fill="var(--a-r)"/><circle cx="46" cy="26" r="3.5" fill="var(--a-r)"/>',
+  kite:
+    '<path fill="var(--a-r)" d="M32 4L53 27L32 50Z"/><path fill="var(--a-y)" d="M32 4L11 27L32 50Z"/><path fill="none" stroke="var(--a-w)" stroke-width="2.5" d="M32 4V50M11 27H53"/><path fill="none" stroke="var(--a-s)" stroke-width="2.5" d="M32 50C25 54 39 57 32 62"/><path fill="var(--a-b)" d="M26 56L31 55L28 60Z"/><path fill="var(--a-b)" d="M38 54L34 56L38 60Z"/>',
+  bike:
+    '<circle cx="14" cy="42" r="11" fill="none" stroke="currentColor" stroke-width="4"/><circle cx="50" cy="42" r="11" fill="none" stroke="currentColor" stroke-width="4"/><path fill="none" stroke="var(--a-r)" stroke-width="4" d="M14 42L30 42L25 22L43 22L50 42M30 42L43 22M43 22L41 14"/><path fill="none" stroke="currentColor" stroke-width="4" d="M20 20H30M36 12H46"/>',
+  rose:
+    '<rect x="30" y="34" width="4" height="25" rx="2" fill="var(--a-g)"/><path fill="var(--a-g)" d="M32 54C24 54 19 49 18 44C26 44 32 48 32 54Z"/><path fill="var(--a-g)" d="M32 48C40 48 45 43 46 38C38 38 32 42 32 48Z"/><circle cx="32" cy="22" r="17" fill="var(--a-r)"/><path fill="none" stroke="var(--a-r2)" stroke-width="3" d="M21 19Q25 8 34 10Q43 13 40 23Q36 31 29 28Q24 25 28 20Q32 17 34 21"/>',
+  bone:
+    '<path fill="none" stroke="var(--a-t)" stroke-width="14" d="M16 48L48 16"/><circle cx="18.5" cy="53.3" r="9.5" fill="var(--a-t)"/><circle cx="10.7" cy="45.5" r="9.5" fill="var(--a-t)"/><circle cx="53.3" cy="18.5" r="9.5" fill="var(--a-t)"/><circle cx="45.5" cy="10.7" r="9.5" fill="var(--a-t)"/><path fill="none" stroke="var(--a-t2)" stroke-width="9" d="M16 48L48 16"/><circle cx="18.5" cy="53.3" r="6.5" fill="var(--a-t2)"/><circle cx="10.7" cy="45.5" r="6.5" fill="var(--a-t2)"/><circle cx="53.3" cy="18.5" r="6.5" fill="var(--a-t2)"/><circle cx="45.5" cy="10.7" r="6.5" fill="var(--a-t2)"/>',
+  nose:
+    '<path fill="var(--a-t)" d="M27 8Q32 4 37 8Q40 24 46 38Q52 50 44 54Q38 56 32 52Q26 56 20 54Q12 50 18 38Q24 24 27 8Z"/><ellipse cx="26" cy="47" rx="3.5" ry="2.5"/><ellipse cx="38" cy="47" rx="3.5" ry="2.5"/><ellipse cx="30" cy="22" rx="2.5" ry="9" fill="var(--a-t2)"/>'
+});
 /* ---------- word data ---------- */
 const DOL=[
 'a and away big blue can come down find for funny go help here I in is it jump little look make me my not one play red run said see the three to two up we where yellow you'.split(' '),
@@ -2873,7 +2978,7 @@ function home(first){
   $('#book').onclick=book;$('#shop').onclick=shop;$('#mix').onclick=()=>{SFX.whoosh();startMix()};$('#race').onclick=raceMenu;$('#flu').onclick=()=>{SFX.whoosh();fluMenu()};$('#care').onclick=care;$('#groom').onclick=()=>{SFX.whoosh();gameRoom()};
   if($('#inst'))$('#inst').onclick=async()=>{try{installEvt.prompt();await installEvt.userChoice}catch(e){}installEvt=null;home()};
   let t;const g=$('#gear');g.onpointerdown=()=>{t=setTimeout(grown,1200)};g.onpointerup=g.onpointerleave=()=>clearTimeout(t);g.onclick=()=>fb('Grown-ups: hold it','warn');
-  {const sc=$('.scroll');if(sc)sc.insertAdjacentHTML('beforeend','<p class="small" style="text-align:center;opacity:.55;margin:14px 0 4px">Star School v57</p>')}
+  {const sc=$('.scroll');if(sc)sc.insertAdjacentHTML('beforeend','<p class="small" style="text-align:center;opacity:.55;margin:14px 0 4px">Star School v58</p>')}
   if(first&&S.voice)setTimeout(()=>say(`Hi ${S.name}! Pick a game!`),400)}
 
 let MAPP='math',MAPW={}; // MAPW[path] = the world picked in the strip (this session only, not saved)
@@ -5924,7 +6029,7 @@ function grown(){let armed=false;
    <div class="vline"><span class="vtxt">Give a bonus</span><button class="btn xs" id="pt5">+5 min</button><button class="btn xs danger" id="pt0">Empty bank</button></div>
    <label class="tg"><input type="checkbox" id="ptp" ${ptCfg().pause?'checked':''}> Pause game time (games locked)</label></div>
   <div class="card"><div class="tw"><table><tr><th>Skill</th><th>Rounds</th><th>1st try</th><th>Tricky ones</th></tr>${rows}</table></div></div>
-  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v57 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
+  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v58 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
    Storage: ${SAVE_FAILED?'<b style="color:#c0392b">could not save (device storage may be full)</b>':'saving OK'}${SAVE_CORRUPT?'<br><b style="color:#c0392b">The old save could not be read. A fresh start was made and the old data was kept on the device.</b>':''}<br>
    Last errors: ${(S.err||[]).length?(S.err||[]).slice().reverse().map(e=>'<br>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+' '+esc(e.msg)).join(''):'none'}</div></details>
   <div class="card"><label class="tg"><input type="checkbox" id="voice" ${S.voice?'checked':''}> Read questions out loud</label>

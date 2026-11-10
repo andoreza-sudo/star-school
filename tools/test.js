@@ -969,6 +969,7 @@ run('pictures: picFor fallback and art swap; picture generators use picFor',()=>
   if(!/^<svg class="art"[^>]*viewBox="0 0 64 64"/.test(a)||!a.includes('<circle'))bad.push('picFor should return the drawing when ART has one: '+a);
   if(!picArt('zzz',48).includes('width="48px"'))bad.push('picArt(name, 48) size');
   delete ART.zzz;
+  const ART0={...ART}; // real drawings (P4-13+) must survive this test
   // the picture generators go through picFor: with a drawing for every word, no word emoji is left in their html
   const PW=[...CVC,...BLEND,...MAGICE,...TEAMS];
   for(const [w] of PW)ART[w]='<rect width="64" height="64"/>';
@@ -976,7 +977,7 @@ run('pictures: picFor fallback and art swap; picture generators use picFor',()=>
     const q=genQ(sk,lv,s);
     for(const [w,e] of PW)if(q.html.includes(e)){bad.push(sk+lv+' seed '+s+': emoji '+e+' not routed through picFor');break}
   }
-  for(const [w] of PW)delete ART[w];
+  for(const [w] of PW){if(ART0[w])ART[w]=ART0[w];else delete ART[w]}
   bad;`);
   return{problems:out};
 });
@@ -1461,6 +1462,8 @@ run('review: migration 5 keeps progress and shrinks the save, exact rebuilds, 60
       try{grownCell()}catch(e){bad(name+': Grown-ups tricky cell throws '+e.message)}
       const once=JSON.stringify(S);MIGRATIONS[5]();migrate();if(JSON.stringify(S)!==once)bad(name+': migration 5 not idempotent');
       if(name=='tricky')info.fx=raw.length+' -> '+sv.length+' bytes, '+items+' items';
+      // a stored question may hold an emoji where today's rebuild holds a drawing (P4-13): compare with the picture blanked out
+      const normPic=h=>String(h).replace(/<svg class="art".*?<\/svg>/g,'@').replace(/(<div class="emo">)[^<]*(<\/div>)/g,'$1@$2');
       // every migrated item with a seed rebuilds the exact stored question; the rest give a question of the same skill and level
       for(const it of REV.get()){
         const o=before.prog[it.sk]&&Object.values(before.prog[it.sk].miss).find(m=>m.q&&String(m.q.label).slice(0,60)===it.label);
@@ -1468,7 +1471,7 @@ run('review: migration 5 keeps progress and shrinks the save, exact rebuilds, 60
         if(it.box!==0||it.due!==0||it.n!==o.n||it.lv!==o.q.lv)bad(name+': item fields '+JSON.stringify(it));
         const q=revQ(it);
         if(!q||q.sk!==it.sk||q.lv!==it.lv||q.rvk!==revKey(it))bad(name+': revQ '+revKey(it));
-        else if(o.q.seed!=null&&(q.html!==o.q.html||String(q.ans)!==String(o.q.ans)||q.label!==o.q.label))bad(name+': not the same question '+revKey(it));
+        else if(o.q.seed!=null&&(normPic(q.html)!==normPic(o.q.html)||String(q.ans)!==String(o.q.ans)||q.label!==o.q.label))bad(name+': not the same question '+revKey(it));
         else if(o.q.seed==null&&!('seed' in it))bad(name+': seed search did not run for '+revKey(it));
       }
       if(name=='tricky'){
@@ -1778,6 +1781,44 @@ run('spelling P2-19: word data, 3000 questions per level, visible clue, hints, m
   };
   const r=eval(js+';('+body.toString()+')()');
   return{problems:serrs,note:'400 words, 21000 questions, '+r.checked+' stop checks over 6 fixtures x 7 grades'};
+});
+
+// ---- object art set A (P4-13) ----
+run('art set A: 40 pictures present, size, allowed elements, tokens only, well-formed, used by picture words',()=>{
+  const p=[];
+  const NAMES=('apple banana cookie ball star fish duck car flower cat dog pig sun bus hat bed cup fox bat bug hen box map pen web frog crab drum '+
+    'ship milk tent hand gift flag cake kite bike rose bone nose').split(' ');
+  const out=eval(js+`
+  const bad=[];
+  for(const n of ${JSON.stringify(NAMES)}){
+    const d=ART[n];
+    if(!d){bad.push('missing drawing: '+n);continue}
+    if(d.length>=900)bad.push(n+': '+d.length+' bytes (limit 900)');
+    if((d.match(/<[^>]*\\/>/g)||[]).join('')!==d)bad.push(n+': every element must be self-closing, nothing between them');
+    for(const t of d.match(/<\\/?[a-z]+/g)||[])if(!/^<(path|circle|ellipse|rect)$/.test(t))bad.push(n+': element '+t+'> not allowed');
+    if(/gradient|filter|<text|url\\(|style=|\\sid=|<defs/i.test(d))bad.push(n+': no ids, defs, gradients, filters, text, url() or style');
+    if(/#[0-9a-f]{3,8}\\b/i.test(d))bad.push(n+': raw hex colour');
+    for(const a of d.match(/(fill|stroke)="[^"]*"/g)||[])if(!/^(fill|stroke)="(currentColor|none|var\\(--a-[a-z0-9]+\\))"$/.test(a))bad.push(n+': colour must be currentColor, none or var(--a-x): '+a);
+    const co=(d.match(/\\s(d|cx|cy|r|rx|ry|x|y|width|height)="[^"]*"/g)||[]).join(' ').match(/\\d*\\.\\d{2,}/g);
+    if(co)bad.push(n+': coordinates to one decimal ('+co[0]+')');
+    const doc=picArt(n,48);
+    if(!/^<svg [^>]*viewBox="0 0 64 64"[^>]*>(<(path|circle|ellipse|rect)\\b[^>]*\\/>)+<\\/svg>$/.test(doc))bad.push(n+': picArt markup not well formed');
+    if(picFor(n,'X')!==picArt(n))bad.push(n+': picFor does not return the drawing');
+  }
+  // every --a-x role used is defined in 21-art.css
+  const css=${JSON.stringify(fs.readFileSync(path.join(SRC,'css','21-art.css'),'utf8'))};
+  for(const n of ${JSON.stringify(NAMES)})for(const m of ART[n].match(/--a-[a-z0-9]+/g)||[])if(!css.includes(m+':'))bad.push(n+': '+m+' not defined in 21-art.css');
+  // picture-word questions show the drawing, not the emoji, for set A words that are picture words
+  const PW=[...CVC,...BLEND,...MAGICE,...TEAMS].filter(([w])=>ART[w]);
+  let shown=0;
+  for(const sk of ['pic','build'])for(let lv=1;lv<=SK[sk].max;lv++)for(let s=1;s<=60;s++){
+    const q=genQ(sk,lv,s);
+    for(const [w,e] of PW){if(q.html.includes(e))bad.push(sk+lv+' seed '+s+': emoji for '+w+' shown instead of the drawing');if(q.html.includes('class="art"'))shown++}
+  }
+  if(!shown)bad.push('no picture question showed a drawing');
+  if(PW.length<30)bad.push('only '+PW.length+' set A words are picture words');
+  bad;`);
+  return{problems:out.concat(p),note:NAMES.length+' pictures'};
 });
 
 // ---- report ----
