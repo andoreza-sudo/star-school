@@ -538,6 +538,63 @@ async function main() {
       await pa.ctx.close();
     }
 
+    // P1-08 mastery: a fast, all-right first five turns the rest of a round into Challenge questions from the next harder stop
+    //     (tag shown); the bot misses every other one once and still gets 3 stars; the stop's mastery record is saved;
+    //     a weak first five turns on support: the hint is on screen before the first try
+    {
+      const ma = await openApp(browser, { fixture: 'midway' });
+      const mp = ma.page;
+      const mi = await mp.evaluate(() => {
+        const i = NODES.math.findIndex(n => n.sk == 'eo' && n.lv == 1);
+        S.maps.math[nid(NODES.math[i])] = 0; // play it as a new stop so the star result is visible
+        start('math', i);
+        return i;
+      });
+      await mp.waitForSelector('#prompt');
+      let missed = 0, tags = 0, tagH = 99;
+      for (let guard = 0; guard < 60; guard++) {
+        const st = await mp.evaluate(() => document.querySelector('#fin') ? { fin: 1 } : G && G.q && !G.lock
+          ? { tag: mastTag(G.q), tries: G.tries, kind: G.q.kind, h: (document.querySelector('.mtag') || {}).offsetHeight || 0 } : null);
+        if (st && st.fin) break;
+        if (!st) { await mp.waitForTimeout(150); continue; }
+        await mp.evaluate(() => { window.__q = G.q; });
+        if (st.tag === 'ch' && st.tries === 0) {
+          tags++;
+          tagH = Math.min(tagH, st.h);
+          if ((st.kind === 'choice' || st.kind === 'num') && tags % 2 === 1) {
+            // every other challenge question: one wrong first try, then the right answer (3 misses in a row would step the round down)
+            if (st.kind === 'choice') await mp.click(`.ch[data-i="${await mp.evaluate(() => G.q.choices.findIndex(c => String(c.v) !== String(G.q.ans)))}"]`);
+            else { for (const d of String(Number(await mp.evaluate(() => G.q.ans)) + 1)) await mp.click(`.k[data-k="${d}"]`); await mp.click('.k[data-k="go"]'); }
+            await mp.waitForFunction(() => G.tries === 1 && !G.lock, null, { timeout: 4000 });
+            missed++;
+          }
+        }
+        await answer(mp);
+        await mp.waitForFunction(() => document.querySelector('#fin') || (G && G.q !== window.__q), null, { timeout: 8000 });
+      }
+      await mp.waitForSelector('#chest', { timeout: 5000 });
+      const res = await mp.evaluate(i => ({ mode: G.mode, score: G.score, n: G.n, forgive: G.forgive || 0, st: getSt('math', i),
+        rec: S.mast && S.mast.eo1, saved: !!JSON.parse(localStorage.getItem(KEY)).mast }), mi);
+      if (res.mode !== 'challenge' || tags !== res.n - 5 || tagH < 20 || !missed || res.forgive !== missed || res.score !== res.n - missed || res.st !== 3)
+        fail('challenge round: ' + JSON.stringify({ ...res, tags, tagH, missed }));
+      else step(`challenge: questions 6-${res.n} came from the harder stop with the tag, ${missed} of them missed once, ${res.score}/${res.n} still gave 3 stars`);
+      if (!res.rec || res.rec.n < 4 || !res.saved) fail('mastery record for eo1 not saved: ' + JSON.stringify(res.rec));
+      // support: five wrong first tries, then the 6th question shows its hint before any answer
+      const sp = await mp.evaluate(i => {
+        start('math', i);
+        G.fr = [0, 1, 2, 3, 4].map(() => ({ ok: false, ms: 9000 }));
+        G.done = 5;
+        next();
+        return { mode: G.mode, hint: document.querySelector('#hint').textContent.trim().length };
+      }, mi);
+      if (sp.mode !== 'support' || !sp.hint) fail('support round: ' + JSON.stringify(sp));
+      else step('support: after 5 wrong first tries the hint shows before the first try');
+      await mp.evaluate(() => { G.dead = true; home(); });
+      network.push(...ma.network);
+      for (const e of ma.errors) fail(e);
+      await ma.ctx.close();
+    }
+
     for (const e of errors) fail(e);
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');

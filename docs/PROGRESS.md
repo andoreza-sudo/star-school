@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** wave 4: P1-08 (Opus) in progress; then P5-02, P5-03, P5-06. Wave 5 includes P4-13; all content pictures use `picFor`.
+**Next up:** wave 4: P5-02 (Opus) and P5-06 next, then P5-03. Wave 5 includes P4-13; all content pictures use `picFor`.
 
-**Current version:** v52
+**Current version:** v53
 
 ## Chunk status
 
@@ -32,6 +32,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - PRE-W5 picFor v50
 - P5-05 v51
 - P1-07 v52
+- P1-08 v53
 
 ## Handoff notes
 
@@ -49,6 +50,12 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P1-07) Bank-based skills choose items by least-recently-shown once a round has been played (BANKLIVE), so in the app a placement question from a bank skill is not exactly the seed's question; the stop list and the result rules are still deterministic. Only tests rely on exact questions.
 - (P1-07) smoke.js answers placement questions with the round helper `answer()`, which reads `G`, by pointing `G` at the quiz state `PL` for the tap. A later cleanup could pass the state into `answer()`.
 - (P1-07) The home "Find my level" card hides for the session with "Not now" (not saved), and disappears for good once a math or reading stop is passed or a placement is done.
+- (P1-08) The roadmap mentions a small mastery badge on the map (`masteryState(nid)`); not drawn because `46-home.js` is not in the chunk's files. P4-09 (map redesign) or P5-06 can add it with one call per stop (`mastStops(p)` gives every stop's state in map order).
+- (P1-08) `ptCalc` (58-playtime.js) is unchanged: "mastered stops earn less game time on replay" already holds through 3 stars (`prev>=3`). P5-09 could also count `masteryState(nid)=='mastered'`. Forgiven challenge misses lift only the star rating: the finish screen can read "7 out of 10" with 3 stars, the game-time accuracy and "Perfect score" use the real score, and coins and stars added to the total are the real first-try count.
+- (P1-08) A missed challenge question is stored by `addMiss` under its own (harder) level, so it can come back in Tricky Mix and when the child reaches that stop; P5-02 should decide whether challenge misses become review items.
+- (P1-08) P1-07 (placement) and any other round that must leave no trace can set `G.nomast = true` (no mastery record, no adaptation). Rounds with a `pool` (boss, test out, mix, passages, placement) never adapt but do record first tries unless `nomast` is set.
+- (P1-08) "Fast" is a fixed median of the first five answer times (12 s, 16 s for Pre-K and K, `MAST.FAST*`). Tune on real tablets; a per-stop baseline from `S.mast[nid].ms` is the obvious next step once there is data.
+- (P1-08) S.mast worst case measured at 28,991 bytes for 400 stops (today's skill ids, n 999, 365 days, every stop mastered). If later skill ids get much longer, drop `md` or store `p` in thousandths to keep under 30 KB.
 
 - (P1-03) The roadmap asks for a hidden dev skill `zz_demo` in `SK`. Not done on purpose: it would ship demo code in the app. Instead `tools/kinds-samples.js` holds 11 sample questions (all `sk:'zz_demo'`), and test.js, shots.js and smoke.js run them through the real engine (`G=newG({sk:'zz_demo',pool:[...]}); next()`). A later chunk that needs a real in-app demo can promote them.
 - (P1-03) Smoke step 7 (number pad reveal) leaves the old round's 2.6 s `next` timer running; it fires into whatever `G` exists later (it skipped a question in step 8). Step 8 now goes home and waits 3 s first. Cleaner fix: `next()` could take the round it belongs to, or `back()`/`home()` could cancel pending round timers.
@@ -118,6 +125,15 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P1-05) Map draw with 16 fake worlds (156 stops) at 6x CPU throttle: median about 29 ms (limit 50), single runs up to about 49 ms. The strip recomputes `worldOpen`/`worldFinished` per chip and `unlocked` scans the world; a memo per draw is the next step if P4-09 adds weight.
 
 ## Log
+
+### P1-08 Mastery tracking and in-round adaptation (v53, 2026-11-10, Claude)
+- What changed: new `src/js/51-mastery.js` (ROADMAP 3.3). Every first try at a question of a map stop (any round) updates `S.mast[nid] = {n, p, ms, d, last, md}`: attempts, first-try accuracy (plain average for 10 tries, then moving average 0.1), running median answer time (ms, capped 60 s), distinct days, last day and mastered day as day numbers (`STRK.idx`). `masteryState(nid)` = new / learning / practised (>= 70% over 10+) / mastered (>= 90% over 20+ on 2+ days). `harder(nd)` / `easier(nd)` = next / previous stop of the same skill in path order. In a normal stop round, after question 5: 5 of 5 right with a median under 12 s (16 s Pre-K, K) makes the rest Challenge questions from `harder()` (bolt "Challenge!" tag, pet line; a wrong first try is forgiven for the star rating); 2 or fewer right turns on support (hint shown before every first try, questions 6, 8, 10 from `easier()`); 3 wrong first tries in a row (any time) give an easier question with the hint shown and the pet saying "Here's a hint!", and after question 5 step the mode down (challenge -> normal, normal -> support). Middling rounds are unchanged. Star thresholds, round length, coins, locks unchanged.
+- Hooks in `50-round.js` (4 lines): `makeQ` first asks `mastQ()`; `check` calls `mastTry(q, ok)` on a first try; `renderQ` calls `mastShow(q)` before `fit()`; `finish` rates stars on `min(n, score + G.forgive)`.
+- Saved data: new optional field `S.mast`, read with defaults, created on the first answer; no migration (LATEST stays 5). Old code ignores the field.
+- Tests: test.js check 23 "mastery" (no S.mast on every fixture reads as new and changes nothing; state thresholds incl. 2 days; median ignores an outlier and follows a shift; demo skills and `nomast` rounds are not recorded; a 100%-fast bot gets challenge from question 6 on every stop at 4 grades; slow 100% bot does not; forgiven challenge misses; 300 rounds of a 30% bot get support, hints first, easier stops on 6/8/10, and an easier question after every 3-wrong run; a middling bot on fresh, midway, maxed gets exactly the old questions (own stop or the usual review), no tags, no hints; determinism; boss rounds record but never adapt; 400 stops = 28,991 bytes). smoke.js P1-08 step (midway: Even or Odd as a new stop, Challenge questions 6-10 with a visible tag, every other one missed once, still 3 stars, record saved; a support round shows the hint before the first try). shots.js `challenge`, `support`.
+- Files: src/js/51-mastery.js (new), src/js/50-round.js (hooks), src/css/33-mastery.css (new, tokens only), tools/test.js, smoke.js, shots.js, contrast.js (1 pair), check.sh (hex guard covers 33-mastery.css), build.py (VER), built output.
+- Checklist 7.1: only chunk files changed (58-playtime.js not needed, see Ideas); VER bumped; build, test.js (23 checks), smoke.js and sizes via check.sh; screenshots challenge 600x960 and 1024x600, support 380x780 looked at; midway fixture keeps stars, coins, pet and map progress (test); no new emoji, no raw hex.
+- Merge: built on a parallel branch, renumbered v50 -> v53 at merge.
 
 ### P1-07 Placement quiz "Find my level" (v52, 2026-11-10, Claude)
 - What changed: new `src/js/45-placement.js`. `PLACE.*` is a pure state machine (world list, seed, right answers per testlet in; next testlet or result out; no S, no DOM): starts at the first world with g >= grade - 1, 4-question testlets of stops from one world, 3-4 right up, 0-1 down, 2 right one more testlet (6 of 8 passes), stops when a "not yet" world sits right above a passed one, at either end, or after 5 testlets (20 questions). Result: the world above the highest passed world (the lowest world asked when none passed); the worlds below are skipped. The screen reuses the question kinds (KIND render/bind) with one try, no stars, no buzz, no hints, a neutral "Got it!" in brand blue and 4 progress dots; the X quits at any time and nothing is saved before the end. Result screen: the start world, the skipped worlds ("you can still play them"), Go to my map (opens on that world), the other subject, Home.

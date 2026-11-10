@@ -16,6 +16,16 @@ const kindShot = (name, taps = []) => ({
   },
 });
 
+// P1-08: math 'Even or Odd' (level 1) at question 6, after five first tries that were all right and fast (ok) or all wrong.
+const mastDemo = ok => async p => {
+  await p.evaluate(ok => {
+    start('math', NODES.math.findIndex(n => n.sk == 'eo' && n.lv == 1));
+    G.fr = [0, 1, 2, 3, 4].map(() => ({ ok, ms: 2000 }));
+    G.done = 5;
+    next();
+  }, ok);
+};
+
 // Each screen: { fixture, full, run(page) }. run() drives the app via its globals or real taps; full: true takes a full-page shot.
 const SCREENS = {
   setup: { fixture: 'fresh', run: async () => {} },
@@ -209,6 +219,11 @@ const SCREENS = {
       await p.evaluate(() => { placeApply('math', PLACE.sim(PATHS.math.worlds, gradeOf(), 7, wi => wi < 2)); grown(); document.querySelector('.pl-grown').scrollIntoView({ block: 'center' }); });
     },
   },
+
+  // P1-08 mastery: question 6 of a round whose first five were right and fast (a Challenge question from the next harder stop,
+  // tag on top), and of one whose first five were wrong (support: the hint shows before the first try)
+  challenge: { run: mastDemo(true) },
+  support: { run: mastDemo(false) },
 };
 
 // Starts a demo bank question (bi = item index) or the demo passage round, through the real round engine.

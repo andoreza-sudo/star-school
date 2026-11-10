@@ -24,6 +24,8 @@ for (const g of ['ink-2', 'ink-3', 'math', 'math-shade', 'play', 'read']) rules.
 // part 2 (P1-11): ink on the viz fills (ruler, coins, boxes), meaningful edges on the white card
 for (const bg of ['star-tint', 'math-tint', 'play-tint', 'surface-2', 'good-tint']) rules.push(['ink', bg, 4.5, 'viz text on fill']);
 for (const g of ['play-shade', 'good-ink']) rules.push([g, 'surface', 3, 'viz graphic on surface']);
+// mastery (P1-08): the Challenge tag (ink text, try-ink bolt on star-tint)
+rules.push(['try-ink', 'star-tint', 3, 'challenge tag icon']);
 rules.push(['ink-3', 'star-tint', 3, 'viz ruler edge'], ['ink-3', 'surface-2', 3, 'viz coin edge'], ['play-shade', 'play-tint', 3, 'viz penny edge']);
 let fail = 0;
 for (const [a, b, min, what] of rules) {

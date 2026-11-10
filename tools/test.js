@@ -1184,6 +1184,160 @@ run('placement: state machine rules, scripted answers, simulated students, never
     `${r.seqs} answer sequences, most questions ${r.maxQ}`};
 });
 
+run('mastery: records, states, harder/easier, challenge from question 6, support and hints, middling unchanged, size',()=>{
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const merrs=[],bad=m=>merrs.push(m);
+  const body=function(){
+    const store={};
+    global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+    const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
+    const key=(sk,lv)=>sk+lv;
+    let rounds=0;
+    // Plays a stop round without the DOM: makeQ, the check hook (mastTry) and G.done, as check() does on a first try.
+    // bot(k, q) -> [right, ms]. Returns one entry per question.
+    const sim=(p,i,bot)=>{
+      const nd=NODES[p][i];
+      G=newG({path:p,node:i,sk:nd.sk,lv:nd.lv,n:gradeCfg().n});
+      const out=[];
+      while(G.done<G.n){
+        const q=makeQ();G.q=q;G.retry=false;G.tries=0;
+        const hint=mastHint(q),[ok,ms]=bot(G.done,q);
+        mastTry(q,ok,ms);
+        if(ok)G.score++;
+        out.push({k:key(q.sk,q.lv),tag:mastTag(q),hint,ok,review:!!q.review});
+        G.done++;
+      }
+      rounds++;
+      return out;
+    };
+    const stops=[];
+    for(const p in NODES)NODES[p].forEach((n,i)=>{if(n.sk!='boss'&&!SK[n.sk].round)stops.push([p,i])});
+    // 0. API on a fresh save and on every fixture: no S.mast is fine, nothing is migrated
+    if(LATEST!==5)bad('P1-08 adds no migration; LATEST should stay 5');
+    for(const name of ['fresh','midway','maxed','legacy-single-map','legacy-index-maps']){
+      const raw=fx(name),obj=JSON.parse(raw);load(Object.keys(obj).length?raw:null);
+      const before=JSON.stringify([S.stars,S.coins,S.pet,S.maps,S.wdone]);
+      for(const p in NODES)for(const s of mastStops(p))if(s.state!=='new'||s.rec!==null)bad(name+': '+s.nid+' not new without S.mast');
+      if(masteryState('add1')!=='new'||mastRec('add1')!==null)bad(name+': masteryState with no S.mast');
+      if(JSON.stringify([S.stars,S.coins,S.pet,S.maps,S.wdone])!==before)bad(name+': reading mastery changed progress');
+    }
+    // 1. harder / easier: next and previous stop of the same skill in path order
+    const N=NODES.math,at=(sk,lv)=>N.find(n=>n.sk==sk&&n.lv==lv);
+    if(harder(at('add',1))!==at('add',2)||harder(at('add',2))!==at('add',3)||easier(at('add',2))!==at('add',1))bad('harder/easier add');
+    if(easier(at('add',1))!==null||harder(N.find(n=>n.sk=='boss'))!==null)bad('easier(add1) / harder(boss) should be null');
+    for(const p in NODES)NODES[p].forEach(n=>{const h=harder(n),e=easier(n);
+      if(h&&(h.sk!==n.sk||NODES[p].indexOf(h)<=NODES[p].indexOf(n)))bad('harder '+nid(n));
+      if(e&&(e.sk!==n.sk||NODES[p].indexOf(e)>=NODES[p].indexOf(n)))bad('easier '+nid(n));});
+    // 2. records and states: average then moving average, running median, distinct days, mastered day
+    load(null);S.grade=1;
+    for(let k=0;k<9;k++)mastAdd('add1',true,3000);
+    if(masteryState('add1')!=='learning')bad('9 right tries should be learning: '+masteryState('add1'));
+    mastAdd('add1',true,3000);
+    if(masteryState('add1')!=='practised')bad('10 right tries should be practised');
+    for(let k=0;k<10;k++)mastAdd('add1',true,3000);
+    if(masteryState('add1')!=='practised'||S.mast.add1.md)bad('20 tries on one day must not be mastered');
+    S.mast.add1.last-=1; // as if the last try was yesterday
+    mastAdd('add1',true,3000);
+    const r=S.mast.add1;
+    if(masteryState('add1')!=='mastered'||r.d!==2||r.md!==mastDay()||r.last!==mastDay()||r.n!==21||r.p!==1)bad('mastered after 2 days: '+JSON.stringify(r));
+    for(let k=0;k<3;k++)mastAdd('add1',false,3000);
+    if(masteryState('add1')!=='practised'||r.md!==mastDay())bad('accuracy drop: state practised, md kept: '+JSON.stringify(r));
+    for(let k=0;k<6;k++)mastAdd('sub1',k<3,3000);
+    if(Math.abs(S.mast.sub1.p-.5)>.001)bad('first tries are a plain average: '+S.mast.sub1.p);
+    [1000,1000,1000,1000,1000,1000,1000,1000,1000,90000].forEach(t=>mastAdd('eo1',true,t));
+    if(S.mast.eo1.ms>1300)bad('one slow answer moved the median to '+S.mast.eo1.ms);
+    for(let k=0;k<40;k++)mastAdd('eo1',true,5000);
+    if(Math.abs(S.mast.eo1.ms-5000)>300)bad('median should follow to 5000, is '+S.mast.eo1.ms);
+    // only stops on a map are recorded; G.nomast records nothing
+    load(null);G=newG({sk:'zz_demo',n:1,pool:[]});mastTry({sk:'zz_demo',lv:1,label:'x'},true,100);
+    G=newG({path:'math',node:0,sk:'add',lv:1,nomast:true});mastTry({sk:'add',lv:1,label:'x'},true,100);
+    if(S.mast&&Object.keys(S.mast).length)bad('recorded a demo skill or a nomast round: '+JSON.stringify(S.mast));
+    // 3. a 100%-fast bot gets challenge questions from question 6 (every grade's round length), the round's own stop before
+    let ch=0;
+    for(const g of [-1,0,1,3]){
+      load(null);S.grade=g;
+      for(const [p,i] of stops){
+        const nd=NODES[p][i],own=nid(nd),h=harder(nd),o=sim(p,i,()=>[true,2500]);
+        o.forEach((x,k)=>{
+          if(k<MAST.AT&&(x.k!==own||x.tag))bad(p+' '+own+' g'+g+' q'+(k+1)+': '+x.k+' '+x.tag+' before question 6');
+          if(k>=MAST.AT&&h&&(x.k!==nid(h)||x.tag!=='ch'))bad(p+' '+own+' g'+g+' q'+(k+1)+': expected challenge '+nid(h)+', got '+x.k+' '+x.tag);
+          if(k>=MAST.AT&&!h&&(x.k!==own||x.tag))bad(p+' '+own+' g'+g+' q'+(k+1)+': no harder stop, got '+x.k+' '+x.tag);
+          if(x.hint)bad(p+' '+own+': hint before the first try for a 100% bot');
+          if(x.tag=='ch')ch++;
+        });
+        if(G.mode!=='challenge')bad(own+' g'+g+': mode '+G.mode);
+      }
+    }
+    // 100% but slow: no challenge
+    load(null);S.grade=1;
+    {const o=sim('math',0,()=>[true,20000]);if(G.mode!==''||o.some(x=>x.tag))bad('slow 100% bot got challenge');}
+    // wrong challenge answers are forgiven for the star rating; 3 wrong ones in a row step back to the round's own stop
+    {const o=sim('math',0,(k,q)=>[mastTag(q)!='ch',2000]);
+      const tags=o.map(x=>x.tag).join(',');
+      if(tags!==',,,,,ch,ch,ch,easy,')bad('challenge then 3 wrong: tags '+tags);
+      if(o[8].k!=='add1'||!o[8].hint||o[9].k!=='add1'||o[9].hint||G.mode!=='')bad('after 3 wrong challenge answers: '+JSON.stringify(o.slice(8))+' mode '+G.mode);
+      if(G.forgive!==3||G.score+G.forgive!==G.n)bad('forgive '+G.forgive+' score '+G.score);}
+    {sim('math',0,k=>[k<MAST.AT||k%2==1,2000]);
+      if(G.forgive!==2||Math.min(G.n,G.score+G.forgive)!==G.n)bad('2 wrong challenge answers must not cost stars: forgive '+G.forgive+' score '+G.score);}
+    // 4. a 30% bot gets support: hints before every remaining first try, easier stop at questions 6, 8, 10
+    const rng=mulberry32(7);let sup=0,easyQ=0;
+    for(let t=0;t<300;t++){
+      load(null);S.grade=1;
+      const [p,i]=stops[t%stops.length],nd=NODES[p][i],own=nid(nd),e=easier(nd),o=sim(p,i,()=>[rng()<.3,6000]);
+      const right5=o.slice(0,MAST.AT).filter(x=>x.ok).length;
+      if(right5<=MAST.SUPPORT){
+        sup++;
+        if(G.mode!=='support')bad(own+': '+right5+' of 5 right but mode '+G.mode);
+        o.slice(MAST.AT).forEach((x,k)=>{
+          if(!x.hint)bad(own+' q'+(k+6)+': support without the hint first');
+          if(x.k!==own&&!(e&&x.k===nid(e)))bad(own+' q'+(k+6)+': support question from '+x.k);
+          if(e&&k%2==0&&x.k!==nid(e))bad(own+' q'+(k+6)+': expected the easier stop '+nid(e));
+          if(e&&x.k===nid(e))easyQ++;
+        });
+      }
+      // 3 wrong first tries in a row: the next question is easier and shows the hint
+      let run=0;
+      o.forEach((x,k)=>{
+        if(run==MAST.RUN&&(x.tag!=='easy'||!x.hint||(e&&x.k!==nid(e))))bad(own+' q'+(k+1)+' after 3 wrong: '+JSON.stringify(x));
+        if(run==MAST.RUN)run=0; // the run starts again after the easier question is chosen
+        run=x.ok?0:run+1;
+      });
+    }
+    if(sup<100||easyQ<sup)bad('30% bot: '+sup+' support rounds, '+easyQ+' easier questions');
+    // 5. a middling bot (2 of 3 right, never 3 wrong in a row) plays exactly as before: own stop or the usual review, no tags
+    for(const name of ['fresh','midway','maxed']){
+      load(name=='fresh'?null:fx(name));S.grade=1;
+      for(const [p,i] of stops){
+        const own=nid(NODES[p][i]),o=sim(p,i,k=>[k%3!=2,4000]);
+        if(G.mode!==''||G.forgive||o.some(x=>x.tag||x.hint||(x.k!==own&&!x.review)))
+          bad(name+' '+own+': middling round changed '+JSON.stringify(o.filter(x=>x.tag||x.hint||x.k!==own)));
+      }
+    }
+    // 6. determinism: the same answers give the same stops, tags and hints
+    load(null);S.grade=1;
+    for(const bot of [()=>[true,1000],k=>[k==2,8000],k=>[k>2,3000]]){
+      const a=JSON.stringify(sim('read',0,bot).map(x=>[x.k,x.tag,x.hint])),b=JSON.stringify(sim('read',0,bot).map(x=>[x.k,x.tag,x.hint]));
+      if(a!==b)bad('not deterministic: '+a+' vs '+b);
+    }
+    // boss rounds record first tries but never adapt
+    load(null);S.grade=1;
+    const bi=NODES.math.findIndex(n=>n.sk=='boss');
+    G=newG({path:'math',node:bi,sk:'boss',boss:{e:'x',name:'x'},hp:7,pool:worldPool('math',0,10)});
+    for(let k=0;k<10;k++){const q=makeQ();G.q=q;mastTry(q,false,500);G.done++;if(mastTag(q)||mastHint(q))bad('boss round adapted')}
+    if(!S.mast||Object.values(S.mast).reduce((a,r)=>a+r.n,0)!==10||G.ease||G.mode!==undefined)bad('boss round: not recorded, or adapted');
+    // 7. size: 400 stops stay under 30 KB
+    S.mast={};
+    // keys: today's skill ids with levels counted up to 400 stops (future ids are about as long); heavy but possible values
+    const ids=Object.keys(SK);
+    for(let k=0;k<400;k++)S.mast[ids[k%ids.length]+(Math.floor(k/ids.length)+1)]={n:999,p:.937,ms:59990,d:365,last:20765,md:20700};
+    const sz=JSON.stringify(S.mast).length;
+    if(sz>=30000)bad('S.mast with 400 stops is '+sz+' bytes');
+    return{ch,rounds,sz,sup};
+  };
+  const r=eval(js+';('+body.toString()+')()');
+  return{problems:merrs,note:r.rounds+' simulated rounds, '+r.ch+' challenge questions, '+r.sup+' support rounds, 400 stops = '+r.sz+' bytes'};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){
