@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** wave 4: P1-07 (Opus), P1-08 (Opus), P5-02, P5-03, P5-05, P5-06.
+**Next up:** wave 4: P1-07 (Opus), P1-08 (Opus), P5-05 in progress; then P5-02, P5-03, P5-06. Wave 5 includes P4-13; all content pictures use `picFor`.
 
-**Current version:** v49
+**Current version:** v50
 
 ## Chunk status
 
@@ -29,6 +29,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P1-03 v47
 - P1-11 v48
 - P1-06 v49
+- PRE-W5 picFor v50
 
 ## Handoff notes
 
@@ -86,6 +87,7 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P1-11) `coordGrid` draws axis arrows only at the positive ends and its labels sit on the axes, over grid lines (readable, a little busy in four quadrants); `angle({proto})` labels 0 and 180 overlap the baseline. Polish in P4.
 - (P1-11) `balance` strings pass behind the counters on a pan; fine at 380 px but a later pass could draw the pan on top. Sphere highlight looks like a small hole at tiny sizes.
 - (P1-11) `coinSVG` prints the value with a cent sign in Andika; if a font ever lacks it, `o.face = false` plus the generator's own text is the fallback.
+- (PRE-W5) Bank items name their picture with `pic` (an ICONS name, drawn with `ico()`); object nouns should move to `picFor` once ART exists so banks get the drawings too.
 - (P1-09) The finish screen text "Get 7 right to open the next stop" is fixed; on a 5-question passage round the pass mark is 4 (`floor(n*.7+.01)`). Reword the message from `n` when a passage skill ships (P2-25).
 - (P1-09) Stored misses in `makeQ` (`{...pick(ms).q}`) keep `q.ctx` and `q.bk`, so a missed passage question comes back with its passage; P5-02 should rebuild with `bankRebuild(q.bk)` (or `genQ`) instead of copying.
 - (P1-09) Forms `order`, `match`, `multi` are validated but never drawn until P1-03/P1-04 add the kinds and register `BANKF.order/match/multi=(item,id)=>question`; the data shape in CURRICULUM section 8 (`order`, `pairs`, `a` as a list) is what the builders receive.
@@ -105,6 +107,14 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P1-05) Map draw with 16 fake worlds (156 stops) at 6x CPU throttle: median about 29 ms (limit 50), single runs up to about 49 ms. The strip recomputes `worldOpen`/`worldFinished` per chip and `unlocked` scans the world; a memo per draw is the next step if P4-09 adds weight.
 
 ## Log
+
+### PRE-W5: content pictures go through picFor (v50, 2026-11-10, Claude)
+- Why: wave 5 adds lots of counting and vocabulary pictures. Object art (P4-13+) replaces emoji later; without a single entry point every new generator would need editing again.
+- New `src/js/15-pics.js`: `ART` (empty until P4-13), `picArt(name, size)` (inline 64x64 SVG, 1em by default), `picFor(word, emoji)` (drawing when `ART[word]` exists, else the emoji). Names `art` and `artSVG` were already taken (a/an helper, Art Studio), so DESIGN_SYSTEM 6.5 now says `picArt` and `Object.assign(ART, ...)`.
+- `genPic` and `genBuild` (32-gen-read.js) use `picFor(w, e)`; output is unchanged today. `.art` rule in 20-base.css (tokens only).
+- New named check "pictures": fallback, art swap, and with a drawing for every word no picture emoji is left in pic/build questions (proved it fails if a generator bypasses picFor).
+- Docs: CONTRIBUTING section 7 rule "Content pictures"; ROADMAP wave 5 now includes P4-13 (object art set A), moved from wave 9.
+- Tests: check.sh ok.
 
 ### P1-06 Grade pick at setup and in Grown-ups (v49, 2026-11-10, Claude)
 - What changed: setup has a "What grade?" card with 8 big buttons (Pre-K, K, 1st..6th, 4 x 2, 48 px, K preselected, tapping speaks the grade) shared with a Grown-ups "Grade" row (`gradePickHTML` / `gradePickBind` in 46-home.js). Changing the grade only calls `setGrade`: it moves where the maps start and which worlds open by grade, and never removes progress or re-locks a passed stop. `gradeCfg(g)` (42-paths.js) returns `{n, choices, auto, multi}`: round length 6 / 8 / 10 (Pre-K / K / 1st and up) used by `start()` for normal stop rounds, and `auto:'all'` for Pre-K and K, which reads every prompt that has a spoken line aloud. The "Get N right to open the next stop" message now follows the round length.

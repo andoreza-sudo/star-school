@@ -955,6 +955,29 @@ run('grade: migration 4 infers a grade, setGrade never removes or re-locks anyth
   return{problems:gerrs,note:r.checks+' passed-stop checks across fixtures and grades'};
 });
 
+// ---- pictures: picFor falls back to the emoji, uses ART when a drawing exists (pre-P4-13) ----
+run('pictures: picFor fallback and art swap; picture generators use picFor',()=>{
+  const out=eval(js+`
+  const bad=[];
+  if(picFor('zzz','🍎')!=='🍎')bad.push('picFor should return the emoji when ART has no drawing');
+  if(picFor('zzz')!=='')bad.push('picFor with no drawing and no emoji should be empty');
+  ART.zzz='<circle cx="32" cy="32" r="20"/>';
+  const a=picFor('zzz','🍎');
+  if(!/^<svg class="art"[^>]*viewBox="0 0 64 64"/.test(a)||!a.includes('<circle'))bad.push('picFor should return the drawing when ART has one: '+a);
+  if(!picArt('zzz',48).includes('width="48px"'))bad.push('picArt(name, 48) size');
+  delete ART.zzz;
+  // the picture generators go through picFor: with a drawing for every word, no word emoji is left in their html
+  const PW=[...CVC,...BLEND,...MAGICE,...TEAMS];
+  for(const [w] of PW)ART[w]='<rect width="64" height="64"/>';
+  for(const sk of ['pic','build'])for(let lv=1;lv<=SK[sk].max;lv++)for(let s=1;s<=60;s++){
+    const q=genQ(sk,lv,s);
+    for(const [w,e] of PW)if(q.html.includes(e)){bad.push(sk+lv+' seed '+s+': emoji '+e+' not routed through picFor');break}
+  }
+  for(const [w] of PW)delete ART[w];
+  bad;`);
+  return{problems:out};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){

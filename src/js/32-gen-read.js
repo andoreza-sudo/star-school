@@ -13,11 +13,11 @@ function variants(w){const out=new Set(),V='aeiou',C='bcdfghjklmnprstvwz',vi=[..
   let r=shuffle([...out]).slice(0,3);if(/[aeiou][^aeiou]e$/.test(w)){const ne=w.slice(0,-1);if(!BAD.test(ne)&&!r.includes(ne))r=[ne,...r.slice(0,2)]}
   return r}
 function genPic(lv){const [w,e]=pick(WL(lv));
-  return{kind:'choice',html:`<div class="emo">${e}</div><div class="sub">Which word is this?</div>`,say:'Which word is this?',after:w,ans:w,
+  return{kind:'choice',html:`<div class="emo">${picFor(w,e)}</div><div class="sub">Which word is this?</div>`,say:'Which word is this?',after:w,ans:w,
     choices:shuffle([w,...variants(w)]).map(x=>({l:x,v:x})),hint:{k:'say',s:'Listen! Now find it.',w},label:`read “${w}”`}}
 function genBuild(lv){const [w,e]=pick(WL(lv)),abc='abcdefghijklmnoprstuw';
   const extra=shuffle([...abc].filter(c=>!w.includes(c))).slice(0,2);
-  return{kind:'build',word:w,tiles:shuffle([...w,...extra]),html:`<div class="emo">${e}</div><div class="lslots">${[...w].map((_,i)=>`<span class="ls" id="ls${i}"></span>`).join('')}</div>`,
+  return{kind:'build',word:w,tiles:shuffle([...w,...extra]),html:`<div class="emo">${picFor(w,e)}</div><div class="lslots">${[...w].map((_,i)=>`<span class="ls" id="ls${i}"></span>`).join('')}</div>`,
     say:w,auto:true,ans:w,hint:{k:'next'},label:`spell “${w}”`}}
 const T1=['I see {a} {w}.','Look at the {w}!','Here is {a} {w}.','I like the {w}.','Can you see the {w}?','The {w} is big.','The {w} is little.','Where is the {w}?'];
 const T2=['Mom and I see {a} {w} by the door.','We can play with the {w} today.','Look! The {w} is up on the hill.','My friend said, "I want {a} {w}."','Come and find the {w} with me.','The little {w} went down the road.','She saw {a} {w} at the park.','Did you get {a} {w} too?'];

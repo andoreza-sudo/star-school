@@ -227,7 +227,7 @@ Four bosses (Gloop, Robo-Bonk, Captain Inky, Zorp) drawn in the same style, one 
 
 ### 6.5 Object art (chunks P4-13 to P4-15)
 
-Pictures for counting, picture words and Spanish vocabulary. 64x64 grid, same flat two-tone style, under 900 bytes each, in `src/js/16-art-a.js`, `-b`, `-c` as `ART = {name: '...'}` with helper `art(name, size)`.
+Pictures for counting, picture words and Spanish vocabulary. 64x64 grid, same flat two-tone style, under 900 bytes each, in `src/js/16-art-a.js`, `-b`, `-c` as `Object.assign(ART, {name: '...'})` (ART, `picArt(name, size)` and `picFor(word, emoji)` live in `src/js/15-pics.js`; the names `art` and `artSVG` are already taken by the a/an helper and the Art Studio).
 
 | Set | Contents (40 each) |
 |-----|--------------------|

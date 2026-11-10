@@ -99,7 +99,7 @@ Files added by later chunks (names are fixed by the roadmap so everyone agrees):
 
 | File | Chunk | Contents |
 |------|-------|----------|
-| `15-icons.js`, `16-art-*.js`, `17-pets-svg.js` | P4-02, P4-13+, P4-05 | Icon sprite, object art, pet rig |
+| `15-icons.js`, `15-pics.js`, `16-art-*.js`, `17-pets-svg.js` | P4-02, pre-wave 5, P4-13+, P4-05 | Icon sprite; `ART`/`picArt`/`picFor`; object art (`Object.assign(ART, {...})`); pet rig |
 | `23-viz.js` | P1-10 | Math visuals |
 | `31-gen-math-early.js`, `33-gen-math-mid.js`, `35-gen-math-upper.js` | P2-01+ | New math generators |
 | `37-bank.js` | P1-09 | Content bank engine |
@@ -164,6 +164,7 @@ How updates reach tablets: the service worker fetches the page network-first, so
 | Names | New global names get a feature prefix or live in one object (`BT.*`, `VIZ.*`, `FLU.*`). Skill IDs never end in a digit. |
 | CSS | Use tokens (after P4-01). Classes are short and feature-prefixed. Animate only `transform` and `opacity`. No `filter`, no `backdrop-filter`. |
 | Assets | No external URLs of any kind. No image files; pictures are inline SVG. No new emoji outside `tools/emoji-allow.txt`. |
+| Content pictures | Any picture of a thing in a question (counting objects, picture words, vocabulary) goes through `picFor(word, emoji)` from `src/js/15-pics.js`, never a bare emoji in `q.html`. It returns the emoji today and the drawing once object art for that word exists (P4-13+). |
 | Sound | Synthesized through `SFX`. No audio files. |
 | Speech | `say()` may fail silently when a voice is missing. Never make speech the only way to get information, except listening tasks with a visible fallback. |
 | Kid safety | No links out, no input that leaves the device, word lists must pass the `BAD` filter, nothing scary or rude. |
