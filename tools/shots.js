@@ -125,6 +125,30 @@ const SCREENS = {
     },
   },
 
+  // ---- P4-13 object art ----
+  // Art sheet: every drawing in ART at 24, 48 and 96 px, on the page colour and on a coloured fill. Full-page shot.
+  art: {
+    full: true,
+    run: async p => {
+      await p.evaluate(() => {
+        const sizes = [24, 48, 96];
+        const row = n => sizes.map(s => picArt(n, s)).join('');
+        const cells = Object.keys(ART).map(n => `<div class="asc"><div class="asw">${row(n)}</div>` +
+          `<div class="asb">${row(n)}</div><div class="asn">${n}</div></div>`).join('');
+        view(`<style>.asg{display:grid;grid-template-columns:repeat(auto-fill,minmax(176px,1fr));gap:8px;padding:8px}
+          .asc{background:var(--surface);border-radius:var(--r-chip);overflow:hidden;box-shadow:var(--shadow)}
+          .asw,.asb{display:flex;align-items:center;gap:8px;padding:6px 8px}
+          .asb{background:var(--brand-tint)}
+          .asn{font-size:var(--fs-1);padding:2px 8px 4px;color:var(--ink-2)}
+          #app,html,body{height:auto;overflow:visible}</style>
+          <div class="top"><div class="title">Art (${Object.keys(ART).length})</div></div><div class="asg">${cells}</div>`);
+      });
+    },
+  },
+
+  // A picture-word question (skill 'pic') showing a drawing instead of an emoji.
+  'art-question': { run: async p => { await p.evaluate(() => { start('read', NODES.read.findIndex(n => n.sk == 'pic')); }); } },
+
   // ---- P1-09 content bank: demo skills are added by hand (they are not on a map) ----
   'bank-passage': { run: async p => { await bankDemo(p, 'passdemo'); } },
   'bank-passage-closed': { run: async p => { await bankDemo(p, 'passdemo'); await p.click('.bctx-h'); } },
