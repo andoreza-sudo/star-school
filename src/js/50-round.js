@@ -21,7 +21,7 @@ function testOut(p,wi){const w=PATHS[p].worlds[wi],o=document.createElement('div
 function makeQ(){if(G.pool)return G.pool.shift();
   if(G.path&&(G.done==3||G.done==7)){const N=NODES[G.path],old=N.filter((n,i)=>i<G.node&&n.sk!='boss'&&passed(G.path,i)&&!(n.sk==G.sk&&n.lv==G.lv));
     if(old.length){const n=pick(old),q=genQ(n.sk,n.lv);q.review=1;return q}}
-  const p=P(G.sk),s=SK[G.sk],ms=Object.values(p.miss).filter(m=>m.n>0&&m.q&&m.q.lv==G.lv);let q;
+  const p=P(G.sk),ms=Object.values(p.miss).filter(m=>m.n>0&&m.q&&m.q.lv==G.lv);let q;
   if(ms.length&&Math.random()<.3)q={...pick(ms).q};
   for(let t=0;t<10&&(!q||q.label===G.last);t++)q=genQ(G.sk,G.lv);
   G.last=q.label;return q}
@@ -35,10 +35,9 @@ function fit(){const qa=$('.qarea'),pr=$('#prompt');if(!qa||!pr)return;let k=1;p
 let rsT;addEventListener('resize',()=>{fit();clearTimeout(rsT);rsT=setTimeout(()=>{if($('#map'))drawMap(MAPP)},150)});
 function petSay(t){const b=$('#bub');if(!b)return;b.textContent=t;const far=G&&G.done/G.n>.5;b.style.left=far?'auto':'0';b.style.right=far?'0':'auto';b.classList.add('on');clearTimeout(b._t);b._t=setTimeout(()=>b.classList.remove('on'),1400)}
 function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;
-  let input='';
-  if(q.kind=='num')input=`<div class="pad">${[1,2,3,4,5,6,7,8,9].map(n=>`<button class="btn k" data-k="${n}">${n}</button>`).join('')}<button class="btn k del" data-k="del">⌫</button><button class="btn k" data-k="0">0</button><button class="btn k go" data-k="go">✓</button></div>`;
-  else if(q.kind=='choice')input=`<div class="choices ${q.cls||''}">${q.choices.map((c,i)=>`<button class="btn ch" data-i="${i}">${c.h?c.l:esc(c.l)}</button>`).join('')}</div>`;
-  else input=`<div class="tiles">${q.tiles.map((t,i)=>`<button class="btn lt" data-i="${i}">${t}</button>`).join('')}</div><button class="btn sm undo" id="undo">↩ Undo</button>`;
+  const K=KIND[q.kind];
+  if(!K)throw new Error('unknown question kind '+q.kind);
+  const input=K.render(q);
   const pos=`calc(${G.done/G.n} * (100% - 70px))`;
   view(`<div class="top"><button class="btn sm" id="quit">✕</button>
    ${G.boss?`<div class="bossbar"><span class="bossE" id="bossE">${G.boss.e}<div class="bubble" id="bub"></div></span><div class="hp"><div id="hpf" style="width:${G.hp/7*100}%"></div></div><b id="hpn">${'❤️'.repeat(G.hp)}</b></div>`
@@ -53,29 +52,20 @@ function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;
   $('#hb').onclick=()=>{const h=$('#hint');h.innerHTML=hintHTML(q);h.classList.remove('pop');void h.offsetWidth;h.classList.add('pop');SFX.pop(3);fit();h.scrollIntoView({block:'nearest',behavior:'smooth'})};
   $$('[data-say]').forEach(b=>b.onclick=()=>say(b.dataset.say,b));
   $$('.w').forEach(s=>s.onclick=()=>{say(s.dataset.w);SFX.pop(1)});
-  if(q.kind=='num')$$('.k').forEach(b=>b.onclick=()=>{if(G.lock)return;const k=b.dataset.k;
-    if(k=='del'){G.typed=G.typed.slice(0,-1);SFX.del()}else if(k=='go'){if(G.typed)check(G.typed,null)}else if(G.typed.length<4){G.typed+=k;SFX.key(+k)}
-    $('#slot').textContent=G.typed;bump('#slot')});
-  if(q.kind=='choice')$$('.ch').forEach(b=>b.onclick=()=>check(q.choices[b.dataset.i].v,b));
-  if(q.kind=='build'){
-    $$('.lt').forEach(b=>b.onclick=()=>{const i=+b.dataset.i;if(G.lock||G.built.includes(i)||G.built.length>=q.word.length)return;G.built.push(i);SFX.pop(G.built.length);drawBuilt();
-      if(G.built.length==q.word.length)check(G.built.map(j=>q.tiles[j]).join(''),null)});
-    $('#undo').onclick=()=>{if(!G.lock&&G.built.length){G.built.pop();SFX.del();drawBuilt()}}}
+  K.bind(q,G,check);
   if(q.review)petSay('Remember this?');
   if(G.retry){fb("Let's try this one again!",'warn');petSay('One more time!')}
   else if(G.done==0)petSay(G.mix?'Tricky mix!':"Let's go!");
   else if(G.done==G.n-1)petSay('Last one!');
   fit();if(document.fonts)document.fonts.ready.then(fit);
   if(q.auto==='must'||(q.auto&&S.voice))setTimeout(()=>say(q.say,null,q.lang=='es'?'es':null),400)}
-function drawBuilt(){const q=G.q;[...q.word].forEach((_,i)=>{$('#ls'+i).textContent=G.built[i]!=null?q.tiles[G.built[i]]:''});
-  $$('.lt').forEach(b=>{b.classList.toggle('used',G.built.includes(+b.dataset.i));b.classList.remove('glow')})}
 function addMiss(q){const p=P(q.sk),m=p.miss[q.label]||{n:0,tot:0,q};m.n++;m.tot++;m.q=q;p.miss[q.label]=m;
   const ks=Object.keys(p.miss);if(ks.length>40){ks.sort((a,b)=>p.miss[a].tot-p.miss[b].tot);delete p.miss[ks[0]]}}
 const PRAISE=['Great job!','You got it!','Awesome!','Super!','Nice!','Yes!','Way to go!','Brilliant!','Boom! 💥','Nailed it!'];
-function check(v,el){if(G.lock)return;const q=G.q,p=P(q.sk),ok=String(v)===String(q.ans);
+function check(v,el){if(G.lock)return;const q=G.q,K=KIND[q.kind],p=P(q.sk),ok=String(v)===String(q.ans);
   const src=el||$('#slot')||$('.lslots');
   if(ok){G.lock=true;if(el)el.classList.add('right');
-    if($('#slot')){if(q.kind=='choice')$('#slot').textContent=q.ans;$('#slot').classList.add('ok')}$$('.ls').forEach(s=>s.classList.add('ok'));
+    K.right(q);
     const first=G.tries==0&&!G.retry;
     if(!G.retry){G.done++;p.t++;if(G.tries==0){G.score++;p.c++}}
     if(G.tries==0&&p.miss[q.label]){if(p.miss[q.label].n>0&&!G.retry)G.fixed=(G.fixed||0)+1;p.miss[q.label].n=Math.max(0,p.miss[q.label].n-1)}
@@ -97,16 +87,13 @@ function check(v,el){if(G.lock)return;const q=G.q,p=P(q.sk),ok=String(v)===Strin
   SFX.wrong();anim($('#runner'),'sad');if(G.boss){anim($('#bossE'),'jump');setTimeout(SFX.giggle,250)}const pr=$('#prompt');pr.classList.remove('shake');void pr.offsetWidth;pr.classList.add('shake');
   if(el){el.classList.add('wrong');el.disabled=true}
   if(G.tries==1){addMiss(q);fb('Try again!','warn');petSay(G.boss?pick(['Ha ha! Missed me!','Hee hee!','Try again!']):pick(PET_OOPS));if(Math.random()<.5)setTimeout(()=>playClip('oops'),300);$('#hint').innerHTML=hintHTML(q);fit();
-    if(q.kind=='num'){G.typed='';if($('#slot'))$('#slot').textContent=''}
-    if(q.kind=='build'){let k=0;while(k<G.built.length&&q.tiles[G.built[k]]==q.word[k])k++;G.lock=true;setTimeout(()=>{if(G.dead)return;G.lock=false;G.built=G.built.slice(0,k);drawBuilt();$('#hint').innerHTML=hintHTML(q);fit()},500)}
+    K.retry(q,G,()=>{$('#hint').innerHTML=hintHTML(q);fit()});
     save();return}
   G.lock=true;
-  if(q.kind=='num'){const s=$('#slot');s.textContent=q.ans;s.className='slot rev'}
-  if(q.kind=='choice'){$$('.ch').forEach(b=>{if(q.choices[b.dataset.i].v==q.ans)b.classList.add('right')});if($('#slot')){$('#slot').textContent=q.ans;$('#slot').className='slot rev'}}
-  if(q.kind=='build')[...q.word].forEach((c,i)=>{$('#ls'+i).textContent=c});
+  K.reveal(q);
   if(!G.retry){G.done++;p.t++;if(!G.boss)G.missed.push(q)}
   const run=$('#runner');if(run)run.style.left=`calc(${G.done/G.n} * (100% - 70px))`;
-  fb("Here's the answer",'warn');petSay("We'll get it next time!");say(q.after||(q.kind=='num'?`The answer is ${q.ans}`:q.ans),null,q.afterLang);save();setTimeout(next,2600)}
+  fb("Here's the answer",'warn');petSay("We'll get it next time!");say(q.after||K.spoken(q),null,q.afterLang);save();setTimeout(next,2600)}
 
 function bossHit(){const b=$('#bossE'),f=$('#hpf'),h=$('#hpn');if(f)f.style.width=G.hp/7*100+'%';if(h)h.textContent='❤️'.repeat(G.hp);
   if(b){b.classList.remove('hit');void b.offsetWidth;b.classList.add('hit');const r=b.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,['💥','⚡','✨'])}SFX.hit()}

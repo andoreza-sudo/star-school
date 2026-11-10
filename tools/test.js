@@ -422,6 +422,37 @@ run('icons: first 40 present, drawing rules, every ico() name exists',()=>{
   return{problems:p,note:Object.keys(ic.ICONS).length+' icons, '+uses+' ico() uses'};
 });
 
+// ---- 12: question-kind registry (P1-02) ----
+run('kinds: every question passes KIND[q.kind].validate; unknown kind fails',()=>{
+  const out=eval(js+`
+  const out={n:0,bad:[]};
+  const NEED=['render','bind','right','retry','reveal','spoken','validate'];
+  for(const k in KIND)for(const f of NEED)if(typeof KIND[k][f]!=='function')out.bad.push('KIND.'+k+'.'+f+' missing');
+  // every skill and level, 300 seeds each, plus Speed Race math questions (made inline, not by a skill)
+  const qs=[];
+  for(const id in SK)for(let lv=1;lv<=SK[id].max;lv++)for(let s=1;s<=300;s++)qs.push([id+' L'+lv,genQ(id,lv,s)]);
+  for(let i=0;i<300;i++)qs.push(['race math',raceQ('math')]);
+  for(const [w,q] of qs){
+    out.n++;
+    if(!KIND[q.kind]){out.bad.push(w+': unknown kind '+q.kind);continue}
+    for(const p of KIND[q.kind].validate(q))out.bad.push(w+': '+p);
+    try{KIND[q.kind].render(q)}catch(e){out.bad.push(w+': render threw '+e.message)}
+  }
+  // the validators must catch broken questions, and an unknown kind must fail
+  const must=(name,q)=>{if(!kindProblems(q).length)out.bad.push('validator missed: '+name)};
+  must('unknown kind',{kind:'dial',html:'',ans:'1'});
+  must('no kind',{html:'',ans:'1'});
+  must('prototype name as kind',{kind:'constructor',ans:'1'});
+  must('num ans not a number',{kind:'num',html:SLOT,ans:'x'});
+  must('num without slot',{kind:'num',html:'<div>1 + 1</div>',ans:'2'});
+  must('choice ans missing',{kind:'choice',html:'',ans:'c',choices:[{v:'a',l:'a'},{v:'b',l:'b'}]});
+  must('choice duplicates',{kind:'choice',html:'',ans:'a',choices:[{v:'a',l:'a'},{v:'a',l:'a'}]});
+  must('build tiles cannot spell',{kind:'build',word:'cat',ans:'cat',tiles:['c','a','x'],html:'<span id="ls0"></span><span id="ls1"></span><span id="ls2"></span>'});
+  must('build no slots',{kind:'build',word:'cat',ans:'cat',tiles:['c','a','t'],html:''});
+  out;`);
+  return{problems:uniq(out.bad),note:out.n+' questions'};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){
