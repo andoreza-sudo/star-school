@@ -37,6 +37,7 @@ function fit(){const qa=$('.qarea'),pr=$('#prompt');if(!qa||!pr)return;let k=1;p
 let rsT;addEventListener('resize',()=>{fit();clearTimeout(rsT);rsT=setTimeout(()=>{if($('#map'))drawMap(MAPP)},150)});
 function petSay(t){const b=$('#bub');if(!b)return;b.textContent=t;const far=G&&G.done/G.n>.5;b.style.left=far?'auto':'0';b.style.right=far?'0':'auto';b.classList.add('on');clearTimeout(b._t);b._t=setTimeout(()=>b.classList.remove('on'),1400)}
 function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;
+  actQStart(q.sk); // P5-05
   const K=KIND[q.kind];
   if(!K)throw new Error('unknown question kind '+q.kind);
   const input=K.render(q);
@@ -68,6 +69,7 @@ function check(v,el){if(G.lock)return;const q=G.q,K=KIND[q.kind],p=P(q.sk),ok=K.
   const src=el||$('#slot')||$('.lslots')||$('.inp');
   if(ok){G.lock=true;if(el)el.classList.add('right');
     K.right(q);
+    actQEnd(G.tries==0&&!G.retry,G.retry); // P5-05
     const first=G.tries==0&&!G.retry;
     if(!G.retry){G.done++;p.t++;if(G.tries==0){G.score++;p.c++}}
     if(G.tries==0&&p.miss[q.label]){if(p.miss[q.label].n>0&&!G.retry)G.fixed=(G.fixed||0)+1;p.miss[q.label].n=Math.max(0,p.miss[q.label].n-1)}
@@ -112,6 +114,7 @@ function finish(){
     if(g.boss&&g.won&&!S.owned[nd.prize]){prize=nd.prize;S.owned[prize]=1;S.wear.hat=prize}}
   if(newPass){const wk=nd.wid;if(!S.wdone[wk]&&worldDone(p,nd.wi)){S.wdone[wk]=1;wDone=true}}
   const prizes=[award()];if(sc==n)prizes.push(award());
+  actRound(); // P5-05
   d.r++;const stk=streakTick();let mission=false;if(d.r>=3&&!d.done){d.done=true;mission=true;prizes.push(award())}
   if(wDone)prizes.push(award());
   const bonus=(mission?5:0),coins=sc+bonus+(wDone?20:0),prevSt=g.test||g.mix?0:(g.prevSt||0),PT=ptCalc(g,sc,n,stars,prevSt,newPass,testOk,nd),ptSec=PT.sec;ptEarn(ptSec);

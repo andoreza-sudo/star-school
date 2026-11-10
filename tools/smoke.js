@@ -445,6 +445,30 @@ async function main() {
       await ga.ctx.close();
     }
 
+    // P5-05 activity log: a real round through the UI writes today's entry (rounds, questions, first-try right, seconds per subject)
+    // and it is saved to localStorage; a hidden-tab period inside a question adds no seconds
+    {
+      const aa = await openApp(browser, { fixture: 'midway' });
+      const ap = aa.page;
+      await ap.waitForSelector('.game[data-p="math"]');
+      await ap.evaluate(() => { S.log = []; });
+      await ap.click('.game[data-p="math"]');
+      await ap.waitForSelector('.node.cur');
+      await ap.click('.node.cur');
+      await ap.waitForSelector('#prompt');
+      const nA = await ap.evaluate(() => G.n);
+      await playRound(ap, 'activity round', nA);
+      const lg = await ap.evaluate(() => ({ e: ACT.entry(today()), saved: JSON.parse(localStorage.getItem(KEY)).log }));
+      const e = lg.e;
+      if (!e || e.rounds !== 1 || e.q !== nA || e.ok !== nA || !(e.sec >= nA) || e.sec > nA * 60 || !e.by.math || e.by.math !== e.sec)
+        fail('activity log after one round: ' + JSON.stringify(e));
+      else if (!lg.saved || !lg.saved.length || lg.saved[0].rounds !== 1) fail('activity log not saved: ' + JSON.stringify(lg.saved));
+      else step(`activity log: one round wrote 1 round, ${e.q} questions, ${e.sec} s of math, saved to the device`);
+      network.push(...aa.network);
+      for (const x of aa.errors) fail(x);
+      await aa.ctx.close();
+    }
+
     for (const e of errors) fail(e);
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');

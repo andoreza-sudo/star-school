@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** wave 4: P1-07 (Opus), P1-08 (Opus), P5-05 in progress; then P5-02, P5-03, P5-06. Wave 5 includes P4-13; all content pictures use `picFor`.
+**Next up:** wave 4: P1-07 (Opus), P1-08 (Opus) in progress; then P5-02, P5-03, P5-06. Wave 5 includes P4-13; all content pictures use `picFor`.
 
-**Current version:** v50
+**Current version:** v51
 
 ## Chunk status
 
@@ -30,6 +30,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P1-11 v48
 - P1-06 v49
 - PRE-W5 picFor v50
+- P5-05 v51
 
 ## Handoff notes
 
@@ -37,6 +38,8 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 
 ## Ideas and issues
 
+
+- (P5-05) Quitting a round mid-question adds no time for that question (only answered questions count), and games (Balloons, Race, Hill Climb, Art) are not logged; P5-06 can say "learning time". Sprint seconds do not add to `q`/`ok`, so Sprint does not change accuracy.
 Things noticed while working that are outside the current chunk. One line each, with the chunk that noticed it.
 
 - (P1-03) The roadmap asks for a hidden dev skill `zz_demo` in `SK`. Not done on purpose: it would ship demo code in the app. Instead `tools/kinds-samples.js` holds 11 sample questions (all `sk:'zz_demo'`), and test.js, shots.js and smoke.js run them through the real engine (`G=newG({sk:'zz_demo',pool:[...]}); next()`). A later chunk that needs a real in-app demo can promote them.
@@ -107,6 +110,16 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P1-05) Map draw with 16 fake worlds (156 stops) at 6x CPU throttle: median about 29 ms (limit 50), single runs up to about 49 ms. The strip recomputes `worldOpen`/`worldFinished` per chip and `unlocked` scans the world; a memo per draw is the next step if P4-09 adds weight.
 
 ## Log
+
+### P5-05 Activity log, time on task (v51, 2026-11-10, Claude)
+- What changed: new `src/js/53-activity.js` (`ACT`). `S.log = [{d, sec, rounds, q, ok, by:{area:sec}}]`, oldest first, 60 days. A question's time runs from when it appears to when it is finally answered right, capped at 60 s, and leaves out time while the tab is hidden (own visibilitychange listener); a question never answered adds nothing. Re-asked misses add time but not a question. A finished round adds 1 round; Fact Sprint adds its active seconds to math. Subject = the skill's `area` (math, read, es; later bt, disc).
+- API for P5-06 (documented in the file header): `ACT.get()`, `ACT.entry(key)`, `ACT.sum(endKey, days)` -> `{sec, rounds, q, ok, by, active}` (this week = `ACT.sum(today(),7)`, last week = `ACT.sum(ACT.shift(today(),-7),7)`; accuracy = ok/q), `ACT.shift(key,n)`, `ACT.total()`. All safe on a missing or damaged `S.log`.
+- Hooks (one line each): 50-round.js `renderQ` start `actQStart(q.sk);`, after `K.right(q);` `actQEnd(G.tries==0&&!G.retry,G.retry);`, in `finish()` after the prizes line `actRound();`; 57-fluency.js `finish` after `FLU.record(...)` `actFlu(sec);`. Hooks never throw into the game.
+- Saved data: additive only, no migration (read with defaults, rule 6). 60 heavy days (3 subjects, 150 questions, about 70 min a day) stays under 6 KB (tested).
+- Tests: test.js check 23 (idle cap, hidden time, start-hidden, re-asked miss, rounds, Fact Sprint, day boundary, 60-day trim, future days, size, missing/damaged/duplicate data, hooks). smoke.js: new step `// P5-05` plays a real round and checks the saved entry.
+- Files: src/js/53-activity.js, 50-round.js, 57-fluency.js, tools/test.js, smoke.js, build.py (VER), built output. No UI, so no screenshots.
+- Checklist 7.1: only chunk files changed; VER bumped (provisional v51, renumbered at merge); build, test.js, smoke.js (network blocked) and sizes via check.sh pass; no new emoji or colours; no saved field of the existing save changes (midway fixture unaffected, `S.log` only added).
+- Merge: built on a parallel branch, renumbered v52 -> v51 at merge.
 
 ### PRE-W5: content pictures go through picFor (v50, 2026-11-10, Claude)
 - Why: wave 5 adds lots of counting and vocabulary pictures. Object art (P4-13+) replaces emoji later; without a single entry point every new generator would need editing again.

@@ -172,6 +172,7 @@ function fluPlay(set, mode) {
     stopFlu();
     S.flu = S.flu || {};
     const r = FLU.record(S.flu, key, today(), sec, right, !timed);
+    actFlu(sec); // P5-05
     const rec = r.rec && (!timed || right > 0); // no fireworks for a first 60 s run of zero
     const earned = FLU.earn(S.flu, set, today(), rec, right, mode);
     if (earned) ptEarn(earned);

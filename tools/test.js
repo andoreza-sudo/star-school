@@ -978,6 +978,77 @@ run('pictures: picFor fallback and art swap; picture generators use picFor',()=>
   return{problems:out};
 });
 
+run('activity log: idle and hidden time, 60 s cap, day boundary, 60-day trim, size, missing and damaged data',()=>{
+  const p=[];
+  const bad=m=>p.push(m);
+  eval(js+`
+  const I=STRK.idx,K=STRK.key,D0='2026-3-1';
+  const sk=Object.keys(SK).find(k=>SK[k].area=='read'),skm=Object.keys(SK).find(k=>SK[k].area=='math');
+  // a question answered after 10 s counts 10 s, on the right subject
+  S.log=undefined;
+  ACT.qStart(skm,1000,false);ACT.qEnd(true,false,11000,D0);
+  let e=ACT.entry(D0);
+  if(!e||e.sec!==10||e.q!==1||e.ok!==1||e.by.math!==10)bad('plain question '+JSON.stringify(e));
+  // idle: a question left on screen for 20 minutes counts at most 60 s
+  ACT.qStart(sk,0,false);ACT.qEnd(false,false,20*60*1000,D0);
+  e=ACT.entry(D0);
+  if(e.by.read!==60||e.sec!==70||e.q!==2||e.ok!==1)bad('idle cap '+JSON.stringify(e));
+  // hidden: 5 s visible, 3 minutes hidden, 4 s visible = 9 s
+  ACT.qStart(skm,0,false);ACT.vis(true,5000);ACT.vis(false,5000+180000);ACT.qEnd(true,false,189000,D0);
+  if(ACT.entry(D0).by.math!==19)bad('hidden time counted '+ACT.entry(D0).by.math);
+  // a question that starts while hidden, and a double hide/show, never go negative or double count
+  ACT.qStart(skm,0,true);ACT.vis(true,1000);ACT.vis(false,50000);ACT.vis(false,50500);ACT.qEnd(true,false,53000,D0);
+  if(ACT.entry(D0).by.math!==19+3)bad('start hidden '+ACT.entry(D0).by.math);
+  // all-hidden question still counts the 1 s minimum for the answer; no question on screen: qEnd and vis do nothing
+  ACT.cur=null;if(ACT.qEnd(true,false,9e9,D0)!==null)bad('qEnd without a question');ACT.vis(true,1);
+  // a re-asked miss adds time but not a question; wrong-first adds q without ok
+  const before=ACT.entry(D0).q;ACT.qStart(skm,0,false);ACT.qEnd(false,true,4000,D0);
+  if(ACT.entry(D0).q!==before)bad('re-asked miss counted as a question');
+  // rounds and Fact Sprint
+  ACT.round(D0);ACT.round(D0);ACT.flu(60,D0);
+  e=ACT.entry(D0);
+  if(e.rounds!==2||e.by.math!==19+3+4+60)bad('rounds or sprint '+JSON.stringify(e));
+  if(e.sec!==Object.values(e.by).reduce((a,b)=>a+b,0))bad('sec must equal the sum of by');
+  // day boundary: the same call on the next day starts a new entry; sums split by day
+  ACT.qStart(skm,0,false);ACT.qEnd(true,false,7000,'2026-3-2');
+  if(ACT.get().length!==2||ACT.entry('2026-3-2').sec!==7||ACT.entry('2026-3-2').rounds!==0)bad('day boundary');
+  const w=ACT.sum('2026-3-2',2);if(w.active!==2||w.sec!==ACT.entry(D0).sec+7)bad('sum over 2 days '+JSON.stringify(w));
+  if(ACT.sum('2026-3-2',1).sec!==7||ACT.sum('2026-3-8',8).sec!==ACT.total().sec||ACT.sum('2026-3-8',7).sec!==7)bad('sum windows');
+  if(ACT.shift('2026-3-1',-1)!=='2026-2-28'||ACT.shift('2026-12-31',1)!=='2027-1-1'||ACT.shift('x',3)!=='x')bad('shift');
+  // 60-day trim: 100 days of data, then a write today keeps exactly the last 60 days
+  S.log=[];
+  const T=I('2026-6-30');
+  for(let i=99;i>=0;i--)ACT.add(K(T-i),{sec:30,area:'math',q:3,ok:2,rounds:1});
+  if(ACT.get().length!==60||ACT.get()[0].d!==K(T-59)||ACT.get()[59].d!==K(T))bad('trim to 60 days: '+ACT.get().length+' '+ACT.get()[0].d);
+  // size: 60 heavy days (about 70 min a day over 3 subjects, 150 questions) stays under 6 KB of saved JSON
+  S.log=[];
+  for(let i=59;i>=0;i--)ACT.add(K(T-i),{sec:1,area:'math',rounds:12,q:150,ok:120}),ACT.add(K(T-i),{sec:1400+i,area:'math'}),
+    ACT.add(K(T-i),{sec:1500+i,area:'read'}),ACT.add(K(T-i),{sec:1100+i,area:'es'});
+  const bytes=JSON.stringify(S.log).length;
+  if(bytes>=6144)bad('log too big: '+bytes+' bytes');
+  // clock set back: days far in the future are dropped, not kept
+  S.log=[{d:'2030-1-1',sec:5,by:{math:5}}];ACT.add('2026-3-1',{sec:2,area:'math'});
+  if(ACT.get().some(x=>x.d==='2030-1-1'))bad('future day kept');
+  // missing and damaged S.log: defaults, no throw, hooks safe
+  for(const v of [undefined,null,5,'x',{},[null,5,'a',{d:'bad'},{d:'2026-3-1'},{d:'2026-3-1',sec:'q',by:'x'},{d:'2026-3-1',by:{math:'z',Es:4,read:-3,es:2.6}}]]){
+    S.log=v;
+    let r;try{r=ACT.sum('2026-3-1',7);ACT.get();ACT.total()}catch(x){bad('throws on '+JSON.stringify(v)+': '+x.message)}
+    if(!r||!(r.sec>=0))bad('sum on '+JSON.stringify(v));
+  }
+  if(ACT.get().length&&ACT.get().some(x=>!(x.sec>=0)||typeof x.by!='object'))bad('cleaned entries');
+  S.log=[{d:'2026-3-1',by:{es:2.6,Es:4}},{d:'2026-3-1',by:{es:1}}];
+  if(ACT.get().length!==1||ACT.get()[0].by.es!==4||ACT.get()[0].sec!==4)bad('duplicate days merge '+JSON.stringify(ACT.get()));
+  S.log=undefined;
+  actQStart('nope');actQEnd(true,false);actRound();actFlu(NaN); // hooks with nothing set up
+  if(!(ACT.total().rounds===1))bad('hook round');
+  // the real hooks write to today's entry and the visibility rule uses the real clock helpers
+  S.log=undefined;
+  actQStart(skm);actQEnd(true,false);
+  const te=ACT.entry(today());if(!te||te.q!==1||te.sec<1||te.sec>2)bad('hook question '+JSON.stringify(te));
+  `);
+  return{problems:p};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){
