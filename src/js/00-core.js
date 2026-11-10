@@ -8,7 +8,7 @@ const pick=a=>a[Math.floor(rnd()*a.length)];
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KEY='starschool-v2';
-const LATEST=4; // newest save schema version = MIGRATIONS.length (ROADMAP section 9)
+const LATEST=5; // newest save schema version = MIGRATIONS.length (ROADMAP section 9)
 let S,SAVE_RAW=null,SAVE_CORRUPT=false,SAVE_FAILED=false;
 /* Read the save string into S. Corrupt or non-object JSON is kept in KEY-corrupt; KEY itself is untouched until the first save(). */
 function loadSave(raw){
@@ -81,6 +81,23 @@ const MIGRATIONS=[null,
       }
       rp.n=n;
     }
+  }
+  ,
+  /* 4: P1-06. Infer S.grade for a save that has none: the highest grade tag among the graded worlds (math, reading) where the child
+     has passed a stop or beaten the boss; K (0) when there is no progress. Uses the frozen v42 world table and the grade tags
+     shipped in v46, never PATHS, so worlds added later cannot change what an old save means. A grade already set is kept.
+     Only adds S.grade (more worlds open, never fewer); nothing is removed or re-locked. */
+  ()=>{
+    if([-1,0,1,2,3,4,5,6].includes(S.grade))return;
+    const G46={m_meadow:0,m_candy:1,m_reef:1,m_space:2,r_meadow:0,r_candy:1,r_reef:1,r_space:2};
+    let g=0;
+    for(const p of['math','read']){
+      const m=(S.maps&&S.maps[p])||{};
+      (MAP_V42[p]||[]).forEach(([id,stops])=>{
+        if(m['boss_'+id]>0||stops.split(' ').some(k=>m[k]>0))g=Math.max(g,G46[id]||0);
+      });
+    }
+    S.grade=g;
   }
 ];
 /* Run once at load, from 42-paths.js (needs NODES, which no code before it reads). Backs up the old string first. */

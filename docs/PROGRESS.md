@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** wave 3: P1-06 in progress (last one). Then wave 4: P1-07 (Opus), P1-08 (Opus), P5-02, P5-03, P5-05, P5-06.
+**Next up:** wave 4: P1-07 (Opus), P1-08 (Opus), P5-02, P5-03, P5-05, P5-06.
 
-**Current version:** v48
+**Current version:** v49
 
 ## Chunk status
 
@@ -28,6 +28,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P1-05 v46
 - P1-03 v47
 - P1-11 v48
+- P1-06 v49
 
 ## Handoff notes
 
@@ -91,6 +92,10 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P1-09) Passage rounds skip the "review an older stop at question 4 and 8" step of `makeQ` (the round is a fixed list). Boss, mix and test-out rounds use the skill's `gen`, which asks a single passage question with its panel.
 - (P1-09) `tools/node_modules` is not in a fresh worktree; `check.sh` runs `npm install` itself, which needs the network.
 
+- (P1-06) A setup that is skipped quickly keeps K (the default, highlighted) as the grade; there is no "not sure" button. P1-07 offers "Find my level" after setup, which is the answer for unsure parents.
+- (P1-06) `gradeCfg().choices` (3 answer buttons for Pre-K) and `.multi` (multi-step items for 5th-6th) are defined but no generator reads them yet; only `n` (round length) and `auto` (speech) are used by the round engine. Boss, test-out and mix rounds stay 10 questions at every grade.
+- (P1-06) Pre-K and K now read every prompt aloud even when "Read questions out loud" is off (ROADMAP 3.1 "forced"); the Grown-ups toggle still turns off the other spoken praise. A grown-up who wants a silent Pre-K would have to mute the tablet.
+- (P1-06) Migration 4 infers the grade only from math and reading worlds (K, 1st or 2nd today). A child with progress only in Spanish gets K. Because K..2nd worlds open by grade, a midway-style save now has Candy Canyon and Coral Reef open at once (more open, never fewer).
 - (P1-05) CURRICULUM 2.3 says the Spanish worlds have `g: -1` "so only order gates it", but the ROADMAP 3.2 rule (a world with `g <= S.grade` is open) would open every Spanish world for any child. Resolved with a path flag: `PATHS.es.byLevel = true` turns the grade rule off for that path (worlds open by order, progress, skip). The Discover path (P2-36) must pick one: graded (like math) or `byLevel`.
 - (P1-05) Migrations 1 and 2 now read old index keys through the frozen table `MAP_V42` (00-core.js) instead of the live `NODES`. Output is identical today (test.js checks `MAP_V42` against today's maps), but with the old code, inserting Tiny Town (P2-01) would have silently moved every legacy index-keyed save's stars to the wrong stops. ROADMAP 9 rule 3 says migrations are never edited; this edit is behaviour-preserving and the only safe fix.
 - (P1-05) Boss character and boss prize still come from the world index (`BOSSES[wi%4]`, `BPRIZE[(pi*4+wi)%12]` in 42-paths.js), so inserting a world changes which boss and prize a world shows (cosmetic; owned prizes stay owned and the stars are keyed by world id). P2-01 or P4-09 could pin a boss per world id.
@@ -100,6 +105,14 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P1-05) Map draw with 16 fake worlds (156 stops) at 6x CPU throttle: median about 29 ms (limit 50), single runs up to about 49 ms. The strip recomputes `worldOpen`/`worldFinished` per chip and `unlocked` scans the world; a memo per draw is the next step if P4-09 adds weight.
 
 ## Log
+
+### P1-06 Grade pick at setup and in Grown-ups (v49, 2026-11-10, Claude)
+- What changed: setup has a "What grade?" card with 8 big buttons (Pre-K, K, 1st..6th, 4 x 2, 48 px, K preselected, tapping speaks the grade) shared with a Grown-ups "Grade" row (`gradePickHTML` / `gradePickBind` in 46-home.js). Changing the grade only calls `setGrade`: it moves where the maps start and which worlds open by grade, and never removes progress or re-locks a passed stop. `gradeCfg(g)` (42-paths.js) returns `{n, choices, auto, multi}`: round length 6 / 8 / 10 (Pre-K / K / 1st and up) used by `start()` for normal stop rounds, and `auto:'all'` for Pre-K and K, which reads every prompt that has a spoken line aloud. The "Get N right to open the next stop" message now follows the round length.
+- Saved data: migration 4 (LATEST 5, 00-core.js) sets `S.grade` for saves that have none: the highest grade tag of a math or reading world with a passed stop or beaten boss (frozen v42 table plus the v46 grade tags), K if none; an existing grade is kept; idempotent. Fixtures: midway -> 1st, maxed -> 2nd, legacy saves -> K. A brand-new save has no grade until setup saves one.
+- Tests: test.js check 22 "grade" (migration on every fixture, existing grade kept, v4 -> v5, gradeCfg values, a fresh save at each of the 8 grades opens the right world on every path, setGrade at every grade up and down on midway/maxed/legacy keeps maps, wdone, stars, coins, skip and never locks a passed stop). Check 17 now lets midway open more stops than v42 (inferred grade 1), never fewer. smoke.js step 11 (setup shows 8 buttons, Pre-K tap saved, 6-question round, Grown-ups to 3rd, last world opens, 10-question round); step 1 unchanged because K is preselected, so its three rounds are now 8 questions: `playRound` reads the length from `G.n` instead of expecting 10. shots.js `setup-grade`, `grown-grade`.
+- Files: src/js/00-core.js, 42-paths.js, 46-home.js, 50-round.js, 80-grown.js, src/css/30-learn.css (tokens only), tools/test.js, smoke.js, shots.js, build.py (VER), built output.
+- Checklist 7.1: only chunk files changed; VER bumped; build, test.js, smoke.js and sizes via check.sh; setup and Grown-ups screenshots looked at (380x780); midway fixture keeps its stars, coins, pet and map progress (test); no new emoji or raw hex.
+- Merge: built on a parallel branch, renumbered v47 -> v49 at merge.
 
 ### P1-11 Math visuals library, part 2 (v48, 2026-11-10, Claude)
 - What changed: added to the VIZ block in `src/js/23-viz.js` (same style, helpers and tap contract; all documented in the file header): `ruler(len, unit, obj, o)`, `barGraph(data, scale, o)`, `pictograph(data, o)`, `linePlot(values, o)`, `shape(name, o)` (+ `VIZ.shapeNames`: circle oval square rectangle triangle rhombus trapezoid pentagon hexagon octagon, solids cube prism cylinder cone sphere; rot/stretch/dots), `areaGrid(w, h, o)`, `rectSides(w, h, labels, o)`, `angle(deg, o)` (with protractor), `coordGrid(o)` (1 or 4 quadrants, points, join, tap points), `balance(left, right, o)`, `coinSVG(v, o)` (coins and bills, one or a list), `tally(n)`, `tableInOut(rows, o)`; and the missing number-line hops, `numLine({hops})`. Tap targets: `barGraph({tap})`, `linePlot({tapValues})`, `coordGrid({tapPts})`, all at least 48 units and at most about 330 wide.

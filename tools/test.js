@@ -813,8 +813,8 @@ run('worlds: ids, grade tags, migration 3 keeps every star, gating, inserted wor
         const was=oldSt(pre.maps,p),now=NODES[p].map((n,i)=>getSt(p,i));
         if(JSON.stringify(was)!==JSON.stringify(now))bad(name+' '+p+': stars '+JSON.stringify(was)+' -> '+JSON.stringify(now));
         const wo=oldOpen(was,S.unlockAll),no=NODES[p].map((n,i)=>unlocked(p,i));
-        // midway, maxed and fresh look exactly the same. Legacy saves (stops skipped by the old single map) may open more, never less.
-        if(name.startsWith('legacy')?wo.some((o,i)=>o&&!no[i]):JSON.stringify(wo)!==JSON.stringify(no))bad(name+' '+p+': locks changed');
+        // maxed and fresh look exactly the same. Legacy saves (stops skipped by the old single map) and midway (P1-06 infers grade 1, which opens the grade-1 worlds) may open more, never less.
+        if(name.startsWith('legacy')||name=='midway'?wo.some((o,i)=>o&&!no[i]):JSON.stringify(wo)!==JSON.stringify(no))bad(name+' '+p+': locks changed');
         if(oldCur(was)!==curNode(p))bad(name+' '+p+': current stop '+oldCur(was)+' -> '+curNode(p));
       }
     }
@@ -885,6 +885,74 @@ run('worlds: ids, grade tags, migration 3 keeps every star, gating, inserted wor
   };
   const r=eval(js+';('+body.toString()+')()');
   return{problems:werrs,note:r.paths+' paths, '+r.checked+' stop checks with an inserted world'};
+});
+
+run('grade: migration 4 infers a grade, setGrade never removes or re-locks anything, gradeCfg, start world per grade',()=>{
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const gerrs=[],bad=m=>gerrs.push(m);
+  const body=function(){
+    const store={};
+    global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+    const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
+    const clone=o=>JSON.parse(JSON.stringify(o));
+    if(LATEST!==5||MIGRATIONS.length!==5)bad('LATEST should be 5, MIGRATIONS '+MIGRATIONS.length);
+    // 1. migration 4: inferred grade per fixture (highest graded world with progress), idempotent, nothing else changes
+    const want={fresh:0,midway:1,maxed:2,'legacy-single-map':0,'legacy-index-maps':0};
+    for(const name of Object.keys(want)){
+      const raw=fx(name),obj=JSON.parse(raw),empty=!Object.keys(obj).length;
+      load(empty?null:raw);
+      const g=S.grade;
+      if(empty){ // a brand-new save has no grade until setup picks one; gradeOf() is K
+        if(g!==undefined&&g!==0)bad(name+': new save grade '+g);
+      }else if(g!==want[name])bad(name+': inferred grade '+g+', expected '+want[name]);
+      if(S.v!==5)bad(name+': S.v '+S.v);
+      MIGRATIONS[4]();const once=JSON.stringify(S);migrate();MIGRATIONS[4]();if(JSON.stringify(S)!==once)bad(name+': migration 4 not idempotent');
+    }
+    // an existing choice is kept, not overwritten
+    {const o=JSON.parse(fx('maxed'));o.v=4;o.grade=-1;load(JSON.stringify(o));if(S.grade!==-1)bad('migration 4 overwrote S.grade');}
+    // a grade-less save from v46 (LATEST 4) gets one through the normal path and keeps its stars
+    {const o=JSON.parse(fx('midway'));o.v=4;load(JSON.stringify(o));if(S.v!==5||S.grade!==1||S.stars!==o.stars)bad('v4 save not migrated to 5');}
+    // 2. gradeCfg values (ROADMAP 3.1)
+    const cfg={'-1':[6,3,'all'],0:[8,4,'all'],1:[10,4,'auto'],2:[10,4,'tap'],3:[10,4,'tap'],4:[10,4,'tap'],5:[10,4,'tap'],6:[10,4,'tap']};
+    for(const g of GRADES){
+      const c=gradeCfg(g),w=cfg[g];
+      if(c.n!==w[0]||c.choices!==w[1]||c.auto!==w[2]||c.multi!==(g>=5)||c.g!==g)bad('gradeCfg('+g+') '+JSON.stringify(c));
+      if(typeof gradeSpoken(g)!=='string'||!gradeSpoken(g))bad('no spoken label for '+g);
+    }
+    S.grade=3;if(gradeCfg().n!==10)bad('gradeCfg() should use the child grade');
+    // 3. a fresh save at each of the 8 grades opens the right world on every graded path
+    for(const g of GRADES){
+      load(null);
+      if(!setGrade(g)||S.grade!==g||JSON.parse(store[KEY]).grade!==g)bad('setGrade('+g+') not stored');
+      for(const p in PATHS){
+        const ws=PATHS[p].worlds,k=PATHS[p].byLevel?0:(ws.findIndex(w=>w.g>=g)<0?ws.length-1:ws.findIndex(w=>w.g>=g));
+        if(startWorld(p)!==k||curWorld(p)!==k)bad('fresh grade '+g+' '+p+': start world '+startWorld(p)+', map opens on '+curWorld(p)+', expected '+k);
+        if(!worldOpen(p,k))bad('fresh grade '+g+' '+p+': start world not open');
+        ws.forEach((w,wi)=>{if(!PATHS[p].byLevel&&w.g<=g&&!worldOpen(p,wi))bad('grade '+g+' '+p+': world '+wi+' at or below grade is locked')});
+      }
+    }
+    if(setGrade(7)||setGrade('2')||setGrade(null))bad('setGrade accepted a bad value');
+    // 4. changing the grade (every value, up and down) keeps every star and never locks a passed stop
+    let checks=0;
+    for(const name of ['midway','maxed','legacy-single-map']){
+      load(fx(name));
+      const maps0=clone(S.maps),wd0=clone(S.wdone),stars0=S.stars,coins0=S.coins,skip0=clone(S.skip||{});
+      for(const g of [...GRADES,...GRADES.slice().reverse()]){
+        setGrade(g);
+        if(JSON.stringify(S.maps)!==JSON.stringify(maps0))bad(name+' grade '+g+': maps changed');
+        if(JSON.stringify(S.wdone)!==JSON.stringify(wd0)||S.stars!==stars0||S.coins!==coins0||JSON.stringify(S.skip||{})!==JSON.stringify(skip0))bad(name+' grade '+g+': progress fields changed');
+        for(const p in PATHS)NODES[p].forEach((n,i)=>{
+          if(passed(p,i)){checks++;if(!unlocked(p,i))bad(name+' grade '+g+' '+p+' stop '+i+': passed stop locked')}
+          if(!n.wid||unlocked(p,i)&&!worldOpen(p,n.wi))bad(name+' '+p+' '+i+': open stop in a closed world');
+        });
+        // the map always opens on an open stop
+        for(const p in PATHS)if(!unlocked(p,curNode(p))&&!passed(p,curNode(p)))bad(name+' grade '+g+' '+p+': current stop is locked');
+      }
+    }
+    return{checks};
+  };
+  const r=eval(js+';('+body.toString()+')()');
+  return{problems:gerrs,note:r.checks+' passed-stop checks across fixtures and grades'};
 });
 
 // ---- report ----

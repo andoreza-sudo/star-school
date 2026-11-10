@@ -25,6 +25,9 @@ const SCREENS = {
   'map-es': { run: async p => { await p.evaluate(() => pathMap('es')); } },
   // P1-05: the world strip with a far world picked (shows the "more worlds" button above it)
   'map-worlds': { run: async p => { await p.evaluate(() => pathMap('math', 3)); } },
+  // P1-06: setup with a grade tapped (Pre-K), and Grown-ups scrolled to the grade picker
+  'setup-grade': { fixture: 'fresh', run: async p => { await p.click('.gr[data-g="-1"]'); await p.evaluate(() => document.querySelector('.gr.sel').scrollIntoView({ block: 'center' })); } },
+  'grown-grade': { run: async p => { await p.evaluate(() => { grown(); document.querySelector('.gr.sel').scrollIntoView({ block: 'center' }); }); } },
   question: { run: async p => { await p.evaluate(() => start('math', 0)); } },
   'question-read': { run: async p => { await p.evaluate(() => start('read', 5)); } },
   boss: { run: async p => { await p.evaluate(() => bossIntro('math', NODES.math.findIndex(n => n.sk == 'boss'))); } },

@@ -205,6 +205,11 @@ label.tg{display:block;font-size:20px;margin:8px 0}
 @media (max-height:520px){.setup h1{font-size:24px;margin:0 0 6px}.setup .card{margin:6px 0;padding:10px}.petopt{padding:6px 4px}.petopt span{font-size:36px}.prize{font-size:64px}.chestbtn{font-size:90px}.msg{font-size:18px;margin:2px 0}h1{font-size:26px;margin:0 0 8px}.top{padding:6px 10px}.play{padding-top:8px}.tools .btn{padding:6px 10px;font-size:15px}}
 
 /* v4: map, new skills, shop, balloons */
+
+/* grade picker (setup, Grown-ups): 4 x 2 big buttons */
+.grades{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--s-2);margin-top:var(--s-2)}
+.gr{min-height:var(--tap);padding:var(--s-2) var(--s-1);font-size:var(--fs-3);font-weight:700}
+.gr.sel{background:var(--brand);color:var(--surface);box-shadow:var(--ledge) var(--brand-shade)}
 /* Question kinds A (P1-03): number pad extras, multi-select, order. Tokens only (00-tokens.css). */
 
 /* number pad: extra key (. or +/-) on its own row; several slots (fraction, remainder, mixed number) */
@@ -599,7 +604,7 @@ const pick=a=>a[Math.floor(rnd()*a.length)];
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KEY='starschool-v2';
-const LATEST=4; // newest save schema version = MIGRATIONS.length (ROADMAP section 9)
+const LATEST=5; // newest save schema version = MIGRATIONS.length (ROADMAP section 9)
 let S,SAVE_RAW=null,SAVE_CORRUPT=false,SAVE_FAILED=false;
 /* Read the save string into S. Corrupt or non-object JSON is kept in KEY-corrupt; KEY itself is untouched until the first save(). */
 function loadSave(raw){
@@ -673,6 +678,23 @@ const MIGRATIONS=[null,
       rp.n=n;
     }
   }
+  ,
+  /* 4: P1-06. Infer S.grade for a save that has none: the highest grade tag among the graded worlds (math, reading) where the child
+     has passed a stop or beaten the boss; K (0) when there is no progress. Uses the frozen v42 world table and the grade tags
+     shipped in v46, never PATHS, so worlds added later cannot change what an old save means. A grade already set is kept.
+     Only adds S.grade (more worlds open, never fewer); nothing is removed or re-locked. */
+  ()=>{
+    if([-1,0,1,2,3,4,5,6].includes(S.grade))return;
+    const G46={m_meadow:0,m_candy:1,m_reef:1,m_space:2,r_meadow:0,r_candy:1,r_reef:1,r_space:2};
+    let g=0;
+    for(const p of['math','read']){
+      const m=(S.maps&&S.maps[p])||{};
+      (MAP_V42[p]||[]).forEach(([id,stops])=>{
+        if(m['boss_'+id]>0||stops.split(' ').some(k=>m[k]>0))g=Math.max(g,G46[id]||0);
+      });
+    }
+    S.grade=g;
+  }
 ];
 /* Run once at load, from 42-paths.js (needs NODES, which no code before it reads). Backs up the old string first. */
 function migrate(){
@@ -688,7 +710,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S));SAVE_FAILED=fals
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v48'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v49'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -2299,6 +2321,17 @@ const GRADES=[-1,0,1,2,3,4,5,6];
 const gradeLabel=g=>g<0?'Pre-K':g==0?'K':['1st','2nd','3rd','4th','5th','6th'][g-1]||'';
 const gradeOf=()=>GRADES.includes(S.grade)?S.grade:0;
 function setGrade(g){if(!GRADES.includes(g))return false;S.grade=g;save();return true}
+/* Spoken names for the grade buttons (say() reads them when tapped). */
+const gradeSpoken=g=>g<0?'Pre-K':g==0?'Kindergarten':['First','Second','Third','Fourth','Fifth','Sixth'][g-1]+' grade';
+/* Round rules for a grade (ROADMAP 3.1). n: questions in a normal stop round; choices: most answer buttons a generator should
+   show (3 for Pre-K, else 4); auto: 'all' = every prompt that has a spoken line is read aloud on its own, even with
+   "Read questions out loud" off (Pre-K and K); 'auto' = prompts marked auto are read when that setting is on (1st);
+   'tap' = same, the child taps the speaker for the rest (2nd and up); multi: multi-step items wanted (5th, 6th).
+   gradeCfg() with no argument uses the child's grade. */
+function gradeCfg(g){
+  g=GRADES.includes(g)?g:gradeOf();
+  return{g,n:g<0?6:g==0?8:10,choices:g<0?3:4,auto:g<=0?'all':g==1?'auto':'tap',multi:g>=5};
+}
 const worldId=(p,wi)=>PATHS[p].worlds[wi].id;
 const worldSkipped=(p,wi)=>!!(S.skip&&S.skip[worldId(p,wi)]);
 function worldHasProgress(p,wi){const[a,b]=WR[p][wi];for(let i=a;i<=b;i++)if(passed(p,i))return true;return false}
@@ -2386,16 +2419,25 @@ function micHelp(kind){const o=document.createElement('div');o.className='ovl';o
   o.innerHTML=`<div style="background:#fff;color:var(--ink);border-radius:24px;padding:20px;max-width:600px;text-align:center"><h2 style="margin:0 0 8px">🎙️ Microphone</h2>${body}<button class="btn big" id="mok">OK</button></div>`;
   document.body.appendChild(o);o.querySelector('#mok').onclick=()=>o.remove()}
 
-function setup(){let pet=S.pet;
+/* Grade picker (setup and Grown-ups): 8 big buttons, one per grade. Tapping reads the grade aloud and calls onPick(g). */
+function gradePickHTML(sel){
+  return`<div class="grades" role="radiogroup" aria-label="Grade">${GRADES.map(g=>`<button class="btn gr ${g==sel?'sel':''}" role="radio" aria-checked="${g==sel}" data-g="${g}">${gradeLabel(g)}</button>`).join('')}</div>`}
+function gradePickBind(onPick){
+  $$('.gr').forEach(b=>b.onclick=()=>{const g=+b.dataset.g;
+    $$('.gr').forEach(x=>{x.classList.toggle('sel',x==b);x.setAttribute('aria-checked',x==b)});
+    say(gradeSpoken(g),b);SFX.pop(1);onPick(g)})}
+function setup(){let pet=S.pet,grade=gradeOf();
   view(`<div class="center setup"><h1>⭐ Star School</h1>
   <div class="card"><div class="sub" style="margin-bottom:8px">What's your name?</div><input class="name" id="nm" value="${esc(S.name)}" placeholder="Your name"></div>
   <div class="card"><div class="sub" style="margin-bottom:8px">Pick a pet egg to hatch!</div>
    <div class="pets">${Object.entries(PETS).map(([k,p])=>`<button class="btn petopt ${k==pet?'sel':''}" data-p="${k}"><span>${p.s[3]}</span>${p.n}</button>`).join('')}</div>
    <input class="name" id="pn" style="margin-top:12px;width:100%" value="${esc(S.petName)}" placeholder="Name your pet (${PETS[pet].def})"></div>
+  <div class="card"><div class="sub" style="margin-bottom:8px">What grade? <span class="small">(Grown-ups can change this later)</span></div>${gradePickHTML(grade)}</div>
   <button class="btn big" id="go">Let's go! 🚀</button></div>`);
+  gradePickBind(g=>{grade=g});
   $$('.petopt').forEach(b=>b.onclick=()=>{pet=b.dataset.p;$$('.petopt').forEach(x=>x.classList.toggle('sel',x==b));$('#pn').placeholder=`Name your pet (${PETS[pet].def})`;SFX.giggle();anim(b.querySelector('span'),'jump')});
   $('#go').onclick=()=>{const n=$('#nm').value.trim();if(!n){fb('Type your name first!','warn');SFX.wrong();return}
-    S.name=n;S.pet=pet;S.petName=$('#pn').value.trim();save();SFX.magic();home(true)}}
+    S.name=n;S.pet=pet;S.petName=$('#pn').value.trim();setGrade(grade);SFX.magic();home(true)}}
 
 function home(first){
   if(!S.name)return setup();
@@ -2428,7 +2470,7 @@ function home(first){
   $('#book').onclick=book;$('#shop').onclick=shop;$('#mix').onclick=()=>{SFX.whoosh();startMix()};$('#race').onclick=raceMenu;$('#flu').onclick=()=>{SFX.whoosh();fluMenu()};$('#care').onclick=care;$('#groom').onclick=()=>{SFX.whoosh();gameRoom()};
   if($('#inst'))$('#inst').onclick=async()=>{try{installEvt.prompt();await installEvt.userChoice}catch(e){}installEvt=null;home()};
   let t;const g=$('#gear');g.onpointerdown=()=>{t=setTimeout(grown,1200)};g.onpointerup=g.onpointerleave=()=>clearTimeout(t);g.onclick=()=>fb('Grown-ups: hold it','warn');
-  {const sc=$('.scroll');if(sc)sc.insertAdjacentHTML('beforeend','<p class="small" style="text-align:center;opacity:.55;margin:14px 0 4px">Star School v48</p>')}
+  {const sc=$('.scroll');if(sc)sc.insertAdjacentHTML('beforeend','<p class="small" style="text-align:center;opacity:.55;margin:14px 0 4px">Star School v49</p>')}
   if(first&&S.voice)setTimeout(()=>say(`Hi ${S.name}! Pick a game!`),400)}
 
 let MAPP='math',MAPW={}; // MAPW[path] = the world picked in the strip (this session only, not saved)
@@ -3140,7 +3182,7 @@ function kindLabel(list,v){
 /* ---------- game ---------- */
 let G;
 const newG=o=>(bankRound(),Object.assign({n:10,done:0,score:0,streak:0,best:0,missed:[],last:null,node:-1,path:null},o));
-function start(p,i){const n=NODES[p][i];G=newG({path:p,node:i,sk:n.sk,lv:n.lv});
+function start(p,i){const n=NODES[p][i];G=newG({path:p,node:i,sk:n.sk,lv:n.lv,n:gradeCfg().n});
   if(SK[n.sk].round){G.pool=SK[n.sk].round(n.lv);G.n=G.pool.length}
   next()}
 function startMix(){const qs=allMiss().slice(0,7).map(m=>({...m.q})),pool=[];
@@ -3199,7 +3241,7 @@ function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;
   else if(G.done==0)petSay(G.mix?'Tricky mix!':"Let's go!");
   else if(G.done==G.n-1)petSay('Last one!');
   fit();if(document.fonts)document.fonts.ready.then(fit);
-  if(q.auto==='must'||(q.auto&&S.voice))setTimeout(()=>say(q.say,null,q.lang=='es'?'es':null),400)}
+  if(q.auto==='must'||(q.auto&&S.voice)||(q.say&&gradeCfg().auto==='all'))setTimeout(()=>say(q.say,null,q.lang=='es'?'es':null),400)}
 function addMiss(q){const p=P(q.sk),m=p.miss[q.label]||{n:0,tot:0,q};m.n++;m.tot++;m.q=q;p.miss[q.label]=m;
   const ks=Object.keys(p.miss);if(ks.length>40){ks.sort((a,b)=>p.miss[a].tot-p.miss[b].tot);delete p.miss[ks[0]]}}
 const PRAISE=['Great job!','You got it!','Awesome!','Super!','Nice!','Yes!','Way to go!','Brilliant!','Boom! 💥','Nailed it!'];
@@ -3281,7 +3323,7 @@ function finish(){
     if(g.boss)msgs.push(g.won?[`💥 You beat ${g.boss.name}!`,'fanfare']:[`${g.boss.e} ${g.boss.name} got away! Try again, you can beat it!`,null]);
     if(prize)msgs.push([`🎁 New costume for ${petN()}: ${prize}`,'magic']);
     if(g.test)msgs.push(testOk?[`🚀 You tested out of ${PATHS[p].worlds[g.test.wi].n}!`,'fanfare']:['So close! Get 9 right to test out. Or play the stops one by one.',null]);
-    if(!g.mix&&!g.test&&!g.boss&&stars==0)msgs.push(['Get 7 right to open the next stop. You can do it!',null]);
+    if(!g.mix&&!g.test&&!g.boss&&stars==0)msgs.push([`Get ${Math.floor(n*.7+.01)} right to open the next stop. You can do it!`,null]);
     if(mission)msgs.push([`🏆 Daily mission done! +5 bonus stars!`,'fanfare']);
     if(stk.msg)msgs.push([stk.msg,'fanfare']);
     if(g.mix)msgs.push(['🎯 Great practice on the tricky ones!',null]);
@@ -5008,6 +5050,7 @@ function grown(){let armed=false;
    <div class="row"><b style="width:110px">Buddy</b><input class="name" id="bd" value="${esc(S.buddy)}" placeholder="Sibling or friend, used in story problems"></div>
    <div class="small">Stops passed: ${prog}<br>⭐ ${S.stars} stars · ${ico('coin','1.2em','ic-coin')} ${S.coins} coins · 📒 ${STK.filter(s=>S.stickers[s]).length}/${STK.length} stickers · 🔥 best streak ${S.best||0}</div>
    ${SAVE_FAILED?'<div class="small" style="color:#c0392b;font-weight:700">Could not save progress: the device storage may be full.</div>':''}
+   <div class="row" style="display:block;margin-top:12px"><b>Grade</b> <span class="small">Picks where the maps start. Nothing is ever locked or removed when you change it.</span>${gradePickHTML(gradeOf())}</div>
    <label class="tg"><input type="checkbox" id="ula" ${S.unlockAll?'checked':''}> Unlock every stop on the map (let them jump ahead)</label></div>
   <div class="card"><h2 style="margin:0 0 6px">🎙️ Your voice</h2><div class="small" style="margin-bottom:8px">Tap ⏺ and say the line (up to 4 seconds). Record as many as you like. The app shuffles them so the same one doesn't play twice in a row. ${inFrame?'<b>Recording only works on the tablet app, not in this preview.</b>':!canRec?'<b>Recording isn\'t available in this browser. Use Chrome or the installed app.</b>':''}</div>
    ${CLIPKINDS.map(([k,l,tip,lines])=>{const cs=CLIPS.filter(c=>c.kind==k),extra=cs.filter(c=>c.line==null||c.line>=lines.length);
@@ -5022,7 +5065,7 @@ function grown(){let armed=false;
    <div class="vline"><span class="vtxt">Give a bonus</span><button class="btn xs" id="pt5">+5 min</button><button class="btn xs danger" id="pt0">Empty bank</button></div>
    <label class="tg"><input type="checkbox" id="ptp" ${ptCfg().pause?'checked':''}> Pause game time (games locked)</label></div>
   <div class="card"><div class="tw"><table><tr><th>Skill</th><th>Rounds</th><th>1st try</th><th>Tricky ones</th></tr>${rows}</table></div></div>
-  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v48 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
+  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v49 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
    Storage: ${SAVE_FAILED?'<b style="color:#c0392b">could not save (device storage may be full)</b>':'saving OK'}${SAVE_CORRUPT?'<br><b style="color:#c0392b">The old save could not be read. A fresh start was made and the old data was kept on the device.</b>':''}<br>
    Last errors: ${(S.err||[]).length?(S.err||[]).slice().reverse().map(e=>'<br>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+' '+esc(e.msg)).join(''):'none'}</div></details>
   <div class="card"><label class="tg"><input type="checkbox" id="voice" ${S.voice?'checked':''}> Read questions out loud</label>
@@ -5034,6 +5077,7 @@ function grown(){let armed=false;
   $('#nm').oninput=e=>{if(e.target.value.trim()){S.name=e.target.value.trim();save()}};
   $('#pn').oninput=e=>{S.petName=e.target.value.trim();save()};
   $('#bd').oninput=e=>{S.buddy=e.target.value.trim();save()};
+  gradePickBind(g=>{setGrade(g)});
   $('#ula').onchange=e=>{S.unlockAll=e.target.checked;save()};
   $$('[data-per]').forEach(b=>b.onclick=()=>{ptCfg().per=+b.dataset.per;save();grown()});
   $$('[data-max]').forEach(b=>b.onclick=()=>{ptCfg().max=+b.dataset.max;save();grown()});
