@@ -19,7 +19,7 @@ function home(first){
   <div class="scroll" id="hs">
    <div class="hero ${sc[0]=='space'?'dark':''}" style="background:${sc[3]}"><div style="position:relative"><div class="petbig ${petAura()}" id="pet">${petHTML()}</div>${needs?`<div class="thought">${cr.food<30?'🍖':cr.clean<30?'🛁':'🎾'}?</div>`:''}</div>
     <div class="hinfo"><div class="hname">${esc(S.name)} & ${pn}</div>
-     <div class="rowh" style="justify-content:flex-start;gap:6px;margin:4px 0"><div class="stars" id="starc">⭐ ${S.stars}</div><div class="stars">🪙 ${S.coins}</div><button class="stc-chip ${STRK.count()?'':'off'}" id="stkb" aria-label="Streak calendar"><span class="stc-fl">🔥</span>${STRK.count()}</button></div>
+     <div class="rowh" style="justify-content:flex-start;gap:6px;margin:4px 0"><div class="stars" id="starc">⭐ ${S.stars}</div><div class="stars">${ico('coin','1.2em','ic-coin')} ${S.coins}</div><button class="stc-chip ${STRK.count()?'':'off'}" id="stkb" aria-label="Streak calendar"><span class="stc-fl">${ico('flame','1.2em')}</span>${STRK.count()}</button></div>
      <div class="meter"><div style="width:${pct}%"></div></div><div class="htxt">${growTxt}</div>
      <div class="meter m"><div style="width:${Math.min(d.r,3)/3*100}%"></div></div><div class="htxt">${d.done?"🏆 Today's mission done!":`🎯 Mission: finish 3 rounds today (${d.r}/3)`}</div></div></div>
    <h2 style="margin:14px 4px 8px">Pick a game!</h2>

@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** P1-02 (Opus), P4-02 (Opus). Then wave 3.
+**Next up:** P1-02 (Opus, in progress). Then wave 3 (P4-03 adds the next ~60 icons on the P4-02 system).
 
-**Current version:** v39
+**Current version:** v40
 
 ## Chunk status
 
@@ -19,6 +19,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P4-01 v37
 - P1-01 v38
 - P5-04 v39
+- P4-02 v40
 
 ## Handoff notes
 
@@ -53,7 +54,19 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P0-04) The "risky" test only knows Unicode 12+ ranges from a table in `tools/test.js`; it is a safety net for new emoji, not a full emoji-version database. CSS `content:'\1F...'` escapes are not scanned (none exist today).
 - (P0-04) `node tools/test.js` needs a built `index.html` for the size check (it fails with a message if missing); `check.sh` builds first. The size budget (warn 1.2 MB, fail 1.5 MB) lives only in `tools/test.js`.
 
+- (P4-02) Coin icon swapped only in chrome chips/prices (home, shop, pet care, grown-ups). `🪙` remains in `38-skills.js` (Coins skill `e`, a map node picture; P4-03 skill icons), `50-round.js` (world-finished toast "+20 🪙"; left alone because P1-02 is refactoring that file), `52-balloons.js`, and games 60/62/72 (out of scope). The other 12 risky emoji are untouched.
+- (P4-02) The `.stars` chip line in `46-home.js` (stars + coins) was edited for the coin icon; P5-04 also adds to the home stat row, so expect a one-line merge there.
+- (P4-02) The icon sheet is built inside `tools/shots.js` (no dev screen in the app). Icons are drawn for the 24 grid with the recipe in the `15-icons.js` header; `close` and `times` are nearly the same shape on purpose (times is slightly smaller).
+
 ## Log
+
+### P4-02 Icon system and first 40 icons (v40, 2026-11-10, Claude)
+- What changed: new `src/js/15-icons.js`: `ICONS` (the 40 icons of DS 5.3 as SVG strings), `icoSprite()` (one hidden `<svg id="ico-sprite">` with a `<symbol id="i-name">` per icon, added before `#app` at load), and `ico(name, size=24, cls='')` returning `<svg class="ic" ...><use href="#i-name"/></svg>`. House style (header of 15-icons.js, row added to DS 5.2): solid currentColor shapes, rounded corners by stroking the inset shape, cut-outs with evenodd, second tone `var(--ic2,#fff)` only where needed. `.ic` and `.ic-coin` (gold coin: `--star-shade` with `--star-tint` face) in 20-base.css (tokens only). The risky coin emoji in chrome is now the SVG coin: home stat chip, Pet Shop chip and prices, Pet Care chip and snack prices, Grown-ups summary. Icon sheet: `node tools/shots.js icons` (every icon at 20/32/64 px on white and on `--brand`, full-page shot); shots.js gained a `care` screen and a `full` option.
+- Files: src/js/15-icons.js (new), src/css/20-base.css, src/js/46-home.js, 48-shop.js, 56-petcare.js, 80-grown.js (coin swaps only), tools/test.js (new check 12), tools/shots.js (P4-02 group), tools/build.py (VER), docs/DESIGN_SYSTEM.md (one row in 5.2), docs/PROGRESS.md, built output.
+- Tests: test.js 14 of 14 ok (icons: 40 icons, 6 ico() uses) / contrast ok / smoke.js ok / index.html 407,501 bytes (+13.4 KB; the 40 icons are about 10 KB)
+- Screenshots: before in tools/out/before/ (home, shop, care at 600x960, 1024x600, 380x780); after: icons, home, shop, care, grown at all three sizes. Looked at icons-600x960 (sheet), home-600x960, shop-600x960, care-380x780, grown-600x960: coin chips/prices show the gold SVG coin in place of the emoji, same layout, no overflow.
+- Checklist 7.1: all ticked (only P4-02 files plus the coin swaps; midway fixture and no-network covered by smoke; no emoji added; no raw hex in 20-base.css). Not pushed: built on branch P4-02-icons for merge; VER v40 is provisional.
+- Left over / notes: see "Ideas and issues" (remaining coin uses; home stat row merge with P5-04). Merged after P5-04: the home streak chip now uses `ico('flame')` too.
 
 ### P5-04 Streak calendar (v39, 2026-11-10, Claude)
 - What changed: new `src/js/55-streak.js` (`STRK` object: date helpers, `calc` pure streak count, `tick`, month `grid`; `streakTick()`, `streakCal(off)` screen) and `src/css/35-streak.css` (tokens only). `finish()` in 50-round.js calls `streakTick()` once per finished learning round (one line) and shows the reward line in the finish messages (one line). Home gets a flame chip (`#stkb`) beside the coins chip; tapping opens the month grid (stars on active days, moon on rest days, today outlined, back up to 4 months). Rest rule: one missed day is forgiven if the day before it was played and no other rest day is in the 7 days before it. Rewards at 3, 7, 14, 30 days: +5, +10, +20, +50 coins and a sticker, once per run (`rw` resets when the streak breaks).

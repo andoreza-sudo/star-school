@@ -385,6 +385,43 @@ run('streak calendar: rest day, month and year change, trim, clock back, missing
   return{problems:p,note:'rest rule, month/year change, trim 120, clock back, missing S.streak, milestones'};
 });
 
+// ---- 12: icon set and drawing rules (P4-02, DESIGN_SYSTEM 5) ----
+run('icons: first 40 present, drawing rules, every ico() name exists',()=>{
+  const p=[];
+  const ic=eval(fs.readFileSync(path.join(SRC,'js','15-icons.js'),'utf8')+';({ICONS,ico,icoSprite})');
+  const FIRST40=('star coin ticket flame home back map play pause replay sound-on sound-off speak gear lock check close hint heart gift '+
+    'trophy target bolt paw bag sticker-book gamepad puzzle path-math path-read path-es path-disc plus minus times divide '+
+    'backspace go calendar crown').split(' ');
+  for(const n of FIRST40)if(!ic.ICONS[n])p.push('missing icon: '+n);
+  for(const [n,d] of Object.entries(ic.ICONS)){
+    if(!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(n))p.push(n+': name must be lowercase-hyphenated');
+    if(d.length>=600)p.push(n+': '+d.length+' bytes (limit 600)');
+    const tags=d.match(/<\/?[a-z]+/g)||[];
+    for(const t of tags)if(!/^<(path|circle|ellipse|rect)$/.test(t))p.push(n+': element '+t+'> not allowed');
+    if((d.match(/<[^>]*\/>/g)||[]).join('')!==d)p.push(n+': every element must be self-closing, nothing between them');
+    if(/gradient|filter|<text|url\(|style=/i.test(d))p.push(n+': no gradients, filters, text, url() or style');
+    const hex=d.replace(/var\(--ic2,#fff\)/g,'').match(/#[0-9a-f]{3,8}\b/gi);
+    if(hex)p.push(n+': raw colour '+hex[0]+' (use currentColor or var(--ic2,#fff))');
+    const fills=(d.match(/(fill|stroke)="[^"]*"/g)||[]).filter(a=>!/^(fill|stroke)="(currentColor|none|var\(--ic2,#fff\))"$/.test(a));
+    if(fills.length)p.push(n+': colour must be currentColor, none or var(--ic2,#fff): '+fills[0]);
+    const coords=(d.match(/\s(d|cx|cy|r|rx|ry|x|y|width|height)="[^"]*"/g)||[]).join(' ').match(/\d*\.\d{2,}/g);
+    if(coords)p.push(n+': coordinates to one decimal ('+coords[0]+')');
+  }
+  const one=ic.ico('star',32,'x');
+  if(!one.includes('width="32"')||!one.includes('height="32"')||!one.includes('class="ic x"')||!one.includes('<use href="#i-star"/>')||
+    !one.includes('aria-hidden="true"'))p.push('ico() markup changed: '+one);
+  if(!ic.ico('play').includes('width="24"'))p.push('ico() default size is not 24');
+  const sp=ic.icoSprite();
+  if((sp.match(/<symbol id="i-/g)||[]).length!==Object.keys(ic.ICONS).length)p.push('sprite does not hold one symbol per icon');
+  // every literal ico('name' in src/ must name an existing icon
+  const files=['js','data'].flatMap(d=>fs.readdirSync(path.join(SRC,d)).filter(f=>f.endsWith('.js')).map(f=>path.join(SRC,d,f)));
+  let uses=0;
+  for(const f of files)for(const m of fs.readFileSync(f,'utf8').matchAll(/\bico\(\s*['"`]([^'"`$]+)['"`]/g)){
+    uses++;if(!ic.ICONS[m[1]])p.push(path.relative(ROOT,f)+': ico(\''+m[1]+'\') is not in ICONS');
+  }
+  return{problems:p,note:Object.keys(ic.ICONS).length+' icons, '+uses+' ico() uses'};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){
