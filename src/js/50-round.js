@@ -122,7 +122,7 @@ function finish(){
     if(g.boss&&g.won&&!S.owned[nd.prize]){prize=nd.prize;S.owned[prize]=1;S.wear.hat=prize}}
   if(newPass){const wk=p+nd.wi;if(!S.wdone[wk]&&worldDone(p,nd.wi)){S.wdone[wk]=1;wDone=true}}
   const prizes=[award()];if(sc==n)prizes.push(award());
-  d.r++;let mission=false;if(d.r>=3&&!d.done){d.done=true;mission=true;prizes.push(award())}
+  d.r++;const stk=streakTick();let mission=false;if(d.r>=3&&!d.done){d.done=true;mission=true;prizes.push(award())}
   if(wDone)prizes.push(award());
   const bonus=(mission?5:0),coins=sc+bonus+(wDone?20:0),prevSt=g.test||g.mix?0:(g.prevSt||0),PT=ptCalc(g,sc,n,stars,prevSt,newPass,testOk,nd),ptSec=PT.sec;ptEarn(ptSec);
   S.stars+=sc+bonus;S.coins+=coins;S.best=Math.max(S.best||0,best);
@@ -154,6 +154,7 @@ function finish(){
     if(g.test)msgs.push(testOk?[`🚀 You tested out of ${PATHS[p].worlds[g.test.wi].n}!`,'fanfare']:['So close! Get 9 right to test out. Or play the stops one by one.',null]);
     if(!g.mix&&!g.test&&!g.boss&&stars==0)msgs.push(['Get 7 right to open the next stop. You can do it!',null]);
     if(mission)msgs.push([`🏆 Daily mission done! +5 bonus stars!`,'fanfare']);
+    if(stk.msg)msgs.push([stk.msg,'fanfare']);
     if(g.mix)msgs.push(['🎯 Great practice on the tricky ones!',null]);
     msgs.push([sc>=9?'You are a superstar!':sc>=7?'Fantastic work!':sc>=5?'Good job! Keep practicing!':'Nice try! Practice makes you stronger!',null]);
     msgs.forEach(([m,s])=>{setTimeout(()=>{if(!live())return;$('#msgs').insertAdjacentHTML('beforeend',`<div class="msg">${m}</div>`);if(s)SFX[s]();if(s&&m.startsWith('🌍'))confetti(40)},t);t+=650});

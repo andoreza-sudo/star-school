@@ -155,6 +155,17 @@ async function main() {
     if (injected.length !== 1) fail('expected exactly 1 injected page error, saw ' + injected.length);
     for (let i = errors.length - 1; i >= 0; i--) if (errors[i].includes(MARK)) errors.splice(i, 1);
 
+    // 6. P5-04 streak: the rounds played above counted today; the flame on Home opens the month grid
+    const stk = await page.evaluate(() => ({ n: (S.streak.days[today()] || 0), best: S.streak.best }));
+    if (stk.n < 1 || stk.best < 1) fail('finished rounds did not count for the streak: ' + JSON.stringify(stk)); else step('streak counted ' + stk.n + ' rounds today');
+    await page.evaluate(() => home());
+    await page.click('#stkb');
+    await page.waitForSelector('.stc-grid');
+    const cal = await page.evaluate(() => ({ on: document.querySelectorAll('.stc-d.on').length, now: document.querySelectorAll('.stc-d.now').length }));
+    if (cal.on < 1 || cal.now !== 1) fail('streak calendar grid wrong: ' + JSON.stringify(cal)); else step('streak calendar opens with today marked and a star on active days');
+    await page.click('#back');
+    await page.waitForSelector('#stkb');
+
     for (const e of errors) fail(e);
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');

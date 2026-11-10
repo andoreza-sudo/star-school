@@ -1,0 +1,21 @@
+/* Streak flame chip and calendar (P5-04). Tokens only. */
+.stc-chip{font:inherit;font-size:var(--fs-4);font-weight:700;min-height:var(--tap);min-width:var(--tap);display:inline-flex;align-items:center;gap:var(--s-1);
+  border:0;cursor:pointer;color:var(--play-shade);background:var(--play-tint);border-radius:var(--r-btn);padding:6px 12px;box-shadow:var(--ledge) var(--shadow-ink);font-variant-numeric:tabular-nums}
+.stc-chip.off{color:var(--ink-3);background:var(--surface-2)}
+.stc-chip.off .stc-fl{opacity:.45}
+.stc-card{background:var(--surface);border-radius:var(--r-card);border:2px solid var(--line);padding:var(--s-4);max-width:520px;margin:0 auto;text-align:center}
+.stc-big{font-size:var(--fs-6);font-weight:700;color:var(--play-shade)}
+.stc-sub{font-size:var(--fs-3);margin:var(--s-1) 0;color:var(--ink-2)}
+.stc-sub.small{font-size:var(--fs-1);color:var(--ink-3)}
+.stc-nav{display:flex;align-items:center;justify-content:space-between;margin:var(--s-3) 0 var(--s-2);font-size:var(--fs-3)}
+.stc-nav .btn[disabled]{opacity:.35}
+.stc-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:var(--s-1)}
+.stc-h{font-size:var(--fs-1);font-weight:700;color:var(--ink-3);padding:var(--s-1) 0}
+.stc-d{min-height:var(--tap);border-radius:var(--r-chip);background:var(--surface-2);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1}
+.stc-d.stc-pad{background:none}
+.stc-d.on{background:var(--star-tint)}
+.stc-d.rest{background:var(--brand-tint)}
+.stc-d.now{outline:3px solid var(--brand);outline-offset:-3px}
+.stc-n{font-size:var(--fs-1);color:var(--ink-2)}
+.stc-m{font-size:var(--fs-2);min-height:1em}
+@media (max-width:420px){.stc-card{padding:var(--s-3)}.stc-grid{gap:2px}}
