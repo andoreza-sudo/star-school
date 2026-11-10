@@ -9,10 +9,11 @@ function fail(msg) { failed++; console.error('FAIL: ' + msg); }
 
 // Answer the current question by tapping the on-screen controls.
 async function answer(page) {
-  const q = await page.evaluate(() => ({ kind: G.q.kind, ans: String(G.q.ans), word: G.q.word,
+  const q = await page.evaluate(() => ({ kind: G.q.kind, ans: String(G.q.ans), word: G.q.word, alt: G.q.alt,
     vals: G.q.choices ? G.q.choices.map(c => String(c.v)) : null }));
   if (q.kind === 'num') {
-    for (const d of q.ans) await page.click(`.k[data-k="${d}"]`);
+    // digits and '.' tap their own key, '-' taps the +/- key, any separator (R, /, space) is the check key moving on
+    for (const d of (q.alt || q.ans)) await page.click(`.k[data-k="${/\d|\./.test(d) ? d : d === '-' ? 'neg' : 'go'}"]`);
     await page.click('.k[data-k="go"]');
   } else if (q.kind === 'choice') {
     await page.click(`.ch[data-i="${q.vals.indexOf(q.ans)}"]`);
@@ -25,6 +26,15 @@ async function answer(page) {
       }, q.word[k]);
       if (idx < 0) throw new Error('no tile for ' + q.word[k] + ' in ' + q.word);
       await page.click(`.lt[data-i="${idx}"]`);
+    }
+  } else if (q.kind === 'multi') {
+    const idx = await page.evaluate(() => G.q.choices.map((c, i) => G.q.ans.map(String).includes(String(c.v)) ? i : -1).filter(i => i >= 0));
+    for (const i of idx) await page.click(`.mc[data-i="${i}"]`);
+    await page.click('#mcheck');
+  } else if (q.kind === 'order') {
+    for (let k = 0; k < (await page.evaluate(() => G.q.ans.length)); k++) {
+      const idx = await page.evaluate(k => G.q.items.findIndex((t, j) => String(t.v) === String(G.q.ans[k]) && !G.ord.includes(j)), k);
+      await page.click(`.ot[data-i="${idx}"]`);
     }
   } else {
     throw new Error('unknown question kind ' + q.kind);
@@ -332,6 +342,62 @@ async function main() {
       network.push(...wm.network);
       await wm.ctx.close();
     }
+
+    // 11. new kinds A (P1-03): the bot plays every sample question of tools/kinds-samples.js through the real engine at 380x780
+    //    (right answers, 48 px targets, no sideways scroll), then gets three of them wrong twice and checks the reveal
+    // the number-pad step above leaves the old round's 2.6 s next-question timer running; let it fire before the new round starts
+    await page.evaluate(() => home());
+    await page.waitForTimeout(3000);
+    await page.setViewportSize({ width: 380, height: 780 });
+    await page.evaluate(src => { window.__S2 = eval(src)(); }, '(' + require('./kinds-samples').make.toString() + ')');
+    const names = await page.evaluate(() => Object.keys(window.__S2));
+    await page.evaluate(() => { G = newG({ sk: 'zz_demo', mix: true, n: Object.keys(window.__S2).length, pool: Object.values(window.__S2) }); next(); });
+    for (const nm of names) {
+      await page.waitForFunction(() => G && G.q && !G.lock, null, { timeout: 8000 });
+      await page.waitForTimeout(500); // let the screen's entrance animation finish before measuring
+      const m = await page.evaluate(() => {
+        const small = [...document.querySelectorAll('.k, .mc, .ot, .os, #mcheck, .ch')].filter(e => e.getBoundingClientRect().height < 47.5 || e.getBoundingClientRect().width < 47.5)
+          .map(e => e.className + ' ' + Math.round(e.getBoundingClientRect().width) + 'x' + Math.round(e.getBoundingClientRect().height));
+        return { small, wide: document.documentElement.scrollWidth > window.innerWidth + 1, label: G.q.label };
+      });
+      if (m.small.length) fail(`${m.label}: targets under 48 px: ${m.small.join(', ')}`);
+      if (m.wide) fail(`${m.label}: page scrolls sideways at 380 wide`);
+      await page.evaluate(() => { window.__q = G.q; });
+      await answer(page).catch(async e => { throw new Error(`new kinds: playing "${nm}" failed: ` + String(e.message).split('\n')[0]); });
+      await page.waitForFunction(() => document.querySelector('#fin') || (G && G.q !== window.__q), null, { timeout: 8000 });
+    }
+    await page.waitForSelector('#chest', { timeout: 5000 });
+    const sc2 = await page.evaluate(() => G.score);
+    if (sc2 !== names.length) fail(`new kinds: bot scored ${sc2}/${names.length}`); else step(`new kinds: ${names.length} sample questions answered right (${names.join(', ')}), targets 48 px, no sideways scroll`);
+
+    // wrong twice: the reveal shows the right answer (num: slot, multi: right boxes, order: slots)
+    const wrongOf = ['dec', 'multi', 'order'];
+    await page.evaluate(w => { G = newG({ sk: 'zz_demo', mix: true, n: w.length, pool: w.map(k => window.__S2[k]) }); next(); }, wrongOf);
+    for (const nm of wrongOf) {
+      await page.evaluate(() => { window.__q = G.q; });
+      for (let t = 0; t < 2; t++) {
+        await page.waitForFunction(() => G && !G.lock, null, { timeout: 8000 });
+        if (nm === 'dec') { await page.click('.k[data-k="9"]'); await page.click('.k[data-k="go"]'); }
+        else if (nm === 'multi') {
+          const i = await page.evaluate(() => G.q.choices.findIndex(c => !G.q.ans.includes(c.v)));
+          await page.click(`.mc[data-i="${i}"]`); await page.click('#mcheck');
+        } else {
+          const order = await page.evaluate(() => G.q.ans.slice().reverse().map(v => G.q.items.findIndex(t => t.v === v)));
+          for (const i of order) await page.click(`.ot[data-i="${i}"]`);
+        }
+      }
+      await page.waitForTimeout(150);
+      const rev = await page.evaluate(() => {
+        const q = G.q;
+        if (q.kind === 'num') return document.querySelector('#slot').textContent === q.ans && document.querySelector('#slot').classList.contains('rev');
+        if (q.kind === 'multi') return [...document.querySelectorAll('.mc.right')].map(b => q.choices[b.dataset.i].v).join() === q.ans.join();
+        return [...document.querySelectorAll('.os')].map(b => b.textContent).join() === q.ans.join();
+      });
+      if (!rev) fail(`new kinds: ${nm} reveal after two wrong tries does not show the right answer`);
+      else step(`new kinds: ${nm} second wrong try reveals the right answer`);
+      await page.waitForFunction(() => document.querySelector('#fin') || (G && G.q !== window.__q), null, { timeout: 8000 });
+    }
+    await page.evaluate(() => home());
 
     for (const e of errors) fail(e);
     for (const u of network) fail('network request: ' + u);

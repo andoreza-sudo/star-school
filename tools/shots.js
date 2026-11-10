@@ -6,6 +6,15 @@ const path = require('path');
 const { SIZES, launch, openApp } = require('./lib/browser');
 
 const OUT = path.join(__dirname, 'out');
+const KS = require('./kinds-samples');
+
+// P1-03: a sample question of a new kind shown by the real round engine (a one-question round); taps are clicked afterwards.
+const kindShot = (name, taps = []) => ({
+  run: async p => {
+    await p.evaluate(([src, n]) => { const q = eval(src)()[n]; G = newG({ sk: 'zz_demo', n: 1, pool: [q] }); next(); }, ['(' + KS.make.toString() + ')', name]);
+    for (const t of taps) await p.click(t);
+  },
+});
 
 // Each screen: { fixture, full, run(page) }. run() drives the app via its globals or real taps; full: true takes a full-page shot.
 const SCREENS = {
@@ -49,6 +58,16 @@ const SCREENS = {
   'streak-home': { run: async p => { await p.evaluate(() => { const T = STRK.idx(today()); S.streak = { days: {}, best: 9, rw: 3 }; [0, 1, 2, 4, 5, 6, 9, 10, 11, 12].forEach(o => { S.streak.days[STRK.key(T - o)] = 1; }); home(true); }); } },
   streak: { run: async p => { await p.evaluate(() => { const T = STRK.idx(today()); S.streak = { days: {}, best: 9, rw: 3 }; [0, 1, 2, 4, 5, 6, 9, 10, 11, 12].forEach(o => { S.streak.days[STRK.key(T - o)] = 1; }); streakCal(0); }); } },
 
+
+  // ---- P1-03 kinds A (sample questions, see tools/kinds-samples.js) ----
+  'kinds-dec': kindShot('dec', ['.k[data-k="0"]', '.k[data-k="."]', '.k[data-k="7"]']),
+  'kinds-neg': kindShot('neg', ['.k[data-k="neg"]', '.k[data-k="5"]']),
+  'kinds-frac': kindShot('frac', ['.k[data-k="3"]', '.k[data-k="go"]', '.k[data-k="4"]']),
+  'kinds-rem': kindShot('rem', ['.k[data-k="9"]', '.k[data-k="go"]']),
+  'kinds-mix': kindShot('mix', ['.k[data-k="2"]', '.k[data-k="go"]', '.k[data-k="1"]', '.k[data-k="go"]']),
+  'kinds-multi': kindShot('multi', ['.mc[data-i="1"]', '.mc[data-i="3"]']),
+  'kinds-order': kindShot('order', ['.ot[data-i="1"]', '.ot[data-i="3"]']),
+  'kinds-words': kindShot('words', ['.ot[data-i="2"]', '.ot[data-i="4"]']),
 
   // ---- P4-02 icons ----
   care: { run: async p => { await p.evaluate(() => care()); } },
