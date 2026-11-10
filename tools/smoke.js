@@ -17,6 +17,8 @@ async function answer(page) {
     await page.click('.k[data-k="go"]');
   } else if (q.kind === 'choice') {
     await page.click(`.ch[data-i="${q.vals.indexOf(q.ans)}"]`);
+  } else if (q.kind === 'tap') {
+    await page.click(`#prompt [data-v="${q.ans}"]`); // pictures in the prompt (Pre-K "which has more")
   } else if (q.kind === 'build') {
     for (let k = 0; k < q.word.length; k++) {
       const idx = await page.evaluate(ch => {
@@ -182,8 +184,10 @@ async function main() {
     // 7. number pad: after the second wrong try the slot must show the right answer, not the child's wrong number
     await page.evaluate(() => home());
     await page.click('.game[data-p="math"]');
-    await page.waitForSelector('.node[data-n="0"]');
-    await page.click('.node[data-n="0"]');
+    // P2-01: node 0 is Tiny Town now; the K child's map opens on Number Meadow, whose first stop is a number-pad question
+    const meadow0 = await page.evaluate(() => WR.math[PATHS.math.worlds.findIndex(w => w.id === 'm_meadow')][0]);
+    await page.waitForSelector(`.node[data-n="${meadow0}"]`);
+    await page.click(`.node[data-n="${meadow0}"]`);
     let numSeen = false;
     for (let i = 0; i < 10 && !numSeen; i++) {
       await page.waitForFunction(() => G && G.q && !G.lock, null, { timeout: 8000 });
@@ -307,17 +311,19 @@ async function main() {
       await wp.click('.game[data-p="math"]');
       await wp.waitForSelector('.wchip.on');
       const st = await wp.evaluate(() => ({ n: PATHS.math.worlds.length, chips: document.querySelectorAll('.wchip').length, on: +document.querySelector('.wchip.on').dataset.w,
-        cur: document.querySelector('.node.cur') && +document.querySelector('.node.cur').dataset.n }));
-      if (st.chips !== st.n || st.on !== 1 || st.cur !== 9) fail('math map on midway: ' + JSON.stringify(st));
-      else step('math map opens on Candy Canyon (current stop 9) with ' + st.chips + ' world chips');
-      await wp.click('.wchip[data-w="3"]');
-      await wp.waitForSelector('.wchip.on[data-w="3"]');
-      const far = await wp.evaluate(() => ({ first: document.querySelector('.node[data-n="0"]') !== null, space: document.querySelector('.node[data-n="35"]') !== null,
-        up: document.querySelector('.wmore') && +document.querySelector('.wmore').dataset.w }));
-      if (far.first || !far.space || far.up !== 1) fail('world chip did not switch the map: ' + JSON.stringify(far));
+        cur: document.querySelector('.node.cur') && +document.querySelector('.node.cur').dataset.n, sh: WR.math[1][0] })); // sh: stops in Tiny Town (P2-01 inserted it before Number Meadow)
+      // P2-01: Candy Canyon is now world 2 and its current stop is 9 + sh (was world 1, stop 9)
+      if (st.chips !== st.n || st.on !== 2 || st.cur !== 9 + st.sh) fail('math map on midway: ' + JSON.stringify(st));
+      else step('math map opens on Candy Canyon (current stop ' + st.cur + ') with ' + st.chips + ' world chips');
+      const SH = st.sh;
+      await wp.click('.wchip[data-w="4"]'); // Space Station, the last world (was chip 3)
+      await wp.waitForSelector('.wchip.on[data-w="4"]');
+      const far = await wp.evaluate(sh => ({ first: document.querySelector('.node[data-n="0"]') !== null, space: document.querySelector('.node[data-n="' + (35 + sh) + '"]') !== null,
+        up: document.querySelector('.wmore') && +document.querySelector('.wmore').dataset.w }), SH);
+      if (far.first || !far.space || far.up !== 2) fail('world chip did not switch the map: ' + JSON.stringify(far));
       await wp.click('.wmore');
-      await wp.waitForSelector('.wchip.on[data-w="1"]');
-      await wp.click('.node[data-n="10"]'); // locked stop: stays on the map
+      await wp.waitForSelector('.wchip.on[data-w="2"]');
+      await wp.click('.node[data-n="' + (10 + SH) + '"]'); // locked stop: stays on the map
       if (!(await wp.$('#map'))) fail('locked stop opened something');
       else step('world chips and "more worlds" button switch worlds; locked stop stays locked');
       const ms = await wp.evaluate(() => {
@@ -436,7 +442,7 @@ async function main() {
       await gp.click('#back');
       await gp.click('.game[data-p="math"]');
       await gp.waitForSelector('.node.cur');
-      const cw = await gp.evaluate(() => worldOpen('math', 3));
+      const cw = await gp.evaluate(() => worldOpen('math', PATHS.math.worlds.length - 1)); // the last world (P2-01: no longer index 3)
       await gp.click('.node.cur');
       await gp.waitForSelector('#prompt');
       const n10 = await gp.evaluate(() => G.n);
@@ -472,7 +478,7 @@ async function main() {
     }
 
     // P1-07 placement quiz at 380x780: a new K child sees the "Find my level" card on Home; quitting after 2 answers changes
-    //    nothing; a full run with every answer right (real taps) passes all 4 math worlds in 16 questions, shows the result,
+    //    nothing; a full run with every answer right (real taps) passes all 5 math worlds in 20 questions (P2-01: Tiny Town added), shows the result,
     //    saves S.place and the skips, keeps stars and coins, and the map opens on the last world. Grown-ups shows the result.
     {
       const pa = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 });
@@ -521,15 +527,16 @@ async function main() {
       const res = await pp.evaluate(() => ({ place: S.place && S.place.math, skip: S.skip, stars: S.stars, coins: S.coins,
         btn: Math.min(...[...document.querySelectorAll('.pl-in .btn')].map(b => b.offsetHeight)), wide: document.documentElement.scrollWidth }));
       const s2 = JSON.parse((await snap()).mem);
-      if (n !== 16 || !res.place || res.place.world !== 'm_space' || res.place.asked !== 16 || res.place.right !== 16
-        || ['m_meadow', 'm_candy', 'm_reef', 'm_space'].some(id => !res.skip[id]) || s2.stars !== JSON.parse(s0.mem).stars
+      // P2-01: a K child's quiz now starts one grade below, in Tiny Town, so passing every math world takes 5 testlets (20 questions)
+      if (n !== 20 || !res.place || res.place.world !== 'm_space' || res.place.asked !== 20 || res.place.right !== 20
+        || ['m_tiny', 'm_meadow', 'm_candy', 'm_reef', 'm_space'].some(id => !res.skip[id]) || s2.stars !== JSON.parse(s0.mem).stars
         || s2.coins !== JSON.parse(s0.mem).coins || res.btn < 48 || res.wide > 380)
         fail('placement result: ' + n + ' answers, ' + JSON.stringify(res));
       await pp.click('#plmap');
       await pp.waitForSelector('#map');
-      const mw = await pp.evaluate(() => ({ w: MAPW.math, cur: curWorld('math'), open: unlocked('math', WR.math[3][0]) }));
-      if (mw.w !== 3 || mw.cur !== 3 || !mw.open) fail('map after placement: ' + JSON.stringify(mw));
-      else step('placement: 16 right answers pass all 4 math worlds; result saved, stars and coins unchanged, map opens on Space Station');
+      const mw = await pp.evaluate(() => ({ w: MAPW.math, cur: curWorld('math'), open: unlocked('math', WR.math[PATHS.math.worlds.length - 1][0]), last: PATHS.math.worlds.length - 1 }));
+      if (mw.w !== mw.last || mw.cur !== mw.last || !mw.open) fail('map after placement: ' + JSON.stringify(mw));
+      else step('placement: 20 right answers pass all 5 math worlds; result saved, stars and coins unchanged, map opens on Space Station');
       await pp.evaluate(() => grown());
       await pp.waitForSelector('.pl-grown [data-place="read"]');
       const gtxt = await pp.evaluate(() => document.querySelector('.pl-grown').textContent);
@@ -825,6 +832,76 @@ async function main() {
       network.push(...ka.network);
       for (const e of ka.errors) fail(e);
       await ka.ctx.close();
+    }
+
+    // P2-01 Tiny Town (Pre-K math) at 380x780 with ALL TEXT HIDDEN (html.notext, the debug flag): a Pre-K child opens on Tiny Town, a full
+    //    6-question round is finished by tapping pictures only, every prompt is spoken on its own (say() is stubbed and recorded), the
+    //    replay button is big, no letters are on screen outside the picture choices; then every Tiny Town stop is opened and answered
+    //    once through the real taps (numerals, picture choices, plates) with sizes checked (48 px or more, no sideways scroll)
+    {
+      const ta = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 });
+      const tp = ta.page;
+      await tp.fill('#nm', 'Tiny');
+      await tp.click('.gr[data-g="-1"]');
+      await tp.click('#go');
+      await tp.waitForSelector('.game[data-p="math"]');
+      await tp.click('.game[data-p="math"]');
+      await tp.waitForSelector('.node.cur');
+      const mp0 = await tp.evaluate(() => ({ on: +document.querySelector('.wchip.on').dataset.w, wid: NODES.math[curNode('math')].wid,
+        sk: nid(NODES.math[curNode('math')]), chips: document.querySelectorAll('.wchip').length, n: PATHS.math.worlds.length }));
+      if (mp0.on !== 0 || mp0.wid !== 'm_tiny' || mp0.sk !== 'pk_count1' || mp0.chips !== mp0.n) fail('Pre-K map does not open on Tiny Town: ' + JSON.stringify(mp0));
+      else step('Pre-K child: the math map opens on Tiny Town, first stop pk_count1, ' + mp0.chips + ' world chips');
+      // text hidden + speech recorder
+      await tp.evaluate(() => {
+        document.documentElement.classList.add('notext');
+        window.__said = [];
+        window.say = t => { window.__said.push(String(t)); };
+        window.__rec = [];
+        const r0 = renderQ;
+        renderQ = function () {
+          r0();
+          const q = G.q;
+          setTimeout(() => {
+            const sp = document.querySelector('#spk'), pr = document.querySelector('#prompt');
+            const txt = [...document.querySelectorAll('.pktxt')];
+            window.__rec.push({ sk: q.sk + q.lv, kind: q.kind, said: window.__said.includes(q.say), spk: sp ? [sp.offsetWidth, sp.offsetHeight] : null,
+              letters: /[A-Za-z]/.test(pr.innerText), txtHidden: txt.every(e => e.offsetHeight === 0), nTxt: txt.length,
+              wide: document.documentElement.scrollWidth });
+          }, 700);
+        };
+      });
+      await tp.click('.node.cur');
+      await tp.waitForSelector('#prompt');
+      await playRound(tp, 'P2-01 Tiny Town round, text hidden', 6);
+      const rec = await tp.evaluate(() => window.__rec);
+      const badRec = rec.filter(r => !r.said || !r.spk || r.spk[0] < 64 || r.spk[1] < 64 || r.letters || !r.txtHidden || !r.nTxt || r.wide > 380);
+      if (rec.length < 6 || badRec.length) fail('Tiny Town text-hidden round: ' + JSON.stringify(badRec.length ? badRec : rec));
+      else step('Tiny Town with text hidden: ' + rec.length + ' prompts spoken on their own, replay button ' + rec[0].spk.join('x') + ', no letters on screen, 6/6 by tapping pictures');
+      // every stop once, through the real taps; sizes and the Help button (a picture hint, no letters) on each
+      const stops = await tp.evaluate(() => NODES.math.map((n, i) => [i, nid(n), n.wid]).filter(x => x[2] === 'm_tiny' && x[1] !== 'boss_m_tiny'));
+      const seen = [];
+      for (const [i, id] of stops) {
+        await tp.evaluate(i => { start('math', i); }, i);
+        await tp.waitForSelector('#prompt');
+        await tp.waitForTimeout(600);
+        const sz = await tp.evaluate(() => {
+          const pts = [...document.querySelectorAll('.ch, #prompt [data-v]')].map(e => Math.min(e.offsetWidth, e.offsetHeight));
+          return { kind: G.q.kind, n: pts.length, min: Math.min(...pts), wide: document.documentElement.scrollWidth, tall: document.querySelector('.qarea').scrollHeight > document.querySelector('.qarea').clientHeight + 1 };
+        });
+        await tp.click('#hb');
+        const hint = await tp.evaluate(() => ({ len: document.querySelector('#hint').innerHTML.length, letters: /[A-Za-z]/.test(document.querySelector('#hint').innerText) }));
+        await answer(tp);
+        await tp.evaluate(() => { G.dead = true; }); // the round's own next() timer fires into this dead round, not into the next stop
+        await tp.waitForTimeout(1500);
+        seen.push(id);
+        if (sz.n < 2 || sz.min < 48 || sz.wide > 380 || sz.tall || !hint.len || hint.letters) fail('Tiny Town stop ' + id + ': ' + JSON.stringify({ ...sz, ...hint }));
+      }
+      if (seen.length !== 9) fail('Tiny Town has ' + seen.length + ' stops, expected 9');
+      else step('Tiny Town: all 9 stops open and are answered by taps; touch targets 48 px or more, no sideways scroll, picture hints without letters');
+      await tp.evaluate(() => { G.dead = true; home(); });
+      network.push(...ta.network);
+      for (const e of ta.errors) fail(e);
+      await ta.ctx.close();
     }
 
     for (const e of errors) fail(e);

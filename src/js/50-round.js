@@ -51,7 +51,7 @@ function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;
     :`<div class="track"><div class="line"></div><div class="chest">${G.test?'⚡':'🎁'}</div><div class="runner ${petAura()}" id="runner" style="left:${pos}">${petHTML()}<div class="bubble" id="bub"></div></div></div>`}
    <div class="streak ${G.streak>=2?'on':''}" id="stk">🔥 ${G.streak}</div><div class="stars" id="starc">⭐ ${G.score}</div></div>
   <div class="play"><div class="qarea">${q.review?'<div class="rtag">🔁 Remember this one?</div>':''}${q.ctx?bankCtx(q.ctx):''}<div class="prompt" id="prompt">${q.html}</div>
-  <div class="tools">${q.say?'<button class="btn sm" id="spk">🔊 Hear it</button>':''}<button class="btn sm" id="hb">💡 Help</button></div><div id="hint" class="hint"></div></div>
+  <div class="tools">${q.say?(q.pk?`<button class="btn pkspk" id="spk" aria-label="Hear it again">${ico('speak',44)}</button>`:'<button class="btn sm" id="spk">🔊 Hear it</button>'):''}<button class="btn sm" id="hb">💡 Help</button></div><div id="hint" class="hint"></div></div>
   <div class="inp">${input}</div></div>`);
   $('#quit').onclick=()=>{G.dead=true;back()};
   if($('#spk'))$('#spk').onclick=e=>say(q.say,e.currentTarget,q.lang=='es'&&q.auto=='must'?'es':null);
@@ -66,7 +66,7 @@ function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;
   else if(G.done==G.n-1)petSay('Last one!');
   mastShow(q); // P1-08: Challenge tag, hint before the first try, answer clock
   fit();if(document.fonts)document.fonts.ready.then(fit);
-  if(q.auto==='must'||(q.auto&&S.voice)||(q.say&&gradeCfg().auto==='all'))setTimeout(()=>say(q.say,null,q.lang=='es'?'es':null),400)}
+  if(q.auto==='must'||q.pk||(q.auto&&S.voice)||(q.say&&gradeCfg().auto==='all'))setTimeout(()=>say(q.say,null,q.lang=='es'?'es':null),400)}
 function addMiss(q){const p=P(q.sk),m=p.miss[q.label]||{tot:0};m.tot=(m.tot||0)+1;m.q={label:q.label};delete m.n;p.miss[q.label]=m; // P5-02: a tally only
   const ks=Object.keys(p.miss);if(ks.length>40){ks.sort((a,b)=>p.miss[a].tot-p.miss[b].tot);delete p.miss[ks[0]]}
   revMiss(q)} // P5-02: the review item (59-review.js)

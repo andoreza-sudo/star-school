@@ -277,6 +277,20 @@ const SCREENS = {
   'report-needs': { run: reportDemo('#rp-needs', 1) },
   'report-fresh': { fixture: 'fresh', run: async p => { await p.evaluate(() => { S.name = 'Ava'; report(); }); } },
   'report-maxed': { fixture: 'maxed', run: reportDemo('#rp-level', 3) },
+
+  // P2-01 Tiny Town (Pre-K math): the map, and one question of each of the 9 stops (seed 11) as a Pre-K child; tiny-hint opens Help
+  'tiny-map': { fixture: 'fresh', run: async p => { await p.evaluate(() => { S.name = 'Ava'; setGrade(-1); home(); }); await p.click('.game[data-p="math"]'); } },
+  'tiny-count1': { fixture: 'fresh', run: tinyShot('pk_count', 1) },
+  'tiny-shape1': { fixture: 'fresh', run: tinyShot('shape', 1) },
+  'tiny-num1': { fixture: 'fresh', run: tinyShot('pk_num', 1) },
+  'tiny-sort1': { fixture: 'fresh', run: tinyShot('sort', 1) },
+  'tiny-more1': { fixture: 'fresh', run: tinyShot('pk_more', 1) },
+  'tiny-count2': { fixture: 'fresh', run: tinyShot('pk_count', 2) },
+  'tiny-pat1': { fixture: 'fresh', run: tinyShot('pat', 1) },
+  'tiny-num2': { fixture: 'fresh', run: tinyShot('pk_num', 2) },
+  'tiny-sort2': { fixture: 'fresh', run: tinyShot('sort', 2) },
+  'tiny-hint': { fixture: 'fresh', run: tinyShot('pk_count', 2, true) },
+  'tiny-notext': { fixture: 'fresh', run: tinyShot('pk_num', 2, false, true) },
   // P2-19 spelling: one seeded question of each level in a one-question round; the 'hint' shot also opens the hint
   ...Object.fromEntries([1, 2, 3, 4, 5, 6, 7].map(lv => ['spell-' + lv, { run: spellShot(lv, false) }])),
   'spell-hint': { run: spellShot(7, true) },
@@ -291,7 +305,35 @@ const SCREENS = {
   'syl-2': { fixture: 'fresh', run: abcShot('syl', 2, 17) },
   'sound-3': { fixture: 'fresh', run: abcShot('sound', 3, 18) },
   'sound-4': { fixture: 'fresh', run: abcShot('sound', 4, 19) },
+
+  // P2-01 Tiny Town (Pre-K math): the map, and one question of each of the 9 stops (seed 11) as a Pre-K child; tiny-hint opens Help
+  'tiny-map': { fixture: 'fresh', run: async p => { await p.evaluate(() => { S.name = 'Ava'; setGrade(-1); home(); }); await p.click('.game[data-p="math"]'); } },
+  'tiny-count1': { fixture: 'fresh', run: tinyShot('pk_count', 1) },
+  'tiny-shape1': { fixture: 'fresh', run: tinyShot('shape', 1) },
+  'tiny-num1': { fixture: 'fresh', run: tinyShot('pk_num', 1) },
+  'tiny-sort1': { fixture: 'fresh', run: tinyShot('sort', 1) },
+  'tiny-more1': { fixture: 'fresh', run: tinyShot('pk_more', 1) },
+  'tiny-count2': { fixture: 'fresh', run: tinyShot('pk_count', 2) },
+  'tiny-pat1': { fixture: 'fresh', run: tinyShot('pat', 1) },
+  'tiny-num2': { fixture: 'fresh', run: tinyShot('pk_num', 2) },
+  'tiny-sort2': { fixture: 'fresh', run: tinyShot('sort', 2) },
+  'tiny-hint': { fixture: 'fresh', run: tinyShot('pk_count', 2, true) },
+  'tiny-notext': { fixture: 'fresh', run: tinyShot('pk_num', 2, false, true) },
 };
+
+// One Tiny Town question (genQ with a fixed seed) through the real round engine; hint opens Help, notext sets the debug flag.
+function tinyShot(sk, lv, hint, notext) {
+  return async p => {
+    await p.evaluate(([sk, lv, notext]) => {
+      S.name = 'Ava'; setGrade(-1);
+      window.say = () => {};
+      if (notext) document.documentElement.classList.add('notext');
+      start('math', NODES.math.findIndex(n => n.sk === sk && n.lv === lv));
+      G.q = genQ(sk, lv, 11); renderQ();
+    }, [sk, lv, !!notext]);
+    if (hint) await p.click('#hb');
+  };
+}
 
 // Starts the ABC Beach stop through the real round engine, then shows one seeded question (searching on from seed for the wanted kind).
 function abcShot(sk, lv, seed, kind) {

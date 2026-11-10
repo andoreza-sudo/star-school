@@ -225,6 +225,58 @@ label.tg{display:block;font-size:20px;margin:8px 0}
 .grades{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--s-2);margin-top:var(--s-2)}
 .gr{min-height:var(--tap);padding:var(--s-2) var(--s-1);font-size:var(--fs-3);font-weight:700}
 .gr.sel{background:var(--brand);color:var(--surface);box-shadow:var(--ledge) var(--brand-shade)}
+/* Pre-K math (P2-01, world Tiny Town): pictures first, words only inside .pktxt (hidden by html.notext, the debug flag).
+   Tokens only. Sizes follow the prompt's font size (em), so fit() shrinks pictures and text together. */
+.pkq{display:flex;flex-direction:column;align-items:center;gap:var(--s-2);max-width:100%;font-size:1.3em}
+.pkrow{display:flex;flex-wrap:wrap;justify-content:center;gap:.08em .12em;max-width:100%}
+.pko{display:inline-block;font-size:1em;line-height:1.15;min-width:1.1em;text-align:center}
+.pko .art{width:1em;height:1em}
+.pkscat{display:grid;grid-template-columns:repeat(5,1.2em);grid-template-rows:repeat(2,1.2em);justify-content:center;max-width:100%}
+.pkscat .pko{align-self:center;justify-self:center}
+.pks{display:block;width:clamp(48px,9vh,76px);height:auto;max-width:100%}
+.ch .pks{margin:0 auto}
+.pks.pkbig{width:clamp(96px,16vh,140px)}
+.pkf{fill:var(--c,var(--surface-2));stroke:var(--ink);stroke-width:2;stroke-linejoin:round}
+.pkdim{fill:var(--surface-2)}
+.pkside{fill:none;stroke:var(--play);stroke-width:5;stroke-linecap:round;opacity:.15;animation:pkside var(--T,2.4s) var(--d,0s) infinite}
+@keyframes pkside{0%,30%{opacity:1}31%,100%{opacity:.15}}
+.pulse .pko{animation:pkpulse .7s var(--d,0s) 2}
+@keyframes pkpulse{50%{transform:scale(1.4)}}
+.pkhint{display:flex;flex-direction:column;align-items:center;gap:var(--s-2);font-size:clamp(28px,6vh,44px)}
+.pkhint .sub{font-size:clamp(16px,2.8vh,20px)}
+.pkhint svg.viz{max-width:100%}
+.pkline{display:flex;gap:.1em;justify-content:flex-start;min-height:1.2em}
+.pkear{display:inline-flex;padding:var(--s-4);border-radius:var(--r-pill);background:var(--brand-tint);color:var(--brand)}
+.pkask{font-size:.9em;color:var(--brand)}
+/* more or fewer: two plates, each a tap target */
+.pkpair{display:flex;gap:var(--s-4);justify-content:center;max-width:100%}
+.pkplate{display:flex;align-items:center;justify-content:center;min-width:var(--tap-pk);min-height:calc(var(--tap-pk)*2);padding:var(--s-2);
+  border:4px solid var(--line);border-radius:var(--r-card);background:var(--surface);cursor:pointer}
+.pkplate.right{background:var(--good-tint);border-color:var(--good);animation:bump .4s}
+.pkplate.wrong{background:var(--try-tint);border-color:var(--try);opacity:.6}
+.pkpl{display:grid;grid-template-columns:repeat(3,auto);font-size:.8em;gap:.05em}
+.pkpl .pkrow{display:contents}
+/* pattern row */
+.pkpat{display:flex;flex-direction:row;gap:var(--s-2);align-items:center;justify-content:center;max-width:100%}
+.pkpat .pks{width:clamp(34px,11.5vw,64px)}
+.pkunk{display:inline-flex;align-items:center;justify-content:center;width:clamp(34px,11.5vw,64px);aspect-ratio:1;box-sizing:border-box;
+  border:3px dashed var(--brand);border-radius:var(--r-btn);color:var(--brand);font-size:.7em;font-weight:700}
+/* picture choices */
+.choices.pk2,.choices.pk4{grid-template-columns:1fr 1fr}
+.choices.pk3{grid-template-columns:repeat(3,1fr)}
+.choices.pkcol{grid-template-columns:1fr}
+.choices.pics .ch{min-height:var(--tap-pk)}
+.pkcell{display:flex;align-items:flex-end;justify-content:center;min-height:clamp(72px,12vh,100px);width:100%}
+.pkcell.pkleft{justify-content:flex-start;align-items:center;min-height:calc(var(--tap)*.9);padding-left:var(--s-3)}
+.pkscale{display:block;line-height:1}
+.pkscale .art{width:1em;height:1em}
+.pkbar{display:block;max-width:100%;height:auto}
+.pkbar .pkf{fill:var(--c)}
+/* the big replay button: the way to ask again without reading */
+.btn.pkspk{display:inline-flex;align-items:center;justify-content:center;min-width:96px;min-height:72px;padding:var(--s-2) var(--s-6);
+  color:var(--brand);border-radius:var(--r-pill)}
+/* debug flag (smoke test, "all text hidden"): html.notext */
+html.notext .pktxt{display:none}
 /* Question kinds A (P1-03): number pad extras, multi-select, order. Tokens only (00-tokens.css). */
 
 /* number pad: extra key (. or +/-) on its own row; several slots (fraction, remainder, mixed number) */
@@ -885,7 +937,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S));SAVE_FAILED=fals
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v59'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v60'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -2154,6 +2206,222 @@ function genStory(lv){
   return{kind:'num',html:`<p class="story">${words(t)}</p><div>${SLOT}</div>`,say:t,auto:true,ans:String(op=='+'?a+b:a-b),
     hint:{k:'emoji',e,a,b,op},label:`story ${a} ${op=='+'?'+':'−'} ${b}`}}
 
+/* ---------- Pre-K math generators: world Tiny Town (P2-01; CURRICULUM M-PK) ----------
+   Skills: pk_count 1-2, pk_num 1-2, pk_more 1, sort 1-2, shape 1, pat 1. Every question is audio-first (CURRICULUM 1.4):
+   q.pk = true (the round engine speaks q.say on its own and draws a big replay button), the prompt is a picture, the answers are
+   pictures or numerals, and any words on screen sit in an element with class "pktxt" (the debug flag html.notext hides them).
+   Pictures of things go through picFor; coloured shapes are drawn here (tokens only, no hex). Randomness: rnd() helpers only.
+   Later chunks (P2-02 K math) add levels to the same skill ids in this file. */
+const PK = {
+  // colours: [name spoken, token]. Shapes carry an outline, so colour is never the only cue where it is not the point.
+  COL: [['red', '--danger'], ['blue', '--math'], ['green', '--good'], ['yellow', '--star'], ['purple', '--bt'], ['orange', '--play']],
+  // counting things: [singular, plural, emoji fallback]
+  OBJ: [['duck', 'ducks', '🦆'], ['apple', 'apples', '🍎'], ['star', 'stars', '⭐'], ['fish', 'fish', '🐟'], ['cookie', 'cookies', '🍪'],
+    ['ball', 'balls', '⚽'], ['car', 'cars', '🚗'], ['balloon', 'balloons', '🎈'], ['flower', 'flowers', '🌸'], ['frog', 'frogs', '🐸']],
+  NUM: ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'],
+  // outlines on a 40 x 40 grid, upright: name -> [points, closed polygon]
+  SHP: {
+    triangle: [[20, 4], [37, 35], [3, 35]],
+    square: [[5, 5], [35, 5], [35, 35], [5, 35]],
+    rectangle: [[2, 10], [38, 10], [38, 30], [2, 30]],
+    diamond: [[20, 2], [37, 20], [20, 38], [3, 20]],
+    star: [[20, 2], [25, 14], [38, 15], [28, 24], [31, 37], [20, 30], [9, 37], [12, 24], [2, 15], [15, 14]],
+  },
+  // one object, as picFor draws it; d = animation delay in seconds (hints that pulse one at a time)
+  o(ob, d) { return `<span class="pko"${d == null ? '' : ` style="--d:${d}s"`}>${picFor(ob[0], ob[2])}</span>`; },
+  row(n, ob, pulse) { return Array.from({ length: n }, (_, i) => PK.o(ob, pulse ? i * 0.8 : null)).join(''); },
+  // n objects scattered over a 5 x 2 grid of cells (cells are wider than an object, so nothing overlaps), each nudged a little
+  scatter(n, ob) {
+    const cells = shuffle([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]).slice(0, n).sort((a, b) => a - b);
+    return `<div class="pkscat">${cells.map(c => {
+      const dx = R(-5, 5), dy = R(-4, 4);
+      return `<span class="pko" style="grid-column:${c % 5 + 1};grid-row:${(c / 5 | 0) + 1};transform:translate(${dx}px,${dy}px)">${picFor(ob[0], ob[2])}</span>`;
+    }).join('')}</div>`;
+  },
+  // a coloured shape as an inline svg (40 x 40); ci = index in COL; name = circle or a key of SHP
+  shp(name, ci) {
+    const c = `style="--c:var(${PK.COL[ci][1]})"`;
+    const body = name == 'circle' ? '<circle class="pkf" cx="20" cy="20" r="17"/>'
+      : `<polygon class="pkf" points="${PK.SHP[name].map(p => p.join(',')).join(' ')}"/>`;
+    return `<svg class="pks" viewBox="0 0 40 40" ${c} aria-hidden="true" focusable="false">${body}</svg>`;
+  },
+  // the sides of a shape, lighting one after another (the shape hint); circle has none
+  sides(name) {
+    const P = PK.SHP[name], n = P.length;
+    const ls = P.map((p, i) => {
+      const q = P[(i + 1) % n];
+      return `<line class="pkside" style="--d:${(i * 0.8).toFixed(1)}s;--T:${(n * 0.8).toFixed(1)}s" x1="${p[0]}" y1="${p[1]}" x2="${q[0]}" y2="${q[1]}"/>`;
+    }).join('');
+    return `<svg class="pks pkbig" viewBox="0 0 40 40" aria-hidden="true" focusable="false"><polygon class="pkf pkdim" points="${P.map(p => p.join(',')).join(' ')}"/>${ls}</svg>`;
+  },
+  // one bar of a given length in px (horizontal, a crayon) or n blocks stacked (a tower)
+  bar(len, ci) {
+    return `<svg class="pkbar" viewBox="0 0 ${len} 24" width="${len}" height="24" style="--c:var(${PK.COL[ci][1]})" aria-hidden="true" focusable="false">`
+      + `<rect class="pkf" x="2" y="2" width="${len - 4}" height="20" rx="8"/></svg>`;
+  },
+  tower(n, ci) {
+    let b = '';
+    for (let i = 0; i < n; i++) b += `<rect class="pkf" x="2" y="${2 + (n - 1 - i) * 18}" width="36" height="16" rx="4"/>`;
+    return `<svg class="pkbar" viewBox="0 0 40 ${n * 18 + 4}" width="40" height="${n * 18 + 4}" style="--c:var(${PK.COL[ci][1]})" aria-hidden="true" focusable="false">${b}</svg>`;
+  },
+  // a hint panel: html is trusted markup; w is spoken when it opens (never the only way to learn it)
+  hint(html, w) { return { k: 'html', html, w }; },
+  num: n => PK.NUM[n],
+};
+const pkTxt = t => `<div class="sub pktxt">${t}</div>`; // words on screen: hidden by html.notext
+const pkEar = () => `<div class="pkear">${ico('speak', 56)}</div>`; // the picture for a listening task
+const pkQ = o => Object.assign({ pk: true, auto: true }, o);
+// numeral choices (strings, so answer and values compare strictly)
+const pkNums = (n, ds) => shuffle([n, ...ds]).map(x => ({ l: String(x), v: String(x) }));
+
+function genPkCount(lv) {
+  const ob = pick(PK.OBJ), top = lv == 1 ? 5 : 10, n = R(1, top);
+  let ds;
+  if (lv == 1) {
+    const a = pick([n - 1, n + 1].filter(x => x >= 1 && x <= 5));
+    ds = [a, pick([1, 2, 3, 4, 5].filter(x => x != n && x != a))];
+  } else {
+    const a = pick([n - 1, n + 1].filter(x => x >= 1 && x <= 10));
+    ds = [a, pick([n - 2, n + 2].filter(x => x >= 1 && x <= 10 && x != a))];
+  }
+  const words = Array.from({ length: n }, (_, i) => PK.num(i + 1)).join(', ');
+  return pkQ({
+    kind: 'choice', cls: 'syms', ans: String(n), choices: pkNums(n, ds),
+    html: `<div class="pkq">${lv == 1 ? `<div class="pkrow">${PK.row(n, ob)}</div>` : PK.scatter(n, ob)}</div>${pkTxt(`How many ${ob[1]}?`)}`,
+    say: `How many ${ob[1]}?`, after: `${PK.num(n)} ${n == 1 ? ob[0] : ob[1]}`,
+    hint: PK.hint(`<div class="pkhint"><div class="pkrow pulse">${PK.row(n, ob, true)}</div></div>`, `Count with me. ${words}.`),
+    label: `count ${n} ${ob[1]}${lv == 2 ? ' (scatter)' : ''}`,
+  });
+}
+
+function genPkNum(lv) {
+  const top = lv == 1 ? 5 : 10, n = R(0, top);
+  const look = { 6: 9, 9: 6, 1: 7, 7: 1, 2: 5, 5: 2, 3: 8, 8: 3 }; // look-alike numerals
+  const used = new Set([n]), ds = [];
+  const add = x => { if (x >= 0 && x <= top && !used.has(x)) { used.add(x); ds.push(x); return true; } return false; };
+  if (lv == 2 && look[n] != null) add(look[n]);
+  while (ds.length < 2) {
+    if (ds.length == 0 || coin()) { if (!add(pick([n - 1, n + 1]))) add(R(0, top)); } else add(R(0, top));
+  }
+  return pkQ({
+    kind: 'choice', cls: 'syms', ans: String(n), choices: pkNums(n, ds), auto: 'must',
+    html: `<div class="pkq">${pkEar()}</div>${pkTxt(`Tap the number ${PK.num(n)}.`)}`,
+    say: `Tap the number ${PK.num(n)}.`,
+    hint: n == 0
+      ? PK.hint(`<div class="pkhint">${pkTxt('Zero means none. No dots at all!')}</div>`, 'Zero means none. No dots at all!')
+      : PK.hint(`<div class="pkhint">${VIZ.dots(n, 'row')}</div>`, `Count the dots. ${Array.from({ length: n }, (_, i) => PK.num(i + 1)).join(', ')}.`),
+    label: lv == 1 ? `tap ${n}` : `tap ${n} to ten`,
+  });
+}
+
+// two groups, tap the one with more; the difference is at least 2
+const PK_PLATES = [['plate', ['cookie', 'cookies', '🍪']], ['bowl', ['apple', 'apples', '🍎']], ['basket', ['ball', 'balls', '⚽']],
+  ['pond', ['duck', 'ducks', '🦆']], ['box', ['car', 'cars', '🚗']]];
+function genPkMore() {
+  const [cn, ob] = pick(PK_PLATES);
+  const hi = R(3, 5), lo = R(1, hi - 2), big = coin() ? 'l' : 'r';
+  const [a, b] = big == 'l' ? [hi, lo] : [lo, hi];
+  const plate = (n, v) => `<div class="pkplate" data-v="${v}" aria-label="${cn}"><div class="pkpl">${PK.row(n, ob)}</div></div>`;
+  return pkQ({
+    kind: 'tap', ans: big,
+    html: `<div class="pkpair">${plate(a, 'l')}${plate(b, 'r')}</div>${pkTxt(`Which ${cn} has more ${ob[1]}?`)}`,
+    say: `Which ${cn} has more ${ob[1]}?`, ansSay: 'This one has more.',
+    hint: PK.hint(`<div class="pkhint"><div class="pkline">${PK.row(a, ob)}</div><div class="pkline">${PK.row(b, ob)}</div>${pkTxt('Line them up. Which row is longer?')}</div>`,
+      'Line them up in two rows. Which row is longer?'),
+    label: `more ${a} or ${b} ${ob[1]}`,
+  });
+}
+
+// sort 1: three alike by colour or by shape, one different
+function genSort1() {
+  const byColour = coin(), SH = ['circle', 'square', 'triangle', 'star', 'diamond'];
+  const sh = shuffle(SH), cs = shuffle([0, 1, 2, 3, 4, 5]);
+  let items, odd; // items: [shape, colour index]
+  if (byColour) {
+    items = [[sh[0], cs[0]], [sh[1], cs[0]], [sh[2], cs[0]]]; // same colour, three different shapes
+    odd = [pick(sh), cs[1]];
+  } else {
+    items = [[sh[0], cs[0]], [sh[0], cs[1]], [sh[0], cs[2]]]; // same shape, three different colours
+    odd = [sh[1], pick(cs.slice(0, 5))];
+  }
+  const all = shuffle([...items.map(x => ({ x, odd: false })), { x: odd, odd: true }]);
+  const oi = all.findIndex(a => a.odd);
+  const cn = i => PK.COL[i][0];
+  const label = byColour ? `odd ${cn(odd[1])} ${odd[0]} in ${cn(cs[0])}: ${items.map(i => i[0]).join(',')}`
+    : `odd ${odd[0]} in ${items[0][0]}: ${items.map(i => cn(i[1])).join(',')}`;
+  return pkQ({
+    kind: 'choice', cls: 'pics pk4', ans: String(oi),
+    choices: all.map((a, i) => ({ l: PK.shp(a.x[0], a.x[1]), v: String(i), h: true })),
+    html: `<div class="pkq pkask">?</div>${pkTxt('Which one does not belong?')}`, say: 'Which one does not belong?',
+    hint: PK.hint(`<div class="pkhint">${pkTxt(byColour ? 'Look at the colours.' : 'Look at the shapes.')}</div>`,
+      byColour ? 'Look at the colours. Three are the same.' : 'Look at the shapes. Three are the same.'),
+    label,
+  });
+}
+
+// sort 2: biggest / smallest ball, longest / shortest crayon, tallest / shortest tower; 2 or 3 pictures
+function genSort2() {
+  const kind = pick(['size', 'length', 'height']), n = R(2, 3), top = coin();
+  const ci = R(0, 5), pool = kind == 'size' ? [0.5, 0.75, 1, 1.35] : kind == 'length' ? [36, 62, 88, 114] : [1, 2, 3, 4];
+  const vals = shuffle(pool).slice(0, n);
+  const want = top ? Math.max(...vals) : Math.min(...vals);
+  const ob = pick(PK.OBJ.filter(o => o[0] != 'fish'));
+  const adj = kind == 'size' ? (top ? ['biggest', 'bigger'] : ['smallest', 'smaller'])
+    : kind == 'length' ? (top ? ['longest', 'longer'] : ['shortest', 'shorter']) : (top ? ['tallest', 'taller'] : ['shortest', 'shorter']);
+  const noun = kind == 'size' ? ob[0] : kind == 'length' ? 'crayon' : 'tower';
+  const a = n == 2 ? adj[1] : adj[0], sayT = `Tap the ${a} ${noun}.`;
+  const choices = vals.map((v, i) => ({
+    v: String(i), h: true,
+    l: kind == 'size' ? `<span class="pkcell"><span class="pkscale" style="font-size:${v}em">${picFor(ob[0], ob[2])}</span></span>`
+      : kind == 'length' ? `<span class="pkcell pkleft">${PK.bar(v, ci)}</span>` : `<span class="pkcell">${PK.tower(v, ci)}</span>`,
+  }));
+  const HOW = {
+    size: ['Look at all of them. Which one takes up the most room?', 'Look at all of them. Which one takes up the least room?'],
+    length: ['Line them up on the left. Which one reaches farthest?', 'Line them up on the left. Which one stops first?'],
+    height: ['Stand them on the floor. Which one reaches highest?', 'Stand them on the floor. Which one is lowest?'],
+  };
+  const how2 = HOW[kind][top ? 0 : 1];
+  return pkQ({
+    kind: 'choice', cls: `pics pk${n}${kind == 'length' ? ' pkcol' : ''}`, ans: String(vals.indexOf(want)), choices,
+    html: `<div class="pkq pkask">?</div>${pkTxt(sayT)}`, say: sayT,
+    hint: PK.hint(`<div class="pkhint">${pkTxt(how2)}</div>`, how2),
+    label: `${a} ${noun} ${vals.join('/')}`,
+  });
+}
+function genSort(lv) { return lv == 1 ? genSort1() : genSort2(); }
+
+// shape 1: hear a shape name, tap it among 3 (random colours, upright)
+function genPkShape() {
+  const names = ['circle', 'square', 'triangle', 'rectangle'], sh = shuffle(names).slice(0, 3), ans = pick(sh);
+  const cs = shuffle([0, 1, 2, 3, 4, 5]);
+  const facts = { circle: 'A circle is round. It has no corners.', square: 'A square has 4 sides. They are all the same.',
+    triangle: 'A triangle has 3 sides.', rectangle: 'A rectangle has 4 sides. Two are long and two are short.' };
+  const hint = ans == 'circle' ? PK.hint(`<div class="pkhint">${PK.shp('circle', cs[0]).replace('class="pks"', 'class="pks pkbig"')}${pkTxt(facts[ans])}</div>`, facts[ans])
+    : PK.hint(`<div class="pkhint">${PK.sides(ans)}${pkTxt(facts[ans])}</div>`, facts[ans]);
+  return pkQ({
+    kind: 'choice', cls: 'pics', ans, auto: 'must', choices: sh.map((s, i) => ({ l: PK.shp(s, cs[i]), v: s, h: true })),
+    html: `<div class="pkq">${pkEar()}</div>${pkTxt(`Tap the ${ans}.`)}`, say: `Tap the ${ans}.`, hint, label: `tap the ${ans}`,
+  });
+}
+
+// pat 1: an AB pattern of 5, pick the 6th (colours, or shapes in one colour)
+function genPkPat() {
+  const byColour = coin(), cs = shuffle([0, 1, 2, 3, 4, 5]), sh = shuffle(['circle', 'square', 'triangle', 'star', 'diamond']);
+  const A = byColour ? { s: 'circle', c: cs[0] } : { s: sh[0], c: cs[0] };
+  const B = byColour ? { s: 'circle', c: cs[1] } : { s: sh[1], c: cs[0] };
+  const seq = [A, B, A, B, A], nm = x => byColour ? PK.COL[x.c][0] : x.s;
+  const other = byColour ? { s: 'circle', c: cs[2] } : { s: sh[2], c: cs[0] };
+  const n = R(2, 3), opts = shuffle(n == 2 ? [B, A] : [B, A, other]);
+  const draw = x => PK.shp(x.s, x.c), names = seq.map(nm).join(', ');
+  const chant = `${names}. What comes next?`;
+  return pkQ({
+    kind: 'choice', cls: `pics pk${n}`, ans: String(opts.indexOf(B)), choices: opts.map((x, i) => ({ l: draw(x), v: String(i), h: true })),
+    html: `<div class="pkq pkpat">${seq.map(draw).join('')}<span class="pkunk">?</span></div>${pkTxt('What comes next?')}`, say: chant,
+    hint: PK.hint(`<div class="pkhint"><div class="pkpat pulse">${seq.map((x, i) => `<span class="pko" style="--d:${i * 0.8}s">${draw(x)}</span>`).join('')}</div>`
+      + `${pkTxt('Say it with me.')}</div>`, `${names}, what comes next?`),
+    label: `pattern ${names}`,
+  });
+}
 /* ---------- reading generators ---------- */
 function words(t){return t.split(' ').map(w=>`<span class="w" data-w="${esc(w.replace(/[^A-Za-z']/g,''))}">${esc(w)}</span>`).join(' ')}
 function genSight(lv){const L=DOL[lv-1],w=pick(L);
@@ -2617,6 +2885,12 @@ const SK={
  cmp:{t:'Compare',e:'🐊',area:'math',max:3,gen:genCmp},
  time:{t:'Clocks',e:'🕒',area:'math',max:3,gen:genTime},
  coins:{t:'Coins',e:'🪙',area:'math',max:3,gen:genCoins},
+ pk_count:{t:'Count Things',e:'🔢',area:'math',max:2,gen:genPkCount},
+ pk_num:{t:'Hear a Number',e:'🔟',area:'math',max:2,gen:genPkNum},
+ pk_more:{t:'Which Has More',e:'⚖️',area:'math',max:1,gen:genPkMore},
+ sort:{t:'Sort and Compare',e:'🧩',area:'math',max:2,gen:genSort},
+ shape:{t:'Shapes',e:'🔺',area:'math',max:1,gen:genPkShape},
+ pat:{t:'Patterns',e:'🌈',area:'math',max:1,gen:genPkPat},
  mult:{t:'Equal Groups',e:'✖️',area:'math',max:2,gen:genMult},
  comp:{t:'Story Time',e:'📗',area:'read',max:2,gen:genComp},
  add:{t:'Adding',e:'➕',area:'math',max:3,gen:genAdd},
@@ -2637,6 +2911,7 @@ function rod(n,c,cls='',x=0){if(n<=0)return'';let s='';for(let i=0;i<n;i++)s+=`<
 function hintHTML(q){const h=q.hint;if(!h)return'';
   if(h.k=='text')return esc(h.s);
   if(h.k=='say'){setTimeout(()=>say(h.w,null,h.lang),150);return esc(h.s)}
+  if(h.k=='html'){if(h.w)setTimeout(()=>say(h.w),150);return h.html} // trusted markup from a generator (Pre-K pictures); h.w is spoken
   if(h.k=='next'){const need=q.word[G.built.length],i=q.tiles.findIndex((t,j)=>t==need&&!G.built.includes(j));const el=$(`.lt[data-i="${i}"]`);if(el)el.classList.add('glow');setTimeout(()=>say(q.word),150);return'Look for the glowing letter!'}
   if(h.k=='pairs'){if(h.n>20)return'Look at the last digit. Is it 0, 2, 4, 6, or 8?';let s='<div class="pairs">';for(let i=0;i<h.n;i+=2)s+='<span><b></b>'+(i+1<h.n?'<b></b>':'')+'</span>';return s+'</div><div>Does every dot have a partner?</div>'}
   if(h.k=='emoji'){const{e,a,b,op}=h;if(op=='+')return a+b>20?'Count on with your fingers!':`<div class="emh">${e.repeat(a)} + ${e.repeat(b)}</div>`;
@@ -2659,6 +2934,7 @@ const PET_OOPS=['Oops! Try again!','You can do it!','Almost!','Hmm, look again!'
 /* ---------- games (paths), maps ---------- */
 const PATHS={
  math:{n:'Math Adventure',e:'🔢',c:'linear-gradient(135deg,#dbeafe,#bfdbfe)',worlds:[
+  {id:'m_tiny',g:-1,n:'Tiny Town',e:'🏠',c:'#fef9c3',nodes:[['pk_count',1,'Count to 5'],['shape',1,'Find the Shape'],['pk_num',1,'Hear a Number'],['sort',1,'Which One Is Different'],['pk_more',1,'Which Has More'],['pk_count',2,'Count to 10'],['pat',1,'What Comes Next'],['pk_num',2,'Numbers to 10'],['sort',2,'Big and Small']]},
   {id:'m_meadow',g:0,n:'Number Meadow',e:'🌻',c:'#dcfce7',nodes:[['add',1,'Adding to 10'],['cnt',1,'Count by 1s & 10s'],['eo',1,'Even or Odd'],['miss',1,'Missing Number'],['sub',1,'Take Away'],['story',1,'Story Problems']]},
   {id:'m_candy',g:1,n:'Candy Canyon',e:'🍭',c:'#fce7f3',nodes:[['add',2,'+9 & Doubles'],['big',1,'Tens & Hundreds'],['cnt',2,'Count by 2s & 5s'],['cmp',1,'Bigger or Smaller'],['miss',2,'Missing to 18'],['sub',2,'Take Away to 18'],['story',2,'Story Problems 2']]},
   {id:'m_reef',g:1,n:'Ocean Reef',e:'🐠',c:'#e0f2fe',nodes:[['add',3,'All the Facts'],['time',1,"O'Clock"],['big',2,'2-Digit Adding'],['coins',1,'Pennies & Nickels'],['eo',2,'Even/Odd to 99'],['cmp',2,'Compare to 100'],['time',2,'Half Past'],['sub',3,'2-Digit Take Away'],['story',3,'Story Problems 3']]},
@@ -2755,14 +3031,14 @@ function startWorld(p){
   return k<0?ws.length-1:k;
 }
 /* The stop the map opens on: the first open, unpassed stop, not counting NEW stops or untouched worlds below the start world.
-   Falls back to any open unpassed stop outside those untouched worlds, then to the very last stop (everything done). */
+   Falls back to any open unpassed stop (not in an untouched world below the start world), then to the very last stop (everything done). */
 function curNode(p){
   const N=NODES[p],sw=startWorld(p);let any=-1;
   for(let i=0;i<N.length;i++){
     if(passed(p,i)||!unlocked(p,i))continue;
-    const wi=N[i].wi;
-    if(any<0&&!(wi<sw&&!worldHasProgress(p,wi)))any=i; // never fall back into an untouched world below the start world (ABC Beach for a K child)
-    if(stopNew(p,i)||(wi<sw&&(!worldHasProgress(p,wi)||worldSkipped(p,wi))))continue; // skipped by placement: start above it
+    const wi=N[i].wi,below=wi<sw&&(!worldHasProgress(p,wi)||worldSkipped(p,wi)); // an untouched world below the start world (Pre-K Tiny Town for a K child)
+    if(any<0&&!below)any=i; // a finished child is not sent back down to a world they never needed
+    if(stopNew(p,i)||below)continue; // skipped by placement: start above it
     return i;
   }
   return any>=0?any:N.length-1;
@@ -3087,7 +3363,7 @@ function home(first){
   $('#book').onclick=book;$('#shop').onclick=shop;$('#mix').onclick=()=>{SFX.whoosh();startMix()};$('#race').onclick=raceMenu;$('#flu').onclick=()=>{SFX.whoosh();fluMenu()};$('#care').onclick=care;$('#groom').onclick=()=>{SFX.whoosh();gameRoom()};
   if($('#inst'))$('#inst').onclick=async()=>{try{installEvt.prompt();await installEvt.userChoice}catch(e){}installEvt=null;home()};
   let t;const g=$('#gear');g.onpointerdown=()=>{t=setTimeout(grown,1200)};g.onpointerup=g.onpointerleave=()=>clearTimeout(t);g.onclick=()=>fb('Grown-ups: hold it','warn');
-  {const sc=$('.scroll');if(sc)sc.insertAdjacentHTML('beforeend','<p class="small" style="text-align:center;opacity:.55;margin:14px 0 4px">Star School v59</p>')}
+  {const sc=$('.scroll');if(sc)sc.insertAdjacentHTML('beforeend','<p class="small" style="text-align:center;opacity:.55;margin:14px 0 4px">Star School v60</p>')}
   if(first&&S.voice)setTimeout(()=>say(`Hi ${S.name}! Pick a game!`),400)}
 
 let MAPP='math',MAPW={}; // MAPW[path] = the world picked in the strip (this session only, not saved)
@@ -3849,7 +4125,7 @@ function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;
     :`<div class="track"><div class="line"></div><div class="chest">${G.test?'⚡':'🎁'}</div><div class="runner ${petAura()}" id="runner" style="left:${pos}">${petHTML()}<div class="bubble" id="bub"></div></div></div>`}
    <div class="streak ${G.streak>=2?'on':''}" id="stk">🔥 ${G.streak}</div><div class="stars" id="starc">⭐ ${G.score}</div></div>
   <div class="play"><div class="qarea">${q.review?'<div class="rtag">🔁 Remember this one?</div>':''}${q.ctx?bankCtx(q.ctx):''}<div class="prompt" id="prompt">${q.html}</div>
-  <div class="tools">${q.say?'<button class="btn sm" id="spk">🔊 Hear it</button>':''}<button class="btn sm" id="hb">💡 Help</button></div><div id="hint" class="hint"></div></div>
+  <div class="tools">${q.say?(q.pk?`<button class="btn pkspk" id="spk" aria-label="Hear it again">${ico('speak',44)}</button>`:'<button class="btn sm" id="spk">🔊 Hear it</button>'):''}<button class="btn sm" id="hb">💡 Help</button></div><div id="hint" class="hint"></div></div>
   <div class="inp">${input}</div></div>`);
   $('#quit').onclick=()=>{G.dead=true;back()};
   if($('#spk'))$('#spk').onclick=e=>say(q.say,e.currentTarget,q.lang=='es'&&q.auto=='must'?'es':null);
@@ -3864,7 +4140,7 @@ function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;
   else if(G.done==G.n-1)petSay('Last one!');
   mastShow(q); // P1-08: Challenge tag, hint before the first try, answer clock
   fit();if(document.fonts)document.fonts.ready.then(fit);
-  if(q.auto==='must'||(q.auto&&S.voice)||(q.say&&gradeCfg().auto==='all'))setTimeout(()=>say(q.say,null,q.lang=='es'?'es':null),400)}
+  if(q.auto==='must'||q.pk||(q.auto&&S.voice)||(q.say&&gradeCfg().auto==='all'))setTimeout(()=>say(q.say,null,q.lang=='es'?'es':null),400)}
 function addMiss(q){const p=P(q.sk),m=p.miss[q.label]||{tot:0};m.tot=(m.tot||0)+1;m.q={label:q.label};delete m.n;p.miss[q.label]=m; // P5-02: a tally only
   const ks=Object.keys(p.miss);if(ks.length>40){ks.sort((a,b)=>p.miss[a].tot-p.miss[b].tot);delete p.miss[ks[0]]}
   revMiss(q)} // P5-02: the review item (59-review.js)
@@ -6138,7 +6414,7 @@ function grown(){let armed=false;
    <div class="vline"><span class="vtxt">Give a bonus</span><button class="btn xs" id="pt5">+5 min</button><button class="btn xs danger" id="pt0">Empty bank</button></div>
    <label class="tg"><input type="checkbox" id="ptp" ${ptCfg().pause?'checked':''}> Pause game time (games locked)</label></div>
   <div class="card"><div class="tw"><table><tr><th>Skill</th><th>Rounds</th><th>1st try</th><th>Tricky ones</th></tr>${rows}</table></div></div>
-  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v59 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
+  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v60 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
    Storage: ${SAVE_FAILED?'<b style="color:#c0392b">could not save (device storage may be full)</b>':'saving OK'}${SAVE_CORRUPT?'<br><b style="color:#c0392b">The old save could not be read. A fresh start was made and the old data was kept on the device.</b>':''}<br>
    Last errors: ${(S.err||[]).length?(S.err||[]).slice().reverse().map(e=>'<br>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+' '+esc(e.msg)).join(''):'none'}</div></details>
   <div class="card"><label class="tg"><input type="checkbox" id="voice" ${S.voice?'checked':''}> Read questions out loud</label>
