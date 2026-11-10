@@ -6,8 +6,9 @@ const PATHS={
   {id:'m_reef',g:1,n:'Ocean Reef',e:'🐠',c:'#e0f2fe',nodes:[['add',3,'All the Facts'],['time',1,"O'Clock"],['big',2,'2-Digit Adding'],['coins',1,'Pennies & Nickels'],['eo',2,'Even/Odd to 99'],['cmp',2,'Compare to 100'],['time',2,'Half Past'],['sub',3,'2-Digit Take Away'],['story',3,'Story Problems 3']]},
   {id:'m_space',g:2,n:'Space Station',e:'🚀',c:'#ede9fe',nodes:[['big',3,'Carry the 1'],['mult',1,'Equal Groups'],['coins',2,'Dimes Too'],['cnt',3,'Skip Count Big'],['sub',4,'Borrowing'],['time',3,'Quarter Hours'],['big',4,'3-Digit Adding'],['mult',2,'Groups to 5×5'],['cmp',3,'Compare to 999'],['coins',3,'Quarters']]}]},
  read:{n:'Reading Adventure',e:'📖',c:'linear-gradient(135deg,#fce7f3,#fbcfe8)',worlds:[
-  {id:'r_meadow',g:0,n:'Letter Meadow',e:'🌻',c:'#dcfce7',nodes:[['sound',1,'First Sounds'],['sight',1,'Sight Words'],['rhyme',1,'Rhyme Time'],['pic',1,'Picture Words'],['sound',2,'Last Sounds'],['build',1,'Build a Word'],['sent',1,'Read & Match']]},
-  {id:'r_candy',g:1,n:'Candy Canyon',e:'🍭',c:'#fce7f3',nodes:[['sight',2,'More Sight Words'],['rhyme',2,'Rhyme & Read'],['pic',2,'Blends'],['build',2,'Build Blends'],['sent',2,'Read Sentences'],['comp',1,'Story Time'],['spell',1,'Spell Short Words']]},
+  {id:'r_abc',g:-1,n:'ABC Beach',e:'🏖️',c:'#e0f2fe',nodes:[['abc',1,'Big Letters'],['abc',2,'Little Letters'],['abc',3,'Match Big & Little'],['syl',1,'Clap the Syllables'],['abc',4,'ABC Order']]},
+  {id:'r_meadow',g:0,n:'Letter Meadow',e:'🌻',c:'#dcfce7',nodes:[['sound',1,'First Sounds'],['sight',1,'Sight Words'],['rhyme',1,'Rhyme Time'],['pic',1,'Picture Words'],['sound',2,'Last Sounds'],['build',1,'Build a Word'],['sent',1,'Read & Match'],['sound',3,'Middle Sounds']]},
+  {id:'r_candy',g:1,n:'Candy Canyon',e:'🍭',c:'#fce7f3',nodes:[['sight',2,'More Sight Words'],['rhyme',2,'Rhyme & Read'],['pic',2,'Blends'],['build',2,'Build Blends'],['sent',2,'Read Sentences'],['comp',1,'Story Time'],['sound',4,'Letter Teams'],['syl',2,'Count the Claps'],['spell',1,'Spell Short Words']]},
   {id:'r_reef',g:1,n:'Ocean Reef',e:'🐠',c:'#e0f2fe',nodes:[['sight',3,'Sight Words 3'],['pic',3,'Magic E'],['build',3,'Build Magic E'],['comp',2,'Story Time 2'],['spell',2,'Spell Blends']]},
   {id:'r_space',g:2,n:'Space Station',e:'🚀',c:'#ede9fe',nodes:[['pic',4,'Vowel Teams'],['build',4,'Build Vowel Teams'],['spell',3,'Spell Magic E & Teams']]},
   {id:'r_summit',g:3,n:'Story Summit',e:'🏔️',c:'#e2e8f0',nodes:[['spell',4,'Spell Tricky Sounds']]},
@@ -96,13 +97,13 @@ function startWorld(p){
   return k<0?ws.length-1:k;
 }
 /* The stop the map opens on: the first open, unpassed stop, not counting NEW stops or untouched worlds below the start world.
-   Falls back to any open unpassed stop, then to the very last stop (everything done). */
+   Falls back to any open unpassed stop outside those untouched worlds, then to the very last stop (everything done). */
 function curNode(p){
   const N=NODES[p],sw=startWorld(p);let any=-1;
   for(let i=0;i<N.length;i++){
     if(passed(p,i)||!unlocked(p,i))continue;
-    if(any<0)any=i;
     const wi=N[i].wi;
+    if(any<0&&!(wi<sw&&!worldHasProgress(p,wi)))any=i; // never fall back into an untouched world below the start world (ABC Beach for a K child)
     if(stopNew(p,i)||(wi<sw&&(!worldHasProgress(p,wi)||worldSkipped(p,wi))))continue; // skipped by placement: start above it
     return i;
   }

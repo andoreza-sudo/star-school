@@ -388,6 +388,11 @@ label.tg{display:block;font-size:20px;margin:8px 0}
 .stc-n{font-size:var(--fs-1);color:var(--ink-2)}
 .stc-m{font-size:var(--fs-2);min-height:1em}
 @media (max-width:420px){.stc-card{padding:var(--s-3)}.stc-grid{gap:2px}}
+/* P2-15 ABC Beach (32-gen-read.js genAbc, genSoundB, genSyl). Tokens only. */
+.choices.syms.sym4{grid-template-columns:repeat(2,1fr)}
+.ab-l{display:flex;align-items:center;justify-content:center;font-size:calc(clamp(36px,9vmin,72px)*var(--k));font-weight:700;color:var(--ink);min-width:1.1em}
+.choices.clps .ch{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--s-1);min-height:var(--tap-pk)}
+.clp{display:flex;flex-wrap:wrap;justify-content:center;gap:var(--s-1);font-size:var(--fs-5);color:var(--star-shade)}
 /* P5-06 Grown-ups report card (82-report.js). Tokens only; every class starts with rp-. */
 .rp-entry{display:flex;align-items:center;gap:var(--s-3);flex-wrap:wrap}
 .rp-entry .btn{display:inline-flex;align-items:center;gap:var(--s-2);min-height:var(--tap)}
@@ -880,7 +885,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S));SAVE_FAILED=fals
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v58'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v59'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -1290,6 +1295,37 @@ const NOUNS=[...CVC,...BLEND].filter(w=>!['ten','six','man','leg','pin'].include
 const BAD=/^(fuck|fuk|shit|dick|cock|suck|tit|tits|fag|cum|sex|ass|piss|crap|damn|dam|hell|hoe|slut|cunt|twat|nig|fap|wank|porn|poop|butt|pee|kill|gun)$/;
 const art=w=>/^[aeiou]/.test(w)?'an':'a';
 
+
+/* ---------- ABC Beach data (P2-15; CURRICULUM E-PK, E-K) ---------- */
+// Letters in the order they are introduced (CURRICULUM E-PK). The first 13 are drawn twice as often.
+const ABCO='SATPINMDGOCKEURHBFLJVWXYZQ';
+const ABCP=[...ABCO.slice(0,13),...ABCO];
+// Look-alike groups: wrong choices come from the group first (E/F, M/W, O/Q, P/R; b/d/p/q, n/h, i/l, u/n).
+const LOOKU=['EFLT','MWNH','OQCG','PRBD','IJLT','KXYV','UVWY','SZ'];
+const LOOKL=['bdpq','nhru','il','uvwy','mn','ceo','fkt','agqy','sz','jy'];
+// A word for each letter, said in the hint ("B is for ball"). Words only: no picture is needed.
+const LETW={S:'sun',A:'apple',T:'tiger',P:'pig',I:'igloo',N:'nose',M:'moon',D:'dog',G:'goat',O:'octopus',C:'cat',K:'king',E:'egg',U:'umbrella',
+  R:'rabbit',H:'hat',B:'ball',F:'fish',L:'lion',J:'jam',V:'van',W:'whale',X:'x-ray',Y:'yo-yo',Z:'zebra',Q:'queen'};
+// Middle-vowel words for sound 3: three letters, consonant-vowel-consonant, from CVC.
+const CVCM=CVC.filter(x=>/^[^aeiou][aeiou][^aeiou]$/.test(x[0])&&!['ten','six','man','leg','pin'].includes(x[0]));
+// Digraph picture words for sound 4: [word, emoji, digraph, 's' starts with it | 'e' ends with it].
+const DIGR=[['ship','🚢','sh','s'],['shell','🐚','sh','s'],['sheep','🐑','sh','s'],['shark','🦈','sh','s'],['fish','🐟','sh','e'],['dish','🍽️','sh','e'],['brush','🖌️','sh','e'],
+  ['chick','🐤','ch','s'],['cheese','🧀','ch','s'],['peach','🍑','ch','e'],['beach','🏖️','ch','e'],
+  ['thumb','👍','th','s'],['tooth','🦷','th','e'],['bath','🛁','th','e'],['moth','🦋','th','e'],
+  ['whale','🐳','wh','s'],
+  ['duck','🦆','ck','e'],['sock','🧦','ck','e'],['clock','🕐','ck','e'],['truck','🚚','ck','e'],['lock','🔒','ck','e'],['brick','🧱','ck','e'],['chick','🐤','ck','e']];
+// Syllable picture words for syl 1 (40): [word, emoji, syllables 1-3].
+const SYLP=[['cat','🐱',1],['dog','🐶',1],['sun','☀️',1],['bus','🚌',1],['fish','🐟',1],['frog','🐸',1],['star','⭐',1],['moon','🌙',1],['tree','🌳',1],['cake','🎂',1],['duck','🦆',1],['ship','🚢',1],
+  ['apple','🍎',2],['rabbit','🐰',2],['pizza','🍕',2],['candy','🍬',2],['pencil','✏️',2],['penguin','🐧',2],['turtle','🐢',2],['cookie','🍪',2],['doughnut','🍩',2],['rainbow','🌈',2],
+  ['guitar','🎸',2],['trumpet','🎺',2],['balloon','🎈',2],['dragon','🐉',2],['castle','🏰',2],['pumpkin','🎃',2],
+  ['banana','🍌',3],['elephant','🐘',3],['butterfly','🦋',3],['octopus','🐙',3],['strawberry','🍓',3],['ladybug','🐞',3],['crocodile','🐊',3],['volcano','🌋',3],
+  ['sunflower','🌻',3],['bicycle','🚲',3],['dinosaur','🦖',3],['triangle','🔺',3]];
+// Syllable words for syl 2 (60, printed, no picture), by number of syllables (index 0 = one syllable).
+const SYLW=[
+  'cat jump stop black train house light plant spoon bread smile thumb'.split(' '),
+  'tiger apple window happy monkey pencil garden rabbit table circle summer winter finger basket pillow button yellow market'.split(' '),
+  'banana elephant umbrella bicycle family computer dinosaur tomato potato animal butterfly beautiful yesterday remember strawberry kangaroo marshmallow vitamin'.split(' '),
+  'alligator watermelon caterpillar dictionary helicopter motorcycle celebration elevator invitation category refrigerate generation'.split(' ')];
 /* ---------- question helpers ---------- */
 const SLOT='<span class="slot" id="slot"></span>';
 const PAL=['#f97316','#ec4899','#facc15','#84cc16','#38bdf8','#a855f7','#d6d3d1','#92400e','#14b8a6','#2563eb'];
@@ -2208,6 +2244,76 @@ function genComp(lv){const [t,qq,a,d]=pick(STORIES[Math.min(lv,2)-1]);
   return{kind:'choice',cls:'wide',html:`<p class="story">${words(t)}</p><p class="story" style="color:#1d4ed8">${words(qq)}</p>`,say:t+' '+qq,auto:true,ans:a,
     choices:shuffle([a,...d]).map(x=>({l:x,v:x})),hint:{k:'say',s:'Listen to the story again. Tap any word to hear it.',w:t},label:qq}}
 
+
+/* ---------- ABC Beach (P2-15): letters, middle vowels, digraphs, syllables ---------- */
+const ABC_LOW='abcdefghijklmnopqrstuvwxyz',ABC_UP=ABC_LOW.toUpperCase();
+// Wrong letters: look-alikes first, then any other letter. Returns n shuffled options that include L.
+function abcOpts(L,groups,n,all){
+  const near=[]; // members of the first group that holds L come first (b: d p q before the other groups)
+  for(const g of groups.filter(g=>g.includes(L)))for(const c of shuffle([...g].filter(x=>x!=L)))if(!near.includes(c))near.push(c);
+  const rest=shuffle([...all].filter(x=>x!=L&&!near.includes(x)));
+  return shuffle([L,...near.concat(rest).slice(0,n-1)])}
+const HEARBTN=w=>`<button class="btn hear" data-say="${esc(w)}">${ico('speak','1em')}</button>`;
+function genAbc(lv){
+  const AL=ABC_LOW;
+  if(lv<=2){ // hear a letter name, tap the big (1) or little (2) letter
+    const L=pick(ABCP),low=lv==2,ans=low?L.toLowerCase():L,w=LETW[L],size=low?'little':'big',s=`Find the ${size} letter ${L}.`;
+    const opts=abcOpts(ans,low?LOOKL:LOOKU,low?4:3,low?ABC_LOW:ABC_UP);
+    return{kind:'choice',cls:low?'syms sym4':'syms',html:`${HEARBTN(s)}<div class="sub">Tap the ${size} letter you hear</div>`,
+      say:s,auto:'must',ans,after:`${ans}. ${L} is for ${w}!`,choices:opts.map(x=>({l:x,v:x})),
+      hint:{k:'say',w:`${L}. ${L} is for ${w}.`,s:`${low?L.toLowerCase()+' and '+L:L} is for ${w}. Look for the ${size} ${ans}.`},label:`${size} ${L}`}}
+  if(lv==3){ // match 4 big letters to their little letters
+    const Ls=[];while(Ls.length<4){const x=pick(ABCP);if(!Ls.includes(x))Ls.push(x)}
+    const items=Ls.map(x=>({v:x,l:x})),opts=shuffle(Ls.map(x=>({v:x,l:x.toLowerCase()})));
+    return{kind:'match',html:'<div class="sub">Match each big letter to its little letter</div>',say:'Match each big letter to its little letter.',
+      items,opts,ans:[...Ls].sort().join('|'),after:'Big and little letters are partners!',
+      hint:{k:'text',s:'Tap a big letter, then tap the little letter that is its partner. They often look alike.'},label:`match ${[...Ls].sort().join('')}`}}
+  // lv 4: what comes after a letter (choice) or fill the gap in a run of four (build)
+  const up=coin(),f=s=>up?s.toUpperCase():s;
+  if(coin()){
+    const i=R(0,24),L=AL[i],ans=AL[i+1];
+    const d=shuffle([AL[i-1],AL[i+2],AL[i+3],AL[i-2]].filter(x=>x&&x!=ans&&x!=L)).slice(0,2);
+    return{kind:'choice',cls:'syms',html:`<div class="emo">${f(L)}</div><div class="sub">What letter comes next in the ABC?</div>`,
+      say:`What letter comes after ${L}?`,auto:true,ans:f(ans),after:`${f(L)}, ${f(ans)}!`,choices:shuffle([ans,...d]).map(x=>({l:f(x),v:f(x)})),
+      hint:{k:'say',w:AL.slice(Math.max(0,i-3),i+1).split('').join(', '),s:`Sing the ABC song up to ${f(L)}. The very next letter is the answer.`},label:`after ${f(L)}`}}
+  const s=R(1,22),g=R(1,2),miss=AL[s+g],word=f(miss);
+  // 3 wrong tiles: letters just outside the run (never one that is shown in it), topped up with others
+  const wrong=[AL[s-1],AL[s+4],AL[s-2],AL[s+5]].filter(x=>x&&x!=miss);
+  const fill=shuffle([...AL].filter(x=>!AL.slice(s,s+4).includes(x)&&!wrong.includes(x)));
+  const tiles=shuffle([word,...[...new Set(wrong.concat(fill))].slice(0,3).map(f)]);
+  const run=[0,1,2,3].map(k=>k==g?'<span class="ls" id="ls0"></span>':`<span class="ab-l">${f(AL[s+k])}</span>`).join('');
+  const sp=[0,1,2,3].map(k=>k==g?'blank':AL[s+k]).join(', ');
+  return{kind:'build',word,tiles,html:`<div class="lslots">${run}</div><div class="sub">Which letter is missing?</div>`,say:`Which letter is missing? ${sp}.`,auto:true,ans:word,
+    hint:{k:'next'},label:`gap ${f(AL[s])}${g}`}}
+
+// sound 3 (K): the middle vowel of a picture word. sound 4 (1st): digraph at the start or end of a picture word.
+function genSoundB(lv){
+  if(lv==3){
+    const [w,e]=pick(CVCM),mid=w[1];
+    const opts=shuffle([mid,...shuffle([...'aeiou'].filter(x=>x!=mid)).slice(0,2)]);
+    return{kind:'choice',cls:'syms',html:`<div class="emo">${picFor(w,e)}</div><div class="sub">Which vowel is in the middle?</div><div class="sent">${w[0]} ${SLOT} ${w[2]}</div>`,
+      say:`${w}. Which vowel is in the middle of ${w}?`,auto:true,ans:mid,after:`${w}!`,choices:opts.map(x=>({l:x,v:x})),
+      hint:{k:'say',w:`${w}... ${w}`,s:'Say it slowly. Listen to the sound in the middle.'},label:`middle: ${w}`}}
+  const dg=pick(['sh','ch','th','ck','sh','ch','th','ck','wh']),[w,e,,pos]=pick(DIGR.filter(x=>x[2]==dg)),st=pos=='s';
+  const pool=st?['sh','ch','th','wh']:['sh','ch','th','ck'];
+  return{kind:'choice',cls:'syms sym4',html:`<div class="emo">${picFor(w,e)}</div><div class="sub">Which letters ${st?'start':'end'} <b>${w}</b>?</div>`,
+    say:`${w}. Which letters ${st?'start':'end'} ${w}?`,auto:true,ans:dg,after:`${w}: ${dg}!`,choices:shuffle(pool).map(x=>({l:x,v:x})),
+    hint:{k:'say',w:`${w}... ${w}`,s:`Two letters work together to make one sound. Listen to the ${st?'start':'end'} of ${w}.`},label:`${st?'starts':'ends'} ${dg}: ${w}`}}
+
+// syl 1 (K): picture words, 1-3 claps. syl 2 (1st): printed words, 1-4 claps. Buttons show the number and that many clap stars.
+function sylChoices(max){
+  return Array.from({length:max},(_,i)=>({v:String(i+1),h:true,
+    l:`<b>${i+1}</b><span class="clp">${ico('star','1em').repeat(i+1)}</span>`}))}
+function genSyl(lv){
+  if(lv==1){
+    const n=R(1,3),[w,e]=pick(SYLP.filter(x=>x[2]==n));
+    return{kind:'choice',cls:'syms clps',html:`<div class="emo">${picFor(w,e)}</div><div class="sub">How many claps in <b>${w}</b>?</div>`,say:`${w}. How many claps in ${w}?`,
+      auto:true,ans:String(n),after:`${w} has ${n} ${n==1?'clap':'claps'}!`,choices:sylChoices(3),
+      hint:{k:'say',w:`${w}... ${w}`,s:'Clap each beat as you say the word slowly.'},label:`claps: ${w}`}}
+  const n=R(1,4),w=pick(SYLW[n-1]);
+  return{kind:'choice',cls:'syms sym4 clps',html:`${HEARBTN(w)}<div class="sent">${esc(w)}</div><div class="sub">How many claps?</div>`,say:`${w}. How many claps in ${w}?`,
+    auto:true,ans:String(n),after:`${w} has ${n} ${n==1?'clap':'claps'}!`,choices:sylChoices(4),
+    hint:{k:'say',w:`${w}... ${w}`,s:'Clap each beat as you say the word slowly.'},label:`syllables: ${w}`}}
 /* ---------- Spanish ---------- */
 const SPN={
  greet:[['hola','Hello','👋'],['adiós','Goodbye','🚶'],['gracias','Thank you','🙏'],['por favor','Please','🥺'],['buenos días','Good morning','🌅'],['buenas noches','Good night','🌙'],['sí','Yes','👍'],['no','No','👎']],
@@ -2504,7 +2610,9 @@ const SK={
  es_body:{t:'My Body',e:'👃',area:'es',max:2,gen:lv=>genEs('body',lv)},
  es_family:{t:'Family',e:'👪',area:'es',max:2,gen:lv=>genEs('family',lv)},
  es_mix:{t:'Big Review',e:'🏆',area:'es',max:2,gen:lv=>genEs('mix',lv)},
- sound:{t:'Letter Sounds',e:'🔤',area:'read',max:2,gen:genSound},
+ abc:{t:'ABC Letters',e:'🔤',area:'read',max:4,gen:genAbc},
+ syl:{t:'Syllable Claps',e:'🥁',area:'read',max:2,gen:genSyl},
+ sound:{t:'Letter Sounds',e:'🔤',area:'read',max:4,gen:lv=>lv>2?genSoundB(lv):genSound(lv)},
  rhyme:{t:'Rhyme Time',e:'🎵',area:'read',max:2,gen:genRhyme},
  cmp:{t:'Compare',e:'🐊',area:'math',max:3,gen:genCmp},
  time:{t:'Clocks',e:'🕒',area:'math',max:3,gen:genTime},
@@ -2556,8 +2664,9 @@ const PATHS={
   {id:'m_reef',g:1,n:'Ocean Reef',e:'🐠',c:'#e0f2fe',nodes:[['add',3,'All the Facts'],['time',1,"O'Clock"],['big',2,'2-Digit Adding'],['coins',1,'Pennies & Nickels'],['eo',2,'Even/Odd to 99'],['cmp',2,'Compare to 100'],['time',2,'Half Past'],['sub',3,'2-Digit Take Away'],['story',3,'Story Problems 3']]},
   {id:'m_space',g:2,n:'Space Station',e:'🚀',c:'#ede9fe',nodes:[['big',3,'Carry the 1'],['mult',1,'Equal Groups'],['coins',2,'Dimes Too'],['cnt',3,'Skip Count Big'],['sub',4,'Borrowing'],['time',3,'Quarter Hours'],['big',4,'3-Digit Adding'],['mult',2,'Groups to 5×5'],['cmp',3,'Compare to 999'],['coins',3,'Quarters']]}]},
  read:{n:'Reading Adventure',e:'📖',c:'linear-gradient(135deg,#fce7f3,#fbcfe8)',worlds:[
-  {id:'r_meadow',g:0,n:'Letter Meadow',e:'🌻',c:'#dcfce7',nodes:[['sound',1,'First Sounds'],['sight',1,'Sight Words'],['rhyme',1,'Rhyme Time'],['pic',1,'Picture Words'],['sound',2,'Last Sounds'],['build',1,'Build a Word'],['sent',1,'Read & Match']]},
-  {id:'r_candy',g:1,n:'Candy Canyon',e:'🍭',c:'#fce7f3',nodes:[['sight',2,'More Sight Words'],['rhyme',2,'Rhyme & Read'],['pic',2,'Blends'],['build',2,'Build Blends'],['sent',2,'Read Sentences'],['comp',1,'Story Time'],['spell',1,'Spell Short Words']]},
+  {id:'r_abc',g:-1,n:'ABC Beach',e:'🏖️',c:'#e0f2fe',nodes:[['abc',1,'Big Letters'],['abc',2,'Little Letters'],['abc',3,'Match Big & Little'],['syl',1,'Clap the Syllables'],['abc',4,'ABC Order']]},
+  {id:'r_meadow',g:0,n:'Letter Meadow',e:'🌻',c:'#dcfce7',nodes:[['sound',1,'First Sounds'],['sight',1,'Sight Words'],['rhyme',1,'Rhyme Time'],['pic',1,'Picture Words'],['sound',2,'Last Sounds'],['build',1,'Build a Word'],['sent',1,'Read & Match'],['sound',3,'Middle Sounds']]},
+  {id:'r_candy',g:1,n:'Candy Canyon',e:'🍭',c:'#fce7f3',nodes:[['sight',2,'More Sight Words'],['rhyme',2,'Rhyme & Read'],['pic',2,'Blends'],['build',2,'Build Blends'],['sent',2,'Read Sentences'],['comp',1,'Story Time'],['sound',4,'Letter Teams'],['syl',2,'Count the Claps'],['spell',1,'Spell Short Words']]},
   {id:'r_reef',g:1,n:'Ocean Reef',e:'🐠',c:'#e0f2fe',nodes:[['sight',3,'Sight Words 3'],['pic',3,'Magic E'],['build',3,'Build Magic E'],['comp',2,'Story Time 2'],['spell',2,'Spell Blends']]},
   {id:'r_space',g:2,n:'Space Station',e:'🚀',c:'#ede9fe',nodes:[['pic',4,'Vowel Teams'],['build',4,'Build Vowel Teams'],['spell',3,'Spell Magic E & Teams']]},
   {id:'r_summit',g:3,n:'Story Summit',e:'🏔️',c:'#e2e8f0',nodes:[['spell',4,'Spell Tricky Sounds']]},
@@ -2646,13 +2755,13 @@ function startWorld(p){
   return k<0?ws.length-1:k;
 }
 /* The stop the map opens on: the first open, unpassed stop, not counting NEW stops or untouched worlds below the start world.
-   Falls back to any open unpassed stop, then to the very last stop (everything done). */
+   Falls back to any open unpassed stop outside those untouched worlds, then to the very last stop (everything done). */
 function curNode(p){
   const N=NODES[p],sw=startWorld(p);let any=-1;
   for(let i=0;i<N.length;i++){
     if(passed(p,i)||!unlocked(p,i))continue;
-    if(any<0)any=i;
     const wi=N[i].wi;
+    if(any<0&&!(wi<sw&&!worldHasProgress(p,wi)))any=i; // never fall back into an untouched world below the start world (ABC Beach for a K child)
     if(stopNew(p,i)||(wi<sw&&(!worldHasProgress(p,wi)||worldSkipped(p,wi))))continue; // skipped by placement: start above it
     return i;
   }
@@ -2978,7 +3087,7 @@ function home(first){
   $('#book').onclick=book;$('#shop').onclick=shop;$('#mix').onclick=()=>{SFX.whoosh();startMix()};$('#race').onclick=raceMenu;$('#flu').onclick=()=>{SFX.whoosh();fluMenu()};$('#care').onclick=care;$('#groom').onclick=()=>{SFX.whoosh();gameRoom()};
   if($('#inst'))$('#inst').onclick=async()=>{try{installEvt.prompt();await installEvt.userChoice}catch(e){}installEvt=null;home()};
   let t;const g=$('#gear');g.onpointerdown=()=>{t=setTimeout(grown,1200)};g.onpointerup=g.onpointerleave=()=>clearTimeout(t);g.onclick=()=>fb('Grown-ups: hold it','warn');
-  {const sc=$('.scroll');if(sc)sc.insertAdjacentHTML('beforeend','<p class="small" style="text-align:center;opacity:.55;margin:14px 0 4px">Star School v58</p>')}
+  {const sc=$('.scroll');if(sc)sc.insertAdjacentHTML('beforeend','<p class="small" style="text-align:center;opacity:.55;margin:14px 0 4px">Star School v59</p>')}
   if(first&&S.voice)setTimeout(()=>say(`Hi ${S.name}! Pick a game!`),400)}
 
 let MAPP='math',MAPW={}; // MAPW[path] = the world picked in the strip (this session only, not saved)
@@ -6029,7 +6138,7 @@ function grown(){let armed=false;
    <div class="vline"><span class="vtxt">Give a bonus</span><button class="btn xs" id="pt5">+5 min</button><button class="btn xs danger" id="pt0">Empty bank</button></div>
    <label class="tg"><input type="checkbox" id="ptp" ${ptCfg().pause?'checked':''}> Pause game time (games locked)</label></div>
   <div class="card"><div class="tw"><table><tr><th>Skill</th><th>Rounds</th><th>1st try</th><th>Tricky ones</th></tr>${rows}</table></div></div>
-  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v58 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
+  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v59 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
    Storage: ${SAVE_FAILED?'<b style="color:#c0392b">could not save (device storage may be full)</b>':'saving OK'}${SAVE_CORRUPT?'<br><b style="color:#c0392b">The old save could not be read. A fresh start was made and the old data was kept on the device.</b>':''}<br>
    Last errors: ${(S.err||[]).length?(S.err||[]).slice().reverse().map(e=>'<br>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+' '+esc(e.msg)).join(''):'none'}</div></details>
   <div class="card"><label class="tg"><input type="checkbox" id="voice" ${S.voice?'checked':''}> Read questions out loud</label>

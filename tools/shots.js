@@ -281,7 +281,30 @@ const SCREENS = {
   ...Object.fromEntries([1, 2, 3, 4, 5, 6, 7].map(lv => ['spell-' + lv, { run: spellShot(lv, false) }])),
   'spell-hint': { run: spellShot(7, true) },
   'spell-pic': { run: spellShot(3, false, true) }, // a word that has a picture
+  // P2-15 ABC Beach: one question per new level (seeds fixed so the picture is the same every run)
+  'abc-1': { fixture: 'fresh', run: abcShot('abc', 1, 11) },
+  'abc-2': { fixture: 'fresh', run: abcShot('abc', 2, 12) },
+  'abc-3': { fixture: 'fresh', run: abcShot('abc', 3, 13) },
+  'abc-4a': { fixture: 'fresh', run: abcShot('abc', 4, 14, 'choice') },
+  'abc-4b': { fixture: 'fresh', run: abcShot('abc', 4, 15, 'build') },
+  'syl-1': { fixture: 'fresh', run: abcShot('syl', 1, 16) },
+  'syl-2': { fixture: 'fresh', run: abcShot('syl', 2, 17) },
+  'sound-3': { fixture: 'fresh', run: abcShot('sound', 3, 18) },
+  'sound-4': { fixture: 'fresh', run: abcShot('sound', 4, 19) },
 };
+
+// Starts the ABC Beach stop through the real round engine, then shows one seeded question (searching on from seed for the wanted kind).
+function abcShot(sk, lv, seed, kind) {
+  return async p => {
+    await p.evaluate(([sk, lv, seed, kind]) => {
+      start('read', NODES.read.findIndex(n => n.sk == sk && n.lv == lv));
+      let q = genQ(sk, lv, seed);
+      for (let i = 1; kind && q.kind != kind && i < 200; i++) q = genQ(sk, lv, seed + i);
+      G.q = q;
+      renderQ();
+    }, [sk, lv, seed, kind]);
+  };
+}
 
 function spellShot(lv, hint, pic) {
   return async p => {

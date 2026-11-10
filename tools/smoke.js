@@ -773,6 +773,60 @@ async function main() {
       await sa.ctx.close();
     }
 
+    // P2-15 ABC Beach at 380x780: a Pre-K child's reading map opens on abc1 (ABC Beach is the first reading world) and the bot wins the
+    //     6-question round by tapping; every new stop (abc 1-4, syl 1-2, sound 3-4) shows a question whose buttons are 48 px or more and
+    //     nothing is wider than the screen; a default (K) child is not put in ABC Beach: the reading map opens on Letter Meadow (sound1)
+    {
+      const pa = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 });
+      const pp = pa.page;
+      await pp.fill('#nm', 'Beach');
+      await pp.click('.gr[data-g="-1"]');
+      await pp.click('#go');
+      await pp.waitForSelector('.game[data-p]');
+      await pp.click('.game[data-p="read"]');
+      await pp.waitForSelector('.node.cur');
+      const cur0 = await pp.evaluate(() => ({ id: nid(NODES.read[curNode('read')]), w: NODES.read[curNode('read')].wid, n: +document.querySelector('.node.cur').dataset.n }));
+      if (cur0.id !== 'abc1' || cur0.w !== 'r_abc' || cur0.n !== 0) fail('Pre-K reading map should open on abc1: ' + JSON.stringify(cur0));
+      await pp.click('.node.cur');
+      await pp.waitForSelector('#prompt');
+      const n6 = await pp.evaluate(() => G.n);
+      await playRound(pp, 'P2-15 abc1 Pre-K', 6);
+      if (n6 !== 6) fail('Pre-K ABC Beach round length ' + n6); else step('ABC Beach: Pre-K map opens on abc1, the bot won the 6-question round by tapping');
+      await pp.evaluate(() => { G.dead = true; home(); });
+      await pp.waitForSelector('.game[data-p]');
+      for (const id of ['abc1', 'abc2', 'abc3', 'abc4', 'syl1', 'syl2', 'sound3', 'sound4']) {
+        await pp.evaluate(i => { start('read', NODES.read.findIndex(n => n.sk + n.lv === i)); }, id);
+        await pp.waitForSelector('#prompt');
+        const sz = await pp.evaluate(() => {
+          const els = [...document.querySelectorAll('.ch, .mb, .lt')];
+          const sc = document.querySelector('.scroll') || document.body;
+          return { n: els.length, min: Math.min(...els.map(e => Math.min(e.offsetHeight, e.offsetWidth))), over: Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth),
+            kind: G.q.kind, hint: !!G.q.hint, say: !!G.q.say };
+        });
+        if (!sz.n || sz.min < 48 || sz.over > 0 || !sz.hint || !sz.say) fail(`ABC Beach ${id} question at 380x780: ` + JSON.stringify(sz));
+        await pp.evaluate(() => { G.dead = true; home(); });
+        await pp.waitForSelector('.game[data-p]');
+        await pp.waitForTimeout(2800); // let the old round's timers finish
+      }
+      step('ABC Beach: abc 1-4, syl 1-2, sound 3-4 show buttons of 48 px or more with a hint and spoken text, nothing wider than 380 px');
+      network.push(...pa.network);
+      for (const e of pa.errors) fail(e);
+      await pa.ctx.close();
+      const ka = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 });
+      const kp = ka.page;
+      await kp.fill('#nm', 'Kay');
+      await kp.click('#go');
+      await kp.waitForSelector('.game[data-p]');
+      await kp.click('.game[data-p="read"]');
+      await kp.waitForSelector('.node.cur');
+      const cur1 = await kp.evaluate(() => ({ id: nid(NODES.read[curNode('read')]), w: curWorld('read'), g: S.grade }));
+      if (cur1.id !== 'sound1' || cur1.w !== 1) fail('K reading map should open on Letter Meadow sound1: ' + JSON.stringify(cur1));
+      else step('ABC Beach: a K child (default) opens the reading map on Letter Meadow, not ABC Beach');
+      network.push(...ka.network);
+      for (const e of ka.errors) fail(e);
+      await ka.ctx.close();
+    }
+
     for (const e of errors) fail(e);
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');
