@@ -284,6 +284,54 @@ label.tg{display:block;font-size:20px;margin:8px 0}
 .viz .right .vm,.viz .vp.right{fill:var(--good);stroke:var(--good-ink)}
 .viz .wrong .vm,.viz .vp.wrong{fill:var(--try);stroke:var(--try-ink)}
 .viz .vp.sel,.viz .vp.right,.viz .vp.wrong{stroke-width:2}
+/* part 2 (P1-11) */
+.viz .vta{text-anchor:end}
+.viz .vts{text-anchor:start}
+.viz .vgl{fill:none;stroke:var(--ink-3);stroke-width:1;opacity:.6}
+.viz .vgd{fill:none;stroke:var(--ink-3);stroke-width:2;stroke-dasharray:4 4}
+.viz .vtk{fill:none;stroke:var(--ink);stroke-width:4}
+.viz .vjn{fill:none;stroke:var(--math-shade);stroke-width:3}
+.viz .vdt circle{fill:var(--ink);stroke:var(--surface);stroke-width:1.5}
+/* ruler, pencil, protractor */
+.viz .vru{fill:var(--star-tint);stroke:var(--ink-3);stroke-width:2}
+.viz .vpt{fill:var(--play-tint);stroke:var(--play-shade);stroke-width:2}
+.viz .vwg{fill:var(--math-tint);stroke:var(--math);stroke-width:2}
+/* bars: states on the group */
+.viz .vbar{stroke-width:2}
+.viz .sel .vbar{fill:var(--brand);stroke:var(--brand-shade)}
+.viz .right .vbar{fill:var(--good);stroke:var(--good-ink)}
+.viz .wrong .vbar{fill:var(--try);stroke:var(--try-ink)}
+/* rectangle, area grid cells */
+.viz .vpo{fill:var(--math-tint);stroke:var(--math-shade);stroke-width:3}
+.viz .vce{fill:none;stroke:var(--surface);stroke-linecap:butt}
+/* solids: front (s1), top or light (s2), side or shade (s3), equator (s0); .c2 is the second colour */
+.viz .vsl .s1{fill:var(--math);stroke:var(--math-shade);stroke-width:2}
+.viz .vsl .s2{fill:var(--math-tint);stroke:var(--math-shade);stroke-width:2}
+.viz .vsl .s3{fill:var(--math-shade);stroke:var(--math-shade);stroke-width:2}
+.viz .vsl .s0{fill:none;stroke:var(--math-shade);stroke-width:2}
+.viz .vsl.c2 .s1{fill:var(--play);stroke:var(--play-shade)}
+.viz .vsl.c2 .s2{fill:var(--play-tint);stroke:var(--play-shade)}
+.viz .vsl.c2 .s3,.viz .vsl.c2 .s0{fill:var(--play-shade);stroke:var(--play-shade)}
+.viz .vsl.c2 .s0{fill:none}
+/* number-line hops */
+.viz .vhop{fill:none;stroke:var(--play);stroke-width:3}
+.viz .vhoa{fill:var(--play);stroke:var(--play);stroke-width:1}
+/* balance scale */
+.viz .vst{fill:var(--surface-2);stroke:var(--ink-2);stroke-width:3}
+.viz .vsr{fill:none;stroke:var(--ink-3);stroke-width:2}
+.viz .vpan{fill:var(--surface-2);stroke:var(--ink-2);stroke-width:3}
+.viz .vbm{fill:none;stroke:var(--ink-2);stroke-width:6}
+.viz .vwl{fill:var(--math-tint);stroke:var(--math-shade);stroke-width:2}
+.viz .vwr{fill:var(--play-tint);stroke:var(--play-shade);stroke-width:2}
+/* coins (penny copper, the rest silver) and bills */
+.viz .vcu{fill:var(--play-tint);stroke:var(--play-shade);stroke-width:3}
+.viz .vsv{fill:var(--surface-2);stroke:var(--ink-3);stroke-width:3}
+.viz .vci{fill:none;stroke:var(--ink-3);stroke-width:1.5;stroke-dasharray:2 3}
+.viz .vcc{font-size:13px}
+.viz .vcp{fill:var(--play-shade)}
+.viz .vbl{fill:var(--good-tint);stroke:var(--good-ink);stroke-width:2}
+.viz .vbi{fill:none;stroke:var(--good-ink);stroke-width:1.5}
+.viz .vcb{font-size:20px;fill:var(--good-ink)}
 /* Streak flame chip and calendar (P5-04). Tokens only. */
 .stc-chip{font:inherit;font-size:var(--fs-4);font-weight:700;min-height:var(--tap);min-width:var(--tap);display:inline-flex;align-items:center;gap:var(--s-1);
   border:0;cursor:pointer;color:var(--play-shade);background:var(--play-tint);border-radius:var(--r-btn);padding:6px 12px;box-shadow:var(--ledge) var(--shadow-ink);font-variant-numeric:tabular-nums}
@@ -640,7 +688,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S));SAVE_FAILED=fals
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v47'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v48'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -1001,6 +1049,33 @@ function genQ(sk,lv,seed){
      dots(n, layout, o)           counting dots, never overlapping. layout: 'row' (fives, 10 per row), 'ten'
                                   (ten-frame rows of 5), 'dice' (1-6 one face; 7-10 two faces, 5 + rest),
                                   'scatter' (o.seed picks the arrangement). o.b and o.fade as in tenFrame
+     numLine also takes o.hops: [[from, to, label?], ...] arcs above the line (label '+3' by default, '' none, '?' box)
+   Part 2 (P1-11). Same rules; labels from generators are escaped. Widths: all fit 340 units except where noted.
+     ruler(len, unit, obj, o)     object of length len on a 'cm' or 'in' ruler; obj 'bar' (default), 'pencil', 'none';
+                                  o.from: where the object starts (0), o.max: ruler length, o.guide = false: no guide lines
+     barGraph(data, scale, o)     data [[label, value, set?], ...] (max 8; set 2 = second colour); scale = value per grid
+                                  line (auto when left out); o.vals prints values; o.tap: bars are targets (data-v = 0..,
+                                  48 wide: at most 6 bars)
+     pictograph(data, o)          data [[label, count], ...] (max 6 rows); o.per: count per picture (1; a half picture for
+                                  a half step), o.key: key text after "=" (shown when per > 1 or key is set)
+     linePlot(values, o)          a circle per value stacked over a number line; o.min, o.max, o.step (1), o.den (fraction
+                                  labels), o.w, o.tapValues as numLine
+     shape(name, o)               VIZ.shapeNames: circle oval square rectangle triangle rhombus trapezoid pentagon hexagon
+                                  octagon, solids cube prism cylinder cone sphere. 100 x 100 always. o.c = 2 second colour,
+                                  o.rot degrees, o.st stretch across (not circle or square), o.dots dots on corners
+     areaGrid(w, h, o)            w x h unit squares (max 12); o.n: only the first n are filled
+     rectSides(w, h, labels, o)   rectangle (not to scale); labels {w, h}: number, text, '?' (box) or null;
+                                  o.all labels all four sides, o.unit adds a unit
+     angle(deg, o)                a ray along +x and one deg counter-clockwise; o.rot turns it, o.label text or '?' on the
+                                  arc, o.proto draws a protractor (deg up to 180); right angles get a square mark
+     coordGrid(o)                 o.quadrants 1 or 4, o.max (6 / 5), o.points [[x, y, 'A'?]], o.join (and o.close) lines
+                                  through them, o.tapPts [[x, y], ...] targets (data-v "x,y"; spacing 48, so max 5 / 3)
+     balance(left, right, o)      counters on a scale (left blue, right orange); a side may be {n, q: true} (n counters plus
+                                  a "?" box); tilts to the heavier side unless o.tilt (-1, 0, 1); o.nums or more than 10
+                                  shows a number block
+     coinSVG(v, o)                v cents or a list: coins 1 5 10 25 50, bills 100 500 1000 2000; o.face = false hides values
+     tally(n)                     tally marks, 0..50, groups of five
+     tableInOut(rows, o)          rows [[in, out], ...] ('?' = unknown box); o.head: ['In', 'Out']
    New visuals: add a function inside this block and to the returned object; use svg(), f() and counters(). */
 const VIZ = (() => {
   // one decimal keeps the markup small
@@ -1128,9 +1203,10 @@ const VIZ = (() => {
     let w = def(o.w, 290);
     // tap targets: at least 48 units between neighbouring values
     for (let i = 1; i < tap.length; i++) w = Math.max(w, 48 * (max - min) / Math.max(tap[i] - tap[i - 1], 1e-9));
-    const P = 24, Y = 28, den = o.den;
+    const hops = o.hops || [], top = hops.length ? 34 : 0;
+    const P = 24, Y = 28 + top, den = o.den;
     const X = v => P + (v - min) / (max - min) * w;
-    const W = w + 2 * P, Hh = den ? 84 : 68;
+    const W = w + 2 * P, Hh = (den ? 84 : 68) + top;
     // fraction labels: k/den, whole numbers stay whole
     const lab = v => {
       const k = Math.round(v * den);
@@ -1169,6 +1245,18 @@ const VIZ = (() => {
     let body = `<path class="va" d="M${P - 14} ${Y}H${f(P + w + 14)}"/>` +
       `<path class="vr" d="M${P - 20} ${Y}l7-5v10zM${f(P + w + 20)} ${Y}l-7-5v10z"/>` +
       `<path class="vk" d="${ticks}"/>${text}`;
+    if (hops.length) {
+      let arcs = '', tips = '', txt = '';
+      for (const h of hops) {
+        const x1 = X(h[0]), x2 = X(h[1]), mid = (x1 + x2) / 2, ch = clamp(Math.abs(x2 - x1) * 0.5, 22, 40), y0 = Y - 11;
+        const t = h[2] === undefined ? (h[1] >= h[0] ? '+' : '') + num(clean(h[1] - h[0])) : h[2];
+        arcs += `M${f(x1)} ${y0}Q${f(mid)} ${f(y0 - ch)} ${f(x2)} ${y0}`;
+        tips += `M${f(x2)} ${y0 + 3}l-5-7h10z`;
+        txt += t == '?' ? `<rect class="vq" x="${f(mid - 14)}" y="${f(y0 - ch / 2 - 28)}" width="28" height="24" rx="7"/><text class="vqt" x="${f(mid)}" y="${f(y0 - ch / 2 - 10)}">?</text>`
+          : t ? `<text x="${f(mid)}" y="${f(y0 - ch / 2 - 6)}">${t}</text>` : '';
+      }
+      body += `<path class="vhop" d="${arcs}"/><path class="vhoa" d="${tips}"/>${txt}`;
+    }
     if (o.marks) body += `<g class="v1">${o.marks.map(v => `<circle cx="${f(X(v))}" cy="${Y}" r="8"/>`).join('')}</g>`;
     // tap targets reach halfway to their neighbours (24 units past the ends) and cover the labels
     tap.forEach((v, i) => {
@@ -1333,7 +1421,346 @@ const VIZ = (() => {
     return svg('dots', W, H, body, 'dots to count');
   }
 
-  return {tenFrame, base10, numLine, fracBar, fracCircle, clock, array, dots};
+
+  // ======== part 2 (P1-11) ========
+  // text from a generator, escaped
+  const ex = s => String(s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+  // "?" box (the unknown) centred on (x, y)
+  const qbox = (x, y, w = 28, h = 28) => `<rect class="vq" x="${f(x - w / 2)}" y="${f(y - h / 2)}" width="${w}" height="${h}" rx="7"/>` +
+    `<text class="vqt" x="${f(x)}" y="${f(y + 6)}">?</text>`;
+  // value label at baseline y: '?' draws the box, null or '' nothing, else text. cls ' vts' left-aligned, ' vta' right-aligned.
+  const lbl = (x, y, v, cls = '') => (v == '?' ? qbox(x + (cls == ' vts' ? 14 : cls == ' vta' ? -14 : 0), y - 6) :
+    v == null || v === '' ? '' : `<text${cls ? ` class="${cls.trim()}"` : ''} x="${f(x)}" y="${f(y)}">${ex(v)}</text>`);
+
+  // ---- ruler ----
+  // An object of length len along a cm or inch ruler (the object's ends have dashed guide lines to the ruler).
+  function ruler(len, unit = 'cm', obj = 'bar', o = {}) {
+    const inch = unit == 'in';
+    len = Math.max(0, +len || 0);
+    const from = Math.max(0, def(o.from, 0));
+    const max = clamp(Math.round(def(o.max, Math.ceil(len + from) + 1)), inch ? 4 : 6, inch ? 12 : 15);
+    const s = Math.floor(clamp(300 / max, 18, 34)), P = 20, RY = 58, RH = 48;
+    const x0 = P + from * s, x1 = x0 + len * s, w = max * s;
+    let body = '';
+    if (obj == 'pencil' && len * s >= 40) {
+      body += `<path class="vpt" d="M${f(x0)} 28L${f(x0 + 22)} 16v24z"/><path class="vpin" d="M${f(x0)} 28l5-3v6z"/>` +
+        `<rect class="v2" x="${f(x0 + 22)}" y="16" width="${f(x1 - x0 - 22)}" height="24" rx="3"/>`;
+    } else if (obj != 'none') body += `<rect class="v1" x="${f(x0)}" y="16" width="${f(len * s)}" height="24" rx="5"/>`;
+    if (obj != 'none' && o.guide !== false) body += `<path class="vgd" d="M${f(x0)} 44V${RY}M${f(x1)} 44V${RY}"/>`;
+    const per = inch ? 4 : 2;
+    let t = '', lab = '';
+    for (let k = 0; k <= max * per; k++) {
+      const x = P + k / per * s;
+      t += `M${f(x)} ${RY}v${k % per == 0 ? 16 : inch && k % 2 == 0 ? 12 : inch ? 8 : 10}`;
+      if (k % per == 0) lab += `<text class="vcn" x="${f(x)}" y="${RY + 31}">${k / per}</text>`;
+    }
+    body += `<rect class="vru" x="${P}" y="${RY}" width="${w}" height="${RH}" rx="4"/><path class="vk" d="${t}"/>${lab}` +
+      `<text class="vcn" x="${f(P + w - 18)}" y="${RY + RH - 5}">${inch ? 'in' : 'cm'}</text>`;
+    return svg('rul', w + 2 * P, RY + RH + 4, body, 'ruler');
+  }
+
+  // ---- bar graph ----
+  function barGraph(data, scale, o = {}) {
+    data = (data || []).slice(0, 8).map(d => [d[0], Math.max(0, +d[1] || 0), d[2]]);
+    const n = Math.max(1, data.length), top = Math.max(1, ...data.map(d => d[1]));
+    const ks = [1, 2, 5, 10, 20, 25, 50, 100, 200, 500, 1000];
+    let sc = scale > 0 ? scale : ks.find(k => top / k <= 8) || 1000;
+    if (top / sc > 10) sc = ks.find(k => k > sc && top / k <= 10) || sc;
+    const rows = Math.max(1, Math.ceil(top / sc)), rh = clamp(Math.floor(170 / rows), 14, 28);
+    const pitch = o.tap ? 48 : clamp(Math.floor(270 / n), 30, 56), L = 34, T = 14, base = T + rows * rh;
+    const w = L + n * pitch + 6, bw = Math.round(pitch * 0.6);
+    let grid = '', ylab = '', body = '';
+    for (let k = 0; k <= rows; k++) {
+      grid += `M${L} ${base - k * rh}h${n * pitch + 4}`;
+      if (rows < 6 || k % 2 == 0) ylab += `<text class="vta" x="${L - 7}" y="${base - k * rh + 5}">${clean(k * sc)}</text>`;
+    }
+    body += `<path class="vgl" d="${grid}"/><path class="va" d="M${L} ${T - 4}V${base}H${w - 2}"/>${ylab}`;
+    data.forEach(([name, v, set], i) => {
+      const x = L + i * pitch + (pitch - bw) / 2, h = v / sc * rh;
+      const bar = h > 0 ? `<rect class="${set == 2 ? 'v2' : 'v1'} vbar" x="${f(x)}" y="${f(base - h)}" width="${bw}" height="${f(h)}" rx="3"/>` : '';
+      const val = o.vals && h > 0 ? `<text class="vcn" x="${f(x + bw / 2)}" y="${f(base - h - 5)}">${clean(v)}</text>` : '';
+      const lab = `<text class="vcn" x="${f(x + bw / 2)}" y="${base + 18}">${ex(String(name).slice(0, 8))}</text>`;
+      body += o.tap ? `<g ${tapAttr(i)}><rect class="vh" x="${L + i * pitch}" y="0" width="${pitch}" height="${base + 28}"/>${bar}${lab}</g>` : bar + val + lab;
+    });
+    return svg('bar', w, base + 28, body, 'bar graph', !!o.tap);
+  }
+
+  // ---- pictograph ----
+  function pictograph(data, o = {}) {
+    data = (data || []).slice(0, 6).map(d => [d[0], Math.max(0, +d[1] || 0)]);
+    const per = def(o.per, 1), r = 10, pc = 26;
+    const LW = Math.min(88, Math.max(...data.map(d => String(d[0]).length), 3) * 8 + 8);
+    const most = clamp(Math.ceil(Math.max(1, ...data.map(d => d[1])) / per), 1, 12);
+    const w = LW + 12 + most * pc, rh = 34, key = per > 1 || o.key;
+    const full = [];
+    let half = '', body = '', grid = '';
+    data.forEach(([name, v], i) => {
+      const y = i * rh + rh / 2 + 2, k = v / per;
+      body += `<text class="vta" x="${LW}" y="${y + 5}">${ex(name)}</text>`;
+      grid += `M4 ${(i + 1) * rh + 2}h${f(w - 4)}`;
+      for (let j = 0; j < Math.floor(k); j++) full.push([LW + 12 + j * pc + r + 2, y]);
+      if (k % 1 >= 0.5) {
+        const cx = LW + 12 + Math.floor(k) * pc + r + 2;
+        half += `M${f(cx)} ${y - r}A${r} ${r} 0 0 0 ${f(cx)} ${y + r}z`;
+      }
+    });
+    const H = data.length * rh + 4 + (key ? 34 : 0);
+    body = `<path class="vgl" d="${grid}"/>` + body + counters(full, r) + (half ? `<path class="v1" d="${half}"/>` : '');
+    if (key) body += counters([[LW + 12 + r + 2, H - 17]], r) + `<text class="vts" x="${LW + 12 + 2 * r + 10}" y="${H - 12}">= ${ex(def(o.key, per))}</text>`;
+    return svg('pic', w, H, body, 'picture graph');
+  }
+
+  // ---- line plot: one circle per value, stacked over a number line ----
+  function linePlot(data, o = {}) {
+    data = (data || []).map(Number).filter(v => v == v).slice(0, 30);
+    const min = def(o.min, Math.floor(Math.min(0, ...data))), step = def(o.step, 1);
+    const max = def(o.max, Math.max(min + step, Math.ceil(Math.max(...data, 0))));
+    const nT = Math.max(1, Math.round((max - min) / step)), den = o.den;
+    const tap = (o.tapValues || []).map(Number).sort((a, b) => a - b);
+    let w = def(o.w, 280);
+    for (let i = 1; i < tap.length; i++) w = Math.max(w, 48 * (max - min) / Math.max(tap[i] - tap[i - 1], 1e-9));
+    const P = 24, X = v => P + (v - min) / (max - min) * w;
+    const stack = {};
+    data.forEach(v => { const k = clean(Math.round((v - min) / step) * step + min); stack[k] = (stack[k] || 0) + 1; });
+    const m = Math.min(8, Math.max(1, ...Object.values(stack))), Y = 14 + m * 19 + 10;
+    const sp = w / nT, k = [1, 2, 5, 10].find(q => q * sp >= (den ? 26 : 22)) || 10;
+    let ticks = '', text = '';
+    for (let j = 0; j <= nT; j++) {
+      const v = clean(min + j * step), x = X(v), lab = j % k == 0;
+      ticks += `M${f(x)} ${Y - (lab ? 8 : 5)}v${lab ? 16 : 10}`;
+      if (!lab) continue;
+      const q = Math.round(v * den);
+      text += den && q % den ? fracText(x, Y + 31, q, den) : `<text x="${f(x)}" y="${Y + (den ? 36 : 32)}">${num(den ? q / den : v)}</text>`;
+    }
+    let body = `<path class="va" d="M${P - 14} ${Y}H${f(P + w + 14)}"/><path class="vk" d="${ticks}"/>${text}`;
+    const pts = [];
+    for (const kk of Object.keys(stack)) for (let j = 0; j < Math.min(stack[kk], 8); j++) pts.push([X(+kk), Y - 16 - j * 19]);
+    body += counters(pts, 8);
+    tap.forEach((v, i) => {
+      const l = i ? (X(v) - X(tap[i - 1])) / 2 : 24, r = i < tap.length - 1 ? (X(tap[i + 1]) - X(v)) / 2 : 24;
+      body += `<g ${tapAttr(v)}><rect class="vh" x="${f(X(v) - l)}" y="0" width="${f(l + r)}" height="${Y + 48}"/>` +
+        `<circle class="vm" cx="${f(X(v))}" cy="${Y}" r="10"/></g>`;
+    });
+    return svg('lp', w + 2 * P, Y + (den ? 52 : 40), body, 'line plot', tap.length > 0);
+  }
+
+  // ---- shapes ----
+  // Outlines as points in -1..1 (y down); regular ones are generated. Everything is drawn in a 100 x 100 box.
+  const reg = (n, off) => [...Array(n).keys()].map(i => [Math.sin(2 * Math.PI * (i + off) / n), -Math.cos(2 * Math.PI * (i + off) / n)]);
+  const POLY = {
+    triangle: [[0, -1], [1, 0.8], [-1, 0.8]], square: [[-1, -1], [1, -1], [1, 1], [-1, 1]],
+    rectangle: [[-1, -0.6], [1, -0.6], [1, 0.6], [-1, 0.6]], rhombus: [[0, -1], [0.7, 0], [0, 1], [-0.7, 0]],
+    trapezoid: [[-0.55, -0.6], [0.55, -0.6], [1, 0.6], [-1, 0.6]],
+    pentagon: reg(5, 0), hexagon: reg(6, 0.5), octagon: reg(8, 0.5),
+  };
+  // solids: s1 front, s2 top or light, s3 side or shade (colours in 32-viz.css)
+  const SOLIDS = {
+    cube: '<path class="s1" d="M15 38h48v48h-48z"/><path class="s2" d="M15 38L37 16h48L63 38z"/><path class="s3" d="M63 38L85 16v48L63 86z"/>',
+    prism: '<path class="s1" d="M8 42h60v40h-60z"/><path class="s2" d="M8 42L30 20h60L68 42z"/><path class="s3" d="M68 42L90 20v40L68 82z"/>',
+    cylinder: '<path class="s1" d="M22 22V78A28 9 0 0 0 78 78V22z"/><ellipse class="s2" cx="50" cy="22" rx="28" ry="9"/>',
+    cone: '<path class="s1" d="M50 12L18 78A32 10 0 0 0 82 78z"/>',
+    sphere: '<circle class="s1" cx="50" cy="50" r="40"/><path class="s0" d="M10 50A40 12 0 0 0 90 50"/>' +
+      '<ellipse class="s2" cx="36" cy="33" rx="12" ry="7" transform="rotate(-35 36 33)"/>',
+  };
+  const shapeNames = Object.keys(POLY).concat(['circle', 'oval'], Object.keys(SOLIDS));
+  function shape(name, o = {}) {
+    const c = o.c == 2 ? 'v2' : 'v1', B = 100;
+    if (SOLIDS[name]) return svg('shp', B, B, `<g class="vsl${o.c == 2 ? ' c2' : ''}">${SOLIDS[name]}</g>`, 'solid');
+    const th = (def(o.rot, 0) % 360) * Math.PI / 180, st = name == 'circle' || name == 'square' ? 1 : def(o.st, 1);
+    const cs = Math.cos(th), sn = Math.sin(th);
+    let body;
+    if (name == 'circle' || name == 'oval') {
+      const a = name == 'oval' ? 1.4 * st : 1;
+      const k = 45 / Math.max(Math.hypot(a * cs, sn), Math.hypot(a * sn, cs));
+      body = `<ellipse class="${c}" cx="50" cy="50" rx="${f(a * k)}" ry="${f(k)}" transform="rotate(${f(th * 180 / Math.PI)} 50 50)"/>`;
+    } else {
+      let pts = (POLY[name] || POLY.square).map(([x, y]) => [x * st * cs - y * sn, x * st * sn + y * cs]);
+      const k = 45 / Math.max(...pts.map(p => Math.max(Math.abs(p[0]), Math.abs(p[1]))));
+      pts = pts.map(p => [50 + p[0] * k, 50 + p[1] * k]);
+      body = `<path class="${c}" d="M${pts.map(p => f(p[0]) + ' ' + f(p[1])).join('L')}z"/>`;
+      if (o.dots) body += `<g class="vdt">${pts.map(p => `<circle cx="${f(p[0])}" cy="${f(p[1])}" r="4"/>`).join('')}</g>`;
+    }
+    return svg('shp', B, B, body, 'shape');
+  }
+
+  // ---- area grid (cells drawn like base-ten cells: one dashed stroke per row) ----
+  function areaGrid(w, h, o = {}) {
+    w = clamp(Math.round(w) || 1, 1, 12);
+    h = clamp(Math.round(h) || 1, 1, 12);
+    const n = clamp(Math.round(def(o.n, w * h)), 0, w * h);
+    const p = clamp(Math.floor(Math.min(300 / w, 240 / h)), 14, 34), c = p - 2, P = 3;
+    let on = '', off = '';
+    for (let r = 0; r < h; r++) {
+      const k = clamp(n - r * w, 0, w), y = f(P + r * p + p / 2);
+      if (k) on += `M${P + 1} ${y}h${k * p - 2}`;
+      if (k < w) off += `M${P + 1 + k * p} ${y}h${(w - k) * p - 2}`;
+    }
+    const d = `stroke-width="${c}" stroke-dasharray="${c} 2"`;
+    const body = `<rect class="vb" x="${P}" y="${P}" width="${w * p}" height="${h * p}" rx="3"/>` +
+      (off ? `<path class="vce" ${d} d="${off}"/>` : '') + (on ? `<path class="vc" ${d} d="${on}"/>` : '');
+    return svg('area', w * p + 2 * P, h * p + 2 * P, body, 'grid of squares');
+  }
+
+  // ---- rectangle with side labels (not to scale: only the ratio is followed) ----
+  function rectSides(w, h, labels = {}, o = {}) {
+    const k = Math.min(190 / Math.max(w, 1), 100 / Math.max(h, 1));
+    const rw = clamp(w * k, 70, 190), rh = clamp(h * k, 44, 100), X = 56, Y = 30;
+    const u = v => (v == '?' || v == null ? v : v + (o.unit ? ' ' + o.unit : ''));
+    const lw = u(labels.w), lh = u(labels.h);
+    let d = '';
+    for (const [x, y, sx, sy] of [[X, Y, 1, 1], [X + rw, Y, -1, 1], [X + rw, Y + rh, -1, -1], [X, Y + rh, 1, -1]])
+      d += `M${x + 10 * sx} ${y}v${10 * sy}h${-10 * sx}`;
+    const body = `<rect class="vpo" x="${X}" y="${Y}" width="${rw}" height="${rh}" rx="2"/><path class="vk" d="${d}"/>` +
+      lbl(X + rw / 2, Y + rh + 24, lw) + (o.all ? lbl(X + rw / 2, Y - 10, lw) : '') +
+      lbl(X + rw + 10, Y + rh / 2 + 5, lh, ' vts') + (o.all ? lbl(X - 10, Y + rh / 2 + 5, lh, ' vta') : '');
+    return svg('rect', rw + 2 * X, rh + Y + 36, body, 'rectangle with sides');
+  }
+
+  // ---- angle ----
+  function angle(deg, o = {}) {
+    deg = clamp(Math.round(deg) || 0, 1, o.proto ? 180 : 359);
+    const rot = o.proto ? 0 : def(o.rot, 0), R = o.proto ? 120 : 96, ar = o.proto ? 34 : 28;
+    const at = (a, r) => [Math.cos(a * Math.PI / 180) * r, -Math.sin(a * Math.PI / 180) * r];
+    const a0 = rot, a1 = rot + deg;
+    const pts = [[0, 0], at(a0, R), at(a1, R)];
+    for (let a = a0; a <= a1; a += 10) pts.push(at(a, ar + 14));
+    if (o.proto) pts.push([-R - 12, 0], [R + 12, 0], [0, -R - 12]);
+    const x0 = Math.min(...pts.map(p => p[0])) - 14, y0 = Math.min(...pts.map(p => p[1])) - 14;
+    const W = Math.max(...pts.map(p => p[0])) + 14 - x0, H = Math.max(...pts.map(p => p[1])) + 14 - y0;
+    const T = (x, y) => `${f(x - x0)} ${f(y - y0)}`;
+    const P1 = at(a0, ar), P2 = at(a1, ar);
+    let body = '';
+    if (o.proto) {
+      let t = '', tx = '';
+      for (let a = 0; a <= 180; a += 10) {
+        const m = a % 30 == 0;
+        t += `M${T(...at(a, R - (m ? 14 : 8)))}L${T(...at(a, R))}`;
+        if (m) tx += `<text class="vcn" x="${f(at(a, R - 26)[0] - x0)}" y="${f(at(a, R - 26)[1] - y0 + 4)}">${a}</text>`;
+      }
+      body += `<path class="vru" d="M${T(-R - 8, 0)}A${R + 8} ${R + 8} 0 0 1 ${T(R + 8, 0)}z"/><path class="vk" d="${t}"/>${tx}`;
+    }
+    body += `<path class="${o.proto ? 'vwg' : 'v1'}" d="M${T(0, 0)}L${T(...P1)}A${ar} ${ar} 0 ${deg > 180 ? 1 : 0} 0 ${T(...P2)}z"/>` +
+      `<path class="va" d="M${T(...at(a0, R))}L${T(0, 0)}L${T(...at(a1, R))}"/>`;
+    if (deg == 90) {
+      const u = at(a0, 14), v = at(a1, 14);
+      body += `<path class="vk" d="M${T(...u)}L${T(u[0] + v[0], u[1] + v[1])}L${T(...v)}"/>`;
+    }
+    if (o.label != null && o.label !== '') {
+      const m = at(a0 + deg / 2, ar + (deg < 40 ? 26 : 18));
+      body += o.label == '?' ? qbox(m[0] - x0, m[1] - y0, 26, 26) : `<text x="${f(m[0] - x0)}" y="${f(m[1] - y0 + 5)}">${ex(o.label)}</text>`;
+    }
+    return svg('ang', W, H, body, 'angle');
+  }
+
+  // ---- coordinate grid ----
+  function coordGrid(o = {}) {
+    const four = o.quadrants == 4, tapPts = o.tapPts || [];
+    const mx = clamp(Math.round(def(o.max, tapPts.length ? (four ? 3 : 5) : (four ? 5 : 6))), 1, 10);
+    const span = four ? 2 * mx : mx, lo = four ? -mx : 0;
+    const p = tapPts.length ? 48 : clamp(Math.floor(270 / span), 16, 40);
+    const ox = 28 + (four ? mx * p : 0), oy = 14 + mx * p, W = 28 + span * p + 18, H = 14 + (four ? 2 : 1) * mx * p + 26;
+    const X = x => ox + x * p, Y = y => oy - y * p;
+    let g = '', lab = '';
+    for (let k = lo; k <= mx; k++) {
+      g += `M${X(k)} ${Y(mx)}V${Y(lo)}M${X(lo)} ${Y(k)}H${X(mx)}`;
+      if (k) lab += `<text class="vcn" x="${X(k)}" y="${oy + 18}">${num(k)}</text><text class="vcn vta" x="${ox - 7}" y="${Y(k) + 5}">${num(k)}</text>`;
+    }
+    lab += `<text class="vcn vta" x="${ox - 7}" y="${oy + 18}">0</text>`;
+    let body = `<path class="vgl" d="${g}"/><path class="va" d="M${X(lo) - 6} ${oy}H${X(mx) + 10}M${ox} ${Y(lo) + 6}V${Y(mx) - 10}"/>` +
+      `<path class="vr" d="M${X(mx) + 16} ${oy}l-7-5v10zM${ox} ${Y(mx) - 16}l-5 7h10z"/>${lab}`;
+    const pts = o.points || [];
+    if (o.join && pts.length > 1) body += `<path class="vjn" d="M${pts.map(q => X(q[0]) + ' ' + Y(q[1])).join('L')}${o.close ? 'z' : ''}"/>`;
+    if (pts.length) body += `<g class="v1">${pts.map(q => `<circle cx="${X(q[0])}" cy="${Y(q[1])}" r="7"/>`).join('')}</g>` +
+      pts.filter(q => q[2]).map(q => `<text class="vts" x="${X(q[0]) + 10}" y="${Y(q[1]) - 9}">${ex(q[2])}</text>`).join('');
+    tapPts.forEach(q => {
+      body += `<g ${tapAttr(q[0] + ',' + q[1])}><rect class="vh" x="${X(q[0]) - 24}" y="${Y(q[1]) - 24}" width="48" height="48"/>` +
+        `<circle class="vm" cx="${X(q[0])}" cy="${Y(q[1])}" r="9"/></g>`;
+    });
+    return svg('grid', W, H, body, 'coordinate grid', tapPts.length > 0);
+  }
+
+  // ---- balance scale ----
+  function balance(left, right, o = {}) {
+    const side = v => (v && typeof v == 'object' ? v : {n: v});
+    const L = side(left), R = side(right);
+    const ln = clamp(Math.round(L.n) || 0, 0, 99), rn = clamp(Math.round(R.n) || 0, 0, 99);
+    const tilt = o.tilt != null ? o.tilt : L.q || R.q ? 0 : Math.sign(ln - rn);
+    const th = tilt * 8 * Math.PI / 180, cx = 150, py = 70, half = 100;
+    const ends = [[cx - half * Math.cos(th), py + half * Math.sin(th)], [cx + half * Math.cos(th), py - half * Math.sin(th)]];
+    let body = `<path class="vst" d="M${cx} ${py + 8}L${cx - 28} 194h56z"/>`;
+    [[L, ln, 0], [R, rn, 1]].forEach(([sd, n, i]) => {
+      const [x, y] = ends[i], yp = y + 80;
+      body += `<path class="vsr" d="M${f(x)} ${f(y)}L${f(x - 40)} ${f(yp)}M${f(x)} ${f(y)}L${f(x + 40)} ${f(yp)}"/>` +
+        `<path class="vpan" d="M${f(x - 44)} ${f(yp)}h88a44 14 0 0 1-88 0z"/>`;
+      let stackH;
+      if (n > 10 || o.nums) {
+        body += `<rect class="${i ? 'vwr' : 'vwl'}" x="${f(x - 30)}" y="${f(yp - 36)}" width="60" height="36" rx="8"/>` +
+          `<text x="${f(x)}" y="${f(yp - 12)}">${n}</text>`;
+        stackH = 36;
+      } else {
+        const pts = [];
+        for (let k = 0; k < n; k++) pts.push([x + (k % 5 - (Math.min(n, 5) - 1) / 2) * 17, yp - 10 - Math.floor(k / 5) * 17]);
+        body += counters(pts, 8).replace('class="v1"', i ? 'class="v2"' : 'class="v1"');
+        stackH = Math.ceil(n / 5) * 17 + 2;
+      }
+      if (sd.q) body += qbox(x, yp - stackH - 16);
+    });
+    body += `<path class="vbm" d="M${f(ends[0][0])} ${f(ends[0][1])}L${f(ends[1][0])} ${f(ends[1][1])}"/><circle class="vpin" cx="${cx}" cy="${py}" r="7"/>`;
+    return svg('bal', 300, 200, body, 'balance scale');
+  }
+
+  // ---- coins and bills ----
+  const COIN = {1: 18.6, 5: 20.7, 10: 17.4, 25: 23.7, 50: 30};
+  function coinSVG(v, o = {}) {
+    const list = (Array.isArray(v) ? v : [v]).slice(0, 16).map(x => (COIN[x] || [100, 500, 1000, 2000].includes(x) ? x : 1));
+    const face = o.face !== false;
+    let x = 4, y = 0, mx = 0, row = '';
+    for (const c of list) {
+      const d = COIN[c] ? 2 * COIN[c] : 90;
+      if (x + d > 300 && row) { mx = Math.max(mx, x); x = 4; y += 64; }
+      const cx = x + d / 2, cy = y + 32, r = COIN[c];
+      row += r
+        ? `<circle class="${c == 1 ? 'vcu' : 'vsv'}" cx="${f(cx)}" cy="${cy}" r="${r}"/><circle class="vci" cx="${f(cx)}" cy="${cy}" r="${f(r - 4)}"/>` +
+          (face ? `<text class="vcc${c == 1 ? ' vcp' : ''}" x="${f(cx)}" y="${cy + 5}">${c}¢</text>` : '')
+        : `<rect class="vbl" x="${f(x)}" y="${cy - 22}" width="90" height="44" rx="5"/><rect class="vbi" x="${f(x + 5)}" y="${cy - 17}" width="80" height="34" rx="3"/>` +
+          (face ? `<text class="vcb" x="${f(cx)}" y="${cy + 7}">$${c / 100}</text>` : '');
+      x += d + 8;
+    }
+    mx = Math.max(mx, x);
+    return svg('coin', Math.max(mx - 4, 12), y + 64, row, 'money');
+  }
+
+  // ---- tally marks ----
+  function tally(n) {
+    n = clamp(Math.round(n) || 0, 0, 50);
+    const gp = 52, groups = Math.floor(n / 5), rest = n % 5, total = groups + (rest ? 1 : 0);
+    let d = '';
+    for (let g = 0; g < total; g++) {
+      const x = 10 + (g % 5) * gp, y = 6 + Math.floor(g / 5) * 50, k = g < groups ? 4 : rest;
+      for (let i = 0; i < k; i++) d += `M${x + i * 9} ${y}v38`;
+      if (g < groups) d += `M${x - 6} ${y + 31}L${x + 33} ${y + 7}`;
+    }
+    return svg('tal', Math.min(Math.max(total, 1), 5) * gp - 4, Math.max(1, Math.ceil(total / 5)) * 50 + 2, `<path class="vtk" d="${d}"/>`, 'tally marks');
+  }
+
+  // ---- in/out table ----
+  function tableInOut(rows, o = {}) {
+    rows = (rows || []).slice(0, 8);
+    const head = o.head || ['In', 'Out'], cw = 84, hh = 36, rh = 40, P = 3, H = hh + rows.length * rh;
+    let body = `<rect class="vo" x="${P}" y="${P}" width="${2 * cw}" height="${H}" rx="8"/>` +
+      `<path class="v1" d="M${P + 8} ${P}h${2 * cw - 16}a8 8 0 0 1 8 8v${hh - 8}h${-2 * cw}v${8 - hh}a8 8 0 0 1 8-8z"/>` +
+      `<text class="vw" x="${P + cw / 2}" y="${P + 24}">${ex(head[0])}</text><text class="vw" x="${P + cw * 1.5}" y="${P + 24}">${ex(head[1])}</text>`;
+    let d = `M${P + cw} ${P}v${H}`;
+    rows.forEach((r, i) => {
+      const y = P + hh + i * rh;
+      if (i) d += `M${P} ${y}h${2 * cw}`;
+      body += lbl(P + cw / 2, y + 26, r[0]) + lbl(P + cw * 1.5, y + 26, r[1]);
+    });
+    return svg('tio', 2 * cw + 2 * P, H + 2 * P, body + `<path class="vl" d="${d}"/>`, 'in out table');
+  }
+
+  return {tenFrame, base10, numLine, fracBar, fracCircle, clock, array, dots,
+    ruler, barGraph, pictograph, linePlot, shape, shapeNames, areaGrid, rectSides, angle, coordGrid, balance, coinSVG, tally, tableInOut};
 })();
 /* ---------- math generators ---------- */
 function genAdd(lv){let a,b;
@@ -2001,7 +2428,7 @@ function home(first){
   $('#book').onclick=book;$('#shop').onclick=shop;$('#mix').onclick=()=>{SFX.whoosh();startMix()};$('#race').onclick=raceMenu;$('#flu').onclick=()=>{SFX.whoosh();fluMenu()};$('#care').onclick=care;$('#groom').onclick=()=>{SFX.whoosh();gameRoom()};
   if($('#inst'))$('#inst').onclick=async()=>{try{installEvt.prompt();await installEvt.userChoice}catch(e){}installEvt=null;home()};
   let t;const g=$('#gear');g.onpointerdown=()=>{t=setTimeout(grown,1200)};g.onpointerup=g.onpointerleave=()=>clearTimeout(t);g.onclick=()=>fb('Grown-ups: hold it','warn');
-  {const sc=$('.scroll');if(sc)sc.insertAdjacentHTML('beforeend','<p class="small" style="text-align:center;opacity:.55;margin:14px 0 4px">Star School v47</p>')}
+  {const sc=$('.scroll');if(sc)sc.insertAdjacentHTML('beforeend','<p class="small" style="text-align:center;opacity:.55;margin:14px 0 4px">Star School v48</p>')}
   if(first&&S.voice)setTimeout(()=>say(`Hi ${S.name}! Pick a game!`),400)}
 
 let MAPP='math',MAPW={}; // MAPW[path] = the world picked in the strip (this session only, not saved)
@@ -4595,7 +5022,7 @@ function grown(){let armed=false;
    <div class="vline"><span class="vtxt">Give a bonus</span><button class="btn xs" id="pt5">+5 min</button><button class="btn xs danger" id="pt0">Empty bank</button></div>
    <label class="tg"><input type="checkbox" id="ptp" ${ptCfg().pause?'checked':''}> Pause game time (games locked)</label></div>
   <div class="card"><div class="tw"><table><tr><th>Skill</th><th>Rounds</th><th>1st try</th><th>Tricky ones</th></tr>${rows}</table></div></div>
-  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v47 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
+  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v48 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
    Storage: ${SAVE_FAILED?'<b style="color:#c0392b">could not save (device storage may be full)</b>':'saving OK'}${SAVE_CORRUPT?'<br><b style="color:#c0392b">The old save could not be read. A fresh start was made and the old data was kept on the device.</b>':''}<br>
    Last errors: ${(S.err||[]).length?(S.err||[]).slice().reverse().map(e=>'<br>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+' '+esc(e.msg)).join(''):'none'}</div></details>
   <div class="card"><label class="tg"><input type="checkbox" id="voice" ${S.voice?'checked':''}> Read questions out loud</label>

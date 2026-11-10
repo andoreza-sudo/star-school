@@ -21,6 +21,10 @@ for (const s of ['math', 'read', 'es', 'disc', 'bt', 'play']) rules.push([s + '-
 rules.push(['good-ink', 'good-tint', 4.5, 'shade on tint'], ['try-ink', 'try-tint', 4.5, 'shade on tint'], ['brand-shade', 'brand-tint', 4.5, 'shade on tint']);
 // math visuals (P1-10): lines and fills that carry meaning need 3:1 against the white card (WCAG 1.4.11)
 for (const g of ['ink-2', 'ink-3', 'math', 'math-shade', 'play', 'read']) rules.push([g, 'surface', 3, 'viz graphic on surface']);
+// part 2 (P1-11): ink on the viz fills (ruler, coins, boxes), meaningful edges on the white card
+for (const bg of ['star-tint', 'math-tint', 'play-tint', 'surface-2', 'good-tint']) rules.push(['ink', bg, 4.5, 'viz text on fill']);
+for (const g of ['play-shade', 'good-ink']) rules.push([g, 'surface', 3, 'viz graphic on surface']);
+rules.push(['ink-3', 'star-tint', 3, 'viz ruler edge'], ['ink-3', 'surface-2', 3, 'viz coin edge'], ['play-shade', 'play-tint', 3, 'viz penny edge']);
 let fail = 0;
 for (const [a, b, min, what] of rules) {
   const r = ratio(a, b), ok = r >= min;

@@ -661,12 +661,29 @@ run('viz: math visuals well-formed, small, deterministic, tokens only, tap targe
   if(/#[0-9a-f]{3,8}\b/i.test(css))p.push('32-viz.css has a raw hex colour');
   const V=eval(src+';VIZ');
   // typical inputs (what generators will use most): each under 2.5 KB
+  const V0=eval(src+';VIZ');
   const typical=[['tenFrame',[7]],['tenFrame',[3,5]],['tenFrame',[18,20,{b:8,fade:2}]],['base10',[999]],['base10',[47]],['base10',[358]],
     ['numLine',[{}]],['numLine',[{max:20,marks:[13],hide:[10]}]],['numLine',[{max:100,step:10}]],['numLine',[{min:-5,max:5,tapValues:[-4,-2,0,2,4]}]],
     ['numLine',[{max:1,step:.25,den:4,tapValues:[0,.25,.5,.75,1]}]],['numLine',[{max:2,step:1/8,den:8,marks:[1.375]}]],
     ['fracBar',[3,4,{unit:true}]],['fracBar',[7,8,{unit:true}]],['fracBar',[5,4]],['fracBar',[0,6,{tap:true}]],
     ['fracCircle',[3,8]],['fracCircle',[7,4]],['fracCircle',[0,6,{tap:true}]],['clock',[10,45]],['clock',[12,0,{nums:false}]],
-    ['array',[10,10]],['array',[3,4]],['dots',[20,'scatter',{seed:9}]],['dots',[10,'dice']],['dots',[20,'ten']],['dots',[20,'row',{b:5,fade:3}]]];
+    ['array',[10,10]],['array',[3,4]],['dots',[20,'scatter',{seed:9}]],['dots',[10,'dice']],['dots',[20,'ten']],['dots',[20,'row',{b:5,fade:3}]],
+    // part 2 (P1-11)
+    ['numLine',[{max:10,hops:[[0,3],[3,7],[7,10,'?']]}]],['numLine',[{max:20,hops:[[14,9]],marks:[9]}]],
+    ['ruler',[7,'cm','pencil']],['ruler',[4.5,'in']],['ruler',[12,'cm','bar',{from:2}]],
+    ['barGraph',[[['Cat',4],['Dog',7],['Fish',3],['Bird',5]],1]],['barGraph',[[['Mon',20],['Tue',35],['Wed',15]],5,{vals:true}]],
+    ['barGraph',[[['A',2],['B',5],['C',3],['D',4],['E',1],['F',6]],1,{tap:true}]],
+    ['pictograph',[[['Red',4],['Blue',6.5],['Green',3]],{per:2}]],['pictograph',[[['Cats',3],['Dogs',5]]]],
+    ['linePlot',[[1,2,2,3,3,3,5,5]]],['linePlot',[[0.25,0.5,0.5,0.75,1,1,1.25],{min:0,max:1.5,step:0.25,den:4}]],
+    ['linePlot',[[1,2,3,3],{max:5,tapValues:[1,2,3,4,5]}]]]
+    .concat(V0.shapeNames.map(n=>['shape',[n]])).concat([['shape',['triangle',{rot:35,st:1.5,dots:true}]],['shape',['oval',{rot:90}]],['shape',['cube',{c:2}]],
+    ['areaGrid',[4,6]],['areaGrid',[12,12]],['areaGrid',[5,3,{n:8}]],['rectSides',[8,5,{w:8,h:5},{unit:'cm'}]],['rectSides',[6,4,{w:'?',h:4},{all:true}]],
+    ['angle',[60]],['angle',[90,{rot:20,label:'?'}]],['angle',[130,{proto:true,label:'x'}]],['angle',[250]],
+    ['coordGrid',[{points:[[2,3,'A'],[4,1,'B']]}]],['coordGrid',[{quadrants:4,max:5,points:[[-2,3],[4,-1],[-3,-4]],join:true,close:true}]],
+    ['coordGrid',[{tapPts:[[1,2],[2,1],[4,3]]}]],['coordGrid',[{quadrants:4,tapPts:[[-1,2],[2,-1]]}]],
+    ['balance',[5,3]],['balance',[{n:3,q:true},7]],['balance',[12,12]],['balance',[4,9,{nums:true}]],
+    ['coinSVG',[25]],['coinSVG',[[25,10,10,5,1,1]]],['coinSVG',[[500,100,100]]],['coinSVG',[[25,25,25,25,25,25,25,10],{face:false}]],
+    ['tally',[13]],['tally',[50]],['tableInOut',[[[1,3],[2,5],[3,'?'],['?',9]]]]]);
   // everything else: a sweep of edge inputs, checked for broken markup only
   const sweep=[];
   for(let n=0;n<=20;n++){sweep.push(['tenFrame',[n,20]],['tenFrame',[n,5]],['dots',[n,'row']],['dots',[n,'ten']],['dots',[n,'dice']]);
@@ -675,6 +692,13 @@ run('viz: math visuals well-formed, small, deterministic, tokens only, tap targe
   for(let d=1;d<=12;d++)for(let n=0;n<=2*d+1;n++)sweep.push(['fracBar',[n,d,{unit:true}]],['fracCircle',[n,d,{tap:true}]]);
   for(let h=0;h<=12;h++)for(let m=0;m<60;m+=7)sweep.push(['clock',[h,m]]);
   for(let r=1;r<=12;r++)for(let c=1;c<=12;c++)sweep.push(['array',[r,c]]);
+  for(let w=1;w<=12;w+=3)for(let h=1;h<=12;h+=2)sweep.push(['areaGrid',[w,h,{n:w*h>>1}]],['rectSides',[w,h,{w:'?',h:'?'},{all:true}]]);
+  for(let d=0;d<=360;d+=15){sweep.push(['angle',[d,{rot:d,label:'?'}]]);if(d<=180)sweep.push(['angle',[d,{proto:true}]])}
+  for(let a=0;a<=12;a++)for(let b=0;b<=12;b+=3)sweep.push(['balance',[a,b]]);
+  for(let n=0;n<=52;n++)sweep.push(['tally',[n]]);
+  for(const v of [1,5,10,25,50,100,500,1000,2000,7])sweep.push(['coinSVG',[v]]);
+  for(const q of [1,4])for(let m=1;m<=10;m++)sweep.push(['coordGrid',[{quadrants:q,max:m,points:[[m,m],[0,0]]}]]);
+  for(let n=1;n<=8;n++)sweep.push(['barGraph',[Array.from({length:n},(_,i)=>['L'+i,i*3+1]),0]],['pictograph',[Array.from({length:Math.min(n,6)},(_,i)=>['L'+i,i*2+1]),{per:2}]]);
   for(const [mn,mx,st] of [[0,5,1],[0,20,1],[0,100,5],[-10,10,1],[0,1000,100],[0,3,1/3],[0,0.3,0.1]])sweep.push(['numLine',[{min:mn,max:mx,step:st}]]);
   const big=[];
   for(const [name,args,typ] of typical.map(t=>[...t,1]).concat(sweep)){
@@ -717,6 +741,29 @@ run('viz: math visuals well-formed, small, deterministic, tokens only, tap targe
   if(!V.numLine({hide:[4]}).includes('class="vq"'))p.push('numLine hide box');
   if(!/>3<\/text>.*>4<\/text>/.test(V.numLine({max:1,step:.25,den:4})))p.push('numLine den labels');
   if(!V.numLine({min:-3,max:3}).includes('−3'))p.push('numLine minus sign');
+  // part 2 promises
+  const has=(s,re)=>re.test(s);
+  if(cnt(V.shape('hexagon'),/L/g)!==5)p.push('hexagon should have 6 corners');
+  if(V.shape('triangle',{rot:30})===V.shape('triangle'))p.push('shape rot has no effect');
+  if(!has(V.shape('sphere'),/class="s0"/)||has(V.shape('circle'),/s1/))p.push('sphere/circle drawing');
+  if(/cube|hexagon/.test(V.shape('cube')+V.shape('hexagon')))p.push('shape aria-label must not name the shape');
+  if(cnt(V.areaGrid(4,6),/h\d+(?=M|")/g)!==6)p.push('areaGrid(4, 6) should have one dashed row path per row');
+  if(!has(V.rectSides(8,5,{w:8,h:'?'}),/class="vq"/))p.push('rectSides ? box');
+  if(!has(V.angle(90),/class="vk"/)||has(V.angle(60),/class="vk"/))p.push('right angle mark only at 90');
+  if(!has(V.angle(60,{label:'?'}),/class="vq"/))p.push('angle ? label');
+  if(cnt(V.balance(5,3),/<circle/g)!==9)p.push('balance(5, 3): 8 counters and the pivot');
+  if(V.balance(5,3)===V.balance(3,5)||V.balance(4,4)===V.balance(5,3))p.push('balance tilt');
+  if(cnt(V.coinSVG([25,10,5,1]),/<text/g)!==4||cnt(V.coinSVG([25,10,5,1],{face:false}),/<text/g)!==0)p.push('coinSVG face');
+  if(cnt(V.tally(13),/v38/g)!==11)p.push('tally(13) should draw 11 upright strokes');
+  if(cnt(V.tally(13),/L/g)!==2)p.push('tally(13) should draw 2 slashes');
+  if(cnt(V.pictograph([['A',5]],{per:2}),/<path class="v1"/g)!==1)p.push('pictograph half picture');
+  if(cnt(V.linePlot([1,1,2]),/<circle/g)!==3)p.push('linePlot should draw one circle per value');
+  if(cnt(V.barGraph([['a',3],['b',2]],1,{tap:true}),/data-v=/g)!==2)p.push('barGraph tap targets');
+  if(!has(V.coordGrid({tapPts:[[1,2]]}),/data-v="1,2"/))p.push('coordGrid tap points');
+  if(cnt(V.numLine({hops:[[0,3],[3,5]]}),/Q/g)!==2||!V.numLine({hops:[[0,3]]}).includes('>+3<'))p.push('numLine hops');
+  if(V.numLine({max:20,hops:[[14,9]]}).includes('>+5<')||!V.numLine({max:20,hops:[[14,9]]}).includes('−5'))p.push('numLine backward hop label');
+  // text from generators is escaped
+  if(V.tableInOut([['<b>',1]]).includes('<b>'))p.push('tableInOut does not escape');
   // scatter dots never overlap (2r = 26)
   for(let n=2;n<=20;n++)for(let sd=1;sd<=20;sd++){
     const c=[...V.dots(n,'scatter',{seed:sd}).matchAll(/cx="([\d.]+)" cy="([\d.]+)"/g)].map(m=>[+m[1],+m[2]]);

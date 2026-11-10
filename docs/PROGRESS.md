@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** wave 3: P1-06 and P1-11 in progress (last two). Then wave 4: P1-07 (Opus), P1-08 (Opus), P5-02, P5-03, P5-05, P5-06.
+**Next up:** wave 3: P1-06 in progress (last one). Then wave 4: P1-07 (Opus), P1-08 (Opus), P5-02, P5-03, P5-05, P5-06.
 
-**Current version:** v47
+**Current version:** v48
 
 ## Chunk status
 
@@ -27,6 +27,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P1-10 v45
 - P1-05 v46
 - P1-03 v47
+- P1-11 v48
 
 ## Handoff notes
 
@@ -78,9 +79,12 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-02) The icon sheet is built inside `tools/shots.js` (no dev screen in the app). Icons are drawn for the 24 grid with the recipe in the `15-icons.js` header; `close` and `times` are nearly the same shape on purpose (times is slightly smaller).
 - (P1-10) `VIZ.clock` is not used by `genTime` yet: the old `clockSVG` (32-gen-read.js) has raw hex colours and a different look, and the chunk allows replacing it only if identical. The new clock keeps "short red hour hand, long blue minute hand", so the hint text still fits; P2-03 (Clock Tower) should switch `genTime` to `VIZ.clock` and delete `clockSVG` and the `.clock` rule in 40-games.css.
 - (P1-10) Tap visuals wider than about 340 units shrink on a 380 px phone (max-width), so their targets drop under 48 px: a fraction bar with 7-8 tap parts, or a number line with more than 6 tap values. Generators for the `tap` kind should stay within that (documented in the 23-viz.js header); P1-03/P1-04 could add a check.
-- (P1-10) Number-line hops (`jumps`, arcs for "+3" on a line) are not in VIZ yet; grade 1-2 addition on a number line (P2-03/P2-04) will want them. Small add-on to `numLine` in the same style.
+- (P1-10, DONE in P1-11) Number-line hops: `numLine({hops: [[from, to, label?]]})`.
 - (P1-10) `VIZ.base10(999)` is 404 units wide, so on a 380 px phone it scales to about 0.88 (cells about 5 px). Readable; a later chunk could stack flats when n > 599 if it looks small on a real phone.
 
+- (P1-11) `coordGrid` draws axis arrows only at the positive ends and its labels sit on the axes, over grid lines (readable, a little busy in four quadrants); `angle({proto})` labels 0 and 180 overlap the baseline. Polish in P4.
+- (P1-11) `balance` strings pass behind the counters on a pan; fine at 380 px but a later pass could draw the pan on top. Sphere highlight looks like a small hole at tiny sizes.
+- (P1-11) `coinSVG` prints the value with a cent sign in Andika; if a font ever lacks it, `o.face = false` plus the generator's own text is the fallback.
 - (P1-09) The finish screen text "Get 7 right to open the next stop" is fixed; on a 5-question passage round the pass mark is 4 (`floor(n*.7+.01)`). Reword the message from `n` when a passage skill ships (P2-25).
 - (P1-09) Stored misses in `makeQ` (`{...pick(ms).q}`) keep `q.ctx` and `q.bk`, so a missed passage question comes back with its passage; P5-02 should rebuild with `bankRebuild(q.bk)` (or `genQ`) instead of copying.
 - (P1-09) Forms `order`, `match`, `multi` are validated but never drawn until P1-03/P1-04 add the kinds and register `BANKF.order/match/multi=(item,id)=>question`; the data shape in CURRICULUM section 8 (`order`, `pairs`, `a` as a list) is what the builders receive.
@@ -96,6 +100,15 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P1-05) Map draw with 16 fake worlds (156 stops) at 6x CPU throttle: median about 29 ms (limit 50), single runs up to about 49 ms. The strip recomputes `worldOpen`/`worldFinished` per chip and `unlocked` scans the world; a memo per draw is the next step if P4-09 adds weight.
 
 ## Log
+
+### P1-11 Math visuals library, part 2 (v48, 2026-11-10, Claude)
+- What changed: added to the VIZ block in `src/js/23-viz.js` (same style, helpers and tap contract; all documented in the file header): `ruler(len, unit, obj, o)`, `barGraph(data, scale, o)`, `pictograph(data, o)`, `linePlot(values, o)`, `shape(name, o)` (+ `VIZ.shapeNames`: circle oval square rectangle triangle rhombus trapezoid pentagon hexagon octagon, solids cube prism cylinder cone sphere; rot/stretch/dots), `areaGrid(w, h, o)`, `rectSides(w, h, labels, o)`, `angle(deg, o)` (with protractor), `coordGrid(o)` (1 or 4 quadrants, points, join, tap points), `balance(left, right, o)`, `coinSVG(v, o)` (coins and bills, one or a list), `tally(n)`, `tableInOut(rows, o)`; and the missing number-line hops, `numLine({hops})`. Tap targets: `barGraph({tap})`, `linePlot({tapValues})`, `coordGrid({tapPts})`, all at least 48 units and at most about 330 wide.
+- Not used in generators (chunk Out). Labels from generators are escaped; aria-labels never name the answer (`shape`, `solid`).
+- Files: src/js/23-viz.js, src/css/32-viz.css (tokens only), tools/test.js (viz check extended: every shape name, sweeps over angle, balance, tally, coins, grids; promises for each visual), tools/shots.js (viz sheet), tools/contrast.js (10 more pairs), tools/build.py (VER), built output.
+- Tests and size: check.sh ok (contrast 58 pairs, test.js 19 of 19 with viz 1198 visuals, smoke ok). index.html 497,765 bytes (+27.5 KB: 23-viz.js +24.8 KB, half of it header docs; 32-viz.css +2.8 KB). Typical outputs 150 B to 1.8 KB, all under 2.5 KB.
+- Screenshots: viz sheet at 600x960 (new part, 2 contact sheets) and 380x780 widths checked by numbers (widest tap visual 328 units).
+- Checklist 7.1: all ticked (only VIZ files, tests and built output; VER bumped; no emoji added, the cent sign is not an emoji; no raw colours). Not pushed; branch P1-11-viz2, VER v48 provisional for renumbering at merge.
+- Merge: built on a parallel branch, renumbered v46 -> v48 at merge.
 
 ### P1-03 New kinds A: number pads, multi-select, order (v47, 2026-11-10, Claude)
 - What changed: `KIND.num` gets `q.pad` ('int' default, 'dec' adds `.`, 'neg' adds `±`, 'frac' two stacked slots, answer `'3/4'`), `q.sep` ('R': quotient and remainder slots, `'9R2'`; 'mix': whole + fraction in three slots, `'2 1/3'`), `q.eq:'value'` (numeric compare: `0.50` = `.5`, `2/4` = `1/2`, exact BigInt maths; the default stays exact text) and `q.max` (digits per slot, default 4, up to 9). With more than one slot the check key shows `→` and moves to the next slot, `✓` on the last slot submits, del steps back across the separator, the active slot is outlined. New kinds `multi` (choose all that apply, a Check button, `ans` = sorted array) and `order` (tap tiles into slots, tap a filled slot to take it back, auto-checks when full; generalises `build`, which is unchanged). Each has render/bind/right/retry/reveal/spoken/validate plus `same`. Existing int pad behaviour is unchanged (same HTML, same keys).
