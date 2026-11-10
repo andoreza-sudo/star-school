@@ -1636,6 +1636,62 @@ run('mix: Mixed Practice and Tricky Mix start without errors on every fixture, n
   return{problems:[...new Set(out)]};
 });
 
+// ---- P5-03 Daily Review: card and round built on dueItems ----
+run('daily review: card counts due items, the round asks them first, nothing due never starts an empty round',()=>{
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const out=[];
+  const r=eval(js+`
+  const store={'starschool-v2':${JSON.stringify(fx('tricky'))}};
+  localStorage.getItem=k=>k in store?store[k]:null;localStorage.setItem=(k,v)=>{store[k]=String(v)};
+  loadSave(store['starschool-v2']);migrate();
+  const bad=[],td=REV.day(),rall=REV.get().slice();
+  let started=0,nexts=0;
+  startMix=()=>{started++};next=()=>{nexts++};
+  // 12 due items: the card says 12, the round holds the 10 most urgent, in order, and makeQ hands them out first
+  S.rev=rall.slice(0,12).map(x=>({...x,due:td}));
+  if(dueItems().length!==12)bad.push('setup: '+dueItems().length+' due');
+  if(!/id="revn">12<\\/span> due/.test(revCard())||!/id="rev"/.test(revCard()))bad.push('card with 12 due: '+revCard());
+  const want=dueItems(10).map(revKey);
+  startReview();
+  if(!G||!G.mix||!G.daily||G.n!==10||G.pool.length!==10||started||nexts!==1)bad.push('round: '+JSON.stringify({n:G&&G.n,p:G&&G.pool&&G.pool.length,started,nexts}));
+  else{
+    const got=G.pool.map(q=>q.rvk);
+    if(got.join()!==want.join())bad.push('round does not ask the due items first, most urgent first');
+    const asked=[];for(let i=0;i<10;i++)asked.push(makeQ().rvk);
+    if(asked.join()!==want.join())bad.push('makeQ order');
+  }
+  // 3 due: a short round of exactly those 3
+  S.rev=rall.slice(0,3).map(x=>({...x,due:td}));
+  startReview();
+  if(G.n!==3||G.pool.length!==3||G.pool.some(q=>!q.rvk))bad.push('3 due: '+G.n);
+  // a right first try books the item (Daily Review answers move items up like any other)
+  const q0=G.pool[0];if(!revRight(q0,td))bad.push('answer not booked');
+  if(dueItems().length!==2)bad.push('2 due expected after one right answer');
+  // nothing due: kind card, no start button, startReview falls back to Mixed Practice and never builds an empty round
+  S.rev=[];G=null;
+  const c0=revCard();
+  if(!/All caught up/.test(c0)||/id="rev"/.test(c0)||/Tricky/.test(c0))bad.push('empty card: '+c0);
+  started=0;nexts=0;startReview();
+  if(started!==1||nexts!==0||G)bad.push('0 due must run Mixed Practice, not an empty round');
+  // items not due yet are not counted
+  S.rev=rall.slice(0,5).map(x=>({...x,due:td+1,box:1}));
+  if(dueItems().length||!/All caught up/.test(revCard()))bad.push('future items counted as due');
+  // every fixture: card and review questions build without errors
+  bad;`);
+  for(const m of r)out.push(m);
+  for(const name of ['fresh','midway','maxed','legacy-single-map','legacy-index-maps']){
+    const r2=eval(js+`
+    const store={'starschool-v2':${JSON.stringify(fx(name))}};
+    localStorage.getItem=k=>k in store?store[k]:null;localStorage.setItem=(k,v)=>{store[k]=String(v)};
+    loadSave(store['starschool-v2']);migrate();
+    const bad=[];
+    try{const c=revCard(),qs=reviewQs();if(!c||qs.length>10||qs.some(q=>!q||!q.html))bad.push('bad card or questions')}catch(e){bad.push('threw: '+e.message)}
+    bad;`);
+    for(const m of r2)out.push(name+': '+m);
+  }
+  return{problems:out};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){

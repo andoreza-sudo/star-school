@@ -1,0 +1,10 @@
+/* P5-03 Daily Review card on Home (59-review.js). Tokens only; classes start with rv-. */
+.rv-card{display:flex;align-items:center;gap:var(--s-3);background:var(--star-tint);border-radius:var(--r-card);
+  padding:var(--s-3) var(--s-4);margin:var(--s-4) 0 0;color:var(--ink)}
+.rv-card .ic{color:var(--star-shade);flex:none}
+.rv-tx{display:flex;flex-direction:column;flex:1 1 auto;min-width:0;font-size:var(--fs-3);line-height:var(--lh-3)}
+.rv-tx span{color:var(--ink-2)}
+.rv-go{min-height:var(--tap);min-width:var(--tap);font-size:var(--fs-3);font-weight:700;padding:var(--s-2) var(--s-4);
+  background:var(--brand);color:var(--surface)}
+.rv-done{background:var(--good-tint)}
+.rv-done .ic{color:var(--good-ink)}

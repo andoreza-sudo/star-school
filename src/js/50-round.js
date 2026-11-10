@@ -142,7 +142,7 @@ function finish(){
     setTimeout(()=>{if(!live())return;$('#btns').style.visibility='visible';
       $('#bonus').onclick=()=>balloons(g.mix||g.boss||g.test?(p||pick(['math','read','es'])):SK[g.sk].area,g);
       if($('#nxt'))$('#nxt').onclick=()=>{SFX.whoosh();open(p,nextI)};
-      if($('#again'))$('#again').onclick=()=>{SFX.whoosh();g.mix?startMix():g.test?testOut(p,g.test.wi):open(p,ni)};$('#menu').onclick=()=>g.mix?home():pathMap(p);
+      if($('#again'))$('#again').onclick=()=>{SFX.whoosh();g.mix?(g.daily?startReview():startMix()):g.test?testOut(p,g.test.wi):open(p,ni)};$('#menu').onclick=()=>g.mix?home():pathMap(p);
       if(grew)setTimeout(()=>growShow(before),300);else if(!playClip('done')&&S.voice)say(`You got ${sc} stars!`+(newPass?' You unlocked the next stop!':''))},t);
     t+=300;
     const msgs=[[`🎟️ +${fmtM(ptSec)} of game time!<div class="ptlines">${PT.lines.map(([v,l])=>`<span class="${v<0?'neg':''}">${v<0?'−':'+'}${fmtM(Math.abs(v))} ${l}</span>`).join('')}</div>${PT.mast&&nextI>=0?'<div class="pthint">💡 New stops earn way more game time!</div>':PT.rep>=1?'<div class="pthint">💡 Try a different stop to earn more!</div>':''}`,'coin'],[`+${coins} 🪙 coins for the pet shop!`,null]];

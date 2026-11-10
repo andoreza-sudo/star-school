@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** wave 4: P5-03 (Daily Review and Tricky Mix on the review engine), then wave 5 (batch A: P2-01, P2-05, P2-15, P2-19, P4-13).
+**Next up:** wave 5 batch A: P2-01, P2-05, P2-15, P2-19, P4-13.
 
-**Current version:** v55
+**Current version:** v56
 
 ## Chunk status
 
@@ -35,6 +35,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P1-08 v53
 - P5-06 v54
 - P5-02 v55
+- P5-03 v56
 
 ## Handoff notes
 
@@ -49,6 +50,9 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - (P5-02) Items moved from saves older than v38 have no seed: `revQ` tries 120 seeds for the same label once and keeps the one it finds (`seed: null` when none; then each review is a fresh question of that skill and level). Labels whose format changed since (midway's `3 + 4` against today's add labels) never match, so those items get fresh questions until they leave the system.
 - (P5-05) Quitting a round mid-question adds no time for that question (only answered questions count), and games (Balloons, Race, Hill Climb, Art) are not logged; P5-06 can say "learning time". Sprint seconds do not add to `q`/`ok`, so Sprint does not change accuracy.
 Things noticed while working that are outside the current chunk. One line each, with the chunk that noticed it.
+
+- (P5-03) The Daily Review round has no filler: it holds only due items (1 to 10). Mixed Practice still starts with up to 7 due items, so the same items can be asked by either button; a later pass could make Mixed Practice skip due items or limit the card to once a day if that feels repetitive. The card shows the whole backlog ("21 due") although a round takes 10 at a time.
+- (P5-03) The Mixed Practice button still uses a raw emoji and inline colours (old home code); P4-09/P4-10 home redesign should move it onto ico().
 
 - (P1-07) The roadmap's "within one world in 95% of runs" holds when the true level is within about 2 grades of the grade picked (test.js: 97.9% of 2,000 simulated students, truth from 3 worlds below to 5 above the start world). With the truth anywhere on a 16-world path it is about 57%: 5 testlets can move at most 5 worlds. If later grade bands get long, a coarse first step (skip 2 worlds on 4 of 4) would widen the reach.
 - (P1-07) Spanish has no placement: its worlds are vocabulary sets in an order (`byLevel`), not a difficulty ladder. `placePaths()` takes every path without `byLevel`, so a graded Discover path (P2-36) gets "Find my level" for free; check its world list makes sense as a ladder.
@@ -135,6 +139,15 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P1-05) Map draw with 16 fake worlds (156 stops) at 6x CPU throttle: median about 29 ms (limit 50), single runs up to about 49 ms. The strip recomputes `worldOpen`/`worldFinished` per chip and `unlocked` scans the world; a memo per draw is the next step if P4-09 adds weight.
 
 ## Log
+
+### P5-03 Daily Review and Tricky Mix on the new engine (v56, 2026-11-10, Claude)
+- What changed: Home has a "Today's review" card under the hero: with items due it reads "N due" (N = `dueItems().length`, the whole backlog) and a Start button; with none it is a kind green "All caught up! Nothing to review today." with no button. Start runs `startReview()`: a round (mix-style: no stars, no map progress) holding the 10 most urgent due items (`dueItems(10)` rebuilt with `revQ`) and nothing else, so with 12 due the round asks those first, most urgent first; with 3 due it is a 3-question round. With nothing due `startReview()` falls back to Mixed Practice, so an empty round is never built. Play again on the finish screen starts the next review while items remain. Answers book through the existing `check()` hooks (right = up a box and counted as fixed for game time, wrong = box 0 again).
+- Tricky Mix is replaced by the card: the home button in the action row is now always "Mixed Practice" (`#mix`, `startMix()` unchanged: up to 7 due items then stops the child has reached, never a boss stop; the boss-stop fix from v55 is kept and still tested).
+- New: `src/css/34-review.css` (tokens only, `rv-` classes); `reviewQs`, `startReview`, `revCard`, `revCardBind` appended to `src/js/59-review.js`. Review engine rules are untouched.
+- Edits to existing files: `46-home.js` three small edits (`${revCard()}` after `${placeBanner()}`; the `#mix` label is the fixed text "Mixed Practice" instead of the Tricky Mix (N) ternary; `revCardBind();` after `placeBannerBind();`), `50-round.js` one edit (Play again: `g.mix?(g.daily?startReview():startMix()):...`), `tools/build.py` VER.
+- Tests: test.js "daily review" (tricky fixture with 12 due: card says 12, round holds the 10 most urgent in `dueItems` order and `makeQ` hands them out in that order; 3 due = 3 questions; a right answer books the item; nothing due = kind card, no button, `startReview` calls Mixed Practice and builds no round; future items are not due; card and questions build on every fixture). smoke.js `// P5-03` (tricky fixture at 380x780: card shows 21, Start 48 px or more, no horizontal overflow; round of 10 rebuilt due items, all right, 10 fixed, home says 11 due; with `S.rev=[]` the card is the empty state and `startReview()` still plays a full round). The P5-02 smoke check now expects "Mixed Practice" on the button. shots.js: review-due, review-none.
+- Screenshots looked at: review-due and review-none at 380x780.
+- Checklist 7.1: [x] only named files changed (plus new CSS and tests) [x] VER bumped [x] build [x] test.js (30 checks) [x] smoke.js [x] screenshots (home at 380x780 with items due and with none) [x] midway fixture unchanged (test) [x] size under 1.5 MB [x] no network [x] no new emoji or hex [x] PROGRESS entry [x] one commit (not pushed).
 
 ### FIX: Mixed Practice / Tricky Mix crash after a boss is beaten (in v55, 2026-11-10, Claude)
 - Cause: `startMix` filled the round from every reached stop, including boss stops, which are not skills (`SK.boss` is undefined), so a random pick of a boss stop threw and the child stayed on Home. Pre-existing since v30; found when the P5-02 smoke step started failing at random after merging.
