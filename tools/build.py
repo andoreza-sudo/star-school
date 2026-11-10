@@ -2,11 +2,17 @@ import base64, json, os
 from PIL import Image, ImageDraw
 # Build: python3 tools/build.py   (run from anywhere; writes index.html, sw.js, manifest.json, icons to the repo root)
 # Bump VER on every release so tablets pick up the update.
-VER = 'v31'
+VER = 'v32'
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = ROOT
 F = os.path.join(ROOT, 'tools', 'fonts', 'andika-latin-%s-normal.woff2')
-src = open(os.path.join(ROOT, 'src', 'src.html')).read()
+S_DIR = os.path.join(ROOT, 'src')
+def cat(sub, ext):
+    d = os.path.join(S_DIR, sub)
+    return ''.join(open(os.path.join(d, n), newline='').read() for n in sorted(os.listdir(d)) if n.endswith(ext))
+# shell + css (sorted) + js (sorted) + data (sorted) + boot.js
+src = open(os.path.join(S_DIR, 'shell.html'), newline='').read()
+src = src.replace('/*@@CSS@@*/\n', cat('css', '.css')).replace('/*@@JS@@*/\n', cat('js', '.js') + cat('data', '.js') + open(os.path.join(S_DIR, 'boot.js'), newline='').read())
 src = src.replace('__VER__', VER)
 for w in ('400', '700'):
     src = src.replace('__F%s__' % w, base64.b64encode(open(F % w, 'rb').read()).decode())

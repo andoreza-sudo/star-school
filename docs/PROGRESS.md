@@ -2,15 +2,16 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** P0-02, P0-03, P0-04, P5-01.
+**Next up:** P0-03, P0-04, P5-01.
 
-**Current version:** v31
+**Current version:** v32
 
 ## Chunk status
 
 Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 
 - P0-01 v31
+- P0-02 v32
 
 ## Handoff notes
 
@@ -23,8 +24,19 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P0-01) `node tools/smoke.js` takes about 95 s because the bot waits for the app's own 1.2 s between questions. Fine for now; a later chunk could shorten it with a fake clock.
 - (P0-01) `node tools/test.js` only prints and always exits 0 until P0-04 makes it a real check.
 - (P0-01) `python3 tools/build.py` re-draws the icons with Pillow, so `icon-*.png` can show as modified in git after a rebuild even when nothing changed visually.
+- (P0-02) CONTRIBUTING 3.2 says boot.js is lines 2438-2439 and the CSS split is "near 58 and 162"; used 58 and 163 (line 162 is a blank line kept with 30-learn.css). All JS ranges matched the real markers. 46-home.js (734) and 00-core.js (322) have no marker comment; cut by the documented line numbers.
+- (P0-02) CONTRIBUTING 3.1/3.2 still describe the pre-split layout as "today"; a later docs pass could update the 3.1 text. `src/data/` holds only a `.gitkeep` until the first data file exists.
 
 ## Log
+
+### P0-02: Split source into ordered files (v32), 2026-11-10, Claude
+- `src/src.html` cut by script into `src/shell.html` (two marker lines `/*@@CSS@@*/` and `/*@@JS@@*/`), `src/css/{20-base,30-learn,40-games}.css`, 31 files in `src/js/` (names and ranges from CONTRIBUTING 3.2), `src/boot.js` and an empty `src/data/` (`.gitkeep`). No code edited, renamed, reordered or reformatted.
+- `tools/build.py` concatenates shell + sorted css + sorted js + sorted data + boot.js, then the existing `__VER__`/font replacement. `tools/test.js` reads the same js + data concatenation without boot.js. `tools/check.sh` no longer lists `src/src.html` in sizes.
+- Acceptance: index.html SHA-256 at v31 before and after the split is identical (0a2ebfa9de6837e6d051b160bd654116a574b616697394040584c942584d8224). Then VER bumped to v32.
+- Largest JS: 62-hill.js 67 KB, 60-blocks.js 47 KB, 72-shapes.js 30 KB; the rest are under 25 KB.
+- check.sh passes (test.js 207000 generated, 0 errors; smoke OK incl. midway fixture; index.html 374,697 bytes). Looked at home-600x960 only.
+
+Checklist 7.1: [x] only chunk files changed [x] VER bumped [x] built [x] test.js 0 [x] smoke.js 0, no console errors [x] screenshot looked at (home 600x960; layout is unchanged, hash identical at v31) [x] midway fixture intact [x] size 375 KB [x] no network requests [x] no new emoji [x] entry added [x] one commit
 
 ### P0-01: Test and screenshot harness (v31), 2026-11-10, Claude
 - New `tools/package.json` (devDependency `playwright-core` only, uses system Chrome via `CHROME` or `/usr/bin/google-chrome`, no browser download) and `.gitignore` (`tools/node_modules`, `tools/out`).

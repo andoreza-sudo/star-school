@@ -15,7 +15,7 @@ node tools/test.js > /dev/null
 echo "== smoke.js"
 node tools/smoke.js
 echo "== sizes (bytes)"
-for f in src/src.html index.html sw.js manifest.json icon-192.png icon-512.png; do
+for f in index.html sw.js manifest.json icon-192.png icon-512.png; do
   [ -f "$f" ] && printf '%10d  %s\n' "$(wc -c < "$f")" "$f"
 done
 size=$(wc -c < index.html)
