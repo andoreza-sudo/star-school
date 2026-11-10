@@ -44,7 +44,8 @@ const KIND={
           st.typed+=k;
           SFX.key(+k);
         }
-        // written after submit on purpose: this is how it has always behaved (see PROGRESS.md, P1-02 note)
+        // once submit has locked the question (right answer or reveal), the slot belongs to the engine: do not overwrite it
+        if(st.lock&&k=='go')return;
         $('#slot').textContent=st.typed;
         if(!o.quiet)bump('#slot');
         if(o.auto&&st.typed==q.ans)submit(st.typed,null);

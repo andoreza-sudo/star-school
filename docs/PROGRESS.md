@@ -4,7 +4,7 @@ The running record of what has shipped. Newest entry first. Every chunk adds one
 
 **Next up:** wave 3: P1-03, P1-04, P1-05, P1-06, P1-09, P1-10 (Opus), P1-11. P1-03/P1-04/P1-09 build on `KIND`; P4-03 adds the next ~60 icons.
 
-**Current version:** v41
+**Current version:** v42
 
 ## Chunk status
 
@@ -21,6 +21,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P5-04 v39
 - P4-02 v40
 - P1-02 v41
+- FIX number pad reveal v42
 
 ## Handoff notes
 
@@ -30,7 +31,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 
 Things noticed while working that are outside the current chunk. One line each, with the chunk that noticed it.
 
-- (P1-02) Old bug, kept on purpose (the chunk must not change behaviour): after the second wrong try on a `num` question the slot shows the child's wrong number in the orange "answer" style, not the right one (the pad handler writes `st.typed` into `#slot` after `submit` has revealed the answer; same in Speed Race after a wrong "check" tap). Fix in `KIND.num.bind` (49-kinds.js): skip the slot write when `st.lock` became true during `submit`. The voice already says the right answer.
+- (P1-02, FIXED in v42) Old bug, kept on purpose (the chunk must not change behaviour): after the second wrong try on a `num` question the slot shows the child's wrong number in the orange "answer" style, not the right one (the pad handler writes `st.typed` into `#slot` after `submit` has revealed the answer; same in Speed Race after a wrong "check" tap). Fix in `KIND.num.bind` (49-kinds.js): skip the slot write when `st.lock` became true during `submit`. The voice already says the right answer.
 - (P1-02) Fact Sprint (`57-fluency.js`) builds its own number pad (no check key) instead of `KIND.num`; P4-10 (keypad redesign) should move it onto `KIND.num.render/bind` so all pads stay alike.
 - (P1-02) `KIND.*.right/reveal` find the answer area by fixed ids (`#slot`, `#ls0..`, `.ch`), so only one question can be on screen at a time. Fine for rounds and races; a two-question layout would need a root element passed in.
 
@@ -64,6 +65,12 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-02) The icon sheet is built inside `tools/shots.js` (no dev screen in the app). Icons are drawn for the 24 grid with the recipe in the `15-icons.js` header; `close` and `times` are nearly the same shape on purpose (times is slightly smaller).
 
 ## Log
+
+### FIX: number pad reveal shows the wrong number (v42, 2026-11-10, Claude)
+- Cause: in `KIND.num.bind` (49-kinds.js) the slot was written with the typed value after `submit()`. On the second wrong try `submit()` reveals the answer, then that write put the child's wrong number back (orange "answer" style). Same in Speed Race. Pre-existing since v30; kept as-is through P1-02 on purpose.
+- Fix: after a "go" tap that locked the question, leave the slot to the engine (one line).
+- Test: smoke step 7 plays a math round to the first number question, enters a wrong number twice, and checks the slot shows the right answer. Proved it fails without the fix ("shows 9, expected 3").
+- Tests: check.sh ok.
 
 ### P1-02 Question-kind registry (v41, 2026-11-10, Claude)
 - What changed: new `src/js/49-kinds.js` with `KIND = {num, choice, build}`; each kind has `render(q)`, `bind(q, st, submit, o)`, `right(q)`, `retry(q, st, ready)`, `reveal(q)`, `spoken(q)`, `validate(q)`, and `kindProblems(q)` also reports an unknown kind. The question-object contract is documented at the top of the file. `renderQ`, `check` (right, first wrong try, reveal, spoken answer) in 50-round.js go through `KIND`; `drawBuilt` moved to `KIND.build.draw`; unused `s=SK[G.sk]` in `makeQ` removed. Speed Race (54-race.js) uses the same `render/bind/right/reveal` with options `{max:3, auto:true, quiet:true}` (its old 3-digit, auto-answer, no del sound/bump behaviour). No new kinds, no visual change, nothing in S changed.
