@@ -3,6 +3,8 @@
    key is the set id ('add10') for the 60-second mode and set id + '-20' ('add10-20') for the 20-facts mode.
    best is the most right answers (60 s) or the fastest seconds (20 facts). Missing fields are read with defaults.
    S.flu[set].paid holds the day game time was last earned for that set. */
+// Highest level (1-4) of a math skill the child has passed, 0 when none.
+const fluLv = sk => [4, 3, 2, 1].find(l => passedAny('math', sk, l)) || 0;
 const FLU = {
   GOAL: 20, SECS: 60, KEEP: 30, MIN_RIGHT: 5,
   // Sets. `ok` says whether the child has reached the matching skill; mul/div sets are added here later (P2-05).
@@ -15,6 +17,19 @@ const FLU = {
       gen: () => {const a = R(1, 10), b = R(Math.max(1, 11 - a), 10); return {a, op: '+', b, c: a + b}}},
     {id: 'sub20', e: '➖', t: 'Take away from 20', ok: () => passedAny('math', 'sub', 2),
       gen: () => {const a = R(11, 20), b = R(1, Math.min(10, a - 1)); return {a, op: '−', b, c: a - b}}},
+    // Times and divide facts (P2-05). The facts grow with the highest level of the matching skill the child has passed.
+    {id: 'mfact', e: '✖️', t: 'Times facts', ok: () => passedAny('math', 'mfact', 1),
+      gen: () => {
+        const l = fluLv('mfact'), keys = MF_KEYS.slice(0, Math.max(1, l)).flat();
+        let a = l >= 4 ? R(0, 10) : pick(keys), b = R(0, 10);
+        if (coin()) [a, b] = [b, a];
+        return {a, op: '×', b, c: a * b};
+      }},
+    {id: 'dfact', e: '÷', t: 'Divide facts', ok: () => passedAny('math', 'dfact', 1),
+      gen: () => {
+        const l = fluLv('dfact'), d = l >= 4 ? R(1, 10) : pick(DF_KEYS.slice(0, Math.max(1, l)).flat()), q = R(1, 10);
+        return {a: d * q, op: '÷', b: d, c: q};
+      }},
   ],
   set: id => FLU.SETS.find(s => s.id == id),
   sets: () => FLU.SETS.filter(s => s.ok()),

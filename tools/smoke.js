@@ -478,7 +478,7 @@ async function main() {
     }
 
     // P1-07 placement quiz at 380x780: a new K child sees the "Find my level" card on Home; quitting after 2 answers changes
-    //    nothing; a full run with every answer right (real taps) passes all 5 math worlds in 20 questions (P2-01: Tiny Town added), shows the result,
+    //    nothing; a full run with every answer right (real taps) passes every math world below the last in 20 questions (5 sets; P2-01 Tiny Town, P2-05 Multiply Mountain), shows the result,
     //    saves S.place and the skips, keeps stars and coins, and the map opens on the last world. Grown-ups shows the result.
     {
       const pa = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 });
@@ -528,19 +528,20 @@ async function main() {
         btn: Math.min(...[...document.querySelectorAll('.pl-in .btn')].map(b => b.offsetHeight)), wide: document.documentElement.scrollWidth }));
       const s2 = JSON.parse((await snap()).mem);
       // P2-01: a K child's quiz now starts one grade below, in Tiny Town, so passing every math world takes 5 testlets (20 questions)
-      if (n !== 20 || !res.place || res.place.world !== 'm_space' || res.place.asked !== 20 || res.place.right !== 20
-        || ['m_tiny', 'm_meadow', 'm_candy', 'm_reef', 'm_space'].some(id => !res.skip[id]) || s2.stars !== JSON.parse(s0.mem).stars
+      const mids = await pp.evaluate(() => PATHS.math.worlds.map(w => w.id)), lastId = mids[mids.length - 1];
+      if (n !== 20 || !res.place || res.place.world !== lastId || res.place.asked !== 20 || res.place.right !== 20
+        || mids.slice(0, -1).some(id => !res.skip[id]) || s2.stars !== JSON.parse(s0.mem).stars
         || s2.coins !== JSON.parse(s0.mem).coins || res.btn < 48 || res.wide > 380)
         fail('placement result: ' + n + ' answers, ' + JSON.stringify(res));
       await pp.click('#plmap');
       await pp.waitForSelector('#map');
       const mw = await pp.evaluate(() => ({ w: MAPW.math, cur: curWorld('math'), open: unlocked('math', WR.math[PATHS.math.worlds.length - 1][0]), last: PATHS.math.worlds.length - 1 }));
       if (mw.w !== mw.last || mw.cur !== mw.last || !mw.open) fail('map after placement: ' + JSON.stringify(mw));
-      else step('placement: 20 right answers pass all 5 math worlds; result saved, stars and coins unchanged, map opens on Space Station');
+      else step('placement: 20 right answers pass every math world below the last; result saved, stars and coins unchanged, map opens on the last world');
       await pp.evaluate(() => grown());
       await pp.waitForSelector('.pl-grown [data-place="read"]');
       const gtxt = await pp.evaluate(() => document.querySelector('.pl-grown').textContent);
-      if (!gtxt.includes('Space Station')) fail('Grown-ups does not show the placement result');
+      if (!gtxt.includes(await pp.evaluate(() => PATHS.math.worlds[PATHS.math.worlds.length - 1].n))) fail('Grown-ups does not show the placement result');
       else step('Grown-ups: "Find my level" row shows the last result');
       network.push(...pa.network);
       for (const e of pa.errors) fail(e);
@@ -902,6 +903,65 @@ async function main() {
       network.push(...ta.network);
       for (const e of ta.errors) fail(e);
       await ta.ctx.close();
+    }
+
+    // P2-05 Multiply Mountain at 380x780: a 3rd grader opens the last math world from the strip, plays Arrays and the first
+    //    times-facts stop with real taps (every answer right), nothing is wider than the screen; the Fact Sprint then lists
+    //    the Times facts set and a 20-facts sprint of it is played to the end.
+    {
+      const ma5 = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
+      const mp = ma5.page;
+      await mp.evaluate(() => { S.grade = 3; save(); });
+      const lastW = await mp.evaluate(() => PATHS.math.worlds.length - 1);
+      const openMountain = async k => { // home, math map, the last world's chip, then its k-th stop
+        await mp.evaluate(() => home());
+        await mp.click('.game[data-p="math"]');
+        await mp.waitForSelector('.wchip.on');
+        await mp.click(`.wchip[data-w="${lastW}"]`);
+        await mp.waitForSelector(`.wchip.on[data-w="${lastW}"]`);
+        const n = await mp.evaluate(k => WR.math[PATHS.math.worlds.length - 1][0] + k, k);
+        await mp.click(`.node[data-n="${n}"]`);
+        await mp.waitForSelector('#prompt');
+      };
+      await mp.evaluate(() => home());
+      await mp.click('.game[data-p="math"]');
+      await mp.waitForSelector('.wchip.on');
+      await mp.click(`.wchip[data-w="${lastW}"]`);
+      await mp.waitForSelector(`.wchip.on[data-w="${lastW}"]`);
+      const world = await mp.evaluate(() => ({ id: PATHS.math.worlds[PATHS.math.worlds.length - 1].id, stops: WR.math[PATHS.math.worlds.length - 1][1] - WR.math[PATHS.math.worlds.length - 1][0] + 1,
+        boss: !!document.querySelector(`.node[data-n="${WR.math[PATHS.math.worlds.length - 1][1]}"]`),
+        first: NODES.math[WR.math[PATHS.math.worlds.length - 1][0]].sk }));
+      if (world.id !== 'm_mult' || world.stops !== 12 || !world.boss || world.first !== 'arr') fail('Multiply Mountain map: ' + JSON.stringify(world));
+      await openMountain(0);
+      await mp.waitForSelector('#prompt');
+      const lay = await mp.evaluate(() => ({ n: G.n, sk: G.sk, w: document.documentElement.scrollWidth, art: !!document.querySelector('#prompt svg') }));
+      if (lay.sk !== 'arr' || lay.n !== 10 || lay.w > 380 || !lay.art) fail('arrays round: ' + JSON.stringify(lay));
+      await playRound(mp, 'P2-05 Arrays', 10);
+      await mp.evaluate(() => { G.dead = true; });
+      await openMountain(1);
+      const k1 = await mp.evaluate(() => ({ sk: G.sk, lv: G.lv, w: document.documentElement.scrollWidth, pad: Math.min(...[...document.querySelectorAll('.k')].map(b => Math.min(b.offsetHeight, b.offsetWidth))) }));
+      if (k1.sk !== 'mfact' || k1.lv !== 1 || k1.w > 380 || k1.pad < 48) fail('times facts round: ' + JSON.stringify(k1));
+      await playRound(mp, 'P2-05 Times facts', 10);
+      await mp.evaluate(() => { G.dead = true; home(); });
+      await mp.click('#flu');
+      await mp.waitForSelector('.game[data-s="mfact"]');
+      const sets = await mp.evaluate(() => ({ ids: [...document.querySelectorAll('.game[data-s]')].map(b => b.dataset.s), h: document.querySelector('.game[data-s="mfact"]').offsetHeight }));
+      if (sets.ids.includes('dfact') || sets.h < 48) fail('Fact Sprint sets after Easy Times Facts: ' + JSON.stringify(sets));
+      await mp.click('.game[data-s="mfact"]');
+      await mp.click('.game[data-m="n20"]');
+      for (let i = 0; i < 40; i++) {
+        await mp.waitForFunction(() => document.querySelector('#fagain') || (FL && FL.f && !FL.lock), null, { timeout: 8000 });
+        if (await mp.$('#fagain')) break;
+        for (const d of await mp.evaluate(() => String(FL.f.c))) await mp.click(`.k[data-k="${d}"]`);
+        await mp.click('.k[data-k="go"]').catch(() => {});
+      }
+      await mp.waitForSelector('#fagain', { timeout: 8000 });
+      const fl = await mp.evaluate(() => ({ n: S.flu['mfact-20'] && S.flu['mfact-20'].hist.length }));
+      if (fl.n !== 1) fail('times sprint not saved: ' + JSON.stringify(fl));
+      else step('P2-05: Multiply Mountain opens for a 3rd grader (12 stops), Arrays and Times facts rounds played, Fact Sprint lists Times facts and a sprint is saved');
+      network.push(...ma5.network);
+      for (const e of ma5.errors) fail(e);
+      await ma5.ctx.close();
     }
 
     for (const e of errors) fail(e);
