@@ -1562,7 +1562,9 @@ run('review: migration 5 keeps progress and shrinks the save, exact rebuilds, 60
         if(it.box!==0||it.due!==0||it.n!==o.n||it.lv!==o.q.lv)bad(name+': item fields '+JSON.stringify(it));
         const q=revQ(it);
         if(!q||q.sk!==it.sk||q.lv!==it.lv||q.rvk!==revKey(it))bad(name+': revQ '+revKey(it));
-        else if(o.q.seed!=null&&(normPic(q.html)!==normPic(o.q.html)||String(q.ans)!==String(o.q.ans)||q.label!==o.q.label))bad(name+': not the same question '+revKey(it));
+        // R-01m changed sub 2 (even facts) and story 1 (new kinds, a picture) on purpose: their stored seeds now give another question,
+        // and revQ falls back to a fresh question of the same skill and level (checked just above), as for any changed generator
+        else if(o.q.seed!=null&&!['sub|2','story|1'].includes(it.sk+'|'+it.lv)&&(normPic(q.html)!==normPic(o.q.html)||String(q.ans)!==String(o.q.ans)||q.label!==o.q.label))bad(name+': not the same question '+revKey(it));
         else if(o.q.seed==null&&!('seed' in it))bad(name+': seed search did not run for '+revKey(it));
       }
       if(name=='tricky'){
@@ -4058,7 +4060,7 @@ run('Fraction Forest P2-07: stops in CURRICULUM order, 3,000 samples per new lev
           if(m=L.match(/^story6 (\d+) × (\d+) \+ (\d+)$/)){if(a!==m[1]*m[2]+ +m[3]||!sy.includes(m[1]+' bags with '+m[2])||!sy.includes(m[3]+' more'))add(W+L+' -> '+q.ans);tally('mul+add')}
           else if(m=L.match(/^story6 (\d+) × (\d+) − (\d+)$/)){if(a!==m[1]*m[2]-m[3]||a<1||!sy.includes(m[1]+' boxes with '+m[2])||!sy.includes('sells '+m[3]))add(W+L+' -> '+q.ans);tally('mul-sub')}
           else if(m=L.match(/^story6 \((\d+) \+ (\d+)\) ÷ (\d+)$/)){const t=+m[1]+ +m[2];if(t%m[3]||a!==t/m[3]||!sy.includes('has '+m[1])||!sy.includes(m[2]+' more')||!sy.includes('among '+m[3]+' friends'))add(W+L+' -> '+q.ans);tally('add-div')}
-          else if(m=L.match(/^story6 (\d+) ÷ (\d+) − (\d+)$/)){if(m[1]%m[2]||a!==m[1]/m[2]-m[3]||a<1||!sy.includes('packs '+m[1])||!sy.includes(m[2]+' in each bag')||!sy.includes(m[3]+' bags'))add(W+L+' -> '+q.ans);tally('div-sub')}
+          else if(m=L.match(/^story6 (\d+) ÷ (\d+) − (\d+)$/)){if(m[1]%m[2]||a!==m[1]/m[2]-m[3]||a<1||!sy.includes('packs '+m[1])||!sy.includes(m[2]+' in each bag')||!sy.includes(m[3]+(m[3]=='1'?' bag.':' bags')))add(W+L+' -> '+q.ans);tally('div-sub')} // R-01m: "1 bag"
           else if(m=L.match(/^story6 \((\d+) − (\d+)\) × (\d+)$/)){if(a!==(m[1]-m[2])*m[3]||+m[1]<=+m[2]||!sy.includes('has '+m[1])||!sy.includes(m[2]+' are too small')||!sy.includes(m[3]+' cents each'))add(W+L+' -> '+q.ans);tally('sub-mul')}
           else add(W+'label '+L);
         }
@@ -14334,6 +14336,178 @@ run('racing game G-02',()=>{
   for(const f of fs.readdirSync(path.join(SRC,'js')))for(const m of rd('js/'+f).matchAll(/(['"`>])Speed Race/g))p.push(f+': "Speed Race" still shown to children');
   if(!/S\.race\[cat\]/.test(rd('js/54-race.js')))p.push('Fact Race must keep its save key S.race');
   return{problems:[...new Set(p)].slice(0,60),note:notes.join('; ')};
+});
+
+// ---- R-01m: the math review's must-fix items and cheap should-fix items (docs/reviews/R-01-math.md) ----
+run('math review fixes R-01m',()=>{
+  const body=()=>{
+    const bad=[],add=m=>{if(bad.length<60)bad.push(m)};
+    S.name='Ava';S.buddy='Ben';
+    const strip=x=>String(x||'').replace(/<[^>]*>/g,' | ').replace(/&nbsp;/g,' ').replace(/\s+/g,' ');
+    const hintText=h=>!h?[]:[h.s,h.w,strip(h.html),...(h.steps||[]).flatMap(s=>[strip(s.html),s.say])].filter(Boolean);
+    const allText=q=>[strip(q.html),q.say,q.after,q.ansSay,...(q.choices||[]).map(c=>strip(c.l)),...hintText(q.hint)].filter(Boolean).map(String);
+    const mathLv=[];
+    for(const id in SK)for(let lv=1;lv<=SK[id].max;lv++)if(skArea(id,lv)=='math'&&!skLvEmpty(id,lv))mathLv.push([id,lv]);
+    const note={};
+    // 1. rounding: the hint's rule, applied to the numbers in the hint, gives the answer on every seed; exactly halfway is covered
+    for(const lv of [1,2]){
+      let half=0;
+      for(let s=1;s<=4000;s++){
+        const q=genQ('round',lv,s),w=q.hint.w,n=+q.label.match(/^round (\d+) to/)[1];
+        const m=w.match(/^(\d+) is between (\d+) and (\d+)\. Halfway is (\d+)\. Halfway or more\? Round up\. Less than halfway\? Round down\.$/);
+        if(!m||+m[1]!==n){add('round '+lv+' seed '+s+': hint '+w);continue}
+        const want=n>=+m[4]?+m[3]:+m[2];
+        if(String(want)!==q.ans)add('round '+lv+' seed '+s+': the hint leads to '+want+', the answer is '+q.ans);
+        if(n==+m[4])half++;
+        if(/past halfway/.test(strip(q.hint.html)))add('round '+lv+': "past halfway" in the hint');
+      }
+      if(!half)add('round '+lv+': no exactly-halfway number in 4,000 seeds');
+      note['halfway'+lv]=half;
+    }
+    for(const lv of [3,4]){
+      for(let s=1;s<=3000;s++){
+        const q=genQ('round',lv,s),t=q.hint.steps.map(x=>x.say).join(' '),n=+q.label.match(/^round ([\d.]+) to/)[1];
+        const m=t.match(/It is (an?) (\d)\. .*Is (\d) 5 or more\? Then add 1/);
+        if(!m||m[2]!==m[3]){add('round '+lv+' seed '+s+': hint '+t);continue}
+        if((m[2]=='8')!==(m[1]=='an'))add('round '+lv+' seed '+s+': "'+m[1]+' '+m[2]+'"');
+        if((+m[2]>=5)!==(+q.ans>n))add('round '+lv+' seed '+s+': the hint says '+(+m[2]>=5?'up':'down')+', the answer '+q.ans+' for '+n);
+      }
+    }
+    // 2. no "1" followed by a plural in the text, speech or hints of any math level (2,000 seeds a level). A word after the 1 that
+    //    is not a noun (1 is, 1 plus, 1 times, 1 half equals ...) is skipped.
+    const STOP=new Set(('is was has as plus minus times equals less across means makes goes says becomes stays this its us yes does gives gets '+
+      'needs fits always').split(' '));
+    const ONE=/(^|[^\d.,\/])[-−]?1 (?:([a-z]+) )?([a-z]+s)\b/gi;
+    let scanned=0;
+    for(const [id,lv] of mathLv)for(let s=1;s<=2000;s++){
+      const q=genQ(id,lv,s);scanned++;
+      for(const t of allText(q))for(const m of t.matchAll(ONE)){
+        if([m[2],m[3]].some(x=>x&&STOP.has(x.toLowerCase())))continue;
+        add(id+' '+lv+' seed '+s+': "'+m[0].trim()+'" in "'+t.slice(Math.max(0,m.index-30),m.index+40)+'"');
+      }
+    }
+    note.scanned=scanned+' questions';
+    // 3. strategy hints on the fact stops: a picture, short spoken words, a named strategy that fits the fact, never the answer
+    const STRAT={add2:['double','ten','counton','near','nine','make10'],add3:['double','counton','near','tenpair','nine','make10'],
+      sub2:['countback','tenpair','countup','thinkadd'],miss2:['tenpair','countup','thinkadd']};
+    for(const k in STRAT){
+      const sk=k.slice(0,-1),lv=+k.slice(-1),seen={};
+      for(let s=1;s<=2000;s++){
+        const q=genQ(sk,lv,s),h=q.hint,m=q.label.match(/^(\?|\d+) ([+−]) (\?|\d+) = (\?|\d+)$/);
+        if(!m){add(k+' label '+q.label);continue}
+        const ans=+q.ans,a=m[1]=='?'?ans:+m[1],b=m[3]=='?'?ans:+m[3],c=m[4]=='?'?ans:+m[4];
+        if(!h||h.k!=='html'||!STRAT[k].includes(h.st)){add(k+' seed '+s+': hint '+JSON.stringify(h&&{k:h.k,st:h.st}));continue}
+        seen[h.st]=(seen[h.st]||0)+1;
+        if(!/class="viz/.test(h.html))add(k+' seed '+s+': no picture in the hint');
+        if(/count them all|cross out/i.test(h.w+strip(h.html)))add(k+' seed '+s+': a counting hint');
+        if(new RegExp('(\\bis|=|\\bmakes?) '+ans+'\\b').test(h.w))add(k+' seed '+s+': the hint says the answer: '+h.w);
+        const words=h.w.split(/\s+/).length;
+        if(words>30)add(k+' seed '+s+': '+words+' spoken words');
+        // the strategy fits the fact, and its numbers add up (a + b = c, or a − b = c)
+        const big=Math.max(a,b),sm=Math.min(a,b);
+        if(h.st=='double'&&a!==b)add(k+' double '+q.label);
+        if(h.st=='near'&&!(Math.abs(a-b)==1&&h.w.includes(sm+' plus '+sm+' is '+2*sm)))add(k+' near '+q.label+': '+h.w);
+        if(h.st=='ten'&&big!==10)add(k+' ten '+q.label);
+        if(h.st=='counton'&&!(sm<=3&&h.w.includes('number, '+big+'. Count on '+sm)))add(k+' counton '+q.label+': '+h.w);
+        if(h.st=='nine'&&!(big==9&&h.w.includes('10 plus '+sm+' is '+(10+sm))))add(k+' nine '+q.label+': '+h.w);
+        if(h.st=='make10'){
+          const x=h.w.match(/(\d+) needs (\d+) more\. Take \2 from the (\d+)\. Now it is 10 plus (\d+)\./);
+          if(!x||+x[1]+ +x[2]!==10||+x[3]-x[2]!==+x[4]||+x[1]+ +x[3]!==c||10+ +x[4]!==c)add(k+' make10 '+q.label+': '+h.w);
+        }
+        if(h.st=='tenpair'&&(m[2]=='+'?c:a)!==10)add(k+' tenpair '+q.label);
+        if(h.st=='countback'&&!(b<=3&&h.w.includes('Start at '+a+'. Count back '+b)))add(k+' countback '+q.label);
+        if(h.st=='countup'&&!/Count up (from \d+ )?to \d+\. How many jumps\?/.test(h.w))add(k+' countup '+q.label);
+        if(h.st=='thinkadd'&&!/Jump from \d+ to 10, then to \d+\. Add the jumps\./.test(h.w))add(k+' thinkadd '+q.label);
+      }
+      for(const st of STRAT[k])if(!seen[st])add(k+': the '+st+' strategy never comes up');
+      note[k]=Object.keys(seen).length+' strategies';
+    }
+    for(const [sk,lv] of [['add',1],['sub',1],['miss',1]])if(genQ(sk,lv,5).hint.k!=='blocks')add(sk+' '+lv+' (Kindergarten) lost its blocks hint');
+    // 4. story 1-3: the problem types by level, answers recomputed from the spoken story (not the label), Kindergarten pictures
+    const KINDS={1:['join','sep'],2:['join','sep','chg','chgS','part','cmpD'],3:['join','sep','start','startS','cmpB','cmpS','cmpD']};
+    const solve=t=>{
+      const n=(t.match(/\d+/g)||[]).map(Number);
+      if(/How many more .* than /.test(t))return['cmpD',n[0]-n[1]];
+      if(/How many fewer .* than /.test(t))return['cmpD',n[0]-n[1]];
+      if(/ has \d+ more than /.test(t))return['cmpB',n[0]+n[1]];
+      if(/ has \d+ fewer than /.test(t))return['cmpS',n[0]-n[1]];
+      if(/had some .* gave \d+ to .* at the start\?$/.test(t))return['startS',n[0]+n[1]];
+      if(/had some .* gave .* \d+ more\. .* at the start\?$/.test(t))return['start',n[1]-n[0]];
+      if(/some more\. Now /.test(t))return['chg',n[1]-n[0]];
+      if(/ gave some to .* give away\?$/.test(t))return['chgS',n[0]-n[1]];
+      if(/are big and the rest are small/.test(t))return['part',n[0]-n[1]];
+      if(/(are left|still on the table)\?$/.test(t))return['sep',n[0]-n[1]];
+      return['join',n[0]+n[1]];
+    };
+    for(let lv=1;lv<=3;lv++){
+      const cnt={},N=3000;
+      for(let s=1;s<=N;s++){
+        const q=genQ('story',lv,s),[kd,want]=solve(q.say),nums=(q.say.match(/\d+/g)||[]).map(Number);
+        cnt[kd]=(cnt[kd]||0)+1;
+        if(String(want)!==q.ans||!(want>=1))add('story '+lv+' seed '+s+': '+q.say+' -> '+want+', answer '+q.ans);
+        if(!q.label.startsWith('story '+kd+' '))add('story '+lv+' seed '+s+': label '+q.label+' for a '+kd+' story');
+        if(!KINDS[lv].includes(kd))add('story '+lv+': a '+kd+' story');
+        if(Math.max(...nums,want)>(lv==1?10:20))add('story '+lv+' seed '+s+': a number over '+(lv==1?10:20));
+        if(!q.hint||q.hint.k!=='html'||q.hint.st!==kd||!q.hint.w)add('story '+lv+' seed '+s+': hint');
+        const pic=(q.html.match(/<div class="st-pic">([\s\S]*?)<\/div>/)||[])[1];
+        if(lv==1){
+          const objs=pic?(pic.match(/class="st-o[ "]/g)||[]).length:0;
+          if(objs!==(kd=='join'?nums[0]+nums[1]:nums[0]))add('story 1 seed '+s+': the picture has '+objs+' things for: '+q.say);
+        }else if(pic)add('story '+lv+': a prompt picture above Kindergarten');
+      }
+      for(const k of KINDS[lv])if(!((cnt[k]||0)>=N*.05))add('story '+lv+': '+k+' only '+(cnt[k]||0)+' of '+N);
+      note['story'+lv]=Object.entries(cnt).map(([k,v])=>k+' '+v).join(', ');
+    }
+    // 5. even fact frequencies
+    const tally=(sk,lv,N,key)=>{const t={};for(let s=1;s<=N;s++){const k=key(genQ(sk,lv,s));t[k]=(t[k]||0)+1}return t};
+    for(const [sk,keyf] of [['sub',q=>q.label],['miss',q=>q.label.replace('?',q.ans)]]){
+      const N=9000,t=tally(sk,2,N,keyf),facts=Object.keys(t).length,want=45,exp=N/want; // the 45 facts that cross 10
+      if(facts!==want)add(sk+' 2: '+facts+' different facts');
+      for(const f in t)if(t[f]<exp*.5||t[f]>exp*1.6)add(sk+' 2: '+f+' '+t[f]+' times (about '+Math.round(exp)+' expected)');
+      const a9=(tally(sk,2,N,q=>q.ans)['9']||0)/N;
+      if(a9>.24)add(sk+' 2: answer 9 in '+Math.round(a9*100)+'%');
+      note[sk+'2 answer 9']=Math.round(a9*100)+'%';
+    }
+    {
+      const N=6000,z=(tally('mfact',1,N,q=>q.ans)['0']||0)/N;
+      if(z>.12||z<.03)add('mfact 1: times 0 in '+Math.round(z*100)+'%');
+      note['mfact1 times 0']=Math.round(z*100)+'%';
+    }
+    {
+      const N=9000,e=(tally('dbig',1,N,q=>q.ans)['11']||0)/N,pairs=Object.keys(tally('dbig',1,N,q=>q.label)).length;
+      if(e>.12)add('dbig 1: quotient 11 in '+Math.round(e*100)+'%');
+      if(pairs<95)add('dbig 1: only '+pairs+' different divisions');
+      note['dbig1 quotient 11']=Math.round(e*100)+'%';
+    }
+    // 6. patterns and "which one is different" are never colour-only, and never show red with green
+    const shp=x=>({c:(x.match(/--c:var\((--[a-z]+)\)/)||[])[1],s:/<circle/.test(x)?'circle':(x.match(/points="([^"]+)"/)||[])[1]});
+    const RG=['--danger','--good'],COOL=['--math','--bt'];
+    // a pair a red-green colour-blind child tells apart: a cool colour against a warm one, or yellow against red (light and dark)
+    const safe=(x,y)=>COOL.includes(x)!==COOL.includes(y)||[x,y].sort().join()=='--danger,--star';
+    for(const lv of [1,2])for(let s=1;s<=3000;s++){
+      const q=genQ('pat',lv,s),seq=q.html.match(/<svg class="pks"[\s\S]*?<\/svg>/g)||[],toks=[...seq,...q.choices.map(c=>c.l)].map(shp);
+      // two tokens that differ must differ in shape: no shape comes in two colours
+      const colOf={},cols=new Set(toks.map(t=>t.c));
+      for(const t of toks){
+        if(colOf[t.s]&&colOf[t.s]!==t.c)add('pat '+lv+' seed '+s+': two tokens differ only in colour ('+q.label+')');
+        colOf[t.s]=colOf[t.s]||t.c;
+      }
+      if(RG.every(c=>cols.has(c)))add('pat '+lv+' seed '+s+': red and green together');
+    }
+    for(let s=1;s<=3000;s++){
+      const q=genQ('sort',1,s),it=q.choices.map(c=>shp(c.l)),odd=it[+q.ans],rest=it.filter((_,i)=>i!=+q.ans);
+      const byColour=rest.every(r=>r.c==rest[0].c)&&new Set(rest.map(r=>r.s)).size>1;
+      if(byColour&&!safe(odd.c,rest[0].c))add('sort 1 seed '+s+': '+odd.c+' among '+rest[0].c+' is hard to tell apart for colour-blind children');
+    }
+    // 7. the fop 5 area model is described as it is drawn
+    for(let s=1;s<=300;s++){
+      const q=genQ('fop',5,s);
+      if(q.hint.steps&&/orange rows|blue columns/.test(q.hint.steps.map(x=>x.say).join(' ')))add('fop 5 seed '+s+': "orange rows" hint');
+    }
+    return{bad,note};
+  };
+  const r=eval(js+';('+body.toString()+')()');
+  return{problems:r.bad,note:Object.entries(r.note).map(([k,v])=>k+': '+v).join('; ')};
 });
 
 // ---- report ----

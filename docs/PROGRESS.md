@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** G-01, R-01m, R-01r, R-01s, P5-10, R-01 (Discover, Brain Teasers, practice), G-04
+**Next up:** G-01, R-01r, R-01s, P5-10, R-01 (Discover, Brain Teasers, practice), G-04
 
-**Current version:** v136
+**Current version:** v137
 
 ## Chunk status
 
@@ -118,6 +118,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P4-17 v134
 - P5-07 v135
 - G-02 v136
+- R-01m v137
 - R-01 reading done
 - R-01 spanish done
 
@@ -444,6 +445,25 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-11) Icons wanted from P4-03: `balloon` (Bonus game, today `gamepad`), `sparkle` / `confetti`, `unlock` (open padlock for "Next stop unlocked", today `map`), `zap` (a lightning with a spark for boss hits; today `bolt`), `sticker` (single sticker for the prize row), `medal` (the prize rosette as an icon), `heart-half` (boss life bar), `chest` (the treasure chest at icon size, e.g. for the round track where renderQ shows the gift emoji).
 
 ## Log
+
+### R-01m Math review fixes (v137, 2026-11-11, Claude)
+- Done from docs/reviews/R-01-math.md (each item marked there): all four Must items and the cheap Should items 5, 11, 12 and 13.
+- Must 1, rounding: the `round 1-2` hint (`ffRound`) now says "Halfway or more? Round up. Less than halfway? Round down.", right for every number (135 rounds up). `round 3-4` hints say "It is an 8" (was "a 8"); their "Is 8 5 or more?" rule was already right.
+- Must 2, fact strategies: `factHint` (30-gen-math.js) gives every fact on `add 2` (+9 & Doubles), `add 3` (All the Facts), `sub 2` and `miss 2` one strategy, drawn with two small ten frames or a number line and read aloud in one or two short sentences: count on from the bigger number (+1 to +3), doubles, near doubles, ten and some more, ten pairs, +9 as +10 then take 1 away, make a ten; count back, count up and think addition (jump to 10, then on) for take away and missing numbers. The hint never says the answer. Kindergarten `add 1`, `sub 1`, `miss 1` keep the counting blocks.
+- Must 3, word problems: `genStory` (story 1-3) by CCSS Table 1. Story 1 (K): add-to and take-from, with the story's objects drawn in the prompt (a group never splits over two lines). Story 2 (grade 1): add-to and take-from with the change unknown, put-together with one part unknown, compare "how many more / fewer". Story 3 (grade 1): start unknown (add-to and take-from), compare with the bigger or the smaller amount unknown, plus the old kinds. Each kind has a drawn hint (compare: two lined-up rows). Labels are `story <kind> <equation>`.
+- Must 4, plurals: one helper, `qN(n, one, many)` / `qW` in 22-qhelpers.js, used in story 1-3, story 6, coins 5, geo 1-2, shape 6 (the 1 side is never last before the unit), int 1-3, data 4 ("1/2 inch long"), pv 1, big 1, sub 6-7, dec 1, fop 1, fop 4-6, frac 5 and 8 ("halves", never "halfs"), story 9. THINGS gained singular names.
+- Should 5, even facts: `sub 2` and `miss 2` pick one of the 45 facts that cross 10 evenly (answer 9: 31% -> 20%), `mfact 1` asks times 0 one time in 12 (28% -> 8%), `dbig 1` picks one of its 98 divisions evenly (quotient 11: 26% -> 8%).
+- Should 11, colour: colour patterns (`pat 1`, `pat 2`) give each colour its own shape and never show red with green (`PK.cols()`); "which one does not belong" by colour (`sort 1`) uses only pairs colour-blind children tell apart (`PK.SAFE`: blue or purple against a warm colour, or yellow against red).
+- Should 12: `fop 5` hint describes the picture ("4 of the 5 rows are colored: that is 4/5 ..."); Shape Garden says "Two full tens" for 20.
+- Should 13: after a miss the prompt card scrolls so the whole hint is above the number pad (`hintIn`, 50-round.js), as the Help button already did.
+- Questions changed on purpose: story 1-3 (all items), sub 2, miss 2, mfact 1 (and its review share in mfact 2-3), dbig 1, pat 1-2 (colour items), sort 1 (colour items), geo 1-2 and shape 6 (wording, side order), coins 5, story 6, int 1, data 4, frac 5, frac 8 (spoken text). Hints only: add 2-3, round 1-4, big 1, pv 1, sub 6-7, dec 1, fop 1-2, fop 4-6, int 2-3, story 9, pk_count 3, pk_num 3. No skill, level or stop id changed; no saved data changed.
+- Files: 22-qhelpers.js, 30-gen-math.js, 31-gen-math-early.js, 33-gen-math-mid.js, 35-gen-math-upper.js, 50-round.js, new src/css/32-facts.css, tools/test.js, tools/smoke.js, tools/build.py.
+- Tests: named check "math review fixes R-01m" (rounding hint rule applied to every seed, exactly halfway included; no "1 + plural" in text, speech, choices or hints of every math level over 2,000 seeds, 336,000 questions; strategy hints on the four fact stops fit their fact and never state the answer; story kinds by level with answers recomputed from the spoken story; fact frequency bounds; patterns never colour-only; fop 5 wording). Smoke `// R-01m` at 380x780: round 1 seed 3 and add 2 seed 8, the hint fully above the pad after a miss and after Help; story 1 picture. Screenshots at 2x looked at in the session scratchpad `r01m/` folder.
+- Test expectations changed: (1) "review: migration 5 ..." no longer asks the tricky fixture's seeded `sub 2` and `story 1` items to rebuild the exact stored question (their generators changed on purpose; revQ falls back to a fresh question of the same level, which the check still verifies). (2) "Fraction Forest P2-07" story 6 now expects "1 bag." (was "1 bags"). Other subjects' seed hashes are unchanged.
+- Not done (left for later): Should 6 (mistake-specific feedback), 7 (missing CCSS topics), 8 (even/odd and sub 3 a grade early), 9 (pictures for K adding), 10 (coin faces); Could 14-19; the area-model picture in fop 5 keeps its colours (only the words changed); times 0 in mfact 2-4 was not touched.
+- Merge: built on R01m-fixes from a898f8c (v133); VER v136 is provisional, renumber at merge (rebuild, `git add -A`). New globals: `qN`, `qW`, `factHint`, `factPair`, `FACT_PAIRS`, `STORY_KINDS`, `storyObj`, `storyRow`, `storyHint`, `fcPl`, `FF_HALF`, `FF_UNIT1`, `FY_DBIG1`, `hintIn`, `PK.cols`, `PK.SAFE` (34-gen-es.js already has `stHint`, so the story helpers are named `story*`).
+- Merge: the base a898f8c predates 66cb2b5 (smoke's P5-09 step reads the old Game Room card and crashes), so plain check.sh on this branch stops there; with 66cb2b5's lines applied for a run, check.sh printed "check OK" (118 checks, smoke OK including `// R-01m`). The fix is not part of this commit; it comes from wip/batch-L at merge.
+- Merge: renumbered v136 -> v137 at merge, on top of P4-17, P5-07, G-02 and the reviews.
 
 ### G-02 Racing game: Star Rally (v136, 2026-11-11, Claude)
 - What: an original racing game for the Game Room, **Star Rally** (`src/js/63-game-race.js`, `src/css/49-game-race.css`, both in `games.<VER>.js`). A race against five friendly animal drivers (Fern the fox, Bo the bunny, Bruno the bear, Pip the penguin, Fizz the frog, each in a kart of their own colour), seen from behind the car on a pseudo-3D road (strips on a canvas), 3 laps, 76-82 s at the speed the car keeps by itself (57-69 s for a good Pro driver). No lives, no game over, no energy, no ads; nothing happens while the app is closed; nothing says "last" or turns red (the end card says "You finished the race!" and gives a tip).
