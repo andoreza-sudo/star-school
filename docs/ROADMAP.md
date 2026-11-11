@@ -153,6 +153,7 @@ that respects the "Deps" line, but only one chunk at a time lands on `main`.
 | 10 | P2-30 to P2-37, P3-11 to P3-17, P5-07 to P5-10 | Spanish growth, Discover, remaining puzzles |
 | 11 | P6-01 to P6-05 | Version 1.0 |
 | 12 | R-01, R-02 (queued by Andy) | Expert review of every teaching section and of every game, with a prioritised list of improvements |
+| 13 | G-01 to G-04 (queued by Andy) | Fix Block Builder, a racing game, and new games chosen from what children play most |
 
 Rule for anything built after P4-01 and P4-02 land: new UI must use design tokens and `ico()` icons, never new hard-coded colors or emoji chrome.
 Content pictures go through `picFor(word, emoji)` (`src/js/15-pics.js`, added before wave 5) so object art replaces emoji everywhere without touching generators. P4-13 moved from wave 9 to wave 5 for the same reason.
@@ -601,6 +602,33 @@ These are review chunks: they read the app, play it through the screenshot and s
 **R-01 · Teaching and engagement review** · Opus: one review per section, run in parallel: Math (Pre-K to 6th, every world), Reading and Language Arts, Spanish, Discover, Brain Teasers, and the practice systems (Fact Sprint, Daily Review, Mixed Practice, placement, challenge/support rounds, streaks, rewards). Each review checks the section against current evidence-based teaching practice for that age and subject (for example: concrete to pictorial to abstract and number sense in early math; systematic phonics, decodable text and fluency in reading; comprehensible input and spaced retrieval in a second language; worked examples, immediate specific feedback, desirable difficulty, interleaving and spaced practice, mastery before moving on) and against engagement practice for young children (clear goals, short sessions, autonomy and choice, visible progress, kind feedback with no shaming, audio-first for non-readers, accessibility). It plays real rounds at each grade through the tools, samples generated questions for errors, ambiguity and age-fit, and reads the curriculum spec. Output: `docs/reviews/R-01-<section>.md` with what works, what to improve (each item: problem, evidence, suggested change, effort S/M/L, impact), and a top-10 list; plus a combined summary for Andy. No app changes.
 
 **R-02 · Game replay review** · Opus: analyses every game and game-like feature (Game Room games: 4x4 Hill Climb, Art Studio, Block Builder, colour by number, shape colouring; Balloons, Speed Race, Pet Care, Pet Shop and stickers, Fact Sprint, streaks and missions, boss fights, the game-time economy) for what makes children want to play again and again in a healthy way: short satisfying loops, mastery and visible skill growth, variety and surprise, collection and customisation, goals at several time scales, fair challenge, social-free motivation, and no manipulative patterns (no loss-aversion pressure, no endless scrolling, game time stays earned by learning). It plays each game through the tools and reads its code. Output: `docs/reviews/R-02-games.md` with, per game, what keeps children coming back, what makes them stop, and a prioritised list of improvements (problem, suggested change, effort, impact), plus game-time economy recommendations. No app changes.
+
+## 10c. Queued games (added 2026-11-11 at Andy's request; run after wave 12)
+
+Andy: Block Builder is "really hard to use"; add a racing game and a few more games, looking at what tops the kids' charts on the
+Play Store. The games are original Star School games in those genres (no copies of a specific game's name, characters, art, levels
+or look). R-02's findings on what brings children back feed into all four.
+
+| ID | Title | Model | Size | Deps |
+|----|-------|-------|------|------|
+| G-01 | Block Builder usability fix | **Opus** | M | R-02 |
+| G-02 | Racing game | **Opus** | L | R-02, A11b (games file) |
+| G-03 | Research: genres and mechanics children play most (Play Store kids charts), pick 2-3 new games | **Opus** | S | R-02 |
+| G-04 | Build the new games picked in G-03 (one chunk per game) | **Opus** | M each | G-03 |
+
+**G-01 · Block Builder usability fix** · Opus: watch the game played with real touch at 380x780 and 1024x600, list every point where a
+child gets stuck (placing, rotating, choosing blocks, the camera, undo), fix them, and add smoke steps that build something by touch.
+
+**G-02 · Racing game** · Opus: an original racing game for the Game Room (paid with game time like the others), drawn in the app's
+style, playable by touch on a cheap tablet at 60 fps or close, with simple controls for young children and depth for older ones,
+optional learning tie-ins (answer to boost) only if they don't spoil the fun; new file `src/js/NN-game-race*.js` (goes to the games
+file).
+
+**G-03 · Research** · Opus: look at the current top kids' and family games charts on the Play Store (and similar lists), sum up the
+genres and the mechanics that keep children playing in a healthy way, check them against R-02, and propose 2-3 games for Star School
+with a one-page design each; Andy picks or the merger picks if no answer.
+
+**G-04 · New games** · Opus: one chunk per game picked in G-03, same rules as G-02.
 
 ## 11. Later ideas (not planned)
 
