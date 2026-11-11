@@ -293,11 +293,15 @@ const BT = {
       if (r.quit && r.quit.lv === n) delete r.quit; // solved: the count of times it was left starts again
     } else r.endless++;
     S.stars += added;
-    // game time: first solve by band and stars; any replay a flat 15 s; the Puzzle of the Day pays 5 coins and 60 s once a day
-    let want = first ? BT.gameSec(band, stars) : BT.REPLAY_SEC, coins = 0;
+    // game time (P5-09, ptCalc): first solve by band and stars; any replay a flat 15 s; the Puzzle of the Day 60 s once a day; the daily
+    // mission 60 s; all of it stops at the room left under the grown-up's cap. The round comes first: it says whether the mission is done.
+    let coins = 0;
     const daily = !!(dl && !dl.done && dl.id == run.id && dl.band == band && String(dl.level) == String(run.level));
-    if (daily) { want += BT.DAILY_SEC; coins += BT.DAILY_COINS; BT.st().daily.done.push(run.id); }
-    const sec = Math.min(want, BT.room());
+    if (daily) { coins += BT.DAILY_COINS; BT.st().daily.done.push(run.id); }
+    const round = BT.round(), mi = MIS.done({ k: 'teaser' }); // P5-08: the missions it completes (the bonus once all three are done)
+    const PT = ptCalc({ bt: { band, stars, hints: res.hints | 0, first, daily, room: BT.room() } }, 0, 0, 0, 0, false, false, null,
+      { mission: mi.bonus });
+    const sec = PT.sec, want = PT.want;
     if (sec > 0) {
       const e = BT.st().earn && BT.st().earn.day === today() ? BT.st().earn : (BT.st().earn = { day: today(), sec: 0 });
       e.sec += sec;
@@ -315,11 +319,10 @@ const BT = {
     }
     const badges = BT.badgeCheck();
     try { ACT.add(today(), { sec: Math.min(res.sec | 0, 900), area: 'bt' }); } catch (e) {}
-    const round = BT.round();
-    const mis = MIS.pay(MIS.done({ k: 'teaser' })); // P5-08
+    const mis = MIS.pay(mi); // P5-08
     delete BT.st().cur;
     save();
-    return { stars, first, improved, added, unlocked, sec, capped: sec < want, coins, daily, round, mis, before, grew: stage(S.stars) > stage(before), badges };
+    return { stars, first, improved, added, unlocked, sec, capped: sec < want, pt: PT, coins, daily, round, mis, before, grew: stage(S.stars) > stage(before), badges };
   },
 
   /* ---------- the screen in play ---------- */
@@ -584,6 +587,9 @@ const BT = {
       `<p>${UI.tag(o.badges.length > 1 ? 'New badges!' : 'New badge!', 'new', 'medal')}<b>${esc(BT.badgeNames(o.badges))}</b></p></div>` : '';
     const gt = o.sec > 0 ? `${ico('ticket', 28)}<span>+${BT.fmtSec(o.sec)} of game time${o.capped ? ' (that is all for today)' : ''}</span>`
       : `<span>Game time from puzzles is full for today</span>`;
+    // P5-09: why: each part of the game time (ptCalc lines), as the first rows of the list
+    if (o.pt) ls.unshift(...o.pt.lines.map(([v, l]) => `<li${v < 0 ? ' class="neg"' : ''}>${ico(v < 0 ? 'replay' : RW.ptIcon(l), 18)}` +
+      `<span>${v < 0 ? '\u2212' : '+'}${BT.fmtSec(Math.abs(v))} ${esc(l)}</span></li>`));
     const card = GFX.endCard({ title: o.stars == 3 ? 'Perfect!' : 'Solved!', icon: 'puzzle', rec: false,
       extra: (note && note.length ? `<ul class="bt-sum">${note.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : '') + `<div class="bt-wst">${UI.stars(o.stars, 3, 44, { arc: true })}</div>${o.unlocked && !endless ? `<p class="bt-new">${UI.tag(next === 'E' ? 'Endless is open!' : 'New level open!', 'new', 'sparkle')}</p>` : ''}` +
         (ls.length ? `<ul class="rw-pl bt-wl">${ls.join('')}</ul>` : '') + (o.mis || '') + nb,

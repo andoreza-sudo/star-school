@@ -279,7 +279,7 @@ function hmPaths() {
       `<span class="hm-pn">${esc(sub)}</span></span><span class="hm-go">${ico(done ? 'trophy' : 'play', 28)}</span></button>`;
   }).join('');
   const left = ptLeft();
-  const gsub = left > 0 ? `${ico('ticket', 22)}<span>${fmtT(left)} of game time to spend!</span>` : '<span>Finish learning rounds to earn game time</span>';
+  const gsub = left > 0 ? `${ico('ticket', 22)}<span>${fmtT(left)} of game time to spend!</span>` : `<span>${esc(ptLine())}</span>`;
   const bts = BT.totalStars(), bsub = bts ? `${bts} star${bts == 1 ? '' : 's'} from puzzles` : 'Puzzles to make you think!';
   // Brain Teasers shows on Home once at least one puzzle type is registered (P3-01 ships the hub with none)
   const brain = !BT.list().length ? '' : `<button class="hm-path s-bt" id="btcard"><span class="hm-art">${hmArt('bt')}</span>` +
