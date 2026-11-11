@@ -6559,6 +6559,55 @@ async function main() {
         'sparkles and none with reduced motion or calm mode; 48 px targets, no sideways scroll, no emoji chrome at 380x780 and 1024x600');
     }
 
+    // P4-14 Object art set B (src/data/d-art-b.js), midway save at 380x780: questions that use the new drawings, drawn by the real
+    //    round engine (start, a seeded question in G.q, renderQ): counting balloons, a picture word, Spanish animals and food (drawings as the
+    //    picture and as the answer choices). Every drawing is inline SVG with its shapes, at least 16 px, no emoji in its place, no
+    //    sideways scroll.
+    {
+      const app = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
+      const pg = app.page, bad = [], notes = [];
+      const B = ['balloon', 'book', 'moon', 'sock', 'cow', 'cheese', 'bell', 'bird', 'egg', 'pencil', 'tree', 'house', 'horse', 'bear'];
+      const show = async (area, sk, lv, want) => pg.evaluate(([area, sk, lv, want]) => {
+        for (let s = 1; s <= 400; s++) {
+          const q = genQ(sk, lv, s), h = q.html + (q.choices || []).map(c => c.l).join('');
+          const hit = want.find(w => h.includes(picArt(w)));
+          if (!hit) continue;
+          start(area, NODES[area].findIndex(n => n.sk == sk));
+          G.q = q;
+          renderQ();
+          return { hit, seed: s };
+        }
+        return null;
+      }, [area, sk, lv, want]);
+      const look = () => {
+        const out = [], arts = [...document.querySelectorAll('#prompt svg.art, .ch svg.art')];
+        if (!arts.length) out.push('no drawing on screen');
+        for (const a of arts) {
+          const r = a.getBoundingClientRect();
+          if (!a.querySelector('path,circle,ellipse,rect')) out.push('an empty drawing');
+          if (r.width < 16 || r.height < 16) out.push('a drawing ' + Math.round(r.width) + ' px');
+        }
+        if (document.documentElement.scrollWidth > innerWidth) out.push('sideways scroll ' + document.documentElement.scrollWidth);
+        return { out, n: arts.length };
+      };
+      for (const [area, sk, lv, want, emo] of [['math', 'pk_count', 2, ['balloon'], '🎈'], ['read', 'pic', 4, B, ''],
+        ['es', 'es_animal', 1, ['cow', 'horse', 'bird', 'bear'], '🐄🐴🐦🐻'], ['es', 'es_food', 2, ['cheese', 'bread', 'egg', 'grapes'], '🧀🍞🥚🍇']]) {
+        const got = await show(area, sk, lv, want);
+        if (!got) { bad.push(sk + lv + ': no question with a set B drawing'); continue; }
+        await pg.waitForTimeout(150);
+        const r = await pg.evaluate('(' + look.toString() + ')()');
+        const txt = await pg.evaluate(() => [...document.querySelectorAll('#prompt, .ch')].map(e => e.innerText).join(' '));
+        for (const e of [...emo]) if (e.trim() && txt.includes(e)) bad.push(sk + lv + ' seed ' + got.seed + ': emoji ' + e + ' shown instead of the drawing');
+        for (const o of r.out) bad.push(sk + lv + ' seed ' + got.seed + ': ' + o);
+        notes.push(sk + lv + ' ' + got.hit + ' (' + r.n + ' drawings)');
+      }
+      if (bad.length) fail('P4-14 object art set B:\n  ' + bad.join('\n  '));
+      else step('P4-14 object art set B at 380x780: ' + notes.join(', ') + '; every drawing drawn, no emoji in its place, no sideways scroll');
+      network.push(...app.network);
+      for (const e of app.errors) fail(e);
+      await app.ctx.close();
+    }
+
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');
   } catch (e) {
