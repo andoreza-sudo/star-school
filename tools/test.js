@@ -8482,6 +8482,104 @@ run('sudoku UI P3-03',()=>{
   return{problems:p,note:s.n+' puzzles (4 bands x 12 levels x 15 days), one solution each (countSimple), human grade kept; next-day repeats '+s.same+'/'+s.pairs+'; hint steps: '+k};
 });
 
+run('logic grid banks P3-06: format, every clue true of the solution, exactly one solution (own brute force), no redundant clue, grade reproduces, short clean sentences, no duplicates, reproducible from the seed',()=>{
+  const p=[];
+  const vb=require('./puzzles/verify-banks.js'),lg=require('./puzzles/logic.js');
+  const T=require('./puzzles/build-banks.js').TYPES.logic;
+  // the bank as the app sees it: evaluated with all of src/js and src/data, and present in the built data file
+  const inApp=eval(js+';PUZ.logic');
+  const bank=vb.loadBank('d-puz-logic.js').logic;
+  if(JSON.stringify(inApp)!==JSON.stringify(bank))p.push('PUZ.logic differs when loaded with the whole app');
+  if(!eval(js+';PUZ.sudoku&&PUZ.sudoku.D&&PUZ.mathdoku&&PUZ.mathdoku.D'))p.push('PUZ.sudoku or PUZ.mathdoku lost when the logic bank loads');
+  const built=fs.existsSync(path.join(ROOT,DATA_FILE))?fs.readFileSync(path.join(ROOT,DATA_FILE),'utf8'):'';
+  if(!built.includes('PUZ.logic = {'))p.push(DATA_FILE+' has no logic bank (rebuild)');
+  // every stored puzzle through verify-banks.js: format, band sizes and categories, clue kinds and indexes, sentence = render(),
+  // one solution and no redundant clue (its counter), grade and score reproduce, band grade and chain limits, sorted, no duplicates
+  const v=vb.verifyLogic(bank);
+  p.push(...v.problems);
+  // this test's own brute force (no code shared with logic.js or verify-banks.js): every assignment as one permutation per category
+  const permsOf=n=>{const out=[];const rec=(a,left)=>{if(!left.length){out.push(a);return}left.forEach((x,k)=>rec([...a,x],left.filter((_,j)=>j!==k)))};rec([],[...Array(n).keys()]);return out};
+  const allOf=(n,K)=>{let out=[[]];for(let c=0;c<K;c++)out=out.flatMap(a=>permsOf(n).map(q=>[...a,q]));return out}; // a[c-1][child]=item
+  const truth=(a,raw,O)=>{
+    const kid=(c,i)=>c?a[c-1].indexOf(i):i,item=(c,i,d)=>d?a[d-1][kid(c,i)]:kid(c,i);
+    const[k,...r]=raw;
+    if(k==='is')return kid(r[0],r[1])===kid(r[2],r[3]);
+    if(k==='not')return kid(r[0],r[1])!==kid(r[2],r[3]);
+    if(k==='or'){const x=item(r[0],r[1],r[2]);return x===r[3]||x===r[4]}
+    const x=item(r[0],r[1],O),y=item(r[2],r[3],O);
+    return k==='gt'?x>y:k==='lt'?x<y:k==='nx'?Math.abs(x-y)===1:false;
+  };
+  const brute=(n,K,O,clues)=>allOf(n,K).filter(a=>clues.every(c=>truth(a,c,O)));
+  if(allOf(3,1).length!==6||allOf(3,2).length!==36||allOf(4,2).length!==576)p.push('own brute force: wrong number of assignments');
+  if(brute(3,1,0,[['is',0,0,1,0],['is',0,1,1,0]]).length!==0)p.push('own brute force: two children with one item still solve');
+  if(brute(4,2,2,[['gt',0,0,0,1],['gt',0,1,0,0]]).length!==0)p.push('own brute force: older and younger at once still solve');
+  // reading: the band's word limit; every word is a template word, a name or a word of the categories' phrases; nothing rude
+  const LIMIT={B:6,C:11,D:14};
+  const TEMPLATE=new Set('the child who is not and or are one year apart older younger than lives live at a bigger smaller number next door to finished behind ahead of came come did place owner year old'.split(' '));
+  const BADW=eval(js+';BAD');
+  const phraseWords=c=>lg.CATS[c].items.flatMap(it=>[it.w,...it.v.split(' '),...it.nv.split(' '),...it.o.split(' ')]);
+  const own=new Map(),grades={};let total=0,clueTotal=0,redundant=0;const longest={B:0,C:0,D:0};
+  for(const band of lg.ORDER)bank[band].forEach((entry,idx)=>{
+    const at=band+' #'+idx,[head,...clues]=entry,[names,catsS,solS,gr]=head.split('|');
+    const nm=names.split(','),cats=catsS.split(';').map(s=>s.split('=')),sol=solS.split(';').map(s=>[...s].map(Number));
+    const n=nm.length,K=cats.length,O=cats.findIndex(([c])=>bank.cats[c]&&bank.cats[c].ordered)+1;
+    const raws=clues.map(c=>c.slice(0,-1)),word=(c,i)=>c?cats[c-1][1].split(',')[i]:nm[i];
+    total++;clueTotal+=clues.length;
+    // exactly one solution, the stored one
+    const s=brute(n,K,O,raws);
+    if(s.length!==1)p.push(at+': own brute force finds '+s.length+' solutions');
+    else if(s[0].map(r=>r.join('')).join(';')!==solS)p.push(at+': own brute force solves it differently from the stored solution');
+    // every clue true of the stored solution; none can be left out (redundant clues: none allowed)
+    raws.forEach((r,k)=>{
+      if(!truth(sol,r,O))p.push(at+' clue '+(k+1)+': false for the stored solution');
+      if(brute(n,K,O,raws.filter((_,j)=>j!==k)).length<2){redundant++;p.push(at+' clue '+(k+1)+': redundant')}
+    });
+    // sentences: short, known words, name the entities of the structure, "not" exactly in the negative clues
+    const vocab=new Set([...TEMPLATE,...nm.map(x=>x.toLowerCase()),...cats.flatMap(([c])=>phraseWords(c))]);
+    clues.forEach((c,k)=>{
+      const text=c[c.length-1],ws=text.replace(/\.$/,'').split(' ');
+      longest[band]=Math.max(longest[band],ws.length);
+      if(!/^[A-Z].*[a-z0-9]\.$/.test(text))p.push(at+' clue '+(k+1)+': not one plain sentence: '+text);
+      if(ws.length>LIMIT[band])p.push(at+' clue '+(k+1)+': '+ws.length+' words: '+text);
+      for(const w of ws.flatMap(w=>w.toLowerCase().replace(/'s$/,'').split('-'))){
+        if(!vocab.has(w))p.push(at+' clue '+(k+1)+': word "'+w+'" not in the template words, names or category phrases');
+        if(BADW.test(w))p.push(at+' clue '+(k+1)+': rude word '+w);
+      }
+      // the sentence names every entity of the structure (a word or its verb form: paint, paints)
+      const r=c.slice(0,-1),ents=r[0]==='or'?[[r[1],r[2]],[r[3],r[4]],[r[3],r[5]]]:[[r[1],r[2]],[r[3],r[4]]];
+      for(const[e,i]of ents)if(!new RegExp('\\b'+word(e,i)).test(text))p.push(at+' clue '+(k+1)+': does not mention '+word(e,i)+': '+text);
+      if((r[0]==='not')!==/\bnot\b/.test(text))p.push(at+' clue '+(k+1)+': "not" does not match the clue kind: '+text);
+    });
+    // word lists: names clean, different first letters, not a category word; B pictures exist for every item
+    if(nm.some(x=>BADW.test(x.toLowerCase())||!/^[A-Z][a-z]{2,4}$/.test(x)))p.push(at+': a name is not a short clean name');
+    if(new Set(nm.map(x=>x[0])).size!==n)p.push(at+': names share a first letter');
+    for(const[c,list]of cats)for(const w of list.split(',')){
+      if(nm.some(x=>x.toLowerCase()===w)||BADW.test(w))p.push(at+': item word '+w+' clashes with a name or is rude');
+      if(band==='B'&&!(bank.cats[c].pics||{})[w])p.push(at+': band B item '+w+' has no picture');
+      if(band==='B'&&!/^[a-z-]+$/.test(w))p.push(at+': '+w+' is not a picture name');
+    }
+    // no duplicates: the clues with every unordered item replaced by the child who has it, over every renaming of the children
+    let key=null;
+    for(const pi of permsOf(n)){
+      const ent=(c,i)=>c===O&&O?'o'+c+i:'k'+pi[c?sol[c-1].indexOf(i):i]+(c?'c'+c:'');
+      const k=raws.map(r=>r[0]==='or'?'or'+ent(r[1],r[2])+[ent(r[3],r[4]),ent(r[3],r[5])].sort().join(''):
+        r[0]==='lt'?'gt'+ent(r[3],r[4])+ent(r[1],r[2]):r[0]==='gt'?'gt'+ent(r[1],r[2])+ent(r[3],r[4]):r[0]+[ent(r[1],r[2]),ent(r[3],r[4])].sort().join('')).sort().join(',');
+      if(key===null||k<key)key=k;
+    }
+    key=catsS+'|'+key;
+    if(own.has(key))p.push(at+': same puzzle as '+own.get(key)+' with the children renamed');else own.set(key,at);
+    const gk=band;grades[gk]=grades[gk]||{};grades[gk][gr]=(grades[gk][gr]||0)+1;
+  });
+  // the generator's counter agrees on the first puzzle of each band
+  for(const b of lg.ORDER){const q=lg.decode(bank[b][0]);if(lg.countSolutions(q,3)!==1)p.push('logic.js countSolutions is not 1 for '+b+' #0')}
+  // reproducible: the whole bank regenerated from the seed is the committed file, byte for byte
+  const text=T.text(),file=fs.readFileSync(path.join(SRC,'data',T.file),'utf8'),same=text===file;
+  if(!same){const a=text.split('\n'),b=file.split('\n'),i=a.findIndex((l,k)=>l!==b[k]);p.push('the bank regenerated from seed '+T.seed+' differs at line '+(i+1)+': '+a[i]+' / stored '+b[i])}
+  return{problems:p,note:total+' puzzles, '+clueTotal+' clues, '+redundant+' redundant; grades '+
+    Object.entries(grades).map(([k,g])=>k+' '+Object.entries(g).map(([x,y])=>y+'x'+x).join('/')).join(', ')+
+    '; longest clue B/C/D '+longest.B+'/'+longest.C+'/'+longest.D+' words'+(same?'; regenerated byte for byte':'')};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){
