@@ -326,8 +326,11 @@ async function main() {
       await wp.waitForSelector(`.wchip.on[data-w="${st.space}"]`);
       const far = await wp.evaluate(sp => ({ first: document.querySelector('.node[data-n="0"]') !== null, space: document.querySelector('.node[data-n="' + WR.math[sp][1] + '"]') !== null,
         up: document.querySelector('.wmore') && +document.querySelector('.wmore').dataset.w }), st.space);
-      if (far.first || !far.space || far.up !== st.candy) fail('world chip did not switch the map: ' + JSON.stringify(far));
+      // the map draws the picked world and its neighbours; "more worlds" opens the next world beyond them (Clock Tower since P2-03)
+      if (far.first || !far.space || far.up !== st.space - 2) fail('world chip did not switch the map: ' + JSON.stringify(far));
       await wp.click('.wmore');
+      await wp.waitForSelector(`.wchip.on[data-w="${st.space - 2}"]`);
+      await wp.click(`.wchip[data-w="${st.candy}"]`);
       await wp.waitForSelector(`.wchip.on[data-w="${st.candy}"]`);
       await wp.click('.node[data-n="' + (10 + SH) + '"]'); // locked stop: stays on the map
       if (!(await wp.$('#map'))) fail('locked stop opened something');
