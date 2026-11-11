@@ -40,7 +40,9 @@ function genMfact(lv) {
     const blank = coin() ? 'b' : 'a', known = blank == 'b' ? a : b;
     return facQ(a, '×', b, a * b, blank, false, {k: 'text', s: `Think: ${known} times what makes ${a * b}? Count by ${known}s.`});
   }
-  if (lv == 1) {a = pick(MF_KEYS[0]); b = R(0, 10)}
+  if (lv == 1) { // R-01m: times 0 is one rule, so it comes 1 time in 12 (it was more than 1 in 4)
+    if (rnd() < 1 / 12) {a = 0; b = R(0, 10)} else {a = pick([1, 2, 5, 10]); b = R(1, 10)}
+  }
   else if (lv == 2) {a = pick(MF_KEYS[1]); b = R(0, 10)}
   else if (lv == 3) {a = pick(MF_KEYS[2]); b = R(2, 10)}
   else {a = R(0, 10); b = R(0, 10)}
@@ -130,6 +132,7 @@ const fcFr = (a, b) => `<span class="fr"><span class="fn">${a}</span><span class
 const FC_NAMES = ['', 'whole', 'half', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth'];
 // spoken: "3 fourths", "1 half", "2 halves"
 const fcSay = (n, d) => d == 2 && n != 1 ? `${n} halves` : `${n} ${FC_NAMES[d]}${n == 1 ? '' : 's'}`;
+const fcPl = d => (d == 2 ? 'halves' : FC_NAMES[d] + 's'); // R-01m: "how many halves", never "halfs"
 const FC_SYM = [{v: '<', l: '<'}, {v: '=', l: '='}, {v: '>', l: '>'}];
 const fcCmp = (n1, d1, n2, d2) => n1 * d2 < n2 * d1 ? '<' : n1 * d2 == n2 * d1 ? '=' : '>';
 const fcHintBars = (n, d) => ({k: 'html', html: `${VIZ.fracBar(n, d, {unit: true, w: 240})}<div>${n} of the ${d} equal parts are shaded.</div>`,
@@ -211,7 +214,7 @@ function fracEquiv() {
   if (rnd() < .55) {
     const pic = coin() ? `${VIZ.fracBar(n, d, {w: 220})}${VIZ.fracBar(n * m, D, {w: 220})}` : '';
     return {kind: 'num', html: `${pic}<div class="eq">${fcFr(n, d)} = ${fcFr(SLOT, D)}</div>`,
-      say: `${fcSay(n, d)} equals how many ${FC_NAMES[D]}s?`, ans: String(n * m), hint, label: `frac eq ${n}/${d} = ?/${D}`};
+      say: `${fcSay(n, d)} equals how many ${fcPl(D)}?`, ans: String(n * m), hint, label: `frac eq ${n}/${d} = ?/${D}`};
   }
   const seen = new Set([`${n * m}/${D}`]), opts = [[n * m, D]];
   const bad = shuffle([[n + m, d + m], [n * m, D + m], [n * m + 1, D], [n + m, D], [n, D], [n * m, d + m]]);
@@ -271,8 +274,8 @@ function fracMixed() {
   const w = R(1, 5), top = w * d + n;
   if (coin()) {
     return {kind: 'num', html: `<div class="eq">${w} ${fcFr(n, d)} = ${fcFr(SLOT, d)}</div>`,
-      say: `${w} and ${fcSay(n, d)} equals how many ${FC_NAMES[d]}s?`, ans: String(top),
-      hint: {k: 'text', s: `Each whole is ${d} ${FC_NAMES[d]}s. ${w} wholes make ${w * d}. Then add the ${n} more.`}, label: `frac to improper ${w} ${n}/${d}`};
+      say: `${w} and ${fcSay(n, d)} equals how many ${fcPl(d)}?`, ans: String(top),
+      hint: {k: 'text', s: `Each whole is ${d} ${fcPl(d)}. ${qN(w, 'whole')} ${w == 1 ? 'makes' : 'make'} ${w * d}. Then add the ${n} more.`}, label: `frac to improper ${w} ${n}/${d}`};
   }
   return {kind: 'num', pad: 'frac', sep: 'mix', html: `<div class="sub">Write as a mixed number</div><div class="eq">${fcFr(top, d)} = ${SLOT_MIX}</div>`,
     say: `Write ${top} over ${d} as a whole number and a fraction.`, ans: `${w} ${n}/${d}`,
@@ -299,6 +302,7 @@ const ffComma = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 const ffHH = x => ((x % 12) + 11) % 12 + 1; // hour on a clock face: 0 -> 12, 13 -> 1
 const ffSayT = (h, m) => m == 0 ? `${h} o'clock` : m < 10 ? `${h} oh ${m}` : `${h} ${m}`;
 const FF_UNIT = {cm: 'centimeters', m: 'meters', in: 'inches', ft: 'feet'};
+const FF_UNIT1 = {cm: 'centimeter', m: 'meter', in: 'inch', ft: 'foot'}; // R-01m: "1 centimeter wide"
 const FF_SQ = {cm: 'square cm', m: 'square m', in: 'square in', ft: 'square ft'};
 // n distinct values from a candidate list, never the answer
 const ffOthers = (cand, ans, n) => {
@@ -308,6 +312,8 @@ const ffOthers = (cand, ans, n) => {
 };
 
 // round 1: nearest 10 (2- and 3-digit); round 2: nearest 100 (3- and 4-digit). The hint is a number line between the two neighbours.
+// R-01m: the rule names exactly halfway (135 rounds up to 140), so following the hint always gives the answer
+const FF_HALF = 'Halfway or more? Round up. Less than halfway? Round down.';
 function ffRound(lv) {
   const p = lv == 1 ? 10 : 100;
   let n;
@@ -317,8 +323,8 @@ function ffRound(lv) {
   return {kind: 'num', html: `<div class="sub">Round ${ffComma(n)} to the nearest ${p}.</div><div class="eq">${SLOT}</div>`,
     say: `Round ${n} to the nearest ${p}.`, ans: String(ans), label: `round ${n} to ${p}`,
     hint: {k: 'html', html: `${VIZ.numLine({min: lo, max: hi, step: p / 10, labels: [lo, hi], marks: [n]})}`
-      + `<div>${ffComma(n)} sits between ${ffComma(lo)} and ${ffComma(hi)}. Halfway is ${ffComma(lo + p / 2)}. Is it past halfway? Then round up.</div>`,
-      w: `${n} is between ${lo} and ${hi}. Halfway is ${lo + p / 2}. Is it past halfway? Then round up.`}};
+      + `<div>${ffComma(n)} is between ${ffComma(lo)} and ${ffComma(hi)}. Halfway is ${ffComma(lo + p / 2)}. ${FF_HALF}</div>`,
+      w: `${n} is between ${lo} and ${hi}. Halfway is ${lo + p / 2}. ${FF_HALF}`}};
 }
 
 // sub 6: 3-digit - 3-digit, regrouping in one or two places, no zeros in the top number (vertical)
@@ -332,7 +338,7 @@ function ffSub6() {
     first = '';
     borrows = 0;
     if (a1 < b1) {first = `${a1} is too small for ${b1}. Borrow a ten: ${a1 + 10} − ${b1} = ${a1 + 10 - b1}.`; t--; borrows++}
-    if (t < b2) {if (!first) first = `${t} tens is too small for ${b2} tens. Borrow a hundred: ${t + 10} − ${b2} = ${t + 10 - b2} tens.`; borrows++}
+    if (t < b2) {if (!first) first = `${qN(t, 'ten')} is too small for ${qN(b2, 'ten')}. Borrow a hundred: ${t + 10} − ${b2} = ${t + 10 - b2} tens.`; borrows++}
     if (borrows >= 1 && borrows <= 2) break;
   }
   return mathQ(a, '-', b, a - b, 'c', true, {hint: {k: 'text', s: `${first} Then do the other columns, one at a time.`}});
@@ -345,12 +351,12 @@ function ffSub7() {
   if (f < .4) {
     a = X * 100;
     do b = R(101, a - 1); while (b % 10 == 0); // a ones digit, so the borrow runs across both zeros
-    s = `${a} is ${X} hundreds, 0 tens, 0 ones. Take 1 hundred: ${X - 1} hundreds and 10 tens. Take 1 ten: 9 tens and 10 ones. Now subtract each column.`;
+    s = `${a} is ${X} hundreds, 0 tens, 0 ones. Take 1 hundred: ${qN(X - 1, 'hundred')} and 10 tens. Take 1 ten: 9 tens and 10 ones. Now subtract each column.`;
   } else if (f < .85) {
     const Y = R(1, 8);
     a = X * 100 + Y;
     do b = R(100, a - 1); while (b % 10 <= Y);
-    s = `${Y} ones is too small, and the tens place is 0. Borrow from the hundreds: ${X - 1} hundreds and 10 tens. Then borrow a ten: 9 tens and ${Y + 10} ones.`;
+    s = `${qN(Y, 'one')} is too small, and the tens place is 0. Borrow from the hundreds: ${qN(X - 1, 'hundred')} and 10 tens. Then borrow a ten: 9 tens and ${Y + 10} ones.`;
   } else {
     a = 1000;
     do b = R(101, 999); while (b % 10 == 0);
@@ -435,13 +441,14 @@ function ffGeo1() {
     let w = R(1, 20), h = R(1, 20);
     if (w == h) h = h == 20 ? 19 : h + 1;
     return {kind: 'num', html: `${VIZ.rectSides(w, h, {w, h}, {unit})}<div class="sub">Find the perimeter of the rectangle.</div><div class="eq">${SLOT} ${unit}</div>`,
-      say: `A rectangle is ${w} ${U} long and ${h} ${U} wide. What is the perimeter?`, ans: String(2 * (w + h)),
+      say: `A rectangle is ${qN(w, FF_UNIT1[unit], U)} long and ${qN(h, FF_UNIT1[unit], U)} wide. What is the perimeter?`, ans: String(2 * (w + h)),
       hint: {k: 'html', html: `${VIZ.rectSides(w, h, {w, h}, {unit, all: true})}<div>A rectangle has two pairs of equal sides. Add all 4 sides: ${w} + ${h} + ${w} + ${h}.</div>`,
         w: `Add all 4 sides: ${w} plus ${h} plus ${w} plus ${h}.`}, label: `geo1 rect ${w}x${h} ${unit}`};
   }
   const n = R(3, 6), name = ['', '', '', 'triangle', 'shape with 4 sides', 'pentagon', 'hexagon'][n];
   let s;
-  do s = Array.from({length: n}, () => R(1, 20)); while (n == 3 && (s[0] + s[1] <= s[2] || s[0] + s[2] <= s[1] || s[1] + s[2] <= s[0]));
+  do s = Array.from({length: n}, () => R(1, 20)); while (n == 3 && (s[0] + s[1] <= s[2] || s[0] + s[2] <= s[1] || s[1] + s[2] <= s[0]) || s.every(x => x == 1));
+  while (s[n - 1] == 1) s.unshift(s.pop()); // R-01m: the unit follows the last side, so it is never "1 meters" (the same polygon, turned)
   const sum = s.reduce((x, y) => x + y, 0);
   return {kind: 'num', html: `${ffPoly(s, unit)}<div class="sub">Find the perimeter of the ${name}.</div><div class="eq">${SLOT} ${unit}</div>`,
     say: `A ${name} has sides of ${s.join(', ')} ${U}. What is the perimeter?`, ans: String(sum),
@@ -458,7 +465,7 @@ function ffGeo2() {
   }
   const l = R(2, 12), w = R(2, 12), unit = pick(['cm', 'm', 'in', 'ft']);
   return {kind: 'num', html: `${VIZ.rectSides(l, w, {w: l, h: w}, {unit})}<div class="sub">What is the area of the rectangle?</div><div class="eq">${SLOT} ${FF_SQ[unit]}</div>`,
-    say: `A rectangle is ${l} ${FF_UNIT[unit]} long and ${w} ${FF_UNIT[unit]} wide. What is its area?`, ans: String(l * w),
+    say: `A rectangle is ${qN(l, FF_UNIT1[unit], FF_UNIT[unit])} long and ${qN(w, FF_UNIT1[unit], FF_UNIT[unit])} wide. What is its area?`, ans: String(l * w),
     hint: {k: 'html', html: `${VIZ.areaGrid(l, w)}<div>${w} rows of ${l} squares. Area is length × width: ${l} × ${w}.</div>`, w: `${w} rows of ${l} squares. Multiply ${l} times ${w}.`},
     label: `geo2 ${l}x${w} ${unit}`};
 }
@@ -594,7 +601,7 @@ function ffMeas4() {
 // story 6: two steps with all four operations within 1,000
 function ffStory6() {
   const me = S.name || 'Sam', n2 = pick([S.buddy, S.buddy, petN(), ...NAMES].filter(n => n && n !== me));
-  const th = pick(THINGS)[0], who = pick([me, n2]), other = who == me ? n2 : me;
+  const T = pick(THINGS), th = T[0], who = pick([me, n2]), other = who == me ? n2 : me;
   const f = R(1, 5);
   let t, ans, s, label;
   if (f == 1) { // multiply, then add
@@ -607,11 +614,11 @@ function ffStory6() {
     ans = a * b - c; s = `Step 1: ${a} × ${b}. Step 2: take away ${c}.`; label = `story6 ${a} × ${b} − ${c}`;
   } else if (f == 3) { // add, then share
     const d = R(2, 9), q = R(2, 10), total = d * q, a = R(1, total - 1), b = total - a;
-    t = `${who} has ${a} ${th}. ${other} gives ${who} ${b} more. Then ${who} shares them equally among ${d} friends. How many ${th} does each friend get?`;
+    t = `${who} has ${qN(a, T[2], th)}. ${other} gives ${who} ${b} more. Then ${who} shares them equally among ${d} friends. How many ${th} does each friend get?`;
     ans = q; s = `Step 1: add ${a} + ${b}. Step 2: share the total into ${d} equal groups.`; label = `story6 (${a} + ${b}) ÷ ${d}`;
   } else if (f == 4) { // divide, then take away
     const d = R(2, 9), q = R(4, 12), g = R(1, q - 1);
-    t = `${who} packs ${d * q} ${th}, ${d} in each bag. Then ${who} gives away ${g} bags. How many bags are left?`;
+    t = `${who} packs ${d * q} ${th}, ${d} in each bag. Then ${who} gives away ${qN(g, 'bag')}. How many bags are left?`;
     ans = q - g; s = `Step 1: ${d * q} ÷ ${d}. Step 2: take away ${g}.`; label = `story6 ${d * q} ÷ ${d} − ${g}`;
   } else { // take away, then multiply
     const n = R(12, 60), k = R(2, n - 6), m = R(2, 9);

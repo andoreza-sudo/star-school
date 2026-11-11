@@ -39,6 +39,9 @@ function next(){if(!G||G.dead)return;
 function fit(){const qa=$('.qarea'),pr=$('#prompt');if(!qa||!pr)return;let k=1;pr.style.setProperty('--k',1);
   while(k>.42&&(qa.scrollHeight>qa.clientHeight+1||pr.scrollWidth>pr.clientWidth+1)){k-=.05;pr.style.setProperty('--k',k)}}
 let rsT;addEventListener('resize',()=>{fit();clearTimeout(rsT);rsT=setTimeout(()=>{if($('#map'))drawMap(MAPP)},150)});
+// R-01m: after a miss opens the hint, scroll the prompt card so the whole hint shows above the answer pad (on a phone the card
+// scrolls, and the hint sat below its fold). The Help button already does this (smoothly) in renderQ.
+function hintIn(){const h=$('#hint');if(h&&h.firstChild)h.scrollIntoView({block:'nearest'})}
 function petSay(t){const b=$('#bub');if(!b)return;b.textContent=t;const far=G&&G.done/G.n>.5;b.style.left=far?'auto':'0';b.style.right=far?'0':'auto';b.classList.add('on');clearTimeout(b._t);b._t=setTimeout(()=>b.classList.remove('on'),1400)}
 // P4-10: the question screen. Top bar: close, the track (one dot per question, the pet walks to the gift), streak and star chips.
 // Then the prompt card (.qarea) and the input area (.inp) of the question's kind. Subject colour from the question's skill.
@@ -110,8 +113,8 @@ function check(v,el){if(G.lock)return;const q=G.q,K=KIND[q.kind],p=P(q.sk),ok=K.
   G.tries++;G.streak=0;qStreak();
   SFX.wrong();anim($('#runner'),'sad');if(G.boss){anim($('#bossE'),'jump');setTimeout(SFX.giggle,250)}const pr=$('#prompt');pr.classList.remove('shake');void pr.offsetWidth;pr.classList.add('shake');
   if(el){el.classList.add('wrong');el.disabled=true}
-  if(G.tries==1){addMiss(q);fb('Try again!','again');petSay(G.boss?pick(['Ha ha! Missed me!','Hee hee!','Try again!']):pick(PET_OOPS));if(Math.random()<.5)setTimeout(()=>playClip('oops'),300);$('#hint').innerHTML=hintHTML(q);fit();
-    K.retry(q,G,()=>{$('#hint').innerHTML=hintHTML(q);fit()});
+  if(G.tries==1){addMiss(q);fb('Try again!','again');petSay(G.boss?pick(['Ha ha! Missed me!','Hee hee!','Try again!']):pick(PET_OOPS));if(Math.random()<.5)setTimeout(()=>playClip('oops'),300);$('#hint').innerHTML=hintHTML(q);fit();hintIn();
+    K.retry(q,G,()=>{$('#hint').innerHTML=hintHTML(q);fit();hintIn()});
     save();return}
   G.lock=true;
   K.reveal(q);
