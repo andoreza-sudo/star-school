@@ -953,7 +953,7 @@ async function main() {
         await mp.waitForFunction(() => document.querySelector('#fagain') || (FL && FL.f && !FL.lock), null, { timeout: 8000 });
         if (await mp.$('#fagain')) break;
         for (const d of await mp.evaluate(() => String(FL.f.c))) await mp.click(`.k[data-k="${d}"]`);
-        await mp.click('.k[data-k="go"]').catch(() => {});
+        if (await mp.$('.k[data-k="go"]')) await mp.click('.k[data-k="go"]'); // the Fact Sprint pad submits by itself; waiting for a missing key cost 30 s per fact
       }
       await mp.waitForSelector('#fagain', { timeout: 8000 });
       const fl = await mp.evaluate(() => ({ n: S.flu['mfact-20'] && S.flu['mfact-20'].hist.length }));
