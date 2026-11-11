@@ -1877,6 +1877,48 @@ Object.assign(SCREENS, {
   'bt-badges': { run: async p => { await p.evaluate(dailySeed); await p.evaluate(() => BT.badgeView()); } },
 });
 
+// ---- P4-09 map and world scenes ----
+// scenes: a sheet of every world's scene (the top of its band with its first four stops, trail and title, drawn by the real SCN code
+// at a phone width of 340 px), grouped by path. Full page; look at it at 2x (SHOTS_SCALE=2 SHOTS_SIZES=1024x600).
+// scene-<path>: each path's real map at the world the child is on; map-*-top: the top of a picked world (title, Test out, landmark).
+Object.assign(SCREENS, {
+  scenes: {
+    full: true,
+    run: async p => {
+      await p.evaluate(() => {
+        const W = 340, amp = W * .3;
+        const card = (p, wi) => {
+          const w = PATHS[p].worlds[wi], [a, b] = WR[p][wi];
+          const pts = [];
+          for (let i = a; i <= Math.min(b, a + 3); i++) pts.push([W / 2 + Math.sin(i * 1.15) * amp, 86 + (i - a) * 106, i]);
+          const h = 86 + pts.length * 106 - 24;
+          const stops = pts.map(([x, y, i]) => [x, y, NODES[p][i].t, NODES[p][i].sk == 'boss', false]);
+          const nodes = pts.map(([x, y, i], k) => {
+            const n = NODES[p][i], s = nInfo(n);
+            return `<button class="btn node s-${p} ${s.area} ${k < 2 ? 'done' : k == 2 ? 'cur' : 'lock'}" style="left:${x}px;top:${y}px">${nodeFace(n, k > 2)}</button>` +
+              `<div class="nlab" style="left:${x}px;top:${y + 42}px">${esc(n.t)}<div class="nstar">${k < 2 ? UI.stars(3 - k, 3, 16) : ''}</div></div>`;
+          }).join('');
+          return `<div class="scs-c"><div class="map" style="height:${h + 10}px;width:${W}px">` +
+            SCN.band(w, W, 0, h, { test: false, stops, trail: SCN.trailPts(pts), pet: null }) +
+            `<div class="wtitle" style="top:14px">${wBadge(p, wi)}<span>${esc(w.n)}</span></div>` +
+            SCN.trail(W, h, pts, 3, []) + nodes + `</div><div class="scs-n">${p} ${wi + 1}: ${w.id} (${(SCN.theme(w) || {}).key})</div></div>`;
+        };
+        const all = Object.keys(PATHS).flatMap(p => PATHS[p].worlds.map((w, wi) => card(p, wi))).join('');
+        view(`<style>.scs{display:flex;flex-wrap:wrap;gap:12px;padding:8px}.scs-c{width:340px}.scs .map{margin:0}
+          .scs-n{font-size:var(--fs-1);color:var(--ink-2);padding:2px 4px}#app,html,body{height:auto;overflow:visible}</style>
+          <div class="top"><div class="title">World scenes (${PATHS.math.worlds.length + PATHS.read.worlds.length + PATHS.es.worlds.length + PATHS.disc.worlds.length})</div></div>
+          <div class="scs">${all}</div>`);
+      });
+    },
+  },
+  'scene-math': { run: async p => { await p.evaluate(() => pathMap('math')); } },
+  'scene-read': { run: async p => { await p.evaluate(() => pathMap('read')); } },
+  'scene-es': { run: async p => { await p.evaluate(() => pathMap('es')); } },
+  'scene-disc': { run: async p => { await p.evaluate(() => { S.grade = 4; pathMap('disc'); }); } },
+  'scene-top': { run: async p => { await p.evaluate(() => pathMap('math', 6)); } },
+  'scene-space': { run: async p => { await p.evaluate(() => pathMap('read', 4)); } },
+});
+
 
 async function main() {
   const args = process.argv.slice(2);

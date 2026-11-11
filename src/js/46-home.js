@@ -337,10 +337,12 @@ function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],ws=PATHS[p].
   let y=10,bands='';
   const more=(wi,up)=>`<button class="btn wmore" data-w="${wi}" style="top:${y}px">${ico(up?'arrow-up':'arrow-down',20)}${wBadge(p,wi)}${esc(ws[wi].n)}</button>`;
   if(w0>0){bands+=more(w0-1,true);y+=72}
+  const wb=[]; // P4-09: [world, top, height, first and end index in pts, Test out shown]; scenes are drawn once every stop is placed
   for(let wi=w0;wi<=w1;wi++){const w=ws[wi],y0=y,[a,b]=WR[p][wi],canTest=worldOpen(p,wi)&&!worldFinished(p,wi);y+=canTest?160:86; // room under the Test out banner so the first stop, its ring and the pet never cover it
+    const k0=pts.length;
     for(let i=a;i<=b;i++){pts.push([W/2+Math.sin(i*1.15)*amp,y,i]);y+=106}
-    bands+=`<div class="wband" style="top:${y0}px;height:${y-y0-24}px;background:${w.c}"></div><div class="wtitle" data-w="${wi}" style="top:${y0+14}px">${wBadge(p,wi)}<span>${esc(w.n)}</span>${worldFinished(p,wi)?ico('check-circle',24,'ic-good'):''}</div>${canTest?`<button class="btn xs tobtn" data-w="${wi}" style="top:${y0+58}px">${ico('bolt',20)}<span>Already know it? Test out!</span></button>`:''}`;y+=4}
-  let path='';pts.forEach(([x,yy],k)=>{if(!k)path=`M${x} ${yy}`;else{const[px,py]=pts[k-1];path+=` C${px} ${py+55} ${x} ${yy-55} ${x} ${yy}`}});
+    wb.push([wi,y0,y-y0-24,k0,pts.length,canTest]);
+    bands+=`<div class="wtitle" data-w="${wi}" style="top:${y0+14}px">${wBadge(p,wi)}<span>${esc(w.n)}</span>${worldFinished(p,wi)?ico('check-circle',24,'ic-good'):''}</div>${canTest?`<button class="btn xs tobtn" data-w="${wi}" style="top:${y0+58}px">${ico('bolt',20)}<span>Already know it? Test out!</span></button>`:''}`;y+=4}
   const cur=curNode(p),allDone=N.every((n,i)=>passed(p,i)),end=w1==ws.length-1;
   const nodes=pts.map(([x,yy,i])=>{const n=N[i],s=nInfo(n),st=getSt(p,i),lk=!unlocked(p,i);
     return`<button class="btn node s-${p} ${s.area} ${lk?'lock':''} ${st?'done':''} ${i==cur&&!lk&&!allDone?'cur':''}" data-n="${i}" style="left:${x}px;top:${yy}px" aria-label="${esc(n.t)}${lk?', locked':''}">${nodeFace(n,lk)}</button>${stopNew(p,i)?`<div class="nnew" style="left:${x}px;top:${yy-50}px">New</div>`:''}<div class="nlab" style="left:${x}px;top:${yy+42}px">${esc(n.t)}<div class="nstar">${st?UI.stars(st,3,16):''}</div></div>`}).join('');
@@ -348,7 +350,12 @@ function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],ws=PATHS[p].
   let tail=end&&allDone?90:20;
   if(!end){y+=8;bands+=more(w1+1,false);tail=80}
   m.style.height=(y+tail)+'px';
-  m.innerHTML=bands+`<svg width="${W}" height="${y+20}"><path d="${path}" fill="none" stroke="#d6c7a8" stroke-width="16" stroke-linecap="round"/><path d="${path}" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="8 10"/></svg>`+nodes
+  // P4-09: every world band gets its drawn scene (kept clear of the stops, labels, trail and pet); the trail gets stones and bridges
+  const tp=SCN.trailPts(pts),pet=cp?[cp[0]+side,cp[1]+18]:null;
+  const scenes=wb.map(([wi,top,h,k0,k1,test])=>SCN.band(ws[wi],W,top,h,{test,trail:tp,pet,
+    stops:pts.slice(k0,k1).map(([x,yy,i])=>[x,yy,N[i].t,N[i].sk=='boss',stopNew(p,i)])})).join('');
+  const kw=allDone?pts.length:pts.filter(q=>q[2]<=cur).length;
+  m.innerHTML=scenes+bands+SCN.trail(W,y+20,pts,kw,wb.slice(1).map(([,top])=>top-14))+nodes
     +(cp?`<div class="mappet ${petAura()}" style="left:${cp[0]+side}px;top:${cp[1]+18}px">${petHTML()}</div>`:'')+(end&&allDone?`<div class="wtitle mp-champ" style="top:${y+10}px">${ico('trophy',30)}<span>${esc(PATHS[p].n)} Champion!</span></div>`:'');
   $$('.node').forEach(b=>b.onclick=()=>{const i=+b.dataset.n;if(!unlocked(p,i)){SFX.wrong();anim(b,'sad');fb('Finish the stop before this one!','warn');return}SFX.whoosh();
     open(p,i)});
