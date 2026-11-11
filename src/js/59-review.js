@@ -58,6 +58,7 @@ const REV={
 };
 const revLabel=l=>String(l==null?'':l).slice(0,REV.LABEL);
 const revKey=o=>o.sk+'|'+o.lv+'|'+revLabel(o.label);
+const revNoArt=l=>String(l).replace(/^(el|la|los|las) /,''); // R-01s: a Spanish label without its leading article
 const revDue=(it,d)=>it.due<=d||it.due>d+REV.INT[REV.INT.length-1];
 const revOk=it=>!!(SK[it.sk]&&SK[it.sk].gen&&it.lv>=1&&it.lv<=(SK[it.sk].max||1));
 const revOnPath=(it,p)=>!!NODES[p]&&NODES[p].some(n=>n.sk==it.sk&&n.lv==it.lv);
@@ -126,6 +127,9 @@ function revQ(it){
       for(let s=1;s<=REV.FIND;s++){const t=genQ(it.sk,it.lv,s);if(revLabel(t.label)===it.label){it.seed=s;q=t;break}}
     }
   }catch(e){q=null}
+  // R-01s: the first Spanish units gained el / la ("pato (read)" is now "el pato (read)"): a Spanish item rebuilt from its seed whose
+  // label differs only by that article is the same question, and the item takes the new label (so a new miss finds it)
+  if(q&&/^es_/.test(it.sk)&&revLabel(q.label)!==it.label&&revNoArt(revLabel(q.label))===revNoArt(it.label))it.label=revLabel(q.label);
   if(!q||revLabel(q.label)!==it.label)q=genQ(it.sk,it.lv);
   q.sk=it.sk;
   q.lv=it.lv;

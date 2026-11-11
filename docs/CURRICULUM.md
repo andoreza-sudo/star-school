@@ -522,8 +522,8 @@ Existing pattern (frozen): each unit skill `es_<unit>` has level 1 = hear the wo
 | Chunk | Unit skill | Words (author the full list; these are the anchors) |
 |-------|-----------|------------------------------------------------------|
 | P2-31 | `es_house` | la casa, la puerta, la ventana, la mesa, la silla, la cama, la cocina, el baño, el jardín, la lámpara |
-| P2-31 | `es_clothes` | la camisa, los pantalones, el vestido, los zapatos, el sombrero, la chaqueta, los calcetines, la falda |
-| P2-31 | `es_school` | el libro, el lápiz, la mochila, el papel, la maestra, el maestro, la escuela, la clase, las tijeras, el borrador |
+| P2-31 | `es_clothes` | la camisa, los pantalones, el vestido, los zapatos, el sombrero, la chamarra (R-01s; not "la chaqueta"), los calcetines, la falda |
+| P2-31 | `es_school` | el libro, el lápiz, la mochila, el papel, la maestra, el maestro, la escuela, la clase, las tijeras, la goma (R-01s; not "el borrador") |
 | P2-31 | `es_feel` | feliz, triste, enojado, cansado, asustado, enfermo, emocionado, tranquilo (faces) |
 | P2-32 | `es_days` | lunes to domingo, hoy, mañana, ayer |
 | P2-32 | `es_months` | enero to diciembre; seasons: primavera, verano, otoño, invierno |

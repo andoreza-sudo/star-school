@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** G-01, R-01s, P5-10, R-01 (Discover, Brain Teasers, practice), G-04
+**Next up:** G-01, P5-10, R-01 (Discover, Brain Teasers, practice), G-04, P6-01 to P6-05
 
-**Current version:** v138
+**Current version:** v139
 
 ## Chunk status
 
@@ -120,6 +120,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - G-02 v136
 - R-01m v137
 - R-01r v138
+- R-01s v139
 - R-01 reading done
 - R-01 spanish done
 
@@ -128,6 +129,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 (none)
 
 ## Ideas and issues
+- (R-01s) Still open from docs/reviews/R-01-spanish.md: Must 4 and 5 above (M), Should 6 (sentences in every unit from world 1, L), 7 (speaking practice, M), 14 (a review world for the later units; near-miss choices in Read Big Numbers and Read the Time, where the answer is the only "y" phrase; compounds and half/quarter past by ear, M), 15 (culture, M), 16 (pictures: bajo, la clase, la goma's sponge, el mercado, sucio, nuevo, the repeated face in story who-answers, M), 17 (more dialogues and "Hear the whole story", M), and Could 18-21 (sandwich order and slow replay on the learn screen, "el words / la words" and the full plural hint in es_art, recorded voice, any number 21-99 and "menos cuarto"). The test "Spanish review fixes R-01s" lists the identical-picture items of days, months and story who-answers as known.
 - (R-01 reading) Done in R-01r (v137). Must: Picture Words wrong choices included racial slurs and rude words: `variants()` / `phonVariants()` (32-gen-read.js) changed one letter and the `BAD`/`PHBAD` filters (20-words.js) missed them: pic 3 seed 4371301, pic 4 seeds 8481262 and 6739082, pic 6 seed 981969, pic 1 seeds 1346243 and 3040909 (slurs), and rude words at about 0.8-2.8% of pic 1, 2, 3, 4, 6 items (the words were removed from this file in R-01r; seeds in docs/reviews/R-01-reading.md 2.4).
 - (R-01 reading) Done in R-01r (v137). Must: pic 1-4 wrong choices are mostly impossible spellings (pic 3 seed 13 snake: "snakb", "cnake"; pic 2 seed 13 sock: "socb"; pic 1 egg: "bgg"): 17% of pic 1, 71% of pic 2, 61% of pic 3, 39% of pic 4 items. Replace with real-word or legal contrast sets (cap/cape, kit/kite) per CURRICULUM 1.3.
 - (R-01 reading) Done in R-01r (v137). Must: sight words offer a homophone of the spoken word: sight 1 seed 190069 (hear "two": to, two, three, you; 2.5% of sight 1), sight 4 seed 7932 (hear "right": write offered). `genSight` (32-gen-read.js) must exclude homophones.
@@ -446,6 +448,27 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-11) Icons wanted from P4-03: `balloon` (Bonus game, today `gamepad`), `sparkle` / `confetti`, `unlock` (open padlock for "Next stop unlocked", today `map`), `zap` (a lightning with a spark for boss hits; today `bolt`), `sticker` (single sticker for the prize row), `medal` (the prize rosette as an icon), `heart-half` (boss life bar), `chest` (the treasure chest at icon size, e.g. for the round track where renderQ shows the gift emoji).
 
 ## Log
+
+### R-01s Spanish review fixes (v139, 2026-11-11, Claude)
+- What changed (docs/reviews/R-01-spanish.md, Must 1-3 and the S-sized Shoulds 8-13; each item there is marked "Done in R-01s"):
+  - Must 1, two right answers: a unit may list `confuse` pairs that are never offered together (`esWrong` in 34-gen-es.js; a unit without the list draws exactly as before): weather hace sol / hace calor, nieva / hace frío, hace fresco / hace viento; feelings feliz / tranquilo, feliz / emocionado; transport el camión / el autobús. A unit's `cap` can now be a list of words: weather captions "hace calor", "hace frío", "hace fresco" (the faces and the leaf are not enough alone). In Los Cuentos two answer lists lost "tranquila" next to "feliz" (now "asustada") and "Hace frío" next to "Nieva" (now "Está nublado").
+  - Must 2, English: `enPlural(w)` in 22-qhelpers.js (irregulars, -s/-x/-z/-ch/-sh + es, consonant + y to ies) replaces `gEnPl`; es_art 2 shows "the beaches" and says "More than one beach! How do you say the beaches?".
+  - Must 3 and Should 11, dialogues (d-es-story.js): "Aquí tienes agua.", "¿Tienes una mascota, Pablo?" (mascota in newWords), "No, abuelo. ¡Eres muy rápido!" (and its who question), "¡Hola, Carlos! ¿Estás en la biblioteca?", "¿Qué animales hay en el libro?", "How does Mateo feel?", the park dialogue is "A phone call from the park". Every question of a changed dialogue still has one right answer (checked).
+  - Should 8: the 37 nouns of Animals, Food, My Body and Family carry el / la / los / las (el agua, la mano, los ojos, las uvas, el bebé) on the learn cards, in the prompt, the choices and the voice.
+  - Should 9, hints: level 1 replays the word at 0.75 speed ("Listen again, slowly: ..."; `say(t, btn, lang, q, slow)` in 12-speech.js, `h.slow` in 39-hints.js), never the English meaning; level 2 reads the three choices aloud ("Say each word out loud. Which word names the picture?"), never the first letter. Level 3 (spell) keeps its letter count and first letter.
+  - Should 10, Mexico: la chamarra (not la chaqueta) and la goma (not el borrador) in the units and the grammar nouns; el camión is glossed "truck (in Mexico, also a bus)" and never offered with el autobús; me gusta likes marked 'an' (animals) are plural only: level 1 asks food, level 2 says "Me gustan los cerdos".
+  - Should 12: feelings show both forms, "cansado / cansada" (said "cansado, cansada"; level 2 choices one per row); cansada and asustada are taught words now (out of newWords). Build a Sentence uses ser with traits: "Ella es alta.", "Yo soy inteligente." (no "Yo soy feliz.").
+  - Should 13: sentence tiles are lower case (a name keeps its capital) and the dot is drawn after the last slot (`q.end` in KIND.order, `.oend` in 42-question.css), so no tile is pinned.
+  - Saves: stop ids and levels unchanged (stars stay). A review item saved before R-01s whose label gained an article ("pato (read)" -> "el pato (read)") is rebuilt from its seed and takes the new label (`revNoArt` in `revQ`, 59-review.js).
+- Not done (left for later chunks, listed in Ideas and issues): Must 4 (days and months listening, M), Must 5 (Pre-K/K reading stops, M), Should 6 (L), 7, 14, 15, 16, 17 (M), Could 18-21.
+- Hash changes (on purpose, with a comment naming R-01s at each): the old-Spanish-stops hash (P2-30, 2,700 questions of es_greet ... es_mix, ART emptied) 85968a5ca262a225f92f3a7354d2277e -> c2834d47005f792ed2a972866ad54259 in the five checks that hash those stops: "Spanish framework P2-30", "Spanish La Casa P2-31", "Spanish La Ciudad P2-33", "Spanish Las Frases P2-34", "Spanish Los Cuentos P2-35". The new check undoes the two intended changes in memory (articles blanked, old hint shapes) and gets 85968a5c... back byte for byte, so items, choices and their order per seed are unchanged; it also checks every one of the 2,700 has exactly one right answer.
+- Other test expectations changed: "Spanish La Casa P2-31" (word lists: chamarra, goma, both forms of feelings; the answer pattern allows "x / y"); "Spanish Las Frases P2-34" (noun genders with chamarra and goma; es_gusta 1 counts only non-animal likes; sentence order checked without the capital/dot pins, articles must agree with their noun; the answer is the stored sentence's tiles); "review: migration 5 ..." (a Spanish rebuild may differ from the stored question only by el / la).
+- Tests: new named check "Spanish review fixes R-01s": 2,000 seeds of every Spanish skill and level (122,000 questions) with no pair that shares a meaning (hace sol / hace calor, nieva / frío, fresco / viento, feliz / tranquilo, feliz / emocionado, camión / autobús), value or picture, and one right answer each; the review's seeds by name; confuse lists and weather captions; `enPlural` table and a scan of all English text of the Spanish section for wrong plurals (es_art plural text shown and spoken); the corrected dialogue lines and one right answer for every question of the changed dialogues at all levels; articles of the first units; both forms of feelings; no ser + feeling in es_sent; hints with no first letter or English meaning, slow replay reaching the voice (rate 0.6); the Mexican words; es_gusta animals; sentence tiles and the drawn dot; the old-stops hash undo; stop ids equal to v135; review items re-labelled. Known (not done here): days and months level 1 and story who-answers can show the same picture twice. Smoke block `// R-01s` (midway save, 380x780 at 2x): the weather and the feelings level 1 stops opened from the Spanish map with real taps (world chip, stop, ¡Vamos!), the review's seeds shown (weather 1 seed 38, feelings 1 seed 41): no two choices mean the same, captions on the cool / hot / cold pictures, both forms on the learn cards and in the prompt, a wrong tap shows the slow-replay hint with no meaning or first letter, the right tap answers; 48 px, no sideways scroll.
+- Sizes (bytes, v138): index.html 849,846; gen 205,870; gen2 236,340; bt 576,282; games 229,382; data 666,962; total 2,764,682 (warnings as before: bt over 400 KB, total over 2 MB). `bash tools/check.sh` printed "check OK".
+- Screenshots (2x, looked at): learn cards, question and hint for weather and feelings, feelings level 2 (one choice per row), sentence tiles with the dot.
+- Checklist 7.1: [x] chunk files [x] VER v138 (provisional) [x] build [x] test.js [x] smoke.js [x] screenshots [x] no network [x] no new emoji [x] PROGRESS entry [x] one commit (not pushed).
+- Merge: built on branch R01s-fixes from 791c7ed (v135); VER v138 is provisional, renumber at merge (rebuild, `git add -A`). Conflicts to expect: `tools/build.py` (VER), `tools/test.js` (KNOWN entry, five hash lines, P2-31 / P2-34 / review migration edits, the new check before "game room P4-16"), `tools/smoke.js` (one block before the final network lines), `src/js/34-gen-es.js`, `src/data/d-es*.js`, `src/js/49-kinds.js` (order render), `src/js/59-review.js` (revQ), `src/js/12-speech.js` (say), `src/js/39-hints.js`, `src/css/42-question.css`, this file. If another chunk also changes the old Spanish stops, recompute the hash in the five checks and in the R-01s undo step.
+- Merge: renumbered v138 -> v139 at merge, on top of G-02, R-01m and R-01r. `22-qhelpers.js` keeps R-01m's `qN`/`qW` and this chunk's `enPlural`; the migration-5 check keeps R-01m's sub 2 / story 1 exception and this chunk's el / la comparison.
 
 ### R-01r Reading review fixes, safe wrong choices (v138, 2026-11-11, Claude)
 - Why: the R-01 reading review (docs/reviews/R-01-reading.md) found slurs and rude words among the made-up Picture Words choices, impossible

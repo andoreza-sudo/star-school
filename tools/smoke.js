@@ -7725,6 +7725,72 @@ async function main() {
         '), Letter Teams words heard but not printed (' + notes.slice(3).join(', ') + '), no sideways scroll');
     }
 
+    // R-01s Spanish review fixes at 380x780 (2x). A weather question and a feelings question, each opened from the Spanish map with real taps
+    //    (world chip, stop, ¡Vamos! on the learn screen), then the review's two-answer seed shown in the round (weather 1 seed 38, feelings 1
+    //    seed 41): no two choices mean the same thing, the cool / hot / cold pictures carry their English, a feeling shows both forms
+    //    (cards and choices); a wrong tap shows the new hint (no first letter, no English meaning), a right tap answers. 48 px, no sideways scroll.
+    //    Screenshots: tools/out/es-r01s-* (or the folder in R01S_SHOTS).
+    {
+      const rx = await openApp(browser, { fixture: 'midway', width: 380, height: 780, scale: 2 });
+      const rp = rx.page;
+      const dir = process.env.R01S_SHOTS || require('path').join(__dirname, 'out');
+      const shot = n => rp.screenshot({ path: require('path').join(dir, 'es-r01s-' + n + '-380x780.png') }).catch(() => {});
+      await rp.evaluate(() => { S.unlockAll = true; save(); speechSynthesis.getVoices = () => [{ lang: 'es-MX', name: 'es-MX' }]; ESNOTE = 0; });
+      const bad = [], notes = [];
+      const PAIRS = [[/\bsol\b|sunny/i, /calor|\bhot\b/i], [/niev|snow/i, /fr[ií]o|\bcold\b/i], [/fresco|\bcool\b/i, /viento|windy/i],
+        [/feliz|happy/i, /tranquil|\bcalm\b/i], [/feliz|happy/i, /emocionad|excited/i]];
+      for (const [id, wid, tag, seed] of [['es_weather1', 'e_tiempo', 'weather', 38], ['es_feel1', 'e_casa', 'feelings', 41]]) {
+        await rp.evaluate(() => { if (G) G.dead = true; home(); });
+        await rp.click('.game[data-p="es"]');
+        await rp.waitForSelector('.wchip.on');
+        const at = await rp.evaluate(id => { const i = NODES.es.findIndex(n => nid(n) === id); return { i, w: NODES.es[i].wi, wid: NODES.es[i].wid }; }, id);
+        if (at.wid !== wid) bad.push(id + ' is not in ' + wid + ': ' + JSON.stringify(at));
+        await rp.click(`.wchip[data-w="${at.w}"]`);
+        await rp.waitForSelector(`.wchip.on[data-w="${at.w}"]`);
+        await rp.click(`.node[data-n="${at.i}"]`);
+        await rp.waitForSelector('#go'); // level 1 opens on the learn cards
+        const cards = await rp.evaluate(() => [...document.querySelectorAll('.lcard b')].map(b => b.textContent));
+        if (tag === 'feelings' && (!cards.includes('cansado / cansada') || !cards.includes('feliz'))) bad.push('feelings learn cards: ' + cards.join(', '));
+        if (tag === 'weather' && !cards.includes('hace fresco')) bad.push('weather learn cards: ' + cards.join(', '));
+        await shot(tag + '-learn');
+        await rp.click('#go');
+        await rp.waitForSelector('#prompt .hear');
+        // the review's seed for this unit, shown in the round
+        await rp.evaluate(([sk, s]) => { G.q = genQ(sk, 1, s); renderQ(); }, [id.slice(0, -1), seed]);
+        await rp.waitForSelector('#prompt .hear');
+        await rp.waitForTimeout(250);
+        const look = await rp.evaluate(() => {
+          const chs = [...document.querySelectorAll('.ch')];
+          return { w: document.documentElement.scrollWidth, ans: G.q.ans, prompt: document.querySelector('#prompt').innerText,
+            ch: chs.map(b => ({ v: G.q.choices[+b.dataset.i].v, cap: (b.querySelector('small') || {}).textContent || '', h: Math.min(b.getBoundingClientRect().width, b.getBoundingClientRect().height) })) };
+        });
+        const txt = look.ch.map(c => c.v + ' ' + c.cap);
+        for (const [a, b] of PAIRS) for (let i = 0; i < txt.length; i++) for (let j = 0; j < txt.length; j++) if (i !== j && a.test(txt[i]) && b.test(txt[j])) bad.push(tag + ': two choices mean the same: ' + txt.join(' | '));
+        if (look.w > 380 || look.ch.length !== 3 || look.ch.some(c => c.h < 48)) bad.push(tag + ' layout: ' + JSON.stringify(look));
+        if (tag === 'weather') for (const c of look.ch) if (['hace calor', 'hace frío', 'hace fresco'].includes(c.v) !== !!c.cap) bad.push('weather caption on ' + c.v + ': "' + c.cap + '"');
+        if (tag === 'feelings' && !/tranquilo \/ tranquila/.test(look.prompt)) bad.push('feelings prompt: ' + look.prompt);
+        await shot(tag + '-question');
+        // a wrong tap: the hint replays the word, gives neither the first letter nor the English meaning
+        const wi = look.ch.findIndex(c => c.v !== look.ans);
+        await rp.click(`.ch[data-i="${await rp.evaluate(v => G.q.choices.findIndex(c => c.v === v), look.ch[wi].v)}"]`);
+        await rp.waitForFunction(() => document.querySelector('#hint') && document.querySelector('#hint').textContent.trim().length > 0);
+        const hint = await rp.evaluate(() => document.querySelector('#hint').textContent);
+        const gloss = await rp.evaluate(() => { const u = ES_UNITS.find(x => 'es_' + x.id === G.q.sk); return u.items.find(i => esFull(i) === G.q.ans)[1]; });
+        if (/starts with/i.test(hint) || new RegExp('\\b' + gloss + '\\b', 'i').test(hint) || !/slowly/.test(hint)) bad.push(tag + ' hint: ' + hint);
+        await shot(tag + '-hint');
+        const ri = await rp.evaluate(() => G.q.choices.findIndex(c => c.v === G.q.ans));
+        await rp.click(`.ch[data-i="${ri}"]`);
+        if (!(await rp.evaluate(() => G.lock && !!document.querySelector('.ch.right')))) bad.push(tag + ': the right tap did not answer');
+        notes.push(tag + ' (' + look.ch.map(c => c.v + (c.cap ? ' [' + c.cap + ']' : '')).join(', ') + ')');
+      }
+      if (bad.length) fail('R-01s Spanish review fixes:\n  ' + bad.join('\n  '));
+      else step('R-01s: weather and feelings level 1 opened from the map with real taps at 380x780: ' + notes.join('; ') +
+        '; no two choices mean the same, captions on cool/hot/cold, both forms of a feeling, the hint replays slowly and gives nothing away');
+      network.push(...rx.network);
+      for (const e of rx.errors) fail(e);
+      await rx.ctx.close();
+    }
+
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');
   } catch (e) {
