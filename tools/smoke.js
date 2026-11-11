@@ -1056,422 +1056,6 @@ async function main() {
       await ph.ctx.close();
     }
 
-    // P1-08 mastery: a fast, all-right first five turns the rest of a round into Challenge questions from the next harder stop
-    //     (tag shown); the bot misses every other one once and still gets 3 stars; the stop's mastery record is saved;
-    //     a weak first five turns on support: the hint is on screen before the first try
-    {
-      const ma = await openApp(browser, { fixture: 'midway' });
-      const mp = ma.page;
-      const mi = await mp.evaluate(() => {
-        const i = NODES.math.findIndex(n => n.sk == 'eo' && n.lv == 1);
-        S.maps.math[nid(NODES.math[i])] = 0; // play it as a new stop so the star result is visible
-        start('math', i);
-        return i;
-      });
-      await mp.waitForSelector('#prompt');
-      let missed = 0, tags = 0, tagH = 99;
-      for (let guard = 0; guard < 60; guard++) {
-        const st = await mp.evaluate(() => document.querySelector('#fin') ? { fin: 1 } : G && G.q && !G.lock
-          ? { tag: mastTag(G.q), tries: G.tries, kind: G.q.kind, h: (document.querySelector('.mtag') || {}).offsetHeight || 0 } : null);
-        if (st && st.fin) break;
-        if (!st) { await mp.waitForTimeout(150); continue; }
-        await mp.evaluate(() => { window.__q = G.q; });
-        if (st.tag === 'ch' && st.tries === 0) {
-          tags++;
-          tagH = Math.min(tagH, st.h);
-          if ((st.kind === 'choice' || st.kind === 'num') && tags % 2 === 1) {
-            // every other challenge question: one wrong first try, then the right answer (3 misses in a row would step the round down)
-            if (st.kind === 'choice') await mp.click(`.ch[data-i="${await mp.evaluate(() => G.q.choices.findIndex(c => String(c.v) !== String(G.q.ans)))}"]`);
-            else { for (const d of String(Number(await mp.evaluate(() => G.q.ans)) + 1)) await mp.click(`.k[data-k="${d}"]`); await mp.click('.k[data-k="go"]'); }
-            await mp.waitForFunction(() => G.tries === 1 && !G.lock, null, { timeout: 4000 });
-            missed++;
-          }
-        }
-        await answer(mp);
-        await mp.waitForFunction(() => document.querySelector('#fin') || (G && G.q !== window.__q), null, { timeout: 8000 });
-      }
-      await mp.waitForSelector('#chest', { timeout: 5000 });
-      const res = await mp.evaluate(i => ({ mode: G.mode, score: G.score, n: G.n, forgive: G.forgive || 0, st: getSt('math', i),
-        rec: S.mast && S.mast.eo1, saved: !!JSON.parse(localStorage.getItem(KEY)).mast }), mi);
-      if (res.mode !== 'challenge' || tags !== res.n - 5 || tagH < 20 || !missed || res.forgive !== missed || res.score !== res.n - missed || res.st !== 3)
-        fail('challenge round: ' + JSON.stringify({ ...res, tags, tagH, missed }));
-      else step(`challenge: questions 6-${res.n} came from the harder stop with the tag, ${missed} of them missed once, ${res.score}/${res.n} still gave 3 stars`);
-      if (!res.rec || res.rec.n < 4 || !res.saved) fail('mastery record for eo1 not saved: ' + JSON.stringify(res.rec));
-      // support: five wrong first tries, then the 6th question shows its hint before any answer
-      const sp = await mp.evaluate(i => {
-        start('math', i);
-        G.fr = [0, 1, 2, 3, 4].map(() => ({ ok: false, ms: 9000 }));
-        G.done = 5;
-        next();
-        return { mode: G.mode, hint: document.querySelector('#hint').textContent.trim().length };
-      }, mi);
-      if (sp.mode !== 'support' || !sp.hint) fail('support round: ' + JSON.stringify(sp));
-      else step('support: after 5 wrong first tries the hint shows before the first try');
-      await mp.evaluate(() => { G.dead = true; home(); });
-      network.push(...ma.network);
-      for (const e of ma.errors) fail(e);
-      await ma.ctx.close();
-    }
-
-    // P5-06 report card at 380x780: Grown-ups has a Report card button (48 px or more); it opens a read-only screen with seven sections,
-    // nothing wider than the screen, S unchanged; a brand-new child gets kind empty states; Back returns to Grown-ups
-    {
-      const ra = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
-      const rp = ra.page;
-      await rp.waitForSelector('.game[data-p="math"]');
-      await rp.evaluate(() => {
-        const n = STRK.idx(today()), k = d => STRK.key(n - d);
-        S.log = [{ d: k(0), sec: 600, rounds: 2, q: 20, ok: 18, by: { math: 420, read: 180 } }, { d: k(8), sec: 300, rounds: 1, q: 10, ok: 6, by: { math: 300 } }];
-        S.mast = { add1: { n: 30, p: .95, ms: 5000, d: 3, last: n, md: n - 2 }, sub1: { n: 12, p: .4, ms: 9000, d: 2, last: n, md: -1 } };
-        grown();
-      });
-      const before = await rp.evaluate(() => JSON.stringify(S));
-      const eb = await rp.evaluate(() => { const b = document.querySelector('#rp-open'); return b ? b.offsetHeight : 0; });
-      if (eb < 48) fail('report card button on Grown-ups is ' + eb + ' px high');
-      await rp.click('#rp-open');
-      await rp.waitForSelector('#rp-weeks');
-      const rr = await rp.evaluate(() => {
-        const sc = document.querySelector('.scroll');
-        return { n: document.querySelectorAll('.rp-card').length, over: sc.scrollWidth - sc.clientWidth, S: JSON.stringify(S), text: sc.textContent,
-          btn: Math.min(...[...document.querySelectorAll('.top .btn')].map(b => b.offsetHeight)), svg: document.querySelector('.rp-svg').getBoundingClientRect().width };
-      });
-      if (rr.n !== 7) fail('report card sections: ' + rr.n);
-      else if (rr.over > 0) fail('report card is ' + rr.over + ' px wider than the screen at 380');
-      else if (rr.S !== before) fail('opening the report card changed the saved data');
-      else if (rr.btn < 48) fail('report card top buttons are ' + rr.btn + ' px high');
-      else if (!/Adding to 10/.test(rr.text) || !/Needs practice/.test(rr.text) || /undefined|NaN/.test(rr.text)) fail('report card text: ' + rr.text.slice(0, 200));
-      else step('report card: 7 sections at 380x780, nothing wider than the screen, saved data unchanged');
-      await rp.click('#back');
-      await rp.waitForSelector('#rp-open');
-      step('report card: Back returns to Grown-ups');
-      network.push(...ra.network);
-      for (const e of ra.errors) fail(e);
-      await ra.ctx.close();
-      const rf = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 });
-      const fp = rf.page;
-      await fp.waitForFunction(() => typeof report == 'function');
-      await fp.evaluate(() => { S.name = 'Ava'; report(); });
-      const ft = await fp.evaluate(() => ({ text: document.querySelector('.scroll').textContent, over: document.querySelector('.scroll').scrollWidth - document.querySelector('.scroll').clientWidth }));
-      if (!/No learning time recorded yet/.test(ft.text) || !/This list fills in after a few rounds/.test(ft.text) || /undefined|NaN/.test(ft.text) || ft.over > 0)
-        fail('report card for a new child: ' + ft.text.slice(0, 200));
-      else step('report card: a new child sees kind empty states');
-      network.push(...rf.network);
-      for (const e of rf.errors) fail(e);
-      await rf.ctx.close();
-    }
-
-    // P5-02 spaced review: the tricky fixture (a v53 save whose 21 tricky misses are whole stored questions) is migrated on load
-    //     (no question html left, stars and coins kept); home still offers Mixed Practice; a stop round asks due items at
-    //     questions 2 and 4 with the "Remember this one?" tag and a right answer moves them to box 1, due tomorrow; Tricky Mix
-    //     plays 7 rebuilt items and books every one as fixed
-    {
-      const ra = await openApp(browser, { fixture: 'tricky' });
-      const rp = ra.page;
-      const r0 = await rp.evaluate(() => {
-        const raw = localStorage.getItem(KEY);
-        return { v: S.v, items: REV.get().length, due: dueItems().length, stars: S.stars, coins: S.coins, html: /class=|"html"/.test(raw),
-          rev: JSON.stringify(S.rev).length, mix: document.querySelector('#mix').textContent.trim() };
-      });
-      if (r0.v !== 6 || r0.items !== 21 || r0.due !== 21 || r0.stars !== 85 || r0.coins !== 64 || r0.html || !/Mixed Practice/.test(r0.mix))
-        fail('tricky fixture after migration: ' + JSON.stringify(r0));
-      else step(`tricky fixture migrated: ${r0.items} review items (${r0.rev} bytes), no html in the save, home shows "${r0.mix}"`);
-      // a math stop round: log every question as it is drawn (G.q.rvk = the review item it came from)
-      await rp.evaluate(() => {
-        const orig = renderQ;
-        window.__rq = [];
-        renderQ = function () { orig(); __rq.push({ rvk: G.q.rvk || '', retry: !!G.retry, tag: (document.querySelector('.rtag') || {}).offsetHeight || 0 }); };
-        const i = NODES.math.findIndex(n => n.sk == 'sub' && n.lv == 1);
-        start('math', i);
-      });
-      await rp.waitForSelector('#prompt');
-      await playRound(rp, 'P5-02 stop round');
-      const r1 = await rp.evaluate(() => {
-        const d = REV.day(), asked = __rq.filter(x => x.rvk && !x.retry);
-        return { first: __rq.slice(0, 4).map(x => !!x.rvk), tags: asked.map(x => x.tag),
-          moved: asked.map(x => { const it = REV.get().find(y => revKey(y) === x.rvk); return it ? [it.box, it.due - d] : null; }),
-          due: dueItems().length, stars: S.stars >= 85 };
-      });
-      if (JSON.stringify(r1.first) !== '[false,true,false,true]' || r1.tags.some(h => h < 20) || r1.moved.some(m => !m || m[0] !== 1 || m[1] !== 1)
-        || r1.due !== 21 - r1.moved.length || !r1.stars)
-        fail('review in a stop round: ' + JSON.stringify(r1));
-      else step(`stop round: questions 2 and 4 were due review items with the tag (${r1.moved.length} in all), each now in box 1, due tomorrow`);
-      // Tricky Mix from home: 7 rebuilt items, all right on the first try = 7 fixed
-      await rp.evaluate(() => home());
-      await rp.waitForSelector('#mix');
-      await rp.click('#mix');
-      await rp.waitForSelector('#prompt');
-      const rm = await rp.evaluate(() => G.pool.filter(q => q.rvk).length + (G.q.rvk ? 1 : 0));
-      await playRound(rp, 'P5-02 tricky mix');
-      const r2 = await rp.evaluate(() => ({ fixed: G.fixed || 0, due: dueItems().length, box1: REV.get().filter(x => x.box == 1).length }));
-      if (rm !== 7 || r2.fixed !== 7 || r2.due !== r1.due - 7 || r2.box1 !== r1.moved.length + 7) fail('tricky mix: ' + JSON.stringify({ rm, ...r2 }));
-      else step(`Tricky Mix: ${rm} rebuilt review items, ${r2.fixed} fixed, ${r2.due} still due today`);
-      await rp.evaluate(() => { G.dead = true; home(); });
-      network.push(...ra.network);
-      for (const e of ra.errors) fail(e);
-      await ra.ctx.close();
-    }
-
-    // P5-03 Daily Review at 380x780: the tricky fixture (21 due) shows "Today's review: 21 due" with a Start button of 48 px or more and
-    //     nothing wider than the screen; Start plays a 10-question round of due items only (all rebuilt, all booked as fixed); home then says
-    //     11 due; with nothing due the card is a kind "All caught up" with no button, and startReview() still plays a normal round
-    {
-      const ra = await openApp(browser, { fixture: 'tricky', width: 380, height: 780 });
-      const rp = ra.page;
-      await rp.waitForSelector('#rev');
-      const h0 = await rp.evaluate(() => ({ btn: document.querySelector('#rev').offsetHeight, n: document.querySelector('#revn').textContent,
-        over: document.querySelector('.scroll').scrollWidth - document.querySelector('.scroll').clientWidth, card: document.querySelector('#revcard').offsetHeight }));
-      if (h0.btn < 48 || h0.n !== '21' || h0.over > 0 || h0.card < 48) fail('daily review card: ' + JSON.stringify(h0));
-      else step(`daily review card: ${h0.n} due, Start ${h0.btn} px high, nothing wider than the screen`);
-      await rp.click('#rev');
-      await rp.waitForSelector('#prompt');
-      const g0 = await rp.evaluate(() => ({ n: G.n, daily: !!G.daily, rv: G.pool.filter(q => q.rvk).length + (G.q.rvk ? 1 : 0) }));
-      if (g0.n !== 10 || !g0.daily || g0.rv !== 10) fail('daily review round: ' + JSON.stringify(g0));
-      await playRound(rp, 'P5-03 daily review');
-      const g1 = await rp.evaluate(() => ({ fixed: G.fixed || 0, due: dueItems().length }));
-      if (g1.fixed !== 10 || g1.due !== 11) fail('daily review result: ' + JSON.stringify(g1));
-      else step(`daily review: 10 due items asked first, ${g1.fixed} fixed, ${g1.due} still due`);
-      await rp.evaluate(() => { G.dead = true; home(); });
-      await rp.waitForSelector('#rev');
-      const h1 = await rp.evaluate(() => document.querySelector('#revn').textContent);
-      if (h1 !== '11') fail('home after the daily review says ' + h1 + ' due');
-      await rp.evaluate(() => { S.rev = []; save(); home(); });
-      await rp.waitForSelector('#revcard');
-      const h2 = await rp.evaluate(() => ({ btn: !!document.querySelector('#rev'), text: document.querySelector('#revcard').textContent }));
-      if (h2.btn || !/All caught up/.test(h2.text)) fail('daily review card with nothing due: ' + JSON.stringify(h2));
-      else step('daily review: nothing due shows a kind "All caught up" card with no button');
-      await rp.evaluate(() => startReview());
-      await rp.waitForSelector('#prompt');
-      await playRound(rp, 'P5-03 review with nothing due');
-      await rp.evaluate(() => { G.dead = true; home(); });
-      network.push(...ra.network);
-      for (const e of ra.errors) fail(e);
-      await ra.ctx.close();
-    }
-
-    // P2-19 spelling: every level has a map stop; a round at 380x780 taps the in-app keyboard (keys 48 px or more); the clue shows a blank,
-    //       never the word; the hint gives the letter count; the stop earns stars; stars of old stops do not move
-    {
-      const sa = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
-      const sp = sa.page;
-      await sp.waitForSelector('.game[data-p="read"]');
-      const si = await sp.evaluate(() => {
-        const lv = NODES.read.filter(n => n.sk == 'spell').map(n => n.lv).join('');
-        const before = JSON.stringify(S.maps.read);
-        const i = NODES.read.findIndex(n => n.sk == 'spell' && n.lv == 3);
-        start('read', i);
-        return { lv, i, before };
-      });
-      if (si.lv !== '1234567') fail('spelling stops on the reading map: ' + si.lv);
-      await sp.waitForSelector('#prompt .lslots');
-      const sq = await sp.evaluate(() => {
-        const keys = [...document.querySelectorAll('.sk')];
-        const clue = document.querySelector('#prompt').textContent;
-        return { kind: G.q.kind, minKey: Math.min(...keys.map(k => k.offsetHeight)), minW: Math.min(...keys.map(k => k.offsetWidth)),
-          blank: clue.includes('_____'), shows: clue.toLowerCase().includes(G.q.word),
-          over: document.querySelector('#prompt').scrollWidth - document.querySelector('#prompt').clientWidth,
-          slots: document.querySelectorAll('.lslots .ls').length === G.q.word.length };
-      });
-      if (sq.kind !== 'spell' || !sq.blank || sq.shows || !sq.slots) fail('spelling question: ' + JSON.stringify(sq));
-      else if (sq.minKey < 48 || sq.minW < 24 || sq.over > 0) fail('spelling keyboard at 380: ' + JSON.stringify(sq));
-      else step(`spelling: keyboard keys ${sq.minKey} px high, the clue shows a blank, not the word`);
-      await sp.click('#hb');
-      const hint = await sp.evaluate(() => document.querySelector('#hint').textContent);
-      if (!/\d+ letters and starts with/.test(hint)) fail('spelling hint: ' + hint); else step('spelling: hint gives the letter count and the first letter');
-      await playRound(sp, 'P2-19 spelling');
-      const after = await sp.evaluate(i => ({ st: getSt('read', i), maps: JSON.stringify(S.maps.read) }), si.i);
-      const was = JSON.parse(si.before), now = JSON.parse(after.maps);
-      const moved = Object.keys(was).filter(k => now[k] !== was[k]);
-      if (after.st < 1 || moved.length) fail('spelling stars: ' + JSON.stringify({ st: after.st, moved }));
-      else step(`spelling: stop earned ${after.st} stars, no other stop changed`);
-      await sp.evaluate(() => { G.dead = true; home(); });
-      network.push(...sa.network);
-      for (const e of sa.errors) fail(e);
-      await sa.ctx.close();
-    }
-
-    // P2-15 ABC Beach at 380x780: a Pre-K child's reading map opens on abc1 (ABC Beach is the first reading world) and the bot wins the
-    //     6-question round by tapping; every new stop (abc 1-4, syl 1-2, sound 3-4) shows a question whose buttons are 48 px or more and
-    //     nothing is wider than the screen; a default (K) child is not put in ABC Beach: the reading map opens on Letter Meadow (sound1)
-    {
-      const pa = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 });
-      const pp = pa.page;
-      await pp.fill('#nm', 'Beach');
-      await pp.click('.gr[data-g="-1"]');
-      await pp.click('#go');
-      await pp.waitForSelector('.game[data-p]');
-      await pp.click('.game[data-p="read"]');
-      await pp.waitForSelector('.node.cur');
-      const cur0 = await pp.evaluate(() => ({ id: nid(NODES.read[curNode('read')]), w: NODES.read[curNode('read')].wid, n: +document.querySelector('.node.cur').dataset.n }));
-      if (cur0.id !== 'abc1' || cur0.w !== 'r_abc' || cur0.n !== 0) fail('Pre-K reading map should open on abc1: ' + JSON.stringify(cur0));
-      await pp.click('.node.cur');
-      await pp.waitForSelector('#prompt');
-      const n6 = await pp.evaluate(() => G.n);
-      await playRound(pp, 'P2-15 abc1 Pre-K', 6);
-      if (n6 !== 6) fail('Pre-K ABC Beach round length ' + n6); else step('ABC Beach: Pre-K map opens on abc1, the bot won the 6-question round by tapping');
-      await pp.evaluate(() => { G.dead = true; home(); });
-      await pp.waitForSelector('.game[data-p]');
-      for (const id of ['abc1', 'abc2', 'abc3', 'abc4', 'syl1', 'syl2', 'sound3', 'sound4']) {
-        await pp.evaluate(i => { start('read', NODES.read.findIndex(n => n.sk + n.lv === i)); }, id);
-        await pp.waitForSelector('#prompt');
-        const sz = await pp.evaluate(() => {
-          const els = [...document.querySelectorAll('.ch, .mb, .lt')];
-          const sc = document.querySelector('.scroll') || document.body;
-          return { n: els.length, min: Math.min(...els.map(e => Math.min(e.offsetHeight, e.offsetWidth))), over: Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth),
-            kind: G.q.kind, hint: !!G.q.hint, say: !!G.q.say };
-        });
-        if (!sz.n || sz.min < 48 || sz.over > 0 || !sz.hint || !sz.say) fail(`ABC Beach ${id} question at 380x780: ` + JSON.stringify(sz));
-        await pp.evaluate(() => { G.dead = true; home(); });
-        await pp.waitForSelector('.game[data-p]');
-        await pp.waitForTimeout(2800); // let the old round's timers finish
-      }
-      step('ABC Beach: abc 1-4, syl 1-2, sound 3-4 show buttons of 48 px or more with a hint and spoken text, nothing wider than 380 px');
-      network.push(...pa.network);
-      for (const e of pa.errors) fail(e);
-      await pa.ctx.close();
-      const ka = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 });
-      const kp = ka.page;
-      await kp.fill('#nm', 'Kay');
-      await kp.click('#go');
-      await kp.waitForSelector('.game[data-p]');
-      await kp.click('.game[data-p="read"]');
-      await kp.waitForSelector('.node.cur');
-      const cur1 = await kp.evaluate(() => ({ id: nid(NODES.read[curNode('read')]), w: curWorld('read'), g: S.grade }));
-      if (cur1.id !== 'sound1' || cur1.w !== 1) fail('K reading map should open on Letter Meadow sound1: ' + JSON.stringify(cur1));
-      else step('ABC Beach: a K child (default) opens the reading map on Letter Meadow, not ABC Beach');
-      network.push(...ka.network);
-      for (const e of ka.errors) fail(e);
-      await ka.ctx.close();
-    }
-
-    // P2-01 Tiny Town (Pre-K math) at 380x780 with ALL TEXT HIDDEN (html.notext, the debug flag): a Pre-K child opens on Tiny Town, a full
-    //    6-question round is finished by tapping pictures only, every prompt is spoken on its own (say() is stubbed and recorded), the
-    //    replay button is big, no letters are on screen outside the picture choices; then every Tiny Town stop is opened and answered
-    //    once through the real taps (numerals, picture choices, plates) with sizes checked (48 px or more, no sideways scroll)
-    {
-      const ta = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 });
-      const tp = ta.page;
-      await tp.fill('#nm', 'Tiny');
-      await tp.click('.gr[data-g="-1"]');
-      await tp.click('#go');
-      await tp.waitForSelector('.game[data-p="math"]');
-      await tp.click('.game[data-p="math"]');
-      await tp.waitForSelector('.node.cur');
-      const mp0 = await tp.evaluate(() => ({ on: +document.querySelector('.wchip.on').dataset.w, wid: NODES.math[curNode('math')].wid,
-        sk: nid(NODES.math[curNode('math')]), chips: document.querySelectorAll('.wchip').length, n: PATHS.math.worlds.length }));
-      if (mp0.on !== 0 || mp0.wid !== 'm_tiny' || mp0.sk !== 'pk_count1' || mp0.chips !== mp0.n) fail('Pre-K map does not open on Tiny Town: ' + JSON.stringify(mp0));
-      else step('Pre-K child: the math map opens on Tiny Town, first stop pk_count1, ' + mp0.chips + ' world chips');
-      // text hidden + speech recorder
-      await tp.evaluate(() => {
-        document.documentElement.classList.add('notext');
-        window.__said = [];
-        window.say = t => { window.__said.push(String(t)); };
-        window.__rec = [];
-        const r0 = renderQ;
-        renderQ = function () {
-          r0();
-          const q = G.q;
-          setTimeout(() => {
-            const sp = document.querySelector('#spk'), pr = document.querySelector('#prompt');
-            const txt = [...document.querySelectorAll('.pktxt')];
-            window.__rec.push({ sk: q.sk + q.lv, kind: q.kind, said: window.__said.includes(q.say), spk: sp ? [sp.offsetWidth, sp.offsetHeight] : null,
-              letters: /[A-Za-z]/.test(pr.innerText), txtHidden: txt.every(e => e.offsetHeight === 0), nTxt: txt.length,
-              wide: document.documentElement.scrollWidth });
-          }, 700);
-        };
-      });
-      await tp.click('.node.cur');
-      await tp.waitForSelector('#prompt');
-      await playRound(tp, 'P2-01 Tiny Town round, text hidden', 6);
-      const rec = await tp.evaluate(() => window.__rec);
-      const badRec = rec.filter(r => !r.said || !r.spk || r.spk[0] < 64 || r.spk[1] < 64 || r.letters || !r.txtHidden || !r.nTxt || r.wide > 380);
-      if (rec.length < 6 || badRec.length) fail('Tiny Town text-hidden round: ' + JSON.stringify(badRec.length ? badRec : rec));
-      else step('Tiny Town with text hidden: ' + rec.length + ' prompts spoken on their own, replay button ' + rec[0].spk.join('x') + ', no letters on screen, 6/6 by tapping pictures');
-      // every stop once, through the real taps; sizes and the Help button (a picture hint, no letters) on each
-      const stops = await tp.evaluate(() => NODES.math.map((n, i) => [i, nid(n), n.wid]).filter(x => x[2] === 'm_tiny' && x[1] !== 'boss_m_tiny'));
-      const seen = [];
-      for (const [i, id] of stops) {
-        await tp.evaluate(i => { start('math', i); }, i);
-        await tp.waitForSelector('#prompt');
-        await tp.waitForTimeout(600);
-        const sz = await tp.evaluate(() => {
-          const pts = [...document.querySelectorAll('.ch, #prompt [data-v]')].map(e => Math.min(e.offsetWidth, e.offsetHeight));
-          return { kind: G.q.kind, n: pts.length, min: Math.min(...pts), wide: document.documentElement.scrollWidth, tall: document.querySelector('.qarea').scrollHeight > document.querySelector('.qarea').clientHeight + 1 };
-        });
-        await tp.click('#hb');
-        const hint = await tp.evaluate(() => ({ len: document.querySelector('#hint').innerHTML.length, letters: /[A-Za-z]/.test(document.querySelector('#hint').innerText) }));
-        await answer(tp);
-        await tp.evaluate(() => { G.dead = true; }); // the round's own next() timer fires into this dead round, not into the next stop
-        await tp.waitForTimeout(1500);
-        seen.push(id);
-        if (sz.n < 2 || sz.min < 48 || sz.wide > 380 || sz.tall || !hint.len || hint.letters) fail('Tiny Town stop ' + id + ': ' + JSON.stringify({ ...sz, ...hint }));
-      }
-      if (seen.length !== 9) fail('Tiny Town has ' + seen.length + ' stops, expected 9');
-      else step('Tiny Town: all 9 stops open and are answered by taps; touch targets 48 px or more, no sideways scroll, picture hints without letters');
-      await tp.evaluate(() => { G.dead = true; home(); });
-      network.push(...ta.network);
-      for (const e of ta.errors) fail(e);
-      await ta.ctx.close();
-    }
-
-    // P2-05 Multiply Mountain at 380x780: a 3rd grader opens the last math world from the strip, plays Arrays and the first
-    //    times-facts stop with real taps (every answer right), nothing is wider than the screen; the Fact Sprint then lists
-    //    the Times facts set and a 20-facts sprint of it is played to the end.
-    {
-      const ma5 = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
-      const mp = ma5.page;
-      await mp.evaluate(() => { S.grade = 3; save(); });
-      const lastW = await mp.evaluate(() => PATHS.math.worlds.length - 1);
-      const openMountain = async k => { // home, math map, the last world's chip, then its k-th stop
-        await mp.evaluate(() => home());
-        await mp.click('.game[data-p="math"]');
-        await mp.waitForSelector('.wchip.on');
-        await mp.click(`.wchip[data-w="${lastW}"]`);
-        await mp.waitForSelector(`.wchip.on[data-w="${lastW}"]`);
-        const n = await mp.evaluate(k => WR.math[PATHS.math.worlds.length - 1][0] + k, k);
-        await mp.click(`.node[data-n="${n}"]`);
-        await mp.waitForSelector('#prompt');
-      };
-      await mp.evaluate(() => home());
-      await mp.click('.game[data-p="math"]');
-      await mp.waitForSelector('.wchip.on');
-      await mp.click(`.wchip[data-w="${lastW}"]`);
-      await mp.waitForSelector(`.wchip.on[data-w="${lastW}"]`);
-      const world = await mp.evaluate(() => ({ id: PATHS.math.worlds[PATHS.math.worlds.length - 1].id, stops: WR.math[PATHS.math.worlds.length - 1][1] - WR.math[PATHS.math.worlds.length - 1][0] + 1,
-        boss: !!document.querySelector(`.node[data-n="${WR.math[PATHS.math.worlds.length - 1][1]}"]`),
-        first: NODES.math[WR.math[PATHS.math.worlds.length - 1][0]].sk }));
-      if (world.id !== 'm_mult' || world.stops !== 12 || !world.boss || world.first !== 'arr') fail('Multiply Mountain map: ' + JSON.stringify(world));
-      await openMountain(0);
-      await mp.waitForSelector('#prompt');
-      const lay = await mp.evaluate(() => ({ n: G.n, sk: G.sk, w: document.documentElement.scrollWidth, art: !!document.querySelector('#prompt svg') }));
-      if (lay.sk !== 'arr' || lay.n !== 10 || lay.w > 380 || !lay.art) fail('arrays round: ' + JSON.stringify(lay));
-      await playRound(mp, 'P2-05 Arrays', 10);
-      await mp.evaluate(() => { G.dead = true; });
-      await openMountain(1);
-      const k1 = await mp.evaluate(() => ({ sk: G.sk, lv: G.lv, w: document.documentElement.scrollWidth, pad: Math.min(...[...document.querySelectorAll('.k')].map(b => Math.min(b.offsetHeight, b.offsetWidth))) }));
-      if (k1.sk !== 'mfact' || k1.lv !== 1 || k1.w > 380 || k1.pad < 48) fail('times facts round: ' + JSON.stringify(k1));
-      await playRound(mp, 'P2-05 Times facts', 10);
-      await mp.evaluate(() => { G.dead = true; home(); });
-      await mp.click('#flu');
-      await mp.waitForSelector('.game[data-s="mfact"]');
-      const sets = await mp.evaluate(() => ({ ids: [...document.querySelectorAll('.game[data-s]')].map(b => b.dataset.s), h: document.querySelector('.game[data-s="mfact"]').offsetHeight }));
-      if (sets.ids.includes('dfact') || sets.h < 48) fail('Fact Sprint sets after Easy Times Facts: ' + JSON.stringify(sets));
-      await mp.click('.game[data-s="mfact"]');
-      await mp.click('.game[data-m="n20"]');
-      for (let i = 0; i < 40; i++) {
-        await mp.waitForFunction(() => document.querySelector('#fagain') || (FL && FL.f && !FL.lock), null, { timeout: 8000 });
-        if (await mp.$('#fagain')) break;
-        for (const d of await mp.evaluate(() => String(FL.f.c))) await mp.click(`.k[data-k="${d}"]`);
-        await mp.click('.k[data-k="go"]').catch(() => {});
-      }
-      await mp.waitForSelector('#fagain', { timeout: 8000 });
-      const fl = await mp.evaluate(() => ({ n: S.flu['mfact-20'] && S.flu['mfact-20'].hist.length }));
-      if (fl.n !== 1) fail('times sprint not saved: ' + JSON.stringify(fl));
-      else step('P2-05: Multiply Mountain opens for a 3rd grader (12 stops), Arrays and Times facts rounds played, Fact Sprint lists Times facts and a sprint is saved');
-      network.push(...ma5.network);
-      for (const e of ma5.errors) fail(e);
-      await ma5.ctx.close();
-    }
-
     // P2-02 Shape Garden (K math) at 380x780: a K child's math map opens on Shape Garden (the first K world, after Tiny Town), a full
     //    8-question round of the first stop is played by taps with every prompt spoken on its own, then each of the 14 stops is opened and
     //    answered once through the real taps with all text hidden (html.notext): nothing to read in the prompt, every touch target 48 px
@@ -1546,6 +1130,69 @@ async function main() {
       network.push(...sg.network);
       for (const e of sg.errors) fail(e);
       await sg.ctx.close();
+    }
+
+    // P2-03 Clock Tower at 380x780: a 1st grader who has finished Candy Canyon opens on Clock Tower (between Candy Canyon and Ocean Reef),
+    //    plays the first round with real taps, then every stop is opened and three questions of it answered by taps (numerals, picture
+    //    choices, picture graphs, shapes, cut circles); sizes checked (48 px or more, no sideways scroll). Time stops draw the VIZ clock.
+    {
+      const ca = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 });
+      const cp = ca.page;
+      await cp.fill('#nm', 'Tower');
+      await cp.click('.gr[data-g="1"]');
+      await cp.click('#go');
+      await cp.waitForSelector('.game[data-p="math"]');
+      await cp.evaluate(() => { NODES.math.filter(n => n.wid === 'm_candy').forEach(n => { S.maps.math[nid(n)] = 1; }); save(); home(); }); // Candy Canyon finished
+      await cp.click('.game[data-p="math"]');
+      await cp.waitForSelector('.node.cur');
+      const cm = await cp.evaluate(() => { const ids = PATHS.math.worlds.map(w => w.id), c = ids.indexOf('m_clock');
+        return { c, near: ids[c - 1] + ' ' + ids[c + 1], on: +document.querySelector('.wchip.on').dataset.w, wid: NODES.math[curNode('math')].wid,
+          sk: nid(NODES.math[curNode('math')]), chips: document.querySelectorAll('.wchip').length, n: ids.length }; });
+      if (cm.c < 0 || cm.near !== 'm_candy m_reef' || cm.on !== cm.c || cm.wid !== 'm_clock' || cm.sk !== 'pv1' || cm.chips !== cm.n) fail('Clock Tower map: ' + JSON.stringify(cm));
+      else step('Clock Tower: sits between Candy Canyon and Ocean Reef, the map opens on it at stop pv1 after Candy Canyon');
+      await cp.click('.node.cur');
+      await cp.waitForSelector('#prompt');
+      await playRound(cp, 'P2-03 Tens & Ones');
+      await cp.click('#menu');
+      await cp.waitForSelector('#map');
+      const nx = await cp.evaluate(() => { const a = WR.math[PATHS.math.worlds.findIndex(w => w.id === 'm_clock')][0]; return { pv: passed('math', a), add5: unlocked('math', a + 1) }; });
+      if (!nx.pv || !nx.add5) fail('Clock Tower: passing pv1 should unlock add5: ' + JSON.stringify(nx));
+      const stops = await cp.evaluate(() => NODES.math.map((n, i) => [i, nid(n), n.wid]).filter(x => x[2] === 'm_clock' && x[1] !== 'boss_m_clock'));
+      const reefTime = await cp.evaluate(() => NODES.math.findIndex(n => n.sk === 'time' && n.lv === 1));
+      const seen = [];
+      for (const [i, id] of [...stops, [reefTime, 'time1']]) {
+        await cp.evaluate(i => { start('math', i); }, i);
+        await cp.waitForSelector('#prompt');
+        for (let k = 0; k < 3; k++) {
+          await cp.waitForTimeout(500);
+          const sz = await cp.evaluate(() => {
+            const pts = [...document.querySelectorAll('.ch, .k')].map(e => Math.min(e.offsetWidth, e.offsetHeight));
+            const qa = document.querySelector('.qarea');
+            return { sk: G.q.sk + G.q.lv, kind: G.q.kind, min: Math.min(...pts), wide: document.documentElement.scrollWidth, tall: qa.scrollHeight > qa.clientHeight + 1,
+              svg: !!document.querySelector('#prompt svg, .ch svg'), clk: !!document.querySelector('#prompt svg.viz-clk') };
+          });
+          if (sz.min < 48 || sz.wide > 380 || sz.tall) fail('Clock Tower stop ' + id + ': ' + JSON.stringify(sz));
+          if (id === 'time1' && (!sz.clk || sz.wide > 380)) fail('time stop does not draw the VIZ clock: ' + JSON.stringify(sz));
+          if (['pv1', 'meas2', 'data1', 'shape4', 'frac1'].includes(id) && !sz.svg && sz.kind !== 'num') fail('Clock Tower stop ' + id + ' has no picture');
+          if (k === 0) {
+            await cp.click('#hb');
+            const hint = await cp.evaluate(() => document.querySelector('#hint').innerHTML.length);
+            if (!hint) fail('Clock Tower stop ' + id + ': empty hint');
+          }
+          await cp.evaluate(() => { window.__q = G.q; });
+          await answer(cp);
+          if (k < 2) await cp.waitForFunction(() => G && G.q !== window.__q, null, { timeout: 8000 });
+        }
+        await cp.evaluate(() => { G.dead = true; });
+        await cp.waitForTimeout(1500);
+        seen.push(id);
+      }
+      if (seen.length !== 8) fail('Clock Tower has ' + seen.length + ' stops checked, expected 7 + time1');
+      else step('Clock Tower: all 7 stops and the Ocean Reef clock stop open, 3 questions each answered by taps; 48 px targets, no sideways scroll, hints, VIZ clock on time stops');
+      await cp.evaluate(() => { G.dead = true; home(); });
+      network.push(...ca.network);
+      for (const e of ca.errors) fail(e);
+      await ca.ctx.close();
     }
 
     for (const e of errors) fail(e);

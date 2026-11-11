@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** batch merging P2-03, P4-05, P4-04; then batch C: P2-04, P2-07; wave 6: P4-03, P4-08, P4-10, P4-11, then P4-18.
+**Next up:** batch merging P4-05, P4-04, P4-13b; then batch C: P2-04, P2-07; wave 6: P4-03, P4-08, P4-10, P4-11, then P4-18.
 
-**Current version:** v65
+**Current version:** v66
 
 ## Chunk status
 
@@ -45,6 +45,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P2-06 v63
 - P2-18 v64
 - P2-02 v65
+- P2-03 v66
 
 ## Handoff notes
 
@@ -62,6 +63,12 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - (P2-02) `shape` now spans three levels in one skill and `pat`, `sort`, `pk_more`, `pk_count`, `pk_num`, `add`, `cnt` gained levels, so "easier" and "harder" (mastery) follow map order: easier(add 1) is now add 4 (Shape Garden), harder(add 4) is add 1. Tests compute this from NODES.
 - (P2-02) The tipped scale in `meas 1` uses VIZ.balance with two invisible tap zones laid over its left and right halves (`.sgbal`); a child who taps the beam or the pivot still hits one of them. A later VIZ option for tap pans would be cleaner.
 - (P2-02) Only two shape colours exist in the viz palette (`v1` blue, `v2` orange), so the K shape levels are blue or orange; the three Pre-K colour pictures (PK.shp) stay as they were.
+- (P2-03) Placement ("Find my level") passes one world per 4-question testlet and stops after 5 testlets (PLACE.MAX). With Clock Tower the math path has 7 worlds, so a child who is right every time starting at world 1 now ends on Multiply Mountain after 5 sets but is no longer reported as "passed every world"; every further inserted world (Shape Garden, Treasure Bay, ...) makes this worse. A later chunk could jump two worlds after a perfect testlet, or raise PLACE.MAX. test.js and smoke now compute the expectation from the world count and PLACE.MAX.
+- (P2-03) `mastNear` (harder/easier stop of the same skill) used path order. Clock Tower puts add 5 and add 6 before Ocean Reef's add 3, so path order would have made "harder than add 6" = add 3. It now goes by level (next higher / lower level of the same skill that has a stop). Nothing changes for skills whose levels already rise along the path. The mastery test's path-order invariant became a level invariant.
+- (P2-03) Levels without a stop until P2-02 ships: `add 4`, `shape 2-3`, `meas 1` (K, P2-02). They are listed in test.js `RESERVED` and ask like their neighbour (add 4 like add 3, shape 2-3 like the Pre-K shape question, meas 1 like meas 2). P2-02 must replace them and delete its entries from `RESERVED`.
+- (P2-03) `frac` has only level 1 (`max:1`), `pv` only level 1, `meas` max 2, `data` max 1. P2-04 adds `pv 2-3`, `meas 3`, `data 2` (new generator branches next to genPv1/genMeas/genData1; raise `max`); P2-06/P2-07 add `frac 2-8` (switch `SK.frac.gen` to a dispatcher; `genFrac1` stays level 1). Cut pictures for frac 1 are `CT.cut` in 31-gen-math-early.js (unequal and equal circles and rectangles), not VIZ.fracCircle (equal parts only).
+- (P2-03) `src/css/40-games.css` still has an unused `.clock{...}` rule (genTime now draws VIZ.clock). Left alone (file is exempt from the hex guard and not in this chunk).
+- (P2-03) The Help panel of meas 2 numbers the cubes 1..n, so the last number shows the answer. It is the counting aid on purpose; if a later review wants it hidden, number only up to n-1.
 - (merge P2-05) The full smoke run now takes about 12 minutes. A run that crosses midnight fails the P5-03 daily review counts (items moved to "due tomorrow" become due again). A later chunk could freeze the page clock in tools/lib/browser.js.
 - (P2-19) Spelling hint 2 ("show the word for 2 seconds, then hide", CURRICULUM E-spell) is not built: `hintHTML` has no stepped hints. A later hint chunk can add it to `genSpell` as a second hint step.
 - (P2-19) Story Summit, Dragon Library, Author Island and Legend Lab exist now with only a spell stop each (plus the boss). P2-20 to P2-29 should insert their stops in CURRICULUM 2.2 order; do not change the spell stop ids. Word Workshop (`r_workshop`, grade 2) between Space Station and Story Summit still has to be created by P2-18.
@@ -179,6 +186,19 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P1-05) Map draw with 16 fake worlds (156 stops) at 6x CPU throttle: median about 29 ms (limit 50), single runs up to about 49 ms. The strip recomputes `worldOpen`/`worldFinished` per chip and `unlocked` scans the world; a memo per draw is the next step if P4-09 adds weight.
 
 ## Log
+
+### P2-03 1st grade gaps: world Clock Tower (v66, 2026-11-11, Claude)
+- What changed: new math world `m_clock` (Clock Tower, grade 1) between Candy Canyon and Ocean Reef (CURRICULUM 2.1 #5) with exactly the M-1 stops in order: `pv 1, add 5, meas 2, add 6, data 1, shape 4, frac 1` plus the boss. New generators in one block at the end of `src/js/31-gen-math-early.js` (headed `// ---- P2-03 Clock Tower (1st) ----`, helper object `CT`): `genPv1` (base-ten picture / "how many tens in 47" / `30 + 6`, mixed evenly), `genAdd5` (three addends, sum <= 20, 60% have a pair making ten or a double, the rest neither), `genAdd6` (+10, -10, + multiple of 10, +/- inside the same ten), `genMeas` (pencil or paper strip above 1-12 unit cubes), `genData1` (picture graph, 3 categories, values 1-8 all different, count / most / least / how many more / total of two), `genShape` (level 4: sides, corners, "which shape has 4 sides"; 6 shapes, corner dots and flashing sides in the hints), `genFrac1` (circles and rectangles cut in 2 or 4 equal or unequal parts: halves, fourths, "is it cut into equal parts?"). Every level has a hint, every question has `say`.
+- Clock picture: `genTime` now draws `VIZ.clock(h, m)`; `clockSVG` (raw hex) is deleted. Answers, choices and labels are unchanged (tested against the picture). The two hint sentences say "short pink hand" instead of "short red hand" (the token colour of the hour hand is pink-red). Before/after screenshots of time levels 1 and 3 looked right.
+- Edits to existing files: `38-skills.js` (new skills `pv`, `meas`, `data`, `frac` as one contiguous group after `mbig`; `add` max 3 -> 6 with a dispatcher, `shape` max 1 -> 4 with `genShape`), `42-paths.js` (one world inserted after `m_candy`), `32-gen-read.js` (genTime, clockSVG removed), `51-mastery.js` (`mastNear` by level, see Ideas and issues), tools only otherwise.
+- Tests changed (old -> new): test.js "skills: every level is reachable" `RESERVED` `{arr:[1],story:[4]}` -> adds `add:[4],shape:[2,3],meas:[1]` (P2-02 levels); placement "start world per grade on math" uses world ids instead of indexes 0,1,2,4; placement "all right on math" expects `hi=min(nw-1, PLACE.MAX)`: 7 worlds now end on the last world after 5 testlets with `all` false, skip = worlds 0..5 (was `all` true with 6 worlds); placement simulated "allRight" accepts "every world, or five testlets in a row"; mastery harder/easier invariant path order -> level order; Tiny Town skill max check `!==` -> `<` (later chunks raise the max). smoke.js: no old expectation changed (the placement step computes from the world count and still ends on the last world after 20 questions). New: test.js "Clock Tower (P2-03)" (3,000 samples per level, answers by rule, label/answer, grade gating, saves compared with a path without the world for 5 fixtures x 6 grades = 1740 stop checks, mastery chain add 1,2,3,5,6); smoke.js `// P2-03` block (map position, first round, all stops answered by taps at 380x780, time stop draws the VIZ clock); shots.js group `clock-*` and helper `clockShot`.
+- Save safety: stars are keyed by stop id (`pv1`, `add5`, `meas2`, `add6`, `data1`, `shape4`, `frac1`, `boss_m_clock` are new keys; `time1` etc. keep their meaning). Proven by fixtures (midway, maxed, fresh, both legacy maps) at grades none/0/1/2/3/6: every stop has the same stars with and without the world, no passed stop re-locks, nothing open is locked except an untouched world above the child's grade (the "inserted world" exemption of the worlds check, which is not weakened), no new stop starts with stars, loading changes no map. A child who had finished Candy Canyon and not started Ocean Reef (K grade) now meets Clock Tower first; grade 1 and up see both open.
+- Tests: test.js 37 checks pass; smoke.js passes; contrast and hex guard pass.
+- Screenshots looked at (380x780 unless noted): clock-map, clock-pv1a/b, clock-meas2, clock-data1a/b, clock-shape4a/b, clock-frac1a/b, clock-time3, clock-hint-meas2, clock-hint-shape4, time1 before/after (600x960). All 17 entries exist at the three sizes.
+- Checklist 7.1: [x] only named files changed (plus tests, shots, 51-mastery fix, built output) [x] VER bumped (v66, provisional) [x] build [x] test.js [x] smoke.js [x] screenshots [x] midway fixture unchanged (stars per stop id) [x] size under 1.5 MB [x] no network [x] no new emoji or hex [x] PROGRESS entry
+- Merge: built on a parallel branch, renumbered v63 -> v66 at merge.
+
+- Merge (after P2-02 and P2-06): skill table routes each level to its owner (shape 4, meas 2, add 5-6, frac 1 are Clock Tower's; Clock Tower's measuring generator renamed genMeas2). harder/easier stay in map order (the curriculum sequence), because Shape Garden's add 4 is easier than add 1; Clock Tower's level-order change was not kept. Reserved levels cleared where stops now exist.
 
 ### P2-02 K math: world Shape Garden (v65, 2026-11-11, Claude)
 - What changed: new math world `m_shape` "Shape Garden" (g 0, K), the second math world, between Tiny Town and Number Meadow, with exactly the CURRICULUM M-K stops in order: pk_count 3, pk_num 3, tenf 1, pk_more 2, shape 2, add 4, pat 2, tenf 2, cnt 4, shape 3, sort 3, pos 1, meas 1, tenf 3 (14 stops plus the boss `boss_m_shape`). New skills `tenf` (3 levels), `pos` (1), `meas` (1); levels added to `pk_count` (3), `pk_num` (3), `pk_more` (2), `shape` (3), `add` (4), `pat` (2), `cnt` (4), `sort` (3). Existing levels are untouched: `38-skills.js` points those skills at small wrappers (`genPkCountK` etc.) that call the old generator for the old levels.
