@@ -1,6 +1,7 @@
 /* ---------- content pictures: object art with emoji fallback (DESIGN_SYSTEM 6.5) ---------- */
 /* Every content picture (counting objects, picture words, vocabulary) goes through picFor(word, emoji).
-   P4-13 to P4-15 add drawings to ART in src/js/16-art-*.js with Object.assign(ART, {apple: '<path .../>', ...})
+   P4-13 to P4-15 add drawings to ART with Object.assign(ART, {apple: '<path .../>', ...}): set A in src/js/16-art-a.js, set B in
+   src/data/d-art-b.js (the data file, so ART is complete only at render time: read it inside functions, never while loading)
    (64x64 grid, style and limits in DESIGN_SYSTEM 6.5); words with a drawing show it, the rest keep the emoji,
    with no change to any generator.
    Rules for content code:

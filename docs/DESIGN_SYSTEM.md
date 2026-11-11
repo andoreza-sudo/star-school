@@ -311,7 +311,7 @@ light rays, and returns the markup of the reward screens (`RW.pre`, `RW.done`, `
 
 ### 6.5 Object art (chunks P4-13 to P4-15; style reset in P4-13b)
 
-Pictures for counting, picture words and Spanish vocabulary, in `src/js/16-art-a.js`, `-b`, `-c` as `Object.assign(ART, {name: '...'})`
+Pictures for counting, picture words and Spanish vocabulary, in `src/js/16-art-a.js` (set A, in index.html) and `src/data/d-art-b.js` (set B, in the data file since P4-14; set C the same way) as `Object.assign(ART, {name: '...'})`
 (ART, `picArt(name, size)` and `picFor(word, emoji)` live in `src/js/15-pics.js`; the names `art` and `artSVG` are already taken by the a/an helper and the Art Studio).
 Reference: set A (`node tools/shots.js art`). This section replaces the flat two-tone rule of 6.1 for object art.
 
@@ -336,6 +336,7 @@ It should look like a current, well-made kids' app: soft, chunky, with real volu
 | Size | Up to 2,500 bytes and 40 elements per picture, coordinates to one decimal; set A is about 53 KB in all |
 | Review | `node tools/shots.js art` (24/48/96 px on white and on a tint) and `art-question` (inside a real question at 380x780). Look before shipping |
 | Checked by | `tools/test.js` "art set A" (rules above, every role maps to an `--ill-*` token). Sets B and C add their names to a copy of that check |
+| Set B check | `tools/test.js` "object art set B P4-14": the same rules, every number on the 64 grid, each word asked for by content, drawings shown by picture words and Spanish units. Review: `node tools/shots.js art-b art art-b-question` |
 
 How set A was authored: shapes were written with small helpers (volume, crescent, eye, rotate) in a scratch script and the output pasted into `16-art-a.js`;
 the file is the source of truth. Any authoring approach is fine as long as the output follows the rules.
@@ -344,6 +345,7 @@ the file is the source of truth. Any authoring approach is fine as long as the o
 |-----|--------------------|
 | A | Counting and core nouns: apple, banana, cookie, ball, star, fish, duck, car, flower, cat, dog, pig, sun, bus, hat, bed, cup, fox, bat, bug, hen, box, map, pen, web, frog, crab, drum, ship, milk, tent, hand, gift, flag, cake, kite, bike, rose, bone, nose |
 | B | Remaining picture words (vowel teams, r-controlled, diphthongs) and the Spanish units: animals, food, body, family, house, clothes, school |
+| B as built (P4-14) | balloon book moon sock cow cheese bell bird egg pencil plane bread tree coat foot cloud rainbow house grapes truck train tooth shirt mouth mouse table horse bee turtle water ear owl helicopter rocket tie boots dice chair bear dress: the 40 picFor words used most by the content that had no drawing (count in PROGRESS P4-14). Spanish items name their drawing in the `art` field (jacket uses `coat`, socks `sock`, class `bell`, airplane `plane`, good night `moon`) |
 | C (stretch) | Science and remaining Spanish units, places, transport, weather, feelings faces |
 
 `picFor(word)` returns object art when it exists, else the emoji, so replacement is gradual and nothing breaks. The emoji allowlist test still applies to whatever remains.
