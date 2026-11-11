@@ -470,6 +470,34 @@ Object.assign(SCREENS, {
   'frac-5-which': { run: fracShot(5, '^frac which') },
 });
 
+// P2-07 Fraction Forest, the other twelve stops: the map and one question per variant (first seed whose label matches), grade 3
+function ffShot(sk, lv, want) {
+  return async p => {
+    await p.evaluate(([sk, lv, want]) => {
+      S.grade = 3; S.name = 'Ava'; S.buddy = 'Ben';
+      window.say = () => {};
+      start('math', NODES.math.findIndex(n => n.sk == sk && n.lv == lv));
+      let q; for (let i = 1; i < 800; i++) { q = genQ(sk, lv, i); if (new RegExp(want).test(q.label)) break; }
+      G.q = q; renderQ();
+    }, [sk, lv, want]);
+  };
+}
+Object.assign(SCREENS, {
+  'ff-map': { run: async p => { await p.evaluate(() => { S.grade = 3; for (const id of ['frac2', 'frac3', 'frac4', 'frac5']) S.maps.math[id] = 3; pathMap('math', PATHS.math.worlds.findIndex(w => w.id === 'm_frac')); }); } },
+  'ff-round1': { run: ffShot('round', 1, '^round') },
+  'ff-sub7': { run: ffShot('sub', 7, '^1,000 ') },
+  'ff-geo1-poly': { run: ffShot('geo', 1, '^geo1 5 sides') },
+  'ff-geo2': { run: ffShot('geo', 2, '^geo2 \\d+x\\d+ cm') },
+  'ff-time5-pick': { run: ffShot('time', 5, '^clock5 pick') },
+  'ff-time6-clocks': { run: ffShot('time', 6, '^time6 \\d+:\\d\\d to') },
+  'ff-shape5': { run: ffShot('shape', 5, '^shape5 notrhom') },
+  'ff-data3-pic': { run: ffShot('data', 3, '^data3 pic 10 ') },
+  'ff-meas4-ruler': { run: ffShot('meas', 4, '^meas4 ruler 1[0-9]/4') },
+  'ff-meas4-scale': { run: ffShot('meas', 4, '^meas4 scale') },
+  'ff-meas4-jug': { run: ffShot('meas', 4, '^meas4 jug') },
+  'ff-story6': { run: ffShot('story', 6, '^story6 ') },
+});
+
 // One Tiny Town question (genQ with a fixed seed) through the real round engine; hint opens Help, notext sets the debug flag.
 function tinyShot(sk, lv, hint, notext) {
   return async p => {

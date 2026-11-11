@@ -2419,7 +2419,8 @@ run('fractions P2-06: Fraction Forest stops, spoken names, reserved levels, no n
   S.name='Ava';S.buddy='Ben';G={built:[]};
   const bad=[],mw=PATHS.math.worlds,wi=mw.findIndex(x=>x.id=='m_frac'),w=mw[wi]||{nodes:[]};
   const ids=w.nodes.map(n=>n[0]+n[1]).join(' ');
-  if(w.g!==3||w.n!=='Fraction Forest'||ids!=='frac2 frac3 frac4 frac5')bad.push('world: '+w.id+' '+w.g+' '+ids);
+  const fids=w.nodes.filter(n=>n[0]=='frac').map(n=>n[0]+n[1]).join(' '); // P2-07 added the other stops between these four
+  if(w.g!==3||w.n!=='Fraction Forest'||fids!=='frac2 frac3 frac4 frac5')bad.push('world: '+w.id+' '+w.g+' '+ids);
   // CURRICULUM 2.1 order: Fraction Forest comes straight after Multiply Mountain
   if(wi<1||mw[wi-1].id!=='m_mult')bad.push('Fraction Forest must follow Multiply Mountain');
   if(new Set(mw.map(x=>x.id)).size!==mw.length)bad.push('duplicate world ids');
@@ -3716,6 +3717,333 @@ run('question screen (P4-10): tokens only, transform/opacity motion, pad keys, t
   for(const n of ['close','gift','bolt','speak','hint','backspace','check','go','back','flame','star','replay'])if(!ICONS[n])bad.push('missing icon '+n);
   bad;`);
   return{problems:p.concat(out)};
+});
+
+// ---- P2-07 Fraction Forest (3rd) ----
+run('Fraction Forest P2-07: stops in CURRICULUM order, 3,000 samples per new level with the maths checked',()=>{
+  const body=function(){
+    S.name='Ava';S.buddy='Ben';G={built:[]};
+    const bad=[],N=3000,add=m=>{if(bad.length<40&&!bad.includes(m))bad.push(m)};
+    const num=s=>+String(s).replace(/,/g,''),tm=(h,m)=>h+':'+String(m).padStart(2,'0');
+    const mins=(h,m)=>(h%12)*60+m,fromMin=t=>{t=((t%720)+720)%720;const h=Math.floor(t/60);return [h==0?12:h,t%60]};
+    const clk=(t)=>{const [h,m]=t.split(':').map(Number);return VIZ.clock(h,m)};
+    const cnt=(h,re)=>(h.match(re)||[]).length;
+    // ---- world: the stops of M-3b in CURRICULUM 2.1 order, the four frac ids kept
+    const mw=PATHS.math.worlds,wi=mw.findIndex(x=>x.id=='m_frac'),w=mw[wi];
+    const want='frac2 round1 frac3 sub6 geo1 frac4 round2 time5 geo2 frac5 sub7 data3 shape5 time6 meas4 story6';
+    if(w.nodes.map(n=>n[0]+n[1]).join(' ')!==want)add('stop order: '+w.nodes.map(n=>n[0]+n[1]).join(' '));
+    if(w.g!==3||w.n!=='Fraction Forest'||mw[wi-1].id!=='m_mult')add('world g/name/position');
+    if(w.nodes.some(n=>n[2].length>24))add('stop name too long: '+w.nodes.find(n=>n[2].length>24)[2]);
+    if(new Set(w.nodes.map(n=>n[2])).size!==w.nodes.length)add('duplicate stop names');
+    const ids=NODES.math.map(nid);
+    if(new Set(ids).size!==ids.length)add('stop ids repeat on the math path');
+    if(WR.math[wi][1]-WR.math[wi][0]!==16||NODES.math[WR.math[wi][1]].sk!=='boss')add('17 stops: 16 and the boss');
+    const mx={round:2,geo:2,sub:7,time:6,shape:5,data:3,meas:4,story:6,frac:8};
+    for(const k in mx)if(SK[k].max!==mx[k]||SK[k].area!=='math')add('SK.'+k+'.max '+SK[k].max);
+    // ---- generic checks per level, then the maths of each level
+    const levels=[['round',1],['round',2],['sub',6],['sub',7],['geo',1],['geo',2],['time',5],['time',6],['shape',5],['data',3],['meas',4],['story',6],
+      ]; // sub 5, time 4, data 2 and meas 3 are Treasure Bay's (P2-04) and are checked by its own test
+    const share={},seen={};
+    for(const [sk,lv] of levels){
+      const key=sk+lv,labs={},seeLab=new Set();
+      for(let i=0;i<N;i++){
+        const q=genQ(sk,lv,i*7919+31),W=key+': ';
+        const pr=kindProblems(q);if(pr.length)add(W+q.label+': '+pr[0]);
+        if(q.sk!==sk||q.lv!==lv)add(W+'not stamped');
+        if(!q.say||/undefined|NaN/.test(q.say))add(W+'say '+q.say);
+        if(!q.hint||hintHTML(q).length<10)add(W+'hint missing');
+        if(!q.label||q.label.length>=60||/undefined|NaN/.test(q.label))add(W+'label '+q.label);
+        if(labs[q.label]!==undefined&&labs[q.label]!==q.ans)add(W+'label '+q.label+' has two answers');
+        labs[q.label]=q.ans;seeLab.add(q.label);
+        if(/undefined|NaN|\[object/.test(q.html))add(W+'html has undefined/NaN');
+        if(q.kind=='num'&&!(q.pad||q.sep)&&(String(q.ans).length>4||String(+q.ans)!==q.ans))add(W+'num answer '+q.ans);
+        if(q.kind=='choice'){const vs=q.choices.map(c=>c.v);if(!vs.includes(q.ans)||new Set(vs).size!==vs.length||vs.length<3||vs.length>4)add(W+'choices '+q.label)}
+        const S_=share[key]=share[key]||{};const tally=t=>{S_[t]=(S_[t]||0)+1};
+        const a=+q.ans;
+        // ---------------- round
+        if(sk=='round'){
+          const m=q.html.match(/Round ([\d,]+) to the nearest (\d+)\./),n=num(m[1]),p=+m[2];
+          const exp=n%p>=p/2?n-n%p+p:n-n%p;
+          if(p!==(lv==1?10:100)||n%p==0||a!==exp)add(W+'round '+n+' to '+p+' -> '+q.ans);
+          if(lv==1&&!((n>=11&&n<=99)||(n>=101&&n<=999)))add(W+'size '+n);
+          if(lv==2&&!(n>=101&&n<=9949))add(W+'size '+n);
+          tally(String(n).length);if(n%p==p/2)tally('half');
+          const lo=n-n%p;if(!q.hint.html.startsWith(VIZ.numLine({min:lo,max:lo+p,step:p/10,labels:[lo,lo+p],marks:[n]})))add(W+'hint line');
+        }
+        // ---------------- sub 6 and 7 (and 5 until P2-04)
+        if(sk=='sub'&&lv>=5){
+          const m=q.html.match(/<div class="veq"><div>([\d,]+)<\/div><div><span class="op">−<\/span>(\d+)<\/div>/);
+          if(!m){add(W+'no vertical layout');continue}
+          const A=num(m[1]),B=+m[2];
+          if(a!==A-B||B>=A||B<100||B>999)add(W+A+' - '+B+' -> '+q.ans);
+          // borrows, ones to thousands
+          const da=String(A).padStart(4,'0').split('').map(Number).reverse(),db=String(B).padStart(4,'0').split('').map(Number).reverse();
+          let br=0,b=0;for(let k=0;k<4;k++){if(da[k]-b<db[k]){br++;b=1}else b=0}
+          if(lv<=6){
+            if(String(A).includes('0')||A<200||A>999)add(W+'top number '+A);
+            if(br<1||br>2)add(W+A+' - '+B+' regroups '+br+' times');
+            tally(br==2?'two':'one');
+          }else{
+            const z=(String(A).match(/0/g)||[]).length,k=A==1000?'thousand':A%100==0?'hund':A%100<10?'tens':'bad';
+            if(k=='bad'||(k!='thousand'&&(z<1||z>2))||br<2)add(W+'across zeros '+A+' - '+B+' ('+br+' regroups)');
+            tally(k);
+          }
+        }
+        // ---------------- time 5 / 6 (time 4 asks like 5 until P2-04)
+        if(sk=='time'&&lv<=5){
+          const m=q.label.match(/^clock5 (read|pick) (\d+):(\d\d)$/);
+          if(!m){add(W+'label '+q.label);continue}
+          const h=+m[2],mi=+m[3],t=tm(h,mi);
+          if(h<1||h>12||mi>59||q.ans!==t)add(W+q.label+' -> '+q.ans);
+          const vs=q.choices.map(c=>c.v);if(vs.length!==4)add(W+'4 choices');
+          tally(m[1]);S_['m'+mi]=1;
+          if(m[1]=='read'){
+            if(!q.html.startsWith(clk(t)))add(W+'clock picture');
+            for(const c of q.choices)if(c.l!==c.v||!/^\d{1,2}:\d\d$/.test(c.v))add(W+'choice '+c.v);
+          }else{
+            if(!q.html.includes('<div class="eq">'+t+'</div>')||q.cls!=='ffc')add(W+'digital prompt');
+            for(const c of q.choices){
+              const [ch,cm]=c.v.split(':').map(Number);
+              if(c.l!==clk(c.v)||ch<1||ch>12)add(W+'clock choice '+c.v);
+              if(c.v!==t){const d=Math.abs(cm-mi);if(ch==h&&Math.min(d,60-d)<5)add(W+'too close '+c.v+' for '+t)}
+            }
+          }
+        }
+        if(sk=='time'&&lv==6){
+          let m=q.label.match(/^time6 (\d+:\d\d) to (\d+:\d\d)$/);
+          if(m){
+            const [sh,sm]=m[1].split(':').map(Number),[eh,em]=m[2].split(':').map(Number),d=(mins(eh,em)-mins(sh,sm)+720)%720;
+            if(a!==d||d<15||d>120||sm%5||em%5||sh<1||sh>12||eh<1||eh>12)add(W+m[0]+' -> '+q.ans);
+            if(q.html.includes('class="ffrow"')){tally('clocks');if(!q.html.includes(clk(m[1]))||!q.html.includes(clk(m[2])))add(W+'clock pictures')}
+            else{tally('digital');if(!q.html.includes('Start <b>'+m[1]+'</b>')||!q.html.includes('End <b>'+m[2]+'</b>'))add(W+'digital times')}
+            if(!q.html.includes(' minutes</div>'))add(W+'unit');
+          }else{
+            m=q.label.match(/^time6 (\d+) (after|before) (\d+:\d\d)$/);
+            if(!m){add(W+'label '+q.label);continue}
+            const d=+m[1],[h,mi]=m[3].split(':').map(Number),[eh,em]=fromMin(mins(h,mi)+(m[2]=='after'?d:-d));
+            if(q.ans!==tm(eh,em)||d<10||d>90||d%5||mi%5||(m[2]=='before'&&mi==0))add(W+m[0]+' -> '+q.ans);
+            if(!q.html.includes(m[3])||!q.html.includes(d+' minutes '+m[2]))add(W+'prompt');
+            if(q.choices.length!==4||q.choices.some(c=>!/^\d{1,2}:\d\d$/.test(c.v)))add(W+'choices');
+            tally(m[2]);
+          }
+        }
+        // ---------------- geo 1 and 2
+        if(sk=='geo'&&lv==1){
+          let m=q.label.match(/^geo1 rect (\d+)x(\d+) (cm|m|in|ft)$/);
+          if(m){
+            const x=+m[1],y=+m[2],svg=q.html.slice(0,q.html.indexOf('</svg>')+6);
+            if(a!==2*(x+y)||x<1||x>20||y<1||y>20||x===y)add(W+m[0]+' -> '+q.ans);
+            if(!q.html.startsWith(VIZ.rectSides(x,y,{w:x,h:y},{unit:m[3]}))||cnt(svg,/<text/g)!==2)add(W+'a rectangle gives only 2 sides');
+            tally('rect');
+          }else{
+            m=q.label.match(/^geo1 (\d) sides ([\d,]+) (cm|m|in|ft)$/);
+            if(!m){add(W+'label '+q.label);continue}
+            const n=+m[1],s=m[2].split(',').map(Number),svg=q.html.slice(0,q.html.indexOf('</svg>')+6),txt=[...svg.matchAll(/<text[^>]*>([^<]*)<\/text>/g)].map(x=>x[1]);
+            if(n<3||n>6||s.length!==n||s.some(v=>v<1||v>20)||a!==s.reduce((x,y)=>x+y,0))add(W+m[0]+' -> '+q.ans);
+            if(txt.join('|')!==s.map(v=>v+' '+m[3]).join('|'))add(W+'side labels '+txt.join('|')+' vs '+s);
+            if(n==3&&(s[0]+s[1]<=s[2]||s[0]+s[2]<=s[1]||s[1]+s[2]<=s[0]))add(W+'not a triangle '+s);
+            if(!q.html.includes(['','','','triangle','shape with 4 sides','pentagon','hexagon'][n]))add(W+'name');
+            tally('poly'+n);
+          }
+        }
+        if(sk=='geo'&&lv==2){
+          let m=q.label.match(/^geo2 grid (\d+)x(\d+)$/);
+          if(m){
+            const c=+m[1],r=+m[2];
+            if(a!==r*c||r<2||r>6||c<2||c>8||!q.html.startsWith(VIZ.areaGrid(c,r))||!q.html.includes('square units'))add(W+m[0]+' -> '+q.ans);
+            tally('grid');
+          }else{
+            m=q.label.match(/^geo2 (\d+)x(\d+) (cm|m|in|ft)$/);
+            if(!m){add(W+'label '+q.label);continue}
+            const l=+m[1],x=+m[2],sq={cm:'square cm',m:'square m',in:'square in',ft:'square ft'}[m[3]];
+            if(a!==l*x||l<2||l>12||x<2||x>12||!q.html.startsWith(VIZ.rectSides(l,x,{w:l,h:x},{unit:m[3]}))||!q.html.includes(sq))add(W+m[0]+' -> '+q.ans);
+            tally('labelled');
+          }
+        }
+        // ---------------- shape 5
+        if(sk=='shape'){
+          const QUAD=['square','rectangle','rhombus','trapezoid'],NONQ=['triangle','pentagon','hexagon','octagon'],m=q.label.match(/^shape5 (\w+)/);
+          if(!m){add(W+'label '+q.label);continue}
+          const f=m[1],vs=q.kind=='choice'?q.choices.map(c=>c.v):[];
+          tally(f);
+          if(q.cls=='pics')for(const c of q.choices)if(c.l!==VIZ.shape(c.v)||c.h!==true)add(W+'picture of '+c.v);
+          if(f=='quad'){if(vs.length!==3||vs.filter(v=>QUAD.includes(v)).length!==1||!QUAD.includes(q.ans)||vs.filter(v=>NONQ.includes(v)).length!==2)add(W+q.label)}
+          else if(f=='notquad'){if(vs.length!==3||!NONQ.includes(q.ans)||vs.filter(v=>QUAD.includes(v)).length!==2)add(W+q.label)}
+          else if(f=='notrhom'){if([...vs].sort().join()!==[q.ans,'rhombus','square'].sort().join()||['rhombus','square'].includes(q.ans))add(W+q.label)}
+          else if(f=='which'){
+            const n={pentagon:5,hexagon:6,octagon:8}[q.ans],art=q.ans=='octagon'?'an':'a';
+            if(!n||vs.length!==3||new Set(vs).size!==3||!q.html.includes('Which shape is '+art+' '+q.ans+'?'))add(W+q.label)}
+          else if(f=='right'){const nm=q.label.split(' ')[3];if(a!==(nm=='square'||nm=='rectangle'?4:0)||!q.html.startsWith(VIZ.shape(nm)))add(W+q.label+' -> '+q.ans)}
+          else if(f=='sides'){const nm=q.label.split(' ')[2];if(a!==({pentagon:5,hexagon:6,octagon:8})[nm]||!q.html.startsWith(VIZ.shape(nm)))add(W+q.label+' -> '+q.ans)}
+          else if(f=='name'){const nm=q.label.split(' ')[2];if(q.ans!==nm||vs.length!==4||!q.html.startsWith(VIZ.shape(nm)))add(W+q.label)}
+          else add(W+'unknown form '+f);
+        }
+        // ---------------- data 3 (data 2 asks like 3 until P2-04)
+        if(sk=='data'&&lv>=2){
+          const m=q.label.match(/^data3 (bar|pic) (\d+) (.*): ([\d,]+)$/);
+          if(!m){add(W+'label '+q.label);continue}
+          const sc=+m[2],vals=m[4].split(',').map(Number),names=[...q.html.matchAll(/<text[^>]*>([A-Za-z]+)<\/text>/g)].map(x=>x[1]),tag=m[3].split(' ');
+          if(![2,5,10].includes(sc)||vals.length!==4||names.length!==4||new Set(vals).size!==4)add(W+m[0]);
+          const g=m[1]=='bar'?VIZ.barGraph(names.map((x,i)=>[x,vals[i]]),sc):VIZ.pictograph(names.map((x,i)=>[x,vals[i]]),{per:sc,key:sc+' children'});
+          if(!q.html.includes(g))add(W+'the picture does not show the numbers in '+q.label);
+          if(m[1]=='bar'&&vals.some(v=>v%sc||v/sc<1||v/sc>5))add(W+'bar values '+vals+' scale '+sc);
+          const half=vals.some(v=>(v/sc)%1);
+          if(m[1]=='pic'&&vals.some(v=>v%(sc==5?5:sc/2)||v/sc>(sc==5?8:5.5)))add(W+'picture values '+vals+' scale '+sc);
+          if(half&&sc==5)add(W+'half symbol at scale 5');
+          tally(m[1]+sc);if(half)tally('half'+sc);
+          const at=x=>vals[x-1]; // label tags count the graph's rows from 1
+          let exp;
+          if(tag[0]=='read')exp=at(tag[1]);else if(tag[0]=='more')exp=at(tag[1])-at(tag[2]);else if(tag[0]=='total')exp=at(tag[1])+at(tag[2]);else exp=vals.reduce((x,y)=>x+y,0);
+          if(!(exp>0)||a!==exp)add(W+q.label+' -> '+q.ans+' (expected '+exp+')');
+          if(tag[0]!=='all'&&tag.slice(1).some(x=>!q.html.toLowerCase().includes(names[x-1].toLowerCase())))add(W+'names in the question');
+          tally(tag[0]);
+        }
+        // ---------------- meas 4 (meas 3 asks like 4 until P2-04)
+        if(sk=='meas'&&lv>=3){
+          const vs=q.choices.map(c=>c.v);
+          if(vs.length!==4)add(W+'4 choices');
+          let m=q.label.match(/^meas4 ruler (\d+)\/4 in$/);
+          if(m){
+            const S4=+m[1],wh=Math.floor(S4/4),r=S4%4,v=r==0?''+wh:wh+' '+(r==2?'1/2':r+'/4');
+            if(q.ans!==v||S4<4||S4>28)add(W+m[0]+' -> '+q.ans);
+            if(!q.html.startsWith(VIZ.ruler(S4/4,'in','pencil'))&&!q.html.startsWith(VIZ.ruler(S4/4,'in','bar')))add(W+'ruler picture');
+            const qs=vs.map(x=>{const y=x.match(/^(\d+)(?: (1\/2|1\/4|3\/4))?$/);if(!y)return -1;return +y[1]*4+(y[2]=='1/2'?2:y[2]=='1/4'?1:y[2]=='3/4'?3:0)});
+            if(qs.some(x=>x<4||x>28))add(W+'choice lengths '+vs);
+            if(S4%2==0&&qs.some(x=>x%2))add(W+'a half-inch item with quarter choices '+vs);
+            tally(S4%2?'quarter':'half');
+          }else{
+            m=q.label.match(/^meas4 (scale|jug) (\d+) (g|kg|mL|L)$/);
+            if(!m){add(W+'label '+q.label);continue}
+            const val=+m[2],labs2=[...q.html.matchAll(/<text class="vcn[^"]*"[^>]*>(\d+)<\/text>/g)].map(x=>+x[1]),max=Math.max(...labs2);
+            const n=cnt(q.html.match(/class="vk" d="([^"]*)"/)[1],/M/g)-1,step=max/n;
+            let read;
+            if(m[1]=='scale'){
+              const nd=q.html.match(/class="vmh" d="M70 70L([\d.]+) ([\d.]+)"/),ang=Math.atan2(+nd[1]-70,70-nd[2])*180/Math.PI;
+              read=(ang+135)/270*max;
+            }else{
+              const rc=q.html.match(/<rect class="v1" x="35" y="([\d.]+)" width="46" height="([\d.]+)"/);
+              read=(150-rc[1])/130*max;
+              if(Math.abs(+rc[1]+ +rc[2]-150)>.2)add(W+'water does not reach the bottom');
+            }
+            if(Math.abs(read-val)>step*.08||val%step||val<=0||val>=max||(n!=5&&n!=10)||!q.html.includes('>'+m[3]+'</text>'))add(W+q.label+' reads '+read+' (max '+max+', n '+n+')');
+            if(q.ans!==String(val)||vs.some(x=>!(+x>0&&+x<=max&&+x%step==0))||q.choices.some(c=>!c.l.endsWith(' '+m[3])))add(W+'choices '+vs+' for '+q.label);
+            tally(m[1]);
+          }
+        }
+        // ---------------- story 6
+        if(sk=='story'){
+          const L=q.label,sy=q.say;let m;
+          if(a>1000||!q.hint.s.startsWith('Do one step at a time.'))add(W+'answer or hint '+q.ans);
+          if(m=L.match(/^story6 (\d+) × (\d+) \+ (\d+)$/)){if(a!==m[1]*m[2]+ +m[3]||!sy.includes(m[1]+' bags with '+m[2])||!sy.includes(m[3]+' more'))add(W+L+' -> '+q.ans);tally('mul+add')}
+          else if(m=L.match(/^story6 (\d+) × (\d+) − (\d+)$/)){if(a!==m[1]*m[2]-m[3]||a<1||!sy.includes(m[1]+' boxes with '+m[2])||!sy.includes('sells '+m[3]))add(W+L+' -> '+q.ans);tally('mul-sub')}
+          else if(m=L.match(/^story6 \((\d+) \+ (\d+)\) ÷ (\d+)$/)){const t=+m[1]+ +m[2];if(t%m[3]||a!==t/m[3]||!sy.includes('has '+m[1])||!sy.includes(m[2]+' more')||!sy.includes('among '+m[3]+' friends'))add(W+L+' -> '+q.ans);tally('add-div')}
+          else if(m=L.match(/^story6 (\d+) ÷ (\d+) − (\d+)$/)){if(m[1]%m[2]||a!==m[1]/m[2]-m[3]||a<1||!sy.includes('packs '+m[1])||!sy.includes(m[2]+' in each bag')||!sy.includes(m[3]+' bags'))add(W+L+' -> '+q.ans);tally('div-sub')}
+          else if(m=L.match(/^story6 \((\d+) − (\d+)\) × (\d+)$/)){if(a!==(m[1]-m[2])*m[3]||+m[1]<=+m[2]||!sy.includes('has '+m[1])||!sy.includes(m[2]+' are too small')||!sy.includes(m[3]+' cents each'))add(W+L+' -> '+q.ans);tally('sub-mul')}
+          else add(W+'label '+L);
+        }
+      }
+      seen[key]=seeLab.size;
+    }
+    // ---- mixes (each variant shows up a fair share of the time)
+    const fair=(k,names,lo)=>{for(const n of names)if(!((share[k]||{})[n]>N*lo))add(k+': '+n+' too rare '+JSON.stringify(share[k]))};
+    fair('round1',['2','3'],.3);fair('round1',['half'],.06);fair('round2',['3','4'],.3);fair('sub6',['one','two'],.2);fair('sub7',['hund','tens','thousand'],.1);
+    fair('time5',['read','pick'],.4);fair('time6',['clocks','digital','after','before'],.2);fair('geo1',['rect'],.3);fair('geo1',['poly3','poly4','poly5','poly6'],.1);
+    fair('geo2',['grid','labelled'],.3);fair('shape5',['quad','notquad','notrhom','which','right','sides','name'],.08);
+    fair('data3',['bar2','bar5','bar10','pic2','pic5','pic10'],.1);fair('data3',['half2','half10'],.02);fair('data3',['read','more','total','all'],.15);
+    fair('meas4',['half','quarter','scale','jug'],.1);fair('story6',['mul+add','mul-sub','add-div','div-sub','sub-mul'],.15);
+    if((share.data3||{}).half5)add('data3: half symbols at scale 5');
+    for(let mi=0;mi<60;mi++)if(!(share.time5||{})['m'+mi])add('time5: minute '+mi+' never asked');
+    for(const k of ['round1','round2','sub6','sub7','time5','time6','geo1','geo2','shape5','data3','meas4','story6'])if(seen[k]<30)add(k+': only '+seen[k]+' different labels');
+    return bad;
+  };
+  const r=eval(js+';('+body.toString()+')()');
+  return{problems:r,note:'12 levels (+4 reserved) x 3,000'};
+});
+
+run('Fraction Forest P2-07: stops added to m_frac keep every star, a finished forest shows NEW and does not move the current stop (fixtures)',()=>{
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const body=function(){
+    const store={};
+    localStorage.getItem=k=>k in store?store[k]:null;localStorage.setItem=(k,v)=>{store[k]=String(v)};localStorage.removeItem=k=>{delete store[k]};
+    const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
+    const bad=[],wi=PATHS.math.worlds.findIndex(x=>x.id=='m_frac'),W=PATHS.math.worlds[wi],full=W.nodes.slice();
+    const OLD=full.filter(n=>n[0]=='frac'&&n[1]>=2&&n[1]<=5); // the four stops of v69 (P2-06), in their v69 order
+    const setNodes=a=>{W.nodes=a;buildNodes('math')};
+    const idx=id=>NODES.math.findIndex(n=>nid(n)==id);
+    const newIds=full.filter(n=>!OLD.includes(n)).map(n=>n[0]+n[1]);
+    if(newIds.length!==12||OLD.map(n=>n[0]+n[1]).join(' ')!=='frac2 frac3 frac4 frac5')bad.push('expected 4 old and 12 new stops, got '+OLD.length+'/'+newIds.length);
+    // a save from v69 is the "maxed" fixture (every older stop passed) plus some Fraction Forest progress
+    const mk=(stars,boss,base='maxed')=>{
+      load(fx(base));
+      for(const k of ['frac2','frac3','frac4','frac5','boss_m_frac'])delete S.maps.math[k];
+      Object.assign(S.maps.math,stars);if(boss)S.maps.math.boss_m_frac=3;
+      for(const k in S.wdone||{})if(k=='m_frac')delete S.wdone[k];
+      if(boss)S.wdone.m_frac=1;
+      return JSON.stringify(S);
+    };
+    const cases={
+      'forest not started':mk({}),
+      'frac2 and frac3 passed':mk({frac2:3,frac3:2}),
+      'frac2 to frac4 passed (frac5 was next)':mk({frac2:3,frac3:2,frac4:1}),
+      'all four stops, boss not beaten':mk({frac2:3,frac3:3,frac4:2,frac5:1}),
+      'forest finished (4 stops + boss), everything else passed':mk({frac2:3,frac3:2,frac4:3,frac5:1},true),
+      'forest finished, an older stop still open (midway)':mk({frac2:3,frac3:2,frac4:3,frac5:1},true,'midway'),
+    };
+    let checked=0;
+    for(const name in cases){
+      const raw=cases[name];
+      // the v69 world
+      setNodes(OLD);load(raw);
+      const starsOld=JSON.stringify(S.maps.math),curOld=nid(NODES.math[curNode('math')]);
+      const lockedOld=NODES.math.map(n=>nid(n)).filter((id,i)=>!unlocked('math',i));
+      const openOld=new Set(NODES.math.map(n=>nid(n)).filter((id,i)=>unlocked('math',i)));
+      // the same save in the world of this build
+      setNodes(full);load(raw);
+      if(JSON.stringify(S.maps.math)!==starsOld)bad.push(name+': star table changed');
+      for(const id of newIds)if(S.maps.math[id])bad.push(name+': stars on new stop '+id);
+      for(const n of OLD){const id=n[0]+n[1],i=idx(id);if(i<0)bad.push(name+': '+id+' is gone');else{checked++;if((S.maps.math[id]||0)>0&&!unlocked('math',i))bad.push(name+': passed stop '+id+' is locked')}}
+      // every stop that was open stays open, except that an unfinished forest now has stops in front of frac5 (see the note on the next line)
+      // (a forest that is not finished now has stops to play before frac5 and the boss; the boss of a forest with all four old stops passed waits for them)
+      for(const id of openOld){const i=idx(id);if(!/^(frac[345]|boss_m_frac)$/.test(id)&&!unlocked('math',i))bad.push(name+': '+id+' was open and is locked');}
+      const curNew=nid(NODES.math[curNode('math')]);
+      const finished=name.startsWith('forest finished');
+      if(finished){
+        // a finished world: the new stops are NEW and never locked; the map does not move to them (curNode skips NEW stops)
+        for(const id of newIds){const i=idx(id);if(!stopNew('math',i)||!unlocked('math',i))bad.push(name+': '+id+' should show NEW and be open')}
+        if(!worldFinished('math',wi))bad.push(name+': forest no longer finished');
+        if(name.includes('midway')){
+          if(curNew!==curOld||newIds.includes(curNew))bad.push(name+': current stop '+curOld+' -> '+curNew);
+        }else if(curOld!=='boss_m_frac'||curNew!==newIds[0]){
+          // every stop of the path was passed: the old map opened on the last stop; curNode's last resort now offers the first NEW stop (the only stop left)
+          bad.push(name+': current stop '+curOld+' -> '+curNew);
+        }
+      }else{
+        // an unfinished forest: no star moves; the map opens on the first stop that is not passed
+        const first=NODES.math.findIndex((n,i)=>i>=WR.math[wi][0]&&i<=WR.math[wi][1]&&!passed('math',i)&&unlocked('math',i));
+        if(!/^boss/.test(curNew)&&first>=0&&curNew!==nid(NODES.math[first])&&worldHasProgress('math',wi))bad.push(name+': current stop '+curNew+' is not the first open stop');
+        for(const id of newIds)if(stopNew('math',idx(id)))bad.push(name+': NEW tag in an unfinished forest ('+id+')');
+      }
+      // the one unlocked chain: nothing in the new stops is open before the stop before it is passed, unless a later stop is passed
+      for(let i=WR.math[wi][0]+1;i<WR.math[wi][1];i++){
+        if(passed('math',i))continue;
+        const behind=NODES.math.slice(i+1,WR.math[wi][1]+1).some((n,k)=>passed('math',i+1+k));
+        if(unlocked('math',i)&&!passed('math',i-1)&&!behind&&!worldSkipped('math',wi)&&!S.unlockAll)bad.push(name+': '+nid(NODES.math[i])+' open without the stop before it');
+      }
+    }
+    // the plain fixtures: stars identical with and without the twelve new stops (frac stars absent there)
+    for(const name of ['midway','maxed','legacy-single-map','legacy-index-maps','fresh']){
+      const raw=fx(name);
+      setNodes(OLD);load(raw);const a=JSON.stringify(S.maps.math),ca=nid(NODES.math[curNode('math')]);
+      setNodes(full);load(raw);
+      if(JSON.stringify(S.maps.math)!==a)bad.push(name+': star table changed');
+      const cb=nid(NODES.math[curNode('math')]);
+      if(ca!==cb)bad.push(name+': current stop '+ca+' -> '+cb);
+    }
+    setNodes(full);
+    return {bad,checked};
+  };
+  const r=eval(js+';('+body.toString()+')()');
+  return{problems:uniq(r.bad),note:r.checked+' passed-stop checks, 5 forest saves + 5 old fixtures'};
 });
 
 // ---- report ----

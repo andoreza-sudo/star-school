@@ -284,3 +284,339 @@ function genFracCore(lv) {
   if (lv <= 2) return fracName();
   return [null, null, null, fracLine, fracCompare, fracEquiv, fracUnlike, fracSimplest, fracMixed][lv]();
 }
+
+// ---- P2-07 Fraction Forest (3rd) ----
+/* CURRICULUM M-3b: the other stops of Fraction Forest (m_frac), all written with the prefix ff.
+   round 1-2   round to the nearest 10 / 100          sub 6-7    3-digit subtraction with regrouping, across zeros
+   time 5-6    clock to the minute, elapsed time      geo 1-2    perimeter, area of rectangles
+   shape 5     classify polygons                      data 3     scaled bar graphs and picture graphs
+   meas 4      ruler to 1/4 inch, mass and volume     story 6    two-step stories with all four operations
+   Levels that belong to P2-04 (Treasure Bay: sub 5, time 4, data 2, meas 3) have no stop yet; until it ships they ask like the next
+   level up, and tools/test.js lists them as RESERVED. Seeded randomness only (R, pick, shuffle, coin, rnd). */
+
+const ffComma = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+const ffHH = x => ((x % 12) + 11) % 12 + 1; // hour on a clock face: 0 -> 12, 13 -> 1
+const ffSayT = (h, m) => m == 0 ? `${h} o'clock` : m < 10 ? `${h} oh ${m}` : `${h} ${m}`;
+const FF_UNIT = {cm: 'centimeters', m: 'meters', in: 'inches', ft: 'feet'};
+const FF_SQ = {cm: 'square cm', m: 'square m', in: 'square in', ft: 'square ft'};
+// n distinct values from a candidate list, never the answer
+const ffOthers = (cand, ans, n) => {
+  const out = [];
+  for (const c of shuffle(cand)) if (c != ans && !out.includes(c) && out.length < n) out.push(c);
+  return out;
+};
+
+// round 1: nearest 10 (2- and 3-digit); round 2: nearest 100 (3- and 4-digit). The hint is a number line between the two neighbours.
+function ffRound(lv) {
+  const p = lv == 1 ? 10 : 100;
+  let n;
+  if (lv == 1) do n = rnd() < .5 ? R(11, 99) : R(101, 999); while (n % 10 == 0);
+  else do n = rnd() < .45 ? R(101, 999) : R(1001, 9949); while (n % 100 == 0);
+  const lo = Math.floor(n / p) * p, hi = lo + p, ans = Math.floor((n + p / 2) / p) * p;
+  return {kind: 'num', html: `<div class="sub">Round ${ffComma(n)} to the nearest ${p}.</div><div class="eq">${SLOT}</div>`,
+    say: `Round ${n} to the nearest ${p}.`, ans: String(ans), label: `round ${n} to ${p}`,
+    hint: {k: 'html', html: `${VIZ.numLine({min: lo, max: hi, step: p / 10, labels: [lo, hi], marks: [n]})}`
+      + `<div>${ffComma(n)} sits between ${ffComma(lo)} and ${ffComma(hi)}. Halfway is ${ffComma(lo + p / 2)}. Is it past halfway? Then round up.</div>`,
+      w: `${n} is between ${lo} and ${hi}. Halfway is ${lo + p / 2}. Is it past halfway? Then round up.`}};
+}
+
+// sub 6: 3-digit - 3-digit, regrouping in one or two places, no zeros in the top number (vertical)
+function ffSub6() {
+  let a1, a2, a3, b1, b2, b3, a, b, first, borrows;
+  for (;;) {
+    a1 = R(1, 9); a2 = R(1, 9); a3 = R(2, 9); b1 = R(0, 9); b2 = R(0, 9); b3 = R(1, a3);
+    a = a3 * 100 + a2 * 10 + a1; b = b3 * 100 + b2 * 10 + b1;
+    if (a <= b) continue;
+    let t = a2;
+    first = '';
+    borrows = 0;
+    if (a1 < b1) {first = `${a1} is too small for ${b1}. Borrow a ten: ${a1 + 10} − ${b1} = ${a1 + 10 - b1}.`; t--; borrows++}
+    if (t < b2) {if (!first) first = `${t} tens is too small for ${b2} tens. Borrow a hundred: ${t + 10} − ${b2} = ${t + 10 - b2} tens.`; borrows++}
+    if (borrows >= 1 && borrows <= 2) break;
+  }
+  return mathQ(a, '-', b, a - b, 'c', true, {hint: {k: 'text', s: `${first} Then do the other columns, one at a time.`}});
+}
+
+// sub 7: subtract across zeros: X00, X0Y, or 1,000 on top
+function ffSub7() {
+  const f = rnd(), X = R(2, 9);
+  let a, b, s;
+  if (f < .4) {
+    a = X * 100;
+    do b = R(101, a - 1); while (b % 10 == 0); // a ones digit, so the borrow runs across both zeros
+    s = `${a} is ${X} hundreds, 0 tens, 0 ones. Take 1 hundred: ${X - 1} hundreds and 10 tens. Take 1 ten: 9 tens and 10 ones. Now subtract each column.`;
+  } else if (f < .85) {
+    const Y = R(1, 8);
+    a = X * 100 + Y;
+    do b = R(100, a - 1); while (b % 10 <= Y);
+    s = `${Y} ones is too small, and the tens place is 0. Borrow from the hundreds: ${X - 1} hundreds and 10 tens. Then borrow a ten: 9 tens and ${Y + 10} ones.`;
+  } else {
+    a = 1000;
+    do b = R(101, 999); while (b % 10 == 0);
+    s = '1,000 is the same as 9 hundreds, 9 tens and 10 ones. Now subtract each column.';
+  }
+  return mathQ(a == 1000 ? '1,000' : a, '-', b, a - b, 'c', true, {hint: {k: 'text', s}});
+}
+
+// time 5: clock to the minute -> digital (4 choices); half of the items go the other way: digital -> pick the clock
+function ffTime5() {
+  const h = R(1, 12), m = R(0, 59), ans = tstr(h, m);
+  const sw = [ffHH(Math.round(m / 5) || 12), h * 5 % 60]; // the two hands read the wrong way round
+  const pairs = [[h, (m + 5) % 60], [h, (m + 55) % 60], [ffHH(h + 1), m], [ffHH(h - 1), m], sw];
+  const fine = [[h, (m + 1) % 60], [h, (m + 59) % 60]]; // one minute off: only for the digital choices
+  if (coin()) {
+    const far = pairs.filter(p => p[0] != h || Math.min(Math.abs(p[1] - m), 60 - Math.abs(p[1] - m)) >= 5); // clocks must look different
+    const bad = ffOthers(far.map(p => tstr(p[0], p[1])), ans, 3);
+    const ch = [ans, ...bad].map(x => {const [hh, mm] = x.split(':').map(Number); return {v: x, l: VIZ.clock(hh, mm), h: true}});
+    return {kind: 'choice', cls: 'ffc', html: `<div class="eq">${ans}</div><div class="sub">Which clock shows this time?</div>`,
+      say: `Which clock shows ${ffSayT(h, m)}?`, ans, choices: shuffle(ch),
+      hint: {k: 'text', s: `The long hand shows the minutes: count by 5s from the 12 to ${Math.floor(m / 5) * 5}${m % 5 ? `, then ${m % 5} more little marks` : ''}. The short hand shows the hour, ${h}.`},
+      label: `clock5 pick ${ans}`};
+  }
+  const bad = ffOthers(pairs.concat(fine).map(p => tstr(p[0], p[1])), ans, 3);
+  return {kind: 'choice', html: `${VIZ.clock(h, m)}<div class="sub">What time is it?</div>`, say: 'What time does the clock show?',
+    ans, choices: shuffle([ans, ...bad].map(x => ({v: x, l: x}))),
+    hint: {k: 'text', s: 'The short hand shows the hour. The long hand shows the minutes: count by 5s from the 12, then add the little marks.'},
+    label: `clock5 read ${ans}`};
+}
+
+// time 6: elapsed time (clocks or digital times, answer in minutes up to 120), or "what time will it be 45 minutes after 2:30?"
+function ffTime6() {
+  const form = pick(['clocks', 'digital', 'after', 'before']);
+  const h = R(1, 12), m = 5 * (form == 'before' ? R(1, 11) : R(0, 11)), nh = tstr(ffHH(h + 1), 0), s = tstr(h, m);
+  const base = (h % 12) * 60 + m, at = x => {const t = ((x % 720) + 720) % 720; return [ffHH(Math.floor(t / 60)), t % 60]};
+  if (form == 'clocks' || form == 'digital') {
+    const d = 5 * R(3, 24), [eh, em] = at(base + d), e = tstr(eh, em);
+    const art = form == 'clocks'
+      ? `<div class="ffrow"><div>${VIZ.clock(h, m)}<div>Start</div></div><div>${VIZ.clock(eh, em)}<div>End</div></div></div>`
+      : `<div class="eq"><div>Start <b>${s}</b></div><div>End <b>${e}</b></div></div>`;
+    const hint = m + d < 60 ? `Both times are in the same hour. Subtract the minutes: ${em} − ${m}.`
+      : m + d == 60 ? `Count the minutes from ${s} up to the next hour, ${e}. How many minutes is that?`
+      : m > 0 ? `From ${s} to ${nh} is ${60 - m} minutes. Then count the minutes from ${nh} to ${e}.`
+      : `From ${s} to ${nh} is 60 minutes. Then count the minutes from ${nh} to ${e}.`;
+    return {kind: 'num', html: `${art}<div class="sub">How many minutes passed?</div><div class="eq">${SLOT} minutes</div>`,
+      say: `The time starts at ${ffSayT(h, m)} and ends at ${ffSayT(eh, em)}. How many minutes passed?`, ans: String(d),
+      hint: {k: 'text', s: hint}, label: `time6 ${s} to ${e}`};
+  }
+  const d = 5 * R(2, 18), after = form == 'after', [ah, am] = at(base + (after ? d : -d)), ans = tstr(ah, am);
+  const cand = [-60, -10, -5, 5, 10, 60, after ? -d : d].map(k => at(base + (after ? d : -d) + k)).map(p => tstr(p[0], p[1]));
+  const bad = ffOthers(cand, ans, 3);
+  let hint;
+  if (after) hint = m + d < 60 ? `Stay in the same hour. Add the minutes: ${m} + ${d}.`
+    : m > 0 && m + d == 60 ? `Count up from ${s} to the next hour. How many minutes is that?`
+    : m > 0 ? `From ${s} to ${nh} is ${60 - m} minutes. Then add the ${d - (60 - m)} minutes that are left.`
+    : `60 minutes make 1 hour. Add the hour first, then the ${d - 60} minutes that are left.`;
+  else hint = d <= m ? `Stay in the same hour. Subtract the minutes: ${m} − ${d}.`
+    : `Go back to ${tstr(h, 0)} first: that is ${m} minutes. Then go back ${d - m} more minutes.`;
+  return {kind: 'choice', html: `<div class="sub">What time ${after ? 'will it be' : 'was it'} ${d} minutes ${after ? 'after' : 'before'}</div><div class="eq">${s}</div>`,
+    say: `What time ${after ? 'will it be' : 'was it'} ${d} minutes ${after ? 'after' : 'before'} ${ffSayT(h, m)}?`, ans,
+    choices: shuffle([ans, ...bad].map(x => ({v: x, l: x}))), hint: {k: 'text', s: hint}, label: `time6 ${d} ${form} ${s}`};
+}
+
+// A polygon of 3 to 6 sides, each side labelled outside (not drawn to scale)
+function ffPoly(sides, unit) {
+  const n = sides.length, cx = 130, cy = 100, r = 60, off = n % 2 ? 0 : Math.PI / n;
+  const pt = (i, rr) => [cx + rr * Math.cos(-Math.PI / 2 + off + 2 * Math.PI * i / n), cy + rr * Math.sin(-Math.PI / 2 + off + 2 * Math.PI * i / n)];
+  const P = sides.map((_, i) => pt(i, r)), fx = v => Math.round(v * 10) / 10;
+  let lab = '';
+  sides.forEach((v, i) => {
+    const mid = pt(i + .5, r * Math.cos(Math.PI / n) + 24);
+    lab += `<text x="${fx(mid[0])}" y="${fx(mid[1] + 5)}">${v}${unit ? ' ' + unit : ''}</text>`;
+  });
+  const body = `<path class="vpo" d="M${P.map(p => fx(p[0]) + ' ' + fx(p[1])).join('L')}z"/>${lab}`;
+  return `<svg class="viz viz-poly" viewBox="0 0 260 200" style="--vw:260" role="img" aria-label="shape with side lengths">${body}</svg>`;
+}
+
+// geo 1: perimeter of rectangles (two sides given) and other polygons (every side given)
+function ffGeo1() {
+  const unit = pick(['cm', 'm', 'in', 'ft']), U = FF_UNIT[unit];
+  if (rnd() < .4) {
+    let w = R(1, 20), h = R(1, 20);
+    if (w == h) h = h == 20 ? 19 : h + 1;
+    return {kind: 'num', html: `${VIZ.rectSides(w, h, {w, h}, {unit})}<div class="sub">Find the perimeter of the rectangle.</div><div class="eq">${SLOT} ${unit}</div>`,
+      say: `A rectangle is ${w} ${U} long and ${h} ${U} wide. What is the perimeter?`, ans: String(2 * (w + h)),
+      hint: {k: 'html', html: `${VIZ.rectSides(w, h, {w, h}, {unit, all: true})}<div>A rectangle has two pairs of equal sides. Add all 4 sides: ${w} + ${h} + ${w} + ${h}.</div>`,
+        w: `Add all 4 sides: ${w} plus ${h} plus ${w} plus ${h}.`}, label: `geo1 rect ${w}x${h} ${unit}`};
+  }
+  const n = R(3, 6), name = ['', '', '', 'triangle', 'shape with 4 sides', 'pentagon', 'hexagon'][n];
+  let s;
+  do s = Array.from({length: n}, () => R(1, 20)); while (n == 3 && (s[0] + s[1] <= s[2] || s[0] + s[2] <= s[1] || s[1] + s[2] <= s[0]));
+  const sum = s.reduce((x, y) => x + y, 0);
+  return {kind: 'num', html: `${ffPoly(s, unit)}<div class="sub">Find the perimeter of the ${name}.</div><div class="eq">${SLOT} ${unit}</div>`,
+    say: `A ${name} has sides of ${s.join(', ')} ${U}. What is the perimeter?`, ans: String(sum),
+    hint: {k: 'text', s: `The perimeter is the distance all the way around. Add every side: ${s.join(' + ')}.`}, label: `geo1 ${n} sides ${s.join(',')} ${unit}`};
+}
+
+// geo 2: area of rectangles: count the squares of a grid (to 6 by 8), or length times width with labels (to 12 by 12)
+function ffGeo2() {
+  if (rnd() < .4) {
+    const r = R(2, 6), c = R(2, 8);
+    return {kind: 'num', html: `${VIZ.areaGrid(c, r)}<div class="sub">Each square is 1 square unit. What is the area?</div><div class="eq">${SLOT} square units</div>`,
+      say: `The rectangle is covered with ${r} rows of ${c} squares. Each square is 1 square unit. What is the area?`, ans: String(r * c),
+      hint: {k: 'text', s: `Count one row: ${c} squares. There are ${r} rows. Count by ${c}s, or multiply ${r} × ${c}.`}, label: `geo2 grid ${c}x${r}`};
+  }
+  const l = R(2, 12), w = R(2, 12), unit = pick(['cm', 'm', 'in', 'ft']);
+  return {kind: 'num', html: `${VIZ.rectSides(l, w, {w: l, h: w}, {unit})}<div class="sub">What is the area of the rectangle?</div><div class="eq">${SLOT} ${FF_SQ[unit]}</div>`,
+    say: `A rectangle is ${l} ${FF_UNIT[unit]} long and ${w} ${FF_UNIT[unit]} wide. What is its area?`, ans: String(l * w),
+    hint: {k: 'html', html: `${VIZ.areaGrid(l, w)}<div>${w} rows of ${l} squares. Area is length × width: ${l} × ${w}.</div>`, w: `${w} rows of ${l} squares. Multiply ${l} times ${w}.`},
+    label: `geo2 ${l}x${w} ${unit}`};
+}
+
+// shape 5: families of polygons (quadrilaterals, rhombuses), right angles, and sides of pentagons, hexagons, octagons
+function ffShape5() {
+  const form = pick(['quad', 'notquad', 'notrhom', 'right', 'sides', 'name', 'whichn']);
+  const QUAD = ['square', 'rectangle', 'rhombus', 'trapezoid'], NONQ = ['triangle', 'pentagon', 'hexagon', 'octagon'];
+  const pics = (names, ask, ans, hint, label) => ({kind: 'choice', cls: 'pics', html: `<div class="sub">${ask}</div>`, say: ask, ans,
+    choices: shuffle(names.map(x => ({v: x, l: VIZ.shape(x), h: true}))), hint: {k: 'text', s: hint}, label});
+  if (form == 'quad') {
+    const a = pick(QUAD), o = shuffle(NONQ).slice(0, 2);
+    return pics([a, ...o], 'Which shape is a quadrilateral?', a, 'A quadrilateral has 4 sides. Count the sides of each shape.', `shape5 quad ${[a, ...o].join(' ')}`);
+  }
+  if (form == 'notquad') {
+    const a = pick(NONQ), o = shuffle(QUAD).slice(0, 2);
+    return pics([a, ...o], 'Which shape is NOT a quadrilateral?', a, 'A quadrilateral has 4 sides. Find the shape that does not have 4 sides.', `shape5 notquad ${[a, ...o].join(' ')}`);
+  }
+  if (form == 'notrhom') {
+    const a = pick(['rectangle', 'trapezoid', 'triangle', 'pentagon', 'hexagon']);
+    return pics([a, 'rhombus', 'square'], 'Which shape is NOT a rhombus?', a, 'A rhombus has 4 sides that are all the same length. A square does too.', `shape5 notrhom ${a}`);
+  }
+  if (form == 'whichn') {
+    const a = pick(['pentagon', 'hexagon', 'octagon']), o = shuffle(['pentagon', 'hexagon', 'octagon', 'triangle'].filter(x => x != a)).slice(0, 2);
+    const art = a == 'octagon' ? 'an' : 'a', sd = {pentagon: 5, hexagon: 6, octagon: 8}[a];
+    return pics([a, ...o], `Which shape is ${art} ${a}?`, a, `${art == 'an' ? 'An' : 'A'} ${a} has ${sd} sides. Count the sides of each shape.`, `shape5 which ${a} ${[a, ...o].join(' ')}`);
+  }
+  if (form == 'right') {
+    const name = pick(['square', 'rectangle', 'square', 'rectangle', 'rhombus', 'triangle', 'trapezoid', 'hexagon']);
+    const ans = name == 'square' || name == 'rectangle' ? 4 : 0;
+    return {kind: 'num', html: `${VIZ.shape(name)}<div class="sub">How many right angles does it have?</div>${SLOT}`,
+      say: `How many right angles does this ${name} have?`, ans: String(ans), label: `shape5 right angles ${name}`,
+      hint: {k: 'text', s: 'A right angle is a square corner, like the corner of a book. Check each corner of the shape.'}};
+  }
+  if (form == 'sides') {
+    const name = pick(['pentagon', 'hexagon', 'octagon']), n = {pentagon: 5, hexagon: 6, octagon: 8}[name];
+    return {kind: 'num', html: `${VIZ.shape(name)}<div class="sub">How many sides does it have?</div>${SLOT}`, say: 'How many sides does this shape have?',
+      ans: String(n), label: `shape5 sides ${name}`,
+      hint: {k: 'html', html: `${VIZ.shape(name, {dots: true})}<div>Each dot is a corner. A shape has as many sides as corners.</div>`, w: 'Each dot is a corner. A shape has as many sides as corners.'}};
+  }
+  const name = pick(['pentagon', 'hexagon', 'octagon']), names = ['pentagon', 'hexagon', 'octagon', 'quadrilateral'];
+  return {kind: 'choice', html: `${VIZ.shape(name)}<div class="sub">What is this shape called?</div>`, say: 'What is this shape called?', ans: name,
+    choices: shuffle(names.map(x => ({v: x, l: x[0].toUpperCase() + x.slice(1)}))),
+    hint: {k: 'text', s: 'Count the sides. Quadrilateral 4, pentagon 5, hexagon 6, octagon 8.'}, label: `shape5 name ${name}`};
+}
+
+// data 3: scaled bar graph or picture graph (scale 2, 5 or 10; half symbols for scales 2 and 10): read, compare, total
+const FF_DATA = [['Favorite fruit', ['Apples', 'Pears', 'Plums', 'Grapes']], ['Favorite pets', ['Cats', 'Dogs', 'Fish', 'Birds']],
+  ['Favorite sports', ['Soccer', 'Tennis', 'Swim', 'Bike']], ['Favorite colors', ['Red', 'Blue', 'Green', 'Purple']]];
+function ffData3() {
+  const [title, pool] = pick(FF_DATA), names = shuffle(pool), sc = pick([2, 5, 10]), bar = coin();
+  const half = !bar && sc != 5, units = shuffle(half ? [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] : [1, 2, 3, 4, 5, 6, 7, 8]).slice(0, 4);
+  const vals = bar ? shuffle([1, 2, 3, 4, 5]).slice(0, 4).map(k => k * sc) : units.map(u => half ? u * sc / 2 : u * sc);
+  const g = `<div class="sub"><b>${esc(title)}</b></div>` + (bar ? VIZ.barGraph(names.map((x, i) => [x, vals[i]]), sc)
+    : VIZ.pictograph(names.map((x, i) => [x, vals[i]]), {per: sc, key: `${sc} children`}));
+  const hint = bar ? `Each line on the side goes up by ${sc}. Find where the top of the bar reaches.`
+    : `Look at the key: each circle stands for ${sc} children${half ? `, and a half circle stands for ${sc / 2}` : ''}. Count the circles, then count by ${sc}s.`;
+  const form = pick(['read', 'more', 'total2', 'all']), i = R(0, 3), j = (i + R(1, 3)) % 4, lc = k => names[k].toLowerCase();
+  let ask, ans, tag;
+  if (form == 'read') {ask = `How many children chose ${lc(i)}?`; ans = vals[i]; tag = `read ${i + 1}`}
+  else if (form == 'more') {
+    const [hi, lo] = vals[i] > vals[j] ? [i, j] : [j, i];
+    ask = `How many more children chose ${lc(hi)} than ${lc(lo)}?`; ans = vals[hi] - vals[lo]; tag = `more ${hi + 1} ${lo + 1}`;
+  } else if (form == 'total2') {ask = `How many children chose ${lc(i)} and ${lc(j)} in all?`; ans = vals[i] + vals[j]; tag = `total ${i + 1} ${j + 1}`}
+  else {ask = 'How many children voted in all?'; ans = vals.reduce((x, y) => x + y, 0); tag = 'all'}
+  return {kind: 'num', html: `${g}<div class="sub">${ask}</div>${SLOT}`, say: ask, ans: String(ans), hint: {k: 'text', s: hint},
+    label: `data3 ${bar ? 'bar' : 'pic'} ${sc} ${tag}: ${vals.join(',')}`};
+}
+
+// meas 4: ruler to the half or quarter inch, or a dial (g, kg) or jug (mL, L) with marks to count
+function ffMeasRuler() {
+  const quarter = coin(), steps = quarter ? 2 * R(2, 11) + 1 : 2 * R(2, 12);
+  const mk = q => { // q: length in quarter inches; "3 1/2", "2 1/4", "5"
+    const w = Math.floor(q / 4), r = q % 4;
+    if (!r) return {v: String(w), l: `${w} in`};
+    return {v: `${w} ${r == 2 ? '1/2' : r + '/4'}`, l: `${w} ${r == 2 ? fcFr(1, 2) : fcFr(r, 4)} in`};
+  };
+  const ks = quarter ? [1, 2, 3] : [2, 4, 6];
+  const bad = ffOthers(ks.flatMap(k => [steps + k, steps - k]).filter(q => q >= 4 && q <= 28), steps, 3);
+  const obj = coin() ? 'pencil' : 'bar', name = obj == 'pencil' ? 'pencil' : 'paper strip';
+  return {kind: 'choice', cls: 'ffc', html: `${VIZ.ruler(steps / 4, 'in', obj)}<div class="sub">How long is the ${name}?</div>`,
+    say: `How long is the ${name}? The ruler is in inches.`, ans: mk(steps).v,
+    choices: shuffle([steps, ...bad].map(q => ({...mk(q), h: true}))),
+    hint: {k: 'text', s: `Each inch is cut into ${quarter ? '4 small steps, called quarters' : '2 steps, called halves'}. Count the whole inches first. Then count the small steps after the last whole number.`},
+    label: `meas4 ruler ${steps}/4 in`};
+}
+// a round scale with a needle: ticks every `step`, a label on every tick (or every second tick when there are more than 6)
+function ffDial(val, max, step, unit) {
+  const n = max / step, fx = v => Math.round(v * 10) / 10, c = 70, at = (i, rr) => {
+    const a = (-135 + 270 * i / n) * Math.PI / 180;
+    return [fx(c + rr * Math.sin(a)), fx(c - rr * Math.cos(a))];
+  };
+  let ticks = '', labs = '';
+  for (let i = 0; i <= n; i++) {
+    const [x1, y1] = at(i, 53), [x2, y2] = at(i, 61), [lx, ly] = at(i, 41);
+    ticks += `M${x1} ${y1}L${x2} ${y2}`;
+    if (n <= 6 || i % 2 == 0) labs += `<text class="vcn" x="${lx}" y="${fx(ly + 4)}">${i * step}</text>`;
+  }
+  const [nx, ny] = at(val / step, 31);
+  return `<svg class="viz viz-ffd" viewBox="0 0 140 140" style="--vw:170" role="img" aria-label="scale with a needle"><circle class="vrim" cx="${c}" cy="${c}" r="66"/>`
+    + `<path class="vk" d="${ticks}"/>${labs}<text class="vcn" x="${c}" y="124">${unit}</text><path class="vmh" d="M${c} ${c}L${nx} ${ny}"/><circle class="vpin" cx="${c}" cy="${c}" r="4.5"/></svg>`;
+}
+// a measuring jug with water up to `val`
+function ffJug(val, max, step, unit) {
+  const n = max / step, fx = v => Math.round(v * 10) / 10, y = i => fx(150 - 130 * i / n);
+  let ticks = '', labs = '';
+  for (let i = 0; i <= n; i++) {
+    ticks += `M34 ${y(i)}h-8`;
+    if (n <= 6 || i % 2 == 0) labs += `<text class="vcn vta" x="22" y="${fx(y(i) + 5)}">${i * step}</text>`;
+  }
+  const top = y(val / step);
+  return `<svg class="viz viz-ffj" viewBox="0 0 130 170" style="--vw:150" role="img" aria-label="measuring jug"><rect class="v1" x="35" y="${top}" width="46" height="${fx(150 - top)}"/>`
+    + `<path class="vl" d="M34 18V150H82V18"/><path class="vk" d="${ticks}"/>${labs}<text class="vcn vts" x="88" y="40">${unit}</text></svg>`;
+}
+const FF_DIAL = [['g', 1000, 100], ['g', 500, 50], ['g', 500, 100], ['kg', 10, 1], ['kg', 5, 1], ['kg', 20, 2]];
+const FF_JUG = [['mL', 1000, 100], ['mL', 500, 50], ['mL', 500, 100], ['L', 5, 1], ['L', 10, 2], ['L', 10, 1]];
+function ffMeasScale(dial) {
+  const [unit, max, step] = pick(dial ? FF_DIAL : FF_JUG), n = max / step, K = R(1, n - 1), val = K * step;
+  const bad = ffOthers([K - 1, K + 1, K - 2, K + 2, K - 3, K + 3].filter(k => k >= 1 && k <= n), K, 3);
+  const ask = dial ? 'How heavy is the bag on the scale?' : 'How much water is in the jug?';
+  return {kind: 'choice', cls: 'ffc', html: `${dial ? ffDial(val, max, step, unit) : ffJug(val, max, step, unit)}<div class="sub">${ask}</div>`,
+    say: `${ask} Each little mark is ${step} ${unit}.`, ans: String(val),
+    choices: shuffle([K, ...bad].map(k => ({v: String(k * step), l: `${k * step} ${unit}`}))),
+    hint: {k: 'text', s: dial ? `Each mark is ${step} ${unit}. Find the last number the needle has passed, then count the marks after it.`
+      : `Each mark is ${step} ${unit}. Find the top of the water and count the marks up from the bottom.`},
+    label: `meas4 ${dial ? 'scale' : 'jug'} ${val} ${unit}`};
+}
+function ffMeas4() {
+  const f = rnd();
+  return f < .5 ? ffMeasRuler() : ffMeasScale(f < .75);
+}
+
+// story 6: two steps with all four operations within 1,000
+function ffStory6() {
+  const me = S.name || 'Sam', n2 = pick([S.buddy, S.buddy, petN(), ...NAMES].filter(n => n && n !== me));
+  const th = pick(THINGS)[0], who = pick([me, n2]), other = who == me ? n2 : me;
+  const f = R(1, 5);
+  let t, ans, s, label;
+  if (f == 1) { // multiply, then add
+    const a = R(2, 9), b = coin() ? R(2, 9) : 10 * R(1, 9), c = R(5, 99);
+    t = `${who} has ${a} bags with ${b} ${th} in each bag. ${other} gives ${who} ${c} more ${th}. How many ${th} does ${who} have now?`;
+    ans = a * b + c; s = `Step 1: ${a} × ${b}. Step 2: add ${c}.`; label = `story6 ${a} × ${b} + ${c}`;
+  } else if (f == 2) { // multiply, then take away
+    const a = R(2, 9), b = coin() ? R(3, 9) : 10 * R(2, 9), c = R(3, Math.min(99, a * b - 1));
+    t = `A shop has ${a} boxes with ${b} ${th} in each box. It sells ${c} ${th}. How many ${th} are left?`;
+    ans = a * b - c; s = `Step 1: ${a} × ${b}. Step 2: take away ${c}.`; label = `story6 ${a} × ${b} − ${c}`;
+  } else if (f == 3) { // add, then share
+    const d = R(2, 9), q = R(2, 10), total = d * q, a = R(1, total - 1), b = total - a;
+    t = `${who} has ${a} ${th}. ${other} gives ${who} ${b} more. Then ${who} shares them equally among ${d} friends. How many ${th} does each friend get?`;
+    ans = q; s = `Step 1: add ${a} + ${b}. Step 2: share the total into ${d} equal groups.`; label = `story6 (${a} + ${b}) ÷ ${d}`;
+  } else if (f == 4) { // divide, then take away
+    const d = R(2, 9), q = R(4, 12), g = R(1, q - 1);
+    t = `${who} packs ${d * q} ${th}, ${d} in each bag. Then ${who} gives away ${g} bags. How many bags are left?`;
+    ans = q - g; s = `Step 1: ${d * q} ÷ ${d}. Step 2: take away ${g}.`; label = `story6 ${d * q} ÷ ${d} − ${g}`;
+  } else { // take away, then multiply
+    const n = R(12, 60), k = R(2, n - 6), m = R(2, 9);
+    t = `${who} has ${n} ${th}, but ${k} are too small to sell. ${who} sells the rest for ${m} cents each. How many cents does ${who} get?`;
+    ans = (n - k) * m; s = `Step 1: ${n} − ${k}. Step 2: multiply by ${m}.`; label = `story6 (${n} − ${k}) × ${m}`;
+  }
+  return {kind: 'num', html: `<p class="story">${words(t)}</p><div>${SLOT}</div>`, say: t, auto: true, ans: String(ans),
+    hint: {k: 'text', s: `Do one step at a time. ${s}`}, label};
+}

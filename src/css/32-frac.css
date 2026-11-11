@@ -3,3 +3,11 @@
 .fr .fn{border-bottom:.07em solid var(--ink);padding:0 .18em .04em}
 .fr .fd{padding:.04em .18em 0}
 .choices.wide .ch .viz{margin:0 auto}
+
+/* Fraction Forest (P2-07): two-column picture choices (clocks, ruler lengths, scales) and a row of two clocks. Tokens only. */
+.choices.ffc{grid-template-columns:repeat(2,1fr)}
+.choices.ffc .ch .viz{margin:0 auto}
+.ffrow{display:flex;justify-content:center;gap:var(--s-3);text-align:center;font-weight:700}
+.ffrow>div{min-width:0;flex:0 1 auto}
+.ffrow .viz{width:calc(var(--vw)*.78px);max-width:100%}
+.ffrow>div>div{font-size:.55em;margin-top:var(--s-1)}

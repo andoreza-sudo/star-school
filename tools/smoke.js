@@ -988,7 +988,7 @@ async function main() {
     {
       const fr6 = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
       const fp = fr6.page;
-      await fp.evaluate(() => { S.grade = 3; save(); });
+      await fp.evaluate(() => { S.grade = 3; S.unlockAll = true; save(); }); // P2-07 put twelve stops between these four
       const forest = await fp.evaluate(() => PATHS.math.worlds.findIndex(w => w.id === 'm_frac'));
       const openStop = async k => {
         await fp.evaluate(() => home());
@@ -996,14 +996,14 @@ async function main() {
         await fp.waitForSelector('.wchip.on');
         await fp.click(`.wchip[data-w="${forest}"]`);
         await fp.waitForSelector(`.wchip.on[data-w="${forest}"]`);
-        const n = await fp.evaluate(([w, k]) => WR.math[w][0] + k, [forest, k]);
+        const n = await fp.evaluate(k => NODES.math.findIndex(x => nid(x) === 'frac' + (k + 2)), k);
         await fp.click(`.node[data-n="${n}"]`);
         await fp.waitForSelector('#prompt');
       };
       await openStop(0);
       const world = await fp.evaluate(w => ({ id: PATHS.math.worlds[w].id, stops: WR.math[w][1] - WR.math[w][0] + 1,
         first: NODES.math[WR.math[w][0]].sk + NODES.math[WR.math[w][0]].lv }), forest);
-      if (world.id !== 'm_frac' || world.stops !== 5 || world.first !== 'frac2') fail('Fraction Forest map: ' + JSON.stringify(world));
+      if (world.id !== 'm_frac' || world.stops !== 17 || world.first !== 'frac2') fail('Fraction Forest map: ' + JSON.stringify(world));
       for (let k = 0; k < 4; k++) {
         if (k) await openStop(k);
         await fp.waitForSelector('#prompt');
@@ -1712,6 +1712,55 @@ async function main() {
       }
       if (bad10.length) fail('P4-10 question screen:\n  ' + bad10.join('\n  '));
       else step('P4-10: 12 kinds at 380x780, 600x960, 1024x600: targets 48 px (pad keys 56), no sideways scroll, no broken words, one dot per question; right and wrong feedback with badges and toasts; calm mode');
+    }
+
+    // P2-07 Fraction Forest, the other twelve stops, at 380x780: a 3rd grader plays round1 ... story6 in map order with real taps
+    //    (the four fraction stops are passed in the save, so each new stop opens as the one before it is passed). Nothing is wider
+    //    than the screen, number pad keys and choices are 48 px or more, the picture stops show a picture, and every stop saves
+    //    its stars. Then a forest that was finished before (four fraction stops + boss) shows NEW on all twelve, and the map
+    //    does not open on one of them (this child still has an older stop open).
+    {
+      const ff7 = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
+      const fq = ff7.page;
+      await fq.evaluate(() => { S.grade = 3; for (const id of ['frac2', 'frac3', 'frac4', 'frac5']) S.maps.math[id] = 3; save(); });
+      const forest = await fq.evaluate(() => PATHS.math.worlds.findIndex(w => w.id === 'm_frac'));
+      const stops = await fq.evaluate(w => PATHS.math.worlds[w].nodes.map(n => n[0] + n[1]), forest);
+      if (stops.length !== 16) fail('Fraction Forest should have 16 stops plus the boss: ' + stops.join(' '));
+      const fresh = stops.filter(s => !/^frac/.test(s));
+      const pics = new Set(['time5', 'geo1', 'geo2', 'data3', 'shape5', 'meas4']);
+      for (const id of fresh) {
+        await fq.evaluate(() => home());
+        await fq.click('.game[data-p="math"]');
+        await fq.waitForSelector('.wchip.on');
+        await fq.click(`.wchip[data-w="${forest}"]`);
+        await fq.waitForSelector(`.wchip.on[data-w="${forest}"]`);
+        const n = await fq.evaluate(id => NODES.math.findIndex(x => nid(x) === id), id);
+        await fq.click(`.node[data-n="${n}"]`);
+        await fq.waitForSelector('#prompt');
+        await fq.waitForTimeout(900); // the prompt pops in with a scale animation; sizes are measured once it has settled
+        const lay = await fq.evaluate(() => {
+          const sm = a => Math.min(...a.map(b => Math.min(b.offsetHeight, b.offsetWidth)));
+          return { sk: G.sk, lv: G.lv, w: document.documentElement.scrollWidth, art: !!document.querySelector('#prompt svg, .ch svg'),
+            keys: sm([...document.querySelectorAll('.k')]), ch: sm([...document.querySelectorAll('.ch')]) };
+        });
+        if (lay.sk + lay.lv !== id || lay.w > 380 || lay.keys < 48 || lay.ch < 48 || (pics.has(id) && !lay.art)) fail('Fraction Forest stop ' + id + ': ' + JSON.stringify(lay));
+        await playRound(fq, 'P2-07 ' + id, 10);
+        await fq.evaluate(() => { G.dead = true; });
+      }
+      const got = await fq.evaluate(ids => ids.map(id => S.maps.math[id] || 0), stops);
+      if (got.some(s => s < 1)) fail('Fraction Forest stars not saved: ' + JSON.stringify(got));
+      // a forest finished before these stops existed: the twelve new stops are NEW and the map does not open on them
+      const nw = await fq.evaluate(([w, ids]) => {
+        for (const id of ids) if (!/^frac/.test(id)) delete S.maps.math[id];
+        S.maps.math.boss_m_frac = 3; save();
+        pathMap('math', w);
+        return { tags: document.querySelectorAll('.nnew').length, cur: nid(NODES.math[curNode('math')]) };
+      }, [forest, stops]);
+      if (nw.tags !== 12 || fresh.includes(nw.cur)) fail('finished forest: NEW tags ' + JSON.stringify(nw));
+      else step('P2-07: Fraction Forest 16 stops; the 12 new stops played with taps (48 px targets, pictures, stars saved); 12 NEW tags on a finished forest');
+      network.push(...ff7.network);
+      for (const e of ff7.errors) fail(e);
+      await ff7.ctx.close();
     }
 
     for (const e of errors) fail(e);
