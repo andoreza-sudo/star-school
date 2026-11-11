@@ -429,6 +429,8 @@ const SCREENS = {
   'story-closed': { run: compShot('comp', 3, 'g2f05', 3, 'closed') },
   // ---- P2-22 vocabulary A: one question per level (a fixed seed; level 1 and 2 pick one with a picture); vocab-hint opens Help ----
   ...Object.fromEntries([1, 2, 3, 4, 5].map(lv => ['vocab-' + lv, { run: vocabShot(lv) }])),
+  // P2-23 vocabulary B: levels 6-10 (no pictures; level 7 shows the bold word)
+  ...Object.fromEntries([6, 7, 8, 9, 10].map(lv => ['vocab-' + lv, { run: vocabShot(lv) }])),
   'vocab-nopic': { run: vocabShot(1, false, false) },
   'vocab-hint': { run: vocabShot(3, true) },
   // P2-20/21 grammar: one seeded question of each level 1-9 in a one-question round (level 1 tap-a-word is 'gram-1b'); 'gram-hint' opens a hint

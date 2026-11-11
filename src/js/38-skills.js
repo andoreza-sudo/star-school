@@ -50,6 +50,6 @@ const SK={
  spell:{t:'Spelling',e:'✏️',area:'read',max:7,gen:lv=>genSpell(lv)}, // P2-19: genSpell and its words are in src/data/d-spell.js
  // P2-20 and P2-21: grammar levels 1-9 (bank items in src/data/d-gram.js)
  gram:{t:'Grammar',e:'🔤',area:'read',max:9,bank:'gram',gen:lv=>genBank('gram',lv)},
- // P2-22 Vocabulary A (levels 1-5; P2-23 adds 6-10): items are BANK.vocab in src/data/d-vocab.js
- vocab:{t:'Vocabulary',e:'📚',area:'read',max:5,bank:'vocab',gen:lv=>genBank('vocab',lv)}};
+ // P2-22 Vocabulary A (levels 1-5) and P2-23 Vocabulary B (6-10): items are BANK.vocab in src/data/d-vocab.js
+ vocab:{t:'Vocabulary',e:'📚',area:'read',max:10,bank:'vocab',gen:lv=>genBank('vocab',lv)}};
 

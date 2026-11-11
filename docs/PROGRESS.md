@@ -6,7 +6,9 @@ The running record of what has shipped. Newest entry first. Every chunk adds one
 
 **Next up:** P2-08, P2-23, P2-26 to P2-29
 
-**Current version:** v82
+**Next up:** P2-08, P2-26 to P2-29
+
+**Current version:** v83
 
 ## Chunk status
 
@@ -63,6 +65,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P2-25 v80
 - P2-24 v81
 - P2-21 v82
+- P2-23 v83
 
 ## Handoff notes
 
@@ -71,6 +74,9 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 ## Ideas and issues
 
 - (P4-18) The drawn map costs about 1.4x the old one (stop icons through the sprite `<use>`, drawn boss art, star SVGs, labels on pills): best-of-40 unthrottled draw of a 16-world map went from about 3.2 ms to 4.5 ms; about 32 ms at 6x throttle on a quiet machine, under the 50 ms limit. The smoke map check now takes the second fastest of its 7 draws instead of the median, because with many checks in parallel the median measured the machine's load (it failed at 50-68 ms while the old build measured 25-56 ms beside it). If the map needs to be lighter on real tablets: inline the stop icons, or draw the neighbour worlds' stops without icons.
+- (P2-23) Level 10 'order by strength' (CURRICULUM E-vocab) is a choice item ("Which word means the hottest?", four words from one set, the strongest or the weakest) because `BANKF.order` still has no builder. When one is registered, the 14 sets in `VOC_L10S` can become tile-order items.
+- (P2-23) A word between `*stars*` in a bank prompt now prints bold (`bankTxt` in 37-bank.js; `bankSay` and the label strip the stars). Level 7 context clues use it for the hard word. The label is now cut to stay under 60 letters in all (the question part shrinks, the answer part is cut at 24), which does not change any label that was already short enough.
+- (P2-23) Homophone items (level 6) always offer the sound-alike word plus two words that do not fit, so a child cannot pass by sound alone. Level 6 has 95 items about 45 sound-alike sets; level 8 mixes 26 idiom meanings with 33 which-kind items (simile, metaphor, personification, idiom); level 9 asks 24 roots and 38 words built from roots; level 10 has 36 analogies and 28 strongest/weakest items.
 - (P2-22) The bank forms `order`, `match`, `multi` have no builder (`BANKF.*` is never registered), so level 3 compound words use choice items ("Which two words make rainbow?", "What do sun and flower make together?") instead of tile building. The first chunk that registers `BANKF.order` can add tile items to `BANK.vocab`.
 - (P2-22) New optional bank field `em: [artName, emoji]` (a picture above the prompt through `picFor`; 37-bank.js, validated by `bankItemProblems`, class `.bem` in 38-bank.css). P2-23 and later content can use it. No skill icon was added to `ICO_SK` for `vocab` (it shows the reading-path icon); P4 icon work could add a `skill-vocab`.
 - (P2-22) Level counts are 56, 52, 68, 63, 82 items; every level has more than the 40 CURRICULUM asks. smoke.js ran 4 full times on this branch with other agents' smokes running at the same time, slow but green.
@@ -270,6 +276,16 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-11) Icons wanted from P4-03: `balloon` (Bonus game, today `gamepad`), `sparkle` / `confetti`, `unlock` (open padlock for "Next stop unlocked", today `map`), `zap` (a lightning with a spark for boss hits; today `bolt`), `sticker` (single sticker for the prize row), `medal` (the prize rosette as an icon), `heart-half` (boss life bar), `chest` (the treasure chest at icon size, e.g. for the round track where renderQ shows the gift emoji).
 
 ## Log
+
+### P2-23 Vocabulary B, levels 6-10 (v83, 2026-11-11, Claude)
+- What changed: `src/data/d-vocab.js` now also builds levels 6-10 (`vocBuildB`, plain text lists, no rnd), every item with four choices, a topic and a hint that teaches without naming the answer: 6 homophones, cloze (95 items), 7 context clues with the hard word in bold (47), 8 idioms and kinds of figurative language (59), 9 Greek and Latin roots, root meaning and word meaning (62), 10 analogies, and strongest or weakest word of a set (64). `SK.vocab.max` is 10. Stops by world id: `vocab 6`, `7`, `8` right after `spell 5` in Dragon Library (`r_library`), `vocab 9` after `spell 6` in Author Island (`r_island`), `vocab 10` after `spell 7` in Legend Lab (`r_legend`). gram 6 to 9 (P2-21) slot between them when merged (CURRICULUM 2.2 order); nothing depends on the order.
+- Existing files: `37-bank.js` (bold `*word*` in prompts, label kept under 60 letters), `38-skills.js`, `42-paths.js`, `tools/build.py` (VER v83, provisional), tools (test, smoke, shots).
+- Expectations changed: test.js "vocabulary P2-22" and the smoke P2-22 block asserted the exact list of all vocab stops and `SK.vocab.max===5` and that no item lies outside levels 1-5; they now look at levels 1-5 only (the lists they check are unchanged).
+- Save safety: stars are keyed by stop id (`vocab6`..`vocab10`), all new. Test "vocabulary P2-23" compares the reading path without the five stops against today's over 8 saves (fresh, midway, maxed, both legacy maps, tricky, all-old-passed, library-mid, worlds-done) x 9 grades: no star moves, nothing re-locks, a passed stop is never locked, new stops in finished worlds are NEW, open and never the current stop. The order check keeps only spell and vocab stops, so gram stops from P2-21 do not break it.
+- Tests: test.js check "vocabulary P2-23" (bankProblems min 40, exact counts, four unique choices, hints do not hold the answer, sound-alike words agree both ways, at least 30 groups, one blank per cloze, bold word in the prompt of level 7, simile only where there is like or as, all four kinds on every which-kind item, roots examples hold the root, shade sets match the strongest and weakest items, 3,000 seeded questions per level = 15,000 with kindProblems zero, unique labels under 60, every item drawn, reproducible, rebuild identical, stops, fixtures). smoke.js: one `// P2-23` block at 380x780 (the longest prompt and choices of each level 6-10: four choices of 48 px or more, no sideways scroll, nothing cut off; hint; a 10/10 round of context clues saves stars; no other stop moved).
+- Screenshots checked (380x780): vocab-6 to vocab-10 (`node tools/shots.js vocab-6 vocab-7 vocab-8 vocab-9 vocab-10`).
+- Checklist 7.1: [x] chunk files only [x] VER v83 (provisional) [x] build [x] test.js [x] smoke.js [x] screenshots [x] midway fixture (smoke) [x] no network [x] no new emoji or hex [x] PROGRESS entry [x] one commit (not pushed).
+- Merge: built on a parallel branch, renumbered v82 -> v83 at merge.
 
 ### P2-21 Grammar B, levels 6-9 (v82, 2026-11-11, Claude)
 - What changed: `BANK.gram` in `src/data/d-gram.js` grows by levels 6-9 (219 items, same `GR(...)` pattern, every item has a topic, a hint that teaches the method without the answer, one right answer): 6 pronouns, possessives and look-alike words (64: its/it's, their/there/they're, your/you're, to/too/two, whose/who's, pronoun matches noun, possessives), 7 commas and quotation marks (41, all wide: series, dates and places, introductory words and names, comma before and/but/so, dialogue), 8 more parts of speech (57: tap the adverb, preposition, conjunction or interjection, adverb cloze, name the word type, has/have/had perfect tenses), 9 sentence craft (57: complete vs fragment, run-on fixes, combine two sentences, I/me, he/him, we/us, who/whom, vague pronouns). `SK.gram.max` is 9. Labels are the question plus the answer and must be under 60 characters, so level 7 and 9 questions are short ("Which is correct?") and the sentences are the answers.

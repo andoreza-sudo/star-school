@@ -1816,7 +1816,7 @@ async function main() {
       const vp = va.page;
       await vp.waitForSelector('.game[data-p="read"]');
       const vi = await vp.evaluate(() => {
-        const st = NODES.read.filter(n => n.sk == 'vocab').map(n => n.lv + '@' + n.wid).join(' ');
+        const st = NODES.read.filter(n => n.sk == 'vocab' && n.lv <= 5).map(n => n.lv + '@' + n.wid).join(' ');
         const i = NODES.read.findIndex(n => n.sk == 'vocab' && n.lv == 1);
         const before = JSON.stringify(S.maps.read);
         start('read', i);
@@ -2108,6 +2108,57 @@ async function main() {
       network.push(...gb.network);
       for (const e of gb.errors) fail(e);
       await gb.ctx.close();
+    }
+
+    // P2-23 vocabulary B: five more stops (Dragon Library, Author Island, Legend Lab); each level's longest prompt and longest choices fit at
+    //       380x780 (choices 48 px or more, no sideways scroll, nothing cut off); a 10/10 round of context clues saves stars
+    {
+      const vb = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
+      const bp = vb.page;
+      await bp.waitForSelector('.game[data-p="read"]');
+      const bi = await bp.evaluate(() => {
+        const st = NODES.read.filter(n => n.sk == 'vocab' && n.lv >= 6).map(n => n.lv + '@' + n.wid).join(' ');
+        const i = NODES.read.findIndex(n => n.sk == 'vocab' && n.lv == 7);
+        const before = JSON.stringify(S.maps.read);
+        start('read', i);
+        return { st, i, before };
+      });
+      if (bi.st !== '6@r_library 7@r_library 8@r_library 9@r_island 10@r_legend') fail('vocabulary B stops on the reading map: ' + bi.st);
+      await bp.waitForSelector('#prompt');
+      const looks = [];
+      for (const lv of [6, 7, 8, 9, 10]) {
+        const rs = await bp.evaluate(lv => {
+          const L = BANK.vocab.map((it, i) => [it, i]).filter(([it]) => it.lv == lv);
+          const pick = f => L.reduce((a, b) => (f(b[0]) > f(a[0]) ? b : a))[1];
+          const out = [];
+          for (const bi of [...new Set([pick(it => it.q.length), pick(it => Math.max(...[it.a, ...it.d].map(x => x.length))), pick(it => it.a.length + it.d.join('').length)])]) {
+            const q = genBank('vocab', lv, { bi, s: 3 });
+            G.q = q; q.sk = 'vocab'; q.lv = lv; renderQ();
+            const chs = [...document.querySelectorAll('.ch')], pr = document.querySelector('#prompt');
+            out.push({ lv, q: q.label, n: chs.length, minH: Math.min(...chs.map(c => c.offsetHeight)), over: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+              cut: chs.some(c => c.scrollWidth > c.clientWidth + 1), text: pr.textContent.length > 8 });
+          }
+          return out;
+        }, lv);
+        for (const r of rs) if (r.n !== 4 || r.minH < 48 || r.over > 0 || r.cut || !r.text) looks.push(JSON.stringify(r));
+      }
+      if (looks.length) fail('vocabulary B layout at 380: ' + looks.join(' '));
+      else step('vocabulary B: levels 6-10 at 380x780: four choices, 48 px or more, no sideways scroll, no cut-off words');
+      await bp.evaluate(i => { G.dead = true; start('read', i); }, bi.i);
+      await bp.waitForSelector('#prompt');
+      await bp.click('#hb');
+      const hint = await bp.evaluate(() => document.querySelector('#hint').textContent);
+      if (!/bold word/.test(hint)) fail('vocabulary B hint: ' + hint); else step('vocabulary B: hint shows');
+      await playRound(bp, 'P2-23 vocabulary 7');
+      const after = await bp.evaluate(i => ({ st: getSt('read', i), maps: JSON.stringify(S.maps.read) }), bi.i);
+      const was = JSON.parse(bi.before), now = JSON.parse(after.maps);
+      const moved = Object.keys(was).filter(k => now[k] !== was[k]);
+      if (after.st < 1 || moved.length) fail('vocabulary B stars: ' + JSON.stringify({ st: after.st, moved }));
+      else step(`vocabulary B: stop earned ${after.st} stars, no other stop changed`);
+      await bp.evaluate(() => { G.dead = true; home(); });
+      network.push(...vb.network);
+      for (const e of vb.errors) fail(e);
+      await vb.ctx.close();
     }
 
     for (const e of errors) fail(e);
