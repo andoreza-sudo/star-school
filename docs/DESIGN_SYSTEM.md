@@ -155,7 +155,7 @@ toasts, a thin gloss (`--hi`) on coloured fills, generous corners. Subject colou
 | Meter | `.gauge` > `i` with `--v` (0..1) (+ `grow`, `good`, `lg`, subject); `UI.meter(v, {kind, p, label})` | progress, pet growth, done | 16 px (24 `lg`); the fill moves by transform |
 | Round dots | `.dots` > `i` (`.done`, `.try`, `.cur`); `UI.dots(total, cur, res)` | | Fits 10 on a phone top bar; past about 12 questions use a gauge |
 | Star rating | `UI.stars(n, of, size, {arc})` -> `.rate` > `.rs(.on)` | 0-3, `arc` lifts the middle star | Filled `--star` on a `--star-shade` ledge, empty `--line` |
-| Toast | `UI.toast(text, kind, ms)` -> `#toast.toast` | `good`, `try`, `info` | Top-centre pill with an icon disc. `fb()` is unchanged until P4-10 switches to it |
+| Toast | `UI.toast(text, kind, ms, icon)` -> `#toast.toast` | `good`, `try`, `info`, `streak` | Top-centre pill with an icon disc (on the question screen it sits just under the top bar). Since P4-10 `fb(text, cls, ms)` shows it: `warn`/`bad` try, `again` try with the replay arrow, `info`/`pl-fb` info, `streak` flame, `zap` bolt, anything else good |
 | Speech bubble | `.speech` (+ `r`, `l`); `UI.speech(text, side)` | tail bottom-left, bottom-right, left | |
 | Sheet / modal | `UI.sheet(html, {stay, onClose})` -> `.sheet-bg` > `.sheet` (`.sh-art`, `h2`, `p`, `.acts`) | slides up (portrait), centred (landscape) | Lives inside `#app`, so `view()` removes it. One primary action |
 | Hint panel | `.hintp` > `.hb` + `.hx`; `UI.hint(html, {steps, at, next})` | text, picture (`.hpic`), steps (`.hsteps` li `.on`/`.later`, "Next step" button `#hintnext`) | Amber tint, bulb icon |
@@ -381,7 +381,7 @@ Order matters: tokens, then icons, then components, then screens from most seen 
 | 1 | Setup and onboarding | P4-12 | Welcome with the app logo, name, pet picker with SVG pets, grade picker; spoken guidance; 3 steps with progress dots |
 | 2 | Home | P4-08 | Hero card with SVG pet and scene, stat chips (stars, coins, streak, game time), path cards per subject with icons and meters, a "Today" row (review due, fact sprint, puzzle of the day), secondary actions as an icon row, version in the footer |
 | 3 | Map | P4-09 | Scenes, new nodes, world picker (section 7) |
-| 4 | Question screen | P4-10 | Clean top bar (back, progress dots, streak chip), prompt area on a white card, new keypad and choices, hint panel, pet in a corner bubble, amber/green feedback. Portrait and landscape layouts |
+| 4 | Question screen | P4-10 | Clean top bar (back, progress dots, streak chip), prompt area on a white card, new keypad and choices, hint panel, pet in a corner bubble, amber/green feedback. Portrait and landscape layouts. Shipped (P4-10): the dots form a track the drawn pet walks along to a gift, with its speech bubble; streak (flame) and star chips; the card has a subject-colour top edge; kinds use `.key`, `.choice`, `.piece`, `.socket`; right and wrong carry badges and a toast; styles in `src/css/42-question.css` |
 | 5 | Rewards: round complete, chest, boss intro and fight, test out | P4-11 | Star pop sequence, "why you earned this game time" list with icons, next-step primary button, SVG bosses |
 | 6 | Grown-ups and Pet Care | P4-12 | Pet Care gets the SVG pet with moods and icon meters. Grown-ups: plain, adult layout: sections as cards, switches, segmented controls, readable tables. Uses `--fs-2`, no cartoon styling |
 | 7 | Pet Shop, Stickers | P4-07 | SVG wearables, item cards with price chips, die-cut stickers |
