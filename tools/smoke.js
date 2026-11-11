@@ -6796,7 +6796,7 @@ async function main() {
       await cp.waitForSelector('.bctx.dlg .dl-b');
       await vwait(cp, 800);
       const l2 = await look();
-      const p2 = await cp.evaluate(() => ({ lv: G.lv, cls: document.querySelector('.choices').className, pics: [...document.querySelectorAll('.ch')].every(c => /\S/.test(c.innerHTML) && !/[a-z]{4}/.test(c.textContent.replace(/[A-ZÁÉÍÓÚ][a-záéíóú]+/g, ''))) }));
+      const p2 = await cp.evaluate(() => ({ lv: G.lv, cls: document.querySelector('.choices').className, pics: [...document.querySelectorAll('.ch')].every(c => /\S/.test(c.innerHTML) && !/[a-z]{4}/.test(c.textContent.replace(/La maestra|[A-ZÁÉÍÓÚ][a-záéíóú]+/g, ''))) })); // a who answer is a face and the speaker's name ('La maestra' has a lower-case word)
       if (p2.lv !== 2 || !/pics/.test(p2.cls) || !p2.pics || l2.ch !== 3 || l2.chMin < 48 || l2.btnMin < 48 || l2.w > 380 || l2.chBottom > 780) fail('P2-35 level 2 layout: ' + JSON.stringify({ l2, p2 }));
       await shot('level2-pictures');
       // level 3 with no Spanish voice: no speak buttons, the lines are still there to read, the question can be answered
