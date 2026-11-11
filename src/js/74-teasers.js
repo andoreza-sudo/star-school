@@ -272,9 +272,7 @@ const BT = {
     actRound();
     const d = day(), stk = streakTick();
     d.r++;
-    let mission = false, sticker = null;
-    if (d.r >= 3 && !d.done) { d.done = true; mission = true; S.stars += 5; S.coins += 5; sticker = award(); }
-    return { mission, streak: stk.msg ? stk.count : 0, sticker };
+    return { mission: false, streak: stk.msg ? stk.count : 0, sticker: null }; // P5-08: missions are paid in finish() through MIS
   },
   /* A puzzle was solved. run: the saved run (S.bt.cur); res: {mistakes, hints, sec}. Pays everything, clears S.bt.cur, saves.
      Returns what the win card shows: {stars, first, improved, added (new stars paid), unlocked, sec (game time paid), capped, coins,
@@ -318,9 +316,10 @@ const BT = {
     const badges = BT.badgeCheck();
     try { ACT.add(today(), { sec: Math.min(res.sec | 0, 900), area: 'bt' }); } catch (e) {}
     const round = BT.round();
+    const mis = MIS.pay(MIS.done({ k: 'teaser' })); // P5-08
     delete BT.st().cur;
     save();
-    return { stars, first, improved, added, unlocked, sec, capped: sec < want, coins, daily, round, before, grew: stage(S.stars) > stage(before), badges };
+    return { stars, first, improved, added, unlocked, sec, capped: sec < want, coins, daily, round, mis, before, grew: stage(S.stars) > stage(before), badges };
   },
 
   /* ---------- the screen in play ---------- */
@@ -578,7 +577,7 @@ const BT = {
     const li = (ic, t) => `<li>${ico(ic, 18)}<span>${esc(t)}</span></li>`, ls = [];
     if (o.added) ls.push(li('star', `+${o.added} star${o.added > 1 ? 's' : ''}`));
     if (o.coins) ls.push(li('coin', `+${o.coins} coins for the Puzzle of the Day`));
-    if (o.round) ls.push(o.round.mission ? li('gift', 'Daily mission done! +5 coins') : li('check', 'That counts as a learning round'));
+    if (o.round) ls.push(li('check', 'That counts as a learning round'));
     if (o.round && o.round.streak) ls.push(li('flame', `${o.round.streak} days in a row!`));
     // P3-17: new badges pop in on the card, once (calm mode and reduced motion show them still)
     const nb = o.badges && o.badges.length ? `<div class="bt-nb" role="status">${o.badges.slice(0, 3).map(x => BT.medal(x, 56)).join('')}` +
@@ -587,7 +586,7 @@ const BT = {
       : `<span>Game time from puzzles is full for today</span>`;
     const card = GFX.endCard({ title: o.stars == 3 ? 'Perfect!' : 'Solved!', icon: 'puzzle', rec: false,
       extra: (note && note.length ? `<ul class="bt-sum">${note.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : '') + `<div class="bt-wst">${UI.stars(o.stars, 3, 44, { arc: true })}</div>${o.unlocked && !endless ? `<p class="bt-new">${UI.tag(next === 'E' ? 'Endless is open!' : 'New level open!', 'new', 'sparkle')}</p>` : ''}` +
-        (ls.length ? `<ul class="rw-pl bt-wl">${ls.join('')}</ul>` : '') + nb,
+        (ls.length ? `<ul class="rw-pl bt-wl">${ls.join('')}</ul>` : '') + (o.mis || '') + nb,
       earn: gt,
       btns: (next ? UI.btn(next === 'E' ? 'Endless' : 'Next level', { kind: 'primary', size: 'lg', wide: true, icon: 'go', id: 'btnext' }) : '') +
         `<div class="rw-two">${UI.btn('Again', { icon: 'replay', id: 'btagain' })}${UI.btn('Levels', { icon: 'puzzle', id: 'btlvls' })}</div>` });
