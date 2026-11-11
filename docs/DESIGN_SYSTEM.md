@@ -346,6 +346,25 @@ the file is the source of truth. Any authoring approach is fine as long as the o
 - World picker strip at the top: chips grouped by grade, current world highlighted.
 - Performance: only the selected world's nodes are in the DOM; the scene is one SVG with no animation except an optional drifting cloud (transform only).
 
+As built (P4-09, `src/js/43-scenes.js` `SCN`, data in `src/data/d-scenes.js`, CSS `src/css/47-scenes.css`, tokens `--sc-*`):
+- Every world band is a scene: a CSS gradient from its sky (two `--sc-*` tokens, the second at the horizon) to its ground, a ledge in
+  the ground's `-2` tone, and one SVG: sun (or moon and stars) top left where the light comes from, clouds, light rays (reef), a papel
+  picado garland (plaza, fiesta, repaso), 2 horizon ridges (hills, peaks, blocks for skylines, puffs, a cave ceiling hanging from the
+  top, the sea behind a beach), rolling ground (a soft crest every 200-260 px, every other layer a shade deeper, a light rim), the
+  world's landmark (clock tower, volcano, rocket, castle, fountain ...), props down the sides with small companions in front, and
+  ground marks (tufts, pebbles, sparkles, bubbles, sprinkles). 29 themes, 94 props (64 drawings and 30 hue variants), 35 worlds; worlds that
+  share a name share a theme, others change landmarks or props (Letter Meadow, Story Summit, La Casa).
+- Props use the object-art style of 6.5 (shade, base up-left, highlight, ink ground shadow at .1, tokens only) in a compact
+  language (`d-scenes.js` header). They are placed only where no stop (disc, ring, ledge), label, New tag, world title, Test out
+  banner, pet or trail is, so the map stays readable; stops are never on a prop.
+- Quiet: every scene token except the night skies keeps `--ink` at 7:1 and each path colour at 3:1 (stop rings), in tools/contrast.js.
+- Cheap: props are stamped into shared layers (one path per shape position and look, so all tree crowns of a scene are one path):
+  at most about 70 elements and 36 KB a scene; at most 24 props a scene; scenes are cached by what they depend on.
+- Trail: a worn path (ink rim at .1, pale cream bed) with stepping stones (grey shade, white-2 stone, white gloss) every 25 px, gold
+  stones up to the current stop ("the walked part"), and a little plank bridge with rails over each gap between two worlds.
+- No ids, gradients, filters, `<use>` or text inside the SVG; no animation (reduced motion and calm mode need nothing).
+- Review: `node tools/shots.js scenes` (every world, a sheet) and `scene-math`, `scene-read`, `scene-es`, `scene-disc`.
+
 ## 8. Motion and sound (chunk P4-17)
 
 ### 8.1 Motion

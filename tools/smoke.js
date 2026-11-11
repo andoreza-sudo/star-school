@@ -5826,6 +5826,74 @@ async function main() {
       else step(`P3-17: Home daily card -> played to a win (5 coins and game time once, badge revealed), Home and hub show it done, badges view at 380x780 and 1024x600, old work revealed once, the band-below offer after three exits, ${bars} play top bars show the whole name beside the timer; targets 48 px, no sideways scroll, no emoji chrome`);
     }
 
+    // P4-09: map and world scenes. Every world of every path picked in turn at 380x780 and 1024x600: each drawn world band holds its
+    // scene (one SVG the size of the band, aria-hidden, no taps), drawn behind the map: with the scenes made hit-testable for the
+    // check, the point at every stop's centre is the stop, at its label the label, at the title the title and at the Test out
+    // banner the banner; the trail has its stones, nothing scrolls sideways. (The draw time check is step 10.)
+    {
+      const bad = [];
+      let worlds = 0, stops = 0;
+      for (const [w, h] of [[380, 780], [1024, 600]]) {
+        const sc = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const ps = sc.page;
+        const paths = await ps.evaluate(() => Object.keys(PATHS).map(p => [p, PATHS[p].worlds.length]));
+        for (const [p, n] of paths) {
+          for (let wi = 0; wi < n; wi++) {
+            const r = await ps.evaluate(([p, wi]) => {
+              pathMap(p, wi);
+              const bad = [], m = document.querySelector('#map'), ms = document.querySelector('#ms');
+              const bands = [...m.querySelectorAll('.wband')], titles = [...m.querySelectorAll('.wtitle[data-w]')];
+              if (!bands.length || bands.length !== titles.length) bad.push(bands.length + ' bands for ' + titles.length + ' worlds');
+              for (const b of bands) {
+                const s = b.querySelector('svg.scn-art'), cs = getComputedStyle(b), br = b.getBoundingClientRect();
+                if (!s || !b.dataset.scene) { bad.push('band without a scene at ' + b.style.top); continue; }
+                if (b.getAttribute('aria-hidden') !== 'true' || cs.pointerEvents !== 'none') bad.push('band ' + b.dataset.scene + ' is not decoration only');
+                const sr = s.getBoundingClientRect();
+                if (Math.abs(sr.width - br.width) > 1 || Math.abs(sr.height - br.height) > 1 || Math.abs(sr.top - br.top) > 1) bad.push('scene ' + b.dataset.scene + ' is not the size of its band');
+                if (s.querySelectorAll('*').length > 75) bad.push('scene ' + b.dataset.scene + ' has ' + s.querySelectorAll('*').length + ' elements');
+              }
+              // every world title sits on its own band (the band starts 14 px above it)
+              for (const t of titles) if (!bands.some(b => Math.abs(parseFloat(b.style.top) - (parseFloat(t.style.top) - 14)) < 1)) bad.push('world ' + t.dataset.w + ' has no band');
+              const tr = m.querySelector('svg.mp-trail');
+              if (!tr || !tr.querySelector('.tr-st') || getComputedStyle(tr).pointerEvents !== 'none' && getComputedStyle(tr.querySelector('.tr-st')).pointerEvents !== 'none') bad.push('trail missing or tappable');
+              // make the scenes, the trail and the labels (none of them take taps) hit-testable, then check what is on top at each point
+              const st = document.createElement('style');
+              st.textContent = '.wband,.wband *,.mp-trail,.mp-trail *,.nlab,.nlab *,.nnew,.mappet,.mappet *{pointer-events:auto!important}';
+              document.head.appendChild(st);
+              const at = (el, what, ok) => {
+                el.scrollIntoView({ block: 'center' });
+                const r = el.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2;
+                if (y < 0 || y > innerHeight) return;
+                const e = document.elementFromPoint(x, y);
+                if (!e || e.closest('.wband') || e.closest('.mp-trail') || !ok(e)) bad.push(what + ' covered by ' + (e ? (e.closest('.wband') ? 'the scene' : e.closest('.mp-trail') ? 'the trail' : e.className.baseVal || e.className || e.tagName) : 'nothing'));
+              };
+              const picked = [...m.querySelectorAll('.node')].filter(b => NODES[p][+b.dataset.n].wi === wi);
+              for (const b of picked) {
+                at(b, 'stop ' + b.dataset.n, e => e.closest('.node') === b || !!e.closest('.nnew'));
+                const lab = [...m.querySelectorAll('.nlab')].find(l => l.style.left === b.style.left && parseFloat(l.style.top) === parseFloat(b.style.top) + 42);
+                if (lab) at(lab, 'label of stop ' + b.dataset.n, e => !!(e.closest('.nlab') || e.closest('.node') || e.closest('.mappet')));
+              }
+              const t = m.querySelector(`.wtitle[data-w="${wi}"]`);
+              if (t) at(t, 'title', e => !!e.closest('.wtitle'));
+              const to = m.querySelector(`.tobtn[data-w="${wi}"]`);
+              if (to) at(to, 'Test out banner', e => !!e.closest('.tobtn'));
+              st.remove();
+              if (document.documentElement.scrollWidth > document.documentElement.clientWidth + 1 || ms.scrollWidth > ms.clientWidth + 1) bad.push('sideways scroll');
+              return { bad, stops: picked.length };
+            }, [p, wi]);
+            worlds++;
+            stops += r.stops;
+            for (const x of r.bad) bad.push(`${p} world ${wi + 1} ${w}x${h}: ${x}`);
+          }
+        }
+        network.push(...sc.network);
+        for (const e of sc.errors) fail(e);
+        await sc.ctx.close();
+      }
+      if (bad.length) fail('P4-09:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step(`P4-09: ${worlds} world maps (every world of every path at 380x780 and 1024x600): every band has its scene behind the map, ${stops} stops, their labels, titles and Test out banners on top, trail stones, no sideways scroll`);
+    }
+
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');
   } catch (e) {

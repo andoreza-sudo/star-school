@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** P2-34, P2-35, P3-12, P3-15, P4-07, P4-09, P4-12
+**Next up:** P2-34, P2-35, P3-12, P3-15, P4-07, P4-12
 
-**Current version:** v120
+**Current version:** v122
 
 ## Chunk status
 
@@ -99,12 +99,16 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P3-13 v118
 - P3-16 v119
 - P3-17 v120
+- P4-09 v122
 
 ## Handoff notes
 
 (none)
 
 ## Ideas and issues
+- (P4-09) index.html is 1,197,523 bytes after the map scenes (warn at 1,200,000): the scene engine `43-scenes.js` is 17.9 KB (the props, themes and world table, 25 KB, are already in the data file). The next chunk that adds code will print the warning; the cheapest levers are still the ones in the A11 note (word lists, `SPN`, art drawings from src/js to src/data).
+- (P4-09) World chips (`wBadge`) still show the icon of the world's first new skill; a mini emblem of the world's landmark (SCN.prop at 0.4 scale in the disc) would also work, but the skill icon tells a child what the world teaches and the P4-18 check expects it. Left as is.
+- (P4-09) The first draw of a world costs about 1.5-2.5 ms of scene work unthrottled (warm draws hit SCN.cache). If tablets show a hitch when switching worlds, the scenes can be drawn in the next animation frame (the band and its gradient are there at once, so nothing shifts).
 - (P3-16) bt.<VER>.js is 393,523 bytes after the three spatial types (warn at 400,000, fail at 800,000), so the next puzzle chunk will print the part-file warning. Nothing is wrong; if it should stay quiet, comments are about a third of 75- to 86-bt-*.js.
 - (P3-16) The catalog name "Cube Count" is shown as "Cubes": with the timer chip (bands C and D) the top bar cut it to "Cube Cou" at 380 px (the `.bt-tt` limit of the P3-05 and P3-10 notes).
 - (P3-16) Mirror grids of 8 x 8 are 44 px a square on a 380 px phone (BRAIN_TEASERS 8 allows 44 inside dense grids); the puzzle uses the stage's side padding to get there. Smoke checks 44 for `.mr-cell`, 48 for everything else.
@@ -373,6 +377,20 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-11) Icons wanted from P4-03: `balloon` (Bonus game, today `gamepad`), `sparkle` / `confetti`, `unlock` (open padlock for "Next stop unlocked", today `map`), `zap` (a lightning with a spark for boss hits; today `bolt`), `sticker` (single sticker for the prize row), `medal` (the prize rosette as an icon), `heart-half` (boss life bar), `chest` (the treasure chest at icon size, e.g. for the round track where renderQ shows the gift emoji).
 
 ## Log
+
+### P4-09 Map and world scenes (v122, 2026-11-11, Claude)
+- What changed (DESIGN_SYSTEM 7 and 9 row 3; "As built" note added to section 7): every world band on every map is a drawn scene instead of a flat `w.c` colour band, and the trail is redrawn. New `src/js/43-scenes.js` (`SCN`: the drawing language, stamping, placement, `SCN.band`, `SCN.trail`), `src/data/d-scenes.js` (data file, read only inside functions: 64 prop drawings and 30 hue variants, 29 themes, the 35 world ids -> theme table), `src/css/47-scenes.css`, and 27 `--sc-*` scene tokens in `00-tokens.css` (pale skies and grounds; ground `-2` tones for ledges and rolling layers, a night sky for space headers).
+- A scene: CSS gradient sky -> horizon -> ground (tokens), a ledge in the ground's deeper tone, and one SVG with the sun (or moon and stars) top left, clouds, rays (reef), a papel picado garland (plaza, fiesta, repaso), two horizon ridges (hills, peaks, skylines, puffs, a cave ceiling, the sea behind a beach), rolling ground layers with a light rim, the world's landmark (sunflower, lollipop, clock tower, coral, rocket, ship, mountain, factory, pyramid, volcano, crystals, floating island, galaxy, umbrella, pencil cup, castle tower, palm, castle, fountain, piñata, trophy, rainbow, buildings, signpost, flask, observatory dome ...), props down the sides with small companions in front, and ground marks. Props in the object-art style (shade, base up-left, highlight, ink shadow at .1). Themes per family with per-world changes; worlds that share a name (Candy Canyon, Ocean Reef, Space Station in math and reading) share the theme with other landmarks.
+- Readable: props go only where no stop (disc, ring, ledge), label, New tag, title, Test out banner, pet or trail is (placement keeps a list of what to keep clear); bands are `pointer-events:none`, `aria-hidden`, under the trail and stops; every scene token but the night skies keeps ink at 7:1 and each path colour at 3:1 (tools/contrast.js, 237 pairs). The Test out banner spacing (P2-36) is unchanged: the horizon sits under it.
+- Trail: worn path (ink rim at .1, cream bed), stepping stones every 25 px with a grey shade and white gloss, gold stones up to the current stop (DESIGN_SYSTEM 7: "the walked part is solid"), a plank bridge with rails over each gap between two worlds (the world transition). drawMap (46-home.js) computes the stops first and then draws the scenes; no stop, band or title moved (same geometry; no layout shift). No raw colours are left in drawMap.
+- Motion: none (no idle animation), so reduced motion and calm mode need nothing.
+- Speed: props are stamped into shared layers (one path per shape position and look; a scene is 36-67 elements, at most 36 KB, at most 24 props) and scenes are cached by what they depend on (band px), so switching back to a world costs no scene work. drawMap of the midway math map (worlds 6-9 picked in turn), unthrottled best of 40 on a shared busy machine, before/after in the same run: 380x780 3.9-4.2 ms -> 5.6-5.9 ms (cold, cache cleared every draw: 6.2-7.0 ms), 1024x600 3.8-4.3 ms -> 4.8-5.2 ms (cold 6.6-6.9 ms); elements in the map 253 -> 411. 6x CPU throttle, smoke's 16-world method (fastest of 9): passes of 19-31 ms after in the bench, 46.5 ms and 19.9 ms in two check.sh runs at load 6-8 on 4 cores (limit 50; single passes of both builds varied 4-48 ms with the machine load).
+- Tests: test.js named check "map scenes P4-09": every world of every path drawn as the picked world at 352 and 996 px, with and without Test out (140 scenes): a scene per world (SCN_W covers every world id, every theme and prop exists and is used), SVG well formed with only svg/path/circle, no ids/defs/gradients/filters/url/use/text/style/transforms, no raw colours, every var() a token, deterministic, the same when its band moves down the map, budget 75 elements and 36,000 bytes (largest 66 / 31,330 B at 352, 67 / 34,686 B at 996), every placed prop clear of stops, labels, New tags, title, Test out, pet and trail and inside the band, every scene has its landmark, ground tokens ink 7:1 and math/read/es/disc 3:1, the trail (stones, gold, a bridge per gap), a fake world id still gets a scene and no data file gives the plain band, sources token-only, CSS without motion or filters, drawMap without the old raw colours, the drawings in the data file. tools/contrast.js: ink 7:1 and the four path colours 3:1 on every `--sc-*` token except the night skies.
+- Smoke: `// P4-09` block: every world of every path picked at 380x780 and 1024x600 (70 maps): every band has its scene (an SVG the size of the band, aria-hidden, no taps, at most 75 elements), each world title on its band, the trail with stones; with the scenes, trail and labels made hit-testable for the check, elementFromPoint at each picked stop's centre is the stop (678 stops), at its label the label, at the title the title, at the Test out banner the banner; no sideways scroll. The step 10 map-draw timing check is unchanged and passes.
+- Shots: `scenes` (a sheet of every world's scene at phone width, full page; look at it at 2x), `scene-math`, `scene-read`, `scene-es`, `scene-disc`, `scene-top`, `scene-space`. Looked at the sheet at 1100 px wide and the four path maps at 380x780 and 1024x600 at 2x. Fixed after looking: props too small and sparse (bigger, a column where the trail swings out, companions in groups), a blank reef band (a missing token), the volcano lab ridge reading as pink mesas, props in rows at 1024 (looser on wide screens).
+- Test expectations changed: none.
+- Checklist 7.1: [x] chunk files (43-scenes.js, d-scenes.js, 47-scenes.css, tokens, drawMap in 46-home.js) plus tests, shots, docs, built output [x] VER v122 (provisional) [x] build [x] test.js [x] smoke.js [x] screenshots [x] no network [x] no new emoji or hex outside the token file [x] PROGRESS entry [x] one commit (not pushed).
+- Merge: built on branch P4-09-scenes from f09c4b9 (v120). Overlaps: 00-tokens.css (a block after the `--ill-*` lines), 46-home.js drawMap, test.js (one block before `// ---- report ----`), smoke.js (one block before the final network lines), shots.js (one `Object.assign(SCREENS, ...)` before `main`), contrast.js (rules before the report loop), this log. Renumber VER at merge (rebuild, `git add -A`). index.html is 1,197,523 bytes (warn 1,200,000).
 
 ### P3-17 Puzzle of the Day and badges (v120, 2026-11-11, Claude)
 - What changed (BRAIN_TEASERS 9, 7, 2, 3): the Puzzle of the Day gets its small card on Home, badges arrive (store, drawn medals, a badges view from the hub and as a page of the sticker book, a reveal), the "left the same level 3 times, offer the band below" rule is built, and the play top bar shows every type's whole name, so four types get their catalog names back. All framework code is in `src/js/74-teasers.js` and `src/css/48-teasers.css` (index.html); Home in `46-home.js` / `46-home.css`. Inline code calls part code only from handlers, as before.
