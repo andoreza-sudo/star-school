@@ -146,7 +146,7 @@ that respects the "Deps" line, but only one chunk at a time lands on `main`.
 | 3 | P1-03, P1-04, P1-05, P1-06, P1-09, P1-10, P1-11 | Grade pick at setup; nothing locked below grade |
 | 4 | P1-07, P1-08, P5-02, P5-03, P5-05, P5-06 | Placement quiz, smarter rounds, spaced review, report card |
 | 5 | P2-01 to P2-07 (math PreK-3), P2-15, P2-18, P2-19, P4-13 | Big content jump for younger grades, with drawn pictures for counting and core nouns |
-| 6 | P4-03, P4-04, P4-05, P4-08, P4-10, P4-11 | App looks new on the main screens |
+| 6 | P4-03, P4-04, P4-05, P4-08, P4-10, P4-11, then P4-18 | App looks new on the main screens; a full graphics pass removes the flat, dated look everywhere |
 | 7 | P2-08 to P2-14 (math 4-6), P2-20 to P2-29 (ELA) | Upper grades |
 | 8 | P3-01 to P3-10 | Brain Teasers open |
 | 9 | P4-06, P4-07, P4-09, P4-12, P4-14 to P4-17, P2-16, P2-17 | Rest of the redesign, tracing |
@@ -429,8 +429,12 @@ Spec in DESIGN_SYSTEM.md. Section numbers below refer to it.
 | P4-15 | Object art set C (40 pictures) (STRETCH) | **Opus** | M | P4-14 | 6.5 |
 | P4-16 | Game Room hub and shared game chrome | **Opus** | S | P4-04 | 9 row 8 |
 | P4-17 | Motion and sound polish | **Opus** | M | P4-08, P4-10, P4-11 | 8 |
+| P4-18 | Graphics quality pass: no flat clip-art anywhere | **Opus** | L | P4-08, P4-10, P4-11, P4-13b | 2, 5, 6, 7 |
 
 Model change (2026-11-11, Andy): every remaining Phase 4 graphics chunk runs on Opus, because visual judgment matters more than cost here. Content, plumbing and test chunks stay on Sonnet. P4-13 (object art set A) shipped on Sonnet and may get an Opus review pass.
+
+**P4-18 · Graphics quality pass** · Opus · L (added 2026-11-11 at Andy's request): the original plan capped pictures at "flat two-tone, under 900 bytes, no shading" for cheap tablets. Andy never asked for that, and it made the app look dated. Cheap tablets only need: no CSS filters or backdrop blur, animate transform/opacity, modest SVG path counts. This chunk reviews every visual in the app against the new illustration standard (DESIGN_SYSTEM 6.5 as rewritten by P4-13b) and fixes what still looks flat or dated: the 40 UI icons and P4-03 icons (keep them simple but not crude), the coin and flame, world chips and map, every remaining emoji used as a picture or chrome (path tiles, Game Room, stickers, pets other than the dragon, bosses, prizes), the math visuals (23-viz.js), the Fact Sprint, streak, review, placement and report screens, and the games' own art in files 60-72 where it is cheap to improve. Accept: before/after screenshots of every screen at 600x960 and 380x780; no remaining emoji in UI chrome; the art sheet, icon sheet and viz sheet reviewed at real size; check.sh passes; size stays under the 1.2 MB warning. Out: no behaviour or content changes.
+
 
 Shared accept for P4: before and after screenshots at all three sizes attached to PROGRESS.md entry by filename; no layout overflow;
 contrast script passes; no new hard-coded hex colors outside the token file (grep check in `check.sh`); frame time not worse
