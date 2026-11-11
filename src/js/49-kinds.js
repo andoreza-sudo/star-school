@@ -17,7 +17,7 @@
      (the full field notes for these three sit above each entry at the end of KIND)
    P1-03 kind fields:
      num     also (all optional): pad 'int' (default) | 'dec' (adds .) | 'neg' (adds +/-) | 'frac' (two slots, ans '3/4');
-             sep 'R' (two slots, ans '9R2') | 'mix' (three slots, ans '2 1/2'); eq 'value' compares numerically
+             sep 'R' (two slots, ans '9R2') | 'mix' (three slots, ans '2 1/2') | 'xy' (two slots, ans '3,5', P2-12 coordinates); eq 'value' compares numerically
              (0.50 = .5, 2/4 = 1/2) instead of exact text; max digits per slot (default 4, up to 9).
              html holds SLOT, or SLOT_FRAC / SLOT_R / SLOT_MIX (ids slot, slot2, slot3). The check key moves to the
              next slot first and submits from the last one; del steps back across the separator.
@@ -131,10 +131,10 @@ const KIND={
     validate(q){
       const p=[],pad=q.pad||'int',seps=numSeps(q),a=q.ans;
       if(!['int','dec','neg','frac'].includes(pad))p.push('num: bad pad '+pad);
-      if(q.sep!=null&&!['R','mix'].includes(q.sep))p.push('num: bad sep '+q.sep);
+      if(q.sep!=null&&!['R','mix','xy'].includes(q.sep))p.push('num: bad sep '+q.sep);
       if(q.eq!=null&&q.eq!=='value')p.push('num: bad eq '+q.eq);
       if(q.max!=null&&!(Number.isInteger(q.max)&&q.max>=1&&q.max<=9))p.push('num: max must be 1 to 9');
-      const shape=q.sep=='R'?/^\d+R\d+$/:q.sep=='mix'?/^\d+ \d+\/[1-9]\d*$/:pad=='frac'?/^\d+\/[1-9]\d*$/
+      const shape=q.sep=='R'?/^\d+R\d+$/:q.sep=='xy'?/^\d+,\d+$/:q.sep=='mix'?/^\d+ \d+\/[1-9]\d*$/:pad=='frac'?/^\d+\/[1-9]\d*$/
         :pad=='neg'?/^(0|-?[1-9]\d*)$/:pad=='dec'?/^-?(0|[1-9]\d*)(\.\d+)?$/:/^\d+$/;
       if(typeof a!=='string'||!shape.test(a)||(pad=='int'&&!q.sep&&String(+a)!==a))p.push('num: ans must look like the pad, got '+a);
       else if(q.max!=null&&numParts(a,seps).some(t=>t.replace(/\D/g,'').length>q.max))p.push('num: ans longer than max');
@@ -578,7 +578,7 @@ const SLOT_MIX='<span class="slot" id="slot"></span><span class="fslot"><span cl
   +'<span class="slot" id="slot3"></span></span>';
 // separators between the slots of a num question, in order; none for a plain pad
 function numSeps(q){
-  return q.sep=='mix'?[' ','/']:q.sep=='R'?['R']:q.pad=='frac'?['/']:[];
+  return q.sep=='mix'?[' ','/']:q.sep=='R'?['R']:q.sep=='xy'?[',']:q.pad=='frac'?['/']:[];
 }
 // split typed text into one string per slot
 function numParts(t,seps){

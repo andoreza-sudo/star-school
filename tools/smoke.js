@@ -3334,6 +3334,137 @@ async function main() {
       }
     }
 
+    // P2-12 Crystal Caves at 380x780: a 5th grader whose earlier worlds are finished opens the math map on the caves (no unlock switch), plays Unlike Denominators with a
+    //    step hint and Coordinate Grid and Volume of a Box as full rounds of real taps (a point tapped on the grid, an (x, y) typed into
+    //    two boxes), then jumps through the other stops. Every question measured: 48 px keys and choices, nothing wider than the screen,
+    //    no word cut off by the card or a button, the picture where there should be one; and the stars are saved.
+    {
+      const cc = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 });
+      const cp = cc.page;
+      await cp.fill('#nm', 'Caves');
+      await cp.click('.gr[data-g="5"]');
+      await cp.click('#go');
+      await cp.waitForSelector('.game[data-p="math"]');
+      // worlds before the caves (Volcano Lab sits there after merge) are finished first, so the map meets the caves without an unlock switch
+      await cp.evaluate(() => {
+        const wi = PATHS.math.worlds.findIndex(w => w.id === 'm_caves');
+        for (let i = 0; i < wi; i++) { for (let j = WR.math[i][0]; j <= WR.math[i][1]; j++) setSt('math', j, 2); S.wdone = S.wdone || {}; S.wdone[worldId('math', i)] = 1; }
+        save();
+      });
+      const w12 = await cp.evaluate(() => {
+        const wi = PATHS.math.worlds.findIndex(w => w.id === 'm_caves');
+        return { wi, open: worldOpen('math', wi), cur: curWorld('math'), stops: PATHS.math.worlds[wi].nodes.map(n => n[0] + n[1]).join(' '), boss: NODES.math[WR.math[wi][1]].sk };
+      });
+      const want12 = 'fop3 fop4 geo4 fop5 coord1 fop6 meas6 data4 pat5 story8';
+      if (w12.wi < 0 || !w12.open || w12.cur !== w12.wi || w12.stops !== want12 || w12.boss !== 'boss') fail('Crystal Caves: ' + JSON.stringify(w12));
+      await cp.click('.game[data-p="math"]');
+      await cp.waitForSelector(`.wchip.on[data-w="${w12.wi}"]`);
+      const lay12 = () => {
+        const sm = a => (a.length ? Math.min(...a.map(b => Math.min(b.offsetHeight, b.offsetWidth))) : 99);
+        const qa = document.querySelector('.qarea'), card = qa.getBoundingClientRect();
+        // a word is cut when a text element of the prompt or a choice sticks out of the card, or a choice is wider than its button
+        const cut = [...document.querySelectorAll('#prompt *, .choice')].filter(e => !e.closest('svg') && e.getClientRects().length).filter(e => {
+          const r = e.getBoundingClientRect();
+          return r.right > card.right + 1 || r.left < card.left - 1 || (e.classList.contains('choice') && e.scrollWidth > e.clientWidth + 1);
+        }).map(e => e.className || e.tagName);
+        const pics = document.querySelector('#prompt svg, .ch svg');
+        return { sk: G.sk + G.lv, kind: G.q.kind, sep: G.q.sep || '', label: G.q.label, w: document.documentElement.scrollWidth, art: !!pics,
+          keys: sm([...document.querySelectorAll('.k')]), ch: sm([...document.querySelectorAll('.ch')]), tall: qa.scrollHeight > qa.clientHeight + 1, cut: cut.slice(0, 3),
+          tap: sm([...document.querySelectorAll('#prompt .vt .vh')].map(e => ({ offsetHeight: e.getBoundingClientRect().height, offsetWidth: e.getBoundingClientRect().width }))) };
+      };
+      const seen12 = { tap: 0, xy: 0, mix: 0, frac: 0, choice: 0, dec: 0 };
+      const meas12 = async id => {
+        const ok = await cp.waitForFunction(id => G && G.q && G.sk + G.lv === id, id, { timeout: 8000 }).then(() => true, () => false);
+        if (!ok) { fail('Crystal Caves ' + id + ': the question on screen is ' + (await cp.evaluate(() => G && JSON.stringify([G.sk, G.lv, G.q && G.q.label])))); return { sk: id, w: 0, keys: 99, ch: 99, cut: [], tap: 99, art: true, label: '' }; }
+        const lay = await cp.evaluate(lay12);
+        if (lay.sk !== id || lay.w > 380 || lay.keys < 48 || lay.ch < 48 || lay.tall || lay.cut.length || lay.tap < 47.5) fail('Crystal Caves ' + id + ' (' + lay.label + '): ' + JSON.stringify(lay));
+        if ((['geo4', 'coord1', 'fop6', 'data4'].includes(String(lay.label).split(' ')[0]) || /^fop5 \d+\/\d+ x \d+\/\d+$/.test(lay.label)) && !lay.art) fail('Crystal Caves ' + id + ': picture missing ' + lay.label);
+        if (lay.kind === 'tap') seen12.tap++;
+        if (lay.sep === 'xy') seen12.xy++;
+        if (lay.sep === 'mix') seen12.mix++;
+        if (lay.kind === 'choice') seen12.choice++;
+        const dot = await cp.evaluate(() => !!document.querySelector('.k[data-k="."]'));
+        if (dot) seen12.dec++;
+        return lay;
+      };
+      // first stop by taps: Unlike Denominators, a step hint, then the full round
+      const first = await cp.evaluate(() => NODES.math.findIndex(x => nid(x) === 'fop3'));
+      await cp.click(`.node[data-n="${first}"]`);
+      await cp.waitForSelector('#prompt');
+      await cp.waitForTimeout(900);
+      await cp.click('#hb');
+      await vwait(cp, 300);
+      const h1 = await cp.evaluate(() => ({ at: document.querySelector('#hint .hs') && document.querySelector('#hint .hs').dataset.hs, label: document.querySelector('#hb').textContent.trim(), wide: document.documentElement.scrollWidth,
+        hb: Math.min(document.querySelector('#hb').offsetHeight, document.querySelector('#hb').offsetWidth) }));
+      await cp.click('#hb');
+      await vwait(cp, 300);
+      const h2 = await cp.evaluate(() => document.querySelector('#hint .hs').dataset.hs);
+      if (h1.at !== '0' || !/Next step/.test(h1.label) || h2 !== '1' || h1.wide > 380 || h1.hb < 48) fail('Crystal Caves step hint: ' + JSON.stringify([h1, h2]));
+      await playRound(cp, 'P2-12 fop3', 10, async () => { await cp.waitForTimeout(600); await meas12('fop3'); });
+      await cp.evaluate(() => { G.dead = true; });
+      await vwait(cp, 2500);
+      const got3 = await cp.evaluate(() => S.maps.math.fop3 || 0);
+      const next3 = await cp.evaluate(() => unlocked('math', NODES.math.findIndex(x => nid(x) === 'fop4')));
+      if (got3 < 1 || !next3) fail('Crystal Caves: fop3 stars ' + got3 + ', next stop open ' + next3);
+      // the other stops: full rounds of Volume of a Box and Coordinate Grid, three measured questions of each of the rest
+      await cp.evaluate(() => { S.unlockAll = true; save(); });
+      const full = new Set(['geo4', 'coord1']);
+      for (const id of ['fop4', 'geo4', 'fop5', 'coord1', 'fop6', 'meas6', 'data4', 'pat5', 'story8']) {
+        await cp.evaluate(() => home());
+        await cp.click('.game[data-p="math"]');
+        await cp.waitForSelector('.wchip.on');
+        await cp.click(`.wchip[data-w="${w12.wi}"]`);
+        await cp.waitForSelector(`.wchip.on[data-w="${w12.wi}"]`);
+        const n = await cp.evaluate(id => NODES.math.findIndex(x => nid(x) === id), id);
+        await cp.click(`.node[data-n="${n}"]`);
+        await cp.waitForSelector('#prompt');
+        if (full.has(id)) {
+          await playRound(cp, 'P2-12 ' + id, 10, async () => { await cp.waitForTimeout(600); await meas12(id); });
+        } else {
+          for (let k = 0; k < 3; k++) {
+            await cp.waitForTimeout(900);
+            await meas12(id);
+            if (k === 0 && (id === 'fop4' || id === 'meas6')) {
+              await cp.click('#hb');
+              const hint = await cp.evaluate(() => ({ len: document.querySelector('#hint').innerHTML.length, steps: !!document.querySelector('#hint .hs') }));
+              if (!hint.len || !hint.steps) fail('Crystal Caves stop ' + id + ': hint ' + JSON.stringify(hint));
+            }
+            await cp.evaluate(() => { window.__q = G.q; });
+            await answer(cp);
+            await cp.waitForFunction(() => G && G.q !== window.__q, null, { timeout: 8000 });
+          }
+        }
+        await cp.evaluate(() => { G.dead = true; });
+        await vwait(cp, 2500);
+      }
+      // one of each coordinate and volume picture, forced, measured and answered with real taps
+      for (const [sk, lv, re] of [['coord', 1, '^coord1 tap'], ['coord', 1, '^coord1 read'], ['coord', 1, '^coord1 pair'], ['coord', 1, '^coord1 dist'], ['geo', 4, '^geo4 join'], ['geo', 4, '^geo4 vol 1\\d'], ['geo', 4, '^geo4 cubes 4x4'], ['fop', 5, '^fop5 \\d+/\\d+ x \\d+/\\d+$'], ['pat', 5, '^pat5 rule'], ['pat', 5, '^pat5 relc'], ['story', 8, '^story8 total']]) {
+        await cp.evaluate(() => home());
+        await cp.click('.game[data-p="math"]');
+        await cp.waitForSelector('.wchip.on');
+        await cp.click(`.wchip[data-w="${w12.wi}"]`);
+        const n = await cp.evaluate(([sk, lv]) => NODES.math.findIndex(x => x.sk === sk && x.lv === lv), [sk, lv]);
+        await cp.click(`.node[data-n="${n}"]`);
+        await cp.waitForSelector('#prompt');
+        await cp.evaluate(([sk, lv, re]) => { for (let i = 1; i < 900; i++) { const q = genQ(sk, lv, i); if (new RegExp(re).test(q.label)) { G.q = q; renderQ(); break; } } }, [sk, lv, re]);
+        await cp.waitForTimeout(700);
+        const lay = await meas12(sk + lv);
+        if (!lay.art && sk !== 'story') fail('Crystal Caves ' + re + ': no picture');
+        await cp.evaluate(() => { window.__q = G.q; });
+        await answer(cp);
+        await cp.waitForFunction(() => G && G.q !== window.__q, null, { timeout: 8000 });
+        await cp.evaluate(() => { G.dead = true; });
+        await vwait(cp, 1500);
+      }
+      if (!seen12.tap || !seen12.xy || !seen12.mix || !seen12.dec) fail('Crystal Caves: a tapped point, the (x, y) boxes, the mixed-number boxes or the decimal key never showed ' + JSON.stringify(seen12));
+      const stars12 = await cp.evaluate(() => ['fop3', 'geo4', 'coord1'].map(id => S.maps.math[id] || 0));
+      if (stars12.some(x => x < 1)) fail('Crystal Caves: stars not saved ' + JSON.stringify(stars12));
+      else step('P2-12: Crystal Caves opens for a 5th grader on its first stop; Unlike Denominators with a step hint, Volume of a Box and Coordinate Grid as full rounds by real taps (a point tapped on the grid, (x, y) typed in two boxes), 10 stops measured at 380x780 (48 px targets, no cut-off words, no sideways scroll), stars saved');
+      network.push(...cc.network);
+      for (const e of cc.errors) fail(e);
+      await cc.ctx.close();
+    }
+
     for (const e of errors) fail(e);
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');

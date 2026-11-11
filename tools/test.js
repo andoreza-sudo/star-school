@@ -1130,7 +1130,7 @@ run('placement: state machine rules, scripted answers, simulated students, never
     // math worlds by grade: Tiny Town -1, Number Meadow 0, Candy Canyon 1, Ocean Reef 1, Space Station 2 (P2-01 added Tiny Town)
     {const MW=PATHS.math.worlds,ix=id=>MW.findIndex(w=>w.id===id); // P2-02: by world id (Shape Garden is the first K world, so grade 1 starts there)
     if(PLACE.first(MW,0)!==ix('m_tiny')||PLACE.first(MW,1)!==ix('m_shape')||PLACE.first(MW,2)!==ix('m_candy')
-      ||PLACE.first(MW,3)!==ix('m_space')||PLACE.first(MW,6)!==MW.length-1)bad('start world per grade on math')}
+      ||PLACE.first(MW,3)!==ix('m_space')||PLACE.first(MW,6)!==MW.findIndex(w=>w.g>=5))bad('start world per grade on math')} // grade 6 starts on the first grade-5 world (Volcano Lab since P2-11; not the last world once Crystal Caves follows it)
     if(PLACE.first(FAKE,0)!==0||PLACE.first(FAKE,3)!==6||PLACE.first(FAKE,6)!==12)bad('start world per grade on 16 worlds');
     // 2. scripted rules (right answers per testlet -> where it goes)
     const run1=(ws,g,seq)=>{let st=PLACE.begin(ws,g,7);const path=[];for(const r of seq){if(st.done)break;path.push(st.wi);st=PLACE.step(st,r)}return{st,path}};
@@ -3749,7 +3749,7 @@ run('Fraction Forest P2-07: stops in CURRICULUM order, 3,000 samples per new lev
     const ids=NODES.math.map(nid);
     if(new Set(ids).size!==ids.length)add('stop ids repeat on the math path');
     if(WR.math[wi][1]-WR.math[wi][0]!==16||NODES.math[WR.math[wi][1]].sk!=='boss')add('17 stops: 16 and the boss');
-    const mx={round:4,geo:3,sub:8,time:6,shape:6,data:3,meas:5,story:7,frac:8}; // round 3 and sub 8 are Factor Factory's (P2-09)
+    const mx={round:4,geo:4,sub:8,time:6,shape:6,data:4,meas:6,story:8,frac:8}; // round 3 and sub 8 are Factor Factory's (P2-09)
     for(const k in mx)if(SK[k].max!==mx[k]||SK[k].area!=='math')add('SK.'+k+'.max '+SK[k].max);
     // ---- generic checks per level, then the maths of each level
     const levels=[['round',1],['round',2],['sub',6],['sub',7],['geo',1],['geo',2],['time',5],['time',6],['shape',5],['data',3],['meas',4],['story',6],
@@ -6078,7 +6078,7 @@ run('Decimal Desert P2-10: stops in CURRICULUM order, 3,000 samples per new leve
     const ids=NODES.math.map(nid);
     if(new Set(ids).size!==ids.length)add('stop ids repeat on the math path');
     if(WR.math[wi][1]-WR.math[wi][0]!==14||NODES.math[WR.math[wi][1]].sk!=='boss')add('15 stops: 14 and the boss');
-    const mx={fop:2,dec:5,ang:2,geo:3,shape:6,meas:5,pat:4,story:7,frac:8};
+    const mx={fop:6,dec:5,ang:2,geo:4,shape:6,meas:6,pat:5,story:8,frac:8};
     for(const k in mx)if(!SK[k]||SK[k].max!==mx[k]||SK[k].area!=='math')add('SK.'+k+'.max');
     for(let l=1;l<=8;l++)if(!NODES.math.some(n=>n.sk=='frac'&&n.lv==l))add('frac '+l+' has no stop');
     // ---- helpers for pictures
@@ -7516,6 +7516,438 @@ run('data file split A11',()=>{
   if(nd>DATA_FAIL)p.push(DATA_FILE+' is '+nd+' bytes, over the '+DATA_FAIL+' limit');else if(nd>DATA_WARN)w.push('data over '+DATA_WARN);
   if(nt>TOTAL_FAIL)p.push('index.html + '+DATA_FILE+' is '+nt+' bytes, over the '+TOTAL_FAIL+' limit');else if(nt>TOTAL_WARN)w.push('total over '+TOTAL_WARN);
   return{problems:p,note:DATA_FILE+' '+Math.round(nd/1000)+' KB, total '+Math.round(nt/1000)+' KB'+(w.length?'  WARN: '+w.join(', '):'')};
+});
+
+run('Crystal Caves P2-12: stops in CURRICULUM order, 3,000 samples per new level with the maths recomputed, hints, say, labels, reproducible, old levels unchanged',()=>{
+  const cur=fs.readFileSync(path.join(ROOT,'docs','CURRICULUM.md'),'utf8');
+  const body=function(){
+    S.name='Ava';S.buddy='Ben';S.pet='dino';G={built:[]};
+    const bad=[],N=3000,add=m=>{if(bad.length<40&&!bad.includes(m))bad.push(m)};
+    const gcd=(a,b)=>b?gcd(b,a%b):a,lcm=(a,b)=>a/gcd(a,b)*b;
+    const txt=h=>String(h).replace(/<svg[^]*?<\/svg>/g,' ').replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/\s+/g,' ');
+    const esc2=s=>String(s).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    const red=(n,d)=>{const g=gcd(n,d);return n/g+'/'+d/g};
+    const frs=h=>[...h.matchAll(/<span class="fn">(\d+)<\/span><span class="fd">(\d+)<\/span>/g)].map(x=>x[1]+'/'+x[2]);
+    const nums=s=>(s.match(/-?\d+(?:\.\d+)?/g)||[]).map(Number);
+    const mixed=(n,d)=>{const g=gcd(n,d);n/=g;d/=g;const w=Math.floor(n/d),r=n%d;return d==1?String(w):w?`${w} ${r}/${d}`:`${r}/${d}`};
+    const dstr=v=>{const w=Math.floor(v/100),f=String(v%100).padStart(2,'0').replace(/0+$/,'');return f?w+'.'+f:''+w}; // hundredths -> text
+    const sc=s=>Math.round(parseFloat(s)*100);
+    // ---- world: the stops of CURRICULUM 2.1 row 14, in that order, after Decimal Desert
+    const mw=PATHS.math.worlds,wi=mw.findIndex(x=>x.id=='m_caves'),w=mw[wi]||{nodes:[]};
+    const row=cur.match(/\| 14 \| `m_caves` \| Crystal Caves \| 5 \| ([^|]+) \|/);
+    const want=row?row[1].trim().split(', ').map(s=>s.replace(' ','')).join(' '):'?';
+    if(w.nodes.map(n=>n[0]+n[1]).join(' ')!==want)add('stop order: '+w.nodes.map(n=>n[0]+n[1]).join(' ')+' (CURRICULUM: '+want+')');
+    if(want.split(' ').length!==10)add('CURRICULUM row 14 does not list 10 stops: '+want);
+    if(wi<1||w.g!==5||w.n!=='Crystal Caves'||wi<mw.findIndex(x=>x.id=='m_desert')+1)add('world g/name/position');
+    if(w.nodes.some(n=>n[2].length>22))add('stop title over 22 letters: '+w.nodes.find(n=>n[2].length>22)[2]);
+    if(new Set(w.nodes.map(n=>n[2])).size!==w.nodes.length)add('two stops share a title');
+    const ids=NODES.math.map(nid);
+    if(new Set(ids).size!==ids.length)add('stop ids repeat on the math path');
+    if(WR.math[wi][1]-WR.math[wi][0]!==10||NODES.math[WR.math[wi][1]].sk!=='boss')add('11 stops: 10 and the boss');
+    const mx={fop:6,geo:4,coord:1,meas:6,data:4,pat:5,story:8};
+    for(const k in mx)if(!SK[k]||SK[k].max<mx[k]||SK[k].area!=='math')add('SK.'+k+'.max');
+    if(SK.coord.t!=='Coordinates'||/\d$/.test('coord'))add('SK.coord');
+    // ---- old levels unchanged: the dispatchers still call the old generators with the same seed
+    const sameQ=(sk,lv,fn)=>{for(let s=1;s<=60;s++){const sd=(s*7+3)>>>0,a=genQ(sk,lv,sd),prev=RNG;RNG=mulberry32(sd);let b;try{b=fn(lv);b.sk=sk;b.lv=lv;b.seed=sd}finally{RNG=prev}
+      if(JSON.stringify(a)!==JSON.stringify(b)){add('old level changed: '+sk+lv);return}}};
+    sameQ('fop',1,dsFop1);sameQ('fop',2,dsFop2);sameQ('geo',1,ffGeo1);sameQ('geo',2,ffGeo2);sameQ('geo',3,dsGeo3);
+    sameQ('meas',1,genMeas);sameQ('meas',2,genMeas2);sameQ('meas',3,genBayMeas3);sameQ('meas',4,ffMeas4);sameQ('meas',5,dsMeas5);
+    sameQ('data',1,genData1);sameQ('data',2,genBayData2);sameQ('data',3,ffData3);
+    sameQ('pat',1,genPatK);sameQ('pat',2,genPatK);sameQ('pat',3,genBayPat3);sameQ('pat',4,dsPat4);
+    for(const l of [1,2,3,5])sameQ('story',l,genStoryAll);sameQ('story',4,genBayStory4);sameQ('story',6,ffStory6);sameQ('story',7,dsStory7);
+    // ---- helpers for pictures
+    const pathPts=d=>[...d.matchAll(/(-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?)/g)].map(m=>[+m[1],+m[2]]);
+    const boxes=h=>[...h.matchAll(/<g class="vsl[^"]*"><path class="s2" d="([^"]+)"\/><path class="s1" d="([^"]+)"\/>/g)].map(m=>{
+      const t=pathPts(m[1]),s=pathPts(m[2]);return{l:Math.hypot(t[1][0]-t[0][0],t[1][1]-t[0][1]),w:Math.hypot(t[2][0]-t[1][0],t[2][1]-t[1][1]),h:Math.hypot(s[2][0]-s[1][0],s[2][1]-s[1][1])}});
+    const svgTexts=h=>[...h.matchAll(/<text[^>]*>([^<]*)<\/text>/g)].map(m=>m[1]);
+    const cgPts=h=>[...h.matchAll(/<circle cx="([\d.]+)" cy="([\d.]+)" r="7"\/>/g)].map(m=>[Math.round((+m[1]-28)/27),Math.round((284-(+m[2]))/27)]); // coordGrid max 10: spacing 27
+    const lpKs=(h,den,max)=>[...h.matchAll(/<circle cx="([\d.]+)" cy="[\d.]+" r="8"\/>/g)].map(m=>Math.round((+m[1]-24)/290*max*den));
+    const near=(x,y,t)=>Math.abs(x-y)<=(t||.35);
+    // ---- generic checks per level, then the maths of each level
+    const levels=[['fop',3],['fop',4],['fop',5],['fop',6],['geo',4],['coord',1],['meas',6],['data',4],['pat',5],['story',8]];
+    const share={},seen={};
+    for(const [sk,lv] of levels){
+      const key=sk+lv,labs={},seeLab=new Set(),S_=share[key]={};
+      const tally=t=>{S_[t]=(S_[t]||0)+1};
+      for(let i=0;i<N;i++){
+        const q=genQ(sk,lv,i*7919+31),W=key+': ',L=q.label,a=q.ans;
+        const pr=kindProblems(q);if(pr.length)add(W+L+': '+pr[0]);
+        if(q.sk!==sk||q.lv!==lv)add(W+'not stamped');
+        if(!q.say||/undefined|NaN/.test(q.say)||/\d\/\d/.test(q.say))add(W+'say '+q.say);
+        if(!q.hint||hintHTML(q).length<10)add(W+'hint missing');
+        if(!L||L.length>=60||/undefined|NaN/.test(L))add(W+'label '+L);
+        if(labs[L]!==undefined&&labs[L]!==a)add(W+'label '+L+' has two answers');
+        labs[L]=a;seeLab.add(L);
+        if(/undefined|NaN|\[object/.test(q.html))add(W+'html has undefined/NaN');
+        if(q.kind=='num'&&numParts(a,numSeps(q)).some(t=>t.replace(/\D/g,'').length>(q.max||4)))add(W+'answer longer than max '+a);
+        if(q.kind=='choice'){const vs=q.choices.map(c=>c.v);if(!vs.includes(a)||new Set(vs).size!==vs.length||vs.length!==4)add(W+'choices '+L);
+          if(q.choices.some(c=>String(c.l).length>20))add(W+'a choice is long '+q.choices.find(c=>String(c.l).length>20).l)}
+        // a hint teaches the method and never states the answer
+        {const pieces=q.hint.k=='steps'?q.hint.steps.map(s=>txt(s.html)):[txt(q.hint.s||q.hint.html)];
+          if(q.hint.k=='steps'&&(q.hint.steps.length<2||!/\?/.test(pieces[pieces.length-1])))add(W+'steps: '+q.hint.steps.length+', last has no "?": '+pieces[pieces.length-1]);
+          if(pieces.some(p=>/the answer is/i.test(p)))add(W+'hint says the answer');
+          if(q.kind=='num'||q.kind=='choice')for(const p of pieces){
+            // a short whole-number answer is only a leak when a calculation ends in it (1 yd = 3 ft is a table row, not the answer)
+            const re=/^\d{1,2}$/.test(a)?'[×÷+−][^=|]*=\\s*':'(=|\\bis|equals|makes)\\s*';
+            if(new RegExp(re+esc2(a)+'(?![\\d/.])').test(p))add(W+'hint gives the answer '+a+' in: '+p)}
+          if(q.kind=='tap'&&pieces.join(' ').includes(a.replace(',',', ')))add(W+'hint names the point')}
+        let m;
+        // ---------------- fop 3
+        if(sk=='fop'&&lv==3){
+          if(!(m=L.match(/^fop3 (\d+)\/(\d+) ([+−]) (\d+)\/(\d+)( simplest)?$/))){add(W+'label '+L);continue}
+          const A=+m[1],B=+m[2],C=+m[4],D=+m[5],add_=m[3]=='+',Lc=lcm(B,D);
+          if(B==D||B<2||B>12||D<2||D>12||A>=B||C>=D||A<1||C<1||gcd(A,B)>1||gcd(C,D)>1||Lc>60)add(W+'operands '+L);
+          const n=add_?A*D+C*B:A*D-C*B,d=B*D;
+          if(n<=0||n%d==0)add(W+'result not a positive non-whole '+L);
+          if(a!==red(n,d))add(W+L+' -> '+a+', expected '+red(n,d));
+          if(JSON.stringify(frs(q.html))!==JSON.stringify([A+'/'+B,C+'/'+D]))add(W+'prompt shows '+frs(q.html));
+          const simp=!!m[6],[rn,rd]=red(n,d).split('/').map(Number);
+          if(simp!==(q.eq===undefined)||q.pad!=='frac')add(W+'eq/pad '+L);
+          if(simp&&!/simplest form/.test(q.html)||!simp&&!/as a fraction/.test(q.html))add(W+'prompt wording '+L);
+          if(simp&&KIND.num.same(q,2*rn+'/'+2*rd))add(W+'an unsimplified answer is accepted '+L);
+          if(!simp&&!KIND.num.same(q,2*rn+'/'+2*rd))add(W+'an equal fraction is refused '+L);
+          if(!KIND.num.same(q,rn+'/'+rd))add(W+'the right answer is refused '+L);
+          const fin=q.hint.steps.find(s=>s.c&&s.c.L);
+          if(!fin||fin.c.L!==Lc||fin.c.x[0]!==A*(Lc/B)||fin.c.x[1]!==C*(Lc/D)||fin.c.op!==(add_?'+':'−'))add(W+'hint record '+JSON.stringify(fin&&fin.c));
+          tally(add_?'add':'sub');tally(simp?'simplest':'any');tally(gcd(n,d)>1?'reduces':'already');tally(n>d?'improper':'proper');
+        }
+        // ---------------- fop 4
+        if(sk=='fop'&&lv==4){
+          if(!(m=L.match(/^fop4 (\d+) (\d+)\/(\d+) ([+−]) (\d+) (\d+)\/(\d+)$/))){add(W+'label '+L);continue}
+          const w1=+m[1],A=+m[2],B=+m[3],w2=+m[5],C=+m[6],D=+m[7],add_=m[4]=='+',Lc=lcm(B,D);
+          if(B==D||B<2||B>12||D<2||D>12||A>=B||C>=D||A<1||C<1||gcd(A,B)>1||gcd(C,D)>1||Lc>60||w1<1||w2<1)add(W+'operands '+L);
+          const n=add_?(w1*B+A)*D+(w2*D+C)*B:(w1*B+A)*D-(w2*D+C)*B,d=B*D,Wh=Math.floor(n/d),r=n%d;
+          if(n<=0||Wh<1||r==0)add(W+'result has no whole part or no fraction '+L);
+          const exp=Wh+' '+red(r,d);
+          if(a!==exp)add(W+L+' -> '+a+', expected '+exp);
+          if(q.sep!=='mix'||q.eq!=='value')add(W+'sep/eq');
+          if(JSON.stringify(frs(q.html))!==JSON.stringify([A+'/'+B,C+'/'+D]))add(W+'prompt shows '+frs(q.html));
+          const wh=q.html.match(/<div class="eq">(\d+) <span class="fr">[^]*?<\/span><\/span> [+−] (\d+) <span class="fr">/);
+          if(!wh||+wh[1]!==w1||+wh[2]!==w2)add(W+'wholes in the prompt '+L);
+          if(!KIND.num.same(q,Wh+' '+(r*2)+'/'+(d*2)))add(W+'an equal mixed number is refused '+L);
+          const a1=A*(Lc/B),c1=C*(Lc/D),reg=!add_&&a1<c1,carry=add_&&a1+c1>=Lc;
+          const hs=q.hint.steps.map(s=>txt(s.html)).join(' | ');
+          if(reg!==/Take 1 whole/.test(hs))add(W+'regroup step '+L);
+          tally(add_?(carry?'add-carry':'add'):(reg?'sub-regroup':'sub'));
+        }
+        // ---------------- fop 5
+        if(sk=='fop'&&lv==5){
+          if(!(m=L.match(/^fop5 (\d+)\/(\d+) x (?:(\d+) )?(\d+)\/(\d+)$/))){add(W+'label '+L);continue}
+          const A=+m[1],B=+m[2],Wh=m[3]?+m[3]:0,C=+m[4],D=+m[5];
+          if(A>=B||C>=D||A<1||C<1||gcd(A,B)>1||gcd(C,D)>1||B<2||D<2||B>6||D>6)add(W+'operands '+L);
+          const n=A*(Wh*D+C),d=B*D;
+          if(n%d==0)add(W+'whole result '+L);
+          if(a!==red(n,d))add(W+L+' -> '+a+', expected '+red(n,d));
+          if(q.pad!=='frac'||q.eq!=='value'||!KIND.num.same(q,2*n+'/'+2*d))add(W+'pad/eq');
+          const fr=frs(q.html);
+          if(JSON.stringify(fr)!==JSON.stringify([A+'/'+B,C+'/'+D]))add(W+'prompt shows '+fr);
+          const svg=(q.html.match(/<svg[^]*?<\/svg>/)||[''])[0],cnt=c=>(svg.match(new RegExp('<rect class="'+c+'"','g'))||[]).length;
+          if(Wh){if(svg)add(W+'a picture with a mixed number');if(!new RegExp('<div class="eq">[^]*? × '+Wh+' <span').test(q.html))add(W+'mixed number missing');tally('mixed')}
+          else{
+            if(!svg||cnt('vp vs')!==A*C||cnt('vpt')!==A*(D-C)||cnt('vwg')!==(B-A)*C||cnt('vp')!==(B-A)*(D-C))add(W+'area model does not show '+L);
+            tally('area');tally(gcd(n,d)>1?'reduces':'already');
+          }
+        }
+        // ---------------- fop 6
+        if(sk=='fop'&&lv==6){
+          const svg=(q.html.match(/<svg[^]*?<\/svg>/)||[''])[0],rects=[...svg.matchAll(/<rect class="([^"]*)"/g)].map(x=>x[1]);
+          if(m=L.match(/^fop6 1\/(\d+) \/ (\d+)$/)){
+            const d=+m[1],n=+m[2];
+            if(d<2||d>8||n<2||n>6)add(W+'sizes '+L);
+            if(a!==`1/${d*n}`||q.pad!=='frac')add(W+L+' -> '+a);
+            const cuts=(svg.match(/<path class="vce"[^>]*d="([^"]*)"/)||['',''])[1].split('M').filter(Boolean).length;
+            if(rects.length!==d||rects.filter(c=>c=='vp vs').length!==1||cuts!==n-1)add(W+'bar picture '+L+' '+rects.length+' parts, '+cuts+' cuts');
+            if(JSON.stringify(frs(q.html))!==JSON.stringify(['1/'+d])||!new RegExp('÷ '+n+' =').test(txt(q.html.replace(/<span class="fn">|<\/span>/g,' '))+' ')&&!q.html.includes('÷ '+n+' ='))add(W+'prompt '+L);
+            tally('unit÷whole');
+          }else if(m=L.match(/^fop6 (\d+) \/ 1\/(\d+)$/)){
+            const n=+m[1],d=+m[2];
+            if(d<2||d>8||n<2||n>6)add(W+'sizes '+L);
+            if(a!==String(n*d)||q.pad)add(W+L+' -> '+a);
+            if(rects.length!==n*d||rects.some(c=>c!=='vp vs'))add(W+'bars picture '+L+' '+rects.length);
+            if(JSON.stringify(frs(q.html))!==JSON.stringify(['1/'+d])||!q.html.includes('<div class="eq">'+n+' ÷ '))add(W+'prompt '+L);
+            tally('whole÷unit');
+          }else{add(W+'label '+L);continue}
+        }
+        // ---------------- geo 4
+        if(sk=='geo'&&lv==4){
+          const svg=(q.html.match(/<svg[^]*?<\/svg>/)||[''])[0],bx=boxes(svg),tx=svgTexts(svg).map(Number).sort((x,y)=>x-y).join();
+          const dimOk=(b,l,ww,h)=>near(b.l*ww,b.w*l,.5*Math.max(l,ww))&&near(b.h*l,b.l*h,.5*Math.max(l,h));
+          if(m=L.match(/^geo4 cubes (\d)x(\d)x(\d)$/)){
+            const l=+m[1],ww=+m[2],h=+m[3];
+            if(l<2||l>4||ww<2||ww>4||h<2||h>4)add(W+'sizes '+L);
+            if(a!==String(l*ww*h))add(W+L+' -> '+a);
+            if(bx.length!==1||!dimOk(bx[0],l,ww,h))add(W+'the drawn box is not '+L+' '+JSON.stringify(bx));
+            const top=(svg.match(/<path class="vcg vct" d="([^"]*)"/)||['',''])[1].split('M').filter(Boolean).length,side=(svg.match(/<path class="vcg" d="([^"]*)"/)||['',''])[1].split('M').filter(Boolean).length;
+            if(top!==(l-1)+(ww-1)||side!==(l-1)+(ww-1)+(h-1))add(W+'grid lines '+L+': '+top+'/'+side);
+            if(svgTexts(svg).length)add(W+'numbers on a counting box '+L);
+            tally('cubes');
+          }else if(m=L.match(/^geo4 vol (\d+)x(\d+)x(\d+)$/)){
+            const l=+m[1],ww=+m[2],h=+m[3];
+            if(l<2||l>12||ww<2||ww>12||h<2||h>12)add(W+'sizes '+L);
+            if(a!==String(l*ww*h)||!/cm³/.test(q.html))add(W+L+' -> '+a);
+            if(bx.length!==1||!dimOk(bx[0],l,ww,h))add(W+'the drawn box is not '+L);
+            if(tx!==[l,ww,h].sort((x,y)=>x-y).join())add(W+'labels '+tx+' for '+L);
+            if(/vcg/.test(svg))add(W+'unit grid on a labelled box');
+            if(!q.hint.steps.some(s=>s.c&&s.c.op=='×'))add(W+'hint has no multiplication step');
+            tally('labelled');
+          }else if(m=L.match(/^geo4 join (\d+)x(\d+)x(\d+)\+(\d+)x(\d+)x(\d+)$/)){
+            const [l1,w1,h1,l2,w2,h2]=m.slice(1).map(Number);
+            if(w1!==w2||h1==h2||l1<2||l2<2||l1>6||l2>6||w1<2||w1>6||h1>8||h2>8||h1<2||h2<2)add(W+'sizes '+L);
+            if(a!==String(w1*(l1*h1+l2*h2))||!/cm³/.test(q.html))add(W+L+' -> '+a);
+            if(bx.length!==2||!dimOk(bx[0],l1,w1,h1)||!dimOk(bx[1],l2,w2,h2)||!near(bx[1].l*l1,bx[0].l*l2,.5*Math.max(l1,l2)))add(W+'the drawn boxes are not '+L);
+            if(tx!==[l1,w1,h1,l2,h2].sort((x,y)=>x-y).join())add(W+'labels '+tx+' for '+L);
+            if(!/class="vsl c2"/.test(svg))add(W+'second box not in the second colour');
+            tally('joined');
+          }else{add(W+'label '+L);continue}
+        }
+        // ---------------- coord 1
+        if(sk=='coord'&&lv==1){
+          const svg=(q.html.match(/<svg[^]*?<\/svg>/)||[''])[0];
+          if(!svg)add(W+'no grid');
+          if(m=L.match(/^coord1 tap (\d),(\d)$/)){
+            const x=+m[1],y=+m[2],vs=[...svg.matchAll(/data-v="(\d),(\d)"/g)].map(z=>[+z[1],+z[2]]);
+            if(q.kind!=='tap'||a!==x+','+y)add(W+L+' -> '+a);
+            if(x<1||x>4||y<1||y>4||vs.length!==4||new Set(vs.map(String)).size!==4||vs.some(p=>p[0]<1||p[0]>4||p[1]<1||p[1]>4))add(W+'tap points '+L+JSON.stringify(vs));
+            if(!vs.some(p=>p[0]==x&&p[1]==y))add(W+'the right point is not offered '+L);
+            if(!txt(q.html).includes('('+x+', '+y+')'))add(W+'prompt does not name the point '+L);
+            // every target is 48 across and no two overlap
+            const rc=[...svg.matchAll(/<rect class="vh" x="([\d.-]+)" y="([\d.-]+)" width="48" height="48"\/>/g)].map(z=>[+z[1],+z[2]]);
+            if(rc.length!==4||rc.some((p,i)=>rc.some((r,j)=>j>i&&Math.abs(p[0]-r[0])<47.9&&Math.abs(p[1]-r[1])<47.9)))add(W+'tap targets overlap or are not 48 '+L);
+            if(!/viz-grid vi/.test(svg))add(W+'grid is not a tap picture');
+            {const vb=svg.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/);if(!vb||rc.some(p=>p[0]<0||p[1]<0||p[0]+48>+vb[1]+.01||p[1]+48>+vb[2]+.01))add(W+'a tap target sticks out of the picture '+L)}
+            tally('tap');
+          }else if(m=L.match(/^coord1 read (\d+),(\d+)$/)){
+            const x=+m[1],y=+m[2],pts=cgPts(svg);
+            if(q.kind!=='num'||q.sep!=='xy'||a!==x+','+y)add(W+L+' -> '+a);
+            if(pts.length!==1||pts[0][0]!==x||pts[0][1]!==y)add(W+'the drawn point is '+JSON.stringify(pts)+' not '+L);
+            if(x>10||y>10||(x==0&&y==0)||!/>A<\/text>/.test(svg))add(W+'point or name '+L);
+            if(!q.html.includes('id="slot"')||!q.html.includes('id="slot2"'))add(W+'two slots');
+            tally('read');if(x==0||y==0)tally('on-axis');if(x==10||y==10)tally('on-edge');
+          }else if(m=L.match(/^coord1 pair (\d+),(\d+)$/)){
+            const x=+m[1],y=+m[2],pts=cgPts(svg),vs=q.choices.map(c=>c.v);
+            if(q.kind!=='choice'||a!==x+','+y)add(W+L+' -> '+a);
+            if(pts.length!==1||pts[0][0]!==x||pts[0][1]!==y)add(W+'the drawn point is '+JSON.stringify(pts)+' not '+L);
+            if(q.choices.some(c=>c.l!=='('+c.v.replace(',',', ')+')'))add(W+'choice text '+JSON.stringify(q.choices));
+            tally('pair');if(vs.includes(y+','+x))tally('swap-offered');
+          }else if(m=L.match(/^coord1 dist (\d+),(\d+) (\d+),(\d+)$/)){
+            const [x1,y1,x2,y2]=m.slice(1).map(Number),pts=cgPts(svg);
+            const d=Math.abs(x1-x2)+Math.abs(y1-y2);
+            if((x1!==x2&&y1!==y2)||d<2)add(W+'not on one line or too close '+L);
+            if(a!==String(d))add(W+L+' -> '+a);
+            if(pts.length!==2||pts[0].join()!==x1+','+y1||pts[1].join()!==x2+','+y2)add(W+'drawn points '+JSON.stringify(pts)+' for '+L);
+            tally(x1==x2?'vertical':'horizontal');
+          }else{add(W+'label '+L);continue}
+        }
+        // ---------------- meas 6
+        if(sk=='meas'&&lv==6){
+          if(!(m=L.match(/^meas6 (\d+(?:\.\d)?) (\w+) to (\w+)$/))){add(W+'label '+L);continue}
+          const ONE={'km>m':1000,'m>cm':100,'kg>g':1000,'L>mL':1000,'yd>ft':3,'ft>in':12,'hr>min':60,'min>sec':60,'lb>oz':16,'gal>qt':4};
+          const TWO={'yd>in':36,'gal>pt':8,'hr>sec':3600,'day>min':1440,'wk>hr':168};
+          const N0=m[1],f=m[2],t=m[3],kf=f+'>'+t,kr=t+'>'+f,x10=Math.round(parseFloat(N0)*10);
+          let exp,dir;
+          if(kf in ONE||kf in TWO){dir='down';exp=x10*(ONE[kf]||TWO[kf])/10;if(!Number.isInteger(exp))add(W+'not whole '+L)}
+          else if(kr in ONE){dir='up';exp=parseFloat(N0)/ONE[kr];if(Math.abs(exp*10-Math.round(exp*10))>1e-9)add(W+'more than one decimal '+L)}
+          else{add(W+'unknown pair '+L);continue}
+          const el=String(Math.round(exp*10)/10);
+          if(!numEq(a,el)||!/^(0|[1-9]\d*)(\.\d*[1-9])?$/.test(a))add(W+L+' -> '+a+', expected '+el);
+          if((a.includes('.'))!==(q.pad=='dec')&&!(q.pad===undefined&&!a.includes('.')))add(W+'pad '+q.pad+' for '+a);
+          if(dir=='down'&&!/smaller unit/.test(q.html)||dir=='up'&&!/bigger unit/.test(q.html))add(W+'direction wording '+L);
+          const eq=txt(q.html);
+          if(!eq.includes(N0+' '+f+' ='))add(W+'prompt does not show '+N0+' '+f);
+          if(!eq.includes(' '+t))add(W+'prompt does not show the unit '+t);
+          if(q.eq!=='value'||numParts(a,numSeps(q)).some(p=>p.replace(/\D/g,'').length>(q.max||4)))add(W+'eq/max');
+          tally(kf in TWO?'two-step':dir);if(N0.includes('.'))tally('decimal-in');if(a.includes('.'))tally('decimal-out');
+        }
+        // ---------------- data 4
+        if(sk=='data'&&lv==4){
+          if(!(m=L.match(/^data4 (count|total|range) (?:k=(\d+) )?d=(\d+): ([\d ]+)$/))){add(W+'label '+L);continue}
+          const type=m[1],den=+m[3],ks=m[4].split(' ').map(Number),mxv=den==2?3:den==4?2:1,svg=(q.html.match(/<svg[^]*?<\/svg>/)||[''])[0];
+          const drawn=lpKs(svg,den,mxv).sort((x,y)=>x-y);
+          if(drawn.join()!==ks.join())add(W+'dots '+drawn+' for '+L);
+          if(![2,4,8].includes(den)||ks.length<6||ks.length>10||ks.some(k=>k<1||k>mxv*den)||new Set(ks).size<3)add(W+'data '+L);
+          const cnt={};ks.forEach(k=>{cnt[k]=(cnt[k]||0)+1});if(Math.max(...Object.values(cnt))>6)add(W+'a stack is too tall '+L);
+          if(type=='count'){
+            const k=+m[2],c=ks.filter(z=>z==k).length;
+            if(!(k in cnt)||a!==String(c)||q.kind!=='num')add(W+L+' -> '+a);
+            tally('count');
+          }else{
+            const n=type=='total'?ks.reduce((s,k)=>s+k,0):Math.max(...ks)-Math.min(...ks),e=mixed(n,den);
+            if(n%den==0)add(W+'whole result '+L);
+            if(a!==e||!numEq(a,e))add(W+L+' -> '+a+', expected '+e);
+            const whole=n/den>=1;
+            if(whole!==(q.sep==='mix')||(!whole&&q.pad!=='frac')||q.eq!=='value')add(W+'slots for '+a+': sep '+q.sep+' pad '+q.pad);
+            const g=gcd(n,den),r=(n/g)%(den/g);
+            if(!KIND.num.same(q,(whole?Math.floor(n/den)+' ':'')+(2*r)+'/'+(2*den/g)))add(W+'an equal fraction is refused '+L);
+            tally(type);tally(whole?'mixed':'fraction');
+          }
+          tally('d'+den);
+        }
+        // ---------------- pat 5
+        if(sk=='pat'&&lv==5){
+          const tx=svgTexts((q.html.match(/<svg[^]*?<\/svg>/)||[''])[0]);
+          const tbl=tx.slice(2).map(Number);
+          if(m=L.match(/^pat5 (rel|relc) (\d+) (\d+)$/)){
+            const A=+m[2],B=+m[3],k=B/A;
+            if(!Number.isInteger(k)||k<2||k>5||A<2||A>6)add(W+'numbers '+L);
+            if(tbl.join()!==[1,2,3,4].flatMap(j=>[A*j,B*j]).join()||tx[0]!=='A'||tx[1]!=='B')add(W+'table '+tx);
+            if(!txt(q.html).includes('add '+A+'.')||!txt(q.html).includes('add '+B+'.'))add(W+'rules text '+L);
+            if(m[1]=='rel'){if(a!==String(k)||q.kind!=='num')add(W+L+' -> '+a);tally('rel-num')}
+            else{
+              // exactly one statement is true for every row of the table
+              const true_=q.choices.filter(c=>{let t=c.l.match(/^B is (\d+) times A$/);if(t)return[1,2,3,4].every(j=>B*j===+t[1]*A*j);
+                t=c.l.match(/^B is A \+ (\d+)$/);if(t)return[1,2,3,4].every(j=>B*j===A*j+ +t[1]);
+                t=c.l.match(/^A is (\d+) times B$/);if(t)return[1,2,3,4].every(j=>A*j===+t[1]*B*j);return null});
+              if(true_.length!==1||true_[0].v!==a||q.cls!=='ccw')add(W+'choices '+JSON.stringify(q.choices.map(c=>c.l)));
+              tally('rel-choice');
+            }
+          }else if(m=L.match(/^pat5 pair (\d+) (\d+) A=(\d+)$/)){
+            const A=+m[1],B=+m[2],V=+m[3];
+            if(B%A||V%A||V/A<6||V/A>9)add(W+'numbers '+L);
+            if(a!==String(B/A*V))add(W+L+' -> '+a);
+            if(tbl.join()!==[1,2,3].flatMap(j=>[A*j,B*j]).join())add(W+'table '+tx);
+            tally('pair');
+          }else if(m=L.match(/^pat5 rule (\d+) (\d+) ([\d,]+)$/)){
+            const A=+m[1],B=+m[2],xs=m[3].split(',').map(Number);
+            if(A<2||A>5||B<0||B>5||xs.length!==4||new Set(xs).size!==4)add(W+'numbers '+L);
+            if(tbl.join()!==xs.flatMap(x=>[x,A*x+B]).join())add(W+'table '+tx+' for '+L);
+            // every offered rule is parsed and tried on the table: only the answer fits every row
+            const fits=r=>{const t=r.match(/^y = (\d*)x(?: \+ (\d+))?$/);if(!t)return null;const p=t[1]===''?1:+t[1],c=t[2]?+t[2]:0;return xs.every(x=>p*x+c===A*x+B)};
+            const ok=q.choices.filter(c=>fits(c.v)===true);
+            if(ok.length!==1||ok[0].v!==a||q.choices.some(c=>fits(c.v)===null)||q.cls!=='ccw')add(W+'rules '+JSON.stringify(q.choices.map(c=>c.v))+' for '+L);
+            if(a!==`y = ${A}x${B?' + '+B:''}`)add(W+L+' -> '+a);
+            tally('rule');if(B==0)tally('no-constant');
+          }else if(m=L.match(/^pat5 eval (\d+) (\d+) (\d+)$/)){
+            const A=+m[1],B=+m[2],x=+m[3];
+            if(a!==String(A*x+B)||!txt(q.html).includes('y = '+A+'x + '+B)||!txt(q.html).includes('x is '+x+','))add(W+L+' -> '+a);
+            tally('eval');
+          }else{add(W+'label '+L);continue}
+        }
+        // ---------------- story 8
+        if(sk=='story'&&lv==8){
+          const t=txt(q.html),money=[...t.matchAll(/\$(\d+\.\d\d)\b/g)].map(z=>sc(z[1]));
+          const same=(e)=>{if(!numEq(a,e)||!/^(0|[1-9]\d*)(\.\d*[1-9])?$|^\d+\/\d+$/.test(a))add(W+L+' -> '+a+', expected '+e)};
+          if(q.kind!=='num'||q.auto!==true||!q.html.includes('class="story"'))add(W+'story shape');
+          if(m=L.match(/^story8 total (\d+)\+(\d+)$/)){
+            const p1=+m[1],p2=+m[2];
+            if(money.join()!==[p1,p2].join()||p1%100==0||p2%100==0||p1+p2>=2000)add(W+'prices '+money+' for '+L);
+            same(dstr(p1+p2));if(q.pad!=='dec'||!/\$ /.test(q.html))add(W+'pad');tally('total');
+          }else if(m=L.match(/^story8 change (\d+) (\d+)$/)){
+            const bill=+m[1],p=+m[2];
+            if(money[0]!==p||!t.includes('$'+bill+' bill')||![5,10,20].includes(bill)||p>=bill*100-50||p%100==0)add(W+'prices '+t);
+            same(dstr(bill*100-p));tally('change');
+          }else if(m=L.match(/^story8 diff (\d+)-(\d+)$/)){
+            const p1=+m[1],p2=+m[2];
+            if(money.join()!==[p1,p2].join()||p1<=p2)add(W+'prices '+money+' for '+L);
+            same(dstr(p1-p2));tally('diff');
+          }else if(m=L.match(/^story8 (half|triple) (\d+)\/(\d+)$/)){
+            const A=+m[2],B=+m[3],half=m[1]=='half';
+            if(A>=B||gcd(A,B)>1||B<2||B>8||!t.includes(A+'/'+B+' cup')||(half?!/half of the recipe/.test(t):!/3 times the recipe/.test(t)))add(W+'text '+t);
+            const e=half?red(A,2*B):red(3*A,B);
+            if(!half&&(3*A)%B==0)add(W+'whole result '+L);
+            same(e);if(q.pad!=='frac'||q.eq!=='value')add(W+'pad');tally(half?'half':'triple');
+          }else if(m=L.match(/^story8 km (\d+\.\d) x (\d)$/)){
+            const x=sc(m[1]),n=+m[2];
+            if(!t.includes(m[1]+' km')||!t.includes(n+' times')||n<3||n>6)add(W+'text '+t);
+            same(dstr(x*n));tally('km-times');
+          }else if(m=L.match(/^story8 add (\d+(?:\.\d+)?)\+(\d+\.\d+)$/)){
+            if(!t.includes(m[1]+' km')||!t.includes(m[2]+' km'))add(W+'text '+t);
+            same(dstr(sc(m[1])+sc(m[2])));tally('dec-add');
+          }else if(m=L.match(/^story8 sub (\d+(?:\.\d+)?)-(\d+\.\d+)$/)){
+            if(!t.includes(m[1]+' km')||!t.includes(m[2]+' km')||sc(m[1])<=sc(m[2]))add(W+'text '+t);
+            same(dstr(sc(m[1])-sc(m[2])));tally('dec-sub');
+          }else if(m=L.match(/^story8 (fadd|fsub) (\d+)\/(\d+)([+-])(\d+)\/(\d+)$/)){
+            const A=+m[2],B=+m[3],C=+m[5],D=+m[6],ad=m[1]=='fadd';
+            if(B==D||lcm(B,D)>24||gcd(A,B)>1||gcd(C,D)>1||A>=B||C>=D||(ad?m[4]!=='+':m[4]!=='-'))add(W+'operands '+L);
+            if(!t.includes(A+'/'+B+' mile')||!t.includes(C+'/'+D+' mile'))add(W+'text '+t);
+            const n=ad?A*D+C*B:A*D-C*B;if(n<=0)add(W+'not positive '+L);
+            same(red(n,B*D));if(q.pad!=='frac')add(W+'pad');tally(m[1]);
+          }else{add(W+'label '+L);continue}
+        }
+      }
+      seen[key]=seeLab.size;
+      // reproducible: the same seed gives the same question, hint and choices
+      for(let s=1;s<=40;s++)if(JSON.stringify(genQ(sk,lv,s))!==JSON.stringify(genQ(sk,lv,s)))add(key+' seed '+s+' not reproducible');
+    }
+    // ---- mixes (each variant shows up a fair share of the time)
+    const fair=(k,names,lo)=>{for(const n of names)if(!((share[k]||{})[n]>N*lo))add(k+': '+n+' too rare '+JSON.stringify(share[k]))};
+    fair('fop3',['add','sub','simplest','any','reduces','already','improper','proper'],.12);
+    fair('fop4',['add','add-carry','sub','sub-regroup'],.04);fair('fop5',['area','mixed','reduces','already'],.1);fair('fop6',['unit÷whole','whole÷unit'],.4);
+    fair('geo4',['cubes','labelled','joined'],.25);fair('coord1',['tap','read','pair','vertical','horizontal'],.07);fair('coord1',['on-axis'],.01);fair('coord1',['on-edge'],.02);
+    fair('meas6',['down','up','two-step','decimal-in','decimal-out'],.06);fair('data4',['count','total','range','d2','d4','d8','mixed','fraction'],.1);
+    fair('pat5',['rel-num','rel-choice','pair','rule','eval'],.06);fair('pat5',['no-constant'],.04);
+    fair('story8',['total','change','diff','half','triple','km-times','dec-add','dec-sub','fadd','fsub'],.04);
+    for(const [k,min] of [['fop3',200],['fop4',200],['fop5',60],['fop6',40],['geo4',150],['coord1',100],['meas6',60],['data4',300],['pat5',100],['story8',300]])if(seen[k]<min)add(k+': only '+seen[k]+' different labels');
+    return bad;
+  };
+  const r=eval(js+';('+body.toString()+')()');
+  // the block of this chunk: no Math.random, no raw colour
+  const src=fs.readFileSync(path.join(SRC,'js','35-gen-math-upper.js'),'utf8'),i0=src.indexOf('// ---- P2-12 Crystal Caves ----'),i1=src.indexOf('\n// ---- P',i0+10),blk=src.slice(i0,i1<0?undefined:i1);
+  if(i0<0)r.push('P2-12 block marker missing');
+  if(/#[0-9a-fA-F]{3,8}\b/.test(blk))r.push('P2-12 block has a raw hex colour');
+  if(/Math\.random/.test(blk))r.push('P2-12 block uses Math.random');
+  // names in the block start with cc (CONTRIBUTING: new globals carry a prefix)
+  for(const m of blk.matchAll(/^(?:const|function) ([A-Za-z_$][\w$]*)/gm))if(!/^(cc|CC_)/i.test(m[1]))r.push('P2-12 block: global '+m[1]+' does not start with cc');
+  // VIZ.solid and coordGrid are deterministic and tokens only
+  const vz=eval(js+';VIZ');
+  if(vz.solid([{l:3,h:4}],{w:2,grid:true,lab:true})!==vz.solid([{l:3,h:4}],{w:2,grid:true,lab:true}))r.push('VIZ.solid is not deterministic');
+  if(/#[0-9a-fA-F]{3,8}\b|id=|<defs|filter/.test(vz.solid([{l:3,h:4},{l:2,h:2,c2:true}],{w:2,grid:true,lab:true})))r.push('VIZ.solid has a raw colour, id, defs or filter');
+  if(!/<text class="vta" x="[\d.]+" y="[\d.]+">A<\/text>/.test(vz.coordGrid({max:10,points:[[10,10,'A']]})))r.push('coordGrid: a name on the top right edge is not moved inside');
+  return{problems:r,note:'10 levels x 3,000 samples'};
+});
+
+run('Crystal Caves P2-12: the new world keeps every star, re-locks nothing and the map opens where it did (fixtures x grades; the path ends at the caves while it runs)',()=>{
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const body=function(){
+    const out=[],b=m=>{if(out.length<25&&!out.includes(m))out.push(m)};
+    const store={};
+    global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+    const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
+    // the path ends at the caves while this runs, so worlds added after it by later chunks do not matter here
+    const ALL=PATHS.math.worlds,CI=ALL.findIndex(w=>w.id=='m_caves'),ORIG=ALL.slice(0,CI+1),without=()=>ORIG.filter(w=>w.id!=='m_caves');
+    PATHS.math.worlds=ORIG;buildNodes('math');
+    const snap=()=>{const o={};NODES.math.forEach((n,i)=>{o[nid(n)]={st:getSt('math',i),open:unlocked('math',i),pass:passed('math',i),wid:n.wid}});return o};
+    const fixtures=[];
+    for(const name of ['fresh','midway','maxed','tricky','legacy-single-map','legacy-index-maps'])fixtures.push([name,fx(name)]);
+    // synthetic saves: everything before the caves passed (with and without the last boss), and a caves world partly played
+    const mk=(boss,extra)=>{load(null);PATHS.math.worlds=without();buildNodes('math');const m={};
+      NODES.math.forEach(n=>{if(n.sk!=='boss'||boss)m[nid(n)]=2});PATHS.math.worlds=ORIG;buildNodes('math');
+      return JSON.stringify({v:LATEST,mapv:2,name:'Kid',maps:{math:Object.assign(m,extra||{}),read:{},es:{}},grade:5})};
+    fixtures.push(['path-done',mk(true)],['stops-done-no-boss',mk(false)],['caves-started',mk(true,{fop3:3,fop4:2,geo4:1})]);
+    let checked=0,moved=0;
+    for(const [name,raw] of fixtures)for(const g of [null,-1,0,1,2,3,4,5,6]){
+      load(raw.length>2?raw:null);if(g!==null)S.grade=g;
+      const tag=name+' g'+gradeOf()+': ',maps=JSON.stringify(S.maps);
+      const now=snap(),cur=nid(NODES.math[curNode('math')]),curW=NODES.math[curNode('math')].wid;
+      PATHS.math.worlds=without();buildNodes('math');
+      const old=snap(),curOld=nid(NODES.math[curNode('math')]);
+      PATHS.math.worlds=ORIG;buildNodes('math');
+      for(const k in old){
+        checked++;
+        if(!now[k]){b(tag+'stop '+k+' disappeared');continue}
+        if(now[k].st!==old[k].st)b(tag+'stars of '+k+' changed');
+        if(old[k].pass&&!now[k].open)b(tag+'passed stop '+k+' re-locked');
+        if(old[k].open&&!now[k].open)b(tag+k+' locked by the new world');
+      }
+      const given=(JSON.parse(raw).maps||{}).math||{};
+      for(const k in now)if(!(k in old)&&now[k].st&&!(k in given))b(tag+'new stop '+k+' has stars');
+      if(JSON.stringify(S.maps)!==maps)b(tag+'building the nodes changed the map');
+      // the map opens on the same stop as before, except: a child with nothing left before the caves (every older stop passed) meets
+      // them next; and a 5th grader and up with nothing further on starts in the world of their own grade (startWorld)
+      if(cur!==curOld){
+        moved++;
+        const prevDone=NODES.math.filter(n=>n.wi<CI).every(n=>passed('math',NODES.math.indexOf(n)));
+        if(curW!=='m_caves'||!(prevDone||worldFinished('math',CI-1)||gradeOf()>=5))b(tag+'map opens on '+cur+' (was '+curOld+')');
+      }
+      if(curW==='m_caves'&&gradeOf()<5&&!worldFinished('math',CI-1)&&!worldHasProgress('math',CI))b(tag+'the map opens in the caves before the world before them is done');
+    }
+    PATHS.math.worlds=ALL;buildNodes('math');
+    // a 4th grader does not see the caves open until the world before them is finished
+    load(null);S.grade=4;if(worldOpen('math',CI))b('grade 4: the caves are open before the world before them is done');
+    S.grade=5;if(!worldOpen('math',CI))b('grade 5: the caves must be open');
+    return{out,checked,moved};
+  };
+  const r=eval(js+';('+body.toString()+')()');
+  return{problems:r.out,note:r.checked+' stop checks against a path without the caves, map moved on '+r.moved+' of 81 loads'};
 });
 
 // ---- report ----

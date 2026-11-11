@@ -1020,3 +1020,485 @@ function vlOooVal(s) {
   const v = expr();
   return Number.isInteger(v) ? v : null;
 }
+
+// ---- P2-12 Crystal Caves ----
+/* CURRICULUM M-5b: the stops of Crystal Caves (m_caves), all names start with cc.
+   fop 3-4   add and subtract fractions with unlike bottoms (simplest form in half of them), mixed numbers with regrouping
+   fop 5-6   fraction x fraction (area model) and x mixed number; unit fraction / whole and whole / unit fraction (bars)
+   geo 4     volume: count unit cubes, l x w x h from labels, two joined boxes (VIZ.solid)
+   coord 1   first quadrant: tap a point (grid to 4 so every target is 48 px), read a point (x, y), pick the pair, distance
+   meas 6    conversions both ways, decimals for metric, two steps (yd to in, hr to sec)
+   data 4    line plot of halves, quarters, eighths: how many, total, longest minus shortest
+   pat 5     two rules related ("B is 3 times A"), pick y = 2x + 1 for a table
+   story 8   money, recipes scaled by 1/2 or 3, distances with fractions and decimals
+   Every label holds the numbers of its question, so tools/test.js can rebuild the right answer from the label. */
+
+// a step hint from [picture, head, text] rows; plain text only (fractions as 3/8), the last row has a "?"
+const ccHint = rows => ({k: 'steps', w: 0, steps: rows.map(([pic, head, text]) => ST.step(pic || '', head, text, null))});
+// put one text step in front of a step hint made by stepsAdd, stepsSub ...
+const ccLead = (h, text) => {h.steps.unshift({html: `<p class="hsc">${esc(text)}</p>`, say: text}); return h};
+const ccGcd = (a, b) => (b ? ccGcd(b, a % b) : a);
+const ccLcm = (a, b) => (a / ccGcd(a, b)) * b;
+const ccFr = (n, d) => { const g = ccGcd(n, d); return `${n / g}/${d / g}`; }; // lowest terms as text
+// a decimal with the given places from a whole number of tenths / hundredths, no trailing zeros: (275, 2) -> 2.75
+const ccDec = (v, p) => { const s = String(v).padStart(p + 1, '0'), w = s.slice(0, -p), f = s.slice(-p).replace(/0+$/, ''); return f ? `${w}.${f}` : w; };
+// answer text of n/d as a number: 'frac' under 1, 'mix' otherwise (lowest terms, never a whole number); null for a whole number
+function ccAnsFor(n, d) {
+  const [a, b] = [n / ccGcd(n, d), d / ccGcd(n, d)];
+  if (b == 1) return null;
+  const w = Math.floor(a / b), r = a % b;
+  return w ? {sep: 'mix', pad: 'int', ans: `${w} ${r}/${b}`} : {sep: null, pad: 'frac', ans: `${r}/${b}`};
+}
+const ccSlot = o => (o.sep == 'mix' ? SLOT_MIX : SLOT_FRAC);
+// two proper fractions in lowest terms with different bottoms and a common bottom of at most 60
+function ccPair() {
+  for (;;) {
+    const b = R(2, 12), d = R(2, 12), a = R(1, b - 1), c = R(1, d - 1);
+    if (b != d && ccLcm(b, d) <= 60 && ccGcd(a, b) == 1 && ccGcd(c, d) == 1) return {a, b, c, d, L: ccLcm(b, d)};
+  }
+}
+
+/* ---- fop 3: unlike bottoms; the second half of the items need simplest form ---- */
+function ccFop3() {
+  const simp = coin();
+  let p, add, n;
+  do {
+    p = ccPair(); add = coin();
+    n = p.a * (p.L / p.b) + (add ? 1 : -1) * p.c * (p.L / p.d);
+  } while (n <= 0 || n % p.L == 0);
+  const {a, b, c, d, L} = p, op = add ? '+' : '−', red = ccFr(n, L);
+  const ask = simp ? 'in simplest form' : 'as a fraction';
+  const h = stepsCommonDen(a, b, c, d, add ? '+' : '−');
+  if (simp) h.steps.push(ST.step('', 'Simplest form:', 'Is there a number that goes into both the top and the bottom? Divide both by it, again and again. Is only 1 left?', null));
+  const q = {kind: 'num', pad: 'frac',
+    html: `<div class="sub">${add ? 'Add' : 'Subtract'}. Write the answer ${ask}.</div><div class="eq">${fcFr(a, b)} ${op} ${fcFr(c, d)} = ${SLOT_FRAC}</div>`,
+    say: `${fcSay(a, b)} ${add ? 'plus' : 'minus'} ${fcSay(c, d)}. Write the answer ${ask}.`, ans: red, hint: h,
+    label: `fop3 ${a}/${b} ${op} ${c}/${d}${simp ? ' simplest' : ''}`};
+  if (!simp) q.eq = 'value';
+  return q;
+}
+
+/* ---- fop 4: mixed numbers, unlike bottoms, regrouping in subtraction ---- */
+function ccFop4() {
+  let p, add, w1, w2, W, n, reg, tries = 0;
+  for (;;) {
+    p = ccPair(); add = coin(); w1 = R(2, 7); w2 = R(1, 5);
+    const A = p.a * (p.L / p.b), C = p.c * (p.L / p.d);
+    reg = false;
+    if (add) {
+      n = A + C; W = w1 + w2;
+      if (n >= p.L) {W++; n -= p.L}
+    } else {
+      if (w1 <= w2) continue;
+      if (A < C) {reg = true; n = A + p.L - C; W = w1 - w2 - 1} else {n = A - C; W = w1 - w2}
+      if (!reg && rnd() < .6 && ++tries < 40) continue; // most subtractions regroup
+    }
+    if (n > 0 && W >= 1) break;
+  }
+  const {a, b, c, d, L} = p, op = add ? '+' : '−', A = a * (L / b), C = c * (L / d), g = ccGcd(n, L);
+  const cd = stepsCommonDen(a, b, c, d, op), last = 'Then write the fraction in simplest form. What is the mixed number?';
+  let steps = cd.steps;
+  if (add) steps.push(ST.step('', 'Then the wholes:', `${w1} + ${w2} = ${w1 + w2}. If your fraction is more than 1 whole, move 1 whole over to the wholes. ${last}`, null));
+  else if (!reg) steps.push(ST.step('', 'Then the wholes:', `${w1} − ${w2} = ${w1 - w2}. Put the fraction with them. ${last}`, null));
+  else {
+    steps = steps.slice(0, -1);
+    steps.push(ST.step('', 'Not enough:', `${A}/${L} is smaller than ${C}/${L}. Take 1 whole from the ${w1}. That leaves ${w1 - 1} wholes, and the whole is ${L}/${L}, so you have ${A + L}/${L}.`, null));
+    steps.push(ST.step('', 'Now subtract:', `${w1 - 1} − ${w2} = ? wholes. ${A + L} − ${C} = ? over ${L}. ${last}`, null));
+  }
+  return {kind: 'num', sep: 'mix', eq: 'value',
+    html: `<div class="sub">${add ? 'Add' : 'Subtract'}. Write a mixed number in simplest form.</div><div class="eq">${w1} ${fcFr(a, b)} ${op} ${w2} ${fcFr(c, d)} = ${SLOT_MIX}</div>`,
+    say: `${w1} and ${fcSay(a, b)} ${add ? 'plus' : 'minus'} ${w2} and ${fcSay(c, d)}. Write a mixed number in simplest form.`,
+    ans: `${W} ${n / g}/${L / g}`,
+    hint: ST.hint([ST.step('', 'Fractions first:', `Work with ${a}/${b} and ${c}/${d} first. The whole numbers come after.`, null), ...steps], 9), label: `fop4 ${w1} ${a}/${b} ${op} ${w2} ${c}/${d}`};
+}
+
+/* ---- fop 5: fraction x fraction (area model), fraction x mixed number ---- */
+// a/b of the rows and c/d of the columns: rows in the play tint, columns in the math tint, the overlap dark
+function ccArea(a, b, c, d) {
+  const cw = Math.min(34, Math.floor(240 / d)), ch = Math.min(28, Math.floor(168 / b)), P = 3, W = d * cw + 2 * P, H = b * ch + 2 * P;
+  let body = '';
+  for (let r = 0; r < b; r++) {
+    for (let k = 0; k < d; k++) {
+      const row = r < a, col = k < c;
+      body += `<rect class="${row && col ? 'vp vs' : row ? 'vpt' : col ? 'vwg' : 'vp'}" x="${P + k * cw}" y="${P + r * ch}" width="${cw}" height="${ch}"/>`;
+    }
+  }
+  return `<svg class="viz viz-cc" viewBox="0 0 ${W} ${H}" style="--vw:${W}" role="img" aria-label="a rectangle in equal boxes, rows and columns shaded">${body}</svg>`;
+}
+function ccFop5() {
+  if (rnd() < .6) {
+    let a, b, c, d;
+    do {b = R(2, 6); d = R(2, 6); a = R(1, b - 1); c = R(1, d - 1)} while (ccGcd(a, b) > 1 || ccGcd(c, d) > 1);
+    return {kind: 'num', pad: 'frac', eq: 'value',
+      html: `${ccArea(a, b, c, d)}<div class="sub">Multiply. Write the answer as a fraction.</div><div class="eq">${fcFr(a, b)} × ${fcFr(c, d)} = ${SLOT_FRAC}</div>`,
+      say: `${fcSay(a, b)} times ${fcSay(c, d)}. The picture shows the rows and the columns. Write the answer as a fraction.`, ans: ccFr(a * c, b * d),
+      hint: ccHint([['', 'The picture:', `The orange rows show ${a}/${b}. The blue columns show ${c}/${d}. The dark boxes are in both. How many dark boxes? How many boxes in all?`],
+        ['', 'Or multiply:', `Tops: ${a} × ${c} = ? Bottoms: ${b} × ${d} = ?`],
+        ['', 'Simplest form:', 'Does one number go into both the top and the bottom? Divide to make the fraction as small as it can be. What is left?']]),
+      label: `fop5 ${a}/${b} x ${c}/${d}`};
+  }
+  let a, b, c, d, W, n;
+  do {
+    b = R(2, 6); d = R(2, 6); a = R(1, b - 1); c = R(1, d - 1); W = R(1, 3);
+    n = a * (W * d + c);
+  } while (ccGcd(a, b) > 1 || ccGcd(c, d) > 1 || n % (b * d) == 0);
+  const top = W * d + c;
+  return {kind: 'num', pad: 'frac', eq: 'value',
+    html: `<div class="sub">Multiply. Write the answer as a fraction.</div><div class="eq">${fcFr(a, b)} × ${W} ${fcFr(c, d)} = ${SLOT_FRAC}</div>`,
+    say: `${fcSay(a, b)} times ${W} and ${fcSay(c, d)}. Write the answer as a fraction.`, ans: ccFr(n, b * d),
+    hint: ccHint([['', 'Mixed number to fraction:', `${W} ${c}/${d} is ${W} wholes of ${d}/${d}, and ${c}/${d} more. ${W} × ${d} + ${c} = ${top}, so it is ${top}/${d}.`],
+      ['', 'Multiply:', `${a}/${b} × ${top}/${d}. Tops: ${a} × ${top} = ? Bottoms: ${b} × ${d} = ?`],
+      ['', 'Simplest form:', 'Does one number go into both the top and the bottom? Divide to make the fraction as small as it can be. What is left?']]),
+    label: `fop5 ${a}/${b} x ${W} ${c}/${d}`};
+}
+
+/* ---- fop 6: unit fraction / whole, whole / unit fraction ---- */
+// one bar in d parts, the first part shaded and cut into n small pieces
+function ccSplit(d, n) {
+  const cw = Math.min(40, Math.floor(260 / d)), rh = 26, P = 3, W = d * cw + 2 * P, H = rh + 2 * P, sw = cw / n;
+  let body = '';
+  for (let i = 0; i < d; i++) body += `<rect class="vp${i == 0 ? ' vs' : ''}" x="${P + i * cw}" y="${P}" width="${cw}" height="${rh}"/>`;
+  let cut = '';
+  for (let k = 1; k < n; k++) cut += `M${Math.round((P + k * sw) * 10) / 10} ${P}v${rh}`;
+  return `<svg class="viz viz-cc" viewBox="0 0 ${W} ${H}" style="--vw:${W}" role="img" aria-label="a bar in equal parts, the first part cut into smaller pieces">${body}<path class="vce" stroke-width="2" d="${cut}"/></svg>`;
+}
+function ccFop6() {
+  if (coin()) {
+    const d = R(2, 8), n = R(2, 6);
+    return {kind: 'num', pad: 'frac', eq: 'value',
+      html: `${ccSplit(d, n)}<div class="sub">Divide. Write the answer as a fraction.</div><div class="eq">${fcFr(1, d)} ÷ ${n} = ${SLOT_FRAC}</div>`,
+      say: `${fcSay(1, d)} divided by ${n}. The first part of the bar is cut into ${n} small pieces. Write the answer as a fraction.`, ans: `1/${d * n}`,
+      hint: ccHint([[ccSplit(d, n), 'Cut it up:', `Take 1/${d} of the bar and cut it into ${n} equal small pieces. Each small piece is one answer.`],
+        ['', 'Name the piece:', `The whole bar would have ${d} × ${n} = ? of these small pieces. So each one is 1 out of that many.`]]),
+      label: `fop6 1/${d} / ${n}`};
+  }
+  const n = R(2, 6), d = R(2, 8);
+  return {kind: 'num',
+    html: `${ccBars(n, d)}<div class="sub">How many pieces?</div><div class="eq">${n} ÷ ${fcFr(1, d)} = ${SLOT}</div>`,
+    say: `${n} divided by ${fcSay(1, d)}. How many pieces of ${fcSay(1, d)} are in ${n} wholes?`, ans: String(n * d),
+    hint: ccHint([['', 'Cut up the wholes:', `Each whole is cut into ${ccPl(d)}. How many ${ccPl(d)} make 1 whole?`],
+      ['', 'Count them all:', `${n} wholes with ${d} pieces in each: ${n} × ${d} = ?`]]),
+    label: `fop6 ${n} / 1/${d}`};
+}
+// n bars, each cut into d parts
+function ccBars(n, d) {
+  const cw = Math.min(34, Math.floor(250 / d)), rh = 14, gap = 5, P = 3, W = d * cw + 2 * P, H = n * (rh + gap) - gap + 2 * P;
+  let body = '';
+  for (let r = 0; r < n; r++) for (let i = 0; i < d; i++) body += `<rect class="vp vs" x="${P + i * cw}" y="${P + r * (rh + gap)}" width="${cw}" height="${rh}"/>`;
+  return `<svg class="viz viz-cc" viewBox="0 0 ${W} ${H}" style="--vw:${W}" role="img" aria-label="whole bars, each cut into equal parts">${body}</svg>`;
+}
+
+/* ---- geo 4: volume ---- */
+function ccGeo4() {
+  const f = rnd();
+  if (f < .34) { // count the unit cubes
+    const l = R(2, 4), w = R(2, 4), h = R(2, 4);
+    return {kind: 'num', max: 3,
+      html: `${VIZ.solid([{l, h}], {w, grid: true})}<div class="sub">The box is filled with unit cubes. How many cubes?</div><div class="eq">${SLOT} cubes</div>`,
+      say: 'The box is made of small cubes, all the same size. Count the cubes in one layer, then count the layers. How many cubes in all?', ans: String(l * w * h),
+      hint: ccHint([[VIZ.solid([{l, h: 1}], {w, grid: true}), 'One layer:', `Look at the top. There are ${l} cubes in a row and ${w} rows. ${l} × ${w} = ? cubes make one layer.`],
+        ['', 'Stack the layers:', `The box is ${h} layers tall. Every layer has the same number of cubes. (cubes in a layer) × ${h} = ?`]]),
+      label: `geo4 cubes ${l}x${w}x${h}`};
+  }
+  if (f < .72) { // labelled box
+    const l = R(2, 12), w = R(2, 12), h = R(2, 12), base = l * w, v = base * h;
+    const mul = stepsMul(base, h);
+    mul.steps.unshift(ST.step('', 'Volume of a box:', `Length × width × height. First the bottom layer: ${l} × ${w} = ${base} square units. Then ${h} layers high: ${base} × ${h}.`, null));
+    return {kind: 'num', max: 4,
+      html: `${VIZ.solid([{l, h}], {w, lab: true})}<div class="sub">All sides are in cm. What is the volume?</div><div class="eq">${SLOT} cm³</div>`,
+      say: `A box is ${l} centimeters long, ${w} centimeters wide and ${h} centimeters tall. What is its volume in cubic centimeters?`, ans: String(v),
+      hint: mul, label: `geo4 vol ${l}x${w}x${h}`};
+  }
+  // two boxes joined: add the two volumes
+  let l1, l2, w, h1, h2;
+  do {l1 = R(2, 6); l2 = R(2, 6); w = R(2, 6); h1 = R(2, 8); h2 = R(2, 8)} while (h1 == h2);
+  const v1 = l1 * w * h1, v2 = l2 * w * h2;
+  return {kind: 'num', max: 3,
+    html: `${VIZ.solid([{l: l1, h: h1}, {l: l2, h: h2, c2: true}], {w, lab: true})}<div class="sub">Two boxes stuck together. All sides are in cm. Find the volume.</div><div class="eq">${SLOT} cm³</div>`,
+    say: `Two boxes are stuck together. The blue box is ${l1} by ${w} by ${h1}. The orange box is ${l2} by ${w} by ${h2}. All sides are in centimeters. What is the volume of the whole solid?`, ans: String(v1 + v2),
+    hint: ccHint([['', 'Split it:', 'Find the volume of each box on its own, then add the two volumes.'],
+      ['', 'Blue box:', `${l1} × ${w} × ${h1} = ${v1} cubic cm.`], ['', 'Orange box:', `${l2} × ${w} × ${h2} = ${v2} cubic cm.`],
+      ['', 'Add:', `${v1} + ${v2} = ?`]]),
+    label: `geo4 join ${l1}x${w}x${h1}+${l2}x${w}x${h2}`};
+}
+
+/* ---- coord 1: the first quadrant ---- */
+const ccXY = '<span class="ccxy">(<span class="slot" id="slot"></span><span class="ccsep">,</span><span class="slot" id="slot2"></span>)</span>';
+const ccPair2 = (x, y) => `(${x}, ${y})`;
+function ccCoord1() {
+  const f = rnd();
+  if (f < .25) { // tap the point; the grid stops at 4 so that every target is a whole 48 px square on a phone (VIZ.coordGrid)
+    const x = R(1, 4), y = R(1, 4), key = `${x},${y}`;
+    const cand = [[y, x], [x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1], [x + 1, y + 1], [x - 1, y - 1]]
+      .filter(p => p[0] >= 1 && p[0] <= 4 && p[1] >= 1 && p[1] <= 4 && p.join() != key);
+    const pts = [[x, y]].concat(shuffle(cand).slice(0, 3));
+    return {kind: 'tap', ans: key, ansSay: `${x} across and ${y} up`,
+      html: `${VIZ.coordGrid({max: 4, tapPts: shuffle(pts)})}<div class="sub">Tap the point ${ccPair2(x, y)}.</div>`,
+      say: `Tap the point ${x}, ${y}. Go ${x} across, then ${y} up.`,
+      hint: {k: 'text', s: `Start at 0. The first number tells how far to go across, to the right. The second number tells how far to go up. Go across first, then up.`},
+      label: `coord1 tap ${x},${y}`};
+  }
+  const pt = () => {
+    let x, y;
+    do {x = R(0, 10); y = R(0, 10)} while ((x == 0 && y == 0) || ((x == 0 || y == 0) && rnd() < .8));
+    return [x, y];
+  };
+  if (f < .55) { // read the point
+    const [x, y] = pt();
+    return {kind: 'num', sep: 'xy',
+      html: `${VIZ.coordGrid({max: 10, points: [[x, y, 'A']]})}<div class="sub">What are the coordinates of point A?</div><div class="eq">${ccXY}</div>`,
+      say: 'What are the coordinates of point A? Say how far across, then how far up.', ans: `${x},${y}`, after: `Point A is ${x} across and ${y} up.`,
+      hint: ccHint([['', 'Across first:', 'Start at 0. Slide to the right along the bottom until you are straight below point A. What number is there?'],
+        ['', 'Then up:', 'Now go up from there to point A. What number is that? Write across first, then up.']]),
+      label: `coord1 read ${x},${y}`};
+  }
+  if (f < .72) { // which pair names A
+    const [x, y] = pt();
+    const set = new Map([[`${x},${y}`, ccPair2(x, y)]]);
+    for (const [a, b] of shuffle([[y, x], [x + 1, y], [x, y + 1], [x - 1, y], [x, y - 1], [x + 2, y], [x - 1, y - 1], [x - 2, y], [x, y - 2]])) {
+      if (a >= 0 && a <= 10 && b >= 0 && b <= 10) set.set(`${a},${b}`, ccPair2(a, b));
+      if (set.size == 4) break;
+    }
+    return {kind: 'choice', ans: `${x},${y}`, choices: shuffle([...set].map(([v, l]) => ({v, l}))),
+      html: `${VIZ.coordGrid({max: 10, points: [[x, y, 'A']]})}<div class="sub">Which ordered pair names point A?</div>`,
+      say: 'Which ordered pair names point A? The first number is across and the second number is up.',
+      hint: ccHint([['', 'Across first:', 'Slide right along the bottom to below point A. That number comes first.'], ['', 'Then up:', 'Now go up to A. That number comes second. Which pair has them in that order?']]),
+      label: `coord1 pair ${x},${y}`};
+  }
+  // distance between two points on the same line
+  const horiz = coin();
+  let u = R(0, 10), v, k;
+  do {v = R(0, 10); k = R(1, 10)} while (Math.abs(u - v) < 2);
+  const A = horiz ? [u, k] : [k, u], B = horiz ? [v, k] : [k, v], dist = Math.abs(u - v), hi = Math.max(u, v), lo = Math.min(u, v);
+  return {kind: 'num', max: 2,
+    html: `${VIZ.coordGrid({max: 10, points: [[A[0], A[1], 'A'], [B[0], B[1], 'B']]})}<div class="sub">How far is it from A to B? (units)</div><div class="eq">${SLOT}</div>`,
+    say: 'How far is it from point A to point B? Count the units along the line.', ans: String(dist),
+    hint: ccHint([['', 'Same line:', horiz ? 'A and B are on the same row, so only the across numbers are different.' : 'A and B are in the same column, so only the up numbers are different.'],
+      ['', 'The gap:', `Take the smaller number from the bigger one: ${hi} − ${lo} = ?`]]),
+    label: `coord1 dist ${A.join(',')} ${B.join(',')}`};
+}
+
+/* ---- meas 6: conversions both ways, decimals for metric, two steps ---- */
+const CC_ONE = [['km', 'm', 1000, 'kilometers', 'meters', 1], ['m', 'cm', 100, 'meters', 'centimeters', 1], ['kg', 'g', 1000, 'kilograms', 'grams', 1],
+  ['L', 'mL', 1000, 'liters', 'milliliters', 1], ['yd', 'ft', 3, 'yards', 'feet', 0], ['ft', 'in', 12, 'feet', 'inches', 0], ['hr', 'min', 60, 'hours', 'minutes', 0],
+  ['min', 'sec', 60, 'minutes', 'seconds', 0], ['lb', 'oz', 16, 'pounds', 'ounces', 0], ['gal', 'qt', 4, 'gallons', 'quarts', 0]];
+const CC_TWO = [['yd', 'ft', 'in', 3, 12, 'yards', 'inches', 2, 9], ['gal', 'qt', 'pt', 4, 2, 'gallons', 'pints', 2, 9], ['hr', 'min', 'sec', 60, 60, 'hours', 'seconds', 2, 4],
+  ['day', 'hr', 'min', 24, 60, 'days', 'minutes', 2, 5], ['wk', 'day', 'hr', 7, 24, 'weeks', 'hours', 2, 6]];
+function ccMeas6() {
+  const f = rnd();
+  const maxOf = a => ({max: Math.max(4, String(a).length)});
+  if (f < .35) { // two steps
+    const [b, m, s, k1, k2, bn, sn, lo, hi] = pick(CC_TWO), n = R(lo, hi), mid = n * k1, ans = mid * k2;
+    return {kind: 'num', eq: 'value', ...maxOf(ans),
+      html: `<div class="sub">Change to the smaller unit.</div><div class="eq">${n} ${b} = ${SLOT} ${s}</div>`,
+      say: `${n} ${bn} is how many ${sn}?`, ans: String(ans),
+      hint: ccHint([['', 'Two steps:', `${b} to ${m}, then ${m} to ${s}. 1 ${b} = ${k1} ${m}. 1 ${m} = ${k2} ${s}.`],
+        ['', 'Step 1:', `${n} ${b} = ${n} × ${k1} = ${mid} ${m}.`], ['', 'Step 2:', `${mid} ${m} = ${mid} × ${k2} = ?`]]),
+      label: `meas6 ${n} ${b} to ${s}`};
+  }
+  const [b, s, k, bn, sn, metric] = pick(CC_ONE), dec = metric && rnd() < .7;
+  if (coin()) { // big to small; metric units often with a decimal
+    if (dec) {
+      const t = R(11, 99), ans = t * k / 10;
+      return {kind: 'num', eq: 'value', ...maxOf(ans),
+        html: `<div class="sub">Change to the smaller unit.</div><div class="eq">${ccDec(t, 1)} ${b} = ${SLOT} ${s}</div>`, say: `${ccDec(t, 1).replace('.', ' point ')} ${bn} is how many ${sn}?`, ans: String(ans),
+        hint: ccHint([['', 'Table:', `1 ${b} = ${k} ${s}. You are changing to the smaller unit, so the number gets bigger.`], ['', 'Multiply:', `${ccDec(t, 1)} × ${k} = ?`]]),
+        label: `meas6 ${ccDec(t, 1)} ${b} to ${s}`};
+    }
+    const n = R(2, k >= 100 ? 9 : 20), ans = n * k;
+    return {kind: 'num', eq: 'value', ...maxOf(ans),
+      html: `<div class="sub">Change to the smaller unit.</div><div class="eq">${n} ${b} = ${SLOT} ${s}</div>`, say: `${n} ${bn} is how many ${sn}?`, ans: String(ans),
+      hint: ccHint([['', 'Table:', `1 ${b} = ${k} ${s}. You are changing to the smaller unit, so the number gets bigger.`], ['', 'Multiply:', `${n} × ${k} = ?`]]),
+      label: `meas6 ${n} ${b} to ${s}`};
+  }
+  // small to big (metric answers may have a decimal)
+  if (dec) {
+    let t;
+    do t = R(11, 99); while (t % 10 == 0);
+    const small = t * k / 10;
+    return {kind: 'num', pad: 'dec', eq: 'value', ...maxOf(small),
+      html: `<div class="sub">Change to the bigger unit.</div><div class="eq">${small} ${s} = ${SLOT} ${b}</div>`, say: `${small} ${sn} is how many ${bn}?`, ans: ccDec(t, 1),
+      hint: ccHint([['', 'Table:', `1 ${b} = ${k} ${s}. You are changing to the bigger unit, so the number gets smaller.`], ['', 'Divide:', `${small} ÷ ${k} = ? Move the decimal point.`]]),
+      label: `meas6 ${small} ${s} to ${b}`};
+  }
+  const n = R(2, k >= 60 ? 12 : 20), small = n * k;
+  return {kind: 'num', eq: 'value', ...maxOf(n),
+    html: `<div class="sub">Change to the bigger unit.</div><div class="eq">${small} ${s} = ${SLOT} ${b}</div>`, say: `${small} ${sn} is how many ${bn}?`, ans: String(n),
+    hint: ccHint([['', 'Table:', `1 ${b} = ${k} ${s}. You are changing to the bigger unit, so the number gets smaller.`], ['', 'Divide:', `How many groups of ${k} fit in ${small}? ${small} ÷ ${k} = ?`]]),
+    label: `meas6 ${small} ${s} to ${b}`};
+}
+
+/* ---- data 4: line plots of halves, quarters and eighths ---- */
+const CC_LP = [['leaf', 'leaves', 'inches'], ['ribbon', 'ribbons', 'yards'], ['worm', 'worms', 'inches'], ['rope', 'ropes', 'feet'],
+  ['seedling', 'seedlings', 'inches'], ['pencil', 'pencils', 'inches']];
+// an amount k/den as html (whole numbers stay whole; the rest are written like the labels of the line plot) and as speech
+const ccPl = d => (d == 2 ? 'halves' : FC_NAMES[d] + 's'); // halves, thirds, fourths
+const CC_SING = {inches: 'inch', yards: 'yard', feet: 'foot'};
+const ccAmt = (k, den) => (k % den ? fcFr(k, den) : String(k / den));
+const ccAmtSay = (k, den) => (k % den ? fcSay(k, den) : String(k / den));
+function ccData4() {
+  const [den, max] = pick([[2, 3], [4, 2], [8, 1]]), [noun, plural, unit] = pick(CC_LP), type = pick(['count', 'total', 'range']);
+  let ks, v, o;
+  for (;;) {
+    const all = Array.from({length: max * den}, (_, i) => i + 1), m = R(3, Math.min(5, all.length)), vals = shuffle(all).slice(0, m), n = R(6, 10);
+    ks = vals.slice();
+    while (ks.length < n) ks.push(pick(vals));
+    const cnt = {};
+    ks.forEach(k => {cnt[k] = (cnt[k] || 0) + 1});
+    if (Math.max(...Object.values(cnt)) > 6) continue;
+    ks.sort((a, b) => a - b);
+    if (type == 'count') {v = pick(vals); break}
+    o = ccAnsFor(type == 'total' ? ks.reduce((s, k) => s + k, 0) : ks[ks.length - 1] - ks[0], den);
+    if (o) break;
+  }
+  const plot = VIZ.linePlot(ks.map(k => k / den), {min: 0, max, step: 1 / den, den, w: 290});
+  const head = `<div class="sub">Each dot shows the length of one ${noun} in ${unit}.</div>`;
+  const tag = `d=${den}: ${ks.join(' ')}`;
+  if (type == 'count') {
+    const c = ks.filter(k => k == v).length;
+    return {kind: 'num', max: 2, html: `${plot}${head}<div class="sub">How many ${plural} are ${v % den ? v + '/' + den : v / den} ${v == den ? CC_SING[unit] : unit} long?</div><div class="eq">${SLOT}</div>`,
+      say: `Each dot shows the length of one ${noun} in ${unit}. How many ${plural} are ${ccAmtSay(v, den)} ${v == den ? CC_SING[unit] : unit} long?`, ans: String(c),
+      hint: ccHint([['', 'Find the mark:', `Find ${v % den ? v + '/' + den : v / den} on the number line under the dots.`],
+        ['', 'Count the dots:', 'How many dots are stacked above that mark?']]),
+      label: `data4 count k=${v} ${tag}`};
+  }
+  const sum = ks.reduce((s, k) => s + k, 0), q = {kind: 'num', eq: 'value', pad: o.pad, ans: o.ans};
+  if (o.sep) q.sep = o.sep;
+  if (type == 'total') {
+    return {...q, html: `${plot}${head}<div class="sub">What is the total length of all the ${plural}?</div><div class="eq">${ccSlot(o)} ${unit}</div>`,
+      say: `Each dot shows the length of one ${noun} in ${unit}. What is the total length of all the ${plural}? Write a fraction or a mixed number.`,
+      hint: ccHint([['', 'List them:', `Read every dot from the left: ${ks.map(k => (k % den ? k + '/' + den : k / den)).join(', ')}.`],
+        ['', 'Add:', `Every length is a number of ${ccPl(den)}, so add the tops and keep ${den} on the bottom. The tops: ${ks.join(' + ')} = ?`],
+        ['', 'Make it neat:', 'If the top is bigger than the bottom, take out the whole numbers. Then write it in simplest form. What is the number?']]),
+      label: `data4 total ${tag}`};
+  }
+  const hi = ks[ks.length - 1], lo = ks[0];
+  return {...q, html: `${plot}${head}<div class="sub">How much longer is the longest ${noun} than the shortest?</div><div class="eq">${ccSlot(o)} ${unit}</div>`,
+    say: `Each dot shows the length of one ${noun} in ${unit}. How much longer is the longest ${noun} than the shortest? Write a fraction or a mixed number.`,
+    hint: ccHint([['', 'Find the ends:', `The longest is ${hi % den ? hi + '/' + den : hi / den} and the shortest is ${lo % den ? lo + '/' + den : lo / den}.`],
+      ['', 'Subtract:', `Both are ${ccPl(den)}. Subtract the tops: ${hi} − ${lo} = ? Keep ${den} on the bottom, then write it in simplest form.`]]),
+    label: `data4 range ${tag}`};
+}
+
+/* ---- pat 5: two rules ---- */
+const ccRule = (a, b) => `y = ${a == 1 ? '' : a}x${b ? ' + ' + b : ''}`;
+function ccPat5() {
+  const f = rnd();
+  if (f < .35) { // how are the two sequences related
+    const a = R(2, 6), k = R(2, 5), b = a * k, rows = [1, 2, 3, 4].map(i => [a * i, b * i]);
+    const pic = `<p class="story">Rule A: start at 0, add ${a}.<br>Rule B: start at 0, add ${b}.</p>${VIZ.tableInOut(rows, {head: ['A', 'B']})}`;
+    const hint = ccHint([['', 'Compare one row:', `Row 1: A is ${a} and B is ${b}. How many times as big is B? ${a} × ? = ${b}.`],
+      ['', 'Check another row:', `Row 2: A is ${2 * a} and B is ${2 * b}. Does the same number work? Yes? Then that is the rule.`]]);
+    if (coin()) {
+      return {kind: 'num', max: 1, html: `${pic}<div class="sub">Each number in B is ___ times the number next to it in A.</div><div class="eq">${SLOT}</div>`,
+        say: `Rule A starts at 0 and adds ${a}. Rule B starts at 0 and adds ${b}. Each number in B is how many times the number next to it in A?`, ans: String(k), hint, label: `pat5 rel ${a} ${b}`};
+    }
+    const ch = [[`B is ${k} times A`], [`B is A + ${b - a}`], [`A is ${k} times B`], [`B is ${k + 1} times A`]].map(([l]) => ({v: l, l}));
+    return {kind: 'choice', html: `${pic}<div class="sub">How are the numbers in B and A related?</div>`,
+      say: `Rule A starts at 0 and adds ${a}. Rule B starts at 0 and adds ${b}. How are the numbers in B and A related?`, ans: `B is ${k} times A`, choices: shuffle(ch), cls: 'ccw', hint,
+      label: `pat5 relc ${a} ${b}`};
+  }
+  if (f < .5) { // use the link to find a bigger pair
+    const a = R(2, 6), k = R(2, 5), b = a * k, i = R(6, 9), A = a * i;
+    return {kind: 'num', max: 3,
+      html: `<p class="story">Rule A: start at 0, add ${a}.<br>Rule B: start at 0, add ${b}.</p>${VIZ.tableInOut([1, 2, 3].map(j => [a * j, b * j]), {head: ['A', 'B']})}<div class="sub">When A is ${A}, what is B?</div><div class="eq">${SLOT}</div>`,
+      say: `Rule A starts at 0 and adds ${a}. Rule B starts at 0 and adds ${b}. Each B number goes with the A number next to it. When A is ${A}, what is B?`, ans: String(b * i),
+      hint: ccHint([['', 'Find the link:', `Row 1: A is ${a} and B is ${b}. B is ${k} times as big as A.`], ['', 'Use it:', `Do the same to ${A}: ${A} × ${k} = ?`]]),
+      label: `pat5 pair ${a} ${b} A=${A}`};
+  }
+  if (f < .88) { // pick the rule for the table
+    const a = R(2, 5), b = rnd() < .7 ? R(1, 5) : 0, xs = shuffle([0, 1, 2, 3, 4, 5, 6, 7, 8]).slice(0, 4).sort((p, q) => p - q);
+    const rows = xs.map(x => [x, a * x + b]), right = ccRule(a, b), set = new Map([[right, 1]]);
+    const cand = [[a, b + 1], [a, b - 1], [a + 1, b], [a - 1, b], [b, a], [1, a + b]].filter(([p, q]) => p >= 1 && q >= 0);
+    for (const [p, q] of shuffle(cand)) {
+      set.set(ccRule(p, q), 1);
+      if (set.size == 4) break;
+    }
+    const [x0, y0] = rows[1], [x1, y1] = rows[2];
+    return {kind: 'choice', html: `${VIZ.tableInOut(rows, {head: ['x', 'y']})}<div class="sub">Which rule gives y from x?</div>`,
+      say: 'Look at the table. Which rule turns each x number into its y number?', ans: right, choices: shuffle([...set.keys()].map(l => ({v: l, l}))), cls: 'ccw',
+      hint: ccHint([['', 'Try one row:', `Row 2: x is ${x0} and y is ${y0}. Put ${x0} in each rule. Which rules give ${y0}?`],
+        ['', 'Try another row:', `Row 3: x is ${x1} and y is ${y1}. Test the rules that are left. Which rule works on every row?`]]),
+      label: `pat5 rule ${a} ${b} ${xs.join(',')}`};
+  }
+  const a = R(2, 5), b = R(1, 9), x = R(2, 9);
+  return {kind: 'num', max: 2, html: `<p class="story">Rule: ${ccRule(a, b)}</p><div class="sub">When x is ${x}, what is y?</div><div class="eq">y = ${SLOT}</div>`,
+    say: `The rule is y equals ${a} times x plus ${b}. When x is ${x}, what is y?`, ans: String(a * x + b),
+    hint: ccHint([['', 'Put in x:', `Replace x with ${x}: ${a} × ${x} + ${b}.`], ['', 'Multiply first:', `${a} × ${x} = ? Then add ${b}.`]]),
+    label: `pat5 eval ${a} ${b} ${x}`};
+}
+
+/* ---- story 8: money, recipes scaled by 1/2 or 3, distances ---- */
+const ccMoney = c => `$${Math.floor(c / 100)}.${String(c % 100).padStart(2, '0')}`;
+const ccNum = c => (c / 100).toFixed(2);
+const CC_THING = ['notebook', 'pen', 'book', 'toy car', 'kite', 'puzzle', 'ball', 'poster', 'folder', 'sticker pack'];
+const CC_FOOD = ['flour', 'sugar', 'oats', 'milk', 'rice', 'raisins'];
+function ccStory8() {
+  const f = rnd(), who = pick([S.name || 'Sam', petN(), 'Ava', 'Leo', 'Mia']);
+  const story = (text, spoken, more) => ({kind: 'num', auto: true, say: spoken || text, ...more});
+  const cents = (lo, hi) => { let c; do c = R(lo, hi); while (c % 100 == 0); return c; };
+  if (f < .3) { // money
+    const [t1, t2] = shuffle(CC_THING).slice(0, 2), type = f < .12 ? 'total' : f < .22 ? 'change' : 'diff';
+    if (type == 'total') {
+      const p1 = cents(105, 899), p2 = cents(105, 899), text = `${who} buys a ${t1} for ${ccMoney(p1)} and a ${t2} for ${ccMoney(p2)}. How much money does ${who} spend in all?`;
+      return story(text, null, {pad: 'dec', eq: 'value', html: `<p class="story">${words(text)}</p><div class="eq">$ ${SLOT}</div>`, ans: ccDec(p1 + p2, 2),
+        hint: ccLead(stepsAdd(ccNum(p1), ccNum(p2)), 'Add the two prices. Line up the decimal points.'), label: `story8 total ${p1}+${p2}`});
+    }
+    if (type == 'change') {
+      const bill = pick([5, 10, 20]), p = cents(105, bill * 100 - 55), text = `A ${t1} costs ${ccMoney(p)}. ${who} pays with a $${bill} bill. How much change does ${who} get back?`;
+      return story(text, null, {pad: 'dec', eq: 'value', html: `<p class="story">${words(text)}</p><div class="eq">$ ${SLOT}</div>`, ans: ccDec(bill * 100 - p, 2),
+        hint: ccLead(stepsSub(String(bill), ccNum(p)), 'Change is what is left of the money paid. Subtract the price from it.'), label: `story8 change ${bill} ${p}`});
+    }
+    let p1 = cents(205, 999), p2 = cents(105, 899);
+    if (p1 <= p2) [p1, p2] = [p2 + 100 + R(1, 99), p1];
+    while (p1 % 100 == 0) p1++;
+    const text = `A ${t1} costs ${ccMoney(p1)}. A ${t2} costs ${ccMoney(p2)}. How much more does the ${t1} cost than the ${t2}?`;
+    return story(text, null, {pad: 'dec', eq: 'value', html: `<p class="story">${words(text)}</p><div class="eq">$ ${SLOT}</div>`, ans: ccDec(p1 - p2, 2),
+      hint: ccLead(stepsSub(ccNum(p1), ccNum(p2)), '"How much more" means subtract the smaller price from the bigger one.'), label: `story8 diff ${p1}-${p2}`});
+  }
+  if (f < .58) { // recipes: half, or 3 times as much
+    const half = f < .44, food = pick(CC_FOOD);
+    let a, b;
+    do {b = R(2, 8); a = R(1, b - 1)} while (ccGcd(a, b) > 1 || (!half && (3 * a) % b == 0));
+    const text = half ? `A recipe uses ${a}/${b} cup of ${food}. ${who} makes half of the recipe. How many cups of ${food} does ${who} need?`
+      : `A recipe uses ${a}/${b} cup of ${food}. ${who} makes 3 times the recipe. How many cups of ${food} does ${who} need?`;
+    const spoken = text.replace(`${a}/${b}`, fcSay(a, b).replace(/^1 /, 'one ')); // "3 fourths"
+    return story(text, spoken, {pad: 'frac', eq: 'value', html: `<p class="story">${words(text)}</p><div class="eq">${SLOT_FRAC} cups</div>`, ans: half ? ccFr(a, 2 * b) : ccFr(3 * a, b),
+      hint: stepsStory(half ? ['Half of the recipe means half of the food: multiply by 1/2.', `Multiply the tops: ${a} × 1 = ? Multiply the bottoms: ${b} × 2 = ?`, 'Can the top and the bottom both be divided by the same number? Write it in simplest form. What is left?']
+        : ['3 times the recipe means 3 times the food: multiply by 3.', `Multiply the top: 3 × ${a} = ? Keep ${b} on the bottom.`, 'Can the top and the bottom both be divided by the same number? Write it in simplest form. What is left?']),
+      label: `story8 ${half ? 'half' : 'triple'} ${a}/${b}`});
+  }
+  if (f < .86) { // decimal distances
+    if (f < .68) {
+      let t; do t = R(11, 49); while (t % 10 == 0);
+      const n = R(3, 6), text = `A trail is ${ccDec(t, 1)} km long. ${who} walks the trail ${n} times. How many km does ${who} walk?`;
+      return story(text, text.replace(ccDec(t, 1), ccDec(t, 1).replace('.', ' point ')), {pad: 'dec', eq: 'value', html: `<p class="story">${words(text)}</p><div class="eq">${SLOT} km</div>`, ans: ccDec(t * n, 1),
+        hint: stepsStory([`${n} trips means ${n} groups of ${ccDec(t, 1)} km: multiply.`, `Leave out the point for now: ${t} × ${n} = ?`, `Put the point back. ${ccDec(t, 1)} has 1 digit after the point, so the answer does too. Where does the point go?`]),
+        label: `story8 km ${ccDec(t, 1)} x ${n}`});
+    }
+    if (f < .78) {
+      const x = R(11, 59), y = cents(101, 499), sx = ccDec(x, 1), sy = ccDec(y, 2);
+      const text = `${who} ran ${sx} km on Monday and ${sy} km on Tuesday. How many km did ${who} run in all?`;
+      return story(text, text.replace(sx, sx.replace('.', ' point ')).replace(sy, sy.replace('.', ' point ')), {pad: 'dec', eq: 'value', html: `<p class="story">${words(text)}</p><div class="eq">${SLOT} km</div>`, ans: ccDec(x * 10 + y, 2),
+        hint: ccLead(stepsAdd(sx, sy), 'Add the two distances. Line up the decimal points.'), label: `story8 add ${sx}+${sy}`});
+    }
+    let T, y;
+    do {T = R(40, 120); y = cents(101, 399)} while (T * 10 <= y);
+    const sT = ccDec(T, 1), sy = ccDec(y, 2), text = `A path is ${sT} km long. ${who} has walked ${sy} km of it. How many km are left?`;
+    return story(text, text.replace(sT, sT.replace('.', ' point ')).replace(sy, sy.replace('.', ' point ')), {pad: 'dec', eq: 'value', html: `<p class="story">${words(text)}</p><div class="eq">${SLOT} km</div>`, ans: ccDec(T * 10 - y, 2),
+      hint: ccLead(stepsSub(sT, sy), '"Left" means subtract what is done from the whole. Line up the decimal points.'), label: `story8 sub ${sT}-${sy}`});
+  }
+  // distances with fractions
+  let p;
+  do p = ccPair(); while (p.L > 24);
+  let {a, b, c, d, L} = p;
+  if (f < .93) {
+    const n = a * (L / b) + c * (L / d), text = `${who} hikes ${a}/${b} mile to the lake and then ${c}/${d} mile to the cave. How many miles is that in all?`;
+    return story(text, `${who} hikes ${fcSay(a, b)} of a mile to the lake and then ${fcSay(c, d)} of a mile to the cave. How many miles is that in all?`,
+      {pad: 'frac', eq: 'value', html: `<p class="story">${words(text)}</p><div class="eq">${SLOT_FRAC} miles</div>`, ans: ccFr(n, L), hint: stepsCommonDen(a, b, c, d, '+'), label: `story8 fadd ${a}/${b}+${c}/${d}`});
+  }
+  if (a * d < c * b) [a, b, c, d] = [c, d, a, b];
+  const n = a * (L / b) - c * (L / d), text = `The red trail is ${a}/${b} mile long. The blue trail is ${c}/${d} mile long. How much longer is the red trail?`;
+  return story(text, `The red trail is ${fcSay(a, b)} of a mile long. The blue trail is ${fcSay(c, d)} of a mile long. How much longer is the red trail, in miles?`,
+    {pad: 'frac', eq: 'value', html: `<p class="story">${words(text)}</p><div class="eq">${SLOT_FRAC} miles</div>`, ans: ccFr(n, L), hint: stepsCommonDen(a, b, c, d, '−'), label: `story8 fsub ${a}/${b}-${c}/${d}`});
+}
