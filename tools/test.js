@@ -12688,6 +12688,162 @@ run('wearables and shop P4-07: every item drawn (valid SVG, roles only), fits ev
   return{problems:[...new Set(p)],note:o.items.length+' items, '+bytes+' bytes of drawings (largest '+biggest+'), '+fits+' item x pet x stage fits, '+Object.keys(o.fix).length+' fixtures'};
 });
 
+// ---- P4-09: map and world scenes (DESIGN_SYSTEM 7) ----
+// Every world of every path drawn as the picked world (with its neighbours) at a phone (352) and a tablet (996) map width, with
+// and without the Test out banner, through the same geometry as drawMap: a scene per world, valid SVG, tokens only, no ids /
+// gradients / filters / url / use / text, deterministic, in budget, props clear of every stop, label, the title and Test out
+// banner, and the trail; the ground tokens quiet behind the stops (ink 7:1, the path's colour 3:1).
+run('map scenes P4-09',()=>{
+  const p=[];
+  const rd=f=>fs.readFileSync(path.join(SRC,f),'utf8');
+  const tokCss=rd('css/00-tokens.css'),TOK={};
+  for(const m of tokCss.matchAll(/--([a-z0-9-]+):(#[0-9a-fA-F]{6})\b/g))TOK[m[1]]=m[2];
+  const lum=h=>{const c=[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)/255).map(v=>v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4));
+    return 0.2126*c[0]+0.7152*c[1]+0.0722*c[2]};
+  const ratio=(a,b)=>{const x=lum(TOK[a]),y=lum(TOK[b]);return(Math.max(x,y)+0.05)/(Math.min(x,y)+0.05)};
+  const o=(()=>eval(js+`
+  const r={paths:{},themes:SCN_T,worlds:SCN_W,props:Object.keys(SCN_P).concat(Object.keys(SCN_V)),draws:[],again:[],trail:[],bad:[]};
+  // drawMap's geometry (46-home.js): world bands, stops on the sine, the trail; test = the Test out banner is shown
+  const lay=(p,sel,W,test)=>{
+    const ws=PATHS[p].worlds,amp=Math.min(W*.3,200),pts=[],wb=[];
+    const w0=Math.max(0,sel-1),w1=Math.min(ws.length-1,sel+1);
+    let y=10;if(w0>0)y+=72;
+    for(let wi=w0;wi<=w1;wi++){const y0=y,[a,b]=WR[p][wi],t=test(wi);y+=t?160:86;const k0=pts.length;
+      for(let i=a;i<=b;i++){pts.push([W/2+Math.sin(i*1.15)*amp,y,i]);y+=106}
+      wb.push([wi,y0,y-y0-24,k0,pts.length,t]);y+=4}
+    return{pts,wb,y};
+  };
+  for(const p of Object.keys(PATHS)){
+    r.paths[p]=PATHS[p].worlds.map(w=>w.id);
+    PATHS[p].worlds.forEach((w0,sel)=>{
+      for(const W of [352,996])for(const tf of [wi=>wi%2==0,wi=>wi%2==1]){
+        const L=lay(p,sel,W,tf),tp=SCN.trailPts(L.pts),cur=L.pts[Math.min(2,L.pts.length-1)];
+        const pet=[cur[0]+(cur[0]>W/2?-66:66),cur[1]+18];
+        for(const [wi,top,h,k0,k1,test] of L.wb){
+          if(wi!=sel)continue;
+          const w=PATHS[p].worlds[wi];
+          const stops=L.pts.slice(k0,k1).map(([x,yy,i])=>[x,yy,NODES[p][i].t,NODES[p][i].sk=='boss',i%5==1]);
+          SCN.cache.clear();
+          const html=SCN.band(w,W,top,h,{test,trail:tp,pet,stops});
+          const placed=SCN.placed.slice();
+          SCN.cache.clear();
+          const again=SCN.band(w,W,top,h,{test,trail:tp,pet,stops});
+          // the same scene lower on the map (the cache keys on band px) and from the cache
+          const moved=SCN.band(w,W,top+500,h,{test,trail:tp.map(([x,y])=>[x,y+500]),pet:[pet[0],pet[1]+500],stops:stops.map(s=>[s[0],s[1]+500,s[2],s[3],s[4]])});
+          r.draws.push({p,id:w.id,W,test,top,h,html,placed,same:html===again,moved:moved.replace('top:'+(top+500)+'px','top:'+top+'px')===html,
+            stops:stops.map(([x,yy,lab,boss,nw])=>[x,yy-top,lab.length,boss,nw]),pet:[pet[0],pet[1]-top],
+            trail:tp.filter(q=>q[1]>top-30&&q[1]<top+h+30).map(([x,yy])=>[x,yy-top]),tlen:w.n.length});
+        }
+        if(W==352&&tf(0)){
+          const kw=Math.min(3,L.pts.length);
+          r.trail.push({p,sel,svg:SCN.trail(W,L.y+20,L.pts,kw,L.wb.slice(1).map(q=>q[1]-14)),gaps:L.wb.length-1});
+        }
+      }
+    });
+  }
+  // a world with no table entry (smoke's fake worlds) still gets a scene; no data file: a plain band, no scene
+  r.fake=SCN.band({id:'m_fake3',n:'Fake',c:'x'},352,0,600,{test:false,trail:[],pet:null,stops:[]});
+  const keepT=SCN_T;SCN_T=undefined;r.nodata=SCN.band({id:'m_meadow',n:'Number Meadow',c:'w-c'},352,0,600,{test:false,trail:[],pet:null,stops:[]});SCN_T=keepT;
+  r;`))();
+  // every world of every path has a scene entry, a theme, and every prop the theme names
+  const T=o.themes;
+  for(const [pth,ids] of Object.entries(o.paths))for(const id of ids){
+    const e=o.worlds[id];
+    if(!e){p.push(pth+' '+id+': no scene in SCN_W');continue}
+    const k=Array.isArray(e)?e[0]:e;
+    if(!T[k])p.push(id+': theme '+k+' missing');
+  }
+  for(const id of Object.keys(o.worlds))if(!Object.values(o.paths).some(ids=>ids.includes(id)))p.push('SCN_W has '+id+', which is no world');
+  const used=new Set();
+  for(const [k,t] of Object.entries(T)){
+    for(const f of ['sky','g','hz','lm','pr'])if(!t[f])p.push('theme '+k+': no '+f);
+    for(const n of [...t.lm||[],...t.pr||[],...t.sm||[],'cloud']){if(!o.props.includes(n))p.push('theme '+k+': prop '+n+' missing');used.add(n)}
+    // the ground (base and ledge) is quiet behind the stops: ink 7:1, every path colour 3:1 (WCAG 1.4.11 for the stop rings)
+    for(const g of t.g||[]){
+      if(!TOK['sc-'+g]){p.push('theme '+k+': --sc-'+g+' is not a token');continue}
+      if(ratio('ink','sc-'+g)<7)p.push('theme '+k+': ink on --sc-'+g+' '+ratio('ink','sc-'+g).toFixed(2)+' (min 7)');
+      for(const s of ['math','read','es','disc'])if(ratio(s,'sc-'+g)<3)p.push('theme '+k+': --'+s+' on --sc-'+g+' '+ratio(s,'sc-'+g).toFixed(2)+' (min 3)');
+    }
+    for(const s of t.sky||[])if(!TOK['sc-'+s])p.push('theme '+k+': --sc-'+s+' is not a token');
+  }
+  // a world's own changes to its theme (other landmarks or props)
+  for(const [id,e] of Object.entries(o.worlds))if(Array.isArray(e))
+    for(const n of [...e[1].lm||[],...e[1].pr||[],...e[1].sm||[]]){if(!o.props.includes(n))p.push(id+': prop '+n+' missing');used.add(n)}
+  // every drawn scene
+  let maxEl=0,maxB=0,maxEl996=0,maxB996=0,np=0;
+  const seen=new Set();
+  const hit=(a,b)=>a[0]<b[2]&&a[2]>b[0]&&a[1]<b[3]&&a[3]>b[1];
+  for(const d of o.draws){
+    const key=d.p+' '+d.id+' @'+d.W+(d.test?' test':'');
+    seen.add(d.p+' '+d.id);
+    const h=d.html;
+    if(!h.startsWith('<div class="wband scn sc-')||!h.includes('aria-hidden="true"'))p.push(key+': band markup '+h.slice(0,80));
+    const svg=(h.match(/<svg[^]*<\/svg>/)||[''])[0];
+    if(!svg.startsWith('<svg class="scn-art" width="'+d.W+'" height="'+d.h+'" focusable="false">'))p.push(key+': svg head '+svg.slice(0,90));
+    const stack=[];let n=0;
+    for(const t of svg.matchAll(/<(\/?)([a-z]+)\b[^>]*?(\/?)>/g)){
+      if(!/^(svg|path|circle)$/.test(t[2]))p.push(key+': element <'+t[2]+'>');
+      if(t[1]){if(stack.pop()!==t[2])p.push(key+': </'+t[2]+'> out of order')}else{n++;if(!t[3])stack.push(t[2])}
+    }
+    if(stack.length)p.push(key+': unclosed '+stack.join());
+    if(/\sid=|<defs|gradient|filter|url\(|<use|<text|<animate|<style|<script|\son[a-z]+=|\sstyle=|transform=/i.test(svg))p.push(key+': ids, defs, gradients, filters, url, use, text, SMIL, style or transforms in the scene');
+    if(/#[0-9a-f]{3,8}\b|rgba?\(|hsla?\(/i.test(h))p.push(key+': raw colour');
+    if(/NaN|undefined|null|Infinity/.test(h))p.push(key+': NaN/undefined');
+    for(const v of h.matchAll(/var\(--([a-z0-9-]+)\)/g))if(!TOK[v[1]]&&!tokCss.includes('--'+v[1]+':'))p.push(key+': --'+v[1]+' is not a token');
+    for(const a of svg.matchAll(/\s(fill|stroke)="([^"]*)"/g))if(a[2]!=='none'&&!/^var\(--(ill|sc)-[a-z0-9-]+\)$/.test(a[2]))p.push(key+': colour '+a[2]);
+    if(!d.same)p.push(key+': not deterministic');
+    if(!d.moved)p.push(key+': the scene changes when its band moves down the map');
+    // budget: a few dozen elements and a few tens of KB per scene
+    const el=n-1,b=svg.length;
+    if(d.W==352){maxEl=Math.max(maxEl,el);maxB=Math.max(maxB,b)}else{maxEl996=Math.max(maxEl996,el);maxB996=Math.max(maxB996,b)}
+    if(el>75)p.push(key+': '+el+' elements (budget 75)');
+    if(b>36000)p.push(key+': '+b+' bytes (budget 36,000)');
+    // props stand clear of the stops (disc, ring, ledge), their labels, the New tag, the title and Test out banner, the pet and the trail
+    const keep=[];
+    for(const [x,y,ln,boss,nw] of d.stops){const r=boss?50:44,lw=Math.min(140,ln*7.6+18);
+      keep.push(['stop',[x-r,y-r,x+r,y+r+5]],['label',[x-lw/2,y+40,x+lw/2,y+84]]);if(nw)keep.push(['New tag',[x-26,y-62,x+26,y-30]])}
+    const tw=64+d.tlen*12.5;keep.push(['title',[(d.W-tw)/2,10,(d.W+tw)/2,66]]);
+    if(d.test)keep.push(['Test out',[d.W/2-140,54,d.W/2+140,110]]);
+    keep.push(['pet',[d.pet[0]-36,d.pet[1]-68,d.pet[0]+36,d.pet[1]+20]]);
+    for(const [x,y] of d.trail)keep.push(['trail',[x-14,y-14,x+14,y+14]]);
+    for(const [name,box] of d.placed){
+      np++;
+      if(box[0]<0||box[2]>d.W)p.push(key+': '+name+' sticks out of the band');
+      for(const [what,k] of keep)if(hit(box,k)){p.push(key+': '+name+' covers the '+what);break}
+    }
+    if(!d.placed.length)p.push(key+': no props');
+    if(!d.placed.some(q=>{const t=T[Array.isArray(o.worlds[d.id])?o.worlds[d.id][0]:o.worlds[d.id]],lm=(Array.isArray(o.worlds[d.id])&&o.worlds[d.id][1].lm)||t.lm;return lm.includes(q[0])}))
+      p.push(key+': its landmark found no room');
+  }
+  for(const [pth,ids] of Object.entries(o.paths))for(const id of ids)if(!seen.has(pth+' '+id))p.push(pth+' '+id+': not drawn');
+  // themes and props all used, and every theme used by a world
+  for(const n of o.props)if(!used.has(n)&&!['cloud'].includes(n))p.push('prop '+n+' is not used by any theme');
+  for(const k of Object.keys(T))if(!Object.values(o.worlds).some(e=>(Array.isArray(e)?e[0]:e)===k))p.push('theme '+k+' is not used by any world');
+  if(!o.fake.startsWith('<div class="wband scn sc-'))p.push('a world with no scene entry gets no scene');
+  if(o.nodata!=='<div class="wband" style="top:0px;height:600px;background:w-c" aria-hidden="true"></div>')p.push('no data file: '+o.nodata.slice(0,90));
+  // the trail: a valid SVG of classes (colours in 47-scenes.css), a bridge per gap between worlds, gold up to the current stop
+  for(const t of o.trail){
+    const s=t.svg,key='trail '+t.p+' '+t.sel;
+    if(!s.startsWith('<svg class="mp-trail" ')||!s.includes('aria-hidden="true"'))p.push(key+': head');
+    if(/#[0-9a-f]{3,8}\b|NaN|undefined|\sid=|gradient|filter|url\(/i.test(s))p.push(key+': raw colour, NaN, id, gradient, filter or url');
+    if((s.match(/<g transform=/g)||[]).length!==t.gaps)p.push(key+': '+(s.match(/<g transform=/g)||[]).length+' bridges for '+t.gaps+' gaps');
+    for(const c of ['tr-rim','tr-bed','tr-sh','tr-st','tr-gs','tr-go','tr-hi'])if(!s.includes(c))p.push(key+': no '+c);
+  }
+  // sources: tokens only, the drawings are data (data file, not index.html), the map has no raw colours left, decoration only
+  const css=rd('css/47-scenes.css').replace(/\/\*[\s\S]*?\*\//g,'');
+  for(const [f,s] of [['src/js/43-scenes.js',rd('js/43-scenes.js')],['src/data/d-scenes.js',rd('data/d-scenes.js')],['src/css/47-scenes.css',css]])
+    if(/#[0-9a-f]{3,8}\b|rgba?\(|hsla?\(/i.test(s.replace(/\/\*[\s\S]*?\*\//g,'')))p.push(f+': raw colour');
+  for(const v of css.matchAll(/var\(--([a-z0-9-]+)\)/g))if(!tokCss.includes('--'+v[1]+':'))p.push('47-scenes.css: --'+v[1]+' is not a token');
+  if(!/\.wband\{[^}]*pointer-events:none/.test(css))p.push('47-scenes.css: bands must not take taps');
+  if(/animation|transition|@keyframes|filter/.test(css))p.push('47-scenes.css: scenes do not move (and use no filters)');
+  const home=rd('js/46-home.js');
+  if(/#d6c7a8|stroke="#fff"|background:\$\{w\.c\}/.test(home))p.push('46-home.js: drawMap still draws the old flat band or trail');
+  const idx=fs.readFileSync(path.join(ROOT,'index.html'),'utf8'),dat=fs.readFileSync(path.join(ROOT,DATA_FILE),'utf8');
+  if(idx.includes('var SCN_P')||!dat.includes('var SCN_P'))p.push('the scene drawings must be in the data file, not index.html');
+  return{problems:[...new Set(p)].slice(0,60),note:o.draws.length+' scenes ('+Object.keys(o.worlds).length+' worlds, '+Object.keys(T).length+' themes, '+
+    o.props.length+' props), '+np+' props placed; largest '+maxEl+' elements / '+maxB+' B at 352 px, '+maxEl996+' / '+maxB996+' B at 996 px'};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){

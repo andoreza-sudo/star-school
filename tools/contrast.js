@@ -40,6 +40,12 @@ let fail = 0;
 // Home (P4-08): placement card text, the logo star, the stickers and Fact Sprint badge icons, the review count
 rules.push(['ink', 'brand-tint', 4.5, 'home placement card text'], ['star', 'brand', 3, 'home logo star'], ['try-ink', 'star', 3, 'home stickers icon'],
   ['ink', 'star', 3, 'home bolt badge'], ['surface', 'read', 4.5, 'home review count']);
+// map scenes (P4-09): every scene sky and ground behind the map stops is quiet: ink 7:1, and the path colours 3:1 (the stop rings,
+// WCAG 1.4.11); the night skies (space headers) hold only the white title pill and the moon
+for (const t of Object.keys(T).filter(k => k.startsWith('sc-') && !k.startsWith('sc-night'))) {
+  rules.push(['ink', t, 7, 'map scene']);
+  for (const s of ['math', 'read', 'es', 'disc']) rules.push([s, t, 3, 'stop ring on map scene']);
+}
 for (const [a, b, min, what] of rules) {
   const r = ratio(a, b), ok = r >= min;
   if (!ok) fail++;
