@@ -112,12 +112,18 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P4-15 v131
 - P5-08 v132
 - G-03 done
+- R-02 done
 
 ## Handoff notes
 
 (none)
 
 ## Ideas and issues
+- (R-02) Must: Block Builder tap targets are too small: a block top is 36 x 18 px at 380 px wide (43 x 22 at 1024 x 600), a side face 18 px wide, and blueprints open at zoom 1 (a whole block 21 x 21 px on a phone). One finger cannot move the view (pinch only). G-01: open close up (block tops 48 px+), one-finger pan, place on top of the tapped column by default. `src/js/60-blocks.js`. Details: docs/reviews/R-02-games.md section 3.
+- (R-02) Must: Block Builder blueprints count the app's own targeting as mistakes: in "Little House" 6 of the 15 buildable see-through blocks are covered by floating roof blocks; tapping them with the right block chosen gave "Oops! That spot needs Brick" 38 times and the stars drop. Show only the next layer, never count a miss for an unreachable block, hit-test the ghost under the finger first; Undo must refresh `bbProg`. G-01.
+- (R-02) Must: tapping a TNT block with the Block tool detonates it (23-29 blocks removed in play); TNT is first in the palette. Build on top of TNT instead, make lighting a separate named action, move TNT to the end. G-01.
+- (R-02) Must: Block Builder tools are 33-50 px emoji buttons with 10 px labels over the scene, the palette shows 5 of 26 blocks with no names on a phone, Undo is an unlabelled emoji. One labelled 48 px+ tool bar off the scene, block names, grouped palette. G-01.
+- (R-02) Must: Speed Race pays +1 min game time for every race with 5+ right and has no daily limit (`54-race.js` line 36); pay once per category per day plus records, like Fact Sprint, or fold it into Fact Sprint. P5-09.
 - (P4-15) The Las Frases grammar units (d-es-gram.js, P2-34) call `picFor('', emoji)`: their items have no art field, so conejo, helado, puerta, ventana, mochila, escuela, playa, papel, borrador, jardín, león and the set A/B words there still show the emoji. A later chunk could add an art name to those items (no generator change: `picFor(name, emoji)` at the four call sites in 34-gen-es.js).
 - (P4-15) Still emoji after set C, by count: calendar pages, people and verbs that show a person, greetings and gestures, feelings faces (happy, scared, angry, sick, excited, surprised, calm, sad, tired; it is cold / hot), leg, eyes, the kitchen pan, wind puffs. Next objects by count: clapperboard (movie theater), carrot (market), race car (fast), store, trash can (dirty), microphone (to sing), snail, crown, kangaroo (to jump), bank, ant, octopus, whale, hospital. Feelings faces would want one consistent family drawn together (and a 6.5 rule for faces on objects).
 - (P4-14) Still emoji among the most used pictures: the calendar pages of the Spanish days and months units (one picture for 19 words, so it carries no meaning), the family unit (people: object art has no people yet), greetings and feelings (gestures and faces, set C), leg and eyes (left out: at 24 px they read as foot and a face), the kitchen pan, and words that share an emoji with a drawn one but are another word (home and the house's 🏠, feet and the foot's 🦶, teddy 🧸, snail, crown, snowman, robot, tractor). Set C could start from the count in the P4-14 entry.
@@ -413,6 +419,13 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-11) Icons wanted from P4-03: `balloon` (Bonus game, today `gamepad`), `sparkle` / `confetti`, `unlock` (open padlock for "Next stop unlocked", today `map`), `zap` (a lightning with a spark for boss hits; today `bolt`), `sticker` (single sticker for the prize row), `medal` (the prize rosette as an icon), `heart-half` (boss life bar), `chest` (the treasure chest at icon size, e.g. for the round track where renderQ shows the gift emoji).
 
 ## Log
+
+### R-02 Game replay review (2026-11-11, Claude)
+- What: new `docs/reviews/R-02-games.md`: every game and game-like feature (Game Room hub, Hill Climb, Coloring, Block Builder, Balloons, Speed Race, Fact Sprint, Pet Care, Pet Shop and stickers, streaks and missions, boss fights, the game-time economy) read in the code and played by real touch in the built app (Playwright, touch events, 380x780, 1024x600 and 1024x552, about 130 screenshots at 2x, looked at; midway save; no console errors).
+- Findings: the setup is healthy (game time earned by learning, daily limit, pause holds the clock, shared end cards, no ads, no random paid rewards). Hill Climb is the strongest game; Coloring has the most variety. Block Builder is hard to use: 28 stuck points listed for G-01 (tiny tap targets, two-finger-only camera, tools over the scene, TNT detonates on a build tap, blueprint ghosts that overlap so correct taps count as wrong blocks). Economy: Speed Race game time has no daily limit; the bank has no cap; the hub earn list leaves out the main source. Gentle pressure to soften: pet meters fall while the app is closed, random stickers with doubles, boss taunts. Coins lose meaning after about 40 rounds (the shop costs 595 in all).
+- Output: a parent summary, a must / should / could list (5 / 8 / 7 items with file and size), the Block Builder stuck-point list, economy recommendations for P5-09, guidance for G-02 (racing) and G-04 (Snack Stand, Sky Hop, Fishing Day). Must items added under Ideas and issues with "(R-02)".
+- Not in this commit: P5-09 (game-time rules v2) and P4-17 (motion and sound) are being built in parallel; the review describes the v132 rules and marks where those chunks may change them.
+- No code changes, no VER bump, no build.
 
 ### G-03 Games research (2026-11-11, Claude)
 - What: new `docs/GAMES_RESEARCH.md` for Andy to pick the G-04 games. It sums up what children aged 5 to 11 play most (ESA 2025, Morning Consult 2025, KB&B 2025, Roy Morgan 2025, Ofcom 2025, 2025 download charts from Pocket Gamer.biz and Sensor Tower, Google Play's Kids tab, Teacher Approved criteria and Best of 2025, Common Sense Media), why (competence, choice, sharing; pretend play, collecting, customising), which mechanics are healthy and which to keep out (loot boxes, energy timers, ads, streaks, limited-time offers, leaderboards, endless loops, idle earnings, guilt-tripping characters; JAMA Network Open 2022, FTC 2025, ICO Children's code, UNICEF RITEC 2024).
