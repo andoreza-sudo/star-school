@@ -1,10 +1,10 @@
-/* ---------- grammar, levels 1-5 (P2-20, CURRICULUM E-gram) ---------- */
-/* BANK.gram: bank skill `gram`, items in the format of CURRICULUM section 8 (engine: 37-bank.js). P2-21 adds levels 6-9 to the same bank
-   (append more GR(...) groups below). Every item has exactly one right answer; wrong answers are the common real mistakes. The bank
+/* ---------- grammar, levels 1-9 (P2-20, P2-21, CURRICULUM E-gram) ---------- */
+/* BANK.gram: bank skill `gram`, items in the format of CURRICULUM section 8 (engine: 37-bank.js). P2-21 adds levels 6-9 to the same bank. Every item has exactly one right answer; wrong answers are the common real mistakes. The bank
    validator compares answers without regard to capitals, so a wrong "missing capital" sentence also differs in its end mark.
    GR(lv, topic, hint, form, rows) turns rows into items; the hint teaches the method and never holds the answer:
      choice/wide rows:  [q, answer, wrong, wrong, (wrong)]        tap rows:  [q, sentence, answer]
-   Level sizes: 1: 52, 2: 60, 3: 46, 4: 51, 5: 46. */
+   Level sizes: 1: 52, 2: 60, 3: 46, 4: 51, 5: 46, 6: LV6, 7: LV7, 8: LV8, 9: LV9.
+   A label is the question plus the answer and must stay under 60 characters, so questions and answers are short. */
 const GR=(lv,topic,hint,form,rows)=>rows.map(r=>form=='tap'
   ?{lv,topic,hint,form,q:r[0],sent:r[1],a:r[2],say:r[0]+' '+r[1]}
   :{lv,topic,hint,form,q:r[0],a:r[1],d:r.slice(2)});
@@ -154,5 +154,188 @@ GR(5,'contractions','An apostrophe shows where letters were left out. Say the tw
  ['Which is the short way to write "they are"?',"they're",'their',"they'er"],['Which is the short way to write "she is"?',"she's",'shes',"sh'es"],
  ['Which is the short way to write "will not"?',"won't","willn't",'wont'],['Which is the short way to write "did not"?',"didn't",'didnt',"did'nt"],
  ['Which is the short way to write "you are"?',"you're",'your',"you'er"],['Which is the short way to write "let us"?',"let's",'lets',"let'us"],
- ['Which two words make "isn\'t"?','is not','it is','is now'],['Which two words make "we\'re"?','we are','we were','we will']])
+ ['Which two words make "isn\'t"?','is not','it is','is now'],['Which two words make "we\'re"?','we are','we were','we will']]),
+// ---- level 6: pronouns, possessives, confusable words (grade 4) ----
+GR(6,'confusable','Say "it is" in the blank. If that makes sense, pick the word with an apostrophe. If not, the blank shows who owns something.','choice',[
+ ['The dog wagged ___ tail.','its',"it's","its'"],["___ a sunny day today.","It's",'Its',"Its'"],
+ ['The bird fed ___ babies.','its',"it's","its'"],["___ time to go home.","It's",'Its',"Its'"],
+ ['The tree lost ___ leaves.','its',"it's","its'"],["I think ___ going to rain.","it's",'its',"its'"],
+ ['The cat licked ___ paw.','its',"it's","its'"],["___ my favorite book.","It's",'Its',"Its'"],
+ ['The ship left ___ port.','its',"it's","its'"],["Look, ___ snowing!","it's",'its',"its'"]]),
+GR(6,'confusable','One word shows a place, one shows that people own something, and one squeezes two words together with an apostrophe. Try each in the blank.','choice',[
+ ['Put the books over ___.','there','their',"they're"],['The kids lost ___ hats.','their','there',"they're"],
+ ["___ going to the zoo.","They're",'Their','There'],['We sat ___ for an hour.','there','their',"they're"],
+ ['The twins love ___ new puppy.','their','there',"they're"],["I think ___ late for school.","they're",'their','there'],
+ ['___ are three apples in the bowl.','There','Their',"They're"],['The dogs ate ___ dinner.','their','there',"they're"],
+ ["Look, ___ playing in the snow.","they're",'their','there'],['My parents sold ___ old car.','their','there',"they're"],
+ ['Is the milk ___ on the table?','there','their',"they're"],['Did you see ___ new house?','their','there',"they're"]]),
+GR(6,'confusable','Try "you are" in the blank. If it fits, pick the word with the apostrophe. If not, the blank shows what belongs to you.','choice',[
+ ["___ my best friend.","You're",'Your','Youre'],['Is this ___ coat?','your',"you're",'youre'],
+ ["I know ___ going to win.","you're",'your','youre'],['Please clean ___ room.','your',"you're",'youre'],
+ ["Do you think ___ ready?","you're",'your','youre'],['I like ___ new shoes.','your',"you're",'youre'],
+ ["___ welcome to join us.","You're",'Your','Youre'],['Where did you put ___ bag?','your',"you're",'youre']]),
+GR(6,'confusable','One word is a number, one means also or more than enough, and one points toward a place or comes before a verb. Try each in the blank.','choice',[
+ ['We went ___ the park.','to','too','two'],['I have ___ cats.','two','to','too'],['Can I come ___?','too','to','two'],
+ ['It is ___ hot to play outside.','too','to','two'],['She wants ___ read a book.','to','too','two'],
+ ['Mom bought ___ loaves of bread.','two','to','too'],['I like pizza, ___.','too','to','two'],['Give the ball ___ me.','to','too','two'],
+ ['The soup is ___ cold.','too','to','two'],['There were ___ ducks in the pond.','two','to','too']]),
+GR(6,'confusable','Try "who is" or "who has" in the blank. If it fits, pick the word with the apostrophe. If the blank asks about owning, pick the other one.','choice',[
+ ['___ coat is this?','Whose',"Who's",'Whos'],["___ coming to my party?","Who's",'Whose','Whos'],
+ ['I know ___ book that is.','whose',"who's",'whos'],["___ at the door?","Who's",'Whose','Whos'],
+ ['Tell me ___ turn it is.','whose',"who's",'whos'],["___ got the key?","Who's",'Whose','Whos']]),
+GR(6,'pronouns','A pronoun takes the place of a noun. Ask: is it a girl, a boy, a thing, or more than one? Does it do the action or receive it?','choice',[
+ ['Tom runs fast. ___ wins races.','He','She','It'],['Mia sings well. ___ loves music.','She','He','They'],
+ ['The box is big. ___ is heavy.','It','He','They'],['Sam and Eli swim. ___ like water.','They','He','It'],
+ ['My sister and I play. ___ have fun.','We','They','She'],['Dad is tall. Mia looks at ___.','him','he','his'],
+ ['Mom called. I talked to ___.','her','she','hers'],['The dogs bark. Dad hears ___.','them','they','their'],
+ ['Ana is kind. I gave ___ a card.','her','she','hers'],['Ben is my friend. I like ___.','him','he','his'],
+ ['Jan and I read. ___ love books.','We','They','Us'],['The cat is soft. I pet ___.','it','he','they']]),
+GR(6,'possessives','An apostrophe and s show that one owner has something. When the owners are plural and end in s, the apostrophe goes after the s.','choice',[
+ ['Which shows the bike Sam owns?',"Sam's bike",'Sams bike',"Sams' bike"],
+ ['Which shows the toy a puppy owns?',"the puppy's toy",'the puppys toy',"the puppys' toy"],
+ ['Which shows the hats two girls own?',"the girls' hats","the girl's hats",'the girls hats'],
+ ['Which shows the pen a teacher owns?',"the teacher's pen",'the teachers pen',"the teachers' pen"],
+ ['Which shows the nest many birds share?',"the birds' nest","the bird's nest",'the birds nest'],
+ ['Which shows the tails of three cats?',"the cats' tails","the cat's tails",'the cats tails']]),
+// ---- level 7: commas and quotation marks (grade 4-5) ----
+GR(7,'commas','When you list three or more things, put a comma after each one except the last, and join the last two with the little word that means plus.','wide',[
+ ['Which is correct?','I packed socks, shoes, and a hat.','I packed socks shoes, and a hat.','I packed, socks, shoes, and a hat.'],
+ ['Which is correct?','Mia sings, dances, and jumps.','Mia sings dances, and jumps.','Mia sings, dances, and, jumps.'],
+ ['Which is correct?','We saw lions, tigers, and bears.','We saw lions tigers, and bears.','We saw, lions, tigers, and bears.'],
+ ['Which is correct?','Buy milk, eggs, and bread.','Buy milk eggs, and bread.','Buy milk, eggs, and, bread.'],
+ ['Which is correct?','He is tall, kind, and funny.','He is tall kind, and funny.','He is, tall, kind, and funny.'],
+ ['Which is correct?','Pack a book, a pen, and a pad.','Pack a book a pen, and a pad.','Pack a book, a pen, and, a pad.'],
+ ['Which is correct?','We need paper, glue, and tape.','We need paper glue, and tape.','We need, paper, glue, and tape.'],
+ ['Which is correct?','Pat, Sam, and Lee won.','Pat Sam, and Lee won.','Pat, Sam, and, Lee won.']]),
+GR(7,'commas','In a date, a comma goes between the day and the year. In a place, a comma goes between the city and the state.','wide',[
+ ['Which is correct?','Her birthday is June 4, 2015.','Her birthday is June, 4 2015.','Her birthday is June 4 2015.'],
+ ['Which is correct?','We moved on May 9, 2019.','We moved on May, 9 2019.','We moved on May 9 2019.'],
+ ['Which is correct?','School began on August 20, 2024.','School began on August, 20 2024.','School began on August 20 2024.'],
+ ['Which is correct?','I was born in Austin, Texas.','I was born in Austin Texas.','I was born, in Austin Texas.'],
+ ['Which is correct?','We visited Denver, Colorado.','We visited Denver Colorado.','We visited, Denver Colorado.'],
+ ['Which is correct?','She lives in Reno, Nevada.','She lives in Reno Nevada.','She lives, in Reno Nevada.'],
+ ['Which is correct?','Dad was born on March 3, 1980.','Dad was born on March, 3 1980.','Dad was born on March 3 1980.'],
+ ['Which is correct?','We left on July 1, 2022.','We left on July, 1 2022.','We left on July 1 2022.']]),
+GR(7,'commas','Use a comma to set off a name when you speak to someone, and after a starting word that is not part of the main idea.','wide',[
+ ['Which is correct?','Yes, I can come.','Yes I can come.','Yes I, can come.'],
+ ['Which is correct?','No, thank you.','No thank you.','No thank, you.'],
+ ['Which is correct?','Mia, please sit down.','Mia please sit down.','Mia please, sit down.'],
+ ['Which is correct?','Well, it is time to go.','Well it is time to go.','Well it is time, to go.'],
+ ['Which is correct?','First, wash your hands.','First wash your hands.','First wash, your hands.'],
+ ['Which is correct?','Dad, can we go now?','Dad can we go now?','Dad can, we go now?'],
+ ['Which is correct?','Thank you, Grandma.','Thank you Grandma.','Thank, you Grandma.'],
+ ['Which is correct?','Next, add the eggs.','Next add the eggs.','Next add, the eggs.'],
+ ['Which is correct?','Oh, I forgot my hat.','Oh I forgot my hat.','Oh I forgot, my hat.']]),
+GR(7,'commas','When a little joining word links two whole sentences, put a comma before it. A comma alone cannot do the joining.','wide',[
+ ['Which is correct?','We were tired, so we slept.','We were tired so, we slept.','We were, tired so we slept.'],
+ ['Which is correct?','It rained, but we played.','It rained but, we played.','It, rained but we played.'],
+ ['Which is correct?','I like cats, and Mia likes dogs.','I like cats and, Mia likes dogs.','I like, cats and Mia likes dogs.'],
+ ['Which is correct?','Dad cooked, and I set the table.','Dad cooked and, I set the table.','Dad, cooked and I set the table.'],
+ ['Which is correct?','The sun set, so we went home.','The sun set so, we went home.','The sun, set so we went home.']]),
+GR(7,'quotes','Spoken words go inside quotation marks. A comma separates the speaker from the words, and the end mark sits inside the closing marks.','wide',[
+ ['Which is correct?','Mia said, "I am hungry."','Mia said, "I am hungry".','Mia said "I am hungry."','Mia said, I am hungry.'],
+ ['Which is correct?','Dad asked, "Are you ready?"','Dad asked, "Are you ready"?','Dad asked "Are you ready?"','Dad asked, Are you ready?'],
+ ['Which is correct?','Ben yelled, "Look out!"','Ben yelled, "Look out"!','Ben yelled "Look out!"','Ben yelled, Look out!'],
+ ['Which is correct?','"I like pie," said Jo.','"I like pie." said Jo.','"I like pie", said Jo.','I like pie, said Jo.'],
+ ['Which is correct?','"Come in," said Mom.','"Come in". said Mom.','"Come in" said Mom.'],
+ ['Which is correct?','Ana said, "It is late."','Ana said, "It is late".','Ana said "It is late."'],
+ ['Which is correct?','The teacher said, "Sit down."','The teacher said, "Sit down".','The teacher said "Sit down."'],
+ ['Which is correct?','"Where is it?" asked Tia.','"Where is it", asked Tia.','"Where is it?", asked Tia.'],
+ ['Which is correct?','Sam whispered, "Be quiet."','Sam whispered, "Be quiet".','Sam whispered "Be quiet."'],
+ ['Which is correct?','Liv asked, "Can I help?"','Liv asked, "Can I help"?','Liv asked "Can I help?"'],
+ ['Which is correct?','"Run!" yelled Kim.','"Run" yelled Kim.','"Run!," yelled Kim.']]),
+// ---- level 8: more parts of speech and perfect tenses (grade 5) ----
+GR(8,'adverbs','An adverb tells how, when or where an action happens. Many end in -ly. Find the word that describes the action.','tap',[
+ ['Tap the adverb.','The dog barked loudly.','loudly'],['Tap the adverb.','She sings softly.','softly'],
+ ['Tap the adverb.','He ran quickly.','quickly'],['Tap the adverb.','We walked slowly home.','slowly'],
+ ['Tap the adverb.','Kids play outside.','outside'],['Tap the adverb.','He spoke kindly.','kindly'],
+ ['Tap the adverb.','The cat sleeps quietly.','quietly'],['Tap the adverb.','Mom drives carefully.','carefully'],
+ ['Tap the adverb.','He jumped happily.','happily']]),
+GR(8,'adverbs','Does the blank tell how the action is done? A word that describes an action usually ends in -ly.','choice',[
+ ['The turtle moves ___.','slowly','slow','slower'],['He spoke ___ to the baby.','softly','soft','softer'],
+ ['She ran ___ to school.','quickly','quick','quicker'],['The band played ___.','loudly','loud','louder'],
+ ['Please walk ___.','carefully','careful','care'],['We waited ___ for the bus.','patiently','patient','patience']]),
+GR(8,'prepositions','A preposition shows where something is or when it happens, and it comes before a noun. Ask: where, or when?','tap',[
+ ['Tap the preposition.','Cats sleep under beds.','under'],['Tap the preposition.','Birds fly over us.','over'],
+ ['Tap the preposition.','Sit beside me.','beside'],['Tap the preposition.','Hide behind trees.','behind'],
+ ['Tap the preposition.','Frogs sit on logs.','on'],['Tap the preposition.','Fish swim in ponds.','in'],
+ ['Tap the preposition.','Dogs run through mud.','through'],['Tap the preposition.','We eat after school.','after']]),
+GR(8,'conjunctions','A conjunction is a small joining word. It links two words, two phrases, even two sentences.','tap',[
+ ['Tap the conjunction.','Cats and dogs play.','and'],['Tap the conjunction.','Pick tea or milk.','or'],
+ ['Tap the conjunction.','Tired but happy.','but'],['Tap the conjunction.','Small yet strong.','yet']]),
+GR(8,'interjections','An interjection shows a sudden feeling such as surprise or pain. It often comes first, with a comma or a mark after it.','tap',[
+ ['Tap the interjection.','Wow, so big!','Wow'],['Tap the interjection.','Ouch, that hurts!','Ouch'],
+ ['Tap the interjection.','Hooray, we won!','Hooray'],['Tap the interjection.','Yikes, a snake!','Yikes'],
+ ['Tap the interjection.','Oops, I spilled.','Oops']]),
+GR(8,'wordtypes','Ask what job the word does: telling how, showing where, joining ideas, or showing a sudden feeling.','choice',[
+ ['What kind of word is "gently"?','adverb','adjective','preposition'],['What kind of word is "under"?','preposition','adverb','conjunction'],
+ ['What kind of word is "beside"?','preposition','interjection','noun'],['What kind of word is "because"?','conjunction','preposition','adverb'],
+ ['What kind of word is "but"?','conjunction','interjection','adverb'],['What kind of word is "wow"?','interjection','conjunction','adjective'],
+ ['What kind of word is "ouch"?','interjection','noun','adverb'],['What kind of word is "carefully"?','adverb','adjective','verb'],
+ ['What kind of word is "across"?','preposition','conjunction','verb'],['What kind of word is "or"?','conjunction','preposition','interjection'],
+ ['What kind of word is "between"?','preposition','adverb','noun']]),
+GR(8,'perfect','A helper word plus a special form of the verb tells about something finished earlier. Check the clue: already, twice, since, before.','choice',[
+ ['Mia ___ her lunch already.','has eaten','has ate','have eaten'],['We ___ our homework twice.','have done','have did','has done'],
+ ['The bird ___ away before we came.','had flown','had flew','has flown'],['I ___ this movie two times.','have seen','have saw','has seen'],
+ ['Dad ___ the car already.','has washed','have washed','has wash'],['They ___ to the zoo three times.','have gone','have went','has gone'],
+ ['By noon, she ___ her work.','had finished','has finish','had finish'],['The kids ___ their toys away.','have put','has put','have putted'],
+ ['Sam ___ his shoes before he left.','had tied','has tied','had tie'],['The sun ___ before we woke up.','had risen','had rose','has risen'],
+ ['Mom ___ three books this week.','has read','has readed','have read'],['We ___ our bikes since morning.','have ridden','have rode','has ridden'],
+ ['She ___ the same song twice.','has sung','has sang','have sung'],['The class ___ the test.','has taken','has took','have taken']]),
+// ---- level 9: sentence craft (grade 6) ----
+GR(9,'sentences','A complete sentence names who or what and tells what happens, and it makes sense alone. If it leaves you waiting, it is not finished.','wide',[
+ ['Which is a complete sentence?','The dog barked loudly.','The dog in the yard.','Barking loudly at night.'],
+ ['Which is a complete sentence?','Birds sing every morning.','Singing every morning.','Birds in the tall tree.'],
+ ['Which is a complete sentence?','Mia found a coin.','Found a shiny coin.','A coin in her pocket.'],
+ ['Which is a complete sentence?','We ate lunch.','After we ate lunch.','Eating lunch outside.'],
+ ['Which is a complete sentence?','Rain fell all day.','Falling all day.','Because rain fell all day.'],
+ ['Which is a complete sentence?','The baby laughed.','The laughing baby.','When the baby laughed.'],
+ ['Which is a complete sentence?','Dad fixed the sink.','Fixing the sink.','The sink in the kitchen.'],
+ ['Which is a complete sentence?','The bus stopped.','The bus at the corner.','Stopping at the corner.'],
+ ['Which is a complete sentence?','Kids play outside.','Playing outside.','Kids in the yard.']]),
+GR(9,'sentences','A fragment is missing a subject, a verb or a finished thought. Read each one alone: which one leaves you waiting for more?','wide',[
+ ['Which is a fragment?','Under the old bridge.','Trolls live under bridges.','The bridge is old.'],
+ ['Which is a fragment?','Because it was late.','It was late.','We went home.'],
+ ['Which is a fragment?','Running down the hill.','She ran down the hill.','The hill is steep.'],
+ ['Which is a fragment?','My best friend Sam.','Sam is my best friend.','Sam lives nearby.'],
+ ['Which is a fragment?','After the movie ended.','The movie ended.','We left after it.'],
+ ['Which is a fragment?','When the bell rings.','The bell rings.','Class ends soon.'],
+ ['Which is a fragment?','Hoping for snow.','We hope for snow.','Snow is fun.']]),
+GR(9,'sentences','A run-on jams two sentences together. Fix it with a comma plus a joining word, or split it in two. A comma alone is not enough.','wide',[
+ ['Fix it: We ran we hid.','We ran, and we hid.','We ran we, hid.','We ran, we hid.'],
+ ['Fix it: It is hot I swim.','It is hot, so I swim.','It is hot, I swim.','It is hot I, swim.'],
+ ['Fix it: Mom sang I danced.','Mom sang, and I danced.','Mom sang, I danced.','Mom sang I, danced.'],
+ ['Fix it: Dogs bark cats hiss.','Dogs bark, and cats hiss.','Dogs bark, cats hiss.','Dogs, bark cats hiss.'],
+ ['Fix it: We won we cheered.','We won, so we cheered.','We won, we cheered.','We won we, cheered.'],
+ ['Fix it: Ben fell he cried.','Ben fell, and he cried.','Ben fell, he cried.','Ben, fell he cried.'],
+ ['Fix it: It snowed we sledded.','It snowed, so we sledded.','It snowed, we sledded.','It, snowed we sledded.'],
+ ['Fix it: I am tired I nap.','I am tired, so I nap.','I am tired, I nap.','I am, tired I nap.']]),
+GR(9,'combining','Joining two short sentences with a joining word makes one smooth sentence. If both parts have their own subject and verb, use a comma first.','wide',[
+ ['Combine: Tim ran. Tim fell.','Tim ran and fell.','Tim ran fell and.','Tim and ran fell.'],
+ ['Combine: I am sad. I am hungry.','I am sad and hungry.','I am sad and I hungry.','I am and sad hungry.'],
+ ['Combine: Mia sings. Mia plays.','Mia sings and plays.','Mia and sings plays.','Mia sings plays and.'],
+ ['Join: I am cold. I shiver.','I am cold, so I shiver.','I am cold so, I shiver.','I am cold, I shiver.'],
+ ['Join: It rained. We played.','It rained, but we played.','It rained but, we played.','It rained, we played.'],
+ ['Join: I was late. I ran.','I was late, so I ran.','I was late so, I ran.','I was late, I ran.'],
+ ['Join: Al is tall. Jo is not.','Al is tall, but Jo is not.','Al is tall but, Jo is not.','Al is tall, Jo is not.']]),
+GR(9,'pronoun case','Say the sentence with only one person in it. Pick the form for the one doing the action, or the form for the one it happens to.','choice',[
+ ['Tom and ___ went to the park.','I','me','mine'],['Mom gave Ben and ___ a snack.','me','I','mine'],
+ ['Jo and ___ built a fort.','I','me','mine'],['The prize went to Ana and ___.','me','I','mine'],
+ ['Dad took Meg and ___ to the zoo.','me','I','mine'],['Sara and ___ won the game.','I','me','mine'],
+ ['Tia and ___ sang a song.','he','him','his'],['The teacher helped Jan and ___.','her','she','hers'],
+ ['___ and I ate lunch.','She','Her','Hers'],['Sit with Tom and ___.','him','he','his'],
+ ['___ kids love recess.','We','Us','Our'],['Mom picked ___ kids up.','us','we','our']]),
+GR(9,'who or whom','One word does the action and one receives it. Replace the blank with he or him, then pick the matching word.','choice',[
+ ['___ ate the last cookie?','Who','Whom','Whose'],['To ___ did you give it?','whom','who','whose'],
+ ['___ is calling you?','Who','Whom','Whose'],['With ___ did you go?','whom','who','whose'],
+ ['___ wants some pizza?','Who','Whom','Whose'],['For ___ is this gift?','whom','who','whose']]),
+GR(9,'clear pronouns','A pronoun must point to one clear noun. If it could mean two people, or nothing at all, say the name again.','wide',[
+ ['Which is clear?','Tim told Ben that Tim was late.','Tim told Ben he was late.','He told Ben he was late.'],
+ ['Which is clear?','Mia told Ann that Ann won.','Mia told Ann she won.','She told Ann she won.'],
+ ['Which is clear?','Pam hugged Kay, and Kay smiled.','Pam hugged Kay, and she smiled.','She hugged Kay, and she smiled.'],
+ ['Which is clear?','Ben called Sam, and Ben was late.','Ben called Sam, and he was late.','He called Sam, and he was late.'],
+ ['Which is clear?','Mom told Gran that Mom was ill.','Mom told Gran she was ill.','She told Gran she was ill.'],
+ ['Which is clear?','Al saw Ed, and Ed waved.','Al saw Ed, and he waved.','He saw Ed, and he waved.'],
+ ['Which is clear?','The book says owls hunt at night.','They say owls hunt at night.','In the book, they say owls hunt.'],
+ ['Which is clear?','The sign says to keep off.','It says to keep off.','They say to keep off.']])
 );

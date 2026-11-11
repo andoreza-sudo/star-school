@@ -48,8 +48,8 @@ const SK={
  build:{t:'Build a Word',e:'🧩',area:'read',max:6,gen:lv=>lv>4?genBuildP(lv):genBuild(lv)},
  sent:{t:'Read & Match',e:'📚',area:'read',max:5,gen:lv=>lv>=3?genSentB(lv):genSent(lv)}, // P2-24: levels 3-5 (genSentB, end of 32-gen-read.js)
  spell:{t:'Spelling',e:'✏️',area:'read',max:7,gen:lv=>genSpell(lv)}, // P2-19: genSpell and its words are in src/data/d-spell.js
- // P2-20: grammar levels 1-5 (bank items in src/data/d-gram.js); P2-21 raises max to 9
- gram:{t:'Grammar',e:'🔤',area:'read',max:5,bank:'gram',gen:lv=>genBank('gram',lv)},
+ // P2-20 and P2-21: grammar levels 1-9 (bank items in src/data/d-gram.js)
+ gram:{t:'Grammar',e:'🔤',area:'read',max:9,bank:'gram',gen:lv=>genBank('gram',lv)},
  // P2-22 Vocabulary A (levels 1-5; P2-23 adds 6-10): items are BANK.vocab in src/data/d-vocab.js
  vocab:{t:'Vocabulary',e:'📚',area:'read',max:5,bank:'vocab',gen:lv=>genBank('vocab',lv)}};
 
