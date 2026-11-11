@@ -6824,6 +6824,200 @@ async function main() {
         '48 px targets, no sideways scroll, no emoji chrome');
     }
 
+    // P4-17 motion and sound polish (midway save, sound on). At 380x780 and 1024x600, each with and without reduced motion, with real
+    //    taps: Home's pet, a round on the current math stop (one wrong answer first), the chest and the reward cards, a boss (two hits),
+    //    the Pet Shop (try on, buy), Pet Care (a snack) and the Game Room (hub, a game, back), then (1024x600) Calm mode switched on in
+    //    Grown-ups. Every tap is answered within 100 ms (its handlers run and the next frame is drawn); nothing shifts the layout while
+    //    the effects play (right answer, boss hit, reward reveal, pet tap, snack, buy); no sideways scroll at any moment; with reduced
+    //    motion and in calm mode no particle shows; no console errors.
+    {
+      const watch = () => {
+        const rn = window.__realNow || performance.now.bind(performance);
+        const m = window.__mo = { taps: [], ls: [], side: [] };
+        addEventListener('click', e => {
+          const t0 = rn(), el = e.target.closest('[id],[data-f],[data-id],[data-i],[data-k]') || e.target;
+          const id = el.id || (el.dataset && Object.entries(el.dataset).map(([k, v]) => k + '=' + v)[0]) || el.className;
+          requestAnimationFrame(() => { const c = new MessageChannel(); c.port1.onmessage = () => m.taps.push([String(id).slice(0, 24), Math.round(rn() - t0)]); c.port2.postMessage(0); });
+        }, true);
+        new PerformanceObserver(l => {
+          for (const e of l.getEntries()) m.ls.push([+e.value.toFixed(4), window.__wq && (!window.G || G.q !== window.__wq) ? 'after' : '', e.sources.map(s => s.node ? (s.node.id || String(s.node.className || s.node.nodeName)).slice(0, 30) : '?').join('|')]);
+        }).observe({ type: 'layout-shift' });
+        let f = 0;
+        const side = () => {
+          if (++f % 3 == 0) for (const s of [document.documentElement, ...document.querySelectorAll('.center, .scroll, .rw-feed')]) {
+            const o = getComputedStyle(s).overflowX;
+            if (s.scrollWidth > s.clientWidth + 1 && o != 'hidden' && o != 'clip') m.side.push((s.id || s.className || 'page') + ' ' + s.scrollWidth + '>' + s.clientWidth);
+          }
+          requestAnimationFrame(side);
+        };
+        requestAnimationFrame(side);
+      };
+      // particles that show (display not none) and the screen-in duration
+      const shown = () => ({ fx: [...document.querySelectorAll('.burst, .rw-burst, .fly, .pc-fx')].filter(e => getComputedStyle(e).display != 'none').length,
+        enter: parseFloat(getComputedStyle(document.querySelector('#app')).animationDuration) });
+      // the answer's last tap is the window: a typed number goes into its slot first (the slot growing as digits are typed is the
+      // child's own input, not an effect), then Check
+      const finalTap = async pg => {
+        const q = await pg.evaluate(() => ({ kind: G.q.kind, ans: String(G.q.ans), alt: G.q.alt }));
+        if (q.kind !== 'num') return () => answer(pg);
+        for (const d of (q.alt || q.ans)) await pg.click(`.k[data-k="${/\d|\./.test(d) ? d : d === '-' ? 'neg' : 'go'}"]`);
+        return () => pg.click('.k[data-k="go"]');
+      };
+      const bad = [];
+      let taps = 0, slow = 0, wins = 0, shiftMax = 0, at = '';
+      const all = [];
+      for (const [w, h] of [[380, 780], [1024, 600]]) for (const rm of [false, true]) {
+        const tag = w + 'x' + h + (rm ? ' reduced motion' : '') + ': ';
+        const ma = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ma.page;
+        if (rm) await pg.emulateMedia({ reducedMotion: 'reduce' });
+        await pg.evaluate(watch);
+        await pg.evaluate(() => { window.say = () => {}; S.sound = true; S.music = false; S.coins = 500; S.pt = { bank: 900, day: today(), used: 0 }; save(); home(); });
+        await pg.waitForSelector('#pet');
+        await pg.waitForTimeout(400);
+        // an animation window: clear the layout-shift list, act, wait, then nothing may have moved
+        const win = async (what, act, ms) => {
+          await pg.waitForTimeout(250); // the screen settles first (a new question fits its text to the card)
+          await pg.evaluate(() => { __mo.ls.length = 0; window.__wq = window.G && G.q && !G.lock && document.querySelector('#prompt') ? G.q : null; });
+          await act();
+          const fx = await pg.evaluate(shown);
+          await vwait(pg, ms);
+          // shifts once the next question is drawn belong to the new screen, not to the effects. The bar is a score of 0.01 (ten
+          // times under the web's "good" 0.1): the answer shown in its slot may move a little text; tools/test.js "motion and sound
+          // P4-17" checks that no CSS motion touches layout.
+          const ls = (await pg.evaluate(() => __mo.ls.splice(0))).filter(x => x[1] !== 'after');
+          const sum = ls.reduce((a, b) => a + b[0], 0);
+          if (sum >= 0.01) bad.push(tag + what + ': layout shift ' + sum.toFixed(4) + ' (' + [...new Set(ls.map(x => x[2]))].join(', ') + ')');
+          shiftMax = Math.max(shiftMax, sum);
+          if (rm && fx.fx) bad.push(tag + what + ': ' + fx.fx + ' particles show with reduced motion');
+          wins++;
+          return fx;
+        };
+        try {
+          at = 'home';
+          // Home: the pet tap (drawn hearts)
+          const hp = await win('Home pet tap', () => pg.click('#pet'), 900);
+          if (!rm && !hp.fx) bad.push(tag + 'Home pet tap drew no hearts');
+          if (rm && hp.enter > 0.01) bad.push(tag + 'the screen-in still moves with reduced motion (' + hp.enter + ' s)');
+          at = 'round';
+          // a round: first stop of math, one wrong answer, then right answers; the chest; the reward cards
+          await pg.click('.game[data-p="math"]');
+          await pg.waitForSelector('.node.cur');
+          await pg.click('.node.cur'); // the child's current stop
+          await pg.waitForSelector('#prompt');
+          for (let guard = 0, k = 0; guard < 40; guard++) {
+            const st = await pg.evaluate(() => document.querySelector('#fin') ? 'fin' : (G && G.q && !G.lock ? 'ask' : 'none'));
+            if (st === 'fin') break;
+            if (st === 'none') { await pg.waitForTimeout(100); continue; }
+            await pg.evaluate(() => { window.__q = G.q; });
+            const q = await pg.evaluate(() => ({ kind: G.q.kind, wrong: G.q.choices ? G.q.choices.findIndex(c => String(c.v) !== String(G.q.ans)) : -1 }));
+            if (k === 0 && q.kind === 'choice' && q.wrong >= 0) {
+              await pg.click(`.ch[data-i="${q.wrong}"]`); // the shake and the amber choice (the hint that appears may move things: not checked)
+              await vwait(pg, 400);
+            }
+            const fx = await win('right answer ' + (k + 1), await finalTap(pg), 900);
+            if (!rm && !fx.fx) bad.push(tag + 'right answer ' + (k + 1) + ': no drawn burst');
+            await pg.waitForFunction(() => document.querySelector('#fin') || (G && G.q !== window.__q), null, { timeout: 8000 });
+            k++;
+          }
+          await pg.waitForSelector('#chest', { timeout: 5000 });
+          await pg.waitForTimeout(300);
+          await win('reward reveal', () => pg.click('#chest'), 7000);
+          if (!(await pg.$('#btns .btn.primary'))) bad.push(tag + 'reward: no next step');
+          const left = await pg.evaluate(() => document.querySelectorAll('#fin .rw-wait').length);
+          if (left) bad.push(tag + 'reward: ' + left + ' cards still waiting after 7 s');
+          const yay = await pg.$('#yay');
+          if (yay) await yay.click();
+          at = 'boss';
+          // a boss: the intro, Let's go, two hits
+          const bi = await pg.evaluate(() => NODES.math.indexOf(NODES.math.filter(n => n.sk == 'boss')[0]));
+          await pg.evaluate(bi => bossIntro('math', bi), bi);
+          await pg.waitForSelector('#fight');
+          await pg.waitForTimeout(400);
+          await pg.click('#fight');
+          await pg.waitForSelector('#bossE');
+          for (let i = 0; i < 2; i++) {
+            await pg.waitForFunction(() => G && G.q && !G.lock, null, { timeout: 8000 });
+            await pg.evaluate(() => { window.__q = G.q; });
+            const fx = await win('boss hit ' + (i + 1), await finalTap(pg), 900);
+            if (!rm && !fx.fx) bad.push(tag + 'boss hit ' + (i + 1) + ': no drawn zap');
+            const hp = await pg.evaluate(() => ({ hp: G.hp, tr: document.querySelector('#hpf').style.transform }));
+            if (Math.abs(parseFloat((hp.tr.match(/scaleX\(([\d.]+)\)/) || [])[1]) - hp.hp / 7) > 1e-3) bad.push(tag + 'boss life bar ' + JSON.stringify(hp));
+            await pg.waitForFunction(() => G.q !== window.__q, null, { timeout: 8000 });
+          }
+          await pg.evaluate(() => { document.querySelectorAll('.ovl, .sheet-bg').forEach(o => o.remove()); home(); });
+          at = 'shop';
+          // the Pet Shop: try an item on, buy it (drawn confetti)
+          await pg.waitForSelector('#shop');
+          await pg.click('#shop');
+          await pg.waitForSelector('.ps-grid .item');
+          const id = await pg.evaluate(() => { const b = [...document.querySelectorAll('.ps-grid .item[data-id]')].find(e => !S.owned[e.dataset.id]); return b && b.dataset.id; });
+          await pg.click(`.item[data-id="${id}"]`);
+          await pg.click('#psact');
+          await pg.waitForSelector('.sheet-bg.on #psyes');
+          await pg.waitForTimeout(400);
+          await win('shop buy', () => pg.click('#psyes'), 1500);
+          if (!(await pg.evaluate(i => !!S.owned[i], id))) bad.push(tag + 'shop: ' + id + ' not bought');
+          await pg.click('#back');
+          at = 'care';
+          // Pet Care: a snack (drawn hearts and sparkles)
+          await pg.waitForSelector('#care');
+          await pg.evaluate(() => { S.care = { food: 30, clean: 30, fun: 30, t: Date.now(), gift: '' }; save(); });
+          await pg.click('#care');
+          await pg.waitForSelector('[data-f="0"]');
+          await pg.waitForTimeout(400);
+          await win('Pet Care snack', () => pg.click('[data-f="0"]'), 1200);
+          await vwait(pg, 600);
+          await pg.click('#back');
+          at = 'game room';
+          // the Game Room: the hub, a game's first screen, back, back
+          await pg.waitForSelector('#groom');
+          await pg.click('#groom');
+          await pg.waitForSelector('.gh-room .gh-card');
+          const gb = await pg.evaluate(() => GH.games[1].btn);
+          await pg.click('#' + gb);
+          await pg.waitForSelector('.gh-top #back');
+          await pg.click('#back');
+          await pg.waitForSelector('.gh-room .gh-card');
+          await pg.click('#back');
+          await pg.waitForSelector('#pet');
+          at = 'calm';
+          // Calm mode switched on in Grown-ups (hold the gear): saved, html.calm, and no particles on the next pet tap
+          if (w === 1024 && !rm) {
+            const gr = await (await pg.$('#gear')).boundingBox();
+            await pg.mouse.move(gr.x + gr.width / 2, gr.y + gr.height / 2);
+            await pg.mouse.down();
+            await vwait(pg, 1500);
+            await pg.mouse.up();
+            await pg.waitForSelector('#calm', { state: 'attached' });
+            await pg.click('label.switch:has(#calm)');
+            const c = await pg.evaluate(() => ({ s: S.calm, html: document.documentElement.classList.contains('calm') }));
+            if (c.s !== true || !c.html) bad.push(tag + 'Calm mode switch: ' + JSON.stringify(c));
+            await pg.evaluate(() => home());
+            await pg.waitForSelector('#pet');
+            const cf = await win('calm Home pet tap', () => pg.click('#pet'), 900);
+            if (cf.fx || cf.enter > 0.01) bad.push(tag + 'calm mode: ' + JSON.stringify(cf));
+          }
+        } catch (e) {
+          bad.push(tag + 'taps (' + at + '): ' + e.message.split('\n')[0]);
+        }
+        const m = await pg.evaluate(() => ({ taps: __mo.taps, side: [...new Set(__mo.side)] }));
+        for (const s of m.side) bad.push(tag + 'sideways scroll: ' + s);
+        for (const [id, ms] of m.taps) { taps++; all.push(ms); if (ms > 100) { slow++; bad.push(tag + 'tap ' + id + ' answered after ' + ms + ' ms'); } }
+        if (m.taps.length < 15) bad.push(tag + 'only ' + m.taps.length + ' taps measured');
+        network.push(...ma.network);
+        for (const e of ma.errors) fail('P4-17 ' + tag + e);
+        await ma.ctx.close();
+      }
+      all.sort((a, b) => a - b);
+      if (bad.length) fail('P4-17 motion and sound:\n  ' + [...new Set(bad)].slice(0, 40).join('\n  '));
+      else step(`P4-17: ${taps} real taps at 380x780 and 1024x600, with and without reduced motion (round with a wrong answer, chest and reward ` +
+        `cards, boss hits, Pet Shop buy, Pet Care snack, Home pet tap, Game Room, Calm mode switched on): every tap answered within 100 ms ` +
+        `(median ${all[all.length >> 1]} ms, slowest ${all[all.length - 1]} ms); ${wins} effect windows without a visible layout shift ` +
+        `(largest score ${shiftMax.toFixed(4)}, under 0.01); no sideways ` +
+        'scroll; no particles with reduced motion or in calm mode');
+    }
+
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');
   } catch (e) {

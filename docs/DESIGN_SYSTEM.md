@@ -425,6 +425,36 @@ All sounds stay synthesized (WebAudio), no audio files.
 Rules: one master gain; effects never louder than the voice; duck effects and music to 30% while speech is playing; never more than 3 effects at once;
 separate switches for Voice, Sound effects and Music in Grown-ups (today sound and music share one switch); optional light vibration (10 ms) on key taps where supported.
 
+### 8.3 As built (P4-17, v131)
+
+- Motion tokens: the four in 2.4 plus three moment tokens in `00-tokens.css`: `--t-shake` 240 ms (wrong-answer shake), `--t-cele` 1200 ms
+  (confetti and other celebrations), `--t-loop` 2400 ms (one idle loop: pet bob, the current stop's pulse). In the chrome CSS
+  (10-components, 20-base, 42-question, 42-rewards, 43-shop, 46-home, 47-gfx, 48-game-hub, 48-setup-grown-care, 48-teasers, 50-motion)
+  every animation and transition runs for one of them (or a `calc()` of one) with `--ease`, `--spring`, `linear` or `ease-in-out`.
+  Every CSS file, the parts included, animates only `transform` and `opacity`; the two exceptions are inside games (Hill Climb's fuel
+  gauge width, the colouring page's fill), named in the test.
+- Screen change: `#app` fades in with an 8 px rise (`--t-slow`, `--ease`); overlays fade in (`--t-slow`); sheets and toasts as P4-04.
+  Press: `.btn` squashes onto its ledge (`--t-fast`). The legacy aliases (`--bg`, `--blue` ...) are gone.
+- Particles are drawn, never emoji: `burst(x, y, kind)` (12-speech.js) throws 10 shaded pieces (Pet Care's heart, star and sparkle
+  drawings, plus a bolt and a coin): `star` for a right answer, `heart` for Home's pet tap, `zap` for a boss hit, `coin` for a balloon.
+  `confetti(n)` is the drawn `RW.burst` on the body (fixed, above overlays), at most 40 pieces for 1.2 s. The boss life bar is a shaded
+  red pill that shrinks with `scaleX`.
+- Nothing loops forever except the pet's idle (bob, shadow, blink), the current stop's pulse, Pre-K's side-by-side count (the question
+  itself) and Hill Climb's low-fuel blink. The chest rattles 4 times (sound too), Home's thought bubble bobs 4 times.
+- The reward screen puts every sticker, earned row and message card in its place at once as a faint slot (`.rw-wait`: the card or
+  tile at 40%, a row keeps its icon disc) and shows them in turn, so nothing on the screen moves while they arrive.
+- Reduced motion (OS) and Calm mode (new Grown-ups switch "Calm mode: less movement, no confetti", saved as `S.calm`, read with a
+  default; every screen adds `html.calm`): every animation and transition ends at once (20-base.css), and no particle is shown
+  (`.burst`, `.rw-burst`, `.fly`, `.pc-fx`). Everything still reads from the screen itself (the green choice, the tick, the toast,
+  the hearts, the counts).
+- Sound (`10-sfx.js`): the set in 8.2 retuned to soft waves (sine, triangle) at those lengths, plus `star` (the star landing on its
+  chip) and `tick` (the last seconds of Balloons, Speed Race and Fact Sprint, which used to beep even with sound off). One master
+  gain at .8; each effect has its own gain node and a 4th effect at once fades the oldest out; while the voice talks (speech or a
+  recorded clip) the master ducks to 30%. `tone()` and `noise()` (used by the games) are silent with Sound effects off; music keeps its
+  own switch. Measured levels (test.js "motion and sound P4-17", envelope x wave loudness): tap .03 (the quietest), coin .04,
+  whoosh .035, fanfare .056, star .058, Try again .071 (under Right .094), open .075, boss hit .10; all under .13. No vibration
+  (left out: it is optional and many tablets have none).
+
 ## 9. Migration plan, screen by screen
 
 Order matters: tokens, then icons, then components, then screens from most seen to least seen. Each row is one chunk; behaviour never changes in these chunks.

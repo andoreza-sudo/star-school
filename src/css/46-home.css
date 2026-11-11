@@ -33,7 +33,7 @@
 .sc-space{background:linear-gradient(var(--ill-ink),var(--ill-purple-3))}
 .sc-castle{background:linear-gradient(var(--ill-purple-1),var(--ill-pink-1))}
 .hm-think{position:absolute;top:var(--s-2);right:var(--s-2);display:grid;place-items:center;width:44px;height:44px;border-radius:50%;
-  font-size:30px;background:var(--surface);box-shadow:0 3px 0 var(--drop);animation:hm-bob 1.8s ease-in-out infinite}
+  font-size:30px;background:var(--surface);box-shadow:0 3px 0 var(--drop);animation:hm-bob calc(var(--t-loop) * .75) var(--ease) 4}
 .hm-think::after{content:"";position:absolute;left:-2px;bottom:-6px;width:12px;height:12px;border-radius:50%;background:var(--surface)}
 @keyframes hm-bob{50%{transform:translateY(-4px)}}
 .hm-name{grid-area:nm;align-self:end;font-family:var(--font-display);font-size:var(--fs-4);font-weight:700;line-height:1.2;overflow-wrap:break-word}
