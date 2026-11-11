@@ -231,6 +231,7 @@ async function main() {
           css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(), games: [typeof garage, typeof blockBuilder, typeof colorMenu].join() };
       });
       const files = g.files.map(f => f[0] + '.' + g.dv + '.js'), want = 'data.' + g.dv + '.js';
+      const btF = 'bt.' + g.dv + '.js', gamesF = 'games.' + g.dv + '.js'; // A11c: the order of the parts is build.py's, so name them
       if (JSON.stringify(g.src) !== JSON.stringify(files) || files[files.length - 1] !== want || !g.ready || !(g.gram > 0 && g.vocab > 0 && g.comp > 0 && g.info > 0)
         || g.spell !== 'function' || !g.vq || g.pz !== '3:16:16' || g.ix < 0) {
         fail('A11 data globals: ' + JSON.stringify(g));
@@ -243,6 +244,19 @@ async function main() {
       if (words < 20) fail('A11: reading passage did not open (' + words + ' words)');
       else step('A11: ' + files.join(', ') + ' loaded over file:// (' + g.vocab + ' vocabulary items, ' + g.comp + '+' + g.info + ' passages, '
         + 'sudoku bank), a vocabulary question built, a passage opened (' + words + ' words)');
+
+      // A11c: the question generators are in gen/gen2 part files now: the first lesson of each subject opens a real question
+      for (const area of ['math', 'read', 'es', 'disc']) {
+        const r = await d.page.evaluate(async a => {
+          const i = NODES[a].findIndex(n => n.sk !== 'boss' && n.sk !== 'trace' && SK[n.sk] && SK[n.sk].gen);
+          start(a, i);
+          await new Promise(res => setTimeout(res, 300));
+          return { sk: NODES[a][i].sk, q: !!(G && G.q && G.q.html), prompt: !!document.querySelector('#prompt, .bctx-p, #app .q') };
+        }, area);
+        if (!r.q || !r.prompt) fail('A11c: ' + area + ' lesson question did not open: ' + JSON.stringify(r));
+        else step('A11c: ' + area + ' lesson (' + r.sk + ') opened a question built by gen/gen2');
+        await d.page.evaluate(() => { try { G.dead = true; } catch (e) {} home(); });
+      }
       await d.page.evaluate(() => { G.dead = true; S.grade = 3; save(); home(); });
       // A11b: each puzzle file's types open from the hub, laid out by the CSS that came with bt.<VER>.js
       const opened = [];
@@ -265,8 +279,8 @@ async function main() {
       await d.page.waitForSelector('#gbb', { timeout: 5000 }).catch(() => {});
       const room = await d.page.evaluate(() => ['#g4x4', '#gcbn', '#gbb'].filter(s => document.querySelector(s)).length);
       if (room !== 3) fail('A11b: the Game Room did not open (' + room + ' of 3 games)');
-      if (opened.length === 3 && room === 3) step('A11b: puzzle types ' + g.bt + ' registered from ' + files[0] + ', its <style> in, opened from the hub: '
-        + opened.join(', ') + '; Game Room from ' + files[1] + ' opened');
+      if (opened.length === 3 && room === 3) step('A11b: puzzle types ' + g.bt + ' registered from ' + btF + ', its <style> in, opened from the hub: '
+        + opened.join(', ') + '; Game Room from ' + gamesF + ' opened');
       await d.page.evaluate(() => home());
       errors.push(...d.errors);
       network.push(...d.network);
@@ -311,10 +325,10 @@ async function main() {
       await a2.ctx.close();
       fs.copyFileSync(path.join(ROOT, want), path.join(tmp, want));
       // 3. A11b: no puzzle file; with it back, Try again starts the app and a maze opens from the hub
-      fs.rmSync(path.join(tmp, files[0]));
-      const a3 = await guard(files[0] + ' missing', NOFILE, 'bt file missing');
-      fs.copyFileSync(path.join(ROOT, files[0]), path.join(tmp, files[0]));
-      await retry(a3, files[0], async pg => {
+      fs.rmSync(path.join(tmp, btF));
+      const a3 = await guard(btF + ' missing', NOFILE, 'bt file missing');
+      fs.copyFileSync(path.join(ROOT, btF), path.join(tmp, btF));
+      await retry(a3, btF, async pg => {
         try {
           await pg.evaluate(() => document.querySelector('#btcard').scrollIntoView({ block: 'center' }));
           await pg.click('#btcard');
@@ -325,8 +339,8 @@ async function main() {
         } catch (e) { return 'NO MAZE: ' + e.message.split('\n')[0] + ' '; }
       });
       // 4. A11b: a games file from another release
-      fs.writeFileSync(path.join(tmp, files[1]), fs.readFileSync(path.join(ROOT, files[1]), 'utf8').replace("var GAMES_VER='" + g.dv + "'", "var GAMES_VER='v1'"));
-      const a4 = await guard(files[1] + ' of another release', /^$/, 'games file v1 does not match');
+      fs.writeFileSync(path.join(tmp, gamesF), fs.readFileSync(path.join(ROOT, gamesF), 'utf8').replace("var GAMES_VER='" + g.dv + "'", "var GAMES_VER='v1'"));
+      const a4 = await guard(gamesF + ' of another release', /^$/, 'games file v1 does not match');
       await a4.ctx.close();
       fs.rmSync(tmp, { recursive: true, force: true });
     }
