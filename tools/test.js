@@ -12129,6 +12129,114 @@ run('tangram pack and Shape Fit P3-12',()=>{
     s.acc+' equal covers and '+s.alt+' other tilings accepted, '+s.near+' near misses refused, '+s.snaps+' drops snapped, '+s.hints+' hint steps, '+s.dmg+' damaged states refused'};
 });
 
+// ---- P4-12: setup, Grown-ups, Pet Care, app icon ----
+run('setup, grown-ups, pet care, icon P4-12',()=>{
+  const p=[],rd=f=>fs.readFileSync(path.join(SRC,f),'utf8');
+  // 1. the chunk's CSS: tokens only, no filters, motion only on transform/opacity
+  const css=rd('css/48-setup-grown-care.css').replace(/\/\*[\s\S]*?\*\//g,''),tok=rd('css/00-tokens.css');
+  if(/#[0-9a-fA-F]{3,8}\b/.test(css))p.push('raw hex colour in 48-setup-grown-care.css');
+  if(/rgba?\(|hsla?\(/.test(css))p.push('colour function in 48-setup-grown-care.css');
+  if(/(^|[;{\s])(-webkit-)?(backdrop-)?filter\s*:/.test(css))p.push('filter or backdrop-filter used');
+  for(const m of css.matchAll(/transition\s*:\s*([^;}]+)/g))for(const part of m[1].split(','))
+    if(!/^\s*(transform|opacity)\s/.test(part))p.push('transition on something other than transform/opacity: '+part.trim());
+  for(const m of css.matchAll(/@keyframes\s+([\w-]+)\s*\{([\s\S]*?\})\s*\}/g))for(const d of m[2].matchAll(/([a-z-]+)\s*:/g))
+    if(!['transform','opacity'].includes(d[1]))p.push('keyframes '+m[1]+' animates '+d[1]);
+  for(const m of css.matchAll(/var\(--([a-z0-9-]+)/g))if(!['c','c-tint','c-shade','x','y','d'].includes(m[1])&&!new RegExp('--'+m[1]+':').test(tok))p.push('unknown token --'+m[1]);
+  if(!/html\.calm \.pc-fx\{display:none\}/.test(css)||!/prefers-reduced-motion:reduce\)\{\.pc-fx\{display:none\}/.test(css))p.push('care sparkles not hidden in calm mode and with reduced motion');
+  // 2. no emoji chrome in the screens' functions (content pictures such as SNACKS live outside them and go through picFor)
+  const fnText=(file,name)=>{const t=rd('js/'+file),a=t.search(new RegExp('(function |const )'+name+'\\b'));
+    if(a<0){p.push(file+': '+name+' not found');return''}const b=t.indexOf('\nfunction ',a+1);return t.slice(a,b<0?t.length:b)};
+  const EMO=/\p{Emoji_Presentation}|\p{Extended_Pictographic}️|[◀▶✕⭐⚡✅★☆✓✔]/u;
+  const fns=[['46-home.js','setup'],['46-home.js','suStep'],['80-grown.js','GW'],['80-grown.js','grown'],['80-grown.js','record'],['82-report.js','report'],
+    ['82-report.js','reportGrownHTML'],['48-shop.js','stageHTML'],['56-petcare.js','PC_FX'],['56-petcare.js','careFx'],['56-petcare.js','care']];
+  const txt={};
+  for(const [f,fn] of fns){const t=txt[fn]=fnText(f,fn),m=t.match(EMO);if(m)p.push(f+' '+fn+': emoji or text glyph as chrome: '+m[0])}
+  // Pet Care: no emoji bursts, emoji confetti or emoji toasts; drawn pieces; reduced motion and calm respected
+  if(/\bfly\(|burst\(r\.|confetti\(/.test(txt.care))p.push('care() still makes emoji bursts or emoji confetti');
+  if(!/careFx\('food'\)/.test(txt.care)||!/careFx\('bath'/.test(txt.care)||!/careFx\('play'\)/.test(txt.care))p.push('care actions do not all show drawn feedback');
+  if(!/prefers-reduced-motion: reduce/.test(txt.careFx)||!/classList\.contains\('calm'\)/.test(txt.careFx))p.push('careFx ignores reduced motion or calm mode');
+  if(/sdeco|sc\[2\]|sc\[3\]/.test(txt.stageHTML)||!/HM_SCENE\[id\]\(\)/.test(txt.stageHTML))p.push('stageHTML still uses emoji props or raw colours instead of the drawn scene');
+  if(/style\.background|#[0-9a-fA-F]{6}\b/.test(txt.record+txt.grown))p.push('Grown-ups sets a raw colour');
+  // ids and selectors the code and the tests use
+  const has=(t,list,w)=>{for(const s of list)if(!new RegExp('["\']'+s+'["\']').test(t))p.push(w+' lost '+s)};
+  has(txt.setup,['nm','pn','go','speak'],'setup');
+  if(!/class="btn petopt gx-pet/.test(txt.setup)||!/data-p="\$\{k\}"/.test(txt.setup)||!/<span class="gx-pp">\$\{petPick\(k\)\}/.test(txt.setup))p.push('setup pet cards changed (.petopt[data-p] > span pet)');
+  has(txt.grown,['back','nm','pn','bd','ula','pt5','pt0','ptp','voice','snd','mus','test','reset','applog'],'grown');
+  for(const a of ['data-play=','data-del=','data-rec=','placeGrownHTML()','reportGrownHTML()','gradePickHTML(','<details class="gw-card gw-det" id="applog">'])
+    if(!txt.grown.includes(a))p.push('grown lost '+a);
+  // 3. share and print: the report card's Print button keeps the online note and runs through needOnline (print may go on offline)
+  if(!/onlineNote\(\)/.test(txt.report)||!/\$\('#rp-print'\)\.onclick = \(\) => needOnline\(\(\) => \{try \{window\.print\(\)\} catch \(e\) \{\}\}, \{block: false\}\)/.test(txt.report))
+    p.push('report card Print lost its online note or needOnline');
+  if(!/id: 'rp-print'/.test(txt.report))p.push('report card lost #rp-print');
+  // 4. helpers
+  const out=eval(js+`
+  const bad=[];
+  S={name:'A<b>',pet:'dragon',stars:0,wear:{},care:{food:50,clean:50,fun:50,t:Date.now(),gift:''}};
+  const sg=GW.seg('per',[2,3,5],3,'Minutes',v=>v);
+  if((sg.match(/data-per="/g)||[]).length!==3||!/data-per="3" aria-pressed="true" class="on"/.test(sg))bad.push('GW.seg: '+sg);
+  const cd=GW.card('x','chart','T','<i></i>',{sub:'s',tone:'s-play'});
+  if(!/^<section class="gw-card" id="x"><h2 class="gw-h"><span class="gw-hi s-play">/.test(cd)||!/#i-chart/.test(cd))bad.push('GW.card: '+cd.slice(0,80));
+  const rg=reportGrownHTML();
+  if(!/id="rp-open"/.test(rg)||!/gw-card rp-entry/.test(rg)||/A<b>/.test(rg))bad.push('reportGrownHTML: '+rg.slice(0,120));
+  if(!/id="nm" value="&lt;x&gt;"/.test(fldHTML('edit','id="nm" value="'+esc('<x>')+'"')))bad.push('fldHTML');
+  for(const sc of SHOP.scene){const h=stageHTML(sc,'t','',false);
+    if(!/<svg class="gx-scene"/.test(h)||!h.includes('sc-'+sc[0])||/\\p{Extended_Pictographic}/u.test(h.replace(/<svg class="pet-svg[\\s\\S]*$/,'')))bad.push('stage '+sc[0])}
+  for(const k in PC_FX)if(!/^<(path|circle)/.test(PC_FX[k])||/#[0-9a-f]{3,6}\\b/i.test(PC_FX[k]))bad.push('care piece '+k);
+  bad;`);
+  p.push(...out);
+  // 5. app icon: PNGs at 192 and 512, opaque, full-bleed brand blue, everything drawn inside the maskable safe circle (radius 40%)
+  const zlib=require('zlib');
+  const png=f=>{const b=fs.readFileSync(path.join(ROOT,f));if(b.readUInt32BE(0)!==0x89504e47)return null;
+    let o=8,w=0,h=0,ct=0,bd=0;const idat=[];
+    while(o<b.length){const n=b.readUInt32BE(o),t=b.toString('ascii',o+4,o+8),d=b.subarray(o+8,o+8+n);
+      if(t=='IHDR'){w=d.readUInt32BE(0);h=d.readUInt32BE(4);bd=d[8];ct=d[9]}if(t=='IDAT')idat.push(d);o+=12+n}
+    const bpp=ct==6?4:ct==2?3:0;if(!bpp||bd!==8)return{w,h,ct,bd};
+    const raw=zlib.inflateSync(Buffer.concat(idat)),px=Buffer.alloc(w*h*bpp),st=w*bpp;
+    for(let y=0;y<h;y++){const f=raw[y*(st+1)],src=raw.subarray(y*(st+1)+1,(y+1)*(st+1));
+      for(let x=0;x<st;x++){const a=x>=bpp?px[y*st+x-bpp]:0,up=y?px[(y-1)*st+x]:0,c=x>=bpp&&y?px[(y-1)*st+x-bpp]:0;
+        const pa=Math.abs(up-c),pb=Math.abs(a-c),pc=Math.abs(a+up-2*c);
+        px[y*st+x]=(src[x]+(f==0?0:f==1?a:f==2?up:f==3?(a+up)>>1:pa<=pb&&pa<=pc?a:pb<=pc?up:c))&255}}
+    return{w,h,ct,bd,bpp,at:(x,y)=>{const i=(y*w+x)*bpp;return[px[i],px[i+1],px[i+2],bpp==4?px[i+3]:255]}}};
+  const icons={};
+  for(const s of [192,512]){const f='icon-'+s+'.png';if(!fs.existsSync(path.join(ROOT,f))){p.push(f+' missing');continue}
+    const im=png(f);icons[s]=im;
+    if(!im||im.w!==s||im.h!==s)p.push(f+': size '+(im&&im.w)+'x'+(im&&im.h));
+    if(!im||!im.at){p.push(f+': not an 8-bit RGB(A) PNG');continue}
+    let outside=0,clear=0,yellow=0,ink=0;const c=s/2,R=s*.4;
+    for(let y=0;y<s;y++)for(let x=0;x<s;x++){const [r,g,b,a]=im.at(x,y);
+      if(a<255)clear++;
+      const blue=b>r+40&&b>g+20,d=Math.hypot(x+.5-c,y+.5-c);
+      if(d>R&&!blue)outside++;
+      if(d<s*.3&&r>230&&g>170&&b<120)yellow++;
+      if(d<s*.2&&r<60&&g<60&&b<90)ink++}
+    if(clear)p.push(f+': '+clear+' pixels not opaque');
+    if(outside)p.push(f+': '+outside+' drawn pixels outside the maskable safe circle');
+    if(yellow<s*s*.06)p.push(f+': the star mark is missing from the middle ('+yellow+' star pixels)');
+    if(ink<s*s*.004)p.push(f+': the star has no face ('+ink+' eye pixels)');
+    const brand=(tok.match(/--brand:#([0-9A-Fa-f]{6})/)||[])[1]||'000000',bg=im.at(Math.round(s*.02),Math.round(s*.72));
+    if(bg.slice(0,3).some((v,i)=>Math.abs(v-parseInt(brand.slice(i*2,i*2+2),16))>3))p.push(f+': background '+bg.slice(0,3)+' is not --brand #'+brand);
+    for(const [x,y] of [[0,0],[s-1,0],[0,s-1],[s-1,s-1]]){const [r,g,b]=im.at(x,y);if(!(b>r+40&&b>g+20))p.push(f+': corner '+x+','+y+' is not the brand background')}
+  }
+  // 6. manifest and favicon
+  let man=null;try{man=JSON.parse(fs.readFileSync(path.join(ROOT,'manifest.json'),'utf8'))}catch(e){p.push('manifest.json is not valid JSON')}
+  if(man){
+    for(const k of ['name','short_name','start_url','display','background_color','theme_color','icons'])if(!man[k])p.push('manifest: no '+k);
+    const paper=(tok.match(/--paper:(#[0-9A-Fa-f]{6})/)||[])[1]||'';
+    if(String(man.theme_color).toLowerCase()!==paper.toLowerCase())p.push('manifest theme_color '+man.theme_color+' is not --paper '+paper);
+    if(!/^#[0-9a-f]{6}$/i.test(man.background_color))p.push('manifest background_color '+man.background_color);
+    const ic=man.icons||[],pur=new Set(ic.flatMap(i=>String(i.purpose||'any').split(/\s+/)));
+    if(!pur.has('any')||!pur.has('maskable'))p.push('manifest icons need purpose any and maskable: '+[...pur]);
+    for(const i of ic){const m=/^icon-(\d+)\.png$/.exec(i.src);if(!m||i.sizes!==m[1]+'x'+m[1]||i.type!=='image/png'||!icons[m[1]])p.push('manifest icon '+JSON.stringify(i))}
+    if(!ic.some(i=>i.sizes=='192x192')||!ic.some(i=>i.sizes=='512x512'))p.push('manifest needs 192 and 512 icons');
+    const shell=rd('shell.html');
+    if(!shell.includes('<meta name="theme-color" content="'+man.theme_color+'">'))p.push('shell theme-color differs from the manifest');
+    if(!/<link rel="icon" href="icon-192\.png">/.test(shell))p.push('favicon link missing');
+  }
+  const sw=fs.readFileSync(path.join(ROOT,'sw.js'),'utf8');
+  if(!sw.includes("'./icon-192.png'")||!sw.includes("'./icon-512.png'"))p.push('sw.js does not precache the icons');
+  return{problems:p,note:fns.length+' functions, icons 192 and 512 checked pixel by pixel'};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){

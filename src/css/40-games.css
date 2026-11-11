@@ -20,7 +20,6 @@
 .grp{border:3px dashed #a8a29e;border-radius:22px;padding:6px 8px;font-size:calc(30px*var(--k));line-height:1.2;background:#fff8;display:inline-grid;grid-template-columns:repeat(var(--c),1fr)}
 .choices.syms{grid-template-columns:repeat(3,1fr)}.choices.syms .ch{font-size:clamp(36px,7vh,56px)}
 .choices.wide{grid-template-columns:1fr}.choices.wide .ch{font-size:clamp(20px,3.6vh,28px);padding:clamp(8px,1.6vh,14px)}
-.vrow{padding:8px 0;border-top:1px solid #f0ebe3}
 .rule{font-size:clamp(20px,4vh,30px);font-weight:700;text-align:center;padding:4px 12px 8px;cursor:pointer}
 .bfield{position:relative;flex:1;overflow:hidden;background:linear-gradient(#bae6fd,#f0f9ff);border-radius:24px 24px 0 0;touch-action:none}
 .bal{position:absolute;width:88px;height:106px;border:0;padding:0;border-radius:50% 50% 48% 52%/55% 55% 45% 45%;background:var(--c);display:flex;align-items:center;justify-content:center;font:inherit;font-size:26px;font-weight:700;color:#fff;text-shadow:0 2px 2px #0005;box-shadow:inset -10px -12px 0 #0002,inset 8px 8px 0 #fff3;cursor:pointer}
@@ -29,7 +28,6 @@
 .hint.pop{animation:qin .35s cubic-bezier(.5,1.6,.5,1)}
 .talking{background:#dbeafe;animation:bump .6s infinite}
 .fb.long{font-size:clamp(18px,4.5vw,26px)}
-.vline{display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px dashed #f0ebe3}.vtxt{flex:1;font-size:16px}.btn.rec{background:#fee2e2}
 
 .games{display:flex;flex-direction:column;gap:12px}
 .game{display:flex;align-items:center;gap:14px;text-align:left;padding:14px 16px;border-radius:24px}
@@ -82,7 +80,6 @@
 .stage .petbig{font-size:clamp(100px,24vmin,180px);padding:.38em .5em .05em;line-height:1}
 .stage .hname{font-size:clamp(20px,3.4vh,28px);margin-top:2px}.stage .htxt{font-size:16px}
 .stage.dark{color:#fff}.stage.dark .htxt{color:#fde68a}
-.sdeco{position:absolute;font-size:clamp(28px,6vmin,48px);opacity:.55;pointer-events:none}
 .ptcard{display:flex;gap:14px;align-items:center;background:linear-gradient(135deg,#fef3c7,#fde68a);border-radius:22px;padding:14px 16px;margin:6px 0 14px}.ptcard.empty{background:#f5f5f4}
 .game.soon{opacity:.55;cursor:default}
 .upg{cursor:default}.upg .gi{gap:2px}

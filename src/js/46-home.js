@@ -5,18 +5,48 @@ function gradePickBind(onPick){
   $$('.gr').forEach(b=>b.onclick=()=>{const g=+b.dataset.g;
     $$('.gr').forEach(x=>{x.classList.toggle('sel',x==b);x.setAttribute('aria-checked',x==b)});
     say(gradeSpoken(g),b);SFX.pop(1);onPick(g)})}
-function setup(){let pet=S.pet,grade=gradeOf();
-  view(`<div class="center setup"><h1 class="gx-logo"><span class="hm-mark">${ico('star',36)}</span><span>Star School</span></h1>
-  <div class="card"><div class="sub" style="margin-bottom:8px">What's your name?</div><input class="name" id="nm" value="${esc(S.name)}" placeholder="Your name"></div>
-  <div class="card"><div class="sub" style="margin-bottom:8px">Pick a pet egg to hatch!</div>
-   <div class="pets">${Object.entries(PETS).map(([k,p])=>`<button class="btn petopt gx-pet ${k==pet?'sel':''}" data-p="${k}"><span class="gx-pp">${petPick(k)}</span><b>${p.n}</b></button>`).join('')}</div>
-   <input class="name" id="pn" style="margin-top:12px;width:100%" value="${esc(S.petName)}" placeholder="Name your pet (${PETS[pet].def})"></div>
-  <div class="card"><div class="sub" style="margin-bottom:8px">What grade? <span class="small">(Grown-ups can change this later)</span></div>${gradePickHTML(grade)}</div>
-  ${UI.btn("Let's go!",{kind:'primary',size:'lg',icon:'rocket',id:'go'})}</div>`);
-  gradePickBind(g=>{grade=g});
-  $$('.petopt').forEach(b=>b.onclick=()=>{pet=b.dataset.p;$$('.petopt').forEach(x=>x.classList.toggle('sel',x==b));$('#pn').placeholder=`Name your pet (${PETS[pet].def})`;SFX.giggle();anim(b.querySelector('span'),'jump')});
-  $('#go').onclick=()=>{const n=$('#nm').value.trim();if(!n){fb('Type your name first!','warn');SFX.wrong();return}
-    S.name=n;S.pet=pet;S.petName=$('#pn').value.trim();setGrade(grade);SFX.magic();home(true)}}
+/* Setup, first run (P4-12, DESIGN_SYSTEM 9 row 1): the logo, a speaker that reads the steps, then three numbered steps on drawn
+   cards (name, pet egg, grade) and the big "Let's go!". A step's number turns into a tick once it is done. Styles in
+   src/css/48-setup-grown-care.css. Ids and classes kept: #nm, #pn, #go, .petopt[data-p] (first span = the pet), .gr[data-g]. */
+const SU_SAY = "Hi! Type your name. Pick a pet egg to hatch. Tap your grade. Then tap Let's go!";
+function suStep(n, icon, title, sub, body) {
+  return `<section class="su-step" data-step="${n}"><h2 class="su-h"><span class="su-n" aria-hidden="true"><b>${n}</b>${ico('check', 22)}</span>` +
+    `<span class="su-hi">${ico(icon, 24)}</span><span>${title}</span></h2>${sub ? `<p class="su-sub">${sub}</p>` : ''}${body}</section>`;
+}
+// A text field drawn as a white well with an icon (setup and Grown-ups). Attributes in attrs (id, value, placeholder) are escaped by the caller.
+const fldHTML = (icon, attrs) => `<label class="fld">${ico(icon, 24)}<input ${attrs} autocomplete="off"></label>`;
+function setup() {
+  let pet = S.pet, grade = gradeOf();
+  const pets = Object.entries(PETS).map(([k, p]) => `<button class="btn petopt gx-pet ${k == pet ? 'sel' : ''}" data-p="${k}" aria-pressed="${k == pet}">` +
+    `<span class="gx-pp">${petPick(k)}</span><b>${p.n}</b></button>`).join('');
+  view(`<div class="center setup su"><header class="su-top"><h1 class="gx-logo su-logo"><span class="hm-mark su-mark">${ico('star', 36)}</span><span>Star School</span></h1>` +
+    `<p class="su-hello">Hi! Let's get you ready.<span> A grown-up can help.</span></p>${UI.ibtn('speak', 'Hear the steps', { id: 'suspk' })}</header>` +
+    `<div class="su-grid">` +
+    suStep(1, 'user', "What's your name?", '', fldHTML('edit', `id="nm" value="${esc(S.name)}" placeholder="Your name" aria-label="Your name"`)) +
+    suStep(2, 'paw', 'Pick a pet egg to hatch!', '', `<div class="pets su-pets">${pets}</div>` +
+      fldHTML('paw', `id="pn" value="${esc(S.petName)}" placeholder="Name your pet (${PETS[pet].def})" aria-label="Your pet's name"`)) +
+    suStep(3, 'calendar', 'What grade?', 'Grown-ups can change this later.', gradePickHTML(grade)) +
+    UI.btn("Let's go!", { kind: 'primary', size: 'lg', icon: 'rocket', id: 'go' }) + '</div></div>');
+  const ok = (n, on) => { const s = $(`.su-step[data-step="${n}"]`); if (s) s.classList.toggle('ok', !!on); };
+  const nameOk = () => ok(1, $('#nm').value.trim());
+  nameOk();
+  $('#nm').oninput = nameOk;
+  $('#suspk').onclick = e => say(SU_SAY, e.currentTarget);
+  gradePickBind(g => { grade = g; ok(3, 1); });
+  $$('.petopt').forEach(b => b.onclick = () => {
+    pet = b.dataset.p;
+    $$('.petopt').forEach(x => { x.classList.toggle('sel', x == b); x.setAttribute('aria-pressed', x == b); });
+    ok(2, 1);
+    $('#pn').placeholder = `Name your pet (${PETS[pet].def})`;
+    SFX.giggle();
+    anim(b.querySelector('span'), 'jump');
+  });
+  $('#go').onclick = () => {
+    const n = $('#nm').value.trim();
+    if (!n) { fb('Type your name first!', 'warn'); SFX.wrong(); $('#nm').focus(); return; }
+    S.name = n; S.pet = pet; S.petName = $('#pn').value.trim(); setGrade(grade); SFX.magic(); home(true);
+  };
+}
 
 /* ---------- Home (P4-08; DESIGN_SYSTEM.md 9 row 2; styles in src/css/46-home.css) ----------
    Top bar (logo, sound, grown-ups gear), hero card (the pet on a drawn scene, name, grow meter, today's mission, stat chips),

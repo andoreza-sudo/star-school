@@ -86,19 +86,11 @@
 .st.no{filter:grayscale(1) brightness(1.6);opacity:.35}
 .st b{position:absolute;right:6px;bottom:2px;font-size:14px;color:var(--muted)}
 /* setup + grownups */
-.card{background:#fff;border-radius:18px;padding:14px;margin:12px 0;box-shadow:0 2px 8px #0001}
-.card .row{display:flex;gap:10px;align-items:center;margin-bottom:10px}
-.name{flex:1;min-width:0;font-size:22px;padding:8px 12px;border:2px solid #e7e5e4;border-radius:12px}
 .pets{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
 @media (max-width:420px){.pets{grid-template-columns:1fr 1fr}}
 .petopt{display:flex;flex-direction:column;align-items:center;font-size:16px;padding:10px 4px}
 .petopt span{font-size:52px}
-.petopt.sel{background:#fde68a;outline:4px solid #f59e0b}
-.tw{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:15px}td,th{padding:6px 4px;border-bottom:1px solid #f0ebe3;text-align:left}.nw{white-space:nowrap}.tr{color:var(--muted)}
-.danger{color:var(--red)}
-.setup .card{width:min(560px,100%)}.setup .name{width:100%;display:block}
-label.tg{display:block;font-size:20px;margin:8px 0}
 @media (orientation:landscape){.play{flex-direction:row;align-items:stretch}.inp{width:46%;display:flex;flex-direction:column;justify-content:center}}
 @media (max-width:560px){.hero{padding:10px;gap:10px}.petbig{font-size:64px}.hname{font-size:21px}.top{gap:6px;padding:8px}.btn.sm{font-size:16px;padding:8px 10px}.stars{font-size:18px;padding:5px 9px}.streak{font-size:16px;padding:4px 7px}.runner{font-size:32px}.track .chest{font-size:28px}.title{font-size:20px}.grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}.tile{font-size:17px;padding:12px 6px}.te{font-size:38px}.chestbtn{font-size:100px}.bigstars{font-size:26px}.msg{font-size:19px}h1{font-size:28px}}
 @media (max-height:520px){.setup h1{font-size:24px;margin:0 0 6px}.setup .card{margin:6px 0;padding:10px}.petopt{padding:6px 4px}.petopt span{font-size:36px}.prize{font-size:64px}.chestbtn{font-size:90px}.msg{font-size:18px;margin:2px 0}h1{font-size:26px;margin:0 0 8px}.top{padding:6px 10px}.play{padding-top:8px}.tools .btn{padding:6px 10px;font-size:15px}}
