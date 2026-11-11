@@ -7673,6 +7673,58 @@ async function main() {
       await app.ctx.close();
     }
 
+    // R-01r reading review fixes at 380x780 (scale 2), midway save: a Picture Words question (Magic E, pic 3, the seed the review saw
+    //    with impossible spellings) and a Letter Teams question (sound 4), drawn by the real round engine (start, a seeded question in G.q,
+    //    renderQ). Every word choice on screen is the answer or a real word from its checked set (PWC); the Letter Teams word is spoken
+    //    (Hear it replays it), but is printed nowhere on the screen. No sideways scroll. With R01R_SHOTS=<dir> it saves both screens.
+    {
+      const app = await openApp(browser, { fixture: 'midway', width: 380, height: 780, scale: 2 });
+      const pg = app.page, bad = [], notes = [];
+      const open = (sk, lv, seed) => pg.evaluate(([sk, lv, seed]) => {
+        start('read', NODES.read.findIndex(n => n.sk == sk && n.lv == lv));
+        const q = genQ(sk, lv, seed);
+        G.q = q;
+        renderQ();
+        return { ans: q.ans, label: q.label, say: q.say, set: PWC[q.ans] || [] };
+      }, [sk, lv, seed]);
+      const screen = () => pg.evaluate(() => ({
+        ch: [...document.querySelectorAll('#app .ch')].map(b => b.innerText.trim()),
+        txt: document.querySelector('#app').innerText,
+        hear: !!document.querySelector('#app #spk'),
+        wide: document.documentElement.scrollWidth > innerWidth,
+      }));
+      const shot = async n => {
+        if (process.env.R01R_SHOTS) await pg.screenshot({ path: require('path').join(process.env.R01R_SHOTS, n + '.png') });
+      };
+      for (const seed of [13, 2407389, 4371301]) {
+        const q = await open('pic', 3, seed);
+        await pg.waitForTimeout(250);
+        const s = await screen();
+        if (s.ch.length !== 4 || !s.ch.includes(q.ans)) bad.push('pic3 seed ' + seed + ': choices ' + s.ch.join(', '));
+        for (const c of s.ch) if (c !== q.ans && !q.set.includes(c)) bad.push('pic3 seed ' + seed + ': "' + c + '" is not a real word from the checked set');
+        if (s.wide) bad.push('pic3 seed ' + seed + ': sideways scroll');
+        notes.push('pic3 ' + q.ans + ': ' + s.ch.join(' '));
+        if (seed == 13) await shot('r01r-pic3-380x780');
+      }
+      for (const seed of [1, 7, 19]) {
+        const q = await open('sound', 4, seed);
+        await pg.waitForTimeout(250);
+        const s = await screen(), w = q.label.replace(/^.*: /, '');
+        if (new RegExp('\\b' + w + '\\b', 'i').test(s.txt)) bad.push('sound4 seed ' + seed + ': the word ' + w + ' is printed on the screen');
+        if (!s.hear || !q.say.startsWith(w + '.')) bad.push('sound4 seed ' + seed + ': ' + w + ' is not spoken, or no Hear it button');
+        if (s.ch.length !== 4 || s.ch.some(c => !/^(sh|ch|th|wh|ck)$/.test(c))) bad.push('sound4 seed ' + seed + ': choices ' + s.ch.join(', '));
+        if (s.wide) bad.push('sound4 seed ' + seed + ': sideways scroll');
+        notes.push('sound4 ' + w);
+        if (seed == 1) await shot('r01r-sound4-380x780');
+      }
+      network.push(...app.network);
+      for (const e of app.errors) fail(e);
+      await app.ctx.close();
+      if (bad.length) fail('R-01r reading review fixes:\n  ' + bad.join('\n  '));
+      else step('R-01r at 380x780: Picture Words choices are real words from the checked sets (' + notes.slice(0, 3).join('; ') +
+        '), Letter Teams words heard but not printed (' + notes.slice(3).join(', ') + '), no sideways scroll');
+    }
+
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');
   } catch (e) {

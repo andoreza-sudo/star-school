@@ -1,5 +1,5 @@
-/* Star School gen v137. BUILT by tools/build.py from 23-viz.js, 30-gen-math.js, 31-gen-math-early.js, 32-gen-read.js, 33-gen-math-mid.js, 34-gen-es.js: never edit by hand.
-   index.html v137 loads this file with <script src="gen.v137.js"> after its own code, before data.v137.js. */
+/* Star School gen v138. BUILT by tools/build.py from 23-viz.js, 30-gen-math.js, 31-gen-math-early.js, 32-gen-read.js, 33-gen-math-mid.js, 34-gen-es.js: never edit by hand.
+   index.html v138 loads this file with <script src="gen.v138.js"> after its own code, before data.v138.js. */
 /* ---------- math visuals (P1-10; P1-11 adds part 2 in this same file) ----------
    Every VIZ.* function returns one inline <svg> string for a question's html (or a hint). No ids, no defs, no filters,
    no Math.random: the same arguments always give the same markup, so a question rebuilt from its seed looks the same.
@@ -1988,18 +1988,17 @@ function genBayPat3() {
 }
 /* ---------- reading generators ---------- */
 function words(t){return t.split(' ').map(w=>`<span class="w" data-w="${esc(w.replace(/[^A-Za-z']/g,''))}">${esc(w)}</span>`).join(' ')}
-function genSight(lv){const L=DOL[lv-1],w=pick(L);
+function genSight(lv){const L=DOL[lv-1],w=pick(L),hw=sameSound(w);
   const sim=x=>(x[0].toLowerCase()==w[0].toLowerCase()?2:0)+(x.length==w.length?1:0);
-  const d=shuffle(shuffle(L.filter(x=>x!==w)).sort((x,y)=>sim(y)-sim(x)).slice(0,6)).slice(0,3);
+  // R-01r: never a word that sounds the same as the one heard (to / two, right / write): the child could not tell which is meant
+  const d=shuffle(shuffle(L.filter(x=>x!==w&&!hw.includes(x.toLowerCase()))).sort((x,y)=>sim(y)-sim(x)).slice(0,6)).slice(0,3);
   return{kind:'choice',html:`<button class="btn hear" data-say="${esc(w)}">🔊</button><div class="sub">Tap the word you hear</div>`,
     say:w,auto:'must',ans:w,choices:shuffle([w,...d]).map(x=>({l:x,v:x})),hint:{k:'say',s:`Listen again. It starts with “${w[0]}”.`,w},label:`hear “${w}”`}}
-function variants(w){const out=new Set(),V='aeiou',C='bcdfghjklmnprstvwz',vi=[...w].findIndex(c=>V.includes(c));
-  for(let t=0;t<40&&out.size<6;t++){let x;const r=t%3;
-    if(r==0&&vi>=0)x=w.slice(0,vi)+pick([...V])+w.slice(vi+1);
-    else if(r==1)x=pick([...C])+w.slice(1);else x=w.slice(0,-1)+pick([...C]);
-    if(x&&x!==w&&!BAD.test(x))out.add(x)}
-  let r=shuffle([...out]).slice(0,3);if(/[aeiou][^aeiou]e$/.test(w)){const ne=w.slice(0,-1);if(!BAD.test(ne)&&!r.includes(ne))r=[ne,...r.slice(0,2)]}
-  return r}
+// R-01r: three real words from the word's checked contrast set (PWC in 20-words.js: cap / cape, boat / boot). Letters are never
+// changed at random any more: that made impossible spellings (snakb) and, about one time in 50, a slur or a rude word.
+// The blocklist check stays as a second guard.
+function variants(w){
+  return shuffle((PWC[w]||[]).filter(x=>x!==w&&!BAD.test(x)&&!ksBad(x,true))).slice(0,3)}
 function genPic(lv){const [w,e]=pick(WL(lv));
   return{kind:'choice',html:`<div class="emo">${picFor(w,e)}</div><div class="sub">Which word is this?</div>`,say:'Which word is this?',after:w,ans:w,
     choices:shuffle([w,...variants(w)]).map(x=>({l:x,v:x})),hint:{k:'say',s:'Listen! Now find it.',w},label:`read “${w}”`}}
@@ -2009,12 +2008,17 @@ function genBuild(lv){const [w,e]=pick(WL(lv)),abc='abcdefghijklmnoprstuw';
     say:w,auto:true,ans:w,hint:{k:'next'},label:`spell “${w}”`}}
 const T1=['I see {a} {w}.','Look at the {w}!','Here is {a} {w}.','I like the {w}.','Can you see the {w}?','The {w} is big.','The {w} is little.','Where is the {w}?'];
 const T2=['Mom and I see {a} {w} by the door.','We can play with the {w} today.','Look! The {w} is up on the hill.','My friend said, "I want {a} {w}."','Come and find the {w} with me.','The little {w} went down the road.','She saw {a} {w} at the park.','Did you get {a} {w} too?'];
+// R-01r: "I see the sun", "some milk", never "a sun" or "a milk"
+const SENT_ART={sun:'the',milk:'some'};
 function genSent(lv){const [w,e]=pick(lv==1?NOUNS.filter(x=>CVC.includes(x)):NOUNS);
   let pool=NOUNS.filter(x=>x[0]!==w);
   if(lv==2){const near=pool.filter(x=>x[0][0]==w[0]||x[0].slice(-2)==w.slice(-2));if(near.length>=2)pool=near}
-  const d=shuffle(pool).slice(0,2),t=pick(lv==1?T1:T2).replace('{a}',art(w)).replace('{w}',w);
-  return{kind:'choice',cls:'pics',html:`<div class="sent">${words(t)}</div><div class="sub">Tap the picture that matches</div>`,say:'Read it, then tap the picture that matches.',
-    ans:w,after:t,choices:shuffle([[w,e],...d]).map(x=>({l:x[1],v:x[0]})),hint:{k:'text',s:'Tap any word to hear it!'},label:`“${t}”`}}
+  const d=shuffle(pool).slice(0,2),t=pick(lv==1?T1:T2).replace('{a}',SENT_ART[w]||art(w)).replace('{w}',w);
+  // R-01r: pictures go through picFor (drawings where they exist) and are named aloud, so a child knows what each one is meant to be
+  const ch=shuffle([[w,e],...d]),names=ch.map(x=>x[0]);
+  return{kind:'choice',cls:'pics',html:`<div class="sent">${words(t)}</div><div class="sub">Tap the picture that matches</div>`,
+    say:`Read it, then tap the picture that matches: ${names.slice(0,-1).join(', ')} or ${names[names.length-1]}.`,
+    ans:w,after:t,choices:ch.map(x=>({l:picFor(x[0],x[1]),v:x[0],h:true})),hint:{k:'say',s:'Tap any word to hear it!',w:'Tap any word to hear it.'},label:`“${t}”`}}
 
 function genCmp(lv){let a,b;
   if(lv==1){a=R(0,20);b=R(0,20)}else if(lv==2){a=R(10,99);b=coin()?Math.floor(a/10)*10+R(0,9):R(10,99)}else{a=R(100,999);b=coin()?Math.floor(a/100)*100+R(0,99):R(100,999)}
@@ -2093,7 +2097,8 @@ function genAbc(lv){
     const items=Ls.map(x=>({v:x,l:x})),opts=shuffle(Ls.map(x=>({v:x,l:x.toLowerCase()})));
     return{kind:'match',html:'<div class="sub">Match each big letter to its little letter</div>',say:'Match each big letter to its little letter.',
       items,opts,ans:[...Ls].sort().join('|'),after:'Big and little letters are partners!',
-      hint:{k:'text',s:'Tap a big letter, then tap the little letter that is its partner. They often look alike.'},label:`match ${[...Ls].sort().join('')}`}}
+      hint:{k:'say',s:'Tap a big letter, then tap the little letter that is its partner. They often look alike.',
+        w:'Tap a big letter, then tap the little letter that is its partner. They often look alike.'},label:`match ${[...Ls].sort().join('')}`}}
   // lv 4: what comes after a letter (choice) or fill the gap in a run of four (build)
   const up=coin(),f=s=>up?s.toUpperCase():s;
   if(coin()){
@@ -2115,14 +2120,15 @@ function genAbc(lv){
 // sound 3 (K): the middle vowel of a picture word. sound 4 (1st): digraph at the start or end of a picture word.
 function genSoundB(lv){
   if(lv==3){
-    const [w,e]=pick(CVCM),mid=w[1];
+    const v=pick([...'aeiou']),[w,e]=pick(CVCM.filter(x=>x[0][1]==v)),mid=w[1]; // R-01r: each vowel as often as the others
     const opts=shuffle([mid,...shuffle([...'aeiou'].filter(x=>x!=mid)).slice(0,2)]);
     return{kind:'choice',cls:'syms',html:`<div class="emo">${picFor(w,e)}</div><div class="sub">Which vowel is in the middle?</div><div class="sent">${w[0]} ${SLOT} ${w[2]}</div>`,
       say:`${w}. Which vowel is in the middle of ${w}?`,auto:true,ans:mid,after:`${w}!`,choices:opts.map(x=>({l:x,v:x})),
       hint:{k:'say',w:`${w}... ${w}`,s:'Say it slowly. Listen to the sound in the middle.'},label:`middle: ${w}`}}
   const dg=pick(['sh','ch','th','ck','sh','ch','th','ck','wh']),[w,e,,pos]=pick(DIGR.filter(x=>x[2]==dg)),st=pos=='s';
   const pool=st?['sh','ch','th','wh']:['sh','ch','th','ck'];
-  return{kind:'choice',cls:'syms sym4',html:`<div class="emo">${picFor(w,e)}</div><div class="sub">Which letters ${st?'start':'end'} <b>${w}</b>?</div>`,
+  // R-01r: the word is spoken (Hear it replays it), never printed: printing it showed the answer letters
+  return{kind:'choice',cls:'syms sym4',html:`<div class="emo">${picFor(w,e)}</div><div class="sub">Which letters ${st?'start':'end'} this word?</div>`,
     say:`${w}. Which letters ${st?'start':'end'} ${w}?`,auto:true,ans:dg,after:`${w}: ${dg}!`,choices:shuffle(pool).map(x=>({l:x,v:x})),
     hint:{k:'say',w:`${w}... ${w}`,s:`Two letters work together to make one sound. Listen to the ${st?'start':'end'} of ${w}.`},label:`${st?'starts':'ends'} ${dg}: ${w}`}}
 
@@ -2146,8 +2152,9 @@ function genSyl(lv){
 // Wrong choices swap the r-vowel or team inside the same word: bird / bard / berd / burd.
 function phonVariants(w,pair,pool){
   const i=w.indexOf(pair),endW=i+pair.length==w.length;
-  const out=pool.filter(p=>p!==pair&&!(p=='oy'&&!endW)&&!((p=='ou'||p=='oi')&&endW))
-    .map(p=>w.slice(0,i)+p+w.slice(i+pair.length)).filter(x=>x!==w&&!BAD.test(x)&&!PHBAD.test(x)&&!RVW.concat(VTW).some(r=>r[0]===x)); // never another picture word of these levels
+  const out=pool.filter(p=>p!==pair&&!(p=='oy'&&!endW&&!/^[aeiou]/.test(w.slice(i+pair.length)))&&!((p=='ou'||p=='oi')&&endW)) // oy ends a word or meets a vowel (toy, royal)
+    .map(p=>w.slice(0,i)+p+w.slice(i+pair.length)).filter(x=>x!==w&&!BAD.test(x)&&!PHBAD.test(x)&&!RVW.concat(VTW).some(r=>r[0]===x)) // never another picture word of these levels
+    .filter(x=>!ksBad(x,true)&&ksLegal(x)); // R-01r: the blocklist (coin never gives a slur) and English spelling rules
   return shuffle(out).slice(0,3)}
 const phonList=lv=>lv==5?RVW:VTW,phonPool=lv=>lv==5?RVP:VTP;
 function genPicP(lv){const [w,e,pr]=pick(phonList(lv));
@@ -2988,4 +2995,4 @@ function esStoryRound(lv){const D=ES_STORY.dialogues,s0=bankSeed(),out=[];let po
     D[di].qs.forEach((_,qi)=>{const q=bankWith(bankSub(s0,di*8+qi),()=>stQ(lv,di,qi));q.sk='es_story';q.lv=lv;out.push(q)})}
   return out}
 
-var GEN_VER='v137'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var GEN_VER='v138'; // last line: the whole file ran (checked by dataReady() before the app starts)

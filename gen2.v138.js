@@ -1,5 +1,5 @@
-/* Star School gen2 v137. BUILT by tools/build.py from 35-gen-math-upper.js, 36-gen-phonics.js, 37-bank.js, 37-comp.js, 39b-steps.js: never edit by hand.
-   index.html v137 loads this file with <script src="gen2.v137.js"> after its own code, before data.v137.js. */
+/* Star School gen2 v138. BUILT by tools/build.py from 35-gen-math-upper.js, 36-gen-phonics.js, 37-bank.js, 37-comp.js, 39b-steps.js: never edit by hand.
+   index.html v138 loads this file with <script src="gen2.v138.js"> after its own code, before data.v138.js. */
 /* Upper-grade math generators (4th grade and up). One marked block per chunk, so parallel chunks merge by appending.
    Seeded randomness only (R, pick, shuffle, coin, rnd). Step hints come from 39b-steps.js. */
 
@@ -2385,18 +2385,28 @@ function galStory9() {
 }
 /* ---------- early reading: sounds & rhymes ---------- */
 function genSound(lv){const [w,e]=pick(lv==1?CVC.concat(BLEND.filter(x=>!/^(sh|ch|th|wh)/.test(x[0]))):CVC),ch=lv==1?w[0]:w[w.length-1];
-  const opts=shuffle([ch,...shuffle([...'bcdfghjklmnprstvw'].filter(x=>x!=ch)).slice(0,2)]);
-  return{kind:'choice',cls:'syms',html:`<div class="emo">${e}</div><div class="sub">${lv==1?'What sound does it START with?':'What sound does it END with?'}</div>`,
+  // R-01r: c and k are never offered together (both are right for /k/), and the picture goes through picFor (drawings)
+  const opts=shuffle([ch,...shuffle([...'bcdfghjklmnprstvw'].filter(x=>x!=ch&&!(ch=='c'&&x=='k')&&!(ch=='k'&&x=='c'))).slice(0,2)]);
+  return{kind:'choice',cls:'syms',html:`<div class="emo">${picFor(w,e)}</div><div class="sub">${lv==1?'What sound does it START with?':'What sound does it END with?'}</div>`,
     say:`${w}. What sound does ${w} ${lv==1?'start':'end'} with?`,auto:true,ans:ch,after:w,choices:opts.map(x=>({l:x,v:x})),
     hint:{k:'say',w:`${w}... ${w}`,s:lv==1?'Say it slowly. Listen to the very first sound.':'Say it slowly. Listen to the very last sound.'},label:`${lv==1?'starts':'ends'}: ${w}`}}
-const RHY=[[['cat','🐱'],['bat','🦇'],['hat','🎩'],['rat','🐀']],[['hen','🐔'],['pen','🖊️'],['ten','🔟']],[['bug','🐛'],['mug','☕']],[['dog','🐶'],['frog','🐸']],[['fox','🦊'],['box','📦']],
- [['cake','🎂'],['snake','🐍']],[['king','👑'],['ring','💍']],[['bee','🐝'],['tree','🌳']],[['goat','🐐'],['boat','⛵'],['coat','🧥']],[['sock','🧦'],['clock','🕐']],[['bell','🔔'],['shell','🐚']],
+// R-01r: every picture names one thing a child would say: no mug drawn as a coffee cup, no king drawn as a crown, no rat that looks
+// like the mouse, no ten drawn as a keycap. The families with those words became duck / truck and nose / rose (all drawn).
+const RHY=[[['cat','🐱'],['bat','🦇'],['hat','🎩']],[['hen','🐔'],['pen','🖊️']],[['duck','🦆'],['truck','🚚']],[['dog','🐶'],['frog','🐸']],[['fox','🦊'],['box','📦']],
+ [['cake','🎂'],['snake','🐍']],[['nose','👃'],['rose','🌹']],[['bee','🐝'],['tree','🌳']],[['goat','🐐'],['boat','⛵'],['coat','🧥']],[['sock','🧦'],['clock','🕐']],[['bell','🔔'],['shell','🐚']],
  [['car','🚗'],['star','⭐']],[['moon','🌙'],['spoon','🥄']],[['mouse','🐭'],['house','🏠']]];
-function genRhyme(lv){const fi=R(0,RHY.length-1),fam=RHY[fi],[t,r]=shuffle(fam),others=shuffle(RHY.filter((_,i)=>i!=fi)).slice(0,2).map(f=>pick(f));
-  const opts=shuffle([r,...others]);
-  return{kind:'choice',cls:lv==1?'pics':'',html:`<div class="emo">${t[1]}</div><div class="sub">${lv==1?`Which picture rhymes with “${t[0]}”?`:`Which word rhymes with “${t[0]}”?`}</div>`,
-    say:`Which one rhymes with ${t[0]}?`,auto:true,ans:r[0],after:`${t[0]}, ${r[0]}!`,choices:opts.map(x=>({l:lv==1?x[1]:x[0],v:x[0]})),
-    hint:{k:'text',s:`Rhymes sound the same at the end: ${t[0].slice(-2)}…`},label:`rhyme: ${t[0]}`}}
+// The rime: the word from its first vowel on (goat: oat, duck: uck). The hint names it, so it never fits another family (oat, not at).
+const rime=w=>w.slice(w.search(/[aeiou]/));
+function genRhyme(lv){const fi=R(0,RHY.length-1),fam=RHY[fi],[t,r]=shuffle(fam);
+  // other families whose words end in the same letters are left out (goat and cat: oat ends in at), so the hint fits one choice only
+  const near=f=>f.some(x=>x[0].endsWith(rime(t[0]))||t[0].endsWith(rime(x[0])));
+  const others=shuffle(RHY.filter((f,i)=>i!=fi&&!near(f))).slice(0,2).map(f=>pick(f));
+  const opts=shuffle([r,...others]),names=opts.map(x=>x[0]);
+  // R-01r: pictures through picFor; in Rhyme Time (level 1, Kindergarten) the three pictures are named aloud and the help is spoken
+  const say=lv==1?`Which one rhymes with ${t[0]}: ${names[0]}, ${names[1]} or ${names[2]}?`:`Which one rhymes with ${t[0]}?`;
+  return{kind:'choice',cls:lv==1?'pics':'',html:`<div class="emo">${picFor(t[0],t[1])}</div><div class="sub">${lv==1?`Which picture rhymes with “${t[0]}”?`:`Which word rhymes with “${t[0]}”?`}</div>`,
+    say,auto:true,ans:r[0],after:`${t[0]}, ${r[0]}!`,choices:opts.map(x=>lv==1?{l:picFor(x[0],x[1]),v:x[0],h:true}:{l:x[0],v:x[0]}),
+    hint:{k:'say',s:`Rhymes sound the same at the end: ${rime(t[0])}…`,w:`${t[0]}. Rhymes sound the same at the end. Which one ends like ${t[0]}?`},label:`rhyme: ${t[0]}`}}
 
 /* ---------- content banks (P1-09) ---------- */
 /* Fact content (grammar, vocabulary, passages, science) is DATA in src/data/d-*.js and is turned into questions here.
@@ -3415,4 +3425,4 @@ function stepsDecDiv(a, b) {
   return ST.hint([...steps, ...h.steps], h.w);
 }
 
-var GEN2_VER='v137'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var GEN2_VER='v138'; // last line: the whole file ran (checked by dataReady() before the app starts)
