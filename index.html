@@ -710,6 +710,30 @@ html.notext .pktxt{display:none}
 .sgbal i.right{background:var(--good-tint);outline:4px solid var(--good)}
 .sgbal i.wrong{background:var(--try-tint);outline:4px solid var(--try)}
 .choices.syms.pk4,.choices.syms.pk2{grid-template-columns:1fr 1fr}
+/* R-01m: fact strategy hints (factHint in src/js/30-gen-math.js) and story pictures and hints (genStory). Tokens only. */
+/* fact hints: two small ten frames side by side, or one number line, then a short sentence */
+.fhint{display:flex;flex-direction:column;align-items:center;gap:var(--s-2);max-width:100%}
+.fh-frs{display:flex;gap:var(--s-2);justify-content:center;align-items:flex-start;max-width:100%}
+.fhint .viz{--k:.62}
+.fhint .viz-nl,.fhint .viz-arr{--k:.9}
+.fh-t{max-width:28em}
+
+/* story 1 (Kindergarten): the story's objects in the prompt; they shrink with the prompt (--k) */
+.st-pic{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:.08em;max-width:100%;margin:0 auto 6px;
+  font-size:calc(clamp(24px,6vmin,48px)*var(--k,1));line-height:1}
+.st-g{display:inline-flex;flex-wrap:nowrap} /* a group never splits over two lines */
+.st-op{font-size:.8em;margin:0 .15em;color:var(--ink-2)}
+
+/* story hints: rows of objects in a grid of --n columns, so two rows that are compared line up one under the other */
+.st-h{display:flex;flex-direction:column;gap:var(--s-1);align-items:flex-start;max-width:100%}
+.st-row{display:grid;grid-template-columns:repeat(var(--n),1.15em);justify-items:center;align-items:center;line-height:1;
+  font-size:min(28px,calc((min(100vw,560px) - 120px) / var(--n) / 1.15))}
+.st-row .st-op{margin:0;font-size:.8em}
+.st-o{display:flex;align-items:center;justify-content:center;width:1em;height:1em}
+.st-x{opacity:.3}
+.st-sm{font-size:.62em}
+.st-n{outline:2px dashed var(--play);outline-offset:1px;border-radius:50%}
+.st-e{width:.8em;height:.8em;border:2px dashed var(--ink-3);border-radius:50%;box-sizing:border-box}
 /* Stacked fractions in prompts and choices (P2-06): numerator over a bar over denominator. Tokens only. */
 .fr{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 .12em;line-height:1.1}
 .fr .fn{border-bottom:.07em solid var(--ink);padding:0 .18em .04em}
@@ -2897,7 +2921,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S));SAVE_FAILED=fals
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v133'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v136'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -5438,6 +5462,11 @@ function mathQ(a,op,b,c,blank,vert,extra={}){
   return Object.assign({kind:'num',html,say:`${sw('a')} ${w} ${sw('b')} equals ${sw('c')}?`,ans:String(v[blank]),hint:{k:'blocks',a,b,c,op,blank},
     label:`${blank=='a'?'?':a} ${sym} ${blank=='b'?'?':b} = ${blank=='c'?'?':c}`},extra)}
 const coin=()=>rnd()<.5;
+/* R-01m: a count with its noun, singular for exactly 1 (and -1), in question text, speech and hints alike:
+   qN(1, 'pencil') "1 pencil", qN(3, 'pencil') "3 pencils", qN(1, 'box', 'boxes'); qW(n, one, many) is the noun alone.
+   tools/test.js "math review fixes R-01m" scans every math skill and level for a 1 followed by a plural. */
+const qW = (n, one, many) => (Math.abs(+n) === 1 ? one : many || one + 's');
+const qN = (n, one, many) => `${n} ${qW(n, one, many)}`;
 /* genQ(sk,lv,seed): build one question of skill sk, level lv, from a seed (uint32; random when omitted). Same (sk,lv,seed) gives the same question.
    The question is stamped with q.sk, q.lv, q.seed. RNG is always restored, even if the generator throws. */
 function genQ(sk,lv,seed){
@@ -6645,7 +6674,7 @@ function home(first){
   <div class="scroll hm" id="hs"><div class="hm-cols">
    <div class="hm-col">${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('target', 26)}<span>Today's missions</span></h2>${hmMissions()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}${hmDaily()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
-   <p class="hm-ver">${ico('star', 16)}<span>Star School v133</span></p></div>`);
+   <p class="hm-ver">${ico('star', 16)}<span>Star School v136</span></p></div>`);
   music(true);
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,['💖','✨','⭐']);
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
@@ -8163,6 +8192,9 @@ function next(){if(!G||G.dead)return;
 function fit(){const qa=$('.qarea'),pr=$('#prompt');if(!qa||!pr)return;let k=1;pr.style.setProperty('--k',1);
   while(k>.42&&(qa.scrollHeight>qa.clientHeight+1||pr.scrollWidth>pr.clientWidth+1)){k-=.05;pr.style.setProperty('--k',k)}}
 let rsT;addEventListener('resize',()=>{fit();clearTimeout(rsT);rsT=setTimeout(()=>{if($('#map'))drawMap(MAPP)},150)});
+// R-01m: after a miss opens the hint, scroll the prompt card so the whole hint shows above the answer pad (on a phone the card
+// scrolls, and the hint sat below its fold). The Help button already does this (smoothly) in renderQ.
+function hintIn(){const h=$('#hint');if(h&&h.firstChild)h.scrollIntoView({block:'nearest'})}
 function petSay(t){const b=$('#bub');if(!b)return;b.textContent=t;const far=G&&G.done/G.n>.5;b.style.left=far?'auto':'0';b.style.right=far?'0':'auto';b.classList.add('on');clearTimeout(b._t);b._t=setTimeout(()=>b.classList.remove('on'),1400)}
 // P4-10: the question screen. Top bar: close, the track (one dot per question, the pet walks to the gift), streak and star chips.
 // Then the prompt card (.qarea) and the input area (.inp) of the question's kind. Subject colour from the question's skill.
@@ -8234,8 +8266,8 @@ function check(v,el){if(G.lock)return;const q=G.q,K=KIND[q.kind],p=P(q.sk),ok=K.
   G.tries++;G.streak=0;qStreak();
   SFX.wrong();anim($('#runner'),'sad');if(G.boss){anim($('#bossE'),'jump');setTimeout(SFX.giggle,250)}const pr=$('#prompt');pr.classList.remove('shake');void pr.offsetWidth;pr.classList.add('shake');
   if(el){el.classList.add('wrong');el.disabled=true}
-  if(G.tries==1){addMiss(q);fb('Try again!','again');petSay(G.boss?pick(['Ha ha! Missed me!','Hee hee!','Try again!']):pick(PET_OOPS));if(Math.random()<.5)setTimeout(()=>playClip('oops'),300);$('#hint').innerHTML=hintHTML(q);fit();
-    K.retry(q,G,()=>{$('#hint').innerHTML=hintHTML(q);fit()});
+  if(G.tries==1){addMiss(q);fb('Try again!','again');petSay(G.boss?pick(['Ha ha! Missed me!','Hee hee!','Try again!']):pick(PET_OOPS));if(Math.random()<.5)setTimeout(()=>playClip('oops'),300);$('#hint').innerHTML=hintHTML(q);fit();hintIn();
+    K.retry(q,G,()=>{$('#hint').innerHTML=hintHTML(q);fit();hintIn()});
     save();return}
   G.lock=true;
   K.reveal(q);
@@ -10199,7 +10231,7 @@ function grown(){let armed=false;
     {sub:'Rounds played and first-try accuracy for every skill on the maps, with the questions missed most.'})}
   ${GW.card('gw-how','info','How it works',`<p class="gw-p">Each subject has its own map. Getting 7 of 10 right opens the next stop (8 earns 2 stars, 10 earns 3), and each world stretches further. Missed questions come back at the end of a round, in later rounds, in Daily Review and in the Tricky Mix. Each right answer earns a star (the pet grows) and a coin (spent in the shop). Everything is saved on this tablet only.</p>`)}
   <details class="gw-card gw-det" id="applog"><summary class="gw-h"><span class="gw-hi">${ico('doc',24)}</span><span>App log</span>${ico('chevron-right',22,'chev')}</summary><div class="gw-log">
-   <div><b>Version</b> v133</div><div><b>Save size</b> ${(JSON.stringify(S).length/1024).toFixed(1)} KB</div>
+   <div><b>Version</b> v136</div><div><b>Save size</b> ${(JSON.stringify(S).length/1024).toFixed(1)} KB</div>
    <div><b>Storage</b> ${SAVE_FAILED?'<span class="gw-bad">could not save (device storage may be full)</span>':'saving OK'}</div>
    ${SAVE_CORRUPT?'<div class="gw-bad">The old save could not be read. A fresh start was made and the old data was kept on the device.</div>':''}
    <div><b>Last errors</b> ${(S.err||[]).length?'<ul class="gw-errs">'+(S.err||[]).slice().reverse().map(e=>'<li><span>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+'</span> '+esc(e.msg)+'</li>').join('')+'</ul>':'none'}</div></div></details>
@@ -10550,20 +10582,20 @@ function appFiles() {
   ];
 }
 function dataReady() {
-  return appFiles().every(f => f[1] === 'v133');
+  return appFiles().every(f => f[1] === 'v136');
 }
 function dataMissing() {
-  logErr(appFiles().filter(f => f[1] !== 'v133').map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v133)');
+  logErr(appFiles().filter(f => f[1] !== 'v136').map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v136)');
   const again = UI.btn('Try again', { kind: 'primary', size: 'lg', icon: 'replay', id: 'dataretry' });
   view(`<div class="scroll" id="datamiss">${UI.empty('download', 'Star School needs to finish updating. Connect to the internet, then tap Try again.', again)}</div>`);
   $('#dataretry').onclick = () => location.reload();
 }
 </script>
-<script src="gen.v133.js"></script>
-<script src="gen2.v133.js"></script>
-<script src="bt.v133.js"></script>
-<script src="games.v133.js"></script>
-<script src="data.v133.js"></script>
+<script src="gen.v136.js"></script>
+<script src="gen2.v136.js"></script>
+<script src="bt.v136.js"></script>
+<script src="games.v136.js"></script>
+<script src="data.v136.js"></script>
 <script>
 if (dataReady()) {
   loadClips();

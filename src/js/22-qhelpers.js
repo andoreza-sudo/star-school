@@ -8,6 +8,11 @@ function mathQ(a,op,b,c,blank,vert,extra={}){
   return Object.assign({kind:'num',html,say:`${sw('a')} ${w} ${sw('b')} equals ${sw('c')}?`,ans:String(v[blank]),hint:{k:'blocks',a,b,c,op,blank},
     label:`${blank=='a'?'?':a} ${sym} ${blank=='b'?'?':b} = ${blank=='c'?'?':c}`},extra)}
 const coin=()=>rnd()<.5;
+/* R-01m: a count with its noun, singular for exactly 1 (and -1), in question text, speech and hints alike:
+   qN(1, 'pencil') "1 pencil", qN(3, 'pencil') "3 pencils", qN(1, 'box', 'boxes'); qW(n, one, many) is the noun alone.
+   tools/test.js "math review fixes R-01m" scans every math skill and level for a 1 followed by a plural. */
+const qW = (n, one, many) => (Math.abs(+n) === 1 ? one : many || one + 's');
+const qN = (n, one, many) => `${n} ${qW(n, one, many)}`;
 /* genQ(sk,lv,seed): build one question of skill sk, level lv, from a seed (uint32; random when omitted). Same (sk,lv,seed) gives the same question.
    The question is stamped with q.sk, q.lv, q.seed. RNG is always restored, even if the generator throws. */
 function genQ(sk,lv,seed){

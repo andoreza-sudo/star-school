@@ -6601,14 +6601,13 @@ async function main() {
         const gp = ga.page;
         await gp.evaluate(() => { window.say = () => {}; ptCfg().need = 1; ptCfg().max = 30; ptCfg().pause = false; pt().bank = 0; pt().used = 0; pt().open = ''; S.log = []; save(); home(); });
         await gp.waitForSelector('#groom');
-        // Home and the Game Room say plainly why it is shut
+        // Home and the Game Room say plainly why it is shut (P4-16 merge: the hub's ticket and its .gh-why line, read as the old card's title and line)
         const home1 = await gp.evaluate(() => document.querySelector('.hm-gsub').textContent.trim());
         if (home1 !== 'Learn 1 more minute to open the Game Room today.') bad.push(tag + ' Home line: ' + home1);
         await chk(gp, 'Home');
         await gp.click('#groom');
         await gp.waitForSelector('#g4x4');
-        const room1 = await gp.evaluate(() => ({ t: document.querySelector('.gx-pt .hname').textContent.trim(), s: document.querySelector('.gx-pt .small').textContent.trim(),
-          empty: document.querySelector('.gx-pt').classList.contains('empty'), earn: !!document.querySelector('#learn') }));
+        const room1 = await gp.evaluate((() => { const off = document.querySelector('.gh-hero').classList.contains('off'); return { t: off ? 'No game time yet' : document.querySelector('.gh-tkt b').textContent.trim() + ' of game time', s: document.querySelector('.gh-why p').textContent.trim(), empty: off, earn: !!document.querySelector('#learn') }; }));
         if (room1.t !== 'No game time yet' || room1.s !== 'Learn 1 more minute to open the Game Room today.' || !room1.empty || !room1.earn) bad.push(tag + ' Game Room shut: ' + JSON.stringify(room1));
         await chk(gp, 'Game Room shut');
         // earn: a real round, then the reasons and the bank
@@ -6634,13 +6633,12 @@ async function main() {
         await gp.waitForSelector('#map');
         await gp.evaluate(() => gameRoom());
         await gp.waitForSelector('#g4x4');
-        const room2 = await gp.evaluate(() => ({ t: document.querySelector('.gx-pt .hname').textContent.trim(), s: document.querySelector('.gx-pt .small').textContent.trim() }));
+        const room2 = await gp.evaluate((() => { const off = document.querySelector('.gh-hero').classList.contains('off'); return { t: off ? 'No game time yet' : document.querySelector('.gh-tkt b').textContent.trim() + ' of game time', s: document.querySelector('.gh-why p').textContent.trim(), empty: off, earn: !!document.querySelector('#learn') }; }));
         if (!/^No game time yet$/.test(room2.t) || !/^You have \d+:\d\d saved\. Learn 1 more minute/.test(room2.s)) bad.push(tag + ' Game Room after the round: ' + JSON.stringify(room2));
         // the minute of learning is done (the log is what the round writes; here the rest of the minute is added): the time shows
         await gp.evaluate(() => { ACT.add(today(), { sec: 60, area: 'math' }); pt().bank = 4; save(); gameRoom(); });
         await gp.waitForSelector('#g4x4');
-        const room3 = await gp.evaluate(() => ({ t: document.querySelector('.gx-pt .hname').textContent.trim(), s: document.querySelector('.gx-pt .small').textContent.trim(),
-          empty: document.querySelector('.gx-pt').classList.contains('empty') }));
+        const room3 = await gp.evaluate((() => { const off = document.querySelector('.gh-hero').classList.contains('off'); return { t: off ? 'No game time yet' : document.querySelector('.gh-tkt b').textContent.trim() + ' of game time', s: document.querySelector('.gh-why p').textContent.trim(), empty: off, earn: !!document.querySelector('#learn') }; }));
         if (room3.t !== '0:04 of game time' || room3.empty || room3.s !== 'Every learning round earns more. Have fun!') bad.push(tag + ' Game Room open: ' + JSON.stringify(room3));
         await chk(gp, 'Game Room open');
         // play until the time runs out: Coloring, one picture, 4 s in the bank and 20 s of grace
@@ -6655,8 +6653,7 @@ async function main() {
         await gp.waitForSelector('#groom');
         await gp.evaluate(() => gameRoom());
         await gp.waitForSelector('#g4x4');
-        const room4 = await gp.evaluate(() => ({ t: document.querySelector('.gx-pt .hname').textContent.trim(), s: document.querySelector('.gx-pt .small').textContent.trim(),
-          empty: document.querySelector('.gx-pt').classList.contains('empty') }));
+        const room4 = await gp.evaluate((() => { const off = document.querySelector('.gh-hero').classList.contains('off'); return { t: off ? 'No game time yet' : document.querySelector('.gh-tkt b').textContent.trim() + ' of game time', s: document.querySelector('.gh-why p').textContent.trim(), empty: off, earn: !!document.querySelector('#learn') }; }));
         if (room4.t !== 'No game time yet' || room4.s !== 'Finish a learning round to earn game time!' || !room4.empty) bad.push(tag + ' Game Room after the time ran out: ' + JSON.stringify(room4));
         // ---- Grown-ups: the Game time card ----
         await gp.evaluate(() => grown());
@@ -7165,6 +7162,62 @@ async function main() {
       await pb.ctx.close();
       if (bad.length) fail('P5-08:\n  ' + bad.join('\n  '));
       else step('P5-08 missions: three rows at 380x780 and 1024x600 (48 px, no sideways scroll, no emoji), round, Fact Sprint and puzzle each finished from its row with the sticker paid once, the bonus after three once, every row opens what it names');
+    }
+
+    // R-01m math review fixes at 380x780 (midway save): a rounding question (round 1 seed 3: 135, exactly halfway) and a fact question
+    //    (add 2 seed 8: 6 + 9, the "+9 is +10 then take 1 away" ten frames) through the real round engine. A wrong answer on the pad opens
+    //    the hint, and the Help button on a fresh question opens it too: either way the whole hint is on screen inside the prompt card,
+    //    above the number pad (R-01 Should 13), with the strategy picture drawn. Also a Kindergarten story with its picture (story 1).
+    {
+      const app = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
+      const pg = app.page, bad = [], notes = [];
+      const show = (sk, lv, seed) => pg.evaluate(([sk, lv, seed]) => {
+        start('math', NODES.math.findIndex(n => n.sk == sk && n.lv == lv));
+        G.q = genQ(sk, lv, seed);
+        renderQ();
+      }, [sk, lv, seed]);
+      const look = () => pg.evaluate(() => {
+        const h = document.querySelector('#hint'), inp = document.querySelector('.inp'), qa = document.querySelector('.qarea');
+        if (!h || !h.firstChild) return { empty: true };
+        const r = h.getBoundingClientRect(), p = inp.getBoundingClientRect(), a = qa.getBoundingClientRect();
+        return { top: Math.round(r.top), bottom: Math.round(r.bottom), padTop: Math.round(p.top), cardTop: Math.round(a.top), cardBottom: Math.round(a.bottom),
+          viz: h.querySelectorAll('svg.viz').length, text: h.innerText.replace(/\s+/g, ' ').trim(), sw: document.documentElement.scrollWidth };
+      });
+      const visible = m => !m.empty && m.top >= m.cardTop - 1 && m.bottom <= m.cardBottom + 1 && m.bottom <= m.padTop && m.sw <= 380;
+      for (const [sk, lv, seed, want] of [['round', 1, 3, /Halfway is 135\. Halfway or more\? Round up\./], ['add', 2, 8, /9 is 10 take away 1\./]]) {
+        // a wrong answer on the pad
+        await show(sk, lv, seed);
+        await pg.waitForTimeout(300);
+        const wrong = await pg.evaluate(() => String((+G.q.ans + 1) % 10));
+        await pg.click(`.k[data-k="${wrong}"]`);
+        await pg.click('.k[data-k="go"]');
+        await pg.waitForTimeout(500);
+        const m1 = await look();
+        if (!visible(m1)) bad.push(sk + lv + ' seed ' + seed + ' after a miss: hint not fully above the pad ' + JSON.stringify(m1));
+        if (!want.test(m1.text || '') || !m1.viz) bad.push(sk + lv + ' hint: ' + JSON.stringify(m1));
+        await pg.screenshot({ path: require('path').join(__dirname, 'out', `r01m-${sk}${lv}-miss-380x780.png`) }).catch(() => {});
+        // the Help button on a fresh copy of the question
+        await show(sk, lv, seed);
+        await pg.waitForTimeout(300);
+        await pg.click('#hb');
+        await pg.waitForTimeout(700);
+        const m2 = await look();
+        if (!visible(m2)) bad.push(sk + lv + ' seed ' + seed + ' after Help: hint not fully above the pad ' + JSON.stringify(m2));
+        notes.push(`${sk} ${lv} hint ${m1.top}-${m1.bottom} px, pad at ${m1.padTop}`);
+      }
+      await show('story', 1, 2);
+      await pg.waitForTimeout(300);
+      const st = await pg.evaluate(() => {
+        const p = document.querySelector('#prompt .st-pic'), r = p && p.getBoundingClientRect();
+        return { n: p ? p.querySelectorAll('.st-o').length : 0, w: r ? Math.round(r.width) : 0, rows: p ? new Set([...p.querySelectorAll('.st-o')].map(o => Math.round(o.getBoundingClientRect().top))).size : 0 };
+      });
+      if (st.n !== 10 || st.w > 340 || st.rows > 2) bad.push('story 1 seed 2 picture: ' + JSON.stringify(st));
+      await pg.screenshot({ path: require('path').join(__dirname, 'out', 'r01m-story1-380x780.png') }).catch(() => {});
+      if (bad.length) fail('R-01m:\n  ' + bad.join('\n  '));
+      else step('R-01m math review fixes at 380x780: ' + notes.join('; ') + '; the whole hint shows above the pad after a miss and after Help; story 1 has its picture (' + st.n + ' things)');
+      network.push(...app.network);
+      for (const e of app.errors) fail(e);
+      await app.ctx.close();
     }
 
     for (const u of network) fail('network request: ' + u);

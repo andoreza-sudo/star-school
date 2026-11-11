@@ -215,7 +215,7 @@ const GH = {
   <div class="scroll gh-scroll"><section class="gh-hero${on ? '' : ' off'}">${GH.scene()}
     <div class="gh-tk" role="img" aria-label="${on ? esc(fmtT(left) + ' of game time left') : 'No game time yet'}">${GH.ticket(on)}
       <span class="gh-tkt"><b>${on ? fmtT(left) : '0:00'}</b><span>${on ? 'game time left' : 'No game time yet'}</span></span></div></section>
-  ${on ? '' : `<div class="gh-why"><p>${esc(ptWhyNot())}</p>${UI.btn('Go earn game time', { kind: 'primary', size: 'lg', icon: 'path-read', id: 'learn' })}</div>`}
+  <div class="gh-why${on ? ' on' : ''}"><p>${esc(ptWhyNot())}</p>${on ? '' : UI.btn('Go earn game time', { kind: 'primary', size: 'lg', icon: 'path-read', id: 'learn' })}</div>
   <div class="gh-grid">${GH.games.map(card).join('')}</div>
   <section class="gh-earn"><h2>${ico('ticket', 26)}<span>How to earn more game time</span></h2>
    <ul>${earn.map(([i, t, v]) => `<li>${R_(i)}<span>${esc(t)}</span><b>${esc(v)}</b></li>`).join('')}</ul>
