@@ -232,6 +232,15 @@ Pet palettes: dragon green `#34B56A` with yellow belly; dino blue `#3E8BFF` with
 
 Four bosses (Gloop, Robo-Bonk, Captain Inky, Zorp) drawn in the same style, one pose plus a "hit" pose. Silly, never scary. Built in P4-11.
 
+As built (P4-11, `src/js/18-reward-art.js`, `src/css/42-rewards.css`): the bosses use the object-art style of 6.5 (roles `var(--a-x)`,
+light from the top left, shade / base / highlight per area, no outlines, gradients, filters or ids) on a 200x200 grid with the ground at y 184,
+like the pets. Gloop is a purple jelly with a curl and one tooth, Robo-Bonk an aqua robot with a screen face and springy arms, Captain Inky
+a pink octopus in a pirate hat with a curly moustache, Zorp a green three-eyed alien. `RW.boss(name, 'idle' | 'hit')` draws both faces in
+one SVG (`.rb-idle`, `.rb-hit`); CSS shows one, and `.bossE.hit` (a zap in the round's top bar) shows the dizzy face with a ring of stars.
+A boss name without a drawing returns '' and the caller keeps its emoji. The same file draws the treasure chest (3/4 view, closed and open
+with gold and gems), the reward star (the object-art star, and an empty slot), the prize rosette (the costume emoji in the middle) and soft
+light rays, and returns the markup of the reward screens (`RW.pre`, `RW.done`, `RW.bossIn`). Review sheet: `node tools/shots.js rewards`.
+
 ### 6.4 Wearables, shop items, stickers (chunk P4-07)
 
 - Hats (cap, bow, top hat, helmet, grad cap, crown) and toys (balloon, lollipop, ball, teddy, kite, wand, trophy) as SVG symbols on a 64x64 grid, placed at the rig anchors.
