@@ -341,6 +341,20 @@ As built (P3-14, `src/js/81-bt-riddle.js`, `82-bt-memory.js`, `83-bt-copycat.js`
 
 **Unscramble**: shuffle the letters of a list word (never left in the original order). If the letters spell another word in the app's lists, accept that too. Hint 2 places the first letter.
 
+As built (P3-15, `src/js/87-bt-wsearch.js` object `WS`, `88-bt-scramble.js` object `US`; data `src/data/d-words-bt.js` `BTW`):
+- Word Search (`wsearch`, bands BCD, `allow` 3): B spelling levels 1-3, 5 x 5 with 5 words across (levels 1-4), across and down
+  (5-8), 6 x 6 with 6 words (9-12); C levels 4-5, 7 x 7 with 6 words across, down, down slant (1-4), 8 x 8 + the up slant with 7 / 8
+  words; D levels 5-7, every direction including backwards, 9 x 9 with 8 words, 10 x 10 with 9 / 10. Two words share at most the one
+  letter where they cross. Words holding a rude run (either way), palindromes, and words that hold another listed word or its reverse
+  are not put in one grid. Drag (snaps to 8 directions) or tap the first and then the last letter, either end first. Found: a soft
+  coloured band under the letters, the list entry struck through with a tick, the word spoken. Hints per word: ring the first letter,
+  shade its row / column / slanted line, find it. On a 380 px phone a 10 x 10 grid has 36 px squares (as section 8 allows 9 x 9).
+- Unscramble (`scramble`, bands BCD, `allow` 2): B a picture (picture words with a drawing), 3 words of 3 letters / 3 of 4 / 4 of 4;
+  C a sentence with a gap (spelling levels 4-5), 3 of 5 / 4 of 5-6 / 4 of 6; D the same (levels 6-7), 3 of 7 / 4 of 7-8 / 4 of 8-9.
+  Change from the text above: instead of accepting a second word with the same letters, only words whose letters spell no other real
+  word (the app's lists and `BTW.more`) are used, so every scramble has exactly one answer. A full row is checked; wrong letters go
+  back, right ones stay. Hints per word: first and last letters named, the first letter placed (as above), then the next letter.
+
 ### 5.11 Spatial (stretch)
 
 **Cube Count**: an isometric stack defined by a height map (so hidden cubes are always supported and countable). "How many cubes?" Number pad. Own small SVG renderer in `23-viz.js` style; do not use Block Builder internals. Hint 2 shows the stack layer by layer.

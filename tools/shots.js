@@ -1919,6 +1919,52 @@ Object.assign(SCREENS, {
 });
 
 
+// P3-15 Word Search and Unscramble. Grade g sets the band, level lv is started, then real input (tools/lib/bt-p315.js).
+// ws: o.found words dragged (mouse), o.tap a first letter tapped, o.wrong a line that is not a word, o.hint hint presses, o.win all.
+// us: o.done words spelled, o.part letters tapped in, o.wrong a wrong order, o.hint hint presses, o.win every word.
+const P315 = require('./lib/bt-p315');
+const wordShot = (id, g, lv, o = {}) => ({
+  run: async p => {
+    await p314Start(id, g, lv)(p);
+    if (id == 'wsearch') {
+      await p.waitForSelector('.ws-c');
+      if (o.win) { await P315.wsFind(p); await p.waitForTimeout(1300); return; }
+      await P315.wsFind(p, o.found || 0);
+      if (o.wrong) { const t = await P315.wsNow(p); await P315.wsDrag(p, 0, (t.n - 1) * t.n + t.n - 1); }
+      await p314Hint(p, o.hint || 0);
+      if (o.tap) { const t = await P315.wsNow(p); await P315.wsTap(p, t.left[t.left.length - 1].a); }
+    } else {
+      await p.waitForSelector('.us-tile');
+      if (o.win) { await P315.usWin(p); await p.waitForTimeout(1300); return; }
+      for (let i = 0; i < (o.done || 0); i++) {
+        const t = await P315.usNow(p);
+        await P315.usSpell(p);
+        await p.waitForFunction(i => S.bt.cur.state && S.bt.cur.state.i > i && !document.querySelector('.us-boxes.ok'), t.i);
+        await p.waitForTimeout(300);
+      }
+      if (o.wrong) { await P315.usWrong(p); await p.waitForTimeout(o.wrongWait || 120); }
+      await p314Hint(p, o.hint || 0);
+      if (o.part) await P315.usSpell(p, o.part);
+    }
+  },
+});
+Object.assign(SCREENS, {
+  'bt-ws-hub': { run: async p => { await p.evaluate(() => { S.grade = 3; BT.hub(); document.querySelector('[data-t="wsearch"]').scrollIntoView({ block: 'center' }); }); } },
+  'bt-ws-b': wordShot('wsearch', 1, 2, { found: 2 }),
+  'bt-ws-b-down': wordShot('wsearch', 2, 10, { found: 3, tap: true }),
+  'bt-ws-c': wordShot('wsearch', 3, 6, { found: 3, wrong: true }),
+  'bt-ws-c-hint': wordShot('wsearch', 4, 9, { found: 2, hint: 2 }),
+  'bt-ws-d': wordShot('wsearch', 5, 11, { found: 4, hint: 3 }),
+  'bt-ws-win': wordShot('wsearch', 3, 3, { win: true }),
+  'bt-us-b': wordShot('scramble', 1, 2, { part: 1 }),
+  'bt-us-b4': wordShot('scramble', 2, 10, { done: 1, hint: 2 }),
+  'bt-us-c': wordShot('scramble', 3, 6, { wrong: true }),
+  'bt-us-c-hint': wordShot('scramble', 4, 9, { done: 2, hint: 1, part: 2 }),
+  'bt-us-d': wordShot('scramble', 5, 11, { done: 1, hint: 3 }),
+  'bt-us-win': wordShot('scramble', 6, 5, { win: true }),
+});
+
+
 async function main() {
   const args = process.argv.slice(2);
   let fixtureArg = null;

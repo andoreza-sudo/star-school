@@ -204,6 +204,15 @@ const ICONS={
     '<rect fill="var(--ic3,currentColor)" opacity=".4" x="2.5" y="2.5" width="19" height="19" rx="3"/>' +
     '<path d="M4.5 4.5H11V13H19.5V19.5H4.5Z"/>' +
     '<rect fill="none" stroke="currentColor" stroke-width="1.4" stroke-dasharray="2.2 1.6" x="13.2" y="4.7" width="6.1" height="6.1" rx="1"/>',
+  'wsearch':
+    '<rect fill="var(--ic3,currentColor)" opacity=".4" x="2.5" y="2.5" width="19" height="19" rx="3.5"/>' +
+    '<path fill="none" stroke="currentColor" stroke-width="5.2" stroke-linecap="round" d="M7.2 7.2L16.8 16.8"/>' +
+    '<circle cx="16.8" cy="7.2" r="2"/><circle cx="7.2" cy="16.8" r="2"/>',
+  'scramble':
+    '<rect fill="var(--ic3,currentColor)" opacity=".4" x="2.5" y="11.5" width="9.5" height="10" rx="2.2"/>' +
+    '<rect x="12" y="2.5" width="9.5" height="10" rx="2.2"/>' +
+    '<path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" ' +
+    'd="M4 9C4 6.1 5.8 4.3 8.6 4.3M6.9 2.8L8.6 4.3L6.9 5.9M20 15C20 17.9 18.2 19.7 15.4 19.7M17.1 18.1L15.4 19.7L17.1 21.2"/>',
   'path-math':
 
     '<path fill="none" stroke="currentColor" stroke-width="2.4" d="M7 3.5V10.5M3.5 7H10.5M13.5 7H20.5' +
