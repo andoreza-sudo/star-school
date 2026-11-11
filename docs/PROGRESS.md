@@ -6,11 +6,15 @@ The running record of what has shipped. Newest entry first. Every chunk adds one
 
 **Next up:** P2-12, P2-13, P3-08, P3-09, P3-10
 
-**Current version:** v96
+**Next up:** P2-12, P2-13
+
+**Current version:** v97
 
 **Next up:** P2-12, P3-08, A11
 
-**Current version:** v96
+**Next up:** P2-12, P2-13
+
+**Current version:** v97
 
 ## Chunk status
 
@@ -81,6 +85,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P3-09 v94
 - P3-10 v95
 - P3-08 v96
+- A11 v97
 
 ## Handoff notes
 
@@ -98,6 +103,10 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - (P3-08) Maze cells are smaller than the spec's 28 px on the largest mazes when the screen is small: an 18x18 maze is 19 px a cell at 380x780 and 22 px at 1024x600 (33 px at 600x960). The board is always the largest square that fits (BRAIN_TEASERS 8), and the drag steers the bear cell by cell toward the finger along open sides, so a finger never has to hit a 19 px cell exactly. A zoomed, scrolling board for phones would need a camera that follows the bear; not done.
 - (P3-08) The maze's arrow-pad choice is stored as `S.bt.maze.pad` (1 or 0), beside the band records of the type (`S.bt.maze.A` ...). `BT.rec` and the star counts read only the band keys, so nothing else sees it. If P3-17 or P5 adds a real per-type settings place, move it there.
 - (P3-08) The `maze` icon was added to `15-icons.js` (right after `puzzle`, so parallel chunks adding icons at the end do not conflict). The other 18 Brain Teaser type icons are still missing; their cards fall back to `puzzle`.
+- (A11) index.html is now mostly code: about 929 KB of the 1,160 KB is `src/js`. The math worlds and puzzle types still to come add code, so the 1.2 MB warning will come back after a few more chunks. Next levers, in order: move data that still lives in `src/js` (word lists in 20-words, `SENT_*` in 32-gen-read, `SPN` in 34-gen-es, art drawings in 16-art-a) to `src/data` (no build change needed; check nothing reads them while loading); then, if needed, the games (60- to 72-, about 190 KB) as a third precached file added only when a game is opened, which would also cut start-up parse time.
+- (A11) `src/data/d-spell.js` holds code as well as words (`spellList`, `spellPic`, `genSpell`, `SPELL_CACHE`). It ships in the data file and works (SK.spell calls `genSpell` inside a closure), but it is the one data file that is not data only; moving the three functions to a `src/js` file would make the rule exact.
+- (A11) The update guard text is English only, like the rest of the chrome.
+
 - (P3-01 merge) The Brain Teasers card on Home is hidden until at least one puzzle type is registered (`BT.list()`), so a release between P3-01 and the first type (P3-03 sudoku) does not show children an empty hub. Smoke and shots register the fake type first, so they still see it.
 - (P3-02) The human-style grader tries naked single before hidden single (the order BRAIN_TEASERS 6 lists), so almost every bank puzzle in bands B to D grades 2 (naked single); only 1 C hard and 4 D easy/medium puzzles grade 3. Both are allowed in those bands, so nothing is rejected, but P3-03's hint tier 2 should not assume a puzzle's grade names the only way to solve it: at each step it can look for a hidden single in a box first (children usually find those more easily) and fall back to a naked single.
 - (P3-02) Band B easy (8 givens on 4x4) has 8 puzzles that need only "last empty cell" (grade 1), like band A. They are different puzzles from band A's (the duplicate check covers both bands), but if B should always need a single, set band B's lowest grade to 2 in `BANDS` (tools/puzzles/sudoku.js) and rerun `node tools/puzzles/build-banks.js sudoku`.
@@ -312,6 +321,22 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-11) Icons wanted from P4-03: `balloon` (Bonus game, today `gamepad`), `sparkle` / `confetti`, `unlock` (open padlock for "Next stop unlocked", today `map`), `zap` (a lightning with a spark for boss hits; today `bolt`), `sticker` (single sticker for the prize row), `medal` (the prize rosette as an icon), `heart-half` (boss life bar), `chest` (the treasure chest at icon size, e.g. for the round track where renderQ shows the gift emoji).
 
 ## Log
+
+### A11 Data banks in a second precached file (v97, 2026-11-11, Claude)
+- Why now (ROADMAP A11, risk R1): the built index.html was 1,376,935 bytes, and the chunks in flight (5th/6th grade math worlds, three Brain Teaser puzzle types, more banks) would push it past the 1.5 MB limit.
+- Build (`tools/build.py`): two files. `index.html` = shell + CSS + fonts + `<script>` with `src/js` + `<script src="data.v97.js"></script>` + `<script>` with `src/boot.js`. `data.v97.js` = every `src/data/*.js` in filename order (d-comp, d-demo, d-gram, d-puz-sudoku, d-spell, d-vocab), byte for byte, between a header comment and the last line `var DATA_VER='v97';`. The build deletes every other `data.v*.js` at the repo root. `src/shell.html` got the external script tag and a `/*@@BOOT@@*/` marker.
+- Load order: the three classic scripts run in document order, synchronously, and share one global scope, so it is the same order as the old single script (code, data, boot); data files keep calling `compAdd`, `GR`, `BANK.x = ...` at load time. A data script before the code would not work (the data files call code helpers). Plain `<script src>` works over `file://`, so smoke, shots and a parent opening the file directly are unchanged.
+- Version pairing: both. The file name carries VER, so an index.html can only ask for its own release's data file, and no HTTP cache (GitHub Pages sends max-age=600; the service worker's fetch uses the HTTP cache) can hand it an older file under the same name. The stamp catches the rest: `src/boot.js` starts the app only if `dataReady()` (`src/js/90-app.js`: `DATA_VER` exists, so the file ran to its last line, and equals the page's VER). Otherwise `dataMissing()` shows "Star School needs to finish updating. Connect to the internet, then tap Try again." (Try again reloads) and logs one line in S.err (App log). No other save change; no new save fields.
+- Service worker (`sw.js`, from build.py): cache `starschool-v97` precaches `./`, `index.html`, `data.v97.js`, manifest, icons; the activate step deletes other caches as before, so an update replaces both files together. Two small hardening changes: only `res.ok` responses are cached (a 404 or 500 page can no longer become the cached index.html or data file), and a script request that fails offline gets a network error instead of index.html as its body (which would have been a parse error).
+- Sizes: index.html 1,376,935 -> 1,159,988 bytes (under the 1.2 MB warning again); data.v97.js 218,632; total 1,378,620. Of index.html, about 929 KB is code (src/js), 179 KB CSS, 52 KB fonts.
+- Budgets (`tools/test.js`): index.html unchanged (warn 1.2 MB, fail 1.5 MB); data file warn 1 MB, fail 2 MB (mostly strings, which parse faster than code, and banks are where content grows); total warn 2 MB, fail 3 MB (what a tablet downloads once and parses at every start; P6-02's throttled start-up budget is the real gate). `tools/check.sh` prints all three.
+- Tests: new check `data file split A11`: index.html has exactly three scripts (code, `data.v97.js`, boot) and no async/defer, boot checks `dataReady()`, no bank left in index.html, no `__VER__` left; the data file is all of src/data and ends with the stamp; the built code loads in Node without the data file (proves no code reads data while loading) and `dataReady()` is false; with the data file every expected global is there (BANK.gram/vocab/demo, PASS.comp/info, COMP, SPELL_WORDS, genSpell, PUZ.sudoku A-D) and `dataReady()` is true; with another release's stamp it is false; sw.js cache name and precache list; no stale data file at the root; the budgets. Shown to fail on a stale `data.v1.js` and on a precache list without the data file. The P3-02 sudoku check now looks for the bank in the data file.
+- Smoke (block `// A11`, after the midway step): over file:// the page loads exactly `data.<ver>.js`, the globals are there, a vocabulary question is built, a sudoku puzzle reads, and a reading passage opens on screen. Guard: a copy of index.html in a temp folder with no data file shows Try again (only the expected file-not-found console error), progress unchanged (midway stars 85, coins 64), the App log line; putting the file back and tapping Try again starts the app with the same progress; a data file stamped `v1` shows the guard with no console error. `tools/lib/browser.js` `openApp` takes an optional `url`.
+- Offline check by hand (Playwright, local http server that answers like GitHub Pages, "offline" = context offline plus a server that drops every connection; script not committed): the old one-file v93 release installs its worker; deploying v97 and opening online starts v97 (the old worker fetches data.v97.js, the new worker takes over and the page reloads), leaving one cache `starschool-v97` with index.html and data.v97.js; offline reload starts v97 and a reading passage opens; a renamed v98 copy replaces it online (cache `starschool-v98` only, no data.v97.js) and works offline; with data.v98.js evicted from the cache and the HTTP cache cleared, offline reload shows the guard (one network error, no parse error), and Try again back online starts the app. Not verified: a real tablet, Safari/iOS, and an install from the GitHub Pages URL.
+- Files: `tools/build.py`, `src/shell.html`, `src/boot.js`, `src/js/90-app.js` (block at the end), `tools/test.js`, `tools/smoke.js`, `tools/lib/browser.js`, `tools/check.sh`, docs (CONTRIBUTING 3.2, new 3.3, 4, 6; ROADMAP principle 8, A11, 7.1, R1, R4); built `index.html`, `sw.js`, new `data.v97.js`.
+- For later chunks: a new `src/data/d-*.js` needs nothing else (it goes into the data file; see CONTRIBUTING 3.3), but code may read it only inside functions, and a test that looks for a bank in the built output must read `DATA_FILE`, not index.html. At merge, renumbering VER renames the data file: rebuild and `git add -A` so the old one's deletion is staged.
+- Merge: built on branch A11-data-split from 5621f49 (v93) while other chunks are in flight; VER v97 is provisional. Conflicts to expect: `tools/build.py` (VER), `tools/test.js` (constants at the top, the P3-02 check line, the new check before the report), `src/js/90-app.js` (appended block), built files (rebuild). A chunk that adds a test reading `index.html` for bank text must switch to the data file.
+- Merge: built on a parallel branch, renumbered v96 -> v97 at merge.
 
 ### P3-08 Mazes (v94, 2026-11-11, Claude)
 - What changed: new puzzle type `maze` in `src/js/75-bt-maze.js` (the `MZ` helpers and one `BT.reg`), CSS in `src/css/49-bt-maze.css`, a drawn `maze` icon in `15-icons.js`. Nothing in the framework changed. With a real type registered, the Brain Teasers card now shows on Home for every child (bands A-D all have mazes).

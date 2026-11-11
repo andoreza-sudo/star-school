@@ -8,6 +8,12 @@ const js=cat('js')+cat('data'); // all code and data, without boot.js
 
 // ---- Budgets and known exceptions: the one place to change them ----
 const SIZE_WARN=1200000,SIZE_FAIL=1500000; // bytes of the built index.html (ROADMAP risk R1)
+// A11: the data banks (src/data) are a second file, data.<VER>.js. It is mostly strings, which parse fast, so it may be bigger than the
+// code; the total is what a tablet downloads once and parses at every start (both files load before the app starts).
+const DATA_WARN=1000000,DATA_FAIL=2000000; // bytes of the built data.<VER>.js
+const TOTAL_WARN=2000000,TOTAL_FAIL=3000000; // bytes of index.html + data.<VER>.js
+const BUILD_VER=(fs.readFileSync(path.join(ROOT,'tools','build.py'),'utf8').match(/^VER = '(v\d+)'/m)||[])[1];
+const DATA_FILE='data.'+BUILD_VER+'.js'; // the built data file at the repo root (tools/build.py)
 const KNOWN={ // check name -> exact problem strings that are known content issues, not test failures
   // Spanish level 2 ("How do you say it in Spanish?") shows a picture and asks for the Spanish word, so it has no `say` on purpose:
   // reading the answer aloud would give it away (genEs in src/js/34-gen-es.js). Logged in PROGRESS.md; a later chunk may add a
@@ -6555,12 +6561,12 @@ run('sudoku banks P3-02: format, givens agree with the solution, exactly one sol
   const p=[];
   const vb=require('./puzzles/verify-banks.js'),sd=require('./puzzles/sudoku.js'),csp=require('./puzzles/csp.js');
   const T=require('./puzzles/build-banks.js').TYPES.sudoku;
-  // the bank as the app sees it: evaluated with all of src/js and src/data, and present in the built page
+  // the bank as the app sees it: evaluated with all of src/js and src/data, and present in the built data file
   const inApp=eval(js+';PUZ.sudoku');
   const bank=vb.loadBank('d-puz-sudoku.js').sudoku;
   if(JSON.stringify(inApp)!==JSON.stringify(bank))p.push('PUZ.sudoku differs when loaded with the whole app');
-  const html=fs.existsSync(path.join(ROOT,'index.html'))?fs.readFileSync(path.join(ROOT,'index.html'),'utf8'):'';
-  if(!html.includes('PUZ.sudoku = {'))p.push('index.html has no sudoku bank (rebuild)');
+  const built=fs.existsSync(path.join(ROOT,DATA_FILE))?fs.readFileSync(path.join(ROOT,DATA_FILE),'utf8'):''; // A11: banks are in the data file
+  if(!built.includes('PUZ.sudoku = {'))p.push(DATA_FILE+' has no sudoku bank (rebuild)');
   // every stored puzzle: format, givens count, valid solution, givens agree, symmetric 9x9, one solution, grade, no duplicates
   const v=vb.verifySudoku(bank);
   p.push(...v.problems);
@@ -7452,6 +7458,64 @@ run('mazes P3-08',()=>{
   const[bad,n,st,avg]=r;
   return{problems:[...new Set(bad)],note:n+' mazes; mean shortest win A '+st.A.par.toFixed(0)+', B '+st.B.par.toFixed(0)+', C '+st.C.par.toFixed(0)+', D '+st.D.par.toFixed(0)+
     '; dead ends '+['A','B','C','D'].map(b=>st[b].dead.toFixed(0)).join('/')+'; make '+avg.toFixed(2)+' ms'};
+});
+
+// ---- A11: data banks in a second precached file ----
+run('data file split A11',()=>{
+  const p=[],rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8');
+  if(!BUILD_VER)return{problems:['no VER in tools/build.py']};
+  for(const f of ['index.html',DATA_FILE,'sw.js'])if(!fs.existsSync(path.join(ROOT,f)))p.push(f+' not built; run python3 tools/build.py first');
+  if(p.length)return{problems:p};
+  const html=rd('index.html'),data=rd(DATA_FILE),sw=rd('sw.js');
+  // index.html: three scripts in this order: the code (inline), exactly one external script = the current data file, boot (inline)
+  const tags=[...html.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/g)].map(m=>({attrs:m[1],src:(m[1].match(/src="([^"]*)"/)||[])[1],body:m[2]}));
+  const srcs=tags.filter(t=>t.src!==undefined).map(t=>t.src);
+  if(JSON.stringify(srcs)!==JSON.stringify([DATA_FILE]))p.push('index.html loads '+JSON.stringify(srcs)+', expected exactly ["'+DATA_FILE+'"]');
+  if(tags.length!==3||tags[1].src!==DATA_FILE||tags[0].src!==undefined||tags[2].src!==undefined)p.push('index.html scripts are not code, '+DATA_FILE+', boot');
+  else if(!/dataReady\(\)/.test(tags[2].body)||!/home\(true\)/.test(tags[2].body))p.push('boot script does not check dataReady() before home(true)');
+  if(tags.some(t=>/\b(async|defer)\b|type=/.test(t.attrs)))p.push('a script is async, defer or typed: the data must load in order');
+  if(!html.includes('Star School '+BUILD_VER))p.push('index.html is not '+BUILD_VER);
+  if(/PUZ\.sudoku = \{|COMPSPEC\[2\]=|BANK\.vocab = |SPELL_WORDS=\{/.test(html))p.push('index.html still holds data banks');
+  if(/__VER__/.test(html+data))p.push('a built file still has __VER__');
+  // the data file: header, all of src/data in name order (byte for byte), and the version stamp as the last line
+  const stamp="var DATA_VER='"+BUILD_VER+"';";
+  const lines=data.trimEnd().split('\n');
+  if(!lines[lines.length-1].startsWith(stamp))p.push(DATA_FILE+' does not end with '+stamp);
+  if(!data.includes(cat('data')))p.push(DATA_FILE+' is not src/data/*.js (rebuild)');
+  if((data.match(/var DATA_VER=/g)||[]).length!==1)p.push(DATA_FILE+' should set DATA_VER once');
+  // load the built code alone, then with the data file, then with a data file of another release (each in its own scope)
+  const code=tags[0]&&tags[0].body||'';
+  const alone=(()=>{try{return eval(code+';({ready:dataReady()})')}catch(e){return{err:String(e)}}})();
+  if(alone.err)p.push('the code does not load without the data file (it must not read data while loading): '+alone.err);
+  else if(alone.ready)p.push('dataReady() is true without the data file');
+  const g=(()=>{try{return eval(code+';\n'+data+`;({ready:dataReady(),ver:DATA_VER,gram:BANK.gram.length,vocab:BANK.vocab.length,
+    demo:BANK.demo.length,comp:PASS.comp.length,info:PASS.info.length,passages:COMP.length,spell:Object.keys(SPELL_WORDS).length,
+    spellGen:typeof genSpell,sudoku:Object.keys(PUZ.sudoku).join(''),sudokuA:PUZ.sudoku.A.easy.length})`)}catch(e){return{err:String(e)}}})();
+  if(g.err)p.push('code + '+DATA_FILE+' do not load: '+g.err);
+  else{
+    if(!g.ready||g.ver!==BUILD_VER)p.push('dataReady() false with the current data file ('+g.ver+')');
+    for(const k of ['gram','vocab','demo','comp','info','passages','spell','sudokuA'])if(!(g[k]>0))p.push('data global missing or empty: '+k);
+    if(g.spellGen!=='function')p.push('genSpell is not defined by the data file');
+    if(g.sudoku!=='ABCD')p.push('PUZ.sudoku bands '+g.sudoku);
+  }
+  const other=(()=>{try{return eval(code+';\n'+data.replace(stamp,"var DATA_VER='v1';")+';dataReady()')}catch(e){return String(e)}})();
+  if(other!==false)p.push('dataReady() does not refuse a data file of another release: '+other);
+  // sw.js: one cache per release, precaching both files
+  const F=JSON.parse(((sw.match(/const F=(\[[^\]]*\])/)||[])[1]||'[]').replace(/'/g,'"'));
+  if(!sw.includes("const C='starschool-"+BUILD_VER+"'"))p.push('sw.js cache name is not starschool-'+BUILD_VER);
+  for(const f of ['./','./index.html','./'+DATA_FILE])if(!F.includes(f))p.push('sw.js does not precache '+f);
+  if(F.filter(f=>/data\./.test(f)).length!==1)p.push('sw.js should precache exactly one data file: '+F.join(' '));
+  // no stale data files at the repo root (GitHub Pages serves the root of main)
+  const stale=fs.readdirSync(ROOT).filter(f=>/^data\..*\.js$/.test(f)&&f!==DATA_FILE);
+  if(stale.length)p.push('old data files at the repo root: '+stale.join(', '));
+  // sources: the shell loads the data file between the code and boot
+  const shell=fs.readFileSync(path.join(SRC,'shell.html'),'utf8');
+  if(!/\/\*@@JS@@\*\/\s*<\/script>\s*<script src="data\.__VER__\.js"><\/script>\s*<script>\s*\/\*@@BOOT@@\*\//.test(shell))p.push('src/shell.html: code, data.__VER__.js, boot not in that order');
+  // budgets (ROADMAP R1 and A11; index.html alone is the 'size: index.html under budget' check)
+  const nd=Buffer.byteLength(data),nt=Buffer.byteLength(html)+nd,w=[];
+  if(nd>DATA_FAIL)p.push(DATA_FILE+' is '+nd+' bytes, over the '+DATA_FAIL+' limit');else if(nd>DATA_WARN)w.push('data over '+DATA_WARN);
+  if(nt>TOTAL_FAIL)p.push('index.html + '+DATA_FILE+' is '+nt+' bytes, over the '+TOTAL_FAIL+' limit');else if(nt>TOTAL_WARN)w.push('total over '+TOTAL_WARN);
+  return{problems:p,note:DATA_FILE+' '+Math.round(nd/1000)+' KB, total '+Math.round(nt/1000)+' KB'+(w.length?'  WARN: '+w.join(', '):'')};
 });
 
 // ---- report ----

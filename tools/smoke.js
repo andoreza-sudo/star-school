@@ -153,6 +153,71 @@ async function main() {
     network.push(...old.network);
     await old.ctx.close();
 
+    // A11: the data banks are a second file (data.<VER>.js) loaded by its own <script> over file://. Check the globals,
+    // open a reading passage, build a vocabulary question and read a sudoku puzzle. Then the version guard: a copy of index.html
+    // with no data file, and with a data file of another release, shows "Try again" instead of starting, and changes no progress.
+    {
+      const d = await openApp(browser, { fixture: 'midway' });
+      const g = await d.page.evaluate(() => {
+        const src = [...document.scripts].filter(s => s.src).map(s => s.getAttribute('src'));
+        const vq = genQ('vocab', 1, 4242);
+        const pz = PUZ.sudoku.A.easy[0].split('|');
+        const ix = NODES.read.findIndex(n => n.sk === 'info' && n.lv === 1);
+        return { src, dv: DATA_VER, ready: dataReady(), gram: BANK.gram.length, vocab: BANK.vocab.length, comp: PASS.comp.length,
+          info: PASS.info.length, spell: typeof genSpell, vq: !!(vq.kind && vq.ans && vq.html && vq.sk === 'vocab'),
+          pz: pz.length + ':' + pz[0].length + ':' + pz[1].length, ix };
+      });
+      const want = 'data.' + g.dv + '.js';
+      if (JSON.stringify(g.src) !== JSON.stringify([want]) || !g.ready || !(g.gram > 0 && g.vocab > 0 && g.comp > 0 && g.info > 0)
+        || g.spell !== 'function' || !g.vq || g.pz !== '3:16:16' || g.ix < 0) {
+        fail('A11 data globals: ' + JSON.stringify(g));
+      }
+      await d.page.evaluate(ix => start('read', ix), g.ix);
+      await d.page.waitForSelector('.bctx-p .w', { timeout: 8000 });
+      const words = await d.page.evaluate(() => document.querySelectorAll('.bctx-p .w').length);
+      if (words < 20) fail('A11: reading passage did not open (' + words + ' words)');
+      else step('A11: ' + want + ' loaded over file:// (' + g.vocab + ' vocabulary items, ' + g.comp + '+' + g.info + ' passages, '
+        + 'sudoku bank), a vocabulary question built, a passage opened (' + words + ' words)');
+      await d.page.evaluate(() => { G.dead = true; home(); });
+      errors.push(...d.errors);
+      network.push(...d.network);
+      await d.ctx.close();
+
+      const fs = require('fs'), os = require('os'), path = require('path');
+      const { ROOT } = require('./lib/browser');
+      const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'ss-a11-'));
+      for (const f of ['index.html', 'manifest.json', 'icon-192.png', 'icon-512.png']) fs.copyFileSync(path.join(ROOT, f), path.join(tmp, f));
+      const url = 'file://' + path.join(tmp, 'index.html');
+      const guard = async (label, allowed) => {
+        const a = await openApp(browser, { fixture: 'midway', url });
+        await a.page.waitForSelector('#dataretry', { timeout: 5000 }).catch(() => {});
+        const r = await a.page.evaluate(() => ({ retry: !!document.querySelector('#datamiss #dataretry'), home: !!document.querySelector('.game[data-p]'),
+          stars: S.stars, coins: S.coins, math: Object.keys(S.maps.math).length, err: (S.err || []).map(e => e.msg).pop() || '',
+          wide: document.documentElement.scrollWidth > innerWidth }));
+        const bad = a.errors.filter(e => !allowed.test(e));
+        if (!r.retry || r.home || r.stars !== 85 || r.coins !== 64 || !/data file/.test(r.err) || r.wide || bad.length || a.network.length) {
+          fail('A11 guard (' + label + '): ' + JSON.stringify(r) + ' ' + bad.concat(a.network).join(' | '));
+        } else step('A11 guard, ' + label + ': app does not start, shows Try again, progress unchanged, App log: ' + r.err);
+        return a;
+      };
+      // 1. no data file next to index.html (offline before it was cached): the browser reports the missing file, nothing else
+      const a1 = await guard('data file missing', /ERR_FILE_NOT_FOUND|Failed to load resource/);
+      // Try again after the file is back: the app starts with the same progress
+      fs.copyFileSync(path.join(ROOT, want), path.join(tmp, want));
+      await a1.page.click('#dataretry');
+      await a1.page.waitForSelector('.game[data-p]', { timeout: 10000 }).catch(() => {});
+      const back = await a1.page.evaluate(() => ({ home: !!document.querySelector('.game[data-p]'), stars: S.stars, coins: S.coins }));
+      const after = a1.errors.filter(e => !/ERR_FILE_NOT_FOUND|Failed to load resource/.test(e));
+      if (!back.home || back.stars !== 85 || back.coins !== 64 || after.length) fail('A11 guard: Try again with the data file back: ' + JSON.stringify(back) + ' ' + after.join(' | '));
+      else step('A11 guard: Try again with the data file back starts the app (stars ' + back.stars + ', coins ' + back.coins + ')');
+      await a1.ctx.close();
+      // 2. a data file from another release under this release's name (a cache that kept half an update)
+      fs.writeFileSync(path.join(tmp, want), fs.readFileSync(path.join(ROOT, want), 'utf8').replace("var DATA_VER='" + g.dv + "'", "var DATA_VER='v1'"));
+      const a2 = await guard('data file of another release', /^$/);
+      await a2.ctx.close();
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
+
     // 5. P0-05 error guard: throw inside a round -> friendly "go home" button, error logged, shown in the App log.
     //    The injected error is the only one allowed; it is removed from the list below, everything else still fails the run.
     const MARK = 'P0-05 injected test error';
