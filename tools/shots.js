@@ -9,6 +9,14 @@ const { SIZES, launch, openApp } = require('./lib/browser');
 const OUT = process.env.SHOTS_OUT ? path.resolve(process.env.SHOTS_OUT) : path.join(__dirname, 'out');
 const SHOT_SIZES = process.env.SHOTS_SIZES ? process.env.SHOTS_SIZES.split(',').map(s => s.split('x').map(Number)) : SIZES;
 const KS = require('./kinds-samples');
+const BTF = require('./lib/bt-fake');
+
+// P3-01 Brain Teasers: the framework screens with the fake type from tools/lib/bt-fake.js (no real puzzle type exists yet)
+const btShot = (fn, solved = 0) => async p => {
+  await p.evaluate('(' + BTF.install.toString() + ')()');
+  if (solved) await p.evaluate(n => { BT.rec('zzfake', BT.band(), true).stars = [3, 2, 1].slice(0, n); BT.rec('zzfake', BT.band()).lvl = n + 1; S.bt.cur = null; }, solved);
+  await p.evaluate(fn);
+};
 
 // P1-03: a sample question of a new kind shown by the real round engine (a one-question round); taps are clicked afterwards.
 const kindShot = (name, taps = []) => ({
@@ -51,6 +59,12 @@ const reportDemo = (sel, grade) => async p => {
 // Each screen: { fixture, full, run(page) }. run() drives the app via its globals or real taps; full: true takes a full-page shot.
 const SCREENS = {
   setup: { fixture: 'fresh', run: async () => {} },
+  // P3-01: Home card, hub (empty and with a type), level strip, play frame, win card
+  'bt-hub-empty': { run: async p => { await p.evaluate(() => BT.hub()); } },
+  'bt-hub': { run: btShot(() => BT.hub(), 2) },
+  'bt-levels': { run: btShot(() => BT.levels('zzfake'), 3) },
+  'bt-play': { run: async p => { await btShot(() => BT.start('zzfake', BT.band(), 1))(p); await p.click('#bthint'); } },
+  'bt-win': { run: async p => { await btShot(() => BT.start('zzfake', BT.band(), 1))(p); await p.evaluate(() => BT.win(BT.act, { mistakes: 0 })); await p.waitForTimeout(900); } },
   home: { run: async p => { await p.evaluate(() => home(true)); } },
   map: { run: async p => { await p.evaluate(() => pathMap('math')); } },
   'map-read': { run: async p => { await p.evaluate(() => pathMap('read')); } },
