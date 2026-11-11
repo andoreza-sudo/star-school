@@ -4356,7 +4356,7 @@ async function main() {
           const c = document.querySelector('.game[data-p="disc"]'), r = c.getBoundingClientRect();
           return { h: r.height, art: !!c.querySelector('.hm-svg'), txt: c.textContent.replace(/\s+/g, ' ') };
         });
-        if (card.h < 48 || !card.art || !/Discover/.test(card.txt) || !/0\/4/.test(card.txt)) fail(`${tag}: Home card ${JSON.stringify(card)}`);
+        if (card.h < 48 || !card.art || !/Discover/.test(card.txt) || !/0\/18/.test(card.txt)) fail(`${tag}: Home card ${JSON.stringify(card)}`);
         await dp.click('.game[data-p="disc"]');
         await dp.waitForSelector('.node[data-n="0"]');
         const map = await dp.evaluate(() => {
@@ -4364,8 +4364,8 @@ async function main() {
           return { n: ns.length, lock: ns.map(n => n.classList.contains('lock')), minH: Math.min(...ns.map(n => n.offsetHeight)), minW: Math.min(...ns.map(n => n.offsetWidth)),
             over: document.documentElement.scrollWidth - document.documentElement.clientWidth, title: document.querySelector('.top').textContent };
         });
-        if (map.n !== 4 || map.lock.join() !== 'false,true,true,true' || map.minH < 48 || map.minW < 48 || map.over > 0 || !/Discover/.test(map.title)) fail(`${tag}: map ${JSON.stringify(map)}`);
-        else step(`${tag}: Home card, then the map with 4 stops (first open), 48 px stops, no sideways scroll`);
+        if (map.n !== 12 || map.lock.slice(0, 6).join() !== 'false,true,true,true,true,true' || map.minH < 48 || map.minW < 48 || map.over > 0 || !/Discover/.test(map.title)) fail(`${tag}: map ${JSON.stringify(map)}`);
+        else step(`${tag}: Home card, then the map (Nature Trail and the world after it, 12 stops; the first is open), 48 px stops, no sideways scroll`);
         const before = await dp.evaluate(() => JSON.stringify([S.maps.math, S.maps.read, S.maps.es, S.stars]));
         await dp.click('.node[data-n="0"]');
         await dp.waitForSelector('#prompt');
@@ -4388,7 +4388,7 @@ async function main() {
         await dp.click('#menu');
         await dp.waitForSelector('#map');
         const open2 = await dp.evaluate(() => [...document.querySelectorAll('.node')].map(n => n.classList.contains('lock')).join());
-        if (open2 !== 'false,false,true,true') fail(`${tag}: map after the round: locks ${open2}`);
+        if (open2.split(',').slice(0, 6).join() !== 'false,false,true,true,true,true') fail(`${tag}: map after the round: locks ${open2}`);
         network.push(...da.network);
         for (const e of da.errors) fail(e);
         await da.ctx.close();
@@ -4689,6 +4689,75 @@ async function main() {
       network.push(...gc.network);
       for (const e of gc.errors) fail(e);
       await gc.ctx.close();
+    }
+
+    // P2-37 Discover 3-6, geography and civics at 380x780: a 4th grader opens Discover on Science Lab (not Nature Trail), plays Life Cycles & Food,
+    //       then (the stops before it counted as done) the geography stop States & Capitals and, in Nature Trail, the civics stop Our Community, all with
+    //       real taps. Stars save under each stop's own id, nothing on the other paths moves, every question has 48 px choices, no sideways scroll,
+    //       no cut-off words.
+    {
+      const da = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
+      const dp = da.page, tag = 'Discover 4th grade';
+      await dp.evaluate(() => { S.grade = 4; save(); home(true); });
+      await dp.waitForSelector('.game[data-p="disc"]');
+      await dp.click('.game[data-p="disc"]');
+      await dp.waitForSelector('.node[data-n="0"]');
+      const on = await dp.evaluate(() => ({
+        world: PATHS.disc.worlds[curWorld('disc')].id, cur: nid(NODES.disc[curNode('disc')]), chip: (document.querySelector('.wchip.on') || {}).textContent || '',
+        node: document.querySelector('.node.cur') ? +document.querySelector('.node.cur').dataset.n : -1,
+        over: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      }));
+      if (on.world !== 'd_lab' || on.cur !== 'sci_life2' || !/Science Lab/.test(on.chip) || on.node !== 6 || on.over > 0) fail(`${tag}: Discover opened on ${JSON.stringify(on)}`);
+      else step(`${tag}: Discover opens on Science Lab at Life Cycles & Food (sci_life 2), no sideways scroll`);
+      const before = await dp.evaluate(() => JSON.stringify([S.maps.math, S.maps.read, S.maps.es, S.stars]));
+      // one real round on a stop: opens it by its map button, plays, checks every question, and returns to the map
+      const playStop = async (n, what) => {
+        await dp.evaluate(i => document.querySelector(`.node[data-n="${i}"]`).scrollIntoView({ block: 'center' }), n);
+        const nb = await dp.evaluate(i => { const b = document.querySelector(`.node[data-n="${i}"]`).getBoundingClientRect(); return { w: b.width, h: b.height, lock: document.querySelector(`.node[data-n="${i}"]`).classList.contains('lock') }; }, n);
+        if (nb.w < 48 || nb.h < 48 || nb.lock) fail(`${tag}: ${what} stop button ${JSON.stringify(nb)}`);
+        await dp.click(`.node[data-n="${n}"]`);
+        await dp.waitForSelector('#prompt');
+        const bad = [];
+        await playRound(dp, `${tag} ${what}`, undefined, async () => {
+          const r = await dp.evaluate(() => {
+            const chs = [...document.querySelectorAll('.ch')], pr = document.querySelector('#prompt');
+            return { n: chs.length, minH: Math.min(...chs.map(c => c.offsetHeight)), minW: Math.min(...chs.map(c => c.offsetWidth)),
+              over: document.documentElement.scrollWidth - document.documentElement.clientWidth, cut: chs.some(c => c.scrollWidth > c.clientWidth + 1) || pr.scrollWidth > pr.clientWidth + 1,
+              text: pr.textContent.trim().length > 8, sk: G.q.sk, lv: G.q.lv, label: G.q.label };
+          });
+          if (r.n < 3 || r.minH < 48 || r.minW < 48 || r.over > 0 || r.cut || !r.text) bad.push(JSON.stringify(r));
+        });
+        if (bad.length) fail(`${tag} ${what}: question layout ${bad.join(' ')}`);
+        else step(`${tag} ${what}: every question: 3-4 choices of 48 px or more, no sideways scroll, no cut-off words`);
+        const st = await dp.evaluate(i => ({ id: nid(NODES.disc[i]), stars: getSt('disc', i), saved: JSON.parse(localStorage.getItem(KEY)).maps.disc[nid(NODES.disc[i])] || 0 }), n);
+        if (st.stars < 1 || st.saved !== st.stars) fail(`${tag} ${what}: stars ${JSON.stringify(st)}`);
+        else step(`${tag} ${what}: ${st.stars} stars saved under ${st.id}`);
+        await dp.click('#menu');
+        await dp.waitForSelector('#map');
+      };
+      await playStop(6, 'Life Cycles & Food');
+      const after1 = await dp.evaluate(() => ({ keys: Object.keys(S.maps.disc).join(), next: unlocked('disc', 7), others: JSON.stringify([S.maps.math, S.maps.read, S.maps.es, S.stars]) }));
+      if (after1.keys !== 'sci_life2' || !after1.next || JSON.stringify(JSON.parse(after1.others).slice(0, 3)) !== JSON.stringify(JSON.parse(before).slice(0, 3)))
+        fail(`${tag}: after the first stop ${JSON.stringify(after1)}`);
+      else step(`${tag}: stars only under sci_life2, the next stop opened, no other path changed`);
+      // Science Earth and Forces count as done (set directly), then the geography stop is played with taps
+      await dp.evaluate(() => { S.maps.disc.sci_earth2 = 1; S.maps.disc.sci_phys2 = 1; save(); pathMap('disc'); });
+      await dp.waitForSelector('.node[data-n="9"]');
+      const geo = await dp.evaluate(() => ({ id: nid(NODES.disc[9]), open: unlocked('disc', 9), t: NODES.disc[9].t }));
+      if (geo.id !== 'geo_us1' || !geo.open) fail(`${tag}: geography stop ${JSON.stringify(geo)}`);
+      await playStop(9, 'States & Capitals');
+      // the civics stop is in Nature Trail: the four stops before it count as done
+      await dp.evaluate(() => { for (const k of ['sci_life1', 'sci_earth1', 'sci_phys1', 'geo_world1']) S.maps.disc[k] = 1; save(); pathMap('disc', 0); });
+      await dp.waitForSelector('.node[data-n="4"]');
+      const civ = await dp.evaluate(() => ({ id: nid(NODES.disc[4]), open: unlocked('disc', 4), t: NODES.disc[4].t }));
+      if (civ.id !== 'civ1' || !civ.open) fail(`${tag}: civics stop ${JSON.stringify(civ)}`);
+      await playStop(4, 'Our Community');
+      const fin = await dp.evaluate(() => ({ g: S.grade, civ: S.maps.disc.civ1, geo: S.maps.disc.geo_us1, v: S.v, others: JSON.stringify([S.maps.math, S.maps.read, S.maps.es]) }));
+      if (!(fin.civ >= 1) || !(fin.geo >= 1) || fin.g !== 4 || fin.others !== JSON.stringify(JSON.parse(before).slice(0, 3))) fail(`${tag}: end state ${JSON.stringify(fin)}`);
+      else step(`${tag}: geography and civics stops saved, the other paths are unchanged`);
+      network.push(...da.network);
+      for (const e of da.errors) fail(e);
+      await da.ctx.close();
     }
 
     for (const e of errors) fail(e);

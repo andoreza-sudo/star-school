@@ -1,5 +1,5 @@
-/* Star School data banks v114. BUILT by tools/build.py from src/data/*.js (sorted): never edit by hand.
-   index.html v114 loads this file with <script src="data.v114.js"> between the code and the start-up script. */
+/* Star School data banks v115. BUILT by tools/build.py from src/data/*.js (sorted): never edit by hand.
+   index.html v115 loads this file with <script src="data.v115.js"> between the code and the start-up script. */
 /* Comprehension passages (P2-25: 2nd grade). Format and how to add a grade: header of src/js/37-comp.js.
    Fiction (type 'f') is the comp skill, level 3; nonfiction (type 'n') is the info skill, level 1. Original text, no brands, no real people.
    Append new grades below; never reorder or insert (saved review items remember a passage by its position). */
@@ -1258,9 +1258,10 @@ const DISC_HINT = {
 // Grade band of each level (CURRICULUM 6: Lv 1 is K-2, Lv 2 is 3-4, Lv 3 is 5-6). Every item carries it as `grade`.
 const DISC_GRADE = {1: 'K-2', 2: '3-4', 3: '5-6'};
 
-function discRows(lv, text) {
+// grade: the grade band of a bank whose levels do not follow DISC_GRADE (P2-37: geo_us and civ start at levels 3-4 and 5-6)
+function discRows(lv, text, grade) {
   return text.trim().split('\n').map(r => {
-    const f = r.split('|'), it = {lv, grade: DISC_GRADE[lv], q: f[0], a: f[1], d: f[2].split(';'), topic: f[3]};
+    const f = r.split('|'), it = {lv, grade: grade || DISC_GRADE[lv], q: f[0], a: f[1], d: f[2].split(';'), topic: f[3]};
     if (f[4]) it.em = f[4].split(',');
     it.hint = f[5] || DISC_HINT[f[3]];
     return it;
@@ -1483,6 +1484,1045 @@ Which one is a liquid?|honey|a brick;a coin;a book|solid
 Which one is NOT a liquid?|a crayon|water;milk;juice|solid
 A liquid takes the shape of the ___ it is poured into.|container|color;weight;smell|solid
 `);
+/* ---------- Discover: science for grades 3-6 (P2-37; CURRICULUM section 6, Lv 2 and Lv 3 columns) ---------- */
+/* Levels 2 (grades 3-4) and 3 (grades 5-6) of BANK.sci_life, BANK.sci_earth and BANK.sci_phys. Same row format and the same helpers
+   as d-disc.js (discRows, DISC_HINT), which loads first (its file name sorts before this one: "d-disc." < "d-disc2").
+   Row = question | right answer | wrong answers (split by ;) | topic | picture (art name,emoji) | hint
+   Every fact is settled textbook science. A hint teaches the method and never names the answer; no item needs a picture or a map.
+   tools/test.js ("Discover 3-6, geography and civics P2-37") checks all of it. */
+
+Object.assign(DISC_HINT, {
+  // sci_life 2
+  lifecycle: 'A life cycle is a set of stages that repeat. Think about what the young one looks like and what it does at each stage.',
+  foodchain: 'Follow the energy. Who makes food, who eats the plant, who eats that animal, and what happens to the leftovers?',
+  adapt: 'Match the body part or the habit to the place the animal lives and to the job it does for the animal.',
+  classify: 'Think about the whole body: what covers it, how it breathes and how its babies are born.',
+  plantfn: 'Each part of a plant has its own job. Think about where the part is on the plant and what it does for it.',
+  fossils: 'Fossils are clues. Think about how long ago things lived and how layers of mud and sand can bury them.',
+  // sci_life 3
+  cells: 'Cells are the tiny building blocks of living things. Picture a small room where each part has a job to do.',
+  ecosystem: 'An ecosystem is the living and non-living things of one place working together. Think about who depends on whom.',
+  photo: 'Plants make their own food. Think about what goes in, what comes out and what gives the power.',
+  body: 'Each body system has one main job. Think about what the organs in it do together.',
+  traits: 'Some traits are passed from parents to young and some are learned or happen to you. Sort them that way.',
+  // sci_earth 2
+  watercycle: 'Follow one drop of water on its trip around the Earth. What happens to it at each step, and what powers the trip?',
+  rocks: 'Think about what the ground is made of and what each layer or kind is like to touch.',
+  erosion: 'Things in nature that move, like streams and weather, carry bits of land away. Think about what slows that down or speeds it up.',
+  resources: 'Ask whether nature makes more of it fast enough to use again, or whether it takes a very long time.',
+  moonphase: 'The Moon does not shine on its own. Think about which half the Sun lights and how much of that half we can see.',
+  planets: 'Picture the Sun in the middle and the planets going out in order, with the small inner ones first.',
+  // sci_earth 3
+  plates: 'Earth is made of layers, and the top layer is cracked into slabs that move slowly. Think about what happens at the edges.',
+  rockcycle: 'Think about how the rock was made: cooled from melted rock, pressed from layers, or changed by heat and pressure.',
+  atmosphere: 'Our blanket of gas has layers. Think about which layer is lowest, and what changes as you go up.',
+  solarscale: 'Think big. Compare how large things are and how much space lies between them, step by step.',
+  rotrev: 'Earth spins and Earth travels. Decide which motion makes the pattern in the question.',
+  // sci_phys 2
+  states: 'Think about how the tiny pieces are packed and what happens to shape and size as heat is added or taken away.',
+  forces: 'Think about what makes a ball start rolling or stop, and whether anything has to touch it.',
+  machines: 'A simple machine changes the size or direction of a force. Picture the tool and how it is used.',
+  energy: 'Energy comes in forms and can change form. Ask what the thing is doing, or what it is storing.',
+  circuits: 'Electricity needs a complete loop to flow. Think about what the loop is made of and if it is broken anywhere.',
+  // sci_phys 3
+  mixtures: 'Ask whether the parts can still be told apart or are spread out evenly, and what you could do to pull them apart.',
+  change: 'Ask yourself if a brand new substance is made, or if it is the same stuff that only looks different.',
+  gravity: 'Think about what makes things fall to the ground, and how it depends on how much stuff there is and how far apart things are.',
+  transfer: 'Follow the power from where it starts to where it ends up, and think about what it turns into along the way.',
+  waves: 'A wave moves along without the water or air itself traveling far. Think about what it really carries.',
+});
+
+BANK.sci_life.push(...discRows(2, `
+A butterfly hatches from an egg as a ___.|caterpillar|chrysalis;tadpole;seed|lifecycle|butterfly,🦋
+The stage of a butterfly's life spent inside a chrysalis is the ___.|pupa|egg;caterpillar;adult|lifecycle
+A young frog that lives in water and has a tail is a ___.|tadpole|caterpillar;chick;pupa|lifecycle
+A tadpole grows legs and lungs and becomes a ___.|frog|fish;snake;lizard|lifecycle
+A hen's egg hatches into a ___.|chick|calf;cub;pup|lifecycle
+Which is the first stage in the life cycle of most plants?|seed|flower;fruit;leaf|lifecycle
+A seed that starts to grow roots and a shoot is said to ___.|germinate|migrate;hibernate;evaporate|lifecycle
+The stages of a living thing's life, from birth to death, make up its ___.|life cycle|food chain;habitat;migration|lifecycle||Think of a circle: a plant makes seeds, the seeds grow, and the new plant makes seeds again.
+Which animal does NOT change its body shape as it grows, but only gets bigger?|a dog|a frog;a butterfly;a beetle|lifecycle
+Which of these has a pupa stage?|a beetle|a human;a dog;a bird|lifecycle
+In a food chain, plants are called ___ because they make their own food.|producers|consumers;predators;decomposers|foodchain
+An animal that hunts other animals for food is a ___.|predator|producer;decomposer;prey|foodchain
+An animal that is hunted by another animal is called ___.|prey|a predator;a producer;a decomposer|foodchain
+Mushrooms and some bacteria break down dead plants and animals. They are ___.|decomposers|producers;predators;herbivores|foodchain|mushroom,🍄
+An animal that eats only plants is a ___.|herbivore|carnivore;omnivore;decomposer|foodchain
+An animal that eats only other animals is a ___.|carnivore|herbivore;omnivore;producer|foodchain
+An animal that eats both plants and animals is an ___.|omnivore|herbivore;carnivore;decomposer|foodchain
+An arrow in a food chain shows where the ___ goes.|energy|rain;wind;sound|foodchain||The arrow points from the food to the eater. Think about what the eater gets from the food that lets it run, grow and play.
+Almost every food chain starts with energy from the ___.|Sun|soil;wind;rain|foodchain
+A snake that eats mice is the ___ of the mice.|predator|producer;decomposer;prey|foodchain
+Which food chain is in the right order, from food to eater?|grass, rabbit, fox|fox, rabbit, grass;rabbit, grass, fox;fox, grass, rabbit|foodchain
+Most of the insects a frog eats disappear from its pond. What happens to the frogs?|they have less food and become fewer|there are more frogs;nothing changes;they grow wings|foodchain||Think about a hungry frog with almost no bugs to catch. What would happen to its meals, and then to how many frogs can live there?
+A polar bear's thick fur and layer of fat help it stay warm in the ___.|Arctic|desert;rain forest;ocean floor|adapt||Think about the places the bear lives and what the weather is like there. What would the fur and fat protect it from?
+A cactus stores water in its thick stem. This helps it live in the ___.|desert|ocean;rain forest;Arctic|adapt
+A giraffe's long neck helps it ___.|reach leaves high in trees|swim fast;dig holes;hide in snow|adapt|giraffe,🦒
+A stick insect looks like a twig. This helps it ___.|hide from hungry animals|sing loudly;swim fast;dig holes|adapt
+A duck's webbed feet help it ___.|swim|climb trees;dig holes;run fast|adapt|duck,🦆
+The shape of a bird's beak depends on ___.|the food it eats|its color;its age;the weather|adapt
+A body part or habit that helps a living thing survive where it lives is an ___.|adaptation|invention;accident;illness|adapt
+Birds that fly far away for the winter to find food and warmth are ___.|migrating|hibernating;camouflaging;hatching|adapt
+A bear sleeps through the cold winter in a den. This is called ___.|hibernation|migration;camouflage;adaptation|adapt
+A camel's wide, flat feet help it walk on ___.|sand|ice;tree branches;a wall|adapt
+Which animal has thick white fur that helps it hide and stay warm in snow?|an Arctic fox|a camel;a lizard;a toucan|adapt
+A thick waxy coat on a leaf helps a plant ___.|keep its water in|catch more snow;sing;move|adapt
+Animals with a backbone are called ___.|vertebrates|invertebrates;insects;plants|classify
+Animals without a backbone are called ___.|invertebrates|vertebrates;mammals;reptiles|classify
+Which group of animals feeds its babies milk?|mammals|reptiles;birds;fish|classify
+Which animal is a mammal?|a whale|a shark;a turtle;a penguin|classify
+Which animal is a reptile?|a lizard|a frog;a whale;a robin|classify
+Which animal is an amphibian?|a frog|a lizard;a snake;a turtle|classify
+Which animal is an insect?|an ant|a spider;a worm;a snail|classify
+An insect has how many legs?|six|four;eight;ten|classify
+A spider is not an insect because it has ___ legs.|eight|six;four;ten|classify
+Which group of animals has feathers and lays eggs?|birds|reptiles;mammals;fish|classify
+Fish breathe underwater using their ___.|gills|lungs;wings;fur|classify
+A bat can fly, but it is a ___ because it has fur and feeds its babies milk.|mammal|bird;insect;reptile|classify
+A dolphin is a ___.|mammal|fish;reptile;amphibian|classify
+Water from the soil is taken in by a plant's ___.|roots|leaves;flower;fruit|plantfn
+Which part of a plant holds it up and carries water to the leaves?|stem|root;seed;petal|plantfn
+Which part of a plant makes food using sunlight?|leaf|root;stem;seed|plantfn
+The part of a plant that makes seeds is the ___.|flower|root;stem;leaf|plantfn
+Bees carry a yellow dust from flower to flower. It is called ___.|pollen|sap;seeds;roots|plantfn
+Seeds can be spread by wind, by water or by ___.|animals|rocks;shadows;sunlight|plantfn
+A dandelion seed floats away on the wind. This helps the plant ___.|spread its seeds|make food;drink water;stay warm|plantfn
+Plants need light, water and air. Which of these does a plant NOT need?|chocolate|sunlight;water;air|plantfn
+Fossils are the traces of living things from ___.|long ago|yesterday;next year;this week|fossils||Think about animals like dinosaurs. Was it this year, or a time before there were any people?
+Where would you most likely find a fossil?|in a layer of rock|on a tree branch;in a bird's nest;in a puddle|fossils
+Which part of an animal is most likely to become a fossil?|a bone|its fur;its skin;its voice|fossils
+Scientists who study fossils are called ___.|paleontologists|astronomers;chemists;meteorologists|fossils
+A fossil footprint can show how an animal ___.|walked|sounded;smelled;dreamed|fossils
+Which of these animals is extinct, with none alive today?|a woolly mammoth|an elephant;a tiger;a horse|fossils
+Fossils of sea shells are found high on a mountain. The place was once ___.|under the sea|a desert;a big city;a volcano|fossils
+Older fossils are usually found in ___ layers of rock.|deeper|higher;thinner;warmer|fossils
+`));
+
+BANK.sci_life.push(...discRows(3, `
+All living things are made of tiny building blocks called ___.|cells|crystals;grains;bubbles|cells||Under a microscope you can see that skin, leaves and wood are all made of tiny boxes joined together.
+Which cell part controls what the cell does?|nucleus|cell wall;chloroplast;vacuole|cells
+Which part is found in plant cells but NOT in animal cells?|cell wall|nucleus;cell membrane;cytoplasm|cells
+Which part of a plant cell makes food using sunlight?|chloroplast|nucleus;cell membrane;cytoplasm|cells
+The cell membrane ___.|controls what goes in and out|makes sunlight;stores bones;digests food for the body|cells
+Which tool do scientists use to see cells?|a microscope|a telescope;a thermometer;a ruler|cells
+The jelly-like liquid that fills a cell is the ___.|cytoplasm|nucleus;chloroplast;cell wall|cells
+Which living thing is made of just one cell?|an amoeba|a frog;an oak tree;a mushroom|cells
+Many similar cells that work together form a ___.|tissue|atom;planet;mineral|cells
+Tissues that work together form an ___.|organ|atom;cell;mineral|cells
+The heart is an example of an ___.|organ|cell;atom;mineral|cells
+Where do new cells come from?|from other cells dividing|from sunlight;from water alone;from rocks|cells||Think about a growing child. The body gets bigger when the tiny building blocks split in two.
+Which part of a cell holds its instructions, called DNA?|nucleus|membrane;wall;cytoplasm|cells
+All the living and non-living things in one place make up an ___.|ecosystem|organism;population;skeleton|ecosystem||Think of a pond with its fish, plants, water, rocks and sunlight all working together as one team.
+All the deer living in one forest are a ___.|population|community;ecosystem;food chain|ecosystem
+All the different populations living in one area form a ___.|community|population;organism;cell|ecosystem
+Parts of an ecosystem that are not alive, like water and sunlight, are ___ factors.|abiotic|biotic;animal;plant|ecosystem
+Which of these is a living, or biotic, part of an ecosystem?|a mushroom|sunlight;a stream;a rock|ecosystem
+Many connected food chains in one ecosystem make a food ___.|web|net;tower;ladder|ecosystem
+In a pond, most of the insects that frogs eat die. Over time the number of insects will ___.|go up|vanish;turn into frogs;stay exactly the same|ecosystem
+Two animals trying to eat the same food are in ___.|competition|cooperation;migration;photosynthesis|ecosystem
+A clownfish and a sea anemone protect and feed each other. This kind of partnership is ___.|mutualism|competition;predation;decay|ecosystem
+Which ecosystem is hot and dry and gets very little rain?|a desert|a rain forest;the tundra;an ocean|ecosystem
+A very cold ecosystem with no trees and frozen ground is the ___.|tundra|desert;wetland;grassland|ecosystem
+Which is a way that people can harm an ecosystem?|pollution|planting trees;recycling;saving water|ecosystem
+Energy in nearly every ecosystem first comes from the ___.|Sun|soil;wind;decomposers|ecosystem
+A vulture is a scavenger. It eats ___.|dead animals|only grass;only seeds;rocks|ecosystem
+An invasive species can harm an ecosystem because it ___.|competes with native species|adds shade;makes rain;feeds the soil|ecosystem
+Plants make their own food through a process called ___.|photosynthesis|digestion;evaporation;migration|photo
+In photosynthesis, plants use sunlight, water and ___.|carbon dioxide|oxygen;sugar;salt|photo
+During photosynthesis, plants give off ___.|oxygen|carbon dioxide;smoke;nitrogen|photo
+The food a plant makes in its leaves is a kind of ___.|sugar|plastic;salt;oil|photo
+The green material in leaves that traps sunlight is ___.|chlorophyll|pollen;nectar;sap|photo
+Leaves take in air through tiny openings called ___.|stomata|roots;petals;veins|photo
+Which part of the plant takes in the water used for photosynthesis?|the roots|the flowers;the petals;the seeds|photo
+A plant kept in the dark for weeks would ___.|become weak and pale|grow taller and greener;turn blue;make more sugar|photo
+Which of these can make food by photosynthesis?|a tree|a mushroom;a dog;a worm|photo
+Photosynthesis changes light energy into ___ energy stored in food.|chemical|sound;wind;magnetic|photo
+Animals depend on photosynthesis because it gives them food and ___.|oxygen|sunlight;gravity;soil|photo
+Which system carries blood around the body?|the circulatory system|the digestive system;the nervous system;the skeletal system|body||The heart pushes blood through tubes all over the body. Which body team has that job?
+Which system breaks down the food you eat?|the digestive system|the respiratory system;the muscular system;the skeletal system|body||Food goes in your mouth and down a long path to your stomach. Which body team handles that trip?
+The brain, spinal cord and nerves make up the ___ system.|nervous|digestive;circulatory;skeletal|body
+Your bones make up the ___ system.|skeletal|muscular;respiratory;nervous|body
+Which organs bring oxygen into the body?|the lungs|the kidneys;the stomach;the heart|body
+The job of the heart is to ___.|pump blood|break down food;send messages;clean the air|body
+Muscles that pull on bones help the body ___.|move|digest food;see;taste|body
+Most nutrients from food pass into the blood in the ___.|small intestine|mouth;lungs;heart|body
+The kidneys ___.|filter waste out of the blood|pump blood;make bones;move food|body
+The skin is the ___ organ of the body.|largest|smallest;oldest;only|body
+Which tubes carry blood away from the heart?|arteries|veins;nerves;bones|body
+The ribs protect the ___.|heart and lungs|brain;feet;eyes|body
+Tiny air sacs in the lungs let oxygen pass into the ___.|blood|bones;stomach;brain|body
+A trait you get from your parents is called ___.|inherited|learned;lost;bought|traits
+Which trait is inherited?|eye color|riding a bike;speaking Spanish;knowing a song|traits
+Which is a learned behavior?|riding a bike|having curly hair;eye color;skin color|traits
+The instructions for traits are carried in ___.|genes|bones;muscles;nerves|traits
+A baby gets genes from ___ of its parents.|both|only one;neither;a friend|traits
+Can a scar from a cut be passed on to a child?|no|yes;always;only in winter|traits
+Identical twins have almost exactly the same ___.|genes|friends;clothes;memories|traits
+Which of these did a lion cub get from its parents?|its golden fur|a scar from a fight;a trick it was taught;a name|traits
+Members of one kind of animal are not all exactly alike. This is called ___.|variation|migration;adaptation;extinction|traits
+Over many generations, traits that help living things survive become ___.|more common|less common;impossible;harmless|traits
+`));
+
+BANK.sci_earth.push(...discRows(2, `
+Water changing from a liquid into a gas is called ___.|evaporation|condensation;precipitation;collection|watercycle
+Water vapor cooling into tiny drops of water in clouds is called ___.|condensation|evaporation;precipitation;erosion|watercycle
+Rain, snow and hail falling from clouds is called ___.|precipitation|evaporation;condensation;erosion|watercycle
+What gives the water cycle the heat it needs to evaporate water?|the Sun|the Moon;the wind;the soil|watercycle
+Where is most of Earth's water found?|in the oceans|in rivers;in lakes;in clouds|watercycle
+Water that runs downhill over the ground to rivers and seas is called ___.|runoff|vapor;fog;frost|watercycle
+After a sunny morning a puddle is gone because its water ___.|evaporated|froze;melted;condensed|watercycle
+Drops appear on the outside of a cold glass. They come from water vapor in the ___.|air|glass;drink;table|watercycle
+Water in the form of a gas in the air is called water ___.|vapor|rain;ice;fog|watercycle
+Snow forms when water in clouds freezes into ___.|ice crystals|raindrops;vapor;fog|watercycle
+A raindrop falls from a cloud because ___ pulls it down.|gravity|wind;the Moon;the Sun|watercycle
+Tiny pieces of rock mixed with bits of dead plants and animals make ___.|soil|lava;ice;metal|rocks
+Rocks are made of one or more ___.|minerals|bones;cloth;plastic|rocks
+Which of these is the hardest mineral?|diamond|chalk;gold;talc|rocks
+The dark top layer of soil, full of plant food, is the ___.|topsoil|bedrock;gravel;clay|rocks
+The solid rock far under the soil layers is called ___.|bedrock|topsoil;gravel;sand|rocks
+Which kind of soil holds water best?|clay|sand;gravel;pebbles|rocks
+Which kind of soil lets water drain through quickly?|sand|clay;mud;topsoil|rocks
+A scientist uses a ___ to look closely at a rock.|hand lens|thermometer;stopwatch;calendar|rocks
+Sand, silt and clay are tiny pieces of ___.|rock|wood;plastic;paper|rocks
+Earthworms help soil by ___.|digging tunnels that let in air and water|freezing it;painting it;making it hard|rocks
+Wind, water and ice carrying bits of rock and soil away is called ___.|erosion|evaporation;pollution;migration|erosion
+Moving water or wind drops the pieces it carried in a new place. This is called ___.|deposition|erosion;gravity;condensation|erosion
+The Grand Canyon was carved mostly by ___.|a river|an earthquake;a volcano;a meteor|erosion
+Plant roots slow down erosion because they ___.|hold soil in place|make rain;create wind;melt rock|erosion
+Weathering is when rock is slowly ___.|broken into smaller pieces|turned into metal;grown bigger;painted|erosion
+Water freezes in a crack in a rock. As it turns to ice it ___.|expands and widens the crack|shrinks;melts the rock;glows|erosion
+A fast river can carry ___ soil and rock than a slow river.|more|less;exactly the same|erosion
+Which can slow erosion on a hillside?|planting grass and trees|cutting down all the plants;digging up the soil;adding more rain|erosion
+A glacier is a slow-moving river of ___.|ice|sand;lava;mud|erosion||Think about a very cold place where snow piles up for years and slowly squeezes into something solid.
+Sand dunes in a desert are shaped by ___.|wind|volcanoes;glaciers;the Moon|erosion
+Resources that can be used again and again, like sunlight and wind, are ___.|renewable|nonrenewable;plastic;extinct|resources
+Coal, oil and natural gas take millions of years to form, so they are ___ resources.|nonrenewable|renewable;endless;new|resources
+Which energy source is renewable?|wind|coal;oil;natural gas|resources
+Which of these is a natural resource?|water|a car;a phone;a bicycle|resources
+Using less and not wasting a resource is called ___.|conservation|pollution;erosion;evaporation|resources
+Trees cut for wood can be replaced by planting new ones, so wood can be a ___ resource.|renewable|nonrenewable;useless;endless|resources
+Reduce, reuse and ___ are three ways to help the Earth.|recycle|remove;replace;repeat|resources
+Oil and coal formed from plants and animals that lived ___.|millions of years ago|last year;last week;yesterday|resources
+Solar panels change sunlight into ___.|electricity|rain;rocks;sound|resources
+Dirty air, water or land is called ___.|pollution|conservation;erosion;weather|resources
+The Moon shines because it ___ light from the Sun.|reflects|makes;eats;hides|moonphase
+The changing shape of the Moon that we see in the sky is called the Moon's ___.|phases|seasons;tides;eclipses|moonphase
+When we can see the whole round face of the Moon lit up, it is a ___ Moon.|full|new;crescent;quarter|moonphase
+When we cannot see the Moon's lit side at all, it is a ___ Moon.|new|full;half;crescent|moonphase
+About how long does the Moon take to go through all its phases?|one month|one day;one week;one year|moonphase
+The Moon travels around the ___.|Earth|Mars;Jupiter;the stars|moonphase
+A Moon that looks like a thin curved slice is a ___ Moon.|crescent|full;new;round|moonphase
+Moon phases happen because we see different amounts of the Moon's ___ side.|sunlit|cold;rainy;frozen|moonphase
+After a new Moon, the lit part we see gets bigger each night. This is called ___.|waxing|waning;falling;shrinking|moonphase
+Which is true about the Moon?|it has no air|it has oceans;it has rain;it has forests|moonphase
+The same side of the Moon always faces ___.|Earth|the Sun;Mars;away from us|moonphase
+Which planet is closest to the Sun?|Mercury|Venus;Earth;Mars|planets
+Earth is the ___ planet from the Sun.|third|second;fourth;first|planets
+Which is the biggest planet in our solar system?|Jupiter|Saturn;Neptune;Earth|planets
+Which planet has bright rings you can see with a small telescope?|Saturn|Mars;Mercury;Venus|planets
+Which planet is called the Red Planet?|Mars|Venus;Jupiter;Mercury|planets
+The four planets closest to the Sun are made mostly of ___.|rock|gas;water;fire|planets
+Which of these is a gas giant?|Jupiter|Mars;Venus;Earth|planets
+Which planet comes right after Earth, going away from the Sun?|Mars|Venus;Jupiter;Mercury|planets
+Which planet is the farthest from the Sun?|Neptune|Uranus;Saturn;Jupiter|planets
+Pluto is now called a ___ planet.|dwarf|giant;gas;rocky|planets
+Our Sun is a ___.|star|planet;moon;comet|planets
+A planet travels around the Sun in a path called an ___.|orbit|equator;horizon;axis|planets
+How many planets are in our solar system?|eight|seven;nine;ten|planets
+Which planet is the hottest, with thick clouds that trap heat?|Venus|Mercury;Mars;Neptune|planets
+`));
+
+BANK.sci_earth.push(...discRows(3, `
+Earth's outer shell is broken into huge slabs called ___ plates.|tectonic|crystal;desert;ocean|plates
+Earth's plates move slowly, about a few ___ each year.|centimeters|kilometers;meters;miles|plates
+Earthquakes happen most often where plates ___.|meet and rub or push|stay far from edges;disappear;stop for good|plates
+Mountains can form where two plates push together. This is a ___ boundary.|convergent|divergent;transform;central|plates
+Where plates pull apart, the boundary is called ___.|divergent|convergent;transform;central|plates
+The San Andreas Fault in California is where two plates ___.|slide past each other|crash head-on;pull apart;sink into the sea|plates
+Most volcanoes form near plate ___.|boundaries|centers;deserts;poles|plates
+The Ring of Fire, with many volcanoes and earthquakes, circles the ___ Ocean.|Pacific|Atlantic;Indian;Arctic|plates
+Earth's layers from outside to inside are crust, mantle, outer core and ___.|inner core|atmosphere;ocean;surface|plates
+Which layer of Earth is the thinnest?|the crust|the mantle;the outer core;the inner core|plates
+Which layer of Earth is the thickest?|the mantle|the crust;the outer core;the inner core|plates
+The outer core is made of hot, liquid ___.|metal|water;ice;sand|plates
+Scientists use a ___ to record earthquakes.|seismograph|thermometer;barometer;telescope|plates
+The spot on the ground right above where an earthquake starts is the ___.|epicenter|crater;core;summit|plates
+Long ago the continents were joined in one huge landmass called ___.|Pangaea|Atlantis;Eurasia;Antarctica|plates
+Melted rock that flows out of a volcano onto the ground is called ___.|lava|magma;soot;ore|plates
+Rock that forms when melted rock cools and hardens is ___.|igneous|sedimentary;metamorphic;fossil|rockcycle
+Rock that forms when layers of sediment are pressed together is ___.|sedimentary|igneous;metamorphic;volcanic|rockcycle
+Rock that is changed by heat and pressure is ___.|metamorphic|igneous;sedimentary;crystal|rockcycle
+Granite is an ___ rock.|igneous|sedimentary;metamorphic;liquid|rockcycle
+Limestone is a ___ rock.|sedimentary|igneous;metamorphic;liquid|rockcycle
+Marble forms from limestone that is squeezed and heated deep down, so it is ___.|metamorphic|igneous;sedimentary;volcanic|rockcycle
+Which kind of rock most often holds fossils?|sedimentary|igneous;metamorphic;lava|rockcycle
+Melted rock that is still underground is called ___.|magma|lava;sand;sediment|rockcycle
+Layers of sediment get squeezed together by the weight above them. This is called ___.|compaction|erosion;melting;eruption|rockcycle
+Any rock can slowly become any other kind of rock. This is the rock ___.|cycle|chain;web;line|rockcycle
+Which process breaks rock down into sediment?|weathering|melting;cooling;cementing|rockcycle
+Sand and mud carried by a river and dropped at its mouth are called ___.|sediment|magma;lava;bedrock|rockcycle
+Melted rock that cools slowly deep underground forms ___ crystals.|large|tiny;no;glassy|rockcycle
+Rock layers in a canyon wall were laid down one on top of another from mud and sand. They are ___ rock.|sedimentary|igneous;metamorphic;volcanic|rockcycle
+The layer of air nearest the ground is the ___.|troposphere|stratosphere;mesosphere;thermosphere|atmosphere
+Almost all weather happens in the ___.|troposphere|stratosphere;mesosphere;exosphere|atmosphere
+The ozone layer is found in the ___.|stratosphere|troposphere;thermosphere;exosphere|atmosphere
+The ozone layer protects us from the Sun's harmful ___ rays.|ultraviolet|radio;sound;rain|atmosphere
+Most of the air around us is ___.|nitrogen|oxygen;carbon dioxide;hydrogen|atmosphere
+About one fifth of the air is ___.|oxygen|nitrogen;helium;argon|atmosphere
+As you climb a tall mountain, the air gets ___.|thinner|thicker;heavier;wetter|atmosphere
+Air pressure is greatest ___.|at sea level|at the top of a mountain;in space;high in the sky|atmosphere
+A barometer measures ___.|air pressure|temperature;wind speed;rainfall|atmosphere
+Which layer is the highest, where the air is very thin and fades into space?|the exosphere|the troposphere;the stratosphere;the mesosphere|atmosphere
+Gases such as carbon dioxide trap heat near Earth. This is called the ___ effect.|greenhouse|rainbow;ozone;wind|atmosphere
+In the troposphere, the temperature ___ as you go higher.|gets colder|gets warmer;stays the same;turns to ice cream|atmosphere
+The colorful lights called auroras glow in the upper atmosphere, in the ___.|thermosphere|troposphere;stratosphere;mesosphere|atmosphere
+Light from the Sun takes about ___ to reach Earth.|8 minutes|8 seconds;8 hours;8 days|solarscale
+About how many Earths could fit side by side across the Sun?|100|10;1,000;1,000,000|solarscale
+One astronomical unit (AU) is the distance from ___.|Earth to the Sun|Earth to the Moon;Sun to Jupiter;Mars to Earth|solarscale
+A light-year is a measure of ___.|distance|time;speed;brightness|solarscale
+Which planet has the longest year?|Neptune|Mercury;Earth;Mars|solarscale
+Which is the largest object in our solar system?|the Sun|Jupiter;Earth;the Moon|solarscale
+The belt of rocky pieces between Mars and Jupiter is the ___ belt.|asteroid|comet;moon;dust|solarscale
+The tail of a comet always points ___.|away from the Sun|toward the Sun;toward Earth;down|solarscale
+Which one is closest to Earth?|the Moon|the Sun;Mars;Jupiter|solarscale
+Jupiter's Great Red Spot is a giant ___.|storm|volcano;lake;crater|solarscale
+Which planet spins on its side?|Uranus|Mars;Earth;Mercury|solarscale
+Which planet has the shortest year?|Mercury|Venus;Earth;Mars|solarscale
+Which is made of ice, dust and rock and grows a glowing tail near the Sun?|a comet|an asteroid;a moon;a planet|solarscale
+Which of these is a rocky planet?|Mars|Saturn;Neptune;Jupiter|solarscale
+The Sun holds about ___ of all the mass in our solar system.|99 percent|50 percent;10 percent;1 percent|solarscale
+Earth spins once on its axis about every ___.|24 hours|365 days;12 hours;one month|rotrev
+Earth travels once around the Sun in about ___.|365 days|24 hours;30 days;7 days|rotrev
+Day and night are caused by Earth's ___.|rotation|revolution;tilt;orbit|rotrev
+The seasons are caused mainly by Earth's ___ as it travels around the Sun.|tilt|speed;size;color|rotrev
+Earth's axis is tilted about ___ degrees.|23|90;45;10|rotrev
+When it is summer in the Northern Hemisphere, it is ___ in the Southern Hemisphere.|winter|summer;autumn;spring|rotrev
+Earth spins in one direction, so the Sun seems to rise in the ___.|east|west;north;south|rotrev
+A year is about 365 and a quarter days, so every four years we add a ___.|leap day|extra week;moon day;second summer|rotrev
+A solar eclipse happens when the ___ passes between Earth and the Sun.|Moon|Sun;a comet;Venus|rotrev
+A lunar eclipse happens when Earth is between the Sun and the ___.|Moon|stars;Mars;Venus|rotrev
+Summer days are longer because Earth's tilt points your half of the world ___ the Sun.|toward|away from;sideways to;behind|rotrev
+Near the equator, day and night are about the same length ___.|all year|in winter only;in summer only;never|rotrev
+The Sun is at its highest point in the sky around ___.|noon|sunrise;sunset;midnight|rotrev
+Earth's path around the Sun is called its ___.|orbit|axis;equator;rotation|rotrev
+The imaginary line Earth spins around is its ___.|axis|orbit;equator;horizon|rotrev
+`));
+
+BANK.sci_phys.push(...discRows(2, `
+The three common states of matter are solid, liquid and ___.|gas|metal;powder;foam|states
+Matter that keeps its own shape and size is a ___.|solid|liquid;gas;vapor|states
+Matter that takes the shape of its container but keeps its size is a ___.|liquid|solid;gas;crystal|states
+Matter that spreads out to fill its whole container is a ___.|gas|solid;liquid;block|states
+When a solid turns into a liquid, it ___.|melts|freezes;condenses;evaporates|states
+When a liquid turns into a solid, it ___.|freezes|melts;boils;evaporates|states
+When a liquid turns into a gas, it ___.|evaporates|freezes;melts;hardens|states
+When a gas cools and turns into a liquid, it ___.|condenses|melts;burns;breaks|states
+Water freezes at ___.|0 degrees Celsius|100 degrees Celsius;50 degrees Celsius;10 degrees Celsius|states
+Water boils at ___.|100 degrees Celsius|0 degrees Celsius;50 degrees Celsius;10 degrees Celsius|states
+Anything that has mass and takes up space is called ___.|matter|energy;light;sound|states
+Which one is NOT matter?|light|air;water;a rock|states
+Which of these is a gas?|the air in a bike tire|a rubber tire;water;sand|states
+Mass is the amount of ___ in an object.|matter|color;heat;light|states
+You can measure mass with a ___.|balance|ruler;thermometer;clock|states
+You can measure temperature with a ___.|thermometer|ruler;balance;measuring cup|states
+A push or a pull is called a ___.|force|matter;mass;volume|forces
+The force that pulls things down toward Earth is ___.|gravity|magnetism;friction;wind|forces
+The force that slows down things that rub together is ___.|friction|gravity;magnetism;light|forces
+Which surface has the most friction?|sandpaper|ice;glass;a wet floor|forces
+A magnet pulls on objects made of ___.|iron|wood;plastic;glass|forces
+Which would a magnet pick up?|a steel paper clip|a rubber band;a wooden spoon;a plastic cup|forces
+Which would a magnet NOT pick up?|a plastic button|a nail;a steel screw;a paper clip|forces
+Every magnet has two ends called ___.|poles|sides;wires;handles|forces
+Two north poles of magnets will ___ each other.|push away|pull toward;stick to;ignore|forces
+The north pole of one magnet and the south pole of another will ___ each other.|pull toward|push away;ignore;melt|forces
+Which force can act without touching an object?|magnetism|kicking it;throwing it;pulling it with a rope|forces
+A ball rolling across grass slows down and stops mostly because of ___.|friction|magnetism;light;sound|forces
+If the forces on an object are balanced, the object ___.|does not change how it is moving|speeds up;gets heavier;turns magnetic|forces
+A bigger push makes a ball go ___.|faster and farther|slower;nowhere;backward|forces
+Wheels on a wagon make it easier to move because they ___.|cut down friction|add weight;make it magnetic;make it stick|forces
+A ramp is a kind of simple machine called an ___.|inclined plane|lever;pulley;wheel and axle|machines
+A seesaw is a ___.|lever|ramp;pulley;wedge|machines
+A knife blade works as a ___.|wedge|screw;pulley;wheel and axle|machines
+A flagpole uses a rope and a wheel called a ___.|pulley|lever;wedge;screw|machines
+A jar lid works like a ___.|screw|wedge;pulley;lever|machines
+A simple machine helps us by making work ___.|easier|louder;colder;slower|machines
+Lever, pulley, wheel and axle, inclined plane, wedge and ___ are the six simple machines.|screw|spring;gear;engine|machines
+A doorknob is an example of a ___.|wheel and axle|wedge;ramp;pulley|machines
+A crowbar is a ___.|lever|wedge;screw;pulley|machines
+A ramp makes it easier to lift a heavy box because you push it over a ___ distance.|longer|shorter;zero;smaller|machines
+The turning point of a lever is called the ___.|fulcrum|plane;wedge;axle|machines
+Which one is NOT a simple machine?|a toaster|a ramp;a lever;a pulley|machines
+A bicycle wheel turns on a rod called the ___.|axle|wedge;ramp;lever|machines
+Energy of motion is called ___ energy.|kinetic|potential;static;solar|energy
+A ball held high up has stored energy called ___ energy.|potential|kinetic;sound;heat|energy
+The Sun gives us light and ___.|heat|ice;rain;sound|energy
+A ringing bell gives off ___ energy.|sound|chemical;magnetic;nuclear|energy
+A cup of hot cocoa warms your hands with ___ energy.|heat|sound;light;motion|energy
+A toaster changes electrical energy into ___.|heat|sound;wind;food|energy
+A light bulb changes electrical energy into light and ___.|heat|sound;ice;rain|energy
+Food gives your body ___ energy.|chemical|electrical;sound;wind|energy
+Plants use ___ energy to make food.|light|sound;wind;magnetic|energy
+Which one has stored energy?|a stretched rubber band|a rolling ball;a flying bird;running water|energy
+A wind turbine changes the energy of moving air into ___.|electricity|sunlight;rocks;water|energy
+Which one gives off both light and heat?|a campfire|a mirror;the Moon;ice|energy
+Which is an example of kinetic energy?|a running dog|a book on a shelf;a battery;a sleeping cat|energy
+A battery stores ___ energy.|chemical|motion;sound;heat|energy
+A complete path that electricity can flow around is a ___.|circuit|battery;switch;magnet|circuits
+A circuit has to be ___ for a bulb to light.|closed|open;broken;empty|circuits
+A switch turns a circuit off by making a ___ in it.|gap|bulb;battery;wire|circuits
+Which material lets electricity flow through it?|copper wire|rubber;plastic;wood|circuits
+A material that does NOT let electricity flow easily is an ___.|insulator|conductor;battery;wire|circuits
+A material that lets electricity flow easily is a ___.|conductor|insulator;shadow;spring|circuits
+The plastic around a wire keeps us safe because plastic is a good ___.|insulator|conductor;battery;magnet|circuits
+Which would NOT carry electricity in a circuit?|a rubber band|a metal paper clip;a copper wire;a steel key|circuits
+Which part of a flashlight gives it power?|the batteries|the case;the switch;the lens|circuits
+Electricity from a wall outlet can be very ___, so never touch it.|dangerous|tasty;slow;quiet|circuits
+In a circuit, the wire is like a ___ for the electricity.|path|battery;storm;door|circuits
+Lightning is a huge spark of ___ electricity.|static|battery;solar;wall|circuits
+Rubbing a balloon on your hair can make ___ electricity.|static|solar;nuclear;wind|circuits
+A bulb in a circuit does not light. Which is a good first check?|whether all the wires are touching|the color of the wire;the size of the room;the time of day|circuits
+`));
+
+BANK.sci_phys.push(...discRows(3, `
+Salt stirred into water until it seems to disappear makes a ___.|solution|solid;pure metal;gas|mixtures
+In salt water, the salt is the solute and the water is the ___.|solvent|solute;filter;crystal|mixtures
+Sand mixed in water can be separated by ___.|filtering|using a magnet;freezing;burning|mixtures
+Iron filings mixed with sand can be separated with a ___.|magnet|filter;thermometer;microscope|mixtures
+Which one is a mixture?|trail mix|pure water;a gold bar;oxygen|mixtures
+Which one is a solution?|sugar dissolved in tea|sand in water;oil in water;pebbles in a jar|mixtures
+To get salt back out of salt water, you can let the water ___.|evaporate|be filtered;be magnetized;be shaken|mixtures
+The parts of a mixture can be ___.|separated without making anything new|turned into a new substance;destroyed;changed into gas|mixtures
+Oil floats on water because it is ___.|less dense|more dense;warmer;heavier|mixtures
+Which helps sugar dissolve faster in water?|stirring|using bigger lumps;adding no water;keeping it cold|mixtures
+Air is a mixture of ___.|gases|only oxygen;liquids;solids|mixtures
+Which is a pure substance?|distilled water|ocean water;soil;orange juice|mixtures
+Sugar dissolves faster in hot water than in cold water because heat ___.|speeds up the tiny particles|slows the sugar down;stops the stirring;makes the sugar heavier|mixtures
+Which is a physical change?|ice melting|wood burning;a nail rusting;milk going sour|change
+Which is a chemical change?|wood burning|ice melting;paper tearing;sugar dissolving|change
+A new substance is made in a ___ change.|chemical|physical;slow;small|change
+Which is a sign of a chemical change?|a new color and gas bubbles|a change in size;a change in shape;crushing|change||Think about an egg being cooked or a nail left in the rain. What do you see that was not there before?
+Rusting iron is a ___.|chemical change|physical change;change of state;mixture|change
+Cutting paper into pieces is a ___.|physical change|chemical change;burning;rusting|change
+Baking cake batter makes new substances. It is a ___ change.|chemical|physical;shape;size|change
+Water boiling into steam is a ___ change because it is still water.|physical|chemical;rusting;burning|change
+Which one can be undone easily?|freezing water|burning a log;baking bread;rusting a bike|change
+An apple slice turning brown is a ___ change.|chemical|physical;size;shape|change
+Baking soda mixed with vinegar makes bubbles of new gas. This is a ___ change.|chemical|physical;shape;state|change
+Crushing a can is a ___ change.|physical|chemical;burning;rusting|change
+Dissolving sugar in water is a ___ change.|physical|chemical;rusting;burning|change
+Which one is NOT a physical change?|bread toasting|chopping wood;melting butter;breaking glass|change
+When matter changes state, it ___.|is still the same kind of matter|turns into a new substance;disappears;weighs nothing|change||Think of ice melting into water and then freezing again. Is it ever a different material?
+The Moon's gravity is ___ than Earth's.|weaker|stronger;the same;zero|gravity
+On the Moon you would weigh ___ than on Earth.|less|more;the same;nothing|gravity
+Your mass is the same on the Moon because mass is the amount of ___ in you.|matter|pull;weight;height|gravity
+Weight is a measure of the pull of ___ on an object.|gravity|friction;magnetism;wind|gravity
+Gravity pulls objects ___.|toward the center of Earth|away from Earth;sideways;upward|gravity
+A feather and a hammer dropped together on the airless Moon will ___.|land at the same time|float upward;fall very slowly;land at different times|gravity
+The more mass an object has, the ___ its gravity.|stronger|weaker;shorter;colder|gravity
+The farther apart two objects are, the ___ the pull of gravity between them.|weaker|stronger;the same;heavier|gravity
+What keeps the Moon traveling around Earth?|gravity|friction;magnetism;wind|gravity
+The Sun's gravity keeps the planets ___.|in their orbits|still;from spinning;frozen|gravity
+Weight is measured in units called ___.|newtons|meters;liters;seconds|gravity
+A crumpled paper falls faster than a flat sheet because of less ___.|air resistance|gravity;mass;magnetism|gravity
+Astronauts seem to float in orbit because they are ___.|falling around Earth|beyond all gravity;magnetized;very light|gravity
+Heat always flows from ___.|hot things to cold things|cold things to hot things;cold things to cold things;nowhere|transfer
+Heat moving through a solid by touch is called ___.|conduction|convection;radiation;evaporation|transfer
+Heat moving in liquids and gases as they flow is called ___.|convection|conduction;radiation;insulation|transfer
+Heat from the Sun reaches Earth through space by ___.|radiation|conduction;convection;friction|transfer
+A metal spoon left in hot soup gets hot by ___.|conduction|radiation;evaporation;melting|transfer
+Which material is the best insulator?|foam|copper;aluminum;iron|transfer
+Which is a good conductor of heat?|metal|wood;plastic;wool|transfer
+A hot air balloon rises because warm air is ___.|less dense|more dense;heavier;colder|transfer
+At the top of a hill, a roller coaster has the most ___ energy.|potential|kinetic;sound;chemical|transfer
+At the bottom of a hill, a roller coaster has the most ___ energy.|kinetic|potential;stored;chemical|transfer
+Energy cannot be created or destroyed. It can only ___.|change from one form to another|be made from nothing;be lost forever;be used up|transfer
+Rubbing your hands together changes motion energy into ___.|heat|chemical energy;magnetism;sunlight|transfer
+A solar cell changes light into ___.|electrical energy|chemical energy;sound;wind|transfer
+Most of the energy an old-style light bulb uses is wasted as ___.|heat|sound;sparks;magnetism|transfer
+A fan changes electrical energy into ___.|motion|chemical energy;light only;rain|transfer
+The highest point of a wave is the ___.|crest|trough;wavelength;wave bottom|waves
+The lowest point of a wave is the ___.|trough|crest;wavelength;peak|waves
+The distance from one crest to the next crest is the ___.|wavelength|amplitude;frequency;trough|waves
+Sound cannot travel through ___.|empty space|water;steel;air|waves
+Which can travel through empty space?|light|sound;ocean waves;an earthquake|waves
+A higher pitch means the sound wave has a higher ___.|frequency|loudness;crest;gravity|waves
+The loudness of a sound depends on the wave's ___.|amplitude|wavelength;color;speed of light|waves
+Light bouncing off a surface is called ___.|reflection|refraction;absorption;evaporation|waves
+Light bending as it passes from air into water is called ___.|refraction|reflection;absorption;condensation|waves
+A straw looks bent in a glass of water because of ___.|refraction|reflection;gravity;evaporation|waves
+Sound travels fastest through ___.|a solid|a gas;a liquid;empty space|waves
+An echo is a sound that has ___.|bounced back|bent;slowed to a stop;turned into light|waves
+A rainbow shows that white light is made of ___.|many colors|one color;no color;only heat|waves
+A red apple looks red because it ___ red light.|reflects|absorbs;makes;blocks all|waves
+Waves carry ___ from place to place.|energy|matter;water;air|waves
+Radio waves, microwaves and visible light are all ___ waves.|electromagnetic|sound;ocean;seismic|waves
+Earthquake waves are called ___ waves.|seismic|solar;light;radio|waves
+`));
+/* ---------- Discover: geography and civics (P2-37; CURRICULUM section 6) ---------- */
+/* Three skills: geo_world (levels 1 and 2: grades K-2 and 3-4), geo_us (levels 1 and 2: grades 3-4 and 5-6) and civ (levels 1 and 2:
+   grades K-2 and 5-6). CURRICULUM 6 leaves the cells "n/a" where a skill has no content for a grade band, so the levels of a skill
+   count only the bands it has (geo_us 1 is the 3-4 column, geo_us 2 the 5-6 column, civ 2 the 5-6 column). Each item's `grade` says which.
+   Same row format and helpers as d-disc.js (discRows, DISC_HINT). Map skills are asked in words (map words, coordinates written as
+   pairs such as (3, 2), a key described in a sentence): no item needs a map or a picture. States, capitals, regions and borders are
+   made from the tables below, in this file's order, with no random numbers, so the same file always gives the same items.
+   Civics is neutral and age-appropriate: how government works, never who is in it; no living person and no holiday of one faith.
+   Row = question | right answer | wrong answers (split by ;) | topic | picture (art name,emoji) | hint
+   tools/test.js ("Discover 3-6, geography and civics P2-37") checks all of it. */
+
+Object.assign(DISC_HINT, {
+  // geo_world 1
+  mapwords: 'Picture a drawing of a place the way a bird sees it. Think about the four main directions and where each one points.',
+  landforms: 'Picture the shape of the land or water. Is it high or low, flat or steep, wet or dry?',
+  continents: 'Think of the giant pieces of ground on Earth that the oceans separate. Which one has what the question describes?',
+  oceans: 'Think of the huge seas on Earth. Picture which lands each one touches.',
+  // geo_world 2
+  grid: 'Count the squares one step at a time, starting from the corner marked (0, 0).',
+  key: 'A drawing like this comes with small helpers around its edges. Decide which helper does this job.',
+  hemi: 'Imagine lines drawn on the ball that is Earth. Think about which line splits it into which halves.',
+  climate: 'Think about how far a place is from the middle of Earth and how high it is, and what the sky is usually like there.',
+  features: 'Think about the continent where this famous place is. Say the continent in your head before you choose.',
+  // geo_us 1
+  capitals: 'The capital is where the state leaders meet. It is often not the biggest place in the state.',
+  states: 'Each capital belongs to one state. Think about the part of the country it is in.',
+  regions: 'Think of the country cut into five big areas by position. Where in the country is this state?',
+  borders: 'Imagine the states as puzzle pieces. A neighbor touches this one along a line.',
+  // geo_us 2
+  landmarks: 'Think about the part of the country where this famous place is. Which state would you cross the country to reach it?',
+  rivers: 'Follow the water from where it starts to where it ends, and think about which way the land slopes.',
+  mountains: 'Think about where in the country this big line of peaks is, and how old and worn down it is.',
+  timezones: 'Count the zones between the two places and decide which way the clock moves.',
+  // civ 1
+  helpers: 'Think about the job. What does this person do all day, and who do they help?',
+  rules: 'Think about what could go wrong, or be unfair, if nobody had to follow the same rule.',
+  symbols: 'Think about what a sign or a picture makes you think of when you see it.',
+  needswants: 'Ask if you could do without it and still be well tomorrow. If not, it is a must-have.',
+  community: 'Think about the neighborhood around you and who and what keeps it going smoothly for everyone.',
+  // civ 2
+  branches: 'Our government splits its jobs into three branches: making laws, carrying them out and judging them. Match the job to the branch.',
+  constitution: 'Think about the written plan the nation agreed on long ago, and how it can be changed.',
+  rights: 'Ask if it is something you are allowed to do, or something you should do to help the group.',
+  economy: 'Think about what is being made, sold or bought, and who is doing it. Is it a thing you can hold or work done for you?',
+  supply: 'Think about a store: how much is on the shelves, how many shoppers are lining up, and what happens to the price tag when one changes.',
+});
+
+BANK.geo_world = discRows(1, `
+On a compass, the letter N stands for ___.|north|south;east;west|mapwords
+On most maps, north is at the ___ of the map.|top|bottom;left;right|mapwords
+On most maps, south is at the ___ of the map.|bottom|top;left;right|mapwords
+On most maps, east is on the ___ side of the map.|right|left;top;bottom|mapwords
+On most maps, west is on the ___ side of the map.|left|right;top;bottom|mapwords
+The Sun comes up in the east and goes down in the ___.|west|north;south;east|mapwords
+The opposite of north is ___.|south|east;west;up|mapwords
+The opposite of east is ___.|west|north;south;left|mapwords
+If you face north, east is on your ___.|right|left;back;front|mapwords
+If you face north, west is on your ___.|left|right;back;front|mapwords
+A map is a drawing of a place as seen from ___.|above|the side;inside;underneath|mapwords
+The tool that shows which way is north is a ___.|compass|clock;ruler;scale|mapwords
+A small picture on a map, such as a tree or a house, is a ___.|symbol|number;border;grid|mapwords
+A map key tells you what the ___ on the map mean.|symbols|sounds;seasons;days|mapwords
+Which one is a direction word?|south|sun;song;sand|mapwords
+A map of your classroom shows ___.|where things are|what things smell like;what things cost;who is tallest|mapwords
+Which one is a compass direction?|west|up;left;under|mapwords
+If you walk toward the place where the Sun sets, you are walking ___.|west|east;north;south|mapwords
+On a map, the top is north. Which way is the bottom of the map?|south|east;west;north|mapwords
+A very tall landform with a peak is a ___.|mountain|valley;island;lake|landforms
+A low area of land between mountains or hills is a ___.|valley|mountain;island;desert|landforms
+Land that has water all around it is an ___.|island|valley;mountain;plain|landforms
+A big flat area of land is a ___.|plain|mountain;island;volcano|landforms
+A hill is ___ than a mountain.|smaller|taller;wetter;wider|landforms
+A large area of very dry land with little rain is a ___.|desert|lake;island;bay|landforms
+A body of water with land all around it is a ___.|lake|island;peninsula;desert|landforms
+A stream of water that flows across the land to the sea is a ___.|river|lake;valley;island|landforms
+A mountain that can erupt with hot melted rock is a ___.|volcano|valley;plain;island|landforms
+Land with water on three sides is a ___.|peninsula|island;lake;valley|landforms
+A deep, narrow valley with steep sides, often cut by a river, is a ___.|canyon|plain;lake;hill|landforms
+The sandy or rocky land beside the sea is a ___.|beach|valley;mountain;volcano|landforms
+Which one is NOT a landform?|a cloud|a hill;a valley;an island|landforms
+Which one is a body of water?|an ocean|a hill;a plain;a mountain|landforms
+A flat-topped area of high land is a ___.|plateau|valley;island;lake|landforms
+A river that drops over a high cliff makes a ___.|waterfall|valley;island;plain|landforms
+A part of the ocean that cuts into the land is a ___.|bay|island;plain;hill|landforms
+Which landform is usually the highest?|a mountain|a hill;a valley;a plain|landforms
+How many continents are there?|seven|five;six;eight|continents||Say the names of the continents you know and count them on your fingers.
+Which continent is the biggest?|Asia|Africa;Europe;Australia|continents
+Which continent is the coldest and covered in ice?|Antarctica|Asia;Africa;Europe|continents
+People in the United States live on the continent of ___.|North America|South America;Europe;Asia|continents
+Which continent has the Amazon rain forest?|South America|Africa;Europe;Antarctica|continents
+Which continent is also one country?|Australia|Africa;Asia;Europe|continents
+Which continent has the Sahara Desert?|Africa|Asia;Europe;Australia|continents
+Giraffes live in the wild on the continent of ___.|Africa|Asia;Europe;Antarctica|continents
+The South Pole is on the continent of ___.|Antarctica|Asia;Europe;North America|continents
+China is on the continent of ___.|Asia|Africa;Europe;South America|continents
+Mexico is on the continent of ___.|North America|South America;Europe;Asia|continents
+Brazil is on the continent of ___.|South America|North America;Africa;Europe|continents
+France is on the continent of ___.|Europe|Asia;Africa;Australia|continents
+A continent is a very large piece of ___.|land|water;sky;ice cream|continents
+Africa, Antarctica, Asia, Australia, Europe, North America and ___ are the seven continents.|South America|Greenland;the Arctic;the Pacific|continents
+Which one of these is a continent?|Europe|Pacific;Sahara;Amazon|continents
+Which continent has the most people?|Asia|Africa;Europe;North America|continents
+Which is the biggest ocean?|the Pacific Ocean|the Atlantic Ocean;the Indian Ocean;the Arctic Ocean|oceans
+Which is the smallest ocean?|the Arctic Ocean|the Pacific Ocean;the Atlantic Ocean;the Indian Ocean|oceans
+Which ocean is between North America and Europe?|the Atlantic Ocean|the Pacific Ocean;the Indian Ocean;the Arctic Ocean|oceans
+Which ocean touches the west coast of the United States?|the Pacific Ocean|the Atlantic Ocean;the Arctic Ocean;the Indian Ocean|oceans
+Which ocean touches the east coast of the United States?|the Atlantic Ocean|the Pacific Ocean;the Arctic Ocean;the Indian Ocean|oceans
+Most of Earth's surface is covered by ___.|water|land;ice;sand|oceans
+Which one is an ocean?|the Atlantic|Asia;Africa;Europe|oceans
+Ocean water tastes ___.|salty|sweet;sour;like lemons|oceans
+Which ocean is at the very top of the world, around the North Pole?|the Arctic Ocean|the Pacific Ocean;the Atlantic Ocean;the Indian Ocean|oceans
+`);
+
+BANK.geo_world.push(...discRows(2, `
+In the point (4, 2), the first number tells how far to go ___.|across|up;down;back|grid||Think of walking along a hallway first, and then climbing stairs. Which move comes first when you read a point?
+In the point (4, 2), the second number tells how far to go ___.|up|across;down;back|grid||Think of walking along a hallway first, and then climbing stairs. Which move comes second when you read a point?
+Start at (0, 0). Go 3 across and 2 up. Where are you?|(3, 2)|(2, 3);(3, 3);(5, 0)|grid
+Start at (0, 0). Go 1 across and 4 up. Where are you?|(1, 4)|(4, 1);(1, 1);(5, 5)|grid
+A treasure is at (2, 5). From (0, 0) you go ___.|2 across and 5 up|5 across and 2 up;2 across and 2 up|grid
+A park is at (3, 4) and a school is at (3, 1). The school is ___ squares south of the park.|3|1;4;2|grid
+A library is at (1, 2) and a zoo is at (5, 2). The zoo is ___ squares east of the library.|4|2;5;6|grid
+A bank is at (2, 2). Go 3 squares east and 1 square north. Where are you?|(5, 3)|(3, 5);(2, 2);(1, 3)|grid
+Which point is farthest to the east: (2, 1), (6, 1), (4, 4) or (1, 6)?|(6, 1)|(2, 1);(4, 4);(1, 6)|grid
+Which point is farthest north: (1, 2), (4, 6), (5, 3) or (6, 1)?|(4, 6)|(1, 2);(5, 3);(6, 1)|grid
+How many squares apart are (1, 1) and (1, 5)?|4|5;6;1|grid
+How many squares apart are (2, 3) and (7, 3)?|5|4;6;9|grid
+Which point is 2 across and 6 up from (0, 0)?|(2, 6)|(6, 2);(2, 2);(8, 0)|grid
+A kite is at (3, 3). Move it 2 squares west. Where is it?|(1, 3)|(5, 3);(3, 1);(3, 5)|grid
+A boat is at (4, 5). Move it 3 squares south. Where is it?|(4, 2)|(7, 5);(4, 8);(1, 5)|grid
+A compass rose shows ___.|directions|distance;weather;time|key
+NE on a compass rose stands for ___.|northeast|northwest;southeast;southwest|key
+Which direction is between south and west?|southwest|northwest;southeast;northeast|key
+A map scale tells you ___.|how map distance matches real distance|which way is north;what colors mean;the name of the map|key
+On a scale where 1 inch equals 10 miles, 3 inches on the map is ___ miles.|30|13;3;10|key
+On a map where 1 centimeter equals 5 kilometers, two towns 4 centimeters apart are ___ kilometers apart.|20|9;4;45|key
+On most maps, blue stands for ___.|water|forests;roads;deserts|key
+A map title tells you ___.|what the map is about|how long the trip is;the scale;the compass|key
+A political map shows ___.|borders of countries or states|rainfall;mountain height only;animals|key
+A physical map shows ___.|landforms and water|city populations;borders only;bus routes|key
+To find how far apart two towns are, use the map ___.|scale|key;title;border|key
+To find out what a map symbol means, check the ___.|key|scale;title;border|key
+To find which way is north, check the ___.|compass rose|scale;key;title|key
+A road map is most useful for ___.|planning a car trip|finding the highest mountain;checking rainfall;choosing a pet|key
+The equator divides Earth into the Northern and ___ Hemispheres.|Southern|Eastern;Western;Central|hemi
+The imaginary line around the middle of Earth is the ___.|equator|Prime Meridian;horizon;border|hemi
+Places near the equator are usually ___.|hot|cold;snowy;frozen|hemi
+The North Pole is in the ___ Hemisphere.|Northern|Southern;Tropical;Equatorial|hemi
+The Prime Meridian divides Earth into the Eastern and ___ Hemispheres.|Western|Northern;Southern;Central|hemi
+The United States is in the Northern and ___ Hemispheres.|Western|Southern;Eastern;Polar|hemi
+Australia is in the ___ Hemisphere.|Southern|Northern;Western;Arctic|hemi
+Lines of latitude run ___ around Earth.|east and west|north and south;diagonally;up and down|hemi
+Lines of longitude run from ___.|pole to pole|east to west;sea to sea;the equator only|hemi
+Latitude tells how far a place is north or south of the ___.|equator|Prime Meridian;compass;key|hemi
+Longitude tells how far a place is east or west of the ___.|Prime Meridian|equator;North Pole;key|hemi
+The farthest north place on Earth is the ___.|North Pole|equator;South Pole;Prime Meridian|hemi
+A globe is a ___ model of Earth.|round|flat;square;paper-flat|hemi||Think of the shape Earth really is, and of the shape you can spin on a desk.
+Places far from the equator, near the poles, are usually ___.|cold|hot;rainy;tropical|hemi
+The usual weather of a place over many years is its ___.|climate|forecast;season;storm|climate||Today's rain or sun is one thing. This word is about the pattern a place keeps for a very long time.
+Weather is what the sky is doing today. Climate is ___.|the usual weather over many years|tomorrow's weather;what you wear;only rain|climate||Think about a pattern that a place keeps for a long time, not just one day.
+A tropical climate near the equator is ___ all year.|warm|freezing;snowy;dry and icy|climate
+A desert climate is ___.|dry|rainy;icy;cloudy|climate
+A polar climate is ___.|very cold|hot;tropical;warm and wet|climate
+A tropical rain forest gets ___ rain.|a lot of|very little;no;only snow|climate
+Which place has a polar climate?|Antarctica|the Amazon;the Sahara;Hawaii|climate
+Which place usually has a desert climate?|the Sahara|the Amazon rain forest;Hawaii;Iceland|climate
+It is colder near the poles because the Sun's light hits Earth there ___.|at a slant and spreads out|straight down;more brightly;for more hours a day|climate
+The top of a high mountain is colder because the air there is ___.|thinner|thicker;heavier;wetter|climate
+A place near the ocean usually has ___ temperatures than a place far inland.|milder|hotter;wilder;shorter|climate
+The three main climate zones are tropical, temperate and ___.|polar|desert;mountain;ocean|climate
+A temperate climate has ___.|four seasons|only summer;only winter;no seasons|climate
+Most of the United States has a ___ climate.|temperate|polar;tropical;desert|climate
+Mount Everest is the tallest mountain on Earth above sea level. It is in the ___ Mountains.|Himalaya|Alps;Andes;Rockies|features
+The Himalayas are in ___.|Asia|Europe;Africa;South America|features
+The Andes Mountains run along the west side of ___.|South America|Africa;Europe;Asia|features
+The Alps are a mountain range in ___.|Europe|Asia;Africa;North America|features
+The Nile River flows through ___.|Africa|Asia;Europe;South America|features
+The Amazon River is in ___.|South America|Africa;Asia;Europe|features
+The Sahara, the largest hot desert, is in ___.|Africa|Asia;Australia;South America|features
+The Rocky Mountains are in ___.|North America|Europe;Asia;Africa|features
+The Ganges River flows through ___.|India|Brazil;Egypt;Mexico|features
+The Danube River flows through ___.|Europe|Asia;Africa;Australia|features
+Mount Kilimanjaro is the tallest mountain in ___.|Africa|Asia;Europe;South America|features
+The Great Barrier Reef is off the coast of ___.|Australia|Africa;Canada;Brazil|features
+Mount Fuji, a famous volcano, is in ___.|Japan|Brazil;Egypt;Canada|features
+The Yangtze River flows through ___.|China|India;Egypt;Brazil|features
+The biggest island in the world that is not a continent is ___.|Greenland|Iceland;Hawaii;Cuba|features
+The deepest spot in the ocean is in the Mariana ___.|Trench|Canyon;Mountain;Island|features
+`));
+
+/* ---------- geo_us: the 50 states, their capitals, five regions and neighbours, all from tables ---------- */
+// code | state | capital | region (NE, SE, MW, SW, W, or - when books disagree) | a big city that is NOT the capital
+const DISC_ST = `
+AL|Alabama|Montgomery|SE|Birmingham
+AK|Alaska|Juneau|W|Anchorage
+AZ|Arizona|Phoenix|SW|Tucson
+AR|Arkansas|Little Rock|-|Fort Smith
+CA|California|Sacramento|W|Los Angeles
+CO|Colorado|Denver|-|Colorado Springs
+CT|Connecticut|Hartford|NE|New Haven
+DE|Delaware|Dover|-|Wilmington
+FL|Florida|Tallahassee|SE|Miami
+GA|Georgia|Atlanta|SE|Savannah
+HI|Hawaii|Honolulu|W|Hilo
+ID|Idaho|Boise|W|Idaho Falls
+IL|Illinois|Springfield|MW|Chicago
+IN|Indiana|Indianapolis|MW|Fort Wayne
+IA|Iowa|Des Moines|MW|Cedar Rapids
+KS|Kansas|Topeka|MW|Wichita
+KY|Kentucky|Frankfort|-|Louisville
+LA|Louisiana|Baton Rouge|-|New Orleans
+ME|Maine|Augusta|NE|Portland
+MD|Maryland|Annapolis|-|Baltimore
+MA|Massachusetts|Boston|NE|Springfield
+MI|Michigan|Lansing|MW|Detroit
+MN|Minnesota|Saint Paul|MW|Minneapolis
+MS|Mississippi|Jackson|SE|Biloxi
+MO|Missouri|Jefferson City|MW|Kansas City
+MT|Montana|Helena|W|Billings
+NE|Nebraska|Lincoln|MW|Omaha
+NV|Nevada|Carson City|W|Las Vegas
+NH|New Hampshire|Concord|NE|Manchester
+NJ|New Jersey|Trenton|NE|Newark
+NM|New Mexico|Santa Fe|SW|Albuquerque
+NY|New York|Albany|NE|New York City
+NC|North Carolina|Raleigh|SE|Charlotte
+ND|North Dakota|Bismarck|MW|Fargo
+OH|Ohio|Columbus|MW|Cleveland
+OK|Oklahoma|Oklahoma City|-|Tulsa
+OR|Oregon|Salem|W|Portland
+PA|Pennsylvania|Harrisburg|NE|Philadelphia
+RI|Rhode Island|Providence|NE|Newport
+SC|South Carolina|Columbia|SE|Charleston
+SD|South Dakota|Pierre|MW|Sioux Falls
+TN|Tennessee|Nashville|SE|Memphis
+TX|Texas|Austin|SW|Houston
+UT|Utah|Salt Lake City|W|Provo
+VT|Vermont|Montpelier|NE|Burlington
+VA|Virginia|Richmond|-|Norfolk
+WA|Washington|Olympia|W|Seattle
+WV|West Virginia|Charleston|-|Huntington
+WI|Wisconsin|Madison|MW|Milwaukee
+WY|Wyoming|Cheyenne|W|Casper
+`;
+// states that share a border (a line on the ground; a state touching another at one point, or across water only, is not listed)
+const DISC_ADJ = `
+AL: FL GA MS TN
+AZ: CA NV UT NM
+AR: LA MS MO OK TN TX
+CA: AZ NV OR
+CO: KS NE NM OK UT WY
+CT: MA NY RI
+DE: MD NJ PA
+FL: AL GA
+GA: AL FL NC SC TN
+ID: MT NV OR UT WA WY
+IL: IN IA KY MO WI
+IN: IL KY MI OH
+IA: IL MN MO NE SD WI
+KS: CO MO NE OK
+KY: IL IN MO OH TN VA WV
+LA: AR MS TX
+ME: NH
+MD: DE PA VA WV
+MA: CT NH NY RI VT
+MI: IN OH WI
+MN: IA ND SD WI
+MS: AL AR LA TN
+MO: AR IL IA KS KY NE OK TN
+MT: ID ND SD WY
+NE: CO IA KS MO SD WY
+NV: AZ CA ID OR UT
+NH: ME MA VT
+NJ: DE NY PA
+NM: AZ CO OK TX
+NY: CT MA NJ PA VT
+NC: GA SC TN VA
+ND: MN MT SD
+OH: IN KY MI PA WV
+OK: AR CO KS MO NM TX
+OR: CA ID NV WA
+PA: DE MD NJ NY OH WV
+RI: CT MA
+SC: GA NC
+SD: IA MN MT NE ND WY
+TN: AL AR GA KY MS MO NC VA
+TX: AR LA NM OK
+UT: AZ CO ID NV WY
+VT: MA NH NY
+VA: KY MD NC TN WV
+WA: ID OR
+WV: KY MD OH PA VA
+WI: IA IL MI MN
+WY: CO ID MT NE SD UT
+`;
+// pairs that touch at a point or across water: never a right answer, never a wrong one
+const DISC_TOUCH = ['AZ CO', 'NM UT', 'IL MI', 'MI MN', 'NY RI', 'MD DC'];
+
+(function () {
+  const ST = DISC_ST.trim().split('\n').map(r => {
+    const f = r.split('|');
+    return {c: f[0], n: f[1], cap: f[2], reg: f[3], big: f[4]};
+  });
+  const byC = {};
+  ST.forEach(s => { byC[s.c] = s; });
+  const adj = {};
+  DISC_ADJ.trim().split('\n').forEach(r => { adj[r.split(':')[0]] = r.split(':')[1].trim().split(' '); });
+  const NAME = {NE: 'Northeast', SE: 'Southeast', MW: 'Midwest', SW: 'Southwest', W: 'West'};
+  const REGS = ['NE', 'SE', 'MW', 'SW', 'W'];
+  const rows = [];
+  // capitals: state -> capital. Wrong: the big city that is not the capital (when it has one) and capitals of other states
+  ST.forEach((s, i) => {
+    if (s.cap.includes(s.n)) return; // Oklahoma City: the state's name would give the answer away
+    const ds = [s.big];
+    for (let k = 1; ds.length < 3; k++) {
+      const o = ST[(i + k * 13 + 5) % ST.length];
+      if (o.c !== s.c && o.cap !== s.cap && !ds.includes(o.cap)) ds.push(o.cap);
+    }
+    rows.push(`What is the capital of ${s.n}?|${s.cap}|${ds.join(';')}|capitals`);
+  });
+  rows.push('The capital of the United States is ___.|Washington, D.C.|New York City;Philadelphia;Chicago|capitals');
+  // states: capital -> state, for 28 states, the wrong states chosen from the same region first
+  ST.forEach((s, i) => {
+    if (s.cap.includes(s.n) || i % 2 === 1 && i % 7 !== 0) return;
+    const same = ST.filter(o => o.c !== s.c && s.reg !== '-' && o.reg === s.reg);
+    const rest = ST.filter(o => o.c !== s.c && !same.includes(o));
+    const ds = [];
+    for (let k = 0; ds.length < 3; k++) {
+      const o = k < same.length && k < 3 ? same[(i + k * 3) % same.length] : rest[(i * 5 + k * 11) % rest.length];
+      if (!ds.includes(o.n) && o.n !== s.n) ds.push(o.n);
+    }
+    rows.push(`${s.cap} is the capital of which state?|${s.n}|${ds.join(';')}|states`);
+  });
+  rows.push('How many states are in the United States?|50|48;51;52|states');
+  // regions: five regions, 43 states whose region books agree on
+  ST.forEach((s, i) => {
+    if (s.reg === '-') return;
+    const others = REGS.filter(r => r !== s.reg), ds = [];
+    for (let k = 0; ds.length < 3; k++) ds.push(NAME[others[(i + k) % others.length]]);
+    rows.push(`Which region of the United States is ${s.n} in?|${NAME[s.reg]}|${[...new Set(ds)].join(';')}|regions`);
+  });
+  // borders: one neighbour as the right answer (rotating through the list), three states that do not touch it, from the same region first
+  ST.forEach((s, i) => {
+    const nb = adj[s.c];
+    if (!nb || nb.length < 2) return;
+    const right = byC[nb[(i * 3) % nb.length]];
+    const touch = new Set([...nb, s.c]);
+    DISC_TOUCH.forEach(p => { const [x, y] = p.split(' '); if (x === s.c) touch.add(y); if (y === s.c) touch.add(x); });
+    const far = ST.filter(o => !touch.has(o.c) && o.c !== 'AK' && o.c !== 'HI');
+    const near = far.filter(o => o.reg === s.reg && s.reg !== '-'), ds = [];
+    for (let k = 0; ds.length < 3; k++) {
+      const o = k < near.length && k < 1 ? near[(i + k) % near.length] : far[(i * 7 + k * 17) % far.length];
+      if (!ds.includes(o.n)) ds.push(o.n);
+    }
+    rows.push(`Which state shares a border with ${s.n}?|${right.n}|${ds.join(';')}|borders`);
+  });
+  BANK.geo_us = discRows(1, rows.join('\n'), '3-4');
+})();
+
+BANK.geo_us.push(...discRows(2, `
+The Statue of Liberty stands in the harbor of ___.|New York|Boston;Washington, D.C.;Florida|landmarks
+The Grand Canyon is mostly in ___.|Arizona|Texas;Utah;Colorado|landmarks
+Mount Rushmore, with four presidents carved in rock, is in ___.|South Dakota|Montana;Wyoming;Nebraska|landmarks
+The Golden Gate Bridge is in ___.|California|Oregon;New York;Florida|landmarks
+The Gateway Arch is in ___.|Missouri|Illinois;Ohio;Kansas|landmarks
+Old Faithful, a famous geyser, is in ___ National Park.|Yellowstone|Yosemite;Zion;Acadia|landmarks
+The Liberty Bell is in ___.|Philadelphia|Boston;Chicago;Atlanta|landmarks
+The Space Needle is in ___.|Seattle|Denver;Dallas;Miami|landmarks
+Niagara Falls is on the border between New York and ___.|Canada|Mexico;Vermont;Ohio|landmarks
+The Alamo is in ___.|Texas|Florida;Arizona;Louisiana|landmarks
+Denali, the highest mountain in North America, is in ___.|Alaska|Colorado;Washington;Wyoming|landmarks
+The Everglades, a huge wetland, are in ___.|Florida|Georgia;Texas;Louisiana|landmarks
+The White House is in ___.|Washington, D.C.|New York City;Boston;Philadelphia|landmarks
+Crater Lake, the deepest lake in the United States, is in ___.|Oregon|Washington;Idaho;Nevada|landmarks
+Mount St. Helens is a volcano in ___.|Washington|Oregon;Idaho;Montana|landmarks
+Death Valley, one of the hottest places on Earth, is mostly in ___.|California|Arizona;Nevada;Texas|landmarks
+Lake Michigan is the only Great Lake entirely inside the ___.|United States|Canada;Mexico;Alaska|landmarks
+Which is the biggest of the Great Lakes?|Lake Superior|Lake Erie;Lake Ontario;Lake Michigan|landmarks
+Cape Canaveral, where rockets are launched, is in ___.|Florida|Texas;California;Alaska|landmarks
+The Mississippi River flows into the ___.|Gulf of Mexico|Pacific Ocean;Atlantic Ocean;Great Lakes|rivers
+The Mississippi River flows mostly from north to ___.|south|east;west;north|rivers
+The Colorado River carved the ___.|Grand Canyon|Rocky Mountains;Great Lakes;Death Valley|rivers
+The Ohio River flows into the ___ River.|Mississippi|Colorado;Hudson;Columbia|rivers
+The Hudson River runs through ___.|New York|Texas;Oregon;Florida|rivers
+The Rio Grande forms part of the border between Texas and ___.|Mexico|Canada;Oklahoma;Florida|rivers
+The Columbia River flows through the Pacific ___.|Northwest|Southwest;Northeast;Southeast|rivers
+The Missouri River flows into the ___ River.|Mississippi|Ohio;Hudson;Colorado|rivers
+The Great Lakes are in the northern United States, next to ___.|Canada|Mexico;the Gulf;Alaska|rivers
+The Great Salt Lake is in ___.|Utah|Nevada;Idaho;Colorado|rivers
+The Great Plains are mostly ___.|flat grassland|snowy mountains;thick rain forest;sand dunes|rivers
+A river that flows into a bigger river is called a ___.|tributary|delta;canyon;harbor|rivers
+Where a river meets the sea and spreads out, it often builds a ___.|delta|canyon;peak;volcano|rivers
+The Appalachian Mountains run through the ___ part of the United States.|eastern|western;central;far northern|mountains
+The Rocky Mountains are in the ___ part of the United States.|western|eastern;southern coast;central plains|mountains
+The Sierra Nevada mountains are in ___.|California|Maine;Florida;Ohio|mountains
+Which mountain range is older, with lower and rounder peaks worn down over time?|the Appalachian Mountains|the Rocky Mountains;the Sierra Nevada;the Cascades|mountains
+The Cascade Range, with volcanoes like Mount St. Helens, is in the ___.|Pacific Northwest|Southeast;Midwest;Northeast|mountains
+The Appalachian Mountains stretch from Canada south to ___.|Alabama|Texas;Nebraska;Utah|mountains
+Which is the tallest mountain in the United States?|Denali|Mount Rainier;Mount Whitney;Mount Mitchell|mountains
+The long mountain chain down the western side of North America, with peaks over 14,000 feet, is the ___.|Rocky Mountains|Appalachians;Ozarks;Alps|mountains
+The ___ Mountains are in the northeast of the United States and include Mount Washington.|White|Rocky;Sierra;Cascade|mountains
+Mount Whitney, the highest peak in the lower 48 states, is in the ___ mountains.|Sierra Nevada|Appalachian;Ozark;Catskill|mountains
+Mauna Loa and Kilauea are volcanoes in ___.|Hawaii|Alaska;Oregon;Florida|mountains
+The lower 48 United States have ___ main time zones.|four|two;three;six|timezones
+Which is the easternmost main time zone of the lower 48 states?|Eastern|Pacific;Central;Mountain|timezones
+When it is noon in New York (Eastern), it is ___ in Chicago (Central).|11 a.m.|1 p.m.;noon;10 a.m.|timezones
+When it is 3 p.m. in Eastern Time, it is ___ in Pacific Time.|noon|6 p.m.;2 p.m.;1 p.m.|timezones
+Going west across time zones, the clock time gets ___.|earlier|later;the same;stuck|timezones||The Sun is high for the east coast before the west coast. Think about what that does to the clocks as you go.
+Going east across time zones, the clock time gets ___.|later|earlier;the same;stuck|timezones||The Sun is high for the east coast before the west coast. Think about what that does to the clocks as you go.
+Time zones exist because Earth ___.|spins|is flat;is hot inside;has oceans|timezones||Think about the ball of Earth turning, so the Sun shines on one side at a time.
+Los Angeles is in the ___ time zone.|Pacific|Eastern;Central;Mountain|timezones
+Chicago is in the ___ time zone.|Central|Eastern;Pacific;Mountain|timezones
+Denver is in the ___ time zone.|Mountain|Pacific;Central;Eastern|timezones
+New York City is in the ___ time zone.|Eastern|Central;Pacific;Mountain|timezones
+When it is 9 a.m. in Pacific Time, it is ___ in Mountain Time.|10 a.m.|8 a.m.;9 a.m.;noon|timezones
+A game starts at 8 p.m. Eastern Time. A fan in the Central time zone should tune in at ___.|7 p.m.|9 p.m.;8 p.m.;6 p.m.|timezones
+Earth is divided into about ___ main time zones.|24|12;7;50|timezones
+Each time zone is about ___ wide in clock time.|one hour|ten hours;half a day;one minute|timezones||There are 24 zones around the whole Earth, and a day is 24 of what?
+Pacific Time is ___ hours behind Eastern Time.|3|1;2;4|timezones
+Mountain Time is ___ hour(s) ahead of Pacific Time.|1|2;3;0|timezones
+`, '5-6'));
+
+BANK.civ = discRows(1, `
+Who helps put out fires?|a firefighter|a baker;a pilot;a farmer|helpers
+Who helps keep us safe in our town?|a police officer|a baker;a farmer;a painter|helpers
+Who helps sick people feel better?|a doctor|a baker;a pilot;a farmer|helpers
+Who brings letters and packages to our homes?|a mail carrier|a dentist;a teacher;a builder|helpers
+Who teaches students at school?|a teacher|a pilot;a farmer;a baker|helpers
+Who takes care of your teeth?|a dentist|a baker;a pilot;a firefighter|helpers
+Who grows food for us on a farm?|a farmer|a librarian;a dentist;a firefighter|helpers
+Who drives the big yellow bus to school?|a bus driver|a pilot;a chef;a vet|helpers
+Who helps you find and borrow books?|a librarian|a farmer;a vet;a builder|helpers
+Who takes care of sick pets and farm animals?|a veterinarian|a baker;a firefighter;a pilot|helpers
+Who builds houses and buildings?|a builder|a dentist;a vet;a librarian|helpers
+Who collects the trash and recycling?|a sanitation worker|a baker;a pilot;a dentist|helpers
+Community helpers are people who ___.|do jobs that help others|only watch TV;never work;live alone|helpers||Think of the firefighter, the teacher and the mail carrier. What do they all have in common?
+Who makes bread and cakes in a bakery?|a baker|a pilot;a dentist;a vet|helpers
+Why do we have rules at school?|to keep everyone safe and fair|to make people sad;to stop learning;to be mean|rules
+What should you do before you cross a street?|stop and look both ways|run fast;close your eyes;hop|rules
+At a red light, cars must ___.|stop|go fast;sing;honk|rules
+A rule made for everyone in a town, state or country is called a ___.|law|toy;game;story|rules
+Who must follow the law?|everyone|only kids;only grown-ups;nobody|rules
+A good rule for the playground is to ___.|take turns|push others;grab all the balls;shout|rules
+If someone breaks a rule, there is a ___.|consequence|prize;party;holiday|rules
+Wearing a seat belt is a rule that keeps you ___.|safe|late;hungry;cold|rules
+Raising your hand in class helps everyone ___.|get a turn to talk|talk at once;nap;go home|rules
+Which is a fair way to share a toy?|take turns|take it and run;hide it;say it is yours|rules
+A good citizen follows the rules and ___.|helps others|is rude;takes things;litters|rules
+Voting is a fair way for a group to ___.|make a choice|sleep;pay bills;fly|rules
+Walking in the hallway at school helps keep everyone ___.|safe|loud;late;hungry|rules
+The flag of the United States has ___ stripes.|13|10;50;7|symbols
+The flag of the United States has ___ stars.|50|13;48;100|symbols
+Each star on the United States flag stands for a ___.|state|president;city;holiday|symbols
+The 13 stripes on the flag stand for the first 13 ___.|colonies|cities;kings;oceans|symbols
+The Statue of Liberty is a symbol of ___.|freedom|money;sports;weather|symbols
+The bald eagle is a symbol of the ___.|United States|Mexico;Antarctica;Moon|symbols
+The colors of the United States flag are red, white and ___.|blue|green;yellow;black|symbols
+The Statue of Liberty holds a ___ in her raised hand.|torch|book;flag;sword|symbols
+A symbol is a picture or thing that stands for an ___.|idea|owner;lunch;address|symbols
+A red eight-sided sign on a street corner tells drivers to ___.|stop|go fast;sing;honk|symbols
+A national anthem is a ___ about a country.|song|map;game;rule|symbols
+Which one is a United States symbol?|the bald eagle|a dragon;a unicorn;a kangaroo|symbols
+The White House is where the President lives and ___.|works|swims;sleeps only;plays ball|symbols
+Washington, D.C. is the ___ of the United States.|capital|farm;lake;island|symbols
+Which is a need?|food|a video game;a toy;a candy bar|needswants
+Which is a want?|a new toy|water;a home;food|needswants
+Which is a need?|clean water|a bike;a puzzle;ice cream|needswants
+Which is a want?|a game|a warm coat;water;a home|needswants
+People need ___ to stay safe from the weather.|shelter|a game;candy;a phone|needswants
+Food, water, clothes and a home are all ___.|needs|wants;toys;games|needswants
+Things we would like to have but can live without are ___.|wants|needs;rules;laws|needswants
+A need is something you must have to ___.|live and stay healthy|have fun;look cool;win a game|needswants||Think about food, water and a home. What do they let you do?
+Which is a need on a freezing day?|a warm coat|a toy;a game;candy|needswants
+Which is a want?|a toy robot|a bed;a coat;breakfast|needswants
+Saving money means keeping some to use ___.|later|never;now only;yesterday|needswants
+A community is a group of people who ___.|live, work or play in the same place|live far from everyone;never talk;are all one age|community
+Where can you borrow books for free?|a library|a bank;a gas station;a bakery|community
+A big place with many people and tall buildings is a ___.|city|farm;pond;hill|community
+A town park is a place for everyone to ___.|share and enjoy|own;sell;hide|community
+People in a community can help each other by ___.|working together|staying apart;being mean;never sharing|community
+A mayor is the leader of a ___.|town or city|school;state;family|community
+A principal is the leader of a ___.|school|town;state;country|community
+Which is a way to be a good neighbor?|helping with a chore|making loud noise at night;tossing trash;ignoring them|community
+What do we call the people who live near you?|neighbors|astronauts;kings;pilots|community
+A fire station is where ___ work.|firefighters|doctors;teachers;bakers|community
+A post office is where you can ___.|mail a letter|see a movie;borrow a book;buy food|community
+A hospital is a place where ___.|sick people get care|people mail letters;books are kept;food is grown|community
+A bus or a train helps people ___.|get from place to place|cook;sleep;paint|community
+`);
+
+BANK.civ.push(...discRows(2, `
+The three branches of the United States government are legislative, executive and ___.|judicial|military;federal;political|branches
+Congress makes the laws. It is part of the ___ branch.|legislative|executive;judicial;military|branches
+The President leads the ___ branch.|executive|legislative;judicial;military|branches
+Courts and judges are part of the ___ branch.|judicial|legislative;executive;military|branches
+Which branch decides what laws mean and whether they were broken?|judicial|legislative;executive;military|branches
+Which branch carries out and enforces the laws?|executive|legislative;judicial;state|branches
+Congress has two parts, the Senate and the ___.|House of Representatives|Supreme Court;Cabinet;White House|branches
+How many senators does each state have?|two|one;three;fifty|branches
+The highest court in the United States is the ___.|Supreme Court|Senate;Cabinet;House|branches
+Three branches keep any one group from having too much power. This idea is called ___.|checks and balances|majority rule;free trade;taxes|branches
+A President can say no to a bill by using a ___.|veto|vote;verdict;visa|branches
+A proposed law is called a ___.|bill|ballot;budget;bond|branches
+The leader of a state government is a ___.|governor|mayor;senator;judge|branches
+The leader of a city or town is a ___.|mayor|governor;senator;judge|branches
+A government in which people choose their leaders by voting is a ___.|democracy|monarchy;empire;colony|branches
+In a republic, the people choose ___ to make decisions for them.|representatives|kings;judges only;relatives|branches
+Congress meets in the Capitol building in ___.|Washington, D.C.|New York City;Philadelphia;Boston|branches
+The Constitution is the ___ of the United States.|supreme law of the land|oldest song;first map;flag|constitution
+The first words of the Constitution are "We the ___."|People|Kings;States only;Judges|constitution
+A change added to the Constitution is called an ___.|amendment|invention;election;island|constitution
+The first ten amendments are called the ___.|Bill of Rights|Declaration;Pledge;Preamble|constitution
+The Bill of Rights protects the rights of ___.|the people|only the President;only judges;only soldiers|constitution
+The Constitution was written in the year ___.|1787|1492;1620;1865|constitution
+The Declaration of Independence said the colonies were free from ___ rule.|British|French;Spanish;Mexican|constitution
+The Declaration of Independence was adopted in ___.|1776|1492;1812;1865|constitution
+The delegates met in ___ to write the Constitution.|Philadelphia|Boston;Washington, D.C.;New York|constitution
+A constitution is a set of basic ___ for how a government works.|rules|songs;maps;prices|constitution
+The Preamble is the ___ of the Constitution.|introduction|last part;list of states;signature page|constitution
+The First Amendment protects freedom of speech, religion, the press, assembly and ___.|petition|travel;money;weather|constitution
+Under the Constitution, every state also has ___.|its own state government|no laws;no governor;no courts|constitution
+Power shared between the national government and the state governments is called ___.|federalism|monarchy;trade;taxes|constitution
+The Constitution can be changed by ___.|adding an amendment|a coin toss;one person's order;nothing, it never changes|constitution
+Which is a responsibility of a citizen?|obeying the laws|ignoring the laws;skipping every rule;breaking promises|rights
+Which is a right of people in the United States?|freedom of speech|a free car;a day off every week;free candy|rights
+Citizens aged 18 and over have the right to ___.|vote|drive a bus;be a judge;skip taxes|rights
+Serving on a jury is a ___ of citizens.|duty|prize;game;hobby|rights
+Paying taxes is a ___ of citizens.|responsibility|right to refuse;prize;choice|rights
+Taxes pay for things like roads, schools and ___.|fire departments|video games;candy;vacations|rights
+Which is a way to be a good citizen?|helping clean up a park|littering;ignoring neighbors;breaking rules|rights
+A fair trial is a right of people ___ of a crime.|accused|bored;proud;young|rights
+Freedom of religion means people may ___.|choose their own beliefs|be forced to follow one;hide their beliefs;not practice at all|rights
+Which is NOT a right of every citizen?|a free car|freedom of speech;voting at 18;a fair trial|rights
+Freedom of the press means newspapers can ___.|report the news without government control|print only what the government says;never print;sell nothing|rights
+A citizen is a person who belongs to a ___.|country|club;band;team|rights
+Rights come with ___.|responsibilities|nothing;gifts;holidays|rights
+A student who returns a library book on time is showing ___.|responsibility|bravery;luck;speed|rights
+Something you can touch and buy, like a shirt, is a ___.|good|service;tax;job|economy
+Work done for you, like a haircut, is a ___.|service|good;product;tax|economy
+Which one is a service?|a dentist cleaning teeth|a loaf of bread;a toy car;a jacket|economy
+Which one is a good?|a bicycle|a haircut;a bus ride;a lesson|economy
+A person who buys goods and services is a ___.|consumer|producer;banker;farmer|economy
+A person or company that makes goods is a ___.|producer|consumer;customer;shopper|economy
+Money earned from a job is called ___.|income|tax;debt;a loan|economy
+Trading things without using money is called ___.|bartering|banking;taxing;voting|economy
+Money that people pay to the government for public services is called ___.|taxes|wages;prices;profits|economy
+A place where people keep their money safe is a ___.|bank|market;library;factory|economy
+Spending less than you earn lets you ___.|save|owe;lose;trade|economy
+Something that is hard to get and that many people want is said to be ___.|scarce|plentiful;free;cheap|economy
+A budget is a plan for how to ___ money.|spend and save|lose;hide;print|economy
+A factory line where each worker does one job is an example of ___.|division of labor|a budget;scarcity;bartering|economy
+Supply is how much of something is ___.|for sale or available|wanted;taxed;wasted|supply
+Demand is how much people ___ something.|want to buy|sell;make;hide|supply
+Many people want a toy but there are few of them. The price usually ___.|goes up|goes down;stays zero;disappears|supply
+A store has too many apples and few buyers. The price usually ___.|goes down|goes up;triples;stays high forever|supply
+When demand goes up and supply stays the same, prices tend to ___.|rise|fall;vanish;stay free|supply
+When supply goes up and demand stays the same, prices tend to ___.|fall|rise;double;never change|supply
+A frost destroys many orange trees. The supply of oranges ___.|goes down|goes up;stays the same;doubles|supply
+More people want umbrellas on a rainy day. The demand ___.|goes up|goes down;stays zero;is gone|supply
+A price is the amount of money you pay for ___.|a good or service|a vote;a law;a river|supply
+Competition between businesses often leads to ___.|lower prices and better goods|higher prices only;no choices;empty stores|supply
+A market is any place where buyers and ___ meet.|sellers|judges;voters;firefighters|supply
+Very few diamonds exist and many people want them. Their price is ___.|high|low;zero;always the same|supply
+A shop has too many winter coats left in spring. It may ___ the price to sell them.|lower|raise;triple;hide|supply
+Which would make the price of gas go up?|less gas being supplied|more gas being made;fewer drivers;a new gas well|supply
+`, '5-6'));
 /* ---------- Spanish unit data (P2-30, CURRICULUM S-frame) ----------
    ES_UNITS is the one place Spanish vocabulary lives. A unit is
      {id, t, e, theme, items:[...], cap?, spell?, l1?, mix?}
@@ -4739,4 +5779,4 @@ function vocBuildB() {
 
 BANK.vocab = vocBuild().concat(vocBuildB());
 
-var DATA_VER='v114'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var DATA_VER='v115'; // last line: the whole file ran (checked by dataReady() before the app starts)

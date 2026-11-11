@@ -1010,7 +1010,8 @@ run('grade: migration 4 infers a grade, setGrade never removes or re-locks anyth
       load(null);
       if(!setGrade(g)||S.grade!==g||JSON.parse(store[KEY]).grade!==g)bad('setGrade('+g+') not stored');
       for(const p in PATHS){
-        const ws=PATHS[p].worlds,k=PATHS[p].byLevel?0:(ws.findIndex(w=>w.g>=g)<0?ws.length-1:ws.findIndex(w=>w.g>=g));
+        const ws=PATHS[p].worlds;let k=PATHS[p].byLevel?0:(ws.findIndex(w=>w.g>=g)<0?ws.length-1:ws.findIndex(w=>w.g>=g));
+        if(PATHS[p].startBelow&&ws[k].g>g){k=-1;ws.forEach((w,i)=>{if(w.g<=g)k=i});if(k<0)k=0} // P2-37: Discover has worlds for K, 3 and 5 only: start at the last world at or below the grade
         if(startWorld(p)!==k||curWorld(p)!==k)bad('fresh grade '+g+' '+p+': start world '+startWorld(p)+', map opens on '+curWorld(p)+', expected '+k);
         if(!worldOpen(p,k))bad('fresh grade '+g+' '+p+': start world not open');
         ws.forEach((w,wi)=>{if(!PATHS[p].byLevel&&w.g<=g&&!worldOpen(p,wi))bad('grade '+g+' '+p+': world '+wi+' at or below grade is locked')});
@@ -9520,8 +9521,7 @@ run('Discover science K-2 P2-36: banks validate, tags, one right answer, hints, 
       const s=SK[id];
       if(!s||s.area!=='disc'||s.bank!==id||s.max<1)bad('SK.'+id+' is wrong');
       for(const m of bankProblems(id,{levels:[1],min:40}))bad(m);
-      const B=BANK[id];items+=B.length;
-      if(B.some(it=>it.lv!==1))bad(id+': only level 1 ships in P2-36');
+      const B=BANK[id].filter(it=>it.lv===1);items+=B.length; // P2-37 adds levels 2 and 3 (its own test)
       const tops={};
       for(const it of B){
         const w=id+': '+it.q+' = '+it.a+': ';
@@ -9572,10 +9572,10 @@ run('Discover science K-2 P2-36: banks validate, tags, one right answer, hints, 
     const D=PATHS.disc;
     if(!D||D.byLevel||!D.noPlace)bad('PATHS.disc must be graded and without placement');
     if(placePaths().includes('disc'))bad('Discover offers placement');
-    if(D.worlds.map(w=>w.id+'/'+w.g).join()!=='d_nature/0')bad('worlds '+D.worlds.map(w=>w.id+'/'+w.g));
+    if(D.worlds.map(w=>w.id+'/'+w.g).join()!=='d_nature/0,d_lab/3,d_cosmos/5')bad('worlds '+D.worlds.map(w=>w.id+'/'+w.g)); // P2-37 added d_lab and d_cosmos
     if(D.worlds[0].n!=='Nature Trail')bad('world name');
-    if(NODES.disc.map(nid).join(' ')!=='sci_life1 sci_earth1 sci_phys1 boss_d_nature')bad('stops '+NODES.disc.map(nid).join(' '));
-    if(!NODES.disc[3].last||!NODES.disc[3].boss)bad('the world must end with a boss');
+    if(NODES.disc.slice(0,3).map(nid).join(' ')!=='sci_life1 sci_earth1 sci_phys1')bad('stops '+NODES.disc.map(nid).join(' ')); // P2-37 added geo_world 1 and civ 1 after them
+    if(!NODES.disc[5].last||!NODES.disc[5].boss)bad('the world must end with a boss');
     for(const n of NODES.disc)if(n.sk!='boss'&&(!SK[n.sk]||n.lv>SK[n.sk].max||!n.t||n.t.length>24))bad('stop '+nid(n)+' title or skill');
     for(const [p,P] of Object.entries(PATHS))for(const w of P.worlds)if(/^d_/.test(w.id)!==(p=='disc'))bad('world id prefix '+w.id);
     if(REP.strandOf('sci_phys')!=='Science')bad('strand');
@@ -9600,7 +9600,7 @@ run('Discover science K-2 P2-36: banks validate, tags, one right answer, hints, 
       if(!name.startsWith('legacy'))for(const p of OLD)for(const k in raws[p]||{})if(S.maps[p][k]!==raws[p][k])bad(w+p+' '+k+' stars moved'); // the legacy fixtures are old-format maps, covered by the worlds check
       const withD=snap(),noD=withoutDisc(snap);checked++;
       if(withD!==noD)bad(w+'adding Discover changed another path (stars, open stops or where the map opens)');
-      if(!unlocked('disc',0)||!worldOpen('disc',0)||nid(NODES.disc[curNode('disc')])!=='sci_life1')bad(w+'Discover does not start at its first stop');
+      if(!unlocked('disc',0)||!worldOpen('disc',0)||(g===null||g<=2)&&nid(NODES.disc[curNode('disc')])!=='sci_life1')bad(w+'Discover does not start at its first stop'); // P2-37: a 3rd grader and up start in a later world
       if(unlocked('disc',1)||unlocked('disc',3))bad(w+'later Discover stops are open');
       if(Object.keys(S.maps.disc).length)bad(w+'reading Discover wrote stars');
       // stars on a Discover stop save under its stop id and change nothing else
@@ -9617,7 +9617,7 @@ run('Discover science K-2 P2-36: banks validate, tags, one right answer, hints, 
     if(!m)bad('Home has no Discover card');
     else{
       if(!/class="hm-svg"/.test(m[0]))bad('Discover card has no drawing');
-      if(!/>Discover</.test(m[0])||!/Start here!/.test(m[0])||!/0 of 4 stops/.test(m[0]))bad('Discover card text: '+m[0].replace(/<[^>]+>/g,' ').replace(/\s+/g,' '));
+      if(!/>Discover</.test(m[0])||!/Start here!/.test(m[0])||!/0 of 18 stops/.test(m[0]))bad('Discover card text: '+m[0].replace(/<[^>]+>/g,' ').replace(/\s+/g,' '));
     }
     return {items,questions,checked};
   };
@@ -10704,6 +10704,228 @@ run('Spanish La Ciudad P2-33',()=>{
   };
   const r=eval(js+';('+body.toString()+')()');
   return{problems:errs.length?uniq(errs):[],note:r.n+' generated questions, '+r.checked+' stop checks'};
+});
+
+// ---- P2-37: Discover science 3-6, geography and civics ----
+run('Discover 3-6, geography and civics P2-37: banks validate, grade and topic tags, one right answer, hints, 3000 questions per level, worlds and stops, saves safe',()=>{
+  const serrs=[],bad=m=>serrs.push(m);
+  const body=function(){
+    // skill -> level -> {grade band, topics}. CURRICULUM 6: a skill's levels count only the grade bands it has
+    const SPEC={
+      sci_life:{1:['K-2',['living','babies','covers','habitat','plants','needs','senses']],
+        2:['3-4',['lifecycle','foodchain','adapt','classify','plantfn','fossils']],3:['5-6',['cells','ecosystem','photo','body','traits']]},
+      sci_earth:{1:['K-2',['weather','seasons','daynight','sunmoon','landwater']],
+        2:['3-4',['watercycle','rocks','erosion','resources','moonphase','planets']],3:['5-6',['plates','rockcycle','atmosphere','solarscale','rotrev']]},
+      sci_phys:{1:['K-2',['push','stuff','soundlight','solid']],
+        2:['3-4',['states','forces','machines','energy','circuits']],3:['5-6',['mixtures','change','gravity','transfer','waves']]},
+      geo_world:{1:['K-2',['mapwords','landforms','continents','oceans']],2:['3-4',['grid','key','hemi','climate','features']]},
+      geo_us:{1:['3-4',['capitals','states','regions','borders']],2:['5-6',['landmarks','rivers','mountains','timezones']]},
+      civ:{1:['K-2',['helpers','rules','symbols','needswants','community']],2:['5-6',['branches','constitution','rights','economy','supply']]}};
+    const MAX={sci_life:3,sci_earth:3,sci_phys:3,geo_world:2,geo_us:2,civ:2};
+    const SCI=/^sci_/;
+    const STOP=/^(a|an|the|and|or|of|in|to|it|is|its|on|at|up|from|where|that|with|this|have|are|for|can|you|your|one|all|each|how|what|which)$/;
+    const norm=x=>String(x).toLowerCase().replace(/^(a|an|the) /,'').replace(/[^a-z0-9 ]/g,'').replace(/s$/,'').trim();
+    const NOMAP=/\b(look at|shown|pictured|the picture|this picture|image|diagram|see the map|on the map below)\b/i;
+    // clues a question may share with its answer: a name that is part of the question's natural wording
+    let items=0,questions=0,pics=0,levels=0;
+    const per={};
+    for(const id of Object.keys(SPEC)){
+      const s=SK[id];
+      if(!s||s.area!=='disc'||s.bank!==id||s.max!==MAX[id])bad('SK.'+id+' is wrong (max '+(s&&s.max)+')');
+      per[id]={};
+      const B=BANK[id];
+      for(const m of bankProblems(id,{levels:Object.keys(SPEC[id]).map(Number),min:40}))bad(m);
+      if(B.some(it=>!SPEC[id][it.lv]))bad(id+': an item has a level that is not in the plan');
+      for(const lv of Object.keys(SPEC[id]).map(Number)){
+        const [gr,tops]=SPEC[id][lv],L=B.filter(it=>it.lv===lv);
+        if(lv===1&&SCI.test(id))continue; // sci level 1 is P2-36's (its own check)
+        levels++;items+=L.length;per[id][lv]={n:L.length,topics:{}};
+        for(const it of L){
+          const w=id+' L'+lv+' '+it.q+' = '+it.a+': ';
+          if(it.grade!==gr)bad(w+'grade tag '+it.grade+', wanted '+gr);
+          if(!it.topic||!tops.includes(it.topic))bad(w+'topic tag '+it.topic);
+          per[id][lv].topics[it.topic]=(per[id][lv].topics[it.topic]||0)+1;
+          if(it.form&&it.form!=='choice'&&it.form!=='wide')bad(w+'form '+it.form);
+          if(it.d.length<2||it.d.length>3)bad(w+it.d.length+' wrong answers');
+          // one right answer: the wrong answers differ from it and from each other, none holds the answer's words or the other way round
+          const all=[it.a,...it.d],ns=all.map(norm);
+          if(new Set(ns).size!==ns.length)bad(w+'a choice repeats');
+          // a wrong answer whose words are all inside the right one (or the other way round) is a synonym or part of it: "Pacific" and "the Pacific Ocean"
+          const ws=x=>String(x).toLowerCase().replace(/[^a-z0-9 ]/g,' ').split(' ').filter(y=>y&&!/^(a|an|the)$/.test(y));
+          it.d.forEach(d=>{const x=ws(d),y=ws(it.a);
+            if(x.length!==y.length&&(x.every(v=>y.includes(v))||y.every(v=>x.includes(v))))bad(w+'"'+d+'" holds the same words as the answer');
+          });
+          if(!it.hint||it.hint.length<20)bad(w+'hint missing');
+          // a hint teaches the method and never says the answer, neither the whole answer nor a word of it
+          const hl=(it.hint||'').toLowerCase(),hw=hl.split(/[^a-z]+/);
+          const aw=it.a.toLowerCase().split(/[^a-z]+/).filter(x=>x.length>=3&&!STOP.test(x));
+          if(hl.includes(it.a.toLowerCase())||aw.some(x=>hw.includes(x)))bad(w+'the hint gives the answer: '+it.hint);
+          if(/\d/.test(it.a)&&hl.split(/[^0-9]+/).includes(it.a.replace(/\D/g,'')))bad(w+'the hint has the answer number');
+          const qw=it.q.toLowerCase().split(/[^a-z]+/);
+          const cw=aw.filter(x=>x.length>=4);
+          if(cw.length&&cw.every(x=>qw.includes(x)))bad(w+'the answer is in the prompt');
+          if(NOMAP.test(it.q))bad(w+'the prompt points at a picture or map');
+          if(it.q.length>140||all.some(x=>x.length>60))bad(w+'too long');
+          if(it.em)pics++;
+        }
+        for(const t of tops)if(!per[id][lv].topics[t])bad(id+' L'+lv+': topic '+t+' has no items');
+        // 3000 seeded questions: no errors, one right choice, say, hint, label, every item drawn
+        const seen=new Set(),labels={};
+        for(let i=0;i<3000;i++){
+          const q=genQ(id,lv,i+1),w=id+' L'+lv+' '+q.label+': ';questions++;
+          const pr=kindProblems(q);if(pr.length)bad(w+pr.join('; '));
+          seen.add(q.bk.bi);
+          if(q.kind!=='choice')bad(w+'kind '+q.kind);
+          const vs=q.choices.map(c=>c.v);
+          if(new Set(vs).size!==vs.length||vs.filter(v=>v===q.ans).length!==1)bad(w+'not exactly one right choice');
+          if(vs.length<3||vs.length>4)bad(w+vs.length+' choices');
+          if(!q.say||!q.say.trim())bad(w+'no say text');
+          if(!q.hint||q.hint.k!=='text'||q.hint.s.length<20)bad(w+'hint');
+          if(!q.label||q.label.length>=60)bad(w+'label length');
+          if(labels[q.label]!==undefined&&labels[q.label]!==q.bk.bi)bad(w+'label is not unique');
+          labels[q.label]=q.bk.bi;
+          if(q.sk!==id||q.lv!==lv)bad(w+'genQ did not stamp sk/lv');
+          if(q.topic!==BANK[id][q.bk.bi].topic)bad(w+'topic not carried');
+          if(i<30&&bankRebuild(q.bk).label!==q.label)bad(w+'bankRebuild differs');
+        }
+        if(seen.size!==L.length)bad(id+' L'+lv+': 3000 questions drew only '+seen.size+' of '+L.length+' items');
+      }
+      if(JSON.stringify(genQ(id,SPEC[id][2]?2:1,77))!==JSON.stringify(genQ(id,SPEC[id][2]?2:1,77)))bad(id+' is not reproducible');
+    }
+    // facts built from tables: 50 states, 50 capitals, borders both ways, wrong answers never touch the state
+    const ST=DISC_ST.trim().split('\n').map(r=>r.split('|')),ADJ={};
+    DISC_ADJ.trim().split('\n').forEach(r=>{ADJ[r.split(':')[0]]=r.split(':')[1].trim().split(' ')});
+    if(ST.length!==50||new Set(ST.map(r=>r[0])).size!==50||new Set(ST.map(r=>r[2])).size!==50)bad('the state table must hold 50 different states and capitals');
+    for(const r of ST)if(r[2]===r[4])bad('the big city of '+r[1]+' is its capital');
+    const NAMES={};ST.forEach(r=>{NAMES[r[1]]=r[0]});
+    for(const a in ADJ)for(const b of ADJ[a])if(!ADJ[b]||!ADJ[b].includes(a))bad('border '+a+'-'+b+' is not listed both ways');
+    for(const it of BANK.geo_us.filter(i=>i.topic==='borders')){
+      const m=it.q.match(/border with (.+)\?$/);
+      if(!m||!NAMES[m[1]]){bad('borders prompt '+it.q);continue}
+      const nb=ADJ[NAMES[m[1]]]||[];
+      if(!nb.includes(NAMES[it.a]))bad(it.q+' = '+it.a+' is not a neighbour');
+      for(const d of it.d){
+        if(nb.includes(NAMES[d])||NAMES[d]===NAMES[m[1]])bad(it.q+': '+d+' touches it');
+        if(DISC_TOUCH.some(p=>p.split(' ').includes(NAMES[d])&&p.split(' ').includes(NAMES[m[1]])))bad(it.q+': '+d+' touches it at a point or over water');
+      }
+    }
+    for(const it of BANK.geo_us.filter(i=>i.topic==='capitals'&&/^What is the capital of/.test(i.q))){
+      const st=ST.find(r=>it.q==='What is the capital of '+r[1]+'?');
+      if(!st||st[2]!==it.a)bad(it.q+' = '+it.a+' does not match the table');
+      for(const d of it.d)if(d===st[2]||(d!==st[4]&&ST.some(r=>r[2]===d&&r[0]===st[0])))bad(it.q+': wrong answer is right');
+    }
+    for(const it of BANK.geo_us.filter(i=>i.topic==='states'&&/ is the capital of which state\?$/.test(i.q))){
+      const cap=it.q.replace(' is the capital of which state?',''),st=ST.find(r=>r[2]===cap);
+      if(!st||st[1]!==it.a)bad(it.q+' = '+it.a+' does not match the table');
+      if(it.d.includes(st[1]))bad(it.q+': wrong answer is right');
+    }
+    const REGION={Northeast:'NE',Southeast:'SE',Midwest:'MW',Southwest:'SW',West:'W'};
+    for(const it of BANK.geo_us.filter(i=>i.topic==='regions'&&/^Which region/.test(i.q))){
+      const st=ST.find(r=>it.q==='Which region of the United States is '+r[1]+' in?');
+      if(!st||st[3]!==REGION[it.a])bad(it.q+' = '+it.a+' does not match the table');
+      if(new Set(it.d).size!==3)bad(it.q+': needs 3 different wrong regions');
+    }
+    // worlds and stops, CURRICULUM 2.4, in order, by world id
+    const D=PATHS.disc,stops=w=>w.nodes.map(n=>n[0]+' '+n[1]).join(', ');
+    const WANT=[['d_nature',0,'sci_life 1, sci_earth 1, sci_phys 1, geo_world 1, civ 1'],['d_lab',3,'sci_life 2, sci_earth 2, sci_phys 2, geo_us 1, geo_world 2'],
+      ['d_cosmos',5,'sci_life 3, sci_earth 3, sci_phys 3, geo_us 2, civ 2']];
+    if(D.worlds.length!==3)bad('Discover has '+D.worlds.length+' worlds');
+    WANT.forEach((w,i)=>{
+      const W=D.worlds[i];
+      if(!W||W.id!==w[0]||W.g!==w[1]||stops(W)!==w[2])bad('world '+i+': '+(W?W.id+'/'+W.g+' '+stops(W):'missing')+', wanted '+w[0]+'/'+w[1]+' '+w[2]);
+    });
+    if(D.worlds.map(w=>w.n).join()!=='Nature Trail,Science Lab,Star Observatory')bad('world names '+D.worlds.map(w=>w.n));
+    if(NODES.disc.length!==18||NODES.disc.filter(n=>n.boss).length!==3)bad('Discover has '+NODES.disc.length+' stops');
+    const titles={};
+    for(const n of NODES.disc){
+      if(n.sk==='boss')continue;
+      if(!SK[n.sk]||n.lv<1||n.lv>SK[n.sk].max||!n.t||n.t.length>24)bad('stop '+nid(n)+' skill, level or title');
+      if(titles[n.t])bad('two stops are called '+n.t);
+      titles[n.t]=1;
+      if(!BANK[n.sk].some(it=>it.lv===n.lv))bad('stop '+nid(n)+' has no items');
+    }
+    if(new Set(NODES.disc.map(nid)).size!==18)bad('stop ids are not unique');
+    for(const id of Object.keys(SPEC))if(!ICONS[icoSk(id)]||icoSk(id)==='star')bad('skill icon '+id);
+    if(REP.strandOf('geo_us')!=='Geography and civics'||REP.strandOf('civ')!=='Geography and civics'||REP.strandOf('sci_phys')!=='Science')bad('strands');
+    // every skill is used by a stop, and every level of it by exactly one stop
+    for(const id of Object.keys(SPEC))for(let lv=1;lv<=MAX[id];lv++)if(NODES.disc.filter(n=>n.sk===id&&n.lv===lv).length!==1)bad(id+' level '+lv+' must be on exactly one stop');
+    // saves: no stars move, nothing re-locks, a finished Nature Trail child finds the new worlds open by the grade rules
+    const store={};
+    global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+    const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
+    const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+    const OLD=['math','read','es'];
+    const snapAll=()=>JSON.stringify(['math','read','es','disc'].map(p=>NODES[p].map((n,i)=>[nid(n),getSt(p,i),unlocked(p,i),stopNew(p,i)])));
+    const grades=[null,-1,0,1,2,3,4,5,6];
+    let checked=0;
+    for(const g of grades){
+      // (a) a fresh child: worlds open by grade only
+      load(null);if(g!==null)S.grade=g;
+      const gg=gradeOf(),w0='fresh g'+g+': ';
+      if(!worldOpen('disc',0))bad(w0+'Nature Trail is closed');
+      if(worldOpen('disc',1)!==(gg>=3)||worldOpen('disc',2)!==(gg>=5))bad(w0+'worlds open '+[0,1,2].map(i=>worldOpen('disc',i)));
+      const sw=startWorld('disc'),want=gg>=5?2:gg>=3?1:0;
+      if(sw!==want||curWorld('disc')!==want||!worldOpen('disc',sw))bad(w0+'start world '+sw+', map on '+curWorld('disc')+', wanted '+want);
+      if(nid(NODES.disc[curNode('disc')])!==D.worlds[want].nodes[0][0]+D.worlds[want].nodes[0][1])bad(w0+'map opens on '+nid(NODES.disc[curNode('disc')]));
+      // (b) a child who finished the old Nature Trail (3 stops and the boss) before this chunk
+      for(const name of ['fresh','midway','maxed','tricky']){
+        const raw=JSON.parse(fx(name));
+        if(!Object.keys(raw).length)continue;
+        const old=JSON.stringify({...raw,v:LATEST,grade:g===null?raw.grade:g,maps:{...(raw.maps||{}),disc:{sci_life1:3,sci_earth1:2,sci_phys1:1,boss_d_nature:2}}});
+        load(old);if(g!==null)S.grade=g;
+        const w=name+' finished Nature Trail g'+g+': ';
+        const before=JSON.stringify(S.maps);
+        const snap=snapAll();
+        for(const [k,v] of Object.entries({sci_life1:3,sci_earth1:2,sci_phys1:1,boss_d_nature:2}))if(S.maps.disc[k]!==v)bad(w+k+' stars moved');
+        if(JSON.stringify(Object.keys(S.maps.disc).sort())!==JSON.stringify(['boss_d_nature','sci_earth1','sci_life1','sci_phys1']))bad(w+'Discover keys changed '+Object.keys(S.maps.disc));
+        for(const p of OLD)if(JSON.stringify(S.maps[p])!==JSON.stringify(JSON.parse(old).maps[p]||S.maps[p])&&name!=='tricky')bad(w+p+' map changed');
+        // nothing re-locks: every passed stop is open, the old stops are passed, the two new Nature Trail stops are open and flagged NEW
+        for(let i=0;i<NODES.disc.length;i++)if(passed('disc',i)&&!unlocked('disc',i))bad(w+nid(NODES.disc[i])+' re-locked');
+        const gi=NODES.disc.findIndex(n=>nid(n)==='geo_world1'),ci=NODES.disc.findIndex(n=>nid(n)==='civ1');
+        if(!unlocked('disc',gi)||!unlocked('disc',ci)||!stopNew('disc',gi)||!stopNew('disc',ci))bad(w+'the new Nature Trail stops are not open and NEW');
+        if(!worldFinished('disc',0))bad(w+'Nature Trail no longer counts as finished');
+        if(!worldOpen('disc',1)||worldOpen('disc',2)!==(gg>=5))bad(w+'worlds open '+[0,1,2].map(i=>worldOpen('disc',i)));
+        // the map opens on the next world's first stop (never a NEW stop, never a locked one)
+        const cur=nid(NODES.disc[curNode('disc')]),wantCur=gg>=5?'sci_life3':'sci_life2';
+        if(cur!==wantCur)bad(w+'map opens on '+cur+', wanted '+wantCur);
+        // playing the new stops saves under their ids and moves nothing else
+        setSt('disc',gi,2);setSt('disc',ci,3);save();
+        const saved=JSON.parse(store[KEY]).maps.disc;
+        if(saved.geo_world1!==2||saved.civ1!==3||saved.sci_life1!==3||Object.keys(saved).length!==6)bad(w+'new stops did not save as stop ids '+JSON.stringify(saved));
+        if(S.v!==LATEST)bad(w+'S.v '+S.v);
+        checked++;
+      }
+      // (c) a child with Science Lab and Star Observatory stars keeps them and the stops stay open
+      load(JSON.stringify({v:LATEST,mapv:2,name:'Kid',grade:g===null?4:g,maps:{math:{add1:3},read:{sound1:2},es:{es_greet1:1},
+        disc:{sci_life1:3,sci_life2:2,sci_earth2:1,geo_us1:3}}}));
+      if(g!==null)S.grade=g;
+      for(const k of ['sci_life1','sci_life2','sci_earth2','geo_us1'])if(!S.maps.disc[k])bad('fresh g'+g+': '+k+' stars lost');
+      for(let i=0;i<NODES.disc.length;i++)if(passed('disc',i)&&!unlocked('disc',i))bad('lab save g'+g+': '+nid(NODES.disc[i])+' re-locked');
+      if(S.maps.math.add1!==3||S.maps.read.sound1!==2||S.maps.es.es_greet1!==1)bad('lab save g'+g+': another path moved');
+      checked++;
+    }
+    // the old saves from before Discover (P2-36 fixtures) get empty Discover stars and every old path is unchanged
+    for(const name of ['fresh','midway','maxed','legacy-single-map','legacy-index-maps','tricky']){
+      const raw=fx(name);
+      load(Object.keys(JSON.parse(raw)).length?raw:null);
+      if(!S.maps||typeof S.maps.disc!=='object'||Object.keys(S.maps.disc).length)bad(name+': S.maps.disc is not an empty map');
+      checked++;
+    }
+    if(LATEST!==6)bad('this chunk adds no migration; LATEST is '+LATEST);
+    return {items,questions,pics,levels,checked,per};
+  };
+  const r=eval(js+';('+body.toString()+')()');
+  // the questions ship in the data file, not in index.html (A11)
+  const dataF=path.join(ROOT,DATA_FILE),idx=path.join(ROOT,'index.html');
+  if(!fs.existsSync(dataF))serrs.push(DATA_FILE+' is not built');
+  else{
+    const d=fs.readFileSync(dataF,'utf8'),i=fs.readFileSync(idx,'utf8');
+    if(!d.includes('BANK.geo_world')||!d.includes('BANK.civ')||!d.includes('Which state shares a border')||!d.includes('The three branches of the United States government'))serrs.push('the new Discover banks are not in '+DATA_FILE);
+    if(i.includes('The three branches of the United States government')||i.includes('BANK.geo_world')||i.includes('DISC_ADJ'))serrs.push('Discover geography or civics content leaked into index.html');
+  }
+  const sum=[];
+  for(const id in r.per)for(const lv in r.per[id])sum.push(id+lv+':'+r.per[id][lv].n);
+  return{problems:serrs,note:r.items+' new items ('+sum.join(' ')+'), '+r.questions+' questions, '+r.checked+' save checks'};
 });
 
 // ---- report ----

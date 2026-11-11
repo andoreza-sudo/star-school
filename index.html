@@ -2501,7 +2501,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S));SAVE_FAILED=fals
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v114'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v115'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -3331,7 +3331,7 @@ const ICO_SK={
   spell:'edit',trace:'edit',
   es_greet:'wave',es_color:'palette',es_num:'skill-num',es_teen:'skill-num',es_animal:'paw',es_food:'food',es_body:'user',
   es_family:'users',es_mix:'trophy',
-  sci_life:'paw',sci_earth:'globe',sci_phys:'bolt',
+  sci_life:'paw',sci_earth:'globe',sci_phys:'bolt',geo_world:'map',geo_us:'pin',civ:'users',
 };
 const ICO_AREA={math:'path-math',read:'path-read',es:'path-es',disc:'path-disc',bt:'puzzle'};
 function icoSk(id){
@@ -10524,10 +10524,14 @@ const SK={
  gram:{t:'Grammar',e:'🔤',area:'read',max:9,bank:'gram',gen:lv=>genBank('gram',lv)},
  // P2-22 Vocabulary A (levels 1-5) and P2-23 Vocabulary B (6-10): items are BANK.vocab in src/data/d-vocab.js
  vocab:{t:'Vocabulary',e:'📚',area:'read',max:10,bank:'vocab',gen:lv=>genBank('vocab',lv)},
- // P2-36 Discover science K-2 (level 1; P2-37 adds levels 2-3 and more skills): items are BANK.sci_* in src/data/d-disc.js
- sci_life:{t:'Living Things',e:'🌱',area:'disc',max:1,bank:'sci_life',gen:lv=>genBank('sci_life',lv)},
- sci_earth:{t:'Sky & Earth',e:'🌍',area:'disc',max:1,bank:'sci_earth',gen:lv=>genBank('sci_earth',lv)},
- sci_phys:{t:'Push, Pull & Stuff',e:'⚡',area:'disc',max:1,bank:'sci_phys',gen:lv=>genBank('sci_phys',lv)}};
+ // Discover (P2-36 level 1, P2-37 levels 2-3 and geography/civics): items are BANK.* in src/data/d-disc*.js. Levels count only the grade
+ // bands a skill has (CURRICULUM 6 "n/a" cells): geo_world 1-2 = K-2, 3-4; geo_us 1-2 = 3-4, 5-6; civ 1-2 = K-2, 5-6.
+ sci_life:{t:'Living Things',e:'🌱',area:'disc',max:3,bank:'sci_life',gen:lv=>genBank('sci_life',lv)},
+ sci_earth:{t:'Sky & Earth',e:'🌍',area:'disc',max:3,bank:'sci_earth',gen:lv=>genBank('sci_earth',lv)},
+ sci_phys:{t:'Push, Pull & Stuff',e:'⚡',area:'disc',max:3,bank:'sci_phys',gen:lv=>genBank('sci_phys',lv)},
+ geo_world:{t:'Maps & World',e:'🗺',area:'disc',max:2,bank:'geo_world',gen:lv=>genBank('geo_world',lv)},
+ geo_us:{t:'United States',e:'🏔',area:'disc',max:2,bank:'geo_us',gen:lv=>genBank('geo_us',lv)},
+ civ:{t:'Community & Citizens',e:'👪',area:'disc',max:2,bank:'civ',gen:lv=>genBank('civ',lv)}};
 /* P2-17: the subject area of a skill at a level. A skill may set lvArea {level: area} where some levels belong to another
    subject (trace: digits are math, letters are reading); everything that colours or counts by subject reads the area through this. */
 const skArea=(sk,lv)=>{const s=SK[sk];return s?(s.lvArea&&s.lvArea[lv])||s.area:undefined};
@@ -11225,10 +11229,12 @@ const PATHS={
   {id:'e_casa',g:-1,n:'La Casa',e:'🏠',c:'#fde68a',nodes:[['es_house',1,'Casa Dulce Casa'],['es_house',2,'Read the House'],['es_clothes',1,'¡A Vestirse!'],['es_clothes',2,'Read Clothes'],['es_school',1,'A la Escuela'],['es_school',2,'Read School'],['es_feel',1,'¿Cómo Estás?'],['es_feel',2,'Read Feelings'],['es_house',3,'Spell the House'],['es_clothes',3,'Spell Clothes'],['es_school',3,'Spell School']]},
   {id:'e_tiempo',g:-1,n:'El Tiempo',e:'⏰',c:'#e0f2fe',nodes:[['es_days',1,'Days: Listen'],['es_days',2,'Read the Days'],['es_months',1,'Months: Listen'],['es_months',2,'Read Months'],['es_weather',1,'Weather: Listen'],['es_weather',2,'Read Weather'],['es_big',1,'Big Numbers: Listen'],['es_big',2,'Read Big Numbers'],['es_time',1,'Time: Listen'],['es_time',2,'Read the Time']]},
   {id:'e_ciudad',g:-1,n:'La Ciudad',e:'🏙',c:'#e0f2fe',nodes:[['es_place',1,'Places in Town'],['es_place',2,'Read Places'],['es_trans',1,'Transport'],['es_trans',2,'Read Transport'],['es_verb',1,'Action Words'],['es_verb',2,'Read Action Words'],['es_adj',1,'Opposites'],['es_adj',2,'Read Opposites']]}]},
- /* Discover (P2-36): graded like Math and Reading, but no placement quiz (noPlace). Worlds and stops follow CURRICULUM 2.4;
-    P2-37 adds geo_world 1 and civ 1 to Nature Trail and the worlds d_lab and d_cosmos. */
- disc:{n:'Discover',e:'🌍',c:'linear-gradient(135deg,#ccfbf1,#99f6e4)',noPlace:true,worlds:[
-  {id:'d_nature',g:0,n:'Nature Trail',e:'🌲',c:'#ccfbf1',nodes:[['sci_life',1,'Living Things'],['sci_earth',1,'Sky & Earth'],['sci_phys',1,'Push, Pull & Stuff']]}]}};
+ /* Discover (P2-36, P2-37): graded like Math and Reading, but no placement quiz (noPlace). Worlds and stops follow CURRICULUM 2.4.
+    Nature Trail grew geo_world 1 and civ 1 in P2-37 (a child who had finished it keeps the boss open and sees them as NEW stops). */
+ disc:{n:'Discover',e:'🌍',c:'linear-gradient(135deg,#ccfbf1,#99f6e4)',noPlace:true,startBelow:true,worlds:[
+  {id:'d_nature',g:0,n:'Nature Trail',e:'🌲',c:'#ccfbf1',nodes:[['sci_life',1,'Living Things'],['sci_earth',1,'Sky & Earth'],['sci_phys',1,'Push, Pull & Stuff'],['geo_world',1,'Maps & Land'],['civ',1,'Our Community']]},
+  {id:'d_lab',g:3,n:'Science Lab',e:'💡',c:'#e0f2fe',nodes:[['sci_life',2,'Life Cycles & Food'],['sci_earth',2,'Water, Rocks & Moon'],['sci_phys',2,'Forces & Matter'],['geo_us',1,'States & Capitals'],['geo_world',2,'Grids & Climate']]},
+  {id:'d_cosmos',g:5,n:'Star Observatory',e:'🌌',c:'#ede9fe',nodes:[['sci_life',3,'Cells & Ecosystems'],['sci_earth',3,'Earth & Space'],['sci_phys',3,'Energy & Change'],['geo_us',2,'US Landmarks'],['civ',2,'Government & Money']]}]}};
 const BOSSES=[['👾','Gloop'],['🤖','Robo-Bonk'],['🐙','Captain Inky'],['👽','Zorp']];
 const BPRIZE=['🌼','⭐','🎉','🪐','🌈','🔥','💎','🍀','🌙','⚡','🍩','🎵'];
 /* World ids (`id`) and grade tags (`g`) come from CURRICULUM.md section 2. An id is permanent: anything saved per world uses it,
@@ -11306,7 +11312,10 @@ const stopNew=(p,i)=>!passed(p,i)&&passed(p,WR[p][NODES[p][i].wi][1]);
 function startWorld(p){
   if(PATHS[p].byLevel)return 0;
   const pw=placeWorld(p);if(pw>=0)return pw; // P1-07: a placement result taken at the current grade
-  const ws=PATHS[p].worlds,k=ws.findIndex(w=>w.g>=gradeOf());
+  const ws=PATHS[p].worlds,g0=gradeOf(),k=ws.findIndex(w=>w.g>=g0);
+  // P2-37: Discover has worlds only for K, 3 and 5, so the first world at or above a 1st, 2nd or 4th grader's grade is still locked.
+  // startBelow paths start such a child at the last world at or below their grade (Nature Trail for K-2, Science Lab for 4th grade).
+  if(PATHS[p].startBelow&&k>=0&&ws[k].g>g0){let j=-1;ws.forEach((w,i)=>{if(w.g<=g0)j=i});if(j>=0)return j}
   return k<0?ws.length-1:k;
 }
 /* The stop the map opens on: the first open, unpassed stop, not counting NEW stops or untouched worlds below the start world.
@@ -11849,7 +11858,7 @@ function home(first){
   <div class="scroll hm" id="hs"><div class="hm-cols">
    <div class="hm-col">${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
-   <p class="hm-ver">${ico('star', 16)}<span>Star School v114</span></p></div>`);
+   <p class="hm-ver">${ico('star', 16)}<span>Star School v115</span></p></div>`);
   music(true);
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,['💖','✨','⭐']);
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
@@ -14779,7 +14788,7 @@ function grown(){let armed=false;
    <div class="vline"><span class="vtxt">Give a bonus</span><button class="btn xs" id="pt5">+5 min</button><button class="btn xs danger" id="pt0">Empty bank</button></div>
    <label class="tg"><input type="checkbox" id="ptp" ${ptCfg().pause?'checked':''}> Pause game time (games locked)</label></div>
   <div class="card"><div class="tw"><table><tr><th>Skill</th><th>Rounds</th><th>1st try</th><th>Tricky ones</th></tr>${rows}</table></div></div>
-  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v114 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
+  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v115 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
    Storage: ${SAVE_FAILED?'<b style="color:#c0392b">could not save (device storage may be full)</b>':'saving OK'}${SAVE_CORRUPT?'<br><b style="color:#c0392b">The old save could not be read. A fresh start was made and the old data was kept on the device.</b>':''}<br>
    Last errors: ${(S.err||[]).length?(S.err||[]).slice().reverse().map(e=>'<br>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+' '+esc(e.msg)).join(''):'none'}</div></details>
   <div class="card"><label class="tg"><input type="checkbox" id="voice" ${S.voice?'checked':''}> Read questions out loud</label>
@@ -15124,18 +15133,18 @@ function appFiles() {
   ];
 }
 function dataReady() {
-  return appFiles().every(f => f[1] === 'v114');
+  return appFiles().every(f => f[1] === 'v115');
 }
 function dataMissing() {
-  logErr(appFiles().filter(f => f[1] !== 'v114').map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v114)');
+  logErr(appFiles().filter(f => f[1] !== 'v115').map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v115)');
   const again = UI.btn('Try again', { kind: 'primary', size: 'lg', icon: 'replay', id: 'dataretry' });
   view(`<div class="scroll" id="datamiss">${UI.empty('download', 'Star School needs to finish updating. Connect to the internet, then tap Try again.', again)}</div>`);
   $('#dataretry').onclick = () => location.reload();
 }
 </script>
-<script src="bt.v114.js"></script>
-<script src="games.v114.js"></script>
-<script src="data.v114.js"></script>
+<script src="bt.v115.js"></script>
+<script src="games.v115.js"></script>
+<script src="data.v115.js"></script>
 <script>
 if (dataReady()) {
   loadClips();

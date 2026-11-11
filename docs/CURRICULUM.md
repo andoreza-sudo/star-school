@@ -576,6 +576,8 @@ school textbook would. Loosely follows NGSS topics and typical state social-stud
 
 Map skills use generated grid maps (`VIZ.coordGrid` with icons), not geographic outlines.
 
+Shipped (P2-37): the level numbers of a skill count only the grade bands it has, so they match the stop table in 2.4: `geo_world` 1-2 (K-2, 3-4), `geo_us` 1-2 (3-4, 5-6), `civ` 1-2 (K-2, 5-6), the three sciences 1-3. Each item carries its band in `grade`. Map skills are asked in words (map words, coordinates written as pairs like (3, 2), a key described in a sentence), so no question needs a map image.
+
 ---
 
 ## 7. Scope and sequence at a glance

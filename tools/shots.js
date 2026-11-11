@@ -12,15 +12,18 @@ const KS = require('./kinds-samples');
 const BTF = require('./lib/bt-fake');
 const ES_FX = require('./lib/es-fx');
 
-// P2-36: a Discover question shown by the real round engine; the item with a picture of the given topic when there is one, else the first of the stop
-const discQ = (sk, stop, topic) => ({
+// P2-36: a Discover question shown by the real round engine; the item with a picture of the given topic when there is one, else the first of the stop.
+// P2-37: lv picks the level (the item is the first of that level and topic, a picture preferred), stop is the index in NODES.disc.
+const discQ = (sk, stop, topic, lv = 1) => ({
   run: async p => {
-    await p.evaluate(([sk, stop, topic]) => {
+    await p.evaluate(([sk, stop, topic, lv]) => {
       start('disc', stop);
-      const B = BANK[sk], bi = Math.max(0, B.findIndex(it => it.em && (!topic || it.topic == topic)));
-      const q = bankRebuild({ id: sk, lv: 1, bi, s: 5 }); q.sk = sk; q.lv = 1;
+      const B = BANK[sk], ok = it => it.lv == lv && (!topic || it.topic == topic);
+      let bi = B.findIndex(it => it.em && ok(it));
+      if (bi < 0) bi = Math.max(0, B.findIndex(ok));
+      const q = bankRebuild({ id: sk, lv, bi, s: 5 }); q.sk = sk; q.lv = lv;
       G.q = q; renderQ();
-    }, [sk, stop, topic]);
+    }, [sk, stop, topic, lv]);
   },
 });
 
@@ -119,6 +122,20 @@ const SCREENS = {
   'disc-q-life': discQ('sci_life', 0, 'babies'),
   'disc-q-earth': discQ('sci_earth', 1, null),
   'disc-q-phys': discQ('sci_phys', 2, null),
+  // P2-37: the map for a 4th grader (Science Lab), then one question for every new skill and level
+  'disc-map-lab': { run: async p => { await p.evaluate(() => { S.grade = 4; pathMap('disc'); }); } },
+  'disc-q-geo1': discQ('geo_world', 3, 'continents', 1),
+  'disc-q-civ1': discQ('civ', 4, 'helpers', 1),
+  'disc-q-life2': discQ('sci_life', 6, 'adapt', 2),
+  'disc-q-earth2': discQ('sci_earth', 7, 'planets', 2),
+  'disc-q-phys2': discQ('sci_phys', 8, 'machines', 2),
+  'disc-q-us1': discQ('geo_us', 9, 'borders', 1),
+  'disc-q-geo2': discQ('geo_world', 10, 'grid', 2),
+  'disc-q-life3': discQ('sci_life', 12, 'cells', 3),
+  'disc-q-earth3': discQ('sci_earth', 13, 'rotrev', 3),
+  'disc-q-phys3': discQ('sci_phys', 14, 'waves', 3),
+  'disc-q-us2': discQ('geo_us', 15, 'timezones', 2),
+  'disc-q-civ2': discQ('civ', 16, 'branches', 2),
   // P1-05: the world strip with a far world picked (shows the "more worlds" button above it)
   'map-worlds': { run: async p => { await p.evaluate(() => pathMap('math', 3)); } },
   // P1-06: setup with a grade tapped (Pre-K), and Grown-ups scrolled to the grade picker

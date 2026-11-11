@@ -35,10 +35,12 @@ const PATHS={
   {id:'e_casa',g:-1,n:'La Casa',e:'🏠',c:'#fde68a',nodes:[['es_house',1,'Casa Dulce Casa'],['es_house',2,'Read the House'],['es_clothes',1,'¡A Vestirse!'],['es_clothes',2,'Read Clothes'],['es_school',1,'A la Escuela'],['es_school',2,'Read School'],['es_feel',1,'¿Cómo Estás?'],['es_feel',2,'Read Feelings'],['es_house',3,'Spell the House'],['es_clothes',3,'Spell Clothes'],['es_school',3,'Spell School']]},
   {id:'e_tiempo',g:-1,n:'El Tiempo',e:'⏰',c:'#e0f2fe',nodes:[['es_days',1,'Days: Listen'],['es_days',2,'Read the Days'],['es_months',1,'Months: Listen'],['es_months',2,'Read Months'],['es_weather',1,'Weather: Listen'],['es_weather',2,'Read Weather'],['es_big',1,'Big Numbers: Listen'],['es_big',2,'Read Big Numbers'],['es_time',1,'Time: Listen'],['es_time',2,'Read the Time']]},
   {id:'e_ciudad',g:-1,n:'La Ciudad',e:'🏙',c:'#e0f2fe',nodes:[['es_place',1,'Places in Town'],['es_place',2,'Read Places'],['es_trans',1,'Transport'],['es_trans',2,'Read Transport'],['es_verb',1,'Action Words'],['es_verb',2,'Read Action Words'],['es_adj',1,'Opposites'],['es_adj',2,'Read Opposites']]}]},
- /* Discover (P2-36): graded like Math and Reading, but no placement quiz (noPlace). Worlds and stops follow CURRICULUM 2.4;
-    P2-37 adds geo_world 1 and civ 1 to Nature Trail and the worlds d_lab and d_cosmos. */
- disc:{n:'Discover',e:'🌍',c:'linear-gradient(135deg,#ccfbf1,#99f6e4)',noPlace:true,worlds:[
-  {id:'d_nature',g:0,n:'Nature Trail',e:'🌲',c:'#ccfbf1',nodes:[['sci_life',1,'Living Things'],['sci_earth',1,'Sky & Earth'],['sci_phys',1,'Push, Pull & Stuff']]}]}};
+ /* Discover (P2-36, P2-37): graded like Math and Reading, but no placement quiz (noPlace). Worlds and stops follow CURRICULUM 2.4.
+    Nature Trail grew geo_world 1 and civ 1 in P2-37 (a child who had finished it keeps the boss open and sees them as NEW stops). */
+ disc:{n:'Discover',e:'🌍',c:'linear-gradient(135deg,#ccfbf1,#99f6e4)',noPlace:true,startBelow:true,worlds:[
+  {id:'d_nature',g:0,n:'Nature Trail',e:'🌲',c:'#ccfbf1',nodes:[['sci_life',1,'Living Things'],['sci_earth',1,'Sky & Earth'],['sci_phys',1,'Push, Pull & Stuff'],['geo_world',1,'Maps & Land'],['civ',1,'Our Community']]},
+  {id:'d_lab',g:3,n:'Science Lab',e:'💡',c:'#e0f2fe',nodes:[['sci_life',2,'Life Cycles & Food'],['sci_earth',2,'Water, Rocks & Moon'],['sci_phys',2,'Forces & Matter'],['geo_us',1,'States & Capitals'],['geo_world',2,'Grids & Climate']]},
+  {id:'d_cosmos',g:5,n:'Star Observatory',e:'🌌',c:'#ede9fe',nodes:[['sci_life',3,'Cells & Ecosystems'],['sci_earth',3,'Earth & Space'],['sci_phys',3,'Energy & Change'],['geo_us',2,'US Landmarks'],['civ',2,'Government & Money']]}]}};
 const BOSSES=[['👾','Gloop'],['🤖','Robo-Bonk'],['🐙','Captain Inky'],['👽','Zorp']];
 const BPRIZE=['🌼','⭐','🎉','🪐','🌈','🔥','💎','🍀','🌙','⚡','🍩','🎵'];
 /* World ids (`id`) and grade tags (`g`) come from CURRICULUM.md section 2. An id is permanent: anything saved per world uses it,
@@ -116,7 +118,10 @@ const stopNew=(p,i)=>!passed(p,i)&&passed(p,WR[p][NODES[p][i].wi][1]);
 function startWorld(p){
   if(PATHS[p].byLevel)return 0;
   const pw=placeWorld(p);if(pw>=0)return pw; // P1-07: a placement result taken at the current grade
-  const ws=PATHS[p].worlds,k=ws.findIndex(w=>w.g>=gradeOf());
+  const ws=PATHS[p].worlds,g0=gradeOf(),k=ws.findIndex(w=>w.g>=g0);
+  // P2-37: Discover has worlds only for K, 3 and 5, so the first world at or above a 1st, 2nd or 4th grader's grade is still locked.
+  // startBelow paths start such a child at the last world at or below their grade (Nature Trail for K-2, Science Lab for 4th grade).
+  if(PATHS[p].startBelow&&k>=0&&ws[k].g>g0){let j=-1;ws.forEach((w,i)=>{if(w.g<=g0)j=i});if(j>=0)return j}
   return k<0?ws.length-1:k;
 }
 /* The stop the map opens on: the first open, unpassed stop, not counting NEW stops or untouched worlds below the start world.

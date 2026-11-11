@@ -530,7 +530,7 @@ const ICO_SK={
   spell:'edit',trace:'edit',
   es_greet:'wave',es_color:'palette',es_num:'skill-num',es_teen:'skill-num',es_animal:'paw',es_food:'food',es_body:'user',
   es_family:'users',es_mix:'trophy',
-  sci_life:'paw',sci_earth:'globe',sci_phys:'bolt',
+  sci_life:'paw',sci_earth:'globe',sci_phys:'bolt',geo_world:'map',geo_us:'pin',civ:'users',
 };
 const ICO_AREA={math:'path-math',read:'path-read',es:'path-es',disc:'path-disc',bt:'puzzle'};
 function icoSk(id){
