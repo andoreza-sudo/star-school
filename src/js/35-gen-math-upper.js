@@ -159,11 +159,15 @@ function fySub8() {
 }
 
 // dbig 1-3: long division by one digit (ldiv layout, stepsDiv). lv 1: no remainder; lv 2: remainder (R pad); lv 3: 3- and 4-digit
+// R-01m: dbig 1 picks one of its 98 divisions (divisor 2-9, quotient 11-49, a 2-digit dividend) evenly; picking the divisor
+// first made the quotient 11 in a quarter of the questions
+const FY_DBIG1 = [];
+for (let d = 2; d <= 9; d++) for (let q = 11; q <= Math.min(49, Math.floor(99 / d)); q++) FY_DBIG1.push([d, q]);
 function fyDbig(lv) {
-  const d = R(2, 9);
+  let d = R(2, 9);
   let n, qt, rem = 0, html, extra = {};
   if (lv == 1) {
-    qt = R(11, Math.min(49, Math.floor(99 / d)));
+    [d, qt] = pick(FY_DBIG1);
     n = d * qt;
     html = coin() ? ST.ldiv(n, d) : `<div class="eq">${n} ÷ ${d} = ${SLOT}</div>`;
     return {kind: 'num', html, say: `${n} divided by ${d} equals what?`, ans: String(qt), hint: stepsDiv(n, d), label: `${n} ÷ ${d} = ?`};
@@ -251,7 +255,7 @@ function fyRound3() {
     return {kind: 'num', max: 6, html: `<div class="sub">Round ${fyComma(n)} to the nearest ${names[i]}.</div><div class="eq">${SLOT}</div>`,
       say: `Round ${n} to the nearest ${names[i]}.`, ans: String(ans), label: `round ${n} to ${p}`,
       hint: stepsStory([`Find the ${plc[p]} place in ${fyComma(n)}. It holds the ${keep}.`,
-        `Look at the digit just to its right, in the ${below[p]} place. It is a ${nxt}.`,
+        `Look at the digit just to its right, in the ${below[p]} place. It is ${nxt == 8 ? 'an' : 'a'} ${nxt}.`,
         `Is ${nxt} 5 or more? Then add 1 to the ${keep} and make every digit after it 0. Is it less than 5? Then the ${keep} stays.`])};
   }
 }
@@ -292,7 +296,7 @@ function dsFopSimple() {
     html: `<div class="sub">${add ? 'Add' : 'Subtract'}. Write the answer as a fraction.</div><div class="eq">${fcFr(a, d)} ${op} ${fcFr(b, d)} = ${SLOT_FRAC}</div>`,
     say: `${fcSay(a, d)} ${add ? 'plus' : 'minus'} ${fcSay(b, d)}. Write the answer as a fraction.`, ans: dsFrac(r, d),
     hint: dsHint([
-      [pic, 'Same size pieces:', add ? `Both are ${FC_NAMES[d]}s, so you can put the pieces together.` : `Start with ${a} ${FC_NAMES[d]}s and take away ${b} of them.`],
+      [pic, 'Same size pieces:', add ? `Both are ${ccPl(d)}, so you can put the pieces together.` : `Start with ${fcSay(a, d)} and take away ${b} of them.`],
       ['', add ? 'Add the tops:' : 'Subtract the tops:', `${a} ${op} ${b} = ? Keep ${d} on the bottom.`],
     ]),
     label: `fop1 ${a}/${d} ${op} ${b}/${d}`};
@@ -312,7 +316,7 @@ function dsFopMixed() {
       steps.push(['', 'Fractions:', `${a}/${d} + ${b}/${d} = ${s}/${d}. That is more than 1 whole, so ${d}/${d} becomes 1 more whole.`]);
       steps.push(['', 'Now:', `Take ${d} off the top of ${s}/${d}: ${s} − ${d} = ? That is the new fraction. Then add 1 more whole.`]);
     } else {
-      steps.push(['', 'Fractions:', `Add the tops: ${a} + ${b} = ? Keep ${d} on the bottom. Then write the ${w1 + w2} wholes and that fraction together.`]);
+      steps.push(['', 'Fractions:', `Add the tops: ${a} + ${b} = ? Keep ${d} on the bottom. Then write the ${qN(w1 + w2, 'whole')} and that fraction together.`]);
     }
   } else {
     do {
@@ -321,12 +325,12 @@ function dsFopMixed() {
     if (a > b) {
       W = w1 - w2; n = a - b;
       steps = [['', 'Whole numbers:', `${w1} − ${w2} = ${w1 - w2}.`],
-        ['', 'Fractions:', `${a}/${d} is bigger than ${b}/${d}, so just subtract the tops: ${a} − ${b} = ? Keep ${d} on the bottom. Then write the ${w1 - w2} wholes and that fraction together.`]];
+        ['', 'Fractions:', `${a}/${d} is bigger than ${b}/${d}, so just subtract the tops: ${a} − ${b} = ? Keep ${d} on the bottom. Then write the ${qN(w1 - w2, 'whole')} and that fraction together.`]];
     } else {
       W = w1 - w2 - 1; n = a + d - b;
       steps = [['', 'Whole numbers:', `${w1} − ${w2} = ${w1 - w2}.`],
-        ['', 'Fractions:', `${a}/${d} is smaller than ${b}/${d}. Take 1 whole from the ${w1 - w2} wholes, so ${w1 - w2 - 1} wholes are left. That whole is ${d}/${d}, so now you have ${a + d}/${d}.`],
-        ['', 'Now:', `${a + d} − ${b} = ? Keep ${d} on the bottom. Then write the ${w1 - w2 - 1} wholes and that fraction together.`]];
+        ['', 'Fractions:', `${a}/${d} is smaller than ${b}/${d}. Take 1 whole from the ${qN(w1 - w2, 'whole')}, so ${qN(w1 - w2 - 1, 'whole')} ${w1 - w2 - 1 == 1 ? 'is' : 'are'} left. That whole is ${d}/${d}, so now you have ${a + d}/${d}.`],
+        ['', 'Now:', `${a + d} − ${b} = ? Keep ${d} on the bottom. Then write the ${qN(w1 - w2 - 1, 'whole')} and that fraction together.`]];
     }
   }
   const op = add ? '+' : '−';
@@ -361,7 +365,7 @@ function dsFop2() {
     say: `${w} times ${fcSay(n, d)}. Write the answer as a fraction.`, ans: dsFrac(w * n, d),
     hint: dsHint([
       [VIZ.fracBar(n, d, {w: 170}), 'One time:', `${w} × ${n}/${d} means ${n}/${d} added ${w} times${w <= 4 ? ': ' + sum.join(' + ') : ''}.`],
-      ['', 'Add the tops:', `All the pieces are ${FC_NAMES[d]}s. ${w} × ${n} = ? Keep ${d} on the bottom.`],
+      ['', 'Add the tops:', `All the pieces are ${ccPl(d)}. ${w} × ${n} = ? Keep ${d} on the bottom.`],
     ]),
     label: `fop2 ${w} × ${n}/${d}`};
 }
@@ -380,8 +384,8 @@ function dsDec1() {
     return {kind: 'num', pad: 'dec', eq: 'value',
       html: `<div class="sub">Write as a decimal.</div><div class="eq">${fr} = ${SLOT}</div>`,
       say: `Write ${sayNum(k, p)} as a decimal.`, ans: dsDecStr(num(k, p), p),
-      hint: {k: 'text', s: p == 1 ? 'The bottom is 10, so this is tenths: one digit after the decimal point. Write the top number in the tenths place.' + (W ? ` The ${W} wholes go in front of the point.` : '')
-        : `The bottom is 100, so this is hundredths: two digits after the decimal point.${k < 10 ? ' The top has only one digit, so put a 0 in the tenths place first.' : ' The top number fills the tenths and hundredths places.'}${W ? ` The ${W} wholes go in front of the point.` : ''}`},
+      hint: {k: 'text', s: p == 1 ? 'The bottom is 10, so this is tenths: one digit after the decimal point. Write the top number in the tenths place.' + (W ? ` The ${qN(W, 'whole')} ${W == 1 ? 'goes' : 'go'} in front of the point.` : '')
+        : `The bottom is 100, so this is hundredths: two digits after the decimal point.${k < 10 ? ' The top has only one digit, so put a 0 in the tenths place first.' : ' The top number fills the tenths and hundredths places.'}${W ? ` The ${qN(W, 'whole')} ${W == 1 ? 'goes' : 'go'} in front of the point.` : ''}`},
       label: `dec1 ${W ? W + ' ' : ''}${k}/${10 ** p} to decimal`};
   }
   if (f < .6) { // decimal -> fraction
@@ -627,6 +631,7 @@ function dsTriangle() {
     do s = [R(3, 15), R(3, 15), R(3, 15)]; while (new Set(s).size < 3 || s[0] + s[1] <= s[2] || s[0] + s[2] <= s[1] || s[1] + s[2] <= s[0]);
   }
   s = shuffle(s);
+  while (s[2] == 1) s.unshift(s.pop()); // R-01m: the unit follows the last side, so never "1 centimeters"
   return {kind: 'choice', cls: 'dsw', html: `<div class="sub">A triangle has sides</div><div class="eq">${s.join(', ')} cm</div><div class="sub">What kind of triangle is it?</div>`,
     say: `A triangle has sides of ${s.join(', ')} centimeters. Is it equilateral, isosceles, or scalene?`, ans: kind,
     choices: ['equilateral', 'isosceles', 'scalene'].map(v => ({v, l: v[0].toUpperCase() + v.slice(1)})),
@@ -939,7 +944,7 @@ function vlRound4() {
     return vlMaxOf({kind: 'num', pad: 'dec', eq: 'value', html: `<div class="sub">Round ${n} to the nearest ${nm}.</div><div class="eq">${SLOT}</div>`,
       say: `Round ${n} to the nearest ${nm}.`, ans, label: `round ${n} to ${nm}`,
       hint: stepsStory([`Find the ${keep ? vlPlaceName[-keep] : 'ones'} place in ${n}. It holds the ${keepDig}.`,
-        `Look at the digit just to its right, in the ${vlPlaceName[-(keep + 1)]} place. It is a ${fdig}.`,
+        `Look at the digit just to its right, in the ${vlPlaceName[-(keep + 1)]} place. It is ${fdig == 8 ? 'an' : 'a'} ${fdig}.`,
         `Is ${fdig} 5 or more? Then add 1 to the ${keepDig}. Is it less than 5? Then the ${keepDig} stays. Drop every digit after it.`])});
   }
 }
@@ -1102,7 +1107,7 @@ function ccFop4() {
   else if (!reg) steps.push(ST.step('', 'Then the wholes:', `${w1} − ${w2} = ${w1 - w2}. Put the fraction with them. ${last}`, null));
   else {
     steps = steps.slice(0, -1);
-    steps.push(ST.step('', 'Not enough:', `${A}/${L} is smaller than ${C}/${L}. Take 1 whole from the ${w1}. That leaves ${w1 - 1} wholes, and the whole is ${L}/${L}, so you have ${A + L}/${L}.`, null));
+    steps.push(ST.step('', 'Not enough:', `${A}/${L} is smaller than ${C}/${L}. Take 1 whole from the ${w1}. That leaves ${qN(w1 - 1, 'whole')}, and the whole is ${L}/${L}, so you have ${A + L}/${L}.`, null));
     steps.push(ST.step('', 'Now subtract:', `${w1 - 1} − ${w2} = ? wholes. ${A + L} − ${C} = ? over ${L}. ${last}`, null));
   }
   return {kind: 'num', sep: 'mix', eq: 'value',
@@ -1132,7 +1137,7 @@ function ccFop5() {
     return {kind: 'num', pad: 'frac', eq: 'value',
       html: `${ccArea(a, b, c, d)}<div class="sub">Multiply. Write the answer as a fraction.</div><div class="eq">${fcFr(a, b)} × ${fcFr(c, d)} = ${SLOT_FRAC}</div>`,
       say: `${fcSay(a, b)} times ${fcSay(c, d)}. The picture shows the rows and the columns. Write the answer as a fraction.`, ans: ccFr(a * c, b * d),
-      hint: ccHint([['', 'The picture:', `The orange rows show ${a}/${b}. The blue columns show ${c}/${d}. The dark boxes are in both. How many dark boxes? How many boxes in all?`],
+      hint: ccHint([['', 'The picture:', `${a} of the ${b} rows ${a == 1 ? 'is' : 'are'} colored: that is ${a}/${b}. ${c} of the ${d} columns ${c == 1 ? 'is' : 'are'} colored: that is ${c}/${d}. The dark boxes are in both. How many dark boxes? How many boxes in all?`],
         ['', 'Or multiply:', `Tops: ${a} × ${c} = ? Bottoms: ${b} × ${d} = ?`],
         ['', 'Simplest form:', 'Does one number go into both the top and the bottom? Divide to make the fraction as small as it can be. What is left?']]),
       label: `fop5 ${a}/${b} x ${c}/${d}`};
@@ -1146,7 +1151,7 @@ function ccFop5() {
   return {kind: 'num', pad: 'frac', eq: 'value',
     html: `<div class="sub">Multiply. Write the answer as a fraction.</div><div class="eq">${fcFr(a, b)} × ${W} ${fcFr(c, d)} = ${SLOT_FRAC}</div>`,
     say: `${fcSay(a, b)} times ${W} and ${fcSay(c, d)}. Write the answer as a fraction.`, ans: ccFr(n, b * d),
-    hint: ccHint([['', 'Mixed number to fraction:', `${W} ${c}/${d} is ${W} wholes of ${d}/${d}, and ${c}/${d} more. ${W} × ${d} + ${c} = ${top}, so it is ${top}/${d}.`],
+    hint: ccHint([['', 'Mixed number to fraction:', `${W} ${c}/${d} is ${qN(W, 'whole')} of ${d}/${d}, and ${c}/${d} more. ${W} × ${d} + ${c} = ${top}, so it is ${top}/${d}.`],
       ['', 'Multiply:', `${a}/${b} × ${top}/${d}. Tops: ${a} × ${top} = ? Bottoms: ${b} × ${d} = ?`],
       ['', 'Simplest form:', 'Does one number go into both the top and the bottom? Divide to make the fraction as small as it can be. What is left?']]),
     label: `fop5 ${a}/${b} x ${W} ${c}/${d}`};
@@ -1175,9 +1180,9 @@ function ccFop6() {
   const n = R(2, 6), d = R(2, 8);
   return {kind: 'num',
     html: `${ccBars(n, d)}<div class="sub">How many pieces?</div><div class="eq">${n} ÷ ${fcFr(1, d)} = ${SLOT}</div>`,
-    say: `${n} divided by ${fcSay(1, d)}. How many pieces of ${fcSay(1, d)} are in ${n} wholes?`, ans: String(n * d),
+    say: `${n} divided by ${fcSay(1, d)}. How many pieces of ${fcSay(1, d)} are in ${qN(n, 'whole')}?`, ans: String(n * d),
     hint: ccHint([['', 'Cut up the wholes:', `Each whole is cut into ${ccPl(d)}. How many ${ccPl(d)} make 1 whole?`],
-      ['', 'Count them all:', `${n} wholes with ${d} pieces in each: ${n} × ${d} = ?`]]),
+      ['', 'Count them all:', `${qN(n, 'whole')} with ${d} pieces in each: ${n} × ${d} = ?`]]),
     label: `fop6 ${n} / 1/${d}`};
 }
 // n bars, each cut into d parts
@@ -1356,8 +1361,8 @@ function ccData4() {
   const tag = `d=${den}: ${ks.join(' ')}`;
   if (type == 'count') {
     const c = ks.filter(k => k == v).length;
-    return {kind: 'num', max: 2, html: `${plot}${head}<div class="sub">How many ${plural} are ${v % den ? v + '/' + den : v / den} ${v == den ? CC_SING[unit] : unit} long?</div><div class="eq">${SLOT}</div>`,
-      say: `Each dot shows the length of one ${noun} in ${unit}. How many ${plural} are ${ccAmtSay(v, den)} ${v == den ? CC_SING[unit] : unit} long?`, ans: String(c),
+    return {kind: 'num', max: 2, html: `${plot}${head}<div class="sub">How many ${plural} are ${v % den ? v + '/' + den : v / den} ${v <= den ? CC_SING[unit] : unit} long?</div><div class="eq">${SLOT}</div>`,
+      say: `Each dot shows the length of one ${noun} in ${unit}. How many ${plural} are ${ccAmtSay(v, den)} ${v <= den ? CC_SING[unit] : unit} long?`, ans: String(c),
       hint: ccHint([['', 'Find the mark:', `Find ${v % den ? v + '/' + den : v / den} on the number line under the dots.`],
         ['', 'Count the dots:', 'How many dots are stacked above that mark?']]),
       label: `data4 count k=${v} ${tag}`};
@@ -1737,7 +1742,7 @@ function skyInt1() {
       html: `${skyLineO({tapValues: shuffle(pts)})}<div class="sub">Tap ${skyN(x)} on the number line.</div>`,
       say: `Tap ${skySay(x)} on the number line.`,
       hint: skyHint([['', 'Find zero:', `Numbers to the right of 0 are positive. Numbers to the left of 0 are negative.`],
-        ['', 'Count:', `Start at 0 and count ${Math.abs(x)} steps to the ${x < 0 ? 'left' : 'right'}. Which spot is it?`]]),
+        ['', 'Count:', `Start at 0 and count ${qN(Math.abs(x), 'step')} to the ${x < 0 ? 'left' : 'right'}. Which spot is it?`]]),
       label: `int1 tap ${x}`};
   }
   if (r < .7) {
@@ -1755,7 +1760,7 @@ function skyInt1() {
     return {kind: 'choice', cls: 'skyb', ans: String(cold ? Math.min(a, b) : Math.max(a, b)),
       choices: shuffle([a, b].map(v => ({v: String(v), l: skyN(v) + '°'}))),
       html: `<div class="sub">Two cities have these temperatures.</div><div class="sub">Which is ${cold ? 'colder' : 'warmer'}?</div>`,
-      say: `One city is ${skySay(a)} degrees. Another is ${skySay(b)} degrees. Which is ${cold ? 'colder' : 'warmer'}?`,
+      say: `One city is ${skySay(a)} ${qW(a, 'degree')}. Another is ${skySay(b)} ${qW(b, 'degree')}. Which is ${cold ? 'colder' : 'warmer'}?`,
       hint: skyHint([['', 'A thermometer:', `Think of a thermometer standing up. Higher up means warmer. Below zero is under 0.`],
         ['', 'Compare:', `Which number is ${cold ? 'lower' : 'higher'} on the number line? A negative number is smaller when it is farther from 0.`]]),
       label: `int1 ${cold ? 'cold' : 'warm'} ${a} ${b}`};
@@ -1793,7 +1798,7 @@ function skyInt2() {
       html: `${pic}<div class="sub">What is the opposite of ${skyN(x)}?</div><div class="eq">${SLOT}</div>`,
       say: `What is the opposite of ${skySay(x)}?`, ans: String(-x),
       hint: skyHint([['', 'Same distance:', `Opposites are the same distance from 0, but on different sides of 0.`],
-        ['', 'Other side:', `${skyN(x)} is ${Math.abs(x)} steps ${x < 0 ? 'left' : 'right'} of 0. Go ${Math.abs(x)} steps ${x < 0 ? 'right' : 'left'} of 0. Where do you land?`]]),
+        ['', 'Other side:', `${skyN(x)} is ${qN(Math.abs(x), 'step')} ${x < 0 ? 'left' : 'right'} of 0. Go ${qN(Math.abs(x), 'step')} ${x < 0 ? 'right' : 'left'} of 0. Where do you land?`]]),
       label: `int2 opp ${x}`};
   }
   let a, b;
@@ -1803,7 +1808,7 @@ function skyInt2() {
     html: `${pic}<div class="sub">How far apart are ${skyN(a)} and ${skyN(b)}?</div><div class="eq">${SLOT} steps</div>`,
     say: `How many steps apart are ${skySay(a)} and ${skySay(b)} on the number line?`, ans: String(b - a),
     hint: skyHint([[pic, 'Count the gap:', `Start at ${skyN(a)} and count the steps to ${skyN(b)}.`],
-      ['', a < 0 && b > 0 ? 'Cross zero:' : 'Same side of 0:', a < 0 && b > 0 ? `Count ${Math.abs(a)} steps to 0, then ${b} more steps. Add the two parts. What do you get?` : `Take the smaller distance from 0 away from the bigger one. What is the gap?`]]),
+      ['', a < 0 && b > 0 ? 'Cross zero:' : 'Same side of 0:', a < 0 && b > 0 ? `Count ${qN(Math.abs(a), 'step')} to 0, then ${b} more ${qW(b, 'step')}. Add the two parts. What do you get?` : `Take the smaller distance from 0 away from the bigger one. What is the gap?`]]),
     label: `int2 dist ${a} ${b}`};
 }
 
@@ -1823,8 +1828,8 @@ function skyInt3() {
   return {kind: 'num', pad: 'neg', max: 2,
     html: `<div class="eq">${skyN(a)} ${op == '+' ? '+' : '−'} ${shownB} = ${SLOT}</div>`,
     say: `${skySay(a)} ${op == '+' ? 'plus' : 'minus'} ${skySay(b)}. What is the answer?`, ans: String(res),
-    hint: skyHint([[start, 'Start:', `Start at ${skyN(a)} on the number line.`], ['', 'Which way?', rule + ` Move ${Math.abs(b)} steps.`],
-      [hop, 'Hop:', `Go ${Math.abs(b)} steps ${mv < 0 ? 'left' : 'right'} from ${skyN(a)}. Where do you land?`]]),
+    hint: skyHint([[start, 'Start:', `Start at ${skyN(a)} on the number line.`], ['', 'Which way?', rule + ` Move ${qN(Math.abs(b), 'step')}.`],
+      [hop, 'Hop:', `Go ${qN(Math.abs(b), 'step')} ${mv < 0 ? 'left' : 'right'} from ${skyN(a)}. Where do you land?`]]),
     label: `int3 ${a} ${op} ${b}`};
 }
 
@@ -2295,8 +2300,8 @@ function galStory9() {
       : `The ratio of ${x} to ${y} is ${p} : ${q}. There are ${p * k} ${x}. How many ${y} are there?`;
     const ans = total ? (p + q) * k : q * k;
     return story(text, {html: html(text, `${SLOT} ${total ? 'in all' : y}`), ans: String(ans), max: 3,
-      hint: skyHint([['', 'Equal parts:', `${x} are ${p} parts, and ${p} parts are ${p * k}. One part is ${p * k} ÷ ${p} = ${k}.`],
-        ['', total ? 'All the parts:' : `${y} are ${q} parts:`, total ? `${x} are ${p} parts and ${y} are ${q} parts, so there are ${p + q} parts in all. ${p + q} × ${k} = ?` : `Every part is ${k}. ${q} × ${k} = ?`]]),
+      hint: skyHint([['', 'Equal parts:', `${x} are ${qN(p, 'part')}, and ${qN(p, 'part')} ${p == 1 ? 'is' : 'are'} ${p * k}. One part is ${p * k} ÷ ${p} = ${k}.`],
+        ['', total ? 'All the parts:' : `${y} are ${qN(q, 'part')}:`, total ? `${x} are ${qN(p, 'part')} and ${y} are ${qN(q, 'part')}, so there are ${p + q} parts in all. ${p + q} × ${k} = ?` : `Every part is ${k}. ${q} × ${k} = ?`]]),
       label: `story9 ratio ${p}:${q} ${p * k}${total ? ' all' : ''}`});
   }
   if (f < .4) { // rate

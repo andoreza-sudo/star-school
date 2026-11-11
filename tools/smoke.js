@@ -7617,6 +7617,62 @@ async function main() {
         'no sideways scroll at 380x780 and 1024x600');
     }
 
+    // R-01m math review fixes at 380x780 (midway save): a rounding question (round 1 seed 3: 135, exactly halfway) and a fact question
+    //    (add 2 seed 8: 6 + 9, the "+9 is +10 then take 1 away" ten frames) through the real round engine. A wrong answer on the pad opens
+    //    the hint, and the Help button on a fresh question opens it too: either way the whole hint is on screen inside the prompt card,
+    //    above the number pad (R-01 Should 13), with the strategy picture drawn. Also a Kindergarten story with its picture (story 1).
+    {
+      const app = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
+      const pg = app.page, bad = [], notes = [];
+      const show = (sk, lv, seed) => pg.evaluate(([sk, lv, seed]) => {
+        start('math', NODES.math.findIndex(n => n.sk == sk && n.lv == lv));
+        G.q = genQ(sk, lv, seed);
+        renderQ();
+      }, [sk, lv, seed]);
+      const look = () => pg.evaluate(() => {
+        const h = document.querySelector('#hint'), inp = document.querySelector('.inp'), qa = document.querySelector('.qarea');
+        if (!h || !h.firstChild) return { empty: true };
+        const r = h.getBoundingClientRect(), p = inp.getBoundingClientRect(), a = qa.getBoundingClientRect();
+        return { top: Math.round(r.top), bottom: Math.round(r.bottom), padTop: Math.round(p.top), cardTop: Math.round(a.top), cardBottom: Math.round(a.bottom),
+          viz: h.querySelectorAll('svg.viz').length, text: h.innerText.replace(/\s+/g, ' ').trim(), sw: document.documentElement.scrollWidth };
+      });
+      const visible = m => !m.empty && m.top >= m.cardTop - 1 && m.bottom <= m.cardBottom + 1 && m.bottom <= m.padTop && m.sw <= 380;
+      for (const [sk, lv, seed, want] of [['round', 1, 3, /Halfway is 135\. Halfway or more\? Round up\./], ['add', 2, 8, /9 is 10 take away 1\./]]) {
+        // a wrong answer on the pad
+        await show(sk, lv, seed);
+        await pg.waitForTimeout(300);
+        const wrong = await pg.evaluate(() => String((+G.q.ans + 1) % 10));
+        await pg.click(`.k[data-k="${wrong}"]`);
+        await pg.click('.k[data-k="go"]');
+        await pg.waitForTimeout(500);
+        const m1 = await look();
+        if (!visible(m1)) bad.push(sk + lv + ' seed ' + seed + ' after a miss: hint not fully above the pad ' + JSON.stringify(m1));
+        if (!want.test(m1.text || '') || !m1.viz) bad.push(sk + lv + ' hint: ' + JSON.stringify(m1));
+        await pg.screenshot({ path: require('path').join(__dirname, 'out', `r01m-${sk}${lv}-miss-380x780.png`) }).catch(() => {});
+        // the Help button on a fresh copy of the question
+        await show(sk, lv, seed);
+        await pg.waitForTimeout(300);
+        await pg.click('#hb');
+        await pg.waitForTimeout(700);
+        const m2 = await look();
+        if (!visible(m2)) bad.push(sk + lv + ' seed ' + seed + ' after Help: hint not fully above the pad ' + JSON.stringify(m2));
+        notes.push(`${sk} ${lv} hint ${m1.top}-${m1.bottom} px, pad at ${m1.padTop}`);
+      }
+      await show('story', 1, 2);
+      await pg.waitForTimeout(300);
+      const st = await pg.evaluate(() => {
+        const p = document.querySelector('#prompt .st-pic'), r = p && p.getBoundingClientRect();
+        return { n: p ? p.querySelectorAll('.st-o').length : 0, w: r ? Math.round(r.width) : 0, rows: p ? new Set([...p.querySelectorAll('.st-o')].map(o => Math.round(o.getBoundingClientRect().top))).size : 0 };
+      });
+      if (st.n !== 10 || st.w > 340 || st.rows > 2) bad.push('story 1 seed 2 picture: ' + JSON.stringify(st));
+      await pg.screenshot({ path: require('path').join(__dirname, 'out', 'r01m-story1-380x780.png') }).catch(() => {});
+      if (bad.length) fail('R-01m:\n  ' + bad.join('\n  '));
+      else step('R-01m math review fixes at 380x780: ' + notes.join('; ') + '; the whole hint shows above the pad after a miss and after Help; story 1 has its picture (' + st.n + ' things)');
+      network.push(...app.network);
+      for (const e of app.errors) fail(e);
+      await app.ctx.close();
+    }
+
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');
   } catch (e) {
