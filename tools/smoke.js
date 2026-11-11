@@ -3852,6 +3852,179 @@ async function main() {
       }
     }
 
+    // P2-13 Sky City at 380x780: a 6th grader whose earlier worlds are finished opens the math map on Sky City (no unlock switch), plays Ratios and Tables
+    //    with a step hint, then Ratios and Tables, Integers on a Line, Absolute Value and Integer Add & Subtract as full rounds of real taps (choices,
+    //    a tapped number on the line, three numbers put in order, numbers typed with the +/- key), and jumps through the other stops (a match
+    //    of fractions and percents, divided fractions). Every question measured: 48 px keys, choices, tiles and tap targets, nothing wider than the
+    //    screen, no word cut off, and with a step hint open the question stays in view; and the stars are saved.
+    {
+      const sc = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 });
+      const sp = sc.page;
+      await sp.fill('#nm', 'Sky');
+      await sp.click('.gr[data-g="6"]');
+      await sp.click('#go');
+      await sp.waitForSelector('.game[data-p="math"]');
+      // every world before Sky City is finished first, so the map meets it without an unlock switch (Galaxy Core, after it, is not needed)
+      await sp.evaluate(() => {
+        const wi = PATHS.math.worlds.findIndex(w => w.id === 'm_sky');
+        for (let i = 0; i < wi; i++) { for (let j = WR.math[i][0]; j <= WR.math[i][1]; j++) setSt('math', j, 2); S.wdone = S.wdone || {}; S.wdone[worldId('math', i)] = 1; }
+        save();
+      });
+      const w13 = await sp.evaluate(() => {
+        const wi = PATHS.math.worlds.findIndex(w => w.id === 'm_sky');
+        return { wi, open: worldOpen('math', wi), cur: curWorld('math'), after: PATHS.math.worlds[wi - 1] && PATHS.math.worlds[wi - 1].id, stops: PATHS.math.worlds[wi].nodes.map(n => n[0] + n[1]).join(' '), boss: NODES.math[WR.math[wi][1]].sk, g: PATHS.math.worlds[wi].g };
+      });
+      const want13 = 'ratio1 ratio2 int1 ratio3 int2 ratio4 fop7 int3';
+      if (w13.wi < 1 || !w13.open || w13.cur !== w13.wi || w13.after !== 'm_caves' || w13.g !== 6 || w13.stops !== want13 || w13.boss !== 'boss') fail('Sky City: ' + JSON.stringify(w13));
+      await sp.click('.game[data-p="math"]');
+      await sp.waitForSelector(`.wchip.on[data-w="${w13.wi}"]`);
+      const lay13 = () => {
+        const sm = a => (a.length ? Math.min(...a.map(b => Math.min(b.offsetHeight, b.offsetWidth))) : 99);
+        const qa = document.querySelector('.qarea'), card = qa.getBoundingClientRect();
+        const cut = [...document.querySelectorAll('#prompt *, .choice')].filter(e => !e.closest('svg') && e.getClientRects().length).filter(e => {
+          const r = e.getBoundingClientRect();
+          return r.right > card.right + 1 || r.left < card.left - 1 || (e.classList.contains('choice') && e.scrollWidth > e.clientWidth + 1);
+        }).map(e => e.className || e.tagName);
+        const first = document.querySelector('#prompt').firstElementChild, ft = first ? first.getBoundingClientRect().top : card.top;
+        const pics = document.querySelector('#prompt svg, .ch svg');
+        const box = e => ({ offsetHeight: e.getBoundingClientRect().height, offsetWidth: e.getBoundingClientRect().width });
+        return { sk: G.sk + G.lv, kind: G.q.kind, label: G.q.label, ans: String(G.q.ans), w: document.documentElement.scrollWidth, art: !!pics,
+          keys: sm([...document.querySelectorAll('.k')]), ch: sm([...document.querySelectorAll('.ch')]), tall: qa.scrollHeight > qa.clientHeight + 1,
+          top: ft >= card.top - 1, cut: cut.slice(0, 3), tiles: sm([...document.querySelectorAll('.ot, .mb')]),
+          tap: sm([...document.querySelectorAll('#prompt .vt .vh')].map(box)), neg: !!document.querySelector('.k[data-k="neg"]'), dot: !!document.querySelector('.k[data-k="."]') };
+      };
+      const seen13 = { tap: 0, order: 0, match: 0, neg: 0, negTyped: 0, choice: 0, dec: 0, mix: 0, frac: 0 };
+      const meas13 = async (id, hint) => {
+        const ok = await sp.waitForFunction(id => G && G.q && G.sk + G.lv === id, id, { timeout: 8000 }).then(() => true, () => false);
+        if (!ok) { fail('Sky City ' + id + ': the question on screen is ' + (await sp.evaluate(() => G && JSON.stringify([G.sk, G.lv, G.q && G.q.label])))); return { sk: id, w: 0, keys: 99, ch: 99, cut: [], tap: 99, art: true, label: '' }; }
+        const lay = await sp.evaluate(lay13);
+        if (lay.sk !== id || lay.w > 380 || lay.keys < 48 || lay.ch < 48 || lay.tiles < 48 || lay.tall || lay.cut.length || lay.tap < 47.5 || !lay.top) fail('Sky City ' + id + ' (' + lay.label + '): ' + JSON.stringify(lay));
+        const l0 = String(lay.label).split(' ')[0];
+        if ((['int2', 'int3'].includes(l0) || /^int1 (tap|cmp)/.test(lay.label) || /^ratio1 dots/.test(lay.label)) && !lay.art && !/^int2 opp/.test(lay.label) && !/^int3/.test(lay.label)) fail('Sky City ' + id + ': picture missing ' + lay.label);
+        if (lay.kind === 'tap') seen13.tap++;
+        if (lay.kind === 'order') seen13.order++;
+        if (lay.kind === 'match') seen13.match++;
+        if (lay.kind === 'choice') seen13.choice++;
+        if (lay.neg) seen13.neg++;
+        if (lay.dot) seen13.dec++;
+        if (hint) {
+          // step hints: the first and the last step, the question stays in view and nothing sticks out sideways
+          const n = await sp.evaluate(() => G.q.hint.steps.length);
+          for (let k = 0; k < n; k++) {
+            await sp.click('#hb');
+            await sp.waitForTimeout(450);
+            const h = await sp.evaluate(() => {
+              const qa = document.querySelector('.qarea').getBoundingClientRect(), f = document.querySelector('#prompt').firstElementChild;
+              const hs = document.querySelector('#hint .hs');
+              return { at: hs && hs.dataset.hs, w: document.documentElement.scrollWidth, top: f.getBoundingClientRect().top >= qa.top - 1, hb: Math.min(document.querySelector('#hb').offsetHeight, document.querySelector('#hb').offsetWidth),
+                cut: hs ? [...hs.querySelectorAll('*')].filter(e => !e.closest('svg') && e.getBoundingClientRect().right > hs.getBoundingClientRect().right + 1).length : -1 };
+            });
+            if (h.at !== String(k) || h.w > 380 || !h.top || h.hb < 48 || h.cut) fail('Sky City step hint ' + id + ' ' + lay.label + ' step ' + k + ': ' + JSON.stringify(h));
+          }
+        }
+        return lay;
+      };
+      const answerMatch = async () => {
+        const pairs = await sp.evaluate(() => G.q.items.map((it, i) => [i, G.q.opts.findIndex(o => o.v === it.v)]));
+        for (const [i, j] of pairs) {
+          await sp.click(`.mb[data-s="L"][data-i="${i}"]`);
+          await sp.click(`.mb[data-s="R"][data-i="${j}"]`);
+        }
+      };
+      const answer13 = async () => (await sp.evaluate(() => G.q.kind)) === 'match' ? answerMatch() : answer(sp);
+      // first stop by taps: Ratios and Tables, a step hint, then the full round
+      const first = await sp.evaluate(() => NODES.math.findIndex(x => nid(x) === 'ratio1'));
+      await sp.click(`.node[data-n="${first}"]`);
+      await sp.waitForSelector('#prompt');
+      await sp.waitForTimeout(900);
+      await sp.click('#hb');
+      await vwait(sp, 300);
+      const h1 = await sp.evaluate(() => ({ at: document.querySelector('#hint .hs') && document.querySelector('#hint .hs').dataset.hs, label: document.querySelector('#hb').textContent.trim(), wide: document.documentElement.scrollWidth,
+        hb: Math.min(document.querySelector('#hb').offsetHeight, document.querySelector('#hb').offsetWidth) }));
+      await sp.click('#hb');
+      await vwait(sp, 300);
+      const h2 = await sp.evaluate(() => document.querySelector('#hint .hs').dataset.hs);
+      if (h1.at !== '0' || !/Next step/.test(h1.label) || h2 !== '1' || h1.wide > 380 || h1.hb < 48) fail('Sky City step hint: ' + JSON.stringify([h1, h2]));
+      await playRound(sp, 'P2-13 ratio1', 10, async () => { await sp.waitForTimeout(600); await meas13('ratio1'); });
+      await sp.evaluate(() => { G.dead = true; });
+      await vwait(sp, 2500);
+      const got1 = await sp.evaluate(() => S.maps.math.ratio1 || 0);
+      const next1 = await sp.evaluate(() => unlocked('math', NODES.math.findIndex(x => nid(x) === 'ratio2')));
+      if (got1 < 1 || !next1) fail('Sky City: ratio1 stars ' + got1 + ', next stop open ' + next1);
+      // the other stops: full rounds of the three integer stops, three measured questions of each of the rest
+      await sp.evaluate(() => { S.unlockAll = true; save(); });
+      const full = new Set(['int1', 'int2', 'int3']);
+      for (const id of ['ratio2', 'int1', 'ratio3', 'int2', 'ratio4', 'fop7', 'int3']) {
+        await sp.evaluate(() => home());
+        await sp.click('.game[data-p="math"]');
+        await sp.waitForSelector('.wchip.on');
+        await sp.click(`.wchip[data-w="${w13.wi}"]`);
+        await sp.waitForSelector(`.wchip.on[data-w="${w13.wi}"]`);
+        const n = await sp.evaluate(id => NODES.math.findIndex(x => nid(x) === id), id);
+        await sp.click(`.node[data-n="${n}"]`);
+        await sp.waitForSelector('#prompt');
+        if (full.has(id)) {
+          await playRound(sp, 'P2-13 ' + id, 10, async () => { await sp.waitForTimeout(600); await meas13(id); });
+        } else {
+          for (let k = 0; k < 3; k++) {
+            await sp.waitForTimeout(900);
+            await meas13(id, k === 0 && (id === 'ratio3' || id === 'fop7'));
+            await sp.evaluate(() => { window.__q = G.q; });
+            await answer13();
+            await sp.waitForFunction(() => G && G.q !== window.__q, null, { timeout: 8000 });
+          }
+        }
+        await sp.evaluate(() => { G.dead = true; });
+        await vwait(sp, 2500);
+      }
+      // one of each picture and kind, forced, measured (the step hints of two of them opened step by step) and answered with real taps; a negative
+      // answer is typed with the +/- key and the box is read before the check key is tapped
+      const forced = [['ratio', 1, '^ratio1 dots'], ['ratio', 1, '^ratio1 sent'], ['ratio', 1, '^ratio1 tbl'], ['ratio', 2, '^ratio2 buy'], ['ratio', 2, '^ratio2 unit'], ['ratio', 2, '^ratio2 rate'],
+        ['ratio', 3, '^ratio3 whole'], ['ratio', 4, '^ratio4 match fp'], ['ratio', 4, '^ratio4 match fd'], ['ratio', 4, '^ratio4 match dp'], ['ratio', 4, '^ratio4 fd'], ['ratio', 4, '^ratio4 pf'],
+        ['int', 1, '^int1 tap'], ['int', 1, '^int1 ord'], ['int', 1, '^int1 cmp'], ['int', 1, '^int1 cold'], ['int', 2, '^int2 dist -'], ['int', 2, '^int2 abs -'], ['int', 2, '^int2 opp'],
+        ['int', 3, '^int3 -\\d+ \\+ \\d+$', 'hint'], ['int', 3, '^int3 \\d+ - \\d+$', 'neg'], ['int', 3, '^int3 -?\\d+ - -\\d+$'], ['fop', 7, '^fop7 \\d \\d/\\d / \\d/\\d$', 'hint'], ['fop', 7, '^fop7 \\d/\\d / \\d/\\d$']];
+      for (const [sk, lv, re, flag] of forced) {
+        await sp.evaluate(() => home());
+        await sp.click('.game[data-p="math"]');
+        await sp.waitForSelector('.wchip.on');
+        await sp.click(`.wchip[data-w="${w13.wi}"]`);
+        const n = await sp.evaluate(([sk, lv]) => NODES.math.findIndex(x => x.sk === sk && x.lv === lv), [sk, lv]);
+        await sp.click(`.node[data-n="${n}"]`);
+        await sp.waitForSelector('#prompt');
+        const found = await sp.evaluate(([sk, lv, re, flag]) => {
+          for (let i = 1; i < 2000; i++) { const q = genQ(sk, lv, i); if (new RegExp(re).test(q.label) && (flag !== 'neg' || String(q.ans)[0] === '-')) { G.q = q; renderQ(); return true; } }
+          return false;
+        }, [sk, lv, re, flag]);
+        if (!found) { fail('Sky City: no question for ' + re); continue; }
+        await sp.waitForTimeout(700);
+        const lay = await meas13(sk + lv, flag === 'hint');
+        if (flag === 'neg') {
+          // the +/- key first, then the digits; the box shows the minus sign; the check key accepts it
+          const ans = lay.ans;
+          for (const d of ans) await sp.click(`.k[data-k="${d === '-' ? 'neg' : d}"]`);
+          const shown = await sp.evaluate(() => document.querySelector('#slot').textContent);
+          if (shown !== ans) fail('Sky City negative answer: the box shows ' + JSON.stringify(shown) + ', expected ' + ans);
+          seen13.negTyped++;
+          await sp.evaluate(() => { window.__q = G.q; });
+          await sp.click('.k[data-k="go"]');
+          await sp.waitForFunction(() => G && G.q !== window.__q, null, { timeout: 8000 });
+        } else {
+          await sp.evaluate(() => { window.__q = G.q; });
+          await answer13();
+          await sp.waitForFunction(() => G && G.q !== window.__q, null, { timeout: 8000 });
+        }
+        await sp.evaluate(() => { G.dead = true; });
+        await vwait(sp, 1500);
+      }
+      if (!seen13.tap || !seen13.order || !seen13.match || !seen13.neg || !seen13.negTyped || !seen13.dec || !seen13.choice) fail('Sky City: a tapped number, an ordered set, a match, the +/- key, a typed negative answer, the decimal key or a choice never showed ' + JSON.stringify(seen13));
+      const stars13 = await sp.evaluate(() => ['ratio1', 'int1', 'int2', 'int3'].map(id => S.maps.math[id] || 0));
+      if (stars13.some(x => x < 1)) fail('Sky City: stars not saved ' + JSON.stringify(stars13));
+      else step('P2-13: Sky City opens for a 6th grader on its first stop (after Crystal Caves); Ratios and Tables with a step hint, Integers on a Line, Absolute Value and Integer Add & Subtract as full rounds by real taps (a number tapped on the line, three numbers put in order, negative answers typed with the +/- key), 8 stops and 24 forced pictures measured at 380x780 (48 px targets, no cut-off words, no sideways scroll, step hints keep the question in view), stars saved ' + JSON.stringify(seen13));
+      network.push(...sc.network);
+      for (const e of sc.errors) fail(e);
+      await sc.ctx.close();
+    }
+
     for (const e of errors) fail(e);
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');

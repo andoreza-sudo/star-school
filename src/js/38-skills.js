@@ -49,8 +49,11 @@ const SK={
  fact:{t:'Factors & Primes',e:'🔢',area:'math',max:2,gen:lv=>lv==1?fyFact1():fyFact2()},
  geo:{t:'Perimeter and Area',e:'📐',area:'math',max:4,gen:lv=>lv==4?ccGeo4():lv==3?dsGeo3():lv==1?ffGeo1():ffGeo2()}, // 3 Decimal Desert, 4 Crystal Caves
  frac:{t:'Fractions',e:'🍕',area:'math',max:8,gen:lv=>lv==1?genFrac1(lv):genFracCore(lv)}, // level 1 Clock Tower (P2-03), 2-8 fractions core (P2-06)
- fop:{t:'Fraction Math',e:'🍕',area:'math',max:6,gen:lv=>lv==6?ccFop6():lv==5?ccFop5():lv==4?ccFop4():lv==3?ccFop3():lv==1?dsFop1():dsFop2()}, // 1-2 Decimal Desert, 3-6 Crystal Caves (more levels: P2-13)
+ fop:{t:'Fraction Math',e:'🍕',area:'math',max:7,gen:lv=>lv==7?skyFop7():lv==6?ccFop6():lv==5?ccFop5():lv==4?ccFop4():lv==3?ccFop3():lv==1?dsFop1():dsFop2()}, // 1-2 Decimal Desert, 3-6 Crystal Caves, 7 Sky City
  coord:{t:'Coordinates',e:'📌',area:'math',max:1,gen:ccCoord1}, // P2-12 Crystal Caves (level 2: P2-14)
+ // P2-13 Sky City
+ ratio:{t:'Ratios and Rates',e:'⚖️',area:'math',max:4,gen:lv=>lv==1?skyRatio1():lv==2?skyRatio2():lv==3?skyRatio3():skyRatio4()},
+ int:{t:'Integers',e:'🔢',area:'math',max:3,gen:lv=>lv==1?skyInt1():lv==2?skyInt2():skyInt3()},
  ang:{t:'Angles',e:'📐',area:'math',max:2,gen:lv=>lv==1?dsAng1():dsAng2()}, // P2-10
  sight:{t:'Sight Words',e:'👀',area:'read',max:5,gen:genSight},
  pic:{t:'Picture Words',e:'🖼️',area:'read',max:6,gen:lv=>lv>4?genPicP(lv):genPic(lv)},

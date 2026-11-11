@@ -2852,7 +2852,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S));SAVE_FAILED=fals
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v103'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v104'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -9457,6 +9457,363 @@ function ccStory8() {
   return story(text, `The red trail is ${fcSay(a, b)} of a mile long. The blue trail is ${fcSay(c, d)} of a mile long. How much longer is the red trail, in miles?`,
     {pad: 'frac', eq: 'value', html: `<p class="story">${words(text)}</p><div class="eq">${SLOT_FRAC} miles</div>`, ans: ccFr(n, L), hint: stepsCommonDen(a, b, c, d, '−'), label: `story8 fsub ${a}/${b}-${c}/${d}`});
 }
+
+// ---- P2-13 Sky City ----
+/* CURRICULUM M-6a: the stops of Sky City (m_sky), all names start with sky.
+   ratio 1   ratio from dots or a sentence (a : b, a to b), equal-ratio table with one blank
+   ratio 2   unit price, unit rate (miles per hour ...), which is the better buy
+   ratio 3   percent of a number (10, 20, 25, 50, 75, then any multiple of 5), find the whole from a part and a percent
+   ratio 4   fraction / decimal / percent: match, and convert (denominators 2, 4, 5, 10, 20, 25, 50, 100)
+   int 1     integers -10..10: tap on the line, compare, order three
+   int 2     absolute value, opposite, distance between two integers
+   int 3     add and subtract integers -20..20 (number-line hint)
+   fop 7     fraction / fraction and mixed numbers, simplest form
+   Every label holds the numbers of its question, so tools/test.js can rebuild the right answer from the label.
+   Negative numbers are shown with the minus sign U+2212; the answer text of a negative number is -5 (num pad 'neg', the +/- key). */
+
+const skyGcd = (a, b) => (b ? skyGcd(b, a % b) : a);
+const skyFr = (n, d) => { const g = skyGcd(n, d); return `${n / g}/${d / g}`; }; // lowest terms as text
+const skyN = v => (v < 0 ? '−' + -v : '' + v); // shown number
+const skySay = v => (v < 0 ? 'negative ' + -v : '' + v); // spoken number
+const skySpeak = s => ST.spk(s.replace(/−(\d)/g, 'negative $1'));
+// a step hint from [picture, head, text] rows; plain text only, the last row has a "?"
+const skyHint = rows => ({k: 'steps', w: 0, steps: rows.map(([pic, head, text]) => ST.step(pic || '', head, text, null, skySpeak((head ? head + ' ' : '') + text)))});
+const skyMoney = c => '$' + (c % 100 ? (c / 100).toFixed(2) : String(c / 100)); // cents -> $7.50, $12
+const skyMoneySay = c => `${Math.floor(c / 100)} dollar${Math.floor(c / 100) == 1 ? '' : 's'}` + (c % 100 ? ` and ${c % 100} cents` : '');
+const skyDec = c => { const s = String(c).padStart(3, '0'), w = s.slice(0, -2), f = s.slice(-2).replace(/0+$/, ''); return f ? `${w}.${f}` : w; }; // hundredths as a whole number -> 7.5, 12
+const skyPairs = [[['red', 'red'], ['blue', 'blue']], [['cat', 'cats'], ['dog', 'dogs']], [['boy', 'boys'], ['girl', 'girls']], [['apple', 'apples'], ['pear', 'pears']], [['pen', 'pens'], ['pencil', 'pencils']], [['circle', 'circles'], ['square', 'squares']]];
+const skyCnt = (n, w) => `${n} ${n == 1 ? w[0] : w[1]}`; // 1 cat, 3 cats
+const skyPl = w => w[1];
+
+/* ---- ratio 1 ---- */
+function skyCoprime(lo, hi, sum) {
+  let a, b;
+  do {a = R(lo, hi); b = R(lo, hi)} while (a == b || skyGcd(a, b) > 1 || a + b > sum);
+  return [a, b];
+}
+// four ratio choices around the right pair [p, q]; no wrong one is an equal ratio
+function skyRatioChoices(p, q, to) {
+  const f = (x, y) => ({v: `${x}:${y}`, l: to ? `${x} to ${y}` : `${x} : ${y}`});
+  const pool = [[q, p], [p, p + q], [q, p + q], [p + q, p], [p + 1, q], [p, q + 1], [p + q, q]]
+    .filter(([x, y]) => x * q != y * p);
+  const seen = new Set([`${p}:${q}`]), out = [f(p, q)];
+  for (const [x, y] of shuffle(pool)) {
+    if (out.length == 4) break;
+    if (seen.has(`${x}:${y}`)) continue;
+    seen.add(`${x}:${y}`); out.push(f(x, y));
+  }
+  return shuffle(out);
+}
+function skyRatio1() {
+  const r = rnd(), to = coin();
+  if (r < .35) { // dots: blue then orange (VIZ.tenFrame: the first counters are the first colour, the last b the second)
+    const [a, b] = skyCoprime(1, 9, 18), bo = coin();
+    const p = bo ? a : b, q = bo ? b : a, word = bo ? 'blue to orange' : 'orange to blue';
+    const pic = VIZ.tenFrame(a + b, a + b > 10 ? 20 : 10, {b});
+    return {kind: 'choice', cls: 'skyr', ans: `${p}:${q}`, choices: skyRatioChoices(p, q, to),
+      html: `${pic}<div class="sub">What is the ratio of ${word} dots?</div>`,
+      say: `Look at the dots. What is the ratio of ${word} dots? Say the first one, then the second one.`,
+      hint: skyHint([[pic, 'Count each colour:', `How many blue dots? How many orange dots? A ratio compares two amounts.`],
+        ['', 'Put them in order:', `The ratio of ${word} dots has the ${bo ? 'blue' : 'orange'} number first and the ${bo ? 'orange' : 'blue'} number second. Do not add them. Which choice is it?`]]),
+      label: `ratio1 dots ${a} ${b} ${bo ? 'bo' : 'ob'}`};
+  }
+  if (r < .65) { // a sentence
+    const [x, y] = pick(skyPairs), [a, b] = skyCoprime(1, 12, 20), xy = coin();
+    const p = xy ? a : b, q = xy ? b : a;
+    return {kind: 'choice', cls: 'skyr', ans: `${p}:${q}`, choices: skyRatioChoices(p, q, to),
+      html: `<div class="sub">There are ${skyCnt(a, x)} and ${skyCnt(b, y)}.</div><div class="sub">What is the ratio of ${skyPl(xy ? x : y)} to ${skyPl(xy ? y : x)}?</div>`,
+      say: `There are ${skyCnt(a, x)} and ${skyCnt(b, y)}. What is the ratio of ${skyPl(xy ? x : y)} to ${skyPl(xy ? y : x)}?`,
+      hint: skyHint([['', 'Which comes first?', `"${skyPl(xy ? x : y)} to ${skyPl(xy ? y : x)}" means the number of ${skyPl(xy ? x : y)} goes first and the number of ${skyPl(xy ? y : x)} goes second.`],
+        ['', 'Write them in order:', `Find the number of each in the sentence. Do not add them up. Which choice has the numbers in that order?`]]),
+      label: `ratio1 sent ${a} ${b} ${xy ? 'xy' : 'yx'}`};
+  }
+  // equal ratios with one blank
+  const [x, y] = pick(skyPairs), [a, b] = skyCoprime(1, 9, 99), k = R(2, 9), first = rnd() < .3;
+  const left = `${a} : ${b}`, right = first ? `${SLOT} : ${b * k}` : `${a * k} : ${SLOT}`;
+  const known = first ? b : a, want = first ? a : b, kn = first ? b * k : a * k;
+  return {kind: 'num',
+    html: `<div class="sub">${skyCnt(a, x)} to ${skyCnt(b, y)}. Make an equal ratio.</div><div class="eq">${left} = ${right}</div>`,
+    say: `${skyCnt(a, x)} to ${skyCnt(b, y)}. Make an equal ratio. ${first ? `What number goes with ${b * k} ${skyPl(y)}?` : `What number goes with ${a * k} ${skyPl(x)}?`}`,
+    ans: String(first ? a * k : b * k),
+    hint: skyHint([['', 'Same multiplier:', `${known} gets bigger to make ${kn}. What number do you multiply ${known} by?`],
+      ['', 'Do it to both:', `${known} × ${kn / known} = ${kn}. A ratio stays equal when both numbers are multiplied by the same number. Do the same to ${want}: ${want} × ${kn / known} = ?`]]),
+    label: `ratio1 tbl ${a} ${b} ${first ? '?' : a * k} ${first ? b * k : '?'}`};
+}
+
+/* ---- ratio 2 ---- */
+const skyItems = [['apple', 'apples'], ['pencil', 'pencils'], ['ball', 'balls'], ['book', 'books'], ['pen', 'pens']];
+const skyRates = [
+  {a: 'miles', b: 'hours', one: 'hour', w: (t, n) => `A car goes ${t} miles in ${n} hours.`, lo: 20, hi: 80},
+  {a: 'pages', b: 'minutes', one: 'minute', w: (t, n) => `Mia reads ${t} pages in ${n} minutes.`, lo: 2, hi: 9},
+  {a: 'laps', b: 'minutes', one: 'minute', w: (t, n) => `A runner does ${t} laps in ${n} minutes.`, lo: 2, hi: 9},
+  {a: 'words', b: 'minutes', one: 'minute', w: (t, n) => `Leo types ${t} words in ${n} minutes.`, lo: 20, hi: 60}];
+function skyRatio2() {
+  const r = rnd();
+  if (r < .3) { // price of one
+    const [s, pl] = pick(skyItems), n = R(2, 9), u = 5 * R(10, 199), tot = u * n; // u: 50 to 995 cents, in 5s
+    return {kind: 'num', pad: 'dec', eq: 'value', max: 3,
+      html: `<div class="sub">${n} ${pl} cost ${skyMoney(tot)}.</div><div class="sub">How much does 1 ${s} cost?</div><div class="eq">$ ${SLOT}</div>`,
+      say: `${n} ${pl} cost ${skyMoneySay(tot)}. How much does 1 ${s} cost?`, ans: skyDec(u),
+      hint: skyHint([['', 'Share it equally:', `The cost of 1 ${s} is the total split into ${n} equal shares. That is division.`],
+        ['', 'Divide:', `${skyMoney(tot)} ÷ ${n} = ? Change dollars to cents if it helps, then put the point back.`]]),
+      label: `ratio2 unit ${n} ${tot}`};
+  }
+  if (r < .6) { // a rate: per hour, per minute
+    const c = pick(skyRates), n = R(2, 8), u = R(c.lo, c.hi), tot = u * n;
+    return {kind: 'num', max: 3,
+      html: `<div class="sub">${c.w(tot, n)}</div><div class="sub">How many ${c.a} in 1 ${c.one}?</div><div class="eq">${SLOT} ${c.a} per ${c.one}</div>`,
+      say: `${c.w(tot, n)} How many ${c.a} in 1 ${c.one}?`, ans: String(u),
+      hint: skyHint([['', 'Unit rate:', `A unit rate tells how many ${c.a} in just 1 ${c.one}. Share the ${tot} ${c.a} equally over ${n} ${c.b}.`],
+        ['', 'Divide:', `${tot} ÷ ${n} = ?`]]),
+      label: `ratio2 rate ${tot} ${n} ${c.a}`};
+  }
+  // better buy: two sizes of the same thing, the lower price for one wins
+  const [s, pl] = pick(skyItems);
+  let n1, n2, u1, u2;
+  do {n1 = R(2, 9); n2 = R(2, 9); u1 = 5 * R(8, 80); u2 = 5 * R(8, 80)} while (n1 == n2 || u1 == u2 || Math.abs(u1 - u2) < 10);
+  const A = `${n1} ${pl} for ${skyMoney(n1 * u1)}`, B = `${n2} ${pl} for ${skyMoney(n2 * u2)}`;
+  return {kind: 'choice', cls: 'skyb', ans: u1 < u2 ? 'a' : 'b', choices: [{v: 'a', l: 'Deal A'}, {v: 'b', l: 'Deal B'}],
+    html: `<div class="sub">Which is the better buy? It costs less for 1 ${s}.</div><div class="sub">A: ${A}</div><div class="sub">B: ${B}</div>`,
+    say: `Which is the better buy? It costs less for 1 ${s}. Deal A, ${n1} ${pl} for ${skyMoneySay(n1 * u1)}. Deal B, ${n2} ${pl} for ${skyMoneySay(n2 * u2)}.`,
+    hint: skyHint([['', 'Price of one:', `Find the cost of 1 ${s} for each. Divide each price by its number of ${pl}.`],
+      ['', 'Compare:', `${skyMoney(n1 * u1)} ÷ ${n1} = ? and ${skyMoney(n2 * u2)} ÷ ${n2} = ? Which is less?`]]),
+    label: `ratio2 buy ${n1} ${n1 * u1} ${n2} ${n2 * u2}`};
+}
+
+/* ---- ratio 3 ---- */
+const skyPctEarly = [10, 20, 25, 50, 75];
+function skyRatio3() {
+  const p = rnd() < .5 ? pick(skyPctEarly) : 5 * R(1, 19), g = skyGcd(100, p), a = p / g, b = 100 / g; // p% = a/b
+  let w; // the whole: a multiple of b so that the part is whole, 20 to 400
+  do {w = b * R(1, Math.floor(400 / b))} while (w < 20);
+  const part = w * p / 100;
+  if (rnd() < .7) {
+    const rows = [['', 'Percent means out of 100:', `${p}% = ${p}/100 = ${a}/${b}.`],
+      ['', a == 1 ? 'One part:' : 'One part, then more:', a == 1 ? `Find ${a}/${b} of ${w}: divide ${w} by ${b}. ${w} ÷ ${b} = ?` : `Divide ${w} by ${b} to find 1/${b} of it. Then multiply that by ${a}. ${w} ÷ ${b} = ?`]];
+    if (a > 1) rows.push(['', 'Times the top:', `Multiply your answer by ${a}. What do you get?`]);
+    return {kind: 'num', max: 3,
+      html: `<div class="sub">Find the part.</div><div class="eq">${p}% of ${w} = ${SLOT}</div>`,
+      say: `What is ${p} percent of ${w}?`, ans: String(part), hint: skyHint(rows), label: `ratio3 part ${p} ${w}`};
+  }
+  const rows = [['', 'Percent means out of 100:', `${p}% = ${a}/${b}. So ${part} is ${a}/${b} of the whole.`]];
+  if (a == 1) rows.push(['', 'Whole = all the parts:', `${part} is 1 of ${b} equal parts. The whole is ${b} of them. ${part} × ${b} = ?`]);
+  else rows.push(['', 'One part:', `${part} is ${a} of ${b} equal parts. 1 part is ${part} ÷ ${a} = ?`], ['', 'The whole:', `The whole is ${b} parts. Multiply the size of 1 part by ${b}. What do you get?`]);
+  return {kind: 'num', max: 3,
+    html: `<div class="sub">${part} is ${p}% of a number. What is the number?</div><div class="eq">${p}% of ${SLOT} = ${part}</div>`,
+    say: `${part} is ${p} percent of a number. What is the number?`, ans: String(w), hint: skyHint(rows), label: `ratio3 whole ${p} ${part}`};
+}
+
+/* ---- ratio 4 ---- */
+const skyDen = [2, 4, 5, 10, 20, 25, 50, 100];
+const skyBig = {20: 'twentieth', 25: 'twenty-fifth', 50: 'fiftieth', 100: 'hundredth'};
+const skyFcSay = (n, d) => (skyBig[d] ? `${n} ${skyBig[d]}${n == 1 ? '' : 's'}` : fcSay(n, d)); // spoken fraction, bottoms to 100
+// a proper fraction n/d with d from skyDen (h100: 100 allowed)
+function skyProper(h100) {
+  const d = pick(h100 ? skyDen : skyDen.slice(0, -1)); return [R(1, d - 1), d];
+}
+const skyPctOf = (n, d) => n * 100 / d;
+const skyDecOf = (n, d) => skyDec(skyPctOf(n, d)); // text of n/d as a decimal
+function skyRatio4() {
+  const r = rnd();
+  if (r < .25) { // match four pairs
+    const mode = pick(['fp', 'fd', 'dp']), seen = new Set(), items = [], opts = [];
+    while (items.length < 4) {
+      const [n, d] = skyProper(mode != 'fp'), pc = skyPctOf(n, d);
+      if (seen.has(pc)) continue;
+      seen.add(pc);
+      items.push(mode == 'dp' ? {v: String(pc), l: skyDecOf(n, d)} : {v: String(pc), l: fcFr(n, d), h: true});
+      opts.push({v: String(pc), l: mode == 'fd' ? skyDecOf(n, d) : pc + '%'});
+    }
+    const ans = items.map(c => c.v).sort().join('|'), names = {fp: ['fractions', 'percent'], fd: ['fractions', 'decimal'], dp: ['decimals', 'percent']}[mode];
+    const sorted = items.slice().sort((x, y) => x.v - y.v);
+    return {kind: 'match', items: sorted, opts: shuffle(opts), ans,
+      html: `<div class="sub">Match each of the ${names[0]} to the same amount as a ${names[1]}.</div>`,
+      say: `Match each of the ${names[0]} to the same amount written as a ${names[1]}.`,
+      hint: skyHint([['', 'One at a time:', mode == 'dp' ? 'Percent means out of 100. A decimal with two places is hundredths, so 0.25 is 25 out of 100. Start with the one you know best.' : 'Make the bottom of the fraction 100 (or 10) by multiplying top and bottom by the same number. Start with the one you know best.'],
+        ['', 'Then the rest:', `The top of the fraction out of 100 is the percent, and the same number written with a point is the decimal. Which pairs are left?`]]),
+      label: `ratio4 match ${mode} ${sorted.map(c => c.v).join(',')}`};
+  }
+  const v = pick(['fp', 'fd', 'dp', 'pd', 'pf']);
+  if (v == 'fp') {
+    const [n, d] = skyProper(false), m = 100 / d;
+    return {kind: 'num', max: 3,
+      html: `<div class="sub">Write the fraction as a percent.</div><div class="eq">${fcFr(n, d)} = ${SLOT} %</div>`,
+      say: `Write ${skyFcSay(n, d)} as a percent.`, ans: String(skyPctOf(n, d)),
+      hint: skyHint([['', 'Out of 100:', `Percent means out of 100. Make the bottom 100: ${d} × ? = 100.`], ['', 'Same to the top:', `Multiply the top, ${n}, by the same number. ${n} × ${m} = ? So the fraction is that many out of 100.`]]),
+      label: `ratio4 fp ${n}/${d}`};
+  }
+  if (v == 'fd') {
+    const [n, d] = skyProper(true);
+    return {kind: 'num', pad: 'dec', eq: 'value', max: 3,
+      html: `<div class="sub">Write the fraction as a decimal.</div><div class="eq">${fcFr(n, d)} = ${SLOT}</div>`,
+      say: `Write ${skyFcSay(n, d)} as a decimal.`, ans: skyDecOf(n, d),
+      hint: skyHint([['', 'Tenths or hundredths:', d == 100 ? 'The bottom is 100, so the top is the number of hundredths.' : `Make the bottom 10 or 100: ${d} × ? = 10 or 100.`],
+        ['', 'Write it with a point:', `Multiply the top by the same number. Two digits after the point mean hundredths, one digit means tenths. What decimal is it?`]]),
+      label: `ratio4 fd ${n}/${d}`};
+  }
+  if (v == 'dp') {
+    const c = R(1, 99), dtext = skyDec(c);
+    return {kind: 'num', max: 3,
+      html: `<div class="sub">Write the decimal as a percent.</div><div class="eq">${dtext} = ${SLOT} %</div>`,
+      say: `Write ${dtext} as a percent.`, ans: String(c),
+      hint: skyHint([['', 'Hundredths:', `Write ${dtext} as hundredths. 0.5 is the same as 0.50.`], ['', 'Out of 100:', `A decimal in hundredths is that many out of 100. Percent means out of 100. What percent is it?`]]),
+      label: `ratio4 dp ${dtext}`};
+  }
+  if (v == 'pd') {
+    const c = R(1, 99);
+    return {kind: 'num', pad: 'dec', eq: 'value', max: 3,
+      html: `<div class="sub">Write the percent as a decimal.</div><div class="eq">${c}% = ${SLOT}</div>`,
+      say: `Write ${c} percent as a decimal.`, ans: skyDec(c),
+      hint: skyHint([['', 'Out of 100:', `${c}% means ${c} out of 100, or ${c}/100.`], ['', 'Hundredths:', `${c} hundredths is written with two places after the point. What decimal is it?`]]),
+      label: `ratio4 pd ${c}`};
+  }
+  const [n, d] = skyProper(false), pc = skyPctOf(n, d), red = skyFr(n, d);
+  return {kind: 'num', pad: 'frac',
+    html: `<div class="sub">Write the percent as a fraction in simplest form.</div><div class="eq">${pc}% = ${SLOT_FRAC}</div>`,
+    say: `Write ${pc} percent as a fraction in simplest form.`, ans: red,
+    hint: skyHint([['', 'Over 100:', `${pc}% is ${pc} out of 100, or ${pc}/100.`], ['', 'Simplest form:', `Find a number that goes into both ${pc} and 100. Divide the top and the bottom by it. Can you go further?`]]),
+    label: `ratio4 pf ${pc}`};
+}
+
+/* ---- int 1 ---- */
+const skyLineO = o => VIZ.numLine(Object.assign({min: -10, max: 10, labels: [-10, -5, 0, 5, 10]}, o));
+function skyInt1() {
+  const r = rnd();
+  if (r < .3) { // tap a number
+    let x;
+    do {x = R(-9, 9)} while (x == 0 || x % 5 == 0);
+    let pts;
+    for (;;) {
+      pts = [x];
+      for (let k = 0; k < 40 && pts.length < 5; k++) { const v = R(-10, 10); if (pts.every(p => Math.abs(p - v) >= 4)) pts.push(v); }
+      if (pts.length >= 4) break;
+    }
+    return {kind: 'tap', ans: String(x), ansSay: skySay(x),
+      html: `${skyLineO({tapValues: shuffle(pts)})}<div class="sub">Tap ${skyN(x)} on the number line.</div>`,
+      say: `Tap ${skySay(x)} on the number line.`,
+      hint: skyHint([['', 'Find zero:', `Numbers to the right of 0 are positive. Numbers to the left of 0 are negative.`],
+        ['', 'Count:', `Start at 0 and count ${Math.abs(x)} steps to the ${x < 0 ? 'left' : 'right'}. Which spot is it?`]]),
+      label: `int1 tap ${x}`};
+  }
+  if (r < .7) {
+    let a, b;
+    do {a = R(-10, 10); b = R(-10, 10)} while (a == b || (a >= 0 && b >= 0));
+    const m = rnd();
+    if (m < .5) { // compare
+      return {kind: 'choice', cls: 'syms', ans: a < b ? '<' : '>', choices: FC_SYM.map(c => ({...c})),
+        html: `<div class="sub">Which is true?</div><div class="eq">${skyN(a)} ${SLOT} ${skyN(b)}</div>${skyLineO({marks: [a, b]})}`,
+        say: `Is ${skySay(a)} less than, equal to, or greater than ${skySay(b)}?`,
+        hint: skyHint([['', 'Use the line:', `On a number line, the numbers get bigger as you go right.`], ['', 'Which is more right?', `Find ${skyN(a)} and ${skyN(b)}. The one farther to the right is greater. Which is it?`]]),
+        label: `int1 cmp ${a} ${b}`};
+    }
+    const cold = m < .75;
+    return {kind: 'choice', cls: 'skyb', ans: String(cold ? Math.min(a, b) : Math.max(a, b)),
+      choices: shuffle([a, b].map(v => ({v: String(v), l: skyN(v) + '°'}))),
+      html: `<div class="sub">Two cities have these temperatures.</div><div class="sub">Which is ${cold ? 'colder' : 'warmer'}?</div>`,
+      say: `One city is ${skySay(a)} degrees. Another is ${skySay(b)} degrees. Which is ${cold ? 'colder' : 'warmer'}?`,
+      hint: skyHint([['', 'A thermometer:', `Think of a thermometer standing up. Higher up means warmer. Below zero is under 0.`],
+        ['', 'Compare:', `Which number is ${cold ? 'lower' : 'higher'} on the number line? A negative number is smaller when it is farther from 0.`]]),
+      label: `int1 ${cold ? 'cold' : 'warm'} ${a} ${b}`};
+  }
+  // order three
+  let v;
+  do {v = [R(-10, 10), R(-10, 10), R(-10, 10)]} while (new Set(v).size < 3 || v.every(x => x >= 0));
+  const up = rnd() < .7, asc = [...v].sort((x, y) => x - y), ans = (up ? asc : asc.slice().reverse()).map(String);
+  let items;
+  do {items = shuffle(v.map(x => ({v: String(x), l: skyN(x)})))} while (items.map(i => i.v).join() == ans.join());
+  return {kind: 'order', items, ans,
+    html: `<div class="sub">Tap the numbers in order from ${up ? 'least to greatest' : 'greatest to least'}.</div>`,
+    say: `Tap the numbers in order from ${up ? 'least to greatest' : 'greatest to least'}.`,
+    hint: skyHint([['', 'Picture the line:', `Negative numbers are left of 0. The bigger the number after the minus sign, the farther left, and the smaller the number.`],
+      ['', 'Order them:', `Which one is farthest to the ${up ? 'left' : 'right'}? Tap it first.`]]),
+    label: `int1 ord ${v.join(',')} ${up ? 'up' : 'down'}`};
+}
+
+/* ---- int 2 ---- */
+function skyNz(lo, hi) { let v; do {v = R(lo, hi)} while (v == 0); return v; }
+function skyInt2() {
+  const r = rnd();
+  if (r < .35) {
+    const x = skyNz(-15, 15), m = Math.max(10, Math.abs(x) + 1), pic = VIZ.numLine({min: -m, max: m, marks: [x]});
+    return {kind: 'num', pad: 'neg', max: 2,
+      html: `${pic}<div class="sub">How far is it from 0?</div><div class="eq">|${skyN(x)}| = ${SLOT}</div>`,
+      say: `What is the absolute value of ${skySay(x)}?`, ans: String(Math.abs(x)),
+      hint: skyHint([[pic, 'Distance from 0:', `Absolute value is how far a number is from 0 on the number line. Distance is never negative.`],
+        ['', 'Count:', `How many steps is ${skyN(x)} from 0? That is |${skyN(x)}|.`]]),
+      label: `int2 abs ${x}`};
+  }
+  if (r < .65) {
+    const x = skyNz(-20, 20), pic = Math.abs(x) <= 10 ? VIZ.numLine({min: -10, max: 10, marks: [x]}) : '';
+    return {kind: 'num', pad: 'neg', max: 2,
+      html: `${pic}<div class="sub">What is the opposite of ${skyN(x)}?</div><div class="eq">${SLOT}</div>`,
+      say: `What is the opposite of ${skySay(x)}?`, ans: String(-x),
+      hint: skyHint([['', 'Same distance:', `Opposites are the same distance from 0, but on different sides of 0.`],
+        ['', 'Other side:', `${skyN(x)} is ${Math.abs(x)} steps ${x < 0 ? 'left' : 'right'} of 0. Go ${Math.abs(x)} steps ${x < 0 ? 'right' : 'left'} of 0. Where do you land?`]]),
+      label: `int2 opp ${x}`};
+  }
+  let a, b;
+  do {a = R(-10, 10); b = R(-10, 10)} while (a >= b || b - a < 2 || (a >= 0 && rnd() < .8));
+  const pic = VIZ.numLine({min: -10, max: 10, marks: [a, b]});
+  return {kind: 'num', pad: 'neg', max: 2,
+    html: `${pic}<div class="sub">How far apart are ${skyN(a)} and ${skyN(b)}?</div><div class="eq">${SLOT} steps</div>`,
+    say: `How many steps apart are ${skySay(a)} and ${skySay(b)} on the number line?`, ans: String(b - a),
+    hint: skyHint([[pic, 'Count the gap:', `Start at ${skyN(a)} and count the steps to ${skyN(b)}.`],
+      ['', a < 0 && b > 0 ? 'Cross zero:' : 'Same side of 0:', a < 0 && b > 0 ? `Count ${Math.abs(a)} steps to 0, then ${b} more steps. Add the two parts. What do you get?` : `Take the smaller distance from 0 away from the bigger one. What is the gap?`]]),
+    label: `int2 dist ${a} ${b}`};
+}
+
+/* ---- int 3 ---- */
+function skyInt3() {
+  let a, b, op, res;
+  for (;;) {
+    a = R(-20, 20); b = R(-20, 20); op = coin() ? '+' : '-';
+    res = op == '+' ? a + b : a - b;
+    if (a && b && Math.abs(res) <= 20 && !(a > 0 && b > 0 && rnd() < .7)) break;
+  }
+  const shownB = b < 0 ? `(${skyN(b)})` : skyN(b), mv = op == '+' ? b : -b;
+  const lo = Math.min(a, res, 0) - 2, hi = Math.max(a, res, 0) + 2;
+  const start = VIZ.numLine({min: lo, max: hi, marks: [a]}), hop = VIZ.numLine({min: lo, max: hi, marks: [a], hops: [[a, a + mv]]});
+  const rule = op == '+' ? (b > 0 ? 'Adding a positive number moves right.' : 'Adding a negative number moves left.')
+    : (b > 0 ? 'Subtracting a positive number moves left.' : 'Subtracting a negative number is the same as adding. It moves right.');
+  return {kind: 'num', pad: 'neg', max: 2,
+    html: `<div class="eq">${skyN(a)} ${op == '+' ? '+' : '−'} ${shownB} = ${SLOT}</div>`,
+    say: `${skySay(a)} ${op == '+' ? 'plus' : 'minus'} ${skySay(b)}. What is the answer?`, ans: String(res),
+    hint: skyHint([[start, 'Start:', `Start at ${skyN(a)} on the number line.`], ['', 'Which way?', rule + ` Move ${Math.abs(b)} steps.`],
+      [hop, 'Hop:', `Go ${Math.abs(b)} steps ${mv < 0 ? 'left' : 'right'} from ${skyN(a)}. Where do you land?`]]),
+    label: `int3 ${a} ${op} ${b}`};
+}
+
+/* ---- fop 7 ---- */
+function skyFrac() { // a proper fraction in lowest terms, bottom 2 to 9
+  let a, b;
+  do {b = R(2, 9); a = R(1, b - 1)} while (skyGcd(a, b) > 1);
+  return [a, b];
+}
+function skyFop7() {
+  const f = rnd(), kinds = f < .4 ? [0, 0] : f < .65 ? [1, 0] : f < .85 ? [0, 1] : [1, 1]; // 1 = mixed number
+  let A, B, n, d;
+  for (;;) {
+    const fa = skyFrac(), fb = skyFrac();
+    A = {w: kinds[0] ? R(1, 3) : 0, a: fa[0], b: fa[1]}; B = {w: kinds[1] ? R(1, 3) : 0, a: fb[0], b: fb[1]};
+    const n1 = A.w * A.b + A.a, n2 = B.w * B.b + B.a;
+    n = n1 * B.b; d = A.b * n2;
+    const g = skyGcd(n, d); n /= g; d /= g;
+    if (d > 1 && n <= 60 && !(A.a == B.a && A.b == B.b && A.w == B.w)) break;
+  }
+  const txt = X => (X.w ? `${X.w} ${X.a}/${X.b}` : `${X.a}/${X.b}`), html = X => (X.w ? `${X.w} ` : '') + fcFr(X.a, X.b);
+  const sayX = X => (X.w ? `${X.w} and ` : '') + fcSay(X.a, X.b);
+  const w = Math.floor(n / d), rem = n % d, mix = w > 0;
+  const ans = mix ? `${w} ${rem}/${d}` : `${n}/${d}`;
+  const t1 = A.w * A.b + A.a, t2 = B.w * B.b + B.a, rows = [];
+  if (A.w || B.w) rows.push(['', 'Mixed numbers to fractions:', `${A.w ? `${txt(A)} = (${A.w} × ${A.b} + ${A.a})/${A.b}. ` : ''}${B.w ? `${txt(B)} = (${B.w} × ${B.b} + ${B.a})/${B.b}. ` : ''}Write each as a fraction with the top bigger than the bottom.`]);
+  rows.push(['', 'Flip and multiply:', `Dividing by a fraction is the same as multiplying by its flip. Flip ${t2}/${B.b} to get ${B.b}/${t2}. Now multiply ${t1}/${A.b} × ${B.b}/${t2}.`],
+    ['', 'Tops and bottoms:', `Tops: ${t1} × ${B.b} = ? Bottoms: ${A.b} × ${t2} = ?`],
+    ['', 'Simplest form:', mix ? 'Divide top and bottom by a number that goes into both. Then if the top is bigger, divide to get a mixed number. What is left?' : 'Divide top and bottom by a number that goes into both, until nothing more goes into both. What is left?']);
+  return {kind: 'num', pad: mix ? 'int' : 'frac', sep: mix ? 'mix' : null, max: 3,
+    html: `<div class="sub">Divide. Write the answer as ${mix ? 'a mixed number' : 'a fraction'} in simplest form.</div><div class="eq">${html(A)} ÷ ${html(B)} = ${mix ? SLOT_MIX : SLOT_FRAC}</div>`,
+    say: `${sayX(A)} divided by ${sayX(B)}. Write the answer in simplest form.`, ans, hint: skyHint(rows),
+    label: `fop7 ${txt(A)} / ${txt(B)}`};
+}
 /* ---------- early reading: sounds & rhymes ---------- */
 function genSound(lv){const [w,e]=pick(lv==1?CVC.concat(BLEND.filter(x=>!/^(sh|ch|th|wh)/.test(x[0]))):CVC),ch=lv==1?w[0]:w[w.length-1];
   const opts=shuffle([ch,...shuffle([...'bcdfghjklmnprstvw'].filter(x=>x!=ch)).slice(0,2)]);
@@ -9951,8 +10308,11 @@ const SK={
  fact:{t:'Factors & Primes',e:'🔢',area:'math',max:2,gen:lv=>lv==1?fyFact1():fyFact2()},
  geo:{t:'Perimeter and Area',e:'📐',area:'math',max:4,gen:lv=>lv==4?ccGeo4():lv==3?dsGeo3():lv==1?ffGeo1():ffGeo2()}, // 3 Decimal Desert, 4 Crystal Caves
  frac:{t:'Fractions',e:'🍕',area:'math',max:8,gen:lv=>lv==1?genFrac1(lv):genFracCore(lv)}, // level 1 Clock Tower (P2-03), 2-8 fractions core (P2-06)
- fop:{t:'Fraction Math',e:'🍕',area:'math',max:6,gen:lv=>lv==6?ccFop6():lv==5?ccFop5():lv==4?ccFop4():lv==3?ccFop3():lv==1?dsFop1():dsFop2()}, // 1-2 Decimal Desert, 3-6 Crystal Caves (more levels: P2-13)
+ fop:{t:'Fraction Math',e:'🍕',area:'math',max:7,gen:lv=>lv==7?skyFop7():lv==6?ccFop6():lv==5?ccFop5():lv==4?ccFop4():lv==3?ccFop3():lv==1?dsFop1():dsFop2()}, // 1-2 Decimal Desert, 3-6 Crystal Caves, 7 Sky City
  coord:{t:'Coordinates',e:'📌',area:'math',max:1,gen:ccCoord1}, // P2-12 Crystal Caves (level 2: P2-14)
+ // P2-13 Sky City
+ ratio:{t:'Ratios and Rates',e:'⚖️',area:'math',max:4,gen:lv=>lv==1?skyRatio1():lv==2?skyRatio2():lv==3?skyRatio3():skyRatio4()},
+ int:{t:'Integers',e:'🔢',area:'math',max:3,gen:lv=>lv==1?skyInt1():lv==2?skyInt2():skyInt3()},
  ang:{t:'Angles',e:'📐',area:'math',max:2,gen:lv=>lv==1?dsAng1():dsAng2()}, // P2-10
  sight:{t:'Sight Words',e:'👀',area:'read',max:5,gen:genSight},
  pic:{t:'Picture Words',e:'🖼️',area:'read',max:6,gen:lv=>lv>4?genPicP(lv):genPic(lv)},
@@ -10637,7 +10997,8 @@ const PATHS={
   {id:'m_factory',g:4,n:'Factor Factory',e:'⚙️',c:'#e0e7ff',nodes:[['mfact',5,'Times 11 & 12'],['pv',4,'Place Value to 999,999'],['mbig',2,'2-Digit Times 1-Digit'],['big',6,'Add 4-Digit Numbers'],['dbig',1,'Divide 2-Digit Numbers'],['mbig',3,'Big Times 1-Digit'],['sub',8,'Take Away Big Numbers'],['dbig',2,'Divide with Leftovers'],['fact',1,'Factors & Multiples'],['mbig',4,'2-Digit Times 2-Digit'],['big',7,'Add Big Numbers'],['dbig',3,'Divide Big Numbers'],['fact',2,'Prime or Composite'],['round',3,'Round Big Numbers']]},
   {id:'m_desert',g:4,n:'Decimal Desert',e:'🏜️',c:'#fef08a',nodes:[['frac',6,'Unlike Fractions'],['frac',7,'Simplest Form'],['fop',1,'Add & Subtract Parts'],['frac',8,'Mixed Numbers'],['fop',2,'Whole × Fraction'],['dec',1,'Tenths & Hundredths'],['dec',2,'Compare Decimals'],['ang',1,'Kinds of Angles'],['ang',2,'Measure Angles'],['geo',3,'Find the Missing Side'],['shape',6,'Symmetry & Lines'],['meas',5,'Convert Units'],['pat',4,'In and Out Tables'],['story',7,'Remainder Stories']]},
   {id:'m_volcano',g:5,n:'Volcano Lab',e:'🌋',c:'#ffe4e6',nodes:[['pv',5,'Decimal Place Value'],['mbig',5,'3-Digit Times 2-Digit'],['dec',3,'Add/Subtract Decimals'],['pv',6,'Powers of Ten'],['dbig',4,'Divide by 2-Digit'],['dec',4,'Multiply Decimals'],['round',4,'Round Decimals'],['ooo',1,'Order of Operations'],['dec',5,'Divide Decimals']]},
-  {id:'m_caves',g:5,n:'Crystal Caves',e:'💎',c:'#f3e8ff',nodes:[['fop',3,'Unlike Denominators'],['fop',4,'Mixed Numbers'],['geo',4,'Volume of a Box'],['fop',5,'Multiply Fractions'],['coord',1,'Coordinate Grid'],['fop',6,'Unit Fraction Division'],['meas',6,'Convert Both Ways'],['data',4,'Line Plots'],['pat',5,'Two Rules'],['story',8,'Fraction Stories']]}]},
+  {id:'m_caves',g:5,n:'Crystal Caves',e:'💎',c:'#f3e8ff',nodes:[['fop',3,'Unlike Denominators'],['fop',4,'Mixed Numbers'],['geo',4,'Volume of a Box'],['fop',5,'Multiply Fractions'],['coord',1,'Coordinate Grid'],['fop',6,'Unit Fraction Division'],['meas',6,'Convert Both Ways'],['data',4,'Line Plots'],['pat',5,'Two Rules'],['story',8,'Fraction Stories']]},
+  {id:'m_sky',g:6,n:'Sky City',e:'☁️',c:'#e0f2fe',nodes:[['ratio',1,'Ratios and Tables'],['ratio',2,'Unit Rates'],['int',1,'Integers on a Line'],['ratio',3,'Percent of a Number'],['int',2,'Absolute Value'],['ratio',4,'Fractions and Percents'],['fop',7,'Divide Fractions'],['int',3,'Integer Add & Subtract']]}]},
  read:{n:'Reading Adventure',e:'📖',c:'linear-gradient(135deg,#fce7f3,#fbcfe8)',worlds:[
   {id:'r_abc',g:-1,n:'ABC Beach',e:'🏖️',c:'#e0f2fe',nodes:[['abc',1,'Big Letters'],['abc',2,'Little Letters'],['abc',3,'Match Big & Little'],['syl',1,'Clap the Syllables'],['abc',4,'ABC Order']]},
   {id:'r_meadow',g:0,n:'Letter Meadow',e:'🌻',c:'#dcfce7',nodes:[['sound',1,'First Sounds'],['sight',1,'Sight Words'],['rhyme',1,'Rhyme Time'],['pic',1,'Picture Words'],['sound',2,'Last Sounds'],['build',1,'Build a Word'],['sent',1,'Read & Match'],['sound',3,'Middle Sounds']]},
@@ -11259,7 +11620,7 @@ function home(first){
   <div class="scroll hm" id="hs"><div class="hm-cols">
    <div class="hm-col">${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
-   <p class="hm-ver">${ico('star', 16)}<span>Star School v103</span></p></div>`);
+   <p class="hm-ver">${ico('star', 16)}<span>Star School v104</span></p></div>`);
   music(true);
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,['💖','✨','⭐']);
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
@@ -18455,7 +18816,7 @@ function grown(){let armed=false;
    <div class="vline"><span class="vtxt">Give a bonus</span><button class="btn xs" id="pt5">+5 min</button><button class="btn xs danger" id="pt0">Empty bank</button></div>
    <label class="tg"><input type="checkbox" id="ptp" ${ptCfg().pause?'checked':''}> Pause game time (games locked)</label></div>
   <div class="card"><div class="tw"><table><tr><th>Skill</th><th>Rounds</th><th>1st try</th><th>Tricky ones</th></tr>${rows}</table></div></div>
-  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v103 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
+  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v104 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
    Storage: ${SAVE_FAILED?'<b style="color:#c0392b">could not save (device storage may be full)</b>':'saving OK'}${SAVE_CORRUPT?'<br><b style="color:#c0392b">The old save could not be read. A fresh start was made and the old data was kept on the device.</b>':''}<br>
    Last errors: ${(S.err||[]).length?(S.err||[]).slice().reverse().map(e=>'<br>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+' '+esc(e.msg)).join(''):'none'}</div></details>
   <div class="card"><label class="tg"><input type="checkbox" id="voice" ${S.voice?'checked':''}> Read questions out loud</label>
@@ -18791,16 +19152,16 @@ try{speechSynthesis.getVoices();speechSynthesis.onvoiceschanged=()=>{}}catch(e){
    of an update), the app does not start, because a round would break on a missing bank. It asks to go online and try again.
    Nothing in the save changes except one line in the App log (S.err). */
 function dataReady() {
-  return typeof DATA_VER !== 'undefined' && DATA_VER === 'v103';
+  return typeof DATA_VER !== 'undefined' && DATA_VER === 'v104';
 }
 function dataMissing() {
-  logErr('data file ' + (typeof DATA_VER === 'undefined' ? 'missing' : DATA_VER + ' does not match') + ' (app v103)');
+  logErr('data file ' + (typeof DATA_VER === 'undefined' ? 'missing' : DATA_VER + ' does not match') + ' (app v104)');
   const again = UI.btn('Try again', { kind: 'primary', size: 'lg', icon: 'replay', id: 'dataretry' });
   view(`<div class="scroll" id="datamiss">${UI.empty('download', 'Star School needs to finish updating. Connect to the internet, then tap Try again.', again)}</div>`);
   $('#dataretry').onclick = () => location.reload();
 }
 </script>
-<script src="data.v103.js"></script>
+<script src="data.v104.js"></script>
 <script>
 if (dataReady()) {
   loadClips();

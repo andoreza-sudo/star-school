@@ -1418,6 +1418,39 @@ Object.assign(SCREENS, {
   'bt-sud-win': sudShot(1, 1, { win: true }),
 });
 
+// P2-13 Sky City: a question of one level picked by its label (grade 6), optionally with the step hint open (hint = taps of Next step)
+function skyShot(sk, lv, want, hint = 0) {
+  return async p => {
+    await p.evaluate(([sk, lv, want]) => {
+      S.grade = 6; S.name = 'Ava'; S.buddy = 'Ben';
+      window.say = () => {};
+      start('math', NODES.math.findIndex(n => n.sk == sk && n.lv == lv));
+      let q; for (let i = 1; i < 900; i++) { q = genQ(sk, lv, i); if (new RegExp(want).test(q.label)) break; }
+      G.q = q; renderQ();
+    }, [sk, lv, want]);
+    for (let i = 0; i < hint; i++) { await p.click('#hb'); await p.waitForTimeout(150); }
+    if (hint) await p.waitForTimeout(500);
+  };
+}
+Object.assign(SCREENS, {
+  'sky-map': { run: async p => { await p.evaluate(() => { S.grade = 6; pathMap('math', PATHS.math.worlds.findIndex(w => w.id === 'm_sky')); }); } },
+  'sky-ratio1-dots': { run: skyShot('ratio', 1, '^ratio1 dots') },
+  'sky-ratio1-table': { run: skyShot('ratio', 1, '^ratio1 tbl', 2) },
+  'sky-ratio2-buy': { run: skyShot('ratio', 2, '^ratio2 buy') },
+  'sky-ratio2-unit': { run: skyShot('ratio', 2, '^ratio2 unit', 1) },
+  'sky-ratio3': { run: skyShot('ratio', 3, '^ratio3 whole 35', 1) },
+  'sky-ratio4-match': { run: skyShot('ratio', 4, '^ratio4 match fp') },
+  'sky-ratio4-pf': { run: skyShot('ratio', 4, '^ratio4 pf') },
+  'sky-int1-tap': { run: skyShot('int', 1, '^int1 tap') },
+  'sky-int1-order': { run: skyShot('int', 1, '^int1 ord') },
+  'sky-int1-cmp': { run: skyShot('int', 1, '^int1 cmp') },
+  'sky-int2-dist': { run: skyShot('int', 2, '^int2 dist -') },
+  'sky-int2-abs': { run: skyShot('int', 2, '^int2 abs -1') },
+  'sky-int3': { run: skyShot('int', 3, '^int3 -\\d+ \\+ \\d+$', 3) },
+  'sky-fop7-mixed': { run: skyShot('fop', 7, '^fop7 \\d \\d/\\d / \\d/\\d$', 1) },
+  'sky-fop7': { run: skyShot('fop', 7, '^fop7 \\d/\\d / \\d/\\d$') },
+});
+
 async function main() {
   const args = process.argv.slice(2);
   let fixtureArg = null;
