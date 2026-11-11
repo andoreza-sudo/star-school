@@ -2937,6 +2937,129 @@ async function main() {
       }
     }
 
+    // P3-10 number puzzles (src/js/77-bt-number.js) at 380x780 (grade 3, band C) and 1024x600 (grade 5, band D), midway save:
+    //    Home -> Brain Teasers -> each of Pyramids, Balance, Target -> level 1 by real taps: a wrong entry (counted; a balance tips
+    //    and shows the guess), hint tiers 1 and 2 (they point and explain but fill nothing), back and Keep going resumes exactly,
+    //    the rest of solve() tapped in -> win card -> stars saved. At 380x780 also band A (grade 0): a balance with one picture.
+    //    Every button 48 px, no sideways scroll, no emoji in the chrome, nothing outside the screen.
+    {
+      const taps = require('./lib/bt-num');
+      const look = () => {
+        const vw = document.documentElement.clientWidth, out = [];
+        for (const e of document.querySelectorAll('button, [role="button"]')) {
+          const r = e.getBoundingClientRect();
+          if (!r.width || r.bottom < 0 || r.top > innerHeight || e.closest('svg') || e.closest('#toast')) continue;
+          if (Math.min(r.width, r.height) < 47.5) out.push('small ' + (e.id || e.className) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
+          if (r.left < -1 || r.right > vw + 1) out.push('outside ' + (e.id || e.className) + ' ' + Math.round(r.left) + '..' + Math.round(r.right));
+        }
+        if (document.documentElement.scrollWidth > vw) out.push('sideways scroll ' + document.documentElement.scrollWidth);
+        const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        for (let n; (n = w.nextNode());) {
+          const el = n.parentElement;
+          if (!el || el.closest('script,style,svg,#ico-sprite,.rw-burst') || !el.getClientRects().length) continue;
+          const m = n.textContent.match(/\p{Extended_Pictographic}|[◀▶✕]/u);
+          if (m) out.push('emoji chrome ' + m[0] + ' in ' + (el.id || el.className));
+        }
+        return out;
+      };
+      const st = pg => pg.evaluate(() => ({ cur: S.bt.cur && { id: S.bt.cur.id, band: S.bt.cur.band, puzzle: JSON.stringify(S.bt.cur.puzzle),
+        state: JSON.stringify(S.bt.cur.state), hints: S.bt.cur.hints } }));
+      // the moves still to tap: pyramid and balance skip what is filled; target plans from the tiles on screen
+      const rest = pg => pg.evaluate(() => {
+        const c = S.bt.cur, p = c.puzzle;
+        if (c.id == 'target') {
+          const T = BTN.TGT, s = JSON.parse(JSON.stringify(c.state || T.fresh(p))), out = [];
+          while (!T.won(p, s)) { const x = T.next(p, s); if (!x) break; T.join(s, ...x); out.push(x); }
+          return out;
+        }
+        const done = (c.state && c.state.done) || [];
+        return BT.get(c.id).solve(p).filter(m => !done.some(d => String(d) == String(m[0])));
+      });
+      for (const [w, h, grade, ids] of [[380, 780, 3, ['pyramid', 'balance', 'target']], [1024, 600, 5, ['pyramid', 'balance', 'target']], [380, 780, 0, ['balance']]]) {
+        const tag = 'P3-10 ' + w + 'x' + h + ' grade ' + grade;
+        const app = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = app.page, bad = [], done = [];
+        const chk = async what => { for (const o of await pg.evaluate('(' + look.toString() + ')()')) bad.push(what + ': ' + o); };
+        await pg.evaluate(g => { S.grade = g; save(); home(); }, grade);
+        await pg.waitForSelector('#btcard');
+        await pg.evaluate(() => document.querySelector('#btcard').scrollIntoView({ block: 'center' }));
+        await pg.click('#btcard');
+        await pg.waitForSelector('.bt-hub .bt-type');
+        await pg.waitForTimeout(450);
+        await chk('hub');
+        const cards = await pg.evaluate(() => [...document.querySelectorAll('.bt-type')].map(b => b.dataset.t));
+        for (const id of ids) if (!cards.includes(id)) bad.push('hub has no ' + id + ' card: ' + cards);
+        if (grade == 0 && (cards.includes('pyramid') || cards.includes('target'))) bad.push('band A shows pyramids or targets: ' + cards);
+        for (const id of ids) {
+          await pg.click(`.bt-type[data-t="${id}"]`);
+          await pg.waitForSelector('.bt-lvs');
+          await pg.click('.bt-lv[data-l="1"]');
+          await pg.waitForSelector('#btstage .bn');
+          await pg.waitForTimeout(450);
+          await chk(id + ' play');
+          const s0 = await st(pg), band = s0.cur.band;
+          // one wrong entry
+          const miss0 = await pg.evaluate(() => (S.bt.cur.state && S.bt.cur.state.miss) || 0);
+          const how = await taps.wrong(pg, id);
+          await vwait(pg, 300);
+          if (id == 'balance') {
+            const tip = await pg.evaluate(() => ({ tip: document.querySelectorAll('.bn-sc.tl, .bn-sc.tr').length, guess: document.querySelectorAll('.bn-vt.bad').length,
+              arm: getComputedStyle(document.querySelector('.bn-sc.tl .bn-arm, .bn-sc.tr .bn-arm') || document.body).transform }));
+            if (tip.tip !== 1 || !tip.guess || !/matrix/.test(tip.arm)) bad.push(id + ': a wrong weight should tip one scale and show the guess ' + JSON.stringify(tip));
+            await chk(id + ' tipped');
+          }
+          if (id == 'target') await vwait(pg, 1800); // the missed joins go back by themselves
+          const miss1 = await pg.evaluate(() => S.bt.cur.state.miss);
+          if (miss1 !== miss0 + 1) bad.push(id + ': wrong entry (' + how + ') counted ' + (miss1 - miss0) + ' mistakes');
+          // hint tiers 1 and 2: something is pointed at and said, nothing is filled
+          const f0 = await pg.evaluate(() => JSON.stringify(S.bt.cur.state.done || S.bt.cur.state.hist));
+          await pg.click('#bthint');
+          await vwait(pg, 200);
+          const t1 = await pg.evaluate(() => ({ hl: document.querySelectorAll('#btstage .hl').length, msg: document.querySelector('.bn-msg').textContent, hints: S.bt.cur.hints }));
+          if (!t1.hl || !t1.msg || t1.hints !== 1) bad.push(id + ' hint 1: ' + JSON.stringify(t1));
+          await vwait(pg, 11500);
+          await pg.click('#bthint');
+          await vwait(pg, 200);
+          const t2 = await pg.evaluate(() => ({ msg: document.querySelector('.bn-msg').textContent, hints: S.bt.cur.hints, f: JSON.stringify(S.bt.cur.state.done || S.bt.cur.state.hist) }));
+          if (t2.hints !== 2 || t2.f !== f0 || t2.msg == t1.msg) bad.push(id + ' hint 2 should explain and fill nothing: ' + JSON.stringify(t2));
+          await chk(id + ' hint 2');
+          // a right move, then back to the levels and the hub: Keep going brings the same puzzle and state back
+          const r1 = await rest(pg);
+          if (r1.length > 1) await taps.move(pg, id, r1[0]); // a one-answer puzzle (band A) resumes with the wrong entry and hints only
+          await vwait(pg, 300);
+          const mid = await st(pg);
+          await pg.click('#back');
+          await pg.waitForSelector('.bt-lvs');
+          await pg.click('#back');
+          await pg.waitForSelector('#btkeep');
+          await pg.click('#btkeep');
+          await pg.waitForSelector('#btstage .bn');
+          const back = await st(pg);
+          if (JSON.stringify(back) !== JSON.stringify(mid) || !mid.cur) bad.push(id + ': Keep going did not resume exactly');
+          // the rest by taps, then the win card
+          const r2 = await rest(pg);
+          for (const m of r2) await taps.move(pg, id, m);
+          try { await pg.waitForSelector('.bt-win #btlvls', { timeout: 8000 }); } catch (e) { bad.push(id + ': no win card after ' + JSON.stringify(r2)); continue; }
+          await pg.waitForTimeout(700);
+          await chk(id + ' win card');
+          const saved = await pg.evaluate(([id, band]) => ({ stars: BT.rec(id, band).stars[0] || 0, lvl: BT.rec(id, band).lvl, cur: !!S.bt.cur,
+            shown: document.querySelectorAll('.bt-win .rs.on').length }), [id, band]);
+          if (saved.stars < 1 || saved.lvl !== 2 || saved.cur || saved.shown !== saved.stars) bad.push(id + ': stars not saved ' + JSON.stringify(saved));
+          done.push(id + ' ' + band + ' (' + saved.stars + ' star' + (saved.stars > 1 ? 's' : '') + ')');
+          await pg.click('#btlvls');
+          await pg.waitForSelector('.bt-lvs');
+          await pg.click('#back');
+          await pg.waitForSelector('.bt-hub .bt-type');
+        }
+        if (bad.length) fail(tag + ':\n  ' + bad.join('\n  '));
+        else step(tag + ': Home -> Brain Teasers -> ' + done.join(', ') + ': wrong entry counted (the balance tipped), hints 1-2 fill nothing, Keep going resumes exactly, win card, stars saved; targets 48 px, no sideways scroll, no emoji chrome');
+        await vwait(pg, 300);
+        network.push(...app.network);
+        for (const e of app.errors) fail(e);
+        await app.ctx.close();
+      }
+    }
+
     for (const e of errors) fail(e);
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');

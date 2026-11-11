@@ -7077,6 +7077,266 @@ run('patterns P3-09',()=>{
   return{problems:r.bad,note:r.note};
 });
 
+// ---- P3-10: number puzzles (BRAIN_TEASERS 5.6, 7): pyramids, balance, make the number ----
+// Every band, levels 1-12 on 20 days each. The checkers below are independent of src/js/77-bt-number.js: pyramids are counted
+// by a search over the bottom row in whole numbers 0 and up (a brick under no given brick is free, so not unique), balances by a
+// brute force over a box (all but one picture tried, the last one forced) plus a cofactor determinant, targets by the set of values
+// every subset of the tiles can make.
+run('number puzzles P3-10',()=>{
+  const body=function(){
+    const out=[],bad=m=>{if(out.length<30&&!out.includes(m))out.push(m)};
+    const DAYS=20,LV=12,num=s=>(String(s).match(/\d+/g)||[]).map(Number);
+    const ids=BT.list().map(t=>t.id);
+    for(const [id,bands] of [['pyramid','BCD'],['balance','ABCD'],['target','BCD']]){
+      if(!ids.includes(id))bad(id+' is not registered');
+      else if(BT.get(id).bands!==bands)bad(id+' bands '+BT.get(id).bands+', want '+bands);
+    }
+    const timing={};
+    const each=(id,fn)=>{
+      const d=BT.get(id);
+      for(const band of d.bands)for(let lv=1;lv<=LV;lv++)for(let day=1;day<=DAYS;day++){
+        const o={day:'2026-3-'+day},t0=Date.now();let p;
+        try{p=BT.make(id,band,lv,o)}catch(e){bad(id+' '+band+lv+' day '+day+': make() threw '+e.message);continue}
+        const ms=Date.now()-t0;
+        const tk=id+' '+band;(timing[tk]=timing[tk]||[0,0]);timing[tk][0]+=ms;timing[tk][1]++;
+        if(JSON.stringify(BT.make(id,band,lv,o))!==JSON.stringify(p))bad(id+' '+band+lv+': make() is not deterministic');
+        try{fn(p,band,lv,d,id+' '+band+lv+' day '+day)}catch(e){bad(id+' '+band+lv+' day '+day+': check threw '+e.message)}
+      }
+    };
+
+    /* ---------- Number Pyramid ---------- */
+    const ROWS={B:3,C:4,D:5},PMAX={B:9,C:12,D:20},EXTRA=lv=>lv<=3?2:lv<=7?1:0;
+    // bricks row by row from the bottom; brick (r, i) covers bottom bricks i..i+r with binomial weights
+    const pcells=n=>{const c=[];for(let r=0;r<n;r++)for(let i=0;i<n-r;i++)c.push([r,i]);return c};
+    const pweights=(r)=>{const w=[1];for(let k=1;k<=r;k++)w.push(w[k-1]*(r-k+1)/k);return w};
+    // count whole-number (0 and up) bottom rows that agree with the givens, stopping at `limit`
+    const pcount=(n,v,g,limit)=>{
+      const cells=pcells(n),cons=[];
+      v.forEach((x,k)=>{if(g[k]){const [r,i]=cells[k];cons.push({w:pweights(r),i,r,val:x})}});
+      for(let j=0;j<n;j++)if(!cons.some(c=>j>=c.i&&j<=c.i+c.r))return Infinity; // a free bottom brick
+      const b=new Array(n).fill(null);let count=0;
+      const ok=()=>cons.every(c=>{let s=0,open=0;for(let k=0;k<=c.r;k++){const x=b[c.i+k];if(x==null)open++;else s+=c.w[k]*x}return open?s<=c.val:s===c.val});
+      const go=()=>{
+        if(count>=limit)return;
+        if(!ok())return;
+        const j=b.indexOf(null);
+        if(j<0){count++;return}
+        // forced by a constraint with only this brick open; else every value up to the smallest covering given
+        for(const c of cons){
+          if(j<c.i||j>c.i+c.r)continue;
+          let s=0,open=0;for(let k=0;k<=c.r;k++){const x=b[c.i+k];if(x==null)open++;else s+=c.w[k]*x}
+          if(open===1){const w=c.w[j-c.i],rest=c.val-s;if(rest<0||rest%w)return;b[j]=rest/w;go();b[j]=null;return}
+        }
+        const hi=Math.min(...cons.filter(c=>j>=c.i&&j<=c.i+c.r).map(c=>c.val));
+        for(let x=0;x<=hi&&count<limit;x++){b[j]=x;go()}
+        b[j]=null;
+      };
+      go();
+      return count;
+    };
+    const pspread=(n,g)=>{
+      const cells=pcells(n),at=(r,i)=>cells.findIndex(c=>c[0]==r&&c[1]==i),kn=g.map(Boolean);let more=true;
+      while(more){more=false;for(let r=1;r<n;r++)for(let i=0;i<n-r;i++){const t=at(r,i),a=at(r-1,i),b=at(r-1,i+1);
+        if(kn[t]+kn[a]+kn[b]===2){kn[t]=kn[a]=kn[b]=true;more=true}}}
+      return kn.every(Boolean);
+    };
+    const pyrGiv={B:[],C:[],D:[]};
+    each('pyramid',(p,band,lv,d,w)=>{
+      const n=ROWS[band],cells=pcells(n);
+      if(p.n!==n||p.v.length!==n*(n+1)/2||p.g.length!==p.v.length)return bad(w+': '+p.n+' rows, want '+n);
+      for(let k=0;k<n;k++)if(p.v[k]<1||p.v[k]>PMAX[band]||p.v[k]%1)bad(w+': bottom brick '+p.v[k]+' outside 1-'+PMAX[band]);
+      cells.forEach(([r,i],k)=>{if(r){const a=cells.findIndex(c=>c[0]==r-1&&c[1]==i),b=cells.findIndex(c=>c[0]==r-1&&c[1]==i+1);if(p.v[k]!==p.v[a]+p.v[b])bad(w+': brick '+k+' is not the sum under it')}});
+      const giv=p.g.reduce((a,b)=>a+b,0);
+      if(giv!==n+EXTRA(lv))bad(w+': '+giv+' givens, want '+(n+EXTRA(lv)));
+      pyrGiv[band].push([lv,giv]);
+      const c=pcount(n,p.v,p.g,2);
+      if(c!==1)bad(w+': '+c+' solutions');
+      const easy=pspread(n,p.g);
+      if(band!=='D'&&!easy)bad(w+': band '+band+' must fill by "two of a triple"');
+      if(!!p.tricky===easy)bad(w+': tricky flag '+p.tricky+' but propagation '+(easy?'fills':'stops'));
+      if(band==='D'&&lv<10&&!easy)bad(w+': tricky before level 10');
+      // solve(): every hidden brick once, with its number
+      const sol=d.solve(p),hid=p.v.map((x,k)=>k).filter(k=>!p.g[k]);
+      if(sol.length!==hid.length||sol.some(([k,x])=>p.g[k]||p.v[k]!==x)||new Set(sol.map(m=>m[0])).size!==hid.length)bad(w+': solve() '+JSON.stringify(sol));
+      // hints at every step of the way: tiers 1 and 2 point and explain, never fill or say the brick's number; tier 3 fills one
+      const st={done:[]};
+      for(let g=0;g<20;g++){
+        const vis=new Set(p.v.filter((x,k)=>p.g[k]||st.done.includes(k)));
+        const h1=BTN.PYR.hint(p,st,1),h2=BTN.PYR.hint(p,st,2),h3=BTN.PYR.hint(p,st,3);
+        if(!h3){if(st.done.length!==hid.length)bad(w+': hints stopped early');break}
+        for(const [t,h] of [[1,h1],[2,h2]]){
+          if(h.fill!=null)bad(w+': hint tier '+t+' fills a brick');
+          const ans=p.v[h.mark[0]];
+          if(!vis.has(ans)&&num(h.say).includes(ans))bad(w+': hint tier '+t+' says the answer: '+h.say);
+          if(st.done.includes(h.mark[0])||p.g[h.mark[0]])bad(w+': hint tier '+t+' points at a known brick');
+        }
+        if(h3.fill==null||p.g[h3.fill]||st.done.includes(h3.fill))bad(w+': tier 3 did not fill an open brick');
+        st.done.push(h3.fill);
+      }
+    });
+    // fewer givens as the levels go up, bigger pyramids by band
+    for(const band of 'BCD'){const a=pyrGiv[band],m=lv=>a.filter(x=>x[0]===lv).map(x=>x[1]);if(!(Math.max(...m(12))<Math.max(...m(1))))bad('pyramid '+band+': level 12 should have fewer givens than level 1')}
+
+    /* ---------- Balance ---------- */
+    const UNK=(band,lv)=>({A:1,B:2,C:3,D:lv<=8?2:3})[band],VMAX={A:5,B:10,C:12,D:20};
+    const side=(cs,k,v)=>cs.reduce((a,c,i)=>a+c*v[i],k);
+    const det=M=>M.length===1?M[0][0]:M[0].reduce((s,a,j)=>s+(j%2?-1:1)*a*det(M.slice(1).map(r=>r.filter((x,k)=>k!==j))),0);
+    // whole-number solutions in a box: every picture but one tried from 0 to B, the last one forced by a scale where it does not cancel
+    const bcount=p=>{
+      const m=p.v.length,B=3*Math.max(...p.eqs.map(e=>e.lc+e.rc))+30,net=(e,i)=>e.l[i]-e.r[i];
+      const last=m-1,ek=p.eqs.find(e=>net(e,last)!==0);
+      let count=0;const v=new Array(m).fill(0);
+      const go=i=>{
+        if(i===last){
+          const rest=side(ek.r,ek.rc,v.map((x,j)=>j===last?0:x))-side(ek.l,ek.lc,v.map((x,j)=>j===last?0:x)),c=net(ek,last);
+          if(rest%c)return;const x=rest/c;if(x<0)return;v[last]=x;
+          if(p.eqs.every(e=>side(e.l,e.lc,v)===side(e.r,e.rc,v)))count++;
+          return;
+        }
+        for(let x=0;x<=B;x++){v[i]=x;go(i+1)}
+      };
+      go(0);
+      return count;
+    };
+    // triangular: the scales can be put in an order where each one brings exactly one new picture
+    const triangular=p=>{
+      const sets=p.eqs.map(e=>e.l.map((c,i)=>c||e.r[i]?i:-1).filter(i=>i>=0)),seen=new Set(),used=new Set();
+      for(let k=0;k<sets.length;k++){
+        const j=sets.findIndex((s,x)=>!used.has(x)&&s.filter(i=>!seen.has(i)).length===1);
+        if(j<0)return false;used.add(j);sets[j].forEach(i=>seen.add(i));
+      }
+      return seen.size===p.v.length;
+    };
+    const balForms={};
+    each('balance',(p,band,lv,d,w)=>{
+      const m=UNK(band,lv);
+      if(p.v.length!==m||p.f.length!==m||new Set(p.f).size!==m)return bad(w+': '+p.v.length+' unknowns, want '+m);
+      if(p.f.some(f=>!ART[f]))bad(w+': a picture has no drawing');
+      if(p.v.some(x=>x<1||x>VMAX[band]||x%1))bad(w+': value outside 1-'+VMAX[band]+': '+p.v);
+      if(p.eqs.length<m)bad(w+': '+p.eqs.length+' scales for '+m+' unknowns');
+      for(const e of p.eqs){
+        if(side(e.l,e.lc,p.v)!==side(e.r,e.rc,p.v))bad(w+': a scale is not level');
+        for(const [cs,k] of [[e.l,e.lc],[e.r,e.rc]]){const pics=cs.reduce((a,b)=>a+b,0);if(pics>3||pics+(k?1:0)>4)bad(w+': a tray holds too much');if(k<0)bad(w+': negative weight')}
+        if(band==='A'&&side(e.l,e.lc,p.v)>10)bad(w+': band A total over 10');
+      }
+      if(det(p.eqs.slice(0,m).map(e=>e.l.map((c,i)=>c-e.r[i])))===0)bad(w+': determinant 0');
+      if(band==='B'||band==='C'){if(!triangular(p))bad(w+': not triangular')}
+      if(band==='D'&&p.eqs.some(e=>e.l.filter((c,i)=>c-e.r[i]).length===1))bad(w+': band D scale with a single unknown (should not be triangular)');
+      if(band==='C'){
+        if(!p.q||p.q.v!==side(p.q.c,0,p.v)||p.q.c.filter(Boolean).length<2||Math.max(...p.q.c)<2)bad(w+': last question '+JSON.stringify(p.q));
+        if(!p.eqs.some(e=>e.l.some(c=>c>=2)))bad(w+': no repeated picture');
+      }else if(p.q)bad(w+': only band C asks a last question');
+      const c=bcount(p);
+      if(c!==1)bad(w+': '+c+' solutions in the box');
+      balForms[band]=(balForms[band]||new Set()).add(p.form);
+      // solve(): every slot once with its answer
+      const slots=p.v.map((x,i)=>i).concat(p.q?['q']:[]),sol=d.solve(p);
+      if(sol.length!==slots.length||sol.some(([s,x])=>x!==(s==='q'?p.q.v:p.v[s]))||new Set(sol.map(s=>String(s[0]))).size!==slots.length)bad(w+': solve() '+JSON.stringify(sol));
+      // hints at every step
+      const st={done:[]},consts=new Set(p.eqs.flatMap(e=>[e.lc,e.rc]).concat([1,2,3]));
+      for(let g=0;g<10;g++){
+        const h3=BTN.BAL.hint(p,st,3);
+        if(!h3){if(st.done.length!==slots.length)bad(w+': hints stopped early');break}
+        // what the child can already see: weights, counts, solved pictures and the known part of each tray
+        const known=p.v.map((x,i)=>st.done.includes(i)?x:0);
+        const vis=new Set([...consts,...st.done.map(s=>s==='q'?p.q.v:p.v[s]),...p.eqs.flatMap(e=>[side(e.l,e.lc,known),side(e.r,e.rc,known)])]);
+        for(const t of [1,2]){
+          const h=BTN.BAL.hint(p,st,t),ans=h.mark.slot==='q'?p.q.v:p.v[h.mark.slot];
+          if(h.fill!=null)bad(w+': hint tier '+t+' fills a box');
+          if(!vis.has(ans)&&num(h.say).includes(ans))bad(w+': hint tier '+t+' says the answer: '+h.say);
+          if(/undefined|NaN/.test(h.say))bad(w+': hint text '+h.say);
+        }
+        if(h3.fill==null||st.done.includes(h3.fill))bad(w+': tier 3 did not fill an open box');
+        st.done.push(h3.fill);
+      }
+      // a wrong number tips the scale it is tried on towards the side that is now heavier
+      for(const i of p.v.keys()){
+        const k=BTN.BAL.tryOn(p,[],i),e=p.eqs[k],dw=BTN.BAL.tip(p,k,i,p.v[i]+1),want=Math.sign((e.r[i]-e.l[i]));
+        if(dw!==want||!dw)bad(w+': one more on picture '+i+' tips '+dw+', want '+want);
+        if(BTN.BAL.tip(p,k,i,p.v[i])!==0)bad(w+': the right number tips the scale');
+      }
+    });
+    if(!(balForms.D&&['sd','pq','xy','pair','chain'].every(f=>balForms.D.has(f))))bad('balance D forms seen: '+[...(balForms.D||[])]);
+
+    /* ---------- Make the Number ---------- */
+    const OPS={B:'+-',C:'+-x',D:'+-x/'},TILES={B:5,C:3,D:4};
+    const calc=(a,o,b)=>o==='+'?a+b:o==='-'?(a>=b?a-b:null):o==='x'?a*b:(b>0&&a%b===0?a/b:null);
+    // the values each subset (bitmask) of the tiles can make with whole, non-negative steps
+    const reach=(nums,ops)=>{
+      const R={};
+      const get=mask=>{
+        if(R[mask])return R[mask];
+        const s=new Set(),idx=nums.map((x,i)=>i).filter(i=>mask>>i&1);
+        if(idx.length===1)s.add(nums[idx[0]]);
+        for(let sub=(mask-1)&mask;sub>0;sub=(sub-1)&mask){
+          const rest=mask^sub;
+          for(const a of get(sub))for(const b of get(rest))for(const o of ops){const r=calc(a,o,b);if(r!=null)s.add(r)}
+        }
+        return R[mask]=s;
+      };
+      return get;
+    };
+    const tgtSols={B:{},C:{},D:{}};
+    each('target',(p,band,lv,d,w)=>{
+      if(p.ops!==OPS[band])bad(w+': signs '+p.ops);
+      if(p.nums.length!==TILES[band])return bad(w+': '+p.nums.length+' tiles');
+      const hi={B:15,C:10,D:13}[band];
+      if(p.nums.some(x=>x<1||x>hi||x%1))bad(w+': tile outside 1-'+hi+': '+p.nums);
+      if(band==='B'){if(p.use!==2||new Set(p.nums).size!==5||p.target<5||p.target>20)bad(w+': '+JSON.stringify(p))}
+      else if(band==='C'){if(p.use!==0||p.target<5||p.target>50)bad(w+': '+JSON.stringify(p))}
+      else if(p.use!==0||(lv<=6?p.target!==24:(p.target<10||p.target>100)))bad(w+': target '+p.target);
+      const get=reach(p.nums,p.ops.split(''));
+      let can;
+      if(band==='B'){can=false;for(let i=0;i<5;i++)for(let j=0;j<5;j++)if(i!==j)for(const o of p.ops)if(calc(p.nums[i],o,p.nums[j])===p.target)can=true}
+      else can=get((1<<p.nums.length)-1).has(p.target);
+      if(!can)bad(w+': no solution by brute force');
+      if(!(p.sols>=1))bad(w+': sols '+p.sols);
+      (tgtSols[band][lv]=tgtSols[band][lv]||[]).push(p.sols);
+      // solve(): apply the steps by id with the arithmetic above
+      const tiles=p.nums.map((v,id)=>({id,v}));let next=p.nums.length,last=null;
+      const sol=d.solve(p);
+      for(const [a,o,b] of sol){
+        const A=tiles.find(t=>t.id===a),Bt=tiles.find(t=>t.id===b),r=A&&Bt&&a!==b?calc(A.v,o,Bt.v):null;
+        if(r==null){bad(w+': solve() step not allowed '+JSON.stringify([a,o,b]));break}
+        tiles.splice(tiles.indexOf(A),1);Bt.id=next++;Bt.v=r;last=Bt;
+      }
+      if(band==='B'?(sol.length!==1||!last||last.v!==p.target):(tiles.length!==1||tiles[0].v!==p.target))bad(w+': solve() does not make '+p.target+': '+JSON.stringify(sol));
+      // hints: tiers 1 and 2 never join; tier 2 names the sign only when it is not the last step; tier 3 joins; never stuck
+      const T=BTN.TGT,st=T.fresh(p);
+      for(let g=0;g<6&&!T.won(p,st);g++){
+        const h1=T.hint(p,st,1),h2=T.hint(p,st,2),h3=T.hint(p,st,3),lastStep=p.use===2||st.tiles.length===2;
+        if(h1.step||h2.step)bad(w+': hint tier 1 or 2 makes a step');
+        if(/=/.test(h1.say+h2.say))bad(w+': hint tier 1 or 2 shows a result: '+h2.say);
+        if(lastStep&&/[+−×÷]/.test(h2.say))bad(w+': hint tier 2 gives the last step away: '+h2.say);
+        if(!h3.step){bad(w+': tier 3 has no step');break}
+        if(h3.reset)while(st.hist.length)T.undo(st);
+        if(T.join(st,...h3.step).err){bad(w+': tier 3 step is not allowed');break}
+      }
+      if(!T.won(p,st))bad(w+': tier 3 hints did not finish');
+      // from a dead end (every tile added up, when that misses), tier 3 starts over and still finishes
+      if(p.use===0){
+        const s2=T.fresh(p);while(s2.tiles.length>1)T.join(s2,s2.tiles[0].id,'+',s2.tiles[1].id);
+        if(!T.won(p,s2)){
+          if(T.hint(p,s2,1).step||!T.hint(p,s2,1).undo)bad(w+': a dead end should point at Undo');
+          for(let g=0;g<6&&!T.won(p,s2);g++){const h=T.hint(p,s2,3);if(h.reset)while(s2.hist.length)T.undo(s2);T.join(s2,...h.step)}
+          if(!T.won(p,s2))bad(w+': tier 3 hints from a dead end did not finish');
+        }
+      }
+    });
+    // difficulty inside a band: level 1 puzzles have more different solutions than level 12 ones
+    const avg=a=>a.reduce((x,y)=>x+y,0)/a.length;
+    for(const band of 'BCD')if(!(avg(tgtSols[band][1])>avg(tgtSols[band][12])))bad('target '+band+': level 1 should have more solutions than level 12 ('+avg(tgtSols[band][1])+' vs '+avg(tgtSols[band][12])+')');
+    // and across bands, as the spec has it
+    if(!(ROWS.B<ROWS.C&&ROWS.C<ROWS.D&&TILES.C<TILES.D&&OPS.B.length<OPS.C.length&&OPS.C.length<OPS.D.length))bad('band steps');
+    const slow=Object.entries(timing).map(([k,[ms,n]])=>[k,ms/n]).filter(x=>x[1]>8);
+    for(const [k,ms] of slow)bad(k+': make() takes '+ms.toFixed(1)+' ms on average (limit 8 ms, 50 ms at 6x throttle)');
+    const worst=Object.entries(timing).map(([k,[ms,n]])=>ms/n).reduce((a,b)=>Math.max(a,b),0);
+    return{out,n:Object.values(timing).reduce((a,t)=>a+t[1],0),worst};
+  };
+  const r=eval(js+';('+body.toString()+')()');
+  return{problems:r.out,note:r.n+' puzzles (3 types, every band, levels 1-12, 20 days), unique by brute force, hints, solve(); slowest make '+r.worst.toFixed(1)+' ms'};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){
