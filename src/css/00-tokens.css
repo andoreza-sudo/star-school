@@ -57,8 +57,6 @@
 --tap:48px;--tap-primary:56px;--tap-pk:64px;
 /* motion */
 --t-fast:90ms;--t:180ms;--t-slow:320ms;--t-xl:600ms;
+--t-shake:240ms;--t-cele:1200ms;--t-loop:2400ms; /* P4-17: a wrong-answer shake, a celebration (confetti), one idle loop */
 --ease:cubic-bezier(.2,.8,.2,1);--spring:cubic-bezier(.34,1.56,.64,1);
-/* legacy aliases, kept until P4-17 */
---bg:var(--paper);--blue:var(--brand);--green:var(--good);--red:var(--danger);--muted:var(--ink-3);--card:var(--surface);
---big:var(--fs-prompt);
 }

@@ -60,7 +60,7 @@
 /* the prompt spans the card, so pictures sized in % of it (Shape Garden depth scenes) never collapse to 0 when the words are hidden */
 .qs .prompt{align-self:stretch;color:var(--ink);font-family:var(--font-display);animation:k-qin var(--t-slow) var(--ease)}
 @keyframes k-qin{from{opacity:0;transform:translateY(8px) scale(.97)}}
-.qs .prompt.shake{animation:k-shake 240ms linear}
+.qs .prompt.shake{animation:k-shake var(--t-shake) linear}
 .qs .tools{flex-wrap:wrap;justify-content:center;gap:var(--s-3)}
 .qs .tools .btn.sm{min-width:var(--tap);font-size:var(--fs-3)}
 /* Pre-K: a big round "hear it again" button and a round help button, no words needed */
@@ -68,7 +68,7 @@
 .qs .btn.pkspk .ic{width:48px;height:48px}
 .qs .btn.pkhb .ic{width:34px;height:34px;color:var(--try-ink)}
 .qs .btn.pkhb{background:var(--try-tint);box-shadow:inset 0 0 0 2px var(--try),var(--ledge) var(--try)}
-.btn.talking{animation:k-talk .6s var(--ease) 3}
+.btn.talking{animation:k-talk var(--t-xl) var(--ease) 3}
 @keyframes k-talk{50%{transform:scale(1.06)}}
 /* tags at the top of the card: review ("Remember this one?") and challenge (51-mastery.js .mtag) */
 .tag.rtag{background:var(--brand-tint);color:var(--brand-shade);border-radius:var(--r-pill);font-size:var(--fs-2);padding:var(--s-1) var(--s-3) var(--s-1) var(--s-2)}
@@ -159,7 +159,7 @@
 .piece.lt{width:clamp(56px,10vh,76px);height:clamp(56px,10vh,76px);padding:0;font-size:clamp(30px,5.5vh,40px)}
 .piece:is(.lt,.ot){background:var(--surface)}
 .piece:is(.lt,.ot).used{visibility:visible;background:var(--surface-2)}
-.piece.lt.glow{box-shadow:inset 0 0 0 4px var(--star-shade),0 0 0 4px var(--star),var(--ledge) var(--star-shade);animation:k-nudge .8s var(--ease) 3}
+.piece.lt.glow{box-shadow:inset 0 0 0 4px var(--star-shade),0 0 0 4px var(--star),var(--ledge) var(--star-shade);animation:k-nudge calc(var(--t-xl) * 1.33) var(--ease) 3}
 @keyframes k-nudge{40%{transform:translateY(-8px)}}
 .btn.undo{display:flex;margin:var(--s-4) auto 0}
 .lslots{gap:var(--s-2)}
@@ -223,11 +223,9 @@
 @media (max-width:480px){.qs .sks{margin:0 calc(var(--s-2) * -1);width:calc(100% + var(--s-4))}.skr{gap:4px}}
 @media (max-height:520px){.key.sk{height:var(--tap)}.sks{gap:var(--s-1)}}
 
-/* ---------- feedback flourishes (12-speech.js): the star that flies to the star chip, the sparkle burst ---------- */
+/* ---------- feedback flourishes (12-speech.js): the star that flies to the star chip; the burst is drawn in 50-motion.css ---------- */
 .fly{width:48px;height:48px;color:var(--star)}
 .fly .ic{width:48px;height:48px;display:block}
-.burst .ic{display:block}
-.burst.b0{color:var(--star)}.burst.b1{color:var(--good)}.burst.b2{color:var(--brand)}
 html.calm .burst,html.calm .fly{display:none}
 @media (prefers-reduced-motion:reduce){.burst,.fly{display:none}}
 

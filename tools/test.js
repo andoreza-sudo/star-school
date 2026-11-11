@@ -7592,7 +7592,7 @@ run('code split A11b (and data file split A11)',()=>{
   for(const f of ['./','./index.html',...FILES.map(f=>'./'+f)])if(!F.includes(f))p.push('sw.js does not precache '+f);
   if(F.filter(f=>/\.v\d+\.js$/.test(f)).length!==FILES.length)p.push('sw.js should precache exactly '+FILES.join(', ')+': '+F.join(' '));
   // no stale built files at the repo root (GitHub Pages serves the root of main)
-  const stale=fs.readdirSync(ROOT).filter(f=>/^[a-z]+\.v\d+\.js$/.test(f)&&!FILES.includes(f));
+  const stale=fs.readdirSync(ROOT).filter(f=>/^[a-z][a-z0-9]*\.v\d+\.js$/.test(f)&&!FILES.includes(f));
   if(stale.length)p.push('old built files at the repo root: '+stale.join(', '));
   // sources: the shell loads the parts and the data file between the code and boot
   const shell=fs.readFileSync(path.join(SRC,'shell.html'),'utf8');
@@ -13857,6 +13857,193 @@ run('game time v2 P5-09',()=>{
   };
   const r=eval(js+';('+body.toString()+')()');
   return{problems:r,note:'ptCalc table, learn first, limits, midnight, Brain Teasers, old saves'};
+});
+
+// ---- P4-17: motion and sound polish (DESIGN_SYSTEM 8) ----
+run('motion and sound P4-17',()=>{
+  const p=[];
+  const rd=f=>fs.readFileSync(path.join(SRC,f),'utf8');
+  const PICT=/\p{Extended_Pictographic}/u;
+  const noCm=s=>s.replace(/\/\*[\s\S]*?\*\//g,'');
+  const cssFiles=fs.readdirSync(path.join(SRC,'css')).filter(f=>f.endsWith('.css')).sort();
+  const CSS={};for(const f of cssFiles)CSS[f]=noCm(rd('css/'+f));
+  const jsFiles=fs.readdirSync(path.join(SRC,'js')).filter(f=>f.endsWith('.js')).sort();
+  const tok=CSS['00-tokens.css'];
+  // split a declaration value on top-level commas (not the ones inside calc() or cubic-bezier())
+  const items=v=>{const out=[];let d=0,cur='';for(const ch of v){if(ch=='(')d++;if(ch==')')d--;if(ch==','&&!d){out.push(cur.trim());cur='';}else cur+=ch}out.push(cur.trim());return out};
+  const rules=css=>[...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map(m=>({sel:m[1].trim(),body:m[2]}));
+  const kfs=css=>[...css.matchAll(/@keyframes\s+([\w-]+)\s*\{((?:[^{}]*\{[^}]*\})*)\s*\}/g)].map(m=>({name:m[1],body:m[2]}));
+
+  // 1. no emoji particles anywhere: burst() takes a drawn kind, confetti() is the drawn RW.burst; the old emoji CSS is gone
+  for(const f of jsFiles){
+    const t=rd('js/'+f);
+    for(const m of t.matchAll(/(?<![\w.])burst\(([^;]*?)\)(?=[;}])/g)){
+      const a=items(m[1]);
+      if(f=='12-speech.js')continue;
+      if(a.length>2&&!/^'(star|heart|zap|coin)'$/.test(a[2]))p.push(f+': burst() with something other than a drawn kind: '+a[2].slice(0,40));
+    }
+    if(/className\s*=\s*'conf'|class="conf"/.test(t))p.push(f+': the old emoji confetti class');
+  }
+  const sp=rd('js/12-speech.js'),fn=n=>{const i=sp.indexOf('function '+n+'(');return i<0?'':sp.slice(i,sp.indexOf('\nfunction ',i+1)>0?sp.indexOf('\nfunction ',i+1):undefined)};
+  for(const n of ['burst','confetti','flyStar','noVoice'])if(!fn(n)||PICT.test(fn(n)))p.push('12-speech.js '+n+'(): missing or makes emoji');
+  if(PICT.test(sp.slice(sp.indexOf('const FX_C'),sp.indexOf('function confetti'))))p.push('12-speech.js: emoji in the particle drawings');
+  if(!/RW\.burst\(document\.body,Math\.min\(40,n\)\)/.test(fn('confetti')))p.push('confetti() must be the drawn RW.burst, at most 40 pieces');
+  for(const f of cssFiles){
+    if(/\.conf\b|@keyframes fall\b/.test(CSS[f]))p.push(f+': the old emoji confetti CSS');
+    if(/\.burst\s*\{[^}]*font-size/.test(CSS[f]))p.push(f+': an emoji-sized .burst rule');
+  }
+  // the particles themselves, drawn in a stand-in page: shaded SVG pieces, no text
+  const o=(()=>eval(js+`;(()=>{
+    const made=[],D=global.document,el=()=>({style:{},className:'',innerHTML:'',dataset:{},attrs:{},setAttribute(k,v){this.attrs[k]=v},remove(){this.gone=1},
+      appendChild(c){made.push(c)},isConnected:true,querySelector(){return null},classList:{add(){},remove(){},contains(){return false}}});
+    const body=el();
+    global.document=Object.assign({},D,{createElement:el,body,documentElement:{classList:{list:new Set(),add(c){this.list.add(c)},remove(c){this.list.delete(c)},
+      toggle(c,on){on?this.add(c):this.remove(c)},contains(c){return this.list.has(c)}}}});
+    const r={bursts:{},conf:null,calm:[]};
+    try{
+      for(const k of ['star','heart','zap','coin','nope']){made.length=0;burst(10,20,k);r.bursts[k]=made.map(e=>[e.className,e.innerHTML,e.attrs['aria-hidden']])}
+      made.length=0;confetti(99);r.conf=made.map(e=>[e.className,e.innerHTML]);
+      // calm mode: S.calm (an old save has none) sets html.calm on every screen; the switch turns it off again
+      const cl=document.documentElement.classList;delete S.calm;calmApply();r.calm.push(cl.contains('calm'));
+      S.calm=true;calmApply();r.calm.push(cl.contains('calm'));S.calm=false;calmApply();r.calm.push(cl.contains('calm'));calmApply(true);r.calm.push(cl.contains('calm'));
+    }finally{global.document=D}
+    return r})()`))();
+  for(const [k,b] of Object.entries(o.bursts)){
+    if(b.length!==1){p.push('burst '+k+': '+b.length+' elements');continue}
+    const [cls,h,hid]=b[0],n=(h.match(/<i /g)||[]).length,svgs=(h.match(/<svg viewBox="0 0 24 24">/g)||[]).length;
+    if(!/^burst fx-(star|heart|zap|coin)$/.test(cls)||hid!=='true')p.push('burst '+k+': class '+cls+' aria-hidden '+hid);
+    if(n!==10||svgs!==10)p.push('burst '+k+': '+n+' pieces, '+svgs+' drawings');
+    if(PICT.test(h)||/>[^<\s]+</.test(h))p.push('burst '+k+': text or emoji in the pieces');
+    if(!/var\(--ill-[a-z]+-2\)/.test(h)||!/var\(--ill-white\)/.test(h))p.push('burst '+k+': pieces not shaded (shade tone and a white glint)');
+    if(/#[0-9a-fA-F]{3,8}\b/.test(h))p.push('burst '+k+': raw colour');
+  }
+  if(!/heart/.test(o.bursts.heart[0][1])&&!o.bursts.heart[0][1].includes('pink'))p.push('burst heart: no hearts');
+  if(!o.conf||o.conf.length!==1||o.conf[0][0]!=='rw-burst rw-fs'||(o.conf[0][1].match(/<i /g)||[]).length!==40||PICT.test(o.conf[0][1]))
+    p.push('confetti(99): expected one drawn full-screen RW.burst of 40 pieces, got '+JSON.stringify((o.conf||[]).map(x=>[x[0],(x[1].match(/<i /g)||[]).length])));
+  if(o.calm.join()!=='false,true,true,false')p.push('calm mode: html.calm for no S.calm, S.calm on, S.calm off before the switch, after the switch: '+o.calm.join());
+  const gw=rd('js/80-grown.js');
+  if(!/UI\.sw\('Calm mode[^']*',!!S\.calm,'calm'\)/.test(gw)||!/\$\('#calm'\)\.onchange=e=>\{S\.calm=e\.target\.checked;save\(\);calmApply\(true\)\}/.test(gw))p.push('Grown-ups: no Calm mode switch saving S.calm');
+  if(!/const view=h=>\{music\(false\);calmApply\(\);/.test(rd('js/40-view.js')))p.push('view() must apply calm mode on every screen');
+
+  // 2. motion: only transform and opacity, in every CSS file (index.html and the parts). Game internals that animate something else,
+  //    each with its reason (they draw inside a game, not the app's chrome, and move nothing around them):
+  const ALLOW=[
+    ['40-games.css','.hcfuel>div>div','width'], // Hill Climb's fuel gauge fill, a 16 px bar inside its HUD
+    ['40-games.css','.shwrap path','fill'],     // colour-by-shape: a tapped region fades to its colour (paint only)
+  ];
+  let nTr=0,nKf=0;
+  for(const f of cssFiles){
+    for(const {sel,body} of rules(CSS[f]))for(const m of body.matchAll(/(?:^|;)\s*transition(-property)?\s*:\s*([^;]+)/g)){
+      if(m[1]){p.push(f+' '+sel+': transition-property (use the transition shorthand)');continue}
+      for(const it of items(m[2])){
+        nTr++;const prop=it.split(/\s+/)[0];
+        if(prop==='none'||prop==='transform'||prop==='opacity')continue;
+        if(ALLOW.some(([af,as,ap])=>af===f&&sel.split(',').map(s=>s.trim()).includes(as)&&ap===prop))continue;
+        p.push(f+' '+sel+': transition on '+it);
+      }
+    }
+    for(const {name,body} of kfs(CSS[f])){nKf++;for(const d of new Set(body.match(/[a-z-]+(?=\s*:)/g)||[]))if(d!=='transform'&&d!=='opacity')p.push(f+' @keyframes '+name+' animates '+d)}
+  }
+  // 3. motion uses the tokens: in the app's chrome every animation and transition runs for a --t-* token (or a calc() of one)
+  //    with --ease, --spring, linear or ease-in-out; the tokens are in 00-tokens.css
+  const T=['--t-fast','--t','--t-slow','--t-xl','--t-shake','--t-cele','--t-loop'];
+  for(const t of T)if(!new RegExp(t+':\\d+ms;').test(tok))p.push('00-tokens.css: motion token '+t+' missing');
+  const CHROME=['10-components.css','20-base.css','42-question.css','42-rewards.css','43-shop.css','46-home.css','47-gfx.css','48-game-hub.css',
+    '48-setup-grown-care.css','48-teasers.css','50-motion.css'];
+  const DUR=/^(var\(--t(-[a-z]+)?\)|calc\(var\(--t(-[a-z]+)?\) \* [\d.]+\))$/,EASE=/^(var\(--ease\)|var\(--spring\)|linear|ease-in-out)$/;
+  let nTok=0;
+  for(const f of CHROME){
+    if(!CSS[f]){p.push(f+' missing');continue}
+    for(const {sel,body} of rules(CSS[f]))for(const m of body.matchAll(/(?:^|;)\s*(animation|transition)\s*:\s*([^;!]+)/g)){
+      if(/^\s*none\s*$/.test(m[2]))continue;
+      for(const it of items(m[2])){
+        // tokens of a shorthand: the first time is the duration; the timing function follows it
+        const parts=it.match(/calc\(var\([^)]*\)[^)]*\)|var\([^)]*\)|cubic-bezier\([^)]*\)|steps\([^)]*\)|\S+/g)||[];
+        const di=parts.findIndex(x=>/^(var\(--t|calc\(var\(--t|[\d.]+m?s$)/.test(x));
+        nTok++;
+        if(di<0||!DUR.test(parts[di])){p.push(f+' '+sel+': '+m[1]+' duration not a motion token: '+it);continue}
+        const e=parts[di+1];
+        if(e&&!/^([\d.]+m?s|var\(--d|infinite|\d+|both|forwards|backwards)/.test(e)&&!EASE.test(e))p.push(f+' '+sel+': '+m[1]+' easing not a token: '+it);
+        if(/cubic-bezier|(^|\s)ease-out|(^|\s)ease-in(\s|$)/.test(it))p.push(f+' '+sel+': '+m[1]+' with a raw easing: '+it);
+      }
+    }
+  }
+  // DS 8.1: screen change = fade + 8 px rise (--t-slow), press = squash onto the ledge (--t-fast)
+  const base=CSS['20-base.css'];
+  if(!/#app\{[^}]*animation:enter var\(--t-slow\) var\(--ease\)/.test(base)||!/@keyframes enter\{from\{opacity:0;transform:translateY\(8px\)\}\}/.test(base))p.push('screen change is not fade + 8 px rise at --t-slow');
+  if(!/\.btn\{[^}]*transition:transform var\(--t-fast\) var\(--ease\)/.test(base)||!/\.btn:active\{transform:translateY\(3px\)/.test(base))p.push('button press is not a --t-fast squash onto the ledge');
+
+  // 4. every animation has a reduced-motion and a calm path; nothing loops forever but a few named ones; particles are not drawn
+  const cut='{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}';
+  if(!base.includes('@media (prefers-reduced-motion:reduce){*,*::before,*::after'+cut+'}'))p.push('20-base.css: the reduced motion rule for every element is missing');
+  if(!base.includes('html.calm *,html.calm *::before,html.calm *::after'+cut))p.push('20-base.css: the calm mode rule for every element is missing');
+  const mo=CSS['50-motion.css']||'';
+  if(!/html\.calm \.burst,html\.calm \.rw-burst,html\.calm \.fly,html\.calm \.pc-fx\{display:none\}/.test(mo)||
+    !/@media \(prefers-reduced-motion:reduce\)\{\.burst,\.rw-burst,\.fly,\.pc-fx\{display:none\}\}/.test(mo))p.push('50-motion.css: particles must not show in calm mode or with reduced motion');
+  // the only endless loops (DS 8.1: the pet's idle bob and the current stop's pulse; plus a lesson's side-by-side count, which IS the
+  // question, and Hill Climb's low-fuel blink while fuel is low). Calm mode and reduced motion stop them all (one 0.01 ms iteration).
+  const LOOPS=['pet-bob','pet-shadow','pet-blink','bob','k-ring','pkside','hc-low'];
+  for(const f of cssFiles)for(const {sel,body} of rules(CSS[f]))for(const m of body.matchAll(/animation\s*:\s*([^;]*\binfinite\b[^;]*)/g)){
+    const n=(m[1].match(/^\s*([\w-]+)/)||[])[1];
+    if(!LOOPS.includes(n))p.push(f+' '+sel+': loops forever ('+n+')');
+  }
+  if(!/rt=setInterval\(\(\)=>\{if\(!\$\('#chest'\)\|\|rn>=4\)/.test(rd('js/50-round.js')))p.push('the chest rattle sound must stop after 4 rattles, like its animation');
+  if(!/careFx[\s\S]{0,300}classList\.contains\('calm'\)[\s\S]{0,200}prefers-reduced-motion: reduce/.test(rd('js/56-petcare.js')))p.push('careFx must draw nothing in calm mode or with reduced motion');
+
+  // 5. sound: nothing plays with Sound effects off; levels balanced (DESIGN_SYSTEM 8.2); at most 3 effects at once; the voice ducks the rest
+  const s=(()=>eval(js+`;(()=>{
+    const calls=[],gains=[],r={};
+    const G=()=>{const g={gain:{value:1,set:[],setTargetAtTime(v,t,c){this.set.push(v)},setValueAtTime(){},exponentialRampToValueAtTime(){}},connect(x){return x}};gains.push(g);return g};
+    AC={currentTime:0,state:'running',resume(){},createGain:G,destination:{}};MG=AC.createGain();
+    synth=(f,d,t=0,type='sine',vol=.2)=>{calls.push({t,d,type,vol});if(FXG)FXG.end=Math.max(FXG.end,AC.currentTime+t+d+.05)};
+    hiss=(d,t=0,vol=.15)=>{calls.push({t,d,type:'noise',vol});if(FXG)FXG.end=Math.max(FXG.end,AC.currentTime+t+d)};
+    const run=f=>{calls.length=0;f();return calls.slice()};
+    S.sound=false;
+    r.off=run(()=>{for(const k in SFX)SFX[k](1);tone(440,.1);noise(.1)}).length;
+    const SI=global.setInterval;global.setInterval=()=>0;
+    try{
+      r.offMusic=(S.music=false,music(true),musT);
+      S.sound=true;r.fx={};
+      for(const k in SFX){FXON.length=0;r.fx[k]=run(()=>SFX[k](3))}
+      r.tone=run(()=>tone(440,.1)).length;
+      // 5 effects at once: two oldest fade out
+      FXON.length=0;gains.length=0;for(let i=0;i<5;i++)SFX.coin(i);
+      r.faded=gains.filter(g=>g.gain.set.includes(0)).length;r.on=FXON.length;
+      // the voice: say() and a recorded clip duck the master to 30%
+      MG.gain.set.length=0;sfxDuck(()=>true);r.duck=MG.gain.set.slice();
+    }finally{global.setInterval=SI}
+    return r})()`))();
+  if(s.off!==0)p.push('with Sound effects off, '+s.off+' sounds still play (SFX, tone, noise)');
+  if(s.offMusic)p.push('music plays with Music off');
+  if(s.tone!==1)p.push('tone() is silent with Sound effects on');
+  if(s.faded!==2||s.on!==3)p.push('5 effects at once: '+s.faded+' faded out, '+s.on+' sounding (want 2 and 3)');
+  if(!s.duck.length||Math.abs(s.duck[0]-.8*.3)>1e-9)p.push('sfxDuck: the master does not duck to 30% under the voice ('+s.duck+')');
+  if(!/speechSynthesis\.speak\(u\);sfxDuck\(/.test(sp))p.push('say() must duck effects and music while the voice talks');
+  if(!/sfxDuck\(\(\)=>!a\.ended&&!a\.paused\)/.test(rd('js/44-clips.js')))p.push('a recorded voice clip must duck effects and music');
+  // level of an effect: the largest sum, over time, of each sound's envelope times its wave's loudness (RMS of a full-scale wave)
+  const W={sine:.71,triangle:.58,square:1,sawtooth:.58,noise:.35};
+  const level=cs=>{let pk=0,len=0;for(const c of cs)len=Math.max(len,c.t+c.d);
+    for(let x=0;x<=len;x+=.002){let v=0;for(const c of cs){const u=x-c.t;if(u<0||u>c.d)continue;
+      const a=u<.012?c.vol*u/.012:c.vol*Math.pow(1e-4/c.vol,(u-.012)/Math.max(.001,c.d-.012));v+=a*W[c.type]}pk=Math.max(pk,v)}
+    return{pk,len}};
+  const L={};for(const [k,cs] of Object.entries(s.fx)){if(!cs.length)p.push('SFX.'+k+' plays nothing');L[k]=level(cs)}
+  // DESIGN_SYSTEM 8.2: [effect, longest length in s]
+  const SET=[['click',.05],['right',.25],['wrong',.2],['star',.3],['coin',.25],['open',.8],['fanfare',1.2],['hit',.25],['whoosh',.3]];
+  for(const [k,mx] of SET)if(!L[k])p.push('SFX.'+k+' missing');else if(L[k].len>mx+1e-9)p.push('SFX.'+k+' lasts '+L[k].len.toFixed(2)+' s (at most '+mx+')');
+  if(L.fanfare&&L.fanfare.len<.9)p.push('SFX.fanfare should be about 1.1 s');
+  for(const [k,v] of Object.entries(L))if(v.pk>.13)p.push('SFX.'+k+' too loud (level '+v.pk.toFixed(3)+', at most .13: effects stay under the voice)');
+  if(L.wrong&&L.right&&!(L.wrong.pk<L.right.pk))p.push('Try again must be quieter than Right');
+  if(L.click&&Object.entries(L).some(([k,v])=>k!=='click'&&k!=='tick'&&v.pk<L.click.pk))p.push('the tap tick must be the quietest effect');
+  if(SET.some(([k])=>L[k]&&L[k].pk<.02))p.push('an effect of the set is almost silent: '+SET.filter(([k])=>L[k]&&L[k].pk<.02).map(x=>x[0]));
+  // no sound outside SFX, tone, noise and music: the countdown beeps go through SFX.tick
+  for(const f of jsFiles){const t=rd('js/'+f);
+    if(f!=='10-sfx.js'&&/\b(synth|hiss)\(/.test(t))p.push(f+': calls the unchecked synth()/hiss() (use SFX, tone or noise)');
+    if(/new Audio\(/.test(t)&&!['44-clips.js','80-grown.js'].includes(f))p.push(f+': plays audio outside the clips');
+    if(/^(52|54|57)-/.test(f)&&/\btone\(/.test(t))p.push(f+': a countdown beep outside SFX.tick');
+  }
+  if(!/function playClip\(kind\)\{const cs=CLIPS\.filter\(c=>c\.kind==kind\);if\(!cs\.length\|\|!S\.sound\)return false;/.test(rd('js/44-clips.js')))p.push('playClip must stay silent with Sound effects off');
+  return{problems:[...new Set(p)].slice(0,60),note:nTr+' transitions and '+nKf+' keyframes on transform/opacity ('+ALLOW.length+' game exceptions), '+nTok+' chrome motions on tokens; '+
+    'levels '+SET.map(([k])=>k+' '+(L[k]?L[k].pk.toFixed(3):'-')).join(', ')};
 });
 
 // ---- report ----

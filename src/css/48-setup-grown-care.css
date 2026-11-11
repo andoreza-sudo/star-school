@@ -146,7 +146,7 @@
 }
 /* care feedback (careFx): drawn hearts, bubbles, stars and sparkles rise from the pet and fade */
 .pc-fx{position:fixed;z-index:45;width:0;height:0;pointer-events:none}
-.pc-fx i{position:absolute;left:0;top:0;opacity:0;transform:translate(-50%,-50%);animation:pc-up 1100ms var(--ease) var(--d,0ms) forwards}
+.pc-fx i{position:absolute;left:0;top:0;opacity:0;transform:translate(-50%,-50%);animation:pc-up var(--t-cele) var(--ease) var(--d,0ms) forwards}
 .pc-fx svg{display:block;width:100%;height:100%;overflow:visible}
 html.calm .pc-fx{display:none}
 @media (prefers-reduced-motion:reduce){.pc-fx{display:none}}

@@ -214,7 +214,7 @@ function fluPlay(set, mode) {
       if (timed) {
         GFX.bar($('#fbar'), left / FLU.SECS);
         $('#ftm b').textContent = Math.max(0, Math.ceil(left)) + ' s';
-        if (left <= 5 && left > 0 && Math.ceil(left) != FL.beep) {FL.beep = Math.ceil(left); tone(880, .08, 0, 'square', .05)}
+        if (left <= 5 && left > 0 && Math.ceil(left) != FL.beep) {FL.beep = Math.ceil(left); SFX.tick()}
         if (left <= 0) finish();
       } else $('#ftm b').textContent = fluSecs(ms) + ' s';
     }, 200);
