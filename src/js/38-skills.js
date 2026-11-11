@@ -19,11 +19,11 @@ const SK={
  pk_num:{t:'Hear a Number',e:'🔟',area:'math',max:3,gen:genPkNumK},
  pk_more:{t:'Which Has More',e:'⚖️',area:'math',max:2,gen:genPkMoreK},
  sort:{t:'Sort and Compare',e:'🧩',area:'math',max:3,gen:genSortK},
- shape:{t:'Shapes',e:'🔺',area:'math',max:5,gen:lv=>lv==5?ffShape5():lv==4?genShape(lv):genShapeK(lv)}, // levels 1-3 Tiny Town / Shape Garden, 4 Clock Tower, 5 Fraction Forest
- pat:{t:'Patterns',e:'🌈',area:'math',max:3,gen:lv=>lv==3?genBayPat3():genPatK(lv)},
+ shape:{t:'Shapes',e:'🔺',area:'math',max:6,gen:lv=>lv==6?dsShape6():lv==5?ffShape5():lv==4?genShape(lv):genShapeK(lv)}, // levels 1-3 Tiny Town / Shape Garden, 4 Clock Tower, 5 Fraction Forest
+ pat:{t:'Patterns',e:'🌈',area:'math',max:4,gen:lv=>lv==4?dsPat4():lv==3?genBayPat3():genPatK(lv)}, // 4 Decimal Desert
  tenf:{t:'Ten Frames',e:'🔟',area:'math',max:3,gen:genTenf}, // P2-02 Shape Garden: tenf, pos, meas (and levels added to pk_count, pk_num, pk_more, shape, add, pat, cnt, sort above)
  pos:{t:'Where Is It',e:'📌',area:'math',max:1,gen:genPos},
- meas:{t:'Measuring',e:'📏',area:'math',max:4,gen:lv=>lv==4?ffMeas4():lv==3?genBayMeas3():lv==1?genMeas(lv):genMeas2(lv)}, // 1 Shape Garden, 2 Clock Tower, 3 Treasure Bay, 4 Fraction Forest
+ meas:{t:'Measuring',e:'📏',area:'math',max:5,gen:lv=>lv==5?dsMeas5():lv==4?ffMeas4():lv==3?genBayMeas3():lv==1?genMeas(lv):genMeas2(lv)}, // 1 Shape Garden, 2 Clock Tower, 3 Treasure Bay, 4 Fraction Forest
  mult:{t:'Equal Groups',e:'✖️',area:'math',max:2,gen:genMult},
  comp:{t:'Story Time',e:'📗',area:'read',max:7,gen:genCompLv,round:compRoundLv}, // levels 1-2 picture stories, 3+ passages (37-comp.js)
  info:{t:'Learn About It',e:'🔍',area:'read',max:5,gen:lv=>genPassage('info',lv),round:lv=>compRound('info',lv)},
@@ -33,7 +33,7 @@ const SK={
  big:{t:'Big Numbers',e:'💯',area:'math',max:7,gen:lv=>lv==5?genBayBig5():lv==6?fyBig6():lv==7?fyBig7():genBig(lv)}, // 6-7 Factor Factory
  eo:{t:'Even or Odd',e:'⚖️',area:'math',max:2,gen:genEO},
  cnt:{t:'Count By',e:'🔢',area:'math',max:5,gen:lv=>lv==5?genBayCnt5():genCntK(lv)},
- story:{t:'Story Problems',e:'📖',area:'math',max:6,gen:lv=>lv==4?genBayStory4():lv==6?ffStory6():genStoryAll(lv)}, // 4 Treasure Bay, 6 Fraction Forest
+ story:{t:'Story Problems',e:'📖',area:'math',max:7,gen:lv=>lv==7?dsStory7():lv==4?genBayStory4():lv==6?ffStory6():genStoryAll(lv)}, // 4 Treasure Bay, 6 Fraction Forest
  arr:{t:'Arrays',e:'🧱',area:'math',max:2,gen:lv=>lv==1?genBayArr1():genArr(lv)},
  mfact:{t:'Times Facts',e:'✖️',area:'math',max:5,gen:lv=>lv==5?fyMfact5():genMfact(lv)}, // 5 Factor Factory
  dfact:{t:'Dividing Facts',e:'÷',area:'math',max:4,gen:genDfact},
@@ -43,8 +43,11 @@ const SK={
  round:{t:'Rounding',e:'🎯',area:'math',max:3,gen:lv=>lv==3?fyRound3():ffRound(lv)}, // 1-2 Fraction Forest, 3 Factor Factory
  dbig:{t:'Long Division',e:'÷',area:'math',max:3,gen:fyDbig}, // P2-09 Factor Factory
  fact:{t:'Factors & Primes',e:'🔢',area:'math',max:2,gen:lv=>lv==1?fyFact1():fyFact2()},
- geo:{t:'Perimeter and Area',e:'📐',area:'math',max:2,gen:lv=>lv==1?ffGeo1():ffGeo2()},
+ geo:{t:'Perimeter and Area',e:'📐',area:'math',max:3,gen:lv=>lv==3?dsGeo3():lv==1?ffGeo1():ffGeo2()}, // 3 Decimal Desert
  frac:{t:'Fractions',e:'🍕',area:'math',max:8,gen:lv=>lv==1?genFrac1(lv):genFracCore(lv)}, // level 1 Clock Tower (P2-03), 2-8 fractions core (P2-06)
+ fop:{t:'Fraction Math',e:'🍕',area:'math',max:2,gen:lv=>lv==1?dsFop1():dsFop2()}, // P2-10 Decimal Desert (more levels: P2-12, P2-13)
+ dec:{t:'Decimals',e:'🔟',area:'math',max:2,gen:lv=>lv==1?dsDec1():dsDec2()}, // P2-10 (levels 3-5: P2-11)
+ ang:{t:'Angles',e:'📐',area:'math',max:2,gen:lv=>lv==1?dsAng1():dsAng2()}, // P2-10
  sight:{t:'Sight Words',e:'👀',area:'read',max:5,gen:genSight},
  pic:{t:'Picture Words',e:'🖼️',area:'read',max:6,gen:lv=>lv>4?genPicP(lv):genPic(lv)},
  build:{t:'Build a Word',e:'🧩',area:'read',max:6,gen:lv=>lv>4?genBuildP(lv):genBuild(lv)},

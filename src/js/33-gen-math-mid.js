@@ -239,15 +239,16 @@ function fracUnlike() {
   }
   const ans = fcCmp(n1, d1, n2, d2), L = fcLcm(d1, d2);
   const half = (n, d) => 2 * n < d ? -1 : 2 * n > d ? 1 : 0;
-  let s;
+  let s, hint;
   if (half(n1, d1) * half(n2, d2) == -1) {
     s = `Think about one half. ${n1}/${d1} is ${half(n1, d1) < 0 ? 'less' : 'more'} than a half and ${n2}/${d2} is ${half(n2, d2) < 0 ? 'less' : 'more'} than a half.`;
+    hint = {k: 'text', s};
   } else {
-    s = `Make the bottom numbers match. Both can have ${L} on the bottom: ${n1}/${d1} = ${n1 * L / d1}/${L} and ${n2}/${d2} = ${n2 * L / d2}/${L}.`;
+    hint = stepsCommonDen(n1, d1, n2, d2, 'cmp'); // P2-10: step hint (common bottom, rename both, compare the tops)
   }
   return {kind: 'choice', cls: 'syms', html: `<div class="sub">Which is true?</div><div class="eq">${fcFr(n1, d1)} ${SLOT} ${fcFr(n2, d2)}</div>`,
     say: `Is ${fcSay(n1, d1)} less than, equal to, or greater than ${fcSay(n2, d2)}?`, ans, choices: FC_SYM.map(c => ({...c})),
-    hint: {k: 'text', s}, label: `frac cmp2 ${n1}/${d1} ? ${n2}/${d2}`};
+    hint, label: `frac cmp2 ${n1}/${d1} ? ${n2}/${d2}`};
 }
 
 // level 7: simplest form (the answer is typed exactly: 12/18 -> 2/3)
