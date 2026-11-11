@@ -414,21 +414,23 @@ Spec in DESIGN_SYSTEM.md. Section numbers below refer to it.
 |----|-------|-------|------|------|-----------|
 | P4-01 | Tokens and base layer | Sonnet | M | P0-02 | 2, 3 |
 | P4-02 | Icon system and first 40 icons | **Opus** | M | P4-01 | 5 |
-| P4-03 | Remaining UI icons (about 60) | Sonnet | M | P4-02 | 5 |
-| P4-04 | Core components | Sonnet | M | P4-02 | 4 |
+| P4-03 | Remaining UI icons (about 60) | **Opus** | M | P4-02 | 5 |
+| P4-04 | Core components | **Opus** | M | P4-02 | 4 |
 | P4-05 | Pet rig and dragon (4 stages, 5 moods) | **Opus** | L | P4-01 | 6 |
-| P4-06 | Dino, bird, sea pal on the rig | Sonnet | M | P4-05 | 6 |
-| P4-07 | Wearables, Pet Shop and Stickers screens | Sonnet | M | P4-05 | 6.4, 9 row 7 |
-| P4-08 | Home screen | Sonnet | M | P4-04 | 9 row 2 |
+| P4-06 | Dino, bird, sea pal on the rig | **Opus** | M | P4-05 | 6 |
+| P4-07 | Wearables, Pet Shop and Stickers screens | **Opus** | M | P4-05 | 6.4, 9 row 7 |
+| P4-08 | Home screen | **Opus** | M | P4-04 | 9 row 2 |
 | P4-09 | Map and world scenes | **Opus** | M | P4-04, P1-05 | 7, 9 row 3 |
-| P4-10 | Question screen, keypads, feedback | Sonnet | M | P4-04, P1-02 | 9 row 4 |
-| P4-11 | Rewards: finish, chest, stars, bosses | Sonnet | M | P4-04 | 6.3, 9 row 5 |
-| P4-12 | Setup, Grown-ups, Pet Care, app icon | Sonnet | M | P4-04, P4-05 | 9 rows 1, 6, 10 |
+| P4-10 | Question screen, keypads, feedback | **Opus** | M | P4-04, P1-02 | 9 row 4 |
+| P4-11 | Rewards: finish, chest, stars, bosses | **Opus** | M | P4-04 | 6.3, 9 row 5 |
+| P4-12 | Setup, Grown-ups, Pet Care, app icon | **Opus** | M | P4-04, P4-05 | 9 rows 1, 6, 10 |
 | P4-13 | Object art set A (40 pictures) | Sonnet | M | P4-02 | 6.5 |
-| P4-14 | Object art set B (40 pictures) | Sonnet | M | P4-13 | 6.5 |
-| P4-15 | Object art set C (40 pictures) (STRETCH) | Sonnet | M | P4-14 | 6.5 |
-| P4-16 | Game Room hub and shared game chrome | Sonnet | S | P4-04 | 9 row 8 |
-| P4-17 | Motion and sound polish | Sonnet | M | P4-08, P4-10, P4-11 | 8 |
+| P4-14 | Object art set B (40 pictures) | **Opus** | M | P4-13 | 6.5 |
+| P4-15 | Object art set C (40 pictures) (STRETCH) | **Opus** | M | P4-14 | 6.5 |
+| P4-16 | Game Room hub and shared game chrome | **Opus** | S | P4-04 | 9 row 8 |
+| P4-17 | Motion and sound polish | **Opus** | M | P4-08, P4-10, P4-11 | 8 |
+
+Model change (2026-11-11, Andy): every remaining Phase 4 graphics chunk runs on Opus, because visual judgment matters more than cost here. Content, plumbing and test chunks stay on Sonnet. P4-13 (object art set A) shipped on Sonnet and may get an Opus review pass.
 
 Shared accept for P4: before and after screenshots at all three sizes attached to PROGRESS.md entry by filename; no layout overflow;
 contrast script passes; no new hard-coded hex colors outside the token file (grep check in `check.sh`); frame time not worse
@@ -476,7 +478,7 @@ Notes:
 
 **P5-06 · Report card** · Sonnet · M: Grown-ups "Report card" screen: this week vs last week (minutes, rounds, accuracy), per subject a grade-level bar (where the child is working vs chosen grade), mastery table grouped by strand (from `S.mast` and the strand tags in CURRICULUM), "Needs practice" top 5 with example items, "Recently mastered" list, fact sprint bests, streak. Plain language, no jargon. Printable via the browser (print stylesheet). Accept: screenshots with `fresh`, `midway`, `maxed` fixtures; empty states read sensibly; nothing clipped at 600x960.
 
-**P5-07 · Backup** · Sonnet · S: Grown-ups: "Save a backup" downloads `starschool-<name>-<date>.json`; "Restore" reads a file, validates it, shows what it contains, asks to confirm, then runs migrations. "Start over" needs typing the child's name. Accept: export then import on a fresh profile reproduces identical `S`; a damaged file is rejected with a clear message.
+**P5-07 · Backup** · Sonnet · S: Grown-ups: "Save a backup" downloads `starschool-<name>-<date>.json`; "Restore" reads a file, validates it, shows what it contains, asks to confirm, then runs migrations. "Start over" needs typing the child's name. Accept: export then import on a fresh profile reproduces identical `S`; a damaged file is rejected with a clear message. Any button that shares or sends the backup file (share sheet, email) shows `onlineNote()` and goes through `needOnline` (CONTRIBUTING section 7, "Sharing needs a connection"); saving the file to the tablet itself works offline.
 
 **P5-08 · Missions v2** · Sonnet · S: three daily missions drawn from a pool that fits the grade (one learning round in the weakest subject, a fact sprint, a brain teaser, clear today's review, a perfect round). Accept: missions never ask for a feature the child has not unlocked.
 
