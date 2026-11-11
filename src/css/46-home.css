@@ -97,6 +97,23 @@ button.hm-tile:active{transform:translateY(3px);box-shadow:inset 0 0 0 2px var(-
   background:var(--star);color:var(--ink);box-shadow:0 0 0 3px var(--surface)}
 .hm-tl{display:block;max-width:100%}
 
+/* ---- Puzzle of the Day (P3-17): a small white card under the Today row, Brain Teasers purple art; green when done ---- */
+.hm .hm-pod{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:var(--s-3);width:100%;min-height:84px;margin-top:var(--s-3);
+  padding:var(--s-2) var(--s-3) var(--s-2) var(--s-2);border:0;border-radius:var(--r-card);background:var(--surface);color:var(--ink);font:inherit;text-align:left;
+  cursor:pointer;box-shadow:inset 0 0 0 2px var(--line),var(--ledge) var(--ledge-soft);transition:transform var(--t-fast) var(--ease)}
+.hm .hm-pod:active{transform:translateY(3px);box-shadow:inset 0 0 0 2px var(--line),var(--ledge-press) var(--ledge-soft)}
+.hm-podi{display:grid;place-items:center;flex:none;width:64px;height:64px;border-radius:18px;background:var(--bt-tint)}
+.hm .hm-podi .hm-svg{width:52px;height:52px}
+.hm-podt{min-width:0}
+.hm-podt b{display:block;font-family:var(--font-display);font-size:var(--fs-4);line-height:1.2;overflow-wrap:normal}
+.hm-podt span{display:block;margin-top:2px;font-size:var(--fs-2);font-weight:700;line-height:1.3;color:var(--bt-shade)}
+.hm-podr{display:inline-flex;align-items:center;gap:2px;padding:var(--s-1) var(--s-3) var(--s-1) var(--s-1);border-radius:var(--r-pill);
+  background:var(--star-tint);color:var(--try-ink);font-size:var(--fs-3);font-weight:700;line-height:1;white-space:nowrap}
+.hm-podk{display:grid;place-items:center;width:48px;height:48px;border-radius:50%;color:var(--surface);
+  background:linear-gradient(var(--hi),var(--hi-0) 60%) var(--good);box-shadow:inset 0 -3px 0 var(--good-ink)}
+.hm .hm-pod.done{background:var(--good-tint);box-shadow:none}
+.hm-pod.done .hm-podt span{color:var(--good-ink)}
+
 /* ---- path cards and the Game Room: a big subject-colour button with a drawing ---- */
 .hm-paths{display:grid;gap:var(--s-3)}
 .hm .hm-path{position:relative;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:var(--s-4);width:100%;
@@ -159,4 +176,6 @@ button.hm-tile:active{transform:translateY(3px);box-shadow:inset 0 0 0 2px var(-
   .hm-go{width:48px;height:48px}
   .hm-act{min-height:100px}
   .hm-ai{width:48px;height:48px}
+  .hm .hm-pod{gap:var(--s-2)}
+  .hm-podt b{font-size:var(--fs-3)}
 }

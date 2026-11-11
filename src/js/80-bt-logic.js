@@ -751,7 +751,7 @@ const LG = (() => {
 })();
 
 BT.reg({
-  id: 'logic', name: 'Logic', icon: 'logic', bands: 'BCD',
+  id: 'logic', name: 'Logic Grid', icon: 'logic', bands: 'BCD',
   rules: 'Read the clues. Tick who has what, and cross what cannot be.',
   make: (band, level, rnd) => LG.make(band, level, rnd),
   mount: (el, p, api) => LG.mount(el, p, api),

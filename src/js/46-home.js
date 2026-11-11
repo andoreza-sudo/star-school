@@ -91,6 +91,18 @@ const HM_ART = {
       `<circle fill="${HM_C('white')}" opacity=".6" cx="45" cy="27.4" r="1.2"/><circle fill="${HM_C('white')}" opacity=".6" cx="51.5" cy="33.9" r="1.2"/>` +
       `<circle fill="${HM_C('white')}" opacity=".6" cx="45" cy="40.4" r="1.2"/><circle fill="${HM_C('white')}" opacity=".6" cx="38.5" cy="33.9" r="1.2"/>`;
   },
+  // Puzzle of the Day (P3-17): a calendar page with a purple top and two rings, a yellow puzzle piece on it
+  pod: () => {
+    const piece = 'M3.3 7.5H8.5A2.5 2.5 0 1 1 11.9 7.5H16.8V12.3A2.5 2.5 0 1 1 16.8 15.7V20.5H3.3Z';
+    const pc = (h, d) => `<path fill="${HM_C(h)}" stroke="${HM_C(h)}" stroke-width="1.5" stroke-linejoin="round"${d ? ' transform="translate(.6 .8)"' : ''} d="${piece}"/>`;
+    return `<rect fill="${HM_C('purple-3')}" x="6" y="12" width="52" height="49" rx="9"/>` +
+      `<rect fill="${HM_C('white')}" x="6" y="9" width="52" height="49" rx="9"/>` +
+      `<path fill="${HM_C('purple')}" d="M15 9H49A9 9 0 0 1 58 18V24H6V18A9 9 0 0 1 15 9Z"/>` +
+      `<rect fill="${HM_C('purple-1')}" opacity=".7" x="11" y="12.5" width="15" height="3" rx="1.5"/>` +
+      `<rect fill="${HM_C('purple-3')}" x="17.5" y="3.5" width="5.5" height="12" rx="2.7"/><rect fill="${HM_C('purple-3')}" x="41" y="3.5" width="5.5" height="12" rx="2.7"/>` +
+      `<g transform="translate(14.5 22.5) scale(1.5)">${pc('yellow-2', 1)}${pc('yellow')}</g>` +
+      `<path fill="none" stroke="${HM_C('yellow-1')}" stroke-width="1.6" stroke-linecap="round" d="M23 37H27"/>`;
+  },
 };
 // A path or Game Room picture; a path without a drawing gets its icon.
 function hmArt(k) {
@@ -214,6 +226,18 @@ function hmToday() {
     <button class="hm-tile" id="mix"><span class="hm-ti t-mix">${hmMixIco()}</span><span class="hm-tl">Mixed Practice</span></button></div>`;
 }
 
+// Puzzle of the Day (P3-17; BRAIN_TEASERS 9): a small card under the Today row once a puzzle type is registered. Before it is
+// played: the type, the level and the 5 coins it pays; after: a tick and "come back tomorrow". Tapping plays it (done: opens the hub).
+function hmDaily() {
+  if (!BT.list().length) return '';
+  const dl = BT.dailyInfo(), t = dl && BT.get(dl.id);
+  if (!t) return '';
+  const side = dl.done ? `<span class="hm-podk">${ico('check', 28)}</span>`
+    : `<span class="hm-podr">${ico('coin', 24, 'ic-coin')}<b>+${BT.DAILY_COINS}</b></span>`;
+  return `<button class="hm-pod${dl.done ? ' done' : ''}" id="hmday"><span class="hm-podi">${hmArt('pod')}</span>` +
+    `<span class="hm-podt"><b>Puzzle of the Day</b><span>${dl.done ? 'Done! Come back tomorrow.' : esc(t.name) + ', level ' + dl.level}</span></span>${side}</button>`;
+}
+
 // One big illustrated card per path, then the Game Room.
 function hmPaths() {
   const cards = Object.keys(PATHS).map(k => {
@@ -254,7 +278,7 @@ function home(first){
     ${UI.ibtn(S.sound ? 'sound-on' : 'sound-off', S.sound ? 'Sound is on' : 'Sound is off', { id: 'snd', size: 'sm' })}
     ${UI.ibtn('gear', 'Grown-ups: hold', { id: 'gear', size: 'sm' })}</div>
   <div class="scroll hm" id="hs"><div class="hm-cols">
-   <div class="hm-col">${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}</div>
+   <div class="hm-col">${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}${hmDaily()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
    <p class="hm-ver">${ico('star', 16)}<span>Star School __VER__</span></p></div>`);
   music(true);
@@ -265,6 +289,7 @@ function home(first){
   $('#snd').onclick=()=>{S.sound=!S.sound;S.music=S.sound;save();home()};
   $('#stkb').onclick=()=>{SFX.whoosh();streakCal(0)};
   $('#book').onclick=book;$('#shop').onclick=shop;$('#mix').onclick=()=>{SFX.whoosh();startMix()};$('#race').onclick=raceMenu;$('#flu').onclick=()=>{SFX.whoosh();fluMenu()};$('#care').onclick=care;$('#groom').onclick=()=>{SFX.whoosh();gameRoom()};if($('#btcard'))$('#btcard').onclick=()=>{SFX.whoosh();BT.hub()};
+  if($('#hmday'))$('#hmday').onclick=()=>{SFX.whoosh();const d=BT.dailyInfo();if(d&&!d.done)BT.start(d.id,d.band,d.level);else BT.hub()};
   if($('#inst'))$('#inst').onclick=async()=>{try{installEvt.prompt();await installEvt.userChoice}catch(e){}installEvt=null;home()};
   let t;const g=$('#gear');g.onpointerdown=()=>{t=setTimeout(grown,1200)};g.onpointerup=g.onpointerleave=()=>clearTimeout(t);g.onclick=()=>fb('Grown-ups: hold it','warn');
   if(first&&S.voice)setTimeout(()=>say(`Hi ${S.name}! Pick a game!`),400)}
@@ -344,7 +369,9 @@ function learn(p,i){const n=NODES[p][i],items=SPN[n.sk.slice(3)];
 function book(){const have=STK.filter(s=>S.stickers[s]).length;
   view(`<div class="top"><button class="btn sm" id="back" aria-label="Back">${ico('back',20)}</button><div class="title">${ico('sticker-book','1.1em','ic-brand')} My Stickers</div><div class="sp"></div><div class="stars">${have} / ${STK.length}</div></div>
   <div class="scroll"><p class="sub" style="text-align:center">Finish a round to win a sticker! Get 10 out of 10 for a bonus one.</p>
+  ${BT.list().length?`<div class="bk-bt">${UI.btn('Puzzle badges',{kind:'subject',p:'bt',icon:'medal',id:'bkbdg'})}</div>`:''}
   <div class="sgrid">${STK.map(s=>S.stickers[s]?`<button class="btn st" data-s="${s}">${s}${S.stickers[s]>1?`<b>×${S.stickers[s]}</b>`:''}</button>`:`<div class="st no">${ico('question','1em')}</div>`).join('')}</div></div>`);
   $('#back').onclick=()=>home(true);
+  if($('#bkbdg'))$('#bkbdg').onclick=()=>{SFX.whoosh();BT.badgeView(book)}; // P3-17: the puzzle badges are a page of the sticker book
   $$('.st[data-s]').forEach(b=>b.onclick=()=>{anim(b,'jump');SFX.pop(R(0,5));const r=b.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,[b.dataset.s])})}
 

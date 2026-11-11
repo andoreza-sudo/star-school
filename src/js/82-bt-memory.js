@@ -352,7 +352,7 @@ const MM = (() => {
 })();
 
 BT.reg({
-  id: 'memory', name: 'Memory', icon: 'memory', bands: 'ABCD', allow: 1,
+  id: 'memory', name: 'Memory Match', icon: 'memory', bands: 'ABCD', allow: 1,
   rules: 'Turn over two cards at a time. Find all the pairs.',
   make: MM.make, mount: MM.mount, solve: MM.solve,
 });
