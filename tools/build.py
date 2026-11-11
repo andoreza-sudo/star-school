@@ -2,7 +2,7 @@ import base64, json, os, re
 from PIL import Image, ImageDraw
 # Build: python3 tools/build.py   (run from anywhere; writes index.html, bt/games/data.<VER>.js, sw.js, manifest.json, icons to the repo root)
 # Bump VER on every release so tablets pick up the update.
-VER = 'v125'
+VER = 'v127'
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = ROOT
 F = os.path.join(ROOT, 'tools', 'fonts', 'andika-latin-%s-normal.woff2')
@@ -13,7 +13,7 @@ S_DIR = os.path.join(ROOT, 'src')
 # `var <STEM>_VER='<VER>'`. Keep one entry per line: tools/test.js reads this list. See CONTRIBUTING 3.3.
 PARTS = [
     ('bt', r'\d+-bt-[\w-]+\.(js|css)'),  # Brain Teaser puzzle types NN-bt-*.js and NN-bt-*.css (74-teasers.js, the framework, stays)
-    ('games', r'(60-blocks|62-hill|64-gtimer|66-colornum|68-lowpoly|70-art|72-shapes|\d+-game-[\w-]+)\.js'),  # the Game Room
+    ('games', r'(60-blocks|62-hill|64-gtimer|66-colornum|68-lowpoly|70-art|72-shapes|\d+-game-[\w-]+)\.js|\d+-game-[\w-]+\.css'),  # the Game Room (P4-16: and its NN-game-*.css)
 ]
 def part_of(name):
     return next((stem for stem, rx in PARTS if re.fullmatch(rx, name)), None)
