@@ -698,10 +698,11 @@ async function main() {
         const d = REV.day(), asked = __rq.filter(x => x.rvk && !x.retry);
         return { first: __rq.slice(0, 4).map(x => !!x.rvk), tags: asked.map(x => x.tag),
           moved: asked.map(x => { const it = REV.get().find(y => revKey(y) === x.rvk); return it ? [it.box, it.due - d] : null; }),
-          due: dueItems().length, stars: S.stars >= 85 };
+          due: dueItems().length, box1: REV.get().filter(x => x.box == 1).length, stars: S.stars >= 85 };
       });
       if (JSON.stringify(r1.first) !== '[false,true,false,true]' || r1.tags.some(h => h < 20) || r1.moved.some(m => !m || m[0] !== 1 || m[1] !== 1)
-        || r1.due !== 21 - r1.moved.length || !r1.stars)
+        // a normal question that happens to equal a due item also books it (right answer = fixed), so count what actually moved
+        || r1.due !== 21 - r1.box1 || r1.box1 < r1.moved.length || !r1.stars)
         fail('review in a stop round: ' + JSON.stringify(r1));
       else step(`stop round: questions 2 and 4 were due review items with the tag (${r1.moved.length} in all), each now in box 1, due tomorrow`);
       // Tricky Mix from home: 7 rebuilt items, all right on the first try = 7 fixed
@@ -712,7 +713,7 @@ async function main() {
       const rm = await rp.evaluate(() => G.pool.filter(q => q.rvk).length + (G.q.rvk ? 1 : 0));
       await playRound(rp, 'P5-02 tricky mix');
       const r2 = await rp.evaluate(() => ({ fixed: G.fixed || 0, due: dueItems().length, box1: REV.get().filter(x => x.box == 1).length }));
-      if (rm !== 7 || r2.fixed !== 7 || r2.due !== r1.due - 7 || r2.box1 !== r1.moved.length + 7) fail('tricky mix: ' + JSON.stringify({ rm, ...r2 }));
+      if (rm !== 7 || r2.fixed !== 7 || r2.due !== r1.due - 7 || r2.box1 !== r1.box1 + 7) fail('tricky mix: ' + JSON.stringify({ rm, ...r2 }));
       else step(`Tricky Mix: ${rm} rebuilt review items, ${r2.fixed} fixed, ${r2.due} still due today`);
       await rp.evaluate(() => { G.dead = true; home(); });
       network.push(...ra.network);
