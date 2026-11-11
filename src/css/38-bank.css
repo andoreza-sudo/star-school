@@ -29,3 +29,9 @@
 .choices.bpass{gap:var(--s-2)}
 .choices.wide.bpass .choice.ch{font-size:clamp(17px,2.7vh,22px);padding:6px var(--s-3);min-height:var(--tap);line-height:1.2}
 @media (orientation:portrait) and (max-height:900px){.bctx-b{max-height:24vh}}
+/* long passages (P2-29, over 700 characters: grade 4 and up): on a tall phone the panel takes less so the question line and four choices stay on screen */
+@media (orientation:portrait) and (max-height:900px){
+  .bctx.long .bctx-b{max-height:19vh}.bctx.long .bctx-say{margin-bottom:var(--s-1)}
+  .qs .qarea:has(.bctx.long){padding-top:var(--s-3);padding-bottom:var(--s-3);gap:var(--s-2)}
+  .qs .qarea:has(.bctx.long) .bctx-h{padding-top:0;padding-bottom:0}
+}

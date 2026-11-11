@@ -52,7 +52,7 @@ async function answer(page) {
 }
 
 // Plays the round that is on screen to the end and opens the chest.
-async function playRound(page, label, total) {
+async function playRound(page, label, total, onAsk) {
   if (total === undefined) total = await page.evaluate(() => G.n); // 8 at the default grade (K), 6 Pre-K, 10 from 1st
   let n = 0;
   for (let guard = 0; guard < 40; guard++) {
@@ -60,6 +60,7 @@ async function playRound(page, label, total) {
     if (state === 'fin') break;
     if (state === 'none') { await page.waitForTimeout(150); continue; }
     await page.evaluate(() => { window.__q = G.q; });
+    if (onAsk) await onAsk(n);
     await answer(page);
     n++;
     // wait for the next question object or the finish screen
@@ -2285,6 +2286,53 @@ async function main() {
       network.push(...cp27.network);
       for (const e of cp27.errors) fail(e);
       await cp27.ctx.close();
+    }
+
+    // P2-29 6th grade passages at 380x780: a 6th grader who has done every other stop opens Legend Lab on its two new stops (comp 7, info 5),
+    //    230-300 word passages in the panel: on every one of the 10 questions the question line is visible with the panel open, the four
+    //    choices are at least 48 px, nothing scrolls sideways; a 10/10 round saves stars. Shots story6-comp and story6-info are the ones to look at.
+    {
+      const cp29 = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
+      const pg = cp29.page;
+      await pg.evaluate(() => {
+        S.grade = 6;
+        NODES.read.forEach(n => { if (!/^(comp7|info5)$/.test(nid(n))) S.maps.read[nid(n)] = S.maps.read[nid(n)] || 2; });
+        save();
+      });
+      const lw = await pg.evaluate(() => PATHS.read.worlds.findIndex(w => w.id === 'r_legend'));
+      for (const [id, sk, lv] of [['comp7', 'comp', 7], ['info5', 'info', 5]]) {
+        const at = await pg.evaluate(id => { const i = NODES.read.findIndex(n => nid(n) === id); return { i, w: NODES.read[i].wi }; }, id);
+        await pg.evaluate(() => { if (G) G.dead = true; home(); });
+        await pg.click('.game[data-p="read"]');
+        await pg.waitForSelector('.wchip.on');
+        await pg.click(`.wchip[data-w="${at.w}"]`);
+        await pg.waitForSelector(`.wchip.on[data-w="${at.w}"]`);
+        if (at.w !== lw) fail('P2-29 ' + id + ' is not in Legend Lab');
+        await pg.click(`.node[data-n="${at.i}"]`);
+        await pg.waitForSelector('#prompt');
+        const bad = [];
+        await playRound(pg, 'P2-29 ' + id, 10, async k => {
+          const m = await pg.evaluate(() => {
+            const pr = document.querySelector('#prompt'), r = pr.getBoundingClientRect(), d = document.querySelector('.bctx'), ch = [...document.querySelectorAll('.ch')];
+            const cr = ch.map(e => e.getBoundingClientRect());
+            return { sk: G.sk, lv: G.lv, top: r.top, bottom: r.bottom, h: innerHeight, w: document.documentElement.scrollWidth, open: !!d && d.open, words: d ? d.querySelectorAll('.bctx-p .w').length : 0,
+              n: ch.length, min: Math.min(...ch.map(e => Math.min(e.offsetWidth, e.offsetHeight))), low: Math.max(...cr.map(c => c.bottom)) };
+          });
+          if (m.sk !== sk || m.lv !== lv) bad.push(`q${k}: ${m.sk}${m.lv}`);
+          if (m.top < 0 || m.bottom > m.h) bad.push(`q${k}: question line not visible (${Math.round(m.top)}-${Math.round(m.bottom)} of ${m.h})`);
+          if (!m.open || m.words < 200) bad.push(`q${k}: panel open ${m.open}, ${m.words} words`);
+          if (m.n !== 4 || m.min < 48) bad.push(`q${k}: ${m.n} choices, smallest side ${Math.round(m.min)}`);
+          if (m.w > 380) bad.push(`q${k}: sideways scroll, width ${m.w}`);
+        });
+        if (bad.length) fail('P2-29 ' + id + ': ' + bad.slice(0, 5).join('; '));
+        const st = await pg.evaluate(id => S.maps.read[id] || 0, id);
+        if (st < 1) fail('P2-29 ' + id + ' did not save stars');
+      }
+      step('P2-29: Legend Lab comp 7 and info 5 played at 380x780 (10 questions each): question line visible with the passage panel, buttons >= 48 px, no sideways scroll, stars saved');
+      await vwait(pg, 500);
+      network.push(...cp29.network);
+      for (const e of cp29.errors) fail(e);
+      await cp29.ctx.close();
     }
 
     for (const e of errors) fail(e);

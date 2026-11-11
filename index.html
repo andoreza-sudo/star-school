@@ -1068,6 +1068,12 @@ html.notext .pktxt{display:none}
 .choices.bpass{gap:var(--s-2)}
 .choices.wide.bpass .choice.ch{font-size:clamp(17px,2.7vh,22px);padding:6px var(--s-3);min-height:var(--tap);line-height:1.2}
 @media (orientation:portrait) and (max-height:900px){.bctx-b{max-height:24vh}}
+/* long passages (P2-29, over 700 characters: grade 4 and up): on a tall phone the panel takes less so the question line and four choices stay on screen */
+@media (orientation:portrait) and (max-height:900px){
+  .bctx.long .bctx-b{max-height:19vh}.bctx.long .bctx-say{margin-bottom:var(--s-1)}
+  .qs .qarea:has(.bctx.long){padding-top:var(--s-3);padding-bottom:var(--s-3);gap:var(--s-2)}
+  .qs .qarea:has(.bctx.long) .bctx-h{padding-top:0;padding-bottom:0}
+}
 /* Placement quiz "Find my level" (P1-07): home card, Grown-ups row, quiz dots, result. Tokens only. */
 .pl-card{background:var(--brand-tint);border-radius:var(--r-card);padding:var(--s-3) var(--s-4);margin:var(--s-4) 0 0;color:var(--ink)}
 .pl-ct{display:flex;align-items:center;gap:var(--s-2);font-size:var(--fs-3);line-height:var(--lh-3);color:var(--ink)}
@@ -2339,7 +2345,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S));SAVE_FAILED=fals
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v85'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v86'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -7338,14 +7344,14 @@ function bankRebuild(bk){
    renderQ puts bankCtx(q.ctx) above the prompt. The words use the existing .w spans, so renderQ's tap-to-hear works.
    The "Hear it" button uses data-say, which renderQ also binds. ontoggle re-fits the question after open/close. */
 function bankCtx(c){
-  return `<details class="bctx" open ontoggle="fit()"><summary class="bctx-h"><span class="bctx-t">${esc(c.title||'Read')}</span>`
+  return `<details class="bctx${c.text.length>700?' long':''}" open ontoggle="fit()"><summary class="bctx-h"><span class="bctx-t">${esc(c.title||'Read')}</span>`
     +'<span class="bctx-s"><span class="bctx-hide">Hide</span><span class="bctx-show">Show</span></span></summary>'
     +`<div class="bctx-b"><button class="btn sm bctx-say" data-say="${esc(c.text)}">${ico('speak',22)} Hear the story</button>`
     +`<p class="bctx-p">${words(c.text)}</p></div></details>`;
 }
 
 /* ---------- validator (run by tools/test.js; reused by content chunks) ---------- */
-const BANKLIM={q:140,choice:60,hint:140,text:1200,title:40};
+const BANKLIM={q:140,choice:60,hint:140,text:2000,title:40};
 function bankBadWords(t){return bankWords(t).map(w=>w.toLowerCase()).filter(w=>BAD.test(w))}
 // problems with one item; where is a label for the message
 function bankItemProblems(it,where){
@@ -7639,8 +7645,8 @@ const SK={
  pos:{t:'Where Is It',e:'📌',area:'math',max:1,gen:genPos},
  meas:{t:'Measuring',e:'📏',area:'math',max:4,gen:lv=>lv==4?ffMeas4():lv==3?genBayMeas3():lv==1?genMeas(lv):genMeas2(lv)}, // 1 Shape Garden, 2 Clock Tower, 3 Treasure Bay, 4 Fraction Forest
  mult:{t:'Equal Groups',e:'✖️',area:'math',max:2,gen:genMult},
- comp:{t:'Story Time',e:'📗',area:'read',max:5,gen:genCompLv,round:compRoundLv}, // levels 1-2 picture stories, 3+ passages (37-comp.js)
- info:{t:'Learn About It',e:'🔍',area:'read',max:3,gen:lv=>genPassage('info',lv),round:lv=>compRound('info',lv)},
+ comp:{t:'Story Time',e:'📗',area:'read',max:7,gen:genCompLv,round:compRoundLv}, // levels 1-2 picture stories, 3+ passages (37-comp.js)
+ info:{t:'Learn About It',e:'🔍',area:'read',max:5,gen:lv=>genPassage('info',lv),round:lv=>compRound('info',lv)},
  add:{t:'Adding',e:'➕',area:'math',max:6,gen:lv=>lv==5?genAdd5():lv==6?genAdd6():genAddK(lv)},
  miss:{t:'Missing Number',e:'❓',area:'math',max:2,gen:genMiss},
  sub:{t:'Take Away',e:'➖',area:'math',max:7,gen:lv=>lv==5?genBaySub5():lv==6?ffSub6():lv==7?ffSub7():genSub(lv)}, // 5 Treasure Bay, 6-7 Fraction Forest
@@ -8292,7 +8298,7 @@ const PATHS={
   {id:'r_summit',g:3,n:'Story Summit',e:'🏔️',c:'#e2e8f0',nodes:[['spell',4,'Spell Tricky Sounds'],['gram',4,'Verb Tenses'],['vocab',4,'Prefixes'],['gram',5,'Contractions & Agreeing'],['vocab',5,'Suffixes']]},
   {id:'r_library',g:4,n:'Dragon Library',e:'🐉',c:'#fee2e2',nodes:[['spell',5,'Spell Word Parts'],['gram',6,'Pronouns & Look-Alikes'],['vocab',6,'Homophones'],['vocab',7,'Context Clues'],['gram',7,'Commas & Quotes'],['vocab',8,'Figurative Language'],['comp',5,'Longer Stories'],['info',3,'Learn More Facts']]},
   {id:'r_island',g:5,n:'Author Island',e:'🏝️',c:'#fef9c3',nodes:[['spell',6,'Spell Big Words'],['gram',8,'More Parts of Speech'],['vocab',9,'Word Roots']]},
-  {id:'r_legend',g:6,n:'Legend Lab',e:'🏰',c:'#f3e8ff',nodes:[['spell',7,'Spell Tough Words'],['gram',9,'Sentence Craft'],['vocab',10,'Analogies']]}]},
+  {id:'r_legend',g:6,n:'Legend Lab',e:'🏰',c:'#f3e8ff',nodes:[['spell',7,'Spell Tough Words'],['gram',9,'Sentence Craft'],['vocab',10,'Analogies'],['comp',7,'Read a Story 6'],['info',5,'Learn About It 6']]}]},
  es:{n:'Spanish Adventure',e:'🌮',c:'linear-gradient(135deg,#dcfce7,#fef9c3)',byLevel:true,worlds:[
   {id:'e_plaza',g:-1,n:'Hola Plaza',e:'🌮',c:'#fef9c3',nodes:[['es_greet',1,'¡Hola! Listen'],['es_color',1,'Colors'],['es_num',1,'Numbers 1–10'],['es_animal',1,'Animals'],['es_greet',2,'¡Hola! Read'],['es_color',2,'Read Colors'],['es_num',2,'Read Numbers'],['es_animal',2,'Read Animals']]},
   {id:'e_fiesta',g:-1,n:'Fiesta Island',e:'🪅',c:'#ffedd5',nodes:[['es_food',1,'Food'],['es_body',1,'My Body'],['es_family',1,'Family'],['es_teen',1,'Numbers 11–20'],['es_food',2,'Read Food'],['es_body',2,'Read Body'],['es_family',2,'Read Family'],['es_teen',2,'Read 11–20']]},
@@ -8898,7 +8904,7 @@ function home(first){
   <div class="scroll hm" id="hs"><div class="hm-cols">
    <div class="hm-col">${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
-   <p class="hm-ver">${ico('star', 16)}<span>Star School v85</span></p></div>`);
+   <p class="hm-ver">${ico('star', 16)}<span>Star School v86</span></p></div>`);
   music(true);
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,['💖','✨','⭐']);
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
@@ -12028,7 +12034,7 @@ function grown(){let armed=false;
    <div class="vline"><span class="vtxt">Give a bonus</span><button class="btn xs" id="pt5">+5 min</button><button class="btn xs danger" id="pt0">Empty bank</button></div>
    <label class="tg"><input type="checkbox" id="ptp" ${ptCfg().pause?'checked':''}> Pause game time (games locked)</label></div>
   <div class="card"><div class="tw"><table><tr><th>Skill</th><th>Rounds</th><th>1st try</th><th>Tricky ones</th></tr>${rows}</table></div></div>
-  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v85 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
+  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v86 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
    Storage: ${SAVE_FAILED?'<b style="color:#c0392b">could not save (device storage may be full)</b>':'saving OK'}${SAVE_CORRUPT?'<br><b style="color:#c0392b">The old save could not be read. A fresh start was made and the old data was kept on the device.</b>':''}<br>
    Last errors: ${(S.err||[]).length?(S.err||[]).slice().reverse().map(e=>'<br>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+' '+esc(e.msg)).join(''):'none'}</div></details>
   <div class="card"><label class="tg"><input type="checkbox" id="voice" ${S.voice?'checked':''}> Read questions out loud</label>
@@ -12774,6 +12780,286 @@ compAdd([
   {t:'vocab',q:'In this passage, "dart" means...',a:'move away quickly',d:['sink slowly','sleep deeply','grow larger'],ev:[5]},
   {t:'structure',q:'How is this passage mostly organized?',a:'It describes one animal using facts and examples',
    d:['It lists steps in time order from first to last one','It compares two sea animals','It gives a problem and a solution'],ev:[0,3,6,9]}]}
+]);
+
+// ---- grade 6 (P2-29): 230-300 words, 5 questions: central idea, inference, figurative meaning, best evidence, author's purpose or claim ----
+COMPSPEC[6]={words:[230,300],sent:24,maxSent:34,fk:10.5,need:['main','infer','figure','evidence']};
+compAdd([
+{id:'g6f01',g:6,type:'f',title:'The Silent Foghorn',text:[
+  'Nell had lived her whole life on Gull Rock, where her grandfather kept the lighthouse.',
+  'Every foggy night, the great foghorn gave three low blasts to warn the fishing boats away from the rocks.',
+  'Then one gray evening, the horn coughed, rattled, and went quiet.',
+  '"The motor is worn out," Grandpa said, wiping oil from his hands. "The part I need will not arrive until Friday."',
+  'Nell stared out at the fog, which pressed against the window like a wet wool blanket.',
+  'Three boats were still out on the water, and none of them could see the lamp through the thick air.',
+  'Grandpa paced the floor, but Nell was thinking hard.',
+  'She remembered the old brass bell in the shed, which her great-grandmother had rung to call the crews home.',
+  '"Grandpa, a bell can carry across water too," she said.',
+  'He frowned, and then a slow smile spread across his face.',
+  'Together they dragged the heavy bell to the rocky edge of the island and hung it from an iron post.',
+  'Nell took the rope and pulled three times, waited, and pulled three times again, the same pattern as the horn.',
+  'Hour after hour her arms ached and her hands stung, but she kept the rhythm steady.',
+  'Near midnight, a faint horn answered from the dark, and then another, and then another.',
+  'One by one, the boats slid out of the fog and turned toward the harbor, safe.',
+  'In the morning, Grandpa set the old bell on a shelf inside the lighthouse. "Some tools," he said, "just wait for their turn."'],
+ qs:[
+  {t:'main',q:'Which statement best expresses the central idea of the story?',a:'Nell finds a new use for an old bell',
+   d:'Fog is the greatest danger a lighthouse keeper faces|A broken motor can be fixed with a little oil|Grandparents always know the best way to work'.split('|'),ev:[7,8,10,11,13]},
+  {t:'infer',q:'Why did Grandpa frown before he smiled?',a:'He first had to think about her idea',
+   d:'He thought the bell was too valuable to use|He was upset that Nell had spoken up|He had not heard what Nell said'.split('|'),ev:[8,9]},
+  {t:'figure',q:'The fog "pressed against the window like a wet wool blanket." This comparison shows that the fog was...',a:'thick and heavy',
+   d:'warm and comforting|thin and patchy|quick to disappear'.split('|'),ev:[4]},
+  {t:'evidence',q:'Which detail best shows that Nell kept going even though it hurt?',a:'"her arms ached and her hands stung"',
+   d:'"She remembered the old brass bell in the shed"|"a faint horn answered from the dark"|"Nell stared out at the fog"'.split('|'),ev:[12]},
+  {t:'purpose',q:'Why does the author end with Grandpa saying that some tools "just wait for their turn"?',a:'To show old things still have value',
+   d:'To explain why the motor broke down|To hint that Grandpa will sell the bell|To show that Nell wants all new tools'.split('|'),ev:[15]}]},
+
+{id:'g6f02',g:6,type:'f',title:'The Wobbling Robot Arm',text:[
+  'Rosa had spent three weeks building a robot arm for the science fair, and she was sure it would win.',
+  'It could lift a cup, turn, and set the cup down, all on its own.',
+  'But on the morning of the fair, the arm shook like a leaf in the wind and spilled the cup across the table.',
+  'Rosa tightened every screw, yet the wobble remained.',
+  'Her classmate Dev, whose own project was only a plain chart about soil, watched from the next table.',
+  '"Can I try something?" he asked quietly.',
+  'Rosa hesitated, because she did not think he could possibly help.',
+  'But the judges were only twenty minutes away, so she nodded.',
+  'Dev did not touch the arm at all. He looked at the table and pressed on one corner.',
+  '"Your table is uneven," he said. "Every time the arm swings, the whole thing rocks."',
+  'Rosa felt her cheeks grow warm. She had checked every part of the robot except the one thing under it.',
+  'Dev folded a card into a small square and slid it beneath the short leg.',
+  'The arm lifted the cup, turned, and set it down without a drop spilled.',
+  'The judges did not give Rosa the first prize, which went to a team with a solar oven.',
+  'But they praised her robot, and Rosa walked straight to Dev\'s table.',
+  '"Your sharp eyes saved my project," she said. "I am sorry I thought yours was too simple to matter."'],
+ qs:[
+  {t:'main',q:'What is the central idea of this story?',a:'Help can come from unexpected people',
+   d:'Science fairs are won by the best builders|A wobbly robot can never be repaired|Charts are better projects than robots'.split('|'),ev:[4,9,12,15]},
+  {t:'infer',q:'Why did Rosa\'s cheeks grow warm?',a:'She was embarrassed by her own mistake',
+   d:'She was angry that Dev had touched her robot|She was excited about winning the prize|She was hot from standing near the table'.split('|'),ev:[9,10]},
+  {t:'figure',q:'The arm "shook like a leaf in the wind." This means the arm was...',a:'trembling and unsteady',
+   d:'moving smoothly and silently|spinning in fast circles|breaking into small pieces'.split('|'),ev:[2]},
+  {t:'evidence',q:'Which detail shows that Rosa at first looked down on Dev?',a:'"she did not think he could possibly help"',
+   d:'"Rosa tightened every screw"|"The judges did not give Rosa the first prize"|"he asked quietly"'.split('|'),ev:[6]},
+  {t:'purpose',q:'Why does the author mention that the first prize went to a team with a solar oven?',a:'To show winning was not the main point',
+   d:'To suggest that the judges were not fair|To explain why Dev\'s chart did not win|To show that robots never win prizes'.split('|'),ev:[13,14,15]}]},
+
+{id:'g6f03',g:6,type:'f',title:'Water for Alder Creek',text:[
+  'By midsummer, the spring that fed the village of Alder Creek had slowed to a trickle.',
+  'Gardens drooped, and the town\'s only pump coughed up more air than water.',
+  'Neighbors gathered in the square, and the talk grew louder with every minute.',
+  '"We should dig a deeper well," said one man. "Or haul water from the lake," said another.',
+  'Twelve-year-old Teo listened from the back, holding a bucket he knew was nearly empty.',
+  'Both plans would take weeks, and weeks was longer than the gardens could wait.',
+  'He thought about the spring itself. A storm last month had knocked trees across the hillside path, and no one had gone up to look.',
+  '"Maybe the water is not gone," he said. "Maybe it is only stuck."',
+  'A few adults smiled kindly, but nobody moved.',
+  'So the next morning, Teo and his sister Ana climbed the hill alone, carrying gloves and a shovel.',
+  'Near the top, they found the channel jammed with branches, leaves, and one broken log, with a pool of clear water backed up behind it.',
+  'The two of them tugged and lifted for an hour, until their arms shook.',
+  'When the last branch slid free, the water leapt forward and raced down the channel, laughing over the stones.',
+  'By afternoon, the pump in the square was running strong again.',
+  'The villagers were quiet for a moment. Then the man who had wanted a new well tipped his hat to Teo.',
+  '"Next time," he said, "we ask the spring before we dig."'],
+ qs:[
+  {t:'main',q:'Which statement best expresses the central idea?',a:'A close look can beat a big plan',
+   d:'A village should always dig a deeper well|Storms are the cause of every dry summer|Children are stronger than adults in a crisis'.split('|'),ev:[6,7,10,12,15]},
+  {t:'infer',q:'Why did the adults smile kindly but not follow Teo?',a:'They doubted a boy\'s guess was worth a climb',
+   d:'They were too busy hauling water from the lake|They had already cleared the hillside path|They were afraid of the steep hill'.split('|'),ev:[7,8]},
+  {t:'figure',q:'The water raced down the channel, "laughing over the stones." This phrase suggests the water was moving...',a:'quickly and happily',
+   d:'slowly and angrily|quietly and carefully|coldly and silently'.split('|'),ev:[12]},
+  {t:'evidence',q:'Which sentence best shows that the storm caused the problem?',a:'"A storm last month had knocked trees"',
+   d:'"Gardens drooped"|"Neighbors gathered in the square"|"The two of them tugged and lifted for an hour"'.split('|'),ev:[6]},
+  {t:'purpose',q:'Why does the author end with the man\'s remark about asking the spring before digging?',a:'To show that the adults learned from Teo',
+   d:'To show that he still wants a new well|To explain how the pump was fixed|To suggest that the spring will dry up again'.split('|'),ev:[14,15]}]},
+
+{id:'g6f04',g:6,type:'f',title:'Marisol\'s Map',text:[
+  'When Marisol\'s family moved to Pine Street, the whole neighborhood felt like a book written in a language she could not read.',
+  'Every house looked the same to her, and every face belonged to a stranger.',
+  'At school she ate lunch quietly and counted the minutes until she could go home.',
+  'One rainy Saturday, she took out a pencil and a big sheet of paper and began to draw a map of the street.',
+  'She drew her own house first, then the corner store, then the crooked maple tree by the bus stop.',
+  'But soon she ran out of things to draw, and the map stayed mostly empty, like a table set for guests who had not arrived.',
+  'The next day she carried the map up the street and knocked on a door.',
+  '"I am making a map," she said, her voice barely a whisper. "Is there anything on this block that should be on it?"',
+  'The woman who answered laughed. "You must add the pond behind the library, where the ducks sleep!"',
+  'At the next house, a boy told her about a shortcut through the alley, and at the third, an old man described a bakery that opened at five every morning.',
+  'By dusk, Marisol\'s paper was crowded with ink, arrows, and tiny drawings, and her pencil had worn down to a stub.',
+  'More than that, she now knew eleven names she had not known before.',
+  'On Monday, she pinned the map to the school bulletin board, and soon a small crowd gathered.',
+  '"That is my street!" someone shouted. "You forgot the dog park!"',
+  'Marisol grinned, picked up her pencil, and added it.'],
+ qs:[
+  {t:'main',q:'What is the central idea of the story?',a:'Reaching out turns a strange place into home',
+   d:'Drawing is the best way to pass a rainy day|Every neighborhood has a pond with ducks|Shy people should not move to a brand new town'.split('|'),ev:[2,7,11,12,14]},
+  {t:'infer',q:'Why was Marisol\'s voice barely a whisper at the first door?',a:'She felt shy about knocking',
+   d:'She did not want anyone else to hear|She was tired from all her drawing|She was angry about moving away'.split('|'),ev:[7]},
+  {t:'figure',q:'The neighborhood felt "like a book written in a language she could not read." This means it seemed...',a:'strange and hard to understand',
+   d:'full of libraries and stories|bright and easy to enjoy|noisy and crowded with visitors'.split('|'),ev:[0,1]},
+  {t:'evidence',q:'Which detail best shows that the map did more than show places?',a:'"eleven names she had not known before"',
+   d:'"her pencil had worn down to a stub"|"the crooked maple tree by the bus stop"|"a bakery that opened at five every morning"'.split('|'),ev:[11]},
+  {t:'purpose',q:'Why does the author end with Marisol adding the dog park?',a:'To show she now belongs on the street',
+   d:'To prove that her first map was wrong|To explain why dogs live on Pine Street|To suggest that she will draw a second map'.split('|'),ev:[13,14]}]},
+
+{id:'g6f05',g:6,type:'f',title:'The Tuba and the Train',text:[
+  'Jonah loved the tuba because nobody could ignore it.',
+  'When he blew, the low notes rolled across the band room and rattled the music stands.',
+  'Mr. Lund, the band director, kept raising his hand to ask for softer playing, but Jonah thought softer meant smaller, and he did not want to be small.',
+  'Before the spring concert, the flutes and clarinets complained that they could not hear themselves.',
+  '"Your tuba is a freight train," whispered one clarinet player.',
+  'Jonah\'s face burned, and that night he hid his horn in the closet and decided to quit.',
+  'His older sister, who played in a community orchestra, found him sulking. "Do you know what the best tuba players do?" she asked. "They listen more than they play."',
+  'She explained that a tuba is like the floor of a house: if the floor is steady, everything above it can stand.',
+  'The next day, Jonah took out his horn and played softly while he listened to the melody above him.',
+  'For the first time, he noticed how the flutes rose and fell like birds, and how his low notes could cradle them.',
+  'At the concert, he matched his volume to the clarinets in the quiet parts and swelled only when the whole band swelled.',
+  'When the last chord faded, the audience stayed silent for a heartbeat, then burst into applause.',
+  'Afterward, the clarinet player who had teased him smiled. "Today," she said, "I could finally hear the whole song."'],
+ qs:[
+  {t:'main',q:'Which statement best expresses the central idea?',a:'Strength helps most when it supports the group',
+   d:'Band directors should always ask for louder playing|The tuba is the hardest instrument to learn|Quitting is the best answer to teasing'.split('|'),ev:[2,7,10,12]},
+  {t:'infer',q:'Why did Jonah hide his horn in the closet?',a:'He felt hurt and embarrassed',
+   d:'He thought the horn was broken|He wanted to trade it for a flute|He planned to practice in secret'.split('|'),ev:[4,5]},
+  {t:'figure',q:'The clarinet player says, "Your tuba is a freight train." She means that Jonah\'s playing was...',a:'loud and overpowering',
+   d:'slow but very pleasant|smooth and easy to follow|too quiet to be heard'.split('|'),ev:[3,4]},
+  {t:'evidence',q:'Which detail shows Jonah put his sister\'s advice into action at the concert?',a:'"he matched his volume to the clarinets"',
+   d:'"Jonah\'s face burned"|"hid his horn in the closet"|"the audience stayed silent for a heartbeat"'.split('|'),ev:[10]},
+  {t:'purpose',q:'Why does the author include the sister\'s comparison of a tuba to the floor of a house?',a:'To show that quiet roles matter',
+   d:'To explain how houses are built|To show that she dislikes loud music|To prove tubas are the loudest instruments'.split('|'),ev:[7]}]},
+
+{id:'g6n01',g:6,type:'n',title:'Riding the Tides',text:[
+  'If you stand on a beach for six hours, you will notice that the sea does not stay still.',
+  'The water creeps up the sand, covers the rocks, and later slides back out again.',
+  'This rising and falling is called the tide, and it follows the moon.',
+  'The moon\'s gravity pulls on everything on Earth, but water can move, so the ocean bulges toward the moon.',
+  'A second bulge forms on the opposite side of Earth, because the whole planet is pulled toward the moon more strongly than the far water is.',
+  'As Earth spins, a coastline passes through both bulges, so most coasts have two high tides and two low tides each day.',
+  'The sun pulls on the ocean as well, but its pull is far weaker than the moon\'s, because the sun is so much farther away.',
+  'When the sun, Earth, and moon line up at new moon and full moon, their pulls combine, and the tides grow extra large.',
+  'These are called spring tides, even though they have nothing to do with the season.',
+  'When the moon is at a quarter phase, the pulls work against each other, and the tides are smaller, called neap tides.',
+  'Tides matter to people in many ways.',
+  'Sailors in shallow harbors wait for high water so that their ships will not scrape the bottom.',
+  'Walkers on the shore check tide tables so that rising water does not trap them on a narrow path.',
+  'Scientists understand tides so well that these tables can be printed years ahead of time.',
+  'The sea may look as if it is simply breathing in and out, but it is really answering a call from the moon.'],
+ qs:[
+  {t:'main',q:'What is the central idea of the passage?',a:'The moon makes the ocean rise and fall',
+   d:'Sailors need tables to find harbors|The sun is the strongest force on Earth|Beaches change shape every season'.split('|'),ev:[2,3,5]},
+  {t:'infer',q:'Based on the passage, what would be true of a shallow harbor at low tide?',a:'Ships could scrape the bottom',
+   d:'Ships could sail in more easily|The tide would be at its highest|Sailors would not need tide tables'.split('|'),ev:[11]},
+  {t:'figure',q:'The sea is "answering a call from the moon." This phrase means the ocean is...',a:'reacting to the moon\'s pull',
+   d:'making noise at night|chasing the moon across the sky|sending signals to sailors'.split('|'),ev:[14,3]},
+  {t:'evidence',q:'Which sentence best shows that the sun has less effect on tides than the moon?',a:'"its pull is far weaker than the moon\'s"',
+   d:'"the ocean bulges toward the moon"|"the tides grow extra large"|"these tables can be printed years ahead"'.split('|'),ev:[6]},
+  {t:'purpose',q:'Why does the author point out that spring tides have nothing to do with the season?',a:'To clear up a possible mix-up about the name',
+   d:'To argue that spring is the best time to visit a beach|To show that tides change with the weather|To explain how the sun heats the ocean'.split('|'),ev:[8]}]},
+
+{id:'g6n02',g:6,type:'n',title:'How Bees Share Directions',text:[
+  'A honeybee that finds a patch of flowers has a problem, because the news is useless unless she can tell her sisters.',
+  'Bees solve this with a dance, performed in the dark hive on the upright wall of the honeycomb, where the comb becomes a message board.',
+  'When the flowers are very close, the bee runs in small circles.',
+  'When they are farther away, she dances a figure eight with a straight middle run, during which she wiggles her whole body.',
+  'That wiggling run is called the waggle.',
+  'If the waggle points straight up the comb, the flowers lie in the same direction as the sun.',
+  'If it points to the right of straight up, the flowers lie to the right of the sun.',
+  'The length of the waggle tells the distance, since the longer the run, the farther away the flowers are.',
+  'Other bees crowd close and touch the dancer with their antennae, learning the scent of the flowers she carries.',
+  'Then they fly out and find the patch for themselves.',
+  'Because the sun moves across the sky, a dancer who keeps dancing for hours slowly changes her angle to match.',
+  'Researchers have confirmed this code by building a small robot bee that copied the dance, and real bees flew to the place the robot pointed.',
+  'A brain smaller than a sesame seed can hold a message that carries both a direction and a distance.',
+  'The waggle dance is one of the few animal signals that is known to share exact information with others of its kind.'],
+ qs:[
+  {t:'main',q:'What is the central idea of the passage?',a:'Honeybees use a dance to share where food is',
+   d:'Bees build honeycombs in the dark|Robot bees can replace real bees|Flowers grow best in the direction of the sun'.split('|'),ev:[0,1,5,7,13]},
+  {t:'infer',q:'What would most likely happen if a dancing bee gave the wrong angle?',a:'Other bees would search the wrong way',
+   d:'The hive would move to a new tree|The other bees would stop eating honey|The flowers would grow in the new place'.split('|'),ev:[5,6,9]},
+  {t:'figure',q:'The honeycomb "becomes a message board." This phrase means that the comb is...',a:'a place to share information',
+   d:'a wall covered in paper notes|a surface the bees paint on|a spot where bees rest after work'.split('|'),ev:[1]},
+  {t:'evidence',q:'Which sentence shows that distance is part of the dance\'s message?',a:'"the longer the run, the farther away"',
+   d:'"the bee runs in small circles"|"touch the dancer with their antennae"|"the flowers lie to the right of the sun"'.split('|'),ev:[7]},
+  {t:'claim',q:'Which claim does the author make about the waggle dance?',a:'It shares exact information',
+   d:'It is the loudest sound a bee makes|It is easy for people to copy|It is only done by the oldest bees'.split('|'),ev:[12,13]}]},
+
+{id:'g6n03',g:6,type:'n',title:'Roads That Built an Empire',text:[
+  'More than two thousand years ago, the Roman government began paving roads that would eventually stretch across Europe, North Africa, and parts of Asia.',
+  'The roads were built for soldiers, but they soon carried merchants, messengers, and ordinary travelers too.',
+  'Roman engineers dug a trench and filled it in layers, with large stones at the bottom, then gravel and sand, and then a top of fitted flat stones.',
+  'The surface curved slightly upward in the middle, so rain ran off into ditches on both sides and the road stayed dry.',
+  'Whenever possible, the builders made the road straight, because a straight line is the shortest way to travel.',
+  'Where a river or valley was in the way, they built bridges and arches, and some still stand today.',
+  'Stone markers along the roads told travelers how far they were from the nearest town, a help to anyone tired or lost.',
+  'Messages moved far faster than a single rider could manage, because riders changed horses at stations along the route.',
+  'With such roads, the government could send soldiers to trouble spots, collect taxes, and move grain to hungry cities.',
+  'Historians agree that the roads helped hold the huge empire together, like threads in a woven cloth.',
+  'When the empire weakened, many roads went unrepaired, yet their routes lasted.',
+  'Many highways in Europe today still follow the paths that Roman builders chose, which shows how well those paths were planned.'],
+ qs:[
+  {t:'main',q:'What is the central idea of the passage?',a:'Roman roads helped connect a large empire',
+   d:'Roman soldiers preferred to travel by river|Straight lines are always the best design|Only messengers were allowed on the roads'.split('|'),ev:[1,7,8,9]},
+  {t:'infer',q:'Which conclusion is best supported by the passage?',a:'Roman engineers built roads to last',
+   d:'Roman roads were built in a single year|Roman builders did not care about rain|Travelers in Rome never needed bridges'.split('|'),ev:[2,3,5,11]},
+  {t:'figure',q:'The roads were "like threads in a woven cloth." This comparison shows that the roads...',a:'tied the empire together',
+   d:'were made of soft fabric|were too thin to be useful|could easily be pulled apart'.split('|'),ev:[9]},
+  {t:'evidence',q:'Which detail best supports the idea that Roman roads were built to last?',a:'"some still stand today"',
+   d:'"The roads were built for soldiers"|"told travelers how far they were"|"riders changed horses at stations"'.split('|'),ev:[5]},
+  {t:'claim',q:'Which claim does the author make about Roman roads?',a:'They helped the empire stay united',
+   d:'They were more useful than Roman ships|They were built mainly for sightseeing|They caused the empire to grow too large'.split('|'),ev:[8,9]}]},
+
+{id:'g6n04',g:6,type:'n',title:'Why Leaves Change Color',text:[
+  'In spring and summer, leaves are green because they are packed with chlorophyll, a substance that captures sunlight.',
+  'The tree uses that light to turn air and water into sugar, which is its food.',
+  'Yet green was never the leaf\'s only color.',
+  'Yellow and orange pigments called carotenoids have been in the leaf all along, hidden beneath the green.',
+  'As autumn arrives, the days grow shorter and the nights cooler.',
+  'The tree senses these changes and begins to seal off the base of each leaf stem, closing the tiny tubes that carry water and food.',
+  'Without a fresh supply of water, the leaf stops making chlorophyll, and the green slowly fades.',
+  'Now the yellow and orange are revealed, as if someone had pulled a curtain aside.',
+  'Reds and purples have a different story.',
+  'Some trees make a new pigment in autumn from sugars trapped in the leaf.',
+  'Bright, sunny days and cool nights help produce plenty of it, which is why some years the red is more brilliant than others.',
+  'Brown comes from waste left in the leaf after the other colors are gone.',
+  'At last, a thin layer of cells at the base of the stem weakens, and the leaf drops.',
+  'The tree is not being wasteful.',
+  'By letting go of leaves it could not keep supplied through winter, when water is frozen and sunlight is weak, the tree saves its energy.'],
+ qs:[
+  {t:'main',q:'What is the central idea of the passage?',a:'Leaf colors change as the tree changes',
+   d:'Trees lose their leaves because of wind|Red is the most common color in nature|Leaves are only green in the spring'.split('|'),ev:[3,6,7,10,14]},
+  {t:'infer',q:'Why might a cloudy, warm autumn make the reds less brilliant?',a:'Less red pigment would form',
+   d:'The trees would grow new green leaves|The yellow pigment would turn brown|The leaves would drop in summer'.split('|'),ev:[10]},
+  {t:'figure',q:'The yellow and orange are revealed "as if someone had pulled a curtain aside." This means the colors...',a:'had been hidden from view',
+   d:'were painted on by the tree|were blown in by the wind|were brand new to the leaf'.split('|'),ev:[7,3]},
+  {t:'evidence',q:'Which sentence best shows that yellow was in the leaf before autumn?',a:'"have been in the leaf all along"',
+   d:'"the days grow shorter and the nights cooler"|"the leaf stops making chlorophyll"|"a thin layer of cells at the base"'.split('|'),ev:[3]},
+  {t:'purpose',q:'Why does the author end by saying the tree is "not being wasteful"?',a:'To show leaf loss helps the tree survive',
+   d:'To argue that trees should keep their leaves|To explain why leaves turn red and purple|To warn that leaves can harm a tree'.split('|'),ev:[13,14]}]},
+
+{id:'g6n05',g:6,type:'n',title:'Coral Reefs, Cities Under the Sea',text:[
+  'A coral reef looks like a garden of rock, but it is built by animals.',
+  'Each coral polyp is a soft creature with tentacles, usually only a few millimeters across.',
+  'A polyp takes calcium from seawater and uses it to build a hard cup of limestone around its body.',
+  'When polyps die, their skeletons remain, and new polyps build on top, so a reef grows very slowly over thousands of years.',
+  'Living inside the polyps are tiny algae that make food from sunlight and share some of it with the coral.',
+  'This is why reefs need clear, shallow, sunlit water, and why most of them form in warm seas.',
+  'Reefs cover only a tiny part of the ocean floor, yet scientists estimate that about a quarter of all ocean species spend part of their lives there.',
+  'Fish hide among the branches, crabs squeeze into cracks, and young sea creatures grow up in the shelter.',
+  'A reef is a crowded city with food, homes, and nurseries all in one place.',
+  'Reefs also protect coastlines by breaking the force of waves during storms.',
+  'But corals are sensitive to change.',
+  'If the water becomes too warm, polyps push out their algae and turn pale, an event called bleaching.',
+  'A bleached coral is not yet dead and may recover if cooler water returns soon.',
+  'That is why keeping ocean water clean and cool matters so much to reefs.'],
+ qs:[
+  {t:'main',q:'What is the central idea of the passage?',a:'Reefs are animal-built homes for sea life',
+   d:'Reefs are made of rocks that grow in the dark|Warm water is harmful to all ocean animals|Polyps live longer than other sea creatures'.split('|'),ev:[0,2,6,8]},
+  {t:'infer',q:'Why would a reef most likely fail to grow in deep, dark water?',a:'The algae inside need sunlight',
+   d:'Crabs cannot live in the cold|Waves would break the limestone cups|Polyps cannot make calcium at all'.split('|'),ev:[4,5]},
+  {t:'figure',q:'A reef is called "a crowded city." This comparison shows that a reef is...',a:'a busy place full of living things',
+   d:'a place with buildings made of stone|a noisy place full of traffic|a quiet place where few animals live'.split('|'),ev:[8,7]},
+  {t:'evidence',q:'Which detail best supports the claim that reefs are important to ocean life?',a:'"about a quarter of all ocean species"',
+   d:'"usually only a few millimeters across"|"a hard cup of limestone"|"push out their algae and turn pale"'.split('|'),ev:[6]},
+  {t:'purpose',q:'Why does the author explain bleaching near the end of the passage?',a:'To show how a change in water can harm a reef',
+   d:'To prove that corals are dead rock|To explain how polyps build limestone|To argue that reefs should be moved to cooler seas'.split('|'),ev:[10,11,13]}]}
 ]);
 /* Demo content for the bank format (P1-09). Small on purpose: it proves the format, the validator and the passage panel.
    Real content arrives with the Phase 2 chunks (d-gram.js, d-vocab.js, d-comp.js, ...). There is no demo skill in SK: tests,

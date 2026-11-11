@@ -92,7 +92,7 @@ run('skills: every level is reachable from some node',()=>{
   const used=new Set(),p=[];
   for(const path in GEN.nodes)for(const n of GEN.nodes[path])used.add(n.sk+':'+n.lv);
   // Levels reserved for P2-04 (Treasure Bay: arr 1, story 4). They have no stop yet; until P2-04 ships they ask like the next level up.
-  const RESERVED={frac:[6,7,8],comp:[4],info:[2]}; // arr 1 and story 4 are Treasure Bay's (P2-04); frac 6-8 get their stops in P2-10 (frac 1 is Clock Tower's) // comp 4 and info 2 (grade 3) have no passages in this chunk; their stops come with P2-26
+  const RESERVED={frac:[6,7,8],comp:[4,6],info:[2,4]}; // arr 1 and story 4 are Treasure Bay's (P2-04); frac 6-8 get their stops in P2-10 (frac 1 is Clock Tower's) // comp 4 and info 2 (grade 3) have no passages in this chunk; their stops come with P2-26
   for(const id in GEN.skills)for(let lv=1;lv<=GEN.skills[id].max;lv++)if(!used.has(id+':'+lv)&&!(RESERVED[id]||[]).includes(lv))p.push(id+' level '+lv+' has no map node');
   return{problems:p};
 });
@@ -280,6 +280,7 @@ run('seeded rnd: genQ(sk, lv, seed) is reproducible',()=>{
   const out=eval(js+`
   const out={ok:0,bad:[]},eq=require('util').isDeepStrictEqual;
   for(const id in SK)for(let lv=1;lv<=SK[id].max;lv++){
+    if(((id=='comp'&&lv>2)||id=='info')&&!PASS[id].some(p=>p.lv==lv))continue; // no passages at this level yet
     if(skLvEmpty(id,lv))continue;
     let varied=new Set();
     for(let s=1;s<=200;s++){
@@ -571,7 +572,7 @@ run('banks: demo bank and passage validate, seeded and reproducible, memory, rou
   if(!passageProblems('__p').some(m=>/3 to 6/.test(m)))bad('validator missed a passage with 2 questions');
   PASS.__p=[{lv:1,title:'T',text:'He said poop.',qs:[base,{...base,q:'Two?'},{...base,q:'Three?'}]}];
   if(!passageProblems('__p').some(m=>/bad word/.test(m)))bad('validator missed a bad word in a passage');
-  PASS.__p=[{lv:1,title:'T'.repeat(41),text:'x '.repeat(700),qs:[base,{...base,q:'Two?'},{...base,q:'Three?'}]}];
+  PASS.__p=[{lv:1,title:'T'.repeat(41),text:'x '.repeat(1100),qs:[base,{...base,q:'Two?'},{...base,q:'Three?'}]}];
   if(passageProblems('__p').length<2)bad('validator missed a long passage title and text');
   PASS.__p=[{lv:1,title:'T',text:'Fine.',qs:[base,{...base,q:'Two?'},{...base,q:'Three?',form:'spell',a:'cat'}]}];
   if(!passageProblems('__p').some(m=>/choice or wide/.test(m)))bad('validator missed a non-choice passage question');
@@ -5338,6 +5339,153 @@ run('passages grade 4 P2-27',()=>{
   const r=eval(js+';('+body.toString()+')()');
   const mx=a=>Math.max(...a),mn=a=>Math.min(...a);
   return{problems:r.out,note:'10 passages, 50 questions; words '+mn(r.words)+'-'+mx(r.words)+', reading grade '+mn(r.fk).toFixed(1)+'-'+mx(r.fk).toFixed(1)+', words per sentence up to '+mx(r.sent).toFixed(1)+'; '+r.checked+' stop checks, current stop moved on '+r.moved+' loads'};
+});
+
+// ---- P2-29 6th grade passages ----
+run('passages grade 6 P2-29: 10 passages validate, comp 7 and info 5 (3,000 questions each), Legend Lab stops, save safety (fixtures)',()=>{
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const body=function(){
+    const out=[],b=m=>{if(out.length<30&&!out.includes(m))out.push(m)};
+    const store={};
+    global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+    const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
+    S.name='Ava';S.buddy='Ben';G={built:[]};
+    // 1. data: the grade validator (words, sentences, reading level, evidence, one right answer, not always the longest), counts, types
+    for(const m of compProblems(6))b(m);
+    const g6=COMP.filter(p=>p.g==6);
+    if(g6.length!==10||g6.filter(p=>p.type=='f').length!==5||g6.filter(p=>p.type=='n').length!==5)b('grade 6 needs 5 fiction and 5 nonfiction passages, has '+g6.length);
+    if(g6.reduce((a,p)=>a+p.qs.length,0)!==50)b('grade 6 questions: '+g6.reduce((a,p)=>a+p.qs.length,0));
+    if(COMPSPEC[6].words[0]<230||COMPSPEC[6].words[1]>300)b('grade 6 word limits are outside CURRICULUM 230-300');
+    if(new Set(COMP.map(p=>p.id)).size!==COMP.length)b('two passages share an id');
+    if(new Set(COMP.map(p=>p.title)).size!==COMP.length)b('two passages share a title');
+    if(PASS.comp.filter(x=>x.lv==7).length!==5||PASS.info.filter(x=>x.lv==5).length!==5)b('PASS levels: comp 7 and info 5 need 5 passages each');
+    if(SK.comp.max<7||SK.info.max<5)b('SK.comp.max '+SK.comp.max+', SK.info.max '+SK.info.max);
+    for(const p of g6){
+      const ts=p.qs.map(q=>q.t);
+      for(const t of ['main','infer','figure','evidence'])if(!ts.includes(t))b(p.id+': no '+t+' question');
+      if(!ts.includes('purpose')&&!ts.includes('claim'))b(p.id+': no purpose or claim question');
+      for(const q of p.qs){
+        const all=[q.a,...q.d].map(x=>x.toLowerCase());
+        if(new Set(all).size!==all.length)b(p.id+': repeated choice in "'+q.q+'"');
+        if(q.d.length!==3)b(p.id+': needs 3 wrong choices in "'+q.q+'"');
+        if(q.t=='evidence'){
+          // the quoted evidence answer is really in the passage, in an evidence sentence
+          const quote=q.a.replace(/^"|"$/g,'');
+          if(!q.ev.some(i=>p.text[i].includes(quote)))b(p.id+': evidence answer is not quoted from an evidence sentence: '+q.a);
+          for(const d of q.d){const t=d.replace(/^"|"$/g,'');if(!p.text.some(x=>x.includes(t)))b(p.id+': evidence choice is not in the passage: '+d)}
+        }
+      }
+    }
+    // 2. 3,000 questions per level: panel, one right answer, 4 choices, hint, say, label, renders, rebuilds
+    const N=3000,labels=new Map(),texts=new Set();
+    for(const [sk,lv] of [['comp',7],['info',5]]){
+      const tx=new Set();
+      for(let i=0;i<N;i++){
+        const q=genQ(sk,lv,i*7919+31),w=sk+lv;
+        if(!q.ctx||!q.ctx.text||!q.ctx.title)b(w+': no passage panel');
+        const vals=q.choices.map(c=>String(c.v));
+        if(vals.filter(v=>v===String(q.ans)).length!==1)b(w+': not exactly one right choice: '+q.label);
+        if(q.choices.length!==4)b(w+': '+q.choices.length+' choices');
+        if(!q.hint||q.hint.k!=='text'||!q.hint.s||q.hint.s.length>140)b(w+': no hint, or too long');
+        if(typeof q.say!=='string'||!q.say.trim())b(w+': no say');
+        if(!q.label||q.label.length>=70)b(w+': label '+q.label);
+        if(labels.has(q.label)&&labels.get(q.label)!==q.ans)b(w+': label '+q.label+' has two answers');
+        labels.set(q.label,q.ans);tx.add(q.ctx.title);
+        for(const m of kindProblems(q))b(w+': '+m);
+        if(i<200){
+          try{KIND.choice.render(q)}catch(e){b(w+': render threw '+e.message)}
+          if(/undefined|NaN|\[object/.test(q.html))b(w+': bad html');
+        }
+      }
+      if(tx.size!==5)b(sk+lv+': 3,000 samples reached '+tx.size+' of 5 passages');
+    }
+    if(labels.size!==50)b('50 questions expected, labels '+labels.size);
+    // 3. every authored hint is at most 140 characters; a round is 2 passages x 5 questions, all five stories reached in 3 live rounds
+    for(const sk of ['comp','info'])PASS[sk].forEach(p=>{if(p.g===6)p.qs.forEach((it,j)=>{if(!it.hint||it.hint.length>140)b(p.id+' q'+j+': hint length')})});
+    bankRound();
+    for(const [sk,lv] of [['comp',7],['info',5]]){
+      const seen=new Set();
+      for(let r=0;r<3;r++){
+        const rd=compRound(sk,lv);
+        if(rd.length!==10)b(sk+' round has '+rd.length+' questions');
+        if(new Set(rd.map(q=>q.ctx.title)).size!==2)b(sk+' round needs 2 passages');
+        rd.forEach(q=>seen.add(q.ctx.title));
+      }
+      if(seen.size!==5)b(sk+': three live rounds reached '+seen.size+' of 5 passages');
+    }
+    bankReset();
+    // 4. the stops: the last two of Legend Lab, after Spell Tough Words; comp/info stops of the whole map keep their level order
+    const L=PATHS.read.worlds.find(w=>w.id=='r_legend');
+    if(!L)b('Legend Lab is missing');
+    else{
+      const ids=L.nodes.map(n=>n[0]+n[1]);
+      if(ids.slice(-2).join(' ')!=='comp7 info5'||ids[0]!=='spell7')b('Legend Lab must end with comp7 info5 after spell7: '+ids.join(' '));
+      if(L.nodes.some(n=>n[2].length>22))b('a Legend Lab stop title is too long');
+    }
+    for(const sk of ['comp','info']){
+      const lvs=NODES.read.filter(n=>n.sk===sk).map(n=>n.lv);
+      if(lvs.join()!==lvs.slice().sort((a,c)=>a-c).join())b(sk+' stops are not in level order: '+lvs.join(' '));
+      if(!lvs.includes(sk=='comp'?7:5))b(sk+' has no stop for grade 6');
+      const ns=NODES.read.filter(n=>n.sk===sk);
+      ns.forEach((n,i)=>{if(harder(n)!==(ns[i+1]||null)||easier(n)!==(ns[i-1]||null))b('harder/easier must follow map order at '+sk+n.lv)});
+    }
+    // 5. saves: stars and locks of every other stop are untouched compared with a map without the two stops
+    const snap=()=>{const o={};NODES.read.forEach((n,i)=>{o[nid(n)]={st:getSt('read',i),open:unlocked('read',i),pass:passed('read',i),prog:worldHasProgress('read',n.wi),
+      g:PATHS.read.worlds[n.wi].g,nw:stopNew('read',i)}});return o};
+    const ORIG=PATHS.read.worlds,NEW=/^(comp7|info5)$/;
+    const without=()=>ORIG.map(w=>w.id!=='r_legend'?w:{...w,nodes:w.nodes.filter(n=>!NEW.test(n[0]+n[1]))});
+    let checked=0,moved=0;
+    const compare=label=>{
+      const maps=JSON.stringify(S.maps);
+      const now=snap(),cur=nid(NODES.read[curNode('read')]);
+      PATHS.read.worlds=without();buildNodes('read');
+      const old=snap(),curOld=nid(NODES.read[curNode('read')]);
+      PATHS.read.worlds=ORIG;buildNodes('read');
+      for(const k in old){
+        checked++;
+        if(!now[k]){b(label+': stop '+k+' disappeared');continue}
+        if(now[k].st!==old[k].st)b(label+': stars of '+k+' changed');
+        if(old[k].pass&&!now[k].open)b(label+': passed stop '+k+' re-locked');
+        if(old[k].open&&!now[k].open)b(label+': '+k+' locked by the new stops');
+      }
+      for(const k in now)if(!(k in old)&&NEW.test(k)&&now[k].st)b(label+': new stop '+k+' has stars');
+      if(JSON.stringify(S.maps)!==maps)b(label+': loading changed the map');
+      // the map may open on a different stop only for a child who has done every old stop of Legend Lab, the last world of the path:
+      // curNode (42-paths.js) then falls back from "everything done" (the boss) to the only open, unpassed stops, the new ones
+      if(cur!==curOld){
+        moved++;
+        const ok=NEW.test(cur)&&curOld==='boss_r_legend';
+        if(!ok)b(label+': map opens on '+cur+' (was '+curOld+')');
+      }
+      return{now,old,cur,curOld};
+    };
+    for(const name of ['fresh','midway','maxed','tricky','legacy-single-map','legacy-index-maps'])
+      for(const g of [null,0,1,2,3,6]){
+        const raw=fx(name);load(raw.length>2?raw:null);if(g!==null)S.grade=g;
+        compare(name+' g'+g);
+      }
+    // 6. a child who finished Legend Lab before these stops existed: both show NEW, stay open, are not the current stop, nothing moves
+    for(const g of [2,3,6]){
+      load(null);S.grade=g;
+      for(const n of NODES.read)if(!NEW.test(nid(n)))S.maps.read[nid(n)]=2;
+      for(const k of ['comp7','info5'])delete S.maps.read[k];
+      const r=compare('finished Legend Lab g'+g);
+      for(const k of ['comp7','info5']){
+        const i=NODES.read.findIndex(n=>nid(n)===k);
+        if(!stopNew('read',i))b(k+' does not show NEW for a finished Legend Lab');
+        if(!unlocked('read',i))b(k+' is locked for a finished Legend Lab');
+        if(r.cur===k&&k!=='comp7')b(k+' became the current stop of a finished Legend Lab'); // comp7 is the first new stop: the fallback above
+      }
+      const before=JSON.stringify(S.maps.read);
+      setSt('read',NODES.read.findIndex(n=>nid(n)==='comp7'),3);
+      const after=JSON.parse(JSON.stringify(S.maps.read));
+      if(after.comp7!==3||JSON.stringify({...after,comp7:undefined})!==JSON.stringify({...JSON.parse(before),comp7:undefined}))b('passing comp7 changed another stop');
+    }
+    return{out,checked,moved,words:g6.map(p=>p.text.flatMap(bankWords).length),fk:g6.map(p=>compFK(p.text))};
+  };
+  const r=eval(js+';('+body.toString()+')()');
+  const mx=a=>Math.max(...a),mn=a=>Math.min(...a);
+  return{problems:r.out,note:'10 passages, 50 questions; words '+mn(r.words)+'-'+mx(r.words)+', reading grade '+mn(r.fk).toFixed(1)+'-'+mx(r.fk).toFixed(1)+'; '+r.checked+' stop checks, current stop moved on '+r.moved+' of 36 loads (only where Legend Lab is done and nothing else is open)'};
 });
 
 // ---- report ----
