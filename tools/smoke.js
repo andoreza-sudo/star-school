@@ -2231,6 +2231,18 @@ async function main() {
           if (k + 1 >= (id === 'sent5' ? 3 : most) && (id !== 'sent5' || both)) break;
           await sp.waitForFunction(() => G && G.q !== window.__q, null, { timeout: 8000 });
         }
+        if (id === 'sent5') for (const want of ['sent5order', 'sent5choicewide']) if (!seenKinds.has(want)) {
+          // the round draws its kinds at random and review items take some places: show the missing kind directly and check it the same way
+          const sz = await sp.evaluate(want => {
+            for (let s = 1; s < 400; s++) { const q = genQ('sent', 5, s); if ('sent5' + q.kind + (q.cls || '') === want) { G.q = q; G.q.sk = 'sent'; G.q.lv = 5; renderQ(); break; } }
+            const pts = [...document.querySelectorAll('.ch, .ot, .os, .socket')].map(e => Math.min(e.offsetWidth, e.offsetHeight)).filter(x => x > 0);
+            const qa = document.querySelector('.qarea');
+            return { sk: G.q.sk + G.q.lv, kind: G.q.kind, cls: G.q.cls || '', min: Math.min(...pts), wide: document.documentElement.scrollWidth,
+              tall: qa.scrollHeight > qa.clientHeight + 1 };
+          }, want);
+          seenKinds.add(sz.sk + sz.kind + sz.cls);
+          if (sz.min < 48 || sz.wide > 380 || sz.tall) fail('Sentences stop sent5 (' + want + '): ' + JSON.stringify(sz));
+        }
         await sp.evaluate(() => { G.dead = true; });
         await vwait(sp, 2500); // the last answer's own timers fire into the dead round
         await sp.evaluate(() => { home(); });
