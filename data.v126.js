@@ -1,5 +1,5 @@
-/* Star School data banks v125. BUILT by tools/build.py from src/data/*.js (sorted): never edit by hand.
-   index.html v125 loads this file with <script src="data.v125.js"> between the code and the start-up script. */
+/* Star School data banks v126. BUILT by tools/build.py from src/data/*.js (sorted): never edit by hand.
+   index.html v126 loads this file with <script src="data.v126.js"> between the code and the start-up script. */
 /* Comprehension passages (P2-25: 2nd grade). Format and how to add a grade: header of src/js/37-comp.js.
    Fiction (type 'f') is the comp skill, level 3; nonfiction (type 'n') is the info skill, level 1. Original text, no brands, no real people.
    Append new grades below; never reorder or insert (saved review items remember a passage by its position). */
@@ -5156,7 +5156,7 @@ var SCN_W = {
   r_summit: ['mountain', { lm: ['mountain', 'flag'], pr: ['pine', 'flag', 'rock', 'pine', 'mountain', 'bush'] }], r_library: 'library',
   r_island: 'island', r_legend: 'legend',
   e_plaza: 'plaza', e_fiesta: 'fiesta', e_repaso: 'repaso', e_casa: ['town', { lm: ['houseG', 'tree'], pr: ['houseG', 'flowers', 'tree', 'house', 'bush', 'treeP'] }],
-  e_tiempo: 'tiempo', e_ciudad: 'city',
+  e_tiempo: 'tiempo', e_ciudad: 'city', e_frases: 'library',
   d_nature: 'nature', d_lab: 'lab', d_cosmos: 'observatory'
 };
 /* ---------- spelling words (P2-19, CURRICULUM E-spell) ---------- */
@@ -6931,4 +6931,4 @@ var BTW = {
     'glean parts strap traps tea eat ate nip pin top pot opt tar art rat now own won tub but bus',
 };
 
-var DATA_VER='v125'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var DATA_VER='v126'; // last line: the whole file ran (checked by dataReady() before the app starts)

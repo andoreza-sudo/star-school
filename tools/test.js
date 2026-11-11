@@ -7494,7 +7494,7 @@ run('mazes P3-08',()=>{
 run('code split A11b (and data file split A11)',()=>{
   const p=[],rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8');
   if(!BUILD_VER)return{problems:['no VER in tools/build.py']};
-  if(PARTS.map(x=>x.stem).join()!=='bt,games')p.push('PARTS in tools/build.py read as '+JSON.stringify(PARTS.map(x=>x.stem))+' (one entry per line, like the others)');
+  if(PARTS.map(x=>x.stem).join()!=='gen,gen2,bt,games')p.push('PARTS in tools/build.py read as '+JSON.stringify(PARTS.map(x=>x.stem))+' (one entry per line, like the others)');
   const FILES=[...PART_FILES,DATA_FILE];
   for(const f of ['index.html',...FILES,'sw.js'])if(!fs.existsSync(path.join(ROOT,f)))p.push(f+' not built; run python3 tools/build.py first');
   if(p.length)return{problems:p};
@@ -7553,8 +7553,8 @@ run('code split A11b (and data file split A11)',()=>{
     const alone=load([code],'({ready:dataReady()})');
     if(alone.err)p.push('the code does not load without the other files (it must not use part code or data while loading): '+alone.err);
     else if(alone.ready)p.push('dataReady() is true without the other files');
-    const nop=load([code,data],'({ready:dataReady(),bt:BT.list().length,game:typeof garage})');
-    if(nop.err)p.push('code + '+DATA_FILE+' do not load without the part files: '+nop.err);
+    const nop=load([code,...parts.filter((_,i)=>PARTS[i].stem.startsWith('gen')),data],'({ready:dataReady(),bt:BT.list().length,game:typeof garage})');
+    if(nop.err)p.push('code + gen parts + '+DATA_FILE+' do not load without the bt and games parts: '+nop.err);
     else if(nop.ready||nop.bt||nop.game!=='undefined')p.push('without the part files: '+JSON.stringify(nop));
     styles.length=0;
     const g=load([code,...parts,data],`({ready:dataReady(),files:appFiles(),gram:BANK.gram.length,vocab:BANK.vocab.length,
@@ -7568,15 +7568,18 @@ run('code split A11b (and data file split A11)',()=>{
       for(const k of ['gram','vocab','demo','comp','info','passages','spell','sudokuA'])if(!(g[k]>0))p.push('data global missing or empty: '+k);
       if(g.spellGen!=='function')p.push('genSpell is not defined by the data file');
       if(g.sudoku!=='ABCD')p.push('PUZ.sudoku bands '+g.sudoku);
-      if(g.bt!==5||g.mz!=='object'||g.pat!=='object'||g.btn!=='object')p.push('puzzle types not registered from '+PART_FILES[0]+': '+JSON.stringify(g));
-      if(g.games!==Array(10).fill('function').join())p.push('game code missing from '+PART_FILES[1]+': '+g.games);
+      if(g.bt!==5||g.mz!=='object'||g.pat!=='object'||g.btn!=='object')p.push('puzzle types not registered from '+PART_FILES[PARTS.findIndex(x=>x.stem==='bt')]+': '+JSON.stringify(g));
+      if(g.games!==Array(10).fill('function').join())p.push('game code missing from '+PART_FILES[PARTS.findIndex(x=>x.stem==='games')]+': '+g.games);
       const want=PARTS.map(x=>cat('css',x.stem,'.css')).filter(Boolean);
       if(styles.length!==want.length||styles.some((s,i)=>s.tag!=='style'||s.textContent!==want[i]))p.push('the parts did not add their CSS: '+styles.map(s=>s.id).join());
     }
     FILES.forEach((f,i)=>{
       const all=[code,...parts,data],stamp=stamps[i][1]+"='"+BUILD_VER+"'";
       const miss=load(all.filter((_,j)=>j!==i+1),'({ready:dataReady(),bad:appFiles().filter(f=>f[1]!==\''+BUILD_VER+'\').map(f=>f[0]+":"+f[1]).join()})');
-      if(miss.err||miss.ready||miss.bad!==stamps[i][0]+':null')p.push('without '+f+': '+JSON.stringify(miss));
+      // the data file calls the generators' helpers while loading (esReg, COMPSPEC): without a gen part it stops with a ReferenceError,
+      // so its stamp is never set; the app is just as refused (A11c)
+      const genGone=f!==DATA_FILE&&PARTS[i].stem.startsWith('gen');
+      if(genGone?(!miss.err&&(miss.ready||miss.bad!==stamps[i][0]+':null'))||(miss.err&&!/is not defined/.test(miss.err)):(miss.err||miss.ready||miss.bad!==stamps[i][0]+':null'))p.push('without '+f+': '+JSON.stringify(miss));
       const old=load(all.map((t,j)=>j===i+1?t.replace(stamp,stamps[i][1]+"='v1'"):t),'dataReady()');
       if(old!==false)p.push('dataReady() does not refuse a '+f+' of another release: '+JSON.stringify(old));
     });
@@ -7599,6 +7602,66 @@ run('code split A11b (and data file split A11)',()=>{
   if(nt>TOTAL_FAIL)p.push('index.html + '+FILES.join(' + ')+' is '+nt+' bytes, over the '+TOTAL_FAIL+' limit');else if(nt>TOTAL_WARN)w.push('total over '+TOTAL_WARN);
   return{problems:p,note:PART_FILES.map((f,i)=>f+' '+Math.round(np[i]/1000)+' KB').join(', ')+', '+DATA_FILE+' '+Math.round(nd/1000)+' KB, total '+Math.round(nt/1000)+' KB'+
     ' ('+moved.length+' src files in parts)'+(w.length?'  WARN: '+w.join(', '):'')};
+});
+
+// ---- A11c: the question generators and their helpers in gen.<VER>.js and gen2.<VER>.js, index.html well under 1 MB ----
+run('parts split A11c',()=>{
+  const p=[],rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8'),vm=require('vm');
+  if(!BUILD_VER)return{problems:['no VER in tools/build.py']};
+  const FILES=[...PART_FILES,DATA_FILE];
+  for(const f of ['index.html',...FILES])if(!fs.existsSync(path.join(ROOT,f)))return{problems:[f+' not built; run python3 tools/build.py first']};
+  const html=rd('index.html'),parts=PART_FILES.map(rd),data=rd(DATA_FILE);
+  // sizes: index.html under 1.0 MB (ROADMAP R1 headroom), every part under its fail budget
+  const nh=Buffer.byteLength(html);
+  if(nh>=1000000)p.push('index.html is '+nh+' bytes, not under 1,000,000');
+  parts.forEach((t,i)=>{const b=Buffer.byteLength(t);if(b>PART_FAIL)p.push(PART_FILES[i]+' is '+b+' bytes, over the '+PART_FAIL+' limit')});
+  // the moved files: in gen / gen2, not in index.html
+  const want={gen:['23-viz','30-gen-math','31-gen-math-early','32-gen-read','33-gen-math-mid','34-gen-es'],
+    gen2:['35-gen-math-upper','36-gen-phonics','37-bank','37-comp','39b-steps']};
+  for(const [stem,list] of Object.entries(want)){
+    const i=PARTS.findIndex(x=>x.stem===stem);
+    if(i<0){p.push('PARTS has no '+stem);continue}
+    for(const n of list){
+      const f=n+'.js';
+      if(partOf(f)!==stem)p.push(f+' is not moved to '+stem+' by PARTS');
+      const code=fs.readFileSync(path.join(SRC,'js',f),'utf8');
+      if(!parts[i].includes(code))p.push(f+' is not in '+PART_FILES[i]);
+      if(html.includes(code))p.push(f+' is still in index.html');
+    }
+  }
+  // a fresh load, like an offline page: index.html's code, then every part and the data in script-tag order, one classic script each.
+  // Every part stamp equals the page's VER; then a question from each subject is built with the loaded files.
+  const tags=[...html.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/g)];
+  const srcs=tags.filter(t=>/src="/.test(t[1])).map(t=>t[1].match(/src="([^"]*)"/)[1]);
+  if(JSON.stringify(srcs)!==JSON.stringify(FILES))p.push('index.html loads '+JSON.stringify(srcs)+', expected '+JSON.stringify(FILES));
+  const sw=rd('sw.js');
+  for(const f of FILES)if(!sw.includes("'./"+f+"'"))p.push('sw.js does not precache '+f);
+  const doc=Object.assign({},global.document,{createElement:t=>({tag:t}),head:{appendChild:()=>{}}});
+  const ctx=vm.createContext({localStorage:global.localStorage,document:doc,navigator:{},addEventListener:()=>{},location:{protocol:'file:'},
+    speechSynthesis:{getVoices:()=>[]},setTimeout:()=>{},console});
+  try{
+    for(const t of [tags[0][2],...parts,data])vm.runInContext(t,ctx);
+    const r=vm.runInContext(`(()=>{const files=appFiles(),qs={};
+      for(const [k,sk,lv] of [['math','add',1],['math','mult',1],['math','frac',3],['read','abc',1],['read','sound',1],['es','es_color',1],['disc','sci_life',1]]){
+        try{const q=genQ(sk,lv,7);qs[k+':'+sk]=!!(q&&q.html&&q.sk===sk)}catch(e){qs[k+':'+sk]=String(e)}}
+      return{ready:dataReady(),files,qs}})()`,ctx);
+    const stems=['gen','gen2','bt','games','data'];
+    if(JSON.stringify(r.files.map(f=>f[0]))!==JSON.stringify(stems))p.push('appFiles() lists '+JSON.stringify(r.files.map(f=>f[0]))+', expected '+stems.join());
+    if(!r.ready||r.files.some(f=>f[1]!==BUILD_VER))p.push('a part is not '+BUILD_VER+': '+JSON.stringify(r.files));
+    for(const [k,v] of Object.entries(r.qs))if(v!==true)p.push('question '+k+' did not build from the loaded files: '+v);
+    // each part missing or stale is refused (so a half-updated offline cache never starts the app)
+    for(const stem of ['gen','gen2']){
+      const i=PARTS.findIndex(x=>x.stem===stem),stamp=stem.toUpperCase()+"_VER='"+BUILD_VER+"'";
+      for(const [label,mod] of [['missing',t=>null],['stale',t=>t.replace(stamp,stem.toUpperCase()+"_VER='v1'")]]){
+        const c2=vm.createContext({localStorage:global.localStorage,document:doc,navigator:{},addEventListener:()=>{},location:{protocol:'file:'},
+          speechSynthesis:{getVoices:()=>[]},setTimeout:()=>{},console});
+        const all=[tags[0][2],...parts,data].map((t,j)=>j===i+1?mod(t):t).filter(t=>t!==null);
+        for(const t of all){try{vm.runInContext(t,c2)}catch(e){if(!/is not defined/.test(String(e)))throw e}} // data stops at esReg without gen
+        if(vm.runInContext('dataReady()',c2)!==false)p.push('dataReady() does not refuse a '+label+' '+PART_FILES[i]);
+      }
+    }
+  }catch(e){p.push('fresh load of index.html + parts + data failed: '+String(e).split('\n')[0])}
+  return{problems:p,note:'index.html '+Math.round(nh/1000)+' KB, '+PART_FILES.map((f,i)=>f+' '+Math.round(Buffer.byteLength(parts[i])/1000)+' KB').join(', ')};
 });
 
 run('Crystal Caves P2-12: stops in CURRICULUM order, 3,000 samples per new level with the maths recomputed, hints, say, labels, reproducible, old levels unchanged',()=>{
