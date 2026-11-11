@@ -168,6 +168,7 @@ How updates reach tablets: the service worker fetches the page network-first, so
 | Sound | Synthesized through `SFX`. No audio files. |
 | Speech | `say()` may fail silently when a voice is missing. Never make speech the only way to get information, except listening tasks with a visible fallback. |
 | Kid safety | No links out, no input that leaves the device, word lists must pass the `BAD` filter, nothing scary or rude. |
+| Sharing needs a connection | The app works offline, but share, send, email, print and upload do not. Every such button shows `onlineNote()` ("Make sure the tablet is online to share or print.") and runs its action through `needOnline(action, {block})` from `src/js/88-online.js`: offline it shows a friendly message, then stops (share, send, upload) or carries on (print, which can still save a PDF). A named check in `tools/test.js` enforces this. |
 | Sizes | Touch targets at least 48 px. Test at 600x960, 1024x600, 380x780. |
 | Tests | Every new generator, bank or puzzle is covered by `tools/test.js`. Every new screen is reachable by `tools/smoke.js` and has a named entry in `tools/shots.js`. |
 

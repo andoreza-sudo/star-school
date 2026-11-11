@@ -53,3 +53,4 @@ h2{font-size:24px;margin:18px 4px 10px}
 html.calm *,html.calm *::before,html.calm *::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 html.calm .conf{display:none!important}
 .art{display:inline-block;vertical-align:-.125em;color:var(--ink)}
+.online-note{font-size:var(--fs-1);color:var(--ink-2);text-align:right;padding:0 var(--s-3) var(--s-1)}

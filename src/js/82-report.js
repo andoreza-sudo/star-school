@@ -232,10 +232,12 @@ function report() {
   let m;
   try {m = REP.data()} catch (e) {m = null}
   view(`<div class="top rp-noprint"><button class="btn sm" id="back" aria-label="Back">${ico('back', 20)}</button><div class="title">Report card</div>`
-    + `<button class="btn sm" id="rp-print" style="margin-left:auto">Print</button></div><div class="scroll rp-scroll">`
+    + `<button class="btn sm" id="rp-print" style="margin-left:auto">Print</button></div>`
+    + `<div class="rp-noprint rp-online">${onlineNote()}</div><div class="scroll rp-scroll">`
     + (m ? REP.html(m) : '<div class="card rp-empty">The report card could not be drawn.</div>') + `</div>`);
   $('#back').onclick = () => grown();
-  $('#rp-print').onclick = () => {try {window.print()} catch (e) {}};
+  // printing can still save a PDF offline, so offline only warns (needOnline block:false)
+  $('#rp-print').onclick = () => needOnline(() => {try {window.print()} catch (e) {}}, {block: false});
 }
 /* Grown-ups entry (80-grown.js): one card with one button. */
 function reportGrownHTML() {
