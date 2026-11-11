@@ -32,8 +32,8 @@ h2{font-size:24px;margin:18px 4px 10px}
 .lv{color:var(--star-shade);font-size:20px;letter-spacing:2px}
 /* hero */
 .hero{display:flex;gap:16px;align-items:center;background:linear-gradient(135deg,var(--star-tint),var(--star));border-radius:var(--r-hero);padding:14px 18px;margin:4px 0 6px;box-shadow:var(--ledge) var(--shadow-ink)}
-.petbig{font-size:96px;line-height:1;cursor:pointer;animation:bob 2.4s ease-in-out infinite;filter:drop-shadow(0 6px 4px var(--shadow-ink-2))}
-.pet.aura,.petbig.aura{filter:drop-shadow(0 0 12px var(--star)) drop-shadow(0 0 4px var(--surface))}
+.petbig{font-size:96px;line-height:1;cursor:pointer;animation:bob 2.4s ease-in-out infinite;text-shadow:0 6px 4px var(--shadow-ink-2)}
+.pet.aura,.petbig.aura{text-shadow:0 0 12px var(--star),0 0 4px var(--surface)}
 @keyframes bob{50%{transform:translateY(-8px) rotate(3deg)}}
 .jump{animation:jump .5s!important}
 @keyframes jump{30%{transform:translateY(-30px) scale(1.15) rotate(-8deg)}60%{transform:translateY(0) scale(.95)}}
