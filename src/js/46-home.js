@@ -215,7 +215,12 @@ function hmPaths() {
   }).join('');
   const left = ptLeft();
   const gsub = left > 0 ? `${ico('ticket', 22)}<span>${fmtT(left)} of game time to spend!</span>` : '<span>Finish learning rounds to earn game time</span>';
-  return `<div class="hm-paths">${cards}
+  const bts = BT.totalStars(), bsub = bts ? `${bts} star${bts == 1 ? '' : 's'} from puzzles` : 'Puzzles to make you think!';
+  // Brain Teasers shows on Home once at least one puzzle type is registered (P3-01 ships the hub with none)
+  const brain = !BT.list().length ? '' : `<button class="hm-path s-bt" id="btcard"><span class="hm-art">${hmArt('bt')}</span>` +
+    `<span class="hm-pi"><span class="hm-pt">Brain Teasers</span><span class="hm-pn">${esc(bsub)}</span></span>` +
+    `<span class="hm-go">${ico('play', 28)}</span></button>`;
+  return `<div class="hm-paths">${cards}${brain}
     <button class="hm-path s-play${left > 0 ? '' : ' shut'}" id="groom"><span class="hm-art">${hmArt('play')}</span>` +
     `<span class="hm-pi"><span class="hm-pt">Game Room</span><span class="hm-pn hm-gsub">${gsub}</span></span>` +
     `<span class="hm-go">${ico(left > 0 ? 'play' : 'lock', 28)}</span></button></div>`;
@@ -248,7 +253,7 @@ function home(first){
   placeBannerBind();revCardBind();
   $('#snd').onclick=()=>{S.sound=!S.sound;S.music=S.sound;save();home()};
   $('#stkb').onclick=()=>{SFX.whoosh();streakCal(0)};
-  $('#book').onclick=book;$('#shop').onclick=shop;$('#mix').onclick=()=>{SFX.whoosh();startMix()};$('#race').onclick=raceMenu;$('#flu').onclick=()=>{SFX.whoosh();fluMenu()};$('#care').onclick=care;$('#groom').onclick=()=>{SFX.whoosh();gameRoom()};
+  $('#book').onclick=book;$('#shop').onclick=shop;$('#mix').onclick=()=>{SFX.whoosh();startMix()};$('#race').onclick=raceMenu;$('#flu').onclick=()=>{SFX.whoosh();fluMenu()};$('#care').onclick=care;$('#groom').onclick=()=>{SFX.whoosh();gameRoom()};if($('#btcard'))$('#btcard').onclick=()=>{SFX.whoosh();BT.hub()};
   if($('#inst'))$('#inst').onclick=async()=>{try{installEvt.prompt();await installEvt.userChoice}catch(e){}installEvt=null;home()};
   let t;const g=$('#gear');g.onpointerdown=()=>{t=setTimeout(grown,1200)};g.onpointerup=g.onpointerleave=()=>clearTimeout(t);g.onclick=()=>fb('Grown-ups: hold it','warn');
   if(first&&S.voice)setTimeout(()=>say(`Hi ${S.name}! Pick a game!`),400)}

@@ -6427,6 +6427,129 @@ run('Decimal Desert P2-10: the new world keeps every star, re-locks nothing and 
   return{problems:r.out,note:r.checked+' stop checks against a path without the desert, map moved on '+r.moved+' of 81 loads'};
 });
 
+// ---- P3-01: Brain Teasers hub and puzzle framework (BRAIN_TEASERS 2, 3, 9) ----
+run('teaser framework P3-01',()=>{
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const fixtures=fs.readdirSync(path.join(__dirname,'fixtures')).filter(n=>n.endsWith('.json')).map(n=>n.slice(0,-5));
+  const r=eval(js+`
+  const store={};
+  localStorage.getItem=k=>k in store?store[k]:null;localStorage.setItem=(k,v)=>{store[k]=String(v)};localStorage.removeItem=k=>{delete store[k]};
+  const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
+  const bad=[],eq=(a,b,m)=>{if(JSON.stringify(a)!==JSON.stringify(b))bad.push(m+': '+JSON.stringify(a)+' != '+JSON.stringify(b))};
+  const fake=(id,o)=>Object.assign({id,name:'Fake '+id,icon:'nope',bands:'ABCD',make:(b,l,rn)=>({b,l,n:Math.floor(rn()*1e9),g:R(1,1e9)}),mount:()=>({hint(){},destroy(){}}),solve:p=>[p.n]},o||{});
+  const run=(lv,over)=>Object.assign({id:'zzmaze',band:'B',level:lv,puzzle:{},state:null,hints:0,sec:30,day:today()},over||{});
+  const nod=()=>{BT.st().daily={day:today(),done:['zzmaze','zzfit','sudoku'],pick:{id:'zzmaze',band:'B',level:1}}}; // today's daily bonus already taken
+  const fin=(lv,over,res)=>BT.finish(run(lv,over),Object.assign({mistakes:0,hints:0,sec:5},res||{}));
+  BT.list().forEach(t=>BT.unreg(t.id)); // only the fake types below
+  // 1. registration
+  BT.reg(fake('zzmaze'));BT.reg(fake('zzfit',{bands:'BC',levels:b=>b=='B'?3:5}));BT.reg(fake('sudoku',{icon:'star'}));
+  eq(BT.list().map(t=>t.id),['sudoku','zzfit','zzmaze'],'catalog order first, then by id');
+  for(const[m,d]of[['a duplicate',fake('zzmaze')],['a reserved id',fake('cur')],['a reserved id (daily)',fake('daily')],['a bad id',fake('Bad Id')],['bad bands',fake('zzx',{bands:'EF'})],
+    ['no make',fake('zzx',{make:null})],['no mount',fake('zzx',{mount:null})],['no solve',fake('zzx',{solve:null})],['no name',fake('zzx',{name:''})],['levels that is not a function',fake('zzx',{levels:12})]]){
+    let threw=false;try{BT.reg(d)}catch(e){threw=true}if(!threw)bad.push('BT.reg accepted '+m);
+  }
+  if(BT.icon(BT.get('zzmaze'))!=='puzzle'||BT.icon(BT.get('sudoku'))!=='star')bad.push('an unknown icon falls back to puzzle, a known one is kept');
+  // 2. bands and what the hub lists
+  eq([-1,0,1,2,3,4,5,6].map(BT.bandOf),['A','A','B','B','C','C','D','D'],'band by grade');
+  load(null);S.grade=1;
+  eq(BT.offered().map(t=>t.id),['sudoku','zzfit','zzmaze'],'grade 1 offered');
+  S.grade=5;eq(BT.offered().map(t=>t.id),['sudoku','zzmaze'],'zzfit (B and C only) is hidden in band D');
+  S.grade=3;eq(BT.bands(BT.get('zzmaze')),['B','C'],'own band and one lower');
+  BT.rec('zzmaze','C',true).stars=[3,3,3,1];
+  eq(BT.bands(BT.get('zzmaze')),['B','C','D'],'the next band opens at 10 stars');
+  eq(BT.bands(BT.get('zzfit')),['B','C'],'a type without the next band');
+  S.grade=0;eq(BT.bands(BT.get('zzmaze')),['A'],'band A has no lower one');
+  // 3. seeded puzzles
+  load(null);S.grade=1;
+  const a1=BT.make('zzmaze','B',3,{day:'2026-6-15'}),a2=BT.make('zzmaze','B',3,{day:'2026-6-15'});
+  eq(a1,a2,'same type, band, level and day: the same puzzle (including the global R)');
+  if(JSON.stringify(a1)===JSON.stringify(BT.make('zzmaze','B',3,{day:'2026-6-16'})))bad.push('another day gives the same puzzle');
+  if(a1.n===BT.make('zzmaze','B',4,{day:'2026-6-15'}).n)bad.push('another level gives the same puzzle');
+  if(BT.make('zzmaze','B',3,{day:'2026-6-15'}).n===BT.make('zzmaze','C',3,{day:'2026-6-15'}).n)bad.push('another band gives the same puzzle');
+  const before=RNG;BT.make('zzmaze','B',1);if(RNG!==before)bad.push('make left the seeded RNG installed');
+  const mk=BT.get('zzmaze').make;BT.get('zzmaze').make=()=>{throw new Error('boom')};try{BT.make('zzmaze','B',1)}catch(e){}
+  if(RNG!==before)bad.push('make threw and left the seeded RNG installed');BT.get('zzmaze').make=mk;
+  eq(BT.get('zzmaze').solve(a1),[a1.n],'solve');
+  for(let i=0;i<50;i++){const e=BT.endlessLevel(BT.get('zzmaze'),'B',i,'2026-6-15');if(e<9||e>12)bad.push('endless level '+e)}
+  eq(BT.nLevels(BT.get('zzfit'),'B'),3,'levels by band');
+  // 4. stars and game time
+  eq([[0,0],[0,2],[0,3],[1,0],[1,9],[2,0],[5,0]].map(([h,m])=>BT.rate(h,m,2)),[3,3,2,2,2,1,1],'stars: 3 = no hint and mistakes within the allowance, 2 = at most one hint, 1');
+  eq(BT.rate(0,3,3),3,'a type may allow more mistakes');
+  eq(['A','B','C','D'].map(b=>[1,2,3].map(s=>BT.gameSec(b,s))),[[23,30,45],[30,40,60],[45,60,90],[60,80,120]],'game time by band and stars (at least a half)');
+  // 5. a first solve, a replay, an improvement
+  load(null);S.grade=1;S.stars=0;S.coins=0;nod();
+  const gtb=pt().bank;
+  let o=fin(1);
+  if(o.stars!==3||!o.first||o.added!==3||S.stars!==3||o.sec!==60||pt().bank!==gtb+60)bad.push('first solve in band B: '+JSON.stringify(o));
+  eq([BT.rec('zzmaze','B').lvl,BT.rec('zzmaze','B').stars],[2,[3]],'level 2 unlocked');
+  o=fin(1);
+  if(o.first||o.added||S.stars!==3||o.sec!==15||pt().bank!==gtb+75)bad.push('replay of a solved level: '+JSON.stringify(o));
+  o=fin(2,0,{hints:2});
+  if(o.stars!==1||o.sec!==30||S.stars!==4)bad.push('first solve with 2 hints: 1 star, half time: '+JSON.stringify(o));
+  o=fin(2);
+  if(!o.improved||o.added!==2||S.stars!==6||o.sec!==15)bad.push('an improved replay pays only the new stars: '+JSON.stringify(o));
+  o=fin(2,0,{mistakes:5,hints:1});
+  if(o.added||BT.rec('zzmaze','B').stars[1]!==3)bad.push('a worse replay must not lower the best');
+  eq(BT.rec('zzmaze','B').lvl,3,'lvl after solving 1 and 2');
+  fin(1);if(BT.rec('zzmaze','B').lvl!==3)bad.push('replaying an old level changed lvl');
+  if(BT.totalStars()!==6||BT.starsOf('zzmaze')!==6)bad.push('totalStars '+BT.totalStars());
+  S.bt.cur={id:'zzmaze'};fin(1);if(S.bt.cur)bad.push('finish must clear S.bt.cur');
+  for(const[b,sec]of[['A',45],['C',90],['D',120]]){load(null);S.grade=3;nod();const g=pt().bank;o=fin(1,{band:b});if(o.sec!==sec||pt().bank!==g+sec)bad.push('band '+b+' first solve game time '+o.sec)}
+  // 6. the last level opens Endless; an Endless solve pays a replay
+  load(null);S.grade=1;nod();
+  BT.rec('zzfit','B',true).lvl=3;BT.rec('zzfit','B').stars=[3,3,2];
+  o=fin(3,{id:'zzfit'});
+  if(BT.rec('zzfit','B').lvl!==4||!o.unlocked)bad.push('finishing the last level opens Endless (lvl N+1)');
+  const s0=S.stars;o=fin('E',{id:'zzfit'});
+  if(o.added||S.stars!==s0||o.sec!==15||BT.rec('zzfit','B').endless!==1||o.first)bad.push('endless solve: '+JSON.stringify(o));
+  // 7. game time from puzzles stops at half of the grown-up's daily cap
+  load(null);S.grade=3;nod();ptCfg().max=30;
+  let paid=0;for(let i=0;i<100;i++){const g=pt().bank;fin(1,{band:'D'});paid+=pt().bank-g}
+  if(paid!==900)bad.push('cap 30 min: puzzles may earn 900 s, earned '+paid);
+  o=fin(1,{band:'D'});if(o.sec!==0||!o.capped)bad.push('capped win '+JSON.stringify(o));
+  S.bt.earn.day='1999-1-1';o=fin(1,{band:'D'});if(o.sec!==15)bad.push('the cap starts again the next day');
+  load(null);S.grade=3;nod();ptCfg().max=0;paid=0;for(let i=0;i<30;i++){const g=pt().bank;fin(1,{band:'D'});paid+=pt().bank-g}
+  if(paid!==120+29*15)bad.push('no cap set: '+paid);
+  // 8. three solves make one round (day count, streak), the daily mission follows the usual rule
+  load(null);S.grade=1;S.day={};nod();ptCfg().max=0;
+  const d0=day().r,st0=STRK.get().days[today()]||0;
+  fin(1);fin(1);
+  if(day().r!==d0||(STRK.get().days[today()]||0)!==st0)bad.push('two solves are not a round yet');
+  o=fin(1);
+  if(day().r!==d0+1||STRK.get().days[today()]!==st0+1||!o.round||o.round.mission)bad.push('three solves = one round: '+JSON.stringify([day().r,o.round]));
+  for(let i=0;i<5;i++)fin(1);
+  if(day().r!==d0+2)bad.push('six solves = two rounds, got '+(day().r-d0));
+  // 9. the Puzzle of the Day: the same all day, paid once
+  load(null);S.grade=1;S.coins=0;ptCfg().max=0;
+  const dl=BT.dailyInfo();eq(dl,BT.dailyInfo(),'the daily pick is stable');
+  if(!dl||dl.done||dl.band!=='B'||dl.level!==1)bad.push('daily pick '+JSON.stringify(dl));
+  o=fin(dl.level,{id:dl.id});
+  if(!o.daily||o.coins!==5||o.sec!==120||S.coins!==5||!BT.dailyInfo().done||BT.dailyInfo().id!==dl.id)bad.push('daily reward: '+JSON.stringify(o));
+  o=fin(1,{id:dl.id});if(o.daily||o.coins)bad.push('the daily bonus was paid twice');
+  BT.st().daily.day='1999-1-1';if(BT.dailyInfo().done)bad.push('the daily puzzle starts again on a new day');
+  BT.list().forEach(t=>BT.unreg(t.id));if(BT.dailyInfo()!==null)bad.push('no types: no daily pick');
+  // 10. saves: every fixture loads unchanged, a damaged S.bt never throws, a new save round-trips
+  for(const name of fixtures){
+    load(fx(name));const pre=JSON.parse(JSON.stringify(S));
+    BT.reg(fake('zzmaze'));
+    BT.totalStars();BT.offered();BT.bands(BT.get('zzmaze'));BT.dailyInfo();BT.nowLevel(BT.get('zzmaze'),'A');
+    const post=JSON.parse(JSON.stringify(S));delete post.bt;
+    if(pre.bt!==undefined)bad.push(name+': an old save already has S.bt');
+    eq(post,pre,name+': reading Brain Teasers data changed the save');
+    if(S.v!==LATEST)bad.push(name+': S.v is not the latest version');
+    BT.unreg('zzmaze');
+  }
+  BT.reg(fake('zzmaze'));
+  for(const junk of ['x',[],null,7,{zzmaze:'x'},{zzmaze:{B:{lvl:'a',stars:'b',endless:-4}}},{zzmaze:{B:{lvl:99,stars:[9,-1,'q',2]}}},{cur:5,daily:'d',rnd:[],earn:3}]){
+    load(null);S.grade=1;S.bt=junk;
+    try{BT.totalStars();BT.offered();BT.dailyInfo();BT.rec('zzmaze','B',true);fin(1,0,{sec:1})}catch(e){bad.push('damaged S.bt '+JSON.stringify(junk)+' threw '+e.message)}
+  }
+  load(null);S.grade=1;fin(1,0,{mistakes:1,sec:9});S.bt.cur={id:'zzmaze',band:'B',level:2,puzzle:{a:1},state:{x:[1,2]},hints:1,sec:44,day:today()};save();
+  const keep=JSON.parse(JSON.stringify(S.bt));load(store[KEY]);eq(S.bt,keep,'S.bt round trip');
+  bad;`);
+  return{problems:[...new Set(r)],note:'registry, seeds, stars, rewards, cap, rounds, daily, '+fixtures.length+' fixtures'};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){

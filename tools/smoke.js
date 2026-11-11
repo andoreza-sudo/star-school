@@ -2615,6 +2615,135 @@ async function main() {
       await dd.ctx.close();
     }
 
+    // P3-01 Brain Teasers framework at 380x780 and 1024x600 (midway), with a fake puzzle type (tools/lib/bt-fake.js): Home card ->
+    //    hub (Puzzle of the Day, type card) -> level strip (locked levels, band chips) -> play (hint tiers with a cooldown, saved
+    //    state, restart sheet) -> back and Keep going resumes exactly -> win card pays stars and game time -> Next level -> Home.
+    //    Every button 48 px, no sideways scroll, no emoji in the chrome, nothing outside the screen.
+    {
+      const fake = require('./lib/bt-fake');
+      const look = () => {
+        const vw = document.documentElement.clientWidth, out = [];
+        for (const e of document.querySelectorAll('button, [role="button"]')) {
+          const r = e.getBoundingClientRect();
+          if (!r.width || r.bottom < 0 || r.top > innerHeight || e.closest('svg') || e.closest('#toast')) continue;
+          if (Math.min(r.width, r.height) < 47.5) out.push('small ' + (e.id || e.className) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
+          if (r.left < -1 || r.right > vw + 1) out.push('outside ' + (e.id || e.className) + ' ' + Math.round(r.left) + '..' + Math.round(r.right));
+        }
+        if (document.documentElement.scrollWidth > vw) out.push('sideways scroll ' + document.documentElement.scrollWidth);
+        const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        for (let n; (n = w.nextNode());) {
+          const el = n.parentElement;
+          if (!el || el.closest('script,style,svg,#ico-sprite,.fk,.rw-burst') || !el.getClientRects().length) continue;
+          const m = n.textContent.match(/\p{Extended_Pictographic}|[◀▶✕]/u);
+          if (m) out.push('emoji chrome ' + m[0] + ' in ' + (el.id || el.className));
+        }
+        return out;
+      };
+      for (const [w, h] of [[380, 780], [1024, 600]]) {
+        const tag = 'P3-01 ' + w + 'x' + h;
+        const bt = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = bt.page, bad = [];
+        const chk = async what => { for (const o of await pg.evaluate('(' + look.toString() + ')()')) bad.push(what + ': ' + o); };
+        await pg.evaluate('(' + fake.install.toString() + ')()');
+        await pg.evaluate(() => home());
+        await pg.waitForSelector('#btcard');
+        await pg.waitForTimeout(450);
+        await chk('home');
+        await pg.evaluate(() => document.querySelector('#btcard').scrollIntoView({ block: 'center' }));
+        await pg.click('#btcard');
+        await pg.waitForSelector('.bt-hub [data-t="zzfake"]');
+        await pg.waitForTimeout(450);
+        await chk('hub');
+        const hub = await pg.evaluate(() => ({ day: !!document.querySelector('#btday'), cards: document.querySelectorAll('.bt-type').length, keep: !!document.querySelector('#btkeep'),
+          title: document.querySelector('.ttl').textContent }));
+        if (!hub.day || hub.cards !== 1 || hub.keep || hub.title.trim() !== 'Brain Teasers') bad.push('hub: ' + JSON.stringify(hub));
+        // level strip
+        await pg.click('[data-t="zzfake"]');
+        await pg.waitForSelector('.bt-lvs');
+        await pg.waitForTimeout(450);
+        await chk('levels');
+        const lv = await pg.evaluate(() => ({ n: document.querySelectorAll('.bt-lv').length, open: document.querySelectorAll('.bt-lv:not(.lock)').length,
+          end: document.querySelector('#btend').disabled, band: !!document.querySelector('#btband'), say: !!document.querySelector('#btsay') }));
+        if (lv.n !== 12 || lv.open !== 1 || !lv.end || !lv.band || !lv.say) bad.push('levels: ' + JSON.stringify(lv));
+        await pg.click('.bt-lv[data-l="2"]', { force: true }); // locked (aria-disabled): only a toast
+        await vwait(pg, 300);
+        if (await pg.evaluate(() => !!document.querySelector('.bt-stage'))) bad.push('a locked level opened');
+        // play level 1: hint tiers, cooldown, saved state, restart sheet
+        const s0 = await pg.evaluate(() => ({ stars: S.stars, bank: pt().bank }));
+        await pg.click('.bt-lv[data-l="1"]');
+        await pg.waitForSelector('#btstage .fkt');
+        await pg.waitForTimeout(450);
+        await chk('play');
+        const band = await pg.evaluate(() => S.bt.cur.band);
+        const timer = await pg.evaluate(() => !!document.querySelector('#bttime'));
+        if (timer !== (band === 'C' || band === 'D')) bad.push('timer shown in band ' + band + ': ' + timer);
+        await pg.click('#bthint');
+        const h1 = await pg.evaluate(() => ({ t: document.querySelector('.fkn').textContent, dis: document.querySelector('#bthint').disabled, pips: document.querySelectorAll('#btpips i.on').length, hints: S.bt.cur.hints }));
+        if (h1.t !== 'hint 1' || !h1.dis || h1.pips !== 1 || h1.hints !== 1) bad.push('hint 1: ' + JSON.stringify(h1));
+        await vwait(pg, 11500);
+        if (await pg.evaluate(() => document.querySelector('#bthint').disabled)) bad.push('hint button still cooling down after 10 s');
+        await pg.click('#bthint');
+        if ((await pg.evaluate(() => document.querySelector('.fkn').textContent)) !== 'hint 2') bad.push('hint 2 did not run');
+        // a state is saved after a tap; back keeps the puzzle; Keep going resumes it
+        const lit = await pg.evaluate(() => S.bt.cur.puzzle.lit);
+        await pg.click(`.fkt[data-i="${lit}"]`);
+        const sv = await pg.evaluate(() => ({ taps: S.bt.cur.state.taps, puzzle: JSON.stringify(S.bt.cur.puzzle) }));
+        if (sv.taps !== 1) bad.push('state not saved: ' + JSON.stringify(sv));
+        await pg.click('#back');
+        await pg.waitForSelector('.bt-lvs');
+        await pg.click('#back');
+        await pg.waitForSelector('#btkeep');
+        await pg.waitForTimeout(450);
+        await chk('hub with Keep going');
+        await pg.click('#btkeep');
+        await pg.waitForSelector('#btstage .fkt');
+        const rs = await pg.evaluate(() => ({ t: document.querySelector('.fkn').textContent, puzzle: JSON.stringify(S.bt.cur.puzzle), hints: S.bt.cur.hints }));
+        if (rs.t !== '1 of 3' || rs.puzzle !== sv.puzzle || rs.hints !== 2) bad.push('resume: ' + JSON.stringify(rs));
+        // restart asks first
+        await pg.click('#btredo');
+        await pg.waitForSelector('#btyes');
+        await pg.waitForTimeout(450);
+        await chk('restart sheet');
+        await pg.click('#btno');
+        await vwait(pg, 500);
+        if ((await pg.evaluate(() => document.querySelector('.fkn').textContent)) !== '1 of 3') bad.push('No on the restart sheet changed the puzzle');
+        await pg.click('#btredo');
+        await pg.waitForSelector('#btyes');
+        await pg.waitForTimeout(450);
+        await pg.click('#btyes');
+        await vwait(pg, 500);
+        if ((await pg.evaluate(() => document.querySelector('.fkn').textContent)) !== '0 of 3') bad.push('restart did not clear the puzzle');
+        // solve it (2 hints used, so 1 star), win card
+        const sol = await pg.evaluate(() => BT.get('zzfake').solve(S.bt.cur.puzzle));
+        for (const i of sol) await pg.click(`.fkt[data-i="${i}"]`);
+        await pg.waitForSelector('.bt-win #btnext');
+        await pg.waitForTimeout(700);
+        await chk('win card');
+        const win = await pg.evaluate(() => ({ stars: document.querySelectorAll('.bt-win .rs.on').length, gt: document.querySelector('.gx-earn').textContent, cur: !!S.bt.cur,
+          s: S.stars, bank: pt().bank }));
+        if (win.stars !== 1 || win.cur || win.s < s0.stars + 1 || !/game time/.test(win.gt) || win.bank <= s0.bank) bad.push('win: ' + JSON.stringify(win) + ' from ' + JSON.stringify(s0));
+        await pg.click('#btnext');
+        await pg.waitForSelector('#btstage .fkt');
+        if ((await pg.evaluate(() => S.bt.cur.level)) !== 2) bad.push('Next level did not open level 2');
+        await pg.click('#back');
+        await pg.waitForSelector('.bt-lvs');
+        const open2 = await pg.evaluate(() => document.querySelectorAll('.bt-lv:not(.lock)').length);
+        if (open2 !== 2) bad.push('after level 1 the strip should have 2 open levels, got ' + open2);
+        await pg.click('#back');
+        await pg.waitForSelector('.bt-hub');
+        await pg.click('#back');
+        await pg.waitForSelector('#btcard');
+        await pg.waitForTimeout(450);
+        await chk('home again');
+        if (bad.length) fail(tag + ':\n  ' + bad.join('\n  '));
+        else step(tag + ': Home card -> hub -> levels -> play (hint cooldown, saved state, Keep going, restart sheet) -> win card pays 1 star and game time -> Next level -> Home; targets 48 px, no sideways scroll, no emoji chrome');
+        await vwait(pg, 300);
+        network.push(...bt.network);
+        for (const e of bt.errors) fail(e);
+        await bt.ctx.close();
+      }
+    }
+
     for (const e of errors) fail(e);
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');

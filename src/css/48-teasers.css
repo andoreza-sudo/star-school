@@ -1,0 +1,37 @@
+/* Brain Teasers (P3-01): hub, level strip, play frame and win card. Tokens only; motion is transform and opacity. */
+.bt-hub .games{max-width:640px}
+.bt-top3{display:flex;flex-direction:column;gap:var(--s-4);margin:0 auto}
+.bt-top3:empty{display:none}
+.bt-h{display:flex;align-items:center;gap:var(--s-2);max-width:640px;margin:var(--s-5) auto var(--s-3);font-family:var(--font-display);font-size:var(--fs-4);line-height:1.2}
+.bt-h .ic{flex:none;color:var(--bt)}
+.bt-type .gx-ln,.bt-keep .gx-ln,.bt-day .gx-ln{gap:var(--s-2);flex-wrap:wrap}
+.bt-day .pc-badge{background:var(--star-tint);color:var(--star-shade)}
+.bt-hub .blank{margin-top:var(--s-7)}
+/* level strip */
+.bt-bands{display:flex;justify-content:center;margin:var(--s-2) 0 var(--s-3)}
+.bt-rules{display:flex;align-items:center;justify-content:center;gap:var(--s-2);max-width:480px;margin:0 auto var(--s-3);text-align:center;font-size:var(--fs-3);font-weight:700;color:var(--ink-2)}
+.bt-rules p{margin:0;min-width:0}
+.bt-lvs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--s-3);max-width:480px;margin:var(--s-3) auto var(--s-5)}
+.bt-lv{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:var(--tap);min-height:84px;padding:var(--s-2);border:0;border-radius:var(--r-card);
+  background:var(--surface);color:var(--bt-shade);font-family:var(--font-display);font-size:var(--fs-5);font-weight:700;line-height:1.1;cursor:pointer;touch-action:manipulation;
+  box-shadow:inset 0 0 0 3px var(--bt),0 5px 0 var(--bt-shade);transition:transform var(--t-fast) var(--ease)}
+.bt-lv.done{background:var(--bt-tint)}
+.bt-lv:active{transform:translateY(4px);box-shadow:inset 0 0 0 3px var(--bt),0 1px 0 var(--bt-shade)}
+.bt-lv.lock{background:var(--surface-2);color:var(--ink-3);box-shadow:inset 0 0 0 3px var(--line),0 3px 0 var(--ledge-soft)}
+.bt-lv.lock:active{transform:none}
+.bt-lv .rate{display:flex;gap:0}
+.bt-end{max-width:480px;margin:0 auto}
+/* play frame */
+.bt-bar .ttl{flex:1}
+.bt-tt{display:flex;flex-direction:column;min-width:0;line-height:1.1}
+.bt-tt small{font-size:var(--fs-1);font-weight:700;color:var(--ink-2)}
+.bt-play{flex:1;min-height:0;display:flex;flex-direction:column}
+.bt-stage{flex:1;min-height:0;overflow:auto;padding:var(--s-3) var(--s-4);-webkit-overflow-scrolling:touch}
+.bt-foot{flex:none;display:flex;align-items:center;justify-content:center;gap:var(--s-4);padding:var(--s-2) var(--s-4) var(--s-3)}
+.bt-pips{display:flex;gap:var(--s-2)}
+.bt-pips i{width:14px;height:14px;border-radius:50%;background:var(--surface);box-shadow:inset 0 0 0 3px var(--bt)}
+.bt-pips i.on{background:var(--bt)}
+/* win card */
+.bt-wst{display:flex;justify-content:center;margin:var(--s-2) 0}
+.bt-new{margin:0 0 var(--s-2);text-align:center}
+.bt-wl{justify-content:center;width:max-content;max-width:100%;margin:var(--s-2) auto 0}
