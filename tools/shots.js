@@ -1165,6 +1165,46 @@ Object.assign(SCREENS, {
   'vl-steps-mbig5': { run: vlShot('mbig', 5, ' = \\?$', 3) },
 });
 
+// o.hints gives that many hint tiers (straight through the puzzle, no cooldown), o.win shows the win card
+function patShot(band, level, kind, o = {}) {
+  return async p => {
+    await p.evaluate(([band, level, kind, o]) => {
+      S.grade = { A: 0, B: 1, C: 3, D: 5 }[band];
+      window.say = () => {};
+      let pz, i = -1;
+      for (let s = 0; s < 80 && i < 0; s++) {
+        pz = BT.make('pattern', band, level, { salt: s });
+        i = pz.items.findIndex(it => it.k == kind && (!o.at || it.at.length >= o.at) && (!o.rule || it.rule == o.rule));
+      }
+      BT.st().cur = { id: 'pattern', band, level, puzzle: pz, state: { i, miss: 0, h: 0, x: [], g: [] }, hints: 0, sec: 0, day: today() };
+      BT.start('pattern', band, level);
+    }, [band, level, kind, o]);
+    await p.waitForSelector('.pt-ch');
+    if (o.wrong) {
+      const w = await p.evaluate(() => { const it = S.bt.cur.puzzle.items[S.bt.cur.state.i]; return (it.a + 1) % it.ch.length; });
+      await p.click(`.pt-ch[data-c="${w}"]`);
+    }
+    for (let h = 0; h < (o.hints || 0); h++) await p.evaluate(() => BT.act.inst.hint());
+    if (o.win) { await p.evaluate(() => BT.win(BT.act, { mistakes: 0 })); await p.waitForTimeout(900); }
+  };
+}
+Object.assign(SCREENS, {
+  'bt-pat-levels': { run: async p => { await p.evaluate(() => { S.grade = 1; BT.levels('pattern'); }); } },
+  'bt-pat-a-seq': { run: patShot('A', 1, 'seq') },
+  'bt-pat-a-odd': { run: patShot('A', 9, 'odd', { hints: 2 }) },
+  'bt-pat-a-grow': { run: patShot('A', 12, 'seq', { at: 2, wrong: true }) },
+  'bt-pat-b-num': { run: patShot('B', 5, 'num', { wrong: true }) },
+  'bt-pat-b-ana': { run: patShot('B', 9, 'ana', { hints: 2 }) },
+  'bt-pat-b-seq': { run: patShot('B', 9, 'seq', { at: 2 }) },
+  'bt-pat-b-odd': { run: patShot('B', 12, 'odd') },
+  'bt-pat-c-mat': { run: patShot('C', 5, 'mat', { hints: 1, wrong: true }) },
+  'bt-pat-c-num': { run: patShot('C', 9, 'num', { rule: 'alt' }) },
+  'bt-pat-d-mat': { run: patShot('D', 9, 'mat', { hints: 3 }) },
+  'bt-pat-d-seq': { run: patShot('D', 12, 'seq', { at: 3 }) },
+  'bt-pat-d-num': { run: patShot('D', 5, 'num', { rule: 'inter', hints: 2 }) },
+  'bt-pat-win': { run: patShot('C', 1, 'mat', { win: true }) },
+});
+
 async function main() {
   const args = process.argv.slice(2);
   let fixtureArg = null;
