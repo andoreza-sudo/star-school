@@ -889,7 +889,7 @@ async function main() {
         };
       });
       await tp.click('.node.cur');
-      await tp.waitForSelector('#prompt');
+      await tp.waitForSelector('#prompt', { state: 'attached' }); // text hidden: a listening prompt can be empty
       await playRound(tp, 'P2-01 Tiny Town round, text hidden', 6);
       const rec = await tp.evaluate(() => window.__rec);
       const badRec = rec.filter(r => !r.said || !r.spk || r.spk[0] < 64 || r.spk[1] < 64 || r.letters || !r.txtHidden || !r.nTxt || r.wide > 380);
@@ -900,7 +900,7 @@ async function main() {
       const seen = [];
       for (const [i, id] of stops) {
         await tp.evaluate(i => { start('math', i); }, i);
-        await tp.waitForSelector('#prompt');
+        await tp.waitForSelector('#prompt', { state: 'attached' }); // text hidden: a listening prompt can be empty
         await vwait(tp, 600);
         const sz = await tp.evaluate(() => {
           const pts = [...document.querySelectorAll('.ch, #prompt [data-v]')].map(e => Math.min(e.offsetWidth, e.offsetHeight));
@@ -1109,7 +1109,8 @@ async function main() {
       const seen = [];
       for (const [i, id] of stops) {
         await sp.evaluate(i => { start('math', i); }, i);
-        await sp.waitForSelector('#prompt');
+        // with all text hidden, a listening question's prompt can be empty (zero size), so wait for it to exist, not to be visible
+        await sp.waitForSelector('#prompt', { state: 'attached' });
         await sp.waitForFunction(() => window.__said.includes(G.q.say), null, { timeout: 4000 }).catch(() => {}); // the prompt is spoken a moment after it shows
         const sz = await sp.evaluate(() => {
           const pts = [...document.querySelectorAll('.ch, #prompt [data-v], .k')].map(e => Math.min(e.offsetWidth, e.offsetHeight));
