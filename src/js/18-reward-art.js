@@ -313,12 +313,10 @@ const RW = {
     return `<div class="rw-msg${kind ? ' ' + kind : ''}"><span class="rw-md">${a}</span><div class="rw-mt">${html}</div></div>`;
   },
 
-  // the child's pet cheering (round with no stars, mix, test out): the drawn pet, or its emoji for pets not on the rig yet
+  // the child's pet cheering (round with no stars, mix, test out): the drawn pet (every pet is on the rig since P4-06)
   pet() {
     const w = S.wear || {};
-    const p = typeof petRig == 'function' && petRig() ? petSVG(S.pet, stage(), 'cheer', { hat: w.hat, toy: w.toy })
-      : `<span class="rw-pete">${petE()}</span>`;
-    return `<div class="rw-pet">${p}</div>`;
+    return `<div class="rw-pet">${petSVG(S.pet, stage(), 'cheer', { hat: w.hat, toy: w.toy })}</div>`;
   },
 
   // ---- screens ----

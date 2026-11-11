@@ -139,6 +139,6 @@ const SHOP={hat:[['🧢',10],['🎀',10],['🎩',20],['⛑️',25],['🎓',40],[
  scene:[['meadow',0,'🌻','linear-gradient(135deg,#fef3c7,#fde68a)','Meadow'],['beach',30,'🏖️','linear-gradient(180deg,#bae6fd,#fef3c7 75%)','Beach'],['candy',40,'🍭','linear-gradient(135deg,#fbcfe8,#ddd6fe)','Candy'],
   ['rainbow',40,'🌈','linear-gradient(135deg,#fecaca,#fde68a,#bbf7d0,#bfdbfe,#ddd6fe)','Rainbow'],['space',50,'🌌','linear-gradient(135deg,#1e1b4b,#581c87)','Space'],['castle',60,'🏰','linear-gradient(135deg,#fae8ff,#c7d2fe)','Castle']]};
 const sceneOf=()=>SHOP.scene.find(x=>x[0]==S.wear.scene)||SHOP.scene[0];
-function petHTML(st=S.stars){if(petRig())return petRigHTML(st);const w=S.wear;return`<span class="petwrap"><span class="pe">${petE(st)}</span>${w.hat?`<span class="hat">${w.hat}</span>`:''}${w.toy?`<span class="toy">${w.toy}</span>`:''}</span>`}
+function petHTML(st=S.stars){return petRigHTML(st)} // P4-06: every pet is drawn on the rig (17-pets-svg.js)
 const allMiss=()=>dueItems(); // P5-02: review items due today, most urgent first (59-review.js); home shows the count
 

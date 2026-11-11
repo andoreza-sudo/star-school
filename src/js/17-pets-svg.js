@@ -13,8 +13,11 @@
      scale maps 64-grid units to viewBox units; the hat turns with the head and the toy with the right arm.
    Colour: only fill/stroke="var(--pc-x)" roles, set per pet in src/css/41-pet.css from tokens (b body, b2 body shade,
      l belly, l2 belly shade and accents, h / h2 horns, x / x2 / x3 muzzle, claws and their shades, b3 / l3 dark accent and light tint, sh / sh2 egg shell, e ink, w glint,
-     t tongue, ck cheeks, d drops, gl / gl2 glow, sd shadow). Motion is CSS on the groups (41-pet.css).
-   A new pet (P4-06): add PET_RIG.<kind> with the same stage keys and parts, and a .pet-k-<kind> palette in 41-pet.css.
+     t tongue, ck cheeks, d drops, gl / gl2 glow, sd shadow;
+     P4-06 adds p / p2 plates and fins, b1 light spots, n / n2 / n3 the bird's nest). Motion is CSS on the groups (41-pet.css).
+   Pets: dragon (P4-05, the reference), dino, bird and ocean (the sea pal) (P4-06). A new pet: add PET_RIG.<kind> with the same
+     stage keys and parts (wing / tail / arm strings, body / belly / head functions, cheeks; optional face = its own PET_FACE,
+     e.g. the bird's beak is its mouth), and a .pet-k-<kind> palette in 41-pet.css (only --ill-* or app tokens).
    Stage numbers come from stage() in 05-pets.js (stars); nothing here reads or writes saved data except petMood (care). */
 const PET_STAGES = ['egg', 'baby', 'kid', 'grown'];
 const PET_MOODS = ['idle', 'happy', 'oops', 'cheer', 'sleepy', 'hungry'];
@@ -126,6 +129,211 @@ PET_RIG.dragon = {
 };
 // <<< dragon
 
+// ---- P4-06: dino, bird and sea pal on the same rig (same stages, faces, anchors and shading as the dragon) ----
+// a volume shape: the shade path, then the base path (drawn a little up and left), both in one role pair
+const petVol = (d2, d, c) => `<path d="${d2}" fill="var(--pc-${c}2)"/><path d="${d}" fill="var(--pc-${c})"/>`;
+const petGl = (d, w, a) => `<path d="${d}" fill="none" stroke="var(--pc-w)" stroke-width="${w}" stroke-linecap="round" opacity="${a}"/>`;
+const petAt = (x, y, r, s, m) => `<g transform="translate(${x} ${y})${r ? ` rotate(${r})` : ''}${s != 1 ? ` scale(${s})` : ''}">${m}</g>`;
+// shared egg shell (the face goes on it): shade rim, base, gloss
+const petShell = (rx, ry, cy) => `<ellipse cx="100" cy="${cy}" rx="${rx}" ry="${ry}" fill="var(--pc-sh2)"/>` +
+  `<ellipse cx="98" cy="${cy - 2.5}" rx="${rx - 2.5}" ry="${ry - 2.5}" fill="var(--pc-sh)"/>`;
+const petShellHi = petHi(80, 98, 10, 18, 22, .75) + petHi(90, 78, 4, 3, 0, .9);
+
+// >>> dino (blue with a cream belly and snout, orange back plates, spots, a thick tail)
+// a rounded plate standing on (0, 0), about 22 high
+const petPlateS = petVol('M-8 2C-9-9-5-20 0-23C5-20 9-9 8 2Z', 'M-8 0C-9-9-5-18-1-21C3-18 6-9 6 0Z', 'p'), // no gloss: small plates
+  petPlate = petPlateS + petGl('M-4-4C-5-10-3-14-1-17', 2.2, .5);
+PET_RIG.dino = {
+  stages: {
+    egg: { egg: 1, head: [100, 126, .66], sh: 40, hat: [100, 72, .72, -8], toy: [148, 162, .62, 10] },
+    baby: { body: [100, 157, 28, 25], belly: [100, 162, 17, 15], head: [100, 101, .94], plate: .62, arm: [81, 148, .78],
+      wing: [78, 150, .55], tail: [116, 174, .62], sh: 38, hat: [100, 70, .74, -6], toy: [133, 163, .6, 10] },
+    kid: { body: [100, 148, 33, 32], belly: [100, 154, 21, 21], head: [100, 84, 1], plate: .85, arm: [75, 137, .95],
+      wing: [72, 142, .78], tail: [120, 172, .9], sh: 46, hat: [100, 52, .82, -6], toy: [138, 156, .68, 10] },
+    grown: { body: [100, 137, 41, 43], belly: [100, 146, 27, 30], head: [100, 69, 1.04], plate: 1.1, arm: [66, 121, 1.16],
+      wing: [64, 128, 1.1], tail: [126, 168, 1.28], sh: 56, hat: [100, 36, .9, -6], toy: [150, 147, .78, 10] },
+  },
+  egg: petShell(45, 55, 124) + [[68, 132, 8], [128, 100, 6.5], [124, 158, 9], [86, 166, 5.5], [104, 78, 5.5], [74, 96, 4]].map(([x, y, r]) =>
+    `<circle cx="${x}" cy="${y}" r="${r}" fill="var(--pc-b2)"/><circle cx="${x - 1}" cy="${y - 1}" r="${r - 1.5}" fill="var(--pc-b)"/>`).join('') +
+    petAt(120, 74, 30, .6, petPlate) + petShellHi,
+  // back plates poking out on one side (joint at (0, 0)); the other side is the mirror
+  wing: petAt(-2, -4, -40, 1, petPlate) + petAt(4, 12, -68, .8, petPlate),
+  // a thick tail lying to the right, tip curling up, two small plates on top
+  tail: petAt(18, -12, 12, .5, petPlateS) + petAt(34, -18, 36, .42, petPlateS) +
+    petVol('M0-13C16-13 30-12 40-18C46-22 50-28 52-34C58-26 57-14 48-6C36 5 18 12 0 12Z',
+      'M0-13C16-13 29-13 38-19C44-23 48-28 50-33C54-25 52-17 45-10C34-1 17 6 0 6Z', 'b') + petGl('M4-8C16-8 27-9 35-14', 2.8, .3),
+  // a stubby arm, shoulder at (0, 0), with two cream claws
+  arm: petVol('M3-3C-4-2-10 5-10 13C-10 19-3 20-1 15C1 11 4 6 6 0Z', 'M2-4C-4-3-9 4-9 11C-9 16-4 17-2 13C0 9 3 5 4-1Z', 'b') +
+    '<circle cx="-7.5" cy="14.5" r="2.1" fill="var(--pc-l)"/><circle cx="-3" cy="15.5" r="2.1" fill="var(--pc-l)"/>',
+  body: P => {
+    const [x, y, rx, ry] = P.body, r = petR1;
+    return `<path d="${petBlob(x, y, rx, ry)}" fill="var(--pc-b2)"/><path d="${petBlob(x - 1.5, y - 2.5, rx - 2, ry - 2.5)}" fill="var(--pc-b)"/>` +
+      petHi(r(x - rx * .5), r(y - ry * .3), r(rx * .2), r(ry * .34), 20, .25) +
+      [[-.72, .08, .11], [.7, -.25, .1], [.62, -.55, .06]].map(([a, b, s]) =>
+        `<ellipse cx="${r(x + a * rx)}" cy="${r(y + b * ry)}" rx="${r(rx * s)}" ry="${r(rx * s * .75)}" fill="var(--pc-b2)"/>`).join('') +
+      [-1, 1].map(s => {
+        const fx = r(x + s * rx * .5), fy = y + ry - 3, w = r(rx * .46), h = r(rx * .28);
+        return `<ellipse cx="${fx + 1}" cy="${fy + 1}" rx="${w}" ry="${h}" fill="var(--pc-b3)"/><ellipse cx="${fx}" cy="${fy}" rx="${w}" ry="${h}" fill="var(--pc-b2)"/>` +
+          `<ellipse cx="${r(fx - 1)}" cy="${r(fy - h * .3)}" rx="${r(w * .8)}" ry="${r(h * .6)}" fill="var(--pc-b)"/>` +
+          [-1, 0, 1].map(t => `<circle cx="${r(fx + t * rx * .19)}" cy="${r(fy + h * .5)}" r="${r(rx * .08)}" fill="var(--pc-l)"/>`).join('');
+      }).join('');
+  },
+  belly: P => {
+    const [x, y, rx, ry] = P.belly, r = petR1;
+    return `<ellipse cx="${x + 1.2}" cy="${y + 1.5}" rx="${rx}" ry="${ry}" fill="var(--pc-l2)"/><ellipse cx="${x - .5}" cy="${y - .5}" rx="${rx - 1.5}" ry="${ry - 1.5}" fill="var(--pc-l)"/>` +
+      `<ellipse cx="${r(x - rx * .3)}" cy="${r(y - ry * .38)}" rx="${r(rx * .38)}" ry="${r(ry * .22)}" transform="rotate(-25 ${r(x - rx * .3)} ${r(y - ry * .38)})" fill="var(--pc-l3)"/>`;
+  },
+  head: P => {
+    const s = P.plate;
+    return '<ellipse cy="33" rx="22" ry="6" fill="var(--pc-b3)" opacity=".35"/>' +
+      petAt(-18, -24, -30, petR1(s * .82), petPlate) + petAt(18, -24, 30, petR1(s * .82), petPlate) + petAt(0, -29, 0, petR1(s * 1.05), petPlate) +
+      '<ellipse cy="3" rx="46" ry="35" fill="var(--pc-b2)"/><ellipse cx="-1.5" cy=".5" rx="44" ry="33" fill="var(--pc-b)"/>' +
+      petHi(-15, -16, 17, 9, -20, .22) + petHi(-25, -19, 5, 3, -30, .55) +
+      '<ellipse cx="21" cy="-20" rx="5.5" ry="4" fill="var(--pc-b2)"/><ellipse cx="32" cy="-8" rx="3.6" ry="2.8" fill="var(--pc-b2)"/>' +
+      '<ellipse cx="10" cy="-27" rx="3.4" ry="2.4" fill="var(--pc-b2)"/>' +
+      '<ellipse cx="1" cy="17.5" rx="27" ry="13.5" fill="var(--pc-l2)"/><ellipse cx="-.5" cy="16.3" rx="26" ry="12.4" fill="var(--pc-l)"/>' +
+      petHi(-10, 10, 7, 3, -10, .7) + '<ellipse cx="-7" cy="8.5" rx="2.4" ry="1.7" fill="var(--pc-l2)"/><ellipse cx="7" cy="8.5" rx="2.4" ry="1.7" fill="var(--pc-l2)"/>';
+  },
+  cheeks: PET_RIG.dragon.cheeks,
+};
+// <<< dino
+
+// >>> bird (yellow and round, orange beak and feet, a feather tuft, wings for arms, a fan tail; the egg sits in a nest)
+// the beak is the mouth: closed, or open by o units with the inside and the tongue showing
+const birdBeak = o => {
+  const r = petR1, lo = o ? petVol(`M-8 ${r(11 + o)}C-5 ${r(20 + o)} 5 ${r(20 + o)} 8 ${r(11 + o)}C4 ${r(13.5 + o)}-4 ${r(13.5 + o)}-8 ${r(11 + o)}Z`,
+    `M-7.5 ${r(10.5 + o)}C-5 ${r(18.5 + o)} 4 ${r(18.5 + o)} 7 ${r(10.5 + o)}C4 ${r(13 + o)}-4 ${r(13 + o)}-7.5 ${r(10.5 + o)}Z`, 'x') +
+    `<ellipse cy="${r(11 + o * .55)}" rx="7.5" ry="${r(o * .55 + 2)}" fill="var(--pc-e)"/><ellipse cx="1" cy="${r(12 + o * .75)}" rx="4.4" ry="${r(Math.min(o * .3 + 1, 3.4))}" fill="var(--pc-t)"/>`
+    : petVol('M-7 11C-4 18 4 18 7 11Z', 'M-6.5 10.5C-4 16.5 3.5 16.5 6 10.5Z', 'x');
+  return lo + petVol('M-11 6C-7 0 7 0 11 6C9 11 4 14 0 15.5C-4 14-9 11-11 6Z', 'M-10.5 5C-7-.5 6 0 9.5 4.5C7.5 9 3.5 12-.5 13.5C-4.5 12-8.5 9-10.5 5Z', 'x') +
+    petHi(-4, 4.2, 4.5, 1.6, -8, .65);
+};
+const birdFace = {};
+for (const m of PET_MOODS) birdFace[m] = [PET_FACE[m][0], birdBeak({ happy: 5, cheer: 9, hungry: 7 }[m] || 0) +
+  (m == 'hungry' ? '<path d="M-5 26q-2.5 5 0 7q2.5-2 0-7Z" fill="var(--pc-d)"/>' : '')];
+// one feather pointing up from (0, 0), about 26 long, tip leaning right
+const birdFeather = '<path d="M-7.5 1C-10-9-6-20 3-27C8-18 9.5-8 7.5 1Z" fill="var(--pc-b)"/><path d="M3-27C8-18 9.5-8 7.5 1L2.5 1C4-8 4.5-18 3-27Z" fill="var(--pc-b2)"/>' +
+  petGl('M-3.5-3C-4.5-9-3-15 0-19', 2.2, .55);
+PET_RIG.bird = {
+  stages: {
+    egg: { egg: 1, head: [100, 116, .6], sh: 50, hat: [100, 66, .68, -8], toy: [146, 158, .6, 10] },
+    baby: { body: [100, 158, 26, 24], belly: [100, 163, 17, 15], head: [100, 106, .97], crest: .62, arm: [78, 145, .62],
+      wing: [80, 150, 1], tail: [118, 174, .62], sh: 34, hat: [100, 73, .74, -6], toy: [132, 160, .58, 10] },
+    kid: { body: [100, 150, 30, 30], belly: [100, 156, 20, 20], head: [100, 91, 1.02], crest: .85, arm: [73, 135, .8],
+      wing: [80, 140, 1], tail: [124, 172, .85], sh: 40, hat: [100, 57, .82, -6], toy: [137, 154, .66, 10] },
+    grown: { body: [100, 139, 36, 40], belly: [100, 147, 24, 28], head: [100, 77, 1.05], crest: 1.15, arm: [66, 117, 1.02],
+      wing: [80, 130, 1], tail: [130, 166, 1.2], sh: 48, hat: [100, 42, .9, -6], toy: [147, 146, .76, 10] },
+  },
+  // a speckled egg sitting in a straw nest
+  egg: '<path d="M50 152C52 140 148 140 150 152Z" fill="var(--pc-n2)"/>' + petShell(38, 47, 118) +
+    [[84, 96, 2.6], [110, 88, 2], [122, 112, 3], [80, 128, 2.2], [104, 136, 2.8], [126, 140, 2], [96, 112, 1.6], [70, 112, 1.8]].map(([x, y, r]) =>
+      `<circle cx="${x}" cy="${y}" r="${r}" fill="var(--pc-n)"/>`).join('') + petHi(82, 96, 8, 15, 22, .75) + petHi(90, 78, 3.5, 2.6, 0, .9) +
+    petVol('M44 148C48 170 72 184 100 184C128 184 152 170 156 148C140 158 122 162 100 162C78 162 60 158 44 148Z',
+      'M45 146C50 166 72 180 99 180C126 180 148 166 153 146C138 155 120 158 99 158C78 158 60 155 45 146Z', 'n') +
+    '<path d="M56 160C70 168 86 170 100 170M60 168C74 175 92 176 112 174M120 168C132 166 142 162 148 156M88 162C104 164 122 162 138 158" fill="none" stroke="var(--pc-n3)" stroke-width="2.2" stroke-linecap="round" opacity=".8"/>',
+  wing: '',
+  // a fan of three feathers, root at (0, 0), spreading up and to the right
+  tail: petVol('M0-7C8-15 19-24 29-25C34-25 35-20 32-17C37-17 39-12 35-9C39-7 39-2 34 0C25 4 11 7 0 7Z',
+    'M0-7C8-15 19-23 28-24C32-24 33-20 30-17.5C34-17 36-13 33-10C36-8 36-4 32-2.5C24 1 11 3 0 3Z', 'b') +
+    '<path d="M10-4C17-8 23-13 28-18M12 0C20-2 27-6 32-9" fill="none" stroke="var(--pc-b2)" stroke-width="1.8" stroke-linecap="round" opacity=".8"/>' +
+    petGl('M5-8C12-14 19-19 25-21', 2.2, .45),
+  // a wing for an arm: shoulder at (0, 0), feather tips at the bottom
+  arm: petVol('M5-5C-5-7-15 2-18 14C-20 22-17 30-12 33C-11 29-8 28-6 30C-5 26-2 25 0 27C1 20 6 8 5-5Z',
+    'M3-6C-6-7-14 1-16 12C-17 19-15 25-11 28C-10 25-7 24-5 26C-4 22-2 21 0 22C1 16 4 6 3-6Z', 'b') +
+    '<path d="M-9 8C-12 13-13 18-12 23M-4 9C-6 14-6 18-5 22" fill="none" stroke="var(--pc-b2)" stroke-width="1.8" stroke-linecap="round" opacity=".8"/>' +
+    petGl('M-1-2C-7 0-11 5-12 11', 2.2, .4),
+  body: P => {
+    const [x, y, rx, ry] = P.body, r = petR1;
+    return `<path d="${petBlob(x, y, rx, ry)}" fill="var(--pc-b2)"/><path d="${petBlob(x - 1.5, y - 2.5, rx - 2, ry - 2.5)}" fill="var(--pc-b)"/>` +
+      petHi(r(x - rx * .5), r(y - ry * .3), r(rx * .2), r(ry * .34), 20, .25) +
+      [-1, 1].map(s => {
+        const fx = r(x + s * rx * .36), fy = r(y + ry - 1), t = r(rx * .15);
+        return [-1, 0, 1].map(k => {
+          const cx = r(fx + k * t * 1.15), a = k * 28;
+          return `<ellipse cx="${r(cx + .8)}" cy="${r(fy + .8)}" rx="${r(t * .72)}" ry="${r(t * 1.25)}" transform="rotate(${a} ${r(cx + .8)} ${r(fy + .8)})" fill="var(--pc-x2)"/>` +
+            `<ellipse cx="${cx}" cy="${fy}" rx="${r(t * .6)}" ry="${r(t * 1.1)}" transform="rotate(${a} ${cx} ${fy})" fill="var(--pc-x)"/>`;
+        }).join('');
+      }).join('');
+  },
+  belly: P => {
+    const [x, y, rx, ry] = P.belly, r = petR1;
+    return `<ellipse cx="${x + 1.2}" cy="${y + 1.5}" rx="${rx}" ry="${ry}" fill="var(--pc-l2)"/><ellipse cx="${x - .5}" cy="${y - .5}" rx="${rx - 1.5}" ry="${ry - 1.5}" fill="var(--pc-l)"/>` +
+      [[-.3, -.2], [.3, -.2], [0, .25], [-.45, .3], [.45, .3]].map(([a, b]) => {
+        const cx = r(x + a * rx), cy = r(y + b * ry), w = r(rx * .16);
+        return `<path d="M${r(cx - w)} ${cy}Q${cx} ${r(cy + w * 1.1)} ${r(cx + w)} ${cy}" fill="none" stroke="var(--pc-l2)" stroke-width="2.2" stroke-linecap="round"/>`;
+      }).join('') + petHi(r(x - rx * .35), r(y - ry * .5), r(rx * .3), r(ry * .16), -25, .8);
+  },
+  head: P => {
+    const c = P.crest;
+    return '<ellipse cy="33" rx="20" ry="6" fill="var(--pc-b3)" opacity=".3"/>' +
+      [[-22, .8], [24, .78], [0, 1.08]].map(([a, s]) => petAt(a * .3, -31, a, petR1(c * s), birdFeather)).join('') +
+      '<ellipse cy="2" rx="41" ry="37" fill="var(--pc-b2)"/><ellipse cx="-1.5" cy="-.5" rx="39" ry="35" fill="var(--pc-b)"/>' +
+      petHi(-14, -17, 16, 9, -20, .3) + petHi(-23, -20, 5, 3, -30, .6);
+  },
+  face: birdFace,
+  cheeks: [-28, 28].map(x => `<ellipse cx="${x}" cy="10" rx="6.5" ry="4.2" fill="var(--pc-ck)" opacity=".9"/><ellipse cx="${x}" cy="10.5" rx="4.6" ry="2.8" fill="var(--pc-t)" opacity=".3"/>`).join(''),
+};
+// <<< bird
+
+// >>> ocean (sea pal: a little aqua whale with a white chin and belly, blue fins, light spots and a tail fluke)
+// a fin standing on (0, 0), about 20 high, leaning back to the right
+const seaFin = petVol('M-9 2C-7-10 2-20 13-22C9-14 9-6 10 2Z', 'M-8 0C-6-10 2-18 10.5-19.5C7-13 7-6 8 0Z', 'p') + petGl('M-4-3C-2-9 2-13 6-16', 2, .45);
+PET_RIG.ocean = {
+  stages: {
+    egg: { egg: 1, head: [100, 126, .66], sh: 40, hat: [100, 72, .72, -8], toy: [148, 162, .62, 10] },
+    baby: { body: [100, 157, 27, 25], belly: [100, 162, 17, 16], head: [100, 102, .96], fin: .62, arm: [79, 146, .7],
+      wing: [80, 150, 1], tail: [114, 172, .6], sh: 36, hat: [100, 71, .74, -6], toy: [133, 162, .6, 10] },
+    kid: { body: [100, 148, 31, 32], belly: [100, 154, 20, 21], head: [100, 84, 1.02], fin: .85, arm: [73, 136, .88],
+      wing: [80, 140, 1], tail: [118, 170, .86], sh: 42, hat: [100, 51, .82, -6], toy: [138, 155, .68, 10] },
+    grown: { body: [100, 138, 38, 42], belly: [100, 146, 25, 29], head: [100, 70, 1.06], fin: 1.1, arm: [65, 121, 1.1],
+      wing: [80, 130, 1], tail: [124, 164, 1.26], sh: 52, hat: [100, 35, .9, -6], toy: [148, 148, .78, 10] },
+  },
+  // an aqua egg with white waves and two bubbles
+  egg: petShell(45, 55, 124) +
+    [96, 132, 160].map(y => `<path d="M${y == 132 ? 56 : 60} ${y}q8-7 16 0t16 0t16 0t16 0t16 0" fill="none" stroke="var(--pc-l)" stroke-width="4.5" stroke-linecap="round" opacity=".85"/>`).join('') +
+    petShellHi + [[150, 92, 6], [158, 72, 4]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="var(--pc-b1)" opacity=".8"/>` +
+      `<circle cx="${x - r * .35}" cy="${y - r * .35}" r="${petR1(r * .35)}" fill="var(--pc-w)"/>`).join(''),
+  wing: '',
+  // the tail: a stalk curling up behind on the right, ending in a two-lobed fluke
+  tail: petVol('M0-9C14-9 24-12 30-24L39-20C35-4 18 10 0 10Z', 'M0-9C14-9 23-13 29-24L35-22C31-8 16 4 0 4Z', 'b') +
+    petAt(34, -22, -20, 1, petVol('M0 2C-6-6-16-10-26-9C-20-4-14 2-12 8C-6 6-2 4 0 2ZM0 2C2-8 2-18-4-26C2-26 14-20 20-10C14-8 6-4 0 2Z',
+      'M-1 0C-6-6-15-9-23-8.5C-18-4-13 1-11 6C-6 4-3 2-1 0ZM-1 0C1-8 0-16-4-23C2-22 11-17 16-10C11-8 5-4-1 0Z', 'p')) +
+    petGl('M4-5C14-5 21-8 26-16', 2.4, .3),
+  // a flipper, shoulder at (0, 0)
+  arm: petVol('M6-4C-4-4-14 4-18 15C-20 22-17 27-12 26C-6 24 0 15 7 2Z', 'M5-5C-4-5-13 3-16.5 13C-18 19-15.5 23-11.5 22C-6 20-1 13 5.5 0Z', 'p') +
+    petGl('M0-1C-6 2-11 8-13 14', 2.2, .4),
+  body: P => {
+    const [x, y, rx, ry] = P.body, r = petR1;
+    return `<path d="${petBlob(x, y, rx, ry)}" fill="var(--pc-b2)"/><path d="${petBlob(x - 1.5, y - 2.5, rx - 2, ry - 2.5)}" fill="var(--pc-b)"/>` +
+      petHi(r(x - rx * .5), r(y - ry * .3), r(rx * .2), r(ry * .34), 20, .25) +
+      [[-.78, -.1, .07], [-.66, -.42, .05], [.74, -.3, .06], [.8, .06, .045]].map(([a, b, s]) =>
+        `<circle cx="${r(x + a * rx)}" cy="${r(y + b * ry)}" r="${r(rx * s)}" fill="var(--pc-b1)"/>`).join('') +
+      // flipper feet, pointing out
+      [-1, 1].map(s => {
+        const fx = r(x + s * rx * .52), fy = y + ry - 2.5, w = r(rx * .44), h = r(rx * .22), a = s * 10;
+        return `<ellipse cx="${fx + 1}" cy="${fy + 1}" rx="${w}" ry="${h}" transform="rotate(${a} ${fx + 1} ${fy + 1})" fill="var(--pc-p2)"/>` +
+          `<ellipse cx="${r(fx - .5)}" cy="${r(fy - .8)}" rx="${r(w - 1.2)}" ry="${r(h - 1)}" transform="rotate(${a} ${r(fx - .5)} ${r(fy - .8)})" fill="var(--pc-p)"/>` +
+          petHi(r(fx - w * .3), r(fy - h * .35), r(w * .35), r(h * .25), a, .4);
+      }).join('');
+  },
+  belly: P => {
+    const [x, y, rx, ry] = P.belly, r = petR1;
+    return `<ellipse cx="${x + 1.2}" cy="${y + 1.5}" rx="${rx}" ry="${ry}" fill="var(--pc-l2)"/><ellipse cx="${x - .5}" cy="${y - .5}" rx="${rx - 1.5}" ry="${ry - 1.5}" fill="var(--pc-l)"/>` +
+      [-.4, 0, .4].map(f => `<path d="M${r(x + rx * f)} ${r(y - ry * .45)}Q${r(x + rx * f * 1.2)} ${y} ${r(x + rx * f)} ${r(y + ry * .55)}" fill="none" stroke="var(--pc-l2)" stroke-width="2.2" stroke-linecap="round"/>`).join('');
+  },
+  head: P => {
+    const f = P.fin, ear = petAt(-39, 0, -84, petR1(f * .85), seaFin);
+    return '<ellipse cy="33" rx="22" ry="6" fill="var(--pc-b3)" opacity=".35"/>' + petAt(-2, -30, 0, petR1(f * 1.15), seaFin) +
+      ear + `<g transform="scale(-1 1)">${ear}</g>` +
+      '<ellipse cy="2" rx="43" ry="36" fill="var(--pc-b2)"/><ellipse cx="-1.5" cy="-.5" rx="41" ry="34" fill="var(--pc-b)"/>' +
+      petHi(-14, -17, 17, 9, -20, .25) + petHi(-23, -20, 5, 3, -30, .55) +
+      '<circle cx="15" cy="-24" r="2.8" fill="var(--pc-b1)"/><circle cx="25" cy="-16" r="2.2" fill="var(--pc-b1)"/><circle cx="24" cy="-27" r="1.8" fill="var(--pc-b1)"/>' +
+      '<ellipse cx="1" cy="18.5" rx="29" ry="15" fill="var(--pc-l2)"/><ellipse cx="-.5" cy="17.3" rx="28" ry="13.8" fill="var(--pc-l)"/>' + petHi(-10, 11, 8, 3, -10, .7);
+  },
+  cheeks: PET_RIG.dragon.cheeks,
+};
+// <<< ocean
+
 // stage name for a stage() number or a name (unknown -> 'kid')
 const petStageName = st => typeof st == 'number' ? PET_STAGES[Math.max(0, Math.min(st, 3))] : PET_STAGES.includes(st) ? st : 'kid';
 
@@ -172,7 +380,7 @@ function petSVG(kind, st = 2, mood = 'idle', o = {}) {
 }
 
 // ---- hooks used by the screens (05-pets.js petAura, 42-paths.js petHTML, 46-home.js setup, 50-round.js growShow) ----
-const petRig = (kind = S.pet) => !!PET_RIG[kind]; // pets not on the rig yet keep their emoji (P4-06 converts them)
+const petRig = (kind = S.pet) => !!PET_RIG[kind]; // true for every pet in PETS since P4-06
 
 // mood from the pet care meters (56-petcare.js): hungry < sleepy (dirty or bored) < happy (all meters 80+) < idle
 function petMood(c) {
@@ -188,7 +396,7 @@ function petRigHTML(st = S.stars, mood) {
   return `<span class="petwrap">${petSVG(S.pet, stage(st), mood || petMood(), { hat: w.hat, toy: w.toy, react: true })}</span>`;
 }
 
-// the bare pet (no wearables), e.g. the growing egg: drawing for rig pets, emoji for the others
-const petArt = (st = S.stars) => petRig() ? petSVG(S.pet, stage(st), 'idle') : petE(st);
+// the bare pet (no wearables), e.g. the growing egg
+const petArt = (st = S.stars) => petSVG(S.pet, stage(st), 'idle');
 // the pet choice at setup: grown and happy
-const petPick = kind => petRig(kind) ? petSVG(kind, 'grown', 'happy') : PETS[kind].s[3];
+const petPick = kind => petSVG(kind, 'grown', 'happy');

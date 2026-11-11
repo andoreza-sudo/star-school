@@ -6,6 +6,13 @@
 .pet-k-dragon{--pc-b:var(--good);--pc-b2:var(--good-ink);--pc-b3:var(--es-shade);
   --pc-l:var(--star);--pc-l2:var(--star-shade);--pc-l3:var(--star-tint);
   --pc-h:var(--try-tint);--pc-h2:var(--star);--pc-x:var(--star-tint);--pc-x2:var(--try-tint);--pc-x3:var(--star-shade);--pc-sh:var(--star-tint);--pc-sh2:var(--try-tint)}
+/* P4-06: dino (blue, cream belly and snout, orange plates), bird (yellow, orange beak and feet, straw nest), sea pal (aqua, white chin, blue fins) */
+.pet-k-dino{--pc-b:var(--ill-blue);--pc-b2:var(--ill-blue-2);--pc-b3:var(--ill-blue-3);--pc-l:var(--ill-cream);--pc-l2:var(--ill-cream-2);--pc-l3:var(--ill-cream-1);
+  --pc-p:var(--ill-orange);--pc-p2:var(--ill-orange-2);--pc-sh:var(--ill-blue-1);--pc-sh2:var(--ill-blue)}
+.pet-k-bird{--pc-b:var(--ill-yellow);--pc-b2:var(--ill-yellow-2);--pc-b3:var(--ill-yellow-3);--pc-l:var(--ill-yellow-1);--pc-l2:var(--ill-yellow);
+  --pc-x:var(--ill-orange);--pc-x2:var(--ill-orange-2);--pc-sh:var(--ill-cream);--pc-sh2:var(--ill-cream-2);--pc-n:var(--ill-tan-2);--pc-n2:var(--ill-brown-2);--pc-n3:var(--ill-tan)}
+.pet-k-ocean{--pc-b:var(--ill-aqua);--pc-b1:var(--ill-aqua-1);--pc-b2:var(--ill-aqua-2);--pc-b3:var(--ill-aqua-3);--pc-l:var(--ill-white);--pc-l2:var(--ill-white-2);
+  --pc-p:var(--ill-blue);--pc-p2:var(--ill-blue-2);--pc-sh:var(--ill-aqua-1);--pc-sh2:var(--ill-aqua)}
 
 /* containers that hold a rig pet (petAura() gives them .rig): no box bob, no shadow; the drawing has its own */
 .rig{text-shadow:none}
