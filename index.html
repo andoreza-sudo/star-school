@@ -1067,6 +1067,7 @@ html.notext .pktxt{display:none}
 /* passage questions (P2-25): the choices sit under the passage panel, so they are compact and the question line stays on screen */
 .choices.bpass{gap:var(--s-2)}
 .choices.wide.bpass .choice.ch{font-size:clamp(17px,2.7vh,22px);padding:6px var(--s-3);min-height:var(--tap);line-height:1.2}
+.choices.bpass:not(.wide) .choice.ch{font-size:clamp(20px,3.2vh,28px);padding:8px var(--s-3);min-height:var(--tap);line-height:1.2} /* short answers (2 x 2 tiles) are compact too (P2-26) */
 @media (orientation:portrait) and (max-height:900px){.bctx-b{max-height:24vh}}
 /* long passages (P2-29, over 700 characters: grade 4 and up): on a tall phone the panel takes less so the question line and four choices stay on screen */
 @media (orientation:portrait) and (max-height:900px){
@@ -2345,7 +2346,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S));SAVE_FAILED=fals
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v87'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v88'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -8555,10 +8556,10 @@ const PATHS={
   {id:'r_reef',g:1,n:'Ocean Reef',e:'🐠',c:'#e0f2fe',nodes:[['sight',3,'Sight Words 3'],['pic',3,'Magic E'],['build',3,'Build Magic E'],['comp',2,'Story Time 2'],['spell',2,'Spell Blends'],['vocab',1,'Opposites'],['gram',1,'Capitals & End Marks']]},
   {id:'r_space',g:2,n:'Space Station',e:'🚀',c:'#ede9fe',nodes:[['pic',4,'Vowel Teams'],['build',4,'Build Vowel Teams'],['sight',4,'Sight Words 4'],['pic',5,'Bossy R'],['build',5,'Build Bossy R'],['spell',3,'Spell Magic E & Teams'],['sent',3,'Build Sentences']]},
   {id:'r_workshop',g:2,n:'Word Workshop',e:'🔧',c:'#fef3c7',nodes:[['sight',5,'Sight Words 5'],['pic',6,'Vowel Teams 2'],['build',6,'Build Vowel Teams 2'],['gram',2,'Parts of Speech'],['vocab',2,'Synonyms'],['sent',4,'Fill the Gap'],['vocab',3,'Compound Words'],['gram',3,'Plurals'],['sent',5,'Sentence Stories'],['comp',3,'Read a Story'],['info',1,'Learn About It']]},
-  {id:'r_summit',g:3,n:'Story Summit',e:'🏔️',c:'#e2e8f0',nodes:[['spell',4,'Spell Tricky Sounds'],['gram',4,'Verb Tenses'],['vocab',4,'Prefixes'],['gram',5,'Contractions & Agreeing'],['vocab',5,'Suffixes']]},
-  {id:'r_library',g:4,n:'Dragon Library',e:'🐉',c:'#fee2e2',nodes:[['spell',5,'Spell Word Parts'],['gram',6,'Pronouns & Look-Alikes'],['vocab',6,'Homophones'],['vocab',7,'Context Clues'],['gram',7,'Commas & Quotes'],['vocab',8,'Figurative Language'],['comp',5,'Longer Stories'],['info',3,'Learn More Facts']]},
+  {id:'r_summit',g:3,n:'Story Summit',e:'🏔️',c:'#e2e8f0',nodes:[['spell',4,'Spell Tricky Sounds'],['gram',4,'Verb Tenses'],['vocab',4,'Prefixes'],['gram',5,'Contractions & Agreeing'],['vocab',5,'Suffixes'],['comp',4,'Read a Story 2'],['info',2,'Learn About It 2']]},
+  {id:'r_library',g:4,n:'Dragon Library',e:'🐉',c:'#fee2e2',nodes:[['spell',5,'Spell Word Parts'],['gram',6,'Pronouns & Look-Alikes'],['vocab',6,'Homophones'],['vocab',7,'Context Clues'],['gram',7,'Commas & Quotes'],['vocab',8,'Figurative Language'],['comp',5,'Read a Story 3'],['info',3,'Learn About It 3']]},
   {id:'r_island',g:5,n:'Author Island',e:'🏝️',c:'#fef9c3',nodes:[['spell',6,'Spell Big Words'],['gram',8,'More Parts of Speech'],['vocab',9,'Word Roots']]},
-  {id:'r_legend',g:6,n:'Legend Lab',e:'🏰',c:'#f3e8ff',nodes:[['spell',7,'Spell Tough Words'],['gram',9,'Sentence Craft'],['vocab',10,'Analogies'],['comp',7,'Read a Story 6'],['info',5,'Learn About It 6']]}]},
+  {id:'r_legend',g:6,n:'Legend Lab',e:'🏰',c:'#f3e8ff',nodes:[['spell',7,'Spell Tough Words'],['gram',9,'Sentence Craft'],['vocab',10,'Analogies'],['comp',7,'Read a Story 5'],['info',5,'Learn About It 5']]}]},
  es:{n:'Spanish Adventure',e:'🌮',c:'linear-gradient(135deg,#dcfce7,#fef9c3)',byLevel:true,worlds:[
   {id:'e_plaza',g:-1,n:'Hola Plaza',e:'🌮',c:'#fef9c3',nodes:[['es_greet',1,'¡Hola! Listen'],['es_color',1,'Colors'],['es_num',1,'Numbers 1–10'],['es_animal',1,'Animals'],['es_greet',2,'¡Hola! Read'],['es_color',2,'Read Colors'],['es_num',2,'Read Numbers'],['es_animal',2,'Read Animals']]},
   {id:'e_fiesta',g:-1,n:'Fiesta Island',e:'🪅',c:'#ffedd5',nodes:[['es_food',1,'Food'],['es_body',1,'My Body'],['es_family',1,'Family'],['es_teen',1,'Numbers 11–20'],['es_food',2,'Read Food'],['es_body',2,'Read Body'],['es_family',2,'Read Family'],['es_teen',2,'Read 11–20']]},
@@ -9164,7 +9165,7 @@ function home(first){
   <div class="scroll hm" id="hs"><div class="hm-cols">
    <div class="hm-col">${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
-   <p class="hm-ver">${ico('star', 16)}<span>Star School v87</span></p></div>`);
+   <p class="hm-ver">${ico('star', 16)}<span>Star School v88</span></p></div>`);
   music(true);
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,['💖','✨','⭐']);
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
@@ -12294,7 +12295,7 @@ function grown(){let armed=false;
    <div class="vline"><span class="vtxt">Give a bonus</span><button class="btn xs" id="pt5">+5 min</button><button class="btn xs danger" id="pt0">Empty bank</button></div>
    <label class="tg"><input type="checkbox" id="ptp" ${ptCfg().pause?'checked':''}> Pause game time (games locked)</label></div>
   <div class="card"><div class="tw"><table><tr><th>Skill</th><th>Rounds</th><th>1st try</th><th>Tricky ones</th></tr>${rows}</table></div></div>
-  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v87 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
+  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v88 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
    Storage: ${SAVE_FAILED?'<b style="color:#c0392b">could not save (device storage may be full)</b>':'saving OK'}${SAVE_CORRUPT?'<br><b style="color:#c0392b">The old save could not be read. A fresh start was made and the old data was kept on the device.</b>':''}<br>
    Last errors: ${(S.err||[]).length?(S.err||[]).slice().reverse().map(e=>'<br>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+' '+esc(e.msg)).join(''):'none'}</div></details>
   <div class="card"><label class="tg"><input type="checkbox" id="voice" ${S.voice?'checked':''}> Read questions out loud</label>
@@ -12816,6 +12817,234 @@ compAdd([
    d:['So they can swim faster','Because the middle is empty','To look for more fish'],ev:[5,6,7]}]}
 ]);
 
+// ---- grade 3: 90-130 words, 5 questions: main idea, detail, cause and effect, vocabulary, character feeling (stories) or text feature (nonfiction) ----
+COMPSPEC[3]={words:[90,130],sent:13,maxSent:18,fk:5,need:['main','detail','cause','vocab']};
+compAdd([
+{id:'g3f01',g:3,type:'f',title:'The Lost Book',text:[
+  'Nina\'s library book was due on Friday, but it was not in her bag.',
+  'She looked under her bed and behind the couch.',
+  'She even checked the refrigerator, because she had been hungry the last time she read it.',
+  'Nina felt worried, since she had promised the librarian she would be on time.',
+  'Then she heard giggles from the next room.',
+  'Her little brother Leo had stacked blocks into a tall tower, and the book was its roof.',
+  '"I needed something flat," he said.',
+  'Nina smiled and carefully lifted the book away.',
+  'The tower wobbled, so she helped him build a new roof from a cookie tray.',
+  'She returned the book on Thursday, one day early.'],
+ qs:[
+  {t:'main',q:'What is this story mostly about?',a:'Nina searches for a lost book and finds it',
+   d:['Nina and Leo build the tallest tower ever','Nina forgets to visit the library','Leo learns how to read a new book'],ev:[0,1,5,9]},
+  {t:'detail',q:'Where did Nina find the book?',a:'As the roof of a tall tower',
+   d:['Behind the couch','In the refrigerator','Under her bed'],ev:[5]},
+  {t:'cause',q:'Why did Nina feel worried?',a:'She had promised to return the book on time',
+   d:['She was too hungry to read','Her brother was angry with her','The librarian had lost her card'],ev:[0,3]},
+  {t:'vocab',q:'In this story, "wobbled" means...',a:'shook from side to side',
+   d:['fell flat on the floor','grew much taller','turned bright red'],ev:[8]},
+  {t:'feel',q:'How did Nina feel when she could not find her book?',a:'worried that she might be late',
+   d:['proud of her search','sleepy and bored','silly and cheerful'],ev:[3]}]},
+
+{id:'g3f02',g:3,type:'f',title:'Rainy Day Recess',text:[
+  'Rain fell all morning, so recess was moved inside.',
+  'Kai groaned because he had wanted to play soccer.',
+  'The other children sat at their desks with long faces.',
+  '"We have no room to run," said Zoe.',
+  'Kai looked at the chairs, the mats, and a long rope in the supply closet.',
+  '"What if we make a game with these?" he asked.',
+  'Soon the class had built an indoor obstacle course.',
+  'Each child had to crawl under the rope, hop across the mats, and weave around the chairs.',
+  'They timed each other with a clock, and everyone cheered.',
+  'At the end of the day, Kai said it was the best rainy day ever.'],
+ qs:[
+  {t:'main',q:'What is "Rainy Day Recess" mostly about?',a:'A class turns a rainy recess into a fun game',
+   d:['A class waits for the rain to stop','Kai wins a soccer game outside','Zoe teaches the class a new song'],ev:[0,4,6,9]},
+  {t:'detail',q:'What did the children use to time each other?',a:'a clock',
+   d:['a stopwatch','a sand timer','a song'],ev:[8]},
+  {t:'cause',q:'Why did the class have recess inside?',a:'It rained all morning',
+   d:['The playground was being painted','Kai had hurt his foot','The soccer ball was lost'],ev:[0]},
+  {t:'vocab',q:'In this story, "groaned" means...',a:'made a sound of being unhappy',
+   d:['laughed out loud','sang a short tune','asked a question'],ev:[1]},
+  {t:'feel',q:'How did Kai feel at the end of the day?',a:'happy',
+   d:['upset about the rain','tired and grumpy','jealous of Zoe'],ev:[9]}]},
+
+{id:'g3f03',g:3,type:'f',title:'Lemonade for Sale',text:[
+  'Marta set up a lemonade stand on the corner and waited.',
+  'An hour passed, and nobody stopped.',
+  'Then a man bought one cup, took a sip, and made a sour face.',
+  '"It needs more sugar," he said politely.',
+  'Marta tasted it and agreed, so she stirred in three spoonfuls of sugar.',
+  'She also drew a bright sign with big yellow letters.',
+  'Soon a line of neighbors stretched down the sidewalk.',
+  'By afternoon, the pitcher was empty.',
+  'Marta counted her coins and smiled.',
+  'Next time, she planned to taste her lemonade first.'],
+ qs:[
+  {t:'main',q:'What is this story mostly about?',a:'Marta makes her lemonade better',
+   d:['Marta wins a big prize','Marta buys a new stand','A man teaches her to draw'],ev:[1,4,5,6]},
+  {t:'detail',q:'How much sugar did Marta stir in?',a:'three spoonfuls',
+   d:['two spoonfuls','one whole cup','a pinch'],ev:[4]},
+  {t:'cause',q:'Why did Marta add more sugar?',a:'The lemonade tasted too sour',
+   d:['The sign was hard to read','She ran out of cups','Her neighbors asked for ice'],ev:[2,3,4]},
+  {t:'vocab',q:'In this story, "politely" means...',a:'in a kind way',
+   d:['in a loud voice','with a big grin','in a rush'],ev:[3]},
+  {t:'feel',q:'How did Marta feel when she counted her coins?',a:'pleased with her work',
+   d:['worried about the sour taste','angry at the man','too tired to count'],ev:[8]}]},
+
+{id:'g3f04',g:3,type:'f',title:'Eli and the Puppy',text:[
+  'Eli found a small brown puppy shivering near the bus stop.',
+  'It had no collar, so he could not tell who owned it.',
+  'Eli carried the puppy home and gave it a bowl of water.',
+  '"We must find its family," he told his mom.',
+  'Together they made a poster with a drawing of the puppy and their phone number.',
+  'They taped it to the lamp posts along Maple Street.',
+  'That evening, the phone rang.',
+  'A girl named Rosa said her puppy, Pepper, had slipped out the gate.',
+  'When Rosa arrived, Pepper leaped into her arms and licked her chin.',
+  'Eli felt a little sad to say goodbye, but mostly he felt proud.'],
+ qs:[
+  {t:'main',q:'What is this story mostly about?',a:'Eli helps a lost puppy get home',
+   d:['Eli gets a new pet puppy','Rosa teaches Eli to draw','A bus stop is moved to Maple Street'],ev:[0,3,4,8]},
+  {t:'detail',q:'What was on the poster?',a:'a drawing of the puppy',
+   d:['a map of Maple Street','a photo of Rosa','a picture of the bus stop'],ev:[4]},
+  {t:'cause',q:'Why could Eli not tell who owned the puppy?',a:'The puppy had no collar',
+   d:['The puppy ran away from him','Nobody was at the bus stop','His mom said it was too late'],ev:[1]},
+  {t:'vocab',q:'In this story, "shivering" means...',a:'shaking from the cold',
+   d:['running very fast','sleeping on the ground','barking loudly'],ev:[0]},
+  {t:'feel',q:'How did Eli feel at the end of the story?',a:'proud, with a little sadness',
+   d:['bored and sleepy','angry at Rosa','afraid of the puppy'],ev:[9]}]},
+
+{id:'g3f05',g:3,type:'f',title:'Dev\'s Paper Boat',text:[
+  'Dev built a boat from paper for the class boat race.',
+  'He set it on the water, and it sank in a few seconds.',
+  'His teammates frowned, and Dev felt like giving up.',
+  'Then he remembered that wax keeps water out.',
+  'He rubbed a candle stub along the bottom and sides until they shone.',
+  'When he tried again, the boat floated across the tub.',
+  'Then he added three pennies as cargo, and it still floated.',
+  'The class clapped when his boat crossed the finish line first.',
+  'Dev learned that one small change can fix a big problem.'],
+ qs:[
+  {t:'main',q:'What is this story mostly about?',a:'Dev fixes his boat so that it floats',
+   d:['Dev loses the boat race on purpose','Dev collects pennies from his class','Dev builds a boat out of candles'],ev:[1,3,4,5]},
+  {t:'detail',q:'What did Dev rub on the boat?',a:'a candle stub',
+   d:['a wet sponge','a coat of paint','a piece of tape'],ev:[4]},
+  {t:'cause',q:'Why did the boat float the second time?',a:'The wax kept the water out',
+   d:['The pennies made it heavier','The tub was filled with less water','His teammates held it up'],ev:[3,4,5]},
+  {t:'vocab',q:'In this story, "cargo" means...',a:'things a boat carries',
+   d:['the sails of a boat','a prize for the winner','the front end of a boat'],ev:[6]},
+  {t:'feel',q:'How did Dev feel right after his boat sank?',a:'ready to give up',
+   d:['excited to race','proud of his work','calm and sleepy'],ev:[2]}]},
+
+{id:'g3n01',g:3,type:'n',title:'How Bees Make Honey',text:[
+  'Honey bees make honey from a sweet liquid called nectar.',
+  'First, a worker bee visits flowers and drinks nectar with her long tongue.',
+  'She stores the nectar in a special stomach and flies back to the hive.',
+  'There, other bees mix the nectar in their mouths and pass it along.',
+  'Next, the bees spread the nectar into wax cells.',
+  'They fan their wings to dry it out until it becomes thick honey.',
+  'Finally, they cover each cell with a lid of wax.',
+  'The honey stays safe inside until the bees need food in winter.'],
+ qs:[
+  {t:'main',q:'What is this passage mostly about?',a:'How bees turn nectar into honey',
+   d:['How bees build wax hives','Why flowers grow in spring','How bees keep warm in winter'],ev:[0,1,3,5]},
+  {t:'detail',q:'What does a worker bee use to drink nectar?',a:'her long tongue',
+   d:['her sharp stinger','her wings','her six legs'],ev:[1]},
+  {t:'cause',q:'Why do bees fan their wings over the honey?',a:'To dry it until it is thick',
+   d:['To cool the hive down for winter','To call other bees to the flowers','To keep ants out of the cells'],ev:[5]},
+  {t:'vocab',q:'In this passage, the "hive" is...',a:'the home where bees live',
+   d:['a flower that makes nectar','a tool for making wax','a kind of honey'],ev:[2]},
+  {t:'feature',q:'The words "First," "Next," and "Finally" are used to show...',a:'the order of the steps',
+   d:['which bee is the biggest','where the flowers grow','how much honey is made'],ev:[1,4,6]}]},
+
+{id:'g3n02',g:3,type:'n',title:'Shapes of the Moon',text:[
+  'The Moon does not make its own light.',
+  'It shines because it reflects light from the Sun.',
+  'The Sun always lights up half of the Moon.',
+  'As the Moon travels around Earth, we see different amounts of that bright half.',
+  'This is why the Moon seems to change shape.',
+  'When we see the whole bright half, it is called a full moon.',
+  'When the bright half faces away from us, we cannot see it, and that is a new moon.',
+  'It takes about one month for the Moon to go through all of its shapes.',
+  'Then the pattern begins again.'],
+ qs:[
+  {t:'main',q:'What is this passage mostly about?',a:'Why the Moon changes shape',
+   d:['How the Sun makes its own light','How far away the Moon is from Earth','Why the Sun rises each morning'],ev:[3,4,7]},
+  {t:'detail',q:'What does the Moon reflect?',a:'light from the Sun',
+   d:['heat from Earth','light from the stars','water from the sea'],ev:[1]},
+  {t:'cause',q:'Why does the Moon seem to change shape?',a:'We see more or less of its bright half as it moves',
+   d:['Earth blocks the Moon every night','The Moon makes less light each week','Clouds cover part of the Moon'],ev:[3,4]},
+  {t:'vocab',q:'In this passage, "reflects" means...',a:'bounces back',
+   d:['gives away','soaks up','turns off'],ev:[1]},
+  {t:'feature',q:'What does the title tell the reader?',a:'It explains why the Moon changes',
+   d:['It tells a story about a girl','It lists the planets in order','It shows how to make a telescope'],ev:[4]}]},
+
+{id:'g3n03',g:3,type:'n',title:'Rain Forest Layers',text:[
+  'A rain forest has four layers, and each one is home to different living things.',
+  'The tallest trees poke out above the rest in the top layer, called the emergent layer.',
+  'Below it is the canopy, where leaves grow so thick that they form a green roof.',
+  'Many monkeys, birds, and frogs live in the canopy.',
+  'The understory is darker and has small trees and bushes.',
+  'On the forest floor, it is dim and damp.',
+  'Only a little sunlight can get through the thick leaves above.',
+  'Because of this, few plants grow on the ground.',
+  'Fallen leaves rot quickly there and feed the soil.'],
+ qs:[
+  {t:'main',q:'What is this passage mostly about?',a:'The four layers of a rain forest',
+   d:['The animals of a desert','How trees grow from seeds','Why rain forests get so much rain'],ev:[0,2,4,5]},
+  {t:'detail',q:'Which animals live in the canopy?',a:'monkeys, birds, and frogs',
+   d:['snakes, bats, and ants','deer, wolves, and bears','fish, turtles, and crabs'],ev:[3]},
+  {t:'cause',q:'Why do few plants grow on the forest floor?',a:'Only a little sunlight reaches the ground',
+   d:['The soil is too dry','Too many monkeys live there','The trees drop too few leaves'],ev:[6,7]},
+  {t:'vocab',q:'In this passage, "dim" means...',a:'not very bright',
+   d:['very loud','full of animals','hot and dry'],ev:[5]},
+  {t:'feature',q:'How does the passage help you understand the word "canopy"?',a:'It says the leaves form a green roof',
+   d:['It shows a picture of a monkey','It lists the animals that eat leaves','It puts the word in a title'],ev:[2]}]},
+
+{id:'g3n04',g:3,type:'n',title:'How Maps Help Us',text:[
+  'A map is a drawing that shows where places are.',
+  'Most maps have a key that explains the small pictures, called symbols.',
+  'A tree symbol might show a park, and a blue line might show a river.',
+  'Many maps also have a compass rose, which points out north, south, east, and west.',
+  'If you know which way is north, you can tell which way to walk.',
+  'Some maps have a scale, too.',
+  'The scale tells how far a short line on the map is in real life.',
+  'For example, one inch on the map might equal one mile on the ground.',
+  'With these tools, a map can guide you to a place you have never visited.'],
+ qs:[
+  {t:'main',q:'What is this passage mostly about?',a:'The parts of a map and how they help us',
+   d:['How to draw a picture of a park','Why rivers are blue','Where the oldest maps were found'],ev:[0,1,3,5,8]},
+  {t:'detail',q:'What does the key of a map explain?',a:'the small pictures',
+   d:['the names of cities','the age of the map','the best road to take'],ev:[1]},
+  {t:'cause',q:'Why is a compass rose useful?',a:'It shows which way is north, south, east, and west',
+   d:['It tells how long a trip will take','It shows where the rivers begin','It lists the streets in order'],ev:[3,4]},
+  {t:'vocab',q:'In this passage, "symbols" are...',a:'small pictures that stand for things',
+   d:['long roads between towns','the names of mapmakers','words printed in red'],ev:[1]},
+  {t:'feature',q:'Which part of a map tells how far apart two places are?',a:'the scale',
+   d:['the key','the compass rose','the title'],ev:[5,6]}]},
+
+{id:'g3n05',g:3,type:'n',title:'How Seeds Travel',text:[
+  'Plants cannot walk, so their seeds need other ways to travel.',
+  'Some seeds, like those of the dandelion, have fluffy parts that catch the wind.',
+  'The wind carries them far from the parent plant.',
+  'Other seeds, such as burrs, have tiny hooks.',
+  'These hooks stick to the fur of passing animals.',
+  'The animals carry the seeds along until they brush them off.',
+  'Later, the seeds drop to the ground and begin to grow.',
+  'Coconuts travel by water.',
+  'A coconut can float across the sea and sprout on a faraway beach.',
+  'Moving away gives young plants room to grow.'],
+ qs:[
+  {t:'main',q:'What is this passage mostly about?',a:'Ways that seeds travel to new places',
+   d:['How animals find food in the fur','Why dandelions are yellow','How to plant a garden at home'],ev:[0,1,3,6]},
+  {t:'detail',q:'What do burrs have that lets them stick to fur?',a:'tiny hooks',
+   d:['fluffy parts','a hard shell','sweet juice'],ev:[3,4]},
+  {t:'cause',q:'Why can dandelion seeds travel far?',a:'Their fluffy parts catch the wind',
+   d:['They float on the sea','Animals eat them and fly away','Their roots pull them along'],ev:[1,2]},
+  {t:'vocab',q:'In this passage, "sprout" means...',a:'start to grow',
+   d:['float away','break open','dry out'],ev:[8]},
+  {t:'feature',q:'Why does the writer name the dandelion, the burr, and the coconut?',a:'They are examples of different ways seeds travel',
+   d:['They are the only plants in the world','They are all grown in the same garden','They are the largest seeds'],ev:[1,3,7]}]}
+]);
+
 // ---- grade 4 (P2-27): 130-180 words, 5 questions: main idea, inference, summary choice, vocabulary, and theme (fiction) or text structure (nonfiction) ----
 // comp level 5 (fiction), info level 3 (nonfiction)
 COMPSPEC[4]={words:[130,180],sent:17,maxSent:24,fk:7,need:{f:['main','infer','summary','vocab','theme'],n:['main','infer','summary','vocab','structure']}};
@@ -12931,28 +13160,29 @@ compAdd([
   {t:'theme',q:'Which lesson does this story teach?',a:'Sharing what you do well can help you make friends',
    d:['It is best to eat lunch alone','Science fair posters are the best part of every school day','Being new is always easy for everyone'],ev:[2,6,7,9]}]},
 
-{id:'g4n01',g:4,type:'n',title:'How Bees Make Honey',text:[
-  'Honey begins in a flower.',
-  'A worker bee visits many flowers and sips a sweet liquid called nectar.',
-  'She carries the nectar home in a small pouch in her body.',
-  'At the hive, she passes the nectar to another bee, and that bee passes it along to others.',
-  'Each bee chews the nectar for a while, and the chewing begins to change it into a thick syrup.',
-  'Next, the bees spread the syrup into small wax cells.',
-  'They fan their wings over the cells to dry out the extra water.',
-  'When the syrup is thick enough, the bees seal each cell with a wax cap.',
-  'Now the honey can be stored for months, and it will feed the hive in winter when few flowers are blooming.',
-  'It takes the work of many bees to fill even one jar.'],
+{id:'g4n01',g:4,type:'n',title:'How Paper Is Made',text:[
+  'Most paper starts as a tree.',
+  'First, workers cut logs into small chips about the size of a coin.',
+  'The chips are cooked in water and chemicals until they break apart.',
+  'This makes a wet, mushy mix called pulp.',
+  'Next, the pulp is washed, and sometimes it is bleached to make it white.',
+  'Then it is spread in a thin layer on a long moving screen.',
+  'Water drips through the tiny holes in the screen, but the wood fibers stay on top.',
+  'Heavy rollers press the layer flat and squeeze out more water.',
+  'After that, hot rollers dry the sheet until it is stiff.',
+  'The fibers lock together as they dry, and that is what makes paper strong.',
+  'Finally, the long sheet is rolled up and cut into smaller pieces.',
+  'Many mills also mix old paper into the pulp, which saves trees.'],
  qs:[
-  {t:'main',q:'What is this passage mostly about?',a:'How bees make honey',
-   d:['How bees build their wax hives in spring','Why bees visit flowers for fun','What bees eat when they fly south'],ev:[1,4,6,7]},
-  {t:'infer',q:'Why does it take so many bees to fill even one jar with honey?',a:'Making honey has many steps, and each needs workers',
-   d:['A lone bee cannot fly far from the hive','Flowers only open when many bees are near','The wax caps are too heavy for one small bee to carry alone'],ev:[3,4,5,9]},
-  {t:'summary',q:'Which sentence is the best summary of the passage?',a:'Bees turn nectar into honey in steps',
-   d:['Bees visit flowers in spring and rest all winter','Bees fan the hive to make it cool for sleeping','Honey is made of wax and water mixed together'],ev:[1,4,6,7]},
-  {t:'vocab',q:'In this passage, "seal" means...',a:'close up tightly',d:['open wide','melt down','sort out'],ev:[7]},
-  {t:'structure',q:'How is this passage mostly organized?',a:'In steps that happen in order',
-   d:['By comparing two kinds of bees','By listing problems and then their solutions','By telling about the whole life of one bee'],ev:[1,3,5,7]}]},
-
+  {t:'main',q:'What is this passage mostly about?',a:'How paper is made from trees',
+   d:['Why trees grow so tall','How to fold paper into shapes','Why some paper is white'],ev:[0,1,3,10]},
+  {t:'infer',q:'Why does the screen need tiny holes?',a:'So water can drain while fibers stay',
+   d:['So the pulp turns white','So the rollers can grab the sheet','So the chips get smaller'],ev:[6]},
+  {t:'summary',q:'Which sentence is the best summary of the passage?',a:'Wood is cooked into pulp, then pressed and dried into paper',
+   d:['Trees are cut down and sold as logs','Paper is cut into pieces and sold','Pulp is a wet mix that is hard to use'],ev:[1,3,7,8]},
+  {t:'vocab',q:'In this passage, "pulp" means...',a:'a wet, mushy mix of wood',d:['a hard wooden chip','a thin dry sheet','a heavy metal roller'],ev:[3]},
+  {t:'structure',q:'How is this passage mostly organized?',a:'It tells steps in time order',
+   d:['It compares two kinds of trees','It explains a problem and its solution','It describes one place in detail'],ev:[1,4,5,8,10]}]},
 {id:'g4n02',g:4,type:'n',title:'Frogs and Toads',text:[
   'Frogs and toads look alike, and they are close relatives.',
   'Both are amphibians, so both begin life in water as tadpoles and later grow legs and lungs.',
@@ -12975,28 +13205,28 @@ compAdd([
   {t:'structure',q:'How is this passage mostly organized?',a:'It shows how two things are alike and different',
    d:['It tells what happens first, next, and last in time','It names a problem and then solves it','It gives a cause and then lists its effects'],ev:[0,2,3,4]}]},
 
-{id:'g4n03',g:4,type:'n',title:'Why the Moon Changes',text:[
-  'Each night the Moon seems to change shape, but the Moon itself never changes.',
-  'The Moon does not make its own light.',
-  'It shines because sunlight bounces off its surface.',
-  'At any moment, the sun lights up half of the Moon, just as it lights half of Earth.',
-  'The Moon travels in a big circle around Earth, and one trip takes about a month.',
-  'As it moves, we see different amounts of its lit side from Earth.',
-  'When we see the whole bright half, we call it a full moon.',
-  'When the lit side faces away from us, the Moon looks dark, and we call it a new moon.',
-  'Between those times, we see thin slivers and half circles of light.',
-  'So the changing shapes come from where the Moon is on its path, not from any change in the Moon itself.'],
+{id:'g4n03',g:4,type:'n',title:'Why We Have Seasons',text:[
+  'Many places on Earth have warm summers and cold winters.',
+  'Some people think Earth moves closer to the sun in summer, but that is not the reason.',
+  'The real cause is that Earth is tilted.',
+  'Earth spins around an imaginary line called its axis, and that line leans to one side.',
+  'As Earth travels around the sun each year, the lean always points the same way in space.',
+  'For part of the year, the top half of Earth leans toward the sun.',
+  'Sunlight hits that half more directly, and its days are longer, so it has summer.',
+  'At the same time, the bottom half leans away from the sun and has winter.',
+  'Six months later, the two halves trade places.',
+  'That is why it can be summer in Australia while it is winter in Canada.',
+  'Without the tilt, there would be almost no seasons at all.'],
  qs:[
-  {t:'main',q:'What is this passage mostly about?',a:'Why the Moon seems to change shape',
-   d:['How the Moon makes its own light','How long it takes Earth to circle the sun','Why the sun lights up half of Earth'],ev:[0,5,9]},
-  {t:'infer',q:'Even when we see only a thin sliver of the Moon, which statement is true?',a:'The sun is lighting half of it',
-   d:['Half of it has gone missing','It has stopped moving around Earth','It is closer to the sun than usual'],ev:[3,5]},
-  {t:'summary',q:'Which sentence is the best summary of the passage?',a:'The Moon reflects sunlight, and its look changes',
-   d:['The Moon makes its own light and slowly shrinks','The sun heats the Moon until it glows at night','Earth\'s shadow covers a new part of the Moon each night'],ev:[2,4,5,9]},
-  {t:'vocab',q:'In this passage, "surface" means...',a:'the top, outer part',d:['the deep inside','the long shadow','the bright tail'],ev:[2]},
-  {t:'structure',q:'How is this passage mostly organized?',a:'It explains a cause and what it makes happen',
-   d:['It lists steps for making something','It compares the Moon and the sun','It tells about a problem and how it was solved'],ev:[4,5,9]}]},
-
+  {t:'main',q:'What is this passage mostly about?',a:'Why Earth has seasons',
+   d:['How fast Earth spins each day','Why the sun is so hot','How people travel to Australia'],ev:[2,5,6,7]},
+  {t:'infer',q:'A town in the bottom half of Earth is having summer. What is true about the top half?',a:'It is having winter',
+   d:['It is having summer too','It has stopped spinning','It is closer to the sun'],ev:[5,7,8]},
+  {t:'summary',q:'Which sentence is the best summary of the passage?',a:'Earth\'s tilt makes each half face the sun at different times',
+   d:['Earth moves closer to the sun every summer','The sun gets hotter in summer and cooler in winter','Australia and Canada always have the same weather'],ev:[2,4,5,8]},
+  {t:'vocab',q:'In this passage, "axis" means...',a:'an imaginary line Earth spins around',d:['a path around the sun','a kind of season','a line on a map'],ev:[3]},
+  {t:'structure',q:'How is this passage mostly organized?',a:'It explains a cause and its effects',
+   d:['It lists steps for making something','It tells a story about a family trip','It describes one animal using facts'],ev:[2,6,7,10]}]},
 {id:'g4n04',g:4,type:'n',title:'Lighthouses',text:[
   'Long ago, sailors faced a big problem at night.',
   'Rocky coasts were hard to see in the dark, and ships could crash into hidden rocks.',

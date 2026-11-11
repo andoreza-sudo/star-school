@@ -92,7 +92,7 @@ run('skills: every level is reachable from some node',()=>{
   const used=new Set(),p=[];
   for(const path in GEN.nodes)for(const n of GEN.nodes[path])used.add(n.sk+':'+n.lv);
   // Levels reserved for P2-04 (Treasure Bay: arr 1, story 4). They have no stop yet; until P2-04 ships they ask like the next level up.
-  const RESERVED={frac:[6,7,8],comp:[4,6],info:[2,4]}; // arr 1 and story 4 are Treasure Bay's (P2-04); frac 6-8 get their stops in P2-10 (frac 1 is Clock Tower's) // comp 4 and info 2 (grade 3) have no passages in this chunk; their stops come with P2-26
+  const RESERVED={frac:[6,7,8],comp:[6],info:[4]}; // arr 1 and story 4 are Treasure Bay's (P2-04); frac 6-8 get their stops in P2-10 (frac 1 is Clock Tower's) // comp 4 and info 2 (grade 3) have no passages in this chunk; their stops come with P2-26
   for(const id in GEN.skills)for(let lv=1;lv<=GEN.skills[id].max;lv++)if(!used.has(id+':'+lv)&&!(RESERVED[id]||[]).includes(lv))p.push(id+' level '+lv+' has no map node');
   return{problems:p};
 });
@@ -4236,7 +4236,7 @@ run('vocabulary P2-22: bank validates, one right answer per item, 3000 questions
     if(rd!=='1@r_reef 2@r_workshop 3@r_workshop 4@r_summit 5@r_summit')bad('vocab stops: '+rd);
     const wst=id=>NODES.read.filter(n=>n.wid==id&&n.sk!='boss').map(nid);
     if(wst('r_reef').slice(0,6).join(' ')!=='sight3 pic3 build3 comp2 spell2 vocab1')bad('r_reef order: '+wst('r_reef'));
-    if(wst('r_summit').filter(x=>!x.startsWith('gram')).join(' ')!=='spell4 vocab4 vocab5')bad('r_summit order: '+wst('r_summit')); // gram stops (P2-20) sit between, per CURRICULUM 2
+    if(wst('r_summit').filter(x=>!x.startsWith('gram')&&!x.startsWith('comp')&&!x.startsWith('info')).join(' ')!=='spell4 vocab4 vocab5')bad('r_summit order: '+wst('r_summit')); // gram stops (P2-20) sit between, per CURRICULUM 2
     // save safety: the reading path without the five stops against today's
     const store={};
     global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
@@ -5753,6 +5753,158 @@ run('Factor Factory P2-09: stops added after Fraction Forest keep every star, no
   };
   const r=eval(js+';('+body.toString()+')()');
   return{problems:uniq(r.bad),note:r.checked+' saves with and without the world'};
+});
+
+// ---- P2-26 3rd grade passages ----
+run('passages grade 3 P2-26: 10 passages, 3rd grade level, every answer supported, 3,000 questions per level, stops comp 4 and info 2 (fixtures)',()=>{
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const body=function(){
+    const out=[],b=m=>{if(out.length<30&&!out.includes(m))out.push(m)};
+    const store={};
+    global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+    const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
+    // 1. data: the grade validator, counts, question types of CURRICULUM E-comp (grade 3)
+    for(const m of compProblems(3))b(m);
+    for(const id of ['comp','info'])for(const m of passageProblems(id))b(m);
+    const g3=COMP.filter(p=>p.g==3);
+    if(g3.length!==10||g3.filter(p=>p.type=='f').length!==5)b('grade 3 needs 5 fiction and 5 nonfiction passages, has '+g3.length);
+    if(g3.reduce((a,p)=>a+p.qs.length,0)!==50)b('grade 3 questions: '+g3.reduce((a,p)=>a+p.qs.length,0));
+    if(g3.map(p=>p.id).join(' ')!=='g3f01 g3f02 g3f03 g3f04 g3f05 g3n01 g3n02 g3n03 g3n04 g3n05')b('grade 3 ids: '+g3.map(p=>p.id));
+    if(new Set(COMP.map(p=>p.id)).size!==COMP.length)b('two passages share an id');
+    if(new Set(COMP.map(p=>p.title)).size!==COMP.length)b('two passages share a title');
+    if(COMPSPEC[3].words[0]<90||COMPSPEC[3].words[1]>130)b('grade 3 word limits are outside CURRICULUM 90-130');
+    for(const p of g3){
+      const ts=p.qs.map(q=>q.t);
+      for(const t of ['main','detail','cause','vocab'])if(!ts.includes(t))b(p.id+': no '+t+' question');
+      if(!ts.includes(p.type=='f'?'feel':'feature'))b(p.id+': needs a '+(p.type=='f'?'character feeling':'text feature')+' question');
+      for(const q of p.qs){
+        const all=[q.a,...q.d].map(x=>x.toLowerCase());
+        if(new Set(all).size!==all.length)b(p.id+': repeated choice in "'+q.q+'"');
+        if(q.d.length!==3)b(p.id+': needs 3 wrong choices in "'+q.q+'"');
+      }
+    }
+    if(PASS.comp.filter(x=>x.lv==4).length!==5||PASS.info.filter(x=>x.lv==2).length!==5)b('PASS levels: comp 4 and info 2 need 5 passages each');
+    if(PASS.comp.filter(x=>x.lv==3).length!==5||PASS.info.filter(x=>x.lv==1).length!==5)b('grade 2 passages moved');
+    if(SK.comp.max<4||SK.info.max<2)b('skills comp/info max: '+SK.comp.max+' '+SK.info.max);
+    if(SK.comp.round(4).length!==10||SK.info.round(2).length!==10)b('comp 4 and info 2 rounds must have 10 questions');
+    // 2. 3,000 questions per level: panel, one right answer, kind validator, hint, label, say
+    const strip=q=>{const c={...q};delete c.sk;delete c.lv;delete c.seed;return JSON.stringify(c)};
+    const N=3000,labels=new Map(),texts=new Set();
+    for(const [sk,lv] of [['comp',4],['info',2]]){
+      for(let i=0;i<N;i++){
+        const q=genQ(sk,lv,i*7919+31),w=sk+lv;
+        if(!q.ctx||!q.ctx.text||!q.ctx.title)b(w+': no passage panel');
+        const vals=q.choices.map(c=>String(c.v));
+        if(vals.filter(v=>v===String(q.ans)).length!==1)b(w+': not exactly one right choice: '+q.label);
+        if(q.choices.length!==4)b(w+': '+q.choices.length+' choices');
+        if(!q.hint||q.hint.k!=='text'||!q.hint.s)b(w+': no hint');
+        if(typeof q.say!=='string'||!q.say.trim())b(w+': no say');
+        if(!q.label||q.label.length>=70)b(w+': label '+q.label);
+        if(labels.has(q.label)&&labels.get(q.label)!==q.ans)b(w+': label '+q.label+' has two answers');
+        labels.set(q.label,q.ans);texts.add(q.ctx.title);
+        for(const m of kindProblems(q))b(w+': '+m);
+        if(i<200){
+          try{KIND.choice.render(q)}catch(e){b(w+': render threw '+e.message)}
+          if(/undefined|NaN|\[object/.test(q.html))b(w+': bad html');
+          if(strip(bankRebuild(q.bk))!==strip(q))b(w+': bankRebuild differs');
+        }
+      }
+    }
+    if(texts.size!==10)b('6,000 samples reached '+texts.size+' of 10 passages');
+    if(labels.size!==50)b('50 questions expected, labels '+labels.size);
+    // 3. hints: quote the evidence for detail and vocabulary, at most 140 characters
+    for(const sk of ['comp','info'])PASS[sk].forEach(p=>{
+      if(p.g!==3)return;
+      const x=COMP.find(c=>c.id==p.id);
+      p.qs.forEach((it,j)=>{
+        if(!it.hint||it.hint.length>140)b(p.id+' q'+j+': hint length');
+        const quote=['detail','sequence','vocab','infer'].includes(it.t);
+        if(quote!==it.hint.startsWith('Look back at the story: "'))b(p.id+' q'+j+' ('+it.t+'): hint '+it.hint);
+        if(quote&&!it.hint.includes(x.text[it.ev[0]]))b(p.id+' q'+j+': hint misses the first evidence sentence');
+      });
+    });
+    // 4. rounds: two passages in order, live play reaches every passage within three rounds; grade 2 rounds unchanged in shape
+    bankRound();
+    for(const [sk,lv,n] of [['comp',4,5],['info',2,5]]){
+      const seen=new Set();
+      for(let r=0;r<3;r++){
+        const rd=compRound(sk,lv),titles=[...new Set(rd.map(q=>q.ctx.title))];
+        if(rd.length!==10||titles.length!==2)b(sk+lv+' round: '+rd.length+' questions, '+titles.length+' passages');
+        titles.forEach(t=>seen.add(t));
+        if(!rd.every(q=>q.sk==sk&&q.lv==lv&&q.seed===rd[0].seed))b(sk+lv+' round: questions not stamped');
+      }
+      if(seen.size!==n)b('three live rounds of '+sk+lv+' reached '+seen.size+' of '+n);
+    }
+    bankReset();
+    // 5. the stops: the last two of Story Summit, after the old stops, titles that fit
+    const NEW=/^(comp4|info2)$/,sm=PATHS.read.worlds.find(w=>w.id=='r_summit');
+    if(!sm)b('Story Summit is missing');
+    else{
+      const ids=sm.nodes.map(n=>n[0]+n[1]),k=ids.indexOf('comp4');
+      if(k<0||ids[k+1]!=='info2'||ids.length!==k+2)b('comp4 and info2 must be the last two stops of Story Summit: '+ids.join(' '));
+      for(const o of ['spell4','vocab4','vocab5'])if(ids.indexOf(o)<0||ids.indexOf(o)>k)b('old stop '+o+' must come first: '+ids.join(' '));
+      if(sm.nodes.some(n=>NEW.test(n[0]+n[1])&&n[2].length>22))b('a new Story Summit stop title is too long');
+    }
+    const cio=NODES.read.filter(n=>n.wid=='r_summit'&&(n.sk=='comp'||n.sk=='info')).map(nid).join(' ');
+    if(cio!=='comp4 info2')b('comp/info stops of r_summit: '+cio);
+    for(const sk of ['comp','info']){const ns=NODES.read.filter(n=>n.sk===sk);
+      ns.forEach((n,i)=>{if(harder(n)!==(ns[i+1]||null)||easier(n)!==(ns[i-1]||null))b('harder/easier must follow map order at '+sk+n.lv)})}
+    // 6. saves: stars are keyed by stop id; compared with a map without the two stops nothing moves or re-locks
+    S.name='Ava';S.buddy='Ben';G={built:[]};
+    const snap=()=>{const o={};NODES.read.forEach((n,i)=>{o[nid(n)]={st:getSt('read',i),open:unlocked('read',i),pass:passed('read',i),prog:worldHasProgress('read',n.wi),nw:stopNew('read',i)}});return o};
+    const ORIG=PATHS.read.worlds;
+    const without=()=>ORIG.map(w=>w.id!=='r_summit'?w:{...w,nodes:w.nodes.filter(n=>!NEW.test(n[0]+n[1]))});
+    let checked=0,moved=0;
+    const compare=label=>{
+      const maps=JSON.stringify(S.maps);
+      const now=snap(),cur=nid(NODES.read[curNode('read')]);
+      PATHS.read.worlds=without();buildNodes('read');
+      const old=snap(),curOld=nid(NODES.read[curNode('read')]);
+      PATHS.read.worlds=ORIG;buildNodes('read');
+      for(const k in old){
+        checked++;
+        if(!now[k]){b(label+': stop '+k+' disappeared');continue}
+        if(now[k].st!==old[k].st)b(label+': stars of '+k+' changed');
+        if(old[k].pass&&!now[k].open)b(label+': passed stop '+k+' re-locked');
+        if(old[k].open&&!now[k].open)b(label+': '+k+' locked by the new stops');
+      }
+      for(const k in now)if(!(k in old)&&NEW.test(k)&&now[k].st)b(label+': new stop '+k+' has stars');
+      if(JSON.stringify(S.maps)!==maps)b(label+': loading changed the map');
+      if(cur!==curOld){
+        moved++;
+        const ok=NEW.test(cur)&&curOld==='boss_r_summit'&&!old['boss_r_summit'].pass;
+        if(!ok)b(label+': map opens on '+cur+' (was '+curOld+')');
+      }
+      return{cur};
+    };
+    for(const name of ['fresh','midway','maxed','tricky','legacy-single-map','legacy-index-maps'])
+      for(const g of [null,0,1,2,3,6]){
+        const raw=fx(name);load(raw.length>2?raw:null);if(g!==null)S.grade=g;
+        compare(name+' g'+g);
+      }
+    // a child who finished Story Summit before the stops existed: both NEW, open, never the current stop, nothing else moves
+    for(const g of [3,4,6]){
+      load(null);S.grade=g;
+      const sw=PATHS.read.worlds.findIndex(w=>w.id=='r_summit');
+      for(const n of NODES.read)if(n.wi<=sw&&!NEW.test(nid(n)))S.maps.read[nid(n)]=2;
+      for(const k of ['comp4','info2'])delete S.maps.read[k];
+      const r=compare('finished Story Summit g'+g);
+      for(const k of ['comp4','info2']){
+        const i=NODES.read.findIndex(n=>nid(n)===k);
+        if(!stopNew('read',i))b(k+' does not show NEW for a finished Story Summit');
+        if(!unlocked('read',i))b(k+' is locked for a finished Story Summit');
+        if(r.cur===k)b(k+' became the current stop of a finished Story Summit');
+      }
+      const before=JSON.parse(JSON.stringify(S.maps.read));
+      setSt('read',NODES.read.findIndex(n=>nid(n)==='comp4'),3);
+      const after=JSON.parse(JSON.stringify(S.maps.read));
+      if(after.comp4!==3||JSON.stringify({...after,comp4:undefined})!==JSON.stringify({...before,comp4:undefined}))b('passing comp4 changed another stop');
+    }
+    return{out,checked,moved,words:g3.map(p=>p.text.flatMap(bankWords).length),fk:g3.map(p=>compFK(p.text))};
+  };
+  const r=eval(js+';('+body.toString()+')()');
+  const mx=a=>Math.max(...a),mn=a=>Math.min(...a);
+  return{problems:r.out,note:'10 passages, 50 questions; words '+mn(r.words)+'-'+mx(r.words)+', reading grade '+mn(r.fk).toFixed(1)+'-'+mx(r.fk).toFixed(1)+'; '+r.checked+' stop checks, current stop moved on '+r.moved+' of 36 loads (only mid-world)'};
 });
 
 // ---- report ----

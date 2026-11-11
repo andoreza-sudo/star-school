@@ -4,9 +4,9 @@ The running record of what has shipped. Newest entry first. Every chunk adds one
 
 **Next up:** P2-24, P2-08, P2-21, P2-23
 
-**Next up:** P2-10, P2-11, P2-26, P2-28
+**Next up:** P2-10, P2-11, P2-28
 
-**Current version:** v87
+**Current version:** v88
 
 ## Chunk status
 
@@ -68,6 +68,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P2-27 v85
 - P2-29 v86
 - P2-09 v87
+- P2-26 v88
 
 ## Handoff notes
 
@@ -75,6 +76,8 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 
 ## Ideas and issues
 
+- (P2-26 merge) Grade 3 and grade 4 each had a near-identical "How Bees Make Honey" passage, and grade 3 and 4 both explained the Moon's phases. Grade 4's two were replaced at merge with "How Paper Is Made" (steps in order) and "Why We Have Seasons" (cause and effect). Grades 2 and 3 still share two topics at different depth (honey bees, the Moon's phases): R-01 should decide whether to keep that as spiral review or replace one. A test that fails on two passages with the same topic word in their titles would catch this next time.
+- (P2-26) Passage stop titles are numbered in map order, like Sight Words: Read a Story / Learn About It (grade 2), then 2 to 5 for grades 3 to 6 (comp 4-7, info 2-5). Titles only; stars are keyed by stop id. Grade passages in d-comp.js are in grade order (none had shipped, so no saved review item points at a position yet); from now on append only.
 - (P4-18) The drawn map costs about 1.4x the old one (stop icons through the sprite `<use>`, drawn boss art, star SVGs, labels on pills): best-of-40 unthrottled draw of a 16-world map went from about 3.2 ms to 4.5 ms; about 32 ms at 6x throttle on a quiet machine, under the 50 ms limit. The smoke map check now takes the second fastest of its 7 draws instead of the median, because with many checks in parallel the median measured the machine's load (it failed at 50-68 ms while the old build measured 25-56 ms beside it). If the map needs to be lighter on real tablets: inline the stop icons, or draw the neighbour worlds' stops without icons.
 - (P2-23) Level 10 'order by strength' (CURRICULUM E-vocab) is a choice item ("Which word means the hottest?", four words from one set, the strongest or the weakest) because `BANKF.order` still has no builder. When one is registered, the 14 sets in `VOC_L10S` can become tile-order items.
 - (P2-23) A word between `*stars*` in a bank prompt now prints bold (`bankTxt` in 37-bank.js; `bankSay` and the label strip the stars). Level 7 context clues use it for the hard word. The label is now cut to stay under 60 letters in all (the question part shrinks, the answer part is cut at 24), which does not change any label that was already short enough.
@@ -280,6 +283,14 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-11) Icons wanted from P4-03: `balloon` (Bonus game, today `gamepad`), `sparkle` / `confetti`, `unlock` (open padlock for "Next stop unlocked", today `map`), `zap` (a lightning with a spark for boss hits; today `bolt`), `sticker` (single sticker for the prize row), `medal` (the prize rosette as an icon), `heart-half` (boss life bar), `chest` (the treasure chest at icon size, e.g. for the round track where renderQ shows the gift emoji).
 
 ## Log
+
+### P2-26 3rd grade passages (v84, 2026-11-11, Claude)
+- What changed: 10 original grade 3 passages appended at the end of `src/data/d-comp.js` (g3f01-g3f05 stories, g3n01-g3n05 nonfiction; 50 questions) with `COMPSPEC[3]` (90-130 words, at most 13 words per sentence on average and 18 in any, Flesch-Kincaid at most 5). Every passage has main idea, detail, cause and effect and vocabulary in context; stories have a character feeling question, nonfiction a text feature question (steps words, title, map parts, how a word is explained). Stories: a lost library book, indoor recess, a lemonade stand, a lost puppy, a paper boat. Nonfiction: how bees make honey, why the Moon changes shape, rain forest layers, parts of a map, how seeds travel. Settled facts only.
+- Skills and map: `SK.comp.max` 4 and `SK.info.max` 2 (38-skills.js); stops `comp 4` (Read a Story 3) and `info 2` (Learn About It 2) are the last two of Story Summit (`r_summit`) in 42-paths.js, after spell 4, gram 4, vocab 4, gram 5, vocab 5. Appended passages only, nothing reordered.
+- Save safety: stars are keyed by stop id, no migration. Test `passages grade 3 P2-26` compares every old stop (stars, passed, open) with a map without the two stops over 6 fixtures x 6 grades, plus a built finished-Story-Summit save at grades 3, 4, 6: no star moves, nothing re-locks, the new stops show NEW and are never the current stop. As in P2-25, a child who has done every old Story Summit stop but not its boss is moved on to comp 4 (it is the next stop).
+- Tests: the P2-25 loop (`compProblems` for every grade with passages) covers grade 3; new check does 3,000 seeded questions each for comp 4 and info 2 (kindProblems, hints, labels, one right choice), hints, rounds and the stop order (filtered to comp/info stops). Changed expectation: the P2-22 `r_summit order` line now also ignores comp/info stops (it checked spell/vocab order only, the gram stops were already ignored). Smoke `// P2-26` plays both stops at 380x780 with real taps: all 10 passages (questions 1 and 5) keep the panel open with the question line, Help and four choices on screen, targets 48 px, no sideways scroll; a 10/10 round saves 3 stars. Shots `story3-comp`, `story3-info`; `compShot` now sets the grade from the level.
+- Layout: the longer passages scroll inside the panel (24vh). Found with the shots and smoke: a two-line passage title, a two-line question or several two-line choices pushed the Help button under the choices, and the 2 x 2 tiles for short answers were large enough to clip the card. Fixes: passage titles of 20 characters or less, short choices (about 30 characters), and a compact tile rule `.choices.bpass:not(.wide)` in 38-bank.css (also applies to grade 2). Keep this in mind for grades 4-6: smoke checks Help against the first choice for every question.
+- Merge: built on a parallel branch, renumbered v87 -> v88 at merge.
 
 ### P2-09 4th grade: world Factor Factory (v88, 2026-11-11, Claude)
 - What changed (CURRICULUM M-4a and 2.1 row 11, ROADMAP P2-09): world `m_factory` (Factor Factory, grade 4, gear icon) right after Fraction Forest, the last math world, with the 14 stops in CURRICULUM order: mfact5 Times 11 & 12, pv4 Place Value to 999,999, mbig2 2-Digit Times 1-Digit, big6 Add 4-Digit Numbers, dbig1 Divide 2-Digit Numbers, mbig3 Big Times 1-Digit, sub8 Take Away Big Numbers, dbig2 Divide with Leftovers, fact1 Factors & Multiples, mbig4 2-Digit Times 2-Digit, big7 Add Big Numbers, dbig3 Divide Big Numbers, fact2 Prime or Composite, round3 Round Big Numbers, then the boss. Stop titles are 22 characters or fewer.
