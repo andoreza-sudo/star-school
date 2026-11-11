@@ -4,12 +4,14 @@ The running record of what has shipped. Newest entry first. Every chunk adds one
 
 **Next up:** P2-24, P2-08, P2-21, P2-23
 
-**Next up:** P2-10, P2-11, P3-01, P3-02
+**Next up:** P2-12, P2-13, P3-08, P3-09, P3-10
+
+**Current version:** v93
 
 **Next up:** P2-11, P2-12, P3-08, P3-09, P3-10
 
-**Current version:** v92
-**Current version:** v92
+**Current version:** v93
+**Current version:** v93
 
 ## Chunk status
 
@@ -76,6 +78,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P2-10 v90
 - P3-01 v91
 - P3-02 v92
+- P2-11 v93
 
 ## Handoff notes
 
@@ -297,6 +300,20 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-11) Icons wanted from P4-03: `balloon` (Bonus game, today `gamepad`), `sparkle` / `confetti`, `unlock` (open padlock for "Next stop unlocked", today `map`), `zap` (a lightning with a spark for boss hits; today `bolt`), `sticker` (single sticker for the prize row), `medal` (the prize rosette as an icon), `heart-half` (boss life bar), `chest` (the treasure chest at icon size, e.g. for the round track where renderQ shows the gift emoji).
 
 ## Log
+
+### P2-11 5th grade: world Volcano Lab (v90, 2026-11-11, Claude)
+- What changed (CURRICULUM M-5a and 2.1 row 13, ROADMAP P2-11): world `m_volcano` (Volcano Lab, grade 5, volcano icon) after `m_factory`, 9 stops in CURRICULUM order: pv5 Decimal Place Value, mbig5 3-Digit Times 2-Digit, dec3 Add/Subtract Decimals, pv6 Powers of Ten, dbig4 Divide by 2-Digit, dec4 Multiply Decimals, round4 Round Decimals, ooo1 Order of Operations, dec5 Divide Decimals (titles 22 characters or less), then the boss.
+- Skills: new `dec` (Decimals, max 5, levels 3-5 only) and `ooo` (Order of Operations, max 1); extended `pv` 4 -> 6, `mbig` 4 -> 5, `dbig` 3 -> 4, `round` 3 -> 4. Every extension is a level dispatcher in `src/js/38-skills.js` that leaves old levels on their old generators (the new test proves the output is identical for 60 seeds per old level). All generators are one block `// ---- P2-11 Volcano Lab ----` at the end of `src/js/35-gen-math-upper.js` (names `vl*`).
+- Levels: pv5 value of an underlined digit (4 choices) / expanded form / words (spoken, with "and" at the point) to a decimal, thousandths; pv6 x and / by 10, 100, 1,000 (whole and decimal), `10^n`, `4.2 x 10^2`; mbig5 3 x 2 digits with the standard algorithm (`stepsMul(a, b, 'std')`), max 6; dbig4 divisors 11-50, 3- and 4-digit dividends, half with a remainder (`sep:'R'`, `stepsDiv`); dec3 add and subtract with ragged places and whole numbers mixed in, vertical (`stepsAdd`, `stepsSub`); dec4 decimal x whole, then tenths x tenths and tenths x hundredths; dec5 decimal / whole, whole / 2, 4, 5, 8 with a decimal quotient, then / tenths (some with a hundredths dividend); round4 whole number, tenth, hundredth (round half up, never an answer ending in 0); ooo1 half "evaluate" (13 expression shapes with parentheses, 2 or 3 operations, every step a whole number, results 1-200) and half "write the expression" (four choices, one matches the sentence).
+- Decimal answers: pad `dec`, `eq:'value'` (so 0.20 and 6.0 are also right), canonical `ans` with no trailing zero ("0.2", "6"); `q.max` is set from the digit count whenever it is over 4. Say text speaks symbols as words ("open parenthesis").
+- New step builders in `src/js/39b-steps.js` (block `// ---- P2-11 decimal multiply and divide`): `stepsDecMul(a, b)` (a "Places" step that counts the places of the answer, then the whole-number steps of `stepsMul` on the digits; the last step asks and says where the point goes) and `stepsDecDiv(a, b)` (for a divisor in tenths, a "multiply both by 10" step; zeros are added to the dividend until it divides evenly, then the `stepsDiv` steps; the last step says where the point goes). Neither shows the answer. New step records: `dp`, `ten`, `dd`.
+- dec 1-2 (Decimal Desert, P2-10) are not here. `dec` has `max: 5`; `vlDecLv` in 35-gen-math-upper.js sends levels 1-2 to the level 3 generator so a call never throws. `skLvEmpty` (37-comp.js) says `dec` levels below 3 are empty (clause marked P2-11), so every test loop skips them, and `tools/test.js` lists `dec:[1,2]` in `RESERVED` (every-level-is-reachable check). When P2-10 lands: delete the `sk=='dec'&&lv<3` clause of `skLvEmpty`, delete `dec:[1,2]` from RESERVED, make `vlDecLv` (and the `dec:` line in 38-skills.js) dispatch levels 1-2 to the P2-10 generators, and keep the three Volcano stops.
+- Tests changed (old -> new) and why: P2-07 "stops in CURRICULUM order" `SK.round.max` 3 -> 4 and P2-09 "stops in CURRICULUM order" `pv` 4 -> 6, `mbig` 4 -> 5, `dbig` 3 -> 4, `round` 3 -> 4 (those skills grew; their own levels are checked unchanged). P2-09 fixtures check: it removes and re-adds Factor Factory to compare maps; it now also removes the worlds after it (`m_desert`, `m_volcano`) first, because a world that opens behind Factor Factory must lock when Factor Factory is added (nothing a child had changes: the new world has no stars). `tools/emoji-allow.txt` got the abacus (Unicode 11, not risky). Smoke P2-09: the check "Factor Factory is the last world" became "has a world before it" because Volcano Lab now follows it.
+- Tests added: "Volcano Lab P2-11: stops ... decimal step builders": stop order, world grade/name/position, 10 stops, names; old levels unchanged; 3,000 seeded questions for each of the 9 levels with the maths recomputed on BigInt (decimal answers compared exactly as normalised strings; sums, differences, products, quotients checked by cross-multiplying; rounding half up; an own order-of-operations parser checks results, whole intermediate values and that exactly one "write" choice matches its sentence), `kindProblems` zero errors, say/label (under 60)/hint/q.max, hints never show the answer (checked on decimals and 3+ digit answers), reproducible, shares of each form; plus 3,000 problems each for `stepsDecMul` and `stepsDecDiv` in the style of the P2-08 check (every number of a step on show, last step asks, whole board rows, no symbols in the spoken text, the steps equal `stepsMul`/`stepsDiv` of the whole numbers, N / B read with p places is exactly a / b). "Volcano Lab P2-11: a world added after Factor Factory ... (fixtures)": 60 saves with and without the world (6 fixtures x 9 grades plus a half played and a finished Factor Factory and a Volcano Lab save): no star moves, nothing re-locks, the map opens where it did.
+- Smoke `// P2-11` (last block of the main sequence, midway fixture, grade 5, 380x780): the world is open with 9 stops; every stop's first question fits (no sideways scroll, keys incl. the decimal point and choices 48 px or more); eight stops played with real taps (pv5, mbig5, dec3, dbig4, dec4, round4, ooo1, dec5), with decimal answers typed on the pad and stars saved; Help tapped through every step on dec4, dec5, mbig5 (button reads Next step, last step asks).
+- Screenshots (`node tools/shots.js vl-map vl-pv5-value vl-pv5-words vl-pv6 vl-mbig5 vl-dec3 vl-dec4 vl-dec5 vl-dbig4 vl-round4 vl-ooo-eval vl-ooo-write vl-steps-dec4 vl-steps-dec5 vl-steps-mbig5`) looked at at 380x780.
+- Merge: built on branch P2-11-volcano from b6dd0b7 in parallel with P2-10 (Decimal Desert). Conflicts to expect: `src/js/38-skills.js` (`dec:` line, `pv`, `mbig`, `dbig`, `round` dispatchers: keep every level of both chunks), `42-paths.js` (m_desert goes between m_factory and m_volcano), `37-comp.js` (`skLvEmpty`), the `RESERVED` line and the `mx` tables in test.js, 35-gen-math-upper.js (both blocks appended). Renumber VER at merge.
+- Merge: built on a parallel branch, renumbered v92 -> v93 at merge.
 
 ### P3-02 Dev-time solver core and sudoku banks (v92, 2026-11-11, Claude)
 - What changed (BRAIN_TEASERS 5.1 and 6): new dev-time folder `tools/puzzles/` (Node, never shipped) with a reusable solver core, the sudoku generator and grader, and the bank tools; generated bank `src/data/d-puz-sudoku.js` (240 puzzles). No UI: the bank is data only and nothing in the app reads it yet (P3-03 does).

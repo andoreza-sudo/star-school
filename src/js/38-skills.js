@@ -37,16 +37,18 @@ const SK={
  arr:{t:'Arrays',e:'🧱',area:'math',max:2,gen:lv=>lv==1?genBayArr1():genArr(lv)},
  mfact:{t:'Times Facts',e:'✖️',area:'math',max:5,gen:lv=>lv==5?fyMfact5():genMfact(lv)}, // 5 Factor Factory
  dfact:{t:'Dividing Facts',e:'÷',area:'math',max:4,gen:genDfact},
- mbig:{t:'Times Tens',e:'✖️',area:'math',max:4,gen:lv=>lv==1?genMbig(lv):fyMbig(lv)}, // 2-4 Factor Factory
- pv:{t:'Place Value',e:'🔟',area:'math',max:4,gen:lv=>lv==2?genBayPv2():lv==3?genBayPv3():lv==4?fyPv4():genPv1()}, // P2-03 Clock Tower group (CURRICULUM M-1)
+ mbig:{t:'Times Tens',e:'✖️',area:'math',max:5,gen:lv=>lv==1?genMbig(lv):lv==5?vlMbig5():fyMbig(lv)}, // 2-4 Factor Factory, 5 Volcano Lab
+ pv:{t:'Place Value',e:'🔟',area:'math',max:6,gen:lv=>lv==2?genBayPv2():lv==3?genBayPv3():lv==4?fyPv4():lv==5?vlPv5():lv==6?vlPv6():genPv1()}, // P2-03 Clock Tower group (CURRICULUM M-1), 4 Factor Factory, 5-6 Volcano Lab
  data:{t:'Picture Graphs',e:'📈',area:'math',max:3,gen:lv=>lv==2?genBayData2():lv==3?ffData3():genData1()}, // 2 Treasure Bay, 3 Fraction Forest
- round:{t:'Rounding',e:'🎯',area:'math',max:3,gen:lv=>lv==3?fyRound3():ffRound(lv)}, // 1-2 Fraction Forest, 3 Factor Factory
- dbig:{t:'Long Division',e:'÷',area:'math',max:3,gen:fyDbig}, // P2-09 Factor Factory
+ round:{t:'Rounding',e:'🎯',area:'math',max:4,gen:lv=>lv==4?vlRound4():lv==3?fyRound3():ffRound(lv)}, // 1-2 Fraction Forest, 3 Factor Factory, 4 Volcano Lab
+ dbig:{t:'Long Division',e:'÷',area:'math',max:4,gen:lv=>lv==4?vlDbig4():fyDbig(lv)}, // 1-3 Factor Factory, 4 Volcano Lab
+ // P2-10 Decimal Desert (dec 1-2) and P2-11 Volcano Lab (dec 3-5)
+ dec:{t:'Decimals',e:'🔟',area:'math',max:5,gen:lv=>lv==1?dsDec1():lv==2?dsDec2():vlDecLv(lv)}, // 1-2 Decimal Desert, 3-5 Volcano Lab
+ ooo:{t:'Order of Operations',e:'🧮',area:'math',max:1,gen:vlOoo},
  fact:{t:'Factors & Primes',e:'🔢',area:'math',max:2,gen:lv=>lv==1?fyFact1():fyFact2()},
  geo:{t:'Perimeter and Area',e:'📐',area:'math',max:3,gen:lv=>lv==3?dsGeo3():lv==1?ffGeo1():ffGeo2()}, // 3 Decimal Desert
  frac:{t:'Fractions',e:'🍕',area:'math',max:8,gen:lv=>lv==1?genFrac1(lv):genFracCore(lv)}, // level 1 Clock Tower (P2-03), 2-8 fractions core (P2-06)
  fop:{t:'Fraction Math',e:'🍕',area:'math',max:2,gen:lv=>lv==1?dsFop1():dsFop2()}, // P2-10 Decimal Desert (more levels: P2-12, P2-13)
- dec:{t:'Decimals',e:'🔟',area:'math',max:2,gen:lv=>lv==1?dsDec1():dsDec2()}, // P2-10 (levels 3-5: P2-11)
  ang:{t:'Angles',e:'📐',area:'math',max:2,gen:lv=>lv==1?dsAng1():dsAng2()}, // P2-10
  sight:{t:'Sight Words',e:'👀',area:'read',max:5,gen:genSight},
  pic:{t:'Picture Words',e:'🖼️',area:'read',max:6,gen:lv=>lv>4?genPicP(lv):genPic(lv)},

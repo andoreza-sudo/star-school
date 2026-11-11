@@ -529,3 +529,57 @@ function stepsStory(list) {
     return {html: `<p class="hsc">${esc(t)}</p>`, say: (typeof s == 'object' && s.say) || t};
   }), 0);
 }
+
+// ---- P2-11 decimal multiply and divide (CURRICULUM M-5a) ----
+/* stepsDecMul(a, b): a x b with decimal strings ('0.6', '12.5', '7'). Step 1 counts the decimal places the answer will have;
+   then the whole-number steps of stepsMul on the digits without the points; the last of them is the "?" step and also
+   reminds the child where the point goes. The answer is never shown.
+   stepsDecDiv(a, b): a / b with decimal strings, b a whole number or tenths, and a quotient that ends within 3 places.
+   A divisor in tenths is made whole first (both numbers x 10); zeros are added to the end of the dividend until it divides evenly;
+   then the long-division steps of stepsDiv on whole numbers, with the point placed from the right at the end.
+   Each new step carries c like the other builders: dp {op 'dp', x [placesA, placesB], r places}; ten {op 'ten', x [10], r divisor};
+   dd {op 'dd', x [N, B], r N, p places, z zeros added}. The whole-number steps keep their own c. */
+const stDecS = (n, p) => { // whole number n with p places after the point, as written (zeros kept): (720, 2) -> '7.20'
+  const s = String(n).padStart(p + 1, '0');
+  return p ? s.slice(0, s.length - p) + '.' + s.slice(s.length - p) : s;
+};
+const stPlaces = n => n + (n == 1 ? ' place' : ' places');
+function stepsDecMul(a, b) {
+  const pa = ST.parse(a), pb = ST.parse(b), fa = pa.f.length, fb = pb.f.length, A = ST.scaled(pa, fa), B = ST.scaled(pb, fb), p = fa + fb;
+  if (!(A >= 1 && B >= 1)) throw new Error('stepsDecMul: numbers above 0');
+  const rule = ST.step('', 'Places:', `${a} has ${stPlaces(fa)} after the point and ${b} has ${stPlaces(fb)}. The answer will have ${fa} + ${fb} = ${stPlaces(p)} after the point.`,
+    {op: 'dp', x: [fa, fb], r: p});
+  const h = stepsMul(A, B), last = h.steps[h.steps.length - 1];
+  const tail = p ? ` Then write the point ${stPlaces(p)} in from the right. Use 0s in front if you need them.` : '';
+  last.html = last.html.replace(/<\/p>$/, `${tail}</p>`);
+  last.say += tail;
+  return ST.hint([rule, ...h.steps], h.w);
+}
+// how a / b is made whole: {s: tenths shift, N0: dividend after the shift (whole number), f: its places, z: zeros added, N, B, p} or null
+function stDecDivPlan(a, b) {
+  const pa = ST.parse(a), pb = ST.parse(b), fa = pa.f.length, fb = pb.f.length;
+  const A = ST.scaled(pa, fa), B = ST.scaled(pb, fb);
+  if (!(A >= 1 && B >= 1)) return null;
+  const N0 = A * 10 ** Math.max(fb - fa, 0), f = Math.max(fa - fb, 0);
+  for (let z = 0; z <= 3; z++) {
+    const N = N0 * 10 ** z;
+    if (N % B == 0) return {s: fb, N0, f, z, N, B, p: f + z};
+  }
+  return null;
+}
+function stepsDecDiv(a, b) {
+  const pl = stDecDivPlan(a, b);
+  if (!pl || pl.N < pl.B) throw new Error('stepsDecDiv: no short exact quotient for ' + a + ' / ' + b);
+  const steps = [], at = stDecS(pl.N0, pl.f);
+  if (pl.s) {
+    steps.push(ST.step('', 'Whole divisor:', `Multiply both numbers by ${10 ** pl.s} so the divisor is whole. ${a} ÷ ${b} becomes ${at} ÷ ${pl.B}.`,
+      {op: 'ten', x: [10 ** pl.s], r: pl.B}));
+  }
+  const zs = pl.z ? ` Add ${pl.z == 1 ? 'a zero' : pl.z + ' zeros'} to the end of ${at}: ${stDecS(pl.N, pl.p)}.` : '';
+  steps.push(ST.step('', 'Ignore the point:', `${pl.N} ÷ ${pl.B}.${zs}`, {op: 'dd', x: [pl.N, pl.B], r: pl.N, p: pl.p, z: pl.z}));
+  const h = stepsDiv(pl.N, pl.B), last = h.steps[h.steps.length - 1];
+  const tail = pl.p ? ` Then write the point ${stPlaces(pl.p)} in from the right. Use 0s in front if you need them.` : '';
+  last.html = last.html.replace(/<\/p>$/, `${tail}</p>`);
+  last.say += tail;
+  return ST.hint([...steps, ...h.steps], h.w);
+}

@@ -2386,7 +2386,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S));SAVE_FAILED=fals
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v92'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v93'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -7937,6 +7937,309 @@ function dsStory7() {
   return {kind: 'num', html: `<p class="story">${words(text)}</p><div>${SLOT}</div>`, say: text, auto: true, ans: String(ans),
     hint: stepsStory([...lead, div, ...rest]), label: `story7 ${multi ? a + 'x' + b + '=' : ''}${T} / ${s} ${type}`};
 }
+
+// ---- P2-11 Volcano Lab ----
+/* CURRICULUM M-5a: 5th grade decimals and whole-number fluency (world m_volcano). All names start with vl.
+   pv 5      decimals to thousandths: value of a digit, expanded form, words -> decimal
+   pv 6      x and / by 10, 100, 1,000 (whole and decimal); powers of ten; 4.2 x 10^2
+   mbig 5    3-digit x 2-digit, standard algorithm (stepsMul 'std')
+   dbig 4    3- and 4-digit / 2-digit divisors 11-50, remainders in half the items (stepsDiv)
+   dec 3     add and subtract decimals to hundredths, ragged lengths, vertical (stepsAdd, stepsSub)
+   dec 4     decimal x whole, then decimal x decimal (stepsDecMul)
+   dec 5     decimal / whole, whole / whole with a decimal quotient, then / tenths (stepsDecDiv)
+   round 4   round decimals to the nearest whole, tenth or hundredth
+   ooo 1     order of operations with parentheses; write the expression
+   Decimal answers are written without trailing zeros ('0.2', '6') and every decimal question has eq:'value', so 0.20 and 6.0 are also right.
+   dec levels 1-2 belong to P2-10 (Decimal Desert); vlDec falls back to level 3 for them so a call never fails. */
+
+// whole number n with p places after the point, trailing zeros dropped: (45, 2) -> '0.45', (120, 1) -> '12', (5, 3) -> '0.005'
+function vlDec(n, p) {
+  const s = String(n).padStart(p + 1, '0'), i = s.slice(0, s.length - p), f = p ? s.slice(s.length - p).replace(/0+$/, '') : '';
+  return f ? i + '.' + f : i;
+}
+// the same with the zeros kept, for numbers that are shown as they are written
+const vlShow = (n, p) => stDecS(n, p);
+// a decimal answer's digits, the pad's max (only when the default 4 is too few)
+function vlMaxOf(q) {
+  const m = String(q.ans).replace(/\D/g, '').length;
+  if (m > 4) q.max = m;
+  return q;
+}
+// the exact value of a / b (decimal strings) as a decimal string, or null if it does not end within 3 places; independent of the step builder
+function vlQuot(a, b) {
+  const pa = ST.parse(a), pb = ST.parse(b), fa = pa.f.length, fb = pb.f.length;
+  const num = ST.scaled(pa, fa) * 10 ** fb, den = ST.scaled(pb, fb) * 10 ** fa;
+  for (let t = 0; t <= 3; t++) if ((num * 10 ** t) % den == 0) return vlDec(num * 10 ** t / den, t);
+  return null;
+}
+const vlPlaceName = {'-3': 'thousandths', '-2': 'hundredths', '-1': 'tenths'};
+const vlHintT = s => ({k: 'text', s});
+
+// pv 5: decimals to thousandths (value of a digit / expanded form / words to decimal)
+function vlPv5() {
+  const form = pick(['value', 'exp', 'words']);
+  if (form == 'value') {
+    // distinct digits, so the underlined one is the only one of its kind; the digit is never 0
+    const wl = R(1, 2), ds = shuffle([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]).slice(0, wl + 3);
+    if (ds[0] == 0 && wl > 1) ds.push(ds.shift());
+    const whole = ds.slice(0, wl).join(''), frac = ds.slice(wl).join('');
+    const spots = ds.map((d, k) => k).filter(k => ds[k] != 0), k = pick(spots), dig = ds[k];
+    const e = k < wl ? wl - 1 - k : -(k - wl + 1);
+    const txt = whole.split('').map((c, i) => (i == k ? `<b><u>${c}</u></b>` : c)).join('') + '.' +
+      frac.split('').map((c, i) => (i + wl == k ? `<b><u>${c}</u></b>` : c)).join('');
+    const val = x => vlDec(dig * 10 ** (x + 3), 3);
+    const places = [];
+    for (let x = -3; x < wl; x++) if (x != e) places.push(x);
+    const bad = shuffle(places).slice(0, 3), n = whole + '.' + frac, ans = val(e);
+    const nm = e < 0 ? vlPlaceName[e] : ST.NAME[e];
+    return {kind: 'choice', cls: 'wide', html: `<div class="eq">${txt}</div><div class="sub">What is the value of the ${dig} in ${n}?</div>`,
+      say: `What is the value of the ${dig} in ${n}?`, ans, after: `The ${dig} is in the ${nm} place, so it is worth ${ans}`,
+      choices: shuffle([ans, ...bad.map(val)]).map(v => ({v, l: v})), label: `value of ${dig} in ${n}`,
+      hint: vlHintT('Find the digit. Right of the point the places are tenths, hundredths, thousandths. Left of it: ones, tens, hundreds. Count the place, then ask what the digit is worth there.')};
+  }
+  if (form == 'exp') {
+    let n, parts;
+    for (;;) {
+      const wl = R(1, 2), fl = R(1, 3), dg = [];
+      for (let i = 0; i < wl + fl; i++) dg.push(rnd() < .25 && i ? 0 : R(1, 9));
+      if (!dg[dg.length - 1]) continue;
+      parts = dg.map((d, i) => d ? (i < wl ? String(d * 10 ** (wl - 1 - i)) : vlDec(d, i - wl + 1)) : null).filter(x => x != null);
+      if (parts.length < 3) continue;
+      n = dg.slice(0, wl).join('') + '.' + dg.slice(wl).join('');
+      break;
+    }
+    return vlMaxOf({kind: 'num', pad: 'dec', eq: 'value', html: `<div class="sub">Write the number.</div><div class="eq" style="font-size:.62em;line-height:1.5">${parts.join(' + ')}</div><div class="eq">= ${SLOT}</div>`,
+      say: `${parts.join(' plus ')} equals what?`, ans: n, label: `${parts.join(' + ')} = ?`,
+      hint: vlHintT('Each part names one place. Write each digit in its own place, with the point between the ones and the tenths. Put a 0 in any place with no part.')});
+  }
+  // words: "twelve and four hundred seven thousandths"
+  const fl = R(1, 3);
+  let fv;
+  do fv = R(1, 10 ** fl - 1); while (fv % 10 == 0);
+  const whole = rnd() < .3 ? 0 : R(1, rnd() < .5 ? 9 : 99), unit = ['tenth', 'hundredth', 'thousandth'][fl - 1];
+  const fw = fyWords3(fv) + ' ' + unit + (fv == 1 ? '' : 's'), w = whole ? `${fyWords(whole)} and ${fw}` : fw, n = `${whole}.${String(fv).padStart(fl, '0')}`;
+  return vlMaxOf({kind: 'num', pad: 'dec', eq: 'value', auto: true, html: `<div class="sub">Write this number with digits.</div><div class="sub" style="font-weight:700;color:var(--ink,inherit)">${w}</div><div class="eq">${SLOT}</div>`,
+    say: w, ans: n, label: `words to decimal ${n}`,
+    hint: vlHintT('The word "and" is where the point goes. The last word names the last place: tenths, hundredths or thousandths. Fill the places from the left, with 0s if a place is empty.')});
+}
+
+// pv 6: x and / by 10, 100, 1,000; powers of ten; "4.2 x 10^2"
+function vlPv6() {
+  const form = pick(['md', 'md', 'md', 'pow', 'sci']);
+  const shift = (m, f, j, mul) => mul ? vlDec(m * 10 ** j, f) : vlDec(m, f + j);
+  if (form == 'pow') {
+    const n = R(2, 5);
+    return vlMaxOf({kind: 'num', html: `<div class="eq">10<sup>${n}</sup> = ${SLOT}</div>`, say: `10 to the power ${n} equals what?`, ans: '1' + '0'.repeat(n),
+      label: `10^${n} = ?`, hint: stepsStory([`The small raised number says how many 10s to multiply together. Here it is ${n}, so write 10 ${n} times with × between them.`,
+        `10 has 1 zero. Each 10 you multiply in adds one more zero after the 1.`,
+        `Write a 1, then the zeros for ${n} tens: 10 to the power ${n} = ?`])});
+  }
+  const j = R(1, 3), mul = form == 'sci' ? rnd() < .75 : coin();
+  const f = R(0, form == 'sci' ? 2 : mul ? 3 : Math.min(3, 4 - j));
+  let m;
+  do m = R(mul ? 2 : 3, mul ? 999 : 9999); while (f && m % 10 == 0);
+  if (!f && form == 'sci') m = R(2, 99);
+  const base = vlShow(m, f), ans = shift(m, f, j, mul);
+  const dir = mul ? 'right' : 'left', op = mul ? '×' : '÷', k = 10 ** j;
+  if (form == 'sci') {
+    return vlMaxOf({kind: 'num', pad: 'dec', eq: 'value', html: `<div class="eq">${base} ${op} 10<sup>${j}</sup> = ${SLOT}</div>`, say: `${base} ${mul ? 'times' : 'divided by'} 10 to the power ${j} equals what?`,
+      ans, label: `${base} ${op} 10^${j} = ?`,
+      hint: stepsStory([`The small raised ${j} says to multiply ${j} ${j == 1 ? 'ten' : 'tens'} together. Write it out as a whole number first.`,
+        `That makes ${fyComma(k)}, with ${j} ${j == 1 ? 'zero' : 'zeros'}. ${mul ? 'Multiplying by' : 'Dividing by'} it moves the point ${j} ${j == 1 ? 'place' : 'places'} to the ${dir}.`,
+        `Now do ${base} ${op} ${fyComma(k)} = ?`])});
+  }
+  return vlMaxOf({kind: 'num', pad: 'dec', eq: 'value', html: `<div class="eq">${base} ${op} ${fyComma(k)} = ${SLOT}</div>`, say: `${base} ${mul ? 'times' : 'divided by'} ${k} equals what?`,
+    ans, label: `${base} ${op} ${k} = ?`,
+    hint: stepsStory([`${fyComma(k)} has ${j} ${j == 1 ? 'zero' : 'zeros'}. So every digit moves ${j} ${j == 1 ? 'place' : 'places'}.`,
+      mul ? 'Times makes the number bigger, so the digits move left and the point moves right. Fill empty places with 0s.'
+        : 'Dividing makes the number smaller, so the digits move right and the point moves left. Put 0s in front if you need them.',
+      `Now move it: ${base} ${op} ${fyComma(k)} = ?`])});
+}
+
+// mbig 5: 3-digit x 2-digit, the standard algorithm (stepsMul 'std')
+function vlMbig5() {
+  let a, b;
+  do {a = R(101, 999); b = R(12, 99)} while (a % 10 == 0 || b % 10 == 0);
+  return fyVert([a, b], '×', a * b, stepsMul(a, b, 'std'), 6);
+}
+
+// dbig 4: 3- and 4-digit / 2-digit divisor 11-50; remainders in half the items
+function vlDbig4() {
+  const d = R(11, 50), hi = rnd() < .6 ? 999 : 9999, lo = hi == 999 ? 100 : 1000, rem = coin() ? 0 : R(1, d - 1);
+  const qt = R(Math.max(10, Math.ceil((lo - rem) / d)), Math.floor((hi - rem) / d)), n = d * qt + rem;
+  return Object.assign({kind: 'num', html: rem ? ST.ldiv(n, d, SLOT_R) : ST.ldiv(n, d),
+    say: rem ? `${n} divided by ${d}. How many whole groups, and what is left over?` : `${n} divided by ${d} equals what?`,
+    ans: rem ? `${qt}R${rem}` : String(qt), hint: stepsDiv(n, d), label: `${n} ÷ ${d} = ?`}, rem ? {sep: 'R'} : {});
+}
+
+// a decimal string with p places (last digit not 0) from a whole number of at most that many digits
+function vlRand(p, lo, hi) {
+  let m;
+  do m = R(lo, hi); while (p && m % 10 == 0);
+  return vlShow(m, p);
+}
+
+// dec 3: add and subtract decimals to hundredths; ragged lengths; vertical
+function vlDec3() {
+  let pa, pb;
+  do {pa = R(0, 2); pb = R(0, 2)} while (!pa && !pb || (pa == pb && rnd() < .7));
+  const wa = pa ? R(0, 99) : R(2, 99), wb = pb ? R(0, 99) : R(2, 99);
+  let sa = vlRand(pa, 10 ** pa * wa + 1, 10 ** pa * wa + 10 ** pa - 1), sb = vlRand(pb, 10 ** pb * wb + 1, 10 ** pb * wb + 10 ** pb - 1);
+  if (pa == 0) sa = String(wa);
+  if (pb == 0) sb = String(wb);
+  const d = Math.max(pa, pb), A = ST.scaled(ST.parse(sa), d), B = ST.scaled(ST.parse(sb), d);
+  if (A == B) return vlDec3();
+  if (coin()) {
+    const q = {kind: 'num', pad: 'dec', eq: 'value', html: ST.vert([sa, sb], '+'), say: `${sa} plus ${sb} equals what?`, ans: vlDec(A + B, d), hint: stepsAdd(sa, sb), label: `${sa} + ${sb} = ?`};
+    return vlMaxOf(q);
+  }
+  const [x, y] = A > B ? [sa, sb] : [sb, sa], q = {kind: 'num', pad: 'dec', eq: 'value', html: ST.vert([x, y], '−'), say: `${x} minus ${y} equals what?`,
+    ans: vlDec(Math.abs(A - B), d), hint: stepsSub(x, y), label: `${x} − ${y} = ?`};
+  return vlMaxOf(q);
+}
+
+// dec 4: decimal x whole, then decimal x decimal (tenths x tenths, tenths x hundredths)
+function vlDec4() {
+  let a, b;
+  if (coin()) { // decimal x whole
+    a = coin() ? vlRand(1, 12, 125) : vlRand(2, 104, 599);
+    b = String(R(2, 9));
+    if (coin()) [a, b] = [b, a];
+  } else { // decimal x decimal
+    a = vlRand(1, 2, 99);
+    b = coin() ? vlRand(1, 2, 9) : vlRand(2, 2, 99);
+    if (ST.parse(a).f.length < ST.parse(b).f.length) [a, b] = [b, a];
+  }
+  const pa = ST.parse(a), pb = ST.parse(b), ans = vlDec(ST.scaled(pa, pa.f.length) * ST.scaled(pb, pb.f.length), pa.f.length + pb.f.length);
+  return vlMaxOf({kind: 'num', pad: 'dec', eq: 'value', html: `<div class="eq">${a} × ${b} = ${SLOT}</div>`, say: `${a} times ${b} equals what?`, ans,
+    hint: stepsDecMul(a, b), label: `${a} × ${b} = ?`});
+}
+
+// dec 5: decimal / whole (exact), whole / whole with a decimal quotient (/2, 4, 5, 8), then / tenths
+function vlDec5() {
+  const form = pick(['exact', 'whole', 'tenths', 'tenths']);
+  let a, b;
+  if (form == 'exact') {
+    b = R(3, 9);
+    let m;
+    do m = R(2, 99) * b; while (m % 10 == 0);
+    a = vlShow(m, m > 99 ? 2 : R(1, 2));
+    b = String(b);
+  } else if (form == 'whole') {
+    const d = pick([2, 4, 5, 8]);
+    let n;
+    do n = R(3, 99); while (n % d == 0);
+    a = String(n);
+    b = String(d);
+  } else {
+    const B = R(2, 9), tenthsQ = rnd() < .25, Q = tenthsQ ? R(11, 59) : R(2, 40);
+    if (tenthsQ && Q % 10 == 0) return vlDec5();
+    a = tenthsQ ? vlShow(Q * B, 2) : vlDec(Q * B, 1);
+    if (tenthsQ && a.endsWith('0')) return vlDec5();
+    b = vlShow(B, 1);
+  }
+  const ans = vlQuot(a, b);
+  if (ans == null) return vlDec5();
+  let hint;
+  try {hint = stepsDecDiv(a, b)} catch (e) {return vlDec5()}
+  return vlMaxOf({kind: 'num', pad: 'dec', eq: 'value', html: `<div class="eq">${a} ÷ ${b} = ${SLOT}</div>`, say: `${a} divided by ${b} equals what?`, ans, hint, label: `${a} ÷ ${b} = ?`});
+}
+// the skill table calls this for every dec level; levels 1-2 are P2-10's (Decimal Desert) and use level 3 until they exist
+const vlDecLv = lv => (lv == 4 ? vlDec4() : lv == 5 ? vlDec5() : vlDec3());
+
+// round 4: round a decimal to the nearest whole number, tenth or hundredth (round half up)
+function vlRound4() {
+  for (;;) {
+    const keep = R(0, 2), fl = R(keep + 1, 3), wl = R(1, 3), m = R(10 ** (wl + fl - 1), 10 ** (wl + fl) - 1);
+    if (m % 10 == 0) continue;
+    const p = 10 ** (fl - keep), r = Math.floor((m + p / 2) / p), ans = vlDec(r, keep);
+    if (keep && vlShow(r, keep) != ans) continue; // never an answer that ends in 0 (4.50)
+    const n = vlShow(m, fl), nm = ['whole number', 'tenth', 'hundredth'][keep], rd = ST.parse(n);
+    const fdig = rd.f[keep], keepDig = keep ? rd.f[keep - 1] : rd.i[rd.i.length - 1];
+    return vlMaxOf({kind: 'num', pad: 'dec', eq: 'value', html: `<div class="sub">Round ${n} to the nearest ${nm}.</div><div class="eq">${SLOT}</div>`,
+      say: `Round ${n} to the nearest ${nm}.`, ans, label: `round ${n} to ${nm}`,
+      hint: stepsStory([`Find the ${keep ? vlPlaceName[-keep] : 'ones'} place in ${n}. It holds the ${keepDig}.`,
+        `Look at the digit just to its right, in the ${vlPlaceName[-(keep + 1)]} place. It is a ${fdig}.`,
+        `Is ${fdig} 5 or more? Then add 1 to the ${keepDig}. Is it less than 5? Then the ${keepDig} stays. Drop every digit after it.`])});
+  }
+}
+
+// ooo 1: order of operations with parentheses (value), and "write the expression" (choice)
+function vlOoo() {
+  return coin() ? vlOooEval() : vlOooWrite();
+}
+// each template: numbers -> {s: expression, v: value, tr: [step texts, the last one asks]} or null when a number would be negative or not whole
+const VL_OOO = [
+  (a, b, c) => ({s: `${a} × (${b} + ${c})`, v: a * (b + c), tr: [`Parentheses first: ${b} + ${c} = ${b + c}.`, `Now multiply: ${a} × ${b + c} = ?`]}),
+  (a, b, c) => ({s: `(${a} + ${b}) × ${c}`, v: (a + b) * c, tr: [`Parentheses first: ${a} + ${b} = ${a + b}.`, `Now multiply: ${a + b} × ${c} = ?`]}),
+  (a, b, c) => a > b ? {s: `(${a} − ${b}) × ${c}`, v: (a - b) * c, tr: [`Parentheses first: ${a} − ${b} = ${a - b}.`, `Now multiply: ${a - b} × ${c} = ?`]} : null,
+  (a, b, c) => b > c ? {s: `${a} × (${b} − ${c})`, v: a * (b - c), tr: [`Parentheses first: ${b} − ${c} = ${b - c}.`, `Now multiply: ${a} × ${b - c} = ?`]} : null,
+  (a, b, c) => (a + b) % c == 0 ? {s: `(${a} + ${b}) ÷ ${c}`, v: (a + b) / c, tr: [`Parentheses first: ${a} + ${b} = ${a + b}.`, `Now divide: ${a + b} ÷ ${c} = ?`]} : null,
+  (a, b, c) => a > b + c ? {s: `${a} − (${b} + ${c})`, v: a - b - c, tr: [`Parentheses first: ${b} + ${c} = ${b + c}.`, `Now subtract: ${a} − ${b + c} = ?`]} : null,
+  (a, b, c, d) => ({s: `(${a} + ${b}) × ${c} − ${d}`, v: (a + b) * c - d, tr: [`Parentheses first: ${a} + ${b} = ${a + b}.`, `Multiply before you subtract: ${a + b} × ${c} = ${(a + b) * c}.`, `Now subtract: ${(a + b) * c} − ${d} = ?`]}),
+  (a, b, c, d) => ({s: `${a} × (${b} + ${c}) − ${d}`, v: a * (b + c) - d, tr: [`Parentheses first: ${b} + ${c} = ${b + c}.`, `Multiply before you subtract: ${a} × ${b + c} = ${a * (b + c)}.`, `Now subtract: ${a * (b + c)} − ${d} = ?`]}),
+  (a, b, c, d) => ({s: `${a} + ${b} × (${c} − ${d})`, v: c > d ? a + b * (c - d) : -1, tr: [`Parentheses first: ${c} − ${d} = ${c - d}.`, `Multiply before you add: ${b} × ${c - d} = ${b * (c - d)}.`, `Now add: ${a} + ${b * (c - d)} = ?`]}),
+  (a, b, c, d) => ({s: `(${a} + ${b}) × (${c} − ${d})`, v: c > d ? (a + b) * (c - d) : -1, tr: [`Parentheses first: ${a} + ${b} = ${a + b}, and ${c} − ${d} = ${c - d}.`, `Now multiply: ${a + b} × ${c - d} = ?`]}),
+  (a, b, c, d) => ({s: `${a} × ${b} − (${c} + ${d})`, v: a * b - c - d, tr: [`Parentheses first: ${c} + ${d} = ${c + d}.`, `Multiply before you subtract: ${a} × ${b} = ${a * b}.`, `Now subtract: ${a * b} − ${c + d} = ?`]}),
+  (a, b, c, d) => ({s: `${a} + (${b} + ${c}) × ${d}`, v: a + (b + c) * d, tr: [`Parentheses first: ${b} + ${c} = ${b + c}.`, `Multiply before you add: ${b + c} × ${d} = ${(b + c) * d}.`, `Now add: ${a} + ${(b + c) * d} = ?`]}),
+  (a, b, c, d) => ({s: `${a} × ${b} + (${c} − ${d})`, v: c > d ? a * b + c - d : -1, tr: [`Parentheses first: ${c} − ${d} = ${c - d}.`, `Multiply: ${a} × ${b} = ${a * b}.`, `Now add: ${a * b} + ${c - d} = ?`]}),
+];
+function vlOooEval() {
+  const t = R(0, VL_OOO.length - 1);
+  for (;;) {
+    const nums = [R(2, 12), R(2, 12), R(2, 12), R(2, 12)], r = VL_OOO[t](...nums);
+    if (!r || r.v < 0 || r.v > 200 || r.v == 0) continue;
+    if (r.tr.some((s, i) => i < r.tr.length - 1 && new RegExp('= ' + r.v + '(\\.|,|$)').test(s))) continue; // a step must not show the answer
+    const spoken = r.s.replace(/\(/g, 'open parenthesis ').replace(/\)/g, ' close parenthesis').replace(/ × /g, ' times ').replace(/ ÷ /g, ' divided by ')
+      .replace(/ − /g, ' minus ').replace(/ \+ /g, ' plus ').replace(/\s+/g, ' ').trim();
+    return vlMaxOf({kind: 'num', html: `<div class="eq" style="font-size:.9em">${r.s} = ${SLOT}</div>`, say: `${spoken} equals what?`, ans: String(r.v), label: `${r.s} = ?`,
+      hint: stepsStory(['Do what is inside the parentheses first, then multiply and divide, then add and subtract.', ...r.tr])});
+  }
+}
+// "Add 8 and 7, then multiply by 2." -> pick the expression
+function vlOooWrite() {
+  for (;;) {
+    const a = R(2, 12), b = R(2, 12), c = R(2, 9), t = R(0, 3);
+    let sent, good, bad;
+    if (t == 0) {
+      sent = `Add ${a} and ${b}, then multiply by ${c}.`;
+      good = `(${a} + ${b}) × ${c}`;
+      bad = [`${a} + ${b} × ${c}`, `${a} × ${b} + ${c}`, `${a} + ${b} + ${c}`];
+    } else if (t == 1) {
+      if (a <= b) continue;
+      sent = `Subtract ${b} from ${a}, then multiply by ${c}.`;
+      good = `(${a} − ${b}) × ${c}`;
+      bad = [`${a} − ${b} × ${c}`, `${a} − ${b} + ${c}`, `${a} × ${c} − ${b}`];
+      if (a < b * c) continue;
+    } else if (t == 2) {
+      sent = `Multiply ${a} by ${b}, then add ${c}.`;
+      good = `${a} × ${b} + ${c}`;
+      bad = [`${a} × (${b} + ${c})`, `${a} + ${b} × ${c}`, `(${a} + ${b}) × ${c}`];
+    } else {
+      sent = `Multiply ${a} by the sum of ${b} and ${c}.`;
+      good = `${a} × (${b} + ${c})`;
+      bad = [`${a} × ${b} + ${c}`, `(${a} + ${b}) × ${c}`, `${a} + ${b} × ${c}`];
+    }
+    const val = {'0': (a + b) * c, '1': (a - b) * c, '2': a * b + c, '3': a * (b + c)}[t];
+    // every wrong choice must be a different expression with a different value
+    const vals = new Set([val]);
+    const wrong = bad.filter(s => { const v = vlOooVal(s); if (v == null || v < 0 || vals.has(v)) return false; vals.add(v); return true; });
+    if (wrong.length < 3 || new Set([good, ...wrong]).size < 4) continue;
+    return {kind: 'choice', cls: 'wide', html: `<div class="sub">Which expression matches?</div><div class="sub" style="font-weight:700;color:var(--ink,inherit)">${sent}</div>`,
+      say: `${sent} Which expression matches?`, ans: good, choices: shuffle([good, ...wrong.slice(0, 3)]).map(s => ({v: s, l: s})), label: `write: ${sent}`.slice(0, 59),
+      hint: vlHintT('Say the steps in order. Whatever happens first goes in parentheses. Multiplying and dividing happen before adding and subtracting, unless parentheses say otherwise. Test each choice against the words.')};
+  }
+}
+// value of a small expression made of numbers, + − × ÷ and parentheses, by order of operations (no eval)
+function vlOooVal(s) {
+  const t = s.replace(/\s+/g, '').match(/\d+|[()+−×÷]/g);
+  let i = 0;
+  const expr = () => { let v = term(); while (t[i] == '+' || t[i] == '−') { const o = t[i++], w = term(); v = o == '+' ? v + w : v - w } return v };
+  const term = () => { let v = atom(); while (t[i] == '×' || t[i] == '÷') { const o = t[i++], w = atom(); v = o == '×' ? v * w : v / w } return v };
+  const atom = () => { if (t[i] == '(') { i++; const v = expr(); i++; return v } return +t[i++] };
+  const v = expr();
+  return Number.isInteger(v) ? v : null;
+}
 /* ---------- early reading: sounds & rhymes ---------- */
 function genSound(lv){const [w,e]=pick(lv==1?CVC.concat(BLEND.filter(x=>!/^(sh|ch|th|wh)/.test(x[0]))):CVC),ch=lv==1?w[0]:w[w.length-1];
   const opts=shuffle([ch,...shuffle([...'bcdfghjklmnprstvw'].filter(x=>x!=ch)).slice(0,2)]);
@@ -8419,16 +8722,18 @@ const SK={
  arr:{t:'Arrays',e:'🧱',area:'math',max:2,gen:lv=>lv==1?genBayArr1():genArr(lv)},
  mfact:{t:'Times Facts',e:'✖️',area:'math',max:5,gen:lv=>lv==5?fyMfact5():genMfact(lv)}, // 5 Factor Factory
  dfact:{t:'Dividing Facts',e:'÷',area:'math',max:4,gen:genDfact},
- mbig:{t:'Times Tens',e:'✖️',area:'math',max:4,gen:lv=>lv==1?genMbig(lv):fyMbig(lv)}, // 2-4 Factor Factory
- pv:{t:'Place Value',e:'🔟',area:'math',max:4,gen:lv=>lv==2?genBayPv2():lv==3?genBayPv3():lv==4?fyPv4():genPv1()}, // P2-03 Clock Tower group (CURRICULUM M-1)
+ mbig:{t:'Times Tens',e:'✖️',area:'math',max:5,gen:lv=>lv==1?genMbig(lv):lv==5?vlMbig5():fyMbig(lv)}, // 2-4 Factor Factory, 5 Volcano Lab
+ pv:{t:'Place Value',e:'🔟',area:'math',max:6,gen:lv=>lv==2?genBayPv2():lv==3?genBayPv3():lv==4?fyPv4():lv==5?vlPv5():lv==6?vlPv6():genPv1()}, // P2-03 Clock Tower group (CURRICULUM M-1), 4 Factor Factory, 5-6 Volcano Lab
  data:{t:'Picture Graphs',e:'📈',area:'math',max:3,gen:lv=>lv==2?genBayData2():lv==3?ffData3():genData1()}, // 2 Treasure Bay, 3 Fraction Forest
- round:{t:'Rounding',e:'🎯',area:'math',max:3,gen:lv=>lv==3?fyRound3():ffRound(lv)}, // 1-2 Fraction Forest, 3 Factor Factory
- dbig:{t:'Long Division',e:'÷',area:'math',max:3,gen:fyDbig}, // P2-09 Factor Factory
+ round:{t:'Rounding',e:'🎯',area:'math',max:4,gen:lv=>lv==4?vlRound4():lv==3?fyRound3():ffRound(lv)}, // 1-2 Fraction Forest, 3 Factor Factory, 4 Volcano Lab
+ dbig:{t:'Long Division',e:'÷',area:'math',max:4,gen:lv=>lv==4?vlDbig4():fyDbig(lv)}, // 1-3 Factor Factory, 4 Volcano Lab
+ // P2-10 Decimal Desert (dec 1-2) and P2-11 Volcano Lab (dec 3-5)
+ dec:{t:'Decimals',e:'🔟',area:'math',max:5,gen:lv=>lv==1?dsDec1():lv==2?dsDec2():vlDecLv(lv)}, // 1-2 Decimal Desert, 3-5 Volcano Lab
+ ooo:{t:'Order of Operations',e:'🧮',area:'math',max:1,gen:vlOoo},
  fact:{t:'Factors & Primes',e:'🔢',area:'math',max:2,gen:lv=>lv==1?fyFact1():fyFact2()},
  geo:{t:'Perimeter and Area',e:'📐',area:'math',max:3,gen:lv=>lv==3?dsGeo3():lv==1?ffGeo1():ffGeo2()}, // 3 Decimal Desert
  frac:{t:'Fractions',e:'🍕',area:'math',max:8,gen:lv=>lv==1?genFrac1(lv):genFracCore(lv)}, // level 1 Clock Tower (P2-03), 2-8 fractions core (P2-06)
  fop:{t:'Fraction Math',e:'🍕',area:'math',max:2,gen:lv=>lv==1?dsFop1():dsFop2()}, // P2-10 Decimal Desert (more levels: P2-12, P2-13)
- dec:{t:'Decimals',e:'🔟',area:'math',max:2,gen:lv=>lv==1?dsDec1():dsDec2()}, // P2-10 (levels 3-5: P2-11)
  ang:{t:'Angles',e:'📐',area:'math',max:2,gen:lv=>lv==1?dsAng1():dsAng2()}, // P2-10
  sight:{t:'Sight Words',e:'👀',area:'read',max:5,gen:genSight},
  pic:{t:'Picture Words',e:'🖼️',area:'read',max:6,gen:lv=>lv>4?genPicP(lv):genPic(lv)},
@@ -9037,6 +9342,60 @@ function stepsStory(list) {
     return {html: `<p class="hsc">${esc(t)}</p>`, say: (typeof s == 'object' && s.say) || t};
   }), 0);
 }
+
+// ---- P2-11 decimal multiply and divide (CURRICULUM M-5a) ----
+/* stepsDecMul(a, b): a x b with decimal strings ('0.6', '12.5', '7'). Step 1 counts the decimal places the answer will have;
+   then the whole-number steps of stepsMul on the digits without the points; the last of them is the "?" step and also
+   reminds the child where the point goes. The answer is never shown.
+   stepsDecDiv(a, b): a / b with decimal strings, b a whole number or tenths, and a quotient that ends within 3 places.
+   A divisor in tenths is made whole first (both numbers x 10); zeros are added to the end of the dividend until it divides evenly;
+   then the long-division steps of stepsDiv on whole numbers, with the point placed from the right at the end.
+   Each new step carries c like the other builders: dp {op 'dp', x [placesA, placesB], r places}; ten {op 'ten', x [10], r divisor};
+   dd {op 'dd', x [N, B], r N, p places, z zeros added}. The whole-number steps keep their own c. */
+const stDecS = (n, p) => { // whole number n with p places after the point, as written (zeros kept): (720, 2) -> '7.20'
+  const s = String(n).padStart(p + 1, '0');
+  return p ? s.slice(0, s.length - p) + '.' + s.slice(s.length - p) : s;
+};
+const stPlaces = n => n + (n == 1 ? ' place' : ' places');
+function stepsDecMul(a, b) {
+  const pa = ST.parse(a), pb = ST.parse(b), fa = pa.f.length, fb = pb.f.length, A = ST.scaled(pa, fa), B = ST.scaled(pb, fb), p = fa + fb;
+  if (!(A >= 1 && B >= 1)) throw new Error('stepsDecMul: numbers above 0');
+  const rule = ST.step('', 'Places:', `${a} has ${stPlaces(fa)} after the point and ${b} has ${stPlaces(fb)}. The answer will have ${fa} + ${fb} = ${stPlaces(p)} after the point.`,
+    {op: 'dp', x: [fa, fb], r: p});
+  const h = stepsMul(A, B), last = h.steps[h.steps.length - 1];
+  const tail = p ? ` Then write the point ${stPlaces(p)} in from the right. Use 0s in front if you need them.` : '';
+  last.html = last.html.replace(/<\/p>$/, `${tail}</p>`);
+  last.say += tail;
+  return ST.hint([rule, ...h.steps], h.w);
+}
+// how a / b is made whole: {s: tenths shift, N0: dividend after the shift (whole number), f: its places, z: zeros added, N, B, p} or null
+function stDecDivPlan(a, b) {
+  const pa = ST.parse(a), pb = ST.parse(b), fa = pa.f.length, fb = pb.f.length;
+  const A = ST.scaled(pa, fa), B = ST.scaled(pb, fb);
+  if (!(A >= 1 && B >= 1)) return null;
+  const N0 = A * 10 ** Math.max(fb - fa, 0), f = Math.max(fa - fb, 0);
+  for (let z = 0; z <= 3; z++) {
+    const N = N0 * 10 ** z;
+    if (N % B == 0) return {s: fb, N0, f, z, N, B, p: f + z};
+  }
+  return null;
+}
+function stepsDecDiv(a, b) {
+  const pl = stDecDivPlan(a, b);
+  if (!pl || pl.N < pl.B) throw new Error('stepsDecDiv: no short exact quotient for ' + a + ' / ' + b);
+  const steps = [], at = stDecS(pl.N0, pl.f);
+  if (pl.s) {
+    steps.push(ST.step('', 'Whole divisor:', `Multiply both numbers by ${10 ** pl.s} so the divisor is whole. ${a} ÷ ${b} becomes ${at} ÷ ${pl.B}.`,
+      {op: 'ten', x: [10 ** pl.s], r: pl.B}));
+  }
+  const zs = pl.z ? ` Add ${pl.z == 1 ? 'a zero' : pl.z + ' zeros'} to the end of ${at}: ${stDecS(pl.N, pl.p)}.` : '';
+  steps.push(ST.step('', 'Ignore the point:', `${pl.N} ÷ ${pl.B}.${zs}`, {op: 'dd', x: [pl.N, pl.B], r: pl.N, p: pl.p, z: pl.z}));
+  const h = stepsDiv(pl.N, pl.B), last = h.steps[h.steps.length - 1];
+  const tail = pl.p ? ` Then write the point ${stPlaces(pl.p)} in from the right. Use 0s in front if you need them.` : '';
+  last.html = last.html.replace(/<\/p>$/, `${tail}</p>`);
+  last.say += tail;
+  return ST.hint([...steps, ...h.steps], h.w);
+}
 /* ---------- screens ---------- */
 const view=h=>{music(false);stopBalloons();if(typeof stopRace=='function')stopRace();if(typeof stopFlu=='function')stopFlu();if(typeof stopHC=='function')stopHC();if(typeof gtStop=='function')gtStop();if(typeof BT!='undefined')BT.stop();const a=$('#app');a.style.animation='none';void a.offsetWidth;a.style.animation='';a.innerHTML=h};
 const PET_YAY=['Yay!','Woo-hoo!','You did it!','So smart!','High five!','Awesome!','Super!'];
@@ -9056,7 +9415,8 @@ const PATHS={
   {id:'m_mult',g:3,n:'Multiply Mountain',e:'🏔️',c:'#ffedd5',nodes:[['arr',2,'Arrays'],['mfact',1,'Easy Times Facts'],['mfact',2,'Times 3 & 4'],['dfact',1,'Easy Dividing'],['mfact',3,'Times 6 to 9'],['dfact',2,'Divide by 3 & 4'],['mfact',4,'All Times Facts'],['dfact',3,'Divide by 6 to 9'],['dfact',4,'All Dividing'],['mbig',1,'Times Tens & Hundreds'],['story',5,'Story Problems 5']]},
   {id:'m_frac',g:3,n:'Fraction Forest',e:'🌳',c:'#dcfce7',nodes:[['frac',2,'Name the Fraction'],['round',1,'Round to 10'],['frac',3,'Fractions on a Line'],['sub',6,'3-Digit Take Away'],['geo',1,'Perimeter'],['frac',4,'Compare Fractions'],['round',2,'Round to 100'],['time',5,'Time to the Minute'],['geo',2,'Area'],['frac',5,'Equal Fractions'],['sub',7,'Take Away Across Zeros'],['data',3,'Scaled Graphs'],['shape',5,'Shape Families'],['time',6,'How Much Time Passed'],['meas',4,'Rulers & Scales'],['story',6,'Story Problems 6']]},
   {id:'m_factory',g:4,n:'Factor Factory',e:'⚙️',c:'#e0e7ff',nodes:[['mfact',5,'Times 11 & 12'],['pv',4,'Place Value to 999,999'],['mbig',2,'2-Digit Times 1-Digit'],['big',6,'Add 4-Digit Numbers'],['dbig',1,'Divide 2-Digit Numbers'],['mbig',3,'Big Times 1-Digit'],['sub',8,'Take Away Big Numbers'],['dbig',2,'Divide with Leftovers'],['fact',1,'Factors & Multiples'],['mbig',4,'2-Digit Times 2-Digit'],['big',7,'Add Big Numbers'],['dbig',3,'Divide Big Numbers'],['fact',2,'Prime or Composite'],['round',3,'Round Big Numbers']]},
-  {id:'m_desert',g:4,n:'Decimal Desert',e:'🏜️',c:'#fef08a',nodes:[['frac',6,'Unlike Fractions'],['frac',7,'Simplest Form'],['fop',1,'Add & Subtract Parts'],['frac',8,'Mixed Numbers'],['fop',2,'Whole × Fraction'],['dec',1,'Tenths & Hundredths'],['dec',2,'Compare Decimals'],['ang',1,'Kinds of Angles'],['ang',2,'Measure Angles'],['geo',3,'Find the Missing Side'],['shape',6,'Symmetry & Lines'],['meas',5,'Convert Units'],['pat',4,'In and Out Tables'],['story',7,'Remainder Stories']]}]},
+  {id:'m_desert',g:4,n:'Decimal Desert',e:'🏜️',c:'#fef08a',nodes:[['frac',6,'Unlike Fractions'],['frac',7,'Simplest Form'],['fop',1,'Add & Subtract Parts'],['frac',8,'Mixed Numbers'],['fop',2,'Whole × Fraction'],['dec',1,'Tenths & Hundredths'],['dec',2,'Compare Decimals'],['ang',1,'Kinds of Angles'],['ang',2,'Measure Angles'],['geo',3,'Find the Missing Side'],['shape',6,'Symmetry & Lines'],['meas',5,'Convert Units'],['pat',4,'In and Out Tables'],['story',7,'Remainder Stories']]},
+  {id:'m_volcano',g:5,n:'Volcano Lab',e:'🌋',c:'#ffe4e6',nodes:[['pv',5,'Decimal Place Value'],['mbig',5,'3-Digit Times 2-Digit'],['dec',3,'Add/Subtract Decimals'],['pv',6,'Powers of Ten'],['dbig',4,'Divide by 2-Digit'],['dec',4,'Multiply Decimals'],['round',4,'Round Decimals'],['ooo',1,'Order of Operations'],['dec',5,'Divide Decimals']]}]},
  read:{n:'Reading Adventure',e:'📖',c:'linear-gradient(135deg,#fce7f3,#fbcfe8)',worlds:[
   {id:'r_abc',g:-1,n:'ABC Beach',e:'🏖️',c:'#e0f2fe',nodes:[['abc',1,'Big Letters'],['abc',2,'Little Letters'],['abc',3,'Match Big & Little'],['syl',1,'Clap the Syllables'],['abc',4,'ABC Order']]},
   {id:'r_meadow',g:0,n:'Letter Meadow',e:'🌻',c:'#dcfce7',nodes:[['sound',1,'First Sounds'],['sight',1,'Sight Words'],['rhyme',1,'Rhyme Time'],['pic',1,'Picture Words'],['sound',2,'Last Sounds'],['build',1,'Build a Word'],['sent',1,'Read & Match'],['sound',3,'Middle Sounds']]},
@@ -9678,7 +10038,7 @@ function home(first){
   <div class="scroll hm" id="hs"><div class="hm-cols">
    <div class="hm-col">${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
-   <p class="hm-ver">${ico('star', 16)}<span>Star School v92</span></p></div>`);
+   <p class="hm-ver">${ico('star', 16)}<span>Star School v93</span></p></div>`);
   music(true);
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,['💖','✨','⭐']);
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
@@ -13207,7 +13567,7 @@ function grown(){let armed=false;
    <div class="vline"><span class="vtxt">Give a bonus</span><button class="btn xs" id="pt5">+5 min</button><button class="btn xs danger" id="pt0">Empty bank</button></div>
    <label class="tg"><input type="checkbox" id="ptp" ${ptCfg().pause?'checked':''}> Pause game time (games locked)</label></div>
   <div class="card"><div class="tw"><table><tr><th>Skill</th><th>Rounds</th><th>1st try</th><th>Tricky ones</th></tr>${rows}</table></div></div>
-  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v92 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
+  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v93 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
    Storage: ${SAVE_FAILED?'<b style="color:#c0392b">could not save (device storage may be full)</b>':'saving OK'}${SAVE_CORRUPT?'<br><b style="color:#c0392b">The old save could not be read. A fresh start was made and the old data was kept on the device.</b>':''}<br>
    Last errors: ${(S.err||[]).length?(S.err||[]).slice().reverse().map(e=>'<br>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+' '+esc(e.msg)).join(''):'none'}</div></details>
   <div class="card"><label class="tg"><input type="checkbox" id="voice" ${S.voice?'checked':''}> Read questions out loud</label>
