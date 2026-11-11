@@ -4148,10 +4148,9 @@ run('vocabulary P2-22: bank validates, one right answer per item, 3000 questions
   const serrs=[],bad=m=>serrs.push(m);
   const body=function(){
     const want=[56,52,68,63,82],PRE=['un','re','pre','dis','mis'],SUF=['ful','less','ly','er','est','able'];
-    if(!SK.vocab||SK.vocab.max!==5||SK.vocab.bank!=='vocab'||SK.vocab.area!=='read')bad('SK.vocab is wrong');
+    if(!SK.vocab||SK.vocab.max<5||SK.vocab.bank!=='vocab'||SK.vocab.area!=='read')bad('SK.vocab is wrong');
     for(const m of bankProblems('vocab',{levels:[1,2,3,4,5],min:40}))bad(m);
-    const items=BANK.vocab;
-    if(items.some(it=>![1,2,3,4,5].includes(it.lv)))bad('vocab has an item outside levels 1-5');
+    const items=BANK.vocab.filter(it=>it.lv<=5); // levels 1-5 come first in BANK.vocab, so these indexes match q.bk.bi (P2-23 adds 6-10)
     for(let lv=1;lv<=5;lv++){
       const L=items.filter(it=>it.lv==lv),w2='level '+lv+': ';
       if(L.length!==want[lv-1])bad(w2+L.length+' items, wants '+want[lv-1]);
@@ -4231,7 +4230,7 @@ run('vocabulary P2-22: bank validates, one right answer per item, 3000 questions
     }
     for(let lv=1;lv<=5;lv++)if(JSON.stringify(genQ('vocab',lv,77))!==JSON.stringify(genQ('vocab',lv,77)))bad('level '+lv+' is not reproducible');
     // map: vocab 1 to 5 in the worlds CURRICULUM section 2.2 names, after the stops already there
-    const rd=NODES.read.filter(n=>n.sk=='vocab').map(n=>n.lv+'@'+n.wid).join(' ');
+    const rd=NODES.read.filter(n=>n.sk=='vocab'&&n.lv<=5).map(n=>n.lv+'@'+n.wid).join(' ');
     if(rd!=='1@r_reef 2@r_workshop 3@r_workshop 4@r_summit 5@r_summit')bad('vocab stops: '+rd);
     const wst=id=>NODES.read.filter(n=>n.wid==id&&n.sk!='boss').map(nid);
     if(wst('r_reef').slice(0,6).join(' ')!=='sight3 pic3 build3 comp2 spell2 vocab1')bad('r_reef order: '+wst('r_reef'));
@@ -4844,6 +4843,168 @@ run('grammar B P2-21: gram 6-9 bank, 3000 questions per level, one right answer,
   };
   const r=eval(js+';('+body.toString()+')()');
   return{problems:gerrs,note:'219 items, 12000 questions, '+r.checked+' stop checks over 6 fixtures x 7 grades'};
+});
+
+// ---- P2-23: vocabulary levels 6-10 (bank data, 3,000 questions per level, map stops, save safety) ----
+run('vocabulary P2-23: levels 6-10 bank validates, one right answer per item, 3000 questions per level, hints, map stops, no star moves, no re-lock',()=>{
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const serrs=[],bad=m=>serrs.push(m);
+  const body=function(){
+    const want={6:95,7:47,8:59,9:62,10:64},LV=[6,7,8,9,10],KINDS=['simile','metaphor','personification','idiom'];
+    if(!SK.vocab||SK.vocab.max!==10||SK.vocab.bank!=='vocab'||SK.vocab.area!=='read')bad('SK.vocab is wrong');
+    for(const m of bankProblems('vocab',{levels:[1,2,3,4,5,6,7,8,9,10],min:40}))bad(m);
+    const items=BANK.vocab;
+    if(items.some(it=>it.lv<1||it.lv>10))bad('vocab has an item outside levels 1-10');
+    const star=q=>(q.match(/\*([^*]+)\*/g)||[]);
+    for(const lv of LV){
+      const L=items.filter(it=>it.lv==lv),w2='level '+lv+': ';
+      if(L.length!==want[lv])bad(w2+L.length+' items, wants '+want[lv]);
+      const qs=new Set();
+      for(const it of L){
+        const all=[it.a,...it.d].map(x=>x.toLowerCase());
+        if(new Set(all).size!==all.length)bad(w2+it.q+': a choice repeats');
+        if(it.d.length!==3)bad(w2+it.q+': needs 4 choices');
+        if((it.form||'')!==(Math.max(it.a.length,...it.d.map(x=>x.length))>8?'wide':''))bad(w2+it.q+': form '+it.form+' (wide only when a choice is over 8 letters)');
+        if(!it.hint||it.hint.length<20)bad(w2+it.q+': hint missing');
+        if(it.hint&&it.hint.toLowerCase().split(/[^a-z']+/).includes(it.a.toLowerCase()))bad(w2+it.q+': the hint gives the answer');
+        if(!it.topic)bad(w2+it.q+': no topic');
+        if(it.em||it.pic)bad(w2+it.q+': no picture is expected');
+        if(qs.has(it.q))bad(w2+it.q+': the same prompt twice');qs.add(it.q);
+        if(it.q.length>120)bad(w2+it.q+': prompt over 120 letters (will not fit)');
+        if([it.a,...it.d].some(x=>x.length>60))bad(w2+it.q+': a choice is over 60 letters');
+      }
+    }
+    // level 6: one blank, the sound-alike word is a choice, and the pairs agree both ways
+    {
+      const L=items.filter(i=>i.lv==6),ans=new Map();
+      for(const it of L){
+        if(it.q.split('___').length!==2)bad('level 6: '+it.q+': needs exactly one blank');
+        if(star(it.q).length)bad('level 6: stars in '+it.q);
+        if(!ans.has(it.a))ans.set(it.a,[]);ans.get(it.a).push(it);
+      }
+      if(ans.size<45)bad('level 6: only '+ans.size+' different answer words');
+      for(const it of L)if(!it.d.some(w=>ans.has(w)&&ans.get(w).some(o=>o.d.includes(it.a))))bad('level 6: '+it.q+': no sound-alike choice that points back at '+it.a);
+      const groups=new Set(L.map(i=>[i.a,...i.d.filter(w=>ans.has(w)&&ans.get(w).some(o=>o.d.includes(i.a)))].sort().join('/')));
+      if(groups.size<30)bad('level 6: only '+groups.size+' homophone groups (needs 30)');
+    }
+    // level 7: the same bold word in the sentence and the question, 4 meanings, no meaning repeats the word
+    for(const it of items.filter(i=>i.lv==7)){
+      const s=star(it.q);
+      if(s.length!==2||s[0]!==s[1])bad('level 7: '+it.q+': needs the same bold word twice (in the sentence and in the question)');
+      else if(!/ What does \*\w+\* mean\?$/.test(it.q))bad('level 7: question shape '+it.q);
+      else if([it.a,...it.d].some(x=>x.toLowerCase().includes(s[0].slice(1,-1).toLowerCase())))bad('level 7: '+it.q+': a choice repeats the word');
+    }
+    // level 8: idiom meanings, and kind of language (always the same four kinds)
+    {
+      const L=items.filter(i=>i.lv==8),kinds=L.filter(i=>/^Which kind of language is /.test(i.q)),idi=L.filter(i=>/^What does ".+" mean\?$/.test(i.q));
+      if(kinds.length+idi.length!==L.length)bad('level 8: item shape');
+      for(const it of kinds){
+        if(JSON.stringify([it.a,...it.d].sort())!==JSON.stringify([...KINDS].sort()))bad('level 8: '+it.q+': wrong set of kinds');
+        const p=it.q.match(/"(.+)"/)[1].toLowerCase(),clue=/\bas .+ as\b|\blike\b/.test(p);
+        if((it.a==='simile')!==clue)bad('level 8: '+it.q+': a simile has like or as, and nothing else here does');
+      }
+      for(const k of KINDS)if(kinds.filter(i=>i.a===k).length<6)bad('level 8: fewer than 6 of '+k);
+      if(idi.length<24)bad('level 8: fewer than 24 idiom meanings');
+      for(const it of idi)if(it.q.toLowerCase().includes(it.a.toLowerCase()))bad('level 8: '+it.q+': the meaning is in the prompt');
+    }
+    // level 9: roots (the wrong choices are other meanings) and words
+    {
+      const L=items.filter(i=>i.lv==9),roots=L.filter(i=>/^What does the root /.test(i.q)),wd=L.filter(i=>/^What does \*\w+\* mean\?$/.test(i.q));
+      if(roots.length+wd.length!==L.length)bad('level 9: item shape');
+      for(const r of ['bio','geo','graph','tele','photo','aqua','port','rupt','spect','struct','scrib','dict','micro','therm'])if(!roots.some(i=>i.q.includes('*'+r+'*')))bad('level 9: root '+r+' is missing');
+      for(const it of roots){
+        const eg=it.q.match(/\((.+)\)$/);
+        if(!eg)bad('level 9: '+it.q+': no example words');
+        else{const r=it.q.match(/\*(\w+)\*/)[1];for(const w of eg[1].split(', '))if(!w.includes(r.slice(0,3)))bad('level 9: '+it.q+': '+w+' does not hold the root');}
+      }
+      if(wd.length<30)bad('level 9: fewer than 30 word items');
+      const ROOTM=roots.map(i=>i.a);
+      for(const it of wd)if(ROOTM.includes(it.a))bad('level 9: '+it.q+': answer is a bare root meaning');
+    }
+    // level 10: analogies and shades of meaning
+    {
+      const L=items.filter(i=>i.lv==10),an=L.filter(i=>i.topic=='analogies'),sh=L.filter(i=>i.topic=='shades of meaning');
+      if(an.length+sh.length!==L.length)bad('level 10: item topics');
+      for(const it of an)if(!/^[\w' ]+ : [\w' ]+ :: [\w' ]+ : \?$/.test(it.q))bad('level 10: analogy shape '+it.q);
+      if(an.length<30)bad('level 10: fewer than 30 analogies');
+      const sets=VOC_L10S.split('\n').map(r=>r.split('|'));
+      for(const [w,top,low] of sets){
+        const ws=w.split(','),t=sh.find(i=>i.q===top),l=sh.find(i=>i.q===low);
+        if(!t||t.a!==ws[3]||[t.a,...t.d].sort().join()!==[...ws].sort().join())bad('level 10: strongest item for '+w);
+        if(!l||l.a!==ws[0]||[l.a,...l.d].sort().join()!==[...ws].sort().join())bad('level 10: weakest item for '+w);
+      }
+      if(sh.length!==sets.length*2)bad('level 10: shades items '+sh.length);
+    }
+    // 3000 seeded questions per level
+    for(const lv of LV){
+      const w2='level '+lv+': ',seen=new Set(),labels={};
+      for(let i=0;i<3000;i++){
+        const q=genQ('vocab',lv,i+1);
+        const pr=kindProblems(q);if(pr.length)bad(w2+q.label+': '+pr.join('; '));
+        seen.add(q.bk.bi);
+        if(q.kind!=='choice')bad(w2+q.label+': kind '+q.kind);
+        const vs=q.choices.map(c=>c.v);
+        if(new Set(vs).size!==vs.length||vs.filter(v=>v===q.ans).length!==1)bad(w2+q.label+': not exactly one right choice');
+        if(vs.length!==4)bad(w2+q.label+': '+vs.length+' choices');
+        if(!q.say||!q.say.trim()||q.say.includes('*'))bad(w2+q.label+': say text');
+        if(!q.hint||q.hint.k!=='text'||q.hint.s.length<20)bad(w2+q.label+': hint');
+        if(!q.label||q.label.length>=60||q.label.includes('*'))bad(w2+'label '+q.label);
+        if(labels[q.label]!==undefined&&labels[q.label]!==q.bk.bi)bad(w2+'label '+q.label+' is not unique');
+        labels[q.label]=q.bk.bi;
+        if(q.sk!=='vocab'||q.lv!==lv)bad(w2+'genQ did not stamp sk/lv');
+        if(lv==7&&!/<b>/.test(q.html))bad(w2+q.label+': no bold word');
+        if((lv==6||lv==10)&&/<b>/.test(q.html))bad(w2+q.label+': unexpected bold');
+        if(i<40&&bankRebuild(q.bk).label!==q.label)bad(w2+q.label+': bankRebuild differs');
+      }
+      if(seen.size!==want[lv])bad(w2+'3000 questions drew only '+seen.size+' of '+want[lv]+' items');
+    }
+    for(const lv of LV)if(JSON.stringify(genQ('vocab',lv,77))!==JSON.stringify(genQ('vocab',lv,77)))bad('level '+lv+' is not reproducible');
+    // map: vocab 6-8 in Dragon Library after spell 5, 9 in Author Island, 10 in Legend Lab (other skills' stops, such as gram, are ignored)
+    const rd=NODES.read.filter(n=>n.sk=='vocab'&&n.lv>=6).map(n=>n.lv+'@'+n.wid).join(' ');
+    if(rd!=='6@r_library 7@r_library 8@r_library 9@r_island 10@r_legend')bad('vocab stops: '+rd);
+    const wst=id=>NODES.read.filter(n=>n.wid==id&&n.sk!='boss').map(nid).filter(x=>/^(spell|vocab)/.test(x)).join(' ');
+    if(wst('r_library')!=='spell5 vocab6 vocab7 vocab8')bad('r_library order: '+wst('r_library'));
+    if(wst('r_island')!=='spell6 vocab9')bad('r_island order: '+wst('r_island'));
+    if(wst('r_legend')!=='spell7 vocab10')bad('r_legend order: '+wst('r_legend'));
+    // save safety: the reading path without the five new stops against today's
+    const store={};
+    global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+    const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
+    const CUR=PATHS.read.worlds,NEWV=['vocab6','vocab7','vocab8','vocab9','vocab10'];
+    const OLD=()=>CUR.map(w=>({...w,nodes:w.nodes.filter(x=>!(x[0]==='vocab'&&x[1]>=6))}));
+    const snap=()=>{const o={};NODES.read.forEach((n,i)=>{o[nid(n)]={st:getSt('read',i),open:unlocked('read',i)}});return o};
+    const fixtures=[];
+    for(const name of ['fresh','midway','maxed','legacy-single-map','legacy-index-maps','tricky'])fixtures.push([name,fx(name)]);
+    {load(null);const m={};PATHS.read.worlds=OLD();buildNodes('read');NODES.read.forEach(n=>{m[nid(n)]=2});
+      PATHS.read.worlds=CUR;buildNodes('read');fixtures.push(['all-old-passed',JSON.stringify({maps:{read:m},grade:6})])}
+    fixtures.push(['library-mid',JSON.stringify({maps:{read:{spell5:3,spell4:2}},grade:4})]);
+    fixtures.push(['worlds-done',JSON.stringify({maps:{read:{spell5:3,spell6:1,spell7:1}},grade:5})]);
+    let checked=0;
+    for(const [name,raw] of fixtures)for(const g of [null,-1,0,1,2,3,4,5,6]){
+      load(Object.keys(JSON.parse(raw)).length?raw:null);if(g!==null)S.grade=g;
+      PATHS.read.worlds=OLD();buildNodes('read');
+      const before=snap(),curB=nid(NODES.read[curNode('read')]);
+      PATHS.read.worlds=CUR;buildNodes('read');
+      const after=snap(),curA=nid(NODES.read[curNode('read')]);
+      for(const k in before){
+        checked++;
+        if(!after[k]){bad(name+' g'+g+': stop '+k+' vanished');continue}
+        if(before[k].st!==after[k].st)bad(name+' g'+g+': '+k+' stars '+before[k].st+' -> '+after[k].st);
+        if(before[k].open&&!after[k].open)bad(name+' g'+g+': '+k+' re-locked');
+        if(before[k].st>0&&!after[k].open)bad(name+' g'+g+': passed stop '+k+' is locked');
+      }
+      for(const k of NEWV){
+        const i=NODES.read.findIndex(n=>nid(n)==k);
+        if(getSt('read',i)!==0)bad(name+': '+k+' starts with stars');
+        if(passed('read',WR.read[NODES.read[i].wi][1])&&(!stopNew('read',i)||!unlocked('read',i)||curA==k))bad(name+' g'+g+': '+k+' in a finished world is not NEW, open and not current');
+      }
+      if(curB!==curA&&!/^boss_/.test(curB)&&v42Stops('read').includes(curB)&&NODES.read.some((n,i)=>passed('read',i)))bad(name+' g'+g+': current stop moved '+curB+' -> '+curA);
+    }
+    PATHS.read.worlds=CUR;buildNodes('read');
+    return {checked};
+  };
+  const r=eval(js+';('+body.toString()+')()');
+  return{problems:serrs,note:'327 items, 15000 questions, '+r.checked+' stop checks over 8 fixtures x 9 grades'};
 });
 
 // ---- report ----

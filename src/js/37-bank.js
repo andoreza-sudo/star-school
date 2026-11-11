@@ -66,8 +66,8 @@ function bankChoose(key,cands,s){
   return i;
 }
 const bankCan=it=>it.form=='order'||it.form=='match'||it.form=='multi'?!!(BANKF[it.form]&&KIND[it.form]):true;
-const bankTxt=t=>esc(t).replace(/___/g,SLOT);
-const bankSay=t=>String(t).replace(/___/g,'blank');
+const bankTxt=t=>esc(t).replace(/\*([^*]+)\*/g,'<b>$1</b>').replace(/___/g,SLOT); // a word between * stars * prints in bold (P2-23)
+const bankSay=t=>String(t).replace(/\*/g,'').replace(/___/g,'blank');
 const bankWords=t=>String(t).split(/[^A-Za-z']+/).filter(Boolean);
 
 // One question from one item. Call it inside bankWith so shuffle() uses the item's own random stream.
@@ -93,7 +93,8 @@ function bankBuild(id,it,pass){
   if(!q.hint)q.hint={k:'text',s:it.hint||'Read it again slowly. Which one fits best?'};
   else if(it.hint&&q.hint.k=='text')q.hint.s=it.hint;
   q.say=it.say||bankSay(it.q);
-  q.label=it.label||it.q.slice(0,60)+' = '+(Array.isArray(it.a)?it.a.join(','):it.a); // label: optional, for long prompts (passages)
+  if(it.label)q.label=it.label; // label: optional, for long prompts (passages)
+  else{const a=(Array.isArray(it.a)?it.a.join(','):it.a).slice(0,24);q.label=it.q.replace(/\*/g,'').slice(0,56-a.length)+' = '+a} // under 60 letters in all (P2-23)
   if(it.topic)q.topic=it.topic;
   if(pass)q.ctx={title:pass.title,text:pass.text};
   return q;
