@@ -2,7 +2,8 @@
 let G;
 const newG=o=>(bankRound(),Object.assign({n:10,done:0,score:0,streak:0,best:0,missed:[],last:null,node:-1,path:null},o));
 function start(p,i){const n=NODES[p][i];G=newG({path:p,node:i,sk:n.sk,lv:n.lv,n:gradeCfg().n});
-  if(SK[n.sk].round){G.pool=SK[n.sk].round(n.lv);G.n=G.pool.length}
+  const rd=SK[n.sk].round&&SK[n.sk].round(n.lv); // a skill's own list of questions (passages); null = the usual round
+  if(rd){G.pool=rd;G.n=rd.length}
   next()}
 // The 10 questions of Tricky Mix / Mixed Practice: up to 7 due review items, then stops the child has reached (never a boss stop)
 function mixQs(){const qs=allMiss().slice(0,7).map(revQ).filter(Boolean),pool=[]; // P5-02: rebuilt from review items

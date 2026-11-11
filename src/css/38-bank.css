@@ -23,3 +23,8 @@
 .bctx-p{margin:0;font-size:clamp(17px,3.2vmin,24px);line-height:var(--lh-3);font-weight:600;color:var(--ink)}
 @media (orientation:landscape){.bctx-b{max-height:44vh}}
 @media (max-height:520px){.bctx-b{max-height:36vh}.bctx-h{min-height:var(--tap);padding-top:0;padding-bottom:0}}
+
+/* passage questions (P2-25): the choices sit under the passage panel, so they are compact and the question line stays on screen */
+.choices.bpass{gap:var(--s-2)}
+.choices.wide.bpass .choice.ch{font-size:clamp(17px,2.7vh,22px);padding:6px var(--s-3);min-height:var(--tap);line-height:1.2}
+@media (orientation:portrait) and (max-height:900px){.bctx-b{max-height:24vh}}

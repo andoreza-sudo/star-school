@@ -413,6 +413,13 @@ const SCREENS = {
   'boss-lose': { run: rwShot({ boss: 2, won: false }) },
   testout: { run: async p => { await p.evaluate(() => testOut('math', 2)); } },
   rewards: { full: true, run: async p => { await p.evaluate(rwSheet); } },
+  // P2-25 comprehension (2nd grade): the Word Workshop map with the two new stops, and one question of a story and of a passage about
+  // the world through the real round engine (the passage panel open); story-hint opens Help, story-closed hides the panel.
+  'story-map': { run: async p => { await p.evaluate(() => { S.grade = 2; pathMap('read', PATHS.read.worlds.findIndex(w => w.id === 'r_workshop')); }); } },
+  'story-comp': { run: compShot('comp', 3, 'g2f02', 2) },
+  'story-info': { run: compShot('info', 1, 'g2n01', 1) },
+  'story-hint': { run: compShot('comp', 3, 'g2f01', 1, 'hint') },
+  'story-closed': { run: compShot('comp', 3, 'g2f05', 3, 'closed') },
   // ---- P2-22 vocabulary A: one question per level (a fixed seed; level 1 and 2 pick one with a picture); vocab-hint opens Help ----
   ...Object.fromEntries([1, 2, 3, 4, 5].map(lv => ['vocab-' + lv, { run: vocabShot(lv) }])),
   'vocab-nopic': { run: vocabShot(1, false, false) },
@@ -642,6 +649,21 @@ function clockShot(sk, lv, seed, hint) {
       G.q = genQ(sk, lv, seed); renderQ();
     }, [sk, lv, seed]);
     if (hint) await p.click('#hb');
+  };
+}
+
+// P2-25: one question of a 2nd grade passage (by passage id and question number) through the real round engine.
+function compShot(sk, lv, id, qi, mode) {
+  return async p => {
+    await p.evaluate(([sk, lv, id, qi]) => {
+      S.name = 'Ava'; setGrade(2);
+      window.say = () => {};
+      start('read', NODES.read.findIndex(n => n.sk === sk && n.lv === lv));
+      const bp = PASS[sk].findIndex(x => x.id === id);
+      G.q = genPassage(sk, lv, { bp, qi, s: 5 }); G.q.sk = sk; G.q.lv = lv; renderQ();
+    }, [sk, lv, id, qi]);
+    if (mode === 'hint') await p.click('#hb');
+    if (mode === 'closed') await p.click('.bctx-h');
   };
 }
 

@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** P2-24, P2-25, P2-08, P2-21, P2-23
+**Next up:** P2-24, P2-08, P2-21, P2-23
 
-**Current version:** v79
+**Current version:** v80
 
 ## Chunk status
 
@@ -58,6 +58,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P2-20 v77
 - P2-22 v78
 - P4-18 v79
+- P2-25 v80
 
 ## Handoff notes
 
@@ -231,6 +232,10 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P1-11) `balance` strings pass behind the counters on a pan; fine at 380 px but a later pass could draw the pan on top. Sphere highlight looks like a small hole at tiny sizes.
 - (P1-11) `coinSVG` prints the value with a cent sign in Andika; if a font ever lacks it, `o.face = false` plus the generator's own text is the fallback.
 - (PRE-W5) Bank items name their picture with `pic` (an ICONS name, drawn with `ico()`); object nouns should move to `picFor` once ART exists so banks get the drawings too.
+- (P2-25) The passage panel and four wide choices do not both fit a 380x780 phone at the old sizes (the question line scrolled out of the card). Passage questions now get class `bpass`: compact choices and a 24vh panel body in portrait. Longer grade 3-6 passages will scroll inside the panel; check the question line is still visible in the shots of each grade chunk.
+- (P2-25) A round is 2 passages (10 questions) as CURRICULUM E-comp says. A child who gets a question wrong sees "Get 7 right to open the next stop" (n = 10); there is no per-passage pass mark.
+- (P2-25) The stops sit at the end of Word Workshop today. CURRICULUM 2.2 puts comp 3 and info 1 after the grammar, vocabulary and sentence stops of P2-20/22/24: when those merge, keep comp 3 and info 1 last.
+- (P2-25) `ev` sentences are not highlighted in the panel yet (CURRICULUM mentions "Look at this part again"); the hint quotes them instead. A later pass could mark the evidence sentences in `bankCtx`.
 - (P1-09) The finish screen text "Get 7 right to open the next stop" is fixed; on a 5-question passage round the pass mark is 4 (`floor(n*.7+.01)`). Reword the message from `n` when a passage skill ships (P2-25).
 - (P1-09, DONE in P5-02: items keep `bk`, `revQ` calls `bankRebuild`) Stored misses in `makeQ` (`{...pick(ms).q}`) keep `q.ctx` and `q.bk`, so a missed passage question comes back with its passage; P5-02 should rebuild with `bankRebuild(q.bk)` (or `genQ`) instead of copying.
 - (P1-09) Forms `order`, `match`, `multi` are validated but never drawn until P1-03/P1-04 add the kinds and register `BANKF.order/match/multi=(item,id)=>question`; the data shape in CURRICULUM section 8 (`order`, `pairs`, `a` as a list) is what the builders receive.
@@ -255,6 +260,20 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-11) Icons wanted from P4-03: `balloon` (Bonus game, today `gamepad`), `sparkle` / `confetti`, `unlock` (open padlock for "Next stop unlocked", today `map`), `zap` (a lightning with a spark for boss hits; today `bolt`), `sticker` (single sticker for the prize row), `medal` (the prize rosette as an icon), `heart-half` (boss life bar), `chest` (the treasure chest at icon size, e.g. for the round track where renderQ shows the gift emoji).
 
 ## Log
+
+### P2-25 Comprehension framework and 2nd grade passages (v80, 2026-11-11, Claude)
+- What changed: new `src/js/37-comp.js` (the framework) and `src/data/d-comp.js` (the passages). 10 original grade 2 passages (5 stories, 5 nonfiction), 5 questions each = 50 questions, each of the types CURRICULUM E-comp lists for grade 2: detail, sequence, vocabulary in context, main idea, inference. The `comp` skill (Story Time) gets level 3 (stories) and a new `info` skill (Learn About It, level 1, nonfiction). Levels 1 and 2 of `comp` are the old picture stories, unchanged (same question for the same seed, tested). A round is 2 passages x 5 questions in order (10 questions; 3 stars at 10, 2 at 8, 1 at 7); the passage panel (P1-09) stays above every question; the hint quotes the evidence sentence(s).
+- The framework (how P2-26 to P2-29 add a grade; header of 37-comp.js has it too): in `d-comp.js`, append `COMPSPEC[g]={words:[min,max], sent, maxSent, fk, need:[types]}` and `compAdd([{id:'g3f01', g:3, type:'f'|'n', title, text:[sentences], qs:[{t, q, a, d:[3], ev:[sentence indexes]}]}])`. `compAdd` makes the PASS items (`PASS.comp` lv = grade+1, `PASS.info` lv = grade-1; comp 3-7, info 1-5), keeps the authored copy in `COMP`, makes the hint (quotes `ev`) and the label (`title #n type`). `compProblems(g)` is the validator (10 passages, word count, average and longest sentence, Flesch-Kincaid grade, 5 questions with the required types, `ev` in range, answer words of detail and sequence questions are in the passage and in the evidence sentences, no wrong choice of a detail question is also supported by the evidence, a vocabulary question quotes a word that is in its evidence sentence, the right answer is not the longest choice in more than half the questions, PASS matches COMP). The test check loops over every grade that has passages, so a new grade is covered once its COMPSPEC row exists. Then, outside the data file: raise `SK.comp.max` / `SK.info.max` in 38-skills.js and add `['comp',lv,title],['info',lv,title]` to the grade's world in 42-paths.js (CURRICULUM 2.2). Passages are only ever appended (saved review items remember a passage by its position in PASS, `q.bk.bp`).
+- Stops: `comp 3` ("Read a Story") and `info 1` ("Learn About It") are the last two stops of `r_workshop` (Word Workshop), after sight 5, vowel teams 2 and build vowel teams 2, before the boss. CURRICULUM 2.2 puts them after gram 2, vocab 2, sent 4, vocab 3, gram 3, sent 5 (P2-20, 22, 24); whoever merges those keeps comp 3 and info 1 at the end of the list.
+- Edits to existing files: `38-skills.js` (comp line: max 3, `genCompLv`, `round`; new `info` line), `42-paths.js` (two stops appended to r_workshop), `15-icons.js` (`info:'doc'` in ICO_SK), `50-round.js` `start()` (a skill's `round()` may return null for "ordinary round"; needed because comp levels 1 and 2 have no passage), `37-bank.js` (optional `label` on an item, long prompts; passage questions get class `bpass`), `38-bank.css` (compact choices and a shorter panel under `bpass` so the question line stays visible on a 380 px phone; before this a four-row wide choice list pushed the question out of view), tools (test.js, smoke.js, shots.js), `tools/test.js` P2-18 check expects `comp3 info1` after build6.
+- Save safety: stars are keyed by stop id (`comp3`, `info1`), no migration, `LATEST` unchanged. The new stops are appended at the end of an existing world: a child who had finished Word Workshop sees both with the NEW tag, open, and the map does not open on them; passing them changes no other key. Check compares every old stop (stars, passed, open) with a map without the two stops over 6 fixtures x 6 grades (1950 comparisons), plus a built "finished Word Workshop" save at grades 2, 3, 6: 0 stars moved, 0 stops re-locked, current stop moved on 0 of 36 loads. Only a child in the middle of Word Workshop who has done every old stop but not the boss is moved on, to the new first stop (by design: it is the next stop).
+- Reading level: words per passage 64-77 (CURRICULUM 60-90), at most 9.6 words per sentence on average and 15 in any sentence, Flesch-Kincaid 0.8-2.1 (limit 3.5), no word the BAD filter catches, no real brands or people.
+- Tests: test.js 2 new checks (data and rounds; stops and saves) incl. 10 validator trials proved to catch bad passages (ev out of range, answer not in the text, too long, a sentence too long, wrong question count, missing type, a wrong choice also supported, a vocab word not in the evidence, unknown type, reading grade), 3,000 questions each for comp 3 and info 1, 50 distinct questions, bankRebuild, live rounds reach all 5 stories in 3 rounds. Smoke `// P2-25` (380x780): the map opens on comp3 for a child who did the old stops, both stops played with real taps (10 questions each), panel hides and shows, hint, 48 px targets, no sideways scroll, stars saved, old stops untouched.
+- check.sh: build, contrast (92 pairs), hex guard, test.js 53 of 53, smoke OK (no console errors, no network); index.html 985,126 bytes.
+- Screenshots checked (380x780): story-map, story-comp (passage panel open, question line and four choices visible), story-info, story-hint, story-closed.
+- Checklist 7.1: all ticked (midway fixture and no-network covered by smoke; no new emoji (the info skill uses the allowed magnifier); no raw hex in new CSS).
+- Files: src/js/37-comp.js (new), src/data/d-comp.js (new), src/js/37-bank.js, 38-skills.js, 42-paths.js, 15-icons.js, 50-round.js, src/css/38-bank.css, tools/test.js, smoke.js, shots.js, build.py (VER v80, provisional), docs/PROGRESS.md, built output.
+- Merge: built on a parallel branch, renumbered v79 -> v80 at merge.
 
 ### P4-18 Graphics quality pass, part 1: map chrome, timed games, streak, placement, Pet Care, setup, Game Room, math visuals (v81, 2026-11-11, Claude)
 - Audit (screenshots of every screen at 600x960 and 380x780 on the v75 build, judged at real size). State before -> after this chunk:
