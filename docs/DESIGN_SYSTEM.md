@@ -43,8 +43,8 @@ All tokens are CSS custom properties on `:root` in `src/css/00-tokens.css`. Afte
 | `--star` | `#FFC93C` | Stars, coins, highlights (never text on white) |
 | `--star-shade` | `#F5A800` | Star outline, ledge |
 | `--star-tint` | `#FFF1C7` | Reward backgrounds |
-| `--good` | `#22B35E` | Correct fill |
-| `--good-ink` | `#157F3F` | Correct text |
+| `--good` | `#20A556` | Correct fill |
+| `--good-ink` | `#147A3C` | Correct text |
 | `--good-tint` | `#DDF5E7` | Correct background |
 | `--try` | `#FFB020` | Try-again fill |
 | `--try-ink` | `#8A4B00` | Try-again text |
@@ -55,8 +55,8 @@ Subject colours (each has `-tint` for backgrounds and `-shade` for ledges and te
 
 | Subject | `--x` | `--x-tint` | `--x-shade` |
 |---------|-------|-----------|-------------|
-| Math `--math` | `#2F6FED` | `#E1EBFF` | `#1F4FB8` |
-| Reading `--read` | `#D6336C` | `#FFE3EC` | `#A61E4D` |
+| Math `--math` | `#2D6BE4` | `#E1EBFF` | `#1F4FB8` |
+| Reading `--read` | `#CD3168` | `#FFE3EC` | `#A61E4D` |
 | Spanish `--es` | `#17804F` | `#DDF5E7` | `#0F5F3A` |
 | Discover `--disc` | `#0E7C86` | `#D9F3F5` | `#0A5A62` |
 | Brain Teasers `--bt` | `#7C3AED` | `#EDE4FF` | `#5B21B6` |
@@ -178,6 +178,7 @@ Microcopy rules: short, warm, concrete. "Try again" not "Wrong". "3 more stars t
 | Size | Under 600 bytes per icon, coordinates to one decimal |
 | Feature icons | Same drawings may be shown at 48-64 px inside a tinted circle "badge" with the subject colour |
 | Naming | lowercase, hyphenated: `sound-on`, `skill-add` |
+| How (set in P4-02) | Rounded corners come from stroking the inset shape with `currentColor` (stroke-width 3 for r 1.5, 1.5 for star points); cut-outs use `fill-rule="evenodd"`; `--ic2` only where a cut-out cannot work. Full recipe in the header of `src/js/15-icons.js`; review sheet: `node tools/shots.js icons` |
 
 ### 5.3 First 40 icons (P4-02)
 
@@ -226,7 +227,7 @@ Four bosses (Gloop, Robo-Bonk, Captain Inky, Zorp) drawn in the same style, one 
 
 ### 6.5 Object art (chunks P4-13 to P4-15)
 
-Pictures for counting, picture words and Spanish vocabulary. 64x64 grid, same flat two-tone style, under 900 bytes each, in `src/js/16-art-a.js`, `-b`, `-c` as `ART = {name: '...'}` with helper `art(name, size)`.
+Pictures for counting, picture words and Spanish vocabulary. 64x64 grid, same flat two-tone style, under 900 bytes each, in `src/js/16-art-a.js`, `-b`, `-c` as `Object.assign(ART, {name: '...'})` (ART, `picArt(name, size)` and `picFor(word, emoji)` live in `src/js/15-pics.js`; the names `art` and `artSVG` are already taken by the a/an helper and the Art Studio).
 
 | Set | Contents (40 each) |
 |-----|--------------------|

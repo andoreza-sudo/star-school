@@ -1,0 +1,55 @@
+@font-face{font-family:Andika;font-weight:400;src:url(data:font/woff2;base64,__F400__) format('woff2')}
+@font-face{font-family:Andika;font-weight:700;src:url(data:font/woff2;base64,__F700__) format('woff2')}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+button,a,.btn{touch-action:manipulation}
+:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+html,body{margin:0;height:100%;color:var(--ink);font-family:var(--font-body);-webkit-user-select:none;user-select:none;overscroll-behavior:none;overflow:hidden}
+body{background:radial-gradient(circle at 20% 10%,var(--glow-warm) 0,transparent 40%),radial-gradient(circle at 90% 90%,var(--glow-cool) 0,transparent 45%),var(--paper)}
+input{font:inherit;-webkit-user-select:text;user-select:text}
+#app{height:100%;display:flex;flex-direction:column;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);animation:enter var(--t-slow) ease-out}
+@keyframes enter{from{opacity:0;transform:scale(.97)}}
+.top{display:flex;align-items:center;gap:10px;padding:10px 12px;flex:none}
+.title{font-size:24px;font-weight:700}
+.sp{flex:1}
+.stars{font-size:var(--fs-4);font-weight:700;white-space:nowrap;background:var(--surface);border-radius:var(--r-btn);padding:6px 12px;box-shadow:0 3px 0 var(--shadow-ink);font-variant-numeric:tabular-nums}
+.bump{animation:bump .35s}
+@keyframes bump{40%{transform:scale(1.35)}}
+.btn{border:0;border-radius:var(--r-btn);background:var(--surface);box-shadow:var(--ledge) var(--shadow-ink-2);font:inherit;font-weight:700;color:var(--ink);padding:12px 16px;cursor:pointer;touch-action:manipulation;transition:transform var(--t-fast)}
+.btn:active{transform:translateY(3px) scale(.97);box-shadow:var(--ledge-press) var(--shadow-ink-2)}
+.btn.sm{font-size:18px;padding:10px 14px}
+.btn.xs{padding:4px 10px;font-size:var(--fs-2);border-radius:var(--r-chip)}
+.btn.big{font-size:24px;padding:16px 26px;background:var(--good-ink);color:var(--surface)}
+.center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:16px;text-align:center;overflow:auto;min-height:0}
+.center>:first-child{margin-top:auto}.center>:last-child{margin-bottom:auto}
+h1{font-size:34px;margin:0 0 14px}
+h2{font-size:24px;margin:18px 4px 10px}
+.small{font-size:var(--fs-2);color:var(--ink-3);font-weight:400}
+.scroll{flex:1;overflow:auto;padding:0 14px 24px;-webkit-overflow-scrolling:touch}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.tile{display:flex;flex-direction:column;align-items:center;gap:4px;padding:16px 8px;font-size:19px}
+.tile.math{background:var(--math-tint)}.tile.read{background:var(--read-tint)}
+.te{font-size:44px;transition:transform .2s}.tile:active .te{transform:rotate(-12deg) scale(1.2)}
+.lv{color:var(--star-shade);font-size:20px;letter-spacing:2px}
+/* hero */
+.hero{display:flex;gap:16px;align-items:center;background:linear-gradient(135deg,var(--star-tint),var(--star));border-radius:var(--r-hero);padding:14px 18px;margin:4px 0 6px;box-shadow:var(--ledge) var(--shadow-ink)}
+.petbig{font-size:96px;line-height:1;cursor:pointer;animation:bob 2.4s ease-in-out infinite;filter:drop-shadow(0 6px 4px var(--shadow-ink-2))}
+.pet.aura,.petbig.aura{filter:drop-shadow(0 0 12px var(--star)) drop-shadow(0 0 4px var(--surface))}
+@keyframes bob{50%{transform:translateY(-8px) rotate(3deg)}}
+.jump{animation:jump .5s!important}
+@keyframes jump{30%{transform:translateY(-30px) scale(1.15) rotate(-8deg)}60%{transform:translateY(0) scale(.95)}}
+.sad{animation:sad .5s!important}
+@keyframes sad{25%{transform:rotate(-14deg)}75%{transform:rotate(14deg)}}
+.hinfo{flex:1;min-width:0}
+.hname{font-size:26px;font-weight:700}
+.meter{height:16px;background:var(--wash);border-radius:9px;overflow:hidden;margin:6px 0 2px}
+.meter div{height:100%;background:linear-gradient(90deg,var(--star-shade),var(--danger));border-radius:9px;transition:width .6s}
+.meter.m div{background:linear-gradient(90deg,var(--good),var(--disc))}
+.htxt{font-size:16px;font-weight:700;color:var(--try-ink)}
+/* icons (P4-02): ico(name,size,cls) in 15-icons.js; colour from currentColor, second tone from --ic2 */
+.ic{display:inline-block;flex:none;vertical-align:-.2em;fill:currentColor;overflow:visible;pointer-events:none}
+.ic-coin{color:var(--star-shade);--ic2:var(--star-tint)}
+/* reduced motion and calm mode (also hides confetti) */
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.conf{display:none!important}}
+html.calm *,html.calm *::before,html.calm *::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+html.calm .conf{display:none!important}
+.art{display:inline-block;vertical-align:-.125em;color:var(--ink)}

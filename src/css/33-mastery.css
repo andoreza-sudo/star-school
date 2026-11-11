@@ -1,0 +1,4 @@
+/* P1-08 mastery: the Challenge tag on a question from the next harder stop (51-mastery.js mastShow). Tokens only. */
+.mtag{display:inline-flex;align-items:center;gap:var(--s-1);align-self:center;background:var(--star-tint);color:var(--ink);font-weight:700;
+  font-size:var(--fs-2);border-radius:var(--r-pill);padding:var(--s-1) var(--s-3)}
+.mtag .ic{color:var(--try-ink)}

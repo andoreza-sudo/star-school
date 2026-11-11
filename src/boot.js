@@ -1,0 +1,2 @@
+loadClips();
+home(true);

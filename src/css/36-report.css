@@ -1,0 +1,78 @@
+/* P5-06 Grown-ups report card (82-report.js). Tokens only; every class starts with rp-. */
+.rp-entry{display:flex;align-items:center;gap:var(--s-3);flex-wrap:wrap}
+.rp-entry .btn{display:inline-flex;align-items:center;gap:var(--s-2);min-height:var(--tap)}
+.rp-entry .small{flex:1 1 180px}
+.rp-noprint .btn{min-height:var(--tap)}
+.rp-head{padding:var(--s-2) var(--s-1) 0}
+.rp-t{font-size:var(--fs-5);font-weight:700;line-height:var(--lh-5);overflow-wrap:anywhere}
+.rp-card{overflow-wrap:anywhere}
+.rp-h2{margin:0 0 var(--s-3);font-size:var(--fs-4);line-height:var(--lh-4)}
+.rp-h3{margin:var(--s-4) 0 var(--s-2);font-size:var(--fs-3)}
+.rp-p{margin:var(--s-3) 0 0;line-height:var(--lh-2)}
+.rp-p0{margin:0 0 var(--s-3)}
+.rp-key{margin-top:var(--s-3)}
+.rp-empty{background:var(--surface-2);border:2px dashed var(--line);border-radius:var(--r-btn);padding:var(--s-3) var(--s-4);
+  color:var(--ink-2);line-height:var(--lh-2)}
+.rp-card .rp-empty{margin:0}
+/* this week / last week */
+.rp-wrow{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--s-2);margin-bottom:var(--s-3)}
+.rp-wl{grid-column:1/-1;font-weight:700;color:var(--ink-2)}
+.rp-cell{background:var(--surface-2);border-radius:var(--r-btn);padding:var(--s-2);min-width:0}
+.rp-h{font-size:var(--fs-1);color:var(--ink-3)}
+.rp-n{font-size:var(--fs-5);font-weight:700;line-height:var(--lh-5)}
+.rp-cell .small{font-size:var(--fs-1)}
+/* 14-day chart */
+.rp-svg{display:block;width:100%;max-width:560px;height:auto}
+.rp-b0 rect{fill:var(--ink-3)}
+.rp-b1 rect{fill:var(--brand)}
+.rp-b0 rect.z,.rp-b1 rect.z{fill:var(--line)}
+.rp-v{font-size:12px;font-weight:700;fill:var(--ink)}
+.rp-l{font-size:12px;fill:var(--ink-3)}
+.rp-l.now{fill:var(--ink);font-weight:700}
+.rp-div{stroke:var(--line);stroke-width:2;stroke-dasharray:4 4}
+.rp-base{stroke:var(--line);stroke-width:2}
+.rp-wk{display:flex;max-width:560px;font-size:var(--fs-1);color:var(--ink-2);font-weight:700}
+.rp-wk span{flex:1;text-align:center}
+/* by subject */
+.rp-sub{display:flex;align-items:center;gap:var(--s-2);margin:var(--s-1) 0}
+.rp-sn{flex:0 0 96px;font-weight:700}
+.rp-sbar{flex:1;height:14px;background:var(--surface-2);border-radius:var(--r-pill);overflow:hidden}
+.rp-sbar i{display:block;height:100%;background:var(--brand);border-radius:var(--r-pill)}
+.rp-sm{flex:0 0 64px;text-align:right;font-size:var(--fs-2)}
+/* where they are working */
+.rp-path,.rp-st{margin-bottom:var(--s-4)}
+.rp-ph{display:flex;justify-content:space-between;align-items:baseline;gap:var(--s-2);flex-wrap:wrap}
+.rp-g{display:flex;gap:3px;margin:var(--s-2) 0}
+.rp-gc{flex:1;min-width:0;text-align:center;font-size:var(--fs-1);color:var(--ink-3)}
+.rp-gc i{display:block;height:14px;border-radius:var(--r-chip);background:var(--surface-2);border:2px solid var(--line);margin-bottom:var(--s-1)}
+.rp-gc.on i{background:var(--brand);border-color:var(--brand)}
+.rp-gc.on{color:var(--ink)}
+.rp-gc.pick i{border-color:var(--ink);border-width:3px}
+.rp-gc.pick{font-weight:700;color:var(--ink)}
+.rp-bar1{height:14px;background:var(--surface-2);border:2px solid var(--line);border-radius:var(--r-pill);overflow:hidden;margin:var(--s-2) 0}
+.rp-bar1 i{display:block;height:100%;background:var(--es)}
+/* mastery by strand */
+.rp-bar{display:flex;height:16px;border-radius:var(--r-pill);overflow:hidden;border:2px solid var(--line);margin:var(--s-2) 0;background:var(--surface-2)}
+.rp-bar i{display:block;height:100%}
+.rp-bar .m{background:var(--good-ink)}
+.rp-bar .p{background:var(--good)}
+.rp-bar .l{background:var(--try)}
+.rp-bar .n{background:var(--surface-2)}
+/* lists */
+.rp-list{margin:0;padding-left:var(--s-5)}
+.rp-list li{margin-bottom:var(--s-3);line-height:var(--lh-2)}
+.rp-tag{display:inline-block;background:var(--brand-tint);color:var(--ink);font-size:var(--fs-1);font-weight:700;border-radius:var(--r-pill);padding:0 var(--s-2)}
+.rp-ex{display:inline-block;background:var(--try-tint);color:var(--ink);border-radius:var(--r-chip);padding:0 var(--s-2);margin-right:var(--s-1)}
+.rp-fr{display:flex;flex-wrap:wrap;gap:var(--s-1) var(--s-4);padding:var(--s-2) 0;border-bottom:2px solid var(--line)}
+.rp-fr b{flex:1 1 100%}
+.rp-str{display:flex;align-items:center;gap:var(--s-3)}
+.rp-fl{color:var(--play)}
+@media (max-width:480px){.rp-t{font-size:var(--fs-4)}.rp-n{font-size:var(--fs-4)}.rp-sn{flex-basis:78px}}
+/* print: plain white page, no buttons, all cards in one flow */
+@media print{
+  html,body,#app,.scroll{height:auto!important;overflow:visible!important;display:block!important;background:var(--surface)!important;animation:none!important}
+  .rp-noprint{display:none!important}
+  .rp-scroll{padding:0!important}
+  .rp-card{break-inside:avoid;box-shadow:none!important;border:2px solid var(--line)}
+  .rp-bar,.rp-sbar,.rp-gc i,.rp-b0 rect,.rp-b1 rect{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}

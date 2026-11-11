@@ -1,0 +1,8 @@
+{
+  "name": "star-school-tools",
+  "private": true,
+  "description": "Dev-time harness for Star School. playwright-core only; uses the system Chrome (no browser download).",
+  "devDependencies": {
+    "playwright-core": "1.49.1"
+  }
+}
