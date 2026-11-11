@@ -1074,6 +1074,19 @@ html.notext .pktxt{display:none}
   .qs .qarea:has(.bctx.long){padding-top:var(--s-3);padding-bottom:var(--s-3);gap:var(--s-2)}
   .qs .qarea:has(.bctx.long) .bctx-h{padding-top:0;padding-bottom:0}
 }
+
+/* Spanish dialogues (P2-35): the panel body is a list of lines, each with its own speak button (48 px) */
+.bctx.dlg .bctx-b{max-height:42vh;padding-bottom:var(--s-3)}
+.dl-l{display:grid;grid-template-columns:var(--tap) 1fr;gap:var(--s-2);align-items:center;min-height:var(--tap);border-top:1px solid var(--line)}
+.dl-l:first-child{border-top:0}
+.dl-b{width:var(--tap);height:var(--tap);display:inline-flex;align-items:center;justify-content:center;border-radius:50%;border:0;background:var(--brand);color:var(--surface);cursor:pointer;touch-action:manipulation}
+.dl-b.talking{transform:scale(1.08)}
+.dl-t{font-size:clamp(17px,3.2vmin,22px);line-height:1.3;font-weight:600;color:var(--ink)}
+.dl-n{margin-right:.35em;color:var(--brand-shade)}
+.dl-l.s1 .dl-n{color:var(--ink-2)}
+.choices.pics.dlg .choice.ch{font-size:clamp(30px,5vh,44px);padding:var(--s-2);min-height:var(--tap)}
+.choices.pics.dlg .ch .pcap small{font-size:.4em;color:var(--ink-2)}
+.dl-l:not(:has(.dl-b)){grid-template-columns:1fr;padding:var(--s-1) 0} /* no Spanish voice: the buttons are gone, the text takes the whole row */
 /* Placement quiz "Find my level" (P1-07): home card, Grown-ups row, quiz dots, result. Tokens only. */
 .pl-card{background:var(--brand-tint);border-radius:var(--r-card);padding:var(--s-3) var(--s-4);margin:var(--s-4) 0 0;color:var(--ink)}
 .pl-ct{display:flex;align-items:center;gap:var(--s-2);font-size:var(--fs-3);line-height:var(--lh-3);color:var(--ink)}
@@ -2857,7 +2870,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S));SAVE_FAILED=fals
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v128'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v129'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -2931,9 +2944,10 @@ function esVoice(){let vs=[];try{vs=speechSynthesis.getVoices()}catch(e){}return
 let ESNOTE=0; // the grown-up note shows once per session
 function esNote(){if(ESNOTE)return;ESNOTE=1;fb('No Spanish voice on this tablet. Grown-ups: add one in the tablet’s text-to-speech settings. The words are shown to read.','info long',5000)}
 // after a Spanish question is drawn: with no Spanish voice, the speaker button becomes the word shown big and "Hear it" goes away
-function esQFix(q){if(!q||q.lang!='es'||esVoice()!='no')return;
-  $$('[data-sayes]').forEach(b=>{const d=document.createElement('div');d.className='esbig';d.textContent=b.dataset.sayes;b.replaceWith(d)});
-  const k=$('#spk');if(k)k.style.display='none';esNote()}
+function esQFix(q){if(!q||!(q.lang=='es'||q.dl)||esVoice()!='no')return;
+  // P2-35: a dialogue line (.dl-b) already shows its text beside the button, so the button just goes; an English question keeps "Hear it"
+  $$('[data-sayes]').forEach(b=>{if(b.classList.contains('dl-b')){b.remove();return}const d=document.createElement('div');d.className='esbig';d.textContent=b.dataset.sayes;b.replaceWith(d)});
+  const k=$('#spk');if(k&&q.lang=='es')k.style.display='none';esNote()}
 function say(t,btn,lang,q){if(lang=='es'&&esVoice()=='no'){esNote();if(btn)btn.classList.remove('talking');return}if(!canSpeak()){if(btn)noVoice(btn);return}
   try{if(!q)speechSynthesis.cancel();const es=lang=='es',u=new SpeechSynthesisUtterance(String(t).replace(/−/g,' minus '));u.rate=es?.8:.88;u.pitch=1.1;u.lang=es?'es-MX':'en-US';
   const vs=speechSynthesis.getVoices(),v=es?(vs.find(v=>/^es[-_](MX|US)/i.test(v.lang))||vs.find(v=>/^es/i.test(v.lang))):(vs.find(v=>/^en[-_]US/i.test(v.lang))||vs.find(v=>/^en/i.test(v.lang)));if(v)u.voice=v;
@@ -5593,7 +5607,8 @@ const PATHS={
   {id:'e_casa',g:-1,n:'La Casa',e:'🏠',c:'#fde68a',nodes:[['es_house',1,'Casa Dulce Casa'],['es_house',2,'Read the House'],['es_clothes',1,'¡A Vestirse!'],['es_clothes',2,'Read Clothes'],['es_school',1,'A la Escuela'],['es_school',2,'Read School'],['es_feel',1,'¿Cómo Estás?'],['es_feel',2,'Read Feelings'],['es_house',3,'Spell the House'],['es_clothes',3,'Spell Clothes'],['es_school',3,'Spell School']]},
   {id:'e_tiempo',g:-1,n:'El Tiempo',e:'⏰',c:'#e0f2fe',nodes:[['es_days',1,'Days: Listen'],['es_days',2,'Read the Days'],['es_months',1,'Months: Listen'],['es_months',2,'Read Months'],['es_weather',1,'Weather: Listen'],['es_weather',2,'Read Weather'],['es_big',1,'Big Numbers: Listen'],['es_big',2,'Read Big Numbers'],['es_time',1,'Time: Listen'],['es_time',2,'Read the Time']]},
   {id:'e_ciudad',g:-1,n:'La Ciudad',e:'🏙',c:'#e0f2fe',nodes:[['es_place',1,'Places in Town'],['es_place',2,'Read Places'],['es_trans',1,'Transport'],['es_trans',2,'Read Transport'],['es_verb',1,'Action Words'],['es_verb',2,'Read Action Words'],['es_adj',1,'Opposites'],['es_adj',2,'Read Opposites']]},
-  {id:'e_frases',g:-1,n:'Las Frases',e:'🎤',c:'#fce7f3',nodes:[['es_phrase',1,'Phrases: Listen'],['es_phrase',2,'Phrases: Reply'],['es_art',1,'El or La?'],['es_art',2,'Un, Una & Plurals'],['es_ser',1,'Ser: Who I Am'],['es_ser',2,'Estar: How & Where'],['es_ser',3,'Tener: Have & Am'],['es_gusta',1,'Me Gusta'],['es_gusta',2,'Gusta or Gustan'],['es_sent',1,'Build a Sentence'],['es_sent',2,'Sentences & Places']]}]},
+  {id:'e_frases',g:-1,n:'Las Frases',e:'🎤',c:'#fce7f3',nodes:[['es_phrase',1,'Phrases: Listen'],['es_phrase',2,'Phrases: Reply'],['es_art',1,'El or La?'],['es_art',2,'Un, Una & Plurals'],['es_ser',1,'Ser: Who I Am'],['es_ser',2,'Estar: How & Where'],['es_ser',3,'Tener: Have & Am'],['es_gusta',1,'Me Gusta'],['es_gusta',2,'Gusta or Gustan'],['es_sent',1,'Build a Sentence'],['es_sent',2,'Sentences & Places']]},
+  {id:'e_cuentos',g:-1,n:'Los Cuentos',e:'📚',c:'#ccfbf1',nodes:[['es_story',1,'Mini Stories'],['es_story',2,'Stories: Pictures'],['es_story',3,'Stories: Spanish']]}]},
  /* Discover (P2-36, P2-37): graded like Math and Reading, but no placement quiz (noPlace). Worlds and stops follow CURRICULUM 2.4.
     Nature Trail grew geo_world 1 and civ 1 in P2-37 (a child who had finished it keeps the boss open and sees them as NEW stops). */
  disc:{n:'Discover',e:'🌍',c:'linear-gradient(135deg,#ccfbf1,#99f6e4)',noPlace:true,startBelow:true,worlds:[
@@ -6602,7 +6617,7 @@ function home(first){
   <div class="scroll hm" id="hs"><div class="hm-cols">
    <div class="hm-col">${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}${hmDaily()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
-   <p class="hm-ver">${ico('star', 16)}<span>Star School v128</span></p></div>`);
+   <p class="hm-ver">${ico('star', 16)}<span>Star School v129</span></p></div>`);
   music(true);
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,['💖','✨','⭐']);
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
@@ -9931,7 +9946,7 @@ function grown(){let armed=false;
     {sub:'Rounds played and first-try accuracy for every skill on the maps, with the questions missed most.'})}
   ${GW.card('gw-how','info','How it works',`<p class="gw-p">Each subject has its own map. Getting 7 of 10 right opens the next stop (8 earns 2 stars, 10 earns 3), and each world stretches further. Missed questions come back at the end of a round, in later rounds, in Daily Review and in the Tricky Mix. Each right answer earns a star (the pet grows) and a coin (spent in the shop). Everything is saved on this tablet only.</p>`)}
   <details class="gw-card gw-det" id="applog"><summary class="gw-h"><span class="gw-hi">${ico('doc',24)}</span><span>App log</span>${ico('chevron-right',22,'chev')}</summary><div class="gw-log">
-   <div><b>Version</b> v128</div><div><b>Save size</b> ${(JSON.stringify(S).length/1024).toFixed(1)} KB</div>
+   <div><b>Version</b> v129</div><div><b>Save size</b> ${(JSON.stringify(S).length/1024).toFixed(1)} KB</div>
    <div><b>Storage</b> ${SAVE_FAILED?'<span class="gw-bad">could not save (device storage may be full)</span>':'saving OK'}</div>
    ${SAVE_CORRUPT?'<div class="gw-bad">The old save could not be read. A fresh start was made and the old data was kept on the device.</div>':''}
    <div><b>Last errors</b> ${(S.err||[]).length?'<ul class="gw-errs">'+(S.err||[]).slice().reverse().map(e=>'<li><span>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+'</span> '+esc(e.msg)+'</li>').join('')+'</ul>':'none'}</div></div></details>
@@ -10280,20 +10295,20 @@ function appFiles() {
   ];
 }
 function dataReady() {
-  return appFiles().every(f => f[1] === 'v128');
+  return appFiles().every(f => f[1] === 'v129');
 }
 function dataMissing() {
-  logErr(appFiles().filter(f => f[1] !== 'v128').map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v128)');
+  logErr(appFiles().filter(f => f[1] !== 'v129').map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v129)');
   const again = UI.btn('Try again', { kind: 'primary', size: 'lg', icon: 'replay', id: 'dataretry' });
   view(`<div class="scroll" id="datamiss">${UI.empty('download', 'Star School needs to finish updating. Connect to the internet, then tap Try again.', again)}</div>`);
   $('#dataretry').onclick = () => location.reload();
 }
 </script>
-<script src="gen.v128.js"></script>
-<script src="gen2.v128.js"></script>
-<script src="bt.v128.js"></script>
-<script src="games.v128.js"></script>
-<script src="data.v128.js"></script>
+<script src="gen.v129.js"></script>
+<script src="gen2.v129.js"></script>
+<script src="bt.v129.js"></script>
+<script src="games.v129.js"></script>
+<script src="data.v129.js"></script>
 <script>
 if (dataReady()) {
   loadClips();

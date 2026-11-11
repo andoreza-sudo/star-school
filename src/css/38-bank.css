@@ -36,3 +36,16 @@
   .qs .qarea:has(.bctx.long){padding-top:var(--s-3);padding-bottom:var(--s-3);gap:var(--s-2)}
   .qs .qarea:has(.bctx.long) .bctx-h{padding-top:0;padding-bottom:0}
 }
+
+/* Spanish dialogues (P2-35): the panel body is a list of lines, each with its own speak button (48 px) */
+.bctx.dlg .bctx-b{max-height:42vh;padding-bottom:var(--s-3)}
+.dl-l{display:grid;grid-template-columns:var(--tap) 1fr;gap:var(--s-2);align-items:center;min-height:var(--tap);border-top:1px solid var(--line)}
+.dl-l:first-child{border-top:0}
+.dl-b{width:var(--tap);height:var(--tap);display:inline-flex;align-items:center;justify-content:center;border-radius:50%;border:0;background:var(--brand);color:var(--surface);cursor:pointer;touch-action:manipulation}
+.dl-b.talking{transform:scale(1.08)}
+.dl-t{font-size:clamp(17px,3.2vmin,22px);line-height:1.3;font-weight:600;color:var(--ink)}
+.dl-n{margin-right:.35em;color:var(--brand-shade)}
+.dl-l.s1 .dl-n{color:var(--ink-2)}
+.choices.pics.dlg .choice.ch{font-size:clamp(30px,5vh,44px);padding:var(--s-2);min-height:var(--tap)}
+.choices.pics.dlg .ch .pcap small{font-size:.4em;color:var(--ink-2)}
+.dl-l:not(:has(.dl-b)){grid-template-columns:1fr;padding:var(--s-1) 0} /* no Spanish voice: the buttons are gone, the text takes the whole row */
