@@ -35,3 +35,6 @@
 .bt-wst{display:flex;justify-content:center;margin:var(--s-2) 0}
 .bt-new{margin:0 0 var(--s-2);text-align:center}
 .bt-wl{justify-content:center;width:max-content;max-width:100%;margin:var(--s-2) auto 0}
+/* P3-07: the answer in words on the win card (api.win note) */
+.bt-sum{max-width:420px;margin:var(--s-2) auto 0;padding:var(--s-2) var(--s-3);list-style:none;border-radius:var(--r-card);background:var(--bt-tint);color:var(--bt-shade);font-size:var(--fs-2);font-weight:700;line-height:1.35;text-align:left}
+.bt-sum li+li{margin-top:2px}

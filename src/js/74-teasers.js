@@ -19,6 +19,7 @@
      });
    mount():
      api.win({mistakes, hints, sec})  the child solved it (call once; hints and sec are filled in by the frame when left out)
+                                      note: optional lines of plain text for the win card (P3-07: the answer in words)
      api.sfx                          the SFX object      api.say(text)   speak a line (ignored when the voice is off)
      api.saveState(obj)               store this puzzle's unfinished state (JSON-safe); call after every move
      api.loadState()                  the stored state to resume from, or null     api.band, api.level  read-only
@@ -365,10 +366,11 @@ const BT = {
     r = r || {};
     const run = a.run, res = { mistakes: Math.max(0, r.mistakes | 0), hints: Math.max(r.hints | 0, run.hints), sec: r.sec >= 0 ? Math.round(r.sec) : run.sec };
     const out = BT.finish(run, res);
-    setTimeout(() => { if (BT.act === a) BT.winCard(run, out); }, 700); // the puzzle gets a moment to show it is done
+    const note = Array.isArray(r.note) ? r.note.filter(t => typeof t == 'string').slice(0, 6) : null; // P3-07: the answer in words
+    setTimeout(() => { if (BT.act === a) BT.winCard(run, out, note); }, 700); // the puzzle gets a moment to show it is done
   },
 
-  winCard(run, o) {
+  winCard(run, o, note) {
     const d = BT.types[run.id], N = BT.nLevels(d, run.band), endless = run.level == 'E';
     const next = endless ? 'E' : +run.level < N ? +run.level + 1 : (BT.rec(run.id, run.band).lvl > N ? 'E' : 0);
     const li = (ic, t) => `<li>${ico(ic, 18)}<span>${esc(t)}</span></li>`, ls = [];
@@ -379,7 +381,7 @@ const BT = {
     const gt = o.sec > 0 ? `${ico('ticket', 28)}<span>+${BT.fmtSec(o.sec)} of game time${o.capped ? ' (that is all for today)' : ''}</span>`
       : `<span>Game time from puzzles is full for today</span>`;
     const card = GFX.endCard({ title: o.stars == 3 ? 'Perfect!' : 'Solved!', icon: 'puzzle', rec: false,
-      extra: `<div class="bt-wst">${UI.stars(o.stars, 3, 44, { arc: true })}</div>${o.unlocked && !endless ? `<p class="bt-new">${UI.tag(next === 'E' ? 'Endless is open!' : 'New level open!', 'new', 'sparkle')}</p>` : ''}` +
+      extra: (note && note.length ? `<ul class="bt-sum">${note.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : '') + `<div class="bt-wst">${UI.stars(o.stars, 3, 44, { arc: true })}</div>${o.unlocked && !endless ? `<p class="bt-new">${UI.tag(next === 'E' ? 'Endless is open!' : 'New level open!', 'new', 'sparkle')}</p>` : ''}` +
         (ls.length ? `<ul class="rw-pl bt-wl">${ls.join('')}</ul>` : ''),
       earn: gt,
       btns: (next ? UI.btn(next === 'E' ? 'Endless' : 'Next level', { kind: 'primary', size: 'lg', wide: true, icon: 'go', id: 'btnext' }) : '') +

@@ -9613,6 +9613,163 @@ run('Discover science K-2 P2-36: banks validate, tags, one right answer, hints, 
   return{problems:serrs,note:r.items+' items, '+r.questions+' questions, '+r.checked+' save checks over 7 fixtures x 7 grades'};
 });
 
+run('logic UI P3-07',()=>{
+  const lgx=require('./puzzles/logic.js');
+  const body=function(){
+    const out=[],bad=m=>{if(out.length<30&&!out.includes(m))out.push(m)};
+    const stat={n:0,ms:0,kinds:{},hints:0,maxSteps:0,days:10};
+    const T=BT.get('logic');
+    if(!T)return{out:['logic is not registered'],stat};
+    if(T.bands!=='BCD'||BT.nLevels(T,'B')!==12)bad('logic: bands '+T.bands+', '+BT.nLevels(T,'B')+' levels');
+    if(JSON.stringify(LG.NAMES)!==JSON.stringify(NAMES_GEN))bad('LG.NAMES is not the generator list (tools/puzzles/logic.js NAMES)');
+    const range=k=>Array.from({length:k},(_,i)=>i),J=JSON.stringify;
+    // the test's own reading of a bank entry and its own brute force (no code shared with 80-bt-logic.js or tools/puzzles)
+    const head=e=>{const h=e[0].split('|');return{names:h[0].split(','),cats:h[1].split(';').map(s=>s.split('=')[0]),items:h[1].split(';').map(s=>s.split('=')[1].split(',')),sol:h[2].split(';').map(s=>[...s].map(Number))}};
+    const perms=n=>n===1?[[0]]:perms(n-1).flatMap(p=>range(n).map(k=>[...p.slice(0,k),n-1,...p.slice(k)]));
+    const holds=(q,A,O)=>{
+      const kid=(c,i)=>c===0?i:A[c-1].indexOf(i),item=(c,i,d)=>d===0?kid(c,i):A[d-1][kid(c,i)];
+      if(q[0]==='is')return kid(q[1],q[2])===kid(q[3],q[4]);
+      if(q[0]==='not')return kid(q[1],q[2])!==kid(q[3],q[4]);
+      if(q[0]==='or'){const v=item(q[1],q[2],q[3]);return v===q[4]||v===q[5]}
+      const u=item(q[1],q[2],O),w=item(q[3],q[4],O);
+      return q[0]==='gt'?u>w:q[0]==='lt'?u<w:Math.abs(u-w)===1;
+    };
+    const solutions=p=>{
+      const P=perms(p.n),out=[];
+      const rec=(A)=>{if(A.length===p.K){if(p.cl.every(q=>holds(q,A,p.O)))out.push(J(A));return}for(const x of P)rec(A.concat([x]))};
+      rec([]);return out;
+    };
+    // 1. make: deterministic, the level's three bank entries, names swapped and still true
+    const seenK={B:new Set(),C:new Set(),D:new Set()};
+    for(const band of 'BCD')for(let day=1;day<=stat.days;day++)for(let lv=1;lv<=12;lv++){
+      const w='logic '+band+lv+' day '+day,o={day:'2026-5-'+day},t0=Date.now();
+      let p;try{p=BT.make('logic',band,lv,o)}catch(e){bad(w+': make() threw '+e.message);continue}
+      stat.ms+=Date.now()-t0;stat.n++;
+      if(J(BT.make('logic',band,lv,o))!==J(p))bad(w+': make() is not deterministic');
+      if(!(p.k>=3*(lv-1)&&p.k<=3*lv-1))bad(w+': bank entry '+p.k+' is not one of level '+lv+"'s three");
+      seenK[band].add(p.k);
+      const e=PUZ.logic[band][p.k],h=head(e),n=h.names.length;
+      if(p.n!==n||p.K!==h.cats.length||J(p.sol)!==J(h.sol)||J(p.items)!==J(h.items)||J(p.cats)!==J(h.cats))bad(w+': the puzzle is not bank entry '+p.k);
+      if(p.O!==(band==='D'?2:0))bad(w+': ordered category '+p.O);
+      // names: from the generator's list, different first letters, band B at most 4 letters
+      if(p.names.length!==n||new Set(p.names.map(x=>x[0])).size!==n||!p.names.every(x=>NAMES_GEN.includes(x))||(band==='B'&&p.names.some(x=>x.length>4)))bad(w+': names '+p.names);
+      // each sentence is the bank sentence with every name replaced by the new one (the test's own word-by-word reading)
+      const map=Object.fromEntries(h.names.map((x,i)=>[x,p.names[i]]));
+      e.slice(1).forEach((q,qi)=>{
+        const mine=q[q.length-1].replace(/[A-Za-z]+/g,t=>map[t]||t),got=p.cl[qi];
+        if(J(got.slice(0,-1))!==J(q.slice(0,-1)))bad(w+': clue '+(qi+1)+' structure changed');
+        if(got[got.length-1]!==mine)bad(w+': clue '+(qi+1)+' "'+got[got.length-1]+'" should be "'+mine+'"');
+        const kids=[];if(q[1]===0)kids.push(q[2]);if(q[0]!=='or'&&q[3]===0)kids.push(q[4]);if(q[0]==='or'&&q[3]===0)kids.push(q[4],q[5]);
+        for(const k of kids)if(!new RegExp('\\b'+p.names[k]+'\\b').test(got[got.length-1]))bad(w+': clue '+(qi+1)+' does not name '+p.names[k]);
+        for(const x of h.names)if(!p.names.includes(x)&&new RegExp('\\b'+x+'\\b').test(got[got.length-1]))bad(w+': clue '+(qi+1)+' still names '+x);
+      });
+      if(lv===1||lv===12||day===1){ // the brute force (576 assignments in band D) on a share of the made puzzles; every bank entry below
+        const s=solutions(p);
+        if(s.length!==1||s[0]!==J(p.sol))bad(w+': '+s.length+' solutions after the name swap');
+      }
+      if(LG.summary(p).length!==n||!LG.summary(p).every((t,i)=>t.startsWith(p.names[i]+' ')&&/\.$/.test(t)&&!/undefined/.test(t)))bad(w+': summary '+LG.summary(p));
+    }
+    for(const b of 'BCD')if(seenK[b].size<30)bad('band '+b+': only '+seenK[b].size+' of 36 bank entries made in '+stat.days+' days');
+    // 2. grammar: the words the hints use rebuild every is / is-not sentence of the bank (with the bank's names)
+    for(const b of 'BCD')PUZ.logic[b].forEach((e,k)=>{
+      const p=LG.build(b,k,null);
+      for(const q of p.cl)if((q[0]==='is'||q[0]==='not')&&LG.sent(p,[q[1],q[2]],[q[3],q[4]],q[0]==='not')+'.'!==q[5])bad(b+k+': hint words make "'+LG.sent(p,[q[1],q[2]],[q[3],q[4]],q[0]==='not')+'." for "'+q[5]+'"');
+    });
+    // 3. every bank puzzle: solve() wins by taps; the hint chain finishes it with no guessing; tiers 1-2 change nothing, tier 3 one mark
+    const SYM='012';
+    for(const b of 'BCD')for(let k=0;k<36;k++)for(const ac of b==='D'?[1,0]:[1]){
+      const w='logic '+b+k+(ac?'':' auto-cross off'),p=LG.build(b,k,LG.pickNames(BT.rng('t'+b+k),b==='D'?4:3,b==='B'?4:9));
+      const x=LG.ctx(p),N=x.N;
+      if(ac){
+        const s=solutions(p);
+        if(s.length!==1||s[0]!==J(p.sol))bad(w+': '+s.length+' solutions');
+        const st=LG.fresh(p),mv=T.solve(p);
+        for(const c of mv){LG.tap(p,st,c);if(st.v[c]==='2')LG.tap(p,st,c)}
+        if(!LG.won(p,st)||mv.length!==x.B.length*p.n)bad(w+': solve() taps do not win ('+mv.length+' ticks)');
+      }
+      const st=LG.fresh(p);st.ac=ac;
+      let steps=0;
+      for(;steps<200&&!LG.won(p,st);steps++){
+        const before=J(st),h1=LG.hint(p,st,1),a1=J(st),h2=LG.hint(p,st,2),a2=J(st),h3=LG.hint(p,st,3);
+        if(!h1||!h2||!h3){bad(w+': no hint before the end');break}
+        if(a1!==before||a2!==before||J(st)!==before)bad(w+': hint tier 1 or 2 changed the state');
+        if(h1.cell!==h3.cell||h2.cell!==h3.cell||h1.kind!==h3.kind)bad(w+': the three tiers point at different marks');
+        if(!h3.put||h3.put[0]!==h3.cell||![1,-1].includes(h3.put[1])||h1.put||h2.put)bad(w+': only tier 3 places a mark');
+        if(h2.mark[0]!==h2.cell)bad(w+': tier 2 does not ring the square');
+        stat.kinds[b+' '+h3.kind]=(stat.kinds[b+' '+h3.kind]||0)+1;
+        if(h3.kind==='guess'||h3.kind==='wrong')bad(w+': hint "'+h3.kind+'" in a clean solve');
+        for(const t of [h1.say,h2.say,h3.say])if(!t||/undefined|NaN|null|\[object/.test(t)||!/[.?]$/.test(t))bad(w+': hint words "'+t+'"');
+        if(h1.q>=0&&!new RegExp('clue '+(h1.q+1)+'\\b').test(h1.say))bad(w+': tier 1 does not name clue '+(h1.q+1));
+        // tier 3: the right mark in that square, plus (a tick with auto-cross on) crosses in its row and column; nothing else
+        const v0=st.v,cs=h3.put[0];
+        LG.place(p,st,cs,h3.put[1]);stat.hints++;
+        if(st.v[cs]!==(h3.put[1]>0?'1':'2')||h3.put[1]!==LG.solv(x,cs))bad(w+': tier 3 put a wrong mark');
+        const [A,I,Bc,Jc]=LG.pos(x,cs);
+        for(let c=0;c<N;c++){
+          if(c===cs||st.v[c]===v0[c])continue;
+          const [a,i,bb,j]=LG.pos(x,c),line=a===A&&bb===Bc&&(i===I||j===Jc);
+          if(!(ac&&h3.put[1]>0&&line&&v0[c]==='0'&&st.v[c]==='2'))bad(w+': tier 3 changed square '+c+' too');
+        }
+      }
+      if(!LG.won(p,st))bad(w+': the hint chain did not finish');
+      stat.maxSteps=Math.max(stat.maxSteps,steps);
+    }
+    for(const k of ['B clue','B only','C clue','C only','C link','D clue','D link','D two-way','D chain','D line'])if(!stat.kinds[k])bad('no "'+k+'" hint seen');
+    for(const k of Object.keys(stat.kinds))if(/^B (link|two-way|chain)|^C (two-way|chain)/.test(k))bad('band '+k+' hint: harder than the band allows');
+    // 4. moves on one puzzle per band: auto-cross, undo, tick out, conflicts, Check, a wrong mark found first, saved states
+    for(const b of 'BCD'){
+      const p=BT.make('logic',b,6,{day:'2026-5-1'}),x=LG.ctx(p),N=x.N,w='logic '+b+' moves',st=LG.fresh(p);
+      const solT=range(N).filter(c=>LG.solv(x,c)===1),c0=solT[0],[a0,i0,b0,j0]=LG.pos(x,c0);
+      const lineCells=range(N).filter(c=>{const [a,i,bb,j]=LG.pos(x,c);return c!==c0&&a===a0&&bb===b0&&(i===i0||j===j0)});
+      const s0=J(st);
+      let r=LG.tap(p,st,c0);
+      if(st.v[c0]!=='2'||!r.ok)bad(w+': a first tap should cross');
+      const s1=J(st);
+      LG.tap(p,st,c0);
+      if(st.v[c0]!=='1'||!lineCells.every(c=>st.v[c]==='2'&&st.a[c]==='1')||range(N).some(c=>c!==c0&&!lineCells.includes(c)&&st.v[c]!=='0'))bad(w+': a tick should cross the rest of its row and column, nothing else');
+      LG.undo(p,st);
+      if(J(st.v)!==J(JSON.parse(s1).v)||st.a!==JSON.parse(s1).a)bad(w+': undo did not take the tick and its crosses away');
+      LG.tap(p,st,c0);LG.tap(p,st,c0);
+      if(st.v!==JSON.parse(s0).v)bad(w+': a third tap should take the tick and its auto-crosses away');
+      while(st.h.length)LG.undo(p,st);
+      if(st.v!==JSON.parse(s0).v||st.a!==JSON.parse(s0).a)bad(w+': undo all the way does not give the fresh grid');
+      // a cross where an "is" clue says yes, or a tick where "not" says no: a conflict in words; Check counts it once
+      const q=p.cl.find(q=>q[0]==='is'||q[0]==='not');
+      if(q){
+        const c=LG.at(x,q[1],q[2],q[3],q[4]);LG.tap(p,st,c);if(q[0]==='not')LG.tap(p,st,c);
+        const cf=LG.conflicts(p,st);
+        if(!cf.has(c)||cf.get(c).k!=='clue'||!/does not fit clue/.test(LG.why(p,cf.get(c))))bad(w+': a mark against clue "'+q[5]+'" is not shown: '+J([...cf.keys()]));
+        const k1=LG.check(p,st),m1=st.miss,k2=LG.check(p,st);
+        if(!k1.bad.includes(c)||k1.add<1||st.miss!==m1||k2.add!==0)bad(w+': Check should count a wrong mark once');
+        const h=LG.hint(p,st,1);
+        if(h.kind!=='wrong')bad(w+': the hint should find the wrong mark first, gave '+h.kind);
+        const h3=LG.hint(p,st,3);LG.place(p,st,h3.put[0],h3.put[1]);
+        if(LG.conflicts(p,st).has(c)||st.v[c]===(q[0]==='is'?'2':'1'))bad(w+': tier 3 did not put the wrong mark right');
+        if(!LG.tap(p,st,h3.put[0]).ign)bad(w+': a hint mark could be tapped away');
+      }
+      // two ticks in a line (auto-cross off) are shown
+      const s2=LG.fresh(p);s2.ac=0;const row=range(p.n).map(j=>LG.at(x,x.B[0][0],0,x.B[0][1],j));
+      for(const c of row.slice(0,2)){LG.tap(p,s2,c);LG.tap(p,s2,c)}
+      if(!row.slice(0,2).every(c=>LG.conflicts(p,s2).get(c)&&LG.conflicts(p,s2).get(c).k==='two')||!/Two ticks/.test(LG.why(p,LG.conflicts(p,s2).get(row[0]))))bad(w+': two ticks in a line are not shown');
+      // saved state: a JSON round trip fits and gives the same next hint; damaged states do not fit
+      const back=JSON.parse(J(st));
+      if(!LG.fit(p,back)||!LG.fit(p,LG.fresh(p))||J(LG.hint(p,back,2))!==J(LG.hint(p,st,2)))bad(w+': a saved state does not round trip');
+      for(const [m,y] of [['null',null],['short v',Object.assign({},back,{v:back.v.slice(1)})],['a 3 in v',Object.assign({},back,{v:'3'+back.v.slice(1)})],
+        ['short a',Object.assign({},back,{a:back.a.slice(1)})],['bad undo step',Object.assign({},back,{h:[[N,'0','0']]})],['empty undo step',Object.assign({},back,{h:[[]]})],
+        ['hint square outside',Object.assign({},back,{hn:[N]})],['clue outside',Object.assign({},back,{u:[p.cl.length]})],['miss -1',Object.assign({},back,{miss:-1})],
+        ['tab outside',Object.assign({},back,{tab:x.B.length})],['ac 2',Object.assign({},back,{ac:2})],['no seen',Object.assign({},back,{seen:null})],
+        ['another size',LG.fresh(BT.make('logic',b==='D'?'C':'D',1,{day:'2026-5-1'}))]])
+        if(LG.fit(p,y))bad(w+': a damaged state fits ('+m+')');
+    }
+    return{out,stat};
+  };
+  const r=eval(js+';const NAMES_GEN='+JSON.stringify(lgx.NAMES)+';('+body.toString()+')()');
+  const s=r.stat,p=r.out,avg=s.n?s.ms/s.n:0;
+  if(avg>5)p.push('make() takes '+avg.toFixed(1)+' ms on average (limit 5 ms)');
+  return{problems:p,note:s.n+' made puzzles (3 bands x 12 levels x '+s.days+' days), 108 bank puzzles (+36 with auto-cross off) solved by '+s.hints+' hints, at most '+s.maxSteps+' a puzzle; '+
+    Object.entries(s.kinds).map(([a,b])=>a+' '+b).join(', ')};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){

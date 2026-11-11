@@ -4362,6 +4362,141 @@ async function main() {
       }
     }
 
+    // P3-07 Logic grids (src/js/80-bt-logic.js) with real taps, midway save: band B (a 1st grader) at 380x780 and band D (a 5th grader)
+    //    at 1024x600: Home -> Brain Teasers -> Logic -> level 1. Band B: every clue drawn as child + picture + tick or cross, and its
+    //    speak button speaks the clue. A mark that breaks a clue is shown gently (amber tint, dashed ring, warning mark, the line in words
+    //    in --try-ink, never red) and is not counted; Check counts it; Undo takes it away. Hint tiers 1 and 2 point and explain and
+    //    change nothing; back and Keep going resumes exactly; the rest tapped in; the win card shows the answer in words; stars saved.
+    //    48 px targets (grid squares 44 px, BRAIN_TEASERS 8), no sideways scroll, the page does not scroll, no emoji outside pictures.
+    {
+      const taps = require('./lib/bt-lg');
+      const look = () => {
+        const vw = document.documentElement.clientWidth, out = [];
+        for (const e of document.querySelectorAll('button, [role="button"]')) {
+          const r = e.getBoundingClientRect();
+          if (!r.width || r.bottom < 0 || r.top > innerHeight || e.closest('svg') || e.closest('#toast')) continue;
+          // a clue card scrolled half out of its list is still a full-size target
+          const cl = e.closest('.lg-clues'), lr = cl && cl.getBoundingClientRect();
+          if (lr && (r.top < lr.top || r.bottom > lr.bottom)) continue;
+          const min = e.classList.contains('lg-c') ? 43.5 : 47.5;
+          if (Math.min(r.width, r.height) < min) out.push('small ' + (e.id || e.className) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
+          if (r.left < -1 || r.right > vw + 1) out.push('outside ' + (e.id || e.className) + ' ' + Math.round(r.left) + '..' + Math.round(r.right));
+        }
+        if (document.documentElement.scrollWidth > vw) out.push('sideways scroll ' + document.documentElement.scrollWidth);
+        const stg = document.querySelector('#btstage');
+        if (stg && stg.scrollWidth > stg.clientWidth + 1) out.push('the puzzle scrolls sideways');
+        if (stg && document.querySelector('#btstage .lg') && stg.scrollHeight > stg.clientHeight + 1) out.push('the puzzle does not fit: ' + stg.scrollHeight + ' > ' + stg.clientHeight);
+        const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        for (let n; (n = w.nextNode());) {
+          const el = n.parentElement;
+          if (!el || el.closest('script,style,svg,#ico-sprite,.rw-burst,.lg-pic') || !el.getClientRects().length) continue;
+          const m = n.textContent.match(/\p{Extended_Pictographic}|[◀▶✕]/u);
+          if (m) out.push('emoji chrome ' + m[0] + ' in ' + (el.id || el.className));
+        }
+        return out;
+      };
+      const cur = pg => pg.evaluate(() => S.bt.cur && JSON.stringify({ puzzle: S.bt.cur.puzzle, state: S.bt.cur.state, hints: S.bt.cur.hints }));
+      const grid = pg => pg.evaluate(() => S.bt.cur && (S.bt.cur.state || LG.fresh(S.bt.cur.puzzle)).v);
+      for (const [w, h, grade] of [[380, 780, 1], [1024, 600, 5]]) {
+        const tag = 'P3-07 ' + w + 'x' + h + ' grade ' + grade;
+        const app = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = app.page, bad = [], notes = [];
+        const chk = async what => { for (const o of await pg.evaluate('(' + look.toString() + ')()')) bad.push(what + ': ' + o); };
+        await pg.evaluate(g => { window.__said = []; window.say = t => { window.__said.push(t); }; S.voice = true; S.grade = g; save(); home(); }, grade);
+        await pg.waitForSelector('#btcard');
+        await pg.evaluate(() => document.querySelector('#btcard').scrollIntoView({ block: 'center' }));
+        await pg.click('#btcard');
+        await pg.waitForSelector('.bt-hub .bt-type[data-t="logic"]');
+        await pg.waitForTimeout(400);
+        await pg.click('.bt-type[data-t="logic"]');
+        await pg.waitForSelector('.bt-lvs');
+        await pg.click('.bt-lv[data-l="1"]');
+        await pg.waitForSelector('#btstage .lg');
+        await pg.waitForTimeout(400);
+        await chk('play');
+        const g0 = await pg.evaluate(() => {
+          const c = S.bt.cur, p = c.puzzle, r = e => Math.round(Math.min(e.getBoundingClientRect().width, e.getBoundingClientRect().height));
+          return { band: c.band, n: p.n, K: p.K, clues: p.cl.length, cards: document.querySelectorAll('.lg-q').length, cells: document.querySelectorAll('.lg-c').length,
+            cell: r(document.querySelector('.lg-c')), pics: document.querySelectorAll('.lg-qp .lg-pic').length, marks: document.querySelectorAll('.lg-qp .lg-qm .ic').length,
+            heads: document.querySelectorAll('.lg-h').length, tabs: document.querySelectorAll('#lgtabs button').length, land: !!document.querySelector('.lg.land') };
+        });
+        const want = { 1: ['B', 3, 1], 5: ['D', 4, 2] }[grade];
+        if (g0.band !== want[0] || g0.n !== want[1] || g0.K !== want[2] || g0.cards !== g0.clues) bad.push('puzzle ' + JSON.stringify(g0) + ', want band ' + want);
+        if (g0.band === 'B' && (g0.cells !== 9 || g0.pics !== g0.clues || g0.marks !== g0.clues)) bad.push('band B: a 3x3 grid and every clue drawn as child + picture + tick or cross: ' + JSON.stringify(g0));
+        if (g0.band === 'D' && (!g0.land || g0.cells < 32)) bad.push('band D at 1024x600: clues left, grid right, both children blocks on screen: ' + JSON.stringify(g0));
+        notes.push(`band ${g0.band}, ${g0.cells} squares of ${g0.cell} px${g0.tabs ? ', ' + g0.tabs + ' tabs' : ''}`);
+        // the speak button of clue 1 speaks the clue
+        await pg.click('.lg-q[data-q="0"] .lg-qsp');
+        const said = await pg.evaluate(() => ({ said: window.__said.slice(-1)[0], clue: S.bt.cur.puzzle.cl[0].slice(-1)[0] }));
+        if (said.said !== said.clue) bad.push('the speak button said ' + JSON.stringify(said));
+        // tap clue 1: struck through
+        await pg.click('.lg-q[data-q="0"] .lg-qb');
+        if (!(await pg.evaluate(() => document.querySelector('.lg-q[data-q="0"]').classList.contains('used') && S.bt.cur.state.u.includes(0)))) bad.push('a tapped clue is not struck through');
+        // a mark that breaks a clue: amber, in words, not a mistake yet
+        const g1 = await grid(pg);
+        const wm = await taps.wrong(pg);
+        await vwait(pg, 1400);
+        const gent = await pg.evaluate(m => {
+          const sq = document.querySelector(`.lg-c[data-c="${m[0]}"]`), msg = document.querySelector('.lg-msg'), css = getComputedStyle(document.documentElement);
+          const rgb = v => { const d = document.createElement('i'); d.style.color = v; document.body.appendChild(d); const x = getComputedStyle(d).color; d.remove(); return x; };
+          return { cf: sq.classList.contains('cf'), warn: !!sq.querySelector('.lg-wn svg'), dashed: getComputedStyle(sq).outlineStyle, bg: getComputedStyle(sq).backgroundColor,
+            tryTint: rgb(css.getPropertyValue('--try-tint')), red: rgb(css.getPropertyValue('--danger')), msg: msg.textContent, cls: msg.className,
+            msgColor: getComputedStyle(msg).color, tryInk: rgb(css.getPropertyValue('--try-ink')), miss: S.bt.cur.state.miss, clueCf: document.querySelectorAll('.lg-q.cf').length };
+        }, wm);
+        if (!wm || !gent.cf || !gent.warn || gent.dashed !== 'dashed' || gent.bg !== gent.tryTint || gent.bg === gent.red || !/try/.test(gent.cls) ||
+          gent.msgColor !== gent.tryInk || !/does not fit clue/.test(gent.msg) || gent.miss !== 0 || gent.clueCf !== 1) bad.push('a mark against a clue is not shown gently: ' + JSON.stringify({ wm, gent }));
+        else notes.push('"' + gent.msg + '"');
+        await chk('wrong mark');
+        // Check counts it (once); Undo takes it away
+        await pg.click('#lgcheck');
+        const ck = await pg.evaluate(() => ({ miss: S.bt.cur.state.miss, msg: document.querySelector('.lg-msg').textContent }));
+        if (ck.miss < 1 || !/not right yet/.test(ck.msg)) bad.push('Check should count the wrong mark: ' + JSON.stringify(ck));
+        for (let i = 0; i < 3 && (await grid(pg)) !== g1; i++) await pg.click('#lgundo');
+        if ((await grid(pg)) !== g1 || (await pg.evaluate(() => document.querySelectorAll('.lg-c.cf').length))) bad.push('Undo did not take the wrong mark away');
+        // hint tiers 1 and 2: they point and explain; the grid does not change
+        const f0 = await grid(pg);
+        await pg.click('#bthint');
+        await vwait(pg, 200);
+        const t1 = await pg.evaluate(() => ({ hl: document.querySelectorAll('.lg-q.hl, .lg-c.hh, .lg-c.hl').length, msg: document.querySelector('.lg-msg').textContent, hints: S.bt.cur.hints }));
+        if (!t1.hl || !t1.msg || t1.hints !== 1 || (await grid(pg)) !== f0) bad.push('hint 1: ' + JSON.stringify(t1));
+        await vwait(pg, 11500);
+        await pg.click('#bthint');
+        await vwait(pg, 200);
+        const t2 = await pg.evaluate(() => ({ hl: document.querySelectorAll('.lg-c.hl').length, msg: document.querySelector('.lg-msg').textContent, hints: S.bt.cur.hints }));
+        if (t2.hints !== 2 || !t2.hl || t2.msg === t1.msg || (await grid(pg)) !== f0) bad.push('hint 2 should ring a square, explain and change nothing: ' + JSON.stringify(t2));
+        notes.push('hint 2: "' + t2.msg + '"');
+        await chk('hint 2');
+        // one tick, then back to the levels and the hub: Keep going brings back the same puzzle and state
+        await taps.setTo(pg, (await taps.rest(pg))[0], '1');
+        await vwait(pg, 200);
+        const mid = await cur(pg);
+        await pg.click('#back');
+        await pg.waitForSelector('.bt-lvs');
+        await pg.click('#back');
+        await pg.waitForSelector('#btkeep');
+        await pg.click('#btkeep');
+        await pg.waitForSelector('#btstage .lg');
+        if (!mid || (await cur(pg)) !== mid) bad.push('Keep going did not resume exactly');
+        // the rest by taps, then the win card with the answer in words and the stars saved
+        for (const c of await taps.rest(pg)) await taps.setTo(pg, c, '1');
+        try { await pg.waitForSelector('.bt-win #btlvls', { timeout: 8000 }); } catch (e) { bad.push('no win card'); }
+        await pg.waitForTimeout(700);
+        await chk('win card');
+        const saved = await pg.evaluate(b => ({ stars: BT.rec('logic', b).stars[0] || 0, lvl: BT.rec('logic', b).lvl, cur: !!S.bt.cur,
+          shown: document.querySelectorAll('.bt-win .rs.on').length, sum: [...document.querySelectorAll('.bt-win .bt-sum li')].map(l => l.textContent) }), g0.band);
+        // two hints give 1 star
+        if (saved.lvl !== 2 || saved.cur || saved.shown !== saved.stars || saved.stars !== 1) bad.push('stars not saved ' + JSON.stringify(saved));
+        if (saved.sum.length !== g0.n || !saved.sum.every(t => /^[A-Z][a-z]+ .+\.$/.test(t))) bad.push('win card summary: ' + JSON.stringify(saved.sum));
+        notes.push('won, 1 star, "' + saved.sum[0] + '"');
+        if (bad.length) fail(tag + ':\n  ' + bad.join('\n  '));
+        else step(`${tag}: Home -> Brain Teasers -> Logic -> ${notes.join('; ')}; a mark against a clue shown gently and counted by Check, ` +
+          'hints 1-2 change nothing, Keep going resumes exactly; targets 48 px (squares 44), no sideways scroll, no emoji chrome');
+        network.push(...app.network);
+        for (const e of app.errors) fail(e);
+        await app.ctx.close();
+      }
+    }
+
     for (const e of errors) fail(e);
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');

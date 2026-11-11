@@ -169,6 +169,14 @@ Example (band C): "Three friends each have one pet and one favourite colour. Use
 **Runtime**: the bank stores finished words and sentences (reviewed once, here, rather than templates per theme), so the UI needs no grammar. Names can still be shuffled at runtime: a name appears in a sentence only as itself (`Mia`, never a possessive), so replacing every name of a puzzle by another set with different first letters keeps it correct. Planets were left out of the themes (no distinct pictures, harder words).
 
 **UI**: band B: cards. Tap a pet, tap a child, a line connects them. Bands C and D: the classic triangular grid; tap cycles empty -> cross -> tick; placing a tick auto-crosses the rest of its row and column inside that block (can be switched off in band D). Clues listed beside (landscape) or below (portrait); tap a clue to hear it and to strike it through. "Check" button counts wrong marks without showing them unless hints are used.
+As built (P3-07, `src/js/80-bt-logic.js`): every band uses the grid (band B: one 3x3 block with big picture heads), because band B's
+clues are drawn as child + picture + tick or cross, which are exactly the grid's marks, and the hints place marks; there are no
+cards with lines. A tap cycles blank -> cross -> tick -> blank; taking a tick away takes its auto-crosses. Each clue card is struck
+through by a tap and read by its own speak button. A mark that breaks a rule the child can see (two ticks in a line, a line all
+crossed, a clue, the marks through a tick) turns amber with a dashed ring and a line in words at once (a cross on its way to a tick is
+judged after a short pause) and is not a mistake; Check counts each wrong mark once and shows them only after a hint. The children's
+names are swapped at runtime (seeded, different first letters). When a two-category grid's squares would be under 44 px the grid
+shows the children's two blocks side by side with the third on a tab, or (band D on a phone) one block per tab.
 
 **Hints**: 1) points at a clue not yet used. 2) explains what that clue lets you mark. 3) places one correct mark.
 

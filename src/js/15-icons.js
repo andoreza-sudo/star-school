@@ -166,7 +166,12 @@ const ICONS={
     '<rect fill="var(--ic3,currentColor)" opacity=".4" x="3" y="3" width="18" height="18" rx="3"/>' +
     '<path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" ' +
     'd="M12 3.5V12H20.5M3.5 15H12M5.6 6.6H9.4M7.5 4.7V8.5M15.2 15.7L18.8 19.3M18.8 15.7L15.2 19.3"/>',
+  'logic':
+    '<rect fill="var(--ic3,currentColor)" opacity=".4" x="3" y="3" width="18" height="18" rx="3"/>' +
+    '<path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M9 3.5V20.5M3.5 9H20.5"/>' +
+    '<path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="M11.8 15.2L14.3 17.6L18.6 12.6M4.8 12.6L7.2 15M7.2 12.6L4.8 15M12.6 4.8L15 7.2M15 4.8L12.6 7.2"/>',
   'path-math':
+
     '<path fill="none" stroke="currentColor" stroke-width="2.4" d="M7 3.5V10.5M3.5 7H10.5M13.5 7H20.5' +
     'M4.5 14.5L9.5 19.5M9.5 14.5L4.5 19.5M13.5 15H20.5M13.5 19H20.5"/>',
   'path-read':

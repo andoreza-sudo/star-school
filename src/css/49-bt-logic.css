@@ -1,0 +1,98 @@
+/* Brain Teasers logic grids (P3-07, src/js/80-bt-logic.js). Tokens only; motion is transform and opacity. --cs, --rh, --hh, --n
+   come from the JS layout; block padding 3, square gap 2 and block gap 6 must match it. .land: clues left, grid right. */
+.lg{--bw:calc(var(--n) * var(--cs) + (var(--n) - 1) * 2px + 6px);display:flex;flex-direction:column;gap:var(--s-3);width:100%;max-width:1040px;margin:0 auto}
+.lg-say{flex:none;display:flex;align-items:center;gap:var(--s-2);min-height:var(--tap);padding:var(--s-1) var(--s-1) var(--s-1) var(--s-3);border-radius:var(--r-card);
+  background:var(--surface);box-shadow:inset 0 0 0 2px var(--line),0 3px 0 var(--ledge-soft)}
+.lg-msg{flex:1;min-width:0;margin:0;font-size:var(--fs-2);font-weight:700;line-height:1.3;color:var(--ink-2)}
+.lg-msg.good{color:var(--good-ink)}
+.lg-msg.try{color:var(--try-ink)}
+.lg-msg.hint{color:var(--bt-shade)}
+.lg-spk{flex:none;order:2}
+.lg-board{flex:none;display:flex;flex-direction:column;align-items:center;gap:var(--s-3)}
+.lg-tabs[hidden]{display:none}
+.lg-tabs .seg>button{padding:0 var(--s-3);font-size:var(--fs-2)}
+.lg-tabs .seg>button.lg-tcf{position:relative}
+.lg-tabs .seg>button.lg-tcf::after{content:"";position:absolute;top:6px;right:8px;width:10px;height:10px;border-radius:50%;background:var(--try);box-shadow:0 0 0 2px var(--surface)}
+.lg-tools{flex:none;display:flex;justify-content:center;gap:var(--s-2)}
+.lg-tools .btn{flex:0 1 auto;min-width:0}
+.lg-ac.on{background:var(--bt-tint);color:var(--bt-shade);box-shadow:inset 0 0 0 2px var(--bt),0 3px 0 var(--bt-shade)}
+
+/* ---------- the grid ---------- */
+.lg-grid{display:grid;grid-template-columns:var(--rh) var(--bw);grid-template-rows:var(--hh) var(--bw);gap:6px}
+.lg-grid.lg-g2{grid-template-columns:var(--rh) var(--bw) var(--bw);grid-template-rows:var(--hh) var(--bw) var(--bw)}
+.lg-grid.lg-gp{grid-template-columns:var(--rh) var(--bw) var(--bw)}
+.lg-hd{display:flex;flex-direction:column;justify-content:flex-end;min-width:0}
+.lg-cat{display:block;margin-bottom:2px;font-size:var(--fs-1);font-weight:700;line-height:1.2;color:var(--bt-shade);text-align:center;white-space:nowrap}
+.lg-hs{display:grid;grid-template-columns:repeat(var(--n),var(--cs));gap:2px;padding:0 3px}
+.lg-rhs{display:grid;grid-auto-rows:var(--cs);gap:2px;padding:3px 0}
+.lg-h{display:flex;align-items:center;justify-content:center;min-width:0;height:calc(var(--hh) - 18px);border-radius:10px;color:var(--ink);line-height:1}
+.lg-r{height:auto;justify-content:flex-end;padding-right:var(--s-2)}
+.lg-h.on{background:var(--bt-tint);color:var(--bt-shade)}
+.lg-nm{font-size:var(--fs-3);font-weight:700;line-height:1.1;overflow-wrap:anywhere}
+.lg-pic{display:grid;place-items:center;font-size:min(34px,calc(var(--cs) * .62));line-height:1}
+.lg-pic .art{width:1em;height:1em}
+.lg-col{display:flex;flex-direction:column;align-items:center;gap:2px}
+.lg-r .lg-col{flex-direction:row;gap:var(--s-1)}
+.lg-col i{width:22px;height:22px;border-radius:50%;box-shadow:inset 0 0 0 2px var(--shadow-ink-2)}
+.lg-col small,.lg-num small{font-size:12px;font-weight:700;line-height:1;color:var(--ink-2)}
+.lg-num{display:flex;align-items:center;gap:3px;font-family:var(--font-display);font-size:min(var(--fs-4),calc(var(--cs) * .44));font-weight:700;line-height:1}
+.lg-num .ic{color:var(--ink-3)}
+.lg-corner{display:block}
+.lg-blk{display:grid;grid-template-columns:repeat(var(--n),var(--cs));grid-auto-rows:var(--cs);gap:2px;padding:3px;border-radius:12px;
+  background:linear-gradient(var(--hi),var(--hi-0) 40px) var(--bt);box-shadow:inset 0 2px 0 var(--hi),0 4px 0 var(--bt-shade)}
+.lg-c{position:relative;display:grid;place-items:center;width:var(--cs);height:var(--cs);min-width:0;padding:0;border:0;border-radius:7px;
+  background:var(--surface);color:var(--ink-3);cursor:pointer;touch-action:manipulation;box-shadow:inset 0 -3px 0 var(--surface-2);-webkit-tap-highlight-color:transparent}
+.lg-c>*{pointer-events:none}
+.lg-c .ic{width:calc(var(--cs) * .56);height:calc(var(--cs) * .56)}
+.lg-c.cr .ic{width:calc(var(--cs) * .4);height:calc(var(--cs) * .4)}
+.lg-c.tk{background:var(--good-tint);color:var(--good-ink);box-shadow:inset 0 -3px 0 var(--good)}
+.lg-c.sel{box-shadow:inset 0 0 0 3px var(--bt-tint),inset 0 -3px 0 var(--surface-2)}
+.lg-c.tk.sel{box-shadow:inset 0 0 0 3px var(--bt-tint),inset 0 -3px 0 var(--good)}
+/* a hint's mark: star-yellow; hint highlights: the line soft yellow, the square a star ring */
+.lg-c.hn{background:var(--star-tint);box-shadow:inset 0 -3px 0 var(--star)}
+.lg-c.hh{background:var(--star-tint)}
+.lg-c.hl{background:var(--star-tint);box-shadow:inset 0 0 0 4px var(--star)}
+/* a mark that breaks a rule the child can see, or one Check found after a hint: amber, a dashed ring, a warning mark; never red */
+.lg-c.cf{background:var(--try-tint);color:var(--try-ink);outline:2px dashed var(--try-ink);outline-offset:-5px}
+.lg-c.wr{box-shadow:inset 0 0 0 4px var(--try)}
+.lg-wn{position:absolute;top:2px;right:2px;display:grid;line-height:0;color:var(--try-ink)}
+.lg-c .lg-wn .ic{width:14px;height:14px}
+.lg-c.tk>.ic,.lg-c.cr>.ic{animation:k-pop var(--t-slow) var(--spring)}
+.lg.win .lg-c.tk>.ic{animation:k-pop 520ms var(--ease) both}
+/* the empty corner of a two-category grid: how a tap goes (cross, then tick) */
+.lg-key{display:flex;align-items:center;justify-content:center;gap:var(--s-2);border-radius:12px;background:var(--surface-2);color:var(--ink-3)}
+.lg-key span{display:grid;place-items:center;width:34px;height:34px;border-radius:8px;background:var(--surface)}
+.lg-key span+.ic+span{background:var(--good-tint);color:var(--good-ink)}
+
+/* ---------- the clues ---------- */
+.lg-clues{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:var(--s-2);margin:0;padding:2px 2px 6px;list-style:none;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.lg-q{flex:none;display:flex;align-items:center;gap:var(--s-1);padding:var(--s-1);border-radius:var(--r-card);background:var(--surface);
+  box-shadow:inset 0 0 0 2px var(--line),0 3px 0 var(--ledge-soft)}
+.lg-qb{flex:1;min-width:0;display:flex;align-items:center;gap:var(--s-3);min-height:var(--tap);padding:var(--s-1) var(--s-2);border:0;border-radius:12px;
+  background:transparent;color:var(--ink);font:inherit;text-align:left;cursor:pointer;touch-action:manipulation}
+.lg-qb>*{pointer-events:none}
+.lg-qn{flex:none;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--bt-tint);color:var(--bt-shade);font-family:var(--font-display);font-size:var(--fs-2)}
+.lg-qt{flex:1;min-width:0;display:flex;flex-direction:column;gap:var(--s-1)}
+.lg-qs{font-size:var(--fs-2);font-weight:700;line-height:1.3}
+.lg-qsp{flex:none}
+.lg-qp{display:flex;align-items:center;gap:var(--s-2)}
+.lg-qp .lg-nm{font-size:var(--fs-4)}
+.lg-qp .lg-pic{font-size:36px}
+.lg-qm{display:grid;place-items:center;width:34px;height:34px;border-radius:50%}
+.lg-qm.yes{background:var(--good-tint);color:var(--good-ink)}
+.lg-qm.no{background:var(--surface-2);color:var(--ink-2);box-shadow:inset 0 0 0 2px var(--line)}
+.lg-q.used{background:var(--surface-2);box-shadow:inset 0 0 0 2px var(--line)}
+.lg-q.used .lg-qs{color:var(--ink-3);text-decoration:line-through;text-decoration-thickness:2px}
+.lg-q.used .lg-qn{background:var(--surface);color:var(--ink-3)}
+.lg-q.used .lg-qp{opacity:.55}
+.lg-q.hl{background:var(--star-tint);box-shadow:inset 0 0 0 3px var(--star),0 3px 0 var(--star-shade)}
+.lg-q.cf{background:var(--try-tint);outline:2px dashed var(--try-ink);outline-offset:-5px}
+.lg-B .lg-nm{font-size:var(--fs-4)}
+
+/* ---------- landscape: talk line, tools and clues left; the grid right ---------- */
+.lg.land{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto minmax(0,1fr);grid-template-areas:"say board" "tools board" "clues board";
+  column-gap:var(--s-5);row-gap:var(--s-3)}
+.lg.land .lg-say{grid-area:say}
+.lg.land .lg-tools{grid-area:tools;justify-content:flex-start}
+.lg.land .lg-clues{grid-area:clues}
+.lg.land .lg-board{grid-area:board;align-self:center}
