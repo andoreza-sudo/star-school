@@ -4,6 +4,11 @@ Review of the whole Spanish section ("Spanish Adventure"), all 8 Spanish worlds 
 as of v135 (7dcfebe). Spanish is taught as a second language to English-speaking children from Pre-K to 6th grade.
 Written 2026-11-11 by Claude for Andy. No app changes were made.
 
+**Status (R-01s, v138, 2026-11-11):** done: Must 1, 2, 3 and the S-sized Shoulds 8 to 13 (marked "Done in R-01s" below).
+Not done yet: Must 4 (days and months listening, M), Must 5 (Pre-K and K reading stops, M), Should 6 (sentences from world 1, L),
+7 (speaking, M), 14 (review of later units, near-miss numbers and times, M), 15 (culture, M), 16 (pictures, M), 17 (more dialogues, M),
+and the Could items 18 to 21.
+
 ---
 
 ## Part 1. For parents: the short version
@@ -40,11 +45,14 @@ Sizes: **S** = an hour or two, **M** = about a day, **L** = several days.
    (cold) too, and a plain green leaf for "hace fresco" (it is cool) next to "hace viento" (windy) cannot be told apart at all. In Feelings
    the "calm" face and the "happy" face are almost the same smile. About 2 to 3 in 100 questions of each skill. Weather (`es_weather` 1-2)
    and Feelings (`es_feel` 1-2) in El Tiempo and La Casa; `src/data/d-es.js`. Seeds in Part 2.
+   **Done in R-01s (v138):** never offered together: hace sol / hace calor, nieva / hace frío, hace fresco / hace viento, feliz / tranquilo, feliz / emocionado (a `confuse` list per unit), and el camión / el autobús; "hace calor", "hace frío" and "hace fresco" carry their English under the picture; two dialogue answer lists lost "tranquila" next to "feliz" and "Hace frío" next to "Nieva". tools/test.js scans 2,000 seeds of every Spanish skill and level.
 2. **An English spelling mistake and a grammar slip on screen and in the voice (S).** "Un, Una & Plurals" asks "How do you say
    'the beachs'?" and the voice says "More than one dogs!", "More than one beachs!" for every plural question. `es_art` 2 in Las Frases,
    `genEsArt` in `src/js/34-gen-es.js`.
+   **Done in R-01s (v138):** "the beaches" on screen, and the voice says "More than one beach! How do you say the beaches?" (one helper, `enPlural`, for both); tools/test.js scans every English text of the Spanish section for wrong plurals.
 3. **One dialogue line is not correct Spanish (S).** Grandma says "Aquí está agua." Spanish needs "Aquí tienes agua." (or "Aquí está el
    agua."). The dialogue is meant to be the model a child copies. "At grandma's house", Los Cuentos, `src/data/d-es-story.js`.
+   **Done in R-01s (v138):** "Aquí tienes agua."
 4. **Days and Months "listening" cannot be done by listening (M).** All seven days show the same calendar picture (which says "July 17"),
    and all twelve months show the same calendar, so in 82% of "Days: Listen" and 87% of "Months: Listen" questions the only difference
    between the pictures is an English word printed under them. A child who cannot read English yet cannot do it, and an older child is
@@ -67,24 +75,30 @@ Sizes: **S** = an hour or two, **M** = about a day, **L** = several days.
 8. **The first 85 nouns have no "el" or "la" (S to M).** Hola Plaza and Fiesta Island teach "perro", "manzana", "leche" bare, while later
    worlds teach "la casa", "el libro". Children should learn every noun with its article from the first day; gender is much harder to add
    later. `src/data/d-es.js` (the first 8 units).
+   **Done in R-01s (v138):** the 37 nouns of Animals, Food, My Body and Family show and say el / la / los / las (el agua, la mano, los ojos, las uvas). Greetings, colours and numbers are not nouns and stay as they are.
 9. **Hints that give the answer away (S).** In every "Read" stop the help says "It starts with 'C'", which picks out the answer in 80% of
    questions, and refers to the word after "la", not to the first letter the child sees ("la cocina"). In "Listen" stops the help says
    "'buenas noches' means 'Good night'", and since greetings, places, verbs and opposites show the English under each picture, that is the
    answer. Better: replay the word slowly, then take one wrong picture away.
+   **Done in R-01s (v138):** listening stops replay the word slowly (0.75 of the speed) with no English meaning; reading stops read the three choices aloud ("Say each word out loud. Which word names the picture?"), with no first letter.
 10. **Words that mean something else in Mexico, with no note (S).** The app uses a Mexican voice and Mexican words, but teaches "la
     chaqueta" for jacket: in Mexico that word is also vulgar slang that children giggle at, and the everyday word is "la chamarra". "El
     camión" (truck) is the everyday word for "bus" in Mexico, "el borrador" (eraser) is usually "la goma", and "Me gusta el cerdo" reads
     as "I like pork". Pick the Mexican word or show both, with a small note.
+   **Done in R-01s (v138):** la chamarra (not la chaqueta), la goma (not el borrador), "el camión" glossed "truck (in Mexico, also a bus)" and never offered with el autobús, and animals are liked in the plural only ("Me gustan los cerdos"; level 1 of Me Gusta asks food).
 11. **Small Spanish and logic slips in the dialogues (S).** "¿Tienes un animal?" (say "¿Tienes una mascota?"); Grandpa says "I am very
     old!" and Sofía answers "No, Grandpa. You are very kind." (does not follow); "¿Qué animal hay en el libro?" answered with two
     animals; "Estás en la biblioteca." (tells Carlos where he is). The English question "What does Mateo have?" with the answer "He is
     thirsty." reads oddly.
+   **Done in R-01s (v138):** "¿Tienes una mascota, Pablo?", "No, abuelo. ¡Eres muy rápido!", "¿Qué animales hay en el libro?", "¡Hola, Carlos! ¿Estás en la biblioteca?", "How does Mateo feel?", and the park dialogue is titled "A phone call from the park".
 12. **Mixed messages on ser and estar, and only boy forms of feelings (S).** "Estar: How & Where" teaches "Yo estoy feliz" (feelings use
     estar), then "Build a Sentence" builds "Yo soy feliz." and "Ella es feliz." Both are correct Spanish, but the child is not told why.
     The Feelings unit teaches only "cansado", "enojado", "asustado"; a girl says "cansada", which the app first shows in a dialogue.
+   **Done in R-01s (v138):** Feelings show and say both forms ("cansado / cansada"); Build a Sentence uses ser with traits only ("Ella es alta.", "Yo soy inteligente."), so feelings are always estar.
 13. **Sentence building does not test the rule it teaches (S).** The first tile always has the capital letter and the last always has the
     full stop, so in "El gato es negro." the adjective is pinned at the end by the dot; the child only has to order the two middle tiles.
     The help says "a describing word comes after the thing it describes", which the tiles never test.
+   **Done in R-01s (v138):** the tiles are lower case (a name keeps its capital) and the dot sits after the last slot, so no tile is pinned; tools/test.js still finds one valid order for every sentence (articles must agree with their noun).
 14. **Too little review of later units, and easy wrong choices (M).** The "Big Review" world covers only the first 8 units; the 13 later
     units (house to opposites) have no mixed review. In "Read Big Numbers" and "Read the Time" the answer is the only choice with "y"
     in 40% of questions, so the child can pick it by length. Compound numbers and half and quarter past are only ever read, never heard.
@@ -379,18 +393,18 @@ Each finding names the skill and level, the file, and a sample (seed, as `genQ(s
 
 ### 2.7 Top 10 (for Andy)
 
-1. Remove the two-right-answer pairs in Weather and Feelings (caption the weather pictures, never offer sol/calor, nieva/frío,
+1. **(Done in R-01s.)** Remove the two-right-answer pairs in Weather and Feelings (caption the weather pictures, never offer sol/calor, nieva/frío,
    fresco/viento, feliz/tranquilo, feliz/emocionado together; `es_weather` 2 seeds 19, 38, 13; `es_feel` 1 seed 41) (S).
-2. Fix the English in `es_art` 2: "the beachs" (seed 112) and the spoken "More than one dogs!" on every plural item (S).
-3. Correct "Aquí está agua." to "Aquí tienes agua." and the other dialogue slips (mascota, "¿Qué animales...?", the grandpa reply,
+2. **(Done in R-01s.)** Fix the English in `es_art` 2: "the beachs" (seed 112) and the spoken "More than one dogs!" on every plural item (S).
+3. **(Done in R-01s.)** Correct "Aquí está agua." to "Aquí tienes agua." and the other dialogue slips (mascota, "¿Qué animales...?", the grandpa reply,
    "¿Estás en la biblioteca?") (S).
 4. Make Days and Months listenable without reading English (week and month strips, a non-sunrise "mañana"), or teach them in sentences (M).
 5. Keep Pre-K and K on listening: postpone or voice the "Read" stops for young children, speak the hints (M).
 6. Put sentences in every unit from world 1 (listen-and-point "El perro es grande", "¿Dónde está el gato?") and bring the
    high-frequency verbs and phrases earlier (L).
 7. Add speaking: a "Say it, then check" step and offline record-and-compare on the learn screen and in Las Frases (M).
-8. Teach every noun with el/la from Hola Plaza on; show both forms of feelings; align ser/estar in Build a Sentence (S to M).
-9. Replace answer-giving hints with replay-slowly, then remove-one, then meaning; label or replace Mexican-sensitive words
+8. **(Done in R-01s.)** Teach every noun with el/la from Hola Plaza on; show both forms of feelings; align ser/estar in Build a Sentence (S to M).
+9. **(Done in R-01s.)** Replace answer-giving hints with replay-slowly, then remove-one, then meaning; label or replace Mexican-sensitive words
    (chaqueta to chamarra, camión, borrador, "me gusta el cerdo") (S).
 10. Add review and depth: a mixed review after La Ciudad, near-miss number and time choices, more dialogues with a "Hear the whole story"
     button, and a small culture strand per world (M).

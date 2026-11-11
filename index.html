@@ -1613,6 +1613,7 @@ html.notext .pktxt{display:none}
 .ls:not(:empty){background:var(--brand-tint);box-shadow:inset 0 -.11em 0 var(--brand);color:var(--brand-shade)}
 .ls.ok,.ls.ok:not(:empty){background:var(--good-tint);box-shadow:inset 0 -.11em 0 var(--good);color:var(--good-ink);animation:k-pop var(--t-slow) var(--spring)}
 .oslots{gap:var(--s-2)}
+.oend{align-self:flex-end;margin-left:calc(-1 * var(--s-1));font-size:clamp(28px,5vh,40px);font-weight:800;line-height:1;color:var(--ink)} /* R-01s: the sentence's dot after the last slot */
 .socket.os{min-width:var(--tap-primary);min-height:var(--tap-primary);padding:var(--s-1) var(--s-3);font-size:clamp(20px,3.8vh,30px);cursor:pointer;
   touch-action:manipulation}
 .socket.os.full{border:3px solid var(--brand);background:var(--brand-tint);color:var(--brand-shade);box-shadow:0 3px 0 var(--brand-shade)}
@@ -2923,7 +2924,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S));SAVE_FAILED=fals
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v135'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v138'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -3032,8 +3033,9 @@ function esQFix(q){if(!q||!(q.lang=='es'||q.dl)||esVoice()!='no')return;
   // P2-35: a dialogue line (.dl-b) already shows its text beside the button, so the button just goes; an English question keeps "Hear it"
   $$('[data-sayes]').forEach(b=>{if(b.classList.contains('dl-b')){b.remove();return}const d=document.createElement('div');d.className='esbig';d.textContent=b.dataset.sayes;b.replaceWith(d)});
   const k=$('#spk');if(k&&q.lang=='es')k.style.display='none';esNote()}
-function say(t,btn,lang,q){if(lang=='es'&&esVoice()=='no'){esNote();if(btn)btn.classList.remove('talking');return}if(!canSpeak()){if(btn)noVoice(btn);return}
-  try{if(!q)speechSynthesis.cancel();const es=lang=='es',u=new SpeechSynthesisUtterance(String(t).replace(/−/g,' minus '));u.rate=es?.8:.88;u.pitch=1.1;u.lang=es?'es-MX':'en-US';
+// slow (R-01s): a number under 1 slows the voice down (a hint replays a Spanish word at .75 of the normal speed)
+function say(t,btn,lang,q,slow){if(lang=='es'&&esVoice()=='no'){esNote();if(btn)btn.classList.remove('talking');return}if(!canSpeak()){if(btn)noVoice(btn);return}
+  try{if(!q)speechSynthesis.cancel();const es=lang=='es',u=new SpeechSynthesisUtterance(String(t).replace(/−/g,' minus '));u.rate=(es?.8:.88)*(slow>0&&slow<1?slow:1);u.pitch=1.1;u.lang=es?'es-MX':'en-US';
   const vs=speechSynthesis.getVoices(),v=es?(vs.find(v=>/^es[-_](MX|US)/i.test(v.lang))||vs.find(v=>/^es/i.test(v.lang))):(vs.find(v=>/^en[-_]US/i.test(v.lang))||vs.find(v=>/^en/i.test(v.lang)));if(v)u.voice=v;
   if(btn){let started=false;btn.classList.add('talking');u.onstart=()=>{started=true};u.onend=u.onerror=()=>btn.classList.remove('talking');
     setTimeout(()=>{if(!started&&!speechSynthesis.speaking)noVoice(btn)},2500)}
@@ -5511,6 +5513,16 @@ function mathQ(a,op,b,c,blank,vert,extra={}){
   return Object.assign({kind:'num',html,say:`${sw('a')} ${w} ${sw('b')} equals ${sw('c')}?`,ans:String(v[blank]),hint:{k:'blocks',a,b,c,op,blank},
     label:`${blank=='a'?'?':a} ${sym} ${blank=='b'?'?':b} = ${blank=='c'?'?':c}`},extra)}
 const coin=()=>rnd()<.5;
+// R-01s: the English plural of a noun (or of the last word of a phrase: "ice cream" -> "ice creams"). One helper for shown and
+// spoken text, so "the beaches" and "More than one dog!" never drift apart. Irregular nouns first, then the spelling rules:
+// -s -x -z -ch -sh take -es (beaches, buses, boxes), a consonant + y takes -ies (babies), everything else takes -s.
+const EN_PL_IRR={fish:'fish',sheep:'sheep',deer:'deer',tooth:'teeth',foot:'feet',goose:'geese',mouse:'mice',child:'children',man:'men',woman:'women',
+  person:'people',leaf:'leaves',knife:'knives',wolf:'wolves',loaf:'loaves',shelf:'shelves',half:'halves',potato:'potatoes',tomato:'tomatoes',hero:'heroes'};
+function enPlural(w){const m=/^(.*?)([a-z]+)$/i.exec(String(w));if(!m)return w;const [,pre,x]=m,lo=x.toLowerCase();
+  if(EN_PL_IRR[lo])return pre+EN_PL_IRR[lo];
+  if(/(s|x|z|ch|sh)$/.test(lo))return pre+x+'es';
+  if(/[^aeiou]y$/.test(lo))return pre+x.slice(0,-1)+'ies';
+  return pre+x+'s'}
 /* genQ(sk,lv,seed): build one question of skill sk, level lv, from a seed (uint32; random when omitted). Same (sk,lv,seed) gives the same question.
    The question is stamped with q.sk, q.lv, q.seed. RNG is always restored, even if the generator throws. */
 function genQ(sk,lv,seed){
@@ -5604,7 +5616,7 @@ function rod(n,c,cls='',x=0){if(n<=0)return'';let s='';for(let i=0;i<n;i++)s+=`<
 function hintHTML(q){const h=q.hint;if(!h)return'';
   if(h.k=='text')return esc(h.s);
   if(h.k=='steps')return hintSteps(q); // P2-08
-  if(h.k=='say'){setTimeout(()=>say(h.w,null,h.lang),150);return esc(h.s)}
+  if(h.k=='say'){setTimeout(()=>say(h.w,null,h.lang,0,h.slow),150);return esc(h.s)} // h.slow (R-01s): replay slower
   if(h.k=='trace')return TR.hint(q); // P2-16: the hint plays on the tracing board (47-trace.js)
   if(h.k=='html'){if(h.w)setTimeout(()=>say(h.w),150);return h.html} // trusted markup from a generator (Pre-K pictures); h.w is spoken
   if(h.k=='next'){const need=q.word[G.built.length],i=q.tiles.findIndex((t,j)=>t==need&&!G.built.includes(j));const el=$(`.lt[data-i="${i}"]`);if(el)el.classList.add('glow');setTimeout(()=>say(q.word),150);return'Look for the glowing letter!'}
@@ -6721,7 +6733,7 @@ function home(first){
   <div class="scroll hm" id="hs"><div class="hm-cols">
    <div class="hm-col">${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('target', 26)}<span>Today's missions</span></h2>${hmMissions()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}${hmDaily()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
-   <p class="hm-ver">${ico('star', 16)}<span>Star School v135</span></p></div>`);
+   <p class="hm-ver">${ico('star', 16)}<span>Star School v138</span></p></div>`);
   music(true);
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'heart');
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
@@ -7600,6 +7612,7 @@ function shopBuy(it, btn) {
              (kindSort); cls extra class. A Check button submits the picked values (sorted array).
      order   tap tiles into slots in order: items [{v, l, h}] (shown in this order, so shuffle them; extra
              distractors are allowed), ans = array of v values in the right order. Tap a filled slot to take it back.
+             Optional end (R-01s): a mark such as '.' shown after the last slot, not a tile.
    Optional K.same(q, v) says whether the submitted value v is right; without it the engine compares
    String(v) === String(q.ans). num (eq 'value'), multi and order define it.
    Contract of a kind K = KIND[q.kind]:
@@ -8066,7 +8079,8 @@ const KIND={
   },
 
   order:{
-    render:q=>`<div class="oslots">${q.ans.map((_,i)=>`<button class="socket os" data-s="${i}" aria-label="Place ${i+1}"></button>`).join('')}</div>`
+    render:q=>`<div class="oslots">${q.ans.map((_,i)=>`<button class="socket os" data-s="${i}" aria-label="Place ${i+1}"></button>`).join('')}`
+      +`${q.end?`<span class="oend" aria-hidden="true">${esc(q.end)}</span>`:''}</div>`
       +`<div class="tiles otiles">${q.items.map((t,i)=>`<button class="piece ot" data-i="${i}">${t.h?t.l:esc(t.l)}</button>`).join('')}</div>`,
     bind(q,st,submit){
       const K=KIND.order;
@@ -9481,6 +9495,7 @@ const REV={
 };
 const revLabel=l=>String(l==null?'':l).slice(0,REV.LABEL);
 const revKey=o=>o.sk+'|'+o.lv+'|'+revLabel(o.label);
+const revNoArt=l=>String(l).replace(/^(el|la|los|las) /,''); // R-01s: a Spanish label without its leading article
 const revDue=(it,d)=>it.due<=d||it.due>d+REV.INT[REV.INT.length-1];
 const revOk=it=>!!(SK[it.sk]&&SK[it.sk].gen&&it.lv>=1&&it.lv<=(SK[it.sk].max||1));
 const revOnPath=(it,p)=>!!NODES[p]&&NODES[p].some(n=>n.sk==it.sk&&n.lv==it.lv);
@@ -9549,6 +9564,9 @@ function revQ(it){
       for(let s=1;s<=REV.FIND;s++){const t=genQ(it.sk,it.lv,s);if(revLabel(t.label)===it.label){it.seed=s;q=t;break}}
     }
   }catch(e){q=null}
+  // R-01s: the first Spanish units gained el / la ("pato (read)" is now "el pato (read)"): a Spanish item rebuilt from its seed whose
+  // label differs only by that article is the same question, and the item takes the new label (so a new miss finds it)
+  if(q&&/^es_/.test(it.sk)&&revLabel(q.label)!==it.label&&revNoArt(revLabel(q.label))===revNoArt(it.label))it.label=revLabel(q.label);
   if(!q||revLabel(q.label)!==it.label)q=genQ(it.sk,it.lv);
   q.sk=it.sk;
   q.lv=it.lv;
@@ -10277,7 +10295,7 @@ function grown(){let armed=false;
     {sub:'Rounds played and first-try accuracy for every skill on the maps, with the questions missed most.'})}
   ${GW.card('gw-how','info','How it works',`<p class="gw-p">Each subject has its own map. Getting 7 of 10 right opens the next stop (8 earns 2 stars, 10 earns 3), and each world stretches further. Missed questions come back at the end of a round, in later rounds, in Daily Review and in the Tricky Mix. Each right answer earns a star (the pet grows) and a coin (spent in the shop). Everything is saved on this tablet only.</p>`)}
   <details class="gw-card gw-det" id="applog"><summary class="gw-h"><span class="gw-hi">${ico('doc',24)}</span><span>App log</span>${ico('chevron-right',22,'chev')}</summary><div class="gw-log">
-   <div><b>Version</b> v135</div><div><b>Save size</b> ${(JSON.stringify(S).length/1024).toFixed(1)} KB</div>
+   <div><b>Version</b> v138</div><div><b>Save size</b> ${(JSON.stringify(S).length/1024).toFixed(1)} KB</div>
    <div><b>Storage</b> ${SAVE_FAILED?'<span class="gw-bad">could not save (device storage may be full)</span>':'saving OK'}</div>
    ${SAVE_CORRUPT?'<div class="gw-bad">The old save could not be read. A fresh start was made and the old data was kept on the device.</div>':''}
    <div><b>Last errors</b> ${(S.err||[]).length?'<ul class="gw-errs">'+(S.err||[]).slice().reverse().map(e=>'<li><span>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+'</span> '+esc(e.msg)+'</li>').join('')+'</ul>':'none'}</div></div></details>
@@ -10331,7 +10349,7 @@ const BAK = {
   MAX: 5e6, // bytes: a save is under 300 KB, so a bigger file is not a backup
   // The file text: a small header, then the whole save in "data".
   make() {
-    return JSON.stringify({app: BAK.APP, ver: 'v135', save: LATEST, date: new Date().toISOString(), name: S.name || '', data: S});
+    return JSON.stringify({app: BAK.APP, ver: 'v138', save: LATEST, date: new Date().toISOString(), name: S.name || '', data: S});
   },
   fileName() {
     const nm = String(S.name || 'child').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'child';
@@ -10788,20 +10806,20 @@ function appFiles() {
   ];
 }
 function dataReady() {
-  return appFiles().every(f => f[1] === 'v135');
+  return appFiles().every(f => f[1] === 'v138');
 }
 function dataMissing() {
-  logErr(appFiles().filter(f => f[1] !== 'v135').map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v135)');
+  logErr(appFiles().filter(f => f[1] !== 'v138').map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v138)');
   const again = UI.btn('Try again', { kind: 'primary', size: 'lg', icon: 'replay', id: 'dataretry' });
   view(`<div class="scroll" id="datamiss">${UI.empty('download', 'Star School needs to finish updating. Connect to the internet, then tap Try again.', again)}</div>`);
   $('#dataretry').onclick = () => location.reload();
 }
 </script>
-<script src="gen.v135.js"></script>
-<script src="gen2.v135.js"></script>
-<script src="bt.v135.js"></script>
-<script src="games.v135.js"></script>
-<script src="data.v135.js"></script>
+<script src="gen.v138.js"></script>
+<script src="gen2.v138.js"></script>
+<script src="bt.v138.js"></script>
+<script src="games.v138.js"></script>
+<script src="data.v138.js"></script>
 <script>
 if (dataReady()) {
   loadClips();
