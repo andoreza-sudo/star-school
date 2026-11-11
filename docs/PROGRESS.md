@@ -2,7 +2,7 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** G-01, R-01s, P5-10, R-01 (Discover, Brain Teasers, practice), G-04
+**Next up:** G-01, R-01s, P5-10, R-01 (Discover), G-04
 
 **Current version:** v138
 
@@ -122,12 +122,17 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - R-01r v138
 - R-01 reading done
 - R-01 spanish done
+- R-01 brain teasers done
+- R-01 practice done
 
 ## Handoff notes
 
 (none)
 
 ## Ideas and issues
+- (R-01 bt) Must: Patterns choices are drawn about 1.6x the row's scale, so a size-only wrong choice can match the row by eye: `pattern A 4` day 2026-1-1 item 3 (row big orange / small blue; the medium yellow choice is the row's orange size on screen, the right big orange is much bigger), `pattern A 1` day 2026-1-1 item 3. 30-34% of band A levels 1-4 "What comes next?" items have a size-only wrong choice (39-59% in B5-B12). Draw choices at the row's scale or drop size-only distractors in band A (src/js/76-bt-pattern.js, src/css/49-bt-pattern.css). Details: docs/reviews/R-01-brain-teasers.md.
+- (R-01 bt) Must: band B (grades 1-2) never speaks the first instruction by itself (only band A does): MathDoku B "Each row and column needs 1, 2 and 3 once. The numbers in a cage add up to its number. Tap a square, then a number.", Logic Grid B "Tap a square once for a cross (no), twice for a tick (yes)." Speak the intro line in band B too (the `band == 'A'` intro tests in the bt type files). No broken or two-answer puzzle was found (about 55,000 generated and checked with independent solvers).
+- (R-01 practice) Must: Fact Sprint is on every child's Home and "Adding to 10" is always open (`ok: () => true`, src/js/57-fluency.js), so a Pre-K child can start a 60-second written-sum drill with no voice; the daily mission "Do a Fact Sprint" is drawn from K (55-missions.js). Show Fact Sprint from grade 1, open add10 after the first adding stop is passed, no sprint mission before grade 1 (hmToday in 46-home.js). Details and the should list: docs/reviews/R-01-practice.md.
 - (R-01 reading) Done in R-01r (v137). Must: Picture Words wrong choices included racial slurs and rude words: `variants()` / `phonVariants()` (32-gen-read.js) changed one letter and the `BAD`/`PHBAD` filters (20-words.js) missed them: pic 3 seed 4371301, pic 4 seeds 8481262 and 6739082, pic 6 seed 981969, pic 1 seeds 1346243 and 3040909 (slurs), and rude words at about 0.8-2.8% of pic 1, 2, 3, 4, 6 items (the words were removed from this file in R-01r; seeds in docs/reviews/R-01-reading.md 2.4).
 - (R-01 reading) Done in R-01r (v137). Must: pic 1-4 wrong choices are mostly impossible spellings (pic 3 seed 13 snake: "snakb", "cnake"; pic 2 seed 13 sock: "socb"; pic 1 egg: "bgg"): 17% of pic 1, 71% of pic 2, 61% of pic 3, 39% of pic 4 items. Replace with real-word or legal contrast sets (cap/cape, kit/kite) per CURRICULUM 1.3.
 - (R-01 reading) Done in R-01r (v137). Must: sight words offer a homophone of the spoken word: sight 1 seed 190069 (hear "two": to, two, three, you; 2.5% of sight 1), sight 4 seed 7932 (hear "right": write offered). `genSight` (32-gen-read.js) must exclude homophones.
@@ -446,6 +451,18 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-11) Icons wanted from P4-03: `balloon` (Bonus game, today `gamepad`), `sparkle` / `confetti`, `unlock` (open padlock for "Next stop unlocked", today `map`), `zap` (a lightning with a spark for boss hits; today `bolt`), `sticker` (single sticker for the prize row), `medal` (the prize rosette as an icon), `heart-half` (boss life bar), `chest` (the treasure chest at icon size, e.g. for the round track where renderQ shows the gift emoji).
 
 ## Log
+
+### R-01 Practice systems teaching review (2026-11-11, Claude)
+- What: `docs/reviews/R-01-practice.md`, a teaching and engagement review of Fact Sprint, Fact Race, Daily Review and the review engine, Mixed Practice, placement, challenge and support rounds, streaks, missions and rewards: a parent summary with a must / should / could list (system, file, size), findings per system with seeds and screenshots, and a top 10, with named sources (Roediger and Karpicke, Cepeda et al., Rohrer and Taylor, Brunmair and Richter, Bloom, Kulik et al., Kalyuga et al., Baroody, NCTM, Fuchs et al., Boaler, Ramirez et al., Wainer, Hattie and Timperley, Mueller and Dweck, Deci et al., ICO Children's Code, Radesky et al.).
+- How: read the practice code (57-fluency, 54-race, 59-review, 50-round, 51-mastery, 45-placement, 55-streak, 55-missions, 58-playtime, 46-home); simulated 400 placement quizzes per cell (maths and reading, grades 1/3/5, true level 3 below to 5 above the start, three answer models) and 3,000 Mixed Practice questions for a 3rd grader; played Fact Sprint (Pre-K), Daily Review and Mixed Practice (tricky fixture), support and challenge rounds, a 6-of-10 round, streak and placement in the built app with Playwright at 380x780 and 1024x600 (2x, screenshots `pr-*` in the session scratchpad `r01-btp/`).
+- Result: spaced review, in-round adaptation, kind feedback and gentle streaks are sound. Must: Fact Sprint offered to Pre-K/K (Ideas and issues). Should: Mixed Practice is 59% questions 26+ stops back and 38% Pre-K/K content for a 3rd grader; placement over-places a struggling child 14-28% of the time after a lucky first testlet; only mistakes are reviewed; review repeats the identical item; a "perfect round" mission (even for Pre-K); hint-first support answers count as mastered; 7-of-10 pass bar; "Best streak 10 in a row" after 6 of 10; red backlog count; Fact Race coins unlimited and its clock runs when hidden.
+- No code changes, no VER bump, no build.
+
+### R-01 Brain Teasers teaching review (2026-11-11, Claude)
+- What: `docs/reviews/R-01-brain-teasers.md`, a teaching and engagement review of all 19 puzzle types in bands A-D: a parent summary with a must / should / could list (type, file, size), the reasoning skill each type builds with its evidence, findings per type with samples and days, touch and layout notes, and a top 10, with named sources (Uttal et al., Verdine et al., Cheng and Mix, Levine et al., Clements and Sarama, Frick et al., Dehaene et al., Bornstein et al., Rittle-Johnson et al., Carraher et al., Bers et al., Gathercole et al., Melby-Lervåg et al., Sala and Gobet, Wood et al., Aleven et al., Deci et al.).
+- How: tools/test.js (122 checks pass); about 55,000 generated puzzles checked with my own solvers (14,400 Sudoku, 10,800 MathDoku and 10,800 Logic Grid with exactly one solution each; 3,600 pyramid / balance / target; 4,800 Turn It / Mirror / Cubes; 10,800 pattern items against a 17-rule number library); all 144 riddles, the memory pairs and the word lists read by hand; every type played with real taps and drags in the built app (Playwright, touch at 380x780, mouse at 1024x600, 2x): the first band's level 1 on a phone, band D level 10 on both sizes, all won (Sudoku band A by hints only: a bot problem), about 190 screenshots looked at (session scratchpad `r01-btp/`).
+- Result: no broken puzzle and no puzzle with two answers by its rules. Must: pattern choices drawn at a bigger scale than the row, so size-only wrong choices look right; band B instructions not spoken. Should: band A tangram needs turning, Copy Cat spans above age norms, mirror-image distractors in Turn It band B, hints halve puzzle game time, level steps every 4 levels and band jumps (maze 27 -> 45, Sudoku 4x4 -> 6x6, Robot C par non-monotonic), strategy-free hints, 1.5-unit Pre-K patterns, 18 px maze squares on phones.
+- No code changes, no VER bump, no build.
 
 ### R-01r Reading review fixes, safe wrong choices (v138, 2026-11-11, Claude)
 - Why: the R-01 reading review (docs/reviews/R-01-reading.md) found slurs and rude words among the made-up Picture Words choices, impossible
