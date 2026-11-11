@@ -1123,7 +1123,33 @@ const GROUPS = {
   p418: ['map', 'map-read', 'map-worlds', 'map-boss', 'fluency', 'fluency-modes', 'sprint', 'sprint-end', 'race-menu', 'q-race', 'race-end', 'streak',
     'place-intro', 'place-q', 'place-done', 'place-grown', 'report-top', 'care', 'setup', 'gameroom', 'balloons', 'balloons-end', 'learn-es', 'q-boss',
     'viz', 'viz-q', 'bay-coins4', 'clock-time1', 'frac-2-pic', 'sg-tenf2'],
+  p412: ['setup', 'setup-done', 'grown', 'grown-full', 'grown-log', 'report-top', 'care', 'care-fx', 'care-space', 'shop', 'app-icon'],
 };
+
+// P4-12: setup filled in by taps, the whole Grown-ups page (and the App log open), Pet Care mid-bath (drawn bubbles), the
+// space stage, and a sheet of the app icon (512 and 192 as launchers crop them: square, rounded, the maskable circle; the favicon).
+Object.assign(SCREENS, {
+  'setup-done': { fixture: 'fresh', run: async p => {
+    await p.fill('#nm', 'Ava'); await p.click('.petopt[data-p="bird"]'); await p.click('.gr[data-g="2"]'); await p.click('#nm');
+  } },
+  'grown-full': { full: true, run: async p => { await p.evaluate(() => { S.err = [{ t: Date.now(), ver: 'v124', msg: 'Sample error line' }]; grown();
+    for (const e of [document.documentElement, document.body, document.querySelector('#app'), document.querySelector('.scroll')]) { e.style.height = 'auto'; e.style.overflow = 'visible'; } }); } },
+  'grown-log': { run: async p => { await p.evaluate(() => { S.err = [{ t: Date.now(), ver: 'v124', msg: 'Sample error line' }]; grown(); }); await p.click('#applog summary');
+    await p.evaluate(() => document.querySelector('#applog').scrollIntoView({ block: 'center' })); } },
+  'care-fx': { run: async p => { await p.evaluate(() => { window.say = () => {}; S.care = { food: 40, clean: 20, fun: 40, t: Date.now(), gift: '' }; care(); });
+    // the virtual clock removes the pieces at once (their timer is fast, the CSS motion is real time): copies stay for the shot
+    const keep = n0 => p.evaluate(n0 => document.querySelectorAll('.pc-fx:not(.kept)').forEach(b => { const c = b.cloneNode(true); c.classList.add('kept');
+      document.body.appendChild(c); c.querySelectorAll('i').forEach((i, n) => { i.style.animationDelay = -(n0 + n * 45) + 'ms'; i.style.animationPlayState = 'paused'; }); }), n0);
+    await p.click('#bath'); await keep(380); await p.waitForTimeout(200); await p.click('[data-f="1"]'); await keep(300); } },
+  'care-space': { run: async p => { await p.evaluate(() => { S.wear.scene = 'space'; S.care = { food: 20, clean: 90, fun: 90, t: Date.now(), gift: '' }; care(); }); } },
+  'app-icon': { run: async p => { await p.evaluate(() => {
+    const im = (src, sz, r, extra = '') => `<div style="display:grid;justify-items:center;gap:8px"><div style="position:relative;width:${sz}px;height:${sz}px;border-radius:${r};overflow:hidden;box-shadow:0 6px 16px rgba(31,36,64,.18)">` +
+      `<img src="${src}" width="${sz}" height="${sz}" style="display:block">${extra}</div><small>${src} ${sz}px ${r == '50%' ? 'maskable circle' : r == '0' ? 'square' : 'rounded'}</small></div>`;
+    const zone = '<div style="position:absolute;inset:10%;border-radius:50%;box-shadow:0 0 0 2px #fff8,inset 0 0 0 2px #fff8"></div>';
+    view(`<div class="scroll" style="display:flex;flex-wrap:wrap;gap:24px;align-items:flex-end;justify-content:center;padding:24px">${im('icon-512.png', 256, '0', zone)}` +
+      `${im('icon-512.png', 192, '22%')}${im('icon-512.png', 192, '50%')}${im('icon-192.png', 96, '22%')}${im('icon-192.png', 48, '50%')}${im('icon-192.png', 32, '6px')}</div>`);
+  }); await p.waitForTimeout(200); } },
+});
 
 // P2-08: step hints. One question in a one-question round (made in the page by mk, a function source), then Help tapped
 // `taps` times (the first tap opens step 1, each further tap shows the next step).
