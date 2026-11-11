@@ -341,3 +341,14 @@
 📆  # tear-off calendar
 🥵  # hot face
 🥶  # cold face
+🏪  # convenience store
+🏥  # hospital
+⛪  # church
+🥕  # carrot
+🏦  # bank
+🎬  # clapper board
+🏃  # runner
+🦘  # kangaroo
+🛌  # person in bed
+🎤  # microphone
+💃  # dancer

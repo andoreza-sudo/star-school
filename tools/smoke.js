@@ -4851,6 +4851,39 @@ async function main() {
       await et.ctx.close();
     }
 
+    // P2-33 La Ciudad at 380x780: open the world from the Spanish map by id, play a verbs round (es_verb 1) and an adjectives round (es_adj 2)
+    //    with real taps; stars saved, choices and the speaker 48 px or more, nothing wider than the screen.
+    {
+      const cx = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
+      const cp = cx.page;
+      await cp.evaluate(() => { S.unlockAll = true; save(); });
+      const lay = () => ({ w: document.documentElement.scrollWidth, ch: Math.min(...[...document.querySelectorAll('.ch')].map(b => Math.min(b.getBoundingClientRect().height, b.getBoundingClientRect().width))),
+        cap: document.querySelectorAll('.pcap small').length });
+      for (const id of ['es_verb1', 'es_adj2']) {
+        await cp.evaluate(() => { if (G) G.dead = true; home(); });
+        await cp.click('.game[data-p="es"]');
+        await cp.waitForSelector('.wchip.on');
+        const at = await cp.evaluate(id => ({ i: NODES.es.findIndex(n => nid(n) === id), w: NODES.es.find(n => nid(n) === id).wi, wid: NODES.es.find(n => nid(n) === id).wid }), id);
+        if (at.wid !== 'e_ciudad') fail('P2-33 ' + id + ' is not in La Ciudad: ' + JSON.stringify(at));
+        await cp.click(`.wchip[data-w="${at.w}"]`);
+        await cp.waitForSelector(`.wchip.on[data-w="${at.w}"]`);
+        await cp.click(`.node[data-n="${at.i}"]`);
+        await cp.waitForSelector('#go, .ch'); // the learn screen comes first on a level 1 stop
+        if (await cp.$('#go')) await cp.click('#go');
+        await cp.waitForSelector('.ch');
+        const l = await cp.evaluate(lay);
+        const g = await cp.evaluate(() => ({ sk: G.sk, lv: G.lv, hear: !!document.querySelector('.hear') }));
+        if (l.w > 380 || l.ch < 48 || l.cap < 1 || g.sk !== id.slice(0, -1) || String(g.lv) !== id.slice(-1)) fail('P2-33 ' + id + ' layout: ' + JSON.stringify({ l, g }));
+        await playRound(cp, 'P2-33 ' + id);
+        const st = await cp.evaluate(id => S.maps.es[id] || 0, id);
+        if (st < 1) fail('P2-33 ' + id + ' did not save stars');
+      }
+      step('P2-33: La Ciudad opened by id; verbs (level 1) and adjectives (level 2) rounds played with real taps, stars saved, 48 px choices, no sideways scroll');
+      network.push(...cx.network);
+      for (const e of cx.errors) fail(e);
+      await cx.ctx.close();
+    }
+
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');
   } catch (e) {
