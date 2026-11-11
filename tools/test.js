@@ -3743,7 +3743,7 @@ run('Fraction Forest P2-07: stops in CURRICULUM order, 3,000 samples per new lev
     const ids=NODES.math.map(nid);
     if(new Set(ids).size!==ids.length)add('stop ids repeat on the math path');
     if(WR.math[wi][1]-WR.math[wi][0]!==16||NODES.math[WR.math[wi][1]].sk!=='boss')add('17 stops: 16 and the boss');
-    const mx={round:3,geo:3,sub:8,time:6,shape:6,data:3,meas:5,story:7,frac:8}; // round 3 and sub 8 are Factor Factory's (P2-09)
+    const mx={round:4,geo:3,sub:8,time:6,shape:6,data:3,meas:5,story:7,frac:8}; // round 3 and sub 8 are Factor Factory's (P2-09)
     for(const k in mx)if(SK[k].max!==mx[k]||SK[k].area!=='math')add('SK.'+k+'.max '+SK[k].max);
     // ---- generic checks per level, then the maths of each level
     const levels=[['round',1],['round',2],['sub',6],['sub',7],['geo',1],['geo',2],['time',5],['time',6],['shape',5],['data',3],['meas',4],['story',6],
@@ -5512,7 +5512,7 @@ run('Factor Factory P2-09: stops in CURRICULUM order, 3,000 samples per new leve
     }
     const ids=NODES.math.map(nid);
     if(new Set(ids).size!==ids.length)add('stop ids repeat on the math path');
-    const mx={mfact:5,pv:4,mbig:4,big:7,sub:8,dbig:3,fact:2,round:3};
+    const mx={mfact:5,pv:6,mbig:5,big:7,sub:8,dbig:4,fact:2,round:4}; // pv 5-6, mbig 5, dbig 4 and round 4 are Volcano Lab's (P2-11): the skills grew, Factor Factory's own levels are unchanged
     for(const k in mx)if(SK[k].max!==mx[k]||SK[k].area!=='math')add('SK.'+k+'.max '+SK[k].max);
     // ---- old levels unchanged: every old level still comes from the same generator with the same seed
     const sameQ=(sk,lv,fn)=>{for(let s=1;s<=60;s++){const sd=(s*7+3)>>>0,a=genQ(sk,lv,sd),prev=RNG;RNG=mulberry32(sd);let b;try{b=fn(lv);b.sk=sk;b.lv=lv;b.seed=sd}finally{RNG=prev}
@@ -6072,7 +6072,7 @@ run('Decimal Desert P2-10: stops in CURRICULUM order, 3,000 samples per new leve
     const ids=NODES.math.map(nid);
     if(new Set(ids).size!==ids.length)add('stop ids repeat on the math path');
     if(WR.math[wi][1]-WR.math[wi][0]!==14||NODES.math[WR.math[wi][1]].sk!=='boss')add('15 stops: 14 and the boss');
-    const mx={fop:2,dec:2,ang:2,geo:3,shape:6,meas:5,pat:4,story:7,frac:8};
+    const mx={fop:2,dec:5,ang:2,geo:3,shape:6,meas:5,pat:4,story:7,frac:8};
     for(const k in mx)if(!SK[k]||SK[k].max!==mx[k]||SK[k].area!=='math')add('SK.'+k+'.max');
     for(let l=1;l<=8;l++)if(!NODES.math.some(n=>n.sk=='frac'&&n.lv==l))add('frac '+l+' has no stop');
     // ---- helpers for pictures
@@ -6588,6 +6588,365 @@ run('sudoku banks P3-02: format, givens agree with the solution, exactly one sol
   });
   const total=Object.values(v.counts).reduce((a,c)=>a+c,0);
   return{problems:p,note:total+' puzzles in '+Object.keys(v.counts).length+' band/tier lists; '+regen+' slots regenerated'};
+});
+
+// ---- P2-11 Volcano Lab (5th) ----
+run('Volcano Lab P2-11: stops in CURRICULUM order, 3,000 samples per new level with the maths recomputed (decimals exact), hints, reproducible, old levels unchanged, decimal step builders',()=>{
+  const body=function(){
+    S.name='Ava';S.buddy='Ben';G={built:[]};
+    const bad=[],N=3000,add=m=>{if(bad.length<40&&!bad.includes(m))bad.push(m)};
+    const strip=h=>h.replace(/<[^>]+>/g,'|').replace(/&nbsp;/g,' ');
+    // ---- world
+    const mw=PATHS.math.worlds,wi=mw.findIndex(x=>x.id=='m_volcano'),w=mw[wi];
+    const want='pv5 mbig5 dec3 pv6 dbig4 dec4 round4 ooo1 dec5';
+    if(wi<1||!w)add('world m_volcano missing');
+    else{
+      if(w.nodes.map(n=>n[0]+n[1]).join(' ')!==want)add('stop order: '+w.nodes.map(n=>n[0]+n[1]).join(' '));
+      if(w.g!==5||w.n!=='Volcano Lab'||mw[wi-1].id!=='m_factory'&&mw[wi-1].id!=='m_desert')add('world g/name/position');
+      if(mw.findIndex(x=>x.id=='m_factory')>wi)add('Volcano Lab must come after Factor Factory');
+      if(w.nodes.some(n=>n[2].length>22))add('stop name too long: '+w.nodes.find(n=>n[2].length>22)[2]);
+      if(new Set(w.nodes.map(n=>n[2])).size!==w.nodes.length)add('duplicate stop names');
+      if(WR.math[wi][1]-WR.math[wi][0]!==9||NODES.math[WR.math[wi][1]].sk!=='boss')add('10 stops: 9 and the boss');
+    }
+    const ids=NODES.math.map(nid);
+    if(new Set(ids).size!==ids.length)add('stop ids repeat on the math path');
+    const mx={pv:6,mbig:5,dbig:4,round:4,dec:5,ooo:1};
+    for(const k in mx)if(SK[k].max!==mx[k]||SK[k].area!=='math')add('SK.'+k+'.max '+SK[k].max);
+    // ---- old levels unchanged: every old level still comes from the same generator with the same seed
+    const sameQ=(sk,lv,fn)=>{for(let s=1;s<=60;s++){const sd=(s*7+3)>>>0,a=genQ(sk,lv,sd),prev=RNG;RNG=mulberry32(sd);let b;try{b=fn(lv);b.sk=sk;b.lv=lv;b.seed=sd}finally{RNG=prev}
+      if(JSON.stringify(a)!==JSON.stringify(b)){add('old level changed: '+sk+lv);return}}};
+    sameQ('pv',1,()=>genPv1());sameQ('pv',2,genBayPv2);sameQ('pv',3,genBayPv3);sameQ('pv',4,fyPv4);
+    sameQ('mbig',1,genMbig);for(let l=2;l<=4;l++)sameQ('mbig',l,fyMbig);
+    for(let l=1;l<=3;l++)sameQ('dbig',l,fyDbig);
+    sameQ('round',1,ffRound);sameQ('round',2,ffRound);sameQ('round',3,fyRound3);
+    // ---- independent decimal arithmetic on BigInt: {n, p} is n / 10^p
+    const D=s=>{const [i,f='']=s.split('.');return {n:BigInt(i+f),p:f.length}};
+    const T=BigInt(10);
+    const fmt=(n,p)=>{const s=n.toString().padStart(p+1,'0'),i=s.slice(0,s.length-p),f=p?s.slice(s.length-p).replace(/0+$/,''):'';return f?i+'.'+f:i};
+    const up=(x,p)=>x.n*T**BigInt(p-x.p);
+    const plus=(x,y)=>{const p=Math.max(x.p,y.p);return {n:up(x,p)+up(y,p),p}};
+    const minus=(x,y)=>{const p=Math.max(x.p,y.p);return {n:up(x,p)-up(y,p),p}};
+    const times=(x,y)=>({n:x.n*y.n,p:x.p+y.p});
+    const shift=(x,j)=>j>=0?{n:x.n*T**BigInt(j),p:x.p}:{n:x.n,p:x.p-j}; // x times 10^j
+    const roundTo=(x,k)=>{const d=x.p-k;return {n:(x.n+5n*T**BigInt(d-1))/T**BigInt(d),p:k}};
+    const quot=(x,y)=>{for(let t=0;t<=4;t++){const num=x.n*T**BigInt(y.p+t),den=y.n*T**BigInt(x.p);if(num%den==0n)return {n:num/den,p:t}}return null};
+    const nodig=s=>String(s).replace(/\D/g,'').length;
+    const places=s=>(s.split('.')[1]||'').length;
+    const WORD={zero:0,one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12,thirteen:13,fourteen:14,fifteen:15,sixteen:16,seventeen:17,eighteen:18,nineteen:19,
+      twenty:20,thirty:30,forty:40,fifty:50,sixty:60,seventy:70,eighty:80,ninety:90};
+    const fromWords=s=>{let tot=0,cur=0;for(const t of s.replace(/,/g,' ').replace(/-/g,' ').split(/\s+/).filter(Boolean)){
+      if(t=='hundred')cur*=100;else if(t=='thousand'){tot+=cur*1000;cur=0}else if(t in WORD)cur+=WORD[t];else return NaN}
+      return tot+cur};
+    // order of operations: value and whether any step is not a whole number or is below 0 (own parser)
+    const evalOOO=s=>{
+      const t=s.replace(/\s+/g,'').match(/\d+|[()+−×÷]/g);let i=0,ok=true,ops=0;
+      const chk=v=>{if(!Number.isInteger(v)||v<0)ok=false;return v};
+      const expr=()=>{let v=term();while(t[i]=='+'||t[i]=='−'){const o=t[i++],x=term();ops++;v=chk(o=='+'?v+x:v-x)}return v};
+      const term=()=>{let v=atom();while(t[i]=='×'||t[i]=='÷'){const o=t[i++],x=atom();ops++;v=chk(o=='×'?v*x:v/x)}return v};
+      const atom=()=>{if(t[i]=='('){i++;const v=expr();i++;return v}return +t[i++]};
+      const v=expr();return {v,ok,ops,len:t.length,i}};
+    // a hint's shape: steps, html and say, a record per step, only the last asks, every number of a step is on show, whole board rows, spoken text without symbols
+    const shape=(h,w)=>{
+      if(!h||h.k!=='steps'||!Array.isArray(h.steps)||!h.steps.length)return add(w+': not a step hint');
+      h.steps.forEach((s,i)=>{
+        const last=i==h.steps.length-1;
+        if(typeof s.html!=='string'||typeof s.say!=='string'||!s.say.trim())add(w+' step '+i+': html/say');
+        if(/undefined|NaN|null/.test(s.html+s.say))add(w+' step '+i+': undefined/NaN');
+        if(/[<>×÷−]|&nbsp;/.test(s.say))add(w+' step '+i+': say has symbols: '+s.say);
+        const c=s.c;if(!c)return add(w+' step '+i+': no record');
+        if(last!==(c.r===null))add(w+' step '+i+': r null only in the last step');
+        if(last&&!s.html.includes('?'))add(w+': last step has no ?');
+        const txt=s.html.replace(/<[^>]+>/g,' ');
+        for(const x of c.x.concat(last?[]:[c.r]))if(typeof x=='number'&&!new RegExp('(^|[^0-9])'+x+'([^0-9]|$)').test(txt))add(w+' step '+i+': '+x+' not shown');
+        for(const m of s.html.matchAll(/<div class="hsb[^"]*" style="grid-template-columns:([^"]+)">([\s\S]*?)<\/div>/g)){
+          const cols=m[1].split(' ').length;let cells=0;
+          for(const t of m[2].matchAll(/<i [^>]*?(?:grid-column:span (\d))?"?>/g))cells+=t[1]?+t[1]:1;
+          if(cells%cols)add(w+' step '+i+': board cells '+cells+' not whole rows of '+cols);
+        }
+      });
+    };
+    // ---- the two new step builders, 3,000 problems each
+    const R1=(lo,hi)=>R(lo,hi);
+    const decS=(p,lo,hi)=>{let m;do m=R1(lo,hi);while(p&&m%10==0);return fmt(BigInt(m),p)};
+    for(let t=0;t<N;t++){
+      const pa=R1(0,2),pb=R1(0,2);let a=pa?decS(pa,1,99*10**(pa-1)+9):String(R1(1,99)),b=pb?decS(pb,1,99):String(R1(1,99));
+      if(+a<=0||+b<=0)continue;
+      const w='decmul '+a+' x '+b;let h;try{h=stepsDecMul(a,b)}catch(e){add(w+': threw '+e.message);continue}
+      shape(h,w);
+      const x=D(a),y=D(b),pl=x.p+y.p,s0=h.steps[0].c;
+      if(s0.op!=='dp'||s0.x.join()!==x.p+','+y.p||s0.r!==pl)add(w+': places step '+JSON.stringify(s0));
+      const base=stepsMul(Number(x.n),Number(y.n)),rest=h.steps.slice(1);
+      if(rest.length!==base.steps.length||rest.some((s,i)=>JSON.stringify(s.c)!==JSON.stringify(base.steps[i].c)))add(w+': whole-number steps are not stepsMul of the digits');
+      const lastTxt=strip(h.steps[h.steps.length-1].html);
+      if(pl&&!lastTxt.includes('point '+(pl==1?'1 place':pl+' places')))add(w+': last step does not say where the point goes');
+      const ans=fmt(times(x,y).n,pl),all=h.steps.map(s=>strip(s.html)).join('|').replace(/(\d),(\d)/g,'$1$2');
+      if(/\./.test(ans)&&new RegExp('(?<![\\d.])'+ans.replace('.','\\.')+'(?!\\d|\\.\\d)').test(all)&&ans!==a&&ans!==b)add(w+': hint shows the answer '+ans);
+      const prod=String(times(x,y).n);
+      if(prod.length>=3&&new RegExp('(?<![\\d.])'+prod+'(?!\\d|\\.\\d)').test(all)&&prod!==String(x.n)&&prod!==String(y.n))add(w+': hint shows the whole-number product '+prod);
+    }
+    for(let t=0;t<N;t++){
+      const kind=t%3;let a,b;
+      if(kind==0){b=String(R1(2,9));a=fmt(BigInt(R1(2,99)*+b),R1(1,2))}
+      else if(kind==1){b=String(pick([2,4,5,8]));a=String(R1(3,99))}
+      else{b=fmt(BigInt(R1(2,9)),1);const q=R1(2,40);a=fmt(BigInt(q*+b.replace('.','')),t%2?1:2)}
+      const x=D(a),y=D(b),qq=quot(x,y);
+      if(!qq||x.n==0n){continue}
+      const w='decdiv '+a+' / '+b;let h;try{h=stepsDecDiv(a,b)}catch(e){add(w+': threw '+e.message);continue}
+      shape(h,w);
+      const i0=y.p?1:0,dd=h.steps[i0].c;
+      if(y.p){const c=h.steps[0].c;if(c.op!=='ten'||c.x[0]!==10**y.p||c.r!==Number(y.n))add(w+': whole-divisor step '+JSON.stringify(c))}
+      else if(h.steps[0].c.op!=='dd')add(w+': first step '+h.steps[0].c.op);
+      if(dd.op!=='dd')add(w+': no dd step');
+      else{
+        const Nn=BigInt(dd.x[0]),B=BigInt(dd.x[1]);
+        if(Nn%B!==0n)add(w+': '+dd.x+' does not divide evenly');
+        // N / B read with p places is exactly a / b: (N/B) * bn * 10^ap == an * 10^bp * 10^p
+        if((Nn/B)*y.n*T**BigInt(x.p)!==x.n*T**BigInt(y.p)*T**BigInt(dd.p))add(w+': '+dd.x+' with '+dd.p+' places is not '+a+' / '+b);
+        if(fmt(Nn/B,dd.p)!==fmt(qq.n,qq.p))add(w+': quotient '+fmt(Nn/B,dd.p)+' vs '+fmt(qq.n,qq.p));
+        if(dd.z>3||dd.z<0)add(w+': zeros '+dd.z);
+        const base=stepsDiv(dd.x[0],dd.x[1]),rest=h.steps.slice(i0+1);
+        if(rest.length!==base.steps.length||rest.some((s,i)=>JSON.stringify(s.c)!==JSON.stringify(base.steps[i].c)))add(w+': division steps are not stepsDiv of the whole numbers');
+        const lastTxt=strip(h.steps[h.steps.length-1].html);
+        if(dd.p&&!lastTxt.includes('point '+(dd.p==1?'1 place':dd.p+' places')))add(w+': last step does not say where the point goes');
+      }
+      const ans=fmt(qq.n,qq.p),all=h.steps.map(s=>strip(s.html)).join('|');
+      if((/\./.test(ans)||ans.length>=3)&&new RegExp('(?<![\\d.])'+ans.replace('.','\\.')+'(?!\\d|\\.\\d)').test(all)&&ans!==a&&ans!==b)add(w+': hint shows the answer '+ans);
+    }
+    // a quotient that does not end within 3 places, or numbers that are not whole enough, is refused
+    for(const [a,b] of [['1','3'],['7','0'],['0.5','0.3']])try{stepsDecDiv(a,b);add('stepsDecDiv '+a+' / '+b+' should throw')}catch(e){}
+    // ---- the levels
+    const comma=n=>String(n).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+    const levels=[['pv',5],['mbig',5],['dec',3],['pv',6],['dbig',4],['dec',4],['round',4],['ooo',1],['dec',5]];
+    const tallies={};
+    for(const [sk,lv] of levels){
+      const key=sk+lv,T2=tallies[key]={},tally=t=>{T2[t]=(T2[t]||0)+1};
+      for(let i=0;i<N;i++){
+        const seed=i*7919+31,q=genQ(sk,lv,seed),W=key+': ';
+        const pr=kindProblems(q);if(pr.length)add(W+q.label+': '+pr[0]);
+        if(q.sk!==sk||q.lv!==lv||q.seed!==seed)add(W+'not stamped');
+        if(!q.say||/undefined|NaN|\[object/.test(q.say))add(W+'say '+q.say);
+        if(!q.label||q.label.length>=60||/undefined|NaN/.test(q.label))add(W+'label '+q.label);
+        if(/undefined|NaN|\[object/.test(q.html))add(W+'html has undefined/NaN');
+        if(!q.hint||hintHTML(q).length<10)add(W+'hint missing');
+        if(i%10==0&&JSON.stringify(genQ(sk,lv,seed))!==JSON.stringify(q))add(W+'not reproducible');
+        if(q.kind=='num'&&!q.sep&&nodig(q.ans)>4&&!(q.max>=nodig(q.ans)))add(W+'answer needs q.max '+q.ans);
+        if(q.kind=='num'&&/\./.test(q.ans)&&q.pad!=='dec')add(W+'decimal answer needs the dec pad '+q.ans);
+        if(q.kind=='num'&&q.pad=='dec'&&(q.eq!=='value'||!/^(0|[1-9]\d*)(\.\d*[1-9])?$/.test(q.ans)))add(W+'dec answer not normal '+q.ans);
+        if(q.kind=='choice'){const vs=q.choices.map(c=>c.v);if(!vs.includes(q.ans)||new Set(vs).size!==vs.length||vs.length<2||vs.length>4)add(W+'choices '+q.label)}
+        // the hint may repeat what the prompt shows but never shows the answer
+        const seen=new Set((q.label.match(/\d+(\.\d+)?/g)||[]).concat(strip(q.html).replace(/(\d),(\d)/g,'$1$2').match(/\d+(\.\d+)?/g)||[]));
+        const hs=q.hint.k=='steps'?q.hint.steps.map(s=>strip(s.html)).join('|'):q.hint.k=='text'?q.hint.s:'';
+        if(q.kind=='num'&&sk!='dbig'&&(/^\d{3,}$/.test(q.ans)||/\./.test(q.ans))&&!seen.has(q.ans)&&new RegExp('(?<![\\d.])'+q.ans.replace('.','\\.')+'(?!\\d|\\.\\d)').test(hs.replace(/(\d),(\d)/g,'$1$2')))add(W+'hint shows the answer '+q.label);
+        if(q.hint.k=='steps'){
+          if(q.hint.steps.length<2)add(W+'steps '+q.hint.steps.length);
+          if(!strip(q.hint.steps[q.hint.steps.length-1].html).includes('?'))add(W+'last step has no ?');
+        }
+        const a=q.ans;let m;
+        // ---------- the maths, from the label
+        if(sk=='pv'&&lv==5){
+          if(m=q.label.match(/^value of (\d) in (\d+\.\d+)$/)){
+            const d=m[1],s=m[2],digits=s.replace('.','');
+            if(digits.split(d).length!==2)add(W+'digit not unique '+q.label);
+            const k=s.indexOf(d),dot=s.indexOf('.'),e=k<dot?dot-1-k:-(k-dot),v=fmt(BigInt(d)*T**BigInt(e+3),3);
+            if(a!==v||!q.choices.some(c=>c.v===v))add(W+q.label+' -> '+a+' want '+v);
+            const vs=q.choices.map(c=>D(c.v));
+            if(q.choices.length!==4||vs.some(x=>!(x.n%BigInt(d)==0n&&/^[1-9]0*$/.test(String(x.n/BigInt(d))))))add(W+'choices '+q.label);
+            if(q.choices.some(c=>c.l!==c.v))add(W+'choice label');
+            if(!q.html.includes('<u>'+d+'</u>')||q.html.split('<u>').length!==2)add(W+'digit not marked once');
+            if(d=='0')add(W+'digit 0');
+            tally('value');
+          }else if(m=q.label.match(/^([\d.+ ]+) = \?$/)){
+            const parts=m[1].split(' + '),sum=parts.map(D).reduce(plus);
+            if(a!==fmt(sum.n,sum.p))add(W+q.label+' -> '+a);
+            let last=1e9;for(const p of parts){const x=D(p),e=x.n.toString().length-1-x.p;if(!/^[1-9]0*$/.test(x.n.toString())||e>=last)add(W+'part '+p+' in '+q.label);last=e}
+            if(parts.length<3||!/\./.test(a)||places(a)>3)add(W+'parts/places '+q.label);
+            tally('exp');
+          }else if(m=q.label.match(/^words to decimal (\d+\.\d+)$/)){
+            const words=q.html.match(/font-weight:700[^"]*">([^<]+)</)[1],mm=words.match(/^(?:(.+) and )?(.+) (tenths?|hundredths?|thousandths?)$/);
+            if(!mm)add(W+'words '+words);
+            else{
+              const p={tenth:1,hundredth:2,thousandth:3}[mm[3].replace(/s$/,'')],fr=fromWords(mm[2]),wh=mm[1]?fromWords(mm[1]):0;
+              if(fmt(BigInt(wh)*T**BigInt(p)+BigInt(fr),p)!==a||a!==m[1]||q.say!==words)add(W+'words '+words+' -> '+a);
+              if((fr==1)!==/[a-z]th$/.test(mm[3])||fr<1||fr>=10**p||fr%10==0)add(W+'fraction part '+words);
+              if(wh&&wh>99)add(W+'whole part '+words);
+              tally('words');if(!wh)tally('wordsnowhole');
+            }
+            if(q.auto!==true)add(W+'words auto');
+          }else add(W+'label '+q.label);
+        }
+        else if(sk=='pv'&&lv==6){
+          if(m=q.label.match(/^10\^(\d) = \?$/)){
+            if(a!=='1'+'0'.repeat(+m[1])||+m[1]<2||+m[1]>5)add(W+q.label+' -> '+a);
+            tally('pow');
+          }else if(m=q.label.match(/^(\d+(?:\.\d+)?) ([×÷]) 10\^(\d) = \?$/)){
+            const x=D(m[1]),j=+m[3],v=shift(x,m[2]=='×'?j:-j);
+            if(a!==fmt(v.n,v.p)||j<1||j>3||places(m[1])>2)add(W+q.label+' -> '+a);
+            if(!q.html.includes('<sup>'+j+'</sup>'))add(W+'no superscript');
+            tally('sci');tally(m[2]);
+          }else if(m=q.label.match(/^(\d+(?:\.\d+)?) ([×÷]) (10|100|1000) = \?$/)){
+            const x=D(m[1]),j=m[3].length-1,v=shift(x,m[2]=='×'?j:-j);
+            if(a!==fmt(v.n,v.p)||places(m[1])>3)add(W+q.label+' -> '+a);
+            if(/\./.test(m[1])&&/0$/.test(m[1]))add(W+'trailing zero in '+q.label);
+            tally('md');tally(m[2]);tally(/\./.test(m[1])?'dec':'whole');tally('x'+m[3]);
+          }else add(W+'label '+q.label);
+          if(q.hint.k!=='steps')add(W+'hint kind');
+        }
+        else if(sk=='mbig'){
+          m=q.label.match(/^(\d+) × (\d+) = \?$/);if(!m){add(W+'label '+q.label);continue}
+          const x=+m[1],y=+m[2];
+          if(a!==String(x*y)||x<101||x>999||y<12||y>99||x%10==0||y%10==0||q.max!==6)add(W+q.label+' -> '+a);
+          if(JSON.stringify(q.hint)!==JSON.stringify(stepsMul(x,y,'std')))add(W+'hint is not the standard algorithm');
+          if(!q.html.includes('class="veq"'))add(W+'not vertical');
+        }
+        else if(sk=='dbig'){
+          m=q.label.match(/^(\d+) ÷ (\d+) = \?$/);if(!m){add(W+'label '+q.label);continue}
+          const n=+m[1],d=+m[2],Q=Math.floor(n/d),r=n%d;
+          if(d<11||d>50||n<100||n>9999||Q<10)add(W+'range '+q.label);
+          if(r){if(q.sep!=='R'||a!==Q+'R'+r||!q.html.includes('rsep'))add(W+q.label+' -> '+a)}
+          else if(q.sep||a!==String(Q))add(W+q.label+' -> '+a);
+          if(JSON.stringify(q.hint)!==JSON.stringify(stepsDiv(n,d)))add(W+'hint is not long division');
+          if(!q.html.includes('ldq'))add(W+'layout');
+          tally(r?'rem':'plain');tally('len'+String(n).length);
+        }
+        else if(sk=='dec'&&lv==3){
+          m=q.label.match(/^(\d+(?:\.\d+)?) ([+−]) (\d+(?:\.\d+)?) = \?$/);if(!m){add(W+'label '+q.label);continue}
+          const x=D(m[1]),y=D(m[3]),v=m[2]=='+'?plus(x,y):minus(x,y);
+          if(v.n<=0n||a!==fmt(v.n,v.p))add(W+q.label+' -> '+a);
+          if(x.p>2||y.p>2||x.n==0n||/\.\d*0$/.test(m[1])||/\.\d*0$/.test(m[3]))add(W+'operands '+q.label);
+          if(m[2]=='−'&&x.n*T**BigInt(Math.max(x.p,y.p)-x.p)<=y.n*T**BigInt(Math.max(x.p,y.p)-y.p))add(W+'top not bigger '+q.label);
+          if(!q.html.includes('class="veq"'))add(W+'not vertical');
+          if(JSON.stringify(q.hint)!==JSON.stringify(m[2]=='+'?stepsAdd(m[1],m[3]):stepsSub(m[1],m[3])))add(W+'hint is not the column method');
+          tally(m[2]);tally(x.p==y.p?'same':'ragged');if(!x.p||!y.p)tally('whole');
+        }
+        else if(sk=='dec'&&lv==4){
+          m=q.label.match(/^(\d+(?:\.\d+)?) × (\d+(?:\.\d+)?) = \?$/);if(!m){add(W+'label '+q.label);continue}
+          const x=D(m[1]),y=D(m[2]),v=times(x,y);
+          if(a!==fmt(v.n,v.p))add(W+q.label+' -> '+a);
+          if(x.p+y.p<1||x.n==0n||y.n==0n||x.p>2||y.p>2||/\.\d*0$/.test(m[1])||/\.\d*0$/.test(m[2]))add(W+'operands '+q.label);
+          if(JSON.stringify(q.hint)!==JSON.stringify(stepsDecMul(m[1],m[2])))add(W+'hint is not stepsDecMul');
+          tally(x.p&&y.p?'decdec':'decwhole');
+          if(x.p&&y.p)tally(x.p==1&&y.p==1?'tt':'th');
+        }
+        else if(sk=='dec'&&lv==5){
+          m=q.label.match(/^(\d+(?:\.\d+)?) ÷ (\d+(?:\.\d+)?) = \?$/);if(!m){add(W+'label '+q.label);continue}
+          const x=D(m[1]),y=D(m[2]),v=quot(x,y);
+          if(!v||a!==fmt(v.n,v.p))add(W+q.label+' -> '+a);
+          if(!v||v.p>3||y.p>1||y.n<2n||x.n==0n||x.p>2)add(W+'operands '+q.label);
+          // one right answer: the quotient times the divisor is the dividend, exactly
+          if(v&&times(D(a),y).n*T**BigInt(x.p)!==x.n*T**BigInt(times(D(a),y).p))add(W+'a x b is not the dividend '+q.label);
+          if(JSON.stringify(q.hint)!==JSON.stringify(stepsDecDiv(m[1],m[2])))add(W+'hint is not stepsDecDiv');
+          if(y.p==1)tally('tenths');else if(x.p)tally('exact');else{tally('whole');if(![2,4,5,8].includes(+m[2]))add(W+'whole divisor '+q.label);if(+m[1]%+m[2]==0)add(W+'no decimal quotient '+q.label)}
+          if(y.p==0&&x.p&&(+m[2]<2||+m[2]>9))add(W+'divisor '+q.label);
+        }
+        else if(sk=='round'){
+          m=q.label.match(/^round (\d+\.\d+) to (whole number|tenth|hundredth)$/);if(!m){add(W+'label '+q.label);continue}
+          const k={'whole number':0,tenth:1,hundredth:2}[m[2]],x=D(m[1]),r=roundTo(x,k);
+          if(a!==fmt(r.n,r.p)||x.p<=k||x.p>3||/0$/.test(m[1]))add(W+q.label+' -> '+a);
+          if(k&&places(a)!==k)add(W+'answer ends in 0 '+q.label);
+          if(q.hint.k!=='steps'||q.hint.steps.length!==3)add(W+'hint');
+          tally(m[2]);if(m[1].split('.')[1][k]=='5')tally('five');
+        }
+        else if(sk=='ooo'){
+          if(m=q.label.match(/^(.+) = \?$/)){
+            const e=evalOOO(m[1]);
+            if(e.i!==e.len||!e.ok||e.v<0||e.v>200||a!==String(e.v)||e.ops<2||e.ops>3||!/\(/.test(m[1]))add(W+q.label+' -> '+a+' (value '+e.v+', ops '+e.ops+')');
+            if(!/open parenthesis/.test(q.say)||/[()×÷−+]/.test(q.say))add(W+'say '+q.say);
+            if(q.hint.k!=='steps'||q.hint.steps.length<3)add(W+'hint');
+            tally('eval');tally('ops'+e.ops);
+          }else if(m=q.label.match(/^write: (.+)$/)){
+            // the sentence is in the prompt; the expected expression comes from the sentence
+            const s=q.html.match(/font-weight:700[^"]*">([^<]+)</)[1];let x;
+            if(x=s.match(/^Add (\d+) and (\d+), then multiply by (\d+)\.$/))x=`(${x[1]} + ${x[2]}) × ${x[3]}`;
+            else if(x=s.match(/^Subtract (\d+) from (\d+), then multiply by (\d+)\.$/))x=`(${x[2]} − ${x[1]}) × ${x[3]}`;
+            else if(x=s.match(/^Multiply (\d+) by (\d+), then add (\d+)\.$/))x=`${x[1]} × ${x[2]} + ${x[3]}`;
+            else if(x=s.match(/^Multiply (\d+) by the sum of (\d+) and (\d+)\.$/))x=`${x[1]} × (${x[2]} + ${x[3]})`;
+            else{add(W+'sentence '+s);continue}
+            const vs=q.choices.map(c=>c.v);
+            if(a!==x||vs.filter(v=>v===x).length!==1||vs.length!==4||new Set(vs).size!==4)add(W+s+' -> '+a+' want '+x);
+            const ev=vs.map(v=>evalOOO(v));
+            if(ev.some(e=>!e.ok)||new Set(ev.map(e=>e.v)).size!==4)add(W+'choices '+vs.join(' | '));
+            if(!q.say.startsWith(s))add(W+'say');
+            tally('write');
+          }else add(W+'label '+q.label);
+        }
+      }
+    }
+    // ---- spread of the items
+    const frac=(k,t)=>(tallies[k][t]||0)/N;
+    const inr=(v,lo,hi,m)=>{if(!(v>=lo&&v<=hi))add(m+' '+(v*100).toFixed(0)+'%')};
+    for(const f of ['value','exp','words'])inr(frac('pv5',f),.28,.38,'pv5 '+f);
+    inr(frac('pv5','wordsnowhole')/Math.max(frac('pv5','words'),.01),.15,.45,'pv5 words without a whole part');
+    inr(frac('pv6','md'),.55,.65,'pv6 times and divide by 10/100/1000');inr(frac('pv6','pow'),.15,.25,'pv6 powers');inr(frac('pv6','sci'),.15,.25,'pv6 4.2 x 10^2');
+    for(const x of ['x10','x100','x1000'])if(!(tallies.pv6[x]>100))add('pv6 '+x+' rare');
+    inr(frac('pv6','dec')/Math.max(frac('pv6','md'),.01),.3,.7,'pv6 decimal share');
+    if(!tallies.pv6['÷']||!tallies.pv6['×'])add('pv6 needs both × and ÷');
+    inr(frac('dbig4','rem'),.4,.6,'dbig4 remainder share');if(!tallies.dbig4.len3||!tallies.dbig4.len4)add('dbig4 needs 3- and 4-digit dividends');
+    inr(frac('dec3','+'),.4,.6,'dec3 add share');inr(frac('dec3','ragged'),.6,.95,'dec3 ragged share');if(!(tallies.dec3.whole>30))add('dec3 never mixes a whole number');
+    inr(frac('dec4','decwhole'),.4,.6,'dec4 decimal x whole');inr(frac('dec4','decdec'),.4,.6,'dec4 decimal x decimal');if(!tallies.dec4.tt||!tallies.dec4.th)add('dec4 needs tenths x tenths and tenths x hundredths');
+    for(const f of ['exact','whole','tenths'])if(!(tallies.dec5[f]>N*.15))add('dec5 '+f+' rare');
+    for(const f of ['whole number','tenth','hundredth'])inr(frac('round4',f),.25,.42,'round4 '+f);
+    if(!(tallies.round4.five>N*.08))add('round4 rarely has a 5 just right of the place');
+    inr(frac('ooo1','eval'),.4,.6,'ooo eval share');inr(frac('ooo1','ops3'),.2,.8,'ooo three-operation share');
+    return {bad,n:Object.keys(tallies).length};
+  };
+  const r=eval(js+';('+body.toString()+')()');
+  return{problems:uniq(r.bad),note:r.n+' levels x 3,000, 2 step builders x 3,000'};
+});
+
+run('Volcano Lab P2-11: a world added after Factor Factory keeps every star, nothing re-locks, the map opens where it did (fixtures)',()=>{
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const body=function(){
+    const store={};
+    localStorage.getItem=k=>k in store?store[k]:null;localStorage.setItem=(k,v)=>{store[k]=String(v)};localStorage.removeItem=k=>{delete store[k]};
+    const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
+    const bad=[],mw=PATHS.math.worlds,wi=mw.findIndex(x=>x.id=='m_volcano'),W=mw[wi],ids=W.nodes.map(n=>n[0]+n[1]).concat(['boss_m_volcano']);
+    // the other worlds near it are out of this check: Decimal Desert (P2-10) sits between Factor Factory and this world, Crystal Caves (P2-12) after it
+    for(const id of ['m_desert','m_caves']){const k=mw.findIndex(x=>x.id==id);if(k>=0)mw.splice(k,1)}
+    const vi=mw.indexOf(W),setWorld=on=>{if(on&&!mw.includes(W))mw.splice(vi,0,W);if(!on&&mw.includes(W))mw.splice(mw.indexOf(W),1);buildNodes('math')};
+    const state=raw=>{
+      const o={};load(raw);o.stars=JSON.stringify(S.maps.math);o.cur=nid(NODES.math[curNode('math')]);
+      o.open=new Set(NODES.math.map((n,i)=>unlocked('math',i)?nid(n):null).filter(Boolean));
+      o.passed=NODES.math.filter((n,i)=>passed('math',i)).map(nid);
+      o.wo=PATHS.math.worlds.map((w,i)=>worldOpen('math',i)?w.id:null).filter(Boolean);
+      return o};
+    const saves=[];
+    for(const name of ['fresh','midway','maxed','tricky','legacy-single-map','legacy-index-maps'])for(const g of [null,-1,0,1,2,3,4,5,6])saves.push([name+' g'+g,fx(name),g]);
+    // a finished and a half played Factor Factory
+    const fac=mw.find(x=>x.id=='m_factory'),facIds=fac.nodes.map(n=>n[0]+n[1]);
+    const mk=(stars,boss,g)=>{load(fx('maxed'));Object.assign(S.maps.math,stars);if(boss){S.maps.math.boss_m_frac=3;S.wdone.m_frac=1}if(boss==2){S.maps.math.boss_m_factory=3;S.wdone.m_factory=1}if(g!=null)S.grade=g;return JSON.stringify(S)};
+    const ff={};for(const k of ['frac2','frac3','frac4','frac5'])ff[k]=3;
+    const all=Object.assign({},ff);for(const id of facIds)all[id]=3;
+    saves.push(['factory half played',mk(Object.assign({mfact5:3,pv4:2},ff),1),null],['factory finished',mk(all,2),null],['factory finished g4',mk(all,2,4),null],
+      ['factory finished g5',mk(all,2,5),null],['factory finished g2',mk(all,2,2),null],['volcano started',mk(Object.assign({pv5:3,mbig5:2},all),2,5),null]);
+    let checked=0;
+    for(const [name,raw,g] of saves){
+      let r=raw;if(g!=null){load(raw);S.grade=g;r=JSON.stringify(S)}
+      setWorld(false);const a=state(r);
+      setWorld(true);const b=state(r);
+      checked++;
+      const had=name=='volcano started',grade=JSON.parse(r).grade==null?null:JSON.parse(r).grade;
+      if(!had&&JSON.stringify(Object.keys(JSON.parse(b.stars)).filter(k=>ids.includes(k)))!=='[]')bad.push(name+': stars on new stops');
+      if(!had&&b.stars!==a.stars)bad.push(name+': star table changed');
+      if(had)for(const id of ['pv5','mbig5'])if(!b.passed.includes(id))bad.push(name+': '+id+' lost its stars');
+      for(const id of a.passed)if(!b.passed.includes(id))bad.push(name+': passed stop '+id+' lost');
+      for(const id of a.open)if(!b.open.has(id))bad.push(name+': '+id+' was open and is locked');
+      for(const id of a.wo)if(!b.wo.includes(id))bad.push(name+': world '+id+' was open and is locked');
+      const done=/factory finished/.test(name)||had;
+      if(grade==null||grade<=3){
+        if(!done&&b.cur!==a.cur)bad.push(name+': map moved '+a.cur+' -> '+b.cur);
+        if(done&&b.cur!==ids[0])bad.push(name+': a finished factory should open on '+ids[0]+', got '+b.cur);
+      }else if(b.cur!==a.cur&&!ids.includes(b.cur))bad.push(name+': map moved outside the new world '+a.cur+' -> '+b.cur);
+      for(let k=1;k<ids.length;k++){
+        if(!b.open.has(ids[k])||b.passed.includes(ids[k]))continue;
+        const later=b.passed.some(x=>ids.indexOf(x)>k);
+        if(!b.passed.includes(ids[k-1])&&!later)bad.push(name+': '+ids[k]+' open without '+ids[k-1]);
+      }
+    }
+    setWorld(true);
+    return {bad,checked};
+  };
+  const r=eval(js+';('+body.toString()+')()');
+  return{problems:uniq(r.bad),note:r.checked+' saves with and without the world'};
 });
 
 // ---- report ----

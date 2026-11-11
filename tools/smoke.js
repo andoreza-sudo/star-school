@@ -2753,6 +2753,91 @@ async function main() {
       }
     }
 
+    // P2-11 Volcano Lab at 380x780: a 5th grader finds the world (9 stops), every stop's first question fits (no sideways scroll, number keys
+    //    including the decimal point and choices at least 48 px), seven stops are played with real taps (decimal answers typed on the pad, stars
+    //    saved), and the step hints of the decimal multiply, decimal divide and 3 x 2 digit stops are tapped through.
+    {
+      const vo = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
+      const vp = vo.page;
+      // every earlier world (Factor Factory, and Decimal Desert once it exists) is finished first, so Volcano Lab is open whatever sits before it
+      await vp.evaluate(() => {
+        setGrade(5); window.say = () => {};
+        const vi = PATHS.math.worlds.findIndex(w => w.id === 'm_volcano');
+        NODES.math.forEach(n => { if (n.wi < vi) S.maps.math[nid(n)] = S.maps.math[nid(n)] || 2; });
+        PATHS.math.worlds.forEach((w, i) => { if (i < vi) S.wdone[w.id] = 1; });
+        save();
+      });
+      const info = await vp.evaluate(() => {
+        const wi = PATHS.math.worlds.findIndex(w => w.id === 'm_volcano');
+        return { wi, ids: PATHS.math.worlds[wi].nodes.map(n => n[0] + n[1]), open: worldOpen('math', wi), prev: PATHS.math.worlds[wi - 1].id };
+      });
+      if (info.ids.length !== 9 || !info.open || info.wi < 1) fail('Volcano Lab: ' + JSON.stringify(info));
+      const openStop = async id => {
+        await vp.evaluate(() => { if (G) G.dead = true; home(); });
+        await vp.click('.game[data-p="math"]');
+        await vp.waitForSelector('.wchip.on');
+        await vp.click(`.wchip[data-w="${info.wi}"]`);
+        await vp.waitForSelector(`.wchip.on[data-w="${info.wi}"]`);
+        const n = await vp.evaluate(id => NODES.math.findIndex(x => nid(x) === id), id);
+        await vp.click(`.node[data-n="${n}"]`);
+        await vp.waitForSelector('#prompt');
+        await vp.waitForTimeout(900);
+      };
+      const lookV = () => {
+        const sm = a => Math.min(...a.map(b => Math.min(b.offsetHeight, b.offsetWidth)));
+        const dot = document.querySelector('.k[data-k="."]');
+        return { sk: G.sk, lv: G.lv, w: document.documentElement.scrollWidth, keys: sm([...document.querySelectorAll('.k')]),
+          ch: sm([...document.querySelectorAll('.ch, .mc')]), kind: G.q.kind, pad: G.q.pad || 'int', dot: dot ? Math.min(dot.offsetWidth, dot.offsetHeight) : 0 };
+      };
+      const playV = new Set(['pv5', 'mbig5', 'dec3', 'dbig4', 'dec4', 'round4', 'ooo1', 'dec5']);
+      const badV = [];
+      let typedDecimals = 0;
+      for (let k = 0; k < info.ids.length; k++) {
+        const id = info.ids[k];
+        await vp.evaluate(prev => { if (prev) S.maps.math[prev] = S.maps.math[prev] || 1; save(); }, info.ids[k - 1]);
+        await openStop(id);
+        const lay = await vp.evaluate(lookV);
+        if (lay.sk + lay.lv !== id || lay.w > 380 || (isFinite(lay.keys) && lay.keys < 48) || (isFinite(lay.ch) && lay.ch < 48)) badV.push(id + ': ' + JSON.stringify(lay));
+        if (playV.has(id)) {
+          await playRound(vp, 'P2-11 ' + id, 10, async () => {
+            const q = await vp.evaluate(lookV);
+            if (q.kind === 'num' && q.pad === 'dec') {
+              if (q.dot < 48) badV.push(id + ': decimal point key ' + q.dot + ' px');
+              if (/\./.test(await vp.evaluate(() => G.q.ans))) typedDecimals++;
+            }
+          });
+          const st = await vp.evaluate(id => S.maps.math[id] || 0, id);
+          if (st < 1) badV.push(id + ': no stars saved');
+        }
+        await vp.evaluate(() => { G.dead = true; });
+      }
+      if (typedDecimals < 20) badV.push('only ' + typedDecimals + ' decimal answers were typed on the pad');
+      // step hints: dec4 (places, then whole-number multiplying), dec5 (long division), mbig5 (standard algorithm): tap Help through every step
+      for (const id of ['dec4', 'dec5', 'mbig5']) {
+        await openStop(id);
+        const n = await vp.evaluate(() => G.q.hint.k === 'steps' ? G.q.hint.steps.length : -1);
+        if (n < 2) { badV.push(id + ': hint is not steps'); continue; }
+        for (let i = 0; i < n; i++) {
+          await vp.click('#hb');
+          await vwait(vp, 150);
+          const s = await vp.evaluate(() => {
+            const hs = document.querySelector('#hint .hs'), hb = document.querySelector('#hb');
+            return { at: hs ? +hs.dataset.hs : -1, label: hb.textContent.trim(), wide: document.documentElement.scrollWidth > innerWidth,
+              small: Math.min(hb.offsetWidth, hb.offsetHeight), ask: /\?/.test((document.querySelector('#hint .hsc') || {}).textContent || '') };
+          });
+          if (s.at !== i || s.wide || s.small < 47.5) badV.push(id + ' step ' + i + ': ' + JSON.stringify(s));
+          if (i < n - 1 && !/Next step/i.test(s.label)) badV.push(id + ' step ' + i + ': button reads ' + s.label);
+          if (i == n - 1 && !s.ask) badV.push(id + ': last step has no question mark');
+        }
+        await vp.evaluate(() => { G.dead = true; });
+      }
+      if (badV.length) fail('P2-11 Volcano Lab:\n  ' + badV.slice(0, 20).join('\n  '));
+      else step('P2-11: Volcano Lab opens for a 5th grader (9 stops), every stop fits at 380x780 with 48 px targets (decimal point key too), 8 stops played with taps (' + typedDecimals + ' decimal answers typed, stars saved), step hints tapped through on dec4, dec5 and mbig5');
+      network.push(...vo.network);
+      for (const e of vo.errors) fail(e);
+      await vo.ctx.close();
+    }
+
     for (const e of errors) fail(e);
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');

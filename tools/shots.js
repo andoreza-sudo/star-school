@@ -1134,6 +1134,37 @@ Object.assign(SCREENS, {
   'dd-story7': { run: ddShot('story', 7, '^story7 5x', true) },
 });
 
+// P2-11 Volcano Lab: the world map, one question of several levels, and step hints (Help tapped `taps` times), grade 5
+function vlShot(sk, lv, want, taps) {
+  return async p => {
+    await p.evaluate(([sk, lv, want]) => {
+      S.grade = 5; S.name = 'Ava'; S.buddy = 'Ben';
+      window.say = () => {};
+      start('math', NODES.math.findIndex(n => n.sk == sk && n.lv == lv));
+      let q; for (let i = 1; i < 800; i++) { q = genQ(sk, lv, i); if (new RegExp(want).test(q.label)) break; }
+      G.q = q; renderQ();
+    }, [sk, lv, want]);
+    for (let i = 0; i < (taps || 0); i++) { await p.click('#hb'); await p.waitForTimeout(120); }
+  };
+}
+Object.assign(SCREENS, {
+  'vl-map': { run: async p => { await p.evaluate(() => { S.grade = 5; pathMap('math', PATHS.math.worlds.findIndex(w => w.id === 'm_volcano')); }); } },
+  'vl-pv5-value': { run: vlShot('pv', 5, '^value of') },
+  'vl-pv5-words': { run: vlShot('pv', 5, '^words') },
+  'vl-pv6': { run: vlShot('pv', 6, '× 10\\^') },
+  'vl-mbig5': { run: vlShot('mbig', 5, ' = \\?$') },
+  'vl-dec3': { run: vlShot('dec', 3, '^\\d+\\.\\d+ \\+ ') },
+  'vl-dec4': { run: vlShot('dec', 4, '^0\\.\\d+ × 0\\.\\d+') },
+  'vl-dec5': { run: vlShot('dec', 5, ' ÷ 0\\.\\d') },
+  'vl-dbig4': { run: vlShot('dbig', 4, ' ÷ ') },
+  'vl-round4': { run: vlShot('round', 4, 'hundredth$') },
+  'vl-ooo-eval': { run: vlShot('ooo', 1, ' = \\?$') },
+  'vl-ooo-write': { run: vlShot('ooo', 1, '^write') },
+  'vl-steps-dec4': { run: vlShot('dec', 4, '^\\d+\\.\\d+ × \\d+\\.\\d+', 2) },
+  'vl-steps-dec5': { run: vlShot('dec', 5, '^\\d+\\.\\d+ ÷ \\d+ ', 2) },
+  'vl-steps-mbig5': { run: vlShot('mbig', 5, ' = \\?$', 3) },
+});
+
 async function main() {
   const args = process.argv.slice(2);
   let fixtureArg = null;
