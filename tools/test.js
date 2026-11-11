@@ -3623,6 +3623,58 @@ run('icons (P4-03): every skill has an icon, swapped screens show no emoji chrom
   return{problems:p,note:out[1]+' icons'};
 });
 
+// ---- P4-08: Home ----
+run('home (P4-08): tokens only, transform/opacity motion, drawings well formed, every scene and path drawn, ids kept',()=>{
+  const p=[];
+  const css=fs.readFileSync(path.join(SRC,'css','46-home.css'),'utf8').replace(/\/\*[\s\S]*?\*\//g,'');
+  const tok=fs.readFileSync(path.join(SRC,'css','00-tokens.css'),'utf8');
+  if(/#[0-9a-fA-F]{3,8}\b/.test(css))p.push('raw hex colour in 46-home.css');
+  if(/rgba?\(|hsla?\(/.test(css))p.push('colour function in 46-home.css (put the colour in 00-tokens.css)');
+  if(/(^|[;{\s])(-webkit-)?(backdrop-)?filter\s*:/.test(css))p.push('filter or backdrop-filter used');
+  for(const m of css.matchAll(/transition\s*:\s*([^;}]+)/g))for(const part of m[1].split(','))
+    if(!/^\s*(transform|opacity)\s/.test(part))p.push('transition on something other than transform/opacity: '+part.trim());
+  for(const [,n,body] of css.matchAll(/@keyframes\s+([\w-]+)\s*\{((?:[^{}]*\{[^}]*\})*)\s*\}/g))
+    for(const d of body.match(/[a-z-]+(?=\s*:)/g)||[])if(d!='transform'&&d!='opacity')p.push('keyframes '+n+' animates '+d);
+  const OWN=['c','c-tint','c-shade','c-fill','c-ledge','ic2'];
+  for(const m of css.matchAll(/var\(--([a-z0-9-]+)/g))if(!OWN.includes(m[1])&&!new RegExp('--'+m[1]+':').test(tok))p.push('unknown token --'+m[1]);
+  const out=eval(js+`
+  const bad=[];
+  S.name='Ava';S.petName='Rex';
+  const tokOk=h=>{for(const m of h.matchAll(/var\\(--([a-z0-9-]+)/g))if(!tok.includes('--'+m[1]+':'))bad.push('unknown token --'+m[1]);
+    if(/#[0-9a-fA-F]{3,8}\\b/.test(h.replace(/href="#i-[a-z0-9-]+"/g,'')))bad.push('raw hex in a drawing');};
+  // well formed: every opened svg/text closes, no undefined/NaN, one-decimal numbers
+  const wf=(h,w)=>{
+    if((h.match(/<svg\\b/g)||[]).length!==(h.match(/<\\/svg>/g)||[]).length)bad.push(w+': svg not closed');
+    if((h.match(/<text\\b/g)||[]).length!==(h.match(/<\\/text>/g)||[]).length)bad.push(w+': text not closed');
+    if(/undefined|NaN/.test(h))bad.push(w+': undefined or NaN');
+    if(/\\d\\.\\d\\d/.test(h.replace(/opacity="[^"]*"/g,'')))bad.push(w+': more than one decimal');
+    tokOk(h);
+  };
+  // every scene the shop sells and every path (plus the Game Room) has a drawing
+  for(const sc of SHOP.scene){if(!HM_SCENE[sc[0]])bad.push('no Home scene for '+sc[0]);wf(hmScene(sc[0]),'scene '+sc[0]);}
+  if(!/hm-scene/.test(hmScene('nope')))bad.push('unknown scene has no fallback');
+  for(const k of Object.keys(PATHS).concat('play')){const h=hmArt(k);if(!/class="hm-svg"/.test(h))bad.push('no drawing for '+k);wf(h,'art '+k);}
+  if(!/#i-/.test(hmArt('zz')))bad.push('a path without a drawing should get an icon');
+  wf(hmMixIco(),'mix icon');wf(hmBubbles(),'bubbles');
+  // every icon Home asks for exists
+  for(const n of ['star','calendar','map','replay','check','path-math','bolt','paw','bag','sticker-book','trophy','target','play','lock','ticket','plus','gear','sound-on','sound-off','flame','coin'])
+    if(!ICONS[n])bad.push('missing icon '+n);
+  // the parts keep the ids and selectors other code and smoke.js use
+  const part=hmHero()+hmToday()+hmPaths()+hmActs();
+  for(const s of ['id="pet"','id="starc"','id="stkb"','id="revcard"','id="flu"','id="mix"','id="groom"','id="race"','id="care"','id="shop"','id="book"',
+    'class="hm-path game s-math" data-p="math"','class="hm-path game s-read" data-p="read"','class="hm-path game s-es" data-p="es"'])if(!part.includes(s))bad.push('Home lost '+s);
+  if(/class="petbig\\s/.test(part)===false)bad.push('#pet must keep class petbig');
+  // review card: count in #revn when items are due, "All caught up" with no button otherwise
+  S.rev=[];if(!/All caught up/.test(hmToday())||/id="rev"/.test(hmToday()))bad.push('review tile with nothing due');
+  // no emoji in Home's chrome (the pet's own art and the tap burst are not chrome)
+  const EMO=/\\p{Extended_Pictographic}/u;
+  if(EMO.test(part.replace(/<div class="petbig[\\s\\S]*?<\\/div>/,'')))bad.push('emoji in Home chrome');
+  // escaping: a name with markup stays text
+  S.name='<b>x';S.petName='<i>y';const h=hmHero();if(/<b>x|<i>y/.test(h))bad.push('name not escaped');
+  bad;`);
+  return{problems:p.concat(out)};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){

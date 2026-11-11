@@ -1503,6 +1503,120 @@ async function main() {
       await ia.ctx.close();
     }
 
+    // P4-08 Home at 380x780, 600x960 and 1024x600 for a fresh grade-1 child ("Find my level" card), the midway save, and a child
+    //    with a streak, review items due and a hungry pet (tricky save): no sideways scroll, nothing overflows its box, no word
+    //    broken over two lines, every target at least 48 px, no emoji in the chrome, scene and pictures drawn. Then (380x780)
+    //    every Home button still opens its screen, the thought bubble and the Pet Care badge show, and calm stops the bubble.
+    {
+      const hmSet = ([kind]) => {
+        if (kind == 'fresh') { S.name = 'Ava'; setGrade(1); }
+        if (kind == 'tricky') {
+          const n = STRK.idx(today()), k = d => STRK.key(n - d);
+          S.streak = { best: 9, rw: 0, days: { [k(0)]: 1, [k(1)]: 1, [k(2)]: 1 } };
+          S.care = { food: 12, clean: 70, fun: 70, t: Date.now(), gift: '' };
+        }
+        home();
+      };
+      const hmCheck = () => {
+        const bad = [], W = document.documentElement.clientWidth, sc = document.querySelector('.scroll');
+        if (document.documentElement.scrollWidth > W + 1 || sc.scrollWidth > sc.clientWidth + 1) bad.push('sideways scroll');
+        const name = el => (el.id ? '#' + el.id : el.getAttribute('class')) + ' "' + el.textContent.trim().slice(0, 24) + '"';
+        for (const el of document.querySelectorAll('.hm-top *, .hm *')) {
+          if (el.closest('svg') || el.closest('#pet')) continue;
+          const r = el.getBoundingClientRect();
+          if (r.width && r.right > W + 1) bad.push('off the right edge: ' + name(el));
+          if (getComputedStyle(el).textOverflow != 'ellipsis' && el.scrollWidth > el.clientWidth + 1 && getComputedStyle(el).overflow != 'visible') bad.push('overflows: ' + name(el));
+        }
+        for (const el of document.querySelectorAll('.hm-top, .hm-hero, .hm-place, .hm-today, .hm-paths, .hm-acts, .hm-h, .hm-ver')) {
+          const walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+          for (let t = walk.nextNode(); t; t = walk.nextNode()) {
+            if (t.parentElement.closest('svg, #pet')) continue;
+            for (const m of t.data.matchAll(/\S+/g)) {
+              const rg = document.createRange();
+              rg.setStart(t, m.index);
+              rg.setEnd(t, m.index + m[0].length);
+              if (new Set([...rg.getClientRects()].filter(x => x.width > 0).map(x => Math.round(x.top))).size > 1) bad.push('word broken: ' + m[0]);
+            }
+          }
+        }
+        for (const el of document.querySelectorAll('#app button')) {
+          const r = el.getBoundingClientRect();
+          if (r.width < 47.5 || r.height < 47.5) bad.push('target ' + Math.round(r.width) + 'x' + Math.round(r.height) + ' ' + name(el));
+        }
+        const chrome = [...document.querySelectorAll('.hm-top, .hm-hero, .hm-place, .hm-today, .hm-paths, .hm-acts')].map(e => {
+          const c = e.cloneNode(true); c.querySelectorAll('#pet').forEach(x => x.remove()); return c.textContent;
+        }).join(' ');
+        if (/\p{Extended_Pictographic}/u.test(chrome)) bad.push('emoji in Home chrome');
+        if (!document.querySelector('.hm-stage .hm-scene') || document.querySelectorAll('.hm-path .hm-svg').length < 4) bad.push('scene or path pictures missing');
+        return bad;
+      };
+      let looked = 0;
+      for (const [w, h] of [[380, 780], [600, 960], [1024, 600]]) {
+        for (const fx of ['fresh', 'midway', 'tricky']) {
+          const ha = await openApp(browser, { fixture: fx, width: w, height: h });
+          await ha.page.evaluate(hmSet, [fx]);
+          await ha.page.waitForTimeout(450); // the screen's enter animation (CSS, real time) scales #app to .97 at first
+          const bad = await ha.page.evaluate(hmCheck);
+          for (const b of bad) fail(`P4-08 home ${fx} ${w}x${h}: ${b}`);
+          if (fx == 'fresh' && !(await ha.page.$('#plcard [data-place="math"]'))) fail(`P4-08 home fresh ${w}x${h}: no "Find my level" card`);
+          looked++;
+          network.push(...ha.network);
+          for (const e of ha.errors) fail(e);
+          await ha.ctx.close();
+        }
+      }
+      // every action at 380x780 (tricky: review due, streak, hungry pet)
+      const ha = await openApp(browser, { fixture: 'tricky', width: 380, height: 780 });
+      const hp = ha.page;
+      await hp.evaluate(hmSet, ['tricky']);
+      await hp.waitForTimeout(450);
+      const bits = await hp.evaluate(() => ({ think: !!document.querySelector('.hm-think svg'), need: !!document.querySelector('#care .hm-need'),
+        flame: !document.querySelector('#stkb').classList.contains('off'), revn: (document.querySelector('#revn') || {}).textContent }));
+      if (!bits.think || !bits.need || !bits.flame || bits.revn !== '21') fail('P4-08 home state: ' + JSON.stringify(bits));
+      const anim = () => hp.evaluate(() => parseFloat(getComputedStyle(document.querySelector('.hm-think')).animationDuration));
+      const a0 = await anim();
+      await hp.evaluate(() => document.documentElement.classList.add('calm'));
+      const a1 = await anim();
+      await hp.evaluate(() => document.documentElement.classList.remove('calm'));
+      if (!(a0 >= 1) || !(a1 < .01)) fail('P4-08 thought bubble motion: ' + a0 + 's, calm ' + a1 + 's');
+      const opens = [['.game[data-p="math"]', '#map'], ['.game[data-p="read"]', '#map'], ['.game[data-p="es"]', '#map'], ['#flu', '.game[data-s]'],
+        ['#mix', '#prompt'], ['#rev', '#prompt'], ['#race', '[data-r]'], ['#care', '#bath'], ['#shop', '#coinc'], ['#book', '.sgrid'],
+        ['#groom', '#g4x4'], ['#stkb', '.stc-grid']];
+      for (const [btn, want] of opens) {
+        await hp.evaluate(() => { if (typeof G != 'undefined' && G) G.dead = true; home(); });
+        await hp.click(btn);
+        try { await hp.waitForSelector(want, { timeout: 4000 }); } catch (e) { fail(`P4-08 ${btn} did not open ${want}`); }
+      }
+      const daily = await hp.evaluate(() => { G.dead = true; home(); document.querySelector('#rev').click(); return !!G.daily; });
+      if (!daily) fail('P4-08 #rev did not start the daily review');
+      // sound toggle redraws Home with the other icon; the pet still reacts to a tap
+      await hp.evaluate(() => { G.dead = true; home(); });
+      const s0 = await hp.evaluate(() => [S.sound, !!document.querySelector('#snd use[href="#i-sound-on"]')]);
+      await hp.click('#snd');
+      const s1 = await hp.evaluate(() => [S.sound, !!document.querySelector('#snd use[href="#i-sound-on"]')]);
+      await hp.evaluate(() => { S.sound = false; S.music = false; save(); home(); });
+      if (s0[0] === s1[0] || s0[1] !== s0[0] || s1[1] !== s1[0]) fail('P4-08 sound button: ' + JSON.stringify([s0, s1]));
+      // the jump class lasts 550 ms of app time, so record the anim() call instead of racing the timer
+      await hp.evaluate(() => { const o = anim; window.__hmAnim = []; anim = (e, c) => { __hmAnim.push(c); o(e, c); }; });
+      await hp.click('#pet');
+      if ((await hp.evaluate(() => __hmAnim.join())) !== 'jump') fail('P4-08 pet tap');
+      network.push(...ha.network);
+      for (const e of ha.errors) fail(e);
+      await ha.ctx.close();
+      // fresh child: a subject button opens the placement intro, "Not now" hides the card
+      const hf = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 });
+      await hf.page.evaluate(hmSet, ['fresh']);
+      await hf.page.click('#plcard [data-place="read"]');
+      try { await hf.page.waitForSelector('#plgo', { timeout: 3000 }); } catch (e) { fail('P4-08 placement button did not open the intro'); }
+      await hf.page.evaluate(() => home());
+      await hf.page.click('#plno');
+      if (await hf.page.$('#plcard')) fail('P4-08 "Not now" did not hide the card');
+      else step(`P4-08: Home checked in ${looked} layouts (no overflow, no broken words, targets 48+, no emoji chrome), every button opens its screen`);
+      network.push(...hf.network);
+      for (const e of hf.errors) fail(e);
+      await hf.ctx.close();
+    }
+
     for (const e of errors) fail(e);
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');

@@ -37,6 +37,9 @@ for (const s of ['math', 'read', 'es', 'disc', 'bt', 'play', 'brand', 'star']) {
 rules.push(['surface', 'play-shade', 4.5, 'white text on play button fill']);
 rules.push(['try-ink', 'try', 3, 'wrong badge and try toast icon'], ['ink-3', 'surface', 3, 'switch track off'], ['brand', 'paper', 3, 'focus ring']);
 let fail = 0;
+// Home (P4-08): placement card text, the logo star, the stickers and Fact Sprint badge icons, the review count
+rules.push(['ink', 'brand-tint', 4.5, 'home placement card text'], ['star', 'brand', 3, 'home logo star'], ['try-ink', 'star', 3, 'home stickers icon'],
+  ['ink', 'star', 3, 'home bolt badge'], ['surface', 'read', 4.5, 'home review count']);
 for (const [a, b, min, what] of rules) {
   const r = ratio(a, b), ok = r >= min;
   if (!ok) fail++;
