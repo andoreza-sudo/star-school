@@ -1,0 +1,30 @@
+/* Brain Teasers: Mazes (P3-08). The board is one canvas (75-bt-maze.js); this lays it out. Tokens only; motion is transform and opacity. */
+.mz{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--s-3);min-height:100%}
+.mz.land{flex-direction:row;justify-content:center;align-items:center;gap:var(--s-5)}
+.mz-board{position:relative;flex:none;border-radius:var(--r-card);box-shadow:0 0 0 3px var(--bt-tint),0 6px 0 3px var(--ledge-soft)}
+.mz-cv{display:block;border-radius:var(--r-card);touch-action:none;cursor:pointer;-webkit-user-select:none;user-select:none}
+.mz-side{flex:none;display:flex;flex-direction:column;align-items:center;gap:var(--s-2);width:100%;max-width:420px}
+.mz.land .mz-side{width:236px}
+.mz-stat{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:var(--s-2) var(--s-3);min-height:var(--tap);padding:var(--s-1) var(--s-4);
+  border-radius:var(--r-pill);background:var(--surface);box-shadow:inset 0 0 0 2px var(--line);font-family:var(--font-display);font-size:var(--fs-3);color:var(--ink)}
+.mz-stat b{font-weight:700}
+.mz-sts,.mz-keys{display:flex;gap:var(--s-1)}
+.mz-st{color:var(--line)}
+.mz-st.on{color:var(--star);--ic2:var(--star-shade)}
+.mz-key{opacity:.25;transition:opacity var(--t) var(--ease),transform var(--t) var(--spring)}
+.mz-key.on{opacity:1;transform:scale(1.1)}
+.mz-steps{font-variant-numeric:tabular-nums;color:var(--ink-2)}
+.mz-steps i{font-style:normal;margin-left:var(--s-1);padding:2px var(--s-2);border-radius:var(--r-chip);background:var(--bt-tint);color:var(--bt-shade);font-weight:700}
+.mz-msg{margin:0;min-height:1.45em;text-align:center;font-size:var(--fs-3);font-weight:700;color:var(--ink-2)}
+.mz-ctl{display:flex;align-items:center;justify-content:center;gap:var(--s-4)}
+.mz.land .mz-ctl{flex-direction:column;gap:var(--s-3)}
+.mz-tog[aria-pressed="true"]{background:var(--bt-tint);color:var(--bt-shade)}
+.mz-pad{display:grid;grid-template-columns:repeat(3,var(--tap-primary));grid-template-rows:repeat(2,var(--tap-primary));gap:var(--s-1)} /* keyboard arrows: up over left, down, right */
+.mz-pad[hidden]{display:none}
+.mz-pad [data-d="0"]{grid-area:1/2}.mz-pad [data-d="3"]{grid-area:2/1}.mz-pad [data-d="2"]{grid-area:2/2}.mz-pad [data-d="1"]{grid-area:2/3}
+.mz-arrow{position:absolute;display:flex;align-items:center;justify-content:center;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:50%;
+  background:var(--bt);color:var(--surface);box-shadow:0 4px 0 var(--bt-shade);pointer-events:none;opacity:0}
+.mz-arrow[hidden]{display:none}
+.mz-arrow.on{animation:mz-flash .5s var(--ease) 0s 6 alternate both}
+@keyframes mz-flash{from{opacity:.15;transform:scale(.8)}to{opacity:1;transform:scale(1.08)}}
+@media (max-height:520px){.mz.land .mz-side{gap:var(--s-1)}.mz-pad{grid-template-columns:repeat(3,var(--tap));grid-template-rows:repeat(2,var(--tap))}}

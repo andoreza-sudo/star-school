@@ -1236,6 +1236,38 @@ Object.assign(SCREENS, {
   'bt-pat-win': { run: patShot('C', 1, 'mat', { win: true }) },
 });
 
+// P3-08 Mazes: a level of each band with part of the winning walk already done (k cells of solve()), a hint, the win card
+function mazeShot(band, level, k, after) {
+  return async p => {
+    await p.evaluate(([band, level, k]) => {
+      window.say = () => {};
+      S.grade = { A: 0, B: 2, C: 4, D: 6 }[band];
+      const puzzle = BT.make('maze', band, level), route = BT.get('maze').solve(puzzle), items = puzzle.stars || puzzle.keys || [];
+      const t = [];
+      let m = 0;
+      for (const c of route.slice(0, k + 1)) {
+        if (t.length > 1 && t[t.length - 2] == c) t.pop(); else t.push(c);
+        if (items.includes(c)) m |= 1 << items.indexOf(c);
+      }
+      S.bt = S.bt || {};
+      S.bt.cur = { id: 'maze', band, level, puzzle, state: { t, m, dead: [], steps: k, mis: 0 }, hints: 0, sec: 75, day: today() };
+      BT.start('maze', band, level);
+    }, [band, level, k]);
+    if (after) await after(p);
+  };
+}
+Object.assign(SCREENS, {
+  'bt-maze-hub': { run: async p => { await p.evaluate(() => { S.grade = 2; BT.hub(); }); } },
+  'bt-maze-levels': { run: async p => { await p.evaluate(() => { S.grade = 2; BT.rec('maze', 'B', true).stars = [3, 2]; BT.rec('maze', 'B').lvl = 3; BT.levels('maze', 'B'); }); } },
+  'bt-maze-a': { run: mazeShot('A', 1, 4) },
+  'bt-maze-b': { run: mazeShot('B', 12, 14, async p => { await p.click('#bthint'); await p.waitForTimeout(300); await p.evaluate(() => { BT.act.cd = 0; $('#bthint').disabled = false; }); await p.click('#bthint'); }) },
+  'bt-maze-c': { run: mazeShot('C', 8, 60) },
+  'bt-maze-d': { run: mazeShot('D', 12, 90) },
+  'bt-maze-hint': { run: mazeShot('B', 5, 6, async p => { await p.click('#bthint'); await p.waitForTimeout(400); }) },
+  'bt-maze-pad': { run: mazeShot('C', 1, 10, async p => { await p.click('.mz-tog'); }) },
+  'bt-maze-win': { run: mazeShot('A', 3, 99, async p => { await p.evaluate(() => BT.win(BT.act, { mistakes: 0 })); await p.waitForTimeout(900); }) },
+});
+
 async function main() {
   const args = process.argv.slice(2);
   let fixtureArg = null;
