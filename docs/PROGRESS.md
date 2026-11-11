@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** P4-16, P4-15, P5-07, P5-08, P5-09, P5-10
+**Next up:** P4-16, P4-15, P5-07, P5-08, P5-10
 
-**Current version:** v129
+**Current version:** v130
 
 ## Chunk status
 
@@ -108,6 +108,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P4-14 v127
 - A11c v128
 - P2-35 v129
+- P5-09 v130
 
 ## Handoff notes
 
@@ -403,6 +404,15 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-11) Icons wanted from P4-03: `balloon` (Bonus game, today `gamepad`), `sparkle` / `confetti`, `unlock` (open padlock for "Next stop unlocked", today `map`), `zap` (a lightning with a spark for boss hits; today `bolt`), `sticker` (single sticker for the prize row), `medal` (the prize rosette as an icon), `heart-half` (boss life bar), `chest` (the treasure chest at icon size, e.g. for the round track where renderQ shows the gift emoji).
 
 ## Log
+
+### P5-09 Game-time rules v2 (v130, 2026-11-11, Claude)
+- Rules as built (src/js/58-playtime.js, header comment). Earning: `ptCalc` now also pays a Brain Teaser (`ptCalc({bt:{band,stars,hints,first,daily,room}})`, same amounts as before: band and stars, 15 s replay, 60 s Puzzle of the Day; fewer seconds with hints), the Daily Review (a full round, 100% instead of Tricky Mix's 60%, +30 s per fixed item; counted apart from Tricky Mix for repeats) and the daily mission (+1 min once a day, from the third round or the ninth puzzle; paid after the repeat cut). Speed Race pays 1 min only for the first race a day per category (5 right needed; it paid every race). Fact Sprint amounts unchanged (reviewed, left as is). Every result has plain `lines`; the puzzle win card now lists them (`+1 min Puzzle solved, no hints`), the round reward already did.
+- Spending: `ptLeft()` is 0 when paused, when learning comes first and is not done, at the daily limit, or with an empty bank; `ptLine()` says which in one plain line (`You have 3:00 saved. Learn 6 more minutes to open the Game Room today.`, `That's all the game time for today (30 min). Come back tomorrow!`), shown on the Game Room card and in Home's Game Room card. `ptState()` returns all of it for tests. `ptWhyNot()` is now `ptLine()`, so every game's toast shows the same reason. New grown-up setting in the Game time card: "Learn first, minutes" (None, 5, 10, 15, 20, 30), a line with today's learning, and a switch "Open the Game Room today anyway". Learning today = seconds in the activity log (all subjects, puzzles, sprints). The day turns at local midnight (used, open and learning-first all restart).
+- Save (additive, no migration, defaults when absent): `S.ptCfg.need`, `S.pt.open`, `S.pt.met`; listed in the ROADMAP save-field table. Old saves: need 0 = nothing changes; reading writes nothing new.
+- Files: 58-playtime.js, 50-round.js (mission passed to ptCalc), 54-race.js, 74-teasers.js (finish uses ptCalc, round computed first; win card lines), 80-grown.js, 46-home.js (one line), 18-reward-art.js (icons for the new lines), 48-setup-grown-care.css (`.gw-note`), tools/build.py, test.js, smoke.js, shots.js, ROADMAP.
+- Tests: named check `game time v2 P5-09` (ptCalc table, Brain Teaser rows, learn first, caps, daily limit, virtual clock across local midnight, Speed Race, overrides, 7 old fixtures and damaged values, BT.finish). Smoke `// P5-09` at 380x780 and 1024x600 with real taps. Shots `@p509` (2x looked at: gt-grown, gt-room-shut, gt-home-shut 1024, bt-win 380) in the scratchpad p509 folder.
+- Test expectations changed: (1) P3-01 "no cap set" puzzle total 555 -> 615: the 9th solve finishes the daily mission, now worth +60 s (the cap case still stops at 900 because the mission counts inside the puzzle cap). (2) The reward-icon check's label list gained the new labels (and scans `ptBT` too). The Daily-mission line on the puzzle win card now reads "+5 coins for the daily mission" (the game time has its own line).
+- Merge: built on P5-09-gametime from f25fb43 (v129), VER v130 provisional. Parallel P4-16 edits `gameRoom()` in 58-playtime.js: I changed only its card sub line (`ptLine()`) and the how-to-earn block (now `ptRules(R_)`); keep both calls when merging. In-game timer chips still call `ptLeft()`/`fmtT`. Rebuild and stage everything (`-A`).
 
 ### P2-35 Mini dialogues: Spanish world Los Cuentos (v129, 2026-11-11, Claude)
 - What changed (CURRICULUM S-story and 2.3 row 8, ROADMAP P2-35): one new Spanish skill `es_story` (3 levels) and the world `{id:'e_cuentos', n:'Los Cuentos', g:-1}` after `e_frases` (last in the Spanish path): stops `es_story` 1-3 ("Mini Stories", "Stories: Pictures", "Stories: Spanish") plus the automatic boss. Saves are keyed by stop id; no format change. `es_story` was already in the report card's "Spanish sentences" strand.

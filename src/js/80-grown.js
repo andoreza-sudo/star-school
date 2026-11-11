@@ -31,7 +31,7 @@ function grown(){let armed=false;
   const paths=Object.keys(PATHS).map(p=>{const n=NODES[p].filter((x,i)=>passed(p,i)).length,t=NODES[p].length;
     return`<div class="gw-path s-${p}"><span class="gw-pi">${ico(UI.SUBJ_ICON[p]||'map',22)}</span><span class="gw-pn">${esc(placeName(p))}</span>`+
       `${UI.meter(t?n/t:0,{p,label:`${placeName(p)}: ${n} of ${t} stops`})}<b>${n}/${t}</b></div>`}).join('');
-  const canRec=!!(navigator.mediaDevices&&window.MediaRecorder),pc=ptCfg(),bank=pt(),warn=t=>`<p class="gw-warn">${ico('warning',22)}<span>${t}</span></p>`;
+  const canRec=!!(navigator.mediaDevices&&window.MediaRecorder),pc=ptCfg(),bank=pt(),gt=ptGate(),warn=t=>`<p class="gw-warn">${ico('warning',22)}<span>${t}</span></p>`;
   const clips=CLIPKINDS.map(([k,l,tip,lines,ic])=>{const cs=CLIPS.filter(c=>c.kind==k),extra=cs.filter(c=>c.line==null||c.line>=lines.length);
     const row=(txt,c,line)=>`<div class="vline gw-vl${c?' has':''}"><span class="vtxt">${c?ico('check-circle',22,'ic-good'):ico('circle',22,'ic-off')}<span>${txt}</span></span>`+
       (c?UI.ibtn('play','Play',{size:'sm',attrs:`data-play="${c.id}"`})+UI.ibtn('trash','Delete',{size:'sm',kind:'',cls:'gw-del',attrs:`data-del="${c.id}"`})
@@ -55,8 +55,11 @@ function grown(){let armed=false;
   ${GW.card('gw-time','gamepad','Game time',`<div class="gw-stats two">${GW.stat('ticket','ic-play',fmtT(bank.bank),'in the bank')}${GW.stat('timer','ic-brand',fmtT(bank.used),'used today')}</div>
     <div class="gw-row"><span class="gw-rl">Minutes per round</span>${GW.seg('per',[2,3,5],pc.per,'Minutes per round',v=>v)}</div>
     <div class="gw-row"><span class="gw-rl">Daily max</span>${GW.seg('max',[15,30,45,60,0],pc.max,'Daily max in minutes',v=>v||'No limit')}</div>
+    <div class="gw-row"><span class="gw-rl">Learn first, minutes</span>${GW.seg('need',[0,5,10,15,20,30],pc.need,'Minutes of learning needed each day before the Game Room opens',v=>v||'None')}</div>
+    ${pc.need?`<p class="gw-note" id="ptneed">${ico('clock',22)}<span>${!gt.more?`Learning today: ${pc.need} of ${pc.need} minute${pc.need==1?'':'s'}. The Game Room is open.`:`Learning today: ${Math.floor(gt.done/60)} of ${pc.need} minute${pc.need==1?'':'s'}. The Game Room opens at ${pc.need}.`}</span></p>
+    <div class="gw-sw">${UI.sw('Open the Game Room today anyway',bank.open===today(),'pto')}</div>`:''}
     <div class="gw-row"><span class="gw-rl">Bank</span><span class="gw-btns">${UI.btn('+5 min',{size:'sm',icon:'plus',id:'pt5'})}${UI.btn('Empty bank',{size:'sm',kind:'ghost',icon:'trash',id:'pt0',cls:'gw-risk'})}</span></div>
-    <div class="gw-sw">${UI.sw('Pause game time (games locked)',pc.pause,'ptp')}</div>`,{tone:'s-play',sub:'Each learning round earns game time, plus a bonus for 10 out of 10, bosses and tests.'})}
+    <div class="gw-sw">${UI.sw('Pause game time (games locked)',pc.pause,'ptp')}</div>`,{tone:'s-play',sub:'Each learning round earns game time, plus a bonus for 10 out of 10, bosses, tests, puzzles and the Daily Review.'})}
   ${GW.card('gw-snd','sound-on','Sound and voice',`<div class="gw-sw">${UI.sw('Read questions out loud',S.voice,'voice')}${UI.sw('Sound effects',S.sound,'snd')}${UI.sw('Music on the home screen',S.music,'mus')}</div>
     ${UI.btn('Test voice',{size:'sm',icon:'speak',id:'test'})}`)}
   ${GW.card('gw-rec','mic','Your voice',(inFrame?warn('Recording only works on the tablet app, not in this preview.'):!canRec?warn("Recording isn't available in this browser. Use Chrome or the installed app."):'')+clips,
@@ -83,6 +86,8 @@ function grown(){let armed=false;
   $$('[data-max]').forEach(b=>b.onclick=()=>{ptCfg().max=+b.dataset.max;save();grown()});
   $('#pt5').onclick=()=>{ptEarn(300);grown()};$('#pt0').onclick=()=>{pt().bank=0;save();grown()};
   $('#ptp').onchange=e=>{ptCfg().pause=e.target.checked;save()};
+  $$('[data-need]').forEach(b=>b.onclick=()=>{ptCfg().need=+b.dataset.need;save();grown()});
+  if($('#pto'))$('#pto').onchange=e=>{const p=pt();if(e.target.checked)p.open=today();else p.open='';save()};
   $('#voice').onchange=e=>{S.voice=e.target.checked;save()};
   $('#snd').onchange=e=>{S.sound=e.target.checked;save()};
   $('#mus').onchange=e=>{S.music=e.target.checked;save()};
