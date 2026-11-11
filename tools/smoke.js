@@ -187,6 +187,8 @@ async function main() {
     // P2-01: node 0 is Tiny Town now; P2-02: a K child's map opens on Shape Garden. Number Meadow's first stop is a number-pad question: open its chip first
     const meadowW = await page.evaluate(() => PATHS.math.worlds.findIndex(w => w.id === 'm_meadow'));
     const meadow0 = await page.evaluate(() => WR.math[PATHS.math.worlds.findIndex(w => w.id === 'm_meadow')][0]);
+    await page.waitForSelector('.wchip.on');
+    await page.click(`.wchip[data-w="${meadowW}"]`);
     await page.waitForSelector(`.node[data-n="${meadow0}"]`);
     await page.click(`.node[data-n="${meadow0}"]`);
     let numSeen = false;
