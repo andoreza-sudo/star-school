@@ -845,8 +845,9 @@ run('worlds: ids, grade tags, migration 3 keeps every star, gating, inserted wor
         // maxed and fresh look exactly the same. Legacy saves (stops skipped by the old single map) and midway (P1-06 infers grade 1, which opens the grade-1 worlds) may open more, never less.
         if(name.startsWith('legacy')||name=='midway'?wo.some((o,i)=>o&&!no[i]):JSON.stringify(wo)!==JSON.stringify(no))bad(name+' '+p+': locks changed');
         {const oc=E[oldCur(was)].i,nc=curNode(p),addedHere=!V.has(nc)&&nc<oc&&MAP_V42[p].some(w=>w[0]==NODES[p][nc].wid), // a stop added later to a v42 world, just before the old one
-          frontier=was.every(x=>x>0)&&!MAP_V42[p].some(w=>w[0]==NODES[p][nc].wid); // every v42 stop passed: the map may open on a world added since
-        if(oc!==nc&&!addedHere&&!frontier)bad(name+' '+p+': current stop '+oc+' -> '+nc)}
+          frontier=was.every(x=>x>0)&&!MAP_V42[p].some(w=>w[0]==NODES[p][nc].wid), // every v42 stop passed: the map may open on a world added since
+          pristine=was.every(x=>!x)&&nc===WR[p][startWorld(p)][0]; // no stop passed yet: the map opens on the first stop of the start world (P2-02: Shape Garden is the first K world)
+        if(oc!==nc&&!addedHere&&!frontier&&!pristine)bad(name+' '+p+': current stop '+oc+' -> '+nc)}
       }
     }
     load(fx('midway'));
@@ -1100,8 +1101,9 @@ run('placement: state machine rules, scripted answers, simulated students, never
     for(let k=0;k<16;k++){const src=PATHS.math.worlds[k%4];FAKE.push({id:'f_'+k,g:Math.floor(k/2)-1,n:'Fake '+k,e:'',nodes:src.nodes})}
     // 1. start world: one grade below the child's grade (the first world with g >= grade - 1, else the last)
     // math worlds by grade: Tiny Town -1, Number Meadow 0, Candy Canyon 1, Ocean Reef 1, Space Station 2 (P2-01 added Tiny Town)
-    if(PLACE.first(PATHS.math.worlds,0)!==0||PLACE.first(PATHS.math.worlds,1)!==1||PLACE.first(PATHS.math.worlds,2)!==2
-      ||PLACE.first(PATHS.math.worlds,3)!==4||PLACE.first(PATHS.math.worlds,6)!==PATHS.math.worlds.length-1)bad('start world per grade on math');
+    {const MW=PATHS.math.worlds,ix=id=>MW.findIndex(w=>w.id===id); // P2-02: by world id (Shape Garden is the first K world, so grade 1 starts there)
+    if(PLACE.first(MW,0)!==ix('m_tiny')||PLACE.first(MW,1)!==ix('m_shape')||PLACE.first(MW,2)!==ix('m_candy')
+      ||PLACE.first(MW,3)!==ix('m_space')||PLACE.first(MW,6)!==MW.length-1)bad('start world per grade on math')}
     if(PLACE.first(FAKE,0)!==0||PLACE.first(FAKE,3)!==6||PLACE.first(FAKE,6)!==12)bad('start world per grade on 16 worlds');
     // 2. scripted rules (right answers per testlet -> where it goes)
     const run1=(ws,g,seq)=>{let st=PLACE.begin(ws,g,7);const path=[];for(const r of seq){if(st.done)break;path.push(st.wi);st=PLACE.step(st,r)}return{st,path}};
@@ -1263,7 +1265,7 @@ run('mastery: records, states, harder/easier, challenge from question 6, support
     // 1. harder / easier: next and previous stop of the same skill in path order
     const N=NODES.math,at=(sk,lv)=>N.find(n=>n.sk==sk&&n.lv==lv);
     if(harder(at('add',1))!==at('add',2)||harder(at('add',2))!==at('add',3)||easier(at('add',2))!==at('add',1))bad('harder/easier add');
-    if(easier(at('add',1))!==null||harder(N.find(n=>n.sk=='boss'))!==null)bad('easier(add1) / harder(boss) should be null');
+    if(easier(at('add',1))!==(N.slice(0,N.indexOf(at('add',1))).reverse().find(n=>n.sk=='add')||null)||harder(N.find(n=>n.sk=='boss'))!==null)bad('easier(add1) is the add stop just before it on the map (P2-02: add 4 in Shape Garden); harder(boss) null');
     for(const p in NODES)NODES[p].forEach(n=>{const h=harder(n),e=easier(n);
       if(h&&(h.sk!==n.sk||NODES[p].indexOf(h)<=NODES[p].indexOf(n)))bad('harder '+nid(n));
       if(e&&(e.sk!==n.sk||NODES[p].indexOf(e)>=NODES[p].indexOf(n)))bad('easier '+nid(n));});
@@ -2002,7 +2004,7 @@ run('Tiny Town (P2-01): CURRICULUM M-PK levels, audio-first, answers by rule, 3,
     if(w0.id!=='m_tiny'||w0.g!==-1||w0.n!=='Tiny Town')b('Tiny Town is not the first math world: '+w0.id);
     const ids=w0.nodes.map(n=>n[0]+n[1]).join(' ');
     if(ids!=='pk_count1 shape1 pk_num1 sort1 pk_more1 pk_count2 pat1 pk_num2 sort2')b('Tiny Town stops: '+ids);
-    for(const [sk,max] of LEVELS)if(!SK[sk]||SK[sk].max!==max||SK[sk].area!=='math')b('skill '+sk+' max '+(SK[sk]&&SK[sk].max));
+    for(const [sk,max] of LEVELS)if(!SK[sk]||SK[sk].max<max||SK[sk].area!=='math')b('skill '+sk+' max '+(SK[sk]&&SK[sk].max)); // later chunks add levels (P2-02: Shape Garden)
     const ltr=s=>s.replace(/<[^>]*>/g,'').replace(/[^A-Za-z]/g,''); // letters left once tags (and attributes) are gone
     const TXT=/<div class="sub pktxt">.*?<\/div>/g;
     const sig=h=>{ // the picture of a choice: shape signature + colour token
@@ -2102,8 +2104,8 @@ run('Tiny Town (P2-01): CURRICULUM M-PK levels, audio-first, answers by rule, 3,
     if(curWorld('math')!==0||nid(NODES.math[curNode('math')])!=='pk_count1')b('Pre-K does not open on Tiny Town');
     if(worldOpen('math',1))b('Pre-K: Number Meadow open before Tiny Town is done');
     S.grade=0;
-    if(NODES.math[curNode('math')].wid!=='m_meadow')b('K does not open on Number Meadow: '+NODES.math[curNode('math')].wid);
-    if(!worldOpen('math',1)||!worldOpen('math',0))b('K: Tiny Town and Number Meadow must be open');
+    if(NODES.math[curNode('math')].wid!=='m_shape')b('K does not open on Shape Garden: '+NODES.math[curNode('math')].wid); // P2-02: the first K world
+    if(!worldOpen('math',1)||!worldOpen('math',0)||!worldOpen('math',2))b('K: Tiny Town, Shape Garden and Number Meadow must be open');
     S.grade=2;
     if(NODES.math[curNode('math')].wid!=='m_space')b('grade 2 does not open on Space Station');
     // 5. saves: stars are keyed by stop id, so adding Tiny Town moves none (midway, maxed); the map is not sent back
@@ -2540,6 +2542,317 @@ run('phonics P2-18: sight 4-5, r-controlled and vowel-team picture words, 3,000 
   };
   const r=eval(js+';('+body.toString()+')()');
   return{problems:[...new Set(serrs)],note:'6 levels x 3,000 samples, '+r.checked+' stop checks over 8 fixtures x 7 grades'};
+});
+
+// ---- P2-02 Shape Garden (K): CURRICULUM M-K ----
+run('Shape Garden (P2-02): the 14 M-K levels, audio-first, answers by rule, 3,000 samples per level',()=>{
+  const bad=[];
+  const body=function(){
+    const out=[],b=m=>{if(out.length<25&&!out.includes(m))out.push(m)};
+    S.name='Ava';S.buddy='Ben';G={built:[]};
+    const LV=[['pk_count',3],['pk_num',3],['tenf',1],['pk_more',2],['shape',2],['add',4],['pat',2],['tenf',2],['cnt',4],['shape',3],['sort',3],['pos',1],['meas',1],['tenf',3]];
+    for(const [sk,lv] of LV)if(!SK[sk]||SK[sk].max<lv||SK[sk].area!=='math')b('skill '+sk+' has no level '+lv);
+    const ltr=s=>s.replace(/<[^>]*>/g,'').replace(/[^A-Za-z]/g,''); // letters left once tags (and their attributes) are gone
+    const TXT=/<div class="sub pktxt">.*?<\/div>/g;
+    const NUMW=['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen','twenty'];
+    const viz=(h,cls)=>{const m=new RegExp('<svg class="viz viz-'+cls+'"[^>]*>.*?</svg>').exec(h);return m?m[0]:''};
+    const circles=s=>(s.match(/<circle/g)||[]).length;
+    const nPko=h=>(h.match(/class="pko"/g)||[]).length;
+    const CAT={animals:'dog cat pig frog duck fish hen fox',food:'apple banana cookie cake milk grapes pizza bread',vehicles:'car bus bike ship plane train truck boat',clothes:'hat coat socks shirt boots'};
+    const THING={ball:'sphere','tennis ball':'sphere',basketball:'sphere',can:'cylinder',drum:'cylinder',box:'cube',dice:'cube','ice cream cone':'cone'};
+    const SHP={hexagon:6,rhombus:4,trapezoid:4,square:4,rectangle:4,triangle:3,pentagon:5}; // points of a drawn polygon
+    const seen={};
+    for(const [sk,lv] of LV){
+      const w=sk+' L'+lv,labels=new Set();let same=0,wordsA=0,wordsB=0,back=0,zero=0,front=0,distinct=new Set();
+      for(let i=0;i<3000;i++){
+        const q=SK[sk].gen(lv);
+        if(!q.pk||!q.auto||!q.say)b(w+': not audio-first (pk, auto, say)');
+        if(!q.hint)b(w+': no hint');
+        else{
+          try{if(!hintHTML(q))b(w+': empty hint')}catch(e){b(w+': hintHTML threw '+e.message)}
+          if(q.hint.k==='html'){
+            if(!q.hint.w)b(w+': hint is not spoken');
+            if(ltr(q.hint.html.replace(TXT,''))!=='')b(w+': hint has text outside .pktxt');
+          }
+        }
+        const prompt=q.html.replace(TXT,'');
+        if(ltr(prompt)!=='')b(w+': prompt needs reading: '+ltr(prompt).slice(0,40));
+        if(!/pktxt/.test(q.html))b(w+': no .pktxt fallback text');
+        if(typeof q.label!=='string'||q.label.length>=60)b(w+': label '+q.label);
+        labels.add(q.label);
+        if(q.kind=='choice'){
+          if(q.choices.length<2||q.choices.length>4)b(w+': '+q.choices.length+' choices');
+          if(new Set(q.choices.map(c=>c.v)).size!==q.choices.length||!q.choices.some(c=>c.v===q.ans))b(w+': choices');
+          for(const c of q.choices)if(c.h&&ltr(c.l)!=='')b(w+': a choice has words');
+        }
+        // ---- rules per level
+        if(sk=='pk_count'){
+          const n=+q.ans,fr=q.html.split(/<div class="sgfr(?: sgten)?">/).slice(1);
+          if(n<11||n>20||q.kind!=='num')b(w+': answer '+q.ans);
+          if(nPko(q.html)!==n)b(w+': '+nPko(q.html)+' objects, answer '+n);
+          if(fr.length!==2||nPko(fr[0])!==10||nPko(fr[1])!==n-10)b(w+': frames '+fr.map(nPko));
+          if(!/<div class="sgfr sgten">/.test(q.html))b(w+': first frame not marked as the full ten');
+          if(!/pulse/.test(q.hint.html))b(w+': hint does not count on');
+        }
+        if(sk=='pk_num'){
+          const n=+q.ans,rev=+String(n).split('').reverse().join('');
+          if(n<11||n>20)b(w+': answer '+n);
+          if(q.say!==`Tap the number ${NUMW[n]}.`||q.auto!=='must')b(w+': say '+q.say+' / auto '+q.auto);
+          if(q.choices.length!==4||q.choices.some(c=>!/^\d+$/.test(c.v)||+c.v<10||+c.v>99))b(w+': choices '+q.choices.map(c=>c.v));
+          if(rev!==n&&rev>=10&&!q.choices.some(c=>+c.v===rev))b(w+': no reversed '+rev+' for '+n);
+          if(n>=13&&n<=19&&!q.choices.some(c=>+c.v===(n-10)*10))b(w+': no ty number for '+n);
+        }
+        if(sk=='pk_more'){
+          const m=/^(more|fewer|same) (\d+) or (\d+) /.exec(q.label);
+          if(!m)b(w+': label '+q.label);
+          else{
+            const a=+m[2],c=+m[3],pl=q.html.split('class="pkplate').slice(1).map(nPko);
+            if(pl[0]!==a||pl[1]!==c||pl.length!==2)b(w+': plates '+pl+' label '+q.label);
+            if(a<1||a>10||c<1||c>10)b(w+': group out of range');
+            const cols=(q.hint.html.match(/class="sgpr/g)||[]).length;
+            if(cols!==Math.max(a,c))b(w+': hint pairs '+cols);
+            if(m[1]=='same'){
+              same++;
+              if(q.kind!=='choice'||q.ans!==(a==c?'yes':'no')||q.choices.length!==2)b(w+': same question');
+              if(Math.abs(a-c)>1)b(w+': "same" off by more than 1');
+            }else{
+              if(q.kind!=='tap'||a===c)b(w+': tap with equal groups');
+              const win=(m[1]=='more')===(a>c)?'l':'r';
+              if(q.ans!==win||!q.say.includes(' has '+m[1]+' '))b(w+': answer '+q.ans+' for '+q.label);
+              if(!/data-v="l"/.test(q.html)||!/data-v="r"/.test(q.html))b(w+': plates are not tap targets');
+            }
+          }
+        }
+        if(sk=='shape'&&lv==2){
+          const names=q.choices.map(c=>/data-shape="(\w+)"/.exec(c.l)[1]);
+          if(!['hexagon','rhombus','trapezoid','oval'].includes(q.ans)||q.choices.length!==4||new Set(names).size!==4||names.join()!==q.choices.map(c=>c.v).join())b(w+': choices '+names);
+          if(q.say!==`Tap the ${q.ans}.`||q.auto!=='must')b(w+': say '+q.say);
+          if(q.ans=='rhombus'&&names.includes('square'))b(w+': a square beside the rhombus');
+          for(const c of q.choices){
+            const sv=viz(c.l,'shp'),nm=c.v,np=(/ d="M([^"]*)z"/.exec(sv)||[,''])[1].split('L').length;
+            if(nm=='oval'||nm=='circle'){if(!/<ellipse/.test(sv))b(w+': '+nm+' not drawn as an ellipse')}
+            else if(np!==SHP[nm])b(w+': '+nm+' drawn with '+np+' corners');
+          }
+          const hs=q.choices.find(c=>c.v==q.ans).l;distinct.add(hs);
+        }
+        if(sk=='shape'&&lv==3){
+          const names=q.choices.map(c=>c.v).sort().join();
+          if(names!=='cone,cube,cylinder,sphere')b(w+': solids '+names);
+          if(q.choices.some(c=>!new RegExp('data-shape="'+c.v+'"').test(c.l)||!/viz-shp/.test(c.l)))b(w+': choice picture');
+          if(/^solid like (.+)$/.test(q.label)){
+            wordsB++;const t=/^solid like (.+)$/.exec(q.label)[1];
+            if(THING[t]!==q.ans)b(w+': '+t+' is not '+q.ans);
+            if(!/^Which one is shaped like /.test(q.say)||q.auto==='must')b(w+': say '+q.say);
+            if(!/sgobj/.test(q.html))b(w+': no picture of the thing');
+          }else{
+            wordsA++;
+            if(q.label!=='solid '+q.ans||q.say!==`Tap the ${q.ans}.`||q.auto!=='must')b(w+': name question '+q.label);
+          }
+        }
+        if(sk=='add'){
+          const m=/^(\d) \+ (\d) = \?$/.exec(q.label);
+          if(!m)b(w+': label '+q.label);
+          else{
+            const a=+m[1],c=+m[2];
+            if(a+c>5||a+c<1||q.ans!==String(a+c)||q.kind!=='num')b(w+': '+q.label+' answer '+q.ans);
+            if(circles(viz(q.html,'dots'))!==a+c)b(w+': dots '+circles(viz(q.html,'dots')));
+            if(a==0||c==0)zero++;
+          }
+        }
+        if(sk=='cnt'){
+          const nums=(/<div class="seq">(.*?)<\/div>/.exec(q.html)||[,''])[1].split(', '),bi=nums.findIndex(x=>x.includes('slot'));
+          const vals=q.label.split(',');
+          if(nums.length!==5||bi<1||bi>3||vals.length!==5)b(w+': sequence '+q.label);
+          else{
+            const v=vals.map((x,i)=>i==bi?+q.ans:+x),d=v[1]-v[0];
+            if(Math.abs(d)!==1||v.some((x,i)=>i&&x-v[i-1]!==d)||v.some(x=>x<0||x>20))b(w+': not count by 1 '+v);
+            if(vals[bi]!=='_'||vals.filter(x=>x==='_').length!==1)b(w+': blank '+q.label);
+            if(d<0)back++;
+          }
+        }
+        if(sk=='pat'){
+          const m=/^(AAB|ABB|ABC) /.exec(q.label);
+          if(!m)b(w+': label '+q.label);
+          else{
+            const key=h=>(/--c:var\((--[a-z]+)\)/.exec(h)||[])[1]+'|'+((/points="([^"]*)"/.exec(h)||[])[1]||'circle');
+            const shown=[...q.html.matchAll(/<svg class="pks"[^>]*>.*?<\/svg>/g)].map(x=>key(x[0])),L=shown.length;
+            // A is the first item; B is the first item that is not A; C the first that is neither
+            const A=shown[0],Bk=shown.find(x=>x!==A),Ck=shown.find(x=>x!==A&&x!==Bk),tok={A,B:Bk,C:Ck};
+            const exp=Array.from({length:L},(_,i)=>tok[m[1][i%3]]);
+            if(L<6||L>7||JSON.stringify(exp)!==JSON.stringify(shown))b(w+': shown does not follow '+m[1]);
+            if(m[1]=='ABC'&&!Ck)b(w+': no third item');
+            const want=tok[m[1][L%3]],hit=q.choices.filter(c=>key(c.l)===want);
+            if(q.choices.length!==3||hit.length!==1||hit[0].v!==q.ans)b(w+': the answer picture');
+            if(new Set(q.choices.map(c=>key(c.l))).size!==3)b(w+': two alike');
+          }
+        }
+        if(sk=='sort'){
+          const m=/^odd (\w+) \((\w+)\) in (\w+): (.*)$/.exec(q.label);
+          if(!m)b(w+': label '+q.label);
+          else{
+            const c1=m[3],c2=m[2],three=m[4].split(',');
+            if(c1===c2||!CAT[c2].split(' ').includes(m[1])||three.length!==3||three.some(x=>!CAT[c1].split(' ').includes(x))||new Set(three).size!==3)b(w+': categories '+q.label);
+            const ix=+q.ans,html=q.choices.map(c=>c.l);
+            if(q.choices.length!==4)b(w+': '+q.choices.length+' items');
+            const pic=x=>{const all=Object.values(SG_CATS).flat().find(e=>e[0]===x);return picFor(all[0],all[1])};
+            if(!html[ix].includes(pic(m[1])))b(w+': answer picture is not the odd one');
+            html.forEach((h,j)=>{if(j!==ix&&three.every(x=>!h.includes(pic(x))))b(w+': a picture is not one of the three')});
+          }
+        }
+        if(sk=='tenf'){
+          const fr=(q.html.match(/<svg class="viz viz-ten"[^>]*>.*?<\/svg>/g)||[]).map(circles),n=+q.ans;
+          if(lv==1&&(fr.length!==1||fr[0]!==n||n<0||n>10))b(w+': frame '+fr+' answer '+n);
+          if(lv==2&&(fr.length!==1||fr[0]<1||fr[0]>9||n!==10-fr[0]))b(w+': '+fr+' answer '+n);
+          if(lv==3){
+            const m=/^10 \+ \? = (\d+)$/.exec(q.label);
+            if(m){front++;if(fr.length!==1||fr[0]!==10||!/10 \+ <span class="slot"/.test(q.html)||n!==+m[1]-10||n<1||n>9)b(w+': reverse '+q.label+' answer '+n)}
+            else if(fr.length!==2||fr[0]!==10||fr[1]<1||fr[1]>9||n!==10+fr[1]||q.label!==`10 and ${fr[1]}`)b(w+': two frames '+fr+' answer '+n);
+          }
+          if(q.kind!=='num')b(w+': kind');
+        }
+        if(sk=='pos'){
+          const m=/^(above|below|beside|in front of|behind|between) /.exec(q.label);
+          if(!m)b(w+': label '+q.label);
+          else{
+            const k=m[1],vs=[...q.html.matchAll(/data-v="(\w)"/g)].map(x=>x[1]).join('');
+            const exp={above:['ab','a'],below:['ab','b'],beside:['ab','a'],'in front of':['ab','b'],behind:['ab','a'],between:['acb','c']}[k];
+            if(q.kind!=='tap'||vs!==exp[0]||q.ans!==exp[1])b(w+': '+q.label+' order '+vs+' answer '+q.ans);
+            if(!q.say.includes(k))b(w+': say '+q.say);
+            if(k=='between'&&!/^Tap the one between the (\w+) and the (\w+)\.$/.test(q.say))b(w+': say '+q.say);
+            if(k=='in front of'&&!/sgdepth/.test(q.html)||k=='behind'&&!/sgdepth/.test(q.html))b(w+': no depth scene');
+            seen[k]=(seen[k]||0)+1;
+          }
+        }
+        if(sk=='meas'){
+          const m=/^(longer|longest|shorter|shortest) crayon ([\d\/]+)|^(taller|tallest|shorter|shortest) tower ([\d\/]+)|^(heavier|lighter) (\d) or (\d)/.exec(q.label);
+          if(!m)b(w+': label '+q.label);
+          else if(m[2]){
+            const ws=[...q.html.matchAll(/width="(\d+)" height="24"/g)].map(x=>+x[1]),big=/longer|longest/.test(m[1]);
+            if(ws.join('/')!==m[2]||ws.length<2||ws.length>3||q.ans!==String(ws.indexOf(big?Math.max(...ws):Math.min(...ws)))||new Set(ws).size!==ws.length)b(w+': bars '+ws+' '+q.label+' answer '+q.ans);
+            if(/margin-left:[1-9]/.test(q.html)&&!/not lined up/.test(q.label))b(w+': offset without the label');
+            if(!/sgaligned/.test(q.hint.html))b(w+': hint does not line them up');
+            wordsA++;
+          }else if(m[4]){
+            const hs=[...q.html.matchAll(/viewBox="0 0 40 (\d+)"/g)].map(x=>(+x[1]-4)/18),big=/taller|tallest/.test(m[3]);
+            if(hs.join('/')!==m[4]||hs.length<2||hs.length>3||q.ans!==String(hs.indexOf(big?Math.max(...hs):Math.min(...hs)))||new Set(hs).size!==hs.length)b(w+': towers '+hs+' '+q.label);
+            wordsB++;
+          }else{
+            const l=+/data-l="(\d)"/.exec(q.html)[1],r=+/data-r="(\d)"/.exec(q.html)[1],heavy=l>r?'l':'r';
+            if(Math.abs(l-r)<2||`${m[5]} ${l} or ${r}`!==q.label)b(w+': scale '+q.label);
+            if(q.ans!==(m[5]=='heavier'?heavy:heavy=='l'?'r':'l'))b(w+': scale answer '+q.ans+' for '+q.label);
+            if(!/data-v="l"/.test(q.html)||!/data-v="r"/.test(q.html)||!/viz-bal/.test(q.html))b(w+': scale taps');
+            back++;
+          }
+        }
+      }
+      if(labels.size<4)b(w+': only '+labels.size+' different labels');
+      seen[w]=labels.size;
+      if(sk=='pk_more'&&(same<330||same>570))b(w+': "same" in '+same+' of 3000 items (want about 15%)');
+      if(sk=='shape'&&lv==3&&(wordsA<1200||wordsB<1200))b(w+': name '+wordsA+' / thing '+wordsB);
+      if(sk=='shape'&&lv==2&&distinct.size<200)b(w+': shapes hardly turn or stretch ('+distinct.size+' pictures)');
+      if(sk=='add'&&(zero<300))b(w+': only '+zero+' items with + 0');
+      if(sk=='cnt'&&(back<1000||back>1400))b(w+': backward in '+back+' of 3000 items (want about 40%)');
+      if(sk=='tenf'&&lv==3&&(front<1200||front>1800))b(w+': reverse questions '+front);
+      if(sk=='meas'&&(wordsA<800||wordsB<800||back<800))b(w+': kinds '+wordsA+'/'+wordsB+'/'+back);
+    }
+    for(const k of ['above','below','beside','in front of','behind','between'])if(!seen[k]||seen[k]<300)b('pos: '+k+' appears '+(seen[k]||0)+' times');
+    // seeded: the same seed gives the same question
+    for(const [sk,lv] of LV)for(let s=1;s<=30;s++)if(JSON.stringify(genQ(sk,lv,s))!==JSON.stringify(genQ(sk,lv,s)))b(sk+lv+' seed '+s+' not reproducible');
+    // the old levels of the skills that grew are still the old generators
+    for(const [sk,lv,old] of [['pk_count',1,'pk_count'],['add',3,'add'],['cnt',3,'cnt'],['shape',1,'shape'],['pat',1,'pat'],['sort',2,'sort'],['pk_num',2,'pk_num'],['pk_more',1,'pk_more']])
+      for(let s=1;s<=10;s++){const q=genQ(sk,lv,s);if(!q||q.lv!==lv||q.sk!==old)b('old level '+sk+lv+' changed')}
+    return out;
+  };
+  const r=eval(js+';('+body.toString()+')()');
+  for(const m of r)bad.push(m);
+  // new files: no raw hex colours, no Math.random, no px colours in the new CSS
+  const css=fs.readFileSync(path.join(SRC,'css','31-sg.css'),'utf8'),gen=fs.readFileSync(path.join(SRC,'js','31-gen-math-early.js'),'utf8');
+  if(/#[0-9a-fA-F]{3,8}\b/.test(css))bad.push('31-sg.css has a raw hex colour');
+  if(/#[0-9a-fA-F]{3,8}\b/.test(gen))bad.push('31-gen-math-early.js has a raw hex colour');
+  if(/Math\.random/.test(gen))bad.push('31-gen-math-early.js uses Math.random');
+  if(!/\/\/ ---- P2-02 Shape Garden \(K\) ----/.test(gen))bad.push('the P2-02 block header is missing');
+  return{problems:bad};
+});
+
+run('Shape Garden (P2-02): world position, stop ids, no star moves, nothing re-locks, nobody is sent back into it',()=>{
+  const bad=[];
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const body=function(){
+    const out=[],b=m=>{if(out.length<25&&!out.includes(m))out.push(m)};
+    const store={};
+    global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+    const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
+    const clone=o=>JSON.parse(JSON.stringify(o));
+    // 1. the world: second math world, K, exactly the CURRICULUM stops in order, between Tiny Town and Number Meadow
+    const W=PATHS.math.worlds,ids=W.map(w=>w.id),wi=ids.indexOf('m_shape');
+    if(wi!==ids.indexOf('m_tiny')+1||wi!==ids.indexOf('m_meadow')-1)b('Shape Garden is not between Tiny Town and Number Meadow: '+ids);
+    const w=W[wi];
+    if(w.g!==0||w.n!=='Shape Garden')b('world '+w.g+' '+w.n);
+    const stops=w.nodes.map(n=>n[0]+n[1]).join(' ');
+    if(stops!=='pk_count3 pk_num3 tenf1 pk_more2 shape2 add4 pat2 tenf2 cnt4 shape3 sort3 pos1 meas1 tenf3')b('Shape Garden stops: '+stops);
+    if(new Set(w.nodes.map(n=>n[2])).size!==w.nodes.length)b('two stops share a title');
+    for(const [sk,lv] of w.nodes)if(!SK[sk]||SK[sk].max<lv)b('stop '+sk+lv+' has no skill or level');
+    if(NODES.math.filter(n=>n.wid==='m_shape'&&n.sk==='boss').length!==1||!NODES.math.some(n=>nid(n)==='boss_m_shape'))b('boss id');
+    // 2. every math stop that is not in Shape Garden keeps its id; ids are unique
+    const all=NODES.math.map(nid);
+    if(new Set(all).size!==all.length)b('duplicate stop ids');
+    // 3. saves: each fixture at each grade, compared with the same path without Shape Garden
+    const without=()=>{const keep=PATHS.math.worlds;PATHS.math.worlds=keep.filter(x=>x.id!=='m_shape');buildNodes('math');return keep};
+    const snap=()=>{const N=NODES.math,o={};N.forEach((n,i)=>{o[nid(n)]={st:getSt('math',i),open:unlocked('math',i)}});o._cur=nid(N[curNode('math')]);return o};
+    const startOf=()=>NODES.math[curNode('math')].wi;
+    for(const name of ['fresh','midway','maxed','tricky','legacy-single-map','legacy-index-maps'])for(const g of [null,-1,0,1,2,3,4,5,6]){
+      const raw=fx(name),empty=!Object.keys(JSON.parse(raw)).length,tag=name+' g'+g+': ';
+      const doit=()=>{load(empty?null:raw);if(empty)S.name='Kid';if(g!==null)setGrade(g);return snap()};
+      const keep=without();let before;try{before=doit()}finally{PATHS.math.worlds=keep;buildNodes('math')}
+      const after=doit();
+      const mapsBefore=clone(S.maps.math);
+      for(const k in before){
+        if(k=='_cur')continue;
+        if(after[k]===undefined){b(tag+k+' is gone');continue}
+        if(after[k].st!==before[k].st)b(tag+k+' stars '+before[k].st+' -> '+after[k].st);
+        if(before[k].open&&!after[k].open)b(tag+k+' re-locked');
+        if(before[k].st>0&&!after[k].open)b(tag+'passed stop '+k+' is locked');
+      }
+      // new stops carry no stars from the old save; the map keys are untouched
+      for(const n of NODES.math)if(n.wid==='m_shape'&&(S.maps.math[nid(n)]||0)>0)b(tag+nid(n)+' has stars it never earned');
+      if(JSON.stringify(S.maps.math)!==JSON.stringify(mapsBefore))b(tag+'map changed by loading');
+      // the map opens on the same stop as before, except a child with no stars at all who has Shape Garden as the first world at or above their grade
+      const progress=Object.keys(S.maps.math).some(k=>S.maps.math[k]>0);
+      if(progress&&after._cur!==before._cur)b(tag+'current stop '+before._cur+' -> '+after._cur);
+      if(!progress){
+        const kid=gradeOf();
+        const want=kid==0?'pk_count3':before._cur;
+        if(after._cur!==want)b(tag+'a child with no stars opens on '+after._cur+', expected '+want);
+      }
+      // never sent back into an untouched world below the start world, never into Shape Garden past their progress
+      const cw=NODES.math[curNode('math')];
+      if(cw.wid==='m_shape'&&(progress||gradeOf()!==0))b(tag+'the map opens in Shape Garden');
+      if(!unlocked('math',curNode('math'))&&!passed('math',curNode('math')))b(tag+'the map opens on a locked stop');
+    }
+    // 4. a child partway through Shape Garden keeps going there; a finished one moves on, nobody loses a star
+    load(null);S.name='Kid';setGrade(0);
+    const first=NODES.math.findIndex(n=>n.wid==='m_shape');
+    if(nid(NODES.math[curNode('math')])!=='pk_count3')b('a new K child does not open on Count to 20');
+    for(let i=first;i<first+3;i++)setSt('math',i,2);
+    if(nid(NODES.math[curNode('math')])!=='pk_more2')b('after three stops the map opens on '+nid(NODES.math[curNode('math')]));
+    for(let i=first;i<WR.math[wi][1];i++)setSt('math',i,3);
+    if(unlocked('math',WR.math[wi][1])!==true)b('the boss of Shape Garden is locked after every stop');
+    // 5. Pre-K and grade 1+ children are not sent here
+    load(null);S.name='Kid';setGrade(-1);
+    if(NODES.math[curNode('math')].wid!=='m_tiny'||worldOpen('math',wi))b('Pre-K: map or Shape Garden open too early');
+    setGrade(1);
+    if(NODES.math[curNode('math')].wid!=='m_candy')b('grade 1 does not open on Candy Canyon: '+NODES.math[curNode('math')].wid);
+    if(!worldOpen('math',wi))b('grade 1: Shape Garden should stay open to play');
+    // 6. harder / easier and skills
+    const nd=(sk,lv)=>NODES.math.find(n=>n.sk===sk&&n.lv===lv);
+    if(!harder(nd('add',4))||harder(nd('add',4)).lv!==1||!easier(nd('shape',3))||easier(nd('shape',3)).lv!==2)b('harder/easier skip the Shape Garden levels');
+    // 7. placement: a 1st grader starts the quiz on Shape Garden, the first K world
+    if(PLACE.first(PATHS.math.worlds,1)!==wi)b('placement for grade 1 does not start on Shape Garden');
+    return out;
+  };
+  const r=eval(js+';('+body.toString()+')()');
+  for(const m of r)bad.push(m);
+  return{problems:bad};
 });
 
 // ---- report ----

@@ -278,6 +278,68 @@ label.tg{display:block;font-size:20px;margin:8px 0}
   color:var(--brand);border-radius:var(--r-pill)}
 /* debug flag (smoke test, "all text hidden"): html.notext */
 html.notext .pktxt{display:none}
+/* Kindergarten math, world Shape Garden (P2-02): ten frames of objects, shapes, scenes for position and measuring.
+   Builds on 31-pk.css (same audio-first presentation). Tokens only; sizes follow the prompt's font size (em). */
+/* objects in ten frames (rows of 5): the first frame is the full ten */
+.sgfrs{display:flex;flex-wrap:wrap;justify-content:center;gap:var(--s-3);max-width:100%}
+.sgfr{display:grid;grid-template-columns:repeat(5,1.25em);grid-auto-rows:1.25em;gap:2px;padding:2px;border:3px solid var(--ink-3);border-radius:var(--r-btn);background:var(--surface)}
+.sgfr.sgten{border-color:var(--math)}
+.sgc{display:flex;align-items:center;justify-content:center;border:2px solid var(--line);border-radius:4px;font-size:.85em}
+.sgc .pko{min-width:0}
+/* two plates of up to 10 objects */
+.pkpl.sgp10{grid-template-columns:repeat(4,auto);font-size:.72em}
+.sgpl{min-width:clamp(120px,38vw,170px);min-height:calc(var(--tap-pk)*2)}
+/* pairing up objects (the hint for more / fewer / same) */
+.sgpairs{display:flex;flex-wrap:nowrap;gap:.1em;justify-content:center;font-size:.55em;max-width:100%}
+.pkhint .sgfrs{font-size:.5em}
+.sgpr{display:flex;flex-direction:column;align-items:center;padding:0 .05em;border-radius:6px;background:var(--surface-2)}
+.sgpr.sgx{background:var(--star-tint)}
+.sgs{display:block;min-height:1.2em;min-width:1.1em;text-align:center}
+.sgs .pko{min-width:0}
+/* shapes and solids */
+.sgsh{display:flex;align-items:center;justify-content:center;width:100%}
+.ch .sgsh .viz{--k:.8;max-width:100%}
+.sgbigshape .viz{--k:1.1}
+.sgobj{display:inline-block;font-size:1.6em;line-height:1}
+.sgobj .art{width:1em;height:1em}
+/* eight shapes in a pattern row */
+.pkpat.sgpat{gap:var(--s-1)}
+.pkpat.sgpat .pks,.pkpat.sgpat .pkunk{width:clamp(30px,9.4vw,60px)}
+.pkpat.sgpat .pko .pks{width:clamp(30px,9.4vw,60px)}
+/* tap targets in scenes: pictures with a tap-sized box, right and wrong as colour */
+.sgt{display:inline-flex;align-items:center;justify-content:center;min-width:var(--tap-pk);min-height:var(--tap-pk);padding:var(--s-1);
+  border:4px solid var(--line);border-radius:var(--r-card);background:var(--surface);cursor:pointer;font-size:1.5em;line-height:1}
+.sgt .art{width:1em;height:1em}
+.sgt.right{background:var(--good-tint);border-color:var(--good);animation:bump .4s}
+.sgt.wrong{background:var(--try-tint);border-color:var(--try);opacity:.6}
+.sgscene{display:flex;align-items:center;justify-content:center;gap:var(--s-3)}
+.sgref{display:inline-flex;align-items:center;justify-content:center;font-size:2em;line-height:1;min-width:1.1em}
+.sgref .art{width:1em;height:1em}
+.sgcol{flex-direction:column}
+.sggrid{display:grid;grid-template-columns:auto auto;justify-content:center;gap:var(--s-3);align-items:center;justify-items:center}
+.sggrid.sgflip{direction:rtl}
+.sgrow{flex-direction:row}
+/* in front of / behind: the one in front overlaps the lower right of the thing, the one behind peeks out above and left */
+.sgdepth{position:relative;display:block;width:min(100%,9em);height:clamp(200px,32vh,280px);margin-bottom:var(--s-3)}
+.sgdepth .sgref{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);z-index:2;font-size:2.4em}
+.sgdepth .sgbk{position:absolute;left:36%;top:0;z-index:1;font-size:.9em}
+.sgdepth .sgfk{position:absolute;left:30%;bottom:0;z-index:3;font-size:.9em}
+.sgdepth .sgt{border-color:transparent;background:none}
+.sgdepth .sgt.right{background:var(--good-tint);border-color:var(--good)}
+/* measuring: crayons (left edges), towers (standing on the floor), a tipped scale with two tap zones */
+.sgbars{display:flex;flex-direction:column;align-items:flex-start;gap:var(--s-2);max-width:100%}
+.sgbars .sgt{padding:var(--s-1) var(--s-2);min-height:calc(var(--tap)*.9);justify-content:flex-start}
+.sgbarrow{display:inline-flex;align-items:center}
+.sgaligned{border-left:3px dashed var(--brand);padding-left:var(--s-1)}
+.sgtowers{align-items:flex-end}
+.sgtowers .sgt{align-items:flex-end}
+.sgbal{position:relative;max-width:100%}
+.sgbal i{position:absolute;top:0;bottom:0;width:50%;border-radius:var(--r-card);cursor:pointer}
+.sgbal i[data-v=l]{left:0}
+.sgbal i[data-v=r]{right:0}
+.sgbal i.right{background:var(--good-tint);outline:4px solid var(--good)}
+.sgbal i.wrong{background:var(--try-tint);outline:4px solid var(--try)}
+.choices.syms.pk4,.choices.syms.pk2{grid-template-columns:1fr 1fr}
 /* Stacked fractions in prompts and choices (P2-06): numerator over a bar over denominator. Tokens only. */
 .fr{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 .12em;line-height:1.1}
 .fr .fn{border-bottom:.07em solid var(--ink);padding:0 .18em .04em}
@@ -943,7 +1005,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S));SAVE_FAILED=fals
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v64'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v65'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -2450,6 +2512,298 @@ function genPkPat() {
     label: `pattern ${names}`,
   });
 }
+
+// ---- P2-02 Shape Garden (K) ----
+/* Kindergarten math, world Shape Garden (CURRICULUM M-K). New levels of existing skills: pk_count 3, pk_num 3, pk_more 2, shape 2-3,
+   add 4, pat 2, cnt 4, sort 3; new skills tenf 1-3, pos 1, meas 1. The SK table (38-skills.js) points at the *K wrappers below,
+   which call the older generators for the levels that already existed. Same audio-first presentation as Tiny Town (pkQ, pkTxt,
+   q.pk): pictures and numerals carry the question, words sit in .pktxt. Pictures of things go through picFor; shapes are VIZ.shape.
+   Styles: src/css/31-sg.css. Randomness: rnd() helpers only. */
+const SGN = n => (n <= 10 ? PK.NUM[n] : ['eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen',
+  'nineteen', 'twenty'][n - 11]);
+const sgEq = h => `<div class="eq">${h}</div>`;
+
+// n objects in ten-frames (rows of 5): the first frame is a full ten; pulse = hint (the second frame counts on one at a time)
+function sgFrames(n, ob, pulse) {
+  const frame = (k, first) => `<div class="sgfr${first ? ' sgten' : ''}">${Array.from({ length: 10 }, (_, i) => `<span class="sgc">${
+    i < k ? PK.o(ob, pulse ? (first ? 0 : i * 0.6 + 0.8) : null) : ''}</span>`).join('')}</div>`;
+  return `<div class="sgfrs${pulse ? ' pulse' : ''}">${frame(10, 1)}${frame(n - 10, 0)}</div>`;
+}
+function genSgCount() {
+  const ob = pick(PK.OBJ), n = R(11, 20), w = `One full ten and ${n - 10} more.`;
+  return pkQ({
+    kind: 'num', ans: String(n), html: `<div class="pkq">${sgFrames(n, ob)}</div>${pkTxt(`How many ${ob[1]}?`)}${sgEq(SLOT)}`,
+    say: `How many ${ob[1]}?`, after: `${SGN(n)} ${ob[1]}`,
+    hint: PK.hint(`<div class="pkhint">${sgFrames(n, ob, true)}${pkTxt(w)}</div>`, w),
+    label: `count ${n} ${ob[1]} (frames)`,
+  });
+}
+
+// pk_num 3: hear a number 11-20; look-alike numerals are the reversed number (12 / 21) and the "ty" number (13 / 30)
+function genSgNum() {
+  const n = R(11, 20), rev = +String(n).split('').reverse().join(''), pri = [];
+  if (rev != n && rev >= 10) pri.push(rev);
+  if (n >= 13 && n <= 19) pri.push((n - 10) * 10);
+  if (n == 20) pri.push(12);
+  if (n == 12) pri.push(20);
+  const pool = shuffle([n - 1, n + 1, n - 2, n + 2, ...Array.from({ length: 10 }, (_, i) => 11 + i)]).filter(x => x >= 10 && x <= 20);
+  const ds = [];
+  for (const x of [...pri, ...pool]) if (x != n && !ds.includes(x) && ds.length < 3) ds.push(x);
+  const w = `Count the dots. One full ten, and ${n - 10} more.`;
+  return pkQ({
+    kind: 'choice', cls: 'syms pk4', ans: String(n), choices: pkNums(n, ds), auto: 'must',
+    html: `<div class="pkq">${pkEar()}</div>${pkTxt(`Tap the number ${SGN(n)}.`)}`, say: `Tap the number ${SGN(n)}.`,
+    hint: PK.hint(`<div class="pkhint">${VIZ.dots(n, 'ten')}${pkTxt(w)}</div>`, w),
+    label: `tap ${n} (teens)`,
+  });
+}
+
+// pk_more 2: groups of 1-10; more, fewer (tap a plate) or "are they the same?" (15% of items; yes or no)
+function genSgMore() {
+  const [cn, ob] = pick(PK_PLATES), same = rnd() < 0.15, ask = same ? 'same' : coin() ? 'more' : 'fewer';
+  let a = R(1, 10), b;
+  if (same) b = rnd() < 2 / 3 ? a : (a == 10 || (a > 1 && coin()) ? a - 1 : a + 1);
+  else { b = R(1, 10); if (b == a) b = a == 10 ? 9 : a + 1; }
+  const plate = (n, v) => `<div class="pkplate sgpl" ${v ? `data-v="${v}" ` : ''}aria-label="${cn}"><div class="pkpl sgp10">${PK.row(n, ob)}</div></div>`;
+  const pairs = Array.from({ length: Math.max(a, b) }, (_, i) => `<div class="sgpr${i >= Math.min(a, b) ? ' sgx' : ''}">`
+    + `<span class="sgs">${i < a ? PK.o(ob) : ''}</span><span class="sgs">${i < b ? PK.o(ob) : ''}</span></div>`).join('');
+  const w = a == b ? 'Pair them up. Nobody is left over, so they are the same.' : 'Pair them up, one with one. Who has some left over?';
+  const hint = PK.hint(`<div class="pkhint"><div class="sgpairs">${pairs}</div>${pkTxt(w)}</div>`, w);
+  const nm = ob[1], lab = `${ask} ${a} or ${b} ${nm}`;
+  if (same) {
+    return pkQ({
+      kind: 'choice', cls: 'syms pk2', ans: a == b ? 'yes' : 'no', hint, label: lab,
+      choices: [{ l: ico('check', 56), v: 'yes', h: true }, { l: ico('close', 56), v: 'no', h: true }],
+      html: `<div class="pkpair">${plate(a)}${plate(b)}</div>${pkTxt('Do they have the same number?')}`, say: 'Do they have the same number?',
+      after: a == b ? 'Yes, the same.' : 'No, not the same.',
+    });
+  }
+  const win = (ask == 'more') == (a > b) ? 'l' : 'r';
+  return pkQ({
+    kind: 'tap', ans: win, hint, label: lab,
+    html: `<div class="pkpair">${plate(a, 'l')}${plate(b, 'r')}</div>${pkTxt(`Which ${cn} has ${ask} ${nm}?`)}`,
+    say: `Which ${cn} has ${ask} ${nm}?`, ansSay: `This one has ${ask}.`,
+  });
+}
+
+// shapes: a choice picture is a VIZ.shape inside a span that names it (data-shape), so tests can check what is drawn
+const SG_FACT = {
+  hexagon: 'A hexagon has 6 sides.', rhombus: 'A rhombus has 4 sides, all the same length. It looks like a diamond.',
+  trapezoid: 'A trapezoid has 4 sides. Two sides run the same way.', oval: 'An oval is a squished circle. It has no corners.',
+  cube: 'A cube has 6 flat faces. They are all squares.', sphere: 'A sphere is round all over, like a ball. It has no flat face.',
+  cone: 'A cone has a point on top and one round flat end.', cylinder: 'A cylinder has two flat round ends.',
+};
+function sgShp(name, solid) {
+  const c = coin() ? 1 : 2;
+  if (solid) return `<span class="sgsh" data-shape="${name}">${VIZ.shape(name, { c })}</span>`;
+  const bent = ['hexagon', 'rhombus', 'trapezoid', 'oval'].includes(name); // the new shapes turn and stretch; the old ones only turn in right angles
+  const o = bent ? { c, rot: pick([0, 25, 50, 90, 155, 180, 205, 270, 315, 335]), st: R(85, 130) / 100 } : { c, rot: pick([0, 90, 180, 270]), st: R(90, 125) / 100 };
+  return `<span class="sgsh" data-shape="${name}">${VIZ.shape(name, o)}</span>`;
+}
+function genSgShape2() {
+  const ans = pick(['hexagon', 'rhombus', 'trapezoid', 'oval']);
+  let pool = ['hexagon', 'rhombus', 'trapezoid', 'oval', 'circle', 'square', 'triangle', 'rectangle'].filter(n => n != ans);
+  if (ans == 'rhombus') pool = pool.filter(n => n != 'square'); // a square is a rhombus too
+  const names = shuffle([ans, ...shuffle(pool).slice(0, 3)]), w = SG_FACT[ans];
+  return pkQ({
+    kind: 'choice', cls: 'pics pk4', ans, auto: 'must', choices: names.map(n => ({ l: sgShp(n), v: n, h: true })),
+    html: `<div class="pkq">${pkEar()}</div>${pkTxt(`Tap the ${ans}.`)}`, say: `Tap the ${ans}.`,
+    hint: PK.hint(`<div class="pkhint sgbigshape">${VIZ.shape(ans, { c: 1, dots: ans != 'oval' })}${pkTxt(w)}</div>`, w), label: `tap the ${ans}`,
+  });
+}
+
+// shape 3: solids. Name -> picture, and a real thing -> the solid it is shaped like
+const SG_THINGS3 = [['ball', 'ball', '⚽', 'sphere', 'a ball', 'It is round all over. It rolls any way.'],
+  ['tennis ball', 'ball', '🎾', 'sphere', 'a tennis ball', 'It is round all over. It rolls any way.'],
+  ['basketball', 'ball', '🏀', 'sphere', 'a basketball', 'It is round all over. It rolls any way.'],
+  ['can', 'can', '🥫', 'cylinder', 'a can', 'It has two flat round ends and stands tall.'],
+  ['drum', 'drum', '🥁', 'cylinder', 'a drum', 'It has two flat round ends and stands tall.'],
+  ['box', 'box', '📦', 'cube', 'a box', 'It has flat square sides and sharp corners.'],
+  ['dice', 'dice', '🎲', 'cube', 'a die', 'It has flat square sides and sharp corners.'],
+  ['ice cream cone', 'cone', '🍦', 'cone', 'an ice cream cone', 'It has a point on top and a round flat end.']];
+function genSgShape3() {
+  const solids = shuffle(['cube', 'sphere', 'cone', 'cylinder']), choices = solids.map(n => ({ l: sgShp(n, 1), v: n, h: true }));
+  if (coin()) {
+    const ans = pick(solids), w = SG_FACT[ans];
+    return pkQ({
+      kind: 'choice', cls: 'pics pk4', ans, auto: 'must', choices,
+      html: `<div class="pkq">${pkEar()}</div>${pkTxt(`Tap the ${ans}.`)}`, say: `Tap the ${ans}.`,
+      hint: PK.hint(`<div class="pkhint">${pkTxt(w)}</div>`, w), label: `solid ${ans}`,
+    });
+  }
+  const [nm, art, em, ans, sp, fact] = pick(SG_THINGS3);
+  return pkQ({
+    kind: 'choice', cls: 'pics pk4', ans, choices,
+    html: `<div class="pkq"><span class="sgobj">${picFor(art, em)}</span></div>${pkTxt(`Which one is shaped like ${sp}?`)}`,
+    say: `Which one is shaped like ${sp}?`,
+    hint: PK.hint(`<div class="pkhint"><span class="sgobj">${picFor(art, em)}</span>${pkTxt(fact)}</div>`, fact), label: `solid like ${nm}`,
+  });
+}
+function genShapeK(lv) { return lv == 1 ? genPkShape() : lv == 2 ? genSgShape2() : genSgShape3(); }
+
+// add 4: sums within 5, with dots (the first group blue, the added group orange), including + 0
+function genSgAdd() {
+  const s = R(1, 5), a = R(0, s), b = s - a, q = mathQ(a, '+', b, s, 'c', false);
+  return pkQ(Object.assign(q, { html: `<div class="pkq">${VIZ.dots(s, 'row', { b })}</div>` + q.html + pkTxt('How many in all?') }));
+}
+
+// cnt 4: count on or back by 1 within 0-20; one blank among 5 numbers; 40% backward
+function genSgCnt() {
+  const back = rnd() < 0.4, s = back ? R(4, 20) : R(0, 16), d = back ? -1 : 1;
+  const seq = [0, 1, 2, 3, 4].map(i => s + i * d), bi = R(1, 3);
+  const w = back ? 'Counting back: one less each time.' : 'Counting on: one more each time.';
+  return pkQ({
+    kind: 'num', ans: String(seq[bi]), html: `<div class="seq">${seq.map((n, i) => (i == bi ? SLOT : n)).join(', ')}</div>${pkTxt(back ? 'Count back.' : 'Count on.')}`,
+    say: `${back ? 'Count back' : 'Count on'}. ${seq.map((n, i) => (i == bi ? 'what' : n)).join(', ')}`,
+    hint: PK.hint(`<div class="pkhint">${pkTxt(w)}</div>`, w), label: seq.map((n, i) => (i == bi ? '_' : n)).join(','),
+  });
+}
+
+// pat 2: AAB, ABB or ABC (a colour pattern, or a shape pattern in one colour), 6-7 shown; pick the next
+function genSgPat() {
+  const kind = pick(['AAB', 'ABB', 'ABC']), byColour = coin(), cs = shuffle([0, 1, 2, 3, 4, 5]), sh = shuffle(['circle', 'square', 'triangle', 'star', 'diamond']);
+  const tok = i => (byColour ? { s: 'circle', c: cs[i] } : { s: sh[i], c: cs[0] }), T = [tok(0), tok(1), tok(2)];
+  const unit = [...kind].map(ch => T['ABC'.indexOf(ch)]), L = R(6, 7);
+  const seq = Array.from({ length: L }, (_, i) => unit[i % 3]), next = unit[L % 3];
+  const key = x => x.c + '|' + x.s, others = T.filter(x => key(x) != key(next));
+  const opts = shuffle([next, others[0], coin() ? others[1] : tok(3)]);
+  const nm = x => (byColour ? PK.COL[x.c][0] : x.s), draw = x => PK.shp(x.s, x.c), names = seq.map(nm).join(', ');
+  const short = seq.map(x => nm(x).slice(0, 2)).join(','); // colours re bl gr ye pu or, shapes ci sq tr st di: never the same
+  return pkQ({
+    kind: 'choice', cls: 'pics pk3', ans: String(opts.findIndex(x => key(x) == key(next))), choices: opts.map((x, i) => ({ l: draw(x), v: String(i), h: true })),
+    html: `<div class="pkq pkpat sgpat">${seq.map(draw).join('')}<span class="pkunk">?</span></div>${pkTxt('What comes next?')}`, say: `${names}. What comes next?`,
+    hint: PK.hint(`<div class="pkhint"><div class="pkpat sgpat pulse">${seq.map((x, i) => `<span class="pko" style="--d:${i * 0.6}s">${draw(x)}</span>`).join('')}</div>`
+      + `${pkTxt('Find the part that repeats.')}</div>`, `${names}. Find the part that repeats. What comes next?`),
+    label: `${kind} ${short}`,
+  });
+}
+
+// sort 3: three of one kind (animals, food, vehicles, clothes) and one that is not
+const SG_CATS = {
+  animals: [['dog', '🐶'], ['cat', '🐱'], ['pig', '🐷'], ['frog', '🐸'], ['duck', '🦆'], ['fish', '🐟'], ['hen', '🐔'], ['fox', '🦊']],
+  food: [['apple', '🍎'], ['banana', '🍌'], ['cookie', '🍪'], ['cake', '🎂'], ['milk', '🥛'], ['grapes', '🍇'], ['pizza', '🍕'], ['bread', '🍞']],
+  vehicles: [['car', '🚗'], ['bus', '🚌'], ['bike', '🚲'], ['ship', '🚢'], ['plane', '✈'], ['train', '🚂'], ['truck', '🚚'], ['boat', '⛵']],
+  clothes: [['hat', '🧢'], ['coat', '🧥'], ['socks', '🧦'], ['shirt', '👔'], ['boots', '👢']],
+};
+function genSgSort() {
+  const [c1, c2] = shuffle(Object.keys(SG_CATS)).slice(0, 2), three = shuffle(SG_CATS[c1]).slice(0, 3), odd = pick(SG_CATS[c2]);
+  const all = shuffle([...three.map(x => ({ x, odd: false })), { x: odd, odd: true }]), w = `Three of these are ${c1}.`;
+  return pkQ({
+    kind: 'choice', cls: 'pics pk4', ans: String(all.findIndex(a => a.odd)),
+    choices: all.map((a, i) => ({ l: `<span class="pkcell">${picFor(a.x[0], a.x[1])}</span>`, v: String(i), h: true })),
+    html: `<div class="pkq pkask">?</div>${pkTxt('Which one does not belong?')}`, say: 'Which one does not belong?',
+    hint: PK.hint(`<div class="pkhint">${pkTxt(w)}</div>`, w), label: `odd ${odd[0]} (${c2}) in ${c1}: ${three.map(x => x[0]).join(',')}`,
+  });
+}
+
+// tenf: ten frames (VIZ.tenFrame)
+function genTenf(lv) {
+  if (lv == 1) {
+    const n = R(0, 10), w = n == 0 ? 'Zero. The frame is empty.' : n > 5 ? 'Five on top. Then count on.' : 'Count the counters, one by one.';
+    return pkQ({
+      kind: 'num', ans: String(n), html: `<div class="pkq">${VIZ.tenFrame(n)}</div>${pkTxt('How many counters?')}${sgEq(SLOT)}`,
+      say: 'How many counters?', hint: PK.hint(`<div class="pkhint">${VIZ.tenFrame(n, 10, { b: Math.max(0, n - 5) })}${pkTxt(w)}</div>`, w), label: `frame ${n}`,
+    });
+  }
+  if (lv == 2) {
+    const n = R(1, 9), w = 'Count the empty boxes. Those are the ones you need.';
+    return pkQ({
+      kind: 'num', ans: String(10 - n), html: `<div class="pkq">${VIZ.tenFrame(n)}</div>${pkTxt('How many more to make ten?')}${sgEq(SLOT)}`,
+      say: 'How many more to make ten?', hint: PK.hint(`<div class="pkhint">${VIZ.tenFrame(10, 10, { b: 10 - n })}${pkTxt(w)}</div>`, w), label: `${n} and ? make 10`,
+    });
+  }
+  const n = R(1, 9), tens = `<div class="sgfrs">${VIZ.tenFrame(10)}${VIZ.tenFrame(n)}</div>`;
+  if (coin()) {
+    const w = 'One full ten. Then count on.';
+    return pkQ({
+      kind: 'num', ans: String(10 + n), html: `<div class="pkq">${tens}</div>${pkTxt('How many in all?')}${sgEq(SLOT)}`, say: 'How many in all?',
+      hint: PK.hint(`<div class="pkhint">${tens}${pkTxt(w)}</div>`, w), label: `10 and ${n}`,
+    });
+  }
+  const w = `Start at ten. Count on to ${SGN(10 + n)}.`;
+  return pkQ({
+    kind: 'num', ans: String(n), html: `<div class="pkq">${VIZ.tenFrame(10)}</div>${sgEq(`10 + ${SLOT} = ${10 + n}`)}${pkTxt(`Ten and how many make ${SGN(10 + n)}?`)}`,
+    say: `Ten and how many more make ${SGN(10 + n)}?`,
+    hint: PK.hint(`<div class="pkhint"><div class="sgfrs">${VIZ.tenFrame(10)}${VIZ.tenFrame(n, 10, { b: n })}</div>${pkTxt(w)}</div>`, w), label: `10 + ? = ${10 + n}`,
+  });
+}
+
+// pos 1: where is it? above, below, beside, in front of, behind, between. Tap the right one.
+const SG_ANI = [['cat', '🐱'], ['dog', '🐶'], ['pig', '🐷'], ['duck', '🦆'], ['frog', '🐸'], ['hen', '🐔'], ['fox', '🦊'], ['bug', '🐛']];
+const SG_REF = [['box', '📦'], ['bed', '🛏'], ['house', '🏠'], ['tree', '🌳'], ['car', '🚗'], ['bus', '🚌']];
+function genPos() {
+  const kind = pick(['above', 'below', 'beside', 'in front of', 'behind', 'between']), ani = shuffle(SG_ANI), ref = pick(SG_REF);
+  const pic = a => picFor(a[0], a[1]), tp = (a, v) => `<span class="sgt" data-v="${v}" aria-label="${a[0]}">${pic(a)}</span>`;
+  const rf = `<span class="sgref">${pic(ref)}</span>`, A = ani[0], B = ani[1], C = ani[2];
+  let html, ans, say, hint, lab;
+  if (kind == 'above' || kind == 'below') {
+    html = `<div class="sgscene sgcol">${tp(A, 'a')}${rf}${tp(B, 'b')}</div>`; ans = kind == 'above' ? 'a' : 'b';
+    say = `Tap the one ${kind} the ${ref[0]}.`; lab = `${kind} the ${ref[0]}: ${A[0]} up, ${B[0]} down`;
+    hint = kind == 'above' ? 'Above means higher up. Look at the top.' : 'Below means lower down. Look at the bottom.';
+  } else if (kind == 'beside') {
+    const flip = coin();
+    html = `<div class="sgscene sggrid${flip ? ' sgflip' : ''}">${rf}${tp(A, 'a')}${tp(B, 'b')}</div>`; ans = 'a';
+    say = `Tap the one beside the ${ref[0]}.`; lab = `beside the ${ref[0]}: ${A[0]} next to it, ${B[0]} below${flip ? ' (flipped)' : ''}`;
+    hint = 'Beside means right next to it, on the same line.';
+  } else if (kind == 'between') {
+    html = `<div class="sgscene sgrow">${tp(A, 'a')}${tp(C, 'c')}${tp(B, 'b')}</div>`; ans = 'c';
+    say = `Tap the one between the ${A[0]} and the ${B[0]}.`; lab = `between ${A[0]} and ${B[0]}: ${C[0]}`;
+    hint = 'Between means in the middle, with one on each side.';
+  } else {
+    const front = kind == 'in front of';
+    html = `<div class="sgscene sgdepth"><span class="sgbk">${tp(A, 'a')}</span>${rf}<span class="sgfk">${tp(B, 'b')}</span></div>`;
+    ans = front ? 'b' : 'a'; say = `Tap the one ${kind} the ${ref[0]}.`; lab = `${kind} the ${ref[0]}: ${A[0]} back, ${B[0]} front`;
+    hint = front ? 'In front means closer to you. It hides part of the other one.' : 'Behind means farther away. Part of it is hidden.';
+  }
+  return pkQ({ kind: 'tap', ans, html: `<div class="pkq">${html}</div>${pkTxt(say)}`, say, ansSay: 'This one.', hint: PK.hint(`<div class="pkhint">${pkTxt(hint)}</div>`, hint), label: lab });
+}
+
+// meas 1: compare two or three things: longer / shorter (bars), taller / shorter (towers), heavier / lighter (a tipped scale)
+function genMeas() {
+  const kind = pick(['length', 'height', 'weight']), top = coin(), ci = R(0, 5);
+  if (kind == 'weight') {
+    const a = R(1, 9);
+    let b = R(1, 9);
+    if (Math.abs(a - b) < 2) b = a <= 4 ? a + 2 + R(0, 3) : a - 2 - R(0, 3);
+    const heavy = a > b ? 'l' : 'r', win = top ? heavy : heavy == 'l' ? 'r' : 'l', adj = top ? 'heavier' : 'lighter';
+    const w = top ? 'The heavy side goes down.' : 'The light side goes up.';
+    return pkQ({
+      kind: 'tap', ans: win, label: `${adj} ${a} or ${b}`, say: `Tap the ${adj} side.`, ansSay: `This side is ${adj}.`,
+      html: `<div class="pkq"><div class="sgbal" data-l="${a}" data-r="${b}">${VIZ.balance(a, b)}<i data-v="l" aria-label="left side"></i><i data-v="r" aria-label="right side"></i></div></div>${pkTxt(`Tap the ${adj} side.`)}`,
+      hint: PK.hint(`<div class="pkhint">${pkTxt(w)}</div>`, w),
+    });
+  }
+  const n = R(2, 3);
+  if (kind == 'length') {
+    const lens = shuffle([60, 90, 120, 150, 180]).slice(0, n), aligned = coin();
+    const offs = lens.map(() => (aligned ? 0 : R(0, 50))), want = top ? Math.max(...lens) : Math.min(...lens), adj = top ? 'longer' : 'shorter';
+    const bars = lens.map((l, i) => `<span class="sgt sgbarrow" data-v="${i}" style="margin-left:${offs[i]}px" aria-label="crayon">${PK.bar(l, ci)}</span>`).join('');
+    const same = lens.map(l => `<span class="sgbarrow">${PK.bar(l, ci)}</span>`).join('');
+    const w = 'Line them up at the start. Which one reaches farther?', nm = n == 2 ? adj : top ? 'longest' : 'shortest';
+    return pkQ({
+      kind: 'tap', ans: String(lens.indexOf(want)), say: `Tap the ${nm} crayon.`, ansSay: `This crayon is ${nm}.`, label: `${nm} crayon ${lens.join('/')}${aligned ? '' : ' (not lined up)'}`,
+      html: `<div class="pkq"><div class="sgcol sgbars">${bars}</div></div>${pkTxt(`Tap the ${nm} crayon.`)}`,
+      hint: PK.hint(`<div class="pkhint"><div class="sgcol sgbars sgaligned">${same}</div>${pkTxt(w)}</div>`, w),
+    });
+  }
+  const hs = shuffle([1, 2, 3, 4, 5]).slice(0, n), want = top ? Math.max(...hs) : Math.min(...hs), adj = top ? 'taller' : 'shorter';
+  const nm = n == 2 ? adj : top ? 'tallest' : 'shortest', w = 'Stand them on the floor. Which one reaches higher?';
+  const towers = hs.map((h, i) => `<span class="sgt" data-v="${i}" aria-label="tower">${PK.tower(h, ci)}</span>`).join('');
+  return pkQ({
+    kind: 'tap', ans: String(hs.indexOf(want)), say: `Tap the ${nm} tower.`, ansSay: `This tower is ${nm}.`, label: `${nm} tower ${hs.join('/')}`,
+    html: `<div class="pkq"><div class="sgrow sgtowers">${towers}</div></div>${pkTxt(`Tap the ${nm} tower.`)}`,
+    hint: PK.hint(`<div class="pkhint">${pkTxt(w)}</div>`, w),
+  });
+}
+
+// the older skills with levels added here: each wrapper sends the new level to the code above and the old ones to the old generator
+const genPkCountK = lv => (lv >= 3 ? genSgCount() : genPkCount(lv));
+const genPkNumK = lv => (lv >= 3 ? genSgNum() : genPkNum(lv));
+const genPkMoreK = lv => (lv >= 2 ? genSgMore() : genPkMore());
+const genSortK = lv => (lv == 3 ? genSgSort() : genSort(lv));
+const genPatK = lv => (lv >= 2 ? genSgPat() : genPkPat());
+const genAddK = lv => (lv == 4 ? genSgAdd() : genAdd(lv));
+const genCntK = lv => (lv == 4 ? genSgCnt() : genCnt(lv));
 /* ---------- reading generators ---------- */
 function words(t){return t.split(' ').map(w=>`<span class="w" data-w="${esc(w.replace(/[^A-Za-z']/g,''))}">${esc(w)}</span>`).join(' ')}
 function genSight(lv){const L=DOL[lv-1],w=pick(L);
@@ -3219,20 +3573,23 @@ const SK={
  cmp:{t:'Compare',e:'🐊',area:'math',max:3,gen:genCmp},
  time:{t:'Clocks',e:'🕒',area:'math',max:3,gen:genTime},
  coins:{t:'Coins',e:'🪙',area:'math',max:3,gen:genCoins},
- pk_count:{t:'Count Things',e:'🔢',area:'math',max:2,gen:genPkCount},
- pk_num:{t:'Hear a Number',e:'🔟',area:'math',max:2,gen:genPkNum},
- pk_more:{t:'Which Has More',e:'⚖️',area:'math',max:1,gen:genPkMore},
- sort:{t:'Sort and Compare',e:'🧩',area:'math',max:2,gen:genSort},
- shape:{t:'Shapes',e:'🔺',area:'math',max:1,gen:genPkShape},
- pat:{t:'Patterns',e:'🌈',area:'math',max:1,gen:genPkPat},
+ pk_count:{t:'Count Things',e:'🔢',area:'math',max:3,gen:genPkCountK},
+ pk_num:{t:'Hear a Number',e:'🔟',area:'math',max:3,gen:genPkNumK},
+ pk_more:{t:'Which Has More',e:'⚖️',area:'math',max:2,gen:genPkMoreK},
+ sort:{t:'Sort and Compare',e:'🧩',area:'math',max:3,gen:genSortK},
+ shape:{t:'Shapes',e:'🔺',area:'math',max:3,gen:genShapeK},
+ pat:{t:'Patterns',e:'🌈',area:'math',max:2,gen:genPatK},
+ tenf:{t:'Ten Frames',e:'🔟',area:'math',max:3,gen:genTenf}, // P2-02 Shape Garden: tenf, pos, meas (and levels added to pk_count, pk_num, pk_more, shape, add, pat, cnt, sort above)
+ pos:{t:'Where Is It',e:'📌',area:'math',max:1,gen:genPos},
+ meas:{t:'Measure',e:'📏',area:'math',max:1,gen:genMeas},
  mult:{t:'Equal Groups',e:'✖️',area:'math',max:2,gen:genMult},
  comp:{t:'Story Time',e:'📗',area:'read',max:2,gen:genComp},
- add:{t:'Adding',e:'➕',area:'math',max:3,gen:genAdd},
+ add:{t:'Adding',e:'➕',area:'math',max:4,gen:genAddK},
  miss:{t:'Missing Number',e:'❓',area:'math',max:2,gen:genMiss},
  sub:{t:'Take Away',e:'➖',area:'math',max:4,gen:genSub},
  big:{t:'Big Numbers',e:'💯',area:'math',max:4,gen:genBig},
  eo:{t:'Even or Odd',e:'⚖️',area:'math',max:2,gen:genEO},
- cnt:{t:'Count By',e:'🔢',area:'math',max:3,gen:genCnt},
+ cnt:{t:'Count By',e:'🔢',area:'math',max:4,gen:genCntK},
  story:{t:'Story Problems',e:'📖',area:'math',max:5,gen:genStoryAll},
  arr:{t:'Arrays',e:'🧱',area:'math',max:2,gen:genArr},
  mfact:{t:'Times Facts',e:'✖️',area:'math',max:4,gen:genMfact},
@@ -3275,6 +3632,7 @@ const PET_OOPS=['Oops! Try again!','You can do it!','Almost!','Hmm, look again!'
 const PATHS={
  math:{n:'Math Adventure',e:'🔢',c:'linear-gradient(135deg,#dbeafe,#bfdbfe)',worlds:[
   {id:'m_tiny',g:-1,n:'Tiny Town',e:'🏠',c:'#fef9c3',nodes:[['pk_count',1,'Count to 5'],['shape',1,'Find the Shape'],['pk_num',1,'Hear a Number'],['sort',1,'Which One Is Different'],['pk_more',1,'Which Has More'],['pk_count',2,'Count to 10'],['pat',1,'What Comes Next'],['pk_num',2,'Numbers to 10'],['sort',2,'Big and Small']]},
+  {id:'m_shape',g:0,n:'Shape Garden',e:'🌷',c:'#dcfce7',nodes:[['pk_count',3,'Count to 20'],['pk_num',3,'Hear 11 to 20'],['tenf',1,'Ten Frames'],['pk_more',2,'More, Fewer, Same'],['shape',2,'More Shapes'],['add',4,'Add to 5'],['pat',2,'Harder Patterns'],['tenf',2,'Make Ten'],['cnt',4,'Count On & Back'],['shape',3,'Solid Shapes'],['sort',3,'Sort by Kind'],['pos',1,'Where Is It'],['meas',1,'Measure'],['tenf',3,'Ten and More']]},
   {id:'m_meadow',g:0,n:'Number Meadow',e:'🌻',c:'#dcfce7',nodes:[['add',1,'Adding to 10'],['cnt',1,'Count by 1s & 10s'],['eo',1,'Even or Odd'],['miss',1,'Missing Number'],['sub',1,'Take Away'],['story',1,'Story Problems']]},
   {id:'m_candy',g:1,n:'Candy Canyon',e:'🍭',c:'#fce7f3',nodes:[['add',2,'+9 & Doubles'],['big',1,'Tens & Hundreds'],['cnt',2,'Count by 2s & 5s'],['cmp',1,'Bigger or Smaller'],['miss',2,'Missing to 18'],['sub',2,'Take Away to 18'],['story',2,'Story Problems 2']]},
   {id:'m_reef',g:1,n:'Ocean Reef',e:'🐠',c:'#e0f2fe',nodes:[['add',3,'All the Facts'],['time',1,"O'Clock"],['big',2,'2-Digit Adding'],['coins',1,'Pennies & Nickels'],['eo',2,'Even/Odd to 99'],['cmp',2,'Compare to 100'],['time',2,'Half Past'],['sub',3,'2-Digit Take Away'],['story',3,'Story Problems 3']]},
@@ -3376,10 +3734,11 @@ function startWorld(p){
 /* The stop the map opens on: the first open, unpassed stop, not counting NEW stops or untouched worlds below the start world.
    Falls back to any open unpassed stop (not in an untouched world below the start world), then to the very last stop (everything done). */
 function curNode(p){
-  const N=NODES[p],sw=startWorld(p);let any=-1;
+  const N=NODES[p],sw=startWorld(p);let any=-1,lp=-1;
+  for(let i=0;i<N.length;i++)if(passed(p,i))lp=Math.max(lp,N[i].wi); // the furthest world with a passed stop
   for(let i=0;i<N.length;i++){
     if(passed(p,i)||!unlocked(p,i))continue;
-    const wi=N[i].wi,below=wi<sw&&(!worldHasProgress(p,wi)||worldSkipped(p,wi)); // an untouched world below the start world (Pre-K Tiny Town for a K child)
+    const wi=N[i].wi,below=(wi<sw&&(!worldHasProgress(p,wi)||worldSkipped(p,wi)))||(wi<lp&&!worldHasProgress(p,wi)); // an untouched world below the start world (Pre-K Tiny Town for a K child), or behind the child's furthest progress (a K world added in front of Number Meadow)
     if(any<0&&!below)any=i; // a finished child is not sent back down to a world they never needed
     if(stopNew(p,i)||below)continue; // skipped by placement: start above it
     return i;
@@ -3706,7 +4065,7 @@ function home(first){
   $('#book').onclick=book;$('#shop').onclick=shop;$('#mix').onclick=()=>{SFX.whoosh();startMix()};$('#race').onclick=raceMenu;$('#flu').onclick=()=>{SFX.whoosh();fluMenu()};$('#care').onclick=care;$('#groom').onclick=()=>{SFX.whoosh();gameRoom()};
   if($('#inst'))$('#inst').onclick=async()=>{try{installEvt.prompt();await installEvt.userChoice}catch(e){}installEvt=null;home()};
   let t;const g=$('#gear');g.onpointerdown=()=>{t=setTimeout(grown,1200)};g.onpointerup=g.onpointerleave=()=>clearTimeout(t);g.onclick=()=>fb('Grown-ups: hold it','warn');
-  {const sc=$('.scroll');if(sc)sc.insertAdjacentHTML('beforeend','<p class="small" style="text-align:center;opacity:.55;margin:14px 0 4px">Star School v64</p>')}
+  {const sc=$('.scroll');if(sc)sc.insertAdjacentHTML('beforeend','<p class="small" style="text-align:center;opacity:.55;margin:14px 0 4px">Star School v65</p>')}
   if(first&&S.voice)setTimeout(()=>say(`Hi ${S.name}! Pick a game!`),400)}
 
 let MAPP='math',MAPW={}; // MAPW[path] = the world picked in the strip (this session only, not saved)
@@ -6772,7 +7131,7 @@ function grown(){let armed=false;
    <div class="vline"><span class="vtxt">Give a bonus</span><button class="btn xs" id="pt5">+5 min</button><button class="btn xs danger" id="pt0">Empty bank</button></div>
    <label class="tg"><input type="checkbox" id="ptp" ${ptCfg().pause?'checked':''}> Pause game time (games locked)</label></div>
   <div class="card"><div class="tw"><table><tr><th>Skill</th><th>Rounds</th><th>1st try</th><th>Tricky ones</th></tr>${rows}</table></div></div>
-  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v64 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
+  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v65 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
    Storage: ${SAVE_FAILED?'<b style="color:#c0392b">could not save (device storage may be full)</b>':'saving OK'}${SAVE_CORRUPT?'<br><b style="color:#c0392b">The old save could not be read. A fresh start was made and the old data was kept on the device.</b>':''}<br>
    Last errors: ${(S.err||[]).length?(S.err||[]).slice().reverse().map(e=>'<br>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+' '+esc(e.msg)).join(''):'none'}</div></details>
   <div class="card"><label class="tg"><input type="checkbox" id="voice" ${S.voice?'checked':''}> Read questions out loud</label>

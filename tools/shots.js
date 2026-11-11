@@ -427,6 +427,53 @@ async function kbShow(p, name) {
   await p.evaluate(q => { start('math', 0); G.q = q; renderQ(); }, KB[name]);
 }
 
+// ---- P2-02 Shape Garden (K math): the map, and one question of each of the 14 levels as a K child (380x780 is the size to look at) ----
+Object.assign(SCREENS, {
+  'sg-map': { fixture: 'fresh', run: async p => { await p.evaluate(() => { S.name = 'Ava'; setGrade(0); home(); }); await p.click('.game[data-p="math"]'); } },
+  'sg-count3': { fixture: 'fresh', run: sgShot('pk_count', 3) },
+  'sg-num3': { fixture: 'fresh', run: sgShot('pk_num', 3) },
+  'sg-tenf1': { fixture: 'fresh', run: sgShot('tenf', 1, /frame 7/) },
+  'sg-more2': { fixture: 'fresh', run: sgShot('pk_more', 2, /^more/) },
+  'sg-same2': { fixture: 'fresh', run: sgShot('pk_more', 2, /^same/) },
+  'sg-shape2': { fixture: 'fresh', run: sgShot('shape', 2) },
+  'sg-add4': { fixture: 'fresh', run: sgShot('add', 4) },
+  'sg-pat2': { fixture: 'fresh', run: sgShot('pat', 2) },
+  'sg-tenf2': { fixture: 'fresh', run: sgShot('tenf', 2) },
+  'sg-cnt4': { fixture: 'fresh', run: sgShot('cnt', 4) },
+  'sg-shape3': { fixture: 'fresh', run: sgShot('shape', 3, /^solid [a-z]+$/) },
+  'sg-shape3b': { fixture: 'fresh', run: sgShot('shape', 3, /^solid like/) },
+  'sg-sort3': { fixture: 'fresh', run: sgShot('sort', 3) },
+  'sg-pos1': { fixture: 'fresh', run: sgShot('pos', 1, /^above/) },
+  'sg-pos-front': { fixture: 'fresh', run: sgShot('pos', 1, /^in front of/) },
+  'sg-pos-between': { fixture: 'fresh', run: sgShot('pos', 1, /^between/) },
+  'sg-meas1': { fixture: 'fresh', run: sgShot('meas', 1, /crayon/) },
+  'sg-meas-scale': { fixture: 'fresh', run: sgShot('meas', 1, /^(heavier|lighter)/) },
+  'sg-meas-tower': { fixture: 'fresh', run: sgShot('meas', 1, /tower/) },
+  'sg-tenf3': { fixture: 'fresh', run: sgShot('tenf', 3, /^10 and/) },
+  'sg-tenf3b': { fixture: 'fresh', run: sgShot('tenf', 3, /^10 \+/) },
+  'sg-hint': { fixture: 'fresh', run: sgShot('pk_count', 3, null, true) },
+  'sg-hint-more': { fixture: 'fresh', run: sgShot('pk_more', 2, /^fewer/, true) },
+  'sg-notext': { fixture: 'fresh', run: sgShot('pk_num', 3, null, false, true) },
+});
+
+// One Shape Garden question through the real round engine (a K child). match: regex the label must fit (searches on from seed 11);
+// hint opens Help; notext sets the debug flag.
+function sgShot(sk, lv, match, hint, notext) {
+  return async p => {
+    await p.evaluate(([sk, lv, src, notext]) => {
+      S.name = 'Ava'; setGrade(0);
+      window.say = () => {};
+      if (notext) document.documentElement.classList.add('notext');
+      start('math', NODES.math.findIndex(n => n.sk === sk && n.lv === lv));
+      const re = src ? new RegExp(src) : null;
+      let q = genQ(sk, lv, 11);
+      for (let i = 1; re && !re.test(q.label) && i < 400; i++) q = genQ(sk, lv, 11 + i);
+      G.q = q; renderQ();
+    }, [sk, lv, match ? match.source : null, !!notext]);
+    if (hint) await p.click('#hb');
+  };
+}
+
 async function main() {
   const args = process.argv.slice(2);
   let fixtureArg = null;
