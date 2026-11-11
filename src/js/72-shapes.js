@@ -126,7 +126,7 @@ function shapePage(id,mode){const d=shData(id),cs=shS(),free=mode=='free',fills=
   const ml=mode=='math3'?3:mode=='math2'?2:1,esHard=mode=='es2';if(mode.startsWith('math'))mode='math';if(esHard)mode='es';const facts=d.keys.map((k,i)=>mode=='math'?cbFact(i+1,ml):null);
   const pal=free?FP_COLS.concat(['gris oscuro','café oscuro','azul oscuro','beige','turquesa']).map(k=>`<button class="btn chip" data-k="${k}" style="--cc:${CB_COL[k][0]}"><span class="sw"></span></button>`).join('')
     :d.keys.map((k,i)=>`<button class="btn chip ${esHard?'eshard':''} ${mode=='math'&&ml>1?'wide':''}" data-n="${i+1}" style="--cc:${CB_COL[k][0]}"><span class="sw"></span><b>${mode=='math'?facts[i]:esHard?'':i+1}</b>${mode=='es'?`<small>${k}</small>`:''}</button>`).join('');
-  view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title" style="font-size:20px">${free?'🖌️':'🎨'} ${d.name}</div><div class="sp"></div>${free?'<button class="btn sm" id="shclr">🗑️</button>':'<div class="stars" id="cbp">0%</div>'}<div class="stars" id="gtm">🎟️ ${fmtT(ptLeft())}</div></div>
+  view(`${GH.top('art',{play:true,sub:d.name,tools:free?GH.tool('trash','Clear','shclr'):'',chips:free?'':'<span class="stat gh-st" aria-label="Colored"><b id="cbp">0%</b></span>'})}
    <div class="cbwrap"><div class="cbcv shwrap" id="shw"></div><div class="cbpal ${free?'fp':''}">${pal}</div></div>`);
   const w=$('#shw');
   function render(){const sz=cbLayout(free?18:d.keys.length)*CBN;w.style.width=w.style.height=sz+'px';
@@ -145,11 +145,12 @@ function shapePage(id,mode){const d=shData(id),cs=shS(),free=mode=='free',fills=
     filled.add(r.i);fills[r.i]=CB_COL[r.c][0];SFX.pop(filled.size%6);cs.prog[id]=[...filled];save();render();if(esHard){const c=$(`.chip[data-n="${r.n}"]`);if(c)c.classList.add('found')}
     if(regs.every(x=>filled.has(x.i)))finish()});
   if(free)$('#shclr').onclick=()=>{for(const k in fills)delete fills[k];cs.free[id]={};save();SFX.whoosh();render()};
-  $('#back').onclick=()=>{gtStop();classicColor('shape')};
-  function finish(){cs.done[id]=1;delete cs.prog[id];S.coins+=5;save();gtStop();SFX.fanfare();confetti(50);
-    setTimeout(()=>{const o=document.createElement('div');o.className='ovl';const all={};d.R.forEach(r=>all[r.i]=CB_COL[r.c][0]);
-      o.innerHTML=`<div style="width:min(260px,60vw);animation:spin .8s cubic-bezier(.5,1.6,.5,1);background:#fff;border-radius:18px;padding:8px">${shSVG(d,all)}</div><h1>You colored the ${d.name}!</h1><h2>+5 🪙</h2><div class="rowh"><button class="btn big" id="cbm">🎨 More pictures</button></div>`;
-      document.body.appendChild(o);if(S.voice)say(`Beautiful! You colored the ${d.name}!`);o.querySelector('#cbm').onclick=()=>{o.remove();classicColor('shape')}},600)}
+  GH.wire({quit:()=>{gtStop();classicColor('shape')}});
+  function finish(){cs.done[id]=1;delete cs.prog[id];S.coins+=5;save();gtStop();SFX.fanfare();
+    setTimeout(()=>{const all={};d.R.forEach(r=>all[r.i]=CB_COL[r.c][0]);
+      // P4-16: the shared end card with the finished picture
+      const o=GH.end('art',{win:true,made:true,pic:shSVG(d,all),title:`You colored the ${d.name}!`,stats:[['+5','coins','coin']],
+        btns:UI.btn('More pictures',{kind:'primary',size:'lg',icon:'palette',id:'cbm',wide:true})});if(S.voice)say(`Beautiful! You colored the ${d.name}!`);o.querySelector('#cbm').onclick=()=>{o.remove();classicColor('shape')}},600)}
   pick(sel);let rs;addEventListener('resize',()=>{clearTimeout(rs);rs=setTimeout(()=>{if($('#shw'))render()},120)});
   gtStart('#gtm',()=>timeUpOverlay());
   if(S.voice)setTimeout(()=>say(free?'Pick a color and tap to paint!':mode=='math'?'Solve the fact to find each color!':mode=='es'?'Tap a color to hear it in Spanish!':'Match the numbers to the colors!'),300)}
@@ -157,7 +158,7 @@ function shapePage(id,mode){const d=shData(id),cs=shS(),free=mode=='free',fills=
 function cbLayout(n){const land=innerWidth>innerHeight,avW=land?innerWidth-260:innerWidth-24,avH=land?innerHeight-80:innerHeight-80-(n>6?190:120);return Math.max(14,Math.floor(Math.min(avW,avH)/CBN))}
 function colorPic(id,mode){const d=cbData(id),cs=cbS(),fill=(cs.prog[id]||'0'.repeat(CBN*CBN)).split('');let sel=1,count=fill.filter(c=>c=='1').length;
   const ml=mode=='math3'?3:mode=='math2'?2:1,esHard=mode=='es2';if(mode.startsWith('math'))mode='math';if(esHard)mode='es';const facts=d.keys.map((k,i)=>mode=='math'?cbFact(i+1,ml):null);
-  view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title" style="font-size:20px">🎨 ${d.name}</div><div class="sp"></div><div class="stars" id="cbp">0%</div><div class="stars" id="gtm">🎟️ ${fmtT(ptLeft())}</div></div>
+  view(`${GH.top('art',{play:true,sub:d.name,chips:'<span class="stat gh-st" aria-label="Colored"><b id="cbp">0%</b></span>'})}
    <div class="cbwrap"><div class="cbcv"><canvas id="cbc"></canvas></div><div class="cbpal">${d.keys.map((k,i)=>`<button class="btn chip" data-n="${i+1}" style="--cc:${CB_COL[k][0]}"><span class="sw"></span><b>${mode=='math'?facts[i]:i+1}</b>${mode=='es'?`<small>${k}</small>`:''}</button>`).join('')}</div></div>`);
   const cv=$('#cbc'),x=cv.getContext('2d');let cs2=cbLayout(d.keys.length),dpr=Math.min(2,devicePixelRatio||1),flash=-1,flashT=0;
   const size=()=>{cs2=cbLayout(d.keys.length);cv.width=cv.height=cs2*CBN*dpr;cv.style.width=cv.style.height=cs2*CBN+'px';draw()};
@@ -179,17 +180,18 @@ function colorPic(id,mode){const d=cbData(id),cs=cbS(),fill=(cs.prog[id]||'0'.re
   cv.addEventListener('pointermove',e=>{if(!down)return;const i=cellAt(e);if(i!=last){if(!dragged)paint(last,false);dragged=true;last=i;paint(i,false)}});
   cv.addEventListener('pointerup',e=>{if(down&&!dragged)paint(cellAt(e),true);down=false});
   const leave=()=>{cs.prog[id]=fill.join('');save()};
-  $('#back').onclick=()=>{leave();gtStop();classicColor('pixel')};
-  function finishPic(){leave();cs.done[id]=1;delete cs.prog[id];S.coins+=5;save();gtStop();draw();SFX.fanfare();confetti(50);
-    setTimeout(()=>{const o=document.createElement('div');o.className='ovl';o.innerHTML=`<img src="${cbThumb(d.G,true,200)}" style="width:200px;height:200px;border-radius:16px;box-shadow:0 8px 30px #0006;image-rendering:pixelated;animation:spin .8s cubic-bezier(.5,1.6,.5,1)"><h1>You finished ${d.name}!</h1><h2>+5 🪙</h2><div class="rowh"><button class="btn big" id="cbm">🎨 More pictures</button></div>`;
-      document.body.appendChild(o);if(S.voice)say(`Beautiful! You finished ${d.name}!`);o.querySelector('#cbm').onclick=()=>{o.remove();classicColor('pixel')}},700)}
+  GH.wire({quit:()=>{leave();gtStop();classicColor('pixel')}});
+  function finishPic(){leave();cs.done[id]=1;delete cs.prog[id];S.coins+=5;save();gtStop();draw();SFX.fanfare();
+    setTimeout(()=>{ // P4-16: the shared end card with the finished picture
+      const o=GH.end('art',{win:true,made:true,pic:`<img src="${cbThumb(d.G,true,200)}" alt="">`,title:`You finished ${d.name}!`,stats:[['+5','coins','coin']],
+        btns:UI.btn('More pictures',{kind:'primary',size:'lg',icon:'palette',id:'cbm',wide:true})});if(S.voice)say(`Beautiful! You finished ${d.name}!`);o.querySelector('#cbm').onclick=()=>{o.remove();classicColor('pixel')}},700)}
   pick(1);size();let rs;const onR=()=>{clearTimeout(rs);rs=setTimeout(()=>{if($('#cbc'))size()},120)};addEventListener('resize',onR);
   gtStart('#gtm',()=>{leave();timeUpOverlay()});
   if(S.voice)setTimeout(()=>say(mode=='math'?'Solve the fact to find each color!':mode=='es'?'Tap a color to hear it in Spanish!':'Match the numbers to the colors!'),300)}
 
 const FP_COLS=['rojo','naranja','amarillo','verde','verde oscuro','celeste','azul','morado','rosa','café','gris','negro','blanco'];
 function freePaint(ai){const cs=cbS();const G=ai>=0?cs.art[ai].split(',').map(k=>k||'blanco'):cbGrid('blanco');let sel='rojo',saved=ai>=0,idx=ai;
-  view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title" style="font-size:20px">🖌️ Free Paint</div><div class="sp"></div><button class="btn sm" id="fsave">💾 Save</button><div class="stars" id="gtm">🎟️ ${fmtT(ptLeft())}</div></div>
+  view(`${GH.top('art',{play:true,sub:'Free Paint',tools:GH.tool('download','Save to My Drawings','fsave')})}
    <div class="cbwrap"><div class="cbcv"><canvas id="cbc"></canvas></div><div class="cbpal fp">${FP_COLS.map(k=>`<button class="btn chip" data-k="${k}" style="--cc:${CB_COL[k][0]}"><span class="sw"></span></button>`).join('')}
     <button class="btn chip" data-k="fill" title="Fill">🪣</button><button class="btn chip" id="fclear">🗑️</button></div></div>`);
   const cv=$('#cbc'),x=cv.getContext('2d');let cs2=cbLayout(14),dpr=Math.min(2,devicePixelRatio||1),bucket=false;
@@ -204,9 +206,9 @@ function freePaint(ai){const cs=cbS();const G=ai>=0?cs.art[ai].split(',').map(k=
   cv.addEventListener('pointermove',e=>{if(!down||bucket)return;const i=cellAt(e);if(i!=last){last=i;paint(i)}});
   cv.addEventListener('pointerup',()=>{down=false});
   const doSave=()=>{const str=G.join(',');if(idx>=0)cs.art[idx]=str;else{cs.art.unshift(str);cs.art=cs.art.slice(0,12);idx=0}saved=true;save()};
-  $('#fsave').onclick=()=>{doSave();SFX.fanfare();confetti(20);fb('💾 Saved to My Drawings!')};
+  $('#fsave').onclick=()=>{doSave();SFX.fanfare();confetti(20);fb('Saved to My Drawings!')};
   $('#fclear').onclick=()=>{G.fill('blanco');SFX.whoosh();saved=false;draw()};
-  $('#back').onclick=()=>{if(!saved&&G.some(k=>k!='blanco'))doSave();gtStop();classicColor('paint')};
+  GH.wire({quit:()=>{if(!saved&&G.some(k=>k!='blanco'))doSave();gtStop();classicColor('paint')}});
   pick('rojo');size();addEventListener('resize',()=>{if($('#cbc')&&$('.fp'))size()});
   gtStart('#gtm',()=>{if(G.some(k=>k!='blanco'))doSave();timeUpOverlay()})}
 
