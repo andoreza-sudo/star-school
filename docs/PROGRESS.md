@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** batch merging P4-13b; then batch C: P2-04, P2-07; wave 6: P4-03, P4-08, P4-10, P4-11, then P4-18.
+**Next up:** batch C: P2-04, P2-07; wave 6: P4-03, P4-08, P4-10, P4-11, then P4-18 (graphics quality pass).
 
-**Current version:** v68
+**Current version:** v69
 
 ## Chunk status
 
@@ -48,6 +48,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P2-03 v66
 - P4-05 v67
 - P4-04 v68
+- P4-13b v69
 
 ## Handoff notes
 
@@ -83,6 +84,10 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - (P4-04) Round dots fit about 12 questions on a phone top bar; longer rounds (placement, 20) should show a gauge instead.
 - (P4-04) Component tokens were added to `00-tokens.css` in one block (`--ledge-soft`, `--danger-shade`, `--play-deep`, `--hi`, `--hi-0`, `--dim`, `--drop`); merge note if another branch also appends tokens there.
 - (P4-04) tools/shots.js defines the twelve `tiny-*` entries twice (once before the P2-19 spelling group, once at the end of SCREENS); harmless (the second wins) but worth removing.
+- (P4-13b) Object art now has its own 4-tone palette (`--ill-*` in 00-tokens.css, 13 hues x highlight/base/shade/deep, plus white and ink) and DESIGN_SYSTEM 6.5 has the new rules. Section 6.1 (characters: "two tones per colour area") still describes the old flat style; pets (P4-05), bosses (P4-11) and wearables/stickers (P4-07) should move to the same light direction and tone count, and can reuse the `--ill-*` tokens, so everything on one screen looks like one set.
+- (P4-13b) Eyes and other ink details in object art now use `var(--a-k)` (the `.art` default fill) instead of `currentColor`, so a drawing inside a coloured button or white text no longer changes its eyes. This supersedes the P4-13 note below about details following `color`.
+- (P4-13b) Chrome around questions still shows picture emoji (for example the gift at the end of the question progress bar). Once icons or ART cover them they could switch to `ico()` / `picArt('gift')` for one consistent look.
+- (P4-13b) Sets B and C should copy the "art set A" check in tools/test.js with their own name list (same limits: 2,500 bytes, 40 elements, roles only); the token-mapping part already covers every role in 21-art.css.
 - (merge P2-05) The full smoke run now takes about 12 minutes. A run that crosses midnight fails the P5-03 daily review counts (items moved to "due tomorrow" become due again). A later chunk could freeze the page clock in tools/lib/browser.js.
 - (P2-19) Spelling hint 2 ("show the word for 2 seconds, then hide", CURRICULUM E-spell) is not built: `hintHTML` has no stepped hints. A later hint chunk can add it to `genSpell` as a second hint step.
 - (P2-19) Story Summit, Dragon Library, Author Island and Legend Lab exist now with only a spell stop each (plus the boss). P2-20 to P2-29 should insert their stops in CURRICULUM 2.2 order; do not change the spell stop ids. Word Workshop (`r_workshop`, grade 2) between Space Station and Story Summit still has to be created by P2-18.
@@ -200,6 +205,19 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P1-05) Map draw with 16 fake worlds (156 stops) at 6x CPU throttle: median about 29 ms (limit 50), single runs up to about 49 ms. The strip recomputes `worldOpen`/`worldFinished` per chip and `unlocked` scans the world; a memo per draw is the next step if P4-09 adds weight.
 
 ## Log
+
+### P4-13b: Object art set A redrawn, new illustration style (v69, 2026-11-11, Claude)
+- Why: the owner found the P4-13 drawings flat and dated ("1999 graphics"); the cause was mostly the old 6.5 rule (flat two-tone, under 900 bytes, no shading). This chunk resets the style and redraws all 40 set A pictures with the same names (`picFor`/`picArt`/`ART` unchanged).
+- New style (DESIGN_SYSTEM 6.5 rewritten): soft chunky shapes with real volume; up to four tones per colour area from one hue (base, shade lower right, highlight upper left, deep accent for creases and insides); light always from the top left; no outlines except a deep-tone edge on white or cream objects; faces only on animals, the sun and the star; 3/4 view for boxy things; every picture must read as THE word at 24 px, 48 px and 1em. Gradients are not used (repeated pictures on one screen would repeat ids); volume comes from layered tonal shapes and a few opacity glints.
+- Palette: new `--ill-*` tokens in `src/css/00-tokens.css` (red, orange, yellow, green, aqua, blue, purple, pink, brown, tan, skin, cream, grey x 4 tones, plus white x 3 and ink x 2). `src/css/21-art.css` maps the `--a-*` roles to them (x1 highlight, x base, x2 shade, x3 deep; new hues c aqua, s skin, m cream, e grey, k ink). `.art` fill defaults to ink.
+- The 8 weak pictures: nose is now a skin-tone front-view nose with bridge, tip highlight, nostril wings and dark nostrils (was a yellow blob); box is an open cardboard box in 3/4 view with flaps, dark inside and tape (was toast); map is a three-panel folded paper map with a river, land, trees, a dotted path and a red pin (was a green sheet with an X); rose is a side-view bloom of cupped, layered petals with sepals, thorny stem and leaves (was a lollipop spiral); bed is a chunky side-view wooden bed with tall rounded headboard, pillow, turned-back sheet and blanket; hand is an open palm with tapered fingers, nails, knuckle creases, a thumb and a blue sleeve cuff (the sleeve and nails stop it reading as a glove); hat is a straw sun hat with a red band and bow (was a purple top hat); milk is a glass of milk with a shaded surface and glass rim (was a carton).
+- Other changes for "no other name": cat is now grey with whiskers (the orange fox face is the only orange pointy-eared face); bug is a green beetle (not a ladybug); cup sits on a saucer (not a mug); ship has funnels, decks and portholes (not a boat); the beach ball pole cap was dropped.
+- Size: `16-art-a.js` 18.3 KB -> 59.3 KB source (pictures 52.7 KB, average 1.3 KB, largest hand 2.4 KB); index.html 665 KB -> 709 KB (+43.5 KB), well under the 1.2 MB warning. No filters, masks or gradients; at most 30 elements per picture.
+- Tests: test.js "art set A" updated to the new rules: 40 present, at most 2,500 bytes and 40 elements each, set under 64 KB, only path/circle/ellipse/rect self-closing, only geometry/fill/stroke/stroke-width/opacity/rotate attributes, no ids/defs/gradients/masks/clips/patterns/filters/use/text/style/url/raw hex, colours only var(--a-x)/none/currentColor, one-decimal coordinates, well-formed picArt, every role used is defined, every role in 21-art.css maps to an `--ill-*` hex token, picture questions show drawings. Checked that it fails on an injected id/style/two-decimal coordinate and on a role mapped to a non-ill token. "pictures" check unchanged and passing.
+- Screens: `node tools/shots.js art art-question`; looked at the art sheet at 1024x600 (24/48/96 px on white and tint) and art-question at 380x780, plus many scratch sheets at 160/96/48/24 px and 1em in text during the passes.
+- Edits: `src/js/16-art-a.js` (rewritten), `src/css/21-art.css`, `src/css/00-tokens.css` (new token block only), `src/js/15-pics.js` (header comment only), `docs/DESIGN_SYSTEM.md` 6.5, `tools/test.js`, `tools/build.py` VER.
+- Checklist 7.1: [x] only named files (plus the comment in 15-pics.js) [x] VER bumped (v69, provisional) [x] build [x] contrast [x] test.js [x] smoke.js [x] screenshots [x] midway fixture unchanged [x] size under 1.5 MB [x] no network [x] no new emoji, no hex outside 00-tokens [x] PROGRESS entry [x] one commit (not pushed).
+- Merge: built on a parallel branch, renumbered v68 -> v69 at merge.
 
 ### P4-04 Core components (v68, 2026-11-11, Claude)
 - What changed: the component library of DESIGN_SYSTEM 4, all states, as opt-in classes in the new `src/css/10-components.css` (tokens only) and markup helpers `UI.*` in the new `src/js/14-ui.js`. Buttons (`.btn` + `primary` / `soft` / `subject` / `ghost` / `risk`, sizes `sm` / md / `lg`, `wide`, `.btn.icon` round 48/56/64), keys (`.keys`, `.key`, `.go`, `.del`, letter pad), choices (`.choice` + `pic` / `sym` / `wide` in `.picks`; `.sel`, `.right` with a CSS check badge and pop, `.wrong` with an amber cross badge and shake, disabled), pieces and sockets, panels (plain, tint, hero), path cards, top bars (`.top.tbar`, `.round`, `.adult`), stat chips (`.stat` star / coin / ticket / flame / timer, bump), gauge, round dots, star rating, tags, toast, speech bubble, sheet (modal), hint panel (text, picture, steps), context panel, segmented control, switch, table, empty state, map node. Subject colour by class `.s-math` ... `.s-play`. Look (owner feedback, "no dated flat look"): solid ledge under everything pressable that squashes on press (transform only), thin gloss on coloured fills, soft blur shadow only on panels, sheets and toasts, generous corners.

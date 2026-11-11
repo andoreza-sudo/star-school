@@ -239,9 +239,36 @@ Four bosses (Gloop, Robo-Bonk, Captain Inky, Zorp) drawn in the same style, one 
 - Sticker book: stickers get a white die-cut border (a 3 px white stroke behind the art) and a slight rotation. Emoji stickers stay until object art covers them; the border treatment makes both look consistent.
 - Scenes (meadow, beach, candy, rainbow, space, castle) use the scene generator from section 7.
 
-### 6.5 Object art (chunks P4-13 to P4-15)
+### 6.5 Object art (chunks P4-13 to P4-15; style reset in P4-13b)
 
-Pictures for counting, picture words and Spanish vocabulary. 64x64 grid, same flat two-tone style, under 900 bytes each, in `src/js/16-art-a.js`, `-b`, `-c` as `Object.assign(ART, {name: '...'})` (ART, `picArt(name, size)` and `picFor(word, emoji)` live in `src/js/15-pics.js`; the names `art` and `artSVG` are already taken by the a/an helper and the Art Studio).
+Pictures for counting, picture words and Spanish vocabulary, in `src/js/16-art-a.js`, `-b`, `-c` as `Object.assign(ART, {name: '...'})`
+(ART, `picArt(name, size)` and `picFor(word, emoji)` live in `src/js/15-pics.js`; the names `art` and `artSVG` are already taken by the a/an helper and the Art Studio).
+Reference: set A (`node tools/shots.js art`). This section replaces the flat two-tone rule of 6.1 for object art.
+
+**The bar.** Every picture reads as THE word, with no other plausible name, for a 4-year-old at 24 px, at 48 px and at 1em inside a question.
+It should look like a current, well-made kids' app: soft, chunky, with real volume. If a picture could be called something else
+(ladybug for bug, mug for cup, glove for hand, boat for ship), add the cue that settles it (a beetle, a saucer, a sleeve, funnels).
+
+| Rule | Value |
+|------|-------|
+| Grid | 64x64 viewBox, about 2 units of margin, the object fills the square (chunky proportions, no thin long shapes) |
+| Light | Always from the top left. Shade on the lower right, highlights on the upper left |
+| Tones | Up to four per colour area, all from one hue: base, shade (`2`), highlight (`1`), deep accent (`3`) for creases, holes, insides and contact. White glints (small, often with `opacity`) for shiny things |
+| Volume recipe | Shade shape first, then the base shape shrunk about 8-12% and moved 1-2 units toward the light, so a crescent of shade shows on the lower right; then a highlight. Spheres use a crescent path (offset circle) |
+| Outlines | None. White or cream objects (bone, milk, plate, pillow) get an edge in their own deep tone (`w3`, `m3`) so they hold on white |
+| Faces | Only on animals, the sun and the star: ink ovals with a white glint at the top left, a small smile, pink cheeks at opacity .5-.7. Never on objects or food |
+| View | Front or side view; 3/4 view for boxy things (box, gift, tent, drum, cake) so they show two faces |
+| Detail | Nothing thinner than about 1.4 units; anything that must read at 24 px at least 2.5 units. Small decorative detail is fine when the silhouette already reads |
+| Colour | Only `var(--a-x)` roles from `src/css/21-art.css`, which map to the `--ill-*` palette in `00-tokens.css` (13 hues x 4 tones + white and ink). An element with no fill is ink. `currentColor` is allowed but avoided (it follows the parent text colour) |
+| Hues | r red, o orange, y yellow, g green, c aqua, b blue, v purple, p pink, n brown, t tan, s skin, m cream, e grey, w white (w, w2, w3), k ink (k, k2) |
+| Elements | `<path>`, `<circle>`, `<ellipse>`, `<rect>`, self-closing. Attributes: geometry, `fill`, `stroke`, `stroke-width`, `opacity`, `transform="rotate(a cx cy)"` |
+| Not allowed | ids, `<defs>`, gradients, masks, clip paths, patterns, filters, `<use>`, text, `style`, `url()`, raw hex. Gradients are not used: the same picture often appears several times on one screen (counting), and gradient ids would repeat |
+| Size | Up to 2,500 bytes and 40 elements per picture, coordinates to one decimal; set A is about 53 KB in all |
+| Review | `node tools/shots.js art` (24/48/96 px on white and on a tint) and `art-question` (inside a real question at 380x780). Look before shipping |
+| Checked by | `tools/test.js` "art set A" (rules above, every role maps to an `--ill-*` token). Sets B and C add their names to a copy of that check |
+
+How set A was authored: shapes were written with small helpers (volume, crescent, eye, rotate) in a scratch script and the output pasted into `16-art-a.js`;
+the file is the source of truth. Any authoring approach is fine as long as the output follows the rules.
 
 | Set | Contents (40 each) |
 |-----|--------------------|
