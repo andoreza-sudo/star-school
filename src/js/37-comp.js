@@ -128,7 +128,7 @@ function compProblems(g){
     const body=new Set(words.map(v=>v.toLowerCase()));
     if(x.qs.length!==5)p.push(w+'needs 5 questions');
     const types=x.qs.map(q=>q.t);
-    for(const need of sp.need)if(!types.includes(need))p.push(w+'no '+need+' question');
+    for(const need of (Array.isArray(sp.need)?sp.need:sp.need[x.type]))if(!types.includes(need))p.push(w+'no '+need+' question');
     x.qs.forEach((q,j)=>{
       const ww=w+'qs['+j+'] ';
       if(!COMPTYPES[q.t])p.push(ww+'unknown type '+q.t);
@@ -165,3 +165,8 @@ function compProblems(g){
   }
   return p;
 }
+
+/* Tests iterate skill levels 1..max; a passage level with no passages yet (until its grade chunk ships) cannot give a question.
+   skLvEmpty says so, skLvPick moves a level down to the nearest one that has questions. Both are false/identity for every other skill. */
+const skLvEmpty=(sk,lv)=>(sk=='info'||(sk=='comp'&&lv>2))&&!(PASS[sk]||[]).some(p=>p.lv==lv);
+const skLvPick=(sk,lv)=>{while(lv>1&&skLvEmpty(sk,lv))lv--;return lv};

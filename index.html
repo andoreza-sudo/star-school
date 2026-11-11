@@ -2339,7 +2339,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S));SAVE_FAILED=fals
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v84'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v85'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -7570,7 +7570,7 @@ function compProblems(g){
     const body=new Set(words.map(v=>v.toLowerCase()));
     if(x.qs.length!==5)p.push(w+'needs 5 questions');
     const types=x.qs.map(q=>q.t);
-    for(const need of sp.need)if(!types.includes(need))p.push(w+'no '+need+' question');
+    for(const need of (Array.isArray(sp.need)?sp.need:sp.need[x.type]))if(!types.includes(need))p.push(w+'no '+need+' question');
     x.qs.forEach((q,j)=>{
       const ww=w+'qs['+j+'] ';
       if(!COMPTYPES[q.t])p.push(ww+'unknown type '+q.t);
@@ -7607,6 +7607,11 @@ function compProblems(g){
   }
   return p;
 }
+
+/* Tests iterate skill levels 1..max; a passage level with no passages yet (until its grade chunk ships) cannot give a question.
+   skLvEmpty says so, skLvPick moves a level down to the nearest one that has questions. Both are false/identity for every other skill. */
+const skLvEmpty=(sk,lv)=>(sk=='info'||(sk=='comp'&&lv>2))&&!(PASS[sk]||[]).some(p=>p.lv==lv);
+const skLvPick=(sk,lv)=>{while(lv>1&&skLvEmpty(sk,lv))lv--;return lv};
 const SK={
  es_greet:{t:'Hello & Thank You',e:'👋',area:'es',max:2,gen:lv=>genEs('greet',lv)},
  es_color:{t:'Colors',e:'🎨',area:'es',max:2,gen:lv=>genEs('color',lv)},
@@ -7634,8 +7639,8 @@ const SK={
  pos:{t:'Where Is It',e:'📌',area:'math',max:1,gen:genPos},
  meas:{t:'Measuring',e:'📏',area:'math',max:4,gen:lv=>lv==4?ffMeas4():lv==3?genBayMeas3():lv==1?genMeas(lv):genMeas2(lv)}, // 1 Shape Garden, 2 Clock Tower, 3 Treasure Bay, 4 Fraction Forest
  mult:{t:'Equal Groups',e:'✖️',area:'math',max:2,gen:genMult},
- comp:{t:'Story Time',e:'📗',area:'read',max:3,gen:genCompLv,round:compRoundLv}, // levels 1-2 picture stories, 3+ passages (37-comp.js)
- info:{t:'Learn About It',e:'🔍',area:'read',max:1,gen:lv=>genPassage('info',lv),round:lv=>compRound('info',lv)},
+ comp:{t:'Story Time',e:'📗',area:'read',max:5,gen:genCompLv,round:compRoundLv}, // levels 1-2 picture stories, 3+ passages (37-comp.js)
+ info:{t:'Learn About It',e:'🔍',area:'read',max:3,gen:lv=>genPassage('info',lv),round:lv=>compRound('info',lv)},
  add:{t:'Adding',e:'➕',area:'math',max:6,gen:lv=>lv==5?genAdd5():lv==6?genAdd6():genAddK(lv)},
  miss:{t:'Missing Number',e:'❓',area:'math',max:2,gen:genMiss},
  sub:{t:'Take Away',e:'➖',area:'math',max:7,gen:lv=>lv==5?genBaySub5():lv==6?ffSub6():lv==7?ffSub7():genSub(lv)}, // 5 Treasure Bay, 6-7 Fraction Forest
@@ -8285,7 +8290,7 @@ const PATHS={
   {id:'r_space',g:2,n:'Space Station',e:'🚀',c:'#ede9fe',nodes:[['pic',4,'Vowel Teams'],['build',4,'Build Vowel Teams'],['sight',4,'Sight Words 4'],['pic',5,'Bossy R'],['build',5,'Build Bossy R'],['spell',3,'Spell Magic E & Teams'],['sent',3,'Build Sentences']]},
   {id:'r_workshop',g:2,n:'Word Workshop',e:'🔧',c:'#fef3c7',nodes:[['sight',5,'Sight Words 5'],['pic',6,'Vowel Teams 2'],['build',6,'Build Vowel Teams 2'],['gram',2,'Parts of Speech'],['vocab',2,'Synonyms'],['sent',4,'Fill the Gap'],['vocab',3,'Compound Words'],['gram',3,'Plurals'],['sent',5,'Sentence Stories'],['comp',3,'Read a Story'],['info',1,'Learn About It']]},
   {id:'r_summit',g:3,n:'Story Summit',e:'🏔️',c:'#e2e8f0',nodes:[['spell',4,'Spell Tricky Sounds'],['gram',4,'Verb Tenses'],['vocab',4,'Prefixes'],['gram',5,'Contractions & Agreeing'],['vocab',5,'Suffixes']]},
-  {id:'r_library',g:4,n:'Dragon Library',e:'🐉',c:'#fee2e2',nodes:[['spell',5,'Spell Word Parts'],['gram',6,'Pronouns & Look-Alikes'],['vocab',6,'Homophones'],['vocab',7,'Context Clues'],['gram',7,'Commas & Quotes'],['vocab',8,'Figurative Language']]},
+  {id:'r_library',g:4,n:'Dragon Library',e:'🐉',c:'#fee2e2',nodes:[['spell',5,'Spell Word Parts'],['gram',6,'Pronouns & Look-Alikes'],['vocab',6,'Homophones'],['vocab',7,'Context Clues'],['gram',7,'Commas & Quotes'],['vocab',8,'Figurative Language'],['comp',5,'Longer Stories'],['info',3,'Learn More Facts']]},
   {id:'r_island',g:5,n:'Author Island',e:'🏝️',c:'#fef9c3',nodes:[['spell',6,'Spell Big Words'],['gram',8,'More Parts of Speech'],['vocab',9,'Word Roots']]},
   {id:'r_legend',g:6,n:'Legend Lab',e:'🏰',c:'#f3e8ff',nodes:[['spell',7,'Spell Tough Words'],['gram',9,'Sentence Craft'],['vocab',10,'Analogies']]}]},
  es:{n:'Spanish Adventure',e:'🌮',c:'linear-gradient(135deg,#dcfce7,#fef9c3)',byLevel:true,worlds:[
@@ -8893,7 +8898,7 @@ function home(first){
   <div class="scroll hm" id="hs"><div class="hm-cols">
    <div class="hm-col">${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
-   <p class="hm-ver">${ico('star', 16)}<span>Star School v84</span></p></div>`);
+   <p class="hm-ver">${ico('star', 16)}<span>Star School v85</span></p></div>`);
   music(true);
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,['💖','✨','⭐']);
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
@@ -12023,7 +12028,7 @@ function grown(){let armed=false;
    <div class="vline"><span class="vtxt">Give a bonus</span><button class="btn xs" id="pt5">+5 min</button><button class="btn xs danger" id="pt0">Empty bank</button></div>
    <label class="tg"><input type="checkbox" id="ptp" ${ptCfg().pause?'checked':''}> Pause game time (games locked)</label></div>
   <div class="card"><div class="tw"><table><tr><th>Skill</th><th>Rounds</th><th>1st try</th><th>Tricky ones</th></tr>${rows}</table></div></div>
-  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v84 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
+  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v85 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
    Storage: ${SAVE_FAILED?'<b style="color:#c0392b">could not save (device storage may be full)</b>':'saving OK'}${SAVE_CORRUPT?'<br><b style="color:#c0392b">The old save could not be read. A fresh start was made and the old data was kept on the device.</b>':''}<br>
    Last errors: ${(S.err||[]).length?(S.err||[]).slice().reverse().map(e=>'<br>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+' '+esc(e.msg)).join(''):'none'}</div></details>
   <div class="card"><label class="tg"><input type="checkbox" id="voice" ${S.voice?'checked':''}> Read questions out loud</label>
@@ -12543,6 +12548,232 @@ compAdd([
    d:['How birds build nests','Why penguins fly south for winter','What penguins eat at the zoo'],ev:[1,2,4,5,6]},
   {t:'infer',q:'Why do penguins take turns on the outer edge?',a:'So no one stays cold all the time',
    d:['So they can swim faster','Because the middle is empty','To look for more fish'],ev:[5,6,7]}]}
+]);
+
+// ---- grade 4 (P2-27): 130-180 words, 5 questions: main idea, inference, summary choice, vocabulary, and theme (fiction) or text structure (nonfiction) ----
+// comp level 5 (fiction), info level 3 (nonfiction)
+COMPSPEC[4]={words:[130,180],sent:17,maxSent:24,fk:7,need:{f:['main','infer','summary','vocab','theme'],n:['main','infer','summary','vocab','structure']}};
+compAdd([
+{id:'g4f01',g:4,type:'f',title:'The Tuba Problem',text:[
+  'Tomás was the smallest kid in the school band, and he had been given the biggest instrument, a shiny brass tuba.',
+  'Every time he blew into it, the tuba let out a loud honk like an angry goose.',
+  'The other students giggled, and Tomás wanted to quit.',
+  '"Every player sounds funny at first," said Ms. Reyes, the band teacher.',
+  'She showed him how to sit tall and breathe from his belly instead of his cheeks.',
+  'That night Tomás practiced in the garage for twenty minutes, even though his lips felt tired.',
+  'He practiced again the next day, and the next.',
+  'By Friday, the honks had turned into low, round notes.',
+  'At the school concert, the band played a slow song, and Tomás\'s deep notes held the whole tune together.',
+  'When it ended, the same students who had giggled cheered the loudest.'],
+ qs:[
+  {t:'main',q:'What is this story mostly about?',a:'Tomás gets better at the tuba by practicing',
+   d:['Tomás is picked to lead the school band','A teacher gets upset about a goose in the music room','Tomás trades his tuba for a smaller instrument'],ev:[0,5,7,8]},
+  {t:'infer',q:'Why did the students who had giggled cheer the loudest at the end?',a:'They were surprised by how well he played',
+   d:['Ms. Reyes had asked them to cheer','They wanted the long concert to be over','They still thought the tuba was a funny sound'],ev:[9,8]},
+  {t:'summary',q:'Which sentence is the best summary of the story?',a:'A boy practices until he can play the tuba well',
+   d:['A band gets in trouble for being too noisy','A boy quits the band because others laugh at him','A boy wins a prize for the loudest tuba honk'],ev:[0,4,7,9]},
+  {t:'vocab',q:'In this story, "giggled" means...',a:'laughed in a quiet, silly way',d:['shouted in an angry voice','whispered a secret to a friend nearby','clapped with excitement'],ev:[2]},
+  {t:'theme',q:'Which lesson does this story teach?',a:'With steady practice, a hard thing gets easier',
+   d:['Small kids should wait to join a band','It is best to quit when others laugh','Loud music is better than quiet music'],ev:[4,5,6,7]}]},
+
+{id:'g4f02',g:4,type:'f',title:'The Whale Book',text:[
+  'Priya loved the library book about whales, and she had read it three times before it was due on Friday.',
+  'On Thursday night, she looked for the book so she could pack it, but it was nowhere in sight.',
+  'She searched under her bed, behind the couch, and inside every drawer.',
+  'Her stomach felt tight, and for a moment she thought about pretending she had never borrowed it.',
+  'Then she remembered Mr. Okafor saying that mistakes are easy to fix when people are honest.',
+  'In the morning, Priya went to the desk and told him the whole truth.',
+  '"I lost your whale book," she said quietly. "I am so sorry."',
+  'Mr. Okafor, the librarian, smiled and said that books get lost all the time.',
+  'He asked her to look one more time while he helped the next child.',
+  'Priya unzipped the small pocket of her backpack, the one she never used, and there was the book.',
+  'She handed it over with a huge grin, glad she had told the truth instead of hiding it.'],
+ qs:[
+  {t:'main',q:'What is this story mostly about?',a:'Priya tells the truth about a lost library book',
+   d:['Priya reads a book about whales three times','A librarian loses a book and asks a child for help','Priya decides to keep a book that she loves'],ev:[1,5,6,10]},
+  {t:'infer',q:'How did Priya most likely feel as she walked to the library desk?',a:'nervous, but ready to do the right thing',
+   d:['proud that she had kept a secret','bored and eager to get home','angry at the librarian for asking'],ev:[5,3]},
+  {t:'summary',q:'Which sentence is the best summary of the story?',a:'After losing a book, a girl admits it and then finds it',
+   d:['A girl hides a lost book so no one will find out','A librarian looks all over school for a lost book','A girl reads a whale book three times and then moves away'],ev:[1,5,9,10]},
+  {t:'vocab',q:'In this story, "honest" means...',a:'telling the truth',d:['working very fast','keeping quiet about things','being very polite'],ev:[4]},
+  {t:'theme',q:'Which lesson does this story teach?',a:'Telling the truth is better than hiding a mistake',
+   d:['You should always keep a book in your backpack','It is smart to search every room before you ask for help','Librarians do not mind when a book is lost for good'],ev:[4,5,10]}]},
+
+{id:'g4f03',g:4,type:'f',title:'Lena\'s Rainy Day Stand',text:[
+  'Lena had saved lemons, sugar, and cups for weeks so she could open a lemonade stand on Saturday.',
+  'When she woke up, gray clouds hung low and a chilly rain tapped on the window.',
+  'Lena set up her table anyway and waited under a big umbrella.',
+  'An hour passed, and not one person stopped, because nobody wants a cold drink on a cold day.',
+  'She was ready to pack up and go inside.',
+  'Then her grandfather brought out a pot of warm apple cider and a bag of cinnamon sticks.',
+  'Lena had an idea.',
+  'She crossed out the word lemonade on her sign and wrote warm cider instead.',
+  'Soon neighbors in raincoats lined up, holding out their coins for a hot cup.',
+  'By noon the pot was empty, and Lena had earned more than she had planned.'],
+ qs:[
+  {t:'main',q:'What is this story mostly about?',a:'Lena changes her plan so her stand works in the rain',
+   d:['Lena wins a prize for the best lemonade in town','Lena and her grandfather bake apple pies for a fair','Lena gives up and waits inside for the sun to come out'],ev:[1,3,5,7,9]},
+  {t:'infer',q:'Why did the neighbors line up for the cider?',a:'A hot drink felt good on a chilly, rainy day',
+   d:['They had already bought lemonade from Lena earlier','Lena sold it for less than any other stand','Her new sign was the biggest one on the street'],ev:[8,3]},
+  {t:'summary',q:'Which sentence is the best summary of the story?',a:'Rain spoils her plan, so Lena sells warm cider',
+   d:['Lena sells all her lemonade by noon on a sunny day','Lena\'s grandfather runs the stand while she watches','Lena waits in the rain and then goes home'],ev:[1,3,5,7,9]},
+  {t:'vocab',q:'In this story, "chilly" means...',a:'cool enough to feel cold',d:['bright and sunny','noisy and loud','warm and cozy by the fire'],ev:[1]},
+  {t:'theme',q:'Which lesson does this story teach?',a:'When a plan fails, a new idea can save the day',
+   d:['Cold drinks sell best when it rains','You should never change a sign once it is made','Grandparents always know what to do'],ev:[4,6,7,9]}]},
+
+{id:'g4f04',g:4,type:'f',title:'The Big Crumb',text:[
+  'Early one morning, Ruby the ant found a crumb of bread that was bigger than she was.',
+  '"Dinner for the whole colony!" she cheered.',
+  'She pushed with all her might, but the crumb would not budge.',
+  'Her friend Otis came to help, yet two ants could not move it either.',
+  'Soon more ants arrived, and each one pushed from a different side.',
+  'The crumb only wobbled in place while the ants bumped into one another and grumbled.',
+  'Then old Mabel climbed onto a pebble and called, "Everyone, line up on this side, and push when I count to three!"',
+  'The ants squeezed into one long row and pushed together.',
+  'The crumb began to slide, slowly at first and then faster, all the way to the nest.',
+  'That night, the whole colony shared the feast.'],
+ qs:[
+  {t:'main',q:'What is this story mostly about?',a:'Ants find a way to move a crumb that is too big for one',
+   d:['An ant builds a new nest under a pebble by the path','Two ants race to see who is faster','Mabel gets lost on her way home'],ev:[0,2,6,7,8]},
+  {t:'infer',q:'Why did the crumb only wobble when many ants first came to help?',a:'They pushed from different sides instead of together',
+   d:['The ants were too tired from digging all night','The crumb was stuck fast to the ground by sticky tree sap','Ruby told everyone to stop pushing'],ev:[4,5]},
+  {t:'summary',q:'Which sentence is the best summary of the story?',a:'The ants move a big crumb by pushing together',
+   d:['Ruby eats a crumb alone and goes back to the nest','Otis and Ruby carry a crumb while others watch','Mabel finds a pebble and uses it to carry food'],ev:[0,2,6,7,8]},
+  {t:'vocab',q:'In this story, "budge" means...',a:'move even a little',d:['break into pieces','taste very sweet and sticky','fall over'],ev:[2]},
+  {t:'theme',q:'Which lesson does this story teach?',a:'Teamwork can solve problems one alone cannot',
+   d:['The biggest ant is always the strongest','Grumbling helps a job get done faster','Food tastes best when it is eaten at night'],ev:[3,5,7,8]}]},
+
+{id:'g4f05',g:4,type:'f',title:'Room 12',text:[
+  'On his first day at Maple School, Amir walked into Room 12 holding his backpack straps tightly.',
+  'Everyone else already knew each other, and no one seemed to notice him.',
+  'At lunch, he sat at the end of a long table and drew tiny dragons on his napkin.',
+  'Chloe, who sat across from him, leaned over and asked, "Did you draw those?"',
+  'Amir nodded, a little shy.',
+  'That afternoon, Mr. Park asked the class to make a poster for the science fair, but nobody could decide what to put on it.',
+  'Chloe said that Amir should draw the picture.',
+  'Amir sketched a bold, colorful volcano, and the others added labels and facts.',
+  'When the poster was finished, the whole class clapped.',
+  'At recess, three kids asked him to join their game, and Amir\'s shoulders finally relaxed.'],
+ qs:[
+  {t:'main',q:'What is this story mostly about?',a:'A new student makes friends by sharing his art',
+   d:['A class argues about which science fair to join','Mr. Park teaches the class all about volcanoes','Chloe loses her lunch and a new student helps'],ev:[2,3,6,7,9]},
+  {t:'infer',q:'Why was Amir holding his backpack straps tightly on the first day?',a:'He felt nervous about being new',
+   d:['He was in a hurry to get to lunch','His backpack was too heavy to carry','He wanted to leave before class began'],ev:[0,1]},
+  {t:'summary',q:'Which sentence is the best summary of the story?',a:'A shy new student shares his art and makes friends',
+   d:['A student draws dragons all day and wins a big prize','A teacher asks Chloe to judge a science fair','A new student decides to sit alone at lunch'],ev:[1,2,6,7,9]},
+  {t:'vocab',q:'In this story, "bold" means...',a:'strong and easy to see',d:['small and faint','plain and gray','smooth and cold'],ev:[7]},
+  {t:'theme',q:'Which lesson does this story teach?',a:'Sharing what you do well can help you make friends',
+   d:['It is best to eat lunch alone','Science fair posters are the best part of every school day','Being new is always easy for everyone'],ev:[2,6,7,9]}]},
+
+{id:'g4n01',g:4,type:'n',title:'How Bees Make Honey',text:[
+  'Honey begins in a flower.',
+  'A worker bee visits many flowers and sips a sweet liquid called nectar.',
+  'She carries the nectar home in a small pouch in her body.',
+  'At the hive, she passes the nectar to another bee, and that bee passes it along to others.',
+  'Each bee chews the nectar for a while, and the chewing begins to change it into a thick syrup.',
+  'Next, the bees spread the syrup into small wax cells.',
+  'They fan their wings over the cells to dry out the extra water.',
+  'When the syrup is thick enough, the bees seal each cell with a wax cap.',
+  'Now the honey can be stored for months, and it will feed the hive in winter when few flowers are blooming.',
+  'It takes the work of many bees to fill even one jar.'],
+ qs:[
+  {t:'main',q:'What is this passage mostly about?',a:'How bees make honey',
+   d:['How bees build their wax hives in spring','Why bees visit flowers for fun','What bees eat when they fly south'],ev:[1,4,6,7]},
+  {t:'infer',q:'Why does it take so many bees to fill even one jar with honey?',a:'Making honey has many steps, and each needs workers',
+   d:['A lone bee cannot fly far from the hive','Flowers only open when many bees are near','The wax caps are too heavy for one small bee to carry alone'],ev:[3,4,5,9]},
+  {t:'summary',q:'Which sentence is the best summary of the passage?',a:'Bees turn nectar into honey in steps',
+   d:['Bees visit flowers in spring and rest all winter','Bees fan the hive to make it cool for sleeping','Honey is made of wax and water mixed together'],ev:[1,4,6,7]},
+  {t:'vocab',q:'In this passage, "seal" means...',a:'close up tightly',d:['open wide','melt down','sort out'],ev:[7]},
+  {t:'structure',q:'How is this passage mostly organized?',a:'In steps that happen in order',
+   d:['By comparing two kinds of bees','By listing problems and then their solutions','By telling about the whole life of one bee'],ev:[1,3,5,7]}]},
+
+{id:'g4n02',g:4,type:'n',title:'Frogs and Toads',text:[
+  'Frogs and toads look alike, and they are close relatives.',
+  'Both are amphibians, so both begin life in water as tadpoles and later grow legs and lungs.',
+  'Both eat insects, which they catch with a long, sticky tongue.',
+  'Still, there are some clear differences.',
+  'Most frogs have smooth, moist skin, while most toads have dry, bumpy skin.',
+  'Frogs have long back legs that help them leap far, but toads have shorter legs and take small hops.',
+  'Frogs stay close to ponds and streams, where it is easy to keep their skin moist.',
+  'Toads spend more time on dry land and go to water mainly to lay eggs.',
+  'Many frogs also have webbed back feet, which help them swim well.',
+  'Knowing these clues can help you tell the two animals apart when you see one outdoors.'],
+ qs:[
+  {t:'main',q:'What is this passage mostly about?',a:'How frogs and toads are alike and different',
+   d:['How tadpoles grow into frogs','Where frogs and toads find insects','Why toads have dry, bumpy skin'],ev:[0,3,4,5,7]},
+  {t:'infer',q:'A bumpy animal with short legs is found far from any pond. It is most likely...',a:'a toad',
+   d:['a frog','a young tadpole','a kind of insect'],ev:[7,4,5]},
+  {t:'summary',q:'Which sentence is the best summary of the passage?',a:'Frogs and toads are related, but differ in key ways',
+   d:['Frogs and toads are really one animal with two names','Toads catch insects much better than frogs do','Amphibians spend their whole lives in the water'],ev:[0,4,5,7]},
+  {t:'vocab',q:'In this passage, "leap" means...',a:'jump a long way',d:['crawl very slowly','dig a deep hole','swim underwater'],ev:[5]},
+  {t:'structure',q:'How is this passage mostly organized?',a:'It shows how two things are alike and different',
+   d:['It tells what happens first, next, and last in time','It names a problem and then solves it','It gives a cause and then lists its effects'],ev:[0,2,3,4]}]},
+
+{id:'g4n03',g:4,type:'n',title:'Why the Moon Changes',text:[
+  'Each night the Moon seems to change shape, but the Moon itself never changes.',
+  'The Moon does not make its own light.',
+  'It shines because sunlight bounces off its surface.',
+  'At any moment, the sun lights up half of the Moon, just as it lights half of Earth.',
+  'The Moon travels in a big circle around Earth, and one trip takes about a month.',
+  'As it moves, we see different amounts of its lit side from Earth.',
+  'When we see the whole bright half, we call it a full moon.',
+  'When the lit side faces away from us, the Moon looks dark, and we call it a new moon.',
+  'Between those times, we see thin slivers and half circles of light.',
+  'So the changing shapes come from where the Moon is on its path, not from any change in the Moon itself.'],
+ qs:[
+  {t:'main',q:'What is this passage mostly about?',a:'Why the Moon seems to change shape',
+   d:['How the Moon makes its own light','How long it takes Earth to circle the sun','Why the sun lights up half of Earth'],ev:[0,5,9]},
+  {t:'infer',q:'Even when we see only a thin sliver of the Moon, which statement is true?',a:'The sun is lighting half of it',
+   d:['Half of it has gone missing','It has stopped moving around Earth','It is closer to the sun than usual'],ev:[3,5]},
+  {t:'summary',q:'Which sentence is the best summary of the passage?',a:'The Moon reflects sunlight, and its look changes',
+   d:['The Moon makes its own light and slowly shrinks','The sun heats the Moon until it glows at night','Earth\'s shadow covers a new part of the Moon each night'],ev:[2,4,5,9]},
+  {t:'vocab',q:'In this passage, "surface" means...',a:'the top, outer part',d:['the deep inside','the long shadow','the bright tail'],ev:[2]},
+  {t:'structure',q:'How is this passage mostly organized?',a:'It explains a cause and what it makes happen',
+   d:['It lists steps for making something','It compares the Moon and the sun','It tells about a problem and how it was solved'],ev:[4,5,9]}]},
+
+{id:'g4n04',g:4,type:'n',title:'Lighthouses',text:[
+  'Long ago, sailors faced a big problem at night.',
+  'Rocky coasts were hard to see in the dark, and ships could crash into hidden rocks.',
+  'To solve it, people built tall towers called lighthouses along the shore.',
+  'At the top of each tower, a strong light shone out across the water.',
+  'Later, a curved glass lens gathered the light into a bright beam that could be seen from many miles away.',
+  'Each lighthouse flashes in its own pattern, so a sailor can tell which one it is.',
+  'A captain can match the pattern to a map and learn where the ship is.',
+  'In fog, some lighthouses also sound a loud horn to warn ships.',
+  'Today, most ships also use computers and satellites to find their way, but many lighthouses still shine.'],
+ qs:[
+  {t:'main',q:'What is this passage mostly about?',a:'How lighthouses help ships stay safe',
+   d:['How sailors build tall towers','Why ships sail only at night','How satellites find rocky coasts'],ev:[1,2,5,6]},
+  {t:'infer',q:'Why were lighthouses built as tall towers?',a:'A high light can be seen from farther away',
+   d:['Tall towers kept fog from reaching the shore','Short towers cost too much to build','Sailors liked to climb up and rest'],ev:[2,4]},
+  {t:'summary',q:'Which sentence is the best summary of the passage?',a:'Lighthouses use light and signals to guide ships',
+   d:['Sailors avoid the sea at night and in fog','Satellites have replaced all lighthouses today','Lighthouses store lenses for ships that need them'],ev:[1,2,5,7]},
+  {t:'vocab',q:'In this passage, "lens" means...',a:'a curved piece of glass that bends light',
+   d:['a tall stone tower on a hill','a loud horn that warns ships','a paper map of the coast'],ev:[4]},
+  {t:'structure',q:'How is this passage mostly organized?',a:'It names a problem and tells how it was solved',
+   d:['It describes steps in order','It compares two kinds of towers','It tells how one event caused another'],ev:[0,1,2]}]},
+
+{id:'g4n05',g:4,type:'n',title:'The Clever Octopus',text:[
+  'An octopus is a sea animal with a soft body and eight strong arms.',
+  'With no bones, an octopus can squeeze through a space almost as small as its beak, the only hard part of its body.',
+  'This helps it hide in narrow cracks between rocks on the sea floor.',
+  'An octopus also hides by changing color.',
+  'Special cells in its skin let it match the sand, rocks, or seaweed around it.',
+  'If a hungry fish gets close, an octopus can squirt a cloud of dark ink and dart away.',
+  'Octopuses are also very smart for animals without a backbone.',
+  'In labs, they have learned to open jars and find their way through mazes.',
+  'In the wild, octopuses mostly eat crabs, shrimp, and clams.',
+  'Strangest of all, an octopus has three hearts and blue blood.'],
+ qs:[
+  {t:'main',q:'What is this passage mostly about?',a:'The special body and skills of an octopus',
+   d:['How octopuses lay eggs in the sea','Why mazes are hard for fish','How hearts pump blue blood'],ev:[0,1,3,6,9]},
+  {t:'infer',q:'Why is it hard for a hungry fish to catch an octopus?',a:'The octopus can hide, squirt ink, and swim away fast',
+   d:['The octopus is bigger than most fish','Its hard beak breaks the fish\'s teeth','It lives only in very deep water, far away from all fish'],ev:[5,3,2]},
+  {t:'summary',q:'Which sentence is the best summary of the passage?',a:'An octopus is a soft, clever animal that can hide well',
+   d:['An octopus is a hard-shelled animal that rests on sand','An octopus has arms and spends its life in mazes','An octopus is a large fish that is easy to catch'],ev:[0,2,4,7]},
+  {t:'vocab',q:'In this passage, "dart" means...',a:'move away quickly',d:['sink slowly','sleep deeply','grow larger'],ev:[5]},
+  {t:'structure',q:'How is this passage mostly organized?',a:'It describes one animal using facts and examples',
+   d:['It lists steps in time order from first to last one','It compares two sea animals','It gives a problem and a solution'],ev:[0,3,6,9]}]}
 ]);
 /* Demo content for the bank format (P1-09). Small on purpose: it proves the format, the validator and the passage panel.
    Real content arrives with the Phase 2 chunks (d-gram.js, d-vocab.js, d-comp.js, ...). There is no demo skill in SK: tests,
