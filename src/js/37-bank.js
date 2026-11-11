@@ -152,6 +152,9 @@ function bankRebuild(bk){
    renderQ puts bankCtx(q.ctx) above the prompt. The words use the existing .w spans, so renderQ's tap-to-hear works.
    The "Hear it" button uses data-say, which renderQ also binds. ontoggle re-fits the question after open/close. */
 function bankCtx(c){
+  // c.html (P2-35 Spanish dialogues): the panel body is made by the generator (a speak button per line) instead of the English text
+  if(c.html)return `<details class="bctx dlg" open ontoggle="fit()"><summary class="bctx-h"><span class="bctx-t">${esc(c.title||'Read')}</span>`
+    +`<span class="bctx-s"><span class="bctx-hide">Hide</span><span class="bctx-show">Show</span></span></summary><div class="bctx-b">${c.html}</div></details>`;
   return `<details class="bctx${c.text.length>700?' long':''}" open ontoggle="fit()"><summary class="bctx-h"><span class="bctx-t">${esc(c.title||'Read')}</span>`
     +'<span class="bctx-s"><span class="bctx-hide">Hide</span><span class="bctx-show">Show</span></span></summary>'
     +`<div class="bctx-b"><button class="btn sm bctx-say" data-say="${esc(c.text)}">${ico('speak',22)} Hear the story</button>`

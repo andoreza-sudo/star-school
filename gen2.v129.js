@@ -1,5 +1,5 @@
-/* Star School gen2 v128. BUILT by tools/build.py from 35-gen-math-upper.js, 36-gen-phonics.js, 37-bank.js, 37-comp.js, 39b-steps.js: never edit by hand.
-   index.html v128 loads this file with <script src="gen2.v128.js"> after its own code, before data.v128.js. */
+/* Star School gen2 v129. BUILT by tools/build.py from 35-gen-math-upper.js, 36-gen-phonics.js, 37-bank.js, 37-comp.js, 39b-steps.js: never edit by hand.
+   index.html v129 loads this file with <script src="gen2.v129.js"> after its own code, before data.v129.js. */
 /* Upper-grade math generators (4th grade and up). One marked block per chunk, so parallel chunks merge by appending.
    Seeded randomness only (R, pick, shuffle, coin, rnd). Step hints come from 39b-steps.js. */
 
@@ -2547,6 +2547,9 @@ function bankRebuild(bk){
    renderQ puts bankCtx(q.ctx) above the prompt. The words use the existing .w spans, so renderQ's tap-to-hear works.
    The "Hear it" button uses data-say, which renderQ also binds. ontoggle re-fits the question after open/close. */
 function bankCtx(c){
+  // c.html (P2-35 Spanish dialogues): the panel body is made by the generator (a speak button per line) instead of the English text
+  if(c.html)return `<details class="bctx dlg" open ontoggle="fit()"><summary class="bctx-h"><span class="bctx-t">${esc(c.title||'Read')}</span>`
+    +`<span class="bctx-s"><span class="bctx-hide">Hide</span><span class="bctx-show">Show</span></span></summary><div class="bctx-b">${c.html}</div></details>`;
   return `<details class="bctx${c.text.length>700?' long':''}" open ontoggle="fit()"><summary class="bctx-h"><span class="bctx-t">${esc(c.title||'Read')}</span>`
     +'<span class="bctx-s"><span class="bctx-hide">Hide</span><span class="bctx-show">Show</span></span></summary>'
     +`<div class="bctx-b"><button class="btn sm bctx-say" data-say="${esc(c.text)}">${ico('speak',22)} Hear the story</button>`
@@ -3407,4 +3410,4 @@ function stepsDecDiv(a, b) {
   return ST.hint([...steps, ...h.steps], h.w);
 }
 
-var GEN2_VER='v128'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var GEN2_VER='v129'; // last line: the whole file ran (checked by dataReady() before the app starts)

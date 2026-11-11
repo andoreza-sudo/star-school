@@ -6622,6 +6622,81 @@ async function main() {
       await app.ctx.close();
     }
 
+    // P2-35 Los Cuentos at 380x780: open the world from the Spanish map by id, play a level 1 round (English questions) with real taps: the dialogue panel
+    //    sits above every question with a speak button per line (48 px), the question and its choices stay on screen; stars saved under the stop id.
+    //    Then a level 2 question (picture answers) and a level 3 question with no Spanish voice: the buttons go, the lines stay, a tap still answers.
+    {
+      const ES_FX = require('./lib/es-fx.js');
+      const cx = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
+      const cp = cx.page;
+      await cp.evaluate(() => { S.unlockAll = true; save(); });
+      await cp.evaluate(`(${ES_FX.install})(['es-MX'])`);
+      const shot = n => cp.screenshot({ path: require('path').join(__dirname, 'out', 'es-cuentos-' + n + '-380x780.png') }).catch(() => {});
+      const look = () => cp.evaluate(() => {
+        const r = s => { const e = document.querySelector(s); return e ? e.getBoundingClientRect() : null; };
+        const sm = a => (a.length ? Math.min(...a.map(b => Math.min(b.offsetHeight, b.offsetWidth))) : 0); // layout size: an entrance animation scales the rect for a moment
+        const ch = [...document.querySelectorAll('.ch')], bq = r('.bq'), panel = r('.bctx.dlg');
+        return { w: document.documentElement.scrollWidth, panel: !!panel, open: !!document.querySelector('.bctx.dlg[open]'), lines: document.querySelectorAll('.dl-l').length,
+          btns: document.querySelectorAll('.dl-b').length, btnMin: sm([...document.querySelectorAll('.dl-b')]), ch: ch.length, chMin: sm(ch),
+          chBottom: ch.length ? Math.max(...ch.map(b => b.getBoundingClientRect().bottom)) : 0, bqBottom: bq ? bq.bottom : 0, text: (document.querySelector('.dl-t') || {}).textContent || '',
+          names: [...document.querySelectorAll('.dl-n')].map(e => e.textContent).join(' '), esbig: !!document.querySelector('.esbig'), spk: !!document.querySelector('#spk') && document.querySelector('#spk').style.display !== 'none' };
+      });
+      await cp.evaluate(() => { if (G) G.dead = true; home(); });
+      await cp.click('.game[data-p="es"]');
+      await cp.waitForSelector('.wchip.on');
+      const at = await cp.evaluate(() => ({ i: NODES.es.findIndex(n => nid(n) === 'es_story1'), w: NODES.es.find(n => nid(n) === 'es_story1').wi, wid: NODES.es.find(n => nid(n) === 'es_story1').wid, last: PATHS.es.worlds[PATHS.es.worlds.length - 1].id }));
+      if (at.wid !== 'e_cuentos' || at.last !== 'e_cuentos') fail('P2-35 es_story1 is not in Los Cuentos: ' + JSON.stringify(at));
+      await cp.click(`.wchip[data-w="${at.w}"]`);
+      await cp.waitForSelector(`.wchip.on[data-w="${at.w}"]`);
+      await cp.click(`.node[data-n="${at.i}"]`);
+      await cp.waitForSelector('.bctx.dlg .dl-b'); // a story stop opens straight on the question (no word-card learn screen)
+      await vwait(cp, 800);
+      const l1 = await look();
+      const g1 = await cp.evaluate(() => ({ sk: G.sk, lv: G.lv, n: G.n, kind: G.q.kind, title: G.q.ctx.title }));
+      if (!l1.open || l1.lines < 4 || l1.btns !== l1.lines || l1.btnMin < 48 || l1.ch !== 3 || l1.chMin < 48 || l1.w > 380 || g1.sk !== 'es_story' || g1.lv !== 1 || g1.n !== 6)
+        fail('P2-35 level 1 layout: ' + JSON.stringify({ l1, g1 }));
+      if (l1.chBottom > 780 || l1.bqBottom <= 0) fail('P2-35 the question and its choices must be on screen with the panel open: ' + JSON.stringify(l1));
+      if (!/\S/.test(l1.text) || !l1.names) fail('P2-35 the dialogue panel shows no speaker names or text: ' + JSON.stringify(l1));
+      await shot('level1-panel');
+      // a speak button speaks the Spanish line (es voice: the utterance is es-MX)
+      const spoke = await cp.evaluate(() => {
+        const u = [], orig = window.say; window.say = (t, b, l) => { u.push([t, l]); };
+        document.querySelector('.dl-b').click(); window.say = orig;
+        return { u, line: G.q.after };
+      });
+      if (spoke.u.length !== 1 || spoke.u[0][1] !== 'es' || !spoke.u[0][0] || /<|>/.test(spoke.u[0][0])) fail('P2-35 a line button does not speak its Spanish line: ' + JSON.stringify(spoke));
+      // Hide / Show keeps working
+      await cp.click('.bctx-h');
+      if (await cp.evaluate(() => !!document.querySelector('.bctx.dlg[open]'))) fail('P2-35 the panel did not close');
+      await cp.click('.bctx-h');
+      await playRound(cp, 'P2-35 es_story1');
+      const st = await cp.evaluate(() => S.maps.es.es_story1 || 0);
+      if (st < 1) fail('P2-35 es_story1 did not save stars');
+      // level 2 (picture answers), with a Spanish voice
+      await cp.evaluate(() => { start('es', NODES.es.findIndex(n => nid(n) === 'es_story2')); });
+      await cp.waitForSelector('.bctx.dlg .dl-b');
+      await vwait(cp, 800);
+      const l2 = await look();
+      const p2 = await cp.evaluate(() => ({ lv: G.lv, cls: document.querySelector('.choices').className, pics: [...document.querySelectorAll('.ch')].every(c => /\S/.test(c.innerHTML) && !/[a-z]{4}/.test(c.textContent.replace(/[A-ZÁÉÍÓÚ][a-záéíóú]+/g, ''))) }));
+      if (p2.lv !== 2 || !/pics/.test(p2.cls) || !p2.pics || l2.ch !== 3 || l2.chMin < 48 || l2.btnMin < 48 || l2.w > 380 || l2.chBottom > 780) fail('P2-35 level 2 layout: ' + JSON.stringify({ l2, p2 }));
+      await shot('level2-pictures');
+      // level 3 with no Spanish voice: no speak buttons, the lines are still there to read, the question can be answered
+      await cp.evaluate(`(${ES_FX.install})(['en-US'])`);
+      await vwait(cp, 2800);
+      await cp.evaluate(() => { document.querySelectorAll('.ovl').forEach(e => e.remove()); start('es', NODES.es.findIndex(n => nid(n) === 'es_story3')); });
+      await cp.waitForSelector('.bctx.dlg');
+      await vwait(cp, 800);
+      const l3 = await look();
+      if (l3.btns !== 0 || l3.spk || l3.lines < 4 || !/\S/.test(l3.text) || l3.ch !== 3 || l3.chMin < 48 || l3.w > 380 || l3.chBottom > 780) fail('P2-35 level 3, no voice: ' + JSON.stringify(l3));
+      await shot('level3-novoice');
+      await answer(cp);
+      if (!(await cp.evaluate(() => G.lock))) fail('P2-35 level 3: the right tap did not pass');
+      step('P2-35: Los Cuentos opened by id; level 1 round played with real taps (panel above each question, a 48 px speak button per line, choices 48 px, nothing off screen), stars saved; level 2 pictures; level 3 with no Spanish voice shows the lines without buttons and still answers');
+      network.push(...cx.network);
+      for (const e of cx.errors) fail(e);
+      await cx.ctx.close();
+    }
+
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');
   } catch (e) {
