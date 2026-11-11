@@ -6601,14 +6601,13 @@ async function main() {
         const gp = ga.page;
         await gp.evaluate(() => { window.say = () => {}; ptCfg().need = 1; ptCfg().max = 30; ptCfg().pause = false; pt().bank = 0; pt().used = 0; pt().open = ''; S.log = []; save(); home(); });
         await gp.waitForSelector('#groom');
-        // Home and the Game Room say plainly why it is shut
+        // Home and the Game Room say plainly why it is shut (P4-16 merge: the hub's ticket and its .gh-why line, read as the old card's title and line)
         const home1 = await gp.evaluate(() => document.querySelector('.hm-gsub').textContent.trim());
         if (home1 !== 'Learn 1 more minute to open the Game Room today.') bad.push(tag + ' Home line: ' + home1);
         await chk(gp, 'Home');
         await gp.click('#groom');
         await gp.waitForSelector('#g4x4');
-        const room1 = await gp.evaluate(() => ({ t: document.querySelector('.gx-pt .hname').textContent.trim(), s: document.querySelector('.gx-pt .small').textContent.trim(),
-          empty: document.querySelector('.gx-pt').classList.contains('empty'), earn: !!document.querySelector('#learn') }));
+        const room1 = await gp.evaluate((() => { const off = document.querySelector('.gh-hero').classList.contains('off'); return { t: off ? 'No game time yet' : document.querySelector('.gh-tkt b').textContent.trim() + ' of game time', s: document.querySelector('.gh-why p').textContent.trim(), empty: off, earn: !!document.querySelector('#learn') }; }));
         if (room1.t !== 'No game time yet' || room1.s !== 'Learn 1 more minute to open the Game Room today.' || !room1.empty || !room1.earn) bad.push(tag + ' Game Room shut: ' + JSON.stringify(room1));
         await chk(gp, 'Game Room shut');
         // earn: a real round, then the reasons and the bank
@@ -6634,13 +6633,12 @@ async function main() {
         await gp.waitForSelector('#map');
         await gp.evaluate(() => gameRoom());
         await gp.waitForSelector('#g4x4');
-        const room2 = await gp.evaluate(() => ({ t: document.querySelector('.gx-pt .hname').textContent.trim(), s: document.querySelector('.gx-pt .small').textContent.trim() }));
+        const room2 = await gp.evaluate((() => { const off = document.querySelector('.gh-hero').classList.contains('off'); return { t: off ? 'No game time yet' : document.querySelector('.gh-tkt b').textContent.trim() + ' of game time', s: document.querySelector('.gh-why p').textContent.trim(), empty: off, earn: !!document.querySelector('#learn') }; }));
         if (!/^No game time yet$/.test(room2.t) || !/^You have \d+:\d\d saved\. Learn 1 more minute/.test(room2.s)) bad.push(tag + ' Game Room after the round: ' + JSON.stringify(room2));
         // the minute of learning is done (the log is what the round writes; here the rest of the minute is added): the time shows
         await gp.evaluate(() => { ACT.add(today(), { sec: 60, area: 'math' }); pt().bank = 4; save(); gameRoom(); });
         await gp.waitForSelector('#g4x4');
-        const room3 = await gp.evaluate(() => ({ t: document.querySelector('.gx-pt .hname').textContent.trim(), s: document.querySelector('.gx-pt .small').textContent.trim(),
-          empty: document.querySelector('.gx-pt').classList.contains('empty') }));
+        const room3 = await gp.evaluate((() => { const off = document.querySelector('.gh-hero').classList.contains('off'); return { t: off ? 'No game time yet' : document.querySelector('.gh-tkt b').textContent.trim() + ' of game time', s: document.querySelector('.gh-why p').textContent.trim(), empty: off, earn: !!document.querySelector('#learn') }; }));
         if (room3.t !== '0:04 of game time' || room3.empty || room3.s !== 'Every learning round earns more. Have fun!') bad.push(tag + ' Game Room open: ' + JSON.stringify(room3));
         await chk(gp, 'Game Room open');
         // play until the time runs out: Coloring, one picture, 4 s in the bank and 20 s of grace
@@ -6655,8 +6653,7 @@ async function main() {
         await gp.waitForSelector('#groom');
         await gp.evaluate(() => gameRoom());
         await gp.waitForSelector('#g4x4');
-        const room4 = await gp.evaluate(() => ({ t: document.querySelector('.gx-pt .hname').textContent.trim(), s: document.querySelector('.gx-pt .small').textContent.trim(),
-          empty: document.querySelector('.gx-pt').classList.contains('empty') }));
+        const room4 = await gp.evaluate((() => { const off = document.querySelector('.gh-hero').classList.contains('off'); return { t: off ? 'No game time yet' : document.querySelector('.gh-tkt b').textContent.trim() + ' of game time', s: document.querySelector('.gh-why p').textContent.trim(), empty: off, earn: !!document.querySelector('#learn') }; }));
         if (room4.t !== 'No game time yet' || room4.s !== 'Finish a learning round to earn game time!' || !room4.empty) bad.push(tag + ' Game Room after the time ran out: ' + JSON.stringify(room4));
         // ---- Grown-ups: the Game time card ----
         await gp.evaluate(() => grown());
