@@ -2436,6 +2436,10 @@ async function main() {
                 document.querySelector('.k[data-k="go"]').click(); });
               await vwait(sp, 300);
             }
+            // the hint folds itself to fit a frame after it is drawn: let the card settle (up to 1.5 s real time) before measuring, so a
+            // busy machine is not mistaken for a hint that does not fit (a hint that never fits still fails below)
+            await sp.waitForFunction(() => { const qa = document.querySelector('.qarea'); return qa && qa.scrollHeight - qa.clientHeight <= 1; },
+              null, { timeout: 1500, polling: 'raf' }).catch(() => {});
             const r = await sp.evaluate(look);
             const want = i < n - 1 ? 'Next step' : 'Help';
             const where = `${name} ${w}x${h} step ${i + 1} of ${n}`;
