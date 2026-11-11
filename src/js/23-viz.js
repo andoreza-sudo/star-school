@@ -70,6 +70,8 @@
      coinSVG(v, o)                v cents or a list: coins 1 5 10 25 50, bills 100 500 1000 2000; o.face = false hides values
      tally(n)                     tally marks, 0..50, groups of five
      tableInOut(rows, o)          rows [[in, out], ...] ('?' = unknown box); o.head: ['In', 'Out']
+     solid(parts, o)              P2-12: boxes in 3D, parts [{l, h, c2}] side by side along the length, o.w their width (all to 12);
+                                  o.grid draws the unit cubes, o.lab prints l, w, h on the edges (for volume)
    New visuals: add a function inside this block and to the returned object; use svg(), f() and counters().
 
    Depth (P4-18). The visuals share the light of the object art (DESIGN_SYSTEM 6.5): light from the top left, a shade tone on
@@ -692,7 +694,9 @@ const VIZ = (() => {
     const mx = clamp(Math.round(def(o.max, tapPts.length ? (four ? 3 : 5) : (four ? 5 : 6))), 1, 10);
     const span = four ? 2 * mx : mx, lo = four ? -mx : 0;
     const p = tapPts.length ? 48 : clamp(Math.floor(270 / span), 16, 40);
-    const ox = 28 + (four ? mx * p : 0), oy = 14 + mx * p, W = 28 + span * p + 18, H = 14 + (four ? 2 : 1) * mx * p + 26;
+    // with tap targets the picture keeps 24 units free above and to the right, so the targets at the edge are whole 48 x 48 squares
+    const tp = tapPts.length > 0, top = tp ? 24 : 14;
+    const ox = 28 + (four ? mx * p : 0), oy = top + mx * p, W = 28 + span * p + (tp ? 24 : 18), H = top + (four ? 2 : 1) * mx * p + 26;
     const X = x => ox + x * p, Y = y => oy - y * p;
     let g = '', lab = '';
     for (let k = lo; k <= mx; k++) {
@@ -705,7 +709,11 @@ const VIZ = (() => {
     const pts = o.points || [];
     if (o.join && pts.length > 1) body += `<path class="vjn" d="M${pts.map(q => X(q[0]) + ' ' + Y(q[1])).join('L')}${o.close ? 'z' : ''}"/>`;
     if (pts.length) body += `<g class="v1">${pts.map(q => `<circle cx="${X(q[0])}" cy="${Y(q[1])}" r="7"/>`).join('')}${vol(pts.map(q => [X(q[0]), Y(q[1])]), 7)}</g>` +
-      pts.filter(q => q[2]).map(q => `<text class="vts" x="${X(q[0]) + 10}" y="${Y(q[1]) - 9}">${ex(q[2])}</text>`).join('');
+      // a name sits up and to the right of its point; on the right or top edge of the grid it goes left or below so it stays inside
+      pts.filter(q => q[2]).map(q => {
+        const right = q[0] < mx, top = q[1] < mx;
+        return `<text class="${right ? 'vts' : 'vta'}" x="${X(q[0]) + (right ? 10 : -10)}" y="${Y(q[1]) + (top ? -9 : 18)}">${ex(q[2])}</text>`;
+      }).join('');
     tapPts.forEach(q => {
       body += `<g ${tapAttr(q[0] + ',' + q[1])}><rect class="vh" x="${X(q[0]) - 24}" y="${Y(q[1]) - 24}" width="48" height="48"/>` +
         `<circle class="vm" cx="${X(q[0])}" cy="${Y(q[1])}" r="9"/></g>`;
@@ -794,6 +802,52 @@ const VIZ = (() => {
     return svg('tio', 2 * cw + 2 * P, H + 2 * P, body + `<path class="vl" d="${d}"/>`, 'in out table');
   }
 
+  // ---- boxes in 3D (P2-12): rectangular prisms for volume ----
+  // parts [{l, h, c2?}]: boxes of the same width o.w, side by side along the length; the array order is the draw order, so each
+  // box is in front of the one before. o.grid draws the unit cubes on the three visible faces; o.lab prints l, w, h on the edges.
+  // Corner (x, y, z) goes to the screen as x along the lower right, y along the lower left, z up. Faces reuse .vsl / .s1 .s2 .s3.
+  function solid(parts, o = {}) {
+    parts = (parts || []).slice(0, 3).map(p => ({l: clamp(Math.round(p.l), 1, 12), h: clamp(Math.round(p.h), 1, 12), c2: !!p.c2}));
+    const w = clamp(Math.round(def(o.w, 3)), 1, 12), L = parts.reduce((s, p) => s + p.l, 0), H = Math.max(1, ...parts.map(p => p.h));
+    const s = f(Math.min(28, 300 / ((L + w) * 0.866), 210 / ((L + w) * 0.5 + H))), c = 0.866 * s, e = 0.5 * s, lab = !!o.lab;
+    const ox = (lab ? 34 : 14) + w * c, oy = 14 + H * s;
+    const P = (x, y, z) => `${f(ox + (x - y) * c)} ${f(oy + (x + y) * e - z * s)}`;
+    const poly = pts => 'M' + pts.map(q => P(...q)).join('L') + 'z';
+    const W = ox + L * c + (lab ? 34 : 14), Hh = oy + (L + w) * e + (lab ? 36 : 14);
+    let body = '', x0 = 0;
+    parts.forEach((p, n) => {
+      const x1 = x0 + p.l, h = p.h;
+      let g = '', gt = ''; // grid lines: on the sides (light lines) and on the top (dark lines)
+      if (o.grid) {
+        for (let i = 1; i < p.l; i++) {
+          gt += `M${P(x0 + i, 0, h)}L${P(x0 + i, w, h)}`;
+          g += `M${P(x0 + i, w, 0)}L${P(x0 + i, w, h)}`;
+        }
+        for (let j = 1; j < w; j++) {
+          gt += `M${P(x0, j, h)}L${P(x1, j, h)}`;
+          g += `M${P(x1, j, 0)}L${P(x1, j, h)}`;
+        }
+        for (let k = 1; k < h; k++) g += `M${P(x0, w, k)}L${P(x1, w, k)}L${P(x1, 0, k)}`;
+      }
+      body += `<g class="vsl${p.c2 ? ' c2' : ''}"><path class="s2" d="${poly([[x0, 0, h], [x1, 0, h], [x1, w, h], [x0, w, h]])}"/>` +
+        `<path class="s1" d="${poly([[x0, w, 0], [x1, w, 0], [x1, w, h], [x0, w, h]])}"/>` +
+        `<path class="s3" d="${poly([[x1, w, 0], [x1, 0, 0], [x1, 0, h], [x1, w, h]])}"/>` +
+        `${gt ? `<path class="vcg vct" d="${gt}"/>` : ''}${g ? `<path class="vcg" d="${g}"/>` : ''}</g>`;
+      if (lab) {
+        const [bx, by] = P((x0 + x1) / 2, w, 0).split(' ').map(Number);
+        body += `<text x="${f(bx - 12)}" y="${f(by + 20)}">${p.l}</text>`;
+        const [hx, hy] = (n == 0 ? P(x0, w, h / 2) : P(x1, 0, h / 2)).split(' ').map(Number);
+        body += `<text x="${f(n == 0 ? hx - 14 : hx + 14)}" y="${f(hy + 5)}">${h}</text>`;
+      }
+      x0 = x1;
+    });
+    if (lab) {
+      const [wx, wy] = P(L, w / 2, 0).split(' ').map(Number);
+      body += `<text x="${f(wx + 14)}" y="${f(wy + 18)}">${w}</text>`;
+    }
+    return svg('box', W, Hh, body, 'box made of cubes');
+  }
+
   return {tenFrame, base10, numLine, fracBar, fracCircle, clock, array, dots,
-    ruler, barGraph, pictograph, linePlot, shape, shapeNames, areaGrid, rectSides, angle, coordGrid, balance, coinSVG, tally, tableInOut};
+    ruler, barGraph, pictograph, linePlot, shape, shapeNames, areaGrid, rectSides, angle, coordGrid, balance, coinSVG, tally, tableInOut, solid};
 })();

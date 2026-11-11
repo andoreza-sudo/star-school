@@ -1268,6 +1268,41 @@ Object.assign(SCREENS, {
   'bt-maze-win': { run: mazeShot('A', 3, 99, async p => { await p.evaluate(() => BT.win(BT.act, { mistakes: 0 })); await p.waitForTimeout(900); }) },
 });
 
+// P2-12 Crystal Caves: a question of one level picked by its label (grade 5), optionally with the step hint open
+function ccShot(sk, lv, want, hint) {
+  return async p => {
+    await p.evaluate(([sk, lv, want]) => {
+      S.grade = 5; S.name = 'Ava'; S.buddy = 'Ben';
+      window.say = () => {};
+      start('math', NODES.math.findIndex(n => n.sk == sk && n.lv == lv));
+      let q; for (let i = 1; i < 900; i++) { q = genQ(sk, lv, i); if (new RegExp(want).test(q.label)) break; }
+      G.q = q; renderQ();
+    }, [sk, lv, want]);
+    if (hint) { await p.click('#hb'); await p.waitForTimeout(150); await p.click('#hb'); }
+  };
+}
+Object.assign(SCREENS, {
+  'cc-map': { run: async p => { await p.evaluate(() => { S.grade = 5; pathMap('math', PATHS.math.worlds.findIndex(w => w.id === 'm_caves')); }); } },
+  'cc-fop3': { run: ccShot('fop', 3, '^fop3 .*simplest', true) },
+  'cc-fop4': { run: ccShot('fop', 4, '^fop4 \\d \\d+/\\d+ −') },
+  'cc-fop5': { run: ccShot('fop', 5, '^fop5 \\d+/\\d+ x \\d+/\\d+$') },
+  'cc-fop6-split': { run: ccShot('fop', 6, '^fop6 1/') },
+  'cc-fop6-bars': { run: ccShot('fop', 6, '^fop6 \\d / 1/') },
+  'cc-geo4-cubes': { run: ccShot('geo', 4, '^geo4 cubes 4x4x') },
+  'cc-geo4-vol': { run: ccShot('geo', 4, '^geo4 vol 1\\dx1\\dx') },
+  'cc-geo4-join': { run: ccShot('geo', 4, '^geo4 join') },
+  'cc-coord-tap': { run: ccShot('coord', 1, '^coord1 tap') },
+  'cc-coord-read': { run: ccShot('coord', 1, '^coord1 read') },
+  'cc-coord-dist': { run: ccShot('coord', 1, '^coord1 dist') },
+  'cc-meas6': { run: ccShot('meas', 6, '^meas6 \\d+ hr to sec', true) },
+  'cc-data4-total': { run: ccShot('data', 4, '^data4 total d=8') },
+  'cc-data4-count': { run: ccShot('data', 4, '^data4 count') },
+  'cc-pat5-rule': { run: ccShot('pat', 5, '^pat5 rule', true) },
+  'cc-pat5-rel': { run: ccShot('pat', 5, '^pat5 relc') },
+  'cc-story8-money': { run: ccShot('story', 8, '^story8 change') },
+  'cc-story8-recipe': { run: ccShot('story', 8, '^story8 triple') },
+});
+
 async function main() {
   const args = process.argv.slice(2);
   let fixtureArg = null;

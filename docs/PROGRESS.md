@@ -6,15 +6,9 @@ The running record of what has shipped. Newest entry first. Every chunk adds one
 
 **Next up:** P2-12, P2-13, P3-08, P3-09, P3-10
 
-**Next up:** P2-12, P2-13
+**Next up:** P2-13, P3-03, P3-04, P4-06, P2-16
 
-**Current version:** v97
-
-**Next up:** P2-12, P3-08, A11
-
-**Next up:** P2-12, P2-13
-
-**Current version:** v97
+**Current version:** v98
 
 ## Chunk status
 
@@ -86,6 +80,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P3-10 v95
 - P3-08 v96
 - A11 v97
+- P2-12 v98
 
 ## Handoff notes
 
@@ -321,6 +316,20 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-11) Icons wanted from P4-03: `balloon` (Bonus game, today `gamepad`), `sparkle` / `confetti`, `unlock` (open padlock for "Next stop unlocked", today `map`), `zap` (a lightning with a spark for boss hits; today `bolt`), `sticker` (single sticker for the prize row), `medal` (the prize rosette as an icon), `heart-half` (boss life bar), `chest` (the treasure chest at icon size, e.g. for the round track where renderQ shows the gift emoji).
 
 ## Log
+
+### P2-12 5th grade: world Crystal Caves (v93, 2026-11-11, Claude)
+- What changed (CURRICULUM M-5b and 2.1 row 14, ROADMAP P2-12): new world `m_caves` "Crystal Caves" (grade 5, gem icon, after `m_desert`; P2-11 Volcano Lab goes between them at merge) with the 10 stops in CURRICULUM order: fop 3 Unlike Denominators, fop 4 Mixed Numbers, geo 4 Volume of a Box, fop 5 Multiply Fractions, coord 1 Coordinate Grid, fop 6 Unit Fraction Division, meas 6 Convert Both Ways, data 4 Line Plots, pat 5 Two Rules, story 8 Fraction Stories, then the boss. New skill `coord` (1 level); extended `fop` 2 -> 6, `geo` 3 -> 4, `meas` 5 -> 6, `data` 3 -> 4, `pat` 4 -> 5, `story` 7 -> 8 with dispatchers in `38-skills.js` (old levels untouched, checked by seed).
+- Generators: one block `// ---- P2-12 Crystal Caves ----` at the end of `35-gen-math-upper.js` (names `cc`). fop 3 unlike bottoms (LCD <= 60; half the items need simplest form, `eq` off), fop 4 mixed numbers (most subtractions regroup, answer in the three-slot pad), fop 5 area model for fraction x fraction (rows orange, columns blue, overlap dark) and fraction x mixed number, fop 6 unit fraction / whole (bar cut up) and whole / unit fraction (bars), geo 4 count unit cubes (to 4x4x4) / l x w x h with labels (to 12) / two joined boxes, coord 1 tap a point / read (x, y) in two boxes / pick the ordered pair / distance on one line, meas 6 both directions, metric decimals, two steps, data 4 line plot of halves, quarters, eighths (how many, total, longest minus shortest), pat 5 relate two sequences / pick `y = 2x + 1` / evaluate, story 8 money, recipes x 1/2 or x 3, decimal and fraction distances.
+- Step hints: fop 3, fop 4 and the fraction distance stories use `stepsCommonDen`; geo 4 labelled uses `stepsMul`; money and decimal-distance stories use `stepsAdd` / `stepsSub` with a text step in front; the rest are text steps (`ccHint`). Every step hint ends in a "?" and none states the answer.
+- New picture and kind support: `VIZ.solid(parts, o)` in `23-viz.js` (boxes in 3D, optional unit-cube grid and edge labels, reuses `.vsl` faces, deterministic, tokens only). `VIZ.coordGrid` now keeps the name of a point on the top or right edge inside the picture. `49-kinds.js`: num `sep:'xy'` (two slots, answer `3,5`). CSS: `src/css/44-caves.css` (cube grid lines, `(x, y)` boxes, `.choices.ccw` one column for `y = 5x + 2`).
+- Tests (test.js 73 of 73): "Crystal Caves P2-12" with 3,000 seeded questions per new level (10 levels), maths recomputed from the label and the picture (drawn box proportions and grid-line counts, coordinates of drawn points, dots of the line plot read back from the svg, area-model cell counts, every offered rule tried on the table), hints, say, labels, kindProblems zero, reproducible, old levels unchanged, stops read from CURRICULUM row 14; and a save check (fixtures x 9 grades + 3 synthetic saves) that ends the path at the caves while it runs: no star moves, nothing re-locks, the map opens where it did except for the new world.
+- Smoke expectations changed (position by id, never "last world"): the Factor Factory step asked for `m_factory` to be the last math world; it now asks that it follows `m_frac`. The Decimal Desert step expected the map to open on the desert; Factor Factory (also grade 4) is before it, so the step first marks every earlier world finished (stops passed, `S.wdone`). The Crystal Caves block does the same for the worlds before `m_caves` (Volcano Lab after merge). The save-safety test ends the path at the caves while it runs.
+- Test expectations changed: `SK` maxima in the P2-07 and P2-10 stop checks (geo 4, data 4, meas 6, story 8; fop 6, pat 5), because those levels are this world's. Nothing weakened.
+- Smoke (`// P2-12` block, last in the main sequence): a 5th grader opens the map on the caves, plays Unlike Denominators with a step hint, Volume of a Box and Coordinate Grid as full rounds of real taps (a point tapped, (x, y) typed), measures every question at 380x780 (48 px keys, choices and tap targets, no cut-off words, no sideways scroll, pictures present), forced runs of each picture type, stars saved. Shots `cc-*` (looked at them at 380x780).
+- Found and not changed: tapping a point works on a grid to 4 only (a bigger grid shrinks the 48 px targets on a phone, or its edge targets stick out of the picture); reading, pairs and distances use the full 0-10 grid. Joined boxes are two prisms side by side, not arbitrary solids. With a step hint open, long stories with the decimal pad can crowd the card.
+- Checklist 7.1: [x] chunk files [x] VER v93 (provisional) [x] build [x] test.js [x] smoke.js [x] screenshots [x] no network [x] no new emoji or hex [x] PROGRESS entry [x] one commit (not pushed).
+- Merge: built on a parallel branch from P2-10 (v90); `m_caves` goes after Volcano Lab; renumber VER at merge. Keep both `35-gen-math-upper.js` blocks and every `SK` dispatcher.
+- Merge: built on a parallel branch, renumbered v97 -> v98 at merge.
 
 ### A11 Data banks in a second precached file (v97, 2026-11-11, Claude)
 - Why now (ROADMAP A11, risk R1): the built index.html was 1,376,935 bytes, and the chunks in flight (5th/6th grade math worlds, three Brain Teaser puzzle types, more banks) would push it past the 1.5 MB limit.
