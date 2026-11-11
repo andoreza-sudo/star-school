@@ -3582,8 +3582,9 @@ run('rewards (P4-11): drawings follow the art rules, every boss is drawn, screen
     clean:RW.clean('\u{1F525} 3 days in a row! +5 \u{1FA99} and a sticker \u{1F984}'),
     icons:Object.keys(ICONS),
     pt:['Tested out!','Good try','Practice round','Fixed 2 tricky ones','Already mastered this one','Keep trying','Round done','New stop unlocked',
-      'Beat your old score','Harder world','Perfect score','Beat the boss','Fixed 1 old mistake','Played 2 times today'].map(l=>[l,RW.ptIcon(l)]),
-    ptSrc:SK&&ptCalc.toString(),bossIn:RW.bossIn('read','Gloop','x','\u{1F33C}')})`);
+      'Beat your old score','Harder world','Perfect score','Beat the boss','Fixed 1 old mistake','Played 2 times today',
+      'Daily review done','Daily mission done','Puzzle solved, no hints','Puzzle solved with 2 hints','Puzzle of the Day','Played this one again'].map(l=>[l,RW.ptIcon(l)]),
+    ptSrc:SK&&ptCalc.toString()+ptBT.toString(),bossIn:RW.bossIn('read','Gloop','x','\u{1F33C}')})`);
   p.push(...out.bad);
   // drawing rules (DESIGN_SYSTEM 6.5): no ids, defs, gradients, masks, clips, patterns, filters, use, text, style or url; colours are roles
   for(const [n,h] of Object.entries(out.D)){
@@ -6541,7 +6542,7 @@ run('teaser framework P3-01',()=>{
   o=fin(1,{band:'D'});if(o.sec!==0||!o.capped)bad.push('capped win '+JSON.stringify(o));
   S.bt.earn.day='1999-1-1';o=fin(1,{band:'D'});if(o.sec!==15)bad.push('the cap starts again the next day');
   load(null);S.grade=3;nod();ptCfg().max=0;paid=0;for(let i=0;i<30;i++){const g=pt().bank;fin(1,{band:'D'});paid+=pt().bank-g}
-  if(paid!==120+29*15)bad.push('no cap set: '+paid);
+  if(paid!==120+29*15+60)bad.push('no cap set: '+paid); // P5-09: +60 for the daily mission, which the third round of the day finishes
   // 8. three solves make one round (day count, streak), the daily mission follows the usual rule
   load(null);S.grade=1;S.day={};nod();ptCfg().max=0;
   const d0=day().r,st0=STRK.get().days[today()]||0;
@@ -13287,6 +13288,160 @@ run('Spanish Los Cuentos P2-35',()=>{
   };
   const r=eval(js+';('+body.toString()+')()');
   return{problems:errs.length?uniq(errs):[],note:r.n+' generated questions, '+r.rounds+' rounds, '+r.checked+' stop checks'};
+});
+
+// ---- P5-09: game-time rules v2 ----
+run('game time v2 P5-09',()=>{
+  const GTFX={};for(const n of fs.readdirSync(path.join(__dirname,'fixtures')).filter(n=>n.endsWith('.json')))GTFX[n.slice(0,-5)]=fs.readFileSync(path.join(__dirname,'fixtures',n),'utf8');
+  const body=()=>{
+    const store={};
+    localStorage.getItem=k=>k in store?store[k]:null;localStorage.setItem=(k,v)=>{store[k]=String(v)};localStorage.removeItem=k=>{delete store[k]};
+    const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
+    const bad=[],eq=(a,b,m)=>{if(JSON.stringify(a)!==JSON.stringify(b))bad.push(m+': '+JSON.stringify(a)+' != '+JSON.stringify(b))};
+    // a virtual clock: local time, moved by hand
+    const RD=Date;let NOW=new RD(2026,10,11,10,0,0).getTime();
+    class VD extends RD{constructor(...a){if(a.length)super(...a);else super(NOW)}static now(){return NOW}}
+    globalThis.Date=VD;
+    const at=(y,m,d,h,mi,s)=>{NOW=new RD(y,m-1,d,h,mi,s||0).getTime()};
+    const learn=sec=>ACT.add(today(),{sec,area:'math'});
+    try{
+      // 1. ptCalc, table driven: [name, g, [sc,n,stars,prev,newPass,testOk], {mission}, per, seconds, lines]
+      const T=[
+        ['perfect round, new stop',{},[10,10,3,0,true,false],null,3,300,[[180,'Round done'],[60,'New stop unlocked'],[60,'Perfect score']]],
+        ['6 of 10, new stop',{},[6,10,1,0,true,false],null,3,180,[[121,'Round done'],[60,'New stop unlocked']]],
+        ['3 of 10 earns a little',{},[3,10,0,0,false,false],null,3,60,[[61,'Keep trying']]],
+        ['mastered stop, perfect',{},[10,10,3,3,false,false],null,3,120,[[60,'Already mastered this one'],[60,'Perfect score']]],
+        ['beat an old score',{},[8,10,2,1,false,false],null,3,210,[[180,'Round done'],[30,'Beat your old score']]],
+        ['boss won',{boss:{name:'x'},won:true},[8,10,2,0,true,false],null,3,360,[[180,'Round done'],[60,'New stop unlocked'],[120,'Beat the boss']]],
+        ['test out',{test:{wi:0},path:'math'},[9,10,0,0,false,true],null,3,240,[[240,'Tested out!']]],
+        ['test failed',{test:{wi:0},path:'math'},[5,10,0,0,false,false],null,3,60,[[60,'Good try']]],
+        ['Tricky Mix, 2 fixed',{mix:true,fixed:2},[8,10,0,0,false,false],null,3,180,[[108,'Practice round'],[60,'Fixed 2 tricky ones']]],
+        ['Daily Review, 3 fixed',{mix:true,daily:true,fixed:3},[8,10,0,0,false,false],null,3,270,[[180,'Daily review done'],[90,'Fixed 3 tricky ones']]],
+        ['Daily Review, nothing fixed',{mix:true,daily:true},[8,10,0,0,false,false],null,3,180,[[180,'Daily review done']]],
+        ['the mission is one more minute',{},[6,10,1,0,false,false],{mission:true},3,180,[[121,'Round done'],[60,'Daily mission done']]],
+        ['5 minutes per round',{},[10,10,3,0,false,false],null,5,360,[[300,'Round done'],[60,'Perfect score']]],
+        ['2 minutes per round',{},[10,10,3,0,false,false],null,2,180,[[120,'Round done'],[60,'Perfect score']]]];
+      for(const [name,g,a,x,per,sec,lines] of T){
+        load(null);ptCfg().per=per;
+        const r=ptCalc(g,a[0],a[1],a[2],a[3],a[4],a[5],null,x||undefined);
+        eq([r.sec,r.lines],[sec,lines],'ptCalc '+name);
+      }
+      // the same stop again and again earns less; Daily Review and Tricky Mix are counted apart; the mission is never cut
+      load(null);
+      const rep=x=>ptCalc({},7,10,1,1,false,false,null,x);
+      eq([rep().sec,rep().sec,rep().sec],[180,120,60],'the same stop three times');
+      eq(ptCalc({},7,10,1,1,false,false,null,{mission:true}).sec,120,'the mission after repeats is paid in full (63 s of stop + 60 s)');
+      load(null);
+      const dr=()=>ptCalc({mix:true,daily:true,fixed:3},8,10,0,0,false,false,null);
+      eq([dr().sec,dr().sec],[270,150],'Daily Review twice in a day');
+      eq(ptCalc({mix:true,fixed:2},8,10,0,0,false,false,null).sec,180,'Tricky Mix is not cut by the Daily Review');
+      S.ptRep.day='1999-1-1';eq(dr().sec,270,'Daily Review pays in full again on a new day');
+      // Brain Teasers by band, stars and hints, the Puzzle of the Day, the mission, the cap
+      const B=(b,x)=>{load(null);const r=ptCalc({bt:Object.assign({band:'B',stars:3,hints:0,first:true,daily:false},b)},0,0,0,0,false,false,null,x);return[r.sec,r.lines]};
+      eq(B({}),[60,[[60,'Puzzle solved, no hints']]],'puzzle band B, 3 stars');
+      eq(B({stars:2,hints:1}),[40,[[40,'Puzzle solved with 1 hint']]],'puzzle with 1 hint');
+      eq(B({stars:1,hints:3}),[30,[[30,'Puzzle solved with 3 hints']]],'puzzle with 3 hints (half)');
+      eq(B({band:'A',stars:1}),[23,[[23,'Puzzle solved']]],'puzzle band A, 1 star, no hint (mistakes)');
+      eq(B({band:'D'}),[120,[[120,'Puzzle solved, no hints']]],'puzzle band D');
+      eq(B({first:false}),[15,[[15,'Played this one again']]],'puzzle replay');
+      eq(B({band:'D',daily:true}),[180,[[120,'Puzzle solved, no hints'],[60,'Puzzle of the Day']]],'Puzzle of the Day');
+      eq(B({first:false},{mission:true}),[75,[[15,'Played this one again'],[60,'Daily mission done']]],'puzzle that finishes the mission');
+      eq(B({band:'D',room:50}),[50,[[120,'Puzzle solved, no hints'],[-70,'Puzzle game time is full for today']]],'puzzle over the daily cap');
+      eq(B({band:'D',room:0})[0],0,'no room left');
+      // 2. the learning-first rule
+      load(null);
+      eq([ptCfg().need,ptGate().locked,ptState().why],[0,false,'ok'],'default: no learning first');
+      const bank0=pt().bank;ptCfg().max=0;
+      ptCfg().need=10;
+      eq([ptLeft(),ptState().why,ptState().learned],[0,'learn',0],'10 minutes needed, none learned');
+      eq(ptLine(),'You have 3:00 saved. Learn 10 more minutes to open the Game Room today.','plain line: learn first');
+      learn(300);
+      eq([ptLeft(),ptLine()],[0,'You have 3:00 saved. Learn 5 more minutes to open the Game Room today.'],'5 of 10 minutes');
+      learn(299);eq(ptLeft(),0,'one second short');
+      learn(1);eq([ptLeft(),ptState().why],[bank0,'ok'],'10 minutes learned: open');
+      ACT.get().length=0;S.log=[];eq(ptLeft(),bank0,'once met, it stays open for the day');
+      ptCfg().need=15;eq(ptLeft(),0,'a grown-up asks for more: closed again');
+      ptCfg().need=5;eq(ptLeft(),bank0,'a lower need: open');
+      load(null);ptCfg().need=30;eq(ptLeft(),0,'closed');
+      pt().open=today();eq([ptLeft(),ptState().open],[pt().bank,true],'grown-up opens today anyway');
+      ptCfg().pause=true;eq([ptLeft(),ptLine()],[0,'Game time is paused by a grown-up.'],'pause beats open');
+      ptCfg().pause=false;pt().open='1999-1-1';eq(ptLeft(),0,'an old override is not today');
+      pt().open='';ptCfg().need=0;eq(ptLeft(),pt().bank,'learn first off again');
+      // learning of every kind counts: question time, a puzzle, a sprint (all go to the activity log)
+      load(null);ptCfg().need=5;ACT.add(today(),{sec:100,area:'bt'});ACT.flu(100);ACT.add(today(),{sec:99,area:'es'});
+      eq([ptLeft(),ptState().learned],[0,299],'a puzzle, a sprint and a Spanish round add up to 299 s: closed');ACT.add(today(),{sec:1,area:'math'});eq(ptLeft()>0,true,'300 s: open');
+      // 3. daily limit and the bank
+      load(null);const p=pt();p.bank=3600;ptCfg().max=30;
+      eq([ptLeft(),ptLine()],[1800,'You can play 30:00 more today (the daily limit is 30 min).'],'bank above the limit says so');
+      p.used=600;eq(ptLeft(),1200,'600 s used of 1800');
+      p.used=1800;eq([ptLeft(),ptState().why,ptLine()],[0,'max',"That's all the game time for today (30 min). Come back tomorrow!"],'daily limit reached');
+      ptCfg().max=0;eq(ptLeft(),3600,'no limit');
+      p.bank=0;eq([ptLeft(),ptState().why,ptLine()],[0,'empty','Finish a learning round to earn game time!'],'empty bank');
+      ptEarn(90);eq([ptLeft(),ptLine()],[90,'Every learning round earns more. Have fun!'],'earned 90 s');
+      ptCfg().max=30;p.bank=100;p.used=0;eq(ptLine(),'Every learning round earns more. Have fun!','a small bank under the limit');
+      eq(ptWhyNot(),ptLine(),'games ask ptWhyNot and get the same line');
+      // 4. the day turns at local midnight (a virtual clock)
+      load(null);at(2026,11,11,23,59,50);
+      ptCfg().need=10;ptCfg().max=30;pt().bank=3000;learn(600);pt().open=today();pt().used=1700;
+      ptRace('math',9);ptCalc({},7,10,1,1,false,false,null);
+      eq([today(),ptLeft(),pt().used],['2026-11-11',100,1700],'before midnight: the limit leaves 100 s, learning is done');
+      at(2026,11,12,0,0,5);
+      eq([today(),pt().used,ptState().open,ptGate().locked,ptLeft(),ptState().why],['2026-11-12',0,false,true,0,'learn'],'after midnight: used is 0, learning first closed, override gone');
+      eq(ptLine(),'You have 50:00 saved. Learn 10 more minutes to open the Game Room today.','after midnight: the line says why');
+      eq([ptRace('math',9),ptRace('math',9)],[60,0],'Speed Race pays again on the new day, once');
+      eq(ptCalc({},7,10,1,1,false,false,null).sec,180,'a stop pays in full again on the new day');
+      learn(600);eq([ptLeft(),pt().bank],[1800,3000],'learned again: 30 min limit (bank 50 min)');
+      at(2026,11,12,23,59,59);eq(today(),'2026-11-12','one second before the next midnight');at(2026,11,13,0,0,0);eq(today(),'2026-11-13','exactly at midnight');
+      eq(ptGate().locked,true,'closed again on the 13th');
+      // Speed Race: one paid race a day per category, 5 right needed
+      load(null);eq([ptRace('math',4),ptRace('math',5),ptRace('math',20),ptRace('read',5)],[0,60,0,60],'Speed Race pays the first race of each category');
+      // 5. old saves keep working: no learning first, same time left as before, nothing new written by reading
+      for(const name in GTFX){
+        load(GTFX[name]);const had=JSON.stringify(S.ptCfg||null);
+        const c=ptCfg(),want=c.pause?0:Math.max(0,Math.min(pt().bank,c.max?c.max*60-pt().used:1e9));
+        const st=ptState();ptLine();ptGate();ptWhyNot();
+        if(c.need!==0)bad.push(name+': need is '+c.need);
+        if(ptLeft()!==want||st.why=='learn')bad.push(name+': time left changed '+ptLeft()+' != '+want);
+        if(S.pt&&('open' in S.pt||'met' in S.pt))bad.push(name+': reading wrote S.pt.open or met');
+        if(had!=='null'&&JSON.parse(had).per!==c.per)bad.push(name+': per changed');
+      }
+      load(JSON.stringify({v:6,ptCfg:{per:5,max:45,pause:true},pt:{bank:777,day:'2026-11-11',used:12}}));
+      eq([ptCfg(),pt().bank,ptLeft()],[{per:5,max:45,pause:true,need:0},777,0],'an old save with its own settings and a pause');
+      for(const [j,w] of [['x',0],[-5,0],[999,120],[7.9,7],[null,0]]){load(null);ptCfg().need=j;eq(ptCfg().need,w,'a damaged need '+JSON.stringify(j))}
+      // 6. Brain Teasers pay through ptCalc, and the win card gets the lines
+      BT.list().forEach(t=>BT.unreg(t.id));
+      BT.reg({id:'zzp',name:'Fake',icon:'puzzle',bands:'ABCD',make:(b,l,rn)=>({n:Math.floor(rn()*1e9)}),mount:()=>({hint(){},destroy(){}}),solve:q=>[q.n]});
+      const fin=(lv,over,res)=>BT.finish(Object.assign({id:'zzp',band:'B',level:lv,puzzle:{},state:null,hints:0,sec:30,day:today()},over||{}),Object.assign({mistakes:0,hints:0,sec:5},res||{}));
+      load(null);S.grade=1;ptCfg().max=0;BT.st().daily={day:today(),done:['zzp'],pick:{id:'zzp',band:'B',level:1}};
+      let g0=pt().bank,o=fin(1);
+      eq([o.sec,pt().bank-g0,o.pt.lines],[60,60,[[60,'Puzzle solved, no hints']]],'finish: first solve');
+      g0=pt().bank;o=fin(2,0,{hints:1});
+      eq([o.sec,pt().bank-g0,o.pt.lines[0][1]],[40,40,'Puzzle solved with 1 hint'],'finish: one hint');
+      g0=pt().bank;o=fin(1);
+      eq([o.sec,o.pt.lines],[15,[[15,'Played this one again']]],'finish: a replay');
+      load(null);S.grade=1;ptCfg().max=0;BT.st().daily={day:today(),done:['zzp'],pick:{id:'zzp',band:'B',level:1}};S.day={};
+      fin(1);fin(1);fin(1);fin(1);fin(1);g0=pt().bank;o=fin(1);
+      eq([o.round&&o.round.mission,o.sec,o.pt.lines.map(l=>l[1])],[false,15,['Played this one again']],'the second round of the day: no mission yet');
+      fin(1);fin(1);g0=pt().bank;o=fin(1);
+      eq([o.round&&o.round.mission,o.sec,pt().bank-g0,o.pt.lines.map(l=>l[1])],[true,75,75,['Played this one again','Daily mission done']],'the third round of the day finishes the mission: +1 min');
+      for(let i=0;i<9;i++)fin(1);
+      g0=pt().bank;o=fin(1);o=fin(1);o=fin(1);eq(o.sec,15,'the mission pays once a day');
+      load(null);S.grade=3;ptCfg().max=30;BT.st().daily={day:today(),done:['zzp'],pick:{id:'zzp',band:'B',level:1}};
+      let paid=0;for(let i=0;i<100;i++){g0=pt().bank;fin(1,{band:'D'});paid+=pt().bank-g0}
+      eq(paid,900,'puzzles and the mission together stop at half of the 30 minute limit');
+      o=fin(1,{band:'D'});eq([o.sec,o.capped,o.pt.sec],[0,true,0],'full for today');
+      BT.list().forEach(t=>BT.unreg(t.id));
+      // 7. the screens: the Game Room line, the Grown-ups card, Home
+      const src=gameRoom.toString();
+      if(!src.includes('ptLine()'))bad.push('the Game Room card does not show ptLine()');
+      if(!/ptRules\(/.test(src))bad.push('the Game Room list of ways to earn is not ptRules()');
+      if(!/data-need|'need'/.test(grown.toString())||!grown.toString().includes("'pto'"))bad.push('Grown-ups: no learn-first row or open-today switch');
+      if(!ptRules(n=>'').includes('Brain Teaser')||!ptRules(n=>'').includes('Daily Review')||!ptRules(n=>'').includes('daily mission'))bad.push('ptRules misses a way to earn');
+    }finally{globalThis.Date=RD}
+    return bad;
+  };
+  const r=eval(js+';('+body.toString()+')()');
+  return{problems:r,note:'ptCalc table, learn first, limits, midnight, Brain Teasers, old saves'};
 });
 
 // ---- report ----

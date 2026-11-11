@@ -78,6 +78,8 @@
 .gw-path b{min-width:60px;text-align:right;font-variant-numeric:tabular-nums}
 .gw-warn{display:flex;align-items:flex-start;gap:var(--s-2);margin:var(--s-3) 0;padding:var(--s-2) var(--s-3);border-radius:var(--r-btn);
   background:var(--try-tint);color:var(--try-ink);font-weight:700}
+.gw-note{display:flex;align-items:flex-start;gap:var(--s-2);margin:var(--s-2) 0;color:var(--ink-2);font-weight:700}
+.gw-note .ic{flex:none;color:var(--brand)}
 .gw-f{display:grid;gap:var(--s-1);margin:0 0 var(--s-3)}
 .gw-fl{font-weight:700;color:var(--ink-2)}
 .gw-help{font-size:var(--fs-1);color:var(--ink-3)}

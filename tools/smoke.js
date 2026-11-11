@@ -6573,6 +6573,127 @@ async function main() {
         'sparkles and none with reduced motion or calm mode; 48 px targets, no sideways scroll, no emoji chrome at 380x780 and 1024x600');
     }
 
+    // P5-09 game time v2 at 380x780 and 1024x600 (midway): a grown-up asks for 1 minute of learning first. The child sees a plain line on Home
+    //    and in the Game Room, plays one real round (earn: the reasons are listed, the time goes into the bank), still sees why the Game Room
+    //    is shut and how much is saved; once the minute is done the time shows, a game runs the time out ("Game time's up!"), and the Game
+    //    Room says there is none left and why. Then the Grown-ups Game time card: learn-first row, today's learning, the open-today switch,
+    //    every control a real tap with 48 px targets and no sideways scroll.
+    {
+      const bad = [];
+      const look = (root) => {
+        const vw = document.documentElement.clientWidth, out = [];
+        for (const e of document.querySelectorAll(root + ' button, ' + root + ' label.switch')) {
+          if (!e.offsetWidth || e.closest('svg')) continue;
+          if (Math.min(e.offsetWidth, e.offsetHeight) < 48) out.push('small ' + (e.id || e.dataset.need || e.className || e.tagName) + ' ' + e.offsetWidth + 'x' + e.offsetHeight);
+          const r = e.getBoundingClientRect();
+          if (r.left < -1 || r.right > vw + 1) out.push('outside ' + (e.id || e.className));
+        }
+        if (document.documentElement.scrollWidth > vw + 1) out.push('sideways scroll ' + document.documentElement.scrollWidth);
+        for (const s of document.querySelectorAll('#app .scroll'))
+          if (s.scrollWidth > s.clientWidth + 1) out.push('sideways scroll in ' + s.className + ' ' + s.scrollWidth);
+        return out;
+      };
+      for (const [w, h] of [[380, 780], [1024, 600]]) {
+        const tag = w + 'x' + h;
+        const chk = async (pg, what, root = '#app') => { for (const o of await pg.evaluate(`(${look.toString()})(${JSON.stringify(root)})`)) bad.push(tag + ' ' + what + ': ' + o); };
+        const ga = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const gp = ga.page;
+        await gp.evaluate(() => { window.say = () => {}; ptCfg().need = 1; ptCfg().max = 30; ptCfg().pause = false; pt().bank = 0; pt().used = 0; pt().open = ''; S.log = []; save(); home(); });
+        await gp.waitForSelector('#groom');
+        // Home and the Game Room say plainly why it is shut
+        const home1 = await gp.evaluate(() => document.querySelector('.hm-gsub').textContent.trim());
+        if (home1 !== 'Learn 1 more minute to open the Game Room today.') bad.push(tag + ' Home line: ' + home1);
+        await chk(gp, 'Home');
+        await gp.click('#groom');
+        await gp.waitForSelector('#g4x4');
+        const room1 = await gp.evaluate(() => ({ t: document.querySelector('.gx-pt .hname').textContent.trim(), s: document.querySelector('.gx-pt .small').textContent.trim(),
+          empty: document.querySelector('.gx-pt').classList.contains('empty'), earn: !!document.querySelector('#learn') }));
+        if (room1.t !== 'No game time yet' || room1.s !== 'Learn 1 more minute to open the Game Room today.' || !room1.empty || !room1.earn) bad.push(tag + ' Game Room shut: ' + JSON.stringify(room1));
+        await chk(gp, 'Game Room shut');
+        // earn: a real round, then the reasons and the bank
+        await gp.click('#learn');
+        await gp.waitForSelector('.game[data-p="math"]');
+        await gp.click('.game[data-p="math"]');
+        const mw = await gp.evaluate(() => PATHS.math.worlds.findIndex(x => x.id === 'm_meadow'));
+        const m0 = await gp.evaluate(() => WR.math[PATHS.math.worlds.findIndex(x => x.id === 'm_meadow')][0]);
+        await gp.waitForSelector('.wchip.on');
+        await gp.click(`.wchip[data-w="${mw}"]`);
+        await gp.waitForSelector(`.node[data-n="${m0}"]`);
+        await gp.click(`.node[data-n="${m0}"]`);
+        await gp.waitForSelector('#prompt');
+        const bank0 = await gp.evaluate(() => pt().bank);
+        await playRound(gp, 'P5-09 round ' + tag);
+        const earn = await gp.evaluate(() => ({ lis: [...document.querySelectorAll('#earn .rw-pl li')].map(l => l.textContent.trim()), head: [...document.querySelectorAll('#earn .rw-et')].map(e => e.textContent).join(' | '),
+          bank: pt().bank, why: ptState().why, line: ptLine() }));
+        if (!earn.lis.length || !earn.lis.some(l => /Round done|Already mastered|Keep trying/.test(l)) || !/of game time/.test(earn.head)) bad.push(tag + ' earned lines: ' + JSON.stringify(earn));
+        if (!(earn.bank > bank0) || earn.why !== 'learn' || !/^You have \d+:\d\d saved\. Learn 1 more minute to open the Game Room today\.$/.test(earn.line))
+          bad.push(tag + ' after the round: ' + JSON.stringify(earn));
+        await chk(gp, 'round reward');
+        await gp.click('#menu');
+        await gp.waitForSelector('#map');
+        await gp.evaluate(() => gameRoom());
+        await gp.waitForSelector('#g4x4');
+        const room2 = await gp.evaluate(() => ({ t: document.querySelector('.gx-pt .hname').textContent.trim(), s: document.querySelector('.gx-pt .small').textContent.trim() }));
+        if (!/^No game time yet$/.test(room2.t) || !/^You have \d+:\d\d saved\. Learn 1 more minute/.test(room2.s)) bad.push(tag + ' Game Room after the round: ' + JSON.stringify(room2));
+        // the minute of learning is done (the log is what the round writes; here the rest of the minute is added): the time shows
+        await gp.evaluate(() => { ACT.add(today(), { sec: 60, area: 'math' }); pt().bank = 4; save(); gameRoom(); });
+        await gp.waitForSelector('#g4x4');
+        const room3 = await gp.evaluate(() => ({ t: document.querySelector('.gx-pt .hname').textContent.trim(), s: document.querySelector('.gx-pt .small').textContent.trim(),
+          empty: document.querySelector('.gx-pt').classList.contains('empty') }));
+        if (room3.t !== '0:04 of game time' || room3.empty || room3.s !== 'Every learning round earns more. Have fun!') bad.push(tag + ' Game Room open: ' + JSON.stringify(room3));
+        await chk(gp, 'Game Room open');
+        // play until the time runs out: Coloring, one picture, 4 s in the bank and 20 s of grace
+        await gp.click('#gcbn');
+        await gp.waitForSelector('.sttile');
+        await gp.click('.sttile');
+        await gp.waitForSelector('#gtm');
+        await gp.waitForSelector('.ovl', { timeout: 20000 });
+        const up = await gp.evaluate(() => ({ t: document.querySelector('.ovl h1').textContent, bank: pt().bank, left: ptLeft(), btn: !!document.querySelector('.ovl #tl') }));
+        if (!/Game time's up/.test(up.t) || up.left !== 0 || up.bank !== 0 || !up.btn) bad.push(tag + ' time up: ' + JSON.stringify(up));
+        await gp.click('.ovl #tl');
+        await gp.waitForSelector('#groom');
+        await gp.evaluate(() => gameRoom());
+        await gp.waitForSelector('#g4x4');
+        const room4 = await gp.evaluate(() => ({ t: document.querySelector('.gx-pt .hname').textContent.trim(), s: document.querySelector('.gx-pt .small').textContent.trim(),
+          empty: document.querySelector('.gx-pt').classList.contains('empty') }));
+        if (room4.t !== 'No game time yet' || room4.s !== 'Finish a learning round to earn game time!' || !room4.empty) bad.push(tag + ' Game Room after the time ran out: ' + JSON.stringify(room4));
+        // ---- Grown-ups: the Game time card ----
+        await gp.evaluate(() => grown());
+        await gp.waitForSelector('#gw-time');
+        await gp.evaluate(() => document.querySelector('#gw-time').scrollIntoView({ block: 'start' }));
+        await gp.waitForTimeout(300);
+        const g0 = await gp.evaluate(() => ({ need: [...document.querySelectorAll('[data-need]')].map(b => b.dataset.need + (b.getAttribute('aria-pressed') == 'true' ? '*' : '')).join(','),
+          note: document.querySelector('#ptneed') ? document.querySelector('#ptneed').textContent.trim() : null, sw: !!document.querySelector('#pto') }));
+        if (g0.need !== '0,5,10,15,20,30') bad.push(tag + ' learn-first options: ' + g0.need);
+        if (g0.note !== 'Learning today: 1 of 1 minute. The Game Room is open.' || !g0.sw) bad.push(tag + ' learn-first note: ' + JSON.stringify(g0));
+        await chk(gp, 'Grown-ups Game time', '#gw-time');
+        await gp.click('[data-need="10"]');
+        await gp.waitForSelector('[data-need="10"][aria-pressed="true"]');
+        await gp.evaluate(() => document.querySelector('#gw-time').scrollIntoView({ block: 'start' }));
+        const g1 = await gp.evaluate(() => ({ need: ptCfg().need, note: document.querySelector('#ptneed').textContent.trim(), open: !!document.querySelector('#pto').checked }));
+        if (g1.need !== 10 || !/^Learning today: \d+ of 10 minutes\. The Game Room opens at 10\.$/.test(g1.note) || g1.open) bad.push(tag + ' learn first 10: ' + JSON.stringify(g1));
+        await chk(gp, 'Grown-ups learn first 10', '#gw-time');
+        await gp.evaluate(() => { pt().bank = 600; save(); });
+        const shut = await gp.evaluate(() => ({ left: ptLeft(), line: ptLine() }));
+        if (shut.left !== 0 || !/^You have 10:00 saved\. Learn \d+ more minutes? to open the Game Room today\.$/.test(shut.line)) bad.push(tag + ' shut by the grown-up rule: ' + JSON.stringify(shut));
+        await gp.click('label.switch:has(#pto)');
+        const opened = await gp.evaluate(() => ({ left: ptLeft(), open: pt().open === today() }));
+        if (opened.left !== 600 || !opened.open) bad.push(tag + ' open today anyway: ' + JSON.stringify(opened));
+        await gp.click('label.switch:has(#pto)');
+        if (await gp.evaluate(() => ptLeft()) !== 0) bad.push(tag + ' switching open-today off did not close it');
+        await gp.click('[data-need="0"]');
+        await gp.waitForSelector('[data-need="0"][aria-pressed="true"]');
+        const g2 = await gp.evaluate(() => ({ note: !!document.querySelector('#ptneed'), sw: !!document.querySelector('#pto'), left: ptLeft() }));
+        if (g2.note || g2.sw || g2.left !== 600) bad.push(tag + ' learn first off: ' + JSON.stringify(g2));
+        await chk(gp, 'Grown-ups learn first off', '#gw-time');
+        network.push(...ga.network);
+        for (const e of ga.errors) fail(e);
+        await ga.ctx.close();
+      }
+      if (bad.length) fail('P5-09 game time v2:\n  ' + bad.join('\n  '));
+      else step('P5-09: learn-first line on Home and in the Game Room, a real round earns with its reasons, the bank is shown, a game runs out ' +
+        'with "Game time\'s up!" and the Game Room says why, the Grown-ups Game time card (learn first, today, open anyway) by real taps; 48 px targets, no sideways scroll at 380x780 and 1024x600');
+    }
     // P4-14 Object art set B (src/data/d-art-b.js), midway save at 380x780: questions that use the new drawings, drawn by the real
     //    round engine (start, a seeded question in G.q, renderQ): counting balloons, a picture word, Spanish animals and food (drawings as the
     //    picture and as the answer choices). Every drawing is inline SVG with its shapes, at least 16 px, no emoji in its place, no

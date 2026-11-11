@@ -114,6 +114,8 @@ open-ended writing grading, any generative AI at runtime.
 | `S.streak` | P5-04 | `{days: {'YYYY-M-D': rounds}, best}` last 120 days |
 | `S.log` | P5-05 | `[{d, sec, rounds, by: {math, read, es, bt, disc}}]` last 60 days |
 | `S.bt` | P3-01 | `{type: {lvl, stars, seen: [], best}}`, plus `S.bt.daily` |
+| `S.ptCfg.need` | P5-09 | integer 0-120, minutes of learning needed each day before the Game Room opens (absent = 0) |
+| `S.pt.open`, `S.pt.met` | P5-09 | `open`: day key the grown-up opened the Game Room anyway; `met`: `{day, min}` learn-first already done today (both absent = none) |
 
 ## 5. Phases
 
