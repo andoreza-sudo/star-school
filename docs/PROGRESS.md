@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** wave 5 done. In progress: P4-18 (graphics pass), P2-08 (step hints), P2-20, P2-22, P2-24, P2-25 (reading); then P2-09 to P2-14 (math 4-6), P2-21, P2-23, P2-26 to P2-29.
+**Next up:** In progress: P4-18 (graphics pass), P2-08 (step hints), P2-22, P2-24, P2-25 (reading); then P2-09 to P2-14 (math 4-6), P2-21, P2-23, P2-26 to P2-29.
 
-**Current version:** v76
+**Current version:** v77
 
 ## Chunk status
 
@@ -55,6 +55,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P4-08 v74
 - P4-10 v75
 - P2-07 v76
+- P2-20 v77
 
 ## Handoff notes
 
@@ -246,6 +247,17 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-11) Icons wanted from P4-03: `balloon` (Bonus game, today `gamepad`), `sparkle` / `confetti`, `unlock` (open padlock for "Next stop unlocked", today `map`), `zap` (a lightning with a spark for boss hits; today `bolt`), `sticker` (single sticker for the prize row), `medal` (the prize rosette as an icon), `heart-half` (boss life bar), `chest` (the treasure chest at icon size, e.g. for the round track where renderQ shows the gift emoji).
 
 ## Log
+
+### P2-20 Grammar A, levels 1-5 (v77, 2026-11-11, Claude)
+- What changed: bank skill `gram` (levels 1-5) in the new `src/data/d-gram.js`, CURRICULUM E-gram: 1 capitals and end marks (52 items: "which sentence is correct" wide, pick `.` `?` `!`, tap the word that needs a capital), 2 nouns, verbs, adjectives (60: tap the word in a 4-word sentence, which word is a noun/verb/adjective), 3 plurals (46: -s, -es, y to ies, f to ves, irregular; wrong forms are the real mistakes: mouses, foots, childs), 4 verb tense (51: regular and irregular past, present, future, which sentence is past/now/future), 5 subject-verb agreement and contractions (46: is/are, was/were, has/have, run/runs; don't, can't, it's, we're ...). 255 items, each with a topic and a hint that teaches the method without the answer; a say line (tap items also speak the sentence).
+- Stops, by world id: `gram 1` ends Ocean Reef (`r_reef`, after spell 2); `gram 2` and `gram 3` end Word Workshop (`r_workshop`, after build 6); `gram 4` and `gram 5` end Story Summit (`r_summit`, after spell 4). CURRICULUM 2.2 puts vocab 1 before gram 1 and vocab 2/3, sent 4/5 between gram 2 and 3 (and vocab 4 between gram 4 and 5); those chunks are not in this branch, so they slot in between when merged. Nothing in the data depends on the order.
+- Edits to existing files: `src/js/38-skills.js` (`SK.gram`, one group at the end, max 5), `src/js/42-paths.js` (five nodes), `tools/build.py` (v77), `tools/test.js` (new check; one expectation changed: P2-18's `r_workshop stops` was the exact string `sight5 pic6 build6`, now a prefix, since the world grows), `tools/smoke.js` (`// P2-20` block), `tools/shots.js` (gram-1 to gram-5, gram-1b, gram-hint). `src/js/37-bank.js`, `82-report.js` (strand Grammar already lists `gram`) and the icon table (falls back to the reading icon) are untouched.
+- Save safety: stars are keyed by stop id (`gram1` ...), new ids; no existing id changed. In test.js the reading path without the gram stops is compared with today's over 6 fixtures x 7 grades (2100 stop checks): every stop keeps its stars, nothing re-locks, a passed stop is never locked, the map opens on the same stop. A gram stop in a finished world is NEW, open, has no stars and is never the current stop; a synthetic save that finished Ocean Reef, Word Workshop and Story Summit keeps all stars. Smoke: a round of gram 2 earns 3 stars and no other stop's stars move.
+- Tests: test.js 52 of 52 (new check "grammar P2-20": bankProblems with min 40 per level, exact item counts, a topic and teaching hint on every item, hint never holds the answer, 3,000 seeded questions per level = 15,000 with kindProblems zero, 2-4 unique choices with exactly one right, say, unique label per item (under 60 chars), every item drawn, no BAD words, reproducible and `bankRebuild` identical, map stops, saves). smoke.js OK with a new `// P2-20` block at 380x780: five levels, answer buttons 48 px or more, no sideways scroll, hint check, one full round.
+- Note for P2-21: `GR(lv, topic, hint, form, rows)` in d-gram.js builds items; append levels 6-9 there and raise `SK.gram.max` to 9. The bank engine builds the label from the first 60 characters of the question plus the answer, which must stay under 60 in all (the generator test enforces it), so keep questions short; tap items may have at most 4 words (the generator test allows at most 4 choices); the validator compares answers case-blind, so a "missing capital" wrong answer must differ from the right one in more than the capital.
+- Screenshots (380x780, tools/out/): gram-1, gram-1b, gram-2, gram-4, gram-hint looked at.
+- Checklist 7.1: [x] chunk files only (plus tests, shots, docs, built output) [x] VER v77 (provisional) [x] build [x] test.js [x] smoke.js [x] screenshots [x] midway fixture (smoke) [x] no network [x] no new emoji or hex [x] PROGRESS entry [x] one commit (not pushed).
+- Merge: built on a parallel branch, renumbered v77 -> v77 at merge.
 
 ### P2-07 3rd: world Fraction Forest (v76, 2026-11-11, Claude)
 - What changed: the other twelve stops of CURRICULUM M-3b are in Fraction Forest (`m_frac`), in CURRICULUM 2.1 order with the four P2-06 ids kept: frac2, round1 (Round to 10), frac3, sub6 (3-Digit Take Away), geo1 (Perimeter), frac4, round2 (Round to 100), time5 (Time to the Minute), geo2 (Area), frac5, sub7 (Take Away Across Zeros), data3 (Scaled Graphs), shape5 (Shape Families), time6 (How Much Time Passed), meas4 (Rulers & Scales), story6 (Story Problems 6), then the boss: 16 stops + boss. New skills `round` (2 levels, icon target) and `geo` (2 levels, icon triangle ruler); new levels `sub 6-7`, `time 5-6`, `shape 5`, `data 3`, `meas 4`, `story 6`. All generators are in one block at the end of `src/js/33-gen-math-mid.js` headed `// ---- P2-07 Fraction Forest (3rd) ----` (names start `ff`; seeded randomness only, no new question kinds). Existing levels are untouched: each existing skill got a level dispatcher in `38-skills.js` (`lv<=old max` calls the old generator).
