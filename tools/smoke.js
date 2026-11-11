@@ -5663,6 +5663,169 @@ async function main() {
       }
     }
 
+    // P3-17 Puzzle of the Day and badges (midway save, a 3rd grader). At 380x780: Home shows the daily card (the fake type of
+    //    tools/lib/bt-fake.js is made today's pick so it can be won by real taps), it is played to a win from Home, coins and game time
+    //    are paid once (Again pays no coins), the win card reveals the badge, Home and the hub show the daily done, the badges view
+    //    opens from the hub, the same level left three times offers the band below. Then the badges view and Home at 1024x600, and
+    //    every registered type's play top bar at 380x780 in bands C and D with the timer at 59:59: the whole name shows, beside the
+    //    timer, in at most two lines. 48 px targets, no sideways scroll, no emoji chrome.
+    {
+      const fake = require('./lib/bt-fake');
+      const look = () => {
+        const vw = document.documentElement.clientWidth, out = [];
+        for (const e of document.querySelectorAll('button, [role="button"]')) {
+          const r = e.getBoundingClientRect();
+          if (!r.width || r.bottom < 0 || r.top > innerHeight || e.closest('svg') || e.closest('#toast')) continue;
+          if (Math.min(r.width, r.height) < 47.5) out.push('small ' + (e.id || e.className) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
+          if (r.left < -1 || r.right > vw + 1) out.push('outside ' + (e.id || e.className) + ' ' + Math.round(r.left) + '..' + Math.round(r.right));
+        }
+        if (document.documentElement.scrollWidth > vw) out.push('sideways scroll ' + document.documentElement.scrollWidth);
+        for (const s of document.querySelectorAll('.scroll')) if (s.scrollWidth > s.clientWidth + 1) out.push('sideways scroll in ' + s.className);
+        const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        for (let n; (n = w.nextNode());) {
+          const el = n.parentElement;
+          if (!el || el.closest('script,style,svg,#ico-sprite,.fk,.rw-burst,#pet') || !el.getClientRects().length) continue;
+          const m = n.textContent.match(/\p{Extended_Pictographic}|[◀▶✕]/u);
+          if (m) out.push('emoji chrome ' + m[0] + ' in ' + (el.id || el.className));
+        }
+        return out;
+      };
+      const bad = [];
+      const da = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
+      const pg = da.page;
+      const chk = async what => { for (const o of await pg.evaluate('(' + look.toString() + ')()')) bad.push(what + ': ' + o); };
+      await pg.evaluate('(' + fake.install.toString() + ')()');
+      await pg.evaluate(() => { S.grade = 3; S.bt = { daily: { day: today(), done: [], pick: { id: 'zzfake', band: 'C', level: 1 } } }; save(); home(); });
+      await pg.waitForSelector('#hmday');
+      await pg.evaluate(() => document.querySelector('#hmday').scrollIntoView({ block: 'center' }));
+      await pg.waitForTimeout(450);
+      await chk('home');
+      const card = await pg.evaluate(() => ({ t: document.querySelector('#hmday').textContent, art: !!document.querySelector('#hmday .hm-svg'), done: document.querySelector('#hmday').classList.contains('done') }));
+      if (!/Puzzle of the Day/.test(card.t) || !/Star Taps, level 1/.test(card.t) || !/\+5/.test(card.t) || !card.art || card.done) bad.push('Home card: ' + JSON.stringify(card));
+      const s0 = await pg.evaluate(() => ({ coins: S.coins, bank: pt().bank, stars: S.stars }));
+      await pg.click('#hmday');
+      await pg.waitForSelector('#btstage .fkt');
+      const cur = await pg.evaluate(() => [S.bt.cur.id, S.bt.cur.band, S.bt.cur.level].join());
+      if (cur !== 'zzfake,C,1') bad.push('the Home card opened ' + cur);
+      const lit = await pg.evaluate(() => S.bt.cur.puzzle.lit);
+      for (let i = 0; i < 3; i++) await pg.click(`.fkt[data-i="${lit}"]`);
+      await pg.waitForSelector('.bt-win #btnext');
+      await pg.waitForTimeout(1200); // the medal pops in after the card
+      await chk('win card');
+      const win = await pg.evaluate(() => {
+        const m = document.querySelector('.bt-win .bt-nb .bd-m');
+        return { coins: S.coins, bank: pt().bank, stars: S.stars, line: /\+5 coins for the Puzzle of the Day/.test(document.querySelector('.bt-win').textContent),
+          nb: document.querySelector('.bt-win .bt-nb') ? document.querySelector('.bt-win .bt-nb').textContent : '', medal: !!m && +getComputedStyle(m).opacity > .99,
+          got: !!(S.bt.badges && S.bt.badges.got['first.zzfake']), done: S.bt.daily.done.join() };
+      });
+      if (win.coins !== s0.coins + 5 || !(win.bank > s0.bank) || win.stars !== s0.stars + 3 || !win.line || !/First Star Taps/.test(win.nb) || !win.medal || !win.got || win.done !== 'zzfake')
+        bad.push('daily win: ' + JSON.stringify({ s0, win }));
+      // Again: the same level, no coins and no badge the second time
+      await pg.click('#btagain');
+      await pg.waitForSelector('#btstage .fkt');
+      const lit2 = await pg.evaluate(() => S.bt.cur.puzzle.lit);
+      for (let i = 0; i < 3; i++) await pg.click(`.fkt[data-i="${lit2}"]`);
+      await pg.waitForSelector('.bt-win #btlvls');
+      const again = await pg.evaluate(() => ({ coins: S.coins, nb: !!document.querySelector('.bt-win .bt-nb') }));
+      if (again.coins !== win.coins || again.nb) bad.push('second win paid again: ' + JSON.stringify(again));
+      // Home and the hub show it done
+      await pg.evaluate(() => { document.querySelectorAll('.bt-win').forEach(e => e.remove()); home(); });
+      await pg.waitForSelector('#hmday.done');
+      if (!/Done!/.test(await pg.evaluate(() => document.querySelector('#hmday').textContent))) bad.push('Home card not done');
+      await pg.click('#hmday'); // done: opens the hub
+      await pg.waitForSelector('#btday');
+      await pg.waitForTimeout(450);
+      await chk('hub');
+      const hub = await pg.evaluate(() => ({ day: document.querySelector('#btday').textContent, bdg: document.querySelector('#btbdg').textContent, mini: document.querySelectorAll('#btbdg .bd-m.on').length }));
+      if (!/Done!/.test(hub.day) || !/1 badge/.test(hub.bdg) || hub.mini !== 1) bad.push('hub: ' + JSON.stringify(hub));
+      // the badges view from the hub
+      await pg.click('#btbdg');
+      await pg.waitForSelector('.bd-grid');
+      await pg.waitForTimeout(450);
+      await chk('badges 380x780');
+      const bv = await pg.evaluate(() => ({ got: [...document.querySelectorAll('.bd-t.got')].map(e => e.dataset.b), n: document.querySelectorAll('.bd-t').length,
+        art: [...document.querySelectorAll('.bd-t')].every(e => e.querySelector('svg.bd-m')), chip: document.querySelector('.top .stat b').textContent }));
+      if (bv.got.join() !== 'first.zzfake' || bv.n < 10 || !bv.art || bv.chip !== '1') bad.push('badges view: ' + JSON.stringify(bv));
+      await pg.click('.bd-t[data-b="n10"]');
+      await vwait(pg, 300);
+      if (!/Solve 10 puzzles/.test(await pg.evaluate(() => (document.querySelector('#toast') || {}).textContent || ''))) bad.push('tapping a badge does not say what it is for');
+      await pg.click('#back');
+      await pg.waitForSelector('#btday');
+      // leaving level 2 three times offers level 2 of the band below
+      await pg.click('[data-t="zzfake"]');
+      await pg.waitForSelector('.bt-lvs');
+      for (let i = 0; i < 3; i++) {
+        await pg.click('.bt-lv[data-l="2"]');
+        await pg.waitForSelector('#btstage .fkt');
+        await pg.click('#back');
+        await pg.waitForSelector('.bt-lvs');
+      }
+      await pg.waitForSelector('#btlow');
+      await pg.waitForTimeout(450);
+      await chk('offer sheet');
+      await pg.click('#btlow');
+      await pg.waitForSelector('#btstage .fkt');
+      const low = await pg.evaluate(() => [S.bt.cur.band, S.bt.cur.level].join());
+      if (low !== 'B,2') bad.push('the offer opened ' + low);
+      network.push(...da.network);
+      for (const e of da.errors) fail(e);
+      await da.ctx.close();
+      // 1024x600: Home card and the badges view with some puzzle work
+      const db = await openApp(browser, { fixture: 'midway', width: 1024, height: 600 });
+      const pb = db.page;
+      const chkb = async what => { for (const o of await pb.evaluate('(' + look.toString() + ')()')) bad.push(what + ': ' + o); };
+      await pb.evaluate(() => {
+        S.grade = 3;
+        S.bt = { sudoku: { C: { lvl: 13, stars: [3, 3, 2, 3, 3, 3, 1, 2, 3, 3, 3, 2], endless: 0 } }, maze: { C: { lvl: 3, stars: [3, 2], endless: 0 } } };
+        save(); home();
+      });
+      await pb.waitForSelector('#hmday');
+      await pb.waitForTimeout(450);
+      await chkb('home 1024x600');
+      await pb.evaluate(() => BT.hub());
+      await pb.waitForSelector('#btsee'); // a save from before badges: its badges are revealed once
+      await pb.waitForTimeout(450);
+      await chkb('badge sheet 1024x600');
+      await pb.click('#btsee');
+      await pb.waitForSelector('.bd-grid');
+      await pb.waitForTimeout(450);
+      await chkb('badges 1024x600');
+      const bw = await pb.evaluate(() => ({ got: [...document.querySelectorAll('.bd-t.got')].map(e => e.dataset.b).sort().join(), cols: getComputedStyle(document.querySelector('.bd-grid')).gridTemplateColumns.split(' ').length }));
+      if (bw.got !== 'all.sudoku.C,first.maze,first.sudoku,n10' || bw.cols < 5) bad.push('badges 1024x600: ' + JSON.stringify(bw));
+      await pb.evaluate(() => BT.hub());
+      if (await pb.$('#btsee')) bad.push('the badge sheet came back');
+      network.push(...db.network);
+      for (const e of db.errors) fail(e);
+      await db.ctx.close();
+      // every type's play top bar at 380x780, bands C and D, timer at 59:59
+      const dc = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
+      const pc = dc.page;
+      let bars = 0;
+      for (const g of [3, 5]) {
+        const ids = await pc.evaluate(g => { S.grade = g; S.bt = {}; return BT.offered().map(t => t.id); }, g);
+        for (const id of ids) {
+          await pc.evaluate(([id, g]) => { S.grade = g; BT.start(id, BT.band(), 1); BT.act.run.sec = 3599; }, [id, g]);
+          await pc.waitForFunction(() => /59:59|1:00:00|60:0/.test((document.querySelector('#bttime') || {}).textContent || ''));
+          await pc.waitForTimeout(300);
+          const m = await pc.evaluate(id => {
+            const nm = document.querySelector('.bt-bar .bt-nm'), ttl = document.querySelector('.bt-bar .ttl'), t = document.querySelector('#bttime'), bar = document.querySelector('.bt-bar');
+            const r = nm.getBoundingClientRect(), tr = t.getBoundingClientRect(), br = bar.getBoundingClientRect(), lh = parseFloat(getComputedStyle(nm).lineHeight);
+            const small = [...bar.querySelectorAll('button')].filter(b => Math.min(b.getBoundingClientRect().width, b.getBoundingClientRect().height) < 47.5).length;
+            return { name: nm.textContent, want: BT.get(id).name, clip: nm.scrollWidth > nm.clientWidth + 1 || ttl.scrollWidth > ttl.clientWidth + 1 || ttl.scrollHeight > ttl.clientHeight + 1,
+              overlap: r.right > tr.left - 1, lines: Math.round(r.height / lh), inBar: r.top >= br.top - 1 && r.bottom <= br.bottom + 1, small,
+              sideways: document.documentElement.scrollWidth > document.documentElement.clientWidth };
+          }, id);
+          bars++;
+          if (m.name !== m.want || m.clip || m.overlap || m.lines > 2 || !m.inBar || m.small || m.sideways) bad.push(`top bar ${id} grade ${g}: ` + JSON.stringify(m));
+        }
+      }
+      network.push(...dc.network);
+      for (const e of dc.errors) fail(e);
+      await dc.ctx.close();
+      if (bad.length) fail('P3-17:\n  ' + bad.join('\n  '));
+      else step(`P3-17: Home daily card -> played to a win (5 coins and game time once, badge revealed), Home and hub show it done, badges view at 380x780 and 1024x600, old work revealed once, the band-below offer after three exits, ${bars} play top bars show the whole name beside the timer; targets 48 px, no sideways scroll, no emoji chrome`);
+    }
+
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');
   } catch (e) {

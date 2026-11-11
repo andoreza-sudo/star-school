@@ -11818,6 +11818,151 @@ run('spatial P3-16',()=>{
     ', shape squares '+JSON.stringify(s.shape)+', mirror squares to fill '+JSON.stringify(s.fill)+', make '+ms.toFixed(1)+' ms'};
 });
 
+// ---- P3-17: Puzzle of the Day, badges, the band-below offer, full type names (BRAIN_TEASERS 7, 9) ----
+run('Puzzle of the Day and badges P3-17',()=>{
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const fixtures=fs.readdirSync(path.join(__dirname,'fixtures')).filter(n=>n.endsWith('.json')).map(n=>n.slice(0,-5));
+  const css=fs.readFileSync(path.join(SRC,'css','48-teasers.css'),'utf8').replace(/\/\*[\s\S]*?\*\//g,'');
+  const p=[];
+  for(const [,n,body] of css.matchAll(/@keyframes\s+([\w-]+)\s*\{((?:[^{}]*\{[^}]*\})*)\s*\}/g))
+    for(const d of body.match(/[a-z-]+(?=\s*:)/g)||[])if(d!='transform'&&d!='opacity')p.push('keyframes '+n+' animates '+d);
+  if(/(^|[;{\s])(-webkit-)?(backdrop-)?filter\s*:/.test(css))p.push('48-teasers.css uses filter');
+  const RD=Date;
+  let r;
+  try{r=eval(js+`
+  (()=>{const store={};
+  localStorage.getItem=k=>k in store?store[k]:null;localStorage.setItem=(k,v)=>{store[k]=String(v)};localStorage.removeItem=k=>{delete store[k]};
+  const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
+  const bad=[],eq=(a,b,m)=>{if(JSON.stringify(a)!==JSON.stringify(b))bad.push(m+': '+JSON.stringify(a)+' != '+JSON.stringify(b))};
+  // a clock the test can move: NOW is noon of a day
+  const RD=Date;let NOW=new RD(2026,5,15,12).getTime();
+  globalThis.Date=class extends RD{constructor(...a){if(a.length)super(...a);else super(NOW)}static now(){return NOW}};
+  const nextDay=(k=1)=>{NOW+=k*864e5};
+  // the type names: the catalog's names where the spec gives them (the top bar shows them whole since P3-17)
+  const TNAME={sudoku:'Sudoku',mdoku:'MathDoku',logic:'Logic Grid',maze:'Mazes',pattern:'Patterns',pyramid:'Number Pyramid',balance:'Balance',target:'Make the Number',
+    riddle:'Riddles',memory:'Memory Match',copycat:'Copy Cat'};
+  for(const id in TNAME)if(!BT.get(id)||BT.get(id).name!==TNAME[id])bad.push('type '+id+' is named '+(BT.get(id)&&BT.get(id).name)+', not '+TNAME[id]);
+  for(const t of BT.list())if(t.name.length>16)bad.push('type name longer than 16 letters: '+t.name);
+  // fake types: zza all bands, zzb B and C (3 levels in B), zzc C and D, zzd D only
+  const fake=(id,o)=>Object.assign({id,name:'Fake '+id,icon:'nope',bands:'ABCD',make:(b,l,rn)=>({n:Math.floor(rn()*1e9)}),mount:()=>({hint(){},destroy(){}}),solve:p=>[p.n]},o||{});
+  BT.list().forEach(t=>BT.unreg(t.id));
+  BT.reg(fake('zza'));BT.reg(fake('zzb',{bands:'BC',levels:b=>b=='B'?3:12}));BT.reg(fake('zzc',{bands:'CD'}));BT.reg(fake('zzd',{bands:'D'}));
+  const fin=(id,band,lv,res)=>BT.finish({id,band,level:lv,puzzle:{},state:null,hints:0,sec:20,day:today()},Object.assign({mistakes:0,hints:0,sec:20},res||{}));
+  // 1. the pick: only offered types, the child's band, the next level, the same for a date whatever else happens that day
+  const seen={};
+  for(let g=0;g<=6;g++)for(let k=0;k<40;k++){
+    NOW=new RD(2026,5,15,12).getTime()+k*864e5;
+    load(null);S.grade=g;
+    const L=BT.offered().map(t=>t.id),dl=BT.dailyInfo();
+    if(!dl||!L.includes(dl.id)||dl.band!==BT.band()||dl.level!==1||dl.done){bad.push('grade '+g+' day '+k+' pick '+JSON.stringify(dl)+' from '+L);continue}
+    (seen[g]=seen[g]||new Set()).add(dl.id);
+    load(null);S.grade=g;eq(BT.dailyInfo(),dl,'the same date gives the same pick (grade '+g+', day '+k+')');
+    eq(BT.pickFor(today()),{id:dl.id,band:dl.band,level:dl.level},'pickFor agrees');
+  }
+  for(let g=0;g<=6;g++){S.grade=g;if(!seen[g]||seen[g].size<Math.min(2,BT.offered().length))bad.push('grade '+g+' always gets the same type: '+[...(seen[g]||[])])}
+  if(seen[0]&&[...seen[0]].some(id=>id!=='zza'))bad.push('band A picked a type without band A');
+  if(seen[1]&&[...seen[1]].some(id=>!['zza','zzb'].includes(id)))bad.push('band B picked a type without band B');
+  NOW=new RD(2026,5,15,12).getTime();
+  load(null);S.grade=3;BT.rec('zza','C',true).lvl=5;BT.rec('zzb','C',true).lvl=5;BT.rec('zzc','C',true).lvl=5;
+  let dl=BT.dailyInfo();if(dl.level!==5)bad.push('the pick is at the child\\'s next level in that type: '+JSON.stringify(dl));
+  BT.reg(fake('zze'));eq(BT.dailyInfo(),dl,'a type added during the day does not change the pick');BT.unreg('zze');
+  BT.rec(dl.id,'C').lvl=9;eq(BT.dailyInfo().level,5,'the pick keeps its level all day');
+  S.grade=5;const dl5=BT.dailyInfo();if(dl5.band!=='D'||!['zza','zzc','zzd'].includes(dl5.id))bad.push('a new grade before the daily is done picks again: '+JSON.stringify(dl5));
+  for(const junk of ['x',[],{day:today(),done:[],pick:{id:'nope',band:'C',level:1}},{day:today(),done:[],pick:{id:'zza',band:'C',level:'x'}},{day:today(),done:'q'},{day:today(),done:[],pick:{id:'zza',band:'C',level:99}}]){
+    load(null);S.grade=3;S.bt={daily:junk};let d;try{d=BT.dailyInfo()}catch(e){bad.push('damaged daily '+JSON.stringify(junk)+' threw '+e.message)}
+    if(!d||!BT.get(d.id)||d.band!=='C'||!(d.level>=1&&d.level<=12))bad.push('damaged daily '+JSON.stringify(junk)+' gave '+JSON.stringify(d));
+  }
+  // 2. paid once a day (5 coins and 60 s on top), a new day pays again
+  load(null);S.grade=3;S.coins=0;ptCfg().max=0;
+  dl=BT.dailyInfo();let g0=pt().bank,o=fin(dl.id,dl.band,dl.level);
+  if(!o.daily||o.coins!==5||S.coins!==5||pt().bank-g0!==90+60||!BT.dailyInfo().done)bad.push('daily paid: '+JSON.stringify([o.daily,o.coins,S.coins,pt().bank-g0]));
+  o=fin(dl.id,dl.band,dl.level);if(o.daily||o.coins||S.coins!==5)bad.push('the daily was paid twice');
+  const other=BT.offered().find(t=>t.id!==dl.id);o=fin(other.id,'C',1);if(o.daily||o.coins)bad.push('another puzzle the same day was paid as the daily');
+  S.grade=5;if(!BT.dailyInfo().done)bad.push('a grade change after the daily must not offer a second one today');S.grade=3;
+  nextDay();const dl2=BT.dailyInfo();if(dl2.done)bad.push('the next day has a new daily');
+  o=fin(dl2.id,dl2.band,dl2.level);if(!o.daily||S.coins!==10)bad.push('the next day pays again: '+S.coins);
+  // 3. badges: each awarded once, at the right moment, never taken away
+  NOW=new RD(2026,6,1,12).getTime();
+  load(null);S.grade=3;
+  if(BT.badgeList().some(x=>x.got)||BT.badgeCheck().length)bad.push('a new save has badges');
+  o=fin('zzc','C',1);eq(o.badges.map(x=>x.id),['first.zzc'],'the first solve of a type');
+  o=fin('zzc','C',1);eq(o.badges,[],'a replay gives no badge again');
+  for(let i=3;i<10;i++){o=fin('zzc','C',1);if(o.badges.length)bad.push('badge too early at solve '+i+': '+o.badges.map(x=>x.id))}
+  o=fin('zzc','C',1);eq(o.badges.map(x=>x.id),['n10'],'10 puzzles at the 10th solve');
+  if(BT.solved()!==10)bad.push('solved '+BT.solved());
+  for(let i=11;i<=25;i++){o=fin('zza','C','E');const ids=o.badges.map(x=>x.id);if(i==11&&ids.join()!=='first.zza'||i==25&&ids.join()!=='n25'||i>11&&i<25&&ids.length)bad.push('solve '+i+': '+ids)}
+  S.grade=1;for(let l=1;l<=3;l++){o=fin('zzb','B',l);const ids=o.badges.map(x=>x.id);if(l==3&&!ids.includes('all.zzb.B')||l<3&&ids.includes('all.zzb.B'))bad.push('all levels of zzb in B at level '+l+': '+ids)}
+  if(!BT.badgeList().find(x=>x.id=='all.zzb.B'&&x.got))bad.push('the badges view lists all.zzb.B');
+  S.grade=3;
+  // seven daily puzzles in a row (a gap starts the count again, the best and the badge stay)
+  load(null);S.grade=3;NOW=new RD(2026,6,1,12).getTime();
+  const dailyDay=()=>{const d=BT.dailyInfo();return fin(d.id,d.band,d.level)};
+  for(let k=1;k<=7;k++){o=dailyDay();const has=o.badges.some(x=>x.id=='day7');if(has!==(k==7))bad.push('daily day '+k+': '+o.badges.map(x=>x.id));nextDay()}
+  eq([BT.bdg().dd.n,BT.bdg().dd.best],[7,7],'daily streak');
+  nextDay();o=dailyDay();eq([BT.bdg().dd.n,BT.bdg().dd.best,'day7' in BT.bdg().got],[1,7,true],'a missed day starts the count again, the badge stays');
+  load(null);S.grade=3;NOW=new RD(2026,6,1,12).getTime();
+  for(let k=1;k<=7;k++){o=dailyDay();if(o.badges.some(x=>x.id=='day7'))bad.push('day7 with a gap');nextDay(k==3?2:1)}
+  // a save from before badges: its solved levels count (first solves, all levels, puzzles solved)
+  load(null);S.grade=3;S.bt={zzc:{C:{lvl:13,stars:[3,3,3,3,3,3,3,3,3,3,3,3],endless:2}}};
+  eq(BT.badgeCheck().map(x=>x.id).sort(),['all.zzc.C','first.zzc','n10'],'an old save earns its badges');
+  if(BT.solved()!==14||BT.badgeCheck().length)bad.push('old save: solved '+BT.solved()+', awarded twice');
+  // round trip, and badges survive a reload
+  fin('zza','C',1);save();const keep=JSON.parse(JSON.stringify(S.bt));load(store[KEY]);eq(S.bt,keep,'S.bt round trip with badges');
+  if(!('first.zza' in BT.bdg().got)||BT.badgeCheck().length)bad.push('badges lost or awarded again after a reload');
+  // damaged values never throw, never award twice, keep what is earned
+  for(const junk of ['x',[],7,null,{got:'q'},{got:[1]},{got:{n10:5,'first.zza':null},n:'z',dd:'q'},{got:{},n:-5,dd:{day:3,n:'x',best:-1}}]){
+    load(null);S.grade=3;S.bt={badges:junk};const had='first.zza' in (junk&&junk.got&&typeof junk.got=='object'&&!Array.isArray(junk.got)?junk.got:{}),had10=!!(junk&&junk.got&&junk.got.n10);
+    try{BT.badgeList();BT.solved();BT.badgeCheck();o=fin('zza','C',1);o.badges.forEach(x=>{if(BT.bdg().got[x.id]!==today())bad.push('damaged '+JSON.stringify(junk)+': '+x.id+' not stored')});
+      if(o.badges.some(x=>x.id=='first.zza')===had)bad.push('damaged '+JSON.stringify(junk)+': first.zza awarded wrongly');
+      if(had10&&!('n10' in BT.bdg().got))bad.push('a damaged date lost the badge');
+      if(fin('zza','C',1).badges.length)bad.push('damaged '+JSON.stringify(junk)+': awarded twice')}
+    catch(e){bad.push('damaged badges '+JSON.stringify(junk)+' threw '+e.message)}
+  }
+  // 4. old saves: no badges, nothing else changed by reading (Home's card, the hub's lists, the badges view's list)
+  for(const name of fixtures){
+    load(fx(name));const pre=JSON.parse(JSON.stringify(S));
+    BT.badgeList();BT.solved();const nb=BT.badgeCheck();BT.dailyInfo();hmDaily();
+    if(nb.length||(S.bt&&S.bt.badges))bad.push(name+': an old save got badges');
+    if(S.bt&&Object.keys(S.bt).some(k=>k!=='daily'))bad.push(name+': reading wrote '+Object.keys(S.bt));
+    const post=JSON.parse(JSON.stringify(S));delete post.bt;eq(post,pre,name+': reading changed the save');
+  }
+  // 5. Home's card: hidden with no type, the pick and its pay, then done
+  load(null);S.grade=3;
+  if(!/id="hmday"/.test(hmDaily())||!/\\+5/.test(hmDaily())||!/level 1/.test(hmDaily()))bad.push('Home card: '+hmDaily());
+  dl=BT.dailyInfo();fin(dl.id,dl.band,dl.level);if(!/Done!/.test(hmDaily())||!/hm-pod done/.test(hmDaily()))bad.push('Home card when done');
+  // 6. the band-below offer: the same level left unsolved 3 times, counted per level, cleared by a solve
+  load(null);S.grade=3;
+  const R=(id,band,lv)=>({id,band,level:lv,puzzle:{},state:null,hints:0,sec:5,day:today()});
+  let a=R('zza','C',4);
+  if(BT.noteQuit(a)!==null||BT.noteQuit(a)!==null)bad.push('the first two exits offer nothing');
+  eq(BT.noteQuit(R('zza','C',4)),{id:'zza',band:'B',level:4,from:'C'},'the third quit offers the band below');
+  if(BT.rec('zza','C').quit.n!==0)bad.push('the count starts again after an offer');
+  BT.noteQuit(R('zza','C',4));BT.noteQuit(R('zza','C',5));BT.noteQuit(R('zza','C',4));if(BT.noteQuit(R('zza','C',4)))bad.push('another level in between starts the count again');
+  BT.noteQuit(R('zza','C',6));BT.noteQuit(R('zza','C',6));fin('zza','C',6);if(BT.rec('zza','C').quit)bad.push('a solve clears the count');
+  if(BT.noteQuit(R('zza','C',6))!==null)bad.push('after a solve the count starts at 1');
+  for(let i=0;i<3;i++)o=BT.noteQuit(R('zzc','C',2));if(o!==null)bad.push('no band below in that type: no offer');
+  S.grade=0;for(let i=0;i<3;i++)o=BT.noteQuit(R('zza','A',2));if(o!==null)bad.push('band A has no band below');
+  S.grade=5;for(let i=0;i<3;i++)o=BT.noteQuit(R('zzb','C',12));eq(o,{id:'zzb',band:'B',level:3,from:'C'},'the level is capped to the band below');
+  for(const x of [null,{},R('nope','C',1),R('zza','E',1),R('zza','C','E'),R('zza','CD',1),R('zza','C',0)])if(BT.noteQuit(x)!==null)bad.push('noteQuit '+JSON.stringify(x));
+  for(const q of ['x',[],{lv:'a',n:'b'},{lv:3,n:99}]){load(null);S.grade=3;S.bt={zza:{C:{lvl:5,stars:[],quit:q}}};try{BT.rec('zza','C');BT.noteQuit(R('zza','C',3))}catch(e){bad.push('damaged quit threw')}
+    const z=BT.rec('zza','C').quit;if(z&&!(z.n>=0&&z.n<=3&&z.lv>=0))bad.push('damaged quit kept '+JSON.stringify(z))}
+  // BT.stop counts a left puzzle and keeps the offer for the level strip
+  load(null);S.grade=3;BT.offer=null;
+  for(let i=0;i<3;i++){BT.st().cur=R('zza','C',7);BT.act={run:S.bt.cur,inst:{},iv:0,cd:0,won:false};BT.stop()}
+  eq(BT.offer,{id:'zza',band:'B',level:7,from:'C'},'leaving the same level three times leaves an offer');
+  BT.offer=null;BT.st().cur=R('zza','C',7);BT.act={run:S.bt.cur,inst:{},iv:0,cd:0,won:true};BT.stop();if(BT.offer||BT.rec('zza','C').quit.n)bad.push('a won puzzle is not a quit');
+  // 7. the medal art: tokens only, well formed, drawn for every badge, earned and not
+  load(null);S.grade=3;fin('zza','C',1);
+  for(const x of BT.badgeList(true)){const h=BT.medal(x,64);
+    if(/#[0-9a-fA-F]{3,8}\\b/.test(h.replace(/href="#i-[a-z0-9-]+"/g,''))||/undefined|NaN/.test(h)||(h.match(/<svg/g)||[]).length!==1||!/<\\/svg>$/.test(h))bad.push('medal '+x.id+': '+h.slice(0,80));
+    if(x.num==null&&!/href="#i-[a-z0-9-]+"/.test(h))bad.push('medal '+x.id+' has no icon');
+    for(const m of h.matchAll(/var\\(--([a-z0-9-]+)/g))if(!/^(ill-[a-z]+(-[123])?|drop)$/.test(m[1]))bad.push('medal token --'+m[1]);
+    if(!/^(n\\d+|day\\d+|first\\.[a-z0-9]+|all\\.[a-z0-9]+\\.[ABCD])$/.test(x.id))bad.push('badge id '+x.id);}
+  if(new Set(BT.badgeList(true).map(x=>x.id)).size!==BT.badgeList(true).length)bad.push('badge ids repeat');
+  return bad;})();`)}finally{globalThis.Date=RD}
+  return{problems:[...new Set(p.concat(r))],note:'daily pick over 7 grades x 40 days, pay once, badges, streak, old saves, damaged values, '+fixtures.length+' fixtures, quit rule'};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){

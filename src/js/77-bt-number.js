@@ -1017,7 +1017,7 @@ const BTN = (() => {
 })();
 
 BT.reg({
-  id: 'pyramid', name: 'Pyramids', icon: 'blocks', bands: 'BCD',
+  id: 'pyramid', name: 'Number Pyramid', icon: 'blocks', bands: 'BCD',
   rules: 'Each brick is the two bricks under it added together. Find the missing bricks.',
   make: (band, level, rnd) => BTN.PYR.make(band, level, rnd),
   mount: (el, p, api) => BTN.mountPyr(el, p, api),
@@ -1031,7 +1031,7 @@ BT.reg({
   solve: p => BTN.BAL.solve(p),
 });
 BT.reg({
-  id: 'target', name: 'Target', icon: 'target', bands: 'BCD',
+  id: 'target', name: 'Make the Number', icon: 'target', bands: 'BCD',
   rules: 'Join the numbers with the signs to make the number in the circle.',
   make: (band, level, rnd) => BTN.TGT.make(band, level, rnd),
   mount: (el, p, api) => BTN.mountTgt(el, p, api),

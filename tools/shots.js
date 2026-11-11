@@ -1846,6 +1846,38 @@ Object.assign(SCREENS, {
   'bt-mr-win': spShot('mirror', 6, 5, { win: true }),
 });
 
+// P3-17 Puzzle of the Day and badges (midway save, a 3rd grader). dailySeed gives some puzzle work: Sudoku band C all 12 levels,
+// two maze levels, one pattern level (badges first Sudoku, first Mazes, first Patterns, Sudoku 3-4, 10 puzzles).
+const dailySeed = () => {
+  S.grade = 3;
+  S.bt = { sudoku: { C: { lvl: 13, stars: [3, 3, 2, 3, 3, 3, 1, 2, 3, 3, 3, 2], endless: 0 } }, maze: { C: { lvl: 3, stars: [3, 2], endless: 0 } },
+    pattern: { B: { lvl: 2, stars: [3], endless: 0 } }, badges: { got: {}, n: 15, dd: { day: '', n: 0, best: 4 } } };
+  BT.badgeCheck();
+  save();
+};
+const dailyFake = async p => { // the fake type as today's pick, so the shot can win it with one call
+  await p.evaluate('(' + BTF.install.toString() + ')()');
+  await p.evaluate(() => { S.grade = 3; S.bt = { daily: { day: today(), done: [], pick: { id: 'zzfake', band: 'C', level: 1 } } }; save(); });
+};
+Object.assign(SCREENS, {
+  'bt-daily-home': { run: async p => { await p.evaluate(() => { S.grade = 3; home(); document.querySelector('#hmday').scrollIntoView({ block: 'center' }); }); } },
+  'bt-daily-done': { run: async p => {
+    await p.evaluate(() => { S.grade = 3; const d = BT.dailyInfo(); S.bt.daily.done = [d.id]; home(); document.querySelector('#hmday').scrollIntoView({ block: 'center' }); });
+  } },
+  'bt-daily-hub': { run: async p => { await p.evaluate(dailySeed); await p.evaluate(() => BT.hub()); } },
+  'bt-daily-win': { run: async p => {
+    await dailyFake(p);
+    await p.evaluate(() => { BT.start('zzfake', 'C', 1); BT.win(BT.act, { mistakes: 0 }); });
+    await p.waitForTimeout(1600);
+  } },
+  // a save from before badges with three Sudoku levels solved: opening the hub reveals the badge they already earned
+  'bt-daily-sheet': { run: async p => { await p.evaluate(() => { S.grade = 3; S.bt = { sudoku: { C: { lvl: 4, stars: [3, 3, 2], endless: 0 } } }; BT.hub(); }); await p.waitForTimeout(1200); } },
+  'bt-daily-offer': { run: async p => { await p.evaluate(() => { S.grade = 3; BT.levels('pattern', 'C'); BT.offer = { id: 'pattern', band: 'B', level: 4, from: 'C' }; BT.offerLower(); }); } },
+  'bt-daily-bar': { run: async p => { await p.evaluate(() => { S.grade = 5; S.bt = {}; BT.start('target', 'D', 1); BT.act.run.sec = 3599; }); await p.waitForTimeout(1300); } },
+  'bt-badges': { run: async p => { await p.evaluate(dailySeed); await p.evaluate(() => BT.badgeView()); } },
+});
+
+
 async function main() {
   const args = process.argv.slice(2);
   let fixtureArg = null;

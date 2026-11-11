@@ -21,10 +21,17 @@
 .bt-lv.lock:active{transform:none}
 .bt-lv .rate{display:flex;gap:0}
 .bt-end{max-width:480px;margin:0 auto}
-/* play frame */
-.bt-bar .ttl{flex:1}
+/* play frame. P3-17: the type's whole name shows: it may wrap to two lines (never cut), and on a phone with the timer chip the
+   type icon steps aside and the name is one size smaller, so "Make the Number" fits at 380 px next to the timer. */
+.bt-bar .ttl{flex:1;white-space:normal}
 .bt-tt{display:flex;flex-direction:column;min-width:0;line-height:1.1}
+.bt-nm{overflow-wrap:normal}
 .bt-tt small{font-size:var(--fs-1);font-weight:700;color:var(--ink-2)}
+@media (max-width:480px){
+  .bt-bar.timed .gx-tb{display:none}
+  .bt-bar.timed .ttl{font-size:var(--fs-3)}
+  .bt-bar.timed .bt-tt{line-height:1.05}
+}
 .bt-play{flex:1;min-height:0;display:flex;flex-direction:column}
 .bt-stage{flex:1;min-height:0;overflow:auto;padding:var(--s-3) var(--s-4);-webkit-overflow-scrolling:touch}
 .bt-foot{flex:none;display:flex;align-items:center;justify-content:center;gap:var(--s-4);padding:var(--s-2) var(--s-4) var(--s-3)}
@@ -43,4 +50,43 @@
   .bt-win .rw-card{overflow-y:auto;padding:var(--s-3) var(--s-5)}
   .bt-win .gx-disc{display:none}
   .bt-win .rw-card h1{margin-top:0}
+  /* P3-17: the new-badge row stays small, so Again and Levels still fit */
+  .bt-win .bt-nb{margin-top:var(--s-2);padding:var(--s-1) var(--s-3)}
+  .bt-win .bt-nb .bd-m{width:36px;height:40px}
+  .bt-win .bt-nb p{flex-direction:row;align-items:center;flex-wrap:wrap;gap:var(--s-1) var(--s-2)}
+  .bt-win .bt-nb b{font-size:var(--fs-2)}
 }
+/* P3-17: Puzzle of the Day reward on the hub card, the badges card, the badges view, the reveal and the band-below offer */
+.bt-pay{display:inline-flex;align-items:center;gap:2px;padding:0 var(--s-2) 0 2px;border-radius:var(--r-pill);background:var(--star-tint);color:var(--try-ink);font-weight:700}
+.bt-day.done .pc-badge{background:var(--good-tint);color:var(--good-ink)}
+.bt-mini{display:inline-flex;gap:2px}
+.bt-mini .bd-m{flex:none}
+.bd-m{display:block;overflow:visible}
+.bd-m text{font-family:var(--font-display);font-weight:700;text-anchor:middle}
+.bd-sum{max-width:640px;margin:var(--s-2) auto 0;text-align:center;font-size:var(--fs-3);font-weight:700;line-height:1.35;color:var(--ink-2)}
+.bd-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:var(--s-3);max-width:640px;margin:0 auto}
+.bd-t{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:2px;min-width:0;min-height:var(--tap);padding:var(--s-2) var(--s-1) var(--s-3);
+  border:0;border-radius:var(--r-card);background:var(--surface-2);color:var(--ink-2);font:inherit;text-align:center;cursor:pointer;touch-action:manipulation;
+  box-shadow:inset 0 0 0 2px var(--line);transition:transform var(--t-fast) var(--ease)}
+.bd-t.got{background:var(--surface);color:var(--ink);box-shadow:inset 0 0 0 2px var(--line),var(--ledge) var(--ledge-soft)}
+.bd-t:active{transform:translateY(3px)}
+.bd-t b{font-family:var(--font-display);font-size:var(--fs-2);line-height:1.2;overflow-wrap:normal}
+.bd-t small{display:inline-flex;align-items:center;gap:2px;font-size:var(--fs-2);font-weight:700;line-height:1.3;color:var(--ink-3)}
+.bd-t.got small{color:var(--good-ink)}
+.bd-view .bt-h{max-width:640px}
+/* the reveal: medals pop in once, one after the other (calm mode and reduced motion cut the motion, 20-base.css) */
+.bt-nb{display:flex;align-items:center;justify-content:center;gap:var(--s-2);max-width:440px;margin:var(--s-3) auto 0;padding:var(--s-2) var(--s-3);
+  border-radius:var(--r-card);background:var(--bt-tint);text-align:left}
+.bt-nb p{display:flex;flex-direction:column;align-items:flex-start;gap:var(--s-1);min-width:0;margin:0}
+.bt-nb b{font-family:var(--font-display);font-size:var(--fs-3);line-height:1.2;color:var(--bt-shade)}
+.bt-nb .bd-m,.bt-nbm .bd-m{flex:none;animation:bt-pop var(--t-xl) var(--spring) .45s both}
+.bt-nb .bd-m+.bd-m,.bt-nbm .bd-m+.bd-m{animation-delay:.6s}
+@keyframes bt-pop{from{opacity:0;transform:scale(.5) translateY(12px)}to{opacity:1;transform:none}}
+.bt-nbm{display:flex;justify-content:center;gap:var(--s-2);margin-bottom:var(--s-2)}
+.bt-nbs h2,.bt-off h2{text-align:center}
+.bt-nbs p,.bt-off p{text-align:center}
+.bt-offi{display:grid;place-items:center;width:72px;height:72px;margin:0 auto var(--s-2);border-radius:50%;background:var(--bt-tint);color:var(--bt)}
+/* the sticker book's page link */
+.bk-bt{display:flex;justify-content:center;margin:0 0 var(--s-4)}
+html.calm .bt-nb .bd-m,html.calm .bt-nbm .bd-m{animation:none}
+@media (prefers-reduced-motion:reduce){.bt-nb .bd-m,.bt-nbm .bd-m{animation:none}}
