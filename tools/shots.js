@@ -413,6 +413,13 @@ const SCREENS = {
   'boss-lose': { run: rwShot({ boss: 2, won: false }) },
   testout: { run: async p => { await p.evaluate(() => testOut('math', 2)); } },
   rewards: { full: true, run: async p => { await p.evaluate(rwSheet); } },
+  // ---- P2-24 sentences (sent 3-5): the Space Station map at its new last stop, then one question of each type through the round engine ----
+  'sent-map': { run: async p => { await p.evaluate(() => { S.grade = 2; pathMap('read', PATHS.read.worlds.findIndex(w => w.id === 'r_space')); }); } },
+  'sent3': { run: sentShot(3, 'order') },
+  'sent3-hint': { run: sentShot(3, 'order', true) },
+  'sent4': { run: sentShot(4, 'choice') },
+  'sent5-pic': { run: sentShot(5, 'choice') },
+  'sent5-story': { run: sentShot(5, 'order') },
   // P2-25 comprehension (2nd grade): the Word Workshop map with the two new stops, and one question of a story and of a passage about
   // the world through the real round engine (the passage panel open); story-hint opens Help, story-closed hides the panel.
   'story-map': { run: async p => { await p.evaluate(() => { S.grade = 2; pathMap('read', PATHS.read.worlds.findIndex(w => w.id === 'r_workshop')); }); } },
@@ -438,6 +445,20 @@ function gramShot(lv, seed, hint, form) {
       for (let i = 1; form && i < 400 && !(q.cls == 'bwords'); i++) q = genQ('gram', lv, seed + i);
       G = newG({ sk: 'gram', lv, n: 1, pool: [q] }); next();
     }, [lv, seed, form]);
+    if (hint) await p.click('#hb');
+  };
+}
+
+// P2-24: the first seeded question of that level and kind (level 5 mixes two), shown through the real round engine; hint opens Help.
+function sentShot(lv, kind, hint) {
+  return async p => {
+    await p.evaluate(([lv, kind]) => {
+      S.name = 'Ava'; setGrade(2);
+      window.say = () => {};
+      start('read', NODES.read.findIndex(n => n.sk === 'sent' && n.lv === lv));
+      for (let seed = 1; seed < 200; seed++) { const q = genQ('sent', lv, seed); if (q.kind === kind) { G.q = q; break; } }
+      renderQ();
+    }, [lv, kind]);
     if (hint) await p.click('#hb');
   };
 }
