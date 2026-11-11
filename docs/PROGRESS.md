@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** P2-13, P2-14, P2-17, P3-05, P3-07, A11b
+**Next up:** P2-14, P2-17, P3-05, P3-07, A11b
 
-**Current version:** v103
+**Current version:** v104
 
 ## Chunk status
 
@@ -82,6 +82,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P4-06 v101
 - P3-03 v102
 - P3-06 v103
+- P2-13 v104
 
 ## Handoff notes
 
@@ -333,6 +334,20 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-11) Icons wanted from P4-03: `balloon` (Bonus game, today `gamepad`), `sparkle` / `confetti`, `unlock` (open padlock for "Next stop unlocked", today `map`), `zap` (a lightning with a spark for boss hits; today `bolt`), `sticker` (single sticker for the prize row), `medal` (the prize rosette as an icon), `heart-half` (boss life bar), `chest` (the treasure chest at icon size, e.g. for the round track where renderQ shows the gift emoji).
 
 ## Log
+
+### P2-13 6th grade: world Sky City (v102, 2026-11-11, Claude)
+- What changed (CURRICULUM M-6a and 2.1 row 15, ROADMAP P2-13): new world `m_sky` "Sky City" (grade 6, cloud icon, right after `m_caves`; Galaxy Core, P2-14, follows later) with the 8 stops in CURRICULUM order: ratio 1 Ratios and Tables, ratio 2 Unit Rates, int 1 Integers on a Line, ratio 3 Percent of a Number, int 2 Absolute Value, ratio 4 Fractions and Percents, fop 7 Divide Fractions, int 3 Integer Add & Subtract, then the boss. New skills `ratio` (4 levels) and `int` (3 levels); `fop` extended 6 -> 7 with a dispatcher in `38-skills.js` (old levels untouched, checked by seed).
+- Generators: one block `// ---- P2-13 Sky City ----` at the end of `35-gen-math-upper.js` (names `sky`). ratio 1: ratio of blue to orange dots (VIZ.tenFrame, coprime pairs, four choices none an equal ratio), a ratio from a sentence ("a : b" or "a to b"), an equal-ratio line with one blank. ratio 2: price of one (whole cents in 5s, decimal pad `eq:'value'`), a rate per hour or minute, which is the better buy (two deals in the prompt, buttons Deal A / Deal B). ratio 3: part of a number (10, 20, 25, 50, 75 half the time, else any multiple of 5; whole parts, numbers 20-400) and the whole from a part and a percent. ratio 4: match four fractions, decimals or percents (`match` kind), fraction to percent, fraction to decimal (bottoms to 100), decimal to percent, percent to decimal, percent to a fraction in simplest form. int 1: tap a number on -10..10 (4-5 targets at least 4 apart), compare (`<` `=` `>`) with the line, which of two temperatures is colder or warmer, order three (`order` kind, up or down). int 2: absolute value, opposite, distance between two integers (line with two dots). int 3: add and subtract integers with operands and answer in -20..20 (all four sign cases), hint of three steps with the number line (start dot, the rule for the sign, the hop). fop 7: fraction / fraction, mixed number / fraction, fraction / mixed number, answer in simplest form (a mixed number in the three-slot pad when it is more than 1, else a fraction; never a whole number; `eq` off so 6/20 is refused).
+- Step hints: every question has a `skyHint` (steps of `ST.step`, plain text, a spoken line that says "negative"), the last step ends in a "?" and none states the answer. int 3's hop picture appears only in the last step and shows the arc, not a number.
+- Shared engine edits: none. Negative entry already existed (num `pad:'neg'`, the +/- key under the pad, P1-03); `VIZ.numLine` already draws negative ranges with the minus sign. Both were tested (the pad key only on `neg` questions, typing -5 with real taps in smoke, a -10..10 line is deterministic, tokens only, tap targets at least 48 units).
+- Tests (test.js 83 of 83): "Sky City P2-13" with 3,000 seeded questions per new level (8 levels), maths recomputed independently from the label and the picture (dots counted in the svg, equal-ratio multipliers, unit prices in cents, percents, every match pair, tap targets read back from the svg, marks on the line, hop start and end read from the arc, mixed-number division by fractions, simplest form enforced by `same()`), hints (steps, "?" last, never the answer), say, labels, kindProblems zero, reproducible, old levels unchanged, stops read from CURRICULUM row 15, block has no Math.random / raw hex / name without the `sky` prefix; and a save check (fixtures x 9 grades + 3 synthetic saves) that ends the path at Sky City while it runs: no star moves, nothing re-locks, the map opens where it did except for the new world (a 6th grader with nothing further on now starts in Sky City, startWorld).
+- Test expectations changed: the Decimal Desert P2-10 stop check expected `SK.fop.max` 6; it is 7 (level 7 is this world's). The Volcano Lab P2-11 fixture check removes the later worlds `m_desert` and `m_caves` to compare with and without its world; it now removes `m_sky` too. Nothing weakened.
+- Smoke (`// P2-13` block, last in the main sequence): a 6th grader whose earlier worlds are finished opens the map on Sky City (position by id, after `m_caves`), plays Ratios and Tables with a step hint, then Ratios and Tables, Integers on a Line, Absolute Value and Integer Add & Subtract as full rounds of real taps, measures every question at 380x780 (48 px keys, choices, tiles and tap targets, no cut-off words, no sideways scroll; with a step hint open the question stays in view), 24 forced pictures and kinds (a match of each kind, a tapped number, three numbers ordered, a negative answer typed with the +/- key and read from the box before the check key), stars saved. Shots `sky-*` (looked at them at 380x780).
+- Seen in the shots and fixed: the better-buy choices with the whole deal as button text ("9 stickers for $26.10") wrapped to four lines; the deals are now in the prompt and the buttons say Deal A and Deal B. int 3's third step first pushed the equation out of the card; its text is two lines now.
+- Found and not changed: the tap line shows -10..10 in 5s, so the child counts ticks for an answer such as -8 (labels on every tick do not fit 290 units); the map icon for every math world is the same math icon.
+- Checklist 7.1: [x] chunk files [x] VER v102 (provisional) [x] build [x] test.js [x] smoke.js [x] screenshots [x] no network [x] no new emoji or hex [x] PROGRESS entry [x] one commit (not pushed).
+- Merge: built on a parallel branch from P2-12 (v98); `m_sky` goes after Crystal Caves, so after Volcano Lab and Crystal Caves at merge; renumber VER at merge (rebuild, `git add -A`). Keep every `35-gen-math-upper.js` block and every `SK` dispatcher (`fop` now ends with `lv==7?skyFop7()`).
+- Merge: built on a parallel branch, renumbered v103 -> v104 at merge.
 
 ### P3-06 Logic grid generator and banks (v103, 2026-11-11, Claude)
 - What changed (BRAIN_TEASERS 5.3 and 6): new dev-time generator `tools/puzzles/logic.js`, registered as `logic` in the `build-banks.js` TYPES registry (seed `star-school-logic-1`); `verify-banks.js` gains `verifyLogic` and its own assignment counter `countLogic`; generated bank `src/data/d-puz-logic.js` (108 puzzles) that builds into the data file. No UI: nothing in the app reads `PUZ.logic` yet (P3-07 does).
