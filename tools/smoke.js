@@ -2467,6 +2467,62 @@ async function main() {
       await cp26.ctx.close();
     }
 
+    // P2-28 5th grade passages at 380x780: comp 6 and info 4 at the end of Author Island. For each stop the question line is on screen
+    //    together with the open passage panel, the four choices are at least 48 px, nothing scrolls sideways, and a 10/10 round saves stars.
+    {
+      const cp28 = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
+      const pg = cp28.page;
+      await pg.evaluate(() => {
+        S.grade = 5;
+        const wi = PATHS.read.worlds.findIndex(w => w.id === 'r_island'); // every other stop up to and including Author Island is done
+        NODES.read.forEach(n => { if (n.wi <= wi && !/^(comp6|info4)$/.test(nid(n))) S.maps.read[nid(n)] = S.maps.read[nid(n)] || 2; });
+        save();
+      });
+      const goStop28 = async id => {
+        const at = await pg.evaluate(id => { const i = NODES.read.findIndex(n => nid(n) === id); return { i, w: NODES.read[i].wi }; }, id);
+        await pg.evaluate(() => { if (G) G.dead = true; home(); });
+        await pg.click('.game[data-p="read"]');
+        await pg.waitForSelector('.wchip.on');
+        await pg.click(`.wchip[data-w="${at.w}"]`);
+        await pg.waitForSelector(`.wchip.on[data-w="${at.w}"]`);
+        await pg.click(`.node[data-n="${at.i}"]`);
+        await pg.waitForSelector('#prompt');
+      };
+      for (const [id, sk, lv] of [['comp6', 'comp', 6], ['info4', 'info', 4]]) {
+        await goStop28(id);
+        // look at every question of the first passage: the question line stays on screen above the choices with the panel open
+        const worst = await pg.evaluate(() => {
+          const out = { n: 0, bad: [] };
+          const per = G.pool.length + 1;
+          for (let k = 0; k < 5; k++) {
+            G.q = genPassage(G.sk, G.lv, { bp: PASS[G.sk].findIndex(x => x.lv === G.lv), qi: k, s: 5 }); G.q.sk = G.sk; G.q.lv = G.lv; renderQ();
+            const pr = document.querySelector('#prompt').getBoundingClientRect(), d = document.querySelector('.bctx');
+            const chs = [...document.querySelectorAll('.ch')].map(e => { const r = e.getBoundingClientRect(); return { height: e.offsetHeight, width: e.offsetWidth, left: r.left, right: r.right }; }); // offset sizes: the card is still animating in
+            out.n++;
+            if (!d || !d.open) out.bad.push('q' + k + ': panel not open');
+            if (pr.top < 0 || pr.bottom > innerHeight || pr.height < 10) out.bad.push('q' + k + ': question line at ' + Math.round(pr.top) + '-' + Math.round(pr.bottom));
+            if (chs.length !== 4 || chs.some(r => r.height < 48 || r.width < 48 || r.right > innerWidth + 1 || r.left < -1)) out.bad.push('q' + k + ': choices ' + chs.map(r => Math.round(r.width) + 'x' + Math.round(r.height)).join(' '));
+            if (document.documentElement.scrollWidth > innerWidth) out.bad.push('q' + k + ': sideways scroll ' + document.documentElement.scrollWidth);
+          }
+          out.per = per;
+          return out;
+        });
+        if (worst.bad.length) fail('P2-28 ' + id + ' layout: ' + worst.bad.join('; '));
+        await goStop28(id); // a fresh real round
+        const lay = await pg.evaluate(() => ({ sk: G.sk, lv: G.lv, n: G.n, w: document.documentElement.scrollWidth, panel: !!document.querySelector('.bctx'),
+          words: document.querySelectorAll('.bctx-p .w').length }));
+        if (lay.sk !== sk || lay.lv !== lv || lay.n !== 10 || lay.w > 380 || !lay.panel || lay.words < 150) fail('P2-28 ' + id + ' round: ' + JSON.stringify(lay));
+        await playRound(pg, 'P2-28 ' + id, 10);
+        const st = await pg.evaluate(id => S.maps.read[id] || 0, id);
+        if (st < 1) fail('P2-28 ' + id + ' did not save stars');
+      }
+      step('P2-28: Read a Story 4 and Learn About It 4 at 380x780: question line and passage panel both on screen, buttons >= 48 px, no sideways scroll, 10/10 rounds saved stars');
+      await vwait(pg, 500);
+      network.push(...cp28.network);
+      for (const e of cp28.errors) fail(e);
+      await cp28.ctx.close();
+    }
+
     for (const e of errors) fail(e);
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');
