@@ -348,7 +348,7 @@ compAdd([
    d:['Earth blocks the Moon every night','The Moon makes less light each week','Clouds cover part of the Moon'],ev:[3,4]},
   {t:'vocab',q:'In this passage, "reflects" means...',a:'bounces back',
    d:['gives away','soaks up','turns off'],ev:[1]},
-  {t:'feature',q:'What does the title tell the reader?',a:'It explains why the Moon changes',
+  {t:'feature',q:'What does the title tell the reader?',a:'It names the topic: the shapes of the Moon',
    d:['It tells a story about a girl','It lists the planets in order','It shows how to make a telescope'],ev:[4]}]},
 
 {id:'g3n03',g:3,type:'n',title:'Rain Forest Layers',text:[
@@ -694,14 +694,14 @@ compAdd([
  qs:[
   {t:'infer',q:'How did the narrator feel after Rosa stormed off?',a:'Sad and worried about the fight',
    d:['Proud of the blue waves','Sleepy after a long day','Angry at Grandpa'],ev:[5,4]},
-  {t:'compare',q:'How were the sisters\' first ideas different?',a:'One wanted blue waves, and one wanted yellow stars.',
+  {t:'compare',q:'How were the two first ideas for the quilt different?',a:'One wanted blue waves, and one wanted yellow stars.',
    d:['One wanted a plain quilt, and one wanted stripes.','One wanted to sew a quilt, and one wanted to buy it.','One wanted a small quilt, and one wanted a huge one.'],ev:[2,3]},
-  {t:'pov',q:'From whose point of view is the story told?',a:'The sister who wanted blue waves',
+  {t:'pov',q:'From whose point of view is the story told?',a:'The narrator, who wanted blue waves',
    d:['Rosa, who wanted yellow stars','Grandpa, who received the quilt','A neighbor who watched them sew'],ev:[0,2]},
   {t:'vocab',q:'In this story, "studied" means...',a:'looked at it carefully',
    d:['sewed it together','put it away','forgot all about it'],ev:[8]},
   {t:'theme',q:'Which idea is the theme of the story?',a:'Joining two ideas can beat either one alone.',
-   d:['Arguing is the best way to make a choice.','Sisters should avoid making gifts together.','Store gifts are always better than made ones.'],ev:[9,10,13]}]},
+   d:['Arguing is the best way to make a choice.','Families should never make gifts together.','Store gifts are always better than made ones.'],ev:[9,10,13]}]},
 
 {id:'g5f03',g:5,type:'f',title:'Hiro and the Missing Key',text:[
   'Hiro came home from school and found that his house key was not in his backpack.',
@@ -1070,7 +1070,7 @@ compAdd([
   'The moon\'s gravity pulls on everything on Earth, but water can move, so the ocean bulges toward the moon.',
   'A second bulge forms on the opposite side of Earth, because the whole planet is pulled toward the moon more strongly than the far water is.',
   'As Earth spins, a coastline passes through both bulges, so most coasts have two high tides and two low tides each day.',
-  'The sun pulls on the ocean as well, but its pull is far weaker than the moon\'s, because the sun is so much farther away.',
+  'The sun pulls on the ocean as well, but its tide-making effect is only about half the moon\'s, because the sun is so much farther away.',
   'When the sun, Earth, and moon line up at new moon and full moon, their pulls combine, and the tides grow extra large.',
   'These are called spring tides, even though they have nothing to do with the season.',
   'When the moon is at a quarter phase, the pulls work against each other, and the tides are smaller, called neap tides.',
@@ -1086,7 +1086,7 @@ compAdd([
    d:'Ships could sail in more easily|The tide would be at its highest|Sailors would not need tide tables'.split('|'),ev:[11]},
   {t:'figure',q:'The sea is "answering a call from the moon." This phrase means the ocean is...',a:'reacting to the moon\'s pull',
    d:'making noise at night|chasing the moon across the sky|sending signals to sailors'.split('|'),ev:[14,3]},
-  {t:'evidence',q:'Which sentence best shows that the sun has less effect on tides than the moon?',a:'"its pull is far weaker than the moon\'s"',
+  {t:'evidence',q:'Which sentence best shows that the sun has less effect on tides than the moon?',a:'"its tide-making effect is only about half the moon\'s"',
    d:'"the ocean bulges toward the moon"|"the tides grow extra large"|"these tables can be printed years ahead"'.split('|'),ev:[6]},
   {t:'purpose',q:'Why does the author point out that spring tides have nothing to do with the season?',a:'To clear up a possible mix-up about the name',
    d:'To argue that spring is the best time to visit a beach|To show that tides change with the weather|To explain how the sun heats the ocean'.split('|'),ev:[8]}]},

@@ -324,18 +324,20 @@ function vocBuild() {
   const S5 = ['ful', 'less', 'ly', 'er', 'est', 'able'];
   const sfx = (a, i) => { const r = S5.filter(x => x != a); const o = i % 3; return [r[o], r[(o + 2) % 5], r[(o + 3) % 5]]; };
   const A5 = (word, m, d) => out.push(VOC_IT(5, 'suffix', `What does ${word} mean?`, m, d, 'wide'));
-  for (const b of VOC_L5_FUL) A5(b + 'ful', `full of ${b}`, [`without ${b}`, `more ${b}`, `the most ${b}`]);
+  // R-01r: "full of thanks" (not "full of thank"), "in an old way" (not "in a old way")
+  const nf = b => b == 'thank' ? 'thanks' : b, way = b => `in ${/^[aeiou]/.test(b) ? 'an' : 'a'} ${b} way`;
+  for (const b of VOC_L5_FUL) A5(b + 'ful', `full of ${nf(b)}`, [`without ${nf(b)}`, `more ${nf(b)}`, `the most ${nf(b)}`]);
   for (const b of VOC_L5_LESS) A5(b + 'less', `without ${b}`, [`full of ${b}`, `more ${b}`, `the most ${b}`]);
-  for (const b of VOC_L5_LY) A5(b + 'ly', `in a ${b} way`, [`more ${b}`, `the most ${b}`, `not ${b}`]);
-  for (const b of VOC_L5_ER) A5(b + 'er', `more ${b}`, [`in a ${b} way`, `the most ${b}`, `not ${b}`]);
-  for (const b of VOC_L5_EST) A5(b + 'est', `the most ${b}`, [`more ${b}`, `in a ${b} way`, `not ${b}`]);
+  for (const b of VOC_L5_LY) A5(b + 'ly', way(b), [`more ${b}`, `the most ${b}`, `not ${b}`]);
+  for (const b of VOC_L5_ER) A5(b + 'er', `more ${b}`, [way(b), `the most ${b}`, `not ${b}`]);
+  for (const b of VOC_L5_EST) A5(b + 'est', `the most ${b}`, [`more ${b}`, way(b), `not ${b}`]);
   for (const [w, v, s] of VOC_ROWS(VOC_L5_AGENT)) A5(w, `a person who ${s}`, [`${v} again`, `${v} the wrong way`, `${v} before`]);
   for (const [w, v, pp, vs] of VOC_ROWS(VOC_L5_ABLE)) A5(w, `able to be ${pp}`, [`a person who ${vs}`, `${v} again`, `not able to be ${pp}`]);
   // add-the-ending items: base + ___ = meaning
   const B5 = [];
   for (const b of VOC_L5_FUL.slice(0, 4)) B5.push([b, 'ful', `full of ${b}`]);
   for (const b of VOC_L5_LESS.slice(0, 4)) B5.push([b, 'less', `without ${b}`]);
-  for (const b of VOC_L5_LY.slice(0, 4)) B5.push([b, 'ly', `in a ${b} way`]);
+  for (const b of VOC_L5_LY.slice(0, 4)) B5.push([b, 'ly', way(b)]);
   for (const b of VOC_L5_ER.slice(0, 3)) B5.push([b, 'er', `more ${b}`]);
   for (const b of VOC_L5_EST.slice(0, 3)) B5.push([b, 'est', `the most ${b}`]);
   for (const [, v, pp] of VOC_ROWS(VOC_L5_ABLE).slice(0, 3)) B5.push([v, 'able', `able to be ${pp}`]);
@@ -376,7 +378,7 @@ Can I come with you, ___?|too|to|two,toe
 We walked ___ the park after lunch.|to|too|two,toe
 Is this ___ lunch box?|your|you're|you,yours
 I think ___ very kind to share.|you're|your|you,yours
-The puppy wagged ___ tail.|its|it's|his,is
+The puppy wagged ___ tail.|its|it's|is,it
 ___ raining outside, so take an umbrella.|it's|its|him,his
 Can you ___ the music from the next room?|hear|here|hair,heard
 Come over ___ and sit next to me.|here|hear|her,hire
@@ -402,7 +404,7 @@ She bought a new ___ of shoes.|pair|pear|peer,pail
 Let's ___ at the park at noon.|meet|meat|met,melt
 Dad cooked ___ for dinner.|meat|meet|beat,seat
 We go to the library once a ___.|week|weak|weep,wick
-The baby bird was too ___ to fly.|weak|week|weed,wake
+The baby bird was too ___ to fly.|weak|week|weep,wake
 The sky is ___ today.|blue|blew|blow,glue
 The wind ___ my hat right off.|blew|blue|blow,glow
 She ___ a big lunch at school.|ate|eight|eat,at
@@ -441,16 +443,16 @@ I wonder ___ it will rain tomorrow.|whether|weather|wither,feather
 The ___ is sunny and warm today.|weather|whether|wither,feather
 She ___ the ball to me.|threw|through|thrown,three
 We walked ___ the long tunnel.|through|threw|though,thought
-Have you ___ my red hat?|seen|scene|seem,sewn
+Have you ___ my red hat?|seen|scene|seem,seat
 The last ___ of the play was funny.|scene|seen|seem,scent
 The lion shook his big ___.|mane|main|man,mine
 The ___ road was busy with cars.|main|mane|man,mean
 The bridge is made of strong ___.|steel|steal|stool,steep
 It is wrong to ___ a toy from a shop.|steal|steel|steam,stale
-Our team will ___ the other team.|beat|beet|beer,belt
-The red ___ grew in the garden.|beet|beat|beer,belt
+Our team will ___ the other team.|beat|beet|bead,belt
+The red ___ grew in the garden.|beet|beat|beep,belt
 I will ___ my old bike to a neighbor.|sell|cell|sale,seal
-Every living thing is made of a tiny ___.|cell|sell|seal,sill
+The smallest living part of a plant is a ___.|cell|sell|seal,sill
 It is not ___ to cheat at games.|fair|fare|far,fire
 The bus ___ was two dollars.|fare|fair|far,fire
 A cut will ___ in a few days.|heal|heel|heat,head
