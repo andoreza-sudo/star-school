@@ -1409,6 +1409,12 @@ async function main() {
       const pr = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
       const pp = pr.page;
       const opa = sel => pp.evaluate(s => { const e = document.querySelector(s); return e ? +getComputedStyle(e).opacity : -1; }, sel);
+      // watch(sel) samples the face's opacity every frame until read(): a face shown for a moment is seen even when the page is slow
+      // (a busy machine let a single read after the click land after the face had gone)
+      const watch = sel => pp.evaluate(s => { window.__seen = 0; const tick = () => { const e = document.querySelector(s);
+        if (e) window.__seen = Math.max(window.__seen, +getComputedStyle(e).opacity); if (!window.__seenStop) requestAnimationFrame(tick); };
+        window.__seenStop = 0; requestAnimationFrame(tick); }, sel);
+      const seenMax = () => pp.evaluate(() => { window.__seenStop = 1; return window.__seen; });
       await pp.evaluate(() => { S.care = { food: 90, clean: 90, fun: 90, t: Date.now(), gift: '' }; home(); });
       const h = await pp.evaluate(() => {
         const pet = document.querySelector('#pet'), svg = pet && pet.querySelector('.pet-svg'), r = svg && svg.getBoundingClientRect();
@@ -1431,8 +1437,10 @@ async function main() {
       await pp.waitForSelector('#pet .pet-m-hungry', { timeout: 3000 });
       await pp.click('[data-f="0"]');
       await pp.waitForSelector('#pet .pet-m-idle', { timeout: 4000 });
+      await watch('#pet .pf-oops');
       await pp.click('#bath');
-      const oops = await opa('#pet .pf-oops');
+      await pp.waitForTimeout(300);
+      const oops = await seenMax();
       if (oops !== 1) fail('P4-05 bath: oops face opacity ' + oops);
       await pp.waitForTimeout(1500);
       // map pet and round runner
@@ -1444,8 +1452,10 @@ async function main() {
       if (!mr.m || !(mr.h >= 40) || mr.pos !== 'static') fail('P4-05 map pet: ' + JSON.stringify(mr));
       await pp.evaluate(() => start('math', 0));
       await pp.waitForSelector('#runner .pet-svg');
+      await watch('#runner .pf-cheer');
       await answer(pp);
-      const rc = await opa('#runner .pf-cheer');
+      await pp.waitForTimeout(300);
+      const rc = await seenMax();
       if (rc !== 1) fail('P4-05 runner: cheer face after a right answer ' + rc);
       await pp.evaluate(() => { G.dead = true; });
       // growth overlay: the egg wobbles, then the kid dragon appears
