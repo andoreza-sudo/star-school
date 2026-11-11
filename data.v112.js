@@ -1,5 +1,5 @@
-/* Star School data banks v111. BUILT by tools/build.py from src/data/*.js (sorted): never edit by hand.
-   index.html v111 loads this file with <script src="data.v111.js"> between the code and the start-up script. */
+/* Star School data banks v112. BUILT by tools/build.py from src/data/*.js (sorted): never edit by hand.
+   index.html v112 loads this file with <script src="data.v112.js"> between the code and the start-up script. */
 /* Comprehension passages (P2-25: 2nd grade). Format and how to add a grade: header of src/js/37-comp.js.
    Fiction (type 'f') is the comp skill, level 3; nonfiction (type 'n') is the info skill, level 1. Original text, no brands, no real people.
    Append new grades below; never reorder or insert (saved review items remember a passage by its position). */
@@ -1583,6 +1583,50 @@ const ES_UNITS=[
   ['abuela','grandma','👵',''],
   ['abuelo','grandpa','👴',''],
   ['bebé','baby','👶','']]},
+ {id:'house',t:'House',e:'🏠',theme:'The house',spell:1,items:[
+  ['casa','house','🏠','la'],
+  ['puerta','door','🚪','la'],
+  ['ventana','window','🪟','la'],
+  ['mesa','table','🍽','la'],
+  ['silla','chair','🪑','la'],
+  ['cama','bed','🛏','la','bed'],
+  ['cocina','kitchen','🍳','la'],
+  ['baño','bathroom','🛁','el'],
+  ['jardín','garden','🌻','el'],
+  ['lámpara','lamp','💡','la'],
+  ['sala','living room','🛋','la']]},
+ {id:'clothes',t:'Clothes',e:'👕',theme:'Clothes',spell:1,items:[
+  ['camisa','shirt','👕','la'],
+  ['pantalones','pants','👖','los'],
+  ['vestido','dress','👗','el'],
+  ['zapatos','shoes','👟','los'],
+  ['sombrero','hat','🎩','el','hat'],
+  ['chaqueta','jacket','🧥','la'],
+  ['calcetines','socks','🧦','los'],
+  ['gorra','cap','🧢','la'],
+  ['botas','boots','👢','las'],
+  ['corbata','tie','👔','la']]},
+ {id:'school',t:'School',e:'🎒',theme:'School',spell:1,items:[
+  ['libro','book','📖','el'],
+  ['lápiz','pencil','✏','el'],
+  ['mochila','backpack','🎒','la'],
+  ['papel','paper','📄','el'],
+  ['maestra','teacher (woman)','👩','la'],
+  ['maestro','teacher (man)','👨','el'],
+  ['escuela','school','🏫','la'],
+  ['clase','class','🔔','la'],
+  ['tijeras','scissors','✂','las'],
+  ['borrador','eraser','🧽','el']]},
+ {id:'feel',t:'Feelings',e:'😊',theme:'Feelings',items:[
+  ['feliz','happy','😊',''],
+  ['triste','sad','😢',''],
+  ['enojado','angry','😠',''],
+  ['cansado','tired','😴',''],
+  ['asustado','scared','😨',''],
+  ['enfermo','sick','🤒',''],
+  ['emocionado','excited','🥳',''],
+  ['tranquilo','calm','😌',''],
+  ['sorprendido','surprised','😮','']]},
 ];
 const SPN={};ES_UNITS.forEach(u=>{SPN[u.id]=u.items}); // old name: unit id -> items (balloons, speed race, learn screen)
 ES_UNITS.forEach(esReg);
@@ -4565,4 +4609,4 @@ function vocBuildB() {
 
 BANK.vocab = vocBuild().concat(vocBuildB());
 
-var DATA_VER='v111'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var DATA_VER='v112'; // last line: the whole file ran (checked by dataReady() before the app starts)

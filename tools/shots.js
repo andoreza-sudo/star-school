@@ -385,6 +385,12 @@ const SCREENS = {
   // P2-30 Spanish framework: level 3 (spell niño, accent row) and the no-Spanish-voice listen question (word shown big, note, no speaker)
   'es-spell': { run: async p => { const s = await p.evaluate(`(${ES_FX.install})(['es-MX'])`); await p.evaluate(s => { G = newG({ sk: 'es_tst', lv: 3, n: 1, pool: [genQ('es_tst', 3, s)] }); next(); }, s); } },
   'es-novoice': { run: async p => { await p.evaluate(`(${ES_FX.install})(['en-US'])`); await p.evaluate(() => { G = newG({ sk: 'es_animal', lv: 1, n: 1, pool: [genQ('es_animal', 1, 7)] }); next(); }); } },
+  // P2-31 La Casa: the world map, a listen question (house), a spell question with the accent row (baño), a clothes read question, a feelings listen question
+  'es-casa-map': { run: async p => { await p.evaluate(() => { NODES.es.forEach((x, i) => { if (x.wi < 3) setSt('es', i, 3); }); pathMap('es', 3); }); } },
+  'es-casa-l1': { run: async p => { await p.evaluate(() => { G = newG({ sk: 'es_house', lv: 1, n: 1, pool: [genQ('es_house', 1, 5)] }); next(); }); } },
+  'es-casa-l3': { run: async p => { await p.evaluate(() => { let q; for (let s = 1; s < 400; s++) { q = genQ('es_house', 3, s); if (q.word === 'baño') break; } G = newG({ sk: 'es_house', lv: 3, n: 1, pool: [q] }); next(); }); } },
+  'es-casa-clothes': { run: async p => { await p.evaluate(() => { G = newG({ sk: 'es_clothes', lv: 2, n: 1, pool: [genQ('es_clothes', 2, 8)] }); next(); }); } },
+  'es-casa-feel': { run: async p => { await p.evaluate(() => { G = newG({ sk: 'es_feel', lv: 1, n: 1, pool: [genQ('es_feel', 1, 3)] }); next(); }); } },
   // P2-15 ABC Beach: one question per new level (seeds fixed so the picture is the same every run)
   'abc-1': { fixture: 'fresh', run: abcShot('abc', 1, 11) },
   'abc-2': { fixture: 'fresh', run: abcShot('abc', 2, 12) },
