@@ -823,7 +823,7 @@ function bayShot(sk, lv, seed, hint) {
 }
 
 // P4-05 / P4-06: the pet sheet (runs in the page): every pet (dragon, dino, bird, sea pal) x 5 stages x 6 moods, then for all four:
-// anchors, today's wearables, reactions, small sizes and a dark scene
+// anchors, wearables, reactions, small sizes and a dark scene
 function petSheet() {
   const stages = [0, 1, 2, 3, 4], names = ['egg', 'baby', 'kid', 'grown', 'super'], kinds = Object.keys(PETS);
   const cell = (svg, label, cls = '') => `<div class="psc ${cls}">${svg}<div class="psn">${label}</div></div>`;
@@ -837,13 +837,13 @@ function petSheet() {
   h += '<h1 class="psk">All pets</h1>';
   h += row('anchors (kid and grown): hat box (bottom centre on the dot) and toy box (centre on the dot), 64 grid', kinds.map(k => [2, 3].map(st =>
     cell(petSVG(k, st, 'idle', { hat: box([32, 60]), toy: box([32, 32]) }), PETS[k].n + ' ' + names[st])).join('')).join(''));
-  h += row('today\'s wearables (emoji at the anchors)', kinds.map(k => [1, 3].map(st =>
-    cell(petSVG(k, st, 'happy', { hat: st % 2 ? '👑' : '🎩', toy: st % 2 ? '🧸' : '🎈', react: true }), PETS[k].n + ' ' + names[st])).join('')).join(''));
+  h += row('wearables (drawn since P4-07; the full set: node tools/shots.js wear)', kinds.map(k => [1, 3].map(st =>
+    cell(petSVG(k, st, 'happy', { hat: wearOf(st % 2 ? '👑' : '🎩'), toy: wearOf(st % 2 ? '🧸' : '🎈'), react: true }), PETS[k].n + ' ' + names[st])).join('')).join(''));
   h += row('reactions: .jump (cheer face) and .sad (oops face) on the container', kinds.map(k =>
     cell(`<div class="rig jump">${petSVG(k, 2, 'idle', { react: true })}</div>`, PETS[k].n + ' jump') +
     cell(`<div class="rig sad">${petSVG(k, 2, 'idle', { react: true })}</div>`, PETS[k].n + ' sad')).join(''));
   h += row('sizes: 28 and 42 px font (round runner, map) and the egg at 42', kinds.map(k => [28, 42].map(f =>
-    cell(`<div style="font-size:${f}px">${petSVG(k, 2, 'idle', { hat: '🎩', toy: '🎈' })}</div>`, f + ' px')).join('') +
+    cell(`<div style="font-size:${f}px">${petSVG(k, 2, 'idle', { hat: wearOf('🎩'), toy: wearOf('🎈') })}</div>`, f + ' px')).join('') +
     cell('<div style="font-size:42px">' + petSVG(k, 0, 'idle') + '</div>', 'egg 42')).join(''));
   h += row('dark scene', kinds.map(k => [1, 4].map(st => cell(petSVG(k, st, 'idle'), PETS[k].n + ' ' + names[st], 'psd')).join('')).join(''));
   view(`<style>.psr{display:flex;flex-wrap:wrap;gap:6px;padding:0 8px}.psh{font-size:var(--fs-2);margin:10px 8px 4px;color:var(--ink-2)}
@@ -1968,6 +1968,44 @@ Object.assign(SCREENS, {
   'bt-us-win': wordShot('scramble', 6, 5, { win: true }),
 });
 
+
+// ---- P4-07 wearables, Pet Shop and Stickers ----
+// The wearables sheet (runs in the page): every item alone (96 and 40 px, on white and on a tint), the prize emblems, then every
+// pet x every stage wearing every shop hat (each with a toy), and every prize hat on every pet. Dashed box = the 200 viewBox.
+function wearSheet() {
+  const kinds = Object.keys(PETS), names = ['egg', 'baby', 'kid', 'grown', 'super'];
+  const hats = SHOP.hat.map(h => h[0]), toys = SHOP.toy.map(t => t[0]);
+  const cell = (svg, label, cls = '') => `<div class="wsc ${cls}">${svg}<div class="wsn">${label}</div></div>`;
+  const row = (title, cells) => `<h2 class="wsh">${title}</h2><div class="wsr">${cells}</div>`;
+  const pet = (k, st, hat, toy) => `<div class="wsp">${petSVG(k, st, 'happy', { hat: wearOf(hat), toy: wearOf(toy) })}</div>`;
+  let h = '';
+  h += row('shop hats, toys and prize hats at 96 and 40 px', hats.concat(toys, BPRIZE).map(id =>
+    cell(wearPic(id, '96px') + wearPic(id, '40px'), WEAR_NAME[id] || id)).join(''));
+  h += row('prize emblems (in the reward rosette)', BPRIZE.map(id => cell(RW.badge(id), WEAR_NAME[id] || id, 'wst')).join(''));
+  for (const k of kinds) {
+    h += `<h1 class="wsk">${PETS[k].n}</h1>`;
+    for (const st of [0, 1, 2, 3, 4]) h += row(PETS[k].n + ' ' + names[st], hats.concat(['🌟']).map((hat, i) =>
+      cell(pet(k, st, i < hats.length ? hat : BPRIZE[(st * 3 + kinds.indexOf(k)) % BPRIZE.length], toys[i]), (WEAR_NAME[hat] || 'prize') + ' + ' + WEAR_NAME[toys[i]])).join(''));
+  }
+  h += '<h1 class="wsk">Prize hats on every pet</h1>';
+  for (const k of kinds) h += row(PETS[k].n + ' kid and grown', BPRIZE.map((id, i) => cell(pet(k, 2 + i % 2, id, ''), WEAR_NAME[id])).join(''));
+  view(`<style>.wsr{display:flex;flex-wrap:wrap;gap:6px;padding:0 8px}.wsh{font-size:var(--fs-2);margin:10px 8px 4px;color:var(--ink-2)}
+    .wsk{font-size:var(--fs-4);margin:18px 8px 0;color:var(--ink)}
+    .wsc{background:var(--surface);border-radius:var(--r-chip);padding:6px;font-size:54px;display:flex;flex-direction:column;align-items:center;
+      box-shadow:var(--shadow);min-width:90px}.wsp{font-size:60px}.wsc .pet-svg{outline:2px dashed var(--line);margin:0}.wst{background:var(--star-tint);font-size:var(--fs-4)}
+    .wsc .pet-svg *{animation:none!important}.wsn{font-size:var(--fs-1);color:var(--ink-2)}#app,html,body{height:auto;overflow:visible}</style>
+    <div class="top"><div class="title">Wearables on every pet</div></div>${h}`);
+}
+Object.assign(SCREENS, {
+  wear: { full: true, run: async p => { await p.evaluate(wearSheet); } },
+  // the shop (midway: 64 coins, top hat and balloon on): trying on the crown (not owned), the buy sheet for the cap, toys, places
+  'shop-try': { run: async p => { await p.evaluate(() => { shopTab = 'hat'; shopSel = null; shop(); }); await p.click('.item[data-id="👑"]'); } },
+  'shop-buy': { run: async p => { await p.evaluate(() => { shopTab = 'hat'; shopSel = null; shop(); }); await p.click('.item[data-id="🎓"]'); await p.click('#psact'); } },
+  'shop-toys': { run: async p => { await p.evaluate(() => { S.owned['🧸'] = 1; S.owned['⭐'] = 1; shopSel = null; shopTab = 'toy'; shop(); }); await p.click('.item[data-id="🪄"]'); } },
+  'shop-places': { run: async p => { await p.evaluate(() => { shopTab = 'scene'; shopSel = null; shop(); }); await p.click('.item[data-id="candy"]'); } },
+  // the sticker book with most stickers (some doubles) and one full page
+  'stickers-many': { run: async p => { await p.evaluate(() => { STK.forEach((s, i) => { if (i < 12 || i % 3) S.stickers[s] = 1 + (i % 5 == 0); }); book(); }); } },
+});
 
 async function main() {
   const args = process.argv.slice(2);

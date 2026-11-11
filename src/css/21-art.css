@@ -1,7 +1,8 @@
 /* Object art palette (DESIGN_SYSTEM.md 6.5; drawings in src/js/16-art-*.js). Every role maps to an --ill-* token in 00-tokens.css.
    Per hue: --a-x1 highlight, --a-x base, --a-x2 shade, --a-x3 deep accent. Light comes from the top left.
+   Also on .pw-hat / .pw-toy, the wearables inside a pet drawing (P4-07, src/js/17-wear.js).
    r red, o orange, y yellow, g green, c aqua, b blue, v purple, p pink, n brown, t tan, s skin, m cream, e grey, w white, k ink. */
-.art{
+.art,.pw-hat,.pw-toy{
   fill:var(--a-k);stroke-linecap:round;stroke-linejoin:round;
   --a-r1:var(--ill-red-1);--a-r:var(--ill-red);--a-r2:var(--ill-red-2);--a-r3:var(--ill-red-3);
   --a-o1:var(--ill-orange-1);--a-o:var(--ill-orange);--a-o2:var(--ill-orange-2);--a-o3:var(--ill-orange-3);
