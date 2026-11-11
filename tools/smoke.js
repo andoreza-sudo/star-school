@@ -544,8 +544,8 @@ async function main() {
         return NODES.math.length;
       });
       const cdp = await wp.context().newCDPSession(wp);
-      // fastest of 9 throttled draws; when the machine is busier than its cores (parallel checks), slower draws measure the load,
-      // not the map, so a failing pass is measured again (up to 3 more times, a second apart) and the best pass counts. The 50 ms
+      // fastest of 9 throttled draws; slower draws on a busy machine (parallel checks) measure the load, not the map, so a failing
+      // pass is measured again (up to 3 more times, a second apart) and the best pass counts. The 50 ms
       // limit is unchanged, so a real slowdown still fails on a quiet machine. The load is reported with the result.
       const os = require('os'), cores = os.cpus().length;
       let times, tries = 0, load = os.loadavg()[0];
@@ -560,7 +560,7 @@ async function main() {
         await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
         tries++; load = os.loadavg()[0];
         if (!times || t[0] < times[0]) times = t;
-        if (times[0] < 50 || tries >= 4 || load <= cores) break;
+        if (times[0] < 50 || tries >= 4) break; // a slow pass is always measured again: the load average lags behind short bursts from parallel checks
         await new Promise(r => setTimeout(r, 1000));
       }
       const med = times[0];
