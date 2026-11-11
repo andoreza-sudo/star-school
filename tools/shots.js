@@ -213,11 +213,28 @@ const SCREENS = {
     },
   },
 
-  // ---- P4-13 object art (set B added in P4-14) ----
-  // Art sheet: every drawing in ART (sets A and B together) at 24, 48 and 96 px, on the page colour and on a coloured fill. Full-page shot.
-  art: { full: true, run: async p => { await artSheet(p, null, 'Art, sets A and B'); } },
+  // ---- P4-13 object art (set B added in P4-14, set C in P4-15) ----
+  // Art sheet: every drawing in ART (sets A, B and C together) at 24, 48 and 96 px, on the page colour and on a coloured fill. Full-page shot.
+  art: { full: true, run: async p => { await artSheet(p, null, 'Art, sets A, B and C'); } },
   // P4-14: set B alone (src/data/d-art-b.js), same layout.
   'art-b': { full: true, run: async p => { await artSheet(p, ART_B, 'Art set B'); } },
+  // P4-15: set C alone (src/data/d-art-c.js), same layout.
+  'art-c': { full: true, run: async p => { await artSheet(p, ART_C, 'Art set C'); } },
+  // P4-15: a Spanish house question whose pictures are set C drawings (door, window, sofa, lamp ...).
+  'art-c-question': {
+    run: async p => {
+      await p.evaluate(() => {
+        for (let s = 1; s < 400; s++) {
+          const q = genQ('es_house', 1, s);
+          if (['door', 'window', 'sofa', 'lamp', 'tub', 'sunflower'].filter(w => q.choices.some(c => c.l.includes(picArt(w)))).length < 3) continue;
+          start('es', NODES.es.findIndex(n => n.sk == 'es_house'));
+          G.q = q;
+          renderQ();
+          return;
+        }
+      });
+    },
+  },
   // P4-14: a Spanish animals question whose pictures are set B and set A drawings.
   'art-b-question': {
     run: async p => {
@@ -2075,9 +2092,13 @@ Object.assign(SCREENS, {
   'stickers-many': { run: async p => { await p.evaluate(() => { STK.forEach((s, i) => { if (i < 12 || i % 3) S.stickers[s] = 1 + (i % 5 == 0); }); book(); }); } },
 });
 
-// P4-13 / P4-14 object art sheet: the named drawings (null = all of ART) at 24, 48 and 96 px, on the page colour and on a tint.
+// P4-13 / P4-14 / P4-15 object art sheet: the named drawings (null = all of ART) at 24, 48 and 96 px, on the page colour and on a tint.
 const ART_B = ('balloon book moon sock cow cheese bell bird egg pencil plane bread tree coat foot cloud rainbow house grapes truck ' +
   'train tooth shirt mouth mouse table horse bee turtle water ear owl helicopter rocket tie boots dice chair bear dress').split(' ');
+// P4-15: set C
+const ART_C = ('pizza snowflake elephant icecream beach rabbit sunflower giraffe road tub lion backpack dish school snowman window shell ' +
+  'cap shoes eraser scissors soap sofa paper chick spoon pants butterfly church motorcycle leaf door sheep umbrella storm boat clock ' +
+  'books lamp gamepad').split(' ');
 async function artSheet(p, names, title) {
   await p.evaluate(([names, title]) => {
     const sizes = [24, 48, 96], list = names || Object.keys(ART);

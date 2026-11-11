@@ -144,7 +144,7 @@ How many main senses do people have?|five|two;three;eight|senses||Count them on 
 BANK.sci_earth = discRows(1, `
 What do you wear on a rainy day?|a raincoat|a sun hat;sandals;shorts|weather
 What falls from clouds on a rainy day?|rain|sand;flowers;rocks|weather
-Snow is frozen ___.|water|milk;juice;sand|weather|snow,❄
+Snow is frozen ___.|water|milk;juice;sand|weather|snowflake,❄
 A kite flies best on a ___ day.|windy|snowy;rainy;foggy|weather|kite,🪁
 What do we use to measure how hot or cold it is?|a thermometer|a ruler;a clock;a scale|weather
 A rainbow can appear when the sun shines after ___.|rain|snow;night;dust|weather
