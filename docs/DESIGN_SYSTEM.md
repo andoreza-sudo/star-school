@@ -254,6 +254,15 @@ Big eyes with a white glint, small mouth, round cheeks. Everything built from ci
 - Animation by CSS on groups: body bob (transform), blink (eyes `scaleY` every 4 s), tail wag, jump, sad wobble, cheer bounce. No SMIL, no filters.
 - Budget: under 6 KB per pet for all stages (stages reuse shapes with different proportions).
 - The dragon is the reference. P4-06 builds dino, bird and sea pal by copying the rig and changing shapes and colours.
+- As built (P4-06): dino, bird and sea pal (`ocean`) use the same rig, stages, faces, anchors, motion and shading as the dragon
+  (shade rim, base moved up-left, translucent white highlight, dark contact accent; light from the top left; no outlines).
+  Dino: blue, cream belly and snout, rounded orange plates on the head, back (the `extra` group) and tail, darker spots, stubby arms,
+  a thick tail; its egg is pale blue with spots and a plate poking out. Bird: a round yellow chick-bird with a feather tuft, wings
+  for arms (they lift on cheer), a fan tail, orange toes and its own faces (`PET_RIG.bird.face`: the shared eyes, the beak is the
+  mouth and opens for happy, cheer and hungry); its speckled egg sits in a straw nest. Sea pal: a little aqua whale with a white chin
+  and belly (throat grooves), a blue head fin and side fins, blue flippers and flipper feet, light spots and a tail fluke; its egg is
+  aqua with white waves and bubbles. Each pet's palette is a `.pet-k-<kind>` block in 41-pet.css made of `--ill-*` tokens.
+  Source per pet 4.9-6.4 KB, one drawing at most 8.8 KB (test.js "pets on the rig P4-06"). Review: `node tools/shots.js pets`.
 
 Pet palettes: dragon green `#34B56A` with yellow belly; dino blue `#3E8BFF` with cream belly; bird yellow `#FFC93C` with orange beak; sea pal aqua `#22B8CF` with white belly.
 

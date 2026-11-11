@@ -429,10 +429,14 @@ const SCREENS = {
   'bay-pat3': { run: bayShot('pat', 3, 2) },
   // ---- P4-05 pet rig ----
   // Pet sheet: every stage x mood, the hat/toy anchors with their 64-grid boxes (P4-07), today's emoji wearables,
-  // the jump/sad reaction faces, small sizes and a dark scene. Full-page shot. 'pets-home' / 'pets-care': the dragon in place.
+  // the jump/sad reaction faces, small sizes and a dark scene, for all four pets (P4-06). Full-page shot. 'pets-home' / 'pets-care': the dragon in place.
   pets: { full: true, run: async p => { await p.evaluate(petSheet); } },
   'pets-home': { run: async p => { await p.evaluate(() => { S.care = { food: 90, clean: 90, fun: 90, t: Date.now(), gift: '' }; home(true); }); } },
   'pets-care': { run: async p => { await p.evaluate(() => { S.care = { food: 12, clean: 60, fun: 60, t: Date.now(), gift: '' }; care(); }); } },
+  // P4-06: Home and Pet Care with each of the other pets (midway save: 85 stars = kid, top hat and balloon)
+  ...Object.fromEntries(['dino', 'bird', 'ocean'].flatMap(k => [
+    ['pets-home-' + k, { run: async p => { await p.evaluate(k => { S.pet = k; S.care = { food: 90, clean: 90, fun: 90, t: Date.now(), gift: '' }; home(true); }, k); } }],
+    ['pets-care-' + k, { run: async p => { await p.evaluate(k => { S.pet = k; S.care = { food: 12, clean: 60, fun: 60, t: Date.now(), gift: '' }; care(); }, k); } }]])),
   // ---- P4-04 components ----
   // Component sheet (DESIGN_SYSTEM 4): every component and state, full page. The page also checks itself (compCheck below):
   // overflow, labels broken mid-word, targets under 48 px, horizontal scroll; each problem is a console error, so the shot fails.
@@ -762,30 +766,36 @@ function bayShot(sk, lv, seed, hint) {
   };
 }
 
-// P4-05: the pet sheet (runs in the page)
+// P4-05 / P4-06: the pet sheet (runs in the page): every pet (dragon, dino, bird, sea pal) x 5 stages x 6 moods, then for all four:
+// anchors, today's wearables, reactions, small sizes and a dark scene
 function petSheet() {
-  const stages = [0, 1, 2, 3, 4], names = ['egg', 'baby', 'kid', 'grown', 'super'];
+  const stages = [0, 1, 2, 3, 4], names = ['egg', 'baby', 'kid', 'grown', 'super'], kinds = Object.keys(PETS);
   const cell = (svg, label, cls = '') => `<div class="psc ${cls}">${svg}<div class="psn">${label}</div></div>`;
   const row = (title, cells) => `<h2 class="psh">${title}</h2><div class="psr">${cells}</div>`;
   const box = c => `<rect x="2" y="2" width="60" height="60" rx="6" fill="none" stroke="var(--pc-t)" stroke-width="3" stroke-dasharray="6 5"/><circle cx="${c[0]}" cy="${c[1]}" r="6" fill="var(--pc-t)"/>`;
   let h = '';
-  for (const st of stages) h += row(names[st] + ' (stage ' + st + ')', PET_MOODS.map(m => cell(petSVG('dragon', st, m), m)).join(''));
-  h += row('anchors: hat box (bottom centre on the dot) and toy box (centre on the dot), 64 grid', stages.map(st =>
-    cell(petSVG('dragon', st, 'idle', { hat: box([32, 60]), toy: box([32, 32]) }), names[st])).join(''));
-  h += row('today\'s wearables (emoji at the anchors)', stages.map(st =>
-    cell(petSVG('dragon', st, 'happy', { hat: st % 2 ? '👑' : '🎩', toy: st % 2 ? '🧸' : '🎈', react: true }), names[st])).join(''));
-  h += row('reactions: .jump (cheer face) and .sad (oops face) on the container', [2, 3].map(st =>
-    cell(`<div class="rig jump">${petSVG('dragon', st, 'idle', { react: true })}</div>`, names[st] + ' jump') +
-    cell(`<div class="rig sad">${petSVG('dragon', st, 'idle', { react: true })}</div>`, names[st] + ' sad')).join(''));
-  h += row('sizes: 28, 42 and 64 px font (round runner, map, phone home)', [28, 42, 64].map(f =>
-    cell(`<div style="font-size:${f}px">${petSVG('dragon', 2, 'idle', { hat: '🎩', toy: '🎈' })}</div>`, f + ' px')).join('') +
-    cell('<div style="font-size:42px">' + petSVG('dragon', 0, 'idle') + '</div>', 'egg 42'));
-  h += row('dark scene', stages.map(st => cell(petSVG('dragon', st, 'idle'), names[st], 'psd')).join(''));
+  for (const k of kinds) {
+    h += `<h1 class="psk">${PETS[k].n}</h1>`;
+    for (const st of stages) h += row(PETS[k].n + ': ' + names[st] + ' (stage ' + st + ')', PET_MOODS.map(m => cell(petSVG(k, st, m), m)).join(''));
+  }
+  h += '<h1 class="psk">All pets</h1>';
+  h += row('anchors (kid and grown): hat box (bottom centre on the dot) and toy box (centre on the dot), 64 grid', kinds.map(k => [2, 3].map(st =>
+    cell(petSVG(k, st, 'idle', { hat: box([32, 60]), toy: box([32, 32]) }), PETS[k].n + ' ' + names[st])).join('')).join(''));
+  h += row('today\'s wearables (emoji at the anchors)', kinds.map(k => [1, 3].map(st =>
+    cell(petSVG(k, st, 'happy', { hat: st % 2 ? '👑' : '🎩', toy: st % 2 ? '🧸' : '🎈', react: true }), PETS[k].n + ' ' + names[st])).join('')).join(''));
+  h += row('reactions: .jump (cheer face) and .sad (oops face) on the container', kinds.map(k =>
+    cell(`<div class="rig jump">${petSVG(k, 2, 'idle', { react: true })}</div>`, PETS[k].n + ' jump') +
+    cell(`<div class="rig sad">${petSVG(k, 2, 'idle', { react: true })}</div>`, PETS[k].n + ' sad')).join(''));
+  h += row('sizes: 28 and 42 px font (round runner, map) and the egg at 42', kinds.map(k => [28, 42].map(f =>
+    cell(`<div style="font-size:${f}px">${petSVG(k, 2, 'idle', { hat: '🎩', toy: '🎈' })}</div>`, f + ' px')).join('') +
+    cell('<div style="font-size:42px">' + petSVG(k, 0, 'idle') + '</div>', 'egg 42')).join(''));
+  h += row('dark scene', kinds.map(k => [1, 4].map(st => cell(petSVG(k, st, 'idle'), PETS[k].n + ' ' + names[st], 'psd')).join('')).join(''));
   view(`<style>.psr{display:flex;flex-wrap:wrap;gap:6px;padding:0 8px}.psh{font-size:var(--fs-2);margin:10px 8px 4px;color:var(--ink-2)}
+    .psk{font-size:var(--fs-4);margin:18px 8px 0;color:var(--ink)}
     .psc{background:var(--surface);border-radius:var(--r-chip);padding:6px;font-size:64px;display:flex;flex-direction:column;align-items:center;box-shadow:var(--shadow)}
     .psc .pet-svg *{animation:none!important}.psd{background:var(--bt-shade)}.psd .psn{color:var(--surface)}
     .psn{font-size:var(--fs-1);color:var(--ink-2)}#app,html,body{height:auto;overflow:visible}</style>
-    <div class="top"><div class="title">Pet rig: dragon</div></div>${h}`);
+    <div class="top"><div class="title">Pet rig: dragon, dino, bird, sea pal</div></div>${h}`);
 }
 
 // ---- P4-04 components: the sheet and its self-check ----

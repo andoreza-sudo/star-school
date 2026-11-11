@@ -1395,18 +1395,19 @@ async function main() {
       const d2 = await dur();
       await pp.evaluate(() => document.documentElement.classList.remove('calm'));
       if (!(d0 >= 2) || !(d1 < .01) || !(d2 < .01)) fail('P4-05 motion: idle ' + d0 + 's, reduced ' + d1 + 's, calm ' + d2 + 's');
-      // a dino child keeps today's emoji pet; setup offers the drawn dragon next to the emoji pets
+      // P4-06: a dino child sees the drawn dino with the same hat; setup offers all four drawn pets (was: dino emoji)
       const dino = await pp.evaluate(() => {
         S.pet = 'dino'; home();
         const pet = document.querySelector('#pet');
-        const r = { e: (pet.querySelector('.pe') || {}).textContent, svg: !!pet.querySelector('svg'), cls: pet.className, hat: (pet.querySelector('.hat') || {}).textContent };
+        const r = { e: !!pet.querySelector('.pe'), svg: (pet.querySelector('.pet-svg') || { getAttribute: () => '' }).getAttribute('class'), cls: pet.className,
+          hat: (pet.querySelector('.pw-hat') || {}).textContent };
         S.pet = 'dragon'; S.name = ''; home();
         r.setup = [...document.querySelectorAll('.petopt')].map(b => b.dataset.p + ':' + (b.querySelector('.pet-svg') ? 'svg' : b.querySelector('span').textContent));
         return r;
       });
-      if (dino.e !== '🦕' || dino.svg || dino.cls !== 'petbig ' || dino.hat !== '🎩' || dino.setup.join() !== 'dragon:svg,dino:🦖,bird:🦅,ocean:🐳')
+      if (dino.e || !/pet-k-dino pet-s-kid/.test(dino.svg) || dino.cls !== 'petbig rig' || dino.hat !== '🎩' || dino.setup.join() !== 'dragon:svg,dino:svg,bird:svg,ocean:svg')
         fail('P4-05 other pets / setup: ' + JSON.stringify(dino));
-      else step('P4-05: drawn dragon on Home (hat + toy, cheer on tap), Pet Care moods, map and runner, growth, super, reduced motion and calm; dino unchanged');
+      else step('P4-05: drawn dragon on Home (hat + toy, cheer on tap), Pet Care moods, map and runner, growth, super, reduced motion and calm; dino drawn too (P4-06)');
       network.push(...pr.network);
       for (const e of pr.errors) fail(e);
       await pr.ctx.close();
@@ -3640,6 +3641,57 @@ async function main() {
         for (const e of tr.errors) fail(e);
         await tr.ctx.close();
       }
+    }
+
+    // P4-06 dino, bird and sea pal on the rig, at 380x780 from a fresh save: for each pet, pick it at setup -> Home shows the drawn
+    //    egg; then at a later stage Home, Pet Care, the map pet and a round's runner (cheer face after a right answer) all show the
+    //    drawn pet (pet-k-<kind>), never the emoji; nothing sticks out sideways; no console errors.
+    {
+      const pz = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 });
+      const pg = pz.page, bad = [], seen = [];
+      const PICT = '\\p{Extended_Pictographic}';
+      // the drawn pet inside sel: its class, no emoji text and no .pe emoji span, its box, the page width
+      const look = sel => pg.evaluate(([sel, pict]) => {
+        const el = document.querySelector(sel), svg = el && el.querySelector('.pet-svg'), r = svg && svg.getBoundingClientRect();
+        return { cls: svg ? svg.getAttribute('class') : null, emoji: !!el && (new RegExp(pict, 'u').test(el.textContent) || !!el.querySelector('.pe')),
+          w: r ? Math.round(r.width) : 0, left: r ? r.left : 0, right: r ? r.right : 0, sw: document.documentElement.scrollWidth };
+      }, [sel, PICT]);
+      const want = (tag, l, k, sn) => {
+        if (!l.cls || !l.cls.startsWith('pet-svg pet-k-' + k + ' pet-s-' + sn) || l.emoji || !(l.w >= 24) || l.right > 381 || l.sw > 380)
+          bad.push(k + ' ' + tag + ': ' + JSON.stringify(l));
+      };
+      for (const [k, stars, sn] of [['dragon', 25, 'baby'], ['dino', 80, 'kid'], ['bird', 200, 'grown'], ['ocean', 350, 'grown']]) {
+        await pg.evaluate(() => { if (typeof G == 'object' && G) G.dead = true; S.name = ''; S.stars = 0; S.wear = {}; home(); });
+        await pg.waitForSelector(`.petopt[data-p="${k}"] .pet-svg.pet-k-${k}`);
+        await pg.click(`.petopt[data-p="${k}"]`);
+        await pg.fill('#nm', 'Ava');
+        await pg.click('#go');
+        await pg.waitForSelector('#pet .pet-svg');
+        const sp = await pg.evaluate(() => S.pet);
+        if (sp !== k) bad.push(k + ': setup saved pet ' + sp);
+        want('home (egg)', await look('#pet'), k, 'egg');
+        await pg.evaluate(st => { S.stars = st; S.care = { food: 90, clean: 90, fun: 90, t: Date.now(), gift: '' }; home(); }, stars);
+        want('home', await look('#pet'), k, sn);
+        await pg.click('#care');
+        await pg.waitForSelector('#pet .pet-svg');
+        want('pet care', await look('#pet'), k, sn);
+        await pg.evaluate(() => pathMap('math'));
+        await pg.waitForSelector('.mappet .pet-svg');
+        want('map', await look('.mappet'), k, sn);
+        await pg.evaluate(() => start('math', 0));
+        await pg.waitForSelector('#runner .pet-svg');
+        want('runner', await look('#runner'), k, sn);
+        await answer(pg);
+        const rc = await pg.evaluate(() => +getComputedStyle(document.querySelector('#runner .pf-cheer')).opacity);
+        if (rc !== 1) bad.push(k + ' runner: cheer face after a right answer ' + rc);
+        await pg.evaluate(() => { G.dead = true; });
+        seen.push(k + ' ' + sn);
+      }
+      if (bad.length) fail('P4-06 pets on the rig:\n  ' + bad.join('\n  '));
+      else step('P4-06: setup -> Home (egg), then Home, Pet Care, map and round runner (cheer face) show the drawn ' + seen.join(', ') + ' at 380x780; no emoji, no sideways scroll');
+      network.push(...pz.network);
+      for (const e of pz.errors) fail(e);
+      await pz.ctx.close();
     }
 
     for (const e of errors) fail(e);

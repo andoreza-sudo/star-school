@@ -3106,7 +3106,7 @@ run('Clock Tower (P2-03): CURRICULUM M-1 levels, answers by rule, 3,000 samples 
 });
 
 // ---- P4-05: pet rig and dragon ----
-run('pet rig (P4-05): dragon stages x moods, named groups, anchors, tokens only, budget, other pets and saves unchanged',()=>{
+run('pet rig (P4-05): dragon stages x moods, named groups, anchors, tokens only, budget, saves unchanged (other pets drawn since P4-06)',()=>{
   const p=[];
   const fx=JSON.parse(fs.readFileSync(path.join(__dirname,'fixtures','midway.json'),'utf8'));
   const src=fs.readFileSync(path.join(SRC,'js','17-pets-svg.js'),'utf8');
@@ -3125,9 +3125,9 @@ run('pet rig (P4-05): dragon stages x moods, named groups, anchors, tokens only,
   const strip=s=>{const x=JSON.parse(s);delete x.care;return JSON.stringify(x)},before=JSON.stringify(S);
   r.mid={html:petHTML(),aura:petAura(),art:petArt(),pick:petPick('dragon'),sup:petHTML(300),auraSup:petAura(300),setupPick:petPick('dino')};
   r.saveSame=strip(before)===strip(JSON.stringify(S));
-  for(const k of ['dino','bird','ocean']){S.pet=k;for(const st of [0,25,80,200,350]){const w=S.wear,e=PETS[k].s[Math.min(stage(st),3)];
-    const legacy='<span class="petwrap"><span class="pe">'+e+'</span>'+(w.hat?'<span class="hat">'+w.hat+'</span>':'')+(w.toy?'<span class="toy">'+w.toy+'</span>':'')+'</span>';
-    r.old[k+' '+st]={same:petHTML(st)===legacy,aura:petAura(st)===(stage(st)>=4?'aura':''),art:petArt(st)===e,pick:petPick(k)===PETS[k].s[3]}}}
+  // P4-06: the other pets are drawn too now (checked in "pets on the rig P4-06"); here only that they are no longer the emoji
+  for(const k of ['dino','bird','ocean']){S.pet=k;for(const st of [0,25,80,200,350])
+    r.old[k+' '+st]={drawn:petHTML(st).includes('pet-svg pet-k-'+k),aura:petAura(st)==='rig',art:petArt(st).startsWith('<svg'),pick:petPick(k).startsWith('<svg')}}
   S.pet='dragon';
   r;`))();
   const GROUPS=['shadow','fig','extra','xl','xr','tail','body','belly','arm-l','arm-r','head','cheeks','eyes','mouth'];
@@ -3196,9 +3196,9 @@ run('pet rig (P4-05): dragon stages x moods, named groups, anchors, tokens only,
   if(m.aura!=='rig'||m.auraSup!=='rig')p.push('midway: petAura is not "rig"');
   if(!m.sup.includes('pet-s-grown')||!m.sup.includes('pet-super'))p.push('300 stars: not the super grown dragon');
   if(!m.art.startsWith('<svg')||m.art.includes('pw-hat'))p.push('petArt: not the bare drawing');
-  if(!m.pick.includes('pet-s-grown pet-m-happy')||m.setupPick!=='🦖')p.push('petPick: '+m.pick.slice(0,80)+' / '+m.setupPick);
+  if(!m.pick.includes('pet-s-grown pet-m-happy')||!m.setupPick.includes('pet-k-dino pet-s-grown'))p.push('petPick: '+m.pick.slice(0,80)+' / '+m.setupPick);
   if(!o.saveSame)p.push('drawing the pet changed the save (other than the care meters)');
-  for(const [k,v] of Object.entries(o.old))for(const [f,ok] of Object.entries(v))if(!ok)p.push(k+': '+f+' differs from today (pets not on the rig must not change)');
+  for(const [k,v] of Object.entries(o.old))for(const [f,ok] of Object.entries(v))if(!ok)p.push(k+': '+f+' is not the drawn pet (P4-06)');
   // palette roles are defined in 41-pet.css; the CSS animates only transform and opacity, without filters or raw hex
   for(const r of roles)if(!css.includes(r+':'))p.push(r+' not defined in 41-pet.css');
   if(/filter\s*:|backdrop-filter/.test(css)||/#[0-9a-f]{3,8}\b/i.test(css))p.push('41-pet.css: filter or raw hex');
@@ -8219,6 +8219,123 @@ run('tracing P2-16',()=>{
   }
   if(/Math\.random/.test(src))p.push('47-trace.js uses Math.random');
   return{problems:uniq(p),note:'10 digits, '+r.stat.strokes+' strokes, '+r.stat.traces+' synthetic traces, '+r.checked+' saves with and without trace 1'};
+});
+
+// ---- P4-06: dino, bird and sea pal on the rig ----
+run('pets on the rig P4-06: every pet x stage x mood is valid SVG, tokens only, no ids, in budget, deterministic; no pet emoji left',()=>{
+  const p=[],KINDS=['dragon','dino','bird','ocean'];
+  const src=fs.readFileSync(path.join(SRC,'js','17-pets-svg.js'),'utf8');
+  const css=fs.readFileSync(path.join(SRC,'css','41-pet.css'),'utf8').replace(/\/\*[\s\S]*?\*\//g,'');
+  const tok=fs.readFileSync(path.join(SRC,'css','00-tokens.css'),'utf8');
+  const fx=JSON.parse(fs.readFileSync(path.join(__dirname,'fixtures','midway.json'),'utf8'));
+  const o=(()=>eval(js+`
+  const r={svg:{},react:{},again:{},anch:{},hooks:{},pets:Object.keys(PETS),moods:PET_MOODS,stages:PET_STAGES,src:{}};
+  for(const k of Object.keys(PETS)){
+    for(const st of [0,1,2,3,4]){for(const m of PET_MOODS)r.svg[k+'|'+st+'|'+m]=petSVG(k,st,m);
+      r.react[k+'|'+st]=petSVG(k,st,'idle',{hat:'🎩',toy:'🎈',react:true});
+      r.again[k+'|'+st]=[0,1].map(()=>petSVG(k,st,'cheer',{hat:'🎩',toy:'🎈',react:true}))}
+    for(const sn of PET_STAGES)r.anch[k+' '+sn]={head:PET_RIG[k].stages[sn].head,hat:petAnchor(k,sn,'hat'),toy:petAnchor(k,sn,'toy')};
+  }
+  // the screens' hooks for a child with each pet and no wearables: Home / Pet Care / map / runner (petHTML), growth (petArt),
+  // setup (petPick), rewards (RW.pet), container class (petAura)
+  Object.assign(S,${JSON.stringify(fx)});
+  S.wear={};
+  for(const k of Object.keys(PETS)){S.pet=k;
+    for(const st of [0,25,80,200,350])r.hooks[k+' '+st]={html:petHTML(st),art:petArt(st),pick:petPick(k),rw:(S.stars=st,RW.pet()),aura:petAura(st),rig:petRig(k)}}
+  r.src={petHTML:String(petHTML),petArt:String(petArt),petPick:String(petPick),petAura:String(petAura),petRigHTML:String(petRigHTML),'RW.pet':String(RW.pet)};
+  r;`))();
+  if(o.pets.join()!==KINDS.join())p.push('PETS is '+o.pets.join()+', expected '+KINDS.join());
+  const GROUPS=['shadow','fig','extra','xl','xr','tail','body','belly','arm-l','arm-r','head','cheeks','eyes','mouth'];
+  const EGG=['shadow','fig','body','arm-r','head','cheeks','eyes','mouth'];
+  const PICT=/\p{Extended_Pictographic}/u;
+  // palette roles: the shared ones on .pet-svg and each pet's own block
+  const block=sel=>(css.match(new RegExp('\\'+sel+'\\{([^}]*)\\}'))||['',''])[1];
+  const shared=block('.pet-svg'),size={};
+  const face=/<g class="pf pf-base"><g class="pg-eyes">([^]*?)<\/g><g class="pg-mouth">([^]*?)<\/g><\/g>/;
+  const check=(key,d,k,sn,m,sup,react)=>{
+    const lab={dragon:'Dragon',dino:'Dino',bird:'Bird',ocean:'Sea pal'}[k];
+    if(!d.startsWith(`<svg class="pet-svg pet-k-${k} pet-s-${sn} pet-m-${m}${sup?' pet-super':''}" viewBox="0 0 200 200" role="img" aria-label="${lab}">`))p.push(key+': svg head '+d.slice(0,110));
+    if(d.includes('pg-glow')!==sup)p.push(key+': glow ring only on the super stage');
+    const stack=[];
+    for(const t of d.matchAll(/<(\/?)([a-z]+)\b[^>]*?(\/?)>/g)){
+      if(!/^(svg|g|path|circle|ellipse|rect|text)$/.test(t[2]))p.push(key+': element <'+t[2]+'> not allowed');
+      if(t[1]){if(stack.pop()!==t[2])p.push(key+': tag </'+t[2]+'> out of order')}else if(!t[3])stack.push(t[2]);
+    }
+    if(stack.length)p.push(key+': unclosed '+stack.join(','));
+    if(/\sid=|<defs|gradient|filter|url\(|<animate|<style|<script|\son[a-z]+=|xlink|<use/i.test(d))p.push(key+': no ids, defs, gradients, filters, url(), use, SMIL, style or script');
+    if(/#[0-9a-f]{3,8}\b|rgba?\(|hsla?\(/i.test(d))p.push(key+': raw colour');
+    if(/NaN|undefined|null/.test(d))p.push(key+': NaN/undefined in markup');
+    for(const a of d.match(/\s(fill|stroke)="[^"]*"/g)||[]){
+      const v=a.match(/="([^"]*)"/)[1];
+      if(v==='none')continue;
+      if(!/^var\(--pc-[a-z0-9]+\)$/.test(v)){p.push(key+': colour must be none or var(--pc-x): '+a.trim());continue}
+      const role=v.slice(4,-1);
+      if(!shared.includes(role+':')&&!block('.pet-k-'+k).includes(role+':'))p.push(k+': role '+role+' is not defined for .pet-k-'+k+' or .pet-svg');
+    }
+    const co=(d.match(/\s(d|cx|cy|r|rx|ry|x|y)="[^"]*"/g)||[]).join(' ').match(/\d*\.\d{2,}/g);
+    if(co)p.push(key+': coordinates to one decimal ('+co[0]+')');
+    for(const g of sn=='egg'?EGG:GROUPS)if(!d.includes('class="pg-'+g+'"'))p.push(key+': group pg-'+g+' missing');
+    const n=(d.match(/class="pg-eyes"/g)||[]).length,nm=(d.match(/class="pg-mouth"/g)||[]).length;
+    if(n!==(react?3:1)||nm!==n)p.push(key+': '+n+' eyes / '+nm+' mouth groups');
+    if(react&&!(d.includes('pf-cheer')&&d.includes('pf-oops')))p.push(key+': reaction faces missing');
+    if(!react&&PICT.test(d))p.push(key+': emoji in the drawing');
+    // budget: the dragon's (P4-05): 9,000 bytes for one pet, 11,000 with the two reaction faces and wearables
+    if(d.length>(react?11000:9000))p.push(key+': '+d.length+' bytes');
+    if(!react)size[k]=Math.max(size[k]||0,d.length);
+  };
+  for(const k of KINDS){
+    for(const st of [0,1,2,3,4]){
+      const sn=o.stages[Math.min(st,3)],faces=new Set();let rest=null;
+      for(const m of o.moods){
+        const d=o.svg[k+'|'+st+'|'+m],key=k+' '+sn+(st==4?' super':'')+' '+m;
+        check(key,d,k,sn,m,st==4,false);
+        const f=d.match(face);
+        if(!f){p.push(key+': no pf-base face');continue}
+        faces.add(f[0]);
+        const r=d.replace(face,'').replace(/ pet-m-[a-z]+/,'');
+        if(rest==null)rest=r;else if(r!==rest)p.push(key+': mood changes more than the eyes and mouth');
+      }
+      if(faces.size!==o.moods.length)p.push(k+' '+sn+': moods do not all look different');
+      const w=o.react[k+'|'+st];
+      check(k+' '+sn+' wearables',w,k,sn,'idle',st==4,true);
+      const hat=w.indexOf('class="pw-hat"'),toy=w.indexOf('class="pw-toy"'),head=w.indexOf('class="pg-head"'),arm=w.indexOf('class="pg-arm-r"');
+      if(hat<0||!w.includes('>🎩</text>')||toy<0||!w.includes('>🎈</text>'))p.push(k+' '+sn+': emoji hat/toy not drawn');
+      if(!(hat>head&&head>=0))p.push(k+' '+sn+': hat is not inside the head group');
+      if(!(toy>arm&&arm>=0&&(sn=='egg'||toy<head)))p.push(k+' '+sn+': toy is not inside the right arm group');
+      const a=o.again[k+'|'+st];
+      if(a[0]!==a[1])p.push(k+' '+sn+': petSVG is not deterministic');
+    }
+    for(const sn of o.stages){
+      const a=o.anch[k+' '+sn];
+      for(const t of ['hat','toy'])for(const v of ['x','y'])if(!(a[t][v]>=0&&a[t][v]<=200))p.push(k+' '+sn+' '+t+' anchor outside the viewBox');
+      if(!(a.hat.y<a.head[1]&&Math.abs(a.hat.x-100)<=10))p.push(k+' '+sn+': hat anchor is not on top of the head');
+      if(!(a.toy.x>110))p.push(k+' '+sn+': toy anchor is not on the right hand side');
+      for(const t of ['hat','toy'])if(!(a[t].s>=.3&&a[t].s<=1.2))p.push(k+' '+sn+' '+t+' scale '+a[t].s);
+    }
+    // each pet is its own drawing, not the dragon recoloured
+    const strip=d=>d.replace(/pet-k-\w+|aria-label="[^"]*"/g,'');
+    if(k!='dragon')for(const st of [0,2])if(strip(o.svg[k+'|'+st+'|idle'])===strip(o.svg['dragon|'+st+'|idle']))p.push(k+' stage '+st+' is the dragon drawing');
+    // its palette: tokens only (no raw colours), every token defined
+    const pal=block('.pet-k-'+k);
+    if(!pal)p.push('41-pet.css has no .pet-k-'+k+' palette');
+    if(/#[0-9a-f]{3,8}\b|rgba?\(|hsla?\(/i.test(pal))p.push('.pet-k-'+k+': raw colour');
+    for(const t of pal.matchAll(/var\((--[a-z0-9-]+)\)/g))if(!tok.includes(t[1]+':'))p.push('.pet-k-'+k+': '+t[1]+' is not a token');
+    // source budget per pet (the dragon's 8 KB)
+    const b=(src.match(new RegExp('// >>> '+k+'[^]*?// <<< '+k))||[''])[0].length;
+    if(!b||b>8192)p.push(k+' source is '+b+' bytes (budget 8 KB for all stages)');
+    size[k]=b+' B source, largest drawing '+size[k]+' B';
+  }
+  // the screens' hooks draw every pet (no emoji) for every stage
+  for(const [key,h] of Object.entries(o.hooks)){
+    const k=key.split(' ')[0];
+    if(!h.rig||h.aura!=='rig')p.push(key+': not on the rig ('+h.aura+')');
+    for(const f of ['html','art','pick','rw']){
+      if(!h[f].includes('pet-svg pet-k-'+k+' '))p.push(key+' '+f+': not the drawn '+k);
+      if(PICT.test(h[f]))p.push(key+' '+f+': emoji in the pet markup');
+    }
+  }
+  for(const [n,f] of Object.entries(o.src))if(/petE\(|PETS\[[^\]]*\]\.s\b/.test(f))p.push(n+' still falls back to the pet emoji');
+  return{problems:p,note:KINDS.map(k=>k+' '+size[k]).join('; ')};
 });
 
 // ---- report ----
