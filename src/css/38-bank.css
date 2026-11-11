@@ -1,6 +1,7 @@
 /* content banks and the passage panel (P1-09); tokens only */
 .bq{font-size:.55em;line-height:1.25}
 .bpic{display:flex;justify-content:center;margin-bottom:var(--s-2);color:var(--brand)}
+.bem{font-size:clamp(48px,9vh,72px);line-height:1}
 .bsent{margin-top:var(--s-2);font-size:.5em;font-weight:700;color:var(--ink-2);line-height:1.3}
 .choices.wide{grid-template-columns:1fr}
 .choices.wide .ch{font-size:clamp(20px,3.6vh,28px);padding:clamp(8px,1.6vh,14px) var(--s-3)}

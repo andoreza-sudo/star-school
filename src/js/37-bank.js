@@ -12,6 +12,7 @@
      sent   tap: the sentence; the child taps the word that is the answer
      order  order: the items in the right order      pairs  match: [[left, right], ...]
      topic  strand tag for the report card   hint  teaching hint   pic  icon name from ICONS   say  text to read instead of q
+     em     [art name, emoji]: a picture of a thing above the prompt, through picFor (P2-22)
    choice and wide make a `choice` question (wide = one button per row), tap a `choice` over the words of the sentence,
    spell a `build` question. order, match and multi need their own question kind (P1-03/P1-04): such a kind registers its
    builder as BANKF.form=(item, id)=>question; until it does, those items are never drawn.
@@ -71,7 +72,7 @@ const bankWords=t=>String(t).split(/[^A-Za-z']+/).filter(Boolean);
 // One question from one item. Call it inside bankWith so shuffle() uses the item's own random stream.
 function bankBuild(id,it,pass){
   const form=it.form||'choice';
-  const pic=it.pic&&ICONS[it.pic]?`<div class="bpic">${ico(it.pic,64)}</div>`:'';
+  const pic=it.em?`<div class="bpic bem">${picFor(it.em[0],it.em[1])}</div>`:it.pic&&ICONS[it.pic]?`<div class="bpic">${ico(it.pic,64)}</div>`:'';
   let q;
   if(form=='spell'){
     const w=it.a,abc='abcdefghijklmnoprstuw';
@@ -172,6 +173,7 @@ function bankItemProblems(it,where){
   if(it.hint!=null)str(it.hint,BANKLIM.hint,'hint');
   if(it.say!=null)str(it.say,BANKLIM.q,'say');
   if(it.pic!=null&&typeof ICONS!=='undefined'&&!ICONS[it.pic])p.push(w+'pic '+it.pic+' is not an icon');
+  if(it.em!=null&&!(Array.isArray(it.em)&&it.em.length==2&&/^[a-z-]+$/.test(it.em[0])&&typeof it.em[1]=='string'&&it.em[1]))p.push(w+'em must be [art name, emoji]');
   const distinct=(a,name)=>{if(new Set(a.map(x=>String(x).toLowerCase())).size!==a.length)p.push(w+name+' has duplicates')};
   if(form=='choice'||form=='wide'||form=='multi'){
     const as=form=='multi'?it.a:[it.a];
