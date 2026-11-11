@@ -44,6 +44,7 @@ const uniq=a=>[...new Set(a)];
 // ---- 1-5: generators (fuzzed) ----
 let GEN=null;
 eval(js+`
+globalThis.__hasLv=(id,lv)=>!(id=='comp'&&lv>2||id=='info')||PASS[id].some(p=>p.lv==lv); // P2-28: comp 4-5 and info 2-3 get passages from other chunks; levels without passages are skipped
 S.name='Ava';S.buddy='Ben';G={built:[]};
 GEN={n:0,gen:[],label:[],say:[],html:[],choices:[],skills:SK,paths:PATHS,nodes:NODES};
 const BADHTML=/\\bundefined\\b|\\bNaN\\b|\\[object |\\bnull\\b/;
@@ -92,8 +93,8 @@ run('skills: every level is reachable from some node',()=>{
   const used=new Set(),p=[];
   for(const path in GEN.nodes)for(const n of GEN.nodes[path])used.add(n.sk+':'+n.lv);
   // Levels reserved for P2-04 (Treasure Bay: arr 1, story 4). They have no stop yet; until P2-04 ships they ask like the next level up.
-  const RESERVED={frac:[6,7,8],comp:[6],info:[4]}; // arr 1 and story 4 are Treasure Bay's (P2-04); frac 6-8 get their stops in P2-10 (frac 1 is Clock Tower's) // comp 4 and info 2 (grade 3) have no passages in this chunk; their stops come with P2-26
-  for(const id in GEN.skills)for(let lv=1;lv<=GEN.skills[id].max;lv++)if(!used.has(id+':'+lv)&&!(RESERVED[id]||[]).includes(lv))p.push(id+' level '+lv+' has no map node');
+  const RESERVED={frac:[6,7,8]}; // arr 1 and story 4 are Treasure Bay's (P2-04); frac 6-8 get their stops in P2-10 (frac 1 is Clock Tower's) // comp 4 and info 2 (grade 3) have no passages in this chunk; their stops come with P2-26
+  for(const id in GEN.skills)for(let lv=1;lv<=GEN.skills[id].max;lv++)if(__hasLv(id,lv)&&!used.has(id+':'+lv)&&!(RESERVED[id]||[]).includes(lv))p.push(id+' level '+lv+' has no map node');
   return{problems:p};
 });
 
@@ -279,7 +280,7 @@ run('seeded rnd: genQ(sk, lv, seed) is reproducible',()=>{
   const p=[];let nq=0;
   const out=eval(js+`
   const out={ok:0,bad:[]},eq=require('util').isDeepStrictEqual;
-  for(const id in SK)for(let lv=1;lv<=SK[id].max;lv++){
+  for(const id in SK)for(let lv=1;lv<=SK[id].max;lv++){if(!__hasLv(id,lv))continue;
     if(((id=='comp'&&lv>2)||id=='info')&&!PASS[id].some(p=>p.lv==lv))continue; // no passages at this level yet
     if(skLvEmpty(id,lv))continue;
     let varied=new Set();
@@ -5905,6 +5906,140 @@ run('passages grade 3 P2-26: 10 passages, 3rd grade level, every answer supporte
   const r=eval(js+';('+body.toString()+')()');
   const mx=a=>Math.max(...a),mn=a=>Math.min(...a);
   return{problems:r.out,note:'10 passages, 50 questions; words '+mn(r.words)+'-'+mx(r.words)+', reading grade '+mn(r.fk).toFixed(1)+'-'+mx(r.fk).toFixed(1)+'; '+r.checked+' stop checks, current stop moved on '+r.moved+' of 36 loads (only mid-world)'};
+});
+
+// ---- P2-28 5th grade passages ----
+run('passages grade 5 P2-28',()=>{
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const body=function(){
+    const out=[],b=m=>{if(out.length<30&&!out.includes(m))out.push(m)};
+    // 1. data: the grade validator, counts, theme or purpose, distinct choices
+    for(const m of compProblems(5))b(m);
+    const g5=COMP.filter(p=>p.g==5);
+    if(g5.length!==10||g5.filter(p=>p.type=='f').length!==5)b('grade 5 needs 5 fiction and 5 nonfiction passages, has '+g5.length);
+    if(!g5.every((p,i)=>p.id==='g5'+(i<5?'f0'+(i+1):'n0'+(i-4))))b('grade 5 ids must be g5f01-g5f05 then g5n01-g5n05, in order');
+    if(COMPSPEC[5].words[0]<180||COMPSPEC[5].words[1]>230)b('grade 5 word limits are outside CURRICULUM 180-230');
+    for(const p of g5){
+      if(p.qs.length!==5)b(p.id+': needs 5 questions');
+      const last=p.qs.map(q=>q.t);
+      if(!last.includes(p.type=='f'?'theme':'purpose'))b(p.id+': needs a '+(p.type=='f'?'theme':'purpose')+' question');
+      for(const q of p.qs){
+        const all=[q.a,...q.d].map(x=>x.toLowerCase());
+        if(new Set(all).size!==all.length)b(p.id+': repeated choice in "'+q.q+'"');
+        if(q.d.length!==3)b(p.id+': needs 3 wrong choices in "'+q.q+'"');
+      }
+    }
+    if(PASS.comp.filter(x=>x.lv==6).length!==5||PASS.info.filter(x=>x.lv==4).length!==5)b('PASS levels: comp 6 and info 4 need 5 passages each');
+    if(SK.comp.max<6||SK.info.max<4)b('skills comp/info max: '+SK.comp.max+' '+SK.info.max);
+    // 2. the stops: comp 6 then info 4 after the old Author Island stops (other chunks add comp and info stops to other worlds)
+    const ai=PATHS.read.worlds.find(w=>w.id=='r_island');
+    if(!ai)b('Author Island is missing');
+    else{
+      const ci=ai.nodes.filter(n=>n[0]=='comp'||n[0]=='info').map(n=>n[0]+n[1]).join(' ');
+      if(ci!=='comp6 info4')b('Author Island comp/info stops must be comp6 then info4: '+ci);
+      const ids=ai.nodes.map(n=>n[0]+n[1]);
+      if(ids.indexOf('spell6')!==0||ids.indexOf('comp6')<ids.indexOf('spell6')||ids.indexOf('info4')!==ids.indexOf('comp6')+1)b('Author Island order: '+ids.join(' '));
+      if(ai.nodes.some(n=>n[2].length>22))b('an Author Island stop title is too long');
+    }
+    // 3. 3,000 seeded questions per level: panel, one right answer, kind, hint, say, label
+    const N=3000,labels=new Map(),titles=new Set();
+    for(const [sk,lv] of [['comp',6],['info',4]]){
+      for(let i=0;i<N;i++){
+        const q=genQ(sk,lv,i*6271+17),w=sk+lv;
+        if(!q.ctx||!q.ctx.text||!q.ctx.title)b(w+': no passage panel');
+        if(q.choices.map(c=>String(c.v)).filter(v=>v===String(q.ans)).length!==1)b(w+': not exactly one right choice: '+q.label);
+        if(q.choices.length!==4)b(w+': '+q.choices.length+' choices');
+        if(!q.hint||q.hint.k!=='text'||!q.hint.s)b(w+': no hint');
+        if(typeof q.say!=='string'||!q.say.trim())b(w+': no say');
+        if(!q.label||q.label.length>=70)b(w+': label '+q.label);
+        if(labels.has(q.label)&&labels.get(q.label)!==q.ans)b(w+': label '+q.label+' has two answers');
+        labels.set(q.label,q.ans);titles.add(q.ctx.title);
+        for(const m of kindProblems(q))b(w+': '+m);
+        if(i<200){
+          try{KIND.choice.render(q)}catch(e){b(w+': render threw '+e.message)}
+          if(/undefined|NaN|\[object/.test(q.html))b(w+': bad html');
+        }
+      }
+    }
+    if(titles.size!==10)b('3,000 samples reached '+titles.size+' of 10 passages');
+    if(labels.size!==50)b('50 questions expected, labels '+labels.size);
+    // 4. hints: evidence quoted for infer and vocab, short enough, the type line for the rest
+    for(const sk of ['comp','info'])PASS[sk].forEach(p=>{
+      if(p.g!==5)return;
+      const x=COMP.find(c=>c.id==p.id);
+      p.qs.forEach((it,j)=>{
+        if(!it.hint||it.hint.length>140)b(p.id+' q'+j+': hint length');
+        const quote=['detail','sequence','vocab','infer'].includes(it.t);
+        if(quote!==it.hint.startsWith('Look back at the story: "'))b(p.id+' q'+j+' ('+it.t+'): hint '+it.hint);
+        if(quote&&!it.hint.includes(x.text[it.ev[0]]))b(p.id+' q'+j+': hint misses the first evidence sentence');
+      });
+    });
+    // 5. a round of grade 5: two passages, five questions each
+    bankRound();
+    for(const [sk,lv] of [['comp',6],['info',4]]){
+      const rd=compRound(sk,lv);
+      if(rd.length!==10)b(sk+' round has '+rd.length+' questions');
+      if(new Set(rd.map(q=>q.ctx.title)).size!==2)b(sk+' round needs 2 passages');
+      if(!rd.every(q=>q.sk==sk&&q.lv==lv))b(sk+' round: questions not stamped');
+    }
+    bankReset();
+    // 6. save safety: stars are keyed by stop id; a map without the two new stops is the old map
+    const store={};
+    global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+    const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
+    S.name='Ava';S.buddy='Ben';G={built:[]};
+    const snap=()=>{const o={};NODES.read.forEach((n,i)=>{o[nid(n)]={st:getSt('read',i),open:unlocked('read',i),pass:passed('read',i),nw:stopNew('read',i)}});return o};
+    const ORIG=PATHS.read.worlds,NEW=/^(comp6|info4)$/;
+    const without=()=>ORIG.map(w=>w.id!=='r_island'?w:{...w,nodes:w.nodes.filter(n=>!NEW.test(n[0]+n[1]))});
+    let checked=0;
+    const compare=label=>{
+      const maps=JSON.stringify(S.maps);
+      const now=snap(),cur=nid(NODES.read[curNode('read')]);
+      PATHS.read.worlds=without();buildNodes('read');
+      const old=snap();
+      PATHS.read.worlds=ORIG;buildNodes('read');
+      for(const k in old){
+        checked++;
+        if(!now[k]){b(label+': stop '+k+' disappeared');continue}
+        if(now[k].st!==old[k].st)b(label+': stars of '+k+' changed');
+        if(old[k].pass&&!now[k].open)b(label+': passed stop '+k+' re-locked');
+        if(old[k].open&&!now[k].open)b(label+': '+k+' locked by the new stops');
+      }
+      for(const k in now)if(!(k in old)&&NEW.test(k)&&now[k].st)b(label+': new stop '+k+' has stars');
+      if(JSON.stringify(S.maps)!==maps)b(label+': loading changed the map');
+      return{now,cur};
+    };
+    for(const name of ['fresh','midway','maxed','tricky','legacy-single-map','legacy-index-maps'])
+      for(const g of [null,0,1,2,3,6]){
+        const raw=fx(name);load(raw.length>2?raw:null);if(g!==null)S.grade=g;
+        compare(name+' g'+g);
+      }
+    // a child who finished Author Island before these stops existed: both show NEW, stay open, are never the current stop
+    for(const g of [5,6]){
+      load(null);S.grade=g;
+      for(const n of NODES.read)if(n.wid!=='r_legend'&&!NEW.test(nid(n)))S.maps.read[nid(n)]=2;
+      for(const k of ['comp6','info4'])delete S.maps.read[k];
+      const r=compare('finished Author Island g'+g);
+      for(const k of ['comp6','info4']){
+        const i=NODES.read.findIndex(n=>nid(n)===k);
+        if(i<0){b(k+' is not on the map');continue}
+        if(!stopNew('read',i))b(k+' does not show NEW for a finished Author Island');
+        if(!unlocked('read',i))b(k+' is locked for a finished Author Island');
+        if(r.cur===k)b(k+' became the current stop of a finished Author Island');
+      }
+      const before=JSON.stringify(S.maps.read);
+      setSt('read',NODES.read.findIndex(n=>nid(n)==='comp6'),3);
+      const after=JSON.parse(JSON.stringify(S.maps.read));
+      if(after.comp6!==3||JSON.stringify({...after,comp6:undefined})!==JSON.stringify({...JSON.parse(before),comp6:undefined}))b('passing comp6 changed another stop');
+    }
+    // mastery order of the comp and info stops follows the map (other chunks add stops of their own, so only these skills are compared)
+    for(const sk of ['comp','info']){const ns=NODES.read.filter(n=>n.sk===sk);
+      ns.forEach((n,i)=>{if(harder(n)!==(ns[i+1]||null)||easier(n)!==(ns[i-1]||null))b('harder/easier must follow map order at '+sk+n.lv)})}
+    return{out,checked,words:g5.map(p=>p.text.flatMap(bankWords).length),fk:g5.map(p=>compFK(p.text))};
+  };
+  const r=eval(js+';('+body.toString()+')()');
+  const mx=a=>Math.max(...a),mn=a=>Math.min(...a);
+  return{problems:r.out,note:'10 passages, 50 questions; words '+mn(r.words)+'-'+mx(r.words)+', reading grade '+mn(r.fk).toFixed(1)+'-'+mx(r.fk).toFixed(1)+', '+r.checked+' stop checks; levels without passages are not drawn'};
 });
 
 // ---- report ----

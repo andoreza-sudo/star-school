@@ -4,9 +4,9 @@ The running record of what has shipped. Newest entry first. Every chunk adds one
 
 **Next up:** P2-24, P2-08, P2-21, P2-23
 
-**Next up:** P2-10, P2-11, P2-28
+**Next up:** P2-10, P2-11, P3-01, P3-02
 
-**Current version:** v88
+**Current version:** v89
 
 ## Chunk status
 
@@ -69,6 +69,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P2-29 v86
 - P2-09 v87
 - P2-26 v88
+- P2-28 v89
 
 ## Handoff notes
 
@@ -283,6 +284,18 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-11) Icons wanted from P4-03: `balloon` (Bonus game, today `gamepad`), `sparkle` / `confetti`, `unlock` (open padlock for "Next stop unlocked", today `map`), `zap` (a lightning with a spark for boss hits; today `bolt`), `sticker` (single sticker for the prize row), `medal` (the prize rosette as an icon), `heart-half` (boss life bar), `chest` (the treasure chest at icon size, e.g. for the round track where renderQ shows the gift emoji).
 
 ## Log
+
+### P2-28 5th grade passages (v86, 2026-11-11, Claude)
+- What changed: `COMPSPEC[5]` and 10 original grade 5 passages appended at the end of `src/data/d-comp.js` (never reordered): stories g5f01-g5f05 (Sam's Soccer Switch, The Quilt for Grandpa, Hiro and the Missing Key, Marcus and the Solo, The Borrowed Telescope) and nonfiction g5n01-g5n05 (Built for the Desert, Two Ways to Cross a River, Reading the Rings of a Tree, From Sand to Glass, Gift of the Nile); topics and titles avoid the ones other grades already use. Each has 5 questions with 4 choices: inference with evidence, compare two things, point of view, vocabulary in context, and theme (stories) or author's purpose (nonfiction). 50 questions.
+- Spec: 180-230 words (passages are 181-209), at most 17 words per sentence on average and 26 in any sentence, Flesch-Kincaid at most 8.5 (they measure 3.6-5.9). Right answer is the longest choice in 20 of 50 questions (limit 50%); no choice is longer than 60 characters (bank limit); the first evidence sentence of every inference and vocabulary question is short enough for the hint to quote it.
+- Stops: `comp 6` ("Read a Story 4") and `info 4` ("Learn About It 4") at the end of `r_island` (Author Island), after `spell 6`. `SK.comp.max` is 6 and `SK.info.max` is 4 in `38-skills.js`.
+- Save safety: stars are keyed by stop id, no migration. The new stops are appended to an existing world: a child who finished Author Island sees both as NEW, open, and never as the current stop; no star moves and nothing re-locks (checked against a map without the two stops over 6 fixtures x 6 grades plus finished-world cases).
+- Tests: `tools/test.js` new check "passages grade 5 P2-28" (validator, counts, theme or purpose question, 3,000 seeded questions each for comp 6 and info 4 with zero kindProblems, hint, say and label checks, hints quote evidence, a round of 10 per skill, save safety; stops are found by filtering to comp/info stops so other chunks' stops do not matter). The P2-25 data check loops over every grade, so grade 5 is covered there too.
+- Expectations changed in existing tests: SK.comp.max is now 6 and SK.info.max 4, but comp 4-5 and info 2-3 (grades 3-4) have no passages until P2-26 and P2-27 merge. Five loops in test.js that walk levels 1..max (generator fuzz, every-level-has-a-node, per-level variety, 300-seed all-skills scan, review rebuild and the review model) now skip a comp/info level with no passages via `__hasLv` (set in the first eval; it is true for every level that has passages, so after P2-26/27 merge nothing is skipped and the helper can stay). Nothing else changed.
+- Smoke `// P2-28` (380x780): for comp 6 and info 4, all 5 questions of a passage show the question line on screen with the open panel, the four choices are at least 48 px and inside the width, no sideways scroll, then a real 10/10 round saves stars.
+- Screenshots checked (380x780): story5-comp (Marcus and the Solo, compare) and story5-info (Two Ways to Cross a River, compare). The long passage scrolls inside the panel (24vh body), the small question line and four choices are visible under it; the Hear it / Help row is partly cut at the bottom of the card in this static shot (P2-25 layout, unchanged).
+- Files: src/data/d-comp.js, src/js/38-skills.js, src/js/42-paths.js, tools/test.js, smoke.js, shots.js (compShot takes a grade; `story5-comp`, `story5-info`), build.py (VER v86, provisional), docs/PROGRESS.md, built output.
+- Merge: built on a parallel branch, renumbered v88 -> v89 at merge.
 
 ### P2-26 3rd grade passages (v84, 2026-11-11, Claude)
 - What changed: 10 original grade 3 passages appended at the end of `src/data/d-comp.js` (g3f01-g3f05 stories, g3n01-g3n05 nonfiction; 50 questions) with `COMPSPEC[3]` (90-130 words, at most 13 words per sentence on average and 18 in any, Flesch-Kincaid at most 5). Every passage has main idea, detail, cause and effect and vocabulary in context; stories have a character feeling question, nonfiction a text feature question (steps words, title, map parts, how a word is explained). Stories: a lost library book, indoor recess, a lemonade stand, a lost puppy, a paper boat. Nonfiction: how bees make honey, why the Moon changes shape, rain forest layers, parts of a map, how seeds travel. Settled facts only.

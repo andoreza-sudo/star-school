@@ -427,6 +427,9 @@ const SCREENS = {
   'story-info': { run: compShot('info', 1, 'g2n01', 1) },
   'story-hint': { run: compShot('comp', 3, 'g2f01', 1, 'hint') },
   'story-closed': { run: compShot('comp', 3, 'g2f05', 3, 'closed') },
+  // P2-28 (5th grade): the longest passages with the question line (a compare question) and the panel open
+  'story5-comp': { run: compShot('comp', 6, 'g5f04', 1, undefined, 5) },
+  'story5-info': { run: compShot('info', 4, 'g5n02', 1, undefined, 5) },
   // P2-26 (3rd grade): a story and a passage with the panel open and the widest choices
   'story3-comp': { run: compShot('comp', 4, 'g3f03', 3, null, 3) },
   'story3-info': { run: compShot('info', 2, 'g3n04', 2, null, 3) },
