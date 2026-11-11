@@ -20,6 +20,7 @@ const SK={
  pk_more:{t:'Which Has More',e:'⚖️',area:'math',max:2,gen:genPkMoreK},
  sort:{t:'Sort and Compare',e:'🧩',area:'math',max:3,gen:genSortK},
  shape:{t:'Shapes',e:'🔺',area:'math',max:6,gen:lv=>lv==6?dsShape6():lv==5?ffShape5():lv==4?genShape(lv):genShapeK(lv)}, // levels 1-3 Tiny Town / Shape Garden, 4 Clock Tower, 5 Fraction Forest
+ trace:{t:'Trace Numbers',e:'✏️',area:'math',max:1,gen:genTrace,round:traceRound,noPlace:true}, // P2-16 tracing (47-trace.js); P2-17 adds levels 2-3 (letters)
  pat:{t:'Patterns',e:'🌈',area:'math',max:5,gen:lv=>lv==5?ccPat5():lv==4?dsPat4():lv==3?genBayPat3():genPatK(lv)}, // 4 Decimal Desert
  tenf:{t:'Ten Frames',e:'🔟',area:'math',max:3,gen:genTenf}, // P2-02 Shape Garden: tenf, pos, meas (and levels added to pk_count, pk_num, pk_more, shape, add, pat, cnt, sort above)
  pos:{t:'Where Is It',e:'📌',area:'math',max:1,gen:genPos},

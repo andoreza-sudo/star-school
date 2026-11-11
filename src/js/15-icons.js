@@ -514,7 +514,7 @@ const ICO_SK={
   pat:'skill-pattern',tenf:'skill-array',pos:'pin',meas:'ruler',mult:'times',arr:'skill-array',mfact:'times',dfact:'divide',
   mbig:'times',pv:'blocks',data:'chart',frac:'skill-frac',fop:'skill-frac',dec:'skill-num',ang:'skill-shape',
   abc:'skill-abc',syl:'clap',sound:'ear',rhyme:'music',comp:'skill-story',info:'doc',sight:'eye',pic:'image',build:'puzzle',sent:'doc',
-  spell:'edit',
+  spell:'edit',trace:'edit',
   es_greet:'wave',es_color:'palette',es_num:'skill-num',es_teen:'skill-num',es_animal:'paw',es_food:'food',es_body:'user',
   es_family:'users',es_mix:'trophy',
 };

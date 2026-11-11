@@ -1,6 +1,6 @@
 /* ---------- question kinds (P1-02) ---------- */
 /* A question is a plain object made by a generator (via genQ). Fields every kind uses:
-     kind   'num' | 'choice' | 'build' | 'multi' | 'order' | 'match' | 'tap' | 'spell'   picks the entry in KIND below
+     kind   'num' | 'choice' | 'build' | 'multi' | 'order' | 'match' | 'tap' | 'spell' | 'trace'   picks the entry in KIND below
      html   prompt HTML (trusted; generators escape their own text)
      ans    the right answer; compared as String(value) === String(q.ans)
      say    text read by "Hear it"; auto: true | 'must' reads it on show; lang/afterLang 'es' for Spanish voice
@@ -561,6 +561,8 @@ const KIND={
       return p;
     },
   },
+  // P2-16 tracing: set, g (glyph), ans 'done', passes; the engine and its field notes are in 47-trace.js
+  trace:TRK,
 };
 
 // problems with a question as seen by its kind; an unknown kind is a problem too

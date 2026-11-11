@@ -45,10 +45,62 @@ async function answer(page) {
       const idx = await page.evaluate(k => G.q.items.findIndex((t, j) => String(t.v) === String(G.q.ans[k]) && !G.ord.includes(j)), k);
       await page.click(`.ot[data-i="${idx}"]`);
     }
+  } else if (q.kind === 'trace') {
+    await traceGlyph(page);
   } else {
     throw new Error('unknown question kind ' + q.kind);
   }
   return q;
+}
+
+// P2-16: one finger stroke through screen points pts: touch through CDP when page.__cdp is set (touch emulation on, like P3-08),
+// else the mouse. palm: a wide touch resting on the screen at that point the whole time (it must be ignored).
+async function strokeMoves(page, pts, palm) {
+  if (page.__cdp) {
+    const f = ([x, y]) => ({ x, y, id: 1, radiusX: 8, radiusY: 8, force: 1 });
+    const pm = palm ? [{ x: palm[0], y: palm[1], id: 2, radiusX: 55, radiusY: 55, force: 1 }] : [];
+    const send = (type, touchPoints) => page.__cdp.send('Input.dispatchTouchEvent', { type, touchPoints });
+    if (palm) await send('touchStart', pm);
+    await send('touchStart', [...pm, f(pts[0])]);
+    for (const p of pts.slice(1)) await send('touchMove', [...pm, f(p)]);
+    await send('touchEnd', pm);
+    if (palm) await send('touchEnd', []);
+  } else {
+    await page.mouse.move(pts[0][0], pts[0][1]);
+    await page.mouse.down();
+    for (const p of pts.slice(1)) await page.mouse.move(p[0], p[1]);
+    await page.mouse.up();
+  }
+}
+// P2-16: trace the glyph on screen, stroke by stroke and pass by pass, with real pointer moves made from the stroke data (points
+// 3 box units apart, from where a lifted trace stopped). o.miss: the first stroke is first traced backwards (a miss);
+// o.palm: the first stroke is traced with a palm resting on the board. Returns when the answer is in.
+async function traceGlyph(page, o = {}) {
+  // a question that takes input: not the one just answered, still on screen while the round waits to move on
+  await page.waitForFunction(() => G && G.q && !G.lock && TR.cur && TR.cur.q === G.q, null, { timeout: 10000 });
+  await page.evaluate(() => { window.__tq = G.q; });
+  let missed = false, palmed = false;
+  for (let guard = 0; guard < 60; guard++) {
+    const st = await (await page.waitForFunction(() => {
+      const c = TR.cur;
+      if (G.q !== window.__tq || G.lock || !c) return 'done';
+      return c.k < c.geo.s.length && !c.busy ? 'go' : false; // between passes, during a demo: wait
+    }, null, { timeout: 10000 })).jsonValue();
+    if (st === 'done') return { missed };
+    const miss = o.miss && !missed;
+    const { pts, palm } = await page.evaluate(miss => {
+      const c = TR.cur, s = c.geo.s[c.k], m = c.svg.getScreenCTM(), out = [];
+      const scr = ([x, y]) => [m.a * x + m.c * y + m.e, m.b * x + m.d * y + m.f];
+      if (miss) for (let x = s.L; x >= 0; x -= 3) out.push(scr(TR.at(s, x)));
+      else for (let x = c.part; ; x += 3) { out.push(scr(TR.at(s, Math.min(x, s.L)))); if (x >= s.L) break; }
+      const r = c.svg.getBoundingClientRect();
+      return { pts: out, palm: [r.right - 30, r.bottom - 30] };
+    }, miss);
+    await strokeMoves(page, pts, o.palm && !palmed && !miss ? palm : null);
+    if (miss) missed = true;
+    else if (o.palm) palmed = true;
+  }
+  throw new Error('trace: the glyph was not finished');
 }
 
 // Plays the round that is on screen to the end and opens the chest.
@@ -965,7 +1017,8 @@ async function main() {
       if (rec.length < 6 || badRec.length) fail('Tiny Town text-hidden round: ' + JSON.stringify(badRec.length ? badRec : rec));
       else step('Tiny Town with text hidden: ' + rec.length + ' prompts spoken on their own, replay button ' + rec[0].spk.join('x') + ', no letters on screen, 6/6 by tapping pictures');
       // every stop once, through the real taps; sizes and the Help button (a picture hint, no letters) on each
-      const stops = await tp.evaluate(() => NODES.math.map((n, i) => [i, nid(n), n.wid]).filter(x => x[2] === 'm_tiny' && x[1] !== 'boss_m_tiny'));
+      // P2-16: the tracing stop (trace1) has no taps to answer; its own block (// P2-16 at the end) plays it
+      const stops = await tp.evaluate(() => NODES.math.map((n, i) => [i, nid(n), n.wid]).filter(x => x[2] === 'm_tiny' && x[1] !== 'boss_m_tiny' && x[1] !== 'trace1'));
       const seen = [];
       for (const [i, id] of stops) {
         await tp.evaluate(i => { start('math', i); }, i);
@@ -3464,6 +3517,129 @@ async function main() {
       network.push(...cc.network);
       for (const e of cc.errors) fail(e);
       await cc.ctx.close();
+    }
+
+    // P2-16 Tracing: the Tiny Town stop "Trace Numbers" played with real pointer moves made from the stroke data: touch at 380x780 for a
+    //    Pre-K child (tolerance 14) and the mouse at 1024x600 for a K child (tolerance 10). The stop is opened from the map; the prompt
+    //    is spoken on its own; the first glyph's first stroke is first traced backwards (a deliberate miss: the dot pulses, the
+    //    arrows run, nothing turns red, no stroke is filled); Help twice on the second glyph (tier 1 the pen draws the stroke, tier 2
+    //    the yellow ball and a dotted guide); a palm resting on the board while a stroke is traced is ignored (touch); every glyph is
+    //    traced through its three passes, the round of 5 completes with 5/5 and the stop gets its stars. Targets 48 px or more, the
+    //    board at least 240 px, no sideways scroll.
+    {
+      for (const [w, h, grade, touch] of [[380, 780, -1, true], [1024, 600, 0, false]]) {
+        const tag = 'P2-16 ' + w + 'x' + h;
+        const tr = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = tr.page, bad = [];
+        if (touch) {
+          pg.__cdp = await pg.context().newCDPSession(pg);
+          await pg.__cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 2 });
+        }
+        // a child at this grade who has passed the other Tiny Town stops; say() is recorded
+        const ti = await pg.evaluate(g => {
+          S.grade = g;
+          for (const n of PATHS.math.worlds[0].nodes) if (n[0] != 'trace') S.maps.math[n[0] + n[1]] = 3;
+          save();
+          window.__said = [];
+          window.say = t => { window.__said.push(String(t)); };
+          // misses per glyph (recorded when a glyph ends) and the widths of the touches that went down
+          window.__trm = [];
+          const f0 = TR.finish;
+          TR.finish = c => { window.__trm.push(c.misses); f0(c); };
+          window.__pw = [];
+          document.addEventListener('pointerdown', e => window.__pw.push(Math.round(e.width || 0)), true);
+          home();
+          return NODES.math.findIndex(n => n.sk == 'trace' && n.lv == 1);
+        }, grade);
+        await pg.click('.game[data-p="math"]');
+        await pg.waitForSelector('#map');
+        await pg.evaluate(() => { const c = document.querySelector('.wchip[data-w="0"]'); if (c) c.click(); });
+        await pg.waitForSelector(`.node[data-n="${ti}"]`);
+        await pg.click(`.node[data-n="${ti}"]`);
+        await pg.waitForSelector('#trb');
+        const look = () => {
+          const out = [], de = document.documentElement;
+          if (de.scrollWidth > innerWidth) out.push('sideways scroll ' + de.scrollWidth);
+          for (const e of document.querySelectorAll('#quit, #spk, #hb')) {
+            const r = e.getBoundingClientRect();
+            if (e.offsetWidth < 48 || e.offsetHeight < 48) out.push('#' + e.id + ' is ' + e.offsetWidth + 'x' + e.offsetHeight);
+            if (r.right > innerWidth + 0.5 || r.bottom > innerHeight + 0.5) out.push('#' + e.id + ' off screen');
+          }
+          const b = document.querySelector('#trb').getBoundingClientRect();
+          if (Math.min(b.width, b.height) < 240) out.push('board ' + Math.round(b.width) + 'x' + Math.round(b.height));
+          if (b.right > innerWidth + 0.5 || b.bottom > innerHeight + 0.5) out.push('board off screen');
+          if (getComputedStyle(document.querySelector('#trb')).touchAction !== 'none') out.push('board touch-action');
+          return out;
+        };
+        const chk = async what => { for (const o of await pg.evaluate(look)) bad.push(what + ': ' + o); };
+        const st0 = await pg.evaluate(() => ({ n: G.n, sk: G.sk, kind: G.q.kind, tol: TR.cur.tol, said: window.__said.slice(), say: G.q.say }));
+        await vwait(pg, 700);
+        const said0 = await pg.evaluate(() => window.__said.slice());
+        if (st0.n !== 5 || st0.sk !== 'trace' || st0.kind !== 'trace') bad.push('round: ' + JSON.stringify(st0));
+        if (st0.tol !== (grade < 0 ? 14 : 10)) bad.push('tolerance ' + st0.tol + ' at grade ' + grade);
+        if (!said0.includes(st0.say)) bad.push('the prompt was not spoken on its own');
+        await chk('glyph 1');
+        // glyph 1: a deliberate miss first (the first stroke traced backwards)
+        await pg.waitForFunction(() => TR.cur && !TR.cur.busy, null, { timeout: 8000 });
+        const m0 = await pg.evaluate(() => {
+          const c = TR.cur, s = c.geo.s[0], m = c.svg.getScreenCTM(), pts = [];
+          for (let x = s.L; x >= 0; x -= 3) { const [a, b] = TR.at(s, x); pts.push([m.a * a + m.c * b + m.e, m.b * a + m.d * b + m.f]); }
+          return pts;
+        });
+        await strokeMoves(pg, m0);
+        const miss = await pg.evaluate(() => {
+          const c = TR.cur, red = getComputedStyle(document.documentElement).getPropertyValue('--danger').trim().toLowerCase();
+          const cols = [...document.querySelectorAll('#trb *')].flatMap(e => [getComputedStyle(e).stroke, getComputedStyle(e).fill]);
+          const toHex = v => { const m = /rgb\((\d+), (\d+), (\d+)\)/.exec(v); return m ? '#' + m.slice(1).map(x => (+x).toString(16).padStart(2, '0')).join('') : v; };
+          return { misses: c.misses, k: c.k, part: c.part, pulse: !!document.querySelector('#trs .tr-sd.on .tr-sdi.pulse'),
+            arrows: document.querySelectorAll('#tra .tr-arr.go').length, red: cols.map(toHex).some(v => v.toLowerCase() === red),
+            filled: document.querySelectorAll('#trd .tr-f').length, said: window.__said[window.__said.length - 1] };
+        });
+        if (miss.misses !== 1 || miss.k !== 0 || miss.part || !miss.pulse || !miss.arrows || miss.red || miss.filled || !/green dot|arrow/.test(miss.said))
+          bad.push('the miss: ' + JSON.stringify(miss));
+        await traceGlyph(pg);
+        const g1 = await pg.evaluate(() => ({ stars: TR.cur ? TR.cur.stars : null, done: G.done, score: G.score, res: G.res.slice() }));
+        if (g1.done !== 1 || g1.score !== 1) bad.push('glyph 1 after one miss: ' + JSON.stringify(g1));
+        // glyph 2: Help twice (tier 1: the pen draws the stroke; tier 2: the ball to follow and a dotted guide), then trace it
+        await pg.waitForFunction(() => G.done === 1 && !G.lock && TR.cur && G.q === TR.cur.q && !TR.cur.busy, null, { timeout: 10000 });
+        await chk('glyph 2');
+        await pg.click('#hb');
+        await pg.waitForFunction(() => document.querySelector('#trp').style.display !== 'none', null, { timeout: 3000 }).catch(() => {});
+        const h1 = await pg.evaluate(() => ({ tier: TR.cur.tier, demo: TR.cur.anim, pen: document.querySelector('#trp').style.display !== 'none',
+          panel: document.querySelector('#hint').innerHTML }));
+        await pg.waitForFunction(() => !TR.cur.busy, null, { timeout: 8000 });
+        await pg.click('#hb');
+        await pg.waitForFunction(() => document.querySelector('#trp').style.display !== 'none', null, { timeout: 3000 }).catch(() => {});
+        const h2 = await pg.evaluate(() => ({ tier: TR.cur.tier, lead: TR.cur.anim, pen: document.querySelector('#trp').style.display !== 'none',
+          dots: document.querySelectorAll('#trg .tr-dot, #trg .tr-band').length }));
+        if (h1.tier !== 1 || h1.demo !== 'demo' || !h1.pen || h1.panel || h2.tier !== 2 || h2.lead !== 'lead' || !h2.pen || !h2.dots)
+          bad.push('hints: ' + JSON.stringify({ h1, h2 }));
+        await traceGlyph(pg);
+        // glyph 3: with a palm on the board (touch); the rest of the round as it comes
+        await pg.waitForFunction(() => G.done === 2 && !G.lock && TR.cur && G.q === TR.cur.q, null, { timeout: 10000 });
+        await traceGlyph(pg, { palm: touch });
+        const g3 = await pg.evaluate(() => ({ done: G.done, score: G.score }));
+        if (g3.done !== 3 || g3.score !== 3) bad.push('glyph 3' + (touch ? ' with a palm' : '') + ': ' + JSON.stringify(g3));
+        for (let i = 3; i < 5; i++) {
+          await pg.waitForFunction(i => (G.done === i && !G.lock && TR.cur && G.q === TR.cur.q) || document.querySelector('#chest'), i, { timeout: 10000 });
+          await chk('glyph ' + (i + 1));
+          await traceGlyph(pg);
+        }
+        await pg.waitForSelector('#chest', { timeout: 10000 });
+        const fin = await pg.evaluate(() => ({ score: G.score, n: G.n, stars: S.maps.math.trace1 || 0, misses: window.__trm, wide: Math.max(...window.__pw) }));
+        if (fin.score !== 5 || fin.n !== 5 || fin.stars !== 3 || fin.misses.join() !== '1,0,0,0,0') bad.push('round end: ' + JSON.stringify(fin));
+        if (touch && !(fin.wide > 60)) bad.push('no palm touch went down (widest ' + fin.wide + ' px)');
+        await pg.click('#chest');
+        await pg.waitForSelector('#btns', { state: 'visible', timeout: 10000 });
+        if (bad.length) fail(tag + ':\n  ' + bad.join('\n  '));
+        else step(`${tag}: Trace Numbers opened from the Tiny Town map (grade ${grade}, tolerance ${st0.tol}), prompt spoken on its own, a backwards stroke ` +
+          `is a gentle miss (dot pulses, ${miss.arrows} arrows run, no red, nothing filled), Help plays the stroke then the ball to follow, ` +
+          `${touch ? 'a palm on the board is ignored, ' : ''}5 glyphs x 3 passes traced by ${touch ? 'touch' : 'mouse'}, 5/5, stop saved with 3 stars; ` +
+          'targets 48 px, board 240 px or more, no sideways scroll');
+        network.push(...tr.network);
+        for (const e of tr.errors) fail(e);
+        await tr.ctx.close();
+      }
     }
 
     for (const e of errors) fail(e);

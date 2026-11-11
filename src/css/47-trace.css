@@ -1,0 +1,82 @@
+/* Tracing board (P2-16; src/js/47-trace.js). Tokens only; animate transform and opacity only; no filter.
+   The board is an svg in glyph box units (100 x 100): handwriting lines, the guide (outlined strokes at level 1, dots at level 2),
+   the strokes already traced (subject colour on a shade ledge), the finger's ink (graphite), arrows and numbered green start
+   dots. A miss never turns anything red: the start dot pulses and the arrows run along the stroke. */
+
+/* the question screen gives the board the room: the prompt card shrinks to its content, the input area takes the rest */
+.play.tr-play .qarea{flex:0 0 auto}
+.play.tr-play .inp{flex:1 1 0;min-height:0;display:flex;flex-direction:column}
+@media (orientation:landscape){.play.tr-play .qarea{flex:1 1 0}.qs.tr-play .inp{width:54%;max-width:640px}}
+
+.trw{position:relative;flex:1 1 0;min-height:0;display:flex;flex-direction:column;align-items:center;gap:var(--s-2)}
+.trb{flex:1 1 0;min-height:240px;width:100%;display:block;touch-action:none;user-select:none;-webkit-user-select:none;
+  -webkit-touch-callout:none;background:var(--surface);border-radius:var(--r-hero);box-shadow:inset 0 0 0 2px var(--line),0 4px 0 var(--ledge-soft);
+  cursor:crosshair}
+.trb text{pointer-events:none}
+
+/* handwriting lines: top and base solid, middle dashed */
+.tr-l{stroke:var(--ledge-soft);stroke-width:.6}
+.tr-lm{stroke-dasharray:2.4 2.4}
+.tr-lb{stroke:var(--ill-grey);stroke-width:.7}
+
+/* guide: level 1 hollow outlined strokes, level 2 (and a tier-2 hint) a dotted centre line */
+.tr-band,.tr-bandi,.tr-dot,.tr-f,.tr-fl,.tr-demo,.tr-ink{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.tr-band{stroke:var(--ill-grey);stroke-width:13}
+.tr-bandi{stroke:var(--surface-2);stroke-width:10.4}
+.tr-dot{stroke:var(--ink-3);stroke-width:2.6;stroke-dasharray:0 5.2}
+
+/* strokes traced: subject colour on a shade ledge; they fade in when a stroke snaps on */
+.tr-f{stroke:var(--c,var(--brand));stroke-width:8.4}
+.tr-fl{stroke:var(--c-shade,var(--brand-shade));stroke-width:8.4}
+.tr-f.in,.tr-fl.in{animation:k-trin var(--t) var(--ease) both}
+@keyframes k-trin{from{opacity:0}}
+.tr-dn{transform-box:fill-box;transform-origin:center}
+.tr-dn.pop{animation:k-trpop 520ms var(--spring)}
+@keyframes k-trpop{45%{transform:scale(1.06)}}
+
+/* the finger's ink, the pen's demo stroke and the yellow ball (demo pen, tier-2 lead) */
+.tr-ink{stroke:var(--ink-2);stroke-width:6;opacity:.8;transition:opacity var(--t-slow) var(--ease)}
+.tr-ink.fade{opacity:0}
+.tr-demo{stroke:var(--c,var(--brand));stroke-width:8.4;opacity:.5}
+#trx{transition:opacity var(--t-slow) var(--ease)}
+#trx.fade{opacity:0}
+.tr-pen{fill:var(--star);stroke:var(--star-shade);stroke-width:1.4;pointer-events:none}
+
+/* arrows along the stroke to trace; after a miss they run along it, one after another */
+.tr-arr{fill:none;stroke:var(--c,var(--brand));stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;transform-box:fill-box;transform-origin:center}
+.tr-arr.go{animation:k-trgo 560ms var(--ease) 2 both;animation-delay:calc(var(--i) * 90ms)}
+@keyframes k-trgo{40%{transform:translateX(2.5px) scale(1.6)}}
+
+/* start dots: green, numbered when a glyph has more than one stroke; the one to start at is big, ringed and on top */
+.tr-sdi{transform-box:fill-box;transform-origin:center}
+.tr-sdr{fill:var(--good-tint)}
+.tr-sdc{fill:var(--good);stroke:var(--surface);stroke-width:1.2}
+.tr-sd:not(.on) .tr-sdc{fill:var(--good-ink);opacity:.55}
+.tr-sdt{fill:var(--surface);font-family:var(--font-display);font-size:9px;font-weight:700;text-anchor:middle;dominant-baseline:central}
+.tr-sdt.sm{font-size:6.4px}
+.tr-sdi.pulse{animation:k-trpulse 420ms var(--spring) 2}
+.tr-sdi.hop{animation:k-trhop 560ms var(--spring)}
+@keyframes k-trpulse{50%{transform:scale(1.45)}}
+@keyframes k-trhop{40%{transform:translateY(-3px) scale(1.18)}}
+
+/* passes of this glyph (solid, dotted, on your own) and the glyph's stars when it is done */
+.tr-pips{display:flex;gap:var(--s-2);justify-content:center;flex:none}
+.tr-pips i{width:14px;height:14px;border-radius:50%;background:var(--surface);box-shadow:inset 0 0 0 2px var(--ledge-soft)}
+.tr-pips i.on{background:var(--c-tint,var(--brand-tint));box-shadow:inset 0 0 0 4px var(--c,var(--brand))}
+.tr-pips i.dn{background:var(--good);box-shadow:inset 0 -2px 0 var(--good-ink)}
+.tr-stars{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;gap:var(--s-2);pointer-events:none}
+.tr-stars:not(:empty){padding:var(--s-3) var(--s-5);border-radius:var(--r-pill);background:var(--surface);box-shadow:inset 0 0 0 2px var(--line),0 4px 0 var(--ledge-soft),var(--shadow)}
+.tr-star{color:var(--ledge-soft);--ic2:var(--surface-2);animation:k-trstar var(--t-slow) var(--spring) both;animation-delay:calc(var(--i) * 140ms)}
+.tr-star.lit{color:var(--star);--ic2:var(--star-tint)}
+.tr-star .ic{display:block;width:52px;height:52px}
+@keyframes k-trstar{from{opacity:0;transform:scale(.4)}}
+
+/* the prompt card: the glyph to copy and, for a number, its dots */
+.trq{display:flex;align-items:center;justify-content:center;gap:var(--s-4)}
+.trq-g{display:block;height:72px;width:auto;flex:none}
+.trq-g path{fill:none;stroke:var(--c,var(--brand));stroke-width:11;stroke-linecap:round;stroke-linejoin:round}
+.trq-d svg{display:block;height:60px;width:auto}
+@media (max-height:520px){.trq-g{height:56px}.trq-d svg{height:48px}.trb{min-height:200px}}
+
+html.calm .tr-arr.go,html.calm .tr-sdi.pulse,html.calm .tr-sdi.hop,html.calm .tr-dn.pop,html.calm .tr-star{animation:none}
+@media (prefers-reduced-motion:reduce){.tr-arr.go,.tr-sdi.pulse,.tr-sdi.hop,.tr-dn.pop,.tr-star{animation:none}}

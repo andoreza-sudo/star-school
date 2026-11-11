@@ -29,11 +29,11 @@ const PLACE={
   begin(worlds,grade,seed){
     return{n:worlds.length,wi:PLACE.first(worlds,grade),seed:seed>>>0,k:0,asked:0,right:0,rec:{},done:false,at:-1,skip:[]};
   },
-  // The 4 questions of the next testlet: [{sk, lv, seed}], from the stops (not the boss) of world st.wi.
+  // The 4 questions of the next testlet: [{sk, lv, seed}], from the stops (not the boss, not a skill marked noPlace) of world st.wi.
   // Stops are shuffled by a private stream from (seed, testlet number) and taken in turn, so a world with 2 stops gives 2 each.
   items(worlds,st){
     const r=mulberry32((st.seed^Math.imul(st.k+1,0x9E3779B1))>>>0);
-    const ns=worlds[st.wi].nodes.slice();
+    const ns=worlds[st.wi].nodes.filter(nd=>!(SK[nd[0]]&&SK[nd[0]].noPlace)); // P2-16: tracing is not asked in the quiz
     for(let i=ns.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[ns[i],ns[j]]=[ns[j],ns[i]]}
     const out=[];
     for(let i=0;i<PLACE.TL;i++){const nd=ns[i%ns.length];out.push({sk:nd[0],lv:nd[1],seed:Math.floor(r()*4294967296)>>>0})}
