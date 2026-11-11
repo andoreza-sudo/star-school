@@ -311,7 +311,7 @@ light rays, and returns the markup of the reward screens (`RW.pre`, `RW.done`, `
 
 ### 6.5 Object art (chunks P4-13 to P4-15; style reset in P4-13b)
 
-Pictures for counting, picture words and Spanish vocabulary, in `src/js/16-art-a.js` (set A, in index.html) and `src/data/d-art-b.js` (set B, in the data file since P4-14; set C the same way) as `Object.assign(ART, {name: '...'})`
+Pictures for counting, picture words and Spanish vocabulary, in `src/js/16-art-a.js` (set A, in index.html), `src/data/d-art-b.js` (set B, in the data file since P4-14) and `src/data/d-art-c.js` (set C, P4-15, the same way) as `Object.assign(ART, {name: '...'})`
 (ART, `picArt(name, size)` and `picFor(word, emoji)` live in `src/js/15-pics.js`; the names `art` and `artSVG` are already taken by the a/an helper and the Art Studio).
 Reference: set A (`node tools/shots.js art`). This section replaces the flat two-tone rule of 6.1 for object art.
 
@@ -337,6 +337,7 @@ It should look like a current, well-made kids' app: soft, chunky, with real volu
 | Review | `node tools/shots.js art` (24/48/96 px on white and on a tint) and `art-question` (inside a real question at 380x780). Look before shipping |
 | Checked by | `tools/test.js` "art set A" (rules above, every role maps to an `--ill-*` token). Sets B and C add their names to a copy of that check |
 | Set B check | `tools/test.js` "object art set B P4-14": the same rules, every number on the 64 grid, each word asked for by content, drawings shown by picture words and Spanish units. Review: `node tools/shots.js art-b art art-b-question` |
+| Set C check | `tools/test.js` "object art set C P4-15": the same rules and limits as set B, plus every art name used by a Spanish item has a drawing and bank pictures (vocabulary, Discover) show it; picture, build, digraph and syllable questions and Spanish units show the drawings. Review: `node tools/shots.js art-c art art-c-question` |
 
 How set A was authored: shapes were written with small helpers (volume, crescent, eye, rotate) in a scratch script and the output pasted into `16-art-a.js`;
 the file is the source of truth. Any authoring approach is fine as long as the output follows the rules.
@@ -347,6 +348,7 @@ the file is the source of truth. Any authoring approach is fine as long as the o
 | B | Remaining picture words (vowel teams, r-controlled, diphthongs) and the Spanish units: animals, food, body, family, house, clothes, school |
 | B as built (P4-14) | balloon book moon sock cow cheese bell bird egg pencil plane bread tree coat foot cloud rainbow house grapes truck train tooth shirt mouth mouse table horse bee turtle water ear owl helicopter rocket tie boots dice chair bear dress: the 40 picFor words used most by the content that had no drawing (count in PROGRESS P4-14). Spanish items name their drawing in the `art` field (jacket uses `coat`, socks `sock`, class `bell`, airplane `plane`, good night `moon`) |
 | C (stretch) | Science and remaining Spanish units, places, transport, weather, feelings faces |
+| C as built (P4-15) | pizza snowflake elephant icecream beach rabbit sunflower giraffe road tub lion backpack dish school snowman window shell cap shoes eraser scissors soap sofa paper chick spoon pants butterfly church motorcycle leaf door sheep umbrella storm boat clock books lamp gamepad: the next 40 picFor words with no drawing, counted as for set B (PROGRESS P4-15). Shared pictures by art name: Spanish restaurant `dish`, library `books`, bathroom `tub`, garden `sunflower`, living room `sofa`, street `road`, winter `snowman`, it is raining `umbrella`, it is snowing `snowflake`, it is cool `leaf`, there is a storm `storm`, to eat `pizza`, to play `gamepad`, big `elephant`, tall `giraffe`, clean `soap`; and set A/B drawings for park `tree`, bicycle `bike`, it is sunny `sun`, it is cloudy `cloud`, to read `book`, to write `pencil`, slow `turtle`, pretty `flower`; vocabulary cold `snowflake`, big `elephant`, small `mouse`, sailboat `boat`, bathtub `tub`, seashell `shell`. Feelings faces, people, calendar pages and gestures stay emoji (reasons in PROGRESS P4-15). The snowman keeps coal eyes and a carrot nose: they are what make him a snowman, the one face on an object |
 
 `picFor(word)` returns object art when it exists, else the emoji, so replacement is gradual and nothing breaks. The emoji allowlist test still applies to whatever remains.
 

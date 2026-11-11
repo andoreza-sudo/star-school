@@ -2870,7 +2870,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S));SAVE_FAILED=fals
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v130'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v131'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -3755,8 +3755,8 @@ function icoSk(id){
 if(document.body&&!document.getElementById('ico-sprite'))document.body.insertAdjacentHTML('afterbegin',icoSprite());
 /* ---------- content pictures: object art with emoji fallback (DESIGN_SYSTEM 6.5) ---------- */
 /* Every content picture (counting objects, picture words, vocabulary) goes through picFor(word, emoji).
-   P4-13 to P4-15 add drawings to ART with Object.assign(ART, {apple: '<path .../>', ...}): set A in src/js/16-art-a.js, set B in
-   src/data/d-art-b.js (the data file, so ART is complete only at render time: read it inside functions, never while loading)
+   P4-13 to P4-15 add drawings to ART with Object.assign(ART, {apple: '<path .../>', ...}): set A in src/js/16-art-a.js, sets B and C in
+   src/data/d-art-b.js and d-art-c.js (the data file, so ART is complete only at render time: read it inside functions, never while loading)
    (64x64 grid, style and limits in DESIGN_SYSTEM 6.5); words with a drawing show it, the rest keep the emoji,
    with no change to any generator.
    Rules for content code:
@@ -6617,7 +6617,7 @@ function home(first){
   <div class="scroll hm" id="hs"><div class="hm-cols">
    <div class="hm-col">${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}${hmDaily()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
-   <p class="hm-ver">${ico('star', 16)}<span>Star School v130</span></p></div>`);
+   <p class="hm-ver">${ico('star', 16)}<span>Star School v131</span></p></div>`);
   music(true);
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,['💖','✨','⭐']);
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
@@ -9935,7 +9935,7 @@ function grown(){let armed=false;
     {sub:'Rounds played and first-try accuracy for every skill on the maps, with the questions missed most.'})}
   ${GW.card('gw-how','info','How it works',`<p class="gw-p">Each subject has its own map. Getting 7 of 10 right opens the next stop (8 earns 2 stars, 10 earns 3), and each world stretches further. Missed questions come back at the end of a round, in later rounds, in Daily Review and in the Tricky Mix. Each right answer earns a star (the pet grows) and a coin (spent in the shop). Everything is saved on this tablet only.</p>`)}
   <details class="gw-card gw-det" id="applog"><summary class="gw-h"><span class="gw-hi">${ico('doc',24)}</span><span>App log</span>${ico('chevron-right',22,'chev')}</summary><div class="gw-log">
-   <div><b>Version</b> v130</div><div><b>Save size</b> ${(JSON.stringify(S).length/1024).toFixed(1)} KB</div>
+   <div><b>Version</b> v131</div><div><b>Save size</b> ${(JSON.stringify(S).length/1024).toFixed(1)} KB</div>
    <div><b>Storage</b> ${SAVE_FAILED?'<span class="gw-bad">could not save (device storage may be full)</span>':'saving OK'}</div>
    ${SAVE_CORRUPT?'<div class="gw-bad">The old save could not be read. A fresh start was made and the old data was kept on the device.</div>':''}
    <div><b>Last errors</b> ${(S.err||[]).length?'<ul class="gw-errs">'+(S.err||[]).slice().reverse().map(e=>'<li><span>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+'</span> '+esc(e.msg)+'</li>').join('')+'</ul>':'none'}</div></div></details>
@@ -10284,20 +10284,20 @@ function appFiles() {
   ];
 }
 function dataReady() {
-  return appFiles().every(f => f[1] === 'v130');
+  return appFiles().every(f => f[1] === 'v131');
 }
 function dataMissing() {
-  logErr(appFiles().filter(f => f[1] !== 'v130').map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v130)');
+  logErr(appFiles().filter(f => f[1] !== 'v131').map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v131)');
   const again = UI.btn('Try again', { kind: 'primary', size: 'lg', icon: 'replay', id: 'dataretry' });
   view(`<div class="scroll" id="datamiss">${UI.empty('download', 'Star School needs to finish updating. Connect to the internet, then tap Try again.', again)}</div>`);
   $('#dataretry').onclick = () => location.reload();
 }
 </script>
-<script src="gen.v130.js"></script>
-<script src="gen2.v130.js"></script>
-<script src="bt.v130.js"></script>
-<script src="games.v130.js"></script>
-<script src="data.v130.js"></script>
+<script src="gen.v131.js"></script>
+<script src="gen2.v131.js"></script>
+<script src="bt.v131.js"></script>
+<script src="games.v131.js"></script>
+<script src="data.v131.js"></script>
 <script>
 if (dataReady()) {
   loadClips();
