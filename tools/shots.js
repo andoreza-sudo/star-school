@@ -1451,6 +1451,43 @@ Object.assign(SCREENS, {
   'sky-fop7': { run: skyShot('fop', 7, '^fop7 \\d/\\d / \\d/\\d$') },
 });
 
+// P3-05 MathDoku: grade g sets the band, level lv is started, then by real taps (tools/lib/bt-md.js): o.moves moves of solve(),
+// o.notes pencil marks in the first empty squares, o.clash one number already in its row or column, o.miss one cage filled so it
+// misses its number, o.hint presses of Hint (cooldown skipped), o.win the rest
+const MD_TAPS = require('./lib/bt-md');
+const mdShot = (g, lv, o = {}) => ({
+  run: async p => {
+    await p.evaluate(([g, lv]) => { window.say = () => {}; S.grade = g; S.bt = {}; BT.start('mdoku', BT.band(), lv); }, [g, lv]);
+    await p.waitForSelector('#btstage .md');
+    for (const m of (await MD_TAPS.rest(p)).slice(0, o.moves || 0)) await MD_TAPS.move(p, m);
+    if (o.notes) {
+      const free = await p.evaluate(() => { const p = S.bt.cur.puzzle, b = MD.vals(p, S.bt.cur.state || MD.fresh(p)); return b.map((v, c) => v ? -1 : c).filter(c => c >= 0); });
+      await p.click('.md-pad .k[data-k="notes"]');
+      for (const [i, c] of free.slice(0, o.notes).entries()) {
+        await p.click(`.md-grid .md-c[data-c="${c}"]`);
+        for (const v of [1 + i % 2, 3, 4 + i % 2]) if (await p.$(`.md-pad .k[data-k="${v}"]`)) await p.click(`.md-pad .k[data-k="${v}"]`);
+      }
+      await p.click('.md-pad .k[data-k="notes"]');
+    }
+    if (o.miss) await MD_TAPS.miss(p);
+    if (o.clash) await MD_TAPS.clash(p);
+    for (let i = 0; i < (o.hint || 0); i++) {
+      await p.evaluate(() => { BT.act.cd = 0; document.querySelector('#bthint').disabled = false; });
+      await p.click('#bthint');
+    }
+    if (o.win) { for (const m of await MD_TAPS.rest(p)) await MD_TAPS.move(p, m); await p.waitForTimeout(1600); }
+  },
+});
+Object.assign(SCREENS, {
+  'bt-md-hub': { run: async p => { await p.evaluate(() => { S.grade = 3; BT.levels('mdoku'); }); } },
+  'bt-md-b': mdShot(1, 1, { moves: 1, clash: true }),
+  'bt-md-c': mdShot(3, 6, { moves: 3, notes: 2, miss: true }),
+  'bt-md-d5': mdShot(5, 4, { moves: 5, clash: true }),
+  'bt-md-d6': mdShot(5, 10, { moves: 8, notes: 2, miss: true }),
+  'bt-md-hint': mdShot(5, 8, { moves: 3, hint: 2 }),
+  'bt-md-win': mdShot(1, 3, { win: true }),
+});
+
 async function main() {
   const args = process.argv.slice(2);
   let fixtureArg = null;

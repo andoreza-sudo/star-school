@@ -4079,6 +4079,156 @@ async function main() {
       await sc.ctx.close();
     }
 
+    // P3-05 MathDoku (src/js/79-bt-mdoku.js) with real taps, midway save: a 3x3 (band B, a 1st grader) at 380x780 and a 6x6 (band D
+    //    level 7, a 5th grader) at 1024x600: Home -> Brain Teasers -> MathDoku -> the level, a clash shown gently (amber tint, dashed
+    //    ring, warning mark, never red; one mistake) and taken back with Undo, a cage filled so it misses its number (the label turns
+    //    amber with a warning mark, the line says why in words; one mistake), Notes (6x6), hint tiers 1 and 2 (they point and explain,
+    //    nothing is filled), a right move, back and Keep going resumes exactly, the rest tapped in, win card, 1 star (two hints) saved.
+    //    The same 6x6 again at 380x780: the phone keeps 48 px squares with no zoom box.
+    //    48 px targets everywhere (board squares too), cage labels at least 14 px, no sideways scroll, the puzzle fits, no emoji chrome.
+    {
+      const taps = require('./lib/bt-md');
+      const look = () => {
+        const vw = document.documentElement.clientWidth, out = [];
+        for (const e of document.querySelectorAll('button, [role="button"]')) {
+          const r = e.getBoundingClientRect();
+          if (!r.width || r.bottom < 0 || r.top > innerHeight || e.closest('svg') || e.closest('#toast')) continue;
+          if (Math.min(r.width, r.height) < 47.5) out.push('small ' + (e.id || e.className) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
+          if (r.left < -1 || r.right > vw + 1) out.push('outside ' + (e.id || e.className) + ' ' + Math.round(r.left) + '..' + Math.round(r.right));
+        }
+        for (const l of document.querySelectorAll('.md-lab')) if (parseFloat(getComputedStyle(l).fontSize) < 14) out.push('cage label under 14 px');
+        if (document.documentElement.scrollWidth > vw) out.push('sideways scroll ' + document.documentElement.scrollWidth);
+        const stg = document.querySelector('#btstage');
+        if (stg && stg.scrollWidth > stg.clientWidth + 1) out.push('the puzzle scrolls sideways');
+        if (stg && document.querySelector('#btstage .md') && stg.scrollHeight > stg.clientHeight + 1) out.push('the puzzle does not fit: ' + stg.scrollHeight + ' > ' + stg.clientHeight);
+        const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        for (let n; (n = w.nextNode());) {
+          const el = n.parentElement;
+          if (!el || el.closest('script,style,svg,#ico-sprite,.rw-burst') || !el.getClientRects().length) continue;
+          const m = n.textContent.match(/\p{Extended_Pictographic}|[◀▶✕]/u);
+          if (m) out.push('emoji chrome ' + m[0] + ' in ' + (el.id || el.className));
+        }
+        return out;
+      };
+      const cur = pg => pg.evaluate(() => S.bt.cur && JSON.stringify({ puzzle: S.bt.cur.puzzle, state: S.bt.cur.state, hints: S.bt.cur.hints }));
+      const board = pg => pg.evaluate(() => { const c = S.bt.cur; return MD.vals(c.puzzle, c.state || MD.fresh(c.puzzle)).join(''); });
+      // the colours to compare with: amber tint and ink, and the red that must never show
+      const amber = sel => pg => pg.evaluate(sel => {
+        const e = document.querySelector(sel), css = getComputedStyle(document.documentElement), msg = document.querySelector('.md-msg');
+        const rgb = v => { const d = document.createElement('i'); d.style.color = v; document.body.appendChild(d); const x = getComputedStyle(d).color; d.remove(); return x; };
+        return { found: !!e, bg: e && getComputedStyle(e).backgroundColor, dashed: e && getComputedStyle(e).outlineStyle, warn: !!(e && e.querySelector('svg')),
+          tryTint: rgb(css.getPropertyValue('--try-tint')), red: rgb(css.getPropertyValue('--danger')), tryInk: rgb(css.getPropertyValue('--try-ink')),
+          msg: msg.textContent, cls: msg.className, msgColor: getComputedStyle(msg).color, miss: S.bt.cur.state.miss };
+      }, sel);
+      const gentle = g => g.found && g.bg === g.tryTint && g.bg !== g.red && g.dashed === 'dashed' && g.warn && /try/.test(g.cls) && g.msgColor === g.tryInk;
+      for (const [w, h, grade, lv] of [[380, 780, 1, 1], [1024, 600, 5, 7], [380, 780, 5, 7]]) {
+        const tag = 'P3-05 ' + w + 'x' + h + ' grade ' + grade;
+        const app = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = app.page, bad = [], notes = [];
+        const chk = async what => { for (const o of await pg.evaluate('(' + look.toString() + ')()')) bad.push(what + ': ' + o); };
+        await pg.evaluate(() => { window.say = () => {}; });
+        await pg.evaluate(([g, lv]) => { S.grade = g; if (lv > 1) BT.rec('mdoku', BT.band(), true).lvl = lv; save(); home(); }, [grade, lv]);
+        await pg.waitForSelector('#btcard');
+        await pg.evaluate(() => document.querySelector('#btcard').scrollIntoView({ block: 'center' }));
+        await pg.click('#btcard');
+        await pg.waitForSelector('.bt-hub .bt-type[data-t="mdoku"]');
+        await pg.waitForTimeout(400);
+        await pg.evaluate(() => document.querySelector('.bt-type[data-t="mdoku"]').scrollIntoView({ block: 'center' }));
+        await pg.click('.bt-type[data-t="mdoku"]');
+        await pg.waitForSelector('.bt-lvs');
+        await pg.click(`.bt-lv[data-l="${lv}"]`);
+        await pg.waitForSelector('#btstage .md');
+        await pg.waitForTimeout(400);
+        await chk('play');
+        const g0 = await pg.evaluate(() => {
+          const c = S.bt.cur, r = e => Math.round(Math.min(e.getBoundingClientRect().width, e.getBoundingClientRect().height));
+          return { band: c.band, n: c.puzzle.n, cells: document.querySelectorAll('.md-grid .md-c').length, cell: r(document.querySelector('.md-grid .md-c')),
+            labels: document.querySelectorAll('.md-lab').length, cages: c.puzzle.cg.filter(g => g.o != '=').length, lab: parseFloat(getComputedStyle(document.querySelector('.md-lab')).fontSize),
+            keys: [...document.querySelectorAll('.md-pad .k')].map(k => k.dataset.k).join(' '), thick: !!document.querySelector('.md-lines .md-thick') };
+        });
+        const want = grade === 1 ? ['B', 3, '1 2 3 del undo'] : ['D', 6, '1 2 3 4 5 6 del notes undo'];
+        if (g0.band !== want[0] || g0.n !== want[1] || g0.cells !== g0.n * g0.n || g0.keys !== want[2] || g0.labels !== g0.cages || !g0.thick)
+          bad.push('board: ' + JSON.stringify(g0) + ', want ' + want);
+        notes.push(`${g0.n}x${g0.n} band ${g0.band}, square ${g0.cell} px, labels ${g0.lab} px`);
+        const b0 = await board(pg);
+
+        // a clash: amber, dashed, a warning mark, one mistake; Undo takes it away and keeps the mistake
+        const cm = await taps.clash(pg);
+        const gc = await amber(`.md-grid .md-c[data-c="${cm && cm[0]}"]`)(pg);
+        const ncf = await pg.evaluate(() => document.querySelectorAll('.md-grid .md-c.cf').length);
+        if (!cm || !gentle(gc) || ncf < 2 || gc.miss !== 1 || !/Two \d+s in this (row|column)/.test(gc.msg)) bad.push('the clash is not shown gently: ' + JSON.stringify(gc) + ' squares ' + ncf);
+        await chk('clash');
+        await pg.click('.md-pad .k[data-k="undo"]');
+        const u = await pg.evaluate(() => ({ cf: document.querySelectorAll('.md-c.cf').length, miss: S.bt.cur.state.miss }));
+        if (u.cf || (await board(pg)) !== b0 || u.miss !== 1) bad.push('Undo should take the clash away and keep the mistake: ' + JSON.stringify(u));
+
+        // a cage miss: the label turns amber with a warning mark and a dashed ring, the line says why; one mistake; Undo takes it back
+        const mm = await taps.miss(pg);
+        const gm = await amber('.md-lab.miss')(pg);
+        if (!mm || !gentle(gm) || gm.miss !== 2 || !/, but this cage needs \d+\. Change a number\./.test(gm.msg)) bad.push('the cage miss is not shown gently in words: ' + JSON.stringify(gm));
+        notes.push('cage miss: "' + gm.msg + '"');
+        await chk('cage miss');
+        for (const _ of mm || []) await pg.click('.md-pad .k[data-k="undo"]');
+        if ((await board(pg)) !== b0 || (await pg.evaluate(() => document.querySelectorAll('.md-lab.miss').length))) bad.push('Undo did not take the cage miss back');
+
+        if (g0.n === 6) {
+          // Notes put a 1 and a 3 in an empty square, small; Notes off again
+          const free = await pg.evaluate(() => { const c = S.bt.cur; return MD.vals(c.puzzle, c.state).indexOf(0); });
+          await pg.click(`.md-grid .md-c[data-c="${free}"]`);
+          await pg.click('.md-pad .k[data-k="notes"]');
+          await pg.click('.md-pad .k[data-k="1"]');
+          await pg.click('.md-pad .k[data-k="3"]');
+          const nt = await pg.evaluate(f => ({ txt: document.querySelector(`.md-grid .md-c[data-c="${f}"] .md-nts`)?.textContent, m: S.bt.cur.state.m[f],
+            on: document.querySelector('.md-pad .k[data-k="notes"]').getAttribute('aria-pressed') }), free);
+          if (nt.txt !== '13' || nt.m !== 5 || nt.on !== 'true') bad.push('notes: ' + JSON.stringify(nt));
+          await pg.click('.md-pad .k[data-k="notes"]');
+          await chk('notes');
+        }
+
+        // hint tiers 1 and 2: they point (a cage or a line shaded, then a ringed square) and explain; the board does not change
+        const f0 = await board(pg);
+        await pg.click('#bthint');
+        await vwait(pg, 200);
+        const t1 = await pg.evaluate(() => ({ hh: document.querySelectorAll('.md-grid .md-c.hh').length, msg: document.querySelector('.md-msg').textContent, hints: S.bt.cur.hints }));
+        if (!t1.hh || !t1.msg || t1.hints !== 1) bad.push('hint 1: ' + JSON.stringify(t1));
+        await vwait(pg, 11500);
+        await pg.click('#bthint');
+        await vwait(pg, 200);
+        const t2 = await pg.evaluate(() => ({ hl: document.querySelectorAll('.md-grid .md-c.hl').length, msg: document.querySelector('.md-msg').textContent, hints: S.bt.cur.hints }));
+        if (t2.hints !== 2 || !t2.hl || t2.msg === t1.msg || (await board(pg)) !== f0) bad.push('hint 2 should point at a square, explain and fill nothing: ' + JSON.stringify(t2));
+        notes.push('hint 1: "' + t1.msg + '"; hint 2: "' + t2.msg + '"');
+        await chk('hint 2');
+
+        // one right move, then back to the levels and the hub: Keep going brings back the same puzzle and state
+        await taps.move(pg, (await taps.rest(pg))[0]);
+        await vwait(pg, 200);
+        const mid = await cur(pg);
+        await pg.click('#back');
+        await pg.waitForSelector('.bt-lvs');
+        await pg.click('#back');
+        await pg.waitForSelector('#btkeep');
+        await pg.click('#btkeep');
+        await pg.waitForSelector('#btstage .md');
+        if (!mid || (await cur(pg)) !== mid) bad.push('Keep going did not resume exactly');
+
+        // the rest by taps, then the win card with the stars saved (two hints: 1 star; the next level opens)
+        for (const m of await taps.rest(pg)) await taps.move(pg, m);
+        try { await pg.waitForSelector('.bt-win #btlvls', { timeout: 8000 }); } catch (e) { bad.push('no win card'); }
+        await pg.waitForTimeout(700);
+        await chk('win card');
+        const saved = await pg.evaluate(([b, lv]) => ({ stars: BT.rec('mdoku', b).stars[lv - 1] || 0, lvl: BT.rec('mdoku', b).lvl, cur: !!S.bt.cur,
+          shown: document.querySelectorAll('.bt-win .rs.on').length }), [g0.band, lv]);
+        if (saved.lvl !== lv + 1 || saved.cur || saved.shown !== saved.stars || saved.stars !== 1) bad.push('stars not saved ' + JSON.stringify(saved));
+        notes.push(`won with ${saved.stars} star`);
+        if (bad.length) fail(tag + ':\n  ' + bad.join('\n  '));
+        else step(`${tag}: Home -> Brain Teasers -> MathDoku -> level ${lv}: ${notes.join('; ')}; a clash and a cage miss shown gently in amber and counted, ` +
+          `Undo, hints 1-2 fill nothing, Keep going resumes exactly; targets 48 px, no sideways scroll, no emoji chrome`);
+        network.push(...app.network);
+        for (const e of app.errors) fail(e);
+        await app.ctx.close();
+      }
+    }
+
     for (const e of errors) fail(e);
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');
