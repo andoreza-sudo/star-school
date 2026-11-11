@@ -79,3 +79,40 @@ const ES_SENT_HINT=[null,'In Spanish a describing word, like a color or a size, 
   'Start with the capital letter. Say who it is, then what they do, then where it happens. The dot ends the sentence.'];
 function genEsSent(lv){const it=pick(ES_GRAM.sent[lv]),ws=it[0].split(' '),items=ws.map(w=>({v:w,l:w}));
   return{...sentOrder(items,ws,{html:`Put the words in order: “${esc(it[2])}”`,say:'Put the words in order: '+it[2]},{k:'text',s:ES_SENT_HINT[lv]},it[0]),after:it[0],afterLang:'es'}}
+/* ---------- P2-35 mini dialogues (CURRICULUM S-story): es_story ----------
+   Data: ES_STORY in src/data/d-es-story.js (that file makes the skill). A round is two dialogues, each with its three questions in order
+   (esStoryRound, the SK round hook). The dialogue stays in the passage panel above every question (q.ctx with html: bankCtx in 37-bank.js):
+   speaker names, the Spanish text, and a speak button per line that uses the Spanish voice. With no Spanish voice the buttons go and the
+   text on screen is all there is (esQFix in 12-speech.js). Level 1: the question and the answers in English. Level 2: the question in
+   Spanish, the answers are pictures (a who answer is a face with the name under it). Level 3: the question and the answers in Spanish.
+   The right answer is always in the line the question points to, and no wrong answer is. A hint points at the line and never gives the answer. */
+const ST_ORD=['first','second','third','fourth','fifth','sixth'];
+const stNorm=t=>t.toLowerCase().replace(/[.¡!¿?,«»“”]/g,'').replace(/\s+/g,' ').trim();
+// the words that must be in the line for this answer (or are not in it for a wrong one): the Spanish without the small words, split at " y "
+const stKeys=o=>(o[3]||stNorm(o[0]).replace(/^((en|un|una|el|la|los|las) )+/,'')).split(' y ');
+const stOpt=(q,x)=>q.t=='who'?[x,x,ES_STORY.people[x],stNorm(x)]:x;
+function stHint(q){const o=ST_ORD[q.line];
+  if(q.t=='who')return `Find the line that says “${q.k}”. Who is talking in that line?`;
+  const tail={where:'Which place do you find in it?',how:'Which word tells how someone is, or what it is like?',reply:'Which words does that person say?',
+    what:'Which words answer the question?'}[q.t];
+  return `Read the ${o} line again. ${tail}`}
+function stPanel(D){const sp=[...new Set(D.lines.map(l=>l[0]))];
+  return D.lines.map(([s,t])=>`<div class="dl-l s${sp.indexOf(s)%2}"><button class="dl-b" data-sayes="${esc(t)}" aria-label="Hear this line">${ico('speak',22)}</button>`
+    +`<span class="dl-t"><b class="dl-n">${esc(s)}:</b>${esc(t)}</span></div>`).join('')}
+// one question: dialogue di, question qi, level lv (uses the current RNG for the choices)
+function stQ(lv,di,qi){const D=ES_STORY.dialogues[di],q=D.qs[qi],right=stOpt(q,q.t=='who'?q.a[0]:q.a),
+  wrong=shuffle(q.d.map(x=>stOpt(q,x))).slice(0,2),opts=shuffle([right,...wrong]),line=D.lines[q.line][1],
+  pic=o=>{const p=picHTML([o[0],o[1],o[2],'',''],false);return q.t=='who'?`<span class="pcap"><span>${p}</span><small>${esc(o[0])}</small></span>`:p},
+  choices=opts.map(o=>lv==1?{l:o[1],v:o[1]}:lv==2?{l:pic(o),v:o[0],h:1}:{l:o[0],v:o[0]}),
+  text=lv==1?q.en:q.es,ans=lv==1?right[1]:right[0];
+  const o={kind:'choice',cls:lv==2?'pics dlg':'wide bpass',dl:1,ans,choices,after:line,afterLang:'es',
+    html:`<div class="bq">${esc(text)}</div>`,hint:{k:'text',s:stHint(q)},label:`${D.title}: question ${qi+1}`,
+    ctx:{title:D.title,text:D.lines.map(l=>l[0]+': '+l[1]).join(' '),html:stPanel(D)}};
+  if(lv>1)Object.assign(o,{lang:'es',auto:'must',say:text}); // the Spanish question is read aloud (no Spanish voice: the text on screen is enough)
+  else o.say=q.t=='who'?'Who says the line in the question? Find it in the story.':text; // English; the Spanish quote of a who question is not read in the English voice
+  return o}
+function genEsStory(lv){const D=ES_STORY.dialogues,di=R(0,D.length-1);return stQ(lv,di,R(0,D[di].qs.length-1))}
+function esStoryRound(lv){const D=ES_STORY.dialogues,s0=bankSeed(),out=[];let pool=D.map((_,i)=>i);
+  for(let k=0;k<2;k++){const di=bankChoose('S:es_story',pool,bankSub(s0,k));pool=pool.filter(i=>i!=di);
+    D[di].qs.forEach((_,qi)=>{const q=bankWith(bankSub(s0,di*8+qi),()=>stQ(lv,di,qi));q.sk='es_story';q.lv=lv;out.push(q)})}
+  return out}

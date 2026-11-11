@@ -12521,6 +12521,173 @@ run('Spanish Las Frases P2-34',()=>{
   return{problems:errs.length?uniq(errs):[],note:r.n+' generated questions, '+r.sentN+' sentences, '+r.checked+' stop checks'};
 });
 
+// ---- P2-35: Spanish world Los Cuentos (12 mini dialogues, three questions each) ----
+run('Spanish Los Cuentos P2-35',()=>{
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const allow=new Set(fs.readFileSync(path.join(ROOT,'tools','emoji-allow.txt'),'utf8').split('\n').map(l=>l.split('#')[0].trim().replace(/\uFE0F/g,'')).filter(Boolean));
+  const errs=[],bad=m=>{if(errs.length<40&&!errs.includes(m))errs.push(m)};
+  const body=function(){
+    const strip=s=>String(s).replace(/<[^>]*>/g,'');
+    const toks=s=>strip(s).toLowerCase().split(/[^a-záéíóúüñ]+/).filter(Boolean);
+    const has=(text,key)=>(' '+stNorm(text)+' ').includes(' '+key+' ');
+    const D=ES_STORY.dialogues,P=ES_STORY.people;
+    // ---- NFC everywhere
+    const walk=v=>{if(typeof v==='string'){if(v!==v.normalize('NFC'))bad('not NFC: '+v)}else if(Array.isArray(v))v.forEach(walk);else if(v&&typeof v==='object')for(const k in v)walk(v[k])};
+    walk(ES_STORY);
+    // ---- the words of the earlier Spanish worlds: units, ES_GRAM, the verb forms the grammar stops teach
+    const known=new Set(),add=s=>toks(s).forEach(w=>known.add(w));
+    ES_UNITS.forEach(u=>u.items.forEach(i=>{add(i[0]);if(i[3])add(i[3]);if(i[5])add(i[5])}));
+    const g=ES_GRAM;
+    g.phrases.forEach(p=>add(p[0]));g.qa.forEach(q=>{add(q.q);q.ok.forEach(add)});g.nouns.forEach(n=>{add(n[0]);add(n[3]);add(n[4])});
+    Object.values(g.ser).forEach(a=>a.forEach(r=>{add(r[0]);add(r[2])}));g.likes.forEach(l=>{add(l[0]);add(l[1]);add(l[2])});
+    Object.values(g.sent).forEach(a=>a.forEach(r=>add(r[0])));
+    ['soy','eres','es','estoy','estás','está','están','tengo','tienes','tiene','me','gusta','gustan','no'].forEach(add);
+    Object.keys(P).forEach(add); // the names
+    const NW=ES_STORY.newWords,nw=new Set(NW);
+    if(nw.size!==NW.length)bad('newWords repeats a word');
+    if(NW.length>20)bad('newWords is long ('+NW.length+'): the dialogues should use words already taught');
+    for(const w of NW)if(known.has(w))bad('newWords lists a taught word: '+w);
+    const used=new Set(),word=(w,where)=>{if(known.has(w))return;if(nw.has(w)){used.add(w);return}bad('a word that is not taught and not in newWords: '+w+' ('+where+')')};
+    // ---- skill
+    if(!SK.es_story||SK.es_story.area!=='es'||SK.es_story.max!==3||typeof SK.es_story.round!=='function')bad('skill es_story missing or wrong');
+    // ---- dialogues
+    if(D.length!==12)bad('12 dialogues wanted, '+D.length);
+    if(new Set(D.map(d=>d.id)).size!==D.length)bad('dialogue ids repeat');
+    if(new Set(D.map(d=>d.title)).size!==D.length)bad('dialogue titles repeat');
+    const types=new Set();let nq=0;
+    for(const d of D){const w='dialogue '+d.id+': ';
+      if(!d.title||d.title.length>40)bad(w+'title');
+      if(d.lines.length<2||d.lines.length>6)bad(w+d.lines.length+' lines (2 to 6)');
+      if(new Set(d.lines.map(l=>l[0])).size!==2)bad(w+'two speakers wanted');
+      for(const[s,t]of d.lines){
+        if(!P[s])bad(w+'speaker '+s+' has no picture');
+        if(!t||!/[.!?]$/.test(t))bad(w+'a line must end with . ! or ?: '+t);
+        if(t.length>60)bad(w+'a line is long: '+t);
+        toks(t).forEach(x=>word(x,d.id+' line'));}
+      if(d.lines.some((l,i)=>i&&l[0]===d.lines[i-1][0]))bad(w+'the same speaker twice in a row');
+      if(d.qs.length!==3)bad(w+'3 questions wanted');
+      d.qs.forEach((q,qi)=>{const x=w+'question '+(qi+1)+': ';nq++;types.add(q.t);
+        if(!['who','what','where','how','reply'].includes(q.t))bad(x+'type '+q.t);
+        if(!(q.line>=0&&q.line<d.lines.length))return bad(x+'line');
+        if(!q.en||!q.es||q.en===q.es)bad(x+'en and es');
+        if(q.en.length>70||q.es.length>70)bad(x+'question long');
+        toks(q.es).forEach(t=>word(t,d.id+' question'));
+        const ln=d.lines[q.line],ans=q.t==='who'?[q.a[0],q.a[0],P[q.a[0]],stNorm(q.a[0])]:q.a;
+        if(q.t==='who'){
+          if(q.a.length!==1||!P[q.a[0]])bad(x+'who answer is a name');
+          if(!q.k||!ln[1].includes(q.k))bad(x+'the quote is not in the line');
+          if(!q.es.toLowerCase().includes(q.k.toLowerCase())||!q.en.toLowerCase().includes(q.k.toLowerCase()))bad(x+'both questions quote the line');
+          if(q.a[0]!==ln[0])bad(x+'the right name is not the speaker of the line');
+          if(q.d.length<3||q.d.some(n=>!P[n]||n===ln[0]))bad(x+'wrong names: at least 3, known, never the speaker');
+          for(const o of d.lines)if(o[0]!==ln[0]&&has(o[1],stNorm(q.k)))bad(x+'the quote is said by the other speaker too');
+          if(d.lines.filter(l=>has(l[1],stNorm(q.k))).length!==1)bad(x+'the quote must be in one line only');}
+        else{
+          if(q.d.length<3||q.d.length>5)bad(x+q.d.length+' wrong answers (3 to 5)');
+          if(!Array.isArray(q.a)||q.a.length<3)bad(x+'answer shape');
+          for(const k of stKeys(ans))if(!has(ln[1],k))bad(x+'the right answer ('+k+') is not in line '+(q.line+1));
+          const allO=[ans,...q.d];
+          for(const o of q.d)for(const k of stKeys(o))if(has(ln[1],k))bad(x+'a wrong answer ('+o[0]+') is in line '+(q.line+1));
+          if(new Set(allO.map(o=>o[0])).size!==allO.length||new Set(allO.map(o=>o[1])).size!==allO.length||new Set(allO.map(o=>o[2])).size!==allO.length)bad(x+'answers repeat (Spanish, English or picture)');
+          for(const o of allO){
+            if(o.length<3||!o[0]||!o[1])bad(x+'option '+o);
+            if(!/^(n:\d+|c:#[0-9a-f]{6})$/.test(o[2])&&![...o[2].matchAll(/\p{Extended_Pictographic}\uFE0F?/gu)].every(m=>allow.has(m[0].replace(/\uFE0F/g,''))))bad(x+'picture '+o[2]+' not in the allow-list');
+            toks(o[0]).forEach(t=>word(t,d.id+' answer'));}
+          if(allO.some(o=>/^[A-ZÁÉÍÓÚ]/.test(o[0]))!==allO.every(o=>/^[A-ZÁÉÍÓÚ]/.test(o[0])))bad(x+'some answers start with a capital, some do not');
+        }});}
+    for(const w of NW)if(!used.has(w))bad('newWords lists a word nothing uses: '+w);
+    if(nq!==36)bad('36 questions wanted, '+nq);
+    for(const t of['who','what','where','how','reply'])if(!types.has(t))bad('no question of type '+t);
+    // ---- 3,000 seeded questions per level
+    let n=0;const hit=[{},{},{},{}];
+    const leaks=(q,di,qi)=>{const Q=D[di].qs[qi],right=Q.t==='who'?[Q.a[0]]:[Q.a[0],Q.a[1]],ht=' '+stNorm(q.hint.s)+' ';return right.filter(r=>ht.includes(' '+stNorm(r)+' '))};
+    for(let lv=1;lv<=3;lv++)for(let s=1;s<=3000;s++){
+      const q=genQ('es_story',lv,s);n++;const key='es_story'+lv+': ';
+      for(const m of kindProblems(q))bad(key+m);
+      const di=D.findIndex(d=>d.title===q.ctx.title),qi=di<0?-1:D[di].qs.findIndex(Q=>q.html.includes(esc(lv===1?Q.en:Q.es)));
+      if(di<0||qi<0){bad(key+'question not found '+q.html);continue}
+      hit[lv][di+'/'+qi]=1;const Q=D[di].qs[qi],right=Q.t==='who'?[Q.a[0],Q.a[0],P[Q.a[0]]]:Q.a;
+      const vs=q.choices.map(c=>c.v);
+      if(q.kind!=='choice'||vs.length!==3||new Set(vs).size!==3||vs.filter(v=>v===q.ans).length!==1)bad(key+'three choices, one right');
+      const want=lv===1?right[1]:right[0];if(q.ans!==want)bad(key+'the right answer is '+want+', got '+q.ans);
+      const allD=(Q.t==='who'?Q.d.map(x=>[x,x,P[x]]):Q.d);
+      for(const v of vs)if(v!==q.ans&&!allD.some(o=>(lv===1?o[1]:o[0])===v))bad(key+'a wrong choice that is not in the data: '+v);
+      if(lv===2){if(q.cls!=='pics dlg'||q.choices.some(c=>!c.h||!/\p{Extended_Pictographic}|numpic|swatch/u.test(c.l)))bad(key+'picture answers');
+        if(Q.t==='who'&&q.choices.some(c=>!/pcap/.test(c.l)))bad(key+'a who answer shows the name under the face')}
+      if(lv===1&&q.choices.some(c=>c.l!==c.v))bad(key+'level 1 shows the English');
+      if(lv===3&&q.choices.some(c=>c.l!==c.v))bad(key+'level 3 shows the Spanish');
+      if(lv>1&&(q.lang!=='es'||q.auto!=='must'||q.say!==Q.es))bad(key+'the Spanish question is read aloud (lang es, auto must)');
+      if(lv===1&&(q.lang!==undefined||q.auto!==undefined||typeof q.say!=='string'||(Q.t==='who'?!/^Who says/.test(q.say)||/[¿¡“]/.test(q.say):q.say!==Q.en)))bad(key+'level 1 speaks English only (a who question does not read its Spanish quote)');
+      if(lv===1&&Q.t!=='who'&&/[“¿¡]/.test(Q.en))bad(key+'only a who question quotes Spanish at level 1');
+      if(!q.dl)bad(key+'dl flag (the no-voice fallback)');
+      if(q.after!==D[di].lines[Q.line][1]||q.afterLang!=='es')bad(key+'after reads the line in Spanish');
+      // the dialogue panel: every line, its speaker, a speak button each
+      const h=q.ctx.html,btn=(h.match(/class="dl-b"/g)||[]).length,say=[...h.matchAll(/data-sayes="([^"]*)"/g)].map(m=>m[1]);
+      if(btn!==D[di].lines.length||say.length!==btn)bad(key+'a speak button for every line');
+      D[di].lines.forEach((l,i)=>{if(say[i]!==esc(l[1])||!h.includes(esc(l[0])+':'))bad(key+'line '+(i+1)+' not in the panel')});
+      if(bankCtx(q.ctx).indexOf('bctx dlg')<0||!/data-sayes/.test(bankCtx(q.ctx))||/Hear the story/.test(bankCtx(q.ctx)))bad(key+'panel markup');
+      // hint: points at the line, never gives the answer
+      if(!q.hint||q.hint.k!=='text'||q.hint.s.length<25)bad(key+'hint');
+      else if(leaks(q,di,qi).length)bad(key+'a hint holds the answer: '+q.hint.s+' / '+q.ans);
+      if(typeof q.label!=='string'||!q.label||q.label.length>=60)bad(key+'label');
+      if(/\bundefined\b|\bNaN\b|\[object |\bnull\b/.test(q.html+q.label+q.ctx.html))bad(key+'bad text');
+      if(lv>1&&toks(q.html).some(t=>!known.has(t)&&!nw.has(t)))bad(key+'English in a Spanish question: '+strip(q.html));
+    }
+    for(let lv=1;lv<=3;lv++)if(Object.keys(hit[lv]).length<36)bad('level '+lv+': only '+Object.keys(hit[lv]).length+' of 36 questions asked in 3000 seeds');
+    // ---- rounds: two dialogues, three questions each, in order, the same dialogue's panel throughout
+    let rounds=0;
+    for(let lv=1;lv<=3;lv++)for(let k=0;k<40;k++){
+      const r=esStoryRound(lv);rounds++;
+      if(r.length!==6)bad('round of '+r.length);
+      else{const a=r[0].ctx.title,b=r[3].ctx.title;
+        if(a===b||[0,1,2].some(i=>r[i].ctx.title!==a)||[3,4,5].some(i=>r[i].ctx.title!==b))bad('a round is two dialogues, three questions each');
+        r.forEach(q=>{for(const m of kindProblems(q))bad('round: '+m);if(q.sk!=='es_story'||q.lv!==lv)bad('round stamp')});
+        [0,3].forEach(i=>{const di=D.findIndex(d=>d.title===r[i].ctx.title);for(let j=0;j<3;j++){const Q=D[di].qs[j];if(!r[i+j].html.includes(esc(lv===1?Q.en:Q.es)))bad('round questions are out of order')}})}}
+    // ---- the no-voice fallback: with no Spanish voice the buttons go and the lines stay
+    if(!/q\.dl/.test(esQFix.toString())||!/dl-b/.test(esQFix.toString()))bad('esQFix does not know the dialogue buttons');
+    // ---- old Spanish stops: the P2-30 hash still holds (the nine original skills)
+    const olds=[];
+    for(const id of ['greet','color','num','teen','animal','food','body','family','mix'].map(x=>'es_'+x))for(let lv=1;lv<=2;lv++)for(let s=1;s<=150;s++)olds.push(JSON.stringify(genQ(id,lv,s)));
+    const h=require('crypto').createHash('md5').update(olds.join('\n')).digest('hex');
+    if(h!=='85968a5ca262a225f92f3a7354d2277e'||olds.length!==2700)bad('old Spanish stops changed by seed: '+h);
+    // ---- world and stop order by id
+    const wi=PATHS.es.worlds.map(w=>w.id),ci=wi.indexOf('e_cuentos');
+    if(wi.slice(0,3).join(' ')!=='e_plaza e_fiesta e_repaso')bad('original worlds moved: '+wi.join(' '));
+    if(ci<0||ci!==wi.indexOf('e_frases')+1||ci!==wi.length-1)bad('e_cuentos must come right after e_frases and last: '+wi.join(' '));
+    const W=PATHS.es.worlds[ci];
+    if(W){
+      if(W.g!==-1||W.n!=='Los Cuentos')bad('world fields '+W.g+' '+W.n);
+      const got=W.nodes.map(x=>x[0]+x[1]).join(' ');
+      if(got!=='es_story1 es_story2 es_story3')bad('stops '+got);
+      for(const x of W.nodes)if(x[2].length>22)bad('title too long: '+x[2]);
+      if(new Set(W.nodes.map(x=>x[2])).size!==W.nodes.length)bad('two stops share a title');
+      const nids=NODES.es.map(nid);
+      if(new Set(nids).size!==nids.length)bad('duplicate stop ids');
+      if(!nids.includes('boss_e_cuentos'))bad('no boss stop');
+      if(WR.es[ci][1]-WR.es[ci][0]!==3||NODES.es[WR.es[ci][1]].sk!=='boss')bad('3 stops and the boss');
+      if(!allow.has(W.e)||!allow.has(SK.es_story.e))bad('world or skill emoji not in the allow-list')}
+    // ---- save safety: the path ends at e_cuentos while it runs; with or without the world every older stop keeps its stars and openness
+    const store={};
+    global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+    const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
+    const FULL=PATHS.es.worlds;let checked=0;
+    for(const name of ['fresh','midway','maxed','legacy-single-map','legacy-index-maps','tricky']){
+      const raw=fx(name);load(Object.keys(JSON.parse(raw)).length?raw:null);
+      const snap=()=>{const o={};NODES.es.forEach((x,i)=>{o[nid(x)]={st:getSt('es',i),open:unlocked('es',i)}});return o};
+      PATHS.es.worlds=FULL.filter(w=>w.id!=='e_cuentos');buildNodes('es');const before=snap();
+      PATHS.es.worlds=FULL;buildNodes('es');const after=snap();
+      if(NODES.es[NODES.es.length-1].wid!=='e_cuentos')bad('the path does not end at e_cuentos while it runs');
+      for(const k in before){checked++;
+        if(!after[k])bad(name+': stop '+k+' vanished');
+        else{if(before[k].st!==after[k].st)bad(name+': '+k+' stars changed');if(before[k].open&&!after[k].open)bad(name+': '+k+' re-locked')}}
+      for(const x of W.nodes){const k=x[0]+x[1];if(!after[k])bad(name+': new stop '+k+' missing');else if(after[k].st!==0)bad(name+': new stop '+k+' starts with stars')}
+    }
+    PATHS.es.worlds=FULL;buildNodes('es');
+    return{n,checked,rounds};
+  };
+  const r=eval(js+';('+body.toString()+')()');
+  return{problems:errs.length?uniq(errs):[],note:r.n+' generated questions, '+r.rounds+' rounds, '+r.checked+' stop checks'};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){

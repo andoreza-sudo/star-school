@@ -1076,6 +1076,19 @@ html.notext .pktxt{display:none}
   .qs .qarea:has(.bctx.long){padding-top:var(--s-3);padding-bottom:var(--s-3);gap:var(--s-2)}
   .qs .qarea:has(.bctx.long) .bctx-h{padding-top:0;padding-bottom:0}
 }
+
+/* Spanish dialogues (P2-35): the panel body is a list of lines, each with its own speak button (48 px) */
+.bctx.dlg .bctx-b{max-height:42vh;padding-bottom:var(--s-3)}
+.dl-l{display:grid;grid-template-columns:var(--tap) 1fr;gap:var(--s-2);align-items:center;min-height:var(--tap);border-top:1px solid var(--line)}
+.dl-l:first-child{border-top:0}
+.dl-b{width:var(--tap);height:var(--tap);display:inline-flex;align-items:center;justify-content:center;border-radius:50%;border:0;background:var(--brand);color:var(--surface);cursor:pointer;touch-action:manipulation}
+.dl-b.talking{transform:scale(1.08)}
+.dl-t{font-size:clamp(17px,3.2vmin,22px);line-height:1.3;font-weight:600;color:var(--ink)}
+.dl-n{margin-right:.35em;color:var(--brand-shade)}
+.dl-l.s1 .dl-n{color:var(--ink-2)}
+.choices.pics.dlg .choice.ch{font-size:clamp(30px,5vh,44px);padding:var(--s-2);min-height:var(--tap)}
+.choices.pics.dlg .ch .pcap small{font-size:.4em;color:var(--ink-2)}
+.dl-l:not(:has(.dl-b)){grid-template-columns:1fr;padding:var(--s-1) 0} /* no Spanish voice: the buttons are gone, the text takes the whole row */
 /* Placement quiz "Find my level" (P1-07): home card, Grown-ups row, quiz dots, result. Tokens only. */
 .pl-card{background:var(--brand-tint);border-radius:var(--r-card);padding:var(--s-3) var(--s-4);margin:var(--s-4) 0 0;color:var(--ink)}
 .pl-ct{display:flex;align-items:center;gap:var(--s-2);font-size:var(--fs-3);line-height:var(--lh-3);color:var(--ink)}
@@ -2578,7 +2591,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S));SAVE_FAILED=fals
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v123'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v126'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -2652,9 +2665,10 @@ function esVoice(){let vs=[];try{vs=speechSynthesis.getVoices()}catch(e){}return
 let ESNOTE=0; // the grown-up note shows once per session
 function esNote(){if(ESNOTE)return;ESNOTE=1;fb('No Spanish voice on this tablet. Grown-ups: add one in the tablet’s text-to-speech settings. The words are shown to read.','info long',5000)}
 // after a Spanish question is drawn: with no Spanish voice, the speaker button becomes the word shown big and "Hear it" goes away
-function esQFix(q){if(!q||q.lang!='es'||esVoice()!='no')return;
-  $$('[data-sayes]').forEach(b=>{const d=document.createElement('div');d.className='esbig';d.textContent=b.dataset.sayes;b.replaceWith(d)});
-  const k=$('#spk');if(k)k.style.display='none';esNote()}
+function esQFix(q){if(!q||!(q.lang=='es'||q.dl)||esVoice()!='no')return;
+  // P2-35: a dialogue line (.dl-b) already shows its text beside the button, so the button just goes; an English question keeps "Hear it"
+  $$('[data-sayes]').forEach(b=>{if(b.classList.contains('dl-b')){b.remove();return}const d=document.createElement('div');d.className='esbig';d.textContent=b.dataset.sayes;b.replaceWith(d)});
+  const k=$('#spk');if(k&&q.lang=='es')k.style.display='none';esNote()}
 function say(t,btn,lang,q){if(lang=='es'&&esVoice()=='no'){esNote();if(btn)btn.classList.remove('talking');return}if(!canSpeak()){if(btn)noVoice(btn);return}
   try{if(!q)speechSynthesis.cancel();const es=lang=='es',u=new SpeechSynthesisUtterance(String(t).replace(/−/g,' minus '));u.rate=es?.8:.88;u.pitch=1.1;u.lang=es?'es-MX':'en-US';
   const vs=speechSynthesis.getVoices(),v=es?(vs.find(v=>/^es[-_](MX|US)/i.test(v.lang))||vs.find(v=>/^es/i.test(v.lang))):(vs.find(v=>/^en[-_]US/i.test(v.lang))||vs.find(v=>/^en/i.test(v.lang)));if(v)u.voice=v;
@@ -7816,6 +7830,43 @@ const ES_SENT_HINT=[null,'In Spanish a describing word, like a color or a size, 
   'Start with the capital letter. Say who it is, then what they do, then where it happens. The dot ends the sentence.'];
 function genEsSent(lv){const it=pick(ES_GRAM.sent[lv]),ws=it[0].split(' '),items=ws.map(w=>({v:w,l:w}));
   return{...sentOrder(items,ws,{html:`Put the words in order: “${esc(it[2])}”`,say:'Put the words in order: '+it[2]},{k:'text',s:ES_SENT_HINT[lv]},it[0]),after:it[0],afterLang:'es'}}
+/* ---------- P2-35 mini dialogues (CURRICULUM S-story): es_story ----------
+   Data: ES_STORY in src/data/d-es-story.js (that file makes the skill). A round is two dialogues, each with its three questions in order
+   (esStoryRound, the SK round hook). The dialogue stays in the passage panel above every question (q.ctx with html: bankCtx in 37-bank.js):
+   speaker names, the Spanish text, and a speak button per line that uses the Spanish voice. With no Spanish voice the buttons go and the
+   text on screen is all there is (esQFix in 12-speech.js). Level 1: the question and the answers in English. Level 2: the question in
+   Spanish, the answers are pictures (a who answer is a face with the name under it). Level 3: the question and the answers in Spanish.
+   The right answer is always in the line the question points to, and no wrong answer is. A hint points at the line and never gives the answer. */
+const ST_ORD=['first','second','third','fourth','fifth','sixth'];
+const stNorm=t=>t.toLowerCase().replace(/[.¡!¿?,«»“”]/g,'').replace(/\s+/g,' ').trim();
+// the words that must be in the line for this answer (or are not in it for a wrong one): the Spanish without the small words, split at " y "
+const stKeys=o=>(o[3]||stNorm(o[0]).replace(/^((en|un|una|el|la|los|las) )+/,'')).split(' y ');
+const stOpt=(q,x)=>q.t=='who'?[x,x,ES_STORY.people[x],stNorm(x)]:x;
+function stHint(q){const o=ST_ORD[q.line];
+  if(q.t=='who')return `Find the line that says “${q.k}”. Who is talking in that line?`;
+  const tail={where:'Which place do you find in it?',how:'Which word tells how someone is, or what it is like?',reply:'Which words does that person say?',
+    what:'Which words answer the question?'}[q.t];
+  return `Read the ${o} line again. ${tail}`}
+function stPanel(D){const sp=[...new Set(D.lines.map(l=>l[0]))];
+  return D.lines.map(([s,t])=>`<div class="dl-l s${sp.indexOf(s)%2}"><button class="dl-b" data-sayes="${esc(t)}" aria-label="Hear this line">${ico('speak',22)}</button>`
+    +`<span class="dl-t"><b class="dl-n">${esc(s)}:</b>${esc(t)}</span></div>`).join('')}
+// one question: dialogue di, question qi, level lv (uses the current RNG for the choices)
+function stQ(lv,di,qi){const D=ES_STORY.dialogues[di],q=D.qs[qi],right=stOpt(q,q.t=='who'?q.a[0]:q.a),
+  wrong=shuffle(q.d.map(x=>stOpt(q,x))).slice(0,2),opts=shuffle([right,...wrong]),line=D.lines[q.line][1],
+  pic=o=>{const p=picHTML([o[0],o[1],o[2],'',''],false);return q.t=='who'?`<span class="pcap"><span>${p}</span><small>${esc(o[0])}</small></span>`:p},
+  choices=opts.map(o=>lv==1?{l:o[1],v:o[1]}:lv==2?{l:pic(o),v:o[0],h:1}:{l:o[0],v:o[0]}),
+  text=lv==1?q.en:q.es,ans=lv==1?right[1]:right[0];
+  const o={kind:'choice',cls:lv==2?'pics dlg':'wide bpass',dl:1,ans,choices,after:line,afterLang:'es',
+    html:`<div class="bq">${esc(text)}</div>`,hint:{k:'text',s:stHint(q)},label:`${D.title}: question ${qi+1}`,
+    ctx:{title:D.title,text:D.lines.map(l=>l[0]+': '+l[1]).join(' '),html:stPanel(D)}};
+  if(lv>1)Object.assign(o,{lang:'es',auto:'must',say:text}); // the Spanish question is read aloud (no Spanish voice: the text on screen is enough)
+  else o.say=q.t=='who'?'Who says the line in the question? Find it in the story.':text; // English; the Spanish quote of a who question is not read in the English voice
+  return o}
+function genEsStory(lv){const D=ES_STORY.dialogues,di=R(0,D.length-1);return stQ(lv,di,R(0,D[di].qs.length-1))}
+function esStoryRound(lv){const D=ES_STORY.dialogues,s0=bankSeed(),out=[];let pool=D.map((_,i)=>i);
+  for(let k=0;k<2;k++){const di=bankChoose('S:es_story',pool,bankSub(s0,k));pool=pool.filter(i=>i!=di);
+    D[di].qs.forEach((_,qi)=>{const q=bankWith(bankSub(s0,di*8+qi),()=>stQ(lv,di,qi));q.sk='es_story';q.lv=lv;out.push(q)})}
+  return out}
 /* Upper-grade math generators (4th grade and up). One marked block per chunk, so parallel chunks merge by appending.
    Seeded randomness only (R, pick, shuffle, coin, rnd). Step hints come from 39b-steps.js. */
 
@@ -10363,6 +10414,9 @@ function bankRebuild(bk){
    renderQ puts bankCtx(q.ctx) above the prompt. The words use the existing .w spans, so renderQ's tap-to-hear works.
    The "Hear it" button uses data-say, which renderQ also binds. ontoggle re-fits the question after open/close. */
 function bankCtx(c){
+  // c.html (P2-35 Spanish dialogues): the panel body is made by the generator (a speak button per line) instead of the English text
+  if(c.html)return `<details class="bctx dlg" open ontoggle="fit()"><summary class="bctx-h"><span class="bctx-t">${esc(c.title||'Read')}</span>`
+    +`<span class="bctx-s"><span class="bctx-hide">Hide</span><span class="bctx-show">Show</span></span></summary><div class="bctx-b">${c.html}</div></details>`;
   return `<details class="bctx${c.text.length>700?' long':''}" open ontoggle="fit()"><summary class="bctx-h"><span class="bctx-t">${esc(c.title||'Read')}</span>`
     +'<span class="bctx-s"><span class="bctx-hide">Hide</span><span class="bctx-show">Show</span></span></summary>'
     +`<div class="bctx-b"><button class="btn sm bctx-say" data-say="${esc(c.text)}">${ico('speak',22)} Hear the story</button>`
@@ -11410,7 +11464,8 @@ const PATHS={
   {id:'e_casa',g:-1,n:'La Casa',e:'🏠',c:'#fde68a',nodes:[['es_house',1,'Casa Dulce Casa'],['es_house',2,'Read the House'],['es_clothes',1,'¡A Vestirse!'],['es_clothes',2,'Read Clothes'],['es_school',1,'A la Escuela'],['es_school',2,'Read School'],['es_feel',1,'¿Cómo Estás?'],['es_feel',2,'Read Feelings'],['es_house',3,'Spell the House'],['es_clothes',3,'Spell Clothes'],['es_school',3,'Spell School']]},
   {id:'e_tiempo',g:-1,n:'El Tiempo',e:'⏰',c:'#e0f2fe',nodes:[['es_days',1,'Days: Listen'],['es_days',2,'Read the Days'],['es_months',1,'Months: Listen'],['es_months',2,'Read Months'],['es_weather',1,'Weather: Listen'],['es_weather',2,'Read Weather'],['es_big',1,'Big Numbers: Listen'],['es_big',2,'Read Big Numbers'],['es_time',1,'Time: Listen'],['es_time',2,'Read the Time']]},
   {id:'e_ciudad',g:-1,n:'La Ciudad',e:'🏙',c:'#e0f2fe',nodes:[['es_place',1,'Places in Town'],['es_place',2,'Read Places'],['es_trans',1,'Transport'],['es_trans',2,'Read Transport'],['es_verb',1,'Action Words'],['es_verb',2,'Read Action Words'],['es_adj',1,'Opposites'],['es_adj',2,'Read Opposites']]},
-  {id:'e_frases',g:-1,n:'Las Frases',e:'🎤',c:'#fce7f3',nodes:[['es_phrase',1,'Phrases: Listen'],['es_phrase',2,'Phrases: Reply'],['es_art',1,'El or La?'],['es_art',2,'Un, Una & Plurals'],['es_ser',1,'Ser: Who I Am'],['es_ser',2,'Estar: How & Where'],['es_ser',3,'Tener: Have & Am'],['es_gusta',1,'Me Gusta'],['es_gusta',2,'Gusta or Gustan'],['es_sent',1,'Build a Sentence'],['es_sent',2,'Sentences & Places']]}]},
+  {id:'e_frases',g:-1,n:'Las Frases',e:'🎤',c:'#fce7f3',nodes:[['es_phrase',1,'Phrases: Listen'],['es_phrase',2,'Phrases: Reply'],['es_art',1,'El or La?'],['es_art',2,'Un, Una & Plurals'],['es_ser',1,'Ser: Who I Am'],['es_ser',2,'Estar: How & Where'],['es_ser',3,'Tener: Have & Am'],['es_gusta',1,'Me Gusta'],['es_gusta',2,'Gusta or Gustan'],['es_sent',1,'Build a Sentence'],['es_sent',2,'Sentences & Places']]},
+  {id:'e_cuentos',g:-1,n:'Los Cuentos',e:'📚',c:'#ccfbf1',nodes:[['es_story',1,'Mini Stories'],['es_story',2,'Stories: Pictures'],['es_story',3,'Stories: Spanish']]}]},
  /* Discover (P2-36, P2-37): graded like Math and Reading, but no placement quiz (noPlace). Worlds and stops follow CURRICULUM 2.4.
     Nature Trail grew geo_world 1 and civ 1 in P2-37 (a child who had finished it keeps the boss open and sees them as NEW stops). */
  disc:{n:'Discover',e:'🌍',c:'linear-gradient(135deg,#ccfbf1,#99f6e4)',noPlace:true,startBelow:true,worlds:[
@@ -12064,7 +12119,7 @@ function home(first){
   <div class="scroll hm" id="hs"><div class="hm-cols">
    <div class="hm-col">${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}${hmDaily()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
-   <p class="hm-ver">${ico('star', 16)}<span>Star School v123</span></p></div>`);
+   <p class="hm-ver">${ico('star', 16)}<span>Star School v126</span></p></div>`);
   music(true);
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,['💖','✨','⭐']);
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
@@ -15202,7 +15257,7 @@ function grown(){let armed=false;
    <div class="vline"><span class="vtxt">Give a bonus</span><button class="btn xs" id="pt5">+5 min</button><button class="btn xs danger" id="pt0">Empty bank</button></div>
    <label class="tg"><input type="checkbox" id="ptp" ${ptCfg().pause?'checked':''}> Pause game time (games locked)</label></div>
   <div class="card"><div class="tw"><table><tr><th>Skill</th><th>Rounds</th><th>1st try</th><th>Tricky ones</th></tr>${rows}</table></div></div>
-  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v123 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
+  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v126 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
    Storage: ${SAVE_FAILED?'<b style="color:#c0392b">could not save (device storage may be full)</b>':'saving OK'}${SAVE_CORRUPT?'<br><b style="color:#c0392b">The old save could not be read. A fresh start was made and the old data was kept on the device.</b>':''}<br>
    Last errors: ${(S.err||[]).length?(S.err||[]).slice().reverse().map(e=>'<br>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+' '+esc(e.msg)).join(''):'none'}</div></details>
   <div class="card"><label class="tg"><input type="checkbox" id="voice" ${S.voice?'checked':''}> Read questions out loud</label>
@@ -15547,18 +15602,18 @@ function appFiles() {
   ];
 }
 function dataReady() {
-  return appFiles().every(f => f[1] === 'v123');
+  return appFiles().every(f => f[1] === 'v126');
 }
 function dataMissing() {
-  logErr(appFiles().filter(f => f[1] !== 'v123').map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v123)');
+  logErr(appFiles().filter(f => f[1] !== 'v126').map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v126)');
   const again = UI.btn('Try again', { kind: 'primary', size: 'lg', icon: 'replay', id: 'dataretry' });
   view(`<div class="scroll" id="datamiss">${UI.empty('download', 'Star School needs to finish updating. Connect to the internet, then tap Try again.', again)}</div>`);
   $('#dataretry').onclick = () => location.reload();
 }
 </script>
-<script src="bt.v123.js"></script>
-<script src="games.v123.js"></script>
-<script src="data.v123.js"></script>
+<script src="bt.v126.js"></script>
+<script src="games.v126.js"></script>
+<script src="data.v126.js"></script>
 <script>
 if (dataReady()) {
   loadClips();
