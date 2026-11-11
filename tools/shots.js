@@ -413,6 +413,32 @@ const SCREENS = {
   rewards: { full: true, run: async p => { await p.evaluate(rwSheet); } },
 };
 
+// ---- P4-08 Home ----
+// Home for a fresh child (grade 1, the "Find my level" card), the midway save, and a child with a 5-day streak, review items
+// due and a hungry pet (tricky save). '-end' scrolls Home to the bottom (actions row and version label).
+function homeShot(kind, end) {
+  return async p => {
+    await p.evaluate(([kind, end]) => {
+      if (kind == 'fresh') { S.name = 'Ava'; setGrade(1); }
+      if (kind == 'streak') {
+        const n = STRK.idx(today()), k = d => STRK.key(n - d);
+        S.streak = { best: 9, rw: 0, days: { [k(0)]: 1, [k(1)]: 1, [k(2)]: 1, [k(3)]: 1, [k(4)]: 1 } };
+        S.care = { food: 12, clean: 70, fun: 70, t: Date.now(), gift: '' };
+      } else S.care = { food: 90, clean: 90, fun: 90, t: Date.now(), gift: '' };
+      home();
+      const sc = document.querySelector('.scroll');
+      if (end && sc) sc.scrollTop = sc.scrollHeight;
+    }, [kind, !!end]);
+  };
+}
+Object.assign(SCREENS, {
+  'home-fresh': { fixture: 'fresh', run: homeShot('fresh') },
+  'home-mid': { fixture: 'midway', run: homeShot('mid') },
+  'home-mid-end': { fixture: 'midway', run: homeShot('mid', true) },
+  'home-streak': { fixture: 'tricky', run: homeShot('streak') },
+  'home-streak-end': { fixture: 'tricky', run: homeShot('streak', true) },
+});
+
 // One question of a P2-18 level (genQ with a fixed seed) through the real round engine; hint opens Help.
 function phonShot(sk, lv, hint) {
   return async p => {
