@@ -213,23 +213,23 @@ const SCREENS = {
     },
   },
 
-  // ---- P4-13 object art ----
-  // Art sheet: every drawing in ART at 24, 48 and 96 px, on the page colour and on a coloured fill. Full-page shot.
-  art: {
-    full: true,
+  // ---- P4-13 object art (set B added in P4-14) ----
+  // Art sheet: every drawing in ART (sets A and B together) at 24, 48 and 96 px, on the page colour and on a coloured fill. Full-page shot.
+  art: { full: true, run: async p => { await artSheet(p, null, 'Art, sets A and B'); } },
+  // P4-14: set B alone (src/data/d-art-b.js), same layout.
+  'art-b': { full: true, run: async p => { await artSheet(p, ART_B, 'Art set B'); } },
+  // P4-14: a Spanish animals question whose pictures are set B and set A drawings.
+  'art-b-question': {
     run: async p => {
       await p.evaluate(() => {
-        const sizes = [24, 48, 96];
-        const row = n => sizes.map(s => picArt(n, s)).join('');
-        const cells = Object.keys(ART).map(n => `<div class="asc"><div class="asw">${row(n)}</div>` +
-          `<div class="asb">${row(n)}</div><div class="asn">${n}</div></div>`).join('');
-        view(`<style>.asg{display:grid;grid-template-columns:repeat(auto-fill,minmax(176px,1fr));gap:8px;padding:8px}
-          .asc{background:var(--surface);border-radius:var(--r-chip);overflow:hidden;box-shadow:var(--shadow)}
-          .asw,.asb{display:flex;align-items:center;gap:8px;padding:6px 8px}
-          .asb{background:var(--brand-tint)}
-          .asn{font-size:var(--fs-1);padding:2px 8px 4px;color:var(--ink-2)}
-          #app,html,body{height:auto;overflow:visible}</style>
-          <div class="top"><div class="title">Art (${Object.keys(ART).length})</div></div><div class="asg">${cells}</div>`);
+        for (let s = 1; s < 400; s++) {
+          const q = genQ('es_animal', 1, s);
+          if (['cow', 'horse', 'bird'].filter(w => q.choices.some(c => c.l.includes(picArt(w)))).length < 2) continue;
+          start('es', NODES.es.findIndex(n => n.sk == 'es_animal'));
+          G.q = q;
+          renderQ();
+          return;
+        }
       });
     },
   },
@@ -1964,6 +1964,25 @@ Object.assign(SCREENS, {
   'bt-us-win': wordShot('scramble', 6, 5, { win: true }),
 });
 
+
+// P4-13 / P4-14 object art sheet: the named drawings (null = all of ART) at 24, 48 and 96 px, on the page colour and on a tint.
+const ART_B = ('balloon book moon sock cow cheese bell bird egg pencil plane bread tree coat foot cloud rainbow house grapes truck ' +
+  'train tooth shirt mouth mouse table horse bee turtle water ear owl helicopter rocket tie boots dice chair bear dress').split(' ');
+async function artSheet(p, names, title) {
+  await p.evaluate(([names, title]) => {
+    const sizes = [24, 48, 96], list = names || Object.keys(ART);
+    const row = n => sizes.map(s => picArt(n, s)).join('');
+    const cells = list.map(n => `<div class="asc"><div class="asw">${row(n)}</div>` +
+      `<div class="asb">${row(n)}</div><div class="asn">${n}</div></div>`).join('');
+    view(`<style>.asg{display:grid;grid-template-columns:repeat(auto-fill,minmax(176px,1fr));gap:8px;padding:8px}
+      .asc{background:var(--surface);border-radius:var(--r-chip);overflow:hidden;box-shadow:var(--shadow)}
+      .asw,.asb{display:flex;align-items:center;gap:8px;padding:6px 8px}
+      .asb{background:var(--brand-tint)}
+      .asn{font-size:var(--fs-1);padding:2px 8px 4px;color:var(--ink-2)}
+      #app,html,body{height:auto;overflow:visible}</style>
+      <div class="top"><div class="title">${title} (${list.length})</div></div><div class="asg">${cells}</div>`);
+  }, [names, title]);
+}
 
 async function main() {
   const args = process.argv.slice(2);

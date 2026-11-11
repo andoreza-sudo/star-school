@@ -1553,7 +1553,8 @@ run('review: migration 5 keeps progress and shrinks the save, exact rebuilds, 60
       const once=JSON.stringify(S);MIGRATIONS[5]();migrate();if(JSON.stringify(S)!==once)bad(name+': migration 5 not idempotent');
       if(name=='tricky')info.fx=raw.length+' -> '+sv.length+' bytes, '+items+' items';
       // a stored question may hold an emoji where today's rebuild holds a drawing (P4-13): compare with the picture blanked out
-      const normPic=h=>String(h).replace(/<svg class="art".*?<\/svg>/g,'@').replace(/(<div class="emo">)[^<]*(<\/div>)/g,'$1@$2');
+      const normPic=h=>String(h).replace(/<svg class="art".*?<\/svg>/g,'@').replace(/(<div class="emo">)[^<]*(<\/div>)/g,'$1@$2')
+        .replace(/(<div class="emo"><span>)[^<]*(<\/span>)/g,'$1@$2'); // P4-14: Spanish pictures sit in a span
       // every migrated item with a seed rebuilds the exact stored question; the rest give a question of the same skill and level
       for(const it of REV.get()){
         const o=before.prog[it.sk]&&Object.values(before.prog[it.sk].miss).find(m=>m.q&&String(m.q.label).slice(0,60)===it.label);
@@ -1909,7 +1910,7 @@ run('art set A: 40 pictures present, size, allowed elements and attributes, toke
   const css=${JSON.stringify(fs.readFileSync(path.join(SRC,'css','21-art.css'),'utf8'))};
   for(const n of ${JSON.stringify(NAMES)})for(const m of ART[n].match(/--a-[a-z0-9]+/g)||[])if(!css.includes(m+':'))bad.push(n+': '+m+' not defined in 21-art.css');
   // picture-word questions show the drawing, not the emoji, for set A words that are picture words
-  const PW=[...CVC,...BLEND,...MAGICE,...TEAMS,...RVW,...VTW].filter(([w])=>ART[w]);
+  const PW=[...CVC,...BLEND,...MAGICE,...TEAMS,...RVW,...VTW].filter(([w])=>ART[w]&&${JSON.stringify(NAMES)}.includes(w)); // P4-14: set A's own words
   let shown=0;
   for(const sk of ['pic','build'])for(let lv=1;lv<=SK[sk].max;lv++)for(let s=1;s<=60;s++){
     const q=genQ(sk,lv,s);
@@ -9873,8 +9874,10 @@ run('Spanish framework P2-30',()=>{
     // ---- old units: the 2700 questions of the original generators (es_* levels 1-2, seeds 1-150) are byte for byte the same as at v104
     ES_UNITS.pop();delete SPN.tst;delete SK.es_tst;
     const all=[];
+    const artKeep=Object.assign({},ART);for(const k in ART)delete ART[k]; // P4-14: hashed with the emoji fallback (Spanish items now name drawings)
     for(const id of Object.keys(SK).filter(k=>/^es_(greet|color|num|teen|animal|food|body|family|mix)$/.test(k)))for(let lv=1;lv<=2;lv++)for(let s=1;s<=150;s++)all.push(JSON.stringify(genQ(id,lv,s)));
     const h=require('crypto').createHash('md5').update(all.join('\n')).digest('hex');
+    Object.assign(ART,artKeep);
     if(h!=='85968a5ca262a225f92f3a7354d2277e'||all.length!==2700)bad('old Spanish stops changed by seed: '+h+' ('+all.length+' questions)');
     for(const u of ES_UNITS)if(u.spell&&!NODES.es.some(x=>x.sk==='es_'+u.id&&x.lv===3))bad('level 3 is on in shipped unit '+u.id+' but no world has its stop');
     // ---- voice fallback: the mode function, late voices, and say() staying silent
@@ -10433,9 +10436,11 @@ run('Spanish La Casa P2-31',()=>{
     }
     if(!NODES.es.map(nid).join(' ').startsWith('es_greet1 es_color1 es_num1 es_animal1 es_greet2 es_color2 es_num2 es_animal2 boss_e_plaza es_food1 es_body1 es_family1 es_teen1 es_food2 es_body2 es_family2 es_teen2 boss_e_fiesta es_mix1 es_mix2 boss_e_repaso '))bad('old Spanish stops changed');
     // ---- old Spanish stops: the P2-30 hash still holds (es_mix draws only from the 8 old units)
+    const artKeep=Object.assign({},ART);for(const k in ART)delete ART[k]; // P4-14: hashed with the emoji fallback (Spanish items now name drawings)
     const old=[];
     for(const id of ['greet','color','num','teen','animal','food','body','family','mix'])for(let lv=1;lv<=2;lv++)for(let s=1;s<=150;s++)old.push(JSON.stringify(genQ('es_'+id,lv,s)));
     const hash=require('crypto').createHash('md5').update(Object.keys(SK).filter(k=>/^es_(greet|color|num|teen|animal|food|body|family|mix)$/.test(k)).flatMap(id=>{const o=[];for(let lv=1;lv<=2;lv++)for(let s=1;s<=150;s++)o.push(JSON.stringify(genQ(id,lv,s)));return o}).join('\n')).digest('hex');
+    Object.assign(ART,artKeep);
     if(hash!=='85968a5ca262a225f92f3a7354d2277e'||old.length!==2700)bad('old Spanish stops changed by seed: '+hash);
     // ---- saves: no star moves, nothing re-locks, a child who finished e_repaso sees La Casa open
     const store={};
@@ -10664,9 +10669,11 @@ run('Spanish La Ciudad P2-33',()=>{
       if(lv===2&&U[id].cap&&!q.html.includes('pcap'))bad(id+' L2: no English caption');
     }
     // old Spanish stops: the P2-30 hash still holds
+    const artKeep=Object.assign({},ART);for(const k in ART)delete ART[k]; // P4-14: hashed with the emoji fallback (Spanish items now name drawings)
     const olds=[];
     for(const id of ['greet','color','num','teen','animal','food','body','family','mix'].map(x=>'es_'+x))for(let lv=1;lv<=2;lv++)for(let s=1;s<=150;s++)olds.push(JSON.stringify(genQ(id,lv,s)));
     const h=require('crypto').createHash('md5').update(olds.join('\n')).digest('hex');
+    Object.assign(ART,artKeep);
     if(h!=='85968a5ca262a225f92f3a7354d2277e'||olds.length!==2700)bad('old Spanish stops changed by seed: '+h);
     // world and stop order by id
     const wi=PATHS.es.worlds.map(w=>w.id),ci=wi.indexOf('e_ciudad');
@@ -12283,6 +12290,102 @@ run('word search and unscramble P3-15',()=>{
   if(ms>25)p.push('make() takes '+ms.toFixed(1)+' ms on average (limit 25 ms)');
   return{problems:p,note:s.per.wsearch+' word searches, '+s.per.scramble+' unscrambles; grid squares '+JSON.stringify(s.cells)+', words '+JSON.stringify(s.words)+
     ', directions '+JSON.stringify(s.dirs)+', backwards '+JSON.stringify(s.back)+', unscramble letters '+JSON.stringify(s.len)+', make '+ms.toFixed(1)+' ms'};
+});
+
+// ---- P4-14: object art set B (DESIGN_SYSTEM 6.5; drawings in src/data/d-art-b.js) ----
+run('object art set B P4-14',()=>{
+  const p=[];
+  const NAMES=('balloon book moon sock cow cheese bell bird egg pencil plane bread tree coat foot cloud rainbow house grapes truck '+
+    'train tooth shirt mouth mouse table horse bee turtle water ear owl helicopter rocket tie boots dice chair bear dress').split(' ');
+  const SETA=('apple banana cookie ball star fish duck car flower cat dog pig sun bus hat bed cup fox bat bug hen box map pen web frog crab drum '+
+    'ship milk tent hand gift flag cake kite bike rose bone nose').split(' ');
+  if(NAMES.length!==40||new Set(NAMES).size!==40)p.push('set B must be 40 different names');
+  for(const n of NAMES)if(SETA.includes(n))p.push(n+' is already in set A');
+  const BSRC=fs.readFileSync(path.join(SRC,'data','d-art-b.js'),'utf8');
+  const DATAB=fs.existsSync(path.join(ROOT,DATA_FILE))?fs.readFileSync(path.join(ROOT,DATA_FILE),'utf8'):'';
+  const INDEXB=fs.existsSync(path.join(ROOT,'index.html'))?fs.readFileSync(path.join(ROOT,'index.html'),'utf8'):'';
+  const out=eval(js+`
+  const bad=[];
+  const BN=${JSON.stringify(NAMES)};
+  const ATTR=/^(fill|stroke|stroke-width|opacity|transform|d|cx|cy|r|rx|ry|x|y|width|height)$/;
+  let total=0;
+  // 1. the drawings follow the rules of set A (DESIGN_SYSTEM 6.5)
+  for(const n of BN){
+    const d=ART[n];
+    if(!d){bad.push('missing drawing: '+n);continue}
+    total+=d.length;
+    if(d.length>2500)bad.push(n+': '+d.length+' bytes (limit 2500)');
+    if((d.match(/<[^>]*\\/>/g)||[]).join('')!==d)bad.push(n+': every element must be self-closing, nothing between them');
+    const els=d.match(/<[a-z]+/g)||[];
+    if(els.length>40)bad.push(n+': '+els.length+' elements (limit 40)');
+    for(const t of d.match(/<\\/?[a-z]+/g)||[])if(!/^<(path|circle|ellipse|rect)$/.test(t))bad.push(n+': element '+t+'> not allowed');
+    for(const m of d.matchAll(/\\s([a-zA-Z:-]+)=/g))if(!ATTR.test(m[1]))bad.push(n+': attribute '+m[1]+' not allowed');
+    for(const m of d.matchAll(/transform="([^"]*)"/g))if(!/^rotate\\(-?[\\d.]+ -?[\\d.]+ -?[\\d.]+\\)$/.test(m[1]))bad.push(n+': transform may only be rotate(a cx cy): '+m[1]);
+    for(const m of d.matchAll(/opacity="([^"]*)"/g))if(!(+m[1]>0&&+m[1]<1))bad.push(n+': opacity between 0 and 1: '+m[1]);
+    if(/gradient|filter|mask|clip|pattern|<text|<use|url\\(|style=|\\sid=|<defs|<image|href/i.test(d))bad.push(n+': no ids, defs, gradients, masks, clips, filters, text, use, url() or style');
+    if(/#[0-9a-f]{3,8}\\b/i.test(d))bad.push(n+': raw hex colour');
+    for(const a of d.match(/(fill|stroke)="[^"]*"/g)||[])if(!/^(fill|stroke)="(none|var\\(--a-[a-z0-9]+\\))"$/.test(a))bad.push(n+': colour must be none or var(--a-x): '+a);
+    const co=(d.match(/\\s(d|cx|cy|r|rx|ry|x|y|width|height|stroke-width|transform)="[^"]*"/g)||[]).join(' ').match(/\\d*\\.\\d{2,}/g);
+    if(co)bad.push(n+': coordinates to one decimal ('+co[0]+')');
+    // inside the 64 x 64 grid (circle and rect positions, every number of a path)
+    for(const m of d.matchAll(/\\s(cx|cy|x|y)="(-?[\\d.]+)"/g))if(+m[2]<0||+m[2]>64)bad.push(n+': '+m[1]+' '+m[2]+' is off the 64 x 64 grid');
+    for(const m of d.matchAll(/\\sd="([^"]*)"/g))for(const v of m[1].match(/-?[\\d.]+/g)||[])if(+v<0||+v>64)bad.push(n+': path number '+v+' is off the 64 x 64 grid');
+    const doc=picArt(n,48);
+    if(!/^<svg [^>]*viewBox="0 0 64 64"[^>]*>(<(path|circle|ellipse|rect)\\b[^>]*\\/>)+<\\/svg>$/.test(doc))bad.push(n+': picArt markup not well formed');
+    // 2. picFor returns the drawing for the word, every time the same markup
+    if(picFor(n,'X')!==picArt(n)||picFor(n,'X')!==picFor(n,'Y'))bad.push(n+': picFor does not return the drawing');
+  }
+  if(total>64000)bad.push('set B is '+total+' bytes (limit 64000)');
+  const css=${JSON.stringify(fs.readFileSync(path.join(SRC,'css','21-art.css'),'utf8'))};
+  for(const n of BN)for(const m of (ART[n]||'').match(/--a-[a-z0-9]+/g)||[])if(!css.includes(m+':'))bad.push(n+': '+m+' not defined in 21-art.css');
+  // 3. each word is a picture the content asks for (counted the way the set was chosen): picture words, counting objects,
+  //    bank pictures (vocabulary, Discover), Spanish art names, riddle and Memory Match pictures, logic-grid pictures
+  const used={};
+  const use=(w,s)=>{(used[w]=used[w]||new Set()).add(s)};
+  for(const L of [CVC,BLEND,MAGICE,TEAMS,RVW,VTW])for(const x of L)use(x[0],'words');
+  for(const o of PK.OBJ)use(o[0],'counting');
+  for(const id in BANK)for(const it of BANK[id]||[])if(it&&it.em)use(it.em[0],'bank');
+  for(const u of ES_UNITS)for(const it of u.items)if(it[4])use(it[4],'es');
+  for(const w in RIDDLES.pics)use(w,'riddles');
+  for(const t in MEMW.themes)for(const w of MEMW.themes[t])use(w,'memory');
+  for(const c in PUZ.logic.cats)for(const w in PUZ.logic.cats[c].pics||{})use(w,'logic');
+  for(const n of BN)if(!used[n])bad.push(n+': no content asks for this picture');
+  // 4. the content shows the drawing: picture-word and build-a-word questions for these words
+  const PW=new Set([...CVC,...BLEND,...MAGICE,...TEAMS,...RVW,...VTW].map(x=>x[0]).filter(w=>BN.includes(w)));
+  let shown=0,asked=new Set();
+  for(const sk of ['pic','build'])for(let lv=1;lv<=SK[sk].max;lv++)for(let s=1;s<=120;s++){
+    const q=genQ(sk,lv,s),w=q.kind=='build'?q.word:q.ans;
+    if(!PW.has(w))continue;
+    asked.add(w);
+    if(q.html.includes(picArt(w)))shown++;else bad.push(sk+lv+' seed '+s+': '+w+' shows no drawing');
+  }
+  if(asked.size<10)bad.push('only '+asked.size+' set B picture words were asked in the sample');
+  // Spanish: every unit item with a set B art name shows the drawing, never its emoji (pictures are unique inside a unit)
+  let esShown=0;
+  for(const u of ES_UNITS){
+    const its=u.items.filter(it=>BN.includes(it[4]));
+    if(!its.length)continue;
+    const seen=new Set();
+    for(let lv=1;lv<=2;lv++)for(let s=1;s<=80;s++){
+      const q=genQ('es_'+u.id,lv,s),h=q.html+(q.choices||[]).map(c=>c.l).join('');
+      for(const it of its){if(h.includes(picArt(it[4]))){seen.add(it[4]);esShown++}if(h.includes(it[2]))bad.push('es_'+u.id+' L'+lv+' seed '+s+': emoji '+it[2]+' for '+it[1]+' instead of the drawing')}
+    }
+    for(const it of its)if(!seen.has(it[4]))bad.push('es_'+u.id+': the drawing for '+it[1]+' never showed in 160 questions');
+  }
+  // counting objects and riddle pictures go through picFor with their own fallback
+  if(picFor('balloon','🎈')!==picArt('balloon'))bad.push('counting balloons do not show the drawing');
+  for(const w in RIDDLES.pics)if(BN.includes(w)&&picFor(w,RIDDLES.pics[w])!==picArt(w))bad.push('riddle picture '+w+' does not show the drawing');
+  ({bad,total,shown,esShown,asked:asked.size,json:JSON.stringify(BN.map(n=>ART[n]))});`);
+  // 5. deterministic: the file is plain data, a second evaluation gives the same drawings byte for byte
+  const again=eval(js+';JSON.stringify('+JSON.stringify(NAMES)+'.map(n=>ART[n]))');
+  if(again!==out.json)p.push('the drawings differ between two evaluations');
+  if(/rnd\(|Math\.random|Date|function|=>/.test(BSRC.replace(/\/\*[\s\S]*?\*\//g,'')))p.push('d-art-b.js must be plain data (no code, no randomness)');
+  // 6. where they live: the data file (A11), not index.html; index.html's code alone still draws the emoji
+  if(!DATAB.includes('object art set B'))p.push('set B is not in '+DATA_FILE+' (rebuild)');
+  if(INDEXB.includes('object art set B'))p.push('set B must not be in index.html');
+  const alone=eval(cat('js')+PARTS.map(x=>cat('js',x.stem)).join('')+';[picFor("cow","C"),picFor("apple","A")!=="A"]');
+  if(alone[0]!=='C'||!alone[1])p.push('without the data file picFor must fall back to the emoji and set A must still draw');
+  return{problems:out.bad.concat(p),note:'40 pictures, '+out.total+' bytes; '+out.asked+' picture words asked, '+out.shown+' drawings shown; '+out.esShown+' Spanish drawings shown'};
 });
 
 // ---- report ----
