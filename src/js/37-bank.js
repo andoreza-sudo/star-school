@@ -11,6 +11,7 @@
      form   'choice' (default) | 'wide' | 'tap' | 'spell' | 'order' | 'match' | 'multi'
      sent   tap: the sentence; the child taps the word that is the answer
      order  order: the items in the right order      pairs  match: [[left, right], ...]
+     label  short unique name for the report and review (default: q + answer; passages use title + number)
      topic  strand tag for the report card   hint  teaching hint   pic  icon name from ICONS   say  text to read instead of q
      em     [art name, emoji]: a picture of a thing above the prompt, through picFor (P2-22)
    choice and wide make a `choice` question (wide = one button per row), tap a `choice` over the words of the sentence,
@@ -87,12 +88,12 @@ function bankBuild(id,it,pass){
       html:`${pic}<div class="bq">${esc(it.q)}</div><div class="bsent">${esc(it.sent)}</div>`};
   }
   else if(form!='choice'&&form!='wide')q=BANKF[form](it,id);
-  else q={kind:'choice',cls:form=='wide'?'wide':'',ans:it.a,choices:shuffle([it.a,...it.d]).map(x=>({v:x,l:x})),
+  else q={kind:'choice',cls:(form=='wide'?'wide':'')+(pass?' bpass':''),ans:it.a,choices:shuffle([it.a,...it.d]).map(x=>({v:x,l:x})),
     html:`${pic}<div class="bq">${bankTxt(it.q)}</div>`};
   if(!q.hint)q.hint={k:'text',s:it.hint||'Read it again slowly. Which one fits best?'};
   else if(it.hint&&q.hint.k=='text')q.hint.s=it.hint;
   q.say=it.say||bankSay(it.q);
-  q.label=it.q.slice(0,60)+' = '+(Array.isArray(it.a)?it.a.join(','):it.a);
+  q.label=it.label||it.q.slice(0,60)+' = '+(Array.isArray(it.a)?it.a.join(','):it.a); // label: optional, for long prompts (passages)
   if(it.topic)q.topic=it.topic;
   if(pass)q.ctx={title:pass.title,text:pass.text};
   return q;

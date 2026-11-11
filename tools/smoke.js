@@ -1935,6 +1935,62 @@ async function main() {
       else step('P4-18: ' + screens.length + ' redrawn screens at 380x780 and 600x960: targets 48 px, nothing outside, no sideways scroll, no broken words, no emoji chrome; map badges, stop icons, drawn boss, sprint pad');
     }
 
+    // P2-25 Comprehension at 380x780: a 2nd grader who has done every Word Workshop stop before the new two opens the map on Read a Story
+    //    (comp 3), plays a round of two stories (10 questions, passage panel above each, hint quotes the story), then Learn About It
+    //    (info 1), with real taps. Stars are saved under comp3 and info1 and the old stops keep theirs.
+    {
+      const cp25 = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
+      const pg = cp25.page;
+      await pg.evaluate(() => {
+        S.grade = 2;
+        const ww = PATHS.read.worlds.findIndex(w => w.id === 'r_workshop'); // every world before Word Workshop (bosses too), and its old stops
+        // every Word Workshop stop before the two new ones (sight, pic, build, and the gram/vocab/sent stops merged since)
+        NODES.read.forEach(n => { if (n.wi < ww || (n.wi === ww && n.sk !== 'boss' && !['comp3', 'info1'].includes(nid(n)))) S.maps.read[nid(n)] = S.maps.read[nid(n)] || 2; });
+        save();
+      });
+      const goStop25 = async id => {
+        const at = await pg.evaluate(id => { const i = NODES.read.findIndex(n => nid(n) === id); return { i, w: NODES.read[i].wi }; }, id);
+        await pg.evaluate(() => { if (G) G.dead = true; home(); });
+        await pg.click('.game[data-p="read"]');
+        await pg.waitForSelector('.wchip.on');
+        await pg.click(`.wchip[data-w="${at.w}"]`);
+        await pg.waitForSelector(`.wchip.on[data-w="${at.w}"]`);
+        await pg.click(`.node[data-n="${at.i}"]`);
+        await pg.waitForSelector('#prompt');
+      };
+      const before25 = await pg.evaluate(() => JSON.stringify({ a: S.maps.read.sight5, b: S.maps.read.build6, c: S.maps.read.comp1, d: S.maps.read.comp2 }));
+      const cur25 = await pg.evaluate(() => nid(NODES.read[curNode('read')]));
+      if (cur25 !== 'comp3') fail('P2-25: the map should open on comp3 for a child who did the old Word Workshop stops, got ' + cur25);
+      for (const [id, sk, lv] of [['comp3', 'comp', 3], ['info1', 'info', 1]]) {
+        await goStop25(id);
+        const lay = await pg.evaluate(() => {
+          const d = document.querySelector('.bctx');
+          return { sk: G.sk, lv: G.lv, n: G.n, pool: G.pool.length + 1, w: document.documentElement.scrollWidth, say: !!G.q.say, panel: !!d, open: d && d.open,
+            words: d ? d.querySelectorAll('.bctx-p .w').length : 0, ch: [...document.querySelectorAll('.ch')].length,
+            min: Math.min(...[...document.querySelectorAll('.ch')].map(e => Math.min(e.offsetWidth, e.offsetHeight))) };
+        });
+        if (lay.sk !== sk || lay.lv !== lv || lay.n !== 10 || lay.pool !== 10 || lay.w > 380 || !lay.say || !lay.panel || !lay.open || lay.words < 40 || lay.ch !== 4 || lay.min < 48)
+          fail('P2-25 ' + id + ' round: ' + JSON.stringify(lay));
+        // the panel hides and shows, and the hint quotes the story
+        await pg.click('.bctx-h');
+        const hid = await pg.evaluate(() => !document.querySelector('.bctx').open);
+        await pg.click('.bctx-h');
+        await pg.click('#hb');
+        const hint = await pg.evaluate(() => document.querySelector('#hint').textContent);
+        if (!hid || !hint.trim()) fail('P2-25 ' + id + ': panel hide or hint failed: ' + hid + ' ' + hint);
+        await playRound(pg, 'P2-25 ' + id, 10);
+        const st = await pg.evaluate(id => S.maps.read[id] || 0, id);
+        if (st < 1) fail('P2-25 ' + id + ' did not save stars');
+      }
+      const after25 = await pg.evaluate(() => JSON.stringify({ a: S.maps.read.sight5, b: S.maps.read.build6, c: S.maps.read.comp1, d: S.maps.read.comp2 }));
+      if (before25 !== after25) fail('P2-25: old stops changed their stars: ' + before25 + ' -> ' + after25);
+      else step('P2-25: Read a Story and Learn About It played with real taps (2 stories x 5 questions each, panel and hint work), stars saved, old stops untouched');
+      await vwait(pg, 500);
+      network.push(...cp25.network);
+      for (const e of cp25.errors) fail(e);
+      await cp25.ctx.close();
+    }
+
     for (const e of errors) fail(e);
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');
