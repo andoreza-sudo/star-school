@@ -2347,7 +2347,8 @@ async function main() {
         const wi = PATHS.math.worlds.findIndex(w => w.id === 'm_factory');
         return { wi, ids: PATHS.math.worlds[wi].nodes.map(n => n[0] + n[1]), open: worldOpen('math', wi), n: PATHS.math.worlds.length };
       });
-      if (info.ids.length !== 14 || !info.open || info.wi !== info.n - 1) fail('Factor Factory: ' + JSON.stringify(info));
+      const fwi = await fp.evaluate(() => PATHS.math.worlds.findIndex(w => w.id === 'm_frac'));
+      if (info.ids.length !== 14 || !info.open || info.wi !== fwi + 1) fail('Factor Factory: ' + JSON.stringify(info)); // right after Fraction Forest (Decimal Desert follows it)
       const openStop = async id => {
         await fp.evaluate(() => home());
         await fp.click('.game[data-p="math"]');
@@ -2533,6 +2534,13 @@ async function main() {
       await dp.fill('#nm', 'Desert');
       await dp.click('.gr[data-g="4"]');
       await dp.click('#go');
+      await dp.waitForSelector('.game[data-p="math"]');
+      // Factor Factory (the other 4th grade world) comes first on the map: this child has finished it, so the map opens on the desert
+      await dp.evaluate(() => {
+        const wf = PATHS.math.worlds.findIndex(w => w.id === 'm_factory'), [a, b] = WR.math[wf];
+        for (let i = a; i <= b; i++) S.maps.math[nid(NODES.math[i])] = 2;
+        S.wdone = S.wdone || {}; S.wdone.m_factory = 1; save(); home();
+      });
       await dp.waitForSelector('.game[data-p="math"]');
       const w10 = await dp.evaluate(() => {
         const wi = PATHS.math.worlds.findIndex(w => w.id === 'm_desert');
