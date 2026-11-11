@@ -153,6 +153,11 @@ const ICONS={
   'puzzle':
     '<path stroke="currentColor" stroke-width="1.5" d="M3.3 7.5H8.5A2.5 2.5 0 1 1 11.9 7.5H16.8V12.3' +
     'A2.5 2.5 0 1 1 16.8 15.7V20.5H3.3Z"/>',
+  'maze':
+    '<rect fill="var(--ic3,currentColor)" opacity=".4" x="3" y="3" width="18" height="18" rx="3"/>' +
+    '<path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" ' +
+    'd="M8.5 3.2H20.8V15.5M15.5 20.8H3.2V8.5M8.5 8.5V15.5H12M12 8.5H15.5V12"/>' +
+    '<circle cx="5.6" cy="5.6" r="2.2"/>',
   'path-math':
     '<path fill="none" stroke="currentColor" stroke-width="2.4" d="M7 3.5V10.5M3.5 7H10.5M13.5 7H20.5' +
     'M4.5 14.5L9.5 19.5M9.5 14.5L4.5 19.5M13.5 15H20.5M13.5 19H20.5"/>',

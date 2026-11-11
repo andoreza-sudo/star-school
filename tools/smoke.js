@@ -3060,6 +3060,215 @@ async function main() {
       }
     }
 
+    // P3-08 Mazes with real pointer input: touch at 380x780 (a 1st grader, band B), mouse at 1024x600 (a 3rd grader, band C).
+    //    Home card -> hub -> Mazes -> level 1 -> drag the bear along solve()'s route (walls block, dragging back erases), hint tiers
+    //    (arrow, 5 dots, dots through the next junction; never the whole way), back and Keep going resumes the trail, a tap on the
+    //    trail and the arrow pad, then the rest of the route -> win card, stars saved. At 1024x600 also band D level 12 (18x18):
+    //    a door stops the bear without its key, the full route wins with 3 stars, and the drawing of the board is timed at 6x throttle.
+    //    Every button 48 px, no sideways scroll, no emoji in the chrome.
+    {
+      const look = () => {
+        const vw = document.documentElement.clientWidth, out = [];
+        for (const e of document.querySelectorAll('button, [role="button"]')) {
+          const r = e.getBoundingClientRect();
+          if (!r.width || r.bottom < 0 || r.top > innerHeight || e.closest('svg') || e.closest('#toast')) continue;
+          if (Math.min(r.width, r.height) < 47.5) out.push('small ' + (e.id || e.className) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
+          if (r.left < -1 || r.right > vw + 1) out.push('outside ' + (e.id || e.className) + ' ' + Math.round(r.left) + '..' + Math.round(r.right));
+        }
+        if (document.documentElement.scrollWidth > vw) out.push('sideways scroll ' + document.documentElement.scrollWidth);
+        const cv = document.querySelector('.mz-cv');
+        if (cv && cv.getBoundingClientRect().right > vw + 1) out.push('the maze is wider than the screen');
+        const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        for (let n; (n = w.nextNode());) {
+          const el = n.parentElement;
+          if (!el || el.closest('script,style,svg,#ico-sprite,.rw-burst') || !el.getClientRects().length) continue;
+          const m = n.textContent.match(/\p{Extended_Pictographic}|[◀▶✕]/u);
+          if (m) out.push('emoji chrome ' + m[0] + ' in ' + (el.id || el.className));
+        }
+        return out;
+      };
+      // the trail a walk leaves (a step back onto the cell before erases), as the maze keeps it
+      const trailOf = cells => { const t = []; for (const c of cells) { if (t.length > 1 && t[t.length - 2] === c) t.pop(); else t.push(c); } return t; };
+      for (const [w, h, grade, touch] of [[380, 780, 1, true], [1024, 600, 3, false]]) {
+        const tag = 'P3-08 ' + w + 'x' + h;
+        const mz = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = mz.page, bad = [];
+        const chk = async what => { for (const o of await pg.evaluate('(' + look.toString() + ')()')) bad.push(what + ': ' + o); };
+        const cdp = await pg.context().newCDPSession(pg);
+        if (touch) await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 1 });
+        // one finger (or the mouse) goes down on the first cell's centre, moves through the others, and lifts
+        const trace = async cells => {
+          const pts = await pg.evaluate(cs => cs.map(c => MZ.cur.at(c)), cells);
+          if (touch) {
+            const tp = q => [{ x: q.x, y: q.y, radiusX: 6, radiusY: 6, id: 1 }];
+            await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: tp(pts[0]) });
+            for (let i = 1; i < pts.length; i++) {
+              const a = pts[i - 1], b = pts[i];
+              await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: tp({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }) });
+              await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: tp(b) });
+            }
+            await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+          } else {
+            await pg.mouse.move(pts[0].x, pts[0].y);
+            await pg.mouse.down();
+            for (const q of pts.slice(1)) await pg.mouse.move(q.x, q.y, { steps: 2 });
+            await pg.mouse.up();
+          }
+        };
+        const tapCell = async c => {
+          const q = await pg.evaluate(c => MZ.cur.at(c), c);
+          if (!touch) return pg.mouse.click(q.x, q.y);
+          await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: q.x, y: q.y, radiusX: 6, radiusY: 6, id: 1 }] });
+          await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+        };
+        const now = () => pg.evaluate(() => ({ head: MZ.cur.head(), t: S.bt.cur && S.bt.cur.state ? S.bt.cur.state.t : null, hint: MZ.cur.hint() }));
+        await pg.evaluate(g => { S.grade = g; save(); home(); }, grade);
+        await pg.waitForSelector('#btcard');
+        await pg.waitForTimeout(450);
+        await pg.evaluate(() => document.querySelector('#btcard').scrollIntoView({ block: 'center' }));
+        await pg.click('#btcard');
+        await pg.waitForSelector('.bt-hub [data-t="maze"]');
+        await pg.waitForTimeout(450);
+        await chk('hub');
+        await pg.click('[data-t="maze"]');
+        await pg.waitForSelector('.bt-lvs');
+        await pg.waitForTimeout(450);
+        await chk('levels');
+        await pg.click('.bt-lv[data-l="1"]');
+        await pg.waitForSelector('.mz-cv');
+        await pg.waitForTimeout(450);
+        await chk('play');
+        const g0 = await pg.evaluate(() => ({ band: S.bt.cur.band, route: BT.get('maze').solve(S.bt.cur.puzzle), w: S.bt.cur.puzzle.w, cell: MZ.cur.cell(),
+          board: Math.round(document.querySelector('.mz-cv').getBoundingClientRect().width) }));
+        const band = g0.band, route = g0.route;
+        if (band !== (grade === 1 ? 'B' : 'C')) bad.push('band ' + band + ' for grade ' + grade);
+        // a drag along the first 6 cells
+        await trace(route.slice(0, 7));
+        let s = await now();
+        if (s.head !== route[6] || JSON.stringify(s.t) !== JSON.stringify(trailOf(route.slice(0, 7)))) bad.push('drag of 6 cells: ' + JSON.stringify(s) + ' want ' + route[6]);
+        // walls block: a drag from the bear to a neighbour behind a wall leaves it where it is
+        const walled = await pg.evaluate(() => { const c = MZ.cur.head(), w = MZ.cur.p.w, o = MZ.cur.o[c];
+          for (let d = 0; d < 4; d++) { const x = c % w + MZ.DX[d], y = Math.floor(c / w) + MZ.DY[d]; if (!(o & MZ.BIT[d]) && x >= 0 && y >= 0 && x < w && y < w) return y * w + x; } return -1; });
+        if (walled >= 0) {
+          await trace([route[6], walled]);
+          if ((await now()).head !== route[6]) bad.push('the bear went through a wall');
+        }
+        // dragging back erases the trail; lifting the finger keeps the place
+        await trace([route[6], route[5], route[4]]);
+        s = await now();
+        if (s.head !== route[4] || JSON.stringify(s.t) !== JSON.stringify(trailOf(route.slice(0, 5)))) bad.push('drag back did not erase: ' + JSON.stringify(s));
+        await trace(route.slice(4, 7));
+        // hints: 1 an arrow, 2 the next 5 cells of the route, 3 through the next junction; never the whole way
+        await pg.click('#bthint');
+        const h1 = await pg.evaluate(() => ({ on: !document.querySelector('.mz-arrow').hidden, d: document.querySelector('.mz-arrow').dataset.d, msg: document.querySelector('.mz-msg').textContent }));
+        if (!h1.on || !h1.d || !/ is /.test(h1.msg)) bad.push('hint 1: ' + JSON.stringify(h1));
+        await vwait(pg, 11500);
+        await pg.click('#bthint');
+        s = await now();
+        if (s.hint.length !== 5 || s.hint.some((c, i) => c !== route[7 + i])) bad.push('hint 2: ' + JSON.stringify(s.hint) + ' route ' + JSON.stringify(route.slice(7, 12)));
+        await vwait(pg, 11500);
+        await pg.click('#bthint');
+        s = await now();
+        if (s.hint.length < 5 || s.hint.length >= route.length - 7 || s.hint.some((c, i) => c !== route[7 + i])) bad.push('hint 3: ' + s.hint.length + ' cells of ' + (route.length - 7));
+        await pg.waitForTimeout(300);
+        await chk('hint 3');
+        // back, back, Keep going: the same maze, trail and hints
+        const saved = await pg.evaluate(() => JSON.stringify([S.bt.cur.puzzle, S.bt.cur.state.t]));
+        await pg.click('#back');
+        await pg.waitForSelector('.bt-lvs');
+        await pg.click('#back');
+        await pg.waitForSelector('#btkeep');
+        await pg.click('#btkeep');
+        await pg.waitForSelector('.mz-cv');
+        await pg.waitForTimeout(300);
+        const rs = await pg.evaluate(() => ({ same: JSON.stringify([S.bt.cur.puzzle, S.bt.cur.state.t]), head: MZ.cur.head(), hints: S.bt.cur.hints }));
+        if (rs.same !== saved || rs.head !== route[6] || rs.hints !== 3) bad.push('resume: ' + JSON.stringify({ head: rs.head, hints: rs.hints, same: rs.same === saved }));
+        // a tap on the trail goes back to that spot; the arrow pad steps forward again
+        await tapCell(route[3]);
+        if ((await now()).head !== route[3]) bad.push('a tap on the trail did not go back');
+        await pg.click('.mz-tog');
+        await pg.waitForSelector('.mz-pad:not([hidden]) .mz-ab');
+        await pg.waitForTimeout(300);
+        await chk('arrow pad');
+        for (let i = 3; i < 6; i++) {
+          const d = await pg.evaluate(([a, b]) => { const w = MZ.cur.p.w; return b - a == 1 ? 1 : b - a == -1 ? 3 : b > a ? 2 : 0; }, [route[i], route[i + 1]]);
+          await pg.click(`.mz-ab[data-d="${d}"]`);
+        }
+        s = await now();
+        if (s.head !== route[6] || JSON.stringify(s.t) !== JSON.stringify(trailOf(route.slice(0, 7)))) bad.push('arrow pad: ' + JSON.stringify(s));
+        const padSaved = await pg.evaluate(() => S.bt.maze && S.bt.maze.pad);
+        if (padSaved !== 1) bad.push('the arrow pad choice was not remembered');
+        await pg.click('.mz-tog');
+        // into the nearest empty dead end and back: one mistake, marked on the board, the trail as it was
+        const de = await pg.evaluate(() => {
+          const p = MZ.cur.p, o = MZ.cur.o, b = MZ.bfs(o, p.w, MZ.cur.head()), its = MZ.items(p);
+          let best = -1;
+          for (let c = 0; c < o.length; c++) if (MZ.pop(o[c]) == 1 && c != p.s && c != p.g && !its.includes(c) && (best < 0 || b.dist[c] < b.dist[best])) best = c;
+          const path = [];
+          for (let c = best; c >= 0; c = b.prev[c]) path.push(c);
+          return path.reverse();
+        });
+        await trace(de);
+        const de1 = await pg.evaluate(() => ({ mis: S.bt.cur.state.mis, dead: S.bt.cur.state.dead, msg: document.querySelector('.mz-msg').textContent }));
+        await trace(de.slice().reverse());
+        s = await now();
+        if (de1.mis !== 1 || de1.dead[0] !== de[de.length - 1] || !/Dead end/.test(de1.msg) || s.head !== route[6]) bad.push('dead end: ' + JSON.stringify([de1, s.head]));
+        // the rest of the way, lifting the finger every 25 cells
+        for (let i = 6; i < route.length - 1; i += 25) await trace(route.slice(i, Math.min(route.length, i + 26)));
+        await pg.waitForSelector('.bt-win #btnext', { timeout: 8000 });
+        await pg.waitForTimeout(700);
+        await chk('win card');
+        const win = await pg.evaluate(b => ({ stars: document.querySelectorAll('.bt-win .rs.on').length, cur: !!S.bt.cur, saved: (S.bt.maze[b].stars || [])[0] }), band);
+        if (win.stars !== 1 || win.cur || win.saved !== 1) bad.push('win (3 hints = 1 star): ' + JSON.stringify(win));
+        let extra = '';
+        if (!touch) {
+          // band D, level 12: an 18x18 maze with two keys and two doors
+          await pg.click('#btlvls');
+          await pg.waitForSelector('.bt-lvs');
+          await pg.evaluate(() => { S.grade = 5; BT.start('maze', 'D', 12); });
+          await pg.waitForSelector('.mz-cv');
+          await pg.waitForTimeout(450);
+          await chk('band D');
+          const d0 = await pg.evaluate(() => {
+            const p = MZ.cur.p, o = MZ.cur.o, b = MZ.bfs(o, p.w, p.s), way = [];
+            for (let c = p.doors[0]; c >= 0; c = b.prev[c]) way.push(c);
+            return { size: p.w, keys: p.keys.length, way: way.reverse(), route: BT.get('maze').solve(p), cell: MZ.cur.cell() };
+          });
+          if (d0.size !== 18 || d0.keys !== 2) bad.push('band D level 12: ' + d0.size + 'x' + d0.size + ', ' + d0.keys + ' keys');
+          // straight to the first door without its key: the door does not let the bear in
+          await trace(d0.way);
+          const shut = await pg.evaluate(() => ({ head: MZ.cur.head(), msg: document.querySelector('.mz-msg').textContent }));
+          if (shut.head !== d0.way[d0.way.length - 2] || !/key/.test(shut.msg)) bad.push('a door let the bear in without its key: ' + JSON.stringify(shut));
+          await trace(d0.way.slice(0, -1).reverse());
+          if ((await now()).head !== d0.route[0]) bad.push('band D: dragging back to the start failed');
+          // the board drawing (floor, walls, trail, items) at 6x CPU throttle, second fastest of 7
+          await cdp.send('Emulation.setCPUThrottlingRate', { rate: 6 });
+          const times = await pg.evaluate(() => {
+            const rn = window.__realNow || (() => performance.now()), t = [];
+            for (let i = 0; i < 7; i++) { const a = rn(); MZ.cur.draw(); t.push(rn() - a); }
+            return t.sort((a, b) => a - b);
+          });
+          await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+          if (times[1] >= 50) bad.push('drawing the 18x18 maze at 6x throttle: ' + times[1].toFixed(1) + ' ms (limit 50)');
+          const nodes = await pg.evaluate(() => document.querySelector('#btstage').querySelectorAll('*').length);
+          if (nodes > 60) bad.push('the maze stage has ' + nodes + ' elements');
+          for (let i = 0; i < d0.route.length - 1; i += 40) await trace(d0.route.slice(i, Math.min(d0.route.length, i + 41)));
+          await pg.waitForSelector('.bt-win #btnext', { timeout: 8000 });
+          const dw = await pg.evaluate(() => ({ stars: document.querySelectorAll('.bt-win .rs.on').length, saved: (S.bt.maze.D.stars || [])[11], steps: null }));
+          if (dw.stars !== 3 || dw.saved !== 3) bad.push('band D win: ' + JSON.stringify(dw));
+          extra = `; band D 18x18 (cell ${d0.cell} px): a door stops the bear without its key, ${d0.route.length - 1} cells by mouse win 3 stars; ` +
+            `full board draw ${times[1].toFixed(1)} ms at 6x throttle (2nd fastest of 7), ${nodes} elements in the stage`;
+        }
+        if (bad.length) fail(tag + ':\n  ' + bad.join('\n  '));
+        else step(`${tag}: Home -> Brain Teasers -> Mazes -> band ${band} level 1 (${g0.w}x${g0.w}, board ${g0.board} px, cell ${g0.cell} px) by ${touch ? 'touch' : 'mouse'}: ` +
+          `walls block, dragging back erases, hints 1-3 (never the whole way), back and Keep going resume, tap on the trail, arrow pad, a dead end counts one mistake, ` +
+          `${route.length - 1}-cell route wins 1 star (3 hints) and saves it${extra}; targets 48 px, no sideways scroll, no emoji chrome`);
+        network.push(...mz.network);
+        for (const e of mz.errors) fail(e);
+        await mz.ctx.close();
+      }
+    }
+
     for (const e of errors) fail(e);
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');

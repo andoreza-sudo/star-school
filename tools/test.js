@@ -7337,6 +7337,123 @@ run('number puzzles P3-10',()=>{
   return{problems:r.out,note:r.n+' puzzles (3 types, every band, levels 1-12, 20 days), unique by brute force, hints, solve(); slowest make '+r.worst.toFixed(1)+' ms'};
 });
 
+// ---- P3-08: Mazes (BRAIN_TEASERS 5.4, 7) ----
+run('mazes P3-08',()=>{
+  const r=eval(js+`
+  const bad=[],T=BT.get('maze'),N_DAYS=84; // 12 levels x 84 days = 1,008 mazes per band
+  if(!T)bad.push('maze is not registered');
+  const SIZE={A:[5,5,5,5,5,5,6,6,6,6,6,6],B:[8,8,8,8,9,9,9,9,10,10,10,10],C:[12,12,12,12,13,13,13,13,14,14,14,14],D:[16,16,16,16,17,17,17,17,18,18,18,18]};
+  const D4=[[0,-1,1,4],[1,0,2,8],[0,1,4,1],[-1,0,8,2]]; // dx, dy, this side's bit, the other cell's bit
+  // the test's own reading of a maze: neighbours through open sides, checked from both cells
+  const grid=p=>{const o=[...p.o].map(c=>parseInt(c,16)),w=p.w,h=p.h,nb=[];
+    for(let c=0;c<w*h;c++){const x=c%w,y=(c-x)/w,a=[];for(const[dx,dy,b,ob]of D4){if(!(o[c]&b))continue;const nx=x+dx,ny=y+dy;
+      if(nx<0||ny<0||nx>=w||ny>=h){bad.push('opening off the board');continue}const n=ny*w+nx;if(!(o[n]&ob))bad.push('one-sided opening at '+c);a.push(n)}nb.push(a)}
+    return{o,nb,w,h,N:w*h}};
+  const bfs=(g,s,block)=>{const d=new Array(g.N).fill(-1),pr=new Array(g.N).fill(-1),q=[s];d[s]=0;
+    for(let i=0;i<q.length;i++)for(const n of g.nb[q[i]])if(d[n]<0&&!(block&&block(n))){d[n]=d[q[i]]+1;pr[n]=q[i];q.push(n)}return{d,pr}};
+  // state BFS over (cell, items held): door i needs key i, the flag needs every star. Shortest winning walk length from (s, m0), or -1.
+  // canPick false: items are never picked up (to prove a door really needs its key)
+  const par=(p,g,canPick=true,s=p.s,m0=0)=>{const it=p.stars||p.keys||[],M=1<<it.length,full=M-1,seen=new Set([s*M+m0]),q=[[s,m0,0]];
+    for(let i=0;i<q.length;i++){const[c,m,k]=q[i];if(c==p.g)return k;
+      for(const n of g.nb[c]){const di=(p.doors||[]).indexOf(n);if(di>=0&&!(m>>di&1))continue;if(p.stars&&n==p.g&&m!=full)continue;
+        const ii=it.indexOf(n),nm=canPick&&ii>=0?m|1<<ii:m;if(seen.has(n*M+nm))continue;seen.add(n*M+nm);q.push([n,nm,k+1])}}return-1};
+  const st={};
+  let n=0,ms=0;
+  for(const b of 'ABCD'){
+    st[b]={par:0,dead:0,n:0,lv:[]};
+    for(let lv=1;lv<=12;lv++){
+      let lvPar=0;
+      for(let d=1;d<=N_DAYS;d++){
+        const day='2026-'+(1+d%12)+'-'+(1+d%28),w0=Date.now(),p=BT.make('maze',b,lv,{day,salt:d});ms+=Date.now()-w0;n++;
+        const tag=b+lv+' '+day+'/'+d;
+        if(d<=3&&JSON.stringify(p)!==JSON.stringify(BT.make('maze',b,lv,{day,salt:d})))bad.push(tag+': make() is not deterministic');
+        if(p.w!==SIZE[b][lv-1]||p.h!==p.w||p.o.length!==p.w*p.h||!/^[0-9a-f]+$/.test(p.o))bad.push(tag+': size '+p.w+'x'+p.h+', want '+SIZE[b][lv-1]);
+        const g=grid(p),ds=bfs(g,p.s),dg=bfs(g,p.g);
+        // perfect maze: every cell reached and exactly N-1 openings (a tree), so one way between any two cells
+        const edges=g.nb.reduce((a,x)=>a+x.length,0)/2;
+        if(ds.d.some(x=>x<0)||edges!==g.N-1)bad.push(tag+': not a perfect maze');
+        // start and goal are the two cells farthest apart
+        if(ds.d[p.g]!==Math.max(...ds.d)||dg.d[p.s]!==Math.max(...dg.d))bad.push(tag+': start and goal are not a farthest pair');
+        const way=[];for(let c=p.g;c>=0;c=ds.pr[c])way.push(c);way.reverse();
+        const leaf=c=>g.nb[c].length==1&&c!==p.s&&c!==p.g,dead=g.nb.filter((x,c)=>leaf(c)).length;
+        if(b=='C'){
+          if(!p.stars||p.stars.length!==3||new Set(p.stars).size!==3)bad.push(tag+': band C needs 3 stars');
+          else for(const c of p.stars)if(!leaf(c)||way.includes(c))bad.push(tag+': star '+c+' is not in a dead end off the way');
+          if(p.keys||p.doors)bad.push(tag+': keys in band C');
+        }else if(b=='D'){
+          const nk=lv<=6?1:2;
+          if(!p.keys||p.keys.length!==nk||!p.doors||p.doors.length!==nk)bad.push(tag+': band D level '+lv+' needs '+nk+' key(s) and door(s)');
+          else{
+            p.doors.forEach((c,i)=>{if(!way.includes(c)||c===p.s||c===p.g)bad.push(tag+': door '+i+' is not on the way')});
+            if(nk==2&&way.indexOf(p.doors[0])>=way.indexOf(p.doors[1]))bad.push(tag+': door 1 does not come before door 2');
+            p.keys.forEach((c,i)=>{
+              if(!leaf(c)||way.includes(c))bad.push(tag+': key '+i+' is not at a dead end off the way');
+              // key i can be reached holding only the keys before it (its branch leaves the way before door i)
+              const r=bfs(g,p.s,x=>p.doors.indexOf(x)>=i);if(r.d[c]<0)bad.push(tag+': key '+i+' is behind its own door');
+            });
+            if(par(p,g,false)!==-1)bad.push(tag+': the goal is reachable without a key');
+          }
+          if(p.stars)bad.push(tag+': stars in band D');
+        }else if(p.stars||p.keys||p.doors)bad.push(tag+': extras in band '+b);
+        // solvable: the test's own state BFS, the stored par and solve() agree
+        const best=par(p,g);
+        if(best<0)bad.push(tag+': not solvable');
+        if(p.par!==best)bad.push(tag+': par '+p.par+' but the shortest win is '+best);
+        if(b<'C'&&best!==ds.d[p.g])bad.push(tag+': par is not the length of the way');
+        const rt=T.solve(p);
+        if(!Array.isArray(rt)||rt[0]!==p.s||rt[rt.length-1]!==p.g||rt.length-1!==best)bad.push(tag+': solve() is not a shortest win');
+        else{
+          const it=p.stars||p.keys||[];let m=0;
+          for(let i=1;i<rt.length;i++){
+            const c=rt[i];
+            if(!g.nb[rt[i-1]].includes(c)){bad.push(tag+': solve() goes through a wall at step '+i);break}
+            const di=(p.doors||[]).indexOf(c);if(di>=0&&!(m>>di&1)){bad.push(tag+': solve() walks through door '+di+' without its key');break}
+            if(p.stars&&c==p.g&&m!==7){bad.push(tag+': solve() reaches the flag before all the stars');break}
+            if(it.includes(c))m|=1<<it.indexOf(c);
+          }
+        }
+        // hints: tier 2 = the next 5 cells, tier 3 = through the next junction (at least as many); both follow the route and never
+        // reach its last cell, so no hint shows the whole way. Checked at the start and at three points along solve().
+        if(Array.isArray(rt)&&d<=12)for(const k of [0,(rt.length/3)|0,(rt.length*2/3)|0,rt.length-3]){
+          if(k<0)continue;
+          const t=[],it=p.stars||p.keys||[];let m=0;
+          for(const c of rt.slice(0,k+1)){if(t.length>1&&t[t.length-2]==c)t.pop();else t.push(c);if(it.includes(c))m|=1<<it.indexOf(c)}
+          const head=t[t.length-1],route=MZ.route(p,g.o,head,m);
+          if(!route||route.length-1!==par(p,g,true,head,m)){bad.push(tag+': no shortest route from step '+k);continue}
+          const h2=MZ.hintCells(g.o,route,2),h3=MZ.hintCells(g.o,route,3);
+          if(h2.length>5||h3.length<h2.length)bad.push(tag+': hint sizes '+h2.length+'/'+h3.length);
+          for(const h of [h2,h3]){
+            if(h.some((c,i)=>c!==route[i+1]))bad.push(tag+': a hint leaves the route');
+            if(route.length>2&&h.length>=route.length-1)bad.push(tag+': a hint shows the whole way from step '+k);
+          }
+          if(k==0&&(h3.length>=best||h2.length>=best))bad.push(tag+': a hint at the start shows the whole way');
+          const tg=MZ.target(p,route,m);if(!tg||!(tg.c>=0&&tg.c<g.N))bad.push(tag+': tier 1 has nothing to point at');
+        }
+        st[b].par+=best;st[b].dead+=dead;st[b].n++;lvPar+=best;
+      }
+      st[b].lv.push(lvPar/N_DAYS);
+    }
+    st[b].par/=st[b].n;st[b].dead/=st[b].n;
+    const L=st[b].lv,first=(L[0]+L[1]+L[2]+L[3])/4,last=(L[8]+L[9]+L[10]+L[11])/4;
+    if(!(last>first*1.15))bad.push('band '+b+': the last levels are not longer than the first ('+first.toFixed(1)+' -> '+last.toFixed(1)+')');
+  }
+  // difficulty grows by band: longer shortest wins and more dead ends
+  for(const[a,b]of[['A','B'],['B','C'],['C','D']]){
+    if(!(st[b].par>st[a].par*1.2))bad.push('the mean shortest win does not grow from '+a+' to '+b+': '+st[a].par.toFixed(1)+' -> '+st[b].par.toFixed(1));
+    if(!(st[b].dead>st[a].dead*1.3))bad.push('dead ends do not grow from '+a+' to '+b);
+  }
+  if(ms/n>8)bad.push('make() is slow: '+(ms/n).toFixed(2)+' ms on average'); // the average only: one slow call is a GC pause or a busy machine
+  // a saved state is used only when it fits the puzzle
+  const p=BT.make('maze','B',3,{day:'2026-6-15'}),o=MZ.decode(p.o),rt=T.solve(p);
+  if(!MZ.fit({t:rt.slice(0,4),m:0,dead:[],steps:3,mis:0},p,o))bad.push('a good saved state was refused');
+  if(MZ.fit({t:[rt[0],rt[2]]},p,o)||MZ.fit({t:[rt[1]]},p,o)||MZ.fit(null,p,o)||MZ.fit({t:'x'},p,o))bad.push('a broken saved state was accepted');
+  if(JSON.stringify(BT.make('maze','D',12,{day:'2026-6-15'})).length>600)bad.push('a band D maze is over 600 bytes of JSON');
+  [bad,n,st,ms/n];`);
+  const[bad,n,st,avg]=r;
+  return{problems:[...new Set(bad)],note:n+' mazes; mean shortest win A '+st.A.par.toFixed(0)+', B '+st.B.par.toFixed(0)+', C '+st.C.par.toFixed(0)+', D '+st.D.par.toFixed(0)+
+    '; dead ends '+['A','B','C','D'].map(b=>st[b].dead.toFixed(0)).join('/')+'; make '+avg.toFixed(2)+' ms'};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){
