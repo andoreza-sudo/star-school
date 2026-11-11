@@ -18,6 +18,24 @@ const btShot = (fn, solved = 0) => async p => {
   await p.evaluate(fn);
 };
 
+// P3-10 number puzzles: grade g sets the band; level lv is started, then o.moves moves of solve() are tapped, o.wrong taps one
+// wrong entry (a balance tips), o.hint presses Hint that many times (the 10 s cooldown is skipped for the shot)
+const BTN_TAPS = require('./lib/bt-num');
+const numShot = (id, g, lv, o = {}) => ({
+  run: async p => {
+    await p.evaluate(([id, g, lv]) => { S.grade = g; S.bt = {}; BT.start(id, BT.band(), lv); }, [id, g, lv]);
+    await p.waitForSelector('#btstage .bn');
+    const sol = await p.evaluate(() => BT.get(S.bt.cur.id).solve(S.bt.cur.puzzle));
+    for (const m of sol.slice(0, o.moves || 0)) await BTN_TAPS.move(p, id, m);
+    if (o.wrong) await BTN_TAPS.wrong(p, id);
+    for (let i = 0; i < (o.hint || 0); i++) {
+      await p.evaluate(() => { BT.act.cd = 0; document.querySelector('#bthint').disabled = false; });
+      await p.click('#bthint');
+    }
+    if (o.wait) await p.waitForTimeout(o.wait);
+  },
+});
+
 // P1-03: a sample question of a new kind shown by the real round engine (a one-question round); taps are clicked afterwards.
 const kindShot = (name, taps = []) => ({
   run: async p => {
@@ -65,6 +83,19 @@ const SCREENS = {
   'bt-levels': { run: btShot(() => BT.levels('zzfake'), 3) },
   'bt-play': { run: async p => { await btShot(() => BT.start('zzfake', BT.band(), 1))(p); await p.click('#bthint'); } },
   'bt-win': { run: async p => { await btShot(() => BT.start('zzfake', BT.band(), 1))(p); await p.evaluate(() => BT.win(BT.act, { mistakes: 0 })); await p.waitForTimeout(900); } },
+  // P3-10 number puzzles: the hub with the three types (grade 3), then a band per shot played by real taps (tools/lib/bt-num.js)
+  'bt-num-hub': { run: async p => { await p.evaluate(() => { S.grade = 3; BT.hub(); }); } },
+  'bt-num-pyr-b': numShot('pyramid', 1, 6, { moves: 1 }),
+  'bt-num-pyr-c': numShot('pyramid', 3, 9, { moves: 1, hint: 2 }),
+  'bt-num-pyr-d': numShot('pyramid', 5, 11, { wrong: true }),
+  'bt-num-bal-a': numShot('balance', 0, 5),
+  'bt-num-bal-b': numShot('balance', 1, 7, { moves: 1 }),
+  'bt-num-bal-c': numShot('balance', 3, 8, { moves: 1, wrong: true }),
+  'bt-num-bal-d': numShot('balance', 5, 10, { hint: 2 }),
+  'bt-num-tgt-b': numShot('target', 1, 5, { hint: 2 }),
+  'bt-num-tgt-c': numShot('target', 3, 6, { moves: 1 }),
+  'bt-num-tgt-d': numShot('target', 5, 2, { moves: 1 }),
+  'bt-num-win': numShot('pyramid', 3, 2, { moves: 9, wait: 1600 }),
   home: { run: async p => { await p.evaluate(() => home(true)); } },
   map: { run: async p => { await p.evaluate(() => pathMap('math')); } },
   'map-read': { run: async p => { await p.evaluate(() => pathMap('read')); } },

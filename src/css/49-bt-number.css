@@ -1,0 +1,142 @@
+/* Brain Teasers number puzzles (P3-10, src/js/77-bt-number.js): Number Pyramid, Balance, Make the Number.
+   Tokens only; light from the top left (a white gloss upper left, the shade tone as a ledge lower right); motion is transform and
+   opacity (calm mode and reduced motion stop it in 20-base.css). Portrait: talk line, board, controls. Landscape: board left. */
+.bn{display:flex;flex-direction:column;gap:var(--s-3);width:100%;max-width:640px;min-height:100%;margin:0 auto}
+.bn-say{display:flex;align-items:center;gap:var(--s-2);min-height:var(--tap);padding:var(--s-1) var(--s-1) var(--s-1) var(--s-3);border-radius:var(--r-card);
+  background:var(--surface);box-shadow:inset 0 0 0 2px var(--line),0 3px 0 var(--ledge-soft)}
+.bn-msg{flex:1;min-width:0;margin:0;font-size:var(--fs-2);font-weight:700;line-height:1.3;color:var(--ink-2)}
+.bn-msg.good{color:var(--good-ink)}
+.bn-msg.try{color:var(--try-ink)}
+.bn-msg.hint{color:var(--bt-shade)}
+.bn-spk{flex:none}
+.bn-board{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--s-3);min-height:0}
+.bn-ctl{display:flex;flex-direction:column;align-items:center;gap:var(--s-3)}
+.bn-tag{margin:0}
+/* the question screen's pad in two rows of six (1-6, then 7 8 9 delete 0 check) */
+.bn .bn-pad{grid-template-columns:repeat(6,minmax(0,1fr));gap:var(--s-2);max-width:460px}
+.bn .bn-pad .key{min-height:52px;font-size:var(--fs-5)}
+.bn .bn-pad .key .ic{width:30px;height:30px}
+.bn-shake{animation:k-shake 240ms linear}
+/* a hint points at something: a star ring that pulses */
+.bn .hl{outline:4px solid var(--star);outline-offset:3px}
+
+/* ---------- Number Pyramid ---------- */
+.bn-pyrw{display:grid;grid-template-columns:repeat(calc(var(--n) * 2),minmax(0,1fr));gap:var(--s-2) 6px;width:100%;max-width:calc(var(--n) * 96px)}
+.bn-br{display:flex;align-items:center;justify-content:center;min-width:0;min-height:52px;padding:0;border:0;border-radius:var(--r-chip);
+  font-family:var(--font-display);font-size:var(--fs-4);font-weight:700;line-height:1;color:var(--ink);touch-action:manipulation;
+  transition:transform var(--t-fast) var(--ease)}
+.bn-br span{pointer-events:none}
+/* a given brick: sandstone with a gloss band and a ledge */
+.bn-br.giv{background:linear-gradient(var(--hi),var(--hi-0) 55%) var(--ill-tan);box-shadow:inset 3px 3px 0 var(--ill-tan-1),inset -2px -3px 0 var(--ill-tan-2),0 4px 0 var(--ill-tan-3)}
+.bn-br.hid{background:var(--surface);color:var(--bt);border:3px dashed var(--bt);cursor:pointer;box-shadow:0 4px 0 var(--ledge-soft)}
+.bn-br.hid:active{transform:translateY(3px)}
+.bn-br.sel{border-style:solid;background:var(--bt-tint);color:var(--bt-shade);transform:translateY(-2px);box-shadow:0 5px 0 var(--bt-shade)}
+.bn-br.ok{background:linear-gradient(var(--hi),var(--hi-0) 55%) var(--good-tint);color:var(--good-ink);box-shadow:inset 0 0 0 3px var(--good),0 4px 0 var(--good-ink)}
+.bn-br.ok.hn{background:linear-gradient(var(--hi),var(--hi-0) 55%) var(--star-tint);color:var(--ink);box-shadow:inset 0 0 0 3px var(--star),0 4px 0 var(--star-shade)}
+.bn-pyrw.win .bn-br{animation:k-pop 420ms var(--ease)}
+
+/* ---------- Balance ---------- */
+.bn-scs{display:grid;justify-items:center;gap:var(--s-2);width:100%}
+.bn-sc{width:100%;max-width:340px;padding:var(--s-1) var(--s-2) 0;border-radius:var(--r-card);background:var(--surface);
+  box-shadow:inset 0 0 0 2px var(--line),0 4px 0 var(--ledge-soft)}
+.bn-scs.n3 .bn-sc{max-width:300px}
+.bn-sc.hl{outline-offset:-3px}
+.bn-bal{gap:var(--s-2)}
+.bn-bal .bn-board{gap:var(--s-2)}
+.bn-bal .bn-pad .key{min-height:var(--tap)}
+.bn-bal .bn-slot{height:var(--tap)}
+.bn-sv{display:block;width:100%;height:auto;overflow:visible;font-family:var(--font-display);font-weight:700;text-anchor:middle;stroke-linecap:round}
+/* the stand and base (grey, its right side in shade), the wooden arm (gloss on top, shade below), the brass-grey pin */
+.bn-stand{fill:var(--ill-grey-2)}
+.bn-sts{fill:var(--ill-grey-3)}
+.bn-base{fill:var(--ill-grey-3)}
+.bn-beam{fill:var(--ill-brown)}
+.bn-bsh{fill:none;stroke:var(--ill-brown-2);stroke-width:3}
+.bn-bgl{fill:none;stroke:var(--ill-brown-1);stroke-width:3}
+.bn-nd{fill:none;stroke:var(--ill-brown-3);stroke-width:4}
+.bn-pin{fill:var(--ill-grey-1);stroke:var(--ill-grey-3);stroke-width:3}
+.bn-pgl2{fill:var(--ill-white)}
+.bn-post{fill:var(--ill-grey-2)}
+.bn-dish{fill:var(--ill-grey-1);stroke:var(--ill-grey-2);stroke-width:2;stroke-linejoin:round}
+.bn-dsh{fill:none;stroke:var(--ill-grey);stroke-width:3}
+.bn-pgl{fill:none;stroke:var(--ill-white);stroke-width:2.5}
+.bn-wb{fill:var(--ill-grey-3)}
+.bn-wh{fill:none;stroke:var(--ill-grey-3);stroke-width:4}
+.bn-ws{fill:none;stroke:var(--ill-ink-2);stroke-width:3}
+.bn-wg{fill:none;stroke:var(--ill-grey-2);stroke-width:3}
+.bn-w text{fill:var(--surface);font-size:18px}
+.bn-vt circle{fill:var(--bt);stroke:var(--surface);stroke-width:2}
+.bn-vt text{fill:var(--surface);font-size:13px}
+.bn-vt.bad circle{fill:var(--try)}
+.bn-vt.bad text{fill:var(--ink)}
+/* tipping: the arm turns about the pin and the trays move with its ends (100 units out: sin 6 degrees x 100 = 10.45) */
+.bn-arm,.bn-tray{transition:transform var(--t-xl) var(--spring)}
+.bn-sc.tl .bn-arm{transform:rotate(-6deg)}
+.bn-sc.tl .bn-tray.l,.bn-sc.tr .bn-tray.r{transform:translateY(10.45px)}
+.bn-sc.tl .bn-tray.r,.bn-sc.tr .bn-tray.l{transform:translateY(-10.45px)}
+.bn-sc.tr .bn-arm{transform:rotate(6deg)}
+.bn-slots{display:flex;flex-wrap:wrap;justify-content:center;gap:var(--s-2) var(--s-4)}
+.bn-sg{display:inline-flex;align-items:center;gap:var(--s-1);font-size:var(--fs-4);font-weight:700;color:var(--ink-2)}
+.bn-sg>b{padding:0 2px}
+.bn-sg .bn-x{font-size:var(--fs-3);white-space:nowrap}
+.bn-slot{min-width:60px;height:52px;padding:0 var(--s-2);border:3px dashed var(--bt);border-radius:var(--r-chip);background:var(--surface);
+  font-family:var(--font-display);font-size:var(--fs-4);font-weight:700;color:var(--bt);cursor:pointer;touch-action:manipulation;box-shadow:0 4px 0 var(--ledge-soft)}
+.bn-slot.sel{border-style:solid;background:var(--bt-tint);color:var(--bt-shade);box-shadow:0 5px 0 var(--bt-shade)}
+.bn-slot.ok{border:0;background:linear-gradient(var(--hi),var(--hi-0) 55%) var(--good-tint);color:var(--good-ink);cursor:default;box-shadow:inset 0 0 0 3px var(--good),0 4px 0 var(--good-ink)}
+.bn-slot.ok.hn{background:linear-gradient(var(--hi),var(--hi-0) 55%) var(--star-tint);color:var(--ink);box-shadow:inset 0 0 0 3px var(--star),0 4px 0 var(--star-shade)}
+.bn-scs.win .bn-sc{animation:k-pop 420ms var(--ease)}
+
+/* ---------- Make the Number ---------- */
+.bn-goal{display:flex;justify-content:center}
+.bn-ring{display:grid;place-items:center;width:108px;height:108px;border-radius:50%;
+  background:radial-gradient(circle,var(--surface) 0 47%,var(--bt) 47% 61%,var(--bt-tint) 61% 75%,var(--bt) 75%);box-shadow:0 5px 0 var(--bt-shade)}
+.bn-ring b{font-family:var(--font-display);font-size:var(--fs-5);line-height:1;color:var(--bt-shade)}
+.bn-tiles{display:flex;flex-wrap:wrap;justify-content:center;gap:var(--s-3);min-height:76px}
+.bn-tile{display:grid;place-items:center;width:72px;height:72px;padding:0;border:0;border-radius:var(--r-btn);
+  background:linear-gradient(var(--hi),var(--hi-0) 55%) var(--ill-cream);color:var(--ink);font-family:var(--font-display);font-size:var(--fs-6);line-height:1;
+  cursor:pointer;touch-action:manipulation;box-shadow:inset 3px 3px 0 var(--ill-cream-1),inset 0 0 0 2px var(--ill-cream-2),0 5px 0 var(--ill-cream-3);
+  transition:transform var(--t-fast) var(--ease)}
+.bn-tile b{pointer-events:none}
+.bn-tile:active{transform:translateY(3px)}
+.bn-tile.made{background:linear-gradient(var(--hi),var(--hi-0) 55%) var(--star-tint);box-shadow:inset 3px 3px 0 var(--hi),inset 0 0 0 2px var(--star),0 5px 0 var(--star-shade)}
+.bn-tile.sel{background:var(--bt-tint);color:var(--bt-shade);transform:translateY(-4px);box-shadow:inset 0 0 0 3px var(--bt),0 7px 0 var(--bt-shade)}
+.bn-tiles.win .bn-tile{animation:k-pop 420ms var(--ease)}
+.bn-ops{display:flex;justify-content:center;gap:var(--s-3)}
+.bn-op{display:grid;place-items:center;width:60px;height:60px;padding:0;border:0;border-radius:50%;background:linear-gradient(var(--hi),var(--hi-0) 60%) var(--bt);
+  color:var(--surface);cursor:pointer;touch-action:manipulation;box-shadow:inset 0 3px 0 var(--hi),0 5px 0 var(--bt-shade);transition:transform var(--t-fast) var(--ease)}
+.bn-op:active{transform:translateY(3px)}
+.bn-op.sel{background:var(--star);color:var(--ink);transform:translateY(-3px);box-shadow:inset 0 3px 0 var(--hi),0 6px 0 var(--star-shade)}
+.bn-op .ic{pointer-events:none}
+.bn-trail{display:flex;flex-direction:column;align-items:center;gap:2px;margin:0;padding:0;list-style:none;font-size:var(--fs-3);font-weight:700;color:var(--ink-2)}
+.bn-trail:empty{display:none}
+.bn-trail b{color:var(--bt-shade)}
+.bn-acts{display:flex;justify-content:center}
+
+@media (max-width:480px){
+  .bn-tiles.n5{gap:var(--s-2)}
+  .bn-tiles.n5 .bn-tile{width:60px;height:64px;font-size:var(--fs-5)}
+}
+/* tablets: bigger tiles, target and signs */
+@media (min-width:560px) and (min-height:560px){
+  .bn-tile{width:84px;height:84px}
+  .bn-ring{width:124px;height:124px}
+  .bn-ring b{font-size:var(--fs-6)}
+  .bn-op{width:64px;height:64px}
+}
+/* a tall tablet in portrait: bigger scales */
+@media (min-width:560px) and (min-height:860px){
+  .bn-scs.n3 .bn-sc{max-width:400px}
+  .bn-scs .bn-sc{max-width:460px}
+}
+/* landscape: the board on the left; the talk line, the boxes, the pad and the steps on the right */
+@media (min-aspect-ratio:5/4) and (min-width:700px){
+  .bn{display:grid;grid-template-columns:minmax(0,1fr) minmax(344px,380px);grid-template-rows:auto auto;align-content:center;
+    grid-template-areas:"board say" "board ctl";gap:var(--s-3) var(--s-6);max-width:1000px}
+  .bn-board{grid-area:board}
+  .bn-say{grid-area:say;align-self:end}
+  .bn-ctl{grid-area:ctl;align-self:start}
+  .bn .bn-pad{max-width:none}
+  .bn-scs.n3 .bn-sc{max-width:340px}
+  .bn-scs .bn-sc{max-width:400px}
+  .bn-scs.n1 .bn-sc{max-width:480px}
+}
