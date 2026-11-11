@@ -1787,6 +1787,65 @@ Object.assign(SCREENS, {
   'bt-rb-win': rbShot(0, 2, { win: true }),
 });
 
+// P3-16 Spatial: Cube Count, Turn It, Mirror. Grade g sets the band, level lv is started, then real taps (tools/lib/bt-p316.js).
+// cb: o.done stacks answered, o.wrong a wrong number, o.typed digits typed, o.hint hint presses, o.win every stack answered.
+// ro: o.done shapes answered, o.wrong a wrong choice ('flip' the mirror image), o.hint, o.win.   mr: o.fill twins filled, o.wrong, o.hint, o.win.
+const P316 = require('./lib/bt-p316');
+const spShot = (id, g, lv, o = {}) => ({
+  run: async p => {
+    await p314Start(id, g, lv)(p);
+    if (id == 'cubes') {
+      await p.waitForSelector('.cb-pad');
+      if (o.win) { await P316.cbWin(p); await p.waitForTimeout(1300); return; }
+      for (let i = 0; i < (o.done || 0); i++) {
+        const t = await P316.cbNow(p);
+        await P316.cbType(p, t.n);
+        await p.waitForFunction(i => S.bt.cur.state && S.bt.cur.state.i > i && !document.querySelector('.cb-box.ok'), t.i);
+      }
+      if (o.wrong) await P316.cbType(p, (await P316.cbNow(p)).n - 2);
+      await p314Hint(p, o.hint || 0);
+      if (o.typed) for (const d of String(o.typed)) await p.click(`.cb-pad .k[data-k="${d}"]`);
+    } else if (id == 'rotate') {
+      await p.waitForSelector('.ro-ch');
+      if (o.win) { await P316.roWin(p); await p.waitForTimeout(1300); return; }
+      for (let i = 0; i < (o.done || 0); i++) {
+        const t = await P316.roNow(p);
+        await P316.roTap(p, t.a);
+        await p.waitForFunction(i => S.bt.cur.state && S.bt.cur.state.i > i && !document.querySelector('.ro-ch.right'), t.i);
+      }
+      if (o.wrong) { const t = await P316.roNow(p); await P316.roTap(p, o.wrong == 'flip' && t.flip != null ? t.flip : t.wrong); }
+      await p314Hint(p, o.hint || 0);
+    } else {
+      await p.waitForSelector('.mr-cell.t');
+      if (o.win) { await P316.mrFill(p); await p.waitForTimeout(1300); return; }
+      await P316.mrFill(p, o.fill || 0);
+      if (o.wrong) { await P316.mrTap(p, (await P316.mrNow(p)).wrong); await p.waitForTimeout(150); }
+      await p314Hint(p, o.hint || 0);
+    }
+  },
+});
+Object.assign(SCREENS, {
+  'bt-sp-hub': { run: async p => { await p.evaluate(() => { S.grade = 3; BT.hub(); document.querySelector('[data-t="cubes"]').scrollIntoView({ block: 'center' }); }); } },
+  'bt-sp-levels': { run: async p => { await p.evaluate(() => { S.grade = 3; S.bt = {}; BT.levels('rotate'); }); } },
+  'bt-cb-b': spShot('cubes', 1, 9, { typed: 6 }),
+  'bt-cb-c': spShot('cubes', 3, 6, { done: 1, wrong: true }),
+  'bt-cb-c-hint': spShot('cubes', 3, 10, { hint: 2 }),
+  'bt-cb-d': spShot('cubes', 5, 12, { hint: 3 }),
+  'bt-cb-win': spShot('cubes', 4, 3, { win: true }),
+  'bt-ro-a': spShot('rotate', 0, 2),
+  'bt-ro-a-turn': spShot('rotate', 0, 10, { wrong: true }),
+  'bt-ro-b': spShot('rotate', 1, 5, { done: 1, wrong: true }),
+  'bt-ro-c': spShot('rotate', 3, 4, { wrong: 'flip' }),
+  'bt-ro-c-hint': spShot('rotate', 3, 9, { hint: 2 }),
+  'bt-ro-d': spShot('rotate', 5, 10, { done: 2, hint: 3 }),
+  'bt-ro-win': spShot('rotate', 2, 6, { win: true }),
+  'bt-mr-b': spShot('mirror', 1, 6, { fill: 2, wrong: true }),
+  'bt-mr-c-h': spShot('mirror', 3, 2, { fill: 3, hint: 1 }),
+  'bt-mr-c-d': spShot('mirror', 4, 7, { fill: 4, hint: 2 }),
+  'bt-mr-d': spShot('mirror', 5, 11, { fill: 5, hint: 3 }),
+  'bt-mr-win': spShot('mirror', 6, 5, { win: true }),
+});
+
 async function main() {
   const args = process.argv.slice(2);
   let fixtureArg = null;

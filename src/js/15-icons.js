@@ -195,6 +195,11 @@ const ICONS={
     '<path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 6.5V4.2"/><circle cx="12" cy="3.4" r="1.9"/>' +
     '<rect x="3.5" y="6.5" width="17" height="10.5" rx="3.5"/>' +
     '<circle fill="var(--ic2,#fff)" cx="9" cy="11.7" r="1.9"/><circle fill="var(--ic2,#fff)" cx="15" cy="11.7" r="1.9"/>',
+  'cubes':
+    '<path fill="var(--ic3,currentColor)" opacity=".4" stroke="var(--ic3,currentColor)" stroke-width="1.2" stroke-linejoin="round" d="M12 11.8L19.4 7.6L12 3.4L4.6 7.6Z"/>' +
+    '<path stroke="currentColor" stroke-width=".6" stroke-linejoin="round" d="M11.4 20.6L8.6 19L8.6 15.8L11.4 17.4ZM11.4 16.1L8.6 14.5L8.6 11.3L11.4 12.9Z' +
+    'M7.4 18.3L4.6 16.7L4.6 13.5L7.4 15.1ZM7.4 13.8L4.6 12.2L4.6 9L7.4 10.6ZM12.6 20.6L15.4 19L15.4 15.8L12.6 17.4ZM12.6 16.1L15.4 14.5L15.4 11.3L12.6 12.9Z' +
+    'M16.6 18.3L19.4 16.7L19.4 13.5L16.6 15.1ZM16.6 13.8L19.4 12.2L19.4 9L16.6 10.6Z"/>',
   'path-math':
 
     '<path fill="none" stroke="currentColor" stroke-width="2.4" d="M7 3.5V10.5M3.5 7H10.5M13.5 7H20.5' +

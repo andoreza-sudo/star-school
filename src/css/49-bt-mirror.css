@@ -1,0 +1,43 @@
+/* Brain Teasers: Mirror (P3-16, src/js/86-bt-mirror.js). Tokens only; motion is transform and opacity. --cs (the square size) and
+   --n come from the JS layout. Filled squares are raised tiles: base tone, a light edge toward the top left, a shade edge below.
+   The talk line is shared with Cube Count (49-bt-cubes.css). On a phone the puzzle uses the stage's side padding too, so an 8 x 8
+   grid keeps 44 px squares at 380 px (BRAIN_TEASERS 8, dense grids). */
+.mr{display:flex;flex-direction:column;gap:var(--s-3);width:calc(100% + var(--s-4));min-height:100%;margin:0 calc(var(--s-2) * -1)}
+.mr-main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--s-2)}
+.mr-board{position:relative;display:grid;grid-template-columns:repeat(var(--n),var(--cs,44px));grid-auto-rows:var(--cs,44px);padding:3px;border-radius:var(--r-btn);
+  background:var(--bt-tint);box-shadow:0 4px 0 var(--ledge-soft)}
+.mr-board.won{animation:k-pop var(--t-slow) var(--spring)}
+.mr-cell{position:relative;display:block;width:var(--cs,44px);height:var(--cs,44px);margin:0;padding:0;border:0;background:none;touch-action:manipulation}
+.mr-cell::before{content:'';position:absolute;inset:3px;border-radius:calc(var(--cs,44px) * .2);box-shadow:inset 0 0 0 2px var(--surface)}
+.mr-cell.l::before{background:var(--surface);opacity:.6}
+.mr-cell.t::before,.mr-cell.on::before{inset:2px;opacity:1}
+.mr-cell.t{cursor:pointer}
+.mr-cell.t::before{background:var(--surface);box-shadow:0 2px 0 var(--ledge-soft)}
+.mr-cell.t:active::before{transform:translateY(2px);box-shadow:none}
+.mr-cell.on::before{background:var(--p);box-shadow:inset 3px 3px 0 var(--p1),inset -3px -4px 0 var(--p2),0 2px 0 var(--ledge-soft)}
+.mr-cell.t.on{cursor:default}
+.mr-cell.t.on::before{animation:k-pop var(--t-slow) var(--spring)}
+.mr-cell.hn::after{content:'';position:absolute;inset:2px;border-radius:calc(var(--cs,44px) * .2);box-shadow:inset 0 0 0 3px var(--star)}
+.mr-cell.ring::after{content:'';position:absolute;inset:-2px;border-radius:calc(var(--cs,44px) * .26);box-shadow:inset 0 0 0 4px var(--star-shade)}
+.mr-cell.no{animation:k-shake 240ms linear}
+.mr-cell.no::after{content:'';position:absolute;inset:2px;border-radius:calc(var(--cs,44px) * .2);background:var(--try-tint);box-shadow:inset 0 0 0 3px var(--try);
+  animation:mr-no 1.2s var(--ease) forwards}
+@keyframes mr-no{0%,55%{opacity:1}100%{opacity:0}}
+/* the mirror line (or the centre dot of a half-turn), over the squares, never in the way of a tap */
+.mr-line{position:absolute;inset:3px;width:calc(100% - 6px);height:calc(100% - 6px);overflow:visible;pointer-events:none}
+.mr-ln{fill:none;stroke:var(--bt);stroke-width:.1;stroke-linecap:round;stroke-dasharray:.28 .18}
+.mr-dot{fill:var(--bt);stroke:var(--surface);stroke-width:.06}
+.mr-dotc{fill:var(--bt-tint)}
+.mr-line.glow .mr-ln{stroke:var(--star-shade);stroke-width:.14}
+.mr-line.glow .mr-dot{fill:var(--star-shade)}
+.mr-count{margin:0;font-size:var(--fs-2);font-weight:700;color:var(--ink-2);text-align:center}
+.mr-c0{--p:var(--ill-blue);--p1:var(--ill-blue-1);--p2:var(--ill-blue-2)}
+.mr-c1{--p:var(--ill-orange);--p1:var(--ill-orange-1);--p2:var(--ill-orange-2)}
+.mr-c2{--p:var(--ill-green);--p1:var(--ill-green-1);--p2:var(--ill-green-2)}
+.mr-c3{--p:var(--ill-purple);--p1:var(--ill-purple-1);--p2:var(--ill-purple-2)}
+.mr-c4{--p:var(--ill-red);--p1:var(--ill-red-1);--p2:var(--ill-red-2)}
+.mr-c5{--p:var(--ill-aqua);--p1:var(--ill-aqua-1);--p2:var(--ill-aqua-2)}
+/* wide screens: the board on the left, the talk line on the right */
+.mr.wide{flex-direction:row-reverse;align-items:center;justify-content:center;gap:var(--s-6);width:100%;margin:0;min-height:100%}
+.mr.wide .mr-say{flex:0 1 280px}
+.mr.wide .mr-main{flex:0 1 auto}

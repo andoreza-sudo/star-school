@@ -5486,6 +5486,183 @@ async function main() {
       }
     }
 
+    // P3-16 Spatial: Cube Count, Turn It, Mirror (src/js/84-86-bt-*.js) with real taps, midway save (tools/lib/bt-p316.js):
+    //    380x780: Home -> Brain Teasers -> Cubes (a 1st grader, band B): a wrong number shown gently, hints 1-3 (words, the layers, the
+    //    layer counts that add up), every stack typed on the pad, win, 1 star saved; -> Turn It (PK, band A): a wrong shadow shown
+    //    gently, the rest tapped, 3 stars; -> Mirror (a 3rd grader, band C): a wrong square shown gently, hint 1, back to the hub and
+    //    Keep going resumes the same squares, the rest tapped, 2 stars.
+    //    1024x600 (a 5th grader, band D): Turn It: the mirror image tapped ("flipped"), hints 1-2 (the four turns), every shape, 1 star;
+    //    Cubes and Mirror played straight through, 3 stars each. Every screen: 48 px targets (grid squares 44, BRAIN_TEASERS 8),
+    //    nothing outside the screen, no sideways scroll, the puzzle does not scroll, no emoji chrome.
+    {
+      const P = require('./lib/bt-p316');
+      const look = () => {
+        const vw = document.documentElement.clientWidth, out = [];
+        for (const e of document.querySelectorAll('button, [role="button"]')) {
+          const r = e.getBoundingClientRect();
+          if (!r.width || r.bottom < 0 || r.top > innerHeight || e.closest('svg') || e.closest('#toast')) continue;
+          const min = e.classList.contains('mr-cell') ? 43.5 : 47.5;
+          if (Math.min(r.width, r.height) < min) out.push('small ' + (e.id || e.className) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
+          if (r.left < -1 || r.right > vw + 1 || r.bottom > innerHeight + 1) out.push('outside ' + (e.id || e.className) + ' ' + Math.round(r.left) + '..' + Math.round(r.right) + ' bottom ' + Math.round(r.bottom));
+        }
+        if (document.documentElement.scrollWidth > vw) out.push('sideways scroll ' + document.documentElement.scrollWidth);
+        const st = document.querySelector('.bt-stage');
+        if (st && st.scrollWidth > st.clientWidth + 1) out.push('the puzzle scrolls sideways ' + st.scrollWidth + ' > ' + st.clientWidth);
+        if (st && !document.querySelector('.bt-win') && st.scrollHeight > st.clientHeight + 1) out.push('the puzzle scrolls ' + st.scrollHeight + ' > ' + st.clientHeight);
+        const b = document.querySelector('.cb-board,.ro-card,.mr-board');
+        if (b && !document.querySelector('.bt-win')) { const r = b.getBoundingClientRect(); if (r.left < -1 || r.right > vw + 1 || r.bottom > innerHeight + 1 || r.height < 100) out.push('the drawing is outside or tiny ' + JSON.stringify([r.left, r.right, r.bottom, r.height])); }
+        const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        for (let n; (n = w.nextNode());) {
+          const el = n.parentElement;
+          if (!el || el.closest('script,style,svg,#ico-sprite,.rw-burst') || !el.getClientRects().length) continue;
+          const m = n.textContent.match(/\p{Extended_Pictographic}|[◀▶✕]/u);
+          if (m) out.push('emoji chrome ' + m[0] + ' in ' + (el.id || el.className));
+        }
+        return out;
+      };
+      const gentle = sel => {
+        const e = document.querySelector(sel), css = getComputedStyle(document.documentElement);
+        const rgb = v => { const d = document.createElement('i'); d.style.color = v; document.body.appendChild(d); const x = getComputedStyle(d).color; d.remove(); return x; };
+        return { text: e.textContent, color: getComputedStyle(e).color, ink: rgb(css.getPropertyValue('--try-ink')), red: rgb(css.getPropertyValue('--danger')) };
+      };
+      const hintNow = async (pg, wait) => { if (wait) await vwait(pg, 11500); await pg.click('#bthint'); await vwait(pg, 300); };
+      const open = async (pg, id, grade, viaHome) => {
+        await pg.evaluate(g => { S.grade = g; save(); }, grade);
+        if (viaHome) {
+          await pg.evaluate(() => home());
+          await pg.waitForSelector('#btcard');
+          await pg.evaluate(() => document.querySelector('#btcard').scrollIntoView({ block: 'center' }));
+          await pg.click('#btcard');
+        } else await pg.evaluate(() => BT.hub());
+        await pg.waitForSelector(`.bt-hub [data-t="${id}"]`);
+        await pg.evaluate(id => document.querySelector(`.bt-hub [data-t="${id}"]`).scrollIntoView({ block: 'center' }), id);
+        await pg.click(`.bt-hub [data-t="${id}"]`);
+        await pg.waitForSelector('.bt-lvs');
+        await pg.click('.bt-lv[data-l="1"]');
+      };
+      const won = async (pg, id, band, stars, bad, chk) => {
+        await pg.waitForSelector('.bt-win #btnext', { timeout: 15000 });
+        await vwait(pg, 700);
+        await chk(id + ' win card');
+        const w = await pg.evaluate(([id, b]) => ({ shown: document.querySelectorAll('.bt-win .rs.on').length, saved: S.bt[id] && S.bt[id][b] && S.bt[id][b].stars[0],
+          lvl: S.bt[id] && S.bt[id][b].lvl, cur: !!S.bt.cur }), [id, band]);
+        if (w.shown !== stars || w.saved !== stars || w.lvl !== 2 || w.cur) bad.push(id + ' win: ' + JSON.stringify(w) + ' (want ' + stars + ' stars)');
+        await pg.click('#btlvls');
+        await pg.waitForSelector('.bt-lvs');
+        await pg.click('#back');
+        await pg.waitForSelector('.bt-hub');
+      };
+      for (const [w, h] of [[380, 780], [1024, 600]]) {
+        const tag = 'P3-16 ' + w + 'x' + h;
+        const app = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = app.page, bad = [], notes = [];
+        const chk = async what => { await pg.waitForTimeout(400); for (const o of await pg.evaluate('(' + look.toString() + ')()')) bad.push(what + ': ' + o); };
+        if (w == 380) {
+          // ---- Cubes, band B: a wrong number, hints 1-3, every stack ----
+          await open(pg, 'cubes', 1, true);
+          await pg.waitForSelector('#btstage .cb-pad');
+          await chk('cubes');
+          const s0 = await pg.evaluate(() => S.stars), c0 = await P.cbNow(pg);
+          await P.cbType(pg, c0.n + 1);
+          const cw = await pg.evaluate(() => ({ no: document.querySelector('.cb-box').classList.contains('no'), miss: S.bt.cur.state.miss, i: S.bt.cur.state.i }));
+          const cg = await pg.evaluate('(' + gentle.toString() + ')(".cb-msg")');
+          if (!cw.no || cw.miss !== 1 || cw.i !== 0 || cg.color !== cg.ink || cg.color === cg.red) bad.push('a wrong count is not shown gently: ' + JSON.stringify([cw, cg]));
+          else notes.push('"' + cg.text + '"');
+          const hs = [];
+          for (let t = 1; t <= 3; t++) {
+            await hintNow(pg, t > 1);
+            hs.push(await pg.evaluate(() => ({ msg: document.querySelector('.cb-msg').textContent, ly: document.querySelectorAll('.cb-ly').length,
+              nums: [...document.querySelectorAll('.cb-ly b')].map(b => +b.textContent), want: CUB.layers(S.bt.cur.puzzle.items[S.bt.cur.state.i].hm), hints: S.bt.cur.hints })));
+          }
+          if (hs[0].ly || hs[1].ly !== hs[1].want.length || hs[1].nums.length || hs[2].nums.join() !== hs[2].want.join() || hs[2].nums.reduce((a, b) => a + b, 0) !== c0.n ||
+            hs[2].hints !== 3 || new Set(hs.map(x => x.msg)).size !== 3) bad.push('cube hints 1-3: ' + JSON.stringify(hs));
+          await chk('cubes hint 3');
+          await P.cbWin(pg);
+          await won(pg, 'cubes', 'B', 1, bad, chk);
+          if ((await pg.evaluate(() => S.stars)) !== s0 + 1) bad.push('cubes: the star was not paid');
+          notes.push('cubes B: layers ' + hs[2].nums.join(' + ') + ', 1 star');
+
+          // ---- Turn It, band A: a wrong shadow, the rest ----
+          await open(pg, 'rotate', 0, false);
+          await pg.waitForSelector('#btstage .ro-ch');
+          await chk('turn it A');
+          if (await pg.evaluate(() => document.querySelectorAll('.ro-ch .ro-sh').length) !== 3) bad.push('band A should show 3 shadows');
+          const r0 = await P.roNow(pg);
+          await P.roTap(pg, r0.wrong);
+          const rw = await pg.evaluate(c => ({ cls: document.querySelector(`.ro-ch[data-c="${c}"]`).className, miss: S.bt.cur.state.miss }), r0.wrong);
+          const rg = await pg.evaluate('(' + gentle.toString() + ')(".ro-msg")');
+          if (!/wrong/.test(rw.cls) || rw.miss !== 1 || rg.color !== rg.ink || rg.color === rg.red) bad.push('a wrong shadow is not shown gently: ' + JSON.stringify([rw, rg]));
+          else notes.push('"' + rg.text + '"');
+          await P.roWin(pg);
+          await won(pg, 'rotate', 'A', 3, bad, chk);
+          notes.push('turn it A: 3 stars');
+
+          // ---- Mirror, band C: a wrong square, hint 1, back and resume, the rest ----
+          await open(pg, 'mirror', 3, false);
+          await pg.waitForSelector('#btstage .mr-cell.t');
+          await chk('mirror C');
+          const m0 = await P.mrNow(pg);
+          await P.mrTap(pg, m0.wrong);
+          const mw = await pg.evaluate(i => ({ no: document.querySelector(`.mr-cell[data-i="${i}"]`).classList.contains('no'), on: document.querySelector(`.mr-cell[data-i="${i}"]`).classList.contains('on'),
+            miss: S.bt.cur.state.miss }), m0.wrong);
+          const mg = await pg.evaluate('(' + gentle.toString() + ')(".mr-msg")');
+          if (!mw.no || mw.on || mw.miss !== 1 || mg.color !== mg.ink || mg.color === mg.red) bad.push('a wrong square is not shown gently: ' + JSON.stringify([mw, mg]));
+          else notes.push('"' + mg.text + '"');
+          await P.mrFill(pg, 2);
+          await hintNow(pg, false);
+          const mh = await pg.evaluate(() => ({ glow: !!document.querySelector('.mr-line.glow'), hints: S.bt.cur.hints, on: S.bt.cur.state.on.length }));
+          if (!mh.glow || mh.hints !== 1 || mh.on !== 2) bad.push('mirror hint 1: ' + JSON.stringify(mh));
+          const keep = await pg.evaluate(() => JSON.stringify([S.bt.cur.puzzle, S.bt.cur.state.on]));
+          await pg.click('#back');
+          await pg.waitForSelector('.bt-lvs');
+          await pg.click('#back');
+          await pg.waitForSelector('#btkeep');
+          await pg.click('#btkeep');
+          await pg.waitForSelector('#btstage .mr-cell.t');
+          const back = await pg.evaluate(() => ({ s: JSON.stringify([S.bt.cur.puzzle, S.bt.cur.state.on]), on: document.querySelectorAll('.mr-cell.t.on').length }));
+          if (back.s !== keep || back.on !== 2) bad.push('mirror resume: ' + JSON.stringify(back));
+          await P.mrFill(pg);
+          await won(pg, 'mirror', 'C', 2, bad, chk);
+          notes.push('mirror C: resumed, ' + m0.all + ' squares, 2 stars');
+        } else {
+          // ---- Turn It, band D: the mirror image, hints 1-2, every shape ----
+          await open(pg, 'rotate', 5, true);
+          await pg.waitForSelector('#btstage .ro-ch');
+          await chk('turn it D');
+          const r0 = await P.roNow(pg);
+          await P.roTap(pg, r0.flip);
+          const rg = await pg.evaluate('(' + gentle.toString() + ')(".ro-msg")');
+          if (!/flipped/.test(rg.text) || rg.color !== rg.ink) bad.push('the mirror image tap should say it is flipped: ' + JSON.stringify(rg));
+          else notes.push('"' + rg.text + '"');
+          await hintNow(pg, false);
+          await hintNow(pg, true);
+          const rh = await pg.evaluate(() => ({ turns: document.querySelectorAll('.ro-turns .ro-tn').length, hints: S.bt.cur.hints, off: document.querySelectorAll('.ro-ch.off').length }));
+          if (rh.turns !== 4 || rh.hints !== 2 || rh.off) bad.push('turn it hint 2 should show the four turns: ' + JSON.stringify(rh));
+          await chk('turn it D hint 2');
+          await P.roWin(pg);
+          await won(pg, 'rotate', 'D', 1, bad, chk);
+          // ---- Cubes and Mirror, band D, straight through ----
+          await open(pg, 'cubes', 5, false);
+          await pg.waitForSelector('#btstage .cb-pad');
+          await chk('cubes D');
+          await P.cbWin(pg);
+          await won(pg, 'cubes', 'D', 3, bad, chk);
+          await open(pg, 'mirror', 5, false);
+          await pg.waitForSelector('#btstage .mr-cell.t');
+          await chk('mirror D');
+          await P.mrFill(pg);
+          await won(pg, 'mirror', 'D', 3, bad, chk);
+          notes.push('turn it D 1 star, cubes D and mirror D 3 stars');
+        }
+        if (bad.length) fail(tag + ':\n  ' + bad.join('\n  '));
+        else step(tag + ': Home -> Brain Teasers -> ' + notes.join('; ') + '; targets 48 px (grid 44), no sideways scroll, no emoji chrome');
+        await vwait(pg, 300);
+        network.push(...app.network);
+        for (const e of app.errors) fail(e);
+        await app.ctx.close();
+      }
+    }
+
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');
   } catch (e) {
