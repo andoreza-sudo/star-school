@@ -117,6 +117,8 @@ open-ended writing grading, any generative AI at runtime.
 | `S.bt` | P3-01 | `{type: {lvl, stars, seen: [], best}}`, plus `S.bt.daily` |
 | `S.ptCfg.need` | P5-09 | integer 0-120, minutes of learning needed each day before the Game Room opens (absent = 0) |
 | `S.pt.open`, `S.pt.met` | P5-09 | `open`: day key the grown-up opened the Game Room anyway; `met`: `{day, min}` learn-first already done today (both absent = none) |
+| `S.bb.bp` | G-01 | `{blueprintId: stars 1-3}` Block Builder blueprint stars by id (`tower`, `stairs`, `wall`, `gate`, `tree`, `bridge`, `pond`, `snowman`, `boat`, `castle`, `house`, `pyramid`, `palace`); made on first read from the old index array `S.bb.ch` (kept, still written for the ten old blueprints); absent = made again |
+| `S.bb.worlds[i].goals`, `.n`, `.kinds`, `S.bb.seen` | G-01 | per world: free-build goals done `{goalId: 1}`, blocks built (count), block ids used (array); `seen` 1 once the first tip showed. All optional, read with defaults; world data `d` unchanged |
 
 ## 5. Phases
 

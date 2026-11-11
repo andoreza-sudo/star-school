@@ -13859,6 +13859,193 @@ run('game time v2 P5-09',()=>{
   return{problems:r,note:'ptCalc table, learn first, limits, midnight, Brain Teasers, old saves'};
 });
 
+// ---- G-01: Block Builder made easy to use by touch (src/js/60-blocks.js, src/css/60-game-blocks.css; R-02 section 3) ----
+run('block builder G-01',()=>{
+  const p=[];
+  const rd=f=>fs.readFileSync(path.join(SRC,f),'utf8');
+  const o=(()=>eval(js+`;(()=>{
+  const r={bad:[],notes:[]},bad=m=>r.bad.push(m);
+  // canvas sizes (CSS px) of the scene at 380x780, 600x960, 1024x600 and 1024x552 (portrait: under the bar; landscape: beside it)
+  const SIZES=[[353,440,'380x780'],[576,620,'600x960'],[660,460,'1024x600'],[660,410,'1024x552']];
+  const topW=f=>{const xs=f.poly.map(q=>q[0]);return Math.max(...xs)-Math.min(...xs)};
+  // 1. targets: block tops at least 48 px wide where it opens, in free build and in every blueprint; every island edge reachable
+  let minFree=1e9,minBp=1e9;
+  for(const [W,H,tag] of SIZES){
+    const E=bbMake(bbGen('island',7),null);E.size(W,H,1);E.home();E.render({});
+    for(const f of E.faces)if(f.f=='top'&&!f.deco)minFree=Math.min(minFree,topW(f));
+    E.F=[0,0,E.F[2]];E.pan(-5000,-5000);E.clamp();
+    if(E.F[0]<0||E.F[1]<0||E.F[0]>BW||E.F[1]>BD)bad('camera focus outside the island at '+tag);
+    E.F=[BW,BD,1];const c=E.proj(BW-.5,BD-.5,1);if(Math.abs(c[0]-W/2)>E.a()*2||Math.abs(c[1]-H/2)>E.a()*2)bad('the far corner cannot be brought to the middle at '+tag);
+    for(const bp of BBP){
+      const B=bbMake(bbFlat(),bbGoal(bp));B.size(W,H,1);B.home();B.render({});
+      const g=B.faces.filter(f=>f.ghost&&f.f=='top');
+      if(!g.length)bad(bp.id+': no see-through block to tap at '+tag);
+      for(const f of g)minBp=Math.min(minBp,topW(f));
+    }
+    // Closer / Farther keep the middle
+    const z=bbMake(bbGen('island',7),null);z.size(W,H,1);z.home();const F0=z.F.slice();z.zoomAt(1.4);z.zoomAt(1/1.4);
+    if(Math.hypot(z.F[0]-F0[0],z.F[1]-F0[1])>1e-9)bad('zoom moved the middle at '+tag);
+  }
+  if(minFree<48)bad('free-build block tops '+minFree.toFixed(1)+' px wide (want 48+)');
+  if(minBp<48)bad('blueprint see-through tops '+minBp.toFixed(1)+' px wide (want 48+)');
+  r.notes.push('tops '+Math.round(minFree)+' px, blueprint tops '+Math.round(minBp)+' px');
+  // 2. the palette: every block once, grouped, TNT last; locked blocks named
+  const ids=BBPAL.slice().sort((a,b)=>a-b).join();
+  if(ids!==[...Array(BLOCKS.length-1)].map((_,i)=>i+1).join())bad('palette is not every block once: '+BBPAL);
+  if(BBPAL[BBPAL.length-1]!==20||BLOCKS[20].k!=='tnt')bad('TNT is not last in the palette');
+  if(BB_GROUPS.map(g=>g[0]).join()!=='Nature,Building,Special')bad('palette groups: '+BB_GROUPS.map(g=>g[0]));
+  if(BBPAL[0]===20)bad('TNT first');
+  for(const b of BLOCKS.slice(1))if(!b.n||/\\p{Extended_Pictographic}/u.test(b.n))bad('block without a plain name: '+b.k);
+  // 3. TNT: no Build tap lights it (it builds on top); Break takes it away quietly; only Boom lights it
+  {
+    const w=bbFlat();for(let k=1;k<=3;k++)w[bbI(8,8,k)]=3;w[bbI(8,8,4)]=20;w[bbI(9,8,1)]=20;
+    let lit=0,tried=0;
+    for(const tool of ['build','line','wall','floor','stamp','break']){
+      for(const ang of [0,1,2,3]){
+        const E=bbMake(w.slice(),null);E.size(353,440,1);E.home();E.F=[8.5,8.5,3];E.rot=ang;E.ang=ang*Math.PI/2;E.tool=tool;E.sel=4;E.render({});
+        for(const f of E.faces.filter(q=>E.get(q.i,q.j,q.k)===20)){
+          const cx=f.poly.reduce((s,q)=>s+q[0],0)/4,cy=f.poly.reduce((s,q)=>s+q[1],0)/4;
+          const before=E.w.slice(),res=E.tap(cx,cy);tried++;
+          if(res.kind==='light')lit++;
+          if(tool==='build'&&f.k===4&&f.f==='top'&&!(res.kind==='place'&&E.get(8,8,5)===4))bad('a Build tap on the top of TNT did not build on it: '+JSON.stringify(res));
+          if(tool==='break'&&res.kind==='break'&&before[bbI(f.i,f.j,f.k)]===20&&E.w.filter(v=>v).length!==before.filter(v=>v).length-1)bad('Break on TNT took more than one block');
+          E.w.set(before);E.render({});
+        }
+      }
+    }
+    if(lit)bad(lit+' of '+tried+' taps on TNT with a non-Boom tool lit it');
+    const E=bbMake(w.slice(),null);E.size(353,440,1);E.home();E.F=[8.5,8.5,3];E.tool='boom';E.render({});
+    const f=E.faces.find(q=>E.get(q.i,q.j,q.k)===20&&q.f==='top'&&q.k===4),res=E.tap(...f.poly[0].map((v,i)=>(f.poly[0][i]+f.poly[2][i])/2));
+    if(res.kind!=='light'||res.at.join()!=='8,8,4')bad('Boom on TNT: '+JSON.stringify(res));
+    const n=E.faces.find(q=>E.get(q.i,q.j,q.k)===1&&q.f==='top');
+    if(E.tap(...n.poly[0].map((v,i)=>(n.poly[0][i]+n.poly[2][i])/2)).kind!=='notnt')bad('Boom on grass should only say what Boom is for');
+    // the play screen lights TNT only for a 'light' result (from the Boom tool), and Break never calls light()
+    const src=rd('js/60-blocks.js');
+    const calls=[...src.matchAll(/\\blight\\(([^)]*)\\)/g)].map(m=>m[1]);
+    if(calls.some(c=>!/^\\.\\.\\.r\\.at, 1\\.6$|^a, b, z, \\.15 \\+ d \\* \\.06$|^i, j, k, t$/.test(c)))bad('light() called from somewhere new: '+calls.join(' | '));
+  }
+  // 4. a Build tap puts the block on top of the tapped column, whatever face of the column is tapped
+  {
+    const w=bbFlat();for(let k=1;k<=4;k++)w[bbI(7,7,k)]=3;
+    const E=bbMake(w,null);E.size(660,460,1);E.home();E.F=[7.5,7.5,3];E.sel=8;E.render({});
+    for(const f of E.faces.filter(q=>q.i===7&&q.j===7&&q.k>=1)){
+      E.render({});const c=[(f.poly[0][0]+f.poly[2][0])/2,(f.poly[0][1]+f.poly[2][1])/2],h=E.hit(...c);
+      if(!h||h.i!==7||h.j!==7)continue;
+      const t=E.target(...c);if(!t||t.i!==7||t.j!==7||t.k!==5)bad('tap on the column ('+f.f+' at '+f.k+') targets '+JSON.stringify(t));
+    }
+    E.side=true;const s=E.faces.find(q=>q.i===7&&q.j===7&&q.k===2&&q.f==='side');
+    const ts=E.target((s.poly[0][0]+s.poly[2][0])/2,(s.poly[0][1]+s.poly[2][1])/2);
+    if(!ts||ts.k!==2||Math.abs(ts.i-7)+Math.abs(ts.j-7)!==1)bad('Build on the sides: '+JSON.stringify(ts));
+  }
+  // 5. blueprints: only the next layer can be tapped; every see-through block of it is reached by a tap on it (all four turns);
+  //    a tap never reaches a hidden block; a wrong block counts once per spot, a guess never; built with no mistakes
+  const sizes=[];
+  for(const bp of BBP){
+    const goal=bbGoal(bp);sizes.push(goal.size);
+    for(const rot of [0,1,2,3]){
+      const E=bbMake(bbFlat(),goal);E.size(353,440,1);E.home();E.rot=rot;E.ang=rot*Math.PI/2;
+      let steps=0;
+      while(!E.done()&&steps++<200){
+        E.render({});const L=E.layer(),todo=E.todo();
+        const gh=E.faces.filter(f=>f.ghost);
+        if(gh.some(f=>f.k!==L))bad(bp.id+': a see-through block above the next layer can be tapped');
+        // sample the canvas: a tap with a block that is not wanted never reaches a cell outside this layer
+        if(steps===1||steps%3===0)for(let y=8;y<440;y+=24)for(let x=8;x<353;x+=24){
+          const keep={w:E.w.slice(),m:E.miss,a:[...E.missAt]};E.sel=26;const res=E.bpTap(x,y);
+          if(res.kind==='place')bad(bp.id+': a wrong block was placed');
+          if(res.kind==='wrong'&&!todo.includes(res.idx))bad(bp.id+': a tap reached a hidden block');
+          E.w.set(keep.w);E.miss=keep.m;E.missAt=new Set(keep.a);
+        }
+        const f=gh.filter(q=>q.f==='top').pop();
+        if(!f){bad(bp.id+': no top to tap on layer '+L);break}
+        const i=bbI(f.i,f.j,f.k);E.sel=goal.get(i);
+        const res=E.bpTap((f.poly[0][0]+f.poly[2][0])/2,(f.poly[0][1]+f.poly[2][1])/2);
+        if(res.kind!=='place'||res.cells[0]!==i)bad(bp.id+' turn '+rot+': tapping a see-through block with its block did not build it ('+res.kind+')');
+      }
+      if(!E.done()||E.miss)bad(bp.id+' turn '+rot+': not built without mistakes ('+E.prog()+'/'+goal.size+', '+E.miss+')');
+    }
+    // every see-through block of every layer is the front-most see-through face somewhere on its top (no layer hides another)
+    const E=bbMake(bbFlat(),goal);E.size(353,440,1);E.home();
+    while(!E.done()){
+      E.render({});
+      for(const n of E.todo()){
+        const g=E.faces.filter(f=>f.ghost&&bbI(f.i,f.j,f.k)===n&&f.f==='top')[0];
+        const c=[(g.poly[0][0]+g.poly[2][0])/2,(g.poly[0][1]+g.poly[2][1])/2],h=E.hit(...c,q=>q.ghost);
+        if(!h||bbI(h.i,h.j,h.k)!==n)bad(bp.id+': a see-through block of the next layer is covered at its middle');
+      }
+      for(const n of E.todo())E.w[n]=goal.get(n);
+    }
+  }
+  r.notes.push('blueprints '+sizes.join(', '));
+  if(sizes[0]!==3||sizes.some((s,i)=>i&&s<sizes[i-1])||!sizes.includes(6)||!sizes.includes(10)||!sizes.includes(16))bad('blueprint steps: '+sizes);
+  for(let i=1;i<sizes.length;i++)if(sizes[i]>sizes[i-1]*2.1)bad('blueprint jump '+sizes[i-1]+' -> '+sizes[i]);
+  if(new Set(BBP.map(b=>b.id)).size!==BBP.length)bad('blueprint ids repeat');
+  // a wrong block: counted once per spot; a guess (nothing under the finger) is never counted
+  {
+    const goal=bbGoal(BBP.find(b=>b.id==='wall'));const E=bbMake(bbFlat(),goal);E.size(353,440,1);E.home();E.render({});
+    const f=E.faces.filter(q=>q.ghost&&q.f==='top').pop(),c=[(f.poly[0][0]+f.poly[2][0])/2,(f.poly[0][1]+f.poly[2][1])/2];
+    E.sel=3;const a=E.bpTap(...c),b=E.bpTap(...c);
+    if(a.kind!=='wrong'||a.want!==8||E.miss!==1||b.counted)bad('a wrong block: '+JSON.stringify([a,b,E.miss]));
+    if(E.bpTap(2,2).kind!=='miss'||E.miss!==1)bad('a tap in the sky counted a mistake');
+    // 6. Undo / Redo restore the blocks, the progress and the mistakes together
+    E.sel=8;E.bpTap(...c);const p1=E.prog(),m1=E.miss;
+    E.render({});const f2=E.faces.filter(q=>q.ghost&&q.f==='top').pop();E.sel=3;E.bpTap((f2.poly[0][0]+f2.poly[2][0])/2,(f2.poly[0][1]+f2.poly[2][1])/2);
+    E.sel=8;E.bpTap((f2.poly[0][0]+f2.poly[2][0])/2,(f2.poly[0][1]+f2.poly[2][1])/2);const p2=E.prog(),m2=E.miss;
+    E.doUndo();const p3=E.prog(),m3=E.miss;E.doRedo();const p4=E.prog(),m4=E.miss;E.doUndo();E.doUndo();const p5=E.prog(),m5=E.miss;
+    // undo goes back to the moment before the last block: the blocks and the mistakes as they were then
+    if(!(p1===1&&m1===1&&p2===2&&m2===2&&p3===1&&m3===2&&p4===2&&m4===2&&p5===0&&m5===1))bad('undo/redo progress and mistakes: '+[p1,m1,p2,m2,p3,m3,p4,m4,p5,m5]);
+    if(E.doRedo()!==true||E.prog()!==1)bad('redo after two undos');
+    E.push();if(E.redo.length)bad('a new step must clear Redo');
+  }
+  // free-build undo / redo
+  {
+    const E=bbMake(bbFlat(),null);E.size(353,440,1);E.home();E.render({});
+    const f=E.faces.find(q=>q.f==='top'&&q.i===8&&q.j===8),c=[(f.poly[0][0]+f.poly[2][0])/2,(f.poly[0][1]+f.poly[2][1])/2];
+    E.sel=8;const r1=E.tap(...c);E.render({});E.tap(...c);const n2=E.w.filter(v=>v).length;
+    E.doUndo();const n3=E.w.filter(v=>v).length;E.doRedo();const n4=E.w.filter(v=>v).length;
+    if(r1.kind!=='place'||n3!==n2-1||n4!==n2||E.get(8,8,2)!==8)bad('free build undo/redo: '+[r1.kind,n2,n3,n4]);
+    E.tool='break';E.render({});const t=E.faces.find(q=>q.i===8&&q.j===8&&q.k===2&&q.f==='top');const n5=E.w.filter(v=>v).length;
+    E.tap((t.poly[0][0]+t.poly[2][0])/2,(t.poly[0][1]+t.poly[2][1])/2);if(E.w.filter(v=>v).length!==n5-1)bad('Break took more than one block');
+  }
+  // 7. old saves: worlds and blueprint stars load (by id), nothing lost, damaged values do not crash, bbS keeps one object
+  {
+    const old12=new Uint8Array(1440);for(let i=0;i<144;i++)old12[i]=1;old12[(1*12+5)*12+5]=8;
+    const d12=btoa(String.fromCharCode(...old12)),w12=bbDecode(d12);
+    if(w12[bbI(7,7,1)]!==8||w12[bbI(2,2,0)]!==1||w12[bbI(0,0,0)]!==10)bad('the oldest 12x12x10 world did not load');
+    const w16=bbGen('mountain',42),back=bbDecode(bbEncode(w16));
+    if(back.join()!==w16.join())bad('a world does not survive save and load');
+    const keep=S.bb;
+    S.bb={worlds:[{name:'Old',d:bbEncode(w16),e:'x'}],cur:0,ch:[3,2,1,0,3]};
+    const bpS=bbBP();
+    if(JSON.stringify(bpS)!=='{"tower":3,"wall":2,"tree":1,"snowman":3}')bad('old blueprint stars by id: '+JSON.stringify(bpS));
+    if(S.bb.ch.join()!=='3,2,1,0,3')bad('the old ch array changed');
+    if(!bbOpen(BBP.findIndex(b=>b.id==='stairs'))||!bbOpen(BBP.findIndex(b=>b.id==='gate'))||!bbOpen(BBP.findIndex(b=>b.id==='boat')))bad('a blueprint before or after a done one is locked');
+    if(bbOpen(BBP.findIndex(b=>b.id==='house')))bad('a blueprint two past the last done one is open');
+    if(bbS()!==bbS()||bbS().worlds[0].name!=='Old'||bbDecode(bbS().worlds[0].d).join()!==w16.join())bad('the old world changed');
+    if(bbStars(0)!==3||bbStars(BBP.findIndex(b=>b.id==='pond'))!==0)bad('bbStars');
+    for(const v of [null,5,'x',[],{worlds:'no'},{worlds:[null,{name:'a'}],cur:9},{worlds:[],bp:[1,2]}]){
+      S.bb=v;try{const b=bbS();bbBP();if(!b.worlds.length||b.cur!==0)bad('damaged S.bb '+JSON.stringify(v)+' -> '+JSON.stringify(b).slice(0,80))}catch(e){bad('damaged S.bb '+JSON.stringify(v)+' crashed: '+e.message)}
+    }
+    S.bb=keep;
+  }
+  return r})()`))();
+  for(const m of o.bad)p.push(m);
+  // 8. tokens only: no raw colour in the code or the CSS; every CSS variable is a token; emoji only the animals (content pictures)
+  const src=fs.readFileSync(path.join(SRC,'js','60-blocks.js'),'utf8'),css=fs.readFileSync(path.join(SRC,'css','60-game-blocks.css'),'utf8').replace(/\/\*[\s\S]*?\*\//g,'');
+  const tok=fs.readFileSync(path.join(SRC,'css','00-tokens.css'),'utf8');
+  if(/#[0-9a-fA-F]{3,8}\b(?![\w-])|rgba?\(\s*\d|hsla?\(/.test(src.replace(/#(bb|gt|gpause|app|toast|back)[\w-]*/g,'')))p.push('60-blocks.js: a raw colour');
+  if(/#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(/.test(css.replace(/#bb[\w-]*/g,'')))p.push('60-game-blocks.css: a raw colour');
+  for(const v of css.matchAll(/var\(--([a-z0-9-]+)/g))if(!tok.includes('--'+v[1]+':'))p.push('60-game-blocks.css: --'+v[1]+' is not a token');
+  for(const m of src.matchAll(/bbCol\('([a-z0-9:-]+)'\)|bbA\('([a-z0-9-]+)'/g)){const t=m[1]||m[2],n=t.startsWith('sc:')?'--sc-'+t.slice(3):'--ill-'+t;if(!tok.includes(n+':'))p.push('60-blocks.js: '+t+' is not a token');}
+  const em=[...src.matchAll(/\p{Extended_Pictographic}/gu)].map(m=>m[0]);
+  if(em.some(e=>!'🐷🐔🐑🐄🐰🐱🐶🦆'.includes(e)))p.push('60-blocks.js: emoji other than the animals: '+[...new Set(em)].join(''));
+  if(/petE\(/.test(src))p.push('the emoji pet (petE) is still drawn');
+  if(/(^|[;{\s])(-webkit-)?(backdrop-)?filter\s*:/.test(css))p.push('60-game-blocks.css: filter used');
+  if(partOf('60-game-blocks.css')!=='games')p.push('60-game-blocks.css must go into the games file');
+  if(/\.bb(wrap|cv|tools|pal|k)\b/.test(fs.readFileSync(path.join(SRC,'css','40-games.css'),'utf8')))p.push('old Block Builder rules left in 40-games.css');
+  return{problems:[...new Set(p)].slice(0,50),note:o.notes.join('; ')};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){
