@@ -1,0 +1,30 @@
+/* Question kinds A (P1-03): number pad extras, multi-select, order. Tokens only (00-tokens.css). */
+
+/* number pad: extra key (. or +/-) on its own row; several slots (fraction, remainder, mixed number) */
+.pad .k{min-height:var(--tap)}
+.pad .x{grid-column:1/-1;background:var(--star-tint)}
+.slot.sl-on{border-color:var(--brand);background:var(--brand-tint)}
+.fslot{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 .1em}
+.fbar{align-self:stretch;border-top:.07em solid var(--ink);margin:.06em 0}
+.rsep{font-size:.5em;font-weight:700;margin:0 .3em;color:var(--ink-3);vertical-align:middle}
+
+/* multi: tick boxes inside the choice buttons, then a Check button */
+.mchoices .mc{display:flex;align-items:center;justify-content:center;gap:var(--s-2);min-height:var(--tap);font-size:clamp(20px,3.6vh,28px)}
+.mc .ml{min-width:0;overflow-wrap:anywhere}
+.mk{flex:none;width:26px;height:26px;border-radius:var(--r-chip);border:3px solid var(--ink-3);display:inline-flex;align-items:center;justify-content:center;color:transparent}
+.mc.on{background:var(--brand-tint);outline:4px solid var(--brand);outline-offset:-4px}
+.mc.on .mk{background:var(--brand);border-color:var(--brand);color:var(--surface)}
+.mc.right{background:var(--good-tint);outline:4px solid var(--good-ink);outline-offset:-4px}
+.mc.right .mk{background:var(--good-ink);border-color:var(--good-ink);color:var(--surface)}
+.mc.wrong{background:var(--try-tint);outline:4px dashed var(--try-ink);outline-offset:-4px;opacity:1}
+.mgo{display:block;min-width:200px;min-height:var(--tap);margin:var(--s-3) auto 0;font-size:var(--fs-5);background:var(--good-ink);color:var(--surface)}
+.mgo:disabled{opacity:.45}
+
+/* order: slots in a row, tiles below; a filled slot is tapped to take the tile back */
+.oslots{display:flex;flex-wrap:wrap;gap:var(--s-2);justify-content:center;max-width:560px;margin:0 auto var(--s-4)}
+.os{min-width:var(--tap);min-height:var(--tap);padding:4px 10px;font-size:clamp(20px,3.8vh,30px);box-shadow:none;background:var(--surface-2);border:3px dashed var(--ink-3)}
+.os.full{background:var(--brand-tint);border:3px solid var(--brand)}
+.os.ok{background:var(--good-tint);border-color:var(--good-ink)}
+.os.rev{background:var(--try-tint);border-color:var(--try-ink)}
+.ot{min-width:var(--tap);min-height:var(--tap);padding:8px 14px;font-size:clamp(20px,3.8vh,30px);background:var(--star-tint)}
+.ot.used{visibility:hidden}

@@ -1,0 +1,14 @@
+/* Object art palette (P4-13; drawings in src/js/16-art-a.js). Roles map to design tokens; 2 = darker shade, 3 = light tint. */
+.art{
+  fill:currentColor;stroke-linecap:round;stroke-linejoin:round;
+  --a-r:var(--danger);--a-r2:var(--read-shade);
+  --a-o:var(--play);--a-o2:var(--play-shade);
+  --a-y:var(--star);--a-y2:var(--star-shade);--a-y3:var(--star-tint);
+  --a-g:var(--good);--a-g2:var(--good-ink);
+  --a-b:var(--brand);--a-b2:var(--brand-shade);--a-b3:var(--brand-tint);
+  --a-v:var(--bt);--a-v2:var(--bt-shade);
+  --a-p:var(--read);--a-p2:var(--read-tint);
+  --a-n:var(--try-ink);
+  --a-t:var(--try);--a-t2:var(--try-tint);
+  --a-w:var(--surface);--a-s:var(--ink-3);--a-s2:var(--line);
+}

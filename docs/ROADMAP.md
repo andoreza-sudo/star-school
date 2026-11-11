@@ -145,15 +145,16 @@ that respects the "Deps" line, but only one chunk at a time lands on `main`.
 | 2 | P0-05, P5-04, P1-01, P1-02, P4-01, P4-02 | Streak calendar; first new icons |
 | 3 | P1-03, P1-04, P1-05, P1-06, P1-09, P1-10, P1-11 | Grade pick at setup; nothing locked below grade |
 | 4 | P1-07, P1-08, P5-02, P5-03, P5-05, P5-06 | Placement quiz, smarter rounds, spaced review, report card |
-| 5 | P2-01 to P2-07 (math PreK-3), P2-15, P2-18, P2-19 | Big content jump for younger grades |
+| 5 | P2-01 to P2-07 (math PreK-3), P2-15, P2-18, P2-19, P4-13 | Big content jump for younger grades, with drawn pictures for counting and core nouns |
 | 6 | P4-03, P4-04, P4-05, P4-08, P4-10, P4-11 | App looks new on the main screens |
 | 7 | P2-08 to P2-14 (math 4-6), P2-20 to P2-29 (ELA) | Upper grades |
 | 8 | P3-01 to P3-10 | Brain Teasers open |
-| 9 | P4-06, P4-07, P4-09, P4-12 to P4-17, P2-16, P2-17 | Rest of the redesign, tracing |
+| 9 | P4-06, P4-07, P4-09, P4-12, P4-14 to P4-17, P2-16, P2-17 | Rest of the redesign, tracing |
 | 10 | P2-30 to P2-37, P3-11 to P3-17, P5-07 to P5-10 | Spanish growth, Discover, remaining puzzles |
 | 11 | P6-01 to P6-05 | Version 1.0 |
 
 Rule for anything built after P4-01 and P4-02 land: new UI must use design tokens and `ico()` icons, never new hard-coded colors or emoji chrome.
+Content pictures go through `picFor(word, emoji)` (`src/js/15-pics.js`, added before wave 5) so object art replaces emoji everywhere without touching generators. P4-13 moved from wave 9 to wave 5 for the same reason.
 
 ## 6. Chunk catalog
 
