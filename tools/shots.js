@@ -1044,6 +1044,39 @@ Object.assign(SCREENS, {
     stepsStory(['First find how many Mia has after finding 5 more.', 'Then take away the 4 she gave. How many are left?'])), 2),
 });
 
+// P2-09 Factor Factory: a map of the world, one question of several levels, and step hints (Help tapped `taps` times)
+function fyShot(sk, lv, want, taps) {
+  return async p => {
+    await p.evaluate(([sk, lv, want]) => {
+      S.grade = 4; S.name = 'Ava'; S.buddy = 'Ben';
+      window.say = () => {};
+      start('math', NODES.math.findIndex(n => n.sk == sk && n.lv == lv));
+      let q; for (let i = 1; i < 800; i++) { q = genQ(sk, lv, i); if (new RegExp(want).test(q.label)) break; }
+      G.q = q; renderQ();
+    }, [sk, lv, want]);
+    for (let i = 0; i < (taps || 0); i++) { await p.click('#hb'); await p.waitForTimeout(120); }
+  };
+}
+Object.assign(SCREENS, {
+  'fy-map': { run: async p => { await p.evaluate(() => { S.grade = 4; pathMap('math', PATHS.math.worlds.findIndex(w => w.id === 'm_factory')); }); } },
+  'fy-mfact5': { run: fyShot('mfact', 5, '^\\d+ × \\d+ = \\?$') },
+  'fy-pv4-value': { run: fyShot('pv', 4, '^value of') },
+  'fy-pv4-exp': { run: fyShot('pv', 4, ' = \\?$') },
+  'fy-pv4-words': { run: fyShot('pv', 4, '^words') },
+  'fy-pv4-cmp': { run: fyShot('pv', 4, '^\\d+ \\? \\d+$') },
+  'fy-mbig3': { run: fyShot('mbig', 3, '^\\d{4} × ') },
+  'fy-big7': { run: fyShot('big', 7, '^\\d+ \\+ \\d+ \\+ ') },
+  'fy-sub8': { run: fyShot('sub', 8, '^\\d{6} − ') },
+  'fy-dbig2': { run: fyShot('dbig', 2, ' ÷ ') },
+  'fy-dbig3': { run: fyShot('dbig', 3, '^\\d{4} ÷ ') },
+  'fy-fact1-multi': { run: fyShot('fact', 1, '^all factors') },
+  'fy-fact2': { run: fyShot('fact', 2, 'which is prime') },
+  'fy-round3': { run: fyShot('round', 3, '^round \\d{6} to 1000$') },
+  'fy-steps-mul': { run: fyShot('mbig', 4, '^\\d+ × \\d+ = \\?$', 3) },
+  'fy-steps-div': { run: fyShot('dbig', 3, '^\\d{3} ÷ \\d = \\?$', 3) },
+  'fy-steps-round': { run: fyShot('round', 3, '^round \\d{6} to 100$', 2) },
+});
+
 async function main() {
   const args = process.argv.slice(2);
   let fixtureArg = null;
