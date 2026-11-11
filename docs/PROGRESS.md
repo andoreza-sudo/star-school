@@ -4,9 +4,9 @@ The running record of what has shipped. Newest entry first. Every chunk adds one
 
 **Next up:** P2-24, P2-08, P2-21, P2-23
 
-**Next up:** P2-09, P2-10, P2-26, P2-28, P2-29
+**Next up:** P2-09, P2-10, P2-26, P2-28
 
-**Current version:** v85
+**Current version:** v86
 
 ## Chunk status
 
@@ -66,6 +66,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P2-23 v83
 - P2-08 v84
 - P2-27 v85
+- P2-29 v86
 
 ## Handoff notes
 
@@ -278,6 +279,18 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-11) Icons wanted from P4-03: `balloon` (Bonus game, today `gamepad`), `sparkle` / `confetti`, `unlock` (open padlock for "Next stop unlocked", today `map`), `zap` (a lightning with a spark for boss hits; today `bolt`), `sticker` (single sticker for the prize row), `medal` (the prize rosette as an icon), `heart-half` (boss life bar), `chest` (the treasure chest at icon size, e.g. for the round track where renderQ shows the gift emoji).
 
 ## Log
+
+### P2-29 6th grade passages (v87, 2026-11-11, Claude)
+- What changed: `COMPSPEC[6]` and 10 original grade 6 passages appended at the end of `src/data/d-comp.js` (nothing reordered): fiction g6f01-g6f05 (The Silent Foghorn, The Wobbling Robot Arm, Water for Alder Creek, Marisol's Map, The Tuba and the Train; each has a problem and a solution) and nonfiction g6n01-g6n05 (Riding the Tides, How Bees Share Directions, Roads That Built an Empire, Why Leaves Change Color, Coral Reefs, Cities Under the Sea; settled facts only). Words per passage 233-280 (CURRICULUM 230-300), 12-16 sentences, Flesch-Kincaid 5.0-8.2 (limit 10.5; the validator only has a ceiling). 50 questions, 5 per passage, each passage has central idea (`main`), inference, figurative meaning, best evidence ("which detail/sentence shows...", the choices are quoted from the passage) and author's purpose (`purpose`, fiction and 2 nonfiction) or claim (`claim`, 3 nonfiction). The right answer is the longest choice in 1 of 50 questions (limit 50 percent).
+- Stops: `comp 7` ("Read a Story 6") and `info 5` ("Learn About It 6") are the last two stops of `r_legend` (Legend Lab), after Spell Tough Words, before the boss. `SK.comp.max` 7, `SK.info.max` 5.
+- Edits to existing files: `37-bank.js` (BANKLIM.text 1200 to 2000 characters: a 300-word passage is about 1,700; `bankCtx` adds class `long` to the panel when the passage is over 700 characters), `38-bank.css` (portrait phones: a `long` panel body is 19vh and the card padding and gaps shrink, so the question line and four choices stay on a 380x780 screen; grade 2 passages are under 700 characters and are unchanged), `38-skills.js`, `42-paths.js`, tools (below).
+- Save safety: stars are keyed by stop id (`comp7`, `info5`), no migration, `LATEST` unchanged. Check compares every other stop with a map without the two stops over 6 fixtures x 6 grades plus a built "finished Legend Lab" save at grades 2, 3, 6: 0 stars moved, 0 stops re-locked, both new stops NEW and open. Legend Lab is the last world of the read path, so for a child who finished everything else `curNode` falls back to the only open, unpassed stops and the map opens on `comp7` (the first new stop). That is the existing fallback, not a new rule; the test allows it only there (current stop moved on 3 of 36 loads). Everyone else keeps the same current stop.
+- Tests (test.js): new "passages grade 6 P2-29": `compProblems(6)`, counts, required types per passage, evidence choices quoted from the text, 3,000 seeded questions each for comp 7 and info 5 (0 kindProblems, one right choice of 4, hint at most 140 characters, say, label, render), 50 distinct labels, live rounds reach all 5 passages, stops and their order (filtered to comp/info stops), harder/easier follow the map, fixture save safety. Existing checks changed: (1) every loop over levels 1..max of `comp`/`info` now skips a level that has no passages (comp 4-6 and info 2-4 wait for the grade 3-5 chunks; the loops are the generator fuzz, seed reproducibility, the 300-seed sweep, the review sweep and the 60-day review model), (2) `RESERVED` in "every level is reachable from some node" lists comp 4-6 and info 2-4 until those stops exist, (3) the banks check's "long passage" probe uses 1,100 words since the limit grew to 2,000 characters. When grades 3-5 merge, the skips become no-ops and RESERVED entries can go.
+- Smoke `// P2-29`: Legend Lab comp 7 and info 5 at 380x780 with real taps, 10 questions each: question line fully on screen with the panel open, 4 choices at least 48 px, no sideways scroll, panel text present, a 10/10 round saves stars. `playRound` got an optional `onAsk` callback. Shots story6-comp and story6-info (shots.js: `compShot` takes a grade) looked at at 380x780, 600x960, 1024x600.
+- Known limit: at 360x640 the longest questions overflow the card by up to 66 px (the panel shows 3 lines of a 300-word passage and scrolls); 380x780 and up are fine. A tap on "Hide" gives the full screen to the question.
+- check.sh: build, contrast, hex guard, test.js 60 of 60, smoke OK (no console errors, no network); index.html 1,093,541 bytes. Two other smoke failures seen under a machine load of 12-16 were timing only (a 50 ms map-draw median, an 8 s wait) and passed on rerun. One existing expectation had to change: the P2-25 smoke set only sight5, pic6, build6 as done and expected the map on comp3, but on this base Word Workshop also has gram2, vocab2, vocab3, gram3 before it; they are now in the done list.
+- Files: src/data/d-comp.js, src/js/37-bank.js, 38-skills.js, 42-paths.js, src/css/38-bank.css, tools/test.js, smoke.js, shots.js, build.py (VER v87, provisional), docs/PROGRESS.md, built output.
+- Merge: built on a parallel branch, renumbered v85 -> v86 at merge.
 
 ### P2-27 4th grade passages (v85, 2026-11-11, Claude)
 - What changed: `COMPSPEC[4]` and 10 original grade 4 passages (5 stories g4f01-g4f05, 5 nonfiction g4n01-g4n05), 5 questions each = 50 questions, appended at the end of `src/data/d-comp.js` (nothing reordered). Question types per CURRICULUM E-comp grade 4: main idea, inference, summary choice, vocabulary in context, and theme (stories) or text structure (nonfiction: sequence, compare and contrast, cause and effect, problem and solution, description).

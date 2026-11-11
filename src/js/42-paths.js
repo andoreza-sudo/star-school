@@ -21,7 +21,7 @@ const PATHS={
   {id:'r_summit',g:3,n:'Story Summit',e:'🏔️',c:'#e2e8f0',nodes:[['spell',4,'Spell Tricky Sounds'],['gram',4,'Verb Tenses'],['vocab',4,'Prefixes'],['gram',5,'Contractions & Agreeing'],['vocab',5,'Suffixes']]},
   {id:'r_library',g:4,n:'Dragon Library',e:'🐉',c:'#fee2e2',nodes:[['spell',5,'Spell Word Parts'],['gram',6,'Pronouns & Look-Alikes'],['vocab',6,'Homophones'],['vocab',7,'Context Clues'],['gram',7,'Commas & Quotes'],['vocab',8,'Figurative Language'],['comp',5,'Longer Stories'],['info',3,'Learn More Facts']]},
   {id:'r_island',g:5,n:'Author Island',e:'🏝️',c:'#fef9c3',nodes:[['spell',6,'Spell Big Words'],['gram',8,'More Parts of Speech'],['vocab',9,'Word Roots']]},
-  {id:'r_legend',g:6,n:'Legend Lab',e:'🏰',c:'#f3e8ff',nodes:[['spell',7,'Spell Tough Words'],['gram',9,'Sentence Craft'],['vocab',10,'Analogies']]}]},
+  {id:'r_legend',g:6,n:'Legend Lab',e:'🏰',c:'#f3e8ff',nodes:[['spell',7,'Spell Tough Words'],['gram',9,'Sentence Craft'],['vocab',10,'Analogies'],['comp',7,'Read a Story 6'],['info',5,'Learn About It 6']]}]},
  es:{n:'Spanish Adventure',e:'🌮',c:'linear-gradient(135deg,#dcfce7,#fef9c3)',byLevel:true,worlds:[
   {id:'e_plaza',g:-1,n:'Hola Plaza',e:'🌮',c:'#fef9c3',nodes:[['es_greet',1,'¡Hola! Listen'],['es_color',1,'Colors'],['es_num',1,'Numbers 1–10'],['es_animal',1,'Animals'],['es_greet',2,'¡Hola! Read'],['es_color',2,'Read Colors'],['es_num',2,'Read Numbers'],['es_animal',2,'Read Animals']]},
   {id:'e_fiesta',g:-1,n:'Fiesta Island',e:'🪅',c:'#ffedd5',nodes:[['es_food',1,'Food'],['es_body',1,'My Body'],['es_family',1,'Family'],['es_teen',1,'Numbers 11–20'],['es_food',2,'Read Food'],['es_body',2,'Read Body'],['es_family',2,'Read Family'],['es_teen',2,'Read 11–20']]},

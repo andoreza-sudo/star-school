@@ -151,14 +151,14 @@ function bankRebuild(bk){
    renderQ puts bankCtx(q.ctx) above the prompt. The words use the existing .w spans, so renderQ's tap-to-hear works.
    The "Hear it" button uses data-say, which renderQ also binds. ontoggle re-fits the question after open/close. */
 function bankCtx(c){
-  return `<details class="bctx" open ontoggle="fit()"><summary class="bctx-h"><span class="bctx-t">${esc(c.title||'Read')}</span>`
+  return `<details class="bctx${c.text.length>700?' long':''}" open ontoggle="fit()"><summary class="bctx-h"><span class="bctx-t">${esc(c.title||'Read')}</span>`
     +'<span class="bctx-s"><span class="bctx-hide">Hide</span><span class="bctx-show">Show</span></span></summary>'
     +`<div class="bctx-b"><button class="btn sm bctx-say" data-say="${esc(c.text)}">${ico('speak',22)} Hear the story</button>`
     +`<p class="bctx-p">${words(c.text)}</p></div></details>`;
 }
 
 /* ---------- validator (run by tools/test.js; reused by content chunks) ---------- */
-const BANKLIM={q:140,choice:60,hint:140,text:1200,title:40};
+const BANKLIM={q:140,choice:60,hint:140,text:2000,title:40};
 function bankBadWords(t){return bankWords(t).map(w=>w.toLowerCase()).filter(w=>BAD.test(w))}
 // problems with one item; where is a label for the message
 function bankItemProblems(it,where){
