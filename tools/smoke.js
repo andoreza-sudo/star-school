@@ -6946,6 +6946,136 @@ async function main() {
         '48 px targets, no sideways scroll, no emoji chrome');
     }
 
+    // G-02 Star Rally, the racing game (src/js/63-game-race.js). Midway save with 20 min of game time, real touch (CDP touch events,
+    //    touch emulation on) at 380x780 and 1024x600: Home -> Game Room -> the Star Rally card -> the menu (shared bar, 4 places, 3
+    //    tracks, only the first open on a new save) -> the first track: the race screen (Pause, place, lap, sparkles and time chips,
+    //    steer buttons of 96 px or more); after the countdown a held touch on the right button moves the car right and one on the
+    //    left button moves it left; then the race runs 12x faster (RL_DEV.fast, a test hook) to the finish: the shared end card with
+    //    the podium, stars, place, time and sparkles; game time was spent and the clock stopped; Tracks goes back to the menu with
+    //    the stars shown. Buttons 48 px or more, no sideways scroll. At 1024x600 also the frame time while racing under 6x CPU
+    //    throttle: the median interval between frames at most 34 ms (30 fps or better); a busy machine (load above its cores) is
+    //    measured again, up to 3 more times, and the best pass counts, like the map-draw budget.
+    {
+      const bad = [], notes = [];
+      const os = require('os'), cores = os.cpus().length;
+      for (const [w, h] of [[380, 780], [1024, 600]]) {
+        const ga = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ga.page, at = 'G-02 ' + w + 'x' + h + ' ';
+        const cdp = await pg.context().newCDPSession(pg);
+        await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 2 });
+        const box = sel => pg.evaluate(s => {
+          const e = document.querySelector(s);
+          if (!e) return null;
+          if (!e.closest('.rl')) e.scrollIntoView({ block: 'center' });
+          const r = e.getBoundingClientRect();
+          return { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height };
+        }, sel);
+        const touch = async (sel, ms) => {
+          const b = await box(sel);
+          if (!b) throw new Error('nothing to touch: ' + sel);
+          await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: b.x, y: b.y, id: 1, radiusX: 8, radiusY: 8, force: 1 }] });
+          if (ms) await pg.waitForTimeout(ms);
+          await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+          return b;
+        };
+        const look = () => {
+          const vw = document.documentElement.clientWidth, out = [];
+          for (const e of document.querySelectorAll('.gh-top button, .rl-menu button, .rl-btn, .gh-end button, .rl-gar button')) {
+            const r = e.getBoundingClientRect();
+            if (!r.width || r.bottom < 0 || r.top > innerHeight) continue;
+            if (Math.min(r.width, r.height) < 47.5) out.push('small ' + (e.id || e.className) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
+            if (r.left < -1 || r.right > vw + 1) out.push('outside ' + (e.id || e.className));
+          }
+          if (document.documentElement.scrollWidth > vw) out.push('sideways scroll ' + document.documentElement.scrollWidth);
+          for (const s of document.querySelectorAll('.scroll')) if (s.scrollWidth > s.clientWidth + 1) out.push('sideways scroll in ' + s.className);
+          for (const t of document.querySelectorAll('.gh-top')) if (t.getBoundingClientRect().right > vw + 1) out.push('top bar wider than the screen');
+          return out;
+        };
+        try {
+          await pg.evaluate(() => { S.pt = { bank: 1200, day: today(), used: 0 }; save(); home(); });
+          await touch('#groom');
+          await pg.waitForSelector('#grally', { timeout: 8000 });
+          await pg.waitForTimeout(450);
+          await touch('#grally');
+          await pg.waitForSelector('.rl-trk[data-ok="1"]', { timeout: 8000 });
+          await pg.waitForTimeout(450);
+          const m = await pg.evaluate(() => ({ g: document.querySelector('.gh-top').dataset.g, trk: document.querySelectorAll('.rl-trk').length,
+            open: document.querySelectorAll('.rl-trk[data-ok="1"]').length, places: document.querySelectorAll('.rl-place').length, back: !!document.querySelector('.gh-top #back') }));
+          if (m.g !== 'rally' || m.trk !== 3 || m.open !== 1 || m.places !== 4 || !m.back) bad.push(at + 'menu ' + JSON.stringify(m));
+          for (const o of await pg.evaluate(look)) bad.push(at + 'menu: ' + o);
+          const used0 = await pg.evaluate(() => pt().used);
+          await touch('.rl-trk[data-ok="1"]');
+          await pg.waitForSelector('#rlcv', { timeout: 8000 });
+          await pg.waitForFunction(() => RL && RL.st.cd <= 0 && RL.st.P.v > 3000, null, { timeout: 15000 });
+          const ui = await pg.evaluate(() => ({ pause: !!document.querySelector('.gh-top #gpause'), chips: ['rlpos', 'rllap', 'rlspk', 'gtm'].every(i => document.getElementById(i)),
+            btn: [...document.querySelectorAll('.rl-btn')].map(b => Math.round(Math.min(b.getBoundingClientRect().width, b.getBoundingClientRect().height))),
+            px: RL.cv.width, sprites: !!(RL.v.me.c && RL.v.far.c) }));
+          if (!ui.pause || !ui.chips || ui.btn.length !== 2 || ui.btn.some(s => s < 96) || !ui.sprites) bad.push(at + 'race screen ' + JSON.stringify(ui));
+          for (const o of await pg.evaluate(look)) bad.push(at + 'race: ' + o);
+          // steer with real touches on the two big buttons
+          const x0 = await pg.evaluate(() => RL.st.P.x);
+          await touch('#rlr', 600);
+          const x1 = await pg.evaluate(() => RL.st.P.x);
+          await touch('#rll', 900);
+          const x2 = await pg.evaluate(() => RL.st.P.x);
+          if (!(x1 > x0 + .2) || !(x2 < x1 - .2)) bad.push(at + 'steering by touch: x ' + [x0, x1, x2].map(v => v.toFixed(2)).join(' -> '));
+          // to the finish, faster (test hook)
+          await pg.evaluate(() => { RL_DEV.fast = 12; });
+          await pg.waitForSelector('.gh-end #rlmenu', { timeout: 40000 });
+          await pg.waitForTimeout(500);
+          const e = await pg.evaluate(() => ({ title: (document.querySelector('.gh-end h1') || {}).textContent, pic: !!document.querySelector('.gh-end .gh-epic svg'),
+            stars: !!document.querySelector('.gh-end .rate'), stats: document.querySelectorAll('.gh-end .gh-stat').length, used: pt().used, gt: !!GT, race: !!RL,
+            saved: JSON.stringify([S.rally.stars['meadow-0'], S.rally.races, S.rally.spk > 0, S.rally.best['meadow-0'] > 0]), red: /last/i.test(document.querySelector('.gh-end').textContent) }));
+          await pg.evaluate(() => { RL_DEV.fast = 1; });
+          if (!/^(You won!|\dnd place!|\drd place!|You finished the race!)$/.test(e.title || '') || !e.pic || !e.stars || e.stats !== 3 || e.red) bad.push(at + 'end card ' + JSON.stringify(e));
+          if (!(e.used > used0) || e.gt || e.race) bad.push(at + 'game time: used ' + used0 + ' -> ' + e.used + ', clock still running ' + e.gt + ', race ' + e.race);
+          if (!/^\[[123],1,true,true\]$/.test(e.saved)) bad.push(at + 'saved after the race ' + e.saved);
+          for (const o of await pg.evaluate(look)) bad.push(at + 'end card: ' + o);
+          notes.push(w + 'x' + h + ' ' + e.title + ' (game time ' + used0 + ' -> ' + e.used + ' s)');
+          await touch('#rlmenu');
+          await pg.waitForSelector('.rl-trk[data-ok="1"]', { timeout: 8000 });
+          const after = await pg.evaluate(() => ({ open: document.querySelectorAll('.rl-trk[data-ok="1"]').length, rated: document.querySelector('[data-trk="meadow-0"] .rs.on') != null }));
+          if (after.open !== 2 || !after.rated) bad.push(at + 'menu after the race ' + JSON.stringify(after));
+          // the frame time while racing at 6x CPU throttle (1024x600)
+          if (w == 1024) {
+            await touch('.rl-trk[data-ok="1"]');
+            await pg.waitForFunction(() => RL && RL.st.cd <= 0, null, { timeout: 15000 });
+            await pg.waitForTimeout(1500);
+            let best = null, tries = 0, load = os.loadavg()[0];
+            for (;;) {
+              await cdp.send('Emulation.setCPUThrottlingRate', { rate: 6 });
+              await pg.evaluate(() => { RL.fi.length = 0; RL.ft.length = 0; });
+              await pg.waitForTimeout(3000);
+              const r = await pg.evaluate(() => {
+                const q = (a, p) => a.slice().sort((x, y) => x - y)[Math.floor(a.length * p)];
+                return { med: q(RL.fi, .5), p90: q(RL.fi, .9), work: q(RL.ft, .5), n: RL.fi.length, q: RL.q };
+              });
+              await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+              tries++;
+              load = os.loadavg()[0];
+              if (!best || r.med < best.med) best = r;
+              if (best.med <= 34 || tries >= 4 || load <= cores) break;
+              await pg.waitForTimeout(1000);
+            }
+            const how = `${tries} pass${tries > 1 ? 'es' : ''}, load ${load.toFixed(1)} on ${cores} cores`;
+            if (best.med > 34) bad.push(at + `frame interval at 6x throttle: median ${best.med.toFixed(1)} ms (${how}, limit 34)`);
+            notes.push(`6x throttle: median frame ${best.med.toFixed(1)} ms, 90th ${best.p90.toFixed(1)} ms, JS ${best.work.toFixed(1)} ms a frame, ` +
+              `${best.n} frames in 3 s, pixel scale ${best.q} (${how})`);
+            await pg.evaluate(() => rlQuit());
+          }
+        } catch (x) {
+          bad.push(at + 'taps: ' + x.message.split('\n')[0]);
+        }
+        await pg.evaluate(() => { if (typeof RL_DEV != 'undefined') RL_DEV.fast = 1; });
+        network.push(...ga.network);
+        for (const e of ga.errors) fail(e);
+        await ga.ctx.close();
+      }
+      if (bad.length) fail('G-02 racing game:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('G-02: Star Rally by real touch at 380x780 and 1024x600: hub card -> menu -> race (steered right and left with the 96 px buttons) -> ' +
+        'finish -> shared end card -> menu with the stars; game time spent, clock stopped; 48 px targets, no sideways scroll; ' + notes.join('; '));
+    }
+
     // P4-15 Object art set C (src/data/d-art-c.js), midway save at 380x780: questions that use the new drawings, drawn by the real
     //    round engine (start, a seeded question in G.q, renderQ): a picture word (vowel teams), Spanish house (drawings as the answer
     //    choices), weather and places. Every drawing is inline SVG with its shapes, at least 16 px, no emoji in its place, no sideways scroll.
