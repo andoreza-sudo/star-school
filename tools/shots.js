@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const { SIZES, launch, openApp } = require('./lib/browser');
 
-// P4-18: SHOTS_OUT=dir writes elsewhere (before/after sets); SHOTS_SIZES=600x960,380x780 picks sizes.
+// P4-18: SHOTS_OUT=dir writes elsewhere (before/after sets); SHOTS_SIZES=600x960,380x780 picks sizes. P2-17: SHOTS_SCALE=2 shoots at 2x.
 const OUT = process.env.SHOTS_OUT ? path.resolve(process.env.SHOTS_OUT) : path.join(__dirname, 'out');
 const SHOT_SIZES = process.env.SHOTS_SIZES ? process.env.SHOTS_SIZES.split(',').map(s => s.split('x').map(Number)) : SIZES;
 const KS = require('./kinds-samples');
@@ -1316,33 +1316,37 @@ Object.assign(SCREENS, {
 // P2-16 tracing: one glyph of the Tiny Town stop (Pre-K), on the real round screen; setup(c) puts the board in a state
 // (c = TR.cur; the demo is stopped first). trace-sheet: every glyph's strokes (guide, numbered start dots, arrows) over the
 // Andika glyph at 30% opacity, scaled so its height spans the set's top and base lines (P2-17 checks its letters on it).
-const traceShot = (key, setup) => ({
+// P2-17: one sheet per set (trace-sheet digits, trace-upper-sheet A-Z, trace-lower-sheet a-z). Letters are scaled by one reference
+// letter per set (H: capital height = top to base; h: ascender = top to base), so x-height letters and tails show where the
+// font puts them against the mid and desc lines.
+const traceShot = (key, setup, lv = 1) => ({
   fixture: 'fresh',
   run: async p => {
-    await p.evaluate(key => {
+    await p.evaluate(([key, lv]) => {
       S.name = 'Ava'; setGrade(-1); window.say = () => {};
       let q = null;
-      for (let s = 1; s < 400 && !(q && q.g === key); s++) q = genQ('trace', 1, s);
-      G = newG({ path: 'math', node: NODES.math.findIndex(n => n.sk == 'trace'), sk: 'trace', lv: 1, n: 5, pool: [q] });
+      for (let s = 1; s < 4000 && !(q && q.g === key); s++) q = genQ('trace', lv, s);
+      const path = lv == 1 ? 'math' : 'read';
+      G = newG({ path, node: NODES[path].findIndex(n => n.sk == 'trace' && n.lv == lv), sk: 'trace', lv, n: 5, pool: [q] });
       next();
-    }, key);
+    }, [key, lv]);
     await p.waitForSelector('#trb');
     await p.waitForFunction(() => TR.cur && !TR.cur.busy, null, { timeout: 8000 });
     if (setup) await p.evaluate('(' + setup.toString() + ')(TR.cur)');
   },
 });
-const traceSheet = async p => {
-  await p.evaluate(async () => {
+const traceSheet = set => async p => {
+  await p.evaluate(async set => {
     await document.fonts.ready;
     const cx = document.createElement('canvas').getContext('2d');
     cx.font = '700 100px Andika';
-    const out = [];
-    for (const set in TRACE.sets) {
+    const out = [], ref = { upper: 'H', lower: 'h' }[set];
+    {
       const S0 = TRACE.sets[set], L = S0.lines;
       for (const key of S0.order) {
-        const asc = cx.measureText(key).actualBoundingBoxAscent / 100, fs = (L.base - L.top) / asc, geo = TR.geo(set, key);
+        const asc = cx.measureText(ref || key).actualBoundingBoxAscent / 100, fs = (L.base - L.top) / asc, geo = TR.geo(set, key);
         let g = `<text x="50" y="${L.base}" font-size="${fs.toFixed(1)}" text-anchor="middle" class="tsh-a">${key}</text>`;
-        g += [L.top, L.mid, L.base].map(y => `<line class="tr-l" x1="0" x2="100" y1="${y}" y2="${y}"/>`).join('');
+        g += [L.top, L.mid, L.base, L.desc].filter(y => y != null).map(y => `<line class="tr-l" x1="0" x2="100" y1="${y}" y2="${y}"/>`).join('');
         geo.s.forEach(s => { g += `<path class="tr-dot" d="${s.d}"/>`; });
         geo.s.forEach((s, j) => {
           for (let x = 12; x < s.L - 6; x += 22) {
@@ -1354,12 +1358,12 @@ const traceSheet = async p => {
         out.push(`<svg viewBox="0 0 100 100" class="tsh">${g}</svg>`);
       }
     }
-    view(`<div class="s-math tsh-w">${out.join('')}</div>`);
+    view(`<div class="s-${set == 'digit' ? 'math' : 'read'} tsh-w">${out.join('')}</div>`);
     const st = document.createElement('style');
-    st.textContent = '.tsh-w{display:flex;flex-wrap:wrap;gap:8px;padding:8px;background:var(--paper)}.tsh{width:23%;max-width:220px;background:var(--surface);'
+    st.textContent = 'html,body,#app{height:auto!important;max-height:none!important;overflow:visible!important}.tsh-w{display:flex;flex-wrap:wrap;gap:8px;padding:8px;background:var(--paper)}.tsh{width:23%;max-width:220px;background:var(--surface);'
       + 'border-radius:12px;box-shadow:inset 0 0 0 2px var(--line)}.tsh-a{font-family:Andika;font-weight:700;fill:var(--ink);opacity:.3}';
     document.head.appendChild(st);
-  });
+  }, set);
 };
 Object.assign(SCREENS, {
   // level 1 after the demo, the first stroke of 5 done (snapped on), arrows along stroke 2
@@ -1379,7 +1383,15 @@ Object.assign(SCREENS, {
   'trace-lead': traceShot('9', c => { TR.startPass(c, 2); TR.hintTier(c, 2); }),
   // the glyph done: every pass traced with one miss, 2 stars
   'trace-done': traceShot('7', c => { c.submit = () => {}; TR.startPass(c, 2); c.k = c.geo.s.length; TR.draw(c); c.misses = 1; TR.finish(c); }),
-  'trace-sheet': { fixture: 'fresh', run: traceSheet },
+  'trace-sheet': { fixture: 'fresh', run: traceSheet('digit') },
+  // P2-17: every letter's strokes over the Andika letter (look at them at 2x: SHOTS_SCALE=2)
+  'trace-upper-sheet': { fixture: 'fresh', full: true, run: traceSheet('upper') },
+  'trace-lower-sheet': { fixture: 'fresh', full: true, run: traceSheet('lower') },
+  // P2-17 letter screens (ABC Beach, Pre-K, reading colour): level 1 of big E after the demo with strokes 1-2 done; level 2 of
+  // little j with its stem traced (the dot to tap next); level 3 of little y with stroke 1 done and stroke 2 half traced
+  'trace-letter-E': traceShot('E', c => { c.k = 2; TR.draw(c); }, 2),
+  'trace-letter-j': traceShot('j', c => { TR.startPass(c, 1); c.k = 1; TR.draw(c); }, 3),
+  'trace-letter-y': traceShot('y', c => { TR.startPass(c, 2); c.k = 1; c.part = Math.round(c.geo.s[1].L * 0.5); TR.draw(c); }, 3),
 });
 
 // P3-03 Sudoku: grade g sets the band, level lv is started, then by real taps (tools/lib/bt-sud.js): o.moves moves of solve(),
@@ -1511,7 +1523,7 @@ async function main() {
     for (const [w, h] of SHOT_SIZES) {
       for (const n of names) {
         const s = SCREENS[n];
-        const { ctx, page, errors, network } = await openApp(browser, { fixture: fixtureArg || s.fixture || 'midway', width: w, height: h });
+        const { ctx, page, errors, network } = await openApp(browser, { fixture: fixtureArg || s.fixture || 'midway', width: w, height: h, scale: +process.env.SHOTS_SCALE || 1 });
         await s.run(page);
         await page.waitForTimeout(700);
         const file = path.join(OUT, `${n}-${w}x${h}.png`);

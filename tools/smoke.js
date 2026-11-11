@@ -4229,6 +4229,77 @@ async function main() {
       }
     }
 
+    // P2-17 Tracing letters: the ABC Beach stop "Trace Little Letters" (trace 3) played with real touch moves made from the stroke
+    //    data at 380x780 by a Pre-K child: the round is fixed to a, i (a dot to tap), g (a tail below the base), k, y (a tail).
+    //    Both tracing stops show the reading colour on the map, the round's chrome is the reading colour, every glyph is traced
+    //    through its three passes, the round completes 5/5 and the stop is saved with 3 stars.
+    {
+      const tag = 'P2-17 380x780';
+      const tl = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 });
+      const pg = tl.page, bad = [];
+      pg.__cdp = await pg.context().newCDPSession(pg);
+      await pg.__cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 2 });
+      const ti = await pg.evaluate(() => {
+        S.name = 'Ava'; S.grade = -1;
+        for (const k of ['abc1', 'abc2', 'trace2', 'abc3', 'syl1']) S.maps.read[k] = 3;
+        save();
+        window.say = () => {};
+        // the round: these five letters, made the way traceRound makes them (genQ by seed, reproducible)
+        const keys = ['a', 'i', 'g', 'k', 'y'];
+        window.__keys = keys.join('');
+        SK.trace.round = lv => keys.map(k => { let q = null; for (let s = 1; s < 4000 && !(q && q.g === k); s++) q = genQ('trace', lv, s); return q; });
+        window.__trm = [];
+        const f0 = TR.finish;
+        TR.finish = c => { window.__trm.push(c.misses); f0(c); };
+        home();
+        return NODES.read.findIndex(n => n.sk == 'trace' && n.lv == 3);
+      });
+      await pg.click('.game[data-p="read"]');
+      await pg.waitForSelector('#map');
+      await pg.evaluate(() => { const c = document.querySelector('.wchip[data-w="0"]'); if (c) c.click(); });
+      await pg.waitForSelector(`.node[data-n="${ti}"]`);
+      const map = await pg.evaluate(ti => [ti - 3, ti].map(i => document.querySelector(`.node[data-n="${i}"]`).className), ti);
+      if (!map.every(c => / read\b/.test(c) && !/\bmath\b/.test(c))) bad.push('tracing stops on the map are not in the reading colour: ' + map.join(' | '));
+      await pg.click(`.node[data-n="${ti}"]`);
+      await pg.waitForSelector('#trb');
+      const chrome = await pg.evaluate(() => {
+        const play = document.querySelector('.play'), top = document.querySelector('.qtop'), root = getComputedStyle(document.documentElement);
+        return { play: play.className, top: top.className, c: getComputedStyle(play).getPropertyValue('--c').trim(), read: root.getPropertyValue('--read').trim(),
+          math: root.getPropertyValue('--math').trim(), lv: G.lv, n: G.n, set: G.q.set, tol: TR.cur.tol, lines: document.querySelectorAll('#trb .tr-l').length };
+      });
+      if (!/\bs-read\b/.test(chrome.play) || !/\bs-read\b/.test(chrome.top) || chrome.c !== chrome.read || chrome.c === chrome.math)
+        bad.push('round chrome is not the reading colour: ' + JSON.stringify(chrome));
+      if (chrome.lv !== 3 || chrome.n !== 5 || chrome.set !== 'lower' || chrome.tol !== 14 || chrome.lines !== 4) bad.push('round: ' + JSON.stringify(chrome));
+      const seen = [];
+      for (let i = 0; i < 5; i++) {
+        await pg.waitForFunction(i => (G.done === i && !G.lock && TR.cur && G.q === TR.cur.q) || document.querySelector('#chest'), i, { timeout: 10000 });
+        const g = await pg.evaluate(() => ({ g: G.q.g, strokes: TR.cur.geo.s.length, dot: TR.cur.geo.s.some(s => s.dot),
+          tail: Math.max(...TR.cur.geo.s.flatMap(s => s.p.map(p => p[1]))) > TRACE.sets.lower.lines.base + 10,
+          wide: document.documentElement.scrollWidth > innerWidth, board: Math.round(document.querySelector('#trb').getBoundingClientRect().width) }));
+        seen.push(g);
+        if (g.wide || g.board < 240) bad.push(g.g + ': sideways scroll or board ' + g.board + ' px');
+        await traceGlyph(pg);
+      }
+      await pg.waitForSelector('#chest', { timeout: 10000 });
+      const fin = await pg.evaluate(() => {
+        const saved = JSON.parse(localStorage.getItem(KEY) || '{}');
+        return { score: G.score, n: G.n, stars: S.maps.read.trace3 || 0, saved: ((saved.maps || {}).read || {}).trace3 || 0, misses: window.__trm };
+      });
+      const keys = seen.map(x => x.g).join('');
+      if (keys !== 'aigky') bad.push('letters ' + keys);
+      if (!seen.some(x => x.dot) || !seen.some(x => x.tail)) bad.push('no dot or no tail letter: ' + JSON.stringify(seen));
+      if (fin.score !== 5 || fin.n !== 5 || fin.stars !== 3 || fin.saved !== 3 || fin.misses.join() !== '0,0,0,0,0') bad.push('round end: ' + JSON.stringify(fin));
+      await pg.click('#chest');
+      await pg.waitForSelector('#btns', { state: 'visible', timeout: 10000 });
+      if (bad.length) fail(tag + ':\n  ' + bad.join('\n  '));
+      else step(`${tag}: Trace Little Letters opened from the ABC Beach map (Pre-K, tolerance 14, 4 handwriting lines); both tracing stops ` +
+        `and the round chrome in the reading colour; a i g k y (a dot to tap, tails below the base) x 3 passes traced by touch, 5/5, ` +
+        'stop saved with 3 stars; board 240 px or more, no sideways scroll');
+      network.push(...tl.network);
+      for (const e of tl.errors) fail(e);
+      await tl.ctx.close();
+    }
+
     for (const e of errors) fail(e);
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');

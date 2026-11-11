@@ -64,12 +64,13 @@ async function launch() {
   });
 }
 
-// Opens a page. opts: { fixture: 'midway' | 'fresh' | 'maxed' | null, width, height, url (default: the built index.html) }
+// Opens a page. opts: { fixture: 'midway' | 'fresh' | 'maxed' | null, width, height, url (default: the built index.html),
+//   scale (device pixels per css pixel, default 1) }
 // Returns { ctx, page, errors, network }. errors: console errors + uncaught exceptions.
 // network: any http(s) request the app tried to make (must stay empty, the app is offline).
 async function openApp(browser, opts = {}) {
   const [w, h] = [opts.width || SIZES[0][0], opts.height || SIZES[0][1]];
-  const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 1 });
+  const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: opts.scale || 1 });
   const errors = [];
   const network = [];
   await ctx.route(/^(https?|wss?|ftp):/, route => {

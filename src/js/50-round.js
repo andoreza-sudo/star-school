@@ -42,7 +42,7 @@ let rsT;addEventListener('resize',()=>{fit();clearTimeout(rsT);rsT=setTimeout(()
 function petSay(t){const b=$('#bub');if(!b)return;b.textContent=t;const far=G&&G.done/G.n>.5;b.style.left=far?'auto':'0';b.style.right=far?'0':'auto';b.classList.add('on');clearTimeout(b._t);b._t=setTimeout(()=>b.classList.remove('on'),1400)}
 // P4-10: the question screen. Top bar: close, the track (one dot per question, the pet walks to the gift), streak and star chips.
 // Then the prompt card (.qarea) and the input area (.inp) of the question's kind. Subject colour from the question's skill.
-const qSubj=q=>{const a=(SK[q.sk]||{}).area||G.path;return['math','read','es','disc','bt'].includes(a)?a:'math'};
+const qSubj=q=>{const a=skArea(q.sk,q.lv)||G.path;return['math','read','es','disc','bt'].includes(a)?a:'math'};
 // the pet stands on the dot of the current question; after the last one it reaches the gift (column n+1 of the track)
 const qLeft=()=>`translateX(${+((Math.min(G.done,G.n)+.5)/(G.n+1)*100).toFixed(3)}%)`; // moves #qwalk, a layer as wide as the track
 // move the pet and refresh the dots after an answer (G.res marks questions that needed another try)
@@ -51,7 +51,7 @@ function qProg(){const w=$('#qwalk'),tr=$('#qtrack');if(w)w.style.transform=qLef
 // the streak chip: lit from 2 in a row, bumps when it grows
 function qStreak(){const sk=$('#stk');if(!sk)return;sk.querySelector('b').textContent=G.streak;sk.classList.toggle('off',G.streak<2);if(G.streak>=2)bump(sk)}
 function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;G.res=G.res||[];
-  actQStart(q.sk); // P5-05
+  actQStart(q.sk,q.lv); // P5-05 (P2-17: the level picks the area of a skill with lvArea)
   const K=KIND[q.kind];
   if(!K)throw new Error('unknown question kind '+q.kind);
   const input=K.render(q),ar=qSubj(q);
@@ -159,7 +159,7 @@ function finish(){
     prizes.forEach((pz,k)=>{setTimeout(()=>{if(!live())return;$('#prz').insertAdjacentHTML('beforeend',RW.sticker(pz.s,pz.isNew,k));SFX.magic()},t);t+=600});
     for(let i=0;i<sc;i++){setTimeout(()=>{if(!live())return;RW.count(i+1);SFX.coin(i)},t);t+=150}
     setTimeout(()=>{if(!live())return;const d=$('#btns');d.style.visibility='visible';d.classList.add('on');
-      $('#bonus').onclick=()=>balloons(g.mix||g.boss||g.test?(p||pick(['math','read','es'])):SK[g.sk].area,g);
+      $('#bonus').onclick=()=>balloons(g.mix||g.boss||g.test?(p||pick(['math','read','es'])):skArea(g.sk,g.lv),g);
       if($('#nxt'))$('#nxt').onclick=()=>{SFX.whoosh();open(p,nextI)};
       if($('#again'))$('#again').onclick=()=>{SFX.whoosh();g.mix?(g.daily?startReview():startMix()):g.test?testOut(p,g.test.wi):open(p,ni)};$('#menu').onclick=()=>g.mix?home():pathMap(p);
       if(grew)setTimeout(()=>growShow(before),300);else if(!playClip('done')&&S.voice)say(`You got ${sc} stars!`+(newPass?' You unlocked the next stop!':''))},t);

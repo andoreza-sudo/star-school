@@ -2484,7 +2484,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S));SAVE_FAILED=fals
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v106'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v107'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -9915,7 +9915,7 @@ const SK={
  pk_more:{t:'Which Has More',e:'⚖️',area:'math',max:2,gen:genPkMoreK},
  sort:{t:'Sort and Compare',e:'🧩',area:'math',max:3,gen:genSortK},
  shape:{t:'Shapes',e:'🔺',area:'math',max:6,gen:lv=>lv==6?dsShape6():lv==5?ffShape5():lv==4?genShape(lv):genShapeK(lv)}, // levels 1-3 Tiny Town / Shape Garden, 4 Clock Tower, 5 Fraction Forest
- trace:{t:'Trace Numbers',e:'✏️',area:'math',max:1,gen:genTrace,round:traceRound,noPlace:true}, // P2-16 tracing (47-trace.js); P2-17 adds levels 2-3 (letters)
+ trace:{t:'Tracing',e:'✏️',area:'math',lvArea:{2:'read',3:'read'},max:3,gen:genTrace,round:traceRound,noPlace:true,side:true}, // P2-16 tracing (47-trace.js): 1 digits (Tiny Town); P2-17: 2 A-Z, 3 a-z (ABC Beach, reading colour via lvArea; side: never holds back the next stop, 42-paths.js sideOpen)
  pat:{t:'Patterns',e:'🌈',area:'math',max:5,gen:lv=>lv==5?ccPat5():lv==4?dsPat4():lv==3?genBayPat3():genPatK(lv)}, // 4 Decimal Desert
  tenf:{t:'Ten Frames',e:'🔟',area:'math',max:3,gen:genTenf}, // P2-02 Shape Garden: tenf, pos, meas (and levels added to pk_count, pk_num, pk_more, shape, add, pat, cnt, sort above)
  pos:{t:'Where Is It',e:'📌',area:'math',max:1,gen:genPos},
@@ -9959,7 +9959,9 @@ const SK={
  gram:{t:'Grammar',e:'🔤',area:'read',max:9,bank:'gram',gen:lv=>genBank('gram',lv)},
  // P2-22 Vocabulary A (levels 1-5) and P2-23 Vocabulary B (6-10): items are BANK.vocab in src/data/d-vocab.js
  vocab:{t:'Vocabulary',e:'📚',area:'read',max:10,bank:'vocab',gen:lv=>genBank('vocab',lv)}};
-
+/* P2-17: the subject area of a skill at a level. A skill may set lvArea {level: area} where some levels belong to another
+   subject (trace: digits are math, letters are reading); everything that colours or counts by subject reads the area through this. */
+const skArea=(sk,lv)=>{const s=SK[sk];return s?(s.lvArea&&s.lvArea[lv])||s.area:undefined};
 /* ---------- hints ---------- */
 function rod(n,c,cls='',x=0){if(n<=0)return'';let s='';for(let i=0;i<n;i++)s+=`<i class="${i>=n-x?'x':''}"></i>`;return`<span class="rod ${cls}" style="--c:${c||PAL[(n-1)%10]}">${s}</span>`}
 function hintHTML(q){const h=q.hint;if(!h)return'';
@@ -10636,7 +10638,7 @@ const PATHS={
   {id:'m_caves',g:5,n:'Crystal Caves',e:'💎',c:'#f3e8ff',nodes:[['fop',3,'Unlike Denominators'],['fop',4,'Mixed Numbers'],['geo',4,'Volume of a Box'],['fop',5,'Multiply Fractions'],['coord',1,'Coordinate Grid'],['fop',6,'Unit Fraction Division'],['meas',6,'Convert Both Ways'],['data',4,'Line Plots'],['pat',5,'Two Rules'],['story',8,'Fraction Stories']]},
   {id:'m_sky',g:6,n:'Sky City',e:'☁️',c:'#e0f2fe',nodes:[['ratio',1,'Ratios and Tables'],['ratio',2,'Unit Rates'],['int',1,'Integers on a Line'],['ratio',3,'Percent of a Number'],['int',2,'Absolute Value'],['ratio',4,'Fractions and Percents'],['fop',7,'Divide Fractions'],['int',3,'Integer Add & Subtract']]}]},
  read:{n:'Reading Adventure',e:'📖',c:'linear-gradient(135deg,#fce7f3,#fbcfe8)',worlds:[
-  {id:'r_abc',g:-1,n:'ABC Beach',e:'🏖️',c:'#e0f2fe',nodes:[['abc',1,'Big Letters'],['abc',2,'Little Letters'],['abc',3,'Match Big & Little'],['syl',1,'Clap the Syllables'],['abc',4,'ABC Order']]},
+  {id:'r_abc',g:-1,n:'ABC Beach',e:'🏖️',c:'#e0f2fe',nodes:[['abc',1,'Big Letters'],['abc',2,'Little Letters'],['trace',2,'Trace Big Letters'],['abc',3,'Match Big & Little'],['syl',1,'Clap the Syllables'],['trace',3,'Trace Little Letters'],['abc',4,'ABC Order']]},
   {id:'r_meadow',g:0,n:'Letter Meadow',e:'🌻',c:'#dcfce7',nodes:[['sound',1,'First Sounds'],['sight',1,'Sight Words'],['rhyme',1,'Rhyme Time'],['pic',1,'Picture Words'],['sound',2,'Last Sounds'],['build',1,'Build a Word'],['sent',1,'Read & Match'],['sound',3,'Middle Sounds']]},
   {id:'r_candy',g:1,n:'Candy Canyon',e:'🍭',c:'#fce7f3',nodes:[['sight',2,'More Sight Words'],['rhyme',2,'Rhyme & Read'],['pic',2,'Blends'],['build',2,'Build Blends'],['sent',2,'Read Sentences'],['comp',1,'Story Time'],['sound',4,'Letter Teams'],['syl',2,'Count the Claps'],['spell',1,'Spell Short Words']]},
   {id:'r_reef',g:1,n:'Ocean Reef',e:'🐠',c:'#e0f2fe',nodes:[['sight',3,'Sight Words 3'],['pic',3,'Magic E'],['build',3,'Build Magic E'],['comp',2,'Story Time 2'],['spell',2,'Spell Blends'],['vocab',1,'Opposites'],['gram',1,'Capitals & End Marks']]},
@@ -10717,8 +10719,11 @@ function unlocked(p,i){
   if(S.unlockAll||passed(p,i))return true; // passed stops are always replayable
   const wi=NODES[p][i].wi;
   if(!worldOpen(p,wi))return false;
-  return i==WR[p][wi][0]||passed(p,i-1)||worldSkipped(p,wi)||stopBehind(p,i);
+  return i==WR[p][wi][0]||passed(p,i-1)||sideOpen(p,i-1)||worldSkipped(p,wi)||stopBehind(p,i);
 }
+/* P2-17: a stop of a side skill (SK[sk].side: tracing) never holds back the stop after it; that stop opens with it. Tracing stops sit
+   between older stops (ABC Beach trace 2 and 3), so a save that had the next stop open keeps it open. */
+const sideOpen=(p,i)=>!!(SK[NODES[p][i].sk]||{}).side&&unlocked(p,i);
 const stopNew=(p,i)=>!passed(p,i)&&passed(p,WR[p][NODES[p][i].wi][1]);
 /* The world where a child starts: the first one at or above their grade (the last world if none is). byLevel paths start at 0. */
 function startWorld(p){
@@ -10753,7 +10758,7 @@ function worldStep(p,wi){
 }
 migrate(); /* save upgrades (MIGRATIONS in 00-core.js) run here: the first place NODES exists, before any other code reads S */
 for(const p in PATHS)S.maps[p]=S.maps[p]||{};
-const nInfo=n=>n.sk=='boss'?{e:n.boss[0],area:'boss'}:SK[n.sk];
+const nInfo=n=>n.sk=='boss'?{e:n.boss[0],area:'boss'}:SK[n.sk]&&SK[n.sk].lvArea?Object.assign({},SK[n.sk],{area:skArea(n.sk,n.lv)}):SK[n.sk];
 const SHOP={hat:[['🧢',10],['🎀',10],['🎩',20],['⛑️',25],['🎓',40],['👑',60]],
  toy:[['🎈',10],['🍭',10],['⚽',15],['🧸',20],['🪁',30],['🪄',45],['🏆',80]],
  scene:[['meadow',0,'🌻','linear-gradient(135deg,#fef3c7,#fde68a)','Meadow'],['beach',30,'🏖️','linear-gradient(180deg,#bae6fd,#fef3c7 75%)','Beach'],['candy',40,'🍭','linear-gradient(135deg,#fbcfe8,#ddd6fe)','Candy'],
@@ -11256,7 +11261,7 @@ function home(first){
   <div class="scroll hm" id="hs"><div class="hm-cols">
    <div class="hm-col">${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
-   <p class="hm-ver">${ico('star', 16)}<span>Star School v106</span></p></div>`);
+   <p class="hm-ver">${ico('star', 16)}<span>Star School v107</span></p></div>`);
   music(true);
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,['💖','✨','⭐']);
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
@@ -11385,7 +11390,7 @@ function book(){const have=STK.filter(s=>S.stickers[s]).length;
    while the first has not moved and the second is nearer the start dot. touch-action: none on the board. */
 const TR = {
   N: 5,                 // glyphs in a round (CURRICULUM E-trace)
-  LV: { 1: 'digit' },   // level -> TRACE set (P2-17 adds 2: upper, 3: lower)
+  LV: { 1: 'digit', 2: 'upper', 3: 'lower' }, // level -> TRACE set (P2-17: letters in ABC Beach, CURRICULUM E-trace)
   START: 1.5,           // start radius, in tol
   BACK: 1, AHEAD: 2.5,  // progress search window behind / ahead, in tol
   END: 0.8,             // the end must be reached within END tol
@@ -11559,10 +11564,11 @@ TR.name = q => {
 // ---- generator: skill 'trace' (level 1 digits in Tiny Town) ----
 function genTrace(lv) {
   const set = TR.LV[lv] || 'digit', S0 = TRACE.sets[set], key = pick(S0.order), g = S0.glyphs[key];
-  const what = S0.n + ' ' + g.say;
+  // spoken: "the little letter A" (a letter's name is its capital, as abc 1 says it); shown: "the little letter a" (P2-17)
+  const what = S0.n + ' ' + g.say, shown = S0.n + ' ' + (set == 'digit' ? g.say : key);
   return pkQ({
     kind: 'trace', set, g: key, ans: 'done', passes: [1, 2, 3],
-    html: `<div class="trq">${TR.pic(set, key)}</div>${pkTxt(`Trace the ${esc(what)}.`)}`,
+    html: `<div class="trq">${TR.pic(set, key)}</div>${pkTxt(`Trace the ${esc(shown)}.`)}`,
     say: `Let's write the ${what}! Watch, then trace it with your finger.`,
     hint: { k: 'trace' },
     label: `trace ${set} ${key}`,
@@ -12659,7 +12665,7 @@ let rsT;addEventListener('resize',()=>{fit();clearTimeout(rsT);rsT=setTimeout(()
 function petSay(t){const b=$('#bub');if(!b)return;b.textContent=t;const far=G&&G.done/G.n>.5;b.style.left=far?'auto':'0';b.style.right=far?'0':'auto';b.classList.add('on');clearTimeout(b._t);b._t=setTimeout(()=>b.classList.remove('on'),1400)}
 // P4-10: the question screen. Top bar: close, the track (one dot per question, the pet walks to the gift), streak and star chips.
 // Then the prompt card (.qarea) and the input area (.inp) of the question's kind. Subject colour from the question's skill.
-const qSubj=q=>{const a=(SK[q.sk]||{}).area||G.path;return['math','read','es','disc','bt'].includes(a)?a:'math'};
+const qSubj=q=>{const a=skArea(q.sk,q.lv)||G.path;return['math','read','es','disc','bt'].includes(a)?a:'math'};
 // the pet stands on the dot of the current question; after the last one it reaches the gift (column n+1 of the track)
 const qLeft=()=>`translateX(${+((Math.min(G.done,G.n)+.5)/(G.n+1)*100).toFixed(3)}%)`; // moves #qwalk, a layer as wide as the track
 // move the pet and refresh the dots after an answer (G.res marks questions that needed another try)
@@ -12668,7 +12674,7 @@ function qProg(){const w=$('#qwalk'),tr=$('#qtrack');if(w)w.style.transform=qLef
 // the streak chip: lit from 2 in a row, bumps when it grows
 function qStreak(){const sk=$('#stk');if(!sk)return;sk.querySelector('b').textContent=G.streak;sk.classList.toggle('off',G.streak<2);if(G.streak>=2)bump(sk)}
 function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;G.res=G.res||[];
-  actQStart(q.sk); // P5-05
+  actQStart(q.sk,q.lv); // P5-05 (P2-17: the level picks the area of a skill with lvArea)
   const K=KIND[q.kind];
   if(!K)throw new Error('unknown question kind '+q.kind);
   const input=K.render(q),ar=qSubj(q);
@@ -12776,7 +12782,7 @@ function finish(){
     prizes.forEach((pz,k)=>{setTimeout(()=>{if(!live())return;$('#prz').insertAdjacentHTML('beforeend',RW.sticker(pz.s,pz.isNew,k));SFX.magic()},t);t+=600});
     for(let i=0;i<sc;i++){setTimeout(()=>{if(!live())return;RW.count(i+1);SFX.coin(i)},t);t+=150}
     setTimeout(()=>{if(!live())return;const d=$('#btns');d.style.visibility='visible';d.classList.add('on');
-      $('#bonus').onclick=()=>balloons(g.mix||g.boss||g.test?(p||pick(['math','read','es'])):SK[g.sk].area,g);
+      $('#bonus').onclick=()=>balloons(g.mix||g.boss||g.test?(p||pick(['math','read','es'])):skArea(g.sk,g.lv),g);
       if($('#nxt'))$('#nxt').onclick=()=>{SFX.whoosh();open(p,nextI)};
       if($('#again'))$('#again').onclick=()=>{SFX.whoosh();g.mix?(g.daily?startReview():startMix()):g.test?testOut(p,g.test.wi):open(p,ni)};$('#menu').onclick=()=>g.mix?home():pathMap(p);
       if(grew)setTimeout(()=>growShow(before),300);else if(!playClip('done')&&S.voice)say(`You got ${sc} stars!`+(newPass?' You unlocked the next stop!':''))},t);
@@ -13096,8 +13102,8 @@ const ACT={
     return r;
   },
   // A question appears. `now` and `hidden` are passed in by the tests.
-  qStart(sk,now,hidden){
-    const a=(typeof SK!='undefined'&&SK[sk]&&SK[sk].area)||'other';
+  qStart(sk,now,hidden,lv){
+    const a=(typeof SK!='undefined'&&SK[sk]&&((SK[sk].lvArea||{})[lv]||SK[sk].area))||'other';
     ACT.cur={area:a,acc:0,t0:hidden?null:now};
   },
   // The tab was hidden or shown again.
@@ -13120,7 +13126,7 @@ const ACT={
   flu(sec,key){return ACT.add(key||today(),{sec:Math.min(sec||0,ACT.CAP*2),area:'math'})},
 };
 // Hooks (each is called from one line in an existing file). They never throw into the game.
-function actQStart(sk){try{ACT.qStart(sk,ACT.now(),ACT.hidden())}catch(e){}}
+function actQStart(sk,lv){try{ACT.qStart(sk,ACT.now(),ACT.hidden(),lv)}catch(e){}}
 function actQEnd(first,again){try{ACT.qEnd(first,again,ACT.now())}catch(e){}}
 function actRound(){try{ACT.round()}catch(e){}}
 function actFlu(sec){try{ACT.flu(sec)}catch(e){}}
@@ -14182,7 +14188,7 @@ function grown(){let armed=false;
    <div class="vline"><span class="vtxt">Give a bonus</span><button class="btn xs" id="pt5">+5 min</button><button class="btn xs danger" id="pt0">Empty bank</button></div>
    <label class="tg"><input type="checkbox" id="ptp" ${ptCfg().pause?'checked':''}> Pause game time (games locked)</label></div>
   <div class="card"><div class="tw"><table><tr><th>Skill</th><th>Rounds</th><th>1st try</th><th>Tricky ones</th></tr>${rows}</table></div></div>
-  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v106 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
+  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v107 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
    Storage: ${SAVE_FAILED?'<b style="color:#c0392b">could not save (device storage may be full)</b>':'saving OK'}${SAVE_CORRUPT?'<br><b style="color:#c0392b">The old save could not be read. A fresh start was made and the old data was kept on the device.</b>':''}<br>
    Last errors: ${(S.err||[]).length?(S.err||[]).slice().reverse().map(e=>'<br>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+' '+esc(e.msg)).join(''):'none'}</div></details>
   <div class="card"><label class="tg"><input type="checkbox" id="voice" ${S.voice?'checked':''}> Read questions out loud</label>
@@ -14527,18 +14533,18 @@ function appFiles() {
   ];
 }
 function dataReady() {
-  return appFiles().every(f => f[1] === 'v106');
+  return appFiles().every(f => f[1] === 'v107');
 }
 function dataMissing() {
-  logErr(appFiles().filter(f => f[1] !== 'v106').map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v106)');
+  logErr(appFiles().filter(f => f[1] !== 'v107').map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v107)');
   const again = UI.btn('Try again', { kind: 'primary', size: 'lg', icon: 'replay', id: 'dataretry' });
   view(`<div class="scroll" id="datamiss">${UI.empty('download', 'Star School needs to finish updating. Connect to the internet, then tap Try again.', again)}</div>`);
   $('#dataretry').onclick = () => location.reload();
 }
 </script>
-<script src="bt.v106.js"></script>
-<script src="games.v106.js"></script>
-<script src="data.v106.js"></script>
+<script src="bt.v107.js"></script>
+<script src="games.v107.js"></script>
+<script src="data.v107.js"></script>
 <script>
 if (dataReady()) {
   loadClips();
