@@ -36,7 +36,7 @@ Band comes from `S.grade`. A child can always play one band lower. The next band
 
 ## 3. Puzzle framework (chunk P3-01)
 
-File `74-teasers.js` holds the hub and framework; each puzzle type lives in its own file `75-bt-<id>.js`. Pre-made banks live in `src/data/d-puz-<id>.js`.
+File `74-teasers.js` holds the hub and framework; each puzzle type lives in its own file `NN-bt-<id>.js` (built into `bt.<VER>.js`, not index.html; CONTRIBUTING 3.3). Pre-made banks live in `src/data/d-puz-<id>.js`.
 
 ```js
 BT.reg({

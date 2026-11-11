@@ -3,17 +3,25 @@
 // also recorded in docs/PROGRESS.md "Ideas and issues"); a problem that matches a KNOWN entry is reported as "known", not as a failure.
 const fs=require('fs');
 const path=require('path'),ROOT=path.join(__dirname,'..'),SRC=path.join(ROOT,'src');
-const cat=d=>fs.readdirSync(path.join(SRC,d)).filter(n=>n.endsWith('.js')).sort().map(n=>fs.readFileSync(path.join(SRC,d,n),'utf8')).join('');
-const js=cat('js')+cat('data'); // all code and data, without boot.js
+const BUILD_PY=fs.readFileSync(path.join(ROOT,'tools','build.py'),'utf8');
+// A11b: PARTS in tools/build.py: [stem, regex on whole src/js and src/css file names]. Matching files go to <stem>.<VER>.js, in this order.
+const PARTS=[...((BUILD_PY.match(/^PARTS = \[\n([\s\S]*?)^\]/m)||[])[1]||'').matchAll(/^ +\('(\w+)', r'([^']+)'\),/gm)].map(m=>({stem:m[1],re:new RegExp('^(?:'+m[2]+')$')}));
+const partOf=n=>(PARTS.find(p=>p.re.test(n))||{}).stem;
+const names=(d,ext,part)=>fs.readdirSync(path.join(SRC,d)).filter(n=>n.endsWith(ext)&&partOf(n)===part).sort();
+const cat=(d,part,ext='.js')=>names(d,ext,part).map(n=>fs.readFileSync(path.join(SRC,d,n),'utf8')).join('');
+// all code and data, without boot.js, in the order the built page runs it: index.html's own code, each part file, the data file
+const js=cat('js')+PARTS.map(p=>cat('js',p.stem)).join('')+cat('data');
 
 // ---- Budgets and known exceptions: the one place to change them ----
 const SIZE_WARN=1200000,SIZE_FAIL=1500000; // bytes of the built index.html (ROADMAP risk R1)
 // A11: the data banks (src/data) are a second file, data.<VER>.js. It is mostly strings, which parse fast, so it may be bigger than the
-// code; the total is what a tablet downloads once and parses at every start (both files load before the app starts).
+// code; the total is what a tablet downloads once and parses at every start (all files load before the app starts).
 const DATA_WARN=1000000,DATA_FAIL=2000000; // bytes of the built data.<VER>.js
-const TOTAL_WARN=2000000,TOTAL_FAIL=3000000; // bytes of index.html + data.<VER>.js
-const BUILD_VER=(fs.readFileSync(path.join(ROOT,'tools','build.py'),'utf8').match(/^VER = '(v\d+)'/m)||[])[1];
+const PART_WARN=400000,PART_FAIL=800000; // A11b: bytes of each built part file (bt.<VER>.js, games.<VER>.js)
+const TOTAL_WARN=2000000,TOTAL_FAIL=3000000; // bytes of index.html + the part files + data.<VER>.js
+const BUILD_VER=(BUILD_PY.match(/^VER = '(v\d+)'/m)||[])[1];
 const DATA_FILE='data.'+BUILD_VER+'.js'; // the built data file at the repo root (tools/build.py)
+const PART_FILES=PARTS.map(p=>p.stem+'.'+BUILD_VER+'.js'); // A11b: the built part files, in load order
 const KNOWN={ // check name -> exact problem strings that are known content issues, not test failures
   // Spanish level 2 ("How do you say it in Spanish?") shows a picture and asks for the Spanish word, so it has no `say` on purpose:
   // reading the answer aloud would give it away (genEs in src/js/34-gen-es.js). Logged in PROGRESS.md; a later chunk may add a
@@ -7460,62 +7468,115 @@ run('mazes P3-08',()=>{
     '; dead ends '+['A','B','C','D'].map(b=>st[b].dead.toFixed(0)).join('/')+'; make '+avg.toFixed(2)+' ms'};
 });
 
-// ---- A11: data banks in a second precached file ----
-run('data file split A11',()=>{
+// ---- A11, A11b: data banks and on-demand code (Brain Teaser puzzle types, Game Room) in more precached files ----
+run('code split A11b (and data file split A11)',()=>{
   const p=[],rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8');
   if(!BUILD_VER)return{problems:['no VER in tools/build.py']};
-  for(const f of ['index.html',DATA_FILE,'sw.js'])if(!fs.existsSync(path.join(ROOT,f)))p.push(f+' not built; run python3 tools/build.py first');
+  if(PARTS.map(x=>x.stem).join()!=='bt,games')p.push('PARTS in tools/build.py read as '+JSON.stringify(PARTS.map(x=>x.stem))+' (one entry per line, like the others)');
+  const FILES=[...PART_FILES,DATA_FILE];
+  for(const f of ['index.html',...FILES,'sw.js'])if(!fs.existsSync(path.join(ROOT,f)))p.push(f+' not built; run python3 tools/build.py first');
   if(p.length)return{problems:p};
-  const html=rd('index.html'),data=rd(DATA_FILE),sw=rd('sw.js');
-  // index.html: three scripts in this order: the code (inline), exactly one external script = the current data file, boot (inline)
+  const html=rd('index.html'),data=rd(DATA_FILE),sw=rd('sw.js'),parts=PART_FILES.map(rd);
+  // index.html: the code (inline), then one external script per file in this order (parts, then data), then boot (inline)
   const tags=[...html.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/g)].map(m=>({attrs:m[1],src:(m[1].match(/src="([^"]*)"/)||[])[1],body:m[2]}));
-  const srcs=tags.filter(t=>t.src!==undefined).map(t=>t.src);
-  if(JSON.stringify(srcs)!==JSON.stringify([DATA_FILE]))p.push('index.html loads '+JSON.stringify(srcs)+', expected exactly ["'+DATA_FILE+'"]');
-  if(tags.length!==3||tags[1].src!==DATA_FILE||tags[0].src!==undefined||tags[2].src!==undefined)p.push('index.html scripts are not code, '+DATA_FILE+', boot');
-  else if(!/dataReady\(\)/.test(tags[2].body)||!/home\(true\)/.test(tags[2].body))p.push('boot script does not check dataReady() before home(true)');
-  if(tags.some(t=>/\b(async|defer)\b|type=/.test(t.attrs)))p.push('a script is async, defer or typed: the data must load in order');
+  const srcs=tags.filter(t=>t.src!==undefined).map(t=>t.src),n=FILES.length+2;
+  if(JSON.stringify(srcs)!==JSON.stringify(FILES))p.push('index.html loads '+JSON.stringify(srcs)+', expected exactly '+JSON.stringify(FILES));
+  if(tags.length!==n||tags[0].src!==undefined||tags[n-1].src!==undefined||FILES.some((f,i)=>tags[i+1].src!==f))p.push('index.html scripts are not code, '+FILES.join(', ')+', boot');
+  else if(!/dataReady\(\)/.test(tags[n-1].body)||!/home\(true\)/.test(tags[n-1].body))p.push('boot script does not check dataReady() before home(true)');
+  if(tags.some(t=>/\b(async|defer)\b|type=/.test(t.attrs)))p.push('a script is async, defer or typed: the files must load in order');
   if(!html.includes('Star School '+BUILD_VER))p.push('index.html is not '+BUILD_VER);
   if(/PUZ\.sudoku = \{|COMPSPEC\[2\]=|BANK\.vocab = |SPELL_WORDS=\{/.test(html))p.push('index.html still holds data banks');
-  if(/__VER__/.test(html+data))p.push('a built file still has __VER__');
-  // the data file: header, all of src/data in name order (byte for byte), and the version stamp as the last line
-  const stamp="var DATA_VER='"+BUILD_VER+"';";
-  const lines=data.trimEnd().split('\n');
-  if(!lines[lines.length-1].startsWith(stamp))p.push(DATA_FILE+' does not end with '+stamp);
-  if(!data.includes(cat('data')))p.push(DATA_FILE+' is not src/data/*.js (rebuild)');
-  if((data.match(/var DATA_VER=/g)||[]).length!==1)p.push(DATA_FILE+' should set DATA_VER once');
-  // load the built code alone, then with the data file, then with a data file of another release (each in its own scope)
-  const code=tags[0]&&tags[0].body||'';
-  const alone=(()=>{try{return eval(code+';({ready:dataReady()})')}catch(e){return{err:String(e)}}})();
-  if(alone.err)p.push('the code does not load without the data file (it must not read data while loading): '+alone.err);
-  else if(alone.ready)p.push('dataReady() is true without the data file');
-  const g=(()=>{try{return eval(code+';\n'+data+`;({ready:dataReady(),ver:DATA_VER,gram:BANK.gram.length,vocab:BANK.vocab.length,
-    demo:BANK.demo.length,comp:PASS.comp.length,info:PASS.info.length,passages:COMP.length,spell:Object.keys(SPELL_WORDS).length,
-    spellGen:typeof genSpell,sudoku:Object.keys(PUZ.sudoku).join(''),sudokuA:PUZ.sudoku.A.easy.length})`)}catch(e){return{err:String(e)}}})();
-  if(g.err)p.push('code + '+DATA_FILE+' do not load: '+g.err);
-  else{
-    if(!g.ready||g.ver!==BUILD_VER)p.push('dataReady() false with the current data file ('+g.ver+')');
-    for(const k of ['gram','vocab','demo','comp','info','passages','spell','sudokuA'])if(!(g[k]>0))p.push('data global missing or empty: '+k);
-    if(g.spellGen!=='function')p.push('genSpell is not defined by the data file');
-    if(g.sudoku!=='ABCD')p.push('PUZ.sudoku bands '+g.sudoku);
+  if(/__VER__/.test(html+data+parts.join('')))p.push('a built file still has __VER__');
+  // index.html's own code and CSS: every src file that is not in a part, in name order, and nothing of a part's files
+  const code=tags[0]&&tags[0].body||'',moved=[];
+  if(code!=='\n'+cat('js').replace(/__VER__/g,BUILD_VER))p.push('index.html code is not src/js minus the part files (rebuild)');
+  const b64=s=>s.replace(/base64,[\w+/=]+\)/g,'base64,F)'); // the fonts are embedded at build time
+  if(!b64(html).includes('<style>\n'+b64(cat('css',undefined,'.css'))+'</style>'))p.push('index.html CSS is not src/css minus the part files (rebuild)');
+  for(const x of PARTS)for(const [d,ext] of [['js','.js'],['css','.css']])for(const f of names(d,ext,x.stem)){
+    moved.push(f);
+    const longest=fs.readFileSync(path.join(SRC,d,f),'utf8').split('\n').map(l=>l.trim()).filter(l=>!/^(\/\*|\*|\/\/)/.test(l)).sort((a,b)=>b.length-a.length)[0]||'';
+    if(longest.length>20&&html.includes(longest))p.push(f+' (part '+x.stem+') is still in index.html: '+longest.slice(0,60));
   }
-  const other=(()=>{try{return eval(code+';\n'+data.replace(stamp,"var DATA_VER='v1';")+';dataReady()')}catch(e){return String(e)}})();
-  if(other!==false)p.push('dataReady() does not refuse a data file of another release: '+other);
-  // sw.js: one cache per release, precaching both files
+  for(const f of ['74-teasers.js','58-playtime.js','90-app.js'])if(partOf(f))p.push(f+' must stay in index.html (home and the guard need it), but PARTS moves it');
+  if(!names('js','.js','bt').length||!names('js','.js','games').length)p.push('a part has no src/js files: '+JSON.stringify(PARTS.map(x=>[x.stem,names('js','.js',x.stem)])));
+  for(const f of fs.readdirSync(path.join(SRC,'js')))if(/-bt-/.test(f)&&partOf(f)!=='bt')p.push(f+' is a puzzle type but not in bt.'+BUILD_VER+'.js');
+  // each part file: header, a <style> with its src/css (if any), its src/js in name order (byte for byte), its stamp as the last line
+  const stamps=[];
+  PARTS.forEach((x,i)=>{
+    const f=PART_FILES[i],t=parts[i],stamp='var '+x.stem.toUpperCase()+"_VER='"+BUILD_VER+"';",lines=t.trimEnd().split('\n');
+    stamps.push([x.stem,x.stem.toUpperCase()+'_VER']);
+    if(!lines[lines.length-1].startsWith(stamp))p.push(f+' does not end with '+stamp);
+    if((t.match(new RegExp('var '+x.stem.toUpperCase()+'_VER=','g'))||[]).length!==1)p.push(f+' should set '+x.stem.toUpperCase()+'_VER once');
+    if(!t.includes(cat('js',x.stem)))p.push(f+' is not its src/js files (rebuild)');
+    const css=cat('css',x.stem,'.css');
+    if(css&&!t.includes('s.textContent='+JSON.stringify(css)+';document.head.appendChild(s)'))p.push(f+' does not add its src/css as a <style> (rebuild)');
+    if(css&&t.indexOf('s.textContent=')>t.indexOf(cat('js',x.stem)))p.push(f+': the <style> must come before the code');
+  });
+  stamps.push(['data','DATA_VER']);
+  // dataReady() checks every file: appFiles() in src/js/90-app.js lists the same files in the same order
+  const app=fs.readFileSync(path.join(SRC,'js','90-app.js'),'utf8');
+  const listed=[...app.matchAll(/\['(\w+)', typeof (\w+) === 'undefined' \? null : \2\]/g)].map(m=>[m[1],m[2]]);
+  if(JSON.stringify(listed)!==JSON.stringify(stamps))p.push('appFiles() in 90-app.js lists '+JSON.stringify(listed)+', expected '+JSON.stringify(stamps));
+  // load the built files in Node: the code alone, the code with the data but no parts, everything, and each file missing or stale.
+  // Like the page: each file is its own classic script in one fresh global (vm context), so nothing leaks in from the other checks'
+  // eval and a function declared in a later file is not hoisted into an earlier one. A fake document.head collects the parts' <style>s.
+  const vm=require('vm'),styles=[];
+  const load=(files,tail)=>{
+    const doc=Object.assign({},global.document,{createElement:t=>({tag:t}),head:{appendChild:e=>styles.push(e)}});
+    const ctx=vm.createContext({localStorage:global.localStorage,document:doc,navigator:{},addEventListener:()=>{},location:{protocol:'file:'},
+      speechSynthesis:{getVoices:()=>[]},setTimeout:()=>{},console});
+    try{for(const f of files)vm.runInContext(f,ctx);return JSON.parse(JSON.stringify(vm.runInContext(tail,ctx)))}catch(e){return{err:String(e)}}
+  };
+  {
+    const alone=load([code],'({ready:dataReady()})');
+    if(alone.err)p.push('the code does not load without the other files (it must not use part code or data while loading): '+alone.err);
+    else if(alone.ready)p.push('dataReady() is true without the other files');
+    const nop=load([code,data],'({ready:dataReady(),bt:BT.list().length,game:typeof garage})');
+    if(nop.err)p.push('code + '+DATA_FILE+' do not load without the part files: '+nop.err);
+    else if(nop.ready||nop.bt||nop.game!=='undefined')p.push('without the part files: '+JSON.stringify(nop));
+    styles.length=0;
+    const g=load([code,...parts,data],`({ready:dataReady(),files:appFiles(),gram:BANK.gram.length,vocab:BANK.vocab.length,
+      demo:BANK.demo.length,comp:PASS.comp.length,info:PASS.info.length,passages:COMP.length,spell:Object.keys(SPELL_WORDS).length,
+      spellGen:typeof genSpell,sudoku:Object.keys(PUZ.sudoku).join(''),sudokuA:PUZ.sudoku.A.easy.length,
+      bt:['maze','pattern','pyramid','balance','target'].filter(id=>BT.get(id)).length,mz:typeof MZ,pat:typeof PAT,btn:typeof BTN,
+      games:[typeof garage,typeof blockBuilder,typeof bbMenu,typeof colorMenu,typeof garageS,typeof gtStop,typeof stopHC,typeof shapePage,typeof polyArt,typeof rng].join()})`);
+    if(g.err)p.push('code + '+FILES.join(' + ')+' do not load: '+g.err);
+    else{
+      if(!g.ready||g.files.some(f=>f[1]!==BUILD_VER))p.push('dataReady() false with the current files: '+JSON.stringify(g.files));
+      for(const k of ['gram','vocab','demo','comp','info','passages','spell','sudokuA'])if(!(g[k]>0))p.push('data global missing or empty: '+k);
+      if(g.spellGen!=='function')p.push('genSpell is not defined by the data file');
+      if(g.sudoku!=='ABCD')p.push('PUZ.sudoku bands '+g.sudoku);
+      if(g.bt!==5||g.mz!=='object'||g.pat!=='object'||g.btn!=='object')p.push('puzzle types not registered from '+PART_FILES[0]+': '+JSON.stringify(g));
+      if(g.games!==Array(10).fill('function').join())p.push('game code missing from '+PART_FILES[1]+': '+g.games);
+      const want=PARTS.map(x=>cat('css',x.stem,'.css')).filter(Boolean);
+      if(styles.length!==want.length||styles.some((s,i)=>s.tag!=='style'||s.textContent!==want[i]))p.push('the parts did not add their CSS: '+styles.map(s=>s.id).join());
+    }
+    FILES.forEach((f,i)=>{
+      const all=[code,...parts,data],stamp=stamps[i][1]+"='"+BUILD_VER+"'";
+      const miss=load(all.filter((_,j)=>j!==i+1),'({ready:dataReady(),bad:appFiles().filter(f=>f[1]!==\''+BUILD_VER+'\').map(f=>f[0]+":"+f[1]).join()})');
+      if(miss.err||miss.ready||miss.bad!==stamps[i][0]+':null')p.push('without '+f+': '+JSON.stringify(miss));
+      const old=load(all.map((t,j)=>j===i+1?t.replace(stamp,stamps[i][1]+"='v1'"):t),'dataReady()');
+      if(old!==false)p.push('dataReady() does not refuse a '+f+' of another release: '+JSON.stringify(old));
+    });
+  }
+  // sw.js: one cache per release, precaching every file
   const F=JSON.parse(((sw.match(/const F=(\[[^\]]*\])/)||[])[1]||'[]').replace(/'/g,'"'));
   if(!sw.includes("const C='starschool-"+BUILD_VER+"'"))p.push('sw.js cache name is not starschool-'+BUILD_VER);
-  for(const f of ['./','./index.html','./'+DATA_FILE])if(!F.includes(f))p.push('sw.js does not precache '+f);
-  if(F.filter(f=>/data\./.test(f)).length!==1)p.push('sw.js should precache exactly one data file: '+F.join(' '));
-  // no stale data files at the repo root (GitHub Pages serves the root of main)
-  const stale=fs.readdirSync(ROOT).filter(f=>/^data\..*\.js$/.test(f)&&f!==DATA_FILE);
-  if(stale.length)p.push('old data files at the repo root: '+stale.join(', '));
-  // sources: the shell loads the data file between the code and boot
+  for(const f of ['./','./index.html',...FILES.map(f=>'./'+f)])if(!F.includes(f))p.push('sw.js does not precache '+f);
+  if(F.filter(f=>/\.v\d+\.js$/.test(f)).length!==FILES.length)p.push('sw.js should precache exactly '+FILES.join(', ')+': '+F.join(' '));
+  // no stale built files at the repo root (GitHub Pages serves the root of main)
+  const stale=fs.readdirSync(ROOT).filter(f=>/^[a-z]+\.v\d+\.js$/.test(f)&&!FILES.includes(f));
+  if(stale.length)p.push('old built files at the repo root: '+stale.join(', '));
+  // sources: the shell loads the parts and the data file between the code and boot
   const shell=fs.readFileSync(path.join(SRC,'shell.html'),'utf8');
-  if(!/\/\*@@JS@@\*\/\s*<\/script>\s*<script src="data\.__VER__\.js"><\/script>\s*<script>\s*\/\*@@BOOT@@\*\//.test(shell))p.push('src/shell.html: code, data.__VER__.js, boot not in that order');
-  // budgets (ROADMAP R1 and A11; index.html alone is the 'size: index.html under budget' check)
-  const nd=Buffer.byteLength(data),nt=Buffer.byteLength(html)+nd,w=[];
+  if(!/\/\*@@JS@@\*\/\s*<\/script>\s*<!--@@PARTS@@-->\s*<script src="data\.__VER__\.js"><\/script>\s*<script>\s*\/\*@@BOOT@@\*\//.test(shell))p.push('src/shell.html: code, parts, data.__VER__.js, boot not in that order');
+  // budgets (ROADMAP R1, A11, A11b; index.html alone is the 'size: index.html under budget' check)
+  const nd=Buffer.byteLength(data),np=parts.map(t=>Buffer.byteLength(t)),nt=Buffer.byteLength(html)+nd+np.reduce((a,b)=>a+b,0),w=[];
   if(nd>DATA_FAIL)p.push(DATA_FILE+' is '+nd+' bytes, over the '+DATA_FAIL+' limit');else if(nd>DATA_WARN)w.push('data over '+DATA_WARN);
-  if(nt>TOTAL_FAIL)p.push('index.html + '+DATA_FILE+' is '+nt+' bytes, over the '+TOTAL_FAIL+' limit');else if(nt>TOTAL_WARN)w.push('total over '+TOTAL_WARN);
-  return{problems:p,note:DATA_FILE+' '+Math.round(nd/1000)+' KB, total '+Math.round(nt/1000)+' KB'+(w.length?'  WARN: '+w.join(', '):'')};
+  np.forEach((b,i)=>{if(b>PART_FAIL)p.push(PART_FILES[i]+' is '+b+' bytes, over the '+PART_FAIL+' limit');else if(b>PART_WARN)w.push(PARTS[i].stem+' over '+PART_WARN)});
+  if(nt>TOTAL_FAIL)p.push('index.html + '+FILES.join(' + ')+' is '+nt+' bytes, over the '+TOTAL_FAIL+' limit');else if(nt>TOTAL_WARN)w.push('total over '+TOTAL_WARN);
+  return{problems:p,note:PART_FILES.map((f,i)=>f+' '+Math.round(np[i]/1000)+' KB').join(', ')+', '+DATA_FILE+' '+Math.round(nd/1000)+' KB, total '+Math.round(nt/1000)+' KB'+
+    ' ('+moved.length+' src files in parts)'+(w.length?'  WARN: '+w.join(', '):'')};
 });
 
 run('Crystal Caves P2-12: stops in CURRICULUM order, 3,000 samples per new level with the maths recomputed, hints, say, labels, reproducible, old levels unchanged',()=>{
