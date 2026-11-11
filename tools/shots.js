@@ -1382,6 +1382,42 @@ Object.assign(SCREENS, {
   'trace-sheet': { fixture: 'fresh', run: traceSheet },
 });
 
+// P3-03 Sudoku: grade g sets the band, level lv is started, then by real taps (tools/lib/bt-sud.js): o.moves moves of solve(),
+// o.notes pencil marks in the first empty squares, o.wrong one clashing entry, o.hint presses of Hint (cooldown skipped), o.win the rest
+const SUD_TAPS = require('./lib/bt-sud');
+const sudShot = (g, lv, o = {}) => ({
+  run: async p => {
+    await p.evaluate(([g, lv]) => { window.say = () => {}; S.grade = g; S.bt = {}; BT.start('sudoku', BT.band(), lv); }, [g, lv]);
+    await p.waitForSelector('#btstage .sd');
+    for (const m of (await SUD_TAPS.rest(p)).slice(0, o.moves || 0)) await SUD_TAPS.move(p, m);
+    if (o.notes) {
+      const free = await p.evaluate(() => { const p = S.bt.cur.puzzle, b = SD.vals(p, S.bt.cur.state || SD.fresh(p)); return b.map((v, c) => v ? -1 : c).filter(c => c >= 0); });
+      await p.click('.sd-pad .k[data-k="notes"]');
+      for (const [i, c] of free.slice(0, o.notes).entries()) {
+        await p.click(`.sd-board .sd-c[data-c="${c}"]`);
+        for (const v of [1 + i % 3, 4 + i % 2, 7]) if (await p.$(`.sd-pad .k[data-k="${v}"]`)) await p.click(`.sd-pad .k[data-k="${v}"]`);
+      }
+      await p.click('.sd-pad .k[data-k="notes"]');
+    }
+    if (o.wrong) await SUD_TAPS.wrong(p);
+    for (let i = 0; i < (o.hint || 0); i++) {
+      await p.evaluate(() => { BT.act.cd = 0; document.querySelector('#bthint').disabled = false; });
+      await p.click('#bthint');
+    }
+    if (o.win) { for (const m of await SUD_TAPS.rest(p)) await SUD_TAPS.move(p, m); await p.waitForTimeout(1600); }
+    if (o.sel != null) await p.click(`.sd-board .sd-c[data-c="${o.sel}"]`);
+  },
+});
+Object.assign(SCREENS, {
+  'bt-sud-hub': { run: async p => { await p.evaluate(() => { S.grade = 5; BT.hub(); }); } },
+  'bt-sud-a': sudShot(0, 1, { moves: 3, wrong: true }),
+  'bt-sud-b': sudShot(1, 9, { moves: 2, hint: 2 }),
+  'bt-sud-c': sudShot(3, 6, { moves: 6, notes: 3, wrong: true }),
+  'bt-sud-d': sudShot(5, 1, { moves: 10, notes: 2, wrong: true }),
+  'bt-sud-d-hint': sudShot(5, 10, { moves: 4, hint: 2 }),
+  'bt-sud-win': sudShot(1, 1, { win: true }),
+});
+
 async function main() {
   const args = process.argv.slice(2);
   let fixtureArg = null;

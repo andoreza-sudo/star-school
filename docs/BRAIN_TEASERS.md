@@ -105,6 +105,10 @@ Save shape: `S.bt[type] = {A:{lvl, stars:[...]}, B:{...}, ...}`, `S.bt.cur`, `S.
 **Runtime variety** (all preserve uniqueness and grade): permute symbols; swap rows within a band of boxes; swap box bands; same for columns; transpose (4x4 and 9x9 only).
 
 **UI**: tap a cell, then tap a symbol on the pad (pad shows how many of each symbol are left). Bands A and B: a wrong symbol wiggles and bounces out (counts as a mistake). Bands C and D: conflicts are tinted, and a "notes" toggle allows pencil marks. Cell size at 600 px wide: 9x9 -> 60 px, never under 36 px on a phone.
+As built (P3-03): a clash is amber with a dashed ring and a warning mark (never red, never colour alone) and counts one mistake; Erase and
+Undo in bands C and D. When a 9x9 square would be under 46 px (a phone in portrait: 36 px at 380x780; a 1024x600 tablet: 45 px), a zoom
+box shows the selected square's 3x3 box at 48 px squares beside the pad: a tap on the board picks a square and brings its box into the
+zoom box, where a near miss is put right with one 48 px tap (every square has a 48 px target there).
 
 **Hints**: 1) highlights a row, column or box with only one gap, or says "look at this box". 2) highlights the cell and names the reason ("only a 3 fits here: 1, 2, 4 are already in the row"). 3) fills that cell.
 

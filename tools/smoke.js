@@ -3694,6 +3694,164 @@ async function main() {
       await pz.ctx.close();
     }
 
+    // P3-03 Sudoku (src/js/78-bt-sudoku.js) with real taps, midway save: a 4x4 (band B, a 1st grader) at 380x780 and a 9x9 (band D,
+    //    a 5th grader) at 1024x600: Home -> Brain Teasers -> Sudoku -> level 1, a wrong entry shown gently (B: it bounces out with an
+    //    amber line; D: the clash is tinted amber with a dashed ring and a warning mark, never red; one mistake each), hint tiers 1 and 2
+    //    (they point and explain, nothing is filled), back and Keep going resumes exactly, the rest tapped in, win card, stars saved.
+    //    The 9x9 also: Undo takes the clash away, Notes put a pencil mark in. Then a 9x9 at 380x780 (the zoom box: board squares 36 px
+    //    or more, zoom squares 48 px, a zoom tap picks the square) and band A (animals on the pad, a wrong animal bounces, win).
+    //    48 px targets (board squares of a zoomed 9x9: 36 px on a phone, 44 on a tablet, BRAIN_TEASERS 8), no sideways scroll, no emoji chrome.
+    {
+      const taps = require('./lib/bt-sud');
+      const look = () => {
+        const vw = document.documentElement.clientWidth, out = [];
+        const zm = !!document.querySelector('.sd.zm'), minCell = zm ? (vw < 600 ? 35.5 : 43.5) : 47.5;
+        for (const e of document.querySelectorAll('button, [role="button"]')) {
+          const r = e.getBoundingClientRect();
+          if (!r.width || r.bottom < 0 || r.top > innerHeight || e.closest('svg') || e.closest('#toast')) continue;
+          const min = e.closest('.sd-board') ? minCell : 47.5;
+          if (Math.min(r.width, r.height) < min) out.push('small ' + (e.id || e.className) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
+          if (r.left < -1 || r.right > vw + 1) out.push('outside ' + (e.id || e.className) + ' ' + Math.round(r.left) + '..' + Math.round(r.right));
+        }
+        if (document.documentElement.scrollWidth > vw) out.push('sideways scroll ' + document.documentElement.scrollWidth);
+        const stg = document.querySelector('#btstage');
+        if (stg && stg.scrollWidth > stg.clientWidth + 1) out.push('the puzzle scrolls sideways');
+        if (stg && document.querySelector('#btstage .sd') && stg.scrollHeight > stg.clientHeight + 1) out.push('the puzzle does not fit: ' + stg.scrollHeight + ' > ' + stg.clientHeight);
+        const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        for (let n; (n = w.nextNode());) {
+          const el = n.parentElement;
+          if (!el || el.closest('script,style,svg,#ico-sprite,.rw-burst') || !el.getClientRects().length) continue;
+          const m = n.textContent.match(/\p{Extended_Pictographic}|[◀▶✕]/u);
+          if (m) out.push('emoji chrome ' + m[0] + ' in ' + (el.id || el.className));
+        }
+        return out;
+      };
+      const cur = pg => pg.evaluate(() => S.bt.cur && JSON.stringify({ puzzle: S.bt.cur.puzzle, state: S.bt.cur.state, hints: S.bt.cur.hints }));
+      const board = pg => pg.evaluate(() => { const c = S.bt.cur; return SD.vals(c.puzzle, c.state || SD.fresh(c.puzzle)).join(''); });
+      const open = async (pg, grade) => {
+        await pg.evaluate(g => { S.grade = g; save(); home(); }, grade);
+        await pg.waitForSelector('#btcard');
+        await pg.evaluate(() => document.querySelector('#btcard').scrollIntoView({ block: 'center' }));
+        await pg.click('#btcard');
+        await pg.waitForSelector('.bt-hub .bt-type[data-t="sudoku"]');
+        await pg.waitForTimeout(400);
+        await pg.click('.bt-type[data-t="sudoku"]');
+        await pg.waitForSelector('.bt-lvs');
+        await pg.click('.bt-lv[data-l="1"]');
+        await pg.waitForSelector('#btstage .sd');
+        await pg.waitForTimeout(400);
+      };
+      for (const [w, h, grade, full] of [[380, 780, 1, true], [1024, 600, 5, true], [380, 780, 5, false], [380, 780, 0, false]]) {
+        const tag = 'P3-03 ' + w + 'x' + h + ' grade ' + grade;
+        const app = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = app.page, bad = [], notes = [];
+        const chk = async what => { for (const o of await pg.evaluate('(' + look.toString() + ')()')) bad.push(what + ': ' + o); };
+        await pg.evaluate(() => { window.say = () => {}; });
+        await open(pg, grade);
+        await chk('play');
+        const g0 = await pg.evaluate(() => {
+          const c = S.bt.cur, r = s => { const e = document.querySelector(s); return e ? Math.round(Math.min(e.getBoundingClientRect().width, e.getBoundingClientRect().height)) : 0; };
+          return { band: c.band, n: c.puzzle.n, cells: document.querySelectorAll('.sd-board .sd-c').length, cell: r('.sd-board .sd-c'), zoom: !document.querySelector('.sd-zoom').hidden,
+            zcell: r('.sd-zoom .sd-c'), keys: [...document.querySelectorAll('.sd-pad .k')].map(k => k.dataset.k).join(' '), pics: document.querySelectorAll('.sd-pad .k svg.art').length };
+        });
+        const want = { 0: ['A', 4], 1: ['B', 4], 5: ['D', 9] }[grade];
+        if (g0.band !== want[0] || g0.n !== want[1] || g0.cells !== g0.n * g0.n) bad.push('band ' + g0.band + ' with ' + g0.cells + ' squares, want ' + want);
+        if (g0.n === 4 && g0.keys !== '1 2 3 4') bad.push('4x4 pad keys: ' + g0.keys);
+        if (g0.n === 9 && g0.keys.split(' ').length !== 12) bad.push('9x9 pad keys (1-9, Erase, Notes, Undo): ' + g0.keys);
+        if (grade === 0 && g0.pics !== 4) bad.push('band A pad should show 4 animal drawings, has ' + g0.pics);
+        notes.push(`${g0.n}x${g0.n} band ${g0.band}, square ${g0.cell} px` + (g0.zoom ? `, zoom box ${g0.zcell} px` : ''));
+        const band = g0.band;
+
+        // a wrong entry, shown gently, one mistake
+        const b0 = await board(pg);
+        const wm = await taps.wrong(pg);
+        const gent = await pg.evaluate(m => {
+          const c = S.bt.cur, msg = document.querySelector('.sd-msg'), cf = [...document.querySelectorAll('.sd-board .sd-c.cf')];
+          const sq = document.querySelector(`.sd-board .sd-c[data-c="${m[0]}"]`), bg = getComputedStyle(sq).backgroundColor, css = getComputedStyle(document.documentElement);
+          const rgb = v => { const d = document.createElement('i'); d.style.color = v; document.body.appendChild(d); const x = getComputedStyle(d).color; d.remove(); return x; };
+          return { miss: c.state.miss, cls: msg.className, msg: msg.textContent, cf: cf.length, warn: !!sq.querySelector('.sd-wn svg'), dashed: getComputedStyle(sq).outlineStyle,
+            bg, tryTint: rgb(css.getPropertyValue('--try-tint')), red: rgb(css.getPropertyValue('--danger')), tryInk: rgb(css.getPropertyValue('--try-ink')), msgColor: getComputedStyle(msg).color };
+        }, wm);
+        if (!wm || gent.miss !== 1 || !/try/.test(gent.cls) || gent.msgColor !== gent.tryInk) bad.push('wrong entry ' + JSON.stringify(wm) + ': ' + JSON.stringify(gent));
+        if (band === 'A' || band === 'B') {
+          await vwait(pg, 900);
+          if ((await board(pg)) !== b0) bad.push('a wrong symbol stayed on the board in band ' + band);
+          if (!/already/.test(gent.msg)) bad.push('band ' + band + ': the line should say where the symbol already is: ' + gent.msg);
+        } else {
+          if (gent.cf < 2 || !gent.warn || gent.dashed !== 'dashed' || gent.bg !== gent.tryTint || gent.bg === gent.red) bad.push('the clash is not shown gently (amber tint, dashed ring, warning mark): ' + JSON.stringify(gent));
+          await chk('clash');
+        }
+        if (full && band === 'D') {
+          // Undo takes the clash away; Notes put a pencil mark in an empty square, and back out
+          await pg.click('.sd-pad .k[data-k="undo"]');
+          const u = await pg.evaluate(() => ({ cf: document.querySelectorAll('.sd-c.cf').length, miss: S.bt.cur.state.miss }));
+          if (u.cf || (await board(pg)) !== b0 || u.miss !== 1) bad.push('Undo should take the clash away and keep the mistake: ' + JSON.stringify(u));
+          const free = await pg.evaluate(() => { const c = S.bt.cur; return SD.vals(c.puzzle, c.state).indexOf(0); });
+          await pg.click(`.sd-board .sd-c[data-c="${free}"]`);
+          await pg.click('.sd-pad .k[data-k="notes"]');
+          await pg.click('.sd-pad .k[data-k="3"]');
+          await pg.click('.sd-pad .k[data-k="7"]');
+          const nt = await pg.evaluate(f => ({ txt: document.querySelector(`.sd-board .sd-c[data-c="${f}"] .sd-nts`)?.textContent, m: S.bt.cur.state.m[f], on: document.querySelector('.sd-pad .k[data-k="notes"]').getAttribute('aria-pressed') }), free);
+          if (nt.txt !== '37' || nt.m !== 68 || nt.on !== 'true') bad.push('notes: ' + JSON.stringify(nt));
+          await pg.click('.sd-pad .k[data-k="notes"]');
+          await chk('notes');
+        }
+        if (full) {
+          // hint tiers 1 and 2: they point and explain; the board does not change
+          const f0 = await board(pg);
+          await pg.click('#bthint');
+          await vwait(pg, 200);
+          const t1 = await pg.evaluate(() => ({ hh: document.querySelectorAll('.sd-board .sd-c.hh').length, msg: document.querySelector('.sd-msg').textContent, hints: S.bt.cur.hints }));
+          if (!t1.hh || !t1.msg || t1.hints !== 1) bad.push('hint 1: ' + JSON.stringify(t1));
+          await vwait(pg, 11500);
+          await pg.click('#bthint');
+          await vwait(pg, 200);
+          const t2 = await pg.evaluate(() => ({ hl: document.querySelectorAll('.sd-board .sd-c.hl').length, msg: document.querySelector('.sd-msg').textContent, hints: S.bt.cur.hints }));
+          if (t2.hints !== 2 || !t2.hl || t2.msg === t1.msg || (await board(pg)) !== f0) bad.push('hint 2 should point at a square, explain and fill nothing: ' + JSON.stringify(t2));
+          notes.push('hint 2: "' + t2.msg + '"');
+          await chk('hint 2');
+          // one right move, then back to the levels and the hub: Keep going brings back the same puzzle and state
+          await taps.move(pg, (await taps.rest(pg))[0]);
+          await vwait(pg, 200);
+          const mid = await cur(pg);
+          await pg.click('#back');
+          await pg.waitForSelector('.bt-lvs');
+          await pg.click('#back');
+          await pg.waitForSelector('#btkeep');
+          await pg.click('#btkeep');
+          await pg.waitForSelector('#btstage .sd');
+          if (!mid || (await cur(pg)) !== mid) bad.push('Keep going did not resume exactly');
+        }
+        if (grade === 5 && !full) {
+          // the phone 9x9: a board tap picks the box, a zoom tap picks the square; the number goes in from the pad
+          const [c, v] = (await taps.rest(pg))[0];
+          await pg.click(`.sd-board .sd-c[data-c="${c}"]`);
+          const zc = await pg.evaluate(c => [...document.querySelectorAll('.sd-zoom .sd-c')].map(z => +z.dataset.c).includes(c), c);
+          await taps.move(pg, [c, v], { zoom: true });
+          const z = await pg.evaluate(c => ({ sel: S.bt.cur.state.sel, v: SD.vals(S.bt.cur.puzzle, S.bt.cur.state)[c] }), c);
+          if (!g0.zoom || g0.cell < 36 || g0.zcell < 48 || !zc || z.sel !== c || z.v !== v) bad.push('zoom box: ' + JSON.stringify({ g0, zc, z, c, v }));
+          await chk('zoom');
+        } else {
+          // the rest by taps, then the win card with the stars saved
+          for (const m of await taps.rest(pg)) await taps.move(pg, m);
+          try { await pg.waitForSelector('.bt-win #btlvls', { timeout: 8000 }); } catch (e) { bad.push('no win card'); }
+          await pg.waitForTimeout(700);
+          await chk('win card');
+          const saved = await pg.evaluate(b => ({ stars: BT.rec('sudoku', b).stars[0] || 0, lvl: BT.rec('sudoku', b).lvl, cur: !!S.bt.cur,
+            shown: document.querySelectorAll('.bt-win .rs.on').length }), band);
+          // two hints give 1 star; no hint and one mistake (within the allowance of 2) give 3
+          if (saved.lvl !== 2 || saved.cur || saved.shown !== saved.stars || saved.stars !== (full ? 1 : 3)) bad.push('stars not saved ' + JSON.stringify(saved));
+          notes.push(`won with ${saved.stars} star${saved.stars > 1 ? 's' : ''}`);
+        }
+        if (bad.length) fail(tag + ':\n  ' + bad.join('\n  '));
+        else step(`${tag}: Home -> Brain Teasers -> Sudoku -> ${notes.join('; ')}; a wrong entry shown gently and counted` +
+          (full ? ', hints 1-2 fill nothing, Keep going resumes exactly' : '') + `; targets 48 px, no sideways scroll, no emoji chrome`);
+        network.push(...app.network);
+        for (const e of app.errors) fail(e);
+        await app.ctx.close();
+      }
+    }
+
     for (const e of errors) fail(e);
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');

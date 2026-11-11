@@ -1,0 +1,120 @@
+/* Brain Teasers sudoku (P3-03, src/js/78-bt-sudoku.js). Tokens only; light from the top left (a white gloss on top, the shade tone
+   as a ledge below); motion is transform and opacity (calm mode and reduced motion stop it in 20-base.css).
+   The board is a purple tray (--bt, ledge --bt-shade) holding one white card per box; squares are tiles with a soft lower edge.
+   --cs (the square's side) is set by the layout in the JS; the padding and gaps here (6, 5, 2 px) must match FR there.
+   Portrait: talk line, board, controls. Landscape (.land): board left, talk line and controls right (.sd-side).
+   .zm (9x9 cells under 46 px, a phone): the zoom box (the selected box at 52 px squares) sits left of a 3-across pad. */
+.sd{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--s-3);width:100%;max-width:1000px;min-height:100%;margin:0 auto}
+.sd-say{display:flex;align-items:center;gap:var(--s-2);width:100%;max-width:640px;min-height:var(--tap);padding:var(--s-1) var(--s-1) var(--s-1) var(--s-3);
+  border-radius:var(--r-card);background:var(--surface);box-shadow:inset 0 0 0 2px var(--line),0 3px 0 var(--ledge-soft)}
+.sd-msg{flex:1;min-width:0;margin:0;font-size:var(--fs-2);font-weight:700;line-height:1.3;color:var(--ink-2)}
+.sd-msg.good{color:var(--good-ink)}
+.sd-msg.try{color:var(--try-ink)}
+.sd-msg.hint{color:var(--bt-shade)}
+.sd-spk{flex:none;order:2}
+.sd-main{display:flex;justify-content:center;flex:none}
+.sd-ctl{display:flex;flex-direction:column;align-items:center;gap:var(--s-3);width:100%;max-width:640px}
+.sd-side{display:none}
+
+/* ---------- the board ---------- */
+.sd-board{display:grid;grid-template-columns:repeat(var(--bx),auto);gap:var(--fb);padding:var(--fp);border-radius:16px;
+  background:linear-gradient(var(--hi),var(--hi-0) 40px) var(--bt);box-shadow:inset 0 2px 0 var(--hi),0 6px 0 var(--bt-shade)}
+.sd-box{display:grid;grid-template-columns:repeat(var(--bw),var(--cs));grid-auto-rows:var(--cs);gap:var(--fc);border-radius:10px;background:var(--line);overflow:hidden}
+.sd-n9 .sd-box{border-radius:7px}
+.sd-c{position:relative;display:grid;place-items:center;width:var(--cs);height:var(--cs);min-width:0;padding:0;border:0;border-radius:0;
+  background:var(--surface);color:var(--bt);font-family:var(--font-display);font-size:calc(var(--cs) * .56);font-weight:700;line-height:1;
+  cursor:pointer;touch-action:manipulation;box-shadow:inset 0 -3px 0 var(--surface-2);-webkit-tap-highlight-color:transparent}
+.sd-c>*{pointer-events:none}
+.sd-c b{font-weight:700}
+.sd-c .sd-pic{width:74%;height:74%}
+/* a given number is printed in ink; the child's are purple; a hint's is ink on star-yellow */
+.sd-c.giv{color:var(--ink);background:var(--surface);box-shadow:inset 0 -3px 0 var(--line)}
+.sd-c.ent{color:var(--bt)}
+.sd-c.hn{color:var(--ink);background:var(--star-tint);box-shadow:inset 0 -3px 0 var(--star)}
+/* the selected square, its row, column and box, and the same number elsewhere */
+.sd-c.rc{background:var(--surface-2)}
+.sd-c.same{background:var(--bt-tint);color:var(--bt-shade)}
+.sd-c.same.giv{color:var(--ink)}
+.sd-c.sel{background:var(--bt-tint);box-shadow:inset 0 0 0 3px var(--bt),inset 0 -6px 0 var(--bt)}
+/* hints: the house glows soft yellow, the square gets a star ring */
+.sd-c.hh{background:var(--star-tint)}
+.sd-c.hl{background:var(--star-tint);box-shadow:inset 0 0 0 4px var(--star)}
+.sd-c.sel.hl{box-shadow:inset 0 0 0 4px var(--star),inset 0 0 0 7px var(--bt)}
+/* a clash (C, D) and the number a wrong one ran into (A, B): amber with a dashed ring and a warning mark, never red */
+.sd-c.cf,.sd-c.cl{background:var(--try-tint);color:var(--try-ink);outline:2px dashed var(--try-ink);outline-offset:-5px}
+.sd-c.cf.sel{box-shadow:inset 0 0 0 3px var(--try),inset 0 -6px 0 var(--try)}
+.sd-wn{position:absolute;top:1px;right:1px;display:grid;line-height:0;color:var(--try-ink)}
+.sd-wn .ic{width:max(12px,calc(var(--cs) * .3));height:max(12px,calc(var(--cs) * .3))}
+/* a wrong symbol (A, B) wiggles, then hops out */
+.sd-c.bad{background:var(--try-tint);color:var(--try-ink)}
+.sd-c.bad>*{animation:sd-out 650ms var(--ease) forwards}
+@keyframes sd-out{15%{transform:translateX(-12%)}30%{transform:translateX(12%)}45%{transform:translateX(-6%);opacity:1}100%{transform:translateY(-55%) scale(.5);opacity:0}}
+.sd-c.pop>*{animation:k-pop 420ms var(--ease)}
+/* pencil marks: a small grid of 3 across */
+.sd-nts{position:absolute;inset:3px;display:grid;grid-template-columns:repeat(3,1fr);place-items:center;font-style:normal;
+  font-size:max(9px,calc(var(--cs) * .27));font-weight:700;line-height:1;color:var(--ink-3)}
+.sd-c.sel .sd-nts{color:var(--bt-shade)}
+.sd.win .sd-c>*{animation:k-pop 520ms var(--ease) both}
+.sd.win .sd-box:nth-child(2n) .sd-c>*{animation-delay:90ms}
+.sd.win .sd-box:nth-child(3n) .sd-c>*{animation-delay:180ms}
+
+/* ---------- zoom box (9x9 on a phone): the selected box at full size ---------- */
+.sd-zoom{--cs:48px;display:grid;flex:none;grid-template-columns:repeat(3,var(--cs));grid-auto-rows:var(--cs);gap:2px;padding:2px;border-radius:12px;
+  background:var(--bt);box-shadow:inset 0 2px 0 var(--hi),0 5px 0 var(--bt-shade)}
+.sd-zoom[hidden]{display:none}
+.sd-zoom .sd-c:first-child{border-radius:10px 0 0 0}
+.sd-zoom .sd-c:nth-child(3){border-radius:0 10px 0 0}
+.sd-zoom .sd-c:nth-child(7){border-radius:0 0 0 10px}
+.sd-zoom .sd-c:last-child{border-radius:0 0 10px 0}
+
+/* ---------- the pad: the question screen's keys (padHTML), symbols 1..n with how many are left ---------- */
+.sd .sd-pad{gap:var(--s-2);width:100%;max-width:none;margin:0}
+.sd .sd-pad.row{grid-template-columns:repeat(var(--n),minmax(0,1fr))}
+.sd .sd-pad.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.sd .sd-pad .key{position:relative;min-width:0;min-height:52px;font-size:var(--fs-5)}
+.sd .sd-pad .key .ic{width:28px;height:28px}
+.sd-n9 .sd-pad.row .key.t{grid-column:span 3}
+.sd-n6 .sd-pad.row .key.t,.sd-n6 .sd-pad.g3 .key.t{grid-column:span 1}
+.sd-n6 .sd-pad.row .key.t{grid-column:span 2}
+.sd-kf{display:grid;place-items:center;font-family:var(--font-display);line-height:1;pointer-events:none}
+/* how many are left: a row of dots along the bottom of the key (a tick in a green disc when none are left) */
+.sd-left{position:absolute;left:0;right:0;bottom:5px;display:flex;justify-content:center;gap:2px;height:14px;align-items:center;pointer-events:none}
+.sd-left i{width:5px;height:5px;border-radius:50%;background:var(--bt)}
+.sd-n9 .sd-left{gap:1px}
+.sd-n9 .sd-left i{width:4px;height:4px}
+.sd .sd-pad .sd-left .ic{width:14px;height:14px;padding:2px;box-sizing:content-box;border-radius:50%;background:var(--good-tint);color:var(--good-ink)}
+.sd .sd-pad .sd-sym .sd-kf{margin-bottom:8px}
+.sd .sd-pad .key.zero{background:var(--surface-2);color:var(--ink-3);box-shadow:inset 0 0 0 2px var(--line),var(--ledge) var(--line)}
+.sd .sd-pad .key.t{gap:var(--s-1);font-size:var(--fs-3);font-weight:700}
+.sd .sd-pad .key.t span{pointer-events:none}
+.sd .sd-pad.g3 .key.t span{display:none}
+.sd .sd-pad .key.on{background:var(--bt-tint);color:var(--bt-shade);box-shadow:inset 0 0 0 3px var(--bt),var(--ledge) var(--bt-shade)}
+/* with Notes on, the digits on the keys turn small and purple, so it is clear they will go in small */
+.sd.nt .sd-sym .sd-kf{font-size:var(--fs-3);color:var(--bt)}
+/* 4x4: four big keys; band A keys carry the animals */
+.sd-n4 .sd-pad .key{min-height:var(--tap-pk);font-size:var(--fs-6)}
+.sd-A .sd-pad .sd-kf{font-size:48px}
+
+/* two rows of six (9x9 on a phone): 1-5 and Erase, then 6-9, Notes and Undo */
+.sd .sd-pad.r6{grid-template-columns:repeat(6,minmax(0,1fr));gap:var(--s-1) 6px}
+.sd .sd-pad.r6 .k[data-k="del"]{grid-column:6;grid-row:1}
+.sd .sd-pad.r6 .key{min-height:var(--tap)}
+.sd .sd-pad.r6 .key.t span{display:none}
+
+/* ---------- 9x9 on a phone (.zm, portrait): the zoom box and the talk line share a row under the board ---------- */
+.sd-zrow{display:none}
+.sd.zm:not(.land){gap:var(--s-2)}
+.sd.zm:not(.land) .sd-zrow{display:flex;align-items:stretch;gap:var(--s-2);width:100%}
+.sd.zm:not(.land) .sd-say{display:block;flex:1;min-width:0;height:auto;max-height:152px;overflow:auto;padding:var(--s-1) var(--s-1) var(--s-1) var(--s-3)}
+.sd.zm:not(.land) .sd-spk{float:right;margin:0 0 var(--s-1) var(--s-1)}
+.sd.zm:not(.land) .sd-msg{padding-top:var(--s-1)}
+/* landscape with the zoom box: zoom box left, pad right in the side column */
+.sd.land.zm .sd-ctl{flex-direction:row;align-items:flex-start;justify-content:center;gap:var(--s-3)}
+.sd.land.zm .sd-pad{flex:1}
+.sd.land.zm .sd-pad .key{min-height:var(--tap)}
+
+/* ---------- landscape ---------- */
+.sd.land{flex-direction:row;align-items:center;justify-content:center;gap:var(--s-6)}
+.sd.land .sd-side{display:flex;flex-direction:column;gap:var(--s-3);flex:none;width:min(380px,42%)}
+.sd.land .sd-say{align-self:stretch}
+.sd.land .sd-ctl{max-width:none}

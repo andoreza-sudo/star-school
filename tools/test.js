@@ -8338,6 +8338,150 @@ run('pets on the rig P4-06: every pet x stage x mood is valid SVG, tokens only, 
   return{problems:p,note:KINDS.map(k=>k+' '+size[k]).join('; ')};
 });
 
+// ---- P3-03: Sudoku UI (BRAIN_TEASERS 5.1, 7) ----
+run('sudoku UI P3-03',()=>{
+  const vb=require('./puzzles/verify-banks.js'),human=require('./puzzles/human.js'),sdk=require('./puzzles/sudoku.js');
+  const body=function(){
+    const out=[],bad=m=>{if(out.length<30&&!out.includes(m))out.push(m)};
+    const DAYS=15,T=BT.get('sudoku'),stat={n:0,ms:0,kinds:{},tiers:{},same:0,pairs:0,wrong:0};
+    if(!T)return{out:['sudoku is not registered'],stat};
+    if(T.bands!=='ABCD'||BT.nLevels(T,'A')!==12)bad('sudoku: bands '+T.bands+', '+BT.nLevels(T,'A')+' levels');
+    const digits=s=>Array.from(s,ch=>ch==='.'?0:+ch);
+    // the test's own reading of a transform: out(r, c) = in(x.r[r], x.c[c]), read across when transposed, symbol v -> x.s[v - 1]
+    const xform=(str,x,n)=>{let o='';for(let r=0;r<n;r++)for(let c=0;c<n;c++){const ch=x.t?str[x.r[c]*n+x.c[r]]:str[x.r[r]*n+x.c[c]];o+=ch==='.'?'.':String(x.s[+ch-1])}return o};
+    const isPerm=(a,n,base)=>Array.isArray(a)&&a.length===n&&new Set(a).size===n&&a.every(v=>Number.isInteger(v)&&v>=base&&v<base+n);
+    // a line order keeps lines inside their band: each block of `per` output lines comes from one block of the input
+    const keepsBands=(a,per)=>{for(let i=0;i<a.length;i+=per){const b=Math.floor(a[i]/per);for(let j=i;j<i+per;j++)if(Math.floor(a[j]/per)!==b)return false}return true};
+    const validGrid=(s,n,bw,bh)=>{
+      const g=digits(s),ok=cells=>new Set(cells.map(i=>g[i])).size===n&&cells.every(i=>g[i]>=1&&g[i]<=n);
+      for(let i=0;i<n;i++){
+        const row=[],col=[],box=[],r0=Math.floor(i/(n/bw))*bh,c0=(i%(n/bw))*bw;
+        for(let k=0;k<n;k++){row.push(i*n+k);col.push(k*n+i);box.push((r0+Math.floor(k/bw))*n+c0+k%bw)}
+        if(!ok(row)||!ok(col)||!ok(box))return false;
+      }
+      return true;
+    };
+    const prev={};
+    for(const band of 'ABCD'){
+      const spec=sdk.BANDS[band];
+      for(let day=1;day<=DAYS;day++){
+        const used=new Set();
+        for(let lv=1;lv<=12;lv++){
+          const w='sudoku '+band+lv+' day '+day,o={day:'2026-4-'+day},t0=Date.now();
+          let p;
+          try{p=BT.make('sudoku',band,lv,o)}catch(e){bad(w+': make() threw '+e.message);continue}
+          stat.ms+=Date.now()-t0;stat.n++;
+          if(JSON.stringify(BT.make('sudoku',band,lv,o))!==JSON.stringify(p))bad(w+': make() is not deterministic');
+          const n=spec.n,N=n*n,tier=lv<=4?'easy':lv<=8?'medium':'hard';
+          // the bank puzzle of the right tier, in this level's quarter of the list, a different one for each level of the day
+          if(p.tier!==tier||p.n!==n||p.bw!==spec.bw||p.bh!==spec.bh)bad(w+': tier '+p.tier+' size '+p.n+', want '+tier+' '+n);
+          const list=PUZ.sudoku[band][tier],e=list[p.k];
+          if(!e){bad(w+': bank index '+p.k+' does not exist');continue}
+          if(Math.floor(p.k/(list.length/4))!==(lv-1)%4)bad(w+': bank index '+p.k+' is not in level '+lv+"'s quarter");
+          if(used.has(tier+p.k))bad(w+': two levels of one day use the same bank puzzle');
+          used.add(tier+p.k);
+          stat.tiers[band+tier]=(stat.tiers[band+tier]||0)+1;
+          const [bg,bs,bgr]=e.split('|'),x=p.x;
+          if(!isPerm(x.r,n,0)||!isPerm(x.c,n,0)||!isPerm(x.s,n,1)||!keepsBands(x.r,spec.bh)||!keepsBands(x.c,spec.bw)||(x.t&&spec.bw!==spec.bh)||![0,1].includes(x.t))
+            bad(w+': not an allowed transform '+JSON.stringify(x));
+          if(xform(bg,x,n)!==p.g||xform(bs,x,n)!==p.s)bad(w+': the puzzle is not the bank puzzle under its transform');
+          if(p.gr!==+bgr)bad(w+': grade '+p.gr+', bank says '+bgr);
+          // independent of the app: a valid grid, the givens agree with it, the tier's givens count, exactly one solution
+          // (verify-banks countSimple), and the human grader solves it to that grid with the bank's grade
+          const g=digits(p.g),s=digits(p.s);
+          if(!validGrid(p.s,n,spec.bw,spec.bh))bad(w+': the solution is not a valid grid');
+          if(g.some((v,i)=>v&&v!==s[i]))bad(w+': a given disagrees with the solution');
+          if(g.filter(Boolean).length!==spec.tiers[tier][0])bad(w+': '+g.filter(Boolean).length+' givens, want '+spec.tiers[tier][0]);
+          const cnt=vb.countSimple(g,n,spec.bw,spec.bh,2);
+          if(cnt!==1)bad(w+': '+cnt+' solutions');
+          const hg=human.grade({size:n,houses:sdk.groupsFor(spec),givens:g});
+          if(!hg.solved||hg.grade!==+bgr||hg.grid.join('')!==p.s)bad(w+': human grader '+JSON.stringify({solved:hg.solved,grade:hg.grade}));
+          // tomorrow's puzzle for the same level is not today's
+          const pk=band+lv;
+          if(prev[pk]!=null){stat.pairs++;if(prev[pk]===p.g)stat.same++}
+          prev[pk]=p.g;
+          // solve(): every empty square once, with its number
+          const sol=T.solve(p),fill=g.slice();
+          for(const [c,v] of sol){if(fill[c])bad(w+': solve() fills a full square '+c);fill[c]=v}
+          if(fill.join('')!==p.s||sol.length!==g.filter(v=>!v).length)bad(w+': solve() does not give the solution');
+          // hints from the start: tiers 1 and 2 change nothing and point at the same square, tier 3 fills exactly that one square
+          const st=SD.fresh(p);
+          let steps=0;
+          for(;steps<N;steps++){
+            const before=JSON.stringify(st),b0=SD.vals(p,st);
+            const h1=SD.hint(p,st,1),h2=SD.hint(p,st,2);
+            if(!h1){bad(w+': no hint before the end');break}
+            if(JSON.stringify(st)!==before||h1.fill||h2.fill)bad(w+': hint tier 1 or 2 changed the board');
+            if(h1.cell!==h2.cell||!h2.mark.includes(h2.cell)||h1.mark.length||!h1.house.length||!h1.say||!h2.say)bad(w+': hint tiers 1-2 '+JSON.stringify([h1,h2]));
+            stat.kinds[band+' '+h1.kind]=(stat.kinds[band+' '+h1.kind]||0)+1;
+            if(h1.kind==='guess')bad(w+': the hints had to guess');
+            if(band==='A'&&h1.kind!=='last')bad(w+': band A hint is not "the one gap" ('+h1.kind+')');
+            const h3=SD.hint(p,st,3);
+            if(!h3.fill||h3.fill[0]!==h2.cell||h3.fill[1]!==s[h3.fill[0]]||b0[h3.fill[0]])bad(w+': hint tier 3 '+JSON.stringify(h3.fill));
+            SD.fill(p,st,h3.fill[0]);
+            const b1=SD.vals(p,st),changed=b1.filter((v,i)=>v!==b0[i]).length;
+            if(changed!==1)bad(w+': hint tier 3 changed '+changed+' squares');
+            if(SD.won(p,st))break;
+          }
+          if(!SD.won(p,st)||SD.hint(p,st,1)!==null)bad(w+': tier 3 hints did not finish');
+          if(day>3)continue; // the move checks below on the first days
+          // moves: a wrong one (A, B: bounces, one mistake, nothing placed; C, D: placed, clashes, one mistake, undo puts it back)
+          const s2=SD.fresh(p),c0=g.indexOf(0),G=SD.geo(n,spec.bw,spec.bh),wv=G.peers[c0].map(q=>g[q]).find(v=>v&&v!==s[c0]);
+          if(wv){
+            const b4=JSON.stringify(s2),r=SD.enter(p,s2,c0,wv);
+            if(SD.checked(p)){if(!r.bounce||s2.miss!==1||s2.v!==SD.fresh(p).v)bad(w+': a wrong symbol should bounce out '+JSON.stringify(r))}
+            else{
+              if(!r.ok||!r.conf.length||s2.miss!==1||!SD.conflicts(p,SD.vals(p,s2)).has(c0))bad(w+': a clash should show and count '+JSON.stringify(r));
+              // a hint finds the wrong number first and tier 3 puts the right one there
+              const h=SD.hint(p,s2,2);if(h.kind!=='wrong'||h.cell!==c0)bad(w+': the hint does not find the wrong number');
+              stat.wrong++;
+              SD.undo(p,s2);s2.miss=0;if(JSON.stringify(s2)!==b4)bad(w+': undo did not put the board back');
+            }
+          }
+          const r2=SD.enter(p,s2,c0,s[c0]);
+          if(!r2.ok||r2.conf.length||SD.vals(p,s2)[c0]!==s[c0])bad(w+': the right symbol was not placed');
+          if(!SD.enter(p,s2,g.findIndex(Boolean),s[c0]).ign)bad(w+': a given square took a symbol');
+          // notes (C, D): a mark goes in, a number placed in its row clears that mark, undo brings it back
+          if(!SD.checked(p)){
+            const free=SD.vals(p,s2).map((v,i)=>v?-1:i).filter(i=>i>=0),a=free[0],q=free.find(i=>i!==a&&G.peers[a].includes(i));
+            if(q!=null){
+              const v=s[q];SD.note(p,s2,a,v);
+              if(!(s2.m[a]&(1<<(v-1))))bad(w+': the note did not go in');
+              SD.enter(p,s2,q,v);
+              if(s2.m.length&&s2.m[a]&(1<<(v-1)))bad(w+': placing a number did not clear it from the notes of its houses');
+              SD.undo(p,s2);
+              if(!(s2.m[a]&(1<<(v-1)))||SD.vals(p,s2)[q])bad(w+': undo did not bring back the note');
+            }
+            if(!SD.note(p,s2,c0,1).ign)bad(w+': a note went into a filled square');
+          }else if(!SD.note(p,s2,c0,1).ign||!SD.erase(p,s2,c0).ign)bad(w+': notes or erase in band '+band);
+          // a hint fill locks the square: no undo or erase can take it away
+          const h3=SD.hint(p,s2,3);SD.fill(p,s2,h3.fill[0]);
+          if(!SD.checked(p)&&(!SD.erase(p,s2,h3.fill[0]).ign||SD.vals(p,s2)[h3.fill[0]]!==s[h3.fill[0]]))bad(w+': a hinted square could be erased');
+          // saved state round trip: JSON and back fits, and play goes on the same way; damaged states do not fit
+          const back=JSON.parse(JSON.stringify(s2));
+          if(!SD.fit(p,back)||JSON.stringify(back)!==JSON.stringify(s2)||!SD.fit(p,SD.fresh(p)))bad(w+': a saved state does not fit after a round trip');
+          if(JSON.stringify(SD.hint(p,back,2))!==JSON.stringify(SD.hint(p,s2,2)))bad(w+': a restored state gives another hint');
+          const gi=g.findIndex(Boolean);
+          for(const [m,x] of [['short v',Object.assign({},back,{v:back.v.slice(1)})],['a given overwritten',Object.assign({},back,{v:back.v.slice(0,gi)+'1'+back.v.slice(gi+1)})],
+            ['a digit too big',Object.assign({},back,{v:back.v.slice(0,c0)+(n+1)+back.v.slice(c0+1)})],['bad notes',Object.assign({},back,{m:[1,2]})],['sel outside',Object.assign({},back,{sel:N})],
+            ['no undo list',Object.assign({},back,{h:null})],['null',null],['another puzzle',JSON.parse(JSON.stringify(SD.fresh({n:n===4?6:4,bw:3,bh:2,g:'.'.repeat(n===4?36:16)})))]])
+            if(SD.fit(p,x))bad(w+': a damaged state fits ('+m+')');
+        }
+      }
+    }
+    for(const k of ['A last','B last','C last','D last','D locked'])if(!stat.kinds[k])bad('no '+k+' hint seen');
+    if(!stat.wrong)bad('no wrong-number hint was checked');
+    return{out,stat};
+  };
+  const r=eval(js+';('+body.toString()+')()');
+  const s=r.stat,p=r.out;
+  if(s.pairs&&s.same/s.pairs>0.02)p.push('the same level gives the same puzzle on the next day '+s.same+' times of '+s.pairs);
+  const avg=s.n?s.ms/s.n:0;
+  if(avg>5)p.push('make() takes '+avg.toFixed(1)+' ms on average (limit 5 ms)');
+  const k=Object.entries(s.kinds).map(([a,b])=>a+' '+b).join(', ');
+  return{problems:p,note:s.n+' puzzles (4 bands x 12 levels x 15 days), one solution each (countSimple), human grade kept; next-day repeats '+s.same+'/'+s.pairs+'; hint steps: '+k};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){
