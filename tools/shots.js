@@ -1547,6 +1547,33 @@ Object.assign(SCREENS, {
   'bt-lg-win': lgShot(5, 1, { win: true }),
 });
 
+// P2-14 Galaxy Core (the shots are looked at at 380x780: SHOTS_SIZES=380x780 node tools/shots.js gal-map ...)
+Object.assign(SCREENS, {
+  'gal-map': { run: async p => { await p.evaluate(() => { S.grade = 6; pathMap('math', PATHS.math.worlds.findIndex(w => w.id === 'm_galaxy')); }); } },
+  'gal-ooo2': { run: skyShot('ooo', 2, '^8 × 7\\^2|^\\d+ × \\d+\\^2 \\+ \\(') },
+  'gal-ooo3': { run: skyShot('ooo', 3, '^\\d[a-z] \\+ \\d+, [a-z] = \\d+$', 1) },
+  'gal-alg1': { run: skyShot('alg', 1, '^alg1 [a-z] \\+ \\d+ = \\d+$', 1) },
+  'gal-alg2': { run: skyShot('alg', 2, '^alg2 \\d+[a-z] = ') },
+  'gal-alg3-eq': { run: skyShot('alg', 3, '^alg3 \\d+[a-z] [+−] ', 2) },
+  'gal-alg3-line': { run: skyShot('alg', 3, '^alg3 line x > -') },
+  'gal-alg3-name': { run: skyShot('alg', 3, '^alg3 name x < ') },
+  'gal-geo5-tri': { run: skyShot('geo', 5, '^geo5 tri') },
+  'gal-geo5-par': { run: skyShot('geo', 5, '^geo5 par \\d+ \\d+ [1-9]') },
+  'gal-geo5-trap': { run: skyShot('geo', 5, '^geo5 trap', 2) },
+  'gal-coord2-tap': { run: skyShot('coord', 2, '^coord2 tap -') },
+  'gal-coord2-read': { run: skyShot('coord', 2, '^coord2 read -\\d,-\\d') },
+  'gal-coord2-quad': { run: skyShot('coord', 2, '^coord2 quad pic') },
+  'gal-coord2-reflect': { run: skyShot('coord', 2, '^coord2 reflect y', 1) },
+  'gal-coord2-reflect-tap': { run: skyShot('coord', 2, '^coord2 reflect-tap') },
+  'gal-fact3-gcf': { run: skyShot('fact', 3, '^fact3 gcf-w', 2) },
+  'gal-fact3-lcm': { run: skyShot('fact', 3, '^fact3 lcm \\d+ \\d+$') },
+  'gal-data5-plot': { run: skyShot('data', 5, '^data5 mean .* plot$') },
+  'gal-data5-list': { run: skyShot('data', 5, '^data5 median [\\d,]+$', 1) },
+  'gal-story9-pct': { run: skyShot('story', 9, '^story9 pct sale', 2) },
+  'gal-story9-ratio': { run: skyShot('story', 9, '^story9 ratio') },
+  'gal-story9-eq': { run: skyShot('story', 9, '^story9 eq money', 1) },
+});
+
 async function main() {
   const args = process.argv.slice(2);
   let fixtureArg = null;

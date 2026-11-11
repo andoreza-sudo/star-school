@@ -70,6 +70,9 @@
      coinSVG(v, o)                v cents or a list: coins 1 5 10 25 50, bills 100 500 1000 2000; o.face = false hides values
      tally(n)                     tally marks, 0..50, groups of five
      tableInOut(rows, o)          rows [[in, out], ...] ('?' = unknown box); o.head: ['In', 'Out']
+     rayLine(o)                   P2-14: an inequality (x > k, x < k) on a number line (o.min -5, o.max 5, every value labelled, o.w 290):
+                                  a thick ray from o.at to the end of the line, o.dir 'right' (default) or 'left', and a hollow dot
+                                  at o.at (the number itself is not in the answer)
      solid(parts, o)              P2-12: boxes in 3D, parts [{l, h, c2}] side by side along the length, o.w their width (all to 12);
                                   o.grid draws the unit cubes, o.lab prints l, w, h on the edges (for volume)
    New visuals: add a function inside this block and to the returned object; use svg(), f() and counters().
@@ -296,6 +299,16 @@ const VIZ = (() => {
         `<circle class="vm" cx="${f(X(v))}" cy="${Y}" r="10"/></g>`;
     });
     return svg('nl', W, Hh, body, 'number line', tap.length > 0);
+  }
+
+  // ---- inequality on a number line (P2-14) ----
+  // The numLine with every value labelled, then the ray and the end dot on top. Same geometry as numLine (P = 24, Y = 28).
+  function rayLine(o = {}) {
+    const min = def(o.min, -5), max = def(o.max, 5), w = def(o.w, 290), P = 24, Y = 28;
+    const X = v => P + (v - min) / (max - min) * w, x0 = X(o.at), right = o.dir != 'left';
+    const x1 = right ? P + w + 8 : P - 8;
+    const add = `<path class="vray" d="M${f(x0)} ${Y}H${f(x1)}"/><circle class="vm" cx="${f(x0)}" cy="${Y}" r="9"/>`;
+    return numLine({min, max, labels: 'all', w}).replace('</svg>', add + '</svg>');
   }
 
   // ---- fraction bar ----
@@ -849,5 +862,5 @@ const VIZ = (() => {
   }
 
   return {tenFrame, base10, numLine, fracBar, fracCircle, clock, array, dots,
-    ruler, barGraph, pictograph, linePlot, shape, shapeNames, areaGrid, rectSides, angle, coordGrid, balance, coinSVG, tally, tableInOut, solid};
+    ruler, barGraph, pictograph, linePlot, shape, shapeNames, areaGrid, rectSides, angle, coordGrid, balance, coinSVG, tally, tableInOut, solid, rayLine};
 })();

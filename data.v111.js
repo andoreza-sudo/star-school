@@ -1,5 +1,5 @@
-/* Star School data banks v110. BUILT by tools/build.py from src/data/*.js (sorted): never edit by hand.
-   index.html v110 loads this file with <script src="data.v110.js"> between the code and the start-up script. */
+/* Star School data banks v111. BUILT by tools/build.py from src/data/*.js (sorted): never edit by hand.
+   index.html v111 loads this file with <script src="data.v111.js"> between the code and the start-up script. */
 /* Comprehension passages (P2-25: 2nd grade). Format and how to add a grade: header of src/js/37-comp.js.
    Fiction (type 'f') is the comp skill, level 3; nonfiction (type 'n') is the info skill, level 1. Original text, no brands, no real people.
    Append new grades below; never reorder or insert (saved review items remember a passage by its position). */
@@ -4565,4 +4565,4 @@ function vocBuildB() {
 
 BANK.vocab = vocBuild().concat(vocBuildB());
 
-var DATA_VER='v110'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var DATA_VER='v111'; // last line: the whole file ran (checked by dataReady() before the app starts)
