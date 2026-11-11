@@ -1,5 +1,453 @@
-/* Star School games v125. BUILT by tools/build.py from 60-blocks.js, 62-hill.js, 64-gtimer.js, 66-colornum.js, 68-lowpoly.js, 70-art.js, 72-shapes.js: never edit by hand.
-   index.html v125 loads this file with <script src="games.v125.js"> after its own code, before data.v125.js. */
+/* Star School games v127. BUILT by tools/build.py from 48-game-hub.css, 59-game-hub.js, 60-blocks.js, 62-hill.js, 64-gtimer.js, 66-colornum.js, 68-lowpoly.js, 70-art.js, 72-shapes.js: never edit by hand.
+   index.html v127 loads this file with <script src="games.v127.js"> after its own code, before data.v127.js. */
+(function(){var s=document.createElement('style');s.id='css-games';s.textContent="/* Game Room hub and shared game chrome (P4-16; src/js/59-game-hub.js; DESIGN_SYSTEM.md 9 row 8). Ships in games.<VER>.js (A11b),\n   after index.html's own CSS. Tokens only; motion is transform/opacity. The hub: a fair scene with the game-time ticket, a drawn\n   card per registered game, how to earn more. Every game screen: one top bar .gh-top (back or pause, badge and name, tools, chips,\n   the time chip, sound), the pause sheet .gh-sheet and the end card .gh-end. Game canvases are not restyled. */\n\n/* ---- the hub ---- */\n.gh-room{display:flex;flex-direction:column;flex:1;min-height:0}\n.gh-scroll{padding:var(--s-1) var(--s-4) var(--s-7)}\n.gh-hero{position:relative;height:220px;max-width:1040px;margin:0 auto var(--s-5);border-radius:var(--r-hero);overflow:hidden;\n  background:linear-gradient(var(--sc-sky-1),var(--sc-sky) 62%,var(--sc-green) 63%);box-shadow:inset 0 0 0 2px var(--wash),0 5px 0 var(--sc-green-2)}\n.gh-scene{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}\n.gh-tk{position:absolute;left:50%;bottom:14px;width:min(300px,82%);aspect-ratio:300/104;transform:translateX(-50%)}\n.gh-tks{position:absolute;inset:0;display:block;width:100%;height:100%}\n.gh-tkt{position:absolute;left:34%;right:5%;top:13%;bottom:18%;display:flex;flex-direction:column;align-items:center;justify-content:center;\n  text-align:center;line-height:1;color:var(--ink)}\n.gh-tkt b{font-family:var(--font-display);font-size:var(--fs-7);font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:.01em}\n.gh-tkt span{margin-top:var(--s-1);font-size:var(--fs-2);font-weight:700;color:var(--ink-2);white-space:nowrap}\n.gh-hero.off .gh-tkt b{color:var(--ink-3)}\n.gh-why{display:flex;flex-direction:column;align-items:center;gap:var(--s-3);margin:0 auto var(--s-6);text-align:center}\n.gh-why .btn.lg{padding-left:var(--s-5);padding-right:var(--s-5)}\n@media (max-width:480px){.gh-why .btn.lg{font-size:var(--fs-4)}}\n.gh-why p{max-width:34ch;margin:0;font-size:var(--fs-3);font-weight:700;line-height:1.35;color:var(--ink-2)}\n\n/* a card per game: the drawn picture on its backdrop, the name and one line, the play disc */\n.gh-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,272px),1fr));gap:var(--s-5);max-width:1040px;margin:0 auto}\n.gh-card{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:var(--s-3);\n  padding:var(--s-3) var(--s-3) var(--s-4);border:0;border-radius:var(--r-hero);background:var(--surface);color:var(--ink);font:inherit;\n  text-align:left;cursor:pointer;touch-action:manipulation;box-shadow:inset 0 0 0 2px var(--line),0 6px 0 var(--ledge-soft),0 12px 18px var(--drop);\n  transition:transform var(--t-fast) var(--ease)}\n.gh-card:active,.gh-card.is-press{transform:translateY(4px)}\n.gh-card{--c-fill:var(--c);--c-ledge:var(--c-shade)}\n.gh-card.s-play{--c-fill:var(--play-shade);--c-ledge:var(--play-deep)}\n.gh-pic{position:relative;grid-column:1/-1;display:block;height:150px;border-radius:var(--r-card);overflow:hidden;\n  background:linear-gradient(var(--gh-a),var(--gh-b));box-shadow:inset 0 -4px 0 var(--shadow-ink)}\n.gh-art{display:block;width:100%;height:100%}\n.gh-info{min-width:0;padding:0 0 0 var(--s-2)}\n.gh-name{display:block;font-family:var(--font-display);font-size:var(--fs-5);font-weight:700;line-height:1.15;color:var(--ink)}\n.gh-sub{display:flex;flex-wrap:wrap;gap:2px var(--s-3);margin-top:var(--s-1);font-size:var(--fs-2);line-height:1.35;color:var(--ink-2)}\n.gh-sub>span{display:inline-flex;align-items:center;gap:var(--s-1)}\n.gh-sub b{color:var(--ink)}\n.gh-sub .ic{flex:none;color:var(--star-shade)}\n.gh-go{display:grid;place-items:center;width:64px;height:64px;margin-right:var(--s-1);border-radius:50%;color:var(--surface);\n  background:linear-gradient(var(--hi),var(--hi-0) 60%) var(--c-fill,var(--c));box-shadow:inset 0 2px 0 var(--hi),0 5px 0 var(--c-ledge,var(--c-shade))}\n.gh-go .ic{width:30px;height:30px;margin-left:3px}\n.gh-flag{position:absolute;left:var(--s-3);bottom:var(--s-3);display:inline-flex;align-items:center;gap:var(--s-1);padding:var(--s-1) var(--s-3) var(--s-1) var(--s-2);\n  border-radius:var(--r-pill);background:var(--surface);color:var(--ink);font-size:var(--fs-2);font-weight:700;line-height:1.2;\n  box-shadow:0 3px 0 var(--ledge-soft)}\n.gh-flag .ic{flex:none;color:var(--play)}\n.gh-card:is(.need,.lock) .gh-pic::after{content:'';position:absolute;inset:0;background:var(--wash)}\n.gh-card:is(.need,.lock) .gh-flag{z-index:1}\n.gh-card:is(.need,.lock) .gh-go{background:var(--surface-2);color:var(--ink-3);box-shadow:inset 0 0 0 2px var(--line),0 5px 0 var(--ledge-soft)}\n.gh-card.lock{cursor:default}\n.gh-card.lock .gh-go .ic{margin-left:0}\n\n/* how to earn more game time */\n.gh-earn{max-width:1040px;margin:var(--s-7) auto 0;padding:var(--s-5);border-radius:var(--r-card);background:var(--surface);\n  box-shadow:inset 0 0 0 2px var(--line),0 5px 0 var(--ledge-soft)}\n.gh-earn h2{display:flex;align-items:center;gap:var(--s-2);margin:0 0 var(--s-4);font-family:var(--font-display);font-size:var(--fs-4);line-height:1.2;color:var(--ink)}\n.gh-earn h2 .ic{flex:none;color:var(--play);--ic2:var(--surface)}\n.gh-earn ul{display:grid;gap:var(--s-2) var(--s-6);margin:0;padding:0;list-style:none}\n.gh-earn li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:var(--s-3);font-size:var(--fs-3);line-height:1.3;color:var(--ink)}\n.gh-ei{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:var(--play-tint);color:var(--play-shade);--ic2:var(--play-tint)}\n.gh-earn li b{color:var(--play-shade);text-align:right}\n.gh-earn p{margin:var(--s-4) 0 0;font-size:var(--fs-2);line-height:1.4;color:var(--ink-2)}\n@media (min-width:860px){.gh-earn ul{grid-template-columns:1fr 1fr}}\n\n/* ---- the shared top bar ---- */\n.gh-top .gh-ttl{display:flex;align-items:center;gap:var(--s-2)}\n.gh-tb{flex:none;display:grid;place-items:center;width:44px;height:44px;border-radius:14px;color:var(--surface);\n  background:linear-gradient(var(--hi),var(--hi-0) 60%) var(--c);box-shadow:inset 0 -3px 0 var(--c-shade)}\n.gh-tb .ic{width:26px;height:26px}\n.gh-tt{display:flex;flex-direction:column;min-width:0;line-height:1.15}\n.gh-gn,.gh-gs{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}\n.gh-tt.two .gh-gn{font-size:var(--fs-2);color:var(--c-shade)}\n.gh-tt.two .gh-gs{font-size:var(--fs-4);color:var(--ink)}\n.gh-tools{display:flex;flex:none;gap:var(--s-2)}\n.gh-top .btn.icon.on{background:var(--brand-tint);box-shadow:inset 0 0 0 2px var(--brand),0 4px 0 var(--brand-shade)}\n.gh-top #gpause .ic{color:var(--c-shade)}\n.gh-top .stat.gh-up{background:var(--try-tint);color:var(--try-ink);box-shadow:inset 0 0 0 2px var(--try),0 3px 0 var(--try)}\n.gh-top .stat.gh-up .ic{color:var(--try-ink);--ic2:var(--try-tint)}\n.gh-top .stat.gh-st .ic{color:var(--c-shade)}\n.gh-top .stat.gh-nut .ic{color:var(--star-shade);--ic2:var(--star-tint)}\n@media (max-width:480px){\n  .gh-tb{width:40px;height:40px;border-radius:12px}.gh-tb .ic{width:24px;height:24px}\n  .gh-top.gh-wrap{flex-wrap:wrap}.gh-wrap .gh-tools{order:9;flex-basis:100%;justify-content:flex-end}\n  .gh-top:not(.gh-mtop):not(.gh-hud) .gh-tb{display:none}\n  .gh-tt.two .gh-gs{font-size:var(--fs-3)}\n}\n/* over a full-screen canvas (Hill Climb): no paper behind; the name shows where there is room */\n.gh-top.gh-hud{position:absolute;left:0;right:0;top:0;z-index:2;min-height:0;padding:var(--s-2) var(--s-3);background:none}\n.gh-hud .gh-ttl{flex:0 1 auto;padding:var(--s-1) var(--s-3) var(--s-1) var(--s-1);border-radius:var(--r-pill);background:var(--surface);\n  box-shadow:inset 0 0 0 2px var(--line),0 3px 0 var(--ledge-soft)}\n.gh-hud .gh-ttl .gh-gn{font-size:var(--fs-4)}\n.gh-hud .hcfuel{flex:1;min-width:56px;max-width:240px}\n.gh-hud .hcfuel .ic{flex:none;width:26px;height:26px;color:var(--surface)}\n.gh-hud~.hcprog{top:70px}\n.gh-hud .stat{flex:none;min-height:44px;padding:0 var(--s-3) 0 var(--s-1);font-size:var(--fs-3)}\n.gh-hud .stat .ic{width:28px;height:28px}\n.gh-hud .stat.gh-dist{flex:0 1 auto;min-width:0;padding-left:var(--s-3)}\n.gh-hud .gh-dist b{overflow:hidden;text-overflow:ellipsis}\n@media (max-width:719px){.gh-hud .gh-ttl{display:none}}\n@media (max-width:480px){.gh-top.gh-hud{gap:var(--s-1);padding:var(--s-2)}.gh-hud .stat{padding:0 var(--s-2) 0 2px}.gh-hud .stat .ic{width:24px;height:24px}\n  .gh-hud .hcfuel{min-width:40px}}\n\n/* ---- the pause sheet ---- */\n.gh-sheet{text-align:center}\n.gh-spic{position:relative;height:128px;margin:0 0 var(--s-4);border-radius:var(--r-card);overflow:hidden;background:linear-gradient(var(--gh-a),var(--gh-b))}\n.gh-sheet .gh-acts{display:flex;flex-direction:column;gap:var(--s-3)}\n@media (max-height:520px){.gh-spic{height:84px;margin-bottom:var(--s-2)}.sheet .gh-sheet p{margin-bottom:var(--s-3)}}\n\n/* ---- the end card ---- */\n.ovl.gh-ovl{z-index:65}\n.gh-end{max-width:480px;padding:var(--s-5);overflow-y:auto;overscroll-behavior:contain}\n.gh-epic{position:relative;height:clamp(88px,20vh,140px);border-radius:var(--r-card);overflow:hidden;background:linear-gradient(var(--gh-a),var(--gh-b));\n  box-shadow:inset 0 -4px 0 var(--shadow-ink)}\n.gh-epic.made{display:grid;place-items:center;height:clamp(120px,26vh,200px);background:var(--surface-2)}\n.gh-epic.made>*{width:auto;height:88%;max-width:88%;aspect-ratio:1;border-radius:var(--r-btn);background:var(--surface);\n  box-shadow:0 4px 0 var(--ledge-soft)}\n.gh-epic.made img{image-rendering:pixelated}\n.gh-end .rw-rays{top:-40px}\n.rw-card p.gh-ename{position:relative;margin:var(--s-3) 0 0;font-size:var(--fs-2);font-weight:700;color:var(--c-shade)}\n.rw-card.gh-end h1{margin-top:0}\n.gh-estars{position:relative;margin:0 0 var(--s-2)}\n.rw-card p.gh-etag{position:relative;margin:0 0 var(--s-2)}\n.gh-stats{position:relative;display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,1fr));gap:var(--s-2);margin:var(--s-2) 0 var(--s-3)}\n.gh-stat{display:flex;flex-direction:column;align-items:center;gap:2px;padding:var(--s-2) var(--s-1);border-radius:var(--r-btn);background:var(--surface-2)}\n.gh-stat .ic{color:var(--c-shade)}\n.gh-stat .ic.ic-coin{color:var(--star-shade);--ic2:var(--star-tint)}\n.gh-stat b{font-family:var(--font-display);font-size:var(--fs-4);line-height:1.1;color:var(--ink);font-variant-numeric:tabular-nums}\n.gh-stat span{font-size:var(--fs-2);line-height:1.2;color:var(--ink-2)}\n.gh-extra{position:relative;margin:var(--s-2) 0 var(--s-3)}\n.rw-card p.gh-line{position:relative;display:flex;align-items:center;justify-content:center;gap:var(--s-2);margin:var(--s-2) 0 0;\n  font-size:var(--fs-3);font-weight:700;line-height:1.3;color:var(--ink);text-align:left}\n.gh-line .ic{flex:none;color:var(--c-shade)}\n.gh-end .gh-acts{position:relative;display:flex;flex-direction:column;gap:var(--s-3);margin-top:var(--s-4)}\n.gh-acts .btn.lg{padding-left:var(--s-4);padding-right:var(--s-4)}\n@media (max-width:480px){.gh-stats.n4{grid-template-columns:repeat(2,minmax(0,1fr))}.gh-acts .btn.lg{font-size:var(--fs-4)}\n  .rw-card p.gh-line{font-size:var(--fs-2)}}\n@media (max-height:620px) and (orientation:landscape){\n  .gh-end{max-width:780px;display:grid;grid-template-columns:minmax(0,280px) minmax(0,1fr);column-gap:var(--s-5);align-content:start;padding:var(--s-4)}\n  .gh-end>*{grid-column:2}\n  .gh-end>.gh-epic{grid-column:1;grid-row:1/span 12;align-self:center;height:auto;min-height:0;aspect-ratio:240/120}\n  .gh-end>.gh-epic.made{height:auto;aspect-ratio:1}.gh-epic.made>*{height:auto;width:88%}\n  .gh-end .gh-acts{flex-direction:row;flex-wrap:wrap;justify-content:center}\n  .gh-end .gh-acts .btn{flex:1 1 150px;white-space:nowrap}.gh-end .gh-acts .btn.lg{flex-basis:100%;font-size:var(--fs-4)}\n}\n\n/* the hub on phones and in short landscape */\n@media (max-width:480px){\n  .gh-scroll{padding:var(--s-1) var(--s-3) var(--s-7)}\n  .gh-hero{height:196px}\n  .gh-tk{width:min(256px,76%);bottom:10px}\n  .gh-tkt b{font-size:var(--fs-6)}\n  .gh-pic{height:132px}\n  .gh-name{font-size:var(--fs-4)}\n  .gh-go{width:56px;height:56px}.gh-go .ic{width:26px;height:26px}\n  .gh-earn{padding:var(--s-4)}.gh-earn li{font-size:var(--fs-2)}\n}\n@media (max-height:620px) and (orientation:landscape){\n  .gh-hero{height:196px;margin-bottom:var(--s-4)}\n  .gh-tk{width:min(256px,40%);bottom:10px}\n  .gh-tkt b{font-size:var(--fs-6)}\n  .gh-pic{height:118px}\n}\n";document.head.appendChild(s)})(); // its src/css, after index.html's own CSS (the cascade order of a build without parts)
+/* ---------- Game Room hub and shared game chrome (P4-16; DESIGN_SYSTEM.md 9 row 8; CSS src/css/48-game-hub.css) ----------
+   Lives in games.<VER>.js (A11b) and loads before the games (60-blocks ... 72-shapes, NN-game-*.js), so a game file may call GH.reg()
+   while it loads. gameRoom() (58-playtime.js, index.html) calls GH.hub() inside a tap, never while loading.
+
+   Adding a game (CONTRIBUTING 3.3): one GH.reg({...}) entry, in the game's own src/js/NN-game-<name>.js or below. The hub card, the
+   top-bar badge, the pause sheet and the end card all come from that entry:
+     id       short id ('hill'); the card has data-g="<id>"
+     btn      the card's element id ('g4x4'; kept for old taps and tests)
+     name     the game's name on the card, the pause sheet and the end card
+     short    optional shorter name for the top bar ('Hill Climb')
+     icon     an ico() name for the small badge in the top bar
+     p        colour: play | read | es | math | disc | bt (the component classes s-<p>)
+     sky      two --sc-* scene tokens for the picture's backdrop, top and bottom ('sky-1', 'sky')
+     art      () => the picture: SVG markup on a 240 x 100 grid (object-art roles var(--a-x) only; keep the subject in x 30-210)
+     sub      () => one short line under the name (HTML; escape what is not a literal)
+     open     () => the game's first screen (its menu)
+     lock     optional () => '' or a reason the game cannot be opened yet (shown on the card and said in a toast)
+     tapToPlay  the selector of the button on the game's first screen that starts play (smoke taps it: P4-16 block)
+     saved    optional line for the time-up card ('Your picture is saved.')
+   Each screen of the game draws its top bar with GH.top(id, o) and wires it with GH.wire(o) after view(); play screens get a Pause
+   button that opens the shared sheet (GH.pause); game ends use GH.end(id, o); time running out uses timeUpOverlay() (64-gtimer.js).
+
+   Drawings follow the object-art rules of DESIGN_SYSTEM 6.5: light from the top left, shade / base / highlight per area, a soft ink
+   contact shadow, roles var(--a-x) only (class "art"), no ids, gradients, filters, <use>, text or raw colours. Decoration is aria-hidden.
+   Nothing here changes a game's rules, scores or saved data; pausing holds the game-time clock while the sheet is open. */
+const gh1 = v => Math.round(v * 10) / 10;
+const ghF = (c, o) => `fill="var(--a-${c})"` + (o != null && o < 1 ? ` opacity="${o}"` : '');
+const ghSt = (c, w, o) => `fill="none" stroke="var(--a-${c})" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"` +
+  (o != null && o < 1 ? ` opacity="${o}"` : '');
+const ghC = (x, y, r, c, o) => `<circle cx="${gh1(x)}" cy="${gh1(y)}" r="${gh1(r)}" ${ghF(c, o)}/>`;
+const ghE = (x, y, rx, ry, c, o, a) => `<ellipse cx="${gh1(x)}" cy="${gh1(y)}" rx="${gh1(rx)}" ry="${gh1(ry)}" ${ghF(c, o)}` +
+  (a ? ` transform="rotate(${a} ${gh1(x)} ${gh1(y)})"` : '') + '/>';
+const ghR = (x, y, w, h, r, c, o) => `<rect x="${gh1(x)}" y="${gh1(y)}" width="${gh1(w)}" height="${gh1(h)}"${r ? ` rx="${r}"` : ''} ${ghF(c, o)}/>`;
+const ghP = (d, c, o) => `<path ${ghF(c, o)} d="${d}"/>`;
+const ghL = (d, c, w, o) => `<path ${ghSt(c, w, o)} d="${d}"/>`;
+const ghPts = pts => 'M' + pts.map(([x, y]) => gh1(x) + ' ' + gh1(y)).join('L') + 'Z';
+// a shaded ball: shade, the base nudged toward the light, a soft highlight
+const ghBall = (x, y, r, h) => ghC(x, y, r, h + '2') + ghC(x - r * .12, y - r * .12, r * .86, h) + ghE(x - r * .36, y - r * .4, r * .32, r * .2, 'w', .55, -35);
+// a puffy cloud: a shade row, then the white puffs nudged up-left
+const ghCloud = (x, y, s) => {
+  const puffs = [[-14, 2, 8], [-4, -4, 11], [9, -1, 9], [17, 3, 6]];
+  const row = (dx, dy, c) => ghP(puffs.map(([px, py, r]) => {
+    const cx = x + (px + dx) * s, cy = y + (py + dy) * s, R = r * s;
+    return `M${gh1(cx - R)} ${gh1(cy)}a${gh1(R)} ${gh1(R)} 0 1 0 ${gh1(2 * R)} 0a${gh1(R)} ${gh1(R)} 0 1 0 ${gh1(-2 * R)} 0`;
+  }).join('') + `M${gh1(x - 19 * s + dx * s)} ${gh1(y + 5 * s + dy * s)}a${gh1(20.5 * s)} ${gh1(5 * s)} 0 1 0 ${gh1(41 * s)} 0` +
+    `a${gh1(20.5 * s)} ${gh1(5 * s)} 0 1 0 ${gh1(-41 * s)} 0`, c);
+  return row(1.2, 1.8, 'w2') + row(0, 0, 'w') + ghE(x - 6 * s, y - 8 * s, 5 * s, 2.6 * s, 'w', .9, -20);
+};
+const ghShad = (x, y, rx, ry, o = .13) => ghE(x, y, rx, ry, 'k', o);
+// sun with soft rays (top left: where the light comes from)
+const ghSun = (x, y, r) => {
+  let d = '';
+  for (let i = 0; i < 10; i++) {
+    const a = i * Math.PI / 5, c = Math.cos(a), s = Math.sin(a);
+    d += `M${gh1(x + c * r * 1.35)} ${gh1(y + s * r * 1.35)}L${gh1(x + c * r * 1.75)} ${gh1(y + s * r * 1.75)}`;
+  }
+  return ghL(d, 'y1', gh1(r * .22), .9) + ghC(x, y, r * 1.18, 'y1', .45) + ghBall(x, y, r, 'y');
+};
+// a round tree: trunk, shaded crown
+const ghTree = (x, y, s) => ghShad(x + 2 * s, y, 9 * s, 2.2 * s) + ghR(x - 1.6 * s, y - 9 * s, 3.2 * s, 9 * s, 1, 'n2') +
+  ghC(x + 1.2 * s, y - 15 * s, 8.6 * s, 'g2') + ghC(x - .4 * s, y - 16.6 * s, 7.4 * s, 'g') + ghE(x - 3.4 * s, y - 20 * s, 3 * s, 1.9 * s, 'g1', .8, -30);
+// a hexagon nut (the bolts Hill Climb pays in)
+const ghNut = (x, y, r) => {
+  const hx = (cx, cy, R) => ghPts([0, 1, 2, 3, 4, 5].map(i => [cx + Math.cos(i * Math.PI / 3) * R, cy + Math.sin(i * Math.PI / 3) * R]));
+  return ghP(hx(x + r * .12, y + r * .14, r), 'y3') + ghP(hx(x - r * .04, y - r * .04, r * .9), 'y') + ghC(x, y, r * .38, 'y3') +
+    ghL(`M${gh1(x - r * .62)} ${gh1(y - r * .5)}L${gh1(x - r * .2)} ${gh1(y - r * .78)}`, 'y1', gh1(r * .26));
+};
+
+/* ---- the three games' pictures (240 x 100) ---- */
+const GH_ART = {
+  // 4x4 Hill Climb: a red jeep climbing a grassy hill to a finish flag, bolts ahead, dust behind
+  hill() {
+    const S = 'M0 86C60 86 100 80 140 64S206 38 240 36';
+    const S9 = 'M0 95C60 95 100 89 140 73S206 47 240 45';
+    // the jeep in its own frame: wheels on y 0, x -26 and 26; drawn level, then tilted onto the slope
+    const wheel = x => ghC(x + 1, 1, 13, 'k') + ghC(x, 0, 12.4, 'k2') + ghC(x - .6, -.6, 6.6, 'e1') + ghC(x + .6, .6, 5, 'e') +
+      ghC(x, 0, 2.4, 'e3') + ghE(x - 5.6, -7, 3.4, 1.8, 'w', .35, -40);
+    const jeep = ghShad(2, 13.5, 44, 3.4, .16) +
+      ghL('M-58 4l-7 -2M-56 -3l-9 -4', 'w', 3, .8) + ghC(-50, 6, 5.4, 'w', .8) + ghC(-58, 2, 4, 'w', .65) +
+      ghP('M-12 -22L-7 -40H17L25 -22Z', 'r2') + ghP('M-11 -23L-6.5 -39H15.5L22.5 -23Z', 'r') +
+      ghP('M-6 -24L-2.6 -35.5H13L18.5 -24Z', 'c1') + ghP('M-2.6 -35.5H5L-1 -24H-6Z', 'w', .65) +
+      ghR(-42, -24, 86, 22, 7, 'r2') + ghR(-43, -26, 84, 20, 7, 'r') + ghR(-39, -24, 76, 5, 2.5, 'r1', .7) +
+      ghR(-40, -12, 80, 4, 2, 'r3', .55) + ghR(38, -21, 8, 9, 3, 'y2') + ghC(41, -18, 3, 'y1') + ghR(-47, -14, 9, 7, 2.5, 'k2') +
+      ghR(-44, -9, 88, 6, 3, 'r3') + ghL('M-40 -6a14 14 0 0 1 28 0M12 -6a14 14 0 0 1 28 0', 'k2', 4) + wheel(-26) + wheel(26) + ghL('M-30 -46L-30 -30', 'e3', 1.8) + ghP('M-30 -46L-19 -42L-30 -38Z', 'y');
+    let pebbles = '';
+    for (const [x, y, r] of [[18, 97, 2.2], [52, 98, 1.6], [86, 96, 2.4], [150, 88, 2], [196, 72, 2.6], [228, 62, 1.8], [118, 94, 1.5]]) {
+      pebbles += ghE(x, y, r * 1.4, r, 'n2') + ghE(x - r * .3, y - r * .35, r * .6, r * .35, 'n1', .8);
+    }
+    return ghSun(30, 22, 11) + ghCloud(86, 20, 1) + ghCloud(196, 15, .78) +
+      ghP('M0 66Q30 46 66 58T136 50T206 44T240 50V100H0Z', 'g1') +
+      ghTree(168, 50, .7) + ghTree(182, 48, .55) + ghTree(40, 62, .6) +
+      ghP(S + 'V100H0Z', 'g') + ghP(S9 + 'V100H0Z', 'n') + ghL(S9, 'g2', 3) + ghL(S, 'g1', 2.2) + pebbles +
+      ghL('M223 39V12', 'e3', 2) + ghR(223, 12, 15, 10, 1, 'w') +
+      ghP('M223 12h5v5h-5ZM233 12h5v5h-5ZM228 17h5v5h-5Z', 'k2') + ghShad(224, 39, 5, 1.4) +
+      ghNut(160, 50, 4.6) + ghNut(176, 43, 4.6) + ghNut(192, 34, 4.6) +
+      `<g transform="translate(104 70) rotate(-16)">${jeep}</g>`;
+  },
+  // Coloring: an easel with a rainbow painting, a wooden palette with paint, a brush and two crayons
+  art() {
+    const blob = (x, y, c) => ghE(x + .6, y + .8, 6, 4.4, c + '2') + ghE(x - .3, y - .3, 5.2, 3.8, c) + ghE(x - 2, y - 1.6, 1.8, 1, 'w', .7, -20);
+    let arcs = '';
+    ['r', 'o', 'y', 'g', 'b', 'v'].forEach((c, i) => {
+      const R = 30 - i * 4.4;
+      arcs += ghL(`M${gh1(120 - R)} 66A${gh1(R)} ${gh1(R)} 0 0 1 ${gh1(120 + R)} 66`, c, 4.6);
+    });
+    const crayon = (x, y, a, c) => `<g transform="rotate(${a} ${x} ${y})">` + ghShad(x + 1, y + 6, 20, 2.4) +
+      ghR(x - 18, y - 4, 32, 8, 2, c + '2') + ghR(x - 18, y - 4.6, 32, 7, 2, c) + ghR(x - 8, y - 4.6, 10, 7, 0, 'w', .85) +
+      ghP(`M${x + 14} ${y - 4.6}L${x + 23} ${y - .6}L${x + 14} ${y + 3.6}Z`, c + '2') + ghR(x - 16, y - 3.4, 26, 1.6, .8, c + '1', .8) + '</g>';
+    return ghShad(120, 97, 46, 3.6) + ghL('M120 8L95 97M120 8L145 97', 'n2', 4.6) + ghL('M120 40L120 97', 'n3', 4) +
+      ghL('M118 8L94.5 96', 'n1', 1.2, .7) +
+      ghR(82, 9, 78, 58, 3, 'w3') + ghR(80, 7, 78, 58, 3, 'w') + ghR(84, 11, 70, 50, 2, 'm', .55) +
+      ghSun(98, 22, 5.4) + ghCloud(140, 22, .5) + arcs + ghR(78, 64, 84, 6, 2.5, 'n2') + ghR(78, 63, 84, 4.4, 2, 'n') +
+      ghShad(64, 96, 38, 3.4) +
+      `<path ${ghF('t2')} fill-rule="evenodd" d="M30 80C30 66 48 58 66 60C86 62 100 70 98 82C96 92 84 96 70 94C62 93 62 87 56 87C48 87 44 95 36 92C31 90 30 86 30 80ZM44 76a5 4 0 1 0 10 0a5 4 0 1 0 -10 0Z"/>` +
+      `<path ${ghF('t')} fill-rule="evenodd" d="M31 78C31 65 48 58 65 59C84 61 97 68 96 79C95 89 84 93 71 91C63 90 63 84 56 84C48 84 44 92 37 89C32 87 31 83 31 78ZM44 76a5 4 0 1 0 10 0a5 4 0 1 0 -10 0Z"/>` +
+      ghL('M38 69C44 63 54 61 62 61', 't1', 2.4, .9) +
+      blob(64, 68, 'r') + blob(80, 70, 'y') + blob(88, 81, 'b') + blob(74, 84, 'g') + blob(40, 82, 'v') +
+      ghShad(186, 97, 22, 2.6) + ghL('M170 95L198 52', 'n2', 6) + ghL('M169 94L197 51', 'n', 4.6) + ghL('M171 89L192 57', 'n1', 1.4, .8) +
+      ghL('M197 51L202.5 43', 'e2', 7) + ghL('M196.5 50.5L201.5 43', 'e1', 4.4) +
+      ghP('M200 45C201 40 206 33 212 30C213 36 210 43 205 48Z', 'p2') + ghP('M200 45C201 40 205 34 210 31C210.5 36 208 42 203.5 46.5Z', 'p') +
+      ghC(209, 38, 1.4, 'w', .7) +
+      crayon(196, 90, -8, 'b') + crayon(150, 93, 6, 'g') +
+      ghE(176, 58, 3, 2.2, 'b') + ghE(165, 66, 2, 1.5, 'r') + ghE(30, 52, 2.6, 2, 'y2') + ghE(22, 60, 1.6, 1.2, 'g');
+  },
+  // Block Builder: a little block island on the sea: grass, a tree, stone, TNT and a block on its way down
+  blocks() {
+    const a = 12, ox = 118, oy = 54;
+    const at = (i, j, k) => [ox + (i - j) * a, oy + (i + j) * a / 2 - k * a];
+    const KIND = {
+      grass: ['g1', 'n', 'n2', 'g', 'g2'], stone: ['e1', 'e', 'e2'], wood: ['t1', 'n1', 'n'], leaf: ['g1', 'g', 'g2'],
+      tnt: ['r1', 'r', 'r2'], sand: ['t1', 't', 't2'],
+    };
+    const cube = (i, j, k, kind) => {
+      const [X, Y] = at(i, j, k), T = KIND[kind];
+      const top = ghPts([[X, Y - a / 2], [X + a, Y], [X, Y + a / 2], [X - a, Y]]);
+      const left = ghPts([[X - a, Y], [X, Y + a / 2], [X, Y + a * 1.5], [X - a, Y + a]]);
+      const right = ghPts([[X, Y + a / 2], [X + a, Y], [X + a, Y + a], [X, Y + a * 1.5]]);
+      let h = ghP(top, T[0]) + ghP(left, T[1]) + ghP(right, T[2]);
+      if (kind == 'grass') h += ghP(ghPts([[X - a, Y], [X, Y + a / 2], [X, Y + a * .85], [X - a, Y + a * .35]]), T[3]) +
+        ghP(ghPts([[X, Y + a / 2], [X + a, Y], [X + a, Y + a * .35], [X, Y + a * .85]]), T[4]);
+      if (kind == 'tnt') h += ghP(ghPts([[X - a, Y + a * .32], [X, Y + a * .82], [X, Y + a * 1.12], [X - a, Y + a * .62]]), 'w') +
+        ghP(ghPts([[X, Y + a * .82], [X + a, Y + a * .32], [X + a, Y + a * .62], [X, Y + a * 1.12]]), 'w2');
+      if (kind == 'stone') h += ghL(`M${gh1(X - a * .7)} ${gh1(Y + a * .5)}l${gh1(a * .3)} ${gh1(a * .3)}l${gh1(a * .15)} ${gh1(-a * .1)}`, 'e2', 1.2) +
+        ghL(`M${gh1(X + a * .3)} ${gh1(Y + a * .9)}l${gh1(a * .35)} ${gh1(-a * .3)}`, 'e3', 1.2);
+      if (kind == 'wood') h += ghL(`M${gh1(X - a * .5)} ${gh1(Y + a * .3)}v${gh1(a * .9)}`, 'n2', 1.2, .7);
+      return h + ghL(`M${gh1(X - a)} ${gh1(Y)}L${gh1(X)} ${gh1(Y - a / 2)}`, 'w', 1.2, .55);
+    };
+    // the sea: a flat diamond under the island with a deep edge and waves
+    const [sx, sy] = at(1, 1, 0);
+    const sea = (d, c) => ghP(ghPts([[sx, sy - 52 + d], [sx + 104, sy + d], [sx, sy + 52 + d], [sx - 104, sy + d]]), c);
+    let waves = '';
+    for (const [x, y] of [[54, 72], [74, 84], [168, 78], [186, 70], [150, 92], [92, 94]]) waves += `M${x} ${y}q4 -3 8 0t8 0`;
+    const blocks = [];
+    for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) blocks.push([i, j, 0, i == 2 && j == 2 ? 'sand' : 'grass']);
+    blocks.push([2, 0, 1, 'wood'], [2, 0, 2, 'leaf'], [1, 0, 2, 'leaf'], [2, 1, 2, 'leaf'], [2, 0, 3, 'leaf'],
+      [0, 0, 1, 'stone'], [0, 1, 1, 'stone'], [0, 0, 2, 'tnt']);
+    blocks.sort((p, q) => (p[0] + p[1]) - (q[0] + q[1]) || p[2] - q[2] || p[0] - q[0]);
+    const [gx, gy] = at(1, 2, 1);
+    return ghSun(30, 22, 11) + ghCloud(196, 16, .8) + ghCloud(62, 34, .55) +
+      sea(5, 'b2') + sea(0, 'b') + ghP(ghPts([[sx, sy - 52], [sx + 104, sy], [sx + 70, sy + 2], [sx - 4, sy - 44], [sx - 70, sy - 14], [sx - 104, sy]]), 'b1', .45) +
+      ghL(waves, 'w', 1.6, .8) + ghShad(sx + 4, sy + 26, 54, 12, .14) +
+      blocks.map(b => cube(...b)).join('') +
+      // a ghost outline where the next block will land, and the grass block dropping into it
+      ghL(ghPts([[gx, gy - a / 2], [gx + a, gy], [gx, gy + a / 2], [gx - a, gy]]), 'w', 1.6, .9) +
+      `<g transform="translate(0 -22)">${cube(1, 2, 1, 'grass')}</g>` +
+      ghL(`M${gx - 6} ${gy - 30}v-6M${gx} ${gy - 33}v-7M${gx + 6} ${gy - 30}v-6`, 'w', 1.6, .8);
+  },
+};
+
+const GH = {
+  games: [],
+  cur: null, // id of the game whose top bar is on screen (end and time-up cards use it)
+  held: false, // the pause sheet is open: the game-time clock does not count (64-gtimer.js, Hill Climb's loop)
+
+  // register a game (see the header); a second entry with the same id replaces the first
+  reg(g) {
+    GH.games = GH.games.filter(x => x.id !== g.id).concat([g]);
+    return g;
+  },
+  get(id) {
+    return GH.games.find(g => g.id === id) || null;
+  },
+
+  // the game's picture as an SVG; cls adds a class (the well's size comes from CSS)
+  pic(id, cls = '') {
+    const g = GH.get(id);
+    if (!g || !g.art) return '';
+    return `<svg class="art gh-art${cls ? ' ' + cls : ''}" viewBox="0 0 240 100" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">${g.art()}</svg>`;
+  },
+  // the picture's backdrop (two scene tokens), as an inline style
+  sky(g) {
+    const [a, b] = g.sky || ['sky-1', 'sky'];
+    return `--gh-a:var(--sc-${a});--gh-b:var(--sc-${b})`;
+  },
+
+  /* ---- the hub: a fairground scene with the game-time ticket, a drawn card per game, how to earn more ---- */
+  hub() {
+    const left = ptLeft(), on = left > 0;
+    GH.cur = null;
+    const card = g => {
+      const lock = g.lock ? g.lock() : '', need = !lock && !on;
+      const state = lock ? ' lock' : need ? ' need' : '';
+      const flag = lock ? `<span class="gh-flag">${ico('lock', 20)}<span>${esc(lock)}</span></span>`
+        : need ? `<span class="gh-flag">${ico('ticket', 20)}<span>Needs game time</span></span>` : '';
+      return `<button class="gh-card s-${g.p}${state}" id="${g.btn}" data-g="${g.id}"${lock ? ' aria-disabled="true"' : ''}>` +
+        `<span class="gh-pic" style="${GH.sky(g)}">${GH.pic(g.id)}${flag}</span>` +
+        `<span class="gh-info"><span class="gh-name">${UI.t(g.name)}</span><span class="gh-sub">${g.sub ? g.sub() : ''}</span></span>` +
+        `<span class="gh-go" aria-hidden="true">${ico(lock ? 'lock' : 'play')}</span></button>`;
+    };
+    const R_ = n => `<span class="gh-ei">${ico(n, 22)}</span>`;
+    const earn = [['sparkle', 'Unlock a new stop', '+1 min'], ['star', 'Get a perfect score', '+1 min'],
+      ['globe', 'Play a harder world', 'up to +1½ min'], ['crown', 'Beat a boss', '+2 min'], ['review', 'Fix an old mistake', 'bonus seconds'],
+      ['chart', 'Beat your old score', '+½ min'], ['timer', 'Fact Sprint, first one of the day', '+1 min']];
+    view(`<div class="gh-room"><div class="top tbar gh-top gh-mtop s-play">${UI.ibtn('back', 'Back', { size: 'sm', id: 'back' })}` +
+      `<div class="ttl gh-ttl"><span class="gh-tb">${ico('gamepad', 24)}</span><span class="gh-tt"><span class="gh-gn">Game Room</span></span></div>` +
+      `${UI.chip('ticket', fmtT(left), { aria: 'Game time', id: 'gtm' })}</div>
+  <div class="scroll gh-scroll"><section class="gh-hero${on ? '' : ' off'}">${GH.scene()}
+    <div class="gh-tk" role="img" aria-label="${on ? esc(fmtT(left) + ' of game time left') : 'No game time yet'}">${GH.ticket(on)}
+      <span class="gh-tkt"><b>${on ? fmtT(left) : '0:00'}</b><span>${on ? 'game time left' : 'No game time yet'}</span></span></div></section>
+  ${on ? '' : `<div class="gh-why"><p>${esc(ptWhyNot())}</p>${UI.btn('Go earn game time', { kind: 'primary', size: 'lg', icon: 'path-read', id: 'learn' })}</div>`}
+  <div class="gh-grid">${GH.games.map(card).join('')}</div>
+  <section class="gh-earn"><h2>${ico('ticket', 26)}<span>How to earn more game time</span></h2>
+   <ul>${earn.map(([i, t, v]) => `<li>${R_(i)}<span>${esc(t)}</span><b>${esc(v)}</b></li>`).join('')}</ul>
+   <p>Replaying a stop you already mastered, or the same stop over and over, earns less.</p></section></div></div>`);
+    $('#back').onclick = () => home();
+    if ($('#learn')) $('#learn').onclick = () => home();
+    for (const g of GH.games) {
+      const b = $('#' + g.btn);
+      if (b) b.onclick = () => {
+        const why = g.lock ? g.lock() : '';
+        if (why) {
+          SFX.wrong();
+          fb(why, 'warn long', 2600);
+          return;
+        }
+        SFX.whoosh();
+        g.open();
+      };
+    }
+  },
+
+  // the hub's scene: a fair on green hills under bunting (960 x 180, the sky is the CSS gradient behind it). The middle third
+  // (Ferris wheel, balloons, big top) is what a phone shows; wider screens also see the stalls, hot-air balloons and trees.
+  scene() {
+    const hues = ['r', 'y', 'b', 'g', 'p', 'o'];
+    // bunting: four sagging strings, flags grouped by colour into one path per tone
+    let str = '';
+    const fl = {};
+    for (let k = 0; k < 4; k++) {
+      const x0 = k * 240, x1 = x0 + 240, cx = x0 + 120, y0 = 6, cy = 46;
+      str += `M${x0} ${y0}Q${cx} ${cy} ${x1} ${y0}`;
+      for (let i = 1; i < 12; i++) {
+        const t = i / 12, x = (1 - t) * (1 - t) * x0 + 2 * t * (1 - t) * cx + t * t * x1, y = (1 - t) * (1 - t) * y0 + 2 * t * (1 - t) * cy + t * t * y0;
+        const h = hues[(i + k * 2) % hues.length];
+        fl[h] = fl[h] || ['', ''];
+        fl[h][0] += ghPts([[x - 7, y], [x + 7, y], [x, y + 15]]);
+        fl[h][1] += ghPts([[x, y], [x + 7, y], [x, y + 15]]);
+      }
+    }
+    let flags = '';
+    for (const h of hues) if (fl[h]) flags += ghP(fl[h][0], h) + ghP(fl[h][1], h + '2', .55);
+    // Ferris wheel
+    const wx = 376, wy = 94, R = 47;
+    let spokes = '', cars = '';
+    for (let i = 0; i < 8; i++) {
+      const a = i * Math.PI / 4 + .2, x = wx + Math.cos(a) * R, y = wy + Math.sin(a) * R, h = hues[i % 5];
+      spokes += `M${wx} ${wy}L${gh1(x)} ${gh1(y)}`;
+      cars += ghL(`M${gh1(x)} ${gh1(y)}v5`, 'e3', 1.4) + ghR(x - 7, y + 4.6, 14, 10, 3.4, h + '2') + ghR(x - 7.6, y + 4, 13, 8.6, 3.2, h) +
+        ghR(x - 5, y + 5.4, 8, 2, 1, 'w', .55);
+    }
+    const wheel = ghShad(wx, 162, 42, 4) + ghL(`M${wx - 34} 162L${wx} ${wy}L${wx + 34} 162`, 'e3', 6) +
+      ghL(`M${wx - 33} 161L${wx - 1} ${wy}M${wx + 1} ${wy}L${wx + 33} 161`, 'e1', 2.2, .9) +
+      `<circle cx="${wx}" cy="${wy}" r="${R}" ${ghSt('v2', 5)}/>` + `<circle cx="${wx - .8}" cy="${wy - .8}" r="${R}" ${ghSt('v', 3)}/>` +
+      `<circle cx="${wx}" cy="${wy}" r="${R - 9}" ${ghSt('v1', 1.6, .9)}/>` + ghL(spokes, 'w2', 1.6) + cars + ghBall(wx, wy, 6.5, 'y');
+    // big top tent
+    const tx = 596, ty = 104, tw = 58;
+    let roof = '', wall = '';
+    for (let i = -3; i < 3; i += 2) {
+      roof += ghPts([[tx, ty - 58], [tx + i * tw / 3, ty], [tx + (i + 1) * tw / 3, ty]]);
+      wall += `M${gh1(tx + i * tw / 3)} ${ty}h${gh1(tw / 3)}v52h${gh1(-tw / 3)}Z`;
+    }
+    let scal = `M${tx - tw - 2} ${ty}`;
+    for (let i = 0; i < 8; i++) scal += `a${gh1((tw + 2) / 8)} 7 0 0 0 ${gh1((tw + 2) / 4)} 0`;
+    const tent = ghShad(tx + 6, 157, 70, 5) + ghR(tx - tw + 2, ty, tw * 2 - 4, 52, 0, 'w') + ghP(wall, 'r') +
+      ghP(`M${tx} ${ty + 12}C${tx - 14} ${ty + 12} ${tx - 16} ${ty + 30} ${tx - 16} ${ty + 52}H${tx + 16}C${tx + 16} ${ty + 30} ${tx + 14} ${ty + 12} ${tx} ${ty + 12}Z`, 'k2') +
+      ghP(`M${tx} ${ty + 12}C${tx - 14} ${ty + 12} ${tx - 16} ${ty + 30} ${tx - 16} ${ty + 52}H${tx - 8}C${tx - 8} ${ty + 34} ${tx - 4} ${ty + 20} ${tx} ${ty + 12}Z`, 'r2') +
+      ghP(`M${tx - tw - 4} ${ty}L${tx} ${ty - 58}L${tx + tw + 4} ${ty}Z`, 'w') + ghP(roof, 'r') + ghP(scal + 'Z', 'y') +
+      ghP(`M${tx} ${ty - 58}L${tx + tw + 4} ${ty}H${tx}Z`, 'k', .12) + ghR(tx, ty, tw - 2, 52, 0, 'k', .1) +
+      ghL(`M${tx} ${ty - 58}V${ty - 76}`, 'e3', 2) + ghP(`M${tx} ${ty - 76}L${tx + 15} ${ty - 71}L${tx} ${ty - 66}Z`, 'y') + ghBall(tx, ty - 58, 3.4, 'y');
+    // a bunch of balloons tied to a post
+    const bal = (x, y, h) => ghE(x + .8, y + .8, 9, 11, h + '2') + ghE(x - .4, y - .6, 7.8, 9.8, h) + ghE(x - 3.4, y - 4.6, 2.4, 3.6, 'w', .6, 25) +
+      ghP(`M${x - 2} ${y + 10}h4l-2 3Z`, h + '2');
+    const bx = 484;
+    const balloons = ghL(`M${bx} 118C${bx - 2} 110 ${bx - 10} 104 ${bx - 10} 92M${bx} 118C${bx} 106 ${bx + 6} 98 ${bx + 8} 80` +
+      `M${bx} 118C${bx + 4} 110 ${bx + 20} 104 ${bx + 24} 96`, 'e3', 1.1, .8) +
+      bal(bx - 10, 82, 'p') + bal(bx + 8, 69, 'y') + bal(bx + 25, 86, 'b') + ghR(bx - 2, 116, 4, 44, 2, 'n2') + ghShad(bx, 160, 10, 2);
+    // a game stall with a striped awning and prizes on the counter
+    const stall = (x, h) => {
+      let stripes = '', sc = `M${x - 34} 112`;
+      for (let i = 0; i < 4; i++) stripes += ghPts([[x - 26 + i * 13, 98], [x - 19.5 + i * 13, 98], [x - 25.5 + i * 17, 112], [x - 34 + i * 17, 112]]);
+      for (let i = 0; i < 4; i++) sc += `a8.5 6 0 0 0 17 0`;
+      return ghShad(x + 4, 158, 38, 3.4) + ghL(`M${x - 27} 158V110M${x + 27} 158V110`, 'n2', 3.4) + ghR(x - 26, 110, 52, 24, 0, 'm2') +
+        ghBall(x - 13, 127, 5, 'p') + ghBall(x, 125, 6, 'g') + ghBall(x + 13, 127, 5, 'b') +
+        ghR(x - 30, 132, 62, 26, 3, 't2') + ghR(x - 31, 131, 60, 24, 3, 't') + ghR(x - 29, 133, 56, 3.6, 1.8, 't1', .8) +
+        ghR(x - 18, 139, 36, 12, 3, h) + ghR(x - 16, 140, 20, 3, 1.5, h + '1', .7) +
+        ghP(`M${x - 26} 98H${x + 26}L${x + 34} 112H${x - 34}Z`, 'w') + ghP(stripes, h) + ghP(sc + 'Z', h + '2') +
+        ghP(`M${x} 98H${x + 26}L${x + 34} 112H${x}Z`, 'k', .1);
+    };
+    // a hot-air balloon far away
+    const hot = (x, y, h) => ghE(x + 1.6, y + 1.6, 21, 25, h + '2') + ghE(x - .8, y - 1, 19, 23.4, h) + ghE(x, y, 7, 24, 'w', .5) +
+      ghE(x - 9, y - 10, 4, 7, 'w', .45, 20) + ghL(`M${x - 11} ${y + 19}L${x - 6} ${y + 35}M${x + 11} ${y + 19}L${x + 6} ${y + 35}`, 'e3', 1.2) +
+      ghR(x - 7, y + 34, 14, 10, 3, 'n2') + ghR(x - 7.5, y + 33.5, 13, 8.5, 3, 'n') + ghR(x - 6, y + 35, 9, 2, 1, 'n1', .8);
+    // hills, bushes and the ground
+    let trees = '';
+    for (const [x, y, s] of [[34, 138, .9], [92, 134, .7], [150, 138, 1], [300, 134, .8], [452, 140, .6], [672, 136, .9], [700, 140, .6],
+      [812, 134, 1], [866, 138, .7], [930, 134, .9]]) trees += ghTree(x, y, s);
+    let tufts = '';
+    for (let x = 12; x < 960; x += 37) tufts += `M${x} ${166 + (x % 3) * 3}l-2 -6M${x + 3} ${166 + (x % 3) * 3}v-7M${x + 6} ${166 + (x % 3) * 3}l2 -6`;
+    return `<svg class="art gh-scene" viewBox="0 0 960 180" preserveAspectRatio="xMidYMax slice" aria-hidden="true" focusable="false">` +
+      ghSun(332, 30, 13) + ghCloud(108, 42, 1) + ghCloud(528, 30, .9) + ghCloud(888, 40, 1.1) + ghCloud(690, 70, .7) +
+      hot(212, 62, 'v') + hot(780, 56, 'c') +
+      ghP('M0 122Q50 98 110 112T230 104T350 100T470 108T590 102T710 106T830 100T960 108V180H0Z', 'g1') + trees +
+      ghP('M0 146Q70 132 150 142T300 138T450 144T600 138T750 144T900 140T960 142V180H0Z', 'g2') +
+      ghP('M0 150Q70 136 150 146T300 142T450 148T600 142T750 148T900 144T960 146V180H0Z', 'g') +
+      ghL('M0 150Q70 136 150 146T300 142T450 148T600 142T750 148T900 144T960 146', 'g1', 2.4, .9) + ghL(tufts, 'g2', 1.6, .8) +
+      stall(248, 'b') + stall(740, 'g') + wheel + tent + balloons + ghL(str, 'e3', 1.4) + flags + '</svg>';
+  },
+
+  // the game-time ticket (300 x 104): an orange ticket with a star stub and a cream face for the time (grey when there is none)
+  ticket(on) {
+    const h = on ? 'o' : 'e', st = on ? 'y' : 'w';
+    const body = (dx, dy) => `M${16 + dx} ${4 + dy}H${79 + dx}a9 9 0 0 0 18 0H${284 + dx}a12 12 0 0 1 12 12V${84 + dy}a12 12 0 0 1 -12 12` +
+      `H${97 + dx}a9 9 0 0 0 -18 0H${16 + dx}a12 12 0 0 1 -12 -12V${16 + dy}a12 12 0 0 1 12 -12Z`;
+    return `<svg class="art gh-tks" viewBox="0 0 300 104" aria-hidden="true" focusable="false">` + ghShad(150, 100, 136, 4) +
+      ghP(body(0, 4), h + '3') + ghP(body(0, 0), h + '2') + ghP(body(-1.4, -1.6), h) +
+      ghL('M18 9H76M100 9H282', h + '1', 3, .75) + ghL('M88 20V84', 'm', 2.4) +
+      `<path ${ghF(st + (on ? '2' : '3'))} d="${rwStarD(45, 52, 25, 12.5)}"/>` + `<path ${ghF(st)} d="${rwStarD(43.6, 50.4, 22, 11)}"/>` +
+      ghE(37, 44, 4.6, 2.8, 'w', on ? .7 : .9, -30) +
+      ghR(102, 16, 184, 74, 10, 'm2') + ghR(102, 14, 184, 72, 10, 'm1') + '</svg>';
+  },
+
+  /* ---- the shared top bar ---- */
+  // id: the registered game. o: {play: true for a play screen (Pause instead of Back), sub: text under the name (escaped here),
+  //   chips: html before the time chip, tools: html of icon buttons (play screens), sound: html of the sound button, timeId: the time
+  //   chip's id (default gtm), hud: true over a full-screen canvas}
+  top(id, o = {}) {
+    const g = GH.get(id) || { name: id, icon: 'gamepad', p: 'play' };
+    GH.cur = g.id || null;
+    const lead = o.play ? UI.ibtn('pause', 'Pause', { size: 'sm', id: 'gpause', cls: 'gh-pz' }) : UI.ibtn('back', 'Back', { size: 'sm', id: 'back' });
+    const cls = 'top tbar gh-top s-' + g.p + (o.play ? ' gh-play' : '') + (o.hud ? ' gh-hud' : '') + (o.tools ? ' gh-hastools' : '') +
+      ((o.tools || '').split('<button').length > 2 ? ' gh-wrap' : '');
+    return `<div class="${cls}" data-g="${esc(g.id || id)}">${lead}<div class="ttl gh-ttl"><span class="gh-tb">${ico(g.icon || 'gamepad', 24)}</span>` +
+      `<span class="gh-tt${o.sub ? ' two' : ''}"><b class="gh-gn">${UI.t(g.short || g.name)}</b>${o.sub ? `<span class="gh-gs">${esc(o.sub)}</span>` : ''}</span></div>` +
+      (o.tools ? `<span class="gh-tools">${o.tools}</span>` : '') + (o.chips || '') +
+      UI.chip('ticket', fmtT(ptLeft()), { aria: 'Game time left', id: o.timeId || 'gtm' }) + (o.sound || '') + '</div>';
+  },
+  // after view(): back runs o.back; Pause opens the sheet, whose Quit runs o.quit
+  wire(o = {}) {
+    const b = $('#back');
+    if (b && o.back) b.onclick = o.back;
+    const p = $('#gpause');
+    if (p && o.quit) p.onclick = () => GH.pause(o);
+  },
+  // a small icon button for a play screen's top bar
+  tool(icon, aria, id, on) {
+    return UI.ibtn(icon, aria, { size: 'sm', id, cls: 'gh-tool' + (on ? ' on' : ''), attrs: on != null ? `aria-pressed="${on ? 'true' : 'false'}"` : '' });
+  },
+  // set a time chip: seconds left, or the last seconds of grace after time ran out (up)
+  setTime(el, up) {
+    if (!el) return;
+    el.classList.toggle('gh-up', up != null);
+    UI.setChip(el, up != null ? Math.max(0, Math.ceil(up)) + 's' : fmtT(ptLeft()));
+  },
+
+  /* ---- the pause sheet: Keep playing / Quit. The game-time clock holds while it is open; o.hold(true|false) pauses the game ---- */
+  pause(o = {}) {
+    if (GH.held) return;
+    const g = GH.get(GH.cur) || { name: 'Game', p: 'play' };
+    GH.held = true;
+    if (o.hold) o.hold(true);
+    let quit = false;
+    const s = UI.sheet(`<div class="gh-sheet s-${g.p}"><div class="gh-spic" style="${GH.sky(g)}">${GH.pic(g.id)}</div>` +
+      `<h2>Paused</h2><p>${UI.t(g.name)} is waiting for you. Your game time stops while you rest.</p>` +
+      `<div class="acts gh-acts">${UI.btn('Keep playing', { kind: 'primary', size: 'lg', icon: 'play', id: 'gresume', wide: true })}` +
+      `${UI.btn('Quit', { icon: 'close', id: 'gquit', wide: true })}</div></div>`, {
+      onClose: () => {
+        GH.held = false;
+        if (!quit && o.hold) o.hold(false);
+      },
+    });
+    s.el.querySelector('#gresume').onclick = () => {
+      SFX.pop(2);
+      s.close();
+    };
+    s.el.querySelector('#gquit').onclick = () => {
+      quit = true;
+      s.close();
+      SFX.whoosh();
+      if (o.quit) o.quit();
+    };
+    return s;
+  },
+
+  /* ---- the end-of-game card (over a dim backdrop; append is done here; returns the overlay so callers wire their buttons) ----
+     o: {title, win (rays, a glow and drawn confetti), pic (html instead of the game's picture), made (pic is the child's own picture),
+         stars (0-3 or null), tag (a "New record!" line), stats: [[value, label, icon]], extra (html, e.g. a gauge), lines: [[icon, html]],
+         btns (html: buttons with the caller's ids)} */
+  end(id, o = {}) {
+    const g = GH.get(id || GH.cur) || { name: 'Game', p: 'play' };
+    const el = document.createElement('div');
+    el.className = 'ovl rw-ovl gh-ovl';
+    const stats = (o.stats || []).filter(Boolean);
+    el.innerHTML = `<div class="rw-card gh-end s-${g.p}${o.win ? ' rw-growc' : ''}" role="dialog" aria-modal="true" aria-label="${esc(o.title || g.name)}">` +
+      (o.win ? RW.rays() : '') +
+      `<div class="gh-epic${o.made ? ' made' : ''}" style="${GH.sky(g)}">${o.pic || GH.pic(g.id)}</div>` +
+      `<p class="gh-ename">${UI.t(g.name)}</p><h1>${esc(o.title || '')}</h1>` +
+      (o.stars != null ? `<div class="gh-estars">${UI.stars(o.stars, 3, 40, { arc: true })}</div>` : '') +
+      (o.tag ? `<p class="gh-etag">${UI.tag(o.tag, 'new', 'sparkle')}</p>` : '') +
+      (stats.length ? `<div class="gh-stats n${stats.length}" style="--n:${stats.length}">${stats.map(([v, l, ic]) => `<div class="gh-stat">${ic ? ico(ic, 22, ic == 'coin' ? 'ic-coin' : '') : ''}` +
+        `<b>${esc(v)}</b><span>${esc(l)}</span></div>`).join('')}</div>` : '') + (o.extra ? `<div class="gh-extra">${o.extra}</div>` : '') +
+      (o.lines || []).map(([ic, h]) => `<p class="gh-line">${ico(ic, 22)}<span>${h}</span></p>`).join('') +
+      `<div class="rw-acts gh-acts">${o.btns || ''}</div></div>`;
+    document.body.appendChild(el);
+    if (o.win) RW.burst(el.firstChild, 28); // drawn confetti (hidden in calm mode)
+    return el;
+  },
+};
+
+// The Game Room's games, in hub order. Each game file keeps its own code; only these entries tell the hub about it.
+GH.reg({
+  id: 'hill', btn: 'g4x4', name: '4x4 Hill Climb', short: 'Hill Climb', icon: 'car', p: 'play', sky: ['sky-1', 'sky'], art: GH_ART.hill,
+  sub: () => {
+    const gs = garageS();
+    return `<span>Best <b>${Math.max(gs.best.meadow || 0, gs.best.moon || 0)} m</b></span><span>${ico('nut', 18)}<b>${gs.bolts}</b> bolts</span>`;
+  },
+  open: () => garage(), tapToPlay: '[data-st="meadow"]',
+});
+GH.reg({
+  id: 'art', btn: 'gcbn', name: 'Coloring', icon: 'palette', p: 'read', sky: ['lilac', 'pink'], art: GH_ART.art,
+  sub: () => '<span>Mandalas, animals, pixel art and free paint</span>',
+  open: () => colorMenu(), tapToPlay: '.sttile[data-k]', saved: 'Your picture is saved.',
+});
+GH.reg({
+  id: 'blocks', btn: 'gbb', name: 'Block Builder', icon: 'blocks', p: 'es', sky: ['sea-1', 'sea'], art: GH_ART.blocks,
+  sub: () => '<span>Build your own 3D world</span>',
+  open: () => bbMenu(), tapToPlay: '[data-w="0"]', saved: 'Your world is saved.',
+});
 /* ---------- block builder (isometric) ---------- */
 const BW=16,BD=16,BH=14;
 const BLOCKS=[null,
@@ -93,7 +541,7 @@ function blockBuilder(ci){const bs=bbS(),CH=ci==null?null:BBCH[ci],wd=CH?{name:C
   BB={animals:[],w:CH?bbFlat():bbDecode(wd.d),rot:0,sel:4,tool:'build',undo:[],night:false,zoom:1,px:0,py:0,fx:[],ch:ci==null?null:ci,goal:null,miss:0,drop:null};
   let need=null;if(CH){BB.goal=new Map(CH[2]().map(([a,b,z,v])=>[bbI(a+2,b+2,z),v]));need=new Set(BB.goal.values());BB.sel=[...need][0];BB.total=BB.goal.size}
   const pal=(need?[...need]:BBPAL).map(i=>{const b=BLOCKS[i];if(!b)return'';if(need)return`<button class="btn bbk" data-b="${i}" title="${b.n}"><canvas width="44" height="44" data-bc="${i}"></canvas><i class="bbn">${b.n}</i></button>`;const lock=b.need&&S.stars<b.need;return`<button class="btn bbk ${lock?'lock':''}" data-b="${i}" title="${b.n}"><canvas width="44" height="44" data-bc="${i}"></canvas>${lock?`<i>⭐${b.need}</i>`:''}</button>`}).join('');
-  view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title" style="font-size:20px">🧱 ${esc(wd.name)}</div><div class="sp"></div>${CH?'<div class="stars" id="bbprog"></div>':''}<div class="stars" id="gtm">🎟️ ${fmtT(ptLeft())}</div></div>
+  view(`${GH.top('blocks',{play:true,sub:CH?CH[0]:wd.name,chips:CH?`<span class="stat gh-st" aria-label="Blocks placed">${ico('blocks',32)}<b id="bbprog"></b></span>`:''})}
    <div class="bbwrap"><div class="bbcv"><canvas id="bbc"></canvas>
      <div class="bbtools"><div class="bbtg">${CH?'<button class="btn sm on" data-tool="build">🔨 Build</button>':'<button class="btn sm on" data-tool="build">🔨<i>Block</i></button><button class="btn sm" data-tool="line">📏<i>Line</i></button><button class="btn sm" data-tool="wall">🧱<i>Wall</i></button><button class="btn sm" data-tool="floor">⬛<i>Floor</i></button><button class="btn sm" data-tool="stamp">🏠<i>Stamps</i></button>'}<button class="btn sm" data-tool="break">⛏️<i>Break</i></button></div><button class="btn sm" id="bbundo">↩️</button><button class="btn sm" id="bbrl">⟲</button><button class="btn sm" id="bbrr">⟳</button><button class="btn sm" id="bbzoom">🔍</button><button class="btn sm" id="bbnight">🌙</button>${CH?'':'<button class="btn sm" id="bbpet">🐾</button>'}</div></div>
    <div class="bbpal" id="bbpal">${pal}</div><div class="bbpal bbst" id="bbst" style="display:none">${BBSTAMPS.map((t,i)=>`<button class="btn bbk bbsk ${i==0?'on':''}" data-stamp="${i}"><span>${t.e}</span><i class="bbn">${t.n}</i></button>`).join('')}</div></div>`);
@@ -252,8 +700,8 @@ function blockBuilder(ci){const bs=bbS(),CH=ci==null?null:BBCH[ci],wd=CH?{name:C
   $('#bbundo').onclick=()=>{if(BB.undo.length){BB.w=BB.undo.pop();bbSave();draw();SFX.del()}};
   $('#bbrl').onclick=()=>{BB.rot=(BB.rot+3)%4;SFX.whoosh();draw()};$('#bbrr').onclick=()=>{BB.rot=(BB.rot+1)%4;SFX.whoosh();draw()};
   $('#bbzoom').onclick=e=>{BB.zoom=BB.zoom<1.5?1.7:BB.zoom<2.3?2.5:1;BB.px=BB.py=0;SFX.whoosh();draw();tip('Tip: pinch with 2 fingers to zoom and move')};$('#bbnight').onclick=e=>{BB.night=!BB.night;e.currentTarget.textContent=BB.night?'☀️':'🌙';draw()};
-  $('#back').onclick=()=>{bbSave();gtStop();bbMenu()};if($('#bbpet'))$('#bbpet').onclick=spawn;
-  function bbProg(){const p=$('#bbprog');if(!p)return;const n=[...BB.goal].filter(([i,v])=>BB.w[i]==v).length;p.textContent=`🧱 ${n}/${BB.total}${BB.miss?' · ❌'+BB.miss:''}`}
+  GH.wire({quit:()=>{bbSave();gtStop();bbMenu()}});if($('#bbpet'))$('#bbpet').onclick=spawn;
+  function bbProg(){const p=$('#bbprog');if(!p)return;const n=[...BB.goal].filter(([i,v])=>BB.w[i]==v).length;p.textContent=`${n}/${BB.total}${BB.miss?' · '+BB.miss+' wrong':''}`}
   if(BB.goal)bbProg();
   BB.api={act,hit,get faces(){return faces}};
   $(`[data-b="${BB.sel}"]`).classList.add('on');
@@ -261,10 +709,11 @@ function blockBuilder(ci){const bs=bbS(),CH=ci==null?null:BBCH[ci],wd=CH?{name:C
   gtStart('#gtm',()=>{bbSave();timeUpOverlay()});if(S.voice)setTimeout(()=>say(CH?`Build the ${CH[0]}! Fill in the see-through blocks.`:'Build anything! Tap TNT to blow it up!'),300)}
 function bbFlat(){const w=new Uint8Array(BW*BD*BH);for(let x=0;x<BW;x++)for(let y=0;y<BD;y++)w[bbI(x,y,0)]=1;return w}
 function bbWin(){if(!BB||BB.ch==null||!$('#bbc'))return;const ci=BB.ch,arr=bbChS(),st=BB.miss<=1?3:BB.miss<=4?2:1,old=arr[ci]||0;arr[ci]=Math.max(old,st);const coins=Math.max(0,st-old)*3+1;S.coins+=coins;save();
-  SFX.fanfare();confetti(60);if(S.voice)say(st==3?'Perfect build! Three stars!':'You built it!');const o=document.createElement('div');o.className='ovl';
-  o.innerHTML=`<div class="endcard"><div style="font-size:56px">${BBCH[ci][1]}</div><h1>${BBCH[ci][0]} built!</h1><div class="lvstars">${[1,2,3].map(k=>`<span class="lvstar ${k<=st?'on':''}" style="animation-delay:${k*.25}s">⭐</span>`).join('')}</div>
-   <div class="msg">${BB.miss?`${BB.miss} wrong block${BB.miss>1?'s':''}. `:'No mistakes! '}+${coins} 🪙</div><div class="rowh">${ci+1<BBCH.length?'<button class="btn big" id="bbnx">Next build ▶</button>':''}<button class="btn" id="bbre">↻ Again</button><button class="btn" id="bbls">☰</button></div></div>`;
-  document.body.appendChild(o);const go=f=>{o.remove();f()};if(o.querySelector('#bbnx'))o.querySelector('#bbnx').onclick=()=>go(()=>blockBuilder(ci+1));o.querySelector('#bbre').onclick=()=>go(()=>blockBuilder(ci));o.querySelector('#bbls').onclick=()=>go(()=>{gtStop();bbMenu()})}
+  SFX.fanfare();if(S.voice)say(st==3?'Perfect build! Three stars!':'You built it!');
+  // P4-16: the shared end card (same stars, coins and buttons as before)
+  const o=GH.end('blocks',{win:true,title:`${BBCH[ci][0]} built!`,stars:st,stats:[[String(BB.miss),BB.miss==1?'wrong block':'wrong blocks','blocks'],['+'+coins,'coins','coin']],
+   lines:BB.miss?[]:[['check-circle','No mistakes!']],btns:(ci+1<BBCH.length?UI.btn('Next build',{kind:'primary',size:'lg',icon:'go',id:'bbnx',wide:true}):'')+
+    UI.btn('Again',{icon:'replay',id:'bbre',wide:true})+UI.btn('All builds',{icon:'blocks',id:'bbls',wide:true})});const go=f=>{o.remove();f()};if(o.querySelector('#bbnx'))o.querySelector('#bbnx').onclick=()=>go(()=>blockBuilder(ci+1));o.querySelector('#bbre').onclick=()=>go(()=>blockBuilder(ci));o.querySelector('#bbls').onclick=()=>go(()=>{gtStop();bbMenu()})}
 function bbSave(){if(!BB||BB.ch!=null)return;const bs=bbS();bs.worlds[bs.cur].d=bbEncode(BB.w);save()}
 function bbIcon(x,i,sz){const B=BLOCKS[i];x.clearRect(0,0,sz,sz);if(B.deco){x.font=`${sz*.7}px sans-serif`;x.textAlign='center';x.textBaseline='middle';x.fillText(B.deco=='pet'?petE():B.deco,sz/2,sz/2+2);return}
   const t=bbTex(B.k),a=sz*.42,cx=sz/2,top=sz*.1,f=(tex,O,U,V,sh)=>{x.save();x.beginPath();x.moveTo(...O);x.lineTo(O[0]+U[0],O[1]+U[1]);x.lineTo(O[0]+U[0]+V[0],O[1]+U[1]+V[1]);x.lineTo(O[0]+V[0],O[1]+V[1]);x.closePath();x.clip();
@@ -272,14 +721,14 @@ function bbIcon(x,i,sz){const B=BLOCKS[i];x.clearRect(0,0,sz,sz);if(B.deco){x.fo
   f(t.top,[cx,top],[a,a/2],[-a,a/2],0);f(t.side,[cx-a,top+a/2],[a,a/2],[0,a],.18);f(t.side,[cx,top+a],[a,-a/2],[0,a],.34)}
 const BBWT=[['island','🏝️','Island','Hills, beach, trees and sea'],['mountain','🏔️','Mountains','Tall peaks with snow on top'],['desert','🏜️','Desert','Sand, cactus and an oasis'],['flat','🟩','Flat','Empty grass for big builds']];
 function bbMenu(){const bs=bbS();
-  view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title">🧱 Block Builder</div><div class="sp"></div><div class="stars">🎟️ ${fmtT(ptLeft())}</div></div>
+  view(`${GH.top('blocks')}
   <div class="scroll"><div class="tipcard">Build anything! <b>Drag</b> to build or break lots of blocks fast. Tap 💣 <b>TNT</b> to blow it up (↩️ undoes it). 🐾 adds animals. 🌙 makes night, so lamps and lava glow.</div>
   <h2>My Worlds</h2><div class="games">${bs.worlds.map((w,i)=>`<div class="bbwrow"><button class="btn game" data-w="${i}" style="background:linear-gradient(135deg,#bbf7d0,#7dd3fc)"><span class="ge">${w.e||'🏝️'}</span><span class="gi"><span class="gt">${esc(w.name)}</span><span class="small">${bbDecode(w.d).filter(v=>v).length} blocks</span></span><span class="go">▶</span></button>${bs.worlds.length>1?`<button class="btn sm" data-del="${i}">🗑️</button>`:''}</div>`).join('')}
    ${bs.worlds.length<4?'<button class="btn game" id="bbnew" style="background:#fff"><span class="ge">➕</span><span class="gi"><span class="gt">New World</span><span class="small">Island, mountains, desert or flat</span></span></button>':''}</div>
   <h2>📐 Blueprints <span class="small">${bbChS().reduce((a,b)=>a+(b||0),0)}/${BBCH.length*3} ⭐ · copy the see-through build</span></h2><div class="lvgrid">${BBCH.map(([n,e],i)=>{const ok=i==0||(bbChS()[i-1]||0)>0,sv=bbChS()[i]||0;return`<button class="btn lvb ${ok?'':'lock'} ${sv?'done':''}" data-ch="${i}"><b>${ok?e:'🔒'}</b><span class="lvs">${[1,2,3].map(k=>k<=sv?'⭐':'☆').join('')}</span><small>${i+1}. ${n}</small></button>`}).join('')}</div></div>`);
   $('#back').onclick=gameRoom;
-  $$('[data-ch]').forEach(b=>b.onclick=()=>{const i=+b.dataset.ch;if(i>0&&!(bbChS()[i-1]>0)){SFX.wrong();anim(b,'sad');fb('Finish the build before it first!','warn');return}if(ptLeft()<=0){SFX.wrong();fb('🎟️ '+ptWhyNot(),'warn long',3000);return}SFX.whoosh();blockBuilder(i)});
-  $$('[data-w]').forEach(b=>b.onclick=()=>{if(ptLeft()<=0){SFX.wrong();fb('🎟️ '+ptWhyNot(),'warn long',3000);return}bs.cur=+b.dataset.w;save();SFX.whoosh();blockBuilder()});
+  $$('[data-ch]').forEach(b=>b.onclick=()=>{const i=+b.dataset.ch;if(i>0&&!(bbChS()[i-1]>0)){SFX.wrong();anim(b,'sad');fb('Finish the build before it first!','warn');return}if(ptLeft()<=0){SFX.wrong();fb(ptWhyNot(),'warn long',3000);return}SFX.whoosh();blockBuilder(i)});
+  $$('[data-w]').forEach(b=>b.onclick=()=>{if(ptLeft()<=0){SFX.wrong();fb(ptWhyNot(),'warn long',3000);return}bs.cur=+b.dataset.w;save();SFX.whoosh();blockBuilder()});
   $$('[data-del]').forEach(b=>b.onclick=()=>{const i=+b.dataset.del;if(b.dataset.sure){bs.worlds.splice(i,1);bs.cur=0;save();SFX.del();bbMenu()}else{b.dataset.sure=1;b.textContent='Sure?';b.style.background='#fecaca'}});
   if($('#bbnew'))$('#bbnew').onclick=()=>{const o=document.createElement('div');o.className='ovl';o.innerHTML=`<div style="background:#fff;color:var(--ink);border-radius:24px;padding:18px;max-width:520px;width:92vw;text-align:center"><h2 style="margin:0 0 10px">Pick a world</h2><div class="games">${BBWT.map(([k,e,n,d])=>`<button class="btn game" data-t="${k}"><span class="ge">${e}</span><span class="gi"><span class="gt">${n}</span><span class="small">${d}</span></span></button>`).join('')}</div><button class="btn" id="mx" style="margin-top:10px">Cancel</button></div>`;
     document.body.appendChild(o);o.querySelector('#mx').onclick=()=>o.remove();o.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{const t=BBWT.find(q=>q[0]==b.dataset.t);bs.worlds.push({name:`${t[2]} ${bs.worlds.length+1}`,e:t[1],d:bbEncode(bbGen(t[0],R(1,9999)))});bs.cur=bs.worlds.length-1;save();o.remove();SFX.magic();if(ptLeft()>0)blockBuilder();else bbMenu()})}}
@@ -381,7 +830,7 @@ function texFor(st){if(TEX[st])return TEX[st];const S0=STAGES[st],c=document.cre
 
 /* garage */
 function garage(){const gs=garageS(),left=ptLeft(),v=VEH[gs.veh];
-  view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title">🏁 Hill Climb</div><div class="sp"></div><div class="stars">🔩 ${gs.bolts}</div><div class="stars">🎟️ ${fmtT(left)}</div></div>
+  view(`${GH.top('hill',{chips:`<span class="stat gh-nut" aria-label="Bolts">${ico('nut',32)}<b>${gs.bolts}</b></span>`})}
   <div class="scroll"><div class="stage" style="background:linear-gradient(180deg,#7dd3fc,#fef3c7)"><canvas id="gcv" width="420" height="230" style="width:min(420px,92vw);height:auto"></canvas><div class="hname">${v.e} ${v.n}</div></div>
   <div class="tipcard"><b>How to drive:</b> ▶ GAS goes, ◀ BRAKE slows and backs up. In the air, GAS tips you back and BRAKE tips you forward. Ease off GAS on steep hills or you'll flip! Flips, wheelies and perfect landings earn bonus bolts.</div>
   <h2>🎯 Missions</h2><div class="games">${gs.missions.map((m,i)=>`<div class="btn game upg mis" style="background:${m.done?'#dcfce7':'#fff'}"><span class="gi"><span class="gt" style="font-size:18px">${m.done?'✅':'🎯'} ${m.t}</span>
@@ -398,7 +847,7 @@ function garage(){const gs=garageS(),left=ptLeft(),v=VEH[gs.veh];
   $('#back').onclick=gameRoom;drawTruckPreview();$$('[data-mode]').forEach(b=>b.onclick=()=>{gs.mode=b.dataset.mode;save();SFX.pop(2);const y=$('.scroll').scrollTop;garage();$('.scroll').scrollTop=y});$('#hclv').onclick=()=>{SFX.whoosh();hcLevels(STKEYS.filter(k=>lvOpen(k,0)).pop()||'meadow')};
   $$('[data-vc]').forEach(c=>{const x=c.getContext('2d');x.fillStyle='#16a34a';x.fillRect(0,84,160,12);const V=VEH[c.dataset.vc];drawVehicle(x,c.dataset.vc,80,84-V.R*.62-(V.R+6)*.62,0,.62,gs.paint,0,0,0)});
   $$('[data-st]').forEach(b=>b.onclick=()=>{const s=STAGES[b.dataset.st];if(bestAll()<s.need){SFX.wrong();anim(b,'sad');fb(`Drive ${s.need} m first!`,'warn');return}
-    if(ptLeft()<=0){SFX.wrong();fb('🎟️ '+ptWhyNot(),'warn long',3000);return}SFX.whoosh();hcStart(b.dataset.st)});
+    if(ptLeft()<=0){SFX.wrong();fb(ptWhyNot(),'warn long',3000);return}SFX.whoosh();hcStart(b.dataset.st)});
   $$('[data-v]').forEach(b=>b.onclick=()=>{const k=b.dataset.v,V=VEH[k];if(!gs.vehs[k]){if(gs.bolts<V.cost){SFX.wrong();anim(b,'sad');fb(`Need ${V.cost-gs.bolts} more bolts!`,'warn');return}gs.bolts-=V.cost;gs.vehs[k]=1;SFX.fanfare();confetti(30)}else SFX.pop(2);gs.veh=k;save();garage()});
   $$('[data-claim]').forEach(b=>b.onclick=()=>{const i=+b.dataset.claim,m=gs.missions[i];gs.bolts+=m.r;gs.missions.splice(i,1);garageS();save();SFX.fanfare();confetti(24);fb(`+${m.r} 🔩!`);garage()});
   $$('[data-up]').forEach(b=>b.onclick=()=>{const k=b.dataset.up,cost=UPCOST[gs.up[k]];if(gs.bolts<cost){SFX.wrong();anim(b,'sad');fb(`Need ${cost-gs.bolts} more bolts!`,'warn');return}
@@ -471,10 +920,12 @@ function wheel(x,sx,sy,ang,sc,ox,oy,rot,paint,R=21){const c=Math.cos(-ang),s=Mat
   x.fillStyle='#52525b';for(let i=0;i<5;i++){x.beginPath();x.arc(Math.cos(i*1.256)*r*.23,Math.sin(i*1.256)*r*.23,1.5*sc,0,7);x.fill()}x.restore()}
 
 function stopHC(){if(!HC)return;cancelAnimationFrame(HC.raf);if(HC.eng){try{HC.eng.lfo&&HC.eng.lfo.stop();HC.eng.o.stop();HC.eng.o2.stop()}catch(e){}}removeEventListener('keydown',HC.kd);removeEventListener('keyup',HC.ku);HC=null}
+const HC_SNDI=['sound-on','music','sound-off']; // P4-16: the sound button's icon for S.hcSnd (all, no engine, off)
 function hcStart(stage,lvi){HCLV=lvi==null?null:lvDef(stage,lvi);const gs=garageS(),up=gs.up,V=VEH[gs.veh],R=V.R,L=V.L,y0=terrH(100,stage)+R+2;
   view(`<div class="hc" id="hc"><canvas id="hcv"></canvas>
-   <div class="hchud"><button class="btn sm" id="hcx">✕</button><div class="hcfuel"><span>⛽</span><div><div id="hcf"></div></div></div>
-    <div class="stars" id="hcd">0 m</div><div class="stars" id="hcb">🔩 0</div><div class="stars" id="hct">🎟️ ${fmtT(ptLeft())}</div><button class="btn sm" id="hcsnd">${['🔊','🔉','🔇'][S.hcSnd||0]}</button></div>
+   ${GH.top('hill',{play:true,hud:true,sub:HCLV?`${STAGES[stage].n}, level ${HCLV.i+1}`:STAGES[stage].n,timeId:'hct',
+    chips:`<div class="hcfuel" role="img" aria-label="Fuel">${ico('drop',26)}<div><div id="hcf"></div></div></div><span class="stat gh-st gh-dist"><b id="hcd">0 m</b></span>`+
+     `<span class="stat gh-nut" aria-label="Bolts">${ico('nut',32)}<b id="hcb">0</b></span>`,sound:GH.tool(HC_SNDI[S.hcSnd||0],'Sound','hcsnd')})}
    <div class="hcprog"><div id="hcpb"></div><span id="hcbest"></span></div>
    <div class="pedal brake" id="pb">◀<small>BRAKE</small></div><div class="pedal gas" id="pg">▶<small>GAS</small></div><div class="hcmsg" id="hcm"></div><div class="hcpop" id="hcp"></div><div class="hccombo" id="hcc"></div></div>`);
   HC={veh:gs.veh,prevBest:bestAll(),best:gs.best[stage],stage,R,L,acc:(820+up.engine*150)*V.acc,maxV:(420+up.engine*75)*V.maxV,grip:(.9+up.tires*.12)*V.grip,tireUp:up.tires,lift:(5+up.engine*.12)*V.lift*(stage=='moon'?.6:1),tankSec:17+up.tank*9,fuel:100,
@@ -485,28 +936,29 @@ function hcStart(stage,lvi){HCLV=lvi==null?null:lvDef(stage,lvi);const gs=garage
   const size=()=>{cv.width=cv.clientWidth*dpr;cv.height=cv.clientHeight*dpr};size();HC.size=size;
   const hc=$('#hc');
   const setP=()=>{const ids=Object.values(HC.ptIn);HC.gas=ids.includes('g');HC.brake=ids.includes('b');$('#pg').classList.toggle('on',HC.gas);$('#pb').classList.toggle('on',HC.brake)};
-  hc.addEventListener('pointerdown',e=>{if(!HC||e.target.closest('.hchud'))return;e.preventDefault();HC.ptIn[e.pointerId]=e.clientX>innerWidth/2?'g':'b';setP()});
+  hc.addEventListener('pointerdown',e=>{if(!HC||e.target.closest('.gh-top'))return;e.preventDefault();HC.ptIn[e.pointerId]=e.clientX>innerWidth/2?'g':'b';setP()});
   const rel=e=>{if(!HC)return;delete HC.ptIn[e.pointerId];setP()};hc.addEventListener('pointerup',rel);hc.addEventListener('pointercancel',rel);hc.addEventListener('pointerleave',rel);
   HC.kd=e=>{if(e.key=='ArrowRight'||e.key=='ArrowUp')HC.gas=true;if(e.key=='ArrowLeft'||e.key=='ArrowDown')HC.brake=true};HC.ku=e=>{if(e.key=='ArrowRight'||e.key=='ArrowUp')HC.gas=false;if(e.key=='ArrowLeft'||e.key=='ArrowDown')HC.brake=false};
   addEventListener('keydown',HC.kd);addEventListener('keyup',HC.ku);
-  $('#hcx').onclick=()=>hcEnd('quit');
-  $('#hcsnd').onclick=e=>{S.hcSnd=((S.hcSnd||0)+1)%3;save();e.currentTarget.textContent=['🔊','🔉','🔇'][S.hcSnd];hcMsg(['🔊 All sounds on','🔉 Engine off, other sounds on','🔇 Truck sounds off'][S.hcSnd],1400);if(S.hcSnd&&HC.eng){try{HC.eng.g.gain.setTargetAtTime(0,ac().currentTime,.05);HC.eng.lfo.stop();HC.eng.o.stop();HC.eng.o2.stop()}catch(x){}HC.eng=null}};
+  // P4-16: Pause opens the shared sheet; it holds the drive (and the game-time clock) and its Quit ends the drive as the old close button did
+  GH.wire({quit:()=>hcEnd('quit'),hold:on=>{if(!HC)return;HC.paused=on;HC.ptIn={};setP();if(on&&HC.eng){try{HC.eng.g.gain.setTargetAtTime(0,ac().currentTime,.05)}catch(e){}}}});
+  $('#hcsnd').onclick=e=>{S.hcSnd=((S.hcSnd||0)+1)%3;save();e.currentTarget.innerHTML=ico(HC_SNDI[S.hcSnd]);hcMsg(['All sounds on','Engine off, other sounds on','Truck sounds off'][S.hcSnd],1400);if(S.hcSnd&&HC.eng){try{HC.eng.g.gain.setTargetAtTime(0,ac().currentTime,.05);HC.eng.lfo.stop();HC.eng.o.stop();HC.eng.o2.stop()}catch(x){}HC.eng=null}};
   if(S.sound&&(S.hcSnd||0)==0){try{const E=ENG[gs.veh]||ENG.jeep,a=ac(),o=a.createOscillator(),o2=a.createOscillator(),f=a.createBiquadFilter(),g=a.createGain(),am=a.createGain(),lfo=a.createOscillator(),lg=a.createGain();o.type=E[1];o2.type='square';f.type='lowpass';f.frequency.value=420;g.gain.value=.02;
     o.connect(f);o2.connect(f);f.connect(am).connect(g).connect(MG);am.gain.value=1;lfo.frequency.value=E[2]||7;lg.gain.value=E[2]?.45:.08;lfo.connect(lg).connect(am.gain);lfo.start();o.frequency.value=E[0];o2.frequency.value=E[0]/2;o.start();o2.start();HC.eng={o,o2,g,f,lfo,base:E[0]}}catch(e){}}
   if(HCLV){const L=HCLV;hcMsg(`${STAGES[stage].e} Level ${L.i+1} · Reach ${L.dist} m`,900);[['3',900],['2',1500],['1',2100],['GO!',2600]].forEach(([t,ms])=>setTimeout(()=>{if(HC&&HC.lv===L){hcMsg(t,t=='GO!'?700:500);t=='GO!'?SFX.fanfare():tone(520,.12,0,'square',.12)}},ms))}else hcMsg(HC.mode=='cargo'?'📦 Deliver the crates! Land softly!':HC.mode=='coins'?'🪙 COIN RUSH! 60 seconds, go go go!':HC.mode=='night'?'🌙 Night drive! Double bolts!':`${STAGES[stage].e} ${STAGES[stage].n} · ${HC.best?'Beat '+HC.best+' m!':'Go go go!'}`,2400);if(S.voice)say(`Let's climb, ${S.name}!`);
   let last=0;const loop=ts=>{if(!HC)return;const dt=last?Math.min(.05,(ts-last)/1000):0;last=ts;
-    if(!document.hidden&&!HC.over){HC.acu+=dt;let n=0;while(HC&&!HC.over&&HC.acu>=1/120&&n<8){hcStep(1/120);HC.acu-=1/120;n++}if(HC){HC.acu=Math.min(HC.acu,1/120);if(!HC.over)hcTime(dt)}}
+    if(!document.hidden&&!HC.over&&!HC.paused){HC.acu+=dt;let n=0;while(HC&&!HC.over&&HC.acu>=1/120&&n<8){hcStep(1/120);HC.acu-=1/120;n++}if(HC){HC.acu=Math.min(HC.acu,1/120);if(!HC.over)hcTime(dt)}}
     if(HC){hcDraw(ctx,cv.width,cv.height,dpr);HC.raf=requestAnimationFrame(loop)}};HC.raf=requestAnimationFrame(loop)}
 function hcMsg(t,ms=1500){const m=$('#hcm');if(!m)return;m.textContent=t;m.classList.add('on');clearTimeout(m._t);m._t=setTimeout(()=>m.classList.remove('on'),ms)}
 function hcPop(t){const m=$('#hcp');if(!m)return;m.textContent=t;m.classList.remove('on');void m.offsetWidth;m.classList.add('on')}
 function hcTrick(name,b){const H=HC;H.combo=H.comboT>0?H.combo+1:1;H.comboT=4;const mult=Math.min(4,H.combo),got=b*mult;H.bolts+=got;hcPop(`${name}! +${got} 🔩`);
   const c=$('#hcc');if(c){c.textContent=mult>1?`COMBO x${mult}`:'';c.classList.toggle('on',mult>1)}HSND.trick(mult)}
 function hcTime(dt){const H=HC,p=pt();H.t+=dt;H.ambT=(H.ambT??4)-dt;if(H.ambT<=0){H.ambT=5+Math.random()*8;HSND.amb(H.stage)}if(H.mode=='coins'&&!H.over){H.rushT-=dt;if(H.rushT<=0)return hcEnd('rush');if(H.rushT<10&&Math.floor(H.rushT)!=Math.floor(H.rushT+dt))tone(880,.08,0,'square',.1)}
-  if(!H.timeUp){p.bank=Math.max(0,p.bank-dt);p.used+=dt;if(ptLeft()<=0){H.timeUp=true;H.graceT=25;hcMsg('⏰ Last run! Game time is up soon.',3000);SFX.rattle()}}
+  if(!H.timeUp){p.bank=Math.max(0,p.bank-dt);p.used+=dt;if(ptLeft()<=0){H.timeUp=true;H.graceT=25;hcMsg('Last run! Game time is up soon.',3000);SFX.rattle()}}
   else{H.graceT-=dt;if(H.graceT<=0)return hcEnd('time')}
   H.saveT+=dt;if(H.saveT>5){H.saveT=0;save()}
   if(H.comboT>0){H.comboT-=dt;if(H.comboT<=0){H.combo=0;const c=$('#hcc');if(c)c.classList.remove('on')}}
-  const t=$('#hct');if(t)t.textContent=H.timeUp?`⏰ ${Math.ceil(H.graceT)}s`:`🎟️ ${fmtT(ptLeft())}`}
+  GH.setTime($('#hct'),H.timeUp?H.graceT:null)}
 function rotPts(H,a){const w=[H.w1,H.w2],c=Math.cos(a),s=Math.sin(a),cx=(H.w1.x+H.w2.x)/2,cy=(H.w1.y+H.w2.y)/2;for(const p of w){const dx=p.x-cx,dy=p.y-cy;p.x=cx+dx*c-dy*s;p.y=cy+dx*s+dy*c}}
 function hcStep(dt){const H=HC,st=STAGES[H.stage],R=H.R,L=H.L,w=[H.w1,H.w2];
   H.bobV+=(-H.bob*260-H.bobV*14)*dt;H.bob+=H.bobV*dt;
@@ -585,44 +1037,50 @@ function hcEnd(why){const H=HC;if(!H||H.over)return;H.over=true;const gs=garageS
   if(rec)gs.best[H.stage]=m;gs.bolts+=H.bolts;const mdone=hcMissions(H,m);save();if(H.eng){try{H.eng.g.gain.setTargetAtTime(0,ac().currentTime,.1)}catch(e){}}
   if(why=='quit'){stopHC();return H.lv?hcLevels(H.stage):garage()}
   if(H.lv)return hcLvFail(H,why,m,mdone);
-  (rec&&m>20)||rrec?(SFX.fanfare(),confetti(30)):SFX.magic();
-  const unl=Object.entries(STAGES).filter(([k,s])=>H.prevBest<s.need&&bestAll()>=s.need).map(([k,s])=>`${s.e} ${s.n}`);
-  const o=document.createElement('div');o.className='ovl';
-  o.innerHTML=`<div class="endcard"><div style="font-size:60px">${why=='time'?'⏰':why=='fuel'?'⛽':why=='cargo'?'📦':why=='rush'?'🪙':'🏁'}</div><h1>${why=='time'?"Game time's up!":why=='fuel'?'Out of gas!':why=='cargo'?'Crates fell off!':why=='rush'?'Time!':'Nice drive!'}</h1>
-   <div class="endstats">${H.mode=='coins'?`<div><b>🔩 ${H.bolts}</b><span>${rrec?'🏆 NEW RECORD':'Best '+(gs.rush[H.stage]||0)}</span></div>`:`<div><b>${m} m</b><span>${H.mode=='cargo'?'delivery distance':rec&&m>0?'🏆 NEW RECORD':'Best '+gs.best[H.stage]+' m'}</span></div>`}<div><b>+${H.bolts}</b><span>🔩 bolts</span></div><div><b>${H.flips}</b><span>flips</span></div><div><b>${H.perfect}</b><span>perfect landings</span></div></div>
-   ${mdone.map(x=>`<div class="msg">🎯 Mission done: ${x.t}! Claim it in the garage.</div>`).join('')}${unl.map(u=>`<div class="msg">🔓 New place unlocked: ${u}!</div>`).join('')}
-   <div class="rowh">${why=='time'||ptLeft()<=0?'<button class="btn big" id="hlearn">📚 Earn more game time</button>':'<button class="btn big" id="hagain">Drive again</button>'}<button class="btn" id="hgar">🔧 Garage</button></div></div>`;
-  document.body.appendChild(o);if(S.voice)say(why=='time'?`Game time is up! Let's learn and earn more!`:rec&&m>0?`New record! ${m} meters!`:`You drove ${m} meters!`);
+  const win=(rec&&m>20)||rrec;win?SFX.fanfare():SFX.magic();
+  const unl=Object.entries(STAGES).filter(([k,s])=>H.prevBest<s.need&&bestAll()>=s.need).map(([k,s])=>s.n);
+  // P4-16: the shared end card (the same numbers, messages and buttons as before)
+  const o=GH.end('hill',{win,title:why=='time'?"Game time's up!":why=='fuel'?'Out of gas!':why=='cargo'?'Crates fell off!':why=='rush'?'Time!':'Nice drive!',
+   tag:(H.mode=='coins'?rrec:rec&&m>0)?'New record!':'',
+   stats:[H.mode=='coins'?[String(H.bolts),rrec?'new record':'best '+(gs.rush[H.stage]||0),'nut']:[m+' m',H.mode=='cargo'?'delivery distance':rec&&m>0?'new record':'best '+gs.best[H.stage]+' m','ruler'],
+    ['+'+H.bolts,'bolts','nut'],[String(H.flips),'flips','rotate'],[String(H.perfect),'perfect landings','check-circle']],
+   lines:[...mdone.map(x=>['target',`Mission done: ${esc(x.t)}! Claim it in the garage.`]),...unl.map(u=>['sparkle',`New place unlocked: ${esc(u)}!`])],
+   btns:(why=='time'||ptLeft()<=0?UI.btn('Earn more game time',{kind:'primary',size:'lg',icon:'path-read',id:'hlearn',wide:true}):UI.btn('Drive again',{kind:'primary',size:'lg',icon:'replay',id:'hagain',wide:true}))+
+    UI.btn('Garage',{icon:'car',id:'hgar',wide:true})});
+  if(S.voice)say(why=='time'?`Game time is up! Let's learn and earn more!`:rec&&m>0?`New record! ${m} meters!`:`You drove ${m} meters!`);
   const go=f=>{o.remove();stopHC();f()};
   if(o.querySelector('#hagain'))o.querySelector('#hagain').onclick=()=>go(()=>hcStart(H.stage));
   if(o.querySelector('#hlearn'))o.querySelector('#hlearn').onclick=()=>go(()=>home());
   o.querySelector('#hgar').onclick=()=>go(garage)}
 
-function hcLvCard(H,html,btns){const o=document.createElement('div');o.className='ovl';o.innerHTML=`<div class="endcard">${html}<div class="rowh">${btns}</div></div>`;document.body.appendChild(o);
+function hcLvCard(H,c){const o=GH.end('hill',c); // P4-16: the shared end card; buttons carry data-go as before
   const go=f=>{o.remove();stopHC();f()};o.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{const a=b.dataset.go;if(a=='retry')go(()=>hcStart(H.stage,H.lv.i));else if(a=='next')go(()=>H.lv.i+1<LVN?hcStart(H.stage,H.lv.i+1):hcLevels(STKEYS[STKEYS.indexOf(H.stage)+1]||H.stage));else if(a=='learn')go(home);else go(()=>hcLevels(H.stage))})}
 function hcWin(){const H=HC;if(H.over)return;H.over=true;const L=H.lv,gs=garageS(),arr=lvS(H.stage),stars=1+(H.crashes<=1?1:0)+(H.crashes==0&&H.t<=L.par?1:0),old=arr[L.i]||0,gain=Math.max(0,stars-old)*15*(L.si+1);
   arr[L.i]=Math.max(old,stars);gs.bolts+=H.bolts+gain;const mdone=hcMissions(H,L.dist);save();if(H.eng){try{H.eng.g.gain.setTargetAtTime(0,ac().currentTime,.1)}catch(e){}}
-  SFX.fanfare();confetti(50);if(S.voice)say(stars==3?'Three stars! Amazing!':'You made it!');const tm=Math.round(H.t);
-  const st=[1,2,3].map(k=>`<span class="lvstar ${k<=stars?'on':''}" style="animation-delay:${k*.25}s">⭐</span>`).join('');
+  SFX.fanfare();if(S.voice)say(stars==3?'Three stars! Amazing!':'You made it!');const tm=Math.round(H.t);
   setTimeout(()=>{for(let k=1;k<=stars;k++)setTimeout(()=>SFX.coin(k+2),k*250)},100);
   const last=L.i+1>=LVN,nextSt=STKEYS[STKEYS.indexOf(H.stage)+1];
-  hcLvCard(H,`<h1>🏁 Level ${L.i+1} done!</h1><div class="lvstars">${st}</div>
-   <div class="endstats"><div><b>${tm}s</b><span>${H.crashes==0&&tm<=L.par?'⚡ under '+L.par+'s':'3⭐ = no crashes, under '+L.par+'s'}</span></div><div><b>+${H.bolts+gain}</b><span>🔩 bolts</span></div><div><b>${H.crashes}</b><span>crashes</span></div><div><b>${H.flips}</b><span>flips</span></div></div>
-   ${mdone.map(x=>`<div class="msg">🎯 Mission done: ${x.t}!</div>`).join('')}${last&&nextSt?`<div class="msg">🔓 ${STAGES[nextSt].e} ${STAGES[nextSt].n} levels unlocked!</div>`:''}`,
-   `${ptLeft()>0?`<button class="btn big" data-go="next">${last?'Next world ▶':'Next level ▶'}</button>`:'<button class="btn big" data-go="learn">📚 Earn more game time</button>'}<button class="btn" data-go="retry">↻ Retry</button><button class="btn" data-go="list">☰</button>`)}
+  hcLvCard(H,{win:true,title:`Level ${L.i+1} done!`,stars,
+   stats:[[tm+'s','time','timer'],['+'+(H.bolts+gain),'bolts','nut'],[String(H.crashes),'crashes','warning'],[String(H.flips),'flips','rotate']],
+   lines:[[H.crashes==0&&tm<=L.par?'bolt':'star',H.crashes==0&&tm<=L.par?`Under ${L.par}s!`:`3 stars: no crashes, under ${L.par}s`],
+    ...mdone.map(x=>['target',`Mission done: ${esc(x.t)}!`]),...(last&&nextSt?[['sparkle',`${esc(STAGES[nextSt].n)} levels unlocked!`]]:[])],
+   btns:(ptLeft()>0?UI.btn(last?'Next world':'Next level',{kind:'primary',size:'lg',icon:'go',attrs:'data-go="next"',wide:true})
+    :UI.btn('Earn more game time',{kind:'primary',size:'lg',icon:'path-read',attrs:'data-go="learn"',wide:true}))+
+    UI.btn('Retry',{icon:'replay',attrs:'data-go="retry"',wide:true})+UI.btn('All levels',{icon:'trophy',attrs:'data-go="list"',wide:true})})}
 function hcLvFail(H,why,m,mdone){SFX.magic();const L=H.lv,togo=Math.max(0,L.dist-m);if(S.voice)say(why=='time'?`Game time is up!`:`So close! Try again!`);
-  hcLvCard(H,`<div style="font-size:60px">${why=='time'?'⏰':'⛽'}</div><h1>${why=='time'?"Game time's up!":'Out of gas!'}</h1><div class="hcprog" style="position:relative;left:0;right:0;top:0;margin:10px 0;transform:none;width:auto"><div style="width:${Math.min(100,m/L.dist*100)}%"></div></div>
-   <div class="msg">Only <b>${togo} m</b> to the finish! Tip: grab the ⛽ cans and don't waste gas in the air.</div>${mdone.map(x=>`<div class="msg">🎯 Mission done: ${x.t}!</div>`).join('')}`,
-   `${why=='time'||ptLeft()<=0?'<button class="btn big" data-go="learn">📚 Earn more game time</button>':'<button class="btn big" data-go="retry">↻ Try again</button>'}<button class="btn" data-go="list">☰ Levels</button>`)}
+  hcLvCard(H,{title:why=='time'?"Game time's up!":'Out of gas!',extra:UI.meter(m/L.dist,{lg:true,kind:'good',label:`${m} of ${L.dist} m`}),
+   lines:[['go',`Only <b>${togo} m</b> to the finish!`],['drop','Tip: grab the fuel cans and don\'t waste gas in the air.'],...mdone.map(x=>['target',`Mission done: ${esc(x.t)}!`])],
+   btns:(why=='time'||ptLeft()<=0?UI.btn('Earn more game time',{kind:'primary',size:'lg',icon:'path-read',attrs:'data-go="learn"',wide:true})
+    :UI.btn('Try again',{kind:'primary',size:'lg',icon:'replay',attrs:'data-go="retry"',wide:true}))+UI.btn('All levels',{icon:'trophy',attrs:'data-go="list"',wide:true})})}
 function hcLevels(st='meadow'){const gs=garageS(),left=ptLeft();const tot=STKEYS.reduce((a,k)=>a+lvS(k).reduce((p,q)=>p+(q||0),0),0);
-  view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title">🏆 Levels</div><div class="sp"></div><div class="stars">⭐ ${tot}/${STKEYS.length*LVN*3}</div><div class="stars">🎟️ ${fmtT(left)}</div></div>
+  view(`${GH.top('hill',{sub:'Levels',chips:UI.chip('star',`${tot}/${STKEYS.length*LVN*3}`,{aria:'Level stars'})})}
   <div class="tabs">${STKEYS.map(k=>`<button class="btn sm tab ${k==st?'on':''}" data-t="${k}">${STAGES[k].e}</button>`).join('')}</div>
   <div class="scroll"><div class="lvhead" style="background:linear-gradient(135deg,${STAGES[st].sky[0]},${STAGES[st].top[0]})"><b>${STAGES[st].n}</b><span>${lvS(st).reduce((p,q)=>p+(q||0),0)} / ${LVN*3} ⭐</span></div>
   <div class="lvgrid">${[...Array(LVN)].map((_,i)=>{const L=lvDef(st,i),ok=lvOpen(st,i),sv=lvS(st)[i]||0;return`<button class="btn lvb ${ok?'':'lock'} ${sv?'done':''}" data-l="${i}"><b>${ok?i+1:'🔒'}</b><span class="lvs">${[1,2,3].map(k=>k<=sv?'⭐':'☆').join('')}</span><small>${L.dist} m${L.pits?' · 🕳️':''}</small></button>`}).join('')}</div>
   <p class="small" style="text-align:center">⭐ Finish · ⭐⭐ 1 crash or less · ⭐⭐⭐ No crashes and beat the time</p></div>`);
   $('#back').onclick=garage;$$('[data-t]').forEach(b=>b.onclick=()=>{SFX.pop(1);hcLevels(b.dataset.t)});
   $$('[data-l]').forEach(b=>b.onclick=()=>{const i=+b.dataset.l;if(!lvOpen(st,i)){SFX.wrong();anim(b,'sad');fb(i?'Finish the level before it first!':'Finish the last world, or drive '+STAGES[st].need+' m in Free Drive!','warn long',2600);return}
-    if(ptLeft()<=0){SFX.wrong();fb('🎟️ '+ptWhyNot(),'warn long',3000);return}SFX.whoosh();hcStart(st,i)})}
+    if(ptLeft()<=0){SFX.wrong();fb(ptWhyNot(),'warn long',3000);return}SFX.whoosh();hcStart(st,i)})}
 /* drawing */
 function hcProp(x,type,px,py,s,i){
   if(type=='tree'){const h=(46+(i*37)%26)*s;x.fillStyle='#78350f';x.fillRect(px-3*s,py-h*.38,6*s,h*.4);x.fillStyle=i%2?'#15803d':'#166534';x.beginPath();x.arc(px,py-h*.62,h*.3,0,7);x.arc(px-h*.18,py-h*.5,h*.22,0,7);x.arc(px+h*.18,py-h*.5,h*.22,0,7);x.fill();x.fillStyle='#22c55e66';x.beginPath();x.arc(px-h*.08,py-h*.7,h*.14,0,7);x.fill()}
@@ -722,19 +1180,22 @@ function hcDraw(x,W,Hh,dpr){const H=HC,st=STAGES[H.stage],moon=H.stage=='moon',c
   const na=Math.PI+Math.PI*Math.min(1,sp/(H.maxV*1.15));x.strokeStyle='#fde047';x.lineWidth=gr*.06;x.beginPath();x.moveTo(gx,gy);x.lineTo(gx+Math.cos(na)*gr*.7,gy+Math.sin(na)*gr*.7);x.stroke();
   x.fillStyle='#fff';x.font=`bold ${gr*.38}px sans-serif`;x.fillText(spd,gx,gy-gr*.28);x.font=`${gr*.18}px sans-serif`;x.fillText('km/h',gx,gy-gr*.02);
   const f=$('#hcf');if(f){f.style.width=H.fuel+'%';f.style.background=H.fuel<25?'#ef4444':'linear-gradient(90deg,#f59e0b,#22c55e)';f.parentNode.classList.toggle('low',H.fuel<25)}
-  const m=Math.floor((H.maxX-100)/20),d=$('#hcd');if(d)d.textContent=H.lv?`${Math.min(m,H.lv.dist)} / ${H.lv.dist} m · ${Math.floor(H.t)}s`:H.mode=='coins'?`⏱️ ${Math.max(0,Math.ceil(H.rushT))}s`:H.mode=='cargo'?`📦${H.crates} · ${m} m`:m+' m';const b=$('#hcb');if(b)b.textContent='🔩 '+H.bolts;
+  const m=Math.floor((H.maxX-100)/20),d=$('#hcd');if(d)d.textContent=H.lv?`${Math.min(m,H.lv.dist)} / ${H.lv.dist} m · ${Math.floor(H.t)}s`:H.mode=='coins'?`${Math.max(0,Math.ceil(H.rushT))}s left`:H.mode=='cargo'?`${H.crates} crates · ${m} m`:m+' m';const b=$('#hcb');if(b)b.textContent=H.bolts;
   const pb=$('#hcpb'),goal=H.lv?H.lv.dist:Math.max(H.best,100)*1.05;if(pb){pb.style.width=Math.min(100,m/goal*100)+'%';const bs=$('#hcbest');if(bs){bs.style.left=Math.min(100,H.best/goal*100)+'%';bs.style.display=H.best>5?'block':'none'}}}
 
 /* ---------- game timer shared by pure games ---------- */
+// P4-16: the time chip is the shared top bar's (GH.top, 59-game-hub.js); the clock holds while the pause sheet is open (GH.held).
 let GT=null;
 function gtStop(){if(GT){clearInterval(GT.iv);GT=null}}
-function gtStart(el,onEnd){gtStop();GT={up:false,grace:0,iv:setInterval(()=>{if(!GT||document.hidden)return;const p=pt();
-  if(!GT.up){p.bank=Math.max(0,p.bank-1);p.used+=1;if(ptLeft()<=0){GT.up=true;GT.grace=20;fb('⏰ Game time is almost up!','warn long',2500);SFX.rattle()}}
+function gtStart(el,onEnd){gtStop();GT={up:false,grace:0,iv:setInterval(()=>{if(!GT||document.hidden||GH.held)return;const p=pt();
+  if(!GT.up){p.bank=Math.max(0,p.bank-1);p.used+=1;if(ptLeft()<=0){GT.up=true;GT.grace=20;fb('Game time is almost up!','warn long',2500);SFX.rattle()}}
   else if(--GT.grace<=0){gtStop();save();return onEnd()}
-  if(p.used%5==0)save();const t=$(el);if(t)t.textContent=GT.up?`⏰ ${GT.grace}s`:`🎟️ ${fmtT(ptLeft())}`},1000)}}
-function timeUpOverlay(){const o=document.createElement('div');o.className='ovl';o.innerHTML=`<div style="font-size:72px">⏰</div><h1>Game time's up!</h1><p style="font-size:20px">Your picture is saved. Learn a little to earn more time!</p><div class="rowh"><button class="btn big" id="tl">📚 Earn more time</button></div>`;
-  document.body.appendChild(o);SFX.magic();if(S.voice)say("Game time is up! Your picture is saved.");o.querySelector('#tl').onclick=()=>{o.remove();home()}}
-
+  if(p.used%5==0)save();GH.setTime($(el),GT.up?GT.grace:null)},1000)}}
+// P4-16: the shared end card (GH.end) for the game on screen; "Earn more time" (#tl) goes home as before
+function timeUpOverlay(){const g=GH.get(GH.cur)||{},said=g.saved||'Your game is saved.';
+  const o=GH.end(g.id,{title:"Game time's up!",lines:[['check-circle',esc(said)],['path-read','Learn a little to earn more time!']],
+    btns:UI.btn('Earn more time',{kind:'primary',size:'lg',icon:'path-read',id:'tl',wide:true})});
+  SFX.magic();if(S.voice)say('Game time is up! '+said);o.querySelector('#tl').onclick=()=>{o.remove();home()}}
 /* ---------- color by number ---------- */
 const CB_COL={rojo:['#ef4444','red'],azul:['#3b82f6','blue'],celeste:['#7dd3fc','light blue'],verde:['#22c55e','green'],'verde oscuro':['#15803d','dark green'],amarillo:['#facc15','yellow'],
   naranja:['#f97316','orange'],morado:['#a855f7','purple'],rosa:['#f9a8d4','pink'],negro:['#27272a','black'],blanco:['#ffffff','white'],'café':['#92400e','brown'],gris:['#a8a29e','gray']};
@@ -905,8 +1366,7 @@ function artSVG(regs,fills,o={}){const defs=new Set();defs.out=[];const body=reg
 const artName=k=>{const[t,v]=k.split(':');return t=='m'?'Mandala':t=='g'?'Rose Window':t=='p'?POLYART[v].n:(SHAPES.find(x=>x[0]==v)||[0,'Picture'])[1]};
 function artPage(key){const regs=artRegs(key),st=stS(),it=st.items[key]||{f:{}},fills=Object.assign({},it.f),glass=key[0]=='g';
   let col=PALS['🌅 Sunset'][2],pal=st.pal||'🌅 Sunset',mode='c',mirror=key[0]=='m'||key[0]=='g',undo=[],vb=[0,0,300,300];
-  view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title" style="font-size:19px">${glass?'💎':key[0]=='m'?'✨':'🦁'} ${artName(key)}</div><div class="sp"></div>
-    <button class="btn sm" id="aundo">↩️</button>${key[0]=='m'||key[0]=='g'?`<button class="btn sm on" id="amir" title="Mirror fill">🔁</button>`:''}<button class="btn sm" id="azr">🔍</button><div class="stars" id="gtm">🎟️ ${fmtT(ptLeft())}</div></div>
+  view(`${GH.top('art',{play:true,sub:artName(key),tools:GH.tool('undo','Undo','aundo')+(key[0]=='m'||key[0]=='g'?GH.tool('flip','Mirror fill','amir',true):'')+GH.tool('eye','Zoom','azr')})}
    <div class="stwrap"><div class="stcv" id="stw"></div><div class="stbar">
     <div class="stmodes"><button class="btn sm on" data-md="c">🎨 Paint</button><button class="btn sm" data-md="g">🌅 Shiny</button><button class="btn sm" data-md="s">✨ Glitter</button><button class="btn sm" data-md="e">🧽 Erase</button></div>
     <div class="stpals">${Object.keys(PALS).map(p=>`<button class="btn sm stp ${p==pal?'on':''}" data-p="${p}">${p.split(' ')[0]}</button>`).join('')}</div>
@@ -939,15 +1399,15 @@ function artPage(key){const regs=artRegs(key),st=stS(),it=st.items[key]||{f:{}},
   function clampVB(){vb[0]=Math.max(0,Math.min(300-vb[2],vb[0]));vb[1]=Math.max(0,Math.min(300-vb[3],vb[1]))}
   $('#azr').onclick=()=>{if(vb[2]<299)vb=[0,0,300,300];else vb=[75,75,150,150];setVB();SFX.whoosh()};
   $('#aundo').onclick=()=>{const u=undo.pop();if(!u)return;u.forEach(([j,v])=>paintOne(j,v));persist();SFX.del()};
-  if($('#amir'))$('#amir').onclick=e=>{mirror=!mirror;e.currentTarget.classList.toggle('on',mirror);fb(mirror?'🔁 Mirror ON: one tap colors every matching piece':'Mirror OFF: color one piece at a time','ok',1800)};
+  if($('#amir'))$('#amir').onclick=e=>{mirror=!mirror;e.currentTarget.classList.toggle('on',mirror);e.currentTarget.setAttribute('aria-pressed',String(mirror));fb(mirror?'Mirror ON: one tap colors every matching piece':'Mirror OFF: color one piece at a time','ok',1800)};
   const size=()=>{const r=w.parentNode.getBoundingClientRect(),land=innerWidth>innerHeight,s=Math.min(land?r.width-250:r.width-12,r.height-(land?12:150));w.style.width=w.style.height=Math.max(200,s)+'px'};size();
   let rs;addEventListener('resize',()=>{clearTimeout(rs);rs=setTimeout(()=>{if($('#stw'))size()},120)});
-  $('#back').onclick=()=>{gtStop();colorMenu(key[0]=='m'?'mandala':key[0]=='g'?'glass':'animal')};
+  GH.wire({quit:()=>{gtStop();colorMenu(key[0]=='m'?'mandala':key[0]=='g'?'glass':'animal')}});
   gtStart('#gtm',()=>timeUpOverlay());if(S.voice&&!it.t)setTimeout(()=>say(key[0]=='m'?'Pick colors and make it beautiful!':'Tap to color!'),300)}
 
 /* neon kaleidoscope */
 function neonDraw(){let sym=8,brush='neon',hue=Math.random()*360,size=6,mirror=true,strokes=0;
-  view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title" style="font-size:19px">🌈 Neon Draw</div><div class="sp"></div><button class="btn sm" id="nclr">🗑️</button><button class="btn sm" id="nsave">💾</button><div class="stars" id="gtm">🎟️ ${fmtT(ptLeft())}</div></div>
+  view(`${GH.top('art',{play:true,sub:'Neon Draw',tools:GH.tool('trash','Clear','nclr')+GH.tool('download','Save to my gallery','nsave')})}
    <div class="stwrap"><div class="stcv neon" id="nw"><canvas id="ncv"></canvas></div><div class="stbar">
     <div class="stmodes">${[[1,'✏️ Off'],[4,'✳️ 4'],[6,'❄️ 6'],[8,'✴️ 8'],[12,'🌸 12']].map(([n,l])=>`<button class="btn sm ${n==sym?'on':''}" data-sy="${n}">${l}</button>`).join('')}<button class="btn sm on" id="nmir">🪞</button></div>
     <div class="stmodes">${[['neon','💡 Neon'],['rainbow','🌈 Rainbow'],['spark','✨ Sparkle'],['ribbon','🎀 Ribbon']].map(([k,l])=>`<button class="btn sm ${k==brush?'on':''}" data-br="${k}">${l}</button>`).join('')}</div>
@@ -972,9 +1432,9 @@ function neonDraw(){let sym=8,brush='neon',hue=Math.random()*360,size=6,mirror=t
   $$('[data-h]').forEach(b=>b.onclick=()=>{hue=+b.dataset.h;if(brush=='rainbow')brush='neon',$$('[data-br]').forEach(q=>q.classList.toggle('on',q.dataset.br=='neon'));SFX.pop(2)});
   $('#nclr').onclick=()=>{x.fillStyle='#05010f';x.fillRect(0,0,S0,S0);SFX.whoosh();strokes=0};
   const doSave=()=>{try{const c2=document.createElement('canvas');c2.width=c2.height=360;c2.getContext('2d').drawImage(cv,0,0,360,360);const g=JSON.parse(localStorage.getItem('starschool-neon')||'[]');g.unshift(c2.toDataURL('image/jpeg',.8));localStorage.setItem('starschool-neon',JSON.stringify(g.slice(0,8)));return true}catch(e){return false}};
-  $('#nsave').onclick=()=>{if(doSave()){SFX.fanfare();confetti(20);fb('💾 Saved to your gallery!')}else fb('Gallery is full','warn')};
+  $('#nsave').onclick=()=>{if(doSave()){SFX.fanfare();confetti(20);fb('Saved to your gallery!')}else fb('Gallery is full','warn')};
   let rs;addEventListener('resize',()=>{clearTimeout(rs);rs=setTimeout(()=>{if($('#ncv'))size_()},150)});
-  $('#back').onclick=()=>{if(strokes>2)doSave();gtStop();colorMenu('neon')};
+  GH.wire({quit:()=>{if(strokes>2)doSave();gtStop();colorMenu('neon')}});
   gtStart('#gtm',()=>{if(strokes>2)doSave();timeUpOverlay()})}
 
 let STTAB='mandala';
@@ -990,10 +1450,10 @@ function colorMenu(tab){if(tab&&['shape','pixel','paint'].includes(tab))return c
   else if(STTAB=='neon'){let g=[];try{g=JSON.parse(localStorage.getItem('starschool-neon')||'[]')}catch(e){}
     body=`<button class="btn game" id="newn" style="background:linear-gradient(135deg,#312e81,#be185d);color:#fff"><span class="ge">🌈</span><span class="gi"><span class="gt">Neon Kaleidoscope</span><span class="small" style="color:#fbcfe8">Glowing mirror drawing</span></span><span class="go">▶</span></button>${g.length?`<h3 class="cbdh">My Neon Art</h3><div class="stgrid">${g.map(s=>`<div class="sttile"><img src="${s}"></div>`).join('')}</div>`:''}`}
   else body=`<div class="tipcard">The original pictures, pixel art and color-by-number.</div><div class="games"><button class="btn game" data-c="shape" style="background:#fce7f3"><span class="ge">🦁</span><span class="gi"><span class="gt">Number Pictures</span></span></button><button class="btn game" data-c="pixel" style="background:#dbeafe"><span class="ge">🟦</span><span class="gi"><span class="gt">Pixel Art</span></span></button><button class="btn game" data-c="paint" style="background:#dcfce7"><span class="ge">🖌️</span><span class="gi"><span class="gt">Block Paint</span></span></button></div>`;
-  view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title">🎨 Art Studio</div><div class="sp"></div><div class="stars">🎟️ ${fmtT(ptLeft())}</div></div>
+  view(`${GH.top('art')}
    <div class="tabs sttabs">${tabs.map(([k,l])=>`<button class="btn sm tab ${k==STTAB?'on':''}" data-t="${k}">${l}</button>`).join('')}</div><div class="scroll">${body}</div>`);
   $('#back').onclick=gameRoom;$$('.tab').forEach(b=>b.onclick=()=>{SFX.pop(2);colorMenu(b.dataset.t)});
-  const chk=()=>{if(ptLeft()<=0){SFX.wrong();fb('🎟️ '+ptWhyNot(),'warn long',3000);return false}return true};
+  const chk=()=>{if(ptLeft()<=0){SFX.wrong();fb(ptWhyNot(),'warn long',3000);return false}return true};
   $$('[data-k]').forEach(b=>b.onclick=()=>{if(chk()){SFX.whoosh();artPage(b.dataset.k)}});
   $$('[data-c]').forEach(b=>b.onclick=()=>classicColor(b.dataset.c));
   if($('#newm'))$('#newm').onclick=()=>{if(chk()){SFX.magic();artPage('m:'+R(1000,99999))}};
@@ -1008,9 +1468,9 @@ function classicColor(tab){if(tab)CBTAB=tab;const cs=cbS(),ss=shS();
     return`<button class="btn cbitem" data-id="${id}"><img src="${cbThumb(d.G,done?true:pr)}"><b>${n}</b><span class="small">${done?'✅ Done':pc?pc+'%':'New'}</span></button>`}).join('')}</div>`;
   else body=`<button class="btn game" id="free" style="background:linear-gradient(135deg,#fbcfe8,#c7d2fe);width:100%"><span class="ge">🖌️</span><span class="gi"><span class="gt">New Drawing</span><span class="small">Paint anything you want, block by block</span></span><span class="go">▶</span></button>
     ${cs.art.length?`<h2>My Drawings</h2><div class="cbgrid">${cs.art.map((a,i)=>`<button class="btn cbitem" data-art="${i}"><img src="${cbThumb(a.split(',').map(k=>k||'blanco'),true)}"><b>Drawing ${i+1}</b></button>`).join('')}</div>`:'<p class="small" style="text-align:center">Your saved drawings show up here.</p>'}`;
-  view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title">🎨 Coloring</div><div class="sp"></div><div class="stars" id="gtm">🎟️ ${fmtT(ptLeft())}</div></div><div class="scroll">${tabs}${body}</div>`);
+  view(`${GH.top('art',{sub:'Classic'})}<div class="scroll">${tabs}${body}</div>`);
   $('#back').onclick=()=>colorMenu('classic');$$('.tab').forEach(b=>b.onclick=()=>{SFX.pop(2);classicColor(b.dataset.t)});
-  const chk=()=>{if(ptLeft()<=0){SFX.wrong();fb('🎟️ '+ptWhyNot(),'warn long',3000);return false}return true};
+  const chk=()=>{if(ptLeft()<=0){SFX.wrong();fb(ptWhyNot(),'warn long',3000);return false}return true};
   if($('#free'))$('#free').onclick=()=>{if(chk())freePaint(-1)};
   $$('[data-art]').forEach(b=>b.onclick=()=>{if(chk())freePaint(+b.dataset.art)});
   $$('[data-id]').forEach(b=>b.onclick=()=>{if(chk())modeChooser(m=>colorPic(b.dataset.id,m),false)});
@@ -1144,7 +1604,7 @@ function shapePage(id,mode){const d=shData(id),cs=shS(),free=mode=='free',fills=
   const ml=mode=='math3'?3:mode=='math2'?2:1,esHard=mode=='es2';if(mode.startsWith('math'))mode='math';if(esHard)mode='es';const facts=d.keys.map((k,i)=>mode=='math'?cbFact(i+1,ml):null);
   const pal=free?FP_COLS.concat(['gris oscuro','café oscuro','azul oscuro','beige','turquesa']).map(k=>`<button class="btn chip" data-k="${k}" style="--cc:${CB_COL[k][0]}"><span class="sw"></span></button>`).join('')
     :d.keys.map((k,i)=>`<button class="btn chip ${esHard?'eshard':''} ${mode=='math'&&ml>1?'wide':''}" data-n="${i+1}" style="--cc:${CB_COL[k][0]}"><span class="sw"></span><b>${mode=='math'?facts[i]:esHard?'':i+1}</b>${mode=='es'?`<small>${k}</small>`:''}</button>`).join('');
-  view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title" style="font-size:20px">${free?'🖌️':'🎨'} ${d.name}</div><div class="sp"></div>${free?'<button class="btn sm" id="shclr">🗑️</button>':'<div class="stars" id="cbp">0%</div>'}<div class="stars" id="gtm">🎟️ ${fmtT(ptLeft())}</div></div>
+  view(`${GH.top('art',{play:true,sub:d.name,tools:free?GH.tool('trash','Clear','shclr'):'',chips:free?'':'<span class="stat gh-st" aria-label="Colored"><b id="cbp">0%</b></span>'})}
    <div class="cbwrap"><div class="cbcv shwrap" id="shw"></div><div class="cbpal ${free?'fp':''}">${pal}</div></div>`);
   const w=$('#shw');
   function render(){const sz=cbLayout(free?18:d.keys.length)*CBN;w.style.width=w.style.height=sz+'px';
@@ -1163,11 +1623,12 @@ function shapePage(id,mode){const d=shData(id),cs=shS(),free=mode=='free',fills=
     filled.add(r.i);fills[r.i]=CB_COL[r.c][0];SFX.pop(filled.size%6);cs.prog[id]=[...filled];save();render();if(esHard){const c=$(`.chip[data-n="${r.n}"]`);if(c)c.classList.add('found')}
     if(regs.every(x=>filled.has(x.i)))finish()});
   if(free)$('#shclr').onclick=()=>{for(const k in fills)delete fills[k];cs.free[id]={};save();SFX.whoosh();render()};
-  $('#back').onclick=()=>{gtStop();classicColor('shape')};
-  function finish(){cs.done[id]=1;delete cs.prog[id];S.coins+=5;save();gtStop();SFX.fanfare();confetti(50);
-    setTimeout(()=>{const o=document.createElement('div');o.className='ovl';const all={};d.R.forEach(r=>all[r.i]=CB_COL[r.c][0]);
-      o.innerHTML=`<div style="width:min(260px,60vw);animation:spin .8s cubic-bezier(.5,1.6,.5,1);background:#fff;border-radius:18px;padding:8px">${shSVG(d,all)}</div><h1>You colored the ${d.name}!</h1><h2>+5 🪙</h2><div class="rowh"><button class="btn big" id="cbm">🎨 More pictures</button></div>`;
-      document.body.appendChild(o);if(S.voice)say(`Beautiful! You colored the ${d.name}!`);o.querySelector('#cbm').onclick=()=>{o.remove();classicColor('shape')}},600)}
+  GH.wire({quit:()=>{gtStop();classicColor('shape')}});
+  function finish(){cs.done[id]=1;delete cs.prog[id];S.coins+=5;save();gtStop();SFX.fanfare();
+    setTimeout(()=>{const all={};d.R.forEach(r=>all[r.i]=CB_COL[r.c][0]);
+      // P4-16: the shared end card with the finished picture
+      const o=GH.end('art',{win:true,made:true,pic:shSVG(d,all),title:`You colored the ${d.name}!`,stats:[['+5','coins','coin']],
+        btns:UI.btn('More pictures',{kind:'primary',size:'lg',icon:'palette',id:'cbm',wide:true})});if(S.voice)say(`Beautiful! You colored the ${d.name}!`);o.querySelector('#cbm').onclick=()=>{o.remove();classicColor('shape')}},600)}
   pick(sel);let rs;addEventListener('resize',()=>{clearTimeout(rs);rs=setTimeout(()=>{if($('#shw'))render()},120)});
   gtStart('#gtm',()=>timeUpOverlay());
   if(S.voice)setTimeout(()=>say(free?'Pick a color and tap to paint!':mode=='math'?'Solve the fact to find each color!':mode=='es'?'Tap a color to hear it in Spanish!':'Match the numbers to the colors!'),300)}
@@ -1175,7 +1636,7 @@ function shapePage(id,mode){const d=shData(id),cs=shS(),free=mode=='free',fills=
 function cbLayout(n){const land=innerWidth>innerHeight,avW=land?innerWidth-260:innerWidth-24,avH=land?innerHeight-80:innerHeight-80-(n>6?190:120);return Math.max(14,Math.floor(Math.min(avW,avH)/CBN))}
 function colorPic(id,mode){const d=cbData(id),cs=cbS(),fill=(cs.prog[id]||'0'.repeat(CBN*CBN)).split('');let sel=1,count=fill.filter(c=>c=='1').length;
   const ml=mode=='math3'?3:mode=='math2'?2:1,esHard=mode=='es2';if(mode.startsWith('math'))mode='math';if(esHard)mode='es';const facts=d.keys.map((k,i)=>mode=='math'?cbFact(i+1,ml):null);
-  view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title" style="font-size:20px">🎨 ${d.name}</div><div class="sp"></div><div class="stars" id="cbp">0%</div><div class="stars" id="gtm">🎟️ ${fmtT(ptLeft())}</div></div>
+  view(`${GH.top('art',{play:true,sub:d.name,chips:'<span class="stat gh-st" aria-label="Colored"><b id="cbp">0%</b></span>'})}
    <div class="cbwrap"><div class="cbcv"><canvas id="cbc"></canvas></div><div class="cbpal">${d.keys.map((k,i)=>`<button class="btn chip" data-n="${i+1}" style="--cc:${CB_COL[k][0]}"><span class="sw"></span><b>${mode=='math'?facts[i]:i+1}</b>${mode=='es'?`<small>${k}</small>`:''}</button>`).join('')}</div></div>`);
   const cv=$('#cbc'),x=cv.getContext('2d');let cs2=cbLayout(d.keys.length),dpr=Math.min(2,devicePixelRatio||1),flash=-1,flashT=0;
   const size=()=>{cs2=cbLayout(d.keys.length);cv.width=cv.height=cs2*CBN*dpr;cv.style.width=cv.style.height=cs2*CBN+'px';draw()};
@@ -1197,17 +1658,18 @@ function colorPic(id,mode){const d=cbData(id),cs=cbS(),fill=(cs.prog[id]||'0'.re
   cv.addEventListener('pointermove',e=>{if(!down)return;const i=cellAt(e);if(i!=last){if(!dragged)paint(last,false);dragged=true;last=i;paint(i,false)}});
   cv.addEventListener('pointerup',e=>{if(down&&!dragged)paint(cellAt(e),true);down=false});
   const leave=()=>{cs.prog[id]=fill.join('');save()};
-  $('#back').onclick=()=>{leave();gtStop();classicColor('pixel')};
-  function finishPic(){leave();cs.done[id]=1;delete cs.prog[id];S.coins+=5;save();gtStop();draw();SFX.fanfare();confetti(50);
-    setTimeout(()=>{const o=document.createElement('div');o.className='ovl';o.innerHTML=`<img src="${cbThumb(d.G,true,200)}" style="width:200px;height:200px;border-radius:16px;box-shadow:0 8px 30px #0006;image-rendering:pixelated;animation:spin .8s cubic-bezier(.5,1.6,.5,1)"><h1>You finished ${d.name}!</h1><h2>+5 🪙</h2><div class="rowh"><button class="btn big" id="cbm">🎨 More pictures</button></div>`;
-      document.body.appendChild(o);if(S.voice)say(`Beautiful! You finished ${d.name}!`);o.querySelector('#cbm').onclick=()=>{o.remove();classicColor('pixel')}},700)}
+  GH.wire({quit:()=>{leave();gtStop();classicColor('pixel')}});
+  function finishPic(){leave();cs.done[id]=1;delete cs.prog[id];S.coins+=5;save();gtStop();draw();SFX.fanfare();
+    setTimeout(()=>{ // P4-16: the shared end card with the finished picture
+      const o=GH.end('art',{win:true,made:true,pic:`<img src="${cbThumb(d.G,true,200)}" alt="">`,title:`You finished ${d.name}!`,stats:[['+5','coins','coin']],
+        btns:UI.btn('More pictures',{kind:'primary',size:'lg',icon:'palette',id:'cbm',wide:true})});if(S.voice)say(`Beautiful! You finished ${d.name}!`);o.querySelector('#cbm').onclick=()=>{o.remove();classicColor('pixel')}},700)}
   pick(1);size();let rs;const onR=()=>{clearTimeout(rs);rs=setTimeout(()=>{if($('#cbc'))size()},120)};addEventListener('resize',onR);
   gtStart('#gtm',()=>{leave();timeUpOverlay()});
   if(S.voice)setTimeout(()=>say(mode=='math'?'Solve the fact to find each color!':mode=='es'?'Tap a color to hear it in Spanish!':'Match the numbers to the colors!'),300)}
 
 const FP_COLS=['rojo','naranja','amarillo','verde','verde oscuro','celeste','azul','morado','rosa','café','gris','negro','blanco'];
 function freePaint(ai){const cs=cbS();const G=ai>=0?cs.art[ai].split(',').map(k=>k||'blanco'):cbGrid('blanco');let sel='rojo',saved=ai>=0,idx=ai;
-  view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title" style="font-size:20px">🖌️ Free Paint</div><div class="sp"></div><button class="btn sm" id="fsave">💾 Save</button><div class="stars" id="gtm">🎟️ ${fmtT(ptLeft())}</div></div>
+  view(`${GH.top('art',{play:true,sub:'Free Paint',tools:GH.tool('download','Save to My Drawings','fsave')})}
    <div class="cbwrap"><div class="cbcv"><canvas id="cbc"></canvas></div><div class="cbpal fp">${FP_COLS.map(k=>`<button class="btn chip" data-k="${k}" style="--cc:${CB_COL[k][0]}"><span class="sw"></span></button>`).join('')}
     <button class="btn chip" data-k="fill" title="Fill">🪣</button><button class="btn chip" id="fclear">🗑️</button></div></div>`);
   const cv=$('#cbc'),x=cv.getContext('2d');let cs2=cbLayout(14),dpr=Math.min(2,devicePixelRatio||1),bucket=false;
@@ -1222,11 +1684,11 @@ function freePaint(ai){const cs=cbS();const G=ai>=0?cs.art[ai].split(',').map(k=
   cv.addEventListener('pointermove',e=>{if(!down||bucket)return;const i=cellAt(e);if(i!=last){last=i;paint(i)}});
   cv.addEventListener('pointerup',()=>{down=false});
   const doSave=()=>{const str=G.join(',');if(idx>=0)cs.art[idx]=str;else{cs.art.unshift(str);cs.art=cs.art.slice(0,12);idx=0}saved=true;save()};
-  $('#fsave').onclick=()=>{doSave();SFX.fanfare();confetti(20);fb('💾 Saved to My Drawings!')};
+  $('#fsave').onclick=()=>{doSave();SFX.fanfare();confetti(20);fb('Saved to My Drawings!')};
   $('#fclear').onclick=()=>{G.fill('blanco');SFX.whoosh();saved=false;draw()};
-  $('#back').onclick=()=>{if(!saved&&G.some(k=>k!='blanco'))doSave();gtStop();classicColor('paint')};
+  GH.wire({quit:()=>{if(!saved&&G.some(k=>k!='blanco'))doSave();gtStop();classicColor('paint')}});
   pick('rojo');size();addEventListener('resize',()=>{if($('#cbc')&&$('.fp'))size()});
   gtStart('#gtm',()=>{if(G.some(k=>k!='blanco'))doSave();timeUpOverlay()})}
 
 
-var GAMES_VER='v125'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var GAMES_VER='v127'; // last line: the whole file ran (checked by dataReady() before the app starts)

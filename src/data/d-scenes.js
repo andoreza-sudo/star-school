@@ -205,6 +205,6 @@ var SCN_W = {
   r_summit: ['mountain', { lm: ['mountain', 'flag'], pr: ['pine', 'flag', 'rock', 'pine', 'mountain', 'bush'] }], r_library: 'library',
   r_island: 'island', r_legend: 'legend',
   e_plaza: 'plaza', e_fiesta: 'fiesta', e_repaso: 'repaso', e_casa: ['town', { lm: ['houseG', 'tree'], pr: ['houseG', 'flowers', 'tree', 'house', 'bush', 'treeP'] }],
-  e_tiempo: 'tiempo', e_ciudad: 'city',
+  e_tiempo: 'tiempo', e_ciudad: 'city', e_frases: 'fiesta', // e_frases: P2-34's world (merged in parallel with P4-09; added in P4-16)
   d_nature: 'nature', d_lab: 'lab', d_cosmos: 'observatory'
 };

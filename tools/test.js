@@ -12844,6 +12844,183 @@ run('map scenes P4-09',()=>{
     o.props.length+' props), '+np+' props placed; largest '+maxEl+' elements / '+maxB+' B at 352 px, '+maxEl996+' / '+maxB996+' B at 996 px'};
 });
 
+// ---- P4-16: Game Room hub and shared game chrome ----
+run('game room P4-16',()=>{
+  const p=[];
+  const rd=f=>fs.readFileSync(path.join(SRC,f),'utf8');
+  const tokCss=rd('css/00-tokens.css'),artCss=rd('css/21-art.css'),css=rd('css/48-game-hub.css').replace(/\/\*[\s\S]*?\*\//g,'');
+  const PICT=/\p{Extended_Pictographic}/u;
+  const o=(()=>eval(js+`;(()=>{
+  const r={games:[],hub:{},top:[],ends:[],pics:{},again:{},scene:[GH.scene(),GH.scene()],ticket:[GH.ticket(true),GH.ticket(false)],ico:Object.keys(ICONS)};
+  for(const g of GH.games){
+    r.games.push({id:g.id,btn:g.btn,name:g.name,short:g.short||'',icon:g.icon,p:g.p,sky:g.sky,tap:g.tapToPlay,
+      fns:[typeof g.art,typeof g.sub,typeof g.open].join(),lock:g.lock?typeof g.lock:''});
+    r.pics[g.id]=GH.pic(g.id);r.again[g.id]=GH.pic(g.id);
+  }
+  // the screens' markup with a stand-in page (view() writes #app.innerHTML; GH.end appends to body)
+  const D=global.document,app={style:{},innerHTML:''},dummy={style:{},classList:{add(){},remove(){},toggle(){},contains(){return false}},dataset:{},
+    querySelector(){return dummy},querySelectorAll(){return[]},getBoundingClientRect(){return{left:0,top:0,width:0,height:0}},appendChild(){},isConnected:false};
+  const made=[];
+  global.document=Object.assign({},D,{querySelector:s=>s=='#app'?app:dummy,querySelectorAll:()=>[],body:{appendChild(e){made.push(e)}},
+    createElement:()=>{const e=Object.assign({},dummy);e.firstChild=dummy;return e}});
+  try{
+    S.sound=false;S.voice=false;S.pt={bank:300,day:today(),used:0};S.ptCfg={per:3,max:30,pause:false};GH.hub();r.hub.on=app.innerHTML;
+    S.pt.bank=0;GH.hub();r.hub.off=app.innerHTML;S.pt.bank=300;
+    // one more entry registers one more card (the G-01 / G-02 path), with a lock reason shown on its card
+    GH.reg({id:'zz',btn:'gzz',name:'Test Game',icon:'car',p:'math',sky:['sky-1','sky'],art:()=>'<circle cx="1" cy="1" r="1" fill="var(--a-r)"/>',
+      sub:()=>'<span>x</span>',open:()=>{},lock:()=>'Soon',tapToPlay:'#x'});
+    GH.hub();r.hub.extra=app.innerHTML;GH.games=GH.games.filter(g=>g.id!=='zz');GH.hub();r.hub.back=app.innerHTML;
+    for(const g of GH.games){
+      r.top.push([g.id,'menu',GH.top(g.id)]);
+      r.top.push([g.id,'play',GH.top(g.id,{play:true,sub:'Something',tools:GH.tool('undo','Undo','aundo'),chips:UI.chip('star','1/3')})]);
+      made.length=0;GH.cur=g.id;
+      const e=GH.end(g.id,{win:true,title:'Done!',stars:2,stats:[['3','flips','rotate'],['+5','coins','coin']],lines:[['target','Mission done: a &amp; b']],
+        btns:UI.btn('Again',{kind:'primary',size:'lg',icon:'replay',id:'zagain',wide:true})});
+      r.ends.push([g.id,'end',e.innerHTML,e.className]);
+      timeUpOverlay();r.ends.push([g.id,'time up',made[made.length-1]&&made[made.length-1].innerHTML,'']);
+    }
+    // the screens of every game: each one's own top bar, from the real screen functions
+    const shots={garage:()=>garage(),levels:()=>hcLevels('meadow'),blocks:()=>bbMenu(),art:()=>colorMenu('mandala'),classic:()=>classicColor('shape')};
+    r.screens={};
+    for(const k in shots){app.innerHTML='';try{shots[k]()}catch(x){}r.screens[k]=app.innerHTML||'ERR not drawn'}
+  }finally{global.document=D}
+  r.src={gameRoom:String(gameRoom),pause:String(GH.pause),wire:String(GH.wire),gtStart:String(gtStart),timeUp:String(timeUpOverlay)};
+  return r})()`))();
+  // 1. the registry: every game has what the hub, the top bar, the sheet and the card need
+  const SUBJ=['play','read','es','math','disc','bt'],ids=new Set(),btns=new Set();
+  if(o.games.length<3)p.push('expected the three Game Room games registered, got '+o.games.map(g=>g.id));
+  for(const g of o.games){
+    const w='game '+g.id;
+    if(!/^[a-z][a-z0-9]*$/.test(g.id)||ids.has(g.id))p.push(w+': id must be short, lowercase and unique');ids.add(g.id);
+    if(!/^[a-z][a-z0-9]*$/i.test(g.btn)||btns.has(g.btn))p.push(w+': btn must be a unique element id');btns.add(g.btn);
+    if(!g.name||PICT.test(g.name+g.short))p.push(w+': needs a plain name');
+    if(!o.ico.includes(g.icon))p.push(w+': icon '+g.icon+' is not in ICONS');
+    if(!SUBJ.includes(g.p))p.push(w+': p '+g.p+' is not a colour class');
+    if(!Array.isArray(g.sky)||g.sky.length!==2||g.sky.some(t=>!tokCss.includes('--sc-'+t+':')))p.push(w+': sky must be two --sc-* tokens: '+g.sky);
+    if(g.fns!=='function,function,function')p.push(w+': art, sub and open must be functions ('+g.fns+')');
+    if(!g.tap)p.push(w+': tapToPlay (the button that starts play) is missing');
+    // the hub has its card with its drawing
+    const card=(o.hub.on.match(new RegExp('<button class="gh-card[^"]*" id="'+g.btn+'" data-g="'+g.id+'"[\\s\\S]*?</button>'))||[])[0];
+    if(!card)p.push(w+': no hub card #'+g.btn+' [data-g='+g.id+']');
+    else{
+      if(!card.includes(o.pics[g.id]))p.push(w+': the card does not show the drawing');
+      if(!card.includes('class="gh-go"')||!card.includes('#i-play'))p.push(w+': the card has no play disc');
+      if(!card.includes('--gh-a:var(--sc-'))p.push(w+': the picture has no scene backdrop');
+    }
+    const off=(o.hub.off.match(new RegExp('<button class="gh-card[^"]*" id="'+g.btn+'"'))||[''])[0];
+    if(!/ need"/.test(off))p.push(w+': with no game time the card is not marked "needs game time"');
+  }
+  if((o.hub.on.match(/class="gh-card/g)||[]).length!==o.games.length)p.push('the hub shows a card for something that is not registered');
+  if(!o.hub.off.includes('Needs game time')||!o.hub.off.includes('id="learn"')||!o.hub.off.includes('No game time yet'))p.push('no game time: the hub must say so, flag the cards and offer Go earn game time');
+  if(!/id="gzz" data-g="zz"/.test(o.hub.extra)||!/gh-card s-math lock" id="gzz"/.test(o.hub.extra)||!o.hub.extra.includes('Soon'))p.push('registering one more game did not add its card (with its lock reason)');
+  if(o.hub.back.includes('gzz'))p.push('a removed game kept its card');
+  if(!/^function gameRoom\(\)\{GH\.hub\(\)\}$/.test(o.src.gameRoom))p.push('gameRoom() (58-playtime.js) should only call GH.hub(): '+o.src.gameRoom.slice(0,80));
+  for(const k of ['on','off'])if(PICT.test(o.hub[k].replace(/<svg[\s\S]*?<\/svg>/g,'')))p.push('hub ('+k+'): emoji in the chrome');
+  for(const id of ['back','gtm'])if(!o.hub.on.includes('id="'+id+'"'))p.push('hub: no #'+id);
+  // 2. every drawing follows the object-art rules (DESIGN_SYSTEM 6.5): tokens only, no ids/defs/gradients/filters/use/text/style
+  const ROLE=m=>new RegExp('--'+m+':var\\(--ill-').test(artCss);
+  const svgCheck=(w,d,maxEl,maxB)=>{
+    if(!d){p.push(w+': no drawing');return}
+    if(!/^<svg class="art /.test(d))p.push(w+': not an svg.art (the --a-* roles need it)');
+    if(!/aria-hidden="true"/.test(d))p.push(w+': decoration must be aria-hidden');
+    if(PICT.test(d))p.push(w+': emoji in the drawing');
+    if(/\sid=|<defs|gradient|<mask|<clip|<pattern|filter|<use|<text|style=|url\(|<animate|<script|\son[a-z]+=|xlink/i.test(d))p.push(w+': forbidden SVG feature');
+    if(/#[0-9a-f]{3,8}\b|rgba?\(|hsla?\(/i.test(d))p.push(w+': raw colour');
+    if(/NaN|undefined|null|Infinity/.test(d))p.push(w+': NaN/undefined in the markup');
+    const stack=[];let n=0;
+    for(const t of d.matchAll(/<(\/?)([a-zA-Z]+)\b([^>]*?)(\/?)>/g)){
+      if(!/^(svg|g|path|circle|ellipse|rect)$/.test(t[2]))p.push(w+': element <'+t[2]+'>');
+      if(t[1]){if(stack.pop()!==t[2])p.push(w+': </'+t[2]+'> out of order')}else{if(!t[4])stack.push(t[2]);if(t[2]!=='svg'&&t[2]!=='g')n++}
+      for(const a of t[3].matchAll(/\s([a-z-]+)="([^"]*)"/g)){
+        if(!/^(class|viewBox|preserveAspectRatio|aria-hidden|focusable|d|cx|cy|r|rx|ry|x|y|width|height|fill|stroke|stroke-width|stroke-linecap|stroke-linejoin|opacity|transform|fill-rule)$/.test(a[1]))p.push(w+': attribute '+a[1]);
+        if((a[1]=='fill'||a[1]=='stroke')&&a[2]!=='none'){const m=/^var\(--a-([a-z]\d?)\)$/.exec(a[2]);if(!m||!ROLE('a-'+m[1]))p.push(w+': colour '+a[2]+' is not an --a-* role');}
+        if(a[1]=='transform'&&!/^(translate\([-\d. ]+\)\s*)?(rotate\([-\d. ]+\))?$/.test(a[2]))p.push(w+': transform '+a[2]);
+      }
+    }
+    if(stack.length)p.push(w+': unclosed <'+stack.join('><')+'>');
+    if(n>maxEl)p.push(w+': '+n+' shapes (budget '+maxEl+')');
+    if(d.length>maxB)p.push(w+': '+d.length+' bytes (budget '+maxB+')');
+    // not flat: shaded areas (a hue in two or more tones) in at least three hues, and a soft ink shadow or highlight
+    const tones={};for(const m of d.matchAll(/var\(--a-([a-z])(\d?)\)/g))(tones[m[1]]=tones[m[1]]||new Set()).add(m[2]);
+    if(Object.values(tones).filter(s=>s.size>=2).length<3)p.push(w+': looks flat (fewer than three hues with shade and base tones)');
+    return n;
+  };
+  const sizes=[];
+  for(const g of o.games){
+    sizes.push(g.id+' '+svgCheck('picture '+g.id,o.pics[g.id],130,12000)+' shapes / '+o.pics[g.id].length+' B');
+    if(o.pics[g.id]!==o.again[g.id])p.push('picture '+g.id+': not deterministic');
+    if(!/viewBox="0 0 240 100"/.test(o.pics[g.id]))p.push('picture '+g.id+': not on the 240 x 100 grid');
+    if(!/var\(--a-k\)" opacity="0?\.1\d?"/.test(o.pics[g.id]))p.push('picture '+g.id+': no soft ink contact shadow');
+  }
+  sizes.push('scene '+svgCheck('hub scene',o.scene[0],260,40000)+' shapes / '+o.scene[0].length+' B');
+  if(o.scene[0]!==o.scene[1])p.push('hub scene: not deterministic');
+  for(const [i,t] of o.ticket.entries())svgCheck('ticket '+(i?'off':'on'),t,30,4000);
+  // 3. the shared top bar on every game: back or pause, the badge and name, the time chip; tools are labelled icon buttons
+  for(const [id,k,h] of o.top){
+    const w='top bar '+id+' ('+k+')',g=o.games.find(x=>x.id===id);
+    if(!/^<div class="top tbar gh-top s-/.test(h))p.push(w+': not the shared .gh-top bar');
+    if(k=='menu'&&!/id="back" aria-label="Back"/.test(h))p.push(w+': no Back button');
+    if(k=='play'&&!/id="gpause" aria-label="Pause"/.test(h))p.push(w+': no Pause button');
+    if(!h.includes('class="gh-gn">'+(g.short||g.name).replace(/&/g,'&amp;')+'<'))p.push(w+': no game name');
+    if(!/class="stat ticket" id="gtm" aria-label="Game time left"/.test(h))p.push(w+': no game-time chip');
+    if(k=='play'&&!/id="aundo" aria-label="Undo"/.test(h))p.push(w+': a tool lost its label');
+    if(PICT.test(h))p.push(w+': emoji in the top bar');
+  }
+  for(const [k,h] of Object.entries(o.screens)){
+    if(/^ERR/.test(h)){p.push('screen '+k+': '+h);continue}
+    if(!/^<div class="top tbar gh-top/.test(h.trim()))p.push('screen '+k+' does not start with the shared top bar');
+    let dep=0,end=0; // the top bar: from the start to its closing </div>
+    for(const m of h.trim().matchAll(/<(\/?)div\b/g)){dep+=m[1]?-1:1;if(!dep){end=m.index;break}}
+    const topBar=h.trim().slice(0,end);
+    if(!end||PICT.test(topBar.replace(/<svg[\s\S]*?<\/svg>/g,'')))p.push('screen '+k+': emoji in its top bar (or no top bar)');
+  }
+  // 4. the same end card and the same pause sheet for every game
+  for(const [id,k,h,cls] of o.ends){
+    const w=k+' card '+id;
+    if(!h){p.push(w+': not shown');continue}
+    if(k=='end'&&cls!=='ovl rw-ovl gh-ovl')p.push(w+': not the shared overlay ('+cls+')');
+    if(!/^<div class="rw-card gh-end s-/.test(h))p.push(w+': not the shared .gh-end card');
+    if(!h.includes(o.pics[id]))p.push(w+': no game picture');
+    if(k=='end'&&(!h.includes('class="rate arc"')||!h.includes('gh-stats n2')||!h.includes('id="zagain"')||!h.includes('Mission done: a &amp; b')))p.push(w+': stars, stats, lines or buttons missing');
+    if(k=='time up'&&!h.includes('id="tl"'))p.push(w+': no "Earn more time" (#tl)');
+    if(PICT.test(h.replace(/<svg[\s\S]*?<\/svg>/g,'')))p.push(w+': emoji');
+  }
+  if(!/gresume/.test(o.src.pause)||!/gquit/.test(o.src.pause)||!/Paused/.test(o.src.pause)||!/GH\.held = true/.test(o.src.pause))p.push('GH.pause: Keep playing (#gresume), Quit (#gquit), and the clock hold');
+  if(!/GH\.held/.test(o.src.gtStart))p.push('gtStart: the game-time clock must hold while the pause sheet is open');
+  if(!/GH\.end\(/.test(o.src.timeUp))p.push('timeUpOverlay must use the shared end card');
+  // every screen of every game file starts with GH.top; every play screen wires Pause / Quit; every end uses GH.end; no old chrome left
+  const GF=fs.readdirSync(path.join(SRC,'js')).filter(f=>partOf(f)==='games'&&f!=='59-game-hub.js');
+  let views=0,ends=0;
+  for(const f of GF){
+    const t=rd('js/'+f);
+    for(const m of t.matchAll(/view\(`/g)){
+      views++;
+      const head=t.slice(m.index+6,m.index+160).replace(/^<div class="hc" id="hc"><canvas id="hcv"><\/canvas>\s*/,''); // Hill Climb: the bar is over its canvas
+      if(!head.startsWith('${GH.top('))p.push(f+': a screen without the shared top bar: view(`'+head.slice(0,40));
+    }
+    if(/<div class="top">|class="endcard"|class="hchud"|id="hcx"/.test(t))p.push(f+': old top bar or end card markup left');
+    if(/\$\('#back'\)\.onclick=\(\)=>\{[^}]*gtStop\(\)/.test(t))p.push(f+': a play screen still leaves through Back instead of the Pause sheet');
+    ends+=(t.match(/GH\.end\(/g)||[]).length;
+    const fnBlocks=t.split(/\nfunction /);
+    for(const b of fnBlocks)if(/gtStart\('#|HC\.raf=requestAnimationFrame/.test(b)&&!/GH\.wire\(\{quit:/.test(b))p.push(f+': '+b.slice(0,30)+'... plays without the Pause sheet (GH.wire({quit}))');
+    const chrome=[...t.matchAll(/GH\.(top|end|tool)\(([^;]*?)\)/g)].map(m=>m[0]).join('');
+    if(PICT.test(chrome))p.push(f+': emoji in the shared chrome calls');
+  }
+  if(views<10)p.push('expected the games\' screens to be found ('+views+' view calls)');
+  if(ends<6)p.push('expected the games\' end cards to use GH.end (found '+ends+')');
+  // 5. CSS: tokens only, no filters, motion on transform/opacity; the hub's code and CSS ship in the games file, not index.html
+  if(/#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(/.test(css))p.push('48-game-hub.css: raw colour');
+  const local=new Set(['gh-a','gh-b','c','c-tint','c-shade','c-fill','c-ledge','ic2','n']);
+  for(const v of css.matchAll(/var\(--([a-z0-9-]+)/g))if(!local.has(v[1])&&!tokCss.includes('--'+v[1]+':'))p.push('48-game-hub.css: --'+v[1]+' is not a token');
+  if(/(^|[;{\s])(-webkit-)?(backdrop-)?filter\s*:/.test(css))p.push('48-game-hub.css: filter used');
+  for(const m of css.matchAll(/transition:([^;}]*)/g))if(/\b(width|height|left|top|background|box-shadow|all)\b/.test(m[1]))p.push('48-game-hub.css: transition on '+m[1]);
+  if(partOf('48-game-hub.css')!=='games'||partOf('59-game-hub.js')!=='games')p.push('the hub CSS and code must go into games.'+BUILD_VER+'.js (PARTS)');
+  const idx=fs.readFileSync(path.join(ROOT,'index.html'),'utf8');
+  if(idx.includes('GH_ART')||idx.includes('.gh-card{'))p.push('index.html holds hub code or CSS (it belongs in the games file)');
+  if(PICT.test(rd('js/59-game-hub.js')))p.push('59-game-hub.js: emoji in the hub source');
+  return{problems:[...new Set(p)].slice(0,60),note:o.games.length+' games ('+o.games.map(g=>g.id).join(', ')+'); '+sizes.join('; ')+'; '+views+' game screens on the shared top bar, '+ends+' end cards'};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){

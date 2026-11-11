@@ -104,6 +104,7 @@ Files added by later chunks (names are fixed by the roadmap so everyone agrees):
 | `15-icons.js`, `15-pics.js`, `16-art-*.js`, `17-pets-svg.js` | P4-02, pre-wave 5, P4-13+, P4-05 | Icon sprite; `ART`/`picArt`/`picFor`; object art (`Object.assign(ART, {...})`); pet rig |
 | `18-reward-art.js` | P4-11 | Reward art (chest, stars, bosses, prize rosette) and the reward screens' markup (`RW.*`); CSS in `src/css/42-rewards.css` |
 | `17-wear.js`, `src/data/d-wear.js` | P4-07 | Wearables: helpers, names, `wearOf` / `wearPic` / `wearBox` (code), and the drawings `WEAR` / `WEAR_EMB` keyed by the saved item ids (data file); Pet Shop and sticker book CSS in `src/css/43-shop.css` |
+| `59-game-hub.js`, `src/css/48-game-hub.css` | P4-16 | Game Room hub (`GH.hub`, called by `gameRoom()`), the game registry (`GH.reg`), the drawn hub scene, ticket and game pictures, and the shared game chrome: top bar `GH.top`/`GH.wire`, pause sheet `GH.pause`, end card `GH.end`. Both go into `games.<VER>.js` (section 3.3, "Adding a game") |
 | `23-viz.js` | P1-10 | Math visuals |
 | `31-gen-math-early.js`, `33-gen-math-mid.js`, `35-gen-math-upper.js` | P2-01+ | New math generators |
 | `37-bank.js` | P1-09 | Content bank engine |
@@ -132,7 +133,8 @@ The rule lives in one place, `PARTS` in `tools/build.py`: a file stem and a regu
 `src/css`. A matching file goes into `<stem>.<VER>.js` (in filename order) instead of into index.html:
 - `bt`: every `src/js/NN-bt-*.js` and `src/css/NN-bt-*.css`. The framework `74-teasers.js` and `48-teasers.css` stay in index.html
   (Home needs `BT.list()` for its card, and `view()` calls `BT.stop()`).
-- `games`: the seven Game Room files listed above, and any new `src/js/NN-game-*.js`. `58-playtime.js` (game time and `gameRoom()`)
+- `games`: the seven Game Room files listed above, and any new `src/js/NN-game-*.js` and `src/css/NN-game-*.css` (P4-16: `59-game-hub.js`,
+  the hub and the shared game chrome, and `48-game-hub.css`). `58-playtime.js` (game time and `gameRoom()`, which calls `GH.hub()`)
   and `40-games.css` (shared by Home, the map and the rewards) stay in index.html.
 
 How it fits together:
@@ -162,8 +164,29 @@ How it fits together:
 Adding a puzzle type: name it `src/js/NN-bt-<id>.js` (and `src/css/49-bt-<id>.css`) and it goes into `bt.<VER>.js` by itself; no change
 to build.py, sw.js, the shell or 90-app.js. At load it may call `BT.reg({...})` and anything else from index.html's code.
 
-Adding a game: name it `src/js/NN-game-<name>.js` (it goes into `games.<VER>.js`), and open it from `gameRoom()` (58-playtime.js) inside
-a click handler. Put its CSS in index.html's CSS as now (a `src/css/NN-game-*.css` would not move: the games rule matches `.js` only).
+Adding a game (P4-16): name it `src/js/NN-game-<name>.js` (it goes into `games.<VER>.js`, after `59-game-hub.js`) and register it with one
+`GH.reg({...})` call at load. That entry is the whole hook: the hub card, its drawn picture, the top-bar badge, the pause sheet and the end
+card come from it, and the smoke `// P4-16` block and the test.js check "game room P4-16" pick it up by themselves.
+
+```js
+GH.reg({
+  id: 'race', btn: 'grace', name: 'Kart Race', short: 'Race', icon: 'car', p: 'bt',      // p: play | read | es | math | disc | bt
+  sky: ['sky-1', 'sky'],                       // two --sc-* scene tokens behind the picture
+  art: () => '...',                            // SVG markup on a 240 x 100 grid, object-art roles var(--a-x) only (DESIGN_SYSTEM 6.5)
+  sub: () => '<span>Race your kart</span>',    // one short line under the name (escape what is not a literal)
+  open: () => raceMenu(),                      // the game's first screen
+  lock: () => '',                              // optional: '' or why it cannot be opened yet
+  tapToPlay: '[data-track="0"]',               // the button on the first screen that starts play (smoke taps it)
+  saved: 'Your race is saved.',                // optional line on the time-up card
+});
+```
+
+Every screen of the game starts its `view()` with `${GH.top('race', {...})}` (Back on menus; `{play: true}` gives Pause; `sub`, `tools`,
+`chips`, `sound` as in 59-game-hub.js), then calls `GH.wire({quit: () => ...})` on a play screen (Quit runs it; `hold: on => ...` pauses
+the game while the sheet is open). The game-time clock is `gtStart('#gtm', onEnd)` (64-gtimer.js); it holds by itself while the sheet is
+open. End of a game: `GH.end('race', {title, stars, stats, lines, btns, win})`; time running out: `timeUpOverlay()`. CSS goes in
+`src/css/NN-game-<name>.css`: since P4-16 the games rule also moves `NN-game-*.css` into `games.<VER>.js` (keep it scoped to the game's
+own classes). Do not change `gameRoom()`; it only calls `GH.hub()`.
 
 Adding another part file (only if a part passes its budget, or a big new on-demand area comes): one line in `PARTS` (build.py), one line
 in `appFiles()` (90-app.js, same order), and the expected stems in the A11b check and smoke's `// A11` block. sw.js and the shell

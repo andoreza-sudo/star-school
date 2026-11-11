@@ -2049,6 +2049,30 @@ Object.assign(SCREENS, {
   'stickers-many': { run: async p => { await p.evaluate(() => { STK.forEach((s, i) => { if (i < 12 || i % 3) S.stickers[s] = 1 + (i % 5 == 0); }); book(); }); } },
 });
 
+// P4-16: the Game Room hub and every game's shared chrome (top bar, pause sheet, end cards). node tools/shots.js @p416
+const gameShot = (fn, after) => ({ run: async p => {
+  await p.evaluate(fn);
+  await p.waitForTimeout(700);
+  if (after) { await p.evaluate(after); await p.waitForTimeout(900); }
+} });
+Object.assign(SCREENS, {
+  'gameroom-empty': { run: async p => { await p.evaluate(() => { S.pt = { bank: 0, day: today(), used: 0 }; gameRoom(); }); } },
+  'game-hill-menu': gameShot(() => garage()),
+  'game-hill-play': gameShot(() => hcStart('meadow')),
+  'game-pause': { run: async p => { await p.evaluate(() => hcStart('meadow')); await p.waitForTimeout(600); await p.click('#gpause'); await p.waitForTimeout(600); } },
+  'game-hill-end': gameShot(() => hcStart('meadow'), () => hcEnd('fuel')),
+  'game-hill-win': gameShot(() => hcStart('meadow', 0), () => { HC.t = 20; hcWin(); }),
+  'game-art-menu': gameShot(() => colorMenu('mandala')),
+  'game-art-play': gameShot(() => artPage('m:17')),
+  'game-pixel-play': gameShot(() => colorPic(CB_PICS[0][0], 'num')),
+  'game-blocks-menu': gameShot(() => bbMenu()),
+  'game-blocks-play': gameShot(() => blockBuilder()),
+  'game-blocks-win': gameShot(() => blockBuilder(0), () => { BB.miss = 1; bbWin(); }),
+  'game-timeup': gameShot(() => artPage('m:17'), () => timeUpOverlay()),
+});
+GROUPS.p416 = ['gameroom', 'gameroom-empty', 'game-hill-menu', 'game-hill-play', 'game-pause', 'game-hill-end', 'game-hill-win', 'game-art-menu',
+  'game-art-play', 'game-pixel-play', 'game-blocks-menu', 'game-blocks-play', 'game-blocks-win', 'game-timeup'];
+
 async function main() {
   const args = process.argv.slice(2);
   let fixtureArg = null;
