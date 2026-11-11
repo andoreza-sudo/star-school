@@ -334,3 +334,10 @@
 🥳  # partying face (es_feel, P2-31)
 😌  # relieved face (es_feel, P2-31)
 😮  # face with open mouth (es_feel, P2-31)
+☔  # umbrella with rain drops
+🍂  # fallen leaf
+💨  # dash symbol (wind)
+📅  # calendar
+📆  # tear-off calendar
+🥵  # hot face
+🥶  # cold face

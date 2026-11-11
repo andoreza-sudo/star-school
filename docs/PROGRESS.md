@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** P2-32, P2-33, P2-37, P3-11, P3-13, P3-14
+**Next up:** P2-33, P2-34, P2-37, P3-11, P3-13, P3-14
 
-**Current version:** v112
+**Current version:** v113
 
 ## Chunk status
 
@@ -91,6 +91,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P2-30 v108
 - P2-14 v111
 - P2-31 v112
+- P2-32 v113
 
 ## Handoff notes
 
@@ -353,6 +354,16 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-11) Icons wanted from P4-03: `balloon` (Bonus game, today `gamepad`), `sparkle` / `confetti`, `unlock` (open padlock for "Next stop unlocked", today `map`), `zap` (a lightning with a spark for boss hits; today `bolt`), `sticker` (single sticker for the prize row), `medal` (the prize rosette as an icon), `heart-half` (boss life bar), `chest` (the treasure chest at icon size, e.g. for the round track where renderQ shows the gift emoji).
 
 ## Log
+
+### P2-32 Spanish world El Tiempo (v116, 2026-11-11, Claude)
+- What changed (CURRICULUM S-units, section 2.3 row 5): five units appended to `ES_UNITS` in `src/data/d-es.js`, and world `e_tiempo` "El Tiempo" (`g:-1`, after Gran Repaso; position checked by id) in `PATHS.es` with stops `es_days 1-2, es_months 1-2, es_weather 1-2, es_big 1-2, es_time 1-2` in that order (titles 22 letters or less; 10 stops and the boss). Saves are keyed by stop id; no format change.
+- Units: `days` 10 words (lunes to domingo with `el`, hoy, mañana, ayer; `cap:1` so the English day shows under the calendar picture), `months` 16 (enero to diciembre, primavera, verano, otoño, invierno with their articles; `cap:1`), `weather` 10 (hace sol, hace calor, hace frío, hace viento, llueve, nieva, está nublado, plus hace fresco, hay tormenta, el arco iris), `big` 18 (level 1: treinta to noventa and cien, picture `n:30`...; level 2 adds veintiuno, veintitrés, veintisiete, treinta y cinco, cuarenta y dos, cincuenta y ocho, sesenta y uno, setenta y cuatro, ochenta y nueve, noventa y nueve: hear it -> numeral at level 1, numeral -> word at level 2), `time` 20 (level 1: es la una, son las dos ... doce on the hour; level 2 adds y media and y cuarto, e.g. son las tres y media). No `mix`, no `spell`. `veinte` is not repeated in `big` because it is already in `es_teen` (no word twice across units).
+- Two small additions to the framework: a unit field `l1:N` (level 1 draws only from the first N items, level 2 from all; old units do not have it so their questions are unchanged by seed) and a picture form `k:H:MM` (an analogue clock from `VIZ.clock`, class `clkpic`; there is only one clock emoji in the allow-list and clocks need to show half and quarter past). Pictures are emoji that draw clearly in headless Chrome (looked at in the shots): ☀ 🥵 🥶 💨 ☔ ❄ ☁ 🍃 ⚡ 🌈, not 🌧. New allow-list entries (none risky): ☔ 🍂 💨 📅 📆 🥵 🥶.
+- Tests: "Spanish El Tiempo P2-32" (unit counts and words, NFC, articles, glosses, every number picture against a small Spanish number-word function, every clock against its words, no duplicate word across all units, 3,000 seeded questions per level through `kindProblems` with answer and choices inside the level pool, big/time level 2 reach the later items, world and stop order by id, fixture save safety for all six fixtures). Smoke block `// P2-32` (380x780): world exists; a round of days (listen) and of big numbers (numeral -> word) with real taps, 3 choices of at least 48 px, no sideways scroll, stars saved under the stop id. Shots `es-tiempo-days1/2, months1, weather1/2, big1/2, time1/2` (looked at).
+- Test expectations changed: P2-30 test accepts the `k:` picture form; its old-stops hash now covers only the original Spanish skills (the hash value is unchanged, the new skills are left out of the loop) and its stop list is a prefix check, since a world now follows Gran Repaso; the "say present" known exceptions list the five new level 2 skills for the same reason as the older ones (level 2 is silent on purpose).
+- Not done / ideas: the seven weekday pictures are the same calendar leaf (the caption tells them apart); levels 1 and 2 of days and months are the same pool. `menos cuarto` and times to the minute are left for later.
+- Merge: P2-31 (La Casa) is built in parallel; this world is appended after `e_repaso` and may need re-placing after `e_casa` by id when merged. Provisional v116, renumber at merge.
+- Merge: built on a parallel branch, renumbered v112 -> v113 at merge.
 
 ### P2-31 Spanish world La Casa (v112, 2026-11-11, Claude)
 - What changed (CURRICULUM S-units, 2.3 row 4, ROADMAP P2-31): four new units appended to `ES_UNITS` in `src/data/d-es.js` (the first 8 untouched, no `mix`, so `es_mix` seeds did not move) and a new world `e_casa` "La Casa" after `e_repaso` in `PATHS.es` (`src/js/42-paths.js`). Skills `es_house`, `es_clothes`, `es_school` (3 levels, `spell:1`) and `es_feel` (2 levels) are made by `esReg`. Nouns carry their article (el/la/los/las; feelings are adjectives with none).

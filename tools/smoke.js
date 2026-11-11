@@ -4822,6 +4822,35 @@ async function main() {
       await cx.ctx.close();
     }
 
+    // P2-32 El Tiempo at 380x780: the world is on the Spanish map; a round of days (listen) and a round of big numbers (read the numeral) are
+    //    played with real taps; stars are saved under the stop id; choices are 48 px; nothing wider than the screen.
+    {
+      const ES_FX2 = require('./lib/es-fx.js');
+      const et = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 });
+      const tp = et.page;
+      await tp.evaluate(`(${ES_FX2.install})(['es-MX'])`);
+      const lay = () => {
+        const sm = a => (a.length ? Math.min(...a.map(b => Math.min(b.getBoundingClientRect().height, b.getBoundingClientRect().width))) : 0);
+        return { w: document.documentElement.scrollWidth, ch: sm([...document.querySelectorAll('.ch')]), n: document.querySelectorAll('.ch').length };
+      };
+      const worldOk = await tp.evaluate(() => PATHS.es.worlds.some(w => w.id === 'e_tiempo') && NODES.es.some(n => n.sk === 'es_days' && n.lv === 1));
+      if (!worldOk) fail('El Tiempo is not on the Spanish path');
+      for (const [sk, lv] of [['es_days', 1], ['es_big', 2]]) {
+        const idx = await tp.evaluate(([sk, lv]) => { const i = NODES.es.findIndex(n => n.sk === sk && n.lv === lv); S.maps.es[nid(NODES.es[i])] = 0; start('es', i); return i; }, [sk, lv]);
+        await tp.waitForSelector('.ch');
+        const l = await tp.evaluate(lay);
+        if (l.w > 380 || l.ch < 48 || l.n !== 3) fail(`${sk}${lv} layout: ` + JSON.stringify(l));
+        await playRound(tp, `P2-32 ${sk} level ${lv}`);
+        const res = await tp.evaluate(i => ({ st: getSt('es', i), saved: JSON.parse(localStorage.getItem(KEY)).maps.es[nid(NODES.es[i])] }), idx);
+        if (res.st < 1 || res.saved !== res.st) fail(`${sk}${lv}: stars not saved ` + JSON.stringify(res));
+        else step(`P2-32: ${sk}${lv} earned ${res.st} star(s), saved under its stop id`);
+        await tp.evaluate(() => { home(); document.querySelectorAll('.ovl').forEach(e => e.remove()); });
+      }
+      network.push(...et.network);
+      for (const e of et.errors) fail(e);
+      await et.ctx.close();
+    }
+
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');
   } catch (e) {
