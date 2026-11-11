@@ -2523,6 +2523,98 @@ async function main() {
       await cp28.ctx.close();
     }
 
+    // P2-10 Decimal Desert at 380x780: a 4th grader opens the math map on the desert (no unlock switch), plays Unlike Fractions with
+    //    real taps (a step hint inside), then jumps through the other stops: an angle, a decimal, a fraction pad and the rest each show
+    //    their picture, keys and choices are 48 px or more, nothing is wider than the screen, and the stars are saved.
+    {
+      const dd = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 });
+      const dp = dd.page;
+      await dp.fill('#nm', 'Desert');
+      await dp.click('.gr[data-g="4"]');
+      await dp.click('#go');
+      await dp.waitForSelector('.game[data-p="math"]');
+      const w10 = await dp.evaluate(() => {
+        const wi = PATHS.math.worlds.findIndex(w => w.id === 'm_desert');
+        return { wi, open: worldOpen('math', wi), cur: curWorld('math'), stops: PATHS.math.worlds[wi].nodes.map(n => n[0] + n[1]).join(' '), boss: NODES.math[WR.math[wi][1]].sk };
+      });
+      const want10 = 'frac6 frac7 fop1 frac8 fop2 dec1 dec2 ang1 ang2 geo3 shape6 meas5 pat4 story7';
+      if (w10.wi < 0 || !w10.open || w10.cur !== w10.wi || w10.stops !== want10 || w10.boss !== 'boss') fail('Decimal Desert: ' + JSON.stringify(w10));
+      await dp.click('.game[data-p="math"]');
+      await dp.waitForSelector(`.wchip.on[data-w="${w10.wi}"]`);
+      const first = await dp.evaluate(() => NODES.math.findIndex(x => nid(x) === 'frac6'));
+      const nodeOn = await dp.evaluate(n => !!document.querySelector(`.node[data-n="${n}"]`) && !document.querySelector(`.node[data-n="${n}"]`).classList.contains('lock'), first);
+      await dp.click(`.node[data-n="${first}"]`);
+      await dp.waitForSelector('#prompt');
+      await dp.waitForTimeout(900);
+      // a step hint on the first question: Help shows step 1, "Next step" shows the next one (frac 6 uses the common-bottom steps when it can)
+      const hs = await dp.evaluate(() => { for (let i = 0; i < 80 && !(G.q.hint && G.q.hint.k === 'steps'); i++) { G.q = genQ('frac', 6, 900 + i); renderQ(); } return G.q.hint.k; });
+      if (hs !== 'steps') fail('Decimal Desert: no step hint found for frac 6');
+      await dp.waitForTimeout(500);
+      await dp.click('#hb');
+      await vwait(dp, 300);
+      const h1 = await dp.evaluate(() => ({ at: document.querySelector('#hint .hs') && document.querySelector('#hint .hs').dataset.hs, label: document.querySelector('#hb').textContent.trim(), wide: document.documentElement.scrollWidth }));
+      await dp.click('#hb');
+      await vwait(dp, 300);
+      const h2 = await dp.evaluate(() => document.querySelector('#hint .hs').dataset.hs);
+      if (h1.at !== '0' || !/Next step/.test(h1.label) || h2 !== '1' || h1.wide > 380) fail('Decimal Desert step hint: ' + JSON.stringify([h1, h2]));
+      await playRound(dp, 'P2-10 frac6', 10);
+      await dp.evaluate(() => { G.dead = true; });
+      await vwait(dp, 2500);
+      const got6 = await dp.evaluate(() => S.maps.math.frac6 || 0);
+      const next6 = await dp.evaluate(() => unlocked('math', NODES.math.findIndex(x => nid(x) === 'frac7')));
+      if (!nodeOn || got6 < 1 || !next6) fail('Decimal Desert: first stop open ' + nodeOn + ', stars ' + got6 + ', next stop open ' + next6);
+      // the rest: a full round of an angle stop and a decimal stop, three measured questions of the others
+      await dp.evaluate(() => { S.unlockAll = true; save(); });
+      const full = new Set(['ang1', 'dec1']);
+      const needArt = new Set(['fop2', 'ang1', 'ang2', 'geo3', 'pat4']);
+      const seen10 = { dot: false, frac: false, sets: [] };
+      for (const id of ['frac7', 'fop1', 'frac8', 'fop2', 'dec1', 'dec2', 'ang1', 'ang2', 'geo3', 'shape6', 'meas5', 'pat4', 'story7']) {
+        await dp.evaluate(() => home());
+        await dp.click('.game[data-p="math"]');
+        await dp.waitForSelector('.wchip.on');
+        await dp.click(`.wchip[data-w="${w10.wi}"]`);
+        await dp.waitForSelector(`.wchip.on[data-w="${w10.wi}"]`);
+        const n = await dp.evaluate(id => NODES.math.findIndex(x => nid(x) === id), id);
+        await dp.click(`.node[data-n="${n}"]`);
+        await dp.waitForSelector('#prompt');
+        const most = full.has(id) ? 1 : 3;
+        // the first question of the decimal stop is one that needs the decimal point key (the stop mixes fraction and decimal answers)
+        if (id === 'dec1') await dp.evaluate(() => { for (let i = 1; i < 300; i++) { const q = genQ('dec', 1, i); if (q.pad === 'dec') { G.q = q; renderQ(); break; } } });
+        for (let k = 0; k < most; k++) {
+          await dp.waitForTimeout(900);
+          const lay = await dp.evaluate(() => {
+            const sm = a => (a.length ? Math.min(...a.map(b => Math.min(b.offsetHeight, b.offsetWidth))) : 99);
+            const qa = document.querySelector('.qarea');
+            return { sk: G.sk + G.lv, kind: G.q.kind, pad: G.q.pad || '', sep: G.q.sep || '', w: document.documentElement.scrollWidth,
+              art: !!document.querySelector('#prompt svg, .ch svg'), keys: sm([...document.querySelectorAll('.k')]), ch: sm([...document.querySelectorAll('.ch')]),
+              dot: !!document.querySelector('.k[data-k="."]'), tall: qa.scrollHeight > qa.clientHeight + 1 };
+          });
+          if (lay.sk !== id || lay.w > 380 || lay.keys < 48 || lay.ch < 48 || lay.tall || (needArt.has(id) && !lay.art)) fail('Decimal Desert stop ' + id + ': ' + JSON.stringify(lay));
+          if (lay.pad === 'dec') seen10.dot = seen10.dot || lay.dot;
+          if (lay.pad === 'frac' || lay.sep === 'mix') seen10.frac = true;
+          if (k === 0 && (id === 'fop1' || id === 'dec2' || id === 'meas5')) {
+            await dp.click('#hb');
+            const hint = await dp.evaluate(() => ({ len: document.querySelector('#hint').innerHTML.length, steps: !!document.querySelector('#hint .hs') }));
+            if (!hint.len || !hint.steps) fail('Decimal Desert stop ' + id + ': hint ' + JSON.stringify(hint));
+          }
+          if (full.has(id)) break;
+          await dp.evaluate(() => { window.__q = G.q; });
+          await answer(dp);
+          await dp.waitForFunction(() => G && G.q !== window.__q, null, { timeout: 8000 });
+        }
+        if (full.has(id)) await playRound(dp, 'P2-10 ' + id, 10);
+        await dp.evaluate(() => { G.dead = true; });
+        await vwait(dp, 2500);
+      }
+      if (!seen10.dot || !seen10.frac) fail('Decimal Desert: the decimal point key or the fraction pad never showed ' + JSON.stringify(seen10));
+      const starsAng = await dp.evaluate(() => ['ang1', 'dec1'].map(id => S.maps.math[id] || 0));
+      if (starsAng.some(x => x < 1)) fail('Decimal Desert: stars not saved ' + JSON.stringify(starsAng));
+      else step('P2-10: Decimal Desert opens for a 4th grader on its first stop; Unlike Fractions played with a step hint, an angle round and a decimal round by taps, 13 stops measured at 380x780 (48 px targets, no sideways scroll), stars saved');
+      network.push(...dd.network);
+      for (const e of dd.errors) fail(e);
+      await dd.ctx.close();
+    }
+
     for (const e of errors) fail(e);
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');

@@ -1083,6 +1083,43 @@ Object.assign(SCREENS, {
   'fy-steps-round': { run: fyShot('round', 3, '^round \\d{6} to 100$', 2) },
 });
 
+// P2-10 Decimal Desert: the map, then one question of each new level (the first seed whose label matches), grade 4
+function ddShot(sk, lv, want, hint) {
+  return async p => {
+    await p.evaluate(([sk, lv, want]) => {
+      S.grade = 4; S.name = 'Ava'; S.buddy = 'Ben';
+      window.say = () => {};
+      start('math', NODES.math.findIndex(n => n.sk == sk && n.lv == lv));
+      let q; for (let i = 1; i < 600; i++) { q = genQ(sk, lv, i); if (new RegExp(want).test(q.label)) break; }
+      G.q = q; renderQ();
+    }, [sk, lv, want]);
+    if (hint) await p.click('#hb');
+  };
+}
+Object.assign(SCREENS, {
+  'dd-map': { run: async p => { await p.evaluate(() => { S.grade = 4; pathMap('math', PATHS.math.worlds.findIndex(w => w.id === 'm_desert')); }); } },
+  'dd-frac6': { run: ddShot('frac', 6, '^frac cmp2', true) },
+  'dd-fop1-add': { run: ddShot('fop', 1, '^fop1 \\d+/\\d+ \\+') },
+  'dd-fop1-mixed': { run: ddShot('fop', 1, '^fop1 \\d+ \\d+/\\d+ −', true) },
+  'dd-fop2': { run: ddShot('fop', 2, '^fop2 [6-9] ×') },
+  'dd-dec1-grid': { run: ddShot('dec', 1, '^dec1 grid \\d\\d of 100') },
+  'dd-dec1-line': { run: ddShot('dec', 1, '^dec1 line 0\\.') },
+  'dd-dec2': { run: ddShot('dec', 2, '^dec2 0\\.\\d+ \\? 0\\.\\d{3}$', true) },
+  'dd-ang1': { run: ddShot('ang', 1, '^ang1 obtuse') },
+  'dd-ang1-pick': { run: ddShot('ang', 1, '^ang1 pick') },
+  'dd-ang2-proto': { run: ddShot('ang', 2, '^ang2 protractor') },
+  'dd-ang2-sum': { run: ddShot('ang', 2, '^ang2 straight') },
+  'dd-geo3-l': { run: ddShot('geo', 3, '^geo3 L ') },
+  'dd-geo3-perim': { run: ddShot('geo', 3, '^geo3 perimeter') },
+  'dd-shape6-sym': { run: ddShot('shape', 6, '^shape6 sym line rect d') },
+  'dd-shape6-count': { run: ddShot('shape', 6, '^shape6 sym count pentagon') },
+  'dd-shape6-lines': { run: ddShot('shape', 6, '^shape6 lines parallel') },
+  'dd-meas5': { run: ddShot('meas', 5, '^meas5 \\d+ km', true) },
+  'dd-pat4-fill': { run: ddShot('pat', 4, '^pat4 fill') },
+  'dd-pat4-rule': { run: ddShot('pat', 4, '^pat4 rule') },
+  'dd-story7': { run: ddShot('story', 7, '^story7 5x', true) },
+});
+
 async function main() {
   const args = process.argv.slice(2);
   let fixtureArg = null;

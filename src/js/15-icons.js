@@ -507,7 +507,7 @@ const ICO_SK={
   add:'plus',sub:'minus',miss:'question',big:'skill-num',eo:'blocks',cnt:'skill-count',story:'skill-story',cmp:'scale',
   time:'clock',coins:'coin',pk_count:'skill-count',pk_num:'skill-num',pk_more:'scale',sort:'puzzle',shape:'skill-shape',
   pat:'skill-pattern',tenf:'skill-array',pos:'pin',meas:'ruler',mult:'times',arr:'skill-array',mfact:'times',dfact:'divide',
-  mbig:'times',pv:'blocks',data:'chart',frac:'skill-frac',
+  mbig:'times',pv:'blocks',data:'chart',frac:'skill-frac',fop:'skill-frac',dec:'skill-num',ang:'skill-shape',
   abc:'skill-abc',syl:'clap',sound:'ear',rhyme:'music',comp:'skill-story',info:'doc',sight:'eye',pic:'image',build:'puzzle',sent:'doc',
   spell:'edit',
   es_greet:'wave',es_color:'palette',es_num:'skill-num',es_teen:'skill-num',es_animal:'paw',es_food:'food',es_body:'user',
