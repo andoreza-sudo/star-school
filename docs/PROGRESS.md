@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** P2-35, P4-16, A11c, P4-15, P5-07, P5-08
+**Next up:** P2-35, P4-16, P4-15, P5-07, P5-08, P5-09
 
-**Current version:** v127
+**Current version:** v128
 
 ## Chunk status
 
@@ -106,6 +106,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P4-09 v125
 - P4-12 v126
 - P4-14 v127
+- A11c v128
 
 ## Handoff notes
 
@@ -402,6 +403,18 @@ Things noticed while working that are outside the current chunk. One line each, 
 
 ## Log
 
+### A11c Question code in part files (v128, 2026-11-11, Claude)
+- Why now (ROADMAP A11, risk R1): index.html was 1,229,289 bytes, over the 1.2 MB warning (fail 1.5 MB), with pet care, art sets B and C, the Game Room hub, motion polish and profiles still to add code. Goal: well under 1.0 MB with no change in behaviour.
+- What moved (two new entries in `PARTS`, `tools/build.py`): `gen.<VER>.js` = `23-viz.js`, `30-gen-math.js`, `31-gen-math-early.js`, `32-gen-read.js`, `33-gen-math-mid.js`, `34-gen-es.js` (200 KB); `gen2.<VER>.js` = `35-gen-math-upper.js`, `36-gen-phonics.js`, `37-bank.js`, `37-comp.js`, `39b-steps.js` (236 KB). Both are under the 400 KB part warning (the 177 KB `35-gen-math-upper.js` is why there are two, not one 436 KB file). They load before bt and games: order is index.html's code, gen, gen2, bt, games, data, boot, because `d-es.js` (`esReg`) and `d-comp.js` (`COMPSPEC`) call generator helpers while data loads.
+- Load-time uses found and fixed: the only one in index.html was the skill table `SK` in `38-skills.js`, which named generators as values (`gen:genAbc`, `gen:genCmp`, ... 17 entries) and two `round:` hooks (`compRoundLv`). Each is now an arrow that looks the name up when called (`gen:lv=>genAbc(lv)`, `round:(...a)=>compRoundLv(...a)`), which is how most entries already were; `SK[sk].gen(lv)` is the only caller. `gen:genTrace` / `round:traceRound` stay as they were (47-trace.js is not moved, and a test compares identity). I loaded the built index.html code alone in a Node vm to find every other throw (none), and grepped for `typeof` / `window.` uses of the 430 moved names (none). No generator was touched.
+- Guard: `appFiles()` in `90-app.js` lists `gen`, `gen2`, `bt`, `games`, `data` (same order as `PARTS`); the stamps are `GEN_VER`, `GEN2_VER`. `sw.js` precaches the five files (from build.py). Messages read `gen file missing (app v126)` and so on.
+- Sizes (bytes), before (v125) -> after (v126): index.html 1,229,289 -> 794,248; gen.js new 200,322; gen2.js new 235,900; bt 576,272 -> 576,272; games 187,379 -> 187,379; data 523,917 -> 523,938 (one line, see below); sw.js 1,062 -> 1,095. Total of the page's files 2,516,857 -> 2,518,059 (index + parts + data), so the total warning (2 MB) was already passed and still is; no fail budget is near. `bt.v126.js` (576 KB) was already over its 400 KB part warning; it is a candidate to split when the next puzzle type arrives.
+- Tests: new named check `parts split A11c`: index.html under 1,000,000 bytes, every part under its fail budget, the 11 moved files are inside gen/gen2 and not in index.html, the script tags and the precache list, a fresh vm load of index.html + every part + data with all five stamps equal to VER, a question built from each of math, reading, Spanish and Discover, and a missing or stale gen / gen2 file refused. The A11b check now expects `gen,gen2,bt,games`, loads "code + data without bt and games" with the gen parts present, and accepts a ReferenceError from the data file when a gen part is missing (the app is refused either way).
+- Smoke: new step in the `// A11` block opens the first lesson of math, reading, Spanish and Discover with the built files and checks a question and prompt are on screen; the file-guard steps now name bt and games by stem instead of by position.
+- Also: `src/data/d-scenes.js` gets `e_frases: 'library'` (the same one-line fix as 12d4e14 on wip/batch-L). The merged v125 state fails the test "map scenes P4-09" without it (Las Frases had no scene).
+- Docs: CONTRIBUTING 3.3 (five built files, gen/gen2 rule, load order, budgets), README principle 8, `tools/check.sh` text.
+- Merge: built on branch A11c-split from 3108ba4 (v125); VER v126 is provisional. Renumbering renames all five part/data files: rebuild and `git add -A`. Conflicts to expect: `tools/build.py` (VER, PARTS), `src/js/90-app.js` (`appFiles()` list), `src/js/38-skills.js` (any chunk that adds a skill with `gen:genX` must write `gen:lv=>genX(lv)` if genX is in gen/gen2, or index.html's load throws), `tools/test.js` (a new check before P2-12, the A11b check lines), `tools/smoke.js` (`// A11` block), `d-scenes.js` (the e_frases line, same as batch-L). A chunk in flight that adds a file `NN-gen-*.js` or edits one of the 11 files is unaffected (the file just lives in a part); a new generator file needs adding to the gen/gen2 regular expression in PARTS.
+- Merge: renumbered v126 -> v128 at merge, on top of P4-12 and P4-14; the e_frases scene line was already in 12d4e14.
 ### P4-14 Object art set B, 40 pictures (v127, 2026-11-11, Claude)
 - What changed (DESIGN_SYSTEM 6.5): 40 new drawings in `ART`, in the style of set A as redrawn in P4-13b (shade rim, base moved toward the light, highlight, white glints, deep accents, contact shadows where set A has them, light from the top left, `--a-*` roles only, faces only on animals): balloon, book, moon, sock, cow, cheese, bell, bird, egg, pencil, plane, bread, tree, coat, foot, cloud, rainbow, house, grapes, truck, train, tooth, shirt, mouth, mouse, table, horse, bee, turtle, water, ear, owl, helicopter, rocket, tie, boots, dice, chair, bear, dress. `picFor(word, emoji)` now returns the drawing for each, so picture words, Build a Word, unscramble band B, riddles, Memory Match, logic grids, Discover and vocabulary pictures and the Pre-K counting balloons show them with no generator change.
 - How the 40 were chosen: a scratch script evaluated all code and data like test.js and counted, per picture name, (a) the content items that name it (reading lists, counting objects, Treasure Bay, bank `em` pictures, Spanish items (by English gloss where they had no art name), riddle choices, Memory Match themes, logic-grid pictures) and (b) the `picFor` calls while drawing 200 seeded questions per level of every skill. Score = 25 x items + calls; words that share one drawing were added together (sock + socks, plane + airplane, coat + jacket, bell + class, moon + good night). Top of the list: balloon 987 (every counting grid), book 471, moon 413, sock 377, cow 353, cheese 338, bell 298, bird 289, egg 288, pencil 278 ... chair 133, bear 132, dress 132. Left out although high: calendar pages (january 635, monday 591: one picture for 19 words), people (dad, mom, grandpa, grandma, sister, brother, baby), greetings and feelings, leg 177 and eyes 144 (would read as foot and a face at 24 px), kitchen (a pan). The next ones are backpack, school, cap, teddy, window, rabbit, snail, lion (set C).
