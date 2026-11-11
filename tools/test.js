@@ -4052,9 +4052,9 @@ run('grammar P2-20: gram 1-5 bank, 3000 questions per level, one right answer, h
   const gerrs=[],bad=m=>gerrs.push(m);
   const body=function(){
     const want=[52,60,46,51,46];
-    if(SK.gram.max!==5||SK.gram.bank!=='gram')bad('SK.gram is '+JSON.stringify({max:SK.gram.max,bank:SK.gram.bank}));
+    if(SK.gram.max<5||SK.gram.bank!=='gram')bad('SK.gram is '+JSON.stringify({max:SK.gram.max,bank:SK.gram.bank}));
     for(const m of bankProblems('gram',{levels:[1,2,3,4,5],min:40}))bad(m);
-    if(BANK.gram.some(it=>it.lv<1||it.lv>5))bad('BANK.gram has an item above level 5');
+
     for(let lv=1;lv<=5;lv++){
       const items=BANK.gram.filter(it=>it.lv==lv),w2='level '+lv+': ';
       if(items.length!==want[lv-1])bad(w2+items.length+' items, wants '+want[lv-1]);
@@ -4096,7 +4096,7 @@ run('grammar P2-20: gram 1-5 bank, 3000 questions per level, one right answer, h
     const forms=lv=>[...new Set(BANK.gram.filter(it=>it.lv==lv).map(it=>it.form||'choice'))].sort().join();
     if(forms(1)!=='choice,tap,wide'||forms(2)!=='choice,tap'||forms(3)!=='choice'||forms(4)!=='choice,wide'||forms(5)!=='choice')bad('forms per level: '+[1,2,3,4,5].map(forms).join(' | '));
     // map: gram 1 to 5 each once on the reading path, in the worlds CURRICULUM section 2.2 names (by world id)
-    const rd=NODES.read.filter(n=>n.sk=='gram').map(n=>n.lv+'@'+n.wid).join(' ');
+    const rd=NODES.read.filter(n=>n.sk=='gram'&&n.lv<=5).map(n=>n.lv+'@'+n.wid).join(' ');
     if(rd!=='1@r_reef 2@r_workshop 3@r_workshop 4@r_summit 5@r_summit')bad('gram stops: '+rd);
     // save safety: fixtures at several grades; the reading path without the gram stops against today's
     const store={};
@@ -4133,7 +4133,7 @@ run('grammar P2-20: gram 1-5 bank, 3000 questions per level, one right answer, h
     for(const k of ['sight3','sight5','pic6','build6','spell4','boss_r_summit'])if(S.maps.read[k]!==3)bad('synthetic save: '+k+' lost stars');
     for(const k of ['gram1','gram2','gram3','gram4','gram5']){
       const i=NODES.read.findIndex(n=>nid(n)==k);
-      if(!stopNew('read',i)||!unlocked('read',i)||nid(NODES.read[curNode('read')])===k)bad('synthetic save: '+k+' not NEW and open, or is the current stop');
+      if(!stopNew('read',i)||!unlocked('read',i)||nid(NODES.read[curNode('read')])===k)bad('synthetic save: '+k+' not NEW and open, or is the current stop '+[stopNew('read',i),unlocked('read',i),nid(NODES.read[curNode('read')]),S.maps.read.spell5,S.maps.read.boss_r_library].join());
     }
     PATHS.read.worlds=CUR;buildNodes('read');
     return {checked};
@@ -4734,6 +4734,116 @@ run('sentences P2-24: unscramble has one order, cloze has one word, 3,000 sample
   };
   const r=eval(js+';('+body.toString()+')()');
   return{problems:[...r],note:'3 levels x 3,000 samples, 40 + 40 + 12 items, '+r.checked+' stop checks over 8 fixtures x 7 grades'};
+});
+
+// ---- P2-21: grammar levels 6-9 (bank data, 3,000 samples per level, hints, map stops, save safety) ----
+run('grammar B P2-21: gram 6-9 bank, 3000 questions per level, one right answer, hints, say, labels, stops, no star moves, no re-lock',()=>{
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const gerrs=[],bad=m=>gerrs.push(m);
+  const body=function(){
+    const want={6:64,7:41,8:57,9:57},LV=[6,7,8,9];
+    if(SK.gram.max!==9||SK.gram.bank!=='gram')bad('SK.gram is '+JSON.stringify({max:SK.gram.max,bank:SK.gram.bank}));
+    for(const m of bankProblems('gram',{levels:[1,2,3,4,5,6,7,8,9],min:40}))bad(m);
+    if(BANK.gram.some(it=>it.lv<1||it.lv>9))bad('BANK.gram has an item above level 9');
+    for(const lv of LV){
+      const items=BANK.gram.filter(it=>it.lv==lv),w2='level '+lv+': ';
+      if(items.length!==want[lv])bad(w2+items.length+' items, wants '+want[lv]);
+      for(const it of items){
+        if(!it.topic)bad(w2+it.q+': no topic');
+        if(typeof it.hint!=='string'||it.hint.length<20)bad(w2+it.q+': no teaching hint');
+        else{
+          // a hint teaches the method: it never holds the answer word (or a wrong choice that is one word)
+          const one=x=>String(x).length>2&&/^[a-z']+$/i.test(x);
+          if(one(it.a)&&new RegExp('\\b'+it.a+'\\b','i').test(it.hint))bad(w2+it.q+': the hint holds the answer '+it.a);
+          if(one(it.a))for(const x of it.d||[])if(one(x)&&new RegExp('\\b'+x+'\\b','i').test(it.hint))bad(w2+it.q+': the hint holds a wrong choice '+x);
+        }
+        if(it.form=='tap'&&bankWords(it.sent).length>4)bad(w2+it.sent+': more than 4 words to tap');
+        if(it.form!='tap'&&(it.d||[]).some(x=>x.toLowerCase()===String(it.a).toLowerCase()))bad(w2+it.q+': a wrong choice equals the answer');
+      }
+      const seen=new Set(),labels={};
+      for(let i=0;i<3000;i++){
+        const q=genQ('gram',lv,i+1),w3=w2+q.label+': ';
+        const pr=kindProblems(q);if(pr.length)bad(w3+pr.join('; '));
+        const vs=q.choices.map(c=>String(c.v));
+        if(vs.length<2||vs.length>4)bad(w3+vs.length+' choices');
+        if(new Set(vs).size!==vs.length)bad(w3+'two choices alike');
+        if(vs.filter(v=>v===String(q.ans)).length!==1)bad(w3+'not exactly one right choice');
+        if(!q.hint||q.hint.k!=='text'||!q.hint.s||q.hint.s.length<20||q.hint.s.length>140)bad(w3+'hint');
+        if(!q.say||q.say.length<8)bad(w3+'say');
+        if(q.sk!=='gram'||q.lv!==lv)bad(w3+'genQ did not stamp sk/lv');
+        if(q.label.length>=60)bad(w3+'label too long');
+        const key=q.bk.bi;
+        if(labels[q.label]!==undefined&&labels[q.label]!==key)bad(w3+'label is not unique');
+        labels[q.label]=key;seen.add(key);
+        const t=(q.html+' '+q.say+' '+q.choices.map(c=>c.l).join(' ')).split(/[^A-Za-z']+/).filter(Boolean);
+        for(const x of t)if(BAD.test(x.toLowerCase()))bad(w3+'BAD word '+x);
+      }
+      if(seen.size!==items.length)bad(w2+'3000 questions drew only '+seen.size+' of '+items.length+' items');
+      if(Object.keys(labels).length!==items.length)bad(w2+'labels are not one per item');
+      if(JSON.stringify(genQ('gram',lv,77))!==JSON.stringify(genQ('gram',lv,77)))bad(w2+'not reproducible');
+      const a=genQ('gram',lv,5);
+      {const r=bankRebuild(a.bk),f=q=>JSON.stringify([q.html,q.say,q.ans,q.choices,q.hint,q.label,q.bk]);if(f(r)!==f(a))bad(w2+'bankRebuild differs');}
+    }
+    const forms=lv=>[...new Set(BANK.gram.filter(it=>it.lv==lv).map(it=>it.form||'choice'))].sort().join();
+    if(forms(6)!=='choice'||forms(7)!=='wide'||forms(8)!=='choice,tap'||forms(9)!=='choice,wide')bad('forms per level: '+[6,7,8,9].map(forms).join(' | '));
+    // map: gram 6 to 9 once each, by world id, in CURRICULUM 2.2 order (stops of other skills are ignored so later chunks can add theirs)
+    const wst=id=>NODES.read.filter(n=>n.wid==id&&n.sk=='gram').map(n=>n.sk+n.lv).join(' ');
+    if(wst('r_library')!=='gram6 gram7')bad('r_library gram stops: '+wst('r_library'));
+    if(wst('r_island')!=='gram8')bad('r_island gram stops: '+wst('r_island'));
+    if(wst('r_legend')!=='gram9')bad('r_legend gram stops: '+wst('r_legend'));
+    const before2=(id,a,b)=>{const ks=NODES.read.filter(n=>n.wid==id&&n.sk!='boss').map(nid);return ks.indexOf(a)>=0&&ks.indexOf(a)<ks.indexOf(b)};
+    if(!before2('r_library','spell5','gram6'))bad('gram6 must come after spell5');
+    if(!before2('r_library','gram6','gram7'))bad('gram7 must come after gram6');
+    if(!before2('r_island','spell6','gram8'))bad('gram8 must come after spell6');
+    if(!before2('r_legend','spell7','gram9'))bad('gram9 must come after spell7');
+    const rd=NODES.read.filter(n=>n.sk=='gram').map(n=>n.lv).join(' ');
+    if(rd!=='1 2 3 4 5 6 7 8 9')bad('gram stops in path order: '+rd);
+    // save safety: fixtures at several grades; the reading path without the gram 6-9 stops against today's
+    const store={};
+    global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+    const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
+    const CUR=PATHS.read.worlds,NEWK=['gram6','gram7','gram8','gram9'];
+    const OLD=CUR.map(w=>({...w,nodes:w.nodes.filter(x=>!(x[0]==='gram'&&x[1]>=6))}));
+    const snap=()=>{const o={};NODES.read.forEach((n,i)=>{o[nid(n)]={st:getSt('read',i),open:unlocked('read',i)}});return o};
+    let checked=0;
+    for(const name of ['fresh','midway','maxed','legacy-single-map','legacy-index-maps','tricky'])for(const g of [null,-1,0,1,2,3,6]){
+      const raw=fx(name);load(Object.keys(JSON.parse(raw)).length?raw:null);if(g!==null)S.grade=g;
+      PATHS.read.worlds=OLD;buildNodes('read');
+      const before=snap(),curB=nid(NODES.read[curNode('read')]);
+      PATHS.read.worlds=CUR;buildNodes('read');
+      const aft=snap(),curA=nid(NODES.read[curNode('read')]);
+      for(const k in before){
+        checked++;
+        if(!aft[k]){bad(name+' g'+g+': stop '+k+' vanished');continue}
+        if(before[k].st!==aft[k].st)bad(name+' g'+g+': '+k+' stars '+before[k].st+' -> '+aft[k].st);
+        if(before[k].open&&!aft[k].open)bad(name+' g'+g+': '+k+' re-locked');
+        if(before[k].st>0&&!aft[k].open)bad(name+' g'+g+': passed stop '+k+' is locked');
+      }
+      // a gram stop added to a finished world is NEW, open, has no stars and is never the current stop
+      for(const k of NEWK){
+        const i=NODES.read.findIndex(n=>nid(n)==k);
+        if(getSt('read',i)!==0)bad(name+': '+k+' starts with stars');
+        if(passed('read',WR.read[NODES.read[i].wi][1])&&(!stopNew('read',i)||!unlocked('read',i)||curA==k))bad(name+' g'+g+': '+k+' in a finished world is not NEW, open and not current');
+      }
+      if(curB!==curA&&!/^boss_/.test(curB)&&v42Stops('read').includes(curB)&&NODES.read.some((n,i)=>passed('read',i)))bad(name+' g'+g+': current stop moved '+curB+' -> '+curA);
+    }
+    // a synthetic child who finished Dragon Library and Author Island before gram 6-8 existed keeps every star (Legend Lab is still ahead of them,
+    // so the current stop is spell 7, and gram 9 sits behind it as a normal locked stop)
+    load(null);S.grade=6; // Dragon Library, Author Island and Legend Lab open by grade 4, 5 and 6
+    PATHS.read.worlds=OLD;buildNodes('read');
+    const olds=NODES.read.filter(n=>['r_library','r_island'].includes(n.wid)).map(nid);
+    for(const k of olds)S.maps.read[k]=3;
+    PATHS.read.worlds=CUR;buildNodes('read');
+    for(const k of olds)if(S.maps.read[k]!==3)bad('synthetic save: '+k+' lost stars');
+    for(const k of ['gram6','gram7','gram8']){
+      const i=NODES.read.findIndex(n=>nid(n)==k);
+      if(!stopNew('read',i)||!unlocked('read',i)||nid(NODES.read[curNode('read')])===k)bad('synthetic save: '+k+' not NEW and open, or is the current stop');
+    }
+    PATHS.read.worlds=CUR;buildNodes('read');
+    return {checked};
+  };
+  const r=eval(js+';('+body.toString()+')()');
+  return{problems:gerrs,note:'219 items, 12000 questions, '+r.checked+' stop checks over 6 fixtures x 7 grades'};
 });
 
 // ---- report ----

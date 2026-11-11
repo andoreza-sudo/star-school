@@ -4,7 +4,9 @@ The running record of what has shipped. Newest entry first. Every chunk adds one
 
 **Next up:** P2-24, P2-08, P2-21, P2-23
 
-**Current version:** v80
+**Next up:** P2-08, P2-23, P2-26 to P2-29
+
+**Current version:** v82
 
 ## Chunk status
 
@@ -60,6 +62,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P4-18 v79
 - P2-25 v80
 - P2-24 v81
+- P2-21 v82
 
 ## Handoff notes
 
@@ -266,6 +269,16 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-11) Icons wanted from P4-03: `balloon` (Bonus game, today `gamepad`), `sparkle` / `confetti`, `unlock` (open padlock for "Next stop unlocked", today `map`), `zap` (a lightning with a spark for boss hits; today `bolt`), `sticker` (single sticker for the prize row), `medal` (the prize rosette as an icon), `heart-half` (boss life bar), `chest` (the treasure chest at icon size, e.g. for the round track where renderQ shows the gift emoji).
 
 ## Log
+
+### P2-21 Grammar B, levels 6-9 (v82, 2026-11-11, Claude)
+- What changed: `BANK.gram` in `src/data/d-gram.js` grows by levels 6-9 (219 items, same `GR(...)` pattern, every item has a topic, a hint that teaches the method without the answer, one right answer): 6 pronouns, possessives and look-alike words (64: its/it's, their/there/they're, your/you're, to/too/two, whose/who's, pronoun matches noun, possessives), 7 commas and quotation marks (41, all wide: series, dates and places, introductory words and names, comma before and/but/so, dialogue), 8 more parts of speech (57: tap the adverb, preposition, conjunction or interjection, adverb cloze, name the word type, has/have/had perfect tenses), 9 sentence craft (57: complete vs fragment, run-on fixes, combine two sentences, I/me, he/him, we/us, who/whom, vague pronouns). `SK.gram.max` is 9. Labels are the question plus the answer and must be under 60 characters, so level 7 and 9 questions are short ("Which is correct?") and the sentences are the answers.
+- Stops, by world id: `gram 6` and `gram 7` end Dragon Library (`r_library`, after spell 5), `gram 8` ends Author Island (`r_island`, after spell 6), `gram 9` ends Legend Lab (`r_legend`, after spell 7). CURRICULUM 2.2 puts vocab 6-8 between them; those chunks (P2-23) insert their stops at merge. Stop ids `gram6` ... `gram9` are new; no existing id changed.
+- Edits to existing files: `src/js/38-skills.js` (max 9), `src/js/42-paths.js` (four nodes), `tools/build.py` (v82, provisional), tools (test, smoke, shots). Expectations changed in P2-20's test (it described the whole bank, so it no longer holds): `SK.gram.max` is now checked as at least 5 (P2-21's test checks exactly 9), the "no item above level 5" line is gone (P2-21 checks level 9), and its stop-order string covers gram levels 1-5 only; P2-20's smoke block likewise lists only gram levels 1-5 stops. No P2-20 data or counts changed.
+- Save safety: stars are keyed by stop id. The P2-21 test compares the reading path without gram 6-9 against today's over 6 fixtures x 7 grades (2,520 stop checks): no stop moves stars, nothing re-locks, a passed stop is never locked, the new stops in a finished world show NEW, are open and are never the current stop; plus a synthetic child who finished Dragon Library and Author Island.
+- Tests: test.js check "grammar B P2-21" (bankProblems with min 40 on all 9 levels, exact counts, hints never hold the answer or a one-word wrong choice, 3,000 seeded questions per level = 12,000 with kindProblems zero, 2-4 distinct choices, one right choice, say, labels unique, every item drawn, reproducible, rebuild, forms per level, stop order ignoring other skills' stops). smoke.js: one P2-21 block (stops by world id; levels 6-9 at 380x780 including a forced tap and a forced choice question at level 8: buttons 48 px or more, no sideways scroll, hint teaches; one 10/10 round of level 7 saves stars and moves no other stop).
+- Screenshots (380x780, tools/out/): gram-6, gram-7, gram-7b (four wide choices), gram-8, gram-8b (tap a word), gram-9 looked at. `node tools/shots.js gram-6 gram-7 gram-7b gram-8 gram-8b gram-9`.
+- Note for P2-23: add vocab 6-8 to `r_library` and `r_island` by inserting `['vocab',6,..]` after `gram 6`, `vocab 7` / `gram 7`, `vocab 8` per CURRICULUM 2.2; the P2-21 test only looks at gram stops and their order against spell, so it keeps passing.
+- Merge: built on a parallel branch, renumbered v81 -> v82 at merge.
 
 ### P2-24 Sentences: unscramble and cloze (v79, 2026-11-11, Claude)
 - What changed (CURRICULUM E-sent): skill `sent` grows from 2 to 5 levels; levels 1-2 are untouched (the skill's `gen` is `lv=>lv>=3?genSentB(lv):genSent(lv)`). Level 3 "Build Sentences": 40 four-to-six word sentences as `order` word tiles (first word capital, last word carries the end mark, 7 of them questions). Level 4 "Fill the Gap": 40 cloze sentences, 3 same-part-of-speech words (nouns, verbs, adjectives, is/are/am, past forms), one blank shown as the slot. Level 5 "Sentence Stories": half `choice wide` "which sentence tells about the pictures" (two pictures through `picFor`, three sentences, only one names both), half `order` of 12 three-sentence stories (cue words or a thing that must happen first). Hints, `say` text and unique labels on every level. No new kinds.

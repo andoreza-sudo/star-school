@@ -1771,7 +1771,7 @@ async function main() {
       const gp = ga.page;
       await gp.waitForSelector('.game[data-p="read"]');
       const gi = await gp.evaluate(() => ({
-        stops: NODES.read.filter(n => n.sk == 'gram').map(n => n.lv + '@' + n.wid).join(' '),
+        stops: NODES.read.filter(n => n.sk == 'gram' && n.lv <= 5).map(n => n.lv + '@' + n.wid).join(' '),
         before: JSON.stringify(S.maps.read),
       }));
       if (gi.stops !== '1@r_reef 2@r_workshop 3@r_workshop 4@r_summit 5@r_summit') fail('grammar stops on the reading map: ' + gi.stops);
@@ -2053,6 +2053,61 @@ async function main() {
       network.push(...sa.network);
       for (const e of sa.errors) fail(e);
       await sa.ctx.close();
+    }
+
+    // P2-21 grammar 6-9: stops by world id (gram 6-7 Dragon Library, 8 Author Island, 9 Legend Lab); at 380x780 each level's question fits (no
+    //       sideways scroll, answer buttons at least 48 px, tap-a-word buttons too, quoted sentences not cut); hints teach without the answer;
+    //       one full round of level 7 earns stars and no other stop's stars move
+    {
+      const gb = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
+      const gq = gb.page;
+      await gq.waitForSelector('.game[data-p="read"]');
+      const gi2 = await gq.evaluate(() => ({
+        stops: NODES.read.filter(n => n.sk == 'gram' && n.lv > 5).map(n => n.lv + '@' + n.wid).join(' '),
+        before: JSON.stringify(S.maps.read),
+      }));
+      if (gi2.stops !== '6@r_library 7@r_library 8@r_island 9@r_legend') fail('grammar 6-9 stops on the reading map: ' + gi2.stops);
+      const bad21 = [];
+      for (let lv = 6; lv <= 9; lv++) {
+        // the stop's own question, then (level 8) a forced tap-a-word question and a forced choice one, so every form is measured
+        const forms = lv === 8 ? ['stop', 'tap', 'choice'] : ['stop'];
+        for (const form of forms) {
+          await gq.evaluate(([lv, form]) => {
+            if (form === 'stop') { start('read', NODES.read.findIndex(n => n.sk == 'gram' && n.lv == lv)); return; }
+            let q = genQ('gram', lv, 5);
+            for (let i = 1; i < 400 && ((form == 'tap') !== (q.cls == 'bwords')); i++) q = genQ('gram', lv, 5 + i);
+            G = newG({ sk: 'gram', lv, n: 1, pool: [q] }); next();
+          }, [lv, form]);
+          await gq.waitForSelector('#prompt .bq');
+          const m = await gq.evaluate(() => {
+            const pr = document.querySelector('#prompt'), chs = [...document.querySelectorAll('.ch')];
+            return { sk: G.q.sk, lv: G.q.lv, kind: G.q.kind, tap: G.q.cls == 'bwords', n: chs.length, minH: Math.min(...chs.map(c => c.offsetHeight)),
+              over: document.documentElement.scrollWidth - document.documentElement.clientWidth, pover: pr.scrollWidth - pr.clientWidth,
+              cut: chs.filter(c => c.scrollWidth > c.clientWidth + 1).length };
+          });
+          if (m.sk !== 'gram' || m.lv !== lv || m.kind !== 'choice' || m.n < 2 || m.n > 4 || m.minH < 48 || m.over > 0 || m.pover > 0 || m.cut || (form !== 'stop' && m.tap !== (form == 'tap')))
+            bad21.push('level ' + lv + ' ' + form + ': ' + JSON.stringify(m));
+          await gq.click('#hb');
+          const hint = await gq.evaluate(() => ({ t: document.querySelector('#hint').textContent, ans: String(G.q.ans) }));
+          if (hint.t.length < 20 || (hint.ans.length > 2 && /^[a-z']+$/i.test(hint.ans) && new RegExp('\\b' + hint.ans + '\\b', 'i').test(hint.t))) bad21.push('level ' + lv + ' hint: ' + hint.t);
+          await gq.evaluate(() => { G.dead = true; home(); });
+        }
+      }
+      if (bad21.length) fail('P2-21 grammar:\n  ' + bad21.join('\n  '));
+      else step('P2-21 grammar: levels 6-9 fit at 380x780, answer buttons 48 px or more, no sideways scroll, hints teach without the answer');
+      const gk = await gq.evaluate(() => NODES.read.findIndex(n => n.sk == 'gram' && n.lv == 7));
+      await gq.evaluate(i => start('read', i), gk);
+      await playRound(gq, 'P2-21 grammar 7');
+      const gafter2 = await gq.evaluate(i => ({ st: getSt('read', i), maps: JSON.stringify(S.maps.read) }), gk);
+      const gwas2 = JSON.parse(gi2.before), gnow2 = JSON.parse(gafter2.maps);
+      const gmoved2 = Object.keys(gwas2).filter(k => gnow2[k] !== gwas2[k]);
+      if (gafter2.st < 1 || gmoved2.length) fail('grammar 7 stars: ' + JSON.stringify({ st: gafter2.st, gmoved2 }));
+      else step(`grammar 7: stop earned ${gafter2.st} stars, no other stop changed`);
+      await gq.evaluate(() => { G.dead = true; home(); });
+      await vwait(gq, 1500);
+      network.push(...gb.network);
+      for (const e of gb.errors) fail(e);
+      await gb.ctx.close();
     }
 
     for (const e of errors) fail(e);

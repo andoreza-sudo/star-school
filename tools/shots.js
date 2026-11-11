@@ -431,10 +431,12 @@ const SCREENS = {
   ...Object.fromEntries([1, 2, 3, 4, 5].map(lv => ['vocab-' + lv, { run: vocabShot(lv) }])),
   'vocab-nopic': { run: vocabShot(1, false, false) },
   'vocab-hint': { run: vocabShot(3, true) },
-  // P2-20 grammar: one seeded question of each level 1-5 in a one-question round (level 1 tap-a-word is 'gram-1b'); 'gram-hint' opens a hint
-  ...Object.fromEntries([1, 2, 3, 4, 5].map(lv => ['gram-' + lv, { run: gramShot(lv, 3, false) }])),
+  // P2-20/21 grammar: one seeded question of each level 1-9 in a one-question round (level 1 tap-a-word is 'gram-1b'); 'gram-hint' opens a hint
+  ...Object.fromEntries([1, 2, 3, 4, 5, 6, 7, 8, 9].map(lv => ['gram-' + lv, { run: gramShot(lv, 3, false) }])),
   'gram-1b': { run: gramShot(1, 41, false, 'tap') },
   'gram-hint': { run: gramShot(5, 8, true) },
+  'gram-8b': { run: gramShot(8, 41, false, 'tap') }, // P2-21: level 8 tap-a-word
+  'gram-7b': { run: gramShot(7, 6, false, 'four') }, // P2-21: level 7 quotation marks, four wide choices
 };
 
 // P2-20 grammar helper: seed picks the item (and kind 'tap' searches for a tap-a-word item); hint opens the hint box
@@ -442,7 +444,7 @@ function gramShot(lv, seed, hint, form) {
   return async p => {
     await p.evaluate(([lv, seed, form]) => {
       let q = genQ('gram', lv, seed);
-      for (let i = 1; form && i < 400 && !(q.cls == 'bwords'); i++) q = genQ('gram', lv, seed + i);
+      for (let i = 1; form && i < 400 && !(form == 'four' ? q.choices.length == 4 : q.cls == 'bwords'); i++) q = genQ('gram', lv, seed + i);
       G = newG({ sk: 'gram', lv, n: 1, pool: [q] }); next();
     }, [lv, seed, form]);
     if (hint) await p.click('#hb');
