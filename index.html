@@ -2484,7 +2484,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S));SAVE_FAILED=fals
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v105'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v106'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -2936,6 +2936,10 @@ const ICONS={
     '<rect fill="var(--ic3,currentColor)" opacity=".4" x="3" y="3" width="18" height="18" rx="3"/>' +
     '<path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M9 3.5V20.5M15 3.5V20.5M3.5 9H20.5M3.5 15H20.5"/>' +
     '<rect x="3" y="3" width="6" height="6" rx="1.5"/><rect x="9" y="9" width="6" height="6" rx="1"/><rect x="15" y="15" width="6" height="6" rx="1.5"/>',
+  'mdoku':
+    '<rect fill="var(--ic3,currentColor)" opacity=".4" x="3" y="3" width="18" height="18" rx="3"/>' +
+    '<path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" ' +
+    'd="M12 3.5V12H20.5M3.5 15H12M5.6 6.6H9.4M7.5 4.7V8.5M15.2 15.7L18.8 19.3M18.8 15.7L15.2 19.3"/>',
   'path-math':
     '<path fill="none" stroke="currentColor" stroke-width="2.4" d="M7 3.5V10.5M3.5 7H10.5M13.5 7H20.5' +
     'M4.5 14.5L9.5 19.5M9.5 14.5L4.5 19.5M13.5 15H20.5M13.5 19H20.5"/>',
@@ -11252,7 +11256,7 @@ function home(first){
   <div class="scroll hm" id="hs"><div class="hm-cols">
    <div class="hm-col">${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
-   <p class="hm-ver">${ico('star', 16)}<span>Star School v105</span></p></div>`);
+   <p class="hm-ver">${ico('star', 16)}<span>Star School v106</span></p></div>`);
   music(true);
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,['💖','✨','⭐']);
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
@@ -14178,7 +14182,7 @@ function grown(){let armed=false;
    <div class="vline"><span class="vtxt">Give a bonus</span><button class="btn xs" id="pt5">+5 min</button><button class="btn xs danger" id="pt0">Empty bank</button></div>
    <label class="tg"><input type="checkbox" id="ptp" ${ptCfg().pause?'checked':''}> Pause game time (games locked)</label></div>
   <div class="card"><div class="tw"><table><tr><th>Skill</th><th>Rounds</th><th>1st try</th><th>Tricky ones</th></tr>${rows}</table></div></div>
-  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v105 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
+  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v106 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
    Storage: ${SAVE_FAILED?'<b style="color:#c0392b">could not save (device storage may be full)</b>':'saving OK'}${SAVE_CORRUPT?'<br><b style="color:#c0392b">The old save could not be read. A fresh start was made and the old data was kept on the device.</b>':''}<br>
    Last errors: ${(S.err||[]).length?(S.err||[]).slice().reverse().map(e=>'<br>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+' '+esc(e.msg)).join(''):'none'}</div></details>
   <div class="card"><label class="tg"><input type="checkbox" id="voice" ${S.voice?'checked':''}> Read questions out loud</label>
@@ -14523,18 +14527,18 @@ function appFiles() {
   ];
 }
 function dataReady() {
-  return appFiles().every(f => f[1] === 'v105');
+  return appFiles().every(f => f[1] === 'v106');
 }
 function dataMissing() {
-  logErr(appFiles().filter(f => f[1] !== 'v105').map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v105)');
+  logErr(appFiles().filter(f => f[1] !== 'v106').map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v106)');
   const again = UI.btn('Try again', { kind: 'primary', size: 'lg', icon: 'replay', id: 'dataretry' });
   view(`<div class="scroll" id="datamiss">${UI.empty('download', 'Star School needs to finish updating. Connect to the internet, then tap Try again.', again)}</div>`);
   $('#dataretry').onclick = () => location.reload();
 }
 </script>
-<script src="bt.v105.js"></script>
-<script src="games.v105.js"></script>
-<script src="data.v105.js"></script>
+<script src="bt.v106.js"></script>
+<script src="games.v106.js"></script>
+<script src="data.v106.js"></script>
 <script>
 if (dataReady()) {
   loadClips();

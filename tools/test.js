@@ -9034,6 +9034,193 @@ run('Sky City P2-13: the new world keeps every star, re-locks nothing and the ma
   return{problems:r.out,note:r.checked+' stop checks against a path without Sky City, map moved on '+r.moved+' of 81 loads'};
 });
 
+// ---- P3-05 MathDoku UI (BRAIN_TEASERS 5.2, 7, 8) ----
+// Every band, levels 1-12 on 15 days. Independent of src/js/79-bt-mdoku.js: the bank entry is decoded here and turned with the
+// dev-time symmetry table (tools/puzzles/mathdoku.js SYMS), the solution is checked as a Latin square, every cage target is
+// recomputed here, uniqueness is counted by verify-banks.js countCages, and the dev-time grader must solve the turned puzzle.
+run('mathdoku UI P3-05',()=>{
+  const vb=require('./puzzles/verify-banks.js'),mdk=require('./puzzles/mathdoku.js');
+  const body=function(){
+    const out=[],bad=m=>{if(out.length<30&&!out.includes(m))out.push(m)};
+    const DAYS=15,T=BT.get('mdoku'),stat={n:0,ms:0,kinds:{},same:0,pairs:0,wrong:0,miss:0,grades:0,xs:{}};
+    if(!T)return{out:['mdoku is not registered'],stat};
+    if(T.bands!=='BCD'||BT.nLevels(T,'B')!==12)bad('mdoku: bands '+T.bands+', '+BT.nLevels(T,'B')+' levels');
+    const OPS={B:'+',C:'+-*',D:'+-*/'};
+    const val=(op,v)=>op==='='?v[0]:op==='+'?v.reduce((a,b)=>a+b,0):op==='*'?v.reduce((a,b)=>a*b,1):op==='-'?Math.abs(v[0]-v[1]):
+      (Math.max(...v)%Math.min(...v)?-1:Math.max(...v)/Math.min(...v));
+    const decode=str=>{const [n,cs,sol,gr]=str.split('|');return{n:+n,sol,gr:+gr,cages:cs.split(',').map(s=>{const m=s.match(/^([0-9a-z]+)([-+*\/=])(\d+)$/);return{cells:[...m[1]].map(ch=>parseInt(ch,36)),op:m[2],t:+m[3]}})}};
+    const prev={};
+    for(const band of 'BCD'){
+      for(let day=1;day<=DAYS;day++){
+        const used=new Set(),grids=new Set();
+        for(let lv=1;lv<=12;lv++){
+          const w='mdoku '+band+lv+' day '+day,o={day:'2026-5-'+day},t0=Date.now();
+          let p;
+          try{p=BT.make('mdoku',band,lv,o)}catch(e){bad(w+': make() threw '+e.message);continue}
+          stat.ms+=Date.now()-t0;stat.n++;
+          if(JSON.stringify(BT.make('mdoku',band,lv,o))!==JSON.stringify(p))bad(w+': make() is not deterministic');
+          // the right slice of the bank: entries 3(L-1)..3L-1; band D 5x5 on levels 1-6, 6x6 on 7-12; a different one each level
+          const N=band==='B'?3:band==='C'?4:lv<=6?5:6,NN=N*N;
+          if(p.n!==N||!(p.k>=3*(lv-1)&&p.k<=3*lv-1))bad(w+': size '+p.n+' bank index '+p.k+', want '+N+' and '+(3*(lv-1))+'..'+(3*lv-1));
+          if(used.has(p.k))bad(w+': two levels of one day use the same bank puzzle');
+          used.add(p.k);
+          const e=PUZ.mathdoku[band][p.k];
+          if(!e){bad(w+': no bank entry '+p.k);continue}
+          const d=decode(e);
+          // the stored puzzle is the bank puzzle under symmetry x (the dev-time table), cages keep op and target
+          if(!Number.isInteger(p.x)||p.x<0||p.x>7){bad(w+': transform '+p.x);continue}
+          stat.xs[p.x]=(stat.xs[p.x]||0)+1;
+          const f=mdk.SYMS[p.x],map=c=>{const [r,k]=f(Math.floor(c/N),c%N,N);return r*N+k};
+          const sol=new Array(NN);for(let c=0;c<NN;c++)sol[map(c)]=d.sol[c];
+          const want=d.cages.map(g=>({c:g.cells.map(map).sort((a,b)=>a-b),o:g.op,t:g.t})).sort((a,b)=>a.c[0]-b.c[0]);
+          if(sol.join('')!==p.s||JSON.stringify(want)!==JSON.stringify(p.cg))bad(w+': the puzzle is not the bank puzzle under its transform');
+          if(p.gr!==d.gr)bad(w+': grade '+p.gr+', bank says '+d.gr);
+          const key=JSON.stringify([p.cg,p.s]);
+          if(grids.has(key))bad(w+': a grid repeats on one day');
+          grids.add(key);
+          // independent: a Latin square, cages cover every cell once, connected, band ops, - and / on two cells, targets recomputed
+          const s=Array.from(p.s,Number);
+          for(let i=0;i<N;i++){
+            const row=new Set(),col=new Set();
+            for(let k=0;k<N;k++){row.add(s[i*N+k]);col.add(s[k*N+i])}
+            if(row.size!==N||col.size!==N||s.some(v=>v<1||v>N))bad(w+': the solution is not a Latin square');
+          }
+          const seen=new Array(NN).fill(0);
+          for(const g of p.cg){
+            g.c.forEach(c=>seen[c]++);
+            if(g.c.some((c,i)=>i&&c<=g.c[i-1]))bad(w+': cage cells not ascending');
+            if(g.o!=='='&&!OPS[band].includes(g.o))bad(w+': op '+g.o+' in band '+band);
+            if((g.o==='-'||g.o==='/')&&g.c.length!==2)bad(w+': '+g.o+' cage of '+g.c.length);
+            if((g.o==='=')!==(g.c.length===1))bad(w+': single cells and = do not match');
+            if(val(g.o,g.c.map(c=>s[c]))!==g.t)bad(w+': cage target '+g.t+g.o+' does not match the solution');
+            const reach=new Set([g.c[0]]),todo=[g.c[0]];
+            while(todo.length){const c=todo.pop();for(const q of [c-N,c+N,c%N?c-1:-1,c%N<N-1?c+1:-1])if(q>=0&&g.c.includes(q)&&!reach.has(q)){reach.add(q);todo.push(q)}}
+            if(reach.size!==g.c.length)bad(w+': a cage is not connected');
+          }
+          if(seen.some(x=>x!==1))bad(w+': cages do not cover every square once');
+          const cages=p.cg.map(g=>({cells:g.c,op:g.o,t:g.t}));
+          const cnt=vb.countCages(N,cages,2);
+          if(cnt!==1)bad(w+': '+cnt+' solutions');
+          const gr=mdk.grade(N,cages);
+          if(!gr.solved||gr.grid.join('')!==p.s)bad(w+': the dev-time grader cannot solve the turned puzzle');
+          if(gr.grade!==p.gr)stat.grades++;
+          // tomorrow's puzzle for the same level is not today's (most days)
+          const pk=band+lv;
+          if(prev[pk]!=null){stat.pairs++;if(prev[pk]===key)stat.same++}
+          prev[pk]=key;
+          // solve(): every empty square once, with its number
+          const g0=MD.info(p).giv,sl=T.solve(p),fill=g0.slice();
+          for(const [c,v] of sl){if(fill[c])bad(w+': solve() fills a full square '+c);fill[c]=v}
+          if(fill.join('')!==p.s||sl.length!==g0.filter(v=>!v).length)bad(w+': solve() does not give the solution');
+          // hints from the start: tiers 1 and 2 change nothing and point at the same square, tier 3 fills exactly that square
+          const st=MD.fresh(p);
+          for(let steps=0;steps<NN;steps++){
+            const before=JSON.stringify(st),b0=MD.vals(p,st);
+            const h1=MD.hint(p,st,1),h2=MD.hint(p,st,2);
+            if(!h1){bad(w+': no hint before the end');break}
+            if(JSON.stringify(st)!==before||h1.fill||h2.fill)bad(w+': hint tier 1 or 2 changed the board');
+            if(h1.cell!==h2.cell||!h2.mark.includes(h2.cell)||h1.mark.length||!h1.house.length||!h1.say||!h2.say||/undefined|NaN/.test(h1.say+h2.say))
+              bad(w+': hint tiers 1-2 '+JSON.stringify([h1,h2]));
+            if(['wrong','cagelast','cage','guess'].includes(h1.kind)&&!p.cg[MD.info(p).cageAt[h1.cell]].c.every(c=>h1.house.includes(c)))bad(w+': hint 1 does not point at the cage');
+            stat.kinds[band+' '+h1.kind]=(stat.kinds[band+' '+h1.kind]||0)+1;
+            if(h1.kind==='guess')bad(w+': the hints had to guess');
+            const h3=MD.hint(p,st,3);
+            if(!h3.fill||h3.fill[0]!==h2.cell||h3.fill[1]!==s[h3.fill[0]]||b0[h3.fill[0]])bad(w+': hint tier 3 '+JSON.stringify(h3.fill));
+            MD.fill(p,st,h3.fill[0]);
+            const changed=MD.vals(p,st).filter((v,i)=>v!==b0[i]).length;
+            if(changed!==1)bad(w+': hint tier 3 changed '+changed+' squares');
+            if(MD.won(p,st))break;
+          }
+          if(!MD.won(p,st)||MD.hint(p,st,1)!==null)bad(w+': tier 3 hints did not finish');
+          if(day>3)continue; // the move checks below on the first days
+          const G=MD.geo(N),I=MD.info(p),c0=g0.indexOf(0);
+          // a clash: a number already in the row or column goes in, shows, counts one mistake; the hint finds it; undo puts it back
+          const s2=MD.fresh(p),wv=G.peers[c0].map(q=>g0[q]).find(v=>v&&v!==s[c0]);
+          if(wv){
+            const b4=JSON.stringify(s2),r=MD.enter(p,s2,c0,wv);
+            if(!r.ok||!r.conf.length||s2.miss!==1||!MD.conflicts(p,MD.vals(p,s2)).has(c0))bad(w+': a clash should show and count '+JSON.stringify(r));
+            const h=MD.hint(p,s2,2);if(h.kind!=='wrong'||h.cell!==c0)bad(w+': the hint does not find the clashing number');
+            stat.wrong++;
+            MD.undo(p,s2);s2.miss=0;if(JSON.stringify(s2)!==b4)bad(w+': undo did not put the board back after a clash');
+          }
+          // a cage miss: an empty cage filled with numbers that clash with nothing but do not make its target: one mistake, the
+          // cage is reported, the hint points into it; undo takes each number back
+          const s3=MD.fresh(p),b3=MD.vals(p,s3);
+          let fillM=null;
+          for(const g of p.cg){
+            if(g.c.length<2||g.c.some(c=>b3[c]))continue;
+            const v=g.c.map(()=>0),rec=i=>{
+              if(i===g.c.length)return val(g.o,v)!==g.t;
+              for(let x=1;x<=N;x++){
+                if(G.peers[g.c[i]].some(q=>b3[q]===x))continue;
+                if(g.c.slice(0,i).some((q,j)=>v[j]===x&&G.peers[q].includes(g.c[i])))continue;
+                v[i]=x;if(rec(i+1))return true;
+              }
+              return false;
+            };
+            if(rec(0)){fillM=[g,v.slice()];break}
+          }
+          if(fillM){
+            const [g,v]=fillM,b4=JSON.stringify(s3);let r;
+            g.c.forEach((c,i)=>{r=MD.enter(p,s3,c,v[i])});
+            const ci=I.cageAt[g.c[0]];
+            if(!r.ok||r.conf.length||r.cage!==ci||r.made||!r.miss||s3.miss!==1||!MD.misses(p,MD.vals(p,s3)).includes(ci))bad(w+': a cage miss should show and count once '+JSON.stringify(r));
+            const h=MD.hint(p,s3,1);if(h.kind!=='wrong'||!g.c.includes(h.cell))bad(w+': the hint does not point into the missed cage');
+            stat.miss++;
+            g.c.forEach(()=>MD.undo(p,s3));s3.miss=0;if(JSON.stringify(s3)!==b4)bad(w+': undo did not put the board back after a cage miss');
+          } // (a few 3x3 grids have no empty cage that can be filled wrong without a clash)
+          // a right number goes in; a given takes nothing
+          const r2=MD.enter(p,s2,c0,s[c0]);
+          if(!r2.ok||r2.conf.length||MD.vals(p,s2)[c0]!==s[c0])bad(w+': the right number was not placed');
+          const gi=g0.findIndex(Boolean);
+          if(gi>=0&&!MD.enter(p,s2,gi,s[c0]).ign)bad(w+': a given square took a number');
+          // notes (C, D): a mark goes in, a number placed in its line clears that mark, undo brings it back; none in B
+          if(MD.notesOn(p)){
+            const free=MD.vals(p,s2).map((v,i)=>v?-1:i).filter(i=>i>=0),a=free[0],q=free.find(i=>i!==a&&G.peers[a].includes(i));
+            if(q!=null){
+              const v=s[q];MD.note(p,s2,a,v);
+              if(!(s2.m[a]&(1<<(v-1))))bad(w+': the note did not go in');
+              MD.enter(p,s2,q,v);
+              if(s2.m.length&&s2.m[a]&(1<<(v-1)))bad(w+': placing a number did not clear it from the notes of its row and column');
+              MD.undo(p,s2);
+              if(!(s2.m[a]&(1<<(v-1)))||MD.vals(p,s2)[q])bad(w+': undo did not bring back the note');
+            }
+            if(!MD.note(p,s2,c0,1).ign)bad(w+': a note went into a filled square');
+          }else if(!MD.note(p,s2,MD.vals(p,s2).indexOf(0),1).ign)bad(w+': notes in band B');
+          // a hint fill locks the square: no undo or erase can take it away
+          const h3=MD.hint(p,s2,3);MD.fill(p,s2,h3.fill[0]);
+          if(!MD.erase(p,s2,h3.fill[0]).ign||MD.vals(p,s2)[h3.fill[0]]!==s[h3.fill[0]])bad(w+': a hinted square could be erased');
+          // saved state round trip (puzzle and state through JSON, as S.bt.cur is); damaged states do not fit
+          const back=JSON.parse(JSON.stringify(s2)),pb=JSON.parse(JSON.stringify(p));
+          if(!MD.fit(pb,back)||JSON.stringify(back)!==JSON.stringify(s2)||!MD.fit(p,MD.fresh(p)))bad(w+': a saved state does not fit after a round trip');
+          if(JSON.stringify(MD.hint(pb,back,2))!==JSON.stringify(MD.hint(p,s2,2)))bad(w+': a restored state gives another hint');
+          const fr=MD.vals(p,s2).indexOf(0),dmg=[['short v',Object.assign({},back,{v:back.v.slice(1)})],
+            ['a digit too big',Object.assign({},back,{v:back.v.slice(0,fr)+(N+1)+back.v.slice(fr+1)})],['bad notes',Object.assign({},back,{m:[1,2]})],
+            ['sel outside',Object.assign({},back,{sel:NN})],['no undo list',Object.assign({},back,{h:null})],['a bad undo step',Object.assign({},back,{h:[[[NN,0,0]]]})],
+            ['null',null],['a string','x'],['another puzzle',MD.fresh({n:N===3?4:3,b:'C',cg:[{c:[0],o:'=',t:1}]})]];
+          if(gi>=0)dmg.push(['a given overwritten',Object.assign({},back,{v:back.v.slice(0,gi)+'1'+back.v.slice(gi+1)})],['a hint on a given',Object.assign({},back,{hn:[gi]})]);
+          for(const [m,x] of dmg)if(MD.fit(p,x))bad(w+': a damaged state fits ('+m+')');
+        }
+      }
+    }
+    for(const k of ['B last','B cagelast','C cage','D cage','D hidden'])if(!stat.kinds[k])bad('no '+k+' hint seen');
+    if(!stat.kinds['D inline']&&!stat.kinds['D pair'])bad('no elimination hint (cage in a line, naked pair) seen in band D');
+    if(!stat.wrong||!stat.miss)bad('no clash or cage miss was checked');
+    if(Object.keys(stat.xs).length!==8)bad('not all 8 rotations and mirrors were used: '+Object.keys(stat.xs));
+    if(MD.spoken('12× in two squares: 2 + 3 = 5')!=='12 times in two squares: 2 plus 3 equals 5')bad('spoken(): '+MD.spoken('12× in two squares: 2 + 3 = 5'));
+    return{out,stat};
+  };
+  const r=eval(js+';('+body.toString()+')()');
+  const s=r.stat,p=r.out;
+  // 3 bank puzzles x 8 forms a level: about 1 in 24 next days show the same grid by chance
+  if(s.pairs&&s.same/s.pairs>0.08)p.push('the same level gives the same puzzle on the next day '+s.same+' times of '+s.pairs);
+  const avg=s.n?s.ms/s.n:0;
+  if(avg>5)p.push('make() takes '+avg.toFixed(1)+' ms on average (limit 5 ms)');
+  const k=Object.entries(s.kinds).map(([a,b])=>a+' '+b).join(', ');
+  return{problems:p,note:s.n+' puzzles (3 bands x 12 levels x 15 days), one solution each (countCages); next-day repeats '+s.same+'/'+s.pairs+
+    '; grader grade differs after turning '+s.grades+'; clash and cage-miss moves '+s.wrong+'/'+s.miss+'; hint steps: '+k};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){

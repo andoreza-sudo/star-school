@@ -134,8 +134,18 @@ zoom box, where a near miss is put right with one 48 px tap (every square has a 
 **Runtime variety**: the 8 rotations and mirrors of the grid (symbol permutation is not allowed because of the arithmetic).
 
 **UI**: same grid and pad as sudoku (shared code). The cage label sits in the top-left cell of each cage; cage borders are thick. When a cage is full and wrong, its label turns amber.
+As built (P3-05, `src/js/79-bt-mdoku.js`, own code modelled on the sudoku screen rather than shared, so sudoku stays untouched): the
+grid is drawn as buttons with an svg on top for the lines (thin inside a cage, thick between cages); single-cell cages are givens
+printed in ink. Nothing is judged right or wrong while playing: a number already in its row or column is a clash (amber, dashed
+ring, warning mark, one mistake), and a full cage that misses its number turns its label amber with a warning mark while the line
+says why ("2 + 3 = 5, but this cage needs 6. Change a number.", one mistake). Erase and Undo in every band, Notes in C and D.
+Variety: one of the level's three bank puzzles and one of the 8 rotations and mirrors, from the seeded rnd. Squares stay at least
+48 px at 380x780 for 6x6 (56 px), so no zoom box is needed.
 
 **Hints**: 1) points to the cage with the fewest possibilities. 2) lists the number sets that can make that target ("6 with × in two cells: 1 and 6, or 2 and 3"). 3) fills one cell.
+As built: the steps follow the bank grader: a wrong number first, then a cage with one gap its arithmetic fixes, a row or column
+with one gap, a cage single (the cage with the fewest ways to make it first: "Only 1 and 4 make 3− in two squares. 4 is already
+in this square's row or column, so it is 1."), a hidden single, then a cage in a line or a naked pair until a single shows.
 
 ### 5.3 Logic Grid
 
