@@ -406,6 +406,10 @@ const SCREENS = {
   'es-frases-map': { run: async p => { await p.evaluate(() => { S.unlockAll = true; pathMap('es', NODES.es.findIndex(n => n.wid === 'e_frases')); }); } },
   ...Object.fromEntries([['phrase', 1, 3], ['phrase', 2, 4], ['art', 1, 5], ['art', 2, 6], ['art', 2, 9], ['ser', 1, 4], ['ser', 2, 5], ['ser', 3, 6], ['gusta', 1, 3], ['gusta', 2, 4], ['sent', 1, 5], ['sent', 2, 6]].map(([u, lv, sd]) =>
     ['es-frases-' + u + lv + (u === 'art' && sd === 9 ? 'b' : ''), { run: async p => { await p.evaluate(([u, lv, sd]) => { G = newG({ sk: 'es_' + u, lv, n: 1, pool: [genQ('es_' + u, lv, sd)] }); next(); }, [u, lv, sd]); } }])),
+  // P2-35 Los Cuentos: the world map and one seeded question per level (the dialogue panel above the question; the last one with no Spanish voice)
+  'es-cuentos-map': { run: async p => { await p.evaluate(() => { S.unlockAll = true; pathMap('es', NODES.es.findIndex(n => n.wid === 'e_cuentos')); }); } },
+  ...Object.fromEntries([[1, 'es-MX'], [2, 'es-MX'], [3, 'es-MX'], [3, 'en-US']].map(([lv, v]) =>
+    ['es-cuentos-q' + lv + (v === 'en-US' ? '-novoice' : ''), { run: async p => { await p.evaluate(`(${ES_FX.install})(['${v}'])`); await p.evaluate(lv => { G = newG({ sk: 'es_story', lv, n: 1, pool: [genQ('es_story', lv, 11)] }); next(); }, lv); } }])),
   // P2-33 La Ciudad: the map opened on the world, and one seeded question per unit and level (cap:1 shows the English under the picture)
   'es-ciudad-map': { run: async p => { await p.evaluate(() => { S.unlockAll = true; pathMap('es', NODES.es.findIndex(n => n.wid === 'e_ciudad')); }); } },
   ...Object.fromEntries([['place', 1], ['place', 2], ['trans', 1], ['verb', 1], ['verb', 2], ['adj', 1], ['adj', 2]].map(([u, lv]) =>

@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** P2-35, P4-07, P4-09, P4-12, P4-14, P4-16, P5-07
+**Next up:** P4-07, P4-09, P4-12, P4-14, P4-16, P5-07
 
-**Current version:** v123
+**Current version:** v126
 
 ## Chunk status
 
@@ -102,6 +102,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P3-12 v121
 - P3-15 v122
 - P2-34 v123
+- P2-35 v126
 
 ## Handoff notes
 
@@ -384,6 +385,15 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-11) Icons wanted from P4-03: `balloon` (Bonus game, today `gamepad`), `sparkle` / `confetti`, `unlock` (open padlock for "Next stop unlocked", today `map`), `zap` (a lightning with a spark for boss hits; today `bolt`), `sticker` (single sticker for the prize row), `medal` (the prize rosette as an icon), `heart-half` (boss life bar), `chest` (the treasure chest at icon size, e.g. for the round track where renderQ shows the gift emoji).
 
 ## Log
+
+### P2-35 Mini dialogues: Spanish world Los Cuentos (v126, 2026-11-11, Claude)
+- What changed (CURRICULUM S-story and 2.3 row 8, ROADMAP P2-35): one new Spanish skill `es_story` (3 levels) and the world `{id:'e_cuentos', n:'Los Cuentos', g:-1}` after `e_frases` (last in the Spanish path): stops `es_story` 1-3 ("Mini Stories", "Stories: Pictures", "Stories: Spanish") plus the automatic boss. Saves are keyed by stop id; no format change. `es_story` was already in the report card's "Spanish sentences" strand.
+- Data: new `src/data/d-es-story.js` (`ES_STORY`, format in its header; it also makes the skill). 12 original dialogues of 4-5 short lines between two named speakers (two children, or a child and Mamá, Papá, Abuela, Abuelo or La maestra): meeting, morning at school, the market, a lost pencil, the park, grandma's house, pets, the beach, off to school, ages, bedtime, the library. Three questions each (36): who (9), what (8), where (6), how (4), reply (6, "which reply fits"). Latin American Spanish, NFC. Words come from the units and ES_GRAM; the 17 that are new (quién, quiero, quieres, quiere, aquí, también, con, tu, para, dice, tiempo, color, animales, al, final, cansada, asustada) are in the explicit `newWords` list, which the test checks both ways.
+- Generators: one marked block "P2-35 mini dialogues" at the end of `src/js/34-gen-es.js` (`stQ`, `genEsStory`, `esStoryRound`). The skill has a `round` hook: a round is two dialogues (least recently shown first, `bankChoose`), each with its three questions in order, 6 questions. The dialogue stays in the passage panel above every question: `bankCtx` (37-bank.js) takes `ctx.html` and draws a panel with each line's speaker name, the Spanish text and a 48 px speak button (`data-sayes`, Spanish voice); Hide/Show works like a story. Level 1: question and answers in English (a who question quotes the line: "Who says: ..."). Level 2: question in Spanish, picture answers (numerals and colour swatches where they fit; a who answer is a face with the name under it). Level 3: Spanish question and Spanish text answers. Three choices, one right; the right answer is in the line the question points to and no wrong answer is (checked by the test). Hints point at the line ("Read the third line again. Which place do you find in it?"; a who hint quotes the line) and never hold the answer. After a right answer the line is read in Spanish. With no Spanish voice `esQFix` (12-speech.js) now also removes the line buttons (the text is already on screen) and keeps the English "Hear it" on level 1; the grown-up note shows once as before. CSS: the `.dl-*` rules and `.choices.pics.dlg` at the end of `src/css/38-bank.css`.
+- Tests (test.js): "Spanish Los Cuentos P2-35": 12 dialogues of 2-6 lines, two named speakers, NFC, every word in the units, ES_GRAM, the names or `newWords` (and no stale or already-taught `newWords` entry), 36 questions, all five types, each right answer found in its line and no wrong answer in it, a who answer is the speaker of the quoted line (said once), allow-list pictures, distinct answers, 3,000 seeded questions per level through `kindProblems` (three choices, one right, level rules for English, pictures and Spanish, voice flags, panel markup with a speak button per line, hints never hold the answer, every one of the 36 questions reached), 120 rounds (two dialogues, in order), the P2-30 hash of the old stops, world and stop order by id, save safety on the six fixtures with the path ended at `e_cuentos` while it runs. Smoke (`// P2-35` block): Los Cuentos opened by id, a level 1 round played with real taps at 380x780 (panel open above each question, a speak button per line at 48 px that speaks es-MX, question and choices on screen, stars saved), level 2 pictures, level 3 with no Spanish voice (no buttons, lines still shown, a tap answers), 48 px targets, no sideways scroll. Shots `es-cuentos-level1-panel`, `-level2-pictures`, `-level3-novoice` (smoke) and `es-cuentos-map`, `-q1`, `-q2`, `-q3`, `-q3-novoice` (shots.js).
+- Test expectations changed: see the Merge line (the P2-34 save-safety check says the path ends at `e_frases` while P2-34 runs; it still passes because it cuts the world list there).
+- Checklist 7.1: [x] chunk files [x] VER v126 (provisional) [x] build [x] test.js [x] smoke.js [x] screenshots [x] no network [x] no new emoji [x] PROGRESS entry [x] one commit (not pushed).
+- Merge: built on a parallel branch; renumber VER at merge (rebuild, `git add -A`). Conflicts to expect: `42-paths.js` es worlds (put `e_cuentos` after `e_frases`), `37-bank.js` `bankCtx` and `12-speech.js` `esQFix` (small edits), `src/css/38-bank.css` tail, `34-gen-es.js` tail, the new data file sorts before `d-es.js` (fine: it reads only `SK` while loading), `tools/test.js`, `tools/smoke.js` and `tools/shots.js` tails.
 
 ### P2-34 Phrases and grammar: Spanish world Las Frases (v117, 2026-11-11, Claude)
 - What changed (CURRICULUM S-gram and 2.3 row 7, ROADMAP P2-34): five new Spanish skills and the world `{id:'e_frases', n:'Las Frases', g:-1}` after `e_ciudad`, stops in CURRICULUM order: es_phrase 1-2, es_art 1-2, es_ser 1-3, es_gusta 1-2, es_sent 1-2 (11 stops plus the automatic boss; titles 22 letters or fewer). Saves are keyed by stop id; no format change. The skills were already in the report card's "Spanish sentences" strand.

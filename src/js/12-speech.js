@@ -8,9 +8,10 @@ function esVoice(){let vs=[];try{vs=speechSynthesis.getVoices()}catch(e){}return
 let ESNOTE=0; // the grown-up note shows once per session
 function esNote(){if(ESNOTE)return;ESNOTE=1;fb('No Spanish voice on this tablet. Grown-ups: add one in the tablet’s text-to-speech settings. The words are shown to read.','info long',5000)}
 // after a Spanish question is drawn: with no Spanish voice, the speaker button becomes the word shown big and "Hear it" goes away
-function esQFix(q){if(!q||q.lang!='es'||esVoice()!='no')return;
-  $$('[data-sayes]').forEach(b=>{const d=document.createElement('div');d.className='esbig';d.textContent=b.dataset.sayes;b.replaceWith(d)});
-  const k=$('#spk');if(k)k.style.display='none';esNote()}
+function esQFix(q){if(!q||!(q.lang=='es'||q.dl)||esVoice()!='no')return;
+  // P2-35: a dialogue line (.dl-b) already shows its text beside the button, so the button just goes; an English question keeps "Hear it"
+  $$('[data-sayes]').forEach(b=>{if(b.classList.contains('dl-b')){b.remove();return}const d=document.createElement('div');d.className='esbig';d.textContent=b.dataset.sayes;b.replaceWith(d)});
+  const k=$('#spk');if(k&&q.lang=='es')k.style.display='none';esNote()}
 function say(t,btn,lang,q){if(lang=='es'&&esVoice()=='no'){esNote();if(btn)btn.classList.remove('talking');return}if(!canSpeak()){if(btn)noVoice(btn);return}
   try{if(!q)speechSynthesis.cancel();const es=lang=='es',u=new SpeechSynthesisUtterance(String(t).replace(/−/g,' minus '));u.rate=es?.8:.88;u.pitch=1.1;u.lang=es?'es-MX':'en-US';
   const vs=speechSynthesis.getVoices(),v=es?(vs.find(v=>/^es[-_](MX|US)/i.test(v.lang))||vs.find(v=>/^es/i.test(v.lang))):(vs.find(v=>/^en[-_]US/i.test(v.lang))||vs.find(v=>/^en/i.test(v.lang)));if(v)u.voice=v;
