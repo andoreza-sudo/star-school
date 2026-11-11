@@ -63,7 +63,7 @@ for(const id in SK){for(let lv=1;lv<=SK[id].max;lv++)for(let i=0;i<3000;i++){
   for(const c of q.choices){if(BADHTML.test(c.l+' '+c.v))GEN.html.push(w+': choice has undefined/NaN');if(BAD.test(c.v))GEN.gen.push(w+': BAD word '+c.v)}
  }
  else if(q.kind=='build'){if(!q.tiles||q.tiles.length<q.word.length)GEN.gen.push(w+': too few tiles')}
- else if(q.kind=='tap'){for(const x of kindProblems(q))GEN.gen.push(w+': '+x)}
+ else if(q.kind=='tap'||q.kind=='order'){for(const x of kindProblems(q))GEN.gen.push(w+': '+x)}
  else if(q.kind=='match'){if(!q.items||!q.opts||q.items.length<3||q.items.length>5)GEN.gen.push(w+': bad match pairs')}
  else if(q.kind=='spell'){for(const x of kindProblems(q))GEN.gen.push(w+': '+x)}
  else GEN.gen.push(w+': unknown kind '+q.kind);
@@ -2534,7 +2534,7 @@ run('phonics P2-18: sight 4-5, r-controlled and vowel-team picture words, 3,000 
     }
     // map: CURRICULUM 2.2 order
     const stops=id=>NODES.read.filter(n=>n.wid==id&&n.sk!='boss').map(nid).join(' ');
-    if(stops('r_space')!=='pic4 build4 sight4 pic5 build5 spell3')bad('r_space stops: '+stops('r_space'));
+    if(stops('r_space').replace(/ sent\d/g,'')!=='pic4 build4 sight4 pic5 build5 spell3')bad('r_space stops: '+stops('r_space'));
     if(!stops('r_workshop').startsWith('sight5 pic6 build6'))bad('r_workshop stops: '+stops('r_workshop')); // later chunks add stops after these (P2-20: gram2 gram3)
     const ids=PATHS.read.worlds.map(w=>w.id),iw=ids.indexOf('r_workshop');
     if(ids[iw-1]!=='r_space'||ids[iw+1]!=='r_summit'||PATHS.read.worlds[iw].g!==2)bad('r_workshop must be grade 2, between r_space and r_summit: '+ids);
@@ -4013,8 +4013,8 @@ run('Fraction Forest P2-07: stops added to m_frac keep every star, a finished fo
         if(!worldFinished('math',wi))bad.push(name+': forest no longer finished');
         if(name.includes('midway')){
           if(curNew!==curOld||newIds.includes(curNew))bad.push(name+': current stop '+curOld+' -> '+curNew);
-        }else if(curOld!=='boss_m_frac'||curNew!==newIds[0]){
-          // every stop of the path was passed: the old map opened on the last stop; curNode's last resort now offers the first NEW stop (the only stop left)
+        }else if(curOld!=='boss_m_frac'||curNew!==curOld){
+          // every stop of the path was passed: the map keeps opening where it did (since P2-24 curNode's last resort never picks a NEW stop)
           bad.push(name+': current stop '+curOld+' -> '+curNew);
         }
       }else{
@@ -4555,6 +4555,185 @@ run('comprehension P2-25: Word Workshop stops comp 3 and info 1, no star moves, 
   if(/#[0-9a-fA-F]{3,8}\b/.test(blk))bad.push('37-comp.js has a raw hex colour');
   if(/Math\.random/.test(blk))bad.push('37-comp.js uses Math.random');
   return{problems:bad,note:r.checked+' stop checks against a map without the two stops, current stop moved on '+r.moved+' of 36 loads (only mid-world)'};
+});
+
+// ---- P2-24 sentences (sent 3-5): data, one right answer, 3,000 samples per level, stops, saves ----
+run('sentences P2-24: unscramble has one order, cloze has one word, 3,000 samples per level, stops, old saves keep every star',()=>{
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const body=function(){
+    const out=[],b=m=>{if(out.length<25&&!out.includes(m))out.push(m)};
+    S.name='Ava';S.buddy='Ben';G={built:[]};
+    for(const lv of [3,4,5])if(SK.sent.max<5||typeof SK.sent.gen!=='function')b('sent needs levels up to 5');
+    const wordsOf=s=>s.toLowerCase().split(/[^a-z']+/).filter(Boolean);
+    const rude=s=>wordsOf(s).some(w=>BAD.test(w));
+    // ---- 1. level 3 data: 40 sentences, 4-6 words, roles prove one order ----
+    // the sentence shapes this chunk writes, as role strings; a shuffle that also fits one is a second right answer
+    const STATEMENT=new Set('DNVA DJNVA DNCJ DNCYJ DJNCJ PVDN PVDJN MVDN MVDJN PXVA PXVDN PXVDJN DNXVA NXVA PVTV PVRDN FVDN VRDN VADN PCYJ MCYJ PCJ DNVRO PXVO PXVM PCDJN'.split(' '));
+    const QUESTION=new Set('XPVDN XPVA XPVJN CDNJ WCDN WCDJN WXPV WXVO CPDN'.split(' '));
+    if(SENT_UN.length!==40)b('level 3 has '+SENT_UN.length+' sentences, not 40');
+    const perms=a=>a.length<2?[a]:a.flatMap((x,i)=>perms([...a.slice(0,i),...a.slice(i+1)]).map(r=>[x,...r]));
+    const seenS=new Set();
+    for(const [s,r] of SENT_UN){
+      const ws=s.split(' '),w=s+': ';
+      if(seenS.has(s))b(w+'twice');seenS.add(s);
+      if(ws.length<4||ws.length>6)b(w+ws.length+' words');
+      if(r.length!==ws.length)b(w+'role string has '+r.length+' letters for '+ws.length+' words');
+      if(!/^[A-Z]/.test(ws[0]))b(w+'first word not capital');
+      if(!/[.!?]$/.test(s))b(w+'no end mark');
+      ws.slice(1).forEach((x,i)=>{if(/^[A-Z]/.test(x)&&x!=='I'&&r[i+1]!=='M')b(w+'a middle word is capital: '+x)});
+      if(new Set(ws.map(x=>x.toLowerCase().replace(/[^a-z]/g,''))).size!==ws.length)b(w+'a word twice (tiles would look the same)');
+      if(rude(s))b(w+'BAD word');
+      if(/[^A-Za-z .!?',]/.test(s))b(w+'odd character');
+      const q=/\?$/.test(s),G0=q?QUESTION:STATEMENT;
+      if(!G0.has(r))b(w+'role string '+r+' is not a known '+(q?'question':'statement')+' shape');
+      // every order of the middle words (first word and end mark stay put, as the tiles show them) that fits a known shape
+      const mid=ws.map((x,i)=>i),fit=[];
+      for(const p of perms(mid.slice(1,-1))){
+        const o=[0,...p,ws.length-1],role=o.map(i=>r[i]).join('');
+        if(G0.has(role))fit.push(o.join(''));
+      }
+      if(fit.length!==1||fit[0]!==mid.join(''))b(w+'orders that fit: '+fit.length+' ('+fit.slice(0,3).join(' ')+')');
+    }
+    // ---- 2. level 4 data: 40 cloze sentences, one blank, 3 different words ----
+    if(SENT_CL.length!==40)b('level 4 has '+SENT_CL.length+' sentences, not 40');
+    const seenC=new Set();
+    for(const [s,a,x,y] of SENT_CL){
+      const w=s+': ';
+      if(seenC.has(s))b(w+'twice');seenC.add(s);
+      if(s.split('___').length!==2)b(w+'needs exactly one blank');
+      if(new Set([a,x,y]).size!==3)b(w+'the three words are not different');
+      if([a,x,y].some(t=>!/^[a-z]+$/.test(t)))b(w+'a word is not plain lowercase');
+      if(rude(s+' '+a+' '+x+' '+y))b(w+'BAD word');
+      if(!/^[A-Z]/.test(s)||!/[.!?]$/.test(s))b(w+'capital or end mark');
+      if(s.split(' ').length>12)b(w+'too long for a first reader');
+    }
+    // ---- 3. level 5 data: 12 stories of 3 sentences; picture nouns have pictures ----
+    if(SENT_ST.length<10)b('only '+SENT_ST.length+' stories');
+    for(const st of SENT_ST){
+      if(st.length!==3||new Set(st).size!==3)b('story '+st[0]+': needs 3 different sentences');
+      for(const s of st){if(!/^[A-Z]/.test(s)||!/[.!?]$/.test(s))b(s+': capital or end mark');if(rude(s))b(s+': BAD word')}
+    }
+    for(const w of SENT_PIC)if(!NOUNS.some(n=>n[0]===w))b('picture noun '+w+' is not in NOUNS');
+    for(const w of SENT_PIC)if(BAD.test(w))b('BAD picture noun '+w);
+    // ---- 4. 3,000 samples per level ----
+    const seen={3:new Set(),4:new Set(),5:new Set()},kinds={},lab={};
+    for(let lv=3;lv<=5;lv++){
+      const w2='sent L'+lv+': ';
+      for(let i=0;i<3000;i++){
+        const q=genQ('sent',lv,i+1);
+        const pr=kindProblems(q);if(pr.length)b(w2+q.label+': '+pr.join('; '));
+        if(q.sk!=='sent'||q.lv!==lv)b(w2+'genQ did not stamp sk/lv');
+        if(typeof q.say!=='string'||q.say.length<8)b(w2+'say missing');
+        if(!q.hint||q.hint.k!=='text'||q.hint.s.length<10)b(w2+'hint missing');
+        if(typeof q.label!=='string'||!q.label||q.label.length>=60)b(w2+'label missing or too long: '+q.label);
+        try{hintHTML(q)}catch(e){b(w2+'hintHTML threw')}
+        const sig=JSON.stringify(q.ans);
+        if(lab[q.label]!==undefined&&lab[q.label]!==sig)b(w2+'one label, two different answers: '+q.label);
+        lab[q.label]=sig;seen[lv].add(q.label);
+        const txt=q.html+' '+q.say+' '+(q.hint.s||'');
+        if(/undefined|NaN|\[object|null/.test(txt))b(w2+'undefined in text');
+        kinds[lv+q.kind+(q.cls||'')]=(kinds[lv+q.kind+(q.cls||'')]||0)+1;
+        if(q.kind=='order'){
+          if(q.items.length!==q.ans.length)b(w2+'order has distractor tiles');
+          if(q.items.every((t,j)=>t.v===q.ans[j]))b(w2+q.label+': tiles already in order');
+          if(new Set(q.items.map(t=>t.v)).size!==q.items.length)b(w2+q.label+': two tiles with one value');
+          if(lv==3){
+            const s=q.ans.join(' ');
+            if(!SENT_UN.some(x=>x[0]===s))b(w2+'answer is not a level 3 sentence: '+s);
+            if(/[a-z]/.test(q.ans[0][0])||!/[.!?]$/.test(q.ans[q.ans.length-1]))b(w2+'first/last tile cue missing');
+          }else if(!SENT_ST.some(st=>JSON.stringify(st)===sig))b(w2+'answer is not a story');
+        }else{
+          const vs=q.choices.map(c=>c.v);
+          if(vs.length!==3||new Set(vs).size!==3||!vs.includes(q.ans))b(w2+q.label+': choices '+vs.join('|'));
+          if(lv==4){
+            const row=SENT_CL.find(r=>[r[1],r[2],r[3]].sort().join()===[...vs].sort().join()&&r[1]===q.ans&&q.after===r[0].replace('___',r[1]));
+            if(!row)b(w2+q.label+': not a level 4 sentence');
+            if(!/id="slot"/.test(q.html)||/___/.test(q.html))b(w2+'blank not shown as a slot');
+          }else{
+            // exactly one sentence names both pictures
+            const has=(t,n)=>wordsOf(t).includes(n),nm=SENT_PIC.filter(n=>has(q.ans,n));
+            if(nm.length!==2)b(w2+q.ans+': answer names '+nm.length+' picture words');
+            for(const v of vs)if(v!==q.ans&&nm.every(n=>has(v,n)))b(w2+v+': a second sentence names both pictures');
+            if(rude(vs.join(' ')))b(w2+'BAD word');
+            if(!/class="emo"/.test(q.html))b(w2+'no picture');
+          }
+        }
+      }
+    }
+    if(seen[3].size!==40)b('level 3 drew '+seen[3].size+' of 40 sentences in 3,000 questions');
+    if(seen[4].size<39)b('level 4 drew '+seen[4].size+' of 40 sentences in 3,000 questions');
+    if(!kinds['5order']||!kinds['5choicewide'])b('level 5 should mix pictures and stories: '+JSON.stringify(kinds));
+    if(JSON.stringify(genQ('sent',3,77))!==JSON.stringify(genQ('sent',3,77)))b('level 3 not reproducible');
+    // levels 1-2 are untouched: still the picture match, from genSent
+    for(let i=0;i<300;i++)for(const lv of [1,2]){
+      const q=genQ('sent',lv,i+1);
+      if(q.kind!=='choice'||q.cls!=='pics'||q.choices.length!==3||!NOUNS.some(n=>n[0]===q.ans))b('sent L'+lv+' changed');
+    }
+    // ---- 5. stops: CURRICULUM 2.2 places sent 3 last in Space Station and sent 4, 5 in Word Workshop ----
+    const stops=id=>NODES.read.filter(n=>n.wid==id&&n.sk!='boss').map(nid);
+    const sp=stops('r_space'),ws=stops('r_workshop');
+    if(sp[sp.length-1]!=='sent3'||sp.filter(x=>/^sent/.test(x)).length!==1)b('sent3 is not the last stop of Space Station: '+sp.join(' '));
+    if(!ws.includes('sent4')||!ws.includes('sent5')||ws.indexOf('sent4')>ws.indexOf('sent5'))b('sent4, sent5 missing or out of order in Word Workshop: '+ws.join(' '));
+    for(const [sk,lv,t] of [['sent',3,'Build Sentences'],['sent',4,'Fill the Gap'],['sent',5,'Sentence Stories']]){
+      const row=PATHS.read.worlds.flatMap(w=>w.nodes).find(x=>x[0]===sk&&x[1]===lv);
+      if(!row||row[2]!==t)b('stop '+sk+lv+' title');
+    }
+    const all=NODES.read.map(nid);
+    if(new Set(all).size!==all.length)b('duplicate stop ids');
+    for(const w of PATHS.read.worlds){const t=w.nodes.map(n=>n[2]);if(new Set(t).size!==t.length)b(w.id+': two stops share a title')}
+    // ---- 6. saves: the reading map without the three new stops against today's, 8 fixtures x 7 grades ----
+    const store={};
+    global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+    const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
+    const NEW=new Set(['sent3','sent4','sent5']),CUR=PATHS.read.worlds;
+    const OLD=()=>CUR.map(w=>({...w,nodes:w.nodes.filter(x=>!NEW.has(x[0]+x[1]))}));
+    const snap=()=>{const o={};NODES.read.forEach((n,i)=>{o[nid(n)]={st:getSt('read',i),open:unlocked('read',i),wid:n.wid}});o._cur=nid(NODES.read[curNode('read')]);return o};
+    const fixtures=[];
+    for(const name of ['fresh','midway','maxed','legacy-single-map','legacy-index-maps','tricky'])fixtures.push([name,fx(name)]);
+    {load(null);const m={};PATHS.read.worlds=OLD();buildNodes('read');NODES.read.forEach(n=>{m[nid(n)]=2});
+      PATHS.read.worlds=CUR;buildNodes('read');fixtures.push(['all-old-passed',JSON.stringify({v:LATEST,mapv:2,name:'Kid',maps:{read:m,math:{},es:{}},grade:2})])}
+    // finished every old stop of Space Station and Word Workshop; boss not beaten
+    {load(null);const m={};PATHS.read.worlds=OLD();buildNodes('read');
+      NODES.read.forEach(n=>{if(n.sk!=='boss')m[nid(n)]=2});
+      PATHS.read.worlds=CUR;buildNodes('read');fixtures.push(['stops-done-no-boss',JSON.stringify({v:LATEST,mapv:2,name:'Kid',maps:{read:m,math:{},es:{}},grade:2})])}
+    fixtures.push(['workshop-midway',JSON.stringify({v:LATEST,mapv:2,name:'Kid',maps:{read:{pic4:2,build4:2,sight4:2,pic5:2,build5:2,spell3:3,sight5:1},math:{},es:{}},grade:2})]);
+    let checked=0;
+    for(const [name,raw] of fixtures)for(const g of [null,-1,0,1,2,3,6]){
+      load(Object.keys(JSON.parse(raw)).length?raw:null);if(g!==null)S.grade=g;
+      const g0=S.grade,tag=name+' g'+g0+': ';
+      PATHS.read.worlds=OLD();buildNodes('read');
+      const before=snap();
+      PATHS.read.worlds=CUR;buildNodes('read');
+      const after=snap(),mapNow=JSON.stringify(S.maps.read);
+      for(const k in before){
+        if(k=='_cur')continue;
+        checked++;
+        if(!after[k]){b(tag+'stop '+k+' vanished');continue}
+        if(before[k].st!==after[k].st)b(tag+k+' stars '+before[k].st+' -> '+after[k].st);
+        if(before[k].st>0&&!after[k].open)b(tag+'passed stop '+k+' is locked');
+        if(before[k].open&&!after[k].open){
+          // the one allowed wait: a boss whose world gained a stop at its end opens once that new stop is played (nothing passed is locked)
+          const bw=/^boss_/.test(k)&&after.sent3&&after[k].wid&&['r_space','r_workshop'].includes(after[k].wid);
+          if(!bw||before[k].st>0)b(tag+k+' re-locked');
+        }
+      }
+      // the map opens where it did, unless it was on a boss that now waits for the new stop at the end of its world
+      const bossWait=/^boss_/.test(before._cur)&&before[before._cur].open&&!after[before._cur].open&&after._cur===(before._cur=='boss_r_space'?'sent3':'sent4');
+      if(before._cur!==after._cur&&!bossWait)b(tag+'the map opens on '+after._cur+', it was '+before._cur);
+      for(const k of NEW)if(after[k].st!==0)b(tag+k+' starts with stars');
+      if(JSON.stringify(S.maps.read)!==mapNow)b(tag+'map changed by building the nodes');
+      // the new stops carry the NEW tag when their world is finished, and are never locked then
+      for(const k of NEW){
+        const i=NODES.read.findIndex(n=>nid(n)===k);
+        if(stopNew('read',i)&&!unlocked('read',i))b(tag+k+' is NEW but locked');
+      }
+    }
+    PATHS.read.worlds=CUR;buildNodes('read');
+    out.checked=checked;
+    return out;
+  };
+  const r=eval(js+';('+body.toString()+')()');
+  return{problems:[...r],note:'3 levels x 3,000 samples, 40 + 40 + 12 items, '+r.checked+' stop checks over 8 fixtures x 7 grades'};
 });
 
 // ---- report ----

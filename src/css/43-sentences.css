@@ -1,0 +1,7 @@
+/* P2-24 sentences: story order (sent 5) puts whole sentences on the order tiles. A tile that holds a .sl span is a full-width row
+   that wraps its words; the three slots above it become full-width rows too, so nothing runs off a 380 px screen. */
+.oslots:has(+ .otiles .sl){flex-direction:column;align-items:stretch;max-width:none;gap:var(--s-2)}
+.oslots:has(+ .otiles .sl) .socket.os{width:100%;min-height:var(--tap);padding:var(--s-1) var(--s-3)}
+.otiles:has(.sl){flex-direction:column;align-items:stretch}
+.piece.ot:has(.sl),.socket.os:has(.sl){display:flex;align-items:center;justify-content:flex-start;text-align:left;white-space:normal;height:auto;min-height:var(--tap)}
+.sl{display:block;font-size:var(--fs-3);line-height:1.25;padding:var(--s-1) 0}

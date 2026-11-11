@@ -1991,6 +1991,70 @@ async function main() {
       await cp25.ctx.close();
     }
 
+    // P2-24 Sentences (sent 3-5) at 380x780: the three new stops sit where CURRICULUM puts them, a 2nd grader plays each round with real
+    //    taps (word tiles into slots, the gap word, a picture sentence, story sentences), sizes checked (48 px or more, no sideways scroll).
+    {
+      const sa = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 });
+      const sp = sa.page;
+      await sp.fill('#nm', 'Sent');
+      await sp.click('.gr[data-g="2"]');
+      await sp.click('#go');
+      await sp.waitForSelector('.game[data-p="read"]');
+      const where = await sp.evaluate(() => {
+        const ids = PATHS.read.worlds.map(w => w.id), at = id => NODES.read.map(nid).indexOf(id);
+        const inW = id => NODES.read[at(id)].wid;
+        const ws = NODES.read.filter(n => n.wid === 'r_space' && n.sk !== 'boss').map(nid);
+        return { s3: inW('sent3'), s4: inW('sent4'), s5: inW('sent5'), lastSpace: ws[ws.length - 1], order: at('sent4') < at('sent5'), n: ids.length };
+      });
+      if (where.s3 !== 'r_space' || where.s4 !== 'r_workshop' || where.s5 !== 'r_workshop' || where.lastSpace !== 'sent3' || !where.order)
+        fail('Sentences stops: ' + JSON.stringify(where));
+      else step('Sentences: sent 3 ends Space Station, sent 4 and 5 sit in Word Workshop');
+      // every level, three questions each; level 5 until both its question types were seen
+      const seenKinds = new Set();
+      for (const id of ['sent3', 'sent4', 'sent5']) {
+        const i = await sp.evaluate(id => NODES.read.map(nid).indexOf(id), id);
+        await sp.evaluate(i => { start('read', i); }, i);
+        await sp.waitForSelector('#prompt');
+        await playRound(sp, 'P2-24 ' + id);
+        await sp.click('#menu');
+        await sp.waitForSelector('#map');
+        await sp.evaluate(i => { start('read', i); }, i);
+        await sp.waitForSelector('#prompt');
+        const most = id === 'sent5' ? 9 : 3; // level 5 mixes two question types: play on until both were seen
+        for (let k = 0; k < most; k++) {
+          await vwait(sp, 500);
+          const sz = await sp.evaluate(() => {
+            const pts = [...document.querySelectorAll('.ch, .ot, .os, .socket')].map(e => Math.min(e.offsetWidth, e.offsetHeight)).filter(x => x > 0);
+            const qa = document.querySelector('.qarea');
+            return { sk: G.q.sk + G.q.lv, kind: G.q.kind, cls: G.q.cls || '', min: Math.min(...pts), wide: document.documentElement.scrollWidth,
+              tall: qa.scrollHeight > qa.clientHeight + 1 };
+          });
+          seenKinds.add(sz.sk + sz.kind + sz.cls);
+          if (sz.min < 48 || sz.wide > 380 || sz.tall) fail('Sentences stop ' + id + ': ' + JSON.stringify(sz));
+          if (k === 0) {
+            await sp.click('#hb');
+            const hint = await sp.evaluate(() => document.querySelector('#hint').innerHTML.length);
+            if (!hint) fail('Sentences stop ' + id + ': empty hint');
+          }
+          const both = seenKinds.has('sent5order') && seenKinds.has('sent5choicewide');
+          await sp.evaluate(() => { window.__q = G.q; });
+          await answer(sp);
+          if (k + 1 >= (id === 'sent5' ? 3 : most) && (id !== 'sent5' || both)) break;
+          await sp.waitForFunction(() => G && G.q !== window.__q, null, { timeout: 8000 });
+        }
+        await sp.evaluate(() => { G.dead = true; });
+        await vwait(sp, 2500); // the last answer's own timers fire into the dead round
+        await sp.evaluate(() => { home(); });
+        await sp.waitForSelector('.game[data-p="read"]');
+      }
+      for (const want of ['sent3order', 'sent4choice', 'sent5choicewide', 'sent5order'])
+        if (!seenKinds.has(want)) fail('Sentences: never saw ' + want + ' (' + [...seenKinds].join(' ') + ')');
+      step('Sentences: unscramble, gap, picture sentence and story order played by taps at 380x780; targets 48 px, no sideways scroll, hints present');
+      network.push(...sa.network);
+      for (const e of sa.errors) fail(e);
+      await sa.ctx.close();
+    }
+
     for (const e of errors) fail(e);
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');
