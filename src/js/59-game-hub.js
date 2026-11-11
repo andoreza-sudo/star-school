@@ -208,9 +208,7 @@ const GH = {
         `<span class="gh-go" aria-hidden="true">${ico(lock ? 'lock' : 'play')}</span></button>`;
     };
     const R_ = n => `<span class="gh-ei">${ico(n, 22)}</span>`;
-    const earn = [['sparkle', 'Unlock a new stop', '+1 min'], ['star', 'Get a perfect score', '+1 min'],
-      ['globe', 'Play a harder world', 'up to +1½ min'], ['crown', 'Beat a boss', '+2 min'], ['review', 'Fix an old mistake', 'bonus seconds'],
-      ['chart', 'Beat your old score', '+½ min'], ['timer', 'Fact Sprint, first one of the day', '+1 min']];
+    const earn = ptEarnList(); // P5-09: the same list as ptRules (58-playtime.js)
     view(`<div class="gh-room"><div class="top tbar gh-top gh-mtop s-play">${UI.ibtn('back', 'Back', { size: 'sm', id: 'back' })}` +
       `<div class="ttl gh-ttl"><span class="gh-tb">${ico('gamepad', 24)}</span><span class="gh-tt"><span class="gh-gn">Game Room</span></span></div>` +
       `${UI.chip('ticket', fmtT(left), { aria: 'Game time', id: 'gtm' })}</div>

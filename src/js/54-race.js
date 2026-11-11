@@ -33,10 +33,10 @@ function race(cat){S.race=S.race||{};const best=S.race[cat]||0;
     else{SFX.wrong();if(el)el.classList.add('wrong');KIND[q.kind].reveal(q);setTimeout(rq,800)}};
   setTimeout(()=>{fb('Ready… GO!','zap');SFX.fanfare();rq()},300);
   RC.iv=setInterval(()=>{if(!RC)return;RC.left--;GFX.bar($('#rbar'),RC.left/60);if(RC.left<=5&&RC.left>0)tone(880,.08,0,'square',.05);
-    if(RC.left<=0){const sc=RC.score,rec=sc>best;stopRace();if(rec)S.race[cat]=sc;const coins=Math.floor(sc/2)+(rec&&sc>0?5:0);S.coins+=coins;if(sc>=5)ptEarn(60);save();
+    if(RC.left<=0){const sc=RC.score,rec=sc>best;stopRace();if(rec)S.race[cat]=sc;const coins=Math.floor(sc/2)+(rec&&sc>0?5:0);S.coins+=coins;const ps=ptRace(cat,sc);if(ps)ptEarn(ps);save();
       rec&&sc>0?(SFX.fanfare(),confetti(40)):SFX.magic();
       const o=GFX.endCard({rec:rec&&sc>0,title:`${sc} in 60 seconds!`,best:`Your best: ${best}`,
-        earn:`${ico('coin',28,'ic-coin')}<span>+${coins}</span>${sc>=5?`${ico('ticket',28)}<span>+1 min</span>`:''}`,
+        earn:`${ico('coin',28,'ic-coin')}<span>+${coins}</span>${ps?`${ico('ticket',28)}<span>+1 min of game time</span>`:sc>=5?`<span>Free practice: the first race each day pays</span>`:''}`,
         btns:UI.btn('Race again',{kind:'primary',size:'lg',wide:true,icon:'replay',id:'ragain'})+UI.btn('Home',{icon:'home',wide:true,id:'rhome'})});
       document.body.appendChild(o);if(S.voice)say(rec&&sc>0?`New record! ${sc}!`:`You got ${sc}!`);
       o.querySelector('#ragain').onclick=()=>{o.remove();race(cat)};o.querySelector('#rhome').onclick=()=>{o.remove();home()}}},1000)}
