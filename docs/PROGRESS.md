@@ -111,6 +111,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P4-16 v130
 - P4-15 v131
 - P5-08 v132
+- G-03 done
 
 ## Handoff notes
 
@@ -413,6 +414,11 @@ Things noticed while working that are outside the current chunk. One line each, 
 
 ## Log
 
+### G-03 Games research (2026-11-11, Claude)
+- What: new `docs/GAMES_RESEARCH.md` for Andy to pick the G-04 games. It sums up what children aged 5 to 11 play most (ESA 2025, Morning Consult 2025, KB&B 2025, Roy Morgan 2025, Ofcom 2025, 2025 download charts from Pocket Gamer.biz and Sensor Tower, Google Play's Kids tab, Teacher Approved criteria and Best of 2025, Common Sense Media), why (competence, choice, sharing; pretend play, collecting, customising), which mechanics are healthy and which to keep out (loot boxes, energy timers, ads, streaks, limited-time offers, leaderboards, endless loops, idle earnings, guilt-tripping characters; JAMA Network Open 2022, FTC 2025, ICO Children's code, UNICEF RITEC 2024).
+- Three original game designs, one page each, all on `GH.reg` with the shared end card, 3-10 minute rounds, touch-only, offline, drawn in object-art style: 1. **Snack Stand** (run a snack stand for one day; animal customers, picture orders, Calm and Busy modes, optional Till change mode; Medium), 2. **Sky Hop** (the child's pet bounces through 24 short cloud obstacle courses; one-touch or free move, stars and time medals, no lives; Large), 3. **Fishing Day** (calm side-view fishing trip, about 30 real fish for a Fish Book, Easy or Pro reel, one true fact per fish; Medium). Recommendation: Snack Stand first, Sky Hop second, Fishing Day as the calm third. Also lists ideas considered and not picked (endless runner, merge/idle, match-3, virtual pet, physics launcher, garden defence, rhythm, online).
+- Limits: the Play Store chart pages could not be opened from the build machine (network), so the chart picture comes from published reports; weaker sources are marked. R-02 is not written yet; its roadmap checklist was used and its findings should be read before G-04.
+- No code changes, no VER bump, no build.
 ### P5-08 Daily missions v2 (v132, 2026-11-11, Claude)
 - What changed: three daily missions drawn from a pool that fits the child, replacing "3 rounds today". New `src/js/55-missions.js` (`MIS`, `hmMissions`). Kinds: round (learning round in the weakest subject: lowest mastery, else least played; always one of the three), other (a round in another subject), perfect (every answer right), sprint (one Fact Sprint, K and up), teaser (one Brain Teaser, only if a puzzle type is offered at the grade), review (only when something is due), mix (Mixed Practice). Seeded by day key, name and grade, kept in `S.day.m` so they are the same all day and new at local midnight.
 - Rewards: each mission gives one sticker, once (marked done first); all three give the old bonus (5 stars, 5 coins, sticker) once, via `S.day.done`. Rounds pay in `finish()` (chest, sticker pop and a "Mission done" card); the sprint end card and the puzzle win card show the lines and stickers (`.mis-win`). The puzzle round counter no longer pays the old mission.
