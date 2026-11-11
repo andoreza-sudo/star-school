@@ -1518,6 +1518,31 @@ Object.assign(SCREENS, {
   'bt-md-win': mdShot(1, 3, { win: true }),
 });
 
+// P3-07 Logic grids: grade g sets the band, level lv is started, then by real taps (tools/lib/bt-lg.js): o.moves ticks of solve(),
+// o.wrong one mark that breaks a clue, o.hint presses of Hint (cooldown skipped), o.used clues struck through, o.win the rest
+const LG_TAPS = require('./lib/bt-lg');
+const lgShot = (g, lv, o = {}) => ({
+  run: async p => {
+    await p.evaluate(([g, lv]) => { window.say = () => {}; S.grade = g; S.bt = {}; BT.start('logic', BT.band(), lv); }, [g, lv]);
+    await p.waitForSelector('#btstage .lg');
+    for (const c of (await LG_TAPS.rest(p)).slice(0, o.moves || 0)) await LG_TAPS.setTo(p, c, '1');
+    for (let i = 0; i < (o.used || 0); i++) await p.click(`.lg-qb[data-q="${i}"]`);
+    if (o.wrong) await LG_TAPS.wrong(p);
+    for (let i = 0; i < (o.hint || 0); i++) {
+      await p.evaluate(() => { BT.act.cd = 0; document.querySelector('#bthint').disabled = false; });
+      await p.click('#bthint');
+    }
+    if (o.win) { for (const c of await LG_TAPS.rest(p)) await LG_TAPS.setTo(p, c, '1'); await p.waitForTimeout(1600); }
+  },
+});
+Object.assign(SCREENS, {
+  'bt-lg-b': lgShot(1, 2, { moves: 1, used: 1 }),
+  'bt-lg-c': lgShot(3, 6, { moves: 2, wrong: true, used: 1 }),
+  'bt-lg-d': lgShot(5, 10, { moves: 3, wrong: true, used: 2 }),
+  'bt-lg-d-hint': lgShot(5, 4, { moves: 2, hint: 2 }),
+  'bt-lg-win': lgShot(5, 1, { win: true }),
+});
+
 async function main() {
   const args = process.argv.slice(2);
   let fixtureArg = null;
