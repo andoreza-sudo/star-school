@@ -1,7 +1,12 @@
 // Smoke test: a bot plays through the built app in headless Chrome with the network blocked.
 // Fresh setup, one full round on each path (answers read from G.q.ans, tapped through the real UI),
 // Game Room, Grown-ups. Fails on any console error, uncaught exception or network request.
-const { launch, openApp } = require('./lib/browser');
+const { launch, openApp, envSpeed } = require('./lib/browser');
+
+// TOOL-01: the app's timers run on a virtual clock (see tools/lib/browser.js). vwait waits `ms` of VIRTUAL time, so a wait
+// that exists to let an app timer finish (stale next(), chest, overlay) lasts as long relative to the app as before.
+// Waits that poll or wait for CSS animations stay real-time page.waitForTimeout.
+const vwait = (page, ms) => page.waitForTimeout(ms / envSpeed());
 
 let failed = 0;
 const step = msg => console.log('- ' + msg);
@@ -66,7 +71,7 @@ async function playRound(page, label, total) {
   await page.click('#chest');
   await page.waitForSelector('#btns', { state: 'visible', timeout: 10000 });
   // a pet growth / hatch overlay may cover the buttons: tap its Yay button when it shows up
-  await page.waitForTimeout(800);
+  await vwait(page, 800);
   const yay = await page.waitForSelector('#yay', { timeout: 4000 }).catch(() => null);
   if (yay) { await yay.click(); step(`${label}: pet grew, overlay dismissed`); }
   step(`${label}: round complete (${n} answers, score ${score}/${total})`);
@@ -132,7 +137,7 @@ async function main() {
     const box = await (await page.$('#gear')).boundingBox();
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
     await page.mouse.down();
-    await page.waitForTimeout(1500);
+    await vwait(page, 1500);
     await page.mouse.up();
     await page.waitForSelector('#ula', { timeout: 3000 });
     step('Grown-ups opened');
@@ -218,6 +223,7 @@ async function main() {
 
     // 8. content bank: the round hook plays one passage with 5 questions, the passage panel opens, closes and scrolls
     //    (demo skills are not on a map, so the step adds a node to the read path by hand)
+    await vwait(page, 2800); // TOOL-01: the number-pad reveal above leaves a pending next() (2.6 s); let it fire before leaving the round
     await page.evaluate(() => home());
     await page.evaluate(() => {
       SK.passdemo = { t: 'Passage demo', e: '📗', area: 'read', max: 1, bank: 'demo', gen: lv => genPassage('demo', lv), round: lv => passageRound('passdemo', 'demo', lv) };
@@ -256,7 +262,7 @@ async function main() {
     // 9. new kinds B (P1-04): the bot plays a sample of each through the real round engine
     const KB = require('./lib/kb-samples.js');
     const kbShow = async name => {
-      await page.waitForTimeout(2800); // the engine's own pending next() from the last sample must fire before a new round starts
+      await vwait(page, 2800); // the engine's own pending next() from the last sample must fire before a new round starts
       await page.evaluate(() => home());
       await page.evaluate(q => { start('math', 0); G.q = q; renderQ(); }, KB[name]);
     };
@@ -349,7 +355,7 @@ async function main() {
       const times = await wp.evaluate(() => {
         pathMap('math', 8);
         const t = [];
-        for (let r = 0; r < 7; r++) { MAPW.math = 6 + (r % 4); const t0 = performance.now(); drawMap('math'); void $('#map').offsetHeight; t.push(performance.now() - t0); }
+        for (let r = 0; r < 7; r++) { MAPW.math = 6 + (r % 4); const rn = window.__realNow || (() => performance.now()); /* TOOL-01: real time, not the virtual clock */ const t0 = rn(); drawMap('math'); void $('#map').offsetHeight; t.push(rn() - t0); }
         return t.sort((a, b) => a - b);
       });
       await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
@@ -365,7 +371,7 @@ async function main() {
     //    (right answers, 48 px targets, no sideways scroll), then gets three of them wrong twice and checks the reveal
     // the number-pad step above leaves the old round's 2.6 s next-question timer running; let it fire before the new round starts
     await page.evaluate(() => home());
-    await page.waitForTimeout(3000);
+    await vwait(page, 3000);
     await page.setViewportSize({ width: 380, height: 780 });
     await page.evaluate(src => { window.__S2 = eval(src)(); }, '(' + require('./kinds-samples').make.toString() + ')');
     const names = await page.evaluate(() => Object.keys(window.__S2));
@@ -442,7 +448,7 @@ async function main() {
       const gb = await (await gp.$('#gear')).boundingBox();
       await gp.mouse.move(gb.x + gb.width / 2, gb.y + gb.height / 2);
       await gp.mouse.down();
-      await gp.waitForTimeout(1500);
+      await vwait(gp, 1500);
       await gp.mouse.up();
       await gp.waitForSelector('.gr[data-g="3"]', { timeout: 3000 });
       await gp.click('.gr[data-g="3"]');
@@ -825,7 +831,7 @@ async function main() {
         if (!sz.n || sz.min < 48 || sz.over > 0 || !sz.hint || !sz.say) fail(`ABC Beach ${id} question at 380x780: ` + JSON.stringify(sz));
         await pp.evaluate(() => { G.dead = true; home(); });
         await pp.waitForSelector('.game[data-p]');
-        await pp.waitForTimeout(2800); // let the old round's timers finish
+        await vwait(pp, 2800); // let the old round's timers finish
       }
       step('ABC Beach: abc 1-4, syl 1-2, sound 3-4 show buttons of 48 px or more with a hint and spoken text, nothing wider than 380 px');
       network.push(...pa.network);
@@ -895,7 +901,7 @@ async function main() {
       for (const [i, id] of stops) {
         await tp.evaluate(i => { start('math', i); }, i);
         await tp.waitForSelector('#prompt');
-        await tp.waitForTimeout(600);
+        await vwait(tp, 600);
         const sz = await tp.evaluate(() => {
           const pts = [...document.querySelectorAll('.ch, #prompt [data-v]')].map(e => Math.min(e.offsetWidth, e.offsetHeight));
           return { kind: G.q.kind, n: pts.length, min: Math.min(...pts), wide: document.documentElement.scrollWidth, tall: document.querySelector('.qarea').scrollHeight > document.querySelector('.qarea').clientHeight + 1 };
@@ -904,7 +910,7 @@ async function main() {
         const hint = await tp.evaluate(() => ({ len: document.querySelector('#hint').innerHTML.length, letters: /[A-Za-z]/.test(document.querySelector('#hint').innerText) }));
         await answer(tp);
         await tp.evaluate(() => { G.dead = true; }); // the round's own next() timer fires into this dead round, not into the next stop
-        await tp.waitForTimeout(1500);
+        await vwait(tp, 1500);
         seen.push(id);
         if (sz.n < 2 || sz.min < 48 || sz.wide > 380 || sz.tall || !hint.len || hint.letters) fail('Tiny Town stop ' + id + ': ' + JSON.stringify({ ...sz, ...hint }));
       }

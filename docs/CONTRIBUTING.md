@@ -122,6 +122,8 @@ node tools/shots.js home map question   # screenshots to tools/out/ at 600x960, 
 bash tools/check.sh              # all of the above plus size report                                (after P0-01)
 ```
 
+Smoke runs on a virtual clock (fixed day 2026-06-15 10:00, timers and `Date` run at `SMOKE_SPEED` times real time, default 8, see `tools/lib/browser.js`). Run `SMOKE_SPEED=1 node tools/smoke.js` for the real clock.
+
 Rules:
 - Never edit `index.html`, `sw.js` or `manifest.json` by hand. They are build output. Edit `src/` or `tools/build.py`, then build.
 - Never open `index.html` in an editor or print it: it contains two base64 fonts.

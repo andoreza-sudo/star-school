@@ -206,6 +206,13 @@ Things noticed while working that are outside the current chunk. One line each, 
 
 ## Log
 
+### TOOL-01: Faster smoke (no app change) (2026-11-11, Claude)
+- Why: a full smoke run took 10-20 minutes and a run crossing midnight broke the Daily Review counts.
+- `tools/lib/browser.js` injects a virtual clock (context.addInitScript, before app code): `Date` starts at 2026-06-15 10:00 local and runs at SMOKE_SPEED (default 8) times real time; `setTimeout` / `setInterval` delays and `performance.now` are scaled the same; `requestAnimationFrame` and CSS animations are untouched. `SMOKE_SPEED=1` = the real clock (no faking at all). shots.js uses the same helper (fixed day; screenshots checked).
+- Fixtures only use the day key "2000-1-1", so none needed changes. smoke.js tweaks (all marked TOOL-01): `vwait(page, ms)` (virtual-time wait) for the 8 waits that wait on app timers; an extra `vwait 2800` before the passage step (a stale next() from the number-pad reveal fires mid-round otherwise); the map-draw timing uses the real clock (`window.__realNow`). No step skipped or loosened.
+- Wall clock (run alone, machine busy with other runs): smoke 574 s before (SMOKE_SPEED=1), 230 s after; check.sh about 580 s before, 236 s after. Speed 20 was faster (197 s) but broke the reveal steps, so 8 stays.
+- Tests: check.sh ok, smoke passed 3 runs in a row at speed 8.
+
 ### P4-13b: Object art set A redrawn, new illustration style (v69, 2026-11-11, Claude)
 - Why: the owner found the P4-13 drawings flat and dated ("1999 graphics"); the cause was mostly the old 6.5 rule (flat two-tone, under 900 bytes, no shading). This chunk resets the style and redraws all 40 set A pictures with the same names (`picFor`/`picArt`/`ART` unchanged).
 - New style (DESIGN_SYSTEM 6.5 rewritten): soft chunky shapes with real volume; up to four tones per colour area from one hue (base, shade lower right, highlight upper left, deep accent for creases and insides); light always from the top left; no outlines except a deep-tone edge on white or cream objects; faces only on animals, the sun and the star; 3/4 view for boxy things; every picture must read as THE word at 24 px, 48 px and 1em. Gradients are not used (repeated pictures on one screen would repeat ids); volume comes from layered tonal shapes and a few opacity glints.
