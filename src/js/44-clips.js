@@ -11,7 +11,7 @@ function playClip(kind){const cs=CLIPS.filter(c=>c.kind==kind);if(!cs.length||!S
   let b=(BAG[kind]||[]).filter(id=>cs.some(c=>c.id==id));
   if(!b.length){b=shuffle(cs.map(c=>c.id));if(b.length>1&&b[0]==BAG['last_'+kind])b.push(b.shift())}
   const id=b.shift();BAG[kind]=b;BAG['last_'+kind]=id;const c=cs.find(x=>x.id==id);
-  try{speechSynthesis.cancel();const a=new Audio(c.url);a.play().catch(()=>{});return true}catch(e){return false}}
+  try{speechSynthesis.cancel();const a=new Audio(c.url);a.play().catch(()=>{});sfxDuck(()=>!a.ended&&!a.paused);return true}catch(e){return false}}
 const CLIPKINDS=[
  ['cheer','Cheers','Played after right answers.',['Great job, {name}!','You\'re so smart!','Way to go!','Boom! You nailed it!','I\'m so proud of you!','High five!'],'party'],
  ['oops','Try again','Played sometimes after a miss.',['That\'s okay, try again!','Almost! Look again.','You can do it!','Mistakes help us learn!','Take your time, buddy.','Give it another try!'],'thumbs-up'],

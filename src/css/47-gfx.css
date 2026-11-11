@@ -32,7 +32,7 @@
 .btn.node.done,.btn.node.cur{background:linear-gradient(var(--hi),var(--hi-0) 55%) var(--c,var(--brand));color:var(--surface);
   box-shadow:inset 0 3px 0 var(--hi),inset 0 0 0 4px var(--surface),0 5px 0 var(--c-shade,var(--brand-shade))}
 .btn.node.cur::after{content:'';position:absolute;inset:-9px;border:4px solid var(--c,var(--brand));border-radius:50%;opacity:0;
-  animation:k-ring 1.8s var(--ease) infinite;pointer-events:none}
+  animation:k-ring var(--t-loop) var(--ease) infinite;pointer-events:none}
 .btn.node.lock{background:var(--surface-2);color:var(--ink-3);box-shadow:inset 0 0 0 3px var(--line),0 3px 0 var(--line)}
 .btn.node.lock .ic{width:30px;height:30px}
 .btn.node:active{transform:translateY(3px)}
@@ -84,7 +84,7 @@
 .gx-end{padding:var(--s-5) var(--s-5) var(--s-5)}
 .gx-disc{position:relative;width:96px;height:96px;background:var(--star-tint);color:var(--star-shade);--ic2:var(--star-tint);
   box-shadow:inset 0 0 0 4px var(--star),0 5px 0 var(--star-shade)}
-.gx-disc.rec{animation:rw-pop 600ms var(--spring) both}
+.gx-disc.rec{animation:rw-pop var(--t-xl) var(--spring) both}
 .gx-end .rw-rays{position:absolute;left:50%;top:-30px;width:300px;height:300px;margin-left:-150px;opacity:.7;pointer-events:none}
 .rw-card p.gx-best{margin:0 0 var(--s-2);font-weight:700}
 .gx-week{display:flex;justify-content:center;margin:var(--s-2) 0}

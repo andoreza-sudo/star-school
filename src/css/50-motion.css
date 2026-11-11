@@ -1,0 +1,28 @@
+/* P4-17 motion layer (DESIGN_SYSTEM 8.1). Tokens only; transform and opacity only, so no animation moves the layout.
+   The screen-in (#app: fade + 8 px rise, --t-slow), the press squash (.btn, --t-fast) and the reduced motion / calm mode rule
+   (every animation and transition cut to 0.01 ms, one iteration) live in 20-base.css; sheets and toasts in 10-components.css.
+   Here: the drawn particle burst (burst() in 12-speech.js), the full-screen confetti (confetti() -> RW.burst on the body) and the
+   overlays' fade-in. Calm mode and reduced motion draw no particles at all. */
+
+/* burst(x, y, kind): 10 shaded pieces fly out of a point, turn a little and fade */
+.burst{position:fixed;z-index:45;width:0;height:0;pointer-events:none}
+.burst i{position:absolute;left:0;top:0;opacity:0;transform:translate(-50%,-50%) scale(.3);animation:fx-out calc(var(--t-xl) * 1.25) var(--ease) forwards}
+.burst svg{display:block;width:100%;height:100%;overflow:visible}
+@keyframes fx-out{
+  15%{opacity:1}
+  65%{opacity:1}
+  100%{opacity:0;transform:translate(calc(-50% + var(--x)),calc(-50% + var(--y))) scale(.85) rotate(var(--r))}}
+
+/* confetti() on the body: fixed to the middle of the screen, above overlays and sheets */
+.rw-burst.rw-fs{position:fixed;top:40%;z-index:70}
+
+/* overlays (pet growth, timed game results, the time-up card) fade in like sheets */
+.ovl{animation:fx-fade var(--t-slow) var(--ease)}
+@keyframes fx-fade{from{opacity:0}}
+
+/* calm mode and reduced motion: no particles (the sound and the screen's own change still say what happened) */
+html.calm .burst,html.calm .rw-burst,html.calm .fly,html.calm .pc-fx{display:none}
+@media (prefers-reduced-motion:reduce){.burst,.rw-burst,.fly,.pc-fx{display:none}}
+
+/* the question's streak and star chips keep their width from 9 to 10, so the track beside them does not jump */
+.qtop .stat b{display:inline-block;min-width:2ch;text-align:center}

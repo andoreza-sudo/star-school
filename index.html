@@ -69,10 +69,8 @@
 --tap:48px;--tap-primary:56px;--tap-pk:64px;
 /* motion */
 --t-fast:90ms;--t:180ms;--t-slow:320ms;--t-xl:600ms;
+--t-shake:240ms;--t-cele:1200ms;--t-loop:2400ms; /* P4-17: a wrong-answer shake, a celebration (confetti), one idle loop */
 --ease:cubic-bezier(.2,.8,.2,1);--spring:cubic-bezier(.34,1.56,.64,1);
-/* legacy aliases, kept until P4-17 */
---bg:var(--paper);--blue:var(--brand);--green:var(--good);--red:var(--danger);--muted:var(--ink-3);--card:var(--surface);
---big:var(--fs-prompt);
 }
 /* Core components (P4-04; DESIGN_SYSTEM.md section 4). Tokens only. Animate only transform and opacity.
    Every component is opt-in: a class that already exists in the app (.card, .chip, .meter, .tile, .slot, .bubble, .node,
@@ -167,7 +165,7 @@
 .choice.sel{background:var(--brand-tint);color:var(--brand-shade);box-shadow:inset 0 0 0 3px var(--brand),0 5px 0 var(--brand-shade)}
 .choice.right{background:var(--good-tint);color:var(--good-ink);box-shadow:inset 0 0 0 3px var(--good),0 5px 0 var(--good-ink);
   animation:k-pop var(--t-slow) var(--spring)}
-.choice.wrong{background:var(--try-tint);color:var(--try-ink);box-shadow:inset 0 0 0 3px var(--try),0 5px 0 var(--try);animation:k-shake 240ms linear}
+.choice.wrong{background:var(--try-tint);color:var(--try-ink);box-shadow:inset 0 0 0 3px var(--try),0 5px 0 var(--try);animation:k-shake var(--t-shake) linear}
 .choice:disabled,.choice.off{opacity:.4;box-shadow:inset 0 0 0 3px var(--line);transform:none;cursor:default}
 .choice:is(.right,.wrong,.sel):disabled{opacity:1}
 /* right and wrong carry a corner badge as well as a colour (never colour alone): a check, or a soft amber cross */
@@ -249,7 +247,7 @@
 .stat.timer .ic{color:var(--brand)}
 button.stat{cursor:pointer;touch-action:manipulation;transition:transform var(--t-fast) var(--ease)}
 button.stat:active{transform:translateY(2px);box-shadow:inset 0 0 0 2px var(--line),0 1px 0 var(--ledge-soft)}
-.stat.bump{animation:k-bump 400ms var(--spring)}
+.stat.bump{animation:k-bump var(--t-slow) var(--spring)}
 
 /* ---- gauge (the DS "meter"): .gauge > i with style="--v:.4"; .grow (pet), .good, subject via --c; .lg is taller ---- */
 .gauge{position:relative;height:16px;border-radius:var(--r-pill);background:var(--surface-2);overflow:hidden;box-shadow:inset 0 2px 0 var(--line)}
@@ -402,7 +400,7 @@ button.stat:active{transform:translateY(2px);box-shadow:inset 0 0 0 2px var(--li
 .mapnode:active{transform:translateY(3px)}
 .mapnode.lock{background:var(--surface-2);color:var(--ink-3);box-shadow:inset 0 0 0 3px var(--line);cursor:default;transform:none}
 .mapnode.open::after{content:'';position:absolute;inset:-8px;border:4px solid var(--c,var(--brand));border-radius:50%;opacity:0;
-  animation:k-ring 1.8s var(--ease) infinite;pointer-events:none}
+  animation:k-ring var(--t-loop) var(--ease) infinite;pointer-events:none}
 .mapnode.mast{box-shadow:inset 0 3px 0 var(--hi),0 0 0 5px var(--star),0 5px 0 5px var(--star-shade)}
 .mapnode.skip{background:var(--surface);color:var(--c,var(--brand));box-shadow:inset 0 0 0 3px var(--c,var(--brand)),0 5px 0 var(--ledge-soft)}
 .mapnode.boss{width:84px;height:84px;font-size:46px;background:var(--c-tint,var(--brand-tint));color:var(--c-shade,var(--brand-shade));
@@ -423,15 +421,15 @@ button,a,.btn{touch-action:manipulation}
 html,body{margin:0;height:100%;color:var(--ink);font-family:var(--font-body);-webkit-user-select:none;user-select:none;overscroll-behavior:none;overflow:hidden}
 body{background:radial-gradient(circle at 20% 10%,var(--glow-warm) 0,transparent 40%),radial-gradient(circle at 90% 90%,var(--glow-cool) 0,transparent 45%),var(--paper)}
 input{font:inherit;-webkit-user-select:text;user-select:text}
-#app{height:100%;display:flex;flex-direction:column;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);animation:enter var(--t-slow) ease-out}
-@keyframes enter{from{opacity:0;transform:scale(.97)}}
+#app{height:100%;display:flex;flex-direction:column;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);animation:enter var(--t-slow) var(--ease)}
+@keyframes enter{from{opacity:0;transform:translateY(8px)}}
 .top{display:flex;align-items:center;gap:10px;padding:10px 12px;flex:none}
 .title{font-size:24px;font-weight:700}
 .sp{flex:1}
 .stars{font-size:var(--fs-4);font-weight:700;white-space:nowrap;background:var(--surface);border-radius:var(--r-btn);padding:6px 12px;box-shadow:0 3px 0 var(--shadow-ink);font-variant-numeric:tabular-nums}
-.bump{animation:bump .35s}
-@keyframes bump{40%{transform:scale(1.35)}}
-.btn{border:0;border-radius:var(--r-btn);background:var(--surface);box-shadow:var(--ledge) var(--shadow-ink-2);font:inherit;font-weight:700;color:var(--ink);padding:12px 16px;cursor:pointer;touch-action:manipulation;transition:transform var(--t-fast)}
+.bump{animation:bump var(--t-slow) var(--spring)}
+@keyframes bump{40%{transform:scale(1.2)}}
+.btn{border:0;border-radius:var(--r-btn);background:var(--surface);box-shadow:var(--ledge) var(--shadow-ink-2);font:inherit;font-weight:700;color:var(--ink);padding:12px 16px;cursor:pointer;touch-action:manipulation;transition:transform var(--t-fast) var(--ease)}
 .btn:active{transform:translateY(3px) scale(.97);box-shadow:var(--ledge-press) var(--shadow-ink-2)}
 .btn.sm{font-size:18px;padding:10px 14px}
 .btn.xs{padding:4px 10px;font-size:var(--fs-2);border-radius:var(--r-chip)}
@@ -445,21 +443,21 @@ h2{font-size:24px;margin:18px 4px 10px}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
 .tile{display:flex;flex-direction:column;align-items:center;gap:4px;padding:16px 8px;font-size:19px}
 .tile.math{background:var(--math-tint)}.tile.read{background:var(--read-tint)}
-.te{font-size:44px;transition:transform .2s}.tile:active .te{transform:rotate(-12deg) scale(1.2)}
+.te{font-size:44px;transition:transform var(--t) var(--ease)}.tile:active .te{transform:rotate(-12deg) scale(1.2)}
 .lv{color:var(--star-shade);font-size:20px;letter-spacing:2px}
 /* hero */
 .hero{display:flex;gap:16px;align-items:center;background:linear-gradient(135deg,var(--star-tint),var(--star));border-radius:var(--r-hero);padding:14px 18px;margin:4px 0 6px;box-shadow:var(--ledge) var(--shadow-ink)}
-.petbig{font-size:96px;line-height:1;cursor:pointer;animation:bob 2.4s ease-in-out infinite;text-shadow:0 6px 4px var(--shadow-ink-2)}
+.petbig{font-size:96px;line-height:1;cursor:pointer;animation:bob var(--t-loop) ease-in-out infinite;text-shadow:0 6px 4px var(--shadow-ink-2)}
 .pet.aura,.petbig.aura{text-shadow:0 0 12px var(--star),0 0 4px var(--surface)}
 @keyframes bob{50%{transform:translateY(-8px) rotate(3deg)}}
-.jump{animation:jump .5s!important}
+.jump{animation:jump var(--t-xl) var(--ease)!important}
 @keyframes jump{30%{transform:translateY(-30px) scale(1.15) rotate(-8deg)}60%{transform:translateY(0) scale(.95)}}
-.sad{animation:sad .5s!important}
+.sad{animation:sad var(--t-xl) var(--ease)!important}
 @keyframes sad{25%{transform:rotate(-14deg)}75%{transform:rotate(14deg)}}
 .hinfo{flex:1;min-width:0}
 .hname{font-size:26px;font-weight:700}
 .meter{height:16px;background:var(--wash);border-radius:9px;overflow:hidden;margin:6px 0 2px}
-.meter div{height:100%;background:linear-gradient(90deg,var(--star-shade),var(--danger));border-radius:9px;transition:width .6s}
+.meter div{height:100%;background:linear-gradient(90deg,var(--star-shade),var(--danger));border-radius:9px}
 .meter.m div{background:linear-gradient(90deg,var(--good),var(--disc))}
 .htxt{font-size:16px;font-weight:700;color:var(--try-ink)}
 /* icons (P4-02): ico(name,size,cls) in 15-icons.js; colour from currentColor, second tone from --ic2 */
@@ -469,10 +467,10 @@ h2{font-size:24px;margin:18px 4px 10px}
 .ic-star{color:var(--star-shade)}.ic-flame{color:var(--play)}.ic-good{color:var(--good)}.ic-off{color:var(--ink-3)}
 .ic-rec{color:var(--danger)}.ic-brand{color:var(--brand)}.ic-math{color:var(--math)}.ic-read{color:var(--read)}
 .ic-es{color:var(--es)}.ic-play{color:var(--play-shade)}.ic-bt{color:var(--bt)}.ic-disc{color:var(--disc)}
-/* reduced motion and calm mode (also hides confetti) */
-@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.conf{display:none!important}}
+/* reduced motion and calm mode: every animation and transition ends at once (no large movement, no loops, no flashing);
+   the particles are not drawn at all (50-motion.css) */
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 html.calm *,html.calm *::before,html.calm *::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
-html.calm .conf{display:none!important}
 .art{display:inline-block;vertical-align:-.125em;color:var(--ink)}
 .online-note{font-size:var(--fs-1);color:var(--ink-2);text-align:right;padding:0 var(--s-3) var(--s-1)}
 /* Object art palette (DESIGN_SYSTEM.md 6.5; drawings in src/js/16-art-*.js). Every role maps to an --ill-* token in 00-tokens.css.
@@ -501,30 +499,30 @@ html.calm .conf{display:none!important}
 .track{position:relative;flex:1;height:52px;margin:0 6px}
 .track .line{position:absolute;left:0;right:30px;top:34px;border-top:5px dotted #d6cfc4}
 .track .chest{position:absolute;right:0;top:12px;font-size:34px}
-.runner{position:absolute;top:2px;font-size:40px;line-height:1;transition:left .5s cubic-bezier(.5,1.6,.5,1)}
-.bubble{position:absolute;top:46px;left:0;background:#fff;border-radius:14px;padding:4px 10px;font-size:15px;font-weight:700;white-space:nowrap;box-shadow:0 3px 10px #0002;opacity:0;transition:opacity .2s;z-index:5}
+.runner{position:absolute;top:2px;font-size:40px;line-height:1}
+.bubble{position:absolute;top:46px;left:0;background:#fff;border-radius:14px;padding:4px 10px;font-size:15px;font-weight:700;white-space:nowrap;box-shadow:0 3px 10px #0002;opacity:0;transition:opacity var(--t) var(--ease);z-index:5}
 .bubble.on{opacity:1}
 .streak{font-size:20px;flex:none;font-weight:700;color:#ea580c;background:#ffedd5;border-radius:14px;padding:4px 10px;white-space:nowrap;display:none}
 .streak.on{display:block;animation:bump .4s}
 .play{flex:1;display:flex;flex-direction:column;gap:12px;padding:16px 14px 14px;min-height:0}
 .qarea{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:10px;min-height:0;text-align:center;overflow:auto}
 .qarea>:first-child{margin-top:auto}.qarea>:last-child{margin-bottom:auto}
-.prompt{--k:1;font-size:calc(var(--big)*var(--k));max-width:100%;font-weight:700;line-height:1.2;animation:qin .35s cubic-bezier(.5,1.6,.5,1)}
+.prompt{--k:1;font-size:calc(var(--fs-prompt)*var(--k));max-width:100%;font-weight:700;line-height:1.2;animation:qin .35s cubic-bezier(.5,1.6,.5,1)}
 @keyframes qin{from{transform:scale(.6);opacity:0}}
 .eq{white-space:nowrap}
 .veq{display:inline-grid;justify-items:end;font-variant-numeric:tabular-nums}
 .veq .bar{justify-self:stretch;height:6px;background:var(--ink);border-radius:3px;margin:4px 0}
 .veq .op{margin-right:.35em}
 .seq{font-size:calc(clamp(30px,8vmin,72px)*var(--k))}
-.slot{display:inline-block;min-width:1.3em;min-height:1.15em;line-height:1.15em;border:4px dashed #94a3b8;border-radius:14px;padding:0 .12em;color:var(--blue);vertical-align:middle;text-align:center;background:#fff8}
-.slot.ok{border:4px solid var(--green);color:var(--green);animation:bump .4s}
+.slot{display:inline-block;min-width:1.3em;min-height:1.15em;line-height:1.15em;border:4px dashed #94a3b8;border-radius:14px;padding:0 .12em;color:var(--brand);vertical-align:middle;text-align:center;background:#fff8}
+.slot.ok{border:4px solid var(--good);color:var(--good);animation:bump .4s}
 .slot.rev{border:4px solid #f59e0b;color:#b45309}
 .tools{display:flex;gap:10px}
 .hint{font-size:clamp(16px,2.8vh,20px);font-weight:700;max-width:100%;display:flex;flex-direction:column;align-items:center;gap:8px}
 .inp{flex:none}
 .pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:420px;margin:0 auto;width:100%}
 .pad .k{font-size:clamp(24px,4.6vh,36px);height:clamp(46px,8.5vh,76px);padding:0}
-.pad .go{background:var(--green);color:#fff}.pad .del{background:#fde68a}
+.pad .go{background:var(--good);color:#fff}.pad .del{background:#fde68a}
 .choices{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:560px;margin:0 auto;width:100%}
 .ch{font-size:clamp(26px,4.6vh,34px);padding:clamp(10px,2vh,18px) 8px}
 .choices.pics{grid-template-columns:repeat(3,1fr)}
@@ -533,16 +531,15 @@ html.calm .conf{display:none!important}
 .tiles{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;max-width:560px;margin:0 auto}
 .lt{font-size:clamp(30px,5.5vh,40px);width:clamp(56px,10vh,74px);height:clamp(56px,10vh,74px);padding:0;background:#fef9c3}
 .lt.used{visibility:hidden}
-.lt.glow{animation:glow 1s infinite}
 .undo{display:block;margin:12px auto 0}
 .emo{font-size:calc(clamp(70px,22vmin,160px)*var(--k));line-height:1.2;padding-bottom:.05em}
 .lslots{display:flex;gap:8px;justify-content:center;margin-top:10px}
 .ls{width:1.1em;height:1.35em;border-bottom:6px solid var(--ink);font-size:calc(clamp(36px,9vmin,72px)*var(--k));display:flex;align-items:center;justify-content:center}
-.ls.ok{color:var(--green)}
+.ls.ok{color:var(--good)}
 .story{font-size:calc(clamp(21px,4.6vmin,34px)*max(var(--k),.7));font-weight:700;line-height:1.5;max-width:760px;margin:0 0 6px}
 .sent{font-size:calc(clamp(28px,6.5vmin,52px)*max(var(--k),.6));line-height:1.4}
 .w{border-radius:8px;padding:0 2px}.w:active{background:#fde68a}
-.sub{font-size:clamp(17px,3vh,22px);color:var(--muted);font-weight:700}
+.sub{font-size:clamp(17px,3vh,22px);color:var(--ink-3);font-weight:700}
 .hear{font-size:calc(64px*var(--k));padding:.15em .4em}
 .esbig{font-size:calc(56px*var(--k));font-weight:800;text-align:center;line-height:1.1;padding:.1em .3em}
 .rods{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
@@ -554,29 +551,19 @@ html.calm .conf{display:none!important}
 .rod i.x::after{content:'✕';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#b91c1c;font-style:normal;font-weight:900}
 .pairs{display:inline-flex;gap:8px;align-items:flex-start}
 .pairs span{display:flex;flex-direction:column;gap:6px}
-.pairs b{width:20px;height:20px;border-radius:50%;background:var(--blue);display:block}
+.pairs b{width:20px;height:20px;border-radius:50%;background:var(--brand);display:block}
 .emh{font-size:clamp(18px,4vh,34px);line-height:1.3;max-width:100%}
-.fb{position:fixed;left:50%;top:40%;transform:translate(-50%,-50%) scale(.5) rotate(-6deg);font-size:clamp(26px,7vw,44px);font-weight:700;color:var(--green);background:#fff;padding:14px 26px;border-radius:24px;box-shadow:0 8px 30px #0003;opacity:0;pointer-events:none;transition:all .3s cubic-bezier(.5,1.8,.5,1);width:max-content;max-width:90vw;text-align:center;z-index:40}
-.fb.on{opacity:1;transform:translate(-50%,-50%) scale(1) rotate(-3deg)}
-.fb.warn{color:#c2410c}
 .shake{animation:shake .4s}
 @keyframes shake{25%{transform:translateX(-10px)}75%{transform:translateX(10px)}}
-@keyframes glow{50%{box-shadow:0 0 0 6px #facc15}}
-.fly{position:fixed;font-size:48px;margin:-24px 0 0 -24px;transition:transform .6s cubic-bezier(.5,-.4,.7,1),opacity .6s;pointer-events:none;z-index:50}
-.conf{position:fixed;top:-60px;font-size:36px;animation:fall linear forwards;pointer-events:none;z-index:45}
-@keyframes fall{to{transform:translateY(115vh) rotate(540deg)}}
-.burst{position:fixed;font-size:30px;pointer-events:none;z-index:45;transition:transform .7s ease-out,opacity .7s}
+.fly{position:fixed;margin:-24px 0 0 -24px;transition:transform var(--t-xl) cubic-bezier(.5,-.4,.7,1),opacity var(--t-xl) var(--ease);pointer-events:none;z-index:50}
 /* finish */
-.chestbtn{font-size:120px;background:none;box-shadow:none;animation:rattle 1.2s infinite;padding:0}
-@keyframes rattle{0%,60%,100%{transform:rotate(0)}65%{transform:rotate(-10deg)}75%{transform:rotate(10deg)}85%{transform:rotate(-6deg)}}
 .prize{font-size:clamp(70px,18vmin,120px);animation:spin .8s cubic-bezier(.5,1.6,.5,1)}
 @keyframes spin{from{transform:scale(0) rotate(-360deg)}}
-.newtag{display:inline-block;background:#ef4444;color:#fff;border-radius:10px;padding:2px 10px;font-size:18px;animation:bump .6s infinite}
 .bigstars{font-size:min(36px,8.5vw);white-space:nowrap;margin:6px 0 6px;min-height:1.3em;line-height:1.3}
 .bigstars span{display:inline-block;animation:spin .4s}
 .msg{font-size:24px;font-weight:700;margin:4px 0;animation:qin .4s}
 .ovl{position:fixed;inset:0;background:#000a;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:60;color:#fff;text-align:center}
-.ovl .grow{font-size:160px;animation:wobble .25s infinite}
+.ovl .grow{font-size:160px;animation:wobble .25s 6}
 @keyframes wobble{50%{transform:rotate(8deg) scale(1.05)}}
 .ovl .grown{font-size:160px;animation:spin .9s cubic-bezier(.5,1.6,.5,1)}
 /* stickers */
@@ -585,7 +572,7 @@ html.calm .conf{display:none!important}
 @media (max-width:420px){.pets{grid-template-columns:1fr 1fr}}
 .petopt{display:flex;flex-direction:column;align-items:center;font-size:16px;padding:10px 4px}
 .petopt span{font-size:52px}
-table{width:100%;border-collapse:collapse;font-size:15px}td,th{padding:6px 4px;border-bottom:1px solid #f0ebe3;text-align:left}.nw{white-space:nowrap}.tr{color:var(--muted)}
+table{width:100%;border-collapse:collapse;font-size:15px}td,th{padding:6px 4px;border-bottom:1px solid #f0ebe3;text-align:left}.nw{white-space:nowrap}.tr{color:var(--ink-3)}
 @media (orientation:landscape){.play{flex-direction:row;align-items:stretch}.inp{width:46%;display:flex;flex-direction:column;justify-content:center}}
 @media (max-width:560px){.hero{padding:10px;gap:10px}.petbig{font-size:64px}.hname{font-size:21px}.top{gap:6px;padding:8px}.btn.sm{font-size:16px;padding:8px 10px}.stars{font-size:18px;padding:5px 9px}.streak{font-size:16px;padding:4px 7px}.runner{font-size:32px}.track .chest{font-size:28px}.title{font-size:20px}.grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}.tile{font-size:17px;padding:12px 6px}.te{font-size:38px}.chestbtn{font-size:100px}.bigstars{font-size:26px}.msg{font-size:19px}h1{font-size:28px}}
 @media (max-height:520px){.setup h1{font-size:24px;margin:0 0 6px}.setup .card{margin:6px 0;padding:10px}.petopt{padding:6px 4px}.petopt span{font-size:36px}.prize{font-size:64px}.chestbtn{font-size:90px}.msg{font-size:18px;margin:2px 0}h1{font-size:26px;margin:0 0 8px}.top{padding:6px 10px}.play{padding-top:8px}.tools .btn{padding:6px 10px;font-size:15px}}
@@ -1264,7 +1251,7 @@ html.notext .pktxt{display:none}
 .bal::after{content:'';position:absolute;bottom:-28px;left:50%;width:2px;height:28px;background:#0004}
 .ovl h2{margin:0 0 14px}
 .hint.pop{animation:qin .35s cubic-bezier(.5,1.6,.5,1)}
-.talking{background:#dbeafe;animation:bump .6s infinite}
+.talking{background:#dbeafe;animation:bump .6s 3}
 .fb.long{font-size:clamp(18px,4.5vw,26px)}
 
 .games{display:flex;flex-direction:column;gap:12px}
@@ -1274,26 +1261,25 @@ html.notext .pktxt{display:none}
 .swatch{display:inline-block;width:1em;height:1em;border-radius:50%;background:var(--sw);border:4px solid #0002;box-shadow:inset -6px -6px 0 #0001;vertical-align:middle}
 .numpic{display:inline-flex;align-items:center;justify-content:center;min-width:1.2em;height:1.2em;padding:0 .15em;border-radius:.3em;background:#fff;border:4px solid #93c5fd;font-weight:700;font-size:.8em;line-height:1;color:#1d4ed8}
 .clkpic{display:inline-flex;vertical-align:middle}.clkpic .viz{width:1.15em;height:1.15em}.emo .clkpic .viz{width:1.6em;height:1.6em}
-.pcap{display:inline-flex;flex-direction:column;align-items:center;line-height:1.05}.pcap small{font-size:.3em;font-weight:700;color:var(--muted)}
+.pcap{display:inline-flex;flex-direction:column;align-items:center;line-height:1.05}.pcap small{font-size:.3em;font-weight:700;color:var(--ink-3)}
 .choices.pics .ch .pcap small{font-size:.32em}
 /* P2-34 me gusta card: the face over the picture */
 .gcd{display:inline-flex;flex-direction:column;align-items:center;line-height:1.05;gap:2px}.gcd i{font-style:normal;font-size:.5em}.gcd b{font-weight:400}
 .lgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px}
-.lcard{display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 6px}.lcard .lp{font-size:54px;line-height:1.1}.lcard b{font-size:22px;color:#1d4ed8}.lcard small{font-size:15px;color:var(--muted)}
+.lcard{display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 6px}.lcard .lp{font-size:54px;line-height:1.1}.lcard b{font-size:22px;color:#1d4ed8}.lcard small{font-size:15px;color:var(--ink-3)}
 .lcard.heard{background:#dcfce7}
 .ovl .grow,.ovl .grown{font-size:min(160px,30vh)!important}.ovl h1{font-size:min(34px,7vh)}
 
 .bossbar{flex:1;display:flex;align-items:center;gap:8px;position:relative;min-width:0}
 .bossE{font-size:44px;line-height:1;position:relative;display:inline-block}
 .bossE .bubble{top:46px}
-.bossE.hit{animation:hit .45s}
 .bossE.ko{animation:ko 1.2s forwards}
-@keyframes hit{20%{transform:translateX(-8px) scale(.85);filter:brightness(2.2) saturate(.3)}60%{transform:translateX(6px) scale(1.05)}}
 @keyframes ko{30%{transform:rotate(-30deg) scale(1.3)}100%{transform:rotate(720deg) scale(0);opacity:0}}
-.hp{flex:1;height:18px;background:#fee2e2;border-radius:10px;overflow:hidden;border:2px solid #fca5a5;min-width:40px}
-.hp div{height:100%;background:linear-gradient(90deg,#ef4444,#f97316);transition:width .4s}
+/* P4-17: the boss life bar: token colours, shrinks with transform (no layout), a soft gloss on top */
+.hp{flex:1;height:18px;background:var(--surface);border-radius:var(--r-pill);overflow:hidden;box-shadow:inset 0 0 0 2px var(--line),inset 0 3px 0 var(--surface-2);min-width:40px;position:relative}
+.hp div{height:100%;background:linear-gradient(var(--ill-red-1),var(--ill-red) 45%,var(--ill-red-2));border-radius:inherit;transform-origin:0 50%;transition:transform var(--t-slow) var(--ease)}
 #hpn{font-size:13px;white-space:nowrap;max-width:30vw;overflow:hidden}
-.bossbig{font-size:min(140px,26vh);animation:wobble .5s infinite}
+.bossbig{font-size:min(140px,26vh);animation:wobble .5s 3}
 /* (P4-18: map stops, world titles, labels and the test-out button moved to 47-gfx.css) */
 /* P1-05 world picker strip (one chip per world, grouped by grade), "more worlds" buttons, NEW tag on stops added later */
 .wstrip{display:flex;align-items:center;gap:var(--s-2);flex:none;overflow-x:auto;padding:var(--s-1) var(--s-3) var(--s-3);scrollbar-width:none}
@@ -1313,7 +1299,6 @@ html.notext .pktxt{display:none}
   font-size:var(--fs-1);font-weight:700;border-radius:var(--r-pill);padding:1px var(--s-2)}
 .rtag{background:#ede9fe;color:#6d28d9;font-weight:700;font-size:16px;border-radius:12px;padding:3px 12px}
 .cbar{display:flex;align-items:center;gap:10px;margin:6px 0;font-weight:700}.cbar span{width:90px}.cbar .meter{flex:1;margin:0;background:#f5f5f4}.cbar b{width:48px;text-align:right}
-.thought{position:absolute;top:-10px;right:-18px;background:#fff;border-radius:16px;padding:2px 8px;font-size:22px;box-shadow:0 2px 6px #0002;animation:bob 1.6s infinite}
 .dot{position:absolute;top:4px;right:8px;background:#ef4444;color:#fff;font-style:normal;border-radius:50%;width:22px;height:22px;font-size:15px;display:flex;align-items:center;justify-content:center}
 .stage{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;border-radius:0 0 28px 28px;padding:10px 12px 12px;margin:0 -14px 6px;position:relative;overflow:hidden;box-shadow:0 4px 10px #0001}
 .stage.sticky{position:sticky;top:0;z-index:5}
@@ -1367,7 +1352,7 @@ html.notext .pktxt{display:none}
 .hcmodes{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:6px 0 10px}.hcmode{display:flex;flex-direction:column;align-items:center;padding:10px 6px;background:#fff;border-radius:16px;text-align:center}.hcmode span{font-size:30px}.hcmode b{font-size:17px}.hcmode small{font-size:11px;color:#78716c}.hcmode.on{background:#fde68a;box-shadow:0 0 0 3px #f59e0b inset}
 .bbtg{display:flex;gap:4px;flex-wrap:wrap;width:100%}.bbtg .btn{display:flex;flex-direction:column;align-items:center;line-height:1;padding:5px 7px;min-height:44px;font-size:18px}.bbtg .btn i{font-style:normal;font-size:10px;margin-top:2px}
 .bbsk span{font-size:28px;display:block;line-height:40px}.bbk{width:62px;height:62px}.bbk i.bbn{font-size:9px}
-.bbtip{position:absolute;left:50%;bottom:10px;transform:translateX(-50%) translateY(8px);background:#000b;color:#fff;font-size:14px;padding:6px 14px;border-radius:99px;opacity:0;transition:.25s;pointer-events:none;white-space:nowrap;max-width:94%;overflow:hidden;text-overflow:ellipsis}.bbtip.on{opacity:1;transform:translateX(-50%)}
+.bbtip{position:absolute;left:50%;bottom:10px;transform:translateX(-50%) translateY(8px);background:#000b;color:#fff;font-size:14px;padding:6px 14px;border-radius:99px;opacity:0;transition:opacity var(--t) var(--ease),transform var(--t) var(--ease);pointer-events:none;white-space:nowrap;max-width:94%;overflow:hidden;text-overflow:ellipsis}.bbtip.on{opacity:1;transform:translateX(-50%)}
 .ptlines{display:flex;flex-direction:column;font-size:14px;font-weight:600;color:#57534e;margin-top:4px;gap:1px}.ptlines .neg{color:#b91c1c}.pthint{margin-top:6px;font-size:15px;color:#7c3aed;font-weight:700}
 .ptrules{margin-top:14px;line-height:1.6}.ptrules b{color:#b45309}.ptrules div b{float:right}
 .tipcard{background:#fff;border-radius:16px;padding:10px 14px;margin:10px 0;font-size:15px;box-shadow:0 2px 6px #0001;line-height:1.4}
@@ -1377,15 +1362,16 @@ html.notext .pktxt{display:none}
 .cbcv{flex:none;touch-action:none}.cbcv canvas{display:block;border-radius:10px;box-shadow:0 4px 14px #0002;touch-action:none;background:#fff}
 .cbpal{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:640px}
 .chip{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 8px;min-width:64px;font-size:18px}.chip .sw{width:34px;height:34px;border-radius:50%;background:var(--cc);border:3px solid #0002}
-.chip small{font-size:13px;color:var(--muted)}.chip.on{outline:4px solid #3b82f6;transform:translateY(-3px)}
+.chip small{font-size:13px;color:var(--ink-3)}.chip.on{outline:4px solid #3b82f6;transform:translateY(-3px)}
 .cbpal.fp .chip{min-width:52px;padding:6px}
 @media (orientation:landscape){.cbwrap{flex-direction:row;justify-content:center;align-items:center}.cbpal{flex-direction:column;flex-wrap:wrap;max-height:calc(100vh - 80px);max-width:240px;align-content:flex-start}.cbpal.fp{flex-direction:row;max-width:200px}}
 .hcprog{position:absolute;top:60px;left:50%;transform:translateX(-50%);width:min(320px,50vw);height:8px;background:#0004;border-radius:6px;z-index:2}.hcprog>div{height:100%;background:linear-gradient(90deg,#22c55e,#facc15);border-radius:6px}
 .hcprog span{position:absolute;top:-6px;width:4px;height:20px;background:#facc15;border-radius:2px;box-shadow:0 0 0 2px #713f12}
 .hccombo{position:absolute;right:14px;top:80px;font-size:clamp(20px,4vw,30px);font-weight:700;color:#fff;background:linear-gradient(135deg,#f97316,#ef4444);padding:4px 14px;border-radius:14px;opacity:0;transition:opacity .2s;transform:rotate(4deg)}.hccombo.on{opacity:1;animation:bump .4s}
-.hcfuel>div.low{animation:glow 1s infinite}
+.hcfuel>div.low{animation:hc-low 1s infinite}
+@keyframes hc-low{50%{opacity:.55}}
 .endcard{background:#fff;color:var(--ink);border-radius:26px;padding:18px 22px;max-width:560px;width:92vw;text-align:center;box-shadow:0 10px 40px #0006;animation:spin .5s cubic-bezier(.5,1.6,.5,1)}
-.endstats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}.endstats div{background:#f5f5f4;border-radius:14px;padding:8px 4px;display:flex;flex-direction:column}.endstats b{font-size:22px}.endstats span{font-size:12px;color:var(--muted)}
+.endstats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}.endstats div{background:#f5f5f4;border-radius:14px;padding:8px 4px;display:flex;flex-direction:column}.endstats b{font-size:22px}.endstats span{font-size:12px;color:var(--ink-3)}
 .vehs{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}.veh{display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 6px;font-size:15px}.veh canvas{width:150px;height:90px}.veh.on{outline:4px solid #22c55e;background:#f0fdf4}
 .mis{cursor:default}
 .shthumb{width:100px;height:100px;border-radius:10px;box-shadow:0 2px 6px #0002;background:#fff}
@@ -1518,7 +1504,7 @@ html.notext .pktxt{display:none}
 /* the prompt spans the card, so pictures sized in % of it (Shape Garden depth scenes) never collapse to 0 when the words are hidden */
 .qs .prompt{align-self:stretch;color:var(--ink);font-family:var(--font-display);animation:k-qin var(--t-slow) var(--ease)}
 @keyframes k-qin{from{opacity:0;transform:translateY(8px) scale(.97)}}
-.qs .prompt.shake{animation:k-shake 240ms linear}
+.qs .prompt.shake{animation:k-shake var(--t-shake) linear}
 .qs .tools{flex-wrap:wrap;justify-content:center;gap:var(--s-3)}
 .qs .tools .btn.sm{min-width:var(--tap);font-size:var(--fs-3)}
 /* Pre-K: a big round "hear it again" button and a round help button, no words needed */
@@ -1526,7 +1512,7 @@ html.notext .pktxt{display:none}
 .qs .btn.pkspk .ic{width:48px;height:48px}
 .qs .btn.pkhb .ic{width:34px;height:34px;color:var(--try-ink)}
 .qs .btn.pkhb{background:var(--try-tint);box-shadow:inset 0 0 0 2px var(--try),var(--ledge) var(--try)}
-.btn.talking{animation:k-talk .6s var(--ease) 3}
+.btn.talking{animation:k-talk var(--t-xl) var(--ease) 3}
 @keyframes k-talk{50%{transform:scale(1.06)}}
 /* tags at the top of the card: review ("Remember this one?") and challenge (51-mastery.js .mtag) */
 .tag.rtag{background:var(--brand-tint);color:var(--brand-shade);border-radius:var(--r-pill);font-size:var(--fs-2);padding:var(--s-1) var(--s-3) var(--s-1) var(--s-2)}
@@ -1617,7 +1603,7 @@ html.notext .pktxt{display:none}
 .piece.lt{width:clamp(56px,10vh,76px);height:clamp(56px,10vh,76px);padding:0;font-size:clamp(30px,5.5vh,40px)}
 .piece:is(.lt,.ot){background:var(--surface)}
 .piece:is(.lt,.ot).used{visibility:visible;background:var(--surface-2)}
-.piece.lt.glow{box-shadow:inset 0 0 0 4px var(--star-shade),0 0 0 4px var(--star),var(--ledge) var(--star-shade);animation:k-nudge .8s var(--ease) 3}
+.piece.lt.glow{box-shadow:inset 0 0 0 4px var(--star-shade),0 0 0 4px var(--star),var(--ledge) var(--star-shade);animation:k-nudge calc(var(--t-xl) * 1.33) var(--ease) 3}
 @keyframes k-nudge{40%{transform:translateY(-8px)}}
 .btn.undo{display:flex;margin:var(--s-4) auto 0}
 .lslots{gap:var(--s-2)}
@@ -1681,11 +1667,9 @@ html.notext .pktxt{display:none}
 @media (max-width:480px){.qs .sks{margin:0 calc(var(--s-2) * -1);width:calc(100% + var(--s-4))}.skr{gap:4px}}
 @media (max-height:520px){.key.sk{height:var(--tap)}.sks{gap:var(--s-1)}}
 
-/* ---------- feedback flourishes (12-speech.js): the star that flies to the star chip, the sparkle burst ---------- */
+/* ---------- feedback flourishes (12-speech.js): the star that flies to the star chip; the burst is drawn in 50-motion.css ---------- */
 .fly{width:48px;height:48px;color:var(--star)}
 .fly .ic{width:48px;height:48px;display:block}
-.burst .ic{display:block}
-.burst.b0{color:var(--star)}.burst.b1{color:var(--good)}.burst.b2{color:var(--brand)}
 html.calm .burst,html.calm .fly{display:none}
 @media (prefers-reduced-motion:reduce){.burst,.fly{display:none}}
 
@@ -1730,7 +1714,7 @@ body:has(.qtop) .toast{top:calc(env(safe-area-inset-top) + 84px)}
 .rw-tap{display:inline-flex;align-items:center;gap:var(--s-2);padding:var(--s-2) var(--s-4);border-radius:var(--r-pill);background:var(--surface);
   box-shadow:var(--shadow);color:var(--ink);max-width:none}
 .rw-tap .ic{flex:none;color:var(--read)}
-.rw-chest .rw-chest-art{position:relative;transform-origin:50% 88%;animation:rw-rattle 1.2s var(--ease) infinite}
+.rw-chest .rw-chest-art{position:relative;transform-origin:50% 88%;animation:rw-rattle var(--t-cele) var(--ease) 4}
 .rw-chest:active .rw-chest-art{transform:scale(.96)}
 
 /* ---- after the tap: hero (stars, score), treasure (open chest + stickers), what you earned, messages, the dock ---- */
@@ -1754,10 +1738,10 @@ body:has(.qtop) .toast{top:calc(env(safe-area-inset-top) + 84px)}
 .rw-st{display:block;width:76px;height:76px}
 .rw-st:nth-child(2){width:96px;height:96px;transform:translateY(-14px)}
 .rw-st .rw-star{animation:rw-in var(--t) var(--ease) both}
-.rw-st.on .rw-star{animation:rw-starpop 560ms var(--spring) both;animation-delay:calc(250ms + var(--i) * 120ms)}
+.rw-st.on .rw-star{animation:rw-starpop var(--t-xl) var(--spring) both;animation-delay:calc(250ms + var(--i) * 120ms)}
 
 /* the child's pet cheering instead of stars (no stars yet, Tricky Mix, test out) */
-.rw-pet{font-size:84px;line-height:1;display:flex;justify-content:center;animation:rw-pop 500ms var(--spring) both}
+.rw-pet{font-size:84px;line-height:1;display:flex;justify-content:center;animation:rw-pop var(--t-xl) var(--spring) both}
 .rw-pet .pet-svg{margin:0}
 .rw-pete{font-size:96px;line-height:1.1}
 
@@ -1765,11 +1749,11 @@ body:has(.qtop) .toast{top:calc(env(safe-area-inset-top) + 84px)}
 .rw-tre{display:flex;align-items:center;gap:var(--s-3);min-height:104px;padding:var(--s-2) var(--s-4) var(--s-2) var(--s-2);
   border-radius:var(--r-card);background:var(--star-tint);animation:rw-rise var(--t-slow) var(--ease) 80ms both}
 .rw-chest-o{position:relative;flex:none;width:104px;height:104px}
-.rw-chest-o .rw-rays{position:absolute;inset:-12%;width:124%;height:124%;opacity:.9;animation:rw-rays 900ms var(--ease) both}
-.rw-chest-o .rw-chest-art{position:relative;animation:rw-pop 500ms var(--spring) both}
+.rw-chest-o .rw-rays{position:absolute;inset:-12%;width:124%;height:124%;opacity:.9;animation:rw-rays calc(var(--t-xl) * 1.5) var(--ease) both}
+.rw-chest-o .rw-chest-art{position:relative;animation:rw-pop var(--t-xl) var(--spring) both}
 .rw-prz{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s-3);flex:1;min-width:0;padding:var(--s-2) 0}
 .rw-stk{position:relative;display:inline-grid;place-items:center;width:64px;height:64px;border-radius:20px;background:var(--surface);
-  box-shadow:0 0 0 3px var(--surface),0 4px 10px var(--drop);transform:rotate(var(--r,0deg));animation:rw-stk 520ms var(--spring) both}
+  box-shadow:0 0 0 3px var(--surface),0 4px 10px var(--drop);transform:rotate(var(--r,0deg));animation:rw-stk var(--t-xl) var(--spring) both}
 .rw-se{font-size:42px;line-height:1}
 .rw-stk .tag{position:absolute;top:-12px;right:-16px;padding:1px 8px}
 
@@ -1779,7 +1763,7 @@ body:has(.qtop) .toast{top:calc(env(safe-area-inset-top) + 84px)}
 .rw-er{display:grid;grid-template-columns:44px minmax(0,1fr);gap:var(--s-3);align-items:start;animation:rw-rise var(--t-slow) var(--ease) both}
 .rw-ed{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--star-tint);color:var(--star-shade);--ic2:var(--star-tint)}
 .rw-er.ticket .rw-ed{background:var(--play-tint);color:var(--play);--ic2:var(--play-tint)}
-.rw-er.bump .rw-ed{animation:rw-bump 300ms var(--spring)}
+.rw-er.bump .rw-ed{animation:rw-bump var(--t-slow) var(--spring)}
 .rw-et{padding-top:9px;font-size:var(--fs-4);line-height:var(--lh-4);font-weight:700;color:var(--ink);overflow-wrap:normal}
 .rw-num{font-variant-numeric:tabular-nums}
 .rw-pl{display:grid;gap:2px;margin:var(--s-2) 0 0;padding:0;list-style:none;font-size:var(--fs-2);line-height:var(--lh-2);font-weight:700;color:var(--ink-2)}
@@ -1792,6 +1776,11 @@ body:has(.qtop) .toast{top:calc(env(safe-area-inset-top) + 84px)}
 
 /* message cards: an icon disc (or a little drawn boss) and one line */
 .rw-msgs{display:grid;gap:var(--s-2)}
+/* P4-17: a sticker, row or card already in its place, waiting for its turn (finish() in 50-round.js), so nothing moves when it
+   shows: a faint empty slot (the card or tile; a row keeps only its icon disc), then it rises in */
+.rw-fin .rw-wait{animation:none;opacity:.4}
+.rw-fin .rw-wait>*{visibility:hidden}
+.rw-fin .rw-er.rw-wait>.rw-ed{visibility:visible}
 .rw-msgs:empty{display:none}
 .rw-msg{position:relative;display:grid;grid-template-columns:48px minmax(0,1fr);gap:var(--s-3);align-items:center;padding:var(--s-2) var(--s-4) var(--s-2) var(--s-2);
   border-radius:var(--r-card);background:var(--surface);box-shadow:inset 0 0 0 2px var(--line);animation:rw-rise var(--t-slow) var(--ease) both}
@@ -1846,7 +1835,7 @@ body:has(.qtop) .toast{top:calc(env(safe-area-inset-top) + 84px)}
 
 /* ---- drawn confetti: a short burst out of the chest (or a card), about 1 s ---- */
 .rw-burst{position:absolute;left:50%;top:45%;width:0;height:0;pointer-events:none;z-index:2}
-.rw-burst i{position:absolute;width:9px;height:14px;margin:-7px 0 0 -4px;border-radius:3px;animation:rw-cf 1100ms var(--ease) forwards}
+.rw-burst i{position:absolute;width:9px;height:14px;margin:-7px 0 0 -4px;border-radius:3px;animation:rw-cf var(--t-cele) var(--ease) forwards}
 .rw-burst i.r{width:11px;height:11px;border-radius:50%}
 .rw-burst .c0{background:var(--star)}.rw-burst .c1{background:var(--read)}.rw-burst .c2{background:var(--math)}
 .rw-burst .c3{background:var(--good)}.rw-burst .c4{background:var(--bt)}.rw-burst .c5{background:var(--play)}
@@ -1862,17 +1851,17 @@ html.calm .rw-burst{display:none}
 .rw-card .rw-acts{flex-direction:column;flex-wrap:nowrap;margin-top:var(--s-4)}
 .rw-disc{display:grid;place-items:center;width:88px;height:88px;margin:0 auto;border-radius:50%;background:var(--bt-tint);color:var(--bt)}
 .rw-growc{background:radial-gradient(90% 60% at 50% 32%,var(--star-tint) 0 50%,var(--surface) 90%)}
-.rw-growc .rw-rays{position:absolute;left:50%;top:var(--s-4);width:340px;height:340px;margin-left:-170px;opacity:.75;animation:rw-rays 900ms var(--ease) both}
+.rw-growc .rw-rays{position:absolute;left:50%;top:var(--s-4);width:340px;height:340px;margin-left:-170px;opacity:.75;animation:rw-rays calc(var(--t-xl) * 1.5) var(--ease) both}
 .ovl.rw-ovl .grow,.ovl.rw-ovl .grown{position:relative;display:flex;justify-content:center;font-size:min(124px,24vh)!important;line-height:1}
-.ovl.rw-ovl .grow{animation:rw-wob 600ms var(--ease) infinite}
-.ovl.rw-ovl .grown{animation:rw-pop 600ms var(--spring) both}
+.ovl.rw-ovl .grow{animation:rw-wob var(--t-xl) var(--ease) 3}
+.ovl.rw-ovl .grown{animation:rw-pop var(--t-xl) var(--spring) both}
 .rw-card .grown+h1{animation:rw-rise var(--t-slow) var(--ease) 200ms both}
 
 /* ---- boss intro: the boss on a spotlight, seven zaps to win, the prize rosette ---- */
 .rw-bstage{position:relative;width:min(230px,58vw,34vh);aspect-ratio:1;margin:0 0 var(--s-2)}
 .rw-bstage::before{content:'';position:absolute;left:4%;right:4%;bottom:0;height:42%;border-radius:50%;background:var(--star-tint)}
-.rw-bstage .rw-boss{position:relative;animation:rw-pop 600ms var(--spring) both}
-.rw-bstage .rb-fig{transform-box:fill-box;transform-origin:50% 100%;animation:rw-bob 1.6s var(--ease) 600ms 3}
+.rw-bstage .rw-boss{position:relative;animation:rw-pop var(--t-xl) var(--spring) both}
+.rw-bstage .rb-fig{transform-box:fill-box;transform-origin:50% 100%;animation:rw-bob var(--t-cele) var(--ease) 600ms 3}
 .rw-zaps{display:flex;justify-content:center;gap:2px;margin:0 0 var(--s-2);color:var(--try)}
 .rw-badge{position:relative;display:inline-block;width:76px;height:76px;flex:none}
 .rw-rose{display:block;width:100%;height:100%}
@@ -1886,7 +1875,7 @@ html.calm .rw-burst{display:none}
 .rw-boss.rw-p-hit .rb-hit,.bossE.hit .rw-boss .rb-hit,.bossE.ko .rw-boss .rb-hit{opacity:1}
 .rw-boss.rw-p-hit .rb-fig{transform:rotate(-6deg)}
 .bossE .rw-boss{width:1.3em;height:1.3em}
-.bossE.hit{animation:rw-hit 450ms var(--ease)}
+.bossE.hit{animation:rw-hit calc(var(--t) * 2.5) var(--ease)}
 
 /* ---- motion ---- */
 @keyframes rw-rise{from{opacity:0;transform:translateY(8px)}}
@@ -2075,7 +2064,7 @@ html.calm .rw-burst{display:none}
 .sc-space{background:linear-gradient(var(--ill-ink),var(--ill-purple-3))}
 .sc-castle{background:linear-gradient(var(--ill-purple-1),var(--ill-pink-1))}
 .hm-think{position:absolute;top:var(--s-2);right:var(--s-2);display:grid;place-items:center;width:44px;height:44px;border-radius:50%;
-  font-size:30px;background:var(--surface);box-shadow:0 3px 0 var(--drop);animation:hm-bob 1.8s ease-in-out infinite}
+  font-size:30px;background:var(--surface);box-shadow:0 3px 0 var(--drop);animation:hm-bob calc(var(--t-loop) * .75) var(--ease) 4}
 .hm-think::after{content:"";position:absolute;left:-2px;bottom:-6px;width:12px;height:12px;border-radius:50%;background:var(--surface)}
 @keyframes hm-bob{50%{transform:translateY(-4px)}}
 .hm-name{grid-area:nm;align-self:end;font-family:var(--font-display);font-size:var(--fs-4);font-weight:700;line-height:1.2;overflow-wrap:break-word}
@@ -2280,7 +2269,7 @@ button.hm-tile:active{transform:translateY(3px);box-shadow:inset 0 0 0 2px var(-
 .btn.node.done,.btn.node.cur{background:linear-gradient(var(--hi),var(--hi-0) 55%) var(--c,var(--brand));color:var(--surface);
   box-shadow:inset 0 3px 0 var(--hi),inset 0 0 0 4px var(--surface),0 5px 0 var(--c-shade,var(--brand-shade))}
 .btn.node.cur::after{content:'';position:absolute;inset:-9px;border:4px solid var(--c,var(--brand));border-radius:50%;opacity:0;
-  animation:k-ring 1.8s var(--ease) infinite;pointer-events:none}
+  animation:k-ring var(--t-loop) var(--ease) infinite;pointer-events:none}
 .btn.node.lock{background:var(--surface-2);color:var(--ink-3);box-shadow:inset 0 0 0 3px var(--line),0 3px 0 var(--line)}
 .btn.node.lock .ic{width:30px;height:30px}
 .btn.node:active{transform:translateY(3px)}
@@ -2332,7 +2321,7 @@ button.hm-tile:active{transform:translateY(3px);box-shadow:inset 0 0 0 2px var(-
 .gx-end{padding:var(--s-5) var(--s-5) var(--s-5)}
 .gx-disc{position:relative;width:96px;height:96px;background:var(--star-tint);color:var(--star-shade);--ic2:var(--star-tint);
   box-shadow:inset 0 0 0 4px var(--star),0 5px 0 var(--star-shade)}
-.gx-disc.rec{animation:rw-pop 600ms var(--spring) both}
+.gx-disc.rec{animation:rw-pop var(--t-xl) var(--spring) both}
 .gx-end .rw-rays{position:absolute;left:50%;top:-30px;width:300px;height:300px;margin-left:-150px;opacity:.7;pointer-events:none}
 .rw-card p.gx-best{margin:0 0 var(--s-2);font-weight:700}
 .gx-week{display:flex;justify-content:center;margin:var(--s-2) 0}
@@ -2640,7 +2629,7 @@ html.calm .tr-arr.go,html.calm .tr-sdi.pulse,html.calm .tr-sdi.hop,html.calm .tr
 }
 /* care feedback (careFx): drawn hearts, bubbles, stars and sparkles rise from the pet and fade */
 .pc-fx{position:fixed;z-index:45;width:0;height:0;pointer-events:none}
-.pc-fx i{position:absolute;left:0;top:0;opacity:0;transform:translate(-50%,-50%);animation:pc-up 1100ms var(--ease) var(--d,0ms) forwards}
+.pc-fx i{position:absolute;left:0;top:0;opacity:0;transform:translate(-50%,-50%);animation:pc-up var(--t-cele) var(--ease) var(--d,0ms) forwards}
 .pc-fx svg{display:block;width:100%;height:100%;overflow:visible}
 html.calm .pc-fx{display:none}
 @media (prefers-reduced-motion:reduce){.pc-fx{display:none}}
@@ -2739,11 +2728,38 @@ html.calm .pc-fx{display:none}
 .bk-bt{display:flex;justify-content:center;margin:0 0 var(--s-4)}
 html.calm .bt-nb .bd-m,html.calm .bt-nbm .bd-m{animation:none}
 @media (prefers-reduced-motion:reduce){.bt-nb .bd-m,.bt-nbm .bd-m{animation:none}}
+/* P4-17 motion layer (DESIGN_SYSTEM 8.1). Tokens only; transform and opacity only, so no animation moves the layout.
+   The screen-in (#app: fade + 8 px rise, --t-slow), the press squash (.btn, --t-fast) and the reduced motion / calm mode rule
+   (every animation and transition cut to 0.01 ms, one iteration) live in 20-base.css; sheets and toasts in 10-components.css.
+   Here: the drawn particle burst (burst() in 12-speech.js), the full-screen confetti (confetti() -> RW.burst on the body) and the
+   overlays' fade-in. Calm mode and reduced motion draw no particles at all. */
+
+/* burst(x, y, kind): 10 shaded pieces fly out of a point, turn a little and fade */
+.burst{position:fixed;z-index:45;width:0;height:0;pointer-events:none}
+.burst i{position:absolute;left:0;top:0;opacity:0;transform:translate(-50%,-50%) scale(.3);animation:fx-out calc(var(--t-xl) * 1.25) var(--ease) forwards}
+.burst svg{display:block;width:100%;height:100%;overflow:visible}
+@keyframes fx-out{
+  15%{opacity:1}
+  65%{opacity:1}
+  100%{opacity:0;transform:translate(calc(-50% + var(--x)),calc(-50% + var(--y))) scale(.85) rotate(var(--r))}}
+
+/* confetti() on the body: fixed to the middle of the screen, above overlays and sheets */
+.rw-burst.rw-fs{position:fixed;top:40%;z-index:70}
+
+/* overlays (pet growth, timed game results, the time-up card) fade in like sheets */
+.ovl{animation:fx-fade var(--t-slow) var(--ease)}
+@keyframes fx-fade{from{opacity:0}}
+
+/* calm mode and reduced motion: no particles (the sound and the screen's own change still say what happened) */
+html.calm .burst,html.calm .rw-burst,html.calm .fly,html.calm .pc-fx{display:none}
+@media (prefers-reduced-motion:reduce){.burst,.rw-burst,.fly,.pc-fx{display:none}}
+
+/* the question's streak and star chips keep their width from 9 to 10, so the track beside them does not jump */
+.qtop .stat b{display:inline-block;min-width:2ch;text-align:center}
 </style>
 </head>
 <body>
 <div id="app"></div>
-<div id="fb" class="fb"></div>
 <script>
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 /* Seedable randomness (P1-01). Generators use only rnd(), R, pick, shuffle, coin. genQ() swaps RNG for a seeded stream so a question can be rebuilt from (sk, lv, seed). Games and art keep Math.random. */
@@ -2897,7 +2913,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S));SAVE_FAILED=fals
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v133'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v134'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -2919,51 +2935,82 @@ const petAura=(st=S.stars)=>'rig'; // P4-05/P4-06: 'rig' = drawn pet (17-pets-sv
 const petN=()=>S.petName||PETS[S.pet].def;
 const STK=[...'🦄🐬🦖🚀🌈🍩🎸🏆🦁🐼🍕🎈🌟🐙🦋🍦🚂⚽🎨🐢🦊🍉🏰🛸🌻🐝🍪🎃🐳🦉🏀🚁🧁🍓🐧🦒🎡⛵🌋🦜🧸🎺🐞🍭🌙🦈🚒🐘'.matchAll(/\p{Extended_Pictographic}️?/gu)].map(m=>m[0]);
 
-/* ---------- sound engine (all synthesized, works offline) ---------- */
+/* ---------- sound engine (all synthesized, works offline) ----------
+   P4-17 (DESIGN_SYSTEM 8.2): one soft, consistent set of sounds.
+   - One master gain (MG). Every effect goes through its own small gain node into it, so at most 3 effects sound at once:
+     a 4th fades the oldest out (fxRun). Music and game sounds that call tone()/noise() go straight to MG.
+   - While the voice talks (speech or a recorded clip), MG ducks to 30% (sfxDuck), so effects and music never talk over it.
+   - Nothing plays with Sound effects off: SFX.*, tone() and noise() all check S.sound. Music has its own switch (S.music)
+     and uses the unchecked synth() directly.
+   - Levels: soft waveforms (sine, triangle), effects peak well under the voice; tools/test.js "motion and sound P4-17"
+     measures every effect's peak level and length. */
 let AC,MG;
-function ac(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)();MG=AC.createGain();MG.gain.value=.9;MG.connect(AC.destination)}catch(e){}}
+const MG_V=.8; // master level; ducked to MG_V * .3 under the voice
+function ac(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)();MG=AC.createGain();MG.gain.value=MG_V;MG.connect(AC.destination)}catch(e){}}
   if(AC&&AC.state=='suspended')AC.resume();return AC}
-function tone(f,d,t=0,type='sine',vol=.2,slide=0){const a=ac();if(!a)return;const n=a.currentTime+t,o=a.createOscillator(),g=a.createGain();
+let FXG=null; // while an effect is being built: {g: its gain node, end: when it stops}
+const FXON=[]; // effects still sounding, oldest first
+// a note: frequency f (Hz), length d (s), start t (s from now), wave type, peak level vol, optional slide to frequency `slide`
+function synth(f,d,t=0,type='sine',vol=.2,slide=0){const a=ac();if(!a)return;const n=a.currentTime+t,o=a.createOscillator(),g=a.createGain();
   o.type=type;o.frequency.setValueAtTime(f,n);if(slide)o.frequency.exponentialRampToValueAtTime(slide,n+d);
   g.gain.setValueAtTime(.0001,n);g.gain.exponentialRampToValueAtTime(vol,n+.012);g.gain.exponentialRampToValueAtTime(.0001,n+d);
-  o.connect(g).connect(MG);o.start(n);o.stop(n+d+.05)}
-function noise(d,t=0,vol=.15,f0=600,f1=4000){const a=ac();if(!a)return;const n=a.currentTime+t,b=a.createBuffer(1,a.sampleRate*d,a.sampleRate),x=b.getChannelData(0);
+  o.connect(g).connect(FXG?FXG.g:MG);o.start(n);o.stop(n+d+.05);if(FXG)FXG.end=Math.max(FXG.end,n+d+.05)}
+// band-passed noise of length d, swept from f0 to f1 Hz
+function hiss(d,t=0,vol=.15,f0=600,f1=4000){const a=ac();if(!a)return;const n=a.currentTime+t,b=a.createBuffer(1,Math.max(1,a.sampleRate*d|0),a.sampleRate),x=b.getChannelData(0);
   for(let i=0;i<x.length;i++)x[i]=Math.random()*2-1;const s=a.createBufferSource(),f=a.createBiquadFilter(),g=a.createGain();s.buffer=b;f.type='bandpass';f.Q.value=1.5;
   f.frequency.setValueAtTime(f0,n);f.frequency.exponentialRampToValueAtTime(f1,n+d);g.gain.setValueAtTime(vol,n);g.gain.exponentialRampToValueAtTime(.0001,n+d);
-  s.connect(f).connect(g).connect(MG);s.start(n)}
+  s.connect(f).connect(g).connect(FXG?FXG.g:MG);s.start(n);if(FXG)FXG.end=Math.max(FXG.end,n+d)}
+// the public ones, used by the games: silent with Sound effects off
+function tone(...a){if(S.sound)synth(...a)}
+function noise(...a){if(S.sound)hiss(...a)}
 const NOTE=m=>440*Math.pow(2,(m-69)/12);
 const XY=[0,2,4,5,7,9,11,12,14,16];
+// The set (DESIGN_SYSTEM 8.2 table): click = tap, right, wrong = try again, star, coin, open = chest, fanfare = unlock, hit = boss hit, whoosh.
+// The rest keep their old character at the same soft level.
 const RAW={
-  hit:()=>{noise(.18,0,.32,300,1200);tone(160,.22,0,'square',.12,60)},
-  ko:()=>{[72,67,64,60,55,48].forEach((m,i)=>tone(NOTE(m),.18,i*.09,'square',.09));noise(.6,.5,.2,200,6000)},
-  chomp:()=>{for(let i=0;i<3;i++){noise(.06,i*.14,.25,500,500);tone(220,.05,i*.14,'square',.06)}},
-  splash:()=>{noise(.5,0,.2,800,300);noise(.4,.3,.12,1500,600)},
-  click:()=>tone(1400,.03,0,'square',.04),
-  key:d=>{tone(NOTE(72+XY[d]),.35,0,'sine',.22);tone(NOTE(84+XY[d]),.12,0,'sine',.06)},
-  del:()=>tone(500,.12,0,'sine',.15,250),
-  pop:(i=0)=>tone(420+i*90,.09,0,'sine',.22,900+i*120),
-  right:s=>{const b=60+Math.min(s,10)*2;[0,4,7,12].forEach((x,i)=>tone(NOTE(b+x),.22,i*.07,'triangle',.18));tone(NOTE(b+24),.3,.28,'sine',.08)},
-  wrong:()=>{tone(320,.18,0,'triangle',.2,180);tone(260,.3,.16,'triangle',.18,110)},
-  coin:(i=0)=>{tone(NOTE(83+i),.06,0,'square',.07);tone(NOTE(88+i),.22,.06,'square',.07)},
-  streak:()=>{[0,4,7,11,14,19].forEach((x,i)=>tone(NOTE(79+x),.15,i*.045,'sine',.12));noise(.4,0,.05,3000,9000)},
-  fanfare:()=>{[[67,0,.12],[67,.13,.12],[67,.26,.12],[72,.4,.6],[64,.4,.6],[76,.4,.6]].forEach(([m,t,d])=>tone(NOTE(m),d,t,'square',.08));noise(.5,.4,.06,2000,8000)},
-  whoosh:()=>noise(.45,0,.18,300,5000),
-  magic:()=>{for(let i=0;i<14;i++)tone(NOTE(72+i*2),.25,i*.06,'sine',.1);noise(1,.2,.05,4000,10000)},
-  rattle:()=>{for(let i=0;i<5;i++)tone(150+Math.random()*120,.05,i*.07,'square',.06)},
-  open:()=>{noise(.3,0,.25,200,1500);tone(NOTE(60),.15,.05,'triangle',.2);[72,76,79,84,88].forEach((m,i)=>tone(NOTE(m),.3,.15+i*.07,'sine',.13))},
-  giggle:()=>{for(let i=0;i<5;i++)tone(700+i*60+Math.random()*80,.07,i*.08,'sine',.12,900+i*60)},
-  hatch:()=>{noise(.15,0,.3,800,800);noise(.15,.2,.3,900,900);noise(.4,.45,.3,500,3000)}};
-const SFX={};for(const k in RAW)SFX[k]=(...a)=>{if(S.sound)try{RAW[k](...a)}catch(e){}};
+  click:()=>{synth(1250,.03,0,'triangle',.04,700);synth(2500,.012,0,'sine',.01)},
+  right:s=>{const b=74+Math.min(s||0,8);synth(NOTE(b),.1,0,'triangle',.13);synth(NOTE(b+4),.12,.06,'triangle',.13);synth(NOTE(b+16),.1,.06,'sine',.025)},
+  wrong:()=>synth(NOTE(55),.15,0,'sine',.1,NOTE(52)),
+  star:()=>{synth(NOTE(93),.25,0,'sine',.08);synth(NOTE(100),.12,.015,'sine',.03)},
+  coin:(i=0)=>{synth(NOTE(86+i),.07,0,'triangle',.07);synth(NOTE(91+i),.13,.07,'triangle',.07)},
+  open:()=>{hiss(.18,0,.08,300,1200);[72,76,79,84,88].forEach((m,i)=>synth(NOTE(m),.3,.06+i*.08,'sine',.09))},
+  fanfare:()=>{[[67,0,.14],[72,.15,.14],[76,.3,.14],[79,.45,.62]].forEach(([m,t,d])=>synth(NOTE(m),d,t,'triangle',.09));synth(NOTE(91),.5,.47,'sine',.02)},
+  hit:()=>{synth(1100,.18,0,'triangle',.1,220);hiss(.14,0,.12,2400,700)},
+  whoosh:()=>hiss(.25,0,.1,400,3200),
+  ko:()=>{[76,72,67,64,60].forEach((m,i)=>synth(NOTE(m),.16,i*.09,'triangle',.08));hiss(.5,.45,.08,300,4000)},
+  chomp:()=>{for(let i=0;i<3;i++){hiss(.06,i*.14,.12,500,500);synth(220,.05,i*.14,'triangle',.06)}},
+  splash:()=>{hiss(.45,0,.12,800,300);hiss(.35,.25,.07,1500,600)},
+  key:d=>{synth(NOTE(72+XY[d]),.25,0,'sine',.12);synth(NOTE(84+XY[d]),.1,0,'sine',.03)},
+  del:()=>synth(500,.1,0,'sine',.08,280),
+  pop:(i=0)=>synth(420+i*90,.09,0,'sine',.12,900+i*120),
+  streak:()=>{[0,4,7,11,14,19].forEach((x,i)=>synth(NOTE(79+x),.15,i*.045,'sine',.08));hiss(.3,0,.03,3000,9000)},
+  magic:()=>{for(let i=0;i<10;i++)synth(NOTE(72+i*2),.22,i*.06,'sine',.06);hiss(.6,.15,.03,4000,10000)},
+  rattle:()=>{for(let i=0;i<5;i++)synth(150+Math.random()*120,.05,i*.07,'triangle',.08)},
+  giggle:()=>{for(let i=0;i<5;i++)synth(700+i*60+Math.random()*80,.07,i*.08,'sine',.09,900+i*60)},
+  hatch:()=>{hiss(.15,0,.14,800,800);hiss(.15,.2,.14,900,900);hiss(.4,.45,.14,500,3000)},
+  tick:()=>synth(880,.06,0,'triangle',.05)}; // the last seconds of a timed game
+// run one effect on its own gain node; a 4th effect at once fades the oldest out
+function fxRun(k,a){const x=ac();if(!x)return;const now=x.currentTime;
+  for(let i=FXON.length-1;i>=0;i--)if(FXON[i].end<=now)FXON.splice(i,1);
+  while(FXON.length>=3){const o=FXON.shift();try{o.g.gain.setTargetAtTime(0,now,.012)}catch(e){}}
+  const g=x.createGain();g.connect(MG);FXG={g,end:now};
+  try{RAW[k](...a)}finally{const f=FXG;FXG=null;if(f.end>now)FXON.push(f)}}
+const SFX={};for(const k in RAW)SFX[k]=(...a)=>{if(S.sound)try{fxRun(k,a)}catch(e){}};
+// duck effects and music to 30% while talking() says the voice is on (checked every 200 ms, at most 30 s)
+let DUCK=null;
+function sfxDuck(talking){if(!AC||!MG)return;clearInterval(DUCK);const t0=Date.now();
+  try{MG.gain.setTargetAtTime(MG_V*.3,AC.currentTime,.03)}catch(e){}
+  DUCK=setInterval(()=>{if(Date.now()-t0<400||(talking()&&Date.now()-t0<30000))return;clearInterval(DUCK);DUCK=null;
+    try{MG.gain.setTargetAtTime(MG_V,AC.currentTime,.08)}catch(e){}},200)}
 let musT=null;
 function music(on){clearInterval(musT);musT=null;if(!on||!S.music)return;let i=0;const sc=[60,62,64,67,69,72,74,76,79],bass=[48,53,55,52];
   musT=setInterval(()=>{if(!AC||AC.state!='running')return;
-    if(i%8==0)tone(NOTE(bass[(i/8|0)%4]),1.2,0,'sine',.05);
-    if(i%2==0&&Math.random()<.8)tone(NOTE(pick(sc)),.35,0,'triangle',.035);i++},260)}
+    if(i%8==0)synth(NOTE(bass[(i/8|0)%4]),1.2,0,'sine',.05);
+    if(i%2==0&&Math.random()<.8)synth(NOTE(pick(sc)),.35,0,'triangle',.035);i++},260)}
 document.addEventListener('pointerdown',e=>{ac();const b=e.target.closest('.btn');if(b&&!b.matches('.k,.lt,.ch,.chestbtn'))SFX.click()},true);
-
 /* ---------- speech & feedback ---------- */
 const canSpeak=()=>'speechSynthesis' in window&&typeof SpeechSynthesisUtterance!='undefined';
-function noVoice(btn){fb('🔇 No voice here. Open Star School in Chrome or the installed app.','warn long',3000);if(btn){btn.classList.remove('talking');anim(btn,'sad')}}
+function noVoice(btn){fb('No voice here. Open Star School in Chrome or the installed app.','warn long',3000);if(btn){btn.classList.remove('talking');anim(btn,'sad')}}
 // P2-30: is there a Spanish voice? 'yes', 'no', or 'wait' (the list is still empty: some browsers fill it late, then fire voiceschanged).
 // An empty list after 3 s is 'no' (nothing can speak). esVoiceMode is pure so tests can feed it voice lists.
 function esVoiceMode(vs,spk,ms){if(!spk)return'no';if(vs.some(v=>/^(es|spa)/i.test(v.lang)))return'yes';return vs.length||ms>3000?'no':'wait'}
@@ -2980,7 +3027,7 @@ function say(t,btn,lang,q){if(lang=='es'&&esVoice()=='no'){esNote();if(btn)btn.c
   const vs=speechSynthesis.getVoices(),v=es?(vs.find(v=>/^es[-_](MX|US)/i.test(v.lang))||vs.find(v=>/^es/i.test(v.lang))):(vs.find(v=>/^en[-_]US/i.test(v.lang))||vs.find(v=>/^en/i.test(v.lang)));if(v)u.voice=v;
   if(btn){let started=false;btn.classList.add('talking');u.onstart=()=>{started=true};u.onend=u.onerror=()=>btn.classList.remove('talking');
     setTimeout(()=>{if(!started&&!speechSynthesis.speaking)noVoice(btn)},2500)}
-  speechSynthesis.speak(u)}catch(e){if(btn)noVoice(btn)}}
+  speechSynthesis.speak(u);sfxDuck(()=>speechSynthesis.speaking||speechSynthesis.pending)}catch(e){if(btn)noVoice(btn)}}
 // P4-10: feedback is the P4-04 toast (UI.toast in 14-ui.js). cls picks its look: '' right (green, tick), 'warn' / 'bad' try again (amber),
 // 'again' amber with the replay arrow, 'info' / 'pl-fb' neutral (blue, bulb), 'streak' (flame), 'zap' (bolt). The #fb element is no longer used.
 let fbT;function fb(t,cls='',ms=1000){const c=String(cls||'');
@@ -2992,13 +3039,26 @@ function anim(e,c){if(!e)return;e.classList.remove('jump','sad');void e.offsetWi
 function flyStar(from){const to=$('#starc');if(!to)return;const r=from?from.getBoundingClientRect():{left:innerWidth/2,top:innerHeight/2,width:0,height:0},t=to.getBoundingClientRect();
   const x=r.left+r.width/2,y=r.top+r.height/2,e=document.createElement('div');e.className='fly';e.innerHTML=ico('star',48);e.style.left=x+'px';e.style.top=y+'px';document.body.appendChild(e);
   requestAnimationFrame(()=>requestAnimationFrame(()=>{e.style.transform=`translate(${t.left+20-x}px,${t.top+16-y}px) scale(.5)`;e.style.opacity=.4}));
-  setTimeout(()=>{e.remove();SFX.coin();bump('#starc')},640)}
-// a burst of 10 sparkles from (x, y): drawn stars (P4-10), or the emoji in set (boss hits)
-function burst(x,y,set){for(let i=0;i<10;i++){const e=document.createElement('div');e.className='burst';
-  if(set)e.textContent=pick(set);else{e.className+=' b'+(i%3);e.innerHTML=ico('star',i%2?18:26)}e.style.left=x+'px';e.style.top=y+'px';document.body.appendChild(e);
-  const a=Math.random()*Math.PI*2,d=80+Math.random()*90;requestAnimationFrame(()=>requestAnimationFrame(()=>{e.style.transform=`translate(${Math.cos(a)*d}px,${Math.sin(a)*d}px) scale(.4)`;e.style.opacity=0}));setTimeout(()=>e.remove(),800)}}
-function confetti(n=36){for(let i=0;i<n;i++){const e=document.createElement('div');e.className='conf';e.textContent=pick(['⭐','🎉','✨','🌟','🎈','🍬']);
-  e.style.left=Math.random()*100+'vw';e.style.animationDuration=(1.8+Math.random()*1.8)+'s';e.style.animationDelay=Math.random()*.6+'s';document.body.appendChild(e);setTimeout(()=>e.remove(),4500)}}
+  setTimeout(()=>{e.remove();SFX.star();bump('#starc')},640)}
+/* P4-17: drawn particles only (no emoji). burst(x, y, kind): 10 shaded pieces fly out of a screen point and fade (keyframes fx-out in
+   src/css/50-motion.css, transform and opacity only). kind: 'star' (a right answer), 'heart' (the pet is tapped), 'zap' (a boss hit),
+   'coin' (a balloon pops). The heart, star and sparkle are Pet Care's drawings (PC_FX, 56-petcare.js); the bolt and coin are FX_ART.
+   confetti(n): the drawn confetti (RW.burst) over the whole screen, at most 40 pieces. Both are hidden in calm mode and with reduced
+   motion (the sound and the screen's own change still say what happened). */
+const FX_C=h=>`var(--ill-${h})`;
+const FX_ART={
+  bolt:`<path fill="${FX_C('yellow-2')}" d="M14.6 1.8L4.6 13.6h6.2l-2 8.6 10.6-12.4h-6.4z"/><path fill="${FX_C('yellow')}" d="M13.8 2.4L5.2 12.8h5.9l-1.6 6.9 8.8-10.4h-6.1z"/>`+
+    `<path fill="${FX_C('white')}" opacity=".8" d="M12.4 4.6l-4.2 5.2h1.6z"/>`,
+  coin:`<circle cx="12" cy="12.6" r="9.4" fill="${FX_C('yellow-2')}"/><circle cx="11.6" cy="12" r="8.6" fill="${FX_C('yellow')}"/>`+
+    `<circle cx="11.6" cy="12" r="5.6" fill="none" stroke="${FX_C('yellow-2')}" stroke-width="1.4"/><ellipse cx="8.4" cy="8.4" rx="2" ry="1.2" fill="${FX_C('white')}" opacity=".85" transform="rotate(-40 8.4 8.4)"/>`};
+const FX_SET={star:['star','spark','star'],heart:['heart','spark','heart'],zap:['bolt','spark','star'],coin:['coin','spark','coin']};
+function burst(x,y,kind='star'){const set=FX_SET[kind]||FX_SET.star,art=n=>FX_ART[n]||PC_FX[n],b=document.createElement('div');
+  b.className='burst fx-'+(FX_SET[kind]?kind:'star');b.setAttribute('aria-hidden','true');b.style.left=Math.round(x)+'px';b.style.top=Math.round(y)+'px';let h='';
+  for(let i=0;i<10;i++){const a=i/10*Math.PI*2+Math.random()*.5,d=60+Math.random()*70,s=i%3?20:30;
+    h+=`<i style="--x:${Math.round(Math.cos(a)*d)}px;--y:${Math.round(Math.sin(a)*d)}px;--r:${Math.round(Math.random()*80-40)}deg;width:${s}px;height:${s}px">`+
+      `<svg viewBox="0 0 24 24">${art(set[i%set.length])}</svg></i>`}
+  b.innerHTML=h;document.body.appendChild(b);setTimeout(()=>b.remove(),900)}
+function confetti(n=36){RW.burst(document.body,Math.min(40,n))}
 /* ---------- UI components (P4-04; DESIGN_SYSTEM.md section 4) ----------
    Small helpers that return the markup of the components in src/css/10-components.css, so every screen draws them the same way.
    Text arguments are escaped here; arguments named `html` are inserted as they are (the caller escapes what goes in them).
@@ -5295,11 +5355,14 @@ const RW = {
       `${UI.btn('Map', { icon: 'map', id: 'nope' })}</div></div>`;
   },
 
-  // drawn confetti: n pieces fly out of the middle of host and fade (about 1 s). Hidden in calm mode and with reduced motion.
+  // drawn confetti: n pieces (at most 40) fly out of the middle of host and fade (about 1.2 s). Hidden in calm mode and with reduced
+  // motion. On the body (P4-17: confetti() in 12-speech.js) it is fixed to the middle of the screen, above overlays.
   burst(host, n = 24) {
     if (!host || !host.isConnected) return;
+    n = Math.min(40, n);
     const b = document.createElement('div');
-    b.className = 'rw-burst';
+    b.className = host == document.body ? 'rw-burst rw-fs' : 'rw-burst';
+    b.setAttribute('aria-hidden', 'true');
     let h = '';
     for (let i = 0; i < n; i++) {
       const a = (i / n) * Math.PI * 2 + Math.random() * .4, d = 70 + Math.random() * 90;
@@ -5594,7 +5657,10 @@ function hintStep(q) {
 
 
 /* ---------- screens ---------- */
-const view=h=>{music(false);stopBalloons();if(typeof stopRace=='function')stopRace();if(typeof stopFlu=='function')stopFlu();if(typeof stopHC=='function')stopHC();if(typeof gtStop=='function')gtStop();if(typeof BT!='undefined')BT.stop();if(typeof TR!='undefined')TR.stop();const a=$('#app');a.style.animation='none';void a.offsetWidth;a.style.animation='';a.innerHTML=h};
+// P4-17: calm mode (Grown-ups switch, S.calm, read with a default) sets html.calm: no large movement, no confetti, no loops.
+// Every screen adds it when S.calm is on; the switch (80-grown.js) turns it off again with calmApply(true).
+function calmApply(sync){try{const c=document.documentElement.classList;if(S.calm)c.add('calm');else if(sync)c.remove('calm')}catch(e){}}
+const view=h=>{music(false);calmApply();stopBalloons();if(typeof stopRace=='function')stopRace();if(typeof stopFlu=='function')stopFlu();if(typeof stopHC=='function')stopHC();if(typeof gtStop=='function')gtStop();if(typeof BT!='undefined')BT.stop();if(typeof TR!='undefined')TR.stop();const a=$('#app');a.style.animation='none';void a.offsetWidth;a.style.animation='';a.innerHTML=h};
 const PET_YAY=['Yay!','Woo-hoo!','You did it!','So smart!','High five!','Awesome!','Super!'];
 const PET_OOPS=['Oops! Try again!','You can do it!','Almost!','Hmm, look again!'];
 
@@ -6099,7 +6165,7 @@ function playClip(kind){const cs=CLIPS.filter(c=>c.kind==kind);if(!cs.length||!S
   let b=(BAG[kind]||[]).filter(id=>cs.some(c=>c.id==id));
   if(!b.length){b=shuffle(cs.map(c=>c.id));if(b.length>1&&b[0]==BAG['last_'+kind])b.push(b.shift())}
   const id=b.shift();BAG[kind]=b;BAG['last_'+kind]=id;const c=cs.find(x=>x.id==id);
-  try{speechSynthesis.cancel();const a=new Audio(c.url);a.play().catch(()=>{});return true}catch(e){return false}}
+  try{speechSynthesis.cancel();const a=new Audio(c.url);a.play().catch(()=>{});sfxDuck(()=>!a.ended&&!a.paused);return true}catch(e){return false}}
 const CLIPKINDS=[
  ['cheer','Cheers','Played after right answers.',['Great job, {name}!','You\'re so smart!','Way to go!','Boom! You nailed it!','I\'m so proud of you!','High five!'],'party'],
  ['oops','Try again','Played sometimes after a miss.',['That\'s okay, try again!','Almost! Look again.','You can do it!','Mistakes help us learn!','Take your time, buddy.','Give it another try!'],'thumbs-up'],
@@ -6645,9 +6711,9 @@ function home(first){
   <div class="scroll hm" id="hs"><div class="hm-cols">
    <div class="hm-col">${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('target', 26)}<span>Today's missions</span></h2>${hmMissions()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}${hmDaily()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
-   <p class="hm-ver">${ico('star', 16)}<span>Star School v133</span></p></div>`);
+   <p class="hm-ver">${ico('star', 16)}<span>Star School v134</span></p></div>`);
   music(true);
-  const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,['💖','✨','⭐']);
+  const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'heart');
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
   $$('.game').forEach(b=>b.onclick=()=>{SFX.whoosh();pathMap(b.dataset.p)});
   placeBannerBind();revCardBind();hmMissionsBind();
@@ -8179,7 +8245,7 @@ function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;G.re
   const K=KIND[q.kind];
   if(!K)throw new Error('unknown question kind '+q.kind);
   const input=K.render(q),ar=qSubj(q);
-  const track=G.boss?`<div class="bossbar"><span class="bossE" id="bossE">${G.boss.e}<div class="bubble" id="bub"></div></span><div class="hp"><div id="hpf" style="width:${G.hp/7*100}%"></div></div><b id="hpn" aria-label="${G.hp} hearts">${GFX.hearts(G.hp)}</b></div>`
+  const track=G.boss?`<div class="bossbar"><span class="bossE" id="bossE">${G.boss.e}<div class="bubble" id="bub"></div></span><div class="hp"><div id="hpf" style="transform:scaleX(${G.hp/7})"></div></div><b id="hpn" aria-label="${G.hp} hearts">${GFX.hearts(G.hp)}</b></div>`
     :`<div class="qtrack" id="qtrack" style="--n:${G.n+1};--p:${Math.min(G.done,G.n)/G.n}">${UI.dots(G.n,G.done,G.res)}`
       +`<span class="qgoal${G.test?' test':''}" aria-hidden="true">${ico(G.test?'bolt':'gift')}</span>`
       +`<div class="qwalk" id="qwalk" style="transform:${qLeft()}"><div class="runner ${petAura()}" id="runner">${petHTML()}<div class="bubble" id="bub"></div></div></div></div>`;
@@ -8243,9 +8309,9 @@ function check(v,el){if(G.lock)return;const q=G.q,K=KIND[q.kind],p=P(q.sk),ok=K.
   qProg();
   fb("Here's the answer",'info');petSay("We'll get it next time!");say(q.after||K.spoken(q),null,q.afterLang);save();setTimeout(next,2600)}
 
-function bossHit(){const b=$('#bossE'),f=$('#hpf'),h=$('#hpn');if(f)f.style.width=G.hp/7*100+'%';if(h){h.innerHTML=GFX.hearts(G.hp);h.setAttribute('aria-label',G.hp+' hearts')}
-  if(b){b.classList.remove('hit');void b.offsetWidth;b.classList.add('hit');const r=b.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,['💥','⚡','✨'])}SFX.hit()}
-function bossKO(){const b=$('#bossE');if(b)b.classList.add('ko');SFX.ko();confetti(40);fb(`You beat ${G.boss.name}! 🏆`);if(S.voice)say(`You beat ${G.boss.name}!`)}
+function bossHit(){const b=$('#bossE'),f=$('#hpf'),h=$('#hpn');if(f)f.style.transform=`scaleX(${G.hp/7})`;if(h){h.innerHTML=GFX.hearts(G.hp);h.setAttribute('aria-label',G.hp+' hearts')}
+  if(b){b.classList.remove('hit');void b.offsetWidth;b.classList.add('hit');const r=b.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'zap')}SFX.hit()}
+function bossKO(){const b=$('#bossE');if(b)b.classList.add('ko');SFX.ko();confetti(40);fb(`You beat ${G.boss.name}!`);if(S.voice)say(`You beat ${G.boss.name}!`)}
 function award(){const s=pick(STK),isNew=!S.stickers[s];S.stickers[s]=(S.stickers[s]||0)+1;return{s,isNew}}
 function finish(){
   const g=G,sc=g.score,n=g.n,best=g.best,before=S.stars,d=day(),p=g.path,ni=g.node,nd=p?NODES[p][ni]:null;
@@ -8270,7 +8336,8 @@ function finish(){
   // P4-11: the drawn chest, star rating, earned list and message cards come from RW (18-reward-art.js, 42-rewards.css).
   // The rewards above, the order of the sequence and its sounds are unchanged.
   view(RW.pre());
-  setTimeout(SFX.rattle,300);const rt=setInterval(()=>{if(!$('#chest'))return clearInterval(rt);SFX.rattle()},1200);
+  // P4-17: the chest rattles 4 times (sound and CSS), then waits quietly; nothing loops forever
+  setTimeout(SFX.rattle,300);let rn=1;const rt=setInterval(()=>{if(!$('#chest')||rn>=4)return clearInterval(rt);rn++;SFX.rattle()},1200);
   let opened=false;
   $('#chest').onclick=()=>{if(opened)return;opened=true;clearInterval(rt);SFX.open();const f=$('#fin');
     const nextI=!g.mix&&ni+1<NODES[p].length&&unlocked(p,ni+1)?ni+1:-1;
@@ -8282,8 +8349,9 @@ function finish(){
     f.innerHTML=RW.done({sc,n,line,tip,rate:g.mix||g.test||!stars?-1:stars,next:nextI>=0&&newPass,again:low||(g.test&&!testOk)?'Try again':'Play again',menu:g.mix?'Home':'Map'});
     RW.burst(f.querySelector('.rw-chest-o'),sc>=7?28:14);
     const live=()=>f.isConnected;let t=0;
-    const add=(id,h)=>{const c=$('#'+id);c.insertAdjacentHTML('beforeend',h);return c.lastElementChild};
-    prizes.forEach((pz,k)=>{setTimeout(()=>{if(!live())return;$('#prz').insertAdjacentHTML('beforeend',RW.sticker(pz.s,pz.isNew,k));SFX.magic()},t);t+=600});
+    // P4-17: every sticker, row and card goes in at once, hidden in its place (.rw-wait), and is shown in turn: nothing on the screen moves
+    const add=(id,h)=>{const c=$('#'+id);c.insertAdjacentHTML('beforeend',h);const e=c.lastElementChild;e.classList.add('rw-wait');return e};
+    prizes.forEach((pz,k)=>{const e=add('prz',RW.sticker(pz.s,pz.isNew,k));setTimeout(()=>{if(!live())return;e.classList.remove('rw-wait');SFX.magic()},t);t+=600});
     for(let i=0;i<sc;i++){setTimeout(()=>{if(!live())return;RW.count(i+1);SFX.coin(i)},t);t+=150}
     setTimeout(()=>{if(!live())return;const d=$('#btns');d.style.visibility='visible';d.classList.add('on');
       $('#bonus').onclick=()=>balloons(g.mix||g.boss||g.test?(p||pick(['math','read','es'])):skArea(g.sk,g.lv),g);
@@ -8306,7 +8374,7 @@ function finish(){
     if(mission)M('calendar','All 3 missions done! +5 bonus stars!','fanfare','win');
     if(stk.msg)M('flame',esc(RW.clean(stk.msg)),'fanfare','win');
     if(g.mix)M('target','Great practice on the tricky ones!',null);
-    msgs.forEach(([to,h,s,x])=>{setTimeout(()=>{if(!live())return;const e=add(to,h);if(s)SFX[s]();if(x)RW.burst(e,28)},t);t+=650});
+    msgs.forEach(([to,h,s,x])=>{const e=add(to,h);setTimeout(()=>{if(!live())return;e.classList.remove('rw-wait');if(s)SFX[s]();if(x)RW.burst(e,28)},t);t+=650});
     };
 }
 function growShow(before){const o=document.createElement('div');o.className='ovl rw-ovl';const hatch=stage(before)==0;
@@ -8511,14 +8579,14 @@ function balloons(area,g){const rule=balloonRule(area);let popped=0,left=30;
   function spawn(){const[lab,ok,col]=rule.gen(),e=document.createElement('button');e.className='bal';e.style.setProperty('--c',col||pick(cols));e.textContent=lab;
     const W=bf.clientWidth;e.style.left=R(4,Math.max(5,W-94))+'px';const b={e,ok,y:bf.clientHeight+10,v:(bf.clientHeight+130)/R(50,75)*10,dead:false};e.style.top=b.y+'px';
     e.onpointerdown=ev=>{ev.preventDefault();if(b.dead)return;
-      if(b.ok){b.dead=true;popped++;S.coins++;save();SFX.pop(R(2,6));setTimeout(()=>SFX.coin(R(0,4)),60);const r=e.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,['💥','✨','🪙']);e.remove();UI.setChip($('#bpop'),popped)}
+      if(b.ok){b.dead=true;popped++;S.coins++;save();SFX.pop(R(2,6));setTimeout(()=>SFX.coin(R(0,4)),60);const r=e.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'coin');e.remove();UI.setChip($('#bpop'),popped)}
       else{SFX.wrong();anim(e,'sad')}};
     bf.appendChild(e);BL.list.push(b)}
   function frame(ts){if(!BL)return;const dt=last?Math.min(.05,(ts-last)/1000):0;last=ts;spawnT-=dt;if(spawnT<=0&&left>0){spawn();spawnT=.75}
     BL.list=BL.list.filter(b=>{if(b.dead)return false;b.y-=b.v*dt;b.e.style.top=b.y+'px';if(b.y<-130){b.e.remove();return false}return true});
     BL.raf=requestAnimationFrame(frame)}
   BL.raf=requestAnimationFrame(frame);
-  BL.tick=setInterval(()=>{left--;const t=$('#btime b');if(t)t.textContent=left;if(left<=3&&left>0)tone(880,.08,0,'square',.05);
+  BL.tick=setInterval(()=>{left--;const t=$('#btime b');if(t)t.textContent=left;if(left<=3&&left>0)SFX.tick();
     if(left<=0){stopBalloons();bf.innerHTML='';SFX.fanfare();confetti(24);
       const o=GFX.endCard({icon:'balloon',title:`You popped ${popped}!`,best:'',earn:`${ico('coin',28,'ic-coin')}<span>+${popped} coins</span>`,
         btns:UI.btn(g.mix||!g.path?'Play more':'Keep going',{kind:'primary',size:'lg',wide:true,icon:g.mix||!g.path?'replay':'play',id:'bnext'})+UI.btn(g.path?'Map':'Home',{icon:g.path?'map':'home',wide:true,id:'bhome'})});
@@ -8670,7 +8738,7 @@ function race(cat){S.race=S.race||{};const best=S.race[cat]||0;
     if(String(v)===String(q.ans)){RC.score++;SFX.right(RC.score%10);UI.setChip($('#rsc'),RC.score);if(el)el.classList.add('right');KIND[q.kind].right(q);setTimeout(rq,250)}
     else{SFX.wrong();if(el)el.classList.add('wrong');KIND[q.kind].reveal(q);setTimeout(rq,800)}};
   setTimeout(()=>{fb('Ready… GO!','zap');SFX.fanfare();rq()},300);
-  RC.iv=setInterval(()=>{if(!RC)return;RC.left--;GFX.bar($('#rbar'),RC.left/60);if(RC.left<=5&&RC.left>0)tone(880,.08,0,'square',.05);
+  RC.iv=setInterval(()=>{if(!RC)return;RC.left--;GFX.bar($('#rbar'),RC.left/60);if(RC.left<=5&&RC.left>0)SFX.tick();
     if(RC.left<=0){const sc=RC.score,rec=sc>best;stopRace();if(rec)S.race[cat]=sc;const coins=Math.floor(sc/2)+(rec&&sc>0?5:0);S.coins+=coins;const ps=ptRace(cat,sc);if(ps)ptEarn(ps);save();
       rec&&sc>0?(SFX.fanfare(),confetti(40)):SFX.magic();
       const o=GFX.endCard({rec:rec&&sc>0,title:`${sc} in 60 seconds!`,best:`Your best: ${best}`,
@@ -9237,7 +9305,7 @@ function fluPlay(set, mode) {
       if (timed) {
         GFX.bar($('#fbar'), left / FLU.SECS);
         $('#ftm b').textContent = Math.max(0, Math.ceil(left)) + ' s';
-        if (left <= 5 && left > 0 && Math.ceil(left) != FL.beep) {FL.beep = Math.ceil(left); tone(880, .08, 0, 'square', .05)}
+        if (left <= 5 && left > 0 && Math.ceil(left) != FL.beep) {FL.beep = Math.ceil(left); SFX.tick()}
         if (left <= 0) finish();
       } else $('#ftm b').textContent = fluSecs(ms) + ' s';
     }, 200);
@@ -10133,7 +10201,7 @@ const BT = {
    P4-12 (DESIGN_SYSTEM 9 row 6): a calm adult layout in the same system. Each section is a card with an icon header (GW.card);
    switches, segmented controls, fields and a readable table from the P4-04 components; two columns on a wide screen. Styles in
    src/css/48-setup-grown-care.css. Every id the code and the tests use is kept: #back, #nm, #pn, #bd, .gr[data-g], .pl-grown,
-   #ula, #rp-open, [data-rec], [data-play], [data-del], [data-per], [data-max], #pt5, #pt0, #ptp, #applog, #voice, #snd, #mus,
+   #ula, #rp-open, [data-rec], [data-play], [data-del], [data-per], [data-max], #pt5, #pt0, #ptp, #applog, #voice, #snd, #mus, #calm,
    #test, #reset. Nothing here shares or prints; the report card's Print button carries the online note (82-report.js). */
 const GW = {
   // a section: icon disc + title, an optional line under it, then the body. tone: a subject or token class for the disc colour.
@@ -10191,7 +10259,7 @@ function grown(){let armed=false;
     <div class="gw-sw">${UI.sw('Open the Game Room today anyway',bank.open===today(),'pto')}</div>`:''}
     <div class="gw-row"><span class="gw-rl">Bank</span><span class="gw-btns">${UI.btn('+5 min',{size:'sm',icon:'plus',id:'pt5'})}${UI.btn('Empty bank',{size:'sm',kind:'ghost',icon:'trash',id:'pt0',cls:'gw-risk'})}</span></div>
     <div class="gw-sw">${UI.sw('Pause game time (games locked)',pc.pause,'ptp')}</div>`,{tone:'s-play',sub:'Each learning round earns game time, plus a bonus for 10 out of 10, bosses, tests, puzzles and the Daily Review.'})}
-  ${GW.card('gw-snd','sound-on','Sound and voice',`<div class="gw-sw">${UI.sw('Read questions out loud',S.voice,'voice')}${UI.sw('Sound effects',S.sound,'snd')}${UI.sw('Music on the home screen',S.music,'mus')}</div>
+  ${GW.card('gw-snd','sound-on','Sound and voice',`<div class="gw-sw">${UI.sw('Read questions out loud',S.voice,'voice')}${UI.sw('Sound effects',S.sound,'snd')}${UI.sw('Music on the home screen',S.music,'mus')}${UI.sw('Calm mode: less movement, no confetti',!!S.calm,'calm')}</div>
     ${UI.btn('Test voice',{size:'sm',icon:'speak',id:'test'})}`)}
   ${GW.card('gw-rec','mic','Your voice',(inFrame?warn('Recording only works on the tablet app, not in this preview.'):!canRec?warn("Recording isn't available in this browser. Use Chrome or the installed app."):'')+clips,
     {sub:`Tap Record and say the line (up to 4 seconds). Record as many as you like; the app shuffles them so the same one doesn't play twice in a row.`})}
@@ -10199,7 +10267,7 @@ function grown(){let armed=false;
     {sub:'Rounds played and first-try accuracy for every skill on the maps, with the questions missed most.'})}
   ${GW.card('gw-how','info','How it works',`<p class="gw-p">Each subject has its own map. Getting 7 of 10 right opens the next stop (8 earns 2 stars, 10 earns 3), and each world stretches further. Missed questions come back at the end of a round, in later rounds, in Daily Review and in the Tricky Mix. Each right answer earns a star (the pet grows) and a coin (spent in the shop). Everything is saved on this tablet only.</p>`)}
   <details class="gw-card gw-det" id="applog"><summary class="gw-h"><span class="gw-hi">${ico('doc',24)}</span><span>App log</span>${ico('chevron-right',22,'chev')}</summary><div class="gw-log">
-   <div><b>Version</b> v133</div><div><b>Save size</b> ${(JSON.stringify(S).length/1024).toFixed(1)} KB</div>
+   <div><b>Version</b> v134</div><div><b>Save size</b> ${(JSON.stringify(S).length/1024).toFixed(1)} KB</div>
    <div><b>Storage</b> ${SAVE_FAILED?'<span class="gw-bad">could not save (device storage may be full)</span>':'saving OK'}</div>
    ${SAVE_CORRUPT?'<div class="gw-bad">The old save could not be read. A fresh start was made and the old data was kept on the device.</div>':''}
    <div><b>Last errors</b> ${(S.err||[]).length?'<ul class="gw-errs">'+(S.err||[]).slice().reverse().map(e=>'<li><span>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+'</span> '+esc(e.msg)+'</li>').join('')+'</ul>':'none'}</div></div></details>
@@ -10222,6 +10290,7 @@ function grown(){let armed=false;
   $('#voice').onchange=e=>{S.voice=e.target.checked;save()};
   $('#snd').onchange=e=>{S.sound=e.target.checked;save()};
   $('#mus').onchange=e=>{S.music=e.target.checked;save()};
+  $('#calm').onchange=e=>{S.calm=e.target.checked;save();calmApply(true)}; // P4-17
   $('#test').onclick=e=>say(`Hello ${S.name}! I can read to you.`,e.currentTarget);
   $$('[data-play]').forEach(b=>b.onclick=()=>{const c=CLIPS.find(x=>x.id==b.dataset.play);if(c)new Audio(c.url).play().catch(()=>{})});
   $$('[data-del]').forEach(b=>b.onclick=async()=>{await DB.del(b.dataset.del);await loadClips();grown()});
@@ -10550,20 +10619,20 @@ function appFiles() {
   ];
 }
 function dataReady() {
-  return appFiles().every(f => f[1] === 'v133');
+  return appFiles().every(f => f[1] === 'v134');
 }
 function dataMissing() {
-  logErr(appFiles().filter(f => f[1] !== 'v133').map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v133)');
+  logErr(appFiles().filter(f => f[1] !== 'v134').map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v134)');
   const again = UI.btn('Try again', { kind: 'primary', size: 'lg', icon: 'replay', id: 'dataretry' });
   view(`<div class="scroll" id="datamiss">${UI.empty('download', 'Star School needs to finish updating. Connect to the internet, then tap Try again.', again)}</div>`);
   $('#dataretry').onclick = () => location.reload();
 }
 </script>
-<script src="gen.v133.js"></script>
-<script src="gen2.v133.js"></script>
-<script src="bt.v133.js"></script>
-<script src="games.v133.js"></script>
-<script src="data.v133.js"></script>
+<script src="gen.v134.js"></script>
+<script src="gen2.v134.js"></script>
+<script src="bt.v134.js"></script>
+<script src="games.v134.js"></script>
+<script src="data.v134.js"></script>
 <script>
 if (dataReady()) {
   loadClips();

@@ -24,14 +24,14 @@ function balloons(area,g){const rule=balloonRule(area);let popped=0,left=30;
   function spawn(){const[lab,ok,col]=rule.gen(),e=document.createElement('button');e.className='bal';e.style.setProperty('--c',col||pick(cols));e.textContent=lab;
     const W=bf.clientWidth;e.style.left=R(4,Math.max(5,W-94))+'px';const b={e,ok,y:bf.clientHeight+10,v:(bf.clientHeight+130)/R(50,75)*10,dead:false};e.style.top=b.y+'px';
     e.onpointerdown=ev=>{ev.preventDefault();if(b.dead)return;
-      if(b.ok){b.dead=true;popped++;S.coins++;save();SFX.pop(R(2,6));setTimeout(()=>SFX.coin(R(0,4)),60);const r=e.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,['💥','✨','🪙']);e.remove();UI.setChip($('#bpop'),popped)}
+      if(b.ok){b.dead=true;popped++;S.coins++;save();SFX.pop(R(2,6));setTimeout(()=>SFX.coin(R(0,4)),60);const r=e.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'coin');e.remove();UI.setChip($('#bpop'),popped)}
       else{SFX.wrong();anim(e,'sad')}};
     bf.appendChild(e);BL.list.push(b)}
   function frame(ts){if(!BL)return;const dt=last?Math.min(.05,(ts-last)/1000):0;last=ts;spawnT-=dt;if(spawnT<=0&&left>0){spawn();spawnT=.75}
     BL.list=BL.list.filter(b=>{if(b.dead)return false;b.y-=b.v*dt;b.e.style.top=b.y+'px';if(b.y<-130){b.e.remove();return false}return true});
     BL.raf=requestAnimationFrame(frame)}
   BL.raf=requestAnimationFrame(frame);
-  BL.tick=setInterval(()=>{left--;const t=$('#btime b');if(t)t.textContent=left;if(left<=3&&left>0)tone(880,.08,0,'square',.05);
+  BL.tick=setInterval(()=>{left--;const t=$('#btime b');if(t)t.textContent=left;if(left<=3&&left>0)SFX.tick();
     if(left<=0){stopBalloons();bf.innerHTML='';SFX.fanfare();confetti(24);
       const o=GFX.endCard({icon:'balloon',title:`You popped ${popped}!`,best:'',earn:`${ico('coin',28,'ic-coin')}<span>+${popped} coins</span>`,
         btns:UI.btn(g.mix||!g.path?'Play more':'Keep going',{kind:'primary',size:'lg',wide:true,icon:g.mix||!g.path?'replay':'play',id:'bnext'})+UI.btn(g.path?'Map':'Home',{icon:g.path?'map':'home',wide:true,id:'bhome'})});

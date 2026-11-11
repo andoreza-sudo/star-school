@@ -2106,6 +2106,18 @@ const ART_B = ('balloon book moon sock cow cheese bell bird egg pencil plane bre
 const ART_C = ('pizza snowflake elephant icecream beach rabbit sunflower giraffe road tub lion backpack dish school snowman window shell ' +
   'cap shoes eraser scissors soap sofa paper chick spoon pants butterfly church motorcycle leaf door sheep umbrella storm boat clock ' +
   'books lamp gamepad').split(' ');
+// P5-09: game-time rules v2. The child's plain line (Home, Game Room shut and open), the Grown-ups Game time card with learn first,
+// and the puzzle win card with its reasons.
+const gtSet = (need, learned, bank, max) => `ptCfg().need = ${need}; ptCfg().max = ${max}; pt().bank = ${bank}; pt().used = 0; pt().open = ''; S.log = []; ${learned ? `ACT.add(today(), { sec: ${learned}, area: 'math' });` : ''} save();`;
+Object.assign(SCREENS, {
+  'gt-home-shut': { run: async p => { await p.evaluate(gtSet(10, 240, 180, 30) + ' home();'); await p.evaluate(() => document.querySelector('#groom').scrollIntoView({ block: 'center' })); } },
+  'gt-room-shut': { run: async p => { await p.evaluate(gtSet(10, 240, 180, 30) + ' gameRoom();'); } },
+  'gt-room-open': { run: async p => { await p.evaluate(gtSet(10, 600, 5400, 30) + ' gameRoom();'); } },
+  'gt-room-empty': { run: async p => { await p.evaluate(gtSet(0, 0, 0, 30) + ' gameRoom();'); } },
+  'gt-grown': { run: async p => { await p.evaluate(gtSet(10, 240, 180, 30) + ' grown();'); await p.evaluate(() => document.querySelector('#gw-time').scrollIntoView({ block: 'start' })); } },
+});
+GROUPS.p509 = ['gt-home-shut', 'gt-room-shut', 'gt-room-open', 'gt-room-empty', 'gt-grown', 'bt-win'];
+
 async function artSheet(p, names, title) {
   await p.evaluate(([names, title]) => {
     const sizes = [24, 48, 96], list = names || Object.keys(ART);
