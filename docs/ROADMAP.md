@@ -25,7 +25,7 @@ material for 15 to 20 minutes, and earns a fair amount of fun.
 | 5 | Mastery based | A child moves on by showing they know it. Missed items come back later (spaced review). Hints teach, they do not just reveal. |
 | 6 | Never lose progress | Save data is versioned and migrated. No release may wipe or corrupt a child's stars, map or pet. |
 | 7 | Audio first for little kids | PreK and K screens never require reading. Every prompt is spoken. |
-| 8 | Small and fast | Built `index.html` stays under 1.5 MB (data banks in a second file, A11). 60 fps is not required, but every tap responds within 100 ms. |
+| 8 | Small and fast | Built `index.html` stays under 1.5 MB (data banks, puzzle types and games in files of their own, A11 and A11b). 60 fps is not required, but every tap responds within 100 ms. |
 | 9 | Boring technology | Plain HTML, CSS, JS. No framework, no bundler, no runtime dependencies. Build is one Python script. |
 
 Non-goals: accounts or cloud sync, multiplayer, teacher dashboards, typing tutor (tablets have no keyboard),
@@ -96,7 +96,7 @@ open-ended writing grading, any generative AI at runtime.
 | A8 | Puzzles that need a unique solution (sudoku, MathDoku, logic grids) are generated and verified at dev time by Node tools and shipped as compact banks. Runtime only transforms and checks them. | No heavy solver on a slow tablet; uniqueness is proven by tests. |
 | A9 | Fact content (grammar, vocabulary, passages, science) lives in data files `src/data/d-*.js` using one bank format, consumed by one generic generator. | Content chunks become pure data entry that Sonnet does well, and audits are easy. |
 | A10 | UI chrome uses an inline SVG icon sprite and design tokens. Emoji are allowed only as content pictures, and only from an allowlist known to render on old Android. | Professional look; cheap tablets show blank boxes for newer emoji. |
-| A11 | If built `index.html` passes 1.5 MB, move data banks to a second precached file. Not before. **Done 2026-11-11 (v97)**, ahead of the 5th/6th grade worlds and puzzle types: `src/data/*.js` builds into `data.<VER>.js`, loaded by a plain `<script src>` between the code and `boot.js`, precached under the same `VER` cache; boot refuses to start on a missing or mismatched file (CONTRIBUTING 3.3). | Keep the simple model until it hurts. |
+| A11 | If built `index.html` passes 1.5 MB, move data banks to a second precached file. Not before. **Done 2026-11-11 (v97)**, ahead of the 5th/6th grade worlds and puzzle types: `src/data/*.js` builds into `data.<VER>.js`, loaded by a plain `<script src>` between the code and `boot.js`, precached under the same `VER` cache; boot refuses to start on a missing or mismatched file (CONTRIBUTING 3.3). **Extended 2026-11-11 (A11b, v105)** when index.html was back at 1.39 MB: the Brain Teaser puzzle types (`src/js/NN-bt-*.js` with their `NN-bt-*.css`) build into `bt.<VER>.js` and the Game Room (`60-blocks` to `72-shapes`, any `NN-game-*.js`) into `games.<VER>.js`, by the `PARTS` list in `tools/build.py`; same plain script tags (code, bt, games, data, boot), same `VER` cache and stamp check. index.html went from 1,394,701 to 1,068,449 bytes. | Keep the simple model until it hurts. |
 
 ### Data model additions (all optional fields, added by migrations)
 
@@ -514,12 +514,12 @@ Notes:
 
 - [ ] Only the files named in the chunk were changed (plus tests and built output).
 - [ ] `VER` bumped by one in `tools/build.py`.
-- [ ] `python3 tools/build.py` ran; `index.html`, `data.<VER>.js` (and the old one's deletion), `sw.js`, `manifest.json` rebuilt and staged.
+- [ ] `python3 tools/build.py` ran; `index.html`, `bt/games/data.<VER>.js` (and the old ones' deletion), `sw.js`, `manifest.json` rebuilt and staged.
 - [ ] `node tools/test.js` exits 0.
 - [ ] `node tools/smoke.js` exits 0 with zero console errors.
 - [ ] Screenshots taken at 600x960, 1024x600, 380x780 for every screen the chunk touched, and looked at.
 - [ ] Loading the `midway` fixture (an old save) still shows the same stars, coins, pet and map progress.
-- [ ] Built sizes printed; `index.html` under 1.5 MB, data file under 2 MB, both under 3 MB (tools/test.js budgets).
+- [ ] Built sizes printed; `index.html` under 1.5 MB, each part file under 800 KB, data file under 2 MB, all under 3 MB (tools/test.js budgets).
 - [ ] No network requests at runtime (smoke test runs with network blocked).
 - [ ] No new emoji outside the allowlist; no new hard-coded colors after P4-01.
 - [ ] PROGRESS.md entry added (chunk ID, version, date, what changed, anything left over).
@@ -538,10 +538,10 @@ Notes:
 
 | # | Risk | Likelihood | Impact | Mitigation | Owner chunk |
 |---|------|-----------|--------|------------|-------------|
-| R1 | Built file grows past what a cheap tablet parses quickly | Medium | Medium | Size budget in tests (1.5 MB hard, 1.2 MB warn); compact data formats; decision A11 done in v97 (data file budget 2 MB hard, 1 MB warn; total 3 MB hard, 2 MB warn) | P0-04, P6-02 |
+| R1 | Built file grows past what a cheap tablet parses quickly | Medium | Medium | Size budget in tests (1.5 MB hard, 1.2 MB warn); compact data formats; decision A11 done in v97 (data file budget 2 MB hard, 1 MB warn; total 3 MB hard, 2 MB warn), extended by A11b in v105 (puzzle types and games in part files, 800 KB hard, 400 KB warn each) | P0-04, P6-02 |
 | R2 | A release damages or wipes a child's save | Low | Very high | Versioned migrations, automatic backup key, fixture tests on every chunk, export/import | P0-03, P5-07 |
 | R3 | localStorage quota or eviction | Low | High | Save stays small (target under 300 KB; review items stored as seeds); `save()` failures surfaced; backup file | P0-03, P5-02 |
-| R4 | Service worker serves a stale app (this already happened with cache-first) | Medium | High | Keep network-first for navigation; always bump `VER`; the one other file, `data.<VER>.js` (A11), has `VER` in its name, is in the precache list and is checked against the page's `VER` before start; version visible on home; never add another cached JS file without updating the precache list and testing an upgrade | every chunk |
+| R4 | Service worker serves a stale app (this already happened with cache-first) | Medium | High | Keep network-first for navigation; always bump `VER`; the other files, `bt.<VER>.js`, `games.<VER>.js` (A11b) and `data.<VER>.js` (A11), have `VER` in their names, are in the precache list and are checked against the page's `VER` before start; version visible on home; never add another cached JS file without updating the precache list and testing an upgrade | every chunk |
 | R5 | Slow or janky on low-end tablets | Medium | High | Animate only transform and opacity; no blur filters; cap particles; render one world at a time; perf script with CPU throttle | P1-05, P6-02 |
 | R6 | Speech voices missing or poor (especially es-MX, and isolated letter sounds) | High | Medium | Never require speech to answer; show text alternative; avoid tasks that need isolated phonemes (use whole words); existing recorded-voice feature can cover gaps | P2-15, P2-30 |
 | R7 | Emoji show as empty boxes on old Android | High | Medium | Allowlist test; replace chrome with SVG; object art sets | P0-04, P4-13+ |

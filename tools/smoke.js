@@ -205,9 +205,12 @@ async function main() {
     network.push(...old.network);
     await old.ctx.close();
 
-    // A11: the data banks are a second file (data.<VER>.js) loaded by its own <script> over file://. Check the globals,
-    // open a reading passage, build a vocabulary question and read a sudoku puzzle. Then the version guard: a copy of index.html
-    // with no data file, and with a data file of another release, shows "Try again" instead of starting, and changes no progress.
+    // A11, A11b: the Brain Teaser puzzle types (bt.<VER>.js), the Game Room (games.<VER>.js) and the data banks (data.<VER>.js) are
+    // files of their own, each loaded by a plain <script> over file://, in that order. Check the data globals, open a reading
+    // passage, build a vocabulary question and read a sudoku puzzle; the puzzle types are registered and their CSS is in, and a
+    // maze, a pattern and a number pyramid open from the Brain Teasers hub; the Game Room opens. Then the version guard: a copy of
+    // index.html with one file missing, or with a file of another release, shows "Try again" instead of starting and changes no
+    // progress; Try again with the file back starts the app.
     {
       const d = await openApp(browser, { fixture: 'midway' });
       const g = await d.page.evaluate(() => {
@@ -215,22 +218,49 @@ async function main() {
         const vq = genQ('vocab', 1, 4242);
         const pz = PUZ.sudoku.A.easy[0].split('|');
         const ix = NODES.read.findIndex(n => n.sk === 'info' && n.lv === 1);
-        return { src, dv: DATA_VER, ready: dataReady(), gram: BANK.gram.length, vocab: BANK.vocab.length, comp: PASS.comp.length,
+        return { src, files: appFiles(), dv: DATA_VER, ready: dataReady(), gram: BANK.gram.length, vocab: BANK.vocab.length, comp: PASS.comp.length,
           info: PASS.info.length, spell: typeof genSpell, vq: !!(vq.kind && vq.ans && vq.html && vq.sk === 'vocab'),
-          pz: pz.length + ':' + pz[0].length + ':' + pz[1].length, ix };
+          pz: pz.length + ':' + pz[0].length + ':' + pz[1].length, ix, bt: BT.list().map(t => t.id).join(),
+          css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(), games: [typeof garage, typeof blockBuilder, typeof colorMenu].join() };
       });
-      const want = 'data.' + g.dv + '.js';
-      if (JSON.stringify(g.src) !== JSON.stringify([want]) || !g.ready || !(g.gram > 0 && g.vocab > 0 && g.comp > 0 && g.info > 0)
+      const files = g.files.map(f => f[0] + '.' + g.dv + '.js'), want = 'data.' + g.dv + '.js';
+      if (JSON.stringify(g.src) !== JSON.stringify(files) || files[files.length - 1] !== want || !g.ready || !(g.gram > 0 && g.vocab > 0 && g.comp > 0 && g.info > 0)
         || g.spell !== 'function' || !g.vq || g.pz !== '3:16:16' || g.ix < 0) {
         fail('A11 data globals: ' + JSON.stringify(g));
       }
+      if (!['maze', 'pattern', 'pyramid', 'balance', 'target'].every(id => g.bt.split(',').includes(id)) || g.css !== 'main,css-bt'
+        || g.games !== 'function,function,function') fail('A11b part files: ' + JSON.stringify(g));
       await d.page.evaluate(ix => start('read', ix), g.ix);
       await d.page.waitForSelector('.bctx-p .w', { timeout: 8000 });
       const words = await d.page.evaluate(() => document.querySelectorAll('.bctx-p .w').length);
       if (words < 20) fail('A11: reading passage did not open (' + words + ' words)');
-      else step('A11: ' + want + ' loaded over file:// (' + g.vocab + ' vocabulary items, ' + g.comp + '+' + g.info + ' passages, '
+      else step('A11: ' + files.join(', ') + ' loaded over file:// (' + g.vocab + ' vocabulary items, ' + g.comp + '+' + g.info + ' passages, '
         + 'sudoku bank), a vocabulary question built, a passage opened (' + words + ' words)');
-      await d.page.evaluate(() => { G.dead = true; home(); });
+      await d.page.evaluate(() => { G.dead = true; S.grade = 3; save(); home(); });
+      // A11b: each puzzle file's types open from the hub, laid out by the CSS that came with bt.<VER>.js
+      const opened = [];
+      for (const [id, sel, box] of [['maze', '.mz-cv', '.mz'], ['pattern', '#btstage .pt-ch', '.pt-chs'], ['pyramid', '#btstage .bn', '.bn']]) {
+        try {
+          await d.page.waitForSelector('#btcard', { timeout: 5000 });
+          await d.page.evaluate(() => document.querySelector('#btcard').scrollIntoView({ block: 'center' }));
+          await d.page.click('#btcard');
+          await d.page.click(`.bt-hub [data-t="${id}"]`, { timeout: 5000 });
+          await d.page.click('.bt-lv[data-l="1"]', { timeout: 5000 });
+          await d.page.waitForSelector(sel, { timeout: 8000 });
+          const r = await d.page.evaluate(b => ({ id: S.bt.cur && S.bt.cur.id, grid: getComputedStyle(document.querySelector(b)).display }), box);
+          if (r.id !== id || !/flex|grid/.test(r.grid)) fail('A11b: ' + id + ' puzzle: ' + JSON.stringify(r));
+          else opened.push(id + ' (' + box + ' ' + r.grid + ')');
+        } catch (e) { fail('A11b: ' + id + ' puzzle did not open from the hub: ' + e.message.split('\n')[0]); }
+        await d.page.evaluate(() => { BT.stop(); home(); });
+      }
+      // A11b: the Game Room (games.<VER>.js) opens and lists the games
+      await d.page.evaluate(() => gameRoom());
+      await d.page.waitForSelector('#gbb', { timeout: 5000 }).catch(() => {});
+      const room = await d.page.evaluate(() => ['#g4x4', '#gcbn', '#gbb'].filter(s => document.querySelector(s)).length);
+      if (room !== 3) fail('A11b: the Game Room did not open (' + room + ' of 3 games)');
+      if (opened.length === 3 && room === 3) step('A11b: puzzle types ' + g.bt + ' registered from ' + files[0] + ', its <style> in, opened from the hub: '
+        + opened.join(', ') + '; Game Room from ' + files[1] + ' opened');
+      await d.page.evaluate(() => home());
       errors.push(...d.errors);
       network.push(...d.network);
       await d.ctx.close();
@@ -238,35 +268,59 @@ async function main() {
       const fs = require('fs'), os = require('os'), path = require('path');
       const { ROOT } = require('./lib/browser');
       const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'ss-a11-'));
-      for (const f of ['index.html', 'manifest.json', 'icon-192.png', 'icon-512.png']) fs.copyFileSync(path.join(ROOT, f), path.join(tmp, f));
+      for (const f of ['index.html', 'manifest.json', 'icon-192.png', 'icon-512.png', ...files]) fs.copyFileSync(path.join(ROOT, f), path.join(tmp, f));
       const url = 'file://' + path.join(tmp, 'index.html');
-      const guard = async (label, allowed) => {
+      const NOFILE = /ERR_FILE_NOT_FOUND|Failed to load resource/;
+      const guard = async (label, allowed, log) => {
         const a = await openApp(browser, { fixture: 'midway', url });
         await a.page.waitForSelector('#dataretry', { timeout: 5000 }).catch(() => {});
         const r = await a.page.evaluate(() => ({ retry: !!document.querySelector('#datamiss #dataretry'), home: !!document.querySelector('.game[data-p]'),
           stars: S.stars, coins: S.coins, math: Object.keys(S.maps.math).length, err: (S.err || []).map(e => e.msg).pop() || '',
           wide: document.documentElement.scrollWidth > innerWidth }));
         const bad = a.errors.filter(e => !allowed.test(e));
-        if (!r.retry || r.home || r.stars !== 85 || r.coins !== 64 || !/data file/.test(r.err) || r.wide || bad.length || a.network.length) {
+        if (!r.retry || r.home || r.stars !== 85 || r.coins !== 64 || r.err !== log + ' (app ' + g.dv + ')' || r.wide || bad.length || a.network.length) {
           fail('A11 guard (' + label + '): ' + JSON.stringify(r) + ' ' + bad.concat(a.network).join(' | '));
         } else step('A11 guard, ' + label + ': app does not start, shows Try again, progress unchanged, App log: ' + r.err);
         return a;
       };
+      const retry = async (a, label, then) => {
+        await a.page.click('#dataretry');
+        await a.page.waitForSelector('.game[data-p]', { timeout: 10000 }).catch(() => {});
+        const back = await a.page.evaluate(() => ({ home: !!document.querySelector('.game[data-p]'), stars: S.stars, coins: S.coins, ready: dataReady() }));
+        const extra = then && back.home ? await then(a.page) : '';
+        const after = a.errors.filter(e => !NOFILE.test(e));
+        if (!back.home || !back.ready || back.stars !== 85 || back.coins !== 64 || after.length || extra.startsWith('NO')) fail('A11 guard: Try again with the ' + label + ' back: ' + JSON.stringify(back) + ' ' + extra + after.join(' | '));
+        else step('A11 guard: Try again with the ' + label + ' back starts the app (stars ' + back.stars + ', coins ' + back.coins + ')' + extra);
+        await a.ctx.close();
+      };
       // 1. no data file next to index.html (offline before it was cached): the browser reports the missing file, nothing else
-      const a1 = await guard('data file missing', /ERR_FILE_NOT_FOUND|Failed to load resource/);
-      // Try again after the file is back: the app starts with the same progress
+      fs.rmSync(path.join(tmp, want));
+      const a1 = await guard('data file missing', NOFILE, 'data file missing');
       fs.copyFileSync(path.join(ROOT, want), path.join(tmp, want));
-      await a1.page.click('#dataretry');
-      await a1.page.waitForSelector('.game[data-p]', { timeout: 10000 }).catch(() => {});
-      const back = await a1.page.evaluate(() => ({ home: !!document.querySelector('.game[data-p]'), stars: S.stars, coins: S.coins }));
-      const after = a1.errors.filter(e => !/ERR_FILE_NOT_FOUND|Failed to load resource/.test(e));
-      if (!back.home || back.stars !== 85 || back.coins !== 64 || after.length) fail('A11 guard: Try again with the data file back: ' + JSON.stringify(back) + ' ' + after.join(' | '));
-      else step('A11 guard: Try again with the data file back starts the app (stars ' + back.stars + ', coins ' + back.coins + ')');
-      await a1.ctx.close();
+      await retry(a1, 'data file');
       // 2. a data file from another release under this release's name (a cache that kept half an update)
       fs.writeFileSync(path.join(tmp, want), fs.readFileSync(path.join(ROOT, want), 'utf8').replace("var DATA_VER='" + g.dv + "'", "var DATA_VER='v1'"));
-      const a2 = await guard('data file of another release', /^$/);
+      const a2 = await guard('data file of another release', /^$/, 'data file v1 does not match');
       await a2.ctx.close();
+      fs.copyFileSync(path.join(ROOT, want), path.join(tmp, want));
+      // 3. A11b: no puzzle file; with it back, Try again starts the app and a maze opens from the hub
+      fs.rmSync(path.join(tmp, files[0]));
+      const a3 = await guard(files[0] + ' missing', NOFILE, 'bt file missing');
+      fs.copyFileSync(path.join(ROOT, files[0]), path.join(tmp, files[0]));
+      await retry(a3, files[0], async pg => {
+        try {
+          await pg.evaluate(() => document.querySelector('#btcard').scrollIntoView({ block: 'center' }));
+          await pg.click('#btcard');
+          await pg.click('.bt-hub [data-t="maze"]', { timeout: 5000 });
+          await pg.click('.bt-lv[data-l="1"]', { timeout: 5000 });
+          await pg.waitForSelector('.mz-cv', { timeout: 8000 });
+          return ', a maze opened from the hub';
+        } catch (e) { return 'NO MAZE: ' + e.message.split('\n')[0] + ' '; }
+      });
+      // 4. A11b: a games file from another release
+      fs.writeFileSync(path.join(tmp, files[1]), fs.readFileSync(path.join(ROOT, files[1]), 'utf8').replace("var GAMES_VER='" + g.dv + "'", "var GAMES_VER='v1'"));
+      const a4 = await guard(files[1] + ' of another release', /^$/, 'games file v1 does not match');
+      await a4.ctx.close();
       fs.rmSync(tmp, { recursive: true, force: true });
     }
 

@@ -49,7 +49,8 @@ docs/               this plan
 ```
 src/shell.html      head, body skeleton; markers where CSS and JS are inserted
 src/css/NN-name.css concatenated in filename order
-src/js/NN-name.js   code, concatenated in filename order into ONE <script> (one global scope, no import/export)
+src/js/NN-name.js   code, concatenated in filename order into ONE <script> (one global scope, no import/export); puzzle types
+                    (NN-bt-*.js) and Game Room games go into bt.<VER>.js and games.<VER>.js instead (A11b, section 3.3)
 src/data/d-name.js  data only (word lists, banks, passages, puzzle banks); concatenated, in filename order, into the second built file data.<VER>.js (A11)
 src/boot.js         the start-up lines: if dataReady() then loadClips(); home(true); else dataMissing(); always last
 tools/              build.py, test.js, shots.js, smoke.js, check.sh, lib/, fixtures/, puzzles/ (dev-time generators)
@@ -108,43 +109,81 @@ Files added by later chunks (names are fixed by the roadmap so everyone agrees):
 | `39b-steps.js` | P2-08 | Step-hint builders (`stepsAdd`, `stepsSub`, `stepsMul`, `stepsDiv`, `stepsEquivFrac`, `stepsCommonDen`, `stepsStory`) and prompt layouts `ST.vert`, `ST.ldiv`; the renderer is in `39-hints.js`, CSS in `src/css/39-steps.css` |
 | `src/data/d-*.js` (`d-spell`, `d-gram`, `d-vocab`, `d-comp`, `d-es`, `d-disc`, `d-trace`, `d-puz-*`) | P2, P3 | Data only. Built into `data.<VER>.js` (A11, section 3.3), which loads after all code, so code may read them only inside functions (at run time), never while the script is first loading |
 | `45-placement.js`, `47-trace.js`, `49-kinds.js`, `51-mastery.js`, `57-fluency.js`, `59-review.js` | P1, P2, P5 | Engines |
-| `74-teasers.js`, `75-bt-*.js` | P3 | Brain Teasers |
+| `74-teasers.js`, `NN-bt-*.js` | P3 | Brain Teasers: the framework (index.html) and one file per puzzle type (built into `bt.<VER>.js`, section 3.3) |
 
-Build order is: `src/js/*.js` sorted by name, then `src/data/*.js` sorted by name, then `src/boot.js`.
+Build order is: `src/js/*.js` sorted by name (minus the part files), then each part file (bt, games; their `src/js` sorted by name),
+then `src/data/*.js` sorted by name, then `src/boot.js`.
 
-### 3.3 Built output: two files (A11, since v97)
+### 3.3 Built output: index.html and three more files (A11 since v97, A11b since v105)
 
 ```
-index.html      shell + CSS + fonts + <script>src/js</script> + <script src="data.<VER>.js"></script> + <script>src/boot.js</script>
-data.<VER>.js   src/data/*.js in filename order, then the last line  var DATA_VER='<VER>';
-sw.js           cache 'starschool-<VER>', precaches ./, index.html, data.<VER>.js, manifest.json, icons
+index.html        shell + CSS + fonts + <script>src/js</script>                      (src minus the PARTS files below)
+                  + <script src="bt.<VER>.js"></script> + <script src="games.<VER>.js"></script>
+                  + <script src="data.<VER>.js"></script> + <script>src/boot.js</script>
+bt.<VER>.js       Brain Teaser puzzle types: a <style> with src/css/NN-bt-*.css, then src/js/NN-bt-*.js, then  var BT_VER='<VER>';
+games.<VER>.js    the Game Room: src/js/60-blocks, 62-hill, 64-gtimer, 66-colornum, 68-lowpoly, 70-art, 72-shapes and any NN-game-*.js,
+                  then  var GAMES_VER='<VER>';
+data.<VER>.js     src/data/*.js in filename order, then the last line  var DATA_VER='<VER>';
+sw.js             cache 'starschool-<VER>', precaches ./, index.html, bt/games/data.<VER>.js, manifest.json, icons
 ```
 
-- The three scripts are plain classic scripts: they run in this order, synchronously, and share one global scope (a `const` in a data
-  file is visible to code the same way as before). This works over `file://` too, so open `index.html` directly as always.
-- The data file name carries `VER`, so an index.html can only ever ask for the data file of its own release, and no HTTP cache can
-  hand it an older file under the same name. `tools/build.py` deletes every other `data.v*.js` at the repo root.
-- `src/boot.js` starts the app only if `dataReady()` (src/js/90-app.js): `DATA_VER` exists, so the whole data file ran, and it equals
-  the page's `VER`. Otherwise `dataMissing()` shows "Star School needs to finish updating. Connect to the internet, then tap Try again."
-  and logs one line in the App log. Nothing else in the save changes.
-- Sizes (budgets in `tools/test.js`): index.html warn 1.2 MB / fail 1.5 MB (ROADMAP R1), data file warn 1 MB / fail 2 MB, both together
-  warn 2 MB / fail 3 MB. `bash tools/check.sh` prints all three.
+The rule lives in one place, `PARTS` in `tools/build.py`: a file stem and a regular expression on whole file names in `src/js` and
+`src/css`. A matching file goes into `<stem>.<VER>.js` (in filename order) instead of into index.html:
+- `bt`: every `src/js/NN-bt-*.js` and `src/css/NN-bt-*.css`. The framework `74-teasers.js` and `48-teasers.css` stay in index.html
+  (Home needs `BT.list()` for its card, and `view()` calls `BT.stop()`).
+- `games`: the seven Game Room files listed above, and any new `src/js/NN-game-*.js`. `58-playtime.js` (game time and `gameRoom()`)
+  and `40-games.css` (shared by Home, the map and the rewards) stay in index.html.
+
+How it fits together:
+- All scripts are plain classic scripts: they run in this order, synchronously, and share one global scope (a `const` in one file is
+  visible to the others the same way as before). This works over `file://` too, so open `index.html` directly as always.
+- Load order: index.html's own code, bt, games, data, boot. So a part file may use anything in index.html's code while it loads
+  (`BT.reg`, `padHTML`, `ICONS`, `UI` ...), and the data file still loads after all code. index.html's code may call
+  part code only inside functions that run after start-up (opening a puzzle or a game), never while loading: a `function` in a part
+  file is not hoisted into index.html's script. Part code must not read data while loading either.
+- A part's CSS is added by the file itself, as `<style id="css-bt">` appended to `<head>`, before its code runs. It lands after
+  index.html's own CSS, which is where `49-bt-*.css` sorts anyway, so the cascade is the same as in one file. Nothing is on screen until
+  `src/boot.js` runs, so the first paint already has it. Keep part CSS scoped to the part's own classes (`.mz`, `.pt-`, `.bn-` ...).
+- Every file name carries `VER`, so an index.html can only ever ask for its own release's files, and no HTTP cache can hand it an older
+  file under the same name. `tools/build.py` deletes every other `name.vNN.js` at the repo root.
+- `src/boot.js` starts the app only if `dataReady()` (src/js/90-app.js): every stamp in `appFiles()` (`BT_VER`, `GAMES_VER`,
+  `DATA_VER`) exists, so the whole file ran, and equals the page's `VER`. Otherwise `dataMissing()` shows "Star School needs to finish
+  updating. Connect to the internet, then tap Try again." and logs one line in the App log, such as `bt file missing (app v105)` or
+  `games file v104 does not match (app v105)`. Nothing else in the save changes.
+- Sizes (budgets in `tools/test.js`): index.html warn 1.2 MB / fail 1.5 MB (ROADMAP R1), each part file warn 400 KB / fail 800 KB,
+  data file warn 1 MB / fail 2 MB, all files together warn 2 MB / fail 3 MB. `bash tools/check.sh` prints them all.
+- The check `code split A11b (and data file split A11)` in `tools/test.js` covers all of this: script order, nothing of a part left in
+  index.html, index.html's code loads alone and with only the data, each file's stamp, a missing or stale file refused, the precache
+  list, no stale files, the budgets. It loads the built files in a fresh Node `vm` context, one script after the other, like the page.
+- `tools/test.js` reads `PARTS` from build.py and evaluates the sources in the built order (`js` = index.html's src/js, then each part's,
+  then src/data), so tests see every file.
+
+Adding a puzzle type: name it `src/js/NN-bt-<id>.js` (and `src/css/49-bt-<id>.css`) and it goes into `bt.<VER>.js` by itself; no change
+to build.py, sw.js, the shell or 90-app.js. At load it may call `BT.reg({...})` and anything else from index.html's code.
+
+Adding a game: name it `src/js/NN-game-<name>.js` (it goes into `games.<VER>.js`), and open it from `gameRoom()` (58-playtime.js) inside
+a click handler. Put its CSS in index.html's CSS as now (a `src/css/NN-game-*.css` would not move: the games rule matches `.js` only).
+
+Adding another part file (only if a part passes its budget, or a big new on-demand area comes): one line in `PARTS` (build.py), one line
+in `appFiles()` (90-app.js, same order), and the expected stems in the A11b check and smoke's `// A11` block. sw.js and the shell
+follow from build.py.
 
 Adding a data file:
 1. Create `src/data/d-name.js` (data only; it may call code helpers such as `compAdd`, `GR` or `BANK.x = ...` at load time, because all
    code has already loaded). Name globals with a feature prefix. A bank shared by several files uses `var X = X || {};` (like `PUZ`).
-2. Nothing in `src/js` may read it while loading: only inside functions. The check `data file split A11` loads the built code without the
-   data file and fails if that throws.
+2. Nothing in `src/js` may read it while loading: only inside functions. The A11b check loads the built code without the data file and
+   fails if that throws.
 3. Build. It goes into `data.<VER>.js` automatically; no change to `tools/build.py`, `sw.js` or the shell. `tools/test.js` sees it too
    (tests evaluate `src/js` + `src/data`).
-4. If a test reads a built file to see that your bank shipped, read `data.<VER>.js` (`DATA_FILE` in test.js), not index.html.
+4. If a test reads a built file to see that your bank shipped, read `data.<VER>.js` (`DATA_FILE` in test.js), not index.html. Likewise
+   puzzle and game code is in `PART_FILES` (test.js), not in index.html.
 
 ## 4. Build, test, look
 
 Run from anywhere:
 
 ```bash
-python3 tools/build.py           # writes index.html, data.<VER>.js, sw.js, manifest.json, icons to the repo root
+python3 tools/build.py           # writes index.html, bt/games/data.<VER>.js, sw.js, manifest.json, icons to the repo root
 node tools/test.js               # generator fuzz + data checks; must exit 0
 node tools/smoke.js              # bot plays through the app in headless Chrome; must exit 0   (after P0-01)
 node tools/shots.js home map question   # screenshots to tools/out/ at 600x960, 1024x600, 380x780   (after P0-01)
@@ -161,11 +200,11 @@ change the generator in `tools/puzzles/`, rerun `build-banks.js`, then `node too
 Smoke runs on a virtual clock (fixed day 2026-06-15 10:00, timers and `Date` run at `SMOKE_SPEED` times real time, default 8, see `tools/lib/browser.js`). Run `SMOKE_SPEED=1 node tools/smoke.js` for the real clock.
 
 Rules:
-- Never edit `index.html`, `data.<VER>.js`, `sw.js` or `manifest.json` by hand. They are build output. Edit `src/` or `tools/build.py`, then build.
-- Never open `index.html` in an editor or print it: it contains two base64 fonts. Do not print `data.<VER>.js` either (about 220 KB).
-- Built files are committed, because GitHub Pages serves the repo root of `main`. That includes `data.<VER>.js`, and the deletion of the
-  previous one (`git add -A` stages both).
-- To try the app in a browser: open `index.html` directly (`file://`); `data.<VER>.js` must sit next to it. The service worker only registers over http(s).
+- Never edit `index.html`, `bt.<VER>.js`, `games.<VER>.js`, `data.<VER>.js`, `sw.js` or `manifest.json` by hand. They are build output. Edit `src/` or `tools/build.py`, then build.
+- Never open `index.html` in an editor or print it: it contains two base64 fonts. Do not print the other built files either (140 to 235 KB each).
+- Built files are committed, because GitHub Pages serves the repo root of `main`. That includes `bt.<VER>.js`, `games.<VER>.js` and
+  `data.<VER>.js`, and the deletion of the previous ones (`git add -A` stages both).
+- To try the app in a browser: open `index.html` directly (`file://`); `bt`, `games` and `data.<VER>.js` must sit next to it. The service worker only registers over http(s).
 
 ## 5. Release steps (every chunk)
 
@@ -187,7 +226,8 @@ How updates reach tablets: the service worker fetches the page network-first, so
 - Solo, one chunk at a time: working directly on `main` is fine.
 - Two workers, or a chunk that may not finish in one session: use a branch named `P#-##-short-name`.
   Before merging: rebase on `main`, bump `VER` to one more than `main`'s, rebuild, retest, then merge. Built files will conflict on rebase; resolve by rebuilding, never by hand.
-  The data file is named after `VER`, so a renumbered build writes a new `data.vNN.js` and deletes the old one: stage both (`git add -A`).
+  The part and data files are named after `VER`, so a renumbered build writes new `bt/games/data.vNN.js` and deletes the old ones:
+  stage both (`git add -A`).
 - Unfinished work: push the branch as `wip/P#-##` and write a handoff note (section 9). Do not leave `main` half done.
 
 ## 7. Coding conventions for this codebase
