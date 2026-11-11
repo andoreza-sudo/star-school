@@ -411,7 +411,23 @@ const SCREENS = {
   'boss-lose': { run: rwShot({ boss: 2, won: false }) },
   testout: { run: async p => { await p.evaluate(() => testOut('math', 2)); } },
   rewards: { full: true, run: async p => { await p.evaluate(rwSheet); } },
+  // P2-20 grammar: one seeded question of each level 1-5 in a one-question round (level 1 tap-a-word is 'gram-1b'); 'gram-hint' opens a hint
+  ...Object.fromEntries([1, 2, 3, 4, 5].map(lv => ['gram-' + lv, { run: gramShot(lv, 3, false) }])),
+  'gram-1b': { run: gramShot(1, 41, false, 'tap') },
+  'gram-hint': { run: gramShot(5, 8, true) },
 };
+
+// P2-20 grammar helper: seed picks the item (and kind 'tap' searches for a tap-a-word item); hint opens the hint box
+function gramShot(lv, seed, hint, form) {
+  return async p => {
+    await p.evaluate(([lv, seed, form]) => {
+      let q = genQ('gram', lv, seed);
+      for (let i = 1; form && i < 400 && !(q.cls == 'bwords'); i++) q = genQ('gram', lv, seed + i);
+      G = newG({ sk: 'gram', lv, n: 1, pool: [q] }); next();
+    }, [lv, seed, form]);
+    if (hint) await p.click('#hb');
+  };
+}
 
 // ---- P4-08 Home ----
 // Home for a fresh child (grade 1, the "Find my level" card), the midway save, and a child with a 5-day streak, review items

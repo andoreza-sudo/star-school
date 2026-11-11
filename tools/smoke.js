@@ -1763,6 +1763,52 @@ async function main() {
       await ff7.ctx.close();
     }
 
+    // P2-20 grammar 1-5: every level has a map stop in its world (by id); at 380x780 each level's question fits (no sideways scroll, answer
+    //       buttons at least 48 px, tap-a-word buttons too); the hint teaches without the answer; one full round earns stars and
+    //       no other stop's stars move
+    {
+      const ga = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
+      const gp = ga.page;
+      await gp.waitForSelector('.game[data-p="read"]');
+      const gi = await gp.evaluate(() => ({
+        stops: NODES.read.filter(n => n.sk == 'gram').map(n => n.lv + '@' + n.wid).join(' '),
+        before: JSON.stringify(S.maps.read),
+      }));
+      if (gi.stops !== '1@r_reef 2@r_workshop 3@r_workshop 4@r_summit 5@r_summit') fail('grammar stops on the reading map: ' + gi.stops);
+      const bad20 = [];
+      for (let lv = 1; lv <= 5; lv++) {
+        await gp.evaluate(lv => { start('read', NODES.read.findIndex(n => n.sk == 'gram' && n.lv == lv)); }, lv);
+        await gp.waitForSelector('#prompt .bq');
+        const m = await gp.evaluate(() => {
+          const pr = document.querySelector('#prompt'), chs = [...document.querySelectorAll('.ch')];
+          return { sk: G.q.sk, lv: G.q.lv, kind: G.q.kind, n: chs.length, minH: Math.min(...chs.map(c => c.offsetHeight)),
+            over: document.documentElement.scrollWidth - document.documentElement.clientWidth, pover: pr.scrollWidth - pr.clientWidth,
+            cut: chs.filter(c => c.scrollWidth > c.clientWidth + 1).length };
+        });
+        if (m.sk !== 'gram' || m.lv !== lv || m.kind !== 'choice' || m.n < 2 || m.n > 4 || m.minH < 48 || m.over > 0 || m.pover > 0 || m.cut)
+          bad20.push('level ' + lv + ': ' + JSON.stringify(m));
+        await gp.click('#hb');
+        const hint = await gp.evaluate(() => ({ t: document.querySelector('#hint').textContent, ans: String(G.q.ans) }));
+        if (hint.t.length < 20 || (hint.ans.length > 2 && new RegExp('\\b' + hint.ans + '\\b', 'i').test(hint.t))) bad20.push('level ' + lv + ' hint: ' + hint.t);
+        await gp.evaluate(() => { G.dead = true; home(); });
+      }
+      if (bad20.length) fail('P2-20 grammar:\n  ' + bad20.join('\n  '));
+      else step('P2-20 grammar: five levels fit at 380x780, answer buttons 48 px or more, hints teach without the answer');
+      const gj = await gp.evaluate(() => NODES.read.findIndex(n => n.sk == 'gram' && n.lv == 2));
+      await gp.evaluate(i => start('read', i), gj);
+      await playRound(gp, 'P2-20 grammar 2');
+      const gafter = await gp.evaluate(i => ({ st: getSt('read', i), maps: JSON.stringify(S.maps.read) }), gj);
+      const gwas = JSON.parse(gi.before), gnow = JSON.parse(gafter.maps);
+      const gmoved = Object.keys(gwas).filter(k => gnow[k] !== gwas[k]);
+      if (gafter.st < 1 || gmoved.length) fail('grammar stars: ' + JSON.stringify({ st: gafter.st, gmoved }));
+      else step(`grammar: stop earned ${gafter.st} stars, no other stop changed`);
+      await gp.evaluate(() => { G.dead = true; home(); });
+      await vwait(gp, 1500);
+      network.push(...ga.network);
+      for (const e of ga.errors) fail(e);
+      await ga.ctx.close();
+    }
+
     for (const e of errors) fail(e);
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');
