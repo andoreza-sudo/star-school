@@ -81,10 +81,6 @@
 @keyframes wobble{50%{transform:rotate(8deg) scale(1.05)}}
 .ovl .grown{font-size:160px;animation:spin .9s cubic-bezier(.5,1.6,.5,1)}
 /* stickers */
-.sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:10px}
-.st{background:#fff;border-radius:16px;font-size:44px;height:80px;display:flex;align-items:center;justify-content:center;position:relative;box-shadow:0 3px 0 #0001}
-.st.no{filter:grayscale(1) brightness(1.6);opacity:.35}
-.st b{position:absolute;right:6px;bottom:2px;font-size:14px;color:var(--muted)}
 /* setup + grownups */
 .card{background:#fff;border-radius:18px;padding:14px;margin:12px 0;box-shadow:0 2px 8px #0001}
 .card .row{display:flex;gap:10px;align-items:center;margin-bottom:10px}

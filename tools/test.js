@@ -3147,7 +3147,7 @@ run('pet rig (P4-05): dragon stages x moods, named groups, anchors, tokens only,
   r.mood=[{food:10,clean:10,fun:10},{food:50,clean:20,fun:90},{food:50,clean:90,fun:29},{food:80,clean:80,fun:80},{food:79,clean:90,fun:90}].map(c=>petMood(c));
   Object.assign(S,${JSON.stringify(fx)});
   const strip=s=>{const x=JSON.parse(s);delete x.care;return JSON.stringify(x)},before=JSON.stringify(S);
-  r.mid={html:petHTML(),aura:petAura(),art:petArt(),pick:petPick('dragon'),sup:petHTML(300),auraSup:petAura(300),setupPick:petPick('dino')};
+  r.mid={html:petHTML(),aura:petAura(),art:petArt(),pick:petPick('dragon'),sup:petHTML(300),auraSup:petAura(300),setupPick:petPick('dino'),hat:WEAR['🎩'],toy:WEAR['🎈']};
   r.saveSame=strip(before)===strip(JSON.stringify(S));
   // P4-06: the other pets are drawn too now (checked in "pets on the rig P4-06"); here only that they are no longer the emoji
   for(const k of ['dino','bird','ocean']){S.pet=k;for(const st of [0,25,80,200,350])
@@ -3216,7 +3216,8 @@ run('pet rig (P4-05): dragon stages x moods, named groups, anchors, tokens only,
   if(o.mood.join()!=='hungry,sleepy,sleepy,happy,idle')p.push('petMood: '+o.mood.join());
   // the saved midway child (dragon, 85 stars, top hat and balloon) gets the drawn kid dragon; the save is not changed
   const m=o.mid;
-  if(!m.html.includes('pet-svg pet-k-dragon pet-s-kid')||!m.html.includes('>🎩</text>')||!m.html.includes('>🎈</text>'))p.push('midway: petHTML is not the kid dragon with its hat and toy');
+  // P4-07: the saved hat and toy are drawn (WEAR in src/data/d-wear.js) instead of emoji text
+  if(!m.html.includes('pet-svg pet-k-dragon pet-s-kid')||!m.hat||!m.toy||!m.html.includes(m.hat)||!m.html.includes(m.toy)||m.html.includes('</text>'))p.push('midway: petHTML is not the kid dragon with its drawn hat and toy');
   if(m.aura!=='rig'||m.auraSup!=='rig')p.push('midway: petAura is not "rig"');
   if(!m.sup.includes('pet-s-grown')||!m.sup.includes('pet-super'))p.push('300 stars: not the super grown dragon');
   if(!m.art.startsWith('<svg')||m.art.includes('pw-hat'))p.push('petArt: not the bare drawing');
@@ -11961,6 +11962,172 @@ run('Puzzle of the Day and badges P3-17',()=>{
   if(new Set(BT.badgeList(true).map(x=>x.id)).size!==BT.badgeList(true).length)bad.push('badge ids repeat');
   return bad;})();`)}finally{globalThis.Date=RD}
   return{problems:[...new Set(p.concat(r))],note:'daily pick over 7 grades x 40 days, pay once, badges, streak, old saves, damaged values, '+fixtures.length+' fixtures, quit rule'};
+});
+
+// ---- P4-07: drawn wearables, Pet Shop and Stickers ----
+run('wearables and shop P4-07: every item drawn (valid SVG, roles only), fits every pet x stage, deterministic; no emoji chrome in the shop and the book; saves keep their items',()=>{
+  const p=[];
+  const artCss=fs.readFileSync(path.join(SRC,'css','21-art.css'),'utf8');
+  const tok=fs.readFileSync(path.join(SRC,'css','00-tokens.css'),'utf8');
+  const css=fs.readFileSync(path.join(SRC,'css','43-shop.css'),'utf8').replace(/\/\*[\s\S]*?\*\//g,'');
+  const FIX=fs.readdirSync(path.join(__dirname,'fixtures')).filter(n=>n.endsWith('.json')).sort();
+  const raws=FIX.map(n=>[n,fs.readFileSync(path.join(__dirname,'fixtures',n),'utf8')]);
+  globalThis.__p407raws=raws;
+  const o=eval(js+`;(()=>{
+  const r={items:[],art:{},again:{},emb:{},name:{},fit:[],pets:{},html:{},fix:{},kinds:Object.keys(PETS)};
+  // every item the shop sells or a boss gives: [id, slot]
+  r.items=SHOP.hat.map(h=>[h[0],'hat']).concat(SHOP.toy.map(t=>[t[0],'toy']),BPRIZE.map(b=>[b,'hat']));
+  for(const [id,slot] of r.items){
+    r.art[id]=wearArt(id);r.again[id]=wearArt(id);r.emb[id]=wearEmb(id);r.name[id]=wearName(id);
+    const b=r.art[id]?wearBox(r.art[id]):null;
+    // the drawing's box on each pet at each stage, in the pet's 200 x 200 viewBox (the anchor turns and scales it)
+    for(const k of r.kinds)for(const st of [0,1,2,3,4]){
+      const a=petAnchor(k,st,slot),oy=slot=='hat'?60:32,c=Math.cos(a.r*Math.PI/180),s=Math.sin(a.r*Math.PI/180);
+      const pts=b?[[b[0],b[1]],[b[2],b[1]],[b[0],b[3]],[b[2],b[3]]].map(([x,y])=>{x=(x-32)*a.s;y=(y-oy)*a.s;return[a.x+x*c-y*s,a.y+x*s+y*c]}):[];
+      r.fit.push({id,slot,k,st,grid:b,box:pts.length?[Math.min(...pts.map(q=>q[0])),Math.min(...pts.map(q=>q[1])),Math.max(...pts.map(q=>q[0])),Math.max(...pts.map(q=>q[1]))]:null});
+      // the real drawing: the item in the head group (hat) or the right arm group (toy)
+      r.pets[k+'|'+st+'|'+id]=[0,1].map(()=>petSVG(k,st,'idle',slot=='hat'?{hat:wearOf(id),react:true}:{toy:wearOf(id),react:true}));
+    }
+  }
+  r.prizes=BPRIZE.slice();
+  r.tabOf=Object.fromEntries([...SHOP.hat.map(x=>[x[0],'hat']),...SHOP.toy.map(x=>[x[0],'toy']),...SHOP.scene.map(x=>[x[0],'scene']),...BPRIZE.map(x=>[x,'hat'])]);
+  r.unknown=wearOf('zz')+'|'+wearOf('')+'|'+wearArt('zz')+'|'+wearPic('zz');
+  // the screens' markup, rendered with a stand-in page (view() writes #app.innerHTML)
+  const D=global.document,app={style:{},innerHTML:''},dummy={style:{},classList:{add(){},remove(){},contains(){return false}},dataset:{},
+    querySelector(){return dummy},querySelectorAll(){return[]},getBoundingClientRect(){return{left:0,top:0,width:0,height:0}},appendChild(){},isConnected:false};
+  global.document=Object.assign({},D,{querySelector:s=>s=='#app'?app:dummy,querySelectorAll:()=>[],createElement:()=>Object.assign({},dummy)});
+  const keep=()=>JSON.stringify([S.coins,S.owned,S.wear,S.stickers]);
+  try{
+    const store={};
+    global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+    for(const [name,raw] of globalThis.__p407raws){
+      for(const k in store)delete store[k];
+      const before=JSON.parse(raw);
+      if(Object.keys(before).length)store[KEY]=raw;
+      loadSave(Object.keys(before).length?raw:null);migrate();
+      const f={name,before:[before.owned||null,before.wear||null],after:[JSON.parse(JSON.stringify(S.owned||{})),JSON.parse(JSON.stringify(S.wear||{}))],w:Object.assign({},S.wear)};
+      f.pet=petHTML();f.rw=RW.pet();f.nstk=STK.filter(s=>S.stickers[s]).length;
+      const k0=keep();
+      f.shop={};
+      for(const t of ['hat','toy','scene']){shopTab=t;shopSel=null;shop();f.shop[t]=app.innerHTML}
+      // try on the first item the child does not own (or the first one), then the buy sheet's markup is built from the same helpers
+      shopTab='hat';shopSel=SHOP.hat.map(h=>h[0]).find(id=>!S.owned[id]&&S.wear.hat!=id)||SHOP.hat[0][0];shop();f.shop.try=app.innerHTML;
+      shopSel=null;
+      book();f.book=app.innerHTML;
+      f.same=keep()===k0;
+      r.fix[name]=f;
+    }
+  }finally{global.document=D;shopTab='hat';shopSel=null}
+  r.src={shop:String(shop),shopTap:String(shopTap),shopWear:String(shopWear),shopBuy:String(shopBuy),shopPic:String(shopPic),book:String(book),
+    stageHTML:String(stageHTML)};
+  return r})()`);
+  const ROLE=m=>new RegExp('--'+m+':var\\(--ill-').test(artCss);
+  const PICT=/\p{Extended_Pictographic}/u;
+  // 1. every item has a drawing that follows the illustration rules (DESIGN_SYSTEM 6.4 / 6.5)
+  let bytes=0,biggest=0;
+  for(const [id,slot] of o.items){
+    const d=o.art[id],w=o.name[id]+' ('+slot+')';
+    if(!d){p.push(w+': no drawing');continue}
+    bytes+=d.length;biggest=Math.max(biggest,d.length);
+    if(d!==o.again[id])p.push(w+': not deterministic');
+    if(!o.name[id]||o.name[id]=='Prize')p.push(id+': no name');
+    if(PICT.test(d))p.push(w+': emoji in the drawing');
+    if(/\sid=|<defs|gradient|<mask|<clip|<pattern|filter|<use|<text|style=|url\(|<animate|<script|\son[a-z]+=|xlink/i.test(d))p.push(w+': uses a forbidden SVG feature');
+    if(/#[0-9a-f]{3,8}\b|rgba?\(|hsla?\(/i.test(d))p.push(w+': raw colour');
+    if(/NaN|undefined|null|Infinity/.test(d))p.push(w+': NaN/undefined in the markup');
+    const stack=[];
+    for(const t of d.matchAll(/<(\/?)([a-zA-Z]+)\b([^>]*?)(\/?)>/g)){
+      if(!/^(g|path|circle|ellipse|rect)$/.test(t[2]))p.push(w+': element <'+t[2]+'>');
+      if(t[1]){if(stack.pop()!==t[2])p.push(w+': </'+t[2]+'> out of order')}else if(!t[4])stack.push(t[2]);
+      for(const a of t[3].matchAll(/\s([a-z-]+)="([^"]*)"/g)){
+        if(!/^(d|cx|cy|r|rx|ry|x|y|width|height|fill|stroke|stroke-width|stroke-linecap|stroke-linejoin|opacity|transform)$/.test(a[1]))p.push(w+': attribute '+a[1]);
+        if(a[1]=='transform'&&!/^((translate|scale|rotate)\([-\d. ]+\)\s?)+$/.test(a[2]))p.push(w+': transform '+a[2]);
+        if(a[1]=='transform'&&t[2]!='g'&&!/^rotate\(/.test(a[2]))p.push(w+': only rotate() on a shape: '+a[2]);
+        if(a[1]=='d'&&/[^MLCQZ\d\s.-]/.test(a[2]))p.push(w+': path commands other than M L C Q Z');
+        if((a[1]=='fill'||a[1]=='stroke')&&a[2]!=='none'){
+          const m=a[2].match(/^var\(--(a-[a-z0-9]+)\)$/);
+          if(!m)p.push(w+': colour '+a[2]);else if(!ROLE(m[1]))p.push(w+': role --'+m[1]+' not in 21-art.css');
+        }
+      }
+    }
+    if(stack.length)p.push(w+': unclosed '+stack.join(','));
+    const co=(d.match(/\s(d|cx|cy|r|rx|ry|x|y|width|height)="[^"]*"/g)||[]).join(' ').match(/\d*\.\d{2,}/g);
+    if(co)p.push(w+': coordinates to one decimal ('+co[0]+')');
+    if(d.length>4000)p.push(w+': '+d.length+' bytes (budget 4,000)');
+    if((d.match(/<(path|circle|ellipse|rect)\b/g)||[]).length>70)p.push(w+': more than 70 shapes');
+    // shading: at least three tones of one hue (shade, base, highlight or deep accent), light from the top left
+    const tones={};for(const m of d.matchAll(/--a-([a-z])([0-9]?)\)/g))(tones[m[1]]=tones[m[1]]||new Set()).add(m[2]);
+    if(!Object.values(tones).some(s=>s.size>=3))p.push(w+': flat (no colour area has three tones)');
+    // the 64 grid: a hat's bottom centre near (32, 60), a toy around the hand point (32, 32)
+    const b=o.fit.find(f=>f.id==id).grid;
+    if(slot=='hat'&&!(b[3]>=58&&b[3]<=67&&b[0]<=24&&b[2]>=40&&b[1]>=10))p.push(w+': a hat sits on (32, 60) (its bottom there, wider than the middle) and is under 50 tall: '+b);
+    if(slot=='toy'&&!(b[0]<=32&&b[2]>=32&&b[1]<=32&&b[3]>=32&&b[0]>=-2&&b[2]<=66&&b[1]>=-26&&b[3]<=66))p.push(w+': a toy is held at (32, 32) and stays near the grid: '+b);
+    if(o.prizes.includes(id)){if(!o.emb[id])p.push(w+': prize without an emblem');else if(!d.includes(o.emb[id]))p.push(w+': the prize hat does not show its emblem')}
+  }
+  if(o.unknown!=='zz|||<span class="wr-emo">zz</span>')p.push('an id without a drawing must keep its emoji: '+o.unknown);
+  // 2. fits each pet's anchors at every stage: inside the 200 x 200 viewBox; drawn in the head (hat) or right arm (toy) group
+  let fits=0;
+  for(const f of o.fit){
+    const w=o.name[f.id]+' on '+f.k+' stage '+f.st;
+    if(!f.box)continue;
+    const [x0,y0,x1,y1]=f.box;
+    if(x0<0||y0<0||x1>200||y1>200)p.push(w+': outside the viewBox '+f.box.map(v=>Math.round(v)));
+    else fits++;
+    const [d,d2]=o.pets[f.k+'|'+f.st+'|'+f.id];
+    if(d!==d2)p.push(w+': petSVG not deterministic');
+    if(!d.includes(o.art[f.id]))p.push(w+': not drawn on the pet');
+    if(PICT.test(d))p.push(w+': emoji in the pet drawing');
+    if(/#[0-9a-f]{3,8}\b|\sid=|gradient|filter/i.test(d))p.push(w+': raw colour, id, gradient or filter in the pet drawing');
+    const g=d.indexOf('class="pw-'+f.slot+'"'),head=d.indexOf('class="pg-head"'),arm=d.indexOf('class="pg-arm-r"');
+    if(f.slot=='hat'&&!(g>head&&head>=0))p.push(w+': hat not in the head group');
+    if(f.slot=='toy'&&!(g>arm&&arm>=0&&(f.st==0||g<head)))p.push(w+': toy not in the right arm group');
+    if(d.length>15000)p.push(w+': '+d.length+' bytes');
+  }
+  // 3. the screens: no emoji as chrome (picture characters only as sticker content in the book), the ids the code and smoke use
+  const rx=v=>v.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  const text=h=>h.replace(/<span class="sb-e">[^<]*<\/span>/g,'').replace(/<[^>]*>/g,' ');
+  for(const [name,f] of Object.entries(o.fix)){
+    for(const [t,h] of Object.entries(f.shop)){
+      if(PICT.test(text(h)))p.push(name+' shop '+t+': emoji chrome '+text(h).match(PICT)[0]);
+      if(/<text\b|wr-emo/.test(h))p.push(name+' shop '+t+': an item is not drawn');
+      for(const s of ['id="back"','id="coinc"','class="tabs','data-t="hat"','data-t="toy"','data-t="scene"','class="shopgrid','id="pet"','id="stage"'])
+        if(!h.includes(s))p.push(name+' shop '+t+': missing '+s);
+      if(!/aria-label="Back"/.test(h))p.push(name+' shop: back button has no spoken name');
+    }
+    if(!/id="psact"/.test(f.shop.try))p.push(name+' shop: trying on an item shows no action button');
+    if(PICT.test(text(f.book)))p.push(name+' book: emoji chrome');
+    for(const s of ['id="back"','class="sgrid','class="sb-page'])if(!f.book.includes(s))p.push(name+' book: missing '+s);
+    if(/class="bk-bt"/.test(f.book)!==/id="bkbdg"/.test(f.book))p.push(name+' book: the Puzzle badges button');
+    // 4. saves: loading changes nothing in owned / worn items; the shop and the pet show the same items as before, drawn
+    if(f.before[0]&&JSON.stringify(f.before[0])!==JSON.stringify(f.after[0]))p.push(name+': owned items changed on load');
+    if(f.before[1]&&JSON.stringify(f.before[1])!==JSON.stringify(f.after[1]))p.push(name+': worn items changed on load');
+    if(!f.same)p.push(name+': drawing the shop or the book changed the save');
+    for(const slot of ['hat','toy']){
+      const id=f.w[slot];if(!id)continue;
+      if(!o.art[id])p.push(name+': worn '+slot+' '+id+' has no drawing');
+      else{
+        if(!f.pet.includes(o.art[id]))p.push(name+': Home / Pet Care pet does not wear the drawn '+slot);
+        if(!f.rw.includes(o.art[id]))p.push(name+': the reward pet does not wear the drawn '+slot);
+        if(!new RegExp('class="btn item ps-card[^"]* wear[^"]*" data-id="'+rx(id)+'"').test(f.shop[slot]))p.push(name+': the shop does not show the '+slot+' as on');
+      }
+    }
+    for(const id of Object.keys(f.before[0]||{})){
+      const t=o.tabOf[id];if(!t)continue;
+      if(!new RegExp('class="btn item ps-card own[^"]*" data-id="'+rx(id)+'"').test(f.shop[t]))p.push(name+': owned '+id+' not shown as yours');
+    }
+    if(f.w.scene&&!f.shop.hat.includes('class="ps-stage sc-'+f.w.scene+'"'))p.push(name+': the stage is not the pet\'s place');
+    const n=(f.book.match(/class="sb-slot sb-stk"/g)||[]).length;
+    if(n!==f.nstk)p.push(name+' book: '+n+' stickers shown, '+f.nstk+' in the save');
+  }
+  // 5. source: no emoji literals as chrome in the shop and book functions; Pet Care keeps stageHTML
+  for(const [n,f] of Object.entries(o.src))if(n!='stageHTML'&&/\p{Emoji_Presentation}|\p{Extended_Pictographic}️/u.test(f))p.push(n+'(): emoji in the source');
+  // 6. 43-shop.css: tokens only, no filter, motion on transform / opacity
+  if(/#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(/.test(css))p.push('43-shop.css: raw colour');
+  if(/(^|[;{\s])(-webkit-)?(backdrop-)?filter\s*:/.test(css))p.push('43-shop.css: filter');
+  for(const m of css.matchAll(/transition\s*:\s*([^;}]+)/g))for(const part of m[1].split(','))if(!/^\s*(transform|opacity)\s/.test(part))p.push('43-shop.css: transition on '+part.trim());
+  for(const m of css.matchAll(/var\(--([a-z0-9-]+)/g))if(!['r','c','c-shade','ic2'].includes(m[1])&&!new RegExp('--'+m[1]+':').test(tok))p.push('43-shop.css: unknown token --'+m[1]);
+  if(/filter/.test(fs.readFileSync(path.join(SRC,'css','30-learn.css'),'utf8').match(/\.st\.no[^}]*\}/)?.[0]||''))p.push('the old sticker slot filter is still there');
+  return{problems:[...new Set(p)],note:o.items.length+' items, '+bytes+' bytes of drawings (largest '+biggest+'), '+fits+' item x pet x stage fits, '+Object.keys(o.fix).length+' fixtures'};
 });
 
 // ---- report ----

@@ -1416,10 +1416,14 @@ async function main() {
         window.__seenStop = 0; requestAnimationFrame(tick); }, sel);
       const seenMax = () => pp.evaluate(() => { window.__seenStop = 1; return window.__seen; });
       await pp.evaluate(() => { S.care = { food: 90, clean: 90, fun: 90, t: Date.now(), gift: '' }; home(); });
+      // P4-07: the hat and toy are drawn now; wornId gives the id when the .pw-hat / .pw-toy group holds that item's drawing (WEAR)
+      await pp.evaluate(() => { window.wornId = (svg, slot, id) => { const g = svg && svg.querySelector('g.pw-' + slot);
+        const t = document.createElementNS('http://www.w3.org/2000/svg', 'g'); t.innerHTML = WEAR[id] || '';
+        return g && WEAR[id] && g.innerHTML === t.innerHTML ? id : (g || {}).textContent; }; });
       const h = await pp.evaluate(() => {
         const pet = document.querySelector('#pet'), svg = pet && pet.querySelector('.pet-svg'), r = svg && svg.getBoundingClientRect();
         return { cls: svg && svg.getAttribute('class'), rig: pet.classList.contains('rig'), filter: getComputedStyle(pet).filter,
-          hat: (svg.querySelector('.pw-hat') || {}).textContent, toy: (svg.querySelector('.pw-toy') || {}).textContent,
+          hat: wornId(svg, 'hat', '🎩'), toy: wornId(svg, 'toy', '🎈'),
           w: r && Math.round(r.width), right: r && r.right, sw: document.documentElement.scrollWidth };
       });
       if (h.cls !== 'pet-svg pet-k-dragon pet-s-kid pet-m-happy' || !h.rig || h.filter !== 'none' || h.hat !== '🎩' || h.toy !== '🎈' ||
@@ -1482,7 +1486,7 @@ async function main() {
         S.pet = 'dino'; home();
         const pet = document.querySelector('#pet');
         const r = { e: !!pet.querySelector('.pe'), svg: (pet.querySelector('.pet-svg') || { getAttribute: () => '' }).getAttribute('class'), cls: pet.className,
-          hat: (pet.querySelector('.pw-hat') || {}).textContent };
+          hat: wornId(pet, 'hat', '🎩') };
         S.pet = 'dragon'; S.name = ''; home();
         r.setup = [...document.querySelectorAll('.petopt')].map(b => b.dataset.p + ':' + (b.querySelector('.pet-svg') ? 'svg' : b.querySelector('span').textContent));
         return r;
@@ -5824,6 +5828,112 @@ async function main() {
       await dc.ctx.close();
       if (bad.length) fail('P3-17:\n  ' + bad.join('\n  '));
       else step(`P3-17: Home daily card -> played to a win (5 coins and game time once, badge revealed), Home and hub show it done, badges view at 380x780 and 1024x600, old work revealed once, the band-below offer after three exits, ${bars} play top bars show the whole name beside the timer; targets 48 px, no sideways scroll, no emoji chrome`);
+    }
+
+    // P4-07 Wearables, Pet Shop and Stickers (midway save: the kid dragon, 64 coins, top hat and balloon on). At 380x780 and at
+    //    1024x600, with real taps: Home -> Pet Shop, try an item on (the stage pet wears its drawing), Buy -> the sheet -> "Yes, buy it":
+    //    coins go down by the price, the item is owned and on, and Home and Pet Care show the drawn item on the pet; then the same with
+    //    a toy for a second pet. Not enough coins says so and opens no sheet. Then the sticker book (pages, die-cut stickers, Puzzle
+    //    badges kept). Every screen: 48 px targets, no sideways scroll, no emoji chrome (sticker pictures are content).
+    {
+      const look = () => {
+        const vw = document.documentElement.clientWidth, out = [];
+        for (const e of document.querySelectorAll('button, [role="button"]')) {
+          const r = e.getBoundingClientRect();
+          if (!r.width || r.bottom < 0 || r.top > innerHeight || e.closest('svg') || e.closest('#toast')) continue;
+          if (Math.min(r.width, r.height) < 47.5) out.push('small ' + (e.id || e.className) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
+          if (r.left < -1 || r.right > vw + 1) out.push('outside ' + (e.id || e.className) + ' ' + Math.round(r.left) + '..' + Math.round(r.right));
+        }
+        if (document.documentElement.scrollWidth > vw) out.push('sideways scroll ' + document.documentElement.scrollWidth);
+        for (const s of document.querySelectorAll('.scroll')) if (s.scrollWidth > s.clientWidth + 1) out.push('sideways scroll in ' + s.className);
+        const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        for (let n; (n = w.nextNode());) {
+          const el = n.parentElement;
+          if (!el || el.closest('script,style,svg,#ico-sprite,.rw-burst,#pet,.sb-e') || !el.getClientRects().length) continue;
+          const m = n.textContent.match(/\p{Extended_Pictographic}|[◀▶✕]/u);
+          if (m) out.push('emoji chrome ' + m[0] + ' in ' + (el.id || el.className));
+        }
+        if (document.querySelector('#app .pw-hat:not(g), #app .pw-toy:not(g)')) out.push('a wearable drawn as text');
+        return out;
+      };
+      const bad = [];
+      // the pet in sel wears the drawing of id: a .pw-hat / .pw-toy group holding exactly WEAR[id] (parsed the same way), no emoji text
+      const wears = (pg, sel, id) => pg.evaluate(([sel, id]) => {
+        const e = document.querySelector(sel), t = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        if (!e || !WEAR[id]) return false;
+        t.innerHTML = WEAR[id];
+        return [...e.querySelectorAll('g.pw-hat, g.pw-toy')].some(g => g.innerHTML === t.innerHTML) && !e.querySelector('text');
+      }, [sel, id]);
+      for (const [W, H, buys] of [[380, 780, [['dragon', 'hat', '🧢', 10], ['dino', 'toy', '🧸', 20]]], [1024, 600, [['bird', 'hat', '⛑️', 25], ['ocean', 'toy', '⚽', 15]]]]) {
+        const sz = W + 'x' + H;
+        const sa = await openApp(browser, { fixture: 'midway', width: W, height: H });
+        const pg = sa.page;
+        const chk = async what => { await pg.waitForTimeout(450); for (const o of await pg.evaluate('(' + look.toString() + ')()')) bad.push(sz + ' ' + what + ': ' + o); };
+        await pg.evaluate(() => { S.care = { food: 90, clean: 90, fun: 90, t: Date.now(), gift: '' }; save(); home(); });
+        for (const [pet, tab, id, price] of buys) {
+          await pg.evaluate(k => { S.pet = k; save(); home(); }, pet);
+          await pg.click('#shop');
+          await pg.waitForSelector('.ps-grid .item');
+          if (tab != 'hat') await pg.click(`.tab[data-t="${tab}"]`);
+          await pg.waitForSelector(`.item[data-id="${id}"]`);
+          await chk('shop ' + tab);
+          const c0 = await pg.evaluate(() => S.coins);
+          // try it on: the stage pet wears the drawing, nothing is bought yet
+          await pg.click(`.item[data-id="${id}"]`);
+          if (!(await wears(pg, '#stage #pet', id))) bad.push(sz + ` ${pet}: trying on ${id} does not show it on the stage pet`);
+          if (await pg.evaluate(i => !!S.owned[i], id)) bad.push(sz + ` ${pet}: trying on bought ${id}`);
+          await pg.click('#psact');
+          await pg.waitForSelector('.sheet-bg.on #psyes');
+          await vwait(pg, 400);
+          await chk('buy sheet');
+          await pg.click('#psyes');
+          await pg.waitForSelector(`.item.wear[data-id="${id}"]`);
+          const st = await pg.evaluate(([i, t]) => ({ coins: S.coins, own: S.owned[i], on: S.wear[t], chip: document.querySelector('#coinc b').textContent }), [id, tab]);
+          if (st.coins !== c0 - price || st.own !== 1 || st.on !== id || st.chip !== String(c0 - price)) bad.push(sz + ` ${pet} buy ${id}: ` + JSON.stringify(st) + ' from ' + c0);
+          await vwait(pg, 300);
+          await chk('shop after buying');
+          // Home and Pet Care show it on the pet
+          await pg.click('#back');
+          await pg.waitForSelector('#care');
+          if (!(await wears(pg, '#pet', id)) || !(await pg.evaluate(k => !!document.querySelector('#pet .pet-k-' + k), pet))) bad.push(sz + ` ${pet}: Home pet does not wear ${id}`);
+          await chk('home');
+          await pg.click('#care');
+          await pg.waitForSelector('#bath');
+          if (!(await wears(pg, '#pet', id))) bad.push(sz + ` ${pet}: Pet Care pet does not wear ${id}`);
+          await pg.evaluate(() => home());
+        }
+        // both items of the second pet stay on (its hat from the first buy, its toy from the second)
+        await pg.evaluate(() => home());
+        const both = (await wears(pg, '#pet', buys[0][2])) && (await wears(pg, '#pet', buys[1][2]));
+        if (!both) bad.push(sz + ': the pet does not wear both bought items');
+        // not enough coins: a toast, no sheet, no change
+        await pg.evaluate(() => { S.coins = 5; save(); shopTab = 'hat'; shopSel = null; shop(); });
+        await pg.click('.item[data-id="👑"]');
+        await pg.click('#psact');
+        await vwait(pg, 300);
+        const poor = await pg.evaluate(() => ({ sheet: !!document.querySelector('.sheet-bg'), coins: S.coins, own: !!S.owned['👑'], toast: (document.querySelector('#toast') || {}).textContent || '' }));
+        if (poor.sheet || poor.coins !== 5 || poor.own || !/Need 55 more/.test(poor.toast)) bad.push(sz + ' not enough coins: ' + JSON.stringify(poor));
+        // the sticker book: four pages, the saved stickers as die-cut stickers, the Puzzle badges button
+        await pg.evaluate(() => home());
+        await pg.click('#book');
+        await pg.waitForSelector('.sb-page');
+        await chk('book');
+        const bk = await pg.evaluate(() => ({ pages: document.querySelectorAll('.sb-page').length, stk: document.querySelectorAll('.sb-stk').length,
+          want: STK.filter(s => S.stickers[s]).length, badges: !!document.querySelector('#bkbdg') == (BT.list().length > 0),
+          cut: (getComputedStyle(document.querySelector('.sb-e')).textShadow.match(/rgb/g) || []).length }));
+        if (bk.pages !== 4 || bk.stk !== bk.want || !bk.stk || !bk.badges || bk.cut < 8) bad.push(sz + ' book: ' + JSON.stringify(bk));
+        await pg.click('.sb-stk');
+        if (await pg.evaluate(() => !!document.querySelector('#bkbdg'))) {
+          await pg.click('#bkbdg');
+          await vwait(pg, 300);
+          if (!(await pg.evaluate(() => !document.querySelector('.sb-page')))) bad.push(sz + ' book: Puzzle badges did not open');
+        }
+        network.push(...sa.network);
+        for (const e of sa.errors) fail(e);
+        await sa.ctx.close();
+      }
+      if (bad.length) fail('P4-07:\n  ' + bad.join('\n  '));
+      else step('P4-07: shop -> try on -> Buy -> Yes for 4 items on 4 pets (coins, owned, on), drawn on the pet in the shop, on Home and in Pet Care; not enough coins opens no sheet; sticker book pages and die-cut stickers; 380x780 and 1024x600, 48 px targets, no sideways scroll, no emoji chrome');
     }
 
     for (const u of network) fail('network request: ' + u);

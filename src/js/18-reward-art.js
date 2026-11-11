@@ -271,13 +271,17 @@ const RW = {
     return RW.art(body, `rw-boss rw-b-${k} rw-p-${pose == 'hit' ? 'hit' : 'idle'}${cls ? ' ' + cls : ''}`, '0 0 200 200', B.name);
   },
 
-  // a prize rosette with the prize (today an emoji costume) in the middle
+  // a prize rosette with the prize in the middle: its drawn emblem (P4-07), else the emoji
   badge(prize) {
     const ribbon = `<path ${rwF('r2')} d="M22 34L13 60L22 55.5L26.5 62L33 39Z"/><path ${rwF('r')} d="M42 34L51 60L42 55.5L37.5 62L31 39Z"/>`;
     const rose = `<path ${rwF('y2')} stroke="var(--a-y2)" stroke-width="3" stroke-linejoin="round" d="${rwStarD(32, 28, 25, 21, 14)}"/>` +
       `<path ${rwF('y')} stroke="var(--a-y)" stroke-width="2" stroke-linejoin="round" d="${rwStarD(31, 27, 23.5, 19.8, 14)}"/>` +
       `<circle cx="32" cy="28" r="16.5" ${rwF('y3')}/><circle cx="31.4" cy="27.4" r="15.6" ${rwF('w')}/>` +
       `<path ${rwS('y1', 2.2)} stroke-linecap="round" d="M15 21Q19 11 29 9"/>`;
+    // P4-07: a prize with a drawn emblem shows it on the rosette's face (the same badge the pet then wears); others keep the emoji
+    const emb = typeof wearEmb == 'function' ? wearEmb(prize) : '';
+    if (emb) return `<span class="rw-badge">${RW.art(ribbon + rose + `<g transform="translate(31.4 27.4) scale(.4) translate(-32 -32)">${emb}</g>`,
+      'rw-rose', '0 0 64 64', wearName(prize))}</span>`;
     return `<span class="rw-badge">${RW.art(ribbon + rose, 'rw-rose', '0 0 64 64')}<span class="rw-be">${esc(prize)}</span></span>`;
   },
 
@@ -316,7 +320,7 @@ const RW = {
   // the child's pet cheering (round with no stars, mix, test out): the drawn pet (every pet is on the rig since P4-06)
   pet() {
     const w = S.wear || {};
-    return `<div class="rw-pet">${petSVG(S.pet, stage(), 'cheer', { hat: w.hat, toy: w.toy })}</div>`;
+    return `<div class="rw-pet">${petSVG(S.pet, stage(), 'cheer', { hat: wearOf(w.hat), toy: wearOf(w.toy) })}</div>`;
   },
 
   // ---- screens ----

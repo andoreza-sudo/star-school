@@ -285,6 +285,29 @@ light rays, and returns the markup of the reward screens (`RW.pre`, `RW.done`, `
 - Boss prizes become small badge-like hats in the same style.
 - Sticker book: stickers get a white die-cut border (a 3 px white stroke behind the art) and a slight rotation. Emoji stickers stay until object art covers them; the border treatment makes both look consistent.
 - Scenes (meadow, beach, candy, rainbow, space, castle) use the scene generator from section 7.
+- As built (P4-07): every item the shop sells or a boss gives is drawn in the pets' style (shade / base / highlight per area, light from
+  the top left, a soft dark contact accent where a hat meets the head; roles `var(--a-x)` of 21-art.css, also defined on `.pw-hat` /
+  `.pw-toy`; no outlines, gradients, filters, ids, text or `<use>`). Hats: cap (blue, worn a little sideways, gold star), bow, top hat,
+  rescue helmet, grad cap, crown. Toys: balloon and kite float above the hand on a string, lollipop and magic wand on a stick, ball,
+  teddy, trophy. The 12 boss prizes are badge hats: a headband in the prize's colour with a gold rosette, the prize's emblem (daisy,
+  star, party popper, planet, rainbow, flame, gem, clover, moon, lightning, donut, music notes) on its white face; the same emblem is now
+  drawn in the boss-intro rosette (`RW.badge`). Drawings: `WEAR[id]` / `WEAR_EMB[id]` in `src/data/d-wear.js`, keyed by the emoji ids the
+  save already stores, so saves do not change; an id without a drawing still shows its emoji. Helpers in `src/js/17-wear.js`
+  (`wearOf(id)` for petSVG, `wearPic(id, size)` for cards, `wearBox(svg)` for bounds). 64 grid: a hat's bottom centre (32, 60) sits on the
+  head, a toy is held at (32, 32). The anchors were lowered onto the head and scaled up (hats 0.78-0.98, toys 0.74-0.98) so a hat is worn
+  rather than perched; every item on every pet at every stage stays inside the 200 x 200 viewBox (test-enforced).
+  Review sheet: `node tools/shots.js wear` (every item at 96 and 40 px, the emblems in the rosette, every pet x stage wearing every item).
+- Pet Shop as built (P4-07, `shop()` in 48-shop.js, `src/css/43-shop.css`): a sticky stage with the pet on its place (Home's drawn
+  scenes) wearing what the child tries on; an info bar (item picture, name, coin price or "It is yours", one action: Buy / Put it on /
+  Take it off / Need N more); tabs Hats / Toys / Places as a segmented strip; cards with the drawing on a soft well, the name and a coin
+  price chip, a blue "Yours" tag, a green "On" tag with a green ring, a gold "Prize" tag for boss prizes, a blue ring on the item being
+  tried on. Owned items go on and off with one tap, as before; an item the child does not own is tried on with a tap and bought with
+  Buy, then a sheet ("Buy the crown? It costs 60 coins. You will have 4 left." Yes, buy it / Not now). Wide landscape: stage left,
+  shelf right.
+- Sticker book as built (P4-07, `book()` in 46-home.js): a header card (progress meter, how to win stickers, Puzzle badges), then
+  pages of 12 on cream paper with a ring binding (two pages side by side from 560 px). A collected sticker is its emoji (collectible
+  content) cut out as a die-cut sticker: a white border that follows the picture (stacked text shadows), a soft drop shadow, a slight
+  turn, a "x2" pill for doubles. An empty slot is a soft cream square with a faint star (no filter).
 
 ### 6.5 Object art (chunks P4-13 to P4-15; style reset in P4-13b)
 
