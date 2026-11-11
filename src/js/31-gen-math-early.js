@@ -56,6 +56,15 @@ const PK = {
     for (let i = 0; i < n; i++) b += `<rect class="pkf" x="2" y="${2 + (n - 1 - i) * 18}" width="36" height="16" rx="4"/>`;
     return `<svg class="pkbar" viewBox="0 0 40 ${n * 18 + 4}" width="40" height="${n * 18 + 4}" style="--c:var(${PK.COL[ci][1]})" aria-hidden="true" focusable="false">${b}</svg>`;
   },
+  // R-01m: colour-blind children (about 1 boy in 12 confuses red and green) must be able to solve every item.
+  // cols(): the colour indices in a random order, without red or green (whichever comes later), so the two never meet.
+  cols() {
+    const cs = shuffle([0, 1, 2, 3, 4, 5]), drop = cs.indexOf(0) > cs.indexOf(2) ? 0 : 2;
+    return cs.filter(c => c != drop);
+  },
+  // colour pairs that differ in more than hue for red-green colour blindness: blue or purple against a warm colour, or
+  // yellow against red (light against dark). "Which one is different" by colour uses only these.
+  SAFE: [[1, 0], [1, 2], [1, 3], [1, 5], [4, 0], [4, 2], [4, 3], [4, 5], [3, 0]],
   // a hint panel: html is trusted markup; w is spoken when it opens (never the only way to learn it)
   hint(html, w) { return { k: 'html', html, w }; },
   num: n => PK.NUM[n],
@@ -128,6 +137,11 @@ function genPkMore() {
 function genSort1() {
   const byColour = coin(), SH = ['circle', 'square', 'triangle', 'star', 'diamond'];
   const sh = shuffle(SH), cs = shuffle([0, 1, 2, 3, 4, 5]);
+  if (byColour) { // R-01m: the odd colour against the others is a pair colour-blind children can tell apart
+    const pr = pick(PK.SAFE), flip = coin();
+    cs[0] = pr[flip ? 1 : 0];
+    cs[1] = pr[flip ? 0 : 1];
+  }
   let items, odd; // items: [shape, colour index]
   if (byColour) {
     items = [[sh[0], cs[0]], [sh[1], cs[0]], [sh[2], cs[0]]]; // same colour, three different shapes
@@ -196,13 +210,14 @@ function genPkShape() {
   });
 }
 
-// pat 1: an AB pattern of 5, pick the 6th (colours, or shapes in one colour)
+// pat 1: an AB pattern of 5, pick the 6th (colours, each with its own shape; or shapes in one colour)
 function genPkPat() {
-  const byColour = coin(), cs = shuffle([0, 1, 2, 3, 4, 5]), sh = shuffle(['circle', 'square', 'triangle', 'star', 'diamond']);
-  const A = byColour ? { s: 'circle', c: cs[0] } : { s: sh[0], c: cs[0] };
-  const B = byColour ? { s: 'circle', c: cs[1] } : { s: sh[1], c: cs[0] };
+  const byColour = coin(), cs = PK.cols(), sh = shuffle(['circle', 'square', 'triangle', 'star', 'diamond']);
+  // R-01m: a colour pattern gives each colour its own shape too, so it is never colour-only (and never red with green)
+  const A = { s: sh[0], c: cs[0] };
+  const B = byColour ? { s: sh[1], c: cs[1] } : { s: sh[1], c: cs[0] };
   const seq = [A, B, A, B, A], nm = x => byColour ? PK.COL[x.c][0] : x.s;
-  const other = byColour ? { s: 'circle', c: cs[2] } : { s: sh[2], c: cs[0] };
+  const other = byColour ? { s: sh[2], c: cs[2] } : { s: sh[2], c: cs[0] };
   const n = R(2, 3), opts = shuffle(n == 2 ? [B, A] : [B, A, other]);
   const draw = x => PK.shp(x.s, x.c), names = seq.map(nm).join(', ');
   const chant = `${names}. What comes next?`;
@@ -232,7 +247,7 @@ function sgFrames(n, ob, pulse) {
   return `<div class="sgfrs${pulse ? ' pulse' : ''}">${frame(10, 1)}${frame(n - 10, 0)}</div>`;
 }
 function genSgCount() {
-  const ob = pick(PK.OBJ), n = R(11, 20), w = `One full ten and ${n - 10} more.`;
+  const ob = pick(PK.OBJ), n = R(11, 20), w = n == 20 ? 'Two full tens.' : `One full ten and ${n - 10} more.`; // R-01m: 20 is two tens
   return pkQ({
     kind: 'num', ans: String(n), html: `<div class="pkq">${sgFrames(n, ob)}</div>${pkTxt(`How many ${ob[1]}?`)}${sgEq(SLOT)}`,
     say: `How many ${ob[1]}?`, after: `${SGN(n)} ${ob[1]}`,
@@ -251,7 +266,7 @@ function genSgNum() {
   const pool = shuffle([n - 1, n + 1, n - 2, n + 2, ...Array.from({ length: 10 }, (_, i) => 11 + i)]).filter(x => x >= 10 && x <= 20);
   const ds = [];
   for (const x of [...pri, ...pool]) if (x != n && !ds.includes(x) && ds.length < 3) ds.push(x);
-  const w = `Count the dots. One full ten, and ${n - 10} more.`;
+  const w = n == 20 ? 'Count the dots. Two full tens.' : `Count the dots. One full ten, and ${n - 10} more.`; // R-01m: 20 is two tens
   return pkQ({
     kind: 'choice', cls: 'syms pk4', ans: String(n), choices: pkNums(n, ds), auto: 'must',
     html: `<div class="pkq">${pkEar()}</div>${pkTxt(`Tap the number ${SGN(n)}.`)}`, say: `Tap the number ${SGN(n)}.`,
@@ -361,10 +376,11 @@ function genSgCnt() {
   });
 }
 
-// pat 2: AAB, ABB or ABC (a colour pattern, or a shape pattern in one colour), 6-7 shown; pick the next
+// pat 2: AAB, ABB or ABC (a colour pattern with a shape per colour, or a shape pattern in one colour), 6-7 shown; pick the next
 function genSgPat() {
-  const kind = pick(['AAB', 'ABB', 'ABC']), byColour = coin(), cs = shuffle([0, 1, 2, 3, 4, 5]), sh = shuffle(['circle', 'square', 'triangle', 'star', 'diamond']);
-  const tok = i => (byColour ? { s: 'circle', c: cs[i] } : { s: sh[i], c: cs[0] }), T = [tok(0), tok(1), tok(2)];
+  const kind = pick(['AAB', 'ABB', 'ABC']), byColour = coin(), cs = PK.cols(), sh = shuffle(['circle', 'square', 'triangle', 'star', 'diamond']);
+  // R-01m: in a colour pattern each colour has its own shape too (never colour-only, never red with green)
+  const tok = i => (byColour ? { s: sh[i], c: cs[i] } : { s: sh[i], c: cs[0] }), T = [tok(0), tok(1), tok(2)];
   const unit = [...kind].map(ch => T['ABC'.indexOf(ch)]), L = R(6, 7);
   const seq = Array.from({ length: L }, (_, i) => unit[i % 3]), next = unit[L % 3];
   const key = x => x.c + '|' + x.s, others = T.filter(x => key(x) != key(next));
@@ -597,7 +613,7 @@ function genPv1() {
   }
   const u = R(1, 9), n = t * 10 + u;
   return {kind: 'num', html: `<div class="eq">${t * 10} + ${u} = ${SLOT}</div>`, say: `${t * 10} plus ${u} equals what?`,
-    ans: String(n), label: `${t * 10} + ${u} = ?`, hint: {k: 'text', s: `${t} tens is ${t * 10}. Put the ${u} ones with it.`}};
+    ans: String(n), label: `${t * 10} + ${u} = ?`, hint: {k: 'text', s: `${qN(t, 'ten')} is ${t * 10}. Put the ${qN(u, 'one')} with it.`}};
 }
 
 // add 5: three addends, sum <= 20; two of them make ten or are a double in 60% of the items, the rest have neither
@@ -838,7 +854,7 @@ function genBayCoins5() {
   }
   const d = R(1, 4), p = d * 100 + 50, t = `${ex} ${it} costs $${d}.50. You pay 5 dollars. How many cents do you get back?`;
   return {kind: 'num', html: `${art}<p class="story">${esc(t)}</p><div class="eq" style="font-size:.7em">${SLOT}¢</div>`,
-    say: `${ex} ${it} costs ${d} dollars and 50 cents. You pay 5 dollars. How many cents do you get back?`, auto: true, ans: String(500 - p),
+    say: `${ex} ${it} costs ${qN(d, 'dollar')} and 50 cents. You pay 5 dollars. How many cents do you get back?`, auto: true, ans: String(500 - p),
     label: `change from 500 for ${p}`, hint: BAY.txt(`Count up from $${d}.50 to the next dollar, then on to $5.00. Add the two jumps.`)};
 }
 
