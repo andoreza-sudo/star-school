@@ -1,0 +1,60 @@
+/* Brain Teasers: Word Search (P3-15, src/js/87-bt-wsearch.js). Tokens only; motion is transform and opacity. --cs (the square size)
+   and --n come from the JS layout. A found word: a soft band with round ends under its letters (SVG, the word's colour) and, in the
+   list, the same tint, a strike-through and a tick (never colour alone). On a phone the puzzle uses the stage's side padding too,
+   so an 8 x 8 grid keeps 44 px squares at 380 px (BRAIN_TEASERS 8, dense grids). */
+.ws{display:flex;flex-direction:column;gap:var(--s-3);width:calc(100% + var(--s-4));min-height:100%;margin:0 calc(var(--s-2) * -1)}
+.ws-say{flex:none;display:flex;align-items:center;gap:var(--s-2);min-height:var(--tap);padding:var(--s-1) var(--s-1) var(--s-1) var(--s-3);
+  border-radius:var(--r-card);background:var(--surface);box-shadow:inset 0 0 0 2px var(--line),0 3px 0 var(--ledge-soft)}
+.ws-msg{flex:1;min-width:0;margin:0;font-size:var(--fs-3);font-weight:700;line-height:1.3;color:var(--ink)}
+.ws-msg.good{color:var(--good-ink)}
+.ws-msg.try{color:var(--try-ink)}
+.ws-msg.hint{color:var(--bt-shade)}
+.ws-spk{flex:none}
+.ws-main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--s-3)}
+/* the grid: a white card, letters on top of the bands */
+.ws-board{position:relative;display:grid;grid-template-columns:repeat(var(--n),var(--cs,44px));grid-auto-rows:var(--cs,44px);padding:4px;
+  border-radius:var(--r-card);background:var(--surface);box-shadow:inset 0 0 0 3px var(--bt-tint),0 4px 0 var(--ledge-soft);
+  touch-action:none;-webkit-user-select:none;user-select:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.ws-board.won{animation:k-pop var(--t-slow) var(--spring)}
+.ws-c{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;font-size:calc(var(--cs,44px) * .56);font-weight:700;
+  line-height:1;color:var(--ink);pointer-events:none}
+.ws-ov{position:absolute;inset:4px;width:calc(100% - 8px);height:calc(100% - 8px);overflow:visible;pointer-events:none}
+.ws-band{stroke:var(--wc);stroke-width:.78;stroke-linecap:round;animation:ws-in var(--t-slow) var(--ease)}
+@keyframes ws-in{from{opacity:0}to{opacity:1}}
+.ws-live{stroke:var(--bt);stroke-width:.8;stroke-linecap:round;opacity:.28}
+.ws-live.no{stroke:var(--try);opacity:.6;animation:ws-no .9s var(--ease) forwards}
+@keyframes ws-no{0%,50%{opacity:.6}100%{opacity:0}}
+.ws-hl{stroke:var(--bt-tint);stroke-width:.96;stroke-linecap:round}
+.ws-ring{fill:none;stroke:var(--star-shade);stroke-width:.1}
+.ws-pk{fill:var(--bt-tint);stroke:var(--bt);stroke-width:.08}
+/* the words to find */
+.ws-side{flex:none;display:flex;flex-direction:column;align-items:center;gap:var(--s-2);width:100%}
+.ws-count{margin:0;font-size:var(--fs-2);font-weight:700;color:var(--ink-2)}
+.ws-list{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 8px;margin:0;padding:0;list-style:none}
+.ws-w{display:inline-flex;align-items:center;gap:4px;min-height:36px;padding:2px 14px;border-radius:var(--r-pill);background:var(--surface);
+  box-shadow:inset 0 0 0 2px var(--line);font-size:var(--fs-3);font-weight:700;letter-spacing:.04em;color:var(--ink)}
+.ws-w.got{padding-right:10px;background:var(--wc);box-shadow:none;color:var(--ink-2)}
+.ws-w.got .ws-t{text-decoration:line-through;text-decoration-thickness:3px}
+.ws-w .ic{flex:none;color:var(--good-ink)}
+.ws-D .ws-w{font-size:var(--fs-2)}
+.wk-yellow{--wc:var(--ill-yellow-1)}
+.wk-green{--wc:var(--ill-green-1)}
+.wk-aqua{--wc:var(--ill-aqua-1)}
+.wk-pink{--wc:var(--ill-pink-1)}
+.wk-purple{--wc:var(--ill-purple-1)}
+.wk-orange{--wc:var(--ill-orange-1)}
+.wk-blue{--wc:var(--ill-blue-1)}
+.wk-hint{--wc:var(--star-tint)}
+.ws-band.wk-hint{stroke:var(--star)}
+/* wide screens: the grid on the left, the talk line and the words on the right */
+.ws.wide{display:grid;grid-template-columns:auto minmax(0,320px);grid-template-rows:auto 1fr;align-content:center;justify-content:center;
+  gap:var(--s-4) var(--s-6);width:100%;margin:0}
+.ws.wide .ws-main{display:contents}
+.ws.wide .ws-board{grid-column:1;grid-row:1 / span 2;align-self:center}
+.ws.wide .ws-say{grid-column:2;grid-row:1;align-self:end}
+.ws.wide .ws-side{grid-column:2;grid-row:2;align-items:flex-start;align-self:start}
+.ws.wide .ws-list{justify-content:flex-start}
+@media (max-width:480px){
+  .ws-msg{font-size:var(--fs-2)}
+  .ws-w{min-height:32px;padding:2px 10px;font-size:var(--fs-2)}
+}

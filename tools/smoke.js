@@ -6023,6 +6023,186 @@ async function main() {
       }
     }
 
+    // P3-15 Word Search and Unscramble (src/js/87-88-bt-*.js) with real pointer input and taps, midway save (tools/lib/bt-p315.js):
+    //    380x780 by touch: Home -> Brain Teasers -> Word Search (a 3rd grader, band C): a word dragged forwards, one backwards, a line
+    //    that is no word shown gently (one mistake), a word by tapping its first and last letters, hints 1-3 (the first letter ringed,
+    //    its line shaded, the word found), back to the hub and Keep going resumes the same words, the rest dragged, win, 1 star saved
+    //    and paid; -> Unscramble (band C): a wrong order shown gently, hint 1 (first and last letters), hint 2 (the first letter in its
+    //    box), every word tapped in, win, 1 star. 1024x600 by mouse: Word Search band D (9 x 9, backwards words) dragged through, and
+    //    Unscramble band B (pictures) tapped through, 3 stars each. Every screen: 48 px targets (grid squares 44), found words struck
+    //    through (not colour alone), nothing outside the screen, no sideways scroll, the puzzle does not scroll, no emoji chrome.
+    {
+      const P = require('./lib/bt-p315');
+      const look = () => {
+        const vw = document.documentElement.clientWidth, out = [];
+        for (const e of document.querySelectorAll('button, [role="button"]')) {
+          const r = e.getBoundingClientRect();
+          if (!r.width || r.bottom < 0 || r.top > innerHeight || e.closest('svg') || e.closest('#toast')) continue;
+          if (Math.min(r.width, r.height) < 47.5) out.push('small ' + (e.id || e.className) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
+          if (r.left < -1 || r.right > vw + 1 || r.bottom > innerHeight + 1) out.push('outside ' + (e.id || e.className) + ' ' + Math.round(r.left) + '..' + Math.round(r.right) + ' bottom ' + Math.round(r.bottom));
+        }
+        const c = document.querySelector('.ws-c');
+        if (c && Math.min(c.getBoundingClientRect().width, c.getBoundingClientRect().height) < 43.5) out.push('grid squares ' + Math.round(c.getBoundingClientRect().width) + ' px');
+        const b = document.querySelector('.ws-board,.us-boxes');
+        if (b && !document.querySelector('.bt-win')) { const r = b.getBoundingClientRect(); if (r.left < -1 || r.right > vw + 1 || r.bottom > innerHeight + 1) out.push('the board is outside ' + JSON.stringify([r.left, r.right, r.bottom])); }
+        if (document.documentElement.scrollWidth > vw) out.push('sideways scroll ' + document.documentElement.scrollWidth);
+        const st = document.querySelector('.bt-stage');
+        if (st && st.scrollWidth > st.clientWidth + 1) out.push('the puzzle scrolls sideways ' + st.scrollWidth + ' > ' + st.clientWidth);
+        if (st && !document.querySelector('.bt-win') && st.scrollHeight > st.clientHeight + 1) out.push('the puzzle scrolls ' + st.scrollHeight + ' > ' + st.clientHeight);
+        for (const li of document.querySelectorAll('.ws-w.got')) {
+          if (!/line-through/.test(getComputedStyle(li.querySelector('.ws-t')).textDecorationLine) || !li.querySelector('.ic')) out.push('a found word is not struck through with a tick');
+        }
+        const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        for (let n; (n = w.nextNode());) {
+          const el = n.parentElement;
+          if (!el || el.closest('script,style,svg,#ico-sprite,.rw-burst') || !el.getClientRects().length) continue;
+          const m = n.textContent.match(/\p{Extended_Pictographic}|[◀▶✕]/u);
+          if (m) out.push('emoji chrome ' + m[0] + ' in ' + (el.id || el.className));
+        }
+        return out;
+      };
+      const gentle = sel => {
+        const e = document.querySelector(sel), css = getComputedStyle(document.documentElement);
+        const rgb = v => { const d = document.createElement('i'); d.style.color = v; document.body.appendChild(d); const x = getComputedStyle(d).color; d.remove(); return x; };
+        return { text: e.textContent, color: getComputedStyle(e).color, ink: rgb(css.getPropertyValue('--try-ink')), red: rgb(css.getPropertyValue('--danger')) };
+      };
+      const hintNow = async (pg, wait) => { if (wait) await vwait(pg, 11500); await pg.click('#bthint'); await vwait(pg, 300); };
+      const open = async (pg, id, grade, viaHome) => {
+        await pg.evaluate(g => { S.grade = g; save(); }, grade);
+        if (viaHome) {
+          await pg.evaluate(() => home());
+          await pg.waitForSelector('#btcard');
+          await pg.evaluate(() => document.querySelector('#btcard').scrollIntoView({ block: 'center' }));
+          await pg.click('#btcard');
+        } else await pg.evaluate(() => BT.hub());
+        await pg.waitForSelector(`.bt-hub [data-t="${id}"]`);
+        await pg.evaluate(id => document.querySelector(`.bt-hub [data-t="${id}"]`).scrollIntoView({ block: 'center' }), id);
+        await pg.click(`.bt-hub [data-t="${id}"]`);
+        await pg.waitForSelector('.bt-lvs');
+        await pg.click('.bt-lv[data-l="1"]');
+      };
+      const won = async (pg, id, band, stars, bad, chk) => {
+        await pg.waitForSelector('.bt-win #btnext', { timeout: 15000 });
+        await vwait(pg, 700);
+        await chk(id + ' win card');
+        const w = await pg.evaluate(([id, b]) => ({ shown: document.querySelectorAll('.bt-win .rs.on').length, saved: S.bt[id] && S.bt[id][b] && S.bt[id][b].stars[0],
+          lvl: S.bt[id] && S.bt[id][b].lvl, cur: !!S.bt.cur }), [id, band]);
+        if (w.shown !== stars || w.saved !== stars || w.lvl !== 2 || w.cur) bad.push(id + ' win: ' + JSON.stringify(w) + ' (want ' + stars + ' stars)');
+        await pg.click('#btlvls');
+        await pg.waitForSelector('.bt-lvs');
+        await pg.click('#back');
+        await pg.waitForSelector('.bt-hub');
+      };
+      for (const [w, h] of [[380, 780], [1024, 600]]) {
+        const tag = 'P3-15 ' + w + 'x' + h;
+        const app = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = app.page, bad = [], notes = [];
+        const chk = async what => { await pg.waitForTimeout(400); for (const o of await pg.evaluate('(' + look.toString() + ')()')) bad.push(what + ': ' + o); };
+        if (w == 380) {
+          const cdp = await pg.context().newCDPSession(pg);
+          await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 1 });
+          // ---- Word Search, band C, by touch ----
+          await open(pg, 'wsearch', 3, true);
+          await pg.waitForSelector('#btstage .ws-c');
+          await chk('word search C');
+          const s0 = await pg.evaluate(() => S.stars), t0 = await P.wsNow(pg);
+          await P.wsDrag(pg, t0.left[0].a, t0.left[0].b, cdp);
+          await P.wsDrag(pg, t0.left[1].b, t0.left[1].a, cdp);
+          const f1 = await pg.evaluate(() => ({ f: S.bt.cur.state.f, bands: document.querySelectorAll('.ws-band').length, got: document.querySelectorAll('.ws-w.got').length }));
+          if (f1.f.join() !== '0,1' || f1.bands !== 2 || f1.got !== 2) bad.push('two words dragged (forwards, backwards) by touch: ' + JSON.stringify(f1));
+          await chk('word search C, two found');
+          // a line that is no word: the top row from the first square to the third, or the first column, whichever is no word
+          const wrongLine = await pg.evaluate(() => { const p = S.bt.cur.puzzle, n = p.n; for (const [a, b] of [[0, 2], [0, 2 * n], [n - 1, 3 * n - 1], [n * n - 3, n * n - 1]]) if (WS.match(p, a, b) < 0) return [a, b]; return null; });
+          await P.wsDrag(pg, wrongLine[0], wrongLine[1], cdp);
+          const wm = await pg.evaluate(() => ({ miss: S.bt.cur.state.miss, f: S.bt.cur.state.f.length, no: !!document.querySelector('.ws-live.no') }));
+          const wg = await pg.evaluate('(' + gentle.toString() + ')(".ws-msg")');
+          if (wm.miss !== 1 || wm.f !== 2 || !wm.no || wg.color !== wg.ink || wg.color === wg.red) bad.push('a line that is no word is not shown gently: ' + JSON.stringify([wm, wg]));
+          else notes.push('"' + wg.text + '"');
+          // tap the first letter, then the last
+          const t1 = await P.wsNow(pg), tw = t1.left[t1.left.length - 1];
+          await P.wsTap(pg, tw.a, cdp);
+          const pk = await pg.evaluate(() => ({ pk: S.bt.cur.state.pk, ring: !!document.querySelector('.ws-pk') }));
+          await P.wsTap(pg, tw.b, cdp);
+          const tf = await pg.evaluate(i => S.bt.cur.state.f.includes(i), tw.i);
+          if (pk.pk !== tw.a || !pk.ring || !tf) bad.push('tap first and last letter: ' + JSON.stringify([pk, tf]));
+          // hints 1-3 on the first word left
+          const hw = (await P.wsNow(pg)).left[0], hs = [];
+          for (let t = 1; t <= 3; t++) {
+            await hintNow(pg, t > 1);
+            hs.push(await pg.evaluate(() => ({ msg: document.querySelector('.ws-msg').textContent, ring: !!document.querySelector('.ws-ring'), hl: !!document.querySelector('.ws-hl'),
+              hf: S.bt.cur.state.hf.slice(), hints: S.bt.cur.hints })));
+          }
+          if (!hs[0].ring || hs[0].hl || !hs[1].hl || hs[2].hf.join() !== String(hw.i) || hs[2].hints !== 3 || new Set(hs.map(x => x.msg)).size !== 3 ||
+            !hs[0].msg.includes(hw.t.toUpperCase())) bad.push('word search hints 1-3: ' + JSON.stringify(hs));
+          await chk('word search C hint 3');
+          // back to the hub, Keep going: the same words found
+          const keep = await pg.evaluate(() => JSON.stringify([S.bt.cur.puzzle, S.bt.cur.state.f]));
+          await pg.click('#back');
+          await pg.waitForSelector('.bt-lvs');
+          await pg.click('#back');
+          await pg.waitForSelector('#btkeep');
+          await pg.click('#btkeep');
+          await pg.waitForSelector('#btstage .ws-c');
+          const back = await pg.evaluate(() => ({ s: JSON.stringify([S.bt.cur.puzzle, S.bt.cur.state.f]), got: document.querySelectorAll('.ws-w.got').length, bands: document.querySelectorAll('.ws-band').length }));
+          if (back.s !== keep || back.got !== 4 || back.bands !== 4) bad.push('word search resume: ' + JSON.stringify(back));
+          await P.wsFind(pg, null, cdp);
+          await won(pg, 'wsearch', 'C', 1, bad, chk);
+          if ((await pg.evaluate(() => S.stars)) !== s0 + 1) bad.push('word search: the star was not paid');
+          notes.push('word search C: ' + t0.all + ' words, 1 star');
+
+          // ---- Unscramble, band C: a wrong order, hints 1-2, every word ----
+          await open(pg, 'scramble', 3, false);
+          await pg.waitForSelector('#btstage .us-tile');
+          await chk('unscramble C');
+          const u0 = await P.usNow(pg);
+          await P.usWrong(pg);
+          const ug = await pg.evaluate('(' + gentle.toString() + ')(".us-msg")');
+          const uw = await pg.evaluate(() => ({ miss: S.bt.cur.state.miss, i: S.bt.cur.state.i, no: document.querySelectorAll('.us-box.no').length }));
+          if (uw.miss !== 1 || uw.i !== 0 || !uw.no || ug.color !== ug.ink || ug.color === ug.red) bad.push('a wrong order is not shown gently: ' + JSON.stringify([uw, ug]));
+          else notes.push('"' + ug.text + '"');
+          await vwait(pg, 900);
+          await hintNow(pg, true);
+          const uh1 = await pg.evaluate(() => ({ msg: document.querySelector('.us-msg').textContent, lk: S.bt.cur.state.lk }));
+          await hintNow(pg, true);
+          const uh2 = await pg.evaluate(() => ({ msg: document.querySelector('.us-msg').textContent, lk: S.bt.cur.state.lk, b0: document.querySelector('.us-box[data-k="0"]').textContent,
+            locked: !!document.querySelector('.us-box.lk'), hints: S.bt.cur.hints }));
+          if (!uh1.msg.includes(u0.w[0].toUpperCase()) || uh1.lk !== 0 || uh2.lk !== 1 || uh2.b0 !== u0.w[0].toUpperCase() || !uh2.locked || uh2.hints !== 2)
+            bad.push('unscramble hints 1-2: ' + JSON.stringify([uh1, uh2, u0.w]));
+          await chk('unscramble C hint 2');
+          await P.usWin(pg);
+          await won(pg, 'scramble', 'C', 1, bad, chk);
+          notes.push('unscramble C: ' + u0.items + ' words, 1 star');
+        } else {
+          // ---- Word Search, band D, by mouse: every word, half of them from the last letter back ----
+          await open(pg, 'wsearch', 5, true);
+          await pg.waitForSelector('#btstage .ws-c');
+          await chk('word search D');
+          const d0 = await P.wsNow(pg), back = await pg.evaluate(() => S.bt.cur.puzzle.w.filter(x => x.d >= 4).length);
+          await P.wsFind(pg, 3);
+          await chk('word search D, three found');
+          await P.wsFind(pg);
+          await won(pg, 'wsearch', 'D', 3, bad, chk);
+          notes.push('word search D: ' + d0.n + ' x ' + d0.n + ', ' + d0.all + ' words (' + back + ' backwards), 3 stars');
+          // ---- Unscramble, band B (pictures), straight through ----
+          await open(pg, 'scramble', 1, false);
+          await pg.waitForSelector('#btstage .us-tile');
+          await chk('unscramble B');
+          if (!(await pg.evaluate(() => !!document.querySelector('.us-pic svg.art')))) bad.push('unscramble B shows no picture');
+          await P.usSpell(pg, 1);
+          await chk('unscramble B, a letter in');
+          await P.usWin(pg);
+          await won(pg, 'scramble', 'B', 3, bad, chk);
+          notes.push('unscramble B: 3 stars');
+        }
+        if (bad.length) fail(tag + ':\n  ' + bad.join('\n  '));
+        else step(tag + ': Home -> Brain Teasers -> ' + notes.join('; ') + '; targets 48 px (grid 44), struck-through words, no sideways scroll, no emoji chrome');
+        await vwait(pg, 300);
+        network.push(...app.network);
+        for (const e of app.errors) fail(e);
+        await app.ctx.close();
+      }
+    }
+
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');
   } catch (e) {

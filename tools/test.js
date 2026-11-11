@@ -12129,6 +12129,162 @@ run('tangram pack and Shape Fit P3-12',()=>{
     s.acc+' equal covers and '+s.alt+' other tilings accepted, '+s.near+' near misses refused, '+s.snaps+' drops snapped, '+s.hints+' hint steps, '+s.dmg+' damaged states refused'};
 });
 
+// ---- P3-15: Word Search and Unscramble (BRAIN_TEASERS 5.10, 7, 8) ----
+run('word search and unscramble P3-15',()=>{
+  const BUILT=PART_FILES.map(f=>fs.existsSync(path.join(ROOT,f))?fs.readFileSync(path.join(ROOT,f),'utf8'):'').join('');
+  const DATAB=fs.existsSync(path.join(ROOT,DATA_FILE))?fs.readFileSync(path.join(ROOT,DATA_FILE),'utf8'):'';
+  // every word the app's lists hold: all the data files and the word lists of 20-words.js (sentences, passages, riddles too)
+  const HARVEST=fs.readdirSync(path.join(SRC,'data')).map(n=>fs.readFileSync(path.join(SRC,'data',n),'utf8')).join(' ')+fs.readFileSync(path.join(SRC,'js','20-words.js'),'utf8');
+  const body=function(HARVEST){
+    const out=[],bad=m=>{if(out.length<40&&!out.includes(m))out.push(m)};
+    const J=JSON.stringify,days=['2026-6-1','2026-6-2','2026-6-3','2026-6-4','2026-6-5'];
+    const stat={ms:0,n:0,cells:{},words:{},dirs:{},back:{},len:{},per:{wsearch:0,scramble:0}};
+    for(const id of ['wsearch','scramble']){
+      const T=BT.get(id);
+      if(!T){bad(id+' is not registered');continue}
+      if(T.bands!=='BCD'||BT.nLevels(T,'B')!==12||!ICONS[T.icon])bad(id+': bands '+T.bands+', icon '+T.icon);
+    }
+    if(out.length)return{out,stat};
+    const timed=(id,b,l,o)=>{const t0=Date.now(),p=BT.make(id,b,l,o);stat.ms+=Date.now()-t0;stat.n++;return p};
+    const avg=a=>a.length?+(a.reduce((x,y)=>x+y,0)/a.length).toFixed(2):0;
+    const add=(o,k,v)=>{(o[k]=o[k]||[]).push(v)};
+    const rev=w=>[...w].reverse().join('');
+    const RUDE=BTW.rude.split(' ');
+    for(const w of BAD.source.replace(/^\^\(|\)\$$/g,'').split('|'))if(w!=='dam'&&!RUDE.includes(w))bad('the rude list misses the BAD word '+w);
+    // the test's own scan: every straight run of the grid read in all 8 directions; each occurrence of w as [first, last, direction]
+    const D8=[[0,1],[1,0],[1,1],[-1,1],[0,-1],[-1,0],[-1,-1],[1,-1]];
+    function scan(g,n,w){
+      const f=[];
+      for(let r=0;r<n;r++)for(let c=0;c<n;c++)D8.forEach(([dr,dc],d)=>{
+        let s='',rr=r,cc=c;
+        for(let k=0;k<w.length&&rr>=0&&cc>=0&&rr<n&&cc<n;k++){s+=g[rr*n+cc];rr+=dr;cc+=dc}
+        if(s===w)f.push([r*n+c,(r+dr*(w.length-1))*n+c+dc*(w.length-1),d]);
+      });
+      return f;
+    }
+    // ---- word search ----
+    const WANT={B:[[5,5,'0'],[5,5,'01'],[6,6,'01']],C:[[7,6,'012'],[8,7,'0123'],[8,8,'0123']],D:[[9,8,'01234567'],[10,9,'01234567'],[10,10,'01234567']]};
+    const spellOf=lvs=>new Set(lvs.flatMap(l=>SPELL_WORDS[l].split('\n').map(x=>x.split('|')[0])));
+    const SRCW={B:spellOf([1,2,3]),C:spellOf([4,5]),D:spellOf([5,6,7])};
+    for(const b of 'BCD')for(let l=1;l<=12;l++)for(const d of days){
+      const p=timed('wsearch',b,l,{day:d}),w='wsearch '+b+l+' '+d,[n,k,dirs]=WANT[b][Math.floor((l-1)/4)];
+      stat.per.wsearch++;
+      if(J(p)!==J(BT.make('wsearch',b,l,{day:d})))bad(w+': make() is not deterministic');
+      if(p.n!==n||p.w.length!==k||p.dirs.join('')!==dirs)bad(w+': grid '+p.n+', '+p.w.length+' words, directions '+p.dirs.join('')+' (want '+[n,k,dirs]+')');
+      if(typeof p.g!=='string'||!new RegExp('^[a-z]{'+(n*n)+'}$').test(p.g)){bad(w+': grid letters');continue}
+      add(stat.cells,b,n*n);add(stat.words,b,p.w.length);add(stat.dirs,b,dirs.length);add(stat.back,b,p.w.filter(x=>x.d>=4).length/p.w.length);
+      const ts=p.w.map(x=>x.t);
+      if(new Set(ts).size!==ts.length)bad(w+': a word twice in the list');
+      p.w.forEach((x,i)=>{
+        const v=w+' '+x.t;
+        if(!SRCW[b].has(x.t))bad(v+': not from the band\'s spelling lists');
+        if(BAD.test(x.t)||x.t===rev(x.t))bad(v+': BAD or a palindrome');
+        if(!dirs.includes(String(x.d)))bad(v+': placed in direction '+x.d+', not allowed in this band');
+        for(const y of p.w)if(y!==x&&(y.t.includes(x.t)||y.t.includes(rev(x.t))))bad(v+': inside '+y.t);
+        const f=scan(p.g,n,x.t);
+        if(f.length!==1)return bad(v+': reads '+f.length+' times in the grid');
+        const [a,e,dd]=f[0],[dr,dc]=D8[x.d];
+        if(a!==x.r*n+x.c||dd!==x.d||e!==(x.r+dr*(x.t.length-1))*n+x.c+dc*(x.t.length-1))bad(v+': reads somewhere else than its place');
+        // the selection checker: a drag along its line from either end; never a part of it
+        if(WS.match(p,a,e)!==i||WS.match(p,e,a)!==i)bad(v+': a drag along it (forwards or backwards) is not accepted');
+        const ln=WS.line(n,a,e);
+        if(!ln||ln.length!==x.t.length||ln.map(c=>p.g[c]).join('')!==x.t)bad(v+': line() does not give its squares');
+        else if(WS.match(p,a,ln[ln.length-2])>=0||WS.match(p,ln[1],e)>=0||WS.match(p,a,a)>=0)bad(v+': a part of it is accepted');
+      });
+      // nothing but the listed words' ends is accepted; solve() finds them all
+      const ends=new Set(WS.solve(p).flatMap(([a,e])=>[a+','+e,e+','+a]));
+      for(let a=0;a<n*n;a++)for(let e=0;e<n*n;e++)if(!ends.has(a+','+e)&&WS.match(p,a,e)>=0)bad(w+': '+a+'-'+e+' is accepted but is no word');
+      const got=new Set(WS.solve(p).map(([a,e])=>WS.match(p,a,e)));
+      if(got.size!==p.w.length||got.has(-1))bad(w+': solve() does not find every word');
+      // no rude run anywhere, in any direction
+      for(const r of RUDE)if(scan(p.g,n,r).length)bad(w+': the grid spells '+r);
+      // hints: the first word not found, three different lines; then the next word; the hinted word stays
+      const s=WS.fresh();
+      if(WS.hintWord(p,s)!==0)bad(w+': hint word');
+      const h=[1,2,3].map(t=>WS.hintText(p,0,t));
+      if(new Set(h).size!==3||!h[0].includes(p.w[0].t.toUpperCase())||!/row|column|slanted/.test(h[1]))bad(w+': hint words '+J(h));
+      s.f=[0];s.hf=[0];if(WS.hintWord(p,s)!==1)bad(w+': after a word is found the hint moves on');
+      s.hw=2;s.h=2;if(WS.hintWord(p,s)!==2)bad(w+': the hinted word stays the hint word');
+      if(!WS.fit(p,JSON.parse(J(s)))||!WS.fit(p,WS.fresh()))bad(w+': a good state does not fit');
+      for(const x of [null,[],'x',{f:[0,0],hf:[],miss:0,hw:-1,h:0,pk:-1},{f:[k],hf:[],miss:0,hw:-1,h:0,pk:-1},{f:[],hf:[1],miss:0,hw:-1,h:0,pk:-1},
+        {f:[],hf:[],miss:-1,hw:-1,h:0,pk:-1},{f:[],hf:[],miss:0,hw:1,h:0,pk:-1},{f:[],hf:[],miss:0,hw:-1,h:2,pk:-1},{f:[1],hf:[],miss:0,hw:1,h:1,pk:-1},
+        {f:[],hf:[],miss:0,hw:-1,h:0,pk:n*n},{f:[...Array(k).keys()],hf:[],miss:0,hw:-1,h:0,pk:-1},{f:[],hf:[],miss:0,hw:0,h:4,pk:-1},{f:[],hf:[],miss:0}])
+        if(WS.fit(p,x))bad(w+': a damaged state fits '+J(x));
+    }
+    // ---- unscramble ----
+    const key=w=>[...w].sort().join('');
+    const dict={};
+    for(const t of (HARVEST.toLowerCase().match(/[a-z]+/g)||[]).concat(BTW.more.split(' ')))(dict[key(t)]=dict[key(t)]||new Set()).add(t);
+    const one=w=>!!dict[key(w)]&&dict[key(w)].size===1&&dict[key(w)].has(w);
+    const UW={B:[[3,3,3],[3,4,4],[4,4,4]],C:[[3,5,5],[4,5,6],[4,6,6]],D:[[3,7,7],[4,7,8],[4,8,9]]};
+    for(const b of 'BCD'){
+      const P=US.pool(b);
+      if(P.length<12)bad('unscramble '+b+': only '+P.length+' words');
+      for(const x of P){
+        if(!one(x.w))bad('unscramble '+b+' '+x.w+': its letters also spell '+[...(dict[key(x.w)]||[])].filter(y=>y!==x.w).join(', '));
+        if(BAD.test(x.w))bad('unscramble '+b+' '+x.w+': BAD');
+        if(b==='B'&&!ART[x.w])bad('unscramble B '+x.w+': no drawing');
+        if(b!=='B'&&(!x.c||x.c.split('___').length!==2||new RegExp('\\b'+x.w+'\\b','i').test(x.c)||x.c.split(' ').length>16))bad('unscramble '+b+' '+x.w+': clue '+x.c);
+      }
+    }
+    for(const b of 'BCD')for(let l=1;l<=12;l++)for(const d of days){
+      const p=timed('scramble',b,l,{day:d}),w='scramble '+b+l+' '+d,[k,lo,hi]=UW[b][Math.floor((l-1)/4)];
+      stat.per.scramble++;
+      if(J(p)!==J(BT.make('scramble',b,l,{day:d})))bad(w+': make() is not deterministic');
+      if(p.items.length!==k)bad(w+': '+p.items.length+' words, want '+k);
+      if(new Set(p.items.map(x=>x.w)).size!==p.items.length)bad(w+': a word twice');
+      const sol=BT.get('scramble').solve(p);
+      p.items.forEach((x,i)=>{
+        const v=w+' '+x.w;
+        add(stat.len,b,x.w.length);
+        if(x.w.length<lo||x.w.length>hi)bad(v+': length');
+        if(!US.pool(b).some(y=>y.w===x.w))bad(v+': not from the band\'s words');
+        if(key(x.s)!==key(x.w))bad(v+': the tiles are not its letters');
+        if(x.s===x.w)bad(v+': the tiles start in order');
+        if(dict[key(x.s)]&&dict[key(x.s)].has(x.s))bad(v+': the tiles spell a word ('+x.s+')');
+        if(!one(x.w))bad(v+': more than one answer');
+        for(const r of RUDE)if(x.s.includes(r))bad(v+': the tiles spell '+r);
+        const moved=[...x.s].filter((c,j)=>c!==x.w[j]).length;
+        if(x.w.length>=4&&moved*2<x.w.length)bad(v+': only '+moved+' letters out of place');
+        if(sol[i].map(t=>x.s[t]).join('')!==x.w||new Set(sol[i]).size!==x.w.length)bad(v+': solve() does not spell it');
+        // hints: placing the next letter again and again spells the word, whatever sits in the boxes
+        const s={i,sl:Array(x.w.length).fill(-1),lk:0,miss:0,h:2};
+        s.sl[x.w.length-1]=0;s.sl[0]=x.w.length-1;
+        for(let kk=0;kk<x.w.length;kk++){
+          US.placeAt(s,kk,US.hintTile(x,s,kk));s.lk=kk+1;
+          if(s.lk<x.w.length&&s.sl.includes(-1)&&!US.fit(p,JSON.parse(J(s))))bad(v+': a hinted state does not fit '+J(s));
+        }
+        if(US.check(x,s)!=='ok')bad(v+': hints do not spell the word');
+        const r=US.check(x,{sl:[...x.s].map((c,j)=>j)});
+        if(r==='ok'||!r.length||r.some(kk=>x.s[kk]===x.w[kk]))bad(v+': check() of the starting order '+J(r));
+      });
+      const t=[1,2,3].map(h=>US.hintText(p,{i:0},h)),F=p.items[0].w[0].toUpperCase();
+      if(new Set(t).size!==3||!t[0].includes(F)||!t[1].includes(F))bad(w+': hint words '+J(t));
+      const f=US.fresh(p);
+      if(!US.fit(p,f)||!US.fit(p,JSON.parse(J(f))))bad(w+': the fresh state does not fit');
+      const L=p.items[0].w.length,okT=sol[0][0],wrongT=sol[0].find((tt,kk)=>kk>0&&p.items[0].s[tt]!==p.items[0].w[0]);
+      for(const x of [null,[],{i:p.items.length,sl:Array(L).fill(-1),lk:0,miss:0,h:0},{i:0,sl:Array(L+1).fill(-1),lk:0,miss:0,h:0},{i:0,sl:Array(L).fill(-1),lk:0,miss:-1,h:0},
+        {i:0,sl:Array(L).fill(-1),lk:0,miss:0,h:5},{i:0,sl:[okT,okT,...Array(L-2).fill(-1)],lk:0,miss:0,h:0},{i:0,sl:Array(L).fill(L),lk:0,miss:0,h:0},
+        {i:0,sl:[wrongT,...Array(L-1).fill(-1)],lk:1,miss:0,h:2},{i:0,sl:Array(L).fill(-1),lk:1,miss:0,h:2},{i:0,sl:sol[0],lk:0,miss:0,h:0},{i:'0',sl:Array(L).fill(-1),lk:0,miss:0,h:0}])
+        if(US.fit(p,x))bad(w+': a damaged state fits '+J(x));
+    }
+    for(const k of ['cells','words','dirs','back','len'])for(const b in stat[k])stat[k][b]=avg(stat[k][b]);
+    if(!(stat.cells.B<stat.cells.C&&stat.cells.C<stat.cells.D&&stat.words.B<stat.words.C&&stat.words.C<stat.words.D&&stat.dirs.B<stat.dirs.C&&stat.dirs.C<stat.dirs.D))
+      bad('word search does not grow by band '+J([stat.cells,stat.words,stat.dirs]));
+    if(stat.back.B||stat.back.C||!(stat.back.D>0.2))bad('backwards words only in band D '+J(stat.back));
+    if(!(stat.len.B<stat.len.C&&stat.len.C<stat.len.D))bad('unscramble words do not grow by band '+J(stat.len));
+    return{out,stat};
+  };
+  const r=eval(js+';('+body.toString()+')(HARVEST)');
+  const p=r.out,s=r.stat;
+  for(const k of ["id: 'wsearch'","id: 'scramble'",'const WS','const US'])if(!BUILT.includes(k))p.push(k+' is not in '+PART_FILES.join(' / ')+' (rebuild)');
+  if(!DATAB.includes('var BTW'))p.push('BTW is not in '+DATA_FILE+' (rebuild)');
+  const ms=s.n?s.ms/s.n:0;
+  if(ms>25)p.push('make() takes '+ms.toFixed(1)+' ms on average (limit 25 ms)');
+  return{problems:p,note:s.per.wsearch+' word searches, '+s.per.scramble+' unscrambles; grid squares '+JSON.stringify(s.cells)+', words '+JSON.stringify(s.words)+
+    ', directions '+JSON.stringify(s.dirs)+', backwards '+JSON.stringify(s.back)+', unscramble letters '+JSON.stringify(s.len)+', make '+ms.toFixed(1)+' ms'};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){
