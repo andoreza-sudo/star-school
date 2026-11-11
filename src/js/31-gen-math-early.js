@@ -708,3 +708,228 @@ function genFrac1() {
     label: `which shows ${form}: ${shape} ${spec.slice(1).map(x => x[0] + (x[1] ? 'eq' : 'un')).sort().join(' ')}`,
     hint: {k: 'text', s: `Equal shares are the same size. ${form == 'halves' ? 'Halves are 2 equal parts.' : 'Fourths are 4 equal parts.'}`}};
 }
+
+// ---- P2-04 Treasure Bay (2nd) ----
+/* Grade 2 gaps (CURRICULUM M-2): pv 2-3, big 5, sub 5, time 4, coins 4-5, meas 3, data 2, arr 1, cnt 5, story 4, pat 3, world Treasure Bay (m_bay).
+   Pictures are VIZ.* (base10, clock, coinSVG, ruler, barGraph, array). Hints with several steps are a numbered list (class hsteps, 10-components.css).
+   Randomness: R, rnd, pick, shuffle, coin only. Each function below is one level; 38-skills.js calls it for that level and the old generator for the rest. */
+const BAY = {
+  // a numbered list hint; w (spoken) defaults to the steps read one after another
+  steps(list, w) {
+    return {k: 'html', html: `<ol class="hsteps">${list.map(s => `<li>${esc(s)}</li>`).join('')}</ol>`, w: w || list.join(' ')};
+  },
+  txt: s => ({k: 'text', s}),
+  // "$3.45" from cents
+  money: c => '$' + (c / 100).toFixed(2),
+  // the right value plus distractors in the order given (shuffled), then fill-ins, up to 4 unique values
+  pick4(ans, bad, fill = []) {
+    const out = [ans];
+    for (const x of [...shuffle(bad), ...shuffle(fill)]) if (out.length < 4 && !out.includes(x)) out.push(x);
+    return out;
+  },
+};
+
+// pv 2: base-ten picture with flats, rods and units (100-999; zero tens or ones in 30% of the items) -> number; or "What is the value of the 5 in 352?"
+function genBayPv2() {
+  if (rnd() < 0.55) {
+    const h = R(1, 9), z = rnd() < 0.3 ? pick(['t', 'o', 'to']) : '';
+    const t = z.includes('t') ? 0 : R(1, 9), u = z.includes('o') ? 0 : R(1, 9), n = h * 100 + t * 10 + u;
+    return {kind: 'num', html: `${VIZ.base10(n)}<div class="sub">How many in all?</div>${SLOT}`,
+      say: 'How many blocks in all? Count the flats by hundreds, the rods by tens, then the little cubes by ones.', ans: String(n),
+      label: `pv picture ${n}`, hint: BAY.steps(['Count the flats. Each flat is 100.', 'Count the rods. Each rod is 10.', 'Count the little cubes. Each is 1.'])};
+  }
+  let d;
+  do d = [R(1, 9), R(1, 9), R(1, 9)]; while (new Set(d).size < 3);
+  const p = R(0, 2), n = d[0] * 100 + d[1] * 10 + d[2], place = ['hundreds', 'tens', 'ones'][p], val = d[p] * [100, 10, 1][p];
+  const shown = d.map((x, i) => (i == p ? `<b><u>${x}</u></b>` : x)).join('');
+  return {kind: 'choice', html: `<div class="eq">${shown}</div><div class="sub">What is the value of the ${d[p]} in ${n}?</div>`,
+    say: `What is the value of the ${d[p]} in ${n}?`, ans: String(val), after: `The ${d[p]} is in the ${place} place, so it is worth ${val}`,
+    choices: [d[p], d[p] * 10, d[p] * 100].map(x => ({l: String(x), v: String(x)})),
+    label: `value of ${d[p]} in ${n}`,
+    hint: BAY.txt('Look at which place the digit is in: hundreds, tens or ones. The place tells how much it is worth.')};
+}
+
+// pv 3: expanded form to 999: "400 + 30 + 7 = ?", "600 + ? + 2 = 652", "Which is 508?"
+function genBayPv3() {
+  const form = pick(['exp', 'miss', 'which']);
+  const parts = (h, t, u) => [h * 100, t * 10, u].filter(x => x > 0);
+  const hint = BAY.txt('Hundreds, then tens, then ones.');
+  if (form == 'exp') {
+    const h = R(1, 9), t = rnd() < 0.2 ? 0 : R(1, 9), u = rnd() < 0.2 ? 0 : R(1, 9), p = parts(h, t, u), n = h * 100 + t * 10 + u;
+    return {kind: 'num', html: `<div class="eq">${p.join(' + ')} = ${SLOT}</div>`, say: `${p.join(' plus ')} equals what?`,
+      ans: String(n), label: `${p.join(' + ')} = ?`, hint};
+  }
+  if (form == 'miss') {
+    const d = [R(1, 9), R(1, 9), R(1, 9)], b = pick([0, 1, 1, 1, 2]), v = [d[0] * 100, d[1] * 10, d[2]], n = v[0] + v[1] + v[2];
+    return {kind: 'num', html: `<div class="eq">${v.map((x, i) => (i == b ? SLOT : x)).join(' + ')} = ${n}</div>`,
+      say: `${v.map((x, i) => (i == b ? 'what' : x)).join(' plus ')} equals ${n}`, ans: String(v[b]),
+      label: `${v.map((x, i) => (i == b ? '?' : x)).join(' + ')} = ${n}`, hint};
+  }
+  let h, t, u, ch, ans;
+  for (;;) {
+    h = R(1, 9); t = rnd() < 0.5 ? 0 : R(1, 9); u = R(1, 9);
+    ans = parts(h, t, u).join(' + ');
+    ch = BAY.pick4(ans, [parts(h, u, t).join(' + '), parts(t, h, u).join(' + '), [h, t, u].filter(x => x > 0).join(' + '),
+      parts(u, t, h).join(' + ')]);
+    if (ch.length == 4) break;
+  }
+  const n = h * 100 + t * 10 + u;
+  return {kind: 'choice', cls: 'wide', html: `<div class="sub">Which one is ${n}?</div>`, say: `Which one is ${n}?`, ans, after: `${ans} makes ${n}`,
+    choices: shuffle(ch).map(x => ({l: x, v: x})), label: `which is ${n}`, hint};
+}
+
+// big 5: 3-digit + 3-digit, regrouping in the ones, the tens or both, sum <= 999, vertical
+function genBayBig5() {
+  const kind = pick(['ones', 'tens', 'both']);
+  let d;
+  for (;;) {
+    d = [R(1, 8), R(0, 9), R(0, 9), R(1, 8), R(0, 9), R(0, 9)]; // a2 a1 a0 b2 b1 b0
+    const c0 = d[2] + d[5] >= 10 ? 1 : 0, c1 = d[1] + d[4] + c0 >= 10 ? 1 : 0;
+    if (d[0] + d[3] + c1 > 9) continue;
+    if ((kind == 'ones' && c0 && !c1) || (kind == 'tens' && !c0 && c1) || (kind == 'both' && c0 && c1)) break;
+  }
+  const a = d[0] * 100 + d[1] * 10 + d[2], b = d[3] * 100 + d[4] * 10 + d[5];
+  const hint = BAY.steps([`Ones: ${d[2]} + ${d[5]}. Carry a ten if you can.`, 'Tens: add them and the carried ten.', 'Hundreds: add them and any carried hundred.']);
+  return mathQ(a, '+', b, a + b, 'c', true, {hint, label: `${a} + ${b} = ?`});
+}
+
+// sub 5: 3-digit - 3-digit, no regrouping, vertical
+function genBaySub5() {
+  const d = [R(2, 9), R(0, 9), R(0, 9)], e = [R(1, d[0] - 1), R(0, d[1]), R(0, d[2])];
+  const a = d[0] * 100 + d[1] * 10 + d[2], b = e[0] * 100 + e[1] * 10 + e[2];
+  const hint = BAY.steps([`Ones first: ${d[2]} - ${e[2]}.`, `Then the tens: ${d[1]} - ${e[1]}.`, `Then the hundreds: ${d[0]} - ${e[0]}.`]);
+  return mathQ(a, '-', b, a - b, 'c', true, {hint, label: `${a} - ${b} = ?`});
+}
+
+// time 4: analog clock to the nearest 5 minutes -> the digital time (hands swapped, next hour and 5-minute neighbour as distractors)
+function genBayTime4() {
+  const h = R(1, 12), m = rnd() < 0.75 ? pick([5, 10, 20, 25, 35, 40, 50, 55]) : pick([0, 15, 30, 45]);
+  const hh = x => ((x + 11) % 12) + 1, ans = tstr(h, m);
+  const swap = tstr(hh(m / 5), (h * 5) % 60), next = tstr(hh(h + 1), m), nb = tstr(h, m == 55 ? 50 : m + 5), nb2 = m ? tstr(h, m - 5) : tstr(h, 5);
+  const ch = BAY.pick4(ans, [swap, next, nb, nb2], [tstr(hh(h - 1), m), tstr(hh(h + 2), m), tstr(h, (m + 30) % 60)]);
+  return {kind: 'choice', html: `${VIZ.clock(h, m)}<div class="sub">What time is it?</div>`, say: 'What time does the clock show?', ans,
+    after: `It's ${ans}`, choices: shuffle(ch).map(x => ({l: x, v: x})), label: `clock to 5 min ${ans}`,
+    hint: BAY.txt('The short pink hand shows the hour. The long blue hand shows the minutes: count by 5s from the 12.')};
+}
+
+// coins 4: dollar bills (1, 5) and coins up to $9.99. How much? (four amounts like $3.45)
+function genBayCoins4() {
+  let list, tot;
+  do {
+    const b5 = pick([0, 0, 1]), b1 = R(b5 ? 0 : 1, 4), cs = Array.from({length: R(1, 4)}, () => pick([25, 10, 5, 1])).sort((x, y) => y - x);
+    list = [...Array(b5).fill(500), ...Array(b1).fill(100), ...cs];
+    tot = list.reduce((x, y) => x + y, 0);
+  } while (tot > 999 || list.length > 8);
+  const hasFive = list.includes(500);
+  const ch = BAY.pick4(tot, [tot + 10, tot - 10, tot + 100, tot - 100, tot + 5, tot - 5, hasFive ? tot - 400 : tot + 25].filter(x => x > 0 && x <= 1100));
+  return {kind: 'choice', cls: 'wide', html: `${VIZ.coinSVG(list)}<div class="sub">How much money?</div>`, say: 'How much money is this?', ans: BAY.money(tot),
+    after: `That is ${BAY.money(tot)}`, choices: shuffle(ch).map(x => ({l: BAY.money(x), v: BAY.money(x)})), label: `money ${list.join('+')}`,
+    hint: BAY.txt('Count the bills first, biggest to smallest. Then count on with the coins, biggest to smallest.')};
+}
+
+// coins 5: making change. Pay $1.00 for a price of 5 to 95 cents, or pay $5 for whole dollars and 50 cents. Change in cents.
+const BAY_ITEMS = [['apple', '🍎'], ['cookie', '🍪'], ['ball', '⚽'], ['toy car', '🚗'], ['crayon', '🖍️'], ['pencil', '✏️'], ['fish', '🐟']];
+function genBayCoins5() {
+  const [it, e] = pick(BAY_ITEMS), art = `<div class="eq">${picFor(it, e)}</div>`, ex = /^[aeiou]/.test(it) ? 'An' : 'A';
+  if (coin()) {
+    const p = 5 * R(1, 19), t = `${ex} ${it} costs ${p} cents. You pay 1 dollar. How many cents do you get back?`;
+    return {kind: 'num', html: `${art}<p class="story">${esc(t)}</p><div class="eq" style="font-size:.7em">${SLOT}¢</div>`, say: t, auto: true,
+      ans: String(100 - p), label: `change from 100 for ${p}`, hint: BAY.txt(`Count up from ${p} to 100. How many cents is that?`)};
+  }
+  const d = R(1, 4), p = d * 100 + 50, t = `${ex} ${it} costs $${d}.50. You pay 5 dollars. How many cents do you get back?`;
+  return {kind: 'num', html: `${art}<p class="story">${esc(t)}</p><div class="eq" style="font-size:.7em">${SLOT}¢</div>`,
+    say: `${ex} ${it} costs ${d} dollars and 50 cents. You pay 5 dollars. How many cents do you get back?`, auto: true, ans: String(500 - p),
+    label: `change from 500 for ${p}`, hint: BAY.txt(`Count up from $${d}.50 to the next dollar, then on to $5.00. Add the two jumps.`)};
+}
+
+// meas 3: ruler (inches 0-12 or cm 0-15), object from 0 (70%) or from another mark (30%). How long?
+function genBayMeas3() {
+  const unit = coin() ? 'in' : 'cm', max = unit == 'in' ? 12 : 15, from = rnd() < 0.3 ? R(1, 6) : 0, len = R(2, max - from);
+  const obj = coin() ? 'pencil' : 'bar', name = obj == 'pencil' ? 'pencil' : 'paper strip', word = unit == 'in' ? 'inches' : 'cm';
+  const q = `How long is the ${name}?`;
+  return {kind: 'num', html: `${VIZ.ruler(len, unit, obj, {from, max})}<div class="sub">${q}</div><div class="eq" style="font-size:.7em">${SLOT} ${word}</div>`,
+    say: `${q} Say how many ${unit == 'in' ? 'inches' : 'centimeters'}.`, ans: String(len), label: `ruler ${unit} from ${from} to ${from + len}`,
+    hint: BAY.txt(from ? 'The object does not start at 0. Subtract where it starts from where it ends.' : 'The left end sits at 0. Read the number where the right end is.')};
+}
+
+// data 2: bar graph, 4 categories, scale 1, values 0-10 (all different); count, most, least, how many more, two together, all together
+function genBayData2() {
+  const [title, pool] = pick(CT_DATA), names = shuffle(pool), vals = shuffle([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).slice(0, 4);
+  const g = `<div class="sub"><b>${esc(title)}</b></div>${VIZ.barGraph(names.map((x, i) => [x, vals[i]]), 1)}`;
+  const form = pick(['count', 'most', 'least', 'more', 'two', 'all']), gist = names.map((x, k) => x.slice(0, 2) + vals[k]).join(' ');
+  const lc = k => names[k].toLowerCase(), i = R(0, 3);
+  const num = (ask, ans, label, hint) => ({kind: 'num', html: `${g}<div class="sub">${ask}</div>${SLOT}`, say: ask, ans: String(ans), label, hint: BAY.txt(hint)});
+  if (form == 'count') return num(`How many ${lc(i)}?`, vals[i], `bar count ${names[i]}: ${gist}`, 'Find the top of the bar. Read the number on the side.');
+  if (form == 'most' || form == 'least') {
+    const most = form == 'most', a = vals.indexOf(most ? Math.max(...vals) : Math.min(...vals));
+    return {kind: 'choice', html: `${g}<div class="sub">Which has the ${most ? 'most' : 'least'}?</div>`, say: `Which has the ${most ? 'most' : 'least'}?`,
+      ans: names[a], after: `${names[a]} has the ${most ? 'most' : 'least'}`, choices: names.map(x => ({l: x, v: x})), label: `bar ${form}: ${gist}`,
+      hint: BAY.txt(`The ${most ? 'tallest' : 'shortest'} bar is the one with the ${most ? 'most' : 'least'}.`)};
+  }
+  if (form == 'all') return num('How many in all?', vals.reduce((x, y) => x + y, 0), `bar total: ${gist}`, 'Read each bar, then add all four numbers.');
+  const j = pick([0, 1, 2, 3].filter(x => x != i));
+  if (form == 'more') {
+    const [hi, lo] = vals[i] > vals[j] ? [i, j] : [j, i];
+    return num(`How many more ${lc(hi)} than ${lc(lo)}?`, vals[hi] - vals[lo], `bar more ${names[hi]} than ${names[lo]}: ${gist}`, 'Read both bars, then find the difference.');
+  }
+  return num(`How many ${lc(i)} and ${lc(j)} in all?`, vals[i] + vals[j], `bar two ${names[i]} ${names[j]}: ${gist}`, 'Read both bars, then add the two numbers.');
+}
+
+// arr 1: array of dots, r and c in 2-5, with "3 rows of 4" shown; how many in all?
+function genBayArr1() {
+  const r = R(2, 5), c = R(2, 5);
+  return {kind: 'num', html: `${VIZ.array(r, c)}<div class="sub">${r} rows of ${c}</div><div class="sub">How many in all?</div>${SLOT}`,
+    say: `${r} rows of ${c}. How many in all?`, ans: String(r * c), label: `array ${r} rows of ${c}`,
+    hint: BAY.txt(`Each row has ${c}. Add ${Array(r).fill(c).join(' + ')}.`)};
+}
+
+// cnt 5: skip count by 3s, 4s or 100s; 5 terms within 1000, one blank
+function genBayCnt5() {
+  const step = pick([3, 4, 100]), start = step == 100 ? 100 * R(0, 6) : step * R(0, 30), bi = R(1, 4);
+  const seq = [0, 1, 2, 3, 4].map(i => start + i * step);
+  return {kind: 'num', html: `<div class="seq">${seq.map((n, i) => (i == bi ? SLOT : n)).join(', ')}</div><div class="sub">Count by ${step}s</div>`,
+    say: `Count by ${step}s. ` + seq.map((n, i) => (i == bi ? 'what' : n)).join(', '), ans: String(seq[bi]),
+    hint: BAY.txt(`Add ${step} each time. What comes after ${seq[bi - 1]}?`), label: `skip ${seq.map((n, i) => (i == bi ? '_' : n)).join(',')}`};
+}
+
+// story 4: two-step add/subtract within 100 (get some then lose some, lose then get, compare then total)
+function genBayStory4() {
+  const me = S.name || 'Sam', n2 = pick([S.buddy, S.buddy, petN(), ...NAMES].filter(n => n && n !== me));
+  const th = pick(THINGS)[0], who = pick([me, n2]), other = who == me ? n2 : me;
+  let t, ans, label, hint;
+  const form = pick(['gl', 'lg', 'more', 'fewer']);
+  if (form == 'gl' || form == 'lg') {
+    const a = R(15, 50), b = R(10, 40), c = R(5, Math.min(a + b - 5, 40));
+    if (form == 'gl') {
+      t = pick([`${who} has ${a} ${th}. ${other} gives ${who} ${b} more. Then ${who} gives away ${c}. How many ${th} does ${who} have now?`,
+        `${who} had ${a} ${th}. ${who} found ${b} more and then lost ${c}. How many ${th} are left?`]);
+      ans = a + b - c; label = `2-step ${a} + ${b} - ${c}`;
+      hint = BAY.steps([`First find how many ${who} has after getting ${b} more.`, `Then take away ${c} from that number.`], 'Do one step at a time.');
+    } else {
+      const c2 = Math.min(c, a - 1);
+      t = `${who} had ${a} ${th}. ${who} gave ${c2} to ${other}. Then ${who} got ${b} more. How many ${th} does ${who} have now?`;
+      ans = a - c2 + b; label = `2-step ${a} - ${c2} + ${b}`;
+      hint = BAY.steps([`First take away the ${c2} ${who} gave.`, `Then add the ${b} more.`], 'Do one step at a time.');
+    }
+  } else if (form == 'more') {
+    const a = R(10, 40), b = R(5, Math.min(25, 100 - 2 * a));
+    t = `${who} has ${a} ${th}. ${other} has ${b} more than ${who}. How many ${th} do they have together?`;
+    ans = 2 * a + b; label = `2-step ${a} + (${a} + ${b})`;
+    hint = BAY.steps([`First find how many ${other} has: ${b} more than ${a}.`, `Then add ${who}'s ${th} and ${other}'s ${th}.`], 'Do one step at a time.');
+  } else {
+    const a = R(15, 50), b = R(5, 20);
+    t = `${who} has ${a} ${th}. ${other} has ${b} fewer than ${who}. How many ${th} do they have together?`;
+    ans = 2 * a - b; label = `2-step ${a} + (${a} - ${b})`;
+    hint = BAY.steps([`First find how many ${other} has: ${b} fewer than ${a}.`, `Then add ${who}'s ${th} and ${other}'s ${th}.`], 'Do one step at a time.');
+  }
+  return {kind: 'num', html: `<p class="story">${words(t)}</p><div>${SLOT}</div>`, say: t, auto: true, ans: String(ans), hint, label};
+}
+
+// pat 3: growing number pattern, rule +2..+10 or -2..-10, start 0-50, 4 terms shown, give the 5th
+function genBayPat3() {
+  const d = R(2, 10), up = coin(), start = up ? R(0, 50) : R(4 * d, Math.max(4 * d, 50)), s = up ? d : -d;
+  const seq = [0, 1, 2, 3, 4].map(i => start + i * s);
+  return {kind: 'num', html: `<div class="seq">${seq.slice(0, 4).join(', ')}, ${SLOT}</div><div class="sub">What comes next?</div>`,
+    say: `${seq.slice(0, 4).join(', ')}, what comes next?`, ans: String(seq[4]), label: `grow ${seq.slice(0, 4).join(',')}`,
+    hint: BAY.txt(`What is ${up ? 'added' : 'taken away'} each time? Look at ${seq[0]} and ${seq[1]}.`)};
+}

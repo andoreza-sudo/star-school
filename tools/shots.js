@@ -361,6 +361,20 @@ const SCREENS = {
   'clock-frac1b': { run: clockShot('frac', 1, 102) },
   'clock-hint-meas2': { run: clockShot('meas', 2, 36, true) },
   'clock-hint-shape4': { run: clockShot('shape', 4, 72, true) },
+  // P2-04 Treasure Bay (2nd grade gaps): the map, and one seeded question of the new stops through the real round engine; -hint opens Help.
+  'bay-map': { run: async p => { await p.evaluate(() => { S.grade = 2; pathMap('math', PATHS.math.worlds.findIndex(w => w.id === 'm_bay')); }); } },
+  'bay-pv2a': { run: bayShot('pv', 2, 3) },
+  'bay-pv2b': { run: bayShot('pv', 2, 4) },
+  'bay-pv3': { run: bayShot('pv', 3, 8) },
+  'bay-big5': { run: bayShot('big', 5, 12, true) },
+  'bay-time4': { run: bayShot('time', 4, 14) },
+  'bay-coins4': { run: bayShot('coins', 4, 6) },
+  'bay-coins5': { run: bayShot('coins', 5, 7) },
+  'bay-meas3': { run: bayShot('meas', 3, 9) },
+  'bay-data2': { run: bayShot('data', 2, 11) },
+  'bay-arr1': { run: bayShot('arr', 1, 5) },
+  'bay-story4': { run: bayShot('story', 4, 13, true) },
+  'bay-pat3': { run: bayShot('pat', 3, 2) },
   // ---- P4-05 pet rig ----
   // Pet sheet: every stage x mood, the hat/toy anchors with their 64-grid boxes (P4-07), today's emoji wearables,
   // the jump/sad reaction faces, small sizes and a dark scene. Full-page shot. 'pets-home' / 'pets-care': the dragon in place.
@@ -510,6 +524,19 @@ function clockShot(sk, lv, seed, hint) {
   return async p => {
     await p.evaluate(([sk, lv, seed]) => {
       S.name = 'Ava'; setGrade(1);
+      window.say = () => {};
+      start('math', NODES.math.findIndex(n => n.sk === sk && n.lv === lv));
+      G.q = genQ(sk, lv, seed); renderQ();
+    }, [sk, lv, seed]);
+    if (hint) await p.click('#hb');
+  };
+}
+
+// P2-04: one Treasure Bay question (genQ with a fixed seed) through the real round engine; hint opens Help.
+function bayShot(sk, lv, seed, hint) {
+  return async p => {
+    await p.evaluate(([sk, lv, seed]) => {
+      S.name = 'Ava'; setGrade(2);
       window.say = () => {};
       start('math', NODES.math.findIndex(n => n.sk === sk && n.lv === lv));
       G.q = genQ(sk, lv, seed); renderQ();

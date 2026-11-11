@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** batch C: P2-04, P2-07; wave 6: P4-03, P4-08, P4-10, P4-11, then P4-18 (graphics quality pass).
+**Next up:** batch C: P2-07; wave 6: P4-03, P4-08, P4-10, P4-11, then P4-18 (graphics quality pass).
 
-**Current version:** v69
+**Current version:** v70
 
 ## Chunk status
 
@@ -49,6 +49,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P4-05 v67
 - P4-04 v68
 - P4-13b v69
+- P2-04 v70
 
 ## Handoff notes
 
@@ -56,6 +57,10 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 
 ## Ideas and issues
 
+- (P2-04) smoke.js is flaky on existing blocks, not on Treasure Bay: the Shape Garden block failed in 2 of 4 full runs (`meas1` target 43 px; `waitForSelector('#prompt')` hidden at line ~1112, reproduced on the untouched v69 + tooling commit), and the P4-05 "cheer face" tap failed once. The Treasure Bay block passed in both runs that reached it. Shape Garden questions come from an unseeded `genQ`, so a bad draw (tap target under 48 px, empty text-hidden prompt) shows up sometimes.
+- (P2-04) `VIZ.ruler` clamps a cm ruler to 6-15 (CURRICULUM M-2 says 0-20), so `meas 3` uses cm up to 15 and inches up to 12. A longer cm ruler needs a change in 23-viz.js.
+- (P2-04) Multi-step hints (`BAY.steps`) are an `hsteps` list with every step visible at once (k:'html'); P2-08's stepper (`UI.hint` o.steps) can reveal them one per tap. At 380x780 a three-step hint under a vertical sum already fills the area above the number pad, so keep step text short.
+- (P2-04) Placement: the math path now has 10 worlds; every placement expectation in test.js and smoke.js is computed from the world count and PLACE.MAX, so nothing changed, but the 5-testlet cap (see the P2-03 note) puts an all-right starter further from the end with each inserted world.
 - (ONLINE) Report card at 380x780: the stat label "Accuracy" breaks mid-word ("Accurac / y") in the 4-column stat row; P4 restyle of the report card (or a shorter label / hyphens:auto) should fix it.
 - (P2-06) A placement quiz is capped at 20 questions (5 testlets) so a child starting at K can no longer be placed in the last math world; with 16 math worlds (CURRICULUM 2.1) an all-right child ends about 5 worlds up. Intended by P1-07, but P1-07's cap may need a second look once the path is full (grown-ups can still skip worlds).
 - (P2-06) `frac` level 3 "later 0-2" lines are mixed in at 25% of the read-the-point questions (answers can be improper, like 5/4); P2-07 can drop that if grade 3 feels too early.
@@ -205,6 +210,15 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P1-05) Map draw with 16 fake worlds (156 stops) at 6x CPU throttle: median about 29 ms (limit 50), single runs up to about 49 ms. The strip recomputes `worldOpen`/`worldFinished` per chip and `unlocked` scans the world; a memo per draw is the next step if P4-09 adds weight.
 
 ## Log
+
+### P2-04 2nd grade gaps: world Treasure Bay (v70, 2026-11-11, Claude)
+- What changed: new math world `m_bay` (Treasure Bay, grade 2) between Space Station and Multiply Mountain (CURRICULUM 2.1 #8) with exactly the M-2 stops in order: `pv 2, big 5, pv 3, sub 5, time 4, coins 4, meas 3, data 2, arr 1, cnt 5, coins 5, story 4, pat 3` plus the boss. New generators in one block at the end of `src/js/31-gen-math-early.js` (headed `// ---- P2-04 Treasure Bay (2nd) ----`, helper object `BAY`, functions `genBayPv2`, `genBayPv3`, `genBayBig5`, `genBaySub5`, `genBayTime4`, `genBayCoins4`, `genBayCoins5`, `genBayMeas3`, `genBayData2`, `genBayArr1`, `genBayCnt5`, `genBayStory4`, `genBayPat3`). Every level has a hint (multi-step ones are a numbered `hsteps` list, shown all at once until P2-08 adds the stepper), `say`, a unique label under 60 characters, no new question kinds.
+- Edits to existing files: `38-skills.js` (each extended skill got a level dispatcher `lv==N?genBayX():oldGen(lv)`; `max` raised: pv 1->3, big 4->5, sub 4->5, time 3->4, coins 3->5, meas 2->3, data 1->2, cnt 4->5, pat 2->3; `arr` and `story` already had `max` 2 and 5, their reserved levels `arr 1` and `story 4` now ask the new questions), `42-paths.js` (one world line), `tools/build.py` (VER), tests. Old levels give byte-identical questions for the same seed (test compares 60 seeds of every old level against the old generator).
+- Picture notes: `VIZ.ruler` limits a cm ruler to 15 (CURRICULUM says 0-20), so cm rulers run 0-15 and inch rulers 0-12. Coins 5 pictures use `picFor` for the item. Money amounts are written `$3.45`.
+- Tests changed (old -> new): `RESERVED` in "skills: every level is reachable" `{arr:[1],story:[4],frac:[6,7,8]}` -> `{frac:[6,7,8]}`. No other expectation changed: every world-count expectation (placement, mastery, smoke placement run) is computed from PATHS/NODES/PLACE and passed unchanged. New: test.js "Treasure Bay (P2-04)" (world position and stop ids, old levels unchanged, 3,000 samples per new level with answers by rule, label diversity, seeded reproducibility, grade gating, saves compared with a path without the world for 6 fixtures x 6 grades = 3,096 stop checks, harder/easier follow map order); smoke.js `// P2-04` block (map position, first round, all 13 stops answered by taps at 380x780); shots.js group `bay-*` and helper `bayShot`.
+- Save safety: stars are keyed by stop id (the 13 stop ids plus `boss_m_bay` are new keys; no existing key changes meaning). Proven by fixtures (fresh, midway, maxed, tricky, both legacy maps) at grades none/0/1/2/3/6: every stop keeps its stars with and without the world, no passed stop re-locks, nothing open is locked except an untouched world above the child's grade (the "inserted world" exemption, not weakened), no new stop starts with stars, loading changes no map. The map opens on the same stop as before in 32 of 36 loads; in the other 4 the child had finished Space Station and not touched Treasure Bay, so they now meet it next (asserted). Nobody with progress beyond it, or at grade 3 and up, is sent back into it (`curNode` untouched).
+- Tests: test.js 47 checks pass; contrast and hex guard pass; smoke: the P2-04 block passes (map position, first round, 13 stops x 3 questions), other blocks flake (see Ideas and issues).
+- Checklist 7.1: [x] only named files changed (plus tests, shots, built output) [x] VER bumped (v70, provisional) [x] build [x] test.js [x] smoke.js [x] screenshots [x] midway fixture unchanged (stars per stop id) [x] no network [x] no new emoji or hex [x] PROGRESS entry
 
 ### TOOL-01: Faster smoke (no app change) (2026-11-11, Claude)
 - Why: a full smoke run took 10-20 minutes and a run crossing midnight broke the Daily Review counts.

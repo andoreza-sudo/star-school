@@ -1288,6 +1288,67 @@ async function main() {
       await pr.ctx.close();
     }
 
+    // P2-04 Treasure Bay at 380x780: a 2nd grader who has finished Space Station opens on Treasure Bay (between Space Station and
+    //    Multiply Mountain) at pv2, plays the first round with real taps, then all 13 stops are opened and three questions of each
+    //    answered by taps (base-ten pictures, clocks, money, rulers, bar graphs, arrays); sizes checked (48 px or more, no sideways scroll).
+    {
+      const ba = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 });
+      const bp = ba.page;
+      await bp.fill('#nm', 'Bay');
+      await bp.click('.gr[data-g="2"]');
+      await bp.click('#go');
+      await bp.waitForSelector('.game[data-p="math"]');
+      await bp.evaluate(() => { NODES.math.filter(n => n.wid === 'm_space').forEach(n => { S.maps.math[nid(n)] = 1; }); save(); home(); }); // Space Station finished
+      await bp.click('.game[data-p="math"]');
+      await bp.waitForSelector('.node.cur');
+      const bm = await bp.evaluate(() => { const ids = PATHS.math.worlds.map(w => w.id), c = ids.indexOf('m_bay');
+        return { c, near: ids[c - 1] + ' ' + ids[c + 1], on: +document.querySelector('.wchip.on').dataset.w, wid: NODES.math[curNode('math')].wid,
+          sk: nid(NODES.math[curNode('math')]), chips: document.querySelectorAll('.wchip').length, n: ids.length }; });
+      if (bm.c < 0 || bm.near !== 'm_space m_mult' || bm.on !== bm.c || bm.wid !== 'm_bay' || bm.sk !== 'pv2' || bm.chips !== bm.n) fail('Treasure Bay map: ' + JSON.stringify(bm));
+      else step('Treasure Bay: sits between Space Station and Multiply Mountain, the map opens on it at stop pv2 after Space Station');
+      await bp.click('.node.cur');
+      await bp.waitForSelector('#prompt');
+      await playRound(bp, 'P2-04 Place Value to 999');
+      await bp.click('#menu');
+      await bp.waitForSelector('#map');
+      const bx = await bp.evaluate(() => { const a = WR.math[PATHS.math.worlds.findIndex(w => w.id === 'm_bay')][0]; return { pv: passed('math', a), next: unlocked('math', a + 1) }; });
+      if (!bx.pv || !bx.next) fail('Treasure Bay: passing pv2 should unlock big5: ' + JSON.stringify(bx));
+      const bstops = await bp.evaluate(() => NODES.math.map((n, i) => [i, nid(n), n.wid]).filter(x => x[2] === 'm_bay' && x[1] !== 'boss_m_bay'));
+      const bseen = [];
+      for (const [i, id] of bstops) {
+        await bp.evaluate(i => { start('math', i); }, i);
+        await bp.waitForSelector('#prompt');
+        for (let k = 0; k < 3; k++) {
+          await vwait(bp, 500);
+          const sz = await bp.evaluate(() => {
+            const pts = [...document.querySelectorAll('.ch, .k')].map(e => Math.min(e.offsetWidth, e.offsetHeight));
+            const qa = document.querySelector('.qarea');
+            return { sk: G.q.sk + G.q.lv, kind: G.q.kind, min: Math.min(...pts), wide: document.documentElement.scrollWidth, tall: qa.scrollHeight > qa.clientHeight + 1,
+              svg: !!document.querySelector('#prompt svg') };
+          });
+          if (sz.min < 48 || sz.wide > 380 || sz.tall) fail('Treasure Bay stop ' + id + ': ' + JSON.stringify(sz));
+          if (['time4', 'coins4', 'meas3', 'data2', 'arr1'].includes(id) && !sz.svg) fail('Treasure Bay stop ' + id + ' has no picture');
+          if (k === 0) {
+            await bp.click('#hb');
+            const hint = await bp.evaluate(() => document.querySelector('#hint').innerHTML.length);
+            if (!hint) fail('Treasure Bay stop ' + id + ': empty hint');
+          }
+          await bp.evaluate(() => { window.__q = G.q; });
+          await answer(bp);
+          if (k < 2) await bp.waitForFunction(() => G && G.q !== window.__q, null, { timeout: 8000 });
+        }
+        await bp.evaluate(() => { G.dead = true; });
+        await vwait(bp, 1500);
+        bseen.push(id);
+      }
+      if (bseen.length !== 13) fail('Treasure Bay has ' + bseen.length + ' stops checked, expected 13');
+      else step('Treasure Bay: all 13 stops open, 3 questions each answered by taps; 48 px targets, no sideways scroll, hints');
+      await bp.evaluate(() => { G.dead = true; home(); });
+      network.push(...ba.network);
+      for (const e of ba.errors) fail(e);
+      await ba.ctx.close();
+    }
+
     for (const e of errors) fail(e);
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');
