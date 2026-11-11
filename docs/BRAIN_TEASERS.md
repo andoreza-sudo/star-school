@@ -72,7 +72,7 @@ Save shape: `S.bt[type] = {A:{lvl, stars:[...]}, B:{...}, ...}`, `S.bt.cur`, `S.
 | 8 | Make the Number (`target`) | - | 2 tiles | 3 tiles | 4 tiles (24-style) | at least one | runtime with exhaustive check | P3-10 |
 | 9 | Tangram (`tangram`) | 2-3 pieces, outlines | 4-5 pieces, outlines | 7 pieces, one placed | 7 pieces | any exact cover | authored solutions | P3-11, P3-12 |
 | 10 | Shape Fit (`fit`) | 2-3 pieces | 3-4 | 5-6 | 7-8 with flips | any exact cover | runtime, by construction | P3-12 |
-| 11 | Robot Path (`robot`) | arrows, 3-5 steps | arrows, 6-10 steps | turns + repeat | loops with slot limit | any program that works | runtime, by construction | P3-13 |
+| 11 | Robot Path (`robot`) | arrows, 3-5 steps | arrows, 6-10 steps | turns + repeat | loops with slot limit | any program that works | A-B runtime (BFS); C-D dev-time bank from templates, turned at runtime (5.8) | P3-13 |
 | 12 | Riddles (`riddle`) | "Who am I?" pictures | simple | wordplay | lateral and math | one keyed answer | authored bank | P3-14 |
 | 13 | Memory Match (`memory`) | 3-4 pairs | 6 pairs | 8 pairs, concept pairs | 10 pairs, concept pairs | n/a | runtime | P3-14 |
 | 14 | Copy Cat (`copycat`) | 4 pads | 4 pads faster | 6 pads | 6 pads, reverse mode | n/a | runtime | P3-14 |
@@ -267,6 +267,36 @@ Build a program of arrows, press Go, watch the robot run it. If it crashes, the 
 
 Generator: A-B: random self-avoiding walk from start; walls placed off the path; par = BFS shortest length. C-D: generated from loop templates (staircase, square spiral, zig-zag) with random sizes, so the intended program exists and fits the slots; verified by running it in the simulator. Any program that reaches the goal within the slot limit wins. 3 stars = at or under par.
 
+As built (P3-13, `src/js/81-bt-robot.js`, `src/css/49-bt-robot.css`, `tools/puzzles/robot.js`, bank `src/data/d-puz-robot.js`):
+- Bands: A 4x4 no walls, arrows (icons only, a tapped block says its name), shortest route 3/4/5 (levels 1-4/5-8/9-12), a gem
+  to pick up from level 7, slots par + 2. B 5x5 with walls, arrows with words, route 6-10, a gem from level 7 and two from level 10,
+  slots par + 3. C 6x6: forward, turn left, turn right, repeat N (2-9), loops nest two deep, slots par + 2. D 8x8, slots par + 1:
+  levels 1-9 add "repeat until wall" (its body runs while the cell ahead is open, at most 40 times), levels 10-12 add one function
+  (a second strip of up to 4 forward and turn blocks, called by a Function block). One new block at a time on purpose: with
+  "repeat until wall" a robot can follow almost any corridor in 6-8 blocks by spinning tricks, so a function would never be needed.
+- A and B are made at run time: A picks a start and a goal (and a gem) at the level's distance; B walks a random path that never
+  touches itself, walls the rest, then opens walls in random order while a BFS over (cell, gems held) keeps the route as long as the
+  walk. par = that BFS.
+- C and D worlds are corridors (only the cells of one path are open) from templates: line, turn, ring, stairs, stairs + run and
+  rectangle (C); ring and spiral with "until wall", irregular stairs, and two staircases with a straight bit for the function (D).
+  par must be the fewest blocks of any program, loops included, which needs a search far too heavy for a tablet, so they come from a
+  dev-time bank (decision A8): `tools/puzzles/robot.js` keeps a world only when its exact shortest-program search (effects of every
+  piece of program by cost, then a cheapest path over top-level pieces) proves the template's intended program is a shortest one,
+  no program of plain blocks fits the slots, and on a function level every program without the function is longer. The bank holds
+  36 worlds a band, 3 per level in level order; the app picks one of the level's three and one of the 8 turns and mirrors (a mirror
+  swaps turn left and turn right in the program). `tools/test.js` proves every bank par again with its own search.
+- Mistakes: a failed run (a bump, stopping short of the flag, on the flag without every gem, a loop going round more than 40 times);
+  the type allows 3. A winning program longer than par is reported as allow + 1 mistakes, so it earns 2 stars at most.
+- Editing: tap a palette block to put it in at the cursor (a loop comes with its end bracket and the cursor goes inside; Repeat asks
+  how many times); tap a placed block to take it away (a loop's head keeps its blocks; Repeat's head opens the number picker with Take
+  it away); tap a loop's end bracket or an empty slot to move the cursor after it; Undo. No dragging.
+- Running: the whole run is worked out first, then shown step by step (170-380 ms a step; reduced motion: short steps without
+  gliding): the block running is lifted with a purple ring and the robot glides; a bump: the robot wobbles, an amber star marks the
+  wall, the block that bumped turns amber with a dashed ring and a warning mark, never red.
+- Hints: A, B: the first arrow that bumps or does not bring the robot one step nearer the flag (BFS); C, D: the first block that
+  differs from the bank's intended program (a repeat count the child chose is kept when the program still wins with it). 1) that
+  block, or the empty place, glows star yellow and the line says why; 2) the right block shows faintly there; 3) it is put in.
+
 ### 5.9 Riddles, Memory Match, Copy Cat
 
 **Riddles**: authored bank, 30 per band, original or traditional (public domain). Format `{band, q, a, d:[...], pic}`. Spoken. Band A: "I am yellow. I am a fruit. Monkeys love me. What am I?" with picture choices. D: lateral thinking and number riddles. A riddle never repeats until the band's set is used up. No scary, rude or culturally narrow riddles.
@@ -318,6 +348,7 @@ As built (P3-14, `src/js/81-bt-riddle.js`, `82-bt-memory.js`, `83-bt-copycat.js`
 | `sudoku.js` | Sudoku generator as specified above |
 | `logic.js` | Logic grid generator (5.3), its human-style grid grader `grade(p)` (clue mark, only place left, link, two-way clue, chain), `render(p, clue)` for the sentences, and the vocabulary (`CATS`, `NAMES`). Writes `src/data/d-puz-logic.js`: `PUZ.logic[band]` = 36 puzzles `[head, clue, ...]`, head `names\|cat=items\|solution\|grade\|score`, clue `[kind, ...indexes, sentence]`, sorted by score; `PUZ.logic.cats` = labels and picture emoji |
 | `mathdoku.js` | MathDoku generator (5.2), its cage-aware human-style grader `grade(N, cages)` and `score()`. Writes `src/data/d-puz-mathdoku.js`: `PUZ.mathdoku[band]` = 36 strings `N\|cages\|solution\|grade\|score`, sorted by score; a cage is base-36 cell characters + op (`+ - * / =`) + target, e.g. `01+3` |
+| `robot.js` | Robot Path worlds for bands C and D (5.8, P3-13): templates, corridor layout, the exact shortest-program search `search(world, {K, until, fn})` and the bank builder. Writes `src/data/d-puz-robot.js`: `PUZ.robot[band]` = 36 strings `n\|cells\|start\|facing\|goal\|par\|kit\|main\|fn\|template`, 3 per level in level order |
 | `build-banks.js` | Runs the generators with a fixed seed and writes `src/data/d-puz-*.js`. Deterministic: same seed, same file |
 | `verify-banks.js` | Re-checks every stored puzzle: exactly one solution (its own counters `countSimple`, `countCages` and `countLogic`, not csp.js or the generators), grade within band; for logic grids also every clue true and none redundant, sentence = `render()`. Called from `tools/test.js` |
 | `rng.js` | Seeded random numbers (`rng(seedString)`) shared by the generators; never `Math.random` in `tools/puzzles/` |

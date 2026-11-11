@@ -1,5 +1,5 @@
-/* Star School games v117. BUILT by tools/build.py from 60-blocks.js, 62-hill.js, 64-gtimer.js, 66-colornum.js, 68-lowpoly.js, 70-art.js, 72-shapes.js: never edit by hand.
-   index.html v117 loads this file with <script src="games.v117.js"> after its own code, before data.v117.js. */
+/* Star School games v118. BUILT by tools/build.py from 60-blocks.js, 62-hill.js, 64-gtimer.js, 66-colornum.js, 68-lowpoly.js, 70-art.js, 72-shapes.js: never edit by hand.
+   index.html v118 loads this file with <script src="games.v118.js"> after its own code, before data.v118.js. */
 /* ---------- block builder (isometric) ---------- */
 const BW=16,BD=16,BH=14;
 const BLOCKS=[null,
@@ -1229,4 +1229,4 @@ function freePaint(ai){const cs=cbS();const G=ai>=0?cs.art[ai].split(',').map(k=
   gtStart('#gtm',()=>{if(G.some(k=>k!='blanco'))doSave();timeUpOverlay()})}
 
 
-var GAMES_VER='v117'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var GAMES_VER='v118'; // last line: the whole file ran (checked by dataReady() before the app starts)

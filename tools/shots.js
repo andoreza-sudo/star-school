@@ -1756,6 +1756,37 @@ Object.assign(SCREENS, {
   tangram: tgSheet,
 });
 
+// P3-13 Robot Path: grade g sets the band, level lv is started, then by real taps (tools/lib/bt-rb.js): o.build the first tokens of
+// solve() (o.fn: and the function), o.bump a program that bumps and Go, o.go Go on what is there, o.hint presses of Hint (cooldown
+// skipped), o.win the whole of solve() and Go
+const RB_TAPS = require('./lib/bt-rb');
+const rbShot = (g, lv, o = {}) => ({
+  run: async p => {
+    await p.evaluate(([g, lv]) => { window.say = () => {}; S.grade = g; S.bt = {}; BT.rec('robot', BT.band(), true).lvl = lv; BT.start('robot', BT.band(), lv); }, [g, lv]);
+    await p.waitForSelector('#btstage .rb');
+    const sol = await p.evaluate(() => BT.get('robot').solve(RB.cur.p));
+    if (o.bump) { await RB_TAPS.bump(p); await RB_TAPS.go(p); }
+    if (o.build) await RB_TAPS.build(p, { m: sol.m.slice(0, o.build), f: o.fn ? sol.f : [] });
+    if (o.go) await RB_TAPS.go(p);
+    for (let i = 0; i < (o.hint || 0); i++) {
+      await p.evaluate(() => { BT.act.cd = 0; document.querySelector('#bthint').disabled = false; });
+      await p.click('#bthint');
+    }
+    if (o.win) { await RB_TAPS.build(p, sol); await RB_TAPS.go(p); await p.waitForTimeout(1600); }
+  },
+});
+Object.assign(SCREENS, {
+  'bt-rb-hub': { run: async p => { await p.evaluate(() => { S.grade = 3; BT.levels('robot'); }); } },
+  'bt-rb-a': rbShot(0, 8, { build: 2 }),
+  'bt-rb-b': rbShot(1, 10, { build: 6, go: true }),
+  'bt-rb-c': rbShot(3, 9, { build: 4 }),
+  'bt-rb-d': rbShot(5, 4, { build: 9 }),
+  'bt-rb-f': rbShot(5, 11, { build: 6, fn: true }),
+  'bt-rb-bump': rbShot(3, 4, { bump: true }),
+  'bt-rb-hint': rbShot(3, 7, { build: 3, hint: 2 }),
+  'bt-rb-win': rbShot(0, 2, { win: true }),
+});
+
 async function main() {
   const args = process.argv.slice(2);
   let fixtureArg = null;

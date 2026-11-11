@@ -188,7 +188,7 @@ node tools/test.js               # generator fuzz + data checks; must exit 0
 node tools/smoke.js              # bot plays through the app in headless Chrome; must exit 0   (after P0-01)
 node tools/shots.js home map question   # screenshots to tools/out/ at 600x960, 1024x600, 380x780   (after P0-01)
 bash tools/check.sh              # all of the above plus size report                                (after P0-01)
-node tools/puzzles/build-banks.js [sudoku|mathdoku|logic] # regenerate puzzle banks into src/data/d-puz-*.js from fixed seeds (after P3-02)
+node tools/puzzles/build-banks.js [sudoku|mathdoku|logic|robot] # regenerate puzzle banks into src/data/d-puz-*.js from fixed seeds (after P3-02)
 node tools/puzzles/build-banks.js --check    # regenerate in memory, compare with the committed bank files byte for byte
 node tools/puzzles/verify-banks.js           # re-check every stored puzzle (also part of test.js)
 ```

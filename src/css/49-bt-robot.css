@@ -1,0 +1,175 @@
+/* Brain Teasers: Robot Path (P3-13; 81-bt-robot.js). Tokens only; motion is transform and opacity. Light from the top left. */
+.rb{display:flex;flex-direction:column;align-items:center;gap:var(--s-3);max-width:1040px;min-height:100%;margin:0 auto}
+.rb.land{flex-direction:row;align-items:center;justify-content:center;gap:var(--s-5)}
+.rb-board{flex:none;display:flex;justify-content:center}
+.rb-svg{display:block;width:300px;height:300px;overflow:visible}
+.rb-side{display:flex;flex-direction:column;gap:var(--s-2);width:100%;max-width:560px}
+.rb.land .rb-side{flex:0 1 540px;min-width:340px}
+.rb-abs .rb-dir{display:none}
+/* the talk line */
+.rb-talk{display:flex;align-items:center;gap:var(--s-2);min-height:var(--tap)}
+.rb.land .rb-talk{min-height:56px}
+.rb-msg{flex:1;min-width:0;margin:0;padding:var(--s-1) var(--s-3);border-radius:var(--r-btn);font-size:var(--fs-3);font-weight:700;line-height:1.3;color:var(--ink)}
+.rb-msg.try{background:var(--try-tint);color:var(--try-ink)}
+.rb-msg.good{background:var(--good-tint);color:var(--good-ink)}
+.rb-msg.hint{background:var(--star-tint);color:var(--ink)}
+.rb-say{flex:none}
+/* program strips */
+.rb-prog{display:flex;flex-direction:column;gap:var(--s-2)}
+.rb-sw{padding:var(--s-2);border-radius:var(--r-card);background:var(--surface);box-shadow:inset 0 0 0 2px var(--line),0 3px 0 var(--ledge-soft)}
+.rb-fw.on{box-shadow:inset 0 0 0 3px var(--bt),0 3px 0 var(--bt-shade)}
+/* with a function there are two strips: each name sits on the top edge of its box, like a label on a folder */
+.rb-two .rb-sw{position:relative;margin-top:10px;padding-top:var(--s-3)}
+.rb-hd{position:absolute;top:-11px;left:12px;display:flex;align-items:center;gap:var(--s-2);padding:0 8px;border-radius:var(--r-pill);background:var(--surface);
+  font-size:var(--fs-2);font-weight:700;line-height:22px;color:var(--ink-2);box-shadow:inset 0 0 0 2px var(--line)}
+.rb-fw.on .rb-hd{color:var(--bt-shade);box-shadow:inset 0 0 0 2px var(--bt)}
+.rb-lab{display:flex;align-items:center;gap:6px}
+.rb-lab .ic,.rb-lab .rb-g{flex:none;width:22px;height:22px;color:var(--bt)}
+.rb-cnt{display:flex;flex-direction:column;align-items:center;min-width:64px;font-size:var(--fs-2);font-weight:700;line-height:1.1;color:var(--ink-2)}
+.rb-cnt b{font-family:var(--font-display);font-size:var(--fs-4);color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+.rb-cnt.full b{color:var(--bt-shade)}
+.rb-strip{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-height:52px}
+/* block colours: base (k), light face (k1), ledge (k2), deep icon (k3) */
+.rb-k-mv{--k:var(--ill-blue);--k1:var(--ill-blue-1);--k2:var(--ill-blue-2);--k3:var(--ill-blue-3)}
+.rb-k-tn{--k:var(--ill-purple);--k1:var(--ill-purple-1);--k2:var(--ill-purple-2);--k3:var(--ill-purple-3)}
+.rb-k-rep{--k:var(--ill-pink);--k1:var(--ill-pink-1);--k2:var(--ill-pink-2);--k3:var(--ill-pink-3)}
+.rb-k-uw{--k:var(--ill-aqua);--k1:var(--ill-aqua-1);--k2:var(--ill-aqua-2);--k3:var(--ill-aqua-3)}
+.rb-k-fn{--k:var(--ill-green);--k1:var(--ill-green-1);--k2:var(--ill-green-2);--k3:var(--ill-green-3)}
+.rb-g{fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+/* a placed block: a light face on a coloured ledge, a white gloss along the top */
+.rb-b{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:2px;min-width:var(--tap);height:var(--tap);padding:0 6px;border:0;
+  border-radius:12px;background:var(--k1);color:var(--k3);box-shadow:inset 0 3px 0 var(--hi),0 4px 0 var(--k2);cursor:pointer;touch-action:manipulation;
+  transition:transform var(--t-fast) var(--ease)}
+.rb-b .rb-g,.rb-b>.ic{width:30px;height:30px}
+.rb-b:active{transform:translateY(3px);box-shadow:0 1px 0 var(--k2)}
+.rb-b b,.rb-ghost b{font-family:var(--font-display);font-size:var(--fs-4);line-height:1;color:var(--k3);font-variant-numeric:tabular-nums}
+.rb-lh{min-width:60px;padding:0 4px}
+.rb-lh .rb-g{width:26px;height:26px}
+.rb-b.on{transform:translateY(-3px);box-shadow:0 0 0 3px var(--bt),0 7px 0 var(--k2)}
+.rb-b.bad{background:var(--try-tint);color:var(--try-ink);box-shadow:0 4px 0 var(--try);outline:3px dashed var(--try-ink);outline-offset:2px}
+.rb-b.bad b{color:var(--try-ink)}
+.rb-warn{position:absolute;top:-9px;right:-9px;width:22px;height:22px;padding:2px;border-radius:50%;background:var(--surface);color:var(--try-ink);
+  box-shadow:0 0 0 2px var(--try)}
+.rb-b.hint,.rb-end.hint{box-shadow:0 0 0 4px var(--star),0 4px 0 var(--star-shade)}
+/* a loop: its blocks sit inside a soft frame in the loop's colour, the end bracket closes it */
+.rb-loop{display:inline-flex;flex-wrap:wrap;align-items:center;gap:4px;max-width:100%;padding:4px;border-radius:16px;background:var(--surface-2);
+  box-shadow:inset 0 0 0 3px var(--k1),inset 6px 0 0 var(--k1)}
+.rb-loop.on{box-shadow:inset 0 0 0 3px var(--bt),inset 6px 0 0 var(--bt)}
+.rb-end{display:inline-flex;align-items:center;justify-content:center;width:var(--tap);height:var(--tap);padding:0;border:0;border-radius:12px;background:transparent;
+  color:var(--k3);cursor:pointer;touch-action:manipulation}
+.rb-end .rb-g{width:28px;height:28px}
+/* the cursor and the empty slots */
+.rb-slot,.rb-cur{display:inline-block;flex:none;width:var(--tap);height:var(--tap);padding:0;border:0;border-radius:12px;background:var(--surface-2);
+  box-shadow:inset 0 0 0 2px var(--line);cursor:pointer;touch-action:manipulation}
+.rb-slot.cur,.rb-cur{background:var(--bt-tint);box-shadow:inset 0 0 0 3px var(--bt);animation:rb-in var(--t-slow) var(--spring)}
+.rb-cur{width:14px;cursor:default}
+/* hint marks: the place glows star yellow (tier 1), the right block shows faintly there (tier 2) */
+.rb-ghost{display:inline-flex;flex:none;align-items:center;justify-content:center;gap:2px;min-width:var(--tap);height:var(--tap);padding:0 6px;border-radius:12px;
+  background:var(--k1,var(--star-tint));color:var(--k3,var(--star-shade));opacity:.6;outline:3px dashed var(--star-shade);outline-offset:2px}
+.rb-ghost .rb-g,.rb-ghost>.ic{width:30px;height:30px}
+.rb-gslot{width:var(--tap);padding:0;background:var(--star-tint);opacity:1}
+/* the palette */
+.rb-pals{display:flex;gap:var(--s-2)}
+.rb-pals.rb-pad{display:grid;grid-template-columns:repeat(3,minmax(0,92px));justify-content:center}
+.rb-pad .rb-p[data-t="up"]{grid-column:2}
+.rb-pad .rb-p[data-t="lf"]{grid-column:1}
+.rb-p{flex:1 1 0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:var(--tap);min-height:64px;padding:6px 2px 4px;border:0;
+  border-radius:var(--r-btn);background:var(--k1);color:var(--k3);box-shadow:inset 0 3px 0 var(--hi),0 5px 0 var(--k2);cursor:pointer;touch-action:manipulation;
+  transition:transform var(--t-fast) var(--ease)}
+.rb-p .rb-g,.rb-p>.ic{width:32px;height:32px}
+.rb-p span{font-family:var(--font-display);font-size:var(--fs-2);font-weight:700;line-height:1.05;color:var(--ink);text-align:center}
+.rb-p:active{transform:translateY(4px);box-shadow:0 1px 0 var(--k2)}
+.rb-p:disabled{background:var(--surface-2);color:var(--ink-3);box-shadow:0 3px 0 var(--ledge-soft);cursor:default}
+.rb-p:disabled span{color:var(--ink-3)}
+.rb-p:disabled:active{transform:none}
+.rb-A .rb-p{min-height:var(--tap-pk)}
+.rb-A .rb-p>.ic{width:40px;height:40px}
+/* how many times? */
+.rb-pick{display:flex;flex-direction:column;align-items:center;gap:var(--s-2);padding:var(--s-2) var(--s-3) var(--s-3);border-radius:var(--r-card);background:var(--surface);
+  box-shadow:inset 0 0 0 3px var(--ill-pink-1),0 3px 0 var(--ledge-soft)}
+.rb-pick p{display:flex;align-items:center;gap:var(--s-2);margin:0;font-size:var(--fs-3);font-weight:700;color:var(--ink)}
+.rb-pick p .rb-g{width:26px;height:26px;color:var(--ill-pink-3)}
+.rb-nums{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px;width:100%}
+.rb-nk{min-width:var(--tap);min-height:var(--tap);border:0;border-radius:12px;background:var(--ill-pink-1);color:var(--ink);font-family:var(--font-display);
+  font-size:var(--fs-4);font-weight:700;box-shadow:inset 0 3px 0 var(--hi),0 4px 0 var(--ill-pink-2);cursor:pointer;touch-action:manipulation}
+.rb-nk.on{background:var(--surface);box-shadow:inset 0 0 0 3px var(--bt),0 4px 0 var(--bt-shade)}
+.rb-nk:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ill-pink-2)}
+/* Undo and Go */
+.rb-act{display:flex;align-items:center;gap:var(--s-3)}
+.rb-act .rb-go{flex:1;font-size:var(--fs-5)}
+/* the board */
+.rb-tray{fill:var(--bt-tint)}
+.rb-tray2{fill:var(--ledge-soft)}
+.rb-fl{fill:var(--ill-cream-1)}
+.rb-fl2{fill:var(--ill-cream-2)}
+.rb-ws{fill:var(--drop)}
+.rb-w2{fill:var(--ill-grey-2)}
+.rb-w{fill:var(--ill-grey)}
+.rb-w1{fill:var(--ill-grey-1)}
+.rb-wl{fill:none;stroke:var(--ill-grey-2);stroke-width:4;stroke-linecap:round}
+.rb-st2{fill:var(--ill-grey-1)}
+.rb-st{fill:var(--ill-white)}
+.rb-st1{fill:none;stroke:var(--ill-grey-1);stroke-width:5;stroke-dasharray:9 8}
+.rb-pad{fill:var(--ill-green)}
+.rb-pad2{fill:var(--ill-green-2)}
+.rb-pole{stroke:var(--ill-grey-3);stroke-width:5;stroke-linecap:round}
+.rb-fg{fill:var(--ill-red)}
+.rb-fg2{fill:var(--ill-red-2)}
+.rb-fg1{fill:var(--ill-red-1)}
+.rb-gm{fill:var(--ill-aqua)}
+.rb-gm1{fill:var(--ill-aqua-1)}
+.rb-gm2{fill:var(--ill-aqua-3)}
+.rb-gm3{fill:var(--ill-aqua-2)}
+.rb-gem{transition:transform var(--t-slow) var(--ease),opacity var(--t-slow) var(--ease)}
+.rb-gem.got{opacity:0;transform:scale(1.7)}
+.rb-dot{fill:var(--ill-orange-1)}
+.rb-bonk path{fill:var(--try);stroke:var(--try-ink);stroke-width:3;stroke-linejoin:round}
+/* the robot */
+.rb-sh{fill:var(--drop)}
+.rb-ptr{fill:var(--ill-orange);stroke:var(--ill-white);stroke-width:3;stroke-linejoin:round}
+.rb-ptr2{fill:var(--ill-orange-3)}
+.rb-whl{fill:var(--ill-ink-2)}
+.rb-bd{fill:var(--ill-blue)}
+.rb-bd2{fill:var(--ill-blue-2)}
+.rb-bd1{fill:var(--ill-blue-1)}
+.rb-led{fill:var(--ill-yellow)}
+.rb-ant{stroke:var(--ill-grey-3);stroke-width:4;stroke-linecap:round}
+.rb-ball{fill:var(--ill-red)}
+.rb-ball1{fill:var(--ill-red-1)}
+.rb-hd{fill:var(--ill-white-2)}
+.rb-hd2{fill:var(--ill-white-3)}
+.rb-gl{fill:var(--ill-white)}
+.rb-scr{fill:var(--ill-ink-2)}
+.rb-eye{fill:var(--ill-aqua-1)}
+.rb-smile{fill:none;stroke:var(--ill-aqua-1);stroke-width:3;stroke-linecap:round}
+.rb-bot.glide{transition:transform var(--rb-t,300ms) var(--ease)}
+.rb-dir{transition:transform var(--rb-t,300ms) var(--ease)}
+.rb-eyes{transition:transform var(--t) var(--ease)}
+.rb-body{transform-box:fill-box;transform-origin:50% 100%}
+.rb-body.wob{animation:rb-wob 460ms var(--ease)}
+.rb-body.hop{animation:rb-hop 640ms var(--spring)}
+@keyframes rb-wob{0%,100%{transform:none}20%{transform:translateX(-5px) rotate(-7deg)}45%{transform:translateX(5px) rotate(6deg)}70%{transform:translateX(-3px) rotate(-3deg)}}
+@keyframes rb-hop{0%,100%{transform:none}40%{transform:translateY(-16px) scale(1.06)}70%{transform:translateY(0) scale(1.08,.94)}}
+@keyframes rb-in{from{opacity:0}to{opacity:1}}
+/* landscape: a shorter panel so the board keeps the full height */
+.rb.land .rb-p{min-height:56px;padding:4px 4px 3px}
+.rb.land .rb-p span{white-space:nowrap}
+.rb.land .rb-p .rb-g,.rb.land .rb-p>.ic{width:26px;height:26px}
+.rb.land .rb-pad .rb-p{min-height:56px}
+/* tight: a long program, closer rows */
+.rb.tight{gap:var(--s-2)}
+.rb.tight .rb-side{gap:6px}
+.rb.tight .rb-talk{min-height:var(--tap)}
+.rb.tight .rb-msg{padding-top:2px;padding-bottom:2px}
+.rb.tight .rb-sw{padding:6px}
+.rb.tight .rb-two .rb-sw{padding-top:10px}
+.rb.tight .rb-p{min-height:52px}
+/* phones */
+@media (max-width:480px){
+  .rb-msg{font-size:var(--fs-2)}
+  .rb-pals{gap:4px;margin:0 -8px}
+  .rb-pals.rb-pad{margin:0}
+  .rb-p{min-height:58px;padding:4px 0 3px}
+  .rb-p .rb-g,.rb-p>.ic{width:28px;height:28px}
+  .rb-nums{grid-template-columns:repeat(4,minmax(0,1fr))}
+}

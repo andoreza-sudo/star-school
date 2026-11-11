@@ -11384,6 +11384,240 @@ run('tangrams P3-11',()=>{
     s.near+' near misses refused, '+s.snaps+' drops snapped, '+s.hints+' hint steps, '+s.dmg+' damaged states refused'};
 });
 
+// ---- P3-13 Robot Path: worlds, the interpreter, par against the test's own searches, solve(), hints, saved state ----
+run('robot path P3-13',()=>{
+  // the body runs inside the app's scope (eval of all sources), so RB, BT and PUZ are the app's own objects
+  const body=function(){
+  const B=BT,P=PUZ,p=[],bad=m=>{if(p.length<40&&!p.includes(m))p.push(m)};
+  const T=B.get('robot');
+  if(!T)return{problems:['robot is not registered']};
+  if(T.bands!=='ABCD'||B.nLevels(T,'A')!==12||T.allow!==3)bad('robot: bands '+T.bands+', '+B.nLevels(T,'A')+' levels, allow '+T.allow);
+  const DX=[0,1,0,-1],DY=[-1,0,1,0],ABS={up:0,rt:1,dn:2,lf:3},SIZE={A:4,B:5,C:6,D:8},EXTRA={A:2,B:3,C:2,D:1};
+  // ---- the test's own reading of a world and its own simulator (not RB.run) ----
+  const front=(w,c,d)=>{const n=w.n,x=c%n+DX[d],y=Math.floor(c/n)+DY[d];if(x<0||y<0||x>=n||y>=n)return-1;const k=y*n+x;return w.w[k]=='.'?k:-1};
+  const tree=toks=>{const root=[],st=[root];for(const t of toks){if(/^r[2-9]$/.test(t)||t=='uw'){const nd={n:t=='uw'?0:+t[1],b:[]};st[st.length-1].push(nd);st.push(nd.b)}
+    else if(t=='en'){if(st.length<2)return null;st.pop()}else st[st.length-1].push(t)}return st.length==1?root:null};
+  const sim=(w,prog)=>{const gems=w.gems||[],full=(1<<gems.length)-1,s={c:w.s,d:w.d,g:0,n:0,out:null,moves:0},fn=tree(prog.f||[])||[];
+    const ex=seq=>{for(const x of seq){if(s.out)return;
+      if(x=='fn'){ex(fn);continue}
+      if(typeof x=='string'){if(++s.n>1000){s.out='dizzy';return}
+        if(x=='tl')s.d=(s.d+3)%4;else if(x=='tr')s.d=(s.d+1)%4;else{if(x in ABS)s.d=ABS[x];const k=front(w,s.c,s.d);if(k<0){s.out='bump';return}
+          s.c=k;s.moves++;const gi=gems.indexOf(k);if(gi>=0)s.g|=1<<gi;if(k==w.g&&s.g==full){s.out='win';return}}}
+      else if(x.n){for(let i=0;i<x.n&&!s.out;i++)ex(x.b)}
+      else if(x.b.length){for(let i=0;!s.out&&front(w,s.c,s.d)>=0;i++){if(i>=40){s.out='dizzy';return}ex(x.b)}}}};
+    const t=tree(prog.m);if(!t)return{out:'broken'};ex(t);if(!s.out)s.out=s.c==w.g?'gems':'short';return s};
+  const blocks=prog=>[...prog.m,...(prog.f||[])].filter(t=>t!='en').length;
+  // A, B: BFS over (cell, gems held), arrows
+  const bfs=w=>{const gems=w.gems||[],M=1<<gems.length,seen=new Set([w.s*M]),q=[[w.s,0,0]];
+    for(let i=0;i<q.length;i++){const[c,m,k]=q[i];if(c==w.g&&m==M-1)return k;for(let d=0;d<4;d++){const n=front(w,c,d);if(n<0)continue;const gi=gems.indexOf(n),nm=gi>=0?m|1<<gi:m;
+      if(!seen.has(n*M+nm)){seen.add(n*M+nm);q.push([n,nm,k+1])}}}return-1};
+  // C, D: the fewest blocks of any program under the kit's rules (forward, turns, repeat 2-9, loops two deep; kit u: repeat until wall,
+  // body while the way ahead is open, 40 times at most; kit f: one function of 2-4 plain blocks). Written apart from tools/puzzles/robot.js:
+  // effects (state -> state | win | crash) of every program piece by cost, each kept once, then a cheapest path over top-level pieces.
+  const shortest=(w,kit,K,loops=true)=>{
+    const cells=[];for(let c=0;c<w.n*w.n;c++)if(w.w[c]=='.')cells.push(c);
+    const ix=new Map(cells.map((c,i)=>[c,i])),S=cells.length*4,WIN=-2,X=-1,st=(c,d)=>ix.get(c)*4+d;
+    const atom={fw:[],tl:[],tr:[]},open=[];
+    for(let i=0;i<S;i++){const c=cells[i>>2],d=i&3,k=front(w,c,d);open.push(k>=0);atom.fw.push(k<0?X:k==w.g?WIN:st(k,d));atom.tl.push(st(c,(d+3)%4));atom.tr.push(st(c,(d+1)%4))}
+    const then=(a,b)=>{const e=a.map(v=>v<0?v:b[v]);return e.some(v=>v!=X)?e:null};
+    const loopsOf=b=>{const out=[];let e=b;for(let n=2;n<=9;n++){e=e&&then(e,b);if(!e)break;out.push(e)}
+      if(kit.includes('u')){const u=b.map((v,i)=>{let x=i,k=0;while(x>=0&&open[x]&&k<40){x=b[x];k++}return x>=0&&open[x]?X:x});if(u.some(v=>v!=X))out.push(u)}return out};
+    const best=(base,K)=>{
+      // pieces[d][k]: effects of sequences of cost k with loops at most d deep; stmts[d]: [cost, effect]
+      const id=[...Array(S).keys()],pieces=[],stmts=[];
+      for(let d=0;d<=(loops?2:0);d++){
+        const sts=base.map(e=>[1,e]);
+        if(d)for(let k=1;k<K;k++)for(const b of pieces[d-1][k]||[])for(const e of loopsOf(b))sts.push([k+1,e]);
+        stmts[d]=sts;
+        if(d==(loops?2:0))break;
+        const seen=new Set([id.join()]),Q=[[id]];
+        for(let k=1;k<K;k++){Q[k]=[];for(const[c,e]of sts){if(c>k)continue;for(const r of Q[k-c]){const x=then(e,r);if(!x)continue;const h=x.join();if(seen.has(h))continue;seen.add(h);Q[k].push(x)}}}
+        pieces[d]=Q;
+      }
+      // cheapest path from the start over top-level pieces (bucket Dijkstra: costs are small integers)
+      const top=stmts[loops?2:0],s0=st(w.s,w.d),dist=new Map([[s0,0]]),bk=[[s0]];let win=Infinity;
+      for(let c=0;c<=K&&c<win;c++)for(const x of bk[c]||[]){
+        if(dist.get(x)!==c)continue;
+        for(const[k,e]of top){const nc=c+k,y=e[x];if(nc>K||nc>=win||y==X)continue;if(y==WIN){win=nc;continue}
+          if(!dist.has(y)||dist.get(y)>nc){dist.set(y,nc);(bk[nc]=bk[nc]||[]).push(y)}}
+      }
+      return win};
+    let m=best([atom.fw,atom.tl,atom.tr],K);
+    if(kit.includes('f')){
+      // a function called once could be written out in place (one block less), so only bodies of 2-4 plain blocks called twice or more matter
+      const seen=new Set(),bodies=[[atom.fw,1],[atom.tl,1],[atom.tr,1]];let layer=bodies.slice();
+      for(let k=2;k<=4;k++){const nl=[];for(const[e]of layer)for(const a of[atom.fw,atom.tl,atom.tr]){const x=then(e,a);if(!x)continue;const h=x.join();if(seen.has(h))continue;seen.add(h);nl.push([x,k])}
+        for(const[e]of nl)if(k+3<m){const r=best([atom.fw,atom.tl,atom.tr,e],Math.min(K,m-1)-k);if(r+k<m)m=r+k}layer=nl}
+    }
+    return m};
+  // ---- worlds by band, level and day ----
+  const stat={A:{par:0,mv:0,n:0,lv:[]},B:{par:0,mv:0,n:0,lv:[]},C:{par:0,mv:0,n:0,lv:[]},D:{par:0,mv:0,n:0,lv:[]}},xs=new Set(),kits=new Set();
+  let n=0,ms=0,abn=0;
+  for(const band of 'ABCD')for(let lv=1;lv<=12;lv++){
+    let lvMv=0,lvN=0;
+    for(let day=1;day<=24;day++){
+      const o={day:'2026-'+(1+day%12)+'-'+(1+day%28)},tag=band+lv+' '+o.day,t0=Date.now();
+      let w;try{w=B.make('robot',band,lv,o)}catch(e){bad(tag+': make() threw '+e.message);continue}
+      if(band<'C'){ms+=Date.now()-t0;abn++}
+      n++;
+      if(day<=3&&JSON.stringify(B.make('robot',band,lv,o))!==JSON.stringify(w))bad(tag+': make() is not deterministic');
+      if(w.n!==SIZE[band]||w.w.length!==w.n*w.n||!/^[.#]+$/.test(w.w))bad(tag+': grid '+w.n);
+      const okCell=c=>Number.isInteger(c)&&c>=0&&c<w.n*w.n&&w.w[c]=='.';
+      if(!okCell(w.s)||!okCell(w.g)||w.s===w.g||!(w.d>=0&&w.d<4)||(w.gems||[]).some(c=>!okCell(c)||c===w.s||c===w.g))bad(tag+': start, goal or gems not on open cells');
+      const walls=[...w.w].filter(ch=>ch=='#').length;
+      if(band=='A'&&walls)bad(tag+': band A has walls');
+      if(band=='B'&&walls<4)bad(tag+': band B has '+walls+' walls');
+      const ng=(w.gems||[]).length,wantG=band=='A'?(lv>=7?1:0):band=='B'?(lv>=10?2:lv>=7?1:0):0;
+      if(ng!==wantG)bad(tag+': '+ng+' gems, want '+wantG);
+      const wantKit=band<'C'?'abs':band=='C'?'':lv<=9?'u':'f';
+      if(w.kit!==wantKit)bad(tag+': kit '+JSON.stringify(w.kit)+', want '+JSON.stringify(wantKit));
+      kits.add(band+w.kit);
+      if(w.slots!==w.par+EXTRA[band])bad(tag+': slots '+w.slots+' for par '+w.par);
+      // par: A and B against the test's BFS (and the level's steps), C and D are checked once per bank world below
+      if(band<'C'){const b=bfs(w);if(b!==w.par)bad(tag+': par '+w.par+' but the BFS says '+b);if(w.par!==RB.STEPS[band][lv-1])bad(tag+': par '+w.par+' is not the level\'s '+RB.STEPS[band][lv-1])}
+      else{
+        // a corridor: the open cells are one path from the start to the goal
+        const deg=c=>[0,1,2,3].filter(d=>front(w,c,d)>=0).length;
+        for(let c=0;c<w.n*w.n;c++)if(w.w[c]=='.'&&deg(c)!==(c===w.s||c===w.g?1:2)){bad(tag+': not a corridor at '+c);break}
+        const e=P.robot[band][w.k].split('|');if(+e[5]!==w.par||w.k<3*(lv-1)||w.k>=3*lv)bad(tag+': bank world '+w.k+' for level '+lv);
+        xs.add(w.x);
+      }
+      // solve(): a program the editor could make, of exactly par blocks, that wins in the test's simulator and in RB.run
+      const sol=T.solve(w),r=sim(w,sol);
+      if(r.out!=='win'||blocks(sol)!==w.par||!RB.okProg(w,sol.m,sol.f)||RB.run(w,sol).out!=='win')bad(tag+': solve() gives '+r.out+' with '+blocks(sol)+' blocks (par '+w.par+')');
+      // size of the task: the actions of the winning run (moves and turns); inside a band A, B grow by route, C, D by program length
+      stat[band].par+=w.par;stat[band].mv+=r.n||0;stat[band].n++;lvMv+=band<'C'?r.moves||0:w.par;lvN++;
+      // hints from an empty program: tier 3 again and again builds a winning program; each step puts in one block (or ends a loop)
+      if(day<=4){
+        let s=RB.fresh(),k=0;
+        for(;k<40;k++){
+          const before=JSON.stringify(s),dv=RB.diverge(w,s);
+          if(JSON.stringify(s)!==before)bad(tag+': diverge() changed the state');
+          if(dv.kind=='works')break;
+          const s2=RB.applyHint(w,s,dv);
+          if(!s2){bad(tag+': tier 3 gave nothing at step '+k+' '+JSON.stringify(dv));break}
+          const d=blocks(s2)-blocks(s);
+          if(dv.kind=='add'&&(d!==1||s2[dv.s][dv.i]!==dv.want))bad(tag+': tier 3 did not put in one block: '+JSON.stringify(dv));
+          s=s2;
+        }
+        if(sim(w,s).out!=='win'||blocks(s)>w.par)bad(tag+': hints from nothing do not build a shortest win ('+sim(w,s).out+', '+blocks(s)+' blocks, '+k+' steps)');
+      }
+    }
+    stat[band].lv.push(lvMv/Math.max(1,lvN));
+  }
+  if(xs.size!==8)bad('C and D: not all 8 turns and mirrors used: '+[...xs]);
+  // ---- the bank: every C and D world, par proven by the test's own search; turned and mirrored worlds keep it ----
+  let searched=0;const t0=Date.now();
+  for(const band of 'CD'){
+    const L=(P.robot||{})[band]||[];
+    if(L.length!==36)bad('bank '+band+': '+L.length+' worlds');
+    const seen=new Set();
+    L.forEach((str,k)=>{
+      const w=RB.fromBank(band,k,0),tag='bank '+band+k;
+      if(seen.has(w.w+w.s))bad(tag+': the same world twice');seen.add(w.w+w.s);
+      const best=shortest(w,w.kit,w.par);searched++;
+      if(best!==w.par)bad(tag+': par '+w.par+' but the search finds '+best);
+      // a loop is needed: plain blocks alone do not fit the slots
+      const plain=shortest(w,'',w.slots,false);
+      if(!(plain>w.slots))bad(tag+': '+plain+' plain blocks fit the '+w.slots+' slots');
+      // a function level needs the function
+      if(w.kit=='f'&&!(shortest(w,'',w.par)>w.par))bad(tag+': the function is not needed');
+      for(let x=1;x<8;x++){const v=RB.fromBank(band,k,x);if(v.par!==w.par||sim(v,v.ref).out!=='win'||blocks(v.ref)!==w.par)bad(tag+' turned '+x+': the program does not win')}
+    });
+  }
+  const searchMs=Date.now()-t0;
+  // the bank file is what the generator writes from its seed
+  const bb=require('./puzzles/build-banks.js').TYPES.robot,text=bb.text(()=>{});
+  if(text!==fs.readFileSync(path.join(SRC,'data','d-puz-robot.js'),'utf8'))bad('src/data/d-puz-robot.js is not what `node tools/puzzles/build-banks.js robot` writes');
+  // ---- the interpreter, block by block ----
+  const W=(n,rows,s,d,g,gems=[],kit='')=>({n,w:rows.join(''),s,d,g,gems,kit,par:1,slots:99});
+  const open4=W(4,['....','....','....','....'],5,0,15,[],'abs');
+  const cases=[
+    ['arrows move and turn to face',open4,{m:['rt','dn','dn','rt','rt'],f:[]},'win',15,1],
+    ['an arrow off the board bumps',open4,{m:['up','up'],f:[]},'bump',1,0],
+    ['the run stops at the flag',open4,{m:['rt','rt','dn','dn','up'],f:[]},'win',15,null],
+    ['program ends short',open4,{m:['dn'],f:[]},'short',9,2],
+    ['empty program',open4,{m:[],f:[]},'empty',5,0],
+    ['flag without the gem',W(4,['....','....','....','....'],0,1,3,[12],'abs'),{m:['rt','rt','rt'],f:[]},'gems',3,1],
+    ['the gem, then the flag',W(4,['....','....','....','....'],0,1,3,[1],'abs'),{m:['rt','rt','rt'],f:[]},'win',3,1],
+    ['a wall bumps',W(4,['.#..','....','....','....'],0,1,3,[],'abs'),{m:['rt'],f:[]},'bump',0,1],
+    ['forward and turns',W(4,['....','....','....','....'],12,0,3,[]),{m:['fw','fw','fw','tr','fw','fw','fw'],f:[]},'win',3,1],
+    ['turn left from up faces left',W(4,['....','....','....','....'],13,0,12,[]),{m:['tl','fw'],f:[]},'win',12,3],
+    ['repeat 3',W(4,['....','....','....','....'],12,1,15,[]),{m:['r3','fw','en'],f:[]},'win',15,1],
+    ['repeat inside repeat',W(4,['....','....','....','....'],0,1,15,[]),{m:['r2','r3','fw','en','tr','en'],f:[]},'win',15,2],
+    ['repeat too far bumps at the edge',W(4,['....','....','....','....'],12,1,0,[]),{m:['r5','fw','en'],f:[]},'bump',15,1],
+    ['until wall stops at the wall',W(4,['....','...#','....','....'],4,1,0,[]),{m:['uw','fw','en'],f:[]},'short',6,1],
+    ['until wall: body runs while the way ahead is open',W(4,['....','....','....','....'],12,0,99,[]),{m:['uw','fw','en','tr','uw','fw','en'],f:[]},'short',3,1],
+    ['until wall that never meets a wall is dizzy',W(4,['....','....','....','....'],5,0,99,[]),{m:['uw','tl','tl','en'],f:[]},'dizzy',5,0],
+    ['empty loops do nothing',W(4,['....','....','....','....'],12,0,0,[]),{m:['r3','en','uw','en','fw'],f:[]},'short',8,0],
+    ['the function runs where it is called',W(4,['....','....','....','....'],12,1,3,[]),{m:['r3','fn','en'],f:['fw','tl','fw','tr']},'win',3,0],
+  ];
+  for(const[name,w,prog,out,c,d]of cases){
+    const r=RB.run(w,prog),s=sim(w,prog);
+    if(r.out!==out||r.c!==c||(d!=null&&r.d!==d))bad('RB.run '+name+': '+r.out+' at '+r.c+' facing '+r.d+', want '+out+' at '+c+(d!=null?' facing '+d:''));
+    if(s.out!==(out=='empty'?'short':out))bad('test simulator '+name+': '+s.out);
+  }
+  {
+    // the step list: which block ran, the loops around it, the call of the function; a bump names its block
+    const w=W(4,['....','....','....','....'],12,1,99,[]),r=RB.run(w,{m:['r2','fn','en','r9','fw','en'],f:['fw','tl']});
+    const st=r.steps;
+    if(st.length!==6||st[0].s!=='f'||st[0].i!==0||st[0].call!==1||JSON.stringify(st[0].L)!=='[["m",0],["m",1]]'||st[1].e!=='turn')bad('RB.run steps: '+JSON.stringify(st.slice(0,2)));
+    if(r.out!=='bump'||JSON.stringify(r.at)!=='{"s":"m","i":4,"call":-1}'||st[st.length-1].e!=='bump')bad('RB.run bump: '+r.out+' '+JSON.stringify(r.at));
+  }
+  // ---- editing and saved state ----
+  {
+    const w=B.make('robot','D',11,{day:'2026-6-15'}),sol=T.solve(w);
+    let s=RB.fresh();
+    for(const t of sol.m){s=t=='en'?RB.cursor(w,s,'m',s.ci+1):RB.add(w,s,t);if(!s){bad('editing: could not build '+sol.m.join(' '));break}}
+    if(s){s=RB.cursor(w,s,'f',0);for(const t of sol.f)s=s&&RB.add(w,s,t)}
+    if(!s||JSON.stringify([s.m,s.f])!==JSON.stringify([sol.m,sol.f]))bad('editing: built '+JSON.stringify(s&&[s.m,s.f]));
+    else{
+      if(RB.add(w,RB.cursor(w,s,'f',0),'r3'))bad('editing: a loop went into the function');
+      if(RB.add(w,s,'fw')&&blocks(s)>=w.slots)bad('editing: a block went in with every slot used');
+      const back=RB.fit(JSON.parse(JSON.stringify(Object.assign({},s,{miss:2,runs:5,h:[[[],[],'m',0]]}))),w);
+      if(!back||JSON.stringify([back.m,back.f,back.cs,back.ci,back.miss,back.runs])!==JSON.stringify([s.m,s.f,'f',s.f.length,2,5])||back.h.length!==1)bad('saved state round trip: '+JSON.stringify(back));
+      const dmg=[['null',null],['a string','x'],['an unclosed loop',Object.assign({},s,{m:['r2','fw']})],['an end too many',Object.assign({},s,{m:['fw','en']})],
+        ['an unknown block',Object.assign({},s,{m:['jump']})],['an arrow in a band D world',Object.assign({},s,{m:['up']})],['until wall on a function level',Object.assign({},s,{m:['uw','fw','en']})],
+        ['loops three deep',Object.assign({},s,{m:['r2','r2','r2','fw','en','en','en']})],['a loop in the function',Object.assign({},s,{f:['r2','fw','en']})],
+        ['five blocks in the function',Object.assign({},s,{f:['fw','fw','fw','fw','fw']})],['too many blocks',Object.assign({},s,{m:Array(12).fill('fw')})],
+        ['the cursor outside',Object.assign({},s,{ci:99})],['mistakes not a number',Object.assign({},s,{miss:'x'})],['negative mistakes',Object.assign({},s,{miss:-1})]];
+      for(const[m,x]of dmg)if(RB.fit(x,w))bad('a damaged state fits ('+m+')');
+      const c=B.make('robot','C',3,{day:'2026-6-15'});
+      if(RB.fit(Object.assign({},s,{f:[],m:['fn']}),c))bad('a damaged state fits (the function on a band C level)');
+    }
+  }
+  // ---- hints from wrong programs: tiers 1-2 (diverge) change nothing, tier 3 makes the program agree further, and they lead to a win ----
+  let hn=0;
+  for(const band of 'ABCD')for(const lv of[2,6,11]){
+    const w=B.make('robot',band,lv,{day:'2026-6-15'}),sol=T.solve(w),toks=RB.kitTokens(w.kit).filter(t=>t!='en'&&!/^r/.test(t)&&t!='uw');
+    for(let k=0;k<6;k++){
+      // a right start, then a wrong block
+      const cut=Math.min(sol.m.length,k),m=sol.m.slice(0,cut);
+      let s=Object.assign(RB.fresh(),{m:m.concat(Array(RB.depthAt(m,m.length)).fill('en')),ci:cut,f:k%2?sol.f.slice():[]});
+      const wrong=toks.find(t=>t!==sol.m[cut]&&t!=='fn');if(wrong&&blocks(s)<w.slots)s=RB.add(w,s,wrong)||s;
+      for(let step=0;step<40;step++){
+        const dv=RB.diverge(w,s);if(dv.kind=='works')break;
+        if(dv.kind=='fix'&&dv.want!=null&&s[dv.s][dv.i]==null)bad(band+lv+': tier 1 points at nothing');
+        const s2=RB.applyHint(w,s,dv);if(!s2){bad(band+lv+' #'+k+': tier 3 gave nothing for '+JSON.stringify(dv)+' on '+s.m.join(' '));break}
+        s=s2;hn++;
+      }
+      if(sim(w,s).out!=='win')bad(band+lv+' #'+k+': hints from a wrong program do not lead to a win ('+s.m.join(' ')+' / '+s.f.join(' ')+')');
+    }
+  }
+  // ---- difficulty grows: longer routes and more blocks band by band, and longer routes later in each band ----
+  for(const b of 'ABCD'){stat[b].par/=stat[b].n;stat[b].mv/=stat[b].n;const L=stat[b].lv,a=(L[0]+L[1]+L[2])/3,z=(L[9]+L[10]+L[11])/3;
+    if(!(z>a*1.3))bad('band '+b+': the last levels are not longer ('+a.toFixed(1)+' -> '+z.toFixed(1)+(b<'C'?' moves)':' blocks)'))}
+  for(const[a,b]of[['A','B'],['B','C'],['C','D']])if(!(stat[b].mv>stat[a].mv*1.2))bad('runs do not grow from '+a+' to '+b+': '+stat[a].mv.toFixed(1)+' -> '+stat[b].mv.toFixed(1)+' actions');
+  if(!(stat.B.par>stat.A.par))bad('par does not grow from A to B');
+  if(B.rate(0,RB.ALLOW+1,T.allow)!==2||B.rate(0,RB.ALLOW,T.allow)!==3)bad('a program longer than par should cap the stars at 2');
+  const avg=abn?ms/abn:0;if(avg>5)bad('make() takes '+avg.toFixed(1)+' ms on average in bands A and B');
+  return{problems:p,note:n+' worlds (4 bands x 12 levels x 24 days); mean run A '+stat.A.mv.toFixed(1)+', B '+stat.B.mv.toFixed(1)+', C '+stat.C.mv.toFixed(1)+', D '+stat.D.mv.toFixed(1)+
+    ' actions, par '+['A','B','C','D'].map(b=>stat[b].par.toFixed(1)).join('/')+'; '+searched+' bank worlds proven by search in '+(searchMs/1000).toFixed(1)+' s; '+hn+' hint steps from wrong programs; '+
+    cases.length+' interpreter cases; make A/B '+avg.toFixed(2)+' ms'};
+  };
+  return eval(js+';('+body.toString()+')()');
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){
