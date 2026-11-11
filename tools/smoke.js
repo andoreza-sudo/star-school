@@ -1195,6 +1195,87 @@ async function main() {
       await ca.ctx.close();
     }
 
+    // P4-05 pet rig at 380x780 (midway: dragon, 85 stars = kid, top hat and balloon): the drawn dragon on Home with its hat
+    //    and toy, tapping it shows the cheer face; Pet Care shows the hungry mood and the bath the oops face; the map pet and
+    //    the round runner are drawn, a right answer shows the cheer face; the growth overlay; super stage; reduced motion
+    //    and calm stop the loops; a dino child still sees exactly today's emoji pet; setup offers the drawn dragon.
+    {
+      const pr = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
+      const pp = pr.page;
+      const opa = sel => pp.evaluate(s => { const e = document.querySelector(s); return e ? +getComputedStyle(e).opacity : -1; }, sel);
+      await pp.evaluate(() => { S.care = { food: 90, clean: 90, fun: 90, t: Date.now(), gift: '' }; home(); });
+      const h = await pp.evaluate(() => {
+        const pet = document.querySelector('#pet'), svg = pet && pet.querySelector('.pet-svg'), r = svg && svg.getBoundingClientRect();
+        return { cls: svg && svg.getAttribute('class'), rig: pet.classList.contains('rig'), filter: getComputedStyle(pet).filter,
+          hat: (svg.querySelector('.pw-hat') || {}).textContent, toy: (svg.querySelector('.pw-toy') || {}).textContent,
+          w: r && Math.round(r.width), right: r && r.right, sw: document.documentElement.scrollWidth };
+      });
+      if (h.cls !== 'pet-svg pet-k-dragon pet-s-kid pet-m-happy' || !h.rig || h.filter !== 'none' || h.hat !== '🎩' || h.toy !== '🎈' ||
+        !(h.w >= 70 && h.w <= 130) || h.right > 380 || h.sw > 380) fail('P4-05 home pet: ' + JSON.stringify(h));
+      await pp.click('#pet');
+      const cheer = await opa('#pet .pf-cheer'), base = await opa('#pet .pf-base');
+      await pp.waitForTimeout(700);
+      const after = await opa('#pet .pf-base');
+      if (cheer !== 1 || base !== 0 || after !== 1) fail('P4-05 tap: cheer face ' + [cheer, base, after]);
+      // Pet Care: hungry face; a snack makes it idle again; the bath shows the oops face
+      await pp.evaluate(() => { S.care = { food: 10, clean: 90, fun: 90, t: Date.now(), gift: '' }; home(); });
+      await pp.click('#care');
+      await pp.waitForSelector('#pet .pet-m-hungry', { timeout: 3000 });
+      await pp.click('[data-f="0"]');
+      await pp.waitForSelector('#pet .pet-m-idle', { timeout: 4000 });
+      await pp.click('#bath');
+      const oops = await opa('#pet .pf-oops');
+      if (oops !== 1) fail('P4-05 bath: oops face opacity ' + oops);
+      await pp.waitForTimeout(1500);
+      // map pet and round runner
+      const mr = await pp.evaluate(() => {
+        pathMap('math');
+        const m = document.querySelector('.mappet .pet-svg'), r = m && m.getBoundingClientRect();
+        return { m: !!m, h: r && Math.round(r.height), pos: m && getComputedStyle(m).position };
+      });
+      if (!mr.m || !(mr.h >= 40) || mr.pos !== 'static') fail('P4-05 map pet: ' + JSON.stringify(mr));
+      await pp.evaluate(() => start('math', 0));
+      await pp.waitForSelector('#runner .pet-svg');
+      await answer(pp);
+      const rc = await opa('#runner .pf-cheer');
+      if (rc !== 1) fail('P4-05 runner: cheer face after a right answer ' + rc);
+      await pp.evaluate(() => { G.dead = true; });
+      // growth overlay: the egg wobbles, then the kid dragon appears
+      await pp.evaluate(() => growShow(10));
+      const g1 = await pp.evaluate(() => (document.querySelector('.ovl .grow .pet-svg') || { getAttribute: () => '' }).getAttribute('class'));
+      await pp.waitForSelector('#yay', { timeout: 4000 });
+      const g2 = await pp.evaluate(() => (document.querySelector('.ovl .grown .pet-svg') || { getAttribute: () => '' }).getAttribute('class'));
+      await pp.click('#yay');
+      if (!/pet-s-egg/.test(g1) || !/pet-s-kid/.test(g2)) fail('P4-05 growth overlay: ' + g1 + ' / ' + g2);
+      // super stage, reduced motion and calm
+      const sup = await pp.evaluate(() => { const s = S.stars; S.stars = 300; home(); const c = document.querySelector('#pet .pet-svg').getAttribute('class'); S.stars = s; home(); return c; });
+      if (!/pet-s-grown/.test(sup) || !/pet-super/.test(sup)) fail('P4-05 super: ' + sup);
+      const dur = () => pp.evaluate(() => parseFloat(getComputedStyle(document.querySelector('#pet .pg-fig')).animationDuration));
+      const d0 = await dur();
+      await pp.emulateMedia({ reducedMotion: 'reduce' });
+      const d1 = await dur();
+      await pp.emulateMedia({ reducedMotion: 'no-preference' });
+      await pp.evaluate(() => document.documentElement.classList.add('calm'));
+      const d2 = await dur();
+      await pp.evaluate(() => document.documentElement.classList.remove('calm'));
+      if (!(d0 >= 2) || !(d1 < .01) || !(d2 < .01)) fail('P4-05 motion: idle ' + d0 + 's, reduced ' + d1 + 's, calm ' + d2 + 's');
+      // a dino child keeps today's emoji pet; setup offers the drawn dragon next to the emoji pets
+      const dino = await pp.evaluate(() => {
+        S.pet = 'dino'; home();
+        const pet = document.querySelector('#pet');
+        const r = { e: (pet.querySelector('.pe') || {}).textContent, svg: !!pet.querySelector('svg'), cls: pet.className, hat: (pet.querySelector('.hat') || {}).textContent };
+        S.pet = 'dragon'; S.name = ''; home();
+        r.setup = [...document.querySelectorAll('.petopt')].map(b => b.dataset.p + ':' + (b.querySelector('.pet-svg') ? 'svg' : b.querySelector('span').textContent));
+        return r;
+      });
+      if (dino.e !== '🦕' || dino.svg || dino.cls !== 'petbig ' || dino.hat !== '🎩' || dino.setup.join() !== 'dragon:svg,dino:🦖,bird:🦅,ocean:🐳')
+        fail('P4-05 other pets / setup: ' + JSON.stringify(dino));
+      else step('P4-05: drawn dragon on Home (hat + toy, cheer on tap), Pet Care moods, map and runner, growth, super, reduced motion and calm; dino unchanged');
+      network.push(...pr.network);
+      for (const e of pr.errors) fail(e);
+      await pr.ctx.close();
+    }
+
     for (const e of errors) fail(e);
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');

@@ -9,7 +9,7 @@ function setup(){let pet=S.pet,grade=gradeOf();
   view(`<div class="center setup"><h1>⭐ Star School</h1>
   <div class="card"><div class="sub" style="margin-bottom:8px">What's your name?</div><input class="name" id="nm" value="${esc(S.name)}" placeholder="Your name"></div>
   <div class="card"><div class="sub" style="margin-bottom:8px">Pick a pet egg to hatch!</div>
-   <div class="pets">${Object.entries(PETS).map(([k,p])=>`<button class="btn petopt ${k==pet?'sel':''}" data-p="${k}"><span>${p.s[3]}</span>${p.n}</button>`).join('')}</div>
+   <div class="pets">${Object.entries(PETS).map(([k,p])=>`<button class="btn petopt ${k==pet?'sel':''}" data-p="${k}"><span>${petPick(k)}</span>${p.n}</button>`).join('')}</div>
    <input class="name" id="pn" style="margin-top:12px;width:100%" value="${esc(S.petName)}" placeholder="Name your pet (${PETS[pet].def})"></div>
   <div class="card"><div class="sub" style="margin-bottom:8px">What grade? <span class="small">(Grown-ups can change this later)</span></div>${gradePickHTML(grade)}</div>
   <button class="btn big" id="go">Let's go! 🚀</button></div>`);
