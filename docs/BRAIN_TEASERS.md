@@ -274,6 +274,24 @@ Generator: A-B: random self-avoiding walk from start; walls placed off the path;
 
 **Copy Cat**: watch the pads light in order, repeat. Sequence grows by one each turn. Each pad has a colour, a shape and a tone (never colour alone). Band D adds "backwards" mode. Star thresholds: sequence length 4 / 6 / 8 (scaled by band).
 
+As built (P3-14, `src/js/81-bt-riddle.js`, `82-bt-memory.js`, `83-bt-copycat.js`; data `src/data/d-riddles.js` and `d-memory.js`):
+- Riddles (`riddle`): 36 per band, easiest first (format `{q, a, d: [...], h: [nudge, strong clue]}`; bands A and B name pictures,
+  `RIDDLES.pics` gives the emoji fallback for `picFor`). Level L plays riddles 3(L-1) to 3L-1, so the band's set is used up before a
+  riddle repeats; the seeded rnd shuffles the choices. A: 3 picture choices, read aloud by itself; B: 4 choices, picture and word;
+  C: wordplay, 4 words; D: lateral and number riddles, 4 choices. Hints per riddle: nudge, strong clue, then all wrong choices but one go.
+  A wrong choice turns amber and counts one mistake (`allow` 1). The test checks the answer (also as a number word) is in neither the
+  riddle nor its hints, choices differ, reading length per band (words per sentence grows A to D), BAD, pictures allow-listed.
+- Memory Match (`memory`): A 3 pairs (levels 1-6), 4 (7-12); B 6; C 8; D 10. Kinds by level tier (1-4 / 5-8 / 9-12): A same picture,
+  same picture, big and small letter; B number and dots (1-6), word and picture, number and dots (4-10); C fraction and circle,
+  Spanish and English (SPN), synonyms; D equal fractions, fraction / decimal / percent, word root and meaning. Values in a puzzle are all
+  different, so each card has exactly one partner. Face-down cards hold no face in the page. A "slip" is a miss when the partner of
+  the first card, or the second card, had been seen; the win reports the slips over the band's free ones (A 0, B 1, C 2, D 3), `allow` 1.
+  Hints: peek one card, show one pair, match one pair.
+- Copy Cat (`copycat`): A 4 pads from length 1 to 3 / 4 / 5; B 4 pads from 2 to 4 / 5 / 6, faster; C 6 pads from 2 to 5 / 6 / 7;
+  D 6 pads from 3 to 7 forward, then 5 and 6 backwards (levels 5-12). The "4 / 6 / 8" star thresholds became these target lengths
+  (the frame's stars count hints and mistakes). A wrong pad: amber ring, "Oops! Watch again.", the round shown again a little slower
+  (one mistake, `allow` 2). Hints: the round again slower, the next pad ringed, the next pad tapped for the child.
+
 ### 5.10 Word Search and Unscramble (stretch)
 
 **Word Search**: words come from the child's grade spelling list (5 to 10 words). Place words in allowed directions (B: left-to-right; C: + down and diagonal; D: + backwards), overlaps allowed when letters agree; fill the rest with letters weighted by English frequency. Post-checks: each target word appears exactly once in any direction; no entry of the bad-word list appears in any line in either direction. Drag to select; found words are struck off and spoken.

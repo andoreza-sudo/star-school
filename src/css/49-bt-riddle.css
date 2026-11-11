@@ -1,0 +1,55 @@
+/* Brain Teasers: Riddles (P3-14, src/js/81-bt-riddle.js). Tokens only; motion is transform and opacity (the .choice component). */
+.rd{display:flex;flex-direction:column;gap:var(--s-3);width:100%;max-width:760px;min-height:100%;margin:0 auto}
+/* the riddle card: a question badge on a ledge, the dots, the riddle, a speak button */
+.rd-card{display:flex;align-items:flex-start;gap:var(--s-3);padding:var(--s-3) var(--s-3) var(--s-4);border-radius:var(--r-card);background:var(--surface);
+  box-shadow:inset 0 0 0 2px var(--bt-tint),0 4px 0 var(--ledge-soft)}
+.rd-badge{flex:none;display:flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:50%;background:var(--bt);color:var(--surface);
+  box-shadow:0 4px 0 var(--bt-shade)}
+.rd-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:var(--s-2)}
+.rd-dots{display:flex;gap:6px;padding-top:2px}
+.rd-dots i{width:12px;height:12px;border-radius:50%;background:var(--surface);box-shadow:inset 0 0 0 3px var(--bt-tint)}
+.rd-dots i.now{box-shadow:inset 0 0 0 3px var(--bt)}
+.rd-dots i.on{background:var(--bt);box-shadow:none}
+.rd-q{margin:0;font-size:var(--fs-4);font-weight:700;line-height:1.35;color:var(--ink)}
+.rd-A .rd-q,.rd-B .rd-q{font-size:clamp(22px,4.4vw,28px)}
+.rd-say{flex:none}
+/* hint and answer lines */
+.rd-tip{display:flex;align-items:center;gap:var(--s-2);margin:0;padding:var(--s-2) var(--s-4);border-radius:var(--r-btn);background:var(--star-tint);
+  color:var(--ink);font-size:var(--fs-3);font-weight:700;line-height:1.35;box-shadow:0 3px 0 var(--star)}
+.rd-tip[hidden]{display:none}
+.rd-tip .ic{flex:none;color:var(--star-shade)}
+.rd-msg{min-height:26px;margin:0;font-size:var(--fs-3);font-weight:700;line-height:1.35;color:var(--ink-2);text-align:center}
+.rd-msg.good{color:var(--good-ink)}
+.rd-msg.try{color:var(--try-ink)}
+/* choices */
+.rd-chs{display:grid;gap:var(--s-3);width:100%;margin-top:auto;padding-bottom:var(--s-2)}
+.rd-chs.n3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.rd-chs.n4{grid-template-columns:repeat(2,minmax(0,1fr))}
+.rd-ch.choice{min-height:var(--tap-pk);padding:var(--s-2) var(--s-3);font-size:var(--fs-4);font-weight:700;line-height:1.2}
+.rd-t{overflow-wrap:break-word;text-align:center}
+.rd-ch.pic{flex-direction:column;gap:var(--s-1);min-height:120px}
+.rd-pic{display:flex;align-items:center;justify-content:center;font-size:clamp(64px,18vw,104px);line-height:1}
+.rd-pic .art{width:1em;height:1em}
+.rd-w{font-size:var(--fs-4);line-height:1.1;color:var(--ink)}
+.rd-B .rd-ch.pic{min-height:136px}
+.rd-B .rd-pic{font-size:clamp(52px,12vw,72px)}
+.rd-A .rd-ch.pic{min-height:min(168px,24vh)}
+.rd-C .rd-ch.choice{min-height:76px}
+.rd-ch:is(.right,.wrong)::before,.rd-ch.wrong::after{transform:scale(.8);transform-origin:top right}
+.rd-ch.right::after{transform:rotate(45deg) scale(.8)}
+/* phones: band D's longer answers one under the other */
+@media (max-width:560px){
+  .rd-D .rd-chs.n4{grid-template-columns:1fr}
+  .rd-D .rd-ch.choice{min-height:56px;font-size:var(--fs-3)}
+  .rd-D .rd-q{font-size:var(--fs-3)}
+  .rd-A .rd-q,.rd-B .rd-q{font-size:var(--fs-4)}
+  .rd-badge{width:44px;height:44px}
+}
+/* landscape tablets: the riddle on the left, the choices on the right */
+@media (orientation:landscape) and (min-width:700px){
+  .rd{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto auto 1fr;column-gap:var(--s-6);max-width:1000px}
+  .rd-card,.rd-tip,.rd-msg{grid-column:1}
+  .rd-chs{grid-column:2;grid-row:1 / span 3;align-self:center;margin:0}
+  .rd-chs.n3{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .rd-A .rd-ch.pic{min-height:150px}
+}

@@ -38,3 +38,9 @@
 /* P3-07: the answer in words on the win card (api.win note) */
 .bt-sum{max-width:420px;margin:var(--s-2) auto 0;padding:var(--s-2) var(--s-3);list-style:none;border-radius:var(--r-card);background:var(--bt-tint);color:var(--bt-shade);font-size:var(--fs-2);font-weight:700;line-height:1.35;text-align:left}
 .bt-sum li+li{margin-top:2px}
+/* P3-14: on a short landscape screen (1024x600) the win card leaves out its big disc and can scroll, so Again and Levels stay on screen */
+@media (max-height:640px){
+  .bt-win .rw-card{overflow-y:auto;padding:var(--s-3) var(--s-5)}
+  .bt-win .gx-disc{display:none}
+  .bt-win .rw-card h1{margin-top:0}
+}

@@ -10928,6 +10928,241 @@ run('Discover 3-6, geography and civics P2-37: banks validate, grade and topic t
   return{problems:serrs,note:r.items+' new items ('+sum.join(' ')+'), '+r.questions+' questions, '+r.checked+' save checks'};
 });
 
+run('riddles, memory, copy cat P3-14',()=>{
+  const ALLOW=fs.readFileSync(path.join(__dirname,'emoji-allow.txt'),'utf8').split('\n').filter(l=>l.trim()&&!l.startsWith('#')).map(l=>l.split('#')[0].trim().replace(/️/g,''));
+  const BUILT=PART_FILES.map(f=>fs.existsSync(path.join(ROOT,f))?fs.readFileSync(path.join(ROOT,f),'utf8'):'').join('');
+  const DATA=fs.existsSync(path.join(ROOT,DATA_FILE))?fs.readFileSync(path.join(ROOT,DATA_FILE),'utf8'):'';
+  const body=function(){
+    const out=[],bad=m=>{if(out.length<40&&!out.includes(m))out.push(m)};
+    const stat={rd:0,mm:0,cc:0,ms:0,n:0,words:{},pairs:{},len:{},on:{}};
+    const J=JSON.stringify,days=['2026-6-1','2026-6-2','2026-6-3','2026-6-4','2026-6-5'];
+    for(const id of ['riddle','memory','copycat']){
+      const T=BT.get(id);
+      if(!T){bad(id+' is not registered');continue}
+      if(T.bands!=='ABCD'||BT.nLevels(T,'A')!==12||!ICONS[T.icon])bad(id+': bands '+T.bands+', icon '+T.icon);
+    }
+    if(out.length)return{out,stat};
+    const timed=(id,b,l,o)=>{const t0=Date.now(),p=BT.make(id,b,l,o);stat.ms+=Date.now()-t0;stat.n++;return p};
+
+    // ---- 1. the riddle bank ----
+    const NUMW=['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen','twenty'];
+    const norm=s=>String(s).toLowerCase().replace(/^(a|an|the|your|just)\s+/,'').replace(/[.!?]$/,'').trim();
+    const sing=s=>s.replace(/(es|s)$/,'');
+    const words=s=>String(s).toLowerCase().match(/[a-z0-9]+(?:[.,][0-9]+)*/g)||[];
+    // the answer as a whole word or phrase in a text (numbers also as number words, 0 to 20)
+    const has=(text,ans)=>{
+      const t=' '+words(text).join(' ')+' ',a=words(norm(ans)).join(' ');
+      if(!a)return false;
+      const forms=[a,sing(a)];
+      if(/^\d+$/.test(a)&&+a<=20)forms.push(NUMW[+a]);
+      const k=NUMW.indexOf(a);if(k>=0)forms.push(String(k));
+      return forms.some(f=>f.length>0&&t.includes(' '+f+' '));
+    };
+    const LIM={A:[10,24],B:[14,30],C:[18,36],D:[24,50]},CH={A:3,B:4,C:4,D:4},perSent={};
+    const sents=q=>q.split(/(?<=[.?!])\s+/).map(s=>s.split(/\s+/).filter(Boolean).length).filter(Boolean);
+    const allQ=new Set();
+    for(const b of 'ABCD'){
+      const L=RIDDLES[b];
+      if(!Array.isArray(L)||L.length<30){bad('riddles '+b+': '+(L&&L.length)+' (at least 30)');continue}
+      let sw=0,sn=0;
+      L.forEach((r,i)=>{
+        const w='riddle '+b+(i+1);
+        if(typeof r.q!=='string'||typeof r.a!=='string'||!Array.isArray(r.d)||!Array.isArray(r.h)||r.h.length!==2)return bad(w+': shape');
+        if(r.d.length!==CH[b]-1)bad(w+': '+r.d.length+' wrong choices (want '+(CH[b]-1)+')');
+        const ch=[r.a,...r.d],nn=ch.map(c=>sing(norm(c)));
+        if(new Set(nn).size!==ch.length)bad(w+': choices not all different '+ch);
+        for(const x of r.ok||[])if(r.d.some(d=>sing(norm(d))===sing(norm(x))))bad(w+': a wrong choice is also a fair answer ('+x+')');
+        const said=b<'C'?(RIDDLES.names[r.a]||r.a):r.a;
+        if(has(r.q,said))bad(w+': the answer "'+said+'" is in the riddle');
+        r.h.forEach((h,k)=>{if(has(h,said))bad(w+': the answer "'+said+'" is in hint '+(k+1));if(!/[.?!]$|\.\.\.$/.test(h)||h.split(/\s+/).length>24)bad(w+': hint '+(k+1)+' "'+h+'"')});
+        if(r.h[0]===r.h[1])bad(w+': both hints the same');
+        if(!/\?$/.test(r.q))bad(w+': the riddle does not end with a question');
+        if(allQ.has(r.q))bad(w+': the same riddle twice');allQ.add(r.q);
+        const s=sents(r.q),tot=s.reduce((x,y)=>x+y,0);
+        if(Math.max(...s)>LIM[b][0]||tot>LIM[b][1])bad(w+': too long for band '+b+' ('+Math.max(...s)+' words in a sentence, '+tot+' in all)');
+        sw+=tot;sn+=s.length;
+        for(const t of [r.q,...r.h,...ch])for(const x of words(t))if(BAD.test(x))bad(w+': BAD word '+x);
+        if(/[<>&]/.test(r.q+ch.join('')+r.h.join('')))bad(w+': markup characters');
+        if(b<'C')for(const c of ch){
+          const e=RIDDLES.pics[c];
+          if(!/^[a-z]+(-[a-z]+)*$/.test(c))bad(w+': picture name '+c);
+          if(!e)bad(w+': no picture for '+c);
+          else if(!ALLOW_.includes(e.replace(/️/g,'')))bad(w+': '+c+' emoji '+e+' not in tools/emoji-allow.txt');
+        }
+        else for(const c of ch)if(c.length>(b==='C'?20:32))bad(w+': choice too long "'+c+'"');
+      });
+      perSent[b]=sw/sn;stat.words[b]=+(sw/sn).toFixed(1);
+    }
+    if(!(perSent.A<perSent.B&&perSent.B<perSent.C&&perSent.C<perSent.D))bad('riddle reading does not grow by band (words per sentence '+J(stat.words)+')');
+
+    // ---- 2. riddle puzzles: make, solve, hints, state ----
+    for(const b of 'ABCD'){
+      const used=new Set();
+      for(const day of days)for(let l=1;l<=12;l++){
+        const w='riddle '+b+l+' '+day,p=timed('riddle',b,l,{day});stat.rd++;
+        if(J(BT.make('riddle',b,l,{day}))!==J(p))bad(w+': make() is not deterministic');
+        if(p.items.length!==3)bad(w+': '+p.items.length+' riddles');
+        p.items.forEach((it,j)=>{
+          const r=RIDDLES[b][it.k];
+          if(it.k!==3*(l-1)+j)bad(w+': riddle '+j+' is bank entry '+it.k);
+          if(day===days[0])used.add(it.k);
+          if(it.q!==r.q||it.ch[it.a]!==r.a||J([...it.ch].sort())!==J([r.a,...r.d].sort())||J(it.h)!==J(r.h))bad(w+': riddle '+j+' is not the bank riddle');
+          // hint tiers: 1 and 2 are the bank's words, 3 leaves the answer and one wrong choice
+          const s=RDL.fresh();
+          if(RDL.hintFor(it,s,1).text!==r.h[0]||RDL.hintFor(it,s,2).text!==r.h[1])bad(w+': hint words');
+          const t3=RDL.hintFor(it,s,3).take;
+          if(t3.length!==it.ch.length-2||t3.includes(it.a)||new Set(t3).size!==t3.length)bad(w+': hint 3 takes '+t3);
+          const wr=(it.a+1)%it.ch.length,s2={i:0,miss:1,h:0,x:[wr],g:[]},t3b=RDL.hintFor(it,s2,3).take;
+          if(t3b.length!==it.ch.length-3||t3b.includes(it.a)||t3b.includes(wr))bad(w+': hint 3 after a wrong tap takes '+t3b);
+        });
+        if(J(BT.get('riddle').solve(p))!==J(p.items.map(it=>it.a)))bad(w+': solve()');
+        // saved state: fresh and played states fit after a JSON round trip; damaged ones do not
+        const it=p.items[1],wr=(it.a+1)%it.ch.length,ok=[RDL.fresh(),{i:1,miss:2,h:1,x:[wr],g:[]},{i:2,miss:0,h:3,x:[],g:[(p.items[2].a+1)%p.items[2].ch.length]}];
+        for(const s of ok)if(!RDL.fit(p,JSON.parse(J(s))))bad(w+': a good state does not fit '+J(s));
+        for(const s of [null,[],'x',{i:3,miss:0,h:0,x:[],g:[]},{i:1,miss:-1,h:0,x:[],g:[]},{i:1,miss:0,h:0,x:[it.a],g:[]},{i:1,miss:0,h:1,x:[],g:[wr]},
+          {i:1,miss:0,h:0,x:[wr,wr],g:[]},{i:1,miss:0,h:4,x:[],g:[]},{i:'1',miss:0,h:0,x:[],g:[]},{i:1,miss:0,h:0,x:[9],g:[]}])
+          if(RDL.fit(p,s))bad(w+': a damaged state fits '+J(s));
+      }
+      if(used.size!==RIDDLES[b].length)bad('riddles '+b+': levels 1-12 use '+used.size+' of '+RIDDLES[b].length+' riddles');
+    }
+
+    // ---- 3. memory: layouts, exact pairs, one partner per card, solve, slips, hints, state ----
+    const MW={};
+    MEMW.syn.forEach(([a,c],i)=>{MW['syn:'+a]=MW['syn:'+c]='s'+i});
+    MEMW.roots.forEach(([a,c],i)=>{MW['root:'+a]=MW['root:'+c]='r'+i});
+    SPN.animal.concat(SPN.food).forEach(([es,en])=>{MW['es:'+es]=MW['es:'+en]='e'+en});
+    const synW=MEMW.syn.flat(),rootM=MEMW.roots.map(r=>r[1]);
+    if(new Set(synW).size!==synW.length)bad('MEMW.syn has a word twice');
+    if(new Set(rootM).size!==rootM.length||new Set(MEMW.roots.map(r=>r[0])).size!==MEMW.roots.length)bad('MEMW.roots has a root or meaning twice');
+    for(const [k,L] of Object.entries(MEMW.themes))for(const x of L)if(!RIDDLES.pics[x])bad('MEMW.themes.'+k+': no picture for '+x);
+    // the test's own reading of a face: two cards match exactly when their values are equal
+    const val=(f,kind)=>{
+      if(f.t==='pic')return 'w:'+(RIDDLES.names[f.w]||f.w);
+      if(f.t==='txt'&&kind==='word')return 'w:'+f.s;
+      if(f.t==='let')return 'l:'+f.s.toUpperCase();
+      if(f.t==='num')return 'n:'+(+f.s);
+      if(f.t==='dots')return 'n:'+f.n;
+      if(f.t==='fr'||f.t==='fpic')return 'v:'+(f.n/f.d).toFixed(6);
+      if(f.t==='dec')return 'v:'+(+f.s).toFixed(6);
+      if(f.t==='pct')return 'v:'+(parseFloat(f.s)/100).toFixed(6);
+      if(f.t==='txt')return MW[kind+':'+f.s]||'?'+f.s;
+      return '?';
+    };
+    const NP={A:[3,4],B:[6,6],C:[8,8],D:[10,10]},KIND={A:['pic','pic','abc'],B:['dots','word','dots10'],C:['frac','es','syn'],D:['eqf','fdp','root']};
+    for(const b of 'ABCD'){
+      let sum=0,cnt=0;
+      for(const day of days)for(let l=1;l<=12;l++){
+        const w='memory '+b+l+' '+day,p=timed('memory',b,l,{day});stat.mm++;
+        if(J(BT.make('memory',b,l,{day}))!==J(p))bad(w+': make() is not deterministic');
+        const want=l<=6?NP[b][0]:NP[b][1];
+        if(p.n!==want||p.faces.length!==want||p.cards.length!==2*want)bad(w+': '+p.n+' pairs (want '+want+')');
+        if(p.kind!==KIND[b][l<=4?0:l<=8?1:2])bad(w+': kind '+p.kind);
+        sum+=p.n;cnt++;
+        // exact pairs: each pair id twice, once per side
+        const seen={};
+        p.cards.forEach(([k,sd])=>{(seen[k]=seen[k]||[]).push(sd)});
+        if(Object.keys(seen).length!==p.n||Object.values(seen).some(v=>J(v.slice().sort())!=='[0,1]'))bad(w+': cards are not exact pairs');
+        // one partner per card: equal values come exactly in twos, and they are the pair
+        const vals=p.cards.map(([k,sd])=>val(p.faces[k][sd],p.kind)),byV={};
+        vals.forEach((v,i)=>{if(v[0]==='?')bad(w+': cannot read card '+J(p.faces[p.cards[i][0]][p.cards[i][1]]));(byV[v]=byV[v]||[]).push(i)});
+        for(const [v,ix] of Object.entries(byV))if(ix.length!==2||p.cards[ix[0]][0]!==p.cards[ix[1]][0])bad(w+': value '+v+' on '+ix.length+' cards');
+        if(p.kind==='pic'&&p.faces.some(f=>J(f[0])!==J(f[1])))bad(w+': picture pairs differ');
+        if(p.kind!=='pic'&&p.faces.some(f=>f[0].t===f[1].t&&!['fr','txt','let'].includes(f[0].t)))bad(w+': a concept pair shows the same kind twice');
+        for(const f of p.faces.flat())if(f.t==='txt'&&f.s.length>9)bad(w+': word too long for a card '+f.s);
+        // solve() matches them all, one turn a pair, no slip
+        let s=MM.fresh();
+        for(const [a,c] of MM.solve(p)){
+          const r1=MM.pick(p,s,a),r2=MM.pick(p,r1.s,c);
+          if(r1.ev!=='first'||r2.ev!=='match')bad(w+': solve() pair '+a+','+c+' gives '+r1.ev+'/'+r2.ev);
+          s=r2.s;
+        }
+        if(!MM.done(p,s)||s.turns!==p.n||s.slips!==0||MM.mistakes(p,s)!==0)bad(w+': solve() does not finish cleanly '+J({t:s.turns,sl:s.slips}));
+        if(day!==days[0])continue;
+        // slips: a first miss of two unseen cards is free; flipping a seen card that is not the partner is a slip
+        const sol=MM.solve(p),[a0,a1]=sol[0],[b0,b1]=sol[1];
+        let t=MM.fresh();
+        t=MM.pick(p,t,a0).s;let r=MM.pick(p,t,b0);
+        if(r.ev!=='miss'||r.slip||r.s.slips!==0||J(r.s.up)!==J([a0,b0]))bad(w+': a first miss '+J(r));
+        t=MM.settle(r.s);
+        if(t.up.length)bad(w+': settle() leaves cards up');
+        t=MM.pick(p,t,a0).s;r=MM.pick(p,t,b0);
+        if(r.ev!=='miss'||!r.slip||r.s.slips!==1)bad(w+': flipping a seen card again is not a slip');
+        t=MM.pick(p,MM.settle(r.s),b1).s;r=MM.pick(p,t,b0);
+        if(r.ev!=='match'||r.s.turns!==3)bad(w+': the seen partner does not match');
+        if(MM.pick(p,r.s,b0).ev!=='none')bad(w+': a matched card can be picked');
+        // hints: 1 peeks one card, 2 shows a pair, 3 matches a pair; 1 and 2 change only what was seen
+        const h0=MM.pick(p,MM.fresh(),a0).s;
+        const h1=MM.hint(p,h0,1),h2=MM.hint(p,h0,2),h3=MM.hint(p,h0,3);
+        if(!h1||J(h1.show)!==J([a1])||h1.s.m.length||h1.s.turns!==0||J(h1.s.up)!==J([a0]))bad(w+': hint 1 with a card up should peek its partner '+J(h1&&h1.show));
+        if(!h2||h2.s.m.length||h2.s.turns!==0)bad(w+': hint 2 changed the board');
+        if(!h3||J(h3.match.slice().sort((x,y)=>x-y))!==J([a0,a1].sort((x,y)=>x-y))||h3.s.m.length!==2||h3.s.up.length||h3.s.hm.length!==2)bad(w+': hint 3 with a card up should match its pair');
+        const g2=MM.hint(p,MM.fresh(),2);
+        if(!g2||g2.show.length!==2||p.cards[g2.show[0]][0]!==p.cards[g2.show[1]][0])bad(w+': hint 2 does not show a pair');
+        let hs=MM.fresh(),k=0;
+        while(!MM.done(p,hs)&&k++<20){const x=MM.hint(p,hs,3);if(!x||x.match.length!==2||p.cards[x.match[0]][0]!==p.cards[x.match[1]][0]){bad(w+': hint 3 '+J(x&&x.match));break}hs=x.s}
+        if(!MM.done(p,hs)||k!==p.n||MM.hint(p,hs,1)!==null)bad(w+': hint 3 alone does not finish in '+p.n);
+        // saved state: round trip fits; damaged ones do not
+        const mid=r.s;
+        for(const st of [MM.fresh(),mid,hs,h3.s])if(!MM.fit(p,JSON.parse(J(Object.assign({},st,{up:[]})))))bad(w+': a good state does not fit');
+        for(const st of [null,'x',[],Object.assign({},mid,{m:[b0]}),Object.assign({},mid,{m:[...mid.m,99]}),Object.assign({},mid,{seen:[0,0]}),
+          Object.assign({},mid,{slips:9}),Object.assign({},mid,{hm:[a0]}),Object.assign({},mid,{turns:-1}),Object.assign({},mid,{m:'01'}),Object.assign({},mid,{seen:[]})])
+          if(MM.fit(p,st))bad(w+': a damaged state fits '+J(st).slice(0,80));
+        // layout: cards at least 48 px on a phone and a tablet
+        for(const [aw,ah,ratio] of [[348,560,1.25],[992,404,1],[568,700,1.25]]){const g=MM.fitGrid(p.cards.length,aw,ah,aw<520?8:12,ratio);if(g.cw<48||g.cols*g.cw>aw||Math.ceil(p.cards.length/g.cols)*g.cw*ratio>ah+1)bad(w+': grid '+J(g)+' in '+aw+'x'+ah)}
+      }
+      stat.pairs[b]=+(sum/cnt).toFixed(1);
+    }
+    if(!(stat.pairs.A<stat.pairs.B&&stat.pairs.B<stat.pairs.C&&stat.pairs.C<stat.pairs.D))bad('memory pairs do not grow by band '+J(stat.pairs));
+
+    // ---- 4. copy cat: sequences, the checker, state ----
+    if(new Set(CC.NAMES).size!==6||new Set(CC.NAMES.map(n=>n.split(' ')[1])).size!==6||new Set(CC.NAMES.map(n=>n.split(' ')[0])).size!==6)bad('copy cat pads must differ by shape and by colour');
+    for(const n of [4,6])if(new Set(CC.TONE[n]).size!==n)bad('copy cat: '+n+' pads need '+n+' different notes');
+    if(new Set([0,1,2,3,4,5].map(i=>CC.shape(i))).size!==6)bad('copy cat: pad shapes not all different');
+    for(const b of 'ABCD'){
+      let ls=0,os=0,cnt=0;
+      for(const day of days)for(let l=1;l<=12;l++){
+        const w='copycat '+b+l+' '+day,p=timed('copycat',b,l,{day}),c=CC.CFG[b],ti=l<=4?0:l<=8?1:2;stat.cc++;
+        if(J(BT.make('copycat',b,l,{day}))!==J(p))bad(w+': make() is not deterministic');
+        if(p.pads!==c.pads||p.len!==c.len[ti]||p.seq.length!==p.len||p.rev!==!!c.rev[ti]||p.start!==Math.min(c.start,p.len))bad(w+': '+J(p));
+        if(p.seq.some(v=>!(Number.isInteger(v)&&v>=0&&v<p.pads)))bad(w+': pad out of range');
+        for(let i=c.run;i<p.seq.length;i++)if(p.seq.slice(i-c.run,i+1).every(v=>v===p.seq[i]))bad(w+': the same pad '+(c.run+1)+' times in a row');
+        if(!(p.on>=250&&p.gap>=120))bad(w+': too fast '+p.on+'/'+p.gap);
+        ls+=p.len+(p.rev?1.5:0);os+=p.on;cnt++;
+        // the checker is exact: the whole round is ok, every prefix go, any change or extra tap no
+        const rounds=BT.get('copycat').solve(p);
+        if(rounds.length!==p.len-p.start+1)bad(w+': solve() has '+rounds.length+' rounds');
+        rounds.forEach((e,j)=>{
+          const r=p.start+j,want=p.seq.slice(0,r);
+          if(J(e)!==J(p.rev?want.slice().reverse():want)||J(CC.expect(p,r))!==J(e))bad(w+': round '+r+' asks for '+J(e));
+          if(CC.check(p,r,e)!=='ok')bad(w+': round '+r+' not ok');
+          for(let k=0;k<e.length;k++){
+            if(CC.check(p,r,e.slice(0,k))!=='go')bad(w+': prefix '+k+' of round '+r);
+            for(let v=0;v<p.pads;v++)if(v!==e[k]&&CC.check(p,r,[...e.slice(0,k),v])!=='no')bad(w+': a wrong pad at '+k+' is not caught');
+          }
+          if(CC.check(p,r,[...e,0])!=='no')bad(w+': an extra tap is not caught');
+        });
+        if(p.rev&&p.len>1&&J(CC.expect(p,2))!==J([p.seq[1],p.seq[0]]))bad(w+': backwards round 2');
+        const ok=[CC.fresh(p),{r:p.len,miss:3}];
+        for(const s of ok)if(!CC.fit(p,JSON.parse(J(s))))bad(w+': a good state does not fit');
+        for(const s of [null,[],'x',{r:p.start-1,miss:0},{r:p.len+1,miss:0},{r:p.start,miss:-1},{r:p.start,miss:0,t:[1]},{r:String(p.start),miss:0},{r:p.start}])
+          if(CC.fit(p,s))bad(w+': a damaged state fits '+J(s));
+      }
+      stat.len[b]=+(ls/cnt).toFixed(2);stat.on[b]=Math.round(os/cnt);
+    }
+    if(!(stat.len.A<stat.len.B&&stat.len.B<stat.len.C&&stat.len.C<stat.len.D))bad('copy cat length does not grow by band '+J(stat.len));
+    if(!(stat.on.A>stat.on.B&&stat.on.B>stat.on.C&&stat.on.C>stat.on.D))bad('copy cat is not faster band by band '+J(stat.on));
+    return{out,stat};
+  };
+  const r=eval(js+';const ALLOW_='+JSON.stringify(ALLOW)+';('+body.toString()+')()');
+  const p=r.out,s=r.stat;
+  for(const k of ["id: 'riddle'","id: 'memory'","id: 'copycat'",'const RDL','const MM','const CC'])if(!BUILT.includes(k))p.push(k+' is not in '+PART_FILES.join(' / ')+' (rebuild)');
+  if(!DATA.includes('var RIDDLES')||!DATA.includes('var MEMW'))p.push(DATA_FILE+' has no riddles or memory words (rebuild)');
+  const avg=s.n?s.ms/s.n:0;
+  if(avg>5)p.push('make() takes '+avg.toFixed(1)+' ms on average (limit 5 ms)');
+  return{problems:p,note:s.rd+' riddle, '+s.mm+' memory and '+s.cc+' copy cat puzzles; riddle words per sentence '+JSON.stringify(s.words)+', pairs '+JSON.stringify(s.pairs)+
+    ', copy cat length '+JSON.stringify(s.len)+', light '+JSON.stringify(s.on)+' ms'};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){

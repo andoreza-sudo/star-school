@@ -4760,6 +4760,213 @@ async function main() {
       await da.ctx.close();
     }
 
+
+    // P3-14 Riddles, Memory Match, Copy Cat (src/js/81-83-bt-*.js) with real taps, midway save (tools/lib/bt-p314.js):
+    //    380x780: Home -> Brain Teasers -> Riddles (a PK child, band A): hints 1-3 (nudge, clue, a wrong choice taken away), a wrong
+    //    choice shown gently, the three riddles answered, win card, 1 star saved; -> Memory (a 1st grader, band B): face-down cards hold
+    //    no face, a mismatch shown gently and turned back, a pair, hints 1 and 2 leave the board, back to the hub and Keep going resumes
+    //    the same board, the rest tapped in, win card; -> Copy Cat (a 3rd grader, band C): a wrong pad shown gently and the round
+    //    replayed, hint 1 (slower replay) and hint 2 (the next pad ringed), every round copied, win card.
+    //    1024x600: Memory band D (a 5th grader), 20 cards, a mismatch, every pair tapped, 3 stars. Every screen: 48 px targets (pads
+    //    64), nothing outside, no sideways scroll, no emoji outside the content pictures.
+    {
+      const P = require('./lib/bt-p314');
+      const look = () => {
+        const vw = document.documentElement.clientWidth, out = [];
+        for (const e of document.querySelectorAll('button, [role="button"]')) {
+          const r = e.getBoundingClientRect();
+          if (!r.width || r.bottom < 0 || r.top > innerHeight || e.closest('svg') || e.closest('#toast')) continue;
+          const min = e.classList.contains('cc-pad') ? 63.5 : 47.5;
+          if (Math.min(r.width, r.height) < min) out.push('small ' + (e.id || e.className) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
+          if (r.left < -1 || r.right > vw + 1 || r.bottom > innerHeight + 1) out.push('outside ' + (e.id || e.className) + ' ' + Math.round(r.left) + '..' + Math.round(r.right) + ' bottom ' + Math.round(r.bottom));
+        }
+        if (document.documentElement.scrollWidth > vw) out.push('sideways scroll ' + document.documentElement.scrollWidth);
+        const st = document.querySelector('.bt-stage');
+        if (st && st.scrollWidth > st.clientWidth + 1) out.push('the puzzle scrolls sideways ' + st.scrollWidth + ' > ' + st.clientWidth);
+        if (st && !document.querySelector('.bt-win') && st.scrollHeight > st.clientHeight + 1) out.push('the puzzle scrolls ' + st.scrollHeight + ' > ' + st.clientHeight);
+        const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        for (let n; (n = w.nextNode());) {
+          const el = n.parentElement;
+          if (!el || el.closest('script,style,svg,#ico-sprite,.rw-burst,.rd-pic,.mm-pic') || !el.getClientRects().length) continue;
+          const m = n.textContent.match(/\p{Extended_Pictographic}|[◀▶✕]/u);
+          if (m) out.push('emoji chrome ' + m[0] + ' in ' + (el.id || el.className));
+        }
+        return out;
+      };
+      // a line shown gently: try-ink text, never the danger red
+      const gentle = sel => {
+        const e = document.querySelector(sel), css = getComputedStyle(document.documentElement);
+        const rgb = v => { const d = document.createElement('i'); d.style.color = v; document.body.appendChild(d); const x = getComputedStyle(d).color; d.remove(); return x; };
+        return { text: e.textContent, color: getComputedStyle(e).color, ink: rgb(css.getPropertyValue('--try-ink')), red: rgb(css.getPropertyValue('--danger')) };
+      };
+      const hintNow = async (pg, wait) => { if (wait) await vwait(pg, 11500); await pg.click('#bthint'); await vwait(pg, 300); };
+      const open = async (pg, id, grade) => {
+        await pg.evaluate(g => { S.grade = g; save(); home(); }, grade);
+        await pg.waitForSelector('#btcard');
+        await pg.evaluate(() => document.querySelector('#btcard').scrollIntoView({ block: 'center' }));
+        await pg.click('#btcard');
+        await pg.waitForSelector(`.bt-hub [data-t="${id}"]`);
+        await pg.evaluate(id => document.querySelector(`.bt-hub [data-t="${id}"]`).scrollIntoView({ block: 'center' }), id);
+        await pg.click(`.bt-hub [data-t="${id}"]`);
+        await pg.waitForSelector('.bt-lvs');
+        await pg.click('.bt-lv[data-l="1"]');
+      };
+      const won = async (pg, id, band, stars, bad, chk) => {
+        await pg.waitForSelector('.bt-win #btnext', { timeout: 15000 });
+        await vwait(pg, 700);
+        await chk('win card');
+        const w = await pg.evaluate(([id, b]) => ({ shown: document.querySelectorAll('.bt-win .rs.on').length, note: document.querySelectorAll('.bt-win .bt-sum li').length,
+          saved: S.bt[id] && S.bt[id][b] && S.bt[id][b].stars[0], lvl: S.bt[id] && S.bt[id][b].lvl, cur: !!S.bt.cur }), [id, band]);
+        if (w.shown !== stars || w.saved !== stars || w.lvl !== 2 || w.cur || !w.note) bad.push(id + ' win: ' + JSON.stringify(w) + ' (want ' + stars + ' stars)');
+        await pg.click('#btlvls');
+        await pg.waitForSelector('.bt-lvs');
+        await pg.click('#back');
+        await pg.waitForSelector('.bt-hub');
+        return w;
+      };
+      for (const [w, h] of [[380, 780], [1024, 600]]) {
+        const tag = 'P3-14 ' + w + 'x' + h;
+        const app = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = app.page, bad = [], notes = [];
+        const chk = async what => { await pg.waitForTimeout(400); for (const o of await pg.evaluate('(' + look.toString() + ')()')) bad.push(what + ': ' + o); };
+        if (w == 380) {
+          // ---- Riddles, band A ----
+          await open(pg, 'riddle', 0);
+          await pg.waitForSelector('#btstage .rd-ch');
+          await vwait(pg, 300);
+          await chk('riddle');
+          const r0 = await P.rdNow(pg), s0 = await pg.evaluate(() => S.stars);
+          if (await pg.evaluate(() => document.querySelectorAll('.rd-ch .rd-pic').length) !== 3) bad.push('band A riddles should have 3 picture choices');
+          const tips = [];
+          for (let t = 1; t <= 3; t++) {
+            await hintNow(pg, t > 1);
+            tips.push(await pg.evaluate(() => ({ tip: document.querySelector('.rd-tip').hidden ? '' : document.querySelector('.rd-tip').textContent.trim(),
+              off: document.querySelectorAll('.rd-ch.off').length, hints: S.bt.cur.hints })));
+          }
+          if (!tips[0].tip || !tips[1].tip || tips[0].tip === tips[1].tip || tips[0].off || tips[1].off || tips[1].hints !== 2) bad.push('riddle hints 1-2: ' + JSON.stringify(tips));
+          if (tips[2].off !== 1 || tips[2].hints !== 3) bad.push('riddle hint 3 should take one of the two wrong pictures away: ' + JSON.stringify(tips[2]));
+          await chk('riddle hints');
+          const r1 = await P.rdNow(pg);
+          await P.rdTap(pg, r1.wrong);
+          const g = await pg.evaluate(c => ({ cls: document.querySelector(`.rd-ch[data-c="${c}"]`).className, miss: S.bt.cur.state.miss }), r1.wrong);
+          const gm = await pg.evaluate('(' + gentle.toString() + ')(".rd-msg")');
+          if (!/wrong/.test(g.cls) || g.miss !== 1 || gm.color !== gm.ink || gm.color === gm.red || !gm.text) bad.push('a wrong riddle choice is not shown gently: ' + JSON.stringify([g, gm]));
+          else notes.push('"' + gm.text + '"');
+          for (let i = 0; i < r0.n; i++) {
+            await pg.waitForFunction(i => S.bt.cur && S.bt.cur.state && S.bt.cur.state.i === i && document.querySelectorAll('.rd-dots i.on').length === i, i, { timeout: 8000 });
+            await P.rdTap(pg, (await P.rdNow(pg)).a);
+            if (i < r0.n - 1 && !(await pg.evaluate(() => /good/.test(document.querySelector('.rd-msg').className) && !!document.querySelector('.rd-ch.right')))) bad.push('riddle ' + i + ': right answer not shown');
+          }
+          const rw = await won(pg, 'riddle', 'A', 1, bad, chk);
+          if ((await pg.evaluate(() => S.stars)) !== s0 + 1) bad.push('riddle stars not paid');
+          notes.push('riddles: 1 star, ' + rw.note + ' answer lines');
+
+          // ---- Memory, band B: mismatch, a pair, hints, back and resume ----
+          await pg.evaluate(() => { S.grade = 1; save(); });
+          await pg.evaluate(() => BT.hub());
+          await pg.waitForSelector('.bt-hub [data-t="memory"]');
+          await pg.evaluate(() => document.querySelector('.bt-hub [data-t="memory"]').scrollIntoView({ block: 'center' }));
+          await pg.click('.bt-hub [data-t="memory"]');
+          await pg.waitForSelector('.bt-lvs');
+          await pg.click('.bt-lv[data-l="1"]');
+          await pg.waitForSelector('#btstage .mm-c');
+          await vwait(pg, 300);
+          await chk('memory');
+          const leak = await pg.evaluate(() => [...document.querySelectorAll('.mm-c:not(.up) .mm-face')].filter(f => f.innerHTML).length + [...document.querySelectorAll('.mm-c:not(.up)')].filter(c => !/^Card \d+, face down$/.test(c.getAttribute('aria-label'))).length);
+          if (leak) bad.push('memory: ' + leak + ' face-down cards show what they are');
+          const m = await P.mmMiss(pg);
+          await P.mmTap(pg, m[0]);
+          await P.mmTap(pg, m[1]);
+          const mm = await pg.evaluate(m => ({ up: m.map(i => document.querySelector(`.mm-c[data-i="${i}"]`).className), turns: S.bt.cur.state.turns, m: S.bt.cur.state.m.length }), m);
+          const mg = await pg.evaluate('(' + gentle.toString() + ')(".mm-msg")');
+          if (!mm.up.every(c => /up/.test(c) && /no/.test(c)) || mm.turns !== 1 || mm.m || mg.color !== mg.ink || mg.color === mg.red) bad.push('memory mismatch not shown gently: ' + JSON.stringify([mm, mg]));
+          else notes.push('"' + mg.text + '"');
+          await chk('memory mismatch');
+          await vwait(pg, 1800);
+          if (await pg.evaluate(m => m.some(i => document.querySelector(`.mm-c[data-i="${i}"]`).classList.contains('up')), m)) bad.push('memory: the mismatch did not turn back');
+          const pr = (await P.mmRest(pg))[0];
+          await P.mmTap(pg, pr[0]);
+          await P.mmTap(pg, pr[1]);
+          if (await pg.evaluate(pr => pr.filter(i => document.querySelector(`.mm-c[data-i="${i}"]`).classList.contains('got')).length, pr) !== 2) bad.push('memory: a pair is not shown as found');
+          const mBefore = await pg.evaluate(() => JSON.stringify(S.bt.cur.state.m));
+          await hintNow(pg, false);
+          const h1 = await pg.evaluate(() => ({ peek: document.querySelectorAll('.mm-c.peek.up').length, hints: S.bt.cur.hints, m: JSON.stringify(S.bt.cur.state.m), msg: document.querySelector('.mm-msg').textContent }));
+          await hintNow(pg, true);
+          const h2 = await pg.evaluate(() => ({ peek: document.querySelectorAll('.mm-c.peek.up').length, hints: S.bt.cur.hints, m: JSON.stringify(S.bt.cur.state.m), msg: document.querySelector('.mm-msg').textContent }));
+          if (h1.peek !== 1 || h1.hints !== 1 || h1.m !== mBefore || h2.peek !== 2 || h2.hints !== 2 || h2.m !== mBefore || h1.msg === h2.msg) bad.push('memory hints 1-2: ' + JSON.stringify([h1, h2]));
+          await chk('memory hint 2');
+          await vwait(pg, 2500);
+          // back to the levels and the hub; Keep going resumes the same board
+          const keep = await pg.evaluate(() => JSON.stringify([S.bt.cur.puzzle.cards, S.bt.cur.state.m, S.bt.cur.state.turns]));
+          await pg.click('#back');
+          await pg.waitForSelector('.bt-lvs');
+          await pg.click('#back');
+          await pg.waitForSelector('#btkeep');
+          await pg.click('#btkeep');
+          await pg.waitForSelector('#btstage .mm-c');
+          const back = await pg.evaluate(() => ({ s: JSON.stringify([S.bt.cur.puzzle.cards, S.bt.cur.state.m, S.bt.cur.state.turns]), got: document.querySelectorAll('.mm-c.got').length, up: document.querySelectorAll('.mm-c.up').length }));
+          if (back.s !== keep || back.got !== 2 || back.up !== 2) bad.push('memory resume: ' + JSON.stringify(back));
+          for (const [a, c] of await P.mmRest(pg)) { await P.mmTap(pg, a); await P.mmTap(pg, c); }
+          await won(pg, 'memory', 'B', 1, bad, chk);
+          notes.push('memory: resumed, 1 star');
+
+          // ---- Copy Cat, band C: a wrong pad, hints 1-2, every round ----
+          await pg.evaluate(() => { S.grade = 3; save(); BT.hub(); });
+          await pg.waitForSelector('.bt-hub [data-t="copycat"]');
+          await pg.evaluate(() => document.querySelector('.bt-hub [data-t="copycat"]').scrollIntoView({ block: 'center' }));
+          await pg.click('.bt-hub [data-t="copycat"]');
+          await pg.waitForSelector('.bt-lvs');
+          await pg.click('.bt-lv[data-l="1"]');
+          await pg.waitForSelector('#btstage .cc-pad');
+          if (await pg.evaluate(() => document.querySelectorAll('.cc-pad').length) !== 6) bad.push('band C copy cat should have 6 pads');
+          const t0 = await P.ccTurn(pg);
+          await chk('copy cat');
+          const wp = (t0.want[0] + 1) % 6;
+          await pg.click(`.cc-pad[data-p="${wp}"]`);
+          const cw = await pg.evaluate(i => ({ no: document.querySelector(`.cc-pad[data-p="${i}"]`).classList.contains('no'), miss: S.bt.cur.state.miss, phase: BT.act.inst.now().phase }), wp);
+          const cg = await pg.evaluate('(' + gentle.toString() + ')(".cc-msg")');
+          if (!cw.no || cw.miss !== 1 || cw.phase !== 'wait' || cg.color !== cg.ink || cg.color === cg.red) bad.push('a wrong pad is not shown gently: ' + JSON.stringify([cw, cg]));
+          else notes.push('"' + cg.text + '"');
+          const t1 = await P.ccTurn(pg);
+          if (t1.now.r !== t0.now.r || t1.now.taps.length) bad.push('the round was not shown again: ' + JSON.stringify(t1.now));
+          await hintNow(pg, false);
+          const c1 = await pg.evaluate(() => ({ phase: BT.act.inst.now().phase, hints: S.bt.cur.hints }));
+          if (c1.phase !== 'show' || c1.hints !== 1) bad.push('copy cat hint 1 should show the round again: ' + JSON.stringify(c1));
+          const t2 = await P.ccTurn(pg);
+          await vwait(pg, 11500);
+          await pg.click('#bthint');
+          await vwait(pg, 200);
+          const c2 = await pg.evaluate(() => ({ tip: [...document.querySelectorAll('.cc-pad.tip')].map(b => +b.dataset.p), hints: S.bt.cur.hints, taps: BT.act.inst.now().taps.length }));
+          if (c2.hints !== 2 || c2.tip.length !== 1 || c2.tip[0] !== t2.want[0] || c2.taps) bad.push('copy cat hint 2 should ring the next pad: ' + JSON.stringify(c2));
+          await chk('copy cat hint 2');
+          await P.ccWin(pg);
+          await won(pg, 'copycat', 'C', 1, bad, chk);
+          notes.push('copy cat: ' + t0.len + ' pads copied, 1 star');
+        } else {
+          // ---- Memory, band D at 1024x600 ----
+          await open(pg, 'memory', 5);
+          await pg.waitForSelector('#btstage .mm-c');
+          await vwait(pg, 300);
+          if (await pg.evaluate(() => document.querySelectorAll('.mm-c').length) !== 20) bad.push('band D memory should have 20 cards');
+          await chk('memory D');
+          const m = await P.mmMiss(pg);
+          await P.mmTap(pg, m[0]);
+          await P.mmTap(pg, m[1]);
+          await chk('memory D mismatch');
+          await vwait(pg, 1800);
+          for (const [a, c] of await P.mmRest(pg)) { await P.mmTap(pg, a); await P.mmTap(pg, c); }
+          await won(pg, 'memory', 'D', 3, bad, chk);
+          notes.push('memory D: 20 cards, 3 stars');
+        }
+        if (bad.length) fail(tag + ':\n  ' + bad.join('\n  '));
+        else step(tag + ': Home -> Brain Teasers -> ' + notes.join('; ') + '; targets 48 px, no sideways scroll, no emoji chrome');
+        await vwait(pg, 300);
+        network.push(...app.network);
+        for (const e of app.errors) fail(e);
+        await app.ctx.close();
+      }
+    }
+
     for (const e of errors) fail(e);
     // P2-30 Spanish framework at 380x780: level 3 (hear it, spell it) typed with the accent key, and the no-Spanish-voice path (the word shown big,
     //    a one-time grown-up note, no speaker buttons): 48 px keys and choices, nothing wider than the screen. Uses the fake unit es_tst (tools/lib/es-fx.js).

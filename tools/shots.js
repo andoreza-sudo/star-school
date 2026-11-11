@@ -1604,6 +1604,91 @@ Object.assign(SCREENS, {
   'gal-story9-eq': { run: skyShot('story', 9, '^story9 eq money', 1) },
 });
 
+// P3-14 Riddles, Memory Match, Copy Cat: grade g sets the band, level lv is started, then real taps (tools/lib/bt-p314.js).
+// rd: o.wrong one wrong choice, o.hint hint presses (cooldown skipped), o.win every riddle answered.
+// mm: o.pairs pairs matched, o.miss two cards that do not match left up, o.one one card left up, o.hint hint presses, o.win.
+// cc: o.rounds rounds played, o.taps taps into the next round, o.lit a pad shown lit, o.wrong a wrong pad, o.hint, o.win.
+const P314 = require('./lib/bt-p314');
+const p314Start = (id, g, lv) => async p => {
+  await p.evaluate(([id, g, lv]) => { window.say = () => {}; S.grade = g; S.bt = {}; BT.start(id, BT.band(), lv); }, [id, g, lv]);
+};
+const p314Hint = async (p, n) => {
+  for (let i = 0; i < n; i++) {
+    await p.evaluate(() => { BT.act.cd = 0; document.querySelector('#bthint').disabled = false; });
+    await p.click('#bthint');
+    await p.waitForTimeout(60);
+  }
+};
+const riddleShot = (g, lv, o = {}) => ({
+  run: async p => {
+    await p314Start('riddle', g, lv)(p);
+    await p.waitForSelector('.rd-ch');
+    if (o.win) {
+      for (let i = 0; i < 3; i++) { await p.waitForSelector('.rd-ch:not([disabled])'); await P314.rdTap(p, (await P314.rdNow(p)).a); await p.waitForTimeout(260); }
+      await p.waitForTimeout(1200);
+      return;
+    }
+    if (o.wrong) await P314.rdTap(p, (await P314.rdNow(p)).wrong);
+    await p314Hint(p, o.hint || 0);
+  },
+});
+const memShot = (g, lv, o = {}) => ({
+  run: async p => {
+    await p314Start('memory', g, lv)(p);
+    await p.waitForSelector('.mm-c');
+    const rest = await P314.mmRest(p);
+    for (const [a, b] of rest.slice(0, o.win ? 99 : o.pairs || 0)) { await P314.mmTap(p, a); await P314.mmTap(p, b); }
+    if (o.win) { await p.waitForTimeout(1200); return; }
+    if (o.miss) { const m = await P314.mmMiss(p); await P314.mmTap(p, m[0]); await P314.mmTap(p, m[1]); await p.evaluate(() => BT.act.inst.destroy()); }
+    if (o.one) { const r = await P314.mmRest(p); await P314.mmTap(p, r[0][0]); }
+    await p314Hint(p, o.hint || 0);
+    if (o.hint) await p.evaluate(() => BT.act.inst.destroy()); // the peek stays up for the shot
+  },
+});
+const copyShot = (g, lv, o = {}) => ({
+  run: async p => {
+    await p314Start('copycat', g, lv)(p);
+    await p.waitForSelector('.cc-pad');
+    if (o.win) { await P314.ccWin(p); await p.waitForTimeout(1300); return; }
+    for (let r = 0; r < (o.rounds || 0); r++) {
+      const t = await P314.ccTapRound(p);
+      await p.waitForFunction(r => BT.act.inst.now().r > r, t.now.r);
+    }
+    if (o.taps) await P314.ccTapRound(p, o.taps);
+    if (o.wrong) {
+      const t = await P314.ccTurn(p);
+      await p.click(`.cc-pad[data-p="${(t.want[0] + 1) % (await p.evaluate(() => S.bt.cur.puzzle.pads))}"]`);
+      await p.evaluate(() => { BT.act.inst.destroy(); document.querySelectorAll('.cc-pad.on').forEach(b => b.classList.remove('on')); }); // hold still for the shot
+    }
+    for (let h = 0; h < (o.hint || 0); h++) { await P314.ccTurn(p); await p314Hint(p, 1); }
+    if (o.lit != null) await P314.ccTurn(p);
+    if (o.lit != null) await p.evaluate(i => { document.querySelector(`.cc-pad[data-p="${i}"]`).classList.add('on'); document.querySelector('.cc-msg').textContent = 'Watch me!'; }, o.lit);
+  },
+});
+Object.assign(SCREENS, {
+  'bt-p314-hub': { run: async p => { await p.evaluate(() => { S.grade = 1; BT.hub(); document.querySelector('[data-t="riddle"]').scrollIntoView({ block: 'center' }); }); } },
+  'bt-rd-a': riddleShot(0, 1),
+  'bt-rd-b': riddleShot(1, 4, { wrong: true, hint: 1 }),
+  'bt-rd-c': riddleShot(3, 5, { hint: 2 }),
+  'bt-rd-d': riddleShot(5, 3, { wrong: true, hint: 3 }),
+  'bt-rd-win': riddleShot(5, 2, { win: true }),
+  'bt-mm-a': memShot(0, 1, { pairs: 1, one: true }),
+  'bt-mm-a-abc': memShot(0, 10, { pairs: 2 }),
+  'bt-mm-b': memShot(1, 1, { pairs: 2, miss: true }),
+  'bt-mm-b-word': memShot(1, 5, { pairs: 3, one: true }),
+  'bt-mm-c': memShot(3, 1, { pairs: 3, miss: true }),
+  'bt-mm-c-es': memShot(3, 5, { pairs: 4, one: true }),
+  'bt-mm-d': memShot(5, 1, { pairs: 4, miss: true }),
+  'bt-mm-d-fdp': memShot(5, 5, { pairs: 6, one: true }),
+  'bt-mm-d-root': memShot(5, 9, { pairs: 5, hint: 2 }),
+  'bt-mm-win': memShot(3, 9, { win: true }),
+  'bt-cc-a': copyShot(0, 1, { rounds: 1, lit: 2 }),
+  'bt-cc-b': copyShot(1, 5, { rounds: 1, taps: 1, hint: 2 }),
+  'bt-cc-c': copyShot(3, 1, { rounds: 1, wrong: true }),
+  'bt-cc-d': copyShot(5, 5, { rounds: 1, taps: 1 }),
+  'bt-cc-win': copyShot(1, 1, { win: true }),
+});
+
 async function main() {
   const args = process.argv.slice(2);
   let fixtureArg = null;
