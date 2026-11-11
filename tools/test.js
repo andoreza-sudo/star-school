@@ -92,7 +92,7 @@ run('skills: every level is reachable from some node',()=>{
   const used=new Set(),p=[];
   for(const path in GEN.nodes)for(const n of GEN.nodes[path])used.add(n.sk+':'+n.lv);
   // Levels reserved for P2-04 (Treasure Bay: arr 1, story 4). They have no stop yet; until P2-04 ships they ask like the next level up.
-  const RESERVED={arr:[1],story:[4],frac:[6,7,8]}; // arr 1 and story 4 are P2-04's; frac 6-8 get their stops in P2-10 (frac 1 is Clock Tower's)
+  const RESERVED={frac:[6,7,8]}; // arr 1 and story 4 are Treasure Bay's (P2-04); frac 6-8 get their stops in P2-10 (frac 1 is Clock Tower's)
   for(const id in GEN.skills)for(let lv=1;lv<=GEN.skills[id].max;lv++)if(!used.has(id+':'+lv)&&!(RESERVED[id]||[]).includes(lv))p.push(id+' level '+lv+' has no map node');
   return{problems:p};
 });
@@ -3256,6 +3256,254 @@ run('components (P4-04): tokens only, transform/opacity motion, no old class res
   for(const n of [...Object.values(UI.SUBJ_ICON),...Object.values(UI.CHIP_ICON),'check','replay','hint','play','go','lock','star'])if(!ICONS[n])bad.push('missing icon '+n);
   bad;`);
   return{problems:p.concat(out),note:sels.length+' selectors'};
+});
+
+// ---- P2-04 Treasure Bay: grade 2 gaps ----
+run('Treasure Bay (P2-04): CURRICULUM M-2 levels, old levels unchanged, answers by rule, 3,000 samples per level, world position, saves',()=>{
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const bad=[];
+  const body=function(){
+    const out=[],b=m=>{if(out.length<25&&!out.includes(m))out.push(m)};
+    const store={};
+    global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+    const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
+    S.name='Ava';S.buddy='Ben';G={built:[]};
+    const N=3000,gen=(sk,lv)=>{const o=[];for(let i=0;i<N;i++)o.push(genQ(sk,lv,i*7919+31));return o};
+    // 1. the world: after Space Station, before Multiply Mountain, grade 2, exactly the M-2 stops in order, pat 3 last
+    const W=PATHS.math.worlds,wi=id=>W.findIndex(w=>w.id==id),bw=W[wi('m_bay')];
+    if(!bw||bw.g!==2||bw.n!=='Treasure Bay')b('Treasure Bay world missing or wrong: '+(bw&&bw.id));
+    else{
+      if(wi('m_bay')!==wi('m_space')+1||wi('m_mult')!==wi('m_bay')+1)b('Treasure Bay must sit between Space Station and Multiply Mountain');
+      const ids=bw.nodes.map(n=>n[0]+n[1]).join(' ');
+      if(ids!=='pv2 big5 pv3 sub5 time4 coins4 meas3 data2 arr1 cnt5 coins5 story4 pat3')b('Treasure Bay stops: '+ids);
+      if(bw.nodes.some(n=>n[2].length>22))b('a Treasure Bay stop title is too long');
+    }
+    for(const [sk,max] of [['pv',3],['big',5],['sub',5],['time',4],['coins',5],['meas',3],['data',2],['arr',2],['cnt',5],['story',5],['pat',3]])
+      if(!SK[sk]||SK[sk].max<max||SK[sk].area!=='math')b('skill '+sk+' max '+(SK[sk]&&SK[sk].max));
+    const was={m_space:'big3 mult1 coins2 cnt3 sub4 time3 big4 mult2 cmp3 coins3'};
+    for(const id in was){const now=NODES.math.filter(n=>n.wid==id&&n.sk!='boss').map(nid).join(' ');if(now!==was[id])b(id+' changed: '+now)}
+    // 2. old levels give exactly what they gave before (the same seed gives the same question through the new dispatchers)
+    {const old={pv:{1:genPv1},big:{1:genBig,2:genBig,3:genBig,4:genBig},sub:{1:genSub,2:genSub,3:genSub,4:genSub},time:{1:genTime,2:genTime,3:genTime},
+      coins:{1:genCoins,2:genCoins,3:genCoins},meas:{1:genMeas,2:genMeas2},data:{1:genData1},arr:{2:genArr},cnt:{1:genCntK,2:genCntK,3:genCntK,4:genCntK},
+      story:{1:genStory,2:genStory,3:genStory,5:genStoryAll},pat:{1:genPatK,2:genPatK}};
+     let n=0;
+     for(const sk in old)for(const lv in old[sk])for(let s=1;s<=60;s++){
+       const prev=RNG;RNG=mulberry32(s);let a;try{a=old[sk][lv](+lv)}finally{RNG=prev}
+       const q=genQ(sk,+lv,s);delete q.sk;delete q.lv;delete q.seed;n++;
+       if(JSON.stringify(q)!==JSON.stringify(a))b('existing level changed: '+sk+' '+lv+' seed '+s)}
+    }
+    // 3. generators: every new level, hint, say, label, answer by rule
+    const spy={bar:null},oBar=VIZ.barGraph;
+    VIZ.barGraph=(d,sc,o)=>{spy.bar=[d,sc];return oBar(d,sc,o)};
+    const lab={};
+    const common=(qs,w)=>{
+      const labels=new Map();
+      for(const q of qs){
+        if(!q.hint||!(q.hint.k=='text'?q.hint.s:q.hint.html))b(w+': no hint');
+        else if(q.hint.k!=='text'&&q.hint.k!=='html')b(w+': hint kind '+q.hint.k);
+        else if(hintHTML(q).length<20)b(w+': hint too short');
+        if(typeof q.say!=='string'||!q.say.trim())b(w+': no say');
+        if(!q.label||q.label.length>=60)b(w+': label '+q.label);
+        if(labels.has(q.label)&&labels.get(q.label)!==q.ans)b(w+': label '+q.label+' has two answers');
+        labels.set(q.label,q.ans);
+        if(/#[0-9a-fA-F]{3,6}\b/.test(q.html))b(w+': raw hex in html');
+        for(const x of kindProblems(q))b(w+': '+x);
+      }
+      lab[w]=labels.size;
+    };
+    const P=(s,re)=>{const m=s.match(re);if(!m)throw new Error('no match '+re+' '+s);return m.slice(1)};
+    const digits=n=>[Math.floor(n/100),Math.floor(n/10)%10,n%10];
+    // pv 2
+    {const qs=gen('pv',2),f={pic:0,val:0,zero:0};common(qs,'pv2');
+     for(const q of qs){
+       if(q.label.startsWith('pv picture')){
+         f.pic++;const n=+P(q.label,/^pv picture (\d+)$/)[0],d=digits(n);
+         if(q.ans!==String(n)||n<100||n>999||!q.html.includes(VIZ.base10(n)))b('pv2 picture '+q.label+' '+q.ans);
+         if(d[1]==0||d[2]==0)f.zero++;
+       }else{
+         f.val++;const [dg,nn]=P(q.label,/^value of (\d) in (\d+)$/),n=+nn,d=digits(n),p=String(n).indexOf(dg);
+         if(new Set(d).size<3)b('pv2 value: digits repeat in '+n);
+         if(q.ans!==String(+dg*[100,10,1][p]))b('pv2 value '+q.label+' ans '+q.ans);
+         if(q.choices.map(c=>c.v).join()!==[+dg,+dg*10,+dg*100].join())b('pv2 value choices '+q.choices.map(c=>c.v));
+       }
+     }
+     const pic=f.pic;if(f.val<N*.35||pic<N*.35)b('pv2 forms '+JSON.stringify(f));
+     if(f.zero<pic*.2||f.zero>pic*.4)b('pv2 zero share '+f.zero+' of '+pic)}
+    // pv 3
+    {const qs=gen('pv',3),f={exp:0,miss:0,which:0};common(qs,'pv3');
+     const val=s=>s.split(' + ').reduce((a,x)=>a+ +x,0);
+     for(const q of qs){
+       if(q.kind=='num'&&/ = \?$/.test(q.label)){f.exp++;const e=P(q.label,/^(.+) = \?$/)[0];if(val(e)!==+q.ans||e.split(' + ').some(x=>!/^[1-9]0{0,2}$/.test(x)))b('pv3 exp '+q.label+' '+q.ans)}
+       else if(q.kind=='num'){f.miss++;const [lhs,tot]=P(q.label,/^(.+) = (\d+)$/),t=lhs.split(' + ');
+         if(t.filter(x=>x=='?').length!==1||val(lhs.replace('?',q.ans))!==+tot||!/^[1-9]0{0,2}$/.test(q.ans))b('pv3 miss '+q.label+' '+q.ans)}
+       else{f.which++;const n=+P(q.label,/^which is (\d+)$/)[0],c=q.choices.map(x=>x.v);
+         if(val(q.ans)!==n||c.length!==4||new Set(c).size!==4||c.filter(x=>val(x)===n).length!==1||!c.includes(q.ans))b('pv3 which '+q.label+' '+c)}
+     }
+     for(const k in f)if(f[k]<N*.25)b('pv3 form '+k+' '+f[k])}
+    // big 5
+    {const qs=gen('big',5),f={ones:0,tens:0,both:0};common(qs,'big5');
+     for(const q of qs){
+       const [a,bb]=P(q.label,/^(\d+) \+ (\d+) = \?$/).map(Number),da=digits(a),db=digits(bb);
+       if(a<100||bb<100||a+bb>999||q.ans!==String(a+bb)||!q.html.includes('veq'))b('big5 '+q.label+' '+q.ans);
+       const c0=da[2]+db[2]>=10,c1=da[1]+db[1]+(c0?1:0)>=10;
+       if(c0&&c1)f.both++;else if(c0)f.ones++;else if(c1)f.tens++;else b('big5 no regrouping '+q.label);
+     }
+     for(const k in f)if(f[k]<N*.25)b('big5 regroup '+k+' '+f[k])}
+    // sub 5
+    {const qs=gen('sub',5);common(qs,'sub5');
+     for(const q of qs){
+       const [a,bb]=P(q.label,/^(\d+) - (\d+) = \?$/).map(Number),da=digits(a),db=digits(bb);
+       if(a<100||bb<100||a-bb<=0||q.ans!==String(a-bb)||!q.html.includes('veq'))b('sub5 '+q.label+' '+q.ans);
+       if(da.some((x,i)=>x<db[i]))b('sub5 regroups '+q.label);
+     }}
+    // time 4
+    {const qs=gen('time',4);common(qs,'time4');let odd=0;
+     const oClk=VIZ.clock;
+     for(const q of qs){
+       const [h,m]=P(q.label,/^clock to 5 min (\d+):(\d\d)$/).map(Number);
+       if(q.ans!==h+':'+String(m).padStart(2,'0')||m%5||!q.html.includes(VIZ.clock(h,m)))b('time4 '+q.label+' '+q.ans);
+       if(m%15)odd++;
+       const c=q.choices.map(x=>x.v);
+       if(c.length!==4||new Set(c).size!==4||!c.includes(q.ans)||c.some(x=>!/^(1[0-2]|[1-9]):[0-5][05]$/.test(x)))b('time4 choices '+c);
+       if(!q.hint.s.includes('count by 5s from the 12'))b('time4 hint');
+     }
+     if(odd<N*.6)b('time4 non-quarter share '+odd)}
+    // coins 4
+    {const qs=gen('coins',4);common(qs,'coins4');const oc=VIZ.coinSVG;let five=0;
+     for(const q of qs){
+       const list=P(q.label,/^money ([\d+]+)$/)[0].split('+').map(Number),tot=list.reduce((a,x)=>a+x,0);
+       if(!q.html.includes(VIZ.coinSVG(list)))b('coins4 picture '+q.label);
+       if(tot>999||tot<101||!list.some(x=>x>=100)||list.some(x=>![500,100,25,10,5,1].includes(x)))b('coins4 amount '+q.label);
+       if(list.includes(500))five++;
+       if(q.ans!=='$'+(tot/100).toFixed(2))b('coins4 ans '+q.label+' '+q.ans);
+       const c=q.choices.map(x=>x.v);
+       if(c.length!==4||new Set(c).size!==4||!c.includes(q.ans)||c.some(x=>!/^\$\d\.\d\d$|^\$1[01]\.\d\d$/.test(x)))b('coins4 choices '+c);
+     }
+     if(five<N*.15)b('coins4 five-dollar bills '+five)}
+    // coins 5
+    {const qs=gen('coins',5),f={a:0,b:0};common(qs,'coins5');
+     for(const q of qs){
+       const m1=q.label.match(/^change from 100 for (\d+)$/),m2=q.label.match(/^change from 500 for (\d+)$/);
+       if(m1){f.a++;const p=+m1[1];if(p%5||p<5||p>95||q.ans!==String(100-p)||!q.html.includes(p+' cents')||!q.hint.s.includes('Count up from '+p+' to 100'))b('coins5 '+q.label+' '+q.ans)}
+       else if(m2){f.b++;const p=+m2[1];if(p%100!==50||p<150||p>450||q.ans!==String(500-p)||!q.html.includes('$'+(p/100).toFixed(2)))b('coins5 '+q.label+' '+q.ans)}
+       else b('coins5 label '+q.label);
+     }
+     if(f.a<N*.4||f.b<N*.4)b('coins5 halves '+JSON.stringify(f))}
+    // meas 3
+    {const qs=gen('meas',3),f={z:0,nz:0,in:0,cm:0};common(qs,'meas3');
+     for(const q of qs){
+       const [u,fr,to]=P(q.label,/^ruler (in|cm) from (\d+) to (\d+)$/),from=+fr,len=to-from,max=u=='in'?12:15;
+       if(q.ans!==String(len)||len<2||+to>max)b('meas3 '+q.label+' '+q.ans);
+       if(!q.html.includes('viz-rul')||!(q.html.includes(VIZ.ruler(len,u,'pencil',{from,max}))||q.html.includes(VIZ.ruler(len,u,'bar',{from,max}))))b('meas3 picture '+q.label);
+       from?f.nz++:f.z++;f[u]++;
+       if(from&&!q.hint.s.startsWith('The object does not start at 0'))b('meas3 hint for non-zero start');
+     }
+     if(f.nz<N*.2||f.nz>N*.4||f.in<N*.4||f.cm<N*.4)b('meas3 mix '+JSON.stringify(f))}
+    // data 2
+    {const qs=[],f={count:0,most:0,least:0,more:0,two:0,all:0};
+     for(let i=0;i<N;i++){const q=genQ('data',2,i*7919+31);q.bar=spy.bar;qs.push(q)}
+     common(qs,'data2');
+     for(const q of qs){
+       const [d,sc]=q.bar,v=d.map(x=>x[1]),nm=d.map(x=>x[0]);
+       if(d.length!==4||sc!==1||v.some(x=>x<0||x>10||x!==Math.round(x))||new Set(v).size!==4||new Set(nm).size!==4)b('data2 graph '+JSON.stringify(d));
+       const ask=q.html.match(/<div class="sub">([^<]*)<\/div>[^]*$/)[1],low=n=>nm.findIndex(x=>x.toLowerCase()===n);
+       let m;
+       if(m=ask.match(/^How many (\w+)\?$/)){f.count++;if(q.ans!==String(v[low(m[1])]))b('data2 count '+q.label)}
+       else if(m=ask.match(/^Which has the (most|least)\?$/)){f[m[1]]++;const w=m[1]=='most'?Math.max(...v):Math.min(...v);if(q.ans!==nm[v.indexOf(w)])b('data2 '+m[1]+' '+q.label)}
+       else if(m=ask.match(/^How many more (\w+) than (\w+)\?$/)){f.more++;const x=v[low(m[1])]-v[low(m[2])];if(x<=0||q.ans!==String(x))b('data2 more '+q.label)}
+       else if(m=ask.match(/^How many (\w+) and (\w+) in all\?$/)){f.two++;if(q.ans!==String(v[low(m[1])]+v[low(m[2])]))b('data2 two '+q.label)}
+       else if(ask=='How many in all?'){f.all++;if(q.ans!==String(v.reduce((a,x)=>a+x,0)))b('data2 all '+q.label)}
+       else b('data2 question '+ask);
+       if(q.kind=='choice'&&q.choices.length!==4)b('data2 choices');
+     }
+     for(const k in f)if(f[k]<N*.08)b('data2 form '+k+' '+f[k])}
+    VIZ.barGraph=oBar;
+    // arr 1
+    {const qs=gen('arr',1);common(qs,'arr1');
+     for(const q of qs){
+       const [r,c]=P(q.label,/^array (\d) rows of (\d)$/).map(Number);
+       if(r<2||r>5||c<2||c>5||q.ans!==String(r*c)||!q.html.includes(VIZ.array(r,c))||!q.html.includes(r+' rows of '+c))b('arr1 '+q.label+' '+q.ans);
+     }}
+    // cnt 5
+    {const qs=gen('cnt',5),f={3:0,4:0,100:0};common(qs,'cnt5');
+     for(const q of qs){
+       const s=P(q.label,/^skip (.+)$/)[0].split(','),bi=s.indexOf('_'),st=+P(q.html,/Count by (\d+)s/)[0];f[st]++;
+       if(![3,4,100].includes(st)||bi<1||s.length!==5)b('cnt5 '+q.label);
+       const seq=s.map((x,i)=>i==bi?+q.ans:+x);
+       if(seq.some((x,i)=>i&&x-seq[i-1]!==st)||seq[4]>1000||seq[0]<0)b('cnt5 sequence '+q.label+' '+q.ans);
+     }
+     for(const k in f)if(f[k]<N*.25)b('cnt5 step '+k+' '+f[k])}
+    // story 4
+    {const qs=gen('story',4),f={gl:0,lg:0,more:0,fewer:0};common(qs,'story4');
+     for(const q of qs){
+       let m,a;
+       if(m=q.label.match(/^2-step (\d+) \+ (\d+) - (\d+)$/)){f.gl++;a=+m[1]+ +m[2]-m[3]}
+       else if(m=q.label.match(/^2-step (\d+) - (\d+) \+ (\d+)$/)){f.lg++;a=m[1]-m[2]+ +m[3];if(+m[2]>=+m[1])b('story4 loses all '+q.label)}
+       else if(m=q.label.match(/^2-step (\d+) \+ \(\d+ \+ (\d+)\)$/)){f.more++;a=2*m[1]+ +m[2]}
+       else if(m=q.label.match(/^2-step (\d+) \+ \(\d+ - (\d+)\)$/)){f.fewer++;a=2*m[1]-m[2]}
+       else{b('story4 label '+q.label);continue}
+       if(q.ans!==String(a)||a<1||a>100)b('story4 '+q.label+' '+q.ans);
+       if([...q.label.matchAll(/\d+/g)].some(x=>+x[0]>100))b('story4 number over 100 '+q.label);
+       if(!q.say.includes('?')||q.hint.k!=='html'||!q.hint.html.includes('<li>')||q.hint.html.split('<li>').length!==3)b('story4 hint steps');
+     }
+     for(const k in f)if(f[k]<N*.15)b('story4 form '+k+' '+f[k])
+     const names=new Set(qs.map(q=>(q.say.match(/^(\w+)/)||[])[1]));if(!names.has('Ava')||!names.has('Ben'))b('story4 should use the child and the buddy: '+[...names].join())}
+    // pat 3
+    {const qs=gen('pat',3),f={up:0,down:0};common(qs,'pat3');
+     for(const q of qs){
+       const t=P(q.label,/^grow (.+)$/)[0].split(',').map(Number),d=t[1]-t[0];
+       if(t.length!==4||Math.abs(d)<2||Math.abs(d)>10||t.some((x,i)=>i&&x-t[i-1]!==d)||t[0]<0||t[0]>50||q.ans!==String(t[3]+d)||+q.ans<0)b('pat3 '+q.label+' '+q.ans);
+       d>0?f.up++:f.down++;
+     }
+     if(f.up<N*.4||f.down<N*.4)b('pat3 up/down '+JSON.stringify(f))}
+    for(const w in lab)if(lab[w]<(w=='arr1'?12:w=='coins5'?20:30))b(w+': only '+lab[w]+' different labels');
+    // 4. seeded: the same seed gives the same question
+    for(const [sk,lv] of [['pv',2],['pv',3],['big',5],['sub',5],['time',4],['coins',4],['coins',5],['meas',3],['data',2],['arr',1],['cnt',5],['story',4],['pat',3]])for(let s=1;s<=30;s++)
+      if(JSON.stringify(genQ(sk,lv,s))!==JSON.stringify(genQ(sk,lv,s)))b(sk+lv+' seed '+s+' not reproducible');
+    // 5. grades: a 2nd grader still opens on Space Station; Treasure Bay is open at grade 2 and up; K and 1st do not see it before Space Station is done
+    load(null);S.grade=2;
+    if(NODES.math[curNode('math')].wid!=='m_space')b('grade 2 fresh does not open on Space Station: '+NODES.math[curNode('math')].wid);
+    if(!worldOpen('math',wi('m_bay')))b('grade 2: Treasure Bay must be open');
+    S.grade=1;if(worldOpen('math',wi('m_bay')))b('grade 1: Treasure Bay open before Space Station is done');
+    // 6. saves: every stop keeps its stars and no passed stop re-locks when the world is added (compare with a path without it)
+    let checked=0;
+    const snap=()=>{const o={};for(const p of ['math'])NODES[p].forEach((n,i)=>{o[nid(n)]={st:getSt(p,i),open:unlocked(p,i),pass:passed(p,i),prog:worldHasProgress(p,n.wi),g:PATHS[p].worlds[n.wi].g}});return o};
+    const ORIG=PATHS.math.worlds,NEW=/^(pv2|big5|pv3|sub5|time4|coins4|meas3|data2|arr1|cnt5|coins5|story4|pat3|boss_m_bay)$/;
+    let moved=0;
+    for(const name of ['fresh','midway','maxed','tricky','legacy-single-map','legacy-index-maps']){
+      for(const g of [null,0,1,2,3,6]){
+        const raw=fx(name);load(raw.length>2?raw:null);if(g!==null)S.grade=g;
+        const maps=JSON.stringify(S.maps);
+        const now=snap(),cur=nid(NODES.math[curNode('math')]),curW=NODES.math[curNode('math')].wid;
+        PATHS.math.worlds=ORIG.filter(w=>w.id!=='m_bay');buildNodes('math');
+        const old=snap(),curOld=nid(NODES.math[curNode('math')]);
+        PATHS.math.worlds=ORIG;buildNodes('math');
+        for(const k in old){
+          checked++;
+          if(!now[k]){b(name+' g'+g+': stop '+k+' disappeared');continue}
+          if(now[k].st!==old[k].st)b(name+' g'+g+': stars of '+k+' changed');
+          if(old[k].pass&&!now[k].open)b(name+' g'+g+': passed stop '+k+' re-locked');
+          if(old[k].open&&!now[k].open&&!(now[k].g>gradeOf()&&!now[k].prog))b(name+' g'+g+': '+k+' locked by the new world');
+        }
+        for(const k in now)if(!(k in old)&&NEW.test(k)&&now[k].st)b(name+' g'+g+': new stop '+k+' has stars');
+        if(JSON.stringify(S.maps)!==maps)b(name+' g'+g+': loading changed the map');
+        // the map opens on the same stop as before, except a child who finished Space Station and has not touched Treasure Bay: they meet it next
+        if(cur!==curOld){moved++;if(curW!=='m_bay'||!old['boss_m_space'].pass)b(name+' g'+g+': map opens on '+cur+' (was '+curOld+')')}
+        if(curW==='m_bay'&&old['boss_m_space'].pass===false)b(name+' g'+g+': map opens in Treasure Bay before Space Station is done');
+      }
+    }
+    // 7. mastery: harder/easier follow map order, so Treasure Bay's levels follow the curriculum sequence
+    for(const sk of ['pv','big','sub','time','coins']){const ns=NODES.math.filter(n=>n.sk===sk);
+      ns.forEach((n,i)=>{if(harder(n)!==(ns[i+1]||null)||easier(n)!==(ns[i-1]||null))b('harder/easier must follow map order at '+sk+n.lv)})}
+    return {out,checked,moved};
+  };
+  const r=eval(js+';('+body.toString()+')()');
+  for(const m of r.out)bad.push(m);
+  // 8. new code: no raw hex colours and no Math.random in this chunk's block
+  const gen=fs.readFileSync(path.join(SRC,'js','31-gen-math-early.js'),'utf8'),blk=gen.slice(gen.indexOf('// ---- P2-04 Treasure Bay (2nd) ----'));
+  if(/#[0-9a-fA-F]{3,8}\b/.test(blk))bad.push('P2-04 block has a raw hex colour');
+  if(/Math\.random/.test(blk))bad.push('P2-04 block uses Math.random');
+  return{problems:bad,note:r.checked+' stop checks against a path without Treasure Bay, map moved on '+r.moved+' of 36 loads'};
 });
 
 // ---- report ----
