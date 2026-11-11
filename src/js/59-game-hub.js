@@ -440,6 +440,6 @@ GH.reg({
 });
 GH.reg({
   id: 'blocks', btn: 'gbb', name: 'Block Builder', icon: 'blocks', p: 'es', sky: ['sea-1', 'sea'], art: GH_ART.blocks,
-  sub: () => '<span>Build your own 3D world</span>',
+  sub: () => bbHubLine(), // G-01: blueprints done (60-blocks.js)
   open: () => bbMenu(), tapToPlay: '[data-w="0"]', saved: 'Your world is saved.',
 });

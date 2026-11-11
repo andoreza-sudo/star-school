@@ -2194,6 +2194,14 @@ Object.assign(SCREENS, {
 });
 GROUPS.g02 = ['race-menu', 'race-garage', 'race-meadow', 'race-beach', 'race-snow', 'race-city', 'race-pro', 'race-pause', 'race-end'];
 
+// G-01: Block Builder by touch: a blueprint (only the next layer), the stamps, the More sheet. node tools/shots.js @g01
+Object.assign(SCREENS, {
+  'game-blocks-bp': gameShot(() => blockBuilder(BBP.findIndex(b => b.id == 'house')), () => { for (const [n, v] of BB.goal) if (n < 2 * BW * BD + BW * BD && Math.floor(n / (BW * BD)) == 1) BB.w[n] = v; BB.dirty = 1; }),
+  'game-blocks-stamp': gameShot(() => blockBuilder(), () => document.querySelector('#bbm-stamp').click()),
+  'game-blocks-more': gameShot(() => blockBuilder(), () => document.querySelector('#bbmore').click()),
+});
+GROUPS.g01 = ['game-blocks-menu', 'game-blocks-play', 'game-blocks-bp', 'game-blocks-stamp', 'game-blocks-more', 'game-blocks-win'];
+
 async function main() {
   const args = process.argv.slice(2);
   let fixtureArg = null;

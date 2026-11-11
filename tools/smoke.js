@@ -7791,6 +7791,257 @@ async function main() {
       await rx.ctx.close();
     }
 
+    // G-01 Block Builder by real touch (touch emulation; taps, one-finger drags and a two-finger pinch sent as CDP touch events), midway
+    //    save, the real clock (holds and the turn animation are timed). At 380x780 and 1024x600: Home -> Game Room -> Block Builder ->
+    //    My Island (1024x600) or a new Flat world made with taps (380x780). Free build: block tops at least 48 px wide; every tool, palette and top-bar button at least 48 px; a Stone tower of 3
+    //    by tapping one column three times; a Brick wall of 4 by tapping 4 columns; TNT built and a Build tap on it builds on top (never
+    //    lit); Boom lights it (blocks go) and Undo brings them back, Redo takes them again; a one-finger drag moves the view (nothing is
+    //    built); a pinch zooms in; Closer keeps the middle; Right turns the island a quarter (animated); hold then slide aims with the
+    //    magnifier and lifting builds; no sideways scroll; messages never cover Pause or the progress chip. Blueprints: Pause -> Quit ->
+    //    the first blueprint, built by tapping its see-through blocks, Next build -> Stairs, built the same way: no mistakes, 3 stars each,
+    //    saved by id; a tap far away is a tip, never a mistake.
+    {
+      const bad = [];
+      const notes = [];
+      for (const [w, h] of [[380, 780], [1024, 600]]) {
+        const at = w + 'x' + h + ' ';
+        const ga = await openApp(browser, { fixture: 'midway', width: w, height: h, speed: 1 });
+        const pg = ga.page;
+        let stage = 'open';
+        try {
+          const cdp = await pg.context().newCDPSession(pg);
+          await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
+          const T = (x, y, id = 1) => ({ x: Math.round(x), y: Math.round(y), radiusX: 8, radiusY: 8, force: 1, id });
+          const send = (type, touchPoints) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints });
+          const tap = async ([x, y]) => { await send('touchStart', [T(x, y)]); await pg.waitForTimeout(40); await send('touchEnd', []); await pg.waitForTimeout(120); };
+          const drag = async ([x0, y0], [x1, y1], hold = 0) => {
+            await send('touchStart', [T(x0, y0)]);
+            if (hold) await pg.waitForTimeout(hold);
+            for (let s = 1; s <= 8; s++) { await send('touchMove', [T(x0 + (x1 - x0) * s / 8, y0 + (y1 - y0) * s / 8)]); await pg.waitForTimeout(16); }
+            await send('touchEnd', []);
+            await pg.waitForTimeout(150);
+          };
+          const tapSel = async sel => {
+            const r = await pg.evaluate(s => { const e = document.querySelector(s); if (!e) return null; e.scrollIntoView({ block: 'nearest', inline: 'nearest' }); const b = e.getBoundingClientRect(); return [b.left + b.width / 2, b.top + b.height / 2]; }, sel);
+            if (!r) throw new Error('no ' + sel);
+            await pg.waitForTimeout(80);
+            await tap(r);
+          };
+          // the middle of a cell's top face on the screen (CSS px), as the scene draws it now
+          const topAt = (i, j, k) => pg.evaluate(([i, j, k]) => { const r = $('#bbc').getBoundingClientRect(), d = BB.dpr, p = BB.proj(i + .5, j + .5, k + 1); return [r.left + p[0] / d, r.top + p[1] / d]; }, [i, j, k]);
+          const count = () => pg.evaluate(() => BB.w.filter(v => v).length);
+          const look = () => pg.evaluate(() => {
+            const out = [], vw = document.documentElement.clientWidth;
+            for (const e of document.querySelectorAll('.gh-top button, .bb-tb, .bb-k, .bb-w, .bb-bp')) {
+              const r = e.getBoundingClientRect();
+              if (!r.width || e.closest('[hidden]')) continue;
+              if (Math.min(r.width, r.height) < 47.5) out.push('small ' + (e.id || e.className) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
+            }
+            if (document.documentElement.scrollWidth > vw) out.push('sideways scroll ' + document.documentElement.scrollWidth);
+            const m = document.querySelector('#bbmsg.on');
+            if (m) for (const s of ['#gpause', '#bbprog', '#bbgoal']) {
+              const a = m.getBoundingClientRect(), q = document.querySelector(s);
+              if (!q) continue;
+              const b = q.getBoundingClientRect();
+              if (a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top) out.push('message covers ' + s);
+            }
+            return out;
+          });
+          await pg.evaluate(() => { S.pt = { bank: 1500, day: today(), used: 0 }; save(); home(); });
+          await tapSel('#groom');
+          await pg.waitForSelector('#gbb');
+          await pg.waitForTimeout(400);
+          await tapSel('#gbb');
+          await pg.waitForSelector('.bb-menu [data-w="0"]');
+          await pg.waitForTimeout(400);
+          const menu = await pg.evaluate(() => ({ bp: [...document.querySelectorAll('[data-ch]')].filter(e => e.getBoundingClientRect().bottom <= innerHeight).length,
+            how: document.querySelector('.bb-how').textContent }));
+          if (menu.bp < 1) bad.push(at + 'menu: no blueprint visible without scrolling');
+          if (!/Undo/.test(menu.how) || !/Boom/.test(menu.how) || /\p{Extended_Pictographic}/u.test(menu.how)) bad.push(at + 'menu tips do not match the buttons: ' + menu.how.slice(0, 80));
+          for (const o of await look()) bad.push(at + 'menu: ' + o);
+          if (w < 600) { // on the phone: a new Flat world, made with taps (New world -> Flat)
+            await tapSel('#bbnew');
+            await pg.waitForSelector('.sheet-bg.on [data-t="flat"]');
+            await pg.waitForTimeout(400);
+            await tapSel('[data-t="flat"]');
+          } else await tapSel('[data-w="0"]');
+          await pg.waitForSelector('#bbc');
+          await pg.waitForTimeout(700);
+          stage = 'targets';
+          // targets: the block tops at the opening zoom, and every button
+          const sz = await pg.evaluate(() => {
+            const ws = BB.faces.filter(f => f.f == 'top' && !f.deco).map(f => { const xs = f.poly.map(p => p[0]); return (Math.max(...xs) - Math.min(...xs)) / BB.dpr; });
+            return { min: Math.min(...ws), med: ws.sort((a, b) => a - b)[ws.length >> 1] };
+          });
+          if (!(sz.min >= 48)) bad.push(at + 'block tops under 48 px: ' + JSON.stringify(sz));
+          for (const o of await look()) bad.push(at + 'play: ' + o);
+          // pick a row of 4 open grass columns near the middle, all the same height, each the front face under its own middle
+          // a row of 4 columns near the middle whose tops are the front face under their own middles (a wall), and a column behind it (a tower)
+          const spots = await pg.evaluate(() => {
+            const W = BB.W, H = BB.H, ok = (i, j) => {
+              const k = BB.topZ(i, j) - 1, v = BB.get(i, j, k);
+              if (k < 0 || k > 8 || !v || BLOCKS[v].deco || v == 10) return -1;
+              for (let z = k + 1; z < k + 6; z++) if (BB.get(i + 1, j + 1, z) || BB.get(i + 1, j, z) || BB.get(i, j + 1, z)) return -1;
+              const p = BB.proj(i + .5, j + .5, k + 1), h = BB.hit(p[0], p[1]);
+              return p[0] > W * .12 && p[0] < W * .88 && p[1] > H * .22 && p[1] < H * .88 && h && h.i == i && h.j == j && h.k == k && h.f == 'top' ? k : -1;
+            };
+            let best = null;
+            for (let j = 1; j < 15; j++) for (let i = 1; i < 12; i++) {
+              const ks = [0, 1, 2, 3].map(n => ok(i + n, j));
+              if (ks.some(k => k < 0)) continue;
+              const p = BB.proj(i + 2, j + .5, ks[0]), d = Math.hypot(p[0] - W / 2, p[1] - H / 2);
+              if (best && d >= best.d) continue;
+              let t = null;
+              for (let b = 0; b < 16 && !t; b++) for (let a = 0; a < 16 && !t; a++) if (a + b <= i + j - 3) { const k = ok(a, b); if (k >= 0) t = [a, b, k]; }
+              if (t) best = { i, j, ks, d, t };
+            }
+            return best;
+          });
+          if (!spots) { bad.push(at + 'no open row to build on'); throw new Error('skip'); }
+          const { i: si, j: sj, ks, t: tw } = spots, sk = ks[0];
+          stage = 'a Stone tower';
+          // a Stone tower: three taps on the same spot, each one on top of the column
+          await tapSel('[data-b="3"]');
+          const p0 = await topAt(...tw);
+          for (let n = 0; n < 3; n++) await tap(p0);
+          await pg.waitForTimeout(250);
+          const tower = await pg.evaluate(([i, j, k]) => [1, 2, 3].map(d => BB.get(i, j, k + d)), tw);
+          if (tower.join() != '3,3,3') bad.push(at + 'tower: ' + tower);
+          stage = 'a Brick wall';
+          // a Brick wall: one tap on each of 4 columns
+          await tapSel('[data-b="8"]');
+          for (let n = 0; n < 4; n++) await tap(await topAt(si + n, sj, ks[n]));
+          await pg.waitForTimeout(250);
+          const wall = await pg.evaluate(([i, j, ks]) => [0, 1, 2, 3].map(n => BB.get(i + n, j, ks[n] + 1)), [si, sj, ks]);
+          if (wall.join() != '8,8,8,8') bad.push(at + 'wall: ' + wall);
+          // undo and redo
+          const c0 = await count();
+          await tapSel('#bbundo');
+          const c1 = await count();
+          await tapSel('#bbredo');
+          const c2 = await count();
+          if (!(c1 == c0 - 1 && c2 == c0)) bad.push(at + 'undo/redo: ' + [c0, c1, c2]);
+          stage = 'TNT';
+          // TNT on the wall's first block, then a Build tap on the TNT: it builds on top, nothing is lit
+          await tapSel('[data-b="20"]');
+          await tap(await topAt(si, sj, sk + 1));
+          await tap(await topAt(si, sj, sk + 2));
+          await pg.waitForTimeout(2200);
+          const tnt = await pg.evaluate(([i, j, k]) => [BB.get(i, j, k + 2), BB.get(i, j, k + 3), BB.tool], [si, sj, sk]);
+          if (tnt[0] != 20 || tnt[1] != 20 || tnt[2] != 'build') bad.push(at + 'a Build tap on TNT: ' + tnt);
+          stage = 'Boom lights it';
+          // Boom lights it: blocks go; Undo puts them back
+          const b0 = await count();
+          await tapSel('#bbboom');
+          await tap(await topAt(si, sj, sk + 3));
+          await pg.waitForTimeout(2600);
+          const b1 = await count();
+          await tapSel('#bbm-build');
+          await tapSel('#bbundo');
+          const b2 = await count();
+          if (!(b1 < b0 - 4 && b2 == b0)) bad.push(at + 'Boom and undo: ' + [b0, b1, b2]);
+          stage = 'a one-finger drag';
+          // a one-finger drag moves the view and builds nothing; a pinch zooms; Closer keeps the middle; Right turns
+          const v0 = await pg.evaluate(() => ({ F: BB.F.slice(), z: BB.zoom, n: BB.w.filter(v => v).length }));
+          const cr = await pg.evaluate(() => { const r = $('#bbc').getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; });
+          await drag(cr, [cr[0] - 90, cr[1] - 60]);
+          const v1 = await pg.evaluate(() => ({ F: BB.F.slice(), z: BB.zoom, n: BB.w.filter(v => v).length }));
+          if (Math.hypot(v1.F[0] - v0.F[0], v1.F[1] - v0.F[1]) < .5 || v1.n != v0.n) bad.push(at + 'one-finger drag: ' + JSON.stringify([v0, v1]));
+          await send('touchStart', [T(cr[0] - 30, cr[1], 1), T(cr[0] + 30, cr[1], 2)]);
+          for (let s = 1; s <= 8; s++) { await send('touchMove', [T(cr[0] - 30 - s * 8, cr[1], 1), T(cr[0] + 30 + s * 8, cr[1], 2)]); await pg.waitForTimeout(16); }
+          await send('touchEnd', []);
+          await pg.waitForTimeout(200);
+          const v2 = await pg.evaluate(() => ({ F: BB.F.slice(), z: BB.zoom, n: BB.w.filter(v => v).length }));
+          if (!(v2.z > v1.z * 1.3) || v2.n != v0.n) bad.push(at + 'pinch: ' + JSON.stringify([v1, v2]));
+          await tapSel('#bbzo');
+          await pg.waitForTimeout(400);
+          const v3 = await pg.evaluate(() => ({ F: BB.F.slice(), z: BB.zoom }));
+          if (!(v3.z < v2.z) || Math.hypot(v3.F[0] - v2.F[0], v3.F[1] - v2.F[1]) > .01) bad.push(at + 'Farther (keeps the middle): ' + JSON.stringify([v2, v3]));
+          await tapSel('#bbrr');
+          await pg.waitForTimeout(120);
+          const mid = await pg.evaluate(() => BB.ang);
+          await pg.waitForTimeout(500);
+          const turned = await pg.evaluate(() => [BB.rot, BB.ang]);
+          if (!(mid > 0.05 && mid < Math.PI / 2 - .05) || turned[0] != 1 || Math.abs(turned[1] - Math.PI / 2) > 1e-6) bad.push(at + 'turn (animated): ' + [mid, turned]);
+          stage = 'hold, then slide';
+          // hold, then slide: the magnifier aims and lifting builds there
+          await tapSel('[data-b="4"]');
+          await pg.evaluate(() => BB.api.scene());
+          const sp = await pg.evaluate(() => {
+            for (const f of BB.faces.slice().reverse()) if (f.f == 'top' && !f.deco && !BB.get(f.i, f.j, f.k + 1) && f.k < 10) {
+              const p = BB.proj(f.i + .5, f.j + .5, f.k + 1);
+              if (p[0] > BB.W * .3 && p[0] < BB.W * .7 && p[1] > BB.H * .35 && p[1] < BB.H * .8) { const r = $('#bbc').getBoundingClientRect(); return { i: f.i, j: f.j, k: f.k, p: [r.left + p[0] / BB.dpr, r.top + p[1] / BB.dpr] }; }
+            }
+            return null;
+          });
+          const n0 = await count();
+          await send('touchStart', [T(sp.p[0], sp.p[1] - 40)]);
+          await pg.waitForTimeout(450);
+          await send('touchMove', [T(sp.p[0], sp.p[1] - 20)]);
+          await send('touchMove', [T(sp.p[0], sp.p[1])]);
+          await pg.waitForTimeout(80);
+          const aim = await pg.evaluate(() => ({ aim: BB.gest.aim, prev: (BB.gest.prev || []).length, fp: !!BB.gest.fp }));
+          await send('touchEnd', []);
+          await pg.waitForTimeout(200);
+          const n1 = await count();
+          if (!aim.aim || !aim.prev || !aim.fp || n1 != n0 + 1) bad.push(at + 'hold and slide: ' + JSON.stringify(aim) + ' ' + [n0, n1]);
+          for (const o of await look()) bad.push(at + 'play: ' + o);
+          // the world is saved
+          const saved = await pg.evaluate(() => bbDecode(bbS().worlds[bbS().cur].d).filter(v => v).length == BB.w.filter(v => v).length);
+          if (!saved) bad.push(at + 'world not saved');
+          stage = 'blueprints: Pause';
+          // blueprints: Pause -> Quit -> the first blueprint
+          await tapSel('#gpause');
+          stage = 'wait .sheet-bg.on #gquit'; await pg.waitForSelector('.sheet-bg.on #gquit');
+          await pg.waitForTimeout(450);
+          await tapSel('#gquit');
+          stage = 'wait [data-ch="0"]'; await pg.waitForSelector('[data-ch="0"]');
+          await pg.waitForTimeout(400);
+          await tapSel('[data-ch="0"]');
+          for (const [ci, id] of [[0, 'tower'], [1, 'stairs']]) {
+            stage = 'wait #bbprog'; await pg.waitForSelector('#bbprog');
+            await pg.waitForTimeout(500);
+            const bz = await pg.evaluate(() => {
+              const ws = BB.faces.filter(f => f.ghost && f.f == 'top').map(f => { const xs = f.poly.map(p => p[0]); return (Math.max(...xs) - Math.min(...xs)) / BB.dpr; });
+              return Math.min(...ws);
+            });
+            if (!(bz >= 48)) bad.push(at + id + ': see-through tops under 48 px: ' + bz);
+            // a tap in the sky far away: a tip, not a mistake
+            const cvr = await pg.evaluate(() => { const r = $('#bbc').getBoundingClientRect(); return [r.left + 20, r.top + 70]; });
+            await tap(cvr);
+            await pg.waitForTimeout(150);
+            for (const o of await look()) bad.push(at + id + ': ' + o);
+            for (let guard = 0; guard < 20; guard++) {
+              const g = await pg.evaluate(() => {
+                if (!BB || !BB.goal || BB.done()) return null;
+                const f = BB.faces.filter(q => q.ghost && q.f == 'top').pop();
+                if (!f) return null;
+                const r = $('#bbc').getBoundingClientRect(), xs = f.poly.map(p => p[0]), ys = f.poly.map(p => p[1]);
+                return [r.left + (Math.min(...xs) + Math.max(...xs)) / 2 / BB.dpr, r.top + (Math.min(...ys) + Math.max(...ys)) / 2 / BB.dpr];
+              });
+              if (!g) break;
+              await tap(g);
+              await pg.waitForTimeout(150);
+            }
+            stage = 'wait .gh-end'; await pg.waitForSelector('.gh-end', { timeout: 5000 });
+            const res = await pg.evaluate(id => ({ miss: BB.miss, st: bbBP()[id], prog: $('#bbprog').textContent }), id);
+            if (res.miss || res.st != 3) bad.push(at + id + ': ' + JSON.stringify(res));
+            await pg.waitForTimeout(400);
+            if (ci == 0) await tapSel('#bbnx');
+          }
+          notes.push(at + 'tops ' + Math.round(sz.min) + '-' + Math.round(sz.med) + ' px');
+        } catch (e) { if (e.message != 'skip') bad.push(at + stage + ': ' + e.message.split('\n')[0]); }
+        network.push(...ga.network);
+        for (const e of ga.errors) fail(e);
+        await ga.ctx.close();
+      }
+      if (bad.length) fail('G-01 Block Builder:\n  ' + bad.slice(0, 40).join('\n  '));
+      else step('G-01 Block Builder by real touch at 380x780 and 1024x600 (' + notes.join(', ') + '): Game Room -> menu -> world; Stone tower and Brick ' +
+        'wall by taps; a Build tap on TNT builds on top; Boom lights it and Undo brings the blocks back; Undo / Redo of the wall; drag pans, pinch zooms, Farther keeps the middle, ' +
+        'Right turns (animated), hold-and-slide aims and builds; 48 px targets, no sideways scroll, messages clear of Pause; Stone Tower and Stairs ' +
+        'built by tapping see-through blocks: no mistakes, 3 stars, saved by id');
+    }
+
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');
   } catch (e) {
