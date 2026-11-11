@@ -17,7 +17,7 @@ const PATHS={
   {id:'m_caves',g:5,n:'Crystal Caves',e:'💎',c:'#f3e8ff',nodes:[['fop',3,'Unlike Denominators'],['fop',4,'Mixed Numbers'],['geo',4,'Volume of a Box'],['fop',5,'Multiply Fractions'],['coord',1,'Coordinate Grid'],['fop',6,'Unit Fraction Division'],['meas',6,'Convert Both Ways'],['data',4,'Line Plots'],['pat',5,'Two Rules'],['story',8,'Fraction Stories']]},
   {id:'m_sky',g:6,n:'Sky City',e:'☁️',c:'#e0f2fe',nodes:[['ratio',1,'Ratios and Tables'],['ratio',2,'Unit Rates'],['int',1,'Integers on a Line'],['ratio',3,'Percent of a Number'],['int',2,'Absolute Value'],['ratio',4,'Fractions and Percents'],['fop',7,'Divide Fractions'],['int',3,'Integer Add & Subtract']]}]},
  read:{n:'Reading Adventure',e:'📖',c:'linear-gradient(135deg,#fce7f3,#fbcfe8)',worlds:[
-  {id:'r_abc',g:-1,n:'ABC Beach',e:'🏖️',c:'#e0f2fe',nodes:[['abc',1,'Big Letters'],['abc',2,'Little Letters'],['abc',3,'Match Big & Little'],['syl',1,'Clap the Syllables'],['abc',4,'ABC Order']]},
+  {id:'r_abc',g:-1,n:'ABC Beach',e:'🏖️',c:'#e0f2fe',nodes:[['abc',1,'Big Letters'],['abc',2,'Little Letters'],['trace',2,'Trace Big Letters'],['abc',3,'Match Big & Little'],['syl',1,'Clap the Syllables'],['trace',3,'Trace Little Letters'],['abc',4,'ABC Order']]},
   {id:'r_meadow',g:0,n:'Letter Meadow',e:'🌻',c:'#dcfce7',nodes:[['sound',1,'First Sounds'],['sight',1,'Sight Words'],['rhyme',1,'Rhyme Time'],['pic',1,'Picture Words'],['sound',2,'Last Sounds'],['build',1,'Build a Word'],['sent',1,'Read & Match'],['sound',3,'Middle Sounds']]},
   {id:'r_candy',g:1,n:'Candy Canyon',e:'🍭',c:'#fce7f3',nodes:[['sight',2,'More Sight Words'],['rhyme',2,'Rhyme & Read'],['pic',2,'Blends'],['build',2,'Build Blends'],['sent',2,'Read Sentences'],['comp',1,'Story Time'],['sound',4,'Letter Teams'],['syl',2,'Count the Claps'],['spell',1,'Spell Short Words']]},
   {id:'r_reef',g:1,n:'Ocean Reef',e:'🐠',c:'#e0f2fe',nodes:[['sight',3,'Sight Words 3'],['pic',3,'Magic E'],['build',3,'Build Magic E'],['comp',2,'Story Time 2'],['spell',2,'Spell Blends'],['vocab',1,'Opposites'],['gram',1,'Capitals & End Marks']]},
@@ -98,8 +98,11 @@ function unlocked(p,i){
   if(S.unlockAll||passed(p,i))return true; // passed stops are always replayable
   const wi=NODES[p][i].wi;
   if(!worldOpen(p,wi))return false;
-  return i==WR[p][wi][0]||passed(p,i-1)||worldSkipped(p,wi)||stopBehind(p,i);
+  return i==WR[p][wi][0]||passed(p,i-1)||sideOpen(p,i-1)||worldSkipped(p,wi)||stopBehind(p,i);
 }
+/* P2-17: a stop of a side skill (SK[sk].side: tracing) never holds back the stop after it; that stop opens with it. Tracing stops sit
+   between older stops (ABC Beach trace 2 and 3), so a save that had the next stop open keeps it open. */
+const sideOpen=(p,i)=>!!(SK[NODES[p][i].sk]||{}).side&&unlocked(p,i);
 const stopNew=(p,i)=>!passed(p,i)&&passed(p,WR[p][NODES[p][i].wi][1]);
 /* The world where a child starts: the first one at or above their grade (the last world if none is). byLevel paths start at 0. */
 function startWorld(p){
@@ -134,7 +137,7 @@ function worldStep(p,wi){
 }
 migrate(); /* save upgrades (MIGRATIONS in 00-core.js) run here: the first place NODES exists, before any other code reads S */
 for(const p in PATHS)S.maps[p]=S.maps[p]||{};
-const nInfo=n=>n.sk=='boss'?{e:n.boss[0],area:'boss'}:SK[n.sk];
+const nInfo=n=>n.sk=='boss'?{e:n.boss[0],area:'boss'}:SK[n.sk]&&SK[n.sk].lvArea?Object.assign({},SK[n.sk],{area:skArea(n.sk,n.lv)}):SK[n.sk];
 const SHOP={hat:[['🧢',10],['🎀',10],['🎩',20],['⛑️',25],['🎓',40],['👑',60]],
  toy:[['🎈',10],['🍭',10],['⚽',15],['🧸',20],['🪁',30],['🪄',45],['🏆',80]],
  scene:[['meadow',0,'🌻','linear-gradient(135deg,#fef3c7,#fde68a)','Meadow'],['beach',30,'🏖️','linear-gradient(180deg,#bae6fd,#fef3c7 75%)','Beach'],['candy',40,'🍭','linear-gradient(135deg,#fbcfe8,#ddd6fe)','Candy'],

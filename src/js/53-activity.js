@@ -78,8 +78,8 @@ const ACT={
     return r;
   },
   // A question appears. `now` and `hidden` are passed in by the tests.
-  qStart(sk,now,hidden){
-    const a=(typeof SK!='undefined'&&SK[sk]&&SK[sk].area)||'other';
+  qStart(sk,now,hidden,lv){
+    const a=(typeof SK!='undefined'&&SK[sk]&&((SK[sk].lvArea||{})[lv]||SK[sk].area))||'other';
     ACT.cur={area:a,acc:0,t0:hidden?null:now};
   },
   // The tab was hidden or shown again.
@@ -102,7 +102,7 @@ const ACT={
   flu(sec,key){return ACT.add(key||today(),{sec:Math.min(sec||0,ACT.CAP*2),area:'math'})},
 };
 // Hooks (each is called from one line in an existing file). They never throw into the game.
-function actQStart(sk){try{ACT.qStart(sk,ACT.now(),ACT.hidden())}catch(e){}}
+function actQStart(sk,lv){try{ACT.qStart(sk,ACT.now(),ACT.hidden(),lv)}catch(e){}}
 function actQEnd(first,again){try{ACT.qEnd(first,again,ACT.now())}catch(e){}}
 function actRound(){try{ACT.round()}catch(e){}}
 function actFlu(sec){try{ACT.flu(sec)}catch(e){}}

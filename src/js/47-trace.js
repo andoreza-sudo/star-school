@@ -36,7 +36,7 @@
    while the first has not moved and the second is nearer the start dot. touch-action: none on the board. */
 const TR = {
   N: 5,                 // glyphs in a round (CURRICULUM E-trace)
-  LV: { 1: 'digit' },   // level -> TRACE set (P2-17 adds 2: upper, 3: lower)
+  LV: { 1: 'digit', 2: 'upper', 3: 'lower' }, // level -> TRACE set (P2-17: letters in ABC Beach, CURRICULUM E-trace)
   START: 1.5,           // start radius, in tol
   BACK: 1, AHEAD: 2.5,  // progress search window behind / ahead, in tol
   END: 0.8,             // the end must be reached within END tol
@@ -210,10 +210,11 @@ TR.name = q => {
 // ---- generator: skill 'trace' (level 1 digits in Tiny Town) ----
 function genTrace(lv) {
   const set = TR.LV[lv] || 'digit', S0 = TRACE.sets[set], key = pick(S0.order), g = S0.glyphs[key];
-  const what = S0.n + ' ' + g.say;
+  // spoken: "the little letter A" (a letter's name is its capital, as abc 1 says it); shown: "the little letter a" (P2-17)
+  const what = S0.n + ' ' + g.say, shown = S0.n + ' ' + (set == 'digit' ? g.say : key);
   return pkQ({
     kind: 'trace', set, g: key, ans: 'done', passes: [1, 2, 3],
-    html: `<div class="trq">${TR.pic(set, key)}</div>${pkTxt(`Trace the ${esc(what)}.`)}`,
+    html: `<div class="trq">${TR.pic(set, key)}</div>${pkTxt(`Trace the ${esc(shown)}.`)}`,
     say: `Let's write the ${what}! Watch, then trace it with your finger.`,
     hint: { k: 'trace' },
     label: `trace ${set} ${key}`,

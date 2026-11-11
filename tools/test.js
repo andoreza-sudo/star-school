@@ -2003,7 +2003,7 @@ run('ABC Beach (P2-15): world position, stop ids, nobody is pushed back into it'
   // position and content (CURRICULUM 2.2)
   if(W[0].id!=='r_abc'||W[0].g!==-1||W[1].id!=='r_meadow')bad.push('ABC Beach must be the first reading world (Pre-K), then Letter Meadow');
   const ids=NODES.read.filter(n=>n.wid=='r_abc'&&n.sk!='boss').map(nid).join(' ');
-  if(ids!=='abc1 abc2 abc3 syl1 abc4')bad.push('ABC Beach stops: '+ids);
+  if(ids!=='abc1 abc2 trace2 abc3 syl1 trace3 abc4')bad.push('ABC Beach stops: '+ids); // P2-17 adds trace2, trace3 (CURRICULUM 2.2)
   const tail=(id,k)=>NODES.read.filter(n=>n.wid==id&&n.sk!='boss'&&n.sk!='spell').map(nid).slice(-k).join(' '); // spelling stops (P2-19) sit after these
   if(tail('r_meadow',1)!=='sound3'||tail('r_candy',2)!=='sound4 syl2')bad.push('sound3 ends Letter Meadow; sound4 syl2 end Candy Canyon');
   // existing stop ids keep their meaning and order inside their worlds
@@ -2013,7 +2013,7 @@ run('ABC Beach (P2-15): world position, stop ids, nobody is pushed back into it'
   for(const name of ['midway','maxed','legacy-single-map','legacy-index-maps']){
     const raw=fx(name);loadSave(raw);const pre=JSON.parse(JSON.stringify(S));
     load(raw);
-    for(const k of ['abc1','abc2','abc3','abc4','syl1','sound3','sound4','syl2','boss_r_abc'])if(S.maps.read[k])bad.push(name+': got stars on new stop '+k);
+    for(const k of ['abc1','abc2','abc3','abc4','syl1','sound3','sound4','syl2','boss_r_abc','trace2','trace3'])if(S.maps.read[k])bad.push(name+': got stars on new stop '+k);
     if(name=='maxed'&&!(S.maps.read.sound1===3&&S.maps.read.boss_r_meadow===3))bad.push('maxed: meadow stars lost');
     if(name=='midway'&&!(S.maps.read.sound1===1&&S.maps.read.sight1===2&&S.maps.read.rhyme1===3&&S.maps.read.sent1===1))bad.push('midway: meadow stars lost');
   }
@@ -8203,7 +8203,7 @@ run('tracing P2-16',()=>{
     for(const key of ['0','8']){const s=TR.geo('digit',key).s[0],d0=TR.dir(s,1.5),d1=TR.dir(s,s.L-1.5);if(d0[0]*d1[0]+d0[1]*d1[1]<0.9)b('digit '+key+': the loop has a corner at its join')}
     // 3. the kind and the generator
     for(const f of ['render','bind','right','retry','reveal','spoken','validate'])if(typeof KIND.trace[f]!=='function')b('KIND.trace.'+f+' missing');
-    if(!SK.trace||SK.trace.max!==1||SK.trace.area!=='math'||SK.trace.gen!==genTrace||SK.trace.round!==traceRound||!SK.trace.noPlace)b('skill trace');
+    if(!SK.trace||SK.trace.max!==3||SK.trace.area!=='math'||SK.trace.gen!==genTrace||SK.trace.round!==traceRound||!SK.trace.noPlace)b('skill trace');
     const seen={};
     for(let i=0;i<3000;i++){
       const q=SK.trace.gen(1);
@@ -9219,6 +9219,271 @@ run('mathdoku UI P3-05',()=>{
   const k=Object.entries(s.kinds).map(([a,b])=>a+' '+b).join(', ');
   return{problems:p,note:s.n+' puzzles (3 bands x 12 levels x 15 days), one solution each (countCages); next-day repeats '+s.same+'/'+s.pairs+
     '; grader grade differs after turning '+s.grades+'; clash and cage-miss moves '+s.wrong+'/'+s.miss+'; hint steps: '+k};
+});
+
+// P2-17: the letter sets upper (A-Z) and lower (a-z) of the tracing engine, the ABC Beach stops trace 2 and trace 3, the reading
+// colour of those stops (SK.trace.lvArea, skArea) and save safety (CURRICULUM E-trace and 2.2; d-trace.js header)
+run('tracing letters P2-17',()=>{
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const body=function(){
+    const bad=[],b=m=>{if(bad.length<40&&!bad.includes(m))bad.push(m)},stat={glyphs:0,strokes:0,traces:0,saves:0};
+    const store={};
+    localStorage.getItem=k=>k in store?store[k]:null;localStorage.setItem=(k,v)=>{store[k]=String(v)};localStorage.removeItem=k=>{delete store[k]};
+    const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
+    S.name='Ava';G={built:[],path:'read'};
+    let seed=20261117;const rand=()=>{seed=(seed+0x6D2B79F5)>>>0;let z=Math.imul(seed^(seed>>>15),1|seed);z=(z+Math.imul(z^(z>>>7),61|z))^z;return((z^(z>>>14))>>>0)/4294967296};
+    const ru=(a,c)=>a+rand()*(c-a);
+    // 1. the sets: letters, order (abc 1's), spoken names, lines
+    const U=TRACE.sets.upper,Lw=TRACE.sets.lower;
+    if(!U||!Lw)return{bad:['no TRACE.sets.upper or lower'],stat};
+    if(TR.LV[2]!=='upper'||TR.LV[3]!=='lower'||TR.LV[1]!=='digit')b('TR.LV: '+JSON.stringify(TR.LV));
+    if(U.order.join('')!==ABCO||Lw.order.join('')!==ABCO.toLowerCase())b('letter order is not abc 1 order: '+U.order.join('')+' '+Lw.order.join(''));
+    if(Object.keys(U.glyphs).sort().join('')!=='ABCDEFGHIJKLMNOPQRSTUVWXYZ'||Object.keys(Lw.glyphs).sort().join('')!=='abcdefghijklmnopqrstuvwxyz')b('letter glyph keys');
+    if(U.n!=='big letter'||Lw.n!=='little letter')b('set names '+U.n+' / '+Lw.n);
+    const LU=U.lines,LL=Lw.lines;
+    if(!(LU.top<LU.mid&&LU.mid<LU.base&&LU.top>=0&&LU.base<=100&&LU.desc==null))b('upper lines: '+JSON.stringify(LU));
+    if(!(LL.top<LL.mid&&LL.mid<LL.base&&LL.base<LL.desc&&LL.top>=0&&LL.desc<=100))b('lower lines: '+JSON.stringify(LL));
+    // the handwriting model (d-trace.js header): per stroke the first direction; '.' a dot, 'o' a closed loop from its top, going left
+    const V={d:[0,1],u:[0,-1],l:[-1,0],r:[1,0],dl:[-1,1],dr:[1,1],ul:[-1,-1],ur:[1,-1]};
+    const MODEL={
+      A:'dl dr r',B:'d r r',C:'ul',D:'d r',E:'d r r r',F:'d r r',G:'ul',H:'d d r',I:'r d r',J:'d',K:'d dl',L:'d',M:'d dr',N:'d dr',O:'o',
+      P:'d r',Q:'o dr',R:'d r dr',S:'ul',T:'r d',U:'d',V:'dr',W:'dr',X:'dr dl',Y:'dr dl',Z:'r',
+      a:'ul d',b:'d ur',c:'ul',d:'ul d',e:'r',f:'ul r',g:'ul d',h:'d ur',i:'d .',j:'d .',k:'d dl',l:'d',m:'d ur ur',n:'d ur',o:'o',
+      p:'d ur',q:'ul d',r:'d u',s:'ul',t:'d r',u:'d d',v:'dr',w:'dr',x:'dr dl',y:'dr dl',z:'r'};
+    // lowercase by height: ascenders reach the top line, t is a short ascender, descenders reach the tail line
+    const ASC='bdfhkl',DESC='gjpqy';
+    const curvePts=[]; // spacing of points along curves
+    for(const [set,S0] of [['upper',U],['lower',Lw]]){
+      const Ln=S0.lines,low=set=='lower';
+      for(const key of S0.order){
+        const g=S0.glyphs[key],w=set+' '+key;
+        stat.glyphs++;
+        for(const x of TR.glyphProblems(set,key))b(x);
+        if(!g||g.say!==key.toUpperCase())b(w+': spoken name '+(g&&g.say));
+        const spec=MODEL[key].split(' '),geo=TR.geo(set,key);
+        if(geo.s.length!==spec.length){b(w+': '+geo.s.length+' strokes, the model has '+spec.length);continue}
+        let ys=[];
+        geo.s.forEach((s,j)=>{
+          const ws=w+' stroke '+(j+1),e=spec[j],p=s.p,a=p[0],z=p[p.length-1],raw=g.s[j];
+          stat.strokes++;
+          if(e==='.'){
+            // a dot (i, j): one point, the last stroke, over the stem, between the top and middle lines
+            if(!s.dot||j!==geo.s.length-1)b(ws+': the dot must be one point and the last stroke');
+            if(!(a[1]>Ln.top&&a[1]<Ln.mid-6))b(ws+': the dot is not between the top and middle lines');
+            if(Math.abs(a[0]-geo.s[0].p[0][0])>1.5)b(ws+': the dot is not over the stem');
+            return;
+          }
+          if(s.dot){b(ws+': a dot where the model has a stroke');return}
+          if(s.L<15)b(ws+': degenerate (length '+s.L.toFixed(1)+')');
+          if(p.some(([x,y],i)=>i&&Math.hypot(x-p[i-1][0],y-p[i-1][1])>1.0001))b(ws+': dense points more than 1 unit apart');
+          if(Math.abs(s.L-(p.length-1))>1.01)b(ws+': length and points disagree');
+          if(p.some(([x])=>x<4||x>96))b(ws+': leaves the box');
+          ys=ys.concat(p.map(q=>q[1]));
+          // first direction as in the model (a loop starts at its top going left); ends lower or to the right
+          const dir=e==='o'?V.l:V[e],f=p[Math.min(5,p.length-1)],fl=Math.hypot(f[0]-a[0],f[1]-a[1]);
+          const cos=((f[0]-a[0])*dir[0]+(f[1]-a[1])*dir[1])/fl/Math.hypot(dir[0],dir[1]);
+          if(!(cos>=0.6))b(ws+': first goes '+(f[0]-a[0]).toFixed(1)+','+(f[1]-a[1]).toFixed(1)+', the model goes '+e);
+          const closed=Math.hypot(z[0]-a[0],z[1]-a[1])<0.5;
+          if(closed!==(e==='o'))b(ws+': closed '+closed);
+          if(closed){
+            if(a[1]>Math.min(...p.map(q=>q[1]))+0.5)b(ws+': a loop starts at its top');
+            const d0=TR.dir(s,1.5),d1=TR.dir(s,s.L-1.5);
+            if(d0[0]*d1[0]+d0[1]*d1[1]<0.9)b(ws+': the loop has a corner at its join');
+          }
+          else if(!(z[1]>a[1]+3||z[0]>a[0]+3))b(ws+': does not run top to bottom or left to right'); // (N, U, V, W, u, r end up on the right)
+          // control points: on curved spans about 8 to 14 units apart (7 to 15 allowed); no spike between dense points but at corners
+          TR.segs(raw).forEach(([q0,c1,c2,q1],k)=>{
+            const ch=Math.hypot(q1[0]-q0[0],q1[1]-q0[1]);
+            const bend=Math.max(...[c1,c2].map(c=>Math.abs((q1[0]-q0[0])*(c[1]-q0[1])-(q1[1]-q0[1])*(c[0]-q0[0]))/(ch||1)));
+            if(bend>0.6){curvePts.push(ch);if(ch<7||ch>15)b(ws+': curve points '+(k+1)+'-'+(k+2)+' are '+ch.toFixed(1)+' apart')}
+          });
+          for(let i=2;i<p.length;i++){
+            const u1=[p[i-1][0]-p[i-2][0],p[i-1][1]-p[i-2][1]],u2=[p[i][0]-p[i-1][0],p[i][1]-p[i-1][1]];
+            const c=(u1[0]*u2[0]+u1[1]*u2[1])/(Math.hypot(...u1)*Math.hypot(...u2)||1);
+            const nearCorner=raw.some(q=>q[2]&&Math.hypot(q[0]-p[i-1][0],q[1]-p[i-1][1])<1.5);
+            if(c<-0.2&&!nearCorner){b(ws+': a spike near '+p[i-1].map(v=>v.toFixed(0)));break}
+          }
+        });
+        if(!ys.length)continue;
+        // heights: capitals from the top to the base line (Q's tail dips below the base); lowercase by kind
+        const lo=Math.min(...ys),hi=Math.max(...ys),near=(v,t)=>Math.abs(v-t)<=2;
+        if(!low){
+          if(!near(lo,Ln.top))b(w+': does not reach the top line ('+lo.toFixed(1)+')');
+          const body=key=='Q'?Math.max(...geo.s[0].p.map(q=>q[1])):hi;
+          if(!near(body,Ln.base))b(w+': does not sit on the base line ('+body.toFixed(1)+')');
+          if(key=='Q'?!(hi>Ln.base+2&&hi<=Ln.base+8):hi>Ln.base+2)b(w+': below the base line ('+hi.toFixed(1)+')');
+        }else{
+          if(ASC.includes(key)){if(!near(lo,Ln.top))b(w+': an ascender reaches the top line ('+lo.toFixed(1)+')')}
+          else if(key=='t'){if(!(lo>Ln.top+6&&lo<Ln.mid-6))b(w+': t rises part way above the middle line ('+lo.toFixed(1)+')')}
+          else if(!near(lo,Ln.mid))b(w+': an x-height letter starts on the middle line ('+lo.toFixed(1)+')');
+          if(DESC.includes(key)){if(!near(hi,Ln.desc))b(w+': a tail reaches the descender line ('+hi.toFixed(1)+')')}
+          else if(!near(hi,Ln.base))b(w+': sits on the base line ('+hi.toFixed(1)+')');
+          if(!ASC.includes(key)&&geo.s[0].p[0][1]>(Ln.mid+Ln.base)/2+1)b(w+': starts in the lower half');
+        }
+        // stroke order: top to bottom, left to right (a later stroke never starts up and to the left of the one before)
+        for(let j=1;j<geo.s.length;j++){
+          const p0=geo.s[j-1].p[0],p1=geo.s[j].p[0];
+          if(!(p1[1]>p0[1]+3||p1[0]>=p0[0]-0.5))b(w+': stroke '+(j+1)+' starts up and left of stroke '+j);
+        }
+      }
+    }
+    // 2. the checker: synthetic traces along every letter stroke at both tolerances
+    const along=(s,o={})=>{
+      const s0=o.s0||0,s1=o.s1==null?s.L:o.s1,out=[];
+      const jit=()=>{if(!o.j)return[0,0];const r=Math.sqrt(rand())*o.j,a=rand()*Math.PI*2;return[Math.cos(a)*r,Math.sin(a)*r]};
+      let x=s0;
+      while(true){
+        const [px,py]=TR.at(s,x),[jx,jy]=jit(),[nx,ny]=o.shift?[-TR.dir(s,x)[1],TR.dir(s,x)[0]]:[0,0],k=o.shift&&x>8?o.shift:0;
+        out.push([px+jx+nx*k,py+jy+ny*k]);
+        if(x>=s1)break;
+        x=Math.min(s1,x+(o.step?ru(o.step,o.fast||o.step):1));
+      }
+      return o.rev?out.reverse():out;
+    };
+    for(const tol of [14,10])for(const [set,S0] of [['upper',U],['lower',Lw]])for(const key of S0.order){
+      const geo=TR.geo(set,key),w=set+' '+key+' tol '+tol;
+      geo.s.forEach((s,j)=>{
+        const ws=w+' stroke '+(j+1),chk=(pts,s0)=>{stat.traces++;return TR.check(s,pts,tol,s0)};
+        let r;
+        if(s.dot){
+          if(!chk([[s.p[0][0]+0.3*tol,s.p[0][1]-0.3*tol]]).ok)b(ws+': a tap on the dot fails');
+          if(chk([[s.p[0][0]+2*tol,s.p[0][1]]]).ok)b(ws+': a tap away from the dot passes');
+          if(chk([s.p[0],[s.p[0][0],s.p[0][1]+3*tol]]).ok)b(ws+': a line drawn from the dot passes as the dot');
+          return;
+        }
+        // pass: ideal; noisy (jitter 0.3 tol, fast and slow parts, start a little off, stop a little short); 8 px of jitter
+        r=chk(along(s));
+        if(!r.ok)b(ws+': the ideal trace fails ('+r.why+')');
+        for(let i=0;i<20;i++){
+          const pts=along(s,{j:0.3*tol,step:1,fast:rand()<0.5?10:4,s1:s.L-ru(0,0.45*tol)});
+          pts[0]=[pts[0][0]+ru(-0.5,0.5)*tol,pts[0][1]+ru(-0.5,0.5)*tol];
+          r=chk(pts);
+          if(!r.ok){b(ws+': a noisy trace fails ('+r.why+', off '+r.off.toFixed(2)+')');break}
+        }
+        for(let i=0;i<10;i++){r=chk(along(s,{j:2.4,step:2,fast:6}));if(!r.ok){b(ws+': an 8 px jitter trace fails ('+r.why+')');break}}
+        // fail: backwards, off the path, scribbles, a start far away
+        r=chk(along(s,{rev:1}));
+        if(r.ok)b(ws+': a reversed trace passes');
+        for(let i=0;i<5;i++){r=chk(along(s,{rev:1,j:0.3*tol,step:2,fast:6}));if(r.ok){b(ws+': a noisy reversed trace passes');break}}
+        r=chk(along(s,{shift:1.7*tol,step:2}));
+        if(r.ok||r.why==='part'||r.why==='tap')b(ws+': a trace that leaves the path passes or is kept ('+r.why+')');
+        const zig=[];for(let x=0;x<=s.L;x+=2){const [px,py]=TR.at(s,x),[dx,dy]=TR.dir(s,x),k=(x/2)%2?0.9*tol:-0.9*tol;zig.push([px-dy*k,py+dx*k])}
+        r=chk(zig);
+        if(r.ok||r.why!=='scribble')b(ws+': a zigzag along the stroke is not a scribble ('+r.why+')');
+        const scr=[s.p[0]];for(let i=0;i<60;i++)scr.push([ru(5,95),ru(5,95)]);
+        if(chk(scr).ok)b(ws+': a random scribble from the start dot passes');
+        const far=along(s).map(([x,y])=>[x+2*tol,y]);far[0]=[s.p[0][0]+2*tol,s.p[0][1]];
+        r=chk(far);
+        if(r.ok||r.why!=='start')b(ws+': a trace starting away from the dot is not a start miss ('+r.why+')');
+        // a tap on the dot is ignored; half a stroke is kept and the rest from there finishes it
+        r=chk([s.p[0]]);
+        if(r.ok||r.why!=='tap')b(ws+': a tap on the start dot is '+r.why);
+        const half=Math.round(s.L*0.5);
+        if(half>=TR.PART+2){
+          r=chk(along(s,{s1:half,j:1,step:2}));
+          if(r.why!=='part'||Math.abs(r.s-half)>tol)b(ws+': half a stroke is '+r.why+' at '+r.s);
+          else{const r2=chk(along(s,{s0:r.s,j:1,step:2}),r.s);if(!r2.ok)b(ws+': carrying on from half way fails ('+r2.why+')')}
+        }
+      });
+      // wrong order: every other stroke traced where this one is expected fails
+      for(let j=0;j<geo.s.length;j++)for(let k=0;k<geo.s.length;k++){
+        if(j===k||geo.s[k].dot)continue;
+        const r=TR.check(geo.s[j],along(geo.s[k]),tol);stat.traces++;
+        if(r.ok)b(w+': stroke '+(k+1)+' passes as stroke '+(j+1)+' (wrong order)');
+      }
+    }
+    // 3. the generator at levels 2 (A-Z) and 3 (a-z), rounds, the board
+    for(const lv of [2,3]){
+      const set=TR.LV[lv],S0=TRACE.sets[set],seen={};
+      for(let i=0;i<3000;i++){
+        const q=SK.trace.gen(lv),gl=S0.glyphs[q.g];
+        for(const x of kindProblems(q))b('trace L'+lv+': '+x);
+        if(q.set!==set||!gl){b('trace L'+lv+': set '+q.set+' glyph '+q.g);continue}
+        if(!q.pk||!q.auto||q.hint.k!=='trace'||!q.say.includes(S0.n+' '+gl.say+'!')||!q.html.includes('<svg class="trq-g"'))b('trace L'+lv+' '+q.g+': pk, hint, say or picture');
+        if(/undefined|NaN|\[object/.test(q.html+q.say+q.label))b('trace L'+lv+': bad text');
+        if(!q.html.includes('Trace the '+S0.n+' '+q.g+'.'))b('trace L'+lv+' '+q.g+': the prompt shows the letter to trace');
+        if(/[A-Za-z]/.test(q.html.replace(/<div class="sub pktxt">.*?<\/div>/g,'').replace(/<[^>]*>/g,'')))b('trace L'+lv+': letters outside .pktxt');
+        (seen[q.label]=seen[q.label]||new Set()).add(q.g);
+        if(i<50){
+          const h=KIND.trace.render(q),nl=(h.match(/class="tr-l/g)||[]).length;
+          if(!h.includes('id="trb"')||nl!==(lv==3?5:4))b('trace L'+lv+' render: '+nl+' lines');
+          if(KIND.trace.spoken(q)!==gl.say)b('trace L'+lv+': spoken');
+        }
+      }
+      if(Object.keys(seen).length!==26||Object.values(seen).some(s=>s.size!==1))b('trace L'+lv+' labels: one per letter, '+Object.keys(seen).length);
+      for(let i=0;i<200;i++){
+        const rd=traceRound(lv),ks=rd.map(q=>q.g);
+        if(rd.length!==TR.N||new Set(ks).size!==TR.N||ks.some((k,x)=>x&&S0.order.indexOf(k)<S0.order.indexOf(ks[x-1])))b('round L'+lv+': '+ks.join(''));
+        for(const q of rd){if(q.sk!=='trace'||q.lv!==lv||q.set!==set||genQ('trace',lv,q.seed).g!==q.g)b('round L'+lv+' question not reproducible: '+q.g)}
+      }
+    }
+    // 4. the stops: ABC Beach in CURRICULUM order; reading colour on the map, in the round and in the activity log; no quiz items
+    const wA=PATHS.read.worlds.find(w=>w.id=='r_abc'),ids=wA.nodes.map(n=>n[0]+n[1]).join(' ');
+    if(ids!=='abc1 abc2 trace2 abc3 syl1 trace3 abc4')b('ABC Beach stops: '+ids);
+    const all=[];for(const p in PATHS)for(const w of PATHS[p].worlds)for(const n of w.nodes)if(n[0]=='trace')all.push(p+':'+w.id+':'+n[1]);
+    if(all.join(' ')!=='math:m_tiny:1 read:r_abc:2 read:r_abc:3')b('trace stops: '+all.join(' '));
+    if(SK.trace.max!==3||SK.trace.area!=='math'||skArea('trace',1)!=='math'||skArea('trace',2)!=='read'||skArea('trace',3)!=='read')b('trace areas per level');
+    if(skArea('abc',1)!=='read'||skArea('add',3)!=='math'||skArea('nope',1)!==undefined)b('skArea for other skills');
+    for(const [id,area] of [['trace1','math'],['trace2','read'],['trace3','read']]){
+      const n=NODES[area].find(n=>nid(n)==id);
+      if(!n||nInfo(n).area!==area){b(id+': map stop area '+(n&&nInfo(n).area));continue}
+      const q=genQ('trace',n.lv,5);G={built:[],path:'math'};
+      if(qSubj(q)!==area)b(id+': round colour '+qSubj(q));
+      ACT.qStart('trace',1000,false,n.lv);
+      if(!ACT.cur||ACT.cur.area!==area)b(id+': activity area '+(ACT.cur&&ACT.cur.area));
+      ACT.cur=null;
+    }
+    if(nInfo(NODES.read.find(n=>nid(n)=='trace2')).t!==SK.trace.t||SK.trace.area!=='math')b('nInfo keeps the skill fields and leaves SK.trace alone');
+    for(let sd=1;sd<=200;sd++){const st=PLACE.begin(PATHS.read.worlds,-1,sd);st.wi=0;for(let k=0;k<3;k++){st.k=k;if(PLACE.items(PATHS.read.worlds,st).some(it=>it.sk=='trace'))b('placement asks tracing')}}
+    // 5. save safety: the same saves with and without trace 2 and 3. Stars are keyed by stop id; nothing re-locks; in a finished
+    //    ABC Beach both are NEW and the map does not open on them; otherwise the map opens where it did, or on a new tracing stop
+    //    the child has not played that sits before that stop
+    const full=wA.nodes.slice(),OLD=full.filter(n=>n[0]!=='trace');
+    const setNodes=a=>{wA.nodes=a;buildNodes('read')};
+    const idx=id=>NODES.read.findIndex(n=>nid(n)==id);
+    const abcIds=OLD.map(n=>n[0]+n[1]);
+    const mk=(n,boss,base,grade)=>{load(fx(base));for(const k of abcIds.concat('boss_r_abc'))delete S.maps.read[k];
+      abcIds.slice(0,n).forEach((k,i)=>{S.maps.read[k]=1+i%3});if(boss)S.maps.read.boss_r_abc=3;
+      if(S.wdone)delete S.wdone.r_abc;if(boss)(S.wdone=S.wdone||{}).r_abc=1;if(grade!=null)S.grade=grade;return JSON.stringify(S)};
+    const cases={};
+    for(const g of [-1,0,1]){
+      cases['ABC Beach not started, grade '+g]=mk(0,0,'fresh',g);
+      cases['ABC Beach 2 stops, grade '+g]=mk(2,0,'fresh',g);
+      cases['ABC Beach 3 stops, grade '+g]=mk(3,0,'fresh',g);
+      cases['ABC Beach 5 stops, boss not beaten, grade '+g]=mk(5,0,'fresh',g);
+      cases['ABC Beach finished, grade '+g]=mk(5,1,'fresh',g);
+      cases['ABC Beach finished, midway, grade '+g]=mk(5,1,'midway',g);
+      cases['ABC Beach finished, maxed, grade '+g]=mk(5,1,'maxed',g);
+    }
+    for(const n of ['midway','maxed','legacy-single-map','legacy-index-maps','fresh','tricky'])cases['fixture '+n]=fx(n);
+    for(const name in cases){
+      const raw=cases[name];
+      setNodes(OLD);load(raw);
+      const starsOld=JSON.stringify(S.maps.read),curOld=nid(NODES.read[curNode('read')]);
+      const openOld=NODES.read.map(n=>nid(n)).filter((id,i)=>unlocked('read',i));
+      setNodes(full);load(raw);stat.saves++;
+      if(JSON.stringify(S.maps.read)!==starsOld)b(name+': star table changed');
+      if(S.maps.read.trace2||S.maps.read.trace3)b(name+': stars on a new tracing stop');
+      for(const id of openOld)if(!unlocked('read',idx(id)))b(name+': '+id+' was open and is locked');
+      const curNew=nid(NODES.read[curNode('read')]),fin=name.includes('finished');
+      const okNew=['trace2','trace3'].includes(curNew)&&unlocked('read',idx(curNew))&&!stopNew('read',idx(curNew))&&idx(curNew)<idx(curOld);
+      if(curNew!==curOld&&(fin||!okNew))b(name+': current stop '+curOld+' -> '+curNew);
+      if(fin){
+        for(const id of ['trace2','trace3']){const i=idx(id);if(!stopNew('read',i)||!unlocked('read',i))b(name+': '+id+' should be NEW and open')}
+        if(!worldFinished('read',0))b(name+': ABC Beach is no longer finished');
+      }
+      if(name.includes('2 stops')&&!S.unlockAll&&(!unlocked('read',idx('trace2'))||unlocked('read',idx('trace3'))))b(name+': trace2 open, trace3 not yet');
+    }
+    setNodes(full);
+    stat.curve=curvePts.length?Math.min(...curvePts).toFixed(1)+' to '+Math.max(...curvePts).toFixed(1):'';
+    return{bad,stat};
+  };
+  const r=eval(js+';('+body.toString()+')()');
+  const p=r.bad.slice();
+  // the shipped data file carries both letter sets (A11: data builds into data.<VER>.js)
+  const data=fs.readFileSync(path.join(__dirname,'..',DATA_FILE),'utf8');
+  if(!/\bupper: \{/.test(data)||!/\blower: \{/.test(data))p.push(DATA_FILE+' has no upper or lower tracing set (rebuild)');
+  return{problems:uniq(p),note:r.stat.glyphs+' letters, '+r.stat.strokes+' strokes (curve points '+r.stat.curve+' apart), '+r.stat.traces+' synthetic traces, '+r.stat.saves+' saves with and without trace 2 and 3'};
 });
 
 // ---- report ----
