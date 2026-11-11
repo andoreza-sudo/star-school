@@ -1,5 +1,5 @@
-/* Star School gen2 v128. BUILT by tools/build.py from 35-gen-math-upper.js, 36-gen-phonics.js, 37-bank.js, 37-comp.js, 39b-steps.js: never edit by hand.
-   index.html v128 loads this file with <script src="gen2.v128.js"> after its own code, before data.v128.js. */
+/* Star School gen2 v129. BUILT by tools/build.py from 35-gen-math-upper.js, 36-gen-phonics.js, 37-bank.js, 37-comp.js, 39b-steps.js: never edit by hand.
+   index.html v129 loads this file with <script src="gen2.v129.js"> after its own code, before data.v129.js. */
 /* Upper-grade math generators (4th grade and up). One marked block per chunk, so parallel chunks merge by appending.
    Seeded randomness only (R, pick, shuffle, coin, rnd). Step hints come from 39b-steps.js. */
 
@@ -3407,4 +3407,4 @@ function stepsDecDiv(a, b) {
   return ST.hint([...steps, ...h.steps], h.w);
 }
 
-var GEN2_VER='v128'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var GEN2_VER='v129'; // last line: the whole file ran (checked by dataReady() before the app starts)

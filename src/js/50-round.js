@@ -135,7 +135,10 @@ function finish(){
   if(newPass){const wk=nd.wid;if(!S.wdone[wk]&&worldDone(p,nd.wi)){S.wdone[wk]=1;wDone=true}}
   const prizes=[award()];if(sc==n)prizes.push(award());
   actRound(); // P5-05
-  d.r++;const stk=streakTick();let mission=false;if(d.r>=3&&!d.done){d.done=true;mission=true;prizes.push(award())}
+  d.r++;const stk=streakTick();
+  const mi=MIS.done({k:'round',p:g.path||'',mix:!!g.mix,test:!!g.test,boss:!!g.boss,daily:!!g.daily,perfect:!g.boss&&sc>=n}); // P5-08
+  mi.won.forEach(w=>prizes.push(w.st));
+  const mission=mi.bonus;if(mission)prizes.push(award());
   if(wDone)prizes.push(award());
   const bonus=(mission?5:0),coins=sc+bonus+(wDone?20:0),prevSt=g.test||g.mix?0:(g.prevSt||0),PT=ptCalc(g,sc,n,stars,prevSt,newPass,testOk,nd),ptSec=PT.sec;ptEarn(ptSec);
   S.stars+=sc+bonus;S.coins+=coins;S.best=Math.max(S.best||0,best);
@@ -175,7 +178,8 @@ function finish(){
     if(g.boss){const nm=esc(g.boss.name);g.won?M(RW.boss(g.boss.name,'hit')||'crown',`You beat ${nm}!`,'fanfare','win boss'):M(RW.boss(g.boss.name)||'heart',`${nm} got away! Try again, you can beat it!`,null,'boss')}
     if(prize)M('gift',`New costume for ${esc(petN())}: ${RW.badge(prize)}`,'magic','win');
     if(g.test&&testOk)M('bolt',`You tested out of ${esc(PATHS[p].worlds[g.test.wi].n)}!`,'fanfare','win');
-    if(mission)M('calendar','Daily mission done! +5 bonus stars!','fanfare','win');
+    mi.won.forEach(w=>M('target',`Mission done: ${esc(MIS.title(w.x))}!`,'fanfare','win'));
+    if(mission)M('calendar','All 3 missions done! +5 bonus stars!','fanfare','win');
     if(stk.msg)M('flame',esc(RW.clean(stk.msg)),'fanfare','win');
     if(g.mix)M('target','Great practice on the tricky ones!',null);
     msgs.forEach(([to,h,s,x])=>{setTimeout(()=>{if(!live())return;const e=add(to,h);if(s)SFX[s]();if(x)RW.burst(e,28)},t);t+=650});

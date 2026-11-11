@@ -112,6 +112,7 @@ open-ended writing grading, any generative AI at runtime.
 | `S.flu` | P5-01 | `{setId: {best, hist: [[day, sec, right]] (last 30)}}` |
 | `S.rev` | P5-02 | `[{sk, lv, seed, label, box, due, n}]` max 150 |
 | `S.streak` | P5-04 | `{days: {'YYYY-M-D': rounds}, best}` last 120 days |
+| `S.day.m` | P5-08 | `[{k, p, d}]` three daily missions (k kind, p subject path, d 1 when done); lives inside `S.day` (`{d, r, done, m}`), which is replaced each new day; missing or damaged: drawn again; no migration |
 | `S.log` | P5-05 | `[{d, sec, rounds, by: {math, read, es, bt, disc}}]` last 60 days |
 | `S.bt` | P3-01 | `{type: {lvl, stars, seen: [], best}}`, plus `S.bt.daily` |
 
@@ -486,7 +487,7 @@ Notes:
 
 **P5-07 · Backup** · Sonnet · S: Grown-ups: "Save a backup" downloads `starschool-<name>-<date>.json`; "Restore" reads a file, validates it, shows what it contains, asks to confirm, then runs migrations. "Start over" needs typing the child's name. Accept: export then import on a fresh profile reproduces identical `S`; a damaged file is rejected with a clear message. Any button that shares or sends the backup file (share sheet, email) shows `onlineNote()` and goes through `needOnline` (CONTRIBUTING section 7, "Sharing needs a connection"); saving the file to the tablet itself works offline.
 
-**P5-08 · Missions v2** · Sonnet · S: three daily missions drawn from a pool that fits the grade (one learning round in the weakest subject, a fact sprint, a brain teaser, clear today's review, a perfect round). Accept: missions never ask for a feature the child has not unlocked.
+**P5-08 · Missions v2** · Sonnet · S: three daily missions drawn from a pool that fits the grade (one learning round in the weakest subject, a fact sprint, a brain teaser, clear today's review, a perfect round). Accept: missions never ask for a feature the child has not unlocked. **Built v129:** seven kinds (round in the weakest subject, a round in another subject, perfect round, Fact Sprint, Brain Teaser, today's review, Mixed Practice); "round" is always one of the three; each mission gives a sticker once, all three the old 5 stars + 5 coins + sticker bonus; PROGRESS.md P5-08.
 
 **P5-09 · Game-time rules v2** · Sonnet · S: extend `ptCalc` to Brain Teasers (by puzzle difficulty and hints used), Daily Review and missions; show the "why you earned this" lines everywhere. Add a grown-up setting "learning minutes needed before Game Room opens each day". Accept: table-driven unit tests for `ptCalc`.
 

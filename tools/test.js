@@ -13120,6 +13120,141 @@ run('object art set B P4-14',()=>{
   return{problems:out.bad.concat(p),note:'40 pictures, '+out.total+' bytes; '+out.asked+' picture words asked, '+out.shown+' drawings shown; '+out.esShown+' Spanish drawings shown'};
 });
 
+run('missions v2 P5-08: three distinct doable missions, same all day, new each day, rewards once, old saves load, tokens only',()=>{
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const css=fs.readFileSync(path.join(SRC,'css','46-home.css'),'utf8').replace(/\/\*[\s\S]*?\*\//g,'');
+  const tok=fs.readFileSync(path.join(SRC,'css','00-tokens.css'),'utf8');
+  const p=[];
+  // tokens only: the missions block of 46-home.css (everything from .hm-mis on) and the markup it makes
+  const at=css.indexOf('.hm-mis{');
+  if(at<0)p.push('no missions CSS in 46-home.css');
+  const mis=css.slice(Math.max(0,at));
+  if(/#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(/.test(mis))p.push('raw colour in the missions CSS');
+  if(/(^|[;{\s])(-webkit-)?(backdrop-)?filter\s*:/.test(mis))p.push('filter in the missions CSS');
+  for(const m of mis.matchAll(/transition\s*:\s*([^;}]+)/g))for(const part of m[1].split(','))
+    if(!/^\s*(transform|opacity)\s/.test(part))p.push('missions transition on '+part.trim());
+  for(const m of mis.matchAll(/var\(--([a-z0-9-]+)/g))if(!['c','c-shade','c-tint'].includes(m[1])&&!new RegExp('--'+m[1]+':').test(tok))p.push('unknown token --'+m[1]);
+  const mf=fs.readFileSync(path.join(SRC,'js','55-missions.js'),'utf8');
+  if(/\p{Extended_Pictographic}/u.test(mf))p.push('emoji in 55-missions.js');
+  const out=eval(js+`
+  const store={};
+  localStorage.getItem=k=>k in store?store[k]:null;localStorage.setItem=(k,v)=>{store[k]=String(v)};localStorage.removeItem=k=>{delete store[k]};
+  const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate();S.stickers=S.stickers||{};S.name=S.name||'Ava'}; // the fresh fixture is an empty object (no name yet)
+  const bad=[],seen={checks:0,sets:0,kinds:{}};
+  const RD=Date;let NOW=RD.UTC(2026,5,15,12);
+  Date=class extends RD{constructor(...a){a.length?super(...a):super(NOW)}static now(){return NOW}}; // a clock the check can move
+  const setDay=n=>{NOW=RD.UTC(2026,5,15+n,12)};
+  const dkey=n=>{const d=new RD(RD.UTC(2026,5,15+n,12));return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()};
+  const FXS=['fresh','midway','maxed','tricky','legacy-single-map','legacy-index-maps'];
+  const doable=(x,w)=>{
+    if(['round','other','perfect'].includes(x.k)){
+      const st=MIS.stop(x.p);
+      if(!st){bad.push(w+': '+x.k+' in '+x.p+' with no open stop');return}
+      const n=NODES[x.p][st.i];
+      if(n.sk=='boss'||!unlocked(x.p,st.i)||!SK[n.sk])bad.push(w+': '+x.k+' target is a boss, locked or unknown '+x.p+st.i);
+      else if(!genQ(n.sk,n.lv))bad.push(w+': no question at '+x.p+' '+n.sk+n.lv);
+    }
+    if(x.k=='sprint'&&!(gradeOf()>=0&&FLU.sets().length))bad.push(w+': sprint not doable');
+    if(x.k=='teaser'&&!BT.offered().length)bad.push(w+': teaser with no puzzle type');
+    if(x.k=='review'&&!dueItems().length)bad.push(w+': review with nothing due');
+    if(x.d!==0)bad.push(w+': a new mission starts undone');
+  };
+  const ev=x=>({round:{k:'round',p:x.p},other:{k:'round',p:x.p},perfect:{k:'round',p:'math',perfect:true},sprint:{k:'sprint'},teaser:{k:'teaser'},
+    review:{k:'round',mix:true,daily:true},mix:{k:'round',mix:true}})[x.k];
+  const stk=()=>Object.values(S.stickers).reduce((a,b)=>a+b,0);
+  const btTypes=BT.types;
+  try{
+  for(const fxn of FXS)for(const g of GRADES){
+    const w=fxn+' g'+g;
+    load(fx(fxn));S.grade=g;S.name=S.name||'Ava';S.day={};if(fxn!='tricky')S.rev=[];
+    setDay(0);
+    const c=MIS.ctx(),sets=new Set();
+    for(let n=0;n<40;n++){
+      setDay(n);S.day={};
+      const m=MIS.get(),again=MIS.get(),key=JSON.stringify(m);
+      if(JSON.stringify(again)!==key)bad.push(w+': the missions changed between two reads');
+      if(!MIS.valid(m)||m.length!==3||new Set(m.map(x=>x.k)).size!==3)bad.push(w+' day '+n+': not three distinct missions '+key);
+      if(!m.some(x=>x.k=='round'))bad.push(w+': no learning round mission');
+      m.forEach(x=>{doable(x,w+' day '+n);seen.kinds[x.k]=(seen.kinds[x.k]||0)+1});
+      sets.add(m.map(x=>x.k+(x.p||'')).join(','));
+      if(n<3){
+        // same all day: a round finished, review cleared: the list stays
+        const before=JSON.stringify(m.map(x=>({k:x.k,p:x.p})));
+        S.day.r=2;S.rev=[];save();
+        if(JSON.stringify(MIS.get().map(x=>({k:x.k,p:x.p})))!==before)bad.push(w+': the missions changed during the day');
+        if(JSON.stringify(MIS.draw(dkey(n),S.name,c))!==JSON.stringify(MIS.draw(dkey(n),S.name,c)))bad.push(w+': draw is not repeatable');
+        if(fxn=='tricky')load(fx(fxn)),S.grade=g,S.name=S.name||'Ava';
+      }
+    }
+    seen.checks++;seen.sets+=sets.size;
+    if(sets.size<3)bad.push(w+': only '+sets.size+' different mission sets in 40 days');
+    // never a brain teaser with no puzzle types, or a review with nothing due
+    {
+      setDay(0);S.day={};S.rev=[];BT.types={};
+      const c2=MIS.ctx();
+      for(let n=0;n<40;n++){const m=MIS.draw(dkey(n),'Ava',c2);
+        if(m.some(x=>x.k=='teaser'))bad.push(w+': teaser drawn with no puzzle types');
+        if(m.some(x=>x.k=='review'))bad.push(w+': review drawn with nothing due');
+        if(m.length!==3||new Set(m.map(x=>x.k)).size!==3)bad.push(w+': not three missions with no teasers or review')}
+      BT.types=btTypes;
+    }
+    // rewards: each mission pays one sticker once; all three pay the bonus once
+    {
+      setDay(7);S.day={};S.rev=[];const m=MIS.get(),s0=stk(),stars0=S.stars;let won=0,bonus=0;
+      for(const x of m){
+        const r1=MIS.done(ev(x));won+=r1.won.length;bonus+=r1.bonus?1:0;
+        const r2=MIS.done(ev(x));if(r2.won.some(y=>y.x===x))bad.push(w+': '+x.k+' paid twice');
+        won+=r2.won.length;bonus+=r2.bonus?1:0;
+      }
+      if(!MIS.get().every(x=>x.d))bad.push(w+': a mission did not complete from its own event '+JSON.stringify(MIS.get()));
+      if(won<3||bonus!==1)bad.push(w+': rewards won '+won+', bonus '+bonus);
+      if(stk()-s0!==won)bad.push(w+': stickers '+(stk()-s0)+' for '+won+' missions');
+      const r3=MIS.done({k:'sprint'}),r4=MIS.done({k:'round',p:'math',perfect:true,mix:true});
+      if(r3.won.length||r3.bonus||r4.won.length||r4.bonus||day().done!==true)bad.push(w+': paid again after all three');
+      if(MIS.pay({won:[],bonus:false})!=='')bad.push(w+': pay with nothing won');
+      if(S.stars!==stars0)bad.push(w+': MIS.done changed stars (the caller pays the bonus)');
+    }
+    // the next day starts clean
+    setDay(8);const m8=MIS.get();if(m8.some(x=>x.d)||day().done)bad.push(w+': the next day did not start clean');
+  }
+  // every kind can appear somewhere
+  for(const k of MIS.KINDS)if(!seen.kinds[k])bad.push('mission kind '+k+' never drawn on any fixture or grade');
+  // a pre-K child gets no sprint
+  load(fx('fresh'));S.grade=-1;S.name='Ava';
+  for(let n=0;n<40;n++){setDay(n);S.day={};if(MIS.get().some(x=>x.k=='sprint'))bad.push('pre-K sprint');}
+  // old and damaged saves: S.day as older builds wrote it, and junk in S.day.m
+  const dmg=[{},{d:'2000-1-1',r:2,done:true},{d:dkey(0),r:3,done:true},{d:dkey(0),r:1,done:false},{d:dkey(0),m:'x'},{d:dkey(0),m:[1,2,3]},
+    {d:dkey(0),m:[{k:'zz',d:0},{k:'round',p:'nope',d:0},{k:'mix',d:5}]},{d:dkey(0),m:[{k:'mix',d:0},{k:'mix',d:0},{k:'mix',d:0}]},{d:dkey(0),m:null}];
+  for(const fxn of FXS)for(const dd of dmg){
+    setDay(0);load(fx(fxn));S.grade=2;S.day=JSON.parse(JSON.stringify(dd));
+    const m=MIS.get(),oldDone=dd.done===true&&dd.d==dkey(0);
+    if(!MIS.valid(m))bad.push(fxn+': old S.day '+JSON.stringify(dd)+' gave '+JSON.stringify(m));
+    if(oldDone&&!m.every(x=>x.d))bad.push(fxn+': a mission already done today by the old rule shows as open');
+    if(oldDone){const r=MIS.done({k:'sprint'});if(r.bonus||r.won.length)bad.push(fxn+': paid again after the old mission');}
+    // what is saved still loads as the same object (no migration, nothing lost)
+    save();const back=JSON.parse(store[KEY]);
+    if(!back.day||back.stars!==S.stars||Object.keys(back).sort().join()!==Object.keys(S).sort().join())bad.push(fxn+': the save changed shape');
+  }
+  // an old save has no new top-level field: only S.day.m, written when missions are first read
+  setDay(0);load(fx('midway'));const keys0=Object.keys(S).sort().join();S.day={};MIS.get();
+  if(Object.keys(S).sort().join()!==keys0)bad.push('missions added a top-level save field');
+  // the Home list: three rows, a button for each open mission, a tick for each done one, nothing broken or emoji
+  load(fx('midway'));S.grade=3;S.name='A<b>';S.day={};
+  let h=hmMissions();
+  if((h.match(/data-mi="/g)||[]).length!==3||/A<b>/.test(h))bad.push('Home missions list: '+h.slice(0,200));
+  if(/\\p{Extended_Pictographic}/u.test(h))bad.push('emoji in the missions list');
+  for(const m of h.matchAll(/href="#i-([a-z0-9-]+)"/g))if(!ICONS[m[1]])bad.push('missing icon '+m[1]);
+  for(const m of h.matchAll(/var\\(--([a-z0-9-]+)/g))if(!tok.includes('--'+m[1]+':'))bad.push('unknown token --'+m[1]);
+  MIS.get()[0].d=1;h=hmMissions();
+  if((h.match(/data-mi="/g)||[]).length!==2||!/hm-mi done/.test(h))bad.push('a done mission must be a tick card, not a button');
+  for(const k of MIS.KINDS){const x={k,p:'math',d:0};if(!MIS.title(x)||!MIS.sub(x)||!ICONS[MIS.icon(x)]||!MIS.cls(x))bad.push('mission '+k+' has no title, line, icon or colour');}
+  const html=MIS.winHTML({won:[{x:{k:'mix',d:1},st:{s:'x',isNew:true}}],bonus:true,bst:{s:'y',isNew:false}});
+  if(!/Mission done/.test(html)||!/All 3 missions/.test(html))bad.push('win lines missing');
+  }finally{Date=RD;BT.types=btTypes}
+  ({bad,seen});`);
+  return{problems:p.concat(uniq(out.bad)),note:out.seen.checks+' grade/fixture runs, '+out.seen.sets+' mission sets seen, kinds '+JSON.stringify(out.seen.kinds)};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){
