@@ -1006,6 +1006,38 @@ const GROUPS = {
     'viz', 'viz-q', 'bay-coins4', 'clock-time1', 'frac-2-pic', 'sg-tenf2'],
 };
 
+// P2-08: step hints. One question in a one-question round (made in the page by mk, a function source), then Help tapped
+// `taps` times (the first tap opens step 1, each further tap shows the next step).
+const stepShot = (mk, taps) => ({ run: async p => {
+  await p.evaluate(([src, sq]) => {
+    S.name = 'Ava'; window.say = () => {};
+    window.stepQ = eval('(' + sq + ')');
+    const q = eval('(' + src + ')')();
+    q.sk = q.sk || 'zz_demo'; q.lv = q.lv || 1;
+    G = newG({ sk: 'zz_demo', n: 10, pool: [q] }); next();
+  }, [mk.toString(), stepQ.toString()]);
+  for (let i = 0; i < taps; i++) { await p.click('#hb'); await p.waitForTimeout(120); }
+} });
+const stepQ = (html, ans, hint, o) => Object.assign({ kind: 'num', html, ans, hint, say: 'Work it out', label: 'zz:steps' }, o || {});
+Object.assign(SCREENS, {
+  'steps-add': { run: async p => { await bayShot('big', 5, 12)(p); for (let i = 0; i < 2; i++) { await p.click('#hb'); await p.waitForTimeout(120); } } },
+  'steps-add-end': { run: async p => { await bayShot('big', 5, 12)(p); for (let i = 0; i < 3; i++) { await p.click('#hb'); await p.waitForTimeout(120); } } },
+  'steps-dec': stepShot(() => stepQ(ST.vert(['3.4', '12.75'], '+'), '16.15', stepsAdd('3.4', '12.75'), { pad: 'dec' }), 2),
+  'steps-sub': stepShot(() => stepQ(ST.vert(['5003', '1278'], '−'), '3725', stepsSub(5003, 1278), { max: 4 }), 1),
+  'steps-sub2': stepShot(() => stepQ(ST.vert(['512', '389'], '−'), '123', stepsSub(512, 389)), 4),
+  'steps-mul-pp': stepShot(() => stepQ(ST.vert(['34', '27'], '×'), '918', stepsMul(34, 27, 'pp')), 3),
+  'steps-mul-pp-end': stepShot(() => stepQ(ST.vert(['34', '27'], '×'), '918', stepsMul(34, 27, 'pp')), 5),
+  'steps-mul-std': stepShot(() => stepQ(ST.vert(['348', '26'], '×'), '9048', stepsMul(348, 26, 'std'), { max: 6 }), 6),
+  'steps-mul-1': stepShot(() => stepQ(ST.vert(['1286', '4'], '×'), '5144', stepsMul(1286, 4, 'std'), { max: 5 }), 3),
+  'steps-div': stepShot(() => stepQ(ST.ldiv(745, 6, SLOT_R), '124R1', stepsDiv(745, 6), { sep: 'R' }), 4),
+  'steps-div-end': stepShot(() => stepQ(ST.ldiv(745, 6, SLOT_R), '124R1', stepsDiv(745, 6), { sep: 'R' }), 6),
+  'steps-div2': stepShot(() => stepQ(ST.ldiv(864, 24), '36', stepsDiv(864, 24)), 3),
+  'steps-equiv': stepShot(() => stepQ(`<div class="eq">${fcFr(3, 4)} = ${fcFr(SLOT, 12)}</div>`, '9', stepsEquivFrac(3, 4, null, 12)), 2),
+  'steps-cd': stepShot(() => stepQ(`<div class="eq">${fcFr(2, 3)} + ${fcFr(1, 4)} = ${SLOT_FRAC}</div>`, '11/12', stepsCommonDen(2, 3, 1, 4, '+'), { pad: 'frac' }), 4),
+  'steps-story': stepShot(() => stepQ('<div class="sub">Mia has 12 shells. She finds 5 more, then gives 4 away. How many now?</div>' + SLOT, '13',
+    stepsStory(['First find how many Mia has after finding 5 more.', 'Then take away the 4 she gave. How many are left?'])), 2),
+});
+
 async function main() {
   const args = process.argv.slice(2);
   let fixtureArg = null;

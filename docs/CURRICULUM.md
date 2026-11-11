@@ -276,6 +276,11 @@ Hints: `mfact` shows the skip-count row and, for 6-9, a known-fact strategy ("7 
 it shows the final small computation ("Now add 120 + 18"). Step builders required: `stepsAdd(a,b)`, `stepsSub(a,b)` (with regrouping
 marks), `stepsMul(a,b)` (partial products for up to 3x2 digits), `stepsDiv(a,b)` (long division rounds), `stepsEquivFrac`, `stepsCommonDen`,
 `stepsStory(list)`. All multi-digit skills from here on must use them.
+As shipped (`src/js/39b-steps.js`): each builder returns the whole hint, so a generator writes `hint: stepsAdd(a, b)`.
+`stepsAdd(a, b, ...)` takes 2+ addends and decimal strings ('3.4', '12.75'); `stepsSub(a, b)` needs a >= b, decimals too;
+`stepsMul(a, b, how)` with how 'pp' (default up to 3x2 digits) or 'std'; `stepsDiv(a, b)` needs a >= b, whole numbers, remainder
+as the last step (pair it with `sep:'R'`); `stepsEquivFrac(n, d, n2, d2)` with one of n2, d2 null; `stepsCommonDen(a, b, c, d, op)`
+with op '+', '-' or 'cmp'. Prompts: `ST.vert(nums, op)` (stacked, points lined up) and `ST.ldiv(a, b, slot)` (long division).
 
 ### M-4a: Grade 4 whole numbers (chunk P2-09) (4.NBT, 4.OA)
 

@@ -789,8 +789,8 @@ function genBayBig5() {
     if ((kind == 'ones' && c0 && !c1) || (kind == 'tens' && !c0 && c1) || (kind == 'both' && c0 && c1)) break;
   }
   const a = d[0] * 100 + d[1] * 10 + d[2], b = d[3] * 100 + d[4] * 10 + d[5];
-  const hint = BAY.steps([`Ones: ${d[2]} + ${d[5]}. Carry a ten if you can.`, 'Tens: add them and the carried ten.', 'Hundreds: add them and any carried hundred.']);
-  return mathQ(a, '+', b, a + b, 'c', true, {hint, label: `${a} + ${b} = ?`});
+  // P2-08: column steps, one per tap (ones, tens, then the hundreds with a "?")
+  return mathQ(a, '+', b, a + b, 'c', true, {hint: stepsAdd(a, b), label: `${a} + ${b} = ?`});
 }
 
 // sub 5: 3-digit - 3-digit, no regrouping, vertical
