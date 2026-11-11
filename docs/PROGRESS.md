@@ -110,6 +110,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P2-35 v129
 - P4-16 v130
 - P4-15 v131
+- G-03 done
 
 ## Handoff notes
 
@@ -411,6 +412,12 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-11) Icons wanted from P4-03: `balloon` (Bonus game, today `gamepad`), `sparkle` / `confetti`, `unlock` (open padlock for "Next stop unlocked", today `map`), `zap` (a lightning with a spark for boss hits; today `bolt`), `sticker` (single sticker for the prize row), `medal` (the prize rosette as an icon), `heart-half` (boss life bar), `chest` (the treasure chest at icon size, e.g. for the round track where renderQ shows the gift emoji).
 
 ## Log
+
+### G-03 Games research (2026-11-11, Claude)
+- What: new `docs/GAMES_RESEARCH.md` for Andy to pick the G-04 games. It sums up what children aged 5 to 11 play most (ESA 2025, Morning Consult 2025, KB&B 2025, Roy Morgan 2025, Ofcom 2025, 2025 download charts from Pocket Gamer.biz and Sensor Tower, Google Play's Kids tab, Teacher Approved criteria and Best of 2025, Common Sense Media), why (competence, choice, sharing; pretend play, collecting, customising), which mechanics are healthy and which to keep out (loot boxes, energy timers, ads, streaks, limited-time offers, leaderboards, endless loops, idle earnings, guilt-tripping characters; JAMA Network Open 2022, FTC 2025, ICO Children's code, UNICEF RITEC 2024).
+- Three original game designs, one page each, all on `GH.reg` with the shared end card, 3-10 minute rounds, touch-only, offline, drawn in object-art style: 1. **Snack Stand** (run a snack stand for one day; animal customers, picture orders, Calm and Busy modes, optional Till change mode; Medium), 2. **Sky Hop** (the child's pet bounces through 24 short cloud obstacle courses; one-touch or free move, stars and time medals, no lives; Large), 3. **Fishing Day** (calm side-view fishing trip, about 30 real fish for a Fish Book, Easy or Pro reel, one true fact per fish; Medium). Recommendation: Snack Stand first, Sky Hop second, Fishing Day as the calm third. Also lists ideas considered and not picked (endless runner, merge/idle, match-3, virtual pet, physics launcher, garden defence, rhythm, online).
+- Limits: the Play Store chart pages could not be opened from the build machine (network), so the chart picture comes from published reports; weaker sources are marked. R-02 is not written yet; its roadmap checklist was used and its findings should be read before G-04.
+- No code changes, no VER bump, no build.
 
 ### P4-15 Object art set C, 40 pictures (v131, 2026-11-11, Claude)
 - What changed (DESIGN_SYSTEM 6.5): 40 new drawings in `ART`, in the style of sets A and B (shade rim, base moved toward the top-left light, highlight, white glints, deep accents, contact shadows, `--a-*` roles only, faces only on animals, the snowman's coal eyes and carrot nose being part of what he is): pizza, snowflake, elephant, icecream, beach, rabbit, sunflower, giraffe, road, tub, lion, backpack, dish, school, snowman, window, shell, cap, shoes, eraser, scissors, soap, sofa, paper, chick, spoon, pants, butterfly, church, motorcycle, leaf, door, sheep, umbrella, storm, boat, clock, books, lamp, gamepad. No new colour roles.
