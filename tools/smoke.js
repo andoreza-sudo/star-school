@@ -1010,6 +1010,48 @@ async function main() {
       await fr6.ctx.close();
     }
 
+    // P2-18 Phonics 1st-2nd at 380x780: a 2nd grader who finished Ocean Reef opens Space Station and plays sight 4 and the two
+    //    r-controlled stops, then (with Space Station done) Word Workshop and its sight 5 and two vowel-team stops, with real taps.
+    //    Every answer is right, nothing is wider than the screen, and each stop saves its stars.
+    {
+      const ph = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
+      const pp = ph.page;
+      await pp.evaluate(() => {
+        S.grade = 2; // abc3 stays unpassed: its match question would be asked as a review item and the bot has no match taps
+        NODES.read.forEach((n, i) => { if (i < NODES.read.findIndex(m => m.wid === 'r_space' && m.sk === 'sight') && nid(n) !== 'abc3') S.maps.read[nid(n)] = S.maps.read[nid(n)] || 3; });
+        save();
+      });
+      const goStop = async id => { // home, reading map, the world's chip, then the stop
+        const at = await pp.evaluate(id => { const i = NODES.read.findIndex(n => nid(n) === id); return { i, w: NODES.read[i].wi }; }, id);
+        await pp.evaluate(() => { if (G) G.dead = true; home(); });
+        await pp.click('.game[data-p="read"]');
+        await pp.waitForSelector('.wchip.on');
+        await pp.click(`.wchip[data-w="${at.w}"]`);
+        await pp.waitForSelector(`.wchip.on[data-w="${at.w}"]`);
+        await pp.click(`.node[data-n="${at.i}"]`);
+        await pp.waitForSelector('#prompt');
+      };
+      const rounds = [['sight4', 'sight', 4], ['pic5', 'pic', 5], ['build5', 'build', 5], ['sight5', 'sight', 5], ['pic6', 'pic', 6], ['build6', 'build', 6]];
+      for (const [id, sk, lv] of rounds) {
+        if (id === 'sight5') {
+          await pp.evaluate(() => { NODES.read.forEach(n => { if (n.wid === 'r_space') S.maps.read[nid(n)] = S.maps.read[nid(n)] || 3; }); save(); });
+        }
+        await goStop(id);
+        const lay = await pp.evaluate(() => ({ sk: G.sk, lv: G.lv, w: document.documentElement.scrollWidth, say: !!G.q.say }));
+        if (lay.sk !== sk || lay.lv !== lv || lay.w > 380 || !lay.say) fail('P2-18 ' + id + ' round: ' + JSON.stringify(lay));
+        await playRound(pp, 'P2-18 ' + id);
+        const st = await pp.evaluate(id => S.maps.read[id] || 0, id);
+        if (st < 1) fail('P2-18 ' + id + ' did not save stars');
+      }
+      const ok = await pp.evaluate(() => ({ ws: PATHS.read.worlds.map(w => w.id).join(' ').includes('r_space r_workshop r_summit'),
+        open: ['sight4', 'pic5', 'build5', 'sight5', 'pic6', 'build6'].every(id => S.maps.read[id] > 0) }));
+      if (!ok.ws || !ok.open) fail('P2-18 world order or stars: ' + JSON.stringify(ok));
+      else step('P2-18: Space Station r-controlled stops and Word Workshop (sight 5, vowel teams) played with real taps, stars saved');
+      network.push(...ph.network);
+      for (const e of ph.errors) fail(e);
+      await ph.ctx.close();
+    }
+
     for (const e of errors) fail(e);
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');

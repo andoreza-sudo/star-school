@@ -158,3 +158,23 @@ function genSyl(lv){
   return{kind:'choice',cls:'syms sym4 clps',html:`${HEARBTN(w)}<div class="sent">${esc(w)}</div><div class="sub">How many claps?</div>`,say:`${w}. How many claps in ${w}?`,
     auto:true,ans:String(n),after:`${w} has ${n} ${n==1?'clap':'claps'}!`,choices:sylChoices(4),
     hint:{k:'say',w:`${w}... ${w}`,s:'Clap each beat as you say the word slowly.'},label:`syllables: ${w}`}}
+
+// ---- P2-18 phonics 1st-2nd ----
+// pic 5-6 and build 5-6 (CURRICULUM E-phon): r-controlled vowels and vowel teams. sight 4-5 use genSight with DOL[3] and DOL[4].
+// Wrong choices swap the r-vowel or team inside the same word: bird / bard / berd / burd.
+function phonVariants(w,pair,pool){
+  const i=w.indexOf(pair),endW=i+pair.length==w.length;
+  const out=pool.filter(p=>p!==pair&&!(p=='oy'&&!endW)&&!((p=='ou'||p=='oi')&&endW))
+    .map(p=>w.slice(0,i)+p+w.slice(i+pair.length)).filter(x=>x!==w&&!BAD.test(x)&&!PHBAD.test(x)&&!RVW.concat(VTW).some(r=>r[0]===x)); // never another picture word of these levels
+  return shuffle(out).slice(0,3)}
+const phonList=lv=>lv==5?RVW:VTW,phonPool=lv=>lv==5?RVP:VTP;
+function genPicP(lv){const [w,e,pr]=pick(phonList(lv));
+  return{kind:'choice',html:`<div class="emo">${picFor(w,e)}</div><div class="sub">Which word is this?</div>`,say:'Which word is this?',after:w,ans:w,
+    choices:shuffle([w,...phonVariants(w,pr,phonPool(lv))]).map(x=>({l:x,v:x})),
+    hint:{k:'say',s:`Listen! Look for “${pr}” in the word.`,w},label:`read “${w}”`}}
+function genBuildP(lv){const [w,e]=pick(phonList(lv));
+  // two spare tiles: vowels that are not in the word first (they tempt a wrong r-vowel or team), then any other letter
+  const V=shuffle([...'aeiou'].filter(c=>!w.includes(c))),O=shuffle([...'bcdfghklmnpstw'].filter(c=>!w.includes(c)));
+  return{kind:'build',word:w,tiles:shuffle([...w,...[...V,...O].slice(0,2)]),
+    html:`<div class="emo">${picFor(w,e)}</div><div class="lslots">${[...w].map((_,i)=>`<span class="ls" id="ls${i}"></span>`).join('')}</div>`,
+    say:w,auto:true,ans:w,hint:{k:'next'},label:`spell “${w}”`}}

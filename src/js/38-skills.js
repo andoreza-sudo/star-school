@@ -36,9 +36,9 @@ const SK={
  mbig:{t:'Times Tens',e:'✖️',area:'math',max:1,gen:genMbig},
  // P2-06 fractions: levels 2-8 (frac 1 comes with P2-03)
  frac:{t:'Fractions',e:'🍕',area:'math',max:8,gen:genFracCore},
- sight:{t:'Sight Words',e:'👀',area:'read',max:3,gen:genSight},
- pic:{t:'Picture Words',e:'🖼️',area:'read',max:4,gen:genPic},
- build:{t:'Build a Word',e:'🧩',area:'read',max:4,gen:genBuild},
+ sight:{t:'Sight Words',e:'👀',area:'read',max:5,gen:genSight},
+ pic:{t:'Picture Words',e:'🖼️',area:'read',max:6,gen:lv=>lv>4?genPicP(lv):genPic(lv)},
+ build:{t:'Build a Word',e:'🧩',area:'read',max:6,gen:lv=>lv>4?genBuildP(lv):genBuild(lv)},
  sent:{t:'Read & Match',e:'📚',area:'read',max:2,gen:genSent},
  spell:{t:'Spelling',e:'✏️',area:'read',max:7,gen:lv=>genSpell(lv)}}; // P2-19: genSpell and its words are in src/data/d-spell.js
 

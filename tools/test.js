@@ -1002,7 +1002,7 @@ run('pictures: picFor fallback and art swap; picture generators use picFor',()=>
   delete ART.zzz;
   const ART0={...ART}; // real drawings (P4-13+) must survive this test
   // the picture generators go through picFor: with a drawing for every word, no word emoji is left in their html
-  const PW=[...CVC,...BLEND,...MAGICE,...TEAMS];
+  const PW=[...CVC,...BLEND,...MAGICE,...TEAMS,...RVW,...VTW];
   for(const [w] of PW)ART[w]='<rect width="64" height="64"/>';
   for(const sk of ['pic','build'])for(let lv=1;lv<=SK[sk].max;lv++)for(let s=1;s<=60;s++){
     const q=genQ(sk,lv,s);
@@ -1846,7 +1846,7 @@ run('art set A: 40 pictures present, size, allowed elements, tokens only, well-f
   const css=${JSON.stringify(fs.readFileSync(path.join(SRC,'css','21-art.css'),'utf8'))};
   for(const n of ${JSON.stringify(NAMES)})for(const m of ART[n].match(/--a-[a-z0-9]+/g)||[])if(!css.includes(m+':'))bad.push(n+': '+m+' not defined in 21-art.css');
   // picture-word questions show the drawing, not the emoji, for set A words that are picture words
-  const PW=[...CVC,...BLEND,...MAGICE,...TEAMS].filter(([w])=>ART[w]);
+  const PW=[...CVC,...BLEND,...MAGICE,...TEAMS,...RVW,...VTW].filter(([w])=>ART[w]);
   let shown=0;
   for(const sk of ['pic','build'])for(let lv=1;lv<=SK[sk].max;lv++)for(let s=1;s<=60;s++){
     const q=genQ(sk,lv,s);
@@ -2426,6 +2426,120 @@ run('fractions P2-06: old saves keep every star and no passed math stop re-locks
   }
   ({bad,checked});`);
   return{problems:uniq(r.bad),note:r.checked+' passed stops checked on 5 fixtures'};
+});
+
+// ---- P2-18 phonics 1st-2nd ----
+run('phonics P2-18: sight 4-5, r-controlled and vowel-team picture words, 3,000 samples per level, map, saves',()=>{
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const serrs=[],bad=m=>serrs.push(m);
+  const body=function(){
+    S.name='Ava';S.buddy='Ben';G={built:[]};
+    if(SK.sight.max!==5||SK.pic.max!==6||SK.build.max!==6)bad('max levels: sight '+SK.sight.max+' pic '+SK.pic.max+' build '+SK.build.max);
+    // word data
+    const d4=DOL[3],d5=DOL[4];
+    if(d4.length!==46||d5.length!==41)bad('Dolch 2nd/3rd grade sizes '+d4.length+'/'+d5.length+', want 46/41');
+    for(const [n,L] of [['sight4',d4],['sight5',d5]]){
+      if(new Set(L).size!==L.length)bad(n+': repeated word');
+      for(const w of L)if(BAD.test(w)||!/^[a-z']+$/.test(w))bad(n+': bad word '+w);
+    }
+    if(d4.some(w=>d5.includes(w)||DOL[0].includes(w)||DOL[1].includes(w)||DOL[2].includes(w)))bad('sight4 repeats an older list');
+    if(RVW.length!==24||VTW.length!==24)bad('picture word lists '+RVW.length+'/'+VTW.length+', want 24/24');
+    for(const [n,L,P] of [['pic5',RVW,RVP],['pic6',VTW,VTP]]){
+      if(new Set(L.map(x=>x[0])).size!==24)bad(n+': repeated word');
+      for(const [w,e,p] of L){
+        if(!P.includes(p)||!w.includes(p))bad(n+': '+w+' does not hold '+p);
+        if(BAD.test(w)||PHBAD.test(w))bad(n+': BAD word '+w);
+        if(!e)bad(n+': '+w+' has no emoji');
+      }
+      for(const p of P)if(L.filter(x=>x[2]==p).length<2)bad(n+': team '+p+' has fewer than 2 words');
+      // wrong choices: three different spellings that swap the team, none rude
+      for(const [w,e,p] of L)for(let k=0;k<30;k++){
+        const v=phonVariants(w,p,P);
+        if(v.length!==3||new Set(v).size!==3||v.includes(w))bad(n+' '+w+': wrong choices '+v);
+        for(const x of v)if(BAD.test(x)||PHBAD.test(x))bad(n+' '+w+': rude wrong choice '+x);
+      }
+    }
+    // 3,000 seeded questions per level
+    const want={sight4:46,sight5:41,pic5:24,pic6:24,build5:24,build6:24};
+    for(const [sk,lv] of [['sight',4],['sight',5],['pic',5],['pic',6],['build',5],['build',6]]){
+      const key=sk+lv,w2=key+': ',seen=new Set(),labels={};
+      for(let i=0;i<3000;i++){
+        const q=genQ(sk,lv,i+1);
+        const pr=kindProblems(q);if(pr.length)bad(w2+q.label+': '+pr.join('; '));
+        if(q.sk!==sk||q.lv!==lv)bad(w2+'genQ did not stamp sk/lv');
+        if(!q.say||!q.hint||!q.label)bad(w2+'say, hint or label missing');
+        labels[q.label]=1;seen.add(q.ans);
+        if(sk=='build'){
+          if(q.tiles.length!==q.word.length+2||q.ans!==q.word)bad(w2+q.word+': tiles '+q.tiles.join(''));
+          const t=[...q.tiles];for(const c of q.word){const j=t.indexOf(c);if(j<0)bad(w2+q.word+': tile missing '+c);else t.splice(j,1)}
+          if(q.hint.k!=='next')bad(w2+'hint');
+        }else{
+          const vs=q.choices.map(c=>c.v);
+          if(vs.length!==4||new Set(vs).size!==4||!vs.includes(q.ans))bad(w2+q.label+': choices '+vs);
+          if(sk=='sight'&&vs.some(v=>!DOL[lv-1].includes(v)))bad(w2+q.label+': a choice is off the list');
+          if(sk=='pic'){
+            if(!phonList(lv).some(x=>x[0]===q.ans))bad(w2+q.ans+' is not in the list');
+            for(const v of vs)if(BAD.test(v)||PHBAD.test(v))bad(w2+'rude choice '+v);
+            if(!/class="emo"/.test(q.html))bad(w2+'no picture');
+          }
+        }
+      }
+      if(seen.size!==want[key])bad(w2+'3000 questions drew '+seen.size+' of '+want[key]+' words');
+      if(Object.keys(labels).length!==want[key])bad(w2+'labels are not one per word');
+      if(JSON.stringify(genQ(sk,lv,77))!==JSON.stringify(genQ(sk,lv,77)))bad(w2+'not reproducible');
+    }
+    // existing levels still draw from their own lists
+    for(let i=0;i<300;i++){
+      for(let lv=1;lv<=3;lv++){const q=genQ('sight',lv,i+1);if(!DOL[lv-1].includes(q.ans))bad('sight'+lv+' changed')}
+      for(let lv=1;lv<=4;lv++){
+        const q=genQ('pic',lv,i+1);if(!WL(lv).some(x=>x[0]===q.ans))bad('pic'+lv+' changed');
+        const b=genQ('build',lv,i+1);if(!WL(lv).some(x=>x[0]===b.word))bad('build'+lv+' changed');
+      }
+    }
+    // map: CURRICULUM 2.2 order
+    const stops=id=>NODES.read.filter(n=>n.wid==id&&n.sk!='boss').map(nid).join(' ');
+    if(stops('r_space')!=='pic4 build4 sight4 pic5 build5 spell3')bad('r_space stops: '+stops('r_space'));
+    if(stops('r_workshop')!=='sight5 pic6 build6')bad('r_workshop stops: '+stops('r_workshop'));
+    const ids=PATHS.read.worlds.map(w=>w.id),iw=ids.indexOf('r_workshop');
+    if(ids[iw-1]!=='r_space'||ids[iw+1]!=='r_summit'||PATHS.read.worlds[iw].g!==2)bad('r_workshop must be grade 2, between r_space and r_summit: '+ids);
+    // save safety: the reading map before this chunk against today's
+    const store={};
+    global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+    const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
+    const NEWS=new Set(['sight4','pic5','build5']),CUR=PATHS.read.worlds;
+    const OLD=()=>CUR.filter(w=>w.id!=='r_workshop').map(w=>w.id=='r_space'?{...w,nodes:w.nodes.filter(x=>!NEWS.has(x[0]+x[1]))}:w);
+    const snap=()=>{const o={};NODES.read.forEach((n,i)=>{o[nid(n)]={st:getSt('read',i),open:unlocked('read',i),wid:n.wid}});return o};
+    const early=new Set(PATHS.read.worlds.slice(0,PATHS.read.worlds.findIndex(w=>w.id=='r_workshop')).map(w=>w.id));
+    const fixtures=[];
+    for(const name of ['fresh','midway','maxed','legacy-single-map','legacy-index-maps','tricky'])fixtures.push([name,fx(name)]);
+    // a child who passed every older reading stop (spell 1-3 and every boss included)
+    {load(null);const m={};PATHS.read.worlds=OLD();buildNodes('read');NODES.read.forEach(n=>{m[nid(n)]=2});
+      PATHS.read.worlds=CUR;buildNodes('read');fixtures.push(['all-old-passed',JSON.stringify({maps:{read:m},grade:2})])}
+    // spell3 passed but the stops before it not (a child who skipped around)
+    fixtures.push(['spell3-only',JSON.stringify({maps:{read:{pic4:2,build4:1,spell3:3}},grade:2})]);
+    let checked=0;
+    for(const [name,raw] of fixtures)for(const g of [null,-1,0,1,2,3,6]){
+      load(Object.keys(JSON.parse(raw)).length?raw:null);if(g!==null)S.grade=g;
+      const g0=S.grade;
+      PATHS.read.worlds=OLD();buildNodes('read');
+      const before=snap();
+      PATHS.read.worlds=CUR;buildNodes('read');
+      const after=snap();
+      for(const k in before){
+        checked++;
+        if(!after[k]){bad(name+' g'+g0+': stop '+k+' vanished');continue}
+        if(before[k].st!==after[k].st)bad(name+' g'+g0+': '+k+' stars '+before[k].st+' -> '+after[k].st);
+        if(before[k].st>0&&!after[k].open)bad(name+' g'+g0+': passed stop '+k+' is locked');
+        // nothing in or before Space Station is re-locked (worlds after it wait for Word Workshop, as they wait for any world)
+        if(before[k].open&&!after[k].open&&early.has(after[k].wid))bad(name+' g'+g0+': '+k+' re-locked');
+      }
+      for(const k of ['sight4','pic5','build5','sight5','pic6','build6'])if(after[k]&&after[k].st!==0)bad(name+': '+k+' starts with stars');
+    }
+    PATHS.read.worlds=CUR;buildNodes('read');
+    return {checked};
+  };
+  const r=eval(js+';('+body.toString()+')()');
+  return{problems:[...new Set(serrs)],note:'6 levels x 3,000 samples, '+r.checked+' stop checks over 8 fixtures x 7 grades'};
 });
 
 // ---- report ----

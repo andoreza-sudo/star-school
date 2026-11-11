@@ -335,7 +335,23 @@ const SCREENS = {
   'tiny-sort2': { fixture: 'fresh', run: tinyShot('sort', 2) },
   'tiny-hint': { fixture: 'fresh', run: tinyShot('pk_count', 2, true) },
   'tiny-notext': { fixture: 'fresh', run: tinyShot('pk_num', 2, false, true) },
+  // ---- P2-18 phonics 1st-2nd: one question per new level through the real round engine ----
+  'phon-sight4': { run: phonShot('sight', 4) },
+  'phon-sight5': { run: phonShot('sight', 5) },
+  'phon-pic5': { run: phonShot('pic', 5) },
+  'phon-pic6': { run: phonShot('pic', 6) },
+  'phon-build5': { run: phonShot('build', 5) },
+  'phon-build6': { run: phonShot('build', 6) },
+  'phon-hint': { run: phonShot('pic', 5, true) },
 };
+
+// One question of a P2-18 level (genQ with a fixed seed) through the real round engine; hint opens Help.
+function phonShot(sk, lv, hint) {
+  return async p => {
+    await p.evaluate(([sk, lv]) => { G = newG({ sk, lv, n: 1, pool: [genQ(sk, lv, 5)] }); next(); }, [sk, lv]);
+    if (hint) await p.click('#hb');
+  };
+}
 
 // P2-06 Fraction Forest: the map, then one question per variant of frac 2 to 5 (first seed whose label matches), grade 3
 function fracShot(lv, want) {
