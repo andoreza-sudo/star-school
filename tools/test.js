@@ -11618,6 +11618,206 @@ run('robot path P3-13',()=>{
   return eval(js+';('+body.toString()+')()');
 });
 
+// ---- P3-16: Spatial puzzles: Cube Count, Turn It, Mirror (src/js/84-86-bt-*.js) ----
+// Everything a child sees is checked with the test's own geometry: a screen-space depth buffer for the cube drawings (the app casts
+// rays per column), its own 4 turns and 8 turns-and-flips for the shapes, its own mirror maps for the grids.
+run('spatial P3-16',()=>{
+  const BUILT=PART_FILES.map(f=>fs.existsSync(path.join(ROOT,f))?fs.readFileSync(path.join(ROOT,f),'utf8'):'').join('');
+  const body=function(){
+    const out=[],bad=m=>{if(out.length<40&&!out.includes(m))out.push(m)};
+    const J=JSON.stringify,days=['2026-6-1','2026-6-2','2026-6-3','2026-6-4','2026-6-5'];
+    const stat={ms:0,n:0,cubes:{},hid:{},cells:{},fill:{},per:{cubes:0,rotate:0,mirror:0}};
+    const WANT={cubes:'BCD',rotate:'ABCD',mirror:'BCD'};
+    for(const id in WANT){
+      const T=BT.get(id);
+      if(!T){bad(id+' is not registered');continue}
+      if(T.bands!==WANT[id]||BT.nLevels(T,T.bands[0])!==12||!ICONS[T.icon])bad(id+': bands '+T.bands+', icon '+T.icon);
+    }
+    if(out.length)return{out,stat};
+    const timed=(id,b,l,o)=>{const t0=Date.now(),p=BT.make(id,b,l,o);stat.ms+=Date.now()-t0;stat.n++;return p};
+    const avg=a=>a.length?+(a.reduce((x,y)=>x+y,0)/a.length).toFixed(2):0;
+    const add=(o,k,v)=>{(o[k]=o[k]||[]).push(v)};
+
+    // ---- cube drawings: every face of every cube (top, right +x, left +y) and the floor, projected; the front face at a screen
+    // point is the one with the largest depth x + y + z there (the viewer looks along -(1,1,1))
+    const C=Math.sqrt(3)/2,proj=(x,y,z)=>[(x-y)*C,(x+y)/2-z];
+    function faces(hm){
+      const F=[],nx=hm.length,ny=hm[0].length;
+      for(let x=0;x<nx;x++)for(let y=0;y<ny;y++){
+        F.push({k:'z',c:0,x,y,id:'floor '+x+','+y,q:[[x,y,0],[x+1,y,0],[x+1,y+1,0],[x,y+1,0]]});
+        for(let z=0;z<hm[x][y];z++){
+          F.push({k:'z',c:z+1,id:'top '+x+','+y+','+z,cube:[x,y,z],q:[[x,y,z+1],[x+1,y,z+1],[x+1,y+1,z+1],[x,y+1,z+1]]});
+          F.push({k:'x',c:x+1,id:'right '+x+','+y+','+z,cube:[x,y,z],q:[[x+1,y,z],[x+1,y+1,z],[x+1,y+1,z+1],[x+1,y,z+1]]});
+          F.push({k:'y',c:y+1,id:'left '+x+','+y+','+z,cube:[x,y,z],q:[[x,y+1,z],[x+1,y+1,z],[x+1,y+1,z+1],[x,y+1,z+1]]});
+        }
+      }
+      for(const f of F)f.p=f.q.map(v=>proj(...v));
+      return F;
+    }
+    // strictly inside a convex quad (either winding)
+    const inside=(p,[u,v])=>{let s=0;for(let i=0;i<4;i++){const a=p[i],b=p[(i+1)%4],c=(b[0]-a[0])*(v-a[1])-(b[1]-a[1])*(u-a[0]);if(Math.abs(c)<1e-9)return false;s+=c>0?1:-1}return Math.abs(s)===4};
+    // depth of a face's plane at screen point (u, v)
+    const depth=(f,[u,v])=>{
+      if(f.k==='z'){const d=u/C,e=2*(v+f.c);return (d+e)/2+(e-d)/2+f.c}
+      if(f.k==='x'){const y=f.c-u/C,z=(f.c+y)/2-v;return f.c+y+z}
+      const x=f.c+u/C,z=(x+f.c)/2-v;return x+f.c+z;
+    };
+    const front=(F,q)=>{let best=null,bd=-1e9;for(const f of F)if(inside(f.p,q)){const d=depth(f,q);if(d>bd+1e-9){bd=d;best=f}}return best};
+    // sample points on a face; s and t never equal (a ray through such a point runs exactly along a cube edge, on the border of two faces)
+    const G=[1,2,3,4,5,6].map(i=>(i-0.5)/6),G2=[1,2,3,4,5,6].map(i=>(i-0.25)/6);
+    function look(hm){
+      const F=faces(hm),r={tops:true,floors:true,seenCubes:new Set(),why:''};
+      for(let x=0;x<hm.length;x++)for(let y=0;y<hm[0].length;y++){
+        const h=hm[x][y];
+        if(h){
+          // the whole top of the column is the front face at every sample point
+          for(const s of G)for(const t of G2){const f=front(F,proj(x+s,y+t,h));if(!f||f.id!=='top '+x+','+y+','+(h-1)){r.tops=false;r.why='top of '+x+','+y+' hidden by '+(f&&f.id)}}
+        }else{
+          let n=0;for(const s of G)for(const t of G2){const f=front(F,proj(x+s,y+t,0));if(f&&f.id==='floor '+x+','+y)n++}
+          if(n<12){r.floors=false;r.why='floor of '+x+','+y+' shows '+n+' of 36'}
+        }
+      }
+      // which cubes show any face (sampled densely over each face)
+      for(const f of F)if(f.cube)for(const s of G)for(const t of G2){
+        const [x,y,z]=f.cube,P=f.k==='z'?[x+s,y+t,z+1]:f.k==='x'?[x+1,y+s,z+t]:[x+s,y+1,z+t],g=front(F,proj(...P));
+        if(g===f)r.seenCubes.add(f.cube.join());
+      }
+      return r;
+    }
+    const LIM={B:2,C:3,D:4};
+    for(const b of 'BCD')for(let l=1;l<=12;l++)for(const d of days){
+      const p=timed('cubes',b,l,{day:d}),w='cubes '+b+l+' '+d;
+      stat.per.cubes++;
+      if(J(p)!==J(BT.make('cubes',b,l,{day:d})))bad(w+': make() is not deterministic');
+      if(!Array.isArray(p.items)||p.items.length!==3){bad(w+': want 3 stacks');continue}
+      const sol=BT.get('cubes').solve(p);
+      p.items.forEach((it,i)=>{
+        const hm=it.hm,v=w+' stack '+(i+1);
+        if(!Array.isArray(hm)||!hm.length||!hm.every(c=>Array.isArray(c)&&c.length===hm[0].length&&c.every(h=>Number.isInteger(h)&&h>=0)))return bad(v+': bad height map');
+        if(hm.length>LIM[b]||hm[0].length>LIM[b]||Math.max(...hm.map(c=>Math.max(...c)))>LIM[b])bad(v+': bigger than '+LIM[b]+'x'+LIM[b]+'x'+LIM[b]);
+        let n=0;for(const c of hm)for(const h of c)n+=h; // the test's own count
+        if(n!==it.n||sol[i]!==n)bad(v+': answer '+it.n+' / solve '+sol[i]+' but the heights add to '+n);
+        const L=look(hm);
+        if(!L.tops||!L.floors)bad(v+': not readable from the drawing ('+L.why+') '+J(hm));
+        // every counted cube is seen, or holds up a column whose top is seen (all tops are seen, so the cubes under them are there)
+        for(let x=0;x<hm.length;x++)for(let y=0;y<hm[0].length;y++)for(let z=0;z<hm[x][y];z++)if(!L.seenCubes.has([x,y,z].join())&&!(z<hm[x][y]-1))bad(v+': the top cube of '+x+','+y+' shows no face');
+        const hid=n-L.seenCubes.size;
+        if(hid!==it.hid)bad(v+': '+hid+' hidden cubes by the depth buffer, the puzzle says '+it.hid);
+        add(stat.cubes,b,n);add(stat.hid,b,hid);
+        // hints: 1 words, 2 the layers, 3 the layer counts, which add up to the answer
+        const t3=CUB.hintText(it,3),nums=(t3.match(/\d+/g)||[]).map(Number),lay=[];
+        for(let z=0;z<Math.max(...hm.map(c=>Math.max(...c)));z++){let k=0;for(const c of hm)for(const h of c)if(h>z)k++;lay.push(k)}
+        if(J(CUB.layers(hm))!==J(lay))bad(v+': layers '+J(CUB.layers(hm))+', want '+J(lay));
+        if(nums.reduce((a,c)=>a+c,0)!==n||!CUB.hintText(it,1)||!CUB.hintText(it,2)||CUB.hintText(it,1)===CUB.hintText(it,2)||/\b\d+\b/.test(CUB.hintText(it,1)+CUB.hintText(it,2)))bad(v+': hint words '+t3);
+      });
+      if(new Set(p.items.map(it=>J(it.hm))).size!==3)bad(w+': the same stack twice');
+      for(const s of [CUB.fresh(),{i:2,miss:3,h:3}])if(!CUB.fit(p,JSON.parse(J(s))))bad(w+': a good state does not fit');
+      for(const s of [null,[],'x',{i:-1,miss:0,h:0},{i:3,miss:0,h:0},{i:'0',miss:0,h:0},{i:0,miss:-1,h:0},{i:0,miss:0,h:4},{i:0,miss:0},{i:0.5,miss:0,h:0}])
+        if(CUB.fit(p,s))bad(w+': a damaged state fits '+J(s));
+    }
+    for(const k of ['cubes','hid'])for(const b in stat[k])stat[k][b]=avg(stat[k][b]);
+    if(!(stat.cubes.B<stat.cubes.C&&stat.cubes.C<stat.cubes.D&&stat.hid.B<stat.hid.C&&stat.hid.C<stat.hid.D))bad('cube count does not grow by band '+J([stat.cubes,stat.hid]));
+
+    // ---- shapes: the test's own turns and flips ----
+    const nm=cs=>{const r0=Math.min(...cs.map(c=>c[0])),c0=Math.min(...cs.map(c=>c[1]));return cs.map(([r,c])=>(r-r0)+':'+(c-c0)).sort().join('|')};
+    const t90=cs=>cs.map(([r,c])=>[-c,r]); // a quarter turn the other way round from the app's; the set of 4 is the same
+    const mir=cs=>cs.map(([r,c])=>[-r,c]); // an up-down flip (the app flips left-right; with the turns it is the same set of 8)
+    const turns=cs=>{const o=[];let x=cs;for(let i=0;i<4;i++){o.push(nm(x));x=t90(x)}return o};
+    const all8=cs=>turns(cs).concat(turns(mir(cs)));
+    const one=cs=>{const k=cs.map(c=>c.join()),seen=new Set([k[0]]),todo=[cs[0]];while(todo.length){const [r,c]=todo.pop();for(const [a,b] of [[r+1,c],[r-1,c],[r,c+1],[r,c-1]]){const s=a+','+b;if(k.includes(s)&&!seen.has(s)){seen.add(s);todo.push([a,b])}}}return seen.size===cs.length&&new Set(k).size===k.length};
+    const NSQ={A:[4,5],B:[4,5],C:[5,6],D:[6,7]};
+    const sizes={};
+    for(const b of 'ABCD')for(let l=1;l<=12;l++)for(const d of days){
+      const p=timed('rotate',b,l,{day:d}),w='rotate '+b+l+' '+d;
+      stat.per.rotate++;
+      if(J(p)!==J(BT.make('rotate',b,l,{day:d})))bad(w+': make() is not deterministic');
+      const nI=b==='A'?3:4,nC=b==='A'?3:4,sol=BT.get('rotate').solve(p);
+      if(!Array.isArray(p.items)||p.items.length!==nI){bad(w+': want '+nI+' shapes');continue}
+      p.items.forEach((it,i)=>{
+        const v=w+' shape '+(i+1),T=it.t,n=T.length;
+        if(!NSQ[b].includes(n)||!one(T))bad(v+': target of '+n+' squares, or not one piece');
+        add(sizes,b,n);
+        if(it.ch.length!==nC||sol[i]!==it.a)return bad(v+': '+it.ch.length+' choices, solve '+sol[i]);
+        const T4=turns(T),T8=all8(T),same=b==='A'&&l<=6;
+        // exactly one choice is the shape turned (band A levels 1-6: the very same shape), and it is the answer
+        const hits=it.ch.map((c,k)=>same?nm(c.s)===nm(T):T4.includes(nm(c.s))).map((h,k)=>h?k:-1).filter(k=>k>=0);
+        if(hits.length!==1||hits[0]!==it.a)bad(v+': choices that are the shape turned: '+J(hits)+', answer '+it.a);
+        if(!same&&nm(it.ch[it.a].s)===nm(T))bad(v+': the answer is not turned');
+        it.ch.forEach((c,k)=>{
+          if(c.s.length!==n||!one(c.s))bad(v+' choice '+k+': '+c.s.length+' squares or not one piece');
+          if(c.k==='f'&&(T4.includes(nm(c.s))||!T8.includes(nm(c.s))))bad(v+' choice '+k+': the mirror image is not a mirror image that no turn can make');
+          if(c.k==='m'&&T8.includes(nm(c.s)))bad(v+' choice '+k+': a moved-square choice is the same shape');
+        });
+        if(new Set(it.ch.map(c=>nm(c.s))).size!==nC)bad(v+': two choices look the same');
+        const kinds=it.ch.map(c=>c.k).sort().join('');
+        const wantK={A:'mmr',B:'mmmr',C:'fmmr',D:'fmmr'}[b];
+        if(kinds!==wantK)bad(v+': choice kinds '+kinds+', want '+wantK);
+        if(b>='C'&&T4.includes(nm(mir(T))))bad(v+': the shape is not chiral');
+        if(b==='D'){const m=it.ch.filter(c=>c.k==='m');if(!all8(m[0].s).includes(nm(m[1].s))||turns(m[0].s).includes(nm(m[1].s)))bad(v+': the two moved choices are not mirror images')}
+        // hints: words 1-2 differ; take-aways never take the answer, also after a wrong tap
+        const h1=ROT.hintText(p,it,1),h2=ROT.hintText(p,it,2),h3=ROT.hintText(p,it,3);
+        if(!h1||!h2||!h3||h1===h2||h2===h3)bad(v+': hint words');
+        const wr=it.ch.map((_,k)=>k).find(k=>k!==it.a),s0={i,miss:1,h:1,x:[wr],g:[]};
+        for(const t of [1,2,3]){const g=ROT.takeFor(p,it,s0,t);if(g.includes(it.a)||g.some(k=>s0.x.includes(k)))bad(v+': hint '+t+' takes the answer or a taken choice');
+          const want=p.shadow?(t>=2?1:0):(t>=3?Math.min(2,nC-2):0);if(g.length!==want)bad(v+': hint '+t+' takes '+g.length+' (want '+want+')')}
+      });
+      for(const s of [ROT.fresh(),{i:nI-1,miss:2,h:3,x:[],g:[]}])if(!ROT.fit(p,JSON.parse(J(s))))bad(w+': a good state does not fit');
+      const a0=p.items[0].a;
+      for(const s of [null,[],{i:nI,miss:0,h:0,x:[],g:[]},{i:0,miss:0,h:0,x:[a0],g:[]},{i:0,miss:0,h:0,x:[9],g:[]},{i:0,miss:0,h:5,x:[],g:[]},{i:0,miss:0,h:0,x:[],g:[a0]},{i:0,miss:0,h:0,x:{},g:[]},{i:0,miss:0,h:0}])
+        if(ROT.fit(p,s))bad(w+': a damaged state fits '+J(s));
+    }
+    for(const b in sizes)sizes[b]=avg(sizes[b]);
+    stat.shape=sizes;
+    if(!(sizes.A<=sizes.B&&sizes.B<sizes.C&&sizes.C<sizes.D))bad('shape size does not grow by band '+J(sizes));
+
+    // ---- mirror grids: the test's own mirror maps ----
+    const KIND={B:['v'],C:['h','d'],D:['r']};
+    for(const b of 'BCD')for(let l=1;l<=12;l++)for(const d of days){
+      const p=timed('mirror',b,l,{day:d}),w='mirror '+b+l+' '+d,n=p.n;
+      stat.per.mirror++;
+      if(J(p)!==J(BT.make('mirror',b,l,{day:d})))bad(w+': make() is not deterministic');
+      if(!KIND[b].includes(p.k)||n!==(b==='B'||(b==='D'&&l<=4)?6:8))bad(w+': kind '+p.k+' on '+n+'x'+n);
+      if(b==='C'&&l<=4&&p.k!=='h'||b==='C'&&l>4&&l<=8&&p.k!=='d')bad(w+': kind '+p.k+' at this level');
+      // the given half, the half to fill and the line, by the test's own rules
+      const half=n/2,mine=(r,c)=>p.k==='v'?((c<half)===(p.s===0)?'g':'t'):p.k==='h'?((r<half)===(p.s===0)?'g':'t'):p.k==='d'?(r===c?'l':(r>c)===(p.s===0)?'g':'t'):(r<half?'g':'t');
+      const mapT=(r,c)=>p.k==='v'?[r,n-1-c]:p.k==='h'?[n-1-r,c]:p.k==='d'?[c,r]:[n-1-r,n-1-c];
+      const given=p.on.filter(i=>mine(Math.floor(i/n),i%n)==='g');
+      if(p.on.some(i=>mine(Math.floor(i/n),i%n)==='t'))bad(w+': the picture has squares on the side to fill');
+      const exact=given.map(i=>{const [r,c]=mapT(Math.floor(i/n),i%n);return r*n+c}).sort((a,b)=>a-b),sol=BT.get('mirror').solve(p);
+      if(J(sol)!==J(exact))bad(w+': the solution is not the exact mirror image');
+      if(exact.some(i=>mine(Math.floor(i/n),i%n)!=='t'))bad(w+': a twin is not on the side to fill');
+      for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(MRR.side(p,r,c)!==mine(r,c))bad(w+': side of '+r+','+c);
+      // the full picture is the same after the mirror move
+      const full=p.on.concat(exact).sort((a,b)=>a-b),moved=full.map(i=>{const [r,c]=mapT(Math.floor(i/n),i%n);return r*n+c}).sort((a,b)=>a-b);
+      if(J(full)!==J(moved))bad(w+': the finished picture is not symmetric');
+      const [,lo,hi]=MRR.TIER[b][MRR.tierOf(l)];
+      if(given.length<lo||given.length>hi)bad(w+': '+given.length+' squares to fill, want '+lo+'-'+hi);
+      if(!one(p.on.map(i=>[Math.floor(i/n),i%n])))bad(w+': the given half is not one piece');
+      add(stat.fill,b,given.length);add(stat.cells,b,n*n);
+      // hints: 2 rings a picture square whose twin is missing; 3 fills that twin; pressing 3 again finishes the picture
+      let s=MRR.fresh(),k=0;
+      while(k++<99){const nx=MRR.next(p,s);if(!nx)break;const [r,c]=mapT(Math.floor(nx.g/n),nx.g%n);if(r*n+c!==nx.t||!p.on.includes(nx.g)||s.on.includes(nx.t))bad(w+': hint points at '+J(nx));s.on.push(nx.t);s.hn.push(nx.t)}
+      if(J(s.on.slice().sort((a,b)=>a-b))!==J(exact))bad(w+': hint 3 again and again does not finish the picture');
+      if(!MRR.fit(p,JSON.parse(J(s))))bad(w+': the hinted state does not fit');
+      if(MRR.hintText(p,1)===MRR.hintText(p,2)||!MRR.hintText(p,3))bad(w+': hint words');
+      const bad1=[...Array(n*n).keys()].find(i=>mine(Math.floor(i/n),i%n)==='t'&&!exact.includes(i));
+      for(const x of [null,[],{on:[bad1],hn:[],miss:0,h:0,mk:-1},{on:[exact[0],exact[0]],hn:[],miss:0,h:0,mk:-1},{on:[],hn:[exact[0]],miss:0,h:0,mk:-1},
+        {on:[],hn:[],miss:-2,h:0,mk:-1},{on:[],hn:[],miss:0,h:7,mk:-1},{on:[],hn:[],miss:0,h:0,mk:bad1},{on:[],hn:[],miss:0},{on:'1',hn:[],miss:0,h:0,mk:-1}])
+        if(MRR.fit(p,x))bad(w+': a damaged state fits '+J(x));
+    }
+    for(const k of ['fill','cells'])for(const b in stat[k])stat[k][b]=avg(stat[k][b]);
+    if(!(stat.fill.B<stat.fill.C&&stat.fill.C<stat.fill.D&&stat.cells.B<stat.cells.C))bad('mirror grids do not grow by band '+J([stat.fill,stat.cells]));
+    return{out,stat};
+  };
+  const r=eval(js+';('+body.toString()+')()');
+  const p=r.out,s=r.stat;
+  for(const k of ["id: 'cubes'","id: 'rotate'","id: 'mirror'",'const CUB','const ROT','const MRR'])if(!BUILT.includes(k))p.push(k+' is not in '+PART_FILES.join(' / ')+' (rebuild)');
+  const ms=s.n?s.ms/s.n:0;
+  if(ms>25)p.push('make() takes '+ms.toFixed(1)+' ms on average (limit 25 ms)');
+  return{problems:p,note:s.per.cubes+' cube, '+s.per.rotate+' turn and '+s.per.mirror+' mirror puzzles; cubes '+JSON.stringify(s.cubes)+', hidden '+JSON.stringify(s.hid)+
+    ', shape squares '+JSON.stringify(s.shape)+', mirror squares to fill '+JSON.stringify(s.fill)+', make '+ms.toFixed(1)+' ms'};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){
