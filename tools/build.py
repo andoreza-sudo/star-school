@@ -2,7 +2,7 @@ import base64, json, os, re
 from PIL import Image, ImageDraw
 # Build: python3 tools/build.py   (run from anywhere; writes index.html, bt/games/data.<VER>.js, sw.js, manifest.json, icons to the repo root)
 # Bump VER on every release so tablets pick up the update.
-VER = 'v125'
+VER = 'v126'
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = ROOT
 F = os.path.join(ROOT, 'tools', 'fonts', 'andika-latin-%s-normal.woff2')
@@ -54,9 +54,11 @@ for n in os.listdir(OUT):
         os.remove(os.path.join(OUT, n))
 
 json.dump({"name": "Star School", "short_name": "Star School", "start_url": "./", "scope": "./",
-           "display": "fullscreen", "display_override": ["fullscreen", "standalone"], "id": "./", "orientation": "any", "background_color": "#fff8ec", "theme_color": "#fff8ec",
-           "icons": [{"src": "icon-192.png", "sizes": "192x192", "type": "image/png"},
-                     {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}]},
+           "display": "fullscreen", "display_override": ["fullscreen", "standalone"], "id": "./", "orientation": "any", "background_color": "#fff9ef", "theme_color": "#fff9ef",
+           "icons": [{"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+                     {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+                     {"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable"},
+                     {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}]},
           open(OUT + '/manifest.json', 'w'), indent=1)
 
 # Service worker. Cache name and precache list carry VER, so one release's index.html, part files and data file are cached and replaced together.
@@ -70,12 +72,60 @@ self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;
  e.respondWith(caches.match(e.request,{ignoreSearch:true}).then(r=>r||fetch(e.request).then(res=>{if(res.ok){const cp=res.clone();caches.open(C).then(c=>c.put(e.request,cp))}return res}).catch(()=>e.request.destination==='script'?Response.error():caches.match('./index.html'))))});
 """)
 
+# App icons (P4-12, DESIGN_SYSTEM 9 row 10): the app's logo mark, a star with a face on --brand, in the illustration style (light
+# from the top left: a light rim on the upper-left edges, a shade rim on the lower-right ones, a ledge under it). Drawn 4x and scaled
+# down, so the edges are smooth. Full bleed and opaque, so one file works as "any" and as "maskable": everything drawn sits inside
+# the safe circle (radius 40% of the side, centred); outside it there is only the blue and its gloss (test.js checks this).
+# Colours are the tokens' hex values (src/css/00-tokens.css).
 import math
-for s in (192, 512):
-    im = Image.new('RGB', (s, s), '#3b82f6')
+from PIL import ImageChops
+def star_mask(S, cx, cy, R, r, w):
+    m = Image.new('L', (S, S), 0)
+    d = ImageDraw.Draw(m)
+    pts = [(cx + (R if i % 2 == 0 else r) * math.sin(i * math.pi / 5), cy - (R if i % 2 == 0 else r) * math.cos(i * math.pi / 5)) for i in range(10)]
+    d.polygon(pts, fill=255)
+    d.line(pts + pts[:2], fill=255, width=int(w), joint='curve')  # a thick outline with round joins rounds the points
+    return m
+def app_icon(size):
+    S = size * 4
+    u = S / 100.0
+    im = Image.new('RGB', (S, S), '#3B5BDB')  # --brand
     d = ImageDraw.Draw(im)
-    cx, cy, R, r = s/2, s/2, s*0.36, s*0.15
-    pts = [(cx + (R if i % 2 == 0 else r) * math.sin(i*math.pi/5), cy - (R if i % 2 == 0 else r) * math.cos(i*math.pi/5)) for i in range(10)]
-    d.polygon(pts, fill='#facc15')
-    im.save(OUT + '/icon-%d.png' % s)
+    base = (0x3B, 0x5B, 0xDB)
+    for y in range(int(S * 0.62)):  # gloss: white fading out over the top 62% (like the in-app mark)
+        a = 0.2 * (1 - y / (S * 0.62))
+        d.line([(0, y), (S, y)], fill=tuple(int(v + (255 - v) * a) for v in base))
+    for y in range(int(S * 0.84), S):  # a deeper band at the bottom, toward --brand-shade
+        a = 0.75 * (y - S * 0.84) / (S * 0.16)
+        d.line([(0, y), (S, y)], fill=tuple(int(v + (w - v) * a) for v, w in zip(base, (0x2F, 0x49, 0xB8))))
+    def sparkle(x, y, r, col):  # four-point sparkle
+        k = .26
+        d.polygon([(x, y - r), (x + r * k, y - r * k), (x + r, y), (x + r * k, y + r * k), (x, y + r), (x - r * k, y + r * k),
+                   (x - r, y), (x - r * k, y - r * k)], fill=col)
+    sparkle(71 * u, 30 * u, 6.5 * u, '#FFF1C7')
+    sparkle(22 * u, 69 * u, 4.6 * u, '#FFFFFF')
+    d.ellipse([78.2 * u, 63.2 * u, 81.8 * u, 66.8 * u], fill='#FFF1C7')
+    d.ellipse([23 * u, 31 * u, 26 * u, 34 * u], fill='#FFFFFF')
+    cx, cy, R, r, W = 50 * u, 53 * u, 27.5 * u, 14.8 * u, 7.5 * u
+    star = star_mask(S, cx, cy, R, r, W)
+    im.paste('#2F49B8', (0, int(4.2 * u)), star)                     # ledge on the background (--brand-shade)
+    im.paste('#FFC93C', (0, 0), star)                                 # --star
+    t = int(2.6 * u)
+    im.paste('#F5A800', (0, 0), ImageChops.subtract(star, ImageChops.offset(star, -t, -t)))   # shade rim, lower right (--star-shade)
+    im.paste('#FFF3A3', (0, 0), ImageChops.subtract(star, ImageChops.offset(star, t, t)))     # light rim, upper left (--ill-yellow-1)
+    d = ImageDraw.Draw(im)
+    d.ellipse([cx - 4.6 * u, cy - 21 * u, cx - 1.6 * u, cy - 16.4 * u], fill='#FFFFFF')         # glint on the top point
+    d.ellipse([cx - 19.5 * u, cy - 9.6 * u, cx - 15.5 * u, cy - 6.8 * u], fill='#FFFFFF')        # and on the left arm
+    for ex in (-6.8, 6.8):  # big eyes with two glints (--ill-ink)
+        x, y = cx + ex * u, cy + 1.2 * u
+        d.ellipse([x - 3.4 * u, y - 4.6 * u, x + 3.4 * u, y + 4.6 * u], fill='#1F2440')
+        d.ellipse([x - 2.3 * u, y - 3.5 * u, x + 0.5 * u, y - 0.7 * u], fill='#FFFFFF')
+        d.ellipse([x + 0.8 * u, y + 1.2 * u, x + 2.0 * u, y + 2.4 * u], fill='#FFFFFF')
+    for ex in (-12.6, 12.6):  # round cheeks (--ill-pink)
+        x, y = cx + ex * u, cy + 7 * u
+        d.ellipse([x - 3.3 * u, y - 2.1 * u, x + 3.3 * u, y + 2.1 * u], fill='#FF97B8')
+    d.arc([cx - 4.2 * u, cy + 3.4 * u, cx + 4.2 * u, cy + 10.4 * u], 22, 158, fill='#1F2440', width=int(1.8 * u))  # small smile
+    return im.resize((size, size), Image.LANCZOS)
+for s in (192, 512):
+    app_icon(s).save(OUT + '/icon-%d.png' % s, optimize=True)
 print(os.listdir(OUT), os.path.getsize(OUT + '/index.html'), [os.path.getsize(OUT + '/' + f) for f in FILES])
