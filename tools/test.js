@@ -92,7 +92,7 @@ run('skills: every level is reachable from some node',()=>{
   const used=new Set(),p=[];
   for(const path in GEN.nodes)for(const n of GEN.nodes[path])used.add(n.sk+':'+n.lv);
   // Levels reserved for P2-04 (Treasure Bay: arr 1, story 4). They have no stop yet; until P2-04 ships they ask like the next level up.
-  const RESERVED={arr:[1],story:[4],frac:[1,6,7,8]}; // P2-06: frac 1 comes with P2-03; frac 6-8 get their stops in P2-10
+  const RESERVED={arr:[1],story:[4],frac:[6,7,8]}; // arr 1 and story 4 are P2-04's; frac 6-8 get their stops in P2-10 (frac 1 is Clock Tower's)
   for(const id in GEN.skills)for(let lv=1;lv<=GEN.skills[id].max;lv++)if(!used.has(id+':'+lv)&&!(RESERVED[id]||[]).includes(lv))p.push(id+' level '+lv+' has no map node');
   return{problems:p};
 });
@@ -1264,7 +1264,8 @@ run('mastery: records, states, harder/easier, challenge from question 6, support
     }
     // 1. harder / easier: next and previous stop of the same skill in path order
     const N=NODES.math,at=(sk,lv)=>N.find(n=>n.sk==sk&&n.lv==lv);
-    if(harder(at('add',1))!==at('add',2)||harder(at('add',2))!==at('add',3)||easier(at('add',2))!==at('add',1))bad('harder/easier add');
+    {const AD=N.filter(n=>n.sk=='add'),k=AD.indexOf(at('add',1)); // map order: Shape Garden add 4, Number Meadow add 1, Candy add 2, Clock Tower add 5, 6, Reef add 3
+     if(harder(AD[k])!==AD[k+1]||easier(AD[k+1])!==AD[k]||harder(AD[AD.length-1])!==null)bad('harder/easier add');}
     if(easier(at('add',1))!==(N.slice(0,N.indexOf(at('add',1))).reverse().find(n=>n.sk=='add')||null)||harder(N.find(n=>n.sk=='boss'))!==null)bad('easier(add1) is the add stop just before it on the map (P2-02: add 4 in Shape Garden); harder(boss) null');
     for(const p in NODES)NODES[p].forEach(n=>{const h=harder(n),e=easier(n);
       if(h&&(h.sk!==n.sk||NODES[p].indexOf(h)<=NODES[p].indexOf(n)))bad('harder '+nid(n));
@@ -2274,7 +2275,7 @@ run('fractions P2-06: frac 2-8 maths per level, hints, say, labels, 3,000 sample
   const sym=(a,b,c,d)=>a*d<c*b?'<':a*d==c*b?'=':'>';
   const labs={},share={};
   const seen=new Set();
-  for(let lv=1;lv<=8;lv++){
+  for(let lv=2;lv<=8;lv++){ // frac 1 (equal parts) is Clock Tower's and is checked there
     for(let i=0;i<N;i++){
       const q=genQ('frac',lv,i*7919+31),w='frac L'+lv;
       const L=lv<2?2:lv;
@@ -2393,7 +2394,7 @@ run('fractions P2-06: Fraction Forest stops, spoken names, reserved levels, no n
   if(SK.frac.max!==8||SK.frac.area!=='math')bad.push('frac skill');
   // levels 6-8 have no stop yet (P2-10), levels 2-5 have exactly one each
   const used=NODES.math.filter(n=>n.sk=='frac').map(n=>n.lv).join(' ');
-  if(used!=='2 3 4 5')bad.push('frac stops use levels '+used);
+  if(used!=='1 2 3 4 5')bad.push('frac stops use levels '+used); // 1 in Clock Tower (P2-03), 2-5 in Fraction Forest
   // "3 fourths", "1 half", "2 halves", "1 third"
   const ex=[fcSay(3,4),fcSay(1,2),fcSay(2,2),fcSay(1,3),fcSay(5,8),fcSay(7,12)].join('|');
   if(ex!=='3 fourths|1 half|2 halves|1 third|5 eighths|7 twelfths')bad.push('spoken fractions '+ex);
@@ -2853,6 +2854,211 @@ run('Shape Garden (P2-02): world position, stop ids, no star moves, nothing re-l
   const r=eval(js+';('+body.toString()+')()');
   for(const m of r)bad.push(m);
   return{problems:bad};
+});
+
+// ---- P2-03 1st grade gaps: world Clock Tower (generators, world, saves, clock picture) ----
+run('Clock Tower (P2-03): CURRICULUM M-1 levels, answers by rule, 3,000 samples per level, world position, saves',()=>{
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const bad=[];
+  const body=function(){
+    const out=[],b=m=>{if(out.length<25&&!out.includes(m))out.push(m)};
+    const store={};
+    global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+    const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
+    S.name='Ava';S.buddy='Ben';G={built:[]};
+    const N=3000,gen=(sk,lv)=>{const o=[];for(let i=0;i<N;i++)o.push(genQ(sk,lv,i*7919+29));return o};
+    // 1. the world: between Candy Canyon and Ocean Reef, grade 1, exactly the M-1 stops in order
+    const W=PATHS.math.worlds,wi=id=>W.findIndex(w=>w.id==id),cw=W[wi('m_clock')];
+    if(!cw||cw.g!==1||cw.n!=='Clock Tower')b('Clock Tower world missing or wrong: '+(cw&&cw.id));
+    else{
+      if(wi('m_clock')!==wi('m_candy')+1||wi('m_reef')!==wi('m_clock')+1)b('Clock Tower must sit between Candy Canyon and Ocean Reef');
+      const ids=cw.nodes.map(n=>n[0]+n[1]).join(' ');
+      if(ids!=='pv1 add5 meas2 add6 data1 shape4 frac1')b('Clock Tower stops: '+ids);
+    }
+    for(const [sk,max] of [['pv',1],['meas',2],['data',1],['frac',1],['add',6],['shape',4]])if(!SK[sk]||SK[sk].max<max||SK[sk].area!=='math')b('skill '+sk+' max '+(SK[sk]&&SK[sk].max));
+    // existing stops keep their ids and order inside their worlds
+    const was={m_candy:'add2 big1 cnt2 cmp1 miss2 sub2 story2',m_reef:'add3 time1 big2 coins1 eo2 cmp2 time2 sub3 story3'};
+    for(const id in was){const now=NODES.math.filter(n=>n.wid==id&&n.sk!='boss').map(nid).join(' ');if(now!==was[id])b(id+' changed: '+now)}
+    // 2. generators: every level, hint, say, label, answer by rule
+    const spy={pg:null,cut:[]},oPg=VIZ.pictograph,oCut=CT.cut;
+    VIZ.pictograph=(d,o)=>{spy.pg=d;return oPg(d,o)};
+    CT.cut=(sh,d,eq)=>{spy.cut.push([sh,d,eq]);return oCut(sh,d,eq)};
+    const lab={};
+    const common=(qs,w)=>{
+      const labels=new Map();
+      for(const q of qs){
+        if(!q.hint||!(q.hint.k=='text'?q.hint.s:q.hint.html))b(w+': no hint');
+        if(typeof q.say!=='string'||!q.say.trim())b(w+': no say');
+        if(!q.label)b(w+': no label');
+        if(q.sk!=='frac'&&labels.has(q.label)&&labels.get(q.label)!==q.ans)b(w+': label '+q.label+' has two answers');
+        labels.set(q.label,q.ans);
+        for(const x of kindProblems(q))b(w+': '+x);
+      }
+      lab[w]=labels.size;
+    };
+    const P=(s,re)=>{const m=s.match(re);return m&&m.slice(1)};
+    // pv 1
+    {const qs=gen('pv',1),f={pic:0,tens:0,sum:0};common(qs,'pv1');
+     for(const q of qs){
+       let m;
+       if(m=P(q.label,/^pv picture (\d) tens (\d) ones$/)){f.pic++;if(+q.ans!==+m[0]*10+ +m[1])b('pv1 pic answer '+q.label);
+         if(!q.html.includes('viz-b10'))b('pv1 picture has no base-ten drawing');}
+       else if(m=P(q.label,/^pv tens in (\d+)$/)){f.tens++;if(+q.ans!==Math.floor(+m[0]/10)||+m[0]<10||+m[0]>99)b('pv1 tens '+q.label+' '+q.ans)}
+       else if(m=P(q.label,/^(\d+) \+ (\d) = \?$/)){f.sum++;if(+m[0]%10||+q.ans!==+m[0]+ +m[1]||+m[0]<10)b('pv1 sum '+q.label)}
+       else b('pv1 label '+q.label);
+     }
+     for(const k in f)if(f[k]<N*.25)b('pv1: form '+k+' only '+f[k]+' times (mixed evenly)')}
+    // add 5
+    {const qs=gen('add',5);common(qs,'add5');let sp=0;
+     for(const q of qs){
+       const m=P(q.label,/^(\d+) \+ (\d+) \+ (\d+) = \?$/);if(!m){b('add5 label '+q.label);continue}
+       const v=m.map(Number),s=v[0]+v[1]+v[2];
+       if(String(s)!==q.ans||s>20||v.some(x=>x<1||x>9))b('add5 '+q.label+' -> '+q.ans);
+       const ten=v[0]+v[1]==10||v[0]+v[2]==10||v[1]+v[2]==10,dbl=v[0]==v[1]||v[0]==v[2]||v[1]==v[2];
+       if(ten||dbl)sp++;
+       if(ten&&q.hint.s!=='Look for a pair that makes 10.')b('add5 hint for a ten: '+q.label);
+     }
+     if(sp/N<.55||sp/N>.65)b('add5: ten-or-double share '+(sp/N).toFixed(2)+' (want 0.60)')}
+    // add 6
+    {const qs=gen('add',6);common(qs,'add6');const f={p10:0,m10:0,pm:0,pu:0,mu:0};
+     for(const q of qs){
+       const m=P(q.label,/^(\d+) ([+−]) (\d+) = \?$/);if(!m){b('add6 label '+q.label);continue}
+       const a=+m[0],c=+m[2],plus=m[1]=='+',r=plus?a+c:a-c;
+       if(String(r)!==q.ans||r<0||r>99||a<10||a>99)b('add6 '+q.label+' -> '+q.ans);
+       if(c==10)f[plus?'p10':'m10']++;
+       else if(c%10==0&&plus&&c>=20)f.pm++;
+       else if(c<10&&Math.floor(a/10)===Math.floor(r/10))f[plus?'pu':'mu']++;
+       else b('add6 form '+q.label);
+       if(!/tens/.test(q.hint.s))b('add6 hint '+q.hint.s);
+     }
+     for(const k in f)if(f[k]<N*.12)b('add6: form '+k+' only '+f[k])}
+    // meas 2 (level 1 is reserved for K and must not crash)
+    {const qs=gen('meas',2),seen=new Set();common(qs,'meas2');common(gen('meas',1).slice(0,200),'meas1');
+     for(const q of qs){
+       const cubes=(q.html.match(/class="vwg"/g)||[]).length;
+       if(String(cubes)!==q.ans||cubes<1||cubes>12)b('meas2 cubes '+cubes+' ans '+q.ans);
+       if(q.kind!=='num')b('meas2 kind');
+       if((q.hint.html.match(/class="vcn"/g)||[]).length!==cubes)b('meas2 hint should number every cube');
+       seen.add(+q.ans);
+     }
+     if(seen.size!==12)b('meas2: lengths seen '+seen.size+' of 12')}
+    // data 1
+    {const qs=gen('data',1),f={};common(qs,'data1');
+     for(const q of qs){
+       spy.pg=null;
+       const q2=genQ('data',1,q.seed);
+       if(q2.html!==q.html)b('data1 not reproducible');
+       const d=spy.pg;
+       if(!d||d.length!==3){b('data1 needs 3 categories');continue}
+       const v=d.map(x=>x[1]),nm=d.map(x=>x[0]);
+       if(new Set(v).size!==3||v.some(x=>x<1||x>8))b('data1 values '+v);
+       const low=nm.map(x=>x.toLowerCase());let m,want;
+       if(q.kind=='choice'){
+         const most=/most\?$/.test(q.say);f[most?'most':'least']=(f[most?'most':'least']||0)+1;
+         want=nm[v.indexOf(most?Math.max(...v):Math.min(...v))];
+       }else if(m=P(q.say,/^How many more (\w+) than (\w+)\?$/)){f.more=(f.more||0)+1;want=v[low.indexOf(m[0])]-v[low.indexOf(m[1])];if(want<=0)b('data1 more is not positive')}
+       else if(m=P(q.say,/^How many (\w+) and (\w+) in all\?$/)){f.sum=(f.sum||0)+1;want=v[low.indexOf(m[0])]+v[low.indexOf(m[1])]}
+       else if(m=P(q.say,/^How many (\w+)\?$/)){f.count=(f.count||0)+1;want=v[low.indexOf(m[0])]}
+       else{b('data1 say '+q.say);continue}
+       if(String(want)!==q.ans||Number.isNaN(want))b('data1 '+q.say+' -> '+q.ans+', want '+want);
+       if(q.kind=='choice'&&q.choices.length!==3)b('data1 choice count');
+     }
+     for(const k of ['count','most','least','more','sum'])if(!f[k]||f[k]<N*.12)b('data1: form '+k+' '+f[k])}
+    // shape 4 (levels 2 and 3 are reserved for K)
+    {const qs=gen('shape',4),NS={triangle:3,square:4,rectangle:4,pentagon:5,hexagon:6,trapezoid:4},f={sides:0,corners:0,which:0},seen=new Set();
+     common(qs,'shape4');common(gen('shape',2).slice(0,100),'shape2');common(gen('shape',3).slice(0,100),'shape3');
+     for(const q of qs){
+       let m;
+       if(m=P(q.label,/^(sides|corners) of (\w+)$/)){f[m[0]]++;seen.add(m[1]);if(q.ans!==String(NS[m[1]]))b('shape4 '+q.label+' -> '+q.ans);
+         if(!q.html.includes('viz-shp'))b('shape4 no VIZ.shape');if(m[0]=='corners'&&!/class="vdt"/.test(q.hint.html))b('shape4 corners hint has no dots')}
+       else if(/^which has 4 sides/.test(q.label)){f.which++;
+         if(NS[q.ans]!==4||q.choices.length!==3||q.choices.filter(c=>NS[c.v]===4).length!==1)b('shape4 which '+q.label);
+         if(q.choices.some(c=>!c.h))b('shape4 which: pictures')}
+       else b('shape4 label '+q.label);
+     }
+     if(seen.size!==6)b('shape4: shapes seen '+[...seen]);
+     for(const k in f)if(f[k]<N*.2)b('shape4 form '+k+' '+f[k])}
+    // frac 1
+    {const qs=gen('frac',1),f={halves:0,fourths:0,equal:0};common(qs,'frac1');
+     for(const q of qs){
+       spy.cut=[];
+       const q2=genQ('frac',1,q.seed);
+       if(q2.html!==q.html||JSON.stringify(q2.choices)!==JSON.stringify(q.choices))b('frac1 not reproducible');
+       const c=spy.cut;
+       if(q.kind=='choice'&&q.cls=='syms'){ // is it cut into equal parts?
+         f.equal++;const [sh,d,eq]=c[0];
+         if(c.length!==1||(d!==2&&d!==4)||q.ans!==(eq?'yes':'no')||q.choices.length!==2)b('frac1 equal '+q.label);
+       }else{
+         const form=/halves/.test(q.say)?'halves':'fourths';f[form]++;
+         const d=form=='halves'?2:4;
+         if(c.length!==3||q.choices.length!==3||new Set(c.map(x=>x[0])).size!==1)b('frac1 pictures '+q.label);
+         else{
+           const at=+q.ans,keys=c.map(x=>x[1]+(x[2]?'e':'u'));
+           if(c[at][1]!==d||!c[at][2])b('frac1 '+form+' answer picture is not '+d+' equal parts: '+keys);
+           if(c.filter((x,i)=>x[1]===d&&x[2]).length!==1)b('frac1 '+form+': two right pictures '+keys);
+           if(new Set(keys).size!==3)b('frac1 repeated picture '+keys);
+         }
+         if(q.hint.s.indexOf('Equal shares are the same size.')!==0)b('frac1 hint');
+       }
+     }
+     for(const k in f)if(f[k]<N*.25)b('frac1 form '+k+' '+f[k])}
+    VIZ.pictograph=oPg;CT.cut=oCut;
+    for(const w in lab)if(lab[w]<4)b(w+': only '+lab[w]+' different labels');
+    // 3. seeded: the same seed gives the same question
+    for(const [sk,lv] of [['pv',1],['add',5],['add',6],['meas',2],['data',1],['shape',4],['frac',1],['time',1],['time',2],['time',3]])for(let s=1;s<=30;s++)
+      if(JSON.stringify(genQ(sk,lv,s))!==JSON.stringify(genQ(sk,lv,s)))b(sk+lv+' seed '+s+' not reproducible');
+    // 4. time: the pictures are VIZ.clock; answers, hints and choices follow the clock
+    {const tq=gen('time',1).concat(gen('time',2),gen('time',3));
+     for(const q of tq){
+       if(!q.html.includes('viz-clk')||/#[0-9a-fA-F]{3,6}/.test(q.html))b('time: not the token clock');
+       const m=q.label.match(/^clock (\d+):(\d\d)$/);
+       if(!m||q.ans!==m[1]+':'+m[2])b('time answer '+q.label+' '+q.ans);
+       const h=+m[1],mi=+m[2];
+       if(!q.html.includes(VIZ.clock(h,mi)))b('time: picture does not show '+q.label);
+     }
+     if(typeof clockSVG!=='undefined')b('clockSVG should be deleted')}
+    // 5. grades: Candy Canyon is still where a grade 1 child starts; Clock Tower is open at grade 1 and above; reading and Spanish untouched
+    load(null);S.grade=1;
+    if(NODES.math[curNode('math')].wid!=='m_candy')b('grade 1 fresh does not open on Candy Canyon: '+NODES.math[curNode('math')].wid);
+    if(!worldOpen('math',wi('m_clock'))||!worldOpen('math',wi('m_reef')))b('grade 1: Clock Tower and Ocean Reef must be open');
+    S.grade=0;
+    if(worldOpen('math',wi('m_clock')))b('K child: Clock Tower open before Candy Canyon is done');
+    // 6. saves: every stop keeps its stars and no passed stop re-locks when the world is added (compare with a path without it)
+    let checked=0;
+    const snap=()=>{const o={};for(const p of ['math'])NODES[p].forEach((n,i)=>{o[nid(n)]={st:getSt(p,i),open:unlocked(p,i),pass:passed(p,i),prog:worldHasProgress(p,n.wi),g:PATHS[p].worlds[n.wi].g}});return o};
+    const ORIG=PATHS.math.worlds;
+    for(const name of ['fresh','midway','maxed','legacy-single-map','legacy-index-maps']){
+      for(const g of [null,0,1,2,3,6]){
+        const raw=fx(name);load(raw.length>2?raw:null);if(g!==null)S.grade=g;
+        const maps=JSON.stringify(S.maps);
+        const now=snap(),cur=nid(NODES.math[curNode('math')]);
+        PATHS.math.worlds=ORIG.filter(w=>w.id!=='m_clock');buildNodes('math');
+        const old=snap(),curOld=nid(NODES.math[curNode('math')]);
+        PATHS.math.worlds=ORIG;buildNodes('math');
+        for(const k in old){
+          checked++;
+          if(!now[k]){b(name+' g'+g+': stop '+k+' disappeared');continue}
+          if(now[k].st!==old[k].st)b(name+' g'+g+': stars of '+k+' changed');
+          if(old[k].pass&&!now[k].open)b(name+' g'+g+': passed stop '+k+' re-locked');
+          if(old[k].open&&!now[k].open&&!(now[k].g>gradeOf()&&!now[k].prog))b(name+' g'+g+': '+k+' locked by the new world');
+        }
+        for(const k in now)if(!(k in old)&&/^(pv1|add5|add6|meas2|data1|shape4|frac1|boss_m_clock)$/.test(k)&&now[k].st)b(name+' g'+g+': new stop '+k+' has stars');
+        if(JSON.stringify(S.maps)!==maps)b(name+' g'+g+': loading changed the map');
+        if(g===1&&name=='fresh'&&cur!=='add2')b('fresh grade 1 opens on '+cur);
+      }
+    }
+    // 7. mastery: harder/easier follow map order (the curriculum sequence), so each add stop's neighbours are the add stops before and after it on the map
+    const adds=NODES.math.filter(n=>n.sk==='add');
+    adds.forEach((n,i)=>{if(harder(n)!==(adds[i+1]||null)||easier(n)!==(adds[i-1]||null))b('harder/easier must follow map order at add '+n.lv)});
+    return {out,checked};
+  };
+  const r=eval(js+';('+body.toString()+')()');
+  for(const m of r.out)bad.push(m);
+  // 8. new code: no raw hex colours and no Math.random in this chunk's block
+  const gen=fs.readFileSync(path.join(SRC,'js','31-gen-math-early.js'),'utf8'),blk=gen.slice(gen.indexOf('// ---- P2-03 Clock Tower (1st) ----'));
+  if(/#[0-9a-fA-F]{3,8}\b/.test(blk))bad.push('P2-03 block has a raw hex colour');
+  if(/Math\.random/.test(blk))bad.push('P2-03 block uses Math.random');
+  return{problems:bad,note:r.checked+' stop checks against a path without Clock Tower'};
 });
 
 // ---- report ----

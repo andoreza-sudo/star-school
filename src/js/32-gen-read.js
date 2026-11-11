@@ -34,12 +34,6 @@ function genCmp(lv){let a,b;
   return{kind:'choice',cls:'syms',html:`<div class="eq">${a} ${SLOT} ${b}</div><div class="sub">Bigger, smaller, or the same?</div>`,
     say:`Is ${a} greater than, less than, or equal to ${b}?`,ans,after:`${a} is ${w[ans]} ${b}`,choices:['<','=','>'].map(x=>({l:x,v:x})),
     hint:{k:'text',s:lv==1?'The hungry alligator mouth opens toward the BIGGER number! 🐊':`Look at the ${lv==2?'tens':'hundreds'} first. The alligator eats the bigger number! 🐊`},label:`${a} ? ${b}`}}
-function clockSVG(h,m){const ha=((h%12)+m/60)*30,ma=m*6;let n='';
-  for(let i=1;i<=12;i++){const a=i*Math.PI/6;n+=`<text x="${50+35*Math.sin(a)}" y="${50-35*Math.cos(a)+4}" text-anchor="middle" font-size="11" font-weight="700" fill="#2d2a26">${i}</text>`}
-  for(let i=0;i<60;i++){const a=i*Math.PI/30,r1=i%5?45:43;n+=`<line x1="${50+r1*Math.sin(a)}" y1="${50-r1*Math.cos(a)}" x2="${50+47*Math.sin(a)}" y2="${50-47*Math.cos(a)}" stroke="#a8a29e" stroke-width="${i%5?.6:1.4}"/>`}
-  return`<svg class="clock" viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="#fff" stroke="#3b82f6" stroke-width="3"/>${n}
-  <line x1="50" y1="50" x2="${50+22*Math.sin(ha*Math.PI/180)}" y2="${50-22*Math.cos(ha*Math.PI/180)}" stroke="#ef4444" stroke-width="5" stroke-linecap="round"/>
-  <line x1="50" y1="50" x2="${50+33*Math.sin(ma*Math.PI/180)}" y2="${50-33*Math.cos(ma*Math.PI/180)}" stroke="#2563eb" stroke-width="3" stroke-linecap="round" opacity=".9"/><circle cx="50" cy="50" r="3" fill="#2d2a26"/></svg>`}
 const tstr=(h,m)=>`${h}:${String(m).padStart(2,'0')}`;
 function genTime(lv){const h=R(1,12),m=lv==1?0:lv==2?pick([0,30]):pick([0,15,30,45]),ans=tstr(h,m),c=new Set([ans]);
   const hh=x=>((x+11)%12)+1;
@@ -47,8 +41,8 @@ function genTime(lv){const h=R(1,12),m=lv==1?0:lv==2?pick([0,30]):pick([0,15,30,
   for(const x of shuffle(cand)){if(c.size>=4)break;if(lv==1&&!x.endsWith(':00'))continue;c.add(x)}
   while(c.size<4)c.add(tstr(R(1,12),lv==1?0:pick([0,30])));
   const spoken=m==0?`${h} o'clock`:m==30?`half past ${h}`:m==15?`quarter past ${h}`:`quarter to ${hh(h+1)}`;
-  return{kind:'choice',html:`${clockSVG(h,m)}<div class="sub">What time is it?</div>`,say:'What time does the clock show?',ans,after:`It's ${spoken}!`,
-    choices:shuffle([...c]).map(x=>({l:x,v:x})),hint:{k:'text',s:m==0?'The short red hand shows the hour. The long blue hand on 12 means o\'clock.':'Short red hand = hour. Long blue hand: on 3 is :15, on 6 is :30, on 9 is :45.'},label:`clock ${ans}`}}
+  return{kind:'choice',html:`${VIZ.clock(h,m)}<div class="sub">What time is it?</div>`,say:'What time does the clock show?',ans,after:`It's ${spoken}!`,
+    choices:shuffle([...c]).map(x=>({l:x,v:x})),hint:{k:'text',s:m==0?'The short pink hand shows the hour. The long blue hand on 12 means o\'clock.':'Short pink hand = hour. Long blue hand: on 3 is :15, on 6 is :30, on 9 is :45.'},label:`clock ${ans}`}}
 const COIN={1:['1¢','penny','#c2703d',1],5:['5¢','nickel','#b8bcc2',1.2],10:['10¢','dime','#c9cdd3',.95],25:['25¢','quarter','#aeb3b9',1.35]};
 function genCoins(lv){const types=lv==1?[5,1]:lv==2?[10,5,1]:[25,10,5,1];let cs;
   do{cs=Array.from({length:R(lv==1?2:3,lv==1?5:6)},()=>pick(types)).sort((a,b)=>b-a)}while(cs.reduce((a,b)=>a+b,0)>99);

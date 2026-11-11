@@ -19,14 +19,14 @@ const SK={
  pk_num:{t:'Hear a Number',e:'🔟',area:'math',max:3,gen:genPkNumK},
  pk_more:{t:'Which Has More',e:'⚖️',area:'math',max:2,gen:genPkMoreK},
  sort:{t:'Sort and Compare',e:'🧩',area:'math',max:3,gen:genSortK},
- shape:{t:'Shapes',e:'🔺',area:'math',max:3,gen:genShapeK},
+ shape:{t:'Shapes',e:'🔺',area:'math',max:4,gen:lv=>lv==4?genShape(lv):genShapeK(lv)}, // levels 1-3 Tiny Town / Shape Garden, 4 Clock Tower
  pat:{t:'Patterns',e:'🌈',area:'math',max:2,gen:genPatK},
  tenf:{t:'Ten Frames',e:'🔟',area:'math',max:3,gen:genTenf}, // P2-02 Shape Garden: tenf, pos, meas (and levels added to pk_count, pk_num, pk_more, shape, add, pat, cnt, sort above)
  pos:{t:'Where Is It',e:'📌',area:'math',max:1,gen:genPos},
- meas:{t:'Measure',e:'📏',area:'math',max:1,gen:genMeas},
+ meas:{t:'Measuring',e:'📏',area:'math',max:2,gen:lv=>lv==1?genMeas(lv):genMeas2(lv)}, // level 1 Shape Garden, 2 Clock Tower
  mult:{t:'Equal Groups',e:'✖️',area:'math',max:2,gen:genMult},
  comp:{t:'Story Time',e:'📗',area:'read',max:2,gen:genComp},
- add:{t:'Adding',e:'➕',area:'math',max:4,gen:genAddK},
+ add:{t:'Adding',e:'➕',area:'math',max:6,gen:lv=>lv==5?genAdd5():lv==6?genAdd6():genAddK(lv)},
  miss:{t:'Missing Number',e:'❓',area:'math',max:2,gen:genMiss},
  sub:{t:'Take Away',e:'➖',area:'math',max:4,gen:genSub},
  big:{t:'Big Numbers',e:'💯',area:'math',max:4,gen:genBig},
@@ -37,8 +37,9 @@ const SK={
  mfact:{t:'Times Facts',e:'✖️',area:'math',max:4,gen:genMfact},
  dfact:{t:'Dividing Facts',e:'÷',area:'math',max:4,gen:genDfact},
  mbig:{t:'Times Tens',e:'✖️',area:'math',max:1,gen:genMbig},
- // P2-06 fractions: levels 2-8 (frac 1 comes with P2-03)
- frac:{t:'Fractions',e:'🍕',area:'math',max:8,gen:genFracCore},
+ pv:{t:'Place Value',e:'🔟',area:'math',max:1,gen:genPv1}, // P2-03 Clock Tower group (CURRICULUM M-1)
+ data:{t:'Picture Graphs',e:'📈',area:'math',max:1,gen:genData1},
+ frac:{t:'Fractions',e:'🍕',area:'math',max:8,gen:lv=>lv==1?genFrac1(lv):genFracCore(lv)}, // level 1 Clock Tower (P2-03), 2-8 fractions core (P2-06)
  sight:{t:'Sight Words',e:'👀',area:'read',max:5,gen:genSight},
  pic:{t:'Picture Words',e:'🖼️',area:'read',max:6,gen:lv=>lv>4?genPicP(lv):genPic(lv)},
  build:{t:'Build a Word',e:'🧩',area:'read',max:6,gen:lv=>lv>4?genBuildP(lv):genBuild(lv)},

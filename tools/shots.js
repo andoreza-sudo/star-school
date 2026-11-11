@@ -343,6 +343,24 @@ const SCREENS = {
   'phon-build5': { run: phonShot('build', 5) },
   'phon-build6': { run: phonShot('build', 6) },
   'phon-hint': { run: phonShot('pic', 5, true) },
+  // P2-03 Clock Tower (1st grade gaps): the map, and one seeded question of each new stop through the real round engine; -hint opens Help.
+  'clock-time1': { run: clockShot('time', 1, 21) },
+  'clock-time2': { run: clockShot('time', 2, 22) },
+  'clock-time3': { run: clockShot('time', 3, 23) },
+  'clock-pv1a': { run: clockShot('pv', 1, 50) },
+  'clock-pv1b': { run: clockShot('pv', 1, 54) },
+  'clock-pv1c': { run: clockShot('pv', 1, 33) },
+  'clock-add5': { run: clockShot('add', 5, 34) },
+  'clock-add6': { run: clockShot('add', 6, 35) },
+  'clock-meas2': { run: clockShot('meas', 2, 36) },
+  'clock-data1a': { run: clockShot('data', 1, 62) },
+  'clock-data1b': { run: clockShot('data', 1, 60) },
+  'clock-shape4a': { run: clockShot('shape', 4, 72) },
+  'clock-shape4b': { run: clockShot('shape', 4, 70) },
+  'clock-frac1a': { run: clockShot('frac', 1, 90) },
+  'clock-frac1b': { run: clockShot('frac', 1, 102) },
+  'clock-hint-meas2': { run: clockShot('meas', 2, 36, true) },
+  'clock-hint-shape4': { run: clockShot('shape', 4, 72, true) },
 };
 
 // One question of a P2-18 level (genQ with a fixed seed) through the real round engine; hint opens Help.
@@ -470,6 +488,19 @@ function sgShot(sk, lv, match, hint, notext) {
       for (let i = 1; re && !re.test(q.label) && i < 400; i++) q = genQ(sk, lv, 11 + i);
       G.q = q; renderQ();
     }, [sk, lv, match ? match.source : null, !!notext]);
+    if (hint) await p.click('#hb');
+  };
+}
+
+// P2-03: one Clock Tower question (genQ with a fixed seed) through the real round engine; hint opens Help.
+function clockShot(sk, lv, seed, hint) {
+  return async p => {
+    await p.evaluate(([sk, lv, seed]) => {
+      S.name = 'Ava'; setGrade(1);
+      window.say = () => {};
+      start('math', NODES.math.findIndex(n => n.sk === sk && n.lv === lv));
+      G.q = genQ(sk, lv, seed); renderQ();
+    }, [sk, lv, seed]);
     if (hint) await p.click('#hb');
   };
 }
