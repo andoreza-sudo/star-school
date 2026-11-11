@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** wave 5 batch B merging (P2-02, P2-03, P2-18), then batch C: P2-04, P2-07. Wave 6 underway: P4-04, P4-05 (Opus), P4-13b art redraw (Opus).
+**Next up:** wave 5 batch B merging (P2-02, P2-03), then batch C: P2-04, P2-07. Wave 6 underway: P4-04, P4-05 (Opus), P4-13b art redraw (Opus).
 
-**Current version:** v63
+**Current version:** v64
 
 ## Chunk status
 
@@ -43,6 +43,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P2-05 v61
 - ONLINE note on share/print v62
 - P2-06 v63
+- P2-18 v64
 
 ## Handoff notes
 
@@ -53,6 +54,9 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - (ONLINE) Report card at 380x780: the stat label "Accuracy" breaks mid-word ("Accurac / y") in the 4-column stat row; P4 restyle of the report card (or a shorter label / hyphens:auto) should fix it.
 - (P2-06) A placement quiz is capped at 20 questions (5 testlets) so a child starting at K can no longer be placed in the last math world; with 16 math worlds (CURRICULUM 2.1) an all-right child ends about 5 worlds up. Intended by P1-07, but P1-07's cap may need a second look once the path is full (grown-ups can still skip worlds).
 - (P2-06) `frac` level 3 "later 0-2" lines are mixed in at 25% of the read-the-point questions (answers can be improper, like 5/4); P2-07 can drop that if grade 3 feels too early.
+- (P2-18) `pic 5/6` hints name the letter pair ("Look for \"er\""), which narrows the answer; a gentler first hint could only say the word. er/ir/ur sound the same, so these levels test spelling memory, as CURRICULUM intends.
+- (P2-18) Some level 6 pictures are generic emoji (down = arrow, new = badge, dawn = sunrise, noise = speaker); P4-13+ drawings for them would help. Several r-words (corn, fork, tiger, nurse) were left out because their emoji are not in the allowlist.
+
 - (merge P2-05) The full smoke run now takes about 12 minutes. A run that crosses midnight fails the P5-03 daily review counts (items moved to "due tomorrow" become due again). A later chunk could freeze the page clock in tools/lib/browser.js.
 - (P2-19) Spelling hint 2 ("show the word for 2 seconds, then hide", CURRICULUM E-spell) is not built: `hintHTML` has no stepped hints. A later hint chunk can add it to `genSpell` as a second hint step.
 - (P2-19) Story Summit, Dragon Library, Author Island and Legend Lab exist now with only a spell stop each (plus the boss). P2-20 to P2-29 should insert their stops in CURRICULUM 2.2 order; do not change the spell stop ids. Word Workshop (`r_workshop`, grade 2) between Space Station and Story Summit still has to be created by P2-18.
@@ -170,6 +174,16 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P1-05) Map draw with 16 fake worlds (156 stops) at 6x CPU throttle: median about 29 ms (limit 50), single runs up to about 49 ms. The strip recomputes `worldOpen`/`worldFinished` per chip and `unlocked` scans the world; a memo per draw is the next step if P4-09 adds weight.
 
 ## Log
+
+### P2-18 Phonics 1st-2nd: r-controlled, diphthongs, sight words 4-5 (v64, 2026-11-11, Claude)
+- What changed: `sight` 4 (Dolch 2nd grade, 46 words) and 5 (Dolch 3rd grade, 41 words); `pic` and `build` 5 (r-controlled ar or er ir ur, 24 picture words; wrong choices swap the r-vowel: bird / bard / berd / burd) and 6 (oo ou ow oi oy aw ew, 24 picture words; wrong choices swap the team). Build 5-6 tiles are the word plus two spare tiles, vowels first. Hints on every level (say the word, name the letter pair or first letter), say text on every question, one label per word. No new question kinds (choice, build).
+- Stops (CURRICULUM 2.2): Space Station is now pic4 build4 sight4 pic5 build5 spell3 (spell3 keeps its id, now after the new stops). NEW world `r_workshop` Word Workshop (g2, between Space Station and Story Summit) with sight5 pic6 build6; it is the world CURRICULUM places these in, so it was created here. Later chunks insert their stops after these (gram 2, vocab 2, sent 4 ...).
+- Code: word data in a marked block at the end of `20-words.js` (DOL gets 2 lists; RVW, VTW, RVP, VTP, PHBAD); generators `phonVariants`, `genPicP`, `genBuildP` in a block `// ---- P2-18 phonics 1st-2nd ----` at the end of `32-gen-read.js`; `38-skills.js` max values (sight 5, pic 6, build 6) and level routing (levels 5-6 call the new generators; 1-4 unchanged); `42-paths.js` stops and world. Wrong choices never include another picture word of the same level and never a rude-looking spelling (PHBAD; shirt, fork and tiger-style words were left out of the lists for this reason). All emoji are already in the allowlist; every picture goes through `picFor`.
+- Test changes (old -> new): the two picture checks in test.js (picFor routing, art set A) built their word list from CVC, BLEND, MAGICE, TEAMS; now also RVW and VTW (so the new levels are checked for emoji-not-routed). New check "phonics P2-18" (data sizes, every wrong choice enumerated, 3,000 seeded questions per level with zero errors, all words drawn, labels one per word, reproducible, old levels still draw from old lists, map order, save safety). Total 37 checks. No smoke expectation changed; one new smoke block `// P2-18` plays all six new stops at 380x780 with real taps.
+- Save safety: stars are keyed by stop id and `boss_<worldId>`; MAP_V42 untouched. Test: the reading path before this chunk against today's, 8 fixtures (fresh, midway, maxed, legacy-single-map, legacy-index-maps, tricky, a child with every older stop passed, a child with spell3 passed but earlier stops not) x 7 grades: every old stop keeps its stars, passed stops stay open, nothing in or before Space Station re-locks, new stops start with no stars. A child who has passed every older reading stop opens on the next new stop or world (accepted since P2-15/P2-19). Story Summit and later worlds now wait for Word Workshop to be finished unless the child's grade opens them or they already have progress there; boss monsters and prizes of Story Summit onward shift by one (BOSSES cycles by world index), cosmetic only.
+- Screenshots looked at (380x780): phon-pic5, phon-pic6, phon-build5, phon-build6, phon-sight4, phon-hint. Others written: phon-sight5, all at 600x960 and 1024x600.
+- Checklist 7.1: [x] only named files (plus tests, shots) [x] VER bumped (v64, provisional) [x] build [x] test.js (37 checks) [x] smoke.js [x] screenshots [x] midway fixture unchanged (test) [x] size under 1.5 MB [x] no network [x] no new emoji or hex [x] PROGRESS entry.
+- Merge: built on a parallel branch, renumbered v65 -> v64 at merge.
 
 ### P2-06 Fractions core (v63, 2026-11-11, Claude)
 - What changed: new skill `frac` (levels 2-8, `max: 8`) with generators in one block at the end of `src/js/33-gen-math-mid.js` (headed `// ---- P2-06 fractions core ----`, entry `genFracCore`): 2 name the shaded fraction (bar or circle, number pad `frac`) or pick the picture for a named fraction; 3 tap the point on a 0-1 line (d 2-5) or read the marked point (0-1, sometimes 0-2, `eq:'value'`); 4 compare with bars, same bottom or same top, `< = >`; 5 `1/2 = ?/8` (bars half the time) or "which equals 2/3" (3 choices, no distractor equal in value); 6 compare unlike fractions, no picture (benchmark 1/2 or common bottom hint, 15% equal pairs); 7 simplest form (GCF 2-6, d <= 48, exact); 8 `2 3/4 = ?/4` and `11/4 =` whole and fraction (`sep:'mix'`). Every level has a hint, `say` (fractions spoken "3 fourths") and a unique label; seeded randomness only. New `src/css/32-frac.css` (`.fr` stacked fraction span, tokens only).

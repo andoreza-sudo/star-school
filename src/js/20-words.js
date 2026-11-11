@@ -43,3 +43,25 @@ const SYLW=[
   'tiger apple window happy monkey pencil garden rabbit table circle summer winter finger basket pillow button yellow market'.split(' '),
   'banana elephant umbrella bicycle family computer dinosaur tomato potato animal butterfly beautiful yesterday remember strawberry kangaroo marshmallow vitamin'.split(' '),
   'alligator watermelon caterpillar dictionary helicopter motorcycle celebration elevator invitation category refrigerate generation'.split(' ')];
+
+/* ---------- P2-18 phonics 1st-2nd (CURRICULUM E-phon) ---------- */
+// sight 4 = Dolch second grade (46 words), sight 5 = Dolch third grade (41 words): they become DOL[3] and DOL[4].
+DOL.push(
+'always around because been before best both buy call cold does don\'t fast first five found gave goes green its made many off or pull read right sing sit sleep tell their these those upon us use very wash which why wish work would write your'.split(' '),
+'about better bring carry clean cut done draw drink eight fall far full got grow hold hot hurt if keep kind laugh light long much myself never only own pick seven shall show six small start ten today together try warm'.split(' '));
+// pic 5 / build 5: r-controlled vowels. [word, emoji, the r-vowel]. Wrong choices swap the r-vowel (bird / bard / burd).
+const RVW=[['car','🚗','ar'],['star','⭐','ar'],['farm','🚜','ar'],['shark','🦈','ar'],['arm','💪','ar'],['chart','📈','ar'],['dart','🎯','ar'],
+  ['horse','🐴','or'],['unicorn','🦄','or'],['morning','🌅','or'],['forest','🌲','or'],['sword','⚔️','or'],
+  ['hammer','🔨','er'],['monster','👾','er'],['flower','🌸','er'],['water','💧','er'],['tower','🗼','er'],
+  ['bird','🐦','ir'],['girl','👧','ir'],['circle','⚪','ir'],['birthday','🎉','ir'],
+  ['turtle','🐢','ur'],['purse','👜','ur'],['burn','🔥','ur']];
+// pic 6 / build 6: other vowel teams and diphthongs. [word, emoji, the team].
+const VTW=[['moon','🌙','oo'],['spoon','🥄','oo'],['book','📖','oo'],['foot','🦶','oo'],
+  ['house','🏠','ou'],['mouse','🐭','ou'],['cloud','☁️','ou'],['mouth','👄','ou'],
+  ['cow','🐄','ow'],['crown','👑','ow'],['owl','🦉','ow'],['down','⬇️','ow'],
+  ['coin','🪙','oi'],['noise','🔊','oi'],['boy','👦','oy'],['toy','🧸','oy'],
+  ['paw','🐾','aw'],['hawk','🦅','aw'],['dawn','🌅','aw'],['draw','✏️','aw'],
+  ['screw','🔩','ew'],['stew','🥣','ew'],['jewel','💎','ew'],['new','🆕','ew']];
+const RVP=['ar','or','er','ir','ur'],VTP=['oo','ou','ow','oi','oy','aw','ew'];
+// Spellings that could look rude must never be offered as wrong choices.
+const PHBAD=/^(poo|shart|fark|furk|ferk|firk|sherk|fuk|dik|dirk|cum|tit)$/;
