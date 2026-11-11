@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** P2-31, P2-32, P2-33, P2-37, P3-11, P3-13, P3-14
+**Next up:** P2-32, P2-33, P2-37, P3-11, P3-13, P3-14
 
-**Current version:** v111
+**Current version:** v112
 
 ## Chunk status
 
@@ -90,6 +90,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P3-07 v109
 - P2-30 v108
 - P2-14 v111
+- P2-31 v112
 
 ## Handoff notes
 
@@ -352,6 +353,16 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-11) Icons wanted from P4-03: `balloon` (Bonus game, today `gamepad`), `sparkle` / `confetti`, `unlock` (open padlock for "Next stop unlocked", today `map`), `zap` (a lightning with a spark for boss hits; today `bolt`), `sticker` (single sticker for the prize row), `medal` (the prize rosette as an icon), `heart-half` (boss life bar), `chest` (the treasure chest at icon size, e.g. for the round track where renderQ shows the gift emoji).
 
 ## Log
+
+### P2-31 Spanish world La Casa (v112, 2026-11-11, Claude)
+- What changed (CURRICULUM S-units, 2.3 row 4, ROADMAP P2-31): four new units appended to `ES_UNITS` in `src/data/d-es.js` (the first 8 untouched, no `mix`, so `es_mix` seeds did not move) and a new world `e_casa` "La Casa" after `e_repaso` in `PATHS.es` (`src/js/42-paths.js`). Skills `es_house`, `es_clothes`, `es_school` (3 levels, `spell:1`) and `es_feel` (2 levels) are made by `esReg`. Nouns carry their article (el/la/los/las; feelings are adjectives with none).
+- Words: `es_house` 11 (casa, puerta, ventana, mesa, silla, cama, cocina, baño, jardín, lámpara, sala), `es_clothes` 10 (camisa, pantalones, vestido, zapatos, sombrero, chaqueta, calcetines, gorra, botas, corbata), `es_school` 10 (libro, lápiz, mochila, papel, maestra, maestro, escuela, clase, tijeras, borrador), `es_feel` 9 (feliz, triste, enojado, cansado, asustado, enfermo, emocionado, tranquilo, sorprendido). `falda` (an anchor of the spec list) is not in: Unicode has no skirt and the dress emoji is taken by `vestido`, so two choices of a level 1 round would show the same picture. gorra, botas and corbata took its place. Art: `cama` (bed) and `sombrero` (hat) use `picFor` drawings; `maestra`/`maestro` use the woman and man emoji, `clase` the bell, `borrador` the sponge, `mesa` the plate with fork and knife.
+- Stops of `e_casa` (11 and the boss, saves keyed by stop id): es_house 1 "Casa Dulce Casa", es_house 2 "Read the House", es_clothes 1 "¡A Vestirse!", es_clothes 2 "Read Clothes", es_school 1 "A la Escuela", es_school 2 "Read School", es_feel 1 "¿Cómo Estás?", es_feel 2 "Read Feelings", then es_house 3 "Spell the House", es_clothes 3 "Spell Clothes", es_school 3 "Spell School". The row's "1-2" is read per unit, in the order written.
+- Emoji: 21 added to `tools/emoji-allow.txt` (door, couch, cooking, shirt, jeans, dress, shoe, scissors, satchel, page, school and 8 faces: all Unicode 11 or older), plus window and chair marked `risky` (Unicode 12/13, no older emoji exists for them; the picture is the only clue, so old tablets may show a box for those two).
+- Tests (test.js 96 checks): "Spanish La Casa P2-31": units appended in order after the unchanged first 8, counts, explicit gender list (article matches for every noun), NFC lowercase words, pictures in the allow-list, art names exist, no two words with the same picture in a unit, no duplicate word across all units, no `mix`, 3,000 seeded questions per level (kindProblems, level 3 only spellable words of the unit and every word reached, choices unique), world and stop order, titles at most 22, old stops unchanged by seed (the P2-30 hash holds), save checks (6 fixtures, with and without the world: no star moves, nothing re-locks, new stops start empty) and a child who finished Gran Repaso sees La Casa open at its first stop only (the map opens there). Smoke `// P2-31` block (380x780): opens La Casa after Gran Repaso, plays a level 1 listen round and a level 3 spell round (baño with the ñ key forced first) with real taps, and a round with no Spanish voice (word shown big); stars saved, 48 px keys and choices, no sideways scroll. Shots `es-casa-map`, `es-casa-l1`, `es-casa-l3`, `es-casa-clothes`, `es-casa-feel` (looked at).
+- Test expectations changed: P2-30 "Spanish framework" (a) the old-stops hash now covers the 8 old units and es_mix only (it used every `es_*` skill; the new skills are new stops), (b) the stop list check is a prefix check (the old stops are first), (c) "level 3 is on in a shipped unit" now means "its level 3 stop must exist in a world". `KNOWN` for "say present for every question": added the four new level 2 entries (level 2 shows a picture and asks for the word, so it has no `say` on purpose, as for the 9 old ones). Nothing weakened.
+- Checklist 7.1: [x] chunk files [x] VER v115 (provisional) [x] build [x] test.js [x] smoke.js [x] screenshots [x] no network [x] emoji in the allow-list [x] PROGRESS entry [x] one commit (not pushed).
+- Merge: built on a parallel branch from v111; renumber VER at merge (rebuild, `git add -A`). Conflicts to expect: `42-paths.js` (Spanish worlds list), `d-es.js` (units appended), `tools/emoji-allow.txt`, `tools/test.js` (KNOWN, P2-30 checks, block before report), `tools/smoke.js`, `tools/shots.js`.
 
 ### P2-14 6th grade: world Galaxy Core (v111, 2026-11-11, Claude)
 - What changed (CURRICULUM M-6b and 2.1 row 16, ROADMAP P2-14): new world `m_galaxy` "Galaxy Core" (grade 6, milky way icon, right after `m_sky`, the last math world for now) with the 10 stops in CURRICULUM order: ooo 2 Exponents, alg 1 One-Step Equations, ooo 3 Evaluate Expressions, alg 2 Solve with x and /, geo 5 Triangles & Trapezoids, coord 2 Four Quadrants, fact 3 GCF and LCM, data 5 Mean, Median, Mode, alg 3 Two-Step Equations, story 9 Rate & Percent Stories, then the boss. New skill `alg` (3 levels, "Equations"); extended `ooo` 1 -> 3, `geo` 4 -> 5, `coord` 1 -> 2, `fact` 2 -> 3, `data` 4 -> 5, `story` 8 -> 9 with dispatchers in `38-skills.js` (old levels untouched, checked by seed).

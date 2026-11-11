@@ -4686,7 +4686,7 @@ async function main() {
       const ep = ex.page;
       const lay = () => {
         const sm = a => (a.length ? Math.min(...a.map(b => b.getBoundingClientRect().height)) : 99);
-        return { w: document.documentElement.scrollWidth, keys: sm([...document.querySelectorAll('.sk')]), ch: sm([...document.querySelectorAll('.ch')]),
+        return { w: document.documentElement.scrollWidth, keys: Math.min(99, ...[...document.querySelectorAll('.sk')].map(b => b.getBoundingClientRect().height)), ch: sm([...document.querySelectorAll('.ch')]),
           big: (document.querySelector('.esbig') || {}).textContent || '', hear: !!document.querySelector('.hear'), spk: !!document.querySelector('#spk') && document.querySelector('#spk').style.display !== 'none',
           note: [...document.querySelectorAll('.toast, #toast, [role="status"]')].map(e => e.textContent).join(' ') };
       };
@@ -4733,6 +4733,79 @@ async function main() {
       network.push(...ex.network);
       for (const e of ex.errors) fail(e);
       await ex.ctx.close();
+    }
+
+    // P2-31 La Casa at 380x780: a child who finished Gran Repaso opens the Spanish map on La Casa, plays a level 1 (listen) round of House with real taps, a level 3
+    //    (spell, accent key forced: lápiz, baño) round, and a level 1 round again with no Spanish voice (the word shown big, no speaker). Stars saved, every key and choice
+    //    at least 48 px, nothing wider than the screen. Shots: es-casa-* (tools/shots.js).
+    {
+      const cx = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 });
+      const cp = cx.page;
+      await cp.fill('#nm', 'Casa');
+      await cp.click('#go');
+      await cp.waitForSelector('.game[data-p="es"]');
+      await cp.evaluate(() => {
+        for (let i = 0; i < WR.es[2][1] + 1; i++) setSt('es', i, 3);
+        S.wdone = S.wdone || {}; for (let i = 0; i < 3; i++) S.wdone[worldId('es', i)] = 1;
+        save();
+        speechSynthesis.getVoices = () => [{ lang: 'es-MX', name: 'es-MX' }]; ESNOTE = 0;
+      });
+      const wc = await cp.evaluate(() => ({ wi: PATHS.es.worlds.findIndex(w => w.id === 'e_casa'), open: worldOpen('es', 3), cur: curWorld('es'),
+        stops: PATHS.es.worlds[3].nodes.map(n => n[0] + n[1]).join(' ') }));
+      if (wc.wi !== 3 || !wc.open || wc.cur !== 3 || wc.stops !== 'es_house1 es_house2 es_clothes1 es_clothes2 es_school1 es_school2 es_feel1 es_feel2 es_house3 es_clothes3 es_school3') fail('La Casa world: ' + JSON.stringify(wc));
+      await cp.click('.game[data-p="es"]');
+      await cp.waitForSelector('.wchip.on[data-w="3"]');
+      const mp = await cp.evaluate(() => ({ w: document.documentElement.scrollWidth, n: document.querySelectorAll('.node').length, wide: [...document.querySelectorAll('.node')].filter(e => e.getBoundingClientRect().width < 48 || e.getBoundingClientRect().height < 48).length }));
+      if (mp.w > 380 || mp.n < 12 || mp.wide) fail('La Casa map: ' + JSON.stringify(mp));
+      const lay31 = async (label) => {
+        const l = await cp.evaluate(() => {
+          const sm = a => (a.length ? Math.min(...a.map(b => Math.min(b.getBoundingClientRect().height, b.getBoundingClientRect().width))) : 99);
+          return { w: document.documentElement.scrollWidth, keys: Math.min(99, ...[...document.querySelectorAll('.sk')].map(b => b.getBoundingClientRect().height)), ch: sm([...document.querySelectorAll('.ch')]),
+            big: !!document.querySelector('.esbig'), hear: !!document.querySelector('.hear'), kind: G.q.kind };
+        });
+        if (l.w > 380 || l.keys < 48 || l.ch < 48) fail('La Casa ' + label + ' layout: ' + JSON.stringify(l));
+        return l;
+      };
+      // level 1 (listen): a real tap on the first stop, the learn screen, then the round
+      const n0 = await cp.evaluate(() => WR.es[3][0]);
+      await cp.click('.node[data-n="' + n0 + '"]');
+      await cp.waitForSelector('#go');
+      await cp.click('#go');
+      await cp.waitForSelector('#prompt .hear');
+      await cp.screenshot({ path: require('path').join(__dirname, 'out', 'es-casa-l1-380x780.png') }).catch(() => {});
+      let asked = 0;
+      await playRound(cp, 'P2-31 es_house 1 (listen)', undefined, async () => { const l = await lay31('L1'); if (l.kind !== 'choice') fail('La Casa L1: not a choice ' + JSON.stringify(l)); if (await cp.evaluate(() => G.q.sk === 'es_house' && G.q.lv === 1) && !l.hear) fail('La Casa L1: no speaker on a listen question ' + JSON.stringify(l)); asked++; });
+      const st1 = await cp.evaluate(() => S.maps.es.es_house1);
+      if (!(st1 > 0)) fail('La Casa: stars not saved for es_house1 (' + st1 + ')');
+      // level 3 (spell): the stop is reached by a real tap once the stops before it are passed; the first words are forced to carry accents
+      await cp.evaluate(() => { for (let i = WR.es[3][0]; i < WR.es[3][0] + 8; i++) setSt('es', i, 2); save(); pathMap('es', 3); });
+      await cp.waitForSelector('.wchip.on[data-w="3"]');
+      const n3 = await cp.evaluate(() => NODES.es.findIndex(x => x.sk === 'es_house' && x.lv === 3));
+      await cp.click('.node[data-n="' + n3 + '"]'); // levels 2 and 3 start the round at once (only level 1 has the learn screen)
+      await cp.waitForSelector('.lslots .ls');
+      await cp.evaluate(() => { for (let s = 1; s < 400; s++) { const q = genQ('es_house', 3, s); if (q.word === 'baño') { G.q = q; renderQ(); return; } } });
+      await cp.waitForSelector('.sk[data-ch="ñ"]');
+      if (!(await cp.evaluate(() => !!document.querySelector('.sk[data-ch="ñ"]') && G.q.word === 'baño'))) fail('La Casa L3: baño with the ñ key missing');
+      await cp.screenshot({ path: require('path').join(__dirname, 'out', 'es-casa-l3-380x780.png') }).catch(() => {});
+      await playRound(cp, 'P2-31 es_house 3 (spell)', undefined, async () => { const l = await lay31('L3'); if (l.kind !== 'spell' && (await cp.evaluate(() => G.q.sk === 'es_house' && G.q.lv === 3))) fail('La Casa L3: not a spell question'); });
+      const st3 = await cp.evaluate(() => S.maps.es.es_house3);
+      if (!(st3 > 0)) fail('La Casa: stars not saved for es_house3 (' + st3 + ')');
+      // no Spanish voice: level 1 shows the word big and has no speaker; still playable, stars saved
+      await cp.evaluate(() => { speechSynthesis.getVoices = () => [{ lang: 'en-US', name: 'en-US' }]; ESNOTE = 0; S.maps.es.es_clothes1 = 0; save(); pathMap('es', 3); });
+      await cp.waitForSelector('.wchip.on[data-w="3"]');
+      const nc = await cp.evaluate(() => NODES.es.findIndex(x => x.sk === 'es_clothes' && x.lv === 1));
+      await cp.click('.node[data-n="' + nc + '"]');
+      await cp.waitForSelector('#go');
+      await cp.click('#go');
+      await cp.waitForSelector('.esbig');
+      await cp.screenshot({ path: require('path').join(__dirname, 'out', 'es-casa-novoice-380x780.png') }).catch(() => {});
+      await playRound(cp, 'P2-31 es_clothes 1 with no voice', undefined, async () => { const l = await lay31('no voice'); if (l.hear || (l.kind === 'choice' && !l.big && (await cp.evaluate(() => G.q.sk === 'es_clothes' && G.q.lv === 1)))) fail('La Casa no voice: word not big or speaker still there ' + JSON.stringify(l)); });
+      const stc = await cp.evaluate(() => S.maps.es.es_clothes1);
+      if (!(stc > 0)) fail('La Casa: stars not saved for es_clothes1 with no voice');
+      step('P2-31: La Casa opens after Gran Repaso; level 1 (listen), level 3 (spell, ñ key) and a no-voice round played with taps; stars saved; 48 px, no sideways scroll');
+      network.push(...cx.network);
+      for (const e of cx.errors) fail(e);
+      await cx.ctx.close();
     }
 
     for (const u of network) fail('network request: ' + u);

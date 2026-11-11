@@ -35,7 +35,11 @@ const KNOWN={ // check name -> exact problem strings that are known content issu
     'es_food L2: no say (choice)',
     'es_body L2: no say (choice)',
     'es_family L2: no say (choice)',
-    'es_mix L2: no say (choice)'
+    'es_mix L2: no say (choice)',
+    'es_house L2: no say (choice)',
+    'es_clothes L2: no say (choice)',
+    'es_school L2: no say (choice)',
+    'es_feel L2: no say (choice)'
   ],
 };
 
@@ -9858,10 +9862,10 @@ run('Spanish framework P2-30',()=>{
     // ---- old units: the 2700 questions of the original generators (es_* levels 1-2, seeds 1-150) are byte for byte the same as at v104
     ES_UNITS.pop();delete SPN.tst;delete SK.es_tst;
     const all=[];
-    for(const id of Object.keys(SK).filter(k=>k.startsWith('es_')))for(let lv=1;lv<=2;lv++)for(let s=1;s<=150;s++)all.push(JSON.stringify(genQ(id,lv,s)));
+    for(const id of Object.keys(SK).filter(k=>/^es_(greet|color|num|teen|animal|food|body|family|mix)$/.test(k)))for(let lv=1;lv<=2;lv++)for(let s=1;s<=150;s++)all.push(JSON.stringify(genQ(id,lv,s)));
     const h=require('crypto').createHash('md5').update(all.join('\n')).digest('hex');
     if(h!=='85968a5ca262a225f92f3a7354d2277e'||all.length!==2700)bad('old Spanish stops changed by seed: '+h+' ('+all.length+' questions)');
-    for(const u of ES_UNITS)if(u.spell)bad('level 3 is on in shipped unit '+u.id+' before a world has its stop');
+    for(const u of ES_UNITS)if(u.spell&&!NODES.es.some(x=>x.sk==='es_'+u.id&&x.lv===3))bad('level 3 is on in shipped unit '+u.id+' but no world has its stop');
     // ---- voice fallback: the mode function, late voices, and say() staying silent
     const V=(l)=>({lang:l});
     const cases=[[[],true,0,'wait'],[[],true,4000,'no'],[[V('en-US')],true,0,'no'],[[V('en-US'),V('es-MX')],true,0,'yes'],[[V('es_ES')],true,0,'yes'],[[V('es-419')],true,9999,'yes'],[[V('spa-ES')],true,0,'yes'],[[V('es-MX')],false,0,'no'],[[V('fr-FR'),V('de-DE')],true,0,'no']];
@@ -9882,7 +9886,7 @@ run('Spanish framework P2-30',()=>{
     delete global.window;delete global.SpeechSynthesisUtterance;global.speechSynthesis={getVoices:()=>[]};
     // ---- stops: this chunk adds none; a level 3 stop added later by world id leaves every older stop and its stars alone
     const base=NODES.es.map(nid).join(' ');
-    if(base!=='es_greet1 es_color1 es_num1 es_animal1 es_greet2 es_color2 es_num2 es_animal2 boss_e_plaza es_food1 es_body1 es_family1 es_teen1 es_food2 es_body2 es_family2 es_teen2 boss_e_fiesta es_mix1 es_mix2 boss_e_repaso')bad('Spanish stops changed: '+base);
+    if(!base.startsWith('es_greet1 es_color1 es_num1 es_animal1 es_greet2 es_color2 es_num2 es_animal2 boss_e_plaza es_food1 es_body1 es_family1 es_teen1 es_food2 es_body2 es_family2 es_teen2 boss_e_fiesta es_mix1 es_mix2 boss_e_repaso'))bad('Spanish stops changed: '+base);
     const store={};
     global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
     const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
@@ -10332,6 +10336,124 @@ run('Galaxy Core P2-14: the new world keeps every star, re-locks nothing and the
   };
   const r=eval(js+';('+body.toString()+')()');
   return{problems:r.out,note:r.checked+' stop checks against a path without Galaxy Core, map moved on '+r.moved+' of 81 loads'};
+});
+
+// ---- P2-31: Spanish world La Casa (es_house, es_clothes, es_school, es_feel) ----
+run('Spanish La Casa P2-31',()=>{
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const allow=new Set(fs.readFileSync(path.join(ROOT,'tools','emoji-allow.txt'),'utf8').split('\n').map(l=>l.split('#')[0].trim().replace(/️/g,'')).filter(Boolean));
+  const errs=[],bad=m=>{if(errs.length<40&&!errs.includes(m))errs.push(m)};
+  // the known gender of every noun (Latin American Spanish); feelings are adjectives with no article
+  const GEN={house:{casa:'la',puerta:'la',ventana:'la',mesa:'la',silla:'la',cama:'la',cocina:'la',baño:'el',jardín:'el',lámpara:'la',sala:'la'},
+    clothes:{camisa:'la',pantalones:'los',vestido:'el',zapatos:'los',sombrero:'el',chaqueta:'la',calcetines:'los',gorra:'la',botas:'las',corbata:'la'},
+    school:{libro:'el',lápiz:'el',mochila:'la',papel:'el',maestra:'la',maestro:'el',escuela:'la',clase:'la',tijeras:'las',borrador:'el'},
+    feel:{feliz:'',triste:'',enojado:'',cansado:'',asustado:'',enfermo:'',emocionado:'',tranquilo:'',sorprendido:''}};
+  const COUNT={house:11,clothes:10,school:10,feel:9};
+  const body=function(GEN,COUNT){
+    const N=3000;
+    const ids=Object.keys(GEN),UN=id=>ES_UNITS.find(u=>u.id===id);
+    // ---- units: counts, genders, spelling flags, accents, pictures, no duplicates across all units
+    const OLD=['greet','color','num','teen','animal','food','body','family'];
+    if(ES_UNITS.slice(0,8).map(u=>u.id).join()!==OLD.join())bad('the first 8 units were reordered or changed');
+    if(ES_UNITS.slice(8,12).map(u=>u.id).join()!==ids.join())bad('La Casa units are not appended in order: '+ES_UNITS.slice(8,12).map(u=>u.id));
+    for(const id of ids){
+      const u=UN(id);if(!u){bad('missing unit '+id);continue}
+      if(u.items.length!==COUNT[id])bad(id+': '+u.items.length+' words, wants '+COUNT[id]);
+      if(u.items.length<8||u.items.length>14)bad(id+': outside 8-14 words');
+      if(u.mix)bad(id+': mix must not be set (es_mix seeds would shift)');
+      if(!!u.spell!==(id!=='feel'))bad(id+': spell flag');
+      const want=GEN[id];
+      if(u.items.map(i=>i[0]).sort().join()!==Object.keys(want).sort().join())bad(id+': word list differs from the spec list');
+      for(const it of u.items){
+        const w=id+' '+it[0]+': ';
+        if(it[0]!==it[0].normalize('NFC')||it[0]!==it[0].toLowerCase()||/\s/.test(it[0]))bad(w+'not a bare lowercase NFC word');
+        if(it[3]!==want[it[0]])bad(w+'article '+JSON.stringify(it[3])+' but the noun is '+JSON.stringify(want[it[0]]));
+        const pic=it[2].replace(/️/g,'');
+        if(!allow.has(pic))bad(w+'picture '+it[2]+' not in emoji-allow.txt');
+        if(u.spell&&!esSpellable(it))bad(w+'not spellable');
+        if(it[4]&&!ART[it[4]])bad(w+'art name '+it[4]+' has no drawing');
+      }
+      const pics=u.items.map(i=>i[4]||i[2]);
+      if(new Set(pics).size!==pics.length)bad(id+': two words share a picture (a level 1 choice would be ambiguous)');
+      if(SK['es_'+id].max!==(u.spell?3:2))bad(id+': skill max');
+    }
+    // the plural nouns end in s, the singular articles agree in number
+    for(const u of ES_UNITS){const seenW=new Set();for(const it of u.items)seenW.add(it[0])}
+    const all={};
+    for(const u of ES_UNITS)for(const it of u.items){if(all[it[0]])bad('word "'+it[0]+'" in both '+all[it[0]]+' and '+u.id);all[it[0]]=u.id}
+    for(const u of ES_UNITS)if(u.mix!==(OLD.includes(u.id)?1:undefined))bad('mix flag changed on '+u.id);
+    // ---- questions: 3,000 seeded per level pass kindProblems, level 3 asks only spellable words of the unit
+    let n=0;
+    for(const id of ids){
+      const u=UN(id);
+      for(let lv=1;lv<=SK['es_'+id].max;lv++){
+        const seenWords=new Set();
+        for(let s=1;s<=N;s++){
+          const q=genQ('es_'+id,lv,s*13+1);n++;
+          const pr=kindProblems(q);if(pr.length)bad(id+' L'+lv+': '+pr[0]);
+          if(q.lang!=='es'||/undefined|NaN|null|\[object/.test(q.html))bad(id+' L'+lv+': lang or html');
+          if(lv===3){
+            const it=u.items.find(i=>i[0]===q.word);
+            if(!it||!esSpellable(it))bad(id+' L3 asked '+q.word);
+            else{seenWords.add(q.word);if(q.ans!==q.word||q.html.includes(q.word))bad(id+' L3 answer shown');}
+            if(q.kind!=='spell')bad(id+' L3 kind');
+          }else{
+            if(q.kind!=='choice')bad(id+' L'+lv+' kind');
+            const cs=q.choices.map(c=>c.v);
+            if(new Set(cs).size!==cs.length||!cs.includes(q.ans))bad(id+' L'+lv+' choices');
+            if(!/^(el |la |los |las )?[a-zñáéíóúü]+$/.test(q.ans))bad(id+' L'+lv+' ans '+q.ans);
+          }
+        }
+        if(lv===3&&seenWords.size!==u.items.length)bad(id+' L3 did not reach every word: '+seenWords.size+'/'+u.items.length);
+      }
+    }
+    if(SK.es_feel.max!==2)bad('es_feel must stop at level 2');
+    // ---- world and stop order (CURRICULUM 2.3 row 4)
+    const ws=PATHS.es.worlds,wi=ws.findIndex(w=>w.id==='e_casa'),w=ws[wi];
+    if(wi!==3||ws.map(x=>x.id).slice(0,3).join()!=='e_plaza,e_fiesta,e_repaso')bad('e_casa is not the 4th world after e_repaso');
+    else{
+      const got=w.nodes.map(x=>x[0]+x[1]).join(' ');
+      if(got!=='es_house1 es_house2 es_clothes1 es_clothes2 es_school1 es_school2 es_feel1 es_feel2 es_house3 es_clothes3 es_school3')bad('stop order: '+got);
+      if(w.g!==-1||w.n!=='La Casa')bad('world g or name');
+      if(w.nodes.some(x=>x[2].length>22))bad('a stop title is over 22 letters');
+      if(new Set(w.nodes.map(x=>x[2])).size!==w.nodes.length)bad('stop titles repeat');
+      const ni=NODES.es.map(nid);if(new Set(ni).size!==ni.length)bad('stop ids repeat');
+      if(NODES.es[WR.es[wi][1]].sk!=='boss'||WR.es[wi][1]-WR.es[wi][0]!==11)bad('11 stops and the boss');
+    }
+    if(!NODES.es.map(nid).join(' ').startsWith('es_greet1 es_color1 es_num1 es_animal1 es_greet2 es_color2 es_num2 es_animal2 boss_e_plaza es_food1 es_body1 es_family1 es_teen1 es_food2 es_body2 es_family2 es_teen2 boss_e_fiesta es_mix1 es_mix2 boss_e_repaso '))bad('old Spanish stops changed');
+    // ---- old Spanish stops: the P2-30 hash still holds (es_mix draws only from the 8 old units)
+    const old=[];
+    for(const id of ['greet','color','num','teen','animal','food','body','family','mix'])for(let lv=1;lv<=2;lv++)for(let s=1;s<=150;s++)old.push(JSON.stringify(genQ('es_'+id,lv,s)));
+    const hash=require('crypto').createHash('md5').update(Object.keys(SK).filter(k=>/^es_(greet|color|num|teen|animal|food|body|family|mix)$/.test(k)).flatMap(id=>{const o=[];for(let lv=1;lv<=2;lv++)for(let s=1;s<=150;s++)o.push(JSON.stringify(genQ(id,lv,s)));return o}).join('\n')).digest('hex');
+    if(hash!=='85968a5ca262a225f92f3a7354d2277e'||old.length!==2700)bad('old Spanish stops changed by seed: '+hash);
+    // ---- saves: no star moves, nothing re-locks, a child who finished e_repaso sees La Casa open
+    const store={};
+    global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+    const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
+    const CUR=PATHS.es.worlds;let checked=0;
+    for(const name of ['fresh','midway','maxed','legacy-single-map','legacy-index-maps','tricky']){
+      const raw=fx(name);load(Object.keys(JSON.parse(raw)).length?raw:null);
+      const snap=()=>{const o={};NODES.es.forEach((x,i)=>{o[nid(x)]={st:getSt('es',i),open:unlocked('es',i)}});return o};
+      PATHS.es.worlds=CUR.filter(x=>x.id!=='e_casa');buildNodes('es');const before=snap();
+      PATHS.es.worlds=CUR;buildNodes('es');const after=snap();
+      for(const k in before){checked++;
+        if(!after[k])bad(name+': stop '+k+' vanished');
+        else{if(before[k].st!==after[k].st)bad(name+': '+k+' stars changed');if(before[k].open&&!after[k].open)bad(name+': '+k+' re-locked')}}
+      for(const x of CUR[3].nodes){const k=x[0]+x[1];if(!after[k])bad(name+': new stop '+k+' missing');else if(after[k].st!==0)bad(name+': new stop '+k+' starts with stars')}
+    }
+    // a child who finished Gran Repaso: La Casa opens by order, its first stop is playable, the later ones wait
+    load(null);
+    NODES.es.forEach((x,i)=>{if(x.wi<3)setSt('es',i,3)});
+    if(!worldOpen('es',3)||!unlocked('es',WR.es[3][0])||unlocked('es',WR.es[3][0]+1))bad('after Gran Repaso: La Casa is not open at its first stop only');
+    if(curNode('es')!==WR.es[3][0])bad('the map does not open on the first La Casa stop');
+    load(null);
+    NODES.es.forEach((x,i)=>{if(x.wi<2)setSt('es',i,3)});
+    if(worldOpen('es',3))bad('La Casa open before Gran Repaso is done');
+    load(null);
+    return{n,checked};
+  };
+  const r=eval(js+';('+body.toString()+')('+JSON.stringify(GEN)+','+JSON.stringify(COUNT)+')');
+  return{problems:uniq(errs),note:r.n+' generated questions, '+r.checked+' stop checks'};
 });
 
 // ---- report ----
