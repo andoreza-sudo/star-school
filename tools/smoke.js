@@ -6417,6 +6417,148 @@ async function main() {
       else step(`P4-09: ${worlds} world maps (every world of every path at 380x780 and 1024x600): every band has its scene behind the map, ${stops} stops, their labels, titles and Test out banners on top, trail stones, no sideways scroll`);
     }
 
+    // P4-12 setup, Grown-ups, Pet Care at 380x780 and 1024x600: first-run setup with real taps (steps tick, saved), Grown-ups opened
+    //    by holding the gear, every section looked at (App log opened, a segmented row, a switch, a field, Erase armed only, report card
+    //    with its online note), Pet Care feed, bath and play with drawn sparkles (none with reduced motion or calm mode). Every screen:
+    //    targets at least 48 px, nothing wider than the screen, no emoji in the chrome (pets and snack pictures are content).
+    {
+      const look = () => {
+        const vw = document.documentElement.clientWidth, out = [];
+        for (const e of document.querySelectorAll('#app button, #app summary, #app label.switch, #app .fld')) {
+          const r = e.getBoundingClientRect();
+          if (!r.width || e.closest('svg')) continue;
+          // layout size (offsetWidth/Height): the screen-in motion scales the page for a moment
+          if (Math.min(e.offsetWidth, e.offsetHeight) < 48) out.push('small ' + (e.id || e.className || e.tagName) + ' ' + e.offsetWidth + 'x' + e.offsetHeight);
+          if (r.left < -1 || r.right > vw + 1) out.push('outside ' + (e.id || e.className) + ' ' + Math.round(r.left) + '..' + Math.round(r.right));
+        }
+        for (const s of [document.documentElement, ...document.querySelectorAll('#app .scroll, #app .center')])
+          if (s.scrollWidth > s.clientWidth + 1 && getComputedStyle(s).overflowX != 'hidden') out.push('sideways scroll ' + (s.className || 'page') + ' ' + s.scrollWidth);
+        const w = document.createTreeWalker(document.querySelector('#app'), NodeFilter.SHOW_TEXT);
+        for (let n; (n = w.nextNode());) {
+          const el = n.parentElement;
+          if (!el || el.closest('.pet-svg, .gx-pp, .gx-sp, .petbig, .tblw')) continue;
+          const m = n.textContent.match(/\p{Extended_Pictographic}|[◀▶✕★✓]/u);
+          if (m) out.push('emoji chrome ' + m[0] + ' in ' + (el.id || el.className));
+        }
+        return out;
+      };
+      const bad = [];
+      for (const [w, h] of [[380, 780], [1024, 600]]) {
+        const tag = w + 'x' + h;
+        const chk = async (pg, what) => { for (const o of await pg.evaluate('(' + look.toString() + ')()')) bad.push(tag + ' ' + what + ': ' + o); };
+        // ---- first-run setup with real taps ----
+        const sa = await openApp(browser, { fixture: 'fresh', width: w, height: h });
+        const sp = sa.page;
+        await sp.waitForSelector('.su-step');
+        await sp.evaluate(() => { window.say = () => {}; });
+        await chk(sp, 'setup');
+        const st0 = await sp.evaluate(() => document.querySelectorAll('.su-step.ok').length);
+        await sp.click('#go'); // no name yet: a gentle "type your name" and nothing saved
+        if (!(await sp.$('.su-step')) || st0 !== 0) bad.push(tag + ' setup: ' + st0 + ' steps ticked at the start, or Go without a name left setup');
+        await sp.click('#suspk');
+        await sp.click('#nm');
+        await sp.keyboard.type('Mia');
+        await sp.click('.petopt[data-p="ocean"]');
+        await sp.click('#pn');
+        await sp.keyboard.type('Bubbles');
+        await sp.click('.gr[data-g="2"]');
+        const st = await sp.evaluate(() => ({ ok: document.querySelectorAll('.su-step.ok').length, sel: document.querySelector('.petopt.sel').dataset.p,
+          gr: document.querySelector('.gr.sel').dataset.g, go: document.querySelector('#go').getBoundingClientRect().height }));
+        if (st.ok !== 3 || st.sel !== 'ocean' || st.gr !== '2' || st.go < 56) bad.push(tag + ' setup steps: ' + JSON.stringify(st));
+        await chk(sp, 'setup filled in');
+        await sp.click('#go');
+        await sp.waitForSelector('.game[data-p]');
+        const saved = await sp.evaluate(() => ({ n: S.name, p: S.pet, pn: S.petName, g: S.grade }));
+        if (saved.n !== 'Mia' || saved.p !== 'ocean' || saved.pn !== 'Bubbles' || saved.g !== 2) bad.push(tag + ' setup saved ' + JSON.stringify(saved));
+        // ---- Grown-ups: hold the gear ----
+        const gb = await (await sp.$('#gear')).boundingBox();
+        await sp.mouse.move(gb.x + gb.width / 2, gb.y + gb.height / 2);
+        await sp.mouse.down();
+        await vwait(sp, 1500);
+        await sp.mouse.up();
+        await sp.waitForSelector('.gw-card', { timeout: 3000 });
+        await sp.waitForTimeout(400);
+        const secs = await sp.evaluate(() => [...document.querySelectorAll('.gw-card')].map(c => (c.id || c.className) + ':' + !!c.querySelector('.gw-h svg.ic')));
+        if (secs.length < 10 || secs.some(s => s.endsWith(':false'))) bad.push(tag + ' Grown-ups sections: ' + secs.join(' '));
+        await chk(sp, 'Grown-ups');
+        // every section scrolled into view, each one on screen
+        const seen = await sp.evaluate(async () => { const r = [];
+          for (const c of document.querySelectorAll('.gw-card')) { c.scrollIntoView({ block: 'start' }); await new Promise(f => requestAnimationFrame(f));
+            const b = c.getBoundingClientRect(); if (b.top < 0 || b.top > innerHeight || b.width < 200) r.push(c.id + ' ' + Math.round(b.top) + ' ' + Math.round(b.width)); }
+          return r; });
+        if (seen.length) bad.push(tag + ' sections not shown: ' + seen.join(', '));
+        await sp.click('#applog summary');
+        const log = await sp.evaluate(() => ({ open: document.querySelector('#applog').open, txt: document.querySelector('.gw-log').textContent }));
+        if (!log.open || !/Version v\d+/.test(log.txt) || !/saving OK/.test(log.txt)) bad.push(tag + ' App log: ' + JSON.stringify(log));
+        await sp.click('[data-per="5"]');
+        await sp.waitForSelector('[data-per="5"][aria-pressed="true"]');
+        await sp.click('[data-max="0"]');
+        await sp.waitForSelector('[data-max="0"][aria-pressed="true"]');
+        await sp.click('label.switch:has(#ptp)');
+        await sp.click('label.switch:has(#snd)');
+        await sp.click('#bd');
+        await sp.keyboard.type('Leo');
+        await sp.click('#reset'); // the first tap only arms it
+        const gs = await sp.evaluate(() => ({ per: ptCfg().per, max: ptCfg().max, pause: ptCfg().pause, snd: S.sound, bd: S.buddy, name: S.name,
+          arm: document.querySelector('#reset').textContent }));
+        if (gs.per !== 5 || gs.max !== 0 || gs.pause !== true || gs.snd !== false || gs.bd !== 'Leo' || gs.name !== 'Mia' || !/Tap again/.test(gs.arm))
+          bad.push(tag + ' Grown-ups controls: ' + JSON.stringify(gs));
+        await chk(sp, 'Grown-ups after taps');
+        // the report card: Print keeps its online note
+        await sp.click('#rp-open');
+        await sp.waitForSelector('#rp-weeks');
+        const rp = await sp.evaluate(() => { const b = { height: document.querySelector('#rp-print').offsetHeight }, n = document.querySelector('.rp-online .online-note');
+          return { h: b.height, note: n ? n.textContent : '', vis: n ? n.getBoundingClientRect().height : 0, cards: document.querySelectorAll('.rp-card .gw-h svg.ic').length }; });
+        if (rp.h < 48 || !/online to share or print/.test(rp.note) || !rp.vis || rp.cards !== 7) bad.push(tag + ' report card: ' + JSON.stringify(rp));
+        await chk(sp, 'report card');
+        await sp.click('#back');
+        await sp.waitForSelector('#rp-open');
+        await sp.click('#back');
+        await sp.waitForSelector('#care');
+        // ---- Pet Care: feed, bath, play ----
+        await sp.evaluate(() => { S.coins = 40; S.care = { food: 30, clean: 30, fun: 30, t: Date.now(), gift: '' }; home(); });
+        await sp.click('#care');
+        await sp.waitForSelector('#bath');
+        await sp.waitForTimeout(300);
+        await chk(sp, 'Pet Care');
+        const scene = await sp.evaluate(() => ({ svg: !!document.querySelector('#stage > svg.gx-scene'), deco: document.querySelectorAll('.sdeco').length }));
+        if (!scene.svg || scene.deco) bad.push(tag + ' Pet Care stage: ' + JSON.stringify(scene));
+        const fx = async (sel, kind) => {
+          await sp.click(sel);
+          const r = await sp.evaluate(k => { const b = document.querySelector('.pc-fx.k-' + k);
+            return b ? { n: b.querySelectorAll('i > svg').length, txt: b.textContent.trim() } : null; }, kind);
+          await vwait(sp, 1500);
+          await sp.waitForSelector('#bath');
+          return r;
+        };
+        const feed = await fx('[data-f="0"]', 'food'), bath = await fx('#bath', 'bath'), play = await fx('#play', 'play');
+        const cs = await sp.evaluate(() => ({ food: Math.round(S.care.food), clean: Math.round(S.care.clean), fun: Math.round(S.care.fun), coins: S.coins }));
+        if (!feed || feed.n < 6 || feed.txt || !bath || bath.n < 6 || !play || play.n < 6 || cs.food < 54 || cs.clean !== 100 || cs.fun < 59 || cs.coins !== 37)
+          bad.push(tag + ' Pet Care actions: ' + JSON.stringify({ feed, bath, play, cs }));
+        await chk(sp, 'Pet Care after actions');
+        // reduced motion and calm mode: the action still works, no pieces are drawn
+        await sp.emulateMedia({ reducedMotion: 'reduce' });
+        await sp.click('#play');
+        const rm = await sp.evaluate(() => document.querySelectorAll('.pc-fx').length);
+        await vwait(sp, 1500);
+        await sp.emulateMedia({ reducedMotion: 'no-preference' });
+        await sp.evaluate(() => document.documentElement.classList.add('calm'));
+        await sp.waitForSelector('#bath');
+        await sp.click('#bath');
+        const calm = await sp.evaluate(() => document.querySelectorAll('.pc-fx').length);
+        await vwait(sp, 1500);
+        if (rm || calm) bad.push(tag + ' Pet Care sparkles with reduced motion ' + rm + ', calm ' + calm);
+        await sp.evaluate(() => document.documentElement.classList.remove('calm'));
+        network.push(...sa.network);
+        for (const e of sa.errors) fail(e);
+        await sa.ctx.close();
+      }
+      if (bad.length) fail('P4-12 setup, Grown-ups, Pet Care:\n  ' + bad.join('\n  '));
+      else step('P4-12: first-run setup by taps (steps tick, name, pet, pet name, grade saved), Grown-ups held open from the gear with every section shown ' +
+        '(App log, segmented rows, switches, a field, Erase armed only, report card Print with its online note), Pet Care feed, bath and play with drawn ' +
+        'sparkles and none with reduced motion or calm mode; 48 px targets, no sideways scroll, no emoji chrome at 380x780 and 1024x600');
+    }
+
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');
   } catch (e) {

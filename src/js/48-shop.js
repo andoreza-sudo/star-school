@@ -1,6 +1,7 @@
-/* ---------- pet shop (stageHTML: the old stage, still used by Pet Care in 56-petcare.js) ---------- */
-function stageHTML(sc,title,sub,sticky){return`<div class="stage ${sc[0]=='space'?'dark':''} ${sticky?'sticky':''}" style="background:${sc[3]}" id="stage">
-  <span class="sdeco" style="left:14px;top:12px">${sc[2]}</span><span class="sdeco" style="right:14px;bottom:12px">${sc[2]}</span>
+/* ---------- pet shop (stageHTML: the stage Pet Care draws, 56-petcare.js) ---------- */
+// P4-12: the stage is the scene Home draws for the shop place (HM_SCENE, 46-home.js), so no emoji props; sc-<id> sets its sky
+function stageHTML(sc,title,sub,sticky){const id=HM_SCENE[sc[0]]?sc[0]:'meadow';return`<div class="stage gx-stage sc-${id} ${id=='space'?'dark':''} ${sticky?'sticky':''}" id="stage">
+  <svg class="gx-scene" viewBox="0 0 160 160" preserveAspectRatio="xMidYMax slice" aria-hidden="true">${HM_SCENE[id]()}</svg>
   <div class="petbig ${petAura()}" id="pet">${petHTML()}</div><div class="hname">${title}</div>${sub?`<div class="htxt">${sub}</div>`:''}</div>`}
 
 /* ---- P4-07 Pet Shop (DESIGN_SYSTEM 6.4; CSS 43-shop.css): a stage with the pet wearing what is tried on, an info bar with one
