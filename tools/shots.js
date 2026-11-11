@@ -367,6 +367,13 @@ const SCREENS = {
   pets: { full: true, run: async p => { await p.evaluate(petSheet); } },
   'pets-home': { run: async p => { await p.evaluate(() => { S.care = { food: 90, clean: 90, fun: 90, t: Date.now(), gift: '' }; home(true); }); } },
   'pets-care': { run: async p => { await p.evaluate(() => { S.care = { food: 12, clean: 60, fun: 60, t: Date.now(), gift: '' }; care(); }); } },
+  // ---- P4-04 components ----
+  // Component sheet (DESIGN_SYSTEM 4): every component and state, full page. The page also checks itself (compCheck below):
+  // overflow, labels broken mid-word, targets under 48 px, horizontal scroll; each problem is a console error, so the shot fails.
+  components: { full: true, run: p => compSheet(p) },
+  // The live sheet (modal) and toast over Home, to see the real fixed position, backdrop and slide.
+  'comp-sheet': { run: p => compLive(p, 'sheet') },
+  'comp-toast': { run: p => compLive(p, 'toast') },
 };
 
 // One question of a P2-18 level (genQ with a fixed seed) through the real round engine; hint opens Help.
@@ -535,6 +542,163 @@ function petSheet() {
     .psc .pet-svg *{animation:none!important}.psd{background:var(--bt-shade)}.psd .psn{color:var(--surface)}
     .psn{font-size:var(--fs-1);color:var(--ink-2)}#app,html,body{height:auto;overflow:visible}</style>
     <div class="top"><div class="title">Pet rig: dragon</div></div>${h}`);
+}
+
+// ---- P4-04 components: the sheet and its self-check ----
+// Builds the component sheet in the page with the UI.* helpers (src/js/14-ui.js), then runs compCheck.
+async function compSheet(p) {
+  await p.evaluate(() => {
+    const sec = (t, h) => `<section class="cs-s"><h2>${t}</h2>${h}</section>`;
+    const row = h => `<div class="cs-r">${h}</div>`;
+    const cap = (h, c) => `<div class="cs-c"><div class="cs-i">${h}</div><small>${c}</small></div>`;
+    const B = UI.btn, I = UI.ibtn;
+    const pad = [1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button class="key${n == 5 ? ' is-press' : ''}">${n}</button>`).join('') +
+      `<button class="key del" aria-label="Delete">${ico('backspace')}</button><button class="key">0</button>` +
+      `<button class="key go" aria-label="Check">${ico('go')}</button>`;
+    const abc = 'abcdefg'.split('').map(c => `<button class="key">${c}</button>`).join('');
+    const ch = (f, c, o = {}) => cap(UI.choice(f, o), c);
+    const html = [
+      sec('Buttons', row(B('Play', { kind: 'primary', icon: 'play' }) + B('Map', { icon: 'map' }) + B('Math', { kind: 'subject', p: 'math', icon: 'path-math' }) +
+        B('Games', { kind: 'subject', p: 'play', icon: 'gamepad' }) + B('Skip', { kind: 'ghost' }) + B('Reset', { kind: 'risk', icon: 'close' })) +
+        row(cap(B('Small', { kind: 'primary', size: 'sm', icon: 'star' }), 'sm 48') + cap(B('Medium', { kind: 'primary', icon: 'star' }), 'md 56') +
+          cap(B('Large', { kind: 'primary', size: 'lg', icon: 'star' }), 'lg 72')) +
+        row(cap(B('Go', { kind: 'primary', icon: 'go' }), 'idle') + cap(B('Go', { kind: 'primary', icon: 'go', cls: 'is-press' }), 'pressed') +
+          cap(B('Go', { kind: 'primary', icon: 'go', id: 'cs-focus' }), 'focus') + cap(B('Go', { kind: 'primary', icon: 'go', off: true }), 'disabled') +
+          cap(B('Hear it', { icon: 'speak' }), 'soft') + cap(B('Hear it', { icon: 'speak', cls: 'is-press' }), 'pressed') +
+          cap(B('Hear it', { icon: 'speak', off: true }), 'disabled')) +
+        row(cap(I('back', 'Back', { size: 'sm' }), 'icon sm') + cap(I('sound-on', 'Sound'), 'icon md') + cap(I('gear', 'Settings', { size: 'lg' }), 'icon lg') +
+          cap(I('play', 'Play', { kind: 'primary' }), 'primary') + cap(I('pause', 'Pause', { kind: 'subject', p: 'play' }), 'subject') +
+          cap(I('replay', 'Again', { cls: 'is-press' }), 'pressed')) +
+        `<div class="cs-r cs-w">${B('Accuracy and Grown-ups settings', { kind: 'primary', wide: true, icon: 'gear' })}</div>`),
+      sec('Keys', `<div class="keys">${pad}</div><div class="keys abc" style="margin-top:16px">${abc}</div>`),
+      sec('Choices', `<div class="picks three">${ch('7', 'idle') + ch('12', 'selected', { cls: 'sel' }) + ch('9', 'right', { cls: 'right' })}` +
+        `${ch('4', 'wrong', { cls: 'wrong' }) + ch('15', 'disabled', { cls: 'off' }) + ch('3', 'pressed', { cls: 'is-press' })}</div>` +
+        `<div class="picks three" style="margin-top:16px">${ch(picFor('apple', 'A'), 'picture', { kind: 'pic' }) + ch(picFor('fish', 'F'), 'picture right', { kind: 'pic', cls: 'right' }) +
+          ch('&gt;', 'symbol', { kind: 'sym' })}</div>` +
+        `<div class="picks one" style="margin-top:16px">${ch('The cat sat on the mat.', 'wide', { kind: 'wide' }) + ch('The dog ran to the park to play.', 'wide selected', { kind: 'wide', cls: 'sel' })}</div>`),
+      sec('Pieces and sockets', row(cap(`<span class="socket full">c</span> <span class="socket full">a</span> <span class="socket on"></span>`, 'full, full, next') +
+        cap(`<span class="socket right">t</span>`, 'right') + cap(`<span class="socket wrong">p</span>`, 'wrong') + cap(`<span class="socket"></span>`, 'empty')) +
+        row(cap('<button class="piece">t</button>', 'idle') + cap('<button class="piece sel">p</button>', 'selected') + cap('<button class="piece used">n</button>', 'used') +
+          cap('<button class="piece is-press">m</button>', 'pressed') + cap('<button class="piece num">12</button>', 'number')) +
+        row(cap('<button class="piece word">jumped</button> <button class="piece word sel">over</button>', 'word') + cap('<span class="socket word"></span>', 'word socket'))),
+      sec('Panels', `<div class="cs-g"><div class="panel"><h3>${ico('calendar', 24)} Plain panel</h3><p>White, 22 px corners, a 2 px line and a soft shadow.</p></div>` +
+        `<div class="panel tint s-read"><h3>${ico('path-read', 24)} Tinted panel</h3><p>Uses the subject tint; the title takes the shade.</p></div>` +
+        `<div class="panel big"><h3>${ico('trophy', 24)} Hero panel</h3><p>Big corners and a warm wash for the top of a screen.</p>` +
+        `<div style="margin-top:12px">${UI.meter(.62, { kind: 'grow', lg: true })}</div></div></div>`),
+      sec('Path cards', `<div class="cs-g">${UI.pathcard({ p: 'math', title: 'Math Adventure', done: 9, total: 58, next: 'Count by 2s and 5s' })}` +
+        UI.pathcard({ p: 'read', title: 'Reading Adventure', done: 7, total: 43, next: 'Middle sounds' }) +
+        UI.pathcard({ p: 'es', title: 'Spanish Adventure', done: 5, total: 21, next: 'Read colors' }) +
+        UI.pathcard({ p: 'disc', title: 'Discover', done: 0, total: 30, next: 'Plants and animals' }) +
+        UI.pathcard({ p: 'bt', title: 'Brain Teasers', done: 12, total: 40, next: 'Pattern puzzles' }) +
+        UI.pathcard({ p: 'play', title: 'Game Room', done: 3, total: 10 }) + '</div>'),
+      sec('Top bars', `<div class="top tbar cs-bar"><div class="ttl">Star School</div>${UI.chip('star', 85)}${UI.chip('coin', 64)}${I('gear', 'Grown-ups', { size: 'sm' })}</div>` +
+        `<div class="top tbar round cs-bar">${I('close', 'Stop', { size: 'sm' })}${UI.dots(10, 4, ['', 'try'])}${UI.chip('star', 3)}</div>` +
+        `<div class="top tbar adult cs-bar">${I('back', 'Back', { size: 'sm' })}<div class="ttl">Grown-ups</div></div>`),
+      sec('Stat chips', row(UI.chip('star', 85) + UI.chip('coin', 64) + UI.chip('ticket', '7:00') + UI.chip('flame', 4, { tap: true, aria: 'Streak' }) +
+        UI.chip('flame', 0, { off: true }) + UI.chip('timer', '0:45'))),
+      sec('Meters and dots', `<div class="cs-g">${cap(UI.meter(.2), 'progress 20%')}${cap(UI.meter(.65, { p: 'math' }), 'math 65%')}` +
+        `${cap(UI.meter(.9, { kind: 'grow' }), 'pet growth 90%')}${cap(UI.meter(1, { kind: 'good' }), 'done 100%')}${cap(UI.meter(0), 'empty')}` +
+        `${cap(UI.dots(10, 6, ['', '', 'try']), 'round dots: done, retry, current, to do')}</div>`),
+      sec('Stars and tags', row(cap(UI.stars(0), '0 of 3') + cap(UI.stars(1), '1') + cap(UI.stars(2), '2') + cap(UI.stars(3), '3') +
+        cap(UI.stars(2, 3, 56, { arc: true }), 'reward 56 px')) +
+        row(UI.tag('New', 'new') + UI.tag('Mastered', 'mast', 'crown') + UI.tag('Skipped', 'skip') + UI.tag('Challenge', 'chal', 'bolt'))),
+      sec('Toasts and speech', `<div class="cs-col">${['good:Great job!', 'try:Try again', 'info:Tap the speaker to hear it'].map(x => {
+        const [k, t] = x.split(':');
+        return `<div class="toast on cs-static ${k}"><span class="ti">${ico({ good: 'check', try: 'replay', info: 'hint' }[k])}</span><span>${t}</span></div>`;
+      }).join('')}</div>` +
+        row(UI.speech('You can do it!') + UI.speech('Tap the big one.', 'r') + `<span class="cs-pet">${ico('paw', 40)}</span>${UI.speech('Hi! I am Sparky.', 'l')}`)),
+      sec('Sheet', `<div class="sheet-bg on cs-static cs-sheet"><div class="sheet"><div class="sh-art">${ico('trophy')}</div><h2>Skip ahead?</h2>` +
+        `<p>Answer 5 questions. Get 4 right and you skip this stop.</p><div class="acts">${B('Try it', { kind: 'primary', size: 'lg', icon: 'play', wide: true })}` +
+        `${B('Not now', { kind: 'ghost', wide: true })}</div></div></div>`),
+      sec('Hint panels', `<div class="cs-col">${UI.hint('<p>Count the dots one by one. Touch each one as you count.</p>')}` +
+        UI.hint('<p>Three and two more:</p><div class="hpic">' + picFor('apple', 'A').repeat(3) + ' + ' + picFor('apple', 'A').repeat(2) + '</div>') +
+        UI.hint('', { steps: ['Start at 27.', 'Add 10: that makes 37.', 'Add 5 more: 42.'], at: 1 }) + '</div>'),
+      sec('Context panel', `<div class="cs-col">${UI.ctx('The lost kite', '<p>Mia had a red kite. The wind took it up, up, up. It got stuck in a tall tree.</p>' +
+        '<p>Her dog Rex ran to the tree and barked. A bird flew off the branch, and the kite fell down into the grass.</p><p>Mia gave Rex a big hug.</p>')}` +
+        UI.ctx('Story', '<p>Closed panel.</p>', false) + '</div>'),
+      sec('Segments and switches', `<div class="cs-col">${UI.seg([['e', 'Easy'], ['m', 'Medium'], ['h', 'Hard']], 'm', { label: 'Level' })}` +
+        UI.seg([['30', '30 s'], ['60', '60 s'], ['90', '90 s'], ['0', 'No timer']], '0', { full: true, label: 'Timer' }) +
+        UI.sw('Read questions aloud', true, 'cs-sw1') + UI.sw('Calm mode (less motion)', false, 'cs-sw2') +
+        `<label class="switch"><input type="checkbox" role="switch" disabled><span class="sw" aria-hidden="true"></span><span>Not available</span></label></div>`),
+      sec('Table', `<div class="tblw" style="max-height:220px"><table class="tbl"><thead><tr><th>Day</th><th class="n">Minutes</th><th class="n">Right</th></tr></thead><tbody>` +
+        [['Monday', 12, '90%'], ['Tuesday', 9, '84%'], ['Wednesday', 15, '95%'], ['Thursday', 6, '70%'], ['Friday', 20, '88%'], ['Saturday', 8, '92%']]
+          .map(r => `<tr><td>${r[0]}</td><td class="n">${r[1]}</td><td class="n">${r[2]}</td></tr>`).join('') + '</tbody></table></div>'),
+      sec('Empty state', `<div class="panel">${UI.empty('calendar', 'Nothing to review today. Come back tomorrow.', B('Play a game', { kind: 'primary', icon: 'play' }))}</div>`),
+      sec('Map nodes', `<div class="cs-map s-math">${cap(UI.mapnode({ p: 'math', state: 'lock' }), 'locked')}` +
+        cap(UI.mapnode({ p: 'math', state: 'open', icon: 'plus' }), 'open') + cap(UI.mapnode({ p: 'math', state: 'done', icon: 'plus', stars: 2 }), 'passed') +
+        cap(UI.mapnode({ p: 'math', state: 'mast', icon: 'times', stars: 3 }), 'mastered') + cap(UI.mapnode({ p: 'math', state: 'skip' }), 'skipped') +
+        cap(UI.mapnode({ p: 'read', state: 'open', icon: 'path-read', isNew: true }), 'new') +
+        cap(UI.mapnode({ p: 'math', boss: true, html: ico('crown', 44) }), 'boss') + '</div>'),
+    ].join('');
+    view(`<style>#app,html,body{height:auto;overflow:visible}
+      .cs{display:flex;flex-direction:column;gap:var(--s-4);padding:0 var(--s-4) var(--s-7)}
+      .cs-s{background:var(--wash);border-radius:var(--r-card);padding:var(--s-3) var(--s-4) var(--s-5)}
+      .cs-s>h2{margin:0 0 var(--s-3);font-size:var(--fs-3);color:var(--ink-2)}
+      .cs-r{display:flex;flex-wrap:wrap;gap:var(--s-4);align-items:flex-end;margin-bottom:var(--s-4)}
+      .cs-c{display:flex;flex-direction:column;align-items:flex-start;gap:var(--s-2)}
+      .cs-c>small{font-size:var(--fs-1);color:var(--ink-3)}
+      .cs-i{display:flex;gap:var(--s-2);align-items:center}
+      .picks .cs-c,.cs-g .cs-c{align-items:stretch}.picks .cs-i>*,.cs-g .cs-i>*{flex:1}.picks .cs-c>small{text-align:center}
+      .cs-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:var(--s-4)}
+      .cs-col{display:flex;flex-direction:column;gap:var(--s-3)}.cs-col>.seg:first-child,.cs-col>.toast{align-self:flex-start}
+      .cs-bar{background:var(--surface);border-radius:var(--r-card);margin-bottom:var(--s-3);box-shadow:inset 0 0 0 2px var(--line)}
+      .cs-static{position:relative!important;left:auto!important;top:auto!important;transform:none!important}
+      .cs-sheet{inset:auto;height:auto;padding-top:var(--s-6);border-radius:var(--r-card);overflow:hidden;align-items:flex-end}
+      .cs-pet{color:var(--play);align-self:center}
+      .cs-map{display:flex;flex-wrap:wrap;gap:var(--s-6) var(--s-7);align-items:flex-end;padding:var(--s-4) var(--s-2) var(--s-6)}
+      .cs-map .cs-c{align-items:center;gap:40px}</style>
+      <div class="top tbar"><div class="ttl">Components</div>${UI.chip('star', 85)}</div><div class="cs">${html}</div>`);
+    document.getElementById('cs-focus').focus();
+  });
+  await p.waitForTimeout(400);
+  await p.evaluate(compCheck, '.cs');
+}
+
+// Runs in the page, on the elements inside root. Reports (console.error) any component whose content overflows it, any word split over two lines,
+// any tap target under 48 x 48 px, and horizontal scrolling of the page.
+function compCheck(root) {
+  const bad = m => console.error('components: ' + m);
+  const W = document.documentElement.clientWidth;
+  if (document.documentElement.scrollWidth > W + 1) bad('page scrolls sideways (' + document.documentElement.scrollWidth + ' > ' + W + ')');
+  const sel = '.dots,.btn,.key,.choice,.piece,.socket,.stat,.tag,.pathcard,.pc-t,.seg>button,.switch,.speech,.toast,.mapnode,.hintp,.ctx>summary,.tbl th,.tbl td,.sheet h2,.sheet p,.blank p';
+  const R = document.querySelector(root) || document.body;
+  for (const el of R.querySelectorAll(sel)) {
+    const name = (el.className.baseVal != null ? '' : el.className) + ' "' + el.textContent.trim().slice(0, 30) + '"';
+    // map nodes carry their ring, stars and tag outside on purpose; ellipsis lines cut on purpose
+    if (!el.matches('.mapnode') && getComputedStyle(el).textOverflow != 'ellipsis' && (el.scrollWidth > el.clientWidth + 1)) bad('content overflows ' + name);
+    const r = el.getBoundingClientRect();
+    if (r.right > W + 1) bad('off the right edge: ' + name);
+    // words split across lines: a word whose range has more than one line box
+    const walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    for (let t = walk.nextNode(); t; t = walk.nextNode()) {
+      const re = /\S+/g;
+      for (let m = re.exec(t.data); m; m = re.exec(t.data)) {
+        const rg = document.createRange();
+        rg.setStart(t, m.index);
+        rg.setEnd(t, m.index + m[0].length);
+        const tops = new Set([...rg.getClientRects()].filter(x => x.width > 0).map(x => Math.round(x.top)));
+        if (tops.size > 1) bad('word broken over two lines: "' + m[0] + '" in ' + name);
+      }
+    }
+  }
+  for (const el of R.querySelectorAll('button,.switch,summary,.stat')) {
+    if (el.matches('span.stat')) continue; // a span chip is not tappable
+    const r = el.getBoundingClientRect();
+    if (r.width < 47.5 || r.height < 47.5) bad('tap target ' + Math.round(r.width) + 'x' + Math.round(r.height) + ': ' + (el.className || el.tagName) + ' "' + el.textContent.trim().slice(0, 20) + '"');
+  }
+}
+
+// The real modal sheet and toast over Home (fixed position, backdrop).
+async function compLive(p, what) {
+  await p.evaluate(what => {
+    home(true);
+    if (what == 'sheet') {
+      UI.sheet(`<div class="sh-art">${ico('trophy')}</div><h2>Skip ahead?</h2><p>Answer 5 questions. Get 4 right and you skip this stop.</p>` +
+        `<div class="acts">${UI.btn('Try it', { kind: 'primary', size: 'lg', icon: 'play', wide: true })}${UI.btn('Not now', { kind: 'ghost', wide: true })}</div>`);
+    } else UI.toast('Great job! 3 stars', 'good', 60000);
+  }, what);
+  await p.waitForTimeout(500);
+  await p.evaluate(compCheck, what == 'sheet' ? '.sheet-bg' : '#toast');
 }
 
 async function main() {
