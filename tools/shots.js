@@ -388,6 +388,24 @@ const SCREENS = {
   // The live sheet (modal) and toast over Home, to see the real fixed position, backdrop and slide.
   'comp-sheet': { run: p => compLive(p, 'sheet') },
   'comp-toast': { run: p => compLive(p, 'toast') },
+  // ---- P4-11 rewards: the finish screen through the real finish() (rwShot below), boss intro / fight / win / lose, test out ----
+  // fin-3 .. fin-0: stars earned (fin-3 shows the open chest); fin-chest: before the tap; fin-world: last stop of a world;
+  // fin-grow: the pet grows (overlay); boss-*: world 3's boss (its prize is not owned yet); rewards: the art sheet (all sizes of
+  // the chest, stars, bosses and their hit poses, stickers and prize badges).
+  'fin-3': { run: rwShot({ stars: 3 }) },
+  'fin-2': { run: rwShot({ stars: 2 }) },
+  'fin-1': { run: rwShot({ stars: 1 }) },
+  'fin-0': { run: rwShot({ stars: 0 }) },
+  'fin-chest': { run: rwShot({ stars: 3, tap: false }) },
+  'fin-world': { run: rwShot({ stars: 3, world: true }) },
+  'fin-grow': { run: rwShot({ stars: 3, grow: true }) },
+  'fin-mix': { run: rwShot({ stars: 3, mix: true }) },
+  'boss-intro': { run: async p => { await p.evaluate(() => bossIntro('math', NODES.math.indexOf(NODES.math.filter(n => n.sk == 'boss')[2]))); } },
+  'boss-fight': { run: rwBossFight },
+  'boss-win': { run: rwShot({ boss: 2, won: true }) },
+  'boss-lose': { run: rwShot({ boss: 2, won: false }) },
+  testout: { run: async p => { await p.evaluate(() => testOut('math', 2)); } },
+  rewards: { full: true, run: async p => { await p.evaluate(rwSheet); } },
 };
 
 // One question of a P2-18 level (genQ with a fixed seed) through the real round engine; hint opens Help.
@@ -726,6 +744,77 @@ async function compLive(p, what) {
   }, what);
   await p.waitForTimeout(500);
   await p.evaluate(compCheck, what == 'sheet' ? '.sheet-bg' : '#toast');
+}
+
+// ---- P4-11 rewards helpers ----
+// A finished math round through the real finish() and chest. o: stars (3..0 for a normal stop), world (play the last open stop
+// of the first unfinished world, so the world gets finished), grow (the pet grows a stage), mix (Tricky Mix), boss (k-th math
+// boss) with won; tap: false stops before the chest is tapped (else it waits for the whole sequence).
+function rwShot(o) {
+  return async p => {
+    await p.evaluate(o => {
+      window.rwBossAt = window.rwBossAt || (k => NODES.math.indexOf(NODES.math.filter(n => n.sk == 'boss')[k]));
+      if (o.boss != null) {
+        const bi = rwBossAt(o.boss);
+        for (let i = 0; i < bi; i++) if (!getSt('math', i)) setSt('math', i, 2);
+        bossIntro('math', bi);
+        document.querySelector('#fight').click();
+        G.won = o.won; G.asked = 7; G.score = o.won ? 7 : 5; G.done = G.n; G.hp = o.won ? 0 : 2;
+        finish();
+        return;
+      }
+      if (o.grow) S.stars = 160 - 5;
+      if (o.mix) { startMix(); G.score = G.n; G.done = G.n; finish(); return; }
+      let i = 0;
+      if (o.world) {
+        const wi = PATHS.math.worlds.findIndex(w => !S.wdone[w.id]);
+        const [a, b] = WR.math[wi];
+        for (let k = a; k <= b; k++) setSt('math', k, k == b - 1 ? 0 : 2);
+        i = b - 1;
+      }
+      start('math', i);
+      const n = G.n, need = [Math.floor(n * .7 + .01) - 2, Math.floor(n * .7 + .01), Math.floor(n * .8 + .01), n][o.stars];
+      G.score = need; G.done = n; finish();
+    }, o);
+    if (o.tap === false) return;
+    await p.click('#chest');
+    await p.waitForSelector('#btns', { state: 'visible', timeout: 8000 });
+    await p.waitForTimeout(o.grow ? 1200 : 3500);
+  };
+}
+
+// Reward art sheet (runs in the page): chest closed and open, reward stars and ratings, the four bosses (idle and hit) at
+// intro, card and top-bar sizes, prize rosettes and stickers, each on the page colour and on a tint.
+function rwSheet() {
+  const box = (h, w, t) => `<div class="rwc"><div class="rwb" style="width:${w}px;height:${w}px">${h}</div><div class="rwn">${t}</div></div>`;
+  const row = (title, cells) => `<h3>${title}</h3><div class="rwr">${cells}</div>`;
+  const bosses = Object.keys(RW.BOSS);
+  view(`<style>.rws{padding:8px 12px 24px}.rws h3{margin:14px 0 6px;font-size:var(--fs-3)}
+    .rwr{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}.rwr.t{background:var(--star-tint);border-radius:var(--r-card);padding:8px}
+    .rwc{display:flex;flex-direction:column;align-items:center;gap:4px}.rwb{display:grid;place-items:center}
+    .rwn{font-size:var(--fs-1);color:var(--ink-2)}#app,html,body{height:auto;overflow:visible}.rws *{animation:none!important}</style>
+    <div class="top"><div class="title">Reward art</div></div><div class="rws">
+    ${row('Chest', [200, 104, 64].map(w => box(RW.chest(0), w, 'closed ' + w)).join('') + [200, 104, 64].map(w => box(RW.chest(1), w, 'open ' + w)).join(''))}
+    ${row('Chest with rays', box(`<div style="position:relative;width:100%;height:100%">${RW.rays()}<div style="position:absolute;inset:12%">${RW.chest(1)}</div></div>`, 160, 'open + rays'))}
+    ${row('Stars', [96, 64, 32].map(w => box(RW.star(1), w, 'on ' + w) + box(RW.star(0), w, 'off ' + w)).join(''))}
+    <div class="rwr t">${[3, 2, 1, 0].map(n => RW.rate(n)).join('')}</div>
+    ${bosses.map(b => row(b, [200, 96, 56].map(w => box(RW.boss(b, 'idle'), w, 'idle ' + w) + box(RW.boss(b, 'hit'), w, 'hit ' + w)).join(''))).join('')}
+    <h3>Top bar size on a tint</h3><div class="rwr t">${bosses.map(b => box(RW.boss(b, 'idle'), 56, b) + box(RW.boss(b, 'hit'), 56, 'hit')).join('')}</div>
+    ${row('Prizes and stickers', ['🌼', '🎉', '💎', '🍩'].map(e => box(RW.badge(e), 80, 'badge')).join('') +
+      `<div class="rw-tre" style="width:340px"><div class="rw-prz">${['🦄', '🚀', '🍩', '🐼'].map((e, i) => RW.sticker(e, i % 2 == 0, i)).join('')}</div></div>`)}
+    </div>`);
+}
+
+// A boss round on screen (world 3's boss) after three zaps.
+async function rwBossFight(p) {
+  await p.evaluate(() => {
+    window.rwBossAt = window.rwBossAt || (k => NODES.math.indexOf(NODES.math.filter(n => n.sk == 'boss')[k]));
+    bossIntro('math', rwBossAt(2));
+    document.querySelector('#fight').click();
+    G.hp = 4;
+    bossHit();
+  });
+  await p.waitForTimeout(400);
 }
 
 async function main() {

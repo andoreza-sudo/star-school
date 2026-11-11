@@ -1350,6 +1350,121 @@ async function main() {
       await ba.ctx.close();
     }
 
+    // P4-11 rewards at 380x780 (midway): a perfect round through finish() pays exactly what it paid before (stars, coins,
+    //    stickers, game time); the drawn chest is a 48 px+ button with a spoken name; after the tap the rating shows 3 stars,
+    //    two stickers, the earned list and one primary next step, with no emoji chrome, no sideways scroll, no word broken
+    //    over two lines and every button 48 px or more. A low score gets the pet, "Try again" and the "Get N right" tip.
+    //    The boss intro, top bar (hit face on a zap) and win card are drawn; the prize is saved and worn. Growth overlay,
+    //    test out card, and calm mode hiding the confetti.
+    {
+      const ra = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
+      const rp = ra.page;
+      const layout = () => rp.evaluate(() => {
+        const bad = [], W = document.documentElement.clientWidth;
+        if (document.documentElement.scrollWidth > W + 1) bad.push('sideways scroll');
+        const root = document.querySelector('.rw-card') || document.querySelector('#fin') || document.querySelector('#app');
+        for (const b of root.querySelectorAll('button')) {
+          const r = b.getBoundingClientRect();
+          if (getComputedStyle(b).visibility != 'hidden' && (r.width < 47.5 || r.height < 47.5)) bad.push('target ' + Math.round(r.width) + 'x' + Math.round(r.height) + ' ' + b.id);
+          if (r.right > W + 1) bad.push('off screen ' + b.id);
+        }
+        const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+        for (let t = walk.nextNode(); t; t = walk.nextNode()) {
+          if (t.parentElement.closest('.rw-stk,.rw-badge,.pet-svg')) continue; // stickers, prizes and the pet's worn costume are content
+          if (/\p{Extended_Pictographic}/u.test(t.data)) bad.push('emoji chrome: ' + t.data.trim().slice(0, 30));
+          for (const m of t.data.matchAll(/\S+/g)) {
+            const rg = document.createRange(); rg.setStart(t, m.index); rg.setEnd(t, m.index + m[0].length);
+            if (new Set([...rg.getClientRects()].filter(x => x.width > 0).map(x => Math.round(x.top))).size > 1) bad.push('word broken: ' + m[0]);
+          }
+        }
+        return bad;
+      });
+      // 1. a perfect round on the first math stop
+      const before = await rp.evaluate(() => {
+        start('math', 0); G.score = G.n; G.done = G.n;
+        return { stars: S.stars, coins: S.coins, stk: Object.values(S.stickers).reduce((a, b) => a + b, 0), bank: pt().bank, n: G.n,
+          wasDone: day().done, r: day().r };
+      });
+      await rp.evaluate(() => finish());
+      const pre = await rp.evaluate(() => {
+        const c = document.querySelector('#chest'), r = c.getBoundingClientRect();
+        return { svg: !!c.querySelector('svg.rw-chest-art'), aria: c.getAttribute('aria-label'), w: r.width, h: r.height };
+      });
+      if (!pre.svg || pre.aria !== 'Open the treasure chest' || pre.w < 48 || pre.h < 48) fail('P4-11 chest: ' + JSON.stringify(pre));
+      const preBad = await layout();
+      await rp.click('#chest');
+      await rp.waitForSelector('#btns', { state: 'visible', timeout: 10000 });
+      await vwait(rp, 6000);
+      const got = await rp.evaluate(n => {
+        const T = s => (document.querySelector(s) || {}).textContent || '';
+        return { on: document.querySelectorAll('.rw-rate .rw-st.on').length, stk: document.querySelectorAll('#prz .rw-stk').length,
+          earn: T('#earn'), prim: [...document.querySelectorAll('#btns .btn.primary')].map(b => b.id), menu: !!document.querySelector('#btns #menu'),
+          bonus: !!document.querySelector('#btns #bonus'), stars: S.stars, coins: S.coins, bank: pt().bank,
+          stkN: Object.values(S.stickers).reduce((a, b) => a + b, 0), mission: day().done, fmt: null };
+      }, before.n);
+      const mission = !before.wasDone && got.mission ? 5 : 0;
+      const wantCoins = before.n + mission; // first stop is passed in midway, so no world is finished here
+      if (got.stars - before.stars !== before.n + mission || got.coins - before.coins !== wantCoins || got.stkN - before.stk !== 2 + (mission ? 1 : 0))
+        fail('P4-11 rewards changed: ' + JSON.stringify({ before, got }));
+      const gameTime = await rp.evaluate(d => fmtM(d), got.bank - before.bank);
+      if (!(got.bank > before.bank) || !got.earn.includes('+' + gameTime + ' of game time') || !got.earn.includes('+' + before.n + ' stars') ||
+        !got.earn.includes('coins for the pet shop')) fail('P4-11 earned list: ' + got.earn.slice(0, 160));
+      if (got.on !== 3 || got.stk !== 2 + (mission ? 1 : 0) || got.prim.length !== 1 || !got.menu || !got.bonus) fail('P4-11 finish screen: ' + JSON.stringify(got));
+      const postBad = await layout();
+      for (const b of preBad.concat(postBad)) fail('P4-11 finish layout: ' + b);
+      // 2. a low score: no stars, the pet cheers, Try again is the primary button, and the tip says how many to get
+      await rp.evaluate(() => { start('math', 0); G.score = Math.floor(G.n * .7 + .01) - 2; G.done = G.n; finish(); });
+      await rp.click('#chest');
+      await rp.waitForSelector('#btns', { state: 'visible', timeout: 10000 });
+      await vwait(rp, 5000);
+      const low = await rp.evaluate(() => ({ pet: !!document.querySelector('.rw-hero .rw-pet'), rate: !!document.querySelector('.rw-rate'),
+        again: (document.querySelector('#again.primary') || {}).textContent, tip: (document.querySelector('.rw-hero .rw-tip') || {}).textContent || '' }));
+      if (!low.pet || low.rate || low.again !== 'Try again' || !/^Get \d+ right to open the next stop/.test(low.tip)) fail('P4-11 low score: ' + JSON.stringify(low));
+      for (const b of await layout()) fail('P4-11 low score layout: ' + b);
+      // 3. boss: intro, top bar with the hit face on a zap, then a win with its prize
+      const bi = await rp.evaluate(() => NODES.math.indexOf(NODES.math.filter(n => n.sk == 'boss')[2]));
+      const prize = await rp.evaluate(bi => { bossIntro('math', bi); return NODES.math[bi].prize; }, bi);
+      const intro = await rp.evaluate(() => ({ boss: !!document.querySelector('.rw-bstage svg.rw-boss'), badge: !!document.querySelector('.rw-badge'),
+        fight: !!document.querySelector('#fight.btn.subject') }));
+      if (!intro.boss || !intro.badge || !intro.fight) fail('P4-11 boss intro: ' + JSON.stringify(intro));
+      for (const b of await layout()) fail('P4-11 boss intro layout: ' + b);
+      await rp.click('#fight');
+      await rp.waitForSelector('.bossE svg.rw-boss');
+      const hitFace = await rp.evaluate(() => { bossHit(); return +getComputedStyle(document.querySelector('.bossE .rb-hit')).opacity; });
+      if (hitFace !== 1) fail('P4-11 boss zap: hit face opacity ' + hitFace);
+      await rp.evaluate(() => { G.dead = false; G.won = true; G.asked = 7; G.score = 7; G.done = G.n; finish(); });
+      await rp.click('#chest');
+      await rp.waitForSelector('#btns', { state: 'visible', timeout: 10000 });
+      await vwait(rp, 7000);
+      const win = await rp.evaluate(p => ({ card: !!document.querySelector('.rw-msg.boss svg.rw-p-hit'), badge: !!document.querySelector('.rw-msg .rw-badge'),
+        owned: S.owned[p], hat: S.wear.hat === p }), prize);
+      if (!win.card || !win.badge || win.owned !== 1 || !win.hat) fail('P4-11 boss win: ' + JSON.stringify(win));
+      // 4. growth overlay and test out card
+      await rp.evaluate(() => growShow(10));
+      await rp.waitForSelector('#yay', { timeout: 4000 });
+      const gr = await rp.evaluate(() => ({ card: !!document.querySelector('.ovl.rw-ovl .rw-card .grown .pet-svg'), prim: !!document.querySelector('#yay.btn.primary') }));
+      for (const b of await layout()) fail('P4-11 growth layout: ' + b);
+      await rp.click('#yay');
+      if (!gr.card || !gr.prim) fail('P4-11 growth overlay: ' + JSON.stringify(gr));
+      await rp.evaluate(() => testOut('math', 2));
+      const to = await rp.evaluate(() => ({ go: !!document.querySelector('.rw-card #tgo.primary'), no: !!document.querySelector('.rw-card #tno') }));
+      for (const b of await layout()) fail('P4-11 test out layout: ' + b);
+      await rp.click('#tno');
+      if (!to.go || !to.no || await rp.$('.rw-card')) fail('P4-11 test out: ' + JSON.stringify(to));
+      // 5. calm mode hides the drawn confetti
+      const calm = await rp.evaluate(() => {
+        document.documentElement.classList.add('calm'); home();
+        RW.burst(document.querySelector('#app'), 6);
+        const d = getComputedStyle(document.querySelector('.rw-burst')).display;
+        document.documentElement.classList.remove('calm'); return d;
+      });
+      if (calm !== 'none') fail('P4-11 calm: confetti display ' + calm);
+      else step('P4-11: finish pays the same stars, coins, stickers and game time; drawn chest, 3-star rating, stickers, earned list, one primary next step; low score kind with Try again; boss intro, zap face, win card and prize; growth and test out cards; calm hides confetti; no emoji chrome, 48 px targets, no sideways scroll at 380x780');
+      network.push(...ra.network);
+      for (const e of ra.errors) fail(e);
+      await ra.ctx.close();
+    }
+
     for (const e of errors) fail(e);
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');

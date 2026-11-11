@@ -3506,6 +3506,83 @@ run('Treasure Bay (P2-04): CURRICULUM M-2 levels, old levels unchanged, answers 
   return{problems:bad,note:r.checked+' stop checks against a path without Treasure Bay, map moved on '+r.moved+' of 36 loads'};
 });
 
+// ---- P4-11 rewards: drawn chest, stars, bosses, prize rosette; reward screens' markup; 42-rewards.css motion and tokens ----
+run('rewards (P4-11): drawings follow the art rules, every boss is drawn, screens keep their ids, tokens and transform/opacity only',()=>{
+  const p=[];
+  const artCss=fs.readFileSync(path.join(SRC,'css','21-art.css'),'utf8');
+  const tok=fs.readFileSync(path.join(SRC,'css','00-tokens.css'),'utf8');
+  const out=eval(js+`
+  const bad=[],has=(h,s,w)=>{if(!h.includes(s))bad.push(w+': missing '+s)};
+  const D={'chest closed':RW.chest(0),'chest open':RW.chest(1),rays:RW.rays(),'star on':RW.star(1),'star off':RW.star(0),badge:RW.badge('x')};
+  for(const b of BOSSES){const n=b[1];if(!RW.bossOf(n))bad.push('boss '+n+' has no drawing');
+    for(const pose of ['idle','hit']){const h=RW.boss(n,pose);D[n+' '+pose]=h;has(h,'rw-p-'+pose,n+' pose class');has(h,'aria-label="'+n+'"',n+' spoken name')}
+    const h=D[n+' idle'];has(h,'class="rb-idle"',n);has(h,'class="rb-hit"',n)}
+  if(RW.boss('Nobody')!=='')bad.push('a boss without a drawing must return "" (the caller keeps its emoji)');
+  ({D,bad,
+    rate:RW.rate(2),pre:RW.pre(),
+    doneA:RW.done({sc:9,n:10,line:'Fantastic <work>',rate:2,next:true,again:'Play again',menu:'Map'}),
+    doneB:RW.done({sc:0,n:10,line:'Nice try',rate:-1,next:false,again:'Try again',menu:'Home'}),
+    stk:RW.sticker('<b>',true,1),badge:RW.badge('<i>'),
+    clean:RW.clean('\u{1F525} 3 days in a row! +5 \u{1FA99} and a sticker \u{1F984}'),
+    icons:Object.keys(ICONS),
+    pt:['Tested out!','Good try','Practice round','Fixed 2 tricky ones','Already mastered this one','Keep trying','Round done','New stop unlocked',
+      'Beat your old score','Harder world','Perfect score','Beat the boss','Fixed 1 old mistake','Played 2 times today'].map(l=>[l,RW.ptIcon(l)]),
+    ptSrc:SK&&ptCalc.toString(),bossIn:RW.bossIn('read','Gloop','x','\u{1F33C}')})`);
+  p.push(...out.bad);
+  // drawing rules (DESIGN_SYSTEM 6.5): no ids, defs, gradients, masks, clips, patterns, filters, use, text, style or url; colours are roles
+  for(const [n,h] of Object.entries(out.D)){
+    if(/\sid=|<defs|Gradient|<mask|<clipPath|<pattern|filter|<use|<text|style=|url\(/.test(h))p.push(n+': uses a forbidden SVG feature');
+    if(/#[0-9a-fA-F]{3,8}\b/.test(h))p.push(n+': raw hex colour');
+    for(const t of h.match(/<[a-zA-Z]+/g)||[])if(!['<svg','<path','<circle','<ellipse','<rect','<g','<span'].includes(t))p.push(n+': element '+t);
+    if((h.match(/<g[\s>]/g)||[]).length!==(h.match(/<\/g>/g)||[]).length)p.push(n+': unbalanced <g>');
+    for(const m of h.matchAll(/(?:fill|stroke)="([^"]+)"/g))if(!/^(var\(--a-[a-z0-9]+\)|none)$/.test(m[1]))p.push(n+': colour '+m[1]);
+    for(const m of h.matchAll(/var\(--(a-[a-z0-9]+)\)/g))if(!new RegExp('--'+m[1]+':var\\(--ill-').test(artCss))p.push(n+': role --'+m[1]+' not in 21-art.css');
+    if(!/class="art /.test(h))p.push(n+': missing the art class');
+    if(h.length>9000)p.push(n+': '+h.length+' bytes (over 9,000)');
+  }
+  // screens keep the ids the round code and the smoke bot use
+  const ids=(h,list,w)=>{for(const i of list)if(!h.includes('id="'+i+'"'))p.push(w+': missing #'+i)};
+  ids(out.pre,['fin','chest'],'before the tap');
+  if(!/aria-label="Open the treasure chest"/.test(out.pre))p.push('chest button has no spoken name');
+  ids(out.doneA,['sc','prz','earn','msgs','btns','bonus','nxt','menu','rwst'],'after the tap');
+  ids(out.doneB,['sc','prz','earn','msgs','btns','bonus','again','menu'],'after the tap, no stars');
+  if(out.doneB.includes('id="rwst"'))p.push('a round with no right answers shows a "+0 stars" row');
+  if(!/style="visibility:hidden"/.test(out.doneA))p.push('#btns must start hidden (shown after the star count)');
+  if(!out.doneA.includes('Fantastic &lt;work&gt;'))p.push('headline not escaped');
+  if(!/class="btn primary lg wide" id="nxt"/.test(out.doneA)||!/class="btn primary lg wide" id="again"/.test(out.doneB))p.push('the next step is not the one primary button');
+  if((out.rate.match(/class="rw-st on"/g)||[]).length!==2||!out.rate.includes('aria-label="2 of 3 stars"'))p.push('rate(2): '+out.rate.slice(0,80));
+  if(out.stk.includes('<b>')||!out.stk.includes('class="tag new"'))p.push('sticker: not escaped or no New tag');
+  if(out.badge.includes('<i>'))p.push('badge: prize not escaped');
+  if(out.clean!=='3 days in a row! +5 coins and a sticker \u{1F984}')p.push('clean(): '+out.clean);
+  ids(out.bossIn,['fight','nope'],'boss intro');
+  if(!/btn subject lg s-read" id="fight"/.test(out.bossIn))p.push('boss intro: Let\'s go is not the subject-coloured primary');
+  for(const [l,ic] of out.pt){if(ic=='plus')p.push('no icon for the game-time line "'+l+'"');if(!out.icons.includes(ic))p.push('missing icon '+ic)}
+  // every label ptCalc can produce is in the list above (a new label needs an icon)
+  for(const m of out.ptSrc.matchAll(/add\([^,]+,\s*(?:testOk\?)?['`]([A-Z][a-z]+)/g))if(!out.pt.some(([l])=>l.startsWith(m[1])))p.push('ptCalc label "'+m[1]+'..." has no icon test');
+  // icons named in the reward code exist
+  const src=fs.readFileSync(path.join(SRC,'js','18-reward-art.js'),'utf8')+fs.readFileSync(path.join(SRC,'js','50-round.js'),'utf8');
+  for(const m of src.matchAll(/(?:ico\(|icon:\s*|M\()'([a-z-]+)'/g))if(!out.icons.includes(m[1]))p.push('unknown icon '+m[1]);
+  if(/[\u{1F300}-\u{1FAFF}☀-➿]/u.test(src.slice(src.indexOf('function finish()'),src.indexOf('/* Error guard hook'))))p.push('emoji left in finish() / growShow()');
+  // 42-rewards.css: tokens only, no filter, motion on transform/opacity only, rw-* keyframes, calm mode and reduced motion hide the confetti
+  const css=fs.readFileSync(path.join(SRC,'css','42-rewards.css'),'utf8').replace(/\/\*[\s\S]*?\*\//g,'');
+  if(/#[0-9a-fA-F]{3,8}\b/.test(css))p.push('raw hex colour in 42-rewards.css');
+  if(/rgba?\(|hsla?\(/.test(css))p.push('colour function in 42-rewards.css');
+  if(/(^|[;{\s])(-webkit-)?(backdrop-)?filter\s*:/.test(css))p.push('filter used in 42-rewards.css');
+  for(const m of css.matchAll(/transition\s*:\s*([^;}]+)/g))for(const part of m[1].split(','))if(!/^\s*(transform|opacity)\s/.test(part))p.push('transition on '+part.trim());
+  const kf=[...css.matchAll(/@keyframes\s+([\w-]+)\s*\{((?:[^{}]*\{[^}]*\})*)\s*\}/g)];
+  if(kf.length<10)p.push('expected the rw-* keyframes, found '+kf.length);
+  const others=fs.readdirSync(path.join(SRC,'css')).filter(f=>f!='42-rewards.css').map(f=>fs.readFileSync(path.join(SRC,'css',f),'utf8')).join('');
+  for(const [,n,body] of kf){
+    if(!/^rw-/.test(n))p.push('keyframes '+n+' must be named rw-*');
+    if(new RegExp('@keyframes\\s+'+n+'\\b').test(others))p.push('keyframes '+n+' also defined elsewhere');
+    for(const d of body.match(/[a-z-]+(?=\s*:)/g)||[])if(d!='transform'&&d!='opacity')p.push('keyframes '+n+' animates '+d);
+  }
+  const OWN=['r','i','x','y','t','ic2'];
+  for(const m of css.matchAll(/var\(--([a-z0-9-]+)/g))if(!OWN.includes(m[1])&&!new RegExp('--'+m[1]+':').test(tok))p.push('unknown token --'+m[1]);
+  if(!/html\.calm \.rw-burst\{display:none\}/.test(css)||!/prefers-reduced-motion:reduce\)\{\.rw-burst\{display:none\}/.test(css))p.push('calm / reduced motion must hide the confetti');
+  return{problems:p,note:Object.keys(out.D).length+' drawings'};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){
