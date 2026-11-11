@@ -77,7 +77,7 @@ const PLACE={
 
 /* ---------- saved result ---------- */
 // Paths that offer placement: graded ones (byLevel paths open by order).
-const placePaths=()=>Object.keys(PATHS).filter(p=>!PATHS[p].byLevel);
+const placePaths=()=>Object.keys(PATHS).filter(p=>!PATHS[p].byLevel&&!PATHS[p].noPlace); // Discover (noPlace) has no placement quiz
 const placeOK=()=>gradeOf()>=0; // not for Pre-K
 // The placed start world of path p (index), or -1. Only while the grade is the one it was taken at.
 function placeWorld(p){

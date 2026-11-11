@@ -11,6 +11,18 @@ const SHOT_SIZES = process.env.SHOTS_SIZES ? process.env.SHOTS_SIZES.split(',').
 const KS = require('./kinds-samples');
 const BTF = require('./lib/bt-fake');
 
+// P2-36: a Discover question shown by the real round engine; the item with a picture of the given topic when there is one, else the first of the stop
+const discQ = (sk, stop, topic) => ({
+  run: async p => {
+    await p.evaluate(([sk, stop, topic]) => {
+      start('disc', stop);
+      const B = BANK[sk], bi = Math.max(0, B.findIndex(it => it.em && (!topic || it.topic == topic)));
+      const q = bankRebuild({ id: sk, lv: 1, bi, s: 5 }); q.sk = sk; q.lv = 1;
+      G.q = q; renderQ();
+    }, [sk, stop, topic]);
+  },
+});
+
 // P3-01 Brain Teasers: the framework screens with the fake type from tools/lib/bt-fake.js (no real puzzle type exists yet)
 const btShot = (fn, solved = 0) => async p => {
   await p.evaluate('(' + BTF.install.toString() + ')()');
@@ -100,6 +112,12 @@ const SCREENS = {
   map: { run: async p => { await p.evaluate(() => pathMap('math')); } },
   'map-read': { run: async p => { await p.evaluate(() => pathMap('read')); } },
   'map-es': { run: async p => { await p.evaluate(() => pathMap('es')); } },
+  // P2-36 Discover: the Home card, the map, and one question per science stop (the first item with a picture)
+  'disc-home': { run: async p => { await p.evaluate(() => home(true)); await p.evaluate(() => document.querySelector('.hm-path[data-p="disc"]').scrollIntoView({ block: 'center' })); } },
+  'disc-map': { run: async p => { await p.evaluate(() => pathMap('disc')); } },
+  'disc-q-life': discQ('sci_life', 0, 'babies'),
+  'disc-q-earth': discQ('sci_earth', 1, null),
+  'disc-q-phys': discQ('sci_phys', 2, null),
   // P1-05: the world strip with a far world picked (shows the "more worlds" button above it)
   'map-worlds': { run: async p => { await p.evaluate(() => pathMap('math', 3)); } },
   // P1-06: setup with a grade tapped (Pre-K), and Grown-ups scrolled to the grade picker
