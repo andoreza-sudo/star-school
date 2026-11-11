@@ -2,13 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** P2-24, P2-08, P2-21, P2-23
+**Next up:** P2-13, P2-14, P3-03, P3-05, P3-06, P3-07, P4-06, P2-16, P2-17
 
-**Next up:** P2-12, P2-13, P3-08, P3-09, P3-10
-
-**Next up:** P2-13, P3-03, P3-04, P4-06, P2-16
-
-**Current version:** v98
+**Current version:** v99
 
 ## Chunk status
 
@@ -81,6 +77,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P3-08 v96
 - A11 v97
 - P2-12 v98
+- P3-04 v99
 
 ## Handoff notes
 
@@ -88,6 +85,10 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 
 ## Ideas and issues
 
+- (P3-04) Names: the catalog id is `mdoku` (BRAIN_TEASERS 4), but the generator, bank file and global are `tools/puzzles/mathdoku.js`, `src/data/d-puz-mathdoku.js` and `PUZ.mathdoku`. P3-05 registers `BT.reg({id: 'mdoku', ...})` and reads `PUZ.mathdoku` (inside functions, at run time).
+- (P3-04) Most bank puzzles are solved by csp.js propagation alone (1 search node: B 34 of 36, C 31, D 5x5 11, D 6x6 4), so in the easy levels the order comes from the grader's effort (roughly, how many cells need cage reasoning rather than a given or a last gap). If the levels feel uneven, `score()` in mathdoku.js is the one place to change, then rerun `node tools/puzzles/build-banks.js mathdoku`.
+- (P3-04) The spec gives no grade limits per band, so the generator only requires that the grader can finish (no guessing). Band B is all grade 1-2 (6 puzzles need only last gaps); band D 6x6 reaches grade 4 (cage in a line) in 8 puzzles and 5 (naked pair) in 1. If band C should never need grade 4, add a highest grade to `BANDS` in mathdoku.js (like sudoku's tiers) and regenerate.
+- (P3-04) Hint 2 in 5.2 ("6 with x in two cells: 1 and 6, or 2 and 3") is exactly the grader's cage enumeration; P3-05 can list a cage's number sets at run time cheaply (at most 6^4 tuples for a 4-cell cage) without any solver.
 - (P3-09) With a real type registered, the shot `bt-hub-empty` (tools/shots.js) is no longer empty: it shows Patterns. If the empty hub still needs a picture, the shot can `BT.unreg` every type first.
 - (P3-09) Size and count together: a big shape drawn twice is smaller than a medium shape drawn once (each copy shares the tile), so in odd-one-out items with a 2-2 count split children must compare sizes within the same count. The colour often follows the size there, which helps; a later pass could keep size and count from varying in the same odd-one-out item for band A.
 - (P3-09) Hint words of a 3-attribute item in band D run to three sentences (one rule per attribute); fine on tablets, two lines plus on phones.
@@ -316,6 +317,24 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-11) Icons wanted from P4-03: `balloon` (Bonus game, today `gamepad`), `sparkle` / `confetti`, `unlock` (open padlock for "Next stop unlocked", today `map`), `zap` (a lightning with a spark for boss hits; today `bolt`), `sticker` (single sticker for the prize row), `medal` (the prize rosette as an icon), `heart-half` (boss life bar), `chest` (the treasure chest at icon size, e.g. for the round track where renderQ shows the gift emoji).
 
 ## Log
+
+### P3-04 MathDoku generator and banks (v99, 2026-11-11, Claude)
+- What changed (BRAIN_TEASERS 5.2 and 6): new dev-time generator `tools/puzzles/mathdoku.js`, registered as `mathdoku` in the `build-banks.js` TYPES registry (seed `star-school-mathdoku-1`); `verify-banks.js` gains `verifyMathdoku` and its own cage counter `countCages`; generated bank `src/data/d-puz-mathdoku.js` (108 puzzles) that builds into the data file. No UI: nothing in the app reads `PUZ.mathdoku` yet (P3-05 does).
+- Generator: a random Latin square (csp.solve with a seeded rng); cells visited in random order each start a cage of a random size (band weights) that grows into random free orthogonal neighbours; extra single cells are merged into a neighbouring cage with room, too few (band B needs 2) means a new partition. Operations per band (B `+`; C `+ - *`; D `+ - * /`), `-` and `/` only on 2 cells, `/` only when one value divides the other, `*` only up to 144 (the times tables). Uniqueness by csp.js (`solutions(p, 2)`, cages as `cons`, single cells as givens); when there are two solutions the largest cage they differ on is repaired: a 2-cell cage first gets another operation, a bigger cage is split into two connected parts (or a cell made a single) while the band's single-cell limit allows, else another operation; up to 30 repairs, then the puzzle is discarded. Repairs keep the band rules (cage size, singles B 2-3, C 1-2, D 0-1), and the finished puzzle is checked against them again.
+- Grader (cage-aware, human-style, `grade(N, cages)` in mathdoku.js): candidates are the values not in the row or column, kept only if some way of filling the cage (its target, the other cells' candidates, no repeat in a line) uses them. Techniques, easiest first: 1 last cell (a line with one gap, or a cage with one gap the arithmetic forces), 2 cage single, 3 hidden single, 4 cage in a line (a value every fill of a cage puts in its cells of one row or column leaves the rest of that line), 5 naked pair. Grade = hardest technique used; a puzzle it cannot finish is discarded (no guessing), so every bank puzzle is solvable by these steps.
+- Difficulty score (5.2 step 6): csp.js search nodes with propagation only x 1000 + the grader's effort (sum of the technique numbers of all steps), so the many puzzles that propagation alone solves (1 node) still sort by how much work they take. Each band is sorted by score (band D: 5x5 first, then 6x6), so level L is entries 3(L-1) to 3L-1.
+- Bank format: `PUZ.mathdoku[band] = [36 strings]`, each `'N|cages|solution|grade|score'`; cages comma-separated, each = cells as one base-36 character per index (row * N + col, ascending; the first is the top-left cell where the label goes) + op (`+ - * /`, `=` for a single given cell) + target, e.g. `'4|01+3,23*8,...|1234...|2|1018'`. The spec's `N;cells-op-target` with one character per cell (36 cells fit 0-9a-z), plus the solution, grade and score like the sudoku bank (BRAIN_TEASERS 5.2 step 7 and the section 6 file table updated).
+- Counts and grades: 36 per band (spec), 108 in all. B 3x3: grades 6 x 1 and 30 x 2, scores 1006-2008. C 4x4: 27 x 2, 8 x 3, 1 x 4, scores 1016-4024. D 5x5 (18): 1 x 2, 13 x 3, 4 x 4, scores 1034-6043. D 6x6 (18): 9 x 3, 8 x 4, 1 x 5, scores 1051-19069. Generation took 67 / 59 / 49 / 70 attempts.
+- Determinism: each slot (band, grid size, index) has its own rng `seed|band|N|index` and avoids the puzzles before it; then each band is sorted. `node tools/puzzles/build-banks.js mathdoku` writes the file in about 0.3 s; `--check` reports `same` for both banks.
+- Tests (test.js, named `mathdoku banks P3-04`, before the report): the bank loads alone and with all of src/js and src/data (same object; PUZ.sudoku still there) and is in the built data file; every puzzle through `verifyMathdoku`: format, size per place (D 5x5 then 6x6), solution is a Latin square, cages cover every cell once with ascending cells in first-cell order, connected, cage size, op allowed for the band, `-`/`/` on 2 cells, `=` exactly on single cells, target = op on the solution, product limit, single-cell count, exactly one solution by `countCages`, grader finishes on the stored solution with the stored grade, score recomputes, sorted, no duplicates under the 8 rotations and mirrors. Then the test's own counter (cage-by-cage over each cage's arithmetic tuples; no code shared with csp.js, mathdoku.js or verify-banks.js) on every puzzle (one solution, the stored one) and on one rotation or mirror of each (still unique); its own transform code checks no puzzle turned or mirrored equals another; the counter is checked (12 3x3 and 576 4x4 Latin squares, a changed target gives 0); csp.js agrees on the first puzzle per band; the whole bank regenerated from the seed equals the file byte for byte. Shown to fail on a wrong grade, a mirrored duplicate, a puzzle with two solutions (an operation changed) and a wrong target.
+- Relabelling: not a runtime transform for MathDoku (the arithmetic changes), so duplicates are checked under the 8 rotations and mirrors only (transposition is one of them).
+- Size: data file 218,632 -> 228,577 bytes (+9,945, the bank file); index.html unchanged apart from the version.
+- check.sh: build, contrast, hex guard, test.js 80 of 80, smoke OK; check OK on the first run.
+- Docs: BRAIN_TEASERS 5.2 generator steps (repairs, grader, score, format, file names) and the section 6 file table; CONTRIBUTING section 4 (`build-banks.js [sudoku|mathdoku]`).
+- Files: new `tools/puzzles/mathdoku.js`, `src/data/d-puz-mathdoku.js`; edited `tools/puzzles/build-banks.js`, `tools/puzzles/verify-banks.js`, `tools/test.js`, `tools/build.py` (VER v99, provisional), `docs/BRAIN_TEASERS.md`, `docs/CONTRIBUTING.md`, `docs/PROGRESS.md`; built `index.html`, `sw.js`, `data.v99.js` (replaces `data.v97.js`).
+- Checklist 7.1: [x] chunk files [x] VER v99 (provisional) [x] build [x] test.js [x] smoke.js (nothing user-visible changed, no smoke block) [x] no screenshots (no UI) [x] fixtures unchanged [x] size [x] no network [x] no new emoji or hex [x] PROGRESS entry [x] one commit (not pushed).
+- Merge: built on branch P3-04-mathdoku from 285b8f7 (v97); VER v99 is provisional. Conflicts to expect: `tools/build.py` (VER), `tools/test.js` (the new check before the report), `build-banks.js` / `verify-banks.js` if P3-06 adds its type at the same time, built files (rebuild, `git add -A`).
+- Merge: built on a parallel branch, renumbered v98 -> v99 at merge.
 
 ### P2-12 5th grade: world Crystal Caves (v93, 2026-11-11, Claude)
 - What changed (CURRICULUM M-5b and 2.1 row 14, ROADMAP P2-12): new world `m_caves` "Crystal Caves" (grade 5, gem icon, after `m_desert`; P2-11 Volcano Lab goes between them at merge) with the 10 stops in CURRICULUM order: fop 3 Unlike Denominators, fop 4 Mixed Numbers, geo 4 Volume of a Box, fop 5 Multiply Fractions, coord 1 Coordinate Grid, fop 6 Unit Fraction Division, meas 6 Convert Both Ways, data 4 Line Plots, pat 5 Two Rules, story 8 Fraction Stories, then the boss. New skill `coord` (1 level); extended `fop` 2 -> 6, `geo` 3 -> 4, `meas` 5 -> 6, `data` 3 -> 4, `pat` 4 -> 5, `story` 7 -> 8 with dispatchers in `38-skills.js` (old levels untouched, checked by seed).

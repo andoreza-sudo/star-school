@@ -118,13 +118,14 @@ Save shape: `S.bt[type] = {A:{lvl, stars:[...]}, B:{...}, ...}`, `S.bt.cur`, `S.
 | C | 4 | +, −, × | 1-3 | 1-2 |
 | D | 5, then 6 | +, −, ×, ÷ | 1-4 | 0-1 |
 
-**Dev-time generator** (`tools/puzzles/mdoku.js`, Opus, P3-04):
+**Dev-time generator** (`tools/puzzles/mathdoku.js`, P3-04; the bank is `PUZ.mathdoku` in `src/data/d-puz-mathdoku.js`, the type id stays `mdoku`):
 1. Random Latin square of size N.
-2. Partition cells into cages by random growth from seeds (connected, size limits above). `−` and `÷` cages are exactly 2 cells; `÷` only when one value divides the other.
+2. Partition cells into cages by random growth from seeds (connected, size limits above). `−` and `÷` cages are exactly 2 cells; `÷` only when one value divides the other. `×` targets are at most 144 (the times tables).
 3. Compute targets. Run the counting solver (backtracking with row/column and cage pruning), stopping at 2 solutions.
-4. If not unique: split the largest ambiguous cage or turn one of its cells into a singleton, and retry (up to 30 times, then discard).
-5. Difficulty score = solver search nodes with propagation only. Sort the bank by score and cut into 12 levels.
-6. Format: `N;cells-op-target;...` with cells as indexes. Bank: 36 per band.
+4. If not unique: repair the largest cage on which two solutions differ: a 2-cell cage first gets another operation; a bigger cage is split into two connected parts (or a cell turned into a singleton) while the band's singleton limit allows, otherwise it gets another operation. Retry up to 30 times, then discard.
+5. Grade with a cage-aware human-style solver (techniques: 1 last cell in a line or cage, 2 cage single = only one candidate after listing the cage's number sets, 3 hidden single, 4 cage in a line = a value every number set of a cage puts in one row or column leaves the rest of it, 5 naked pair). Discard a puzzle it cannot finish (it would need guessing), and duplicates under the 8 rotations and mirrors.
+6. Difficulty score = solver search nodes with propagation only (csp.js), times 1000, plus the human-style effort (sum of the technique numbers of all steps) to break ties. Sort the bank by score and cut into 12 levels of 3 (band D: the 18 5x5 puzzles are levels 1-6, the 18 6x6 levels 7-12).
+7. Format: `PUZ.mathdoku[band] = [36 strings]`, level L = entries 3(L-1) to 3L-1. Each string is `N|cages|solution|grade|score`: cages comma-separated, each = its cells as one base-36 character per cell index (row × N + col, ascending, so the first is the top-left cell where the label goes) + op (`+ - * /`, or `=` for a singleton) + target, e.g. `4|01+3,23*8,...`; solution = N×N digits in reading order; grade = the hardest technique above; score as in step 6. Bank: 36 per band, 108 puzzles, about 10 KB.
 
 **Runtime variety**: the 8 rotations and mirrors of the grid (symbol permutation is not allowed because of the arithmetic).
 
@@ -272,9 +273,10 @@ Generator: A-B: random self-avoiding walk from start; walls placed off the path;
 |------|---------|
 | `csp.js` | Small constraint solver for grid puzzles: cells with candidate sets, all-different groups, custom group constraints, propagation, backtracking, `countSolutions(limit)` |
 | `human.js` | Technique-ordered solver for sudoku (last cell, naked single, hidden single, locked candidates, naked pair) that reports the hardest technique used |
-| `sudoku.js`, `mdoku.js`, `logic.js` | Generators as specified above |
+| `sudoku.js`, `logic.js` | Generators as specified above |
+| `mathdoku.js` | MathDoku generator (5.2), its cage-aware human-style grader `grade(N, cages)` and `score()`. Writes `src/data/d-puz-mathdoku.js`: `PUZ.mathdoku[band]` = 36 strings `N\|cages\|solution\|grade\|score`, sorted by score; a cage is base-36 cell characters + op (`+ - * / =`) + target, e.g. `01+3` |
 | `build-banks.js` | Runs the generators with a fixed seed and writes `src/data/d-puz-*.js`. Deterministic: same seed, same file |
-| `verify-banks.js` | Re-checks every stored puzzle: exactly one solution, grade within band. Called from `tools/test.js` |
+| `verify-banks.js` | Re-checks every stored puzzle: exactly one solution (its own counters `countSimple` and `countCages`, not csp.js), grade within band. Called from `tools/test.js` |
 | `rng.js` | Seeded random numbers (`rng(seedString)`) shared by the generators; never `Math.random` in `tools/puzzles/` |
 
 Bank files are generated output but are committed (so a normal build needs no Node step). Regenerate only when a generator changes.

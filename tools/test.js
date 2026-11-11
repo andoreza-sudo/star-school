@@ -7950,6 +7950,81 @@ run('Crystal Caves P2-12: the new world keeps every star, re-locks nothing and t
   return{problems:r.out,note:r.checked+' stop checks against a path without the caves, map moved on '+r.moved+' of 81 loads'};
 });
 
+// ---- P3-04 MathDoku generator and banks (BRAIN_TEASERS 5.2, 6) ----
+run('mathdoku banks P3-04: format, Latin solution, cage targets, connected cages, band operations, exactly one solution (independent counter), grade reproduces, no duplicates under rotation and mirror, reproducible from the seed',()=>{
+  const p=[];
+  const vb=require('./puzzles/verify-banks.js'),md=require('./puzzles/mathdoku.js'),csp=require('./puzzles/csp.js');
+  const T=require('./puzzles/build-banks.js').TYPES.mathdoku;
+  // the bank as the app sees it: evaluated with all of src/js and src/data, and present in the built data file
+  const inApp=eval(js+';PUZ.mathdoku');
+  const bank=vb.loadBank('d-puz-mathdoku.js').mathdoku;
+  if(JSON.stringify(inApp)!==JSON.stringify(bank))p.push('PUZ.mathdoku differs when loaded with the whole app');
+  if(!eval(js+';PUZ.sudoku&&PUZ.sudoku.D'))p.push('PUZ.sudoku lost when the mathdoku bank loads');
+  const built=fs.existsSync(path.join(ROOT,DATA_FILE))?fs.readFileSync(path.join(ROOT,DATA_FILE),'utf8'):'';
+  if(!built.includes('PUZ.mathdoku = {'))p.push(DATA_FILE+' has no mathdoku bank (rebuild)');
+  // every stored puzzle through verify-banks.js: format, sizes, Latin solution, cages cover the grid once, connected, band
+  // operations and cage sizes, targets match the solution, single-cell limits, one solution, grade and score, sorted, no duplicates
+  const v=vb.verifyMathdoku(bank);
+  p.push(...v.problems);
+  // this test's own counter (shares no code with csp.js, mathdoku.js or verify-banks.js): every cage's value tuples that make
+  // its target by plain arithmetic, then cage by cage, each tuple placed only where its values are new in their row and column
+  const arith=(op,a)=>op==='+'||op==='='?a.reduce((x,y)=>x+y,0):op==='*'?a.reduce((x,y)=>x*y,1):op==='-'?Math.abs(a[0]-a[1]):
+    Math.max(a[0],a[1])%Math.min(a[0],a[1])?-1:Math.max(a[0],a[1])/Math.min(a[0],a[1]);
+  const kenSolutions=(N,cages,limit)=>{
+    const tuples=cages.map(cg=>{const out=[],vals=[];const rec=i=>{if(i===cg.cells.length){if(arith(cg.op,vals)===cg.t)out.push(vals.slice());return}for(let x=1;x<=N;x++){vals[i]=x;rec(i+1)}};rec(0);return out});
+    const g=Array(N*N).fill(0),sols=[];
+    const fits=(c,x)=>{const r=Math.floor(c/N),k=c%N;for(let j=0;j<N;j++)if(g[r*N+j]===x||g[j*N+k]===x)return false;return true};
+    const rec=i=>{
+      if(sols.length>=limit)return;
+      if(i===cages.length){sols.push(g.slice());return}
+      const cells=cages[i].cells;
+      for(const tu of tuples[i]){
+        let k=0;
+        for(;k<cells.length;k++){if(!fits(cells[k],tu[k]))break;g[cells[k]]=tu[k]}
+        if(k===cells.length)rec(i+1);
+        for(let j=0;j<k;j++)g[cells[j]]=0;
+      }
+    };
+    rec(0);
+    return sols;
+  };
+  // the counter itself: rows as + cages leave every Latin square (12 of 3x3, 576 of 4x4); a changed target leaves none
+  const rows=N=>Array.from({length:N},(_,r)=>({cells:Array.from({length:N},(_,c)=>r*N+c),op:'+',t:N*(N+1)/2}));
+  if(kenSolutions(3,rows(3),1000).length!==12)p.push('own counter: 3x3 is not 12 Latin squares');
+  if(kenSolutions(4,rows(4),1000).length!==576)p.push('own counter: 4x4 is not 576 Latin squares');
+  const d0=md.decode(bank.D[bank.D.length-1]),k0=d0.cages.findIndex(cg=>cg.op==='+');
+  const changed=d0.cages.map((cg,k)=>k===k0?Object.assign({},cg,{t:cg.t+1}):cg);
+  if(kenSolutions(d0.n,changed,2).length!==0)p.push('own counter: a changed target still has a solution');
+  // exactly one solution, and it is the stored one; the 8 rotations and mirrors (the UI's runtime variety) give puzzles that
+  // are still unique and that no other bank puzzle equals
+  const T8=[(r,c,N)=>[r,c],(r,c,N)=>[c,N-1-r],(r,c,N)=>[N-1-r,N-1-c],(r,c,N)=>[N-1-c,r],(r,c,N)=>[r,N-1-c],(r,c,N)=>[N-1-r,c],(r,c,N)=>[c,r],(r,c,N)=>[N-1-c,N-1-r]];
+  const turn=(q,f)=>{const N=q.n,m=c=>{const[r,k]=f(Math.floor(c/N),c%N,N);return r*N+k};const sol=[];q.solution.forEach((x,c)=>sol[m(c)]=x);
+    return{n:N,solution:sol,cages:q.cages.map(cg=>({cells:cg.cells.map(m).sort((a,b)=>a-b),op:cg.op,t:cg.t}))}};
+  const ident=q=>q.n+':'+q.cages.map(cg=>cg.cells.join('.')+cg.op+cg.t).sort().join(',');
+  const owner=new Map(),grades={},all=[];
+  for(const b of md.ORDER)bank[b].forEach((e,i)=>{const q=md.decode(e);all.push([b+' #'+i,q]);owner.set(ident(q),b+' #'+i)});
+  all.forEach(([at,q],i)=>{
+    const s=kenSolutions(q.n,q.cages,2);
+    if(s.length!==1)p.push(at+': own counter finds '+s.length+' solutions');
+    else if(s[0].join('')!==q.solution.join(''))p.push(at+': own counter solves it differently from the stored solution');
+    T8.forEach((f,k)=>{
+      if(!k)return;
+      const t=turn(q,f),o=owner.get(ident(t));
+      if(o&&o!==at)p.push(at+': turned or mirrored it equals '+o);
+      if(k===1+i%7){const st=kenSolutions(t.n,t.cages,2);if(st.length!==1||st[0].join('')!==t.solution.join(''))p.push(at+': not unique after transform '+k)}
+    });
+    const key=at[0]+' '+q.n+'x'+q.n;
+    grades[key]=grades[key]||{};grades[key][q.grade]=(grades[key][q.grade]||0)+1;
+  });
+  // the generator's solver agrees with the counter on the first puzzle of each band
+  for(const b of md.ORDER){const q=md.decode(bank[b][0]);if(csp.countSolutions(md.problemOf(q.n,q.cages),2)!==1)p.push('csp count is not 1 for '+b+' #0')}
+  // reproducible: the whole bank regenerated from the seed is the committed file, byte for byte
+  const text=T.text(),file=fs.readFileSync(path.join(SRC,'data',T.file),'utf8'),same=text===file;
+  if(!same){const a=text.split('\n'),b=file.split('\n'),i=a.findIndex((l,k)=>l!==b[k]);p.push('the bank regenerated from seed '+T.seed+' differs at line '+(i+1)+': '+a[i]+' / stored '+b[i])}
+  return{problems:p,note:all.length+' puzzles, own counter on each and on one turn or mirror of each; grades '+
+    Object.entries(grades).map(([k,g])=>k+' '+Object.entries(g).map(([x,y])=>y+'x'+x).join('/')).join(', ')+(same?'; regenerated byte for byte':'')};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){
