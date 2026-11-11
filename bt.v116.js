@@ -1,6 +1,6 @@
-/* Star School bt v115. BUILT by tools/build.py from 49-bt-logic.css, 49-bt-maze.css, 49-bt-mdoku.css, 49-bt-number.css, 49-bt-pattern.css, 49-bt-sudoku.css, 75-bt-maze.js, 76-bt-pattern.js, 77-bt-number.js, 78-bt-sudoku.js, 79-bt-mdoku.js, 80-bt-logic.js: never edit by hand.
-   index.html v115 loads this file with <script src="bt.v115.js"> after its own code, before data.v115.js. */
-(function(){var s=document.createElement('style');s.id='css-bt';s.textContent="/* Brain Teasers logic grids (P3-07, src/js/80-bt-logic.js). Tokens only; motion is transform and opacity. --cs, --rh, --hh, --n\n   come from the JS layout; block padding 3, square gap 2 and block gap 6 must match it. .land: clues left, grid right. */\n.lg{--bw:calc(var(--n) * var(--cs) + (var(--n) - 1) * 2px + 6px);display:flex;flex-direction:column;gap:var(--s-3);width:100%;max-width:1040px;margin:0 auto}\n.lg-say{flex:none;display:flex;align-items:center;gap:var(--s-2);min-height:var(--tap);padding:var(--s-1) var(--s-1) var(--s-1) var(--s-3);border-radius:var(--r-card);\n  background:var(--surface);box-shadow:inset 0 0 0 2px var(--line),0 3px 0 var(--ledge-soft)}\n.lg-msg{flex:1;min-width:0;margin:0;font-size:var(--fs-2);font-weight:700;line-height:1.3;color:var(--ink-2)}\n.lg-msg.good{color:var(--good-ink)}\n.lg-msg.try{color:var(--try-ink)}\n.lg-msg.hint{color:var(--bt-shade)}\n.lg-spk{flex:none;order:2}\n.lg-board{flex:none;display:flex;flex-direction:column;align-items:center;gap:var(--s-3)}\n.lg-tabs[hidden]{display:none}\n.lg-tabs .seg>button{padding:0 var(--s-3);font-size:var(--fs-2)}\n.lg-tabs .seg>button.lg-tcf{position:relative}\n.lg-tabs .seg>button.lg-tcf::after{content:\"\";position:absolute;top:6px;right:8px;width:10px;height:10px;border-radius:50%;background:var(--try);box-shadow:0 0 0 2px var(--surface)}\n.lg-tools{flex:none;display:flex;justify-content:center;gap:var(--s-2)}\n.lg-tools .btn{flex:0 1 auto;min-width:0}\n.lg-ac.on{background:var(--bt-tint);color:var(--bt-shade);box-shadow:inset 0 0 0 2px var(--bt),0 3px 0 var(--bt-shade)}\n\n/* ---------- the grid ---------- */\n.lg-grid{display:grid;grid-template-columns:var(--rh) var(--bw);grid-template-rows:var(--hh) var(--bw);gap:6px}\n.lg-grid.lg-g2{grid-template-columns:var(--rh) var(--bw) var(--bw);grid-template-rows:var(--hh) var(--bw) var(--bw)}\n.lg-grid.lg-gp{grid-template-columns:var(--rh) var(--bw) var(--bw)}\n.lg-hd{display:flex;flex-direction:column;justify-content:flex-end;min-width:0}\n.lg-cat{display:block;margin-bottom:2px;font-size:var(--fs-1);font-weight:700;line-height:1.2;color:var(--bt-shade);text-align:center;white-space:nowrap}\n.lg-hs{display:grid;grid-template-columns:repeat(var(--n),var(--cs));gap:2px;padding:0 3px}\n.lg-rhs{display:grid;grid-auto-rows:var(--cs);gap:2px;padding:3px 0}\n.lg-h{display:flex;align-items:center;justify-content:center;min-width:0;height:calc(var(--hh) - 18px);border-radius:10px;color:var(--ink);line-height:1}\n.lg-r{height:auto;justify-content:flex-end;padding-right:var(--s-2)}\n.lg-h.on{background:var(--bt-tint);color:var(--bt-shade)}\n.lg-nm{font-size:var(--fs-3);font-weight:700;line-height:1.1;overflow-wrap:anywhere}\n.lg-pic{display:grid;place-items:center;font-size:min(34px,calc(var(--cs) * .62));line-height:1}\n.lg-pic .art{width:1em;height:1em}\n.lg-col{display:flex;flex-direction:column;align-items:center;gap:2px}\n.lg-r .lg-col{flex-direction:row;gap:var(--s-1)}\n.lg-col i{width:22px;height:22px;border-radius:50%;box-shadow:inset 0 0 0 2px var(--shadow-ink-2)}\n.lg-col small,.lg-num small{font-size:12px;font-weight:700;line-height:1;color:var(--ink-2)}\n.lg-num{display:flex;align-items:center;gap:3px;font-family:var(--font-display);font-size:min(var(--fs-4),calc(var(--cs) * .44));font-weight:700;line-height:1}\n.lg-num .ic{color:var(--ink-3)}\n.lg-corner{display:block}\n.lg-blk{display:grid;grid-template-columns:repeat(var(--n),var(--cs));grid-auto-rows:var(--cs);gap:2px;padding:3px;border-radius:12px;\n  background:linear-gradient(var(--hi),var(--hi-0) 40px) var(--bt);box-shadow:inset 0 2px 0 var(--hi),0 4px 0 var(--bt-shade)}\n.lg-c{position:relative;display:grid;place-items:center;width:var(--cs);height:var(--cs);min-width:0;padding:0;border:0;border-radius:7px;\n  background:var(--surface);color:var(--ink-3);cursor:pointer;touch-action:manipulation;box-shadow:inset 0 -3px 0 var(--surface-2);-webkit-tap-highlight-color:transparent}\n.lg-c>*{pointer-events:none}\n.lg-c .ic{width:calc(var(--cs) * .56);height:calc(var(--cs) * .56)}\n.lg-c.cr .ic{width:calc(var(--cs) * .4);height:calc(var(--cs) * .4)}\n.lg-c.tk{background:var(--good-tint);color:var(--good-ink);box-shadow:inset 0 -3px 0 var(--good)}\n.lg-c.sel{box-shadow:inset 0 0 0 3px var(--bt-tint),inset 0 -3px 0 var(--surface-2)}\n.lg-c.tk.sel{box-shadow:inset 0 0 0 3px var(--bt-tint),inset 0 -3px 0 var(--good)}\n/* a hint's mark: star-yellow; hint highlights: the line soft yellow, the square a star ring */\n.lg-c.hn{background:var(--star-tint);box-shadow:inset 0 -3px 0 var(--star)}\n.lg-c.hh{background:var(--star-tint)}\n.lg-c.hl{background:var(--star-tint);box-shadow:inset 0 0 0 4px var(--star)}\n/* a mark that breaks a rule the child can see, or one Check found after a hint: amber, a dashed ring, a warning mark; never red */\n.lg-c.cf{background:var(--try-tint);color:var(--try-ink);outline:2px dashed var(--try-ink);outline-offset:-5px}\n.lg-c.wr{box-shadow:inset 0 0 0 4px var(--try)}\n.lg-wn{position:absolute;top:2px;right:2px;display:grid;line-height:0;color:var(--try-ink)}\n.lg-c .lg-wn .ic{width:14px;height:14px}\n.lg-c.tk>.ic,.lg-c.cr>.ic{animation:k-pop var(--t-slow) var(--spring)}\n.lg.win .lg-c.tk>.ic{animation:k-pop 520ms var(--ease) both}\n/* the empty corner of a two-category grid: how a tap goes (cross, then tick) */\n.lg-key{display:flex;align-items:center;justify-content:center;gap:var(--s-2);border-radius:12px;background:var(--surface-2);color:var(--ink-3)}\n.lg-key span{display:grid;place-items:center;width:34px;height:34px;border-radius:8px;background:var(--surface)}\n.lg-key span+.ic+span{background:var(--good-tint);color:var(--good-ink)}\n\n/* ---------- the clues ---------- */\n.lg-clues{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:var(--s-2);margin:0;padding:2px 2px 6px;list-style:none;overflow-y:auto;-webkit-overflow-scrolling:touch}\n.lg-q{flex:none;display:flex;align-items:center;gap:var(--s-1);padding:var(--s-1);border-radius:var(--r-card);background:var(--surface);\n  box-shadow:inset 0 0 0 2px var(--line),0 3px 0 var(--ledge-soft)}\n.lg-qb{flex:1;min-width:0;display:flex;align-items:center;gap:var(--s-3);min-height:var(--tap);padding:var(--s-1) var(--s-2);border:0;border-radius:12px;\n  background:transparent;color:var(--ink);font:inherit;text-align:left;cursor:pointer;touch-action:manipulation}\n.lg-qb>*{pointer-events:none}\n.lg-qn{flex:none;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--bt-tint);color:var(--bt-shade);font-family:var(--font-display);font-size:var(--fs-2)}\n.lg-qt{flex:1;min-width:0;display:flex;flex-direction:column;gap:var(--s-1)}\n.lg-qs{font-size:var(--fs-2);font-weight:700;line-height:1.3}\n.lg-qsp{flex:none}\n.lg-qp{display:flex;align-items:center;gap:var(--s-2)}\n.lg-qp .lg-nm{font-size:var(--fs-4)}\n.lg-qp .lg-pic{font-size:36px}\n.lg-qm{display:grid;place-items:center;width:34px;height:34px;border-radius:50%}\n.lg-qm.yes{background:var(--good-tint);color:var(--good-ink)}\n.lg-qm.no{background:var(--surface-2);color:var(--ink-2);box-shadow:inset 0 0 0 2px var(--line)}\n.lg-q.used{background:var(--surface-2);box-shadow:inset 0 0 0 2px var(--line)}\n.lg-q.used .lg-qs{color:var(--ink-3);text-decoration:line-through;text-decoration-thickness:2px}\n.lg-q.used .lg-qn{background:var(--surface);color:var(--ink-3)}\n.lg-q.used .lg-qp{opacity:.55}\n.lg-q.hl{background:var(--star-tint);box-shadow:inset 0 0 0 3px var(--star),0 3px 0 var(--star-shade)}\n.lg-q.cf{background:var(--try-tint);outline:2px dashed var(--try-ink);outline-offset:-5px}\n.lg-B .lg-nm{font-size:var(--fs-4)}\n\n/* ---------- landscape: talk line, tools and clues left; the grid right ---------- */\n.lg.land{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto minmax(0,1fr);grid-template-areas:\"say board\" \"tools board\" \"clues board\";\n  column-gap:var(--s-5);row-gap:var(--s-3)}\n.lg.land .lg-say{grid-area:say}\n.lg.land .lg-tools{grid-area:tools;justify-content:flex-start}\n.lg.land .lg-clues{grid-area:clues}\n.lg.land .lg-board{grid-area:board;align-self:center}\n/* Brain Teasers: Mazes (P3-08). The board is one canvas (75-bt-maze.js); this lays it out. Tokens only; motion is transform and opacity. */\n.mz{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--s-3);min-height:100%}\n.mz.land{flex-direction:row;justify-content:center;align-items:center;gap:var(--s-5)}\n.mz-board{position:relative;flex:none;border-radius:var(--r-card);box-shadow:0 0 0 3px var(--bt-tint),0 6px 0 3px var(--ledge-soft)}\n.mz-cv{display:block;border-radius:var(--r-card);touch-action:none;cursor:pointer;-webkit-user-select:none;user-select:none}\n.mz-side{flex:none;display:flex;flex-direction:column;align-items:center;gap:var(--s-2);width:100%;max-width:420px}\n.mz.land .mz-side{width:236px}\n.mz-stat{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:var(--s-2) var(--s-3);min-height:var(--tap);padding:var(--s-1) var(--s-4);\n  border-radius:var(--r-pill);background:var(--surface);box-shadow:inset 0 0 0 2px var(--line);font-family:var(--font-display);font-size:var(--fs-3);color:var(--ink)}\n.mz-stat b{font-weight:700}\n.mz-sts,.mz-keys{display:flex;gap:var(--s-1)}\n.mz-st{color:var(--line)}\n.mz-st.on{color:var(--star);--ic2:var(--star-shade)}\n.mz-key{opacity:.25;transition:opacity var(--t) var(--ease),transform var(--t) var(--spring)}\n.mz-key.on{opacity:1;transform:scale(1.1)}\n.mz-steps{font-variant-numeric:tabular-nums;color:var(--ink-2)}\n.mz-steps i{font-style:normal;margin-left:var(--s-1);padding:2px var(--s-2);border-radius:var(--r-chip);background:var(--bt-tint);color:var(--bt-shade);font-weight:700}\n.mz-msg{margin:0;min-height:1.45em;text-align:center;font-size:var(--fs-3);font-weight:700;color:var(--ink-2)}\n.mz-ctl{display:flex;align-items:center;justify-content:center;gap:var(--s-4)}\n.mz.land .mz-ctl{flex-direction:column;gap:var(--s-3)}\n.mz-tog[aria-pressed=\"true\"]{background:var(--bt-tint);color:var(--bt-shade)}\n.mz-pad{display:grid;grid-template-columns:repeat(3,var(--tap-primary));grid-template-rows:repeat(2,var(--tap-primary));gap:var(--s-1)} /* keyboard arrows: up over left, down, right */\n.mz-pad[hidden]{display:none}\n.mz-pad [data-d=\"0\"]{grid-area:1/2}.mz-pad [data-d=\"3\"]{grid-area:2/1}.mz-pad [data-d=\"2\"]{grid-area:2/2}.mz-pad [data-d=\"1\"]{grid-area:2/3}\n.mz-arrow{position:absolute;display:flex;align-items:center;justify-content:center;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:50%;\n  background:var(--bt);color:var(--surface);box-shadow:0 4px 0 var(--bt-shade);pointer-events:none;opacity:0}\n.mz-arrow[hidden]{display:none}\n.mz-arrow.on{animation:mz-flash .5s var(--ease) 0s 6 alternate both}\n@keyframes mz-flash{from{opacity:.15;transform:scale(.8)}to{opacity:1;transform:scale(1.08)}}\n@media (max-height:520px){.mz.land .mz-side{gap:var(--s-1)}.mz-pad{grid-template-columns:repeat(3,var(--tap));grid-template-rows:repeat(2,var(--tap))}}\n/* Brain Teasers MathDoku (P3-05, src/js/79-bt-mdoku.js). Tokens only; light from the top left (a white gloss on top, the shade tone\n   as a ledge below); motion is transform and opacity (calm mode and reduced motion stop it in 20-base.css).\n   The board is a purple tray (--bt, ledge --bt-shade) holding one white grid; an svg on top draws the cage lines: thin --line\n   between squares of one cage, thick --bt-shade between cages, and the grid's edge. --cs (the square's side) is set by the layout\n   in the JS; the tray padding (6 px) must match FP there. The cage label (target and sign) sits in the cage's top-left square.\n   Portrait: talk line, board, pad. Landscape (.land): board left, talk line and pad right (.md-side).\n   The pad is a grid of 60 narrow columns: the JS sets --ds (columns per digit key) and --ts (per tool key). */\n.md{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--s-3);width:100%;max-width:1000px;min-height:100%;margin:0 auto}\n.md-say{display:flex;align-items:center;gap:var(--s-2);width:100%;max-width:640px;min-height:var(--tap);padding:var(--s-1) var(--s-1) var(--s-1) var(--s-3);\n  border-radius:var(--r-card);background:var(--surface);box-shadow:inset 0 0 0 2px var(--line),0 3px 0 var(--ledge-soft)}\n.md-msg{flex:1;min-width:0;margin:0;font-size:var(--fs-2);font-weight:700;line-height:1.3;color:var(--ink-2)}\n.md-msg.good{color:var(--good-ink)}\n.md-msg.try{color:var(--try-ink)}\n.md-msg.hint{color:var(--bt-shade)}\n.md-spk{flex:none;order:2}\n.md-main{display:flex;justify-content:center;flex:none}\n.md-ctl{display:flex;flex-direction:column;align-items:center;gap:var(--s-3);width:100%;max-width:640px}\n.md-side{display:none}\n\n/* ---------- the board ---------- */\n.md-board{position:relative;padding:6px;border-radius:16px;\n  background:linear-gradient(var(--hi),var(--hi-0) 40px) var(--bt);box-shadow:inset 0 2px 0 var(--hi),0 6px 0 var(--bt-shade)}\n.md-grid{display:grid;grid-template-columns:repeat(var(--n),var(--cs));grid-auto-rows:var(--cs);border-radius:8px;overflow:hidden;\n  background:var(--surface);box-shadow:0 0 0 2px var(--bt-shade)}\n.md-lines{position:absolute;left:6px;top:6px;width:calc(var(--n) * var(--cs));height:calc(var(--n) * var(--cs));overflow:visible;pointer-events:none}\n.md-lines path{fill:none;vector-effect:non-scaling-stroke}\n.md-thin{stroke:var(--line);stroke-width:2px}\n.md-thick{stroke:var(--bt-shade);stroke-width:4px;stroke-linecap:square}\n.md-c{position:relative;display:grid;place-items:center;width:var(--cs);height:var(--cs);min-width:0;padding:calc(var(--cs) * .14) 0 0;border:0;border-radius:0;\n  background:var(--surface);color:var(--bt);font-family:var(--font-display);font-size:calc(var(--cs) * .5);font-weight:700;line-height:1;\n  cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}\n.md-c>*{pointer-events:none}\n.md-v{font-weight:700}\n/* the cage label: target and sign, top left, in ink so it reads apart from the purple entries */\n.md-lab{position:absolute;left:4px;top:4px;z-index:1;display:flex;align-items:center;gap:2px;padding:0 2px;border-radius:6px;\n  font-family:var(--font-body);font-size:clamp(14px,calc(var(--cs) * .27),22px);font-weight:700;line-height:1.15;color:var(--ink);white-space:nowrap}\n.md-lab .ic{width:.9em;height:.9em;flex:none}\n/* a full cage that does not make its number: the label turns amber, with a dashed ring and a warning mark (never red) */\n.md-lab.miss{padding:0 4px 0 2px;background:var(--try-tint);color:var(--try-ink);outline:2px dashed var(--try-ink);outline-offset:0}\n/* a given number (a single-square cage) is printed in ink; the child's are purple; a hint's is ink on star-yellow */\n.md-c.giv{color:var(--ink);padding-top:0}\n.md-c.ent{color:var(--bt)}\n.md-c.hn{color:var(--ink);background:var(--star-tint)}\n/* the selected square, its row and column, and the same number elsewhere */\n.md-c.rc{background:var(--surface-2)}\n.md-c.same{background:var(--bt-tint);color:var(--bt-shade)}\n.md-c.same.giv{color:var(--ink)}\n.md-c.sel{background:var(--bt-tint);box-shadow:inset 0 0 0 4px var(--bt)}\n/* hints: the cage or line glows soft yellow, the square gets a star ring */\n.md-c.hh{background:var(--star-tint)}\n.md-c.hl{background:var(--star-tint);box-shadow:inset 0 0 0 5px var(--star)}\n.md-c.sel.hl{box-shadow:inset 0 0 0 5px var(--star),inset 0 0 0 8px var(--bt)}\n/* a clash: amber with a dashed ring and a warning mark, never red */\n.md-c.cf{background:var(--try-tint);color:var(--try-ink);outline:2px dashed var(--try-ink);outline-offset:-7px}\n.md-c.cf.sel{box-shadow:inset 0 0 0 4px var(--try)}\n.md-wn{position:absolute;top:4px;right:4px;display:grid;line-height:0;color:var(--try-ink)}\n.md-wn .ic{width:max(14px,calc(var(--cs) * .26));height:max(14px,calc(var(--cs) * .26))}\n.md-c.pop .md-v{animation:k-pop 420ms var(--ease)}\n/* pencil marks: a small grid of 3 across, under the label */\n.md-nts{position:absolute;left:3px;right:3px;top:calc(var(--cs) * .36);bottom:3px;display:grid;grid-template-columns:repeat(3,1fr);place-items:center;\n  font-family:var(--font-body);font-style:normal;font-size:max(11px,calc(var(--cs) * .22));font-weight:700;line-height:1;color:var(--ink-3)}\n.md-c.sel .md-nts{color:var(--bt-shade)}\n.md.win .md-v{animation:k-pop 520ms var(--ease) both}\n\n/* ---------- the pad: the question screen's keys (padHTML), 1..n with how many are left, then Erase, Notes, Undo ---------- */\n.md .md-pad{grid-template-columns:repeat(60,minmax(0,1fr));column-gap:0;row-gap:var(--s-2);width:100%;max-width:none;margin:0}\n.md .md-pad .key{position:relative;grid-column:span var(--ds,12);min-width:0;min-height:56px;margin:0 4px;font-size:var(--fs-5)}\n.md .md-pad .key.t{grid-column:span var(--ts,20);gap:var(--s-1);font-size:var(--fs-3);font-weight:700}\n.md .md-pad .key .ic{width:28px;height:28px}\n.md .md-pad .key.t span{pointer-events:none}\n.md .md-pad.tight .key.t span{display:none}\n.md-kf{display:grid;place-items:center;margin-bottom:8px;font-family:var(--font-display);line-height:1;pointer-events:none}\n/* how many are left: a row of dots along the bottom of the key (a tick in a green disc when none are left) */\n.md-left{position:absolute;left:0;right:0;bottom:5px;display:flex;justify-content:center;gap:2px;height:14px;align-items:center;pointer-events:none}\n.md-left i{width:5px;height:5px;border-radius:50%;background:var(--bt)}\n.md .md-pad .md-left .ic{width:14px;height:14px;padding:2px;box-sizing:content-box;border-radius:50%;background:var(--good-tint);color:var(--good-ink)}\n.md .md-pad .key.zero{background:var(--surface-2);color:var(--ink-3);box-shadow:inset 0 0 0 2px var(--line),var(--ledge) var(--line)}\n.md .md-pad .key.on{background:var(--bt-tint);color:var(--bt-shade);box-shadow:inset 0 0 0 3px var(--bt),var(--ledge) var(--bt-shade)}\n/* with Notes on, the digits on the keys turn small and purple, so it is clear they will go in small */\n.md.nt .md-sym .md-kf{font-size:var(--fs-3);color:var(--bt)}\n.md-B .md-pad .key{min-height:var(--tap-pk)}\n.md-B .md-pad .key.md-sym{font-size:var(--fs-6)}\n\n/* ---------- landscape ---------- */\n.md.land{flex-direction:row;align-items:center;justify-content:center;gap:var(--s-6)}\n.md.land .md-side{display:flex;flex-direction:column;gap:var(--s-3);flex:none;width:min(380px,42%)}\n.md.land .md-say{align-self:stretch}\n.md.land .md-ctl{max-width:none}\n/* Brain Teasers number puzzles (P3-10, src/js/77-bt-number.js): Number Pyramid, Balance, Make the Number.\n   Tokens only; light from the top left (a white gloss upper left, the shade tone as a ledge lower right); motion is transform and\n   opacity (calm mode and reduced motion stop it in 20-base.css). Portrait: talk line, board, controls. Landscape: board left. */\n.bn{display:flex;flex-direction:column;gap:var(--s-3);width:100%;max-width:640px;min-height:100%;margin:0 auto}\n.bn-say{display:flex;align-items:center;gap:var(--s-2);min-height:var(--tap);padding:var(--s-1) var(--s-1) var(--s-1) var(--s-3);border-radius:var(--r-card);\n  background:var(--surface);box-shadow:inset 0 0 0 2px var(--line),0 3px 0 var(--ledge-soft)}\n.bn-msg{flex:1;min-width:0;margin:0;font-size:var(--fs-2);font-weight:700;line-height:1.3;color:var(--ink-2)}\n.bn-msg.good{color:var(--good-ink)}\n.bn-msg.try{color:var(--try-ink)}\n.bn-msg.hint{color:var(--bt-shade)}\n.bn-spk{flex:none}\n.bn-board{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--s-3);min-height:0}\n.bn-ctl{display:flex;flex-direction:column;align-items:center;gap:var(--s-3)}\n.bn-tag{margin:0}\n/* the question screen's pad in two rows of six (1-6, then 7 8 9 delete 0 check) */\n.bn .bn-pad{grid-template-columns:repeat(6,minmax(0,1fr));gap:var(--s-2);max-width:460px}\n.bn .bn-pad .key{min-height:52px;font-size:var(--fs-5)}\n.bn .bn-pad .key .ic{width:30px;height:30px}\n.bn-shake{animation:k-shake 240ms linear}\n/* a hint points at something: a star ring that pulses */\n.bn .hl{outline:4px solid var(--star);outline-offset:3px}\n\n/* ---------- Number Pyramid ---------- */\n.bn-pyrw{display:grid;grid-template-columns:repeat(calc(var(--n) * 2),minmax(0,1fr));gap:var(--s-2) 6px;width:100%;max-width:calc(var(--n) * 96px)}\n.bn-br{display:flex;align-items:center;justify-content:center;min-width:0;min-height:52px;padding:0;border:0;border-radius:var(--r-chip);\n  font-family:var(--font-display);font-size:var(--fs-4);font-weight:700;line-height:1;color:var(--ink);touch-action:manipulation;\n  transition:transform var(--t-fast) var(--ease)}\n.bn-br span{pointer-events:none}\n/* a given brick: sandstone with a gloss band and a ledge */\n.bn-br.giv{background:linear-gradient(var(--hi),var(--hi-0) 55%) var(--ill-tan);box-shadow:inset 3px 3px 0 var(--ill-tan-1),inset -2px -3px 0 var(--ill-tan-2),0 4px 0 var(--ill-tan-3)}\n.bn-br.hid{background:var(--surface);color:var(--bt);border:3px dashed var(--bt);cursor:pointer;box-shadow:0 4px 0 var(--ledge-soft)}\n.bn-br.hid:active{transform:translateY(3px)}\n.bn-br.sel{border-style:solid;background:var(--bt-tint);color:var(--bt-shade);transform:translateY(-2px);box-shadow:0 5px 0 var(--bt-shade)}\n.bn-br.ok{background:linear-gradient(var(--hi),var(--hi-0) 55%) var(--good-tint);color:var(--good-ink);box-shadow:inset 0 0 0 3px var(--good),0 4px 0 var(--good-ink)}\n.bn-br.ok.hn{background:linear-gradient(var(--hi),var(--hi-0) 55%) var(--star-tint);color:var(--ink);box-shadow:inset 0 0 0 3px var(--star),0 4px 0 var(--star-shade)}\n.bn-pyrw.win .bn-br{animation:k-pop 420ms var(--ease)}\n\n/* ---------- Balance ---------- */\n.bn-scs{display:grid;justify-items:center;gap:var(--s-2);width:100%}\n.bn-sc{width:100%;max-width:340px;padding:var(--s-1) var(--s-2) 0;border-radius:var(--r-card);background:var(--surface);\n  box-shadow:inset 0 0 0 2px var(--line),0 4px 0 var(--ledge-soft)}\n.bn-scs.n3 .bn-sc{max-width:300px}\n.bn-sc.hl{outline-offset:-3px}\n.bn-bal{gap:var(--s-2)}\n.bn-bal .bn-board{gap:var(--s-2)}\n.bn-bal .bn-pad .key{min-height:var(--tap)}\n.bn-bal .bn-slot{height:var(--tap)}\n.bn-sv{display:block;width:100%;height:auto;overflow:visible;font-family:var(--font-display);font-weight:700;text-anchor:middle;stroke-linecap:round}\n/* the stand and base (grey, its right side in shade), the wooden arm (gloss on top, shade below), the brass-grey pin */\n.bn-stand{fill:var(--ill-grey-2)}\n.bn-sts{fill:var(--ill-grey-3)}\n.bn-base{fill:var(--ill-grey-3)}\n.bn-beam{fill:var(--ill-brown)}\n.bn-bsh{fill:none;stroke:var(--ill-brown-2);stroke-width:3}\n.bn-bgl{fill:none;stroke:var(--ill-brown-1);stroke-width:3}\n.bn-nd{fill:none;stroke:var(--ill-brown-3);stroke-width:4}\n.bn-pin{fill:var(--ill-grey-1);stroke:var(--ill-grey-3);stroke-width:3}\n.bn-pgl2{fill:var(--ill-white)}\n.bn-post{fill:var(--ill-grey-2)}\n.bn-dish{fill:var(--ill-grey-1);stroke:var(--ill-grey-2);stroke-width:2;stroke-linejoin:round}\n.bn-dsh{fill:none;stroke:var(--ill-grey);stroke-width:3}\n.bn-pgl{fill:none;stroke:var(--ill-white);stroke-width:2.5}\n.bn-wb{fill:var(--ill-grey-3)}\n.bn-wh{fill:none;stroke:var(--ill-grey-3);stroke-width:4}\n.bn-ws{fill:none;stroke:var(--ill-ink-2);stroke-width:3}\n.bn-wg{fill:none;stroke:var(--ill-grey-2);stroke-width:3}\n.bn-w text{fill:var(--surface);font-size:18px}\n.bn-vt circle{fill:var(--bt);stroke:var(--surface);stroke-width:2}\n.bn-vt text{fill:var(--surface);font-size:13px}\n.bn-vt.bad circle{fill:var(--try)}\n.bn-vt.bad text{fill:var(--ink)}\n/* tipping: the arm turns about the pin and the trays move with its ends (100 units out: sin 6 degrees x 100 = 10.45) */\n.bn-arm,.bn-tray{transition:transform var(--t-xl) var(--spring)}\n.bn-sc.tl .bn-arm{transform:rotate(-6deg)}\n.bn-sc.tl .bn-tray.l,.bn-sc.tr .bn-tray.r{transform:translateY(10.45px)}\n.bn-sc.tl .bn-tray.r,.bn-sc.tr .bn-tray.l{transform:translateY(-10.45px)}\n.bn-sc.tr .bn-arm{transform:rotate(6deg)}\n.bn-slots{display:flex;flex-wrap:wrap;justify-content:center;gap:var(--s-2) var(--s-4)}\n.bn-sg{display:inline-flex;align-items:center;gap:var(--s-1);font-size:var(--fs-4);font-weight:700;color:var(--ink-2)}\n.bn-sg>b{padding:0 2px}\n.bn-sg .bn-x{font-size:var(--fs-3);white-space:nowrap}\n.bn-slot{min-width:60px;height:52px;padding:0 var(--s-2);border:3px dashed var(--bt);border-radius:var(--r-chip);background:var(--surface);\n  font-family:var(--font-display);font-size:var(--fs-4);font-weight:700;color:var(--bt);cursor:pointer;touch-action:manipulation;box-shadow:0 4px 0 var(--ledge-soft)}\n.bn-slot.sel{border-style:solid;background:var(--bt-tint);color:var(--bt-shade);box-shadow:0 5px 0 var(--bt-shade)}\n.bn-slot.ok{border:0;background:linear-gradient(var(--hi),var(--hi-0) 55%) var(--good-tint);color:var(--good-ink);cursor:default;box-shadow:inset 0 0 0 3px var(--good),0 4px 0 var(--good-ink)}\n.bn-slot.ok.hn{background:linear-gradient(var(--hi),var(--hi-0) 55%) var(--star-tint);color:var(--ink);box-shadow:inset 0 0 0 3px var(--star),0 4px 0 var(--star-shade)}\n.bn-scs.win .bn-sc{animation:k-pop 420ms var(--ease)}\n\n/* ---------- Make the Number ---------- */\n.bn-goal{display:flex;justify-content:center}\n.bn-ring{display:grid;place-items:center;width:108px;height:108px;border-radius:50%;\n  background:radial-gradient(circle,var(--surface) 0 47%,var(--bt) 47% 61%,var(--bt-tint) 61% 75%,var(--bt) 75%);box-shadow:0 5px 0 var(--bt-shade)}\n.bn-ring b{font-family:var(--font-display);font-size:var(--fs-5);line-height:1;color:var(--bt-shade)}\n.bn-tiles{display:flex;flex-wrap:wrap;justify-content:center;gap:var(--s-3);min-height:76px}\n.bn-tile{display:grid;place-items:center;width:72px;height:72px;padding:0;border:0;border-radius:var(--r-btn);\n  background:linear-gradient(var(--hi),var(--hi-0) 55%) var(--ill-cream);color:var(--ink);font-family:var(--font-display);font-size:var(--fs-6);line-height:1;\n  cursor:pointer;touch-action:manipulation;box-shadow:inset 3px 3px 0 var(--ill-cream-1),inset 0 0 0 2px var(--ill-cream-2),0 5px 0 var(--ill-cream-3);\n  transition:transform var(--t-fast) var(--ease)}\n.bn-tile b{pointer-events:none}\n.bn-tile:active{transform:translateY(3px)}\n.bn-tile.made{background:linear-gradient(var(--hi),var(--hi-0) 55%) var(--star-tint);box-shadow:inset 3px 3px 0 var(--hi),inset 0 0 0 2px var(--star),0 5px 0 var(--star-shade)}\n.bn-tile.sel{background:var(--bt-tint);color:var(--bt-shade);transform:translateY(-4px);box-shadow:inset 0 0 0 3px var(--bt),0 7px 0 var(--bt-shade)}\n.bn-tiles.win .bn-tile{animation:k-pop 420ms var(--ease)}\n.bn-ops{display:flex;justify-content:center;gap:var(--s-3)}\n.bn-op{display:grid;place-items:center;width:60px;height:60px;padding:0;border:0;border-radius:50%;background:linear-gradient(var(--hi),var(--hi-0) 60%) var(--bt);\n  color:var(--surface);cursor:pointer;touch-action:manipulation;box-shadow:inset 0 3px 0 var(--hi),0 5px 0 var(--bt-shade);transition:transform var(--t-fast) var(--ease)}\n.bn-op:active{transform:translateY(3px)}\n.bn-op.sel{background:var(--star);color:var(--ink);transform:translateY(-3px);box-shadow:inset 0 3px 0 var(--hi),0 6px 0 var(--star-shade)}\n.bn-op .ic{pointer-events:none}\n.bn-trail{display:flex;flex-direction:column;align-items:center;gap:2px;margin:0;padding:0;list-style:none;font-size:var(--fs-3);font-weight:700;color:var(--ink-2)}\n.bn-trail:empty{display:none}\n.bn-trail b{color:var(--bt-shade)}\n.bn-acts{display:flex;justify-content:center}\n\n@media (max-width:480px){\n  .bn-tiles.n5{gap:var(--s-2)}\n  .bn-tiles.n5 .bn-tile{width:60px;height:64px;font-size:var(--fs-5)}\n}\n/* tablets: bigger tiles, target and signs */\n@media (min-width:560px) and (min-height:560px){\n  .bn-tile{width:84px;height:84px}\n  .bn-ring{width:124px;height:124px}\n  .bn-ring b{font-size:var(--fs-6)}\n  .bn-op{width:64px;height:64px}\n}\n/* a tall tablet in portrait: bigger scales */\n@media (min-width:560px) and (min-height:860px){\n  .bn-scs.n3 .bn-sc{max-width:400px}\n  .bn-scs .bn-sc{max-width:460px}\n}\n/* landscape: the board on the left; the talk line, the boxes, the pad and the steps on the right */\n@media (min-aspect-ratio:5/4) and (min-width:700px){\n  .bn{display:grid;grid-template-columns:minmax(0,1fr) minmax(344px,380px);grid-template-rows:auto auto;align-content:center;\n    grid-template-areas:\"board say\" \"board ctl\";gap:var(--s-3) var(--s-6);max-width:1000px}\n  .bn-board{grid-area:board}\n  .bn-say{grid-area:say;align-self:end}\n  .bn-ctl{grid-area:ctl;align-self:start}\n  .bn .bn-pad{max-width:none}\n  .bn-scs.n3 .bn-sc{max-width:340px}\n  .bn-scs .bn-sc{max-width:400px}\n  .bn-scs.n1 .bn-sc{max-width:480px}\n}\n/* Brain Teasers: Patterns, matrices, odd one out (P3-09; 76-bt-pattern.js). Tokens only; motion is transform and opacity. */\n.pt{display:flex;flex-direction:column;gap:var(--s-3);max-width:980px;min-height:100%;margin:0 auto}\n.pt-head{display:flex;align-items:center;justify-content:center;gap:var(--s-3);min-height:var(--tap)}\n.pt-dots{display:flex;gap:6px;flex:none}\n.pt-dots i{width:12px;height:12px;border-radius:50%;background:var(--surface);box-shadow:inset 0 0 0 3px var(--bt-tint)}\n.pt-dots i.now{box-shadow:inset 0 0 0 3px var(--bt)}\n.pt-dots i.on{background:var(--bt);box-shadow:none}\n.pt-ask{margin:0;min-width:0;font-family:var(--font-display);font-size:var(--fs-4);font-weight:700;line-height:1.2;color:var(--ink);text-align:center}\n.pt-say{flex:none}\n.pt-main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--s-4);padding-bottom:var(--s-3)}\n.pt-side{display:flex;flex-direction:column;align-items:center;gap:var(--s-3);width:100%}\n/* the board: a soft purple tray with white cells on a ledge */\n.pt-board{padding:var(--s-3);border-radius:var(--r-card);background:var(--bt-tint);box-shadow:0 4px 0 var(--ledge-soft)}\n.pt-cell{display:flex;align-items:center;justify-content:center;min-width:0;aspect-ratio:1;border-radius:var(--r-btn);background:var(--surface);\n  box-shadow:0 3px 0 var(--ledge-soft)}\n.pt-cell .pt-t{width:90%;height:90%}\n.pt-q{background:var(--surface-2);box-shadow:inset 0 0 0 3px var(--bt);outline:3px dashed var(--surface);outline-offset:-3px}\n.pt-q b{font-family:var(--font-display);font-size:clamp(28px,6vw,40px);line-height:1;color:var(--bt)}\n.pt-got{box-shadow:inset 0 0 0 3px var(--good),0 3px 0 var(--good-ink);animation:k-pop var(--t-slow) var(--spring)}\n.pt-row{display:grid;grid-template-columns:repeat(var(--n),minmax(0,76px));gap:var(--s-2);justify-content:center;width:100%;max-width:max-content}\n.pt-nrow .pt-cell{aspect-ratio:auto;min-height:64px;padding:0 2px}\n.pt-nm{font-family:var(--font-display);font-size:clamp(20px,4.6vw,30px);font-weight:700;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums}\n.pt-grid{display:grid;gap:var(--s-2)}\n.pt-grid.g3{grid-template-columns:repeat(3,1fr);width:min(100%,312px)}\n.pt-grid.g2{grid-template-columns:repeat(2,1fr);width:min(100%,232px)}\n/* hint words */\n.pt-tip{display:flex;align-items:center;gap:var(--s-2);max-width:560px;margin:0;padding:var(--s-2) var(--s-4);border-radius:var(--r-btn);background:var(--star-tint);\n  color:var(--ink);font-size:var(--fs-3);font-weight:700;line-height:1.35;box-shadow:0 3px 0 var(--star)}\n.pt-tip[hidden]{display:none}\n.pt-tip .ic{flex:none;color:var(--star-shade)}\n/* choices (the .choice component: .wrong and .right carry a corner badge, .off is a choice a hint took away) */\n.pt-chs{display:grid;gap:var(--s-3);width:100%;max-width:520px}\n.pt-chs.n4{grid-template-columns:repeat(4,minmax(0,1fr))}\n.pt-chs.n6{grid-template-columns:repeat(3,minmax(0,1fr));max-width:420px}\n.pt-ch.choice{aspect-ratio:1;min-height:var(--tap-pk);padding:var(--s-1)}\n.pt-ch .pt-t{width:100%;height:100%;max-width:132px;max-height:132px}\n.pt-ch:is(.right,.wrong)::before,.pt-ch.wrong::after{transform:scale(.8);transform-origin:top right}\n.pt-ch.right::after{transform:rotate(45deg) scale(.8)}\n.pt-num .pt-ch.choice{aspect-ratio:auto;min-height:72px}\n.pt-num .pt-nm{font-size:clamp(24px,6vw,36px)}\n.pt-odd .pt-chs.n4{grid-template-columns:repeat(2,minmax(0,1fr));max-width:400px}\n.pt-odd .pt-ch .pt-t{max-width:170px;max-height:170px}\n/* colours: base and shade tones of one hue (DESIGN_SYSTEM 6.5); the light comes from the top left */\n.pt-c0{--p:var(--ill-red);--p2:var(--ill-red-2)}\n.pt-c1{--p:var(--ill-blue);--p2:var(--ill-blue-2)}\n.pt-c2{--p:var(--ill-yellow);--p2:var(--ill-yellow-2)}\n.pt-c3{--p:var(--ill-green);--p2:var(--ill-green-2)}\n.pt-c4{--p:var(--ill-purple);--p2:var(--ill-purple-2)}\n.pt-c5{--p:var(--ill-orange);--p2:var(--ill-orange-2)}\n.pt-t path{stroke-linejoin:round;stroke-linecap:round}\n.pt-sw{fill:var(--ledge-soft);stroke:var(--ledge-soft);stroke-width:8}\n.pt-sd{fill:var(--p2);stroke:var(--p2);stroke-width:8}\n.pt-sb{fill:var(--p);stroke:var(--p);stroke-width:7}\n.pt-sg{fill:none;stroke:var(--ill-white);stroke-width:6;opacity:.75}\n/* phones: a long row wraps into two rows */\n@media (max-width:560px){\n  .pt-row.pt-wrap{grid-template-columns:repeat(var(--n2),minmax(0,76px))}\n  .pt-ask{font-size:var(--fs-3)}\n}\n@media (max-width:560px) and (max-height:820px){\n  .pt-main{gap:var(--s-3)}\n  .pt-grid.g3{width:min(100%,264px)}\n  .pt-chs.n6{max-width:300px;gap:var(--s-2) var(--s-3)}\n}\n/* landscape tablets: the board on the left, the choices on the right (grids and the odd one out) */\n@media (orientation:landscape) and (min-width:700px){\n  .pt-mat .pt-main,.pt-ana .pt-main{flex-direction:row;justify-content:center;align-items:center;gap:var(--s-7)}\n  .pt-mat .pt-side,.pt-ana .pt-side{width:auto;flex:0 1 440px}\n  .pt-grid.g3{width:min(360px,58vh)}\n  .pt-grid.g2{width:min(300px,52vh)}\n  .pt-ana .pt-chs.n4{grid-template-columns:repeat(2,minmax(0,1fr));max-width:min(300px,46vh)}\n  .pt-mat .pt-chs.n6{max-width:440px}\n  .pt-odd .pt-chs.n4{grid-template-columns:repeat(4,minmax(0,1fr));max-width:760px}\n  .pt-row{grid-template-columns:repeat(var(--n),minmax(0,100px))}\n  .pt-seq .pt-chs.n4,.pt-num .pt-chs.n4{max-width:600px}\n}\n/* Brain Teasers sudoku (P3-03, src/js/78-bt-sudoku.js). Tokens only; light from the top left (a white gloss on top, the shade tone\n   as a ledge below); motion is transform and opacity (calm mode and reduced motion stop it in 20-base.css).\n   The board is a purple tray (--bt, ledge --bt-shade) holding one white card per box; squares are tiles with a soft lower edge.\n   --cs (the square's side) is set by the layout in the JS; the padding and gaps here (6, 5, 2 px) must match FR there.\n   Portrait: talk line, board, controls. Landscape (.land): board left, talk line and controls right (.sd-side).\n   .zm (9x9 cells under 46 px, a phone): the zoom box (the selected box at 52 px squares) sits left of a 3-across pad. */\n.sd{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--s-3);width:100%;max-width:1000px;min-height:100%;margin:0 auto}\n.sd-say{display:flex;align-items:center;gap:var(--s-2);width:100%;max-width:640px;min-height:var(--tap);padding:var(--s-1) var(--s-1) var(--s-1) var(--s-3);\n  border-radius:var(--r-card);background:var(--surface);box-shadow:inset 0 0 0 2px var(--line),0 3px 0 var(--ledge-soft)}\n.sd-msg{flex:1;min-width:0;margin:0;font-size:var(--fs-2);font-weight:700;line-height:1.3;color:var(--ink-2)}\n.sd-msg.good{color:var(--good-ink)}\n.sd-msg.try{color:var(--try-ink)}\n.sd-msg.hint{color:var(--bt-shade)}\n.sd-spk{flex:none;order:2}\n.sd-main{display:flex;justify-content:center;flex:none}\n.sd-ctl{display:flex;flex-direction:column;align-items:center;gap:var(--s-3);width:100%;max-width:640px}\n.sd-side{display:none}\n\n/* ---------- the board ---------- */\n.sd-board{display:grid;grid-template-columns:repeat(var(--bx),auto);gap:var(--fb);padding:var(--fp);border-radius:16px;\n  background:linear-gradient(var(--hi),var(--hi-0) 40px) var(--bt);box-shadow:inset 0 2px 0 var(--hi),0 6px 0 var(--bt-shade)}\n.sd-box{display:grid;grid-template-columns:repeat(var(--bw),var(--cs));grid-auto-rows:var(--cs);gap:var(--fc);border-radius:10px;background:var(--line);overflow:hidden}\n.sd-n9 .sd-box{border-radius:7px}\n.sd-c{position:relative;display:grid;place-items:center;width:var(--cs);height:var(--cs);min-width:0;padding:0;border:0;border-radius:0;\n  background:var(--surface);color:var(--bt);font-family:var(--font-display);font-size:calc(var(--cs) * .56);font-weight:700;line-height:1;\n  cursor:pointer;touch-action:manipulation;box-shadow:inset 0 -3px 0 var(--surface-2);-webkit-tap-highlight-color:transparent}\n.sd-c>*{pointer-events:none}\n.sd-c b{font-weight:700}\n.sd-c .sd-pic{width:74%;height:74%}\n/* a given number is printed in ink; the child's are purple; a hint's is ink on star-yellow */\n.sd-c.giv{color:var(--ink);background:var(--surface);box-shadow:inset 0 -3px 0 var(--line)}\n.sd-c.ent{color:var(--bt)}\n.sd-c.hn{color:var(--ink);background:var(--star-tint);box-shadow:inset 0 -3px 0 var(--star)}\n/* the selected square, its row, column and box, and the same number elsewhere */\n.sd-c.rc{background:var(--surface-2)}\n.sd-c.same{background:var(--bt-tint);color:var(--bt-shade)}\n.sd-c.same.giv{color:var(--ink)}\n.sd-c.sel{background:var(--bt-tint);box-shadow:inset 0 0 0 3px var(--bt),inset 0 -6px 0 var(--bt)}\n/* hints: the house glows soft yellow, the square gets a star ring */\n.sd-c.hh{background:var(--star-tint)}\n.sd-c.hl{background:var(--star-tint);box-shadow:inset 0 0 0 4px var(--star)}\n.sd-c.sel.hl{box-shadow:inset 0 0 0 4px var(--star),inset 0 0 0 7px var(--bt)}\n/* a clash (C, D) and the number a wrong one ran into (A, B): amber with a dashed ring and a warning mark, never red */\n.sd-c.cf,.sd-c.cl{background:var(--try-tint);color:var(--try-ink);outline:2px dashed var(--try-ink);outline-offset:-5px}\n.sd-c.cf.sel{box-shadow:inset 0 0 0 3px var(--try),inset 0 -6px 0 var(--try)}\n.sd-wn{position:absolute;top:1px;right:1px;display:grid;line-height:0;color:var(--try-ink)}\n.sd-wn .ic{width:max(12px,calc(var(--cs) * .3));height:max(12px,calc(var(--cs) * .3))}\n/* a wrong symbol (A, B) wiggles, then hops out */\n.sd-c.bad{background:var(--try-tint);color:var(--try-ink)}\n.sd-c.bad>*{animation:sd-out 650ms var(--ease) forwards}\n@keyframes sd-out{15%{transform:translateX(-12%)}30%{transform:translateX(12%)}45%{transform:translateX(-6%);opacity:1}100%{transform:translateY(-55%) scale(.5);opacity:0}}\n.sd-c.pop>*{animation:k-pop 420ms var(--ease)}\n/* pencil marks: a small grid of 3 across */\n.sd-nts{position:absolute;inset:3px;display:grid;grid-template-columns:repeat(3,1fr);place-items:center;font-style:normal;\n  font-size:max(9px,calc(var(--cs) * .27));font-weight:700;line-height:1;color:var(--ink-3)}\n.sd-c.sel .sd-nts{color:var(--bt-shade)}\n.sd.win .sd-c>*{animation:k-pop 520ms var(--ease) both}\n.sd.win .sd-box:nth-child(2n) .sd-c>*{animation-delay:90ms}\n.sd.win .sd-box:nth-child(3n) .sd-c>*{animation-delay:180ms}\n\n/* ---------- zoom box (9x9 on a phone): the selected box at full size ---------- */\n.sd-zoom{--cs:48px;display:grid;flex:none;grid-template-columns:repeat(3,var(--cs));grid-auto-rows:var(--cs);gap:2px;padding:2px;border-radius:12px;\n  background:var(--bt);box-shadow:inset 0 2px 0 var(--hi),0 5px 0 var(--bt-shade)}\n.sd-zoom[hidden]{display:none}\n.sd-zoom .sd-c:first-child{border-radius:10px 0 0 0}\n.sd-zoom .sd-c:nth-child(3){border-radius:0 10px 0 0}\n.sd-zoom .sd-c:nth-child(7){border-radius:0 0 0 10px}\n.sd-zoom .sd-c:last-child{border-radius:0 0 10px 0}\n\n/* ---------- the pad: the question screen's keys (padHTML), symbols 1..n with how many are left ---------- */\n.sd .sd-pad{gap:var(--s-2);width:100%;max-width:none;margin:0}\n.sd .sd-pad.row{grid-template-columns:repeat(var(--n),minmax(0,1fr))}\n.sd .sd-pad.g3{grid-template-columns:repeat(3,minmax(0,1fr))}\n.sd .sd-pad .key{position:relative;min-width:0;min-height:52px;font-size:var(--fs-5)}\n.sd .sd-pad .key .ic{width:28px;height:28px}\n.sd-n9 .sd-pad.row .key.t{grid-column:span 3}\n.sd-n6 .sd-pad.row .key.t,.sd-n6 .sd-pad.g3 .key.t{grid-column:span 1}\n.sd-n6 .sd-pad.row .key.t{grid-column:span 2}\n.sd-kf{display:grid;place-items:center;font-family:var(--font-display);line-height:1;pointer-events:none}\n/* how many are left: a row of dots along the bottom of the key (a tick in a green disc when none are left) */\n.sd-left{position:absolute;left:0;right:0;bottom:5px;display:flex;justify-content:center;gap:2px;height:14px;align-items:center;pointer-events:none}\n.sd-left i{width:5px;height:5px;border-radius:50%;background:var(--bt)}\n.sd-n9 .sd-left{gap:1px}\n.sd-n9 .sd-left i{width:4px;height:4px}\n.sd .sd-pad .sd-left .ic{width:14px;height:14px;padding:2px;box-sizing:content-box;border-radius:50%;background:var(--good-tint);color:var(--good-ink)}\n.sd .sd-pad .sd-sym .sd-kf{margin-bottom:8px}\n.sd .sd-pad .key.zero{background:var(--surface-2);color:var(--ink-3);box-shadow:inset 0 0 0 2px var(--line),var(--ledge) var(--line)}\n.sd .sd-pad .key.t{gap:var(--s-1);font-size:var(--fs-3);font-weight:700}\n.sd .sd-pad .key.t span{pointer-events:none}\n.sd .sd-pad.g3 .key.t span{display:none}\n.sd .sd-pad .key.on{background:var(--bt-tint);color:var(--bt-shade);box-shadow:inset 0 0 0 3px var(--bt),var(--ledge) var(--bt-shade)}\n/* with Notes on, the digits on the keys turn small and purple, so it is clear they will go in small */\n.sd.nt .sd-sym .sd-kf{font-size:var(--fs-3);color:var(--bt)}\n/* 4x4: four big keys; band A keys carry the animals */\n.sd-n4 .sd-pad .key{min-height:var(--tap-pk);font-size:var(--fs-6)}\n.sd-A .sd-pad .sd-kf{font-size:48px}\n\n/* two rows of six (9x9 on a phone): 1-5 and Erase, then 6-9, Notes and Undo */\n.sd .sd-pad.r6{grid-template-columns:repeat(6,minmax(0,1fr));gap:var(--s-1) 6px}\n.sd .sd-pad.r6 .k[data-k=\"del\"]{grid-column:6;grid-row:1}\n.sd .sd-pad.r6 .key{min-height:var(--tap)}\n.sd .sd-pad.r6 .key.t span{display:none}\n\n/* ---------- 9x9 on a phone (.zm, portrait): the zoom box and the talk line share a row under the board ---------- */\n.sd-zrow{display:none}\n.sd.zm:not(.land){gap:var(--s-2)}\n.sd.zm:not(.land) .sd-zrow{display:flex;align-items:stretch;gap:var(--s-2);width:100%}\n.sd.zm:not(.land) .sd-say{display:block;flex:1;min-width:0;height:auto;max-height:152px;overflow:auto;padding:var(--s-1) var(--s-1) var(--s-1) var(--s-3)}\n.sd.zm:not(.land) .sd-spk{float:right;margin:0 0 var(--s-1) var(--s-1)}\n.sd.zm:not(.land) .sd-msg{padding-top:var(--s-1)}\n/* landscape with the zoom box: zoom box left, pad right in the side column */\n.sd.land.zm .sd-ctl{flex-direction:row;align-items:flex-start;justify-content:center;gap:var(--s-3)}\n.sd.land.zm .sd-pad{flex:1}\n.sd.land.zm .sd-pad .key{min-height:var(--tap)}\n\n/* ---------- landscape ---------- */\n.sd.land{flex-direction:row;align-items:center;justify-content:center;gap:var(--s-6)}\n.sd.land .sd-side{display:flex;flex-direction:column;gap:var(--s-3);flex:none;width:min(380px,42%)}\n.sd.land .sd-say{align-self:stretch}\n.sd.land .sd-ctl{max-width:none}\n";document.head.appendChild(s)})(); // its src/css, after index.html's own CSS (the cascade order of a build without parts)
+/* Star School bt v116. BUILT by tools/build.py from 49-bt-copycat.css, 49-bt-logic.css, 49-bt-maze.css, 49-bt-mdoku.css, 49-bt-memory.css, 49-bt-number.css, 49-bt-pattern.css, 49-bt-riddle.css, 49-bt-sudoku.css, 75-bt-maze.js, 76-bt-pattern.js, 77-bt-number.js, 78-bt-sudoku.js, 79-bt-mdoku.js, 80-bt-logic.js, 81-bt-riddle.js, 82-bt-memory.js, 83-bt-copycat.js: never edit by hand.
+   index.html v116 loads this file with <script src="bt.v116.js"> after its own code, before data.v116.js. */
+(function(){var s=document.createElement('style');s.id='css-bt';s.textContent="/* Brain Teasers: Copy Cat (P3-14, src/js/83-bt-copycat.js). Tokens only; motion is transform and opacity (a lit pad grows a little\n   and its light layer fades in; reduced motion and calm mode make that instant, the light itself still shows). --cols and --ps come\n   from the JS layout. */\n.cc{display:flex;flex-direction:column;gap:var(--s-2);width:100%;max-width:1040px;margin:0 auto}\n.cc-say{flex:none;display:flex;align-items:center;gap:var(--s-2);min-height:56px;padding:var(--s-1) var(--s-1) var(--s-1) var(--s-2);border-radius:var(--r-card);\n  background:var(--surface);box-shadow:inset 0 0 0 2px var(--line),0 3px 0 var(--ledge-soft)}\n.cc-cat{flex:none;display:flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:50%;background:var(--bt-tint);color:var(--bt-shade)}\n.cc-msg{flex:1;min-width:0;margin:0;text-align:left;font-size:var(--fs-3);font-weight:700;line-height:1.3;color:var(--ink-2)}\n.cc-msg.turn{color:var(--bt-shade)}\n.cc-msg.good{color:var(--good-ink)}\n.cc-msg.try{color:var(--try-ink)}\n.cc-msg.hint{color:var(--bt-shade)}\n.cc-spk{flex:none}\n.cc-bar{flex:none;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--s-2) var(--s-3);padding:0 var(--s-2);min-height:28px}\n.cc-rounds,.cc-steps{display:flex;gap:6px}\n.cc-rounds i{width:14px;height:14px;border-radius:50%;background:var(--surface);box-shadow:inset 0 0 0 3px var(--bt-tint)}\n.cc-rounds i.now{box-shadow:inset 0 0 0 3px var(--bt)}\n.cc-rounds i.on{background:var(--bt);box-shadow:none}\n.cc-steps i{width:10px;height:10px;border-radius:3px;background:var(--line)}\n.cc-steps i.on{background:var(--good)}\n.cc-area{flex:1;min-height:0;display:flex;align-items:center;justify-content:center}\n.cc-pads{display:grid;grid-template-columns:repeat(var(--cols),var(--ps));gap:16px;justify-content:center}\n/* a pad: a white tile on a ledge with its shape; lit, its colour's light tone fills the tile and it grows a little */\n.cc-pad{position:relative;display:flex;align-items:center;justify-content:center;width:var(--ps);height:var(--ps);padding:0;border:0;border-radius:var(--r-hero);\n  background:var(--surface);box-shadow:inset 0 0 0 3px var(--line),0 6px 0 var(--ledge-soft);cursor:pointer;transition:transform var(--t-fast) var(--ease)}\n.cc-pad:active{transform:translateY(4px)}\n.cc-lit{position:absolute;inset:0;border-radius:inherit;background:var(--p1);box-shadow:inset 0 0 0 5px var(--p);opacity:0;transition:opacity 90ms linear}\n.cc-sh{position:relative;width:72%;height:72%}\n.cc-pad.on{transform:scale(1.05)}\n.cc-pad.on .cc-lit{opacity:1}\n.cc-pads.wait .cc-pad{cursor:default}\n.cc-pads.wait .cc-pad:active{transform:none}\n.cc-pads.wait .cc-pad.on{transform:scale(1.05)}\n/* the next pad (hint 2 and 3): a star-yellow ring; a wrong pad: amber with a dashed ring */\n.cc-pad.tip{box-shadow:inset 0 0 0 6px var(--star),0 6px 0 var(--star-shade)}\n.cc-pad.no{background:var(--try-tint);box-shadow:inset 0 0 0 4px var(--try),0 6px 0 var(--try);outline:3px dashed var(--try-ink);outline-offset:-12px}\n.cc-pad:focus-visible{outline:3px solid var(--brand);outline-offset:3px}\n/* colours: highlight, base and shade tones of one hue (DESIGN_SYSTEM 6.5); the light comes from the top left */\n.cc-c0{--p1:var(--ill-red-1);--p:var(--ill-red);--p2:var(--ill-red-2)}\n.cc-c1{--p1:var(--ill-blue-1);--p:var(--ill-blue);--p2:var(--ill-blue-2)}\n.cc-c2{--p1:var(--ill-yellow-1);--p:var(--ill-yellow);--p2:var(--ill-yellow-2)}\n.cc-c3{--p1:var(--ill-green-1);--p:var(--ill-green);--p2:var(--ill-green-2)}\n.cc-c4{--p1:var(--ill-purple-1);--p:var(--ill-purple);--p2:var(--ill-purple-2)}\n.cc-c5{--p1:var(--ill-orange-1);--p:var(--ill-orange);--p2:var(--ill-orange-2)}\n.cc-sh path{stroke-linejoin:round;stroke-linecap:round}\n.cc-sw{fill:var(--ledge-soft);stroke:var(--ledge-soft);stroke-width:8}\n.cc-sd{fill:var(--p2);stroke:var(--p2);stroke-width:8}\n.cc-sb{fill:var(--p);stroke:var(--p);stroke-width:7}\n.cc-sg{fill:none;stroke:var(--ill-white);stroke-width:6;opacity:.75}\n@media (max-width:560px){ .cc-msg{font-size:var(--fs-2)} }\n/* Brain Teasers logic grids (P3-07, src/js/80-bt-logic.js). Tokens only; motion is transform and opacity. --cs, --rh, --hh, --n\n   come from the JS layout; block padding 3, square gap 2 and block gap 6 must match it. .land: clues left, grid right. */\n.lg{--bw:calc(var(--n) * var(--cs) + (var(--n) - 1) * 2px + 6px);display:flex;flex-direction:column;gap:var(--s-3);width:100%;max-width:1040px;margin:0 auto}\n.lg-say{flex:none;display:flex;align-items:center;gap:var(--s-2);min-height:var(--tap);padding:var(--s-1) var(--s-1) var(--s-1) var(--s-3);border-radius:var(--r-card);\n  background:var(--surface);box-shadow:inset 0 0 0 2px var(--line),0 3px 0 var(--ledge-soft)}\n.lg-msg{flex:1;min-width:0;margin:0;font-size:var(--fs-2);font-weight:700;line-height:1.3;color:var(--ink-2)}\n.lg-msg.good{color:var(--good-ink)}\n.lg-msg.try{color:var(--try-ink)}\n.lg-msg.hint{color:var(--bt-shade)}\n.lg-spk{flex:none;order:2}\n.lg-board{flex:none;display:flex;flex-direction:column;align-items:center;gap:var(--s-3)}\n.lg-tabs[hidden]{display:none}\n.lg-tabs .seg>button{padding:0 var(--s-3);font-size:var(--fs-2)}\n.lg-tabs .seg>button.lg-tcf{position:relative}\n.lg-tabs .seg>button.lg-tcf::after{content:\"\";position:absolute;top:6px;right:8px;width:10px;height:10px;border-radius:50%;background:var(--try);box-shadow:0 0 0 2px var(--surface)}\n.lg-tools{flex:none;display:flex;justify-content:center;gap:var(--s-2)}\n.lg-tools .btn{flex:0 1 auto;min-width:0}\n.lg-ac.on{background:var(--bt-tint);color:var(--bt-shade);box-shadow:inset 0 0 0 2px var(--bt),0 3px 0 var(--bt-shade)}\n\n/* ---------- the grid ---------- */\n.lg-grid{display:grid;grid-template-columns:var(--rh) var(--bw);grid-template-rows:var(--hh) var(--bw);gap:6px}\n.lg-grid.lg-g2{grid-template-columns:var(--rh) var(--bw) var(--bw);grid-template-rows:var(--hh) var(--bw) var(--bw)}\n.lg-grid.lg-gp{grid-template-columns:var(--rh) var(--bw) var(--bw)}\n.lg-hd{display:flex;flex-direction:column;justify-content:flex-end;min-width:0}\n.lg-cat{display:block;margin-bottom:2px;font-size:var(--fs-1);font-weight:700;line-height:1.2;color:var(--bt-shade);text-align:center;white-space:nowrap}\n.lg-hs{display:grid;grid-template-columns:repeat(var(--n),var(--cs));gap:2px;padding:0 3px}\n.lg-rhs{display:grid;grid-auto-rows:var(--cs);gap:2px;padding:3px 0}\n.lg-h{display:flex;align-items:center;justify-content:center;min-width:0;height:calc(var(--hh) - 18px);border-radius:10px;color:var(--ink);line-height:1}\n.lg-r{height:auto;justify-content:flex-end;padding-right:var(--s-2)}\n.lg-h.on{background:var(--bt-tint);color:var(--bt-shade)}\n.lg-nm{font-size:var(--fs-3);font-weight:700;line-height:1.1;overflow-wrap:anywhere}\n.lg-pic{display:grid;place-items:center;font-size:min(34px,calc(var(--cs) * .62));line-height:1}\n.lg-pic .art{width:1em;height:1em}\n.lg-col{display:flex;flex-direction:column;align-items:center;gap:2px}\n.lg-r .lg-col{flex-direction:row;gap:var(--s-1)}\n.lg-col i{width:22px;height:22px;border-radius:50%;box-shadow:inset 0 0 0 2px var(--shadow-ink-2)}\n.lg-col small,.lg-num small{font-size:12px;font-weight:700;line-height:1;color:var(--ink-2)}\n.lg-num{display:flex;align-items:center;gap:3px;font-family:var(--font-display);font-size:min(var(--fs-4),calc(var(--cs) * .44));font-weight:700;line-height:1}\n.lg-num .ic{color:var(--ink-3)}\n.lg-corner{display:block}\n.lg-blk{display:grid;grid-template-columns:repeat(var(--n),var(--cs));grid-auto-rows:var(--cs);gap:2px;padding:3px;border-radius:12px;\n  background:linear-gradient(var(--hi),var(--hi-0) 40px) var(--bt);box-shadow:inset 0 2px 0 var(--hi),0 4px 0 var(--bt-shade)}\n.lg-c{position:relative;display:grid;place-items:center;width:var(--cs);height:var(--cs);min-width:0;padding:0;border:0;border-radius:7px;\n  background:var(--surface);color:var(--ink-3);cursor:pointer;touch-action:manipulation;box-shadow:inset 0 -3px 0 var(--surface-2);-webkit-tap-highlight-color:transparent}\n.lg-c>*{pointer-events:none}\n.lg-c .ic{width:calc(var(--cs) * .56);height:calc(var(--cs) * .56)}\n.lg-c.cr .ic{width:calc(var(--cs) * .4);height:calc(var(--cs) * .4)}\n.lg-c.tk{background:var(--good-tint);color:var(--good-ink);box-shadow:inset 0 -3px 0 var(--good)}\n.lg-c.sel{box-shadow:inset 0 0 0 3px var(--bt-tint),inset 0 -3px 0 var(--surface-2)}\n.lg-c.tk.sel{box-shadow:inset 0 0 0 3px var(--bt-tint),inset 0 -3px 0 var(--good)}\n/* a hint's mark: star-yellow; hint highlights: the line soft yellow, the square a star ring */\n.lg-c.hn{background:var(--star-tint);box-shadow:inset 0 -3px 0 var(--star)}\n.lg-c.hh{background:var(--star-tint)}\n.lg-c.hl{background:var(--star-tint);box-shadow:inset 0 0 0 4px var(--star)}\n/* a mark that breaks a rule the child can see, or one Check found after a hint: amber, a dashed ring, a warning mark; never red */\n.lg-c.cf{background:var(--try-tint);color:var(--try-ink);outline:2px dashed var(--try-ink);outline-offset:-5px}\n.lg-c.wr{box-shadow:inset 0 0 0 4px var(--try)}\n.lg-wn{position:absolute;top:2px;right:2px;display:grid;line-height:0;color:var(--try-ink)}\n.lg-c .lg-wn .ic{width:14px;height:14px}\n.lg-c.tk>.ic,.lg-c.cr>.ic{animation:k-pop var(--t-slow) var(--spring)}\n.lg.win .lg-c.tk>.ic{animation:k-pop 520ms var(--ease) both}\n/* the empty corner of a two-category grid: how a tap goes (cross, then tick) */\n.lg-key{display:flex;align-items:center;justify-content:center;gap:var(--s-2);border-radius:12px;background:var(--surface-2);color:var(--ink-3)}\n.lg-key span{display:grid;place-items:center;width:34px;height:34px;border-radius:8px;background:var(--surface)}\n.lg-key span+.ic+span{background:var(--good-tint);color:var(--good-ink)}\n\n/* ---------- the clues ---------- */\n.lg-clues{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:var(--s-2);margin:0;padding:2px 2px 6px;list-style:none;overflow-y:auto;-webkit-overflow-scrolling:touch}\n.lg-q{flex:none;display:flex;align-items:center;gap:var(--s-1);padding:var(--s-1);border-radius:var(--r-card);background:var(--surface);\n  box-shadow:inset 0 0 0 2px var(--line),0 3px 0 var(--ledge-soft)}\n.lg-qb{flex:1;min-width:0;display:flex;align-items:center;gap:var(--s-3);min-height:var(--tap);padding:var(--s-1) var(--s-2);border:0;border-radius:12px;\n  background:transparent;color:var(--ink);font:inherit;text-align:left;cursor:pointer;touch-action:manipulation}\n.lg-qb>*{pointer-events:none}\n.lg-qn{flex:none;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--bt-tint);color:var(--bt-shade);font-family:var(--font-display);font-size:var(--fs-2)}\n.lg-qt{flex:1;min-width:0;display:flex;flex-direction:column;gap:var(--s-1)}\n.lg-qs{font-size:var(--fs-2);font-weight:700;line-height:1.3}\n.lg-qsp{flex:none}\n.lg-qp{display:flex;align-items:center;gap:var(--s-2)}\n.lg-qp .lg-nm{font-size:var(--fs-4)}\n.lg-qp .lg-pic{font-size:36px}\n.lg-qm{display:grid;place-items:center;width:34px;height:34px;border-radius:50%}\n.lg-qm.yes{background:var(--good-tint);color:var(--good-ink)}\n.lg-qm.no{background:var(--surface-2);color:var(--ink-2);box-shadow:inset 0 0 0 2px var(--line)}\n.lg-q.used{background:var(--surface-2);box-shadow:inset 0 0 0 2px var(--line)}\n.lg-q.used .lg-qs{color:var(--ink-3);text-decoration:line-through;text-decoration-thickness:2px}\n.lg-q.used .lg-qn{background:var(--surface);color:var(--ink-3)}\n.lg-q.used .lg-qp{opacity:.55}\n.lg-q.hl{background:var(--star-tint);box-shadow:inset 0 0 0 3px var(--star),0 3px 0 var(--star-shade)}\n.lg-q.cf{background:var(--try-tint);outline:2px dashed var(--try-ink);outline-offset:-5px}\n.lg-B .lg-nm{font-size:var(--fs-4)}\n\n/* ---------- landscape: talk line, tools and clues left; the grid right ---------- */\n.lg.land{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto minmax(0,1fr);grid-template-areas:\"say board\" \"tools board\" \"clues board\";\n  column-gap:var(--s-5);row-gap:var(--s-3)}\n.lg.land .lg-say{grid-area:say}\n.lg.land .lg-tools{grid-area:tools;justify-content:flex-start}\n.lg.land .lg-clues{grid-area:clues}\n.lg.land .lg-board{grid-area:board;align-self:center}\n/* Brain Teasers: Mazes (P3-08). The board is one canvas (75-bt-maze.js); this lays it out. Tokens only; motion is transform and opacity. */\n.mz{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--s-3);min-height:100%}\n.mz.land{flex-direction:row;justify-content:center;align-items:center;gap:var(--s-5)}\n.mz-board{position:relative;flex:none;border-radius:var(--r-card);box-shadow:0 0 0 3px var(--bt-tint),0 6px 0 3px var(--ledge-soft)}\n.mz-cv{display:block;border-radius:var(--r-card);touch-action:none;cursor:pointer;-webkit-user-select:none;user-select:none}\n.mz-side{flex:none;display:flex;flex-direction:column;align-items:center;gap:var(--s-2);width:100%;max-width:420px}\n.mz.land .mz-side{width:236px}\n.mz-stat{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:var(--s-2) var(--s-3);min-height:var(--tap);padding:var(--s-1) var(--s-4);\n  border-radius:var(--r-pill);background:var(--surface);box-shadow:inset 0 0 0 2px var(--line);font-family:var(--font-display);font-size:var(--fs-3);color:var(--ink)}\n.mz-stat b{font-weight:700}\n.mz-sts,.mz-keys{display:flex;gap:var(--s-1)}\n.mz-st{color:var(--line)}\n.mz-st.on{color:var(--star);--ic2:var(--star-shade)}\n.mz-key{opacity:.25;transition:opacity var(--t) var(--ease),transform var(--t) var(--spring)}\n.mz-key.on{opacity:1;transform:scale(1.1)}\n.mz-steps{font-variant-numeric:tabular-nums;color:var(--ink-2)}\n.mz-steps i{font-style:normal;margin-left:var(--s-1);padding:2px var(--s-2);border-radius:var(--r-chip);background:var(--bt-tint);color:var(--bt-shade);font-weight:700}\n.mz-msg{margin:0;min-height:1.45em;text-align:center;font-size:var(--fs-3);font-weight:700;color:var(--ink-2)}\n.mz-ctl{display:flex;align-items:center;justify-content:center;gap:var(--s-4)}\n.mz.land .mz-ctl{flex-direction:column;gap:var(--s-3)}\n.mz-tog[aria-pressed=\"true\"]{background:var(--bt-tint);color:var(--bt-shade)}\n.mz-pad{display:grid;grid-template-columns:repeat(3,var(--tap-primary));grid-template-rows:repeat(2,var(--tap-primary));gap:var(--s-1)} /* keyboard arrows: up over left, down, right */\n.mz-pad[hidden]{display:none}\n.mz-pad [data-d=\"0\"]{grid-area:1/2}.mz-pad [data-d=\"3\"]{grid-area:2/1}.mz-pad [data-d=\"2\"]{grid-area:2/2}.mz-pad [data-d=\"1\"]{grid-area:2/3}\n.mz-arrow{position:absolute;display:flex;align-items:center;justify-content:center;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:50%;\n  background:var(--bt);color:var(--surface);box-shadow:0 4px 0 var(--bt-shade);pointer-events:none;opacity:0}\n.mz-arrow[hidden]{display:none}\n.mz-arrow.on{animation:mz-flash .5s var(--ease) 0s 6 alternate both}\n@keyframes mz-flash{from{opacity:.15;transform:scale(.8)}to{opacity:1;transform:scale(1.08)}}\n@media (max-height:520px){.mz.land .mz-side{gap:var(--s-1)}.mz-pad{grid-template-columns:repeat(3,var(--tap));grid-template-rows:repeat(2,var(--tap))}}\n/* Brain Teasers MathDoku (P3-05, src/js/79-bt-mdoku.js). Tokens only; light from the top left (a white gloss on top, the shade tone\n   as a ledge below); motion is transform and opacity (calm mode and reduced motion stop it in 20-base.css).\n   The board is a purple tray (--bt, ledge --bt-shade) holding one white grid; an svg on top draws the cage lines: thin --line\n   between squares of one cage, thick --bt-shade between cages, and the grid's edge. --cs (the square's side) is set by the layout\n   in the JS; the tray padding (6 px) must match FP there. The cage label (target and sign) sits in the cage's top-left square.\n   Portrait: talk line, board, pad. Landscape (.land): board left, talk line and pad right (.md-side).\n   The pad is a grid of 60 narrow columns: the JS sets --ds (columns per digit key) and --ts (per tool key). */\n.md{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--s-3);width:100%;max-width:1000px;min-height:100%;margin:0 auto}\n.md-say{display:flex;align-items:center;gap:var(--s-2);width:100%;max-width:640px;min-height:var(--tap);padding:var(--s-1) var(--s-1) var(--s-1) var(--s-3);\n  border-radius:var(--r-card);background:var(--surface);box-shadow:inset 0 0 0 2px var(--line),0 3px 0 var(--ledge-soft)}\n.md-msg{flex:1;min-width:0;margin:0;font-size:var(--fs-2);font-weight:700;line-height:1.3;color:var(--ink-2)}\n.md-msg.good{color:var(--good-ink)}\n.md-msg.try{color:var(--try-ink)}\n.md-msg.hint{color:var(--bt-shade)}\n.md-spk{flex:none;order:2}\n.md-main{display:flex;justify-content:center;flex:none}\n.md-ctl{display:flex;flex-direction:column;align-items:center;gap:var(--s-3);width:100%;max-width:640px}\n.md-side{display:none}\n\n/* ---------- the board ---------- */\n.md-board{position:relative;padding:6px;border-radius:16px;\n  background:linear-gradient(var(--hi),var(--hi-0) 40px) var(--bt);box-shadow:inset 0 2px 0 var(--hi),0 6px 0 var(--bt-shade)}\n.md-grid{display:grid;grid-template-columns:repeat(var(--n),var(--cs));grid-auto-rows:var(--cs);border-radius:8px;overflow:hidden;\n  background:var(--surface);box-shadow:0 0 0 2px var(--bt-shade)}\n.md-lines{position:absolute;left:6px;top:6px;width:calc(var(--n) * var(--cs));height:calc(var(--n) * var(--cs));overflow:visible;pointer-events:none}\n.md-lines path{fill:none;vector-effect:non-scaling-stroke}\n.md-thin{stroke:var(--line);stroke-width:2px}\n.md-thick{stroke:var(--bt-shade);stroke-width:4px;stroke-linecap:square}\n.md-c{position:relative;display:grid;place-items:center;width:var(--cs);height:var(--cs);min-width:0;padding:calc(var(--cs) * .14) 0 0;border:0;border-radius:0;\n  background:var(--surface);color:var(--bt);font-family:var(--font-display);font-size:calc(var(--cs) * .5);font-weight:700;line-height:1;\n  cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}\n.md-c>*{pointer-events:none}\n.md-v{font-weight:700}\n/* the cage label: target and sign, top left, in ink so it reads apart from the purple entries */\n.md-lab{position:absolute;left:4px;top:4px;z-index:1;display:flex;align-items:center;gap:2px;padding:0 2px;border-radius:6px;\n  font-family:var(--font-body);font-size:clamp(14px,calc(var(--cs) * .27),22px);font-weight:700;line-height:1.15;color:var(--ink);white-space:nowrap}\n.md-lab .ic{width:.9em;height:.9em;flex:none}\n/* a full cage that does not make its number: the label turns amber, with a dashed ring and a warning mark (never red) */\n.md-lab.miss{padding:0 4px 0 2px;background:var(--try-tint);color:var(--try-ink);outline:2px dashed var(--try-ink);outline-offset:0}\n/* a given number (a single-square cage) is printed in ink; the child's are purple; a hint's is ink on star-yellow */\n.md-c.giv{color:var(--ink);padding-top:0}\n.md-c.ent{color:var(--bt)}\n.md-c.hn{color:var(--ink);background:var(--star-tint)}\n/* the selected square, its row and column, and the same number elsewhere */\n.md-c.rc{background:var(--surface-2)}\n.md-c.same{background:var(--bt-tint);color:var(--bt-shade)}\n.md-c.same.giv{color:var(--ink)}\n.md-c.sel{background:var(--bt-tint);box-shadow:inset 0 0 0 4px var(--bt)}\n/* hints: the cage or line glows soft yellow, the square gets a star ring */\n.md-c.hh{background:var(--star-tint)}\n.md-c.hl{background:var(--star-tint);box-shadow:inset 0 0 0 5px var(--star)}\n.md-c.sel.hl{box-shadow:inset 0 0 0 5px var(--star),inset 0 0 0 8px var(--bt)}\n/* a clash: amber with a dashed ring and a warning mark, never red */\n.md-c.cf{background:var(--try-tint);color:var(--try-ink);outline:2px dashed var(--try-ink);outline-offset:-7px}\n.md-c.cf.sel{box-shadow:inset 0 0 0 4px var(--try)}\n.md-wn{position:absolute;top:4px;right:4px;display:grid;line-height:0;color:var(--try-ink)}\n.md-wn .ic{width:max(14px,calc(var(--cs) * .26));height:max(14px,calc(var(--cs) * .26))}\n.md-c.pop .md-v{animation:k-pop 420ms var(--ease)}\n/* pencil marks: a small grid of 3 across, under the label */\n.md-nts{position:absolute;left:3px;right:3px;top:calc(var(--cs) * .36);bottom:3px;display:grid;grid-template-columns:repeat(3,1fr);place-items:center;\n  font-family:var(--font-body);font-style:normal;font-size:max(11px,calc(var(--cs) * .22));font-weight:700;line-height:1;color:var(--ink-3)}\n.md-c.sel .md-nts{color:var(--bt-shade)}\n.md.win .md-v{animation:k-pop 520ms var(--ease) both}\n\n/* ---------- the pad: the question screen's keys (padHTML), 1..n with how many are left, then Erase, Notes, Undo ---------- */\n.md .md-pad{grid-template-columns:repeat(60,minmax(0,1fr));column-gap:0;row-gap:var(--s-2);width:100%;max-width:none;margin:0}\n.md .md-pad .key{position:relative;grid-column:span var(--ds,12);min-width:0;min-height:56px;margin:0 4px;font-size:var(--fs-5)}\n.md .md-pad .key.t{grid-column:span var(--ts,20);gap:var(--s-1);font-size:var(--fs-3);font-weight:700}\n.md .md-pad .key .ic{width:28px;height:28px}\n.md .md-pad .key.t span{pointer-events:none}\n.md .md-pad.tight .key.t span{display:none}\n.md-kf{display:grid;place-items:center;margin-bottom:8px;font-family:var(--font-display);line-height:1;pointer-events:none}\n/* how many are left: a row of dots along the bottom of the key (a tick in a green disc when none are left) */\n.md-left{position:absolute;left:0;right:0;bottom:5px;display:flex;justify-content:center;gap:2px;height:14px;align-items:center;pointer-events:none}\n.md-left i{width:5px;height:5px;border-radius:50%;background:var(--bt)}\n.md .md-pad .md-left .ic{width:14px;height:14px;padding:2px;box-sizing:content-box;border-radius:50%;background:var(--good-tint);color:var(--good-ink)}\n.md .md-pad .key.zero{background:var(--surface-2);color:var(--ink-3);box-shadow:inset 0 0 0 2px var(--line),var(--ledge) var(--line)}\n.md .md-pad .key.on{background:var(--bt-tint);color:var(--bt-shade);box-shadow:inset 0 0 0 3px var(--bt),var(--ledge) var(--bt-shade)}\n/* with Notes on, the digits on the keys turn small and purple, so it is clear they will go in small */\n.md.nt .md-sym .md-kf{font-size:var(--fs-3);color:var(--bt)}\n.md-B .md-pad .key{min-height:var(--tap-pk)}\n.md-B .md-pad .key.md-sym{font-size:var(--fs-6)}\n\n/* ---------- landscape ---------- */\n.md.land{flex-direction:row;align-items:center;justify-content:center;gap:var(--s-6)}\n.md.land .md-side{display:flex;flex-direction:column;gap:var(--s-3);flex:none;width:min(380px,42%)}\n.md.land .md-say{align-self:stretch}\n.md.land .md-ctl{max-width:none}\n/* Brain Teasers: Memory Match (P3-14, src/js/82-bt-memory.js). Tokens only; motion is transform and opacity (the flip turns the card\n   on its Y axis; reduced motion and calm mode make it instant, 20-base.css). --cols, --cw and --gap come from the JS layout. */\n.mm{display:flex;flex-direction:column;gap:var(--s-2);width:100%;max-width:1040px;margin:0 auto}\n.mm-say{flex:none;display:flex;align-items:center;gap:var(--s-2);min-height:var(--tap);padding:var(--s-1) var(--s-1) var(--s-1) var(--s-3);border-radius:var(--r-card);\n  background:var(--surface);box-shadow:inset 0 0 0 2px var(--line),0 3px 0 var(--ledge-soft)}\n.mm-msg{flex:1;min-width:0;margin:0;text-align:left;font-size:var(--fs-2);font-weight:700;line-height:1.3;color:var(--ink-2)}\n.mm-msg.good{color:var(--good-ink)}\n.mm-msg.try{color:var(--try-ink)}\n.mm-msg.hint{color:var(--bt-shade)}\n.mm-spk{flex:none}\n.mm-bar{flex:none;display:flex;align-items:center;justify-content:space-between;gap:var(--s-3);padding:0 var(--s-2);min-height:24px}\n.mm-got{display:flex;flex-wrap:wrap;gap:5px}\n.mm-got i{width:14px;height:14px;border-radius:4px;background:var(--surface);box-shadow:inset 0 0 0 3px var(--bt-tint)}\n.mm-got i.on{background:var(--good);box-shadow:0 2px 0 var(--good-ink)}\n.mm-turns{font-size:var(--fs-2);font-weight:700;color:var(--ink-3);font-variant-numeric:tabular-nums;white-space:nowrap}\n.mm-area{flex:1;min-height:0;display:flex;align-items:center;justify-content:center}\n.mm-grid{display:grid;grid-template-columns:repeat(var(--cols),var(--cw));gap:var(--gap);justify-content:center}\n/* a card: a button that holds two faces back to back */\n.mm-c{position:relative;width:var(--cw);height:var(--ch,calc(var(--cw) * 1.25));padding:0;border:0;background:none;cursor:pointer;perspective:600px;border-radius:var(--r-btn)}\n.mm-in{position:absolute;inset:0;transform-style:preserve-3d;transition:transform var(--t-slow) var(--ease)}\n.mm-c.up .mm-in{transform:rotateY(180deg)}\n.mm-back,.mm-face{position:absolute;inset:0 0 4px;display:flex;align-items:center;justify-content:center;border-radius:var(--r-btn);backface-visibility:hidden;\n  -webkit-backface-visibility:hidden}\n/* the back: brain-teaser purple, a lighter inset frame toward the light, a star, a ledge */\n.mm-back{background:var(--bt);color:var(--bt-tint);box-shadow:0 4px 0 var(--bt-shade)}\n.mm-back i{position:absolute;inset:6px;border-radius:calc(var(--r-btn) - 5px);box-shadow:inset 2px 2px 0 var(--bt-tint);opacity:.35}\n.mm-back .ic{width:calc(var(--cw) * .34);height:calc(var(--cw) * .34);color:var(--star)}\n.mm-c:active .mm-back{transform:translateY(3px);box-shadow:0 1px 0 var(--bt-shade)}\n.mm-face{transform:rotateY(180deg);flex-direction:column;padding:4px;background:var(--surface);color:var(--ink);box-shadow:inset 0 0 0 3px var(--bt-tint),0 4px 0 var(--ledge-soft)}\n.mm-c.got .mm-face{background:var(--good-tint);box-shadow:inset 0 0 0 3px var(--good),0 4px 0 var(--good-ink)}\n.mm-c.hint .mm-face{background:var(--star-tint);box-shadow:inset 0 0 0 3px var(--star),0 4px 0 var(--star-shade)}\n.mm-c.no .mm-face{background:var(--try-tint);box-shadow:inset 0 0 0 3px var(--try),0 4px 0 var(--try)}\n.mm-c.peek .mm-face{box-shadow:inset 0 0 0 4px var(--star),0 4px 0 var(--star-shade)}\n.mm-c.got .mm-face::after,.mm-c.hint .mm-face::after{content:'';position:absolute;top:5px;right:5px;width:18px;height:18px;border-radius:50%;background:var(--good)}\n.mm-c.hint .mm-face::after{background:var(--star-shade)}\n.mm-c.got .mm-face::before,.mm-c.hint .mm-face::before{content:'';position:absolute;z-index:1;top:8px;right:11px;width:4px;height:8px;border:solid var(--surface);\n  border-width:0 3px 3px 0;transform:rotate(45deg)}\n.mm-c.got,.mm-c.hint{cursor:default}\n.mm-c.got .mm-in{animation:k-pop var(--t-slow) var(--spring)}\n.mm-c.no .mm-in{animation:mm-no 420ms var(--ease)}\n@keyframes mm-no{0%,100%{transform:rotateY(180deg)}30%{transform:rotateY(180deg) translateX(-4px)}65%{transform:rotateY(180deg) translateX(4px)}}\n.mm-c:focus-visible{outline:3px solid var(--brand);outline-offset:2px}\n/* faces */\n.mm-pic{display:flex;align-items:center;justify-content:center;font-size:calc(var(--cw) * .62);line-height:1}\n.mm-pic .art{width:1em;height:1em}\n.mm-let,.mm-num{font-family:var(--font-display);font-size:calc(var(--cw) * .5);line-height:1;color:var(--bt-shade);font-variant-numeric:tabular-nums}\n.mm-num{font-size:min(calc(var(--cw) * .36),40px)}\n.mm-let{font-family:inherit;font-size:calc(var(--cw) * .56)}\n.mm-txt{font-size:clamp(16px,calc(var(--cw) * .24),28px);font-weight:700;line-height:1.15;text-align:center;overflow-wrap:anywhere}\n.mm-txt.long{font-size:clamp(16px,calc(var(--cw) * .19),24px)}\n.mm-es{color:var(--es-shade)}\n.mm-root{color:var(--bt-shade)}\n.mm-root::after{content:'-';opacity:.6}\n.mm-viz{display:flex;align-items:center;justify-content:center;width:100%;height:100%}\n.mm-viz .viz{width:86%;height:auto;max-height:86%}\n.mm-fr{display:inline-flex;flex-direction:column;align-items:center;font-family:var(--font-display);font-size:min(calc(var(--cw) * .3),34px);line-height:1.05;\n  color:var(--ink);font-variant-numeric:tabular-nums}\n.mm-fr b+b{border-top:3px solid currentColor;padding:0 4px}\n/* Brain Teasers number puzzles (P3-10, src/js/77-bt-number.js): Number Pyramid, Balance, Make the Number.\n   Tokens only; light from the top left (a white gloss upper left, the shade tone as a ledge lower right); motion is transform and\n   opacity (calm mode and reduced motion stop it in 20-base.css). Portrait: talk line, board, controls. Landscape: board left. */\n.bn{display:flex;flex-direction:column;gap:var(--s-3);width:100%;max-width:640px;min-height:100%;margin:0 auto}\n.bn-say{display:flex;align-items:center;gap:var(--s-2);min-height:var(--tap);padding:var(--s-1) var(--s-1) var(--s-1) var(--s-3);border-radius:var(--r-card);\n  background:var(--surface);box-shadow:inset 0 0 0 2px var(--line),0 3px 0 var(--ledge-soft)}\n.bn-msg{flex:1;min-width:0;margin:0;font-size:var(--fs-2);font-weight:700;line-height:1.3;color:var(--ink-2)}\n.bn-msg.good{color:var(--good-ink)}\n.bn-msg.try{color:var(--try-ink)}\n.bn-msg.hint{color:var(--bt-shade)}\n.bn-spk{flex:none}\n.bn-board{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--s-3);min-height:0}\n.bn-ctl{display:flex;flex-direction:column;align-items:center;gap:var(--s-3)}\n.bn-tag{margin:0}\n/* the question screen's pad in two rows of six (1-6, then 7 8 9 delete 0 check) */\n.bn .bn-pad{grid-template-columns:repeat(6,minmax(0,1fr));gap:var(--s-2);max-width:460px}\n.bn .bn-pad .key{min-height:52px;font-size:var(--fs-5)}\n.bn .bn-pad .key .ic{width:30px;height:30px}\n.bn-shake{animation:k-shake 240ms linear}\n/* a hint points at something: a star ring that pulses */\n.bn .hl{outline:4px solid var(--star);outline-offset:3px}\n\n/* ---------- Number Pyramid ---------- */\n.bn-pyrw{display:grid;grid-template-columns:repeat(calc(var(--n) * 2),minmax(0,1fr));gap:var(--s-2) 6px;width:100%;max-width:calc(var(--n) * 96px)}\n.bn-br{display:flex;align-items:center;justify-content:center;min-width:0;min-height:52px;padding:0;border:0;border-radius:var(--r-chip);\n  font-family:var(--font-display);font-size:var(--fs-4);font-weight:700;line-height:1;color:var(--ink);touch-action:manipulation;\n  transition:transform var(--t-fast) var(--ease)}\n.bn-br span{pointer-events:none}\n/* a given brick: sandstone with a gloss band and a ledge */\n.bn-br.giv{background:linear-gradient(var(--hi),var(--hi-0) 55%) var(--ill-tan);box-shadow:inset 3px 3px 0 var(--ill-tan-1),inset -2px -3px 0 var(--ill-tan-2),0 4px 0 var(--ill-tan-3)}\n.bn-br.hid{background:var(--surface);color:var(--bt);border:3px dashed var(--bt);cursor:pointer;box-shadow:0 4px 0 var(--ledge-soft)}\n.bn-br.hid:active{transform:translateY(3px)}\n.bn-br.sel{border-style:solid;background:var(--bt-tint);color:var(--bt-shade);transform:translateY(-2px);box-shadow:0 5px 0 var(--bt-shade)}\n.bn-br.ok{background:linear-gradient(var(--hi),var(--hi-0) 55%) var(--good-tint);color:var(--good-ink);box-shadow:inset 0 0 0 3px var(--good),0 4px 0 var(--good-ink)}\n.bn-br.ok.hn{background:linear-gradient(var(--hi),var(--hi-0) 55%) var(--star-tint);color:var(--ink);box-shadow:inset 0 0 0 3px var(--star),0 4px 0 var(--star-shade)}\n.bn-pyrw.win .bn-br{animation:k-pop 420ms var(--ease)}\n\n/* ---------- Balance ---------- */\n.bn-scs{display:grid;justify-items:center;gap:var(--s-2);width:100%}\n.bn-sc{width:100%;max-width:340px;padding:var(--s-1) var(--s-2) 0;border-radius:var(--r-card);background:var(--surface);\n  box-shadow:inset 0 0 0 2px var(--line),0 4px 0 var(--ledge-soft)}\n.bn-scs.n3 .bn-sc{max-width:300px}\n.bn-sc.hl{outline-offset:-3px}\n.bn-bal{gap:var(--s-2)}\n.bn-bal .bn-board{gap:var(--s-2)}\n.bn-bal .bn-pad .key{min-height:var(--tap)}\n.bn-bal .bn-slot{height:var(--tap)}\n.bn-sv{display:block;width:100%;height:auto;overflow:visible;font-family:var(--font-display);font-weight:700;text-anchor:middle;stroke-linecap:round}\n/* the stand and base (grey, its right side in shade), the wooden arm (gloss on top, shade below), the brass-grey pin */\n.bn-stand{fill:var(--ill-grey-2)}\n.bn-sts{fill:var(--ill-grey-3)}\n.bn-base{fill:var(--ill-grey-3)}\n.bn-beam{fill:var(--ill-brown)}\n.bn-bsh{fill:none;stroke:var(--ill-brown-2);stroke-width:3}\n.bn-bgl{fill:none;stroke:var(--ill-brown-1);stroke-width:3}\n.bn-nd{fill:none;stroke:var(--ill-brown-3);stroke-width:4}\n.bn-pin{fill:var(--ill-grey-1);stroke:var(--ill-grey-3);stroke-width:3}\n.bn-pgl2{fill:var(--ill-white)}\n.bn-post{fill:var(--ill-grey-2)}\n.bn-dish{fill:var(--ill-grey-1);stroke:var(--ill-grey-2);stroke-width:2;stroke-linejoin:round}\n.bn-dsh{fill:none;stroke:var(--ill-grey);stroke-width:3}\n.bn-pgl{fill:none;stroke:var(--ill-white);stroke-width:2.5}\n.bn-wb{fill:var(--ill-grey-3)}\n.bn-wh{fill:none;stroke:var(--ill-grey-3);stroke-width:4}\n.bn-ws{fill:none;stroke:var(--ill-ink-2);stroke-width:3}\n.bn-wg{fill:none;stroke:var(--ill-grey-2);stroke-width:3}\n.bn-w text{fill:var(--surface);font-size:18px}\n.bn-vt circle{fill:var(--bt);stroke:var(--surface);stroke-width:2}\n.bn-vt text{fill:var(--surface);font-size:13px}\n.bn-vt.bad circle{fill:var(--try)}\n.bn-vt.bad text{fill:var(--ink)}\n/* tipping: the arm turns about the pin and the trays move with its ends (100 units out: sin 6 degrees x 100 = 10.45) */\n.bn-arm,.bn-tray{transition:transform var(--t-xl) var(--spring)}\n.bn-sc.tl .bn-arm{transform:rotate(-6deg)}\n.bn-sc.tl .bn-tray.l,.bn-sc.tr .bn-tray.r{transform:translateY(10.45px)}\n.bn-sc.tl .bn-tray.r,.bn-sc.tr .bn-tray.l{transform:translateY(-10.45px)}\n.bn-sc.tr .bn-arm{transform:rotate(6deg)}\n.bn-slots{display:flex;flex-wrap:wrap;justify-content:center;gap:var(--s-2) var(--s-4)}\n.bn-sg{display:inline-flex;align-items:center;gap:var(--s-1);font-size:var(--fs-4);font-weight:700;color:var(--ink-2)}\n.bn-sg>b{padding:0 2px}\n.bn-sg .bn-x{font-size:var(--fs-3);white-space:nowrap}\n.bn-slot{min-width:60px;height:52px;padding:0 var(--s-2);border:3px dashed var(--bt);border-radius:var(--r-chip);background:var(--surface);\n  font-family:var(--font-display);font-size:var(--fs-4);font-weight:700;color:var(--bt);cursor:pointer;touch-action:manipulation;box-shadow:0 4px 0 var(--ledge-soft)}\n.bn-slot.sel{border-style:solid;background:var(--bt-tint);color:var(--bt-shade);box-shadow:0 5px 0 var(--bt-shade)}\n.bn-slot.ok{border:0;background:linear-gradient(var(--hi),var(--hi-0) 55%) var(--good-tint);color:var(--good-ink);cursor:default;box-shadow:inset 0 0 0 3px var(--good),0 4px 0 var(--good-ink)}\n.bn-slot.ok.hn{background:linear-gradient(var(--hi),var(--hi-0) 55%) var(--star-tint);color:var(--ink);box-shadow:inset 0 0 0 3px var(--star),0 4px 0 var(--star-shade)}\n.bn-scs.win .bn-sc{animation:k-pop 420ms var(--ease)}\n\n/* ---------- Make the Number ---------- */\n.bn-goal{display:flex;justify-content:center}\n.bn-ring{display:grid;place-items:center;width:108px;height:108px;border-radius:50%;\n  background:radial-gradient(circle,var(--surface) 0 47%,var(--bt) 47% 61%,var(--bt-tint) 61% 75%,var(--bt) 75%);box-shadow:0 5px 0 var(--bt-shade)}\n.bn-ring b{font-family:var(--font-display);font-size:var(--fs-5);line-height:1;color:var(--bt-shade)}\n.bn-tiles{display:flex;flex-wrap:wrap;justify-content:center;gap:var(--s-3);min-height:76px}\n.bn-tile{display:grid;place-items:center;width:72px;height:72px;padding:0;border:0;border-radius:var(--r-btn);\n  background:linear-gradient(var(--hi),var(--hi-0) 55%) var(--ill-cream);color:var(--ink);font-family:var(--font-display);font-size:var(--fs-6);line-height:1;\n  cursor:pointer;touch-action:manipulation;box-shadow:inset 3px 3px 0 var(--ill-cream-1),inset 0 0 0 2px var(--ill-cream-2),0 5px 0 var(--ill-cream-3);\n  transition:transform var(--t-fast) var(--ease)}\n.bn-tile b{pointer-events:none}\n.bn-tile:active{transform:translateY(3px)}\n.bn-tile.made{background:linear-gradient(var(--hi),var(--hi-0) 55%) var(--star-tint);box-shadow:inset 3px 3px 0 var(--hi),inset 0 0 0 2px var(--star),0 5px 0 var(--star-shade)}\n.bn-tile.sel{background:var(--bt-tint);color:var(--bt-shade);transform:translateY(-4px);box-shadow:inset 0 0 0 3px var(--bt),0 7px 0 var(--bt-shade)}\n.bn-tiles.win .bn-tile{animation:k-pop 420ms var(--ease)}\n.bn-ops{display:flex;justify-content:center;gap:var(--s-3)}\n.bn-op{display:grid;place-items:center;width:60px;height:60px;padding:0;border:0;border-radius:50%;background:linear-gradient(var(--hi),var(--hi-0) 60%) var(--bt);\n  color:var(--surface);cursor:pointer;touch-action:manipulation;box-shadow:inset 0 3px 0 var(--hi),0 5px 0 var(--bt-shade);transition:transform var(--t-fast) var(--ease)}\n.bn-op:active{transform:translateY(3px)}\n.bn-op.sel{background:var(--star);color:var(--ink);transform:translateY(-3px);box-shadow:inset 0 3px 0 var(--hi),0 6px 0 var(--star-shade)}\n.bn-op .ic{pointer-events:none}\n.bn-trail{display:flex;flex-direction:column;align-items:center;gap:2px;margin:0;padding:0;list-style:none;font-size:var(--fs-3);font-weight:700;color:var(--ink-2)}\n.bn-trail:empty{display:none}\n.bn-trail b{color:var(--bt-shade)}\n.bn-acts{display:flex;justify-content:center}\n\n@media (max-width:480px){\n  .bn-tiles.n5{gap:var(--s-2)}\n  .bn-tiles.n5 .bn-tile{width:60px;height:64px;font-size:var(--fs-5)}\n}\n/* tablets: bigger tiles, target and signs */\n@media (min-width:560px) and (min-height:560px){\n  .bn-tile{width:84px;height:84px}\n  .bn-ring{width:124px;height:124px}\n  .bn-ring b{font-size:var(--fs-6)}\n  .bn-op{width:64px;height:64px}\n}\n/* a tall tablet in portrait: bigger scales */\n@media (min-width:560px) and (min-height:860px){\n  .bn-scs.n3 .bn-sc{max-width:400px}\n  .bn-scs .bn-sc{max-width:460px}\n}\n/* landscape: the board on the left; the talk line, the boxes, the pad and the steps on the right */\n@media (min-aspect-ratio:5/4) and (min-width:700px){\n  .bn{display:grid;grid-template-columns:minmax(0,1fr) minmax(344px,380px);grid-template-rows:auto auto;align-content:center;\n    grid-template-areas:\"board say\" \"board ctl\";gap:var(--s-3) var(--s-6);max-width:1000px}\n  .bn-board{grid-area:board}\n  .bn-say{grid-area:say;align-self:end}\n  .bn-ctl{grid-area:ctl;align-self:start}\n  .bn .bn-pad{max-width:none}\n  .bn-scs.n3 .bn-sc{max-width:340px}\n  .bn-scs .bn-sc{max-width:400px}\n  .bn-scs.n1 .bn-sc{max-width:480px}\n}\n/* Brain Teasers: Patterns, matrices, odd one out (P3-09; 76-bt-pattern.js). Tokens only; motion is transform and opacity. */\n.pt{display:flex;flex-direction:column;gap:var(--s-3);max-width:980px;min-height:100%;margin:0 auto}\n.pt-head{display:flex;align-items:center;justify-content:center;gap:var(--s-3);min-height:var(--tap)}\n.pt-dots{display:flex;gap:6px;flex:none}\n.pt-dots i{width:12px;height:12px;border-radius:50%;background:var(--surface);box-shadow:inset 0 0 0 3px var(--bt-tint)}\n.pt-dots i.now{box-shadow:inset 0 0 0 3px var(--bt)}\n.pt-dots i.on{background:var(--bt);box-shadow:none}\n.pt-ask{margin:0;min-width:0;font-family:var(--font-display);font-size:var(--fs-4);font-weight:700;line-height:1.2;color:var(--ink);text-align:center}\n.pt-say{flex:none}\n.pt-main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--s-4);padding-bottom:var(--s-3)}\n.pt-side{display:flex;flex-direction:column;align-items:center;gap:var(--s-3);width:100%}\n/* the board: a soft purple tray with white cells on a ledge */\n.pt-board{padding:var(--s-3);border-radius:var(--r-card);background:var(--bt-tint);box-shadow:0 4px 0 var(--ledge-soft)}\n.pt-cell{display:flex;align-items:center;justify-content:center;min-width:0;aspect-ratio:1;border-radius:var(--r-btn);background:var(--surface);\n  box-shadow:0 3px 0 var(--ledge-soft)}\n.pt-cell .pt-t{width:90%;height:90%}\n.pt-q{background:var(--surface-2);box-shadow:inset 0 0 0 3px var(--bt);outline:3px dashed var(--surface);outline-offset:-3px}\n.pt-q b{font-family:var(--font-display);font-size:clamp(28px,6vw,40px);line-height:1;color:var(--bt)}\n.pt-got{box-shadow:inset 0 0 0 3px var(--good),0 3px 0 var(--good-ink);animation:k-pop var(--t-slow) var(--spring)}\n.pt-row{display:grid;grid-template-columns:repeat(var(--n),minmax(0,76px));gap:var(--s-2);justify-content:center;width:100%;max-width:max-content}\n.pt-nrow .pt-cell{aspect-ratio:auto;min-height:64px;padding:0 2px}\n.pt-nm{font-family:var(--font-display);font-size:clamp(20px,4.6vw,30px);font-weight:700;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums}\n.pt-grid{display:grid;gap:var(--s-2)}\n.pt-grid.g3{grid-template-columns:repeat(3,1fr);width:min(100%,312px)}\n.pt-grid.g2{grid-template-columns:repeat(2,1fr);width:min(100%,232px)}\n/* hint words */\n.pt-tip{display:flex;align-items:center;gap:var(--s-2);max-width:560px;margin:0;padding:var(--s-2) var(--s-4);border-radius:var(--r-btn);background:var(--star-tint);\n  color:var(--ink);font-size:var(--fs-3);font-weight:700;line-height:1.35;box-shadow:0 3px 0 var(--star)}\n.pt-tip[hidden]{display:none}\n.pt-tip .ic{flex:none;color:var(--star-shade)}\n/* choices (the .choice component: .wrong and .right carry a corner badge, .off is a choice a hint took away) */\n.pt-chs{display:grid;gap:var(--s-3);width:100%;max-width:520px}\n.pt-chs.n4{grid-template-columns:repeat(4,minmax(0,1fr))}\n.pt-chs.n6{grid-template-columns:repeat(3,minmax(0,1fr));max-width:420px}\n.pt-ch.choice{aspect-ratio:1;min-height:var(--tap-pk);padding:var(--s-1)}\n.pt-ch .pt-t{width:100%;height:100%;max-width:132px;max-height:132px}\n.pt-ch:is(.right,.wrong)::before,.pt-ch.wrong::after{transform:scale(.8);transform-origin:top right}\n.pt-ch.right::after{transform:rotate(45deg) scale(.8)}\n.pt-num .pt-ch.choice{aspect-ratio:auto;min-height:72px}\n.pt-num .pt-nm{font-size:clamp(24px,6vw,36px)}\n.pt-odd .pt-chs.n4{grid-template-columns:repeat(2,minmax(0,1fr));max-width:400px}\n.pt-odd .pt-ch .pt-t{max-width:170px;max-height:170px}\n/* colours: base and shade tones of one hue (DESIGN_SYSTEM 6.5); the light comes from the top left */\n.pt-c0{--p:var(--ill-red);--p2:var(--ill-red-2)}\n.pt-c1{--p:var(--ill-blue);--p2:var(--ill-blue-2)}\n.pt-c2{--p:var(--ill-yellow);--p2:var(--ill-yellow-2)}\n.pt-c3{--p:var(--ill-green);--p2:var(--ill-green-2)}\n.pt-c4{--p:var(--ill-purple);--p2:var(--ill-purple-2)}\n.pt-c5{--p:var(--ill-orange);--p2:var(--ill-orange-2)}\n.pt-t path{stroke-linejoin:round;stroke-linecap:round}\n.pt-sw{fill:var(--ledge-soft);stroke:var(--ledge-soft);stroke-width:8}\n.pt-sd{fill:var(--p2);stroke:var(--p2);stroke-width:8}\n.pt-sb{fill:var(--p);stroke:var(--p);stroke-width:7}\n.pt-sg{fill:none;stroke:var(--ill-white);stroke-width:6;opacity:.75}\n/* phones: a long row wraps into two rows */\n@media (max-width:560px){\n  .pt-row.pt-wrap{grid-template-columns:repeat(var(--n2),minmax(0,76px))}\n  .pt-ask{font-size:var(--fs-3)}\n}\n@media (max-width:560px) and (max-height:820px){\n  .pt-main{gap:var(--s-3)}\n  .pt-grid.g3{width:min(100%,264px)}\n  .pt-chs.n6{max-width:300px;gap:var(--s-2) var(--s-3)}\n}\n/* landscape tablets: the board on the left, the choices on the right (grids and the odd one out) */\n@media (orientation:landscape) and (min-width:700px){\n  .pt-mat .pt-main,.pt-ana .pt-main{flex-direction:row;justify-content:center;align-items:center;gap:var(--s-7)}\n  .pt-mat .pt-side,.pt-ana .pt-side{width:auto;flex:0 1 440px}\n  .pt-grid.g3{width:min(360px,58vh)}\n  .pt-grid.g2{width:min(300px,52vh)}\n  .pt-ana .pt-chs.n4{grid-template-columns:repeat(2,minmax(0,1fr));max-width:min(300px,46vh)}\n  .pt-mat .pt-chs.n6{max-width:440px}\n  .pt-odd .pt-chs.n4{grid-template-columns:repeat(4,minmax(0,1fr));max-width:760px}\n  .pt-row{grid-template-columns:repeat(var(--n),minmax(0,100px))}\n  .pt-seq .pt-chs.n4,.pt-num .pt-chs.n4{max-width:600px}\n}\n/* Brain Teasers: Riddles (P3-14, src/js/81-bt-riddle.js). Tokens only; motion is transform and opacity (the .choice component). */\n.rd{display:flex;flex-direction:column;gap:var(--s-3);width:100%;max-width:760px;min-height:100%;margin:0 auto}\n/* the riddle card: a question badge on a ledge, the dots, the riddle, a speak button */\n.rd-card{display:flex;align-items:flex-start;gap:var(--s-3);padding:var(--s-3) var(--s-3) var(--s-4);border-radius:var(--r-card);background:var(--surface);\n  box-shadow:inset 0 0 0 2px var(--bt-tint),0 4px 0 var(--ledge-soft)}\n.rd-badge{flex:none;display:flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:50%;background:var(--bt);color:var(--surface);\n  box-shadow:0 4px 0 var(--bt-shade)}\n.rd-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:var(--s-2)}\n.rd-dots{display:flex;gap:6px;padding-top:2px}\n.rd-dots i{width:12px;height:12px;border-radius:50%;background:var(--surface);box-shadow:inset 0 0 0 3px var(--bt-tint)}\n.rd-dots i.now{box-shadow:inset 0 0 0 3px var(--bt)}\n.rd-dots i.on{background:var(--bt);box-shadow:none}\n.rd-q{margin:0;font-size:var(--fs-4);font-weight:700;line-height:1.35;color:var(--ink)}\n.rd-A .rd-q,.rd-B .rd-q{font-size:clamp(22px,4.4vw,28px)}\n.rd-say{flex:none}\n/* hint and answer lines */\n.rd-tip{display:flex;align-items:center;gap:var(--s-2);margin:0;padding:var(--s-2) var(--s-4);border-radius:var(--r-btn);background:var(--star-tint);\n  color:var(--ink);font-size:var(--fs-3);font-weight:700;line-height:1.35;box-shadow:0 3px 0 var(--star)}\n.rd-tip[hidden]{display:none}\n.rd-tip .ic{flex:none;color:var(--star-shade)}\n.rd-msg{min-height:26px;margin:0;font-size:var(--fs-3);font-weight:700;line-height:1.35;color:var(--ink-2);text-align:center}\n.rd-msg.good{color:var(--good-ink)}\n.rd-msg.try{color:var(--try-ink)}\n/* choices */\n.rd-chs{display:grid;gap:var(--s-3);width:100%;margin-top:auto;padding-bottom:var(--s-2)}\n.rd-chs.n3{grid-template-columns:repeat(3,minmax(0,1fr))}\n.rd-chs.n4{grid-template-columns:repeat(2,minmax(0,1fr))}\n.rd-ch.choice{min-height:var(--tap-pk);padding:var(--s-2) var(--s-3);font-size:var(--fs-4);font-weight:700;line-height:1.2}\n.rd-t{overflow-wrap:break-word;text-align:center}\n.rd-ch.pic{flex-direction:column;gap:var(--s-1);min-height:120px}\n.rd-pic{display:flex;align-items:center;justify-content:center;font-size:clamp(64px,18vw,104px);line-height:1}\n.rd-pic .art{width:1em;height:1em}\n.rd-w{font-size:var(--fs-4);line-height:1.1;color:var(--ink)}\n.rd-B .rd-ch.pic{min-height:136px}\n.rd-B .rd-pic{font-size:clamp(52px,12vw,72px)}\n.rd-A .rd-ch.pic{min-height:min(168px,24vh)}\n.rd-C .rd-ch.choice{min-height:76px}\n.rd-ch:is(.right,.wrong)::before,.rd-ch.wrong::after{transform:scale(.8);transform-origin:top right}\n.rd-ch.right::after{transform:rotate(45deg) scale(.8)}\n/* phones: band D's longer answers one under the other */\n@media (max-width:560px){\n  .rd-D .rd-chs.n4{grid-template-columns:1fr}\n  .rd-D .rd-ch.choice{min-height:56px;font-size:var(--fs-3)}\n  .rd-D .rd-q{font-size:var(--fs-3)}\n  .rd-A .rd-q,.rd-B .rd-q{font-size:var(--fs-4)}\n  .rd-badge{width:44px;height:44px}\n}\n/* landscape tablets: the riddle on the left, the choices on the right */\n@media (orientation:landscape) and (min-width:700px){\n  .rd{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto auto 1fr;column-gap:var(--s-6);max-width:1000px}\n  .rd-card,.rd-tip,.rd-msg{grid-column:1}\n  .rd-chs{grid-column:2;grid-row:1 / span 3;align-self:center;margin:0}\n  .rd-chs.n3{grid-template-columns:repeat(3,minmax(0,1fr))}\n  .rd-A .rd-ch.pic{min-height:150px}\n}\n/* Brain Teasers sudoku (P3-03, src/js/78-bt-sudoku.js). Tokens only; light from the top left (a white gloss on top, the shade tone\n   as a ledge below); motion is transform and opacity (calm mode and reduced motion stop it in 20-base.css).\n   The board is a purple tray (--bt, ledge --bt-shade) holding one white card per box; squares are tiles with a soft lower edge.\n   --cs (the square's side) is set by the layout in the JS; the padding and gaps here (6, 5, 2 px) must match FR there.\n   Portrait: talk line, board, controls. Landscape (.land): board left, talk line and controls right (.sd-side).\n   .zm (9x9 cells under 46 px, a phone): the zoom box (the selected box at 52 px squares) sits left of a 3-across pad. */\n.sd{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--s-3);width:100%;max-width:1000px;min-height:100%;margin:0 auto}\n.sd-say{display:flex;align-items:center;gap:var(--s-2);width:100%;max-width:640px;min-height:var(--tap);padding:var(--s-1) var(--s-1) var(--s-1) var(--s-3);\n  border-radius:var(--r-card);background:var(--surface);box-shadow:inset 0 0 0 2px var(--line),0 3px 0 var(--ledge-soft)}\n.sd-msg{flex:1;min-width:0;margin:0;font-size:var(--fs-2);font-weight:700;line-height:1.3;color:var(--ink-2)}\n.sd-msg.good{color:var(--good-ink)}\n.sd-msg.try{color:var(--try-ink)}\n.sd-msg.hint{color:var(--bt-shade)}\n.sd-spk{flex:none;order:2}\n.sd-main{display:flex;justify-content:center;flex:none}\n.sd-ctl{display:flex;flex-direction:column;align-items:center;gap:var(--s-3);width:100%;max-width:640px}\n.sd-side{display:none}\n\n/* ---------- the board ---------- */\n.sd-board{display:grid;grid-template-columns:repeat(var(--bx),auto);gap:var(--fb);padding:var(--fp);border-radius:16px;\n  background:linear-gradient(var(--hi),var(--hi-0) 40px) var(--bt);box-shadow:inset 0 2px 0 var(--hi),0 6px 0 var(--bt-shade)}\n.sd-box{display:grid;grid-template-columns:repeat(var(--bw),var(--cs));grid-auto-rows:var(--cs);gap:var(--fc);border-radius:10px;background:var(--line);overflow:hidden}\n.sd-n9 .sd-box{border-radius:7px}\n.sd-c{position:relative;display:grid;place-items:center;width:var(--cs);height:var(--cs);min-width:0;padding:0;border:0;border-radius:0;\n  background:var(--surface);color:var(--bt);font-family:var(--font-display);font-size:calc(var(--cs) * .56);font-weight:700;line-height:1;\n  cursor:pointer;touch-action:manipulation;box-shadow:inset 0 -3px 0 var(--surface-2);-webkit-tap-highlight-color:transparent}\n.sd-c>*{pointer-events:none}\n.sd-c b{font-weight:700}\n.sd-c .sd-pic{width:74%;height:74%}\n/* a given number is printed in ink; the child's are purple; a hint's is ink on star-yellow */\n.sd-c.giv{color:var(--ink);background:var(--surface);box-shadow:inset 0 -3px 0 var(--line)}\n.sd-c.ent{color:var(--bt)}\n.sd-c.hn{color:var(--ink);background:var(--star-tint);box-shadow:inset 0 -3px 0 var(--star)}\n/* the selected square, its row, column and box, and the same number elsewhere */\n.sd-c.rc{background:var(--surface-2)}\n.sd-c.same{background:var(--bt-tint);color:var(--bt-shade)}\n.sd-c.same.giv{color:var(--ink)}\n.sd-c.sel{background:var(--bt-tint);box-shadow:inset 0 0 0 3px var(--bt),inset 0 -6px 0 var(--bt)}\n/* hints: the house glows soft yellow, the square gets a star ring */\n.sd-c.hh{background:var(--star-tint)}\n.sd-c.hl{background:var(--star-tint);box-shadow:inset 0 0 0 4px var(--star)}\n.sd-c.sel.hl{box-shadow:inset 0 0 0 4px var(--star),inset 0 0 0 7px var(--bt)}\n/* a clash (C, D) and the number a wrong one ran into (A, B): amber with a dashed ring and a warning mark, never red */\n.sd-c.cf,.sd-c.cl{background:var(--try-tint);color:var(--try-ink);outline:2px dashed var(--try-ink);outline-offset:-5px}\n.sd-c.cf.sel{box-shadow:inset 0 0 0 3px var(--try),inset 0 -6px 0 var(--try)}\n.sd-wn{position:absolute;top:1px;right:1px;display:grid;line-height:0;color:var(--try-ink)}\n.sd-wn .ic{width:max(12px,calc(var(--cs) * .3));height:max(12px,calc(var(--cs) * .3))}\n/* a wrong symbol (A, B) wiggles, then hops out */\n.sd-c.bad{background:var(--try-tint);color:var(--try-ink)}\n.sd-c.bad>*{animation:sd-out 650ms var(--ease) forwards}\n@keyframes sd-out{15%{transform:translateX(-12%)}30%{transform:translateX(12%)}45%{transform:translateX(-6%);opacity:1}100%{transform:translateY(-55%) scale(.5);opacity:0}}\n.sd-c.pop>*{animation:k-pop 420ms var(--ease)}\n/* pencil marks: a small grid of 3 across */\n.sd-nts{position:absolute;inset:3px;display:grid;grid-template-columns:repeat(3,1fr);place-items:center;font-style:normal;\n  font-size:max(9px,calc(var(--cs) * .27));font-weight:700;line-height:1;color:var(--ink-3)}\n.sd-c.sel .sd-nts{color:var(--bt-shade)}\n.sd.win .sd-c>*{animation:k-pop 520ms var(--ease) both}\n.sd.win .sd-box:nth-child(2n) .sd-c>*{animation-delay:90ms}\n.sd.win .sd-box:nth-child(3n) .sd-c>*{animation-delay:180ms}\n\n/* ---------- zoom box (9x9 on a phone): the selected box at full size ---------- */\n.sd-zoom{--cs:48px;display:grid;flex:none;grid-template-columns:repeat(3,var(--cs));grid-auto-rows:var(--cs);gap:2px;padding:2px;border-radius:12px;\n  background:var(--bt);box-shadow:inset 0 2px 0 var(--hi),0 5px 0 var(--bt-shade)}\n.sd-zoom[hidden]{display:none}\n.sd-zoom .sd-c:first-child{border-radius:10px 0 0 0}\n.sd-zoom .sd-c:nth-child(3){border-radius:0 10px 0 0}\n.sd-zoom .sd-c:nth-child(7){border-radius:0 0 0 10px}\n.sd-zoom .sd-c:last-child{border-radius:0 0 10px 0}\n\n/* ---------- the pad: the question screen's keys (padHTML), symbols 1..n with how many are left ---------- */\n.sd .sd-pad{gap:var(--s-2);width:100%;max-width:none;margin:0}\n.sd .sd-pad.row{grid-template-columns:repeat(var(--n),minmax(0,1fr))}\n.sd .sd-pad.g3{grid-template-columns:repeat(3,minmax(0,1fr))}\n.sd .sd-pad .key{position:relative;min-width:0;min-height:52px;font-size:var(--fs-5)}\n.sd .sd-pad .key .ic{width:28px;height:28px}\n.sd-n9 .sd-pad.row .key.t{grid-column:span 3}\n.sd-n6 .sd-pad.row .key.t,.sd-n6 .sd-pad.g3 .key.t{grid-column:span 1}\n.sd-n6 .sd-pad.row .key.t{grid-column:span 2}\n.sd-kf{display:grid;place-items:center;font-family:var(--font-display);line-height:1;pointer-events:none}\n/* how many are left: a row of dots along the bottom of the key (a tick in a green disc when none are left) */\n.sd-left{position:absolute;left:0;right:0;bottom:5px;display:flex;justify-content:center;gap:2px;height:14px;align-items:center;pointer-events:none}\n.sd-left i{width:5px;height:5px;border-radius:50%;background:var(--bt)}\n.sd-n9 .sd-left{gap:1px}\n.sd-n9 .sd-left i{width:4px;height:4px}\n.sd .sd-pad .sd-left .ic{width:14px;height:14px;padding:2px;box-sizing:content-box;border-radius:50%;background:var(--good-tint);color:var(--good-ink)}\n.sd .sd-pad .sd-sym .sd-kf{margin-bottom:8px}\n.sd .sd-pad .key.zero{background:var(--surface-2);color:var(--ink-3);box-shadow:inset 0 0 0 2px var(--line),var(--ledge) var(--line)}\n.sd .sd-pad .key.t{gap:var(--s-1);font-size:var(--fs-3);font-weight:700}\n.sd .sd-pad .key.t span{pointer-events:none}\n.sd .sd-pad.g3 .key.t span{display:none}\n.sd .sd-pad .key.on{background:var(--bt-tint);color:var(--bt-shade);box-shadow:inset 0 0 0 3px var(--bt),var(--ledge) var(--bt-shade)}\n/* with Notes on, the digits on the keys turn small and purple, so it is clear they will go in small */\n.sd.nt .sd-sym .sd-kf{font-size:var(--fs-3);color:var(--bt)}\n/* 4x4: four big keys; band A keys carry the animals */\n.sd-n4 .sd-pad .key{min-height:var(--tap-pk);font-size:var(--fs-6)}\n.sd-A .sd-pad .sd-kf{font-size:48px}\n\n/* two rows of six (9x9 on a phone): 1-5 and Erase, then 6-9, Notes and Undo */\n.sd .sd-pad.r6{grid-template-columns:repeat(6,minmax(0,1fr));gap:var(--s-1) 6px}\n.sd .sd-pad.r6 .k[data-k=\"del\"]{grid-column:6;grid-row:1}\n.sd .sd-pad.r6 .key{min-height:var(--tap)}\n.sd .sd-pad.r6 .key.t span{display:none}\n\n/* ---------- 9x9 on a phone (.zm, portrait): the zoom box and the talk line share a row under the board ---------- */\n.sd-zrow{display:none}\n.sd.zm:not(.land){gap:var(--s-2)}\n.sd.zm:not(.land) .sd-zrow{display:flex;align-items:stretch;gap:var(--s-2);width:100%}\n.sd.zm:not(.land) .sd-say{display:block;flex:1;min-width:0;height:auto;max-height:152px;overflow:auto;padding:var(--s-1) var(--s-1) var(--s-1) var(--s-3)}\n.sd.zm:not(.land) .sd-spk{float:right;margin:0 0 var(--s-1) var(--s-1)}\n.sd.zm:not(.land) .sd-msg{padding-top:var(--s-1)}\n/* landscape with the zoom box: zoom box left, pad right in the side column */\n.sd.land.zm .sd-ctl{flex-direction:row;align-items:flex-start;justify-content:center;gap:var(--s-3)}\n.sd.land.zm .sd-pad{flex:1}\n.sd.land.zm .sd-pad .key{min-height:var(--tap)}\n\n/* ---------- landscape ---------- */\n.sd.land{flex-direction:row;align-items:center;justify-content:center;gap:var(--s-6)}\n.sd.land .sd-side{display:flex;flex-direction:column;gap:var(--s-3);flex:none;width:min(380px,42%)}\n.sd.land .sd-say{align-self:stretch}\n.sd.land .sd-ctl{max-width:none}\n";document.head.appendChild(s)})(); // its src/css, after index.html's own CSS (the cascade order of a build without parts)
 /* ---------- Brain Teasers: Mazes (P3-08; BRAIN_TEASERS.md 5.4, 7, 8) ----------
    A perfect maze (one path between any two cells) from a recursive backtracker; start and goal are the two cells farthest apart
    (two BFS passes), so the way is always long for the size. Built at runtime from the seeded rnd, solvable by construction and
@@ -4545,5 +4545,743 @@ BT.reg({
   mount: (el, p, api) => LG.mount(el, p, api),
   solve: p => LG.solve(p),
 });
+/* ---------- Brain Teasers: Riddles (P3-14; BRAIN_TEASERS.md 5.9, 7) ----------
+   One registered type, `riddle`. The bank is RIDDLES in src/data/d-riddles.js (A11: read only inside functions), 36 riddles per band,
+   easiest first. A puzzle is 3 riddles: level L plays bank riddles 3(L-1) to 3L-1, so the band's whole set is used before any riddle
+   comes back (Endless replays levels 9-12, as the framework does). The seeded rnd shuffles the choices.
+     A (PK-K)  "Who am I?" with 3 picture choices (picFor); the riddle is read aloud by itself, nothing needs reading
+     B (1-2)   simple riddles, 4 choices, each a picture with its word
+     C (3-4)   wordplay, 4 word choices          D (5-6)  lateral thinking and number riddles, 4 choices
+   Every riddle has one clear answer; the wrong choices are not also fair answers (tools/test.js checks what it can: the answer is not
+   in the riddle or its hints, choices are all different, reading length per band, BAD, pictures allow-listed).
+   Play: tap a choice. A wrong choice turns amber, stays out and counts one mistake (allow 1: one slip still earns 3 stars); the line
+   under the riddle says so gently. The right one turns green, the line says the answer, and the next riddle comes after a moment.
+   Hints (per riddle; the frame counts the tiers): 1 a nudge, 2 a strong clue (both shown in the yellow hint line and spoken),
+   3 takes away the wrong choices but one. After that the riddle has no more hints (hint() returns false).
+   State (api.saveState): {i riddle, miss, h hint tier of this riddle, x wrong taps, g choices a hint took away}; RDL.fit rejects a
+   state that does not belong to the puzzle (it then starts fresh). */
+const RDL = (() => {
+  const N = 3, NCH = { A: 3, B: 4, C: 4, D: 4 };
+  const THE = ['sun', 'moon'], NONE = ['cheese', 'bread', 'milk'];
+  const pic = w => picFor(w, (RIDDLES.pics || {})[w] || '');
+  const nameOf = w => (RIDDLES.names || {})[w] || w;
+  const art = w => THE.includes(w) ? 'the ' : NONE.includes(w) ? '' : /^[aeiou]/.test(nameOf(w)) ? 'an ' : 'a ';
+  const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+  // the answer said in words: "a cow", "an egg", "the sun", "a piano", "63"
+  const said = (p, c) => p.pic ? art(c) + nameOf(c) : c;
+  const ASK = { A: 'Listen to the riddle. Tap the answer.', B: 'Read the riddle. Tap the answer.' };
 
-var BT_VER='v115'; // last line: the whole file ran (checked by dataReady() before the app starts)
+  function shuffle(a, rnd) {
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(rnd() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  // level L of a band: its three bank riddles, each with its choices shuffled
+  function make(band, level, rnd) {
+    const bank = RIDDLES[band], L = Math.max(1, Math.min(12, level | 0 || 1)), items = [];
+    for (let j = 0; j < N; j++) {
+      const k = (N * (L - 1) + j) % bank.length, r = bank[k];
+      const ch = shuffle([r.a].concat(r.d.slice(0, NCH[band] - 1)), rnd);
+      items.push({ k, q: r.q, ch, a: ch.indexOf(r.a), h: r.h.slice(0, 2) });
+    }
+    return { band, pic: band == 'A' || band == 'B', items };
+  }
+  const solve = p => p.items.map(it => it.a);
+
+  const fresh = () => ({ i: 0, miss: 0, h: 0, x: [], g: [] });
+  // does a saved state belong to this puzzle?
+  function fit(p, s) {
+    if (!s || typeof s != 'object' || Array.isArray(s)) return false;
+    const n = p.items.length, int = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;
+    if (!int(s.i, 0, n - 1) || !int(s.miss, 0, 999) || !int(s.h, 0, 3)) return false;
+    if (!Array.isArray(s.x) || !Array.isArray(s.g)) return false;
+    const it = p.items[s.i], all = s.x.concat(s.g);
+    if (!all.every(c => int(c, 0, it.ch.length - 1) && c !== it.a) || new Set(all).size !== all.length) return false;
+    if (s.g.length && s.h < 3) return false; // only hint 3 takes choices away
+    return all.length <= it.ch.length - 1;
+  }
+  // hint tier t (1-3) of item it in state s: {text} for tiers 1 and 2, {take: [choice indexes]} for tier 3
+  function hintFor(it, s, t) {
+    if (t < 3) return { text: it.h[t - 1] };
+    const left = it.ch.map((_, c) => c).filter(c => c !== it.a && !s.x.includes(c) && !s.g.includes(c));
+    return { take: left.slice(0, Math.max(0, left.length - 1)) };
+  }
+
+  /* ---------- the screen ---------- */
+  function mount(el, p, api) {
+    let st = api.loadState();
+    if (!fit(p, st)) st = fresh();
+    let busy = 0, alive = true;
+    const band = api.band || p.band;
+    const face = c => p.pic ? `<span class="rd-pic">${pic(c)}</span>${band == 'B' ? `<span class="rd-w">${esc(nameOf(c))}</span>` : ''}` : `<span class="rd-t">${esc(c)}</span>`;
+    function draw() {
+      const it = p.items[st.i];
+      const dots = p.items.map((_, i) => `<i class="${i < st.i ? 'on' : i == st.i ? 'now' : ''}"></i>`).join('');
+      const chs = it.ch.map((c, i) => {
+        const x = st.x.includes(i), g = st.g.includes(i);
+        return `<button class="choice rd-ch${p.pic ? ' pic' : ''}${x ? ' wrong' : ''}${g ? ' off' : ''}" data-c="${i}" aria-label="${esc(p.pic ? nameOf(c) : c)}"` +
+          `${x || g ? ' disabled' : ''}>${face(c)}</button>`;
+      }).join('');
+      const tip = st.h && st.h < 3 ? it.h[st.h - 1] : '';
+      el.innerHTML = `<div class="rd rd-${band}"><div class="rd-card"><span class="rd-badge" aria-hidden="true">${ico('question', 30)}</span>` +
+        `<div class="rd-body"><span class="rd-dots" role="img" aria-label="Riddle ${st.i + 1} of ${p.items.length}">${dots}</span>` +
+        `<p class="rd-q">${esc(it.q)}</p></div>${UI.ibtn('speak', 'Hear the riddle', { size: 'sm', cls: 'rd-say' })}</div>` +
+        `<p class="rd-tip" role="status"${tip ? '' : ' hidden'}>${ico('hint', 24)}<span>${esc(tip)}</span></p>` +
+        `<p class="rd-msg" role="status" aria-live="polite"></p>` +
+        `<div class="rd-chs n${it.ch.length}">${chs}</div></div>`;
+      el.querySelector('.rd-say').onclick = () => api.say(it.q);
+      el.querySelectorAll('.rd-ch').forEach(b => b.onclick = () => tap(+b.dataset.c, b));
+      if (band == 'A') api.say(it.q);
+    }
+    const msg = (t, cls) => { const m = el.querySelector('.rd-msg'); if (m) { m.textContent = t; m.className = 'rd-msg' + (cls ? ' ' + cls : ''); } };
+    function tap(i, b) {
+      const it = p.items[st.i];
+      if (busy || !alive || st.x.includes(i) || st.g.includes(i)) return;
+      if (i !== it.a) {
+        st.miss++;
+        st.x.push(i);
+        api.saveState(st);
+        b.classList.add('wrong');
+        b.disabled = true;
+        api.sfx.wrong();
+        msg(st.x.length == 1 ? 'Not that one. Think again!' : 'Not that one either. You can do it!', 'try');
+        return;
+      }
+      b.classList.add('right');
+      el.querySelectorAll('.rd-ch').forEach(x => { x.disabled = true; });
+      const w = 'Yes! ' + cap(said(p, it.ch[it.a])) + '.';
+      msg(w, 'good');
+      api.sfx.right(st.i + 3);
+      if (band == 'A' || band == 'B') api.say(w);
+      const last = st.i == p.items.length - 1;
+      st = { i: st.i + 1, miss: st.miss, h: 0, x: [], g: [] };
+      if (last) {
+        api.win({ mistakes: st.miss, note: p.items.map((t, n) => `Riddle ${n + 1}: ${said(p, t.ch[t.a])}`) });
+        return;
+      }
+      api.saveState(st);
+      busy = setTimeout(() => { busy = 0; if (alive) draw(); }, 1300);
+    }
+    draw();
+    if (ASK[band] && st.i == 0 && !st.miss && !st.h) msg(ASK[band]);
+    return {
+      hint() {
+        if (busy || st.i >= p.items.length || st.h >= 3) return false;
+        const it = p.items[st.i], t = st.h + 1, r = hintFor(it, st, t);
+        if (t < 3) {
+          st.h = t;
+          api.saveState(st);
+          const tip = el.querySelector('.rd-tip');
+          tip.querySelector('span').textContent = r.text;
+          tip.hidden = false;
+          api.say(r.text);
+          return true;
+        }
+        if (!r.take.length) return false;
+        st.h = 3;
+        st.g.push(...r.take);
+        api.saveState(st);
+        r.take.forEach(c => { const b = el.querySelector(`.rd-ch[data-c="${c}"]`); b.classList.add('off'); b.disabled = true; });
+        el.querySelector('.rd-tip').hidden = true;
+        msg('Just two left. Which one is it?', '');
+        return true;
+      },
+      destroy() { alive = false; clearTimeout(busy); },
+    };
+  }
+
+  return { make, solve, mount, fit, fresh, hintFor, said, nameOf, NCH };
+})();
+
+BT.reg({
+  id: 'riddle', name: 'Riddles', icon: 'riddle', bands: 'ABCD', allow: 1,
+  rules: 'Listen to the riddle, then tap the answer.',
+  make: RDL.make, mount: RDL.mount, solve: RDL.solve,
+});
+/* ---------- Brain Teasers: Memory Match (P3-14; BRAIN_TEASERS.md 5.9, 7) ----------
+   One registered type, `memory`. Cards lie face down in a grid; tap two to turn them over; a pair stays up, two that do not match
+   turn back after a moment (or at the next tap). Word lists are MEMW (src/data/d-memory.js) and SPN (34-gen-es.js); pictures go
+   through picFor with the emoji fallback in RIDDLES.pics (read only inside functions, A11).
+   Pairs and kinds per band (levels 1-4 / 5-8 / 9-12):
+     A (PK-K)  3 pairs (levels 1-6), 4 pairs (7-12): the same picture twice (levels 1-8), then a big letter and its small letter
+     B (1-2)   6 pairs: a number and its dots (1-6), a word and its picture, a number and its dots (4-10; 7-10 on two dice faces)
+     C (3-4)   8 pairs: a fraction and its picture, a Spanish word and the English word, two words that mean the same
+     D (5-6)   10 pairs: equal fractions, a fraction / decimal / percent of the same value, a word root and its meaning
+   Every card has exactly one partner: the values, words and roots of a puzzle are all different (tools/test.js checks it).
+   The layout is made from the seeded rnd, so it is the same for a band, level and day. A face-down card's face is not in the page
+   (it is drawn only while the card is up) and the saved state names cards by place, never by what is on them.
+   Mistakes: a "slip" is a pair that did not match although the child had already seen where the first card's partner was, or had
+   already seen the second card (an unseen card was the better try). The first few slips of a band are free (A 0, B 1, C 2, D 3);
+   the win reports the slips over that, and allow is 1, so a perfect memory is not needed for 3 stars.
+   Hints (tier 1, 2, 3, then 3 again): 1 peeks at one card for a moment (the partner of the card that is up, else the unseen partner
+   of a card the child has seen, else an unseen card), 2 shows one pair for a moment, 3 matches one pair (it stays up, ringed in star
+   yellow). Tiers 1 and 2 change only what counts as seen.
+   State (api.saveState after every turn): {m matched card places, hm the ones a hint matched, seen, turns, slips}; MM.fit rejects a
+   state that does not belong to the puzzle. A card left up in the middle of a turn is face down again after a resume. */
+const MM = (() => {
+  const PAIRS = { A: L => (L <= 6 ? 3 : 4), B: () => 6, C: () => 8, D: () => 10 };
+  const GRACE = { A: 0, B: 1, C: 2, D: 3 };
+  const KINDS = { A: ['pic', 'pic', 'abc'], B: ['dots', 'word', 'dots10'], C: ['frac', 'es', 'syn'], D: ['eqf', 'fdp', 'root'] };
+  const ASK = {
+    pic: 'Find two pictures that are the same.', abc: 'Match each big letter to its small letter.', dots: 'Match each number to its dots.',
+    dots10: 'Match each number to its dots.', word: 'Match each word to its picture.', frac: 'Match each fraction to its picture.',
+    es: 'Match each Spanish word to its English word.', syn: 'Match the two words that mean the same.',
+    eqf: 'Match the fractions that are equal.', fdp: 'Match the numbers that are worth the same.', root: 'Match each word root to its meaning.',
+  };
+  const LETTERS = 'ABDEFGHJKMNQRTY'; // letters whose two forms are easy to tell from other letters (no I and l, no C/c O/o S/s ...)
+  const tier = L => (L <= 4 ? 0 : L <= 8 ? 1 : 2);
+  const gcd = (a, b) => (b ? gcd(b, a % b) : a);
+  const pics = () => (typeof RIDDLES != 'undefined' && RIDDLES.pics) || {};
+  const nameOf = w => ((typeof RIDDLES != 'undefined' && RIDDLES.names) || {})[w] || w;
+
+  function shuffle(a, rnd) {
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(rnd() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+  const take = (a, n, rnd) => shuffle(a.slice(), rnd).slice(0, n);
+  // reduced fractions n/d with d in ds, 0 < n < d (all different values)
+  const fracs = ds => ds.flatMap(d => Array.from({ length: d - 1 }, (_, i) => [i + 1, d]).filter(([n]) => gcd(n, d) == 1));
+  const dec = v => String(Math.round(v * 1000) / 1000);
+  const FDP = [[1, 2], [1, 4], [3, 4], [1, 5], [2, 5], [3, 5], [4, 5], [1, 10], [3, 10], [7, 10], [9, 10]];
+
+  // the pairs of a kind: [[face, face], ...]; a face is {t: kind of face, ...}
+  function pairsOf(kind, n, rnd) {
+    if (kind == 'pic') {
+      const th = MEMW.themes, keys = Object.keys(th), w = take(th[keys[Math.floor(rnd() * keys.length)]], n, rnd);
+      return w.map(x => [{ t: 'pic', w: x }, { t: 'pic', w: x }]);
+    }
+    if (kind == 'abc') return take(LETTERS.split(''), n, rnd).map(c => [{ t: 'let', s: c }, { t: 'let', s: c.toLowerCase() }]);
+    if (kind == 'dots' || kind == 'dots10') {
+      const top = kind == 'dots' ? 6 : 10, ns = Array.from({ length: top }, (_, i) => i + 1);
+      return take(kind == 'dots' ? ns : ns.slice(3), n, rnd).map(v => [{ t: 'num', s: String(v) }, { t: 'dots', n: v }]);
+    }
+    if (kind == 'word') {
+      const all = [].concat(...Object.values(MEMW.themes)).filter(x => nameOf(x).length <= 5 && /^[a-z]+$/.test(nameOf(x)));
+      return take(all, n, rnd).map(x => [{ t: 'txt', s: nameOf(x) }, { t: 'pic', w: x }]);
+    }
+    if (kind == 'frac') return take(fracs([2, 3, 4, 5, 6, 8]), n, rnd).map(([a, b]) => [{ t: 'fr', n: a, d: b }, { t: 'fpic', n: a, d: b }]);
+    if (kind == 'es') {
+      const all = SPN.animal.concat(SPN.food).filter(x => x[1].length <= 9);
+      return take(all, n, rnd).map(x => [{ t: 'txt', s: x[0], es: 1 }, { t: 'txt', s: x[1] }]);
+    }
+    if (kind == 'syn') return take(MEMW.syn, n, rnd).map(([a, b]) => [{ t: 'txt', s: a }, { t: 'txt', s: b }]);
+    if (kind == 'eqf') {
+      return take(fracs([2, 3, 4, 5, 6]), n, rnd).map(([a, b]) => {
+        const k1 = 1 + Math.floor(rnd() * 2), k2 = k1 + 1 + Math.floor(rnd() * 2); // 1-2, then 1-2 more
+        return [{ t: 'fr', n: a * k1, d: b * k1 }, { t: 'fr', n: a * k2, d: b * k2 }];
+      });
+    }
+    if (kind == 'fdp') {
+      return take(FDP, n, rnd).map(([a, b]) => {
+        const f = [{ t: 'fr', n: a, d: b }, { t: 'dec', s: dec(a / b) }, { t: 'pct', s: dec(100 * a / b) + '%' }];
+        const skip = Math.floor(rnd() * 3); // two of the three forms
+        return f.filter((_, i) => i != skip);
+      });
+    }
+    if (kind == 'root') return take(MEMW.roots, n, rnd).map(([a, b]) => [{ t: 'txt', s: a, root: 1 }, { t: 'txt', s: b }]);
+    throw new Error('memory: no kind ' + kind);
+  }
+
+  function make(band, level, rnd) {
+    const L = Math.max(1, Math.min(12, level | 0 || 1)), n = PAIRS[band](L), kind = KINDS[band][tier(L)];
+    const faces = pairsOf(kind, n, rnd);
+    const cards = shuffle(faces.flatMap((_, k) => [[k, 0], [k, 1]]), rnd);
+    return { band, kind, n, faces, cards };
+  }
+  // the winning moves: the two places of each pair, pair by pair
+  const solve = p => p.faces.map((_, k) => p.cards.map((c, i) => (c[0] == k ? i : -1)).filter(i => i >= 0));
+  const pairOf = (p, i) => p.cards[i][0];
+  const partner = (p, i) => p.cards.findIndex((c, j) => j != i && c[0] == p.cards[i][0]);
+
+  /* ---------- the rules (pure; the screen and the tests use the same functions) ---------- */
+  const fresh = () => ({ m: [], hm: [], seen: [], up: [], turns: 0, slips: 0 });
+  // tap card i. Returns {s: the new state, ev: 'none' | 'first' | 'match' | 'miss', slip}. A miss leaves both cards in s.up;
+  // settle() turns them back (the screen does that after a moment or at the next tap).
+  function pick(p, s0, i) {
+    const s = JSON.parse(JSON.stringify(s0));
+    if (s.up.length == 2) s.up = [];
+    if (!(i >= 0 && i < p.cards.length) || s.m.includes(i) || s.up.includes(i)) return { s, ev: 'none', slip: false };
+    if (!s.up.length) {
+      s.up = [i];
+      if (!s.seen.includes(i)) s.seen.push(i);
+      return { s, ev: 'first', slip: false };
+    }
+    const a = s.up[0];
+    s.turns++;
+    if (pairOf(p, a) == pairOf(p, i)) {
+      s.m.push(a, i);
+      s.up = [];
+      if (!s.seen.includes(i)) s.seen.push(i);
+      return { s, ev: 'match', slip: false };
+    }
+    const slip = s.seen.includes(partner(p, a)) || s.seen.includes(i);
+    if (slip) s.slips++;
+    s.up = [a, i];
+    if (!s.seen.includes(i)) s.seen.push(i);
+    return { s, ev: 'miss', slip };
+  }
+  const settle = s0 => Object.assign(JSON.parse(JSON.stringify(s0)), { up: [] });
+  const done = (p, s) => s.m.length == p.cards.length;
+  // the pair a hint is about: the pair of the card that is up, else a pair with one card seen, else the first open pair
+  function hintPair(p, s) {
+    const open = p.cards.map((_, i) => i).filter(i => !s.m.includes(i));
+    if (!open.length) return -1;
+    if (s.up.length == 1) return pairOf(p, s.up[0]);
+    const half = open.find(i => s.seen.includes(i) && !s.seen.includes(partner(p, i)));
+    return pairOf(p, half != null ? half : open[0]);
+  }
+  // hint tier t: {s, show: [card places to show for a moment], match: [places matched by the hint]} or null when nothing is left
+  function hint(p, s0, t) {
+    const s = settle(s0);
+    if (s0.up.length == 1) s.up = s0.up.slice();
+    const k = hintPair(p, s);
+    if (k < 0) return null;
+    const both = p.cards.map((c, i) => (c[0] == k ? i : -1)).filter(i => i >= 0);
+    if (t == 1) {
+      const one = both.find(i => !s.up.includes(i) && !s.seen.includes(i));
+      const show = [one != null ? one : both.find(i => !s.up.includes(i))];
+      show.forEach(i => { if (!s.seen.includes(i)) s.seen.push(i); });
+      return { s, show, match: [] };
+    }
+    both.forEach(i => { if (!s.seen.includes(i)) s.seen.push(i); });
+    if (t == 2) return { s, show: both.filter(i => !s.up.includes(i)), match: [] };
+    s.m.push(...both);
+    s.hm.push(...both);
+    s.up = [];
+    return { s, show: [], match: both };
+  }
+  // does a saved state belong to this puzzle?
+  function fit(p, s) {
+    if (!s || typeof s != 'object' || Array.isArray(s)) return false;
+    const n = p.cards.length, places = a => Array.isArray(a) && a.every(i => Number.isInteger(i) && i >= 0 && i < n) && new Set(a).size == a.length;
+    if (!places(s.m) || !places(s.hm) || !places(s.seen) || !places(s.up || [])) return false;
+    if (!Number.isInteger(s.turns) || s.turns < 0 || !Number.isInteger(s.slips) || s.slips < 0 || s.slips > s.turns) return false;
+    if (s.m.some(i => !s.m.includes(partner(p, i))) || s.hm.some(i => !s.m.includes(i)) || s.m.some(i => !s.seen.includes(i))) return false;
+    return (s.m.length - s.hm.length) / 2 <= s.turns;
+  }
+  const mistakes = (p, s) => Math.max(0, s.slips - GRACE[p.band]);
+
+  /* ---------- drawing ---------- */
+  const frac = (n, d) => `<span class="mm-fr"><b>${n}</b><b>${d}</b></span>`;
+  function faceHTML(f) {
+    if (f.t == 'pic') return `<span class="mm-pic">${picFor(f.w, pics()[f.w] || '')}</span>`;
+    if (f.t == 'let') return `<b class="mm-let">${esc(f.s)}</b>`;
+    if (f.t == 'num') return `<b class="mm-num">${esc(f.s)}</b>`;
+    if (f.t == 'dots') return `<span class="mm-viz">${VIZ.dots(f.n, 'dice')}</span>`;
+    if (f.t == 'fpic') return `<span class="mm-viz">${VIZ.fracCircle(f.n, f.d)}</span>`;
+    if (f.t == 'fr') return frac(f.n, f.d);
+    if (f.t == 'dec' || f.t == 'pct') return `<b class="mm-num">${esc(f.s)}</b>`;
+    const len = f.s.length;
+    return `<span class="mm-txt${f.es ? ' mm-es' : ''}${f.root ? ' mm-root' : ''}${len > 6 ? ' long' : ''}"${f.es ? ' lang="es"' : ''}>${esc(f.s)}</span>`;
+  }
+  // what a face-up card is called (for its aria-label)
+  function faceName(f) {
+    if (f.t == 'pic') return nameOf(f.w);
+    if (f.t == 'dots') return f.n + (f.n == 1 ? ' dot' : ' dots');
+    if (f.t == 'fpic') return 'a circle with ' + f.n + ' of ' + f.d + ' parts shaded';
+    if (f.t == 'fr') return f.n + ' over ' + f.d;
+    if (f.t == 'let') return (f.s == f.s.toUpperCase() ? 'big ' : 'small ') + f.s;
+    return f.s;
+  }
+  const back = () => `<span class="mm-back" aria-hidden="true"><i></i>${ico('star', 26)}</span>`;
+
+  // the cards per row and the card size that fit w x h; ratio = height / width (4:5 cards, square ones on a wide, short screen)
+  function fitGrid(n, w, h, gap, ratio = 1.25) {
+    let best = { cols: 1, cw: 0 };
+    for (let cols = 2; cols <= Math.min(n, 8); cols++) {
+      const rows = Math.ceil(n / cols), cw = Math.min((w - (cols - 1) * gap) / cols, ((h - (rows - 1) * gap) / rows) / ratio);
+      // prefer an even grid (no short last row) when it costs less than 8 percent of the card size
+      const even = n % cols == 0 ? 1.08 : 1;
+      if (cw * even > best.cw * (best.even || 1)) best = { cols, cw, even };
+    }
+    return { cols: best.cols, cw: Math.max(40, Math.floor(Math.min(best.cw, 150))) };
+  }
+
+  /* ---------- the screen ---------- */
+  function mount(el, p, api) {
+    let st = api.loadState();
+    st = fit(p, st) ? Object.assign(st, { up: [] }) : fresh();
+    let alive = true, back_ = 0, lastW = 0, lastH = 0, peekT = 0, winT = 0;
+    const band = api.band || p.band, timers = new Set();
+    const later = (f, ms) => { const t = setTimeout(() => { timers.delete(t); if (alive) f(); }, ms); timers.add(t); return t; };
+    const SHOW = band == 'A' ? 1500 : 1100; // how long two cards that do not match stay up
+    el.innerHTML = `<div class="mm mm-${band}"><div class="mm-say"><p class="mm-msg" role="status" aria-live="polite"></p>` +
+      `${UI.ibtn('speak', 'Hear what to do', { size: 'sm', cls: 'mm-spk' })}</div>` +
+      `<div class="mm-bar"><span class="mm-got" role="img"></span><span class="mm-turns"></span></div>` +
+      `<div class="mm-area"><div class="mm-grid" role="group" aria-label="Cards">` +
+      p.cards.map((_, i) => `<button class="mm-c" data-i="${i}" aria-label="Card ${i + 1}, face down"><span class="mm-in">${back()}<span class="mm-face"></span></span></button>`).join('') +
+      `</div></div></div>`;
+    const root = el.firstChild, grid = root.querySelector('.mm-grid'), area = root.querySelector('.mm-area'), cardEl = [...grid.children];
+    const msgEl = root.querySelector('.mm-msg');
+    const msg = (t, cls) => { msgEl.textContent = t; msgEl.className = 'mm-msg' + (cls ? ' ' + cls : ''); };
+    root.querySelector('.mm-spk').onclick = () => api.say(ASK[p.kind]);
+    function layout() {
+      if (!el.isConnected) return;
+      const ps = getComputedStyle(el);
+      const ah = el.clientHeight - parseFloat(ps.paddingTop) - parseFloat(ps.paddingBottom);
+      root.style.height = Math.max(300, ah) + 'px';
+      const w = area.clientWidth, h = area.clientHeight;
+      lastW = el.clientWidth; lastH = el.clientHeight;
+      const ratio = w > h * 1.6 ? 1 : 1.25, g = fitGrid(p.cards.length, w, h, w < 520 ? 8 : 12, ratio);
+      grid.style.setProperty('--cols', g.cols);
+      grid.style.setProperty('--cw', g.cw + 'px');
+      grid.style.setProperty('--ch', Math.floor(g.cw * ratio) + 'px');
+      grid.style.setProperty('--gap', (w < 520 ? 8 : 12) + 'px');
+    }
+    let rz = 0;
+    const onResize = () => { clearTimeout(rz); rz = setTimeout(() => { if (el.clientWidth != lastW || el.clientHeight != lastH) layout(); }, 120); };
+    window.addEventListener('resize', onResize);
+    // turn a card up or down (its face is put in only while it is up, and taken out once it has turned back)
+    function show(i, up, cls) {
+      const c = cardEl[i], f = p.faces[p.cards[i][0]][p.cards[i][1]], fe = c.querySelector('.mm-face');
+      if (up) {
+        if (!c.classList.contains('up')) fe.innerHTML = faceHTML(f);
+        c.classList.add('up');
+        c.setAttribute('aria-label', faceName(f));
+      } else {
+        c.classList.remove('up', 'no', 'peek');
+        c.setAttribute('aria-label', `Card ${i + 1}, face down`);
+        later(() => { if (!c.classList.contains('up')) fe.innerHTML = ''; }, 400);
+      }
+      if (cls) c.classList.add(cls);
+    }
+    function bar() {
+      const got = st.m.length / 2;
+      const b = root.querySelector('.mm-got');
+      b.innerHTML = p.faces.map((_, k) => `<i class="${k < got ? 'on' : ''}"></i>`).join('');
+      b.setAttribute('aria-label', `${got} of ${p.n} pairs found`);
+      root.querySelector('.mm-turns').textContent = st.turns == 1 ? '1 turn' : st.turns + ' turns';
+    }
+    function paint() { // the whole board from the state (mount, resume)
+      cardEl.forEach((c, i) => {
+        const m = st.m.includes(i);
+        if (m) show(i, true, st.hm.includes(i) ? 'hint' : 'got'); else show(i, false);
+        c.disabled = m;
+      });
+      bar();
+    }
+    function flipBack() {
+      clearTimeout(back_);
+      back_ = 0;
+      if (st.up.length == 2) st.up.forEach(i => show(i, false));
+      st = settle(st);
+    }
+    function tap(i) {
+      if (!alive || st.m.includes(i) || winT) return;
+      if (st.up.length == 2) flipBack();
+      if (peekT) endPeek();
+      const r = pick(p, st, i);
+      if (r.ev == 'none') return;
+      st = r.s;
+      show(i, true);
+      api.sfx.click();
+      if (r.ev == 'first') {
+        api.saveState(Object.assign({}, st, { up: [] }));
+        return msg(band == 'A' ? 'Now find its partner!' : 'Now find the one that goes with it.', '');
+      }
+      if (r.ev == 'match') {
+        const [a, b] = st.m.slice(-2);
+        [a, b].forEach(x => { cardEl[x].classList.add('got'); cardEl[x].disabled = true; });
+        api.sfx.right(st.m.length / 2 + 2);
+        msg(done(p, st) ? 'You found them all!' : pick1([['A pair!', 'They match!', 'Well done!', 'Great memory!'], st.turns]), 'good');
+      } else {
+        st.up.forEach(x => cardEl[x].classList.add('no'));
+        api.sfx.del();
+        msg(r.slip ? 'Not a pair. You have seen one of these before!' : 'Not a pair. Remember where they are.', 'try');
+        back_ = later(flipBack, SHOW);
+      }
+      api.saveState(Object.assign({}, st, { up: [] }));
+      bar();
+      if (done(p, st)) finish();
+    }
+    const pick1 = ([a, n]) => a[n % a.length];
+    function finish() {
+      const note = [`You found ${p.n} pairs in ${st.turns} ${st.turns == 1 ? 'turn' : 'turns'}.`];
+      if (!['pic', 'abc', 'dots', 'dots10', 'word', 'frac'].includes(p.kind)) {
+        p.faces.slice(0, 3).forEach(f => note.push(faceName(f[0]).replace(' over ', '/') + ' = ' + faceName(f[1]).replace(' over ', '/')));
+      }
+      winT = later(() => api.win({ mistakes: mistakes(p, st), note }), 500);
+    }
+    function endPeek() {
+      clearTimeout(peekT);
+      peekT = 0;
+      cardEl.forEach((c, i) => { if (c.classList.contains('peek') && !st.m.includes(i) && !st.up.includes(i)) show(i, false); });
+    }
+    cardEl.forEach((c, i) => { c.onclick = () => tap(i); });
+    layout();
+    paint();
+    msg(ASK[p.kind], '');
+    if (band == 'A') api.say(ASK[p.kind]);
+    return {
+      hint(t) {
+        if (!alive || winT || done(p, st)) return false;
+        if (st.up.length == 2) flipBack();
+        if (peekT) endPeek();
+        const r = hint(p, st, Math.min(3, t || 1));
+        if (!r) return false;
+        st = r.s;
+        if (r.match.length) {
+          r.match.forEach(i => { show(i, true, 'hint'); cardEl[i].disabled = true; });
+          api.sfx.right(st.m.length / 2 + 2);
+          msg('Here is a pair for you.', 'hint');
+        } else {
+          r.show.forEach(i => show(i, true, 'peek'));
+          msg(r.show.length == 1 ? 'Peek! Remember where it is.' : 'Here is a pair. Remember where they are!', 'hint');
+          peekT = later(() => { peekT = 0; endPeek(); }, band == 'A' ? 2200 : 1700);
+        }
+        api.say(msgEl.textContent);
+        api.saveState(Object.assign({}, st, { up: [] }));
+        bar();
+        if (done(p, st)) finish();
+        return true;
+      },
+      destroy() {
+        alive = false;
+        timers.forEach(clearTimeout);
+        timers.clear();
+        clearTimeout(rz);
+        window.removeEventListener('resize', onResize);
+      },
+    };
+  }
+
+  return { make, solve, mount, fresh, pick, settle, done, hint, hintPair, fit, mistakes, partner, faceName, faceHTML, fitGrid, PAIRS, GRACE, KINDS };
+})();
+
+BT.reg({
+  id: 'memory', name: 'Memory', icon: 'memory', bands: 'ABCD', allow: 1,
+  rules: 'Turn over two cards at a time. Find all the pairs.',
+  make: MM.make, mount: MM.mount, solve: MM.solve,
+});
+/* ---------- Brain Teasers: Copy Cat (P3-14; BRAIN_TEASERS.md 5.9, 7) ----------
+   One registered type, `copycat`. The cat lights big pads one after the other, each with its own note (SFX.key); the child taps them
+   back in the same order. Each round the sequence grows by one; the puzzle is won when the child copies the level's target length.
+   Pads differ by shape, colour, place and sound (never colour alone): red circle, blue square, yellow triangle, green star, then
+   purple heart and orange diamond.
+     band  pads  start  target length, levels 1-4 / 5-8 / 9-12   light on + gap (ms, a little faster each level of a tier)
+     A     4     1      3 / 4 / 5                                700 + 320
+     B     4     2      4 / 5 / 6        (faster)                520 + 240
+     C     6     2      5 / 6 / 7                                480 + 220
+     D     6     3      7 / 5 / 6        levels 5-12 backwards   440 + 200
+   (BRAIN_TEASERS 5.9 "star thresholds 4 / 6 / 8, scaled by band" became these target lengths: the frame's stars follow hints and
+   mistakes, so the length is what a level asks for, and it grows with the band and the level, section 7 "steps".)
+   The sequence is made once from the seeded rnd (same for a band, level and day): bands A and B never light the same pad twice in a
+   row, C and D never three times. CC.expect(p, r) is what round r asks for (the first r pads, reversed in backwards mode) and
+   CC.check(p, r, taps) says 'ok' (all of it), 'go' (right so far) or 'no'.
+   A wrong pad: the pad rings amber, the line says "Oops! Watch again." with a soft sound, and the round is shown again a little
+   slower (one mistake; allow 2). Hints (tier 1, 2, 3, then 3 again): 1 shows the round again, slower (the child starts the round
+   again), 2 rings the next pad to tap, 3 taps the next pad for the child. Hints work while it is the child's turn.
+   State (api.saveState after each round and each mistake): {r the round (its length), miss}; a resume shows that round again. */
+const CC = (() => {
+  const CFG = {
+    A: { pads: 4, start: 1, len: [3, 4, 5], on: 700, gap: 320, rev: [0, 0, 0], run: 1 },
+    B: { pads: 4, start: 2, len: [4, 5, 6], on: 520, gap: 240, rev: [0, 0, 0], run: 1 },
+    C: { pads: 6, start: 2, len: [5, 6, 7], on: 480, gap: 220, rev: [0, 0, 0], run: 2 },
+    D: { pads: 6, start: 3, len: [7, 5, 6], on: 440, gap: 200, rev: [0, 1, 1], run: 2 },
+  };
+  const NAMES = ['red circle', 'blue square', 'yellow triangle', 'green star', 'purple heart', 'orange diamond'];
+  const TONE = { 4: [0, 2, 4, 7], 6: [0, 1, 2, 4, 5, 7] }; // SFX.key steps: C E G C, or C D E G A C
+  const tier = L => (L <= 4 ? 0 : L <= 8 ? 1 : 2);
+
+  function make(band, level, rnd) {
+    const c = CFG[band], L = Math.max(1, Math.min(12, level | 0 || 1)), t = tier(L), len = c.len[t], seq = [];
+    while (seq.length < len) {
+      const v = Math.floor(rnd() * c.pads), n = seq.length;
+      // no pad more than c.run times in a row
+      if (n >= c.run && seq.slice(n - c.run).every(x => x == v)) continue;
+      seq.push(v);
+    }
+    const fast = 15 * ((L - 1) % 4);
+    return { band, pads: c.pads, start: Math.min(c.start, len), len, seq, rev: !!c.rev[t], on: c.on - fast, gap: c.gap - Math.round(fast / 3) };
+  }
+  // what round r asks for, and how a list of taps compares with it
+  const expect = (p, r) => { const s = p.seq.slice(0, r); return p.rev ? s.reverse() : s; };
+  function check(p, r, taps) {
+    const e = expect(p, r);
+    if (taps.length > e.length || taps.some((v, i) => v !== e[i])) return 'no';
+    return taps.length == e.length ? 'ok' : 'go';
+  }
+  // every round's taps, from the first round to the target (tests and the smoke bot)
+  const solve = p => { const out = []; for (let r = p.start; r <= p.len; r++) out.push(expect(p, r)); return out; };
+  const fresh = p => ({ r: p.start, miss: 0 });
+  const fit = (p, s) => !!s && typeof s == 'object' && !Array.isArray(s) && Number.isInteger(s.r) && s.r >= p.start && s.r <= p.len &&
+    Number.isInteger(s.miss) && s.miss >= 0 && s.miss < 1000 && Object.keys(s).every(k => k == 'r' || k == 'miss');
+
+  /* ---------- drawing: a shape on a pad, light from the top left (shadow, shade, base toward the light, gloss) ---------- */
+  const f1 = x => Math.round(x * 10) / 10;
+  const STAR = (() => {
+    let d = '';
+    for (let i = 0; i < 10; i++) {
+      const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 17 : 38;
+      d += (i ? 'L' : 'M') + f1(r * Math.cos(a)) + ' ' + f1(r * Math.sin(a) + 3);
+    }
+    return d + 'Z';
+  })();
+  const SHAPES = [
+    { d: 'M-34 0A34 34 0 1 1 34 0A34 34 0 1 1 -34 0Z', g: 'M-21 -14A24 24 0 0 1 -8 -24' },
+    { d: 'M-29 -29H29V29H-29Z', g: 'M-20 -20H-6' },
+    { d: 'M0 -33L35 29H-35Z', g: 'M-8 -12L-16 3' },
+    { d: STAR, g: 'M-9 -9L-4 -21' },
+    { d: 'M0 33C-44 6 -38 -31 -17 -31C-7 -31 -1 -24 0 -17C1 -24 7 -31 17 -31C38 -31 44 6 0 33Z', g: 'M-26 -9C-27 -18 -22 -23 -15 -24' },
+    { d: 'M0 -38L35 0L0 38L-35 0Z', g: 'M-20 -8L-9 -20' },
+  ];
+  const shape = i => {
+    const s = SHAPES[i];
+    return `<svg class="cc-sh" viewBox="-50 -50 100 100" aria-hidden="true"><path class="cc-sw" transform="translate(4 5)" d="${s.d}"/>` +
+      `<path class="cc-sd" d="${s.d}"/><path class="cc-sb" transform="translate(-3 -3) scale(.86)" d="${s.d}"/>` +
+      `<path class="cc-sg" transform="translate(-3 -3) scale(.86)" d="${s.g}"/></svg>`;
+  };
+  const cat = () => (typeof ART != 'undefined' && ART.cat ? picArt('cat', 44) : ico('paw', 32));
+
+  /* ---------- the screen ---------- */
+  function mount(el, p, api) {
+    let st = api.loadState();
+    if (!fit(p, st)) st = fresh(p);
+    let alive = true, phase = 'wait', taps = [], lastW = 0, lastH = 0;
+    const band = api.band || p.band, timers = new Set();
+    const later = (f, ms) => { const t = setTimeout(() => { timers.delete(t); if (alive) f(); }, ms); timers.add(t); return t; };
+    const stopAll = () => { timers.forEach(clearTimeout); timers.clear(); };
+    const ASK = p.rev ? 'Watch the cat. Then tap the pads backwards: the last one first.' : 'Watch the cat. Then tap the pads in the same order.';
+    el.innerHTML = `<div class="cc cc-n${p.pads}${p.rev ? ' cc-rev' : ''}"><div class="cc-say"><span class="cc-cat" aria-hidden="true">${cat()}</span>` +
+      `<p class="cc-msg" role="status" aria-live="polite"></p>${UI.ibtn('speak', 'Hear what to do', { size: 'sm', cls: 'cc-spk' })}</div>` +
+      `<div class="cc-bar"><span class="cc-rounds" role="img"></span>${p.rev ? UI.tag('Backwards', 'info', 'arrow-left') : ''}<span class="cc-steps" aria-hidden="true"></span></div>` +
+      `<div class="cc-area"><div class="cc-pads" role="group" aria-label="Pads">` +
+      Array.from({ length: p.pads }, (_, i) => `<button class="cc-pad cc-c${i}" data-p="${i}" aria-label="${NAMES[i]}"><span class="cc-lit"></span>${shape(i)}</button>`).join('') +
+      `</div></div></div>`;
+    const root = el.firstChild, padsEl = root.querySelector('.cc-pads'), area = root.querySelector('.cc-area'), pad = [...padsEl.children];
+    const msgEl = root.querySelector('.cc-msg');
+    const msg = (t, cls) => { msgEl.textContent = t; msgEl.className = 'cc-msg' + (cls ? ' ' + cls : ''); };
+    root.querySelector('.cc-spk').onclick = () => api.say(ASK);
+    function layout() {
+      if (!el.isConnected) return;
+      const ps = getComputedStyle(el);
+      root.style.height = Math.max(300, el.clientHeight - parseFloat(ps.paddingTop) - parseFloat(ps.paddingBottom)) + 'px';
+      lastW = el.clientWidth; lastH = el.clientHeight;
+      const w = area.clientWidth, h = area.clientHeight, gap = 16;
+      let best = { cols: 2, s: 0 };
+      for (const cols of p.pads == 4 ? [2, 4] : [2, 3]) {
+        const rows = Math.ceil(p.pads / cols), s = Math.min((w - (cols - 1) * gap) / cols, (h - (rows - 1) * gap) / rows);
+        if (s > best.s) best = { cols, s };
+      }
+      padsEl.style.setProperty('--cols', best.cols);
+      padsEl.style.setProperty('--ps', Math.max(64, Math.floor(Math.min(best.s, 230))) + 'px');
+    }
+    let rz = 0;
+    const onResize = () => { clearTimeout(rz); rz = setTimeout(() => { if (el.clientWidth != lastW || el.clientHeight != lastH) layout(); }, 120); };
+    window.addEventListener('resize', onResize);
+    function bar() {
+      const b = root.querySelector('.cc-rounds'), n = p.len - p.start + 1, k = st.r - p.start;
+      b.innerHTML = Array.from({ length: n }, (_, i) => `<i class="${i < k ? 'on' : i == k ? 'now' : ''}"></i>`).join('');
+      b.setAttribute('aria-label', `Round ${k + 1} of ${n}: ${st.r} ${st.r == 1 ? 'pad' : 'pads'}`);
+      root.querySelector('.cc-steps').innerHTML = Array.from({ length: st.r }, (_, i) => `<i class="${i < taps.length ? 'on' : ''}"></i>`).join('');
+    }
+    function light(i, ms, cls = 'on') {
+      const b = pad[i];
+      b.classList.add(cls);
+      if (cls == 'on') api.sfx.key(TONE[p.pads][i]);
+      later(() => b.classList.remove(cls), ms);
+    }
+    const setTurn = on => { padsEl.classList.toggle('wait', !on); pad.forEach(b => b.setAttribute('aria-disabled', on ? 'false' : 'true')); };
+    // show round st.r: the pads light one by one, then it is the child's turn
+    function showRound(slow = 1) {
+      stopAll();
+      phase = 'show';
+      taps = [];
+      setTurn(false);
+      pad.forEach(b => b.classList.remove('on', 'tip', 'no'));
+      bar();
+      msg(slow > 1.3 ? 'Watch slowly...' : 'Watch me!', '');
+      const on = Math.round(p.on * slow), step = Math.round((p.on + p.gap) * slow);
+      p.seq.slice(0, st.r).forEach((v, j) => later(() => light(v, on), 450 + j * step));
+      later(() => {
+        phase = 'input';
+        setTurn(true);
+        const w = p.rev ? (st.r > 1 ? 'Your turn! Backwards: last one first.' : 'Your turn!') : 'Your turn!';
+        msg(w, 'turn');
+        if (band == 'A') api.say('Your turn!');
+      }, 450 + st.r * step);
+    }
+    function tap(i, byHint) {
+      if (!alive || phase != 'input') return;
+      pad.forEach(x => x.classList.remove('tip'));
+      taps.push(i);
+      light(i, 260);
+      const r = check(p, st.r, taps);
+      bar();
+      if (r == 'no') {
+        phase = 'wait';
+        setTurn(false);
+        st.miss++;
+        api.saveState(st);
+        pad[i].classList.add('no');
+        api.sfx.del();
+        msg('Oops! Watch again.', 'try');
+        later(() => showRound(1.2), 1100);
+        return;
+      }
+      if (byHint) pad[i].classList.add('tip');
+      if (r == 'go') return;
+      phase = 'wait';
+      setTurn(false);
+      if (st.r >= p.len) {
+        msg(`You copied all ${p.len}!`, 'good');
+        later(() => api.sfx.right(st.r), 300);
+        later(() => api.win({ mistakes: st.miss, note: [`You copied ${p.len} pads in a row${p.rev ? ', backwards' : ''}.`] }), 600);
+        return;
+      }
+      st.r++;
+      api.saveState(st);
+      msg(['Yes!', 'Well done!', 'Great copying!', 'Super!'][st.r % 4] + ` Now ${st.r}.`, 'good');
+      later(() => api.sfx.right(st.r), 300);
+      later(() => showRound(), 1300);
+    }
+    pad.forEach((b, i) => { b.onclick = () => tap(i); });
+    layout();
+    bar();
+    setTurn(false);
+    msg(ASK, '');
+    if (band == 'A') api.say(ASK);
+    later(() => showRound(), band == 'A' ? 2400 : 1200);
+    return {
+      hint(t) {
+        if (!alive || phase != 'input') return false;
+        const tier_ = Math.min(3, t || 1), next = expect(p, st.r)[taps.length];
+        if (tier_ == 1) { showRound(1.7); return true; }
+        if (tier_ == 2) {
+          pad.forEach(b => b.classList.remove('tip'));
+          pad[next].classList.add('tip');
+          msg('Tap the ringed pad next.', 'hint');
+          api.say('Tap the ' + NAMES[next] + ' next.');
+          return true;
+        }
+        msg('Here is the next one.', 'hint');
+        tap(next, true);
+        return true;
+      },
+      destroy() {
+        alive = false;
+        stopAll();
+        clearTimeout(rz);
+        window.removeEventListener('resize', onResize);
+      },
+      // for the smoke bot and the shots: what is happening now
+      now: () => ({ phase, r: st.r, taps: taps.slice() }),
+    };
+  }
+
+  return { make, expect, check, solve, fresh, fit, mount, shape, CFG, NAMES, TONE };
+})();
+
+BT.reg({
+  id: 'copycat', name: 'Copy Cat', icon: 'copycat', bands: 'ABCD', allow: 2,
+  rules: 'Watch the pads light up, then tap them in the same order.',
+  make: CC.make, mount: CC.mount, solve: CC.solve,
+});
+
+var BT_VER='v116'; // last line: the whole file ran (checked by dataReady() before the app starts)

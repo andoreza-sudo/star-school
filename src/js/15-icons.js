@@ -170,6 +170,22 @@ const ICONS={
     '<rect fill="var(--ic3,currentColor)" opacity=".4" x="3" y="3" width="18" height="18" rx="3"/>' +
     '<path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M9 3.5V20.5M3.5 9H20.5"/>' +
     '<path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="M11.8 15.2L14.3 17.6L18.6 12.6M4.8 12.6L7.2 15M7.2 12.6L4.8 15M12.6 4.8L15 7.2M15 4.8L12.6 7.2"/>',
+  'riddle':
+    '<path fill="var(--ic3,currentColor)" opacity=".4" d="M5.5 3H18.5A3 3 0 0 1 21.5 6V14.5A3 3 0 0 1 18.5 17.5H11.5L6.8 21.2' +
+    'C6.3 21.6 5.6 21.2 5.6 20.6V17.5H5.5A3 3 0 0 1 2.5 14.5V6A3 3 0 0 1 5.5 3Z"/>' +
+    '<path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" ' +
+    'd="M9.3 8A2.8 2.8 0 1 1 13.2 10.6C12.4 11 12 11.5 12 12.4"/><circle cx="12" cy="15.1" r="1.5"/>',
+  'memory':
+    '<rect fill="var(--ic3,currentColor)" opacity=".4" x="2.5" y="4.5" width="10" height="15" rx="2.2"/>' +
+    '<path fill-rule="evenodd" d="M13.6 3.5H19.4A2.1 2.1 0 0 1 21.5 5.6V18.4A2.1 2.1 0 0 1 19.4 20.5H13.6A2.1 2.1 0 0 1 11.5 18.4V5.6' +
+    'A2.1 2.1 0 0 1 13.6 3.5ZM16.5 8L17.6 10.4L20 10.7L18.2 12.4L18.7 14.8L16.5 13.6L14.3 14.8L14.8 12.4L13 10.7L15.4 10.4Z"/>',
+  'copycat':
+    '<rect fill="var(--ic3,currentColor)" opacity=".4" x="13" y="3" width="8" height="8" rx="2"/>' +
+    '<path fill="var(--ic3,currentColor)" stroke="var(--ic3,currentColor)" stroke-width="1.5" stroke-linejoin="round" opacity=".4" ' +
+    'd="M7 14.2L10.6 20.3H3.4Z"/>' +
+    '<path fill="var(--ic3,currentColor)" stroke="var(--ic3,currentColor)" stroke-width="1.5" stroke-linejoin="round" opacity=".4" ' +
+    'd="M17 13.2L20.6 17L17 20.8L13.4 17Z"/>' +
+    '<circle cx="7" cy="7" r="4.6"/>',
   'path-math':
 
     '<path fill="none" stroke="currentColor" stroke-width="2.4" d="M7 3.5V10.5M3.5 7H10.5M13.5 7H20.5' +
