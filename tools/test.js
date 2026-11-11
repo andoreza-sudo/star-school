@@ -3168,6 +3168,82 @@ run('pet rig (P4-05): dragon stages x moods, named groups, anchors, tokens only,
   return{problems:p,note:'5 stages x 6 moods, dragon '+block+' bytes, '+roles.size+' palette roles'};
 });
 
+// ---- P4-04: core components ----
+run('components (P4-04): tokens only, transform/opacity motion, no old class restyled, helpers escape and label',()=>{
+  const p=[];
+  const css=fs.readFileSync(path.join(SRC,'css','10-components.css'),'utf8').replace(/\/\*[\s\S]*?\*\//g,'');
+  const tok=fs.readFileSync(path.join(SRC,'css','00-tokens.css'),'utf8');
+  if(/#[0-9a-fA-F]{3,8}\b/.test(css))p.push('raw hex colour in 10-components.css');
+  if(/rgba?\(|hsla?\(/.test(css))p.push('colour function in 10-components.css (put the colour in 00-tokens.css)');
+  if(/(^|[;{\s])(-webkit-)?(backdrop-)?filter\s*:/.test(css))p.push('filter or backdrop-filter used');
+  // every transition animates only transform or opacity; keyframes change only transform or opacity
+  for(const m of css.matchAll(/transition\s*:\s*([^;}]+)/g))for(const part of m[1].split(','))
+    if(!/^\s*(transform|opacity)\s/.test(part))p.push('transition on something other than transform/opacity: '+part.trim());
+  if(/transition-property/.test(css))p.push('use the transition shorthand (checked) instead of transition-property');
+  const kf=[...css.matchAll(/@keyframes\s+([\w-]+)\s*\{((?:[^{}]*\{[^}]*\})*)\s*\}/g)];
+  if(kf.length<4)p.push('expected the four k-* keyframes');
+  for(const [,n,body] of kf){
+    if(!/^k-/.test(n))p.push('keyframes '+n+' must be named k-*');
+    for(const d of body.match(/[a-z-]+(?=\s*:)/g)||[])if(d!='transform'&&d!='opacity')p.push('keyframes '+n+' animates '+d);
+  }
+  const others=fs.readdirSync(path.join(SRC,'css')).filter(f=>f!='10-components.css').map(f=>fs.readFileSync(path.join(SRC,'css',f),'utf8')).join('');
+  for(const [,n] of kf)if(new RegExp('@keyframes\\s+'+n+'\\b').test(others))p.push('keyframes name '+n+' is also used in another CSS file');
+  // every var(--x) is a token, or one of the component's own custom properties
+  const OWN=['c','c-tint','c-shade','c-fill','c-ledge','v','ic2'];
+  for(const m of css.matchAll(/var\(--([a-z0-9-]+)/g))if(!OWN.includes(m[1])&&!new RegExp('--'+m[1]+':').test(tok))p.push('unknown token --'+m[1]);
+  // classes the app already uses with another look must not be restyled here (DS 4 renames them); a bare .btn or .top is not touched
+  const OLD=['card','chip','meter','tile','slot','bubble','node','empty','danger','stars','hero','pad','ch','k','go','del','title','small','fb','ovl'];
+  const sels=[];
+  for(const m of css.matchAll(/(?:^|})\s*([^{}@]+)\{/g))for(const s of m[1].split(/,(?![^(]*\))/))sels.push(s.trim());
+  for(const s of sels){
+    for(const c of s.match(/\.[a-zA-Z][\w-]*/g)||[]){
+      const n=c.slice(1);
+      if(OLD.includes(n)&&!/\.(key|keys|choice|piece|socket)\b/.test(s))p.push('selector touches an existing class .'+n+': '+s);
+    }
+    if(/(^|[\s>+~])\.btn(?![\w-])/.test(s)&&!/\.btn(:is\([^)]*\)|\.(primary|soft|subject|ghost|risk|icon)\b)/.test(s))p.push('selector restyles a bare .btn: '+s);
+    if(/(^|[\s>+~])\.top(?![\w-])/.test(s)&&!/\.top\.tbar/.test(s))p.push('selector restyles a bare .top: '+s);
+  }
+  if(sels.length<150)p.push('only '+sels.length+' selectors parsed (parser broken?)');
+  // helpers
+  const out=eval(js+`
+  const bad=[],has=(h,s,w)=>{if(!h.includes(s))bad.push(w+': missing '+s+' in '+h.slice(0,160))};
+  let h=UI.btn('<b>Go</b>',{kind:'primary',icon:'go',size:'lg',id:'x'});
+  has(h,'class="btn primary lg"','btn classes');has(h,'&lt;b&gt;Go&lt;/b&gt;','btn escapes the label');has(h,'#i-go','btn icon');has(h,'id="x"','btn id');
+  if(h.includes('<b>'))bad.push('btn label not escaped');
+  has(UI.btn('Skip'),'class="btn soft"','btn default kind');
+  has(UI.btn('Reset',{kind:'risk',off:true}),' disabled','btn disabled');
+  has(UI.btn('Math',{kind:'subject',p:'math'}),'s-math','subject class');
+  has(UI.t('Grown-ups area'),'<span class="nw">Grown-ups</span> area','hyphen word kept whole');
+  has(UI.btn('Grown-ups'),'<span class="nw">Grown-ups</span>','button label keeps Grown-ups whole');
+  h=UI.ibtn('back','Go "back"');has(h,'class="btn icon"','icon button');has(h,'aria-label="Go &quot;back&quot;"','icon button aria-label');
+  has(UI.chip('coin',64),'ic-coin','coin chip colours');has(UI.chip('timer','0:45'),'#i-bolt','timer chip icon');
+  has(UI.chip('flame',4,{tap:true,id:'stk'}),'<button class="stat flame" id="stk"','tappable chip');
+  for(const [v,w] of [[-1,'0'],[2,'1'],[NaN,'0'],['x','0'],[.4567,'0.457']])has(UI.meter(v),'--v:'+w+'"','meter clamps '+v);
+  has(UI.meter(.5,{label:'9 of 58 stops',p:'math',kind:'grow'}),'class="gauge grow s-math" role="img" aria-label="9 of 58 stops"','meter label');
+  h=UI.stars(2,3);if((h.match(/class="rs on"/g)||[]).length!=2||(h.match(/class="rs"/g)||[]).length!=1)bad.push('stars(2,3) on/off count');
+  has(h,'aria-label="2 of 3 stars"','stars label');has(UI.stars(1,3,56,{arc:true}),'rate arc','stars arc');
+  h=UI.dots(5,2,['try']);has(h,'<i class="try"></i><i class="done"></i><i class="cur"></i><i class=""></i><i class=""></i>','dots states');
+  has(h,'Question 3 of 5','dots label');has(UI.dots(3,3),'Question 3 of 3','dots finished label');
+  has(UI.tag('Mastered','mast','crown'),'class="tag mast"','tag');
+  h=UI.choice('7',{kind:'sym',i:2,v:'7'});has(h,'class="choice sym" data-i="2" data-v="7"','choice');
+  h=UI.pathcard({p:'read',title:'Reading <x>',done:7,total:43,next:'Middle sounds'});
+  has(h,'class="pathcard s-read"','pathcard');has(h,'Reading &lt;x&gt;','pathcard escapes');has(h,'Next: Middle sounds','pathcard next');has(h,'--v:0.163','pathcard meter');
+  has(UI.pathcard({p:'math',title:'M',done:0,total:0}),'--v:0"','pathcard with no stops');
+  h=UI.hint('<p>x</p>',{steps:['a','b','c'],at:1});has(h,'<li class="">a</li><li class="on">b</li><li class="later">c</li>','hint steps');has(h,'id="hintnext"','hint next button');
+  if(UI.hint('',{steps:['a','b'],at:1}).includes('hintnext'))bad.push('hint: no next button on the last step');
+  has(UI.ctx('Story','<p>p</p>',false),'<details class="ctx">','ctx closed');has(UI.ctx('Story','<p>p</p>'),'<details class="ctx" open>','ctx open');
+  has(UI.sw('Calm & quiet',true,'calm'),'role="switch" id="calm" checked','switch');has(UI.sw('Calm & quiet',true,'calm'),'Calm &amp; quiet','switch escapes');
+  h=UI.seg([['e','Easy'],[2,'Two']],2);has(h,'data-v="e" aria-pressed="false"','seg off');has(h,'data-v="2" aria-pressed="true"','seg on (number value)');
+  has(UI.empty('calendar','Nothing due',''),'class="blank"','empty state');has(UI.speech('Hi','l'),'class="speech l"','speech');
+  h=UI.mapnode({p:'math',state:'lock'});has(h,'aria-disabled="true"','locked node');has(h,'#i-lock','locked node icon');
+  h=UI.mapnode({p:'math',state:'done',stars:2,isNew:true});has(h,'2 of 3 stars','passed node stars');has(h,'class="tag new"','new tag');
+  if(UI.mapnode({p:'math',state:'open',stars:2}).includes('rate'))bad.push('open node shows stars');
+  // every icon a helper can ask for exists
+  for(const n of [...Object.values(UI.SUBJ_ICON),...Object.values(UI.CHIP_ICON),'check','replay','hint','play','go','lock','star'])if(!ICONS[n])bad.push('missing icon '+n);
+  bad;`);
+  return{problems:p.concat(out),note:sels.length+' selectors'};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){

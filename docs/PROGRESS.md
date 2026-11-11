@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** batch merging P4-04, P4-13b; then batch C: P2-04, P2-07; wave 6: P4-03, P4-08, P4-10, P4-11, then P4-18.
+**Next up:** batch merging P4-13b; then batch C: P2-04, P2-07; wave 6: P4-03, P4-08, P4-10, P4-11, then P4-18.
 
-**Current version:** v67
+**Current version:** v68
 
 ## Chunk status
 
@@ -47,6 +47,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P2-02 v65
 - P2-03 v66
 - P4-05 v67
+- P4-04 v68
 
 ## Handoff notes
 
@@ -76,6 +77,12 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - (P4-05) The dragon's dark accent uses `--es-shade` (the only darker green token). If pets get more species colours (P4-06), dedicated pet tokens in 00-tokens.css may read better than borrowing subject colours.
 - (P4-05) `.stage .petbig` (40-games.css) keeps its large top padding, which made room for the emoji hat; the rig draws the hat inside the drawing, so P4-12 can trim it. The home `.thought` bubble still bobs forever (pre-existing, against DS 8.1).
 - (P4-05) The map pet is now placed by its `translate(-50%,-100%)` (the old box `bob` animation overrode that transform), so the drawn dragon stands beside the current stop. Emoji pets keep the old behaviour.
+- (P4-04) Old and new component classes live side by side: `.card`, `.meter`, `.tile`, `.slot`, `.bubble`, `.node`, `.empty`, `.stars`, `.danger`, plain `.btn` still drive today's screens. Each screen chunk (P4-08, P4-10, P4-11, P4-12, P4-16) should switch to `.panel`, `.gauge`, `.piece`/`.socket`, `.speech`, `.mapnode`, `.blank`, `.stat`, `.btn.risk`, `.btn.soft`; P4-17 can then delete the old rules (`.chip` in 40-games is the colour-by-number palette and stays).
+- (P4-04) `fb()` (the big centre pop-up) is unchanged; `UI.toast` is the DS toast. P4-10 should decide whether `fb()` calls `UI.toast`.
+- (P4-04) Icons missing for components: no `clock` (the timer chip uses `bolt`), no `chevron` (the context panel rotates `play`), no `info` (the info toast uses `hint`). P4-03 could add them.
+- (P4-04) Round dots fit about 12 questions on a phone top bar; longer rounds (placement, 20) should show a gauge instead.
+- (P4-04) Component tokens were added to `00-tokens.css` in one block (`--ledge-soft`, `--danger-shade`, `--play-deep`, `--hi`, `--hi-0`, `--dim`, `--drop`); merge note if another branch also appends tokens there.
+- (P4-04) tools/shots.js defines the twelve `tiny-*` entries twice (once before the P2-19 spelling group, once at the end of SCREENS); harmless (the second wins) but worth removing.
 - (merge P2-05) The full smoke run now takes about 12 minutes. A run that crosses midnight fails the P5-03 daily review counts (items moved to "due tomorrow" become due again). A later chunk could freeze the page clock in tools/lib/browser.js.
 - (P2-19) Spelling hint 2 ("show the word for 2 seconds, then hide", CURRICULUM E-spell) is not built: `hintHTML` has no stepped hints. A later hint chunk can add it to `genSpell` as a second hint step.
 - (P2-19) Story Summit, Dragon Library, Author Island and Legend Lab exist now with only a spell stop each (plus the boss). P2-20 to P2-29 should insert their stops in CURRICULUM 2.2 order; do not change the spell stop ids. Word Workshop (`r_workshop`, grade 2) between Space Station and Story Summit still has to be created by P2-18.
@@ -193,6 +200,17 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P1-05) Map draw with 16 fake worlds (156 stops) at 6x CPU throttle: median about 29 ms (limit 50), single runs up to about 49 ms. The strip recomputes `worldOpen`/`worldFinished` per chip and `unlocked` scans the world; a memo per draw is the next step if P4-09 adds weight.
 
 ## Log
+
+### P4-04 Core components (v68, 2026-11-11, Claude)
+- What changed: the component library of DESIGN_SYSTEM 4, all states, as opt-in classes in the new `src/css/10-components.css` (tokens only) and markup helpers `UI.*` in the new `src/js/14-ui.js`. Buttons (`.btn` + `primary` / `soft` / `subject` / `ghost` / `risk`, sizes `sm` / md / `lg`, `wide`, `.btn.icon` round 48/56/64), keys (`.keys`, `.key`, `.go`, `.del`, letter pad), choices (`.choice` + `pic` / `sym` / `wide` in `.picks`; `.sel`, `.right` with a CSS check badge and pop, `.wrong` with an amber cross badge and shake, disabled), pieces and sockets, panels (plain, tint, hero), path cards, top bars (`.top.tbar`, `.round`, `.adult`), stat chips (`.stat` star / coin / ticket / flame / timer, bump), gauge, round dots, star rating, tags, toast, speech bubble, sheet (modal), hint panel (text, picture, steps), context panel, segmented control, switch, table, empty state, map node. Subject colour by class `.s-math` ... `.s-play`. Look (owner feedback, "no dated flat look"): solid ledge under everything pressable that squashes on press (transform only), thin gloss on coloured fills, soft blur shadow only on panels, sheets and toasts, generous corners.
+- Names: classes the app already uses with another look are not touched; those components got new names (DS 4 table updated): card -> `.panel`, chip -> `.stat`, meter -> `.gauge`, tile/slot -> `.piece`/`.socket`, bubble -> `.speech`, node -> `.mapnode`, empty -> `.blank`, danger button -> `.btn.risk`. A bare `.btn` and `.top` keep their old look. test.js fails if 10-components.css restyles an old class.
+- Live app: nothing changes. No existing screen uses the new classes yet (P4-08, P4-10, P4-11, P4-12, P4-16 switch their screens). Before/after home, question, grown at all three sizes: grown identical pixel for pixel; home and question differ only where they differ between two runs of the same build (pet bob, random question).
+- Edits to existing files: `00-tokens.css` (one block of component tokens: `--ledge-soft`, `--danger-shade`, `--play-deep`, `--hi`, `--hi-0`, `--dim`, `--drop`), `tools/contrast.js` (45 new pairs, 87 in all), `tools/test.js` (new check "components (P4-04)"), `tools/shots.js` (P4-04 group: `components`, `comp-sheet`, `comp-toast`; helpers `compSheet`, `compCheck`, `compLive` after SCREENS), `tools/build.py` (VER), DESIGN_SYSTEM 4 (rewritten to the shipped API), CONTRIBUTING 3.2 (file row for 14-ui.js). No smoke change (no live screen changed).
+- Tests: test.js 37 of 37 (new check: no hex or colour functions, no filter, transitions and keyframes only transform/opacity, k-* keyframe names unique, every var() is a token, no old class or bare .btn/.top restyled, 40+ helper assertions incl. escaping, meter clamping, aria labels, stars, dots, steps; proved to fail on an injected `.card` rule, a background transition, a width keyframe, an unknown token and an unescaped label). Contrast 87 pairs pass. Sheet self-check (`node tools/shots.js components comp-sheet comp-toast`): no overflow, no word broken over two lines, every target at least 48 px, no sideways scroll at 600x960, 1024x600, 380x780 (it caught and fixed: "Grown-/ups" breaking at the hyphen, a 7-key letter row too wide for 380, round dots overlapping a phone top bar, a toast wrapping to 3 lines). check.sh OK (build, contrast, hex guard, test.js, smoke.js with no console errors and no network). index.html 706 KB (+41 KB: CSS 30 KB, JS 11 KB).
+- Screenshots looked at: `tools/out/components-600x960.png` (whole sheet, in parts), `components-380x780.png` (buttons, pieces, path cards, top bars), `components-1024x600.png` (buttons, keys, choices), `comp-sheet-600x960`, `comp-sheet-1024x600`, `comp-toast-380x780`; before (tools/out/before/) and after: home, question, grown at all three sizes.
+- Checklist 7.1: [x] only chunk files changed (plus tests, shots, docs, built output) [x] VER v68 (provisional) [x] build [x] test.js [x] smoke.js [x] screenshots at three sizes [x] midway fixture unchanged (smoke) [x] size under 1.5 MB [x] no network [x] no new emoji or hex [x] PROGRESS entry [x] one commit (not pushed).
+- For the screen chunks: use the helpers (`UI.btn`, `UI.ibtn`, `UI.chip`, `UI.setChip`, `UI.meter`, `UI.dots`, `UI.stars`, `UI.tag`, `UI.choice`, `UI.pathcard`, `UI.hint`, `UI.ctx`, `UI.speech`, `UI.empty`, `UI.sw`, `UI.seg`/`UI.segOn`, `UI.mapnode`, `UI.toast`, `UI.sheet`) or the classes directly; `.is-press` shows a pressed state from code. See DS 4.
+- Merge: built on a parallel branch, renumbered v66 -> v68 at merge.
 
 ### P4-05 Pet rig and dragon, 4 stages, 6 faces (v67, 2026-11-11, Claude)
 - What changed: new `src/js/17-pets-svg.js` (the rig) and `src/css/41-pet.css` (palette roles and motion). The dragon is now a drawn, shaded character instead of the emoji on Home, Pet Shop, Pet Care, the map, the round runner, the growth overlay and the setup choice. Other pets (dino, bird, sea pal) are exactly as before until P4-06.

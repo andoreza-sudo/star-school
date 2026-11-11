@@ -128,32 +128,46 @@ P4-01 changes tokens and base only. It maps old variables to new ones so the app
 
 ## 4. Components (chunk P4-04)
 
-Each component is a CSS class set in `src/css/10-components.css`, plus, where useful, a tiny JS helper that returns HTML. A sheet page (`tools/shots.js components`) shows every variant.
+Each component is a CSS class set in `src/css/10-components.css`, plus a tiny JS helper in `src/js/14-ui.js` (`UI.*`) that returns its HTML
+(text arguments are escaped; `html` arguments are not). A sheet page (`node tools/shots.js components`) shows every variant and state at the
+three sizes and checks itself (overflow, words broken over two lines, targets under 48 px, sideways scroll); `comp-sheet` and `comp-toast`
+show the live modal and toast over Home.
 
-| Component | Class / helper | Variants | Notes |
-|-----------|----------------|----------|-------|
-| Button | `.btn` | `primary` (brand fill, white text), `soft` (white, ledge), `subject` (uses `--c`, `--c-shade` set inline by subject), `ghost`, `danger`; sizes `sm`, `md`, `lg` | Always icon + label on child screens when space allows |
-| Icon button | `.btn.icon` | round 48 or 56 px | Needs `aria-label` |
-| Key | `.key` | number pad, letter pad, `go`, `del` | 56 px min on tablet portrait |
-| Choice | `.choice` | text, picture, symbol, wide; states idle, selected, right, wrong, disabled | Right = green tint + check icon; wrong = amber tint + shake |
-| Tile and slot | `.tile`, `.slot` | letter, word, number | Shared by build, order, spell |
-| Card | `.card` | plain, tinted (subject), hero | 22 px radius, 2 px line |
-| Path card | `.pathcard` | per subject | Icon badge, title, progress meter, "Next: ..." line, play arrow |
-| Top bar | `.top` | home, in-round, grown-ups | Back button left, title, chips right |
-| Stat chip | `.chip` | star, coin, ticket, flame, timer | Icon + number, pill shape, bumps when the number changes |
-| Meter | `.meter` | progress, pet growth, round progress dots | 16 px high, rounded |
-| Star rating | `stars(n, of)` | 1-3 | Filled `--star`, empty `--line` |
-| Toast | `fb()` | good, try, info | Top-centre pill with icon |
-| Speech bubble | `.bubble` | pet says | Tail points to the pet |
-| Sheet / modal | `.sheet` | confirm, test out, hint | Dim backdrop, slides up, one primary action |
-| Hint panel | `.hintp` | text, picture, steps | Amber tint, bulb icon, "next step" button for steps |
-| Context panel | `.ctx` | passage | Collapsible, scrolls inside |
-| Segmented control | `.seg` | 2-4 options | Grown-ups and puzzle settings |
-| Switch | `.switch` | on/off | Replaces raw checkboxes |
-| Table | `.tbl` | report card | Zebra rows, sticky header |
-| Tag | `.tag` | NEW, mastered, skipped, challenge | Small pill |
-| Empty state | `.empty` | icon, one line, one action | For "nothing due", "no game time yet" |
-| Map node | `.node` | locked, open, passed (1-3 stars), mastered, skipped, new, boss | See section 7 |
+Built in P4-04 as shipped. Where the planned class name was already used by the app with another look (`.card`, `.chip`, `.meter`, `.tile`,
+`.slot`, `.bubble`, `.node`, `.empty`, `.danger`), the component got a new name so old screens do not change until their own chunk switches
+them. A bare `.btn` keeps its old look; a variant class opts in. `tools/test.js` fails if `10-components.css` restyles any of those old classes.
+
+Style: a solid ledge under everything you can press (squashes 3-4 px on press, transform only), a soft blur shadow only on panels, sheets and
+toasts, a thin gloss (`--hi`) on coloured fills, generous corners. Subject colour comes from a class `.s-math`, `.s-read`, `.s-es`, `.s-disc`,
+`.s-bt`, `.s-play` on the component or any parent (sets `--c`, `--c-tint`, `--c-shade`; `.s-play` fills buttons with `--play-shade`).
+
+| Component | Class / helper | Variants and states | Notes |
+|-----------|----------------|---------------------|-------|
+| Button | `.btn` + `primary`, `soft`, `subject`, `ghost`, `risk` (the planned `danger`); `UI.btn(label, {kind, size, icon, p, id, wide, off})` | sizes `sm` 48, md (default) 56, `lg` 72; `wide`; pressed (`:active` or `.is-press`), focus ring, `:disabled` | Icon + label on child screens. `risk` (danger fill) is for Grown-ups only |
+| Icon button | `.btn.icon` (+ `primary`, `subject`); `UI.ibtn(icon, aria, o)` | round 48 (`sm`), 56, 64 (`lg`) | Helper always sets `aria-label` |
+| Key | `.keys` grid > `.key`, `.key.go`, `.key.del`; `.keys.abc` letter pad | pressed, disabled | 64 px tall (56 on phones, 48 in short landscape) |
+| Choice | `.choice` (+ `pic`, `sym`, `wide`) in a `.picks` grid (`.three`, `.one`); `UI.choice(html, o)` | idle, `.sel`, `.right` (green + check badge + pop), `.wrong` (amber + soft cross badge + shake), `:disabled`/`.off` | Badges are CSS only, so no extra markup is needed |
+| Tile and slot | `.piece` (+ `word`, `num`), `.socket` (+ `word`) | piece: idle, `.sel` (lifted), `.used`, pressed; socket: empty (dashed), `.on` (next), `.full`, `.right`, `.wrong` | Shared by build, order, spell |
+| Card | `.panel` (+ `tint`, `big`) with `h3` and `p` | plain, tinted (subject), hero | 22 px radius, 2 px line; hero 28 px with a tint wash |
+| Path card | `.pathcard.s-x`; `UI.pathcard({p, title, done, total, next})` | per subject, pressed, disabled | Icon badge, title, gauge, "Next: ..." line (ellipsis), play disc |
+| Top bar | `.top.tbar` (+ `round`, `adult`) with `.ttl` | home, in-round (dots in the middle), grown-ups | Back button left (`UI.ibtn('back', 'Back', {size: 'sm'})`), title, chips right |
+| Stat chip | `.stat` (+ `star`, `coin`, `ticket`, `flame`, `timer`, `.off`); `UI.chip(kind, n, {tap, id})`, `UI.setChip(el, n)` | `button.stat` is tappable; `.bump` when the number changes | Pill, icon + tabular number |
+| Meter | `.gauge` > `i` with `--v` (0..1) (+ `grow`, `good`, `lg`, subject); `UI.meter(v, {kind, p, label})` | progress, pet growth, done | 16 px (24 `lg`); the fill moves by transform |
+| Round dots | `.dots` > `i` (`.done`, `.try`, `.cur`); `UI.dots(total, cur, res)` | | Fits 10 on a phone top bar; past about 12 questions use a gauge |
+| Star rating | `UI.stars(n, of, size, {arc})` -> `.rate` > `.rs(.on)` | 0-3, `arc` lifts the middle star | Filled `--star` on a `--star-shade` ledge, empty `--line` |
+| Toast | `UI.toast(text, kind, ms)` -> `#toast.toast` | `good`, `try`, `info` | Top-centre pill with an icon disc. `fb()` is unchanged until P4-10 switches to it |
+| Speech bubble | `.speech` (+ `r`, `l`); `UI.speech(text, side)` | tail bottom-left, bottom-right, left | |
+| Sheet / modal | `UI.sheet(html, {stay, onClose})` -> `.sheet-bg` > `.sheet` (`.sh-art`, `h2`, `p`, `.acts`) | slides up (portrait), centred (landscape) | Lives inside `#app`, so `view()` removes it. One primary action |
+| Hint panel | `.hintp` > `.hb` + `.hx`; `UI.hint(html, {steps, at, next})` | text, picture (`.hpic`), steps (`.hsteps` li `.on`/`.later`, "Next step" button `#hintnext`) | Amber tint, bulb icon |
+| Context panel | `details.ctx` > `summary` + `.ctx-b`; `UI.ctx(title, html, open)` | open, closed | Scrolls inside (40vh), 60ch lines, text selectable |
+| Segmented control | `.seg` (+ `full`) > `button[aria-pressed]`; `UI.seg(opts, cur, o)`, `UI.segOn(el, cb)` | selected, disabled | Grown-ups and puzzle settings |
+| Switch | `label.switch` > `input[role=switch]` + `.sw` + label; `UI.sw(label, on, id)` | on, off, disabled, focus | Replaces raw checkboxes |
+| Table | `.tblw` > `table.tbl` (`th`, `td.n`) | | Zebra rows, sticky header |
+| Tag | `.tag` (+ `new`, `mast`, `skip`, `chal`); `UI.tag(text, kind, icon)` | | Small pill, 16 px text, sentence case ("New") |
+| Empty state | `.blank` > `.bi` + `p` + one button; `UI.empty(icon, line, actionHtml)` | | For "nothing due", "no game time yet" |
+| Map node | `.mapnode` (+ `lock`, `open`, `done`, `mast`, `skip`, `boss`); `UI.mapnode({p, state, boss, icon, html, stars, isNew})` | as section 7; `open` pulses a ring | 64 px, boss 84 px. P4-09 owns the map and may change it |
+
+Labels never break inside a word: components set `overflow-wrap: normal`, and the helpers keep hyphenated words ("Grown-ups") whole with `.nw`.
 
 Microcopy rules: short, warm, concrete. "Try again" not "Wrong". "3 more stars to hatch your egg" not "Progress 85%". No exclamation marks on every line; save them for wins.
 
