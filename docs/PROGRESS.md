@@ -6,12 +6,11 @@ The running record of what has shipped. Newest entry first. Every chunk adds one
 
 **Next up:** P2-12, P2-13, P3-08, P3-09, P3-10
 
-**Current version:** v93
+**Current version:** v94
 
-**Next up:** P2-11, P2-12, P3-08, P3-09, P3-10
+**Next up:** P2-12, P3-08, P3-10, A11
 
-**Current version:** v93
-**Current version:** v93
+**Current version:** v94
 
 ## Chunk status
 
@@ -79,12 +78,18 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P3-01 v91
 - P3-02 v92
 - P2-11 v93
+- P3-09 v94
 
 ## Handoff notes
 
 (none)
 
 ## Ideas and issues
+
+- (P3-09) With a real type registered, the shot `bt-hub-empty` (tools/shots.js) is no longer empty: it shows Patterns. If the empty hub still needs a picture, the shot can `BT.unreg` every type first.
+- (P3-09) Size and count together: a big shape drawn twice is smaller than a medium shape drawn once (each copy shares the tile), so in odd-one-out items with a 2-2 count split children must compare sizes within the same count. The colour often follows the size there, which helps; a later pass could keep size and count from varying in the same odd-one-out item for band A.
+- (P3-09) Hint words of a 3-attribute item in band D run to three sentences (one rule per attribute); fine on tablets, two lines plus on phones.
+- (P3-09) The Patterns card uses the existing `skill-pattern` icon; P4 may draw the 19 puzzle-type icons.
 
 - (P3-01 merge) The Brain Teasers card on Home is hidden until at least one puzzle type is registered (`BT.list()`), so a release between P3-01 and the first type (P3-03 sudoku) does not show children an empty hub. Smoke and shots register the fake type first, so they still see it.
 - (P3-02) The human-style grader tries naked single before hidden single (the order BRAIN_TEASERS 6 lists), so almost every bank puzzle in bands B to D grades 2 (naked single); only 1 C hard and 4 D easy/medium puzzles grade 3. Both are allowed in those bands, so nothing is rejected, but P3-03's hint tier 2 should not assume a puzzle's grade names the only way to solve it: at each step it can look for a hidden single in a box first (children usually find those more easily) and fall back to a naked single.
@@ -300,6 +305,27 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-11) Icons wanted from P4-03: `balloon` (Bonus game, today `gamepad`), `sparkle` / `confetti`, `unlock` (open padlock for "Next stop unlocked", today `map`), `zap` (a lightning with a spark for boss hits; today `bolt`), `sticker` (single sticker for the prize row), `medal` (the prize rosette as an icon), `heart-half` (boss life bar), `chest` (the treasure chest at icon size, e.g. for the round track where renderQ shows the gift emoji).
 
 ## Log
+
+### P3-09 Patterns, matrices and odd one out (v95, 2026-11-11, Claude)
+- What changed (BRAIN_TEASERS 5.5 and 7): one new puzzle type `pattern` ("Patterns", icon `skill-pattern`, bands ABCD, 12 levels, 1 mistake still earns 3 stars) in a new file `src/js/76-bt-pattern.js` (object `PAT`), with its look in `src/css/49-bt-pattern.css`. A puzzle is a short set of items (band A 3, B-D 4), one tap answers an item; a progress row of dots shows where the child is. Item kinds: `seq` "What comes next?" (pictures, 4 choices), `num` (numbers, 4 choices), `odd` "Which one does not belong?" (4 pictures, one attribute splits them 3-1), `ana` 2x2 "A is to B as C is to ?" (4 choices), `mat` 3x3 with the bottom-right cell missing (6 choices: 4 differ from the answer in one attribute, 1 in two).
+- What each band gets (levels 1-4 / 5-8 / 9-12; the rule count grows over the levels, section 7):
+  - A (PK-K, 3 items, the question is spoken by itself): next in AB / ABC / AAB, ABB, AABB cycles of shape; odd one out by shape, then by size or count, then with a distracting 2-2 split; a second sequence (size or count AB, then AAB/ABB/size ABC, then +1 count or two attributes moving together).
+  - B (1-2, 4 items in an order that changes with the level): numbers +n then -n and bigger steps (up to 100); shape sequences with cycles, +1 / -1 count, arrows turning 45 or 90 degrees, up to three attributes; 2x2 analogies with one, then two changes (size jumps small/big so it reads next to a count); odd one out with one, then two distracting 2-2 splits.
+  - C (3-4): two 3x3 matrices with 1, then 2 changing attributes (row rules: constant in the row, each value once, steady growth; shapes, sizes, counts, arrow turns); numbers x2, x3, alternating +a/+b, squares, big +n; sequences with arrows turning and two or three attributes.
+  - D (5-6): two matrices with 2, then 3 changing attributes (the last tier without "constant in the row"); numbers x a + b, Fibonacci-style, triangular, squares plus a constant, two interleaved sequences; sequences where two or three attributes change with different cycle lengths.
+- Uniqueness: a picture tile is shape (6 + arrow), colour (6), size (3), count (1-5), turn (8 steps, arrows only). `make()` builds each item from its rule, then keeps it only if every changing attribute of the shown part allows exactly one next value under the whole rule library (a cycle of 1-4 seen at least once, steady growth; for numbers also x, x a + b, second differences, growing differences, Fibonacci, alternating, interleaved, each needing one shown term more than it has parameters) and exactly one choice fits, with and without colour. Matrices are read by rows or by columns, attribute by attribute (the spec's "same holds reading by columns").
+- Colour is never the only cue: colour is not an attribute of its own; inside an item it follows shape, size or count (or stays one colour), so two tiles of different colours always differ in something else too, and no two choices differ only in colour. Right and wrong use the `.choice` badges (tick, amber cross), not colour alone.
+- Hints (per item; the frame counts tiers): 1 names the attributes to watch ("Look at the shapes and the sizes."), 2 states the rule for a row ("In each row there is one star, one square and one heart.", "Each number is double the one before.", "From the first picture to the second, it gets bigger."), 3 takes away two wrong choices (fewer if fewer are left; after that the item has no more hints and the button does nothing that counts). Words are shown in a yellow hint line and spoken.
+- Drawing: tiles are inline SVG built per tile (no ids, defs, filters or gradients): a soft `--ledge-soft` shadow down-right, the shade tone, the base tone shrunk and moved toward the top-left light, a white gloss stroke; colours are `--ill-*` tokens through `.pt-c0`..`.pt-c5`. Boards are a `--bt-tint` tray with white ledged cells, the missing cell a dashed purple "?" box that fills with the answer (pop) when solved. Portrait: board on top, choices below; landscape tablets: matrix and 2x2 board left, choices right; long rows wrap into two rows on phones. Choices are at least 64 px.
+- State (`api.saveState`): `{i, miss, h, x, g}` (item, mistakes, this item's hint tier, wrong taps, choices removed). Nothing new in `S` beyond the framework's `S.bt` records.
+- Tests: test.js new named check "patterns P3-09": 1,152 puzzles (4 bands x 12 levels x 24 days, 4,320 items): `make()` deterministic, item and choice counts, exactly one choice fits under an independent rule checker written in the test (a little more generous than the app's: also third differences and rational x a + b), with colour and with colour ignored, and it is `solve()`'s answer; colour is a function of the other attributes; no two choices look the same without colour; distractors share most features (pictures differ in 1-2 attributes, matrices exactly 1,1,1,1,2; numbers within max(12, 60%) of the answer); tiles drawable and in range; hint words present and hint 2 never names a number answer; kinds and number rules per band; matrix changing attributes C 1-2, D 2-3; average rule count grows by band (1.07, 1.31, 1.71, 2.50) and over the tiers of every band; `make()` about 1 ms. Checked that the test catches a broken generator (a 3-1 noise split in odd-one-out made it fail).
+- Smoke: new `// P3-09` block at the end of the main sequence: band A at 380x780 and band D at 1024x600, from Home -> Brain Teasers -> Patterns -> level 1: a wrong tap (amber, disabled, mistake saved), hint tiers 1, 2, 3 with the 10 s cooldown (words differ, two choices removed, the answer kept), every item answered by real taps (the "?" box fills), win card with 1 star (3 hints), stars and level 2 saved; buttons 48 px (choices 64), nothing outside, no sideways scroll on the page or in the puzzle, no emoji chrome.
+- Test expectations changed: (1) P3-01 smoke "hub" expected exactly 1 type card (only the fake type existed); it now expects as many cards as `BT.offered()` (the fake type plus Patterns). (2) Two smoke steps already failing on the base commit 669471c (checked by opening the base build: a new 4th grader opens on world 10, Factor Factory): P2-09 required Factor Factory to be the last math world and P2-10 required a new 4th grader to open on Decimal Desert; since P2-09 and P2-10 merged, the factory sits before the desert. P2-09 now accepts the factory last or just before the desert; P2-10 expects the first grade-4 world and taps the desert's world chip before playing it. No test.js expectation changed.
+- Shots (`node tools/shots.js bt-pat-levels bt-pat-a-seq bt-pat-a-odd bt-pat-a-grow bt-pat-b-num bt-pat-b-ana bt-pat-b-seq bt-pat-b-odd bt-pat-c-mat bt-pat-c-num bt-pat-d-mat bt-pat-d-seq bt-pat-d-num bt-pat-win`): looked at most of them at 380x780, several at 1024x600 and 600x960 (montages). Fixed from looking: matrix choices fell under the hint bar at 380x780 (smaller board on short phones), the 2x2 choices ran off the bottom at 1024x600, sizes were hard to tell apart next to counts (wider size steps, small/big jumps in analogies), the square's gloss looked like a corner bracket, six-picture rows wrapped needlessly.
+- check.sh: check OK (test.js 73 of 73, smoke OK). index.html 1,371,539 bytes (+41.7 KB: 76-bt-pattern.js 36.3 KB, a third of it comments and hint words; 49-bt-pattern.css 5.3 KB).
+- Checklist 7.1: [x] chunk files only (new 76-bt-pattern.js and 49-bt-pattern.css; tests, smoke, shots, docs, built output) [x] VER v95 (provisional, renumber at merge) [x] build [x] test.js [x] smoke.js [x] screenshots [x] midway fixture (smoke) [x] no network [x] no new emoji or hex [x] PROGRESS entry [x] one commit (not pushed).
+- Merge: built on branch P3-09-patterns from 669471c (v91) in parallel with P3-08 (mazes) and P3-10 (number puzzles). Overlaps are appends: tools/test.js (one block before `// ---- report ----`), tools/smoke.js (one block after the P3-01 block, plus the P3-01 hub-count line and the P2-09/P2-10 lines above, which another chunk may fix the same way: keep one), tools/shots.js (one `Object.assign(SCREENS, ...)` block before `main`), built files (rebuild). Renumber VER at merge.
+- Merge: built on a parallel branch, renumbered v93 -> v94 at merge.
 
 ### P2-11 5th grade: world Volcano Lab (v90, 2026-11-11, Claude)
 - What changed (CURRICULUM M-5a and 2.1 row 13, ROADMAP P2-11): world `m_volcano` (Volcano Lab, grade 5, volcano icon) after `m_factory`, 9 stops in CURRICULUM order: pv5 Decimal Place Value, mbig5 3-Digit Times 2-Digit, dec3 Add/Subtract Decimals, pv6 Powers of Ten, dbig4 Divide by 2-Digit, dec4 Multiply Decimals, round4 Round Decimals, ooo1 Order of Operations, dec5 Divide Decimals (titles 22 characters or less), then the boss.

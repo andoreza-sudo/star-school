@@ -6949,6 +6949,134 @@ run('Volcano Lab P2-11: a world added after Factor Factory keeps every star, not
   return{problems:uniq(r.bad),note:r.checked+' saves with and without the world'};
 });
 
+// ---- P3-09: Patterns, matrices, odd one out (BRAIN_TEASERS 5.5, 7). The rule checker below is written for this test and shares
+// no code with 76-bt-pattern.js: it is a little more generous than the app's (it also knows third differences and rational x a + b),
+// so a distractor the app missed would show up here.
+run('patterns P3-09',()=>{
+  const r=eval(js+`
+  const bad=[],add=m=>{if(bad.length<40)bad.push(m)};
+  const K=['s','z','n','r'],KC=K.concat('c'),NOM={s:1,c:1};
+  const DOMS={s:[0,6],c:[0,5],z:[0,2],n:[1,5],r:[0,7]};
+  const norm=(k,x)=>k=='r'?((x%8)+8)%8:x;
+  const diffs=(a,k)=>a.slice(1).map((x,i)=>norm(k,x-a[i]));
+  const allEq=a=>a.every(x=>x===a[0]);
+  // a picture attribute: does x continue the list v?
+  function seqOk(v,x,k){
+    const f=v.concat([x]);
+    for(let p=1;p<=4;p++)if(p<v.length&&f.every((y,i)=>i<p||y===f[i-p]))return true;
+    if(!NOM[k]&&v.length>=3){const d=diffs(f,k);if(d[0]&&allEq(d))return true}
+    return false;
+  }
+  // numbers: does x continue v under any rule (each rule needs at least one shown term more than it has parameters)?
+  function numOk(v,x){
+    const f=v.concat([x]),L=v.length,d=diffs(f),dd=diffs(d),ddd=diffs(dd);
+    for(let p=1;p<=4;p++)if(p<L&&f.every((y,i)=>i<p||y===f[i-p]))return true;
+    if(L>=3&&d[0]&&allEq(d))return true;
+    if(L>=3&&f[0]&&f[1]!==f[0]&&f.every((y,i)=>i<2||y*f[i-2]===f[i-1]*f[i-1]))return true;
+    if(L>=3&&f.every((y,i)=>i<2||y===f[i-1]+f[i-2]))return true;
+    if(L>=4&&f[1]!==f[0]){const a=(f[2]-f[1])/(f[1]-f[0]),b=f[1]-a*f[0];if(f.every((y,i)=>i==0||Math.abs(y-(a*f[i-1]+b))<1e-9))return true}
+    if(L>=4&&dd[0]&&allEq(dd))return true;
+    if(L>=4&&d[0]&&d[1]!==d[0]&&d.every((y,i)=>i<2||y*d[i-2]===d[i-1]*d[i-1]))return true;
+    if(L>=4&&d[0]!==d[1]&&d.every((y,i)=>i<2||y===d[i-2]))return true;
+    if(L>=5&&ddd[0]&&allEq(ddd))return true;
+    if(L>=6&&f.every((y,i)=>i<2||y-f[i-2]===f[2+(i%2)]-f[i%2]))return true;
+    return false;
+  }
+  // a 3x3 attribute (9 values, the last one the candidate): every row or every column constant, a set of three, or steady steps
+  function gridOk(g,k){
+    const fit=ls=>ls.every(l=>allEq(l))||ls.every(l=>new Set(l).size==3&&l.slice().sort().join()==ls[0].slice().sort().join())||
+      (!NOM[k]&&(()=>{const d=diffs(ls[0],k)[0];return d&&ls.every(l=>allEq(diffs(l,k).concat([d])))})());
+    return fit([0,3,6].map(i=>g.slice(i,i+3)))||fit([0,1,2].map(j=>[g[j],g[j+3],g[j+6]]));
+  }
+  function anaOk(A,B,C,D,k){
+    return (A[k]===B[k]&&C[k]===D[k])||(A[k]===C[k]&&B[k]===D[k])||(!NOM[k]&&norm(k,D[k]-C[k])===norm(k,B[k]-A[k]));
+  }
+  // the choices that fit, with the attributes keys
+  function fits(it,keys){
+    if(it.k=='num')return it.ch.map(x=>numOk(it.show,x));
+    if(it.k=='odd'){
+      const odd=new Set();
+      for(const k of keys){const c={};it.ch.forEach(t=>c[t[k]]=(c[t[k]]||0)+1);const v=Object.values(c).sort();if(v.join()=='1,3')odd.add(it.ch.findIndex(t=>c[t[k]]==1))}
+      return it.ch.map((_,i)=>odd.has(i));
+    }
+    return it.ch.map(t=>keys.every(k=>it.k=='seq'?seqOk(it.show.map(s=>s[k]),t[k],k):it.k=='ana'?anaOk(it.show[0],it.show[1],it.show[2],t,k):gridOk(it.show.map(s=>s[k]).concat([t[k]]),k)));
+  }
+  const nDiff=(a,b)=>K.filter(k=>a[k]!==b[k]).length;
+  const NCH={seq:4,num:4,odd:4,ana:4,mat:6},NITEMS={A:3,B:4,C:4,D:4};
+  const stat={};['A','B','C','D'].forEach(b=>stat[b]={kinds:{},rules:{},attrs:[[],[],[]],mat:[],n:0});
+  let ms=0,count=0,items=0;
+  for(const b of 'ABCD')for(let lv=1;lv<=12;lv++)for(let d=1;d<=24;d++){
+    const day='2026-'+(1+d%12)+'-'+(1+d),w=b+lv+' '+day;
+    const t0=Date.now(),p=BT.make('pattern',b,lv,{day});ms+=Date.now()-t0;count++;
+    if(JSON.stringify(p)!==JSON.stringify(BT.make('pattern',b,lv,{day})))add(w+': make is not deterministic');
+    if(p.items.length!==NITEMS[b])add(w+': '+p.items.length+' items');
+    const sol=BT.get('pattern').solve(p);
+    const st=stat[b],tier=lv<=4?0:lv<=8?1:2;st.n++;
+    p.items.forEach((it,ii)=>{
+      items++;const v=w+' item '+ii+' '+it.k;
+      st.kinds[it.k]=1;
+      if(it.ch.length!==NCH[it.k])add(v+': '+it.ch.length+' choices');
+      if(sol[ii]!==it.a)add(v+': solve() does not give the answer');
+      // exactly one choice fits, with and without colour, and it is the answer
+      for(const keys of [KC,K]){
+        const f=fits(it,keys),n=f.filter(Boolean).length;
+        if(n!==1||!f[it.a])add(v+(keys.length==4?' (colour ignored)':'')+': '+n+' choices fit, answer fits '+f[it.a]+' '+JSON.stringify(it.k=='num'?[it.show,it.ch]:it.spec||it.rules||it.at));
+      }
+      for(const t of [1,2]){const h=PAT.hintText(it,t);if(typeof h!='string'||!h||/undefined|NaN|null/.test(h))add(v+': hint '+t+' '+h)}
+      if(it.k=='num'){
+        st.rules[it.rule]=1;st.attrs[tier].push(/^(add|sub|mul)/.test(it.rule)?1:2); // two-step: alternating, squares, triangular, x a + b, Fibonacci, interleaved
+        const a=it.ch[it.a];
+        if(new Set(it.ch).size!==4)add(v+': two choices are the same number');
+        if(it.ch.concat(it.show).some(x=>!Number.isInteger(x)||x<0||x>(b=='B'?100:999)))add(v+': number out of range '+it.ch.concat(it.show));
+        if(it.ch.some(x=>x!==a&&(x<1||Math.abs(x-a)>Math.max(12,a*0.6))))add(v+': a distractor is far from the answer '+it.ch+' '+a);
+        // hint 2 states the rule, never the answer (the answer may appear only where it is also a shown number or a step between two)
+        const seen=new Set(it.show.concat(diffs(it.show).map(Math.abs)));
+        if(!seen.has(a)&&new RegExp('\\\\b'+a+'\\\\b').test(PAT.hintText(it,2)))add(v+': hint 2 says the answer '+PAT.hintText(it,2));
+        return;
+      }
+      const tiles=it.show.concat(it.ch);
+      for(const t of tiles){
+        for(const k of KC)if(!(Number.isInteger(t[k])&&t[k]>=DOMS[k][0]&&t[k]<=DOMS[k][1]))add(v+': '+k+' out of range '+JSON.stringify(t));
+        if(t.n>3&&t.z!=2)add(v+': 4 or 5 shapes that are not big');
+        if(t.s!=6&&t.r)add(v+': a turned shape that is not an arrow');
+      }
+      // colour follows the other attributes: two tiles with different colours always differ in shape, size, count or turn
+      const cm={};
+      for(const t of tiles){const key=K.map(k=>t[k]).join();if(key in cm&&cm[key]!==t.c)add(v+': colour is the only difference between two tiles');cm[key]=t.c}
+      if(it.k!='odd')it.ch.forEach((x,i)=>it.ch.forEach((y,j)=>{if(i<j&&!nDiff(x,y))add(v+': two choices look the same without colour')}));
+      // plausible distractors: they share most features with the answer
+      if(it.k!='odd'){
+        const a=it.ch[it.a],dn=it.ch.filter((_,i)=>i!==it.a).map(x=>nDiff(x,a));
+        if(dn.some(x=>x<1||x>2))add(v+': a distractor differs in '+dn+' attributes');
+        if(it.k=='mat'&&dn.sort().join()!=='1,1,1,1,2')add(v+': matrix distractors should differ in 1,1,1,1,2 attributes, got '+dn);
+      }
+      st.attrs[tier].push(it.k=='odd'?1:it.k=='ana'?it.x.length:it.at.length); // rules to find: odd one out 1, a 2x2 its changes
+      if(it.k=='mat')st.mat.push(it.at.length);
+      if(it.k=='seq'&&it.show.length<4)add(v+': only '+it.show.length+' pictures shown');
+    });
+  }
+  // difficulty grows by band (BRAIN_TEASERS 4 and 5.5) and over the levels of a band (section 7)
+  const ks=b=>Object.keys(stat[b].kinds).sort().join(),rs=b=>Object.keys(stat[b].rules).sort().join();
+  if(ks('A')!=='odd,seq')add('band A kinds '+ks('A'));
+  if(ks('B')!=='ana,num,odd,seq')add('band B kinds '+ks('B'));
+  if(ks('C')!=='mat,num,seq'||ks('D')!=='mat,num,seq')add('bands C, D kinds '+ks('C')+' / '+ks('D'));
+  if(rs('B')!=='add,add1,addbig,sub,sub1')add('band B number rules '+rs('B'));
+  if(!['mul','mul2','alt','sq'].every(x=>stat.C.rules[x])||['affine','fib','tri','inter'].some(x=>stat.C.rules[x]))add('band C number rules '+rs('C'));
+  if(!['affine','fib','tri','inter'].every(x=>stat.D.rules[x])||['add','add1','sub','sub1'].some(x=>stat.D.rules[x]))add('band D number rules '+rs('D'));
+  const mm=a=>[Math.min(...a),Math.max(...a)].join('-');
+  if(mm(stat.C.mat)!=='1-2'||mm(stat.D.mat)!=='2-3')add('changing attributes in matrices: C '+mm(stat.C.mat)+', D '+mm(stat.D.mat));
+  const avg=a=>a.reduce((x,y)=>x+y,0)/a.length,band=b=>avg([].concat(...stat[b].attrs));
+  const AV='ABCD'.split('').map(b=>band(b).toFixed(2));
+  for(let i=1;i<4;i++)if(+AV[i]<=+AV[i-1])add('rule count does not grow by band: '+AV);
+  for(const b of 'ABCD'){const t=stat[b].attrs.map(avg);if(!(t[0]<=t[1]&&t[1]<=t[2]&&t[0]<t[2]))add('band '+b+' rule count does not grow over the levels: '+t.map(x=>x.toFixed(2)))}
+  if(ms/count>20)add('make() takes '+(ms/count).toFixed(1)+' ms');
+  // hint 3 and the frame contract: registered for every band, 1 mistake allowed for 3 stars
+  const d=BT.get('pattern');
+  if(!d||d.bands!=='ABCD'||d.allow!==1||BT.nLevels(d,'A')!==12)add('registration '+JSON.stringify(d&&{bands:d.bands,allow:d.allow}));
+  ({bad,note:count+' puzzles, '+items+' items, '+(ms/count).toFixed(1)+' ms each, rule count by band '+AV.join(' ')});`);
+  return{problems:r.bad,note:r.note};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){

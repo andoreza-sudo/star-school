@@ -2345,7 +2345,8 @@ async function main() {
       await fp.evaluate(() => { setGrade(4); window.say = () => {}; save(); });
       const info = await fp.evaluate(() => {
         const wi = PATHS.math.worlds.findIndex(w => w.id === 'm_factory');
-        return { wi, ids: PATHS.math.worlds[wi].nodes.map(n => n[0] + n[1]), open: worldOpen('math', wi), n: PATHS.math.worlds.length };
+        return { wi, ids: PATHS.math.worlds[wi].nodes.map(n => n[0] + n[1]), open: worldOpen('math', wi), n: PATHS.math.worlds.length,
+          next: (PATHS.math.worlds[wi + 1] || {}).id || '' };
       });
       const fwi = await fp.evaluate(() => PATHS.math.worlds.findIndex(w => w.id === 'm_frac'));
       if (info.ids.length !== 14 || !info.open || info.wi !== fwi + 1) fail('Factor Factory: ' + JSON.stringify(info)); // right after Fraction Forest (Decimal Desert follows it)
@@ -2665,7 +2666,8 @@ async function main() {
         await chk('hub');
         const hub = await pg.evaluate(() => ({ day: !!document.querySelector('#btday'), cards: document.querySelectorAll('.bt-type').length, keep: !!document.querySelector('#btkeep'),
           title: document.querySelector('.ttl').textContent }));
-        if (!hub.day || hub.cards !== 1 || hub.keep || hub.title.trim() !== 'Brain Teasers') bad.push('hub: ' + JSON.stringify(hub));
+        const nTypes = await pg.evaluate(() => BT.offered().length); // the fake type plus the real ones (P3-09 Patterns on)
+        if (!hub.day || hub.cards !== nTypes || nTypes < 1 || hub.keep || hub.title.trim() !== 'Brain Teasers') bad.push('hub: ' + JSON.stringify(hub));
         // level strip
         await pg.click('[data-t="zzfake"]');
         await pg.waitForSelector('.bt-lvs');
@@ -2836,6 +2838,103 @@ async function main() {
       network.push(...vo.network);
       for (const e of vo.errors) fail(e);
       await vo.ctx.close();
+    }
+
+    // P3-09 Patterns with real taps: band A at 380x780 (a PK child) and band D at 1024x600 (a 5th grader): Home -> Brain Teasers ->
+    //    Patterns -> level 1 -> a wrong tap (amber, stays out, a mistake saved) -> hint tiers 1, 2 (words) and 3 (two choices go)
+    //    with the cooldown -> every item answered by tapping -> win card (1 star after 3 hints) -> stars saved, level 2 open.
+    //    Every button 48 px (choices 64), no sideways scroll, nothing outside the screen, no emoji in the chrome.
+    {
+      const look = () => {
+        const vw = document.documentElement.clientWidth, out = [];
+        for (const e of document.querySelectorAll('button, [role="button"]')) {
+          const r = e.getBoundingClientRect();
+          if (!r.width || r.bottom < 0 || r.top > innerHeight || e.closest('svg') || e.closest('#toast')) continue;
+          const min = e.classList.contains('pt-ch') ? 63.5 : 47.5;
+          if (Math.min(r.width, r.height) < min) out.push('small ' + (e.id || e.className) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
+          if (r.left < -1 || r.right > vw + 1) out.push('outside ' + (e.id || e.className) + ' ' + Math.round(r.left) + '..' + Math.round(r.right));
+        }
+        if (document.documentElement.scrollWidth > vw) out.push('sideways scroll ' + document.documentElement.scrollWidth);
+        const st = document.querySelector('.bt-stage');
+        if (st && st.scrollWidth > st.clientWidth + 1) out.push('the puzzle scrolls sideways ' + st.scrollWidth + ' > ' + st.clientWidth);
+        const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        for (let n; (n = w.nextNode());) {
+          const el = n.parentElement;
+          if (!el || el.closest('script,style,svg,#ico-sprite,.rw-burst') || !el.getClientRects().length) continue;
+          const m = n.textContent.match(/\p{Extended_Pictographic}|[◀▶✕]/u);
+          if (m) out.push('emoji chrome ' + m[0] + ' in ' + (el.id || el.className));
+        }
+        return out;
+      };
+      for (const [w, h, grade, band] of [[380, 780, 0, 'A'], [1024, 600, 5, 'D']]) {
+        const tag = 'P3-09 ' + w + 'x' + h + ' band ' + band;
+        const pa = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = pa.page, bad = [];
+        const chk = async what => { for (const o of await pg.evaluate('(' + look.toString() + ')()')) bad.push(what + ': ' + o); };
+        await pg.evaluate(g => { S.grade = g; save(); home(); }, grade);
+        await pg.waitForSelector('#btcard');
+        await pg.evaluate(() => document.querySelector('#btcard').scrollIntoView({ block: 'center' }));
+        await pg.click('#btcard');
+        await pg.waitForSelector('.bt-hub [data-t="pattern"]');
+        await pg.click('.bt-hub [data-t="pattern"]');
+        await pg.waitForSelector('.bt-lvs');
+        await pg.click('.bt-lv[data-l="1"]');
+        await pg.waitForSelector('#btstage .pt-ch');
+        await pg.waitForTimeout(450);
+        await chk('first item');
+        const s0 = await pg.evaluate(() => ({ stars: S.stars, band: S.bt.cur.band, n: S.bt.cur.puzzle.items.length }));
+        if (s0.band !== band) bad.push('played band ' + s0.band);
+        const sol = await pg.evaluate(() => BT.get('pattern').solve(S.bt.cur.puzzle));
+        const nch = await pg.evaluate(() => document.querySelectorAll('.pt-ch').length);
+        // a wrong tap: amber with its badge, out of play, one mistake saved
+        const wrong = (sol[0] + 1) % nch;
+        await pg.click(`.pt-ch[data-c="${wrong}"]`);
+        const wr = await pg.evaluate(i => { const b = document.querySelector(`.pt-ch[data-c="${i}"]`); return { cls: b.className, dis: b.disabled, st: S.bt.cur.state }; }, wrong);
+        if (!/wrong/.test(wr.cls) || !wr.dis || wr.st.miss !== 1 || !wr.st.x.includes(wrong) || wr.st.i !== 0) bad.push('wrong tap: ' + JSON.stringify(wr));
+        // hint tiers: 1 and 2 are words, 3 takes away two wrong choices; the frame's cooldown between them
+        const tips = [];
+        for (let t = 1; t <= 3; t++) {
+          if (t > 1) await vwait(pg, 11500);
+          await pg.click('#bthint');
+          await pg.waitForTimeout(200);
+          tips.push(await pg.evaluate(() => ({ tip: document.querySelector('.pt-tip').hidden ? '' : document.querySelector('.pt-tip').textContent.trim(),
+            off: document.querySelectorAll('.pt-ch.off').length, hints: S.bt.cur.hints, h: S.bt.cur.state.h })));
+          if (t == 2) { await pg.waitForTimeout(250); await chk('hint 2'); }
+        }
+        if (!tips[0].tip || !tips[1].tip || tips[0].tip === tips[1].tip || tips[0].hints !== 1 || tips[1].hints !== 2) bad.push('hint words: ' + JSON.stringify(tips.slice(0, 2)));
+        if (tips[2].off !== Math.min(2, nch - 2) || tips[2].hints !== 3 || tips[2].h !== 3) bad.push('hint 3: ' + JSON.stringify(tips[2]) + ' of ' + nch);
+        if (await pg.evaluate(a => document.querySelector(`.pt-ch[data-c="${a}"]`).disabled, sol[0])) bad.push('hint 3 took away the answer');
+        await chk('hint 3');
+        // answer every item by tapping its choice; the next one draws after a moment
+        for (let i = 0; i < s0.n; i++) {
+          await pg.waitForFunction(i => S.bt.cur && S.bt.cur.state && (S.bt.cur.state.i || 0) === i && document.querySelectorAll('.pt-dots i.on').length === i, i, { timeout: 8000 });
+          await pg.waitForTimeout(200);
+          if (i == 1) await chk('second item');
+          const ok = await pg.evaluate(() => { const it = S.bt.cur.puzzle.items[S.bt.cur.state.i]; return { a: it.a, k: it.k }; });
+          if (ok.a !== sol[i]) bad.push('item ' + i + ': solve() and the puzzle disagree');
+          await pg.click(`.pt-ch[data-c="${sol[i]}"]`);
+          if (i < s0.n - 1) {
+            const got = await pg.evaluate(a => ({ right: document.querySelector(`.pt-ch[data-c="${a}"]`).classList.contains('right'), box: !!document.querySelector('.pt-got') || !document.querySelector('.pt-board') }), sol[i]);
+            if (!got.right || !got.box) bad.push('item ' + i + ' (' + ok.k + ') right tap: ' + JSON.stringify(got));
+          }
+        }
+        await pg.waitForSelector('.bt-win #btnext', { timeout: 8000 });
+        await pg.waitForTimeout(700);
+        await chk('win card');
+        const win = await pg.evaluate(b => ({ shown: document.querySelectorAll('.bt-win .rs.on').length, saved: S.bt.pattern && S.bt.pattern[b] && S.bt.pattern[b].stars[0],
+          lvl: S.bt.pattern && S.bt.pattern[b].lvl, cur: !!S.bt.cur, stars: S.stars }), band);
+        if (win.shown !== 1 || win.saved !== 1 || win.lvl !== 2 || win.cur || win.stars !== s0.stars + 1) bad.push('win: ' + JSON.stringify(win) + ' from ' + JSON.stringify(s0));
+        await pg.click('#btlvls');
+        await pg.waitForSelector('.bt-lvs');
+        const open = await pg.evaluate(() => document.querySelectorAll('.bt-lv:not(.lock)').length);
+        if (open !== 2) bad.push('after level 1 the strip should have 2 open levels, got ' + open);
+        if (bad.length) fail(tag + ':\n  ' + bad.join('\n  '));
+        else step(tag + ': Home -> Brain Teasers -> Patterns -> level 1: a wrong tap, hints 1-3 with the cooldown, ' + s0.n + ' items tapped, win card with 1 star saved, level 2 open; targets 48 px (choices 64), no sideways scroll, no emoji chrome');
+        await vwait(pg, 300);
+        network.push(...pa.network);
+        for (const e of pa.errors) fail(e);
+        await pa.ctx.close();
+      }
     }
 
     for (const e of errors) fail(e);
