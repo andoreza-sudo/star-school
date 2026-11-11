@@ -1,5 +1,5 @@
-/* Star School data banks v135. BUILT by tools/build.py from src/data/*.js (sorted): never edit by hand.
-   index.html v135 loads this file with <script src="data.v135.js"> between the code and the start-up script. */
+/* Star School data banks v137. BUILT by tools/build.py from src/data/*.js (sorted): never edit by hand.
+   index.html v137 loads this file with <script src="data.v137.js"> between the code and the start-up script. */
 /* ---------- object art set B: 40 pictures (P4-14; DESIGN_SYSTEM.md section 6.5) ----------
    The words children see most that set A (src/js/16-art-a.js) did not draw: picture words, Spanish units (animals, food, body,
    house, clothes, school, transport), riddles, Memory Match, Discover, vocabulary and counting. Same style, rules and limits
@@ -1488,7 +1488,7 @@ compAdd([
    d:['Earth blocks the Moon every night','The Moon makes less light each week','Clouds cover part of the Moon'],ev:[3,4]},
   {t:'vocab',q:'In this passage, "reflects" means...',a:'bounces back',
    d:['gives away','soaks up','turns off'],ev:[1]},
-  {t:'feature',q:'What does the title tell the reader?',a:'It explains why the Moon changes',
+  {t:'feature',q:'What does the title tell the reader?',a:'It names the topic: the shapes of the Moon',
    d:['It tells a story about a girl','It lists the planets in order','It shows how to make a telescope'],ev:[4]}]},
 
 {id:'g3n03',g:3,type:'n',title:'Rain Forest Layers',text:[
@@ -1834,14 +1834,14 @@ compAdd([
  qs:[
   {t:'infer',q:'How did the narrator feel after Rosa stormed off?',a:'Sad and worried about the fight',
    d:['Proud of the blue waves','Sleepy after a long day','Angry at Grandpa'],ev:[5,4]},
-  {t:'compare',q:'How were the sisters\' first ideas different?',a:'One wanted blue waves, and one wanted yellow stars.',
+  {t:'compare',q:'How were the two first ideas for the quilt different?',a:'One wanted blue waves, and one wanted yellow stars.',
    d:['One wanted a plain quilt, and one wanted stripes.','One wanted to sew a quilt, and one wanted to buy it.','One wanted a small quilt, and one wanted a huge one.'],ev:[2,3]},
-  {t:'pov',q:'From whose point of view is the story told?',a:'The sister who wanted blue waves',
+  {t:'pov',q:'From whose point of view is the story told?',a:'The narrator, who wanted blue waves',
    d:['Rosa, who wanted yellow stars','Grandpa, who received the quilt','A neighbor who watched them sew'],ev:[0,2]},
   {t:'vocab',q:'In this story, "studied" means...',a:'looked at it carefully',
    d:['sewed it together','put it away','forgot all about it'],ev:[8]},
   {t:'theme',q:'Which idea is the theme of the story?',a:'Joining two ideas can beat either one alone.',
-   d:['Arguing is the best way to make a choice.','Sisters should avoid making gifts together.','Store gifts are always better than made ones.'],ev:[9,10,13]}]},
+   d:['Arguing is the best way to make a choice.','Families should never make gifts together.','Store gifts are always better than made ones.'],ev:[9,10,13]}]},
 
 {id:'g5f03',g:5,type:'f',title:'Hiro and the Missing Key',text:[
   'Hiro came home from school and found that his house key was not in his backpack.',
@@ -2210,7 +2210,7 @@ compAdd([
   'The moon\'s gravity pulls on everything on Earth, but water can move, so the ocean bulges toward the moon.',
   'A second bulge forms on the opposite side of Earth, because the whole planet is pulled toward the moon more strongly than the far water is.',
   'As Earth spins, a coastline passes through both bulges, so most coasts have two high tides and two low tides each day.',
-  'The sun pulls on the ocean as well, but its pull is far weaker than the moon\'s, because the sun is so much farther away.',
+  'The sun pulls on the ocean as well, but its tide-making effect is only about half the moon\'s, because the sun is so much farther away.',
   'When the sun, Earth, and moon line up at new moon and full moon, their pulls combine, and the tides grow extra large.',
   'These are called spring tides, even though they have nothing to do with the season.',
   'When the moon is at a quarter phase, the pulls work against each other, and the tides are smaller, called neap tides.',
@@ -2226,7 +2226,7 @@ compAdd([
    d:'Ships could sail in more easily|The tide would be at its highest|Sailors would not need tide tables'.split('|'),ev:[11]},
   {t:'figure',q:'The sea is "answering a call from the moon." This phrase means the ocean is...',a:'reacting to the moon\'s pull',
    d:'making noise at night|chasing the moon across the sky|sending signals to sailors'.split('|'),ev:[14,3]},
-  {t:'evidence',q:'Which sentence best shows that the sun has less effect on tides than the moon?',a:'"its pull is far weaker than the moon\'s"',
+  {t:'evidence',q:'Which sentence best shows that the sun has less effect on tides than the moon?',a:'"its tide-making effect is only about half the moon\'s"',
    d:'"the ocean bulges toward the moon"|"the tides grow extra large"|"these tables can be printed years ahead"'.split('|'),ev:[6]},
   {t:'purpose',q:'Why does the author point out that spring tides have nothing to do with the season?',a:'To clear up a possible mix-up about the name',
    d:'To argue that spring is the best time to visit a beach|To show that tides change with the weather|To explain how the sun heats the ocean'.split('|'),ev:[8]}]},
@@ -4242,12 +4242,14 @@ GR(1,'caps','Names of people, the days of the week and the word I start with a c
 // ---- level 2: nouns, verbs, adjectives (grade 2) ----
 (()=>{
   // [sentence, noun, verb, adjective]: each sentence has exactly one of each, and no word is used twice
-  const S=[['The tiny frog hops.','frog','hops','tiny'],['A happy puppy barks.','puppy','barks','happy'],['The loud bell rings.','bell','rings','loud'],
-    ['My brave dog runs.','dog','runs','brave'],['The soft kitten sleeps.','kitten','sleeps','soft'],['A shiny fish swims.','fish','swims','shiny'],
-    ['The tall giraffe eats.','giraffe','eats','tall'],['Our funny teacher sings.','teacher','sings','funny'],['A sleepy bear yawns.','bear','yawns','sleepy'],
-    ['The fluffy rabbit jumps.','rabbit','jumps','fluffy'],['The sweet baby giggles.','baby','giggles','sweet'],['A big wave crashes.','wave','crashes','big'],
-    ['The cold wind blows.','wind','blows','cold'],['Her little sister laughs.','sister','laughs','little'],['The yellow duck quacks.','duck','quacks','yellow'],
-    ['The busy bee buzzes.','bee','buzzes','busy']];
+  // R-01r: sentences of several shapes (at most 4 words to tap), so the noun, verb and adjective each sit in every place and the
+  // position of a word never gives the answer: The tiny frog hops. / Happy puppies bark. / I like sweet apples. / Kick the red ball.
+  const S=[['The tiny frog hops.','frog','hops','tiny'],['Happy puppies bark.','puppies','bark','Happy'],['She hugs soft kittens.','kittens','hugs','soft'],
+    ['They climb tall trees.','trees','climb','tall'],['A sleepy bear yawns.','bear','yawns','sleepy'],['I like sweet apples.','apples','like','sweet'],
+    ['Kick the red ball.','ball','Kick','red'],['The cold wind blows.','wind','blows','cold'],['You found pretty shells.','shells','found','pretty'],
+    ['Brave firefighters help.','firefighters','help','Brave'],['Lemons taste sour.','Lemons','taste','sour'],['We sing funny songs.','songs','sing','funny'],
+    ['Her little sister laughs.','sister','laughs','little'],['They ride big bikes.','bikes','ride','big'],['The busy bee buzzes.','bee','buzzes','busy'],
+    ['Shiny fish swim.','fish','swim','Shiny']];
   const HN='A noun names a person, place or thing. Which word names something you could point to?';
   const HV='A verb is an action word. Which word tells what someone or something does?';
   const HA='An adjective describes a noun. Which word tells what kind or how it looks?';
@@ -4303,24 +4305,24 @@ GR(4,'tense','Some verbs change in a special way for the past. Read the clue wor
  ['Yesterday, Mom ___ new shoes.','bought','buyed','boughted'],['Last Sunday, we ___ fresh bread.','bought','buyed','boughted'],
  ['Last night, I ___ about my dream.','thought','thinked','thinking'],['Yesterday, Lily ___ of a good idea.','thought','thinked','thinking'],
  ['Yesterday, I ___ a letter to Gran.','wrote','writed','written'],['Last night, Jo ___ a short story.','wrote','writed','written']]),
-GR(4,'tense','Words like every day and right now tell about the present. Which verb fits the clue?','choice',[
- ['Every day, Dad ___ the bus to work.','takes','took','will take'],['Right now, the baby ___ in her crib.','sleeps','slept','will sleep'],
- ['Every day, I ___ my teeth.','brush','brushed','will brush'],['Right now, we ___ a new song.','sing','sang','will sing'],
+GR(4,'tense','Words like every day and each week tell about the present. Which verb fits the clue?','choice',[
+ ['Every day, Dad ___ the bus to work.','takes','took','will take'],['Every night, the baby ___ in her crib.','sleeps','slept','will sleep'],
+ ['Every day, I ___ my teeth.','brush','brushed','will brush'],['Every morning, we ___ our class song.','sing','sang','will sing'],
  ['Every week, Gran ___ us a card.','sends','sent','will send'],['Each day, the sun ___ in the east.','rises','rose','will rise'],
- ['Right now, the rain ___ on the roof.','falls','fell','will fall']]),
+ ['Each spring, a lot of rain ___ on our roof.','falls','fell','will fall']]),
 GR(4,'tense','Words like tomorrow and next week mean it has not happened yet. Which choice looks ahead?','choice',[
  ['Tomorrow, we ___ the zoo.','will visit','visited','have visited'],['Next week, I ___ eight years old.','will be','was','were'],
  ['Tomorrow, we ___ go to the lake.','will','did','were'],['Next month, Dad ___ fix the fence.','will','did','had'],
  ['Next year, I ___ be in third grade.','will','was','did'],['Tomorrow, I ___ my grandma.','will call','called','have called'],
  ['Next Saturday, we ___ a picnic.','will have','had','have had'],['Tonight, the stars ___ shine.','will','did','were']]),
-GR(4,'tense','Look for clue words: yesterday and last mean past, now and every mean present, tomorrow and next mean future.','wide',[
+GR(4,'tense','Look for clue words: yesterday and last mean past, right now and every day mean present, tomorrow and next mean future.','wide',[
  ['Which is in the future?','We will plant seeds tomorrow.','We planted seeds yesterday.','We plant seeds every spring.'],
  ['Which is in the future?','The bus will come soon.','The bus came early.','The bus comes every day.'],
  ['Which is in the past?','Mom baked a pie last night.','Mom bakes a pie every Friday.','Mom will bake a pie tomorrow.'],
  ['Which is in the past?','I rode my bike yesterday.','I ride my bike every day.','I will ride my bike later.'],
  ['Which is in the past?','The bird flew away.','The bird flies away.','The bird will fly away.'],
  ['Which is happening now?','The kids are playing right now.','The kids played all day.','The kids will play soon.'],
- ['Which is happening now?','Dad cooks dinner every night.','Dad cooked dinner last night.','Dad will cook dinner soon.'],
+ ['Which is happening now?','Dad is cooking dinner right now.','Dad cooked dinner last night.','Dad will cook dinner soon.'],
  ['Which is in the future?','Our team will win next time.','Our team won last time.','Our team wins every time.']]),
 // ---- level 5: subject-verb agreement and contractions (grade 3) ----
 GR(5,'agreement','Look at the subject: is it one thing or more than one? Then say each choice out loud and listen for the one that sounds right.','choice',[
@@ -4439,7 +4441,7 @@ GR(7,'quotes','Spoken words go inside quotation marks. A comma separates the spe
 // ---- level 8: more parts of speech and perfect tenses (grade 5) ----
 GR(8,'adverbs','An adverb tells how, when or where an action happens. Many end in -ly. Find the word that describes the action.','tap',[
  ['Tap the adverb.','The dog barked loudly.','loudly'],['Tap the adverb.','She sings softly.','softly'],
- ['Tap the adverb.','He ran quickly.','quickly'],['Tap the adverb.','We walked slowly home.','slowly'],
+ ['Tap the adverb.','He ran quickly.','quickly'],['Tap the adverb.','We walked slowly.','slowly'],
  ['Tap the adverb.','Kids play outside.','outside'],['Tap the adverb.','He spoke kindly.','kindly'],
  ['Tap the adverb.','The cat sleeps quietly.','quietly'],['Tap the adverb.','Mom drives carefully.','carefully'],
  ['Tap the adverb.','He jumped happily.','happily']]),
@@ -4516,7 +4518,7 @@ GR(9,'pronoun case','Say the sentence with only one person in it. Pick the form 
  ['Dad took Meg and ___ to the zoo.','me','I','mine'],['Sara and ___ won the game.','I','me','mine'],
  ['Tia and ___ sang a song.','he','him','his'],['The teacher helped Jan and ___.','her','she','hers'],
  ['___ and I ate lunch.','She','Her','Hers'],['Sit with Tom and ___.','him','he','his'],
- ['___ kids love recess.','We','Us','Our'],['Mom picked ___ kids up.','us','we','our']]),
+ ['___ kids love recess.','We','Us','Them'],['Mom picked ___ kids up.','us','we','they']]),
 GR(9,'who or whom','One word does the action and one receives it. Replace the blank with he or him, then pick the matching word.','choice',[
  ['___ ate the last cookie?','Who','Whom','Whose'],['To ___ did you give it?','whom','who','whose'],
  ['___ is calling you?','Who','Whom','Whose'],['With ___ did you go?','whom','who','whose'],
@@ -4531,6 +4533,22 @@ GR(9,'clear pronouns','A pronoun must point to one clear noun. If it could mean 
  ['Which is clear?','The book says owls hunt at night.','They say owls hunt at night.','In the book, they say owls hunt.'],
  ['Which is clear?','The sign says to keep off.','It says to keep off.','They say to keep off.']])
 );
+/* ---------- kid-safe text: the blocklist (R-01r) ---------- */
+/* Read by ksBad() in src/js/20-words.js, at run time only. Every entry is the ksHash (cyrb53, base 36) of one lower-case word, so the
+   list itself is never readable or displayed anywhere: not in the app, not in the repo, not in a test log. To add a word, hash it with
+   ksHash('word') in a Node session that loaded the code (never write the word into a file in this repo), then add the hash here.
+   w: words that must never appear in anything a child sees or hears: slurs (ethnic, racial, homophobic, ableist), profanity, sexual and
+      private body words, in their common inflected forms. Checked on every whole word (any case).
+   s: pieces that are offensive inside any longer word; sl lists their lengths. Checked on every substring of those lengths.
+   c: words an authored passage or answer may need (a science text about blood, a plant shoot) but that code never offers as a
+      wrong choice it makes or draws: toilet and rude body words, drugs and alcohol, violence, unkind names (ksBad(text, true)).
+   tools/test.js "reading review fixes R-01r" generates 20,000 questions per reading level and fails on any hit. */
+var KIDSAFE = {
+  w: '106r7itickk 10p6jl9uqw1 112bj1hct37 117xot3dw34 11b1s8ucqyd 11bur09nrb8 124cr574n74 12oicjyf6g8 12s99szs1ke 12t7ucwkuup 136h5mtpwuh 13ck7hqpa3x 13s1k50w9e 141ynvi7i4q 145pqvup0mz 146a72hedzx 146hafai2pm 146wu35qxj8 14gbsja04ld 14mz4vj66te 14ndfterygr 15qhdcl66ql 166kye9ntvq 16allq3unxs 16guocmzaja 16xmqfxze3k 179e9om5l18 18gc51diqz9 18l69yy60mx 1acfafgn751 1aj488857gv 1b2lwv5eg0y 1bs6qvigxo2 1bymdul9lyv 1dl5cr83ro3 1dnvwwfln9n 1dpqfqkz0mw 1dvfi2cft7k 1dylxaaq2bw 1e0r4vlx587 1figyixqy64 1gkgsb63gii 1h1bacv4lp3 1hk4d7gv6ls 1i59lhb4cz0 1ig9qug4872 1ip27wbhlw9 1j252clh9kb 1j4cjrxpbv 1jaucgp1o85 1kgd7klxrr8 1l6o5ebsqo7 1m7pfd8r5zu 1mvk3ss0qf8 1nd90z9zb3h 1ntllclsdhj 1nw285y8gkv 1nx19e3etij 1paph74w6ql 1ppg2jdvffa 1pr4610zgsn 1prn5t2acxz 1pt93awyaux 1pum35w2w1u 1qlsa38xu4t 1qtghq3ewim 1qw9yya4rbw 1qxdn7wo2vb 1r03trdtwmg 1rdfv9dh50w 1rm4h0etyqu 1rsh6iefdc4 1sc6ilenm2r 1stcheg892i 1tiejo7900f 1u0s7jtq881 1ur91vivg40 1v0ws67p0rh 1v1ay3o2s0d 1vhsxinweh9 1w5a7k6wa67 1w7j4jspwmd 1wfwjzc6ntk 1wr5i3a22a 1wtjuzfpddk 1x4be8vl6n8 1xyqhs569k1 1y96kffli5o 1zuvedn6bh3 203f4cis43s 20liiwtxh8p 215kji7zyad 21f97jcn91r 21m2kayp8h4 22e7u64cj4n 22qsnq8he4l 22vp50owv4y 23nutyzoewq 23sri1w9frr 23xcox936xz 249vx7bsgam 24hlw2zwd50 25f4j2kjv9d 25gch0qp5r9 25s73v2genm 2621nw90yge 26omkup90d 26swj232i95 276hiht3dl5 27n4mfx6ard 2965bfst6km 2974rs2qyq2 29krqq48gq9 29rqlezqkjp 2a7r3f7pe83 2an9oh2fhrj 2b3pf1xuld2 2bfho0lj1lc 2cf1i5yq0dm 2chipyvz955 2ecu3i3vb1l 2ee9ciyusof 2eypc49hohs 2f76wtvgk8c 2fzi7l67cul 2hrkiu26jk 2wk0mcnck 3t8nmnl2bo 4i42cpk0oq 516py8b7ai 5j1i1dlpy 5u12nhsf9i 61bwtvncft 6e5dcbhnyt 6i80rdzjvy 6nk3yk2ogk 6p5z66zvox 6vbo9yzxyw 8028prd64b 87jna99put 8b9yksh67z 8d8lhzbuf9 8etyf2yh3l 8kietdcp6d 8repyvji2g 9qcyhgkohp 9zy0f9ln7d a65nk374br ajhjh2iw8t bcq7rgsvq6 biiueyy2q8 bj15255zkb bmdblc8csd bnovoukey5 bpg6w03wpw cbu5fx1ptp cc31stapha d3esfpdx4f d73tjl5mjq dbgwt0tup4 dkebjtdhd6 dpduq1zzsd dtynun9xge ecoq9ir6mz eivvf1uaii eotlyw2iov fg97xf8ydg fyx0eo7uzl g68s6r4hz6 gdkhhmlhos gf9je1ghl6 gtfktyd0of hq4sj0ly6b j7897ce66g j97tw51zx9 jrfheh6b3d jsvtjsi7ha jxl1levyv6 jz9hmt64bl kbvrrpg6in keln6bv3fc kowxeolftt ktdy0yozki ktib8huldj kwspx68jy8 l2tqv6dg0e lkif9zpg6a lq9td5v77 lufgdtek6e mebazdja3p n64ygusm59 nfbfdvsr9d niyzzy487q o26wh2jrbz odwcrgc5sr ooq01t69to pwewbkmo6h pwgrswrf7h qbymt02s7l qhok1luba5 qpwdl2exuf qy8l26i3k qyjcempilt r3o6q0oimm rkupphiupk rp2zjk7qnh s355jkllb3 s9kkwtvcwe snqq9d1cae soe6bnaddz t7anx8yn7j tke2fk5yjv ufca41bzcw uh73lrnzfh vb8w2axj50 vh24w4ziow vj8caog8v1 vpxk1omdi3 vrx61869hs vx6iat0hp5 w3g2hkyjfd wbuobv51cn wfb1igeg4v wie01nl74 wifubnew8x wtu5u2bdfj x60zp7javb yhr0050u11 yi3elfnzcm yu7ia21spl z0db2tdhcv z54obeiw0a z8e4cdlrtk zc1v48wbyu zfhy7d586c',
+  s: '106r7itickk 1m7pfd8r5zu 1nd90z9zb3h 1stcheg892i 1z2u8h6o51e 61bwtvncft ez9fuo8te9 hq4sj0ly6b jz9hmt64bl kbvrrpg6in kwspx68jy8 wfb1igeg4v z54obeiw0a',
+  sl: [4, 5, 6],
+  c: '11kmio7d8gw 11qp68gzzfa 12rgrfs9kpt 12rv9lu843s 13a7ljqe3o2 13ny3zpg2w7 1470nk5ngx3 15kwo9xclzg 15s7yys7m6w 17m9jsm8ubm 187lj16sh7c 18l9l2kq7py 194xjpvhmd0 197fsgnzrcu 19ewgev9s2t 1bvyo8oc83y 1ctr3mdb073 1dm4uwtifh1 1du7r8yvt2a 1dy7vh448wa 1ewze7q3l86 1g5k3joib25 1gzs4j7sqjx 1hbp1lhfmq7 1hebgci48en 1hjqyyg9to2 1ivhj9rcmas 1kbuektt4ra 1lat6o1mdas 1ma0tx314h9 1n0jzsn55uq 1ngwvgeiay5 1o0sgu25nvh 1ort7vn3xqt 1ou3su4fvf9 1p4bnutks3d 1pshx928a6d 1rnfexpaou2 1roqr2vp8is 1ryd9yord2k 1s6fzyrkahe 1setgzrlheo 1snhh2z2d98 1t674okw47d 1uvm3w3p5go 1uxyvfjbqqq 1x6xvkcl5q3 1yvz0eiii3p 20ams9of6b3 20jt37n7lfr 20uy53idtjs 212z10vv81l 21lx2lnmsgi 2236gfv7htz 22g1dt6929t 23svvyabaub 23uki0p2d27 242ao01amzg 24srgi59seb 25p2b4rrast 25yenng04uj 26fmn0fdxc7 26oqxep3ie0 26qvouhanc9 2am9fjfw0c5 2bepi7thtfu 2brignffbyh 2cefqb5an6y 2cobdpf9388 2dbce9i3x5l 2dilc1ydpbw 2dkgzpq7ee9 2dww5zp351c 2e43l277s11 2edjwfrqz5i 2eqi62cr3ht 2owlsucp5p 3w31ipioat 6e431mcova 6usklab6yl 779iuugyqg 8bikngbws1 8kff20bi6n 8ua0vni0lj 91be3k1a80 9vnaidxpr0 b742ogfnm8 d6w9sywb5i dhaj2di9f4 e1hsht7cx1 fmehxju47w gvt7d0r09x hdl9dz2sxf hp879rz3ig j23q890949 jy79idp34x ldugwfzvf1 mc13be9fu3 mfsh4sr0lg nkoqfkcehe nv4z0xf22t q3c3h2xehm qsekii4s3f rhyme8jqnz rzdma6hbi3 s1i8f4nbc9 sx9fop32ab t0uucscw3d t7ge0o8v4 t7q5vxa8yz tpt9olukl1 ugyqf8yqd3 vdcnfylgmm yrifr3jom9',
+};
 /* Memory Match words (P3-14, BRAIN_TEASERS 5.9). Data only; read by src/js/82-bt-memory.js inside functions (A11).
    themes: picture names (emoji fallback in RIDDLES.pics, src/data/d-riddles.js) for band A picture-picture and band B word-picture.
    syn: band C synonym pairs; no word is a synonym of a word in another pair, so every card has exactly one partner.
@@ -6438,7 +6456,8 @@ var SCN_W = {
 /* SPELL_WORDS[lv] is one string per level, one word per line as `word|sentence`. The sentence holds the word exactly once (a capital
    letter at the start is fine); the app shows it with the word blanked out and speaks word, sentence, word.
    Homophones (their/there, knight/night ...) have sentences that only one of them fits. Words are a-z only, 12 letters at most,
-   and pass the BAD filter (tools/test.js checks all of this). Level 1 has 40 words, levels 2 to 7 have 60. */
+   and pass the BAD filter (tools/test.js checks all of this). Level 1 has 40 words, levels 2 to 7 have 60.
+   No days or months (R-01r): they need a capital, and the keyboard spells in small letters. */
 const SPELL_WORDS={
 1:`cat|The cat sat on the mat.
 bed|I go to bed at night.
@@ -6756,7 +6775,7 @@ favorite|Blue is my favorite color.
 interesting|That was an interesting book.
 vegetable|Carrot is a vegetable.
 library|I borrowed a book from the library.
-february|My birthday is in february.
+knowledge|Reading books adds to your knowledge.
 government|The government makes the laws.
 neighbor|My neighbor waves from her porch.
 exercise|We do exercise every morning.
@@ -6838,7 +6857,7 @@ thorough|He gave the room a thorough cleaning.
 twelfth|Her birthday is on the twelfth of June.
 unanimous|The vote was unanimous.
 variety|The store sells a variety of fruit.
-wednesday|We have art class on wednesday.
+muscle|Your heart is a strong muscle.
 yacht|The yacht sailed past the island.`
 };
 
@@ -7533,18 +7552,20 @@ function vocBuild() {
   const S5 = ['ful', 'less', 'ly', 'er', 'est', 'able'];
   const sfx = (a, i) => { const r = S5.filter(x => x != a); const o = i % 3; return [r[o], r[(o + 2) % 5], r[(o + 3) % 5]]; };
   const A5 = (word, m, d) => out.push(VOC_IT(5, 'suffix', `What does ${word} mean?`, m, d, 'wide'));
-  for (const b of VOC_L5_FUL) A5(b + 'ful', `full of ${b}`, [`without ${b}`, `more ${b}`, `the most ${b}`]);
+  // R-01r: "full of thanks" (not "full of thank"), "in an old way" (not "in a old way")
+  const nf = b => b == 'thank' ? 'thanks' : b, way = b => `in ${/^[aeiou]/.test(b) ? 'an' : 'a'} ${b} way`;
+  for (const b of VOC_L5_FUL) A5(b + 'ful', `full of ${nf(b)}`, [`without ${nf(b)}`, `more ${nf(b)}`, `the most ${nf(b)}`]);
   for (const b of VOC_L5_LESS) A5(b + 'less', `without ${b}`, [`full of ${b}`, `more ${b}`, `the most ${b}`]);
-  for (const b of VOC_L5_LY) A5(b + 'ly', `in a ${b} way`, [`more ${b}`, `the most ${b}`, `not ${b}`]);
-  for (const b of VOC_L5_ER) A5(b + 'er', `more ${b}`, [`in a ${b} way`, `the most ${b}`, `not ${b}`]);
-  for (const b of VOC_L5_EST) A5(b + 'est', `the most ${b}`, [`more ${b}`, `in a ${b} way`, `not ${b}`]);
+  for (const b of VOC_L5_LY) A5(b + 'ly', way(b), [`more ${b}`, `the most ${b}`, `not ${b}`]);
+  for (const b of VOC_L5_ER) A5(b + 'er', `more ${b}`, [way(b), `the most ${b}`, `not ${b}`]);
+  for (const b of VOC_L5_EST) A5(b + 'est', `the most ${b}`, [`more ${b}`, way(b), `not ${b}`]);
   for (const [w, v, s] of VOC_ROWS(VOC_L5_AGENT)) A5(w, `a person who ${s}`, [`${v} again`, `${v} the wrong way`, `${v} before`]);
   for (const [w, v, pp, vs] of VOC_ROWS(VOC_L5_ABLE)) A5(w, `able to be ${pp}`, [`a person who ${vs}`, `${v} again`, `not able to be ${pp}`]);
   // add-the-ending items: base + ___ = meaning
   const B5 = [];
   for (const b of VOC_L5_FUL.slice(0, 4)) B5.push([b, 'ful', `full of ${b}`]);
   for (const b of VOC_L5_LESS.slice(0, 4)) B5.push([b, 'less', `without ${b}`]);
-  for (const b of VOC_L5_LY.slice(0, 4)) B5.push([b, 'ly', `in a ${b} way`]);
+  for (const b of VOC_L5_LY.slice(0, 4)) B5.push([b, 'ly', way(b)]);
   for (const b of VOC_L5_ER.slice(0, 3)) B5.push([b, 'er', `more ${b}`]);
   for (const b of VOC_L5_EST.slice(0, 3)) B5.push([b, 'est', `the most ${b}`]);
   for (const [, v, pp] of VOC_ROWS(VOC_L5_ABLE).slice(0, 3)) B5.push([v, 'able', `able to be ${pp}`]);
@@ -7585,7 +7606,7 @@ Can I come with you, ___?|too|to|two,toe
 We walked ___ the park after lunch.|to|too|two,toe
 Is this ___ lunch box?|your|you're|you,yours
 I think ___ very kind to share.|you're|your|you,yours
-The puppy wagged ___ tail.|its|it's|his,is
+The puppy wagged ___ tail.|its|it's|is,it
 ___ raining outside, so take an umbrella.|it's|its|him,his
 Can you ___ the music from the next room?|hear|here|hair,heard
 Come over ___ and sit next to me.|here|hear|her,hire
@@ -7611,7 +7632,7 @@ She bought a new ___ of shoes.|pair|pear|peer,pail
 Let's ___ at the park at noon.|meet|meat|met,melt
 Dad cooked ___ for dinner.|meat|meet|beat,seat
 We go to the library once a ___.|week|weak|weep,wick
-The baby bird was too ___ to fly.|weak|week|weed,wake
+The baby bird was too ___ to fly.|weak|week|weep,wake
 The sky is ___ today.|blue|blew|blow,glue
 The wind ___ my hat right off.|blew|blue|blow,glow
 She ___ a big lunch at school.|ate|eight|eat,at
@@ -7650,16 +7671,16 @@ I wonder ___ it will rain tomorrow.|whether|weather|wither,feather
 The ___ is sunny and warm today.|weather|whether|wither,feather
 She ___ the ball to me.|threw|through|thrown,three
 We walked ___ the long tunnel.|through|threw|though,thought
-Have you ___ my red hat?|seen|scene|seem,sewn
+Have you ___ my red hat?|seen|scene|seem,seat
 The last ___ of the play was funny.|scene|seen|seem,scent
 The lion shook his big ___.|mane|main|man,mine
 The ___ road was busy with cars.|main|mane|man,mean
 The bridge is made of strong ___.|steel|steal|stool,steep
 It is wrong to ___ a toy from a shop.|steal|steel|steam,stale
-Our team will ___ the other team.|beat|beet|beer,belt
-The red ___ grew in the garden.|beet|beat|beer,belt
+Our team will ___ the other team.|beat|beet|bead,belt
+The red ___ grew in the garden.|beet|beat|beep,belt
 I will ___ my old bike to a neighbor.|sell|cell|sale,seal
-Every living thing is made of a tiny ___.|cell|sell|seal,sill
+The smallest living part of a plant is a ___.|cell|sell|seal,sill
 It is not ___ to cheat at games.|fair|fare|far,fire
 The bus ___ was two dollars.|fare|fair|far,fire
 A cut will ___ in a few days.|heal|heel|heat,head
@@ -8206,4 +8227,4 @@ var BTW = {
     'glean parts strap traps tea eat ate nip pin top pot opt tar art rat now own won tub but bus iced mono low flea',
 };
 
-var DATA_VER='v135'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var DATA_VER='v137'; // last line: the whole file ran (checked by dataReady() before the app starts)

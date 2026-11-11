@@ -30,26 +30,26 @@ Written 2026-11-11 by Claude for Andy. No app changes were made.
 Sizes: **S** = an hour or two, **M** = about a day, **L** = several days.
 
 **Must fix**
-1. **Racial slurs and rude words appear as wrong answers (S).** In "Picture Words" the app makes up wrong choices by changing one letter of
-   the right word. The safety filter misses many words, so a child can see a racial slur ("bike" becomes "kike", "moon" and "coin" become
-   "coon", "book" becomes "gook", "dog" becomes "wog", "map" becomes "jap") or a rude word ("pube", "grope", "boob", "vag", "queer",
-   "bum", "weed", "bong"). This happens in about 1 in 50 Picture Words questions (up to 1 in 35 in some stops) in Letter Meadow (K),
+1. **Done in R-01r (v137).** **Racial slurs and rude words appear as wrong answers (S).** In "Picture Words" the app makes up wrong choices by changing one letter of
+   the right word. The safety filter misses many words, so a child can see a racial slur (pic 3 seed 4371301 from "bike", pic 4 seed
+   8481262 from "moon", pic 6 seed 981969 from "coin", pic 4 seed 6739082 from "book", pic 1 seed 1346243 from "dog", pic 1 seed 3040909
+   from "map") or a rude word (seeds in 2.4; the words themselves were removed from this file in R-01r). This happens in about 1 in 50 Picture Words questions (up to 1 in 35 in some stops) in Letter Meadow (K),
    Candy Canyon and Ocean Reef (1st), Space Station and Word Workshop (2nd). `variants()` and `phonVariants()` in 32-gen-read.js, `BAD` and `PHBAD` in 20-words.js.
-2. **Most made-up wrong choices are not even possible English words (M).** "snake" comes with "snakb" and "cnake", "sock" with "socb",
+2. **Done in R-01r (v137).** **Most made-up wrong choices are not even possible English words (M).** "snake" comes with "snakb" and "cnake", "sock" with "socb",
    "egg" with "bgg", "pig" with "pih". More than half of the Blends and Magic E questions have one. A child can find the answer by
    rejecting the impossible spellings, so the question stops testing reading. Good phonics practice contrasts real words that differ by
    the pattern being taught (cap and cape, kit and kite). Same functions as item 1.
-3. **Sight words: two answers sound the same (S).** "Tap the word you hear" can say "two" and offer both "to" and "two" (Letter Meadow,
+3. **Done in R-01r (v137).** **Sight words: two answers sound the same (S).** "Tap the word you hear" can say "two" and offer both "to" and "two" (Letter Meadow,
    1 in 40 questions), or say "right" and offer "write" (Space Station). The child cannot know which one is meant. `genSight` in
    32-gen-read.js.
-4. **Eight grammar and vocabulary questions are wrong or have two right answers (S).** For example "Which is happening now?" expects
+4. **Done in R-01r (v137).** **Eight grammar and vocabulary questions are wrong or have two right answers (S).** For example "Which is happening now?" expects
    "Dad cooks dinner every night"; "The puppy wagged ___ tail" marks "his" wrong; "___ kids love recess" marks "Our" wrong. The full list
    with seeds is in 2.4. src/data/d-gram.js, src/data/d-vocab.js.
-5. **Some Kindergarten help is only written, not spoken (S).** In Rhyme Time the help ("Rhymes sound the same at the end: ug...") is
+5. **Done in R-01r (v137).** **Some Kindergarten help is only written, not spoken (S).** In Rhyme Time the help ("Rhymes sound the same at the end: ug...") is
    text a 5-year-old cannot read, and the answer pictures are never named aloud. The picture for "mug" is a coffee cup, so a child who
    says "cup" cannot find the rhyme for "bug". The same goes for the help in "Match Big & Little" and "Read & Match". 36-gen-phonics.js,
    32-gen-read.js, 39-hints.js.
-6. **"Letter Teams" shows the answer in the question (S).** "Which letters end **moth**?" prints the word, so the child can copy "th"
+6. **Done in R-01r (v137).** **"Letter Teams" shows the answer in the question (S).** "Which letters end **moth**?" prints the word, so the child can copy "th"
    from it. And the moth is drawn as a butterfly. `genSoundB` in 32-gen-read.js, `DIGR` in 20-words.js.
 
 **Should fix**
@@ -65,23 +65,23 @@ Sizes: **S** = an hour or two, **M** = about a day, **L** = several days.
 10. **Passages on a phone (M).** At 380 px wide the passage window shows 4 lines of a 230-word text, the question is in small print, and
     after a wrong answer the help box is cut off below the answers. For detail questions the help quotes the sentence that holds the
     answer ("Look back at the story: 'Mia had a red kite...'") instead of asking the child to find it.
-11. **Factual and wording slips (S).** For example the 6th grade tides passage says the sun's pull on the ocean is "far weaker than the
+11. **Mostly done in R-01r (v137): tides g6n01, g3n02 title, g5f02 narrator, "made of a tiny cell", "full of thank", "in a old way", february and wednesday (replaced), "a sun" / "a milk"; the 2nd grade passage notes in 2.4 (Zip the Robot, Penguins, The Cookie Surprise) are open.** **Factual and wording slips (S).** For example the 6th grade tides passage says the sun's pull on the ocean is "far weaker than the
     moon's" (the sun's pull is stronger; its tide effect is about half), and the spelling list teaches "february" and "wednesday" in
     small letters, which contradicts the grammar stop that teaches capitals for days. List in 2.4.
-12. **Grammar "Tap the noun / verb / adjective" uses 16 sentences of one shape (M).** Every sentence is "The tiny frog hops": adjective
+12. **Done in R-01r (v137).** **Grammar "Tap the noun / verb / adjective" uses 16 sentences of one shape (M).** Every sentence is "The tiny frog hops": adjective
     second, noun third, verb last. A child can answer by position without knowing the parts of speech.
-13. **Pictures (M).** First Sounds and Rhyme Time show emoji, not the app's drawings, and about 15 picture words do not match their
+13. **Partly done in R-01r (v137): First Sounds and Rhyme Time use the drawings; queen, burn, farm, cube, home, king, moth and the others listed in 2.4 were swapped for words with a matching picture (noise, draw, hawk, jewel, screw, water and sword are left).** **Pictures (M).** First Sounds and Rhyme Time show emoji, not the app's drawings, and about 15 picture words do not match their
     picture (queen is a princess, burn is fire, farm is a tractor, cube is ice, home is a house, king and crown share a crown).
 14. **Too few stories in the 1st grade Story Time (M).** 12 one-question stories per stop, so a 10-question round repeats about 3 of them.
     The passage set also repeats plots across grades (two lost library books, two lemonade stands, two tuba players, three bee passages).
-15. **The middle-vowel stop almost never asks short i (S).** Only 4% of "Middle Sounds" questions have "i" (one word, pig), against 35% "a".
+15. **Done in R-01r (v137).** **The middle-vowel stop almost never asks short i (S).** Only 4% of "Middle Sounds" questions have "i" (one word, pig), against 35% "a".
     It also comes last in Letter Meadow, after the child has already been reading and building CVC words.
 
 **Could do**
 16. Writing: every grammar item asks the child to pick, never to produce. Add building sentences from tiles above 2nd grade, combining
     sentences with tiles, and "fix this sentence" editing (M to L).
 17. Teach multi-syllable decoding (2nd to 4th grade) and -ed and -ing endings (1st grade); move common vowel teams into 1st grade (M).
-18. Smaller polish: analogy prompts read aloud as "first colon last colon colon begin" (add a spoken form), "opposite of boy is girl",
+18. (R-01r fixed "full of thank" and "in a old way"; the rest is open.) Smaller polish: analogy prompts read aloud as "first colon last colon colon begin" (add a spoken form), "opposite of boy is girl",
     "full of thank", "in a old way", ambiguous idiom-or-metaphor items, near-duplicate main-idea and summary questions in 4th grade (S).
 
 ---
@@ -106,7 +106,7 @@ Sizes: **S** = an hour or two, **M** = about a day, **L** = several days.
   `21-workshop-comp3-hint-380x780.png`, `13-candy-sound4-moth-380x780.png`). No console errors.
 - Speech was checked from the `say` and `hint.w` strings; the headless browser has no voice, so no sound was heard.
 
-**Wrong answers found** (each is a must-fix, see 2.4 for detail):
+**Wrong answers found** (each is a must-fix, see 2.4 for detail; all fixed in R-01r, v137, and checked by test.js "reading review fixes R-01r"):
 
 | Skill, level | Seed | Item | Problem |
 |---|---|---|---|
@@ -211,7 +211,7 @@ Each finding names the skill and level, the file, and a sample (seed, as `genQ(s
   see the word → find the picture or sentence.
 - **Picture Words** (`pic 1`, Musts 1 and 2): seed 79203, pig: pif, pih, vig (screenshot `07-meadow-pic1-nonwords`). 17% of `pic 1` items
   have a wrong choice that cannot be an English spelling (pih, nuj, bgg for egg, cnt for ant). Rude or slur choices in 2.8% of 5,000:
-  "wog" (seed 1346243, dog), "jap" (seed 3040909, map), "vag" (seed 1813464, bag), "bum", "pis", "sux". The hint says the word aloud
+  seed 1346243 (dog), seed 3040909 (map), seed 1813464 (bag) and three more rude words. The hint says the word aloud
   ("Listen! Now find it."), which turns the item into hear-and-find on the second try; fine as support.
 - **Read & Match** (`sent 1`): decodable sentences from CVC words and sight words 1 ("I see a cat.", "Where is the pen?"). This is the only
   decodable connected text in the app, and it is good. The hint "Tap any word to hear it!" is text only (Must 5). 178 of 8,000 `sent 1`/`sent 2`
@@ -220,7 +220,7 @@ Each finding names the skill and level, the file, and a sample (seed, as `genQ(s
 #### Candy Canyon (1st): sight 2, rhyme 2, pic 2, build 2, sent 2, comp 1, sound 4, syl 2, spell 1
 
 - **Blends** (`pic 2`): 71% of items have an impossible wrong choice (seed 13, sock: socb; seed 79203, crab: crah, vrab; screenshot of the
-  same pattern in `14-reef-pic3-nonwords`). Rude: "cuck" (seed 1449190, duck), "slag" (seed 1987682, flag), "drug" (seed 1227458, drum).
+  same pattern in `14-reef-pic3-nonwords`). Rude: seed 1449190 (duck), seed 1987682 (flag), seed 1227458 (drum).
   The list mixes digraph words (fish, ship, duck, bell, king) into "blends"; fine if the title says "Blends & Teams".
 - **Read Sentences** (`sent 2`): sentences such as "Mom and I see a crab by the door." and "My friend said, 'I want a hand.'" (seed 134636)
   use door, friend, park, road and said, which a 1st grader cannot decode yet (Should 8). Tap-to-hear rescues the child, but then the item
@@ -238,8 +238,8 @@ Each finding names the skill and level, the file, and a sample (seed, as `genQ(s
 
 - **Magic E** (`pic 3`): seed 13, snake: snakb, snak, cnake (screenshot `14-reef-pic3-nonwords-380x780`). 61% of items have an impossible
   choice. The one good distractor is the word without its e ("snak", "bik"), which is exactly the contrast the level teaches; build the
-  whole choice set that way: cap/cape, kit/kite, hop/hope, cub/cube, real words where possible. Rude or slur choices in 1.6%: "kike"
-  (seed 4371301, bike), "grope" (seed 2407389, grape), "pube" (seed 1227458, cube), "lube", "bong", "bonk", "wine".
+  whole choice set that way: cap/cape, kit/kite, hop/hope, cub/cube, real words where possible. Rude or slur choices in 1.6%: seed 4371301
+  (bike, a slur), seed 2407389 (grape), seed 1227458 (cube) and four more rude, drug or alcohol words.
 - Pictures that name something else (Should 13): cube (an ice cube), cone (an ice cream), home (a house), smile (a face), game (a game
   controller), vase (an amphora). 17 of 25 magic-e words have no drawing.
 - **Opposites** (`vocab 1`): good, with pictures for many items. "What is the opposite of boy?" → girl (seed 8): most current word lists
@@ -251,9 +251,8 @@ Each finding names the skill and level, the file, and a sample (seed, as `genQ(s
 
 #### Space Station (2nd): pic 4, build 4, sight 4, pic 5, build 5, spell 3, sent 3
 
-- **Vowel Teams** (`pic 4`): 39% of items have an impossible choice (seed 13, spoon: bpoon, cpoon). Rude or slur choices in 1.8%: "coon"
-  (seed 8481262, moon), "gook" (seed 6739082, book), "queer" (seed 712723, queen), "boob" (seed 1480866, boot), "weed" (seed 2027277,
-  seed), "die", "wee". queen is shown as a princess emoji.
+- **Vowel Teams** (`pic 4`): 39% of items have an impossible choice (seed 13, spoon: bpoon, cpoon). Rude or slur choices in 1.8%: seed
+  8481262 (moon, a slur), seed 6739082 (book, a slur), seed 712723 (queen), seed 1480866 (boot), seed 2027277 (seed) and two more. queen is shown as a princess emoji.
 - **Bossy R** (`pic 5`): the swap-the-r-vowel distractors (bird, bard, berd, burd) are exactly what the spec asks and are all legal
   spellings: the best-designed phonics level. But the word list moved away from the spec's one-syllable words (horn, corn, fork, storm,
   shirt, fern, nurse) to two-syllable and irregular ones: water (the "a" says /aw/), sword (silent w), hammer, monster, tower, unicorn.
@@ -263,7 +262,7 @@ Each finding names the skill and level, the file, and a sample (seed, as `genQ(s
 
 #### Word Workshop (2nd): sight 5, pic 6, build 6, gram 2, vocab 2, sent 4, vocab 3, gram 3, sent 5, comp 3, info 1
 
-- **Vowel Teams 2** (`pic 6`): legal swaps, but "coin" can become "coon" (seed 981969: cown, cewn, coon, coin): 2.7% of items have a word
+- **Vowel Teams 2** (`pic 6`): legal swaps, but "coin" can become a slur (seed 981969): 2.7% of items have a word
   from the list in 2.1. Pictures without a drawing: crown, down (an arrow), noise (a speaker), new (the NEW sign), draw (a pencil), stew
   (a bowl, the same emoji as "bowl" in pic 4), jewel, screw, hawk (an eagle). dawn and morning share the sunrise emoji.
 - **Parts of Speech** (`gram 2`, Should 12): 48 of the 60 items are the same 16 sentences, all article + adjective + noun + verb (seed 9:
