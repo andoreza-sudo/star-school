@@ -6550,6 +6550,46 @@ run('teaser framework P3-01',()=>{
   return{problems:[...new Set(r)],note:'registry, seeds, stars, rewards, cap, rounds, daily, '+fixtures.length+' fixtures'};
 });
 
+// ---- P3-02 dev-time solver core and sudoku banks (BRAIN_TEASERS 5.1, 6) ----
+run('sudoku banks P3-02: format, givens agree with the solution, exactly one solution (independent counter), grade matches the grader, reproducible from the seed',()=>{
+  const p=[];
+  const vb=require('./puzzles/verify-banks.js'),sd=require('./puzzles/sudoku.js'),csp=require('./puzzles/csp.js');
+  const T=require('./puzzles/build-banks.js').TYPES.sudoku;
+  // the bank as the app sees it: evaluated with all of src/js and src/data, and present in the built page
+  const inApp=eval(js+';PUZ.sudoku');
+  const bank=vb.loadBank('d-puz-sudoku.js').sudoku;
+  if(JSON.stringify(inApp)!==JSON.stringify(bank))p.push('PUZ.sudoku differs when loaded with the whole app');
+  const html=fs.existsSync(path.join(ROOT,'index.html'))?fs.readFileSync(path.join(ROOT,'index.html'),'utf8'):'';
+  if(!html.includes('PUZ.sudoku = {'))p.push('index.html has no sudoku bank (rebuild)');
+  // every stored puzzle: format, givens count, valid solution, givens agree, symmetric 9x9, one solution, grade, no duplicates
+  const v=vb.verifySudoku(bank);
+  p.push(...v.problems);
+  // the independent counter itself: 288 full 4x4 grids, an empty 9x9 has more than one, a broken given has none
+  if(vb.countSimple(Array(16).fill(0),4,2,2,1000)!==288)p.push('countSimple: empty 4x4 is not 288 grids');
+  if(vb.countSimple(Array(81).fill(0),9,3,3,2)!==2)p.push('countSimple: empty 9x9 not ambiguous');
+  const d0=sd.decode(bank.D.hard[0],9),clash=d0.givens.slice(),gi=clash.findIndex(x=>x);
+  clash[gi]=clash[gi]%9+1;
+  if(vb.countSimple(clash,9,3,3,2)!==0)p.push('countSimple: a changed given still has a solution');
+  // the generator's solver agrees with the independent counter on the same puzzles
+  for(const b of sd.ORDER)for(const t of sd.TIERS){
+    const s=sd.BANDS[b],q=sd.decode(bank[b][t][0],s.n);
+    if(csp.countSolutions({n:s.n*s.n,size:s.n,groups:sd.groupsFor(s),givens:q.givens},2)!==1)p.push('csp count is not 1 for '+b+' '+t+' #0');
+  }
+  // reproducible: regenerate the first and last slot of every band and tier from the seed and compare the stored string
+  let regen=0;
+  const order=[];
+  for(const b of sd.ORDER)for(const t of sd.TIERS)bank[b][t].forEach((e,i)=>order.push([b,t,i,e]));
+  order.forEach(([b,t,i,e],k)=>{
+    if(i!==0&&i!==T.count-1)return;
+    const avoid=new Set(order.slice(0,k).map(([b2,,,e2])=>sd.bankKey(sd.decode(e2,sd.BANDS[b2].n).givens,sd.BANDS[b2])));
+    const g=sd.encode(sd.genSlot(T.seed,b,t,i,avoid));
+    regen++;
+    if(g!==e)p.push('slot '+b+' '+t+' #'+i+' regenerates as '+g+', stored '+e);
+  });
+  const total=Object.values(v.counts).reduce((a,c)=>a+c,0);
+  return{problems:p,note:total+' puzzles in '+Object.keys(v.counts).length+' band/tier lists; '+regen+' slots regenerated'};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){

@@ -1,0 +1,58 @@
+'use strict';
+// Writes the pre-verified puzzle banks into src/data/d-puz-<type>.js (P3-02, BRAIN_TEASERS 6). Dev-time only.
+//
+//   node tools/puzzles/build-banks.js            all types
+//   node tools/puzzles/build-banks.js sudoku     one type
+//   node tools/puzzles/build-banks.js --check    regenerate in memory and compare with the committed files (exit 1 if different)
+//
+// Each type has a fixed seed, so the same generator gives the same file byte for byte. The files are committed: a normal
+// build needs no Node step. Regenerate only when a generator changes, then run `node tools/test.js` (it re-verifies every
+// puzzle through verify-banks.js). Later puzzle chunks (MathDoku P3-04, logic grids P3-06) add their entry to TYPES.
+
+const fs = require('fs');
+const path = require('path');
+const sudoku = require('./sudoku');
+
+const DATA = path.join(__dirname, '..', '..', 'src', 'data');
+
+const TYPES = {
+  sudoku: {
+    file: 'd-puz-sudoku.js',
+    seed: 'star-school-sudoku-1',
+    count: 20, // puzzles per band and tier: 4 bands x 3 tiers x 20 = 240 (BRAIN_TEASERS 5.1 step 5)
+    text(log) {
+      return sudoku.fileText(sudoku.buildBank(this.seed, this.count, log), this.seed);
+    },
+  },
+};
+
+function main(args) {
+  const check = args.includes('--check');
+  const names = args.filter(a => !a.startsWith('--'));
+  const list = names.length ? names : Object.keys(TYPES);
+  let bad = 0;
+  for (const name of list) {
+    const t = TYPES[name];
+    if (!t) {
+      console.error('unknown puzzle type: ' + name + ' (known: ' + Object.keys(TYPES).join(', ') + ')');
+      process.exitCode = 1;
+      return;
+    }
+    const t0 = Date.now();
+    const text = t.text(line => console.log('  ' + name + ' ' + line));
+    const file = path.join(DATA, t.file);
+    if (check) {
+      const same = fs.existsSync(file) && fs.readFileSync(file, 'utf8') === text;
+      console.log((same ? 'same    ' : 'DIFFERS ') + 'src/data/' + t.file);
+      if (!same) bad++;
+    } else {
+      fs.writeFileSync(file, text);
+      console.log('wrote src/data/' + t.file + ' (' + Buffer.byteLength(text) + ' bytes, ' + (Date.now() - t0) + ' ms)');
+    }
+  }
+  if (bad) process.exitCode = 1;
+}
+
+if (require.main === module) main(process.argv.slice(2));
+
+module.exports = {TYPES};

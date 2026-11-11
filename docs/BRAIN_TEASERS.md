@@ -100,7 +100,7 @@ Save shape: `S.bt[type] = {A:{lvl, stars:[...]}, B:{...}, ...}`, `S.bt.cur`, `S.
 2. Remove givens in random order (symmetric pairs for 9x9). After each removal run the counting solver; if the count is not 1, put the given back.
 3. Stop at the target number of givens for the level.
 4. Grade with a human-style solver that applies techniques in order of difficulty. The grade is the hardest technique needed. Reject the puzzle if its grade exceeds what the band allows, or if the human solver cannot finish (would need guessing).
-5. Emit `givens|solution` strings. Bank: 20 per band and difficulty (240 puzzles, about 20 KB).
+5. Emit `givens|solution|grade` strings (`.` = empty cell; grade = the human solver's hardest technique, 1-5, see `tools/puzzles/human.js`). Bank: 20 per band and difficulty (240 puzzles, about 20 KB) in `PUZ.sudoku` (`src/data/d-puz-sudoku.js`).
 
 **Runtime variety** (all preserve uniqueness and grade): permute symbols; swap rows within a band of boxes; swap box bands; same for columns; transpose (4x4 and 9x9 only).
 
@@ -275,6 +275,7 @@ Generator: A-B: random self-avoiding walk from start; walls placed off the path;
 | `sudoku.js`, `mdoku.js`, `logic.js` | Generators as specified above |
 | `build-banks.js` | Runs the generators with a fixed seed and writes `src/data/d-puz-*.js`. Deterministic: same seed, same file |
 | `verify-banks.js` | Re-checks every stored puzzle: exactly one solution, grade within band. Called from `tools/test.js` |
+| `rng.js` | Seeded random numbers (`rng(seedString)`) shared by the generators; never `Math.random` in `tools/puzzles/` |
 
 Bank files are generated output but are committed (so a normal build needs no Node step). Regenerate only when a generator changes.
 
