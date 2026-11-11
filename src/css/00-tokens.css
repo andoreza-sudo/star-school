@@ -19,6 +19,22 @@
 /* components (P4-04): ledges for white and danger fills, play ledge, gloss highlight, sheet backdrop, soft drop */
 --ledge-soft:#D5D9E8;--danger-shade:#9B1C1C;--play-deep:#8F3307;
 --hi:rgba(255,255,255,.28);--hi-0:rgba(255,255,255,0);--dim:rgba(31,36,64,.5);--drop:rgba(31,36,64,.16);
+/* illustration palette (object art, DESIGN_SYSTEM 6.5): per hue -1 highlight, base, -2 shade, -3 deep accent; light from top left */
+--ill-red-1:#FF8F80;--ill-red:#F2483B;--ill-red-2:#C93030;--ill-red-3:#8F1D27;
+--ill-orange-1:#FFB66E;--ill-orange:#FF8A24;--ill-orange-2:#E0640F;--ill-orange-3:#A84509;
+--ill-yellow-1:#FFF3A3;--ill-yellow:#FFD23F;--ill-yellow-2:#F5A800;--ill-yellow-3:#C27A00;
+--ill-green-1:#A6E36B;--ill-green:#5CBF3E;--ill-green-2:#389A35;--ill-green-3:#22702B;
+--ill-aqua-1:#B2EEF6;--ill-aqua:#45C6DE;--ill-aqua-2:#229BBB;--ill-aqua-3:#13708E;
+--ill-blue-1:#8CC8FF;--ill-blue:#4C8DF6;--ill-blue-2:#3065D6;--ill-blue-3:#1F449E;
+--ill-purple-1:#C7A6FF;--ill-purple:#9663F2;--ill-purple-2:#7041D6;--ill-purple-3:#4D2A9E;
+--ill-pink-1:#FFD3E1;--ill-pink:#FF97B8;--ill-pink-2:#EC6C95;--ill-pink-3:#C2456F;
+--ill-brown-1:#D69A62;--ill-brown:#B06E3A;--ill-brown-2:#8A5028;--ill-brown-3:#5E341A;
+--ill-tan-1:#FFE3B3;--ill-tan:#F7C07A;--ill-tan-2:#DE9A50;--ill-tan-3:#B06F2E;
+--ill-skin-1:#FFDCC4;--ill-skin:#F7BE98;--ill-skin-2:#E39B72;--ill-skin-3:#B8704D;
+--ill-cream-1:#FFFDF6;--ill-cream:#FFF1D6;--ill-cream-2:#EDD3A6;--ill-cream-3:#C9A26A;
+--ill-grey-1:#E1E5EF;--ill-grey:#B4BBD0;--ill-grey-2:#8C94AE;--ill-grey-3:#5F6683;
+--ill-white:#FFFFFF;--ill-white-2:#E4E8F3;--ill-white-3:#B9C0D4;
+--ill-ink:#1F2440;--ill-ink-2:#3A3F5C;
 /* type */
 --font-body:Andika,system-ui,Roboto,sans-serif;
 --font-display:Andika,system-ui,Roboto,sans-serif;

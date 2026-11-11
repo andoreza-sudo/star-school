@@ -1823,28 +1823,37 @@ run('spelling P2-19: word data, 3000 questions per level, visible clue, hints, m
   return{problems:serrs,note:'400 words, 21000 questions, '+r.checked+' stop checks over 6 fixtures x 7 grades'};
 });
 
-// ---- object art set A (P4-13) ----
-run('art set A: 40 pictures present, size, allowed elements, tokens only, well-formed, used by picture words',()=>{
+// ---- object art set A (P4-13, new style P4-13b; DESIGN_SYSTEM 6.5) ----
+run('art set A: 40 pictures present, size, allowed elements and attributes, tokens only, well-formed, used by picture words',()=>{
   const p=[];
   const NAMES=('apple banana cookie ball star fish duck car flower cat dog pig sun bus hat bed cup fox bat bug hen box map pen web frog crab drum '+
     'ship milk tent hand gift flag cake kite bike rose bone nose').split(' ');
   const out=eval(js+`
   const bad=[];
+  const ATTR=/^(fill|stroke|stroke-width|opacity|transform|d|cx|cy|r|rx|ry|x|y|width|height)$/;
+  let total=0;
   for(const n of ${JSON.stringify(NAMES)}){
     const d=ART[n];
     if(!d){bad.push('missing drawing: '+n);continue}
-    if(d.length>=900)bad.push(n+': '+d.length+' bytes (limit 900)');
+    total+=d.length;
+    if(d.length>2500)bad.push(n+': '+d.length+' bytes (limit 2500)');
     if((d.match(/<[^>]*\\/>/g)||[]).join('')!==d)bad.push(n+': every element must be self-closing, nothing between them');
+    const els=d.match(/<[a-z]+/g)||[];
+    if(els.length>40)bad.push(n+': '+els.length+' elements (limit 40)');
     for(const t of d.match(/<\\/?[a-z]+/g)||[])if(!/^<(path|circle|ellipse|rect)$/.test(t))bad.push(n+': element '+t+'> not allowed');
-    if(/gradient|filter|<text|url\\(|style=|\\sid=|<defs/i.test(d))bad.push(n+': no ids, defs, gradients, filters, text, url() or style');
+    for(const m of d.matchAll(/\\s([a-zA-Z:-]+)=/g))if(!ATTR.test(m[1]))bad.push(n+': attribute '+m[1]+' not allowed');
+    for(const m of d.matchAll(/transform="([^"]*)"/g))if(!/^rotate\\(-?[\\d.]+ -?[\\d.]+ -?[\\d.]+\\)$/.test(m[1]))bad.push(n+': transform may only be rotate(a cx cy): '+m[1]);
+    for(const m of d.matchAll(/opacity="([^"]*)"/g))if(!(+m[1]>0&&+m[1]<1))bad.push(n+': opacity between 0 and 1: '+m[1]);
+    if(/gradient|filter|mask|clip|pattern|<text|<use|url\\(|style=|\\sid=|<defs|<image|href/i.test(d))bad.push(n+': no ids, defs, gradients, masks, clips, filters, text, use, url() or style');
     if(/#[0-9a-f]{3,8}\\b/i.test(d))bad.push(n+': raw hex colour');
     for(const a of d.match(/(fill|stroke)="[^"]*"/g)||[])if(!/^(fill|stroke)="(currentColor|none|var\\(--a-[a-z0-9]+\\))"$/.test(a))bad.push(n+': colour must be currentColor, none or var(--a-x): '+a);
-    const co=(d.match(/\\s(d|cx|cy|r|rx|ry|x|y|width|height)="[^"]*"/g)||[]).join(' ').match(/\\d*\\.\\d{2,}/g);
+    const co=(d.match(/\\s(d|cx|cy|r|rx|ry|x|y|width|height|stroke-width|transform)="[^"]*"/g)||[]).join(' ').match(/\\d*\\.\\d{2,}/g);
     if(co)bad.push(n+': coordinates to one decimal ('+co[0]+')');
     const doc=picArt(n,48);
     if(!/^<svg [^>]*viewBox="0 0 64 64"[^>]*>(<(path|circle|ellipse|rect)\\b[^>]*\\/>)+<\\/svg>$/.test(doc))bad.push(n+': picArt markup not well formed');
     if(picFor(n,'X')!==picArt(n))bad.push(n+': picFor does not return the drawing');
   }
+  if(total>64000)bad.push('set A is '+total+' bytes (limit 64000)');
   // every --a-x role used is defined in 21-art.css
   const css=${JSON.stringify(fs.readFileSync(path.join(SRC,'css','21-art.css'),'utf8'))};
   for(const n of ${JSON.stringify(NAMES)})for(const m of ART[n].match(/--a-[a-z0-9]+/g)||[])if(!css.includes(m+':'))bad.push(n+': '+m+' not defined in 21-art.css');
@@ -1858,6 +1867,11 @@ run('art set A: 40 pictures present, size, allowed elements, tokens only, well-f
   if(!shown)bad.push('no picture question showed a drawing');
   if(PW.length<30)bad.push('only '+PW.length+' set A words are picture words');
   bad;`);
+  // every --a-x role maps to an --ill-* token that 00-tokens.css defines as a hex colour
+  const tok=fs.readFileSync(path.join(SRC,'css','00-tokens.css'),'utf8');
+  const acss=fs.readFileSync(path.join(SRC,'css','21-art.css'),'utf8');
+  for(const m of acss.matchAll(/(--a-[a-z0-9]+):var\((--[a-z0-9-]+)\)/g))
+    if(!/^--ill-/.test(m[2])||!new RegExp(m[2]+':#[0-9A-Fa-f]{6};').test(tok))p.push(m[1]+' must map to an --ill-* hex token in 00-tokens.css, got '+m[2]);
   return{problems:out.concat(p),note:NAMES.length+' pictures'};
 });
 
