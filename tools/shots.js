@@ -1689,6 +1689,73 @@ Object.assign(SCREENS, {
   'bt-cc-win': copyShot(1, 1, { win: true }),
 });
 
+// P3-11 Tangrams: grade g sets the band, level lv starts with o.placed of solve()'s moves already made (a saved state); o.wrong puts
+// the next piece on the board turned and off its place; o.sel picks the next tray piece; o.hint presses Hint (cooldown skipped);
+// o.win places all but the last piece and lets hint 3 finish it (the win card). bt-tg-sheet (also `tangram`, BRAIN_TEASERS 5.7):
+// every puzzle of the bank, its silhouette and its solution, for checking new puzzles.
+const tgShot = (g, lv, o = {}) => ({
+  run: async p => {
+    await p.evaluate(([g, lv, o]) => {
+      window.say = () => {};
+      S.grade = g;
+      S.bt = {};
+      const band = BT.band(), puzzle = BT.make('tangram', band, lv), st = TG.fresh(puzzle), moves = TG.solve(puzzle);
+      const n = o.win ? moves.length - 1 : o.placed || 0;
+      for (const [i, k, f, x, y] of moves.slice(0, n)) st.pc[i] = [k, f, x, y];
+      if (o.wrong && moves[n]) { const [i, k, f, x, y] = moves[n]; st.pc[i] = [(k + 1) % 8, f, x + 0.4, y + 0.2]; }
+      S.bt.cur = { id: 'tangram', band, level: lv, puzzle, state: st, hints: 0, sec: 40, day: today() };
+      BT.start('tangram', band, lv);
+    }, [g, lv, o]);
+    await p.waitForSelector('.tg-pc .tg-bs');
+    await p.waitForTimeout(200);
+    if (o.sel) {
+      const q = await p.evaluate(() => { const i = TG.movable(TG.cur.p).find(j => TG.cur.st().pc[j].length == 2); return TG.cur.at(i); });
+      await p.mouse.click(q.x, q.y);
+    }
+    for (let i = 0; i < (o.hint || 0) + (o.win ? 3 : 0); i++) {
+      await p.evaluate(() => { BT.act.cd = 0; document.querySelector('#bthint').disabled = false; });
+      await p.click('#bthint');
+    }
+    if (o.win) await p.waitForSelector('.bt-win #btnext', { timeout: 8000 });
+  },
+});
+const tgSheet = {
+  full: true,
+  run: async p => {
+    await p.evaluate(() => {
+      const card = (e, n) => {
+        const pc = e.pcs.map((q, i) => TG.xnorm(TG.KIND[i], ...q));
+        const pls = pc.map((q, i) => TG.poly(TG.KIND[i], q[0], q[1], TG.num(q[2]), TG.num(q[3]))), all = pls.flat();
+        const x0 = Math.min(...all.map(q => q[0])), y0 = Math.min(...all.map(q => q[1]));
+        const w = Math.max(...all.map(q => q[0])) - x0, h = Math.max(...all.map(q => q[1])) - y0, u = 150 / Math.max(w, h, 6);
+        const P = q => [(q[0] - x0) * u + 8, (q[1] - y0) * u + 8], pts = a => a.map(q => P(q).map(v => v.toFixed(1)).join(',')).join(' ');
+        const d = TG.outline(pls).map(l => 'M' + l.map(q => P(q).map(v => v.toFixed(1)).join(' ')).join('L') + 'Z').join('');
+        const vb = `0 0 ${(w * u + 16).toFixed(0)} ${(h * u + 16).toFixed(0)}`;
+        const sil = `<svg viewBox="${vb}" width="${(w * u + 16).toFixed(0)}"><path class="tg-sb" d="${d}"/><path class="tg-se" d="${d}"/></svg>`;
+        const sol = `<svg viewBox="${vb}" width="${(w * u + 16).toFixed(0)}">${pls.map((a, i) => `<g class="tg-pc tg-c${i}"><polygon class="tg-ld" points="${pts(a.map(q => [q[0], q[1] + 0.05]))}"/>` +
+          `<polygon class="tg-bs" points="${pts(a)}"/></g>`).join('')}</svg>`;
+        return `<div style="display:flex;flex-direction:column;gap:6px;padding:10px;border-radius:16px;background:var(--surface);box-shadow:inset 0 0 0 2px var(--line)">` +
+          `<b style="font-family:var(--font-display);font-size:18px">${n + 1}. ${esc(e.name)} <small style="color:var(--ink-3)">${esc(e.id)}, ${w.toFixed(1)} x ${h.toFixed(1)}</small></b>` +
+          `<div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">${sil}${sol}</div><small>${esc(e.say)}</small></div>`;
+      };
+      view(`<div class="tgs" style="padding:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px">${PUZ.tangram.map(card).join('')}</div>`);
+      for (const e of [document.documentElement, document.body, document.querySelector('#app')]) { e.style.height = 'auto'; e.style.overflow = 'visible'; }
+    });
+  },
+};
+Object.assign(SCREENS, {
+  'bt-tg-levels': { run: async p => { await p.evaluate(() => { S.grade = 3; BT.rec('tangram', 'C', true).stars = [3, 2, 1]; BT.rec('tangram', 'C').lvl = 4; BT.levels('tangram', 'C'); }); } },
+  'bt-tg-a': tgShot(0, 1),
+  'bt-tg-a-turn': tgShot(0, 9, { placed: 0, sel: true }),
+  'bt-tg-b': tgShot(1, 7, { placed: 2 }),
+  'bt-tg-c': tgShot(3, 5, { placed: 3, wrong: true }),
+  'bt-tg-d': tgShot(5, 8),
+  'bt-tg-hint': tgShot(5, 4, { placed: 2, hint: 2 }),
+  'bt-tg-win': tgShot(3, 2, { win: true }),
+  'bt-tg-sheet': tgSheet,
+  tangram: tgSheet,
+});
+
 async function main() {
   const args = process.argv.slice(2);
   let fixtureArg = null;
