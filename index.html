@@ -2572,7 +2572,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S));SAVE_FAILED=fals
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v122'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v125'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -3456,7 +3456,8 @@ function icoSk(id){
 if(document.body&&!document.getElementById('ico-sprite'))document.body.insertAdjacentHTML('afterbegin',icoSprite());
 /* ---------- content pictures: object art with emoji fallback (DESIGN_SYSTEM 6.5) ---------- */
 /* Every content picture (counting objects, picture words, vocabulary) goes through picFor(word, emoji).
-   P4-13 to P4-15 add drawings to ART in src/js/16-art-*.js with Object.assign(ART, {apple: '<path .../>', ...})
+   P4-13 to P4-15 add drawings to ART with Object.assign(ART, {apple: '<path .../>', ...}): set A in src/js/16-art-a.js, set B in
+   src/data/d-art-b.js (the data file, so ART is complete only at render time: read it inside functions, never while loading)
    (64x64 grid, style and limits in DESIGN_SYSTEM 6.5); words with a drawing show it, the rest keep the emoji,
    with no change to any generator.
    Rules for content code:
@@ -11996,7 +11997,7 @@ function home(first){
   <div class="scroll hm" id="hs"><div class="hm-cols">
    <div class="hm-col">${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}${hmDaily()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
-   <p class="hm-ver">${ico('star', 16)}<span>Star School v122</span></p></div>`);
+   <p class="hm-ver">${ico('star', 16)}<span>Star School v125</span></p></div>`);
   music(true);
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,['💖','✨','⭐']);
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
@@ -15134,7 +15135,7 @@ function grown(){let armed=false;
    <div class="vline"><span class="vtxt">Give a bonus</span><button class="btn xs" id="pt5">+5 min</button><button class="btn xs danger" id="pt0">Empty bank</button></div>
    <label class="tg"><input type="checkbox" id="ptp" ${ptCfg().pause?'checked':''}> Pause game time (games locked)</label></div>
   <div class="card"><div class="tw"><table><tr><th>Skill</th><th>Rounds</th><th>1st try</th><th>Tricky ones</th></tr>${rows}</table></div></div>
-  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v122 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
+  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v125 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
    Storage: ${SAVE_FAILED?'<b style="color:#c0392b">could not save (device storage may be full)</b>':'saving OK'}${SAVE_CORRUPT?'<br><b style="color:#c0392b">The old save could not be read. A fresh start was made and the old data was kept on the device.</b>':''}<br>
    Last errors: ${(S.err||[]).length?(S.err||[]).slice().reverse().map(e=>'<br>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+' '+esc(e.msg)).join(''):'none'}</div></details>
   <div class="card"><label class="tg"><input type="checkbox" id="voice" ${S.voice?'checked':''}> Read questions out loud</label>
@@ -15479,18 +15480,18 @@ function appFiles() {
   ];
 }
 function dataReady() {
-  return appFiles().every(f => f[1] === 'v122');
+  return appFiles().every(f => f[1] === 'v125');
 }
 function dataMissing() {
-  logErr(appFiles().filter(f => f[1] !== 'v122').map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v122)');
+  logErr(appFiles().filter(f => f[1] !== 'v125').map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v125)');
   const again = UI.btn('Try again', { kind: 'primary', size: 'lg', icon: 'replay', id: 'dataretry' });
   view(`<div class="scroll" id="datamiss">${UI.empty('download', 'Star School needs to finish updating. Connect to the internet, then tap Try again.', again)}</div>`);
   $('#dataretry').onclick = () => location.reload();
 }
 </script>
-<script src="bt.v122.js"></script>
-<script src="games.v122.js"></script>
-<script src="data.v122.js"></script>
+<script src="bt.v125.js"></script>
+<script src="games.v125.js"></script>
+<script src="data.v125.js"></script>
 <script>
 if (dataReady()) {
   loadClips();
