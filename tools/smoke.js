@@ -528,20 +528,22 @@ async function main() {
         btn: Math.min(...[...document.querySelectorAll('.pl-in .btn')].map(b => b.offsetHeight)), wide: document.documentElement.scrollWidth }));
       const s2 = JSON.parse((await snap()).mem);
       // P2-01: a K child's quiz now starts one grade below, in Tiny Town, so passing every math world takes 5 testlets (20 questions)
-      const mids = await pp.evaluate(() => PATHS.math.worlds.map(w => w.id)), lastId = mids[mids.length - 1];
+      const mids = await pp.evaluate(() => PATHS.math.worlds.map(w => w.id));
+      // 20 questions pass at most PLACE.MAX worlds above the start world, so with a long path the quiz ends before the last world (P2-06)
+      const placedAt = await pp.evaluate(() => Math.min(PATHS.math.worlds.length - 1, PLACE.first(PATHS.math.worlds, gradeOf()) + PLACE.MAX)), lastId = mids[placedAt];
       if (n !== 20 || !res.place || res.place.world !== lastId || res.place.asked !== 20 || res.place.right !== 20
-        || mids.slice(0, -1).some(id => !res.skip[id]) || s2.stars !== JSON.parse(s0.mem).stars
+        || mids.slice(0, placedAt).some(id => !res.skip[id]) || s2.stars !== JSON.parse(s0.mem).stars
         || s2.coins !== JSON.parse(s0.mem).coins || res.btn < 48 || res.wide > 380)
         fail('placement result: ' + n + ' answers, ' + JSON.stringify(res));
       await pp.click('#plmap');
       await pp.waitForSelector('#map');
-      const mw = await pp.evaluate(() => ({ w: MAPW.math, cur: curWorld('math'), open: unlocked('math', WR.math[PATHS.math.worlds.length - 1][0]), last: PATHS.math.worlds.length - 1 }));
+      const mw = await pp.evaluate(placedAt => ({ w: MAPW.math, cur: curWorld('math'), open: unlocked('math', WR.math[placedAt][0]), last: placedAt }), placedAt);
       if (mw.w !== mw.last || mw.cur !== mw.last || !mw.open) fail('map after placement: ' + JSON.stringify(mw));
-      else step('placement: 20 right answers pass every math world below the last; result saved, stars and coins unchanged, map opens on the last world');
+      else step('placement: 20 right answers pass the worlds below the placed one; result saved, stars and coins unchanged, map opens on the placed world');
       await pp.evaluate(() => grown());
       await pp.waitForSelector('.pl-grown [data-place="read"]');
       const gtxt = await pp.evaluate(() => document.querySelector('.pl-grown').textContent);
-      if (!gtxt.includes(await pp.evaluate(() => PATHS.math.worlds[PATHS.math.worlds.length - 1].n))) fail('Grown-ups does not show the placement result');
+      if (!gtxt.includes(await pp.evaluate(i => PATHS.math.worlds[i].n, placedAt))) fail('Grown-ups does not show the placement result');
       else step('Grown-ups: "Find my level" row shows the last result');
       network.push(...pa.network);
       for (const e of pa.errors) fail(e);
@@ -912,14 +914,14 @@ async function main() {
       const ma5 = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
       const mp = ma5.page;
       await mp.evaluate(() => { S.grade = 3; save(); });
-      const lastW = await mp.evaluate(() => PATHS.math.worlds.length - 1);
+      const lastW = await mp.evaluate(() => PATHS.math.worlds.findIndex(w => w.id === 'm_mult'));
       const openMountain = async k => { // home, math map, the last world's chip, then its k-th stop
         await mp.evaluate(() => home());
         await mp.click('.game[data-p="math"]');
         await mp.waitForSelector('.wchip.on');
         await mp.click(`.wchip[data-w="${lastW}"]`);
         await mp.waitForSelector(`.wchip.on[data-w="${lastW}"]`);
-        const n = await mp.evaluate(k => WR.math[PATHS.math.worlds.length - 1][0] + k, k);
+        const n = await mp.evaluate(k => WR.math[PATHS.math.worlds.findIndex(w => w.id === 'm_mult')][0] + k, k);
         await mp.click(`.node[data-n="${n}"]`);
         await mp.waitForSelector('#prompt');
       };
@@ -928,9 +930,9 @@ async function main() {
       await mp.waitForSelector('.wchip.on');
       await mp.click(`.wchip[data-w="${lastW}"]`);
       await mp.waitForSelector(`.wchip.on[data-w="${lastW}"]`);
-      const world = await mp.evaluate(() => ({ id: PATHS.math.worlds[PATHS.math.worlds.length - 1].id, stops: WR.math[PATHS.math.worlds.length - 1][1] - WR.math[PATHS.math.worlds.length - 1][0] + 1,
-        boss: !!document.querySelector(`.node[data-n="${WR.math[PATHS.math.worlds.length - 1][1]}"]`),
-        first: NODES.math[WR.math[PATHS.math.worlds.length - 1][0]].sk }));
+      const world = await mp.evaluate(() => ({ id: PATHS.math.worlds[PATHS.math.worlds.findIndex(w => w.id === 'm_mult')].id, stops: WR.math[PATHS.math.worlds.findIndex(w => w.id === 'm_mult')][1] - WR.math[PATHS.math.worlds.findIndex(w => w.id === 'm_mult')][0] + 1,
+        boss: !!document.querySelector(`.node[data-n="${WR.math[PATHS.math.worlds.findIndex(w => w.id === 'm_mult')][1]}"]`),
+        first: NODES.math[WR.math[PATHS.math.worlds.findIndex(w => w.id === 'm_mult')][0]].sk }));
       if (world.id !== 'm_mult' || world.stops !== 12 || !world.boss || world.first !== 'arr') fail('Multiply Mountain map: ' + JSON.stringify(world));
       await openMountain(0);
       await mp.waitForSelector('#prompt');
@@ -962,6 +964,50 @@ async function main() {
       network.push(...ma5.network);
       for (const e of ma5.errors) fail(e);
       await ma5.ctx.close();
+    }
+
+    // P2-06 Fraction Forest at 380x780: a 3rd grader opens the world from the strip (found by id, 4 stops + boss), plays all four
+    //    stops with real taps and the number pad (frac 2 to 5, every answer right); nothing is wider than the screen, the number pad
+    //    and every choice or tap target is at least 48 px, and a fraction question shows a stacked fraction.
+    {
+      const fr6 = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
+      const fp = fr6.page;
+      await fp.evaluate(() => { S.grade = 3; save(); });
+      const forest = await fp.evaluate(() => PATHS.math.worlds.findIndex(w => w.id === 'm_frac'));
+      const openStop = async k => {
+        await fp.evaluate(() => home());
+        await fp.click('.game[data-p="math"]');
+        await fp.waitForSelector('.wchip.on');
+        await fp.click(`.wchip[data-w="${forest}"]`);
+        await fp.waitForSelector(`.wchip.on[data-w="${forest}"]`);
+        const n = await fp.evaluate(([w, k]) => WR.math[w][0] + k, [forest, k]);
+        await fp.click(`.node[data-n="${n}"]`);
+        await fp.waitForSelector('#prompt');
+      };
+      await openStop(0);
+      const world = await fp.evaluate(w => ({ id: PATHS.math.worlds[w].id, stops: WR.math[w][1] - WR.math[w][0] + 1,
+        first: NODES.math[WR.math[w][0]].sk + NODES.math[WR.math[w][0]].lv }), forest);
+      if (world.id !== 'm_frac' || world.stops !== 5 || world.first !== 'frac2') fail('Fraction Forest map: ' + JSON.stringify(world));
+      for (let k = 0; k < 4; k++) {
+        if (k) await openStop(k);
+        await fp.waitForSelector('#prompt');
+        await fp.waitForTimeout(900); // the prompt pops in with a scale animation; tap targets are measured once it has settled
+        const lay = await fp.evaluate(() => {
+          const sm = a => Math.min(...a.map(b => Math.min(b.offsetHeight, b.offsetWidth)));
+          return { sk: G.sk, lv: G.lv, kind: G.q.kind, w: document.documentElement.scrollWidth, art: !!document.querySelector('#prompt svg'),
+            keys: sm([...document.querySelectorAll('.k')]), ch: sm([...document.querySelectorAll('.ch')]),
+            tap: sm([...document.querySelectorAll('#prompt .vt')].map(e => { const r = e.getBoundingClientRect(); return { offsetHeight: r.height, offsetWidth: r.width }; })) };
+        });
+        if (lay.sk !== 'frac' || lay.lv !== k + 2 || lay.w > 380 || lay.keys < 48 || lay.ch < 48 || lay.tap < 48) fail('Fraction Forest stop ' + k + ': ' + JSON.stringify(lay));
+        await playRound(fp, 'P2-06 frac ' + (k + 2), 10);
+        await fp.evaluate(() => { G.dead = true; });
+      }
+      const stars = await fp.evaluate(() => ['frac2', 'frac3', 'frac4', 'frac5'].map(id => S.maps.math[id] || 0));
+      if (stars.some(s => s < 1)) fail('Fraction Forest stars not saved: ' + JSON.stringify(stars));
+      else step('P2-06: Fraction Forest opens for a 3rd grader (4 stops + boss), frac 2 to 5 rounds played, stars saved, touch targets 48 px or more');
+      network.push(...fr6.network);
+      for (const e of fr6.errors) fail(e);
+      await fr6.ctx.close();
     }
 
     for (const e of errors) fail(e);

@@ -278,7 +278,7 @@ const SCREENS = {
   'report-fresh': { fixture: 'fresh', run: async p => { await p.evaluate(() => { S.name = 'Ava'; report(); }); } },
   'report-maxed': { fixture: 'maxed', run: reportDemo('#rp-level', 3) },
   // P2-05 Multiply Mountain: the world map, then one question of each new level (m5-<skill><level>), grade 3.
-  'm5-map': { run: async p => { await p.evaluate(() => { S.grade = 3; pathMap('math', PATHS.math.worlds.length - 1); }); } },
+  'm5-map': { run: async p => { await p.evaluate(() => { S.grade = 3; pathMap('math', PATHS.math.worlds.findIndex(w => w.id === 'm_mult')); }); } },
   'm5-arr2-swap': { run: async p => { await p.evaluate(() => {
     S.grade = 3; start('math', NODES.math.findIndex(n => n.sk == 'arr'));
     let q; for (let i = 1; i < 400; i++) { q = genQ('arr', 2, i); if (q.kind == 'num') break; }
@@ -336,6 +336,29 @@ const SCREENS = {
   'tiny-hint': { fixture: 'fresh', run: tinyShot('pk_count', 2, true) },
   'tiny-notext': { fixture: 'fresh', run: tinyShot('pk_num', 2, false, true) },
 };
+
+// P2-06 Fraction Forest: the map, then one question per variant of frac 2 to 5 (first seed whose label matches), grade 3
+function fracShot(lv, want) {
+  return async p => {
+    await p.evaluate(([lv, want]) => {
+      S.grade = 3; S.name = 'Ava'; S.buddy = 'Ben';
+      window.say = () => {};
+      start('math', NODES.math.findIndex(n => n.sk == 'frac' && n.lv == lv));
+      let q; for (let i = 1; i < 500; i++) { q = genQ('frac', lv, i); if (new RegExp(want).test(q.label)) break; }
+      G.q = q; renderQ();
+    }, [lv, want]);
+  };
+}
+Object.assign(SCREENS, {
+  'frac-map': { run: async p => { await p.evaluate(() => { S.grade = 3; pathMap('math', PATHS.math.worlds.findIndex(w => w.id === 'm_frac')); }); } },
+  'frac-2-name': { run: fracShot(2, '^frac \\d+/\\d+ (bar|circle)$') },
+  'frac-2-pic': { run: fracShot(2, '^frac pic') },
+  'frac-3-tap': { run: fracShot(3, '^frac tap') },
+  'frac-3-read': { run: fracShot(3, '^frac read .* to 2$') },
+  'frac-4': { run: fracShot(4, '^frac cmp') },
+  'frac-5-num': { run: fracShot(5, '^frac eq') },
+  'frac-5-which': { run: fracShot(5, '^frac which') },
+});
 
 // One Tiny Town question (genQ with a fixed seed) through the real round engine; hint opens Help, notext sets the debug flag.
 function tinyShot(sk, lv, hint, notext) {

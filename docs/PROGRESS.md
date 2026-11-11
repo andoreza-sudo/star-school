@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** wave 5 batch B: P2-02, P2-03, P2-06, P2-18; then batch C: P2-04, P2-07.
+**Next up:** wave 5 batch B merging (P2-02, P2-03, P2-18), then batch C: P2-04, P2-07. Wave 6 underway: P4-04, P4-05 (Opus), P4-13b art redraw (Opus).
 
-**Current version:** v62
+**Current version:** v63
 
 ## Chunk status
 
@@ -42,6 +42,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P2-01 v60
 - P2-05 v61
 - ONLINE note on share/print v62
+- P2-06 v63
 
 ## Handoff notes
 
@@ -50,6 +51,8 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 ## Ideas and issues
 
 - (ONLINE) Report card at 380x780: the stat label "Accuracy" breaks mid-word ("Accurac / y") in the 4-column stat row; P4 restyle of the report card (or a shorter label / hyphens:auto) should fix it.
+- (P2-06) A placement quiz is capped at 20 questions (5 testlets) so a child starting at K can no longer be placed in the last math world; with 16 math worlds (CURRICULUM 2.1) an all-right child ends about 5 worlds up. Intended by P1-07, but P1-07's cap may need a second look once the path is full (grown-ups can still skip worlds).
+- (P2-06) `frac` level 3 "later 0-2" lines are mixed in at 25% of the read-the-point questions (answers can be improper, like 5/4); P2-07 can drop that if grade 3 feels too early.
 - (merge P2-05) The full smoke run now takes about 12 minutes. A run that crosses midnight fails the P5-03 daily review counts (items moved to "due tomorrow" become due again). A later chunk could freeze the page clock in tools/lib/browser.js.
 - (P2-19) Spelling hint 2 ("show the word for 2 seconds, then hide", CURRICULUM E-spell) is not built: `hintHTML` has no stepped hints. A later hint chunk can add it to `genSpell` as a second hint step.
 - (P2-19) Story Summit, Dragon Library, Author Island and Legend Lab exist now with only a spell stop each (plus the boss). P2-20 to P2-29 should insert their stops in CURRICULUM 2.2 order; do not change the spell stop ids. Word Workshop (`r_workshop`, grade 2) between Space Station and Story Summit still has to be created by P2-18.
@@ -167,6 +170,17 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P1-05) Map draw with 16 fake worlds (156 stops) at 6x CPU throttle: median about 29 ms (limit 50), single runs up to about 49 ms. The strip recomputes `worldOpen`/`worldFinished` per chip and `unlocked` scans the world; a memo per draw is the next step if P4-09 adds weight.
 
 ## Log
+
+### P2-06 Fractions core (v63, 2026-11-11, Claude)
+- What changed: new skill `frac` (levels 2-8, `max: 8`) with generators in one block at the end of `src/js/33-gen-math-mid.js` (headed `// ---- P2-06 fractions core ----`, entry `genFracCore`): 2 name the shaded fraction (bar or circle, number pad `frac`) or pick the picture for a named fraction; 3 tap the point on a 0-1 line (d 2-5) or read the marked point (0-1, sometimes 0-2, `eq:'value'`); 4 compare with bars, same bottom or same top, `< = >`; 5 `1/2 = ?/8` (bars half the time) or "which equals 2/3" (3 choices, no distractor equal in value); 6 compare unlike fractions, no picture (benchmark 1/2 or common bottom hint, 15% equal pairs); 7 simplest form (GCF 2-6, d <= 48, exact); 8 `2 3/4 = ?/4` and `11/4 =` whole and fraction (`sep:'mix'`). Every level has a hint, `say` (fractions spoken "3 fourths") and a unique label; seeded randomness only. New `src/css/32-frac.css` (`.fr` stacked fraction span, tokens only).
+- Stops: new math world `m_frac` Fraction Forest (grade 3, appended after Multiply Mountain, CURRICULUM 2.1 #10) with `frac 2, frac 3, frac 4, frac 5` plus the boss (5 map stops). The world did not exist yet, so it was created here in CURRICULUM order; P2-07 inserts the rest (round, sub 6, geo, ...) between these stops in the 2.1 order and must keep these four ids. frac 1 is P2-03's: until it ships `genFracCore(1)` asks like level 2 (the merge should wrap `frac.gen` as `lv => lv == 1 ? genFrac1(lv) : genFracCore(lv)` and register `frac` once). Levels 1 and 6-8 have no stop: `RESERVED.frac = [1, 6, 7, 8]` in the "skills: every level is reachable" check (6-8 get stops in P2-10).
+- Edits to existing files: `38-skills.js` (one `frac` entry), `42-paths.js` (one world appended), `tools/build.py` (VER). New: `32-frac.css`.
+- Tests changed (old -> new): test.js generator fuzz: a `num` question with `pad` other than int or a `sep` is validated with `kindProblems` instead of "ans is a whole number" (frac answers look like 3/4); placement "all right on math (N worlds)": expected end world `N-1`, all passed -> a quiz is capped at PLACE.MAX (5) testlets, so with 7 math worlds from a K start it ends on world 6 (Multiply Mountain) with `all` false; the simulated-student check "all right should pass every world" only applies when `worlds - startWorld <= PLACE.MAX`; "multiply mountain" check finds the world by id (`m_mult`) instead of "last world". smoke.js: P2-05 block and P1-07 placement block use world ids / the computed placed world (`min(last, PLACE.first + PLACE.MAX)`) instead of `worlds.length - 1`. shots.js: `m5-map` finds `m_mult` by id.
+- Tests: test.js 39 checks pass (36 + 3 new: frac maths per level at 3,000 samples, Fraction Forest stops/spoken names/reserved levels, fixture saves); smoke.js has one new block (P2-06 Fraction Forest at 380x780: 4 stops played with taps and pad).
+- Save safety: stars are keyed by stop id; the world is appended after `m_mult`, so no key or index of an existing world moves and `MAP_V42` is untouched. The new fixture test loads midway, maxed, legacy-single-map, legacy-index-maps and fresh with and without the world: the math star table is identical, no star sits on a new stop id, and every stop with stars is still unlocked (50 passed stops checked).
+- Screenshots looked at (380x780): frac-map, frac-2-name, frac-2-pic, frac-3-tap, frac-3-read, frac-4, frac-5-num, frac-5-which (all also written at 600x960 and 1024x600 by `node tools/shots.js frac-map ...`).
+- Checklist 7.1: [x] only named files changed (plus tests, shots, css, built output) [x] VER bumped (v63, provisional) [x] build [x] test.js [x] smoke.js [x] screenshots [x] midway fixture unchanged [x] size under 1.5 MB [x] no network [x] no new emoji or hex [x] PROGRESS entry
+- Merge: built on a parallel branch, renumbered v64 -> v63 at merge.
 
 ### ONLINE: share and print buttons say to get online first (v62, 2026-11-11, Claude)
 - Why: Star School is an offline app; sharing, sending and printing are the only things that need a connection (asked for by Andy).
