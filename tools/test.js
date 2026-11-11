@@ -3318,8 +3318,8 @@ run('Treasure Bay (P2-04): CURRICULUM M-2 levels, old levels unchanged, answers 
     const common=(qs,w)=>{
       const labels=new Map();
       for(const q of qs){
-        if(!q.hint||!(q.hint.k=='text'?q.hint.s:q.hint.html))b(w+': no hint');
-        else if(q.hint.k!=='text'&&q.hint.k!=='html')b(w+': hint kind '+q.hint.k);
+        if(!q.hint||!(q.hint.k=='text'?q.hint.s:q.hint.k=='steps'?q.hint.steps.length:q.hint.html))b(w+': no hint'); // steps: P2-08 (big5)
+        else if(q.hint.k!=='text'&&q.hint.k!=='html'&&q.hint.k!=='steps')b(w+': hint kind '+q.hint.k);
         else if(hintHTML(q).length<20)b(w+': hint too short');
         if(typeof q.say!=='string'||!q.say.trim())b(w+': no say');
         if(!q.label||q.label.length>=60)b(w+': label '+q.label);
@@ -5005,6 +5005,172 @@ run('vocabulary P2-23: levels 6-10 bank validates, one right answer per item, 30
   };
   const r=eval(js+';('+body.toString()+')()');
   return{problems:serrs,note:'327 items, 15000 questions, '+r.checked+' stop checks over 8 fixtures x 9 grades'};
+});
+
+run('step hints (P2-08): every step of 3,000 random problems per algorithm is right and leads to the answer; panel, CSS',()=>{
+  const p=[];
+  const css=fs.readFileSync(path.join(SRC,'css','39-steps.css'),'utf8').replace(/\/\*[\s\S]*?\*\//g,'');
+  const tok=fs.readFileSync(path.join(SRC,'css','00-tokens.css'),'utf8');
+  if(/#[0-9a-fA-F]{3,8}\b/.test(css))p.push('raw hex colour in 39-steps.css');
+  if(/rgba?\(|hsla?\(/.test(css))p.push('colour function in 39-steps.css');
+  if(/(^|[;{\s])(-webkit-)?(backdrop-)?filter\s*:/.test(css))p.push('filter or backdrop-filter used');
+  if(/transition\s*:/.test(css))p.push('39-steps.css should not need transitions');
+  const kf=[...css.matchAll(/@keyframes\s+([\w-]+)\s*\{((?:[^{}]*\{[^}]*\})*)\s*\}/g)];
+  if(kf.length<4)p.push('keyframes not found');
+  for(const [,n,body] of kf){
+    if(!/^k-/.test(n))p.push('keyframes '+n+' must be named k-*');
+    for(const d of body.match(/[a-z-]+(?=\s*:)/g)||[])if(d!='transform'&&d!='opacity')p.push('keyframes '+n+' animates '+d);
+  }
+  const others=fs.readdirSync(path.join(SRC,'css')).filter(f=>f!='39-steps.css').map(f=>fs.readFileSync(path.join(SRC,'css',f),'utf8')).join('');
+  for(const [,n] of kf)if(new RegExp('@keyframes\\s+'+n+'\\b').test(others))p.push('keyframes name '+n+' is also used in another CSS file');
+  for(const m of css.matchAll(/var\(--([a-z0-9-]+)/g))if(!['hsw','hpt'].includes(m[1])&&!new RegExp('--'+m[1]+':').test(tok))p.push('unknown token --'+m[1]);
+  const out=eval(js+`
+  const bad=[],N=3000;RNG=mulberry32(2008);
+  const B=s=>{if(bad.length<40)bad.push(s)};
+  // every hint: k steps, at least one step, html and say for each, the last step asks ("?", r null), no other step does;
+  // every number of a step's computation is on show; each board grid is whole rows; the spoken text has no symbols or markup
+  const shape=(h,w)=>{
+    if(!h||h.k!=='steps'||!Array.isArray(h.steps)||!h.steps.length)return B(w+': not a step hint');
+    h.steps.forEach((s,i)=>{
+      const last=i==h.steps.length-1;
+      if(typeof s.html!=='string'||typeof s.say!=='string'||!s.say.trim())B(w+' step '+i+': html/say');
+      if(/undefined|NaN|null/.test(s.html+s.say))B(w+' step '+i+': undefined/NaN in '+s.html);
+      if(/[<>×÷−]|&nbsp;/.test(s.say))B(w+' step '+i+': say has markup or symbols: '+s.say);
+      const c=s.c;if(!c)return B(w+' step '+i+': no computation record');
+      if(last!==(c.r===null))B(w+' step '+i+': r should be null only in the last step');
+      if(last&&!s.html.includes('?'))B(w+': last step has no ?');
+      const txt=s.html.replace(/<[^>]+>/g,' ');
+      for(const x of c.x.concat(last?[]:[c.r]))if(typeof x=='number'&&!new RegExp('(^|[^0-9])'+x+'([^0-9]|$)').test(txt))B(w+' step '+i+': '+x+' not shown');
+      for(const m of s.html.matchAll(/<div class="hsb[^"]*" style="grid-template-columns:([^"]+)">([\\s\\S]*?)<\\/div>/g)){
+        const cols=m[1].split(' ').length;let cells=0;
+        for(const t of m[2].matchAll(/<i [^>]*?(?:grid-column:span (\\d))?"?>/g))cells+=t[1]?+t[1]:1;
+        if(cells%cols)B(w+' step '+i+': board cells '+cells+' not whole rows of '+cols);
+      }
+    });
+  };
+  const num=(lo,hi)=>R(lo,hi);
+  const nd=k=>k==1?R(0,9):R(10**(k-1),10**k-1);
+  const decStr=()=>{const d=R(0,3),i=String(nd(R(1,4)));return d?i+'.'+Array.from({length:d},()=>R(0,9)).join(''):i};
+  const sc=(s,d)=>{const [i,f='']=s.split('.');return +(i+f.padEnd(d,'0'))};
+  const dg=(s,e,d)=>{const [i,f='']=s.split('.');if(e>=0)return e<i.length?+i[i.length-1-e]:null;const k=-e-1;return k<f.length?+f[k]:k<d?0:null};
+  // ---- addition: each column's digits and carry, the sum, and the last step plus what is brought down make the answer
+  for(let t=0;t<N;t++){
+    const xs=t<N/3?[String(nd(R(1,6))),String(nd(R(1,6)))]:t<2*N/3?Array.from({length:R(2,4)},()=>String(nd(R(1,6)))):Array.from({length:R(2,3)},decStr);
+    const w='add '+xs.join(' + ');let h;try{h=stepsAdd(...xs)}catch(e){B(w+': threw '+e.message);continue}
+    shape(h,w);const d=Math.max(...xs.map(x=>(x.split('.')[1]||'').length)),want=xs.reduce((s,x)=>s+sc(x,d),0);
+    let carry=0,got=0;
+    h.steps.forEach((s,i)=>{const c=s.c,e=-d+i,terms=xs.map(x=>dg(x,e,d)).filter(v=>v!=null),exp=(carry?[carry]:[]).concat(terms);
+      if(c.e!==e||c.op!=='+'||c.x.join()!==exp.join())B(w+' column '+e+': '+c.x+' expected '+exp);
+      const sum=exp.reduce((a,b)=>a+b,0);
+      if(c.r!==null){if(c.r!==sum)B(w+': '+c.x+' = '+c.r);got+=(sum%10)*10**(e+d);carry=Math.floor(sum/10)}
+      else got+=sum*10**(e+d)+c.up;
+    });
+    if(got!==want)B(w+': steps give '+got+', answer '+want);
+  }
+  // ---- subtraction: regroup only when the top digit is too small, from the nearest non-zero place; every column right
+  for(let t=0;t<N;t++){
+    let a,b;
+    if(t<N/2){a=nd(R(2,6));b=R(0,a);if(t%3==0)a=+String(a).replace(/[1-9](?=\\d)/g,m=>rnd()<.5?'0':m)||a,b=R(0,a)}
+    else{a=decStr();b=decStr();if(+a<+b)[a,b]=[b,a]}
+    a=String(a);b=String(b);const w='sub '+a+' - '+b;let h;try{h=stepsSub(a,b)}catch(e){B(w+': threw '+e.message);continue}
+    shape(h,w);const d=Math.max(...[a,b].map(x=>(x.split('.')[1]||'').length)),want=sc(a,d)-sc(b,d);
+    let borrow=0,got=0,e=-d;
+    for(let i=0;i<h.steps.length;i++){const c=h.steps[i].c,top=dg(a,e,d)-borrow,bv=dg(b,e,d)||0;
+      // a 0 that lent on the way (top -1) is already a 9; otherwise regroup exactly when the top digit is smaller
+      const chain=top<0,need=!chain&&top<bv;
+      if(need){if(c.op!=='rg'||c.e!==e||c.from!==top||c.to!==top+10||c.from>=c.b){B(w+' regroup at '+e+': '+JSON.stringify(c));break}i++}
+      const s=h.steps[i];if(!s){B(w+': missing step');break}
+      const cc=s.c,x0=chain?9:need?top+10:top;
+      if(cc.op!=='−'||cc.e!==e||cc.x[0]!==x0||cc.x[1]!==bv)B(w+' column '+e+': '+cc.x+' expected '+x0+','+bv);
+      if(cc.r!==null){if(cc.r!==x0-bv)B(w+': '+cc.x+' = '+cc.r);got+=(x0-bv)*10**(e+d)}else got+=(x0-bv)*10**(e+d)+cc.up;
+      borrow=need||chain?1:0;e++;
+    }
+    if(got!==want)B(w+': steps give '+got+', answer '+want);
+  }
+  // ---- multiplication, partial products: every non-zero place-value pair once; the parts add up to a x b
+  for(let t=0;t<N;t++){
+    const a=nd(R(1,3)),b=nd(R(1,2));if(!a||!b)continue;const w='mul pp '+a+' x '+b;
+    let h;try{h=stepsMul(a,b,'pp')}catch(e){B(w+': threw '+e.message);continue}
+    shape(h,w);const parts=[];
+    String(b).split('').reverse().forEach((y,j)=>{if(+y)String(a).split('').reverse().forEach((x,i)=>{if(+x)parts.push(+y*10**j*(+x*10**i))})});
+    const mul=h.steps.filter(s=>s.c.op=='×');
+    if(mul.length!==parts.length)B(w+': '+mul.length+' parts, expected '+parts.length);
+    mul.forEach((s,k)=>{const v=s.c.x[0]*s.c.x[1];if(v!==parts[k]||s.c.r!==null&&s.c.r!==v)B(w+': part '+s.c.x+' = '+s.c.r)});
+    const fin=h.steps[h.steps.length-1].c,total=fin.op=='+'?fin.x.reduce((s,v)=>s+v,0):fin.x[0]*fin.x[1];
+    if(fin.op=='+'&&fin.x.join()!==parts.join())B(w+': the sum adds '+fin.x);
+    if(total!==a*b)B(w+': steps give '+total+', answer '+a*b);
+  }
+  // ---- multiplication, standard: each digit product plus the carry from the digit before; each row is a x digit; rows add to a x b
+  for(let t=0;t<N;t++){
+    const a=nd(R(1,4)),b=t%2?nd(1):nd(R(2,3));if(!a||!b)continue;const w='mul std '+a+' x '+b;
+    let h;try{h=stepsMul(a,b,'std')}catch(e){B(w+': threw '+e.message);continue}
+    shape(h,w);const rows={};let carry=0,prev=-1,got=null;
+    for(const s of h.steps){const c=s.c;
+      if(c.op=='z'||c.op=='×'&&c.x[0]===0){carry=0;continue}
+      if(c.op=='+'){got=c.x.reduce((s,v)=>s+v,0);if(c.x.join()!==String(b).split('').reverse().map((y,j)=>a*y*10**j).join())B(w+': rows '+c.x);continue}
+      if(c.i===0)carry=0;
+      const da=+String(a).split('').reverse()[c.i],db=+String(b).split('').reverse()[c.j];
+      if(c.x[0]!==db||c.x[1]!==da||c.p!==da*db||c.cin!==carry||c.e!==c.i+c.j)B(w+': digit step '+JSON.stringify(c));
+      const s2=c.p+c.cin,last=c.i==String(a).length-1;
+      rows[c.j]=(rows[c.j]||0)+(last?s2:s2%10)*10**c.e;
+      if(c.r!==null&&c.r!==s2)B(w+': '+c.p+' + '+c.cin+' = '+c.r);
+      carry=Math.floor(s2/10);
+    }
+    for(const j in rows)if(String(b).length>1&&rows[j]!==a*+String(b).split('').reverse()[j]*10**j)B(w+': row '+j+' is '+rows[j]);
+    if(String(b).length==1)got=rows[0];
+    if(got!==a*b)B(w+': steps give '+got+', answer '+a*b);
+  }
+  // ---- long division: each round's number, quotient digit, product and remainder; the quotient and remainder are the answer
+  for(let t=0;t<N;t++){
+    const b=t%3?R(2,9):R(11,50),a=R(b,t%2?9999:999);const w='div '+a+' / '+b;
+    let h;try{h=stepsDiv(a,b)}catch(e){B(w+': threw '+e.message);continue}
+    shape(h,w);const D=String(a).split('').map(Number);
+    let pos=0,cur=D[pos++];while(cur<b)cur=cur*10+D[pos++];
+    let q='',rem=null,k=0;
+    for(;;){const qd=Math.floor(cur/b),s=h.steps[k++];
+      if(!s){B(w+': steps end early');break}
+      if(s.c.x[0]!==cur)B(w+': divides '+s.c.x[0]+', expected '+cur);
+      if(s.c.op=='÷'){if(s.c.x[1]!==b)B(w+': divisor '+s.c.x[1]);if(s.c.r!==null&&s.c.r!==qd)B(w+': '+cur+' / '+b+' gave '+s.c.r);q+=qd;
+        if(s.c.r===null){rem=cur%b;if(rem)B(w+': last step asks a digit but '+cur+' leaves '+rem);break}
+        if(qd){const m=h.steps[k++];if(!m||m.c.op!=='−'||m.c.mul.join()!==[qd,b,qd*b].join()||m.c.x.join()!==[cur,qd*b].join()){B(w+': multiply step '+JSON.stringify(m&&m.c));break}
+          if(m.c.r===null){rem=cur-qd*b;break}if(m.c.r!==cur-qd*b)B(w+': subtract '+m.c.r)}}
+      else{q+=qd;rem=cur;if(qd||s.c.r!==null)B(w+': step '+JSON.stringify(s.c));break}
+      if(pos>=D.length){B(w+': no last step');break}
+      cur=(cur-qd*b)*10+D[pos++];
+    }
+    if(k!==h.steps.length)B(w+': '+h.steps.length+' steps, used '+k);
+    if(+q!==Math.floor(a/b)||rem!==a%b)B(w+': steps give '+q+' R '+rem);
+  }
+  // ---- fractions
+  for(let t=0;t<N;t++){
+    const d=R(2,12),n=R(1,d-1),k=R(2,6),down=t%2;const w='equiv '+n+'/'+d+' k '+k+(down?' down':'');
+    let h,want;
+    try{if(down){h=stepsEquivFrac(n*k,d*k,t%4==1?n:null,t%4==1?null:d);want=t%4==1?d:n}else{h=stepsEquivFrac(n,d,t%4==0?n*k:null,t%4==0?null:d*k);want=t%4==0?d*k:n*k}}
+    catch(e){B(w+': threw '+e.message);continue}
+    shape(h,w);const f=h.steps[1].c,v=f.op=='×'?f.x[0]*f.x[1]:f.x[0]/f.x[1];
+    if(h.steps.length!==2||h.steps[0].c.x[1]!==k||v!==want)B(w+': gives '+v+', answer '+want);
+  }
+  for(let t=0;t<N;t++){
+    const b=R(2,12),d=R(2,12),a=R(1,b-1),c=R(1,d-1),op=['+','-','cmp'][t%3];const w='cd '+a+'/'+b+' '+op+' '+c+'/'+d;
+    let h;try{h=stepsCommonDen(a,b,c,d,op)}catch(e){B(w+': threw '+e.message);continue}
+    shape(h,w);const L=h.steps[0].c.r,f=h.steps[h.steps.length-1].c;
+    if(L%b||L%d||[...Array(L).keys()].some(m=>m>0&&m%b==0&&m%d==0))B(w+': common bottom '+L);
+    if(f.x[0]*b!==a*L||f.x[1]*d!==c*L||f.L!==L)B(w+': renamed '+f.x+' over '+f.L);
+    const v=op=='+'?f.x[0]+f.x[1]:op=='-'?f.x[0]-f.x[1]:Math.sign(f.x[0]-f.x[1]),want=op=='+'?a*d+c*b:op=='-'?a*d-c*b:Math.sign(a*d-c*b);
+    if(op=='cmp'?v!==want:v*b*d!==want*L)B(w+': last step gives '+v);
+  }
+  // ---- text steps, the renderer and the Treasure Bay conversion
+  const st=stepsStory(['First <b>this</b>.',{s:'Then that.',say:'Then that one.'}]);
+  if(st.steps.length!==2||!st.steps[0].html.includes('&lt;b&gt;')||st.steps[1].say!=='Then that one.')B('stepsStory: '+JSON.stringify(st));
+  const q={kind:'num',hint:stepsAdd(159,206)},h0=hintHTML(q);
+  if(!/class="hs mid|class="hs"|class="hs /.test(h0)||!h0.includes('data-hs="0"')||(h0.match(/<i class="(on|dn|)"><\\/i>/g)||[]).length!==3||!h0.includes('aria-label="Step 1 of 3"'))B('panel: '+h0.slice(0,200));
+  HSTEP.set(q,2);const h2=hintHTML(q);if(!h2.includes('data-hs="2"')||!h2.includes('Step 3 of 3'))B('panel at step 3');
+  HSTEP.set(q,9);if(!hintHTML(q).includes('data-hs="2"'))B('panel past the end');
+  if(hintStep(q)!==false)B('hintStep without a panel on show should do nothing');
+  if(!hintHTML({kind:'num',hint:stepsStory(['a','b'])}).includes('class="hs txt"'))B('text steps layout');
+  for(let s=1;s<=200;s++){const bq=genQ('big',5,s);if(bq.hint.k!=='steps'||bq.hint.steps.length!==3)B('big5 seed '+s+': hint '+bq.hint.k);}
+  bad;`);
+  return{problems:p.concat(out),note:'3,000 problems each: add, sub, mul pp, mul std, div, equiv, common bottom'};
 });
 
 // ---- report ----

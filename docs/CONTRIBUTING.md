@@ -105,6 +105,7 @@ Files added by later chunks (names are fixed by the roadmap so everyone agrees):
 | `23-viz.js` | P1-10 | Math visuals |
 | `31-gen-math-early.js`, `33-gen-math-mid.js`, `35-gen-math-upper.js` | P2-01+ | New math generators |
 | `37-bank.js` | P1-09 | Content bank engine |
+| `39b-steps.js` | P2-08 | Step-hint builders (`stepsAdd`, `stepsSub`, `stepsMul`, `stepsDiv`, `stepsEquivFrac`, `stepsCommonDen`, `stepsStory`) and prompt layouts `ST.vert`, `ST.ldiv`; the renderer is in `39-hints.js`, CSS in `src/css/39-steps.css` |
 | `src/data/d-*.js` (`d-spell`, `d-gram`, `d-vocab`, `d-comp`, `d-es`, `d-disc`, `d-trace`, `d-puz-*`) | P2, P3 | Data only. Loaded after all code, so code may read them only inside functions (at run time), never while the script is first loading |
 | `45-placement.js`, `47-trace.js`, `49-kinds.js`, `51-mastery.js`, `57-fluency.js`, `59-review.js` | P1, P2, P5 | Engines |
 | `74-teasers.js`, `75-bt-*.js` | P3 | Brain Teasers |

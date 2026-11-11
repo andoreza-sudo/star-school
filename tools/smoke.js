@@ -1225,8 +1225,10 @@ async function main() {
       });
       if (h.cls !== 'pet-svg pet-k-dragon pet-s-kid pet-m-happy' || !h.rig || h.filter !== 'none' || h.hat !== '🎩' || h.toy !== '🎈' ||
         !(h.w >= 70 && h.w <= 130) || h.right > 380 || h.sw > 380) fail('P4-05 home pet: ' + JSON.stringify(h));
-      await pp.click('#pet');
-      const cheer = await opa('#pet .pf-cheer'), base = await opa('#pet .pf-base');
+      // tap and read in one go: the cheer face lasts 550 ms of app time, about 70 ms real at SMOKE_SPEED 8 (P2-08: separate
+      // round trips missed it on a cold page)
+      const [cheer, base] = await pp.evaluate(() => { document.querySelector('#pet').click();
+        return ['.pf-cheer', '.pf-base'].map(s => +getComputedStyle(document.querySelector('#pet ' + s)).opacity); });
       await pp.waitForTimeout(700);
       const after = await opa('#pet .pf-base');
       if (cheer !== 1 || base !== 0 || after !== 1) fail('P4-05 tap: cheer face ' + [cheer, base, after]);
@@ -2159,6 +2161,87 @@ async function main() {
       network.push(...vb.network);
       for (const e of vb.errors) fail(e);
       await vb.ctx.close();
+    }
+
+    // P2-08 step hints at 380x780, 600x960 and 1024x600: a Treasure Bay big5 question in a real round, and a sample of every
+    //    builder (sums with 6 digits, 3 addends and decimals, subtraction across zeros, both multiplications, long division with
+    //    1- and 2-digit divisors, equivalent fractions, a common bottom, text steps). Each tap on Help shows the next step (the
+    //    pips move, the button reads "Next step" until the last step, then "Help"), the last step asks with a "?", the card never
+    //    overflows, nothing scrolls sideways, the buttons stay 48 px; a wrong answer keeps the step on show.
+    {
+      const CASES8 = [
+        ['big5', null],
+        ['add6', "stepQ(ST.vert(['487265','358947'],'+'),'846212',stepsAdd(487265,358947),{max:7})"],
+        ['add3x', "stepQ(ST.vert(['48726','3589','12047'],'+'),'64362',stepsAdd(48726,3589,12047),{max:7})"],
+        ['dec', "stepQ(ST.vert(['3.4','12.75'],'+'),'16.15',stepsAdd('3.4','12.75'),{pad:'dec'})"],
+        ['sub', "stepQ(ST.vert(['600400','123456'],'−'),'476944',stepsSub(600400,123456),{max:6})"],
+        ['pp', "stepQ(ST.vert(['347','26'],'×'),'9022',stepsMul(347,26,'pp'))"],
+        ['std', "stepQ(ST.vert(['348','26'],'×'),'9048',stepsMul(348,26,'std'),{max:6})"],
+        ['div', "stepQ(ST.ldiv(7453,6,SLOT_R),'1242R1',stepsDiv(7453,6),{sep:'R'})"],
+        ['div2', "stepQ(ST.ldiv(9876,43,SLOT_R),'229R29',stepsDiv(9876,43),{sep:'R'})"],
+        ['equiv', "stepQ(`<div class=\"eq\">${fcFr(3,4)} = ${fcFr(SLOT,12)}</div>`,'9',stepsEquivFrac(3,4,null,12))"],
+        ['cd', "stepQ(`<div class=\"eq\">${fcFr(5,12)} + ${fcFr(3,10)} = ${SLOT_FRAC}</div>`,'43/60',stepsCommonDen(5,12,3,10,'+'),{pad:'frac'})"],
+        ['story', "stepQ('<div class=\"sub\">Mia has 12 shells. She finds 5 more, then gives 4 away. How many now?</div>'+SLOT,'13',stepsStory(['First find how many after 5 more.','Then take away 4. How many are left?']))"],
+      ];
+      const look = () => {
+        const qa = document.querySelector('.qarea'), hs = document.querySelector('#hint .hs'), hb = document.querySelector('#hb');
+        const small = [...document.querySelectorAll('#hb, #spk, .key')].filter(e => Math.min(e.offsetWidth, e.offsetHeight) < 47.5).map(e => e.id || e.className);
+        return { at: hs ? +hs.dataset.hs : -1, pips: hs ? hs.querySelectorAll('.hs-pips i').length : 0, label: hb.textContent.trim(),
+          over: qa.scrollHeight - qa.clientHeight, wide: document.documentElement.scrollWidth > innerWidth, small,
+          ask: !!document.querySelector('#hint .ask') || /\?/.test(document.querySelector('#hint .hsc').textContent) };
+      };
+      const bad8 = [];
+      let seen8 = 0;
+      for (const [w, h] of [[380, 780], [600, 960], [1024, 600]]) {
+        const sa = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const sp = sa.page;
+        for (const [name, src] of CASES8) {
+          const n = await sp.evaluate(src => {
+            if (G) G.dead = true;
+            window.say = () => {};
+            if (!src) {
+              setGrade(2);
+              start('math', NODES.math.findIndex(x => x.sk === 'big' && x.lv === 5));
+              return G.q.hint.steps.length;
+            }
+            const stepQ = (html, ans, hint, o) => Object.assign({ kind: 'num', html, ans, hint, say: 'Work it out', label: 'zz:steps', sk: 'zz_demo', lv: 1 }, o || {});
+            const q = eval(src);
+            G = newG({ sk: 'zz_demo', n: 10, pool: [q] });
+            next();
+            return q.hint.steps.length;
+          }, src);
+          await vwait(sp, 600);
+          for (let i = 0; i < n; i++) {
+            await sp.click('#hb');
+            await vwait(sp, 150);
+            if (name === 'big5' && i === 1) {
+              // a wrong answer: the same step stays on show, and the next tap goes on from it
+              await sp.evaluate(() => { const v = String((+G.q.ans + 1) % 1000); for (const c of v) document.querySelector(`.k[data-k="${c}"]`).click();
+                document.querySelector('.k[data-k="go"]').click(); });
+              await vwait(sp, 300);
+            }
+            const r = await sp.evaluate(look);
+            const want = i < n - 1 ? 'Next step' : 'Help';
+            const where = `${name} ${w}x${h} step ${i + 1} of ${n}`;
+            if (r.at !== i || (r.pips !== n && n <= 12) || r.label !== want) bad8.push(where + ': ' + JSON.stringify(r));
+            if (r.over > 1 || r.wide || r.small.length) bad8.push(where + ': does not fit ' + JSON.stringify(r));
+            if (i === n - 1 && !r.ask) bad8.push(where + ': the last step does not ask');
+            seen8++;
+          }
+          // one more tap on the last step keeps it (no error, no step past the end)
+          await sp.click('#hb');
+          await vwait(sp, 150);
+          const end = await sp.evaluate(look);
+          if (end.at !== n - 1) bad8.push(name + ' ' + w + 'x' + h + ': tap after the last step: ' + JSON.stringify(end));
+        }
+        await sp.evaluate(() => { G.dead = true; });
+        await vwait(sp, 3000);
+        network.push(...sa.network);
+        for (const e of sa.errors) fail(e);
+        await sa.ctx.close();
+      }
+      if (bad8.length) fail('P2-08 step hints:\n  ' + bad8.slice(0, 20).join('\n  '));
+      else step(`P2-08: step hints for big5 and every builder at 380x780, 600x960, 1024x600: ${seen8} steps one per tap, "Next step" then "Help", the last step asks, every step fits the card with no sideways scroll; a wrong answer keeps the step`);
     }
 
     for (const e of errors) fail(e);
