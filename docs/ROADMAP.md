@@ -117,6 +117,7 @@ open-ended writing grading, any generative AI at runtime.
 | `S.bt` | P3-01 | `{type: {lvl, stars, seen: [], best}}`, plus `S.bt.daily` |
 | `S.ptCfg.need` | P5-09 | integer 0-120, minutes of learning needed each day before the Game Room opens (absent = 0) |
 | `S.pt.open`, `S.pt.met` | P5-09 | `open`: day key the grown-up opened the Game Room anyway; `met`: `{day, min}` learn-first already done today (both absent = none) |
+| `S.rally` | G-02 | Star Rally: `{spk, races, best: {track: ms}, stars: {track: 0-3}, paint, paints: {hue: 1}, stk, stks: {id: 1}, body, mode, quiz, tilt, place}`; created when the game is first opened (absent = a new player); every field read with a default and checked (`rlS()`), sparkles never below 0; no migration. `S.race` stays Fact Race's bests |
 
 ## 5. Phases
 

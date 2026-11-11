@@ -58,11 +58,11 @@ function ptCalc(g,sc,n,stars,prev,newPass,testOk,nd,x){const mis=!!(x&&x.mission
   if(r>0){const k=r==1?.6:.35,cut=Math.round(t*(1-k));t-=cut;L.push([-cut,`Played ${r+1} times today`])}
   if(mis){t+=60;L.push([60,'Daily mission done'])} // after the repeat cut: the mission is paid once a day, in full
   t=Math.max(30,Math.round(t/30)*30);return{sec:t,lines:L,mast:!g.test&&!g.mix&&prev>=3&&!g.boss,rep:r}}
-// Speed Race: the first race a day in each category that scores 5 or more pays 1 min; more races are free practice. Returns seconds.
+// Fact Race (54-race.js, once Speed Race): the first race a day in each category that scores 5 or more pays 1 min; more races are free practice. Returns seconds.
 function ptRace(cat,sc){if(sc<5)return 0;const rp=S.ptRep&&S.ptRep.day==today()?S.ptRep:(S.ptRep={day:today(),n:{}}),k='race_'+cat;if(rp.n[k])return 0;rp.n[k]=1;return 60}
 // the lines of "How to earn more game time" (Game Room); R_ draws a small icon
 // the lines of "How to earn more game time": [icon, what, how much]; the Game Room hub (59-game-hub.js) shows them, ptRules as HTML
-function ptEarnList(){return[['sparkle','Unlock a new stop','+1 min'],['star','Get a perfect score','+1 min'],['globe','Play a harder world','up to +1½ min'],['crown','Beat a boss','+2 min'],['review','Do your Daily Review','a full round'],['review','Fix an old mistake','bonus seconds'],['chart','Beat your old score','+½ min'],['puzzle','Solve a Brain Teaser','up to 2 min, fewer with hints'],['calendar',"Finish all three of today's missions",'+1 min'],['timer','Fact Sprint or Speed Race, first one of the day','+1 min']]}
+function ptEarnList(){return[['sparkle','Unlock a new stop','+1 min'],['star','Get a perfect score','+1 min'],['globe','Play a harder world','up to +1½ min'],['crown','Beat a boss','+2 min'],['review','Do your Daily Review','a full round'],['review','Fix an old mistake','bonus seconds'],['chart','Beat your old score','+½ min'],['puzzle','Solve a Brain Teaser','up to 2 min, fewer with hints'],['calendar',"Finish all three of today's missions",'+1 min'],['timer','Fact Sprint or Fact Race, first one of the day','+1 min']]}
 function ptRules(R_){return ptEarnList().map(([i,t,v])=>`<div>${R_(i)} ${t} <b>${v}</b></div>`).join('')+'<div class="small">Replaying a stop you already mastered, or the same stop over and over, earns less.</div>'}
 
 // P4-16: the Game Room hub (scene, game-time ticket, a drawn card per registered game) lives in games.<VER>.js with the games:

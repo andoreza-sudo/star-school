@@ -14129,6 +14129,213 @@ run('motion and sound P4-17',()=>{
     'levels '+SET.map(([k])=>k+' '+(L[k]?L[k].pk.toFixed(3):'-')).join(', ')};
 });
 
+// ---- G-02: Star Rally, the racing game (src/js/63-game-race.js, src/css/49-game-race.css) ----
+run('racing game G-02',()=>{
+  const p=[],notes=[];
+  const rd=f=>fs.readFileSync(path.join(SRC,f),'utf8');
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const src=rd('js/63-game-race.js'),css=rd('css/49-game-race.css').replace(/\/\*[\s\S]*?\*\//g,'');
+  const tokCss=rd('css/00-tokens.css'),artCss=rd('css/21-art.css');
+  const PICT=/\p{Extended_Pictographic}/u;
+  const FIX=['fresh','midway','maxed','tricky','legacy-index-maps','legacy-single-map'].map(n=>[n,fx(n)]);
+  const body=function(){
+    const out={bad:[],note:[]},bad=m=>out.bad.push(m);
+    const store={};
+    global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+    // the test bots: good = keeps on the road and aims at pads; kid = only steers back when near the edge; lazy = no input;
+    // wild = random steering every 0.6 s (seeded); pro = good with Go held except in tight bends, and drifts through bends
+    const bot=(kind,st,rnd)=>{
+      const P=st.P,T=st.T,seg=rlMod(Math.floor(P.d/RL_SEG),T.n),cur=T.cv[seg],sp=P.v/RL_VMAX;
+      if(kind=='lazy')return{};
+      if(kind=='wild'){if(st.rt>=(st._wt||0)){st._w=Math.round(rnd()*2-1);st._wt=st.rt+.6}return{steer:st._w}}
+      if(kind=='kid')return{steer:Math.abs(P.x)>.5?-Math.sign(P.x):0};
+      let tx=0;
+      for(let j=1;j<30;j++){const px=T.padAt[(seg+j)%T.n];if(px!=null){tx=px;break}}
+      let s=Math.max(-1,Math.min(1,(tx-P.x)*2.5+.35*cur*sp*sp*(st.mode=='easy'?.3:1)/(1.7*Math.max(.3,sp))));
+      if(kind=='pro'&&Math.abs(cur)>=3&&sp>.8)s=Math.sign(cur);
+      return{steer:s,go:kind=='pro'?Math.abs(cur)<4.5||P.drifting:false};
+    };
+    const race=(tid,mode,kind,seed)=>{
+      const st=rlNew(tid,{mode,seed}),rnd=rlRng(seed*31+7);
+      let n=0;
+      while(!st.done&&n<60*150){rlStep(st,bot(kind,st,rnd));st.ev.length=0;n++}
+      return{done:st.done,place:st.P.place,time:st.P.time,spk:st.P.spk,st};
+    };
+    // 1. registered in the Game Room: the hub card, the drawn picture, the first screen with the shared bar
+    const g=GH.get('rally');
+    if(!g||g.btn!=='grally'||g.name!=='Star Rally'||g.tapToPlay!=='.rl-trk[data-ok="1"]'||typeof g.open!='function')bad('not registered with GH.reg as Star Rally (#grally)');
+    if(GH.games[GH.games.length-1]!==g)bad('Star Rally should be the last card in the hub (after the three older games)');
+    const D=global.document,app={style:{},innerHTML:''},dummy={style:{},classList:{add(){},remove(){},toggle(){},contains(){return false}},dataset:{},
+      querySelector(){return dummy},querySelectorAll(){return[]},getBoundingClientRect(){return{left:0,top:0,width:0,height:0}},appendChild(){},isConnected:false};
+    const shot=f=>{global.document=Object.assign({},D,{querySelector:s=>s=='#app'?app:dummy,querySelectorAll:()=>[],body:{appendChild(){}}});
+      try{app.innerHTML='';f();return app.innerHTML}catch(e){return 'ERR '+e.message}finally{global.document=D}};
+    S.sound=false;S.voice=false;S.pt={bank:600,day:today(),used:0};S.ptCfg={per:3,max:30,pause:false};
+    for(const [name,raw] of FIX){
+      // 2. old saves load unchanged: nothing about the race until the game is opened; the hub card still works
+      for(const k in store)delete store[k];
+      loadSave(raw);migrate();
+      const before=JSON.stringify(S.race);
+      if('rally' in S)bad(name+': S.rally appeared while loading an old save');
+      S.pt={bank:600,day:today(),used:0};
+      const hub=shot(()=>GH.hub());
+      if(!/id="grally" data-g="rally"/.test(hub)||!hub.includes('Race the animals'))bad(name+': no Star Rally card on the hub');
+      if('rally' in S)bad(name+': showing the hub created S.rally');
+      const menu=shot(()=>rlMenu());
+      if(/^ERR/.test(menu)||!/^<div class="top tbar gh-top/.test(menu.trim())||!menu.includes('data-trk="meadow-0" data-ok="1"'))bad(name+': menu '+menu.slice(0,80));
+      if(menu.includes('data-trk="meadow-1" data-ok="1"')||!menu.includes('data-pl="city"'))bad(name+': on a new save only the first track is open');
+      const r=S.rally;
+      if(!r||r.spk!==0||r.paint!=='r'||r.body!=='kart'||r.stk!==''||JSON.stringify(r.stars)!=='{}'||rlMode(r)!==((S.grade==null?0:S.grade)<=2?'easy':'pro'))bad(name+': defaults '+JSON.stringify(r));
+      if(JSON.stringify(S.race)!==before)bad(name+': S.race (Fact Race bests) changed');
+      if(!/^<div class="top tbar gh-top/.test(shot(()=>rlGarage()).trim()))bad(name+': garage without the shared top bar');
+    }
+    // 3. damaged saves are read safely; the sparkle count is never negative
+    for(const v of ['x',[],5,null,{spk:-40,races:'z',best:{'meadow-0':-1,zz:5,'beach-0':61000},stars:{'meadow-0':'7',zz:3,'beach-0':-2},paint:'zz',
+      paints:{b:1},stk:'heart',stks:[],body:'rocket',mode:'fast',place:'moon',quiz:'yes'},{spk:'12abc'},{spk:1e99},{spk:NaN}]){
+      S.rally=v;
+      const r=rlS();
+      if(!(r.spk>=0&&Number.isInteger(r.spk)))bad('damaged save '+JSON.stringify(v)+': spk '+r.spk);
+      for(const k in r.stars)if(!RL_TRK[k]||r.stars[k]<0||r.stars[k]>3)bad('damaged save: stars '+k+'='+r.stars[k]);
+      for(const k in r.best)if(!RL_TRK[k]||!(r.best[k]>0))bad('damaged save: best '+k);
+      if(!r.paints.r||!RL_PAINTS.some(x=>x[0]===r.paint)||(r.stk&&!r.stks[r.stk])||!rlBodyOpen(r.body,r)||!RL_PLACES.some(x=>x.id===r.place))bad('damaged save '+JSON.stringify(v)+': '+JSON.stringify(r));
+    }
+    // 4. buying: never below 0, refused when short, nothing owned is lost; earning is never negative
+    const rnd=rlRng(99);
+    S.rally={spk:0};
+    let owned=0;
+    for(let i=0;i<4000;i++){
+      const r=rlS(),k=rnd()<.5?'paint':'stk',list=k=='paint'?RL_PAINTS:RL_STICKERS,it=list[Math.floor(rnd()*list.length)];
+      if(rnd()<.3){const got=rlPay(Math.floor(rnd()*40),1+Math.floor(rnd()*6));if(got<0)bad('rlPay < 0');r.spk+=got}
+      const s0=r.spk,own=k=='paint'?r.paints[it[0]]:it[0]?r.stks[it[0]]:1,ok=rlBuy(k,it[0]);
+      if(ok&&(own||s0<it[2]||r.spk!==s0-it[2]))bad('a buy that should have been refused: '+it[0]+' with '+s0);
+      if(!ok&&r.spk!==s0)bad('a refused buy changed the sparkles');
+      if(r.spk<0)bad('sparkles below 0: '+r.spk);
+      const n=Object.keys(r.paints).length+Object.keys(r.stks).length;
+      if(n<owned)bad('an owned item was lost');
+      owned=n;
+    }
+    out.note.push('4000 shop steps, '+owned+' items owned, sparkles never below 0');
+    // 5. tracks: valid data, 60-90 seconds at the speed the car keeps by itself
+    if(RL_PLACES.length!==4||RL_ORDER.length!==12)bad('expected 4 places with 3 tracks each');
+    let need=-1;
+    for(const pl of RL_PLACES){
+      if(pl.need<=need)bad(pl.id+': places must open with more stars each');
+      need=pl.need;
+      if(!/^--sc-/.test('--sc-'+pl.sky[0])||RL_TRACKS[pl.id].length!==3)bad(pl.id+': sky or tracks');
+      for(const [k] of pl.props)if(!RL_PROPS[k])bad(pl.id+': no drawing for '+k);
+    }
+    const secs=[];
+    for(const id of RL_ORDER){
+      const t=RL_TRK[id],T=rlTrack(id),w=id+': ';
+      if(!t.name||PICT.test(t.name)||t.laps<2||t.laps>3)bad(w+'name or laps');
+      if(T.n<700||T.n>1300)bad(w+'length '+T.n+' segments');
+      if(T.hy[0]!==0||T.cv[0]!==0||Math.abs(T.cv[T.n-1])>.01)bad(w+'the start must be flat and straight');
+      let steep=0,bend=0;
+      for(let i=0;i<T.n;i++){steep=Math.max(steep,Math.abs(T.hy[(i+1)%T.n]-T.hy[i]));bend=Math.max(bend,Math.abs(T.cv[i]))}
+      if(steep>RL_SEG*.8)bad(w+'a hill too steep (or the lap does not close): '+steep.toFixed(0));
+      if(bend>6)bad(w+'a bend sharper than 6');
+      if(T.sp.length<20||T.sp.some(([s,x])=>s<0||s>=T.n||Math.abs(x)>.6))bad(w+'sparkles must be on the road');
+      if(T.pads.length<2||T.pads.some(([s,x])=>Math.abs(x)>.6||T.cv[s]!==0))bad(w+'boost pads on straights, on the road');
+      if(T.cv[T.gate]!==0)bad(w+'the boost gate must be on a straight');
+      for(let i=0;i<T.n;i++)if(T.pr[i])for(let j=0;j<T.pr[i].length;j+=2){
+        const k=T.pr[i][j],x=T.pr[i][j+1];
+        if(!RL_PROPS[k])bad(w+'unknown prop '+k);
+        if(k!=='arch'&&Math.abs(x)-RL_PROPS[k].wr/2<1.15)bad(w+k+' stands on the road at segment '+i);
+      }
+      const st=rlNew(id,{}),s=(st.fin-st.P.d)/(RL_CRUISE*RL_VMAX);
+      secs.push(s);
+      if(s<60||s>90)bad(w+'a race at the cruising speed takes '+s.toFixed(0)+' s (want 60-90)');
+    }
+    out.note.push('12 tracks, '+Math.round(Math.min(...secs))+'-'+Math.round(Math.max(...secs))+' s at the cruising speed');
+    // 6. the catch-up keeps races winnable for young children and worth mastering for older ones (bots, 12 tracks x 4 seeds)
+    const stats={};
+    for(const [mode,kind] of [['easy','good'],['easy','kid'],['easy','lazy'],['easy','wild'],['pro','pro'],['pro','good']]){
+      const s=stats[mode+' '+kind]={win:0,top3:0,n:0,slow:0,spk:0};
+      for(const id of RL_ORDER)for(let seed=1;seed<=4;seed++){
+        const r=race(id,mode,kind,seed);
+        s.n++;
+        if(!r.done){bad(mode+' '+kind+' '+id+' seed '+seed+': did not finish');continue}
+        if(r.time>130)s.slow++;
+        if(r.place==1)s.win++;
+        if(r.place<=3)s.top3++;
+        s.spk+=r.spk;
+      }
+      out.note.push(mode+' '+kind+' won '+s.win+'/'+s.n+', top 3 '+s.top3);
+      if(s.slow)bad(mode+' '+kind+': '+s.slow+' races took longer than 130 s');
+    }
+    const S_=k=>stats[k];
+    if(S_('easy good').win<S_('easy good').n*.6)bad('Easy: a child who steers well should usually win ('+S_('easy good').win+'/48)');
+    for(const k of ['easy kid','easy lazy']){
+      if(S_(k).win<1)bad(k+': a young child must be able to win sometimes');
+      if(S_(k).top3<S_(k).n*.7)bad(k+': a young child should mostly finish in the top 3 ('+S_(k).top3+'/48)');
+      if(S_(k).win>S_(k).n*.5)bad(k+': winning without steering should not be the rule ('+S_(k).win+'/48)');
+    }
+    if(S_('pro pro').win<S_('pro pro').n*.5)bad('Pro: Go, drifts and pads should win most races ('+S_('pro pro').win+'/48)');
+    if(S_('pro good').win>S_('pro pro').win*.5)bad('Pro: driving without Go and drifts should rarely win');
+    // 7. deterministic: the same seed and the same driving give the same race; another seed another race
+    const a=race('beach-1','easy','wild',5),b=race('beach-1','easy','wild',5),c=race('beach-1','easy','wild',6);
+    const sig=r=>JSON.stringify([r.place,r.time,r.spk,r.st.cars.map(x=>[x.rv.id,x.d.toFixed(3),x.x.toFixed(4)])]);
+    if(sig(a)!==sig(b))bad('two races with the same seed differ');
+    if(sig(a)===sig(c))bad('a different seed gave the same race');
+    // 8. boost gate questions: three different answers with the right one, never negative, by grade
+    for(const gr of [-1,0,1,2,3,5,6])for(let i=0;i<200;i++){
+      const q=rlQuiz(gr,rlRng(i+1)),q2=rlQuiz(gr,rlRng(i+1));
+      if(JSON.stringify(q)!==JSON.stringify(q2)||q.opts.length!==3||new Set(q.opts).size!==3||!q.opts.includes(q.a)||q.opts.some(o=>o<0)||!/^\d+ [+−×] \d+$/.test(q.q))
+        {bad('grade '+gr+' question '+JSON.stringify(q));break}
+    }
+    if(rlStarsFor(1)!==3||rlStarsFor(3)!==2||rlStarsFor(6)!==1)bad('stars: 3 for a win, 2 for the top 3, 1 for finishing');
+    // 9. the drawings, for the token check outside
+    out.svg=[['hub',RL_ART.hub()],['podium',RL_ART.podium(['you','fox','bunny'],'b',{body:'rocket',stk:'moon'})]];
+    for(const pl of RL_PLACES)out.svg.push(['place '+pl.id,RL_ART.place(pl.id)],['sky '+pl.id,RL_SKY[pl.id]()],['far '+pl.id,RL_BACK[pl.id].far()],['near '+pl.id,RL_BACK[pl.id].near()]);
+    for(const k in RL_PROPS)out.svg.push(['prop '+k,RL_PROPS[k].art()]);
+    for(const [b] of RL_BODIES)for(const [h] of RL_PAINTS)out.svg.push(['car '+b+' '+h,rlCarArt(b,h,'star','you')]);
+    for(const v of RL_RIVALS)out.svg.push(['rival '+v.id,rlCarArt('kart',v.car,'',v.id)],['face '+v.id,rlFace(v.id,25,30,1.2)]);
+    for(const [s] of RL_STICKERS)out.svg.push(['sticker '+s,rlStk(s,20,20,15)]);
+    out.roles=RL_PLACES.flatMap(pl=>[...pl.grass,...pl.road,...pl.rumble,pl.lane,pl.edge]);
+    out.skies=RL_PLACES.flatMap(pl=>pl.sky);
+    out.dev=JSON.stringify(RL_DEV);
+    return out;
+  };
+  const o=eval(js+';('+body.toString()+')()');
+  p.push(...o.bad);
+  notes.push(...o.note);
+  // 10. tokens only, no emoji: the source, the CSS, every drawing
+  if(/#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(/.test(src.replace(/0x[0-9A-F]+/g,'')))p.push('63-game-race.js: a raw colour');
+  if(PICT.test(src)||PICT.test(css))p.push('emoji in the racing game source or CSS');
+  if(/#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(/.test(css))p.push('49-game-race.css: a raw colour');
+  for(const v of css.matchAll(/var\(--([a-z0-9-]+)/g))if(!['gh-a','gh-b','ic2'].includes(v[1])&&!tokCss.includes('--'+v[1]+':'))p.push('49-game-race.css: --'+v[1]+' is not a token');
+  if(/(^|[;{\s])(-webkit-)?(backdrop-)?filter\s*:/.test(css))p.push('49-game-race.css: filter used');
+  for(const m of css.matchAll(/transition:([^;}]*)/g))if(/\b(width|height|left|top|background|box-shadow|all)\b/.test(m[1]))p.push('49-game-race.css: transition on '+m[1]);
+  const ROLE=m=>new RegExp('--a-'+m+':var\\(--ill-').test(artCss);
+  for(const r of o.roles)if(!ROLE(r))p.push('a canvas colour role is not an --a-* role: '+r);
+  for(const s of o.skies)if(!tokCss.includes('--sc-'+s+':'))p.push('a sky is not an --sc-* token: '+s);
+  let shapes=0;
+  for(const [w,d] of o.svg){
+    if(PICT.test(d))p.push(w+': emoji');
+    if(/\sid=|<defs|gradient|<mask|<clip|<pattern|filter|<use|<text|style=|url\(|<script|xlink|NaN|undefined/i.test(d))p.push(w+': forbidden SVG feature');
+    if(/#[0-9a-f]{3,8}\b|rgba?\(|hsla?\(/i.test(d))p.push(w+': raw colour');
+    for(const t of d.matchAll(/<(\/?)([a-zA-Z]+)\b([^>]*?)(\/?)>/g)){
+      if(!/^(svg|g|path|circle|ellipse|rect)$/.test(t[2]))p.push(w+': element <'+t[2]+'>');
+      if(!t[1]&&t[2]!=='svg'&&t[2]!=='g')shapes++;
+      for(const a of t[3].matchAll(/\s([a-z-]+)="([^"]*)"/g)){
+        if((a[1]=='fill'||a[1]=='stroke')&&a[2]!=='none'){const m=/^var\(--a-([a-z]\d?)\)$/.exec(a[2]);if(!m||!ROLE(m[1]))p.push(w+': colour '+a[2]);}
+        if(a[1]=='transform'&&!/^(translate\([-\d. ]+\)\s*)?(rotate\([-\d. ]+\))?$/.test(a[2]))p.push(w+': transform '+a[2]);
+      }
+    }
+    const tones={};for(const m of d.matchAll(/var\(--a-([a-z])(\d?)\)/g))(tones[m[1]]=tones[m[1]]||new Set()).add(m[2]);
+    const want=/^(hub|podium|place|car|rival)/.test(w)?2:/^(prop|face)/.test(w)?1:0;
+    if(Object.values(tones).filter(s=>s.size>=2).length<want)p.push(w+': looks flat (no shade tones)');
+  }
+  notes.push(o.svg.length+' drawings, '+shapes+' shapes, tokens only');
+  // 11. plumbing: in the games file, stopped by view(), test hooks off, Fact Race renamed (save keys and rules unchanged)
+  if(partOf('63-game-race.js')!=='games'||partOf('49-game-race.css')!=='games')p.push('the racing game must ship in games.'+BUILD_VER+'.js');
+  if(!/if\(typeof rlStop=='function'\)rlStop\(\)/.test(rd('js/40-view.js')))p.push('view() must stop the race (rlStop)');
+  if(o.dev!=='{"fast":1,"flush":false}')p.push('RL_DEV test hooks must be off: '+o.dev);
+  if(!rd('js/46-home.js').includes("'Fact Race'")||!rd('js/54-race.js').includes('<span>Fact Race</span>'))p.push('the old Speed Race should be called Fact Race on Home and its menu');
+  for(const f of fs.readdirSync(path.join(SRC,'js')))for(const m of rd('js/'+f).matchAll(/(['"`>])Speed Race/g))p.push(f+': "Speed Race" still shown to children');
+  if(!/S\.race\[cat\]/.test(rd('js/54-race.js')))p.push('Fact Race must keep its save key S.race');
+  return{problems:[...new Set(p)].slice(0,60),note:notes.join('; ')};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){
