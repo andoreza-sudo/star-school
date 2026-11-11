@@ -15,9 +15,9 @@ const VOC_HINT = {
 };
 
 const VOC_L1 = `hot|cold|warm,wet|hot,🔥
-cold|hot|icy,snowy|cold,❄
-big|small|huge,tall|big,🐘
-small|big|tiny,short|small,🐭
+cold|hot|icy,snowy|snowflake,❄
+big|small|huge,tall|elephant,🐘
+small|big|tiny,short|mouse,🐭
 up|down|over,high
 in|out|inside,under
 day|night|sunny,morning|day,☀
@@ -139,13 +139,13 @@ pancake|pan|cake
 playground|play|ground
 popcorn|pop|corn
 raincoat|rain|coat
-sailboat|sail|boat|sailboat,⛵
+sailboat|sail|boat|boat,⛵
 sandbox|sand|box
 snowman|snow|man|snowman,⛄
 starfish|star|fish|starfish,⭐
 toothbrush|tooth|brush
 backpack|back|pack
-bathtub|bath|tub|bathtub,🛁
+bathtub|bath|tub|tub,🛁
 bookshelf|book|shelf
 doghouse|dog|house
 doorbell|door|bell
@@ -159,7 +159,7 @@ moonlight|moon|light
 newspaper|news|paper
 outside|out|side
 paintbrush|paint|brush
-seashell|sea|shell|seashell,🐚
+seashell|sea|shell|shell,🐚
 shoelace|shoe|lace
 sidewalk|side|walk
 sunshine|sun|shine

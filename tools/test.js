@@ -13057,6 +13057,107 @@ run('object art set B P4-14',()=>{
   return{problems:out.bad.concat(p),note:'40 pictures, '+out.total+' bytes; '+out.asked+' picture words asked, '+out.shown+' drawings shown; '+out.esShown+' Spanish drawings shown'};
 });
 
+// ---- P4-15: object art set C (DESIGN_SYSTEM 6.5; drawings in src/data/d-art-c.js) ----
+run('object art set C P4-15',()=>{
+  const p=[];
+  const NAMES=('pizza snowflake elephant icecream beach rabbit sunflower giraffe road tub lion backpack dish school snowman window shell '+
+    'cap shoes eraser scissors soap sofa paper chick spoon pants butterfly church motorcycle leaf door sheep umbrella storm boat clock '+
+    'books lamp gamepad').split(' ');
+  const SETA=('apple banana cookie ball star fish duck car flower cat dog pig sun bus hat bed cup fox bat bug hen box map pen web frog crab drum '+
+    'ship milk tent hand gift flag cake kite bike rose bone nose').split(' ');
+  const SETB=('balloon book moon sock cow cheese bell bird egg pencil plane bread tree coat foot cloud rainbow house grapes truck '+
+    'train tooth shirt mouth mouse table horse bee turtle water ear owl helicopter rocket tie boots dice chair bear dress').split(' ');
+  if(NAMES.length!==40||new Set(NAMES).size!==40)p.push('set C must be 40 different names');
+  for(const n of NAMES)if(SETA.includes(n)||SETB.includes(n))p.push(n+' is already in set A or B');
+  const CSRC=fs.readFileSync(path.join(SRC,'data','d-art-c.js'),'utf8');
+  const DATAC=fs.existsSync(path.join(ROOT,DATA_FILE))?fs.readFileSync(path.join(ROOT,DATA_FILE),'utf8'):'';
+  const INDEXC=fs.existsSync(path.join(ROOT,'index.html'))?fs.readFileSync(path.join(ROOT,'index.html'),'utf8'):'';
+  const out=eval(js+`
+  const bad=[];
+  const CN=${JSON.stringify(NAMES)};
+  const ATTR=/^(fill|stroke|stroke-width|opacity|transform|d|cx|cy|r|rx|ry|x|y|width|height)$/;
+  let total=0;
+  // 1. the drawings follow the rules of sets A and B (DESIGN_SYSTEM 6.5)
+  for(const n of CN){
+    const d=ART[n];
+    if(!d){bad.push('missing drawing: '+n);continue}
+    total+=d.length;
+    if(d.length>2500)bad.push(n+': '+d.length+' bytes (limit 2500)');
+    if((d.match(/<[^>]*\\/>/g)||[]).join('')!==d)bad.push(n+': every element must be self-closing, nothing between them');
+    const els=d.match(/<[a-z]+/g)||[];
+    if(els.length>40)bad.push(n+': '+els.length+' elements (limit 40)');
+    for(const t of d.match(/<\\/?[a-z]+/g)||[])if(!/^<(path|circle|ellipse|rect)$/.test(t))bad.push(n+': element '+t+'> not allowed');
+    for(const m of d.matchAll(/\\s([a-zA-Z:-]+)=/g))if(!ATTR.test(m[1]))bad.push(n+': attribute '+m[1]+' not allowed');
+    for(const m of d.matchAll(/transform="([^"]*)"/g))if(!/^rotate\\(-?[\\d.]+ -?[\\d.]+ -?[\\d.]+\\)$/.test(m[1]))bad.push(n+': transform may only be rotate(a cx cy): '+m[1]);
+    for(const m of d.matchAll(/opacity="([^"]*)"/g))if(!(+m[1]>0&&+m[1]<1))bad.push(n+': opacity between 0 and 1: '+m[1]);
+    if(/gradient|filter|mask|clip|pattern|<text|<use|url\\(|style=|\\sid=|<defs|<image|href/i.test(d))bad.push(n+': no ids, defs, gradients, masks, clips, filters, text, use, url() or style');
+    if(/#[0-9a-f]{3,8}\\b/i.test(d))bad.push(n+': raw hex colour');
+    for(const a of d.match(/(fill|stroke)="[^"]*"/g)||[])if(!/^(fill|stroke)="(none|var\\(--a-[a-z0-9]+\\))"$/.test(a))bad.push(n+': colour must be none or var(--a-x): '+a);
+    const co=(d.match(/\\s(d|cx|cy|r|rx|ry|x|y|width|height|stroke-width|transform)="[^"]*"/g)||[]).join(' ').match(/\\d*\\.\\d{2,}/g);
+    if(co)bad.push(n+': coordinates to one decimal ('+co[0]+')');
+    // inside the 64 x 64 grid (circle and rect positions, every number of a path)
+    for(const m of d.matchAll(/\\s(cx|cy|x|y)="(-?[\\d.]+)"/g))if(+m[2]<0||+m[2]>64)bad.push(n+': '+m[1]+' '+m[2]+' is off the 64 x 64 grid');
+    for(const m of d.matchAll(/\\sd="([^"]*)"/g))for(const v of m[1].match(/-?[\\d.]+/g)||[])if(+v<0||+v>64)bad.push(n+': path number '+v+' is off the 64 x 64 grid');
+    const doc=picArt(n,48);
+    if(!/^<svg [^>]*viewBox="0 0 64 64"[^>]*>(<(path|circle|ellipse|rect)\\b[^>]*\\/>)+<\\/svg>$/.test(doc))bad.push(n+': picArt markup not well formed');
+    // 2. picFor returns the drawing for the word, every time the same markup
+    if(picFor(n,'X')!==picArt(n)||picFor(n,'X')!==picFor(n,'Y'))bad.push(n+': picFor does not return the drawing');
+  }
+  if(total>64000)bad.push('set C is '+total+' bytes (limit 64000)');
+  const css=${JSON.stringify(fs.readFileSync(path.join(SRC,'css','21-art.css'),'utf8'))};
+  for(const n of CN)for(const m of (ART[n]||'').match(/--a-[a-z0-9]+/g)||[])if(!css.includes(m+':'))bad.push(n+': '+m+' not defined in 21-art.css');
+  // 3. each word is a picture the content asks for (counted the way the set was chosen): reading words (with the digraph and
+  //    syllable lists), counting objects, bank pictures (vocabulary, Discover), Spanish art names, riddle, Memory Match and logic pictures
+  const used={};
+  const use=(w,s)=>{(used[w]=used[w]||new Set()).add(s)};
+  for(const L of [CVC,BLEND,MAGICE,TEAMS,RVW,VTW,DIGR,SYLP])for(const x of L)use(x[0],'words');
+  for(const o of PK.OBJ)use(o[0],'counting');
+  for(const id in BANK)for(const it of BANK[id]||[])if(it&&it.em)use(it.em[0],'bank');
+  for(const u of ES_UNITS)for(const it of u.items)if(it[4])use(it[4],'es');
+  for(const w in RIDDLES.pics)use(w,'riddles');
+  for(const t in MEMW.themes)for(const w of MEMW.themes[t])use(w,'memory');
+  for(const c in PUZ.logic.cats)for(const w in PUZ.logic.cats[c].pics||{})use(w,'logic');
+  for(const n of CN)if(!used[n])bad.push(n+': no content asks for this picture');
+  // every art name the content uses has a drawing (a typo would show the emoji quietly)
+  for(const u of ES_UNITS)for(const it of u.items)if(it[4]&&!ART[it[4]])bad.push('es_'+u.id+' '+it[1]+': art name '+it[4]+' has no drawing');
+  for(const id in BANK)for(const it of BANK[id]||[])if(it&&it.em&&CN.includes(it.em[0])&&picFor(it.em[0],it.em[1])!==picArt(it.em[0]))bad.push(id+': picture '+it.em[0]+' does not show the drawing');
+  // 4. the content shows the drawing: picture-word, build-a-word, digraph and syllable questions for these words
+  const PW=new Set([...CVC,...BLEND,...MAGICE,...TEAMS,...RVW,...VTW,...DIGR,...SYLP].map(x=>x[0]).filter(w=>CN.includes(w)));
+  let shown=0,asked=new Set();
+  for(const sk of ['pic','build','dig','syl'])if(SK[sk])for(let lv=1;lv<=SK[sk].max;lv++)for(let s=1;s<=120;s++){
+    const q=genQ(sk,lv,s),w=q.kind=='build'?q.word:(q.after||q.ans);
+    if(!PW.has(w)||!q.html.includes('class="emo"'))continue;
+    asked.add(w);
+    if(q.html.includes(picArt(w)))shown++;else bad.push(sk+lv+' seed '+s+': '+w+' shows no drawing');
+  }
+  if(asked.size<5)bad.push('only '+asked.size+' set C picture words were asked in the sample');
+  // Spanish: every unit item with a set C art name shows the drawing, never its emoji (pictures are unique inside a unit)
+  let esShown=0;
+  for(const u of ES_UNITS){
+    const its=u.items.filter(it=>CN.includes(it[4]));
+    if(!its.length)continue;
+    const seen=new Set();
+    for(let lv=1;lv<=2;lv++)for(let s=1;s<=120;s++){
+      const q=genQ('es_'+u.id,lv,s),h=q.html+(q.choices||[]).map(c=>c.l).join('');
+      for(const it of its){if(h.includes(picArt(it[4]))){seen.add(it[4]);esShown++}if(h.includes(it[2]))bad.push('es_'+u.id+' L'+lv+' seed '+s+': emoji '+it[2]+' for '+it[1]+' instead of the drawing')}
+    }
+    for(const it of its)if(!seen.has(it[4]))bad.push('es_'+u.id+': the drawing for '+it[1]+' never showed in 240 questions');
+  }
+  // riddle, Memory Match and logic pictures go through picFor with their own fallback
+  for(const w in RIDDLES.pics)if(CN.includes(w)&&picFor(w,RIDDLES.pics[w])!==picArt(w))bad.push('riddle picture '+w+' does not show the drawing');
+  ({bad,total,shown,esShown,asked:asked.size,json:JSON.stringify(CN.map(n=>ART[n]))});`);
+  // 5. deterministic: the file is plain data, a second evaluation gives the same drawings byte for byte
+  const again=eval(js+';JSON.stringify('+JSON.stringify(NAMES)+'.map(n=>ART[n]))');
+  if(again!==out.json)p.push('the drawings differ between two evaluations');
+  if(/rnd\(|Math\.random|Date|function|=>/.test(CSRC.replace(/\/\*[\s\S]*?\*\//g,'')))p.push('d-art-c.js must be plain data (no code, no randomness)');
+  // 6. where they live: the data file (A11), not index.html; index.html's code alone still draws set A and falls back to the emoji
+  if(!DATAC.includes('object art set C'))p.push('set C is not in '+DATA_FILE+' (rebuild)');
+  if(INDEXC.includes('object art set C'))p.push('set C must not be in index.html');
+  const alone=eval(cat('js')+PARTS.map(x=>cat('js',x.stem)).join('')+';[picFor("lion","L"),picFor("apple","A")!=="A"]');
+  if(alone[0]!=='L'||!alone[1])p.push('without the data file picFor must fall back to the emoji and set A must still draw');
+  return{problems:out.bad.concat(p),note:'40 pictures, '+out.total+' bytes; '+out.asked+' picture words asked, '+out.shown+' drawings shown; '+out.esShown+' Spanish drawings shown'};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){
