@@ -25,6 +25,7 @@
              (kindSort); cls extra class. A Check button submits the picked values (sorted array).
      order   tap tiles into slots in order: items [{v, l, h}] (shown in this order, so shuffle them; extra
              distractors are allowed), ans = array of v values in the right order. Tap a filled slot to take it back.
+             Optional end (R-01s): a mark such as '.' shown after the last slot, not a tile.
    Optional K.same(q, v) says whether the submitted value v is right; without it the engine compares
    String(v) === String(q.ans). num (eq 'value'), multi and order define it.
    Contract of a kind K = KIND[q.kind]:
@@ -491,7 +492,8 @@ const KIND={
   },
 
   order:{
-    render:q=>`<div class="oslots">${q.ans.map((_,i)=>`<button class="socket os" data-s="${i}" aria-label="Place ${i+1}"></button>`).join('')}</div>`
+    render:q=>`<div class="oslots">${q.ans.map((_,i)=>`<button class="socket os" data-s="${i}" aria-label="Place ${i+1}"></button>`).join('')}`
+      +`${q.end?`<span class="oend" aria-hidden="true">${esc(q.end)}</span>`:''}</div>`
       +`<div class="tiles otiles">${q.items.map((t,i)=>`<button class="piece ot" data-i="${i}">${t.h?t.l:esc(t.l)}</button>`).join('')}</div>`,
     bind(q,st,submit){
       const K=KIND.order;

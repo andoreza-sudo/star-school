@@ -3,15 +3,20 @@
      {id, t, e, theme, items:[...], cap?, spell?, l1?, mix?}
    id     skill id without the prefix: unit 'house' is skill 'es_house' (esReg makes the skill when 38-skills.js has none)
    t, e   skill title and emoji;  theme  what the words have in common (for authors and tests)
-   cap    1: show the English under each picture (words whose picture alone is not enough, like greetings)
+   cap    1: show the English under each picture (words whose picture alone is not enough, like greetings); or a list of the words
+          that get the English (R-01s: weather, where only the temperature pictures need it)
+   confuse  R-01s: pairs of words never offered together in one question, because their pictures or meanings overlap (two right
+          answers by picture or by ear: hace sol / hace calor). tools/test.js scans every Spanish skill for such pairs
    spell  1: the unit has level 3 (hear it, spell it); the skill gets max 3; its words must be single a-z/ñáéíóúü words of 12 letters or fewer
    l1     N: level 1 draws only from the first N items (level 2 uses them all), for units whose later items are the harder ones (big numbers, time)
    mix    1: the unit is drawn into the es_mix "Big Review" (the first 8 units are; later units are not unless a chunk says so)
    An item is [spanish, english, picture, article, art, say]
-   spanish  the bare word, NFC, lowercase (la casa -> 'casa'); level 3 asks for exactly this
+   spanish  the bare word, NFC, lowercase (la casa -> 'casa'); level 3 asks for exactly this. A feeling shows both forms
+            ('cansado / cansada', said 'cansado, cansada'; R-01s)
    english  the gloss
    picture  emoji from tools/emoji-allow.txt, or 'c:#rrggbb' (colour swatch), 'n:12' (numeral), or 'k:3:30' (analogue clock showing 3:30)
-   article  'el' | 'la' | 'los' | 'las' | '' ; shown in front of the word in levels 1 and 2 ('la casa'), and as a clue in level 3
+   article  'el' | 'la' | 'los' | 'las' | '' ; shown in front of the word in levels 1 and 2 ('la casa'), and as a clue in level 3.
+            Every noun has one, from the first unit on (R-01s: animals, food, body and family too; 'el agua', 'la mano')
    art      optional art name for picFor(art, picture): the drawing when ART has it, else the emoji
    say      optional text to speak when it differs from the shown word
    Code reads ES_UNITS and SPN only inside functions. The level 3 stop is added to the world by id (CURRICULUM 2.3). */
@@ -59,46 +64,46 @@ const ES_UNITS=[
   ['diecinueve','nineteen','n:19',''],
   ['veinte','twenty','n:20','']]},
  {id:'animal',t:'Animals',e:'🐶',theme:'Animals',mix:1,items:[
-  ['perro','dog','🐶','','dog'],
-  ['gato','cat','🐱','','cat'],
-  ['pájaro','bird','🐦','','bird'],
-  ['pez','fish','🐟','','fish'],
-  ['vaca','cow','🐄','','cow'],
-  ['caballo','horse','🐴','','horse'],
-  ['cerdo','pig','🐷','','pig'],
-  ['pato','duck','🦆','','duck'],
-  ['oso','bear','🐻','','bear'],
-  ['conejo','rabbit','🐰','','rabbit'],
-  ['león','lion','🦁','','lion'],
-  ['rana','frog','🐸','','frog']]},
+  ['perro','dog','🐶','el','dog'],
+  ['gato','cat','🐱','el','cat'],
+  ['pájaro','bird','🐦','el','bird'],
+  ['pez','fish','🐟','el','fish'],
+  ['vaca','cow','🐄','la','cow'],
+  ['caballo','horse','🐴','el','horse'],
+  ['cerdo','pig','🐷','el','pig'],
+  ['pato','duck','🦆','el','duck'],
+  ['oso','bear','🐻','el','bear'],
+  ['conejo','rabbit','🐰','el','rabbit'],
+  ['león','lion','🦁','el','lion'],
+  ['rana','frog','🐸','la','frog']]},
  {id:'food',t:'Food',e:'🍎',theme:'Food',mix:1,items:[
-  ['manzana','apple','🍎','','apple'],
-  ['plátano','banana','🍌','','banana'],
-  ['leche','milk','🥛','','milk'],
-  ['pan','bread','🍞','','bread'],
-  ['agua','water','💧','','water'],
-  ['queso','cheese','🧀','','cheese'],
-  ['huevo','egg','🥚','','egg'],
-  ['helado','ice cream','🍦','','icecream'],
-  ['galleta','cookie','🍪','','cookie'],
-  ['uvas','grapes','🍇','','grapes']]},
+  ['manzana','apple','🍎','la','apple'],
+  ['plátano','banana','🍌','el','banana'],
+  ['leche','milk','🥛','la','milk'],
+  ['pan','bread','🍞','el','bread'],
+  ['agua','water','💧','el','water'],
+  ['queso','cheese','🧀','el','cheese'],
+  ['huevo','egg','🥚','el','egg'],
+  ['helado','ice cream','🍦','el','icecream'],
+  ['galleta','cookie','🍪','la','cookie'],
+  ['uvas','grapes','🍇','las','grapes']]},
  {id:'body',t:'My Body',e:'👃',theme:'The body',mix:1,items:[
-  ['ojos','eyes','👀',''],
-  ['nariz','nose','👃','','nose'],
-  ['boca','mouth','👄','','mouth'],
-  ['oreja','ear','👂','','ear'],
-  ['mano','hand','✋','','hand'],
-  ['pie','foot','🦶','','foot'],
-  ['pierna','leg','🦵',''],
-  ['diente','tooth','🦷','','tooth']]},
+  ['ojos','eyes','👀','los'],
+  ['nariz','nose','👃','la','nose'],
+  ['boca','mouth','👄','la','mouth'],
+  ['oreja','ear','👂','la','ear'],
+  ['mano','hand','✋','la','hand'],
+  ['pie','foot','🦶','el','foot'],
+  ['pierna','leg','🦵','la'],
+  ['diente','tooth','🦷','el','tooth']]},
  {id:'family',t:'Family',e:'👪',theme:'Family',mix:1,items:[
-  ['mamá','mom','👩',''],
-  ['papá','dad','👨',''],
-  ['hermano','brother','👦',''],
-  ['hermana','sister','👧',''],
-  ['abuela','grandma','👵',''],
-  ['abuelo','grandpa','👴',''],
-  ['bebé','baby','👶','']]},
+  ['mamá','mom','👩','la'],
+  ['papá','dad','👨','el'],
+  ['hermano','brother','👦','el'],
+  ['hermana','sister','👧','la'],
+  ['abuela','grandma','👵','la'],
+  ['abuelo','grandpa','👴','el'],
+  ['bebé','baby','👶','el']]},
  {id:'house',t:'House',e:'🏠',theme:'The house',spell:1,items:[
   ['casa','house','🏠','la','house'],
   ['puerta','door','🚪','la','door'],
@@ -117,7 +122,7 @@ const ES_UNITS=[
   ['vestido','dress','👗','el','dress'],
   ['zapatos','shoes','👟','los','shoes'],
   ['sombrero','hat','🎩','el','hat'],
-  ['chaqueta','jacket','🧥','la','coat'],
+  ['chamarra','jacket','🧥','la','coat'],
   ['calcetines','socks','🧦','los','sock'],
   ['gorra','cap','🧢','la','cap'],
   ['botas','boots','👢','las','boots'],
@@ -132,17 +137,18 @@ const ES_UNITS=[
   ['escuela','school','🏫','la','school'],
   ['clase','class','🔔','la','bell'],
   ['tijeras','scissors','✂','las','scissors'],
-  ['borrador','eraser','🧽','el','eraser']]},
- {id:'feel',t:'Feelings',e:'😊',theme:'Feelings',items:[
+  ['goma','eraser','🧽','la','eraser']]},
+ {id:'feel',t:'Feelings',e:'😊',theme:'Feelings (both forms: cansado for a boy, cansada for a girl)',
+  confuse:[['feliz','tranquilo / tranquila'],['feliz','emocionado / emocionada']],items:[
   ['feliz','happy','😊',''],
   ['triste','sad','😢',''],
-  ['enojado','angry','😠',''],
-  ['cansado','tired','😴',''],
-  ['asustado','scared','😨',''],
-  ['enfermo','sick','🤒',''],
-  ['emocionado','excited','🥳',''],
-  ['tranquilo','calm','😌',''],
-  ['sorprendido','surprised','😮','']]},
+  ['enojado / enojada','angry','😠','','','enojado, enojada'],
+  ['cansado / cansada','tired','😴','','','cansado, cansada'],
+  ['asustado / asustada','scared','😨','','','asustado, asustada'],
+  ['enfermo / enferma','sick','🤒','','','enfermo, enferma'],
+  ['emocionado / emocionada','excited','🥳','','','emocionado, emocionada'],
+  ['tranquilo / tranquila','calm','😌','','','tranquilo, tranquila'],
+  ['sorprendido / sorprendida','surprised','😮','','','sorprendido, sorprendida']]},
  {id:'days',t:'Days of the Week',e:'📅',theme:'Days of the week, today, tomorrow, yesterday',cap:1,items:[
   ['lunes','Monday','📅','el'],
   ['martes','Tuesday','📅','el'],
@@ -171,7 +177,8 @@ const ES_UNITS=[
   ['verano','summer','🏖','el'],
   ['otoño','fall','🍂','el'],
   ['invierno','winter','⛄','el','snowman']]},
- {id:'weather',t:'Weather',e:'☀',theme:'Weather',items:[
+ {id:'weather',t:'Weather',e:'☀',theme:'Weather',cap:['hace calor','hace frío','hace fresco'],
+  confuse:[['hace sol','hace calor'],['nieva','hace frío'],['hace fresco','hace viento']],items:[
   ['hace sol','it is sunny','☀','','sun'],
   ['hace calor','it is hot','🥵',''],
   ['hace frío','it is cold','🥶',''],
@@ -234,14 +241,14 @@ const ES_UNITS=[
   ['calle','street','🛣','la','road'],
   ['banco','bank','🏦','el'],
   ['cine','movie theater','🎬','el']]},
- {id:'trans',t:'Transport',e:'🚌',theme:'Ways to travel',items:[
+ {id:'trans',t:'Transport',e:'🚌',theme:'Ways to travel',confuse:[['camión','autobús']],items:[
   ['carro','car','🚗','el','car'],
   ['autobús','bus','🚌','el','bus'],
   ['tren','train','🚂','el','train'],
   ['avión','airplane','✈','el','plane'],
   ['bicicleta','bicycle','🚲','la','bike'],
   ['barco','ship','🚢','el','ship'],
-  ['camión','truck','🚚','el','truck'],
+  ['camión','truck (in Mexico, also a bus)','🚚','el','truck'],
   ['moto','motorcycle','🏍','la','motorcycle'],
   ['helicóptero','helicopter','🚁','el','helicopter'],
   ['cohete','rocket','🚀','el','rocket']]},
