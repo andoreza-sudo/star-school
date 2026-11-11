@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** P2-34, P2-35, P2-37, P3-11, P3-13, P3-14
+**Next up:** P2-34, P2-35, P3-11, P3-12, P3-13, P3-14
 
-**Current version:** v114
+**Current version:** v115
 
 ## Chunk status
 
@@ -93,6 +93,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P2-31 v112
 - P2-32 v113
 - P2-33 v114
+- P2-37 v115
 
 ## Handoff notes
 
@@ -355,6 +356,18 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-11) Icons wanted from P4-03: `balloon` (Bonus game, today `gamepad`), `sparkle` / `confetti`, `unlock` (open padlock for "Next stop unlocked", today `map`), `zap` (a lightning with a spark for boss hits; today `bolt`), `sticker` (single sticker for the prize row), `medal` (the prize rosette as an icon), `heart-half` (boss life bar), `chest` (the treasure chest at icon size, e.g. for the round track where renderQ shows the gift emoji).
 
 ## Log
+
+### P2-37 Discover science 3-6, geography and civics (v113, 2026-11-11, Claude)
+- What changed (CURRICULUM 2.4 and 6, ROADMAP P2-37): Discover now has three worlds, by world id and in CURRICULUM order: `d_nature` Nature Trail (K) grows two stops after Push, Pull & Stuff (geo_world 1 "Maps & Land", civ 1 "Our Community"), `d_lab` Science Lab (grade 3: sci_life 2, sci_earth 2, sci_phys 2, geo_us 1, geo_world 2) and `d_cosmos` Star Observatory (grade 5: sci_life 3, sci_earth 3, sci_phys 3, geo_us 2, civ 2), each ending in a boss. 18 stops in all. Skills `sci_*` max 1 -> 3, new `geo_world` (max 2), `geo_us` (max 2), `civ` (max 2) in `38-skills.js`; icons map, pin, users. Strand "Geography and civics" already existed.
+- Levels: CURRICULUM 6 marks cells "n/a" where a skill has no content for a grade band, so a skill's levels count only the bands it has and match the stop table (geo_us 1 is the 3-4 column, geo_us 2 the 5-6 column, civ 2 the 5-6 column). Each item's `grade` says its band. Note added to CURRICULUM 6.
+- Content: `src/data/d-disc2-sci.js` (science levels 2-3) and `src/data/d-disc2-soc.js` (geography and civics), built into data.v113.js. They are named d-disc2-* because "d-disc-x" would sort before d-disc.js, which defines `discRows` and `DISC_HINT`; `discRows` gained an optional grade argument. 915 new items, all with grade and topic tags and a hint that teaches: sci_life 2 63 (lifecycle, foodchain, adapt, classify, plantfn, fossils), sci_life 3 62 (cells, ecosystem, photo, body, traits), sci_earth 2 66 (watercycle, rocks, erosion, resources, moonphase, planets), sci_earth 3 73 (plates, rockcycle, atmosphere, solarscale, rotrev), sci_phys 2 72 (states, forces, machines, energy, circuits), sci_phys 3 73 (mixtures, change, gravity, transfer, waves), geo_world 1 63 (mapwords, landforms, continents, oceans), geo_world 2 73 (grid, key, hemi, climate, features), geo_us 1 166 (capitals, states, regions, borders; generated from a table of 50 states, 50 capitals, five regions and a border table, no random numbers), geo_us 2 60 (landmarks, rivers, mountains, timezones), civ 1 65 (helpers, rules, symbols, needswants, community), civ 2 74 (branches, constitution, rights, economy, supply). Map skills are asked in words: coordinates written as pairs such as (3, 2), a key and a scale described in a sentence; no item needs a map or a picture (4 items have a small picture, all from the allow-list). Civics is neutral: how government works, no living person, no holiday of one faith. Regions skip states that books place differently (DE, MD, WV, KY, OK, AR, VA, CO, LA); neighbour questions never use states that touch only at a point or across water.
+- Start world: Discover has worlds only for K, 3 and 5, so the old rule (first world at or above the grade) would start a 1st, 2nd or 4th grader on a locked world. `PATHS.disc.startBelow` makes `startWorld()` use the last world at or below the grade (Nature Trail for K-2, Science Lab for 4th grade, Star Observatory for 5-6). No other path sets it.
+- Saves: no format change (LATEST stays 6, `S.maps.disc` keyed by stop id). A child who had finished the old Nature Trail keeps every star, the boss stays passed, the two new stops open as NEW stops (`stopBehind`/`stopNew`), Science Lab opens (previous world finished) and Star Observatory opens at grade 5 or above only.
+- Tests (test.js): "Discover 3-6, geography and civics P2-37": bankProblems with 40+ per level, grade and topic tags, one right answer, no wrong answer that holds the words of the right one, hints never name the answer (word or whole), the answer is not in the prompt, no prompt points at a picture or map, 3,000 seeded questions per level with kindProblems (36,000), the state, capital, region and border tables checked against each item, worlds and stops in CURRICULUM order, a finished Nature Trail child at 9 grade values over 4 fixtures, and the content is in the data file not index.html. Expectations changed in the P2-36 check: it now covers level 1 only (`filter(it=>it.lv===1)`), world list d_nature/0,d_lab/3,d_cosmos/5, first stops sci_life1 sci_earth1 sci_phys1 and a boss at index 5, the Home card says "0 of 18 stops", and a 3rd grader and up start in a later world. In the grade check (start world per grade) a `startBelow` path expects the last world at or below the grade.
+- Smoke: the P2-36 block expects the Nature Trail map (12 stops shown: Nature Trail and the world after it) and 6 stops in the first world. New `// P2-37` block at the end of the main sequence: a 4th grader opens Discover on Science Lab, plays Life Cycles & Food, States & Capitals and Our Community with real taps at 380x780, stars saved under each stop id, 48 px choices and stop buttons, no sideways scroll, no cut-off words. Shots `disc-map-lab`, `disc-q-geo1`, `disc-q-civ1`, `disc-q-life2`, `disc-q-earth2`, `disc-q-phys2`, `disc-q-us1`, `disc-q-geo2`, `disc-q-life3`, `disc-q-earth3`, `disc-q-phys3`, `disc-q-us2`, `disc-q-civ2`.
+- Checklist 7.1: [x] chunk files [x] VER v113 (provisional) [x] build [x] test.js [x] smoke.js [x] screenshots [x] no network [x] no new emoji or hex [x] PROGRESS entry [x] one commit (not pushed).
+- Merge: built on a parallel branch from v109; renumber VER at merge (rebuild, `git add -A`).
+- Merge: built on a parallel branch, renumbered v114 -> v115 at merge.
 
 ### P2-33 Units batch 3: Spanish world La Ciudad (v117, 2026-11-11, Claude)
 - What changed (CURRICULUM S-units and 2.3 row 6, ROADMAP P2-33): four units appended to `ES_UNITS` in `src/data/d-es.js` (no `mix`, no `spell`, so the Big Review and the old stops are untouched): `es_place` Places in Town (11 words: parque, tienda, biblioteca, hospital, playa, restaurante, iglesia, mercado, calle, banco, cine), `es_trans` Transport (10: carro, autobús, tren, avión, bicicleta, barco, camión, moto, helicóptero, cohete), `es_verb` Action Words (12 infinitives: correr, saltar, comer, beber, dormir, leer, escribir, jugar, cantar, bailar, nadar, caminar; glosses "to run" ...), `es_adj` Opposites (13 masculine singular adjectives in pairs: grande/pequeño, alto/bajo, rápido/lento, nuevo/viejo, caliente/frío, bonito, limpio/sucio). Nouns carry el/la, verbs and adjectives have no article.

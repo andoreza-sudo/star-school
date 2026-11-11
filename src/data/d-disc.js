@@ -33,9 +33,10 @@ const DISC_HINT = {
 // Grade band of each level (CURRICULUM 6: Lv 1 is K-2, Lv 2 is 3-4, Lv 3 is 5-6). Every item carries it as `grade`.
 const DISC_GRADE = {1: 'K-2', 2: '3-4', 3: '5-6'};
 
-function discRows(lv, text) {
+// grade: the grade band of a bank whose levels do not follow DISC_GRADE (P2-37: geo_us and civ start at levels 3-4 and 5-6)
+function discRows(lv, text, grade) {
   return text.trim().split('\n').map(r => {
-    const f = r.split('|'), it = {lv, grade: DISC_GRADE[lv], q: f[0], a: f[1], d: f[2].split(';'), topic: f[3]};
+    const f = r.split('|'), it = {lv, grade: grade || DISC_GRADE[lv], q: f[0], a: f[1], d: f[2].split(';'), topic: f[3]};
     if (f[4]) it.em = f[4].split(',');
     it.hint = f[5] || DISC_HINT[f[3]];
     return it;
