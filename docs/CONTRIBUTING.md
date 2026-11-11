@@ -82,7 +82,7 @@ JS files created by the split, with the source line ranges of `src/src.html` at 
 | `48-shop.js` | 817-836 | Pet shop |
 | `50-round.js` | 837-1004 | Round engine: `start`, `makeQ`, `renderQ`, `check`, `finish`, boss, test out |
 | `52-balloons.js` | 1005-1044 | Balloon bonus game |
-| `54-race.js` | 1045-1085 | Speed Race |
+| `54-race.js` | 1045-1085 | Fact Race (called Speed Race until G-02; ids and `S.race` unchanged) |
 | `56-petcare.js` | 1086-1106 | Pet care |
 | `58-playtime.js` | 1107-1140 | Game time (`ptCfg`, `pt`, `ptLeft`, `ptEarn`, `ptCalc`), `gameRoom()` |
 | `60-blocks.js` | 1141-1424 | Block Builder |
@@ -105,6 +105,7 @@ Files added by later chunks (names are fixed by the roadmap so everyone agrees):
 | `18-reward-art.js` | P4-11 | Reward art (chest, stars, bosses, prize rosette) and the reward screens' markup (`RW.*`); CSS in `src/css/42-rewards.css` |
 | `17-wear.js`, `src/data/d-wear.js` | P4-07 | Wearables: helpers, names, `wearOf` / `wearPic` / `wearBox` (code), and the drawings `WEAR` / `WEAR_EMB` keyed by the saved item ids (data file); Pet Shop and sticker book CSS in `src/css/43-shop.css` |
 | `59-game-hub.js`, `src/css/48-game-hub.css` | P4-16 | Game Room hub (`GH.hub`, called by `gameRoom()`), the game registry (`GH.reg`), the drawn hub scene, ticket and game pictures, and the shared game chrome: top bar `GH.top`/`GH.wire`, pause sheet `GH.pause`, end card `GH.end`. Both go into `games.<VER>.js` (section 3.3, "Adding a game") |
+| `63-game-race.js`, `src/css/49-game-race.css` | G-02 | Star Rally, the racing game (games file): places and tracks, rivals and catch-up, the race simulation (`rlNew`, `rlStep`; no DOM, the tests run whole races), the canvas renderer (sprites from SVG, the road as one path per colour), menu, garage, race and end card; save `S.rally` |
 | `23-viz.js` | P1-10 | Math visuals |
 | `31-gen-math-early.js`, `33-gen-math-mid.js`, `35-gen-math-upper.js` | P2-01+ | New math generators |
 | `37-bank.js` | P1-09 | Content bank engine |
@@ -128,7 +129,7 @@ gen.<VER>.js      question generators, part 1 (A11c): src/js/23-viz, 30-gen-math
 gen2.<VER>.js     question generators, part 2 (A11c): src/js/35-gen-math-upper, 36-gen-phonics, 37-bank, 37-comp, 39b-steps,
                   then  var GEN2_VER='<VER>';
 bt.<VER>.js       Brain Teaser puzzle types: a <style> with src/css/NN-bt-*.css, then src/js/NN-bt-*.js, then  var BT_VER='<VER>';
-games.<VER>.js    the Game Room: src/js/60-blocks, 62-hill, 64-gtimer, 66-colornum, 68-lowpoly, 70-art, 72-shapes and any NN-game-*.js,
+games.<VER>.js    the Game Room: src/js/60-blocks, 62-hill, 64-gtimer, 66-colornum, 68-lowpoly, 70-art, 72-shapes and any NN-game-*.js (59-game-hub, 63-game-race),
                   then  var GAMES_VER='<VER>';
 data.<VER>.js     src/data/*.js in filename order, then the last line  var DATA_VER='<VER>';
 sw.js             cache 'starschool-<VER>', precaches ./, index.html, gen/gen2/bt/games/data.<VER>.js, manifest.json, icons
@@ -145,7 +146,7 @@ The rule lives in one place, `PARTS` in `tools/build.py`: a file stem and a regu
   Index.html's own code may call them only inside functions that run after start-up. The one table that named them at load time, `SK`
   in `38-skills.js`, wraps each generator in an arrow (`gen:lv=>genAbc(lv)`); keep doing that for a new skill whose generator is in these files.
   A new generator file named `NN-gen-*.js` is NOT picked up by itself: add it to the `gen` or `gen2` regular expression in build.py.
-- `games`: the seven Game Room files listed above, and any new `src/js/NN-game-*.js` and `src/css/NN-game-*.css` (P4-16: `59-game-hub.js`,
+- `games`: the seven Game Room files listed above, and any new `src/js/NN-game-*.js` and `src/css/NN-game-*.css` (G-02: `63-game-race.js` and `49-game-race.css`, Star Rally; P4-16: `59-game-hub.js`,
   the hub and the shared game chrome, and `48-game-hub.css`). `58-playtime.js` (game time and `gameRoom()`, which calls `GH.hub()`)
   and `40-games.css` (shared by Home, the map and the rewards) stay in index.html.
 
@@ -195,6 +196,9 @@ GH.reg({
   saved: 'Your race is saved.',                // optional line on the time-up card
 });
 ```
+
+The four games registered today: Hill Climb, Coloring, Block Builder (in `59-game-hub.js`) and Star Rally (`63-game-race.js`, G-02: a
+canvas game with its own loop, stopped by `view()` through `rlStop`, like `stopHC`; it is a worked example of a canvas game on `GH.reg`).
 
 Every screen of the game starts its `view()` with `${GH.top('race', {...})}` (Back on menus; `{play: true}` gives Pause; `sub`, `tools`,
 `chips`, `sound` as in 59-game-hub.js), then calls `GH.wire({quit: () => ...})` on a play screen (Quit runs it; `hold: on => ...` pauses

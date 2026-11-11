@@ -1,4 +1,4 @@
-/* ---------- speed race ---------- */
+/* ---------- Fact Race (called Speed Race until G-02, which added the racing game Star Rally; ids and S.race unchanged) ---------- */
 let RC=null;
 function stopRace(){if(RC){clearInterval(RC.iv);RC=null}}
 const passedAny=(p,sk,lv)=>NODES[p].some((n,i)=>n.sk==sk&&n.lv>=lv&&passed(p,i));
@@ -6,7 +6,7 @@ const RACES={math:['➕','Math Facts','Add and take away, fast!'],sight:['👀',
 // P4-18: drawn race badges and colours (the emoji in RACES stay as data)
 const RACE_GX={math:['path-math','math'],sight:['eye','read'],es:['path-es','es']};
 function raceMenu(){S.race=S.race||{};
-  view(`<div class="top tbar gx-mtop s-play">${UI.ibtn('back','Back',{size:'sm',id:'back'})}<div class="ttl gx-ttl"><span class="gx-tb">${ico('bolt',24)}</span><span>Speed Race</span></div></div>
+  view(`<div class="top tbar gx-mtop s-play">${UI.ibtn('back','Back',{size:'sm',id:'back'})}<div class="ttl gx-ttl"><span class="gx-tb">${ico('bolt',24)}</span><span>Fact Race</span></div></div>
   <div class="scroll gx-list"><p class="gx-lead">How many can you get in 60 seconds? Beat your best score!</p>
   <div class="games">${Object.entries(RACES).map(([k,[e,t,d]])=>GFX.card({cls:'game',attrs:`data-r="${k}"`,p:RACE_GX[k][1],icon:RACE_GX[k][0],title:t,sub:esc(d),
     side:`<span class="gx-best">${ico('trophy',22)}<b>${S.race[k]||0}</b></span>`})).join('')}</div></div>`);
