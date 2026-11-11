@@ -4787,7 +4787,7 @@ run('grammar B P2-21: gram 6-9 bank, 3000 questions per level, one right answer,
       {const r=bankRebuild(a.bk),f=q=>JSON.stringify([q.html,q.say,q.ans,q.choices,q.hint,q.label,q.bk]);if(f(r)!==f(a))bad(w2+'bankRebuild differs');}
     }
     const forms=lv=>[...new Set(BANK.gram.filter(it=>it.lv==lv).map(it=>it.form||'choice'))].sort().join();
-    if(forms(6)!=='choice'||forms(7)!=='wide'||forms(8)!=='choice,tap'||forms(9)!=='choice,wide')bad('forms per level: '+[6,7,8,9].map(forms).join(' | '));
+    if(forms(6)!=='choice'||forms(7)!=='wide'||forms(8)!=='choice,tap,wide'||forms(9)!=='choice,wide')bad('forms per level: '+[6,7,8,9].map(forms).join(' | ')); // level 8 word types are wide (long words like "interjection")
     // map: gram 6 to 9 once each, by world id, in CURRICULUM 2.2 order (stops of other skills are ignored so later chunks can add theirs)
     const wst=id=>NODES.read.filter(n=>n.wid==id&&n.sk=='gram').map(n=>n.sk+n.lv).join(' ');
     if(wst('r_library')!=='gram6 gram7')bad('r_library gram stops: '+wst('r_library'));

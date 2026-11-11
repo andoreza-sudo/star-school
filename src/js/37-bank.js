@@ -88,7 +88,8 @@ function bankBuild(id,it,pass){
       html:`${pic}<div class="bq">${esc(it.q)}</div><div class="bsent">${esc(it.sent)}</div>`};
   }
   else if(form!='choice'&&form!='wide')q=BANKF[form](it,id);
-  else q={kind:'choice',cls:(form=='wide'?'wide':'')+(pass?' bpass':''),ans:it.a,choices:shuffle([it.a,...it.d]).map(x=>({v:x,l:x})),
+  // a word longer than 7 letters does not fit a half-width button at 380 px ("remember", "basketball"): such items get one choice per row
+  else q={kind:'choice',cls:(form=='wide'||!pass&&[it.a,...it.d].some(x=>String(x).length>7)?'wide':'')+(pass?' bpass':''),ans:it.a,choices:shuffle([it.a,...it.d]).map(x=>({v:x,l:x})),
     html:`${pic}<div class="bq">${bankTxt(it.q)}</div>`};
   if(!q.hint)q.hint={k:'text',s:it.hint||'Read it again slowly. Which one fits best?'};
   else if(it.hint&&q.hint.k=='text')q.hint.s=it.hint;

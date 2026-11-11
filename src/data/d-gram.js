@@ -267,7 +267,7 @@ GR(8,'interjections','An interjection shows a sudden feeling such as surprise or
  ['Tap the interjection.','Wow, so big!','Wow'],['Tap the interjection.','Ouch, that hurts!','Ouch'],
  ['Tap the interjection.','Hooray, we won!','Hooray'],['Tap the interjection.','Yikes, a snake!','Yikes'],
  ['Tap the interjection.','Oops, I spilled.','Oops']]),
-GR(8,'wordtypes','Ask what job the word does: telling how, showing where, joining ideas, or showing a sudden feeling.','choice',[
+GR(8,'wordtypes','Ask what job the word does: telling how, showing where, joining ideas, or showing a sudden feeling.','wide',[
  ['What kind of word is "gently"?','adverb','adjective','preposition'],['What kind of word is "under"?','preposition','adverb','conjunction'],
  ['What kind of word is "beside"?','preposition','interjection','noun'],['What kind of word is "because"?','conjunction','preposition','adverb'],
  ['What kind of word is "but"?','conjunction','interjection','adverb'],['What kind of word is "wow"?','interjection','conjunction','adjective'],
