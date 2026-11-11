@@ -334,7 +334,8 @@ function open(p,i){const n=NODES[p][i];if(n.sk=='boss')bossIntro(p,i);else if(n.
 function learn(p,i){const n=NODES[p][i],items=SPN[n.sk.slice(3)];
   view(`<div class="top tbar gx-mtop gx-learn s-es">${UI.ibtn('back','Back',{size:'sm',id:'back'})}<div class="ttl gx-ttl"><span class="gx-tb">${ico('path-es',24)}</span><span>Let's learn!</span></div>${UI.btn('¡Vamos!',{kind:'subject',p:'es',icon:'play',id:'go'})}</div>
   <div class="scroll"><p class="sub" style="text-align:center">Tap each card to hear it in English, then Spanish. Then tap ¡Vamos!</p>
-  <div class="lgrid">${items.map(it=>`<button class="btn lcard" data-es="${esc(it[0])}" data-en="${esc(it[1])}"><span class="lp">${picHTML(it,false)}</span><b>${esc(it[0])}</b><small>${esc(it[1])}</small></button>`).join('')}</div></div>`);
+  <div class="lgrid">${items.map(it=>`<button class="btn lcard" data-es="${esc(it[5]||esFull(it))}" data-en="${esc(it[1])}"><span class="lp">${picHTML(it,false)}</span><b>${esc(esFull(it))}</b><small>${esc(it[1])}</small></button>`).join('')}</div></div>`);
+  if(esVoice()=='no')esNote();
   $('#back').onclick=()=>pathMap(p);$('#go').onclick=()=>{SFX.whoosh();start(p,i)};
   $$('.lcard').forEach(b=>b.onclick=()=>{say(b.dataset.en,b);say(b.dataset.es,null,'es',1);anim(b,'jump');b.classList.add('heard');
     if($$('.lcard').every(x=>x.classList.contains('heard'))){bump('#go');fb('¡Muy bien! Tap ¡Vamos!')}});

@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** P2-14, P2-30, P2-37, P3-11, P3-13
+**Next up:** P2-14, P2-31, P2-32, P2-33, P2-37, P3-11, P3-13, P3-14
 
-**Current version:** v109
+**Current version:** v110
 
 ## Chunk status
 
@@ -88,6 +88,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P2-17 v107
 - P2-36 v109
 - P3-07 v109
+- P2-30 v108
 
 ## Handoff notes
 
@@ -350,6 +351,17 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-11) Icons wanted from P4-03: `balloon` (Bonus game, today `gamepad`), `sparkle` / `confetti`, `unlock` (open padlock for "Next stop unlocked", today `map`), `zap` (a lightning with a spark for boss hits; today `bolt`), `sticker` (single sticker for the prize row), `medal` (the prize rosette as an icon), `heart-half` (boss life bar), `chest` (the treasure chest at icon size, e.g. for the round track where renderQ shows the gift emoji).
 
 ## Log
+
+### P2-30 Spanish framework: unit data format, level 3 (spell), voice fallback (v108, 2026-11-11, Claude)
+- What changed (CURRICULUM S-frame, ROADMAP P2-30): Spanish vocabulary now lives in `src/data/d-es.js` as `ES_UNITS`, a list of units `{id, t, e, theme, items, cap?, spell?, mix?}`; an item is `[spanish, english, picture, article, art?, say?]` (format documented at the top of the file). `spanish` is the bare NFC lowercase word, `article` is `el`/`la`/`los`/`las`/`''` and shows in levels 1 and 2 ("la casa") and as a clue in level 3, `picture` is an emoji from the allow-list (or `c:#hex`, `n:12` as before), `art` is an optional art name that goes through `picFor(art, picture)`, `say` is an optional spoken override. `SPN` (unit id -> items) is still built from it, so balloons, Speed Race and the learn screen are unchanged.
+- Old units: the 8 existing SPN units were migrated into the new format with their words, order, pictures and article `''` (the spec says existing units keep their words); `34-gen-es.js` `genEs` was rewritten around the format (`esFull`, `esReg`) and produces byte-identical questions: a test hashes 2,700 seeded questions (es_* levels 1-2, seeds 1-150) and the hash is the one taken from v104. `es_mix` draws from units flagged `mix:1` (the 8 old ones), so later units do not change its seeds unless a chunk flags them. The skills for the old units stay in `38-skills.js`; `esReg` (called from `d-es.js`) creates `SK.es_<id>` for any unit that has none, with `max` 3 when `spell:1`.
+- Level 3 (spell): `genEs(set, 3)` makes a `spell` question for units with `spell:1`: picture, "Spell it in Spanish: el ... boy" (article and English gloss as the clue, so it works with no voice), blanks, the word spoken by Hear it (auto, Spanish voice). The answer is the bare word (articles are not spelled); only single words of a-z/ñáéíóúü, 12 letters or fewer, are asked (`esSpellable`). The accent row of the spell keyboard is now `ñ á é í ó ú ü ¿ ¡`, and the validator accepts ¿ and ¡. 9 keys fit 380 px. No shipped unit has `spell:1` yet.
+- Stops added: none. CURRICULUM 2.3 lists level 3 only for es_house, es_clothes and es_school in `e_casa` (P2-31), so those chunks set `spell:1` and add the stops by world id. Saves stay keyed by stop id (`es_house3`); a test adds a fixture world with a level 3 stop to every save fixture and checks that no older stop changes stars or locks and the new one starts empty.
+- Voice fallback: `esVoiceMode(voices, canSpeak, ms)` (12-speech.js, pure) gives `yes` (any voice whose lang starts `es` or `spa`), `no` (no speech, or voices exist and none is Spanish, or the list is still empty after 3 s) or `wait` (list empty in the first 3 s; some browsers fill it late, so it is asked again at every call, not cached). With `no`: `say(..., 'es')` stays silent (it used to hand Spanish text to the default voice) and shows the grown-up note once per session ("No Spanish voice on this tablet. Grown-ups: add one in the tablet's text-to-speech settings. The words are shown to read."); `esQFix(q)` runs after a Spanish question is drawn (rounds, placement, Speed Race): the speaker button becomes the word shown big (`.esbig`) and Hear it goes away. Listen questions already print the word, so they turn into read questions; level 3 has the picture and English clue. The learn screen shows the note too. English speech is untouched. The 90-app voice kick-start is unchanged.
+- Tests (test.js 89 of 89): "Spanish framework P2-30": unit format (ids, fields, NFC, article set, picture in emoji-allow.txt or c:/n:, no duplicate word or gloss, skill title/emoji match, spell units spellable), builder output through `kindProblems` for levels 1-3 (200 seeds each, shipped units plus a fixture spell unit with articles and accents), accent keys typed give the exact word (niño, pingüino, canción, ¿cómo, ¡hola ...), old stops unchanged by seed (hash), `esVoiceMode` cases, late voices, no speech call without a Spanish voice, note once, stops list and fixture save safety. Smoke block `// P2-30` (fake unit from `tools/lib/es-fx.js`, 380x780): level 3 typed with the ñ key, no-voice path, 48 px keys and choices, no sideways scroll. Shots `es-spell`, `es-novoice`.
+- Test expectations changed: none.
+- Not done / ideas: the keyboard row is always shown for Spanish spelling including ¿ ¡, which only phrase spelling would need (no level 3 phrases are planned); spelling items with a space (hace sol) are skipped at level 3, the slot row has no space slot. The note text is English only like the rest of the chrome.
+- Merge: built on a parallel branch, renumbered v109 -> v110 at merge.
 
 ### P3-07 Logic grids (v107, 2026-11-11, Claude)
 - What changed (BRAIN_TEASERS 5.3, 7, 8): new puzzle type `logic` ("Logic", bands B, C, D; 12 levels then the framework's Endless; `allow` 2) in a new `src/js/80-bt-logic.js` (object `LG`: the pure rules, the hint engine, the screen, one `BT.reg`), its look in a new `src/css/49-bt-logic.css`, a drawn `logic` icon (a grid on a soft square with a tick and two crosses) in `15-icons.js`. The bank `PUZ.logic` (P3-06) is read only inside functions (A11); no puzzle-type code is referenced from start-up code. One framework addition: `api.win({..., note})` takes up to 6 lines of plain text that the win card shows (`.bt-sum`, 74-teasers.js and 48-teasers.css), used for the answer in words.

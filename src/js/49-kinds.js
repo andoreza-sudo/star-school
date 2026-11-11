@@ -364,7 +364,7 @@ const KIND={
       const key=c=>`<button class="key sk" data-ch="${c}">${c}</button>`;
       const rows=KIND.spell.ROWS.map((r,i)=>`<div class="skr">${[...r].map(key).join('')}`
         +(i==2?`<button class="key sk wide del" data-ch="del" aria-label="Delete">${ico('backspace',28)}</button>`:'')+'</div>').join('');
-      const es=q.lang=='es'?`<div class="skr">${[...'ñáéíóúü'].map(key).join('')}</div>`:'';
+      const es=q.lang=='es'?`<div class="skr">${[...'ñáéíóúü¿¡'].map(key).join('')}</div>`:'';
       return `<div class="sks">${rows}${es}</div>`;
     },
     bind(q,st,submit){
@@ -412,7 +412,7 @@ const KIND={
     validate(q){
       const p=[];
       if(typeof q.word!=='string'||!q.word)return['spell: no word'];
-      const okc=q.lang=='es'?/^[a-zñáéíóúü]+$/:/^[a-z]+$/;
+      const okc=q.lang=='es'?/^[a-zñáéíóúü¿¡]+$/:/^[a-z]+$/;
       if(!okc.test(q.word))p.push('spell: word has letters the keyboard does not have: '+q.word);
       if(q.word.length>12)p.push('spell: word longer than 12 letters');
       if(q.ans!==q.word)p.push('spell: ans is not the word');

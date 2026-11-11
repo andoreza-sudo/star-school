@@ -10,6 +10,7 @@ const OUT = process.env.SHOTS_OUT ? path.resolve(process.env.SHOTS_OUT) : path.j
 const SHOT_SIZES = process.env.SHOTS_SIZES ? process.env.SHOTS_SIZES.split(',').map(s => s.split('x').map(Number)) : SIZES;
 const KS = require('./kinds-samples');
 const BTF = require('./lib/bt-fake');
+const ES_FX = require('./lib/es-fx');
 
 // P2-36: a Discover question shown by the real round engine; the item with a picture of the given topic when there is one, else the first of the stop
 const discQ = (sk, stop, topic) => ({
@@ -381,6 +382,9 @@ const SCREENS = {
   ...Object.fromEntries([1, 2, 3, 4, 5, 6, 7].map(lv => ['spell-' + lv, { run: spellShot(lv, false) }])),
   'spell-hint': { run: spellShot(7, true) },
   'spell-pic': { run: spellShot(3, false, true) }, // a word that has a picture
+  // P2-30 Spanish framework: level 3 (spell niño, accent row) and the no-Spanish-voice listen question (word shown big, note, no speaker)
+  'es-spell': { run: async p => { const s = await p.evaluate(`(${ES_FX.install})(['es-MX'])`); await p.evaluate(s => { G = newG({ sk: 'es_tst', lv: 3, n: 1, pool: [genQ('es_tst', 3, s)] }); next(); }, s); } },
+  'es-novoice': { run: async p => { await p.evaluate(`(${ES_FX.install})(['en-US'])`); await p.evaluate(() => { G = newG({ sk: 'es_animal', lv: 1, n: 1, pool: [genQ('es_animal', 1, 7)] }); next(); }); } },
   // P2-15 ABC Beach: one question per new level (seeds fixed so the picture is the same every run)
   'abc-1': { fixture: 'fresh', run: abcShot('abc', 1, 11) },
   'abc-2': { fixture: 'fresh', run: abcShot('abc', 2, 12) },
