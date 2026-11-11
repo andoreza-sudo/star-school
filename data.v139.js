@@ -1,5 +1,5 @@
-/* Star School data banks v138. BUILT by tools/build.py from src/data/*.js (sorted): never edit by hand.
-   index.html v138 loads this file with <script src="data.v138.js"> between the code and the start-up script. */
+/* Star School data banks v139. BUILT by tools/build.py from src/data/*.js (sorted): never edit by hand.
+   index.html v139 loads this file with <script src="data.v139.js"> between the code and the start-up script. */
 /* ---------- object art set B: 40 pictures (P4-14; DESIGN_SYSTEM.md section 6.5) ----------
    The words children see most that set A (src/js/16-art-a.js) did not draw: picture words, Spanish units (animals, food, body,
    house, clothes, school, transport), riddles, Memory Match, Discover, vocabulary and counting. Same style, rules and limits
@@ -3672,10 +3672,14 @@ Which would make the price of gas go up?|less gas being supplied|more gas being 
                                                 consonant). Level 1 of es_art uses only the nouns ending in -o or -a. Every noun has one article
    ser      {1:[...],2:[...],3:[...]}           [subject, person, rest, english]; person 1 yo, 2 tú, 3 él/ella/a noun, 6 they. Level 1 ser, 2 estar,
                                                 3 tener. A subject fixes the verb form, so only one form fits
-   likes    [article, noun, plural, picture, only]  only 'pl' (grapes: only the plural exists) or 'sg' (milk) or ''
+   likes    [article, noun, plural, picture, only]  only 'pl' (grapes: only the plural exists) or 'sg' (milk) or 'an' (an animal: liked in the
+                                                plural only, "Me gustan los cerdos"; "Me gusta el cerdo" means "I like pork", R-01s) or ''
    sent     {1:[...],2:[...]}                   [sentence, classes, english]; classes per word: A article, D "mi", B noun that can be the subject,
                                                 S pronoun, V verb, J adjective, P preposition, L place noun. The first word is capitalised and the
-                                                last carries the dot, so the tiles have one right order (tools/test.js checks every permutation) */
+                                                last carries the dot, so the tiles have one right order (tools/test.js checks every permutation). R-01s: the tiles
+                                                show the words in lower case and the dot after the last slot; el / la agree with
+                                                their noun, so the order is still one. Level 1 uses ser with traits (alta,
+                                                inteligente), never with a feeling, which es_ser 2 teaches with estar */
 const ES_GRAM={
  phrases:[
   ['¿Cómo te llamas?','What is your name?','Ask this to find out who a new friend is.'],
@@ -3720,10 +3724,10 @@ const ES_GRAM={
   ['casa','house','🏠','la','casas'],['mesa','table','🍽','la','mesas'],['silla','chair','🪑','la','sillas'],['cama','bed','🛏','la','camas'],
   ['puerta','door','🚪','la','puertas'],['ventana','window','🪟','la','ventanas'],['manzana','apple','🍎','la','manzanas'],
   ['galleta','cookie','🍪','la','galletas'],['rana','frog','🐸','la','ranas'],['vaca','cow','🐄','la','vacas'],['mochila','backpack','🎒','la','mochilas'],
-  ['camisa','shirt','👕','la','camisas'],['chaqueta','jacket','🧥','la','chaquetas'],['bicicleta','bicycle','🚲','la','bicicletas'],
+  ['camisa','shirt','👕','la','camisas'],['chamarra','jacket','🧥','la','chamarras'],['bicicleta','bicycle','🚲','la','bicicletas'],
   ['escuela','school','🏫','la','escuelas'],['tienda','store','🏪','la','tiendas'],['playa','beach','🏖','la','playas'],
   ['abuela','grandma','👵','la','abuelas'],['hermana','sister','👧','la','hermanas'],['oreja','ear','👂','la','orejas'],['pierna','leg','🦵','la','piernas'],
-  ['papel','paper','📄','el','papeles'],['lápiz','pencil','✏','el','lápices'],['borrador','eraser','🧽','el','borradores'],['tren','train','🚂','el','trenes'],
+  ['papel','paper','📄','el','papeles'],['lápiz','pencil','✏','el','lápices'],['goma','eraser','🧽','la','gomas'],['tren','train','🚂','el','trenes'],
   ['avión','airplane','✈','el','aviones'],['camión','truck','🚚','el','camiones'],['autobús','bus','🚌','el','autobuses'],
   ['jardín','garden','🌻','el','jardines'],['hospital','hospital','🏥','el','hospitales'],['león','lion','🦁','el','leones'],
   ['pez','fish','🐟','el','peces'],['nariz','nose','👃','la','narices'],['diente','tooth','🦷','el','dientes'],['cohete','rocket','🚀','el','cohetes']],
@@ -3747,15 +3751,15 @@ const ES_GRAM={
  likes:[
   ['la','manzana','manzanas','🍎',''],['el','plátano','plátanos','🍌',''],['la','galleta','galletas','🍪',''],['el','helado','helados','🍦',''],
   ['el','queso','quesos','🧀',''],['el','huevo','huevos','🥚',''],['el','pan','panes','🍞',''],['la','leche','','🥛','sg'],
-  ['el','perro','perros','🐶',''],['el','gato','gatos','🐱',''],['el','pájaro','pájaros','🐦',''],['el','pez','peces','🐟',''],
-  ['la','vaca','vacas','🐄',''],['el','caballo','caballos','🐴',''],['el','cerdo','cerdos','🐷',''],['el','pato','patos','🦆',''],
-  ['el','oso','osos','🐻',''],['el','conejo','conejos','🐰',''],['el','león','leones','🦁',''],['la','rana','ranas','🐸',''],
+  ['el','perro','perros','🐶','an'],['el','gato','gatos','🐱','an'],['el','pájaro','pájaros','🐦','an'],['el','pez','peces','🐟','an'],
+  ['la','vaca','vacas','🐄','an'],['el','caballo','caballos','🐴','an'],['el','cerdo','cerdos','🐷','an'],['el','pato','patos','🦆','an'],
+  ['el','oso','osos','🐻','an'],['el','conejo','conejos','🐰','an'],['el','león','leones','🦁','an'],['la','rana','ranas','🐸','an'],
   ['las','uvas','uvas','🍇','pl']],
  sent:{
   1:[['El gato es negro.','A B V J','The cat is black.'],['La casa es blanca.','A B V J','The house is white.'],['El perro es grande.','A B V J','The dog is big.'],
      ['La mesa es pequeña.','A B V J','The table is small.'],['Los zapatos son rojos.','A B V J','The shoes are red.'],['Las botas son negras.','A B V J','The boots are black.'],
      ['La camisa es azul.','A B V J','The shirt is blue.'],['El libro es nuevo.','A B V J','The book is new.'],['Mi mamá es alta.','D B V J','My mom is tall.'],
-     ['Mi perro es rápido.','D B V J','My dog is fast.'],['Ella es feliz.','S V J','She is happy.'],['Yo soy feliz.','S V J','I am happy.'],
+     ['Mi perro es rápido.','D B V J','My dog is fast.'],['Ella es alta.','S V J','She is tall.'],['Yo soy inteligente.','S V J','I am smart.'],
      ['Tú eres amable.','S V J','You are kind.'],['La rana es verde.','A B V J','The frog is green.'],['La bicicleta es roja.','A B V J','The bike is red.'],
      ['El sombrero es amarillo.','A B V J','The hat is yellow.'],['La silla es vieja.','A B V J','The chair is old.'],['El conejo es pequeño.','A B V J','The rabbit is small.'],
      ['El carro es nuevo.','A B V J','The car is new.'],['La leche es blanca.','A B V J','The milk is white.']],
@@ -3794,7 +3798,7 @@ Object.assign(SK,{
      who:  `k` is the exact phrase quoted in the question; `a` is the name of the speaker of `line`, and the other names are not
    Every question has one right answer, found in the line it points to. Hints are made in code and point at the line. */
 const ES_STORY={
- newWords:['dice','quién','quiero','quieres','quiere','aquí','también','con','tu','para','tiempo','color','animal','animales','al','final','cansada','asustada'],
+ newWords:['dice','quién','quiero','quieres','quiere','aquí','también','con','tu','para','tiempo','color','animal','animales','al','final','mascota'],
  people:{'Ana':'👧','Sofía':'👧','Lucía':'👧','Luis':'👦','Carlos':'👦','Mateo':'👦','Pablo':'👦','Mamá':'👩','Papá':'👨','Abuela':'👵','Abuelo':'👴','La maestra':'👩'},
  dialogues:[
   {id:'hola',title:'Hello, new friend',lines:[
@@ -3810,9 +3814,9 @@ const ES_STORY={
     ['La maestra','Buenos días, Sofía.'],['Sofía','Buenos días, maestra.'],['La maestra','¿Cómo estás hoy?'],['Sofía','Estoy feliz. Hoy hace sol.']],
    qs:[
     {t:'how',line:3,en:'How is Sofía today?',es:'¿Cómo está Sofía hoy?',a:['feliz','happy','😊'],
-     d:[['triste','sad','😢'],['enojada','angry','😠'],['tranquila','calm','😌'],['cansada','tired','😴']]},
+     d:[['triste','sad','😢'],['enojada','angry','😠'],['asustada','scared','😨'],['cansada','tired','😴']]},
     {t:'what',line:3,en:'What is the weather today?',es:'¿Qué tiempo hace hoy?',a:['Hace sol.','It is sunny.','☀'],
-     d:[['Llueve.','It is raining.','☔'],['Nieva.','It is snowing.','❄'],['Hace viento.','It is windy.','💨'],['Hace frío.','It is cold.','🥶']]},
+     d:[['Llueve.','It is raining.','☔'],['Nieva.','It is snowing.','❄'],['Hace viento.','It is windy.','💨'],['Está nublado.','It is cloudy.','☁']]},
     {t:'who',line:2,k:'¿Cómo estás hoy?',en:'Who says: “¿Cómo estás hoy?”',es:'¿Quién dice “¿Cómo estás hoy?”?',a:['La maestra'],d:['Sofía','Ana','Carlos']}]},
   {id:'mercado',title:'At the market',lines:[
     ['Mamá','¡Qué grande es el mercado! ¿Qué quieres, Luis?'],['Luis','Quiero manzanas y queso, por favor.'],
@@ -3833,7 +3837,7 @@ const ES_STORY={
     {t:'who',line:1,k:'¿Está en la mesa?',en:'Who says: “¿Está en la mesa?”',es:'¿Quién dice “¿Está en la mesa?”?',a:['Lucía'],d:['Carlos','Mateo','Sofía']},
     {t:'reply',line:4,en:'What does Carlos say at the end?',es:'¿Qué dice Carlos al final?',a:['Gracias.','Thank you.','🙏'],
      d:[['Adiós.','Goodbye.','🚶'],['Lo siento.','I am sorry.','😢'],['No entiendo.','I do not understand.','❓'],['Hola.','Hello.','👋']]}]},
-  {id:'parque',title:'At the park',lines:[
+  {id:'parque',title:'A phone call from the park',lines:[
     ['Mateo','¡Hola, Pablo! ¿Dónde estás?'],['Pablo','Estoy en el parque con mi perro.'],['Mateo','¿Es grande tu perro?'],
     ['Pablo','No, es pequeño. Corre mucho.'],['Mateo','¡Yo también quiero jugar!']],
    qs:[
@@ -3843,16 +3847,16 @@ const ES_STORY={
      d:[['grande','big','🐘'],['lento','slow','🐢'],['viejo','old','👴'],['sucio','dirty','🗑']]},
     {t:'who',line:4,k:'quiero jugar',en:'Who says: “Yo también quiero jugar”',es:'¿Quién dice “Yo también quiero jugar”?',a:['Mateo'],d:['Pablo','Luis','Ana']}]},
   {id:'abuela',title:'At grandma’s house',lines:[
-    ['Abuela','Hola, Ana. ¿Cómo estás?'],['Ana','Hola, abuela. Estoy cansada. Tengo sed.'],['Abuela','Aquí está agua. ¿Tienes hambre?'],
+    ['Abuela','Hola, Ana. ¿Cómo estás?'],['Ana','Hola, abuela. Estoy cansada. Tengo sed.'],['Abuela','Aquí tienes agua. ¿Tienes hambre?'],
     ['Ana','Sí. Quiero pan y queso, por favor.']],
    qs:[
     {t:'how',line:1,en:'How is Ana?',es:'¿Cómo está Ana?',a:['cansada','tired','😴'],
-     d:[['feliz','happy','😊'],['triste','sad','😢'],['enojada','angry','😠'],['tranquila','calm','😌']]},
+     d:[['feliz','happy','😊'],['triste','sad','😢'],['enojada','angry','😠'],['asustada','scared','😨']]},
     {t:'what',line:3,en:'What does Ana want to eat?',es:'¿Qué quiere comer Ana?',a:['pan y queso','bread and cheese','🍞🧀'],
      d:[['galletas y leche','cookies and milk','🍪🥛'],['manzanas y uvas','apples and grapes','🍎🍇'],['huevos y plátanos','eggs and bananas','🥚🍌']]},
     {t:'who',line:2,k:'¿Tienes hambre?',en:'Who says: “¿Tienes hambre?”',es:'¿Quién dice “¿Tienes hambre?”?',a:['Abuela'],d:['Ana','Mamá','Papá']}]},
   {id:'mascotas',title:'Pets',lines:[
-    ['Lucía','¿Tienes un animal, Pablo?'],['Pablo','Sí, tengo un perro. Me gusta mucho.'],
+    ['Lucía','¿Tienes una mascota, Pablo?'],['Pablo','Sí, tengo un perro. Me gusta mucho.'],
     ['Lucía','Yo tengo un gato. Es negro y muy bonito.'],['Pablo','¡Me gustan los gatos!']],
    qs:[
     {t:'what',line:1,en:'What pet does Pablo have?',es:'¿Qué animal tiene Pablo?',a:['un perro','a dog','🐶','perro'],
@@ -3881,26 +3885,26 @@ const ES_STORY={
      d:[['Buenos días.','Good morning.','🌅'],['Buenas noches.','Good night.','🌙'],['Mucho gusto.','Nice to meet you.','🙂'],['Gracias.','Thank you.','🙏']]}]},
   {id:'anos',title:'How old are you?',lines:[
     ['Abuelo','¿Cuántos años tienes, Sofía?'],['Sofía','Tengo ocho años. ¿Y tú, abuelo?'],
-    ['Abuelo','Yo tengo setenta años. ¡Soy muy viejo!'],['Sofía','No, abuelo. Eres muy amable.']],
+    ['Abuelo','Yo tengo setenta años. ¡Soy muy viejo!'],['Sofía','No, abuelo. ¡Eres muy rápido!']],
    qs:[
     {t:'what',line:1,en:'How old is Sofía?',es:'¿Cuántos años tiene Sofía?',a:['ocho','eight','n:8'],
      d:[['siete','seven','n:7'],['nueve','nine','n:9'],['diez','ten','n:10'],['seis','six','n:6']]},
     {t:'what',line:2,en:'How old is Grandpa?',es:'¿Cuántos años tiene el abuelo?',a:['setenta','seventy','n:70'],
      d:[['sesenta','sixty','n:60'],['ochenta','eighty','n:80'],['cincuenta','fifty','n:50'],['noventa','ninety','n:90']]},
-    {t:'who',line:3,k:'Eres muy amable',en:'Who says: “Eres muy amable”',es:'¿Quién dice “Eres muy amable”?',a:['Sofía'],d:['Abuelo','Mamá','Luis']}]},
+    {t:'who',line:3,k:'Eres muy rápido',en:'Who says: “Eres muy rápido”',es:'¿Quién dice “Eres muy rápido”?',a:['Sofía'],d:['Abuelo','Mamá','Luis']}]},
   {id:'noche',title:'Good night',lines:[
     ['Mamá','Buenas noches, Mateo. ¿Estás cansado?'],['Mateo','Sí, mamá. Y tengo sed.'],['Mamá','Aquí está la leche.'],
     ['Mateo','Gracias. Buenas noches, mamá.']],
    qs:[
-    {t:'how',line:1,en:'What does Mateo have?',es:'¿Qué tiene Mateo?',a:['Tiene sed.','He is thirsty.','💧','tengo sed'],
+    {t:'how',line:1,en:'How does Mateo feel?',es:'¿Qué tiene Mateo?',a:['Tiene sed.','He is thirsty.','💧','tengo sed'],
      d:[['Tiene hambre.','He is hungry.','🍕','tengo hambre'],['Tiene frío.','He is cold.','🥶','tengo frío'],['Tiene calor.','He is hot.','🥵','tengo calor']]},
     {t:'what',line:2,en:'What is here for Mateo?',es:'¿Qué hay aquí para Mateo?',a:['la leche','the milk','🥛','leche'],
      d:[['el pan','the bread','🍞'],['el helado','the ice cream','🍦'],['las galletas','the cookies','🍪'],['el queso','the cheese','🧀']]},
     {t:'reply',line:3,en:'What does Mateo say at the end?',es:'¿Qué dice Mateo al final?',a:['Buenas noches.','Good night.','🌙'],
      d:[['Buenos días.','Good morning.','🌅'],['Hola.','Hello.','👋'],['De nada.','You are welcome.','🙏'],['Lo siento.','I am sorry.','😢']]}]},
   {id:'biblioteca',title:'At the library',lines:[
-    ['Sofía','¡Hola, Carlos! Estás en la biblioteca.'],['Carlos','Sí, leo un libro. ¡Me gusta mucho!'],
-    ['Sofía','¿Qué animal hay en el libro?'],['Carlos','Hay un león y un oso.'],['Sofía','¡Qué bonito!']],
+    ['Sofía','¡Hola, Carlos! ¿Estás en la biblioteca?'],['Carlos','Sí, leo un libro. ¡Me gusta mucho!'],
+    ['Sofía','¿Qué animales hay en el libro?'],['Carlos','Hay un león y un oso.'],['Sofía','¡Qué bonito!']],
    qs:[
     {t:'where',line:0,en:'Where is Carlos?',es:'¿Dónde está Carlos?',a:['en la biblioteca','in the library','📚','biblioteca'],
      d:[['en la tienda','at the store','🏪'],['en el cine','at the movies','🎬'],['en el banco','at the bank','🏦'],['en el hospital','at the hospital','🏥']]},
@@ -3918,15 +3922,20 @@ Object.assign(SK,{
      {id, t, e, theme, items:[...], cap?, spell?, l1?, mix?}
    id     skill id without the prefix: unit 'house' is skill 'es_house' (esReg makes the skill when 38-skills.js has none)
    t, e   skill title and emoji;  theme  what the words have in common (for authors and tests)
-   cap    1: show the English under each picture (words whose picture alone is not enough, like greetings)
+   cap    1: show the English under each picture (words whose picture alone is not enough, like greetings); or a list of the words
+          that get the English (R-01s: weather, where only the temperature pictures need it)
+   confuse  R-01s: pairs of words never offered together in one question, because their pictures or meanings overlap (two right
+          answers by picture or by ear: hace sol / hace calor). tools/test.js scans every Spanish skill for such pairs
    spell  1: the unit has level 3 (hear it, spell it); the skill gets max 3; its words must be single a-z/ñáéíóúü words of 12 letters or fewer
    l1     N: level 1 draws only from the first N items (level 2 uses them all), for units whose later items are the harder ones (big numbers, time)
    mix    1: the unit is drawn into the es_mix "Big Review" (the first 8 units are; later units are not unless a chunk says so)
    An item is [spanish, english, picture, article, art, say]
-   spanish  the bare word, NFC, lowercase (la casa -> 'casa'); level 3 asks for exactly this
+   spanish  the bare word, NFC, lowercase (la casa -> 'casa'); level 3 asks for exactly this. A feeling shows both forms
+            ('cansado / cansada', said 'cansado, cansada'; R-01s)
    english  the gloss
    picture  emoji from tools/emoji-allow.txt, or 'c:#rrggbb' (colour swatch), 'n:12' (numeral), or 'k:3:30' (analogue clock showing 3:30)
-   article  'el' | 'la' | 'los' | 'las' | '' ; shown in front of the word in levels 1 and 2 ('la casa'), and as a clue in level 3
+   article  'el' | 'la' | 'los' | 'las' | '' ; shown in front of the word in levels 1 and 2 ('la casa'), and as a clue in level 3.
+            Every noun has one, from the first unit on (R-01s: animals, food, body and family too; 'el agua', 'la mano')
    art      optional art name for picFor(art, picture): the drawing when ART has it, else the emoji
    say      optional text to speak when it differs from the shown word
    Code reads ES_UNITS and SPN only inside functions. The level 3 stop is added to the world by id (CURRICULUM 2.3). */
@@ -3974,46 +3983,46 @@ const ES_UNITS=[
   ['diecinueve','nineteen','n:19',''],
   ['veinte','twenty','n:20','']]},
  {id:'animal',t:'Animals',e:'🐶',theme:'Animals',mix:1,items:[
-  ['perro','dog','🐶','','dog'],
-  ['gato','cat','🐱','','cat'],
-  ['pájaro','bird','🐦','','bird'],
-  ['pez','fish','🐟','','fish'],
-  ['vaca','cow','🐄','','cow'],
-  ['caballo','horse','🐴','','horse'],
-  ['cerdo','pig','🐷','','pig'],
-  ['pato','duck','🦆','','duck'],
-  ['oso','bear','🐻','','bear'],
-  ['conejo','rabbit','🐰','','rabbit'],
-  ['león','lion','🦁','','lion'],
-  ['rana','frog','🐸','','frog']]},
+  ['perro','dog','🐶','el','dog'],
+  ['gato','cat','🐱','el','cat'],
+  ['pájaro','bird','🐦','el','bird'],
+  ['pez','fish','🐟','el','fish'],
+  ['vaca','cow','🐄','la','cow'],
+  ['caballo','horse','🐴','el','horse'],
+  ['cerdo','pig','🐷','el','pig'],
+  ['pato','duck','🦆','el','duck'],
+  ['oso','bear','🐻','el','bear'],
+  ['conejo','rabbit','🐰','el','rabbit'],
+  ['león','lion','🦁','el','lion'],
+  ['rana','frog','🐸','la','frog']]},
  {id:'food',t:'Food',e:'🍎',theme:'Food',mix:1,items:[
-  ['manzana','apple','🍎','','apple'],
-  ['plátano','banana','🍌','','banana'],
-  ['leche','milk','🥛','','milk'],
-  ['pan','bread','🍞','','bread'],
-  ['agua','water','💧','','water'],
-  ['queso','cheese','🧀','','cheese'],
-  ['huevo','egg','🥚','','egg'],
-  ['helado','ice cream','🍦','','icecream'],
-  ['galleta','cookie','🍪','','cookie'],
-  ['uvas','grapes','🍇','','grapes']]},
+  ['manzana','apple','🍎','la','apple'],
+  ['plátano','banana','🍌','el','banana'],
+  ['leche','milk','🥛','la','milk'],
+  ['pan','bread','🍞','el','bread'],
+  ['agua','water','💧','el','water'],
+  ['queso','cheese','🧀','el','cheese'],
+  ['huevo','egg','🥚','el','egg'],
+  ['helado','ice cream','🍦','el','icecream'],
+  ['galleta','cookie','🍪','la','cookie'],
+  ['uvas','grapes','🍇','las','grapes']]},
  {id:'body',t:'My Body',e:'👃',theme:'The body',mix:1,items:[
-  ['ojos','eyes','👀',''],
-  ['nariz','nose','👃','','nose'],
-  ['boca','mouth','👄','','mouth'],
-  ['oreja','ear','👂','','ear'],
-  ['mano','hand','✋','','hand'],
-  ['pie','foot','🦶','','foot'],
-  ['pierna','leg','🦵',''],
-  ['diente','tooth','🦷','','tooth']]},
+  ['ojos','eyes','👀','los'],
+  ['nariz','nose','👃','la','nose'],
+  ['boca','mouth','👄','la','mouth'],
+  ['oreja','ear','👂','la','ear'],
+  ['mano','hand','✋','la','hand'],
+  ['pie','foot','🦶','el','foot'],
+  ['pierna','leg','🦵','la'],
+  ['diente','tooth','🦷','el','tooth']]},
  {id:'family',t:'Family',e:'👪',theme:'Family',mix:1,items:[
-  ['mamá','mom','👩',''],
-  ['papá','dad','👨',''],
-  ['hermano','brother','👦',''],
-  ['hermana','sister','👧',''],
-  ['abuela','grandma','👵',''],
-  ['abuelo','grandpa','👴',''],
-  ['bebé','baby','👶','']]},
+  ['mamá','mom','👩','la'],
+  ['papá','dad','👨','el'],
+  ['hermano','brother','👦','el'],
+  ['hermana','sister','👧','la'],
+  ['abuela','grandma','👵','la'],
+  ['abuelo','grandpa','👴','el'],
+  ['bebé','baby','👶','el']]},
  {id:'house',t:'House',e:'🏠',theme:'The house',spell:1,items:[
   ['casa','house','🏠','la','house'],
   ['puerta','door','🚪','la','door'],
@@ -4032,7 +4041,7 @@ const ES_UNITS=[
   ['vestido','dress','👗','el','dress'],
   ['zapatos','shoes','👟','los','shoes'],
   ['sombrero','hat','🎩','el','hat'],
-  ['chaqueta','jacket','🧥','la','coat'],
+  ['chamarra','jacket','🧥','la','coat'],
   ['calcetines','socks','🧦','los','sock'],
   ['gorra','cap','🧢','la','cap'],
   ['botas','boots','👢','las','boots'],
@@ -4047,17 +4056,18 @@ const ES_UNITS=[
   ['escuela','school','🏫','la','school'],
   ['clase','class','🔔','la','bell'],
   ['tijeras','scissors','✂','las','scissors'],
-  ['borrador','eraser','🧽','el','eraser']]},
- {id:'feel',t:'Feelings',e:'😊',theme:'Feelings',items:[
+  ['goma','eraser','🧽','la','eraser']]},
+ {id:'feel',t:'Feelings',e:'😊',theme:'Feelings (both forms: cansado for a boy, cansada for a girl)',
+  confuse:[['feliz','tranquilo / tranquila'],['feliz','emocionado / emocionada']],items:[
   ['feliz','happy','😊',''],
   ['triste','sad','😢',''],
-  ['enojado','angry','😠',''],
-  ['cansado','tired','😴',''],
-  ['asustado','scared','😨',''],
-  ['enfermo','sick','🤒',''],
-  ['emocionado','excited','🥳',''],
-  ['tranquilo','calm','😌',''],
-  ['sorprendido','surprised','😮','']]},
+  ['enojado / enojada','angry','😠','','','enojado, enojada'],
+  ['cansado / cansada','tired','😴','','','cansado, cansada'],
+  ['asustado / asustada','scared','😨','','','asustado, asustada'],
+  ['enfermo / enferma','sick','🤒','','','enfermo, enferma'],
+  ['emocionado / emocionada','excited','🥳','','','emocionado, emocionada'],
+  ['tranquilo / tranquila','calm','😌','','','tranquilo, tranquila'],
+  ['sorprendido / sorprendida','surprised','😮','','','sorprendido, sorprendida']]},
  {id:'days',t:'Days of the Week',e:'📅',theme:'Days of the week, today, tomorrow, yesterday',cap:1,items:[
   ['lunes','Monday','📅','el'],
   ['martes','Tuesday','📅','el'],
@@ -4086,7 +4096,8 @@ const ES_UNITS=[
   ['verano','summer','🏖','el'],
   ['otoño','fall','🍂','el'],
   ['invierno','winter','⛄','el','snowman']]},
- {id:'weather',t:'Weather',e:'☀',theme:'Weather',items:[
+ {id:'weather',t:'Weather',e:'☀',theme:'Weather',cap:['hace calor','hace frío','hace fresco'],
+  confuse:[['hace sol','hace calor'],['nieva','hace frío'],['hace fresco','hace viento']],items:[
   ['hace sol','it is sunny','☀','','sun'],
   ['hace calor','it is hot','🥵',''],
   ['hace frío','it is cold','🥶',''],
@@ -4149,14 +4160,14 @@ const ES_UNITS=[
   ['calle','street','🛣','la','road'],
   ['banco','bank','🏦','el'],
   ['cine','movie theater','🎬','el']]},
- {id:'trans',t:'Transport',e:'🚌',theme:'Ways to travel',items:[
+ {id:'trans',t:'Transport',e:'🚌',theme:'Ways to travel',confuse:[['camión','autobús']],items:[
   ['carro','car','🚗','el','car'],
   ['autobús','bus','🚌','el','bus'],
   ['tren','train','🚂','el','train'],
   ['avión','airplane','✈','el','plane'],
   ['bicicleta','bicycle','🚲','la','bike'],
   ['barco','ship','🚢','el','ship'],
-  ['camión','truck','🚚','el','truck'],
+  ['camión','truck (in Mexico, also a bus)','🚚','el','truck'],
   ['moto','motorcycle','🏍','la','motorcycle'],
   ['helicóptero','helicopter','🚁','el','helicopter'],
   ['cohete','rocket','🚀','el','rocket']]},
@@ -8227,4 +8238,4 @@ var BTW = {
     'glean parts strap traps tea eat ate nip pin top pot opt tar art rat now own won tub but bus iced mono low flea',
 };
 
-var DATA_VER='v138'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var DATA_VER='v139'; // last line: the whole file ran (checked by dataReady() before the app starts)

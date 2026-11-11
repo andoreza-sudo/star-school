@@ -9,10 +9,14 @@
                                                 consonant). Level 1 of es_art uses only the nouns ending in -o or -a. Every noun has one article
    ser      {1:[...],2:[...],3:[...]}           [subject, person, rest, english]; person 1 yo, 2 tú, 3 él/ella/a noun, 6 they. Level 1 ser, 2 estar,
                                                 3 tener. A subject fixes the verb form, so only one form fits
-   likes    [article, noun, plural, picture, only]  only 'pl' (grapes: only the plural exists) or 'sg' (milk) or ''
+   likes    [article, noun, plural, picture, only]  only 'pl' (grapes: only the plural exists) or 'sg' (milk) or 'an' (an animal: liked in the
+                                                plural only, "Me gustan los cerdos"; "Me gusta el cerdo" means "I like pork", R-01s) or ''
    sent     {1:[...],2:[...]}                   [sentence, classes, english]; classes per word: A article, D "mi", B noun that can be the subject,
                                                 S pronoun, V verb, J adjective, P preposition, L place noun. The first word is capitalised and the
-                                                last carries the dot, so the tiles have one right order (tools/test.js checks every permutation) */
+                                                last carries the dot, so the tiles have one right order (tools/test.js checks every permutation). R-01s: the tiles
+                                                show the words in lower case and the dot after the last slot; el / la agree with
+                                                their noun, so the order is still one. Level 1 uses ser with traits (alta,
+                                                inteligente), never with a feeling, which es_ser 2 teaches with estar */
 const ES_GRAM={
  phrases:[
   ['¿Cómo te llamas?','What is your name?','Ask this to find out who a new friend is.'],
@@ -57,10 +61,10 @@ const ES_GRAM={
   ['casa','house','🏠','la','casas'],['mesa','table','🍽','la','mesas'],['silla','chair','🪑','la','sillas'],['cama','bed','🛏','la','camas'],
   ['puerta','door','🚪','la','puertas'],['ventana','window','🪟','la','ventanas'],['manzana','apple','🍎','la','manzanas'],
   ['galleta','cookie','🍪','la','galletas'],['rana','frog','🐸','la','ranas'],['vaca','cow','🐄','la','vacas'],['mochila','backpack','🎒','la','mochilas'],
-  ['camisa','shirt','👕','la','camisas'],['chaqueta','jacket','🧥','la','chaquetas'],['bicicleta','bicycle','🚲','la','bicicletas'],
+  ['camisa','shirt','👕','la','camisas'],['chamarra','jacket','🧥','la','chamarras'],['bicicleta','bicycle','🚲','la','bicicletas'],
   ['escuela','school','🏫','la','escuelas'],['tienda','store','🏪','la','tiendas'],['playa','beach','🏖','la','playas'],
   ['abuela','grandma','👵','la','abuelas'],['hermana','sister','👧','la','hermanas'],['oreja','ear','👂','la','orejas'],['pierna','leg','🦵','la','piernas'],
-  ['papel','paper','📄','el','papeles'],['lápiz','pencil','✏','el','lápices'],['borrador','eraser','🧽','el','borradores'],['tren','train','🚂','el','trenes'],
+  ['papel','paper','📄','el','papeles'],['lápiz','pencil','✏','el','lápices'],['goma','eraser','🧽','la','gomas'],['tren','train','🚂','el','trenes'],
   ['avión','airplane','✈','el','aviones'],['camión','truck','🚚','el','camiones'],['autobús','bus','🚌','el','autobuses'],
   ['jardín','garden','🌻','el','jardines'],['hospital','hospital','🏥','el','hospitales'],['león','lion','🦁','el','leones'],
   ['pez','fish','🐟','el','peces'],['nariz','nose','👃','la','narices'],['diente','tooth','🦷','el','dientes'],['cohete','rocket','🚀','el','cohetes']],
@@ -84,15 +88,15 @@ const ES_GRAM={
  likes:[
   ['la','manzana','manzanas','🍎',''],['el','plátano','plátanos','🍌',''],['la','galleta','galletas','🍪',''],['el','helado','helados','🍦',''],
   ['el','queso','quesos','🧀',''],['el','huevo','huevos','🥚',''],['el','pan','panes','🍞',''],['la','leche','','🥛','sg'],
-  ['el','perro','perros','🐶',''],['el','gato','gatos','🐱',''],['el','pájaro','pájaros','🐦',''],['el','pez','peces','🐟',''],
-  ['la','vaca','vacas','🐄',''],['el','caballo','caballos','🐴',''],['el','cerdo','cerdos','🐷',''],['el','pato','patos','🦆',''],
-  ['el','oso','osos','🐻',''],['el','conejo','conejos','🐰',''],['el','león','leones','🦁',''],['la','rana','ranas','🐸',''],
+  ['el','perro','perros','🐶','an'],['el','gato','gatos','🐱','an'],['el','pájaro','pájaros','🐦','an'],['el','pez','peces','🐟','an'],
+  ['la','vaca','vacas','🐄','an'],['el','caballo','caballos','🐴','an'],['el','cerdo','cerdos','🐷','an'],['el','pato','patos','🦆','an'],
+  ['el','oso','osos','🐻','an'],['el','conejo','conejos','🐰','an'],['el','león','leones','🦁','an'],['la','rana','ranas','🐸','an'],
   ['las','uvas','uvas','🍇','pl']],
  sent:{
   1:[['El gato es negro.','A B V J','The cat is black.'],['La casa es blanca.','A B V J','The house is white.'],['El perro es grande.','A B V J','The dog is big.'],
      ['La mesa es pequeña.','A B V J','The table is small.'],['Los zapatos son rojos.','A B V J','The shoes are red.'],['Las botas son negras.','A B V J','The boots are black.'],
      ['La camisa es azul.','A B V J','The shirt is blue.'],['El libro es nuevo.','A B V J','The book is new.'],['Mi mamá es alta.','D B V J','My mom is tall.'],
-     ['Mi perro es rápido.','D B V J','My dog is fast.'],['Ella es feliz.','S V J','She is happy.'],['Yo soy feliz.','S V J','I am happy.'],
+     ['Mi perro es rápido.','D B V J','My dog is fast.'],['Ella es alta.','S V J','She is tall.'],['Yo soy inteligente.','S V J','I am smart.'],
      ['Tú eres amable.','S V J','You are kind.'],['La rana es verde.','A B V J','The frog is green.'],['La bicicleta es roja.','A B V J','The bike is red.'],
      ['El sombrero es amarillo.','A B V J','The hat is yellow.'],['La silla es vieja.','A B V J','The chair is old.'],['El conejo es pequeño.','A B V J','The rabbit is small.'],
      ['El carro es nuevo.','A B V J','The car is new.'],['La leche es blanca.','A B V J','The milk is white.']],

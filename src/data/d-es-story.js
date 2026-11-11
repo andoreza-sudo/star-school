@@ -16,7 +16,7 @@
      who:  `k` is the exact phrase quoted in the question; `a` is the name of the speaker of `line`, and the other names are not
    Every question has one right answer, found in the line it points to. Hints are made in code and point at the line. */
 const ES_STORY={
- newWords:['dice','quién','quiero','quieres','quiere','aquí','también','con','tu','para','tiempo','color','animal','animales','al','final','cansada','asustada'],
+ newWords:['dice','quién','quiero','quieres','quiere','aquí','también','con','tu','para','tiempo','color','animal','animales','al','final','mascota'],
  people:{'Ana':'👧','Sofía':'👧','Lucía':'👧','Luis':'👦','Carlos':'👦','Mateo':'👦','Pablo':'👦','Mamá':'👩','Papá':'👨','Abuela':'👵','Abuelo':'👴','La maestra':'👩'},
  dialogues:[
   {id:'hola',title:'Hello, new friend',lines:[
@@ -32,9 +32,9 @@ const ES_STORY={
     ['La maestra','Buenos días, Sofía.'],['Sofía','Buenos días, maestra.'],['La maestra','¿Cómo estás hoy?'],['Sofía','Estoy feliz. Hoy hace sol.']],
    qs:[
     {t:'how',line:3,en:'How is Sofía today?',es:'¿Cómo está Sofía hoy?',a:['feliz','happy','😊'],
-     d:[['triste','sad','😢'],['enojada','angry','😠'],['tranquila','calm','😌'],['cansada','tired','😴']]},
+     d:[['triste','sad','😢'],['enojada','angry','😠'],['asustada','scared','😨'],['cansada','tired','😴']]},
     {t:'what',line:3,en:'What is the weather today?',es:'¿Qué tiempo hace hoy?',a:['Hace sol.','It is sunny.','☀'],
-     d:[['Llueve.','It is raining.','☔'],['Nieva.','It is snowing.','❄'],['Hace viento.','It is windy.','💨'],['Hace frío.','It is cold.','🥶']]},
+     d:[['Llueve.','It is raining.','☔'],['Nieva.','It is snowing.','❄'],['Hace viento.','It is windy.','💨'],['Está nublado.','It is cloudy.','☁']]},
     {t:'who',line:2,k:'¿Cómo estás hoy?',en:'Who says: “¿Cómo estás hoy?”',es:'¿Quién dice “¿Cómo estás hoy?”?',a:['La maestra'],d:['Sofía','Ana','Carlos']}]},
   {id:'mercado',title:'At the market',lines:[
     ['Mamá','¡Qué grande es el mercado! ¿Qué quieres, Luis?'],['Luis','Quiero manzanas y queso, por favor.'],
@@ -55,7 +55,7 @@ const ES_STORY={
     {t:'who',line:1,k:'¿Está en la mesa?',en:'Who says: “¿Está en la mesa?”',es:'¿Quién dice “¿Está en la mesa?”?',a:['Lucía'],d:['Carlos','Mateo','Sofía']},
     {t:'reply',line:4,en:'What does Carlos say at the end?',es:'¿Qué dice Carlos al final?',a:['Gracias.','Thank you.','🙏'],
      d:[['Adiós.','Goodbye.','🚶'],['Lo siento.','I am sorry.','😢'],['No entiendo.','I do not understand.','❓'],['Hola.','Hello.','👋']]}]},
-  {id:'parque',title:'At the park',lines:[
+  {id:'parque',title:'A phone call from the park',lines:[
     ['Mateo','¡Hola, Pablo! ¿Dónde estás?'],['Pablo','Estoy en el parque con mi perro.'],['Mateo','¿Es grande tu perro?'],
     ['Pablo','No, es pequeño. Corre mucho.'],['Mateo','¡Yo también quiero jugar!']],
    qs:[
@@ -65,16 +65,16 @@ const ES_STORY={
      d:[['grande','big','🐘'],['lento','slow','🐢'],['viejo','old','👴'],['sucio','dirty','🗑']]},
     {t:'who',line:4,k:'quiero jugar',en:'Who says: “Yo también quiero jugar”',es:'¿Quién dice “Yo también quiero jugar”?',a:['Mateo'],d:['Pablo','Luis','Ana']}]},
   {id:'abuela',title:'At grandma’s house',lines:[
-    ['Abuela','Hola, Ana. ¿Cómo estás?'],['Ana','Hola, abuela. Estoy cansada. Tengo sed.'],['Abuela','Aquí está agua. ¿Tienes hambre?'],
+    ['Abuela','Hola, Ana. ¿Cómo estás?'],['Ana','Hola, abuela. Estoy cansada. Tengo sed.'],['Abuela','Aquí tienes agua. ¿Tienes hambre?'],
     ['Ana','Sí. Quiero pan y queso, por favor.']],
    qs:[
     {t:'how',line:1,en:'How is Ana?',es:'¿Cómo está Ana?',a:['cansada','tired','😴'],
-     d:[['feliz','happy','😊'],['triste','sad','😢'],['enojada','angry','😠'],['tranquila','calm','😌']]},
+     d:[['feliz','happy','😊'],['triste','sad','😢'],['enojada','angry','😠'],['asustada','scared','😨']]},
     {t:'what',line:3,en:'What does Ana want to eat?',es:'¿Qué quiere comer Ana?',a:['pan y queso','bread and cheese','🍞🧀'],
      d:[['galletas y leche','cookies and milk','🍪🥛'],['manzanas y uvas','apples and grapes','🍎🍇'],['huevos y plátanos','eggs and bananas','🥚🍌']]},
     {t:'who',line:2,k:'¿Tienes hambre?',en:'Who says: “¿Tienes hambre?”',es:'¿Quién dice “¿Tienes hambre?”?',a:['Abuela'],d:['Ana','Mamá','Papá']}]},
   {id:'mascotas',title:'Pets',lines:[
-    ['Lucía','¿Tienes un animal, Pablo?'],['Pablo','Sí, tengo un perro. Me gusta mucho.'],
+    ['Lucía','¿Tienes una mascota, Pablo?'],['Pablo','Sí, tengo un perro. Me gusta mucho.'],
     ['Lucía','Yo tengo un gato. Es negro y muy bonito.'],['Pablo','¡Me gustan los gatos!']],
    qs:[
     {t:'what',line:1,en:'What pet does Pablo have?',es:'¿Qué animal tiene Pablo?',a:['un perro','a dog','🐶','perro'],
@@ -103,26 +103,26 @@ const ES_STORY={
      d:[['Buenos días.','Good morning.','🌅'],['Buenas noches.','Good night.','🌙'],['Mucho gusto.','Nice to meet you.','🙂'],['Gracias.','Thank you.','🙏']]}]},
   {id:'anos',title:'How old are you?',lines:[
     ['Abuelo','¿Cuántos años tienes, Sofía?'],['Sofía','Tengo ocho años. ¿Y tú, abuelo?'],
-    ['Abuelo','Yo tengo setenta años. ¡Soy muy viejo!'],['Sofía','No, abuelo. Eres muy amable.']],
+    ['Abuelo','Yo tengo setenta años. ¡Soy muy viejo!'],['Sofía','No, abuelo. ¡Eres muy rápido!']],
    qs:[
     {t:'what',line:1,en:'How old is Sofía?',es:'¿Cuántos años tiene Sofía?',a:['ocho','eight','n:8'],
      d:[['siete','seven','n:7'],['nueve','nine','n:9'],['diez','ten','n:10'],['seis','six','n:6']]},
     {t:'what',line:2,en:'How old is Grandpa?',es:'¿Cuántos años tiene el abuelo?',a:['setenta','seventy','n:70'],
      d:[['sesenta','sixty','n:60'],['ochenta','eighty','n:80'],['cincuenta','fifty','n:50'],['noventa','ninety','n:90']]},
-    {t:'who',line:3,k:'Eres muy amable',en:'Who says: “Eres muy amable”',es:'¿Quién dice “Eres muy amable”?',a:['Sofía'],d:['Abuelo','Mamá','Luis']}]},
+    {t:'who',line:3,k:'Eres muy rápido',en:'Who says: “Eres muy rápido”',es:'¿Quién dice “Eres muy rápido”?',a:['Sofía'],d:['Abuelo','Mamá','Luis']}]},
   {id:'noche',title:'Good night',lines:[
     ['Mamá','Buenas noches, Mateo. ¿Estás cansado?'],['Mateo','Sí, mamá. Y tengo sed.'],['Mamá','Aquí está la leche.'],
     ['Mateo','Gracias. Buenas noches, mamá.']],
    qs:[
-    {t:'how',line:1,en:'What does Mateo have?',es:'¿Qué tiene Mateo?',a:['Tiene sed.','He is thirsty.','💧','tengo sed'],
+    {t:'how',line:1,en:'How does Mateo feel?',es:'¿Qué tiene Mateo?',a:['Tiene sed.','He is thirsty.','💧','tengo sed'],
      d:[['Tiene hambre.','He is hungry.','🍕','tengo hambre'],['Tiene frío.','He is cold.','🥶','tengo frío'],['Tiene calor.','He is hot.','🥵','tengo calor']]},
     {t:'what',line:2,en:'What is here for Mateo?',es:'¿Qué hay aquí para Mateo?',a:['la leche','the milk','🥛','leche'],
      d:[['el pan','the bread','🍞'],['el helado','the ice cream','🍦'],['las galletas','the cookies','🍪'],['el queso','the cheese','🧀']]},
     {t:'reply',line:3,en:'What does Mateo say at the end?',es:'¿Qué dice Mateo al final?',a:['Buenas noches.','Good night.','🌙'],
      d:[['Buenos días.','Good morning.','🌅'],['Hola.','Hello.','👋'],['De nada.','You are welcome.','🙏'],['Lo siento.','I am sorry.','😢']]}]},
   {id:'biblioteca',title:'At the library',lines:[
-    ['Sofía','¡Hola, Carlos! Estás en la biblioteca.'],['Carlos','Sí, leo un libro. ¡Me gusta mucho!'],
-    ['Sofía','¿Qué animal hay en el libro?'],['Carlos','Hay un león y un oso.'],['Sofía','¡Qué bonito!']],
+    ['Sofía','¡Hola, Carlos! ¿Estás en la biblioteca?'],['Carlos','Sí, leo un libro. ¡Me gusta mucho!'],
+    ['Sofía','¿Qué animales hay en el libro?'],['Carlos','Hay un león y un oso.'],['Sofía','¡Qué bonito!']],
    qs:[
     {t:'where',line:0,en:'Where is Carlos?',es:'¿Dónde está Carlos?',a:['en la biblioteca','in the library','📚','biblioteca'],
      d:[['en la tienda','at the store','🏪'],['en el cine','at the movies','🎬'],['en el banco','at the bank','🏦'],['en el hospital','at the hospital','🏥']]},

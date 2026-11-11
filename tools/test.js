@@ -52,6 +52,13 @@ const KNOWN={ // check name -> exact problem strings that are known content issu
     'es_verb L2: no say (choice)',
     'es_adj L2: no say (choice)'
   ],
+  // R-01s: left for later chunks (docs/reviews/R-01-spanish.md, logged in PROGRESS.md): days and months level 1 show one calendar picture
+  // for every day and month (Must 4, M), and a "who" answer at story level 2 can show the same face with a different name under it (Should 16, M)
+  'Spanish review fixes R-01s':[
+    'es_days L1: two choices share a picture',
+    'es_months L1: two choices share a picture',
+    'es_story L2: two choices share a picture'
+  ],
 };
 
 // ---- fake browser so the source can be evaluated in Node ----
@@ -1555,6 +1562,7 @@ run('review: migration 5 keeps progress and shrinks the save, exact rebuilds, 60
       // a stored question may hold an emoji where today's rebuild holds a drawing (P4-13): compare with the picture blanked out
       const normPic=h=>String(h).replace(/<svg class="art".*?<\/svg>/g,'@').replace(/(<div class="emo">)[^<]*(<\/div>)/g,'$1@$2')
         .replace(/(<div class="emo"><span>)[^<]*(<\/span>)/g,'$1@$2'); // P4-14: Spanish pictures sit in a span
+      const noArt=h=>String(h).replace(/(^|[“">])(el|la|los|las) (?=[a-zñáéíóúü])/g,'$1');
       // every migrated item with a seed rebuilds the exact stored question; the rest give a question of the same skill and level
       for(const it of REV.get()){
         const o=before.prog[it.sk]&&Object.values(before.prog[it.sk].miss).find(m=>m.q&&String(m.q.label).slice(0,60)===it.label);
@@ -1564,12 +1572,14 @@ run('review: migration 5 keeps progress and shrinks the save, exact rebuilds, 60
         if(!q||q.sk!==it.sk||q.lv!==it.lv||q.rvk!==revKey(it))bad(name+': revQ '+revKey(it));
         // R-01m changed sub 2 (even facts) and story 1 (new kinds, a picture) on purpose: their stored seeds now give another question,
         // and revQ falls back to a fresh question of the same skill and level (checked just above), as for any changed generator
-        else if(o.q.seed!=null&&!['sub|2','story|1'].includes(it.sk+'|'+it.lv)&&(normPic(q.html)!==normPic(o.q.html)||String(q.ans)!==String(o.q.ans)||q.label!==o.q.label))bad(name+': not the same question '+revKey(it));
+        // R-01s: a Spanish noun of the first units now has el / la in front: the same question with the article (taken off both sides)
+        else if(o.q.seed!=null&&!['sub|2','story|1'].includes(it.sk+'|'+it.lv)&&(noArt(normPic(q.html))!==noArt(normPic(o.q.html))||noArt(q.ans)!==noArt(o.q.ans)||noArt(q.label)!==noArt(o.q.label)))bad(name+': not the same question '+revKey(it));
         else if(o.q.seed==null&&!('seed' in it))bad(name+': seed search did not run for '+revKey(it));
       }
       if(name=='tricky'){
         // old items without a seed: a seed with the same label is found and stored, or the item stays and gets a fresh question
-        const ns=REV.get().filter(it=>!Object.values(before.prog[it.sk].miss).find(m=>m.q&&m.q.label===it.label&&m.q.seed!=null));
+        // R-01s: a Spanish item that took its new label with el / la (revQ) is still the seeded item it was
+        const ns=REV.get().filter(it=>!Object.values(before.prog[it.sk].miss).find(m=>m.q&&noArt(m.q.label)===noArt(it.label)&&m.q.seed!=null));
         info.noseed=ns.filter(it=>Number.isInteger(it.seed)).length+' of '+ns.length+' unseeded found a seed';
         if(ns.length!==5||ns.filter(it=>Number.isInteger(it.seed)).length<3)bad('tricky: unseeded items '+JSON.stringify(ns)); // 2 in midway's old label format, 3 not
       }
@@ -10030,7 +10040,10 @@ run('Spanish framework P2-30',()=>{
     for(const id of Object.keys(SK).filter(k=>/^es_(greet|color|num|teen|animal|food|body|family|mix)$/.test(k)))for(let lv=1;lv<=2;lv++)for(let s=1;s<=150;s++)all.push(JSON.stringify(genQ(id,lv,s)));
     const h=require('crypto').createHash('md5').update(all.join('\n')).digest('hex');
     Object.assign(ART,artKeep);
-    if(h!=='85968a5ca262a225f92f3a7354d2277e'||all.length!==2700)bad('old Spanish stops changed by seed: '+h+' ('+all.length+' questions)');
+    // R-01s (v138) changed these old stops on purpose: el / la in front of the nouns of animal, food, body and family (review Should 8)
+    // and the level 1 and 2 hints that gave the answer away (Should 9). Stop ids, levels, items and choices per seed are unchanged:
+    // "Spanish review fixes R-01s" undoes both changes in memory and gets the old hash 85968a5ca262a225f92f3a7354d2277e back.
+    if(h!=='c2834d47005f792ed2a972866ad54259'||all.length!==2700)bad('old Spanish stops changed by seed: '+h+' ('+all.length+' questions)');
     for(const u of ES_UNITS)if(u.spell&&!NODES.es.some(x=>x.sk==='es_'+u.id&&x.lv===3))bad('level 3 is on in shipped unit '+u.id+' but no world has its stop');
     // ---- voice fallback: the mode function, late voices, and say() staying silent
     const V=(l)=>({lang:l});
@@ -10511,9 +10524,11 @@ run('Spanish La Casa P2-31',()=>{
   const errs=[],bad=m=>{if(errs.length<40&&!errs.includes(m))errs.push(m)};
   // the known gender of every noun (Latin American Spanish); feelings are adjectives with no article
   const GEN={house:{casa:'la',puerta:'la',ventana:'la',mesa:'la',silla:'la',cama:'la',cocina:'la',baño:'el',jardín:'el',lámpara:'la',sala:'la'},
-    clothes:{camisa:'la',pantalones:'los',vestido:'el',zapatos:'los',sombrero:'el',chaqueta:'la',calcetines:'los',gorra:'la',botas:'las',corbata:'la'},
-    school:{libro:'el',lápiz:'el',mochila:'la',papel:'el',maestra:'la',maestro:'el',escuela:'la',clase:'la',tijeras:'las',borrador:'el'},
-    feel:{feliz:'',triste:'',enojado:'',cansado:'',asustado:'',enfermo:'',emocionado:'',tranquilo:'',sorprendido:''}};
+    // R-01s: Mexican words (la chamarra for chaqueta, la goma for el borrador) and both forms of a feeling ("cansado / cansada")
+    clothes:{camisa:'la',pantalones:'los',vestido:'el',zapatos:'los',sombrero:'el',chamarra:'la',calcetines:'los',gorra:'la',botas:'las',corbata:'la'},
+    school:{libro:'el',lápiz:'el',mochila:'la',papel:'el',maestra:'la',maestro:'el',escuela:'la',clase:'la',tijeras:'las',goma:'la'},
+    feel:{feliz:'',triste:'','enojado / enojada':'','cansado / cansada':'','asustado / asustada':'','enfermo / enferma':'','emocionado / emocionada':'',
+      'tranquilo / tranquila':'','sorprendido / sorprendida':''}};
   const COUNT={house:11,clothes:10,school:10,feel:9};
   const body=function(GEN,COUNT){
     const N=3000;
@@ -10532,7 +10547,10 @@ run('Spanish La Casa P2-31',()=>{
       if(u.items.map(i=>i[0]).sort().join()!==Object.keys(want).sort().join())bad(id+': word list differs from the spec list');
       for(const it of u.items){
         const w=id+' '+it[0]+': ';
-        if(it[0]!==it[0].normalize('NFC')||it[0]!==it[0].toLowerCase()||/\s/.test(it[0]))bad(w+'not a bare lowercase NFC word');
+        // R-01s: a feeling shows both forms, "cansado / cansada" (and says "cansado, cansada"); every other word is one bare word
+        const both=id==='feel'&&/^([a-z]+o) \/ ([a-z]+a)$/.exec(it[0]);
+        if(both&&(both[1].slice(0,-1)!==both[2].slice(0,-1)||it[5]!==both[1]+', '+both[2]))bad(w+'the two forms do not match or are not said');
+        if(it[0]!==it[0].normalize('NFC')||it[0]!==it[0].toLowerCase()||/\s/.test(it[0])&&!both)bad(w+'not a bare lowercase NFC word');
         if(it[3]!==want[it[0]])bad(w+'article '+JSON.stringify(it[3])+' but the noun is '+JSON.stringify(want[it[0]]));
         const pic=it[2].replace(/️/g,'');
         if(!allow.has(pic))bad(w+'picture '+it[2]+' not in emoji-allow.txt');
@@ -10567,7 +10585,7 @@ run('Spanish La Casa P2-31',()=>{
             if(q.kind!=='choice')bad(id+' L'+lv+' kind');
             const cs=q.choices.map(c=>c.v);
             if(new Set(cs).size!==cs.length||!cs.includes(q.ans))bad(id+' L'+lv+' choices');
-            if(!/^(el |la |los |las )?[a-zñáéíóúü]+$/.test(q.ans))bad(id+' L'+lv+' ans '+q.ans);
+            if(!/^(el |la |los |las )?[a-zñáéíóúü]+( \/ [a-zñáéíóúü]+)?$/.test(q.ans))bad(id+' L'+lv+' ans '+q.ans); // R-01s: "cansado / cansada"
           }
         }
         if(lv===3&&seenWords.size!==u.items.length)bad(id+' L3 did not reach every word: '+seenWords.size+'/'+u.items.length);
@@ -10593,7 +10611,10 @@ run('Spanish La Casa P2-31',()=>{
     for(const id of ['greet','color','num','teen','animal','food','body','family','mix'])for(let lv=1;lv<=2;lv++)for(let s=1;s<=150;s++)old.push(JSON.stringify(genQ('es_'+id,lv,s)));
     const hash=require('crypto').createHash('md5').update(Object.keys(SK).filter(k=>/^es_(greet|color|num|teen|animal|food|body|family|mix)$/.test(k)).flatMap(id=>{const o=[];for(let lv=1;lv<=2;lv++)for(let s=1;s<=150;s++)o.push(JSON.stringify(genQ(id,lv,s)));return o}).join('\n')).digest('hex');
     Object.assign(ART,artKeep);
-    if(hash!=='85968a5ca262a225f92f3a7354d2277e'||old.length!==2700)bad('old Spanish stops changed by seed: '+hash);
+    // R-01s (v138) changed these old stops on purpose: el / la in front of the nouns of animal, food, body and family (review Should 8)
+    // and the level 1 and 2 hints that gave the answer away (Should 9). Stop ids, levels, items and choices per seed are unchanged:
+    // "Spanish review fixes R-01s" undoes both changes in memory and gets the old hash 85968a5ca262a225f92f3a7354d2277e back.
+    if(hash!=='c2834d47005f792ed2a972866ad54259'||old.length!==2700)bad('old Spanish stops changed by seed: '+hash);
     // ---- saves: no star moves, nothing re-locks, a child who finished e_repaso sees La Casa open
     const store={};
     global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
@@ -10826,7 +10847,10 @@ run('Spanish La Ciudad P2-33',()=>{
     for(const id of ['greet','color','num','teen','animal','food','body','family','mix'].map(x=>'es_'+x))for(let lv=1;lv<=2;lv++)for(let s=1;s<=150;s++)olds.push(JSON.stringify(genQ(id,lv,s)));
     const h=require('crypto').createHash('md5').update(olds.join('\n')).digest('hex');
     Object.assign(ART,artKeep);
-    if(h!=='85968a5ca262a225f92f3a7354d2277e'||olds.length!==2700)bad('old Spanish stops changed by seed: '+h);
+    // R-01s (v138) changed these old stops on purpose: el / la in front of the nouns of animal, food, body and family (review Should 8)
+    // and the level 1 and 2 hints that gave the answer away (Should 9). Stop ids, levels, items and choices per seed are unchanged:
+    // "Spanish review fixes R-01s" undoes both changes in memory and gets the old hash 85968a5ca262a225f92f3a7354d2277e back.
+    if(h!=='c2834d47005f792ed2a972866ad54259'||olds.length!==2700)bad('old Spanish stops changed by seed: '+h);
     // world and stop order by id
     const wi=PATHS.es.worlds.map(w=>w.id),ci=wi.indexOf('e_ciudad');
     if(ci<0)bad('no e_ciudad');
@@ -12452,8 +12476,9 @@ run('Spanish Las Frases P2-34',()=>{
   const body=function(){
     // genders from an explicit list (the data must agree with it, word for word)
     const G2={};
-    ['el:perro gato pato oso conejo cerdo caballo pájaro libro vestido sombrero zapato huevo queso helado plátano barco carro abuelo hermano papel lápiz borrador tren avión camión autobús jardín hospital león pez diente cohete',
-     'la:casa mesa silla cama puerta ventana manzana galleta rana vaca mochila camisa chaqueta bicicleta escuela tienda playa abuela hermana oreja pierna nariz']
+    // R-01s: la chamarra and la goma (the Mexican words) for la chaqueta and el borrador
+    ['el:perro gato pato oso conejo cerdo caballo pájaro libro vestido sombrero zapato huevo queso helado plátano barco carro abuelo hermano papel lápiz tren avión camión autobús jardín hospital león pez diente cohete',
+     'la:casa mesa silla cama puerta ventana manzana galleta rana vaca mochila camisa chamarra bicicleta escuela tienda playa abuela hermana oreja pierna nariz goma']
       .forEach(s=>{const[a,ws]=s.split(':');ws.split(' ').forEach(w=>{G2[w]=a})});
     const LIKE_GEN={pan:'el',leche:'la',uvas:'las'}; // nouns only the me-gusta list has
     const plural=w=>{if(/[aeiou]$/.test(w))return w+'s';if(/z$/.test(w))return w.slice(0,-1)+'ces';
@@ -12538,11 +12563,14 @@ run('Spanish Las Frases P2-34',()=>{
       if(!PAT[lv].includes(it[1]))bad(w+'pattern '+it[1]+' is not a pattern of the level');
       if(new Set(ws.map(x=>x.toLowerCase())).size!==ws.length&&false)bad(w);
       const valid=new Set();
+      // R-01s: the tiles are lower case and the dot is not a tile, so nothing pins the first or last tile; an article (A) must agree
+      // with the noun after it, which keeps one order where a sentence has two articles
+      const tl=esTiles(it[0]);
       for(const p of perms(ws.map((x,i)=>i))){
-        if(p[0]!==0||p[p.length-1]!==ws.length-1)continue; // the capital tile starts it, the dot tile ends it
         if(!PAT[lv].includes(p.map(i=>cl[i]).join(' ')))continue;
-        valid.add(p.map(i=>ws[i]).join(' '));}
-      if(valid.size!==1||!valid.has(it[0]))bad(w+valid.size+' valid orders '+[...valid].join(' / '));
+        if(p.some((i,k)=>cl[i]==='A'&&SG[tl[p[k+1]].toLowerCase()]!==tl[i]))continue;
+        valid.add(p.map(i=>tl[i]).join(' '));}
+      if(valid.size!==1||!valid.has(tl.join(' ')))bad(w+valid.size+' valid orders '+[...valid].join(' / '));
       // agreement inside the stored order
       ws.forEach((x,i)=>{const lo=x.toLowerCase().replace('.','');
         if(cl[i]==='A'||cl[i]==='D'){const nx=ws[i+1].toLowerCase().replace('.','');
@@ -12569,7 +12597,9 @@ run('Spanish Las Frases P2-34',()=>{
         if(id==='es_sent'){
           if(q.kind!=='order')bad(key+': kind');
           else{if(q.items.length!==q.ans.length)bad(key+': distractor tiles');
-            const ws=G.sent[lv].find(x=>x[0]===q.ans.join(' '));if(!ws)bad(key+': answer is not a stored sentence '+q.ans.join(' '));else hit[key].add(ws[0]);
+            // R-01s: the tiles are the stored sentence in lower case (a name keeps its capital) without the dot; q.end is the dot
+            const ws=G.sent[lv].find(x=>x[0]===q.after);if(!ws||esTiles(ws[0]).join(' ')!==q.ans.join(' '))bad(key+': answer is not a stored sentence '+q.ans.join(' '));else hit[key].add(ws[0]);
+            if(q.end!=='.'||q.ans.some((t,i)=>/\./.test(t)||/^\p{Lu}/u.test(t)&&!ES_STORY.people[t]))bad(key+': a tile with the dot or a capital');
             if(q.items.every((t,i)=>t.v===q.ans[i])&&q.ans.length>3&&s<50)bad(key+': tiles handed over in order');
             if(!q.html.includes('“'+(ws?ws[2]:'?')+'”'))bad(key+': english prompt');}
           continue}
@@ -12634,14 +12664,19 @@ run('Spanish Las Frases P2-34',()=>{
     for(const k in want)if(k!=='es_phrase2'&&k!=='es_gusta1'&&k!=='es_art2'&&hit[k].size<want[k])bad(k+': only '+hit[k].size+' of '+want[k]+' items asked in 3000 seeds');
     if(hit.es_phrase2.size<12)bad('es_phrase2: only '+hit.es_phrase2.size+' question and reply pairs asked');
     if(hit.es_art2.size<G.nouns.length)bad('es_art2: only '+hit.es_art2.size+' articles or plurals asked');
-    if(hit.es_gusta1.size<G.likes.filter(l=>l[4]!=='pl').length*2-4)bad('es_gusta1: only '+hit.es_gusta1.size+' sentences asked');
+    // R-01s: animals ('an') are liked in the plural only, so level 1 asks the food items
+    if(hit.es_gusta1.size<G.likes.filter(l=>l[4]!=='pl'&&l[4]!=='an').length*2-4)bad('es_gusta1: only '+hit.es_gusta1.size+' sentences asked');
+    if([...hit.es_gusta1].some(x=>G.likes.some(l=>l[4]==='an'&&x.endsWith(' '+l[1]+'.'))))bad('es_gusta1: "Me gusta" with an animal (reads as eating it)');
     // old Spanish stops: the P2-30 hash still holds
     const artKeep=Object.assign({},ART);for(const k in ART)delete ART[k]; // P4-14: hashed with the emoji fallback (Spanish items now name drawings)
     const olds=[];
     for(const id of ['greet','color','num','teen','animal','food','body','family','mix'].map(x=>'es_'+x))for(let lv=1;lv<=2;lv++)for(let s=1;s<=150;s++)olds.push(JSON.stringify(genQ(id,lv,s)));
     const h=require('crypto').createHash('md5').update(olds.join('\n')).digest('hex');
     Object.assign(ART,artKeep);
-    if(h!=='85968a5ca262a225f92f3a7354d2277e'||olds.length!==2700)bad('old Spanish stops changed by seed: '+h);
+    // R-01s (v138) changed these old stops on purpose: el / la in front of the nouns of animal, food, body and family (review Should 8)
+    // and the level 1 and 2 hints that gave the answer away (Should 9). Stop ids, levels, items and choices per seed are unchanged:
+    // "Spanish review fixes R-01s" undoes both changes in memory and gets the old hash 85968a5ca262a225f92f3a7354d2277e back.
+    if(h!=='c2834d47005f792ed2a972866ad54259'||olds.length!==2700)bad('old Spanish stops changed by seed: '+h);
     // world and stop order by id
     const wi=PATHS.es.worlds.map(w=>w.id),fi=wi.indexOf('e_frases');
     if(wi.slice(0,3).join(' ')!=='e_plaza e_fiesta e_repaso')bad('original worlds moved: '+wi.join(' '));
@@ -13337,7 +13372,10 @@ run('Spanish Los Cuentos P2-35',()=>{
     for(const id of ['greet','color','num','teen','animal','food','body','family','mix'].map(x=>'es_'+x))for(let lv=1;lv<=2;lv++)for(let s=1;s<=150;s++)olds.push(JSON.stringify(genQ(id,lv,s)));
     const h=require('crypto').createHash('md5').update(olds.join('\n')).digest('hex');
     Object.assign(ART,artKeep);
-    if(h!=='85968a5ca262a225f92f3a7354d2277e'||olds.length!==2700)bad('old Spanish stops changed by seed: '+h);
+    // R-01s (v138) changed these old stops on purpose: el / la in front of the nouns of animal, food, body and family (review Should 8)
+    // and the level 1 and 2 hints that gave the answer away (Should 9). Stop ids, levels, items and choices per seed are unchanged:
+    // "Spanish review fixes R-01s" undoes both changes in memory and gets the old hash 85968a5ca262a225f92f3a7354d2277e back.
+    if(h!=='c2834d47005f792ed2a972866ad54259'||olds.length!==2700)bad('old Spanish stops changed by seed: '+h);
     // ---- world and stop order by id
     const wi=PATHS.es.worlds.map(w=>w.id),ci=wi.indexOf('e_cuentos');
     if(wi.slice(0,3).join(' ')!=='e_plaza e_fiesta e_repaso')bad('original worlds moved: '+wi.join(' '));
@@ -13378,6 +13416,169 @@ run('Spanish Los Cuentos P2-35',()=>{
 });
 
 // ---- P4-16: Game Room hub and shared game chrome ----
+// ---- R-01s Spanish review fixes (docs/reviews/R-01-spanish.md: Must 1-3, Should 8-13) ----
+run('Spanish review fixes R-01s',()=>{
+  const errs=[],bad=m=>{if(errs.length<60&&!errs.includes(m))errs.push(m)};
+  const body=function(){
+    const N=2000,strip=s=>String(s).replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim(),U=id=>ES_UNITS.find(u=>u.id===id);
+    const ES=Object.keys(SK).filter(k=>SK[k].area==='es').sort();
+    const info={q:0};
+    // ---- 1. two right answers (Must 1, Should 10): pairs whose pictures or meanings overlap are never offered together, by picture or by
+    //      ear, in any Spanish skill and level; no two choices share a meaning (value) or a picture (the picture without its caption)
+    const PAIRS=[[/\bsol\b|sunny/i,/calor|\bhot\b/i,'hace sol / hace calor'],[/niev|snow/i,/fr[ií]o|\bcold\b/i,'nieva / hace frío'],
+      [/fresco|\bcool\b/i,/viento|windy/i,'hace fresco / hace viento'],[/feliz|happy/i,/tranquil|\bcalm\b/i,'feliz / tranquilo'],
+      [/feliz|happy/i,/emocionad|excited/i,'feliz / emocionado'],[/cami[oó]n/i,/autob[uú]s/i,'el camión / el autobús']];
+    const picOf=c=>String(c.l).replace(/<small>[\s\S]*?<\/small>/g,'');
+    const clashes=q=>{const out=[];if(q.kind!=='choice')return out;
+      const t=q.choices.map(c=>strip(c.l)+' | '+c.v);
+      for(const [a,b,name] of PAIRS)for(let i=0;i<t.length;i++)for(let j=0;j<t.length;j++)if(i!==j&&a.test(t[i])&&b.test(t[j]))out.push(name);
+      return out};
+    const scan=(q,key)=>{
+      for(const p of clashes(q))bad(key+': two choices share a meaning ('+p+')');
+      if(q.kind!=='choice')return;
+      const vs=q.choices.map(c=>String(c.v).toLowerCase());
+      if(new Set(vs).size!==vs.length)bad(key+': two choices share a value');
+      const ps=q.choices.filter(c=>c.h).map(picOf);
+      if(new Set(ps).size!==ps.length)bad(key+': two choices share a picture');
+      if(q.choices.filter(c=>String(c.v)===String(q.ans)).length!==1)bad(key+': not exactly one right answer')};
+    for(const sk of ES)for(let lv=1;lv<=SK[sk].max;lv++)for(let s=1;s<=N;s++){const q=genQ(sk,lv,s);info.q++;scan(q,sk+' L'+lv)}
+    // the review's seeds, by name
+    for(const [sk,lv,s] of [['es_weather',2,19],['es_weather',2,38],['es_weather',1,38],['es_weather',2,13],['es_weather',1,13],['es_feel',1,41],['es_feel',1,2],['es_trans',1,40]]){
+      const q=genQ(sk,lv,s);if(clashes(q).length)bad('review seed '+sk+' '+lv+' '+s+' still offers '+clashes(q).join(', '))}
+    // the confuse lists name real words; the weather pictures that are not enough alone carry their English
+    const CONF={weather:[['hace sol','hace calor'],['nieva','hace frío'],['hace fresco','hace viento']],
+      feel:[['feliz','tranquilo / tranquila'],['feliz','emocionado / emocionada']],trans:[['camión','autobús']]};
+    for(const id in CONF){const u=U(id);
+      if(JSON.stringify(u.confuse)!==JSON.stringify(CONF[id]))bad(id+': confuse list '+JSON.stringify(u.confuse));
+      for(const p of u.confuse||[])for(const w of p)if(!u.items.some(i=>i[0]===w))bad(id+': confuse names '+w+', not a word of the unit')}
+    for(const u of ES_UNITS)if(u.confuse&&!CONF[u.id])bad(u.id+': a confuse list this check does not know');
+    const capW=['hace calor','hace frío','hace fresco'];
+    if(JSON.stringify(U('weather').cap)!==JSON.stringify(capW))bad('weather: cap '+JSON.stringify(U('weather').cap));
+    for(let s=1;s<=600;s++){const q1=genQ('es_weather',1,s),q2=genQ('es_weather',2,s);
+      for(const c of q1.choices)if(/pcap/.test(c.l)!==capW.includes(c.v))bad('weather L1: '+c.v+' caption '+/pcap/.test(c.l));
+      if(/pcap/.test(q2.html)!==capW.includes(q2.ans))bad('weather L2: '+q2.ans+' caption')}
+    // ---- 2. English plurals (Must 2): one helper for shown and spoken text, and no wrong plural in any English text of the Spanish section
+    const PL={beach:'beaches',dog:'dogs',bus:'buses',dress:'dresses',fish:'fish',tooth:'teeth',box:'boxes',baby:'babies','ice cream':'ice creams',toy:'toys',
+      leaf:'leaves',foot:'feet',glass:'glasses',brush:'brushes',child:'children',airplane:'airplanes',grandma:'grandmas'};
+    for(const w in PL)if(enPlural(w)!==PL[w])bad('enPlural('+w+') = '+enPlural(w)+', wants '+PL[w]);
+    if(typeof gEnPl!=='undefined')bad('the old gEnPl is still there');
+    const BADPL=/\b[a-z]*(?:ch|sh|x|ss|z)s\b|\b[a-z]*[^aeiou\s]ys\b|\b(?:fishes|tooths|foots|mouses|childs|mans|womans|sheeps|leafs|knifes|persons)\b/i;
+    const enText=q=>{const t=[];if(q.hint&&q.hint.s)t.push(q.hint.s);
+      for(const m of String(q.html).matchAll(/<div class="sub">([\s\S]*?)<\/div>/g))t.push(strip(m[1]));
+      for(const m of (String(q.html)+(q.choices||[]).map(c=>c.l).join(' ')).matchAll(/<small>([\s\S]*?)<\/small>/g))t.push(strip(m[1]));
+      if(q.lang!=='es'&&typeof q.say==='string')t.push(q.say);
+      if(q.sk==='es_story'&&q.lv===1)t.push(strip(q.html),...q.choices.map(c=>c.l));
+      return t};
+    const nounEn=new Set(ES_GRAM.nouns.map(n=>n[1]));let pl=0;
+    for(const sk of ES)for(let lv=1;lv<=SK[sk].max;lv++)for(let s=1;s<=(sk==='es_art'?3000:400);s++){const q=genQ(sk,lv,s);
+      for(const t of enText(q)){const m=BADPL.exec(t);if(m)bad(sk+' L'+lv+': wrong English plural "'+m[0]+'" in "'+t+'"')}
+      if(sk==='es_art'&&/^More than one/.test(q.say||'')){pl++;
+        const m=/^More than one ([a-z ]+)! How do you say the ([a-z ]+)\?$/.exec(q.say),sh=/How do you say “the ([a-z ]+)”\?/.exec(strip(q.html));
+        if(!m||!nounEn.has(m[1])||m[2]!==enPlural(m[1])||!sh||sh[1]!==m[2])bad('es_art L2: plural text '+q.say+' / '+strip(q.html))}}
+    for(const u of ES_UNITS)for(const it of u.items)if(BADPL.test(it[1]))bad(u.id+': wrong English plural in the gloss '+it[1]);
+    if(!genQ('es_art',2,112).html.includes('“the beaches”'))bad('es_art L2 seed 112 does not say "the beaches"');
+    if(pl<1000)bad('es_art L2: only '+pl+' plural items checked');
+    // ---- 3. dialogues (Must 3, Should 11): the corrected lines, and every question of a changed dialogue still has exactly one right answer
+    const D=ES_STORY.dialogues,dl=id=>D.find(d=>d.id===id),line=(id,i)=>dl(id).lines[i][1];
+    const all=D.flatMap(d=>d.lines.map(l=>l[1])).join(' | ');
+    if(/Aquí está agua|un animal,|Qué animal hay|Eres muy amable/.test(all))bad('a line the review corrected is still there');
+    if(line('abuela',2)!=='Aquí tienes agua. ¿Tienes hambre?')bad('abuela line 3: '+line('abuela',2));
+    if(line('mascotas',0)!=='¿Tienes una mascota, Pablo?')bad('mascotas line 1: '+line('mascotas',0));
+    if(line('biblioteca',0)!=='¡Hola, Carlos! ¿Estás en la biblioteca?')bad('biblioteca line 1: '+line('biblioteca',0));
+    if(line('biblioteca',2)!=='¿Qué animales hay en el libro?')bad('biblioteca line 3: '+line('biblioteca',2));
+    if(line('anos',2)!=='Yo tengo setenta años. ¡Soy muy viejo!'||line('anos',3)!=='No, abuelo. ¡Eres muy rápido!')bad('anos lines 3-4: '+line('anos',3));
+    if(dl('noche').qs[0].en!=='How does Mateo feel?')bad('noche question 1: '+dl('noche').qs[0].en);
+    if(!/phone call/.test(dl('parque').title))bad('parque: the title does not say it is a call');
+    if(ES_STORY.newWords.some(w=>w==='cansada'||w==='asustada')||!ES_STORY.newWords.includes('mascota'))bad('newWords: cansada / asustada are taught now, mascota is new');
+    const has=(text,key)=>(' '+stNorm(text)+' ').includes(' '+key+' ');
+    const CHG=['abuela','mascotas','biblioteca','anos','noche','manana','parque'];
+    for(const id of CHG){const d=dl(id),di=D.indexOf(d);
+      d.qs.forEach((Q,qi)=>{const ln=d.lines[Q.line][1],w=id+' question '+(qi+1)+': ';
+        if(Q.t==='who'){if(Q.a[0]!==d.lines[Q.line][0]||d.lines.filter(l=>has(l[1],stNorm(Q.k))).length!==1)bad(w+'the quote is not in exactly one line of the speaker')}
+        else{const right=Q.a;
+          for(const k of stKeys(right))if(!has(ln,k))bad(w+'the right answer is not in its line');
+          for(const o of Q.d)for(const k of stKeys(o))if(has(ln,k))bad(w+'a wrong answer ('+o[0]+') is in the line too')}
+        for(let lv=1;lv<=3;lv++)for(let s=1;s<=60;s++){const q=bankWith(s*7919+di*101+qi,()=>stQ(lv,di,qi));q.sk='es_story';q.lv=lv;scan(q,'es_story L'+lv)}})}
+    // ---- 4. el / la from the first unit (Should 8)
+    const ART8={animal:'el perro|el gato|el pájaro|el pez|la vaca|el caballo|el cerdo|el pato|el oso|el conejo|el león|la rana',
+      food:'la manzana|el plátano|la leche|el pan|el agua|el queso|el huevo|el helado|la galleta|las uvas',
+      body:'los ojos|la nariz|la boca|la oreja|la mano|el pie|la pierna|el diente',
+      family:'la mamá|el papá|el hermano|la hermana|la abuela|el abuelo|el bebé'};
+    for(const id in ART8)if(U(id).items.map(esFull).join('|')!==ART8[id])bad(id+': articles '+U(id).items.map(esFull).join('|'));
+    for(const id of ['greet','color','num','teen'])if(U(id).items.some(i=>i[3]))bad(id+': a word that is not a noun has an article');
+    // every unit of nouns (days and months have their own check in P2-32)
+    for(const id of ['animal','food','body','family','house','clothes','school','place','trans'])for(const it of U(id).items)if(!it[3])bad(id+': the noun '+it[0]+' has no article');
+    const qa=genQ('es_animal',1,7);if(!/“(el|la) [a-zá-ú]+”/.test(qa.html)||!/^(el|la) /.test(qa.ans)||qa.say!==qa.ans)bad('animal L1 does not show and say the article: '+qa.ans);
+    // ---- 5. both forms of a feeling (Should 12)
+    const FEEL={enojado:'enojada',cansado:'cansada',asustado:'asustada',enfermo:'enferma',emocionado:'emocionada',tranquilo:'tranquila',sorprendido:'sorprendida'};
+    for(const it of U('feel').items){const m=/^([a-z]+) \/ ([a-z]+)$/.exec(it[0]);
+      if(m){if(FEEL[m[1]]!==m[2]||it[5]!==m[1]+', '+m[2])bad('feel '+it[0]+': forms or speech')}
+      else if(!['feliz','triste'].includes(it[0]))bad('feel '+it[0]+': only one form')}
+    if(U('feel').items.filter(i=>/ \/ /.test(i[0])).length!==7)bad('feel: 7 words have two forms');
+    const qf=genQ('es_feel',1,41);if(!/ \/ /.test(qf.ans)||qf.say!==qf.ans.replace(' / ',', '))bad('feel L1 does not show and say both forms: '+qf.ans);
+    // ---- 6. ser and estar (Should 12): Build a Sentence never uses ser with a feeling (es_ser 2 teaches estar for feelings)
+    const feelW=new Set(U('feel').items.flatMap(i=>i[0].split(' / ')).concat(['felices','tristes','enojada','bien']));
+    for(const lv of [1,2])for(const it of ES_GRAM.sent[lv]){const ws=it[0].toLowerCase().replace('.','').split(' ');
+      ws.forEach((w,i)=>{if(/^(es|soy|eres|son|somos)$/.test(w)&&feelW.has(ws[i+1]))bad('es_sent: ser with a feeling: '+it[0])})}
+    // ---- 7. hints that do not give the answer away (Should 9): no first letter, no English meaning; level 1 replays slowly, level 2 reads all
+    for(const u of ES_UNITS)for(let lv=1;lv<=2;lv++)for(let s=1;s<=300;s++){const q=genQ('es_'+u.id,lv,s),it=u.items.find(i=>esFull(i)===q.ans),h=q.hint,w='es_'+u.id+' L'+lv+': ';
+      if(!it){bad(w+'answer not found');continue}
+      if(/starts with/i.test(h.s))bad(w+'the hint gives the first letter');
+      if(it[1].toLowerCase()!==it[0]&&new RegExp('(^|[^a-z])'+it[1].replace(/[()]/g,'\\$&')+'([^a-z]|$)','i').test(h.s))bad(w+'the hint holds the English meaning '+it[1]);
+      if(lv===1&&(h.k!=='say'||h.lang!=='es'||h.w!==q.say||!(h.slow>0&&h.slow<1)))bad(w+'the hint does not replay the word slowly');
+      if(lv===2&&(h.k!=='say'||h.lang!=='es'||h.w!==q.choices.map(c=>{const x=u.items.find(i=>esFull(i)===c.v);return x[5]||esFull(x)}).join('. ')))bad(w+'the hint does not read the three choices')}
+    // the slow replay reaches the voice: rate 0.8 x 0.75
+    {let rate=0;global.window={speechSynthesis:1};global.SpeechSynthesisUtterance=function(t){this.text=t};
+      global.speechSynthesis={getVoices:()=>[{lang:'es-MX'}],speak:u=>{rate=u.rate},cancel:()=>{},speaking:false,pending:false};
+      say('el perro',null,'es',0,.75);if(Math.abs(rate-.6)>1e-9)bad('say slow: rate '+rate);
+      say('el perro',null,'es');if(Math.abs(rate-.8)>1e-9)bad('say: normal rate '+rate);
+      delete global.window;delete global.SpeechSynthesisUtterance;global.speechSynthesis={getVoices:()=>[]}}
+    // ---- 8. words that mean something else in Mexico (Should 10)
+    const words=JSON.stringify([ES_UNITS.map(u=>u.items.map(i=>i[0])),ES_GRAM,ES_STORY.dialogues]);
+    if(/chaqueta|borrador/.test(words))bad('chaqueta or borrador is still taught (Mexico: la chamarra, la goma)');
+    if(!U('clothes').items.some(i=>esFull(i)==='la chamarra')||!U('school').items.some(i=>esFull(i)==='la goma'))bad('la chamarra or la goma missing');
+    if(!/Mexico.*bus/.test(U('trans').items.find(i=>i[0]==='camión')[1]))bad('el camión has no Mexico note');
+    for(let s=1;s<=3000;s++){const q=genQ('es_gusta',1,s),q2=genQ('es_gusta',2,s);
+      if(ES_GRAM.likes.some(l=>l[4]==='an'&&q.say.endsWith(' '+l[1]+'.')))bad('es_gusta L1 says "me gusta" with an animal: '+q.say);
+      const an=ES_GRAM.likes.find(l=>l[4]==='an'&&new RegExp('“?(el|la) '+l[1]+'\\.').test(strip(q2.html)));if(an)bad('es_gusta L2: an animal in the singular: '+strip(q2.html))}
+    if(ES_GRAM.likes.filter(l=>l[4]==='an').map(l=>l[1]).join(' ')!=='perro gato pájaro pez vaca caballo cerdo pato oso conejo león rana')bad('likes: the animals are not all marked an');
+    // ---- 9. sentence tiles (Should 13): lower case (a name keeps its capital), no dot on a tile, the dot after the last slot
+    for(const lv of [1,2])for(let s=1;s<=600;s++){const q=genQ('es_sent',lv,s),it=ES_GRAM.sent[lv].find(x=>x[0]===q.after);
+      if(!it){bad('es_sent L'+lv+': after is not a stored sentence');continue}
+      if(q.end!=='.'||q.ans.join(' ')+'.'!==it[0].replace(/^\S+/,w=>ES_STORY.people[w]?w:w.toLowerCase()))bad('es_sent L'+lv+': tiles '+q.ans.join(' '));
+      if(q.items.some(t=>/\./.test(t.v)||/^\p{Lu}/u.test(t.v)&&!ES_STORY.people[t.v]))bad('es_sent L'+lv+': a tile with a dot or a capital');
+      const h=KIND.order.render(q);if(!/<span class="oend" aria-hidden="true">\.<\/span><\/div>/.test(h))bad('es_sent L'+lv+': the dot is not drawn after the slots')}
+    if(/oend/.test(KIND.order.render({kind:'order',items:[{v:'a',l:'a'},{v:'b',l:'b'}],ans:['a','b']})))bad('an order question without end draws a dot');
+    // ---- 10. the old stops (P2-30 hash): undo the two intended changes in memory and the v135 questions come back byte for byte
+    const artKeep=Object.assign({},ART);for(const k in ART)delete ART[k];
+    const OLD8=ES_UNITS.slice(0,8),keepArt=OLD8.map(u=>u.items.map(i=>i[3]));
+    const OLDS=['greet','color','num','teen','animal','food','body','family','mix'].map(x=>'es_'+x);
+    const now=[];for(const id of OLDS)for(let lv=1;lv<=2;lv++)for(let s=1;s<=150;s++){const q=genQ(id,lv,s);now.push(JSON.stringify(q));scan(q,id+' L'+lv+' (old stop)')}
+    OLD8.forEach(u=>u.items.forEach(i=>{i[3]=''}));
+    const back=[];
+    try{for(const id of OLDS)for(let lv=1;lv<=2;lv++)for(let s=1;s<=150;s++){
+      const q=genQ(id,lv,s),it=OLD8.flatMap(u=>u.items).find(i=>i[0]===q.ans);
+      q.hint=lv==1?{k:'say',lang:'es',w:q.hint.w,s:`“${q.ans}” means “${it[1]}”.`}:{k:'text',s:`It starts with “${it[0][0].toUpperCase()}”.`};
+      back.push(JSON.stringify(q))}}
+    finally{OLD8.forEach((u,ui)=>u.items.forEach((i,k)=>{i[3]=keepArt[ui][k]}));Object.assign(ART,artKeep)}
+    const md5=a=>require('crypto').createHash('md5').update(a.join('\n')).digest('hex');
+    if(md5(back)!=='85968a5ca262a225f92f3a7354d2277e')bad('old stops with the R-01s changes undone differ from v135: '+md5(back));
+    if(md5(now)!=='c2834d47005f792ed2a972866ad54259')bad('old stops hash (R-01s) '+md5(now));
+    // ---- 11. saves keep their stars: stop ids and levels are those of v135; a review item saved before R-01s finds its question again
+    const IDS='es_greet1 es_color1 es_num1 es_animal1 es_greet2 es_color2 es_num2 es_animal2 boss_e_plaza es_food1 es_body1 es_family1 es_teen1 es_food2 es_body2 es_family2 es_teen2 boss_e_fiesta '+
+      'es_mix1 es_mix2 boss_e_repaso es_house1 es_house2 es_clothes1 es_clothes2 es_school1 es_school2 es_feel1 es_feel2 es_house3 es_clothes3 es_school3 boss_e_casa '+
+      'es_days1 es_days2 es_months1 es_months2 es_weather1 es_weather2 es_big1 es_big2 es_time1 es_time2 boss_e_tiempo es_place1 es_place2 es_trans1 es_trans2 es_verb1 es_verb2 es_adj1 es_adj2 boss_e_ciudad '+
+      'es_phrase1 es_phrase2 es_art1 es_art2 es_ser1 es_ser2 es_ser3 es_gusta1 es_gusta2 es_sent1 es_sent2 boss_e_frases es_story1 es_story2 es_story3 boss_e_cuentos';
+    if(NODES.es.map(nid).join(' ')!==IDS)bad('Spanish stop ids or levels changed');
+    for(const [sk,lv] of [['es_animal',2],['es_food',1],['es_family',1]]){let seed=0,q0;
+      for(let s=1;s<200&&!seed;s++){q0=genQ(sk,lv,s);if(/^(el|la|los|las) /.test(q0.ans))seed=s}
+      const it={sk,lv,seed,label:q0.label.replace(/^(el|la|los|las) /,''),box:0,due:0,n:1},q=revQ(it);
+      if(q.ans!==q0.ans||it.label!==q0.label||q.rvk!==revKey(it))bad('review item '+sk+' '+lv+' saved before R-01s: '+JSON.stringify([q.ans,q0.ans,it.label]))}
+    return info};
+  const r=eval(js+';('+body.toString()+')()');
+  return{problems:uniq(errs),note:r.q+' questions scanned across every Spanish skill and level'};
+});
+
 run('game room P4-16',()=>{
   const p=[];
   const rd=f=>fs.readFileSync(path.join(SRC,f),'utf8');

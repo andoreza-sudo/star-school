@@ -3,7 +3,7 @@ function rod(n,c,cls='',x=0){if(n<=0)return'';let s='';for(let i=0;i<n;i++)s+=`<
 function hintHTML(q){const h=q.hint;if(!h)return'';
   if(h.k=='text')return esc(h.s);
   if(h.k=='steps')return hintSteps(q); // P2-08
-  if(h.k=='say'){setTimeout(()=>say(h.w,null,h.lang),150);return esc(h.s)}
+  if(h.k=='say'){setTimeout(()=>say(h.w,null,h.lang,0,h.slow),150);return esc(h.s)} // h.slow (R-01s): replay slower
   if(h.k=='trace')return TR.hint(q); // P2-16: the hint plays on the tracing board (47-trace.js)
   if(h.k=='html'){if(h.w)setTimeout(()=>say(h.w),150);return h.html} // trusted markup from a generator (Pre-K pictures); h.w is spoken
   if(h.k=='next'){const need=q.word[G.built.length],i=q.tiles.findIndex((t,j)=>t==need&&!G.built.includes(j));const el=$(`.lt[data-i="${i}"]`);if(el)el.classList.add('glow');setTimeout(()=>say(q.word),150);return'Look for the glowing letter!'}
