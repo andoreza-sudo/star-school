@@ -39,7 +39,13 @@ const KNOWN={ // check name -> exact problem strings that are known content issu
     'es_house L2: no say (choice)',
     'es_clothes L2: no say (choice)',
     'es_school L2: no say (choice)',
-    'es_feel L2: no say (choice)'
+    'es_feel L2: no say (choice)',
+    // P2-32: the same silent-on-purpose level 2 for the five El Tiempo units
+    'es_days L2: no say (choice)',
+    'es_months L2: no say (choice)',
+    'es_weather L2: no say (choice)',
+    'es_big L2: no say (choice)',
+    'es_time L2: no say (choice)'
   ],
 };
 
@@ -9809,7 +9815,7 @@ run('Spanish framework P2-30',()=>{
         if(typeof es!=='string'||!es||es!==es.normalize('NFC')||es!==es.toLowerCase()||es!==es.trim())bad(w1+'word is not a trimmed lowercase NFC string');
         if(typeof en!=='string'||!en.trim())bad(w1+'no gloss');
         if(!ARTS.has(art))bad(w1+'bad article '+art);
-        const ok=/^c:#[0-9a-f]{6}$/.test(pic)||/^n:\d{1,3}$/.test(pic)||allow.has(pic.replace(/\uFE0F/g,''));
+        const ok=/^c:#[0-9a-f]{6}$/.test(pic)||/^n:\d{1,3}$/.test(pic)||/^k:(1[0-2]|[1-9]):[0-5]\d$/.test(pic)||allow.has(pic.replace(/\uFE0F/g,''));
         if(!ok)bad(w1+'picture '+pic+' is not an emoji in tools/emoji-allow.txt, a c:#hex or an n:num');
         if(artName!==undefined&&artName!==''&&!/^[a-z-]+$/.test(artName))bad(w1+'bad art name');
         if(say!==undefined&&typeof say!=='string')bad(w1+'bad say');
@@ -10431,11 +10437,13 @@ run('Spanish La Casa P2-31',()=>{
     global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
     const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
     const CUR=PATHS.es.worlds;let checked=0;
+    // the path ends at La Casa while this runs: the Spanish worlds after it (El Tiempo, La Ciudad) were not shipped before it and have their own checks
+    const CUT=CUR.slice(0,CUR.findIndex(x=>x.id==='e_casa')+1);
     for(const name of ['fresh','midway','maxed','legacy-single-map','legacy-index-maps','tricky']){
       const raw=fx(name);load(Object.keys(JSON.parse(raw)).length?raw:null);
       const snap=()=>{const o={};NODES.es.forEach((x,i)=>{o[nid(x)]={st:getSt('es',i),open:unlocked('es',i)}});return o};
-      PATHS.es.worlds=CUR.filter(x=>x.id!=='e_casa');buildNodes('es');const before=snap();
-      PATHS.es.worlds=CUR;buildNodes('es');const after=snap();
+      PATHS.es.worlds=CUT.filter(x=>x.id!=='e_casa');buildNodes('es');const before=snap();
+      PATHS.es.worlds=CUT;buildNodes('es');const after=snap();
       for(const k in before){checked++;
         if(!after[k])bad(name+': stop '+k+' vanished');
         else{if(before[k].st!==after[k].st)bad(name+': '+k+' stars changed');if(before[k].open&&!after[k].open)bad(name+': '+k+' re-locked')}}
@@ -10454,6 +10462,149 @@ run('Spanish La Casa P2-31',()=>{
   };
   const r=eval(js+';('+body.toString()+')('+JSON.stringify(GEN)+','+JSON.stringify(COUNT)+')');
   return{problems:uniq(errs),note:r.n+' generated questions, '+r.checked+' stop checks'};
+});
+
+// ---- P2-32 Spanish world El Tiempo ----
+run('Spanish El Tiempo P2-32',()=>{
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const errs=[],bad=m=>{if(errs.length<40&&!errs.includes(m))errs.push(m)};
+  const body=function(){
+    const U=id=>ES_UNITS.find(u=>u.id===id);
+    const N=3000;
+    // a small Spanish number-word function: 1-99 and 100
+    const ONES=['','uno','dos','tres','cuatro','cinco','seis','siete','ocho','nueve','diez','once','doce','trece','catorce','quince','dieciséis','diecisiete','dieciocho','diecinueve'];
+    const V=['veinte','veintiuno','veintidós','veintitrés','veinticuatro','veinticinco','veintiséis','veintisiete','veintiocho','veintinueve'];
+    const TENS=['','','','treinta','cuarenta','cincuenta','sesenta','setenta','ochenta','noventa'];
+    const nw=n=>n==100?'cien':n<20?ONES[n]:n<30?V[n-20]:TENS[Math.floor(n/10)]+(n%10?' y '+ONES[n%10]:'');
+    if(nw(21)!=='veintiuno'||nw(35)!=='treinta y cinco'||nw(99)!=='noventa y nueve'||nw(100)!=='cien'||nw(30)!=='treinta'||nw(16)!=='dieciséis')bad('test number-word function is wrong');
+    // ---- units: counts, words, articles, pictures
+    const want={
+      days:{n:10,words:'lunes martes miércoles jueves viernes sábado domingo hoy mañana ayer'},
+      months:{n:16,words:'enero febrero marzo abril mayo junio julio agosto septiembre octubre noviembre diciembre primavera verano otoño invierno'},
+      weather:{n:10,words:'hace sol|hace calor|hace frío|hace viento|llueve|nieva|está nublado|hace fresco|hay tormenta|arco iris'},
+      big:{n:18},time:{n:20}};
+    for(const id in want){
+      const u=U(id);
+      if(!u){bad('unit '+id+' missing');continue}
+      if(u.items.length!==want[id].n)bad(id+': '+u.items.length+' items, wants '+want[id].n);
+      if(u.spell||u.mix)bad(id+': spell or mix set');
+      if(!SK['es_'+id]||SK['es_'+id].max!==2||SK['es_'+id].area!=='es')bad(id+': skill');
+      for(const it of u.items){
+        if(it[0]!==it[0].normalize('NFC')||it[0]!==it[0].toLowerCase()||it[0]!==it[0].trim())bad(id+': '+it[0]+' not NFC lowercase');
+        if(it[1].length<2)bad(id+': gloss');
+      }
+    }
+    const names=(id,sep)=>U(id).items.map(i=>i[0]).join(sep||' ');
+    if(names('days')!==want.days.words)bad('days: '+names('days'));
+    if(names('months')!==want.months.words)bad('months: '+names('months'));
+    if(names('weather','|')!==want.weather.words)bad('weather: '+names('weather','|'));
+    const EN7=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+    U('days').items.slice(0,7).forEach((it,i)=>{if(it[1]!==EN7[i]||it[3]!=='el')bad('day '+it[0]+': gloss or article')});
+    U('days').items.slice(7).forEach((it,i)=>{if(it[1]!==['today','tomorrow','yesterday'][i]||it[3]!=='')bad('day word '+it[0])});
+    const EM=['January','February','March','April','May','June','July','August','September','October','November','December'];
+    U('months').items.slice(0,12).forEach((it,i)=>{if(it[1]!==EM[i]||it[3]!=='')bad('month '+it[0])});
+    const SEA={primavera:['spring','la'],verano:['summer','el'],otoño:['fall','el'],invierno:['winter','el']};
+    U('months').items.slice(12).forEach(it=>{const e=SEA[it[0]];if(!e||it[1]!==e[0]||it[3]!==e[1])bad('season '+it[0])});
+    if(U('weather').items.find(i=>i[0]==='arco iris')[3]!=='el')bad('arco iris article');
+    if(U('weather').items.some(i=>i[0]!=='arco iris'&&i[3]!==''))bad('weather phrase with an article');
+    // big numbers: every picture is n:N and the word is the Spanish for N; the first 8 are the tens (level 1)
+    const big=U('big');
+    if(big.l1!==8)bad('big l1');
+    big.items.forEach((it,i)=>{
+      const m=/^n:(\d+)$/.exec(it[2]);
+      if(!m)bad('big '+it[0]+': picture '+it[2]);
+      else{const n=+m[1];if(nw(n)!==it[0])bad('big: '+it[0]+' is not '+n+' ('+nw(n)+')');if(i<8&&!(n%10==0&&n>=30))bad('big level 1 item '+n+' is not a ten');if(i>=8&&(n<21||n>99||n%10==0))bad('big level 2 item '+n)}
+    });
+    if(!big.items.some(i=>i[0]==='treinta y cinco'))bad('treinta y cinco missing');
+    // time: o'clock first (12), then y media and y cuarto; the clock picture, the words and the gloss agree
+    const tm=U('time');
+    if(tm.l1!==12)bad('time l1');
+    tm.items.forEach((it,i)=>{
+      const m=/^k:(\d+):(\d\d)$/.exec(it[2]);
+      if(!m){bad('time '+it[0]+': picture '+it[2]);return}
+      const h=+m[1],mi=+m[2];
+      const exp=(h==1?'es la una':'son las '+ONES[h])+(mi==30?' y media':mi==15?' y cuarto':'');
+      if(it[0]!==exp)bad('time: '+it[0]+' should be '+exp);
+      if(it[1]!==h+':'+m[2])bad('time gloss '+it[1]);
+      if(i<12&&mi!==0)bad('time level 1 item not on the hour');
+      if(i>=12&&mi===0)bad('time level 2 item on the hour');
+      if(!/viz-clk/.test(picHTML(it,false)))bad('time picture does not draw a clock: '+it[0]);
+    });
+    if(ES_UNITS.flatMap(u=>u.items).some(i=>i[2]==='🌧'))bad('🌧 draws as a blob in headless Chrome');
+    // no word twice across ALL Spanish units, and no gloss twice inside the new units
+    const seen={};
+    for(const u of ES_UNITS)for(const it of u.items){const k=it[0];if(seen[k])bad('word '+k+' is in both '+seen[k]+' and '+u.id);seen[k]=u.id}
+    for(const id in want){const g=U(id).items.map(i=>i[1]);if(new Set(g).size!==g.length)bad(id+': duplicate gloss')}
+    // ---- questions: 3,000 seeded per level pass kindProblems
+    const numOf=h=>{const m=/class="numpic">(\d+)</.exec(h);return m?+m[1]:null};
+    for(const id in want){
+      const u=U(id);
+      for(let lv=1;lv<=2;lv++){
+        const pool=lv==1&&u.l1?u.items.slice(0,u.l1):u.items,bare=new Set(pool.map(i=>(i[3]?i[3]+' ':'')+i[0]));
+        const hit=new Set();
+        for(let s=1;s<=N;s++){
+          const q=genQ('es_'+id,lv,s);
+          for(const m of kindProblems(q))bad(id+' L'+lv+': '+m);
+          if(q.kind!=='choice'||q.lang!=='es')bad(id+' L'+lv+': kind/lang');
+          if(!bare.has(q.ans))bad(id+' L'+lv+': answer '+q.ans+' is not from the level pool');
+          hit.add(q.ans);
+          const vs=q.choices.map(c=>c.v);
+          if(vs.length!==3||new Set(vs).size!==3||!vs.includes(q.ans))bad(id+' L'+lv+': choices '+vs.join('|'));
+          if(vs.some(v=>!bare.has(v)))bad(id+' L'+lv+': a choice from outside the level pool');
+          if(/\bundefined\b|\bNaN\b|\[object |\bnull\b/.test(q.html+q.choices.map(c=>c.l).join('')))bad(id+' L'+lv+': bad html');
+          if(id==='big'){
+            // the number picture and the word agree: level 1 the picture of the right choice, level 2 the picture shown
+            if(lv==1){const c=q.choices.find(c=>c.v===q.ans),n=numOf(c.l);if(nw(n)!==q.ans)bad('big L1: picture '+n+' for '+q.ans);if(n%10)bad('big L1 asked a non-ten '+n)}
+            else{const n=numOf(q.html);if(nw(n)!==q.ans)bad('big L2: picture '+n+' for '+q.ans)}
+          }
+          if(id==='time'){
+            const clk=lv==1?q.choices.find(c=>c.v===q.ans).l:q.html;
+            if(!/viz-clk/.test(clk))bad('time L'+lv+': no clock picture');
+            if(lv==1&&/ y (media|cuarto)/.test(q.ans))bad('time L1 asked '+q.ans);
+          }
+        }
+        if(hit.size!==bare.size)bad(id+' L'+lv+': only '+hit.size+' of '+bare.size+' words asked in '+N+' seeds');
+      }
+    }
+    // level 2 of big and time really reach the later items
+    const lv2=id=>{const a=new Set();for(let s=1;s<=400;s++)a.add(genQ('es_'+id,2,s).ans);return a};
+    if(!lv2('big').has('treinta y cinco'))bad('big L2 never asks treinta y cinco');
+    if(!lv2('time').has('son las tres y media'))bad('time L2 never asks y media');
+    // ---- world and stops, by id
+    const ws=PATHS.es.worlds,wi=ws.findIndex(w=>w.id==='e_tiempo'),w=ws[wi];
+    if(!w)bad('no world e_tiempo');
+    else{
+      if(wi<=ws.findIndex(x=>x.id==='e_repaso')||wi<=ws.findIndex(x=>x.id==='e_fiesta'))bad('e_tiempo is not after the older worlds');
+      if(w.n!=='El Tiempo'||w.g!==-1)bad('world name or grade');
+      const got=w.nodes.map(n=>n[0]+n[1]).join(' ');
+      if(got!=='es_days1 es_days2 es_months1 es_months2 es_weather1 es_weather2 es_big1 es_big2 es_time1 es_time2')bad('stop order '+got);
+      if(w.nodes.some(n=>n[2].length>22))bad('stop title over 22 letters');
+      if(new Set(w.nodes.map(n=>n[2])).size!==w.nodes.length)bad('two stops share a title');
+      const ids=NODES.es.map(nid);
+      if(new Set(ids).size!==ids.length)bad('stop ids repeat on the Spanish path');
+      if(ids.slice(0,21).join(' ')!=='es_greet1 es_color1 es_num1 es_animal1 es_greet2 es_color2 es_num2 es_animal2 boss_e_plaza es_food1 es_body1 es_family1 es_teen1 es_food2 es_body2 es_family2 es_teen2 boss_e_fiesta es_mix1 es_mix2 boss_e_repaso')bad('older Spanish stops changed');
+      if(WR.es[wi][1]-WR.es[wi][0]!==10||NODES.es[WR.es[wi][1]].sk!=='boss')bad('10 stops and the boss');
+    }
+    // ---- fixture saves: the old stops keep their stars and openness, and the new stops start at 0 stars
+    const store={};
+    global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+    const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
+    const CUR=PATHS.es.worlds,OLD=CUR.filter(x=>x.id!=='e_tiempo');let checked=0;
+    for(const name of ['fresh','midway','maxed','legacy-single-map','legacy-index-maps','tricky']){
+      const raw=fx(name);load(Object.keys(JSON.parse(raw)).length?raw:null);
+      const snap=()=>{const o={};NODES.es.forEach((x,i)=>{o[nid(x)]={st:getSt('es',i),open:unlocked('es',i)}});return o};
+      PATHS.es.worlds=OLD;buildNodes('es');const before=snap();
+      PATHS.es.worlds=CUR;buildNodes('es');const after=snap();
+      for(const k in before){checked++;
+        if(!after[k])bad(name+': stop '+k+' vanished');
+        else{if(before[k].st!==after[k].st)bad(name+': '+k+' stars changed');if(before[k].open&&!after[k].open)bad(name+': '+k+' re-locked')}}
+      for(const x of w.nodes){const k=x[0]+x[1];if(!after[k])bad(name+': new stop '+k+' missing');else if(after[k].st!==0)bad(name+': new stop '+k+' starts with stars')}
+    }
+    PATHS.es.worlds=CUR;buildNodes('es');
+    return{checked};
+  };
+  const r=eval(js+';('+body.toString()+')()');
+  return{problems:errs.length?uniq(errs):[],note:'5 units x 2 levels x 3000 questions, '+r.checked+' stop checks'};
 });
 
 // ---- report ----

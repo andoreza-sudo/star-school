@@ -385,6 +385,9 @@ const SCREENS = {
   // P2-30 Spanish framework: level 3 (spell niño, accent row) and the no-Spanish-voice listen question (word shown big, note, no speaker)
   'es-spell': { run: async p => { const s = await p.evaluate(`(${ES_FX.install})(['es-MX'])`); await p.evaluate(s => { G = newG({ sk: 'es_tst', lv: 3, n: 1, pool: [genQ('es_tst', 3, s)] }); next(); }, s); } },
   'es-novoice': { run: async p => { await p.evaluate(`(${ES_FX.install})(['en-US'])`); await p.evaluate(() => { G = newG({ sk: 'es_animal', lv: 1, n: 1, pool: [genQ('es_animal', 1, 7)] }); next(); }); } },
+  // P2-32 El Tiempo: one question of each new unit (seeds fixed); 'es-tiempo-map' shows the world
+  ...Object.fromEntries([['days', 1, 5], ['days', 2, 6], ['months', 1, 7], ['weather', 1, 8], ['weather', 2, 9], ['big', 1, 3], ['big', 2, 4], ['time', 1, 2], ['time', 2, 11]].map(([u, lv, sd]) => ['es-tiempo-' + u + lv,
+    { run: async p => { await p.evaluate(([u, lv, sd]) => { G = newG({ sk: 'es_' + u, lv, n: 1, pool: [genQ('es_' + u, lv, sd)] }); next(); }, [u, lv, sd]); } }])),
   // P2-31 La Casa: the world map, a listen question (house), a spell question with the accent row (baño), a clothes read question, a feelings listen question
   'es-casa-map': { run: async p => { await p.evaluate(() => { NODES.es.forEach((x, i) => { if (x.wi < 3) setSt('es', i, 3); }); pathMap('es', 3); }); } },
   'es-casa-l1': { run: async p => { await p.evaluate(() => { G = newG({ sk: 'es_house', lv: 1, n: 1, pool: [genQ('es_house', 1, 5)] }); next(); }); } },

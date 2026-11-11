@@ -1,15 +1,16 @@
 /* ---------- Spanish unit data (P2-30, CURRICULUM S-frame) ----------
    ES_UNITS is the one place Spanish vocabulary lives. A unit is
-     {id, t, e, theme, items:[...], cap?, spell?, mix?}
+     {id, t, e, theme, items:[...], cap?, spell?, l1?, mix?}
    id     skill id without the prefix: unit 'house' is skill 'es_house' (esReg makes the skill when 38-skills.js has none)
    t, e   skill title and emoji;  theme  what the words have in common (for authors and tests)
    cap    1: show the English under each picture (words whose picture alone is not enough, like greetings)
    spell  1: the unit has level 3 (hear it, spell it); the skill gets max 3; its words must be single a-z/ñáéíóúü words of 12 letters or fewer
+   l1     N: level 1 draws only from the first N items (level 2 uses them all), for units whose later items are the harder ones (big numbers, time)
    mix    1: the unit is drawn into the es_mix "Big Review" (the first 8 units are; later units are not unless a chunk says so)
    An item is [spanish, english, picture, article, art, say]
    spanish  the bare word, NFC, lowercase (la casa -> 'casa'); level 3 asks for exactly this
    english  the gloss
-   picture  emoji from tools/emoji-allow.txt, or 'c:#rrggbb' (colour swatch), or 'n:12' (numeral)
+   picture  emoji from tools/emoji-allow.txt, or 'c:#rrggbb' (colour swatch), 'n:12' (numeral), or 'k:3:30' (analogue clock showing 3:30)
    article  'el' | 'la' | 'los' | 'las' | '' ; shown in front of the word in levels 1 and 2 ('la casa'), and as a clue in level 3
    art      optional art name for picFor(art, picture): the drawing when ART has it, else the emoji
    say      optional text to speak when it differs from the shown word
@@ -142,6 +143,85 @@ const ES_UNITS=[
   ['emocionado','excited','🥳',''],
   ['tranquilo','calm','😌',''],
   ['sorprendido','surprised','😮','']]},
+ {id:'days',t:'Days of the Week',e:'📅',theme:'Days of the week, today, tomorrow, yesterday',cap:1,items:[
+  ['lunes','Monday','📅','el'],
+  ['martes','Tuesday','📅','el'],
+  ['miércoles','Wednesday','📅','el'],
+  ['jueves','Thursday','📅','el'],
+  ['viernes','Friday','📅','el'],
+  ['sábado','Saturday','📅','el'],
+  ['domingo','Sunday','📅','el'],
+  ['hoy','today','📌',''],
+  ['mañana','tomorrow','🌅',''],
+  ['ayer','yesterday','◀','']]},
+ {id:'months',t:'Months & Seasons',e:'📆',theme:'Months and seasons',cap:1,items:[
+  ['enero','January','📆',''],
+  ['febrero','February','📆',''],
+  ['marzo','March','📆',''],
+  ['abril','April','📆',''],
+  ['mayo','May','📆',''],
+  ['junio','June','📆',''],
+  ['julio','July','📆',''],
+  ['agosto','August','📆',''],
+  ['septiembre','September','📆',''],
+  ['octubre','October','📆',''],
+  ['noviembre','November','📆',''],
+  ['diciembre','December','📆',''],
+  ['primavera','spring','🌸','la'],
+  ['verano','summer','🏖','el'],
+  ['otoño','fall','🍂','el'],
+  ['invierno','winter','⛄','el']]},
+ {id:'weather',t:'Weather',e:'☀',theme:'Weather',items:[
+  ['hace sol','it is sunny','☀',''],
+  ['hace calor','it is hot','🥵',''],
+  ['hace frío','it is cold','🥶',''],
+  ['hace viento','it is windy','💨',''],
+  ['llueve','it is raining','☔',''],
+  ['nieva','it is snowing','❄',''],
+  ['está nublado','it is cloudy','☁',''],
+  ['hace fresco','it is cool','🍃',''],
+  ['hay tormenta','there is a storm','⚡',''],
+  ['arco iris','rainbow','🌈','el']]},
+ {id:'big',t:'Numbers to 100',e:'💯',theme:'Tens to 100, then any number 21 to 99',l1:8,items:[
+  ['treinta','thirty','n:30',''],
+  ['cuarenta','forty','n:40',''],
+  ['cincuenta','fifty','n:50',''],
+  ['sesenta','sixty','n:60',''],
+  ['setenta','seventy','n:70',''],
+  ['ochenta','eighty','n:80',''],
+  ['noventa','ninety','n:90',''],
+  ['cien','one hundred','n:100',''],
+  ['veintiuno','twenty-one','n:21',''],
+  ['veintitrés','twenty-three','n:23',''],
+  ['veintisiete','twenty-seven','n:27',''],
+  ['treinta y cinco','thirty-five','n:35',''],
+  ['cuarenta y dos','forty-two','n:42',''],
+  ['cincuenta y ocho','fifty-eight','n:58',''],
+  ['sesenta y uno','sixty-one','n:61',''],
+  ['setenta y cuatro','seventy-four','n:74',''],
+  ['ochenta y nueve','eighty-nine','n:89',''],
+  ['noventa y nueve','ninety-nine','n:99','']]},
+ {id:'time',t:'Telling Time',e:'⏰',theme:'The time on the hour, half past and quarter past',l1:12,items:[
+  ['es la una','1:00','k:1:00',''],
+  ['son las dos','2:00','k:2:00',''],
+  ['son las tres','3:00','k:3:00',''],
+  ['son las cuatro','4:00','k:4:00',''],
+  ['son las cinco','5:00','k:5:00',''],
+  ['son las seis','6:00','k:6:00',''],
+  ['son las siete','7:00','k:7:00',''],
+  ['son las ocho','8:00','k:8:00',''],
+  ['son las nueve','9:00','k:9:00',''],
+  ['son las diez','10:00','k:10:00',''],
+  ['son las once','11:00','k:11:00',''],
+  ['son las doce','12:00','k:12:00',''],
+  ['es la una y media','1:30','k:1:30',''],
+  ['son las tres y media','3:30','k:3:30',''],
+  ['son las seis y media','6:30','k:6:30',''],
+  ['son las ocho y media','8:30','k:8:30',''],
+  ['son las dos y cuarto','2:15','k:2:15',''],
+  ['son las cuatro y cuarto','4:15','k:4:15',''],
+  ['son las siete y cuarto','7:15','k:7:15',''],
+  ['son las diez y cuarto','10:15','k:10:15','']]},
 ];
 const SPN={};ES_UNITS.forEach(u=>{SPN[u.id]=u.items}); // old name: unit id -> items (balloons, speed race, learn screen)
 ES_UNITS.forEach(esReg);
