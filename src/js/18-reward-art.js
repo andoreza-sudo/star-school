@@ -370,11 +370,14 @@ const RW = {
       `${UI.btn('Map', { icon: 'map', id: 'nope' })}</div></div>`;
   },
 
-  // drawn confetti: n pieces fly out of the middle of host and fade (about 1 s). Hidden in calm mode and with reduced motion.
+  // drawn confetti: n pieces (at most 40) fly out of the middle of host and fade (about 1.2 s). Hidden in calm mode and with reduced
+  // motion. On the body (P4-17: confetti() in 12-speech.js) it is fixed to the middle of the screen, above overlays.
   burst(host, n = 24) {
     if (!host || !host.isConnected) return;
+    n = Math.min(40, n);
     const b = document.createElement('div');
-    b.className = 'rw-burst';
+    b.className = host == document.body ? 'rw-burst rw-fs' : 'rw-burst';
+    b.setAttribute('aria-hidden', 'true');
     let h = '';
     for (let i = 0; i < n; i++) {
       const a = (i / n) * Math.PI * 2 + Math.random() * .4, d = 70 + Math.random() * 90;

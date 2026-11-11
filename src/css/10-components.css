@@ -91,7 +91,7 @@
 .choice.sel{background:var(--brand-tint);color:var(--brand-shade);box-shadow:inset 0 0 0 3px var(--brand),0 5px 0 var(--brand-shade)}
 .choice.right{background:var(--good-tint);color:var(--good-ink);box-shadow:inset 0 0 0 3px var(--good),0 5px 0 var(--good-ink);
   animation:k-pop var(--t-slow) var(--spring)}
-.choice.wrong{background:var(--try-tint);color:var(--try-ink);box-shadow:inset 0 0 0 3px var(--try),0 5px 0 var(--try);animation:k-shake 240ms linear}
+.choice.wrong{background:var(--try-tint);color:var(--try-ink);box-shadow:inset 0 0 0 3px var(--try),0 5px 0 var(--try);animation:k-shake var(--t-shake) linear}
 .choice:disabled,.choice.off{opacity:.4;box-shadow:inset 0 0 0 3px var(--line);transform:none;cursor:default}
 .choice:is(.right,.wrong,.sel):disabled{opacity:1}
 /* right and wrong carry a corner badge as well as a colour (never colour alone): a check, or a soft amber cross */
@@ -173,7 +173,7 @@
 .stat.timer .ic{color:var(--brand)}
 button.stat{cursor:pointer;touch-action:manipulation;transition:transform var(--t-fast) var(--ease)}
 button.stat:active{transform:translateY(2px);box-shadow:inset 0 0 0 2px var(--line),0 1px 0 var(--ledge-soft)}
-.stat.bump{animation:k-bump 400ms var(--spring)}
+.stat.bump{animation:k-bump var(--t-slow) var(--spring)}
 
 /* ---- gauge (the DS "meter"): .gauge > i with style="--v:.4"; .grow (pet), .good, subject via --c; .lg is taller ---- */
 .gauge{position:relative;height:16px;border-radius:var(--r-pill);background:var(--surface-2);overflow:hidden;box-shadow:inset 0 2px 0 var(--line)}
@@ -326,7 +326,7 @@ button.stat:active{transform:translateY(2px);box-shadow:inset 0 0 0 2px var(--li
 .mapnode:active{transform:translateY(3px)}
 .mapnode.lock{background:var(--surface-2);color:var(--ink-3);box-shadow:inset 0 0 0 3px var(--line);cursor:default;transform:none}
 .mapnode.open::after{content:'';position:absolute;inset:-8px;border:4px solid var(--c,var(--brand));border-radius:50%;opacity:0;
-  animation:k-ring 1.8s var(--ease) infinite;pointer-events:none}
+  animation:k-ring var(--t-loop) var(--ease) infinite;pointer-events:none}
 .mapnode.mast{box-shadow:inset 0 3px 0 var(--hi),0 0 0 5px var(--star),0 5px 0 5px var(--star-shade)}
 .mapnode.skip{background:var(--surface);color:var(--c,var(--brand));box-shadow:inset 0 0 0 3px var(--c,var(--brand)),0 5px 0 var(--ledge-soft)}
 .mapnode.boss{width:84px;height:84px;font-size:46px;background:var(--c-tint,var(--brand-tint));color:var(--c-shade,var(--brand-shade));

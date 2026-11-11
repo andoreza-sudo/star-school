@@ -2,7 +2,7 @@ import base64, json, os, re
 from PIL import Image, ImageDraw
 # Build: python3 tools/build.py   (run from anywhere; writes index.html, bt/games/data.<VER>.js, sw.js, manifest.json, icons to the repo root)
 # Bump VER on every release so tablets pick up the update.
-VER = 'v130'
+VER = 'v131'
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = ROOT
 F = os.path.join(ROOT, 'tools', 'fonts', 'andika-latin-%s-normal.woff2')
@@ -52,7 +52,7 @@ data = ('/* Star School data banks ' + VER + '. BUILT by tools/build.py from src
 open(OUT + '/' + DATA, 'w', encoding='utf-8', newline='').write(data)
 # only the current release's files stay at the repo root (GitHub Pages serves them; older ones would pile up)
 for n in os.listdir(OUT):
-    if re.fullmatch(r'[a-z]+\.v\d+\.js', n) and n not in FILES:
+    if re.fullmatch(r'[a-z][a-z0-9]*\.v\d+\.js', n) and n not in FILES:
         os.remove(os.path.join(OUT, n))
 
 json.dump({"name": "Star School", "short_name": "Star School", "start_url": "./", "scope": "./",
