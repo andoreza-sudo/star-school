@@ -427,6 +427,9 @@ const SCREENS = {
   'story-info': { run: compShot('info', 1, 'g2n01', 1) },
   'story-hint': { run: compShot('comp', 3, 'g2f01', 1, 'hint') },
   'story-closed': { run: compShot('comp', 3, 'g2f05', 3, 'closed') },
+  // P2-26 (3rd grade): a story and a passage with the panel open and the widest choices
+  'story3-comp': { run: compShot('comp', 4, 'g3f03', 3, null, 3) },
+  'story3-info': { run: compShot('info', 2, 'g3n04', 2, null, 3) },
   // P2-29 grade 6 (230-300 words): the longest story and a passage with the panel open, 380x780 is the one to look at
   'story6-comp': { run: compShot('comp', 7, 'g6f04', 2, null, 6) },
   'story6-info': { run: compShot('info', 5, 'g6n01', 4, null, 6) },

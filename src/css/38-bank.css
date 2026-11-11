@@ -28,6 +28,7 @@
 /* passage questions (P2-25): the choices sit under the passage panel, so they are compact and the question line stays on screen */
 .choices.bpass{gap:var(--s-2)}
 .choices.wide.bpass .choice.ch{font-size:clamp(17px,2.7vh,22px);padding:6px var(--s-3);min-height:var(--tap);line-height:1.2}
+.choices.bpass:not(.wide) .choice.ch{font-size:clamp(20px,3.2vh,28px);padding:8px var(--s-3);min-height:var(--tap);line-height:1.2} /* short answers (2 x 2 tiles) are compact too (P2-26) */
 @media (orientation:portrait) and (max-height:900px){.bctx-b{max-height:24vh}}
 /* long passages (P2-29, over 700 characters: grade 4 and up): on a tall phone the panel takes less so the question line and four choices stay on screen */
 @media (orientation:portrait) and (max-height:900px){

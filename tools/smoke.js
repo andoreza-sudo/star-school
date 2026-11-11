@@ -2405,6 +2405,68 @@ async function main() {
       await fa.ctx.close();
     }
 
+    // P2-26 Story Summit comprehension at 380x780: a 3rd grader who has done every Story Summit stop but the new two opens Read a Story 3
+    //    (comp 4), then Learn About It 2 (info 2). The longer passages (up to ~120 words) must leave the question line and the four
+    //    choices on screen with the passage panel open; targets 48 px; no sideways scroll; a 10/10 round saves stars under comp4 and info2.
+    {
+      const cp26 = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
+      const pg = cp26.page;
+      await pg.evaluate(() => {
+        S.grade = 3;
+        const sw = PATHS.read.worlds.findIndex(w => w.id === 'r_summit');
+        NODES.read.forEach(n => { if (n.wi <= sw && nid(n) !== 'boss_r_summit' && !['comp4', 'info2'].includes(nid(n))) S.maps.read[nid(n)] = S.maps.read[nid(n)] || 2; });
+        save();
+      });
+      const goStop26 = async id => {
+        const at = await pg.evaluate(id => { const i = NODES.read.findIndex(n => nid(n) === id); return { i, w: NODES.read[i].wi }; }, id);
+        await pg.evaluate(() => { if (G) G.dead = true; home(); });
+        await pg.click('.game[data-p="read"]');
+        await pg.waitForSelector('.wchip.on');
+        await pg.click(`.wchip[data-w="${at.w}"]`);
+        await pg.waitForSelector(`.wchip.on[data-w="${at.w}"]`);
+        await pg.click(`.node[data-n="${at.i}"]`);
+        await pg.waitForSelector('#prompt');
+      };
+      const before26 = await pg.evaluate(() => JSON.stringify({ a: S.maps.read.spell4, b: S.maps.read.vocab5, c: S.maps.read.comp3, d: S.maps.read.info1 }));
+      const cur26 = await pg.evaluate(() => nid(NODES.read[curNode('read')]));
+      if (cur26 !== 'comp4') fail('P2-26: the map should open on comp4 for a child who did the old Story Summit stops, got ' + cur26);
+      const lay26 = () => pg.evaluate(() => {
+        const d = document.querySelector('.bctx'), pr = document.querySelector('#prompt'), r = pr.getBoundingClientRect();
+        const chs = [...document.querySelectorAll('.ch')], hb = document.querySelector('#hb').getBoundingClientRect(), first = chs.length ? chs[0].getBoundingClientRect().top : 0, last = chs.length ? chs[chs.length - 1].getBoundingClientRect() : { bottom: 9999 };
+        return { w: document.documentElement.scrollWidth, panel: !!d, open: !!d && d.open, top: Math.round(r.top), bottom: Math.round(r.bottom), h: Math.round(r.height), last: Math.round(last.bottom),
+          ch: chs.length, help: Math.round(hb.bottom), first: Math.round(first), min: Math.min(...chs.map(e => Math.min(e.offsetWidth, e.offsetHeight))), vh: window.innerHeight };
+      });
+      for (const [id, sk, lv] of [['comp4', 'comp', 4], ['info2', 'info', 2]]) {
+        await goStop26(id);
+        const first = await pg.evaluate(() => ({ sk: G.sk, lv: G.lv, n: G.n, pool: G.pool.length + 1 }));
+        if (first.sk !== sk || first.lv !== lv || first.n !== 10 || first.pool !== 10) fail('P2-26 ' + id + ' round: ' + JSON.stringify(first));
+        // every passage of the level, all five questions: panel open, question line and all four choices on screen, targets 48 px, no sideways scroll
+        const ids = await pg.evaluate(([sk, lv]) => PASS[sk].map((p, bp) => [bp, p.id, p.lv]).filter(x => x[2] === lv).map(x => x.slice(0, 2)), [sk, lv]);
+        for (const [bp, pid] of ids) {
+          for (const qi of [0, 1, 2, 3, 4]) {
+            await pg.evaluate(([sk, lv, bp, qi]) => { G.q = genPassage(sk, lv, { bp, qi, s: 5 }); G.q.sk = sk; G.q.lv = lv; renderQ(); }, [sk, lv, bp, qi]);
+            const l = await lay26();
+            if (l.w > 380 || !l.panel || !l.open || l.ch !== 4 || l.min < 48 || l.h < 8 || l.top < 0 || l.bottom > l.vh || l.last > l.vh || l.help > l.first + 4) fail('P2-26 ' + pid + ' q' + (qi + 1) + ': ' + JSON.stringify(l));
+          }
+        }
+        if (ids.length !== 5) fail('P2-26 ' + id + ': ' + ids.length + ' passages checked, expected 5');
+        await goStop26(id);
+        await pg.click('#hb');
+        const hint = await pg.evaluate(() => document.querySelector('#hint').textContent);
+        if (!hint.trim()) fail('P2-26 ' + id + ': empty hint');
+        await playRound(pg, 'P2-26 ' + id, 10);
+        const st = await pg.evaluate(id => S.maps.read[id] || 0, id);
+        if (st !== 3) fail('P2-26 ' + id + ': a 10/10 round should save 3 stars, got ' + st);
+      }
+      const after26 = await pg.evaluate(() => JSON.stringify({ a: S.maps.read.spell4, b: S.maps.read.vocab5, c: S.maps.read.comp3, d: S.maps.read.info1 }));
+      if (before26 !== after26) fail('P2-26: old stops changed their stars: ' + before26 + ' -> ' + after26);
+      else step('P2-26: Read a Story 3 and Learn About It 2 at 380x780: 10 passages x 5 questions checked with the panel open (question line and four choices on screen, targets 48 px, no sideways scroll), 10/10 rounds saved 3 stars, old stops untouched');
+      await vwait(pg, 500);
+      network.push(...cp26.network);
+      for (const e of cp26.errors) fail(e);
+      await cp26.ctx.close();
+    }
+
     for (const e of errors) fail(e);
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');
