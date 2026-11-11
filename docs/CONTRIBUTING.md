@@ -93,6 +93,7 @@ JS files created by the split, with the source line ranges of `src/src.html` at 
 | `70-art.js` | 2002-2156 | Art Studio |
 | `72-shapes.js` | 2157-2368 | Shape coloring pages |
 | `80-grown.js` | 2369-2426 | Grown-ups area |
+| `81-backup.js` (P5-07) | | `BAK`: save a backup file, check and load one, undo the last load; used by the Grown-ups Backup card |
 | `90-app.js` | 2427-2437 | Fullscreen, install, service worker registration |
 | `src/boot.js` | 2438-2439 | `loadClips(); home(true);` (not in `src/js`; the tests leave it out) |
 

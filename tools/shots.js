@@ -1151,6 +1151,7 @@ const GROUPS = {
   p418: ['map', 'map-read', 'map-worlds', 'map-boss', 'fluency', 'fluency-modes', 'sprint', 'sprint-end', 'race-menu', 'q-race', 'race-end', 'streak',
     'place-intro', 'place-q', 'place-done', 'place-grown', 'report-top', 'care', 'setup', 'gameroom', 'balloons', 'balloons-end', 'learn-es', 'q-boss',
     'viz', 'viz-q', 'bay-coins4', 'clock-time1', 'frac-2-pic', 'sg-tenf2'],
+  p507: ['backup-card', 'backup-sheet', 'backup-refused'],
   p412: ['setup', 'setup-done', 'grown', 'grown-full', 'grown-log', 'report-top', 'care', 'care-fx', 'care-space', 'shop', 'app-icon'],
 };
 
@@ -2097,6 +2098,24 @@ Object.assign(SCREENS, {
   'shop-places': { run: async p => { await p.evaluate(() => { shopTab = 'scene'; shopSel = null; shop(); }); await p.click('.item[data-id="candy"]'); } },
   // the sticker book with most stickers (some doubles) and one full page
   'stickers-many': { run: async p => { await p.evaluate(() => { STK.forEach((s, i) => { if (i < 12 || i % 3) S.stickers[s] = 1 + (i % 5 == 0); }); book(); }); } },
+});
+
+// P5-07 backup: the Backup card with Undo showing (scrolled to the top of it), the "Replace this tablet's progress?" summary sheet,
+// and the message for a file that cannot be loaded. The file is a real export of the midway save, loaded by the file picker.
+const bakShot = after => ({ run: async p => {
+  await p.evaluate(() => { localStorage.setItem(BAK.UNDO, JSON.stringify(S)); grown(); document.querySelector('#gw-bak').scrollIntoView({ block: 'start' }); });
+  await after(p);
+} });
+Object.assign(SCREENS, {
+  'backup-card': bakShot(async () => {}),
+  'backup-sheet': bakShot(async p => {
+    await p.setInputFiles('#bk-file', { name: 'b.json', mimeType: 'application/json', buffer: Buffer.from(await p.evaluate(() => BAK.make())) });
+    await p.waitForSelector('#bk-yes');
+  }),
+  'backup-refused': bakShot(async p => {
+    await p.setInputFiles('#bk-file', { name: 'b.json', mimeType: 'application/json', buffer: Buffer.from('{"app":"Star School","save":999,"data":{}}') });
+    await p.waitForSelector('#bk-msg .gw-warn');
+  }),
 });
 
 // P4-13 / P4-14 / P4-15 object art sheet: the named drawings (null = all of ART) at 24, 48 and 96 px, on the page colour and on a tint.

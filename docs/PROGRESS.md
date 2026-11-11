@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** P5-07, G-01, G-02, R-01m, P5-10, R-01 (reading, Spanish, Discover, Brain Teasers, practice)
+**Next up:** G-01, G-02, R-01m, P5-10, R-01 (reading, Spanish, Discover, Brain Teasers, practice), P6-01
 
-**Current version:** v134
+**Current version:** v135
 
 ## Chunk status
 
@@ -116,6 +116,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - R-02 done
 - R-01 math done
 - P4-17 v134
+- P5-07 v135
 
 ## Handoff notes
 
@@ -429,6 +430,17 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-11) Icons wanted from P4-03: `balloon` (Bonus game, today `gamepad`), `sparkle` / `confetti`, `unlock` (open padlock for "Next stop unlocked", today `map`), `zap` (a lightning with a spark for boss hits; today `bolt`), `sticker` (single sticker for the prize row), `medal` (the prize rosette as an icon), `heart-half` (boss life bar), `chest` (the treasure chest at icon size, e.g. for the round track where renderQ shows the gift emoji).
 
 ## Log
+
+### P5-07 Backup: export, import, undo (v135, 2026-11-11, Claude)
+- What changed: Grown-ups has a new Backup card (drawn download, upload and undo icons, same `GW.card` style as P4-12), placed just above Start over. "Save a backup" writes `starschool-<name>-<yyyy-mm-dd>.json`: a small header (`app` "Star School", `ver`, `save` = LATEST, `date`, child's `name`) and the whole save in `data`. It uses the Web Share API with the file when `navigator.canShare({files})` allows it, else a Blob download link, which works offline. "Load a backup" is a file picker (`#bk-file`, `.json`). The file is checked first, on a copy: right app, a save version that can be migrated (a newer one is refused with "made by a newer Star School, update the app first"), sane types (names, numbers, lists, a known pet), size under 5 MB. Then a summary sheet (name, grade, stars, coins, backup date) asks "Replace this tablet's progress?" with Yes / Not now. Yes keeps the current save under `starschool-v2-undo`, writes the new one and reloads. "Undo last load" (shown only while that copy exists) puts it back. A refused file shows a plain message in the card and changes nothing. Start over now has a "Save a backup first" button above Erase everything (still two taps), and erasing also deletes the undo copy.
+- Online rule (CONTRIBUTING 7): both Save buttons show `onlineNote()` and run through `needOnline(..., {block:false})` like the report card's Print: offline it says so, then still downloads. Loading shares nothing and has no note. The app makes no network request itself.
+- Files: new `src/js/81-backup.js` (`BAK`), `src/js/80-grown.js` (card, Start over button, header comment), `src/css/48-setup-grown-care.css` (small block), `tools/build.py` (VER), `tools/test.js`, `tools/smoke.js`, `tools/shots.js`, docs, built output.
+- Size: index.html 1,248,617 -> 1,258,304 (+9.7 KB; over the 1.2 MB warning as before, fail 1.5 MB).
+- Tests: new named check `backup P5-07`: every fixture exports and imports to an identical save and undo brings the other save back; an old (v1) backup migrates and keeps its stars; newer (header, data or both), wrong app, corrupt, empty, wrong types, oversized and other bad files are refused with the save and storage untouched; a full tablet refuses and changes nothing; the Save buttons carry the online note and `needOnline`; no network calls in the file. Smoke block `// P5-07` (midway, 380x780 and 1024x600, real taps): gear hold, share (stubbed) and download (offline) of a backup, Start over, bad files, load by `setInputFiles` (Not now changes nothing, Yes restores the progress), Undo last load, 48 px targets, no sideways scroll, no emoji chrome.
+- Test expectation changes: none. The existing P4-12 smoke block still passes (it taps `#reset` once and reads "Tap again"; section count only needs 10 or more).
+- Shots: group `@p507`: `backup-card`, `backup-sheet`, `backup-refused`. Looked at 2x at 380x780 and 1024x600.
+- Merge: built on branch P5-07-backup from 958ad05 (v127); VER v128 is provisional. Conflicts to expect: `tools/build.py` (VER), `tools/test.js` (one check before "P2-06 fractions core"), `tools/smoke.js` (one block before `// P4-14`), `tools/shots.js` (before the art sheet), `src/js/80-grown.js` (if another chunk edits Grown-ups), `Chunk status` and this log, built files (rebuild, `git add -A`). If another chunk adds a share or send button, it should follow the same online rule.
+- Merge: renumbered v128 -> v135 at merge, on top of A11c, P2-35, P4-15, P4-16, P4-17, P5-08, P5-09 and the reviews. Grown-ups keeps P4-17's Calm switch; the smoke and shots blocks were placed by hand (before the final network lines, and before the art sheet).
 
 ### P4-17 Motion and sound polish (v134, 2026-11-11, Claude)
 - What changed (DESIGN_SYSTEM 8, new "8.3 As built"; the owner: the old look "looks like 1999 graphics", nothing flat anywhere): one gentle, consistent motion and sound layer, no emoji particles left, and a Calm mode switch.
