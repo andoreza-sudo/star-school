@@ -1,0 +1,19 @@
+/* P4-09 map and world scenes (SCN in src/js/43-scenes.js): the world band holds one scene SVG, clipped to its rounded corners and
+   sitting on a ledge in its ground colour; the trail is a worn path of stepping stones (gold where the child has walked) with a
+   small bridge between two worlds. Decoration only: no pointer events, no animation. Tokens only. */
+.wband{overflow:hidden;pointer-events:none;contain:layout paint}
+.wband>.scn-art{position:absolute;left:0;top:0;display:block}
+.mp-trail path,.mp-trail rect{pointer-events:none}
+.mp-trail .tr{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.tr-rim{stroke:var(--ill-ink);stroke-width:30px;opacity:.1}
+.tr-bed{stroke:var(--ill-cream-1);stroke-width:24px;opacity:.92}
+.tr-sh,.tr-st,.tr-gs,.tr-go{stroke-width:14px;stroke-dasharray:0 25}
+.tr-sh{stroke:var(--ill-grey)}
+.tr-st{stroke:var(--ill-white-2)}
+.tr-gs{stroke:var(--star-shade)}
+.tr-go{stroke:var(--star)}
+.tr-hi{stroke:var(--ill-white);stroke-width:5px;stroke-dasharray:0 25;opacity:.9}
+.tr-plank{fill:var(--ill-tan)}
+.tr-plank-sh{fill:var(--ill-brown-2)}
+.tr-seam{fill:none;stroke:var(--ill-tan-2);stroke-width:1.6px}
+.tr-rail{fill:none;stroke:var(--ill-brown-2);stroke-width:4px;stroke-linecap:round}

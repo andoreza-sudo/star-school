@@ -35,6 +35,14 @@
 --ill-grey-1:#E1E5EF;--ill-grey:#B4BBD0;--ill-grey-2:#8C94AE;--ill-grey-3:#5F6683;
 --ill-white:#FFFFFF;--ill-white-2:#E4E8F3;--ill-white-3:#B9C0D4;
 --ill-ink:#1F2440;--ill-ink-2:#3A3F5C;
+/* map scenes (P4-09, DESIGN_SYSTEM 7): pale skies (top, -1 at the horizon) and grounds (base, -2 the ledge and soft patches).
+   Quiet behind the stops: ink at least 7:1 and every subject colour at least 3:1 on every ground (tools/contrast.js) */
+--sc-sky:#CBE6FC;--sc-sky-1:#EAF6FF;--sc-dusk:#FFD6BF;--sc-dusk-1:#FFF0DF;--sc-candy:#FFD3E5;--sc-candy-1:#FFF0F6;
+--sc-night:#2C2766;--sc-night-1:#9C91E0;
+--sc-green:#E5F6D7;--sc-green-2:#CDEBB5;--sc-mint:#DDF4EC;--sc-mint-2:#BFE6D7;--sc-sand:#FCF0D8;--sc-sand-2:#F1DCB2;
+--sc-pink:#FFE9F1;--sc-pink-2:#F9CEDE;--sc-lilac:#EFEAFF;--sc-lilac-2:#D8CEF7;--sc-sea:#DDF2FB;--sc-sea-1:#EFFAFF;--sc-sea-2:#BEE2F2;
+--sc-stone:#EDEFF5;--sc-stone-2:#D3D8E5;--sc-peach:#FFEDE0;--sc-peach-2:#F8D2B8;--sc-sun:#FFF6D8;--sc-sun-2:#F4E2A6;
+--sc-rose:#FFE6E6;--sc-rose-2:#F7CACA;--sc-blue:#E3EAFF;--sc-blue-2:#C8D5FA;
 /* type */
 --font-body:Andika,system-ui,Roboto,sans-serif;
 --font-display:Andika,system-ui,Roboto,sans-serif;
