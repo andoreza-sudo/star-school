@@ -2923,7 +2923,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S));SAVE_FAILED=fals
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v135'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v136'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -5670,7 +5670,7 @@ function hintStep(q) {
 // P4-17: calm mode (Grown-ups switch, S.calm, read with a default) sets html.calm: no large movement, no confetti, no loops.
 // Every screen adds it when S.calm is on; the switch (80-grown.js) turns it off again with calmApply(true).
 function calmApply(sync){try{const c=document.documentElement.classList;if(S.calm)c.add('calm');else if(sync)c.remove('calm')}catch(e){}}
-const view=h=>{music(false);calmApply();stopBalloons();if(typeof stopRace=='function')stopRace();if(typeof stopFlu=='function')stopFlu();if(typeof stopHC=='function')stopHC();if(typeof gtStop=='function')gtStop();if(typeof BT!='undefined')BT.stop();if(typeof TR!='undefined')TR.stop();const a=$('#app');a.style.animation='none';void a.offsetWidth;a.style.animation='';a.innerHTML=h};
+const view=h=>{music(false);calmApply();stopBalloons();if(typeof stopRace=='function')stopRace();if(typeof stopFlu=='function')stopFlu();if(typeof stopHC=='function')stopHC();if(typeof rlStop=='function')rlStop();if(typeof gtStop=='function')gtStop();if(typeof BT!='undefined')BT.stop();if(typeof TR!='undefined')TR.stop();const a=$('#app');a.style.animation='none';void a.offsetWidth;a.style.animation='';a.innerHTML=h};
 const PET_YAY=['Yay!','Woo-hoo!','You did it!','So smart!','High five!','Awesome!','Super!'];
 const PET_OOPS=['Oops! Try again!','You can do it!','Almost!','Hmm, look again!'];
 
@@ -6702,12 +6702,12 @@ function hmPaths() {
     `<span class="hm-go">${ico(left > 0 ? 'play' : 'lock', 28)}</span></button></div>`;
 }
 
-// Secondary actions: Speed Race, Pet Care, Pet Shop, Stickers.
+// Secondary actions: Fact Race (54-race.js; it was called Speed Race until G-02), Pet Care, Pet Shop, Stickers.
 function hmActs() {
   const cr = careTick(), needs = Math.min(cr.food, cr.clean, cr.fun) < 30;
   const a = (id, icon, cls, label, extra = '') =>
     `<button class="hm-act" id="${id}"><span class="hm-ai ${cls}">${ico(icon, 30)}${extra}</span><span>${label}</span></button>`;
-  return `<div class="hm-acts">${a('race', 'bolt', 't-race', 'Speed Race')}` +
+  return `<div class="hm-acts">${a('race', 'bolt', 't-race', 'Fact Race')}` +
     a('care', 'paw', 't-care', 'Pet Care', needs ? `<i class="hm-need" aria-label="Your pet needs you">!</i>` : '') +
     a('shop', 'bag', 't-shop', 'Pet Shop') + a('book', 'sticker-book', 't-book', 'Stickers') + '</div>';
 }
@@ -6721,7 +6721,7 @@ function home(first){
   <div class="scroll hm" id="hs"><div class="hm-cols">
    <div class="hm-col">${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('target', 26)}<span>Today's missions</span></h2>${hmMissions()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}${hmDaily()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
-   <p class="hm-ver">${ico('star', 16)}<span>Star School v135</span></p></div>`);
+   <p class="hm-ver">${ico('star', 16)}<span>Star School v136</span></p></div>`);
   music(true);
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'heart');
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
@@ -8714,7 +8714,7 @@ function actQEnd(first,again){try{ACT.qEnd(first,again,ACT.now())}catch(e){}}
 function actRound(){try{ACT.round()}catch(e){}}
 function actFlu(sec){try{ACT.flu(sec)}catch(e){}}
 if(typeof document!='undefined')document.addEventListener('visibilitychange',()=>{try{ACT.vis(ACT.hidden(),ACT.now())}catch(e){}});
-/* ---------- speed race ---------- */
+/* ---------- Fact Race (called Speed Race until G-02, which added the racing game Star Rally; ids and S.race unchanged) ---------- */
 let RC=null;
 function stopRace(){if(RC){clearInterval(RC.iv);RC=null}}
 const passedAny=(p,sk,lv)=>NODES[p].some((n,i)=>n.sk==sk&&n.lv>=lv&&passed(p,i));
@@ -8722,7 +8722,7 @@ const RACES={math:['➕','Math Facts','Add and take away, fast!'],sight:['👀',
 // P4-18: drawn race badges and colours (the emoji in RACES stay as data)
 const RACE_GX={math:['path-math','math'],sight:['eye','read'],es:['path-es','es']};
 function raceMenu(){S.race=S.race||{};
-  view(`<div class="top tbar gx-mtop s-play">${UI.ibtn('back','Back',{size:'sm',id:'back'})}<div class="ttl gx-ttl"><span class="gx-tb">${ico('bolt',24)}</span><span>Speed Race</span></div></div>
+  view(`<div class="top tbar gx-mtop s-play">${UI.ibtn('back','Back',{size:'sm',id:'back'})}<div class="ttl gx-ttl"><span class="gx-tb">${ico('bolt',24)}</span><span>Fact Race</span></div></div>
   <div class="scroll gx-list"><p class="gx-lead">How many can you get in 60 seconds? Beat your best score!</p>
   <div class="games">${Object.entries(RACES).map(([k,[e,t,d]])=>GFX.card({cls:'game',attrs:`data-r="${k}"`,p:RACE_GX[k][1],icon:RACE_GX[k][0],title:t,sub:esc(d),
     side:`<span class="gx-best">${ico('trophy',22)}<b>${S.race[k]||0}</b></span>`})).join('')}</div></div>`);
@@ -9411,11 +9411,11 @@ function ptCalc(g,sc,n,stars,prev,newPass,testOk,nd,x){const mis=!!(x&&x.mission
   if(r>0){const k=r==1?.6:.35,cut=Math.round(t*(1-k));t-=cut;L.push([-cut,`Played ${r+1} times today`])}
   if(mis){t+=60;L.push([60,'Daily mission done'])} // after the repeat cut: the mission is paid once a day, in full
   t=Math.max(30,Math.round(t/30)*30);return{sec:t,lines:L,mast:!g.test&&!g.mix&&prev>=3&&!g.boss,rep:r}}
-// Speed Race: the first race a day in each category that scores 5 or more pays 1 min; more races are free practice. Returns seconds.
+// Fact Race (54-race.js, once Speed Race): the first race a day in each category that scores 5 or more pays 1 min; more races are free practice. Returns seconds.
 function ptRace(cat,sc){if(sc<5)return 0;const rp=S.ptRep&&S.ptRep.day==today()?S.ptRep:(S.ptRep={day:today(),n:{}}),k='race_'+cat;if(rp.n[k])return 0;rp.n[k]=1;return 60}
 // the lines of "How to earn more game time" (Game Room); R_ draws a small icon
 // the lines of "How to earn more game time": [icon, what, how much]; the Game Room hub (59-game-hub.js) shows them, ptRules as HTML
-function ptEarnList(){return[['sparkle','Unlock a new stop','+1 min'],['star','Get a perfect score','+1 min'],['globe','Play a harder world','up to +1½ min'],['crown','Beat a boss','+2 min'],['review','Do your Daily Review','a full round'],['review','Fix an old mistake','bonus seconds'],['chart','Beat your old score','+½ min'],['puzzle','Solve a Brain Teaser','up to 2 min, fewer with hints'],['calendar',"Finish all three of today's missions",'+1 min'],['timer','Fact Sprint or Speed Race, first one of the day','+1 min']]}
+function ptEarnList(){return[['sparkle','Unlock a new stop','+1 min'],['star','Get a perfect score','+1 min'],['globe','Play a harder world','up to +1½ min'],['crown','Beat a boss','+2 min'],['review','Do your Daily Review','a full round'],['review','Fix an old mistake','bonus seconds'],['chart','Beat your old score','+½ min'],['puzzle','Solve a Brain Teaser','up to 2 min, fewer with hints'],['calendar',"Finish all three of today's missions",'+1 min'],['timer','Fact Sprint or Fact Race, first one of the day','+1 min']]}
 function ptRules(R_){return ptEarnList().map(([i,t,v])=>`<div>${R_(i)} ${t} <b>${v}</b></div>`).join('')+'<div class="small">Replaying a stop you already mastered, or the same stop over and over, earns less.</div>'}
 
 // P4-16: the Game Room hub (scene, game-time ticket, a drawn card per registered game) lives in games.<VER>.js with the games:
@@ -10277,7 +10277,7 @@ function grown(){let armed=false;
     {sub:'Rounds played and first-try accuracy for every skill on the maps, with the questions missed most.'})}
   ${GW.card('gw-how','info','How it works',`<p class="gw-p">Each subject has its own map. Getting 7 of 10 right opens the next stop (8 earns 2 stars, 10 earns 3), and each world stretches further. Missed questions come back at the end of a round, in later rounds, in Daily Review and in the Tricky Mix. Each right answer earns a star (the pet grows) and a coin (spent in the shop). Everything is saved on this tablet only.</p>`)}
   <details class="gw-card gw-det" id="applog"><summary class="gw-h"><span class="gw-hi">${ico('doc',24)}</span><span>App log</span>${ico('chevron-right',22,'chev')}</summary><div class="gw-log">
-   <div><b>Version</b> v135</div><div><b>Save size</b> ${(JSON.stringify(S).length/1024).toFixed(1)} KB</div>
+   <div><b>Version</b> v136</div><div><b>Save size</b> ${(JSON.stringify(S).length/1024).toFixed(1)} KB</div>
    <div><b>Storage</b> ${SAVE_FAILED?'<span class="gw-bad">could not save (device storage may be full)</span>':'saving OK'}</div>
    ${SAVE_CORRUPT?'<div class="gw-bad">The old save could not be read. A fresh start was made and the old data was kept on the device.</div>':''}
    <div><b>Last errors</b> ${(S.err||[]).length?'<ul class="gw-errs">'+(S.err||[]).slice().reverse().map(e=>'<li><span>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+'</span> '+esc(e.msg)+'</li>').join('')+'</ul>':'none'}</div></div></details>
@@ -10331,7 +10331,7 @@ const BAK = {
   MAX: 5e6, // bytes: a save is under 300 KB, so a bigger file is not a backup
   // The file text: a small header, then the whole save in "data".
   make() {
-    return JSON.stringify({app: BAK.APP, ver: 'v135', save: LATEST, date: new Date().toISOString(), name: S.name || '', data: S});
+    return JSON.stringify({app: BAK.APP, ver: 'v136', save: LATEST, date: new Date().toISOString(), name: S.name || '', data: S});
   },
   fileName() {
     const nm = String(S.name || 'child').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'child';
@@ -10788,20 +10788,20 @@ function appFiles() {
   ];
 }
 function dataReady() {
-  return appFiles().every(f => f[1] === 'v135');
+  return appFiles().every(f => f[1] === 'v136');
 }
 function dataMissing() {
-  logErr(appFiles().filter(f => f[1] !== 'v135').map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v135)');
+  logErr(appFiles().filter(f => f[1] !== 'v136').map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v136)');
   const again = UI.btn('Try again', { kind: 'primary', size: 'lg', icon: 'replay', id: 'dataretry' });
   view(`<div class="scroll" id="datamiss">${UI.empty('download', 'Star School needs to finish updating. Connect to the internet, then tap Try again.', again)}</div>`);
   $('#dataretry').onclick = () => location.reload();
 }
 </script>
-<script src="gen.v135.js"></script>
-<script src="gen2.v135.js"></script>
-<script src="bt.v135.js"></script>
-<script src="games.v135.js"></script>
-<script src="data.v135.js"></script>
+<script src="gen.v136.js"></script>
+<script src="gen2.v136.js"></script>
+<script src="bt.v136.js"></script>
+<script src="games.v136.js"></script>
+<script src="data.v136.js"></script>
 <script>
 if (dataReady()) {
   loadClips();

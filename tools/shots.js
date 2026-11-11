@@ -2177,6 +2177,23 @@ Object.assign(SCREENS, {
 GROUPS.p416 = ['gameroom', 'gameroom-empty', 'game-hill-menu', 'game-hill-play', 'game-pause', 'game-hill-end', 'game-hill-win', 'game-art-menu',
   'game-art-play', 'game-pixel-play', 'game-blocks-menu', 'game-blocks-play', 'game-blocks-win', 'game-timeup'];
 
+// G-02: Star Rally, the racing game (menu, garage with a paint tried on, a race in each place, Pro buttons, pause, the end card).
+//    node tools/shots.js @g02   (the race shots wait for the countdown; the end card runs the race 20x faster with RL_DEV.fast)
+const rlSave = () => { S.pt = { bank: 1200, day: today(), used: 0 }; const r = rlS(); r.spk = 130; r.stars = { 'meadow-0': 3, 'meadow-1': 2, 'meadow-2': 3, 'beach-0': 1 }; save(); };
+const rlShot = (fn, wait = 5500) => ({ run: async p => { await p.evaluate(rlSave); await p.evaluate(fn); await p.waitForTimeout(wait); } });
+Object.assign(SCREENS, {
+  'race-menu': rlShot(() => rlMenu(), 600),
+  'race-garage': rlShot(() => rlGarage({ k: 'paint', id: 'b' }), 600),
+  'race-meadow': rlShot(() => rlRace('meadow-0')),
+  'race-beach': rlShot(() => rlRace('beach-0')),
+  'race-snow': rlShot(() => { S.rally.stars['beach-1'] = 3; S.rally.stars['beach-2'] = 2; rlRace('snow-0'); }),
+  'race-city': rlShot(() => { Object.assign(S.rally.stars, { 'beach-1': 3, 'beach-2': 3, 'snow-0': 3 }); rlRace('city-0'); }),
+  'race-pro': rlShot(() => { S.rally.mode = 'pro'; S.rally.quiz = true; rlRace('meadow-1'); }, 9000),
+  'race-pause': { run: async p => { await rlShot(() => rlRace('meadow-0')).run(p); await p.click('#gpause'); await p.waitForTimeout(600); } },
+  'race-end': { run: async p => { await p.evaluate(rlSave); await p.evaluate(() => { rlRace('meadow-0'); RL_DEV.fast = 20; }); await p.waitForSelector('.gh-end', { timeout: 40000 }); } },
+});
+GROUPS.g02 = ['race-menu', 'race-garage', 'race-meadow', 'race-beach', 'race-snow', 'race-city', 'race-pro', 'race-pause', 'race-end'];
+
 async function main() {
   const args = process.argv.slice(2);
   let fixtureArg = null;
