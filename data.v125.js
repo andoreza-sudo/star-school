@@ -5156,7 +5156,7 @@ var SCN_W = {
   r_summit: ['mountain', { lm: ['mountain', 'flag'], pr: ['pine', 'flag', 'rock', 'pine', 'mountain', 'bush'] }], r_library: 'library',
   r_island: 'island', r_legend: 'legend',
   e_plaza: 'plaza', e_fiesta: 'fiesta', e_repaso: 'repaso', e_casa: ['town', { lm: ['houseG', 'tree'], pr: ['houseG', 'flowers', 'tree', 'house', 'bush', 'treeP'] }],
-  e_tiempo: 'tiempo', e_ciudad: 'city',
+  e_tiempo: 'tiempo', e_ciudad: 'city', e_frases: 'library',
   d_nature: 'nature', d_lab: 'lab', d_cosmos: 'observatory'
 };
 /* ---------- spelling words (P2-19, CURRICULUM E-spell) ---------- */
