@@ -385,6 +385,10 @@ const SCREENS = {
   // P2-30 Spanish framework: level 3 (spell niño, accent row) and the no-Spanish-voice listen question (word shown big, note, no speaker)
   'es-spell': { run: async p => { const s = await p.evaluate(`(${ES_FX.install})(['es-MX'])`); await p.evaluate(s => { G = newG({ sk: 'es_tst', lv: 3, n: 1, pool: [genQ('es_tst', 3, s)] }); next(); }, s); } },
   'es-novoice': { run: async p => { await p.evaluate(`(${ES_FX.install})(['en-US'])`); await p.evaluate(() => { G = newG({ sk: 'es_animal', lv: 1, n: 1, pool: [genQ('es_animal', 1, 7)] }); next(); }); } },
+  // P2-33 La Ciudad: the map opened on the world, and one seeded question per unit and level (cap:1 shows the English under the picture)
+  'es-ciudad-map': { run: async p => { await p.evaluate(() => { S.unlockAll = true; pathMap('es', NODES.es.findIndex(n => n.wid === 'e_ciudad')); }); } },
+  ...Object.fromEntries([['place', 1], ['place', 2], ['trans', 1], ['verb', 1], ['verb', 2], ['adj', 1], ['adj', 2]].map(([u, lv]) =>
+    ['es-ciudad-' + u + lv, { run: async p => { await p.evaluate(([u, lv]) => { G = newG({ sk: 'es_' + u, lv, n: 1, pool: [genQ('es_' + u, lv, 5)] }); next(); }, [u, lv]); } }])),
   // P2-32 El Tiempo: one question of each new unit (seeds fixed); 'es-tiempo-map' shows the world
   ...Object.fromEntries([['days', 1, 5], ['days', 2, 6], ['months', 1, 7], ['weather', 1, 8], ['weather', 2, 9], ['big', 1, 3], ['big', 2, 4], ['time', 1, 2], ['time', 2, 11]].map(([u, lv, sd]) => ['es-tiempo-' + u + lv,
     { run: async p => { await p.evaluate(([u, lv, sd]) => { G = newG({ sk: 'es_' + u, lv, n: 1, pool: [genQ('es_' + u, lv, sd)] }); next(); }, [u, lv, sd]); } }])),

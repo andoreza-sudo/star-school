@@ -45,7 +45,12 @@ const KNOWN={ // check name -> exact problem strings that are known content issu
     'es_months L2: no say (choice)',
     'es_weather L2: no say (choice)',
     'es_big L2: no say (choice)',
-    'es_time L2: no say (choice)'
+    'es_time L2: no say (choice)',
+    // P2-33: the same silent-on-purpose level 2 for the four La Ciudad units
+    'es_place L2: no say (choice)',
+    'es_trans L2: no say (choice)',
+    'es_verb L2: no say (choice)',
+    'es_adj L2: no say (choice)'
   ],
 };
 
@@ -10605,6 +10610,100 @@ run('Spanish El Tiempo P2-32',()=>{
   };
   const r=eval(js+';('+body.toString()+')()');
   return{problems:errs.length?uniq(errs):[],note:'5 units x 2 levels x 3000 questions, '+r.checked+' stop checks'};
+});
+
+// ---- P2-33: Spanish world La Ciudad (places, transport, verbs, adjectives) ----
+run('Spanish La Ciudad P2-33',()=>{
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const allow=new Set(fs.readFileSync(path.join(ROOT,'tools','emoji-allow.txt'),'utf8').split('\n').map(l=>l.split('#')[0].trim().replace(/️/g,'')).filter(Boolean));
+  const errs=[],bad=m=>{if(errs.length<40&&!errs.includes(m))errs.push(m)};
+  const body=function(){
+    const WANT={place:[9,14],trans:[7,14],verb:[10,14],adj:[10,14]};
+    // genders from an explicit list (nouns only); verbs and adjectives carry no article
+    const GEN={parque:'el',tienda:'la',biblioteca:'la',hospital:'el',playa:'la',restaurante:'el',iglesia:'la',mercado:'el',calle:'la',banco:'el',cine:'el',
+      carro:'el',autobús:'el',tren:'el',avión:'el',bicicleta:'la',barco:'el',camión:'el',moto:'la',helicóptero:'el',cohete:'el'};
+    const U={};for(const id in WANT){U[id]=ES_UNITS.find(u=>u.id===id);if(!U[id])bad('no unit '+id)}
+    // the four units are appended after the original eight, in this order
+    const ids=ES_UNITS.map(u=>u.id),at=ids.indexOf('place');
+    if(at<8||ids.slice(at,at+4).join(' ')!=='place trans verb adj')bad('unit order '+ids.join(' '));
+    if(ids.slice(0,8).join(' ')!=='greet color num teen animal food body family')bad('original units moved');
+    for(const id in WANT){const u=U[id];if(!u)continue;
+      const [lo,hi]=WANT[id];
+      if(u.items.length<lo||u.items.length>hi)bad(id+': '+u.items.length+' words, wants '+lo+' to '+hi);
+      if(u.mix||u.spell)bad(id+': must not set mix or spell');
+      if(!SK['es_'+id]||SK['es_'+id].max!==2)bad(id+': skill missing or not 2 levels');
+      for(const it of u.items){
+        const w=id+' '+it[0]+': ';
+        if(it[0]!==it[0].normalize('NFC')||it[0]!==it[0].toLowerCase())bad(w+'not NFC lowercase');
+        if(id==='place'||id==='trans'){if(GEN[it[0]]!==it[3])bad(w+'article '+it[3]+' wants '+GEN[it[0]])}
+        else if(it[3]!=='')bad(w+'verbs and adjectives have no article');
+        if(id==='verb'&&!/(ar|er|ir)$/.test(it[0]))bad(w+'not an infinitive');
+        if(id==='verb'&&!/^to /.test(it[1]))bad(w+'gloss should be "to ..."');
+        if(id==='adj'&&/(a|as|os)$/.test(it[0]))bad(w+'not a masculine singular form');
+        if(!allow.has(it[2].replace(/️/g,'')))bad(w+'picture '+it[2]+' not in the allow-list');
+      }
+    }
+    for(const id of ['place','verb','adj'])if(U[id]&&!U[id].cap)bad(id+': needs cap:1 (English under the picture)');
+    for(const k of Object.keys(GEN))if(!U.place.items.concat(U.trans.items).some(it=>it[0]===k))bad('missing noun '+k);
+    for(const k of ['correr','saltar','comer','beber','dormir','leer','escribir','jugar','cantar','bailar','nadar','caminar'])if(!U.verb.items.some(it=>it[0]===k))bad('missing verb '+k);
+    for(const k of ['grande','pequeño','alto','bajo','rápido','lento','nuevo','viejo','caliente','frío','bonito','limpio','sucio'])if(!U.adj.items.some(it=>it[0]===k))bad('missing adjective '+k);
+    // no duplicate word across all units, no shared picture inside a new unit
+    const all=new Map();
+    for(const u of ES_UNITS){const pics=new Set();for(const it of u.items){
+      if(all.has(it[0]))bad('word '+it[0]+' is in '+all.get(it[0])+' and '+u.id);all.set(it[0],u.id);
+      if(WANT[u.id]){if(pics.has(it[2]))bad(u.id+': two words share picture '+it[2]);pics.add(it[2])}}}
+    // levels 1 and 2: 3,000 seeded questions per level through kindProblems, one right answer each
+    let n=0;
+    for(const id in WANT)for(let lv=1;lv<=2;lv++)for(let s=1;s<=3000;s++){
+      const q=genQ('es_'+id,lv,s);n++;
+      for(const m of kindProblems(q))bad(id+' L'+lv+': '+m);
+      if(q.kind!=='choice'||q.lang!=='es')bad(id+' L'+lv+': kind or lang');
+      if(new Set(q.choices.map(c=>c.v)).size!==q.choices.length)bad(id+' L'+lv+': duplicate choices');
+      if(q.choices.filter(c=>c.v===q.ans).length!==1)bad(id+' L'+lv+': not one right answer');
+      if(/\bundefined\b|\bNaN\b|\[object |\bnull\b/.test(q.html))bad(id+' L'+lv+': bad html');
+      if(lv===2&&U[id].cap&&!q.html.includes('pcap'))bad(id+' L2: no English caption');
+    }
+    // old Spanish stops: the P2-30 hash still holds
+    const olds=[];
+    for(const id of ['greet','color','num','teen','animal','food','body','family','mix'].map(x=>'es_'+x))for(let lv=1;lv<=2;lv++)for(let s=1;s<=150;s++)olds.push(JSON.stringify(genQ(id,lv,s)));
+    const h=require('crypto').createHash('md5').update(olds.join('\n')).digest('hex');
+    if(h!=='85968a5ca262a225f92f3a7354d2277e'||olds.length!==2700)bad('old Spanish stops changed by seed: '+h);
+    // world and stop order by id
+    const wi=PATHS.es.worlds.map(w=>w.id),ci=wi.indexOf('e_ciudad');
+    if(ci<0)bad('no e_ciudad');
+    if(wi.slice(0,3).join(' ')!=='e_plaza e_fiesta e_repaso')bad('original worlds moved: '+wi.join(' '));
+    if(ci>=0&&ci<3)bad('e_ciudad must come after the original worlds');
+    const W=PATHS.es.worlds[ci];
+    if(W){
+      if(W.g!==-1||W.n!=='La Ciudad')bad('world fields '+W.g+' '+W.n);
+      const got=W.nodes.map(x=>x[0]+x[1]).join(' ');
+      if(got!=='es_place1 es_place2 es_trans1 es_trans2 es_verb1 es_verb2 es_adj1 es_adj2')bad('stops '+got);
+      for(const x of W.nodes)if(x[2].length>22)bad('title too long: '+x[2]);
+      const ids2=NODES.es.map(nid);
+      if(new Set(ids2).size!==ids2.length)bad('duplicate stop ids');
+      if(!ids2.includes('boss_e_ciudad'))bad('no boss stop');
+      if(NODES.es.filter(x=>x.wid==='e_ciudad'&&x.sk!=='boss').map(nid).join(' ')!=='place1 place2 trans1 trans2 verb1 verb2 adj1 adj2'.replace(/(\w+)/g,'es_$1'))bad('node ids '+ids2.join(' '));
+    }
+    // save safety: with or without the world, every older stop keeps its stars and openness on all fixtures
+    const store={};
+    global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+    const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
+    const CUR=PATHS.es.worlds;let checked=0;
+    for(const name of ['fresh','midway','maxed','legacy-single-map','legacy-index-maps','tricky']){
+      const raw=fx(name);load(Object.keys(JSON.parse(raw)).length?raw:null);
+      const snap=()=>{const o={};NODES.es.forEach((x,i)=>{o[nid(x)]={st:getSt('es',i),open:unlocked('es',i)}});return o};
+      PATHS.es.worlds=CUR.filter(w=>w.id!=='e_ciudad');buildNodes('es');const before=snap();
+      PATHS.es.worlds=CUR;buildNodes('es');const after=snap();
+      for(const k in before){checked++;
+        if(!after[k])bad(name+': stop '+k+' vanished');
+        else{if(before[k].st!==after[k].st)bad(name+': '+k+' stars changed');if(before[k].open&&!after[k].open)bad(name+': '+k+' re-locked')}}
+      if(after.es_place1&&after.es_place1.st!==0)bad(name+': a new stop starts with stars');
+    }
+    PATHS.es.worlds=CUR;buildNodes('es');
+    return{n,checked};
+  };
+  const r=eval(js+';('+body.toString()+')()');
+  return{problems:errs.length?uniq(errs):[],note:r.n+' generated questions, '+r.checked+' stop checks'};
 });
 
 // ---- report ----

@@ -1,5 +1,5 @@
-/* Star School data banks v113. BUILT by tools/build.py from src/data/*.js (sorted): never edit by hand.
-   index.html v113 loads this file with <script src="data.v113.js"> between the code and the start-up script. */
+/* Star School data banks v114. BUILT by tools/build.py from src/data/*.js (sorted): never edit by hand.
+   index.html v114 loads this file with <script src="data.v114.js"> between the code and the start-up script. */
 /* Comprehension passages (P2-25: 2nd grade). Format and how to add a grade: header of src/js/37-comp.js.
    Fiction (type 'f') is the comp skill, level 3; nonfiction (type 'n') is the info skill, level 1. Original text, no brands, no real people.
    Append new grades below; never reorder or insert (saved review items remember a passage by its position). */
@@ -1707,6 +1707,56 @@ const ES_UNITS=[
   ['son las cuatro y cuarto','4:15','k:4:15',''],
   ['son las siete y cuarto','7:15','k:7:15',''],
   ['son las diez y cuarto','10:15','k:10:15','']]},
+ {id:'place',t:'Places in Town',e:'🏙',theme:'Places in town',cap:1,items:[
+  ['parque','park','🌳','el'],
+  ['tienda','store','🏪','la'],
+  ['biblioteca','library','📚','la'],
+  ['hospital','hospital','🏥','el'],
+  ['playa','beach','🏖','la'],
+  ['restaurante','restaurant','🍽','el'],
+  ['iglesia','church','⛪','la'],
+  ['mercado','market','🥕','el'],
+  ['calle','street','🛣','la'],
+  ['banco','bank','🏦','el'],
+  ['cine','movie theater','🎬','el']]},
+ {id:'trans',t:'Transport',e:'🚌',theme:'Ways to travel',items:[
+  ['carro','car','🚗','el'],
+  ['autobús','bus','🚌','el'],
+  ['tren','train','🚂','el'],
+  ['avión','airplane','✈','el'],
+  ['bicicleta','bicycle','🚲','la'],
+  ['barco','ship','🚢','el'],
+  ['camión','truck','🚚','el'],
+  ['moto','motorcycle','🏍','la'],
+  ['helicóptero','helicopter','🚁','el'],
+  ['cohete','rocket','🚀','el']]},
+ {id:'verb',t:'Action Words',e:'🏃',theme:'Action verbs (infinitives)',cap:1,items:[
+  ['correr','to run','🏃',''],
+  ['saltar','to jump','🦘',''],
+  ['comer','to eat','🍕',''],
+  ['beber','to drink','🥤',''],
+  ['dormir','to sleep','🛌',''],
+  ['leer','to read','📖',''],
+  ['escribir','to write','✏',''],
+  ['jugar','to play','🎮',''],
+  ['cantar','to sing','🎤',''],
+  ['bailar','to dance','💃',''],
+  ['nadar','to swim','🏊',''],
+  ['caminar','to walk','🚶','']]},
+ {id:'adj',t:'Opposites',e:'🐘',theme:'Adjectives, masculine singular, as opposite pairs',cap:1,items:[
+  ['grande','big','🐘',''],
+  ['pequeño','small','🐜',''],
+  ['alto','tall','🦒',''],
+  ['bajo','short','⬇',''],
+  ['rápido','fast','🏎',''],
+  ['lento','slow','🐢',''],
+  ['nuevo','new','🆕',''],
+  ['viejo','old','👴',''],
+  ['caliente','hot','🔥',''],
+  ['frío','cold','🧊',''],
+  ['bonito','pretty','🌸',''],
+  ['limpio','clean','🧼',''],
+  ['sucio','dirty','🗑','']]},
 ];
 const SPN={};ES_UNITS.forEach(u=>{SPN[u.id]=u.items}); // old name: unit id -> items (balloons, speed race, learn screen)
 ES_UNITS.forEach(esReg);
@@ -4689,4 +4739,4 @@ function vocBuildB() {
 
 BANK.vocab = vocBuild().concat(vocBuildB());
 
-var DATA_VER='v113'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var DATA_VER='v114'; // last line: the whole file ran (checked by dataReady() before the app starts)

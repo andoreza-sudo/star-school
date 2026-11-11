@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** P2-33, P2-34, P2-37, P3-11, P3-13, P3-14
+**Next up:** P2-34, P2-35, P2-37, P3-11, P3-13, P3-14
 
-**Current version:** v113
+**Current version:** v114
 
 ## Chunk status
 
@@ -92,6 +92,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P2-14 v111
 - P2-31 v112
 - P2-32 v113
+- P2-33 v114
 
 ## Handoff notes
 
@@ -354,6 +355,16 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-11) Icons wanted from P4-03: `balloon` (Bonus game, today `gamepad`), `sparkle` / `confetti`, `unlock` (open padlock for "Next stop unlocked", today `map`), `zap` (a lightning with a spark for boss hits; today `bolt`), `sticker` (single sticker for the prize row), `medal` (the prize rosette as an icon), `heart-half` (boss life bar), `chest` (the treasure chest at icon size, e.g. for the round track where renderQ shows the gift emoji).
 
 ## Log
+
+### P2-33 Units batch 3: Spanish world La Ciudad (v117, 2026-11-11, Claude)
+- What changed (CURRICULUM S-units and 2.3 row 6, ROADMAP P2-33): four units appended to `ES_UNITS` in `src/data/d-es.js` (no `mix`, no `spell`, so the Big Review and the old stops are untouched): `es_place` Places in Town (11 words: parque, tienda, biblioteca, hospital, playa, restaurante, iglesia, mercado, calle, banco, cine), `es_trans` Transport (10: carro, autobús, tren, avión, bicicleta, barco, camión, moto, helicóptero, cohete), `es_verb` Action Words (12 infinitives: correr, saltar, comer, beber, dormir, leer, escribir, jugar, cantar, bailar, nadar, caminar; glosses "to run" ...), `es_adj` Opposites (13 masculine singular adjectives in pairs: grande/pequeño, alto/bajo, rápido/lento, nuevo/viejo, caliente/frío, bonito, limpio/sucio). Nouns carry el/la, verbs and adjectives have no article.
+- Pictures: places, verbs and adjectives use `cap:1` (the English shows under the picture in levels 1 and 2), because one emoji cannot tell "big" from "tall" or "run" from "walk" by itself; so no distractor can also be right. Transport pictures are unambiguous without it. Eleven emoji were added to `tools/emoji-allow.txt` (none risky): 🏪 🏥 ⛪ 🥕 🏦 🎬 🏃 🦘 🛌 🎤 💃.
+- World: `{id:'e_ciudad', n:'La Ciudad', g:-1}` appended to `PATHS.es` after Gran Repaso, stops in CURRICULUM order: es_place 1-2, es_trans 1-2, es_verb 1-2, es_adj 1-2 (plus the automatic boss). Saves are keyed by stop id; no format change. La Casa and El Tiempo (P2-31, P2-32) go before it in CURRICULUM; place by id at merge (the world is not "last").
+- Tests (test.js): "Spanish La Ciudad P2-33": counts, explicit gender list, infinitives, NFC, allow-list pictures, no duplicate word across all units, no shared picture within a new unit, 3,000 seeded questions per unit and level through `kindProblems` (one right answer, caption in level 2), the P2-30 hash of the old stops, world and stop order by id, save safety on the six fixtures. Smoke (`// P2-33` block): La Ciudad opened by id, es_verb 1 and es_adj 2 rounds with real taps at 380x780, stars saved, 48 px choices, no sideways scroll. Shots `es-ciudad-map`, `es-ciudad-place1/2`, `-trans1`, `-verb1/2`, `-adj1/2`.
+- Test expectations changed: (1) in "Spanish framework P2-30" the old-stops hash now runs over the nine original skills by name (it used every `es_*` skill, which now includes the new ones; same hash, same 2,700 questions) and the stop-list check compares the first 21 stops, which are the original ones; (2) the known exceptions of "say present for every question" list the four new level 2 skills, same reason as the old ones (level 2 gives no `say` on purpose).
+- Checklist 7.1: [x] chunk files [x] VER v117 (provisional) [x] build [x] test.js [x] smoke.js [x] screenshots [x] no network [x] new emoji listed [x] PROGRESS entry [x] one commit (not pushed).
+- Merge: built on a parallel branch; renumber VER at merge (rebuild, `git add -A`). Conflicts to expect: `d-es.js` units list (append after P2-31/32 units), `42-paths.js` es worlds (put `e_ciudad` after `e_tiempo`), `tools/emoji-allow.txt`, the KNOWN list and the P2-30 test lines above in test.js.
+- Merge: built on a parallel branch, renumbered v113 -> v114 at merge.
 
 ### P2-32 Spanish world El Tiempo (v116, 2026-11-11, Claude)
 - What changed (CURRICULUM S-units, section 2.3 row 5): five units appended to `ES_UNITS` in `src/data/d-es.js`, and world `e_tiempo` "El Tiempo" (`g:-1`, after Gran Repaso; position checked by id) in `PATHS.es` with stops `es_days 1-2, es_months 1-2, es_weather 1-2, es_big 1-2, es_time 1-2` in that order (titles 22 letters or less; 10 stops and the boss). Saves are keyed by stop id; no format change.
