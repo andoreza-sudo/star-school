@@ -1809,6 +1809,49 @@ async function main() {
       await ga.ctx.close();
     }
 
+    // P2-22 vocabulary A: five stops on the reading map; a round of the opposites level and a look at the compound-word and prefix layouts
+    //       at 380x780 (choice buttons 48 px or more, no sideways scroll); the stop earns stars; stars of other stops do not move
+    {
+      const va = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
+      const vp = va.page;
+      await vp.waitForSelector('.game[data-p="read"]');
+      const vi = await vp.evaluate(() => {
+        const st = NODES.read.filter(n => n.sk == 'vocab').map(n => n.lv + '@' + n.wid).join(' ');
+        const i = NODES.read.findIndex(n => n.sk == 'vocab' && n.lv == 1);
+        const before = JSON.stringify(S.maps.read);
+        start('read', i);
+        return { st, i, before };
+      });
+      if (vi.st !== '1@r_reef 2@r_workshop 3@r_workshop 4@r_summit 5@r_summit') fail('vocabulary stops on the reading map: ' + vi.st);
+      await vp.waitForSelector('#prompt');
+      const look = lv => vp.evaluate(lv => {
+        const q = genQ('vocab', lv, 3);
+        G.q = q; q.sk = 'vocab'; q.lv = lv; renderQ();
+        const chs = [...document.querySelectorAll('.ch')], pr = document.querySelector('#prompt');
+        return { lv, n: chs.length, minH: Math.min(...chs.map(c => c.offsetHeight)), over: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+          cut: chs.some(c => c.scrollWidth > c.clientWidth + 1), text: pr.textContent.length > 8, label: q.label };
+      }, lv);
+      const bads = [];
+      for (const lv of [1, 3, 4, 5]) { const r = await look(lv); if (r.minH < 48 || r.over > 0 || r.cut || !r.text) bads.push(JSON.stringify(r)); }
+      if (bads.length) fail('vocabulary layout at 380: ' + bads.join(' '));
+      else step('vocabulary: levels 1, 3, 4, 5 at 380x780: choices 48 px or more, no sideways scroll, no cut-off words');
+      await vp.evaluate(() => { G.dead = true; start('read', NODES.read.findIndex(n => n.sk == 'vocab' && n.lv == 1)); });
+      await vp.waitForSelector('#prompt');
+      await vp.click('#hb');
+      const hint = await vp.evaluate(() => document.querySelector('#hint').textContent);
+      if (!/pair/.test(hint)) fail('vocabulary hint: ' + hint); else step('vocabulary: hint shows');
+      await playRound(vp, 'P2-22 vocabulary 1');
+      const after = await vp.evaluate(i => ({ st: getSt('read', i), maps: JSON.stringify(S.maps.read) }), vi.i);
+      const was = JSON.parse(vi.before), now = JSON.parse(after.maps);
+      const moved = Object.keys(was).filter(k => now[k] !== was[k]);
+      if (after.st < 1 || moved.length) fail('vocabulary stars: ' + JSON.stringify({ st: after.st, moved }));
+      else step(`vocabulary: stop earned ${after.st} stars, no other stop changed`);
+      await vp.evaluate(() => { G.dead = true; home(); });
+      network.push(...va.network);
+      for (const e of va.errors) fail(e);
+      await va.ctx.close();
+    }
+
     for (const e of errors) fail(e);
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');

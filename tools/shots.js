@@ -411,6 +411,10 @@ const SCREENS = {
   'boss-lose': { run: rwShot({ boss: 2, won: false }) },
   testout: { run: async p => { await p.evaluate(() => testOut('math', 2)); } },
   rewards: { full: true, run: async p => { await p.evaluate(rwSheet); } },
+  // ---- P2-22 vocabulary A: one question per level (a fixed seed; level 1 and 2 pick one with a picture); vocab-hint opens Help ----
+  ...Object.fromEntries([1, 2, 3, 4, 5].map(lv => ['vocab-' + lv, { run: vocabShot(lv) }])),
+  'vocab-nopic': { run: vocabShot(1, false, false) },
+  'vocab-hint': { run: vocabShot(3, true) },
   // P2-20 grammar: one seeded question of each level 1-5 in a one-question round (level 1 tap-a-word is 'gram-1b'); 'gram-hint' opens a hint
   ...Object.fromEntries([1, 2, 3, 4, 5].map(lv => ['gram-' + lv, { run: gramShot(lv, 3, false) }])),
   'gram-1b': { run: gramShot(1, 41, false, 'tap') },
@@ -454,6 +458,20 @@ Object.assign(SCREENS, {
   'home-streak': { fixture: 'tricky', run: homeShot('streak') },
   'home-streak-end': { fixture: 'tricky', run: homeShot('streak', true) },
 });
+
+// One question of a vocabulary level through the real round engine. pic: true picks the first seed with a picture prompt, false the
+// first without; by default levels 1 and 2 show a picture and the others do not need one.
+function vocabShot(lv, hint, pic) {
+  return async p => {
+    await p.evaluate(([lv, pic]) => {
+      const want = pic === undefined ? lv <= 2 : pic;
+      let q = genQ('vocab', lv, 5);
+      for (let i = 1; i < 300; i++) { const c = genQ('vocab', lv, i); if (c.html.includes('bpic bem') === want) { q = c; break; } }
+      G = newG({ sk: 'vocab', lv, n: 1, pool: [q] }); next();
+    }, [lv, pic]);
+    if (hint) await p.click('#hb');
+  };
+}
 
 // One question of a P2-18 level (genQ with a fixed seed) through the real round engine; hint opens Help.
 function phonShot(sk, lv, hint) {

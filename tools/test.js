@@ -4142,6 +4142,140 @@ run('grammar P2-20: gram 1-5 bank, 3000 questions per level, one right answer, h
   return{problems:gerrs,note:'255 items, 15000 questions, '+r.checked+' stop checks over 6 fixtures x 7 grades'};
 });
 
+// ---- P2-22: vocabulary levels 1-5 (bank data, picture prompts, 3,000 questions per level, map stops, save safety) ----
+run('vocabulary P2-22: bank validates, one right answer per item, 3000 questions per level, hints, map stops, no star moves, no re-lock',()=>{
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const serrs=[],bad=m=>serrs.push(m);
+  const body=function(){
+    const want=[56,52,68,63,82],PRE=['un','re','pre','dis','mis'],SUF=['ful','less','ly','er','est','able'];
+    if(!SK.vocab||SK.vocab.max!==5||SK.vocab.bank!=='vocab'||SK.vocab.area!=='read')bad('SK.vocab is wrong');
+    for(const m of bankProblems('vocab',{levels:[1,2,3,4,5],min:40}))bad(m);
+    const items=BANK.vocab;
+    if(items.some(it=>![1,2,3,4,5].includes(it.lv)))bad('vocab has an item outside levels 1-5');
+    for(let lv=1;lv<=5;lv++){
+      const L=items.filter(it=>it.lv==lv),w2='level '+lv+': ';
+      if(L.length!==want[lv-1])bad(w2+L.length+' items, wants '+want[lv-1]);
+      for(const it of L){
+        const all=[it.a,...it.d].map(x=>x.toLowerCase());
+        if(new Set(all).size!==all.length)bad(w2+it.q+': a choice repeats');
+        if(!it.hint||it.hint.length<20)bad(w2+it.q+': hint missing');
+        if(it.hint&&it.hint.toLowerCase().split(/[^a-z]+/).includes(it.a.toLowerCase()))bad(w2+it.q+': the hint gives the answer');
+        if(!it.topic)bad(w2+it.q+': no topic');
+        if(lv<=2){ // the word asked about is never a choice; the answer is not in the prompt
+          const w=it.q.match(/ (\w+)\?$/)[1];
+          if(all.includes(w))bad(w2+it.q+': the word itself is a choice');
+          if(it.q.toLowerCase().split(/[^a-z]+/).includes(it.a.toLowerCase()))bad(w2+it.q+': the answer is in the prompt');
+        }
+      }
+    }
+    // opposites and synonyms: no distractor is also a listed answer for that word (either direction), so only one choice is right
+    for(const lv of [1,2]){
+      const listed={},qs=[];
+      for(const it of items.filter(i=>i.lv==lv)){
+        const w=it.q.match(/ (\w+)\?$/)[1];qs.push([w,it]);
+        (listed[w]=listed[w]||new Set()).add(it.a);(listed[it.a]=listed[it.a]||new Set()).add(w);
+      }
+      for(const [w,it] of qs)for(const d of it.d)if(listed[w].has(d))bad('level '+lv+': '+it.q+': "'+d+'" is also a right answer');
+    }
+    if(items.filter(i=>i.lv==1).some(i=>i.d.length!==2))bad('level 1 must have 3 choices');
+    // compound words: the right split joins to the word, no wrong split does; put-together distractors are other words
+    for(const it of items.filter(i=>i.lv==3)){
+      const m=it.q.match(/^Which two words make (\w+)\?$/);
+      if(m){
+        if(it.a.replace(' + ','')!==m[1])bad('compound '+m[1]+': right split '+it.a+' does not join');
+        for(const d of it.d)if(d.replace(' + ','')===m[1]||!/^\w+ \+ \w+$/.test(d))bad('compound '+m[1]+': wrong split '+d+' joins to the word or is malformed');
+      }
+      else{
+        const t=it.q.match(/^What do (\w+) and (\w+) make together\?$/);
+        if(!t||it.d.includes(it.a)||it.d.length!==3)bad('compound item shape: '+it.q);
+        else if(it.a!==t[1]+t[2])bad('compound '+it.q+': answer is not '+t[1]+t[2]);
+      }
+    }
+    if(items.filter(i=>i.lv==3&&i.form=='wide').length!==51)bad('level 3 wants 51 two-word items');
+    for(const it of items.filter(i=>i.lv==4)){
+      if(/^___\w+ = .+\. Which start piece\?$/.test(it.q)){
+        if(!PRE.includes(it.a)||it.d.length!==3||it.d.some(d=>!PRE.includes(d)))bad('prefix item: '+it.q);
+      }
+      else if(!/^What does (un|re|pre|dis|mis)\w+ mean\?$/.test(it.q))bad('prefix item shape: '+it.q);
+    }
+    for(const it of items.filter(i=>i.lv==5)){
+      if(/^\w+ \+ ___ = .+$/.test(it.q)){
+        if(!SUF.includes(it.a)||it.d.some(d=>!SUF.includes(d)))bad('suffix item: '+it.q);
+      }
+      else if(!/^What does \w+ mean\?$/.test(it.q))bad('suffix item shape: '+it.q);
+    }
+    if(items.filter(i=>i.em).length<20)bad('fewer than 20 items have a picture');
+    // 3000 seeded questions per level
+    for(let lv=1;lv<=5;lv++){
+      const w2='level '+lv+': ',seen=new Set(),labels={};
+      for(let i=0;i<3000;i++){
+        const q=genQ('vocab',lv,i+1);
+        const pr=kindProblems(q);if(pr.length)bad(w2+q.label+': '+pr.join('; '));
+        seen.add(q.bk.bi);
+        if(q.kind!=='choice')bad(w2+q.label+': kind '+q.kind);
+        const vs=q.choices.map(c=>c.v);
+        if(new Set(vs).size!==vs.length||vs.filter(v=>v===q.ans).length!==1)bad(w2+q.label+': not exactly one right choice');
+        if(vs.length!==(lv<=2?3:4))bad(w2+q.label+': '+vs.length+' choices');
+        if(!q.say||!q.say.trim())bad(w2+q.label+': no say text');
+        if(!q.hint||q.hint.k!=='text'||q.hint.s.length<20)bad(w2+q.label+': hint');
+        if(!q.label||q.label.length>=60)bad(w2+'label '+q.label);
+        if(labels[q.label]!==undefined&&labels[q.label]!==q.bk.bi)bad(w2+'label '+q.label+' is not unique');
+        labels[q.label]=q.bk.bi;
+        if(q.sk!=='vocab'||q.lv!==lv)bad(w2+'genQ did not stamp sk/lv');
+        const it=items[q.bk.bi];
+        if(!!it.em!==q.html.includes('bpic bem'))bad(w2+q.label+': picture prompt mismatch');
+        if(it.em&&!/<svg/.test(q.html)&&!q.html.includes(it.em[1]))bad(w2+q.label+': picture is empty');
+        if(i<40&&bankRebuild(q.bk).label!==q.label)bad(w2+q.label+': bankRebuild differs');
+      }
+      if(seen.size!==want[lv-1])bad(w2+'3000 questions drew only '+seen.size+' of '+want[lv-1]+' items');
+    }
+    for(let lv=1;lv<=5;lv++)if(JSON.stringify(genQ('vocab',lv,77))!==JSON.stringify(genQ('vocab',lv,77)))bad('level '+lv+' is not reproducible');
+    // map: vocab 1 to 5 in the worlds CURRICULUM section 2.2 names, after the stops already there
+    const rd=NODES.read.filter(n=>n.sk=='vocab').map(n=>n.lv+'@'+n.wid).join(' ');
+    if(rd!=='1@r_reef 2@r_workshop 3@r_workshop 4@r_summit 5@r_summit')bad('vocab stops: '+rd);
+    const wst=id=>NODES.read.filter(n=>n.wid==id&&n.sk!='boss').map(nid);
+    if(wst('r_reef').slice(0,6).join(' ')!=='sight3 pic3 build3 comp2 spell2 vocab1')bad('r_reef order: '+wst('r_reef'));
+    if(wst('r_summit').filter(x=>!x.startsWith('gram')).join(' ')!=='spell4 vocab4 vocab5')bad('r_summit order: '+wst('r_summit')); // gram stops (P2-20) sit between, per CURRICULUM 2
+    // save safety: the reading path without the five stops against today's
+    const store={};
+    global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+    const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
+    const CUR=PATHS.read.worlds,NEWV=['vocab1','vocab2','vocab3','vocab4','vocab5'];
+    const OLD=()=>CUR.map(w=>({...w,nodes:w.nodes.filter(x=>x[0]!=='vocab')}));
+    const snap=()=>{const o={};NODES.read.forEach((n,i)=>{o[nid(n)]={st:getSt('read',i),open:unlocked('read',i)}});return o};
+    const fixtures=[];
+    for(const name of ['fresh','midway','maxed','legacy-single-map','legacy-index-maps','tricky'])fixtures.push([name,fx(name)]);
+    {load(null);const m={};PATHS.read.worlds=OLD();buildNodes('read');NODES.read.forEach(n=>{m[nid(n)]=2});
+      PATHS.read.worlds=CUR;buildNodes('read');fixtures.push(['all-old-passed',JSON.stringify({maps:{read:m},grade:3})])}
+    fixtures.push(['workshop-mid',JSON.stringify({maps:{read:{sight5:3,pic6:2}},grade:2})]);
+    let checked=0;
+    for(const [name,raw] of fixtures)for(const g of [null,-1,0,1,2,3,6]){
+      load(Object.keys(JSON.parse(raw)).length?raw:null);if(g!==null)S.grade=g;
+      PATHS.read.worlds=OLD();buildNodes('read');
+      const before=snap(),curB=nid(NODES.read[curNode('read')]);
+      PATHS.read.worlds=CUR;buildNodes('read');
+      const after=snap(),curA=nid(NODES.read[curNode('read')]);
+      for(const k in before){
+        checked++;
+        if(!after[k]){bad(name+' g'+g+': stop '+k+' vanished');continue}
+        if(before[k].st!==after[k].st)bad(name+' g'+g+': '+k+' stars '+before[k].st+' -> '+after[k].st);
+        if(before[k].open&&!after[k].open)bad(name+' g'+g+': '+k+' re-locked');
+        if(before[k].st>0&&!after[k].open)bad(name+' g'+g+': passed stop '+k+' is locked');
+      }
+      for(const k of NEWV){
+        const i=NODES.read.findIndex(n=>nid(n)==k);
+        if(getSt('read',i)!==0)bad(name+': '+k+' starts with stars');
+        if(passed('read',WR.read[NODES.read[i].wi][1])&&(!stopNew('read',i)||!unlocked('read',i)||curA==k))bad(name+' g'+g+': '+k+' in a finished world is not NEW, open and not current');
+      }
+      if(curB!==curA&&!/^boss_/.test(curB)&&v42Stops('read').includes(curB)&&NODES.read.some((n,i)=>passed('read',i)))bad(name+' g'+g+': current stop moved '+curB+' -> '+curA);
+    }
+    PATHS.read.worlds=CUR;buildNodes('read');
+    return {checked};
+  };
+  const r=eval(js+';('+body.toString()+')()');
+  return{problems:serrs,note:'321 items, 15000 questions, '+r.checked+' stop checks over 7 fixtures x 7 grades'};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){

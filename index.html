@@ -1007,6 +1007,7 @@ html.notext .pktxt{display:none}
 /* content banks and the passage panel (P1-09); tokens only */
 .bq{font-size:.55em;line-height:1.25}
 .bpic{display:flex;justify-content:center;margin-bottom:var(--s-2);color:var(--brand)}
+.bem{font-size:clamp(48px,9vh,72px);line-height:1}
 .bsent{margin-top:var(--s-2);font-size:.5em;font-weight:700;color:var(--ink-2);line-height:1.3}
 .choices.wide{grid-template-columns:1fr}
 .choices.wide .ch{font-size:clamp(20px,3.6vh,28px);padding:clamp(8px,1.6vh,14px) var(--s-3)}
@@ -2040,7 +2041,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S));SAVE_FAILED=fals
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v77'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v78'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -6730,6 +6731,7 @@ function genRhyme(lv){const fi=R(0,RHY.length-1),fam=RHY[fi],[t,r]=shuffle(fam),
      sent   tap: the sentence; the child taps the word that is the answer
      order  order: the items in the right order      pairs  match: [[left, right], ...]
      topic  strand tag for the report card   hint  teaching hint   pic  icon name from ICONS   say  text to read instead of q
+     em     [art name, emoji]: a picture of a thing above the prompt, through picFor (P2-22)
    choice and wide make a `choice` question (wide = one button per row), tap a `choice` over the words of the sentence,
    spell a `build` question. order, match and multi need their own question kind (P1-03/P1-04): such a kind registers its
    builder as BANKF.form=(item, id)=>question; until it does, those items are never drawn.
@@ -6789,7 +6791,7 @@ const bankWords=t=>String(t).split(/[^A-Za-z']+/).filter(Boolean);
 // One question from one item. Call it inside bankWith so shuffle() uses the item's own random stream.
 function bankBuild(id,it,pass){
   const form=it.form||'choice';
-  const pic=it.pic&&ICONS[it.pic]?`<div class="bpic">${ico(it.pic,64)}</div>`:'';
+  const pic=it.em?`<div class="bpic bem">${picFor(it.em[0],it.em[1])}</div>`:it.pic&&ICONS[it.pic]?`<div class="bpic">${ico(it.pic,64)}</div>`:'';
   let q;
   if(form=='spell'){
     const w=it.a,abc='abcdefghijklmnoprstuw';
@@ -6890,6 +6892,7 @@ function bankItemProblems(it,where){
   if(it.hint!=null)str(it.hint,BANKLIM.hint,'hint');
   if(it.say!=null)str(it.say,BANKLIM.q,'say');
   if(it.pic!=null&&typeof ICONS!=='undefined'&&!ICONS[it.pic])p.push(w+'pic '+it.pic+' is not an icon');
+  if(it.em!=null&&!(Array.isArray(it.em)&&it.em.length==2&&/^[a-z-]+$/.test(it.em[0])&&typeof it.em[1]=='string'&&it.em[1]))p.push(w+'em must be [art name, emoji]');
   const distinct=(a,name)=>{if(new Set(a.map(x=>String(x).toLowerCase())).size!==a.length)p.push(w+name+' has duplicates')};
   if(form=='choice'||form=='wide'||form=='multi'){
     const as=form=='multi'?it.a:[it.a];
@@ -7015,9 +7018,11 @@ const SK={
  pic:{t:'Picture Words',e:'🖼️',area:'read',max:6,gen:lv=>lv>4?genPicP(lv):genPic(lv)},
  build:{t:'Build a Word',e:'🧩',area:'read',max:6,gen:lv=>lv>4?genBuildP(lv):genBuild(lv)},
  sent:{t:'Read & Match',e:'📚',area:'read',max:2,gen:genSent},
- spell:{t:'Spelling',e:'✏️',area:'read',max:7,gen:lv=>genSpell(lv)},
+ spell:{t:'Spelling',e:'✏️',area:'read',max:7,gen:lv=>genSpell(lv)}, // P2-19: genSpell and its words are in src/data/d-spell.js
  // P2-20: grammar levels 1-5 (bank items in src/data/d-gram.js); P2-21 raises max to 9
- gram:{t:'Grammar',e:'🔤',area:'read',max:5,bank:'gram',gen:lv=>genBank('gram',lv)}}; // P2-19: genSpell and its words are in src/data/d-spell.js
+ gram:{t:'Grammar',e:'🔤',area:'read',max:5,bank:'gram',gen:lv=>genBank('gram',lv)},
+ // P2-22 Vocabulary A (levels 1-5; P2-23 adds 6-10): items are BANK.vocab in src/data/d-vocab.js
+ vocab:{t:'Vocabulary',e:'📚',area:'read',max:5,bank:'vocab',gen:lv=>genBank('vocab',lv)}};
 
 /* ---------- hints ---------- */
 function rod(n,c,cls='',x=0){if(n<=0)return'';let s='';for(let i=0;i<n;i++)s+=`<i class="${i>=n-x?'x':''}"></i>`;return`<span class="rod ${cls}" style="--c:${c||PAL[(n-1)%10]}">${s}</span>`}
@@ -7061,10 +7066,10 @@ const PATHS={
   {id:'r_abc',g:-1,n:'ABC Beach',e:'🏖️',c:'#e0f2fe',nodes:[['abc',1,'Big Letters'],['abc',2,'Little Letters'],['abc',3,'Match Big & Little'],['syl',1,'Clap the Syllables'],['abc',4,'ABC Order']]},
   {id:'r_meadow',g:0,n:'Letter Meadow',e:'🌻',c:'#dcfce7',nodes:[['sound',1,'First Sounds'],['sight',1,'Sight Words'],['rhyme',1,'Rhyme Time'],['pic',1,'Picture Words'],['sound',2,'Last Sounds'],['build',1,'Build a Word'],['sent',1,'Read & Match'],['sound',3,'Middle Sounds']]},
   {id:'r_candy',g:1,n:'Candy Canyon',e:'🍭',c:'#fce7f3',nodes:[['sight',2,'More Sight Words'],['rhyme',2,'Rhyme & Read'],['pic',2,'Blends'],['build',2,'Build Blends'],['sent',2,'Read Sentences'],['comp',1,'Story Time'],['sound',4,'Letter Teams'],['syl',2,'Count the Claps'],['spell',1,'Spell Short Words']]},
-  {id:'r_reef',g:1,n:'Ocean Reef',e:'🐠',c:'#e0f2fe',nodes:[['sight',3,'Sight Words 3'],['pic',3,'Magic E'],['build',3,'Build Magic E'],['comp',2,'Story Time 2'],['spell',2,'Spell Blends'],['gram',1,'Capitals & End Marks']]},
+  {id:'r_reef',g:1,n:'Ocean Reef',e:'🐠',c:'#e0f2fe',nodes:[['sight',3,'Sight Words 3'],['pic',3,'Magic E'],['build',3,'Build Magic E'],['comp',2,'Story Time 2'],['spell',2,'Spell Blends'],['vocab',1,'Opposites'],['gram',1,'Capitals & End Marks']]},
   {id:'r_space',g:2,n:'Space Station',e:'🚀',c:'#ede9fe',nodes:[['pic',4,'Vowel Teams'],['build',4,'Build Vowel Teams'],['sight',4,'Sight Words 4'],['pic',5,'Bossy R'],['build',5,'Build Bossy R'],['spell',3,'Spell Magic E & Teams']]},
-  {id:'r_workshop',g:2,n:'Word Workshop',e:'🔧',c:'#fef3c7',nodes:[['sight',5,'Sight Words 5'],['pic',6,'Vowel Teams 2'],['build',6,'Build Vowel Teams 2'],['gram',2,'Nouns, Verbs & Adjectives'],['gram',3,'Plurals']]},
-  {id:'r_summit',g:3,n:'Story Summit',e:'🏔️',c:'#e2e8f0',nodes:[['spell',4,'Spell Tricky Sounds'],['gram',4,'Verb Tenses'],['gram',5,'Agreement & Contractions']]},
+  {id:'r_workshop',g:2,n:'Word Workshop',e:'🔧',c:'#fef3c7',nodes:[['sight',5,'Sight Words 5'],['pic',6,'Vowel Teams 2'],['build',6,'Build Vowel Teams 2'],['gram',2,'Nouns, Verbs & Adjectives'],['vocab',2,'Synonyms'],['vocab',3,'Compound Words'],['gram',3,'Plurals']]},
+  {id:'r_summit',g:3,n:'Story Summit',e:'🏔️',c:'#e2e8f0',nodes:[['spell',4,'Spell Tricky Sounds'],['gram',4,'Verb Tenses'],['vocab',4,'Prefixes'],['gram',5,'Agreement & Contractions'],['vocab',5,'Suffixes']]},
   {id:'r_library',g:4,n:'Dragon Library',e:'🐉',c:'#fee2e2',nodes:[['spell',5,'Spell Word Parts']]},
   {id:'r_island',g:5,n:'Author Island',e:'🏝️',c:'#fef9c3',nodes:[['spell',6,'Spell Big Words']]},
   {id:'r_legend',g:6,n:'Legend Lab',e:'🏰',c:'#f3e8ff',nodes:[['spell',7,'Spell Tough Words']]}]},
@@ -7673,7 +7678,7 @@ function home(first){
   <div class="scroll hm" id="hs"><div class="hm-cols">
    <div class="hm-col">${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
-   <p class="hm-ver">${ico('star', 16)}<span>Star School v77</span></p></div>`);
+   <p class="hm-ver">${ico('star', 16)}<span>Star School v78</span></p></div>`);
   music(true);
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,['💖','✨','⭐']);
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
@@ -10777,7 +10782,7 @@ function grown(){let armed=false;
    <div class="vline"><span class="vtxt">Give a bonus</span><button class="btn xs" id="pt5">+5 min</button><button class="btn xs danger" id="pt0">Empty bank</button></div>
    <label class="tg"><input type="checkbox" id="ptp" ${ptCfg().pause?'checked':''}> Pause game time (games locked)</label></div>
   <div class="card"><div class="tw"><table><tr><th>Skill</th><th>Rounds</th><th>1st try</th><th>Tricky ones</th></tr>${rows}</table></div></div>
-  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v77 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
+  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v78 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
    Storage: ${SAVE_FAILED?'<b style="color:#c0392b">could not save (device storage may be full)</b>':'saving OK'}${SAVE_CORRUPT?'<br><b style="color:#c0392b">The old save could not be read. A fresh start was made and the old data was kept on the device.</b>':''}<br>
    Last errors: ${(S.err||[]).length?(S.err||[]).slice().reverse().map(e=>'<br>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+' '+esc(e.msg)).join(''):'none'}</div></details>
   <div class="card"><label class="tg"><input type="checkbox" id="voice" ${S.voice?'checked':''}> Read questions out loud</label>
@@ -11719,6 +11724,352 @@ function genSpell(lv){
     hint:{k:'say',w,s:`It has ${w.length} letters and starts with “${w[0]}”.`},
     label:`spelling “${w}”`};
 }
+/* ---------- vocabulary, levels 1-5 (P2-22, CURRICULUM E-vocab) ---------- */
+/* BANK.vocab is built once, when this file loads, from the plain lists below. Nothing here uses rnd(): the same file always gives the
+   same items, and the round engine (37-bank.js genBank) does all the shuffling at question time.
+   Level 1 opposites, 2 synonyms, 3 compound words, 4 prefixes (un re pre dis mis), 5 suffixes (ful less ly er est able).
+   Rows are `a|b|c,d` text, one item per line; an optional last column `name,emoji` is a picture for the prompt word (picFor).
+   The distractors are real, plausible mistakes: a synonym when the question asks for an opposite, the other prefix or suffix
+   meanings of the same base word, and so on. Every item has exactly one right answer. A test (tools/test.js, "vocabulary") checks it all. */
+
+const VOC_HINT = {
+  1: 'Say it as a pair, like "black and white". Which word is the very opposite?',
+  2: 'Try each word in a sentence in place of the first one. Which still says the same thing?',
+  3: 'Listen to the long word. Break it where you hear two small words, then check the pair.',
+  4: 'Split off the little start piece. Read the base word first, then think what the start piece adds.',
+  5: 'Cover the ending and read the base word. Then think what the ending adds to it.',
+};
+
+const VOC_L1 = `hot|cold|warm,wet|hot,🔥
+cold|hot|icy,snowy|cold,❄
+big|small|huge,tall|big,🐘
+small|big|tiny,short|small,🐭
+up|down|over,high
+in|out|inside,under
+day|night|sunny,morning|day,☀
+night|day|dark,moon|night,🌙
+open|shut|wide,broken|open,🔓
+happy|sad|glad,silly|happy,😊
+fast|slow|quick,late|fast,🏎
+old|new|dusty,tall|old,👴
+young|old|little,small|young,👶
+wet|dry|damp,cold|wet,💧
+full|empty|heavy,more|full,🥛
+soft|hard|fluffy,loud
+loud|quiet|noisy,busy|loud,🔊
+stop|go|halt,wait
+push|pull|shove,pick
+long|short|wide,thin
+front|back|side,top
+top|bottom|middle,side
+give|take|pass,share
+awake|asleep|tired,quiet
+early|late|soon,first
+clean|dirty|tidy,shiny
+easy|hard|simple,fun
+dark|bright|black,night
+left|right|back,up
+near|far|close,here
+low|high|small,down
+smile|frown|grin,laugh|smile,🙂
+win|lose|play,race|win,🏆
+laugh|cry|giggle,smile
+sweet|sour|sugar,tasty|sweet,🍬
+come|go|arrive,walk
+buy|sell|pay,shop|buy,🛍
+start|end|begin,first
+yes|no|maybe,okay
+above|below|over,high
+thick|thin|fat,wide
+heavy|light|big,strong
+boy|girl|man,baby|boy,👦
+same|different|equal,alike
+true|false|real,right
+before|after|first,early
+always|never|often,usually
+many|few|lots,plenty
+stand|sit|run,jump
+sink|float|swim,drop
+rough|smooth|bumpy,hard
+tight|loose|snug,small
+brave|scared|bold,strong
+forget|remember|lose,miss
+lost|found|missing,gone
+narrow|wide|thin,small`;
+
+const VOC_L2 = `happy|glad|sad,tired
+big|large|small,tall
+small|tiny|huge,heavy
+fast|quick|slow,late
+smart|clever|silly,quiet
+begin|start|end,wait
+end|finish|begin,stay
+shout|yell|whisper,hum
+pretty|beautiful|messy,plain
+look|see|hear,taste
+tired|sleepy|hungry,angry
+mad|angry|sleepy,silly
+sad|unhappy|excited,sleepy
+scared|afraid|brave,calm
+glad|pleased|upset,tired
+nice|kind|rude,loud
+quiet|silent|noisy,busy
+jump|leap|crawl,sit
+walk|stroll|sprint,hop
+run|dash|crawl,rest
+toss|throw|catch,hold
+cold|chilly|warm,damp
+rock|stone|sand,hill
+road|street|bridge,field|road,🛣
+home|house|school,room|home,🏠
+couch|sofa|chair,table
+little|small|loud,long
+huge|giant|tiny,heavy
+loud|noisy|quiet,slow
+speak|talk|listen,write
+shut|close|open,lock
+choose|pick|leave,lose
+grin|smile|frown,laugh
+gift|present|party,wrapper|gift,🎁
+kid|child|adult,baby
+fix|repair|break,buy
+simple|easy|hard,short
+fall|drop|rise,float
+hurry|rush|rest,wait
+stop|halt|start,go
+giggle|laugh|cry,shout
+cry|weep|laugh,sing
+sick|ill|well,tired
+story|tale|song,poem|story,📖
+bunny|rabbit|kitten,puppy
+sea|ocean|lake,river|sea,🌊
+under|below|above,beside
+pull|tug|push,lift
+pal|friend|stranger,teacher
+rest|relax|work,run
+tidy|neat|messy,dirty
+soil|dirt|water,grass`;
+
+// word, first part, second part, optional picture name and emoji. Every word is the two parts joined.
+const VOC_L3 = `rainbow|rain|bow|rainbow,🌈
+sunflower|sun|flower|sunflower,🌻
+football|foot|ball
+basketball|basket|ball|basketball,🏀
+cupcake|cup|cake|cupcake,🧁
+bedroom|bed|room|bedroom,🛏
+birthday|birth|day|birthday,🎂
+butterfly|butter|fly|butterfly,🦋
+goldfish|gold|fish|goldfish,🐟
+notebook|note|book
+pancake|pan|cake
+playground|play|ground
+popcorn|pop|corn
+raincoat|rain|coat
+sailboat|sail|boat|sailboat,⛵
+sandbox|sand|box
+snowman|snow|man|snowman,⛄
+starfish|star|fish|starfish,⭐
+toothbrush|tooth|brush
+backpack|back|pack
+bathtub|bath|tub|bathtub,🛁
+bookshelf|book|shelf
+doghouse|dog|house
+doorbell|door|bell
+firefly|fire|fly
+haircut|hair|cut
+homework|home|work
+ladybug|lady|bug|ladybug,🐞
+lunchbox|lunch|box
+mailbox|mail|box|mailbox,📬
+moonlight|moon|light
+newspaper|news|paper
+outside|out|side
+paintbrush|paint|brush
+seashell|sea|shell|seashell,🐚
+shoelace|shoe|lace
+sidewalk|side|walk
+sunshine|sun|shine
+sunset|sun|set|sunset,🌅
+upstairs|up|stairs
+windmill|wind|mill
+weekend|week|end
+airplane|air|plane|airplane,✈
+anthill|ant|hill
+baseball|base|ball
+beehive|bee|hive|beehive,🐝
+blueberry|blue|berry
+classroom|class|room
+daydream|day|dream
+fireplace|fire|place
+bluebird|blue|bird|bluebird,🐦`;
+
+// prefixes: un (not, or undo), re (again), pre (before), dis (not), mis (wrong).
+// kind n = not + adjective, d = not + verb, u = undo (meaning written out), a = again, b = before, m = the wrong way.
+// row: kind|prefix|base|meaning (u only)
+const VOC_L4A = `n|un|happy
+n|un|fair
+n|un|safe
+n|un|kind
+n|un|clear
+n|un|lucky
+n|dis|honest
+d|dis|like
+d|dis|agree
+d|dis|obey
+d|dis|trust
+u|un|lock|open a lock
+u|un|tie|undo a knot
+u|un|pack|take things out of a bag
+u|un|wrap|take the wrapping off
+u|un|zip|open a zipper
+u|un|button|open a button
+a|re|do
+a|re|read
+a|re|write
+a|re|play
+a|re|fill
+a|re|build
+a|re|heat
+a|re|tell
+a|re|paint
+a|re|open
+a|re|use
+b|pre|heat
+b|pre|pay
+b|pre|wash
+b|pre|test
+b|pre|view
+b|pre|order
+m|mis|spell
+m|mis|read
+m|mis|use
+m|mis|label
+m|mis|behave
+m|mis|judge
+m|mis|hear`;
+
+// add-the-start-piece items: prefix|base|meaning. Only the prefix named makes a word with exactly that meaning.
+const VOC_L4B = `un|happy|not happy
+un|kind|not kind
+un|fair|not fair
+un|safe|not safe
+un|lock|open a lock
+un|tie|undo a knot
+re|do|do again
+re|read|read again
+re|write|write again
+re|fill|fill again
+re|build|build again
+pre|heat|heat before
+pre|pay|pay before
+pre|wash|wash before
+pre|view|view before
+dis|agree|not agree
+dis|obey|not obey
+dis|honest|not honest
+mis|spell|spell the wrong way
+mis|read|read the wrong way
+mis|place|put in the wrong place
+mis|use|use the wrong way`;
+
+// suffixes. Rows: word|base|ending|meaning; the other meanings come from the base word. Kinds are set by the section.
+const VOC_L5_FUL = 'care help hope joy color thank play pain peace use cheer power'.split(' ');
+const VOC_L5_LESS = 'care help hope fear end use harm pain sleep thought'.split(' ');
+const VOC_L5_LY = 'slow quick quiet soft sad loud brave glad kind bad'.split(' ');
+const VOC_L5_ER = 'tall fast small old cold strong slow bright'.split(' ');
+const VOC_L5_EST = 'tall fast small old cold strong warm bright'.split(' ');
+// agent -er: word|verb|"one who" word|past form for "able to be"
+const VOC_L5_AGENT = `teacher|teach|teaches
+singer|sing|sings
+painter|paint|paints
+driver|drive|drives
+farmer|farm|farms
+builder|build|builds`;
+// -able: word|verb|past form|verb with s
+const VOC_L5_ABLE = `washable|wash|washed|washes
+breakable|break|broken|breaks
+readable|read|read|reads
+wearable|wear|worn|wears
+fixable|fix|fixed|fixes
+bendable|bend|bent|bends
+playable|play|played|plays`;
+
+const VOC_ROWS = t => t.split('\n').map(r => r.split('|'));
+const VOC_EM = c => (c ? c.split(',') : undefined);
+const VOC_IT = (lv, topic, q, a, d, form, em) => {
+  const it = { lv, q, a, d, topic, hint: VOC_HINT[lv] };
+  if (form) it.form = form;
+  if (em) it.em = em;
+  return it;
+};
+
+function vocBuild() {
+  const out = [];
+  // level 1 opposites and level 2 synonyms
+  for (const [w, a, d, em] of VOC_ROWS(VOC_L1)) out.push(VOC_IT(1, 'opposites', `What is the opposite of ${w}?`, a, d.split(','), '', VOC_EM(em)));
+  for (const [w, a, d, em] of VOC_ROWS(VOC_L2)) out.push(VOC_IT(2, 'synonyms', `Which word means the same as ${w}?`, a, d.split(','), '', VOC_EM(em)));
+  // level 3 compound words: which two words make it, and what do two words make
+  const L = VOC_ROWS(VOC_L3), words = new Set(L.map(x => x[0])), n = L.length;
+  const other = (i, k, ok) => { // the next part from another compound (k steps on) that passes ok
+    for (let j = 1; j < n; j++) { const c = L[(i + k * j) % n]; if (ok(c)) return c; }
+    return L[(i + 1) % n];
+  };
+  L.forEach(([w, a, b, em], i) => {
+    const e = em ? em.split(',') : undefined;
+    const d1 = other(i, 7, c => c[2] !== b && !words.has(a + c[2]));
+    const d2 = other(i, 11, c => c[1] !== a && !words.has(c[1] + b));
+    const d3 = !words.has(b + a) && b + a !== w ? b + ' + ' + a : other(i, 13, c => c[1] !== a && c[2] !== b && !words.has(c[1] + d1[2])).slice(1, 3).join(' + ');
+    out.push(VOC_IT(3, 'compound', `Which two words make ${w}?`, a + ' + ' + b, [a + ' + ' + d1[2], d2[1] + ' + ' + b, d3], 'wide', e));
+  });
+  L.forEach(([w, a, b], i) => {
+    if (i % 3) return; // one in three also gets the "put them together" form (16 items)
+    const near = L.filter(x => x[0] !== w && (x[1] === a || x[2] === b || x[1] === b || x[2] === a)).map(x => x[0]);
+    const d = [...new Set([...near, ...[5, 9, 14, 20].map(k => L[(i + k) % n][0])])].filter(x => x !== w).slice(0, 3);
+    out.push(VOC_IT(3, 'compound', `What do ${a} and ${b} make together?`, w, d, ''));
+  });
+  // level 4 prefixes
+  const P4 = ['un', 're', 'pre', 'dis', 'mis'];
+  VOC_ROWS(VOC_L4A).forEach(([k, p, b, m]) => {
+    const word = p + b, not = `not ${b}`, again = `${b} again`, before = `${b} before`, wrong = `${b} the wrong way`;
+    let a, d;
+    if (k == 'n') { a = not; d = [`very ${b}`, again, `more ${b}`]; }
+    else if (k == 'd') { a = not; d = [again, before, wrong]; }
+    else if (k == 'u') { a = m; d = [again, before, wrong]; }
+    else if (k == 'a') { a = again; d = [not, before, wrong]; }
+    else if (k == 'b') { a = before; d = [not, again, wrong]; }
+    else { a = wrong; d = [not, again, before]; }
+    out.push(VOC_IT(4, 'prefix', `What does ${word} mean?`, a, d, 'wide'));
+  });
+  VOC_ROWS(VOC_L4B).forEach(([p, b, m], i) => {
+    const sib = p == 'un' ? 'dis' : p == 'dis' ? 'un' : '';
+    const rest = P4.filter(x => x != p && x != sib);
+    const d = [...(sib ? [sib] : []), ...rest.slice(i % rest.length), ...rest.slice(0, i % rest.length)].slice(0, 3);
+    out.push(VOC_IT(4, 'prefix', `___${b} = ${m}. Which start piece?`, p, d, ''));
+  });
+  // level 5 suffixes
+  const S5 = ['ful', 'less', 'ly', 'er', 'est', 'able'];
+  const sfx = (a, i) => { const r = S5.filter(x => x != a); const o = i % 3; return [r[o], r[(o + 2) % 5], r[(o + 3) % 5]]; };
+  const A5 = (word, m, d) => out.push(VOC_IT(5, 'suffix', `What does ${word} mean?`, m, d, 'wide'));
+  for (const b of VOC_L5_FUL) A5(b + 'ful', `full of ${b}`, [`without ${b}`, `more ${b}`, `the most ${b}`]);
+  for (const b of VOC_L5_LESS) A5(b + 'less', `without ${b}`, [`full of ${b}`, `more ${b}`, `the most ${b}`]);
+  for (const b of VOC_L5_LY) A5(b + 'ly', `in a ${b} way`, [`more ${b}`, `the most ${b}`, `not ${b}`]);
+  for (const b of VOC_L5_ER) A5(b + 'er', `more ${b}`, [`in a ${b} way`, `the most ${b}`, `not ${b}`]);
+  for (const b of VOC_L5_EST) A5(b + 'est', `the most ${b}`, [`more ${b}`, `in a ${b} way`, `not ${b}`]);
+  for (const [w, v, s] of VOC_ROWS(VOC_L5_AGENT)) A5(w, `a person who ${s}`, [`${v} again`, `${v} the wrong way`, `${v} before`]);
+  for (const [w, v, pp, vs] of VOC_ROWS(VOC_L5_ABLE)) A5(w, `able to be ${pp}`, [`a person who ${vs}`, `${v} again`, `not able to be ${pp}`]);
+  // add-the-ending items: base + ___ = meaning
+  const B5 = [];
+  for (const b of VOC_L5_FUL.slice(0, 4)) B5.push([b, 'ful', `full of ${b}`]);
+  for (const b of VOC_L5_LESS.slice(0, 4)) B5.push([b, 'less', `without ${b}`]);
+  for (const b of VOC_L5_LY.slice(0, 4)) B5.push([b, 'ly', `in a ${b} way`]);
+  for (const b of VOC_L5_ER.slice(0, 3)) B5.push([b, 'er', `more ${b}`]);
+  for (const b of VOC_L5_EST.slice(0, 3)) B5.push([b, 'est', `the most ${b}`]);
+  for (const [, v, pp] of VOC_ROWS(VOC_L5_ABLE).slice(0, 3)) B5.push([v, 'able', `able to be ${pp}`]);
+  B5.forEach(([b, s, m], i) => out.push(VOC_IT(5, 'suffix', `${b} + ___ = ${m}`, s, sfx(s, i), '')));
+  return out;
+}
+
+BANK.vocab = vocBuild();
 loadClips();
 home(true);
 </script>

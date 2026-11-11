@@ -4,7 +4,9 @@ The running record of what has shipped. Newest entry first. Every chunk adds one
 
 **Next up:** In progress: P4-18 (graphics pass), P2-08 (step hints), P2-22, P2-24, P2-25 (reading); then P2-09 to P2-14 (math 4-6), P2-21, P2-23, P2-26 to P2-29.
 
-**Current version:** v77
+**Next up:** P2-24, P2-25, P2-08, P4-18
+
+**Current version:** v78
 
 ## Chunk status
 
@@ -56,6 +58,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P4-10 v75
 - P2-07 v76
 - P2-20 v77
+- P2-22 v78
 
 ## Handoff notes
 
@@ -63,6 +66,9 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 
 ## Ideas and issues
 
+- (P2-22) The bank forms `order`, `match`, `multi` have no builder (`BANKF.*` is never registered), so level 3 compound words use choice items ("Which two words make rainbow?", "What do sun and flower make together?") instead of tile building. The first chunk that registers `BANKF.order` can add tile items to `BANK.vocab`.
+- (P2-22) New optional bank field `em: [artName, emoji]` (a picture above the prompt through `picFor`; 37-bank.js, validated by `bankItemProblems`, class `.bem` in 38-bank.css). P2-23 and later content can use it. No skill icon was added to `ICO_SK` for `vocab` (it shows the reading-path icon); P4 icon work could add a `skill-vocab`.
+- (P2-22) Level counts are 56, 52, 68, 63, 82 items; every level has more than the 40 CURRICULUM asks. smoke.js ran 4 full times on this branch with other agents' smokes running at the same time, slow but green.
 - (P2-04) smoke.js is flaky on existing blocks, not on Treasure Bay: the Shape Garden block failed in 2 of 4 full runs (`meas1` target 43 px; `waitForSelector('#prompt')` hidden at line ~1112, reproduced on the untouched v69 + tooling commit), and the P4-05 "cheer face" tap failed once. The Treasure Bay block passed in both runs that reached it. Shape Garden questions come from an unseeded `genQ`, so a bad draw (tap target under 48 px, empty text-hidden prompt) shows up sometimes.
 - (P2-04) `VIZ.ruler` clamps a cm ruler to 6-15 (CURRICULUM M-2 says 0-20), so `meas 3` uses cm up to 15 and inches up to 12. A longer cm ruler needs a change in 23-viz.js.
 - (P2-04) Multi-step hints (`BAY.steps`) are an `hsteps` list with every step visible at once (k:'html'); P2-08's stepper (`UI.hint` o.steps) can reveal them one per tap. At 380x780 a three-step hint under a vertical sum already fills the area above the number pad, so keep step text short.
@@ -247,6 +253,16 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-11) Icons wanted from P4-03: `balloon` (Bonus game, today `gamepad`), `sparkle` / `confetti`, `unlock` (open padlock for "Next stop unlocked", today `map`), `zap` (a lightning with a spark for boss hits; today `bolt`), `sticker` (single sticker for the prize row), `medal` (the prize rosette as an icon), `heart-half` (boss life bar), `chest` (the treasure chest at icon size, e.g. for the round track where renderQ shows the gift emoji).
 
 ## Log
+
+### P2-22 Vocabulary A, levels 1-5 (v78, 2026-11-11, Claude)
+- What changed: new `src/data/d-vocab.js` builds `BANK.vocab` at load from plain text lists (no rnd): level 1 opposites (56 items, 3 choices, 19 with a picture of the prompt word), 2 synonyms (52), 3 compound words (68, 19 with a picture: "Which two words make rainbow?" and "What do sun and flower make together?"), 4 prefixes un/re/pre/dis/mis (63: meanings and add-the-start-piece), 5 suffixes -ful/-less/-ly/-er/-est/-able (82). Skill `vocab` (max 5) registered in `38-skills.js`. Stops by world id: vocab 1 in `r_reef` after Spell Blends; vocab 2, 3 in `r_workshop` after Build Vowel Teams 2; vocab 4, 5 in `r_summit` after Spell Tricky Sounds. Every item has a hint, topic, say text and a unique label; distractors are real mistakes (a synonym for an opposite, other prefix or suffix meanings of the same base word).
+- Existing files: `37-bank.js` (optional item field `em` for a picture through `picFor`, plus its validator line), `38-bank.css` (`.bem` size), `38-skills.js`, `42-paths.js`, tools (test, smoke, shots), `tools/build.py` VER.
+- Expectations changed: P2-18 test "r_workshop stops" ignores `vocab` stops (computed, not a new list). No world counts or placement numbers changed.
+- Save safety: stars are keyed by stop id (`vocab1`..`vocab5`). New named test fixtures: the reading path without the five stops against today's over 7 saves (fresh, midway, maxed, both legacy maps, tricky, all-old-passed, workshop-mid) x 7 grades: no star moves, nothing re-locks, a new stop in a finished world is NEW, open and never the current stop, the map opens on the same stop.
+- Tests: test.js check "vocabulary P2-22" (bankProblems, exactly one right answer per item, distractor-vs-listed-answer cross check for opposites and synonyms, compound splits join correctly, 3,000 seeded questions per level with kindProblems, labels under 60 and unique, hints do not hold the answer, rebuild, stop order, fixtures); 52 of 52 pass. smoke.js: one P2-22 block (opposites round 10/10 at 380x780, layouts of levels 1, 3, 4, 5, hint, stars, no other stop moved).
+- Screenshots checked (380x780): vocab-1, vocab-3, vocab-4, vocab-5 (also wrote vocab-2, vocab-hint at all sizes). `node tools/shots.js vocab-1 ... vocab-5 vocab-nopic vocab-hint`.
+- Checklist 7.1: all ticked (no new emoji outside the allowlist; tokens only; midway fixture and no-network covered).
+- Merge: built on a parallel branch, renumbered v77 -> v78 at merge.
 
 ### P2-20 Grammar A, levels 1-5 (v77, 2026-11-11, Claude)
 - What changed: bank skill `gram` (levels 1-5) in the new `src/data/d-gram.js`, CURRICULUM E-gram: 1 capitals and end marks (52 items: "which sentence is correct" wide, pick `.` `?` `!`, tap the word that needs a capital), 2 nouns, verbs, adjectives (60: tap the word in a 4-word sentence, which word is a noun/verb/adjective), 3 plurals (46: -s, -es, y to ies, f to ves, irregular; wrong forms are the real mistakes: mouses, foots, childs), 4 verb tense (51: regular and irregular past, present, future, which sentence is past/now/future), 5 subject-verb agreement and contractions (46: is/are, was/were, has/have, run/runs; don't, can't, it's, we're ...). 255 items, each with a topic and a hint that teaches the method without the answer; a say line (tap items also speak the sentence).
