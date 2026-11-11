@@ -2,16 +2,17 @@
 // Writes the pre-verified puzzle banks into src/data/d-puz-<type>.js (P3-02, BRAIN_TEASERS 6). Dev-time only.
 //
 //   node tools/puzzles/build-banks.js            all types
-//   node tools/puzzles/build-banks.js sudoku     one type
+//   node tools/puzzles/build-banks.js sudoku     one type (sudoku, mathdoku)
 //   node tools/puzzles/build-banks.js --check    regenerate in memory and compare with the committed files (exit 1 if different)
 //
 // Each type has a fixed seed, so the same generator gives the same file byte for byte. The files are committed: a normal
 // build needs no Node step. Regenerate only when a generator changes, then run `node tools/test.js` (it re-verifies every
-// puzzle through verify-banks.js). Later puzzle chunks (MathDoku P3-04, logic grids P3-06) add their entry to TYPES.
+// puzzle through verify-banks.js). Later puzzle chunks (logic grids P3-06) add their entry to TYPES.
 
 const fs = require('fs');
 const path = require('path');
 const sudoku = require('./sudoku');
+const mathdoku = require('./mathdoku');
 
 const DATA = path.join(__dirname, '..', '..', 'src', 'data');
 
@@ -22,6 +23,14 @@ const TYPES = {
     count: 20, // puzzles per band and tier: 4 bands x 3 tiers x 20 = 240 (BRAIN_TEASERS 5.1 step 5)
     text(log) {
       return sudoku.fileText(sudoku.buildBank(this.seed, this.count, log), this.seed);
+    },
+  },
+  mathdoku: {
+    file: 'd-puz-mathdoku.js',
+    seed: 'star-school-mathdoku-1',
+    count: mathdoku.PER_BAND, // puzzles per band: 3 bands x 36 = 108 (BRAIN_TEASERS 5.2 step 6; band D 18 of 5x5 + 18 of 6x6)
+    text(log) {
+      return mathdoku.fileText(mathdoku.buildBank(this.seed, log), this.seed);
     },
   },
 };

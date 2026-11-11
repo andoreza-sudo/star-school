@@ -5,14 +5,17 @@
 // Uniqueness is proved with countSimple() below: a plain backtracking counter that shares no code with csp.js (the solver
 // the generator uses), so a bug in the generator's solver cannot hide a bad puzzle. The grade is re-computed with human.js.
 //
+// MathDoku (P3-04) is checked the same way with countCages(), its own plain cage counter.
+//
 // Exports: loadBank(file) -> the PUZ object the data file builds; verifySudoku(bank) -> {problems, counts};
-//          countSimple(givens, n, bw, bh, limit)
+//          countSimple(givens, n, bw, bh, limit); verifyMathdoku(bank) -> {problems, counts}; countCages(N, cages, limit)
 
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 const human = require('./human');
 const sudoku = require('./sudoku');
+const mathdoku = require('./mathdoku');
 
 const DATA = path.join(__dirname, '..', '..', 'src', 'data');
 
@@ -148,12 +151,159 @@ function verifySudoku(bank) {
   return {problems, counts};
 }
 
-if (require.main === module) {
-  const r = verifySudoku((loadBank('d-puz-sudoku.js') || {}).sudoku);
-  console.log(Object.entries(r.counts).map(([k, v]) => k + ' ' + v).join(', '));
-  for (const p of r.problems) console.log('  - ' + p);
-  console.log(r.problems.length ? 'FAIL: ' + r.problems.length + ' problems' : 'sudoku bank OK');
-  process.exitCode = r.problems.length ? 1 : 0;
+// Number of solutions of an N x N MathDoku, stopping at `limit`. cages: [{cells, op, t}] (op '=' is a given cell).
+// Cells are filled in reading order; a value must be new in its row and column, and when it completes a cage the cage's
+// arithmetic must give the target (a + or * cage is also cut off early once its partial sum or product overshoots).
+// Shares no code with csp.js or mathdoku.js.
+function countCages(N, cages, limit) {
+  const g = new Array(N * N).fill(0);
+  const cageOf = [];
+  cages.forEach((cg, i) => cg.cells.forEach(c => (cageOf[c] = i)));
+  const value = (op, vals) => {
+    if (op === '+' || op === '=') return vals.reduce((a, v) => a + v, 0);
+    if (op === '*') return vals.reduce((a, v) => a * v, 1);
+    const [a, b] = vals[0] > vals[1] ? vals : [vals[1], vals[0]];
+    if (op === '-') return a - b;
+    return a % b ? -1 : a / b;
+  };
+  const ok = c => {
+    const cg = cages[cageOf[c]];
+    const vals = cg.cells.map(x => g[x]).filter(v => v);
+    if (vals.length === cg.cells.length) return value(cg.op, vals) === cg.t;
+    if (cg.op === '+') return value('+', vals) < cg.t;
+    if (cg.op === '*') return cg.t % value('*', vals) === 0;
+    return true;
+  };
+  let count = 0;
+  const rec = c => {
+    if (c === N * N) {
+      count++;
+      return;
+    }
+    const r = Math.floor(c / N);
+    const k = c % N;
+    for (let v = 1; v <= N && count < limit; v++) {
+      let clash = false;
+      for (let j = 0; j < N; j++) if (g[r * N + j] === v || g[j * N + k] === v) clash = true;
+      if (clash) continue;
+      g[c] = v;
+      if (ok(c)) rec(c + 1);
+      g[c] = 0;
+    }
+  };
+  rec(0);
+  return count;
 }
 
-module.exports = {loadBank, verifySudoku, countSimple};
+function verifyMathdoku(bank) {
+  const problems = [];
+  const bad = (where, m) => {
+    if (problems.length < 60) problems.push(where + ': ' + m);
+  };
+  const counts = {};
+  const seen = new Map();
+  if (!bank || typeof bank !== 'object') return {problems: ['PUZ.mathdoku missing'], counts};
+  const re = /^([3-6])\|((?:[0-9a-z]+[-+*/=]\d+,)*[0-9a-z]+[-+*/=]\d+)\|([1-6]+)\|([1-5])\|(\d+)$/;
+  for (const band of mathdoku.ORDER) {
+    const spec = mathdoku.BANDS[band];
+    const list = bank[band];
+    counts[band] = Array.isArray(list) ? list.length : 0;
+    if (!Array.isArray(list) || list.length !== mathdoku.PER_BAND) {
+      bad(band, 'expected ' + mathdoku.PER_BAND + ' puzzles, found ' + (list ? list.length : 'none'));
+      if (!Array.isArray(list)) continue;
+    }
+    const per = mathdoku.PER_BAND / spec.sizes.length;
+    let prev = null;
+    list.forEach((str, i) => {
+      const at = band + ' #' + i;
+      if (typeof str !== 'string' || !re.test(str)) return bad(at, 'bad format: ' + str);
+      const p = mathdoku.decode(str);
+      const N = p.n;
+      // grid size: band D holds the 5x5 puzzles first, then the 6x6
+      if (N !== spec.sizes[Math.min(Math.floor(i / per), spec.sizes.length - 1)]) bad(at, N + 'x' + N + ' is not the size for this place in band ' + band);
+      if (p.solution.length !== N * N) return bad(at, 'solution has ' + p.solution.length + ' cells');
+      // the solution is a Latin square
+      for (let r = 0; r < N; r++) {
+        const row = new Set();
+        const col = new Set();
+        for (let c = 0; c < N; c++) {
+          row.add(p.solution[r * N + c]);
+          col.add(p.solution[c * N + r]);
+        }
+        if (row.size !== N || col.size !== N || p.solution.some(v => v < 1 || v > N)) {
+          bad(at, 'solution is not a Latin square');
+          break;
+        }
+      }
+      // cages: cover every cell once, ascending cells, ordered by first cell, connected, band sizes and operations
+      const owner = new Array(N * N).fill(-1);
+      let singles = 0;
+      let broken = false; // the cage layout itself is wrong: skip the solving checks
+      p.cages.forEach((cg, k) => {
+        const where = at + ' cage ' + str.split('|')[1].split(',')[k];
+        for (const c of cg.cells) {
+          if (c >= N * N) bad(where, 'cell ' + c + ' outside the grid');
+          else if (owner[c] >= 0) bad(where, 'cell ' + c + ' is in two cages');
+          else owner[c] = k;
+          if (c >= N * N || owner[c] !== k) broken = true;
+        }
+        if (cg.cells.some((c, j) => j && c <= cg.cells[j - 1])) bad(where, 'cells not ascending');
+        if (k && cg.cells[0] <= p.cages[k - 1].cells[0]) bad(where, 'cages not ordered by first cell');
+        const set = new Set(cg.cells);
+        const reach = new Set([cg.cells[0]]);
+        const stack = [cg.cells[0]];
+        while (stack.length) {
+          const c = stack.pop();
+          for (const d of [c - N, c + N, c % N ? c - 1 : -1, (c + 1) % N ? c + 1 : -1]) if (set.has(d) && !reach.has(d)) reach.add(d), stack.push(d);
+        }
+        if (reach.size !== cg.cells.length) bad(where, 'cage cells are not connected');
+        const m = cg.cells.length;
+        if (m > spec.maxCage) bad(where, 'cage of ' + m + ' cells, band allows ' + spec.maxCage);
+        if (cg.op === '=') singles++;
+        else if (!spec.ops.includes(cg.op)) bad(where, 'operation ' + cg.op + ' not allowed in band ' + band);
+        if ((cg.op === '=') !== (m === 1)) bad(where, 'a single cell must be = and only a single cell');
+        if ((cg.op === '-' || cg.op === '/') && m !== 2) bad(where, cg.op + ' needs exactly 2 cells');
+        const vals = cg.cells.map(c => p.solution[c]);
+        if (mathdoku.calc(cg.op, vals) !== cg.t) bad(where, 'target ' + cg.t + ' but the solution gives ' + mathdoku.calc(cg.op, vals));
+        if (cg.op === '*' && cg.t > mathdoku.MAX_MUL) bad(where, 'product over ' + mathdoku.MAX_MUL);
+      });
+      if (owner.some(o => o < 0)) {
+        bad(at, 'some cells are in no cage');
+        broken = true;
+      }
+      if (singles < spec.single[0] || singles > spec.single[1]) bad(at, singles + ' single-cell cages, band allows ' + spec.single.join('-'));
+      if (broken) return;
+      // exactly one solution (independent counter)
+      const sols = countCages(N, p.cages, 2);
+      if (sols !== 1) bad(at, sols + ' solutions');
+      // grade and score match the grader; sorted by score inside each grid size
+      const g = mathdoku.grade(N, p.cages);
+      if (!g.solved) bad(at, 'human-style grader cannot finish it');
+      else if (g.grid.join('') !== p.solution.join('')) bad(at, 'grader finished a different grid');
+      if (g.grade !== p.grade) bad(at, 'stored grade ' + p.grade + ', grader says ' + g.grade);
+      const sc = mathdoku.score(N, p.cages, g);
+      if (sc !== p.score) bad(at, 'stored score ' + p.score + ', computed ' + sc);
+      if (prev && prev.n === N && prev.score > p.score) bad(at, 'not sorted by score');
+      prev = p;
+      const key = mathdoku.bankKey(N, p.cages);
+      if (seen.has(key)) bad(at, 'same puzzle as ' + seen.get(key) + ' (up to rotation and mirror)');
+      else seen.set(key, at);
+    });
+  }
+  return {problems, counts};
+}
+
+if (require.main === module) {
+  let fails = 0;
+  const report = (name, r) => {
+    console.log(name + ': ' + Object.entries(r.counts).map(([k, v]) => k + ' ' + v).join(', '));
+    for (const p of r.problems) console.log('  - ' + p);
+    console.log(r.problems.length ? 'FAIL: ' + r.problems.length + ' problems' : name + ' bank OK');
+    fails += r.problems.length;
+  };
+  report('sudoku', verifySudoku((loadBank('d-puz-sudoku.js') || {}).sudoku));
+  report('mathdoku', verifyMathdoku((loadBank('d-puz-mathdoku.js') || {}).mathdoku));
+  process.exitCode = fails ? 1 : 0;
+}
+
+module.exports = {loadBank, verifySudoku, countSimple, verifyMathdoku, countCages};
