@@ -4,7 +4,7 @@ The running record of what has shipped. Newest entry first. Every chunk adds one
 
 **Next up:** batch C: P2-07; wave 6: P4-03, P4-08, P4-10, P4-11, then P4-18 (graphics quality pass).
 
-**Current version:** v70
+**Current version:** v71
 
 ## Chunk status
 
@@ -210,6 +210,10 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P1-05) Map draw with 16 fake worlds (156 stops) at 6x CPU throttle: median about 29 ms (limit 50), single runs up to about 49 ms. The strip recomputes `worldOpen`/`worldFinished` per chip and `unlocked` scans the world; a memo per draw is the next step if P4-09 adds weight.
 
 ## Log
+
+### FIX: Shape Garden measuring tap target; smoke fixes (v71, 2026-11-11, Claude)
+- App: the crayon rows in Shape Garden's measuring stop had min-height 90% of the tap size (43 px), under the 48 px minimum; now the full tap size. Found by the smoke bot's touch-target check, which failed on about a third of starts.
+- Smoke: Tiny Town and Shape Garden text-hidden steps wait for the prompt to exist (an empty listening prompt has zero size); the spaced-review step counts items that actually moved to box 1 (a normal question equal to a due item is also booked as fixed).
 
 ### P2-04 2nd grade gaps: world Treasure Bay (v70, 2026-11-11, Claude)
 - What changed: new math world `m_bay` (Treasure Bay, grade 2) between Space Station and Multiply Mountain (CURRICULUM 2.1 #8) with exactly the M-2 stops in order: `pv 2, big 5, pv 3, sub 5, time 4, coins 4, meas 3, data 2, arr 1, cnt 5, coins 5, story 4, pat 3` plus the boss. New generators in one block at the end of `src/js/31-gen-math-early.js` (headed `// ---- P2-04 Treasure Bay (2nd) ----`, helper object `BAY`, functions `genBayPv2`, `genBayPv3`, `genBayBig5`, `genBaySub5`, `genBayTime4`, `genBayCoins4`, `genBayCoins5`, `genBayMeas3`, `genBayData2`, `genBayArr1`, `genBayCnt5`, `genBayStory4`, `genBayPat3`). Every level has a hint (multi-step ones are a numbered `hsteps` list, shown all at once until P2-08 adds the stepper), `say`, a unique label under 60 characters, no new question kinds.
