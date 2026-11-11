@@ -1,7 +1,7 @@
 /* ---------- games (paths), maps ---------- */
 const PATHS={
  math:{n:'Math Adventure',e:'🔢',c:'linear-gradient(135deg,#dbeafe,#bfdbfe)',worlds:[
-  {id:'m_tiny',g:-1,n:'Tiny Town',e:'🏠',c:'#fef9c3',nodes:[['pk_count',1,'Count to 5'],['shape',1,'Find the Shape'],['pk_num',1,'Hear a Number'],['sort',1,'Which One Is Different'],['pk_more',1,'Which Has More'],['pk_count',2,'Count to 10'],['pat',1,'What Comes Next'],['pk_num',2,'Numbers to 10'],['sort',2,'Big and Small']]},
+  {id:'m_tiny',g:-1,n:'Tiny Town',e:'🏠',c:'#fef9c3',nodes:[['pk_count',1,'Count to 5'],['shape',1,'Find the Shape'],['pk_num',1,'Hear a Number'],['sort',1,'Which One Is Different'],['pk_more',1,'Which Has More'],['pk_count',2,'Count to 10'],['pat',1,'What Comes Next'],['pk_num',2,'Numbers to 10'],['sort',2,'Big and Small'],['trace',1,'Trace Numbers']]},
   {id:'m_shape',g:0,n:'Shape Garden',e:'🌷',c:'#dcfce7',nodes:[['pk_count',3,'Count to 20'],['pk_num',3,'Hear 11 to 20'],['tenf',1,'Ten Frames'],['pk_more',2,'More, Fewer, Same'],['shape',2,'More Shapes'],['add',4,'Add to 5'],['pat',2,'Harder Patterns'],['tenf',2,'Make Ten'],['cnt',4,'Count On & Back'],['shape',3,'Solid Shapes'],['sort',3,'Sort by Kind'],['pos',1,'Where Is It'],['meas',1,'Measure'],['tenf',3,'Ten and More']]},
   {id:'m_meadow',g:0,n:'Number Meadow',e:'🌻',c:'#dcfce7',nodes:[['add',1,'Adding to 10'],['cnt',1,'Count by 1s & 10s'],['eo',1,'Even or Odd'],['miss',1,'Missing Number'],['sub',1,'Take Away'],['story',1,'Story Problems']]},
   {id:'m_candy',g:1,n:'Candy Canyon',e:'🍭',c:'#fce7f3',nodes:[['add',2,'+9 & Doubles'],['big',1,'Tens & Hundreds'],['cnt',2,'Count by 2s & 5s'],['cmp',1,'Bigger or Smaller'],['miss',2,'Missing to 18'],['sub',2,'Take Away to 18'],['story',2,'Story Problems 2']]},

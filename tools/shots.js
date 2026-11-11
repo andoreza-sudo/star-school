@@ -1303,6 +1303,75 @@ Object.assign(SCREENS, {
   'cc-story8-recipe': { run: ccShot('story', 8, '^story8 triple') },
 });
 
+// P2-16 tracing: one glyph of the Tiny Town stop (Pre-K), on the real round screen; setup(c) puts the board in a state
+// (c = TR.cur; the demo is stopped first). trace-sheet: every glyph's strokes (guide, numbered start dots, arrows) over the
+// Andika glyph at 30% opacity, scaled so its height spans the set's top and base lines (P2-17 checks its letters on it).
+const traceShot = (key, setup) => ({
+  fixture: 'fresh',
+  run: async p => {
+    await p.evaluate(key => {
+      S.name = 'Ava'; setGrade(-1); window.say = () => {};
+      let q = null;
+      for (let s = 1; s < 400 && !(q && q.g === key); s++) q = genQ('trace', 1, s);
+      G = newG({ path: 'math', node: NODES.math.findIndex(n => n.sk == 'trace'), sk: 'trace', lv: 1, n: 5, pool: [q] });
+      next();
+    }, key);
+    await p.waitForSelector('#trb');
+    await p.waitForFunction(() => TR.cur && !TR.cur.busy, null, { timeout: 8000 });
+    if (setup) await p.evaluate('(' + setup.toString() + ')(TR.cur)');
+  },
+});
+const traceSheet = async p => {
+  await p.evaluate(async () => {
+    await document.fonts.ready;
+    const cx = document.createElement('canvas').getContext('2d');
+    cx.font = '700 100px Andika';
+    const out = [];
+    for (const set in TRACE.sets) {
+      const S0 = TRACE.sets[set], L = S0.lines;
+      for (const key of S0.order) {
+        const asc = cx.measureText(key).actualBoundingBoxAscent / 100, fs = (L.base - L.top) / asc, geo = TR.geo(set, key);
+        let g = `<text x="50" y="${L.base}" font-size="${fs.toFixed(1)}" text-anchor="middle" class="tsh-a">${key}</text>`;
+        g += [L.top, L.mid, L.base].map(y => `<line class="tr-l" x1="0" x2="100" y1="${y}" y2="${y}"/>`).join('');
+        geo.s.forEach(s => { g += `<path class="tr-dot" d="${s.d}"/>`; });
+        geo.s.forEach((s, j) => {
+          for (let x = 12; x < s.L - 6; x += 22) {
+            const [px, py] = TR.at(s, x), [dx, dy] = TR.dir(s, x);
+            g += `<g transform="translate(${px} ${py}) rotate(${Math.atan2(dy, dx) * 180 / Math.PI})"><path class="tr-arr" d="M-2.2 -3.2L1.8 0L-2.2 3.2"/></g>`;
+          }
+          g += `<g transform="translate(${s.p[0][0] + j * 3} ${s.p[0][1] + j * 3})"><circle class="tr-sdc" r="4.6"/><text class="tr-sdt sm" y="0.3">${j + 1}</text></g>`;
+        });
+        out.push(`<svg viewBox="0 0 100 100" class="tsh">${g}</svg>`);
+      }
+    }
+    view(`<div class="s-math tsh-w">${out.join('')}</div>`);
+    const st = document.createElement('style');
+    st.textContent = '.tsh-w{display:flex;flex-wrap:wrap;gap:8px;padding:8px;background:var(--paper)}.tsh{width:23%;max-width:220px;background:var(--surface);'
+      + 'border-radius:12px;box-shadow:inset 0 0 0 2px var(--line)}.tsh-a{font-family:Andika;font-weight:700;fill:var(--ink);opacity:.3}';
+    document.head.appendChild(st);
+  });
+};
+Object.assign(SCREENS, {
+  // level 1 after the demo, the first stroke of 5 done (snapped on), arrows along stroke 2
+  'trace-1': traceShot('5', c => { c.k = 1; TR.draw(c); }),
+  // level 2 (dotted), the first part of the 8 traced and lifted: the dot waits where the finger stopped
+  'trace-2': traceShot('8', c => { TR.startPass(c, 1); c.part = Math.round(c.geo.s[0].L * 0.45); TR.draw(c); }),
+  // level 3 (start dot only), stroke 2 of the 4 after a miss: the dot pulses, arrows run along the stroke
+  'trace-3': traceShot('4', c => { TR.startPass(c, 2); c.k = 1; c.sm = 1; c.misses = 1; c.arr = true; TR.draw(c); TR.pulse(c, true); }),
+  // hint tier 1 (the pen draws the stroke), frozen at 60%
+  'trace-hint': traceShot('2', c => {
+    TR.stopAnim(c); TR.draw(c);
+    const s = c.geo.s[0];
+    document.querySelector('#trx').innerHTML = `<path class="tr-demo" d="${TR.partD(s, s.L * 0.6)}"/>`;
+    TR.pen(TR.at(s, s.L * 0.6), true);
+  }),
+  // hint tier 2 at level 3: dotted stroke and the yellow ball to follow
+  'trace-lead': traceShot('9', c => { TR.startPass(c, 2); TR.hintTier(c, 2); }),
+  // the glyph done: every pass traced with one miss, 2 stars
+  'trace-done': traceShot('7', c => { c.submit = () => {}; TR.startPass(c, 2); c.k = c.geo.s.length; TR.draw(c); c.misses = 1; TR.finish(c); }),
+  'trace-sheet': { fixture: 'fresh', run: traceSheet },
+});
+
 async function main() {
   const args = process.argv.slice(2);
   let fixtureArg = null;
