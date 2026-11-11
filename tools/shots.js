@@ -1878,6 +1878,47 @@ Object.assign(SCREENS, {
 });
 
 
+// P3-12 Shape Fit: grade g sets the band, level lv starts with o.placed of solve()'s moves already made (a saved state); o.wrong puts
+// the next piece on the board turned and one square off; o.sel picks the next tray piece; o.hint presses Hint (cooldown skipped);
+// o.win places all but the last piece and lets hint 3 finish it (the win card).
+const sfShot = (g, lv, o = {}) => ({
+  run: async p => {
+    await p.evaluate(([g, lv, o]) => {
+      window.say = () => {};
+      S.grade = g;
+      S.bt = {};
+      const band = BT.band(), puzzle = BT.make('fit', band, lv), st = SF.fresh(puzzle), moves = SF.solve(puzzle);
+      const n = o.win ? moves.length - 1 : o.placed || 0;
+      for (const [i, r, f, x, y] of moves.slice(0, n)) st.pc[i] = [r, f, x, y];
+      if (o.wrong && moves[n]) { const [i, r, f, x, y] = moves[n]; st.pc[i] = [puzzle.turn ? (r + 1) % 4 : r, f, x + 1, y]; }
+      S.bt.cur = { id: 'fit', band, level: lv, puzzle, state: st, hints: 0, sec: 40, day: today() };
+      BT.start('fit', band, lv);
+    }, [g, lv, o]);
+    await p.waitForSelector('.sf-pc .tg-bs');
+    await p.waitForTimeout(200);
+    if (o.sel) {
+      const q = await p.evaluate(() => { const i = SF.cur.p.pcs.findIndex((x, j) => SF.cur.st().pc[j].length == 2); return SF.cur.at(i); });
+      await p.mouse.click(q.x, q.y);
+    }
+    for (let i = 0; i < (o.hint || 0) + (o.win ? 3 : 0); i++) {
+      await p.evaluate(() => { BT.act.cd = 0; document.querySelector('#bthint').disabled = false; });
+      await p.click('#bthint');
+    }
+    if (o.win) await p.waitForSelector('.bt-win #btnext', { timeout: 8000 });
+  },
+});
+Object.assign(SCREENS, {
+  'bt-sf-levels': { run: async p => { await p.evaluate(() => { S.grade = 1; BT.rec('fit', 'B', true).stars = [3, 2]; BT.rec('fit', 'B').lvl = 3; BT.levels('fit', 'B'); }); } },
+  'bt-sf-a': sfShot(0, 1),
+  'bt-sf-a7': sfShot(0, 9, { placed: 1 }),
+  'bt-sf-b': sfShot(1, 7, { placed: 1, sel: true }),
+  'bt-sf-c': sfShot(3, 5, { placed: 2, wrong: true }),
+  'bt-sf-d': sfShot(5, 12),
+  'bt-sf-hint': sfShot(5, 4, { placed: 2, hint: 2 }),
+  'bt-sf-win': sfShot(3, 2, { win: true }),
+});
+
+
 async function main() {
   const args = process.argv.slice(2);
   let fixtureArg = null;

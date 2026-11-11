@@ -396,8 +396,9 @@ TG.mount = function (el, p, api) {
   function packTray(s) { // {fits, cells} at tray scale s
     const out = {}, rows = [];
     let row = { w: 0, h: 0, items: [] };
-    for (const i of mv) {
-      if (st.pc[i].length != 2) continue;
+    // P3-12: tallest first, so the rows waste less height (a phone tray with seven pieces got about a fifth bigger)
+    const hOf = i => { const b = box(TG.local(K[i], st.pc[i][0], st.pc[i][1])); return b[3] - b[1]; };
+    for (const i of mv.filter(j => st.pc[j].length == 2).sort((a, b) => hOf(b) - hOf(a) || a - b)) {
       const b = box(TG.local(K[i], st.pc[i][0], st.pc[i][1])), cw = Math.max(56, Math.ceil((b[2] - b[0]) * s + 14)), ch = Math.max(56, Math.ceil((b[3] - b[1]) * s + 14));
       if (row.items.length && row.w + cw > tray.w - 12) { rows.push(row); row = { w: 0, h: 0, items: [] }; }
       row.items.push([i, cw]);
@@ -439,7 +440,7 @@ TG.mount = function (el, p, api) {
       board = { x: 0, y: 0, w: W - tw - gap, h: Hh };
       tray = { x: W - tw, y: 0, w: tw, h: Hh };
     } else {
-      const need = Math.ceil(SH * (W - 2 * pad) / SW + 2 * pad), th = Math.min(Math.round(Hh * 0.5), Math.max(Math.round(Hh * (few ? 0.26 : 0.32)), Hh - gap - need));
+      const need = Math.ceil(SH * (W - 2 * pad) / SW + 2 * pad), th = Math.min(Math.round(Hh * 0.5), Math.max(Math.round(Hh * (few ? 0.26 : mv.length >= 6 ? 0.4 : 0.32)), Hh - gap - need));
       board = { x: 0, y: 0, w: W, h: Hh - th - gap };
       tray = { x: 0, y: Hh - th, w: W, h: th };
     }

@@ -251,6 +251,18 @@ Keys and doors: put a door on the solution path, put its key in a side branch th
 - Generator: choose a region (rectangle or a blob of 12-36 cells), grow random connected pieces of 2-5 cells until the region is partitioned. Solvable by construction.
 - Bands: A 2-3 pieces in the right orientation; B 3-4 pieces, rotation needed; C 5-6; D 7-8, pieces may need flipping.
 - Check: every cell covered once. Any tiling wins.
+- As built (P3-12, `src/js/84-bt-shapefit.js`, object `SF`, id `fit`, name "Shape Fit"; look in `src/css/49-bt-shapefit.css`, reusing the
+  tangram's screen and piece look): made at run time by construction (a rectangle on odd levels when the size allows one at most 7
+  wide, else a blob without holes; then cut into connected pieces whose leftover squares stay connected); the region grows with the level
+  (section 7 size lever). A: 2 pieces (levels 1-6) then 3, 2-4 squares each, 4-11 squares, pieces lie the right way (no Turn), outlines
+  drawn. B: 3 then 4 pieces, 3-4 squares, 9-16 squares, pieces come turned, outlines on levels 1-4. C: 5 then 6 pieces, 3-5 squares,
+  16-28 squares. D: 7 then 8 pieces, 3-5 squares, 24-36 squares, about half start mirrored (Flip button). Drag, tap twice to turn,
+  tap-then-tap, Undo, keys R F U; a drop snaps to the nearest whole square where the piece fits. Solved: every square of the region
+  covered once (any tiling). Hints as for tangrams (slot glows, piece turns, piece goes in). No mistakes are counted.
+- Tangram pack (P3-12): 32 puzzles in `src/data/d-puz-tangram.js` (the 8 of P3-11 and 24 more), ordered by a difficulty score written
+  in the bank's header (outline length, outline corners, pieces turned against the rest, pairs meeting only at a corner); with 12+
+  entries each level plays its own slice of 2-3 puzzles. `tools/test.js` "tangram pack and Shape Fit P3-12" checks the order and that no
+  two silhouettes are alike; "tangrams P3-11" still proves every entry exactly.
 
 **Hints (both)**: 1) outlines where one piece goes. 2) rotates that piece correctly. 3) places it.
 
