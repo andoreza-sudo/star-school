@@ -343,6 +343,9 @@ const SCREENS = {
   },
   // P1-07 placement quiz "Find my level": the Home card for a new child, the intro, a question (dots), the result, Grown-ups row
   'place-home': { fixture: 'fresh', run: async p => { await p.evaluate(() => { S.name = 'Ava'; setGrade(1); home(); }); } },
+  // P5-08: Home's three daily missions, one already done (a learning round, a Fact Sprint, today's review) and all three done
+  'missions': { fixture: 'tricky', run: async p => { await p.evaluate(() => { S.grade = 3; S.day = { d: today(), r: 1, done: false, m: [{ k: 'round', p: 'math', d: 1 }, { k: 'sprint', d: 0 }, { k: 'review', d: 0 }] }; save(); home(true); document.querySelector('#hmmis').scrollIntoView({ block: 'center' }); }); } },
+  'missions-done': { fixture: 'midway', run: async p => { await p.evaluate(() => { S.grade = 3; S.day = { d: today(), r: 3, done: true, m: [{ k: 'round', p: 'read', d: 1 }, { k: 'perfect', p: 'math', d: 1 }, { k: 'mix', d: 1 }] }; save(); home(true); }); } },
   'review-due': { fixture: 'tricky', run: async p => { await p.evaluate(() => home(true)); } },
   'review-none': { fixture: 'midway', run: async p => { await p.evaluate(() => { S.rev = []; home(true); }); } },
   'place-intro': { run: async p => { await p.evaluate(() => placeIntro('math', 'home')); } },

@@ -2208,6 +2208,31 @@ button.hm-tile:active{transform:translateY(3px);box-shadow:inset 0 0 0 2px var(-
   .hm .hm-pod{gap:var(--s-2)}
   .hm-podt b{font-size:var(--fs-3)}
 }
+
+/* ---- Today's missions (P5-08): three rows, each a button (a tick card when done); a subject-coloured disc, two lines, a go arrow ---- */
+.hm-mis{display:grid;gap:var(--s-2)}
+.hm .hm-mi{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:var(--s-3);width:100%;min-height:64px;
+  padding:var(--s-2) var(--s-3) var(--s-2) var(--s-2);border:0;border-radius:var(--r-card);background:var(--surface);color:var(--ink);font:inherit;
+  text-align:left;box-shadow:inset 0 0 0 2px var(--line),var(--ledge) var(--ledge-soft)}
+.hm button.hm-mi{cursor:pointer;transition:transform var(--t-fast) var(--ease)}
+.hm button.hm-mi:active{transform:translateY(3px);box-shadow:inset 0 0 0 2px var(--line),var(--ledge-press) var(--ledge-soft)}
+.hm .hm-mi.done{background:var(--good-tint);color:var(--good-ink);box-shadow:none}
+.hm-mic{display:grid;place-items:center;flex:none;width:48px;height:48px;border-radius:50%;color:var(--surface);
+  background:linear-gradient(var(--hi),var(--hi-0) 60%) var(--c,var(--brand));box-shadow:inset 0 -3px 0 var(--c-shade,var(--brand-shade))}
+.hm-mi.done .hm-mic{--c:var(--good);--c-shade:var(--good-ink)}
+.hm-mt{display:grid;gap:2px;min-width:0}
+.hm-mt b{font-family:var(--font-display);font-size:var(--fs-3);line-height:1.2}
+.hm-mt span{font-size:var(--fs-2);line-height:1.3;color:var(--ink-2)}
+.hm-mi.done .hm-mt span{color:var(--good-ink)}
+.hm-mg{display:grid;place-items:center;color:var(--brand)}
+.hm-mi.done .hm-mg{color:var(--good-ink)}
+/* what a finished mission won, on the sprint and puzzle end cards */
+.mis-win{display:grid;gap:var(--s-2);margin:var(--s-3) 0 0;padding:0;list-style:none;font-size:var(--fs-2);line-height:var(--lh-2);font-weight:700;color:var(--good-ink)}
+.mis-win li{display:flex;align-items:center;justify-content:center;gap:var(--s-3)}
+.mis-win .ic{flex:none}
+.mis-win .rw-stk{width:48px;height:48px;border-radius:16px}
+.mis-win .rw-se{font-size:30px}
+@media (min-width:900px){.hm-mis{gap:var(--s-3)}}
 /* P4-18 graphics quality pass: drawn chrome for the screens that still had emoji or flat looks (map stops and world badges,
    Fact Sprint, Speed Race, streak calendar, placement, Pet Care, setup, Game Room). Tokens only; motion is transform/opacity
    (calm mode and reduced motion stop it in 20-base.css). Markup ids and classes are the ones the screens always had. */
@@ -2857,7 +2882,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S));SAVE_FAILED=fals
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v128'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v129'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -6511,11 +6536,11 @@ function hmHero() {
   const grow = growTxt(star, pn);
   const v = nextG == null ? 1 : (S.stars - GROW[st]) / (nextG - GROW[st]);
   const need = !needs ? '' : `<div class="hm-think" aria-hidden="true">${cr.food < 30 ? picArt('apple') : cr.clean < 30 ? hmBubbles() : picArt('ball')}</div>`;
-  const r = Math.min(d.r, 3);
+  const r = MIS.count(); // P5-08: the pips count today's missions done
   const pips = [0, 1, 2].map(i => `<i class="${i < r ? 'on' : ''}"></i>`).join('');
-  const mission = d.done
-    ? `<div class="hm-ms done">${ico('trophy', 26)}<span class="hm-pips" aria-hidden="true">${pips}</span><span>Mission done!</span></div>`
-    : `<div class="hm-ms">${ico('target', 26)}<span class="hm-pips" role="img" aria-label="${r} of 3 rounds done today">${pips}</span><span>3 rounds today</span></div>`;
+  const mission = r >= 3
+    ? `<div class="hm-ms done">${ico('trophy', 26)}<span class="hm-pips" aria-hidden="true">${pips}</span><span>All missions done!</span></div>`
+    : `<div class="hm-ms">${ico('target', 26)}<span class="hm-pips" role="img" aria-label="${r} of 3 missions done today">${pips}</span><span>${r} of 3 missions</span></div>`;
   const left = ptLeft(), n = STRK.count();
   const chips = UI.chip('star', S.stars, { id: 'starc', aria: S.stars + ' stars' }) + UI.chip('coin', S.coins, { aria: S.coins + ' coins' }) +
     `<button class="stat flame${n ? '' : ' off'}" id="stkb" aria-label="Streak calendar">${ico('flame', 32)}<b>${n}</b></button>` +
@@ -6600,14 +6625,14 @@ function home(first){
     ${UI.ibtn(S.sound ? 'sound-on' : 'sound-off', S.sound ? 'Sound is on' : 'Sound is off', { id: 'snd', size: 'sm' })}
     ${UI.ibtn('gear', 'Grown-ups: hold', { id: 'gear', size: 'sm' })}</div>
   <div class="scroll hm" id="hs"><div class="hm-cols">
-   <div class="hm-col">${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}${hmDaily()}</div>
+   <div class="hm-col">${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('target', 26)}<span>Today's missions</span></h2>${hmMissions()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}${hmDaily()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
-   <p class="hm-ver">${ico('star', 16)}<span>Star School v128</span></p></div>`);
+   <p class="hm-ver">${ico('star', 16)}<span>Star School v129</span></p></div>`);
   music(true);
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,['💖','✨','⭐']);
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
   $$('.game').forEach(b=>b.onclick=()=>{SFX.whoosh();pathMap(b.dataset.p)});
-  placeBannerBind();revCardBind();
+  placeBannerBind();revCardBind();hmMissionsBind();
   $('#snd').onclick=()=>{S.sound=!S.sound;S.music=S.sound;save();home()};
   $('#stkb').onclick=()=>{SFX.whoosh();streakCal(0)};
   $('#book').onclick=book;$('#shop').onclick=shop;$('#mix').onclick=()=>{SFX.whoosh();startMix()};$('#race').onclick=raceMenu;$('#flu').onclick=()=>{SFX.whoosh();fluMenu()};$('#care').onclick=care;$('#groom').onclick=()=>{SFX.whoosh();gameRoom()};if($('#btcard'))$('#btcard').onclick=()=>{SFX.whoosh();BT.hub()};
@@ -8216,7 +8241,10 @@ function finish(){
   if(newPass){const wk=nd.wid;if(!S.wdone[wk]&&worldDone(p,nd.wi)){S.wdone[wk]=1;wDone=true}}
   const prizes=[award()];if(sc==n)prizes.push(award());
   actRound(); // P5-05
-  d.r++;const stk=streakTick();let mission=false;if(d.r>=3&&!d.done){d.done=true;mission=true;prizes.push(award())}
+  d.r++;const stk=streakTick();
+  const mi=MIS.done({k:'round',p:g.path||'',mix:!!g.mix,test:!!g.test,boss:!!g.boss,daily:!!g.daily,perfect:!g.boss&&sc>=n}); // P5-08
+  mi.won.forEach(w=>prizes.push(w.st));
+  const mission=mi.bonus;if(mission)prizes.push(award());
   if(wDone)prizes.push(award());
   const bonus=(mission?5:0),coins=sc+bonus+(wDone?20:0),prevSt=g.test||g.mix?0:(g.prevSt||0),PT=ptCalc(g,sc,n,stars,prevSt,newPass,testOk,nd),ptSec=PT.sec;ptEarn(ptSec);
   S.stars+=sc+bonus;S.coins+=coins;S.best=Math.max(S.best||0,best);
@@ -8256,7 +8284,8 @@ function finish(){
     if(g.boss){const nm=esc(g.boss.name);g.won?M(RW.boss(g.boss.name,'hit')||'crown',`You beat ${nm}!`,'fanfare','win boss'):M(RW.boss(g.boss.name)||'heart',`${nm} got away! Try again, you can beat it!`,null,'boss')}
     if(prize)M('gift',`New costume for ${esc(petN())}: ${RW.badge(prize)}`,'magic','win');
     if(g.test&&testOk)M('bolt',`You tested out of ${esc(PATHS[p].worlds[g.test.wi].n)}!`,'fanfare','win');
-    if(mission)M('calendar','Daily mission done! +5 bonus stars!','fanfare','win');
+    mi.won.forEach(w=>M('target',`Mission done: ${esc(MIS.title(w.x))}!`,'fanfare','win'));
+    if(mission)M('calendar','All 3 missions done! +5 bonus stars!','fanfare','win');
     if(stk.msg)M('flame',esc(RW.clean(stk.msg)),'fanfare','win');
     if(g.mix)M('target','Great practice on the tricky ones!',null);
     msgs.forEach(([to,h,s,x])=>{setTimeout(()=>{if(!live())return;const e=add(to,h);if(s)SFX[s]();if(x)RW.burst(e,28)},t);t+=650});
@@ -8632,6 +8661,183 @@ function race(cat){S.race=S.race||{};const best=S.race[cat]||0;
       document.body.appendChild(o);if(S.voice)say(rec&&sc>0?`New record! ${sc}!`:`You got ${sc}!`);
       o.querySelector('#ragain').onclick=()=>{o.remove();race(cat)};o.querySelector('#rhome').onclick=()=>{o.remove();home()}}},1000)}
 
+/* Daily missions v2 (P5-08). Three missions a day, drawn from a pool that fits the child, the same all day, new at local midnight.
+   Saved in S.day.m = [{k, p, d}] (kind, subject path for the kinds that need one, d = 1 when done). S.day is replaced by day() at the
+   first call on a new day, so the missions start again then without a migration. A missing or damaged list is drawn again.
+   The draw is seeded by the day key, the child's name and grade, and only offers what the child can do right now:
+     round    one learning round in the subject that needs the most practice (lowest mastery, else the least played)
+     other    a learning round in a different subject
+     perfect  a round with every answer right (the subject with the best mastery, to make it fair)
+     sprint   one Fact Sprint (grade K and up)
+     teaser   solve one Brain Teaser (only when a puzzle type is offered at the child's grade)
+     review   do today's review (only when something is due)
+     mix      one Mixed Practice round
+   "round" is always one of the three; the other two are drawn from what is left. Finishing a mission gives a sticker, once (it is
+   marked done first). All three together give the old mission bonus once a day: 5 stars, 5 coins and a sticker (S.day.done).
+   Hooks: finish() in 50-round.js (rounds, mixes, reviews), the sprint's finish in 57-fluency.js, BT.finish in 74-teasers.js. */
+const MIS = {
+  N: 3,
+  KINDS: ['round', 'other', 'perfect', 'sprint', 'teaser', 'review', 'mix'],
+  BONUS_STARS: 5,
+  BONUS_COINS: 5,
+  SUBJ: { math: 'Math', read: 'Reading', es: 'Spanish', disc: 'Discover' },
+  hash(s) {
+    let h = 2166136261;
+    s = String(s);
+    for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return h >>> 0;
+  },
+  // The stop a learning round in subject p starts at: the open stop the map points at (never a boss), or null when none can be played.
+  stop(p) {
+    const N = NODES[p];
+    if (!N || !N.length) return null;
+    const ok = j => N[j] && N[j].sk != 'boss' && SK[N[j].sk] && unlocked(p, j);
+    const c = curNode(p);
+    if (ok(c)) return { p, i: c };
+    for (let j = Math.min(c, N.length - 1); j >= 0; j--) if (ok(j)) return { p, i: j };
+    return null;
+  },
+  // Mean accuracy over the stops of a subject tried at least 3 times, or null when there is nothing to go on
+  score(p) {
+    let t = 0, c = 0;
+    for (const n of NODES[p]) {
+      if (n.sk == 'boss') continue;
+      const r = mastRec(nid(n));
+      if (r && r.n >= 3) { t += +r.p || 0; c++; }
+    }
+    return c ? t / c : null;
+  },
+  passedN: p => NODES[p].filter((n, i) => passed(p, i)).length,
+  // The subjects the child can play a round in, with their score: [{p, i, s, n}]
+  subjects() {
+    const out = [];
+    for (const p of Object.keys(PATHS)) {
+      const st = MIS.stop(p);
+      if (st) out.push({ p, i: st.i, s: MIS.score(p), n: MIS.passedN(p) });
+    }
+    return out;
+  },
+  // What the child can do right now; draw() reads only this
+  ctx() {
+    const g = gradeOf();
+    let bt = false, spr = false, due = 0;
+    try { bt = BT.offered().length > 0; } catch (e) {}
+    try { spr = g >= 0 && FLU.sets().length > 0; } catch (e) {}
+    try { due = dueItems().length; } catch (e) {}
+    return { g, subs: MIS.subjects(), bt, spr, due };
+  },
+  // Pure: three missions [{k, p?, d:0}] for a day key, a child name and a ctx
+  draw(dayKey, name, c) {
+    const rnd = mulberry32(MIS.hash(['mis', dayKey, name, c.g].join('|')));
+    const pickOf = a => a[Math.floor(rnd() * a.length)];
+    // weakest first: lowest score (no data counts as 2), then the fewest stops passed, then the draw
+    const subs = c.subs.map(s => ({ s, r: rnd() })).sort((a, b) => (a.s.s == null ? 2 : a.s.s) - (b.s.s == null ? 2 : b.s.s) || a.s.n - b.s.n || a.r - b.r).map(x => x.s);
+    const first = { k: 'round', p: subs[0].p, d: 0 };
+    const rest = [];
+    if (subs.length > 1) rest.push({ k: 'other', p: pickOf(subs.slice(1)).p, d: 0 });
+    rest.push({ k: 'perfect', p: subs[subs.length - 1].p, d: 0 }, { k: 'mix', d: 0 });
+    if (c.spr) rest.push({ k: 'sprint', d: 0 });
+    if (c.bt) rest.push({ k: 'teaser', d: 0 });
+    if (c.due > 0) rest.push({ k: 'review', d: 0 });
+    for (let i = rest.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [rest[i], rest[j]] = [rest[j], rest[i]]; }
+    return [first].concat(rest.slice(0, MIS.N - 1)).sort((a, b) => MIS.KINDS.indexOf(a.k) - MIS.KINDS.indexOf(b.k));
+  },
+  valid(m) {
+    return Array.isArray(m) && m.length == MIS.N && new Set(m.map(x => x && x.k)).size == MIS.N &&
+      m.every(x => x && MIS.KINDS.includes(x.k) && (x.d === 0 || x.d === 1) && (['round', 'other', 'perfect'].includes(x.k) ? !!NODES[x.p] : true));
+  },
+  // Today's three missions (drawn on the first call of the day and kept)
+  get() {
+    const d = day();
+    if (!MIS.valid(d.m)) {
+      d.m = MIS.draw(today(), S.name || '', MIS.ctx());
+      if (d.done) d.m.forEach(x => { x.d = 1; }); // an old save that finished the old mission today: nothing more to earn
+      save();
+    }
+    return d.m;
+  },
+  count() { try { return MIS.get().filter(x => x.d).length; } catch (e) { return 0; } },
+  // Does a finished thing count for mission x? ev: {k:'round', p, mix, test, boss, daily, perfect} | {k:'sprint'} | {k:'teaser'}
+  hit(x, ev) {
+    if (x.k == 'sprint' || x.k == 'teaser') return ev.k == x.k;
+    if (ev.k != 'round') return false;
+    if (x.k == 'round' || x.k == 'other') return !!ev.p && ev.p === x.p && !ev.mix && !ev.test;
+    if (x.k == 'perfect') return !!ev.perfect;
+    if (x.k == 'mix') return !!ev.mix && !ev.daily;
+    if (x.k == 'review') { let n = 1; try { n = dueItems().length; } catch (e) {} return !!ev.daily || (!!ev.mix && n == 0); }
+    return false;
+  },
+  // Something was finished. Marks the missions it completes and gives each one sticker. Returns {won: [{x, st}], bonus: bool}.
+  // The bonus (stars and coins) is paid by the caller (finish() adds it to its totals; pay() does it for the other screens).
+  done(ev) {
+    const out = { won: [], bonus: false };
+    try {
+      const m = MIS.get(), d = day();
+      for (const x of m) if (!x.d && MIS.hit(x, ev)) { x.d = 1; out.won.push({ x, st: award() }); }
+      if (out.won.length && m.every(x => x.d) && !d.done) { d.done = true; out.bonus = true; }
+    } catch (e) { logErr('missions: ' + e.message); }
+    return out;
+  },
+  // For screens without the treasure chest (sprint, puzzle): pays the bonus and returns the markup of what was won (or '')
+  pay(mi) {
+    if (!mi.won.length) return '';
+    if (mi.bonus) { S.stars += MIS.BONUS_STARS; S.coins += MIS.BONUS_COINS; mi.bst = award(); }
+    return MIS.winHTML(mi);
+  },
+  title(x) {
+    const s = MIS.SUBJ[x.p] || 'Math';
+    return { round: `Play a ${s} round`, other: `Try a ${s} round`, perfect: 'Get a perfect round', sprint: 'Do a Fact Sprint', teaser: 'Solve a Brain Teaser',
+      review: "Do today's review", mix: 'Play Mixed Practice' }[x.k];
+  },
+  sub(x) {
+    return { round: 'Make it stronger!', other: 'Visit another subject!', perfect: 'Every answer right!', sprint: 'Beat your best!', teaser: 'Think hard!',
+      review: 'Practice what you learned', mix: 'A bit of everything!' }[x.k];
+  },
+  icon(x) {
+    return { round: UI.SUBJ_ICON[x.p] || 'path-math', other: UI.SUBJ_ICON[x.p] || 'path-math', perfect: 'star', sprint: 'bolt', teaser: 'puzzle', review: 'replay', mix: 'sparkle' }[x.k];
+  },
+  // The subject colour class of a mission
+  cls(x) { return { round: 's-' + x.p, other: 's-' + x.p, perfect: 's-play', sprint: 's-math', teaser: 's-bt', review: 's-play', mix: 's-es' }[x.k]; },
+  // What the child sees after finishing: one line and one sticker per mission, then the bonus
+  winHTML(mi) {
+    const row = (icon, text, st, i) => `<li>${ico(icon, 20)}<span>${text}</span>${RW.sticker(st.s, st.isNew, i)}</li>`;
+    const rows = mi.won.map((w, i) => row('check', 'Mission done! ' + esc(MIS.title(w.x)), w.st, i)).join('') +
+      (mi.bonus && mi.bst ? row('trophy', `All 3 missions! +${MIS.BONUS_STARS} stars, +${MIS.BONUS_COINS} coins`, mi.bst, mi.won.length) : '');
+    return `<ul class="mis-win" role="status">${rows}</ul>`;
+  },
+  // Tapping a mission: straight to it
+  go(x) {
+    SFX.whoosh();
+    if (x.k == 'sprint') {
+      const ss = FLU.sets();
+      return fluPlay(ss[ss.length - 1].id, 't60');
+    }
+    if (x.k == 'teaser') {
+      const d = BT.dailyInfo();
+      return d && !d.done ? BT.start(d.id, d.band, d.level) : BT.hub();
+    }
+    if (x.k == 'review') return startReview();
+    if (x.k == 'mix') return startMix();
+    const st = MIS.stop(x.p) || MIS.stop('math');
+    if (st) open(st.p, st.i); else startMix();
+  },
+};
+
+// The missions list on Home: one row per mission (a button, or a tick when done)
+function hmMissions() {
+  const m = MIS.get();
+  const row = (x, i) => {
+    const inner = `<span class="hm-mic ${MIS.cls(x)}">${ico(x.d ? 'check' : MIS.icon(x), 28)}</span>` +
+      `<span class="hm-mt"><b>${esc(MIS.title(x))}</b><span>${x.d ? 'Done!' : esc(MIS.sub(x))}</span></span>`;
+    return x.d
+      ? `<div class="hm-mi done" role="group" aria-label="${esc(MIS.title(x))}, done">${inner}<span class="hm-mg">${ico('check-circle', 28)}</span></div>`
+      : `<button class="hm-mi" data-mi="${i}">${inner}<span class="hm-mg">${ico('play', 28)}</span></button>`;
+  };
+  return `<div class="hm-mis" id="hmmis">${m.map(row).join('')}</div>`;
+}
+function hmMissionsBind() {
+  $$('[data-mi]').forEach(b => b.onclick = () => MIS.go(MIS.get()[+b.dataset.mi]));
+}
 /* Streak calendar (P5-04). S.streak = {days:{'Y-M-D':rounds}, best, rw}. Day keys use the same local-time format as today().
    A day counts when at least one learning round is finished (streakTick() is called from finish() in 50-round.js).
    Rest rule: one missed day is forgiven when the day before it was active and no other rest day sits inside the 7 days before it. */
@@ -8994,9 +9200,10 @@ function fluPlay(set, mode) {
     const rec = r.rec && (!timed || right > 0); // no fireworks for a first 60 s run of zero
     const earned = FLU.earn(S.flu, set, today(), rec, right, mode);
     if (earned) ptEarn(earned);
+    const mis = MIS.pay(MIS.done({k: 'sprint'})); // P5-08
     save();
     rec ? (SFX.fanfare(), confetti(40)) : SFX.magic();
-    fluEnd({set, mode, key, timed, sec, right, rec, earned});
+    fluEnd({set, mode, key, timed, sec, right, rec, earned, mis});
   };
 
   // Clock counts only while the page is visible. It starts after a short "ready" beat.
@@ -9038,7 +9245,7 @@ function fluEnd(r) {
   const lower = !r.timed, e = (S.flu || {})[r.key], bestNow = e && e.best;
   const title = r.timed ? `${r.right} in 60 seconds!` : `20 facts in ${r.sec} s!`;
   const sp = fluSpark(FLU.week(e, lower), lower);
-  const o = GFX.endCard({ rec: r.rec, title, best: `Your best: ${lower ? bestNow + ' s' : bestNow}`, extra: sp ? `<div class="gx-week">${sp}</div>` : '',
+  const o = GFX.endCard({ rec: r.rec, title, best: `Your best: ${lower ? bestNow + ' s' : bestNow}`, extra: (sp ? `<div class="gx-week">${sp}</div>` : '') + (r.mis || ''),
     earn: r.earned ? `${ico('ticket', 28)}<span>+${r.earned / 60} min of game time</span>` : '<span>Free practice, no game time</span>',
     btns: UI.btn('Again', { kind: 'primary', size: 'lg', wide: true, icon: 'replay', id: 'fagain' }) +
       `<div class="rw-two">${UI.btn('Sets', { icon: 'path-math', id: 'fsets' })}${UI.btn('Home', { icon: 'home', id: 'fhome' })}</div>` });
@@ -9532,9 +9739,7 @@ const BT = {
     actRound();
     const d = day(), stk = streakTick();
     d.r++;
-    let mission = false, sticker = null;
-    if (d.r >= 3 && !d.done) { d.done = true; mission = true; S.stars += 5; S.coins += 5; sticker = award(); }
-    return { mission, streak: stk.msg ? stk.count : 0, sticker };
+    return { mission: false, streak: stk.msg ? stk.count : 0, sticker: null }; // P5-08: missions are paid in finish() through MIS
   },
   /* A puzzle was solved. run: the saved run (S.bt.cur); res: {mistakes, hints, sec}. Pays everything, clears S.bt.cur, saves.
      Returns what the win card shows: {stars, first, improved, added (new stars paid), unlocked, sec (game time paid), capped, coins,
@@ -9578,9 +9783,10 @@ const BT = {
     const badges = BT.badgeCheck();
     try { ACT.add(today(), { sec: Math.min(res.sec | 0, 900), area: 'bt' }); } catch (e) {}
     const round = BT.round();
+    const mis = MIS.pay(MIS.done({ k: 'teaser' })); // P5-08
     delete BT.st().cur;
     save();
-    return { stars, first, improved, added, unlocked, sec, capped: sec < want, coins, daily, round, before, grew: stage(S.stars) > stage(before), badges };
+    return { stars, first, improved, added, unlocked, sec, capped: sec < want, coins, daily, round, mis, before, grew: stage(S.stars) > stage(before), badges };
   },
 
   /* ---------- the screen in play ---------- */
@@ -9838,7 +10044,7 @@ const BT = {
     const li = (ic, t) => `<li>${ico(ic, 18)}<span>${esc(t)}</span></li>`, ls = [];
     if (o.added) ls.push(li('star', `+${o.added} star${o.added > 1 ? 's' : ''}`));
     if (o.coins) ls.push(li('coin', `+${o.coins} coins for the Puzzle of the Day`));
-    if (o.round) ls.push(o.round.mission ? li('gift', 'Daily mission done! +5 coins') : li('check', 'That counts as a learning round'));
+    if (o.round) ls.push(li('check', 'That counts as a learning round'));
     if (o.round && o.round.streak) ls.push(li('flame', `${o.round.streak} days in a row!`));
     // P3-17: new badges pop in on the card, once (calm mode and reduced motion show them still)
     const nb = o.badges && o.badges.length ? `<div class="bt-nb" role="status">${o.badges.slice(0, 3).map(x => BT.medal(x, 56)).join('')}` +
@@ -9847,7 +10053,7 @@ const BT = {
       : `<span>Game time from puzzles is full for today</span>`;
     const card = GFX.endCard({ title: o.stars == 3 ? 'Perfect!' : 'Solved!', icon: 'puzzle', rec: false,
       extra: (note && note.length ? `<ul class="bt-sum">${note.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : '') + `<div class="bt-wst">${UI.stars(o.stars, 3, 44, { arc: true })}</div>${o.unlocked && !endless ? `<p class="bt-new">${UI.tag(next === 'E' ? 'Endless is open!' : 'New level open!', 'new', 'sparkle')}</p>` : ''}` +
-        (ls.length ? `<ul class="rw-pl bt-wl">${ls.join('')}</ul>` : '') + nb,
+        (ls.length ? `<ul class="rw-pl bt-wl">${ls.join('')}</ul>` : '') + (o.mis || '') + nb,
       earn: gt,
       btns: (next ? UI.btn(next === 'E' ? 'Endless' : 'Next level', { kind: 'primary', size: 'lg', wide: true, icon: 'go', id: 'btnext' }) : '') +
         `<div class="rw-two">${UI.btn('Again', { icon: 'replay', id: 'btagain' })}${UI.btn('Levels', { icon: 'puzzle', id: 'btlvls' })}</div>` });
@@ -9931,7 +10137,7 @@ function grown(){let armed=false;
     {sub:'Rounds played and first-try accuracy for every skill on the maps, with the questions missed most.'})}
   ${GW.card('gw-how','info','How it works',`<p class="gw-p">Each subject has its own map. Getting 7 of 10 right opens the next stop (8 earns 2 stars, 10 earns 3), and each world stretches further. Missed questions come back at the end of a round, in later rounds, in Daily Review and in the Tricky Mix. Each right answer earns a star (the pet grows) and a coin (spent in the shop). Everything is saved on this tablet only.</p>`)}
   <details class="gw-card gw-det" id="applog"><summary class="gw-h"><span class="gw-hi">${ico('doc',24)}</span><span>App log</span>${ico('chevron-right',22,'chev')}</summary><div class="gw-log">
-   <div><b>Version</b> v128</div><div><b>Save size</b> ${(JSON.stringify(S).length/1024).toFixed(1)} KB</div>
+   <div><b>Version</b> v129</div><div><b>Save size</b> ${(JSON.stringify(S).length/1024).toFixed(1)} KB</div>
    <div><b>Storage</b> ${SAVE_FAILED?'<span class="gw-bad">could not save (device storage may be full)</span>':'saving OK'}</div>
    ${SAVE_CORRUPT?'<div class="gw-bad">The old save could not be read. A fresh start was made and the old data was kept on the device.</div>':''}
    <div><b>Last errors</b> ${(S.err||[]).length?'<ul class="gw-errs">'+(S.err||[]).slice().reverse().map(e=>'<li><span>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+'</span> '+esc(e.msg)+'</li>').join('')+'</ul>':'none'}</div></div></details>
@@ -10280,20 +10486,20 @@ function appFiles() {
   ];
 }
 function dataReady() {
-  return appFiles().every(f => f[1] === 'v128');
+  return appFiles().every(f => f[1] === 'v129');
 }
 function dataMissing() {
-  logErr(appFiles().filter(f => f[1] !== 'v128').map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v128)');
+  logErr(appFiles().filter(f => f[1] !== 'v129').map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v129)');
   const again = UI.btn('Try again', { kind: 'primary', size: 'lg', icon: 'replay', id: 'dataretry' });
   view(`<div class="scroll" id="datamiss">${UI.empty('download', 'Star School needs to finish updating. Connect to the internet, then tap Try again.', again)}</div>`);
   $('#dataretry').onclick = () => location.reload();
 }
 </script>
-<script src="gen.v128.js"></script>
-<script src="gen2.v128.js"></script>
-<script src="bt.v128.js"></script>
-<script src="games.v128.js"></script>
-<script src="data.v128.js"></script>
+<script src="gen.v129.js"></script>
+<script src="gen2.v129.js"></script>
+<script src="bt.v129.js"></script>
+<script src="games.v129.js"></script>
+<script src="data.v129.js"></script>
 <script>
 if (dataReady()) {
   loadClips();

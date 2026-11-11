@@ -4,7 +4,7 @@ The running record of what has shipped. Newest entry first. Every chunk adds one
 
 **Next up:** P2-35, P4-16, P4-15, P5-07, P5-08, P5-09
 
-**Current version:** v128
+**Current version:** v129
 
 ## Chunk status
 
@@ -106,6 +106,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P4-09 v125
 - P4-12 v126
 - P4-14 v127
+- P5-08 v129
 - A11c v128
 
 ## Handoff notes
@@ -403,6 +404,15 @@ Things noticed while working that are outside the current chunk. One line each, 
 
 ## Log
 
+### P5-08 Daily missions v2 (v129, 2026-11-11, Claude)
+- What changed: three daily missions drawn from a pool that fits the child, replacing "3 rounds today". New `src/js/55-missions.js` (`MIS`, `hmMissions`). Kinds: round (learning round in the weakest subject: lowest mastery, else least played; always one of the three), other (a round in another subject), perfect (every answer right), sprint (one Fact Sprint, K and up), teaser (one Brain Teaser, only if a puzzle type is offered at the grade), review (only when something is due), mix (Mixed Practice). Seeded by day key, name and grade, kept in `S.day.m` so they are the same all day and new at local midnight.
+- Rewards: each mission gives one sticker, once (marked done first); all three give the old bonus (5 stars, 5 coins, sticker) once, via `S.day.done`. Rounds pay in `finish()` (chest, sticker pop and a "Mission done" card); the sprint end card and the puzzle win card show the lines and stickers (`.mis-win`). The puzzle round counter no longer pays the old mission.
+- Home: "Today's missions" list under the hero (drawn icons, subject colours, 64 px rows, a tick card when done); the hero pips now count missions. Tapping goes straight to the round stop, a 60 s sprint, today's puzzle, the review or Mixed Practice.
+- Save: no new top-level field. `S.day.m = [{k,p,d}]` inside `S.day` (reset each day); missing or damaged is drawn again; an old save that finished the old mission today shows all three done and pays nothing more. Added to the ROADMAP save-field table.
+- Tests: named check `missions v2 P5-08` (6 fixtures x 8 grades x 40 days: three distinct doable missions, no teaser without types, no review with nothing due, no pre-K sprint, same all day, different across days, stickers once, bonus once, old and damaged S.day, no top-level field, tokens only). Smoke block `// P5-08` (380x780: round, sprint, puzzle each finished from its Home row, sticker once, bonus once, 48 px, no sideways scroll; 1024x600: natural draw, every row opens what it names). Shots `missions`, `missions-done` (looked at 2x).
+- Test expectations changed: smoke P4-11 "rewards changed" now adds one sticker per mission finished in that round (stars and coins unchanged apart from the bonus). Reason: a perfect round can now finish missions.
+- Also: `tools/build.py` stale-file cleanup regex is now `[a-z0-9]+` so the old `gen2.vNN.js` is deleted (it was left behind since A11c).
+- Merge: built on branch P5-08-missions from e0a9a86 (v128); VER v129 is provisional. Conflicts to expect: `tools/build.py` (VER), `src/js/46-home.js` (hero, home()), `src/js/50-round.js` (finish), `tools/test.js` (new check before the report), `tools/smoke.js` (new block before the final network check; P4-11 expectation), `tools/shots.js`, `docs/ROADMAP.md` table, `Chunk status` and this log, built files (rebuild, `git add -A`). P5-09 (game-time rules) may want to price missions.
 ### A11c Question code in part files (v128, 2026-11-11, Claude)
 - Why now (ROADMAP A11, risk R1): index.html was 1,229,289 bytes, over the 1.2 MB warning (fail 1.5 MB), with pet care, art sets B and C, the Game Room hub, motion polish and profiles still to add code. Goal: well under 1.0 MB with no change in behaviour.
 - What moved (two new entries in `PARTS`, `tools/build.py`): `gen.<VER>.js` = `23-viz.js`, `30-gen-math.js`, `31-gen-math-early.js`, `32-gen-read.js`, `33-gen-math-mid.js`, `34-gen-es.js` (200 KB); `gen2.<VER>.js` = `35-gen-math-upper.js`, `36-gen-phonics.js`, `37-bank.js`, `37-comp.js`, `39b-steps.js` (236 KB). Both are under the 400 KB part warning (the 177 KB `35-gen-math-upper.js` is why there are two, not one 436 KB file). They load before bt and games: order is index.html's code, gen, gen2, bt, games, data, boot, because `d-es.js` (`esReg`) and `d-comp.js` (`COMPSPEC`) call generator helpers while data loads.

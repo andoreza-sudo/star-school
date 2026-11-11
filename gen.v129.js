@@ -1,5 +1,5 @@
-/* Star School gen v128. BUILT by tools/build.py from 23-viz.js, 30-gen-math.js, 31-gen-math-early.js, 32-gen-read.js, 33-gen-math-mid.js, 34-gen-es.js: never edit by hand.
-   index.html v128 loads this file with <script src="gen.v128.js"> after its own code, before data.v128.js. */
+/* Star School gen v129. BUILT by tools/build.py from 23-viz.js, 30-gen-math.js, 31-gen-math-early.js, 32-gen-read.js, 33-gen-math-mid.js, 34-gen-es.js: never edit by hand.
+   index.html v129 loads this file with <script src="gen.v129.js"> after its own code, before data.v129.js. */
 /* ---------- math visuals (P1-10; P1-11 adds part 2 in this same file) ----------
    Every VIZ.* function returns one inline <svg> string for a question's html (or a hint). No ids, no defs, no filters,
    no Math.random: the same arguments always give the same markup, so a question rebuilt from its seed looks the same.
@@ -2810,4 +2810,4 @@ const ES_SENT_HINT=[null,'In Spanish a describing word, like a color or a size, 
 function genEsSent(lv){const it=pick(ES_GRAM.sent[lv]),ws=it[0].split(' '),items=ws.map(w=>({v:w,l:w}));
   return{...sentOrder(items,ws,{html:`Put the words in order: “${esc(it[2])}”`,say:'Put the words in order: '+it[2]},{k:'text',s:ES_SENT_HINT[lv]},it[0]),after:it[0],afterLang:'es'}}
 
-var GEN_VER='v128'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var GEN_VER='v129'; // last line: the whole file ran (checked by dataReady() before the app starts)

@@ -219,11 +219,11 @@ function hmHero() {
   const grow = growTxt(star, pn);
   const v = nextG == null ? 1 : (S.stars - GROW[st]) / (nextG - GROW[st]);
   const need = !needs ? '' : `<div class="hm-think" aria-hidden="true">${cr.food < 30 ? picArt('apple') : cr.clean < 30 ? hmBubbles() : picArt('ball')}</div>`;
-  const r = Math.min(d.r, 3);
+  const r = MIS.count(); // P5-08: the pips count today's missions done
   const pips = [0, 1, 2].map(i => `<i class="${i < r ? 'on' : ''}"></i>`).join('');
-  const mission = d.done
-    ? `<div class="hm-ms done">${ico('trophy', 26)}<span class="hm-pips" aria-hidden="true">${pips}</span><span>Mission done!</span></div>`
-    : `<div class="hm-ms">${ico('target', 26)}<span class="hm-pips" role="img" aria-label="${r} of 3 rounds done today">${pips}</span><span>3 rounds today</span></div>`;
+  const mission = r >= 3
+    ? `<div class="hm-ms done">${ico('trophy', 26)}<span class="hm-pips" aria-hidden="true">${pips}</span><span>All missions done!</span></div>`
+    : `<div class="hm-ms">${ico('target', 26)}<span class="hm-pips" role="img" aria-label="${r} of 3 missions done today">${pips}</span><span>${r} of 3 missions</span></div>`;
   const left = ptLeft(), n = STRK.count();
   const chips = UI.chip('star', S.stars, { id: 'starc', aria: S.stars + ' stars' }) + UI.chip('coin', S.coins, { aria: S.coins + ' coins' }) +
     `<button class="stat flame${n ? '' : ' off'}" id="stkb" aria-label="Streak calendar">${ico('flame', 32)}<b>${n}</b></button>` +
@@ -308,14 +308,14 @@ function home(first){
     ${UI.ibtn(S.sound ? 'sound-on' : 'sound-off', S.sound ? 'Sound is on' : 'Sound is off', { id: 'snd', size: 'sm' })}
     ${UI.ibtn('gear', 'Grown-ups: hold', { id: 'gear', size: 'sm' })}</div>
   <div class="scroll hm" id="hs"><div class="hm-cols">
-   <div class="hm-col">${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}${hmDaily()}</div>
+   <div class="hm-col">${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('target', 26)}<span>Today's missions</span></h2>${hmMissions()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}${hmDaily()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
    <p class="hm-ver">${ico('star', 16)}<span>Star School __VER__</span></p></div>`);
   music(true);
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,['💖','✨','⭐']);
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
   $$('.game').forEach(b=>b.onclick=()=>{SFX.whoosh();pathMap(b.dataset.p)});
-  placeBannerBind();revCardBind();
+  placeBannerBind();revCardBind();hmMissionsBind();
   $('#snd').onclick=()=>{S.sound=!S.sound;S.music=S.sound;save();home()};
   $('#stkb').onclick=()=>{SFX.whoosh();streakCal(0)};
   $('#book').onclick=book;$('#shop').onclick=shop;$('#mix').onclick=()=>{SFX.whoosh();startMix()};$('#race').onclick=raceMenu;$('#flu').onclick=()=>{SFX.whoosh();fluMenu()};$('#care').onclick=care;$('#groom').onclick=()=>{SFX.whoosh();gameRoom()};if($('#btcard'))$('#btcard').onclick=()=>{SFX.whoosh();BT.hub()};
