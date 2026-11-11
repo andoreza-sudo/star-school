@@ -2330,6 +2330,89 @@ run('online note: share, send and print buttons tell grown-ups to get online, an
   return{problems:[...p,...r]};
 });
 
+// ---- P5-07: backup export, import, undo (the Grown-ups Backup card; 81-backup.js) ----
+run('backup P5-07: round trip of every fixture, old backups migrate, bad files are refused with nothing changed, undo, online note',()=>{
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const names=fs.readdirSync(path.join(__dirname,'fixtures')).filter(n=>n.endsWith('.json')).map(n=>n.slice(0,-5));
+  const p=[];
+  const r=eval(js+`
+  const store={};
+  global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+  const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
+  const sort=o=>Array.isArray(o)?o.map(sort):o&&typeof o=='object'?Object.fromEntries(Object.keys(o).sort().map(k=>[k,sort(o[k])])):o;
+  const same=(a,b)=>JSON.stringify(sort(a))===JSON.stringify(sort(b));
+  const bad=[];let n=0;
+  // 1. round trip: export, load it into a different save, the result is identical, and undo brings the other save back
+  for(const name of NAMES){
+    load(fx(name));
+    const before=JSON.parse(JSON.stringify(S)),text=BAK.make(),head=JSON.parse(text);
+    if(head.app!=='Star School'||typeof head.ver!='string'||!head.ver||head.save!==LATEST||isNaN(new Date(head.date))||head.name!==(before.name||''))bad.push(name+': header '+JSON.stringify(Object.assign({},head,{data:0})));
+    const res=BAK.read(text);
+    if(!res.ok){bad.push(name+': own export refused: '+res.msg);continue}
+    if(!same(res.data,before))bad.push(name+': read() changed the save');
+    if(!same(S,before))bad.push(name+': read() touched the live save');
+    load(fx(name==='midway'?'maxed':'midway'));
+    const other=JSON.parse(JSON.stringify(S));
+    if(BAK.hasUndo())bad.push(name+': undo offered before any load');
+    if(BAK.apply(res.data)!=='')bad.push(name+': apply failed');
+    if(!same(S,before)||!same(JSON.parse(store[KEY]),before))bad.push(name+': import is not identical to the export');
+    if(!BAK.hasUndo()||!same(JSON.parse(store[BAK.UNDO]),other))bad.push(name+': no copy of the previous save kept');
+    if(BAK.undo()!=='')bad.push(name+': undo failed');
+    if(!same(S,other)||!same(JSON.parse(store[KEY]),other)||BAK.hasUndo())bad.push(name+': undo did not restore the previous save');
+    if(BAK.undo()==='')bad.push(name+': a second undo should say there is nothing to undo');
+    n++;
+  }
+  // 2. an old backup (a v30 save in a v1 file) migrates to the latest version and keeps its stars
+  const old=JSON.parse(fx('legacy-single-map')),oldFile=v=>JSON.stringify({app:'Star School',ver:'v30',save:v,date:'2025-01-02T03:04:05Z',name:old.name,data:old});
+  load(fx('midway'));
+  const om=BAK.read(oldFile(1));
+  if(!om.ok||om.data.v!==LATEST||om.data.stars!==old.stars||om.data.maps.math.add1!==2||om.info.name!=='Mia')bad.push('old backup: '+JSON.stringify(om.ok?om.info:om));
+  // 3. refused with nothing changed
+  load(fx('midway'));
+  const snap=JSON.stringify(S),keys=JSON.stringify(store);
+  const good=JSON.parse(BAK.make()),mod=f=>{const g=JSON.parse(JSON.stringify(good));f(g);return JSON.stringify(g)};
+  const refuse={
+    newer:mod(g=>{g.save=LATEST+1;g.data.v=LATEST+1}),
+    newerHeaderOnly:mod(g=>{g.save=LATEST+1}),
+    newerData:mod(g=>{g.data.v=LATEST+1}),
+    wrongApp:mod(g=>{g.app='Other App'}),
+    noApp:JSON.stringify(good.data),
+    corrupt:BAK.make().slice(0,200),
+    empty:'',spaces:'  \\n ',text:'hello',array:'[]',nul:'null',number:'42',
+    noData:mod(g=>{delete g.data}),
+    dataArray:mod(g=>{g.data=[]}),
+    noVersion:mod(g=>{delete g.save}),
+    badVersion:mod(g=>{g.save='six'}),
+    starsText:mod(g=>{g.data.stars='lots'}),
+    starsNeg:mod(g=>{g.data.stars=-5}),
+    progList:mod(g=>{g.data.prog=[]}),
+    nameNum:mod(g=>{g.data.name=7}),
+    pet:mod(g=>{g.data.pet='nopetlikethis'}),
+    big:'{"app":"Star School"'+' '.repeat(BAK.MAX+1)+'}',
+  };
+  for(const k in refuse){
+    const x=BAK.read(refuse[k]);
+    if(x.ok||!x.msg||/undefined|\\[object/.test(x.msg))bad.push('refused file '+k+': '+JSON.stringify(x).slice(0,120));
+    if(JSON.stringify(S)!==snap||JSON.stringify(store)!==keys)bad.push('refused file '+k+' changed something');
+  }
+  if(!/newer/i.test(BAK.read(refuse.newer).msg))bad.push('a newer save version needs a clear message: '+BAK.read(refuse.newer).msg);
+  // a storage failure while keeping the undo copy changes nothing
+  const keepSet=localStorage.setItem;localStorage.setItem=()=>{throw new Error('full')};
+  const gd=BAK.read(BAK.make());
+  const full=BAK.apply(gd.data);localStorage.setItem=keepSet;
+  if(!full||JSON.stringify(S)!==snap||JSON.stringify(store)!==keys)bad.push('a full tablet should refuse the load and change nothing');
+  ({bad,n});`.replace('NAMES',JSON.stringify(names)));
+  // 4. the online note: the Save buttons show it and go through needOnline (block:false: the download still works offline)
+  const src=n=>fs.readFileSync(path.join(SRC,'js',n),'utf8');
+  const bk=src('81-backup.js'),gr=src('80-grown.js');
+  if(!/id: 'bk-save'\}\)\}\$\{onlineNote\(\)\}/.test(bk))p.push('Save a backup has no onlineNote() beside it');
+  if(!/id:'bk-first'\}\)\}\$\{onlineNote\(\)\}/.test(gr))p.push('Save a backup first (Start over) has no onlineNote() beside it');
+  if(!/needOnline\(async \(\) => \{[\s\S]{0,200}navigator\.share\(/.test(bk)||!/\}, \{block: false\}\);/.test(bk))p.push('backup share is not inside needOnline(..., {block:false})');
+  if(/XMLHttpRequest|fetch\(|sendBeacon|https?:\/\//.test(bk.replace(/\/\*[\s\S]*?\*\//,'')))p.push('81-backup.js must not make requests');
+  if(!/BAK\.card\(\)/.test(gr)||!/BAK\.bind\(\)/.test(gr))p.push('Grown-ups does not show the Backup card');
+  return{problems:[...p,...r.bad],note:r.n+' fixtures round-tripped, '+'19 bad files refused'};
+});
+
 // ---- P2-06 fractions core: frac 2-8 generators (math checked), Fraction Forest stops, saves ----
 run('fractions P2-06: frac 2-8 maths per level, hints, say, labels, 3,000 samples per level',()=>{
   const out=eval(js+`
