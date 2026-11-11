@@ -5160,6 +5160,189 @@ async function main() {
       await cx.ctx.close();
     }
 
+    // P3-11 Tangrams (src/js/80-bt-tangram.js) with real pointer input, midway save: touch at 380x780 (a 1st grader, band B, level 1)
+    //    and mouse at 1024x600 (a 5th grader, band D, level 1). Home card -> hub -> Tangram -> level 1. Every move comes from the
+    //    solution (the slot each piece fills, worked out from the board as it is, so pieces the hints placed are skipped): the piece is
+    //    picked with a tap, turned with taps on it (touch) or the Turn button (mouse), flipped with Flip if needed, then dragged onto
+    //    its slot's middle (with a small miss that the snap must correct) or, once, placed by tap-then-tap; each lands exactly in its
+    //    slot. Also: a drag back to the tray, a piece dropped turned wrong gets the amber ring and Undo takes it back (mouse), hint tiers
+    //    1-3 (1 and 2 move nothing, 3 places one), back and Keep going resume the same state, the win card, 1 star (3 hints) saved.
+    //    Every screen: buttons and tray cells 48 px, the smallest piece on the board catchable at 48 px, no sideways scroll, no emoji.
+    {
+      const look = () => {
+        const vw = document.documentElement.clientWidth, out = [];
+        for (const e of document.querySelectorAll('button, [role="button"]')) {
+          const r = e.getBoundingClientRect();
+          if (!r.width || r.bottom < 0 || r.top > innerHeight || e.closest('svg') || e.closest('#toast')) continue;
+          if (Math.min(r.width, r.height) < 47.5) out.push('small ' + (e.id || e.className) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
+          if (r.left < -1 || r.right > vw + 1 || (e.closest('.bt-play') && r.bottom > innerHeight + 1)) out.push('outside ' + (e.id || e.className) + ' ' + Math.round(r.left) + '..' + Math.round(r.right));
+        }
+        if (document.documentElement.scrollWidth > vw) out.push('sideways scroll ' + document.documentElement.scrollWidth);
+        const sv = document.querySelector('.tg-svg');
+        if (sv) {
+          const r = sv.getBoundingClientRect();
+          if (r.right > vw + 1 || r.bottom > innerHeight + 1) out.push('the tangram board is outside the screen');
+          const st = document.querySelector('#btstage');
+          if (st && st.scrollHeight > st.clientHeight + 2) out.push('the puzzle needs scrolling');
+          if (TG.cur) for (const i of TG.movable(TG.cur.p)) {
+            const c = TG.cur.cell(i), e = TG.cur.st().pc[i];
+            if (e.length == 2 && c && Math.min(c.w, c.h) < 48) out.push('tray cell ' + i + ' ' + c.w + 'x' + c.h);
+            if (e.length == 4) { const b = TG.cur.box(i); if (Math.min(b.w, b.h) + 24 < 48) out.push('piece ' + i + ' is ' + Math.round(b.w) + 'x' + Math.round(b.h) + ' on the board'); }
+          }
+        }
+        const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        for (let n; (n = w.nextNode());) {
+          const el = n.parentElement;
+          if (!el || el.closest('script,style,svg,#ico-sprite,.rw-burst') || !el.getClientRects().length) continue;
+          const m = n.textContent.match(/\p{Extended_Pictographic}|[◀▶✕]/u);
+          if (m) out.push('emoji chrome ' + m[0] + ' in ' + (el.id || el.className));
+        }
+        return out;
+      };
+      // the moves still to make, worked out from the board: [piece, k, f, x, y] for every slot nobody fills yet
+      const rest = () => {
+        const p = TG.cur.p, st = TG.cur.st(), { by, used } = TG.filled(p, st), out = [];
+        for (let s = 0; s < 7; s++) {
+          if (by[s] >= 0) continue;
+          const i = TG.movable(p).find(j => TG.KIND[j] == TG.KIND[s] && !used.has(j) && !out.some(m => m[0] == j));
+          const q = p.pcs[s];
+          out.push([i, q[0], q[1], TG.num(q[2]), TG.num(q[3])]);
+        }
+        return out;
+      };
+      for (const [w, h, grade, touch] of [[380, 780, 1, true], [1024, 600, 5, false]]) {
+        const tag = 'P3-11 ' + w + 'x' + h;
+        const app = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = app.page, bad = [];
+        const chk = async what => { for (const o of await pg.evaluate('(' + look.toString() + ')()')) bad.push(what + ': ' + o); };
+        const cdp = await pg.context().newCDPSession(pg);
+        if (touch) await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 1 });
+        const tp = q => [{ x: q.x, y: q.y, radiusX: 6, radiusY: 6, id: 1 }];
+        const tap = async q => {
+          if (!touch) return pg.mouse.click(q.x, q.y);
+          await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: tp(q) });
+          await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+        };
+        const dragTo = async (a, b) => {
+          const steps = 8;
+          if (touch) {
+            await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: tp(a) });
+            for (let s = 1; s <= steps; s++) await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: tp({ x: a.x + (b.x - a.x) * s / steps, y: a.y + (b.y - a.y) * s / steps }) });
+            await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+          } else {
+            await pg.mouse.move(a.x, a.y);
+            await pg.mouse.down();
+            await pg.mouse.move(b.x, b.y, { steps });
+            await pg.mouse.up();
+          }
+        };
+        const at = i => pg.evaluate(i => TG.cur.at(i), i);
+        const slotMid = m => pg.evaluate(m => TG.cur.page(TG.mid(TG.poly(TG.KIND[m[0]], m[1], m[2], m[3], m[4]))), m);
+        const inSlot = m => pg.evaluate(m => { const e = TG.cur.st().pc[m[0]]; return e.length == 4 && TG.samePoly(TG.poly(TG.KIND[m[0]], ...e), TG.poly(TG.KIND[m[0]], m[1], m[2], m[3], m[4])); }, m);
+        // pick the piece, turn and flip it like the move, then bring it in (drag with a miss of (dx, dy) px, or tap-then-tap)
+        const play = async (m, how = 'drag', dx = 0, dy = 0) => {
+          const [i, k, f] = m;
+          if ((await pg.evaluate(() => TG.cur.sel())) !== i) await tap(await at(i));
+          const e = await pg.evaluate(i => TG.cur.st().pc[i], i);
+          for (let t = 0; t < (k - e[0] + 8) % 8; t++) { if (touch) await tap(await at(i)); else await pg.click('.tg-turn'); }
+          if (e[1] !== f) await pg.click('.tg-flip');
+          const q = await slotMid(m);
+          if (how == 'tap') await tap(q);
+          else await dragTo(await at(i), { x: q.x + dx, y: q.y + dy });
+          await pg.waitForTimeout(60);
+          if (!(await inSlot(m))) bad.push(`piece ${i} (${how}${dx || dy ? ', ' + dx + ',' + dy + ' px off' : ''}) did not land in its slot: ` + JSON.stringify(await pg.evaluate(i => TG.cur.st().pc[i], i)));
+        };
+        const pcOf = () => pg.evaluate(() => JSON.stringify(TG.cur.st().pc));
+        await pg.evaluate(g => { S.grade = g; save(); home(); }, grade);
+        await pg.waitForSelector('#btcard');
+        await pg.waitForTimeout(450);
+        await pg.evaluate(() => document.querySelector('#btcard').scrollIntoView({ block: 'center' }));
+        await pg.click('#btcard');
+        await pg.waitForSelector('.bt-hub [data-t="tangram"]');
+        await pg.waitForTimeout(450);
+        await chk('hub');
+        await pg.click('[data-t="tangram"]');
+        await pg.waitForSelector('.bt-lvs');
+        await pg.waitForTimeout(450);
+        await chk('levels');
+        await pg.click('.bt-lv[data-l="1"]');
+        await pg.waitForSelector('.tg-svg .tg-bs');
+        await pg.waitForTimeout(450);
+        await chk('play');
+        const g0 = await pg.evaluate(() => ({ band: S.bt.cur.band, id: S.bt.cur.puzzle.id, n: TG.movable(S.bt.cur.puzzle).length, u: Math.round(TG.cur.u()), ut: Math.round(TG.cur.ut()) }));
+        if (g0.band !== (grade === 1 ? 'B' : 'D') || g0.n !== (grade === 1 ? 4 : 7)) bad.push('band and pieces: ' + JSON.stringify(g0));
+        let moves = await pg.evaluate('(' + rest.toString() + ')()');
+        // first piece: tap-then-tap on touch; on the mouse it is first dropped turned wrong (amber ring, Undo takes it back)
+        if (touch) await play(moves[0], 'tap');
+        else {
+          const m = moves[0];
+          await tap(await at(m[0]));
+          await pg.click('.tg-turn');
+          const q = await slotMid(m);
+          await dragTo(await at(m[0]), q);
+          await pg.waitForTimeout(60);
+          const wr = await pg.evaluate(i => ({ bad: !!document.querySelector(`.tg-pc[data-i="${i}"].bad`), msg: document.querySelector('.tg-msg').textContent, cls: document.querySelector('.tg-msg').className }), m[0]);
+          if (!wr.bad || !/sticks out/.test(wr.msg) || !/try/.test(wr.cls)) bad.push('a piece dropped turned wrong: ' + JSON.stringify(wr));
+          await chk('wrong piece');
+          await pg.click('.tg-undo');
+          const un = await pg.evaluate(i => TG.cur.st().pc[i].length, m[0]);
+          if (un !== 2) bad.push('Undo did not take the piece back to the tray');
+          await play(m, 'drag');
+        }
+        // second piece: dragged with a miss the snap corrects; then back to the tray and in again
+        await play(moves[1], 'drag', 9, -7);
+        const q1 = await at(moves[1][0]), tr = await pg.evaluate(() => { const r = document.querySelector('.tg-tray').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height - 20 }; });
+        await dragTo(q1, tr);
+        if ((await pg.evaluate(i => TG.cur.st().pc[i].length, moves[1][0])) !== 2) bad.push('a drag onto the tray did not put the piece back');
+        await play(moves[1], 'drag', -6, 8);
+        await chk('two pieces in');
+        // hints: 1 shows a slot and picks its piece, 2 turns that piece, 3 puts it in; 1 and 2 move nothing
+        const before = await pcOf();
+        await pg.click('#bthint');
+        const h1 = await pg.evaluate(() => ({ h: TG.cur.st().h, sel: TG.cur.sel(), shown: getComputedStyle(document.querySelector('.tg-hl')).display != 'none', msg: document.querySelector('.tg-msg').textContent }));
+        if (h1.h < 0 || h1.sel < 0 || !h1.shown || !/yellow outline/.test(h1.msg) || (await pcOf()) !== before) bad.push('hint 1: ' + JSON.stringify(h1));
+        await vwait(pg, 11500);
+        await pg.click('#bthint');
+        const h2 = await pg.evaluate(() => { const st = TG.cur.st(), s = st.h, i = TG.cur.sel(); return { s, i, k: st.pc[i], slot: TG.cur.p.pcs[s] }; });
+        const b2 = JSON.parse(before), a2 = JSON.parse(await pcOf());
+        if (h2.s !== h1.h || h2.k.length !== 2 || h2.k[0] !== h2.slot[0] || h2.k[1] !== h2.slot[1] || a2.some((e, j) => j !== h2.i && JSON.stringify(e) !== JSON.stringify(b2[j]))) bad.push('hint 2: ' + JSON.stringify(h2));
+        await vwait(pg, 11500);
+        await pg.click('#bthint');
+        const h3 = await pg.evaluate(() => TG.cur.st().pc.filter(e => e && e.length == 4).length);
+        if (h3 !== 3) bad.push('hint 3 put ' + h3 + ' pieces on the board, want one more than before');
+        await pg.waitForTimeout(300);
+        await chk('hint 3');
+        // back, back, Keep going: the same puzzle and pieces
+        const saved = await pg.evaluate(() => JSON.stringify([S.bt.cur.puzzle, S.bt.cur.state]));
+        await pg.click('#back');
+        await pg.waitForSelector('.bt-lvs');
+        await pg.click('#back');
+        await pg.waitForSelector('#btkeep');
+        await pg.click('#btkeep');
+        await pg.waitForSelector('.tg-svg .tg-bs');
+        await pg.waitForTimeout(300);
+        const rs = await pg.evaluate(() => ({ same: JSON.stringify([S.bt.cur.puzzle, S.bt.cur.state]), shown: JSON.stringify(TG.cur.st()), hints: S.bt.cur.hints }));
+        if (rs.same !== saved || rs.shown !== JSON.stringify(JSON.parse(saved)[1]) || rs.hints !== 3) bad.push('resume: ' + JSON.stringify({ same: rs.same === saved, hints: rs.hints }));
+        await chk('resumed');
+        // the rest, by drags
+        moves = await pg.evaluate('(' + rest.toString() + ')()');
+        for (const m of moves) await play(m, 'drag', 5, 5);
+        await pg.waitForSelector('.bt-win #btnext', { timeout: 8000 });
+        await pg.waitForTimeout(700);
+        await chk('win card');
+        const win = await pg.evaluate(b => ({ stars: document.querySelectorAll('.bt-win .rs.on').length, cur: !!S.bt.cur, saved: ((S.bt.tangram || {})[b] || {}).stars, msg: document.querySelector('.tg-msg').textContent }), g0.band);
+        if (win.stars !== 1 || win.cur || !win.saved || win.saved[0] !== 1 || !/You made the/.test(win.msg)) bad.push('win (3 hints = 1 star): ' + JSON.stringify(win));
+        if (bad.length) fail(tag + ':\n  ' + bad.join('\n  '));
+        else step(`${tag}: Home -> Brain Teasers -> Tangram -> band ${g0.band} level 1 (${g0.id}, ${g0.n} pieces, ${g0.u} px a unit on the board, ${g0.ut} in the tray) by ` +
+          `${touch ? 'touch: tap-then-tap, turning by taps' : 'mouse: turning with the Turn button, a wrong drop rings amber and Undo takes it back'}; drags with a miss snap into ` +
+          `the slot, a drag to the tray puts a piece back, hints 1-2 move nothing and 3 places one, Keep going resumes, win card, 1 star saved; ` +
+          `48 px targets, no sideways scroll, no emoji chrome`);
+        network.push(...app.network);
+        for (const e of app.errors) fail(e);
+        await app.ctx.close();
+      }
+    }
+
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');
   } catch (e) {

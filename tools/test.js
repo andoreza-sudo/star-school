@@ -11163,6 +11163,227 @@ run('riddles, memory, copy cat P3-14',()=>{
     ', copy cat length '+JSON.stringify(s.len)+', light '+JSON.stringify(s.on)+' ms'};
 });
 
+// ---- P3-11: Tangrams (src/js/80-bt-tangram.js, bank src/data/d-puz-tangram.js) ----
+// Exact geometry of its own (numbers a + b*h, h = sqrt(2)/2, kept as pairs; signs and products exact), so the bank is proven
+// without the app's plain-number code: no two pieces overlap (separating axis, exact), pieces meet along edges into one shape, the
+// areas add up to 16 exactly, a 96x96 raster of the union agrees within 2% (BRAIN_TEASERS 5.7), the app's outline is one loop
+// of area 16. Then the app's rules: solved() accepts the solution and its interchangeable forms and refuses near misses, make()
+// per band and level, snapping, hints, saved states.
+run('tangrams P3-11',()=>{
+  const body=function(){
+    const out=[],bad=m=>{if(out.length<40&&!out.includes(m))out.push(m)};
+    const stat={puz:0,made:0,ms:0,var:0,near:0,snaps:0,hints:0,mir:[0,0],dmg:0};
+    const T=BT.get('tangram');
+    if(!T)return{out:['tangram is not registered'],stat};
+    if(T.bands!=='ABCD'||BT.nLevels(T,'A')!==12||T.icon!=='tangram'||!ICONS.tangram)bad('registration: bands '+T.bands+', icon '+T.icon);
+    // ---- exact numbers [a, b] = a + b*h ----
+    const X=v=>Array.isArray(v)?[v[0],v[1]]:[v,0];
+    const add=(p,q)=>[p[0]+q[0],p[1]+q[1]],sub=(p,q)=>[p[0]-q[0],p[1]-q[1]];
+    const mul=(p,q)=>[p[0]*q[0]+p[1]*q[1]/2,p[0]*q[1]+p[1]*q[0]];
+    const sgn=p=>{const[a,b]=p;if(a>=0&&b>=0)return a||b?1:0;if(a<=0&&b<=0)return-1;const d=a*a-b*b/2;return a>0?(d>0?1:-1):(d<0?1:-1)};
+    const cmp=(p,q)=>sgn(sub(p,q)),eqx=(p,q)=>p[0]===q[0]&&p[1]===q[1],flt=p=>p[0]+p[1]*Math.SQRT1_2;
+    const SH={L:[[0,0],[4,0],[2,2]],M:[[0,0],[2,0],[0,2]],S:[[0,0],[2,0],[1,1]],Q:[[1,0],[2,1],[1,2],[0,1]],P:[[0,0],[2,0],[3,1],[1,1]]};
+    const AR={L:4,M:2,S:1,Q:2,P:2},KIND='LLMSSQP';
+    // turn 45 degrees clockwise (y down): (x, y) -> (h(x - y), h(x + y)); h*(a + b h) = b/2 + a h
+    const hx=p=>[p[1]/2,p[0]];
+    const turn=([x,y])=>[hx(sub(x,y)),hx(add(x,y))];
+    const corners=(t,pc)=>SH[t].map(([a,b])=>{let q=[[pc[1]?-a:a,0],[b,0]];for(let i=0;i<pc[0];i++)q=turn(q);return[add(q[0],X(pc[2])),add(q[1],X(pc[3]))]});
+    const area2x=c=>c.reduce((s,q,i)=>{const r=c[(i+1)%c.length];return add(s,sub(mul(q[0],r[1]),mul(r[0],q[1])))},[0,0]);
+    // interiors overlap? separating axis on every edge normal of both (convex pieces), exact
+    const overlapX=(A,B)=>{
+      for(const P of[A,B])for(let i=0;i<P.length;i++){
+        const e=sub(P[(i+1)%P.length][0],P[i][0]),f=sub(P[(i+1)%P.length][1],P[i][1]); // edge (e, f); normal (-f, e)
+        const pr=q=>add(mul([-f[0],-f[1]],q[0]),mul(e,q[1]));
+        const rng=Q=>{let lo=pr(Q[0]),hi=lo;for(const q of Q){const v=pr(q);if(cmp(v,lo)<0)lo=v;if(cmp(v,hi)>0)hi=v}return[lo,hi]};
+        const[a0,a1]=rng(A),[b0,b1]=rng(B);
+        if(cmp(a1,b0)<=0||cmp(b1,a0)<=0)return false;
+      }
+      return true;
+    };
+    // do two pieces share a piece of edge longer than a point?
+    const touchX=(A,B)=>{
+      for(let i=0;i<A.length;i++)for(let j=0;j<B.length;j++){
+        const p1=A[i],p2=A[(i+1)%A.length],q1=B[j],q2=B[(j+1)%B.length],dx=sub(p2[0],p1[0]),dy=sub(p2[1],p1[1]);
+        const cr=q=>sub(mul(dx,sub(q[1],p1[1])),mul(dy,sub(q[0],p1[0])));
+        if(sgn(cr(q1))||sgn(cr(q2)))continue;
+        const dt=q=>add(mul(dx,sub(q[0],p1[0])),mul(dy,sub(q[1],p1[1]))),L=dt(p2),t1=dt(q1),t2=dt(q2);
+        const lo=cmp(t1,t2)<0?t1:t2,hi=cmp(t1,t2)<0?t2:t1,a=cmp(lo,[0,0])>0?lo:[0,0],b=cmp(hi,L)<0?hi:L;
+        if(cmp(b,a)>0)return true;
+      }
+      return false;
+    };
+    // ---- the bank ----
+    const B=PUZ.tangram;
+    if(!Array.isArray(B)||B.length<8)bad('the bank has '+(B&&B.length)+' puzzles, want 8');
+    const ids=new Set();
+    for(const e of B){
+      const w='puzzle '+e.id;
+      stat.puz++;
+      if(!/^[a-z]+$/.test(e.id||'')||ids.has(e.id))bad(w+': id missing or repeated');
+      ids.add(e.id);
+      if(typeof e.name!=='string'||!e.name||e.name.length>14)bad(w+': name');
+      if(typeof e.say!=='string'||!/^Make an? [a-z ,]+\.$/.test(e.say)||e.say.split(' ').length>12)bad(w+': say "'+e.say+'" (one short sentence starting "Make a")');
+      if(BAD.test(e.name+' '+e.say))bad(w+': BAD word');
+      if(!Array.isArray(e.pcs)||e.pcs.length!==7){bad(w+': 7 pieces');continue}
+      let fmt=true;
+      e.pcs.forEach((pc,i)=>{
+        const nums=[X(pc[2]),X(pc[3])].flat();
+        if(!Array.isArray(pc)||pc.length!==4||!Number.isInteger(pc[0])||pc[0]<0||pc[0]>7||(pc[1]!==0&&pc[1]!==1)||(pc[1]&&KIND[i]!=='P')||
+          nums.some(v=>typeof v!=='number'||!Number.isInteger(v*2))||[pc[2],pc[3]].some(v=>Array.isArray(v)&&(v.length!==2||v[1]===0))){fmt=false;bad(w+': piece '+i+' is not [k 0-7, f (P only), x, y] with exact halves: '+JSON.stringify(pc))}
+      });
+      if(!fmt)continue;
+      const C=e.pcs.map((pc,i)=>corners(KIND[i],pc));
+      // every piece has its own area, exactly; together 16
+      let tot=[0,0];
+      C.forEach((c,i)=>{const a=area2x(c);const A=[Math.abs(a[0])/2,Math.abs(a[1])/2];if(a[1]!==0||A[0]!==AR[KIND[i]])bad(w+': piece '+i+' area '+JSON.stringify(a));tot=add(tot,A)});
+      if(!eqx(tot,[16,0]))bad(w+': areas add up to '+JSON.stringify(tot));
+      // no overlap (exact)
+      for(let i=0;i<7;i++)for(let j=i+1;j<7;j++)if(overlapX(C[i],C[j]))bad(w+': pieces '+i+' and '+j+' overlap; corners '+JSON.stringify([C[i],C[j]]));
+      // one shape: pieces joined by shared edges
+      const seen=new Set([0]),q=[0];
+      while(q.length){const i=q.pop();for(let j=0;j<7;j++)if(!seen.has(j)&&touchX(C[i],C[j])){seen.add(j);q.push(j)}}
+      if(seen.size!==7)bad(w+': not one shape; pieces '+[0,1,2,3,4,5,6].filter(i=>!seen.has(i)).join(',')+' only touch at corners or not at all');
+      // the raster check of the spec: 96 x 96 over the box, union vs the sum of the areas, within 2%
+      const F=C.map(c=>c.map(p=>[flt(p[0]),flt(p[1])])),all=F.flat(),x0=Math.min(...all.map(p=>p[0])),y0=Math.min(...all.map(p=>p[1]));
+      const bw=Math.max(...all.map(p=>p[0]))-x0,bh=Math.max(...all.map(p=>p[1]))-y0,N=96;
+      let hit=0;
+      for(let a=0;a<N;a++)for(let b=0;b<N;b++){const px=x0+(a+0.5)*bw/N,py=y0+(b+0.5)*bh/N;
+        if(F.some(pl=>{let r=false;for(let i=0,j=pl.length-1;i<pl.length;j=i++)if((pl[i][1]>py)!=(pl[j][1]>py)&&px<(pl[j][0]-pl[i][0])*(py-pl[i][1])/(pl[j][1]-pl[i][1])+pl[i][0])r=!r;return r}))hit++}
+      const ua=hit*bw*bh/N/N;
+      if(Math.abs(ua-16)>16*0.02)bad(w+': raster union '+ua.toFixed(2)+' vs 16');
+      // the app's outline of the silhouette: one loop, area 16
+      const loops=TG.outline(F),la=loops.map(l=>l.reduce((s,q,i)=>{const r=l[(i+1)%l.length];return s+q[0]*r[1]-r[0]*q[1]},0)/2);
+      if(loops.length!==1||Math.abs(Math.abs(la[0])-16)>1e-9)bad(w+': outline '+loops.length+' loops, areas '+la.map(v=>v.toFixed(3)));
+      // the app's exact corners agree with the test's, and its mirror image is the exact mirror
+      e.pcs.forEach((pc,i)=>{
+        const a=TG.xverts(KIND[i],pc[0],pc[1],pc[2],pc[3]).map(p=>[[p[0],p[1]],[p[2],p[3]]]);
+        if(!a.every(p=>C[i].some(r=>eqx(p[0],r[0])&&eqx(p[1],r[1]))))bad(w+': TG.xverts differs for piece '+i);
+        const m=TG.xmirror(KIND[i],pc),mc=corners(KIND[i],m);
+        if(m[1]&&KIND[i]!=='P')bad(w+': mirror flips piece '+i);
+        if(!C[i].every(p=>mc.some(r=>eqx(r[0],[-p[0][0],-p[0][1]])&&eqx(r[1],p[1]))))bad(w+': mirror of piece '+i+' is not the mirror image');
+      });
+    }
+    // ---- make(): plan per band, deterministic ----
+    const pos=(st,i)=>st.pc[i];
+    const mid=pl=>[pl.reduce((s,q)=>s+q[0],0)/pl.length,pl.reduce((s,q)=>s+q[1],0)/pl.length];
+    const solvedSt=p=>{const st=TG.fresh(p);for(const[i,k,f,x,y]of T.solve(p))st.pc[i]=[k,f,x,y];return st};
+    const n=B.length;
+    for(const band of 'ABCD')for(let lv=1;lv<=12;lv++)for(let day=1;day<=6;day++){
+      const w='tangram '+band+lv+' day '+day,o={day:'2026-7-'+day},t0=Date.now();
+      let p;
+      try{p=BT.make('tangram',band,lv,o)}catch(er){bad(w+': make threw '+er.message);continue}
+      stat.ms+=Date.now()-t0;stat.made++;
+      if(JSON.stringify(BT.make('tangram',band,lv,o))!==JSON.stringify(p))bad(w+': make() is not deterministic');
+      const want=lv<=n?lv-1:-1;
+      if(want>=0?p.n!==want:!(p.n>=Math.floor(n/2)&&p.n<n))bad(w+': bank index '+p.n);
+      if(p.id!==B[p.n].id||p.b!==band)bad(w+': id or band');
+      stat.mir[p.m]++;
+      const mv=TG.movable(p),fixK=p.fix.map(i=>KIND[i]).join('');
+      const nm={A:lv<=6?2:3,B:lv<=6?4:5,C:6,D:7}[band];
+      if(mv.length!==nm)bad(w+': '+mv.length+' pieces to place, want '+nm);
+      if(band==='A'&&mv.some(i=>!'LMQ'.includes(KIND[i])))bad(w+': band A places a small piece');
+      if(band==='C'&&lv<=6&&fixK!=='L')bad(w+': band C level '+lv+' gives '+fixK+', want a big triangle');
+      if(band==='C'&&lv>6&&(fixK.length!==1||fixK==='L'))bad(w+': band C gives '+fixK);
+      if(p.ol!==(band<'C'?1:0))bad(w+': outlines '+p.ol);
+      p.tray.forEach(([k,f],i)=>{
+        if(!mv.includes(i))return;
+        const s=p.pcs[i];
+        if(band==='A'&&lv<=4&&(k!==s[0]||f!==s[1]))bad(w+': band A level '+lv+' tray piece '+i+' not turned right');
+        if(!(band==='A'&&lv<=4)&&k===s[0]&&f===s[1])bad(w+': tray piece '+i+' already turned right');
+        if(KIND[i]==='P'&&(band==='C'||band==='D'||(band==='B'&&lv>=9))&&f!==0)bad(w+': the parallelogram starts flipped');
+        if(KIND[i]==='P'&&band==='B'&&lv<9&&f!==s[1])bad(w+': band B parallelogram needs a flip before level 9');
+      });
+      // the puzzle's exact pieces: the bank's, or their mirror image
+      const e=B[p.n];
+      p.pcs.forEach((pc,i)=>{
+        const a=corners(KIND[i],pc),b=corners(KIND[i],e.pcs[i]);
+        if(!a.every(q=>b.some(r=>eqx(r[1],q[1])&&eqx(r[0],p.m?[-q[0][0],-q[0][1]]:q[0]))))bad(w+': piece '+i+' is not the bank piece'+(p.m?' mirrored':''));
+      });
+      // solve() wins; interchangeable forms win; near misses do not
+      const st=solvedSt(p);
+      if(!TG.solved(p,st))bad(w+': solve() does not win');
+      if(TG.solved(p,TG.fresh(p)))bad(w+': a fresh puzzle counts as solved');
+      const vary=[];
+      const swap=(i,j)=>{if(!mv.includes(i)||!mv.includes(j))return;const s=JSON.parse(JSON.stringify(st));[s.pc[i],s.pc[j]]=[s.pc[j],s.pc[i]];vary.push(['swap '+i+'/'+j,s])};
+      swap(0,1);swap(3,4);
+      const spin=(i,by)=>{if(!mv.includes(i))return;const s=JSON.parse(JSON.stringify(st)),c=s.pc[i],k2=(c[0]+by)%8,[x,y]=TG.about(KIND[i],c[0],c[1],c[2],c[3],k2,c[1]);s.pc[i]=[k2,c[1],x,y];vary.push(['turn '+i+' by '+by,s])};
+      spin(5,2);spin(5,4);spin(5,6);spin(6,4);
+      if(mv.length)vary.push(['a hair off',(()=>{const s=JSON.parse(JSON.stringify(st));s.pc[mv[0]][2]+=2e-5;return s})()]);
+      for(const[m,s]of vary){stat.var++;if(!TG.fit(p,s)||!TG.solved(p,s))bad(w+': '+m+' is not accepted')}
+      if(day<=2)for(const i of mv){
+        const near=[];
+        {const s=JSON.parse(JSON.stringify(st)),c=s.pc[i],k2=(c[0]+1)%8,[x,y]=TG.about(KIND[i],c[0],c[1],c[2],c[3],k2,c[1]);s.pc[i]=[k2,c[1],x,y];near.push(['turned 45',s])}
+        if(KIND[i]==='P'){const s=JSON.parse(JSON.stringify(st)),c=s.pc[i],[x,y]=TG.about('P',c[0],c[1],c[2],c[3],c[0],1-c[1]);s.pc[i]=[c[0],1-c[1],x,y];near.push(['flipped',s])}
+        for(const[dx,dy]of[[0.05,0],[0,-0.05],[0.25,0.25],[-0.4,0]]){const s=JSON.parse(JSON.stringify(st));s.pc[i][2]+=dx;s.pc[i][3]+=dy;near.push(['moved '+dx+','+dy,s])}
+        {const s=JSON.parse(JSON.stringify(st));s.pc[i]=[s.pc[i][0],s.pc[i][1]];near.push(['in the tray',s])}
+        for(const[m,s]of near){stat.near++;if(TG.solved(p,s))bad(w+': piece '+i+' '+m+' still counts as solved')}
+      }
+      // snapping: a piece dropped near its place (the other pieces in, or none) clicks exactly in
+      if(day===1)for(const i of mv)for(const[others,off]of[[true,[0.2,-0.15]],[false,[-0.25,0.1]],[true,[0.1,0.28]]]){
+        const s=others?JSON.parse(JSON.stringify(st)):TG.fresh(p),c=st.pc[i];
+        s.pc[i]=[c[0],c[1]];
+        const r=TG.snap(p,s,i,c[0],c[1],c[2]+off[0],c[3]+off[1],0.4);
+        stat.snaps++;
+        if(!r.snapped||!r.ok||Math.abs(r.x-c[2])>1e-9||Math.abs(r.y-c[3])>1e-9)bad(w+': piece '+i+' dropped '+off+' off'+(others?'':' on an empty board')+' snaps to '+JSON.stringify(r));
+      }
+      // hints: tiers 1 and 2 never move a piece (tier 2 only turns the one it names); tier 3 puts exactly one piece in its slot
+      if(day<=2){
+        let s=TG.fresh(p);
+        if(day===2&&mv.length>2){ // a piece lying wrongly on another's slot goes back to the tray when that slot is hinted
+          const[i,k,f,x,y]=T.solve(p)[1];s.pc[i]=[k,f,x,y];const j=T.solve(p)[0][0];s.pc[j]=[(st.pc[j][0]+3)%8,st.pc[j][1],st.pc[i][2]+0.3,st.pc[i][3]+0.2];
+        }
+        for(let step=0;step<10&&!TG.solved(p,s);step++){
+          const h1=TG.hint(p,s,1);
+          if(!h1){bad(w+': no hint at step '+step);break}
+          stat.hints++;
+          if(JSON.stringify(h1.st.pc)!==JSON.stringify(s.pc)||h1.st.h!==h1.s||KIND[h1.s]!==KIND[h1.i]||!mv.includes(h1.i))bad(w+': hint 1 changed pieces or named a wrong pair');
+          const h2=TG.hint(p,h1.st,2);
+          if(h2.i!==h1.i||h2.s!==h1.s)bad(w+': hint 2 is about another piece');
+          for(let j=0;j<7;j++){
+            const a=s.pc[j],b=h2.st.pc[j];
+            if(a===null){if(b!==null)bad(w+': hint 2 touched a given piece');continue}
+            if(a.length!==b.length)bad(w+': hint 2 moved piece '+j+' in or out of the tray');
+            else if(a.length===4){const ca=mid(TG.poly(KIND[j],...a)),cb=mid(TG.poly(KIND[j],...b));if(Math.hypot(ca[0]-cb[0],ca[1]-cb[1])>1e-9)bad(w+': hint 2 moved piece '+j)}
+            if(j!==h2.i&&JSON.stringify(a)!==JSON.stringify(b))bad(w+': hint 2 changed piece '+j);
+          }
+          const sp=p.pcs[h2.s];
+          if(h2.st.pc[h2.i][0]!==sp[0]||h2.st.pc[h2.i][1]!==sp[1])bad(w+': hint 2 did not turn the piece the slot\'s way');
+          const h3=TG.hint(p,h2.st,3),inA=s.pc.filter(e=>e&&e.length===4).length,inB=h3.st.pc.filter(e=>e&&e.length===4).length;
+          if(h3.i!==h1.i||inB!==inA+(s.pc[h3.i].length===2?1:0)-h3.back.length||h3.st.h!==-1)bad(w+': hint 3 placed '+(inB-inA)+' pieces');
+          if(!TG.samePoly(TG.poly(KIND[h3.i],...h3.st.pc[h3.i]),TG.solPoly(p,h3.s)))bad(w+': hint 3 did not put the piece in its slot');
+          if(day===2&&step===0&&mv.length>2&&!h3.back.length&&h3.s===T.solve(p)[1][0])bad(w+': hint 3 left a piece in the way');
+          s=h3.st;
+        }
+        if(!TG.solved(p,s))bad(w+': hints alone did not finish the puzzle');
+      }
+      // saved state: a round trip fits and says the same; damaged states do not fit
+      if(day===1){
+        const s=JSON.parse(JSON.stringify(st));
+        s.pc[mv[0]]=[s.pc[mv[0]][0],s.pc[mv[0]][1]];
+        const back=JSON.parse(JSON.stringify(s));
+        if(!TG.fit(p,back)||TG.solved(p,back)!==TG.solved(p,s)||JSON.stringify(TG.hint(p,back,3))!==JSON.stringify(TG.hint(p,s,3)))bad(w+': saved state round trip');
+        if(!TG.fit(p,TG.fresh(p)))bad(w+': a fresh state does not fit');
+        const D=(f)=>{const d=JSON.parse(JSON.stringify(s));f(d);return d};
+        const g=p.fix[0],m0=mv[0],tri=mv.find(i=>KIND[i]!=='P');
+        const dmg=[['null',null],['an array',[]],['no pieces',{h:-1}],['pieces a string',{pc:'x',h:-1}],['six pieces',D(d=>d.pc.pop())],
+          ['turn 8',D(d=>{d.pc[m0][0]=8})],['turn 1.5',D(d=>{d.pc[m0][0]=1.5})],['flip 2',D(d=>{d.pc[m0][1]=2})],['three numbers',D(d=>{d.pc[m0]=[0,0,1]})],
+          ['x not a number',D(d=>{d.pc[mv[1]]=[0,0,null,1]})],['x far away',D(d=>{d.pc[mv[1]]=[0,0,500,1]})],['h 7',D(d=>{d.h=7})],['h a string',D(d=>{d.h='1'})],
+          ['a piece missing',D(d=>{d.pc[m0]=null})]];
+        if(tri!=null)dmg.push(['a flipped triangle',D(d=>{d.pc[tri][1]=1})]);
+        if(g!=null)dmg.push(['a given piece moved',D(d=>{d.pc[g]=[0,0]})],['a hint on a given piece',D(d=>{d.h=g})]);
+        for(const[m,d]of dmg){stat.dmg++;if(TG.fit(p,d))bad(w+': a damaged state fits ('+m+')')}
+      }
+    }
+    if(!stat.mir[0]||!stat.mir[1])bad('mirrored and plain pictures not both seen: '+stat.mir);
+    return{out,stat};
+  };
+  const r=eval(js+';('+body.toString()+')()');
+  const s=r.stat,p=r.out,avg=s.made?s.ms/s.made:0;
+  if(avg>5)p.push('make() takes '+avg.toFixed(1)+' ms on average (limit 5 ms)');
+  return{problems:p,note:s.puz+' bank puzzles proven exactly; '+s.made+' made (4 bands x 12 levels x 6 days, mirrored '+s.mir[1]+'); '+s.var+' interchangeable forms accepted, '+
+    s.near+' near misses refused, '+s.snaps+' drops snapped, '+s.hints+' hint steps, '+s.dmg+' damaged states refused'};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){

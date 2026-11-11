@@ -186,6 +186,10 @@ const ICONS={
     '<path fill="var(--ic3,currentColor)" stroke="var(--ic3,currentColor)" stroke-width="1.5" stroke-linejoin="round" opacity=".4" ' +
     'd="M17 13.2L20.6 17L17 20.8L13.4 17Z"/>' +
     '<circle cx="7" cy="7" r="4.6"/>',
+  'tangram':
+    '<rect fill="var(--ic3,currentColor)" opacity=".4" x="2.5" y="2.5" width="19" height="19" rx="3"/>' +
+    '<path stroke="currentColor" stroke-width="1.2" d="M5 3.6H19L12 10.6ZM3.6 5.5V19.5L10.6 12.5ZM15.5 10.4L18.6 13.5L15.5 16.6L12.4 13.5Z' +
+    'M5.6 20.4H13.4L9.5 16.5ZM20.4 15.1V20.4H15.1Z"/>',
   'path-math':
 
     '<path fill="none" stroke="currentColor" stroke-width="2.4" d="M7 3.5V10.5M3.5 7H10.5M13.5 7H20.5' +

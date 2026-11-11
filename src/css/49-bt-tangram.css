@@ -1,0 +1,58 @@
+/* Brain Teasers Tangrams (P3-11, src/js/80-bt-tangram.js). Tokens only; light from the top left; motion is transform and opacity
+   (calm mode and reduced motion stop it in 20-base.css). One svg holds the board (the silhouette) and the tray; the JS sizes it.
+   Portrait: talk line, svg, buttons. Landscape (.land): svg left, a side column (.tg-side) with the talk line and the buttons.
+   Pieces: .tg-c0 .. .tg-c6 set the four tones of a piece (light, base, shade, deep); a ledge (.tg-ld) in the shade tone below,
+   the base (.tg-bs) with a deep outline, the light edges (.tg-hi) on the sides facing the top left, a ring (.tg-rg) for picked
+   (purple), the hint's piece (purple, dashed) and does-not-fit (amber, dashed: never red); the hint's slot glows star yellow. */
+.tg{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--s-2);width:100%;max-width:1100px;min-height:100%;margin:0 auto}
+.tg.land{flex-direction:row;align-items:center;gap:var(--s-4)}
+.tg-say{display:flex;align-items:center;gap:var(--s-2);width:100%;max-width:640px;min-height:var(--tap);padding:var(--s-1) var(--s-1) var(--s-1) var(--s-3);
+  border-radius:var(--r-card);background:var(--surface);box-shadow:inset 0 0 0 2px var(--line),0 3px 0 var(--ledge-soft)}
+.tg-msg{flex:1;min-width:0;margin:0;font-size:var(--fs-2);font-weight:700;line-height:1.3;color:var(--ink-2)}
+.tg-msg.good{color:var(--good-ink)}
+.tg-msg.try{color:var(--try-ink)}
+.tg-msg.hint{color:var(--bt-shade)}
+.tg-spk{flex:none;order:2}
+.tg-main{display:flex;justify-content:center;flex:none}
+.tg-side{display:none}
+.tg.land .tg-side{display:flex;flex:none;flex-direction:column;gap:var(--s-3);width:244px}
+.tg-ctl{display:flex;justify-content:center;flex-wrap:wrap;gap:var(--s-2);width:100%;max-width:640px}
+.tg.land .tg-ctl{flex-direction:column;align-items:stretch}
+.tg-ctl .btn{min-height:var(--tap);min-width:104px}
+.tg-ctl .btn[hidden]{display:none}
+.tg-svg{display:block;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;overflow:visible}
+/* board and tray */
+.tg-board{fill:var(--surface);stroke:var(--line);stroke-width:2px}
+.tg-tray{fill:var(--bt-tint);stroke:var(--bt-tint);stroke-width:2px}
+/* the silhouette: dark slate, a shadow along its top-left inside edge, a thin deep rim */
+.tg-sb{fill:var(--ill-ink-2)}
+.tg-sl{fill:var(--ill-grey-3)}
+.tg-se{fill:none;stroke:var(--ill-ink);stroke-width:2px;stroke-linejoin:round}
+.tg.won .tg-se{stroke:var(--star);stroke-width:5px}
+/* outlines of the missing pieces (bands A and B) and the hint's slot */
+.tg-ol{fill:none;stroke:var(--surface);stroke-width:2.5px;stroke-dasharray:7 5;stroke-linejoin:round;opacity:.85}
+.tg-hl{fill:var(--star-tint);fill-opacity:.35;stroke:var(--star);stroke-width:4px;stroke-dasharray:9 6;stroke-linejoin:round;pointer-events:none}
+/* pieces */
+.tg-pc{cursor:grab}
+.tg-pc.fixed{pointer-events:none;cursor:default}
+.tg-pc polygon,.tg-pc path{stroke-linejoin:round;stroke-linecap:round}
+.tg-c0{--p1:var(--ill-red-1);--p:var(--ill-red);--p2:var(--ill-red-2);--p3:var(--ill-red-3)}
+.tg-c1{--p1:var(--ill-blue-1);--p:var(--ill-blue);--p2:var(--ill-blue-2);--p3:var(--ill-blue-3)}
+.tg-c2{--p1:var(--ill-yellow-1);--p:var(--ill-yellow);--p2:var(--ill-yellow-2);--p3:var(--ill-yellow-3)}
+.tg-c3{--p1:var(--ill-green-1);--p:var(--ill-green);--p2:var(--ill-green-2);--p3:var(--ill-green-3)}
+.tg-c4{--p1:var(--ill-pink-1);--p:var(--ill-pink);--p2:var(--ill-pink-2);--p3:var(--ill-pink-3)}
+.tg-c5{--p1:var(--ill-orange-1);--p:var(--ill-orange);--p2:var(--ill-orange-2);--p3:var(--ill-orange-3)}
+.tg-c6{--p1:var(--ill-aqua-1);--p:var(--ill-aqua);--p2:var(--ill-aqua-2);--p3:var(--ill-aqua-3)}
+.tg-sh{fill:var(--drop);display:none}
+.tg-pc.lift .tg-sh{display:inline}
+.tg-ld{fill:var(--p2);stroke:var(--p3);stroke-width:2px}
+.tg-bs{fill:var(--p);stroke:var(--p3);stroke-width:2px}
+.tg-hi{fill:none;stroke:var(--p1);stroke-width:3.5px}
+.tg-rg{fill:none;stroke:none;stroke-width:5px}
+.tg-pc.fixed .tg-ld{display:none} /* pieces placed for you lie flat in the picture; the child's stand on a ledge */
+.tg-pc.sel .tg-rg{stroke:var(--bt)}
+.tg-pc.tip .tg-rg{stroke:var(--bt);stroke-width:6px;stroke-dasharray:9 6}
+.tg-pc.bad .tg-rg{stroke:var(--try-ink);stroke-dasharray:6 5}
+.tg-pc.lift .tg-pa{transform:translate(-2px,-4px)}
+.tg-pa{transform-box:fill-box;transform-origin:center}
+.tg.won .tg-pa{animation:k-pop 520ms var(--ease) var(--d,0ms) both}
