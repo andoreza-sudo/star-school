@@ -101,6 +101,7 @@ h2{font-size:24px;margin:18px 4px 10px}
 html.calm *,html.calm *::before,html.calm *::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 html.calm .conf{display:none!important}
 .art{display:inline-block;vertical-align:-.125em;color:var(--ink)}
+.online-note{font-size:var(--fs-1);color:var(--ink-2);text-align:right;padding:0 var(--s-3) var(--s-1)}
 /* Object art palette (P4-13; drawings in src/js/16-art-a.js). Roles map to design tokens; 2 = darker shade, 3 = light tint. */
 .art{
   fill:currentColor;stroke-linecap:round;stroke-linejoin:round;
@@ -937,7 +938,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S));SAVE_FAILED=fals
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v61'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v62'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -3480,7 +3481,7 @@ function home(first){
   $('#book').onclick=book;$('#shop').onclick=shop;$('#mix').onclick=()=>{SFX.whoosh();startMix()};$('#race').onclick=raceMenu;$('#flu').onclick=()=>{SFX.whoosh();fluMenu()};$('#care').onclick=care;$('#groom').onclick=()=>{SFX.whoosh();gameRoom()};
   if($('#inst'))$('#inst').onclick=async()=>{try{installEvt.prompt();await installEvt.userChoice}catch(e){}installEvt=null;home()};
   let t;const g=$('#gear');g.onpointerdown=()=>{t=setTimeout(grown,1200)};g.onpointerup=g.onpointerleave=()=>clearTimeout(t);g.onclick=()=>fb('Grown-ups: hold it','warn');
-  {const sc=$('.scroll');if(sc)sc.insertAdjacentHTML('beforeend','<p class="small" style="text-align:center;opacity:.55;margin:14px 0 4px">Star School v61</p>')}
+  {const sc=$('.scroll');if(sc)sc.insertAdjacentHTML('beforeend','<p class="small" style="text-align:center;opacity:.55;margin:14px 0 4px">Star School v62</p>')}
   if(first&&S.voice)setTimeout(()=>say(`Hi ${S.name}! Pick a game!`),400)}
 
 let MAPP='math',MAPW={}; // MAPW[path] = the world picked in the strip (this session only, not saved)
@@ -6546,7 +6547,7 @@ function grown(){let armed=false;
    <div class="vline"><span class="vtxt">Give a bonus</span><button class="btn xs" id="pt5">+5 min</button><button class="btn xs danger" id="pt0">Empty bank</button></div>
    <label class="tg"><input type="checkbox" id="ptp" ${ptCfg().pause?'checked':''}> Pause game time (games locked)</label></div>
   <div class="card"><div class="tw"><table><tr><th>Skill</th><th>Rounds</th><th>1st try</th><th>Tricky ones</th></tr>${rows}</table></div></div>
-  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v61 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
+  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v62 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
    Storage: ${SAVE_FAILED?'<b style="color:#c0392b">could not save (device storage may be full)</b>':'saving OK'}${SAVE_CORRUPT?'<br><b style="color:#c0392b">The old save could not be read. A fresh start was made and the old data was kept on the device.</b>':''}<br>
    Last errors: ${(S.err||[]).length?(S.err||[]).slice().reverse().map(e=>'<br>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+' '+esc(e.msg)).join(''):'none'}</div></details>
   <div class="card"><label class="tg"><input type="checkbox" id="voice" ${S.voice?'checked':''}> Read questions out loud</label>
@@ -6819,10 +6820,12 @@ function report() {
   let m;
   try {m = REP.data()} catch (e) {m = null}
   view(`<div class="top rp-noprint"><button class="btn sm" id="back" aria-label="Back">${ico('back', 20)}</button><div class="title">Report card</div>`
-    + `<button class="btn sm" id="rp-print" style="margin-left:auto">Print</button></div><div class="scroll rp-scroll">`
+    + `<button class="btn sm" id="rp-print" style="margin-left:auto">Print</button></div>`
+    + `<div class="rp-noprint rp-online">${onlineNote()}</div><div class="scroll rp-scroll">`
     + (m ? REP.html(m) : '<div class="card rp-empty">The report card could not be drawn.</div>') + `</div>`);
   $('#back').onclick = () => grown();
-  $('#rp-print').onclick = () => {try {window.print()} catch (e) {}};
+  // printing can still save a PDF offline, so offline only warns (needOnline block:false)
+  $('#rp-print').onclick = () => needOnline(() => {try {window.print()} catch (e) {}}, {block: false});
 }
 /* Grown-ups entry (80-grown.js): one card with one button. */
 function reportGrownHTML() {
@@ -6831,6 +6834,36 @@ function reportGrownHTML() {
 }
 function reportGrownBind() {
   $('#rp-open').onclick = () => report();
+}
+/* ---------- sharing needs a connection (the rest of the app works offline) ---------- */
+/* Star School is an offline app. Anything that sends something off the tablet (share, send, email, print, upload)
+   needs a connection, so every such button:
+   - shows onlineNote() next to it, so a grown-up knows to get online first;
+   - runs its action through needOnline(action, {block}): offline, it shows a friendly message first.
+     block:true (share, send, upload) stops there; block:false (print, which can still save a PDF on the tablet)
+     shows the message and then carries on.
+   Nothing here ever reaches the network itself. */
+const ONLINE_NOTE = 'Make sure the tablet is online to share or print.';
+const OFFLINE_MSG = "You're offline. Connect to wifi to share or print.";
+
+// The small note that sits under or beside a share / send / print button.
+function onlineNote() {
+  return `<div class="online-note">${esc(ONLINE_NOTE)}</div>`;
+}
+
+// true when the browser says it is offline (navigator.onLine is only reliable when false).
+function isOffline() {
+  return typeof navigator != 'undefined' && navigator.onLine === false;
+}
+
+// Runs action() unless offline and blocked; returns true when the action ran.
+function needOnline(action, o = {}) {
+  if (isOffline()) {
+    fb(OFFLINE_MSG, 'bad', 2600);
+    if (o.block !== false) return false;
+  }
+  action();
+  return true;
 }
 /* ---------- app mode: full screen, install button ---------- */
 const isApp=()=>matchMedia('(display-mode: fullscreen),(display-mode: standalone)').matches||navigator.standalone===true;

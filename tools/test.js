@@ -2229,6 +2229,36 @@ run('multiply mountain: stops, fact rules per level, answers, unique labels, arr
   return{problems:out.bad,note:Object.keys(out.count).length+' fact levels x 3,000'};
 });
 
+// ---- sharing needs a connection: every share / send / print action carries the online note and goes through needOnline ----
+run('online note: share, send and print buttons tell grown-ups to get online, and offline is handled kindly',()=>{
+  const p=[];
+  const files=fs.readdirSync(path.join(SRC,'js')).filter(n=>n.endsWith('.js')&&n!='88-online.js');
+  const SENDS=/window\.print\(|navigator\.share\(|navigator\.sendBeacon\(|mailto:|\.click\(\)\s*;?\s*\/\/\s*download/;
+  for(const f of files){
+    const src=fs.readFileSync(path.join(SRC,'js',f),'utf8');
+    if(!SENDS.test(src))continue;
+    if(!src.includes('onlineNote()'))p.push(f+': shares or prints but shows no onlineNote()');
+    for(const m of src.matchAll(/window\.print\(|navigator\.share\(/g)){
+      const before=src.slice(Math.max(0,m.index-200),m.index);
+      if(!before.includes('needOnline('))p.push(f+': '+m[0]+' is not inside needOnline(...)');
+    }
+  }
+  const r=eval(js+`
+  const bad=[];let ran=0,msg='';
+  fb=(t)=>{msg=t};
+  const setNav=v=>Object.defineProperty(globalThis,'navigator',{value:v,configurable:true,writable:true});
+  const nav=Object.getOwnPropertyDescriptor(globalThis,'navigator');
+  setNav({onLine:false});
+  if(needOnline(()=>ran++)!==false||ran!==0||!/offline/i.test(msg))bad.push('offline share should be stopped with a message');
+  msg='';if(needOnline(()=>ran++,{block:false})!==true||ran!==1||!/offline/i.test(msg))bad.push('offline print should warn and still run');
+  setNav({onLine:true});msg='';
+  if(needOnline(()=>ran++)!==true||ran!==2||msg)bad.push('online share should just run');
+  if(nav)Object.defineProperty(globalThis,'navigator',nav);
+  if(!/online/i.test(onlineNote()))bad.push('onlineNote text');
+  bad;`);
+  return{problems:[...p,...r]};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){

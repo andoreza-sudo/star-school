@@ -4,7 +4,7 @@ The running record of what has shipped. Newest entry first. Every chunk adds one
 
 **Next up:** wave 5 batch B: P2-02, P2-03, P2-06, P2-18; then batch C: P2-04, P2-07.
 
-**Current version:** v61
+**Current version:** v62
 
 ## Chunk status
 
@@ -41,6 +41,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P2-15 v59
 - P2-01 v60
 - P2-05 v61
+- ONLINE note on share/print v62
 
 ## Handoff notes
 
@@ -48,6 +49,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 
 ## Ideas and issues
 
+- (ONLINE) Report card at 380x780: the stat label "Accuracy" breaks mid-word ("Accurac / y") in the 4-column stat row; P4 restyle of the report card (or a shorter label / hyphens:auto) should fix it.
 - (merge P2-05) The full smoke run now takes about 12 minutes. A run that crosses midnight fails the P5-03 daily review counts (items moved to "due tomorrow" become due again). A later chunk could freeze the page clock in tools/lib/browser.js.
 - (P2-19) Spelling hint 2 ("show the word for 2 seconds, then hide", CURRICULUM E-spell) is not built: `hintHTML` has no stepped hints. A later hint chunk can add it to `genSpell` as a second hint step.
 - (P2-19) Story Summit, Dragon Library, Author Island and Legend Lab exist now with only a spell stop each (plus the boss). P2-20 to P2-29 should insert their stops in CURRICULUM 2.2 order; do not change the spell stop ids. Word Workshop (`r_workshop`, grade 2) between Space Station and Story Summit still has to be created by P2-18.
@@ -165,6 +167,14 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P1-05) Map draw with 16 fake worlds (156 stops) at 6x CPU throttle: median about 29 ms (limit 50), single runs up to about 49 ms. The strip recomputes `worldOpen`/`worldFinished` per chip and `unlocked` scans the world; a memo per draw is the next step if P4-09 adds weight.
 
 ## Log
+
+### ONLINE: share and print buttons say to get online first (v62, 2026-11-11, Claude)
+- Why: Star School is an offline app; sharing, sending and printing are the only things that need a connection (asked for by Andy).
+- New `src/js/88-online.js`: `onlineNote()` ("Make sure the tablet is online to share or print."), `isOffline()`, `needOnline(action, {block})`. Offline, it shows "You're offline. Connect to wifi to share or print." and stops (share/send/upload) or carries on (print, which can still save a PDF).
+- Report card: the note sits under the top bar (hidden when printing); Print goes through `needOnline(..., {block: false})`. `.online-note` in 20-base.css (tokens only).
+- There are no share buttons yet; P5-07 (Backup) must follow the rule (ROADMAP note added). CONTRIBUTING section 7 rule "Sharing needs a connection".
+- New named check "online note": any source file that prints, shares, sends or mails must show `onlineNote()` and call it inside `needOnline`; also checks the offline / online behaviour. Proved it fails when the report card note is removed.
+- Tests: check.sh ok.
 
 ### P2-05 3rd: world Multiply Mountain (v61, 2026-11-10, Claude)
 - What changed: new math world `m_mult` (Multiply Mountain, grade 3, last math world after Space Station) with exactly the CURRICULUM M-3a stops in order: `arr 2, mfact 1, mfact 2, dfact 1, mfact 3, dfact 2, mfact 4, dfact 3, dfact 4, mbig 1, story 5` plus the boss (12 map stops). New generators in `src/js/33-gen-math-mid.js`: `genArr` (array picture -> choose the sentence with distractors r+c, (r+1)×c, r×r; or `4 × 6 = 6 × ?`), `genMfact` (levels 1-4, 20% review at levels 2-3, 35% missing factor at level 4, horizontal and vertical), `genDfact` (levels 1-4, 35% `? ÷ 7 = 6` or `42 ÷ ? = 6` at level 4), `genMbig`, `genStoryMul` (8 templates: 4 times, 4 divide) behind `genStoryAll` (levels 1-3 still call `genStory` unchanged). Every question has `say`, a unique label and a text hint (skip-count row for times facts, a neighbour fact for the 6-9 facts, "Think: 5 times what makes 35?" for division).
