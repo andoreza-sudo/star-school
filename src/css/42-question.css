@@ -73,6 +73,11 @@
 /* tags at the top of the card: review ("Remember this one?") and challenge (51-mastery.js .mtag) */
 .tag.rtag{background:var(--brand-tint);color:var(--brand-shade);border-radius:var(--r-pill);font-size:var(--fs-2);padding:var(--s-1) var(--s-3) var(--s-1) var(--s-2)}
 .tag.rtag .ic{width:18px;height:18px}
+/* the review tag sits in the card's top corner and takes no height, so a review question fits exactly where it did as a
+   normal question (a ten-frame count at 380x780 overflowed by 25 px with the tag in the flow) */
+.qs .qarea>.tag.rtag{position:absolute;top:var(--s-2);right:var(--s-2);margin:0;z-index:1;font-size:var(--fs-1);padding:2px var(--s-2) 2px var(--s-1)}
+.qs .qarea>.tag.rtag .ic{width:16px;height:16px}
+.qarea>.tag.rtag+*{margin-top:auto}
 .qs .mtag{background:var(--bt);color:var(--surface);padding:var(--s-1) var(--s-3) var(--s-1) var(--s-2);line-height:1.2}
 .qs .mtag .ic{color:var(--surface)}
 .qs .bctx{box-shadow:none;border:2px solid var(--line);background:var(--surface-2)}
