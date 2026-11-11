@@ -2,11 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** In progress: P4-18 (graphics pass), P2-08 (step hints), P2-22, P2-24, P2-25 (reading); then P2-09 to P2-14 (math 4-6), P2-21, P2-23, P2-26 to P2-29.
+**Next up:** P2-24, P2-25, P2-08, P2-21, P2-23
 
-**Next up:** P2-24, P2-25, P2-08, P4-18
-
-**Current version:** v78
+**Current version:** v79
 
 ## Chunk status
 
@@ -59,6 +57,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P2-07 v76
 - P2-20 v77
 - P2-22 v78
+- P4-18 v79
 
 ## Handoff notes
 
@@ -69,6 +68,9 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - (P2-22) The bank forms `order`, `match`, `multi` have no builder (`BANKF.*` is never registered), so level 3 compound words use choice items ("Which two words make rainbow?", "What do sun and flower make together?") instead of tile building. The first chunk that registers `BANKF.order` can add tile items to `BANK.vocab`.
 - (P2-22) New optional bank field `em: [artName, emoji]` (a picture above the prompt through `picFor`; 37-bank.js, validated by `bankItemProblems`, class `.bem` in 38-bank.css). P2-23 and later content can use it. No skill icon was added to `ICO_SK` for `vocab` (it shows the reading-path icon); P4 icon work could add a `skill-vocab`.
 - (P2-22) Level counts are 56, 52, 68, 63, 82 items; every level has more than the 40 CURRICULUM asks. smoke.js ran 4 full times on this branch with other agents' smokes running at the same time, slow but green.
+- (P4-18) `.map svg` in 40-games.css pinned every svg inside the map (icons, labels) to the map's top-left; it is now `.map>svg` (the trail only). Anyone adding svg to map markup no longer needs a position reset (`.map .pet-svg{position:static}` is now redundant).
+- (P4-18) The Game Room game-time card and rules card stretch the full width at 1024x600 while the game cards stop at 640 px; P4-16 can give `.gx-list` children one width.
+- (P4-18) `GFX.card` puts `.pathcard` and the old `.game` class on one button (smoke selects `.game[data-s]`); 47-gfx.css restores the path-card grid over `.game`. When `.game` is retired (P4-17) the extra class can go.
 - (P2-04) smoke.js is flaky on existing blocks, not on Treasure Bay: the Shape Garden block failed in 2 of 4 full runs (`meas1` target 43 px; `waitForSelector('#prompt')` hidden at line ~1112, reproduced on the untouched v69 + tooling commit), and the P4-05 "cheer face" tap failed once. The Treasure Bay block passed in both runs that reached it. Shape Garden questions come from an unseeded `genQ`, so a bad draw (tap target under 48 px, empty text-hidden prompt) shows up sometimes.
 - (P2-04) `VIZ.ruler` clamps a cm ruler to 6-15 (CURRICULUM M-2 says 0-20), so `meas 3` uses cm up to 15 and inches up to 12. A longer cm ruler needs a change in 23-viz.js.
 - (P2-04) Multi-step hints (`BAY.steps`) are an `hsteps` list with every step visible at once (k:'html'); P2-08's stepper (`UI.hint` o.steps) can reveal them one per tap. At 380x780 a three-step hint under a vertical sum already fills the area above the number pad, so keep step text short.
@@ -253,6 +255,52 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-11) Icons wanted from P4-03: `balloon` (Bonus game, today `gamepad`), `sparkle` / `confetti`, `unlock` (open padlock for "Next stop unlocked", today `map`), `zap` (a lightning with a spark for boss hits; today `bolt`), `sticker` (single sticker for the prize row), `medal` (the prize rosette as an icon), `heart-half` (boss life bar), `chest` (the treasure chest at icon size, e.g. for the round track where renderQ shows the gift emoji).
 
 ## Log
+
+### P4-18 Graphics quality pass, part 1: map chrome, timed games, streak, placement, Pet Care, setup, Game Room, math visuals (v81, 2026-11-11, Claude)
+- Audit (screenshots of every screen at 600x960 and 380x780 on the v75 build, judged at real size). State before -> after this chunk:
+
+  | Screen | Before (v75) | After (v81) |
+  |--------|--------------|-------------|
+  | Home, question screen, rewards, boss intro, icons, dragon, components | new style (P4-08, P4-10, P4-11, P4-03, P4-05, P4-04) | unchanged |
+  | Map: top bar, world chips, world titles, stops, boss stop, stars, test-out, "more worlds" | emoji chrome (subject, world and skill emoji, lock emoji, boss emoji, text stars, ◀, ⚡, ✅, 🏆), flat pastel discs with raw-hex borders | new style: back icon button, subject icon title, star chip; world badge (world colour disc + icon of the world's first new skill); 72 px stop discs with ledge and gloss (open: ringed; done/current: subject fill, current pulses with the k-ring); drawn boss (RW.boss) on a 92 px stop; drawn rating stars; label pills; trophy champion pill. Map backgrounds untouched (P4-09) |
+  | Fact Sprint menu, modes | emoji chrome (🔢 ➕ ➖ ⚡ 🏆 🎟️ ▶), raw-hex gradient tiles | new style: path-card tiles with a math badge (sign + 10/20 tag), bests on icon lines, play disc |
+  | Fact Sprint play | emoji chrome (✕ ⚡), old pad (`.pad .k`), raw-hex timer bar | new style: P4-10 top bar (close, time gauge, bolt and timer chips), P4-10 keys without a check key, prompt card |
+  | Fact Sprint / Speed Race end | emoji overlay on black (🏆 ⚡ 🎉 🎟️ 🪙 🏠), raw-hex sparkline | new style: reward card (trophy or bolt disc, rays and a "New record!" tag for a record), token sparkline, icon earn line, primary Again |
+  | Speed Race menu, play | emoji chrome (⚡ ➕ 👀 🌮 🏆 ✕ ◀), raw-hex tiles and bar | new style (as Fact Sprint) |
+  | Streak calendar | emoji chrome (🔥 ⭐ 🌙 ◀ ▶), flat | new style: flame disc + big count, star cells with ledge, moon rest days, chevron buttons, prize chips (medal, tick when reached) |
+  | Placement intro, question, result | emoji chrome (subject emoji, world emoji, 🔢), old buttons | new style: subject badge with target, P4-10 top bar and prompt card, world badge result, component buttons; Grown-ups/setup "Find my level" buttons use subject icons |
+  | Pet Care | emoji chrome (🐾 🍖 🛁 🎾 💖, ◀), raw-hex gradient meters, emoji snacks | new style: icon title, coin chip, icon meters on gauges, snack cards with object art (apple, cookie, cake; pizza stays emoji until drawn) and price chips, icon action buttons. Stage scene deco emoji left (P4-12) |
+  | Setup | emoji chrome (⭐ title, 🚀), flat pet cards | logo mark, rocket primary button, pet cards with a tinted disc and brand selection ring; dino, bird, sea pal themselves stay emoji (P4-06) |
+  | Game Room | ico icons on raw-hex gradient tiles | new style: path-card tiles, game-time card with a ticket disc, ticket chip |
+  | Balloon bonus | emoji chrome (🎈 🪙 ⏱ 🔊, end overlay 🗺️ 🏠 ▶) | new style top bar, chips, speaker icon, reward end card. Balloons are the game's own (unchanged) |
+  | Spanish learn cards | ◀ ▶ text buttons | icon back, subject ¡Vamos! button (cards keep their pictures) |
+  | Boss bar (round) | ❤️ emoji hearts | drawn hearts (`GFX.hearts`); the red hp bar is still P4-10/P4-17 |
+  | Report card | "Accurac / y" mid-word break at 380, 40 px back button | 2 x 2 week cells on phones, `overflow-wrap: normal`, 48 px back |
+  | Math visuals (23-viz.js) | flat by design | depth (below) |
+  | Grown-ups, Pet Shop, Stickers, Daily Review | P4-03 icons; flat cards | unchanged (P4-12, P4-07); the Daily Review tile is P4-08's Home tile, no leftovers on screen (`revCard()` is test-only) |
+  | Games 60-72 (Hill Climb, Coloring, Block Builder, Art) | own canvas art | unchanged (out of scope) |
+
+- Math visuals (src/js/23-viz.js, src/css/32-viz.css; header documents the "Depth" rules): light from the top left like the object art. Counters (ten frames, dots, dice, arrays, balance, line plots, pictographs, number-line marks, grid points) are drawn in the shade tone with a deep rim; `vol()` adds a base-tone spot moved toward the light (a shade crescent shows lower right) and a short white gloss, as zero-length round-capped strokes, so each counter is still exactly one `<circle>`. Arrays do the same with shifted dashed paths. Ten frames, dice faces, fraction bars and circles, the clock and bills sit on a soft `--ledge-soft` ledge; fraction bars and graph bars get a white gloss band, fraction circles, the clock rim and coins a gloss arc; the clock face a lower-right crescent; base-ten blocks a deep-tone ledge; coins are metallic (grey or tan base, shade crescent, gloss, darker rim; penny text `--ill-brown-3`). Tokens only (`--ill-*` for deep tones), no gradients, filters or ids, deterministic; decorations have `pointer-events: none`, so tap targets, `data-v` and the 48-unit tap rule are unchanged. Typical sizes stay under 2.5 KB (tenFrame 20 with two colours 1.9 KB, base10(999) 2.2 KB).
+- New files: `src/js/19-gfx.js` (`GFX.card`, `GFX.speedTop`, `GFX.bar`, `GFX.pad`, `GFX.hearts`, `GFX.endCard`), `src/css/47-gfx.css` (map chrome, activity cards, timed-game chrome, end card, Game Room, Pet Care, setup). Edited: 46-home.js (map: `wBadge`, `nodeFace`, pathMap/worldStrip/drawMap markup; setup; learn), 57-fluency.js, 54-race.js, 55-streak.js, 45-placement.js, 56-petcare.js, 58-playtime.js, 52-balloons.js, 50-round.js (hearts only), 23-viz.js; CSS 32-viz, 35-streak, 36-report, 39-place, 40-games (old map node rules removed; `.map svg` -> `.map>svg` so icons inside the map are not pinned to its corner).
+- Kept for code and smoke: `.node[data-n]` (`.cur`, `.done`, `.lock`, `.boss`, area class), `.wchip[data-w]` (`.on`), `.wmore`, `.tobtn`, `.wtitle[data-w]`, `.nnew`, `.game[data-s]`, `.game[data-m]`, `.game[data-r]`, `#g4x4`, `#gcbn`, `#gbb`, `#learn`, `#quit`, `#fsc`, `#ftm`, `#fbar`, `#rsc`, `#rbar`, `.k[data-k]`, `#fagain`, `#fsets`, `#fhome`, `#ragain`, `#rhome`, `#bnext`, `#bhome`, `#bpop`, `#btime`, `#rule`, `#stcp`, `#stcn`, `.stc-grid`, `.stc-d` (`.on`, `.now`, `.rest`), `#plgo`, `#plback`, `#plmap`, `#plnext[data-place]`, `#plhome`, `.pl-dot`, `#spk`, `[data-f]`, `#bath`, `#play`, `#coinc`, `.petopt[data-p]` (first `span` is still the pet), `#go`, `#nm`, `#pn`, `#hpn`, `.ovl`. Chips update their `<b>` (`UI.setChip`); gauges take `--v` (`GFX.bar`).
+- Tools: `tools/shots.js` reads `SHOTS_OUT` and `SHOTS_SIZES`; new entries `map-boss`, `race-menu`, `race-end`, `balloons`, `balloons-end`, `learn-es`; group `@p418` (30 screens) for before/after sets; the `sprint` entry sets its chip through `UI.setChip`.
+- Tests: test.js 53 of 53. New checks "graphics pass (P4-18)" (47-gfx.css tokens only, no filter, transform/opacity only, no keyframes; no emoji or ◀ ▶ ✕ glyphs in the fixed screens' functions or templates; end cards, hearts and snack pictures drawn; GFX helpers keep ids, escape, pad keys; every world badge and stop face has a real icon or drawn boss) and "math visuals depth (P4-18)" (one circle per counter, one spot and one gloss path per group inside the faded group, ledges and gloss where promised, no decoration is a tap target, every tap target keeps `data-v`, crescent path shape, 32-viz.css tokens). The base10 block count in the viz check now counts the `.vb` path (the ledge repeats it). smoke.js: new `// P4-18` block: 18 redrawn screens at 380x780 and 600x960 (buttons at least 48 px, nothing outside, no sideways scroll, no broken words, no emoji text in chrome), drawn badges, stop icons and boss, sprint pad keys. Run against the v75 build the block reports 416 emoji-chrome findings; on v81 none.
+- Screenshots: before (v75) in tools/out/p418-before/, after (v81) in tools/out/p418-after/, at 600x960 and 380x780 for the `@p418` group plus setup, care, gameroom, streak, fluency, sprint, report, viz; 1024x600 after for map, fluency, sprint, streak, care, gameroom, place-done, race-end. Looked at: map, map-boss, map-worlds, fluency, fluency-modes, sprint, sprint-end, q-race, race-menu, race-end, streak, gameroom, care, setup, place-intro, place-q, place-done, balloons, balloons-end, learn-es, q-boss, report-top, viz sheet, bay-coins4, clock-time1, frac-2-pic, sg-tenf2.
+- Checklist 7.1: [x] chunk files only (plus tests, shots, docs, built output) [x] VER v81 (provisional) [x] build [x] test.js [x] smoke.js [x] screenshots (two sizes for all, three for the main ones) [x] midway fixture (smoke) [x] no network [x] no new emoji or hex [x] PROGRESS entry [x] one commit (not pushed).
+- Follow-up (not done here, for later chunks):
+  - Pet Care stage and Pet Shop stage: the scene decorations (`.sdeco`, e.g. 🏖️) and the mood/toast lines with emoji (`fb('🎁 ...')`, `... 😋`) and the emoji particle bursts (care, Home pet tap, balloons, boss hits) - P4-12 (stage) and P4-17 (particles: `RW.burst` already draws confetti).
+  - Boss bar in the round top bar: raw-hex red hp bar and the old `.bossE` box (40-games.css) - P4-10 follow-up or P4-17.
+  - Map: drawn world scenes and the path trail (still `#d6c7a8`/`#fff` in drawMap) - P4-09; P4-09 can replace `wBadge()` with the scene chip. Stop labels are still small text pills (13-14 px) over the scene.
+  - Setup: dino, bird and sea pal are emoji on the new cards - P4-06; the setup `.card` sections and name inputs are the old look - P4-12.
+  - Game Room: the "How to earn MORE game time" `.tipcard` and the full-width game-time card at 1024x600 are the old layout - P4-16.
+  - Report card: bar chart and tables are plain (Grown-ups style by design); only the break and button were fixed.
+  - Fact Sprint 20-facts mode reuses the time gauge as a progress bar (it fills); a separate progress style could help.
+  - Math visuals not given depth: 2-D shapes (`VIZ.shape` polygons), rulers and pencils, balance pans and weights, area grids, angles, coordinate grid lines, tally marks, in/out tables. Shapes would need a gloss per polygon; the rest are line drawings where depth does not help.
+  - Pictograph half pictures (`<path class="v1">`) stay flat next to the shaded full ones.
+  - Games 60-72 (Block Builder and Hill Climb still paint `petE()` emoji on their canvases; colour-by-number and Art Studio chrome) - their own chunk.
+  - Old classes now unused by these screens: `.ge`, `.gi`, `.gt`, `.game .go`, `.ptcard` gradient, `.cbar .meter`, `.stars` on these top bars, `.prog`; P4-17 can delete them once nothing else uses them.
+- Merge: built on branch P4-18-gfx from v75 in parallel with P2-07, P2-08, P2-20, P2-22, P2-24, P2-25 (content and hints). No generator or content file is touched; likely overlaps are tools/test.js and tools/smoke.js (appended blocks), tools/shots.js (entries after SCREENS and the env switches in main), 46-home.js (map functions, setup, learn) and the built files (rebuild). Renumber VER at merge.
+- Merge: built on a parallel branch, renumbered v78 -> v79 at merge.
 
 ### P2-22 Vocabulary A, levels 1-5 (v78, 2026-11-11, Claude)
 - What changed: new `src/data/d-vocab.js` builds `BANK.vocab` at load from plain text lists (no rnd): level 1 opposites (56 items, 3 choices, 19 with a picture of the prompt word), 2 synonyms (52), 3 compound words (68, 19 with a picture: "Which two words make rainbow?" and "What do sun and flower make together?"), 4 prefixes un/re/pre/dis/mis (63: meanings and add-the-start-piece), 5 suffixes -ful/-less/-ly/-er/-est/-able (82). Skill `vocab` (max 5) registered in `38-skills.js`. Stops by world id: vocab 1 in `r_reef` after Spell Blends; vocab 2, 3 in `r_workshop` after Build Vowel Teams 2; vocab 4, 5 in `r_summit` after Spell Tricky Sounds. Every item has a hint, topic, say text and a unique label; distractors are real mistakes (a synonym for an opposite, other prefix or suffix meanings of the same base word).

@@ -105,7 +105,7 @@ function placeAsk(){
   if(PLACE_HIDE||!placeOK()||(S.place&&Object.keys(S.place).length))return false;
   return placePaths().every(p=>!NODES[p].some((n,i)=>passed(p,i)));
 }
-const placeSubBtn=p=>`<button class="btn pl-sub" data-place="${p}"><span class="pl-pe">${PATHS[p].e}</span>${esc(placeName(p))}</button>`;
+const placeSubBtn=p=>`<button class="btn pl-sub s-${p}" data-place="${p}"><span class="pl-pe">${ico(UI.SUBJ_ICON[p]||'map',26)}</span>${esc(placeName(p))}</button>`; // P4-18: drawn subject icon
 const placeName=p=>PATHS[p].n.replace(/ Adventure$/,'');
 function placeBanner(){
   if(!placeAsk())return'';
@@ -138,10 +138,10 @@ function placeIntro(p,from){
   PL=null;
   if(G)G.dead=true; // a finished or left round must not fire its next-question timer into this screen
   const nm=esc(placeName(p));
-  view(`<div class="center pl-in"><div class="pl-big">${PATHS[p].e}</div><h1>Let's find your level!</h1>
+  view(`<div class="center pl-in s-${p}"><div class="pl-big">${ico(UI.SUBJ_ICON[p]||'map',64)}<i class="pl-tg">${ico('target',26)}</i></div><h1>Let's find your level!</h1>
    <p class="sub">A few ${nm} questions. Some may be tricky, and that's OK. Just do your best!</p>
    <p class="small">No stars to win or lose. You can stop any time.</p>
-   <div class="rowh"><button class="btn big" id="plgo">${ico('play','1em')} Start</button><button class="btn" id="plback">Not now</button></div></div>`);
+   <div class="rowh">${UI.btn('Start',{kind:'primary',size:'lg',icon:'play',id:'plgo'})}${UI.btn('Not now',{id:'plback'})}</div></div>`);
   if(S.voice)say(`Let's find your level! Some questions may be tricky. Just do your best!`);
   $('#plback').onclick=()=>{SFX.click();placeBack(from)};
   $('#plgo').onclick=()=>{
@@ -165,11 +165,11 @@ function placeQ(){
   const me=PL,q=PL.its[PL.qi],K=KIND[q.kind];
   PL.q=q;PL.lock=false;PL.typed='';PL.tries=0;PL.built=[];
   const dots=PL.its.map((_,i)=>`<span class="pl-dot ${i<PL.qi?'on':i==PL.qi?'now':''}"></span>`).join('');
-  view(`<div class="top"><button class="btn sm pl-x" id="quit" aria-label="Stop">${ico('close','1em')}</button>
+  view(`<div class="top tbar round qtop pl-top s-${PL.p}">${UI.ibtn('close','Stop',{size:'sm',id:'quit'})}
    <div class="pl-dots" aria-label="Question ${PL.qi+1} of ${PL.its.length}">${dots}</div><div class="sp"></div>
-   <div class="pl-tag">${PATHS[PL.p].e} Find my level</div></div>
-  <div class="play"><div class="qarea">${q.ctx?bankCtx(q.ctx):''}<div class="prompt" id="prompt">${q.html}</div>
-  <div class="tools">${q.say?`<button class="btn sm pl-x" id="spk">${ico('speak','1em')} Hear it</button>`:''}</div></div>
+   <div class="pl-tag">${ico(UI.SUBJ_ICON[PL.p]||'map',24)}<span>Find my level</span></div></div>
+  <div class="play qs s-${PL.p}"><div class="qarea">${q.ctx?bankCtx(q.ctx):''}<div class="prompt" id="prompt">${q.html}</div>
+  <div class="tools">${q.say?UI.btn('Hear it',{size:'sm',icon:'speak',id:'spk'}):''}</div></div>
   <div class="inp">${K.render(q)}</div></div>`);
   $('#quit').onclick=()=>{PL=null;SFX.click();placeBack(me.from)};
   if($('#spk'))$('#spk').onclick=e=>say(q.say,e.currentTarget,q.lang=='es'&&q.auto=='must'?'es':null);
@@ -205,11 +205,11 @@ function placeDone(){
   const other=placePaths().find(x=>x!=p&&!(S.place&&S.place[x]));
   view(`<div class="center pl-in"><div class="pl-done">${ico('trophy',64)}</div><h1>All done! Great work${S.name?', '+esc(S.name):''}!</h1>
    <p class="sub">${st.all?`You know a lot! Your ${esc(placeName(p))} map opens at the last world:`:`Your ${esc(placeName(p))} map starts here:`}</p>
-   <div class="pl-res"><span class="pl-pe">${w.e}</span>${esc(w.n)}</div>
+   <div class="pl-res">${wBadge(p,st.at)}${esc(w.n)}</div>
    ${sk.length?`<p class="small pl-skip">${ico('check','1.2em')} Skipped: ${sk.map(x=>esc(x.n)).join(', ')}. You can still play ${sk.length>1?"them":"it"} any time.</p>`:''}
-   <div class="rowh"><button class="btn big" id="plmap">${ico('map','1em')} Go to my map</button>
-    ${other?`<button class="btn" id="plnext" data-place="${other}">${PATHS[other].e} ${esc(placeName(other))} next</button>`:''}
-    <button class="btn" id="plhome">${ico(from=='grown'?'gear':'home','1em')} ${from=='grown'?'Grown-ups':'Home'}</button></div></div>`);
+   <div class="rowh">${UI.btn('Go to my map',{kind:'primary',size:'lg',icon:'map',id:'plmap'})}
+    ${other?UI.btn(placeName(other)+' next',{icon:UI.SUBJ_ICON[other]||'map',id:'plnext',attrs:`data-place="${other}"`}):''}
+    ${UI.btn(from=='grown'?'Grown-ups':'Home',{icon:from=='grown'?'gear':'home',id:'plhome'})}</div></div>`);
   SFX.fanfare();
   if(S.voice)say(`All done! Great work! Your map starts at ${w.n}.`);
   $('#plmap').onclick=()=>{SFX.whoosh();pathMap(p,st.at)};

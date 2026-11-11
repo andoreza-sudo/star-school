@@ -2,7 +2,7 @@
 .rp-entry{display:flex;align-items:center;gap:var(--s-3);flex-wrap:wrap}
 .rp-entry .btn{display:inline-flex;align-items:center;gap:var(--s-2);min-height:var(--tap)}
 .rp-entry .small{flex:1 1 180px}
-.rp-noprint .btn{min-height:var(--tap)}
+.rp-noprint .btn{min-height:var(--tap);min-width:var(--tap)}
 .rp-head{padding:var(--s-2) var(--s-1) 0}
 .rp-t{font-size:var(--fs-5);font-weight:700;line-height:var(--lh-5);overflow-wrap:anywhere}
 .rp-card{overflow-wrap:anywhere}
@@ -17,7 +17,7 @@
 /* this week / last week */
 .rp-wrow{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--s-2);margin-bottom:var(--s-3)}
 .rp-wl{grid-column:1/-1;font-weight:700;color:var(--ink-2)}
-.rp-cell{background:var(--surface-2);border-radius:var(--r-btn);padding:var(--s-2);min-width:0}
+.rp-cell{background:var(--surface-2);border-radius:var(--r-btn);padding:var(--s-2);min-width:0;overflow-wrap:normal;box-shadow:inset 0 3px 0 var(--line)}
 .rp-h{font-size:var(--fs-1);color:var(--ink-3)}
 .rp-n{font-size:var(--fs-5);font-weight:700;line-height:var(--lh-5)}
 .rp-cell .small{font-size:var(--fs-1)}
@@ -67,7 +67,7 @@
 .rp-fr b{flex:1 1 100%}
 .rp-str{display:flex;align-items:center;gap:var(--s-3)}
 .rp-fl{color:var(--play)}
-@media (max-width:480px){.rp-t{font-size:var(--fs-4)}.rp-n{font-size:var(--fs-4)}.rp-sn{flex-basis:78px}}
+@media (max-width:480px){.rp-wrow{grid-template-columns:repeat(2,1fr)}.rp-t{font-size:var(--fs-4)}.rp-n{font-size:var(--fs-4)}.rp-sn{flex-basis:78px}}
 /* print: plain white page, no buttons, all cards in one flow */
 @media print{
   html,body,#app,.scroll{height:auto!important;overflow:visible!important;display:block!important;background:var(--surface)!important;animation:none!important}

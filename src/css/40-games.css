@@ -6,17 +6,8 @@
 .act{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:16px;padding:10px 4px;line-height:1.15}.act span{font-size:34px}
 .act.mix{background:linear-gradient(135deg,#fde68a,#fca5a5)}
 .map{position:relative;margin:10px 0 20px}
-.map svg{position:absolute;left:0;top:0;pointer-events:none}
+.map>svg{position:absolute;left:0;top:0;pointer-events:none}
 .wband{position:absolute;left:0;right:0;border-radius:28px}
-.wtitle{position:absolute;left:50%;transform:translateX(-50%);background:#fff;border-radius:18px;padding:6px 16px;font-weight:700;font-size:20px;box-shadow:0 3px 0 #0001;white-space:nowrap;z-index:1}
-.node{position:absolute;width:76px;height:76px;margin:-38px 0 0 -38px;border-radius:50%;padding:0;font-size:36px;display:flex;align-items:center;justify-content:center;border:4px solid #fff;z-index:2}
-.node.math{background:#bfdbfe}.node.read{background:#fbcfe8}
-.node.done{border-color:#facc15}
-.node.lock{background:#e7e5e4;opacity:.65;font-size:28px}
-.node.cur{animation:pulse 1.4s infinite;border-color:#f59e0b}
-@keyframes pulse{50%{box-shadow:0 0 0 12px #facc1577}}
-.nlab{position:absolute;transform:translateX(-50%);font-size:13px;font-weight:700;text-align:center;width:120px;line-height:1.1;pointer-events:none;z-index:2;text-shadow:0 0 3px #fff,0 0 3px #fff}
-.nstar{color:#f59e0b;font-size:15px;letter-spacing:1px}
 .mappet{position:absolute;font-size:42px;transform:translate(-50%,-100%);pointer-events:none;animation:bob 2.4s ease-in-out infinite;z-index:3}
 .tabs{display:flex;gap:8px;justify-content:center;margin:10px 0}.tab.on{background:#3b82f6;color:#fff}
 .shopgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px}
@@ -51,7 +42,6 @@
 .lgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px}
 .lcard{display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 6px}.lcard .lp{font-size:54px;line-height:1.1}.lcard b{font-size:22px;color:#1d4ed8}.lcard small{font-size:15px;color:var(--muted)}
 .lcard.heard{background:#dcfce7}
-.node.es{background:#bbf7d0}
 .ovl .grow,.ovl .grown{font-size:min(160px,30vh)!important}.ovl h1{font-size:min(34px,7vh)}
 
 .bossbar{flex:1;display:flex;align-items:center;gap:8px;position:relative;min-width:0}
@@ -65,10 +55,7 @@
 .hp div{height:100%;background:linear-gradient(90deg,#ef4444,#f97316);transition:width .4s}
 #hpn{font-size:13px;white-space:nowrap;max-width:30vw;overflow:hidden}
 .bossbig{font-size:min(140px,26vh);animation:wobble .5s infinite}
-.node.boss{background:#fecaca;width:90px;height:90px;margin:-45px 0 0 -45px;font-size:46px;border-color:#ef4444}
-.node.boss.done{border-color:#facc15}
-.tobtn{position:absolute;left:50%;transform:translateX(-50%);z-index:2;background:#fef3c7;white-space:nowrap}
-.tobtn:active{transform:translateX(-50%) translateY(3px)}
+/* (P4-18: map stops, world titles, labels and the test-out button moved to 47-gfx.css) */
 /* P1-05 world picker strip (one chip per world, grouped by grade), "more worlds" buttons, NEW tag on stops added later */
 .wstrip{display:flex;align-items:center;gap:var(--s-2);flex:none;overflow-x:auto;padding:var(--s-1) var(--s-3) var(--s-3);scrollbar-width:none}
 .wstrip::-webkit-scrollbar{display:none}
@@ -77,14 +64,12 @@
   background:var(--surface);color:var(--ink);font:inherit;font-size:var(--fs-2);font-weight:700;white-space:nowrap;cursor:pointer;
   box-shadow:var(--ledge) var(--line);touch-action:manipulation;transition:transform var(--t-fast)}
 .wchip:active{transform:translateY(3px)}
-.wchip .we{font-size:var(--fs-4);line-height:1}
 .wchip.lock{background:var(--surface-2);color:var(--ink-3)}
 .wchip.done .ic{color:var(--good)}
 .wchip.on{background:var(--brand);color:var(--surface);box-shadow:var(--ledge) var(--brand-shade)}
 .wchip.on .ic{color:var(--surface)}
 .wmore{position:absolute;left:50%;transform:translateX(-50%);z-index:2;display:flex;align-items:center;gap:var(--s-2);min-height:var(--tap);white-space:nowrap}
 .wmore:active{transform:translateX(-50%) translateY(3px)}
-.wmore .we{font-size:var(--fs-4);line-height:1}
 .nnew{position:absolute;transform:translateX(-50%);z-index:3;pointer-events:none;background:var(--danger);color:var(--surface);
   font-size:var(--fs-1);font-weight:700;border-radius:var(--r-pill);padding:1px var(--s-2)}
 .rtag{background:#ede9fe;color:#6d28d9;font-weight:700;font-size:16px;border-radius:12px;padding:3px 12px}

@@ -20,14 +20,15 @@ function ptCalc(g,sc,n,stars,prev,newPass,testOk,nd){const per=ptCfg().per*60,L=
 function ptWhyNot(){const p=pt(),c=ptCfg();if(c.pause)return'Game time is paused by a grown-up.';if(c.max&&p.used>=c.max*60)return`That's all the game time for today (${c.max} min). Come back tomorrow!`;return'Finish a learning round to earn game time!'}
 
 function gameRoom(){const left=ptLeft(),gs=garageS(),R_=n=>ico(n,'1.2em','ic-play');
-  view(`<div class="top"><button class="btn sm" id="back" aria-label="Back">${ico('back',20)}</button><div class="title">${ico('gamepad','1.1em','ic-play')} Game Room</div><div class="sp"></div><div class="stars">${ico('ticket','1.2em','ic-play')} ${fmtT(left)}</div></div>
-  <div class="scroll"><div class="ptcard ${left>0?'':'empty'}"><div style="font-size:44px">${ico('ticket','1em','ic-play')}</div><div><div class="hname">${left>0?`${fmtT(left)} of game time`:'No game time yet'}</div>
+  // P4-18: drawn top bar, game-time card and game cards (were flat gradient tiles with raw colours)
+  view(`<div class="top tbar gx-mtop s-play">${UI.ibtn('back','Back',{size:'sm',id:'back'})}<div class="ttl gx-ttl"><span class="gx-tb">${ico('gamepad',24)}</span><span>Game Room</span></div>${UI.chip('ticket',fmtT(left),{aria:'Game time'})}</div>
+  <div class="scroll gx-list"><div class="ptcard gx-pt ${left>0?'':'empty'}"><span class="gx-ptd">${ico('ticket',40)}</span><div><div class="hname">${left>0?`${fmtT(left)} of game time`:'No game time yet'}</div>
    <div class="small">${left>0?'Every learning round earns more. Have fun!':esc(ptWhyNot())}</div></div></div>
   <div class="games">
-   <button class="btn game" id="g4x4" style="background:linear-gradient(135deg,#fed7aa,#fdba74)"><span class="ge">${ico('car','1em','ic-play')}</span><span class="gi"><span class="gt">4x4 Hill Climb</span><span class="small">Best: ${Math.max(gs.best.meadow,gs.best.moon)} m · ${ico('nut','1.1em')} ${gs.bolts} bolts</span></span><span class="go">${ico('play','1em')}</span></button>
-   <button class="btn game" id="gcbn" style="background:linear-gradient(135deg,#fbcfe8,#f9a8d4)"><span class="ge">${ico('palette','1em','ic-read')}</span><span class="gi"><span class="gt">Coloring</span><span class="small">Animals, pixel art & free paint</span></span><span class="go">${ico('play','1em')}</span></button>
-   <button class="btn game" id="gbb" style="background:linear-gradient(135deg,#bbf7d0,#86efac)"><span class="ge">${ico('blocks','1em','ic-es')}</span><span class="gi"><span class="gt">Block Builder</span><span class="small">Build your own 3D world</span></span><span class="go">${ico('play','1em')}</span></button></div>
-  ${left>0?'':`<button class="btn big" id="learn" style="display:block;margin:18px auto">${ico('path-read','1.1em')} Go earn game time</button>`}
+   ${GFX.card({id:'g4x4',cls:'game',p:'play',icon:'car',title:'4x4 Hill Climb',sub:`<span class="gx-ln">Best: <b>${Math.max(gs.best.meadow,gs.best.moon)} m</b></span><span class="gx-ln">${ico('nut',18)}<b>${gs.bolts}</b> bolts</span>`})}
+   ${GFX.card({id:'gcbn',cls:'game',p:'read',icon:'palette',title:'Coloring',sub:'Animals, pixel art &amp; free paint'})}
+   ${GFX.card({id:'gbb',cls:'game',p:'es',icon:'blocks',title:'Block Builder',sub:'Build your own 3D world'})}</div>
+  ${left>0?'':`<div class="gx-center">${UI.btn('Go earn game time',{kind:'primary',size:'lg',icon:'path-read',id:'learn'})}</div>`}
   <div class="tipcard ptrules"><b>${ico('ticket','1.2em')} How to earn MORE game time</b><div>${R_('sparkle')} Unlock a new stop <b>+1 min</b></div><div>${R_('star')} Get a perfect score <b>+1 min</b></div><div>${R_('globe')} Play a harder world <b>up to +1½ min</b></div><div>${R_('crown')} Beat a boss <b>+2 min</b></div><div>${R_('review')} Fix an old mistake <b>bonus seconds</b></div><div>${R_('chart')} Beat your old score <b>+½ min</b></div><div>${R_('timer')} Fact Sprint, first one of the day <b>+1 min</b></div><div class="small">Replaying a stop you already mastered, or the same stop over and over, earns less.</div></div></div>`);
   $('#back').onclick=()=>home();if($('#learn'))$('#learn').onclick=()=>home();
   $('#g4x4').onclick=()=>{SFX.whoosh();garage()};$('#gcbn').onclick=()=>{SFX.whoosh();colorMenu()};$('#gbb').onclick=()=>{SFX.whoosh();bbMenu()}}

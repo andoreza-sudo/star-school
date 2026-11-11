@@ -758,7 +758,7 @@ run('viz: math visuals well-formed, small, deterministic, tokens only, tap targe
   if(cnt(V.tenFrame(9,10,{b:3,fade:1}),/<g class="v2 vx">/g)!==1)p.push('tenFrame b/fade groups');
   if(cnt(V.dots(13,'scatter',{seed:4}),/<circle/g)!==13)p.push('dots scatter count');
   if(V.dots(13,'scatter',{seed:4})===V.dots(13,'scatter',{seed:5}))p.push('dots scatter: seed does not change the layout');
-  if(cnt(V.base10(234),/h-[\d.]+z/g)!==9)p.push('base10(234) does not draw 2 + 3 + 4 blocks');
+  if(cnt((V.base10(234).match(/class="vb" d="[^"]*"/)||[''])[0],/h-[\d.]+z/g)!==9)p.push('base10(234) does not draw 2 + 3 + 4 blocks');
   if(cnt(V.fracBar(3,4),/class="vp vs"/g)!==3||cnt(V.fracBar(3,4),/class="vp"/g)!==1)p.push('fracBar(3, 4) shading');
   if(cnt(V.fracCircle(5,4),/class="ve"/g)!==2)p.push('fracCircle(5, 4) should draw 2 circles');
   if(cnt(V.numLine({tapValues:[1,3,5]}),/data-v=/g)!==3)p.push('numLine tapValues');
@@ -4274,6 +4274,92 @@ run('vocabulary P2-22: bank validates, one right answer per item, 3000 questions
   };
   const r=eval(js+';('+body.toString()+')()');
   return{problems:serrs,note:'321 items, 15000 questions, '+r.checked+' stop checks over 7 fixtures x 7 grades'};
+});
+
+// ---- P4-18: graphics quality pass ----
+run('graphics pass (P4-18): 47-gfx.css tokens and motion, no emoji chrome on the fixed screens, ids kept',()=>{
+  const p=[];
+  const css=fs.readFileSync(path.join(SRC,'css','47-gfx.css'),'utf8').replace(/\/\*[\s\S]*?\*\//g,'');
+  const tok=fs.readFileSync(path.join(SRC,'css','00-tokens.css'),'utf8');
+  if(/#[0-9a-fA-F]{3,8}\b/.test(css))p.push('raw hex colour in 47-gfx.css');
+  if(/rgba?\(|hsla?\(/.test(css))p.push('colour function in 47-gfx.css');
+  if(/(^|[;{\s])(-webkit-)?(backdrop-)?filter\s*:/.test(css))p.push('filter or backdrop-filter used');
+  for(const m of css.matchAll(/transition\s*:\s*([^;}]+)/g))for(const part of m[1].split(','))
+    if(!/^\s*(transform|opacity)\s/.test(part))p.push('transition on something other than transform/opacity: '+part.trim());
+  if(/@keyframes/.test(css))p.push('47-gfx.css defines keyframes (reuse k-ring / rw-pop)');
+  const OWN=['c','c-tint','c-shade','c-fill','c-ledge','ic2','wb'];
+  for(const m of css.matchAll(/var\(--([a-z0-9-]+)/g))if(!OWN.includes(m[1])&&!new RegExp('--'+m[1]+':').test(tok))p.push('unknown token --'+m[1]);
+  // the markup a fixed screen builds (view() templates and the map's innerHTML) has no emoji and no ◀ ▶ ✕ text glyphs
+  const fnText=(file,name)=>{const t=fs.readFileSync(path.join(SRC,'js',file),'utf8'),a=t.indexOf('function '+name+'(');
+    if(a<0){p.push(file+': function '+name+' not found');return''}const b=t.indexOf('\nfunction ',a+1);return t.slice(a,b<0?t.length:b)};
+  const tpl=t=>{const out=[];let i=0;for(;;){const a=t.indexOf('view(`',i);if(a<0)break;const b=t.indexOf('`);',a);out.push(t.slice(a,b<0?t.length:b));i=a+6}return out.join('\n')};
+  const EMO=/\p{Emoji_Presentation}|\p{Extended_Pictographic}️|[◀▶✕⭐⚡✅⌨⌫]/u;
+  const whole=[['57-fluency.js','fluMenu'],['57-fluency.js','fluModes'],['57-fluency.js','fluPlay'],['57-fluency.js','fluEnd'],['57-fluency.js','fluSpark'],
+    ['54-race.js','raceMenu'],['55-streak.js','streakCal'],['45-placement.js','placeIntro'],['45-placement.js','placeQ'],['45-placement.js','placeDone'],
+    ['46-home.js','pathMap'],['46-home.js','worldStrip'],['46-home.js','drawMap'],['46-home.js','setup'],['46-home.js','learn'],['46-home.js','wBadge'],['46-home.js','nodeFace']];
+  for(const [f,fn] of whole){const t=fnText(f,fn).replace(/n\.boss\[0\]/g,''),m=t.match(EMO);if(m)p.push(f+' '+fn+'(): emoji or text glyph as chrome: '+m[0])}
+  // screens whose functions also hold effects (emoji particle bursts, toasts): only their templates are chrome
+  for(const [f,fn] of [['54-race.js','race'],['56-petcare.js','care'],['52-balloons.js','balloons']]){const t=tpl(fnText(f,fn)),m=t.match(EMO);if(m)p.push(f+' '+fn+'() template: emoji as chrome: '+m[0])}
+  for(const [f,re,w] of [['54-race.js',/GFX\.endCard\(/,'race end card'],['52-balloons.js',/GFX\.endCard\(/,'balloons end card'],['57-fluency.js',/GFX\.endCard\(/,'sprint end card'],
+    ['50-round.js',/GFX\.hearts\(G\.hp\)/,'boss hearts'],['56-petcare.js',/picFor\(SNACK_W\[i\]/,'snack pictures']])
+    if(!re.test(fs.readFileSync(path.join(SRC,'js',f),'utf8')))p.push(w+' not drawn');
+  const out=eval(js+`
+  const bad=[];
+  // ids and selectors smoke.js and the screens' handlers use
+  const keep=(h,list,w)=>{for(const s of list)if(!h.includes(s))bad.push(w+' lost '+s)};
+  keep(GFX.card({id:'g4x4',cls:'game',attrs:'data-s="add10"',title:'x'}),['id="g4x4"','data-s="add10"','class="pathcard gx-card s-math game"','class="pc-go"'],'GFX.card');
+  if(/pc-go/.test(GFX.card({title:'x',go:''})))bad.push('GFX.card go:"" should leave out the play disc');
+  if(GFX.card({title:'<b>'}).includes('<b>'))bad.push('GFX.card does not escape the title');
+  const pad=GFX.pad(),ks=[...pad.matchAll(/data-k="([^"]+)"/g)].map(m=>m[1]).join(' ');
+  if(ks!=='1 2 3 4 5 6 7 8 9 del 0'||!/class="keys qpad pad"/.test(pad)||(pad.match(/class="key k/g)||[]).length!==11)bad.push('sprint pad keys: '+ks);
+  keep(GFX.speedTop('math','fbar',1,''),['id="quit"','id="fbar"','class="top tbar round qtop gx-top s-math"','style="--v:1"'],'speedTop');
+  if((GFX.hearts(7).match(/#i-heart/g)||[]).length!==7||GFX.hearts(-1)!=='')bad.push('GFX.hearts');
+  // map chrome: every world has a badge with a real icon, every stop a face (lock, boss drawing, skill icon)
+  for(const p in PATHS)PATHS[p].worlds.forEach((w,wi)=>{const h=wBadge(p,wi),n=(/#i-([a-z0-9-]+)/.exec(h)||[])[1];
+    if(!ICONS[n])bad.push('world badge '+w.id+': icon '+n);if(!h.includes('--wb:'+w.c))bad.push('world badge '+w.id+': colour')});
+  for(const p in NODES)NODES[p].forEach(n=>{const h=nodeFace(n,false);
+    if(n.sk=='boss'?!/rw-boss/.test(h):!/#i-/.test(h))bad.push('stop face '+p+' '+nid(n));});
+  if(!/#i-lock/.test(nodeFace(NODES.math[0],true)))bad.push('locked stop face');
+  [...new Set(bad)];`);
+  return{problems:p.concat(out)};
+});
+
+run('math visuals depth (P4-18): one circle per counter, shade spot and gloss per group, ledges and gloss never take taps',()=>{
+  const p=[];
+  const src=fs.readFileSync(path.join(SRC,'js','23-viz.js'),'utf8'),css=fs.readFileSync(path.join(SRC,'css','32-viz.css'),'utf8');
+  const tok=fs.readFileSync(path.join(SRC,'css','00-tokens.css'),'utf8');
+  for(const m of css.matchAll(/var\(--([a-z0-9-]+)/g))if(!['vw','vz','k'].includes(m[1])&&!new RegExp('--'+m[1]+':').test(tok))p.push('32-viz.css: unknown token --'+m[1]);
+  const deco=['vbs','vsp','vld','vgs','vgc','vfs','vcs'];
+  const pe=(css.match(/([^}]*)\{pointer-events:none\}/)||[])[1]||'';
+  for(const c of deco)if(!pe.includes('.viz .'+c))p.push('32-viz.css: .'+c+' must have pointer-events: none');
+  const V=eval(src+';VIZ');
+  const cnt=(s,re)=>(s.match(re)||[]).length;
+  // counters: one <circle> each, one base spot path (one h0 per counter) and one gloss path per group, inside the group
+  const tf=V.tenFrame(9,10,{b:3,fade:1});
+  if(cnt(tf,/<circle/g)!==9)p.push('tenFrame(9): circles '+cnt(tf,/<circle/g));
+  if(cnt(tf,/class="vbs"/g)!==3||cnt(tf,/class="vsp"/g)!==3)p.push('tenFrame b/fade: one spot and one gloss path per group');
+  if(!/<g class="v2 vx">(<circle[^>]*\/>)+<path class="vbs"[^>]*\/><path class="vsp"[^>]*\/><\/g>/.test(tf))p.push('faded group must wrap its own spot and gloss');
+  const t7=V.tenFrame(7);if(cnt((t7.match(/class="vbs"[^>]*d="([^"]*)"/)||['',''])[1],/h0/g)!==7)p.push('tenFrame(7): 7 base spots');
+  for(const [w,s] of [['dots scatter',V.dots(12,'scatter',{seed:3})],['dice',V.dots(8,'dice')],['balance',V.balance(5,3)],['linePlot',V.linePlot([1,2,2])],
+    ['numLine marks',V.numLine({marks:[3]})],['coordGrid points',V.coordGrid({points:[[1,2]]})],['pictograph',V.pictograph([['A',3]])]])
+    if(!/class="vbs"/.test(s)||!/class="vsp"/.test(s))p.push(w+': counters have no depth');
+  // boards and gloss
+  if(!/class="vld"/.test(V.tenFrame(4))||!/class="vld"/.test(V.dots(4,'dice')))p.push('ten frame / dice face ledge');
+  const fb=V.fracBar(3,4);if(cnt(fb,/class="vld"/g)!==1||cnt(fb,/class="vgs"/g)!==1)p.push('fracBar ledge and gloss');
+  const fc=V.fracCircle(5,4);if(cnt(fc,/class="vld"/g)!==2||cnt(fc,/class="vgc"/g)!==2)p.push('fracCircle ledge and gloss per circle');
+  const ck=V.clock(3,0);for(const c of ['vld','vfs','vgc'])if(!ck.includes('class="'+c+'"'))p.push('clock: no '+c);
+  const cs=V.coinSVG([25,10,5,1]);if(cnt(cs,/class="vcs/g)!==4||cnt(cs,/class="vgc"/g)!==4)p.push('coins: a shade crescent and a gloss per coin');
+  if(!/class="vbd" transform="translate\(1\.5 1\.5\)"/.test(V.base10(47)))p.push('base10 ledge');
+  if(!/class="vgs"/.test(V.barGraph([['a',5]],1)))p.push('bar gloss');
+  // decorations never carry a tap target or data-v, and every tap target still has data-v
+  for(const s of [V.fracBar(0,6,{tap:true}),V.fracCircle(0,4,{tap:true}),V.numLine({tapValues:[1,3,5],marks:[2]}),V.barGraph([['a',2],['b',3]],1,{tap:true}),V.coordGrid({tapPts:[[1,2]],points:[[2,2]]})]){
+    for(const c of deco)if(new RegExp('class="(vt )?'+c+'[^"]*" data-v').test(s)||new RegExp('class="vt '+c).test(s))p.push('decoration .'+c+' is a tap target');
+    if(!/class="vt[^"]*" data-v="/.test(s))p.push('tap targets lost data-v');
+  }
+  // the crescent is a closed path of two arcs; numbers have one decimal
+  const cr=(ck.match(/class="vfs" d="([^"]*)"/)||['',''])[1];
+  if(!/^M[\d.]+ [\d.]+A52 52 0 1 1 [\d.]+ [\d.]+A52 52 0 0 0 [\d.]+ [\d.]+z$/.test(cr))p.push('clock face crescent: '+cr);
+  return{problems:p,note:deco.length+' decoration classes'};
 });
 
 // ---- report ----

@@ -87,11 +87,27 @@
 .viz .vwl{fill:var(--math-tint);stroke:var(--math-shade);stroke-width:2}
 .viz .vwr{fill:var(--play-tint);stroke:var(--play-shade);stroke-width:2}
 /* coins (penny copper, the rest silver) and bills */
-.viz .vcu{fill:var(--play-tint);stroke:var(--play-shade);stroke-width:3}
-.viz .vsv{fill:var(--surface-2);stroke:var(--ink-3);stroke-width:3}
-.viz .vci{fill:none;stroke:var(--ink-3);stroke-width:1.5;stroke-dasharray:2 3}
+.viz .vcu{fill:var(--ill-tan);stroke:var(--ill-tan-3);stroke-width:3}
+.viz .vsv{fill:var(--ill-grey-1);stroke:var(--ill-grey-2);stroke-width:3}
+.viz .vci{fill:none;stroke:var(--ill-grey-2);stroke-width:1.5;stroke-dasharray:2 3}
 .viz .vcc{font-size:13px}
-.viz .vcp{fill:var(--play-shade)}
+.viz .vcp{fill:var(--ill-brown-3)}
 .viz .vbl{fill:var(--good-tint);stroke:var(--good-ink);stroke-width:2}
 .viz .vbi{fill:none;stroke:var(--good-ink);stroke-width:1.5}
 .viz .vcb{font-size:20px;fill:var(--good-ink)}
+/* depth (P4-18; the header of 23-viz.js describes it): counters in the shade tone with a deep rim, a base-tone spot toward the
+   light (.vbs) and a white gloss (.vsp); ledges (.vld), gloss bands (.vgs) and arcs (.vgc); decorations never take taps */
+.viz g.v1>circle{fill:var(--math-shade);stroke:var(--ill-blue-3)}
+.viz g.v2>circle{fill:var(--play-shade);stroke:var(--play-deep)}
+.viz .vbs{fill:none;stroke:var(--math)}
+.viz .v2 .vbs{stroke:var(--play)}
+.viz .vsp{fill:none;stroke:var(--surface);opacity:.6}
+.viz .vld{fill:var(--ledge-soft);stroke:none}
+.viz .vgs{fill:var(--surface);stroke:none;opacity:.3}
+.viz .vgc{fill:none;stroke:var(--surface);opacity:.55}
+.viz .vfs{fill:var(--surface-2);stroke:none}
+.viz .vbd{fill:var(--ill-blue-3)}
+.viz .vcs{fill:var(--ill-grey);stroke:none}
+.viz .vcs.vcp{fill:var(--ill-tan-2)}
+.viz .vci.vcp{fill:none;stroke:var(--ill-tan-3)}
+.viz .vbs,.viz .vsp,.viz .vld,.viz .vgs,.viz .vgc,.viz .vfs,.viz .vcs{pointer-events:none}

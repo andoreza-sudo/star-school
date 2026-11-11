@@ -70,6 +70,8 @@ const STRK={
 };
 function streakTick(){try{return STRK.tick()}catch(e){return{count:0,msg:''}}}
 
+// A played day's star: the P4-04 rating star (ledge behind, star in front)
+const STC_STAR=`<span class="rs on">${ico('star',20,'rs-b')}${ico('star',20,'rs-f')}</span>`;
 // Month grid screen. off = months back from this month (0 = this month).
 function streakCal(off){
   off=Math.max(0,Math.min(off||0,4));
@@ -80,17 +82,19 @@ function streakCal(off){
     if(!d){cells+='<div class="stc-d stc-pad"></div>';continue}
     const k=y+'-'+(m+1)+'-'+d,n=+s.days[k]||0;
     cells+=`<div class="stc-d${n?' on':''}${k===tk?' now':''}${rest.has(k)?' rest':''}" aria-label="${STRK.MONTHS[m]} ${d}${n?', played':''}">`+
-      `<span class="stc-n">${d}</span><span class="stc-m">${n?'⭐':rest.has(k)?'🌙':''}</span></div>`;
+      `<span class="stc-n">${d}</span><span class="stc-m">${n?STC_STAR:rest.has(k)?ico('moon',18):''}</span></div>`;
   }
   const msg=inf.count?`${inf.count} day${inf.count>1?'s':''} in a row!`:'Finish a round to light your flame!';
-  view(`<div class="top"><button class="btn sm" id="back" aria-label="Back">◀</button><div class="title">🔥 My Streak</div><div class="sp"></div></div>
+  // P4-18: drawn flame, stars, moon and prize chips (were emoji)
+  const prizes=STRK.MILESTONES.map(([d])=>`<span class="stc-pz${inf.count>=d?' got':''}">${ico(inf.count>=d?'check':'medal',18)}<b>${d}</b></span>`).join('');
+  view(`<div class="top tbar gx-mtop s-play">${UI.ibtn('back','Back',{size:'sm',id:'back'})}<div class="ttl gx-ttl"><span class="gx-tb">${ico('flame',24)}</span><span>My Streak</span></div></div>
    <div class="scroll"><div class="stc-card">
-    <div class="stc-big">🔥 ${inf.count}</div><div class="stc-sub">${msg}</div>
-    <div class="stc-sub small">Best: ${s.best} day${s.best==1?'':'s'}. A rest day 🌙 will not break your streak.</div>
-    <div class="stc-nav"><button class="btn sm" id="stcp" aria-label="Earlier month"${off>=4?' disabled':''}>◀</button>
-     <b>${STRK.MONTHS[m]} ${y}</b><button class="btn sm" id="stcn" aria-label="Later month"${off<=0?' disabled':''}>▶</button></div>
+    <div class="stc-hero${inf.count?'':' off'}"><span class="stc-fd">${ico('flame',64)}</span><span class="stc-big">${inf.count}</span></div><div class="stc-sub">${msg}</div>
+    <div class="stc-sub small">Best: ${s.best} day${s.best==1?'':'s'}. A rest day ${ico('moon','1.2em','ic-brand')} will not break your streak.</div>
+    <div class="stc-nav">${UI.ibtn('chevron-left','Earlier month',{size:'sm',id:'stcp',off:off>=4})}
+     <b>${STRK.MONTHS[m]} ${y}</b>${UI.ibtn('chevron-right','Later month',{size:'sm',id:'stcn',off:off<=0})}</div>
     <div class="stc-grid">${['S','M','T','W','T','F','S'].map(x=>`<div class="stc-h">${x}</div>`).join('')}${cells}</div>
-    <div class="stc-sub small">Next prizes: ${STRK.MILESTONES.map(x=>x[0]).join(', ')} days in a row</div>
+    <div class="stc-sub small stc-pzs"><span>Next prizes, days in a row:</span>${prizes}</div>
    </div></div>`);
   $('#back').onclick=()=>home();
   $('#stcp').onclick=()=>streakCal(off+1);

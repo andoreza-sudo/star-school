@@ -70,7 +70,17 @@
      coinSVG(v, o)                v cents or a list: coins 1 5 10 25 50, bills 100 500 1000 2000; o.face = false hides values
      tally(n)                     tally marks, 0..50, groups of five
      tableInOut(rows, o)          rows [[in, out], ...] ('?' = unknown box); o.head: ['In', 'Out']
-   New visuals: add a function inside this block and to the returned object; use svg(), f() and counters(). */
+   New visuals: add a function inside this block and to the returned object; use svg(), f() and counters().
+
+   Depth (P4-18). The visuals share the light of the object art (DESIGN_SYSTEM 6.5): light from the top left, a shade tone on
+   the lower right, a white highlight on the upper left, a soft ledge under boards. Still no gradients, filters or ids.
+     counters      the circle is the shade tone with a deep rim; vol() adds a base-tone spot moved toward the light (.vbs,
+                   so a shade crescent shows on the lower right) and a short white gloss (.vsp). Spots are zero-length
+                   round-capped strokes, so every counter is still exactly one <circle>
+     boards        ten frames, dice faces, fraction bars and circles, the clock sit on a .vld ledge (--ledge-soft, 3 units down)
+     gloss         .vgs white band (fraction bars, graph bars), .vgc white arc (fraction circles, clock rim, coins);
+                   decorations never take taps (pointer-events: none), so tap targets and data-v stay as they were
+     blocks        base-ten blocks get a deep-tone ledge (.vbd) under the shade block; coins a shade crescent (.vcs) */
 const VIZ = (() => {
   // one decimal keeps the markup small
   const f = x => Math.round(x * 10) / 10;
@@ -90,17 +100,40 @@ const VIZ = (() => {
   // attributes that make an element a tap target
   const tapAttr = (v, cls) => `class="vt${cls ? ' ' + cls : ''}" data-v="${v}" role="button" aria-label="${v}"`;
 
+  // Volume for round counters of radius r at pts (P4-18, see the header): base-tone spots toward the light, then a gloss.
+  function vol(pts, r) {
+    if (!pts.length) return '';
+    const d = r * 0.1, bw = f(2 * (r + 0.7 - d * 1.42)), g = r * 0.4, a = r * 0.15;
+    let b = '', s = '';
+    for (const [x, y] of pts) {
+      b += `M${f(x - d)} ${f(y - d)}h0`;
+      s += `M${f(x - g - a)} ${f(y - g + a)}l${f(2 * a)} ${f(-2 * a)}`;
+    }
+    return `<path class="vbs" stroke-width="${bw}" d="${b}"/><path class="vsp" stroke-width="${f(r * 0.28)}" d="${s}"/>`;
+  }
+
+  // The lower-right crescent of the circle (cx, cy, R): what the same circle moved k toward the top left does not cover.
+  function cres(cx, cy, R, k) {
+    const u = Math.sqrt(R * R - k * k / 2) / Math.SQRT2, mx = cx - k / 2, my = cy - k / 2;
+    const p1 = `${f(mx + u)} ${f(my - u)}`, p2 = `${f(mx - u)} ${f(my + u)}`;
+    return `M${p1}A${R} ${R} 0 1 1 ${p2}A${R} ${R} 0 0 0 ${p1}z`;
+  }
+
+  // A gloss arc on the upper left of a circle (cx, cy), radius R, from 8 o'clock round to 11 o'clock.
+  const glossArc = (cx, cy, R) => `M${f(cx - R * 0.94)} ${f(cy + R * 0.34)}A${f(R)} ${f(R)} 0 0 1 ${f(cx - R * 0.34)} ${f(cy - R * 0.94)}`;
+
   // Counters at points [[x, y], ...]. The last o.b are the second colour, the last o.fade are faded.
   function counters(pts, r, o = {}) {
     const n = pts.length;
     const b = o.b || 0;
     const x = o.fade || 0;
-    const groups = {};
+    const groups = {}, at = {};
     pts.forEach(([cx, cy], i) => {
       const k = (i >= n - b ? 'v2' : 'v1') + (i >= n - x ? ' vx' : '');
       groups[k] = (groups[k] || '') + `<circle cx="${f(cx)}" cy="${f(cy)}" r="${r}"/>`;
+      (at[k] = at[k] || []).push([cx, cy]);
     });
-    return Object.keys(groups).map(k => `<g class="${k}">${groups[k]}</g>`).join('');
+    return Object.keys(groups).map(k => `<g class="${k}">${groups[k]}${vol(at[k], r)}</g>`).join('');
   }
 
   // Stacked fraction a/b centred on x; y is the fraction bar. cls ' vw' makes it white (on a shaded part).
@@ -125,7 +158,8 @@ const VIZ = (() => {
       let d = '';
       for (let c = 1; c < 5; c++) d += `M${P + c * C} ${y0}v${fh}`;
       if (rows == 2) d += `M${P} ${y0 + C}h${5 * C}`;
-      body += `<rect class="vo" x="${P}" y="${y0}" width="${5 * C}" height="${fh}" rx="8"/><path class="vl" d="${d}"/>`;
+      body += `<rect class="vld" x="${P}" y="${y0 + 3}" width="${5 * C}" height="${fh}" rx="8"/>` +
+        `<rect class="vo" x="${P}" y="${y0}" width="${5 * C}" height="${fh}" rx="8"/><path class="vl" d="${d}"/>`;
     }
     const pts = [];
     for (let i = 0; i < n; i++) {
@@ -183,7 +217,7 @@ const VIZ = (() => {
       x += uc * (p + 1) + (uc - 1) * sg + G;
     }
     const w = Math.max(x - G + P, 2 * P + p + 1);
-    const body = bg ? `<path class="vb" d="${bg}"/><path class="vc" stroke-width="${c}" stroke-dasharray="${c} 1" d="${cells}"/>` : '';
+    const body = bg ? `<path class="vbd" transform="translate(1.5 1.5)" d="${bg}"/><path class="vb" d="${bg}"/><path class="vc" stroke-width="${c}" stroke-dasharray="${c} 1" d="${cells}"/>` : '';
     return svg('b10', w, h + 2 * P, body, 'base ten blocks');
   }
 
@@ -251,7 +285,7 @@ const VIZ = (() => {
       }
       body += `<path class="vhop" d="${arcs}"/><path class="vhoa" d="${tips}"/>${txt}`;
     }
-    if (o.marks) body += `<g class="v1">${o.marks.map(v => `<circle cx="${f(X(v))}" cy="${Y}" r="8"/>`).join('')}</g>`;
+    if (o.marks) body += `<g class="v1">${o.marks.map(v => `<circle cx="${f(X(v))}" cy="${Y}" r="8"/>`).join('')}${vol(o.marks.map(v => [X(v), Y]), 8)}</g>`;
     // tap targets reach halfway to their neighbours (24 units past the ends) and cover the labels
     tap.forEach((v, i) => {
       const l = i ? (X(v) - X(tap[i - 1])) / 2 : 24;
@@ -273,6 +307,7 @@ const VIZ = (() => {
     let body = '';
     for (let b = 0; b < bars; b++) {
       const y = P + b * (h + G);
+      body += `<rect class="vld" x="${P}" y="${y + 3}" width="${f(w)}" height="${h}" rx="6"/>`;
       for (let i = 0; i < d; i++) {
         const idx = b * d + i, on = idx < n;
         const x0 = P + i * pw + (i ? 0 : 1.5), x1 = P + (i + 1) * pw - (i < d - 1 ? 0 : 1.5);
@@ -281,7 +316,8 @@ const VIZ = (() => {
         body += `<rect ${attr} x="${f(x0)}" y="${y + 1.5}" width="${f(x1 - x0)}" height="${h - 3}"/>`;
         if (o.unit && pw >= 30) body += fracText(P + (i + 0.5) * pw, y + h / 2 + 1, 1, d, on ? ' vw' : '');
       }
-      body += `<rect class="ve" x="${P}" y="${y}" width="${f(w)}" height="${h}" rx="6"/>`;
+      body += `<rect class="vgs" x="${P + 4}" y="${y + 5}" width="${f(w - 8)}" height="10" rx="5"/>` +
+        `<rect class="ve" x="${P}" y="${y}" width="${f(w)}" height="${h}" rx="6"/>`;
     }
     return svg('fb', w + 2 * P, bars * h + (bars - 1) * G + 2 * P, body, 'fraction bar', !!o.tap);
   }
@@ -296,6 +332,7 @@ const VIZ = (() => {
     let body = '';
     for (let k = 0; k < count; k++) {
       const cx = P + r + k * (2 * r + G), cy = P + r;
+      body += `<circle class="vld" cx="${cx}" cy="${cy + 3}" r="${r}"/>`;
       for (let i = 0; i < d; i++) {
         const idx = k * d + i, on = idx < n;
         const cls = `vp${on ? ' vs' : ''}`;
@@ -306,7 +343,7 @@ const VIZ = (() => {
           body += `<path ${attr} d="M${cx} ${cy}L${pt(cx, cy, a0)}A${r} ${r} 0 0 1 ${pt(cx, cy, a1)}z"/>`;
         }
       }
-      body += `<circle class="ve" cx="${cx}" cy="${cy}" r="${r}"/>`;
+      body += `<path class="vgc" stroke-width="${f(r * 0.12)}" d="${glossArc(cx, cy, r * 0.8)}"/><circle class="ve" cx="${cx}" cy="${cy}" r="${r}"/>`;
     }
     return svg('fc', count * 2 * r + (count - 1) * G + 2 * P, 2 * r + 2 * P, body, 'fraction circle', !!o.tap);
   }
@@ -327,7 +364,8 @@ const VIZ = (() => {
       const t = a * Math.PI / 180;
       return `<path class="${cls}" d="M${c} ${c}L${f(c + len * Math.sin(t))} ${f(c - len * Math.cos(t))}"/>`;
     };
-    let body = `<circle class="vrim" cx="${c}" cy="${c}" r="54"/>` + ring(48.5, 60, 1.2, 'vt1') + ring(47.8, 12, 2.6, 'vt5');
+    let body = `<circle class="vld" cx="${c}" cy="${c + 2}" r="55"/><circle class="vrim" cx="${c}" cy="${c}" r="54"/>` +
+      `<path class="vfs" d="${cres(c, c, 52, 4)}"/><path class="vgc" stroke-width="1.6" d="${glossArc(c, c, 54)}"/>` + ring(48.5, 60, 1.2, 'vt1') + ring(47.8, 12, 2.6, 'vt5');
     if (def(o.nums, true)) {
       for (let i = 1; i <= 12; i++) {
         const a = i * Math.PI / 6;
@@ -348,7 +386,8 @@ const VIZ = (() => {
     for (let r = 0; r < rows; r++) d += `M${P + s / 2} ${P + s / 2 + r * s}h${f((cols - 1) * s + 0.1)}`;
     const W = cols * s + 2 * P, H = rows * s + 2 * P;
     const body = `<rect class="vbg" width="${W}" height="${H}" rx="10"/>` +
-      `<path class="vdd" stroke-dasharray="0 ${s}" d="${d}"/><path class="vd" stroke-dasharray="0 ${s}" d="${d}"/>`;
+      `<path class="vdd" stroke-dasharray="0 ${s}" d="${d}"/><path class="vd" stroke-dasharray="0 ${s}" transform="translate(-1.2 -1.2)" d="${d}"/>` +
+      `<path class="vsp" stroke-width="5" stroke-dasharray="0 ${s}" transform="translate(-4.5 -4.5)" d="${d}"/>`;
     return svg('arr', W, H, body, 'array of dots');
   }
 
@@ -366,7 +405,7 @@ const VIZ = (() => {
       const faces = n <= 6 ? [n] : [5, n - 5];
       faces.forEach((k, fi) => {
         const x0 = P + fi * (F + G);
-        body += `<rect class="vo" x="${x0}" y="${P}" width="${F}" height="${F}" rx="16"/>`;
+        body += `<rect class="vld" x="${x0}" y="${P + 3}" width="${F}" height="${F}" rx="16"/><rect class="vo" x="${x0}" y="${P}" width="${F}" height="${F}" rx="16"/>`;
         for (const ch of PIPS[k - 1] || '') pts.push([x0 + (ch % 3 + 0.5) * F / 3, P + (Math.floor(ch / 3) + 0.5) * F / 3]);
       });
       W = faces.length * F + (faces.length - 1) * G + 2 * P;
@@ -471,7 +510,8 @@ const VIZ = (() => {
     body += `<path class="vgl" d="${grid}"/><path class="va" d="M${L} ${T - 4}V${base}H${w - 2}"/>${ylab}`;
     data.forEach(([name, v, set], i) => {
       const x = L + i * pitch + (pitch - bw) / 2, h = v / sc * rh;
-      const bar = h > 0 ? `<rect class="${set == 2 ? 'v2' : 'v1'} vbar" x="${f(x)}" y="${f(base - h)}" width="${bw}" height="${f(h)}" rx="3"/>` : '';
+      const bar = h > 0 ? `<rect class="${set == 2 ? 'v2' : 'v1'} vbar" x="${f(x)}" y="${f(base - h)}" width="${bw}" height="${f(h)}" rx="3"/>` +
+        (h > 12 ? `<rect class="vgs" x="${f(x + 4)}" y="${f(base - h + 4)}" width="${f(bw * 0.2)}" height="${f(h - 8)}" rx="2"/>` : '') : '';
       const val = o.vals && h > 0 ? `<text class="vcn" x="${f(x + bw / 2)}" y="${f(base - h - 5)}">${clean(v)}</text>` : '';
       const lab = `<text class="vcn" x="${f(x + bw / 2)}" y="${base + 18}">${ex(String(name).slice(0, 8))}</text>`;
       body += o.tap ? `<g ${tapAttr(i)}><rect class="vh" x="${L + i * pitch}" y="0" width="${pitch}" height="${base + 28}"/>${bar}${lab}</g>` : bar + val + lab;
@@ -664,7 +704,7 @@ const VIZ = (() => {
       `<path class="vr" d="M${X(mx) + 16} ${oy}l-7-5v10zM${ox} ${Y(mx) - 16}l-5 7h10z"/>${lab}`;
     const pts = o.points || [];
     if (o.join && pts.length > 1) body += `<path class="vjn" d="M${pts.map(q => X(q[0]) + ' ' + Y(q[1])).join('L')}${o.close ? 'z' : ''}"/>`;
-    if (pts.length) body += `<g class="v1">${pts.map(q => `<circle cx="${X(q[0])}" cy="${Y(q[1])}" r="7"/>`).join('')}</g>` +
+    if (pts.length) body += `<g class="v1">${pts.map(q => `<circle cx="${X(q[0])}" cy="${Y(q[1])}" r="7"/>`).join('')}${vol(pts.map(q => [X(q[0]), Y(q[1])]), 7)}</g>` +
       pts.filter(q => q[2]).map(q => `<text class="vts" x="${X(q[0]) + 10}" y="${Y(q[1]) - 9}">${ex(q[2])}</text>`).join('');
     tapPts.forEach(q => {
       body += `<g ${tapAttr(q[0] + ',' + q[1])}><rect class="vh" x="${X(q[0]) - 24}" y="${Y(q[1]) - 24}" width="48" height="48"/>` +
@@ -714,9 +754,10 @@ const VIZ = (() => {
       if (x + d > 300 && row) { mx = Math.max(mx, x); x = 4; y += 64; }
       const cx = x + d / 2, cy = y + 32, r = COIN[c];
       row += r
-        ? `<circle class="${c == 1 ? 'vcu' : 'vsv'}" cx="${f(cx)}" cy="${cy}" r="${r}"/><circle class="vci" cx="${f(cx)}" cy="${cy}" r="${f(r - 4)}"/>` +
+        ? `<circle class="${c == 1 ? 'vcu' : 'vsv'}" cx="${f(cx)}" cy="${cy}" r="${r}"/><path class="vcs${c == 1 ? ' vcp' : ''}" d="${cres(cx, cy, r - 1.5, f(r * 0.16))}"/>` +
+          `<path class="vgc" stroke-width="2.6" d="${glossArc(cx, cy, r - 3.5)}"/><circle class="vci${c == 1 ? ' vcp' : ''}" cx="${f(cx)}" cy="${cy}" r="${f(r - 4)}"/>` +
           (face ? `<text class="vcc${c == 1 ? ' vcp' : ''}" x="${f(cx)}" y="${cy + 5}">${c}¢</text>` : '')
-        : `<rect class="vbl" x="${f(x)}" y="${cy - 22}" width="90" height="44" rx="5"/><rect class="vbi" x="${f(x + 5)}" y="${cy - 17}" width="80" height="34" rx="3"/>` +
+        : `<rect class="vld" x="${f(x)}" y="${cy - 19}" width="90" height="44" rx="5"/><rect class="vbl" x="${f(x)}" y="${cy - 22}" width="90" height="44" rx="5"/><rect class="vbi" x="${f(x + 5)}" y="${cy - 17}" width="80" height="34" rx="3"/>` +
           (face ? `<text class="vcb" x="${f(cx)}" y="${cy + 7}">$${c / 100}</text>` : '');
       x += d + 8;
     }

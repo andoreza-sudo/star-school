@@ -1852,6 +1852,89 @@ async function main() {
       await va.ctx.close();
     }
 
+    // P4-18 graphics pass at 380x780 and 600x960 (midway): the screens it redrew (map with world badges, stop icons and a drawn
+    //    boss; Fact Sprint menu, modes, play and end card; Speed Race menu, play and end card; streak calendar; placement intro,
+    //    question and result; Pet Care; Game Room; setup; the balloon bonus; the Spanish learn cards; the report card) have every
+    //    button at least 48 px, nothing outside the screen, no sideways scroll, no word broken over two lines and no emoji in
+    //    their chrome (pets, balloons, snack and word pictures are content and not counted).
+    {
+      const look = () => {
+        const vw = document.documentElement.clientWidth, out = [];
+        const SKIP = '.petbig, .pet-svg, .gx-pp, .bal, .gx-sp, .stage, .lp, .mappet, .sdeco, .rw-burst, .burst';
+        for (const e of document.querySelectorAll('button, [role="button"]')) {
+          const r = e.getBoundingClientRect();
+          if (!r.width || r.bottom < 0 || r.top > innerHeight || e.closest('svg')) continue;
+          if (Math.min(r.width, r.height) < 47.5) out.push('small ' + (e.id || e.className) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
+          if (!e.closest('.wstrip') && (r.left < -1 || r.right > vw + 1)) out.push('outside ' + (e.id || e.className) + ' ' + Math.round(r.left) + '..' + Math.round(r.right));
+        }
+        if (document.documentElement.scrollWidth > vw) out.push('sideways scroll ' + document.documentElement.scrollWidth);
+        const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        for (let n; (n = w.nextNode());) {
+          const el = n.parentElement;
+          if (!el || el.closest(SKIP) || el.closest('script,style,#ico-sprite') || !el.getClientRects().length) continue;
+          const m = n.textContent.match(/\p{Extended_Pictographic}|[◀▶✕]/u);
+          if (m) out.push('emoji chrome ' + m[0] + ' in ' + (el.id || el.className));
+          for (const x of n.textContent.matchAll(/[A-Za-z]{4,}/g)) {
+            const rg = document.createRange(); rg.setStart(n, x.index); rg.setEnd(n, x.index + x[0].length);
+            const lines = new Set([...rg.getClientRects()].filter(b => b.width > 1).map(b => Math.round(b.top)));
+            if (lines.size > 1) out.push('broken word ' + x[0]);
+          }
+        }
+        return out;
+      };
+      const screens = [
+        ['map', () => pathMap('math')],
+        ['map boss', () => { pathMap('math'); document.querySelector('.node.boss').scrollIntoView({ block: 'center' }); }],
+        ['map read', () => pathMap('read')],
+        ['sprint menu', () => fluMenu()],
+        ['sprint modes', () => fluModes('add20')],
+        ['sprint play', () => fluPlay('add10', 't60'), 800, () => stopFlu()],
+        ['sprint end', () => fluEnd({ set: 'add10', mode: 't60', key: 'add10', timed: true, sec: 60, right: 12, rec: true, earned: 120 }), 0, () => document.querySelector('.ovl').remove()],
+        ['race menu', () => raceMenu()],
+        ['race play', () => race('math'), 800, () => stopRace()],
+        ['streak', () => streakCal(0)],
+        ['placement intro', () => placeIntro('math', 'home')],
+        ['placement question', () => placeStart('math', 'home', 4242), 400, () => { PL = null; }],
+        ['pet care', () => care()],
+        ['game room', () => gameRoom()],
+        ['setup', () => setup()],
+        ['learn', () => learn('es', 0), 0, () => speechSynthesis && speechSynthesis.cancel && speechSynthesis.cancel()],
+        ['balloons', () => balloons('math', { path: 'math', node: 0 }), 800, () => stopBalloons()],
+        ['report', () => report()],
+      ];
+      const bad18 = [];
+      for (const [w, h] of [[380, 780], [600, 960]]) {
+        const ga = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const gp = ga.page;
+        for (const [name, fn, wait, after] of screens) {
+          await gp.evaluate('(' + fn.toString() + ')()');
+          await vwait(gp, wait || 300);
+          await gp.waitForTimeout(450); // screen-in motion is real time (CSS)
+          const out = await gp.evaluate('(' + look.toString() + ')()');
+          for (const o of out) bad18.push(w + 'x' + h + ' ' + name + ': ' + o);
+          if (after) await gp.evaluate('(' + after.toString() + ')()');
+        }
+        // drawn chrome is really there: stop icons and a drawn boss, world badges, the sprint pad without a check key, drawn hearts
+        const got = await gp.evaluate(() => {
+          pathMap('math');
+          const r = { badges: document.querySelectorAll('.wchip .wbadge').length, chips: document.querySelectorAll('.wchip').length,
+            icons: document.querySelectorAll('.node:not(.boss) svg.ic').length, nodes: document.querySelectorAll('.node:not(.boss)').length,
+            boss: !!document.querySelector('.node.boss .rw-boss') };
+          fluPlay('add10', 'n20');
+          return r;
+        });
+        await vwait(gp, 800);
+        got.keys = await gp.evaluate(() => { const k = [...document.querySelectorAll('.qpad .key')].map(k => k.dataset.k).join(''); stopFlu(); return k; });
+        if (got.badges !== got.chips || got.icons !== got.nodes || !got.boss || got.keys !== '123456789del0') bad18.push(w + 'x' + h + ' drawn chrome: ' + JSON.stringify(got));
+        await vwait(gp, 1500); // the screens' own timers (sprint ready beat, race, balloons) fire into stopped games
+        network.push(...ga.network);
+        for (const e of ga.errors) fail(e);
+        await ga.ctx.close();
+      }
+      if (bad18.length) fail('P4-18 graphics pass:\n  ' + bad18.join('\n  '));
+      else step('P4-18: ' + screens.length + ' redrawn screens at 380x780 and 600x960: targets 48 px, nothing outside, no sideways scroll, no broken words, no emoji chrome; map badges, stop icons, drawn boss, sprint pad');
+    }
+
     for (const e of errors) fail(e);
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');
