@@ -402,6 +402,10 @@ const SCREENS = {
   // P2-30 Spanish framework: level 3 (spell niño, accent row) and the no-Spanish-voice listen question (word shown big, note, no speaker)
   'es-spell': { run: async p => { const s = await p.evaluate(`(${ES_FX.install})(['es-MX'])`); await p.evaluate(s => { G = newG({ sk: 'es_tst', lv: 3, n: 1, pool: [genQ('es_tst', 3, s)] }); next(); }, s); } },
   'es-novoice': { run: async p => { await p.evaluate(`(${ES_FX.install})(['en-US'])`); await p.evaluate(() => { G = newG({ sk: 'es_animal', lv: 1, n: 1, pool: [genQ('es_animal', 1, 7)] }); next(); }); } },
+  // P2-34 Las Frases: the world map and one seeded question per skill and level (the sentence ones after a first tile is placed)
+  'es-frases-map': { run: async p => { await p.evaluate(() => { S.unlockAll = true; pathMap('es', NODES.es.findIndex(n => n.wid === 'e_frases')); }); } },
+  ...Object.fromEntries([['phrase', 1, 3], ['phrase', 2, 4], ['art', 1, 5], ['art', 2, 6], ['art', 2, 9], ['ser', 1, 4], ['ser', 2, 5], ['ser', 3, 6], ['gusta', 1, 3], ['gusta', 2, 4], ['sent', 1, 5], ['sent', 2, 6]].map(([u, lv, sd]) =>
+    ['es-frases-' + u + lv + (u === 'art' && sd === 9 ? 'b' : ''), { run: async p => { await p.evaluate(([u, lv, sd]) => { G = newG({ sk: 'es_' + u, lv, n: 1, pool: [genQ('es_' + u, lv, sd)] }); next(); }, [u, lv, sd]); } }])),
   // P2-33 La Ciudad: the map opened on the world, and one seeded question per unit and level (cap:1 shows the English under the picture)
   'es-ciudad-map': { run: async p => { await p.evaluate(() => { S.unlockAll = true; pathMap('es', NODES.es.findIndex(n => n.wid === 'e_ciudad')); }); } },
   ...Object.fromEntries([['place', 1], ['place', 2], ['trans', 1], ['verb', 1], ['verb', 2], ['adj', 1], ['adj', 2]].map(([u, lv]) =>

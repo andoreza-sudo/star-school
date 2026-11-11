@@ -354,7 +354,7 @@ function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],ws=PATHS[p].
     open(p,i)});
   $$('.tobtn').forEach(b=>b.onclick=()=>testOut(p,+b.dataset.w));
   $$('.wmore').forEach(b=>b.onclick=()=>mapGo(p,+b.dataset.w))}
-function open(p,i){const n=NODES[p][i];if(n.sk=='boss')bossIntro(p,i);else if(n.sk.startsWith('es_')&&n.sk!='es_mix'&&n.lv==1)learn(p,i);else start(p,i)}
+function open(p,i){const n=NODES[p][i];if(n.sk=='boss')bossIntro(p,i);else if(n.sk.startsWith('es_')&&SPN[n.sk.slice(3)]&&n.lv==1)learn(p,i);else start(p,i)}
 
 function learn(p,i){const n=NODES[p][i],items=SPN[n.sk.slice(3)];
   view(`<div class="top tbar gx-mtop gx-learn s-es">${UI.ibtn('back','Back',{size:'sm',id:'back'})}<div class="ttl gx-ttl"><span class="gx-tb">${ico('path-es',24)}</span><span>Let's learn!</span></div>${UI.btn('¡Vamos!',{kind:'subject',p:'es',icon:'play',id:'go'})}</div>

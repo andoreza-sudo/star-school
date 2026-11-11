@@ -6203,6 +6203,42 @@ async function main() {
       }
     }
 
+    // P2-34 Las Frases at 380x780: open the world from the Spanish map by id, play an articles round (es_art 1, choices) and a sentence round
+    //    (es_sent 1, word tiles) with real taps; stars saved under the stop id, choices and tiles 48 px or more, nothing wider than the screen.
+    {
+      const fx = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
+      const fp = fx.page;
+      await fp.evaluate(() => { S.unlockAll = true; save(); });
+      const lay = sel => ({ w: document.documentElement.scrollWidth, n: document.querySelectorAll(sel).length,
+        min: Math.min(...[...document.querySelectorAll(sel)].map(b => Math.min(b.getBoundingClientRect().height, b.getBoundingClientRect().width))) });
+      for (const [id, sel] of [['es_art1', '.ch'], ['es_sent1', '.ot']]) {
+        await fp.evaluate(() => { if (G) G.dead = true; home(); });
+        await fp.click('.game[data-p="es"]');
+        await fp.waitForSelector('.wchip.on');
+        const at = await fp.evaluate(id => ({ i: NODES.es.findIndex(n => nid(n) === id), w: NODES.es.find(n => nid(n) === id).wi, wid: NODES.es.find(n => nid(n) === id).wid }), id);
+        if (at.wid !== 'e_frases') fail('P2-34 ' + id + ' is not in Las Frases: ' + JSON.stringify(at));
+        await fp.click(`.wchip[data-w="${at.w}"]`);
+        await fp.waitForSelector(`.wchip.on[data-w="${at.w}"]`);
+        await fp.click(`.node[data-n="${at.i}"]`);
+        await fp.waitForSelector('.ch, .ot'); // a grammar stop opens straight on the question (no word-card learn screen)
+        const l = await fp.evaluate(lay, sel);
+        const g = await fp.evaluate(() => ({ sk: G.sk, lv: G.lv, kind: G.q.kind }));
+        if (l.w > 380 || l.n < 2 || l.min < 48 || g.sk !== id.slice(0, -1) || String(g.lv) !== id.slice(-1)) fail('P2-34 ' + id + ' layout: ' + JSON.stringify({ l, g }));
+        if (id === 'es_sent1') {
+          const so = await fp.evaluate(() => Math.min(...[...document.querySelectorAll('.os')].map(b => Math.min(b.getBoundingClientRect().height, b.getBoundingClientRect().width))));
+          if (g.kind !== 'order' || so < 48) fail('P2-34 sentence sockets: ' + JSON.stringify({ g, so }));
+        }
+        await fp.screenshot({ path: require('path').join(__dirname, 'out', 'es-frases-' + id + '-play-380x780.png') }).catch(() => {});
+        await playRound(fp, 'P2-34 ' + id);
+        const st = await fp.evaluate(id => S.maps.es[id] || 0, id);
+        if (st < 1) fail('P2-34 ' + id + ' did not save stars');
+      }
+      step('P2-34: Las Frases opened by id; articles (level 1) and sentence (level 1) rounds played with real taps, stars saved, 48 px targets, no sideways scroll');
+      network.push(...fx.network);
+      for (const e of fx.errors) fail(e);
+      await fx.ctx.close();
+    }
+
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');
   } catch (e) {

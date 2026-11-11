@@ -40,6 +40,8 @@
 .clkpic{display:inline-flex;vertical-align:middle}.clkpic .viz{width:1.15em;height:1.15em}.emo .clkpic .viz{width:1.6em;height:1.6em}
 .pcap{display:inline-flex;flex-direction:column;align-items:center;line-height:1.05}.pcap small{font-size:.3em;font-weight:700;color:var(--muted)}
 .choices.pics .ch .pcap small{font-size:.32em}
+/* P2-34 me gusta card: the face over the picture */
+.gcd{display:inline-flex;flex-direction:column;align-items:center;line-height:1.05;gap:2px}.gcd i{font-style:normal;font-size:.5em}.gcd b{font-weight:400}
 .lgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px}
 .lcard{display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 6px}.lcard .lp{font-size:54px;line-height:1.1}.lcard b{font-size:22px;color:#1d4ed8}.lcard small{font-size:15px;color:var(--muted)}
 .lcard.heard{background:#dcfce7}
