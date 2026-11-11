@@ -18,8 +18,10 @@ echo "== test.js (named checks; includes the size budget, which lives in tools/t
 node tools/test.js
 echo "== smoke.js"
 node tools/smoke.js
-echo "== sizes (bytes)"
-for f in index.html sw.js manifest.json icon-192.png icon-512.png; do
+echo "== sizes (bytes; budgets in tools/test.js: index.html warn 1.2 MB / fail 1.5 MB, data warn 1 MB / fail 2 MB, total warn 2 MB / fail 3 MB)"
+data=$(ls data.v*.js)
+for f in index.html "$data" sw.js manifest.json icon-192.png icon-512.png; do
   [ -f "$f" ] && printf '%10d  %s\n' "$(wc -c < "$f")" "$f"
 done
+printf '%10d  %s\n' "$(( $(wc -c < index.html) + $(wc -c < "$data") ))" "total: index.html + $data (A11)"
 echo "== check OK"

@@ -64,7 +64,7 @@ async function launch() {
   });
 }
 
-// Opens a page. opts: { fixture: 'midway' | 'fresh' | 'maxed' | null, width, height }
+// Opens a page. opts: { fixture: 'midway' | 'fresh' | 'maxed' | null, width, height, url (default: the built index.html) }
 // Returns { ctx, page, errors, network }. errors: console errors + uncaught exceptions.
 // network: any http(s) request the app tried to make (must stay empty, the app is offline).
 async function openApp(browser, opts = {}) {
@@ -93,7 +93,7 @@ async function openApp(browser, opts = {}) {
   const page = await ctx.newPage();
   page.on('console', m => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
   page.on('pageerror', e => errors.push('exception: ' + e.message));
-  await page.goto(INDEX_URL);
+  await page.goto(opts.url || INDEX_URL);
   await page.waitForSelector('#app *', { timeout: 10000 });
   await page.waitForTimeout(300);
   return { ctx, page, errors, network };

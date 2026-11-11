@@ -50,8 +50,8 @@ docs/               this plan
 src/shell.html      head, body skeleton; markers where CSS and JS are inserted
 src/css/NN-name.css concatenated in filename order
 src/js/NN-name.js   code, concatenated in filename order into ONE <script> (one global scope, no import/export)
-src/data/d-name.js  data only (word lists, banks, passages, puzzle banks); concatenated after all of src/js
-src/boot.js         the two start-up lines (loadClips(); home(true);); always last
+src/data/d-name.js  data only (word lists, banks, passages, puzzle banks); concatenated, in filename order, into the second built file data.<VER>.js (A11)
+src/boot.js         the start-up lines: if dataReady() then loadClips(); home(true); else dataMissing(); always last
 tools/              build.py, test.js, shots.js, smoke.js, check.sh, lib/, fixtures/, puzzles/ (dev-time generators)
 ```
 
@@ -106,18 +106,45 @@ Files added by later chunks (names are fixed by the roadmap so everyone agrees):
 | `31-gen-math-early.js`, `33-gen-math-mid.js`, `35-gen-math-upper.js` | P2-01+ | New math generators |
 | `37-bank.js` | P1-09 | Content bank engine |
 | `39b-steps.js` | P2-08 | Step-hint builders (`stepsAdd`, `stepsSub`, `stepsMul`, `stepsDiv`, `stepsEquivFrac`, `stepsCommonDen`, `stepsStory`) and prompt layouts `ST.vert`, `ST.ldiv`; the renderer is in `39-hints.js`, CSS in `src/css/39-steps.css` |
-| `src/data/d-*.js` (`d-spell`, `d-gram`, `d-vocab`, `d-comp`, `d-es`, `d-disc`, `d-trace`, `d-puz-*`) | P2, P3 | Data only. Loaded after all code, so code may read them only inside functions (at run time), never while the script is first loading |
+| `src/data/d-*.js` (`d-spell`, `d-gram`, `d-vocab`, `d-comp`, `d-es`, `d-disc`, `d-trace`, `d-puz-*`) | P2, P3 | Data only. Built into `data.<VER>.js` (A11, section 3.3), which loads after all code, so code may read them only inside functions (at run time), never while the script is first loading |
 | `45-placement.js`, `47-trace.js`, `49-kinds.js`, `51-mastery.js`, `57-fluency.js`, `59-review.js` | P1, P2, P5 | Engines |
 | `74-teasers.js`, `75-bt-*.js` | P3 | Brain Teasers |
 
 Build order is: `src/js/*.js` sorted by name, then `src/data/*.js` sorted by name, then `src/boot.js`.
+
+### 3.3 Built output: two files (A11, since v97)
+
+```
+index.html      shell + CSS + fonts + <script>src/js</script> + <script src="data.<VER>.js"></script> + <script>src/boot.js</script>
+data.<VER>.js   src/data/*.js in filename order, then the last line  var DATA_VER='<VER>';
+sw.js           cache 'starschool-<VER>', precaches ./, index.html, data.<VER>.js, manifest.json, icons
+```
+
+- The three scripts are plain classic scripts: they run in this order, synchronously, and share one global scope (a `const` in a data
+  file is visible to code the same way as before). This works over `file://` too, so open `index.html` directly as always.
+- The data file name carries `VER`, so an index.html can only ever ask for the data file of its own release, and no HTTP cache can
+  hand it an older file under the same name. `tools/build.py` deletes every other `data.v*.js` at the repo root.
+- `src/boot.js` starts the app only if `dataReady()` (src/js/90-app.js): `DATA_VER` exists, so the whole data file ran, and it equals
+  the page's `VER`. Otherwise `dataMissing()` shows "Star School needs to finish updating. Connect to the internet, then tap Try again."
+  and logs one line in the App log. Nothing else in the save changes.
+- Sizes (budgets in `tools/test.js`): index.html warn 1.2 MB / fail 1.5 MB (ROADMAP R1), data file warn 1 MB / fail 2 MB, both together
+  warn 2 MB / fail 3 MB. `bash tools/check.sh` prints all three.
+
+Adding a data file:
+1. Create `src/data/d-name.js` (data only; it may call code helpers such as `compAdd`, `GR` or `BANK.x = ...` at load time, because all
+   code has already loaded). Name globals with a feature prefix. A bank shared by several files uses `var X = X || {};` (like `PUZ`).
+2. Nothing in `src/js` may read it while loading: only inside functions. The check `data file split A11` loads the built code without the
+   data file and fails if that throws.
+3. Build. It goes into `data.<VER>.js` automatically; no change to `tools/build.py`, `sw.js` or the shell. `tools/test.js` sees it too
+   (tests evaluate `src/js` + `src/data`).
+4. If a test reads a built file to see that your bank shipped, read `data.<VER>.js` (`DATA_FILE` in test.js), not index.html.
 
 ## 4. Build, test, look
 
 Run from anywhere:
 
 ```bash
-python3 tools/build.py           # writes index.html, sw.js, manifest.json, icons to the repo root
+python3 tools/build.py           # writes index.html, data.<VER>.js, sw.js, manifest.json, icons to the repo root
 node tools/test.js               # generator fuzz + data checks; must exit 0
 node tools/smoke.js              # bot plays through the app in headless Chrome; must exit 0   (after P0-01)
 node tools/shots.js home map question   # screenshots to tools/out/ at 600x960, 1024x600, 380x780   (after P0-01)
@@ -134,10 +161,11 @@ change the generator in `tools/puzzles/`, rerun `build-banks.js`, then `node too
 Smoke runs on a virtual clock (fixed day 2026-06-15 10:00, timers and `Date` run at `SMOKE_SPEED` times real time, default 8, see `tools/lib/browser.js`). Run `SMOKE_SPEED=1 node tools/smoke.js` for the real clock.
 
 Rules:
-- Never edit `index.html`, `sw.js` or `manifest.json` by hand. They are build output. Edit `src/` or `tools/build.py`, then build.
-- Never open `index.html` in an editor or print it: it contains two base64 fonts.
-- Built files are committed, because GitHub Pages serves the repo root of `main`.
-- To try the app in a browser: open `index.html` directly (`file://`). The service worker only registers over http(s).
+- Never edit `index.html`, `data.<VER>.js`, `sw.js` or `manifest.json` by hand. They are build output. Edit `src/` or `tools/build.py`, then build.
+- Never open `index.html` in an editor or print it: it contains two base64 fonts. Do not print `data.<VER>.js` either (about 220 KB).
+- Built files are committed, because GitHub Pages serves the repo root of `main`. That includes `data.<VER>.js`, and the deletion of the
+  previous one (`git add -A` stages both).
+- To try the app in a browser: open `index.html` directly (`file://`); `data.<VER>.js` must sit next to it. The service worker only registers over http(s).
 
 ## 5. Release steps (every chunk)
 
@@ -159,6 +187,7 @@ How updates reach tablets: the service worker fetches the page network-first, so
 - Solo, one chunk at a time: working directly on `main` is fine.
 - Two workers, or a chunk that may not finish in one session: use a branch named `P#-##-short-name`.
   Before merging: rebase on `main`, bump `VER` to one more than `main`'s, rebuild, retest, then merge. Built files will conflict on rebase; resolve by rebuilding, never by hand.
+  The data file is named after `VER`, so a renumbered build writes a new `data.vNN.js` and deletes the old one: stage both (`git add -A`).
 - Unfinished work: push the branch as `wip/P#-##` and write a handoff note (section 9). Do not leave `main` half done.
 
 ## 7. Coding conventions for this codebase
