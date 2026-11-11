@@ -714,7 +714,8 @@ async function main() {
       const rm = await rp.evaluate(() => G.pool.filter(q => q.rvk).length + (G.q.rvk ? 1 : 0));
       await playRound(rp, 'P5-02 tricky mix');
       const r2 = await rp.evaluate(() => ({ fixed: G.fixed || 0, due: dueItems().length, box1: REV.get().filter(x => x.box == 1).length }));
-      if (rm !== 7 || r2.fixed !== 7 || r2.due !== r1.due - 7 || r2.box1 !== r1.box1 + 7) fail('tricky mix: ' + JSON.stringify({ rm, ...r2 }));
+      // a mixed-in normal question that equals a due item also fixes it (as in the stop round above), so count what was fixed
+      if (rm !== 7 || r2.fixed < 7 || r2.due !== r1.due - r2.fixed || r2.box1 !== r1.box1 + r2.fixed) fail('tricky mix: ' + JSON.stringify({ rm, ...r2, due0: r1.due, box10: r1.box1 }));
       else step(`Tricky Mix: ${rm} rebuilt review items, ${r2.fixed} fixed, ${r2.due} still due today`);
       await rp.evaluate(() => { G.dead = true; home(); });
       network.push(...ra.network);
