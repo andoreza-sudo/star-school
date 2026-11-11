@@ -1,0 +1,5 @@
+/* Stacked fractions in prompts and choices (P2-06): numerator over a bar over denominator. Tokens only. */
+.fr{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 .12em;line-height:1.1}
+.fr .fn{border-bottom:.07em solid var(--ink);padding:0 .18em .04em}
+.fr .fd{padding:.04em .18em 0}
+.choices.wide .ch .viz{margin:0 auto}

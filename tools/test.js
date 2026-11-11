@@ -54,7 +54,7 @@ for(const id in SK){for(let lv=1;lv<=SK[id].max;lv++)for(let i=0;i<3000;i++){
  else if(q.label.length>=60)GEN.label.push(w+': label too long ('+q.label.length+')');
  if(typeof q.say!=='string'||!q.say.trim())GEN.say.push(w+': no say ('+q.kind+')');
  for(const [f,v] of [['html',q.html],['label',q.label],['say',q.say]])if(typeof v==='string'&&BADHTML.test(v))GEN.html.push(w+': '+f+' has undefined/NaN');
- if(q.kind=='num'){const a=+q.ans;if(!(a>=0)||String(a)!==q.ans)GEN.gen.push(w+': bad num ans '+q.ans)}
+ if(q.kind=='num'){if(q.pad&&q.pad!='int'||q.sep){for(const x of kindProblems(q))GEN.gen.push(w+': '+x)}else{const a=+q.ans;if(!(a>=0)||String(a)!==q.ans)GEN.gen.push(w+': bad num ans '+q.ans)}}
  else if(q.kind=='choice'){
   const vs=q.choices.map(c=>c.v);
   if(!vs.includes(q.ans))GEN.gen.push(w+': ans not in choices');
@@ -92,7 +92,7 @@ run('skills: every level is reachable from some node',()=>{
   const used=new Set(),p=[];
   for(const path in GEN.nodes)for(const n of GEN.nodes[path])used.add(n.sk+':'+n.lv);
   // Levels reserved for P2-04 (Treasure Bay: arr 1, story 4). They have no stop yet; until P2-04 ships they ask like the next level up.
-  const RESERVED={arr:[1],story:[4]};
+  const RESERVED={arr:[1],story:[4],frac:[1,6,7,8]}; // P2-06: frac 1 comes with P2-03; frac 6-8 get their stops in P2-10
   for(const id in GEN.skills)for(let lv=1;lv<=GEN.skills[id].max;lv++)if(!used.has(id+':'+lv)&&!(RESERVED[id]||[]).includes(lv))p.push(id+' level '+lv+' has no map node');
   return{problems:p};
 });
@@ -1115,7 +1115,9 @@ run('placement: state machine rules, scripted answers, simulated students, never
     {const{st}=run1(FAKE,3,[0,0,0,0,0]);want('all wrong from world 6: lowest asked',[st.done,st.at,st.skip],[true,2,[]])}
     {const{st}=run1(PATHS.math.worlds,0,[0]);want('not yet at the first world stops',[st.done,st.at,st.skip],[true,0,[]])}
     {const nw=PATHS.math.worlds.length,{st}=run1(PATHS.math.worlds,1,Array(nw-1).fill(4)); // a K child starts on world 1 (Tiny Town below is skipped too)
-     want('all right on math ('+nw+' worlds)',[st.done,st.at,st.all,st.skip],[true,nw-1,true,Array.from({length:nw},(_,i)=>i)])}
+     // 20 questions (PLACE.MAX testlets) pass at most 5 worlds from the start, so on a long path the quiz ends below the last world (P2-06: 7 math worlds)
+     const all=nw-1<=PLACE.MAX,at=all?nw-1:1+PLACE.MAX;
+     want('all right on math ('+nw+' worlds)',[st.done,st.at,st.all,st.skip],[true,at,all,Array.from({length:all?nw:at},(_,i)=>i)])}
     {const{st}=run1(PATHS.read.worlds,2,[4,1]);want('reading grade 2: pass Candy, not yet Reef',[st.done,st.at,st.skip],[true,3,[0,1,2]])}
     // step is pure: the input state is not changed
     {const a=PLACE.begin(FAKE,3,1),j=JSON.stringify(a);PLACE.step(a,4);if(JSON.stringify(a)!==j)bad('step changed its input')}
@@ -1191,7 +1193,7 @@ run('placement: state machine rules, scripted answers, simulated students, never
         if(startWorld(p)!==st.at)bad(name+' '+pn+': start world '+startWorld(p)+', placed '+st.at);
         if(!unlocked(p,curNode(p))&&!passed(p,curNode(p)))bad(name+' '+pn+': map opens on a locked stop');
         if(name=='fresh'&&curWorld(p)!==st.at)bad('fresh '+pn+': map opens on world '+curWorld(p)+', placed '+st.at);
-        if(pn=='allRight'&&!st.all)bad(name+': all right should pass every world');
+        if(pn=='allRight'&&!st.all&&ws.length-PLACE.first(ws,gradeOf())<=PLACE.MAX)bad(name+': all right should pass every world');
         if(pn=='allWrong'&&(st.skip.length||st.at!==0))bad(name+': all wrong should start at the first world and skip nothing');
         if(pn=='mixed'&&st.at!==1)bad(name+' mixed: placed at '+st.at+', expected 1');
         // a different grade ignores the result (the skips stay); back to the same grade uses it again
@@ -2133,11 +2135,11 @@ run('multiply mountain: stops, fact rules per level, answers, unique labels, arr
   S.name='Ava';S.buddy='Ben';G={built:[]};
   const bad=[],N=3000,mf=[],rv=n=>n.replace(/[×÷−]/g,m=>m);
   // 1. the world: last math world, grade 3, exactly the CURRICULUM M-3a stops in order
-  const mw=PATHS.math.worlds,w=mw[mw.length-1],ids=w.nodes.map(n=>n[0]+n[1]).join(' ');
+  const mw=PATHS.math.worlds,mi=mw.findIndex(x=>x.id=='m_mult'),w=mw[mi]||{},ids=w.nodes.map(n=>n[0]+n[1]).join(' ');
   if(w.id!=='m_mult'||w.g!==3||ids!=='arr2 mfact1 mfact2 dfact1 mfact3 dfact2 mfact4 dfact3 dfact4 mbig1 story5')bad.push('world: '+w.id+' '+w.g+' '+ids);
   // gating: a 3rd grader sees it open, a 2nd grader only after Space Station (grade tag, not a lock on earlier worlds)
-  {S.grade=3;if(!worldOpen('math',mw.length-1))bad.push('grade 3: Multiply Mountain should be open');
-   S.grade=2;S.maps={math:{},read:{},es:{}};if(worldOpen('math',mw.length-1))bad.push('grade 2: should wait for Space Station');}
+  {S.grade=3;if(!worldOpen('math',mi))bad.push('grade 3: Multiply Mountain should be open');
+   S.grade=2;S.maps={math:{},read:{},es:{}};if(worldOpen('math',mi))bad.push('grade 2: should wait for Space Station');}
   // 2. every level: constraints, answers, hints, say, labels
   const lab={},hasKey=(a,b,keys)=>keys.includes(a)||keys.includes(b);
   const L1=MF_KEYS[0],L2=MF_KEYS[1],L3=MF_KEYS[2];
@@ -2257,6 +2259,173 @@ run('online note: share, send and print buttons tell grown-ups to get online, an
   if(!/online/i.test(onlineNote()))bad.push('onlineNote text');
   bad;`);
   return{problems:[...p,...r]};
+});
+
+// ---- P2-06 fractions core: frac 2-8 generators (math checked), Fraction Forest stops, saves ----
+run('fractions P2-06: frac 2-8 maths per level, hints, say, labels, 3,000 samples per level',()=>{
+  const out=eval(js+`
+  S.name='Ava';S.buddy='Ben';G={built:[]};
+  const bad=[],N=3000,gcd=(a,b)=>b?gcd(b,a%b):a;
+  const cnt=(h,re)=>(h.match(re)||[]).length;
+  const parts=h=>cnt(h,/class="vp[ "]/g),shaded=h=>cnt(h,/class="vp vs"/g); // parts and shaded parts of the fraction picture(s)
+  const frs=h=>[...h.matchAll(/<span class="fn">(\\d+|<span[^]*?<\\/span>)<\\/span><span class="fd">(\\d+)<\\/span>/g)].map(m=>[m[1],+m[2]]);
+  const sym=(a,b,c,d)=>a*d<c*b?'<':a*d==c*b?'=':'>';
+  const labs={},share={};
+  const seen=new Set();
+  for(let lv=1;lv<=8;lv++){
+    for(let i=0;i<N;i++){
+      const q=genQ('frac',lv,i*7919+31),w='frac L'+lv;
+      const L=lv<2?2:lv;
+      if(kindProblems(q).length)bad.push(w+': '+kindProblems(q)[0]);
+      if(!q.hint||!(q.hint.s||q.hint.html))bad.push(w+': no hint');
+      else if(hintHTML(q).length<10)bad.push(w+': empty hint');
+      if(!q.say||/undefined|NaN/.test(q.say))bad.push(w+': say');
+      if(q.say&&/\\d\\/\\d/.test(q.say))bad.push(w+': say has a slash fraction '+q.say);
+      if(!q.label||q.label.length>=60||/undefined|NaN/.test(q.label))bad.push(w+': label '+q.label);
+      const key=lv+'|'+q.label;
+      if(labs[key]!==undefined&&labs[key]!==q.ans)bad.push(w+': label '+q.label+' has two answers');
+      labs[key]=q.ans;seen.add(key);
+      const m=q.label.match(/(\\d+)\\/(\\d+)/g)||[];
+      if(L==2){
+        if(q.kind=='num'){
+          const [n,d]=q.ans.split('/').map(Number);
+          if(![2,3,4,6,8].includes(d)||n<1||n>=d||parts(q.html)!==d||shaded(q.html)!==n||!/^frac \\d+\\/\\d+ (bar|circle)$/.test(q.label))bad.push(w+': bad shaded '+q.label);
+          if(q.pad!=='frac'||q.eq)bad.push(w+': pad');
+        }else{
+          const [n,d]=q.ans.split('/').map(Number),vs=q.choices.map(c=>c.v);
+          if(q.choices.length!==3||vs.includes(undefined))bad.push(w+': 3 pictures needed');
+          for(const c of q.choices){
+            const [a,b]=c.v.split('/').map(Number);
+            if(parts(c.l)!==b||shaded(c.l)!==a||a>=b||![2,3,4,6,8].includes(b))bad.push(w+': picture '+c.v+' draws '+shaded(c.l)+'/'+parts(c.l));
+            if(c.v!==q.ans&&a*d===n*b)bad.push(w+': two pictures equal '+q.ans+' '+c.v);
+          }
+          const f=frs(q.html);if(f.length!==1||+f[0][0]!==n||f[0][1]!==d)bad.push(w+': named fraction '+q.label);
+        }
+      }
+      else if(L==3){
+        if(q.kind=='tap'){
+          const [d,n]=[+m[0].split('/')[1],+m[0].split('/')[0]];
+          const vs=[...q.html.matchAll(/data-v="([^"]*)"/g)].map(x=>x[1]);
+          if(d>5||vs.length!==d+1||!vs.includes(q.ans)||Math.abs(+q.ans-n/d)>1e-9||n<1||n>=d)bad.push(w+': tap '+q.label);
+          if(String(+q.ans)!==q.ans)bad.push(w+': tap ans');
+        }else{
+          const [n,d]=q.ans.split('/').map(Number),two=/to 2$/.test(q.label),mx=two?2:1;
+          if(q.eq!=='value'||q.pad!=='frac'||n/d>=mx||n<1||n===d||(!two&&n>=d)||![2,3,4,5,6,8].includes(d)||(two&&d>4))bad.push(w+': read '+q.label);
+          if(cnt(q.html,/class="vk"/g)!==1)bad.push(w+': ticks');
+          if(!q.html.includes('<circle cx="'))bad.push(w+': no mark');
+          // the mark sits where n/d is: tick count d*mx+1 cannot be read from the path, so check the label marks list through numLine itself
+          if(q.html!==VIZ.numLine({max:mx,step:1/d,den:d,labels:Array.from({length:mx+1},(_,k)=>k),marks:[n/d]})+q.html.slice(q.html.indexOf('</svg>')+6))bad.push(w+': line does not match '+q.label);
+        }
+      }
+      else if(L==4){
+        const [a,b]=[m[0].split('/').map(Number),m[1].split('/').map(Number)];
+        const sameD=a[1]===b[1],sameN=a[0]===b[0];
+        if(sameD===sameN||a[0]===b[0]&&a[1]===b[1]||!(a[1]<=8&&b[1]<=8&&a[0]<a[1]&&b[0]<b[1]))bad.push(w+': need same bottom or same top '+q.label);
+        if(q.ans!==sym(a[0],a[1],b[0],b[1])||q.ans==='=')bad.push(w+': symbol '+q.label+' -> '+q.ans);
+        const svs=[...q.html.matchAll(/<svg[^]*?<\\/svg>/g)].map(x=>x[0]);
+        if(svs.length!==2||shaded(svs[0])!==a[0]||parts(svs[0])!==a[1]||shaded(svs[1])!==b[0]||parts(svs[1])!==b[1])bad.push(w+': bars '+q.label);
+        if(q.choices.map(c=>c.v).join('')!=='<=>')bad.push(w+': symbol choices');
+        (share.l4=share.l4||{})[sameD?'d':'n']=((share.l4||{})[sameD?'d':'n']||0)+1;
+      }
+      else if(L==5){
+        const f=frs(q.html);
+        if(q.kind=='num'){
+          const [n,d]=m[0].split('/').map(Number),D=+q.label.match(/\\?\\/(\\d+)/)[1];
+          if(!(d>=2&&d<=6&&D<=12&&D%d===0&&D/d>=2&&D/d<=4)||+q.ans*d!==n*D)bad.push(w+': equiv '+q.label+' -> '+q.ans);
+          if(q.pad&&q.pad!=='int')bad.push(w+': pad');
+          (share.l5=share.l5||{}).num=((share.l5||{}).num||0)+1;
+        }else{
+          const [n,d]=m[0].split('/').map(Number),[a,b]=q.ans.split('/').map(Number);
+          if(a*d!==n*b||b>12||b%d||b/d<2||b/d>4)bad.push(w+': which '+q.label+' -> '+q.ans);
+          if(q.choices.length<3)bad.push(w+': need 3 choices');
+          for(const c of q.choices){const [x,y]=c.v.split('/').map(Number);if(c.v!==q.ans&&x*d===n*y)bad.push(w+': distractor equals '+c.v+' for '+q.label);if(y>12)bad.push(w+': denominator over 12')}
+          (share.l5=share.l5||{}).which=((share.l5||{}).which||0)+1;
+        }
+      }
+      else if(L==6){
+        const a=m[0].split('/').map(Number),b=m[1].split('/').map(Number);
+        if(![a,b].every(x=>x[1]>=2&&x[1]<=12&&x[0]>=1&&x[0]<x[1])||a[1]===b[1]||a[0]===b[0])bad.push(w+': unlike '+q.label);
+        if(q.ans!==sym(a[0],a[1],b[0],b[1]))bad.push(w+': symbol '+q.label+' -> '+q.ans);
+        if(/<svg/.test(q.html))bad.push(w+': picture at level 6');
+        share.l6=share.l6||{};share.l6[q.ans]=(share.l6[q.ans]||0)+1;
+        if(q.ans==='='&&!/Make the bottom/.test(q.hint.s))bad.push(w+': equal needs common bottom hint');
+        if(/Make the bottom/.test(q.hint.s)){const mm=q.hint.s.match(/(\\d+)\\/(\\d+) = (\\d+)\\/(\\d+) and (\\d+)\\/(\\d+) = (\\d+)\\/(\\d+)/);
+          if(!mm||mm[4]!==mm[8]||+mm[3]*+mm[2]!==+mm[1]*+mm[4]||+mm[7]*+mm[6]!==+mm[5]*+mm[8])bad.push(w+': common bottom wrong '+q.hint.s)}
+      }
+      else if(L==7){
+        const [n,d]=m[0].split('/').map(Number),[a,b]=q.ans.split('/').map(Number);
+        if(q.eq)bad.push(w+': eq must be off');
+        if(d>48||gcd(a,b)!==1||a*d!==n*b||gcd(n,d)<2||gcd(n,d)>6||n>=d||n/gcd(n,d)!==a)bad.push(w+': simplest '+q.label+' -> '+q.ans);
+        if(q.pad!=='frac')bad.push(w+': pad');
+      }
+      else if(L==8){
+        if(q.sep==='mix'){
+          const [top,d]=m[0].split('/').map(Number),[w0,n2,d2]=q.ans.match(/^(\\d+) (\\d+)\\/(\\d+)$/).slice(1).map(Number);
+          if(d2!==d||w0*d+n2!==top||n2<1||n2>=d||gcd(n2,d)!==1||d>12)bad.push(w+': mixed '+q.label+' -> '+q.ans);
+          (share.l8=share.l8||{}).mix=((share.l8||{}).mix||0)+1;
+        }else{
+          const mm=q.label.match(/^frac to improper (\\d+) (\\d+)\\/(\\d+)$/);
+          if(!mm||+mm[1]*+mm[3]+ +mm[2]!==+q.ans)bad.push(w+': improper '+q.label+' -> '+q.ans);
+          (share.l8=share.l8||{}).imp=((share.l8||{}).imp||0)+1;
+        }
+      }
+    }
+  }
+  // both variants appear at the levels that mix them; level 4 uses both rules; level 6 has some equal pairs but mostly < and >
+  if(!(share.l4.d>N*.35&&share.l4.n>N*.35))bad.push('level 4 mix '+JSON.stringify(share.l4));
+  if(!(share.l5.num>N*.4&&share.l5.which>N*.3))bad.push('level 5 mix '+JSON.stringify(share.l5));
+  if(!(share.l6['=']>N*.05&&share.l6['=']<N*.3))bad.push('level 6 equal share '+JSON.stringify(share.l6));
+  if(!(share.l8.mix>N*.35&&share.l8.imp>N*.35))bad.push('level 8 mix '+JSON.stringify(share.l8));
+  ({bad,n:seen.size});`);
+  return{problems:uniq(out.bad),note:'8 levels x 3,000, '+out.n+' distinct labels'};
+});
+run('fractions P2-06: Fraction Forest stops, spoken names, reserved levels, no new emoji or hex',()=>{
+  const out=eval(js+`
+  S.name='Ava';S.buddy='Ben';G={built:[]};
+  const bad=[],mw=PATHS.math.worlds,wi=mw.findIndex(x=>x.id=='m_frac'),w=mw[wi]||{nodes:[]};
+  const ids=w.nodes.map(n=>n[0]+n[1]).join(' ');
+  if(w.g!==3||w.n!=='Fraction Forest'||ids!=='frac2 frac3 frac4 frac5')bad.push('world: '+w.id+' '+w.g+' '+ids);
+  // CURRICULUM 2.1 order: Fraction Forest comes straight after Multiply Mountain
+  if(wi<1||mw[wi-1].id!=='m_mult')bad.push('Fraction Forest must follow Multiply Mountain');
+  if(new Set(mw.map(x=>x.id)).size!==mw.length)bad.push('duplicate world ids');
+  if(SK.frac.max!==8||SK.frac.area!=='math')bad.push('frac skill');
+  // levels 6-8 have no stop yet (P2-10), levels 2-5 have exactly one each
+  const used=NODES.math.filter(n=>n.sk=='frac').map(n=>n.lv).join(' ');
+  if(used!=='2 3 4 5')bad.push('frac stops use levels '+used);
+  // "3 fourths", "1 half", "2 halves", "1 third"
+  const ex=[fcSay(3,4),fcSay(1,2),fcSay(2,2),fcSay(1,3),fcSay(5,8),fcSay(7,12)].join('|');
+  if(ex!=='3 fourths|1 half|2 halves|1 third|5 eighths|7 twelfths')bad.push('spoken fractions '+ex);
+  // fractions are written stacked: numerator over denominator in .fr spans, and the prompts of level 2 and 7 use them
+  if(!/class="fr"/.test(genQ('frac',7,5).html)||!/class="fr"/.test(genQ('frac',2,5).html+genQ('frac',2,6).html+genQ('frac',2,7).html))bad.push('stacked fraction span missing');
+  bad;`);
+  const css=fs.readFileSync(path.join(SRC,'css','32-frac.css'),'utf8');
+  if(/#[0-9a-fA-F]{3,8}\b/.test(css))out.push('32-frac.css has a raw hex colour');
+  if(/Math\.random/.test(fs.readFileSync(path.join(SRC,'js','33-gen-math-mid.js'),'utf8')))out.push('33-gen-math-mid.js uses Math.random');
+  return{problems:out};
+});
+run('fractions P2-06: old saves keep every star and no passed math stop re-locks (fixtures)',()=>{
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const r=eval(js+`
+  const store={};
+  localStorage.getItem=k=>k in store?store[k]:null;localStorage.setItem=(k,v)=>{store[k]=String(v)};localStorage.removeItem=k=>{delete store[k]};
+  const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
+  const bad=[];let checked=0;
+  const newIds=new Set(NODES.math.filter(n=>n.wid=='m_frac').map(n=>n.sk=='boss'?'boss_m_frac':n.sk+n.lv));
+  for(const name of ['midway','maxed','legacy-single-map','legacy-index-maps','fresh']){
+    const raw=fx(name);
+    // what the same save looks like with the P2-06 world removed (the build before this chunk): the star table must be identical
+    load(raw);const after=JSON.parse(JSON.stringify(S.maps.math||{}));
+    for(const id of newIds)if(after[id])bad.push(name+': stars on new stop '+id);
+    const wi=PATHS.math.worlds.findIndex(x=>x.id=='m_frac'),saved=PATHS.math.worlds.splice(wi,1)[0];buildNodes('math');
+    load(raw);const before=JSON.parse(JSON.stringify(S.maps.math||{}));
+    const lockedBefore=NODES.math.map((n,i)=>(before[nid(n)]||0)>0&&!unlocked('math',i));
+    PATHS.math.worlds.splice(wi,0,saved);buildNodes('math');
+    load(raw);
+    if(JSON.stringify(after)!==JSON.stringify(before))bad.push(name+': star table changed by adding Fraction Forest');
+    NODES.math.forEach((n,i)=>{const id=nid(n);if((after[id]||0)>0){checked++;if(!unlocked('math',i))bad.push(name+': passed stop '+id+' is locked now')}});
+  }
+  ({bad,checked});`);
+  return{problems:uniq(r.bad),note:r.checked+' passed stops checked on 5 fixtures'};
 });
 
 // ---- report ----

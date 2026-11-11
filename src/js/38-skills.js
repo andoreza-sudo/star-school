@@ -34,6 +34,8 @@ const SK={
  mfact:{t:'Times Facts',e:'✖️',area:'math',max:4,gen:genMfact},
  dfact:{t:'Dividing Facts',e:'÷',area:'math',max:4,gen:genDfact},
  mbig:{t:'Times Tens',e:'✖️',area:'math',max:1,gen:genMbig},
+ // P2-06 fractions: levels 2-8 (frac 1 comes with P2-03)
+ frac:{t:'Fractions',e:'🍕',area:'math',max:8,gen:genFracCore},
  sight:{t:'Sight Words',e:'👀',area:'read',max:3,gen:genSight},
  pic:{t:'Picture Words',e:'🖼️',area:'read',max:4,gen:genPic},
  build:{t:'Build a Word',e:'🧩',area:'read',max:4,gen:genBuild},
