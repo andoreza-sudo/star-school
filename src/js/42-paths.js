@@ -30,7 +30,11 @@ const PATHS={
  es:{n:'Spanish Adventure',e:'🌮',c:'linear-gradient(135deg,#dcfce7,#fef9c3)',byLevel:true,worlds:[
   {id:'e_plaza',g:-1,n:'Hola Plaza',e:'🌮',c:'#fef9c3',nodes:[['es_greet',1,'¡Hola! Listen'],['es_color',1,'Colors'],['es_num',1,'Numbers 1–10'],['es_animal',1,'Animals'],['es_greet',2,'¡Hola! Read'],['es_color',2,'Read Colors'],['es_num',2,'Read Numbers'],['es_animal',2,'Read Animals']]},
   {id:'e_fiesta',g:-1,n:'Fiesta Island',e:'🪅',c:'#ffedd5',nodes:[['es_food',1,'Food'],['es_body',1,'My Body'],['es_family',1,'Family'],['es_teen',1,'Numbers 11–20'],['es_food',2,'Read Food'],['es_body',2,'Read Body'],['es_family',2,'Read Family'],['es_teen',2,'Read 11–20']]},
-  {id:'e_repaso',g:-1,n:'Gran Repaso',e:'🏆',c:'#e0e7ff',nodes:[['es_mix',1,'Big Review: Listen'],['es_mix',2,'Big Review: Read']]}]}};
+  {id:'e_repaso',g:-1,n:'Gran Repaso',e:'🏆',c:'#e0e7ff',nodes:[['es_mix',1,'Big Review: Listen'],['es_mix',2,'Big Review: Read']]}]},
+ /* Discover (P2-36): graded like Math and Reading, but no placement quiz (noPlace). Worlds and stops follow CURRICULUM 2.4;
+    P2-37 adds geo_world 1 and civ 1 to Nature Trail and the worlds d_lab and d_cosmos. */
+ disc:{n:'Discover',e:'🌍',c:'linear-gradient(135deg,#ccfbf1,#99f6e4)',noPlace:true,worlds:[
+  {id:'d_nature',g:0,n:'Nature Trail',e:'🌲',c:'#ccfbf1',nodes:[['sci_life',1,'Living Things'],['sci_earth',1,'Sky & Earth'],['sci_phys',1,'Push, Pull & Stuff']]}]}};
 const BOSSES=[['👾','Gloop'],['🤖','Robo-Bonk'],['🐙','Captain Inky'],['👽','Zorp']];
 const BPRIZE=['🌼','⭐','🎉','🪐','🌈','🔥','💎','🍀','🌙','⚡','🍩','🎵'];
 /* World ids (`id`) and grade tags (`g`) come from CURRICULUM.md section 2. An id is permanent: anything saved per world uses it,

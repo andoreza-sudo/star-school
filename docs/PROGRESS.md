@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** P2-14, P2-30, P2-36, P3-07, P3-11, P3-13
+**Next up:** P2-14, P2-30, P2-37, P3-07, P3-11, P3-13
 
-**Current version:** v107
+**Current version:** v108
 
 ## Chunk status
 
@@ -86,6 +86,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - A11b v105
 - P3-05 v106
 - P2-17 v107
+- P2-36 v109
 
 ## Handoff notes
 
@@ -344,6 +345,18 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-11) Icons wanted from P4-03: `balloon` (Bonus game, today `gamepad`), `sparkle` / `confetti`, `unlock` (open padlock for "Next stop unlocked", today `map`), `zap` (a lightning with a spark for boss hits; today `bolt`), `sticker` (single sticker for the prize row), `medal` (the prize rosette as an icon), `heart-half` (boss life bar), `chest` (the treasure chest at icon size, e.g. for the round track where renderQ shows the gift emoji).
 
 ## Log
+
+### P2-36 Discover path shell and Science K-2 (v109, 2026-11-11, Claude)
+- What changed (CURRICULUM 2.4 and 6, ROADMAP P2-36): new path `disc` ("Discover", graded, `noPlace`) in `42-paths.js` with world `d_nature` "Nature Trail" (grade K) and its three stops in CURRICULUM order: sci_life 1 Living Things, sci_earth 1 Sky & Earth, sci_phys 1 Push, Pull & Stuff, then the boss. Skills `sci_life`, `sci_earth`, `sci_phys` (area `disc`, max 1, bank-backed) in `38-skills.js`; skill icons in `ICO_SK`. geo_world 1 and civ 1 (P2-37) join Nature Trail later; worlds `d_lab` and `d_cosmos` are P2-37.
+- Content: new `src/data/d-disc.js` (data file, built into data.v109.js). 208 level 1 items, each with `grade:'K-2'`, a `topic` tag, a hint that teaches (per-topic default, or its own) and say text. sci_life 95 (living 14, babies 16, covers 13, habitat 16, plants 14, needs 10, senses 12), sci_earth 62 (weather 16, seasons 12, daynight 11, sunmoon 10, landwater 13), sci_phys 51 (push 12, stuff 15, soundlight 12, solid 12). Pictures (`em`, through picFor, emoji fallback) only show the subject of a question, never the answer, and no item needs a picture or a map.
+- Home: card from the existing generic path loop plus a drawn `HM_ART.disc` (magnifier over a leaf and a star), subject colour `--disc` already in the tokens. Placement: `placePaths()` skips paths with `noPlace`. Grown-ups report, strands (Science) and mastery were already generic.
+- Saves: no migration (LATEST stays 6). `migrate()` now also gives every path in PATHS an empty `S.maps[p]` before its version check, so a save written before Discover gets `S.maps.disc={}` (the load in 42-paths.js already did this at start-up; migrate() is what tests call after loadSave).
+- Tests (test.js): "Discover science K-2 P2-36": bankProblems, grade and topic tags, one right answer, hint never names the answer, 3,000 seeded questions per skill with kindProblems, path/world/stop structure, 7 fixtures x 7 grades with Discover added (no star moves, nothing re-locks, S.maps.disc empty, a Discover star saves under sci_life1 and moves nothing else), Home card, content is in the data file not index.html. Expectations changed: the "worlds" check looped over all PATHS for v42 stop tables and now loops over MAP_V42 (Discover has no v42 stops); the review check's `keep()` ignores the empty `disc` map that migrate() adds.
+- Smoke (`// P2-36`, last in the main sequence): Home -> Discover card -> map -> Living Things round with real taps at 380x780 and 1024x600; stars under sci_life1, next stop opens, other paths unchanged, every question 48 px choices, no sideways scroll, no cut-off words. Shots `disc-home`, `disc-map`, `disc-q-life`, `disc-q-earth`, `disc-q-phys`.
+- Seen in the shots and fixed: the map title "Discover Adventure" was cut off at 380 px, so the path is named "Discover"; the 🌧 emoji drew as a blob in headless Chrome and several pictures gave the answer away, so those items are text only.
+- Checklist 7.1: [x] chunk files [x] VER v109 (provisional) [x] build [x] test.js [x] smoke.js [x] screenshots [x] no network [x] no new emoji or hex [x] PROGRESS entry [x] one commit (not pushed).
+- Merge: built on a parallel branch from v104; renumber VER at merge (rebuild, `git add -A`). index.html is about 1.47 MB against the 1.5 MB limit; this chunk added under 1 KB of code.
+- Merge: built on a parallel branch, renumbered v107 -> v108 at merge.
 
 ### P2-17 Tracing letters A-Z and a-z (v104, 2026-11-11, Claude)
 - What changed: `src/data/d-trace.js` gains the sets `upper` (A-Z, "big letter") and `lower` (a-z, "little letter"), 52 letters in neat school print (manuscript, ball and stick) drawn to sit on Andika bold; `TR.LV[2] = 'upper'`, `TR.LV[3] = 'lower'`; skill `trace` max 1 -> 3 (title 'Tracing'); ABC Beach gets `trace 2` "Trace Big Letters" after abc 2 and `trace 3` "Trace Little Letters" after syl 1 (CURRICULUM 2.2: abc 1, abc 2, trace 2, abc 3, syl 1, trace 3, abc 4). Letters in abc 1 order (`ABCO`), rounds of 5 as for digits; tolerance by grade as before.

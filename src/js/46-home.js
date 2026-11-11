@@ -67,6 +67,17 @@ const HM_ART = {
     `<rect fill="${HM_C('green')}" x="3.5" y="6.5" width="44" height="26.5" rx="10"/>` +
     `<rect fill="${HM_C('green-1')}" opacity=".7" x="9" y="9.5" width="16" height="3" rx="1.5"/>` +
     `<text x="25.5" y="27" fill="${HM_C('white')}" font-size="14.5">¡Hola!</text>`,
+  // a magnifying glass over a green leaf, with a little star (Discover, P2-36)
+  disc: () =>
+    `<path fill="${HM_C('green-2')}" d="M6 52C4 38 12 24 28 20C32 36 24 50 6 52Z"/>` +
+    `<path fill="${HM_C('green')}" d="M6 50C5 38 12 26 26 22C29 36 22 47 6 50Z"/>` +
+    `<path fill="none" stroke="${HM_C('green-3')}" stroke-width="1.6" stroke-linecap="round" d="M7 50C13 42 19 33 24 25"/>` +
+    `<path fill="none" stroke="${HM_C('brown-2')}" stroke-width="7" stroke-linecap="round" d="M43 43L56 56"/>` +
+    `<path fill="none" stroke="${HM_C('brown-1')}" stroke-width="3" stroke-linecap="round" d="M43.5 42.5L55 54"/>` +
+    `<circle fill="${HM_C('aqua-1')}" opacity=".85" cx="33" cy="30" r="15.5"/>` +
+    `<circle fill="none" stroke="${HM_C('blue-2')}" stroke-width="4.5" cx="33" cy="30" r="15.5"/>` +
+    `<path fill="none" stroke="${HM_C('white')}" stroke-width="2.6" stroke-linecap="round" d="M23.5 26C25 21.5 29 18.5 33.5 18.3"/>` +
+    `<path fill="${HM_C('yellow')}" stroke="${HM_C('yellow')}" stroke-width="1.2" stroke-linejoin="round" d="M50 5L52 9.8L57 10.3L53.2 13.6L54.4 18.5L50 16L45.6 18.5L46.8 13.6L43 10.3L48 9.8Z"/>`,
   // a game controller
   play: () => {
     const body = 'M18 20H46C54.5 20 58.5 27 60 37L61 45.5C61.6 52.5 55 56.5 50 51.5L44.5 46H19.5L14 51.5C9 56.5 2.4 52.5 3 45.5L4 37C5.5 27 9.5 20 18 20Z';
@@ -301,7 +312,7 @@ function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],ws=PATHS[p].
   let y=10,bands='';
   const more=(wi,up)=>`<button class="btn wmore" data-w="${wi}" style="top:${y}px">${ico(up?'arrow-up':'arrow-down',20)}${wBadge(p,wi)}${esc(ws[wi].n)}</button>`;
   if(w0>0){bands+=more(w0-1,true);y+=72}
-  for(let wi=w0;wi<=w1;wi++){const w=ws[wi],y0=y,[a,b]=WR[p][wi],canTest=worldOpen(p,wi)&&!worldFinished(p,wi);y+=canTest?132:86;
+  for(let wi=w0;wi<=w1;wi++){const w=ws[wi],y0=y,[a,b]=WR[p][wi],canTest=worldOpen(p,wi)&&!worldFinished(p,wi);y+=canTest?160:86; // room under the Test out banner so the first stop, its ring and the pet never cover it
     for(let i=a;i<=b;i++){pts.push([W/2+Math.sin(i*1.15)*amp,y,i]);y+=106}
     bands+=`<div class="wband" style="top:${y0}px;height:${y-y0-24}px;background:${w.c}"></div><div class="wtitle" data-w="${wi}" style="top:${y0+14}px">${wBadge(p,wi)}<span>${esc(w.n)}</span>${worldFinished(p,wi)?ico('check-circle',24,'ic-good'):''}</div>${canTest?`<button class="btn xs tobtn" data-w="${wi}" style="top:${y0+58}px">${ico('bolt',20)}<span>Already know it? Test out!</span></button>`:''}`;y+=4}
   let path='';pts.forEach(([x,yy],k)=>{if(!k)path=`M${x} ${yy}`;else{const[px,py]=pts[k-1];path+=` C${px} ${py+55} ${x} ${yy-55} ${x} ${yy}`}});

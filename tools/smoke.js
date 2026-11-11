@@ -4300,6 +4300,57 @@ async function main() {
       await tl.ctx.close();
     }
 
+    // P2-36 Discover: Home -> the Discover card -> the map (Nature Trail) -> a round of Living Things played with real taps, at 380x780 and
+    //       1024x600. The stop earns stars under its own id, nothing on the other paths moves, the next stop opens; every question seen has
+    //       buttons of 48 px or more, no sideways scroll and no cut-off words.
+    {
+      for (const [dw, dh] of [[380, 780], [1024, 600]]) {
+        const da = await openApp(browser, { fixture: 'midway', width: dw, height: dh });
+        const dp = da.page, tag = `Discover ${dw}x${dh}`;
+        await dp.waitForSelector('.game[data-p="disc"]');
+        const card = await dp.evaluate(() => {
+          const c = document.querySelector('.game[data-p="disc"]'), r = c.getBoundingClientRect();
+          return { h: r.height, art: !!c.querySelector('.hm-svg'), txt: c.textContent.replace(/\s+/g, ' ') };
+        });
+        if (card.h < 48 || !card.art || !/Discover/.test(card.txt) || !/0\/4/.test(card.txt)) fail(`${tag}: Home card ${JSON.stringify(card)}`);
+        await dp.click('.game[data-p="disc"]');
+        await dp.waitForSelector('.node[data-n="0"]');
+        const map = await dp.evaluate(() => {
+          const ns = [...document.querySelectorAll('.node')];
+          return { n: ns.length, lock: ns.map(n => n.classList.contains('lock')), minH: Math.min(...ns.map(n => n.offsetHeight)), minW: Math.min(...ns.map(n => n.offsetWidth)),
+            over: document.documentElement.scrollWidth - document.documentElement.clientWidth, title: document.querySelector('.top').textContent };
+        });
+        if (map.n !== 4 || map.lock.join() !== 'false,true,true,true' || map.minH < 48 || map.minW < 48 || map.over > 0 || !/Discover/.test(map.title)) fail(`${tag}: map ${JSON.stringify(map)}`);
+        else step(`${tag}: Home card, then the map with 4 stops (first open), 48 px stops, no sideways scroll`);
+        const before = await dp.evaluate(() => JSON.stringify([S.maps.math, S.maps.read, S.maps.es, S.stars]));
+        await dp.click('.node[data-n="0"]');
+        await dp.waitForSelector('#prompt');
+        const bad = [];
+        await playRound(dp, tag, undefined, async () => {
+          const r = await dp.evaluate(() => {
+            const chs = [...document.querySelectorAll('.ch')], pr = document.querySelector('#prompt');
+            return { n: chs.length, minH: Math.min(...chs.map(c => c.offsetHeight)), minW: Math.min(...chs.map(c => c.offsetWidth)),
+              over: document.documentElement.scrollWidth - document.documentElement.clientWidth, cut: chs.some(c => c.scrollWidth > c.clientWidth + 1) || pr.scrollWidth > pr.clientWidth + 1,
+              text: pr.textContent.trim().length > 8, bq: G.q.label };
+          });
+          if (r.n < 3 || r.minH < 48 || r.minW < 48 || r.over > 0 || r.cut || !r.text) bad.push(JSON.stringify(r));
+        });
+        if (bad.length) fail(`${tag}: question layout ${bad.join(' ')}`);
+        else step(`${tag}: every question: 3-4 choices of 48 px or more, no sideways scroll, no cut-off words`);
+        const after = await dp.evaluate(() => ({ st: S.maps.disc.sci_life1 || 0, keys: Object.keys(S.maps.disc).join(), others: JSON.stringify([S.maps.math, S.maps.read, S.maps.es]),
+          next: unlocked('disc', 1), saved: JSON.parse(localStorage.getItem(KEY)).maps.disc.sci_life1 || 0 }));
+        if (after.st < 1 || after.keys !== 'sci_life1' || after.saved !== after.st || !after.next || after.others !== JSON.stringify(JSON.parse(before).slice(0, 3))) fail(`${tag}: stars ${JSON.stringify(after)}`);
+        else step(`${tag}: stop earned ${after.st} stars under sci_life1, the next stop opened, no other path changed`);
+        await dp.click('#menu');
+        await dp.waitForSelector('#map');
+        const open2 = await dp.evaluate(() => [...document.querySelectorAll('.node')].map(n => n.classList.contains('lock')).join());
+        if (open2 !== 'false,false,true,true') fail(`${tag}: map after the round: locks ${open2}`);
+        network.push(...da.network);
+        for (const e of da.errors) fail(e);
+        await da.ctx.close();
+      }
+    }
+
     for (const e of errors) fail(e);
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');

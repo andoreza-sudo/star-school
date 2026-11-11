@@ -63,7 +63,11 @@ const SK={
  // P2-20 and P2-21: grammar levels 1-9 (bank items in src/data/d-gram.js)
  gram:{t:'Grammar',e:'🔤',area:'read',max:9,bank:'gram',gen:lv=>genBank('gram',lv)},
  // P2-22 Vocabulary A (levels 1-5) and P2-23 Vocabulary B (6-10): items are BANK.vocab in src/data/d-vocab.js
- vocab:{t:'Vocabulary',e:'📚',area:'read',max:10,bank:'vocab',gen:lv=>genBank('vocab',lv)}};
+ vocab:{t:'Vocabulary',e:'📚',area:'read',max:10,bank:'vocab',gen:lv=>genBank('vocab',lv)},
+ // P2-36 Discover science K-2 (level 1; P2-37 adds levels 2-3 and more skills): items are BANK.sci_* in src/data/d-disc.js
+ sci_life:{t:'Living Things',e:'🌱',area:'disc',max:1,bank:'sci_life',gen:lv=>genBank('sci_life',lv)},
+ sci_earth:{t:'Sky & Earth',e:'🌍',area:'disc',max:1,bank:'sci_earth',gen:lv=>genBank('sci_earth',lv)},
+ sci_phys:{t:'Push, Pull & Stuff',e:'⚡',area:'disc',max:1,bank:'sci_phys',gen:lv=>genBank('sci_phys',lv)}};
 /* P2-17: the subject area of a skill at a level. A skill may set lvArea {level: area} where some levels belong to another
    subject (trace: digits are math, letters are reading); everything that colours or counts by subject reads the area through this. */
 const skArea=(sk,lv)=>{const s=SK[sk];return s?(s.lvArea&&s.lvArea[lv])||s.area:undefined};
