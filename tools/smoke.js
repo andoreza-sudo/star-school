@@ -1617,6 +1617,103 @@ async function main() {
       await hf.ctx.close();
     }
 
+    // P4-10 question screen at 380x780, 600x960 and 1024x600: nine kinds (num, dec pad, choice, multi, order, match, tap,
+    //    spell, build) and a Pre-K question; every target at least 48 px (pad keys at least 56, spell keys 48 tall), nothing
+    //    sticks out sideways, no word broken over two lines, the track has one dot per question; then right and wrong
+    //    feedback: a green tick badge and a toast, an amber cross badge and a "try again" toast; calm mode stops the motion.
+    {
+      const KB10 = require('./lib/kb-samples.js'), KS10 = '(' + require('./kinds-samples').make.toString() + ')';
+      // lay out one question and measure it (runs in the page)
+      const measure = () => {
+        const vw = document.documentElement.clientWidth, out = [];
+        const tgt = '#quit, #spk, #hb, #undo, #mcheck, .stat, .key, .choice, .piece, .socket, .tp, .pkplate, .btn';
+        for (const e of document.querySelectorAll(tgt)) {
+          const r = e.getBoundingClientRect();
+          if (!r.width) continue;
+          const min = e.matches('.sk') ? r.height : Math.min(r.width, r.height);
+          if (min < 47.5) out.push('small ' + (e.id || e.className) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
+          if (e.matches('.qpad .key:not(.x)') && Math.min(r.width, r.height) < 55.5) out.push('pad key ' + Math.round(r.width) + 'x' + Math.round(r.height));
+          if (e.matches('.sk') && r.width < 28) out.push('spell key ' + Math.round(r.width));
+          if (r.left < -1 || r.right > vw + 1) out.push('outside ' + (e.id || e.className) + ' ' + Math.round(r.left) + '..' + Math.round(r.right));
+          // a word broken over two lines shows up as a range with two boxes
+          const w = document.createTreeWalker(e, NodeFilter.SHOW_TEXT);
+          for (let n; (n = w.nextNode());) {
+            for (const m of n.textContent.matchAll(/\S+/g)) {
+              const rg = document.createRange(); rg.setStart(n, m.index); rg.setEnd(n, m.index + m[0].length);
+              const lines = new Set([...rg.getClientRects()].filter(b => b.width > 1).map(b => Math.round(b.top)));
+              if (lines.size > 1) out.push('broken word ' + m[0]);
+            }
+          }
+        }
+        if (document.documentElement.scrollWidth > vw) out.push('sideways scroll ' + document.documentElement.scrollWidth);
+        const tr = document.querySelector('#qtrack');
+        if (tr && tr.querySelectorAll('.dots > i').length !== G.n) out.push('dots ' + tr.querySelectorAll('.dots > i').length + ' of ' + G.n);
+        if (!document.querySelector('.qtop #quit') || !document.querySelector('#starc') || !document.querySelector('#stk')) out.push('top bar');
+        return out;
+      };
+      const show = {
+        num: () => { start('math', NODES.math.findIndex(n => n.sk == 'add')); for (let t = 0; t < 40 && G.q.kind != 'num'; t++) { G.q = genQ(G.q.sk, G.q.lv); renderQ(); } },
+        choice: () => { start('math', NODES.math.findIndex(n => n.sk == 'eo')); },
+        build: () => { start('read', NODES.read.findIndex(n => n.sk == 'build')); },
+        pk: () => { window.__g = S.grade; setGrade(-1); start('math', NODES.math.findIndex(n => n.sk == 'pk_more')); S.grade = __g; },
+      };
+      const bad10 = [];
+      for (const [w, h] of [[380, 780], [600, 960], [1024, 600]]) {
+        const qa = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const qp = qa.page;
+        await qp.evaluate(src => { window.__KS = eval(src)(); }, KS10);
+        const views = [['num', show.num], ['choice', show.choice], ['build', show.build], ['pk', show.pk]];
+        for (const k of ['dec', 'frac', 'multi', 'order']) views.push([k, k]);
+        for (const k of ['match', 'tapLine', 'spell', 'spellEs']) views.push([k, KB10[k]]);
+        for (const [name, how] of views) {
+          await qp.evaluate(([how, isFn]) => {
+            if (G) G.dead = true;
+            if (isFn) eval('(' + how + ')')();
+            else if (typeof how == 'string') { G = newG({ sk: 'zz_demo', n: 1, pool: [__KS[how]] }); next(); }
+            else { start('math', 0); G.q = how; renderQ(); }
+          }, [typeof how == 'function' ? how.toString() : how, typeof how == 'function']);
+          await qp.waitForTimeout(450); // the prompt's entrance and fit()
+          const out = await qp.evaluate(measure);
+          if (out.length) bad10.push(`${name} ${w}x${h}: ${out.slice(0, 4).join('; ')}`);
+        }
+        if (w == 380) {
+          // right: green badge on the slot and a good toast; wrong: amber choice with a badge and a try-again toast
+          // next() is held (the round stays on this question) and toasts are recorded, so the virtual clock cannot hide them first
+          await qp.evaluate(() => { G.dead = true; });
+          await qp.evaluate('(' + show.num.toString() + ')()');
+          await qp.evaluate(() => { window.__next = next; next = () => {}; window.__toasts = [];
+            const t = UI.toast; UI.toast = (...a) => { __toasts.push(a[1] + ':' + a[0]); t.apply(UI, a); }; });
+          await answer(qp);
+          const r1 = await qp.evaluate(() => ({ ok: document.querySelector('#slot').classList.contains('ok'),
+            badge: getComputedStyle(document.querySelector('#slot'), '::before').content, toast: __toasts.join(),
+            dot: document.querySelectorAll('#qtrack .dots > i.done').length, res: (G.res || []).join() }));
+          if (!r1.ok || r1.badge === 'none' || !/^good:/.test(r1.toast) || r1.dot !== 1) bad10.push('right answer feedback: ' + JSON.stringify(r1));
+          await qp.evaluate(() => { G.dead = true; next = __next; });
+          await qp.evaluate('(' + show.choice.toString() + ')()');
+          await qp.evaluate(() => { window.__toasts = []; });
+          await qp.click(`.ch[data-i="${await qp.evaluate(() => G.q.choices.findIndex(c => String(c.v) !== String(G.q.ans)))}"]`);
+          const r2 = await qp.evaluate(() => {
+            const b = document.querySelector('.ch.wrong'), cs = b && getComputedStyle(b);
+            return { wrong: !!b, bg: cs && cs.backgroundColor, badge: b && getComputedStyle(b, '::after').backgroundImage.includes('gradient'),
+              toast: __toasts.join(), hint: document.querySelector('#hint').innerHTML.length,
+              flame: document.querySelector('#stk').classList.contains('off') };
+          });
+          if (!r2.wrong || r2.bg !== 'rgb(255, 232, 184)' || !r2.badge || !/try:Try again/.test(r2.toast) || !r2.flame) bad10.push('wrong answer feedback: ' + JSON.stringify(r2));
+          // calm mode: no entrance animation on the prompt
+          const calm = await qp.evaluate(() => { document.documentElement.classList.add('calm'); renderQ();
+            const d = parseFloat(getComputedStyle(document.querySelector('#prompt')).animationDuration); document.documentElement.classList.remove('calm'); return d; });
+          if (!(calm < .01)) bad10.push('calm mode prompt animation ' + calm + 's');
+          await qp.evaluate(() => { G.dead = true; });
+          await vwait(qp, 3000); // the round's own timers fire into the dead round
+        }
+        network.push(...qa.network);
+        for (const e of qa.errors) fail(e);
+        await qa.ctx.close();
+      }
+      if (bad10.length) fail('P4-10 question screen:\n  ' + bad10.join('\n  '));
+      else step('P4-10: 12 kinds at 380x780, 600x960, 1024x600: targets 48 px (pad keys 56), no sideways scroll, no broken words, one dot per question; right and wrong feedback with badges and toasts; calm mode');
+    }
+
     for (const e of errors) fail(e);
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');

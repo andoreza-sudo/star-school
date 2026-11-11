@@ -3675,6 +3675,49 @@ run('home (P4-08): tokens only, transform/opacity motion, drawings well formed, 
   return{problems:p.concat(out)};
 });
 
+run('question screen (P4-10): tokens only, transform/opacity motion, pad keys, toast kinds, track positions',()=>{
+  const p=[];
+  const css=fs.readFileSync(path.join(SRC,'css','42-question.css'),'utf8').replace(/\/\*[\s\S]*?\*\//g,'');
+  const tok=fs.readFileSync(path.join(SRC,'css','00-tokens.css'),'utf8');
+  if(/#[0-9a-fA-F]{3,8}\b/.test(css))p.push('raw hex colour in 42-question.css');
+  if(/rgba?\(|hsla?\(/.test(css))p.push('colour function in 42-question.css');
+  if(/(^|[;{\s])(-webkit-)?(backdrop-)?filter\s*:/.test(css))p.push('filter or backdrop-filter used');
+  for(const m of css.matchAll(/transition\s*:\s*([^;}]+)/g))for(const part of m[1].split(','))
+    if(!/^\s*(transform|opacity)\s/.test(part)&&part.trim()!='none')p.push('transition on something other than transform/opacity: '+part.trim());
+  const kf=[...css.matchAll(/@keyframes\s+([\w-]+)\s*\{((?:[^{}]*\{[^}]*\})*)\s*\}/g)];
+  for(const [,n,body] of kf){
+    if(!/^k-/.test(n))p.push('keyframes '+n+' must be named k-*');
+    for(const d of body.match(/[a-z-]+(?=\s*:)/g)||[])if(d!='transform'&&d!='opacity')p.push('keyframes '+n+' animates '+d);
+  }
+  const others=fs.readdirSync(path.join(SRC,'css')).filter(f=>f!='42-question.css').map(f=>fs.readFileSync(path.join(SRC,'css',f),'utf8')).join('');
+  for(const [,n] of kf)if(new RegExp('@keyframes\\s+'+n+'\\b').test(others))p.push('keyframes name '+n+' is also used in another CSS file');
+  const OWN=['c','c-tint','c-shade','c-fill','c-ledge','v','ic2','n','p','rw','pm','k'];
+  for(const m of css.matchAll(/var\(--([a-z0-9-]+)/g))if(!OWN.includes(m[1])&&!new RegExp('--'+m[1]+':').test(tok))p.push('unknown token --'+m[1]);
+  const out=eval(js+`
+  const bad=[];
+  // the pad: digits, del, 0 and the check key (with spoken names), plus . or +/- for dec and neg; the check key is an arrow with several slots
+  const keys=h=>[...h.matchAll(/data-k="([^"]+)"/g)].map(m=>m[1]).join(' ');
+  const pd=KIND.num.render({pad:'int'}),pf=KIND.num.render({pad:'frac'});
+  if(keys(pd)!=='1 2 3 4 5 6 7 8 9 del 0 go')bad.push('int pad keys: '+keys(pd));
+  if(!/class="keys qpad pad"/.test(pd)||(pd.match(/class="key k/g)||[]).length!==12)bad.push('pad classes');
+  if(!pd.includes('aria-label="Check"')||!pd.includes('#i-check')||!pd.includes('aria-label="Delete"'))bad.push('pad check/delete keys');
+  if(!pf.includes('aria-label="Next box"')||!pf.includes('#i-go'))bad.push('frac pad: check key should first move to the next box');
+  if(keys(KIND.num.render({pad:'dec'})).split(' ').pop()!=='.')bad.push('dec pad has no point key');
+  if(keys(KIND.num.render({pad:'neg'})).split(' ').pop()!=='neg')bad.push('neg pad has no +/- key');
+  if(/btn /.test(KIND.choice.render({choices:[{v:1,l:'1'}]})))bad.push('choice still uses the old button');
+  // fb(): the toast kind and icon for each feedback class
+  const seen=[];UI.toast=(t,k,ms,ic)=>seen.push(k+'/'+ic);
+  for(const c of ['','warn','again','info','pl-fb','streak','zap','warn long','bad'])fb('x',c);
+  if(seen.join()!=='good/check,try/hint,try/replay,info/hint,info/hint,streak/flame,good/bolt,try/hint,try/hint')bad.push('fb kinds: '+seen.join());
+  // the pet stands on the centre of column done+1 of n+1 (the last column is the gift)
+  G={done:0,n:10};const a=qLeft();G.done=10;const b=qLeft();G.done=12;const c=qLeft();G={done:2,n:5};const d=qLeft();
+  if(a!=='translateX(4.545%)'||b!=='translateX(95.455%)'||c!==b||d!=='translateX(41.667%)')bad.push('qLeft: '+[a,b,c,d]);
+  G=null;
+  for(const n of ['close','gift','bolt','speak','hint','backspace','check','go','back','flame','star','replay'])if(!ICONS[n])bad.push('missing icon '+n);
+  bad;`);
+  return{problems:p.concat(out)};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){

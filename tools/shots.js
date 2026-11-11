@@ -848,6 +848,36 @@ async function rwBossFight(p) {
   await p.waitForTimeout(400);
 }
 
+// ---- P4-10 question screen: the states the kind shots do not show (right, try again, answer shown, tags, streak, boss, race).
+// The round is frozen (G.dead) right after the tap, so the feedback stays on screen for the shot; the toast is kept up too. ----
+const qFreeze = () => { G.dead = true; try { clearTimeout(fbT); } catch (e) {} if (typeof UI != 'undefined') clearTimeout(UI._toastT); };
+// start the first stop of skill sk (math) and keep asking until the question is of kind `kind`
+const qOpen = (sk, kind) => {
+  start('math', NODES.math.findIndex(n => n.sk == sk));
+  for (let t = 0; t < 40 && G.q.kind != kind; t++) { G.q = genQ(G.q.sk, G.q.lv); renderQ(); }
+};
+// type a number on the pad and press the check key
+const qType = s => { for (const c of s) document.querySelector(`.k[data-k="${c}"]`).click(); document.querySelector('.k[data-k="go"]').click(); };
+const qShot = (fn, arg) => ({ run: async p => {
+  await p.evaluate(([h, f, a]) => { eval(h); eval('(' + f + ')')(a); }, [`var qFreeze=${qFreeze};var qOpen=${qOpen};var qType=${qType};`, fn.toString(), arg]);
+} });
+Object.assign(SCREENS, {
+  'q-right': qShot(() => { qOpen('add', 'num'); qType(G.q.ans); qFreeze(); }),
+  'q-try': qShot(() => { qOpen('eo', 'choice'); [...document.querySelectorAll('.ch')].find(b => G.q.choices[b.dataset.i].v != G.q.ans).click(); qFreeze(); }),
+  'q-reveal': qShot(() => { qOpen('add', 'num'); qType('99'); qType('98'); qFreeze(); }),
+  'q-build-try': qShot(() => {
+    start('read', NODES.read.findIndex(n => n.sk == 'build' || n.sk == 'cvc'));
+    for (let t = 0; t < 40 && G.q.kind != 'build'; t++) { G.q = genQ(G.q.sk, G.q.lv); renderQ(); }
+    const w = G.q.word, tl = [...document.querySelectorAll('.lt')];
+    const first = tl.find(b => G.q.tiles[b.dataset.i] == w[0]); first.click();
+    const bad = tl.find(b => b !== first && G.q.tiles[b.dataset.i] != w[1]); if (bad) bad.click();
+  }),
+  'q-review': qShot(() => { start('math', 0); G.q.review = 1; renderQ(); }),
+  'q-streak': qShot(() => { start('math', 0); G.streak = 4; G.score = 4; G.done = 4; G.res = ['', '', 'try', '']; renderQ(); }),
+  'q-boss': { run: async p => { await p.evaluate(() => bossIntro('math', NODES.math.findIndex(n => n.sk == 'boss'))); await p.click('#fight'); } },
+  'q-race': { run: async p => { await p.evaluate(() => race('math')); } },
+});
+
 async function main() {
   const args = process.argv.slice(2);
   let fixtureArg = null;

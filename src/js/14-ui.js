@@ -156,8 +156,8 @@ const UI = {
       `${o.attrs ? ' ' + o.attrs : ''}>${face}${st}${tag}</button>`;
   },
 
-  // Toast: a pill at the top centre for ms milliseconds. kind: good | try | info.
-  toast(text, kind = 'info', ms = 1600) {
+  // Toast: a pill at the top centre for ms milliseconds. kind: good | try | info | streak. icon: optional, overrides the kind's icon.
+  toast(text, kind = 'info', ms = 1600, icon = '') {
     let t = document.getElementById('toast');
     if (!t) {
       t = document.createElement('div');
@@ -166,9 +166,9 @@ const UI = {
       t.setAttribute('aria-live', 'polite');
       document.body.appendChild(t);
     }
-    const icon = { good: 'check', try: 'replay', info: 'info' }[kind] || 'info';
+    const ic = icon || { good: 'check', try: 'replay', info: 'info', streak: 'flame' }[kind] || 'info';
     t.className = 'toast ' + kind;
-    t.innerHTML = `<span class="ti">${ico(icon)}</span><span>${UI.t(text)}</span>`;
+    t.innerHTML = `<span class="ti">${ico(ic)}</span><span>${UI.t(text)}</span>`;
     void t.offsetWidth; // let it slide in again when shown twice in a row
     t.classList.add('on');
     clearTimeout(UI._toastT);

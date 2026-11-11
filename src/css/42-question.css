@@ -1,0 +1,245 @@
+/* Question screen (P4-10; DESIGN_SYSTEM 9 row 4). Tokens only; animate transform and opacity only; no filter.
+   Round markup is in 50-round.js renderQ: .top.tbar.round.qtop (close, track with dots and the pet runner, flame and star chips),
+   then .play.qs.s-<subject> holding the prompt card .qarea and the input area .inp. The input markup of every kind is in 49-kinds.js
+   and uses the P4-04 components (.key, .choice, .piece, .socket); the rules below give them their question-screen size and states.
+   Kind rules are not scoped to .qs, so Speed Race and the placement quiz (same kinds) get them too.
+   Old rules for the same classes still sit in 30-learn.css, 32-kinds-a.css, 37-kinds-b.css and 40-games.css; this file loads after
+   them and wins with equal or higher specificity (the dead ones can go in P4-17). */
+
+/* ---------- top bar: close, progress track, streak and star chips ---------- */
+.top.qtop{flex-wrap:wrap;gap:var(--s-2) var(--s-3);min-height:0;padding:var(--s-3) var(--s-4) var(--s-1)}
+.qtop #quit .ic{color:var(--ink-2)}
+.qtop .stat.flame{margin-left:auto}
+.qtop .bossbar~.stat.flame{margin-left:0}
+.qtop .stat.flame.off{color:var(--ink-3)}
+.qtop .stat.flame:not(.off) .ic{color:var(--play)}
+.qtop .stat.flame:not(.off){background:var(--play-tint);box-shadow:inset 0 0 0 2px var(--try),0 3px 0 var(--try)}
+
+/* the track: one grid column per question plus one for the goal; dots sit on a rail, the pet stands on the current dot */
+.qtrack{position:relative;flex:1 1 0;min-width:0;max-width:640px;height:64px;margin:0 auto;display:grid;
+  grid-template-columns:repeat(var(--n),minmax(0,1fr));align-items:end;justify-items:center;padding-bottom:6px;--rw:44px}
+.qtrack .dots{display:contents}
+.qtrack .dots>i{position:relative;z-index:1;width:16px;height:16px;margin-bottom:6px;background:var(--surface);box-shadow:inset 0 0 0 3px var(--ledge-soft)}
+.qtrack .dots>i.done{background:var(--good);box-shadow:inset 0 -3px 0 var(--good-ink)}
+.qtrack .dots>i.try{background:var(--try);box-shadow:inset 0 -3px 0 var(--star-shade)}
+.qtrack .dots>i.cur{width:24px;height:24px;margin-bottom:2px;background:var(--surface);box-shadow:inset 0 0 0 5px var(--brand),0 0 0 3px var(--brand-tint)}
+.qtrack::before,.qtrack::after{content:'';position:absolute;left:calc(50% / var(--n));right:calc(50% / var(--n));bottom:17px;height:6px;
+  border-radius:var(--r-pill);background:var(--ledge-soft)}
+/* the part of the rail already walked, grown with transform (--p = done / total) */
+.qtrack::after{background:var(--good);opacity:.45;transform-origin:left center;transform:scaleX(var(--p,0));transition:transform var(--t-slow) var(--ease)}
+.qgoal{position:relative;z-index:1;display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:var(--star-tint);
+  color:var(--star-shade);--ic2:var(--star-tint);box-shadow:inset 0 0 0 2px var(--star),0 3px 0 var(--star-shade)}
+.qgoal .ic{width:26px;height:26px}
+.qgoal.test{background:var(--brand-tint);color:var(--brand);box-shadow:inset 0 0 0 2px var(--brand),0 3px 0 var(--brand-shade)}
+/* #qwalk is as wide as the track, so translateX(%) (set by qLeft in 50-round.js) puts the pet's centre on a column centre */
+.qwalk{position:absolute;left:0;right:0;bottom:22px;z-index:2;height:0;pointer-events:none;transition:transform var(--t-slow) var(--spring)}
+.qtrack .runner{position:absolute;left:0;top:auto;bottom:0;width:var(--rw);margin-left:calc(var(--rw) / -2);font-size:32px;
+  display:flex;justify-content:center;transition:none}
+.qtrack .runner .petwrap{font-size:30px}
+/* the pet's speech bubble (petSay), a P4-04 speech bubble that hangs under the pet */
+#bub{top:calc(100% + 26px);padding:var(--s-1) var(--s-3);border:2px solid var(--line);border-radius:var(--r-btn);background:var(--surface);
+  color:var(--ink);font-size:var(--fs-3);line-height:1.3;box-shadow:0 4px 0 var(--ledge-soft),var(--shadow);transform:translateY(-4px);
+  transition:opacity var(--t) var(--ease),transform var(--t) var(--spring)}
+#bub.on{transform:none}
+/* phones: the track gets its own row under the buttons */
+@media (max-width:480px){
+  .top.qtop{padding:var(--s-2) var(--s-3) 0}
+  .qtrack,.qtop .bossbar{order:9;flex:1 0 100%;max-width:none}
+  .qtop .bossbar~.stat.flame{margin-left:auto}
+  .qtrack{height:58px}
+}
+@media (max-height:520px){
+  .top.qtop{padding:var(--s-2) var(--s-4) 0}
+  .qtrack{height:56px}
+}
+
+/* ---------- the prompt card ---------- */
+.play.qs{gap:var(--s-3);padding:var(--s-2) var(--s-4) var(--s-4)}
+.qs .qarea{position:relative;gap:var(--s-3);padding:var(--s-5) var(--s-4) var(--s-4);border-top:6px solid var(--c,var(--brand));
+  border-radius:var(--r-hero);background:var(--surface);box-shadow:inset 0 0 0 2px var(--line),var(--shadow)}
+/* the prompt spans the card, so pictures sized in % of it (Shape Garden depth scenes) never collapse to 0 when the words are hidden */
+.qs .prompt{align-self:stretch;color:var(--ink);font-family:var(--font-display);animation:k-qin var(--t-slow) var(--ease)}
+@keyframes k-qin{from{opacity:0;transform:translateY(8px) scale(.97)}}
+.qs .prompt.shake{animation:k-shake 240ms linear}
+.qs .tools{flex-wrap:wrap;justify-content:center;gap:var(--s-3)}
+.qs .tools .btn.sm{min-width:var(--tap);font-size:var(--fs-3)}
+/* Pre-K: a big round "hear it again" button and a round help button, no words needed */
+.qs .btn.pkspk{width:88px;height:88px;min-width:88px;min-height:88px;padding:0;border-radius:50%}
+.qs .btn.pkspk .ic{width:48px;height:48px}
+.qs .btn.pkhb .ic{width:34px;height:34px;color:var(--try-ink)}
+.qs .btn.pkhb{background:var(--try-tint);box-shadow:inset 0 0 0 2px var(--try),var(--ledge) var(--try)}
+.btn.talking{animation:k-talk .6s var(--ease) 3}
+@keyframes k-talk{50%{transform:scale(1.06)}}
+/* tags at the top of the card: review ("Remember this one?") and challenge (51-mastery.js .mtag) */
+.tag.rtag{background:var(--brand-tint);color:var(--brand-shade);border-radius:var(--r-pill);font-size:var(--fs-2);padding:var(--s-1) var(--s-3) var(--s-1) var(--s-2)}
+.tag.rtag .ic{width:18px;height:18px}
+.qs .mtag{background:var(--bt);color:var(--surface);padding:var(--s-1) var(--s-3) var(--s-1) var(--s-2);line-height:1.2}
+.qs .mtag .ic{color:var(--surface)}
+.qs .bctx{box-shadow:none;border:2px solid var(--line);background:var(--surface-2)}
+
+/* hint: #hint is the amber panel once it has something in it; the bulb badge sits on its corner */
+.qhint{position:relative;max-width:100%}
+.qs .hint:not(:empty){padding:var(--s-3) var(--s-4);border:2px solid var(--try);border-radius:var(--r-card);background:var(--try-tint);
+  color:var(--ink);font-size:clamp(var(--fs-3),2.8vh,var(--fs-4));line-height:1.35}
+.qhint .hb{position:absolute;left:-10px;top:-14px;display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:var(--try);
+  color:var(--try-ink);box-shadow:inset 0 -3px 0 var(--star-shade)}
+.qhint .hb .ic{width:22px;height:22px}
+.qhint .hint:empty+.hb{display:none}
+.qs .hint.pop{animation:k-qin var(--t-slow) var(--spring)}
+
+/* ---------- answer slots in the prompt (num) ---------- */
+.slot{position:relative;border:.07em dashed var(--ink-3);border-radius:.22em;background:var(--surface-2);color:var(--brand)}
+.slot.sl-on{border-color:var(--brand);background:var(--brand-tint)}
+.slot.ok{border:.07em solid var(--good);background:var(--good-tint);color:var(--good-ink);animation:k-pop var(--t-slow) var(--spring)}
+.slot.rev{border:.07em solid var(--try);background:var(--try-tint);color:var(--try-ink)}
+
+/* right and wrong badges (never colour alone): a green disc with a tick, or an amber disc with a soft cross.
+   Shared by the slot, tap targets, Pre-K plates and the letter slots row; the choice component draws its own. */
+:is(.slot,.tp,.pkplate).ok::before,:is(.tp,.pkplate).right::before,:is(.tp,.pkplate).wrong::before{content:'';position:absolute;z-index:1;
+  top:-12px;right:-12px;width:28px;height:28px;border-radius:50%;background:var(--good);box-shadow:0 0 0 3px var(--surface)}
+:is(.slot,.tp,.pkplate).ok::after,:is(.tp,.pkplate).right::after{content:'';position:absolute;z-index:2;top:-6px;right:-2px;width:7px;height:13px;
+  border:solid var(--surface);border-width:0 4px 4px 0;border-radius:1px;transform:rotate(45deg)}
+:is(.tp,.pkplate).wrong::before{background:var(--try)}
+:is(.tp,.pkplate).wrong::after{content:'';position:absolute;z-index:2;top:-12px;right:-12px;width:28px;height:28px;background-repeat:no-repeat;
+  background-position:center;background-size:14px 14px;background-image:linear-gradient(45deg,transparent 40%,var(--try-ink) 40% 60%,transparent 60%),
+  linear-gradient(-45deg,transparent 40%,var(--try-ink) 40% 60%,transparent 60%)}
+.slot.ok::before{top:-.24em;right:-.24em}
+.slot.ok::after{top:-.13em;right:-.06em}
+
+/* ---------- number pad (.keys.qpad > .key.k) ---------- */
+.qpad{max-width:440px}
+.qpad .key{height:auto;min-height:var(--tap-pk);font-size:clamp(28px,4.6vh,var(--fs-6))}
+.qpad .key .ic{width:34px;height:34px}
+.qpad .key.go .ic{width:38px;height:38px}
+.qpad .key.x{grid-column:1/-1;min-height:var(--tap);background:var(--star-tint);box-shadow:inset 0 0 0 2px var(--star),var(--ledge) var(--star-shade)}
+.qpad .key.x:is(:active,.is-press){box-shadow:inset 0 0 0 2px var(--star),var(--ledge-press) var(--star-shade)}
+@media (min-height:900px){.qpad .key{min-height:72px}}
+@media (max-width:480px){.qpad .key{min-height:56px}}
+@media (max-height:520px){.qpad .key{min-height:var(--tap)}}
+
+/* ---------- choices (.choices > .choice.ch) ---------- */
+.choices{gap:var(--s-3);max-width:600px}
+.choice.ch{min-height:var(--tap-pk);padding:var(--s-2) var(--s-3);font-size:clamp(26px,4.6vh,var(--fs-6))}
+.choice.ch.wrong{opacity:1;background:var(--try-tint);color:var(--try-ink);box-shadow:inset 0 0 0 3px var(--try),0 5px 0 var(--try)}
+.choices.pics .choice.ch{font-size:clamp(44px,8vh,64px);padding:var(--s-2)}
+.choices.wide .choice.ch{justify-content:center;font-size:clamp(20px,3.6vh,28px);padding:clamp(8px,1.6vh,14px) var(--s-7);line-height:1.25}
+.choices.bwords .choice.ch{min-height:var(--tap-primary);font-size:clamp(20px,3.6vh,28px);padding:clamp(8px,1.6vh,14px) var(--s-5)}
+.choices.syms .choice.ch{font-size:clamp(36px,7vh,56px)}
+/* the right answer shown after the second try: green with its tick */
+.choice.ch.right{opacity:1;background:var(--good-tint);color:var(--good-ink);box-shadow:inset 0 0 0 3px var(--good),0 5px 0 var(--good-ink)}
+
+/* multi: a tick box in each choice, then the Check button */
+.mchoices .choice.mc{justify-content:flex-start;gap:var(--s-3);min-height:var(--tap-primary);padding:var(--s-2) var(--s-4);font-size:clamp(20px,3.6vh,28px);text-align:left}
+.choice.mc .mk{width:30px;height:30px;border:3px solid var(--ledge-soft);border-radius:var(--r-chip);background:var(--surface)}
+.choice.mc.on{outline:0;background:var(--brand-tint);color:var(--brand-shade);box-shadow:inset 0 0 0 3px var(--brand),0 5px 0 var(--brand-shade)}
+.choice.mc.on .mk{background:var(--brand);border-color:var(--brand);color:var(--surface)}
+.choice.mc.right{outline:0}
+.choice.mc.right .mk{background:var(--good-ink);border-color:var(--good-ink);color:var(--surface)}
+.choice.mc.wrong{outline:0}
+.choice.mc.wrong .mk{border-color:var(--try-ink)}
+.choice.mc:is(.right,.wrong)::before{top:50%;margin-top:-14px}
+.choice.mc.right::after{top:50%;margin-top:-9px}
+.choice.mc.wrong::after{top:50%;margin-top:-14px}
+.btn.mgo{display:flex;min-width:200px;margin:var(--s-4) auto 0;background:linear-gradient(var(--hi),var(--hi-0) 60%) var(--good-ink);
+  box-shadow:inset 0 2px 0 var(--hi),var(--ledge) var(--es-shade)}
+.btn.mgo:is(:active,.is-press){box-shadow:inset 0 2px 0 var(--hi),var(--ledge-press) var(--es-shade)}
+.btn.mgo:disabled{opacity:1}
+
+/* ---------- build and order: pieces into slots ---------- */
+.tiles{gap:var(--s-3)}
+.piece.lt{width:clamp(56px,10vh,76px);height:clamp(56px,10vh,76px);padding:0;font-size:clamp(30px,5.5vh,40px)}
+.piece:is(.lt,.ot){background:var(--surface)}
+.piece:is(.lt,.ot).used{visibility:visible;background:var(--surface-2)}
+.piece.lt.glow{box-shadow:inset 0 0 0 4px var(--star-shade),0 0 0 4px var(--star),var(--ledge) var(--star-shade);animation:k-nudge .8s var(--ease) 3}
+@keyframes k-nudge{40%{transform:translateY(-8px)}}
+.btn.undo{display:flex;margin:var(--s-4) auto 0}
+.lslots{gap:var(--s-2)}
+.ls{position:relative;width:1.05em;height:1.3em;border-bottom:0;border-radius:.16em .16em .08em .08em;background:var(--surface-2);
+  box-shadow:inset 0 -.11em 0 var(--ink-3);color:var(--ink)}
+.ls:empty{background:var(--surface-2)}
+.ls:not(:empty){background:var(--brand-tint);box-shadow:inset 0 -.11em 0 var(--brand);color:var(--brand-shade)}
+.ls.ok,.ls.ok:not(:empty){background:var(--good-tint);box-shadow:inset 0 -.11em 0 var(--good);color:var(--good-ink);animation:k-pop var(--t-slow) var(--spring)}
+.oslots{gap:var(--s-2)}
+.socket.os{min-width:var(--tap-primary);min-height:var(--tap-primary);padding:var(--s-1) var(--s-3);font-size:clamp(20px,3.8vh,30px);cursor:pointer;
+  touch-action:manipulation}
+.socket.os.full{border:3px solid var(--brand);background:var(--brand-tint);color:var(--brand-shade);box-shadow:0 3px 0 var(--brand-shade)}
+.socket.os.ok{border:3px solid var(--good);background:var(--good-tint);color:var(--good-ink);box-shadow:none;animation:k-pop var(--t-slow) var(--spring)}
+.socket.os.rev{border:3px solid var(--try);background:var(--try-tint);color:var(--try-ink);box-shadow:none}
+.piece.ot{min-height:var(--tap-primary);font-size:clamp(20px,3.8vh,30px);padding:0 var(--s-4)}
+@media (min-width:560px){.socket.os,.piece.ot{min-width:var(--tap-pk);min-height:var(--tap-pk)}}
+
+/* ---------- match: two columns of cards; a found pair shares a colour and a shape mark ---------- */
+.choice.mb{min-height:var(--tap-primary);padding:var(--s-2) var(--s-3);font-size:clamp(var(--fs-3),3.4vh,var(--fs-5));border:0;overflow-wrap:anywhere}
+.choice.mb.sel{transform:translateY(-3px)}
+.choice.mb.bad{background:var(--try-tint);color:var(--try-ink);box-shadow:inset 0 0 0 3px var(--try),0 5px 0 var(--try)}
+.choice.mb.done{cursor:default;color:var(--ink);transform:none}
+.choice.mb.pc0{background:var(--brand-tint);box-shadow:inset 0 0 0 3px var(--brand);--pm:var(--brand)}
+.choice.mb.pc1{background:var(--star-tint);box-shadow:inset 0 0 0 3px var(--star-shade);--pm:var(--star-shade)}
+.choice.mb.pc2{background:var(--good-tint);box-shadow:inset 0 0 0 3px var(--good);--pm:var(--good-ink)}
+.choice.mb.pc3{background:var(--read-tint);box-shadow:inset 0 0 0 3px var(--read);--pm:var(--read)}
+.choice.mb.pc4{background:var(--play-tint);box-shadow:inset 0 0 0 3px var(--play);--pm:var(--play-shade)}
+.choice.mb.done{padding-left:var(--s-7)}
+.choice.mb.done::before{content:'';position:absolute;left:12px;top:50%;width:14px;height:14px;margin-top:-7px;background:var(--pm)}
+.choice.mb.pc0::before{border-radius:50%}
+.choice.mb.pc1::before{border-radius:2px}
+.choice.mb.pc2::before{border-radius:2px;transform:rotate(45deg) scale(.9)}
+.choice.mb.pc3::before{height:6px;margin-top:-3px;border-radius:3px}
+.choice.mb.pc4::before{background:transparent;border:4px solid var(--pm);border-radius:50%}
+.mt.ok .choice.mb.done{animation:k-pop var(--t-slow) var(--spring)}
+
+/* ---------- tap: parts of the prompt you tap ---------- */
+.tp{position:relative;background:var(--surface);border:0;box-shadow:inset 0 0 0 3px var(--line),0 4px 0 var(--ledge-soft);
+  transition:transform var(--t-fast) var(--ease)}
+.tp:active{transform:translateY(3px);box-shadow:inset 0 0 0 3px var(--line),0 1px 0 var(--ledge-soft)}
+.tp.right{border:0;background:var(--good-tint);color:var(--good-ink);box-shadow:inset 0 0 0 3px var(--good),0 4px 0 var(--good-ink);animation:k-pop var(--t-slow) var(--spring)}
+.tp.wrong{border:0;opacity:1;background:var(--try-tint);color:var(--try-ink);box-shadow:inset 0 0 0 3px var(--try),0 4px 0 var(--try)}
+.tpl .tp{box-shadow:inset 0 0 0 3px var(--line)}
+.tpl .tp:is(.right,.wrong)::before{top:-16px}
+.tpl .tp.right::after{top:-10px}
+.tpl .tp.wrong::after{top:-16px}
+
+/* Pre-K plates (more / fewer) */
+.pkplate{position:relative;box-shadow:0 4px 0 var(--ledge-soft)}
+.pkplate.wrong{opacity:1}
+
+/* ---------- spelling keyboard (.sks > .skr > .key.sk) ---------- */
+.sks{gap:var(--s-2)}
+.skr{gap:5px}
+.key.sk{flex:1 1 0;min-width:0;max-width:60px;min-height:var(--tap);height:clamp(var(--tap),8.5vh,64px);padding:0;border-radius:var(--r-chip);
+  font-family:var(--font-body);font-size:clamp(var(--fs-4),3.4vh,var(--fs-5));text-transform:uppercase;box-shadow:inset 0 0 0 2px var(--line),0 3px 0 var(--ledge-soft)}
+.key.sk:is(:active,.is-press){box-shadow:inset 0 0 0 2px var(--line),0 1px 0 var(--ledge-soft)}
+.key.sk.wide{flex:1.7 1 0;max-width:96px}
+.key.sk.del .ic{width:30px;height:30px}
+.key.sk.del:is(:active,.is-press){box-shadow:inset 0 0 0 2px var(--try),0 1px 0 var(--try)}
+@media (max-width:480px){.qs .sks{margin:0 calc(var(--s-2) * -1);width:calc(100% + var(--s-4))}.skr{gap:4px}}
+@media (max-height:520px){.key.sk{height:var(--tap)}.sks{gap:var(--s-1)}}
+
+/* ---------- feedback flourishes (12-speech.js): the star that flies to the star chip, the sparkle burst ---------- */
+.fly{width:48px;height:48px;color:var(--star)}
+.fly .ic{width:48px;height:48px;display:block}
+.burst .ic{display:block}
+.burst.b0{color:var(--star)}.burst.b1{color:var(--good)}.burst.b2{color:var(--brand)}
+html.calm .burst,html.calm .fly{display:none}
+@media (prefers-reduced-motion:reduce){.burst,.fly{display:none}}
+
+/* ---------- landscape: card left, input right ---------- */
+@media (orientation:landscape){
+  .play.qs{gap:var(--s-4)}
+  .qs .inp{width:46%;max-width:520px}
+}
+@media (max-height:520px){
+  .play.qs{padding:var(--s-1) var(--s-4) var(--s-3)}
+  .qs .qarea{padding:var(--s-3) var(--s-3) var(--s-3);border-top-width:5px}
+  .qs .btn.pkspk{width:72px;height:72px;min-width:72px;min-height:72px}
+}
+
+/* streak toast (fb(text, 'streak')): flame on an orange disc */
+.toast.streak{color:var(--play-shade)}
+.toast.streak .ti{background:var(--play);color:var(--surface)}
+/* on the question screen the toast drops just below the top bar, so it does not hide the pet stepping along the track
+   (browsers without :has keep it at the top) */
+body:has(.qtop) .toast{top:calc(env(safe-area-inset-top) + 84px)}
+@media (max-width:480px){body:has(.qtop) .toast{top:calc(env(safe-area-inset-top) + 128px)}}
+@media (max-height:520px){body:has(.qtop) .toast{top:calc(env(safe-area-inset-top) + 72px)}}
+/* Shape Garden crayon bars: a full 48 px tap target inside the narrower card */
+.qs .sgbars .sgt{min-height:var(--tap)}

@@ -1276,6 +1276,251 @@ html.notext .pktxt{display:none}
 .rig.jump .pg-arm-r{transform:rotate(-60deg)}
 .rig.sad .pg-fig{animation:pet-wobble .5s ease-in-out}
 @keyframes pet-jump{35%{transform:translateY(-24px) scale(1.04,.98)}70%{transform:translateY(0) scale(1.05,.94)}}
+/* Question screen (P4-10; DESIGN_SYSTEM 9 row 4). Tokens only; animate transform and opacity only; no filter.
+   Round markup is in 50-round.js renderQ: .top.tbar.round.qtop (close, track with dots and the pet runner, flame and star chips),
+   then .play.qs.s-<subject> holding the prompt card .qarea and the input area .inp. The input markup of every kind is in 49-kinds.js
+   and uses the P4-04 components (.key, .choice, .piece, .socket); the rules below give them their question-screen size and states.
+   Kind rules are not scoped to .qs, so Speed Race and the placement quiz (same kinds) get them too.
+   Old rules for the same classes still sit in 30-learn.css, 32-kinds-a.css, 37-kinds-b.css and 40-games.css; this file loads after
+   them and wins with equal or higher specificity (the dead ones can go in P4-17). */
+
+/* ---------- top bar: close, progress track, streak and star chips ---------- */
+.top.qtop{flex-wrap:wrap;gap:var(--s-2) var(--s-3);min-height:0;padding:var(--s-3) var(--s-4) var(--s-1)}
+.qtop #quit .ic{color:var(--ink-2)}
+.qtop .stat.flame{margin-left:auto}
+.qtop .bossbar~.stat.flame{margin-left:0}
+.qtop .stat.flame.off{color:var(--ink-3)}
+.qtop .stat.flame:not(.off) .ic{color:var(--play)}
+.qtop .stat.flame:not(.off){background:var(--play-tint);box-shadow:inset 0 0 0 2px var(--try),0 3px 0 var(--try)}
+
+/* the track: one grid column per question plus one for the goal; dots sit on a rail, the pet stands on the current dot */
+.qtrack{position:relative;flex:1 1 0;min-width:0;max-width:640px;height:64px;margin:0 auto;display:grid;
+  grid-template-columns:repeat(var(--n),minmax(0,1fr));align-items:end;justify-items:center;padding-bottom:6px;--rw:44px}
+.qtrack .dots{display:contents}
+.qtrack .dots>i{position:relative;z-index:1;width:16px;height:16px;margin-bottom:6px;background:var(--surface);box-shadow:inset 0 0 0 3px var(--ledge-soft)}
+.qtrack .dots>i.done{background:var(--good);box-shadow:inset 0 -3px 0 var(--good-ink)}
+.qtrack .dots>i.try{background:var(--try);box-shadow:inset 0 -3px 0 var(--star-shade)}
+.qtrack .dots>i.cur{width:24px;height:24px;margin-bottom:2px;background:var(--surface);box-shadow:inset 0 0 0 5px var(--brand),0 0 0 3px var(--brand-tint)}
+.qtrack::before,.qtrack::after{content:'';position:absolute;left:calc(50% / var(--n));right:calc(50% / var(--n));bottom:17px;height:6px;
+  border-radius:var(--r-pill);background:var(--ledge-soft)}
+/* the part of the rail already walked, grown with transform (--p = done / total) */
+.qtrack::after{background:var(--good);opacity:.45;transform-origin:left center;transform:scaleX(var(--p,0));transition:transform var(--t-slow) var(--ease)}
+.qgoal{position:relative;z-index:1;display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:var(--star-tint);
+  color:var(--star-shade);--ic2:var(--star-tint);box-shadow:inset 0 0 0 2px var(--star),0 3px 0 var(--star-shade)}
+.qgoal .ic{width:26px;height:26px}
+.qgoal.test{background:var(--brand-tint);color:var(--brand);box-shadow:inset 0 0 0 2px var(--brand),0 3px 0 var(--brand-shade)}
+/* #qwalk is as wide as the track, so translateX(%) (set by qLeft in 50-round.js) puts the pet's centre on a column centre */
+.qwalk{position:absolute;left:0;right:0;bottom:22px;z-index:2;height:0;pointer-events:none;transition:transform var(--t-slow) var(--spring)}
+.qtrack .runner{position:absolute;left:0;top:auto;bottom:0;width:var(--rw);margin-left:calc(var(--rw) / -2);font-size:32px;
+  display:flex;justify-content:center;transition:none}
+.qtrack .runner .petwrap{font-size:30px}
+/* the pet's speech bubble (petSay), a P4-04 speech bubble that hangs under the pet */
+#bub{top:calc(100% + 26px);padding:var(--s-1) var(--s-3);border:2px solid var(--line);border-radius:var(--r-btn);background:var(--surface);
+  color:var(--ink);font-size:var(--fs-3);line-height:1.3;box-shadow:0 4px 0 var(--ledge-soft),var(--shadow);transform:translateY(-4px);
+  transition:opacity var(--t) var(--ease),transform var(--t) var(--spring)}
+#bub.on{transform:none}
+/* phones: the track gets its own row under the buttons */
+@media (max-width:480px){
+  .top.qtop{padding:var(--s-2) var(--s-3) 0}
+  .qtrack,.qtop .bossbar{order:9;flex:1 0 100%;max-width:none}
+  .qtop .bossbar~.stat.flame{margin-left:auto}
+  .qtrack{height:58px}
+}
+@media (max-height:520px){
+  .top.qtop{padding:var(--s-2) var(--s-4) 0}
+  .qtrack{height:56px}
+}
+
+/* ---------- the prompt card ---------- */
+.play.qs{gap:var(--s-3);padding:var(--s-2) var(--s-4) var(--s-4)}
+.qs .qarea{position:relative;gap:var(--s-3);padding:var(--s-5) var(--s-4) var(--s-4);border-top:6px solid var(--c,var(--brand));
+  border-radius:var(--r-hero);background:var(--surface);box-shadow:inset 0 0 0 2px var(--line),var(--shadow)}
+/* the prompt spans the card, so pictures sized in % of it (Shape Garden depth scenes) never collapse to 0 when the words are hidden */
+.qs .prompt{align-self:stretch;color:var(--ink);font-family:var(--font-display);animation:k-qin var(--t-slow) var(--ease)}
+@keyframes k-qin{from{opacity:0;transform:translateY(8px) scale(.97)}}
+.qs .prompt.shake{animation:k-shake 240ms linear}
+.qs .tools{flex-wrap:wrap;justify-content:center;gap:var(--s-3)}
+.qs .tools .btn.sm{min-width:var(--tap);font-size:var(--fs-3)}
+/* Pre-K: a big round "hear it again" button and a round help button, no words needed */
+.qs .btn.pkspk{width:88px;height:88px;min-width:88px;min-height:88px;padding:0;border-radius:50%}
+.qs .btn.pkspk .ic{width:48px;height:48px}
+.qs .btn.pkhb .ic{width:34px;height:34px;color:var(--try-ink)}
+.qs .btn.pkhb{background:var(--try-tint);box-shadow:inset 0 0 0 2px var(--try),var(--ledge) var(--try)}
+.btn.talking{animation:k-talk .6s var(--ease) 3}
+@keyframes k-talk{50%{transform:scale(1.06)}}
+/* tags at the top of the card: review ("Remember this one?") and challenge (51-mastery.js .mtag) */
+.tag.rtag{background:var(--brand-tint);color:var(--brand-shade);border-radius:var(--r-pill);font-size:var(--fs-2);padding:var(--s-1) var(--s-3) var(--s-1) var(--s-2)}
+.tag.rtag .ic{width:18px;height:18px}
+.qs .mtag{background:var(--bt);color:var(--surface);padding:var(--s-1) var(--s-3) var(--s-1) var(--s-2);line-height:1.2}
+.qs .mtag .ic{color:var(--surface)}
+.qs .bctx{box-shadow:none;border:2px solid var(--line);background:var(--surface-2)}
+
+/* hint: #hint is the amber panel once it has something in it; the bulb badge sits on its corner */
+.qhint{position:relative;max-width:100%}
+.qs .hint:not(:empty){padding:var(--s-3) var(--s-4);border:2px solid var(--try);border-radius:var(--r-card);background:var(--try-tint);
+  color:var(--ink);font-size:clamp(var(--fs-3),2.8vh,var(--fs-4));line-height:1.35}
+.qhint .hb{position:absolute;left:-10px;top:-14px;display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:var(--try);
+  color:var(--try-ink);box-shadow:inset 0 -3px 0 var(--star-shade)}
+.qhint .hb .ic{width:22px;height:22px}
+.qhint .hint:empty+.hb{display:none}
+.qs .hint.pop{animation:k-qin var(--t-slow) var(--spring)}
+
+/* ---------- answer slots in the prompt (num) ---------- */
+.slot{position:relative;border:.07em dashed var(--ink-3);border-radius:.22em;background:var(--surface-2);color:var(--brand)}
+.slot.sl-on{border-color:var(--brand);background:var(--brand-tint)}
+.slot.ok{border:.07em solid var(--good);background:var(--good-tint);color:var(--good-ink);animation:k-pop var(--t-slow) var(--spring)}
+.slot.rev{border:.07em solid var(--try);background:var(--try-tint);color:var(--try-ink)}
+
+/* right and wrong badges (never colour alone): a green disc with a tick, or an amber disc with a soft cross.
+   Shared by the slot, tap targets, Pre-K plates and the letter slots row; the choice component draws its own. */
+:is(.slot,.tp,.pkplate).ok::before,:is(.tp,.pkplate).right::before,:is(.tp,.pkplate).wrong::before{content:'';position:absolute;z-index:1;
+  top:-12px;right:-12px;width:28px;height:28px;border-radius:50%;background:var(--good);box-shadow:0 0 0 3px var(--surface)}
+:is(.slot,.tp,.pkplate).ok::after,:is(.tp,.pkplate).right::after{content:'';position:absolute;z-index:2;top:-6px;right:-2px;width:7px;height:13px;
+  border:solid var(--surface);border-width:0 4px 4px 0;border-radius:1px;transform:rotate(45deg)}
+:is(.tp,.pkplate).wrong::before{background:var(--try)}
+:is(.tp,.pkplate).wrong::after{content:'';position:absolute;z-index:2;top:-12px;right:-12px;width:28px;height:28px;background-repeat:no-repeat;
+  background-position:center;background-size:14px 14px;background-image:linear-gradient(45deg,transparent 40%,var(--try-ink) 40% 60%,transparent 60%),
+  linear-gradient(-45deg,transparent 40%,var(--try-ink) 40% 60%,transparent 60%)}
+.slot.ok::before{top:-.24em;right:-.24em}
+.slot.ok::after{top:-.13em;right:-.06em}
+
+/* ---------- number pad (.keys.qpad > .key.k) ---------- */
+.qpad{max-width:440px}
+.qpad .key{height:auto;min-height:var(--tap-pk);font-size:clamp(28px,4.6vh,var(--fs-6))}
+.qpad .key .ic{width:34px;height:34px}
+.qpad .key.go .ic{width:38px;height:38px}
+.qpad .key.x{grid-column:1/-1;min-height:var(--tap);background:var(--star-tint);box-shadow:inset 0 0 0 2px var(--star),var(--ledge) var(--star-shade)}
+.qpad .key.x:is(:active,.is-press){box-shadow:inset 0 0 0 2px var(--star),var(--ledge-press) var(--star-shade)}
+@media (min-height:900px){.qpad .key{min-height:72px}}
+@media (max-width:480px){.qpad .key{min-height:56px}}
+@media (max-height:520px){.qpad .key{min-height:var(--tap)}}
+
+/* ---------- choices (.choices > .choice.ch) ---------- */
+.choices{gap:var(--s-3);max-width:600px}
+.choice.ch{min-height:var(--tap-pk);padding:var(--s-2) var(--s-3);font-size:clamp(26px,4.6vh,var(--fs-6))}
+.choice.ch.wrong{opacity:1;background:var(--try-tint);color:var(--try-ink);box-shadow:inset 0 0 0 3px var(--try),0 5px 0 var(--try)}
+.choices.pics .choice.ch{font-size:clamp(44px,8vh,64px);padding:var(--s-2)}
+.choices.wide .choice.ch{justify-content:center;font-size:clamp(20px,3.6vh,28px);padding:clamp(8px,1.6vh,14px) var(--s-7);line-height:1.25}
+.choices.bwords .choice.ch{min-height:var(--tap-primary);font-size:clamp(20px,3.6vh,28px);padding:clamp(8px,1.6vh,14px) var(--s-5)}
+.choices.syms .choice.ch{font-size:clamp(36px,7vh,56px)}
+/* the right answer shown after the second try: green with its tick */
+.choice.ch.right{opacity:1;background:var(--good-tint);color:var(--good-ink);box-shadow:inset 0 0 0 3px var(--good),0 5px 0 var(--good-ink)}
+
+/* multi: a tick box in each choice, then the Check button */
+.mchoices .choice.mc{justify-content:flex-start;gap:var(--s-3);min-height:var(--tap-primary);padding:var(--s-2) var(--s-4);font-size:clamp(20px,3.6vh,28px);text-align:left}
+.choice.mc .mk{width:30px;height:30px;border:3px solid var(--ledge-soft);border-radius:var(--r-chip);background:var(--surface)}
+.choice.mc.on{outline:0;background:var(--brand-tint);color:var(--brand-shade);box-shadow:inset 0 0 0 3px var(--brand),0 5px 0 var(--brand-shade)}
+.choice.mc.on .mk{background:var(--brand);border-color:var(--brand);color:var(--surface)}
+.choice.mc.right{outline:0}
+.choice.mc.right .mk{background:var(--good-ink);border-color:var(--good-ink);color:var(--surface)}
+.choice.mc.wrong{outline:0}
+.choice.mc.wrong .mk{border-color:var(--try-ink)}
+.choice.mc:is(.right,.wrong)::before{top:50%;margin-top:-14px}
+.choice.mc.right::after{top:50%;margin-top:-9px}
+.choice.mc.wrong::after{top:50%;margin-top:-14px}
+.btn.mgo{display:flex;min-width:200px;margin:var(--s-4) auto 0;background:linear-gradient(var(--hi),var(--hi-0) 60%) var(--good-ink);
+  box-shadow:inset 0 2px 0 var(--hi),var(--ledge) var(--es-shade)}
+.btn.mgo:is(:active,.is-press){box-shadow:inset 0 2px 0 var(--hi),var(--ledge-press) var(--es-shade)}
+.btn.mgo:disabled{opacity:1}
+
+/* ---------- build and order: pieces into slots ---------- */
+.tiles{gap:var(--s-3)}
+.piece.lt{width:clamp(56px,10vh,76px);height:clamp(56px,10vh,76px);padding:0;font-size:clamp(30px,5.5vh,40px)}
+.piece:is(.lt,.ot){background:var(--surface)}
+.piece:is(.lt,.ot).used{visibility:visible;background:var(--surface-2)}
+.piece.lt.glow{box-shadow:inset 0 0 0 4px var(--star-shade),0 0 0 4px var(--star),var(--ledge) var(--star-shade);animation:k-nudge .8s var(--ease) 3}
+@keyframes k-nudge{40%{transform:translateY(-8px)}}
+.btn.undo{display:flex;margin:var(--s-4) auto 0}
+.lslots{gap:var(--s-2)}
+.ls{position:relative;width:1.05em;height:1.3em;border-bottom:0;border-radius:.16em .16em .08em .08em;background:var(--surface-2);
+  box-shadow:inset 0 -.11em 0 var(--ink-3);color:var(--ink)}
+.ls:empty{background:var(--surface-2)}
+.ls:not(:empty){background:var(--brand-tint);box-shadow:inset 0 -.11em 0 var(--brand);color:var(--brand-shade)}
+.ls.ok,.ls.ok:not(:empty){background:var(--good-tint);box-shadow:inset 0 -.11em 0 var(--good);color:var(--good-ink);animation:k-pop var(--t-slow) var(--spring)}
+.oslots{gap:var(--s-2)}
+.socket.os{min-width:var(--tap-primary);min-height:var(--tap-primary);padding:var(--s-1) var(--s-3);font-size:clamp(20px,3.8vh,30px);cursor:pointer;
+  touch-action:manipulation}
+.socket.os.full{border:3px solid var(--brand);background:var(--brand-tint);color:var(--brand-shade);box-shadow:0 3px 0 var(--brand-shade)}
+.socket.os.ok{border:3px solid var(--good);background:var(--good-tint);color:var(--good-ink);box-shadow:none;animation:k-pop var(--t-slow) var(--spring)}
+.socket.os.rev{border:3px solid var(--try);background:var(--try-tint);color:var(--try-ink);box-shadow:none}
+.piece.ot{min-height:var(--tap-primary);font-size:clamp(20px,3.8vh,30px);padding:0 var(--s-4)}
+@media (min-width:560px){.socket.os,.piece.ot{min-width:var(--tap-pk);min-height:var(--tap-pk)}}
+
+/* ---------- match: two columns of cards; a found pair shares a colour and a shape mark ---------- */
+.choice.mb{min-height:var(--tap-primary);padding:var(--s-2) var(--s-3);font-size:clamp(var(--fs-3),3.4vh,var(--fs-5));border:0;overflow-wrap:anywhere}
+.choice.mb.sel{transform:translateY(-3px)}
+.choice.mb.bad{background:var(--try-tint);color:var(--try-ink);box-shadow:inset 0 0 0 3px var(--try),0 5px 0 var(--try)}
+.choice.mb.done{cursor:default;color:var(--ink);transform:none}
+.choice.mb.pc0{background:var(--brand-tint);box-shadow:inset 0 0 0 3px var(--brand);--pm:var(--brand)}
+.choice.mb.pc1{background:var(--star-tint);box-shadow:inset 0 0 0 3px var(--star-shade);--pm:var(--star-shade)}
+.choice.mb.pc2{background:var(--good-tint);box-shadow:inset 0 0 0 3px var(--good);--pm:var(--good-ink)}
+.choice.mb.pc3{background:var(--read-tint);box-shadow:inset 0 0 0 3px var(--read);--pm:var(--read)}
+.choice.mb.pc4{background:var(--play-tint);box-shadow:inset 0 0 0 3px var(--play);--pm:var(--play-shade)}
+.choice.mb.done{padding-left:var(--s-7)}
+.choice.mb.done::before{content:'';position:absolute;left:12px;top:50%;width:14px;height:14px;margin-top:-7px;background:var(--pm)}
+.choice.mb.pc0::before{border-radius:50%}
+.choice.mb.pc1::before{border-radius:2px}
+.choice.mb.pc2::before{border-radius:2px;transform:rotate(45deg) scale(.9)}
+.choice.mb.pc3::before{height:6px;margin-top:-3px;border-radius:3px}
+.choice.mb.pc4::before{background:transparent;border:4px solid var(--pm);border-radius:50%}
+.mt.ok .choice.mb.done{animation:k-pop var(--t-slow) var(--spring)}
+
+/* ---------- tap: parts of the prompt you tap ---------- */
+.tp{position:relative;background:var(--surface);border:0;box-shadow:inset 0 0 0 3px var(--line),0 4px 0 var(--ledge-soft);
+  transition:transform var(--t-fast) var(--ease)}
+.tp:active{transform:translateY(3px);box-shadow:inset 0 0 0 3px var(--line),0 1px 0 var(--ledge-soft)}
+.tp.right{border:0;background:var(--good-tint);color:var(--good-ink);box-shadow:inset 0 0 0 3px var(--good),0 4px 0 var(--good-ink);animation:k-pop var(--t-slow) var(--spring)}
+.tp.wrong{border:0;opacity:1;background:var(--try-tint);color:var(--try-ink);box-shadow:inset 0 0 0 3px var(--try),0 4px 0 var(--try)}
+.tpl .tp{box-shadow:inset 0 0 0 3px var(--line)}
+.tpl .tp:is(.right,.wrong)::before{top:-16px}
+.tpl .tp.right::after{top:-10px}
+.tpl .tp.wrong::after{top:-16px}
+
+/* Pre-K plates (more / fewer) */
+.pkplate{position:relative;box-shadow:0 4px 0 var(--ledge-soft)}
+.pkplate.wrong{opacity:1}
+
+/* ---------- spelling keyboard (.sks > .skr > .key.sk) ---------- */
+.sks{gap:var(--s-2)}
+.skr{gap:5px}
+.key.sk{flex:1 1 0;min-width:0;max-width:60px;min-height:var(--tap);height:clamp(var(--tap),8.5vh,64px);padding:0;border-radius:var(--r-chip);
+  font-family:var(--font-body);font-size:clamp(var(--fs-4),3.4vh,var(--fs-5));text-transform:uppercase;box-shadow:inset 0 0 0 2px var(--line),0 3px 0 var(--ledge-soft)}
+.key.sk:is(:active,.is-press){box-shadow:inset 0 0 0 2px var(--line),0 1px 0 var(--ledge-soft)}
+.key.sk.wide{flex:1.7 1 0;max-width:96px}
+.key.sk.del .ic{width:30px;height:30px}
+.key.sk.del:is(:active,.is-press){box-shadow:inset 0 0 0 2px var(--try),0 1px 0 var(--try)}
+@media (max-width:480px){.qs .sks{margin:0 calc(var(--s-2) * -1);width:calc(100% + var(--s-4))}.skr{gap:4px}}
+@media (max-height:520px){.key.sk{height:var(--tap)}.sks{gap:var(--s-1)}}
+
+/* ---------- feedback flourishes (12-speech.js): the star that flies to the star chip, the sparkle burst ---------- */
+.fly{width:48px;height:48px;color:var(--star)}
+.fly .ic{width:48px;height:48px;display:block}
+.burst .ic{display:block}
+.burst.b0{color:var(--star)}.burst.b1{color:var(--good)}.burst.b2{color:var(--brand)}
+html.calm .burst,html.calm .fly{display:none}
+@media (prefers-reduced-motion:reduce){.burst,.fly{display:none}}
+
+/* ---------- landscape: card left, input right ---------- */
+@media (orientation:landscape){
+  .play.qs{gap:var(--s-4)}
+  .qs .inp{width:46%;max-width:520px}
+}
+@media (max-height:520px){
+  .play.qs{padding:var(--s-1) var(--s-4) var(--s-3)}
+  .qs .qarea{padding:var(--s-3) var(--s-3) var(--s-3);border-top-width:5px}
+  .qs .btn.pkspk{width:72px;height:72px;min-width:72px;min-height:72px}
+}
+
+/* streak toast (fb(text, 'streak')): flame on an orange disc */
+.toast.streak{color:var(--play-shade)}
+.toast.streak .ti{background:var(--play);color:var(--surface)}
+/* on the question screen the toast drops just below the top bar, so it does not hide the pet stepping along the track
+   (browsers without :has keep it at the top) */
+body:has(.qtop) .toast{top:calc(env(safe-area-inset-top) + 84px)}
+@media (max-width:480px){body:has(.qtop) .toast{top:calc(env(safe-area-inset-top) + 128px)}}
+@media (max-height:520px){body:has(.qtop) .toast{top:calc(env(safe-area-inset-top) + 72px)}}
+/* Shape Garden crayon bars: a full 48 px tap target inside the narrower card */
+.qs .sgbars .sgt{min-height:var(--tap)}
 /* Rewards (P4-11; DESIGN_SYSTEM.md 6.3, 8.1, 9 row 5): round complete, treasure chest, stars, prizes, bosses, test out, pet growth.
    Drawings: src/js/18-reward-art.js (RW.*). Tokens only. Animate only transform and opacity; keyframes are named rw-*.
    Calm mode and reduced motion cut every animation to 0.01 ms (20-base.css) and hide the drawn confetti (.rw-burst). */
@@ -1787,7 +2032,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S));SAVE_FAILED=fals
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v74'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v75'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -1860,14 +2105,21 @@ function say(t,btn,lang,q){if(!canSpeak()){if(btn)noVoice(btn);return}
   if(btn){let started=false;btn.classList.add('talking');u.onstart=()=>{started=true};u.onend=u.onerror=()=>btn.classList.remove('talking');
     setTimeout(()=>{if(!started&&!speechSynthesis.speaking)noVoice(btn)},2500)}
   speechSynthesis.speak(u)}catch(e){if(btn)noVoice(btn)}}
-let fbT;function fb(t,cls='',ms=1000){const e=$('#fb');e.textContent=t;e.className='fb on '+cls;clearTimeout(fbT);fbT=setTimeout(()=>e.className='fb',ms)}
+// P4-10: feedback is the P4-04 toast (UI.toast in 14-ui.js). cls picks its look: '' right (green, tick), 'warn' / 'bad' try again (amber),
+// 'again' amber with the replay arrow, 'info' / 'pl-fb' neutral (blue, bulb), 'streak' (flame), 'zap' (bolt). The #fb element is no longer used.
+let fbT;function fb(t,cls='',ms=1000){const c=String(cls||'');
+  const k=/\b(warn|bad|again)\b/.test(c)?['try',/again/.test(c)?'replay':'hint']:/\b(info|pl-fb)\b/.test(c)?['info','hint']
+    :/\bstreak\b/.test(c)?['streak','flame']:/\bzap\b/.test(c)?['good','bolt']:['good','check'];
+  UI.toast(t,k[0],ms,k[1])}
 function bump(sel){const e=typeof sel=='string'?$(sel):sel;if(!e)return;e.classList.remove('bump');void e.offsetWidth;e.classList.add('bump')}
 function anim(e,c){if(!e)return;e.classList.remove('jump','sad');void e.offsetWidth;e.classList.add(c);setTimeout(()=>e.classList.remove(c),550)}
 function flyStar(from){const to=$('#starc');if(!to)return;const r=from?from.getBoundingClientRect():{left:innerWidth/2,top:innerHeight/2,width:0,height:0},t=to.getBoundingClientRect();
-  const x=r.left+r.width/2,y=r.top+r.height/2,e=document.createElement('div');e.className='fly';e.textContent='⭐';e.style.left=x+'px';e.style.top=y+'px';document.body.appendChild(e);
+  const x=r.left+r.width/2,y=r.top+r.height/2,e=document.createElement('div');e.className='fly';e.innerHTML=ico('star',48);e.style.left=x+'px';e.style.top=y+'px';document.body.appendChild(e);
   requestAnimationFrame(()=>requestAnimationFrame(()=>{e.style.transform=`translate(${t.left+20-x}px,${t.top+16-y}px) scale(.5)`;e.style.opacity=.4}));
   setTimeout(()=>{e.remove();SFX.coin();bump('#starc')},640)}
-function burst(x,y,set=['✨','⭐','💫']){for(let i=0;i<10;i++){const e=document.createElement('div');e.className='burst';e.textContent=pick(set);e.style.left=x+'px';e.style.top=y+'px';document.body.appendChild(e);
+// a burst of 10 sparkles from (x, y): drawn stars (P4-10), or the emoji in set (boss hits)
+function burst(x,y,set){for(let i=0;i<10;i++){const e=document.createElement('div');e.className='burst';
+  if(set)e.textContent=pick(set);else{e.className+=' b'+(i%3);e.innerHTML=ico('star',i%2?18:26)}e.style.left=x+'px';e.style.top=y+'px';document.body.appendChild(e);
   const a=Math.random()*Math.PI*2,d=80+Math.random()*90;requestAnimationFrame(()=>requestAnimationFrame(()=>{e.style.transform=`translate(${Math.cos(a)*d}px,${Math.sin(a)*d}px) scale(.4)`;e.style.opacity=0}));setTimeout(()=>e.remove(),800)}}
 function confetti(n=36){for(let i=0;i<n;i++){const e=document.createElement('div');e.className='conf';e.textContent=pick(['⭐','🎉','✨','🌟','🎈','🍬']);
   e.style.left=Math.random()*100+'vw';e.style.animationDuration=(1.8+Math.random()*1.8)+'s';e.style.animationDelay=Math.random()*.6+'s';document.body.appendChild(e);setTimeout(()=>e.remove(),4500)}}
@@ -2029,8 +2281,8 @@ const UI = {
       `${o.attrs ? ' ' + o.attrs : ''}>${face}${st}${tag}</button>`;
   },
 
-  // Toast: a pill at the top centre for ms milliseconds. kind: good | try | info.
-  toast(text, kind = 'info', ms = 1600) {
+  // Toast: a pill at the top centre for ms milliseconds. kind: good | try | info | streak. icon: optional, overrides the kind's icon.
+  toast(text, kind = 'info', ms = 1600, icon = '') {
     let t = document.getElementById('toast');
     if (!t) {
       t = document.createElement('div');
@@ -2039,9 +2291,9 @@ const UI = {
       t.setAttribute('aria-live', 'polite');
       document.body.appendChild(t);
     }
-    const icon = { good: 'check', try: 'replay', info: 'info' }[kind] || 'info';
+    const ic = icon || { good: 'check', try: 'replay', info: 'info', streak: 'flame' }[kind] || 'info';
     t.className = 'toast ' + kind;
-    t.innerHTML = `<span class="ti">${ico(icon)}</span><span>${UI.t(text)}</span>`;
+    t.innerHTML = `<span class="ti">${ico(ic)}</span><span>${UI.t(text)}</span>`;
     void t.offsetWidth; // let it slide in again when shown twice in a row
     t.classList.add('on');
     clearTimeout(UI._toastT);
@@ -7073,7 +7325,7 @@ function home(first){
   <div class="scroll hm" id="hs"><div class="hm-cols">
    <div class="hm-col">${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
-   <p class="hm-ver">${ico('star', 16)}<span>Star School v74</span></p></div>`);
+   <p class="hm-ver">${ico('star', 16)}<span>Star School v75</span></p></div>`);
   music(true);
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,['💖','✨','⭐']);
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
@@ -7216,20 +7468,22 @@ function shop(){const sc=sceneOf(),items=shopTab=='hat'?SHOP.hat.concat(BPRIZE.f
      K.spoken(q)              what is said when the answer is revealed (when q.after is not set)
      K.validate(q)            list of problems (strings); used by tools/test.js
    A new kind adds KIND.name = {...} with all of these. kindProblems(q) also catches an unknown kind. */
-const PAD_HTML=`<div class="pad">${[1,2,3,4,5,6,7,8,9].map(n=>`<button class="btn k" data-k="${n}">${n}</button>`).join('')}`
-  +'<button class="btn k del" data-k="del">⌫</button><button class="btn k" data-k="0">0</button>'
-  +'<button class="btn k go" data-k="go">✓</button></div>';
+// P4-10: the pad is the P4-04 key component (.keys > .key); .pad, .k[data-k], .del, .go and .x stay as the hooks code and tests use.
+// extra: '' | '.' | 'neg'; next: true when the check key first moves to the next slot (several slots).
+function padHTML(extra,next){
+  const key=(k,face,cls,aria)=>`<button class="key k${cls?' '+cls:''}" data-k="${k}"${aria?` aria-label="${aria}"`:''}>${face}</button>`;
+  return '<div class="keys qpad pad">'+[1,2,3,4,5,6,7,8,9].map(n=>key(n,n)).join('')
+    +key('del',ico('backspace'),'del','Delete')+key(0,0)+key('go',ico(next?'go':'check'),'go',next?'Next box':'Check')
+    +(extra=='.'?key('.','.','x','Point'):extra=='neg'?key('neg','±','x','Plus or minus'):'')+'</div>';
+}
+const PAD_HTML=padHTML('');
 
 const KIND={
   num:{
     // pad: int (default), dec, neg, frac; sep 'R' or 'mix'; see the header. Several slots share st.typed, parts joined by the separators
     render(q){
       const pad=q.pad||'int';
-      let h=PAD_HTML;
-      if(numSeps(q).length)h=h.replace('>✓<','>→<');
-      if(pad=='dec')h=h.replace(/<\/div>$/,'<button class="btn k x" data-k=".">.</button></div>');
-      if(pad=='neg')h=h.replace(/<\/div>$/,'<button class="btn k x" data-k="neg">±</button></div>');
-      return h;
+      return padHTML(pad=='dec'?'.':pad=='neg'?'neg':'',numSeps(q).length>0);
     },
     bind(q,st,submit,o={}){
       const max=o.max||q.max||4,seps=numSeps(q),K=KIND.num;
@@ -7276,8 +7530,12 @@ const KIND={
       for(let i=parts.length;i<=seps.length;i++)$('#slot'+(i+1)).textContent='';
       if(seps.length){
         $$('.slot').forEach(s=>s.classList.toggle('sl-on','#'+s.id==at));
-        const go=$('.k.go');
-        if(go)go.textContent=parts.length>seps.length?'✓':'→';
+        const go=$('.k.go'),last=parts.length>seps.length;
+        if(go&&go.dataset.last!==String(last)){
+          go.dataset.last=last;
+          go.innerHTML=ico(last?'check':'go');
+          go.setAttribute('aria-label',last?'Check':'Next box');
+        }
       }
       return at;
     },
@@ -7316,7 +7574,7 @@ const KIND={
 
   choice:{
     render:q=>`<div class="choices ${q.cls||''}">`
-      +q.choices.map((c,i)=>`<button class="btn ch" data-i="${i}">${c.h?c.l:esc(c.l)}</button>`).join('')+'</div>',
+      +q.choices.map((c,i)=>`<button class="choice ch" data-i="${i}">${c.h?c.l:esc(c.l)}</button>`).join('')+'</div>',
     bind(q,st,submit){
       $$('.ch').forEach(b=>b.onclick=()=>submit(q.choices[b.dataset.i].v,b));
     },
@@ -7349,8 +7607,8 @@ const KIND={
   },
 
   build:{
-    render:q=>`<div class="tiles">${q.tiles.map((t,i)=>`<button class="btn lt" data-i="${i}">${t}</button>`).join('')}</div>`
-      +'<button class="btn sm undo" id="undo">↩ Undo</button>',
+    render:q=>`<div class="tiles">${q.tiles.map((t,i)=>`<button class="piece lt" data-i="${i}">${t}</button>`).join('')}</div>`
+      +UI.btn('Undo',{size:'sm',icon:'back',id:'undo',cls:'undo'}),
     bind(q,st,submit){
       const K=KIND.build;
       $$('.lt').forEach(b=>b.onclick=()=>{
@@ -7419,7 +7677,7 @@ const KIND={
   //        A wrong pair submits '!' (a miss for the engine: first one retries, second one reveals); matched pairs stay.
   match:{
     render:q=>{
-      const b=(s,c,i)=>`<button class="btn mb" data-s="${s}" data-i="${i}">${c.h?c.l:esc(c.l)}</button>`;
+      const b=(s,c,i)=>`<button class="choice mb" data-s="${s}" data-i="${i}">${c.h?c.l:esc(c.l)}</button>`;
       return `<div class="mt"><div class="mtc">${q.items.map((c,i)=>b('L',c,i)).join('')}</div>`
         +`<div class="mtc">${q.opts.map((c,i)=>b('R',c,i)).join('')}</div></div>`;
     },
@@ -7532,9 +7790,9 @@ const KIND={
   spell:{
     ROWS:['qwertyuiop','asdfghjkl','zxcvbnm'],
     render:q=>{
-      const key=c=>`<button class="btn sk" data-ch="${c}">${c}</button>`;
+      const key=c=>`<button class="key sk" data-ch="${c}">${c}</button>`;
       const rows=KIND.spell.ROWS.map((r,i)=>`<div class="skr">${[...r].map(key).join('')}`
-        +(i==2?`<button class="btn sk wide del" data-ch="del" aria-label="Delete">${ico('backspace',28)}</button>`:'')+'</div>').join('');
+        +(i==2?`<button class="key sk wide del" data-ch="del" aria-label="Delete">${ico('backspace',28)}</button>`:'')+'</div>').join('');
       const es=q.lang=='es'?`<div class="skr">${[...'ñáéíóúü'].map(key).join('')}</div>`:'';
       return `<div class="sks">${rows}${es}</div>`;
     },
@@ -7601,9 +7859,9 @@ const KIND={
   // ---- P1-03 kinds: multi (choose all that apply), order (tap tiles into order) ----
   multi:{
     render:q=>`<div class="choices mchoices ${q.cls||''}">`
-      +q.choices.map((c,i)=>`<button class="btn ch mc" data-i="${i}" aria-pressed="false">`
+      +q.choices.map((c,i)=>`<button class="choice ch mc" data-i="${i}" aria-pressed="false">`
         +`<span class="mk">${ico('check',22)}</span><span class="ml">${c.h?c.l:esc(c.l)}</span></button>`).join('')+'</div>'
-      +'<button class="btn go mgo" id="mcheck" disabled>Check</button>',
+      +UI.btn('Check',{kind:'primary',icon:'check',id:'mcheck',cls:'mgo',off:true}),
     bind(q,st,submit){
       const K=KIND.multi;
       st.sel=[];
@@ -7662,8 +7920,8 @@ const KIND={
   },
 
   order:{
-    render:q=>`<div class="oslots">${q.ans.map((_,i)=>`<button class="btn os" data-s="${i}" aria-label="Place ${i+1}"></button>`).join('')}</div>`
-      +`<div class="tiles otiles">${q.items.map((t,i)=>`<button class="btn ot" data-i="${i}">${t.h?t.l:esc(t.l)}</button>`).join('')}</div>`,
+    render:q=>`<div class="oslots">${q.ans.map((_,i)=>`<button class="socket os" data-s="${i}" aria-label="Place ${i+1}"></button>`).join('')}</div>`
+      +`<div class="tiles otiles">${q.items.map((t,i)=>`<button class="piece ot" data-i="${i}">${t.h?t.l:esc(t.l)}</button>`).join('')}</div>`,
     bind(q,st,submit){
       const K=KIND.order;
       st.ord=[];
@@ -7833,18 +8091,31 @@ function fit(){const qa=$('.qarea'),pr=$('#prompt');if(!qa||!pr)return;let k=1;p
   while(k>.42&&(qa.scrollHeight>qa.clientHeight+1||pr.scrollWidth>pr.clientWidth+1)){k-=.05;pr.style.setProperty('--k',k)}}
 let rsT;addEventListener('resize',()=>{fit();clearTimeout(rsT);rsT=setTimeout(()=>{if($('#map'))drawMap(MAPP)},150)});
 function petSay(t){const b=$('#bub');if(!b)return;b.textContent=t;const far=G&&G.done/G.n>.5;b.style.left=far?'auto':'0';b.style.right=far?'0':'auto';b.classList.add('on');clearTimeout(b._t);b._t=setTimeout(()=>b.classList.remove('on'),1400)}
-function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;
+// P4-10: the question screen. Top bar: close, the track (one dot per question, the pet walks to the gift), streak and star chips.
+// Then the prompt card (.qarea) and the input area (.inp) of the question's kind. Subject colour from the question's skill.
+const qSubj=q=>{const a=(SK[q.sk]||{}).area||G.path;return['math','read','es','disc','bt'].includes(a)?a:'math'};
+// the pet stands on the dot of the current question; after the last one it reaches the gift (column n+1 of the track)
+const qLeft=()=>`translateX(${+((Math.min(G.done,G.n)+.5)/(G.n+1)*100).toFixed(3)}%)`; // moves #qwalk, a layer as wide as the track
+// move the pet and refresh the dots after an answer (G.res marks questions that needed another try)
+function qProg(){const w=$('#qwalk'),tr=$('#qtrack');if(w)w.style.transform=qLeft();
+  if(tr){tr.style.setProperty('--p',Math.min(G.done,G.n)/G.n);const d=tr.querySelector('.dots');if(d)d.outerHTML=UI.dots(G.n,G.done,G.res)}}
+// the streak chip: lit from 2 in a row, bumps when it grows
+function qStreak(){const sk=$('#stk');if(!sk)return;sk.querySelector('b').textContent=G.streak;sk.classList.toggle('off',G.streak<2);if(G.streak>=2)bump(sk)}
+function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;G.res=G.res||[];
   actQStart(q.sk); // P5-05
   const K=KIND[q.kind];
   if(!K)throw new Error('unknown question kind '+q.kind);
-  const input=K.render(q);
-  const pos=`calc(${G.done/G.n} * (100% - 70px))`;
-  view(`<div class="top"><button class="btn sm" id="quit">✕</button>
-   ${G.boss?`<div class="bossbar"><span class="bossE" id="bossE">${G.boss.e}<div class="bubble" id="bub"></div></span><div class="hp"><div id="hpf" style="width:${G.hp/7*100}%"></div></div><b id="hpn">${'❤️'.repeat(G.hp)}</b></div>`
-    :`<div class="track"><div class="line"></div><div class="chest">${G.test?'⚡':'🎁'}</div><div class="runner ${petAura()}" id="runner" style="left:${pos}">${petHTML()}<div class="bubble" id="bub"></div></div></div>`}
-   <div class="streak ${G.streak>=2?'on':''}" id="stk">🔥 ${G.streak}</div><div class="stars" id="starc">⭐ ${G.score}</div></div>
-  <div class="play"><div class="qarea">${q.review?'<div class="rtag">🔁 Remember this one?</div>':''}${q.ctx?bankCtx(q.ctx):''}<div class="prompt" id="prompt">${q.html}</div>
-  <div class="tools">${q.say?(q.pk?`<button class="btn pkspk" id="spk" aria-label="Hear it again">${ico('speak',44)}</button>`:'<button class="btn sm" id="spk">🔊 Hear it</button>'):''}<button class="btn sm" id="hb">💡 Help</button></div><div id="hint" class="hint"></div></div>
+  const input=K.render(q),ar=qSubj(q);
+  const track=G.boss?`<div class="bossbar"><span class="bossE" id="bossE">${G.boss.e}<div class="bubble" id="bub"></div></span><div class="hp"><div id="hpf" style="width:${G.hp/7*100}%"></div></div><b id="hpn">${'❤️'.repeat(G.hp)}</b></div>`
+    :`<div class="qtrack" id="qtrack" style="--n:${G.n+1};--p:${Math.min(G.done,G.n)/G.n}">${UI.dots(G.n,G.done,G.res)}`
+      +`<span class="qgoal${G.test?' test':''}" aria-hidden="true">${ico(G.test?'bolt':'gift')}</span>`
+      +`<div class="qwalk" id="qwalk" style="transform:${qLeft()}"><div class="runner ${petAura()}" id="runner">${petHTML()}<div class="bubble" id="bub"></div></div></div></div>`;
+  const spk=!q.say?'':q.pk?UI.ibtn('speak','Hear it again',{kind:'primary',size:'lg',id:'spk',cls:'pkspk'}):UI.btn('Hear it',{size:'sm',icon:'speak',id:'spk'});
+  const help=q.pk?UI.ibtn('hint','Help',{size:'lg',id:'hb',cls:'pkhb'}):UI.btn('Help',{size:'sm',icon:'hint',id:'hb'});
+  view(`<div class="top tbar round qtop s-${ar}">${UI.ibtn('close','Stop',{size:'sm',id:'quit'})}${track}
+   ${UI.chip('flame',G.streak,{id:'stk',off:G.streak<2,aria:'In a row'})}${UI.chip('star',G.score,{id:'starc',aria:'Stars'})}</div>
+  <div class="play qs s-${ar}"><div class="qarea">${q.review?UI.tag('Remember this one?','rtag','replay'):''}${q.ctx?bankCtx(q.ctx):''}<div class="prompt" id="prompt">${q.html}</div>
+  <div class="tools">${spk}${help}</div><div class="qhint"><div id="hint" class="hint"></div><span class="hb" aria-hidden="true">${ico('hint')}</span></div></div>
   <div class="inp">${input}</div></div>`);
   $('#quit').onclick=()=>{G.dead=true;back()};
   if($('#spk'))$('#spk').onclick=e=>say(q.say,e.currentTarget,q.lang=='es'&&q.auto=='must'?'es':null);
@@ -7854,7 +8125,7 @@ function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;
   $$('.w').forEach(s=>s.onclick=()=>{say(s.dataset.w);SFX.pop(1)});
   K.bind(q,G,check);
   if(q.review)petSay('Remember this?');
-  if(G.retry){fb("Let's try this one again!",'warn');petSay('One more time!')}
+  if(G.retry){fb("Let's try this one again!",'again');petSay('One more time!')}
   else if(G.done==0)petSay(G.mix?'Tricky mix!':"Let's go!");
   else if(G.done==G.n-1)petSay('Last one!');
   mastShow(q); // P1-08: Challenge tag, hint before the first try, answer clock
@@ -7863,7 +8134,7 @@ function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;
 function addMiss(q){const p=P(q.sk),m=p.miss[q.label]||{tot:0};m.tot=(m.tot||0)+1;m.q={label:q.label};delete m.n;p.miss[q.label]=m; // P5-02: a tally only
   const ks=Object.keys(p.miss);if(ks.length>40){ks.sort((a,b)=>p.miss[a].tot-p.miss[b].tot);delete p.miss[ks[0]]}
   revMiss(q)} // P5-02: the review item (59-review.js)
-const PRAISE=['Great job!','You got it!','Awesome!','Super!','Nice!','Yes!','Way to go!','Brilliant!','Boom! 💥','Nailed it!'];
+const PRAISE=['Great job!','You got it!','Awesome!','Super!','Nice!','Yes!','Way to go!','Brilliant!','Boom!','Nailed it!'];
 function check(v,el){if(G.lock)return;const q=G.q,K=KIND[q.kind],p=P(q.sk),ok=K.same?K.same(q,v):String(v)===String(q.ans);
   if(G.tries==0&&!G.retry)mastTry(q,ok); // P1-08: mastery record and in-round adaptation
   const src=el||$('#slot')||$('.lslots')||$('.inp');
@@ -7877,27 +8148,27 @@ function check(v,el){if(G.lock)return;const q=G.q,K=KIND[q.kind],p=P(q.sk),ok=K.
     SFX.right(G.streak);
     if(first)setTimeout(()=>flyStar(src),150);
     const r=src.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2);
-    const run=$('#runner');if(run){run.style.left=`calc(${G.done/G.n} * (100% - 70px))`;anim(run,'jump')}
+    if(!G.retry)G.res[G.done-1]=G.tries?'try':'';qProg();anim($('#runner'),'jump');
     let ko=false;if(G.boss&&!G.retry){G.hp=Math.max(0,G.hp-1);bossHit();if(G.hp==0){ko=true;G.won=true;G.asked=G.done;G.done=G.n;G.missed=[]}}
-    const sk=$('#stk');sk.textContent='🔥 '+G.streak;sk.classList.toggle('on',G.streak>=2);if(G.streak>=2)bump(sk);
+    qStreak();
     let wait=q.after?1900:1200;
     if(ko){wait+=1500;setTimeout(bossKO,500)}
-    else if([3,5,8,10].includes(G.streak)){setTimeout(SFX.streak,350);fb(`🔥 ${G.streak} in a row!`);petSay("You're on fire!");
+    else if([3,5,8,10].includes(G.streak)){setTimeout(SFX.streak,350);fb(`${G.streak} in a row!`,'streak');petSay("You're on fire!");
       if(!q.after&&!playClip('cheer')&&S.voice)say(`${G.streak} in a row! ${pick(['Amazing','Wow','Incredible','Super'])}, ${S.name}!`);wait+=300}
-    else if(G.boss){fb(pick(['ZAP! ⚡','POW! 💥','BAM! 💫','Zing! ✨']));petSay(pick(['Ouch!','Hey!','Oof!','No fair!']))}
+    else if(G.boss){fb(pick(['Zap!','Pow!','Bam!','Zing!']),'zap');petSay(pick(['Ouch!','Hey!','Oof!','No fair!']))}
     else{fb(pick(PRAISE));petSay(pick(PET_YAY));if(!q.after&&Math.random()<.3&&playClip('cheer'))wait+=400}
     if(q.after)say(q.after,null,q.afterLang);save();setTimeout(next,wait);return}
-  G.tries++;G.streak=0;const sk=$('#stk');sk.classList.remove('on');
+  G.tries++;G.streak=0;qStreak();
   SFX.wrong();anim($('#runner'),'sad');if(G.boss){anim($('#bossE'),'jump');setTimeout(SFX.giggle,250)}const pr=$('#prompt');pr.classList.remove('shake');void pr.offsetWidth;pr.classList.add('shake');
   if(el){el.classList.add('wrong');el.disabled=true}
-  if(G.tries==1){addMiss(q);fb('Try again!','warn');petSay(G.boss?pick(['Ha ha! Missed me!','Hee hee!','Try again!']):pick(PET_OOPS));if(Math.random()<.5)setTimeout(()=>playClip('oops'),300);$('#hint').innerHTML=hintHTML(q);fit();
+  if(G.tries==1){addMiss(q);fb('Try again!','again');petSay(G.boss?pick(['Ha ha! Missed me!','Hee hee!','Try again!']):pick(PET_OOPS));if(Math.random()<.5)setTimeout(()=>playClip('oops'),300);$('#hint').innerHTML=hintHTML(q);fit();
     K.retry(q,G,()=>{$('#hint').innerHTML=hintHTML(q);fit()});
     save();return}
   G.lock=true;
   K.reveal(q);
-  if(!G.retry){G.done++;p.t++;if(!G.boss)G.missed.push(q)}
-  const run=$('#runner');if(run)run.style.left=`calc(${G.done/G.n} * (100% - 70px))`;
-  fb("Here's the answer",'warn');petSay("We'll get it next time!");say(q.after||K.spoken(q),null,q.afterLang);save();setTimeout(next,2600)}
+  if(!G.retry){G.done++;p.t++;if(!G.boss)G.missed.push(q);G.res[G.done-1]='try'}
+  qProg();
+  fb("Here's the answer",'info');petSay("We'll get it next time!");say(q.after||K.spoken(q),null,q.afterLang);save();setTimeout(next,2600)}
 
 function bossHit(){const b=$('#bossE'),f=$('#hpf'),h=$('#hpn');if(f)f.style.width=G.hp/7*100+'%';if(h)h.textContent='❤️'.repeat(G.hp);
   if(b){b.classList.remove('hit');void b.offsetWidth;b.classList.add('hit');const r=b.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,['💥','⚡','✨'])}SFX.hit()}
@@ -10158,7 +10429,7 @@ function grown(){let armed=false;
    <div class="vline"><span class="vtxt">Give a bonus</span><button class="btn xs" id="pt5">+5 min</button><button class="btn xs danger" id="pt0">Empty bank</button></div>
    <label class="tg"><input type="checkbox" id="ptp" ${ptCfg().pause?'checked':''}> Pause game time (games locked)</label></div>
   <div class="card"><div class="tw"><table><tr><th>Skill</th><th>Rounds</th><th>1st try</th><th>Tricky ones</th></tr>${rows}</table></div></div>
-  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v74 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
+  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v75 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
    Storage: ${SAVE_FAILED?'<b style="color:#c0392b">could not save (device storage may be full)</b>':'saving OK'}${SAVE_CORRUPT?'<br><b style="color:#c0392b">The old save could not be read. A fresh start was made and the old data was kept on the device.</b>':''}<br>
    Last errors: ${(S.err||[]).length?(S.err||[]).slice().reverse().map(e=>'<br>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+' '+esc(e.msg)).join(''):'none'}</div></details>
   <div class="card"><label class="tg"><input type="checkbox" id="voice" ${S.voice?'checked':''}> Read questions out loud</label>

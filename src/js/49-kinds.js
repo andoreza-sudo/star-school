@@ -39,20 +39,22 @@
      K.spoken(q)              what is said when the answer is revealed (when q.after is not set)
      K.validate(q)            list of problems (strings); used by tools/test.js
    A new kind adds KIND.name = {...} with all of these. kindProblems(q) also catches an unknown kind. */
-const PAD_HTML=`<div class="pad">${[1,2,3,4,5,6,7,8,9].map(n=>`<button class="btn k" data-k="${n}">${n}</button>`).join('')}`
-  +'<button class="btn k del" data-k="del">⌫</button><button class="btn k" data-k="0">0</button>'
-  +'<button class="btn k go" data-k="go">✓</button></div>';
+// P4-10: the pad is the P4-04 key component (.keys > .key); .pad, .k[data-k], .del, .go and .x stay as the hooks code and tests use.
+// extra: '' | '.' | 'neg'; next: true when the check key first moves to the next slot (several slots).
+function padHTML(extra,next){
+  const key=(k,face,cls,aria)=>`<button class="key k${cls?' '+cls:''}" data-k="${k}"${aria?` aria-label="${aria}"`:''}>${face}</button>`;
+  return '<div class="keys qpad pad">'+[1,2,3,4,5,6,7,8,9].map(n=>key(n,n)).join('')
+    +key('del',ico('backspace'),'del','Delete')+key(0,0)+key('go',ico(next?'go':'check'),'go',next?'Next box':'Check')
+    +(extra=='.'?key('.','.','x','Point'):extra=='neg'?key('neg','±','x','Plus or minus'):'')+'</div>';
+}
+const PAD_HTML=padHTML('');
 
 const KIND={
   num:{
     // pad: int (default), dec, neg, frac; sep 'R' or 'mix'; see the header. Several slots share st.typed, parts joined by the separators
     render(q){
       const pad=q.pad||'int';
-      let h=PAD_HTML;
-      if(numSeps(q).length)h=h.replace('>✓<','>→<');
-      if(pad=='dec')h=h.replace(/<\/div>$/,'<button class="btn k x" data-k=".">.</button></div>');
-      if(pad=='neg')h=h.replace(/<\/div>$/,'<button class="btn k x" data-k="neg">±</button></div>');
-      return h;
+      return padHTML(pad=='dec'?'.':pad=='neg'?'neg':'',numSeps(q).length>0);
     },
     bind(q,st,submit,o={}){
       const max=o.max||q.max||4,seps=numSeps(q),K=KIND.num;
@@ -99,8 +101,12 @@ const KIND={
       for(let i=parts.length;i<=seps.length;i++)$('#slot'+(i+1)).textContent='';
       if(seps.length){
         $$('.slot').forEach(s=>s.classList.toggle('sl-on','#'+s.id==at));
-        const go=$('.k.go');
-        if(go)go.textContent=parts.length>seps.length?'✓':'→';
+        const go=$('.k.go'),last=parts.length>seps.length;
+        if(go&&go.dataset.last!==String(last)){
+          go.dataset.last=last;
+          go.innerHTML=ico(last?'check':'go');
+          go.setAttribute('aria-label',last?'Check':'Next box');
+        }
       }
       return at;
     },
@@ -139,7 +145,7 @@ const KIND={
 
   choice:{
     render:q=>`<div class="choices ${q.cls||''}">`
-      +q.choices.map((c,i)=>`<button class="btn ch" data-i="${i}">${c.h?c.l:esc(c.l)}</button>`).join('')+'</div>',
+      +q.choices.map((c,i)=>`<button class="choice ch" data-i="${i}">${c.h?c.l:esc(c.l)}</button>`).join('')+'</div>',
     bind(q,st,submit){
       $$('.ch').forEach(b=>b.onclick=()=>submit(q.choices[b.dataset.i].v,b));
     },
@@ -172,8 +178,8 @@ const KIND={
   },
 
   build:{
-    render:q=>`<div class="tiles">${q.tiles.map((t,i)=>`<button class="btn lt" data-i="${i}">${t}</button>`).join('')}</div>`
-      +'<button class="btn sm undo" id="undo">↩ Undo</button>',
+    render:q=>`<div class="tiles">${q.tiles.map((t,i)=>`<button class="piece lt" data-i="${i}">${t}</button>`).join('')}</div>`
+      +UI.btn('Undo',{size:'sm',icon:'back',id:'undo',cls:'undo'}),
     bind(q,st,submit){
       const K=KIND.build;
       $$('.lt').forEach(b=>b.onclick=()=>{
@@ -242,7 +248,7 @@ const KIND={
   //        A wrong pair submits '!' (a miss for the engine: first one retries, second one reveals); matched pairs stay.
   match:{
     render:q=>{
-      const b=(s,c,i)=>`<button class="btn mb" data-s="${s}" data-i="${i}">${c.h?c.l:esc(c.l)}</button>`;
+      const b=(s,c,i)=>`<button class="choice mb" data-s="${s}" data-i="${i}">${c.h?c.l:esc(c.l)}</button>`;
       return `<div class="mt"><div class="mtc">${q.items.map((c,i)=>b('L',c,i)).join('')}</div>`
         +`<div class="mtc">${q.opts.map((c,i)=>b('R',c,i)).join('')}</div></div>`;
     },
@@ -355,9 +361,9 @@ const KIND={
   spell:{
     ROWS:['qwertyuiop','asdfghjkl','zxcvbnm'],
     render:q=>{
-      const key=c=>`<button class="btn sk" data-ch="${c}">${c}</button>`;
+      const key=c=>`<button class="key sk" data-ch="${c}">${c}</button>`;
       const rows=KIND.spell.ROWS.map((r,i)=>`<div class="skr">${[...r].map(key).join('')}`
-        +(i==2?`<button class="btn sk wide del" data-ch="del" aria-label="Delete">${ico('backspace',28)}</button>`:'')+'</div>').join('');
+        +(i==2?`<button class="key sk wide del" data-ch="del" aria-label="Delete">${ico('backspace',28)}</button>`:'')+'</div>').join('');
       const es=q.lang=='es'?`<div class="skr">${[...'ñáéíóúü'].map(key).join('')}</div>`:'';
       return `<div class="sks">${rows}${es}</div>`;
     },
@@ -424,9 +430,9 @@ const KIND={
   // ---- P1-03 kinds: multi (choose all that apply), order (tap tiles into order) ----
   multi:{
     render:q=>`<div class="choices mchoices ${q.cls||''}">`
-      +q.choices.map((c,i)=>`<button class="btn ch mc" data-i="${i}" aria-pressed="false">`
+      +q.choices.map((c,i)=>`<button class="choice ch mc" data-i="${i}" aria-pressed="false">`
         +`<span class="mk">${ico('check',22)}</span><span class="ml">${c.h?c.l:esc(c.l)}</span></button>`).join('')+'</div>'
-      +'<button class="btn go mgo" id="mcheck" disabled>Check</button>',
+      +UI.btn('Check',{kind:'primary',icon:'check',id:'mcheck',cls:'mgo',off:true}),
     bind(q,st,submit){
       const K=KIND.multi;
       st.sel=[];
@@ -485,8 +491,8 @@ const KIND={
   },
 
   order:{
-    render:q=>`<div class="oslots">${q.ans.map((_,i)=>`<button class="btn os" data-s="${i}" aria-label="Place ${i+1}"></button>`).join('')}</div>`
-      +`<div class="tiles otiles">${q.items.map((t,i)=>`<button class="btn ot" data-i="${i}">${t.h?t.l:esc(t.l)}</button>`).join('')}</div>`,
+    render:q=>`<div class="oslots">${q.ans.map((_,i)=>`<button class="socket os" data-s="${i}" aria-label="Place ${i+1}"></button>`).join('')}</div>`
+      +`<div class="tiles otiles">${q.items.map((t,i)=>`<button class="piece ot" data-i="${i}">${t.h?t.l:esc(t.l)}</button>`).join('')}</div>`,
     bind(q,st,submit){
       const K=KIND.order;
       st.ord=[];
