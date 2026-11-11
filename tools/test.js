@@ -2024,10 +2024,12 @@ run('ABC Beach (P2-15): world position, stop ids, nobody is pushed back into it'
   const ids=NODES.read.filter(n=>n.wid=='r_abc'&&n.sk!='boss').map(nid).join(' ');
   if(ids!=='abc1 abc2 trace2 abc3 syl1 trace3 abc4')bad.push('ABC Beach stops: '+ids); // P2-17 adds trace2, trace3 (CURRICULUM 2.2)
   const tail=(id,k)=>NODES.read.filter(n=>n.wid==id&&n.sk!='boss'&&n.sk!='spell').map(nid).slice(-k).join(' '); // spelling stops (P2-19) sit after these
-  if(tail('r_meadow',1)!=='sound3'||tail('r_candy',2)!=='sound4 syl2')bad.push('sound3 ends Letter Meadow; sound4 syl2 end Candy Canyon');
+  // R-01r: Middle Sounds (sound3) moved from the end of Letter Meadow to just before Picture Words, so the vowel is heard before CVC reading
+  const meadow=NODES.read.filter(n=>n.wid=='r_meadow'&&n.sk!='boss').map(nid);
+  if(meadow[meadow.indexOf('sound3')+1]!=='pic1'||tail('r_candy',2)!=='sound4 syl2')bad.push('sound3 comes right before pic1 in Letter Meadow; sound4 syl2 end Candy Canyon');
   // existing stop ids keep their meaning and order inside their worlds
   const was={r_meadow:'sound1 sight1 rhyme1 pic1 sound2 build1 sent1',r_candy:'sight2 rhyme2 pic2 build2 sent2 comp1',r_reef:'sight3 pic3 build3 comp2',r_space:'pic4 build4'};
-  for(const id in was){const now=NODES.read.filter(n=>n.wid==id&&n.sk!='boss').map(nid).slice(0,was[id].split(' ').length).join(' ');if(now!==was[id])bad.push(id+' changed: '+now)}
+  for(const id in was){const now=NODES.read.filter(n=>n.wid==id&&n.sk!='boss').map(nid).filter(x=>x!=='sound3').slice(0,was[id].split(' ').length).join(' ');if(now!==was[id])bad.push(id+' changed: '+now)} // R-01r: sound3 now sits inside r_meadow
   // saves: every star survives on the same stop id, and nobody gets a star they did not have
   for(const name of ['midway','maxed','legacy-single-map','legacy-index-maps']){
     const raw=fx(name);loadSave(raw);const pre=JSON.parse(JSON.stringify(S));
@@ -14508,6 +14510,190 @@ run('math review fixes R-01m',()=>{
   };
   const r=eval(js+';('+body.toString()+')()');
   return{problems:r.bad,note:Object.entries(r.note).map(([k,v])=>k+': '+v).join('; ')};
+});
+
+// ---- R-01r: reading review fixes (docs/reviews/R-01-reading.md, must items 1-6 and the small should items) ----
+// No offensive word is written here: the blocklist is hashes only (src/data/d-kidsafe.js) and the self-test words are ROT13 below.
+run('reading review fixes R-01r',()=>{
+  const p=[],bad=m=>p.push(m),note={};
+  const KSRC=fs.readFileSync(path.join(SRC,'data','d-kidsafe.js'),'utf8');
+  // the list is kept as hashes only, in the data file (never in index.html or a part file)
+  for(const k of ['w','s','c']){
+    const m=KSRC.match(new RegExp('\\n  '+k+": '([^']*)'"));
+    if(!m||!/^[0-9a-z]{6,12}( [0-9a-z]{6,12})*$/.test(m[1]))bad('KIDSAFE.'+k+' must be hashes only');
+  }
+  const INDEX=fs.existsSync(path.join(ROOT,'index.html'))?fs.readFileSync(path.join(ROOT,'index.html'),'utf8'):'';
+  if(INDEX.includes('var KIDSAFE'))bad('the blocklist must live in the data file, not index.html');
+  const body=function(){
+    const rot=s=>s.replace(/[a-z]/g,c=>String.fromCharCode((c.charCodeAt(0)-84)%26+97)); // ROT13
+    const W1=rot('obbo'),C1=rot('jrrq'),S1='k'+rot('cbea')+'l'; // a rude body word (list w), a drug word (list c), a piece (list s)
+    const K=KIDSAFE,n=t=>t.split(' ').length;
+    if(n(K.w)<200||n(K.s)<10||n(K.c)<80)bad('blocklist too short: '+n(K.w)+' words, '+n(K.s)+' pieces, '+n(K.c)+' choice words');
+    // 1. the filter: every case form, inside a sentence, pieces inside longer words, choice-only words only for choices
+    if(!ksBad(W1)||!ksBad(W1.toUpperCase())||!ksBad('The '+W1[0].toUpperCase()+W1.slice(1)+'!')||!ksBad(W1+'s'))bad('ksBad misses a list w word');
+    if(!ksBad(S1)||!ksBad(S1.toUpperCase()))bad('ksBad misses a piece inside a longer word');
+    if(ksBad(C1)||!ksBad(C1,true)||!ksBad('a '+C1,true))bad('list c words must be refused as choices only');
+    for(const ok of ['grape cake','raccoon','shell hello','class pass','scrape','peacock','title','cucumber','document','bike','moon','map'])
+      if(ksBad(ok,true))bad('ksBad refuses a harmless text');
+    // 2. spelling rules for made-up strings
+    for(const w of ['snakb','cnake','socb','bgg','pih','nuj','cnt','bpoon','cpoon','crah','vrab','pif'.replace('f','h'),'flowouo','tbe','oi'])
+      if(ksLegal(w))bad('ksLegal accepts the impossible spelling '+w);
+    for(const L of [CVC,BLEND,MAGICE,TEAMS,RVW,VTW,DIGR,SYLP,CVCM])for(const x of L)if(!ksLegal(x[0]))bad('ksLegal refuses the real word '+x[0]);
+    for(const w of ['bird','bard','berd','burd','cake','kite','boat','boot','flowar','jewel'])if(!ksLegal(w))bad('ksLegal refuses '+w);
+    // 3. picture words 1-4: wrong choices come from the checked real-word sets only
+    const PW=[CVC,BLEND,MAGICE,TEAMS];
+    for(const L of PW)for(const [w] of L){
+      const d=PWC[w];
+      if(!d||d.length<3||new Set(d).size!==d.length||d.includes(w)){bad('PWC '+w+': needs 3 or more different wrong words');continue}
+      for(const x of d){
+        if(ksBad(x,true)||BAD.test(x)||PHBAD.test(x))bad('PWC '+w+': a blocked word (seed list, not shown)');
+        if(!ksLegal(x))bad('PWC '+w+': '+x+' breaks the spelling rules');
+        if(sameSound(w).includes(x))bad('PWC '+w+': '+x+' sounds the same');
+      }
+    }
+    for(const w in PWC)if(!PW.some(L=>L.some(x=>x[0]===w)))bad('PWC '+w+' is not a picture word');
+    // 4. every reading level, 20,000 questions each: nothing a child sees or hears holds a blocked word; choices that code makes or
+    //    draws (not the authored passages, which may need a science word) hold no list c word either
+    const strip=h=>String(h==null?'':h).replace(/<[^>]*>/g,' ').replace(/&[a-z#0-9]+;/gi,' ');
+    const textOf=q=>[q.html,q.say,q.after,q.label,q.word,q.ans,q.hint&&q.hint.s,q.hint&&q.hint.w,q.hint&&q.hint.html].map(strip).join(' | ');
+    const choicesOf=q=>(q.choices||[]).concat(q.items||[],q.opts||[]).map(c=>strip(c.l)+' '+strip(c.v));
+    const scan=(key,N,gen,choiceTier)=>{const out=[];
+      for(let s=1;s<=N&&out.length<5;s++){const q=gen(s);
+        if(ksBad(textOf(q)))out.push(key+' seed '+s+': a blocked word in what the child sees or hears');
+        else if(choicesOf(q).some(c=>ksBad(c,choiceTier)))out.push(key+' seed '+s+': a blocked word in a choice');
+      }
+      return out};
+    const N=20000;let total=0,levels=0;
+    const SEEN={};
+    for(const id in SK){
+      if(SK[id].area!=='read')continue;
+      for(let lv=1;lv<=SK[id].max;lv++){
+        if(skLvEmpty(id,lv))continue;
+        levels++;
+        const key=id+lv,tier=!['comp','info'].includes(id);
+        for(const m of scan(key,N,s=>{const q=genQ(id,lv,s);total++;
+          const vs=(q.choices||[]).map(c=>c.v);
+          if(id=='pic'&&lv<=4&&vs.some(v=>v!==q.ans&&!(PWC[q.ans]||[]).includes(v)))bad(key+' seed '+s+': a wrong choice from outside the checked set');
+          if(id=='pic'&&lv>4&&vs.some(v=>!ksLegal(v)))bad(key+' seed '+s+': a choice breaks the spelling rules');
+          if(id=='pic'&&vs.length!==4)bad(key+' seed '+s+': '+vs.length+' choices');
+          if((q.choices||[]).some(c=>/</.test(c.l)&&!c.h))bad(key+' seed '+s+': a drawing in a choice is not marked h (it would show as code)');
+          if(id=='sight'&&vs.some(v=>v!==q.ans&&sameSound(q.ans).includes(v.toLowerCase())))bad(key+' seed '+s+': a choice sounds the same as '+q.ans);
+          if(id=='sent'&&lv<=2&&/\ba (sun|milk)\b/i.test(q.after))bad(key+' seed '+s+': '+q.after);
+          if(id=='sound'&&lv<=2&&['c','k'].includes(q.ans)&&vs.includes('c')&&vs.includes('k'))bad(key+' seed '+s+': c and k offered together for a /k/ word');
+          if(id=='sound'&&lv==3)SEEN[q.ans]=(SEEN[q.ans]||0)+1;
+          return q},tier))bad(m);
+      }
+    }
+    note.scan=total+' questions over '+levels+' reading levels';
+    // 5. the scan really fails on a blocked word: one injected into a question, and one put into a word set with the app's own
+    //    guard switched off (the test keeps its own copy of ksBad)
+    const inj=scan('inject',50,s=>{const q=genQ('pic',3,s);if(s==37)q.choices[1]={l:W1,v:W1};return q},true);
+    if(inj.length!==1||!/seed 37/.test(inj[0]))bad('the scan does not catch a word injected into a choice');
+    const inj2=scan('inject',50,s=>{const q=genQ('sent',4,s);if(s==12)q.say+=' '+W1.toUpperCase();return q},true);
+    if(inj2.length!==1)bad('the scan does not catch a word injected into the spoken text');
+    const keepSet=PWC.cake,KB=ksBad;
+    PWC.cake=[C1,'cape','came'];
+    let guarded=0;for(let s=1;s<=400;s++){const q=genQ('pic',3,s);if(q.ans=='cake'){guarded++;if(q.choices.some(c=>c.v==C1))bad('variants offers a list c word from its own word set')}}
+    ksBad=()=>false; // the app's guard off: now the word reaches a question and the scan must see it
+    let caught=0;
+    try{for(let s=1;s<=400&&!caught;s++){const q=genQ('pic',3,s);if(q.choices.some(c=>KB(c.v,true)))caught++}}finally{ksBad=KB;PWC.cake=keepSet}
+    if(!guarded||!caught)bad('word set injection: guarded '+guarded+', caught '+caught);
+    // 6. the reported seeds (review 2.4): Picture Words, sight words, grammar and vocabulary
+    for(const [lv,s] of [[1,1346243],[1,3040909],[1,1813464],[1,79203],[2,1449190],[2,1987682],[2,1227458],[2,13],[3,4371301],[3,2407389],
+      [3,1227458],[3,13],[4,8481262],[4,6739082],[4,712723],[4,1480866],[4,2027277],[4,13],[6,981969]]){
+      const q=genQ('pic',lv,s),vs=q.choices.map(c=>c.v);
+      if(vs.some(v=>ksBad(v,true)||!ksLegal(v)))bad('pic'+lv+' seed '+s+': a blocked or impossible choice');
+    }
+    for(const [lv,s] of [[1,190069],[4,7932]]){const q=genQ('sight',lv,s);
+      if(q.choices.some(c=>c.v!==q.ans&&sameSound(q.ans).includes(c.v.toLowerCase())))bad('sight'+lv+' seed '+s+': a choice sounds the same')}
+    const ITEMS=[...BANK.gram,...BANK.vocab];
+    const PRON=['my','our','your','their','his','her','its'],GROUPN=['kids','children','friends','students','team','class','dogs','cats','parents'];
+    const PART=['seen','sewn','shown','known','grown','thrown','blown','flown','sown','been'];
+    const ADV=['home','today','yesterday','tomorrow','outside','inside','here','there','now','soon','later','often','always','never','fast',
+      'hard','well','very','too','away','again','early','late'];
+    const words=t=>String(t).toLowerCase().replace(/[^a-z' ]/g,' ').split(/\s+/).filter(Boolean);
+    const itemCheck=(it,where)=>{
+      const all=[it.a,...(it.d||[])].map(String),wrong=(it.d||[]).map(x=>String(x).toLowerCase()),q=String(it.q),blank=q.match(/___ ([a-z]+)/i);
+      // present tense: "right now" or "happening now" asks for the -ing form
+      if((/right now/i.test(q)&&q.includes('___'))||/happening now/i.test(q))if(!/\b(is|are|am)\b \w+ing\b/i.test(String(it.a))&&!/ing$/.test(String(it.a)))
+        bad(where+': "now" with a key that is not happening now');
+      // one adverb in an adverb tap sentence
+      if(it.form=='tap'&&/adverb/.test(it.topic||''))if(words(it.sent).filter(x=>/ly$/.test(x)||ADV.includes(x)).length!==1)bad(where+': more than one adverb');
+      // a possessive before a group noun also fits ("___ kids love recess": our)
+      if(blank&&GROUPN.includes(blank[1].toLowerCase())&&wrong.some(x=>PRON.includes(x)))bad(where+': a possessive also fits before '+blank[1]);
+      // homophones: no second pronoun or past participle that also fits
+      if(it.topic=='homophones'){
+        if(PRON.includes(String(it.a).toLowerCase())&&wrong.some(x=>PRON.includes(x)))bad(where+': a second pronoun also fits');
+        if(PART.includes(String(it.a).toLowerCase())&&wrong.some(x=>PART.includes(x)))bad(where+': a second past participle also fits');
+      }
+      if(all.some(x=>ksBad(x,true))||ksBad(q+' '+(it.sent||'')))bad(where+': a blocked word');
+    };
+    ITEMS.forEach((it,i)=>itemCheck(it,(i<BANK.gram.length?'gram item '+i:'vocab item '+(i-BANK.gram.length))));
+    for(const [sk,lv,s] of [['gram',4,22],['gram',4,13],['gram',4,37],['gram',4,29],['gram',8,83],['gram',9,77],['gram',9,51],['vocab',6,116],['vocab',6,73]]){
+      const q=genQ(sk,lv,s),txt=strip(q.html)+' '+q.say;
+      if(/right now/i.test(txt)&&q.choices&&!/ing\b/.test(q.ans))bad(sk+lv+' seed '+s+': "right now" with '+q.ans);
+      if(/happening now/i.test(txt)&&!/\b(is|are|am) \w+ing\b/.test(q.ans))bad(sk+lv+' seed '+s+': happening now is '+q.ans);
+      if(/slowly home/.test(txt)||/___ kids/.test(txt)&&(q.choices||[]).some(c=>/^our$/i.test(c.v))||/wagged/.test(txt)&&(q.choices||[]).some(c=>c.v=='his')||
+        /red hat/.test(txt)&&(q.choices||[]).some(c=>c.v=='sewn'))bad(sk+lv+' seed '+s+': the reported two-answer item is back');
+    }
+    // 7. Pre-K and K reading help is spoken, and Rhyme Time and Read & Match name their pictures aloud
+    const W=PATHS.read.worlds;
+    for(const nd of NODES.read){
+      if(nd.sk=='boss'||W[nd.wi].g>0||SK[nd.sk].side)continue;
+      for(let s=1;s<=300;s++){const q=genQ(nd.sk,nd.lv,s),h=q.hint||{};
+        if(!['say','next','trace','html'].includes(h.k)||(h.k=='say'&&!String(h.w||'').trim())){bad(nd.sk+nd.lv+': help is not spoken ('+h.k+')');break}}
+    }
+    for(const [sk,lv] of [['rhyme',1],['sent',1]])for(let s=1;s<=300;s++){const q=genQ(sk,lv,s);
+      if(q.choices.some(c=>!q.say.includes(c.v))){bad(sk+lv+' seed '+s+': the pictures are not named in "'+q.say+'"');break}}
+    // rhyme pictures: no mug (a coffee cup), king (a crown), rat (looks like the mouse) or ten (a keycap); the hint names the rime
+    const fam=RHY.flat().map(x=>x[0]);
+    for(const w of ['mug','king','rat','ten'])if(fam.includes(w))bad('Rhyme Time still has '+w);
+    for(let s=1;s<=500;s++){const q=genQ('rhyme',1,s),t=q.label.replace('rhyme: ',''),r=rime(t);
+      if(!q.hint.s.includes(r+'…')||q.choices.filter(c=>c.v.endsWith(r)).length!==1)bad('rhyme1 seed '+s+': hint "'+q.hint.s+'"');
+      if(!q.html.includes(picFor(t,'?')))bad('rhyme1 seed '+s+': the picture does not go through picFor')}
+    // 8. Letter Teams: the word is heard, never printed; no moth drawn as a butterfly
+    if(DIGR.some(x=>x[0]=='moth'))bad('Letter Teams still has moth');
+    for(let s=1;s<=2000;s++){const q=genQ('sound',4,s),w=q.label.replace(/^.*: /,'');
+      if(new RegExp('\\b'+w+'\\b').test(strip(q.html))){bad('sound4 seed '+s+': the word '+w+' is printed');break}
+      if(!q.say.startsWith(w+'.')||q.auto!==true){bad('sound4 seed '+s+': the word is not spoken');break}}
+    // picture words that named something else are gone from the lists (review 2.4 and Should 13)
+    const ALLW=[CVC,BLEND,MAGICE,TEAMS,RVW,VTW,DIGR].flat().map(x=>x[0]);
+    for(const w of ['queen','cube','cone','home','game','vase','farm','arm','chart','burn','morning','down','new','stew','king','moth'])
+      if(ALLW.includes(w))bad('picture word '+w+' still shows a picture of something else');
+    // 9. small fixes: passages, vocabulary wording, spelling, gram 2 positions, Middle Sounds
+    const P=id=>[...PASS.comp,...PASS.info].find(x=>x.id==id),T=id=>[].concat(P(id).text).join(' ');
+    if(/far weaker than the moon/.test(T('g6n01'))||!/about half the moon/.test(P('g6n01').qs[3].a))bad('tides: the sun\'s pull');
+    if(/explains why/.test(P('g3n02').qs[4].a))bad('g3n02: a title names the topic, it does not explain');
+    if(/sister/i.test(P('g5f02').qs.map(x=>x.q+' '+x.a+' '+x.d.join(' ')).join(' ')))bad('g5f02: the narrator is never said to be a girl');
+    const voc=BANK.vocab.map(it=>[it.q,it.a,...(it.d||[])].join(' | ')).join('\n');
+    if(/full of thank\b|without thank\b|\ba old\b|\ba [aeiou]\w* way\b|made of a tiny/.test(voc))bad('vocabulary wording: thank, a old, a tiny cell');
+    const DAYMON=/^(monday|tuesday|wednesday|thursday|friday|saturday|sunday|january|february|march|april|may|june|july|august|september|october|november|december)$/;
+    for(const lv in SPELL_WORDS)for(const ln of SPELL_WORDS[lv].split('\n'))if(DAYMON.test(ln.split('|')[0]))bad('spell'+lv+': '+ln.split('|')[0]+' needs a capital');
+    const pos={};
+    for(const it of BANK.gram)if(it.lv==2&&it.form=='tap'){const ws=bankWords(it.sent);(pos[it.topic]=pos[it.topic]||new Set()).add(ws.indexOf(it.a)+'/'+ws.length)}
+    for(const t of ['noun','verb','adjective'])if(!pos[t]||new Set([...pos[t]].map(x=>x.split('/')[0])).size<3)bad('gram2 '+t+': the answer sits in fewer than 3 places');
+    const meadow=NODES.read.filter(n=>n.wid=='r_meadow'&&n.sk!='boss').map(nid);
+    if(meadow.indexOf('sound3')<0||meadow.indexOf('sound3')>meadow.indexOf('pic1'))bad('Middle Sounds must come before Picture Words');
+    const tot=Object.values(SEEN).reduce((a,b)=>a+b,0);
+    for(const v of 'aeiou')if(!((SEEN[v]||0)/tot>.15))bad('sound3: '+v+' in '+Math.round(100*(SEEN[v]||0)/tot)+'% of questions');
+    note.vowels=[...'aeiou'].map(v=>v+' '+Math.round(100*(SEEN[v]||0)/tot)+'%').join(', ');
+    // 10. the reading levels this chunk did not touch ask exactly the same questions as before (v135, seeds 1-150, emoji fallback)
+    const OLD=('abc1:9908fd49446a abc2:4c19dd144a3b abc4:46e38a30d851 syl1:bf9fa3508f44 syl2:8965b72e2fd0 sound2:07324c8dc100 comp1:1fb0940c60e3 '+
+      'comp2:acfa177fed10 comp3:b70aa1dffd71 comp4:bfd8a77b0656 comp5:3c064be2d179 comp7:9ead20baae65 info1:c4031e7def5a info3:25ad998d9e5b '+
+      'info4:8edd1307198b sight2:37ed72d3dc40 sight3:03216fa7fca5 sight5:7b324e4e7522 build1:4db265ad9f39 sent3:f0054eae04f3 sent4:06a31dd5bb11 '+
+      'sent5:04c90646fac0 spell1:35ddedc8fd46 spell4:201a12f0db2d spell5:e6a4a11ef010 gram1:51ea83d72579 gram3:2ee838affdca gram5:98e3569be110 '+
+      'gram6:ef46db97c3e0 gram7:4d0a9714bf4a vocab1:3f264da86a43 vocab2:305b1d815e94 vocab3:8db3b2e3838c vocab4:7b71ef3d8a97 vocab7:a7bbbd9d0539 '+
+      'vocab8:e9c52e884e42 vocab9:b56f0001a6cb vocab10:c440a0af5eb4').split(' ').map(x=>x.split(':'));
+    const artKeep=Object.assign({},ART);for(const k in ART)delete ART[k];
+    try{for(const [k,h] of OLD){const [,id,lv]=k.match(/^([a-z]+)(\d+)$/),a=[];
+      for(let s=1;s<=150;s++)a.push(JSON.stringify(genQ(id,+lv,s)));
+      const got=require('crypto').createHash('md5').update(a.join('\n')).digest('hex').slice(0,12);
+      if(got!==h)bad(k+' changed by seed ('+got+'), but R-01r does not touch it')}}
+    finally{Object.assign(ART,artKeep)}
+    note.same=OLD.length;
+  };
+  eval(js+';('+body.toString()+')()');
+  return{problems:uniq(p).slice(0,80),note:note.scan+'; middle vowels '+note.vowels+'; '+note.same+' untouched levels unchanged by seed'};
 });
 
 // ---- report ----

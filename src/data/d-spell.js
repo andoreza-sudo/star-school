@@ -2,7 +2,8 @@
 /* SPELL_WORDS[lv] is one string per level, one word per line as `word|sentence`. The sentence holds the word exactly once (a capital
    letter at the start is fine); the app shows it with the word blanked out and speaks word, sentence, word.
    Homophones (their/there, knight/night ...) have sentences that only one of them fits. Words are a-z only, 12 letters at most,
-   and pass the BAD filter (tools/test.js checks all of this). Level 1 has 40 words, levels 2 to 7 have 60. */
+   and pass the BAD filter (tools/test.js checks all of this). Level 1 has 40 words, levels 2 to 7 have 60.
+   No days or months (R-01r): they need a capital, and the keyboard spells in small letters. */
 const SPELL_WORDS={
 1:`cat|The cat sat on the mat.
 bed|I go to bed at night.
@@ -320,7 +321,7 @@ favorite|Blue is my favorite color.
 interesting|That was an interesting book.
 vegetable|Carrot is a vegetable.
 library|I borrowed a book from the library.
-february|My birthday is in february.
+knowledge|Reading books adds to your knowledge.
 government|The government makes the laws.
 neighbor|My neighbor waves from her porch.
 exercise|We do exercise every morning.
@@ -402,7 +403,7 @@ thorough|He gave the room a thorough cleaning.
 twelfth|Her birthday is on the twelfth of June.
 unanimous|The vote was unanimous.
 variety|The store sells a variety of fruit.
-wednesday|We have art class on wednesday.
+muscle|Your heart is a strong muscle.
 yacht|The yacht sailed past the island.`
 };
 

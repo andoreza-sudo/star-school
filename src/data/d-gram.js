@@ -50,12 +50,14 @@ GR(1,'caps','Names of people, the days of the week and the word I start with a c
 // ---- level 2: nouns, verbs, adjectives (grade 2) ----
 (()=>{
   // [sentence, noun, verb, adjective]: each sentence has exactly one of each, and no word is used twice
-  const S=[['The tiny frog hops.','frog','hops','tiny'],['A happy puppy barks.','puppy','barks','happy'],['The loud bell rings.','bell','rings','loud'],
-    ['My brave dog runs.','dog','runs','brave'],['The soft kitten sleeps.','kitten','sleeps','soft'],['A shiny fish swims.','fish','swims','shiny'],
-    ['The tall giraffe eats.','giraffe','eats','tall'],['Our funny teacher sings.','teacher','sings','funny'],['A sleepy bear yawns.','bear','yawns','sleepy'],
-    ['The fluffy rabbit jumps.','rabbit','jumps','fluffy'],['The sweet baby giggles.','baby','giggles','sweet'],['A big wave crashes.','wave','crashes','big'],
-    ['The cold wind blows.','wind','blows','cold'],['Her little sister laughs.','sister','laughs','little'],['The yellow duck quacks.','duck','quacks','yellow'],
-    ['The busy bee buzzes.','bee','buzzes','busy']];
+  // R-01r: sentences of several shapes (at most 4 words to tap), so the noun, verb and adjective each sit in every place and the
+  // position of a word never gives the answer: The tiny frog hops. / Happy puppies bark. / I like sweet apples. / Kick the red ball.
+  const S=[['The tiny frog hops.','frog','hops','tiny'],['Happy puppies bark.','puppies','bark','Happy'],['She hugs soft kittens.','kittens','hugs','soft'],
+    ['They climb tall trees.','trees','climb','tall'],['A sleepy bear yawns.','bear','yawns','sleepy'],['I like sweet apples.','apples','like','sweet'],
+    ['Kick the red ball.','ball','Kick','red'],['The cold wind blows.','wind','blows','cold'],['You found pretty shells.','shells','found','pretty'],
+    ['Brave firefighters help.','firefighters','help','Brave'],['Lemons taste sour.','Lemons','taste','sour'],['We sing funny songs.','songs','sing','funny'],
+    ['Her little sister laughs.','sister','laughs','little'],['They ride big bikes.','bikes','ride','big'],['The busy bee buzzes.','bee','buzzes','busy'],
+    ['Shiny fish swim.','fish','swim','Shiny']];
   const HN='A noun names a person, place or thing. Which word names something you could point to?';
   const HV='A verb is an action word. Which word tells what someone or something does?';
   const HA='An adjective describes a noun. Which word tells what kind or how it looks?';
@@ -111,24 +113,24 @@ GR(4,'tense','Some verbs change in a special way for the past. Read the clue wor
  ['Yesterday, Mom ___ new shoes.','bought','buyed','boughted'],['Last Sunday, we ___ fresh bread.','bought','buyed','boughted'],
  ['Last night, I ___ about my dream.','thought','thinked','thinking'],['Yesterday, Lily ___ of a good idea.','thought','thinked','thinking'],
  ['Yesterday, I ___ a letter to Gran.','wrote','writed','written'],['Last night, Jo ___ a short story.','wrote','writed','written']]),
-GR(4,'tense','Words like every day and right now tell about the present. Which verb fits the clue?','choice',[
- ['Every day, Dad ___ the bus to work.','takes','took','will take'],['Right now, the baby ___ in her crib.','sleeps','slept','will sleep'],
- ['Every day, I ___ my teeth.','brush','brushed','will brush'],['Right now, we ___ a new song.','sing','sang','will sing'],
+GR(4,'tense','Words like every day and each week tell about the present. Which verb fits the clue?','choice',[
+ ['Every day, Dad ___ the bus to work.','takes','took','will take'],['Every night, the baby ___ in her crib.','sleeps','slept','will sleep'],
+ ['Every day, I ___ my teeth.','brush','brushed','will brush'],['Every morning, we ___ our class song.','sing','sang','will sing'],
  ['Every week, Gran ___ us a card.','sends','sent','will send'],['Each day, the sun ___ in the east.','rises','rose','will rise'],
- ['Right now, the rain ___ on the roof.','falls','fell','will fall']]),
+ ['Each spring, a lot of rain ___ on our roof.','falls','fell','will fall']]),
 GR(4,'tense','Words like tomorrow and next week mean it has not happened yet. Which choice looks ahead?','choice',[
  ['Tomorrow, we ___ the zoo.','will visit','visited','have visited'],['Next week, I ___ eight years old.','will be','was','were'],
  ['Tomorrow, we ___ go to the lake.','will','did','were'],['Next month, Dad ___ fix the fence.','will','did','had'],
  ['Next year, I ___ be in third grade.','will','was','did'],['Tomorrow, I ___ my grandma.','will call','called','have called'],
  ['Next Saturday, we ___ a picnic.','will have','had','have had'],['Tonight, the stars ___ shine.','will','did','were']]),
-GR(4,'tense','Look for clue words: yesterday and last mean past, now and every mean present, tomorrow and next mean future.','wide',[
+GR(4,'tense','Look for clue words: yesterday and last mean past, right now and every day mean present, tomorrow and next mean future.','wide',[
  ['Which is in the future?','We will plant seeds tomorrow.','We planted seeds yesterday.','We plant seeds every spring.'],
  ['Which is in the future?','The bus will come soon.','The bus came early.','The bus comes every day.'],
  ['Which is in the past?','Mom baked a pie last night.','Mom bakes a pie every Friday.','Mom will bake a pie tomorrow.'],
  ['Which is in the past?','I rode my bike yesterday.','I ride my bike every day.','I will ride my bike later.'],
  ['Which is in the past?','The bird flew away.','The bird flies away.','The bird will fly away.'],
  ['Which is happening now?','The kids are playing right now.','The kids played all day.','The kids will play soon.'],
- ['Which is happening now?','Dad cooks dinner every night.','Dad cooked dinner last night.','Dad will cook dinner soon.'],
+ ['Which is happening now?','Dad is cooking dinner right now.','Dad cooked dinner last night.','Dad will cook dinner soon.'],
  ['Which is in the future?','Our team will win next time.','Our team won last time.','Our team wins every time.']]),
 // ---- level 5: subject-verb agreement and contractions (grade 3) ----
 GR(5,'agreement','Look at the subject: is it one thing or more than one? Then say each choice out loud and listen for the one that sounds right.','choice',[
@@ -247,7 +249,7 @@ GR(7,'quotes','Spoken words go inside quotation marks. A comma separates the spe
 // ---- level 8: more parts of speech and perfect tenses (grade 5) ----
 GR(8,'adverbs','An adverb tells how, when or where an action happens. Many end in -ly. Find the word that describes the action.','tap',[
  ['Tap the adverb.','The dog barked loudly.','loudly'],['Tap the adverb.','She sings softly.','softly'],
- ['Tap the adverb.','He ran quickly.','quickly'],['Tap the adverb.','We walked slowly home.','slowly'],
+ ['Tap the adverb.','He ran quickly.','quickly'],['Tap the adverb.','We walked slowly.','slowly'],
  ['Tap the adverb.','Kids play outside.','outside'],['Tap the adverb.','He spoke kindly.','kindly'],
  ['Tap the adverb.','The cat sleeps quietly.','quietly'],['Tap the adverb.','Mom drives carefully.','carefully'],
  ['Tap the adverb.','He jumped happily.','happily']]),
@@ -324,7 +326,7 @@ GR(9,'pronoun case','Say the sentence with only one person in it. Pick the form 
  ['Dad took Meg and ___ to the zoo.','me','I','mine'],['Sara and ___ won the game.','I','me','mine'],
  ['Tia and ___ sang a song.','he','him','his'],['The teacher helped Jan and ___.','her','she','hers'],
  ['___ and I ate lunch.','She','Her','Hers'],['Sit with Tom and ___.','him','he','his'],
- ['___ kids love recess.','We','Us','Our'],['Mom picked ___ kids up.','us','we','our']]),
+ ['___ kids love recess.','We','Us','Them'],['Mom picked ___ kids up.','us','we','they']]),
 GR(9,'who or whom','One word does the action and one receives it. Replace the blank with he or him, then pick the matching word.','choice',[
  ['___ ate the last cookie?','Who','Whom','Whose'],['To ___ did you give it?','whom','who','whose'],
  ['___ is calling you?','Who','Whom','Whose'],['With ___ did you go?','whom','who','whose'],

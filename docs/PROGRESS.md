@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** G-01, R-01r, R-01s, P5-10, R-01 (Discover, Brain Teasers, practice), G-04
+**Next up:** G-01, R-01s, P5-10, R-01 (Discover, Brain Teasers, practice), G-04
 
-**Current version:** v137
+**Current version:** v138
 
 ## Chunk status
 
@@ -119,6 +119,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P5-07 v135
 - G-02 v136
 - R-01m v137
+- R-01r v138
 - R-01 reading done
 - R-01 spanish done
 
@@ -127,6 +128,12 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 (none)
 
 ## Ideas and issues
+- (R-01 reading) Done in R-01r (v137). Must: Picture Words wrong choices included racial slurs and rude words: `variants()` / `phonVariants()` (32-gen-read.js) changed one letter and the `BAD`/`PHBAD` filters (20-words.js) missed them: pic 3 seed 4371301, pic 4 seeds 8481262 and 6739082, pic 6 seed 981969, pic 1 seeds 1346243 and 3040909 (slurs), and rude words at about 0.8-2.8% of pic 1, 2, 3, 4, 6 items (the words were removed from this file in R-01r; seeds in docs/reviews/R-01-reading.md 2.4).
+- (R-01 reading) Done in R-01r (v137). Must: pic 1-4 wrong choices are mostly impossible spellings (pic 3 seed 13 snake: "snakb", "cnake"; pic 2 seed 13 sock: "socb"; pic 1 egg: "bgg"): 17% of pic 1, 71% of pic 2, 61% of pic 3, 39% of pic 4 items. Replace with real-word or legal contrast sets (cap/cape, kit/kite) per CURRICULUM 1.3.
+- (R-01 reading) Done in R-01r (v137). Must: sight words offer a homophone of the spoken word: sight 1 seed 190069 (hear "two": to, two, three, you; 2.5% of sight 1), sight 4 seed 7932 (hear "right": write offered). `genSight` (32-gen-read.js) must exclude homophones.
+- (R-01 reading) Done in R-01r (v137). Must: wrong or two-answer bank items: gram 4 seed 22 "Which is happening now?" → "Dad cooks dinner every night." (item 207); gram 4 seeds 13, 37, 29 "Right now, the baby ___" → "sleeps" / "sing" / "falls" (items 187, 189, 192; needs "is sleeping" or a habit clue); gram 8 seed 83 "We walked slowly home." ("home" is also an adverb, item 363); gram 9 seed 77 "___ kids love recess." ("Our" also right, item 458); gram 9 seed 51 "Mom picked ___ kids up." ("our" also right, item 459); vocab 6 seed 116 "The puppy wagged ___ tail." ("his" also right, item 335); vocab 6 seed 73 "Have you ___ my red hat?" ("sewn" also right, item 400). d-gram.js, d-vocab.js.
+- (R-01 reading) Done in R-01r (v137). Must: Pre-K/K help that is text only is never spoken (`k:'text'` in 39-hints.js): rhyme 1, abc 3, sent 1; rhyme 1 picture choices are emoji and never named (rhyme 1 seed 74: bug → coffee cup "mug"). Speak text hints for PK-K and name picture choices.
+- (R-01 reading) Done in R-01r (v137). Must: sound 4 prints the word in the prompt ("Which letters end **moth**?"), so the digraph is on screen; moth is a butterfly emoji (`genSoundB`, `DIGR`).
 - (P4-17) Not done here: the optional 10 ms vibration on key taps (DESIGN_SYSTEM 8.2; many tablets have none), and the wider dead-CSS tidy the P4-04 / P4-06 / P4-10 notes list (old `.track`, `.streak`, `.pad .k/.go/.del`, `.ch.right/.wrong`, `.slot`, `.petwrap .hat/.toy`, `.aura`, `.rw-pete`, `.game` ...). P4-17 removed only the dead motion rules (`.fb`, `.conf`/`fall`, emoji `.burst`, `.chestbtn`/`rattle`, `.newtag`, `.lt.glow`/`glow`, `.thought`, the old boss `hit` keyframes with a brightness filter) and the legacy colour aliases.
 - (P4-17) Game internals still play their own emoji effects (Hill Climb's `hcPop`/`hcMsg` texts, Block Builder's toasts with emoji): they go through `fb()`/canvas, not particles; G-01 / P4-18 territory.
 - (P4-17) The reward screen now reserves every card's place up front (faint slots that fill in). If the owner prefers no slots, the alternative is cards below the earned list (they then grow at the bottom only), which pushes "Next stop unlocked" further down on phones.
@@ -139,12 +146,6 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - (R-01 math) Must: basic-fact hints teach counting all ("Count them all!", "Cross out 9") in `add 2` (+9 and doubles), `add 3`, `sub 2`, `miss 2` (`blocks` hint, 39-hints.js). Replace with make-ten, doubles and think-addition hints (ten-frame picture).
 - (R-01 math) Must: K-2 story problems (`story 1-3`, `genStory` in 30-gen-math.js) are only result-unknown join, separate and put-together, and `story 1` (K) has no picture in the prompt. Add compare, change-unknown and start-unknown templates (1.OA.1, 2.OA.1) and show the objects.
 - (R-01 math) Must: plural with 1, shown and spoken: `story 1` ("Ava has 1 pencils", 25% of items, seed 39595), `coins 5` ("costs 1 dollars and 50 cents"), `story 6` ("gives away 1 bags"), `int 1` ("1 degrees"), `geo 1` and `shape 6` ("1 centimeters"); hints "1 tens" (`pv 1`), "1 hundreds" (`big 1`), "1 wholes" (`fop 5`).
-- (R-01 reading) Must: Picture Words wrong choices include racial slurs and rude words: `variants()` / `phonVariants()` (32-gen-read.js) change one letter and the `BAD`/`PHBAD` filters (20-words.js) miss them. pic 3 seed 4371301 (bike: "kike"), pic 4 seed 8481262 (moon: "coon"), pic 6 seed 981969 (coin: "coon"), pic 4 seed 6739082 (book: "gook"), pic 1 seed 1346243 (dog: "wog"), pic 1 seed 3040909 (map: "jap"); also pube, grope, queer, boob, vag, bum, weed, bong (0.8-2.8% of pic 1, 2, 3, 4, 6 items). Use a long blocklist, test it in test.js, and prefer curated choices.
-- (R-01 reading) Must: pic 1-4 wrong choices are mostly impossible spellings (pic 3 seed 13 snake: "snakb", "cnake"; pic 2 seed 13 sock: "socb"; pic 1 egg: "bgg"): 17% of pic 1, 71% of pic 2, 61% of pic 3, 39% of pic 4 items. Replace with real-word or legal contrast sets (cap/cape, kit/kite) per CURRICULUM 1.3.
-- (R-01 reading) Must: sight words offer a homophone of the spoken word: sight 1 seed 190069 (hear "two": to, two, three, you; 2.5% of sight 1), sight 4 seed 7932 (hear "right": write offered). `genSight` (32-gen-read.js) must exclude homophones.
-- (R-01 reading) Must: wrong or two-answer bank items: gram 4 seed 22 "Which is happening now?" → "Dad cooks dinner every night." (item 207); gram 4 seeds 13, 37, 29 "Right now, the baby ___" → "sleeps" / "sing" / "falls" (items 187, 189, 192; needs "is sleeping" or a habit clue); gram 8 seed 83 "We walked slowly home." ("home" is also an adverb, item 363); gram 9 seed 77 "___ kids love recess." ("Our" also right, item 458); gram 9 seed 51 "Mom picked ___ kids up." ("our" also right, item 459); vocab 6 seed 116 "The puppy wagged ___ tail." ("his" also right, item 335); vocab 6 seed 73 "Have you ___ my red hat?" ("sewn" also right, item 400). d-gram.js, d-vocab.js.
-- (R-01 reading) Must: Pre-K/K help that is text only is never spoken (`k:'text'` in 39-hints.js): rhyme 1, abc 3, sent 1; rhyme 1 picture choices are emoji and never named (rhyme 1 seed 74: bug → coffee cup "mug"). Speak text hints for PK-K and name picture choices.
-- (R-01 reading) Must: sound 4 prints the word in the prompt ("Which letters end **moth**?"), so the digraph is on screen; moth is a butterfly emoji (`genSoundB`, `DIGR`).
 - (R-01 spanish) Must: two-right-answer items in Weather and Feelings (no wrong key found anywhere in Spanish): `es_weather` 2 seed 19 (sun picture, "hace sol" with "hace calor" offered), seed 38 (plain leaf for "hace fresco" with "hace viento"; also level 1 seed 38 by ear), seed 13 ("nieva" snowflake with "hace frío"); `es_feel` 1-2 seed 41 ("tranquilo" 😌 with "feliz" 😊), seed 2 ("emocionado" with "feliz"). 2-3% of items each. Caption the weather unit or give each phrase a clear picture, and add a never-together list per unit (src/data/d-es.js, `genEs` in 34-gen-es.js).
 - (R-01 spanish) Must: `es_art` 2 English slips: seed 112 shows and says "the beachs" (`gEnPl` has no -ch rule) and every plural item is spoken as "More than one dogs!" (`say` in `genEsArt`, 34-gen-es.js). Say "Lots of dogs!" or "More than one dog!".
 - (R-01 spanish) Must: incorrect model Spanish in Los Cuentos: dialogue "abuela" line 3 "Aquí está agua." → "Aquí tienes agua." (`es_story` 1 seed 14, 3 seed 77; src/data/d-es-story.js). Should, same file: "¿Tienes un animal?" → "¿Tienes una mascota?"; "¡Soy muy viejo!" / "Eres muy amable." does not follow; "¿Qué animal hay en el libro?" → "animales"; "Estás en la biblioteca." → "¿Estás...?".
@@ -445,6 +446,65 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-11) Icons wanted from P4-03: `balloon` (Bonus game, today `gamepad`), `sparkle` / `confetti`, `unlock` (open padlock for "Next stop unlocked", today `map`), `zap` (a lightning with a spark for boss hits; today `bolt`), `sticker` (single sticker for the prize row), `medal` (the prize rosette as an icon), `heart-half` (boss life bar), `chest` (the treasure chest at icon size, e.g. for the round track where renderQ shows the gift emoji).
 
 ## Log
+
+### R-01r Reading review fixes, safe wrong choices (v138, 2026-11-11, Claude)
+- Why: the R-01 reading review (docs/reviews/R-01-reading.md) found slurs and rude words among the made-up Picture Words choices, impossible
+  spellings, homophones in sight words, 9 wrong or two-answer bank items, unspoken K help, and the Letter Teams word printed in the question.
+- Offensive words (Must 1): Picture Words 1-4 no longer change letters at random. Every picture word has a checked set of real, everyday
+  contrast words (`PWC` in 20-words.js: snake / snack, shake, stake; kite / kit, bite, site; moon / mood, noon, soon), three drawn at random.
+  The only made-up strings left are the Bossy R and Vowel Teams 2 swaps (bird / bard / berd / burd); they must pass `ksBad` and `ksLegal`.
+  `ksBad` checks text against a broad blocklist in the new data file src/data/d-kidsafe.js: about 235 slurs (ethnic, racial, homophobic,
+  ableist), profanity, sexual and body words with their inflections (whole words, any case), 13 pieces that are offensive inside any word,
+  and about 110 words that code never offers as a choice (toilet, drugs and alcohol, violence, unkind names). The list is stored as cyrb53
+  hashes only, so no word is readable anywhere in the repo or the app (comment in the file says how to add one).
+- Impossible spellings (Must 2): `ksLegal` (20-words.js) accepts only English-like spellings: legal starting and ending consonant groups,
+  legal vowel spellings, middle groups that split into an ending and a start (rejects snakb, cnake, socb, bgg, pih). Every contrast word
+  and every pic 5-6 swap passes it.
+- Wrong or two-answer items (Must 3, 4): sight words never offer a homophone of the word heard (`SAMESOUND`, `sameSound`); gram 4 "Right now"
+  items became habits ("Every night, the baby ___"), "Which is happening now?" keys "Dad is cooking dinner right now."; gram 8 "We walked
+  slowly."; gram 9 "___ kids love recess." offers We / Us / Them and "Mom picked ___ kids up." us / we / they; vocab 6 "wagged ___ tail"
+  offers its / it's / is / it, "Have you ___ my red hat?" seen / scene / seem / seat. Also "beer" and one drug word left vocab 6.
+- Spoken help and pictures (Must 5, 6): abc 3, rhyme 1 and sent 1-2 help is spoken; Rhyme Time and Read & Match name their pictures in
+  the spoken prompt and show the drawings (picFor, also First and Last Sounds); the rhyme hint names the rime (oat, not at) and never fits
+  a second choice; Rhyme Time lost mug (a coffee cup), king (a crown), rat and ten (families duck / truck and nose / rose instead).
+  Letter Teams no longer prints the word (it is spoken; Hear it replays it); moth (a butterfly) became mouth (drawn). Picture words with a
+  picture of something else were swapped: king > dress (pic 2); cube > ice, cone > note, home > phone, game > frame, vase > pine (pic 3);
+  queen > beach (pic 4); farm > yarn, arm > scarf, chart > cart, burn > church, morning > corn (pic 5); down > clown, stew > broom,
+  new > dew (pic 6). Seven emoji added to tools/emoji-allow.txt (none risky). First and Last Sounds never offer c and k together for /k/.
+- Small fixes (Should 11, 12, 15, Could 18): tides g6n01 (the sun's tide effect is about half the moon's; Q4 key follows), g3n02 Q5 (a
+  title names the topic), g5f02 (the narrator is not called a sister), "The smallest living part of a plant is a ___." (cell), "full of
+  thanks", "in an old way"; spelling: february and wednesday replaced by knowledge and muscle (no days or months, they need a capital);
+  "I see the sun", "some milk" in Read & Match; gram 2 tap sentences in several shapes (Happy puppies bark. / I like sweet apples. / Kick the
+  red ball.) so position never gives the answer; Middle Sounds moved before Picture Words in Letter Meadow, and picks the vowel first
+  (each vowel 20%, short i was 4%; pin, six and bin added).
+- Not done (M/L, left as the task said): fluency practice (Should 7), decodable stories (8), phonemic awareness sound boxes (9), passage
+  layout on phones (10), more Story Time stories (14), sentence building and writing (Could 16), multi-syllable decoding (17), the rest of
+  Could 18 and the remaining pictures of Should 13 (noise, draw, hawk, jewel, screw; water and sword spellings).
+- Generated questions that changed (by seed): abc 3 (spoken help), sound 1, 3, 4, rhyme 1-2, sight 1 and 4 (homophone filter), pic 1-6,
+  build 2-6 (word lists), sent 1-2, spell 2-3 (pictures follow the word lists), spell 6-7 (two words), gram 2, 4, 8, 9, vocab 5, 6,
+  comp 6 (g5f02), info 2 (g3n02), info 5 (g6n01). Every other reading level is unchanged by seed (38 levels, hashed in the new check), and
+  the Spanish seed hashes are unchanged. Brain Teaser band B word puzzles draw from the drawn picture words, so church and dress joined
+  that pool.
+- Expectation changes: test.js "ABC Beach (P2-15): world position, stop ids ..." expected sound3 to end Letter Meadow and compared the
+  first 7 Letter Meadow stops with the v42 list; it now expects sound3 right before pic1 and leaves sound3 out of that comparison (the
+  v42 stops keep their order; no star moves, nothing re-locks, the migration checks are unchanged and pass).
+- Tests: new test.js check "reading review fixes R-01r": 20,000 questions for every reading level (72 levels, 1.44 million questions)
+  scanned in everything shown or spoken (html, say, hints, labels, choices) for list w/s words, and code-made choices for list c words;
+  pic 1-4 choices only from the checked sets, pic 5-6 choices spelling-legal; it proves itself by injecting a blocked word into a choice,
+  into the spoken text and into a word set with the app's guard switched off (each must be caught). Also: the reported seeds, bank pattern
+  scans ("right now" and "happening now" keys, one adverb per tap sentence, no possessive before a group noun, no second pronoun or
+  participle in homophone items), spoken PK/K help, rhyme pictures and hints, Letter Teams not printed, picture swaps, the small fixes, and
+  38 untouched levels unchanged by seed. Run by hand with a blocked word added to a sentence template: the check failed (sent1 seeds
+  13, 17, 52 ...), then passed again once removed. Smoke `// R-01r` at 380x780 (scale 2): Picture Words (pic 3 seeds 13, 2407389,
+  4371301) shows only real words from the checked set, Letter Teams (sound 4) never prints the word and has Hear it; screenshots looked at.
+- Merge: built on branch R01r-fixes from 7dcfebe (v135); VER v137 is provisional (renumber at merge). Conflicts to expect: `tools/build.py`
+  (VER), `tools/test.js` (one new check before the report; the ABC Beach expectation above), `tools/smoke.js` (one block before the final
+  network check), `tools/emoji-allow.txt` (7 lines at the end), `src/js/20-words.js` (lists and the new section after PHBAD),
+  `src/js/32-gen-read.js`, `src/js/36-gen-phonics.js`, `src/js/42-paths.js` (Letter Meadow order), `src/data/d-gram.js`, `d-vocab.js`,
+  `d-comp.js`, `d-spell.js`, the new `src/data/d-kidsafe.js`, docs (`CONTRIBUTING.md` kid-safety row, the review file, this log and
+  Chunk status), built files (rebuild, `git add -A`). A chunk that adds picture words must add a `PWC` set for each (the check fails
+  otherwise); never write a blocklisted word into a file, add its hash.
+- Merge: renumbered v137 -> v138 at merge, on top of P5-07, G-02, R-01m and the Spanish review.
 
 ### R-01m Math review fixes (v137, 2026-11-11, Claude)
 - Done from docs/reviews/R-01-math.md (each item marked there): all four Must items and the cheap Should items 5, 11, 12 and 13.
