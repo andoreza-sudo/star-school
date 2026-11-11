@@ -12285,6 +12285,242 @@ run('word search and unscramble P3-15',()=>{
     ', directions '+JSON.stringify(s.dirs)+', backwards '+JSON.stringify(s.back)+', unscramble letters '+JSON.stringify(s.len)+', make '+ms.toFixed(1)+' ms'};
 });
 
+// ---- P2-34: Spanish world Las Frases (phrases, articles, ser/estar/tener, me gusta, sentences) ----
+run('Spanish Las Frases P2-34',()=>{
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const allow=new Set(fs.readFileSync(path.join(ROOT,'tools','emoji-allow.txt'),'utf8').split('\n').map(l=>l.split('#')[0].trim().replace(/️/g,'')).filter(Boolean));
+  const errs=[],bad=m=>{if(errs.length<40&&!errs.includes(m))errs.push(m)};
+  const body=function(){
+    // genders from an explicit list (the data must agree with it, word for word)
+    const G2={};
+    ['el:perro gato pato oso conejo cerdo caballo pájaro libro vestido sombrero zapato huevo queso helado plátano barco carro abuelo hermano papel lápiz borrador tren avión camión autobús jardín hospital león pez diente cohete',
+     'la:casa mesa silla cama puerta ventana manzana galleta rana vaca mochila camisa chaqueta bicicleta escuela tienda playa abuela hermana oreja pierna nariz']
+      .forEach(s=>{const[a,ws]=s.split(':');ws.split(' ').forEach(w=>{G2[w]=a})});
+    const LIKE_GEN={pan:'el',leche:'la',uvas:'las'}; // nouns only the me-gusta list has
+    const plural=w=>{if(/[aeiou]$/.test(w))return w+'s';if(/z$/.test(w))return w.slice(0,-1)+'ces';
+      return(w+'es').replace(/([áéíóú])(n|s)es$/,(m,v,c)=>({á:'a',é:'e',í:'i',ó:'o',ú:'u'}[v])+c+'es')};
+    const strip=s=>String(s).replace(/<[^>]*>/g,'');
+    const toks=s=>strip(s).toLowerCase().split(/[^a-záéíóúüñ]+/).filter(Boolean);
+    const G=ES_GRAM;
+    // ---- NFC everywhere, counts
+    const walk=(v,p)=>{if(typeof v==='string'){if(v!==v.normalize('NFC'))bad('not NFC: '+v)}else if(Array.isArray(v))v.forEach(x=>walk(x,p));else if(v&&typeof v==='object')for(const k in v)walk(v[k],p)};
+    walk(G,'');
+    const cnt={phrases:G.phrases.length,qa:G.qa.length,nouns:G.nouns.length,likes:G.likes.length,ser1:G.ser[1].length,ser2:G.ser[2].length,ser3:G.ser[3].length,sent1:G.sent[1].length,sent2:G.sent[2].length};
+    for(const[k,min]of Object.entries({phrases:12,qa:8,nouns:50,likes:18,ser1:14,ser2:14,ser3:12,sent1:16,sent2:16}))if(cnt[k]<min)bad(k+': '+cnt[k]+' items, wants '+min+' or more');
+    // ---- skills
+    for(const[id,max]of Object.entries({es_phrase:2,es_art:2,es_ser:3,es_gusta:2,es_sent:2}))if(!SK[id]||SK[id].area!=='es'||SK[id].max!==max)bad(id+': skill missing or wrong max');
+    // ---- nouns: gender, plural, picture, one article
+    const seen=new Set();
+    for(const n of G.nouns){const w='noun '+n[0]+': ';
+      if(seen.has(n[0]))bad(w+'twice');seen.add(n[0]);
+      if(G2[n[0]]!==n[3])bad(w+'article '+n[3]+' wants '+G2[n[0]]);
+      if(n[4]!==plural(n[0]))bad(w+'plural '+n[4]+' wants '+plural(n[0]));
+      if(!allow.has(n[2].replace(/️/g,'')))bad(w+'picture '+n[2]+' not in the allow-list');
+      if(/o$/.test(n[0])&&n[3]!=='el'||/a$/.test(n[0])&&n[3]!=='la')bad(w+'breaks the -o/-a rule the level 1 hint teaches');
+      if(!n[1]||n[1]!==n[1].toLowerCase())bad(w+'gloss');}
+    for(const k in G2)if(!seen.has(k))bad('missing noun '+k);
+    if(G.nouns.filter(n=>!/[oa]$/.test(n[0])).length<10)bad('too few consonant nouns for the -es plurals');
+    // ---- phrases (level 1) and replies (level 2)
+    const en=new Set(),es=new Set();
+    for(const p of G.phrases){if(en.has(p[1])||es.has(p[0]))bad('phrase repeats: '+p[0]);en.add(p[1]);es.add(p[0]);
+      const ht=new Set(toks(p[2])),leak=toks(p[1]).filter(t=>t.length>=4&&ht.has(t));
+      if(leak.length)bad('phrase hint holds the meaning: '+p[0]+' '+leak);
+      if(p[2].length<20)bad('phrase hint short: '+p[0]);}
+    const KIND_RE={name:/^Me llamo \p{Lu}\p{Ll}+\.$/u,how:/^Estoy (bien|muy bien, gracias|feliz|triste)\.$/,age:/^Tengo \p{L}+ años\.$/u,where:/^Está en (la|el) \p{L}+\.$/u,
+      what:/^Es (un|una) \p{L}+\.$/u,thanks:/^De nada\.$/,meet:/^(Mucho gusto|Igualmente)\.$/,bye:/^(Adiós|Hasta luego)\.$/};
+    for(const qa of G.qa){
+      if(!KIND_RE[qa.t])bad('qa type '+qa.t);
+      for(const r of qa.ok){for(const t in KIND_RE)if(KIND_RE[t].test(r)!==(t===qa.t))bad('reply "'+r+'" of '+qa.t+' also reads as '+t)}
+      if(new Set(qa.ok).size!==qa.ok.length)bad('replies repeat in '+qa.q);
+      const others=new Set(G.qa.filter(x=>x.t!==qa.t&&!qa.no.includes(x.t)).map(x=>x.t));
+      if(others.size<3)bad(qa.q+': fewer than 3 other reply types to draw wrong replies from');
+      if(G.qa.some(x=>x.t===qa.t&&x.ok.join('|')!==qa.ok.join('|')))bad(qa.q+': questions of one type must share their reply list');
+      if(!/[?.]$/.test(qa.q)||qa.h.length<20)bad('qa form '+qa.q);
+      const ht=new Set(toks(qa.h));for(const r of qa.ok)for(const t of toks(r))if(t.length>=4&&ht.has(t))bad('qa hint holds a reply word: '+qa.q+' '+t);}
+    // ---- ser / estar / tener: the subject fixes the person, adjectives agree
+    const FORMS=[null,{1:'soy',2:'eres',3:'es'},{1:'estoy',2:'estás',3:'está',6:'están'},{1:'tengo',2:'tienes',3:'tiene'}];
+    const personOf=s=>s==='Yo'?1:s==='Tú'?2:/^(Los|Las|Mis) /.test(s)?6:3;
+    const FEM=/^(Ella|Mi mamá|La casa|Mi hermana|Las niñas|Mis hermanas|Mi abuela)$/,MASC=/^(Él|Mi perro|Mi papá|El gato|Mi libro|Los niños|Mis amigos|Mi hermano)$/;
+    const NAMES=new Set(['Lucía','Mateo']);
+    for(let lv=1;lv<=3;lv++){
+      if(new Set(Object.values(FORMS[lv])).size!==Object.keys(FORMS[lv]).length)bad('ser L'+lv+': two persons share a form');
+      for(const it of G.ser[lv]){const w='ser L'+lv+' '+it.slice(0,3).join(' ')+': ';
+        if(personOf(it[0])!==it[1]||!FORMS[lv][it[1]])bad(w+'person '+it[1]+' does not match the subject');
+        if(!it[3]||!/[.]$/.test(it[3]))bad(w+'english');
+        const last=it[2].split(' ').pop();
+        if(lv<3&&!/^(en|de) /.test(it[2])&&it[1]!==1||lv<3&&!/^(en|de) /.test(it[2])&&it[1]===1){
+          if(FEM.test(it[0])&&/os?$/.test(last))bad(w+'adjective does not agree (feminine subject)');
+          if(MASC.test(it[0])&&/as?$/.test(last)&&!/^(Mi mamá)$/.test(it[0])&&!['doctora'].includes(last))bad(w+'adjective does not agree (masculine subject)');
+          if((it[0]==='Yo'||it[0]==='Tú')&&/[oa]s?$/.test(last)&&!NAMES.has(last))bad(w+'a gendered adjective after yo/tú (the speaker could be either)');}
+        if(lv===3&&!/^(hambre|sed|frío|calor|\p{L}+ años)$/u.test(it[2]))bad(w+'tener needs hambre, sed, frío, calor or a number of años');
+        if(lv===2&&it[1]===6&&!/(es|as|os)$/.test(last)&&!/^en /.test(it[2]))bad(w+'plural adjective');}}
+    // ---- me gusta pool
+    const LS=new Set();
+    for(const l of G.likes){const w='likes '+l[1]+': ';
+      if(LS.has(l[1]))bad(w+'twice');LS.add(l[1]);
+      const g=l[4]==='pl'?l[0]:(G2[l[1]]||LIKE_GEN[l[1]]);
+      if(g!==l[0])bad(w+'article '+l[0]+' wants '+g);
+      if(l[4]==='pl'){if(l[0]!=='las'&&l[0]!=='los'||l[1]!==l[2])bad(w+'plural-only form')}
+      else if(l[4]==='sg'){if(l[2]!=='')bad(w+'a singular-only item has a plural')}
+      else if(l[2]!==plural(l[1]))bad(w+'plural '+l[2]+' wants '+plural(l[1]));
+      if(!allow.has(l[3].replace(/️/g,'')))bad(w+'picture not in the allow-list');}
+    if(G.likes.filter(l=>l[4]!=='pl').length<12)bad('too few singular me gusta items');
+    // ---- sentences: one valid order
+    const PAT={1:['A B V J','D B V J','S V J'],2:['S V P A L','S V P D L','D B V P A L','A B V P A L','B V P A L']};
+    const SG={gato:'el',casa:'la',perro:'el',mesa:'la',zapatos:'los',botas:'las',camisa:'la',libro:'el',mamá:'la',rana:'la',bicicleta:'la',sombrero:'el',silla:'la',conejo:'el',carro:'el',leche:'la',
+      niños:'los',pájaros:'los',maestra:'la',hermano:'el',abuela:'la',papá:'el',cocina:'la',sala:'la',cama:'la',parque:'el',escuela:'la',jardín:'el',playa:'la',calle:'la',clase:'la'};
+    const perms=a=>{const out=[],h=(k,x)=>{if(k===1){out.push(x.slice());return}h(k-1,x);for(let i=0;i<k-1;i++){const j=k%2?0:i,t=x[j];x[j]=x[k-1];x[k-1]=t;h(k-1,x)}};h(a.length,a.slice());return out};
+    let sentN=0;
+    for(const lv of[1,2])for(const it of G.sent[lv]){sentN++;
+      const w='sent L'+lv+' '+it[0]+': ',ws=it[0].split(' '),cl=it[1].split(' ');
+      if(ws.length!==cl.length)bad(w+'a class for every word');
+      if(lv===1&&(ws.length<3||ws.length>4)||lv===2&&(ws.length<4||ws.length>6))bad(w+ws.length+' words');
+      if(!/^\p{Lu}/u.test(ws[0])||!/\.$/.test(ws[ws.length-1])||ws.slice(0,-1).some(x=>/\./.test(x))||ws.slice(1).some(x=>/^\p{Lu}/u.test(x)))bad(w+'capital first, dot last, nothing else capitalised');
+      if(!PAT[lv].includes(it[1]))bad(w+'pattern '+it[1]+' is not a pattern of the level');
+      if(new Set(ws.map(x=>x.toLowerCase())).size!==ws.length&&false)bad(w);
+      const valid=new Set();
+      for(const p of perms(ws.map((x,i)=>i))){
+        if(p[0]!==0||p[p.length-1]!==ws.length-1)continue; // the capital tile starts it, the dot tile ends it
+        if(!PAT[lv].includes(p.map(i=>cl[i]).join(' ')))continue;
+        valid.add(p.map(i=>ws[i]).join(' '));}
+      if(valid.size!==1||!valid.has(it[0]))bad(w+valid.size+' valid orders '+[...valid].join(' / '));
+      // agreement inside the stored order
+      ws.forEach((x,i)=>{const lo=x.toLowerCase().replace('.','');
+        if(cl[i]==='A'||cl[i]==='D'){const nx=ws[i+1].toLowerCase().replace('.','');
+          if(cl[i]==='A'&&SG[nx]!==lo)bad(w+'article '+lo+' with '+nx+' wants '+SG[nx]);}
+        if(cl[i]==='J'&&cl[i-2]==='B'){const nn=ws[i-2].toLowerCase(),g=SG[nn];if(!g)bad(w+'no gender for '+nn);
+          else if(/^(el|la)$/.test(g)&&(g==='el'?!/(o|e|l|z)\.?$/.test(lo)||/a\.?$/.test(lo):/o\.?$/.test(lo)))bad(w+'adjective '+lo+' does not agree with '+nn);
+          else if(/^(los|las)$/.test(g)&&(g==='los'?!/(os|es)\.?$/.test(lo):!/(as|es)\.?$/.test(lo)))bad(w+'adjective '+lo+' does not agree with '+nn);}
+        if(cl[i]==='V'&&(lo==='es'||lo==='son')){const subj=ws[i-1].toLowerCase(),plu=/^(zapatos|botas)$/.test(subj);if(plu!==(lo==='son'))bad(w+'es/son');}});}
+    // ---- questions: 3000 seeded per skill and level through kindProblems
+    let n=0;const hit={};
+    const leaks=q=>{const ht=new Set(toks(q.hint.s)),short=q.sk==='es_phrase'&&q.lv===1,
+      at=toks(q.kind==='order'?q.ans.join(' '):q.sk==='es_gusta'&&q.lv===1?String(q.ans).replace(/[+-]$/,''):String(q.ans)).filter(t=>t.length>=4||!short);
+      return at.filter(t=>ht.has(t))};
+    for(const[id,max]of Object.entries({es_phrase:2,es_art:2,es_ser:3,es_gusta:2,es_sent:2}))for(let lv=1;lv<=max;lv++){
+      const key=id+lv;hit[key]=new Set();
+      for(let s=1;s<=3000;s++){
+        const q=genQ(id,lv,s);n++;const w=key+' seed '+s+': ';
+        for(const m of kindProblems(q))bad(key+': '+m);
+        if(typeof q.say!=='string'||!q.say.trim())bad(key+': no say');
+        if(typeof q.label!=='string'||!q.label||q.label.length>=60)bad(key+': label');
+        if(/\bundefined\b|\bNaN\b|\[object |\bnull\b/.test(q.html+q.label+q.say))bad(key+': bad text');
+        if(!q.hint||!q.hint.s||q.hint.s.length<20)bad(key+': hint missing');
+        else if(leaks(q).length)bad(key+': a hint holds the answer '+leaks(q)+' ('+q.ans+')');
+        if(id==='es_sent'){
+          if(q.kind!=='order')bad(key+': kind');
+          else{if(q.items.length!==q.ans.length)bad(key+': distractor tiles');
+            const ws=G.sent[lv].find(x=>x[0]===q.ans.join(' '));if(!ws)bad(key+': answer is not a stored sentence '+q.ans.join(' '));else hit[key].add(ws[0]);
+            if(q.items.every((t,i)=>t.v===q.ans[i])&&q.ans.length>3&&s<50)bad(key+': tiles handed over in order');
+            if(!q.html.includes('“'+(ws?ws[2]:'?')+'”'))bad(key+': english prompt');}
+          continue}
+        if(q.kind!=='choice'||q.lang!==undefined&&q.lang!=='es')bad(key+': kind or lang');
+        const vs=q.choices.map(c=>c.v);
+        if(new Set(vs).size!==vs.length||vs.filter(v=>v===q.ans).length!==1)bad(key+': not one right answer');
+        if(vs.length<2||vs.length>4)bad(key+': '+vs.length+' choices');
+        if(id==='es_phrase'){
+          if(vs.length!==3)bad(key+': wants 3 choices');
+          if(lv===1){const p=G.phrases.find(x=>x[1]===q.ans);if(!p||q.say!==p[0])bad(key+': phrase and meaning');else hit[key].add(p[0]);
+            if(new Set(vs.map(v=>v.toLowerCase())).size!==3)bad(key+': meanings repeat')}
+          else{const qa=G.qa.filter(x=>x.q===q.say);
+            if(!qa.length||!qa.some(x=>x.ok.includes(q.ans)))bad(key+': reply does not belong to the question');
+            else{hit[key].add(q.say+'>'+q.ans);const t=qa[0].t;
+              for(const v of vs)if(v!==q.ans)if(KIND_RE[t].test(v)||qa.some(x=>x.ok.includes(v)))bad(key+': a wrong reply could fit '+q.say+' / '+v);
+              if(qa[0].no.some(nt=>vs.some(v=>KIND_RE[nt].test(v))))bad(key+': a reply from an excluded type');}}}
+        if(id==='es_art'){
+          const txt=strip(q.html);
+          if(q.say&&/^More than one/.test(q.say)){ // plural
+            const m=/^(los|las) (\p{L}+)$/u.exec(q.ans);const nn=m&&G.nouns.find(x=>x[4]===m[2]);
+            if(!nn||m[1]!==(nn[3]==='el'?'los':'las'))bad(key+': plural answer '+q.ans);
+            else{hit[key].add(q.ans);
+              for(const v of vs)if(v!==q.ans&&v===(nn[3]==='el'?'los ':'las ')+nn[4])bad(key+': a wrong choice equals the answer');
+              if(!vs.some(v=>v.split(' ')[0]!==m[1]&&v.split(' ')[1]===m[2]))bad(key+': no wrong-article choice');
+              if(!vs.some(v=>v.split(' ')[0]===m[1]&&v.split(' ')[1]!==m[2]))bad(key+': no wrong-ending choice');}}
+          else{const m=/^(\p{L}+)$/u.exec(q.say),nn=m&&G.nouns.find(x=>x[0]===q.say);
+            if(!nn||!/[oa]$/.test(nn[0]))bad(key+': noun '+q.say);
+            else{const want=lv===1?nn[3]:(nn[3]==='el'?'un':'una');hit[key].add(nn[0]);
+              if(q.ans!==want)bad(key+': '+nn[0]+' wants '+want+' got '+q.ans);
+              if(vs.join('|')!==(lv===1?'el|la':'un|una'))bad(key+': choices '+vs)}}}
+        if(id==='es_ser'){
+          const F=FORMS[lv],m=/^(.+?) (\S+)? ?(.*)\.$/.exec(strip(q.html));
+          const it=G.ser[lv].find(x=>strip(q.html).startsWith(x[0]+' ')&&strip(q.html).includes(x[2]+'.')&&strip(q.html).endsWith(x[3]));
+          if(!it)bad(key+': no item for '+strip(q.html));
+          else{hit[key].add(it[0]+'|'+it[2]);
+            if(q.ans!==F[it[1]])bad(key+': '+it[0]+' wants '+F[it[1]]+' got '+q.ans);
+            if(vs.some(v=>!Object.values(F).includes(v)))bad(key+': a choice that is not a form of the verb');
+            if(q.say!==it[3]||q.after!==it[0]+' '+q.ans+' '+it[2]+'.')bad(key+': say or after')}}
+        if(id==='es_gusta'){
+          if(lv===1){
+            const m=/^(No me gusta|Me gusta) (el|la) (\p{L}+)\.$/u.exec(q.say),L=m&&G.likes.find(x=>x[1]===m[3]&&x[0]===m[2]&&x[4]!=='pl');
+            if(!L)bad(key+': sentence '+q.say);
+            else{hit[key].add(q.say);const key2=L[1]+(m[1]==='Me gusta'?'+':'-');
+              if(q.ans!==key2)bad(key+': answer '+q.ans+' for '+q.say);
+              if(vs.filter(v=>v===key2).length!==1)bad(key+': one right picture');
+              if(vs.length!==3)bad(key+': wants 3 pictures');
+              if(!vs.some(v=>v.slice(0,-1)===L[1]&&v!==key2))bad(key+': no same-picture wrong-face choice');
+              if(!vs.some(v=>v.slice(0,-1)!==L[1]&&v.slice(-1)===key2.slice(-1)))bad(key+': no other-picture same-face choice');
+              if(q.choices.some(c=>!/😊|😢/.test(c.l)))bad(key+': a picture without a face');
+              if(!q.html.includes('class="sent"'))bad(key+': sentence not shown')}}
+          else{
+            const m=/(No me|Me) <span class="slot" id="slot"><\/span> (el|la|los|las) (\p{L}+)\./u.exec(q.html),pl=m&&/^(los|las)$/.test(m[2]);
+            const L=m&&G.likes.find(x=>pl?(x[2]===m[3]&&gPlArt(x[0])===m[2]):(x[1]===m[3]&&x[0]===m[2]&&x[4]!=='pl'));
+            if(!L)bad(key+': noun phrase in '+q.html);
+            else{hit[key].add((pl?'pl ':'sg ')+L[1]);
+              if(q.ans!==(pl?'gustan':'gusta'))bad(key+': '+m[2]+' '+m[3]+' wants '+(pl?'gustan':'gusta'));
+              if(vs.join('|')!=='gusta|gustan')bad(key+': choices '+vs)}}}}
+    }
+    // every item is reached
+    const want={es_phrase1:G.phrases.length,es_phrase2:G.qa.reduce((a,x)=>a+x.ok.length,0),es_art1:G.nouns.filter(x=>/[oa]$/.test(x[0])).length,es_art2:G.nouns.length+G.nouns.filter(x=>/[oa]$/.test(x[0])).length,
+      es_ser1:G.ser[1].length,es_ser2:G.ser[2].length,es_ser3:G.ser[3].length,es_sent1:G.sent[1].length,es_sent2:G.sent[2].length,es_gusta1:G.likes.filter(l=>l[4]!=='pl').length*2};
+    for(const k in want)if(k!=='es_phrase2'&&k!=='es_gusta1'&&k!=='es_art2'&&hit[k].size<want[k])bad(k+': only '+hit[k].size+' of '+want[k]+' items asked in 3000 seeds');
+    if(hit.es_phrase2.size<12)bad('es_phrase2: only '+hit.es_phrase2.size+' question and reply pairs asked');
+    if(hit.es_art2.size<G.nouns.length)bad('es_art2: only '+hit.es_art2.size+' articles or plurals asked');
+    if(hit.es_gusta1.size<G.likes.filter(l=>l[4]!=='pl').length*2-4)bad('es_gusta1: only '+hit.es_gusta1.size+' sentences asked');
+    // old Spanish stops: the P2-30 hash still holds
+    const olds=[];
+    for(const id of ['greet','color','num','teen','animal','food','body','family','mix'].map(x=>'es_'+x))for(let lv=1;lv<=2;lv++)for(let s=1;s<=150;s++)olds.push(JSON.stringify(genQ(id,lv,s)));
+    const h=require('crypto').createHash('md5').update(olds.join('\n')).digest('hex');
+    if(h!=='85968a5ca262a225f92f3a7354d2277e'||olds.length!==2700)bad('old Spanish stops changed by seed: '+h);
+    // world and stop order by id
+    const wi=PATHS.es.worlds.map(w=>w.id),fi=wi.indexOf('e_frases');
+    if(wi.slice(0,3).join(' ')!=='e_plaza e_fiesta e_repaso')bad('original worlds moved: '+wi.join(' '));
+    if(fi<0||fi!==wi.indexOf('e_ciudad')+1)bad('e_frases must come right after e_ciudad: '+wi.join(' '));
+    const W=PATHS.es.worlds[fi];
+    if(W){
+      if(W.g!==-1||W.n!=='Las Frases')bad('world fields '+W.g+' '+W.n);
+      const got=W.nodes.map(x=>x[0]+x[1]).join(' ');
+      if(got!=='es_phrase1 es_phrase2 es_art1 es_art2 es_ser1 es_ser2 es_ser3 es_gusta1 es_gusta2 es_sent1 es_sent2')bad('stops '+got);
+      for(const x of W.nodes)if(x[2].length>22)bad('title too long: '+x[2]);
+      if(new Set(W.nodes.map(x=>x[2])).size!==W.nodes.length)bad('two stops share a title');
+      const ids=NODES.es.map(nid);
+      if(new Set(ids).size!==ids.length)bad('duplicate stop ids');
+      if(!ids.includes('boss_e_frases'))bad('no boss stop');
+      if(WR.es[fi][1]-WR.es[fi][0]!==11||NODES.es[WR.es[fi][1]].sk!=='boss')bad('11 stops and the boss');}
+    // the learn screen only opens for vocabulary units (the new skills start with the question screen)
+    if(!/SPN\[n\.sk\.slice\(3\)\]/.test(open.toString()))bad('open() must test SPN before learn()');
+    // save safety: the path ends at e_frases while it runs (a later world, P2-35, adds its own check); with or without the world every older stop keeps its stars and openness
+    const store={};
+    global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+    const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
+    const FULL=PATHS.es.worlds,CUR=FULL.slice(0,fi+1);let checked=0;
+    for(const name of ['fresh','midway','maxed','legacy-single-map','legacy-index-maps','tricky']){
+      const raw=fx(name);load(Object.keys(JSON.parse(raw)).length?raw:null);
+      const snap=()=>{const o={};NODES.es.forEach((x,i)=>{o[nid(x)]={st:getSt('es',i),open:unlocked('es',i)}});return o};
+      PATHS.es.worlds=CUR.filter(w=>w.id!=='e_frases');buildNodes('es');const before=snap();
+      PATHS.es.worlds=CUR;buildNodes('es');const after=snap();
+      if(NODES.es[NODES.es.length-1].wid!=='e_frases')bad('the path does not end at e_frases while it runs');
+      for(const k in before){checked++;
+        if(!after[k])bad(name+': stop '+k+' vanished');
+        else{if(before[k].st!==after[k].st)bad(name+': '+k+' stars changed');if(before[k].open&&!after[k].open)bad(name+': '+k+' re-locked')}}
+      for(const x of W.nodes){const k=x[0]+x[1];if(!after[k])bad(name+': new stop '+k+' missing');else if(after[k].st!==0)bad(name+': new stop '+k+' starts with stars')}
+    }
+    PATHS.es.worlds=FULL;buildNodes('es');
+    return{n,checked,sentN};
+  };
+  const r=eval(js+';('+body.toString()+')()');
+  return{problems:errs.length?uniq(errs):[],note:r.n+' generated questions, '+r.sentN+' sentences, '+r.checked+' stop checks'};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){

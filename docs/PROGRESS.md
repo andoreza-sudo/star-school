@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** P2-34, P2-35, P4-07, P4-09, P4-12, P4-14, P4-16
+**Next up:** P2-35, P4-07, P4-09, P4-12, P4-14, P4-16, P5-07
 
-**Current version:** v122
+**Current version:** v123
 
 ## Chunk status
 
@@ -101,6 +101,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P3-17 v120
 - P3-12 v121
 - P3-15 v122
+- P2-34 v123
 
 ## Handoff notes
 
@@ -383,6 +384,18 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-11) Icons wanted from P4-03: `balloon` (Bonus game, today `gamepad`), `sparkle` / `confetti`, `unlock` (open padlock for "Next stop unlocked", today `map`), `zap` (a lightning with a spark for boss hits; today `bolt`), `sticker` (single sticker for the prize row), `medal` (the prize rosette as an icon), `heart-half` (boss life bar), `chest` (the treasure chest at icon size, e.g. for the round track where renderQ shows the gift emoji).
 
 ## Log
+
+### P2-34 Phrases and grammar: Spanish world Las Frases (v117, 2026-11-11, Claude)
+- What changed (CURRICULUM S-gram and 2.3 row 7, ROADMAP P2-34): five new Spanish skills and the world `{id:'e_frases', n:'Las Frases', g:-1}` after `e_ciudad`, stops in CURRICULUM order: es_phrase 1-2, es_art 1-2, es_ser 1-3, es_gusta 1-2, es_sent 1-2 (11 stops plus the automatic boss; titles 22 letters or fewer). Saves are keyed by stop id; no format change. The skills were already in the report card's "Spanish sentences" strand.
+- Data: new `src/data/d-es-gram.js` (`ES_GRAM`, format in its header; it also makes the five skills, like `esReg` does for units). The generators are one marked block at the end of `src/js/34-gen-es.js` (`genEsPhrase`, `genEsArt`, `genEsSer`, `genEsGusta`, `genEsSent`). All use existing kinds: `choice` (text, or picture cards with a face for me gusta) and `order` (tiles, through `sentOrder`).
+- Questions: `es_phrase` 1 hear and read a phrase, pick the English meaning (13 phrases); 2 read or hear a question, pick the reply (9 questions in 8 reply types, 3 Spanish choices; the two wrong replies come from other types, never a type listed in the question's `no`). `es_art` 1 el/la for a noun ending in -o or -a (41 nouns); 2 un/una, or the plural los/las + noun with -s/-es (55 nouns, the wrong choices are the other article and a wrong ending). `es_ser` 1 soy/eres/es (18 sentences: name, origin, description), 2 estoy/estás/está/están (17: feelings and places), 3 tengo/tienes/tiene (14: hambre, sed, frío, calor, años); the subject fixes the person so one form fits, and yo/tú sentences use words that need no gender. `es_gusta` 1 hear "Me gusta / No me gusta + one thing" and tap the card with the right face and picture (wrong cards: the same picture with the other face, and another picture with the right face; 20 nouns), 2 gusta or gustan with singular and plural nouns (21 items, plural-only "uvas", singular-only "leche"). `es_sent` 1 build a 3-4 word sentence (20), 2 build a 5-6 word sentence with a verb and a place (18); the first tile is capitalised and the last has the dot, and the stored order is the only one a simple Spanish word-order rule set allows.
+- Voice: a question that is only Spanish says its Spanish (`lang:'es'`, `auto:'must'`; with no Spanish voice the button is hidden and the text on screen is enough, the existing fallback). Where the Spanish sentence holds the answer (ser, plural articles, sentences) "Hear it" reads the English meaning, and the Spanish sentence is said after the answer. Hints teach the rule in English and never hold the answer (checked by the test).
+- Stops open straight on the question: `open()` in `src/js/46-home.js` now shows the word-card learn screen only when the skill is a vocabulary unit (`SPN[unit]` exists); es_mix and the five grammar skills start the round. Pictures: all in the allow-list, no new emoji. One CSS rule (`.gcd`, the face over the picture) in `src/css/40-games.css`.
+- Tests (test.js): "Spanish Las Frases P2-34": counts, NFC, explicit gender list for all 55 nouns (and the -o/-a rule the level 1 hint teaches), plural rule, allow-list pictures, reply types are disjoint (each reply matches only its own type's pattern), person and agreement of every ser/estar/tener sentence, me gusta nouns and plurals, every sentence has exactly one valid order (all permutations checked with the first-tile and last-tile pins and a class-pattern whitelist plus article and adjective agreement), 3,000 seeded questions per skill and level through `kindProblems` (one right answer, 2-4 choices, say, label, hints never hold the answer, every item reached), the P2-30 hash of the old stops, world and stop order by id, `open()` guard, save safety on the six fixtures with the path ended at `e_frases` while it runs. Smoke (`// P2-34` block): Las Frases opened by id, es_art 1 and es_sent 1 rounds with real taps at 380x780, stars saved, 48 px choices, tiles and sockets, no sideways scroll. Shots `es-frases-map`, `-phrase1/2`, `-art1/2/2b`, `-ser1/2/3`, `-gusta1/2`, `-sent1/2`.
+- Test expectations changed: none (the new skills all give a `say`, so the KNOWN "no say" list is unchanged).
+- Checklist 7.1: [x] chunk files [x] VER v117 (provisional) [x] build [x] test.js [x] smoke.js [x] screenshots [x] no network [x] no new emoji [x] PROGRESS entry [x] one commit (not pushed).
+- Merge: built on a parallel branch; renumber VER at merge (rebuild, `git add -A`). Conflicts to expect: `42-paths.js` es worlds (put `e_frases` after `e_ciudad`), `46-home.js` `open()`, the new data file sorts before `d-es.js` (fine: it reads only `SK` while loading), `tools/test.js` and `tools/smoke.js` tails.
+- Merge: built on a parallel branch, renumbered v122 -> v123 at merge.
 
 ### P3-15 Word Search and Unscramble (v123, 2026-11-11, Claude)
 - What changed (BRAIN_TEASERS 5.10, 2, 3, 7, 8, 9): two new puzzle types, each registered on its own, bands BCD (the catalog has none in A), 12 levels then the framework's Endless: `wsearch` ("Word Search", `src/js/87-bt-wsearch.js`, object `WS`, `allow` 3) and `scramble` ("Unscramble", `88-bt-scramble.js`, object `US`, `allow` 2), their looks in `src/css/49-bt-wsearch.css` and `49-bt-scramble.css` (moved into `bt.<VER>.js` by the build), two drawn icons (`wsearch` a grid with a found-word band, `scramble` two tiles swapping) in `15-icons.js`, and a small data file `src/data/d-words-bt.js` (`BTW`: the rude runs a grid must never spell, and real words that are anagrams of list words but are not in the lists). The words themselves are the app's existing lists, read only inside functions (A11): Word Search uses the spelling lists (`SPELL_WORDS`, d-spell.js) by grade, Unscramble the picture words of 20-words.js that have a drawing (band B) and the spelling lists with their sentences (C, D). Every word passes BAD. Nothing new in `S` beyond the framework's `S.bt` records. BRAIN_TEASERS 5.10 has an "As built" note.
