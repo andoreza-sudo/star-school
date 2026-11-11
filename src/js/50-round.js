@@ -72,7 +72,7 @@ function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;G.re
   $('#hb').onclick=()=>{if(hintStep(q))return;const h=$('#hint');h.innerHTML=hintHTML(q);h.classList.remove('pop');void h.offsetWidth;h.classList.add('pop');SFX.pop(3);fit();h.scrollIntoView({block:'nearest',behavior:'smooth'})};
   $$('[data-say]').forEach(b=>b.onclick=()=>say(b.dataset.say,b));
   $$('.w').forEach(s=>s.onclick=()=>{say(s.dataset.w);SFX.pop(1)});
-  K.bind(q,G,check);
+  K.bind(q,G,check);esQFix(q);
   if(q.review)petSay('Remember this?');
   if(G.retry){fb("Let's try this one again!",'again');petSay('One more time!')}
   else if(G.done==0)petSay(G.mix?'Tricky mix!':"Let's go!");

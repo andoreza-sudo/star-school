@@ -4498,6 +4498,63 @@ async function main() {
     }
 
     for (const e of errors) fail(e);
+    // P2-30 Spanish framework at 380x780: level 3 (hear it, spell it) typed with the accent key, and the no-Spanish-voice path (the word shown big,
+    //    a one-time grown-up note, no speaker buttons): 48 px keys and choices, nothing wider than the screen. Uses the fake unit es_tst (tools/lib/es-fx.js).
+    {
+      const ES_FX = require('./lib/es-fx.js');
+      const ex = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 });
+      const ep = ex.page;
+      const lay = () => {
+        const sm = a => (a.length ? Math.min(...a.map(b => b.getBoundingClientRect().height)) : 99);
+        return { w: document.documentElement.scrollWidth, keys: sm([...document.querySelectorAll('.sk')]), ch: sm([...document.querySelectorAll('.ch')]),
+          big: (document.querySelector('.esbig') || {}).textContent || '', hear: !!document.querySelector('.hear'), spk: !!document.querySelector('#spk') && document.querySelector('#spk').style.display !== 'none',
+          note: [...document.querySelectorAll('.toast, #toast, [role="status"]')].map(e => e.textContent).join(' ') };
+      };
+      // 1. a Spanish voice exists: level 3 shows picture, clue and blanks; niño is typed with the ñ key
+      const seed = await ep.evaluate(`(${ES_FX.install})(['es-MX'])`);
+      await ep.evaluate(s => { start('es', 0); G.q = genQ('es_tst', 3, s); renderQ(); }, seed);
+      await ep.waitForSelector('.lslots .ls');
+      let l3 = await ep.evaluate(lay);
+      const info = await ep.evaluate(() => ({ kind: G.q.kind, word: G.q.word, slots: document.querySelectorAll('.ls').length, acc: !!document.querySelector('.sk[data-ch="ñ"]'), inv: !!document.querySelector('.sk[data-ch="¿"]') && !!document.querySelector('.sk[data-ch="¡"]'), clue: document.querySelector('.sub').textContent }));
+      if (info.kind !== 'spell' || info.word !== 'niño' || info.slots !== 4 || !info.acc || !info.inv || !/el/.test(info.clue) || !/boy/.test(info.clue)) fail('es level 3 question: ' + JSON.stringify(info));
+      if (l3.w > 380 || l3.keys < 48 || !l3.spk) fail('es level 3 layout: ' + JSON.stringify(l3));
+      for (const c of 'niño') await ep.click(`.sk[data-ch="${c}"]`);
+      const r3 = await ep.evaluate(() => ({ lock: G.lock, ok: document.querySelectorAll('.ls.ok').length, done: G.done, typed: G.typed }));
+      if (!r3.lock || r3.ok !== 4 || r3.typed !== 'niño') fail('es level 3: niño typed with the ñ key did not pass ' + JSON.stringify(r3));
+      // 2. no Spanish voice (English only): the listen question shows the word big, no speaker, one note; the question is still answerable
+      await vwait(ep, 2800);
+      await ep.evaluate(() => home());
+      await ep.evaluate(`(${ES_FX.install})(['en-US'])`);
+      await ep.evaluate(() => { start('es', 0); G.q = genQ('es_animal', 1, 7); renderQ(); });
+      await ep.waitForSelector('.esbig');
+      const nv = await ep.evaluate(lay);
+      const want = await ep.evaluate(() => G.q.ans);
+      if (nv.big !== want || nv.hear || nv.spk) fail('es no voice: the word is not shown big or a speaker is still there ' + JSON.stringify(nv));
+      if (nv.w > 380 || nv.ch < 48) fail('es no voice layout: ' + JSON.stringify(nv));
+      if (!/No Spanish voice/.test(nv.note)) fail('es no voice: no note for grown-ups ' + JSON.stringify(nv.note));
+      // the note shows once per session: a second question has none, and the speaker is still gone
+      await ep.click('.ch').catch(() => {});
+      await vwait(ep, 2800);
+      const spoke = await ep.evaluate(() => { let n = 0; speechSynthesis.speak = () => { n++; }; say('hola', null, 'es'); return n; });
+      if (spoke) fail('es no voice: say(es) still spoke');
+      // 3. level 3 with no voice still works from the picture and clue, with no Hear it button
+      await vwait(ep, 2800);
+      await ep.evaluate(() => { home(); document.querySelectorAll('.ovl').forEach(e => e.remove()); });
+      await ep.evaluate(s => { start('es', 0); G.q = genQ('es_tst', 3, s); renderQ(); }, seed);
+      await ep.waitForSelector('.lslots .ls');
+      l3 =await ep.evaluate(lay);
+      if (l3.spk || l3.w > 380 || l3.keys < 48) fail('es level 3 with no voice: ' + JSON.stringify(l3));
+      for (const c of 'niño') await ep.click(`.sk[data-ch="${c}"]`);
+      if (!(await ep.evaluate(() => G.lock && document.querySelectorAll('.ls.ok').length === 4))) fail('es level 3 with no voice: niño did not pass');
+      // 4. voices that arrive late: the list is empty at first (still waiting), then the Spanish voice shows up and the speaker comes back
+      const late = await ep.evaluate(() => { const o = []; speechSynthesis.getVoices = () => o; const a = esVoice(); o.push({ lang: 'es-US' }); return [a, esVoice()]; });
+      if (late[1] !== 'yes') fail('es voices arriving late: ' + JSON.stringify(late));
+      step('P2-30: es level 3 typed with the ñ key; no-voice path shows the word big with one note, no speaker; 48 px, no sideways scroll');
+      network.push(...ex.network);
+      for (const e of ex.errors) fail(e);
+      await ex.ctx.close();
+    }
+
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');
   } catch (e) {

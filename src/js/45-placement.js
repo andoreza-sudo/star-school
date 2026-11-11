@@ -176,7 +176,7 @@ function placeQ(){
   $$('[data-sayes]').forEach(b=>b.onclick=()=>say(b.dataset.sayes,b,'es'));
   $$('[data-say]').forEach(b=>b.onclick=()=>say(b.dataset.say,b));
   $$('.w').forEach(s=>s.onclick=()=>{say(s.dataset.w);SFX.pop(1)});
-  K.bind(q,PL,placeSubmit);
+  K.bind(q,PL,placeSubmit);esQFix(q);
   fit();if(document.fonts)document.fonts.ready.then(fit);
   if(q.auto==='must'||(q.auto&&S.voice)||(q.say&&gradeCfg().auto==='all'))setTimeout(()=>{if(PL===me&&me.q===q)say(q.say,null,q.lang=='es'?'es':null)},400);
 }

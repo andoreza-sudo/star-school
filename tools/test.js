@@ -9770,6 +9770,139 @@ run('logic UI P3-07',()=>{
     Object.entries(s.kinds).map(([a,b])=>a+' '+b).join(', ')};
 });
 
+// ---- P2-30: Spanish framework (unit data format, level 3 spell, voice fallback) ----
+run('Spanish framework P2-30',()=>{
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const allow=new Set(fs.readFileSync(path.join(ROOT,'tools','emoji-allow.txt'),'utf8').split('\n').map(l=>l.split('#')[0].trim().replace(/\uFE0F/g,'')).filter(Boolean));
+  const errs=[],bad=m=>errs.push(m);
+  const body=function(){
+    // ---- unit format: every unit and item
+    const ARTS=new Set(['','el','la','los','las']);
+    if(!Array.isArray(ES_UNITS)||!ES_UNITS.length)bad('no ES_UNITS');
+    const ids=ES_UNITS.map(u=>u.id);
+    if(new Set(ids).size!==ids.length)bad('duplicate unit id');
+    for(const u of ES_UNITS){
+      const w0='unit '+u.id+': ';
+      if(!/^[a-z]+$/.test(u.id))bad(w0+'bad id');
+      for(const k of ['t','e','theme'])if(typeof u[k]!=='string'||!u[k].trim())bad(w0+'no '+k);
+      if(!u.items||!u.items.length)bad(w0+'no items');
+      if(!SK['es_'+u.id])bad(w0+'no skill es_'+u.id);
+      else{
+        if(SK['es_'+u.id].max!==(u.spell?3:2))bad(w0+'skill max '+SK['es_'+u.id].max);
+        if(SK['es_'+u.id].t!==u.t||SK['es_'+u.id].e!==u.e)bad(w0+'title or emoji differs from the skill');
+      }
+      if(SPN[u.id]!==u.items)bad(w0+'SPN does not point at the items');
+      const seen=new Set(),seenEn=new Set();
+      for(const it of u.items){
+        const w1=w0+JSON.stringify(it[0])+': ';
+        if(!Array.isArray(it)||it.length<4||it.length>6)bad(w1+'item length');
+        const [es,en,pic,art,artName,say]=it;
+        if(typeof es!=='string'||!es||es!==es.normalize('NFC')||es!==es.toLowerCase()||es!==es.trim())bad(w1+'word is not a trimmed lowercase NFC string');
+        if(typeof en!=='string'||!en.trim())bad(w1+'no gloss');
+        if(!ARTS.has(art))bad(w1+'bad article '+art);
+        const ok=/^c:#[0-9a-f]{6}$/.test(pic)||/^n:\d{1,3}$/.test(pic)||allow.has(pic.replace(/\uFE0F/g,''));
+        if(!ok)bad(w1+'picture '+pic+' is not an emoji in tools/emoji-allow.txt, a c:#hex or an n:num');
+        if(artName!==undefined&&artName!==''&&!/^[a-z-]+$/.test(artName))bad(w1+'bad art name');
+        if(say!==undefined&&typeof say!=='string')bad(w1+'bad say');
+        const key=(art?art+' ':'')+es;
+        if(seen.has(key))bad(w1+'duplicate word');seen.add(key);
+        if(seenEn.has(en))bad(w1+'duplicate gloss '+en);seenEn.add(en);
+        if(u.spell&&!esSpellable(it))bad(w1+'spell unit has a word level 3 cannot spell');
+      }
+    }
+    // ---- builder: levels 1 to 3 pass kindProblems on every shipped unit, and on a fixture spell unit with articles and accents
+    const FX={id:'tst',t:'Test',e:'🏠',theme:'Test',spell:1,items:[['niño','boy','👦','el'],['bebé','baby','👶','el'],['pingüino','penguin','🐶','el'],['canción','song','🐱','la','','can-ción'],['hace sol','it is sunny','🌅','']]};
+    ES_UNITS.push(FX);SPN.tst=FX.items;esReg(FX);
+    if(SK.es_tst.max!==3)bad('esReg: fixture spell unit is not level 3');
+    let n=0;
+    for(const u of ES_UNITS){
+      for(let lv=1;lv<=SK['es_'+u.id].max;lv++)for(let s=1;s<=200;s++){
+        const q=genQ('es_'+u.id,lv,s);n++;
+        for(const m of kindProblems(q))bad(u.id+' L'+lv+': '+m);
+        const exp=lv==3?'spell':'choice';
+        if(q.kind!==exp)bad(u.id+' L'+lv+': kind '+q.kind);
+        if(q.lang!=='es')bad(u.id+' L'+lv+': lang');
+        if(!q.label||!q.say&&lv!=2)bad(u.id+' L'+lv+': label or say');
+        if(/\bundefined\b|\bNaN\b|\[object |\bnull\b/.test(q.html))bad(u.id+' L'+lv+': bad html');
+        if(lv==3){
+          if(!u.spell)bad(u.id+': level 3 from a unit without spell');
+          if(!u.items.some(it=>it[0]===q.word))bad(u.id+' L3: word not in unit');
+          if(q.html.includes(q.word)||q.hint.s.includes(q.word))bad(u.id+' L3: the answer is in the prompt or hint');
+        }
+        if(lv==1&&!q.html.includes('data-sayes'))bad(u.id+' L1: no speaker');
+      }
+    }
+    // the article shows in levels 1 and 2 and is not part of the spelled word
+    const q1=genQ('es_tst',1,3),q3=genQ('es_tst',3,4);
+    if(!/“(el|la) /.test(q1.html)||!/^(el|la) /.test(q1.ans))bad('L1 does not show the article');
+    if(/ /.test(q3.word)||q3.word==='hace sol')bad('L3 picked a word with a space');
+    for(let s=1;s<=60;s++)if(genQ('es_tst',3,s).word==='hace sol')bad('L3 asked for a two-word item');
+    if(genQ('es_tst',3,9).say!==genQ('es_tst',3,9).say)bad('say not reproducible');
+    // ---- accent keys: typing the keys gives the exact word
+    const keysOf=h=>new Set([...h.matchAll(/data-ch="([^"]+)"/g)].map(m=>m[1]));
+    for(const [w,lang] of [['niño','es'],['pingüino','es'],['canción','es'],['bebé','es'],['ñandú','es'],['qué','es'],['está','es'],['sólo','es'],['¿cómo','es'],['¡hola','es']]){
+      const q={kind:'spell',lang,word:w,ans:w,say:w,html:'<div class="emo">x</div><div class="lslots">'+[...w].map((_,i)=>`<span class="ls" id="ls${i}"></span>`).join('')+'</div>'};
+      const ks=keysOf(KIND.spell.render(q));let typed='';
+      for(const c of w){if(!ks.has(c))bad('keyboard has no key for '+c+' ('+w+')');typed+=c}
+      if(typed!==q.ans||String(typed)!==String(q.ans))bad('typed '+typed+' differs from '+w);
+      if(kindProblems(q).length)bad('spell '+w+': '+kindProblems(q).join(','));
+    }
+    if(!kindProblems({kind:'spell',lang:'es',word:'n!no',ans:'n!no',say:'x',html:'<b>a</b><div class="lslots"><span id="ls0"></span><span id="ls1"></span><span id="ls2"></span><span id="ls3"></span></div>'}).length)bad('validator let an odd character through');
+    for(const c of 'ñáéíóúü¿¡')if(!keysOf(KIND.spell.render({kind:'spell',lang:'es',word:'a'})).has(c))bad('es keyboard lacks '+c);
+    if(keysOf(KIND.spell.render({kind:'spell',word:'a'})).has('ñ'))bad('accent row without lang es');
+    // ---- old units: the 2700 questions of the original generators (es_* levels 1-2, seeds 1-150) are byte for byte the same as at v104
+    ES_UNITS.pop();delete SPN.tst;delete SK.es_tst;
+    const all=[];
+    for(const id of Object.keys(SK).filter(k=>k.startsWith('es_')))for(let lv=1;lv<=2;lv++)for(let s=1;s<=150;s++)all.push(JSON.stringify(genQ(id,lv,s)));
+    const h=require('crypto').createHash('md5').update(all.join('\n')).digest('hex');
+    if(h!=='85968a5ca262a225f92f3a7354d2277e'||all.length!==2700)bad('old Spanish stops changed by seed: '+h+' ('+all.length+' questions)');
+    for(const u of ES_UNITS)if(u.spell)bad('level 3 is on in shipped unit '+u.id+' before a world has its stop');
+    // ---- voice fallback: the mode function, late voices, and say() staying silent
+    const V=(l)=>({lang:l});
+    const cases=[[[],true,0,'wait'],[[],true,4000,'no'],[[V('en-US')],true,0,'no'],[[V('en-US'),V('es-MX')],true,0,'yes'],[[V('es_ES')],true,0,'yes'],[[V('es-419')],true,9999,'yes'],[[V('spa-ES')],true,0,'yes'],[[V('es-MX')],false,0,'no'],[[V('fr-FR'),V('de-DE')],true,0,'no']];
+    for(const [vs,spk,ms,want] of cases)if(esVoiceMode(vs,spk,ms)!==want)bad('esVoiceMode '+JSON.stringify(vs)+' '+spk+' '+ms+' -> '+esVoiceMode(vs,spk,ms)+', wants '+want);
+    let spoken=0,voices=[],notes=0;
+    global.window={speechSynthesis:1};global.SpeechSynthesisUtterance=function(t){this.text=t};
+    global.speechSynthesis={getVoices:()=>voices,speak:()=>{spoken++},cancel:()=>{}};
+    fb=()=>{notes++};
+    voices=[V('en-US')];ESNOTE=0;
+    say('hola',null,'es');say('hola',null,'es',1);
+    if(spoken)bad('say(es) spoke with no Spanish voice');
+    if(esVoice()!=='no')bad('esVoice with English only is '+esVoice());
+    if(notes!==1)bad("the no-voice note showed "+notes+" times, wants once per session");
+    say('hello',null);if(spoken!==1)bad('English speech stopped when there is no Spanish voice');
+    voices=[V('en-US'),V('es-MX')];                       // the voices arrive late
+    say('hola',null,'es');if(spoken!==2)bad('Spanish speech did not start after the voice list filled in');
+    if(esVoice()!=='yes')bad('esVoice after late voices is '+esVoice());
+    delete global.window;delete global.SpeechSynthesisUtterance;global.speechSynthesis={getVoices:()=>[]};
+    // ---- stops: this chunk adds none; a level 3 stop added later by world id leaves every older stop and its stars alone
+    const base=NODES.es.map(nid).join(' ');
+    if(base!=='es_greet1 es_color1 es_num1 es_animal1 es_greet2 es_color2 es_num2 es_animal2 boss_e_plaza es_food1 es_body1 es_family1 es_teen1 es_food2 es_body2 es_family2 es_teen2 boss_e_fiesta es_mix1 es_mix2 boss_e_repaso')bad('Spanish stops changed: '+base);
+    const store={};
+    global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+    const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
+    const CUR=PATHS.es.worlds;ES_UNITS.push(FX);SPN.tst=FX.items;esReg(FX);
+    let checked=0;
+    for(const name of ['fresh','midway','maxed','legacy-single-map','legacy-index-maps','tricky']){
+      const raw=fx(name);load(Object.keys(JSON.parse(raw)).length?raw:null);
+      const snap=()=>{const o={};NODES.es.forEach((x,i)=>{o[nid(x)]={st:getSt('es',i),open:unlocked('es',i)}});return o};
+      PATHS.es.worlds=CUR;buildNodes('es');const before=snap();
+      PATHS.es.worlds=[...CUR,{id:'e_fx',g:-1,n:'Fx',e:'🏠',c:'#fff',nodes:[['es_tst',1,'T1'],['es_tst',2,'T2'],['es_tst',3,'T3']]}];buildNodes('es');
+      const after=snap();
+      for(const k in before){checked++;
+        if(!after[k])bad(name+': stop '+k+' vanished');
+        else{if(before[k].st!==after[k].st)bad(name+': '+k+' stars changed');if(before[k].open&&!after[k].open)bad(name+': '+k+' re-locked')}}
+      if(after.es_tst3===undefined)bad(name+': level 3 stop missing from the fixture world');
+      else if(after.es_tst3.st!==0)bad(name+': a new level 3 stop starts with stars');
+      PATHS.es.worlds=CUR;buildNodes('es');
+    }
+    ES_UNITS.pop();delete SPN.tst;delete SK.es_tst;
+    return{n,checked};
+  };
+  const r=eval(js+';('+body.toString()+')()');
+  return{problems:errs.concat([]).length?uniq(errs):[],note:r.n+' generated questions, '+r.checked+' stop checks'};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){

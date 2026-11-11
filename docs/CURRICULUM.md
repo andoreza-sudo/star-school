@@ -510,7 +510,7 @@ Existing pattern (frozen): each unit skill `es_<unit>` has level 1 = hear the wo
 
 ### S-frame (chunk P2-30)
 
-- Unit data moves to `d-es.js` in the form `[spanish, english, picture, article]` (`article` = `el`/`la`/`''`). Existing units keep their words.
+- Unit data lives in `d-es.js` (`ES_UNITS`, shipped in P2-30; format in the file header): items `[spanish, english, picture, article, art?, say?]`, `article` = `el`/`la`/`los`/`las`/`''`. Existing units keep their words; a unit with `spell:1` has level 3.
 - New level 3 for vocabulary units: hear the word and spell it (`spell` kind with the accent row). Level 3 exists only where listed in section 2.3.
 - New item types for phrase units: hear a phrase -> pick the meaning; read a question -> pick the best reply; fill the blank; build the sentence (`order`).
 - If no Spanish voice is installed: show the word in text and a small "no Spanish voice on this tablet" note once per session.
