@@ -5826,6 +5826,203 @@ async function main() {
       else step(`P3-17: Home daily card -> played to a win (5 coins and game time once, badge revealed), Home and hub show it done, badges view at 380x780 and 1024x600, old work revealed once, the band-below offer after three exits, ${bars} play top bars show the whole name beside the timer; targets 48 px, no sideways scroll, no emoji chrome`);
     }
 
+    // P3-12 Tangram pack and Shape Fit (src/data/d-puz-tangram.js, src/js/84-bt-shapefit.js) with real pointer input, midway save:
+    //    touch at 380x780 (a 1st grader, band B) and mouse at 1024x600 (a 5th grader, band D). Tangram level 2 (a new puzzle of the
+    //    pack): hint 1, then every piece by a drag with a small miss (turned and flipped first), win, a star saved. Shape Fit level 3:
+    //    every piece picked, turned (taps on touch, the Turn button on the mouse) and flipped (Flip, band D), dragged onto its slot with
+    //    a miss the snap corrects, one by tap-then-tap (touch), a drag back to the tray, hint tiers 1-3, the win card, 1 star saved.
+    //    Every screen: buttons and tray cells 48 px, no sideways scroll, nothing outside the screen, no emoji chrome.
+    {
+      const look = () => {
+        const vw = document.documentElement.clientWidth, out = [];
+        for (const e of document.querySelectorAll('button, [role="button"]')) {
+          const r = e.getBoundingClientRect();
+          if (!r.width || r.bottom < 0 || r.top > innerHeight || e.closest('svg') || e.closest('#toast')) continue;
+          if (Math.min(r.width, r.height) < 47.5) out.push('small ' + (e.id || e.className) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
+          if (r.left < -1 || r.right > vw + 1 || (e.closest('.bt-play') && r.bottom > innerHeight + 1)) out.push('outside ' + (e.id || e.className));
+        }
+        if (document.documentElement.scrollWidth > vw) out.push('sideways scroll ' + document.documentElement.scrollWidth);
+        const sv = document.querySelector('.tg-svg');
+        if (sv) {
+          const r = sv.getBoundingClientRect(), st = document.querySelector('#btstage');
+          if (r.right > vw + 1 || r.bottom > innerHeight + 1) out.push('the board is outside the screen');
+          if (st && st.scrollHeight > st.clientHeight + 2) out.push('the puzzle needs scrolling');
+          const C = document.querySelector('.sf') ? SF.cur : TG.cur;
+          if (C) C.p.pcs.forEach((q, i) => { const e = C.st().pc[i], c = C.cell(i); if (e && e.length == 2 && c && Math.min(c.w, c.h) < 48) out.push('tray cell ' + i + ' ' + c.w + 'x' + c.h); });
+        }
+        const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        for (let n; (n = w.nextNode());) {
+          const el = n.parentElement;
+          if (!el || el.closest('script,style,svg,#ico-sprite,.rw-burst') || !el.getClientRects().length) continue;
+          const m = n.textContent.match(/\p{Extended_Pictographic}|[◀▶✕]/u);
+          if (m) out.push('emoji chrome ' + m[0] + ' in ' + (el.id || el.className));
+        }
+        return out;
+      };
+      // Shape Fit: the moves still to make, worked out from the board: [piece, r, f, slot] for every slot nobody fills yet
+      const sfRest = () => {
+        const p = SF.cur.p, st = SF.cur.st(), { by, used } = SF.filled(p, st), out = [];
+        for (let s = 0; s < p.pcs.length; s++) {
+          if (by[s] >= 0) continue;
+          const i = p.pcs.map((q, j) => j).find(j => !used.has(j) && !out.some(m => m[0] == j) && SF.orient(p, st, j, s));
+          const o = SF.orient(p, st, i, s);
+          out.push([i, o[0], o[1], s]);
+        }
+        return out;
+      };
+      const tgRest = () => {
+        const p = TG.cur.p, st = TG.cur.st(), { by, used } = TG.filled(p, st), out = [];
+        for (let s = 0; s < 7; s++) {
+          if (by[s] >= 0) continue;
+          const i = TG.movable(p).find(j => TG.KIND[j] == TG.KIND[s] && !used.has(j) && !out.some(m => m[0] == j));
+          const q = p.pcs[s];
+          out.push([i, q[0], q[1], TG.num(q[2]), TG.num(q[3])]);
+        }
+        return out;
+      };
+      for (const [w, h, grade, touch] of [[380, 780, 1, true], [1024, 600, 5, false]]) {
+        const tag = 'P3-12 ' + w + 'x' + h;
+        const app = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = app.page, bad = [];
+        const chk = async what => { for (const o of await pg.evaluate('(' + look.toString() + ')()')) bad.push(what + ': ' + o); };
+        const cdp = await pg.context().newCDPSession(pg);
+        if (touch) await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 1 });
+        const tp = q => [{ x: q.x, y: q.y, radiusX: 6, radiusY: 6, id: 1 }];
+        const tap = async q => {
+          if (!touch) return pg.mouse.click(q.x, q.y);
+          await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: tp(q) });
+          await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+        };
+        const dragTo = async (a, b) => {
+          const steps = 8;
+          if (touch) {
+            await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: tp(a) });
+            for (let s = 1; s <= steps; s++) await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: tp({ x: a.x + (b.x - a.x) * s / steps, y: a.y + (b.y - a.y) * s / steps }) });
+            await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+          } else {
+            await pg.mouse.move(a.x, a.y);
+            await pg.mouse.down();
+            await pg.mouse.move(b.x, b.y, { steps });
+            await pg.mouse.up();
+          }
+        };
+        const openType = async (id, lv) => {
+          await pg.evaluate(([g, id, lv]) => { S.grade = g; BT.rec(id, BT.band(), true).lvl = lv; save(); home(); }, [grade, id, lv]);
+          await pg.waitForSelector('#btcard');
+          await pg.waitForTimeout(400);
+          await pg.evaluate(() => document.querySelector('#btcard').scrollIntoView({ block: 'center' }));
+          await pg.click('#btcard');
+          await pg.waitForSelector(`.bt-hub [data-t="${id}"]`);
+          await pg.waitForTimeout(400);
+          await chk(id + ' hub');
+          await pg.click(`[data-t="${id}"]`);
+          await pg.waitForSelector('.bt-lvs');
+          await pg.waitForTimeout(400);
+          await chk(id + ' levels');
+          await pg.click(`.bt-lv[data-l="${lv}"]`);
+          await pg.waitForSelector('.tg-svg .tg-bs');
+          await pg.waitForTimeout(450);
+          await chk(id + ' play');
+        };
+        const winOf = async (id, band) => {
+          await pg.waitForSelector('.bt-win #btnext', { timeout: 8000 });
+          await pg.waitForTimeout(700);
+          await chk(id + ' win card');
+          return pg.evaluate(([id, b]) => ({ stars: document.querySelectorAll('.bt-win .rs.on').length, cur: !!S.bt.cur, saved: ((S.bt[id] || {})[b] || {}).stars }), [id, band]);
+        };
+        const band = grade == 1 ? 'B' : 'D';
+
+        // ---- a new tangram of the pack, level 2 ----
+        await openType('tangram', 2);
+        const t0 = await pg.evaluate(() => ({ id: S.bt.cur.puzzle.id, n: S.bt.cur.puzzle.n }));
+        if (['house', 'rocket', 'boat', 'fish', 'cat', 'rabbit', 'turtle', 'swan'].includes(t0.id) || t0.n < 2 || t0.n > 4) bad.push('tangram level 2 is not a new puzzle of its slice: ' + JSON.stringify(t0));
+        await pg.click('#bthint');
+        const th = await pg.evaluate(() => TG.cur.st().h);
+        if (th < 0) bad.push('tangram hint 1 showed no slot');
+        for (const m of await pg.evaluate('(' + tgRest.toString() + ')()')) {
+          const [i, k, f] = m;
+          if ((await pg.evaluate(() => TG.cur.sel())) !== i) await tap(await pg.evaluate(i => TG.cur.at(i), i));
+          const e = await pg.evaluate(i => TG.cur.st().pc[i], i);
+          if (e[1] !== f) await pg.click('.tg-flip');
+          const e2 = await pg.evaluate(i => TG.cur.st().pc[i], i);
+          for (let t = 0; t < (k - e2[0] + 8) % 8; t++) { if (touch) await tap(await pg.evaluate(i => TG.cur.at(i), i)); else await pg.click('.tg-turn'); }
+          const q = await pg.evaluate(m => TG.cur.page(TG.mid(TG.poly(TG.KIND[m[0]], m[1], m[2], m[3], m[4]))), m);
+          await dragTo(await pg.evaluate(i => TG.cur.at(i), i), { x: q.x + 6, y: q.y - 5 });
+          await pg.waitForTimeout(60);
+          const ok = await pg.evaluate(m => { const e = TG.cur.st().pc[m[0]]; return !TG.cur.p.fix.includes(m[0]) && e.length == 4 && TG.samePoly(TG.poly(TG.KIND[m[0]], ...e), TG.poly(TG.KIND[m[0]], m[1], m[2], m[3], m[4])); }, m);
+          if (!ok && !(await pg.$('.bt-win'))) bad.push('tangram piece ' + i + ' did not land in its slot');
+        }
+        const tw = await winOf('tangram', band);
+        if (tw.stars !== 2 || tw.cur || !tw.saved || tw.saved[1] !== 2) bad.push('tangram win (1 hint = 2 stars): ' + JSON.stringify(tw));
+        await pg.click('#btlvls');
+        await pg.waitForSelector('.bt-lvs');
+
+        // ---- Shape Fit, level 3 ----
+        await openType('fit', 3);
+        const f0 = await pg.evaluate(() => ({ band: S.bt.cur.band, n: SF.cur.p.pcs.length, size: SF.cur.p.reg.length, u: Math.round(SF.cur.u()), ut: Math.round(SF.cur.ut()), turn: SF.cur.p.turn, flip: SF.cur.p.flip }));
+        if (f0.band !== band || f0.n !== (band == 'B' ? 3 : 7) || !f0.turn || f0.flip !== (band == 'D' ? 1 : 0)) bad.push('Shape Fit band and pieces: ' + JSON.stringify(f0));
+        const slotMid = s => pg.evaluate(s => { const c = SF.slotCells(SF.cur.p, s), m = SF.midOf(c); return SF.cur.page(m); }, s);
+        const inSlot = m => pg.evaluate(m => { const e = SF.cur.st().pc[m[0]], k = cs => cs.map(c => c.join()).sort().join('|'); return e.length == 4 && k(SF.cellsOf(SF.cur.p, m[0], e)) == k(SF.slotCells(SF.cur.p, m[3])); }, m);
+        const play = async (m, how, dx = 0, dy = 0) => {
+          const [i, r, f, s] = m;
+          if ((await pg.evaluate(() => SF.cur.sel())) !== i) await tap(await pg.evaluate(i => SF.cur.at(i), i));
+          const e = await pg.evaluate(i => SF.cur.st().pc[i], i);
+          if (e[1] !== f) await pg.click('.tg-flip');
+          const e2 = await pg.evaluate(i => SF.cur.st().pc[i], i);
+          for (let t = 0; t < (r - e2[0] + 4) % 4; t++) { if (touch) await tap(await pg.evaluate(i => SF.cur.at(i), i)); else await pg.click('.tg-turn'); }
+          const q = await slotMid(s);
+          if (how == 'tap') await tap(q);
+          else await dragTo(await pg.evaluate(i => SF.cur.at(i), i), { x: q.x + dx, y: q.y + dy });
+          await pg.waitForTimeout(60);
+          if (!(await inSlot(m)) && !(await pg.$('.bt-win'))) bad.push(`Shape Fit piece ${i} (${how}) did not land in slot ${s}: ` + JSON.stringify(await pg.evaluate(i => SF.cur.st().pc[i], i)));
+        };
+        let moves = await pg.evaluate('(' + sfRest.toString() + ')()');
+        await play(moves[0], touch ? 'tap' : 'drag', 0, 0);
+        // a drag back to the tray, then in again with a miss
+        const tr = await pg.evaluate(() => { const r = document.querySelector('.tg-tray').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height - 20 }; });
+        await dragTo(await pg.evaluate(i => SF.cur.at(i), moves[0][0]), tr);
+        if ((await pg.evaluate(i => SF.cur.st().pc[i].length, moves[0][0])) !== 2) bad.push('Shape Fit: a drag onto the tray did not put the piece back');
+        moves = await pg.evaluate('(' + sfRest.toString() + ')()');
+        await play(moves[0], 'drag', 9, -7);
+        await chk('Shape Fit one piece in');
+        // hints: 1 shows a slot and picks its piece, 2 turns only that piece, 3 puts it in
+        const before = await pg.evaluate(() => JSON.stringify(SF.cur.st().pc));
+        await pg.click('#bthint');
+        const h1 = await pg.evaluate(() => ({ h: SF.cur.st().h, sel: SF.cur.sel(), shown: getComputedStyle(document.querySelector('.sf .tg-hl')).display != 'none', msg: document.querySelector('.tg-msg').textContent }));
+        if (h1.h < 0 || h1.sel < 0 || !h1.shown || !/yellow outline/.test(h1.msg) || (await pg.evaluate(() => JSON.stringify(SF.cur.st().pc))) !== before) bad.push('Shape Fit hint 1: ' + JSON.stringify(h1));
+        await vwait(pg, 11500);
+        await pg.click('#bthint');
+        const h2 = await pg.evaluate(() => { const st = SF.cur.st(), s = st.h, i = SF.cur.sel(); return { s, i, ok: SF.key(SF.xf(SF.cur.p.pcs[i].s, st.pc[i][0], st.pc[i][1])) == SF.key(SF.cur.p.pcs[s].s) }; });
+        if (h2.s !== h1.h || !h2.ok) bad.push('Shape Fit hint 2: ' + JSON.stringify(h2));
+        await vwait(pg, 11500);
+        await pg.click('#bthint');
+        const h3 = await pg.evaluate(() => SF.cur.st().pc.filter(e => e.length == 4).length);
+        if (h3 !== 2) bad.push('Shape Fit hint 3 left ' + h3 + ' pieces on the board, want 2');
+        await chk('Shape Fit hint 3');
+        // back, back, Keep going: the same puzzle and pieces
+        const saved = await pg.evaluate(() => JSON.stringify([S.bt.cur.puzzle, S.bt.cur.state]));
+        await pg.click('#back');
+        await pg.waitForSelector('.bt-lvs');
+        await pg.click('#back');
+        await pg.waitForSelector('#btkeep');
+        await pg.click('#btkeep');
+        await pg.waitForSelector('.sf .tg-bs');
+        await pg.waitForTimeout(300);
+        if ((await pg.evaluate(() => JSON.stringify([S.bt.cur.puzzle, S.bt.cur.state]))) !== saved) bad.push('Shape Fit resume changed the puzzle');
+        for (const m of await pg.evaluate('(' + sfRest.toString() + ')()')) await play(m, 'drag', -5, 6);
+        const fw = await winOf('fit', band);
+        if (fw.stars !== 1 || fw.cur || !fw.saved || fw.saved[2] !== 1) bad.push('Shape Fit win (3 hints = 1 star): ' + JSON.stringify(fw));
+        if (bad.length) fail(tag + ':\n  ' + bad.join('\n  '));
+        else step(`${tag}: Tangram band ${band} level 2 (${t0.id}, a new puzzle) by ${touch ? 'touch' : 'mouse'} drags after a hint, 2 stars saved; Shape Fit band ${band} level 3 ` +
+          `(${f0.n} pieces, ${f0.size} squares, ${f0.u} px a square on the board, ${f0.ut} in the tray) by ${touch ? 'touch: tap-then-tap, turning by taps' : 'mouse: the Turn' + (f0.flip ? ' and Flip buttons' : ' button')}, ` +
+          `drags with a miss snap in, a drag to the tray puts a piece back, hints 1-2 move nothing and 3 places one, Keep going resumes, win card, 1 star saved; ` +
+          `48 px targets, no sideways scroll, no emoji chrome`);
+        network.push(...app.network);
+        for (const e of app.errors) fail(e);
+        await app.ctx.close();
+      }
+    }
+
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');
   } catch (e) {

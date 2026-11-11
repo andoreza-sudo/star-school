@@ -200,6 +200,10 @@ const ICONS={
     '<path stroke="currentColor" stroke-width=".6" stroke-linejoin="round" d="M11.4 20.6L8.6 19L8.6 15.8L11.4 17.4ZM11.4 16.1L8.6 14.5L8.6 11.3L11.4 12.9Z' +
     'M7.4 18.3L4.6 16.7L4.6 13.5L7.4 15.1ZM7.4 13.8L4.6 12.2L4.6 9L7.4 10.6ZM12.6 20.6L15.4 19L15.4 15.8L12.6 17.4ZM12.6 16.1L15.4 14.5L15.4 11.3L12.6 12.9Z' +
     'M16.6 18.3L19.4 16.7L19.4 13.5L16.6 15.1ZM16.6 13.8L19.4 12.2L19.4 9L16.6 10.6Z"/>',
+  'fit':
+    '<rect fill="var(--ic3,currentColor)" opacity=".4" x="2.5" y="2.5" width="19" height="19" rx="3"/>' +
+    '<path d="M4.5 4.5H11V13H19.5V19.5H4.5Z"/>' +
+    '<rect fill="none" stroke="currentColor" stroke-width="1.4" stroke-dasharray="2.2 1.6" x="13.2" y="4.7" width="6.1" height="6.1" rx="1"/>',
   'path-math':
 
     '<path fill="none" stroke="currentColor" stroke-width="2.4" d="M7 3.5V10.5M3.5 7H10.5M13.5 7H20.5' +

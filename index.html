@@ -2572,7 +2572,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S));SAVE_FAILED=fals
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v120'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v121'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -3072,6 +3072,10 @@ const ICONS={
     '<path stroke="currentColor" stroke-width=".6" stroke-linejoin="round" d="M11.4 20.6L8.6 19L8.6 15.8L11.4 17.4ZM11.4 16.1L8.6 14.5L8.6 11.3L11.4 12.9Z' +
     'M7.4 18.3L4.6 16.7L4.6 13.5L7.4 15.1ZM7.4 13.8L4.6 12.2L4.6 9L7.4 10.6ZM12.6 20.6L15.4 19L15.4 15.8L12.6 17.4ZM12.6 16.1L15.4 14.5L15.4 11.3L12.6 12.9Z' +
     'M16.6 18.3L19.4 16.7L19.4 13.5L16.6 15.1ZM16.6 13.8L19.4 12.2L19.4 9L16.6 10.6Z"/>',
+  'fit':
+    '<rect fill="var(--ic3,currentColor)" opacity=".4" x="2.5" y="2.5" width="19" height="19" rx="3"/>' +
+    '<path d="M4.5 4.5H11V13H19.5V19.5H4.5Z"/>' +
+    '<rect fill="none" stroke="currentColor" stroke-width="1.4" stroke-dasharray="2.2 1.6" x="13.2" y="4.7" width="6.1" height="6.1" rx="1"/>',
   'path-math':
 
     '<path fill="none" stroke="currentColor" stroke-width="2.4" d="M7 3.5V10.5M3.5 7H10.5M13.5 7H20.5' +
@@ -11983,7 +11987,7 @@ function home(first){
   <div class="scroll hm" id="hs"><div class="hm-cols">
    <div class="hm-col">${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}${hmDaily()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
-   <p class="hm-ver">${ico('star', 16)}<span>Star School v120</span></p></div>`);
+   <p class="hm-ver">${ico('star', 16)}<span>Star School v121</span></p></div>`);
   music(true);
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,['💖','✨','⭐']);
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
@@ -15121,7 +15125,7 @@ function grown(){let armed=false;
    <div class="vline"><span class="vtxt">Give a bonus</span><button class="btn xs" id="pt5">+5 min</button><button class="btn xs danger" id="pt0">Empty bank</button></div>
    <label class="tg"><input type="checkbox" id="ptp" ${ptCfg().pause?'checked':''}> Pause game time (games locked)</label></div>
   <div class="card"><div class="tw"><table><tr><th>Skill</th><th>Rounds</th><th>1st try</th><th>Tricky ones</th></tr>${rows}</table></div></div>
-  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v120 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
+  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v121 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
    Storage: ${SAVE_FAILED?'<b style="color:#c0392b">could not save (device storage may be full)</b>':'saving OK'}${SAVE_CORRUPT?'<br><b style="color:#c0392b">The old save could not be read. A fresh start was made and the old data was kept on the device.</b>':''}<br>
    Last errors: ${(S.err||[]).length?(S.err||[]).slice().reverse().map(e=>'<br>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+' '+esc(e.msg)).join(''):'none'}</div></details>
   <div class="card"><label class="tg"><input type="checkbox" id="voice" ${S.voice?'checked':''}> Read questions out loud</label>
@@ -15466,18 +15470,18 @@ function appFiles() {
   ];
 }
 function dataReady() {
-  return appFiles().every(f => f[1] === 'v120');
+  return appFiles().every(f => f[1] === 'v121');
 }
 function dataMissing() {
-  logErr(appFiles().filter(f => f[1] !== 'v120').map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v120)');
+  logErr(appFiles().filter(f => f[1] !== 'v121').map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v121)');
   const again = UI.btn('Try again', { kind: 'primary', size: 'lg', icon: 'replay', id: 'dataretry' });
   view(`<div class="scroll" id="datamiss">${UI.empty('download', 'Star School needs to finish updating. Connect to the internet, then tap Try again.', again)}</div>`);
   $('#dataretry').onclick = () => location.reload();
 }
 </script>
-<script src="bt.v120.js"></script>
-<script src="games.v120.js"></script>
-<script src="data.v120.js"></script>
+<script src="bt.v121.js"></script>
+<script src="games.v121.js"></script>
+<script src="data.v121.js"></script>
 <script>
 if (dataReady()) {
   loadClips();
