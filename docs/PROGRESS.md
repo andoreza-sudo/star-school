@@ -114,6 +114,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - G-03 done
 - P5-09 v133
 - R-02 done
+- R-01 math done
 
 ## Handoff notes
 
@@ -125,6 +126,10 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - (R-02) Must: tapping a TNT block with the Block tool detonates it (23-29 blocks removed in play); TNT is first in the palette. Build on top of TNT instead, make lighting a separate named action, move TNT to the end. G-01.
 - (R-02) Must: Block Builder tools are 33-50 px emoji buttons with 10 px labels over the scene, the palette shows 5 of 26 blocks with no names on a phone, Undo is an unlabelled emoji. One labelled 48 px+ tool bar off the scene, block names, grouped palette. G-01.
 - (R-02) Must: Speed Race pays +1 min game time for every race with 5+ right and has no daily limit (`54-race.js` line 36); pay once per category per day plus records, like Fact Sprint, or fold it into Fact Sprint. P5-09.
+- (R-01 math) Must: the `round 1`/`round 2` hint (`ffRound`, 33-gen-math-mid.js) says "Is it past halfway? Then round up." For a number exactly halfway (round 1 seed 3: 135, answer 140; about 11% of round 1 items) the hint leads to the wrong answer. Say "halfway or more".
+- (R-01 math) Must: basic-fact hints teach counting all ("Count them all!", "Cross out 9") in `add 2` (+9 and doubles), `add 3`, `sub 2`, `miss 2` (`blocks` hint, 39-hints.js). Replace with make-ten, doubles and think-addition hints (ten-frame picture).
+- (R-01 math) Must: K-2 story problems (`story 1-3`, `genStory` in 30-gen-math.js) are only result-unknown join, separate and put-together, and `story 1` (K) has no picture in the prompt. Add compare, change-unknown and start-unknown templates (1.OA.1, 2.OA.1) and show the objects.
+- (R-01 math) Must: plural with 1, shown and spoken: `story 1` ("Ava has 1 pencils", 25% of items, seed 39595), `coins 5` ("costs 1 dollars and 50 cents"), `story 6` ("gives away 1 bags"), `int 1` ("1 degrees"), `geo 1` and `shape 6` ("1 centimeters"); hints "1 tens" (`pv 1`), "1 hundreds" (`big 1`), "1 wholes" (`fop 5`).
 - (P4-15) The Las Frases grammar units (d-es-gram.js, P2-34) call `picFor('', emoji)`: their items have no art field, so conejo, helado, puerta, ventana, mochila, escuela, playa, papel, borrador, jardín, león and the set A/B words there still show the emoji. A later chunk could add an art name to those items (no generator change: `picFor(name, emoji)` at the four call sites in 34-gen-es.js).
 - (P4-15) Still emoji after set C, by count: calendar pages, people and verbs that show a person, greetings and gestures, feelings faces (happy, scared, angry, sick, excited, surprised, calm, sad, tired; it is cold / hot), leg, eyes, the kitchen pan, wind puffs. Next objects by count: clapperboard (movie theater), carrot (market), race car (fast), store, trash can (dirty), microphone (to sing), snail, crown, kangaroo (to jump), bank, ant, octopus, whale, hospital. Feelings faces would want one consistent family drawn together (and a 6.5 rule for faces on objects).
 - (P4-14) Still emoji among the most used pictures: the calendar pages of the Spanish days and months units (one picture for 19 words, so it carries no meaning), the family unit (people: object art has no people yet), greetings and feelings (gestures and faces, set C), leg and eyes (left out: at 24 px they read as foot and a face), the kitchen pan, and words that share an emoji with a drawn one but are another word (home and the house's 🏠, feet and the foot's 🦶, teddy 🧸, snail, crown, snowman, robot, tractor). Set C could start from the count in the P4-14 entry.
@@ -420,6 +425,12 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-11) Icons wanted from P4-03: `balloon` (Bonus game, today `gamepad`), `sparkle` / `confetti`, `unlock` (open padlock for "Next stop unlocked", today `map`), `zap` (a lightning with a spark for boss hits; today `bolt`), `sticker` (single sticker for the prize row), `medal` (the prize rosette as an icon), `heart-half` (boss life bar), `chest` (the treasure chest at icon size, e.g. for the round track where renderQ shows the gift emoji).
 
 ## Log
+
+### R-01 Math teaching review (2026-11-11, Claude)
+- What: `docs/reviews/R-01-math.md`, a teaching and engagement review of the Math section (Pre-K to 6, all 16 worlds): a parent summary with a must/should/could list (skill, world, file, size), standards gaps by grade (CCSS), findings per world with seeds, practice systems where they touch math, and a top 10.
+- How: read the math generators, hints, step builders, paths, round, mastery, review, Fact Sprint, Speed Race and placement code; generated 1,500 seeded questions for each of the 170 math levels and recomputed about 41,000 answers independently (fractions, percent, division, equations, expressions, rounding, statistics, GCF/LCM) plus every plain-arithmetic label; played 50 questions from every world in the built app with Playwright at 380x780 and 1024x600 (2x), with wrong answers and step hints.
+- Result: no wrong answer key found. Strong: picture-first place value and fractions, step hints from grade 2 up, adaptation, spaced review. Must-fix items are listed under Ideas and issues: a rounding hint that contradicts its answer at exactly halfway, counting-all hints on the fact stops, too few word-problem types in K-2, and "1 pencils" plurals. Should: uneven fact frequency (answer 9 in 31% of `miss 2`/`sub 2`, 0 in 28% of `mfact 1`, 11 in 26% of `dbig 1`), generic "Try again" feedback, CCSS gaps (1.OA.7, 4.OA.1-2, 6.EE.3-4, 6.G.2-4, 6.SP), even/odd and `sub 3` a grade early, abstract-only K adding, labelled coins, colour-only Pre-K patterns, the `fop 5` area-model colour key, hint below the fold on phones.
+- No code changes, no VER bump, no build.
 
 ### R-02 Game replay review (2026-11-11, Claude)
 - What: new `docs/reviews/R-02-games.md`: every game and game-like feature (Game Room hub, Hill Climb, Coloring, Block Builder, Balloons, Speed Race, Fact Sprint, Pet Care, Pet Shop and stickers, streaks and missions, boss fights, the game-time economy) read in the code and played by real touch in the built app (Playwright, touch events, 380x780, 1024x600 and 1024x552, about 130 screenshots at 2x, looked at; midway save; no console errors).
