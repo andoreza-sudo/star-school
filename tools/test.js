@@ -63,7 +63,7 @@ for(const id in SK){for(let lv=1;lv<=SK[id].max;lv++){if(skLvEmpty(id,lv))contin
   for(const c of q.choices){if(BADHTML.test(c.l+' '+c.v))GEN.html.push(w+': choice has undefined/NaN');if(BAD.test(c.v))GEN.gen.push(w+': BAD word '+c.v)}
  }
  else if(q.kind=='build'){if(!q.tiles||q.tiles.length<q.word.length)GEN.gen.push(w+': too few tiles')}
- else if(q.kind=='tap'||q.kind=='order'){for(const x of kindProblems(q))GEN.gen.push(w+': '+x)}
+ else if(q.kind=='tap'||q.kind=='order'||q.kind=='multi'){for(const x of kindProblems(q))GEN.gen.push(w+': '+x)}
  else if(q.kind=='match'){if(!q.items||!q.opts||q.items.length<3||q.items.length>5)GEN.gen.push(w+': bad match pairs')}
  else if(q.kind=='spell'){for(const x of kindProblems(q))GEN.gen.push(w+': '+x)}
  else GEN.gen.push(w+': unknown kind '+q.kind);
@@ -3740,7 +3740,7 @@ run('Fraction Forest P2-07: stops in CURRICULUM order, 3,000 samples per new lev
     const ids=NODES.math.map(nid);
     if(new Set(ids).size!==ids.length)add('stop ids repeat on the math path');
     if(WR.math[wi][1]-WR.math[wi][0]!==16||NODES.math[WR.math[wi][1]].sk!=='boss')add('17 stops: 16 and the boss');
-    const mx={round:2,geo:2,sub:7,time:6,shape:5,data:3,meas:4,story:6,frac:8};
+    const mx={round:3,geo:2,sub:8,time:6,shape:5,data:3,meas:4,story:6,frac:8}; // round 3 and sub 8 are Factor Factory's (P2-09)
     for(const k in mx)if(SK[k].max!==mx[k]||SK[k].area!=='math')add('SK.'+k+'.max '+SK[k].max);
     // ---- generic checks per level, then the maths of each level
     const levels=[['round',1],['round',2],['sub',6],['sub',7],['geo',1],['geo',2],['time',5],['time',6],['shape',5],['data',3],['meas',4],['story',6],
@@ -4015,7 +4015,7 @@ run('Fraction Forest P2-07: stops added to m_frac keep every star, a finished fo
         if(!worldFinished('math',wi))bad.push(name+': forest no longer finished');
         if(name.includes('midway')){
           if(curNew!==curOld||newIds.includes(curNew))bad.push(name+': current stop '+curOld+' -> '+curNew);
-        }else if(curOld!=='boss_m_frac'||curNew!==curOld){
+        }else if(curOld!=='mfact5'||curNew!==curOld){ // P2-09: Factor Factory follows the forest, so a save with everything passed opens on its first stop (it was the forest boss)
           // every stop of the path was passed: the map keeps opening where it did (since P2-24 curNode's last resort never picks a NEW stop)
           bad.push(name+': current stop '+curOld+' -> '+curNew);
         }
@@ -5486,6 +5486,273 @@ run('passages grade 6 P2-29: 10 passages validate, comp 7 and info 5 (3,000 ques
   const r=eval(js+';('+body.toString()+')()');
   const mx=a=>Math.max(...a),mn=a=>Math.min(...a);
   return{problems:r.out,note:'10 passages, 50 questions; words '+mn(r.words)+'-'+mx(r.words)+', reading grade '+mn(r.fk).toFixed(1)+'-'+mx(r.fk).toFixed(1)+'; '+r.checked+' stop checks, current stop moved on '+r.moved+' of 36 loads (only where Legend Lab is done and nothing else is open)'};
+});
+
+// ---- P2-09 Factor Factory (4th) ----
+run('Factor Factory P2-09: stops in CURRICULUM order, 3,000 samples per new level with the maths recomputed, hints, reproducible, old levels unchanged',()=>{
+  const body=function(){
+    S.name='Ava';S.buddy='Ben';G={built:[]};
+    const bad=[],N=3000,add=m=>{if(bad.length<40&&!bad.includes(m))bad.push(m)};
+    const strip=h=>h.replace(/<[^>]+>/g,'|').replace(/&nbsp;/g,' ');
+    // ---- world
+    const mw=PATHS.math.worlds,wi=mw.findIndex(x=>x.id=='m_factory'),w=mw[wi];
+    const want='mfact5 pv4 mbig2 big6 dbig1 mbig3 sub8 dbig2 fact1 mbig4 big7 dbig3 fact2 round3';
+    if(wi<1||!w)add('world m_factory missing');
+    else{
+      if(w.nodes.map(n=>n[0]+n[1]).join(' ')!==want)add('stop order: '+w.nodes.map(n=>n[0]+n[1]).join(' '));
+      if(w.g!==4||w.n!=='Factor Factory'||mw[wi-1].id!=='m_frac')add('world g/name/position');
+      if(w.nodes.some(n=>n[2].length>22))add('stop name too long: '+w.nodes.find(n=>n[2].length>22)[2]);
+      if(new Set(w.nodes.map(n=>n[2])).size!==w.nodes.length)add('duplicate stop names');
+      if(WR.math[wi][1]-WR.math[wi][0]!==14||NODES.math[WR.math[wi][1]].sk!=='boss')add('15 stops: 14 and the boss');
+    }
+    const ids=NODES.math.map(nid);
+    if(new Set(ids).size!==ids.length)add('stop ids repeat on the math path');
+    const mx={mfact:5,pv:4,mbig:4,big:7,sub:8,dbig:3,fact:2,round:3};
+    for(const k in mx)if(SK[k].max!==mx[k]||SK[k].area!=='math')add('SK.'+k+'.max '+SK[k].max);
+    // ---- old levels unchanged: every old level still comes from the same generator with the same seed
+    const sameQ=(sk,lv,fn)=>{for(let s=1;s<=60;s++){const sd=(s*7+3)>>>0,a=genQ(sk,lv,sd),prev=RNG;RNG=mulberry32(sd);let b;try{b=fn(lv);b.sk=sk;b.lv=lv;b.seed=sd}finally{RNG=prev}
+      if(JSON.stringify(a)!==JSON.stringify(b)){add('old level changed: '+sk+lv);return}}};
+    for(let l=1;l<=4;l++)sameQ('mfact',l,genMfact);
+    sameQ('mbig',1,genMbig);
+    sameQ('pv',1,()=>genPv1());sameQ('pv',2,genBayPv2);sameQ('pv',3,genBayPv3);
+    for(let l=1;l<=4;l++)sameQ('big',l,genBig);
+    sameQ('big',5,genBayBig5);
+    for(let l=1;l<=4;l++)sameQ('sub',l,genSub);
+    sameQ('sub',5,genBaySub5);sameQ('sub',6,ffSub6);sameQ('sub',7,ffSub7);
+    sameQ('round',1,ffRound);sameQ('round',2,ffRound);
+    // ---- independent helpers
+    const WORD={zero:0,one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12,thirteen:13,fourteen:14,fifteen:15,sixteen:16,seventeen:17,eighteen:18,nineteen:19,
+      twenty:20,thirty:30,forty:40,fifty:50,sixty:60,seventy:70,eighty:80,ninety:90};
+    const fromWords=s=>{let tot=0,cur=0;for(const t of s.replace(/,/g,' ').replace(/-/g,' ').split(/\s+/).filter(Boolean)){
+      if(t=='hundred')cur*=100;else if(t=='thousand'){tot+=cur*1000;cur=0}else if(t in WORD)cur+=WORD[t];else return NaN}
+      return tot+cur};
+    const isPrime=n=>{if(n<2)return false;for(let d=2;d*d<=n;d++)if(n%d==0)return false;return true};
+    const col=(nums,op)=>{ // does any column regroup (carry or borrow)
+      const L=Math.max(...nums.map(x=>String(x).length));let c=0;
+      for(let e=0;e<L;e++){
+        const ds=nums.map(x=>Math.floor(x/10**e)%10);
+        if(op=='+'){const s=ds.reduce((t,x)=>t+x,0)+c;if(s>=10)return true;c=0}
+        else{if(ds[0]-c<ds[1])return true;c=0}
+      }
+      return false};
+    const comma=n=>String(n).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+    const levels=[['mfact',5],['pv',4],['mbig',2],['big',6],['dbig',1],['mbig',3],['sub',8],['dbig',2],['fact',1],['mbig',4],['big',7],['dbig',3],['fact',2],['round',3]];
+    const tallies={};
+    for(const [sk,lv] of levels){
+      const key=sk+lv,T=tallies[key]={},tally=t=>{T[t]=(T[t]||0)+1};
+      for(let i=0;i<N;i++){
+        const seed=i*7919+31,q=genQ(sk,lv,seed),W=key+': ',a=+q.ans;
+        const pr=kindProblems(q);if(pr.length)add(W+q.label+': '+pr[0]);
+        if(q.sk!==sk||q.lv!==lv||q.seed!==seed)add(W+'not stamped');
+        if(!q.say||/undefined|NaN|\[object/.test(q.say))add(W+'say '+q.say);
+        if(!q.label||q.label.length>=60||/undefined|NaN/.test(q.label))add(W+'label '+q.label);
+        if(/undefined|NaN|\[object/.test(q.html))add(W+'html has undefined/NaN');
+        if(!q.hint||hintHTML(q).length<10)add(W+'hint missing');
+        if(i%10==0&&JSON.stringify(genQ(sk,lv,seed))!==JSON.stringify(q))add(W+'not reproducible');
+        if(q.kind=='num'&&!q.sep&&!q.max&&String(q.ans).length>4)add(W+'answer needs q.max '+q.ans);
+        if(q.kind=='choice'){const vs=q.choices.map(c=>c.v);if(!vs.includes(q.ans)||new Set(vs).size!==vs.length||vs.length<2||vs.length>4)add(W+'choices '+q.label)}
+        // the numbers the child can see (prompt, label): a hint may repeat these but never shows the answer
+        const seen=new Set((q.label.match(/\d+/g)||[]).concat(strip(q.html).replace(/(\d),(\d)/g,'$1$2').match(/\d+/g)||[]));
+        if(/^\d{3,}$/.test(String(q.ans))&&!seen.has(String(q.ans))){ // short answers (1-2 digits) also appear as working digits, e.g. the 12 brought down in 72 ÷ 6; the step builders are proved not to show the answer by the P2-08 check
+          const hs=q.hint.k=='steps'?q.hint.steps.map(s=>strip(s.html)).join('|'):q.hint.k=='text'?q.hint.s:'';
+          if(new RegExp('(^|[^\\d])'+q.ans+'([^\\d]|$)').test(hs.replace(/(\d),(\d)/g,'$1$2')))add(W+'hint shows the answer '+q.label);
+        }
+        if(q.hint.k=='steps'){
+          if(q.hint.steps.length<2)add(W+'steps '+q.hint.steps.length);
+          if(!strip(q.hint.steps[q.hint.steps.length-1].html).includes('?'))add(W+'last step has no ?');
+        }
+        // ---------- the maths, from the label
+        if(sk=='mfact'){
+          const m=q.label.match(/^(\?|\d+) × (\?|\d+) = (\?|\d+)$/);if(!m){add(W+'label '+q.label);continue}
+          const miss=[m[1],m[2],m[3]].indexOf('?');
+          let A=+m[1],B=+m[2],C=+m[3];
+          if(miss==2)C=A*B;else if(miss==0)A=C/B;else B=C/A;
+          if(!Number.isInteger(A)||!Number.isInteger(B)||A*B!==C||a!==[A,B,C][miss])add(W+q.label+' -> '+q.ans);
+          if(A>12||B>12||A<2||B<2)add(W+'range '+q.label);
+          tally(miss==2?'plain':'missing');if(Math.max(A,B)>=11)tally('big');tally('p'+Math.min(A,B)+'x'+Math.max(A,B));
+        }
+        else if(sk=='pv'){
+          let m;
+          if(m=q.label.match(/^value of (\d) in (\d{6})$/)){
+            const d=+m[1],s=m[2];if(s.split(m[1]).length!==2)add(W+'digit not unique '+q.label);
+            const v=d*10**(5-s.indexOf(m[1]));if(a!==v)add(W+q.label+' -> '+q.ans);
+            const vs=q.choices.map(c=>+c.v);if(vs.length!==4||vs.filter(x=>x===v).length!==1||vs.some(x=>x%d||!/^[1-9]0*$/.test(String(x/d))))add(W+'choices '+q.label);
+            if(q.choices.some(c=>c.l!==comma(+c.v)))add(W+'choice label');
+            if(!q.html.includes('<u>'+m[1]+'</u>'))add(W+'digit not marked');
+            tally('value');
+          }else if(m=q.label.match(/^([\d ,+]+) = \?$/)){
+            const parts=m[1].split(' + ').map(Number),sum=parts.reduce((t,x)=>t+x,0);
+            if(a!==sum||sum<100000||sum>999999)add(W+q.label+' -> '+q.ans);
+            let last=7;for(const p of parts){const e=String(p).length-1;if(!/^[1-9]0*$/.test(String(p))||e>=last)add(W+'part '+p+' in '+q.label);last=e}
+            if(parts.length<3)add(W+'few parts');
+            if(q.max!==6)add(W+'max');
+            tally('exp');
+          }else if(m=q.label.match(/^words to number (\d+)$/)){
+            const words=q.html.match(/font-weight:700[^"]*">([^<]+)</)[1];
+            if(fromWords(words)!==+m[1]||a!==+m[1]||q.say!==words)add(W+'words '+words+' -> '+q.ans);
+            if(a>999999||a<10000)add(W+'size '+a);
+            if(q.auto!==true||q.max!==6)add(W+'words auto/max');
+            tally('words');
+          }else if(m=q.label.match(/^(\d+) \? (\d+)$/)){
+            const x=+m[1],y=+m[2],r=x>y?'>':x<y?'<':'=';
+            if(q.ans!==r||x>999999||y>999999||x<100000||y<100000||q.choices.map(c=>c.v).join('')!=='<=>')add(W+q.label+' -> '+q.ans);
+            tally('cmp');tally('cmp'+r);if(String(x).slice(0,3)==String(y).slice(0,3))tally('cmpnear');
+          }else add(W+'label '+q.label);
+        }
+        else if(sk=='mbig'){
+          const m=q.label.match(/^(\d+) × (\d+) = \?$/);if(!m){add(W+'label '+q.label);continue}
+          const A=+m[1],B=+m[2],la=String(A).length,lb=String(B).length;
+          if(a!==A*B)add(W+q.label+' -> '+q.ans);
+          const okLen=lv==2?(la==2&&lb==1):lv==3?((la==3||la==4)&&lb==1):(la==2&&lb==2);
+          if(!okLen||B<2||A%10==0)add(W+'digits '+q.label);
+          if(lv==3&&q.max!==5)add(W+'max');
+          if(!q.html.includes('class="veq"'))add(W+'not vertical');
+          if(q.hint.k!=='steps')add(W+'hint kind');
+          tally('l'+la);
+        }
+        else if(sk=='big'||sk=='sub'){
+          const op=sk=='big'?' + ':' − ',parts=q.label.replace(/ = \?$/,'').split(op).map(Number);
+          if(parts.length<2||parts.some(isNaN)){add(W+'label '+q.label);continue}
+          const exp=sk=='big'?parts.reduce((t,x)=>t+x,0):parts[0]-parts[1];
+          if(a!==exp)add(W+q.label+' -> '+q.ans);
+          const L=parts.map(x=>String(x).length);
+          if(!col(parts,sk=='big'?'+':'-'))add(W+'no regrouping '+q.label);
+          if(lv==6&&(parts.length!==2||L.some(x=>x!==4)||q.max!==5))add(W+'4-digit '+q.label);
+          if(lv==7){if(parts.length<2||parts.length>3||parts.some(x=>x<10000||x>999999)||q.max!==7)add(W+'big7 '+q.label);tally('n'+parts.length)}
+          if(lv==8){
+            if(parts.length!==2||L[0]<4||L[0]>6||L[1]<L[0]-1||L[1]>L[0]||parts[1]>=parts[0]||q.max!==6)add(W+'sub8 '+q.label);
+            tally(/0/.test(String(parts[0]))?'zero':'nozero');tally('L'+L[0]);
+          }
+          if(!q.html.includes('class="veq"'))add(W+'not vertical');
+          if(q.hint.k!=='steps')add(W+'hint kind');
+        }
+        else if(sk=='dbig'){
+          const m=q.label.match(/^(\d+) ÷ (\d) = \?$/);if(!m){add(W+'label '+q.label);continue}
+          const n=+m[1],d=+m[2],Q=Math.floor(n/d),r=n%d;
+          if(d<2||q.hint.k!=='steps')add(W+'divisor/hint');
+          if(r){
+            if(q.sep!=='R'||q.ans!==Q+'R'+r||!q.html.includes('rsep'))add(W+q.label+' -> '+q.ans);
+          }else if(q.sep||q.ans!==String(Q))add(W+q.label+' -> '+q.ans);
+          if(lv==1){if(r||Q<11||Q>49||n<22||n>99)add(W+'dbig1 '+q.label);tally(q.html.includes('ldq')?'ldiv':'eq')}
+          if(lv==2){if(!r||Q<2||n<10||n>99)add(W+'dbig2 '+q.label);if(!q.html.includes('ldq'))add(W+'dbig2 layout')}
+          if(lv==3){if(n<100||n>9999)add(W+'dbig3 '+q.label);tally(r?'rem':'plain');tally('len'+String(n).length)}
+        }
+        else if(sk=='fact'&&lv==1){
+          let m;
+          if(m=q.label.match(/^factor of (\d+)$/)){
+            const n=+m[1],vs=q.choices.map(c=>+c.v),ok=vs.filter(x=>n%x==0);
+            if(vs.length!==4||ok.length!==1||ok[0]!==a||a<2||a>=n||n>100||n<12)add(W+q.label+' -> '+q.ans);
+            tally('factor');
+          }else if(m=q.label.match(/^all factors of (\d+)$/)){
+            const n=+m[1],vs=q.choices.map(c=>+c.v),ok=vs.filter(x=>n%x==0).map(String).sort();
+            if(q.kind!=='multi'||vs.length!==6||ok.length<2||ok.length>4||JSON.stringify(ok)!==JSON.stringify(q.ans)
+              ||JSON.stringify(vs)!==JSON.stringify(vs.slice().sort((x,y)=>x-y)))add(W+q.label+' -> '+q.ans);
+            if(n<12||n>60||vs.some(x=>x<2||x>=n))add(W+'range '+q.label);
+            tally('multi');
+          }else if(m=q.label.match(/^multiple of (\d+)$/)){
+            const b=+m[1],vs=q.choices.map(c=>+c.v),ok=vs.filter(x=>x%b==0);
+            if(vs.length!==4||ok.length!==1||ok[0]!==a||a>100||b<3||b>12||a<2*b)add(W+q.label+' -> '+q.ans);
+            tally('mult');
+          }else add(W+'label '+q.label);
+        }
+        else if(sk=='fact'&&lv==2){
+          let m;
+          if(m=q.label.match(/^(\d+) prime or composite$/)){
+            const n=+m[1];
+            if(n<2||n>100||q.ans!==(isPrime(n)?'prime':'composite')||q.choices.length!==2)add(W+q.label+' -> '+q.ans);
+            tally(q.ans);
+          }else if(q.label.startsWith('which is prime')){
+            const vs=q.choices.map(c=>+c.v),ok=vs.filter(isPrime);
+            if(vs.length!==4||ok.length!==1||ok[0]!==a||vs.some(x=>x<2||x>100))add(W+q.label+' -> '+q.ans);
+            tally('which');
+          }else add(W+'label '+q.label);
+        }
+        else if(sk=='round'){
+          const m=q.label.match(/^round (\d+) to (\d+)$/);if(!m){add(W+'label '+q.label);continue}
+          const n=+m[1],p=+m[2];
+          // round by digits: keep the digits left of the place, add 1 when the digit just right of it is 5 or more
+          const s=String(n),k=s.length-String(p).length+1,head=+s.slice(0,k),nx=+s[k],r=(nx>=5?head+1:head)*p;
+          if(a!==r||n%p==0||n<1000||n>999999||r>999999||![10,100,1000,10000,100000].includes(p)||s.length<String(p).length)add(W+q.label+' -> '+q.ans);
+          if(q.max!==6||q.hint.k!=='steps'||q.hint.steps.length!==3)add(W+'max/hint');
+          tally('p'+p);if(nx==5)tally('five');
+        }
+      }
+    }
+    // ---- spread of the items (each level shows what it should)
+    const frac=(k,t)=>(tallies[k][t]||0)/N;
+    const inr=(v,lo,hi,m)=>{if(!(v>=lo&&v<=hi))add(m+' '+(v*100).toFixed(0)+'%')};
+    inr(frac('mfact5','missing'),.24,.36,'mfact5 missing factor share');inr(frac('mfact5','big'),.45,.8,'mfact5 11-and-12 share');
+    for(let x=2;x<=12;x++)for(let y=x;y<=12;y++)if(!tallies.mfact5['p'+x+'x'+y])add('mfact5 never asks '+x+' x '+y);
+    for(const f of ['value','exp','words','cmp'])inr(frac('pv4',f),.18,.32,'pv4 '+f);
+    for(const f of ['cmp<','cmp>','cmp='])if(!tallies.pv4[f])add('pv4 never '+f);
+    if(!tallies.pv4.cmpnear)add('pv4 no close comparisons');
+    for(const t of ['l3','l4'])if(!tallies.mbig3[t])add('mbig3 no '+t);
+    inr(frac('big7','n3'),.25,.42,'big7 three addends');inr(frac('sub8','zero'),.4,.85,'sub8 zeros in the top number');
+    for(const t of ['L4','L5','L6'])if(!tallies.sub8[t])add('sub8 no '+t);
+    for(const t of ['ldiv','eq'])inr(frac('dbig1',t),.4,.6,'dbig1 '+t);
+    inr(frac('dbig3','rem'),.4,.6,'dbig3 remainder share');inr(frac('dbig3','len3'),.5,.8,'dbig3 3-digit share');
+    for(const f of ['factor','multi','mult'])inr(frac('fact1',f),.28,.38,'fact1 '+f);
+    inr(frac('fact2','prime'),.1,.3,'fact2 prime');inr(frac('fact2','composite'),.2,.4,'fact2 composite');inr(frac('fact2','which'),.4,.6,'fact2 which');
+    for(const p of [10,100,1000,10000,100000])if(!(tallies.round3['p'+p]>N*.1))add('round3 place '+p);
+    if(!(tallies.round3.five>20))add('round3 never has a 5 just right of the place');
+    return {bad,n:Object.keys(tallies).length};
+  };
+  const r=eval(js+';('+body.toString()+')()');
+  return{problems:uniq(r.bad),note:r.n+' levels x 3,000'};
+});
+
+run('Factor Factory P2-09: stops added after Fraction Forest keep every star, nothing re-locks, the map opens where it did (fixtures)',()=>{
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const body=function(){
+    const store={};
+    localStorage.getItem=k=>k in store?store[k]:null;localStorage.setItem=(k,v)=>{store[k]=String(v)};localStorage.removeItem=k=>{delete store[k]};
+    const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
+    const bad=[],mw=PATHS.math.worlds,wi=mw.findIndex(x=>x.id=='m_factory'),W=mw[wi],ids=W.nodes.map(n=>n[0]+n[1]).concat(['boss_m_factory']);
+    const setWorld=on=>{if(on&&!mw.includes(W))mw.splice(wi,0,W);if(!on&&mw.includes(W))mw.splice(mw.indexOf(W),1);buildNodes('math')};
+    const state=raw=>{
+      const o={};load(raw);o.stars=JSON.stringify(S.maps.math);o.cur=nid(NODES.math[curNode('math')]);
+      o.open=new Set(NODES.math.map((n,i)=>unlocked('math',i)?nid(n):null).filter(Boolean));
+      o.passed=NODES.math.filter((n,i)=>passed('math',i)).map(nid);
+      o.wo=PATHS.math.worlds.map((w,i)=>worldOpen('math',i)?w.id:null).filter(Boolean);
+      return o};
+    // saves: the six fixtures at every grade, plus a finished and a half played Fraction Forest
+    const saves=[];
+    for(const name of ['fresh','midway','maxed','tricky','legacy-single-map','legacy-index-maps'])for(const g of [null,-1,0,1,2,3,4,5,6])saves.push([name+' g'+g,fx(name),g]);
+    const mk=(stars,boss,g)=>{load(fx('maxed'));Object.assign(S.maps.math,stars);if(boss){S.maps.math.boss_m_frac=3;S.wdone.m_frac=1}if(g!=null)S.grade=g;return JSON.stringify(S)};
+    const fr={frac2:3,frac3:2,frac4:3,frac5:1};
+    saves.push(['forest half played',mk({frac2:3,frac3:2}),null],['forest finished',mk(fr,true),null],['forest finished g4',mk(fr,true,4),null],
+      ['forest finished g2',mk(fr,true,2),null],['factory started',mk(Object.assign({mfact5:3,pv4:2},fr),true,4),null]);
+    let checked=0;
+    for(const [name,raw,g] of saves){
+      let r=raw;if(g!=null){load(raw);S.grade=g;r=JSON.stringify(S)}
+      setWorld(false);const a=state(r);
+      setWorld(true);const b=state(r);
+      checked++;
+      const had=name=='factory started',grade=g==null?(JSON.parse(r).grade==null?null:JSON.parse(r).grade):g;
+      if(!had&&JSON.stringify(Object.keys(JSON.parse(b.stars)).filter(k=>ids.includes(k)))!=='[]')bad.push(name+': stars on new stops');
+      if(!had&&b.stars!==a.stars)bad.push(name+': star table changed');
+      if(had)for(const id of ['mfact5','pv4'])if(!b.passed.includes(id))bad.push(name+': '+id+' lost its stars');
+      for(const id of a.passed)if(!b.passed.includes(id))bad.push(name+': passed stop '+id+' lost');
+      for(const id of a.open)if(!b.open.has(id))bad.push(name+': '+id+' was open and is locked');
+      for(const id of a.wo)if(!b.wo.includes(id))bad.push(name+': world '+id+' was open and is locked');
+      const done=/forest finished/.test(name)||had;
+      if(grade==null||grade<=3){
+        // below 4th grade the map opens exactly where it did; a save that finished Fraction Forest has a next world now
+        if(!done&&b.cur!==a.cur)bad.push(name+': map moved '+a.cur+' -> '+b.cur);
+        if(done&&b.cur!==ids[0])bad.push(name+': a finished forest should open on '+ids[0]+', got '+b.cur);
+      }else if(b.cur!==a.cur&&!ids.includes(b.cur))bad.push(name+': map moved outside the new world '+a.cur+' -> '+b.cur);
+      // the chain: a stop of the new world is open only after the one before it, unless a later one is passed
+      for(let k=1;k<ids.length;k++){
+        if(!b.open.has(ids[k])||b.passed.includes(ids[k]))continue;
+        const later=b.passed.some(x=>ids.indexOf(x)>k);
+        if(!b.passed.includes(ids[k-1])&&!later)bad.push(name+': '+ids[k]+' open without '+ids[k-1]);
+      }
+    }
+    setWorld(true);
+    return {bad,checked};
+  };
+  const r=eval(js+';('+body.toString()+')()');
+  return{problems:uniq(r.bad),note:r.checked+' saves with and without the world'};
 });
 
 // ---- report ----

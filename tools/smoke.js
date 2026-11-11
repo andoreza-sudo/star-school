@@ -458,7 +458,7 @@ async function main() {
       await gp.click('#back');
       await gp.click('.game[data-p="math"]');
       await gp.waitForSelector('.node.cur');
-      const cw = await gp.evaluate(() => worldOpen('math', PATHS.math.worlds.length - 1)); // the last world (P2-01: no longer index 3)
+      const cw = await gp.evaluate(() => worldOpen('math', PATHS.math.worlds.findIndex(w => w.id === 'm_frac'))); // the last grade-3 world (P2-09: Factor Factory, grade 4, is now last)
       await gp.click('.node.cur');
       await gp.waitForSelector('#prompt');
       const n10 = await gp.evaluate(() => G.n);
@@ -2333,6 +2333,76 @@ async function main() {
       network.push(...cp29.network);
       for (const e of cp29.errors) fail(e);
       await cp29.ctx.close();
+    }
+
+    // P2-09 Factor Factory at 380x780: a 4th grader finds the world, every stop's first question fits (no sideways scroll,
+    //    number keys, choices and tick boxes at least 48 px), eight stops are played with real taps (stars saved), and the
+    //    step hints of the multiplication and long division stops are tapped through (one step per tap, the last step asks).
+    {
+      const fa = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
+      const fp = fa.page;
+      await fp.evaluate(() => { setGrade(4); window.say = () => {}; save(); });
+      const info = await fp.evaluate(() => {
+        const wi = PATHS.math.worlds.findIndex(w => w.id === 'm_factory');
+        return { wi, ids: PATHS.math.worlds[wi].nodes.map(n => n[0] + n[1]), open: worldOpen('math', wi), n: PATHS.math.worlds.length };
+      });
+      if (info.ids.length !== 14 || !info.open || info.wi !== info.n - 1) fail('Factor Factory: ' + JSON.stringify(info));
+      const openStop = async id => {
+        await fp.evaluate(() => home());
+        await fp.click('.game[data-p="math"]');
+        await fp.waitForSelector('.wchip.on');
+        await fp.click(`.wchip[data-w="${info.wi}"]`);
+        await fp.waitForSelector(`.wchip.on[data-w="${info.wi}"]`);
+        const n = await fp.evaluate(id => NODES.math.findIndex(x => nid(x) === id), id);
+        await fp.click(`.node[data-n="${n}"]`);
+        await fp.waitForSelector('#prompt');
+        await fp.waitForTimeout(900);
+      };
+      const lookQ = () => {
+        const sm = a => Math.min(...a.map(b => Math.min(b.offsetHeight, b.offsetWidth)));
+        return { sk: G.sk, lv: G.lv, w: document.documentElement.scrollWidth, keys: sm([...document.querySelectorAll('.k')]),
+          ch: sm([...document.querySelectorAll('.ch, .mc')]), kind: G.q.kind };
+      };
+      const play = new Set(['mfact5', 'pv4', 'mbig2', 'big6', 'dbig1', 'dbig2', 'fact1', 'round3']);
+      const badF = [];
+      for (let k = 0; k < info.ids.length; k++) {
+        const id = info.ids[k];
+        // the stop before it is passed, so this one is open
+        await fp.evaluate(prev => { if (prev) S.maps.math[prev] = S.maps.math[prev] || 1; save(); }, info.ids[k - 1]);
+        await openStop(id);
+        const lay = await fp.evaluate(lookQ);
+        if (lay.sk + lay.lv !== id || lay.w > 380 || (isFinite(lay.keys) && lay.keys < 48) || (isFinite(lay.ch) && lay.ch < 48)) badF.push(id + ': ' + JSON.stringify(lay));
+        if (play.has(id)) {
+          await playRound(fp, 'P2-09 ' + id, 10);
+          const st = await fp.evaluate(id => S.maps.math[id] || 0, id);
+          if (st < 1) badF.push(id + ': no stars saved');
+        }
+        await fp.evaluate(() => { G.dead = true; });
+      }
+      // step hints: mbig4 (partial products), big7 and dbig3 (long division) - tap Help through every step
+      for (const id of ['mbig4', 'dbig3', 'sub8']) {
+        await openStop(id);
+        const n = await fp.evaluate(() => G.q.hint.k === 'steps' ? G.q.hint.steps.length : -1);
+        if (n < 2) { badF.push(id + ': hint is not steps'); continue; }
+        for (let i = 0; i < n; i++) {
+          await fp.click('#hb');
+          await vwait(fp, 150);
+          const s = await fp.evaluate(() => {
+            const hs = document.querySelector('#hint .hs'), hb = document.querySelector('#hb');
+            return { at: hs ? +hs.dataset.hs : -1, label: hb.textContent.trim(), wide: document.documentElement.scrollWidth > innerWidth,
+              small: Math.min(hb.offsetWidth, hb.offsetHeight), ask: /\?/.test((document.querySelector('#hint .hsc') || {}).textContent || '') };
+          });
+          if (s.at !== i || s.wide || s.small < 47.5) badF.push(id + ' step ' + i + ': ' + JSON.stringify(s));
+          if (i < n - 1 && !/Next step/i.test(s.label)) badF.push(id + ' step ' + i + ': button reads ' + s.label);
+          if (i == n - 1 && !s.ask) badF.push(id + ': last step has no question mark');
+        }
+        await fp.evaluate(() => { G.dead = true; });
+      }
+      if (badF.length) fail('P2-09 Factor Factory:\n  ' + badF.slice(0, 20).join('\n  '));
+      else step('P2-09: Factor Factory opens for a 4th grader (14 stops), every stop fits at 380x780 with 48 px targets, 8 stops played with taps (stars saved), step hints tapped through on mbig4, dbig3 and sub8');
+      network.push(...fa.network);
+      for (const e of fa.errors) fail(e);
+      await fa.ctx.close();
     }
 
     for (const e of errors) fail(e);
