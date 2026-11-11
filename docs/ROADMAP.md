@@ -152,6 +152,7 @@ that respects the "Deps" line, but only one chunk at a time lands on `main`.
 | 9 | P4-06, P4-07, P4-09, P4-12, P4-14 to P4-17, P2-16, P2-17 | Rest of the redesign, tracing |
 | 10 | P2-30 to P2-37, P3-11 to P3-17, P5-07 to P5-10 | Spanish growth, Discover, remaining puzzles |
 | 11 | P6-01 to P6-05 | Version 1.0 |
+| 12 | R-01, R-02 (queued by Andy) | Expert review of every teaching section and of every game, with a prioritised list of improvements |
 
 Rule for anything built after P4-01 and P4-02 land: new UI must use design tokens and `ico()` icons, never new hard-coded colors or emoji chrome.
 Content pictures go through `picFor(word, emoji)` (`src/js/15-pics.js`, added before wave 5) so object art replaces emoji everywhere without touching generators. P4-13 moved from wave 9 to wave 5 for the same reason.
@@ -587,6 +588,19 @@ If the context is more than about 60% used and the chunk is not done: commit wor
 (what is done, what is left, what was tried), and stop. The next session continues from the note.
 
 Choosing the model: use the model named on the chunk. If Sonnet fails the same acceptance item twice, stop and hand that one item to Opus with the handoff note; do not keep retrying.
+
+## 10b. Queued reviews (added 2026-11-11 at Andy's request; run after wave 11 and P4-18)
+
+These are review chunks: they read the app, play it through the screenshot and smoke tools, and write findings. They do not change the app. Each ends with a prioritised list Andy can approve; approved items become new chunks.
+
+| ID | Title | Model | Size | Deps |
+|----|-------|-------|------|------|
+| R-01 | Teaching and engagement review of every learning section | **Opus** | L (one agent per section) | wave 11, P4-18 |
+| R-02 | Game replay review: what makes children come back again and again | **Opus** | M | wave 11, P4-18 |
+
+**R-01 · Teaching and engagement review** · Opus: one review per section, run in parallel: Math (Pre-K to 6th, every world), Reading and Language Arts, Spanish, Discover, Brain Teasers, and the practice systems (Fact Sprint, Daily Review, Mixed Practice, placement, challenge/support rounds, streaks, rewards). Each review checks the section against current evidence-based teaching practice for that age and subject (for example: concrete to pictorial to abstract and number sense in early math; systematic phonics, decodable text and fluency in reading; comprehensible input and spaced retrieval in a second language; worked examples, immediate specific feedback, desirable difficulty, interleaving and spaced practice, mastery before moving on) and against engagement practice for young children (clear goals, short sessions, autonomy and choice, visible progress, kind feedback with no shaming, audio-first for non-readers, accessibility). It plays real rounds at each grade through the tools, samples generated questions for errors, ambiguity and age-fit, and reads the curriculum spec. Output: `docs/reviews/R-01-<section>.md` with what works, what to improve (each item: problem, evidence, suggested change, effort S/M/L, impact), and a top-10 list; plus a combined summary for Andy. No app changes.
+
+**R-02 · Game replay review** · Opus: analyses every game and game-like feature (Game Room games: 4x4 Hill Climb, Art Studio, Block Builder, colour by number, shape colouring; Balloons, Speed Race, Pet Care, Pet Shop and stickers, Fact Sprint, streaks and missions, boss fights, the game-time economy) for what makes children want to play again and again in a healthy way: short satisfying loops, mastery and visible skill growth, variety and surprise, collection and customisation, goals at several time scales, fair challenge, social-free motivation, and no manipulative patterns (no loss-aversion pressure, no endless scrolling, game time stays earned by learning). It plays each game through the tools and reads its code. Output: `docs/reviews/R-02-games.md` with, per game, what keeps children coming back, what makes them stop, and a prioritised list of improvements (problem, suggested change, effort, impact), plus game-time economy recommendations. No app changes.
 
 ## 11. Later ideas (not planned)
 
