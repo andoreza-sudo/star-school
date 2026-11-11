@@ -4,11 +4,11 @@ function stageHTML(sc,title,sub,sticky){return`<div class="stage ${sc[0]=='space
   <div class="petbig ${petAura()}" id="pet">${petHTML()}</div><div class="hname">${title}</div>${sub?`<div class="htxt">${sub}</div>`:''}</div>`}
 let shopTab='hat';
 function shop(){const sc=sceneOf(),items=shopTab=='hat'?SHOP.hat.concat(BPRIZE.filter(h=>S.owned[h]).map(h=>[h,0,'boss'])):SHOP[shopTab];
-  view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title">🛍️ Pet Shop</div><div class="sp"></div><div class="stars" id="coinc">${ico('coin','1.2em','ic-coin')} ${S.coins}</div></div>
+  view(`<div class="top"><button class="btn sm" id="back" aria-label="Back">${ico('back',20)}</button><div class="title">${ico('bag','1.1em','ic-play')} Pet Shop</div><div class="sp"></div><div class="stars" id="coinc">${ico('coin','1.2em','ic-coin')} ${S.coins}</div></div>
   <div class="scroll" style="padding-top:0">${stageHTML(sc,esc(petN()),'Tap an item to try it on!',true)}
-  <div class="tabs">${[['hat','🎩 Hats'],['toy','🧸 Toys'],['scene','🏝️ Places']].map(([k,l])=>`<button class="btn sm tab ${k==shopTab?'on':''}" data-t="${k}">${l}</button>`).join('')}</div>
+  <div class="tabs">${[['hat',ico('hat','1.2em')+' Hats'],['toy',ico('teddy','1.2em')+' Toys'],['scene',ico('image','1.2em')+' Places']].map(([k,l])=>`<button class="btn sm tab ${k==shopTab?'on':''}" data-t="${k}">${l}</button>`).join('')}</div>
   <div class="shopgrid">${items.map(it=>{const id=it[0],own=S.owned[id],wear=shopTab=='scene'?S.wear.scene==id:S.wear[shopTab]==id;
-    return`<button class="btn item ${own?'own':''} ${wear?'wear':''}" data-id="${id}"><span>${shopTab=='scene'?it[2]:id}</span>${shopTab=='scene'?it[4]:''}<div>${wear?'✅ On':own?'Tap to use':ico('coin','1.2em','ic-coin')+' '+it[1]}</div></button>`}).join('')}</div></div>`);
+    return`<button class="btn item ${own?'own':''} ${wear?'wear':''}" data-id="${id}"><span>${shopTab=='scene'?it[2]:id}</span>${shopTab=='scene'?it[4]:''}<div>${wear?ico('check','1.1em','ic-good')+' On':own?'Tap to use':ico('coin','1.2em','ic-coin')+' '+it[1]}</div></button>`}).join('')}</div></div>`);
   $('#back').onclick=()=>home(true);
   $$('.tab').forEach(b=>b.onclick=()=>{shopTab=b.dataset.t;shop()});
   $$('.item').forEach(b=>b.onclick=()=>{const id=b.dataset.id,it=items.find(x=>x[0]==id);

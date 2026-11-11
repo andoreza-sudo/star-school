@@ -48,6 +48,10 @@ h2{font-size:24px;margin:18px 4px 10px}
 /* icons (P4-02): ico(name,size,cls) in 15-icons.js; colour from currentColor, second tone from --ic2 */
 .ic{display:inline-block;flex:none;vertical-align:-.2em;fill:currentColor;overflow:visible;pointer-events:none}
 .ic-coin{color:var(--star-shade);--ic2:var(--star-tint)}
+/* P4-03: icon colour helpers for icons inside text and old screens */
+.ic-star{color:var(--star-shade)}.ic-flame{color:var(--play)}.ic-good{color:var(--good)}.ic-off{color:var(--ink-3)}
+.ic-rec{color:var(--danger)}.ic-brand{color:var(--brand)}.ic-math{color:var(--math)}.ic-read{color:var(--read)}
+.ic-es{color:var(--es)}.ic-play{color:var(--play-shade)}.ic-bt{color:var(--bt)}.ic-disc{color:var(--disc)}
 /* reduced motion and calm mode (also hides confetti) */
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.conf{display:none!important}}
 html.calm *,html.calm *::before,html.calm *::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}

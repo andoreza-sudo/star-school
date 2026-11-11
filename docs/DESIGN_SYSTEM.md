@@ -185,7 +185,7 @@ Microcopy rules: short, warm, concrete. "Try again" not "Wrong". "3 more stars t
 | Rule | Value |
 |------|-------|
 | Grid | 24x24, 2 px safe margin, shapes centred optically |
-| Style | Solid rounded shapes filled with `currentColor`; inner detail as cut-outs or `--ic2` |
+| Style | Solid rounded shapes filled with `currentColor`; inner detail as cut-outs or `--ic2`. Two tones (P4-03): a soft second tone for back planes, containers and lesser parts (see 5.2a) |
 | Corners | Rounded, radius 1.5 or more. No sharp spikes except star points (rounded 0.75) |
 | Detail | Nothing thinner than 1.75 units. Must read at 20 px |
 | Perspective | Flat, front view. No gradients, no shadows inside icons |
@@ -194,20 +194,49 @@ Microcopy rules: short, warm, concrete. "Try again" not "Wrong". "3 more stars t
 | Naming | lowercase, hyphenated: `sound-on`, `skill-add` |
 | How (set in P4-02) | Rounded corners come from stroking the inset shape with `currentColor` (stroke-width 3 for r 1.5, 1.5 for star points); cut-outs use `fill-rule="evenodd"`; `--ic2` only where a cut-out cannot work. Full recipe in the header of `src/js/15-icons.js`; review sheet: `node tools/shots.js icons` |
 
+#### 5.2a Two tones (P4-03)
+
+UI icons stay crisp glyphs (they are not illustrations), but most now carry a confident second tone so they match the shaded object art,
+the dragon and the ledged components instead of looking like flat 2010 glyphs.
+
+| Rule | Value |
+|------|-------|
+| Soft tone | `fill="var(--ic3,currentColor)" opacity=".4"` on the element (a stroked soft part uses `stroke="var(--ic3,currentColor)"`). It follows the icon colour on any background: grey-ink on white, pale on a brand fill, mid-blue on a tint. Set `--ic3` to tint it another colour |
+| Where | Back planes and containers (house walls, tray, clock face, tub bubbles, lens, the far one of two people, the pages under a book), never the part that names the icon |
+| Primary alone reads | Take the soft layer away and the icon must still read; `tools/test.js` fails an icon with no full-colour shape |
+| Size | Soft shapes are areas at least 4 units across (or strokes 2.6+ wide), never thin lines or small details |
+| Order | Soft shapes first. A soft shape over a primary one vanishes (same colour). A primary detail on a soft area is bold (2.4+ stroke or 3+ unit shape), because on a coloured fill the soft area is pale |
+| Symbols stay one tone | `check`, `close`, `plus`, `minus`, `times`, `divide`, `play`, `pause`, `back`, arrows, chevrons, `star`, `heart`, `bolt`: one tone, so keys and small chips stay sharp |
+| `--ic2` | Still the knock-out tone for a few inner details (coin face, flame core, trophy star, bulb glint); set it to the fill colour on coloured fills |
+| Colour helpers | `.ic-star`, `.ic-flame`, `.ic-good`, `.ic-off`, `.ic-rec`, `.ic-brand`, `.ic-math`, `.ic-read`, `.ic-es`, `.ic-disc`, `.ic-bt`, `.ic-play` in `20-base.css` (icons inside text on old screens; component classes colour their own icons) |
+
 ### 5.3 First 40 icons (P4-02)
 
 `star, coin, ticket, flame, home, back, map, play, pause, replay, sound-on, sound-off, speak, gear, lock, check, close, hint, heart, gift,
 trophy, target, bolt, paw, bag, sticker-book, gamepad, puzzle, path-math, path-read, path-es, path-disc, plus, minus, times, divide,
 backspace, go, calendar, crown`
 
-### 5.4 Remaining icons (P4-03, about 60)
+### 5.4 Remaining icons (P4-03, as shipped: 66 new, 7 of the first 40 refined)
 
-One per skill family (`skill-add`, `skill-sub`, `skill-count`, `skill-shape`, `skill-clock`, `skill-coin`, `skill-frac`, `skill-dec`, `skill-geo`,
-`skill-data`, `skill-ruler`, `skill-alg`, `skill-abc`, `skill-sound`, `skill-sight`, `skill-spell`, `skill-gram`, `skill-vocab`, `skill-story`,
-`skill-trace`, `skill-sent`, plus Spanish unit icons), puzzle-type icons (19), and utility (`info, warning, download, upload, trash, edit, mic,
-record, stop, undo, redo, rotate, flip, eye, timer, chart, user, users, arrow-up, arrow-down, arrow-left, arrow-right, more`).
+| Group | Icons |
+|-------|-------|
+| Utility (29) | `info, warning, question, circle, check-circle, download, upload, trash, edit, mic, record, stop, undo, redo, rotate, flip, eye, timer, clock, chart, user, users, arrow-right, arrow-left, arrow-up, arrow-down, chevron-right, chevron-left, more` |
+| Chrome and rewards (20) | `rocket, balloon, party, globe, moon, hat, teddy, image, food, bath, ball, drop, car, nut, palette, blocks, medal, sparkle, review, thumbs-up` |
+| Skills (17) | `skill-count, skill-num, skill-shape, skill-frac, skill-abc, skill-story, skill-pattern, skill-array, skill-geo, scale, ruler, ear, doc, music, clap, pin, wave` |
+| Refined in P4-03 (same names) | `home` (soft walls), `map` (soft middle panel), `gift` (soft box), `hint` (soft base), `path-disc` (soft lens), `target` (soft ring), `calendar` (soft page) |
 
-Every emoji used as chrome (titles, buttons, tiles, toasts) is replaced by an icon. `SK[id].e` and `PATHS[p].e` gain an `ic` field; the emoji field stays until P4-17 removes the last use.
+Skill icons: `ICO_SK` in `15-icons.js` maps every skill id to an icon and `icoSk(id)` returns it (a skill missing from the map gets its
+subject's icon, so new content never shows a blank). Shared drawings are reused instead of drawn twice: `add` plus, `sub` minus, `mult`/`mfact`/`mbig`
+times, `dfact` divide, `time` clock, `coins` coin, `data` chart, `meas` ruler, `sight` eye, `spell` edit, `pic` image, `sort`/`build` puzzle,
+`eo`/`pv` blocks, `cmp`/`pk_more` scale, Spanish: `es_greet` wave, `es_color` palette, `es_num`/`es_teen` skill-num, `es_animal` paw,
+`es_food` food, `es_body` user, `es_family` users, `es_mix` trophy. `SK[id].e` and `PATHS[p].e` stay (the emoji field stays until P4-17
+removes the last use); subject icons are `UI.SUBJ_ICON`.
+
+Not drawn in P4-03: the planned `skill-dec`, `skill-alg`, `skill-gram`, `skill-vocab`, `skill-trace` (no such skills yet; the content chunk
+that adds one adds its icon, or `icoSk` falls back to the subject icon) and the 19 Brain Teaser puzzle-type icons (P3 not built yet).
+
+Every emoji used as chrome (titles, buttons, tiles, toasts) is replaced by an icon, screen by screen as each screen chunk lands.
+Where each icon goes is listed in the P4-03 entry of PROGRESS.md.
 
 ## 6. Characters and illustration
 
