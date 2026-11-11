@@ -1,0 +1,6 @@
+/* P2-14 Galaxy Core: the ray of an inequality on a number line (VIZ.rayLine), picture choices of those lines, (x, y) answers */
+.viz .vray{fill:none;stroke:var(--math-shade);stroke-width:6;stroke-linecap:round}
+.choices.galr .ch .viz{margin:0 auto;width:calc(var(--vw)*.8px);max-width:100%}
+.choices.galr .choice.ch{min-height:var(--tap-primary)}
+/* the balance of a one-step equation hint stays small so the hint card keeps the keypad in view */
+.galbal .viz{--vz:.42}

@@ -47,6 +47,13 @@ async function answer(page) {
     }
   } else if (q.kind === 'trace') {
     await traceGlyph(page);
+  } else if (q.kind === 'match') {
+    // P2-14: a review question from an earlier stop can be a match (fractions and percents): pair every left item with its right one
+    const pairs = await page.evaluate(() => G.q.items.map((it, i) => [i, G.q.opts.findIndex(o => o.v === it.v)]));
+    for (const [i, j] of pairs) {
+      await page.click(`.mb[data-s="L"][data-i="${i}"]`);
+      await page.click(`.mb[data-s="R"][data-i="${j}"]`);
+    }
   } else {
     throw new Error('unknown question kind ' + q.kind);
   }
@@ -4507,6 +4514,167 @@ async function main() {
         for (const e of app.errors) fail(e);
         await app.ctx.close();
       }
+    }
+
+    // P2-14 Galaxy Core at 380x780: a 6th grader whose earlier worlds are finished opens the math map on Galaxy Core (no unlock switch), plays Exponents
+    //    with a step hint, then Exponents, One-Step Equations (balance picture in the hint), Four Quadrants and Two-Step Equations as full rounds of
+    //    real taps (a point tapped on the four-quadrant grid, ordered pairs picked, number lines picked, equations typed), and jumps through the other stops
+    //    (expressions with two letters, area of a triangle, a parallelogram and a trapezoid, GCF and LCM stories, mean, median, a line plot, percent
+    //    and ratio stories). Every question measured: 48 px keys, choices, tiles and tap targets, nothing wider than the screen, no word cut off,
+    //    and with a step hint open the question stays in view; and the stars are saved.
+    {
+      const gc = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 });
+      const gp = gc.page;
+      await gp.fill('#nm', 'Gala');
+      await gp.click('.gr[data-g="6"]');
+      await gp.click('#go');
+      await gp.waitForSelector('.game[data-p="math"]');
+      // every world before Galaxy Core is finished first (Sky City too), so the map meets it without an unlock switch; no "last world" is assumed
+      await gp.evaluate(() => {
+        const wi = PATHS.math.worlds.findIndex(w => w.id === 'm_galaxy');
+        for (let i = 0; i < wi; i++) { for (let j = WR.math[i][0]; j <= WR.math[i][1]; j++) setSt('math', j, 2); S.wdone = S.wdone || {}; S.wdone[worldId('math', i)] = 1; }
+        save();
+      });
+      const w14 = await gp.evaluate(() => {
+        const wi = PATHS.math.worlds.findIndex(w => w.id === 'm_galaxy');
+        return { wi, open: worldOpen('math', wi), cur: curWorld('math'), after: PATHS.math.worlds[wi - 1] && PATHS.math.worlds[wi - 1].id, stops: PATHS.math.worlds[wi].nodes.map(n => n[0] + n[1]).join(' '),
+          boss: NODES.math[WR.math[wi][1]].sk, g: PATHS.math.worlds[wi].g, name: PATHS.math.worlds[wi].n };
+      });
+      const want14 = 'ooo2 alg1 ooo3 alg2 geo5 coord2 fact3 data5 alg3 story9';
+      if (w14.wi < 1 || !w14.open || w14.cur !== w14.wi || w14.after !== 'm_sky' || w14.g !== 6 || w14.name !== 'Galaxy Core' || w14.stops !== want14 || w14.boss !== 'boss') fail('Galaxy Core: ' + JSON.stringify(w14));
+      await gp.click('.game[data-p="math"]');
+      await gp.waitForSelector(`.wchip.on[data-w="${w14.wi}"]`);
+      // the map shows the 10 stops and the boss, and the page is not wider than the screen
+      const map14 = await gp.evaluate(() => ({ w: document.documentElement.scrollWidth, n: document.querySelectorAll('.node').length }));
+      if (map14.w > 380 || map14.n < 11) fail('Galaxy Core map: ' + JSON.stringify(map14));
+      const lay14 = () => {
+        const sm = a => (a.length ? Math.min(...a.map(b => Math.min(b.offsetHeight, b.offsetWidth))) : 99);
+        const qa = document.querySelector('.qarea'), card = qa.getBoundingClientRect();
+        const cut = [...document.querySelectorAll('#prompt *, .choice')].filter(e => !e.closest('svg') && e.getClientRects().length).filter(e => {
+          const r = e.getBoundingClientRect();
+          return r.right > card.right + 1 || r.left < card.left - 1 || (e.classList.contains('choice') && e.scrollWidth > e.clientWidth + 1);
+        }).map(e => e.className || e.tagName);
+        const first = document.querySelector('#prompt').firstElementChild, ft = first ? first.getBoundingClientRect().top : card.top;
+        const pics = document.querySelector('#prompt svg, .ch svg');
+        const box = e => ({ offsetHeight: e.getBoundingClientRect().height, offsetWidth: e.getBoundingClientRect().width });
+        return { sk: G.sk + G.lv, qsk: String(G.q.sk) + G.q.lv, kind: G.q.kind, label: G.q.label, ans: String(G.q.ans), w: document.documentElement.scrollWidth, art: !!pics,
+          keys: sm([...document.querySelectorAll('.k')]), ch: sm([...document.querySelectorAll('.ch')]), tall: qa.scrollHeight > qa.clientHeight + 1,
+          top: ft >= card.top - 1, cut: cut.slice(0, 3), tiles: sm([...document.querySelectorAll('.ot, .mb')]),
+          tap: sm([...document.querySelectorAll('#prompt .vt .vh')].map(box)), dot: !!document.querySelector('.k[data-k="."]') };
+      };
+      const seen14 = { tap: 0, choice: 0, num: 0, dec: 0, art: 0 };
+      const meas14 = async (id, hint) => {
+        const ok = await gp.waitForFunction(id => G && G.q && G.sk + G.lv === id, id, { timeout: 8000 }).then(() => true, () => false);
+        if (!ok) { fail('Galaxy Core ' + id + ': the question on screen is ' + (await gp.evaluate(() => G && JSON.stringify([G.sk, G.lv, G.q && G.q.label])))); return { sk: id, w: 0, keys: 99, ch: 99, cut: [], tap: 99, art: true, label: '' }; }
+        const lay = await gp.evaluate(lay14);
+        // a review question from an earlier stop (or a question one level up or down, 51-mastery.js) is another chunk's content: not measured here
+        if (lay.qsk !== id) return lay;
+        if (lay.sk !== id || lay.w > 380 || lay.keys < 48 || lay.ch < 48 || lay.tiles < 48 || lay.tall || lay.cut.length || lay.tap < 47 || !lay.top) fail('Galaxy Core ' + id + ' (' + lay.label + '): ' + JSON.stringify(lay));
+        if ((/^(geo5|coord2 (tap|read|quad pic|reflect)|alg3 (line|name)|data5 \w+ [\d,]+ plot)/.test(lay.label)) && !lay.art) fail('Galaxy Core ' + id + ': picture missing ' + lay.label);
+        if (lay.kind === 'tap') seen14.tap++;
+        if (lay.kind === 'choice') seen14.choice++;
+        if (lay.kind === 'num') seen14.num++;
+        if (lay.dot) seen14.dec++;
+        if (lay.art) seen14.art++;
+        if (hint) {
+          // step hints: every step in turn, the question stays in view and nothing sticks out sideways
+          const n = await gp.evaluate(() => G.q.hint.steps.length);
+          for (let k = 0; k < n; k++) {
+            await gp.click('#hb');
+            await gp.waitForTimeout(450);
+            const h = await gp.evaluate(() => {
+              const qa = document.querySelector('.qarea').getBoundingClientRect(), f = document.querySelector('#prompt').firstElementChild;
+              const hs = document.querySelector('#hint .hs'), sv = hs && hs.querySelector('svg');
+              return { at: hs && hs.dataset.hs, w: document.documentElement.scrollWidth, top: f.getBoundingClientRect().top >= qa.top - 1, hb: Math.min(document.querySelector('#hb').offsetHeight, document.querySelector('#hb').offsetWidth),
+                svg: sv ? Math.round(sv.getBoundingClientRect().height) : 0,
+                cut: hs ? [...hs.querySelectorAll('*')].filter(e => !e.closest('svg') && e.getBoundingClientRect().right > hs.getBoundingClientRect().right + 1).length : -1 };
+            });
+            if (h.at !== String(k) || h.w > 380 || !h.top || h.hb < 48 || h.cut) fail('Galaxy Core step hint ' + id + ' ' + lay.label + ' step ' + k + ': ' + JSON.stringify(h));
+            if (/^alg1 [a-z] \+/.test(lay.label) && k === 0 && !(h.svg > 30 && h.svg < 140)) fail('Galaxy Core: the balance picture in the first step of ' + lay.label + ' is ' + h.svg + ' px high');
+          }
+        }
+        return lay;
+      };
+      // first stop by taps: Exponents, a step hint, then the full round
+      const first = await gp.evaluate(() => NODES.math.findIndex(x => nid(x) === 'ooo2'));
+      await gp.click(`.node[data-n="${first}"]`);
+      await gp.waitForSelector('#prompt');
+      await gp.waitForTimeout(900);
+      await gp.click('#hb');
+      await vwait(gp, 300);
+      const h1 = await gp.evaluate(() => ({ at: document.querySelector('#hint .hs') && document.querySelector('#hint .hs').dataset.hs, label: document.querySelector('#hb').textContent.trim(), wide: document.documentElement.scrollWidth,
+        hb: Math.min(document.querySelector('#hb').offsetHeight, document.querySelector('#hb').offsetWidth) }));
+      await gp.click('#hb');
+      await vwait(gp, 300);
+      const h2 = await gp.evaluate(() => document.querySelector('#hint .hs').dataset.hs);
+      if (h1.at !== '0' || !/Next step/.test(h1.label) || h2 !== '1' || h1.wide > 380 || h1.hb < 48) fail('Galaxy Core step hint: ' + JSON.stringify([h1, h2]));
+      await playRound(gp, 'P2-14 ooo2', 10, async () => { await gp.waitForTimeout(600); await meas14('ooo2'); });
+      await gp.evaluate(() => { G.dead = true; });
+      await vwait(gp, 2500);
+      const got1 = await gp.evaluate(() => S.maps.math.ooo2 || 0);
+      const next1 = await gp.evaluate(() => unlocked('math', NODES.math.findIndex(x => nid(x) === 'alg1')));
+      if (got1 < 1 || !next1) fail('Galaxy Core: ooo2 stars ' + got1 + ', next stop open ' + next1);
+      // the other stops: full rounds of three of them, three measured questions of each of the rest
+      await gp.evaluate(() => { S.unlockAll = true; save(); });
+      const full = new Set(['alg1', 'coord2', 'alg3']);
+      for (const id of ['alg1', 'ooo3', 'alg2', 'geo5', 'coord2', 'fact3', 'data5', 'alg3', 'story9']) {
+        await gp.evaluate(() => home());
+        await gp.click('.game[data-p="math"]');
+        await gp.waitForSelector('.wchip.on');
+        await gp.click(`.wchip[data-w="${w14.wi}"]`);
+        await gp.waitForSelector(`.wchip.on[data-w="${w14.wi}"]`);
+        const n = await gp.evaluate(id => NODES.math.findIndex(x => nid(x) === id), id);
+        await gp.click(`.node[data-n="${n}"]`);
+        await gp.waitForSelector('#prompt');
+        if (full.has(id)) {
+          await playRound(gp, 'P2-14 ' + id, 10, async () => { await gp.waitForTimeout(600); await meas14(id); });
+        } else {
+          for (let k = 0; k < 3; k++) {
+            await gp.waitForTimeout(900);
+            await meas14(id, k === 0 && (id === 'ooo3' || id === 'geo5'));
+            await gp.evaluate(() => { window.__q = G.q; });
+            await answer(gp);
+            await gp.waitForFunction(() => G && G.q !== window.__q, null, { timeout: 8000 });
+          }
+        }
+        await gp.evaluate(() => { G.dead = true; });
+        await vwait(gp, 2500);
+      }
+      // one of each picture and kind, forced, measured (step hints of some opened step by step) and answered with real taps: a point tapped on the
+      // four-quadrant grid (also a reflected one), ordered pairs and number lines picked, equations and decimals typed
+      const forced = [['coord', 2, '^coord2 tap -'], ['coord', 2, '^coord2 read -'], ['coord', 2, '^coord2 quad pic'], ['coord', 2, '^coord2 quad pair'], ['coord', 2, '^coord2 reflect y', 'hint'],
+        ['coord', 2, '^coord2 reflect x'], ['coord', 2, '^coord2 reflect-tap y'], ['alg', 3, '^alg3 line x < -'], ['alg', 3, '^alg3 name x > '], ['alg', 3, '^alg3 \\d+[a-z] −', 'hint'],
+        ['alg', 1, '^alg1 [a-z] \\+ \\d+ = \\d+$', 'hint'], ['alg', 1, '^alg1 [a-z] − '], ['alg', 2, '÷'], ['ooo', 2, '\\^3'], ['ooo', 3, ', x = \\d+, y = ', 'hint'],
+        ['geo', 5, '^geo5 tri'], ['geo', 5, '^geo5 par \\d+ \\d+ [1-9]'], ['geo', 5, '^geo5 trap', 'hint'], ['data', 5, 'plot$'], ['data', 5, '^data5 median [\\d,]+$', 'hint'],
+        ['fact', 3, '^fact3 gcf-w', 'hint'], ['fact', 3, '^fact3 lcm-w'], ['story', 9, '^story9 ratio'], ['story', 9, '^story9 pct sale', 'hint'], ['story', 9, '^story9 eq money'], ['story', 9, '^story9 price']];
+      for (const [sk, lv, re, flag] of forced) {
+        await gp.evaluate(() => home());
+        await gp.click('.game[data-p="math"]');
+        await gp.waitForSelector('.wchip.on');
+        await gp.click(`.wchip[data-w="${w14.wi}"]`);
+        const n = await gp.evaluate(([sk, lv]) => NODES.math.findIndex(x => x.sk === sk && x.lv === lv), [sk, lv]);
+        await gp.click(`.node[data-n="${n}"]`);
+        await gp.waitForSelector('#prompt');
+        const found = await gp.evaluate(([sk, lv, re]) => {
+          for (let i = 1; i < 3000; i++) { const q = genQ(sk, lv, i); if (new RegExp(re).test(q.label)) { G.q = q; renderQ(); return true; } }
+          return false;
+        }, [sk, lv, re]);
+        if (!found) { fail('Galaxy Core: no question for ' + re); continue; }
+        await gp.waitForTimeout(700);
+        await meas14(sk + lv, flag === 'hint');
+        await gp.evaluate(() => { window.__q = G.q; });
+        await answer(gp);
+        await gp.waitForFunction(() => G && G.q !== window.__q, null, { timeout: 8000 });
+        await gp.evaluate(() => { G.dead = true; });
+        await vwait(gp, 1500);
+      }
+      if (!seen14.tap || !seen14.choice || !seen14.num || !seen14.dec || !seen14.art) fail('Galaxy Core: a tapped point, a choice, a typed answer, the decimal key or a picture never showed ' + JSON.stringify(seen14));
+      const stars14 = await gp.evaluate(() => ['ooo2', 'alg1', 'coord2', 'alg3'].map(id => S.maps.math[id] || 0));
+      if (stars14.some(x => x < 1)) fail('Galaxy Core: stars not saved ' + JSON.stringify(stars14));
+      else step('P2-14: Galaxy Core opens for a 6th grader on its first stop (after Sky City, found by id); Exponents with a step hint, One-Step Equations, Four Quadrants and Two-Step Equations as full rounds by real taps (a point tapped on the four-quadrant grid, ordered pairs and number lines picked, equations typed), 10 stops and 26 forced pictures measured at 380x780 (48 px targets, no cut-off words, no sideways scroll), stars saved');
+      network.push(...gc.network);
+      for (const e of gc.errors) fail(e);
+      await gc.ctx.close();
     }
 
     for (const e of errors) fail(e);
