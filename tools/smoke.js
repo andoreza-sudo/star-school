@@ -236,7 +236,7 @@ async function main() {
         || g.spell !== 'function' || !g.vq || g.pz !== '3:16:16' || g.ix < 0) {
         fail('A11 data globals: ' + JSON.stringify(g));
       }
-      if (!['maze', 'pattern', 'pyramid', 'balance', 'target'].every(id => g.bt.split(',').includes(id)) || g.css !== 'main,css-bt'
+      if (!['maze', 'pattern', 'pyramid', 'balance', 'target'].every(id => g.bt.split(',').includes(id)) || g.css !== 'main,css-bt,css-games' // P4-16: the games file adds its own <style> (48-game-hub.css)
         || g.games !== 'function,function,function') fail('A11b part files: ' + JSON.stringify(g));
       await d.page.evaluate(ix => start('read', ix), g.ix);
       await d.page.waitForSelector('.bctx-p .w', { timeout: 8000 });
@@ -6695,6 +6695,133 @@ async function main() {
       network.push(...cx.network);
       for (const e of cx.errors) fail(e);
       await cx.ctx.close();
+    }
+
+    // P4-16 Game Room hub and shared game chrome (midway save, 15 min of game time). At 380x780 and 1024x600, with real taps:
+    //    Home -> Game Room: the fair scene, the game-time ticket and one drawn card per registered game (GH.games). For every game:
+    //    its card -> its first screen has the shared top bar (Back, its name, the time chip) -> its tapToPlay button -> the play
+    //    screen has the shared top bar with Pause -> Pause opens the sheet and the game-time clock holds -> Keep playing closes it and
+    //    the clock runs again -> Pause -> Quit goes back to the game's first screen -> Back goes back to the hub. Then each game's
+    //    time-up card and a real Hill Climb end card (the shared .gh-end) with Garage tapped. Every screen, the sheet and the cards:
+    //    the shared chrome's buttons at least 48 px, no sideways scroll, no emoji in the shared chrome.
+    {
+      const look = () => {
+        const vw = document.documentElement.clientWidth, out = [];
+        for (const e of document.querySelectorAll('.gh-room button, .gh-top button, .sheet button, .gh-end button')) {
+          const r = e.getBoundingClientRect();
+          if (!r.width || r.bottom < 0 || r.top > innerHeight) continue;
+          if (Math.min(r.width, r.height) < 47.5) out.push('small ' + (e.id || e.className) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
+          if (r.left < -1 || r.right > vw + 1) out.push('outside ' + (e.id || e.className) + ' ' + Math.round(r.left) + '..' + Math.round(r.right));
+        }
+        if (document.documentElement.scrollWidth > vw) out.push('sideways scroll ' + document.documentElement.scrollWidth);
+        for (const s of document.querySelectorAll('.scroll')) if (s.scrollWidth > s.clientWidth + 1) out.push('sideways scroll in ' + s.className);
+        for (const t of document.querySelectorAll('.gh-top')) if (t.getBoundingClientRect().right > vw + 1 || t.scrollWidth > t.clientWidth + 1) out.push('top bar wider than the screen');
+        const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        for (let n; (n = w.nextNode());) {
+          const el = n.parentElement;
+          if (!el || !el.closest('.gh-room, .gh-top, .gh-sheet, .gh-end') || el.closest('svg') || !el.getClientRects().length) continue;
+          const m = n.textContent.match(/\p{Extended_Pictographic}|[◀▶✕]/u);
+          if (m) out.push('emoji chrome ' + m[0] + ' in ' + (el.id || el.className));
+        }
+        return out;
+      };
+      const bar = () => {
+        const t = document.querySelector('.gh-top');
+        return t ? { g: t.dataset.g, name: (t.querySelector('.gh-gn') || {}).textContent, time: !!t.querySelector('#gtm.stat.ticket, #hct.stat.ticket'),
+          back: !!t.querySelector('#back[aria-label="Back"]'), pause: !!t.querySelector('#gpause[aria-label="Pause"]') } : null;
+      };
+      const bad = [];
+      let played = 0, sizes = 0;
+      for (const [w, h] of [[380, 780], [1024, 600]]) {
+        const ga = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ga.page, at = w + 'x' + h + ' ';
+        await pg.evaluate(() => { S.pt = { bank: 900, day: today(), used: 0 }; save(); home(); });
+        await pg.click('#groom');
+        await pg.waitForSelector('.gh-room .gh-card');
+        await pg.waitForTimeout(450); // screen-in motion is real time (CSS)
+        const list = await pg.evaluate(() => GH.games.map(g => ({ id: g.id, btn: g.btn, name: g.short || g.name, tap: g.tapToPlay })));
+        const hub = await pg.evaluate(() => ({ cards: document.querySelectorAll('.gh-card').length, pics: document.querySelectorAll('.gh-card .gh-pic svg.gh-art').length,
+          scene: !!document.querySelector('.gh-hero svg.gh-scene'), ticket: (document.querySelector('.gh-tkt b') || {}).textContent, chip: !!document.querySelector('.gh-top #gtm') }));
+        if (hub.cards !== list.length || hub.pics !== list.length || !hub.scene || !/^\d+:\d\d$/.test(hub.ticket || '') || !hub.chip) bad.push(at + 'hub: ' + JSON.stringify(hub));
+        for (const o of await pg.evaluate(look)) bad.push(at + 'hub: ' + o);
+        for (const g of list) {
+          const tag = at + g.id + ' ';
+          try {
+            await pg.click('#' + g.btn);
+            await pg.waitForSelector('.gh-top #back', { timeout: 8000 });
+            await pg.waitForTimeout(450);
+            const m = await pg.evaluate(bar);
+            if (!m || m.g !== g.id || m.name !== g.name || !m.time || !m.back) bad.push(tag + 'first screen top bar: ' + JSON.stringify(m));
+            for (const o of await pg.evaluate(look)) bad.push(tag + 'first screen: ' + o);
+            await pg.click(g.tap);
+            await pg.waitForSelector('.gh-top #gpause', { timeout: 8000 });
+            await pg.waitForTimeout(450);
+            const p = await pg.evaluate(bar);
+            if (!p || p.g !== g.id || p.name !== g.name || !p.time || !p.pause) bad.push(tag + 'play top bar: ' + JSON.stringify(p));
+            for (const o of await pg.evaluate(look)) bad.push(tag + 'play: ' + o);
+            // Pause: the sheet opens and the game-time clock holds
+            await pg.click('#gpause');
+            await pg.waitForSelector('.sheet-bg.on #gresume', { timeout: 5000 });
+            await pg.waitForTimeout(400);
+            const u0 = await pg.evaluate(() => pt().used);
+            await vwait(pg, 4000);
+            const s = await pg.evaluate(() => ({ used: pt().used, held: GH.held, hc: typeof HC != 'undefined' && HC ? !!HC.paused : null,
+              title: (document.querySelector('.gh-sheet h2') || {}).textContent, pic: !!document.querySelector('.gh-sheet svg.gh-art') }));
+            if (s.used !== u0 || !s.held || s.hc === false || s.title !== 'Paused' || !s.pic) bad.push(tag + 'pause: ' + JSON.stringify(Object.assign(s, { u0 })));
+            for (const o of await pg.evaluate(look)) bad.push(tag + 'pause sheet: ' + o);
+            await pg.click('#gresume');
+            await pg.waitForFunction(() => !document.querySelector('.sheet-bg'), null, { timeout: 5000 });
+            await vwait(pg, 6000);
+            const r = await pg.evaluate(() => ({ used: pt().used, held: GH.held, hc: typeof HC != 'undefined' && HC ? !!HC.paused : null, play: !!document.querySelector('#gpause') }));
+            if (!(r.used > s.used) || r.held || r.hc === true || !r.play) bad.push(tag + 'keep playing: ' + JSON.stringify(Object.assign(r, { paused: s.used })));
+            // Pause -> Quit: back on the game's first screen, nothing running; Back: the hub
+            await pg.click('#gpause');
+            await pg.waitForSelector('.sheet-bg.on #gquit', { timeout: 5000 });
+            await pg.click('#gquit');
+            await pg.waitForSelector('.gh-top #back', { timeout: 8000 });
+            const q = await pg.evaluate(() => ({ bar: !!document.querySelector('#gpause'), gt: !!GT, hc: typeof HC != 'undefined' && !!HC, held: GH.held }));
+            if (q.bar || q.gt || q.hc || q.held) bad.push(tag + 'quit: ' + JSON.stringify(q));
+            await pg.click('#back');
+            await pg.waitForSelector('.gh-room .gh-card', { timeout: 8000 });
+            played++;
+          } catch (e) {
+            bad.push(tag + 'taps: ' + e.message.split('\n')[0]);
+            await pg.evaluate(() => { document.querySelectorAll('.ovl').forEach(o => o.remove()); gameRoom(); });
+          }
+        }
+        // the time-up card of each game, then a real Hill Climb end card: the shared .gh-end with the game's picture
+        for (const g of list) {
+          const e = await pg.evaluate(id => {
+            GH.cur = id;
+            timeUpOverlay();
+            const c = document.querySelector('.gh-ovl .gh-end');
+            return c ? { pic: !!c.querySelector('.gh-epic svg.gh-art'), tl: !!c.querySelector('#tl'), name: (c.querySelector('.gh-ename') || {}).textContent } : null;
+          }, g.id);
+          await pg.waitForTimeout(450); // the card's rise and the screen-in motion are real time (CSS)
+          if (!e || !e.pic || !e.tl) bad.push(at + g.id + ' time-up card: ' + JSON.stringify(e));
+          for (const o of await pg.evaluate(look)) bad.push(at + g.id + ' time-up card: ' + o);
+          await pg.evaluate(() => document.querySelectorAll('.gh-ovl').forEach(o => o.remove()));
+        }
+        await pg.evaluate(() => hcStart('meadow'));
+        await vwait(pg, 800);
+        await pg.evaluate(() => hcEnd('fuel'));
+        await pg.waitForSelector('.gh-end #hgar', { timeout: 5000 });
+        await pg.waitForTimeout(400);
+        const end = await pg.evaluate(() => ({ stats: document.querySelectorAll('.gh-end .gh-stat').length, title: (document.querySelector('.gh-end h1') || {}).textContent }));
+        if (end.stats !== 4 || end.title !== 'Out of gas!') bad.push(at + 'Hill Climb end card: ' + JSON.stringify(end));
+        for (const o of await pg.evaluate(look)) bad.push(at + 'Hill Climb end card: ' + o);
+        await pg.click('#hgar');
+        await pg.waitForSelector('.gh-top #back', { timeout: 5000 });
+        if (await pg.evaluate(() => !!document.querySelector('.gh-ovl') || !!HC)) bad.push(at + 'Garage did not close the end card and stop the drive');
+        sizes++;
+        network.push(...ga.network);
+        for (const e of ga.errors) fail(e);
+        await ga.ctx.close();
+      }
+      if (bad.length) fail('P4-16 Game Room:\n  ' + [...new Set(bad)].slice(0, 40).join('\n  '));
+      else step(`P4-16: Game Room hub at ${sizes} sizes (380x780, 1024x600): scene, ticket and a drawn card per game; ${played} games opened, started, ` +
+        'paused (clock held), resumed, quit and back to the hub with real taps on the shared top bar and sheet; time-up and end cards shared; ' +
+        '48 px targets, no sideways scroll, no emoji chrome');
     }
 
     for (const u of network) fail('network request: ' + u);

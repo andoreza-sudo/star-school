@@ -42,8 +42,7 @@ function artSVG(regs,fills,o={}){const defs=new Set();defs.out=[];const body=reg
 const artName=k=>{const[t,v]=k.split(':');return t=='m'?'Mandala':t=='g'?'Rose Window':t=='p'?POLYART[v].n:(SHAPES.find(x=>x[0]==v)||[0,'Picture'])[1]};
 function artPage(key){const regs=artRegs(key),st=stS(),it=st.items[key]||{f:{}},fills=Object.assign({},it.f),glass=key[0]=='g';
   let col=PALS['🌅 Sunset'][2],pal=st.pal||'🌅 Sunset',mode='c',mirror=key[0]=='m'||key[0]=='g',undo=[],vb=[0,0,300,300];
-  view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title" style="font-size:19px">${glass?'💎':key[0]=='m'?'✨':'🦁'} ${artName(key)}</div><div class="sp"></div>
-    <button class="btn sm" id="aundo">↩️</button>${key[0]=='m'||key[0]=='g'?`<button class="btn sm on" id="amir" title="Mirror fill">🔁</button>`:''}<button class="btn sm" id="azr">🔍</button><div class="stars" id="gtm">🎟️ ${fmtT(ptLeft())}</div></div>
+  view(`${GH.top('art',{play:true,sub:artName(key),tools:GH.tool('undo','Undo','aundo')+(key[0]=='m'||key[0]=='g'?GH.tool('flip','Mirror fill','amir',true):'')+GH.tool('eye','Zoom','azr')})}
    <div class="stwrap"><div class="stcv" id="stw"></div><div class="stbar">
     <div class="stmodes"><button class="btn sm on" data-md="c">🎨 Paint</button><button class="btn sm" data-md="g">🌅 Shiny</button><button class="btn sm" data-md="s">✨ Glitter</button><button class="btn sm" data-md="e">🧽 Erase</button></div>
     <div class="stpals">${Object.keys(PALS).map(p=>`<button class="btn sm stp ${p==pal?'on':''}" data-p="${p}">${p.split(' ')[0]}</button>`).join('')}</div>
@@ -76,15 +75,15 @@ function artPage(key){const regs=artRegs(key),st=stS(),it=st.items[key]||{f:{}},
   function clampVB(){vb[0]=Math.max(0,Math.min(300-vb[2],vb[0]));vb[1]=Math.max(0,Math.min(300-vb[3],vb[1]))}
   $('#azr').onclick=()=>{if(vb[2]<299)vb=[0,0,300,300];else vb=[75,75,150,150];setVB();SFX.whoosh()};
   $('#aundo').onclick=()=>{const u=undo.pop();if(!u)return;u.forEach(([j,v])=>paintOne(j,v));persist();SFX.del()};
-  if($('#amir'))$('#amir').onclick=e=>{mirror=!mirror;e.currentTarget.classList.toggle('on',mirror);fb(mirror?'🔁 Mirror ON: one tap colors every matching piece':'Mirror OFF: color one piece at a time','ok',1800)};
+  if($('#amir'))$('#amir').onclick=e=>{mirror=!mirror;e.currentTarget.classList.toggle('on',mirror);e.currentTarget.setAttribute('aria-pressed',String(mirror));fb(mirror?'Mirror ON: one tap colors every matching piece':'Mirror OFF: color one piece at a time','ok',1800)};
   const size=()=>{const r=w.parentNode.getBoundingClientRect(),land=innerWidth>innerHeight,s=Math.min(land?r.width-250:r.width-12,r.height-(land?12:150));w.style.width=w.style.height=Math.max(200,s)+'px'};size();
   let rs;addEventListener('resize',()=>{clearTimeout(rs);rs=setTimeout(()=>{if($('#stw'))size()},120)});
-  $('#back').onclick=()=>{gtStop();colorMenu(key[0]=='m'?'mandala':key[0]=='g'?'glass':'animal')};
+  GH.wire({quit:()=>{gtStop();colorMenu(key[0]=='m'?'mandala':key[0]=='g'?'glass':'animal')}});
   gtStart('#gtm',()=>timeUpOverlay());if(S.voice&&!it.t)setTimeout(()=>say(key[0]=='m'?'Pick colors and make it beautiful!':'Tap to color!'),300)}
 
 /* neon kaleidoscope */
 function neonDraw(){let sym=8,brush='neon',hue=Math.random()*360,size=6,mirror=true,strokes=0;
-  view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title" style="font-size:19px">🌈 Neon Draw</div><div class="sp"></div><button class="btn sm" id="nclr">🗑️</button><button class="btn sm" id="nsave">💾</button><div class="stars" id="gtm">🎟️ ${fmtT(ptLeft())}</div></div>
+  view(`${GH.top('art',{play:true,sub:'Neon Draw',tools:GH.tool('trash','Clear','nclr')+GH.tool('download','Save to my gallery','nsave')})}
    <div class="stwrap"><div class="stcv neon" id="nw"><canvas id="ncv"></canvas></div><div class="stbar">
     <div class="stmodes">${[[1,'✏️ Off'],[4,'✳️ 4'],[6,'❄️ 6'],[8,'✴️ 8'],[12,'🌸 12']].map(([n,l])=>`<button class="btn sm ${n==sym?'on':''}" data-sy="${n}">${l}</button>`).join('')}<button class="btn sm on" id="nmir">🪞</button></div>
     <div class="stmodes">${[['neon','💡 Neon'],['rainbow','🌈 Rainbow'],['spark','✨ Sparkle'],['ribbon','🎀 Ribbon']].map(([k,l])=>`<button class="btn sm ${k==brush?'on':''}" data-br="${k}">${l}</button>`).join('')}</div>
@@ -109,9 +108,9 @@ function neonDraw(){let sym=8,brush='neon',hue=Math.random()*360,size=6,mirror=t
   $$('[data-h]').forEach(b=>b.onclick=()=>{hue=+b.dataset.h;if(brush=='rainbow')brush='neon',$$('[data-br]').forEach(q=>q.classList.toggle('on',q.dataset.br=='neon'));SFX.pop(2)});
   $('#nclr').onclick=()=>{x.fillStyle='#05010f';x.fillRect(0,0,S0,S0);SFX.whoosh();strokes=0};
   const doSave=()=>{try{const c2=document.createElement('canvas');c2.width=c2.height=360;c2.getContext('2d').drawImage(cv,0,0,360,360);const g=JSON.parse(localStorage.getItem('starschool-neon')||'[]');g.unshift(c2.toDataURL('image/jpeg',.8));localStorage.setItem('starschool-neon',JSON.stringify(g.slice(0,8)));return true}catch(e){return false}};
-  $('#nsave').onclick=()=>{if(doSave()){SFX.fanfare();confetti(20);fb('💾 Saved to your gallery!')}else fb('Gallery is full','warn')};
+  $('#nsave').onclick=()=>{if(doSave()){SFX.fanfare();confetti(20);fb('Saved to your gallery!')}else fb('Gallery is full','warn')};
   let rs;addEventListener('resize',()=>{clearTimeout(rs);rs=setTimeout(()=>{if($('#ncv'))size_()},150)});
-  $('#back').onclick=()=>{if(strokes>2)doSave();gtStop();colorMenu('neon')};
+  GH.wire({quit:()=>{if(strokes>2)doSave();gtStop();colorMenu('neon')}});
   gtStart('#gtm',()=>{if(strokes>2)doSave();timeUpOverlay()})}
 
 let STTAB='mandala';
@@ -127,10 +126,10 @@ function colorMenu(tab){if(tab&&['shape','pixel','paint'].includes(tab))return c
   else if(STTAB=='neon'){let g=[];try{g=JSON.parse(localStorage.getItem('starschool-neon')||'[]')}catch(e){}
     body=`<button class="btn game" id="newn" style="background:linear-gradient(135deg,#312e81,#be185d);color:#fff"><span class="ge">🌈</span><span class="gi"><span class="gt">Neon Kaleidoscope</span><span class="small" style="color:#fbcfe8">Glowing mirror drawing</span></span><span class="go">▶</span></button>${g.length?`<h3 class="cbdh">My Neon Art</h3><div class="stgrid">${g.map(s=>`<div class="sttile"><img src="${s}"></div>`).join('')}</div>`:''}`}
   else body=`<div class="tipcard">The original pictures, pixel art and color-by-number.</div><div class="games"><button class="btn game" data-c="shape" style="background:#fce7f3"><span class="ge">🦁</span><span class="gi"><span class="gt">Number Pictures</span></span></button><button class="btn game" data-c="pixel" style="background:#dbeafe"><span class="ge">🟦</span><span class="gi"><span class="gt">Pixel Art</span></span></button><button class="btn game" data-c="paint" style="background:#dcfce7"><span class="ge">🖌️</span><span class="gi"><span class="gt">Block Paint</span></span></button></div>`;
-  view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title">🎨 Art Studio</div><div class="sp"></div><div class="stars">🎟️ ${fmtT(ptLeft())}</div></div>
+  view(`${GH.top('art')}
    <div class="tabs sttabs">${tabs.map(([k,l])=>`<button class="btn sm tab ${k==STTAB?'on':''}" data-t="${k}">${l}</button>`).join('')}</div><div class="scroll">${body}</div>`);
   $('#back').onclick=gameRoom;$$('.tab').forEach(b=>b.onclick=()=>{SFX.pop(2);colorMenu(b.dataset.t)});
-  const chk=()=>{if(ptLeft()<=0){SFX.wrong();fb('🎟️ '+ptWhyNot(),'warn long',3000);return false}return true};
+  const chk=()=>{if(ptLeft()<=0){SFX.wrong();fb(ptWhyNot(),'warn long',3000);return false}return true};
   $$('[data-k]').forEach(b=>b.onclick=()=>{if(chk()){SFX.whoosh();artPage(b.dataset.k)}});
   $$('[data-c]').forEach(b=>b.onclick=()=>classicColor(b.dataset.c));
   if($('#newm'))$('#newm').onclick=()=>{if(chk()){SFX.magic();artPage('m:'+R(1000,99999))}};
@@ -145,9 +144,9 @@ function classicColor(tab){if(tab)CBTAB=tab;const cs=cbS(),ss=shS();
     return`<button class="btn cbitem" data-id="${id}"><img src="${cbThumb(d.G,done?true:pr)}"><b>${n}</b><span class="small">${done?'✅ Done':pc?pc+'%':'New'}</span></button>`}).join('')}</div>`;
   else body=`<button class="btn game" id="free" style="background:linear-gradient(135deg,#fbcfe8,#c7d2fe);width:100%"><span class="ge">🖌️</span><span class="gi"><span class="gt">New Drawing</span><span class="small">Paint anything you want, block by block</span></span><span class="go">▶</span></button>
     ${cs.art.length?`<h2>My Drawings</h2><div class="cbgrid">${cs.art.map((a,i)=>`<button class="btn cbitem" data-art="${i}"><img src="${cbThumb(a.split(',').map(k=>k||'blanco'),true)}"><b>Drawing ${i+1}</b></button>`).join('')}</div>`:'<p class="small" style="text-align:center">Your saved drawings show up here.</p>'}`;
-  view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title">🎨 Coloring</div><div class="sp"></div><div class="stars" id="gtm">🎟️ ${fmtT(ptLeft())}</div></div><div class="scroll">${tabs}${body}</div>`);
+  view(`${GH.top('art',{sub:'Classic'})}<div class="scroll">${tabs}${body}</div>`);
   $('#back').onclick=()=>colorMenu('classic');$$('.tab').forEach(b=>b.onclick=()=>{SFX.pop(2);classicColor(b.dataset.t)});
-  const chk=()=>{if(ptLeft()<=0){SFX.wrong();fb('🎟️ '+ptWhyNot(),'warn long',3000);return false}return true};
+  const chk=()=>{if(ptLeft()<=0){SFX.wrong();fb(ptWhyNot(),'warn long',3000);return false}return true};
   if($('#free'))$('#free').onclick=()=>{if(chk())freePaint(-1)};
   $$('[data-art]').forEach(b=>b.onclick=()=>{if(chk())freePaint(+b.dataset.art)});
   $$('[data-id]').forEach(b=>b.onclick=()=>{if(chk())modeChooser(m=>colorPic(b.dataset.id,m),false)});
