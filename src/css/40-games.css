@@ -12,7 +12,6 @@
 .tabs{display:flex;gap:8px;justify-content:center;margin:10px 0}.tab.on{background:#3b82f6;color:#fff}
 .shopgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px}
 .item{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;font-size:15px}.item span{font-size:44px}
-.item.own{background:#dcfce7}.item.wear{outline:4px solid #22c55e}
 .clock{width:calc(clamp(170px,40vmin,300px)*var(--k));height:auto;display:block;margin:0 auto}
 .coins{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center;max-width:520px;margin:0 auto 6px}
 .cn{width:calc(70px*var(--s)*var(--k));height:calc(70px*var(--s)*var(--k));border-radius:50%;background:radial-gradient(circle at 35% 30%,#fffa,var(--c) 62%);border:3px solid #0003;display:flex;align-items:center;justify-content:center;font-size:calc(20px*var(--s)*var(--k));font-weight:700;color:#2d2a26;box-shadow:0 3px 0 #0002}

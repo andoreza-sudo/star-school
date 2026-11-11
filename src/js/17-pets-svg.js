@@ -4,7 +4,7 @@
    arm-l, arm-r (holds the toy), head (holds the hat), cheeks, eyes, mouth.
    - stage: 'egg' | 'baby' | 'kid' | 'grown', or the stage() number 0-4 (4 = grown plus the "super" glow ring: circles, no filter).
    - mood: 'idle' | 'happy' | 'oops' | 'cheer' | 'sleepy' | 'hungry'. A mood swaps only the eyes and mouth (PET_FACE).
-   - opts.hat / opts.toy: an emoji (drawn as SVG text, today's wearables) or SVG markup on a 64x64 grid (P4-07),
+   - opts.hat / opts.toy: SVG markup on a 64x64 grid (the drawn wearables, P4-07: pass wearOf(id) from 17-wear.js) or an emoji (drawn as text),
      placed at the stage's anchors. opts.react: also draw the cheer and oops faces, shown while anim() puts .jump / .sad
      on a parent. opts.super: force the glow on or off.
    Anchors: PET_RIG[kind].stages[name].hat / .toy = [x, y, scale, degrees] in viewBox units (petAnchor() reads them).
@@ -66,13 +66,13 @@ const PET_RIG = {};
 // >>> dragon (the reference pet: green with a yellow belly, cream horns and muzzle)
 PET_RIG.dragon = {
   stages: {
-    egg: { egg: 1, head: [100, 126, .66], sh: 40, hat: [100, 72, .72, -8], toy: [148, 162, .62, 10] },
+    egg: { egg: 1, head: [100, 126, .66], sh: 40, hat: [100, 74, .8, -8], toy: [148, 160, .76, 10] },
     baby: { body: [100, 157, 26, 25], belly: [100, 161, 16, 16], head: [100, 101, .95], horn: .5, arm: [80, 148, .72],
-      wing: [86, 142, .5], tail: [118, 170, .6], sh: 36, hat: [100, 70, .74, -8], toy: [133, 162, .6, 10] },
+      wing: [86, 142, .5], tail: [118, 170, .6], sh: 36, hat: [100, 77, .9, -8], toy: [134, 160, .78, 10] },
     kid: { body: [100, 148, 31, 32], belly: [100, 154, 20, 21], head: [100, 84, 1.02], horn: .8, arm: [74, 138, .88],
-      wing: [82, 130, .8], tail: [121, 167, .85], sh: 42, hat: [100, 51, .82, -8], toy: [138, 155, .68, 10] },
+      wing: [82, 130, .8], tail: [121, 167, .85], sh: 42, hat: [100, 58, .98, -8], toy: [139, 152, .86, 10] },
     grown: { body: [100, 138, 38, 42], belly: [100, 146, 25, 29], head: [100, 70, 1.06], horn: 1.1, arm: [66, 124, 1.1],
-      wing: [74, 112, 1.35], tail: [126, 162, 1.3], sh: 52, hat: [100, 35, .9, -8], toy: [148, 148, .78, 10] },
+      wing: [74, 112, 1.35], tail: [126, 162, 1.3], sh: 52, hat: [100, 47, .98, -8], toy: [149, 145, .98, 10] },
   },
   egg: '<ellipse cx="100" cy="124" rx="45" ry="55" fill="var(--pc-sh2)"/><ellipse cx="98" cy="121.5" rx="42.5" ry="52.5" fill="var(--pc-sh)"/>' +
     [[66, 130, 6.5], [129, 95, 6.5], [125, 155, 9], [80, 162, 6], [100, 74, 6]].map(([x, y, r]) =>
@@ -145,13 +145,13 @@ const petPlateS = petVol('M-8 2C-9-9-5-20 0-23C5-20 9-9 8 2Z', 'M-8 0C-9-9-5-18-
   petPlate = petPlateS + petGl('M-4-4C-5-10-3-14-1-17', 2.2, .5);
 PET_RIG.dino = {
   stages: {
-    egg: { egg: 1, head: [100, 126, .66], sh: 40, hat: [100, 72, .72, -8], toy: [148, 162, .62, 10] },
+    egg: { egg: 1, head: [100, 126, .66], sh: 40, hat: [100, 74, .8, -8], toy: [148, 160, .76, 10] },
     baby: { body: [100, 157, 28, 25], belly: [100, 162, 17, 15], head: [100, 101, .94], plate: .62, arm: [81, 148, .78],
-      wing: [78, 150, .55], tail: [116, 174, .62], sh: 38, hat: [100, 70, .74, -6], toy: [133, 163, .6, 10] },
+      wing: [78, 150, .55], tail: [116, 174, .62], sh: 38, hat: [100, 77, .9, -6], toy: [134, 161, .78, 10] },
     kid: { body: [100, 148, 33, 32], belly: [100, 154, 21, 21], head: [100, 84, 1], plate: .85, arm: [75, 137, .95],
-      wing: [72, 142, .78], tail: [120, 172, .9], sh: 46, hat: [100, 52, .82, -6], toy: [138, 156, .68, 10] },
+      wing: [72, 142, .78], tail: [120, 172, .9], sh: 46, hat: [100, 58, .98, -6], toy: [139, 153, .86, 10] },
     grown: { body: [100, 137, 41, 43], belly: [100, 146, 27, 30], head: [100, 69, 1.04], plate: 1.1, arm: [66, 121, 1.16],
-      wing: [64, 128, 1.1], tail: [126, 168, 1.28], sh: 56, hat: [100, 36, .9, -6], toy: [150, 147, .78, 10] },
+      wing: [64, 128, 1.1], tail: [126, 168, 1.28], sh: 56, hat: [100, 46, .98, -6], toy: [151, 144, .98, 10] },
   },
   egg: petShell(45, 55, 124) + [[68, 132, 8], [128, 100, 6.5], [124, 158, 9], [86, 166, 5.5], [104, 78, 5.5], [74, 96, 4]].map(([x, y, r]) =>
     `<circle cx="${x}" cy="${y}" r="${r}" fill="var(--pc-b2)"/><circle cx="${x - 1}" cy="${y - 1}" r="${r - 1.5}" fill="var(--pc-b)"/>`).join('') +
@@ -216,13 +216,13 @@ const birdFeather = '<path d="M-7.5 1C-10-9-6-20 3-27C8-18 9.5-8 7.5 1Z" fill="v
   petGl('M-3.5-3C-4.5-9-3-15 0-19', 2.2, .55);
 PET_RIG.bird = {
   stages: {
-    egg: { egg: 1, head: [100, 116, .6], sh: 50, hat: [100, 66, .68, -8], toy: [146, 158, .6, 10] },
+    egg: { egg: 1, head: [100, 116, .6], sh: 50, hat: [100, 68, .78, -8], toy: [146, 156, .74, 10] },
     baby: { body: [100, 158, 26, 24], belly: [100, 163, 17, 15], head: [100, 106, .97], crest: .62, arm: [78, 145, .62],
-      wing: [80, 150, 1], tail: [118, 174, .62], sh: 34, hat: [100, 73, .74, -6], toy: [132, 160, .58, 10] },
+      wing: [80, 150, 1], tail: [118, 174, .62], sh: 34, hat: [100, 81, .9, -6], toy: [133, 158, .76, 10] },
     kid: { body: [100, 150, 30, 30], belly: [100, 156, 20, 20], head: [100, 91, 1.02], crest: .85, arm: [73, 135, .8],
-      wing: [80, 140, 1], tail: [124, 172, .85], sh: 40, hat: [100, 57, .82, -6], toy: [137, 154, .66, 10] },
+      wing: [80, 140, 1], tail: [124, 172, .85], sh: 40, hat: [100, 64, .98, -6], toy: [138, 151, .84, 10] },
     grown: { body: [100, 139, 36, 40], belly: [100, 147, 24, 28], head: [100, 77, 1.05], crest: 1.15, arm: [66, 117, 1.02],
-      wing: [80, 130, 1], tail: [130, 166, 1.2], sh: 48, hat: [100, 42, .9, -6], toy: [147, 146, .76, 10] },
+      wing: [80, 130, 1], tail: [130, 166, 1.2], sh: 48, hat: [100, 52, .98, -6], toy: [148, 143, .96, 10] },
   },
   // a speckled egg sitting in a straw nest
   egg: '<path d="M50 152C52 140 148 140 150 152Z" fill="var(--pc-n2)"/>' + petShell(38, 47, 118) +
@@ -280,13 +280,13 @@ PET_RIG.bird = {
 const seaFin = petVol('M-9 2C-7-10 2-20 13-22C9-14 9-6 10 2Z', 'M-8 0C-6-10 2-18 10.5-19.5C7-13 7-6 8 0Z', 'p') + petGl('M-4-3C-2-9 2-13 6-16', 2, .45);
 PET_RIG.ocean = {
   stages: {
-    egg: { egg: 1, head: [100, 126, .66], sh: 40, hat: [100, 72, .72, -8], toy: [148, 162, .62, 10] },
+    egg: { egg: 1, head: [100, 126, .66], sh: 40, hat: [100, 74, .8, -8], toy: [148, 160, .76, 10] },
     baby: { body: [100, 157, 27, 25], belly: [100, 162, 17, 16], head: [100, 102, .96], fin: .62, arm: [79, 146, .7],
-      wing: [80, 150, 1], tail: [114, 172, .6], sh: 36, hat: [100, 71, .74, -6], toy: [133, 162, .6, 10] },
+      wing: [80, 150, 1], tail: [114, 172, .6], sh: 36, hat: [100, 78, .9, -6], toy: [134, 160, .78, 10] },
     kid: { body: [100, 148, 31, 32], belly: [100, 154, 20, 21], head: [100, 84, 1.02], fin: .85, arm: [73, 136, .88],
-      wing: [80, 140, 1], tail: [118, 170, .86], sh: 42, hat: [100, 51, .82, -6], toy: [138, 155, .68, 10] },
+      wing: [80, 140, 1], tail: [118, 170, .86], sh: 42, hat: [100, 58, .98, -6], toy: [139, 152, .86, 10] },
     grown: { body: [100, 138, 38, 42], belly: [100, 146, 25, 29], head: [100, 70, 1.06], fin: 1.1, arm: [65, 121, 1.1],
-      wing: [80, 130, 1], tail: [124, 164, 1.26], sh: 52, hat: [100, 35, .9, -6], toy: [148, 148, .78, 10] },
+      wing: [80, 130, 1], tail: [124, 164, 1.26], sh: 52, hat: [100, 46, .98, -6], toy: [149, 145, .98, 10] },
   },
   // an aqua egg with white waves and two bubbles
   egg: petShell(45, 55, 124) +
@@ -390,10 +390,10 @@ function petMood(c) {
   return Math.min(c.food, c.clean, c.fun) >= 80 ? 'happy' : 'idle';
 }
 
-// the child's pet as petHTML() draws it, with today's wearables and the cheer / oops reaction faces
+// the child's pet as petHTML() draws it, with its wearables (drawn since P4-07: wearOf in 17-wear.js) and the cheer / oops reaction faces
 function petRigHTML(st = S.stars, mood) {
   const w = S.wear || {};
-  return `<span class="petwrap">${petSVG(S.pet, stage(st), mood || petMood(), { hat: w.hat, toy: w.toy, react: true })}</span>`;
+  return `<span class="petwrap">${petSVG(S.pet, stage(st), mood || petMood(), { hat: wearOf(w.hat), toy: wearOf(w.toy), react: true })}</span>`;
 }
 
 // the bare pet (no wearables), e.g. the growing egg
