@@ -195,9 +195,10 @@ function fluPlay(set, mode) {
     const rec = r.rec && (!timed || right > 0); // no fireworks for a first 60 s run of zero
     const earned = FLU.earn(S.flu, set, today(), rec, right, mode);
     if (earned) ptEarn(earned);
+    const mis = MIS.pay(MIS.done({k: 'sprint'})); // P5-08
     save();
     rec ? (SFX.fanfare(), confetti(40)) : SFX.magic();
-    fluEnd({set, mode, key, timed, sec, right, rec, earned});
+    fluEnd({set, mode, key, timed, sec, right, rec, earned, mis});
   };
 
   // Clock counts only while the page is visible. It starts after a short "ready" beat.
@@ -239,7 +240,7 @@ function fluEnd(r) {
   const lower = !r.timed, e = (S.flu || {})[r.key], bestNow = e && e.best;
   const title = r.timed ? `${r.right} in 60 seconds!` : `20 facts in ${r.sec} s!`;
   const sp = fluSpark(FLU.week(e, lower), lower);
-  const o = GFX.endCard({ rec: r.rec, title, best: `Your best: ${lower ? bestNow + ' s' : bestNow}`, extra: sp ? `<div class="gx-week">${sp}</div>` : '',
+  const o = GFX.endCard({ rec: r.rec, title, best: `Your best: ${lower ? bestNow + ' s' : bestNow}`, extra: (sp ? `<div class="gx-week">${sp}</div>` : '') + (r.mis || ''),
     earn: r.earned ? `${ico('ticket', 28)}<span>+${r.earned / 60} min of game time</span>` : '<span>Free practice, no game time</span>',
     btns: UI.btn('Again', { kind: 'primary', size: 'lg', wide: true, icon: 'replay', id: 'fagain' }) +
       `<div class="rw-two">${UI.btn('Sets', { icon: 'path-math', id: 'fsets' })}${UI.btn('Home', { icon: 'home', id: 'fhome' })}</div>` });

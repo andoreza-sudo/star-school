@@ -1607,7 +1607,7 @@ async function main() {
       const before = await rp.evaluate(() => {
         start('math', 0); G.score = G.n; G.done = G.n;
         return { stars: S.stars, coins: S.coins, stk: Object.values(S.stickers).reduce((a, b) => a + b, 0), bank: pt().bank, n: G.n,
-          wasDone: day().done, r: day().r };
+          wasDone: day().done, r: day().r, md: MIS.count() };
       });
       await rp.evaluate(() => finish());
       const pre = await rp.evaluate(() => {
@@ -1624,16 +1624,17 @@ async function main() {
         return { on: document.querySelectorAll('.rw-rate .rw-st.on').length, stk: document.querySelectorAll('#prz .rw-stk').length,
           earn: T('#earn'), prim: [...document.querySelectorAll('#btns .btn.primary')].map(b => b.id), menu: !!document.querySelector('#btns #menu'),
           bonus: !!document.querySelector('#btns #bonus'), stars: S.stars, coins: S.coins, bank: pt().bank,
-          stkN: Object.values(S.stickers).reduce((a, b) => a + b, 0), mission: day().done, fmt: null };
+          stkN: Object.values(S.stickers).reduce((a, b) => a + b, 0), mission: day().done, md: MIS.count(), fmt: null };
       }, before.n);
       const mission = !before.wasDone && got.mission ? 5 : 0;
+      const mis = got.md - before.md; // P5-08: each mission this round finished gives one sticker (the bonus above is the third mission's)
       const wantCoins = before.n + mission; // first stop is passed in midway, so no world is finished here
-      if (got.stars - before.stars !== before.n + mission || got.coins - before.coins !== wantCoins || got.stkN - before.stk !== 2 + (mission ? 1 : 0))
+      if (got.stars - before.stars !== before.n + mission || got.coins - before.coins !== wantCoins || got.stkN - before.stk !== 2 + mis + (mission ? 1 : 0))
         fail('P4-11 rewards changed: ' + JSON.stringify({ before, got }));
       const gameTime = await rp.evaluate(d => fmtM(d), got.bank - before.bank);
       if (!(got.bank > before.bank) || !got.earn.includes('+' + gameTime + ' of game time') || !got.earn.includes('+' + before.n + ' stars') ||
         !got.earn.includes('coins for the pet shop')) fail('P4-11 earned list: ' + got.earn.slice(0, 160));
-      if (got.on !== 3 || got.stk !== 2 + (mission ? 1 : 0) || got.prim.length !== 1 || !got.menu || !got.bonus) fail('P4-11 finish screen: ' + JSON.stringify(got));
+      if (got.on !== 3 || got.stk !== 2 + mis + (mission ? 1 : 0) || got.prim.length !== 1 || !got.menu || !got.bonus) fail('P4-11 finish screen: ' + JSON.stringify(got));
       const postBad = await layout();
       for (const b of preBad.concat(postBad)) fail('P4-11 finish layout: ' + b);
       // 2. a low score: no stars, the pet cheers, Try again is the primary button, and the tip says how many to get
@@ -6871,6 +6872,178 @@ async function main() {
       network.push(...app.network);
       for (const e of app.errors) fail(e);
       await app.ctx.close();
+    }
+
+    // P5-08 Daily missions v2 (midway save, a 3rd grader). Home shows three mission rows (48 px targets, no sideways scroll, no emoji chrome) at
+    //    380x780 and 1024x600. At 380x780 the three missions are set to a learning round, a Fact Sprint and a Brain Teaser (the fake type of
+    //    tools/lib/bt-fake.js) and each is finished with real taps from its Home row: its sticker is paid once ("Mission done" shows once), the
+    //    row turns into a tick, and after the third the bonus (5 stars, 5 coins, a sticker) is paid once. At 1024x600 the natural draw is
+    //    used and every row opens the thing it names (round, sprint, puzzle, review or mix).
+    {
+      const fake = require('./lib/bt-fake');
+      const look = () => {
+        const vw = document.documentElement.clientWidth, out = [];
+        for (const e of document.querySelectorAll('#app button')) {
+          const r = e.getBoundingClientRect();
+          if (!r.width || e.closest('svg')) continue;
+          if (r.width < 47.5 || r.height < 47.5) out.push('small ' + (e.id || e.className) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
+          if (r.left < -1 || r.right > vw + 1) out.push('outside ' + (e.id || e.className));
+        }
+        if (document.documentElement.scrollWidth > vw + 1) out.push('sideways scroll ' + document.documentElement.scrollWidth);
+        for (const s of document.querySelectorAll('.scroll')) if (s.scrollWidth > s.clientWidth + 1) out.push('sideways scroll in ' + s.className);
+        const box = document.querySelector('#hmmis');
+        if (!box) { if (document.querySelector('.hm')) out.push('no missions list'); } // only Home has the list
+        else {
+          if (box.children.length !== 3) out.push('missions list has ' + box.children.length + ' rows');
+          if (/\p{Extended_Pictographic}/u.test(box.textContent)) out.push('emoji in the missions list');
+          for (const r of box.querySelectorAll('.hm-mi')) {
+            if (r.getBoundingClientRect().height < 47.5) out.push('mission row too low');
+            const t = r.querySelector('.hm-mt b');
+            if (t.scrollWidth > t.clientWidth + 1 || r.scrollWidth > r.clientWidth + 1) out.push('mission text clipped: ' + t.textContent);
+            if (!r.querySelector('svg')) out.push('mission row without a drawn icon');
+          }
+        }
+        return out;
+      };
+      const bad = [];
+      const pa = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
+      const pg = pa.page;
+      const chk = async what => { for (const o of await pg.evaluate('(' + look.toString() + ')()')) bad.push(what + ': ' + o); };
+      await pg.evaluate('(' + fake.install.toString() + ')()');
+      await pg.evaluate(() => {
+        S.grade = 3; S.bt = { daily: { day: today(), done: [], pick: { id: 'zzfake', band: 'C', level: 1 } } };
+        S.day = { d: today(), r: 0, done: false, m: [{ k: 'round', p: 'math', d: 0 }, { k: 'sprint', d: 0 }, { k: 'teaser', d: 0 }] };
+        save(); home();
+      });
+      await pg.waitForSelector('#hmmis');
+      await pg.waitForTimeout(450);
+      await chk('home 380x780');
+      const rows = await pg.evaluate(() => ({ n: document.querySelectorAll('#hmmis .hm-mi').length, btn: document.querySelectorAll('#hmmis button.hm-mi').length,
+        txt: [...document.querySelectorAll('#hmmis .hm-mt b')].map(e => e.textContent), pips: document.querySelector('.hm-ms').textContent }));
+      if (rows.n !== 3 || rows.btn !== 3 || rows.txt.join('|') !== 'Play a Math round|Do a Fact Sprint|Solve a Brain Teaser' || !/0 of 3 missions/.test(rows.pips))
+        bad.push('Home rows: ' + JSON.stringify(rows));
+      const stkN = () => pg.evaluate(() => Object.values(S.stickers).reduce((a, b) => a + b, 0));
+      const base = await pg.evaluate(() => ({ stars: S.stars, coins: S.coins }));
+      const s0 = await stkN();
+      // 1. the learning round
+      await pg.click('#hmmis [data-mi="0"]');
+      await pg.waitForSelector('#prompt');
+      const g1 = await pg.evaluate(() => ({ p: G.path, mix: !!G.mix }));
+      if (g1.p !== 'math' || g1.mix) bad.push('the round row opened ' + JSON.stringify(g1));
+      await playRound(pg, 'P5-08 mission round');
+      await vwait(pg, 7000);
+      const r1 = await pg.evaluate(() => ({ msg: [...document.querySelectorAll('#msgs .rw-msg')].map(e => e.textContent).join('|'), stk: document.querySelectorAll('#prz .rw-stk').length,
+        done: S.day.m.map(x => x.d).join(''), bonus: !!S.day.done }));
+      const n1 = (r1.msg.match(/Mission done: Play a Math round/g) || []).length;
+      if (n1 !== 1 || r1.stk < 3 || r1.done !== '100' || r1.bonus) bad.push('round mission reward: ' + JSON.stringify(r1));
+      if ((await stkN()) - s0 < 3) bad.push('the round mission gave no sticker');
+      await pg.evaluate(() => { G.dead = true; home(); });
+      await pg.waitForSelector('#hmmis');
+      await pg.waitForTimeout(450);
+      await chk('home after one');
+      const h1 = await pg.evaluate(() => ({ done: document.querySelectorAll('#hmmis .hm-mi.done').length, btn: document.querySelectorAll('#hmmis button.hm-mi').length,
+        pips: document.querySelector('.hm-ms').textContent, on: document.querySelectorAll('.hm-pips i.on').length }));
+      if (h1.done !== 1 || h1.btn !== 2 || !/1 of 3 missions/.test(h1.pips) || h1.on !== 1) bad.push('Home after one mission: ' + JSON.stringify(h1));
+      // 2. the Fact Sprint: the row starts a 60 second sprint straight away; every fact is answered right
+      await pg.click('#hmmis [data-mi="1"]');
+      await pg.waitForSelector('#fplay');
+      for (let i = 0; i < 400; i++) {
+        await pg.waitForFunction(() => document.querySelector('#fagain') || (FL && FL.f && !FL.lock), null, { timeout: 15000 });
+        if (await pg.$('#fagain')) break;
+        const c = await pg.evaluate(() => String(FL.f.c));
+        for (const d of c) await pg.click(`.k[data-k="${d}"]`, { timeout: 2000 }).catch(() => {}); // the 60 s may end between two digits
+      }
+      await pg.waitForSelector('#fagain', { timeout: 15000 });
+      const r2 = await pg.evaluate(() => ({ win: document.querySelectorAll('.gx-end .mis-win li').length, txt: (document.querySelector('.gx-end .mis-win') || {}).textContent || '',
+        stk: document.querySelectorAll('.gx-end .mis-win .rw-stk').length, done: S.day.m.map(x => x.d).join(''), bonus: !!S.day.done }));
+      if (r2.win !== 1 || !/Mission done! Do a Fact Sprint/.test(r2.txt) || r2.stk !== 1 || r2.done !== '110' || r2.bonus) bad.push('sprint mission reward: ' + JSON.stringify(r2));
+      await chk('sprint end');
+      await pg.click('#fagain'); // a second sprint pays nothing more
+      await pg.waitForSelector('#fplay');
+      await pg.evaluate(() => { stopFlu(); home(); });
+      await pg.waitForSelector('#hmmis');
+      await pg.waitForTimeout(450);
+      // 3. the Brain Teaser: the row opens today's puzzle; three taps solve it; the bonus is paid with it, once
+      const b0 = await pg.evaluate(() => ({ stars: S.stars, coins: S.coins }));
+      const s1 = await stkN();
+      await pg.click('#hmmis [data-mi="2"]');
+      await pg.waitForSelector('#btstage .fkt');
+      const lit = await pg.evaluate(() => S.bt.cur.puzzle.lit);
+      for (let i = 0; i < 3; i++) await pg.click(`.fkt[data-i="${lit}"]`);
+      await pg.waitForSelector('.bt-win #btnext');
+      const r3 = await pg.evaluate(() => ({ lines: [...document.querySelectorAll('.bt-win .mis-win li')].map(e => e.textContent), stk: document.querySelectorAll('.bt-win .mis-win .rw-stk').length,
+        done: S.day.m.map(x => x.d).join(''), bonus: !!S.day.done, stars: S.stars, coins: S.coins }));
+      if (r3.lines.length !== 2 || !/Mission done! Solve a Brain Teaser/.test(r3.lines[0]) || !/All 3 missions! \+5 stars, \+5 coins/.test(r3.lines[1]) || r3.stk !== 2 ||
+        r3.done !== '111' || !r3.bonus) bad.push('puzzle mission reward and bonus: ' + JSON.stringify(r3));
+      // 3 puzzle stars + 5 bonus stars; 5 coins for the Puzzle of the Day + 5 bonus coins
+      if (r3.stars - b0.stars !== 3 + 5 || r3.coins - b0.coins !== 5 + 5) bad.push('bonus paid wrong: ' + JSON.stringify({ b0, r3 }));
+      if ((await stkN()) - s1 !== 2) bad.push('the third mission and the bonus must give two stickers');
+      await chk('puzzle win');
+      await pg.click('#btagain'); // the same puzzle again: no mission lines, no bonus again
+      await pg.waitForSelector('#btstage .fkt');
+      const lit2 = await pg.evaluate(() => S.bt.cur.puzzle.lit);
+      for (let i = 0; i < 3; i++) await pg.click(`.fkt[data-i="${lit2}"]`);
+      await pg.waitForSelector('.bt-win #btlvls');
+      const again = await pg.evaluate(() => ({ lines: document.querySelectorAll('.bt-win .mis-win li').length, stars: S.stars, coins: S.coins }));
+      if (again.lines !== 0 || again.coins !== r3.coins) bad.push('paid again: ' + JSON.stringify(again));
+      await pg.evaluate(() => { document.querySelectorAll('.bt-win').forEach(e => e.remove()); home(); });
+      await pg.waitForSelector('#hmmis');
+      await pg.waitForTimeout(450);
+      await chk('home after three');
+      const h3 = await pg.evaluate(() => ({ done: document.querySelectorAll('#hmmis .hm-mi.done').length, btn: document.querySelectorAll('#hmmis button.hm-mi').length,
+        pips: document.querySelector('.hm-ms').textContent, on: document.querySelectorAll('.hm-pips i.on').length }));
+      if (h3.done !== 3 || h3.btn !== 0 || !/All missions done/.test(h3.pips) || h3.on !== 3) bad.push('Home after three: ' + JSON.stringify(h3));
+      // the missions stay the same all day: leaving and coming back keeps the list and what is done
+      const keep = await pg.evaluate(() => { const a = JSON.stringify(S.day.m); home(); return a === JSON.stringify(S.day.m); });
+      if (!keep) bad.push('the missions changed on a second visit');
+      network.push(...pa.network);
+      for (const e of pa.errors) fail(e);
+      await pa.ctx.close();
+
+      // 1024x600: the natural draw; every row opens what it names
+      const pb = await openApp(browser, { fixture: 'tricky', width: 1024, height: 600 });
+      const pw = pb.page;
+      await pw.evaluate('(' + fake.install.toString() + ')()');
+      await pw.evaluate(() => { S.grade = 3; S.bt = {}; S.day = {}; save(); home(); });
+      await pw.waitForSelector('#hmmis');
+      await pw.waitForTimeout(450);
+      for (const o of await pw.evaluate('(' + look.toString() + ')()')) bad.push('home 1024x600: ' + o);
+      const kinds = await pw.evaluate(() => S.day.m.map(x => x.k));
+      if (kinds.length !== 3 || new Set(kinds).size !== 3 || !kinds.includes('round')) bad.push('natural draw: ' + kinds.join());
+      const where = async () => pw.evaluate(() => (document.querySelector('#fplay') ? 'sprint' : document.querySelector('#btstage') || document.querySelector('.bt-hub') ? 'puzzle' :
+        typeof G != 'undefined' && G && !G.dead && document.querySelector('#prompt') ? (G.daily ? 'review' : G.mix ? 'mix' : 'round:' + G.path) : 'none'));
+      for (let i = 0; i < 3; i++) {
+        const k = kinds[i];
+        await pw.evaluate(() => { if (typeof G != 'undefined' && G) G.dead = true; stopFlu(); if (window.BT && BT.stop) BT.stop(); home(); });
+        await pw.waitForSelector('#hmmis');
+        await pw.waitForTimeout(450);
+        const bs = await pw.evaluate(i => { const b = document.querySelector(`#hmmis [data-mi="${i}"]`); b.scrollIntoView({ block: 'center' }); return !!b; }, i);
+        if (!bs) { bad.push('no button for ' + k); continue; }
+        await pw.click(`#hmmis [data-mi="${i}"]`);
+        await pw.waitForFunction(() => document.querySelector('#fplay') || document.querySelector('#btstage') || document.querySelector('.bt-hub') || document.querySelector('#prompt'), null, { timeout: 8000 })
+          .catch(() => {});
+        const w = await where();
+        const want = { round: /^round:/, other: /^round:/, perfect: /^round:/, mix: /^mix$/, review: /^review$/, sprint: /^sprint$/, teaser: /^puzzle$/ }[k];
+        if (!want.test(w)) bad.push(`row ${i} (${k}) opened ${w}`);
+      }
+      // a round finished from a row pays its sticker once (the first mission is always a learning round)
+      await pw.evaluate(() => { if (G) G.dead = true; home(); });
+      await pw.waitForSelector('#hmmis');
+      const ri = kinds.indexOf('round');
+      await pw.waitForTimeout(450);
+      const t0 = await pw.evaluate(() => Object.values(S.stickers).reduce((a, b) => a + b, 0));
+      await pw.click(`#hmmis [data-mi="${ri}"]`);
+      await pw.waitForSelector('#prompt');
+      await playRound(pw, 'P5-08 natural round', undefined);
+      await vwait(pw, 7000);
+      const nr = await pw.evaluate(i => ({ n: (document.querySelector('#msgs').textContent.match(/Mission done:/g) || []).length, d: S.day.m[i].d,
+        stk: Object.values(S.stickers).reduce((a, b) => a + b, 0) }), ri);
+      if (nr.n < 1 || nr.d !== 1 || nr.stk - t0 < 3) bad.push('natural round reward: ' + JSON.stringify(nr));
+      network.push(...pb.network);
+      for (const e of pb.errors) fail(e);
+      await pb.ctx.close();
+      if (bad.length) fail('P5-08:\n  ' + bad.join('\n  '));
+      else step('P5-08 missions: three rows at 380x780 and 1024x600 (48 px, no sideways scroll, no emoji), round, Fact Sprint and puzzle each finished from its row with the sticker paid once, the bonus after three once, every row opens what it names');
     }
 
     for (const u of network) fail('network request: ' + u);

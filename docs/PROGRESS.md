@@ -2,9 +2,9 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** P5-07, P5-08, P5-09, P4-17, P5-10, P6-01
+**Next up:** P5-07, P5-09, P4-17, P5-10, P6-01, G-01
 
-**Current version:** v131
+**Current version:** v132
 
 ## Chunk status
 
@@ -110,6 +110,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P2-35 v129
 - P4-16 v130
 - P4-15 v131
+- P5-08 v132
 
 ## Handoff notes
 
@@ -411,6 +412,17 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-11) Icons wanted from P4-03: `balloon` (Bonus game, today `gamepad`), `sparkle` / `confetti`, `unlock` (open padlock for "Next stop unlocked", today `map`), `zap` (a lightning with a spark for boss hits; today `bolt`), `sticker` (single sticker for the prize row), `medal` (the prize rosette as an icon), `heart-half` (boss life bar), `chest` (the treasure chest at icon size, e.g. for the round track where renderQ shows the gift emoji).
 
 ## Log
+
+### P5-08 Daily missions v2 (v132, 2026-11-11, Claude)
+- What changed: three daily missions drawn from a pool that fits the child, replacing "3 rounds today". New `src/js/55-missions.js` (`MIS`, `hmMissions`). Kinds: round (learning round in the weakest subject: lowest mastery, else least played; always one of the three), other (a round in another subject), perfect (every answer right), sprint (one Fact Sprint, K and up), teaser (one Brain Teaser, only if a puzzle type is offered at the grade), review (only when something is due), mix (Mixed Practice). Seeded by day key, name and grade, kept in `S.day.m` so they are the same all day and new at local midnight.
+- Rewards: each mission gives one sticker, once (marked done first); all three give the old bonus (5 stars, 5 coins, sticker) once, via `S.day.done`. Rounds pay in `finish()` (chest, sticker pop and a "Mission done" card); the sprint end card and the puzzle win card show the lines and stickers (`.mis-win`). The puzzle round counter no longer pays the old mission.
+- Home: "Today's missions" list under the hero (drawn icons, subject colours, 64 px rows, a tick card when done); the hero pips now count missions. Tapping goes straight to the round stop, a 60 s sprint, today's puzzle, the review or Mixed Practice.
+- Save: no new top-level field. `S.day.m = [{k,p,d}]` inside `S.day` (reset each day); missing or damaged is drawn again; an old save that finished the old mission today shows all three done and pays nothing more. Added to the ROADMAP save-field table.
+- Tests: named check `missions v2 P5-08` (6 fixtures x 8 grades x 40 days: three distinct doable missions, no teaser without types, no review with nothing due, no pre-K sprint, same all day, different across days, stickers once, bonus once, old and damaged S.day, no top-level field, tokens only). Smoke block `// P5-08` (380x780: round, sprint, puzzle each finished from its Home row, sticker once, bonus once, 48 px, no sideways scroll; 1024x600: natural draw, every row opens what it names). Shots `missions`, `missions-done` (looked at 2x).
+- Test expectations changed: smoke P4-11 "rewards changed" now adds one sticker per mission finished in that round (stars and coins unchanged apart from the bonus). Reason: a perfect round can now finish missions.
+- Also: `tools/build.py` stale-file cleanup regex is now `[a-z0-9]+` so the old `gen2.vNN.js` is deleted (it was left behind since A11c).
+- Merge: built on branch P5-08-missions from e0a9a86 (v128); VER v129 is provisional. Conflicts to expect: `tools/build.py` (VER), `src/js/46-home.js` (hero, home()), `src/js/50-round.js` (finish), `tools/test.js` (new check before the report), `tools/smoke.js` (new block before the final network check; P4-11 expectation), `tools/shots.js`, `docs/ROADMAP.md` table, `Chunk status` and this log, built files (rebuild, `git add -A`). P5-09 (game-time rules) may want to price missions.
+- Merge: renumbered v129 -> v132 at merge, on top of P2-35, P4-16 and P4-15.
 
 ### P4-15 Object art set C, 40 pictures (v131, 2026-11-11, Claude)
 - What changed (DESIGN_SYSTEM 6.5): 40 new drawings in `ART`, in the style of sets A and B (shade rim, base moved toward the top-left light, highlight, white glints, deep accents, contact shadows, `--a-*` roles only, faces only on animals, the snowman's coal eyes and carrot nose being part of what he is): pizza, snowflake, elephant, icecream, beach, rabbit, sunflower, giraffe, road, tub, lion, backpack, dish, school, snowman, window, shell, cap, shoes, eraser, scissors, soap, sofa, paper, chick, spoon, pants, butterfly, church, motorcycle, leaf, door, sheep, umbrella, storm, boat, clock, books, lamp, gamepad. No new colour roles.
