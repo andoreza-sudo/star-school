@@ -47,7 +47,7 @@ eval(js+`
 S.name='Ava';S.buddy='Ben';G={built:[]};
 GEN={n:0,gen:[],label:[],say:[],html:[],choices:[],skills:SK,paths:PATHS,nodes:NODES};
 const BADHTML=/\\bundefined\\b|\\bNaN\\b|\\[object |\\bnull\\b/;
-for(const id in SK){for(let lv=1;lv<=SK[id].max;lv++)for(let i=0;i<3000;i++){
+for(const id in SK){for(let lv=1;lv<=SK[id].max;lv++){if(skLvEmpty(id,lv))continue;for(let i=0;i<3000;i++){
  const q=SK[id].gen(lv),w=id+' L'+lv;GEN.n++;
  if(q.ans===undefined)GEN.gen.push(w+': no ans');
  if(typeof q.label!=='string'||!q.label.trim())GEN.label.push(w+': empty label');
@@ -68,7 +68,7 @@ for(const id in SK){for(let lv=1;lv<=SK[id].max;lv++)for(let i=0;i<3000;i++){
  else if(q.kind=='spell'){for(const x of kindProblems(q))GEN.gen.push(w+': '+x)}
  else GEN.gen.push(w+': unknown kind '+q.kind);
  try{hintHTML(q)}catch(e){GEN.gen.push(w+': hintHTML threw '+e.message)}
-}}
+}}}
 `);
 const gp=a=>({problems:uniq(a),note:GEN.n+' questions'});
 run('generators: answers, choices, BAD filter, hints',()=>gp(GEN.gen));
@@ -92,7 +92,7 @@ run('skills: every level is reachable from some node',()=>{
   const used=new Set(),p=[];
   for(const path in GEN.nodes)for(const n of GEN.nodes[path])used.add(n.sk+':'+n.lv);
   // Levels reserved for P2-04 (Treasure Bay: arr 1, story 4). They have no stop yet; until P2-04 ships they ask like the next level up.
-  const RESERVED={frac:[6,7,8]}; // arr 1 and story 4 are Treasure Bay's (P2-04); frac 6-8 get their stops in P2-10 (frac 1 is Clock Tower's)
+  const RESERVED={frac:[6,7,8],comp:[4],info:[2]}; // arr 1 and story 4 are Treasure Bay's (P2-04); frac 6-8 get their stops in P2-10 (frac 1 is Clock Tower's) // comp 4 and info 2 (grade 3) have no passages in this chunk; their stops come with P2-26
   for(const id in GEN.skills)for(let lv=1;lv<=GEN.skills[id].max;lv++)if(!used.has(id+':'+lv)&&!(RESERVED[id]||[]).includes(lv))p.push(id+' level '+lv+' has no map node');
   return{problems:p};
 });
@@ -280,6 +280,7 @@ run('seeded rnd: genQ(sk, lv, seed) is reproducible',()=>{
   const out=eval(js+`
   const out={ok:0,bad:[]},eq=require('util').isDeepStrictEqual;
   for(const id in SK)for(let lv=1;lv<=SK[id].max;lv++){
+    if(skLvEmpty(id,lv))continue;
     let varied=new Set();
     for(let s=1;s<=200;s++){
       const a=genQ(id,lv,s),b=genQ(id,lv,s);out.ok++;
@@ -455,7 +456,7 @@ run('kinds: every question passes KIND[q.kind].validate; unknown kind fails',()=
   for(const k in KIND)for(const f of NEED)if(typeof KIND[k][f]!=='function')out.bad.push('KIND.'+k+'.'+f+' missing');
   // every skill and level, 300 seeds each, plus Speed Race math questions (made inline, not by a skill)
   const qs=[];
-  for(const id in SK)for(let lv=1;lv<=SK[id].max;lv++)for(let s=1;s<=300;s++)qs.push([id+' L'+lv,genQ(id,lv,s)]);
+  for(const id in SK)for(let lv=1;lv<=SK[id].max;lv++)if(!skLvEmpty(id,lv))for(let s=1;s<=300;s++)qs.push([id+' L'+lv,genQ(id,lv,s)]);
   for(let i=0;i<300;i++)qs.push(['race math',raceQ('math')]);
   const KBS=${JSON.stringify(require('./lib/kb-samples.js'))};
   for(const w in KBS)qs.push(['P1-04 sample '+w,KBS[w]]);
@@ -1564,7 +1565,7 @@ run('review: migration 5 keeps progress and shrinks the save, exact rebuilds, 60
     SK.__ps={t:'Passage',e:'x',area:'read',max:1,bank:'demo',gen:lv=>genPassage('demo',lv)};
     bankRound(); // live play: bank choice is by least recently shown, not by seed
     let nb=0;
-    for(const sk in SK)for(let lv=1;lv<=SK[sk].max;lv++)for(let s=1;s<=4;s++){
+    for(const sk in SK)for(let lv=1;lv<=SK[sk].max;lv++)if(!skLvEmpty(sk,lv))for(let s=1;s<=4;s++){
       S.rev=[];
       const q=genQ(sk,lv,s*7919+lv);
       const it=revMiss(q,D0);
@@ -1622,7 +1623,7 @@ run('review: migration 5 keeps progress and shrinks the save, exact rebuilds, 60
         if(m.box==4){delete model[k];left++}else{m.box++;m.due=d+INT[m.box]}
       }
       for(let j=0;j<t%3;j++){
-        const sk=skills[seed%skills.length],q=genQ(sk,1+seed%SK[sk].max,seed++),k=revKey(q);
+        const sk=skills[seed%skills.length],q=genQ(sk,skLvPick(sk,1+seed%SK[sk].max),seed++),k=revKey(q);
         revMiss(q,d);if(model[k]){model[k].box=0;model[k].due=d}else model[k]={box:0,due:d};qs[k]=1;
       }
       maxLen=Math.max(maxLen,S.rev.length);
@@ -5171,6 +5172,172 @@ run('step hints (P2-08): every step of 3,000 random problems per algorithm is ri
   for(let s=1;s<=200;s++){const bq=genQ('big',5,s);if(bq.hint.k!=='steps'||bq.hint.steps.length!==3)B('big5 seed '+s+': hint '+bq.hint.k);}
   bad;`);
   return{problems:p.concat(out),note:'3,000 problems each: add, sub, mul pp, mul std, div, equiv, common bottom'};
+});
+
+// ---- P2-27 4th grade passages ----
+run('passages grade 4 P2-27',()=>{
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const body=function(){
+    const out=[],b=m=>{if(out.length<30&&!out.includes(m))out.push(m)};
+    // 1. data: the grade validator (words, sentences, reading level, evidence, question types incl. theme / text structure), counts
+    for(const id of ['comp','info'])for(const m of passageProblems(id))b(m);
+    for(const m of compProblems(4))b(m);
+    const g4=COMP.filter(p=>p.g==4);
+    if(g4.length!==10||g4.filter(p=>p.type=='f').length!==5)b('grade 4 needs 5 fiction and 5 nonfiction passages, has '+g4.length);
+    if(g4.reduce((a,p)=>a+p.qs.length,0)!==50)b('grade 4 questions: '+g4.reduce((a,p)=>a+p.qs.length,0));
+    if(new Set(COMP.map(p=>p.id)).size!==COMP.length)b('two passages share an id');
+    if(new Set(COMP.map(p=>p.title)).size!==COMP.length)b('two passages share a title');
+    if(PASS.comp.filter(x=>x.lv==5).length!==5||PASS.info.filter(x=>x.lv==3).length!==5)b('PASS levels: comp 5 and info 3 need 5 passages each');
+    if(COMPSPEC[4].words[0]<130||COMPSPEC[4].words[1]>180)b('grade 4 word limits are outside CURRICULUM 130-180');
+    for(const p of g4){
+      const need=p.type=='f'?'theme':'structure';
+      if(!p.qs.some(q=>q.t==need))b(p.id+': no '+need+' question');
+      if(p.qs.some(q=>q.t==(p.type=='f'?'structure':'theme')))b(p.id+': has a '+(p.type=='f'?'structure':'theme')+' question for the wrong kind of passage');
+      for(const q of p.qs){
+        const all=[q.a,...q.d].map(x=>x.toLowerCase());
+        if(new Set(all).size!==all.length)b(p.id+': repeated choice in "'+q.q+'"');
+        if(q.d.length!==3)b(p.id+': needs 3 wrong choices in "'+q.q+'"');
+      }
+    }
+    // the validator reads need per kind and catches a missing theme / structure question
+    {
+      const n0=COMP.length,trial=(src,edit,want)=>{
+        const c=JSON.parse(JSON.stringify(COMP.find(p=>p.id==src)));c.id=src.slice(0,3)+'9'+'9';edit(c);
+        COMP.push(c);const m=compProblems(4).filter(x=>x.startsWith(c.id));COMP.length=n0;
+        if(!m.some(x=>x.includes(want)))b('validator missed "'+want+'" in '+src+': '+m.join(' | '));
+      };
+      trial('g4f01',c=>{c.qs[4].t='detail'},'no theme question');
+      trial('g4n01',c=>{c.qs[4].t='detail'},'no structure question');
+      trial('g4f01',c=>{c.text=c.text.slice(0,4)},'words, needs 130 to 180');
+    }
+    // 2. 3,000 questions per level: panel, one right answer, hint, say, label, renders, rebuilds
+    const N=3000,labels=new Map(),texts=new Set();
+    for(const [sk,lv] of [['comp',5],['info',3]]){
+      for(let i=0;i<N;i++){
+        const q=genQ(sk,lv,i*7919+31),w=sk+lv;
+        if(!q.ctx||!q.ctx.text||!q.ctx.title)b(w+': no passage panel');
+        const vals=q.choices.map(c=>String(c.v));
+        if(vals.filter(v=>v===String(q.ans)).length!==1)b(w+': not exactly one right choice: '+q.label);
+        if(q.choices.length!==4)b(w+': '+q.choices.length+' choices');
+        if(!q.hint||q.hint.k!=='text'||!q.hint.s)b(w+': no hint');
+        if(typeof q.say!=='string'||!q.say.trim())b(w+': no say');
+        if(!q.label||q.label.length>=70)b(w+': label '+q.label);
+        if(labels.has(q.label)&&labels.get(q.label)!==q.ans)b(w+': label '+q.label+' has two answers');
+        labels.set(q.label,q.ans);texts.add(q.ctx.title);
+        for(const m of kindProblems(q))b(w+': '+m);
+        if(i<200){
+          try{KIND.choice.render(q)}catch(e){b(w+': render threw '+e.message)}
+          if(/undefined|NaN|\[object/.test(q.html))b(w+': bad html');
+          if(JSON.stringify({...bankRebuild(q.bk),sk:0,lv:0,seed:0})!==JSON.stringify({...q,sk:0,lv:0,seed:0}))b(w+': bankRebuild differs');
+        }
+      }
+    }
+    if(texts.size!==10)b('3,000 samples reached '+texts.size+' of 10 passages');
+    if(labels.size!==50)b('50 questions expected, labels '+labels.size);
+    // 3. hints: the evidence quote for detail, sequence, vocab and inference (short enough), the type's own line for the others
+    for(const sk of ['comp','info'])PASS[sk].forEach(p=>{
+      if(p.g!==4)return;
+      const x=COMP.find(c=>c.id==p.id);
+      p.qs.forEach((it,j)=>{
+        if(!it.hint||it.hint.length>140)b(p.id+' q'+j+': hint length');
+        const quote=['detail','sequence','vocab','infer'].includes(it.t);
+        if(quote!==it.hint.startsWith('Look back at the story: "'))b(p.id+' q'+j+' ('+it.t+'): hint '+it.hint);
+        if(quote&&!it.hint.includes(x.text[it.ev[0]]))b(p.id+' q'+j+': hint misses the first evidence sentence');
+      });
+    });
+    // 4. rounds: two passages, five questions each, in order; live play shows every passage within three rounds
+    bankRound();
+    for(const [sk,lv] of [['comp',5],['info',3]]){
+      const seen=new Set();
+      for(let r=0;r<3;r++){
+        const rd=compRound(sk,lv);
+        if(rd.length!==10)b(sk+' round has '+rd.length+' questions, expected 10');
+        const titles=[...new Set(rd.map(q=>q.ctx.title))];
+        if(titles.length!==2)b(sk+' round has '+titles.length+' passages');
+        titles.forEach(t=>seen.add(t));
+        titles.forEach((t,k)=>{
+          const part=rd.slice(k*5,k*5+5),src=COMP.find(c=>c.title==t);
+          if(!part.every(q=>q.ctx.title==t))b('round: questions of "'+t+'" are not in a block');
+          if(part.map(q=>q.label).join('|')!==src.qs.map((q,j)=>t+' #'+(j+1)+' '+q.t).join('|'))b('round: questions of "'+t+'" not in order');
+        });
+        if(!rd.every(q=>q.sk==sk&&q.lv==lv&&q.seed===rd[0].seed))b('round: questions not stamped');
+      }
+      if(seen.size!==5)b('three live '+sk+lv+' rounds reached '+seen.size+' of 5 passages');
+    }
+    bankReset();
+    // 5. skills and stops: comp 5 and info 3 are the last comp/info stops of Dragon Library; grade 3 levels (comp 4, info 2) have no passages here
+    if(SK.comp.max<5||SK.info.max<3)b('skills comp/info max '+SK.comp.max+' '+SK.info.max);
+    const lib=PATHS.read.worlds.find(w=>w.id=='r_library');
+    if(!lib)b('Dragon Library is missing');
+    else{
+      const ci=lib.nodes.filter(n=>n[0]=='comp'||n[0]=='info').map(n=>n[0]+n[1]);
+      if(ci[ci.length-2]!=='comp5'||ci[ci.length-1]!=='info3')b('comp5 and info3 must be the last comp/info stops of Dragon Library: '+ci.join(' '));
+      if(lib.nodes.some(n=>n[2].length>22))b('a Dragon Library stop title is too long');
+      const ids=lib.nodes.map(n=>n[0]+n[1]);
+      if(ids.indexOf('spell5')<0||ids.indexOf('spell5')>ids.indexOf('comp5'))b('spell5 must come before comp5: '+ids.join(' '));
+    }
+    // 6. save safety (fixtures): stars are keyed by stop id, so no star moves, nothing re-locks, the new stops in a finished world are NEW and never current
+    const store={};
+    global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+    const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
+    S.name='Ava';S.buddy='Ben';G={built:[]};
+    const snap=()=>{const o={};NODES.read.forEach((n,i)=>{o[nid(n)]={st:getSt('read',i),open:unlocked('read',i),pass:passed('read',i),prog:worldHasProgress('read',n.wi),
+      g:PATHS.read.worlds[n.wi].g,nw:stopNew('read',i)}});return o};
+    const ORIG=PATHS.read.worlds,NEW=/^(comp5|info3)$/;
+    const without=()=>ORIG.map(w=>w.id!=='r_library'?w:{...w,nodes:w.nodes.filter(n=>!NEW.test(n[0]+n[1]))});
+    let checked=0,moved=0;
+    const compare=label=>{
+      const maps=JSON.stringify(S.maps);
+      const now=snap(),cur=nid(NODES.read[curNode('read')]);
+      PATHS.read.worlds=without();buildNodes('read');
+      const old=snap(),curOld=nid(NODES.read[curNode('read')]);
+      PATHS.read.worlds=ORIG;buildNodes('read');
+      for(const k in old){
+        checked++;
+        if(!now[k]){b(label+': stop '+k+' disappeared');continue}
+        if(now[k].st!==old[k].st)b(label+': stars of '+k+' changed');
+        if(old[k].pass&&!now[k].open)b(label+': passed stop '+k+' re-locked');
+        if(old[k].open&&!now[k].open)b(label+': '+k+' locked by the new stops');
+      }
+      for(const k in now)if(!(k in old)&&NEW.test(k)&&now[k].st)b(label+': new stop '+k+' has stars');
+      if(JSON.stringify(S.maps)!==maps)b(label+': loading changed the map');
+      // the map opens on the same stop, except for a child in the middle of Dragon Library who has done every earlier stop but not the boss
+      if(cur!==curOld){
+        moved++;
+        const ok=NEW.test(cur)&&curOld==='boss_r_library'&&!old['boss_r_library'].pass;
+        if(!ok)b(label+': map opens on '+cur+' (was '+curOld+')');
+      }
+      return{now,old,cur,curOld};
+    };
+    for(const name of ['fresh','midway','maxed','tricky','legacy-single-map','legacy-index-maps'])
+      for(const g of [null,0,1,2,3,4,5,6]){
+        const raw=fx(name);load(raw.length>2?raw:null);if(g!==null)S.grade=g;
+        compare(name+' g'+g);
+      }
+    for(const g of [4,5,6]){
+      load(null);S.grade=g;
+      for(const n of NODES.read)if(n.wid!=='r_island'&&n.wid!=='r_legend'&&!NEW.test(nid(n)))S.maps.read[nid(n)]=2;
+      for(const k of ['comp5','info3'])delete S.maps.read[k];
+      const r=compare('finished Dragon Library g'+g);
+      for(const k of ['comp5','info3']){
+        const i=NODES.read.findIndex(n=>nid(n)===k);
+        if(!stopNew('read',i))b(k+' does not show NEW for a finished Dragon Library');
+        if(!unlocked('read',i))b(k+' is locked for a finished Dragon Library');
+        if(r.cur===k)b(k+' became the current stop of a finished Dragon Library');
+      }
+      const before=JSON.stringify(S.maps.read);
+      setSt('read',NODES.read.findIndex(n=>nid(n)==='comp5'),3);
+      const after=JSON.parse(JSON.stringify(S.maps.read));
+      if(after.comp5!==3||JSON.stringify({...after,comp5:undefined})!==JSON.stringify({...JSON.parse(before),comp5:undefined}))b('passing comp5 changed another stop');
+    }
+    // mastery order follows the map for the stops that exist (levels 4 and 2 may be absent until grade 3 ships)
+    for(const sk of ['comp','info']){const ns=NODES.read.filter(n=>n.sk===sk);
+      ns.forEach((n,i)=>{if(harder(n)!==(ns[i+1]||null)||easier(n)!==(ns[i-1]||null))b('harder/easier must follow map order at '+sk+n.lv)})}
+    return{out,checked,moved,words:g4.map(p=>p.text.flatMap(bankWords).length),fk:g4.map(p=>compFK(p.text)),sent:g4.map(p=>p.text.flatMap(bankWords).length/p.text.length)};
+  };
+  const r=eval(js+';('+body.toString()+')()');
+  const mx=a=>Math.max(...a),mn=a=>Math.min(...a);
+  return{problems:r.out,note:'10 passages, 50 questions; words '+mn(r.words)+'-'+mx(r.words)+', reading grade '+mn(r.fk).toFixed(1)+'-'+mx(r.fk).toFixed(1)+', words per sentence up to '+mx(r.sent).toFixed(1)+'; '+r.checked+' stop checks, current stop moved on '+r.moved+' loads'};
 });
 
 // ---- report ----

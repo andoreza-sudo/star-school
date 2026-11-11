@@ -427,6 +427,9 @@ const SCREENS = {
   'story-info': { run: compShot('info', 1, 'g2n01', 1) },
   'story-hint': { run: compShot('comp', 3, 'g2f01', 1, 'hint') },
   'story-closed': { run: compShot('comp', 3, 'g2f05', 3, 'closed') },
+  // P2-27 (4th grade): the longest story and a nonfiction passage with the panel open, at the question that is read with the most text above it
+  'story4-comp': { run: compShot('comp', 5, 'g4f03', 2, null, 4) },
+  'story4-info': { run: compShot('info', 3, 'g4n03', 2, null, 4) },
   // ---- P2-22 vocabulary A: one question per level (a fixed seed; level 1 and 2 pick one with a picture); vocab-hint opens Help ----
   ...Object.fromEntries([1, 2, 3, 4, 5].map(lv => ['vocab-' + lv, { run: vocabShot(lv) }])),
   // P2-23 vocabulary B: levels 6-10 (no pictures; level 7 shows the bold word)
@@ -678,15 +681,15 @@ function clockShot(sk, lv, seed, hint) {
 }
 
 // P2-25: one question of a 2nd grade passage (by passage id and question number) through the real round engine.
-function compShot(sk, lv, id, qi, mode) {
+function compShot(sk, lv, id, qi, mode, grade = 2) {
   return async p => {
-    await p.evaluate(([sk, lv, id, qi]) => {
-      S.name = 'Ava'; setGrade(2);
+    await p.evaluate(([sk, lv, id, qi, grade]) => {
+      S.name = 'Ava'; setGrade(grade);
       window.say = () => {};
       start('read', NODES.read.findIndex(n => n.sk === sk && n.lv === lv));
       const bp = PASS[sk].findIndex(x => x.id === id);
       G.q = genPassage(sk, lv, { bp, qi, s: 5 }); G.q.sk = sk; G.q.lv = lv; renderQ();
-    }, [sk, lv, id, qi]);
+    }, [sk, lv, id, qi, grade]);
     if (mode === 'hint') await p.click('#hb');
     if (mode === 'closed') await p.click('.bctx-h');
   };

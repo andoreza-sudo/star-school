@@ -2244,6 +2244,49 @@ async function main() {
       else step(`P2-08: step hints for big5 and every builder at 380x780, 600x960, 1024x600: ${seen8} steps one per tap, "Next step" then "Help", the last step asks, every step fits the card with no sideways scroll; a wrong answer keeps the step`);
     }
 
+    // P2-27 4th grade passages at 380x780: a 4th grader who has done everything before Longer Stories plays comp 5 and info 3 with real taps.
+    //    The longer passages (130-180 words) must leave the question line and the choices visible beside the open panel; 10/10 saves stars.
+    {
+      const cp27 = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
+      const pg = cp27.page;
+      await pg.evaluate(() => {
+        S.grade = 4;
+        // every world before Dragon Library, and every Dragon Library stop before the two new ones (spell, gram and vocab stops)
+        NODES.read.forEach(n => { if (n.wid !== 'r_library' && n.wid !== 'r_island' && n.wid !== 'r_legend' || n.wid === 'r_library' && n.sk !== 'boss' && !['comp5', 'info3'].includes(nid(n))) S.maps.read[nid(n)] = S.maps.read[nid(n)] || 2; });
+        save();
+      });
+      for (const [id, sk, lv] of [['comp5', 'comp', 5], ['info3', 'info', 3]]) {
+        const at = await pg.evaluate(id => { const i = NODES.read.findIndex(n => nid(n) === id); return { i, w: NODES.read[i].wi }; }, id);
+        await pg.evaluate(() => { if (G) G.dead = true; home(); });
+        await pg.click('.game[data-p="read"]');
+        await pg.waitForSelector('.wchip.on');
+        await pg.click(`.wchip[data-w="${at.w}"]`);
+        await pg.waitForSelector(`.wchip.on[data-w="${at.w}"]`);
+        await pg.click(`.node[data-n="${at.i}"]`);
+        await pg.waitForSelector('#prompt');
+        // every question of the round: question line and the four buttons inside the screen, panel open, no sideways scroll
+        const lay = await pg.evaluate(() => {
+          const r = e => e.getBoundingClientRect(), d = document.querySelector('.bctx'), pr = document.querySelector('#prompt');
+          const chs = [...document.querySelectorAll('.ch')];
+          return { sk: G.sk, lv: G.lv, n: G.n, w: document.documentElement.scrollWidth, open: !!(d && d.open),
+            words: d ? d.querySelectorAll('.bctx-p .w').length : 0, ch: chs.length,
+            min: Math.min(...chs.map(e => Math.min(e.offsetWidth, e.offsetHeight))),
+            qTop: Math.round(r(pr).top), qBottom: Math.round(r(pr).bottom), qh: Math.round(r(pr).height), vh: innerHeight,
+            chBottom: Math.round(Math.max(...chs.map(e => r(e).bottom))), panelH: d ? Math.round(r(d).height) : 0 };
+        });
+        if (lay.sk !== sk || lay.lv !== lv || lay.n !== 10 || lay.w > 380 || !lay.open || lay.words < 120 || lay.ch !== 4 || lay.min < 48 || lay.qh < 10 || lay.qTop < 0 || lay.qBottom > lay.vh || lay.chBottom > lay.vh)
+          fail('P2-27 ' + id + ' first question layout: ' + JSON.stringify(lay));
+        await playRound(pg, 'P2-27 ' + id, 10);
+        const st = await pg.evaluate(id => S.maps.read[id] || 0, id);
+        if (st < 1) fail('P2-27 ' + id + ' did not save stars');
+      }
+      step('P2-27: Longer Stories (comp 5) and Learn More Facts (info 3) played with real taps at 380x780: passage panel open with the question and four 48 px buttons on screen, no sideways scroll, 10/10 saved stars');
+      await vwait(pg, 500);
+      network.push(...cp27.network);
+      for (const e of cp27.errors) fail(e);
+      await cp27.ctx.close();
+    }
+
     for (const e of errors) fail(e);
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');

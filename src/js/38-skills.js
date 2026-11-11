@@ -25,8 +25,8 @@ const SK={
  pos:{t:'Where Is It',e:'📌',area:'math',max:1,gen:genPos},
  meas:{t:'Measuring',e:'📏',area:'math',max:4,gen:lv=>lv==4?ffMeas4():lv==3?genBayMeas3():lv==1?genMeas(lv):genMeas2(lv)}, // 1 Shape Garden, 2 Clock Tower, 3 Treasure Bay, 4 Fraction Forest
  mult:{t:'Equal Groups',e:'✖️',area:'math',max:2,gen:genMult},
- comp:{t:'Story Time',e:'📗',area:'read',max:3,gen:genCompLv,round:compRoundLv}, // levels 1-2 picture stories, 3+ passages (37-comp.js)
- info:{t:'Learn About It',e:'🔍',area:'read',max:1,gen:lv=>genPassage('info',lv),round:lv=>compRound('info',lv)},
+ comp:{t:'Story Time',e:'📗',area:'read',max:5,gen:genCompLv,round:compRoundLv}, // levels 1-2 picture stories, 3+ passages (37-comp.js)
+ info:{t:'Learn About It',e:'🔍',area:'read',max:3,gen:lv=>genPassage('info',lv),round:lv=>compRound('info',lv)},
  add:{t:'Adding',e:'➕',area:'math',max:6,gen:lv=>lv==5?genAdd5():lv==6?genAdd6():genAddK(lv)},
  miss:{t:'Missing Number',e:'❓',area:'math',max:2,gen:genMiss},
  sub:{t:'Take Away',e:'➖',area:'math',max:7,gen:lv=>lv==5?genBaySub5():lv==6?ffSub6():lv==7?ffSub7():genSub(lv)}, // 5 Treasure Bay, 6-7 Fraction Forest

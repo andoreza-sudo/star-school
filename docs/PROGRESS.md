@@ -4,9 +4,9 @@ The running record of what has shipped. Newest entry first. Every chunk adds one
 
 **Next up:** P2-24, P2-08, P2-21, P2-23
 
-**Next up:** P2-09 to P2-14, P2-26 to P2-29
+**Next up:** P2-09, P2-10, P2-26, P2-28, P2-29
 
-**Current version:** v84
+**Current version:** v85
 
 ## Chunk status
 
@@ -65,6 +65,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P2-21 v82
 - P2-23 v83
 - P2-08 v84
+- P2-27 v85
 
 ## Handoff notes
 
@@ -277,6 +278,21 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-11) Icons wanted from P4-03: `balloon` (Bonus game, today `gamepad`), `sparkle` / `confetti`, `unlock` (open padlock for "Next stop unlocked", today `map`), `zap` (a lightning with a spark for boss hits; today `bolt`), `sticker` (single sticker for the prize row), `medal` (the prize rosette as an icon), `heart-half` (boss life bar), `chest` (the treasure chest at icon size, e.g. for the round track where renderQ shows the gift emoji).
 
 ## Log
+
+### P2-27 4th grade passages (v85, 2026-11-11, Claude)
+- What changed: `COMPSPEC[4]` and 10 original grade 4 passages (5 stories g4f01-g4f05, 5 nonfiction g4n01-g4n05), 5 questions each = 50 questions, appended at the end of `src/data/d-comp.js` (nothing reordered). Question types per CURRICULUM E-comp grade 4: main idea, inference, summary choice, vocabulary in context, and theme (stories) or text structure (nonfiction: sequence, compare and contrast, cause and effect, problem and solution, description).
+- Passages (words): The Tuba Problem 141, The Whale Book 176, Lena's Rainy Day Stand 137, The Big Crumb 134, Room 12 136; How Bees Make Honey 138, Frogs and Toads 135, Why the Moon Changes 142, Lighthouses 131, The Clever Octopus 135. Reading level Flesch-Kincaid 3.4-5.9 (limit 7), at most 16 words per sentence on average and 24 in any sentence. Fiction has a clear problem and solution; nonfiction is settled fact only.
+- Framework change (small): `compProblems` in `37-comp.js` now accepts `need` either as a list or as `{f:[...],n:[...]}`, because grade 4 needs theme only for stories and text structure only for nonfiction (five questions cannot hold both). Grade 2 keeps the list. Header comment of 37-comp.js updated; `skLvEmpty` and `skLvPick` (end of 37-comp.js) let tests skip a passage level that has no passages yet.
+- Skills and stops: `SK.comp.max` 5 and `SK.info.max` 3 (38-skills.js). Two stops appended at the end of `r_library` (Dragon Library) in 42-paths.js: `['comp',5,'Longer Stories']` and `['info',3,'Learn More Facts']`, after Spell Word Parts. Stars are keyed by stop id; no migration. A child who had finished Dragon Library sees both as NEW and open; the map does not open on them.
+- Grade 3 gap: comp 4 and info 2 have no passages on this base (P2-26 writes them). Asking for them throws "passages ... has none at level", so every test that loops levels 1..max now skips a level that has no passages (`skLvEmpty`): the generator fuzz, the 200-seed variety check, the 300-seed all-skills check, the review-box check, and the review simulation (`skLvPick` picks the nearest lower level). The "every level is reachable from some node" check lists comp 4 and info 2 as RESERVED until P2-26 adds their stops (when it merges, the entries are harmless). Nothing in the app asks for those levels: no stop uses them. If P2-26 merges first, these skips never trigger and can be left.
+- Test expectation changed: the P2-25 smoke block set up its child by marking only sight5, pic6 and build6 done, so the map opened on gram2 (Word Workshop has grammar and vocabulary stops since P2-20/22) and the check "map opens on comp3" failed on this base; it now marks every Word Workshop stop except comp3, info1 and the boss. No other expectation changed.
+- Choice length: choices are limited to 60 characters (BANKLIM), so summary choices are short sentences.
+- Tests: `test.js` named check "passages grade 4 P2-27": grade validator, 3 validator trials (missing theme, missing structure, too short), 3,000 seeded questions each for comp 5 and info 3 with zero kindProblems, hints (quote the evidence for infer and vocab, at most 140 characters), labels, say, bankRebuild, live rounds reach all 5 passages of each in 3 rounds, and the fixture save-safety check against a map without the two stops (6 fixtures x 8 grades, plus a finished Dragon Library at grades 4, 5, 6: no star moves, nothing re-locks, NEW and never current). Stop order is checked on comp/info stops only so other chunks' stops do not break it. The existing P2-25 check loops over every grade that has passages and covers grade 4 too.
+- Smoke `// P2-27` (380x780): a 4th grader who did everything before Longer Stories plays comp 5 and info 3 with real taps; the passage panel is open (120+ words), the question line and the four 48 px choices are on screen, no sideways scroll, 10/10 saves stars.
+- Screenshots checked (380x780): story4-comp (Lena's Rainy Day Stand) and story4-info (Why the Moon Changes): the passage scrolls inside the 24vh panel, the question line and all four choices stay visible. A first title ("Why the Moon Changes Shape") wrapped to two lines and clipped the Hear it / Help row, so titles are kept to one line at this width (about 22 characters).
+- Files: src/data/d-comp.js, src/js/37-comp.js, 38-skills.js, 42-paths.js, tools/test.js, smoke.js, shots.js (compShot takes a grade; two screens), build.py (VER v85, provisional), docs/PROGRESS.md, built output.
+- Merge: built from P2-25 (d952e50) in parallel with P2-26 (grade 3). Both append to d-comp.js and edit 38-skills.js (max) and 42-paths.js: keep SK.comp.max at the highest level and keep each world's stops in CURRICULUM order. Renumber VER at merge.
+- Merge: built on a parallel branch, renumbered v84 -> v85 at merge.
 
 ### P2-08 Step-by-step hint engine (v76, 2026-11-11, Claude)
 - What changed (CURRICULUM M-hints, ROADMAP P2-08): a generic `hint.k='steps'` renderer (`hintSteps` in `src/js/39-hints.js`) and step builders in the new `src/js/39b-steps.js`: `stepsAdd` (column addition with carries, 2+ addends, decimals lined up on the point), `stepsSub` (regrouping marks: crossed digit with the new value above, across zeros too; decimals), `stepsMul` ('pp' partial products, default up to 3x2 digits; 'std' standard algorithm with carries, placeholder zeros, then "add the rows"), `stepsDiv` (long division: divide, then multiply and subtract, bring down; remainder in the last step), `stepsEquivFrac`, `stepsCommonDen` ('+', '-', 'cmp'), `stepsStory` (text-only steps). A step is `{html, say, c}` (c records the computation for the tests). The last step never shows the answer: it asks the last small computation with a "?" ("Hundreds: 1 + 2 = ?", "25 − 24 = ? That is the remainder").
