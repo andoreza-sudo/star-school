@@ -393,13 +393,20 @@ run('streak calendar: rest day, month and year change, trim, clock back, missing
 });
 
 // ---- 12: icon set and drawing rules (P4-02, DESIGN_SYSTEM 5) ----
-run('icons: first 40 present, drawing rules, every ico() name exists',()=>{
+run('icons: first 40 and P4-03 set present, drawing rules, two tones, every ico() name exists',()=>{
   const p=[];
   const ic=eval(fs.readFileSync(path.join(SRC,'js','15-icons.js'),'utf8')+';({ICONS,ico,icoSprite})');
   const FIRST40=('star coin ticket flame home back map play pause replay sound-on sound-off speak gear lock check close hint heart gift '+
     'trophy target bolt paw bag sticker-book gamepad puzzle path-math path-read path-es path-disc plus minus times divide '+
     'backspace go calendar crown').split(' ');
-  for(const n of FIRST40)if(!ic.ICONS[n])p.push('missing icon: '+n);
+  // P4-03 (DESIGN_SYSTEM 5.4): utility, chrome and skill icons
+  const P403=('info warning question circle check-circle download upload trash edit mic record stop undo redo rotate flip eye '+
+    'timer clock chart user users arrow-right arrow-left arrow-up arrow-down chevron-right chevron-left more '+
+    'rocket balloon party globe moon hat teddy image food bath ball drop car nut palette blocks medal sparkle review thumbs-up '+
+    'skill-count skill-num skill-shape skill-frac scale ruler skill-abc ear skill-story doc music clap skill-pattern pin '+
+    'skill-array wave skill-geo').split(' ');
+  for(const n of FIRST40.concat(P403))if(!ic.ICONS[n])p.push('missing icon: '+n);
+  if(new Set(FIRST40.concat(P403)).size!==FIRST40.length+P403.length)p.push('icon lists overlap');
   for(const [n,d] of Object.entries(ic.ICONS)){
     if(!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(n))p.push(n+': name must be lowercase-hyphenated');
     if(d.length>=600)p.push(n+': '+d.length+' bytes (limit 600)');
@@ -409,8 +416,19 @@ run('icons: first 40 present, drawing rules, every ico() name exists',()=>{
     if(/gradient|filter|<text|url\(|style=/i.test(d))p.push(n+': no gradients, filters, text, url() or style');
     const hex=d.replace(/var\(--ic2,#fff\)/g,'').match(/#[0-9a-f]{3,8}\b/gi);
     if(hex)p.push(n+': raw colour '+hex[0]+' (use currentColor or var(--ic2,#fff))');
-    const fills=(d.match(/(fill|stroke)="[^"]*"/g)||[]).filter(a=>!/^(fill|stroke)="(currentColor|none|var\(--ic2,#fff\))"$/.test(a));
-    if(fills.length)p.push(n+': colour must be currentColor, none or var(--ic2,#fff): '+fills[0]);
+    const fills=(d.match(/(fill|stroke)="[^"]*"/g)||[]).filter(a=>!/^(fill|stroke)="(currentColor|none|var\(--ic2,#fff\)|var\(--ic3,currentColor\))"$/.test(a));
+    if(fills.length)p.push(n+': colour must be currentColor, none, var(--ic2,#fff) or var(--ic3,currentColor): '+fills[0]);
+    // two tones (P4-03): the soft tone is var(--ic3,currentColor) at opacity .4, on the same element; the primary layer carries the icon
+    const els=d.match(/<[^>]*\/>/g)||[];
+    let prim=0;
+    for(const e of els){
+      const soft=/var\(--ic3,currentColor\)/.test(e),op=(e.match(/\sopacity="([^"]*)"/)||[])[1];
+      if(soft&&op!=='.4')p.push(n+': a soft (--ic3) shape needs opacity=".4"');
+      if(op!=null&&!soft)p.push(n+': opacity is only for the soft tone (var(--ic3,currentColor))');
+      if(/fill-opacity|stroke-opacity/.test(e))p.push(n+': use opacity=".4" on the element, not fill-/stroke-opacity');
+      if(!soft&&!/fill="var\(--ic2/.test(e))prim++;
+    }
+    if(!prim)p.push(n+': no full-colour shape (the soft tone alone must not carry the icon)');
     const coords=(d.match(/\s(d|cx|cy|r|rx|ry|x|y|width|height)="[^"]*"/g)||[]).join(' ').match(/\d*\.\d{2,}/g);
     if(coords)p.push(n+': coordinates to one decimal ('+coords[0]+')');
   }
@@ -3230,7 +3248,7 @@ run('components (P4-04): tokens only, transform/opacity motion, no old class res
   has(UI.t('Grown-ups area'),'<span class="nw">Grown-ups</span> area','hyphen word kept whole');
   has(UI.btn('Grown-ups'),'<span class="nw">Grown-ups</span>','button label keeps Grown-ups whole');
   h=UI.ibtn('back','Go "back"');has(h,'class="btn icon"','icon button');has(h,'aria-label="Go &quot;back&quot;"','icon button aria-label');
-  has(UI.chip('coin',64),'ic-coin','coin chip colours');has(UI.chip('timer','0:45'),'#i-bolt','timer chip icon');
+  has(UI.chip('coin',64),'ic-coin','coin chip colours');has(UI.chip('timer','0:45'),'#i-timer','timer chip icon');
   has(UI.chip('flame',4,{tap:true,id:'stk'}),'<button class="stat flame" id="stk"','tappable chip');
   for(const [v,w] of [[-1,'0'],[2,'1'],[NaN,'0'],['x','0'],[.4567,'0.457']])has(UI.meter(v),'--v:'+w+'"','meter clamps '+v);
   has(UI.meter(.5,{label:'9 of 58 stops',p:'math',kind:'grow'}),'class="gauge grow s-math" role="img" aria-label="9 of 58 stops"','meter label');
@@ -3581,6 +3599,28 @@ run('rewards (P4-11): drawings follow the art rules, every boss is drawn, screen
   for(const m of css.matchAll(/var\(--([a-z0-9-]+)/g))if(!OWN.includes(m[1])&&!new RegExp('--'+m[1]+':').test(tok))p.push('unknown token --'+m[1]);
   if(!/html\.calm \.rw-burst\{display:none\}/.test(css)||!/prefers-reduced-motion:reduce\)\{\.rw-burst\{display:none\}/.test(css))p.push('calm / reduced motion must hide the confetti');
   return{problems:p,note:Object.keys(out.D).length+' drawings'};
+});
+
+// ---- P4-03: skill icons, clip icons, and the screens swapped from emoji to ico() ----
+run('icons (P4-03): every skill has an icon, swapped screens show no emoji chrome',()=>{
+  const p=[];
+  const out=eval(js+`
+  const bad=[];
+  for(const id in SK){const n=icoSk(id);if(!ICONS[n])bad.push('skill '+id+': icon '+n+' missing')}
+  for(const [id,n] of Object.entries(ICO_SK)){if(!ICONS[n])bad.push('ICO_SK.'+id+': icon '+n+' missing');if(!SK[id])bad.push('ICO_SK.'+id+': no such skill')}
+  for(const a of Object.values(ICO_AREA))if(!ICONS[a])bad.push('ICO_AREA icon '+a+' missing');
+  if(icoSk('no_such_skill')!=='star')bad.push('icoSk fallback for an unknown skill is not star');
+  for(const k of CLIPKINDS){if(!ICONS[k[4]])bad.push('clip kind '+k[0]+': icon '+k[4]+' missing');if(/\\p{Emoji_Presentation}/u.test(k[1]))bad.push('clip kind '+k[0]+': emoji in label')}
+  [bad,Object.keys(ICONS).length];`);
+  p.push(...out[0]);
+  // functions whose chrome moved to ico(): no emoji (Emoji_Presentation, or a pictograph with VS16) and no ◀ ▶ text arrows
+  const fnText=(file,name)=>{const t=fs.readFileSync(path.join(SRC,'js',file),'utf8'),a=t.indexOf('function '+name+'(');
+    if(a<0){p.push(file+': function '+name+' not found');return''}const b=t.indexOf('\nfunction ',a+1);return t.slice(a,b<0?t.length:b)};
+  const EMO=/\p{Emoji_Presentation}|\p{Extended_Pictographic}\uFE0F|[\u25C0\u25B6]/u;
+  for(const [f,fn] of [['48-shop.js','shop'],['58-playtime.js','gameRoom'],['46-home.js','book'],['80-grown.js','grown'],['44-clips.js','micHelp']]){
+    const t=fnText(f,fn),m=t.match(EMO);if(m)p.push(f+' '+fn+'(): emoji or text arrow still used as chrome: '+m[0]);
+  }
+  return{problems:p,note:out[1]+' icons'};
 });
 
 // ---- report ----

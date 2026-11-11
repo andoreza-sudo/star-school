@@ -116,9 +116,9 @@ function learn(p,i){const n=NODES[p][i],items=SPN[n.sk.slice(3)];
   if(S.voice)setTimeout(()=>say('Tap each card to hear it in English and Spanish!'),300)}
 
 function book(){const have=STK.filter(s=>S.stickers[s]).length;
-  view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title">📒 My Stickers</div><div class="sp"></div><div class="stars">${have} / ${STK.length}</div></div>
+  view(`<div class="top"><button class="btn sm" id="back" aria-label="Back">${ico('back',20)}</button><div class="title">${ico('sticker-book','1.1em','ic-brand')} My Stickers</div><div class="sp"></div><div class="stars">${have} / ${STK.length}</div></div>
   <div class="scroll"><p class="sub" style="text-align:center">Finish a round to win a sticker! Get 10 out of 10 for a bonus one.</p>
-  <div class="sgrid">${STK.map(s=>S.stickers[s]?`<button class="btn st" data-s="${s}">${s}${S.stickers[s]>1?`<b>×${S.stickers[s]}</b>`:''}</button>`:`<div class="st no">❔</div>`).join('')}</div></div>`);
+  <div class="sgrid">${STK.map(s=>S.stickers[s]?`<button class="btn st" data-s="${s}">${s}${S.stickers[s]>1?`<b>×${S.stickers[s]}</b>`:''}</button>`:`<div class="st no">${ico('question','1em')}</div>`).join('')}</div></div>`);
   $('#back').onclick=()=>home(true);
   $$('.st[data-s]').forEach(b=>b.onclick=()=>{anim(b,'jump');SFX.pop(R(0,5));const r=b.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,[b.dataset.s])})}
 

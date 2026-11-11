@@ -2,26 +2,26 @@
 function grown(){let armed=false;
   const rows=[...new Set(Object.values(NODES).flat().map(n=>n.sk))].filter(id=>SK[id]).map(id=>{const p=P(id),s=SK[id],acc=p.t?Math.round(p.c/p.t*100)+'%':'–';
     const tricky=Object.values(p.miss).sort((a,b)=>b.tot-a.tot).slice(0,3).map(m=>esc(m.q.label)).join('<br>');
-    return`<tr><td>${s.e} ${s.t}</td><td>${p.r}</td><td>${acc}</td><td class="tr">${tricky}</td></tr>`}).join('');
-  const prog=Object.keys(PATHS).map(p=>`${PATHS[p].e} ${NODES[p].filter((n,i)=>passed(p,i)).length}/${NODES[p].length}`).join(' · '),canRec=!!(navigator.mediaDevices&&window.MediaRecorder);
-  view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title">Grown-ups</div></div><div class="scroll">
+    return`<tr><td>${ico(icoSk(id),'1.2em','ic-'+s.area)} ${s.t}</td><td>${p.r}</td><td>${acc}</td><td class="tr">${tricky}</td></tr>`}).join('');
+  const prog=Object.keys(PATHS).map(p=>`${ico(UI.SUBJ_ICON[p]||'map','1.2em','ic-'+p)} ${NODES[p].filter((n,i)=>passed(p,i)).length}/${NODES[p].length}`).join(' · '),canRec=!!(navigator.mediaDevices&&window.MediaRecorder);
+  view(`<div class="top"><button class="btn sm" id="back" aria-label="Back">${ico('back',20)}</button><div class="title">Grown-ups</div></div><div class="scroll">
   <div class="card"><div class="row"><b style="width:110px">Child</b><input class="name" id="nm" value="${esc(S.name)}"></div>
    <div class="row"><b style="width:110px">Pet name</b><input class="name" id="pn" value="${esc(S.petName)}" placeholder="${PETS[S.pet].def}"></div>
    <div class="row"><b style="width:110px">Buddy</b><input class="name" id="bd" value="${esc(S.buddy)}" placeholder="Sibling or friend, used in story problems"></div>
-   <div class="small">Stops passed: ${prog}<br>⭐ ${S.stars} stars · ${ico('coin','1.2em','ic-coin')} ${S.coins} coins · 📒 ${STK.filter(s=>S.stickers[s]).length}/${STK.length} stickers · 🔥 best streak ${S.best||0}</div>
+   <div class="small">Stops passed: ${prog}<br>${ico('star','1.2em','ic-star')} ${S.stars} stars · ${ico('coin','1.2em','ic-coin')} ${S.coins} coins · ${ico('sticker-book','1.2em','ic-brand')} ${STK.filter(s=>S.stickers[s]).length}/${STK.length} stickers · ${ico('flame','1.2em','ic-flame')} best streak ${S.best||0}</div>
    ${SAVE_FAILED?'<div class="small" style="color:#c0392b;font-weight:700">Could not save progress: the device storage may be full.</div>':''}
    <div class="row" style="display:block;margin-top:12px"><b>Grade</b> <span class="small">Picks where the maps start. Nothing is ever locked or removed when you change it.</span>${gradePickHTML(gradeOf())}</div>
    ${placeGrownHTML()}
    <label class="tg"><input type="checkbox" id="ula" ${S.unlockAll?'checked':''}> Unlock every stop on the map (let them jump ahead)</label></div>
   ${reportGrownHTML()}
-  <div class="card"><h2 style="margin:0 0 6px">🎙️ Your voice</h2><div class="small" style="margin-bottom:8px">Tap ⏺ and say the line (up to 4 seconds). Record as many as you like. The app shuffles them so the same one doesn't play twice in a row. ${inFrame?'<b>Recording only works on the tablet app, not in this preview.</b>':!canRec?'<b>Recording isn\'t available in this browser. Use Chrome or the installed app.</b>':''}</div>
-   ${CLIPKINDS.map(([k,l,tip,lines])=>{const cs=CLIPS.filter(c=>c.kind==k),extra=cs.filter(c=>c.line==null||c.line>=lines.length);
-     const row=(txt,c,line)=>`<div class="vline"><span class="vtxt">${c?'✅':'⚪'} ${txt}</span>${c?`<button class="btn xs" data-play="${c.id}">▶</button><button class="btn xs danger" data-del="${c.id}">🗑</button>`:`<button class="btn xs rec" data-rec="${k}|${line}">⏺ Record</button>`}</div>`;
-     return`<div class="vrow"><b>${l}</b> <span class="small">${tip} (${cs.length} recorded)</span>
+  <div class="card"><h2 style="margin:0 0 6px">${ico('mic','1em','ic-brand')} Your voice</h2><div class="small" style="margin-bottom:8px">Tap ${ico('record','1.2em','ic-rec')} and say the line (up to 4 seconds). Record as many as you like. The app shuffles them so the same one doesn't play twice in a row. ${inFrame?'<b>Recording only works on the tablet app, not in this preview.</b>':!canRec?'<b>Recording isn\'t available in this browser. Use Chrome or the installed app.</b>':''}</div>
+   ${CLIPKINDS.map(([k,l,tip,lines,ic])=>{const cs=CLIPS.filter(c=>c.kind==k),extra=cs.filter(c=>c.line==null||c.line>=lines.length);
+     const row=(txt,c,line)=>`<div class="vline"><span class="vtxt">${c?ico('check-circle','1.2em','ic-good'):ico('circle','1.2em','ic-off')} ${txt}</span>${c?`<button class="btn xs" data-play="${c.id}" aria-label="Play">${ico('play','1.1em')}</button><button class="btn xs danger" data-del="${c.id}" aria-label="Delete">${ico('trash','1.1em')}</button>`:`<button class="btn xs rec" data-rec="${k}|${line}">${ico('record','1.1em','ic-rec')} Record</button>`}</div>`;
+     return`<div class="vrow"><b>${ico(ic,'1.2em','ic-brand')} ${l}</b> <span class="small">${tip} (${cs.length} recorded)</span>
        ${lines.map((t,i)=>row('“'+esc(t.replace('{name}',S.name))+'”',cs.find(c=>c.line==i),i)).join('')}
        ${extra.map((c,i)=>row('Your own #'+(i+1),c,null)).join('')}
-       <div class="vline"><span class="vtxt small">➕ Say anything you like</span><button class="btn xs rec" data-rec="${k}|x">⏺ Record</button></div></div>`}).join('')}</div>
-  <div class="card"><h2 style="margin:0 0 6px">🎮 Game time</h2><div class="small">Each learning round earns game time (plus a bonus for 10/10, bosses, and tests). Bank right now: <b>${fmtT(pt().bank)}</b> · used today: <b>${fmtT(pt().used)}</b></div>
+       <div class="vline"><span class="vtxt small">${ico('plus','1.1em','ic-off')} Say anything you like</span><button class="btn xs rec" data-rec="${k}|x">${ico('record','1.1em','ic-rec')} Record</button></div></div>`}).join('')}</div>
+  <div class="card"><h2 style="margin:0 0 6px">${ico('gamepad','1em','ic-play')} Game time</h2><div class="small">Each learning round earns game time (plus a bonus for 10/10, bosses, and tests). Bank right now: <b>${fmtT(pt().bank)}</b> · used today: <b>${fmtT(pt().used)}</b></div>
    <div class="vline"><span class="vtxt">Minutes per round</span>${[2,3,5].map(v=>`<button class="btn xs ${ptCfg().per==v?'on':''}" data-per="${v}">${v}</button>`).join('')}</div>
    <div class="vline"><span class="vtxt">Daily max</span>${[15,30,45,60,0].map(v=>`<button class="btn xs ${ptCfg().max==v?'on':''}" data-max="${v}">${v||'No limit'}</button>`).join('')}</div>
    <div class="vline"><span class="vtxt">Give a bonus</span><button class="btn xs" id="pt5">+5 min</button><button class="btn xs danger" id="pt0">Empty bank</button></div>
@@ -33,8 +33,8 @@ function grown(){let armed=false;
   <div class="card"><label class="tg"><input type="checkbox" id="voice" ${S.voice?'checked':''}> Read questions out loud</label>
    <label class="tg"><input type="checkbox" id="snd" ${S.sound?'checked':''}> Sound effects</label>
    <label class="tg"><input type="checkbox" id="mus" ${S.music?'checked':''}> Music on the home screen</label>
-   <button class="btn sm" id="test">🔊 Test voice</button> <button class="btn sm danger" id="reset">Erase everything</button></div>
-  <div class="card small"><b>How it works:</b> three games (Math, Reading, Spanish), each with its own map. Getting 7 of 10 right opens the next stop (8 = ★★, 10 = ★★★), and each world stretches further: clocks, coins, borrowing, 3-digit numbers, magic-e and vowel-team words, and story comprehension. Missed questions come back at the end of a round, in later rounds, and in the 🎯 Tricky Mix. Each right answer earns a star (grows the pet) and a coin (spent in the shop). Everything is saved on this tablet only.</div></div>`);
+   <button class="btn sm" id="test">${ico('sound-on','1.1em')} Test voice</button> <button class="btn sm danger" id="reset">Erase everything</button></div>
+  <div class="card small"><b>How it works:</b> three games (Math, Reading, Spanish), each with its own map. Getting 7 of 10 right opens the next stop (8 = ★★, 10 = ★★★), and each world stretches further: clocks, coins, borrowing, 3-digit numbers, magic-e and vowel-team words, and story comprehension. Missed questions come back at the end of a round, in later rounds, and in the ${ico('target','1.1em','ic-brand')} Tricky Mix. Each right answer earns a star (grows the pet) and a coin (spent in the shop). Everything is saved on this tablet only.</div></div>`);
   $('#back').onclick=()=>home(true);
   $('#nm').oninput=e=>{if(e.target.value.trim()){S.name=e.target.value.trim();save()}};
   $('#pn').oninput=e=>{S.petName=e.target.value.trim();save()};
@@ -62,7 +62,7 @@ async function record(kind,line,btn){if(inFrame)return micHelp('frame');if(!navi
   mr.onstop=async()=>{st.getTracks().forEach(t=>t.stop());const blob=new Blob(ch,{type:mr.mimeType||'audio/webm'});
     try{await DB.put({id:String(Date.now()),kind,line,blob});await loadClips();const c=CLIPS.find(x=>x.blob===blob)||CLIPS[CLIPS.length-1];if(c)new Audio(c.url).play().catch(()=>{})}catch(e){fb("Couldn't save the clip",'warn')}
     grown()};
-  mr.start();let s=4;btn.textContent='🔴 Recording… '+s;btn.style.background='#fee2e2';
-  const iv=setInterval(()=>{s--;if(s<=0){clearInterval(iv);if(mr.state=='recording')mr.stop()}else btn.textContent='🔴 Recording… '+s},1000);
+  mr.start();let s=4;btn.innerHTML=ico('record','1.1em','ic-rec')+' Recording… '+s;btn.style.background='#fee2e2';
+  const iv=setInterval(()=>{s--;if(s<=0){clearInterval(iv);if(mr.state=='recording')mr.stop()}else btn.innerHTML=ico('record','1.1em','ic-rec')+' Recording… '+s},1000);
   btn.onclick=()=>{clearInterval(iv);if(mr.state=='recording')mr.stop()}}
 

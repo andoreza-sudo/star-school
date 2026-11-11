@@ -104,23 +104,28 @@ const SCREENS = {
 
   // ---- P4-02 icons ----
   care: { run: async p => { await p.evaluate(() => care()); } },
-  // Icon sheet (DESIGN_SYSTEM 5.1): every icon at 20, 32 and 64 px, on white (ink) and on a colour (white icon,
-  // --ic2 set to the fill). Full-page shot, so the sheet may be taller than the viewport.
+  // Icon sheet (DESIGN_SYSTEM 5.1): every icon at 20, 32 and 64 px on white (ink), at 20 and 32 on a colour (white icon,
+  // --ic2 set to the fill) and on a tint (brand icon), grouped as P4-02 core, P4-03 utility / chrome / skills. Full-page shot.
+  // P4-03: tint row and groups added (the soft second tone has to hold on all three backgrounds).
   icons: {
     full: true,
     run: async p => {
       await p.evaluate(() => {
-        const sizes = [20, 32, 64];
-        const row = n => sizes.map(s => ico(n, s)).join('');
-        const cells = Object.keys(ICONS).map(n => `<div class="isc"><div class="isw">${row(n)}</div>` +
-          `<div class="isb">${row(n)}</div><div class="isn">${n}</div></div>`).join('');
-        view(`<style>.isg{display:grid;grid-template-columns:repeat(auto-fill,minmax(176px,1fr));gap:8px;padding:8px}
+        const all = Object.keys(ICONS), start = all.indexOf('info'), skill = all.indexOf('skill-count'), chrome = all.indexOf('rocket');
+        const groups = [['Core (P4-02, two tones added in P4-03)', all.slice(0, start)], ['Utility (P4-03)', all.slice(start, chrome)],
+          ['Chrome and rewards (P4-03)', all.slice(chrome, skill)], ['Skills (P4-03; ICO_SK maps every skill)', all.slice(skill)]];
+        const cell = n => `<div class="isc"><div class="isw">${ico(n, 20)}${ico(n, 32)}${ico(n, 64)}</div>` +
+          `<div class="isb">${ico(n, 20)}${ico(n, 32)}</div><div class="ist">${ico(n, 20)}${ico(n, 32)}</div><div class="isn">${n}</div></div>`;
+        view(`<style>.isg{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;padding:0 8px 8px}
+          .ish{font-weight:700;padding:10px 12px 6px;color:var(--ink-2)}
           .isc{background:var(--surface);border-radius:var(--r-chip);overflow:hidden;box-shadow:var(--shadow)}
-          .isw,.isb{display:flex;align-items:center;gap:8px;padding:6px 8px;color:var(--ink)}
+          .isw,.isb,.ist{display:flex;align-items:center;gap:8px;padding:5px 8px;color:var(--ink)}
           .isb{background:var(--brand);color:var(--surface);--ic2:var(--brand)}
+          .ist{background:var(--brand-tint);color:var(--brand);--ic2:var(--brand-tint)}
           .isn{font-size:var(--fs-1);padding:2px 8px 4px;color:var(--ink-2)}
           #app,html,body{height:auto;overflow:visible}</style>
-          <div class="top"><div class="title">Icons (${Object.keys(ICONS).length})</div></div><div class="isg">${cells}</div>`);
+          <div class="top"><div class="title">Icons (${all.length})</div></div>` +
+          groups.map(([t, ns]) => `<div class="ish">${t}: ${ns.length}</div><div class="isg">${ns.map(cell).join('')}</div>`).join(''));
       });
     },
   },
@@ -649,7 +654,7 @@ async function compSheet(p) {
         row(UI.tag('New', 'new') + UI.tag('Mastered', 'mast', 'crown') + UI.tag('Skipped', 'skip') + UI.tag('Challenge', 'chal', 'bolt'))),
       sec('Toasts and speech', `<div class="cs-col">${['good:Great job!', 'try:Try again', 'info:Tap the speaker to hear it'].map(x => {
         const [k, t] = x.split(':');
-        return `<div class="toast on cs-static ${k}"><span class="ti">${ico({ good: 'check', try: 'replay', info: 'hint' }[k])}</span><span>${t}</span></div>`;
+        return `<div class="toast on cs-static ${k}"><span class="ti">${ico({ good: 'check', try: 'replay', info: 'info' }[k])}</span><span>${t}</span></div>`;
       }).join('')}</div>` +
         row(UI.speech('You can do it!') + UI.speech('Tap the big one.', 'r') + `<span class="cs-pet">${ico('paw', 40)}</span>${UI.speech('Hi! I am Sparky.', 'l')}`)),
       sec('Sheet', `<div class="sheet-bg on cs-static cs-sheet"><div class="sheet"><div class="sh-art">${ico('trophy')}</div><h2>Skip ahead?</h2>` +

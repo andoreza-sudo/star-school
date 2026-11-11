@@ -241,7 +241,7 @@ function report() {
 }
 /* Grown-ups entry (80-grown.js): one card with one button. */
 function reportGrownHTML() {
-  return `<div class="card rp-entry"><button class="btn sm" id="rp-open">${ico('target', 22)} Report card</button>`
+  return `<div class="card rp-entry"><button class="btn sm" id="rp-open">${ico('chart', 22)} Report card</button>`
     + `<span class="small">Time, accuracy, where ${esc(S.name || 'your child')} is working, what to practise.</span></div>`;
 }
 function reportGrownBind() {

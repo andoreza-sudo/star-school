@@ -4,7 +4,7 @@
    Subjects: p is one of math, read, es, disc, bt, play and becomes the class s-<p> (sets --c, --c-tint, --c-shade). */
 const UI = {
   SUBJ_ICON: { math: 'path-math', read: 'path-read', es: 'path-es', disc: 'path-disc', bt: 'puzzle', play: 'gamepad' },
-  CHIP_ICON: { star: 'star', coin: 'coin', ticket: 'ticket', flame: 'flame', timer: 'bolt' },
+  CHIP_ICON: { star: 'star', coin: 'coin', ticket: 'ticket', flame: 'flame', timer: 'timer' },
 
   // Escaped label text; a word with a hyphen ("Grown-ups") is kept on one line (.nw), so a label never breaks inside a word.
   t(text) {
@@ -110,7 +110,7 @@ const UI = {
 
   // Context panel (passage): collapsible, scrolls inside. html is the passage (paragraphs).
   ctx(title, html, open = true, icon = 'path-read') {
-    return `<details class="ctx"${open ? ' open' : ''}><summary>${ico(icon)}<span>${UI.t(title)}</span>${ico('play', 20, 'chev')}</summary>` +
+    return `<details class="ctx"${open ? ' open' : ''}><summary>${ico(icon)}<span>${UI.t(title)}</span>${ico('chevron-right', 20, 'chev')}</summary>` +
       `<div class="ctx-b">${html}</div></details>`;
   },
 
@@ -166,7 +166,7 @@ const UI = {
       t.setAttribute('aria-live', 'polite');
       document.body.appendChild(t);
     }
-    const icon = { good: 'check', try: 'replay', info: 'hint' }[kind] || 'hint';
+    const icon = { good: 'check', try: 'replay', info: 'info' }[kind] || 'info';
     t.className = 'toast ' + kind;
     t.innerHTML = `<span class="ti">${ico(icon)}</span><span>${UI.t(text)}</span>`;
     void t.offsetWidth; // let it slide in again when shown twice in a row

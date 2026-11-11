@@ -1465,6 +1465,44 @@ async function main() {
       await ra.ctx.close();
     }
 
+    // P4-03 icons at 380x780 (midway): Grown-ups, Pet Shop, Stickers and the Game Room menu show ico() icons instead of emoji;
+    //    every icon points at a sprite symbol and is drawn (not 0 x 0); the shop tabs and the back buttons still work.
+    {
+      const ia = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
+      const ip = ia.page;
+      const look = fn => ip.evaluate(fn => {
+        window[fn]();
+        const uses = [...document.querySelectorAll('#app svg.ic use')];
+        const missing = uses.map(u => u.getAttribute('href')).filter(h => !document.querySelector(h));
+        const flat = [...document.querySelectorAll('#app svg.ic')].filter(s => s.closest('.top,.card,.ptcard,.games,.tabs,.shopgrid,.sgrid'))
+          .filter(s => { const r = s.getBoundingClientRect(); return r.width < 8 || r.height < 8; }).length;
+        const title = document.querySelector('.top .title');
+        return { n: uses.length, missing, flat, title: title ? title.textContent.trim() : '', back: !!document.querySelector('#back[aria-label="Back"] svg.ic') };
+      }, fn);
+      const EMO = /\p{Emoji_Presentation}|\p{Extended_Pictographic}️/u;
+      for (const [fn, min] of [['grown', 20], ['shop', 8], ['book', 3], ['gameRoom', 14]]) {
+        const r = await look(fn);
+        if (r.n < min || r.missing.length || r.flat || !r.back || EMO.test(r.title)) fail('P4-03 ' + fn + ': ' + JSON.stringify(r));
+      }
+      // shop tabs: tap Toys, the tab keeps its icon and the grid changes; back goes home
+      await ip.evaluate(() => shop());
+      await ip.click('.tab[data-t="toy"]');
+      const tab = await ip.evaluate(() => ({ on: document.querySelector('.tab.on').dataset.t, ic: !!document.querySelector('.tab.on svg.ic') }));
+      await ip.click('#back');
+      const home = await ip.evaluate(() => !document.querySelector('.tabs') && !!document.querySelector('#app *'));
+      // Game Room back button, then the Grown-ups record row still offers Record buttons with the record icon
+      await ip.evaluate(() => gameRoom());
+      await ip.click('#back');
+      await vwait(ip, 300);
+      const gr = await ip.evaluate(() => !document.querySelector('.ptcard') && !!document.querySelector('#app *'));
+      const rec = await ip.evaluate(() => { grown(); return document.querySelectorAll('[data-rec] use[href="#i-record"]').length; });
+      if (tab.on !== 'toy' || !tab.ic || !home || !gr || rec < 3) fail('P4-03 taps: ' + JSON.stringify({ tab, home, gr, rec }));
+      else step('P4-03: Grown-ups, Pet Shop, Stickers and Game Room show sprite icons (no emoji titles), shop tabs and back buttons work');
+      network.push(...ia.network);
+      for (const e of ia.errors) fail(e);
+      await ia.ctx.close();
+    }
+
     for (const e of errors) fail(e);
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');
