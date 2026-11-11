@@ -5343,6 +5343,149 @@ async function main() {
       }
     }
 
+    // P3-13 Robot Path (src/js/81-bt-robot.js) with real taps, midway save: band A (a Pre-K child, level 8: a gem) at 380x780, band C
+    //    (a 3rd grader, level 6) and band D (a 5th grader, level 11: the function) at 1024x600: Home -> Brain Teasers -> Robot Path ->
+    //    the level; a program that bumps, Go: the run fails gently (the robot wobbles, the block that bumped is amber with a dashed
+    //    ring and a warning mark, never red; one mistake), Undo takes the blocks away; hint tiers 1 and 2 mark the place and show the
+    //    right block faintly (the program does not change), tier 3 puts one right block in; back to the levels and the hub, Keep going
+    //    resumes exactly; the rest of solve() tapped in, Go, the robot reaches the flag, win card, 1 star (three hints) saved.
+    //    Every screen: 48 px targets, nothing outside the screen, no sideways scroll, the puzzle fits without scrolling, no emoji chrome.
+    {
+      const taps = require('./lib/bt-rb');
+      const look = () => {
+        const vw = document.documentElement.clientWidth, out = [];
+        for (const e of document.querySelectorAll('button, [role="button"]')) {
+          const r = e.getBoundingClientRect();
+          if (!r.width || r.bottom < 0 || r.top > innerHeight || e.closest('svg') || e.closest('#toast')) continue;
+          if (Math.min(r.width, r.height) < 47.5) out.push('small ' + (e.id || e.className) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
+          if (r.left < -1 || r.right > vw + 1) out.push('outside ' + (e.id || e.className) + ' ' + Math.round(r.left) + '..' + Math.round(r.right));
+        }
+        if (document.documentElement.scrollWidth > vw) out.push('sideways scroll ' + document.documentElement.scrollWidth);
+        const stg = document.querySelector('#btstage');
+        if (stg && stg.scrollWidth > stg.clientWidth + 1) out.push('the puzzle scrolls sideways');
+        if (stg && document.querySelector('#btstage .rb') && stg.scrollHeight > stg.clientHeight + 1) out.push('the puzzle does not fit: ' + stg.scrollHeight + ' > ' + stg.clientHeight);
+        const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        for (let n; (n = w.nextNode());) {
+          const el = n.parentElement;
+          if (!el || el.closest('script,style,svg,#ico-sprite,.rw-burst') || !el.getClientRects().length) continue;
+          const m = n.textContent.match(/\p{Extended_Pictographic}|[◀▶✕]/u);
+          if (m) out.push('emoji chrome ' + m[0] + ' in ' + (el.id || el.className));
+        }
+        return out;
+      };
+      const prog = pg => pg.evaluate(() => JSON.stringify([RB.cur.st().m, RB.cur.st().f]));
+      for (const [w, h, grade, lv, want] of [[380, 780, 0, 8, 'A'], [1024, 600, 3, 6, 'C'], [1024, 600, 5, 11, 'D']]) {
+        const tag = 'P3-13 ' + w + 'x' + h + ' band ' + want;
+        const app = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = app.page, bad = [], notes = [];
+        const chk = async what => { for (const o of await pg.evaluate('(' + look.toString() + ')()')) bad.push(what + ': ' + o); };
+        await pg.evaluate(() => { window.say = () => {}; });
+        await pg.evaluate(([g, lv]) => { S.grade = g; if (lv > 1) BT.rec('robot', BT.band(), true).lvl = lv; save(); home(); }, [grade, lv]);
+        await pg.waitForSelector('#btcard');
+        await pg.evaluate(() => document.querySelector('#btcard').scrollIntoView({ block: 'center' }));
+        await pg.click('#btcard');
+        await pg.waitForSelector('.bt-hub .bt-type[data-t="robot"]');
+        await pg.waitForTimeout(400);
+        await pg.evaluate(() => document.querySelector('.bt-type[data-t="robot"]').scrollIntoView({ block: 'center' }));
+        await pg.click('.bt-type[data-t="robot"]');
+        await pg.waitForSelector('.bt-lvs');
+        await pg.click(`.bt-lv[data-l="${lv}"]`);
+        await pg.waitForSelector('#btstage .rb');
+        await pg.waitForTimeout(400);
+        await chk('play');
+        const p0 = await pg.evaluate(() => ({ band: RB.cur.p.b, kit: RB.cur.p.kit, par: RB.cur.p.par, slots: RB.cur.p.slots, n: RB.cur.p.n,
+          pal: [...document.querySelectorAll('.rb-p')].map(b => b.dataset.t).join(' '), words: document.querySelectorAll('.rb-p span').length }));
+        const wantPal = { A: 'up lf dn rt', C: 'fw tl tr rep', D: 'fw tl tr rep fn' }[want];
+        if (p0.band !== want || p0.pal !== wantPal || (want === 'A') !== (p0.words === 0)) bad.push('world: ' + JSON.stringify(p0) + ', want band ' + want + ' with ' + wantPal);
+        notes.push(`${p0.n}x${p0.n}, par ${p0.par} in ${p0.slots} slots`);
+
+        // a failed run, shown gently: the robot wobbles, the bumping block is amber (never red) with a dashed ring and a warning mark
+        const bp = await taps.bump(pg);
+        await taps.go(pg);
+        const g = await pg.evaluate(() => {
+          const e = document.querySelector('.rb-strip .rb-b.bad'), css = getComputedStyle(document.documentElement), msg = document.querySelector('.rb-msg');
+          const rgb = v => { const d = document.createElement('i'); d.style.color = v; document.body.appendChild(d); const x = getComputedStyle(d).color; d.remove(); return x; };
+          return { found: !!e, bg: e && getComputedStyle(e).backgroundColor, dashed: e && getComputedStyle(e).outlineStyle, warn: !!(e && e.querySelector('.rb-warn')),
+            tryTint: rgb(css.getPropertyValue('--try-tint')), red: rgb(css.getPropertyValue('--danger')), tryInk: rgb(css.getPropertyValue('--try-ink')),
+            msg: msg.textContent, cls: msg.className, msgColor: getComputedStyle(msg).color, miss: S.bt.cur.state.miss,
+            wob: document.querySelector('.rb-body').classList.contains('wob'), bonk: document.querySelector('.rb-bonk').getAttribute('visibility') };
+        });
+        if (!bp || !g.found || g.bg !== g.tryTint || g.bg === g.red || g.dashed !== 'dashed' || !g.warn || !/try/.test(g.cls) || g.msgColor !== g.tryInk ||
+          g.miss !== 1 || !g.wob || g.bonk !== 'visible' || !/^Bump!/.test(g.msg)) bad.push('the failed run is not shown gently: ' + JSON.stringify(g));
+        notes.push('a bump: "' + g.msg + '"');
+        await chk('failed run');
+        for (const _ of bp.m) await pg.click('.rb-undo');
+        if ((await prog(pg)) !== '[[],[]]' || (await pg.evaluate(() => S.bt.cur.state.miss)) !== 1) bad.push('Undo should empty the program and keep the mistake: ' + await prog(pg));
+
+        // hint tiers 1 and 2 point and show the block faintly; the program does not change. Tier 3 puts one right block in.
+        await pg.click('#bthint');
+        await vwait(pg, 200);
+        const t1 = await pg.evaluate(() => ({ mark: document.querySelectorAll('.rb-ghost.rb-gslot, .rb-b.hint').length, msg: document.querySelector('.rb-msg').textContent, hints: S.bt.cur.hints }));
+        if (!t1.mark || t1.hints !== 1 || (await prog(pg)) !== '[[],[]]') bad.push('hint 1: ' + JSON.stringify(t1));
+        await vwait(pg, 11500);
+        await pg.click('#bthint');
+        await vwait(pg, 200);
+        const t2 = await pg.evaluate(() => ({ ghost: document.querySelectorAll('.rb-ghost:not(.rb-gslot)').length, msg: document.querySelector('.rb-msg').textContent, hints: S.bt.cur.hints }));
+        if (!t2.ghost || t2.hints !== 2 || t2.msg === t1.msg || (await prog(pg)) !== '[[],[]]') bad.push('hint 2 should show the block faintly and change nothing: ' + JSON.stringify(t2));
+        notes.push('hint 1: "' + t1.msg + '"; hint 2: "' + t2.msg + '"');
+        await chk('hint 2');
+        await vwait(pg, 11500);
+        await pg.click('#bthint');
+        await vwait(pg, 200);
+        const t3 = await pg.evaluate(() => { const st = RB.cur.st(), sol = BT.get('robot').solve(RB.cur.p); return { m: st.m, n: RB.count(st), first: sol.m[0], hints: S.bt.cur.hints }; });
+        if (t3.n !== 1 || t3.m[0] !== t3.first || t3.hints !== 3) bad.push('hint 3 should put in one right block: ' + JSON.stringify(t3));
+
+        // back to the levels and the hub: Keep going brings back the same program
+        const mid = await pg.evaluate(() => JSON.stringify(S.bt.cur.state));
+        await pg.click('#back');
+        await pg.waitForSelector('.bt-lvs');
+        await pg.click('#back');
+        await pg.waitForSelector('#btkeep');
+        await pg.click('#btkeep');
+        await pg.waitForSelector('#btstage .rb');
+        if ((await pg.evaluate(() => JSON.stringify(S.bt.cur.state))) !== mid || (await pg.evaluate(() => JSON.stringify(RB.cur.st()))) !== mid) bad.push('Keep going did not resume exactly');
+
+        // the rest by taps, Go, the robot reaches the flag: win card, 1 star (three hints), the next level open
+        await taps.build(pg, await taps.rest(pg));
+        const full = await pg.evaluate(() => { const sol = BT.get('robot').solve(RB.cur.p), st = RB.cur.st(); return JSON.stringify([st.m, st.f]) === JSON.stringify([sol.m, sol.f]); });
+        if (!full) bad.push('the program built by taps is not solve(): ' + await prog(pg));
+        await chk('built');
+        // watch every frame while it runs (real time, the app's clock is faster): the blocks light up one after the other, Go reads Stop
+        await pg.evaluate(() => {
+          const seen = window.__rbSeen = { keys: [], stop: false, moved: 0 }, bot = document.querySelector('.rb-bot'), t0 = bot.style.transform;
+          const f = () => {
+            if (!RB.cur) return;
+            if (RB.cur.busy()) {
+              const k = [...document.querySelectorAll('.rb-strip .rb-b.on')].map(e => e.dataset.s + e.dataset.i).join();
+              if (k && seen.keys[seen.keys.length - 1] !== k) seen.keys.push(k);
+              if (/Stop/.test(document.querySelector('.rb-go').textContent)) seen.stop = true;
+              if (bot.style.transform !== t0) seen.moved++;
+            }
+            if (!RB.cur.won()) requestAnimationFrame(f);
+          };
+          requestAnimationFrame(f);
+        });
+        await pg.click('.rb-go');
+        try { await pg.waitForSelector('.bt-win #btlvls', { timeout: 30000 }); } catch (e) { bad.push('no win card'); }
+        const running = await pg.evaluate(() => window.__rbSeen);
+        if (running.keys.length < 3 || !running.stop || !running.moved) bad.push('the run is not shown step by step: ' + JSON.stringify(running));
+        notes.push(`the run lit ${running.keys.length} blocks in turn`);
+        await pg.waitForTimeout(700);
+        await chk('win card');
+        const saved = await pg.evaluate(([b, lv]) => ({ stars: BT.rec('robot', b).stars[lv - 1] || 0, lvl: BT.rec('robot', b).lvl, cur: !!S.bt.cur,
+          shown: document.querySelectorAll('.bt-win .rs.on').length }), [want, lv]);
+        if (saved.lvl !== lv + 1 || saved.cur || saved.shown !== saved.stars || saved.stars !== 1) bad.push('stars not saved ' + JSON.stringify(saved));
+        notes.push(`won with ${saved.stars} star`);
+        if (bad.length) fail(tag + ':\n  ' + bad.join('\n  '));
+        else step(`${tag}: Home -> Brain Teasers -> Robot Path -> level ${lv}: ${notes.join('; ')}; the failed run shown gently in amber and counted, ` +
+          `Undo, hints 1-2 change nothing, hint 3 puts one block in, Keep going resumes exactly, the run shown step by step; targets 48 px, ` +
+          `no sideways scroll, the puzzle fits, no emoji chrome`);
+        network.push(...app.network);
+        for (const e of app.errors) fail(e);
+        await app.ctx.close();
+      }
+    }
+
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');
   } catch (e) {

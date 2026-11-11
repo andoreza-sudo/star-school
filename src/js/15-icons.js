@@ -190,6 +190,11 @@ const ICONS={
     '<rect fill="var(--ic3,currentColor)" opacity=".4" x="2.5" y="2.5" width="19" height="19" rx="3"/>' +
     '<path stroke="currentColor" stroke-width="1.2" d="M5 3.6H19L12 10.6ZM3.6 5.5V19.5L10.6 12.5ZM15.5 10.4L18.6 13.5L15.5 16.6L12.4 13.5Z' +
     'M5.6 20.4H13.4L9.5 16.5ZM20.4 15.1V20.4H15.1Z"/>',
+  'robot':
+    '<rect fill="var(--ic3,currentColor)" opacity=".4" x="5.5" y="15.5" width="13" height="6.5" rx="2.5"/>' +
+    '<path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 6.5V4.2"/><circle cx="12" cy="3.4" r="1.9"/>' +
+    '<rect x="3.5" y="6.5" width="17" height="10.5" rx="3.5"/>' +
+    '<circle fill="var(--ic2,#fff)" cx="9" cy="11.7" r="1.9"/><circle fill="var(--ic2,#fff)" cx="15" cy="11.7" r="1.9"/>',
   'path-math':
 
     '<path fill="none" stroke="currentColor" stroke-width="2.4" d="M7 3.5V10.5M3.5 7H10.5M13.5 7H20.5' +
