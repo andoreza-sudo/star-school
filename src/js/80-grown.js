@@ -3,7 +3,7 @@
    switches, segmented controls, fields and a readable table from the P4-04 components; two columns on a wide screen. Styles in
    src/css/48-setup-grown-care.css. Every id the code and the tests use is kept: #back, #nm, #pn, #bd, .gr[data-g], .pl-grown,
    #ula, #rp-open, [data-rec], [data-play], [data-del], [data-per], [data-max], #pt5, #pt0, #ptp, #applog, #voice, #snd, #mus, #calm,
-   #test, #reset. Nothing here shares or prints; the report card's Print button carries the online note (82-report.js). */
+   #test, #reset. The report card's Print button (82-report.js) and the backup Save buttons (81-backup.js, P5-07) carry the online note. */
 const GW = {
   // a section: icon disc + title, an optional line under it, then the body. tone: a subject or token class for the disc colour.
   card(id, icon, title, body, o = {}) {
@@ -72,7 +72,8 @@ function grown(){let armed=false;
    <div><b>Storage</b> ${SAVE_FAILED?'<span class="gw-bad">could not save (device storage may be full)</span>':'saving OK'}</div>
    ${SAVE_CORRUPT?'<div class="gw-bad">The old save could not be read. A fresh start was made and the old data was kept on the device.</div>':''}
    <div><b>Last errors</b> ${(S.err||[]).length?'<ul class="gw-errs">'+(S.err||[]).slice().reverse().map(e=>'<li><span>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+'</span> '+esc(e.msg)+'</li>').join('')+'</ul>':'none'}</div></div></details>
-  ${GW.card('gw-reset','warning','Start over',`${UI.btn('Erase everything',{size:'sm',kind:'risk',icon:'trash',id:'reset'})}`,{tone:'gw-dz',sub:'Erases all progress, the pet, stars, coins and voice recordings on this tablet. This cannot be undone.'})}
+  ${BAK.card()}
+  ${GW.card('gw-reset','warning','Start over',`<div class="gw-bkrow">${UI.btn('Save a backup first',{size:'sm',icon:'download',id:'bk-first'})}${onlineNote()}</div>${UI.btn('Erase everything',{size:'sm',kind:'risk',icon:'trash',id:'reset'})}`,{tone:'gw-dz',sub:'Erases all progress, the pet, stars, coins and voice recordings on this tablet. This cannot be undone, so save a backup first if you may want it back.'})}
   </div></div>`);
   $('#back').onclick=()=>home(true);
   $('#nm').oninput=e=>{if(e.target.value.trim()){S.name=e.target.value.trim();save()}};
@@ -81,6 +82,7 @@ function grown(){let armed=false;
   gradePickBind(g=>{setGrade(g)});
   placeGrownBind();
   reportGrownBind();
+  BAK.bind();
   $('#ula').onchange=e=>{S.unlockAll=e.target.checked;save()};
   $$('[data-per]').forEach(b=>b.onclick=()=>{ptCfg().per=+b.dataset.per;save();grown()});
   $$('[data-max]').forEach(b=>b.onclick=()=>{ptCfg().max=+b.dataset.max;save();grown()});
@@ -96,7 +98,7 @@ function grown(){let armed=false;
   $$('[data-play]').forEach(b=>b.onclick=()=>{const c=CLIPS.find(x=>x.id==b.dataset.play);if(c)new Audio(c.url).play().catch(()=>{})});
   $$('[data-del]').forEach(b=>b.onclick=async()=>{await DB.del(b.dataset.del);await loadClips();grown()});
   $$('[data-rec]').forEach(b=>b.onclick=()=>{const[k,l]=b.dataset.rec.split('|');record(k,l=='x'?null:+l,b)});
-  $('#reset').onclick=async e=>{if(!armed){armed=true;e.currentTarget.querySelector('span').textContent='Tap again to erase ALL progress';return}try{localStorage.removeItem(KEY);const d=await DB.open();d.close();indexedDB.deleteDatabase('starschool')}catch(x){}location.reload()}}
+  $('#reset').onclick=async e=>{if(!armed){armed=true;e.currentTarget.querySelector('span').textContent='Tap again to erase ALL progress';return}try{localStorage.removeItem(KEY);localStorage.removeItem(BAK.UNDO);const d=await DB.open();d.close();indexedDB.deleteDatabase('starschool')}catch(x){}location.reload()}}
 async function record(kind,line,btn){if(inFrame)return micHelp('frame');if(!navigator.mediaDevices||!window.MediaRecorder)return micHelp('frame');
   try{const pm=await navigator.permissions.query({name:'microphone'});if(pm.state=='denied')return micHelp('denied')}catch(e){}
   let st;try{st=await navigator.mediaDevices.getUserMedia({audio:true})}catch(e){return micHelp(e&&e.name=='NotFoundError'?'none':'denied')}

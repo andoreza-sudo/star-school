@@ -7361,6 +7361,135 @@ async function main() {
         'scroll; no particles with reduced motion or in calm mode');
     }
 
+    // P5-07 backup at 380x780 and 1024x600, real taps: hold the gear to open Grown-ups, Save a backup (the download, the share sheet when
+    //    the browser has one, and offline), Start over (two taps, after Save a backup first), load the file back with the file picker
+    //    (a summary sheet: Not now changes nothing, Yes brings the progress back), Undo last load; bad files give a message and change
+    //    nothing. Targets at least 48 px, nothing wider than the screen, the online note beside every Save button.
+    {
+      const fs = require('fs'), os = require('os'), path = require('path');
+      const look = () => {
+        const vw = document.documentElement.clientWidth, out = [];
+        for (const e of document.querySelectorAll('#app button, #app summary, #app label.switch')) {
+          const r = e.getBoundingClientRect();
+          if (!r.width || e.closest('svg')) continue;
+          if (Math.min(e.offsetWidth, e.offsetHeight) < 48) out.push('small ' + (e.id || e.className || e.tagName) + ' ' + e.offsetWidth + 'x' + e.offsetHeight);
+          if (r.left < -1 || r.right > vw + 1) out.push('outside ' + (e.id || e.className) + ' ' + Math.round(r.left) + '..' + Math.round(r.right));
+        }
+        for (const s of [document.documentElement, ...document.querySelectorAll('#app .scroll')])
+          if (s.scrollWidth > s.clientWidth + 1 && getComputedStyle(s).overflowX != 'hidden') out.push('sideways scroll ' + (s.className || 'page') + ' ' + s.scrollWidth);
+        const w = document.createTreeWalker(document.querySelector('#app'), NodeFilter.SHOW_TEXT);
+        for (let n; (n = w.nextNode());) {
+          const el = n.parentElement;
+          if (!el || el.closest('.pet-svg, .gx-pp, .gx-sp, .petbig, .tblw')) continue;
+          const m = n.textContent.match(/\p{Extended_Pictographic}|[◀▶✕★✓]/u);
+          if (m) out.push('emoji chrome ' + m[0] + ' in ' + (el.id || el.className));
+        }
+        return out;
+      };
+      const bad = [];
+      const tmpd = fs.mkdtempSync(path.join(os.tmpdir(), 'ss-bak-'));
+      for (const [w, h] of [[380, 780], [1024, 600]]) {
+        const tag = w + 'x' + h;
+        const ba = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const bp = ba.page;
+        const chk = async what => { for (const o of await bp.evaluate('(' + look.toString() + ')()')) bad.push(tag + ' ' + what + ': ' + o); };
+        await bp.waitForSelector('.game[data-p="math"]');
+        const s0 = await bp.evaluate(() => ({ stars: S.stars, coins: S.coins, name: S.name, pet: S.pet, grade: S.grade, maps: JSON.stringify(S.maps) }));
+        const gb = await (await bp.$('#gear')).boundingBox();
+        await bp.mouse.move(gb.x + gb.width / 2, gb.y + gb.height / 2);
+        await bp.mouse.down();
+        await vwait(bp, 1500);
+        await bp.mouse.up();
+        await bp.waitForSelector('#gw-bak', { timeout: 3000 });
+        await bp.waitForTimeout(400);
+        await bp.evaluate(() => document.querySelector('#gw-bak').scrollIntoView({ block: 'start' }));
+        await bp.waitForTimeout(200);
+        await chk('Backup card');
+        const ui = await bp.evaluate(() => {
+          const note = id => { const n = document.querySelector(id).closest('.gw-bkrow').querySelector('.online-note'); return n ? n.textContent + '|' + n.getBoundingClientRect().height : ''; };
+          return { save: note('#bk-save'), first: note('#bk-first'), load: document.querySelector('#bk-load').offsetHeight, undo: !!document.querySelector('#bk-undo'),
+            ico: document.querySelectorAll('#gw-bak .btn svg.ic').length };
+        });
+        if (!/online to share or print/.test(ui.save) || !/online to share or print/.test(ui.first) || ui.undo || ui.ico < 2 || ui.load < 48) bad.push(tag + ' Backup card: ' + JSON.stringify(ui));
+        // the share sheet, when the browser has one (stubbed: headless Linux has none)
+        await bp.evaluate(() => { navigator.canShare = () => true; navigator.share = async d => { window.__shared = { n: d.files[0].name, t: await d.files[0].text() }; }; });
+        await bp.click('#bk-save');
+        await bp.waitForFunction(() => window.__shared);
+        const sh = await bp.evaluate(() => ({ n: window.__shared.n, h: JSON.parse(window.__shared.t) }));
+        if (!/^starschool-.+-\d{4}-\d\d-\d\d\.json$/.test(sh.n) || sh.h.app !== 'Star School' || sh.h.save !== 6 || sh.h.data.stars !== s0.stars || sh.h.name !== s0.name)
+          bad.push(tag + ' shared backup: ' + sh.n + ' ' + JSON.stringify(Object.assign({}, sh.h, { data: 0 })));
+        // no share sheet: a download, and it still works offline (with the friendly offline message)
+        await bp.evaluate(() => { navigator.canShare = undefined; navigator.share = undefined; });
+        await ba.ctx.setOffline(true);
+        const [dl] = await Promise.all([bp.waitForEvent('download'), bp.click('#bk-first')]);
+        const file = path.join(tmpd, 'backup-' + w + '.json');
+        await dl.saveAs(file);
+        const toast = await bp.evaluate(() => document.querySelector('.toast') ? document.querySelector('.toast').textContent : '');
+        await ba.ctx.setOffline(false);
+        const dj = JSON.parse(fs.readFileSync(file, 'utf8'));
+        if (!/^starschool-.+\.json$/.test(dl.suggestedFilename()) || dj.data.stars !== s0.stars || dj.data.name !== s0.name || !/offline|Backup saved/i.test(toast))
+          bad.push(tag + ' downloaded backup: ' + dl.suggestedFilename() + ' ' + toast);
+        // Start over: two taps (the first only arms it)
+        await bp.click('#reset');
+        await bp.waitForFunction(() => /Tap again/.test(document.querySelector('#reset').textContent));
+        await Promise.all([bp.waitForNavigation({ timeout: 60000 }), bp.click('#reset')]); // the page reloads, empty
+        await bp.waitForSelector('.su-step', { timeout: 60000 });
+        const z = await bp.evaluate(() => ({ stars: S.stars, name: S.name, undo: !!localStorage.getItem(BAK.UNDO) }));
+        if (z.stars !== 0 || z.name !== '' || z.undo) bad.push(tag + ' Start over: ' + JSON.stringify(z));
+        await bp.evaluate(() => { grown(); });
+        await bp.waitForSelector('#bk-file', { state: 'attached' });
+        // refused files: a message, no sheet, nothing changed
+        for (const [nm, body, re] of [['new.json', '{"app":"Star School","save":999,"data":{}}', /newer/], ['other.json', '{"hello":1}', /isn't a Star School backup/],
+          ['bad.json', '{"app":"Sta', /damaged/], ['empty.json', '', /empty/]]) {
+          await bp.setInputFiles('#bk-file', { name: nm, mimeType: 'application/json', buffer: Buffer.from(body) });
+          await bp.waitForFunction(r => new RegExp(r).test(document.querySelector('#bk-msg').textContent), re.source);
+          const r = await bp.evaluate(() => ({ sheet: !!document.querySelector('.sheet'), stars: S.stars, raw: localStorage.getItem(KEY), undo: !!localStorage.getItem(BAK.UNDO) }));
+          if (r.sheet || r.stars !== 0 || r.undo) bad.push(tag + ' refused ' + nm + ': ' + JSON.stringify(r));
+        }
+        await chk('Backup message');
+        // Not now changes nothing
+        await bp.setInputFiles('#bk-file', file);
+        await bp.waitForSelector('#bk-yes');
+        const sum = await bp.evaluate(() => ({ t: document.querySelector('.sheet').textContent, yes: document.querySelector('#bk-yes').offsetHeight, no: document.querySelector('#bk-no').offsetHeight }));
+        if (!/Replace this tablet's progress\?/.test(sum.t) || !sum.t.includes(s0.name) || !sum.t.includes(String(s0.stars)) || !/Backed up on/.test(sum.t) || sum.yes < 48 || sum.no < 48 || /undefined|NaN/.test(sum.t))
+          bad.push(tag + ' summary sheet: ' + JSON.stringify(sum));
+        await chk('summary sheet');
+        await bp.click('#bk-no');
+        await bp.waitForSelector('.sheet', { state: 'detached' });
+        const nn = await bp.evaluate(() => ({ stars: S.stars, undo: !!localStorage.getItem(BAK.UNDO) }));
+        if (nn.stars !== 0 || nn.undo) bad.push(tag + ' Not now changed something: ' + JSON.stringify(nn));
+        // Yes brings the progress back (the page reloads)
+        await bp.setInputFiles('#bk-file', file);
+        await bp.waitForSelector('#bk-yes');
+        await Promise.all([bp.waitForNavigation(), bp.click('#bk-yes')]); // the page reloads
+        await bp.waitForFunction(x => typeof S != 'undefined' && S && S.stars === x, s0.stars);
+        const s1 = await bp.evaluate(() => ({ stars: S.stars, coins: S.coins, name: S.name, pet: S.pet, grade: S.grade, maps: JSON.stringify(S.maps), undo: !!localStorage.getItem(BAK.UNDO) }));
+        if (JSON.stringify(Object.assign({}, s1, { undo: 0 })) !== JSON.stringify(Object.assign({}, s0, { undo: 0 })) || !s1.undo) bad.push(tag + ' progress after load: ' + JSON.stringify(s1) + ' vs ' + JSON.stringify(s0));
+        // Undo last load: the empty save from before comes back and the button goes
+        await bp.waitForSelector('.game[data-p], .su-step');
+        await bp.evaluate(() => { grown(); });
+        await bp.waitForSelector('#bk-undo');
+        await bp.evaluate(() => document.querySelector('#gw-bak').scrollIntoView({ block: 'start' }));
+        await chk('Backup card with Undo');
+        await Promise.all([bp.waitForNavigation(), bp.click('#bk-undo')]);
+        await bp.waitForFunction(() => typeof S != 'undefined' && S && S.stars === 0 && S.name === '');
+        await bp.evaluate(() => { grown(); });
+        await bp.waitForSelector('#bk-load');
+        const u = await bp.evaluate(() => ({ undo: !!document.querySelector('#bk-undo'), key: !!localStorage.getItem(BAK.UNDO) }));
+        if (u.undo || u.key) bad.push(tag + ' Undo left its button or copy behind: ' + JSON.stringify(u));
+        await bp.evaluate(() => document.querySelector('#gw-reset').scrollIntoView({ block: 'center' }));
+        await chk('Start over card');
+        network.push(...ba.network);
+        for (const e of ba.errors) fail(e);
+        await ba.ctx.close();
+      }
+      fs.rmSync(tmpd, { recursive: true, force: true });
+      if (bad.length) fail('P5-07 backup:\n  ' + bad.join('\n  '));
+      else step('P5-07: Grown-ups opened by the gear, Save a backup (share sheet, download, offline download), Start over, Load a backup by the file picker ' +
+        '(summary, Not now, Yes brings the progress back, bad files refused), Undo last load; online note beside each Save button, 48 px targets, ' +
+        'no sideways scroll at 380x780 and 1024x600');
+    }
+
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');
   } catch (e) {
