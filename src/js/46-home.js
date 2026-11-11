@@ -6,13 +6,13 @@ function gradePickBind(onPick){
     $$('.gr').forEach(x=>{x.classList.toggle('sel',x==b);x.setAttribute('aria-checked',x==b)});
     say(gradeSpoken(g),b);SFX.pop(1);onPick(g)})}
 function setup(){let pet=S.pet,grade=gradeOf();
-  view(`<div class="center setup"><h1>⭐ Star School</h1>
+  view(`<div class="center setup"><h1 class="gx-logo"><span class="hm-mark">${ico('star',36)}</span><span>Star School</span></h1>
   <div class="card"><div class="sub" style="margin-bottom:8px">What's your name?</div><input class="name" id="nm" value="${esc(S.name)}" placeholder="Your name"></div>
   <div class="card"><div class="sub" style="margin-bottom:8px">Pick a pet egg to hatch!</div>
-   <div class="pets">${Object.entries(PETS).map(([k,p])=>`<button class="btn petopt ${k==pet?'sel':''}" data-p="${k}"><span>${petPick(k)}</span>${p.n}</button>`).join('')}</div>
+   <div class="pets">${Object.entries(PETS).map(([k,p])=>`<button class="btn petopt gx-pet ${k==pet?'sel':''}" data-p="${k}"><span class="gx-pp">${petPick(k)}</span><b>${p.n}</b></button>`).join('')}</div>
    <input class="name" id="pn" style="margin-top:12px;width:100%" value="${esc(S.petName)}" placeholder="Name your pet (${PETS[pet].def})"></div>
   <div class="card"><div class="sub" style="margin-bottom:8px">What grade? <span class="small">(Grown-ups can change this later)</span></div>${gradePickHTML(grade)}</div>
-  <button class="btn big" id="go">Let's go! 🚀</button></div>`);
+  ${UI.btn("Let's go!",{kind:'primary',size:'lg',icon:'rocket',id:'go'})}</div>`);
   gradePickBind(g=>{grade=g});
   $$('.petopt').forEach(b=>b.onclick=()=>{pet=b.dataset.p;$$('.petopt').forEach(x=>x.classList.toggle('sel',x==b));$('#pn').placeholder=`Name your pet (${PETS[pet].def})`;SFX.giggle();anim(b.querySelector('span'),'jump')});
   $('#go').onclick=()=>{const n=$('#nm').value.trim();if(!n){fb('Type your name first!','warn');SFX.wrong();return}
@@ -254,13 +254,22 @@ function home(first){
   if(first&&S.voice)setTimeout(()=>say(`Hi ${S.name}! Pick a game!`),400)}
 
 let MAPP='math',MAPW={}; // MAPW[path] = the world picked in the strip (this session only, not saved)
+/* P4-18: drawn map chrome (until P4-09 draws world scenes). A world badge is a disc in the world's own colour with the icon of
+   the first skill that is new in that world (else its first skill); a stop shows its skill icon, a boss stop the drawn boss. */
+function wBadge(p,wi){const ws=PATHS[p].worlds,w=ws[wi],seen=new Set();
+  ws.slice(0,wi).forEach(x=>x.nodes.forEach(n=>seen.add(n[0])));
+  const sk=(w.nodes.find(n=>!seen.has(n[0]))||w.nodes[0]||['star'])[0];
+  return`<span class="wbadge s-${p}" style="--wb:${w.c}" aria-hidden="true">${ico(icoSk(sk),20)}</span>`}
+function nodeFace(n,lk){if(lk)return ico('lock',32);
+  if(n.sk=='boss')return RW.boss(n.boss[1],'idle','nb-art')||`<span class="nb-e">${n.boss[0]}</span>`;
+  return ico(icoSk(n.sk),38)}
 /* Map of a path (P1-05: long maps). A strip of world chips, grouped by grade, sits above the map; the map draws only the picked
    world and its two neighbours, so it stays fast with 16 worlds and 150 stops. pathMap(p) opens on the world the child is in
    (or the one they just played); pathMap(p, wi) opens on world wi. */
 function pathMap(p,wi){MAPP=p;const P=PATHS[p];
   const last=G&&G.path==p&&G.node>=0&&NODES[p][G.node]?G.node:-1;
   MAPW[p]=wi!=null?wi:last>=0?NODES[p][last].wi:curWorld(p);
-  view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title">${P.e} ${P.n}</div><div class="sp"></div><div class="stars">⭐ ${S.stars}</div></div>
+  view(`<div class="top tbar mp-top s-${p}">${UI.ibtn('back','Back',{size:'sm',id:'back'})}<div class="ttl mp-ttl">${ico(UI.SUBJ_ICON[p]||'map',30)}<span>${esc(P.n)}</span></div>${UI.chip('star',S.stars,{aria:'Stars'})}</div>
   <div class="wstrip" id="wstrip" aria-label="Worlds"></div>
   <div class="scroll" id="ms"><div class="map" id="map"></div></div>`);
   $('#back').onclick=()=>home();drawMap(p);music(true);
@@ -275,7 +284,7 @@ function worldStrip(p){
     if(!PATHS[p].byLevel&&w.g!==lastG){lastG=w.g;h+=`<span class="wgl">${gradeLabel(w.g)}</span>`}
     const open=worldOpen(p,wi),done=worldFinished(p,wi),sel=wi==MAPW[p];
     h+=`<button class="wchip${sel?' on':''}${done?' done':''}${open?'':' lock'}${wi==cw?' cur':''}" data-w="${wi}" aria-pressed="${sel}"`
-      +` aria-label="${esc(w.n)}${done?', done':open?'':', locked'}"><span class="we">${w.e}</span>${esc(w.n)}`
+      +` aria-label="${esc(w.n)}${done?', done':open?'':', locked'}">${wBadge(p,wi)}${esc(w.n)}`
       +`${done?ico('check',18):open?'':ico('lock',18)}</button>`;
   });
   return h;
@@ -285,21 +294,21 @@ function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],ws=PATHS[p].
   const st=$('#wstrip');if(st){st.innerHTML=worldStrip(p);$$('.wchip').forEach(b=>b.onclick=()=>mapGo(p,+b.dataset.w));
     const on=st.querySelector('.wchip.on');if(on)st.scrollLeft=Math.max(0,on.offsetLeft-(st.clientWidth-on.offsetWidth)/2)}
   let y=10,bands='';
-  const more=(wi,up)=>`<button class="btn wmore" data-w="${wi}" style="top:${y}px">${ico(up?'back':'go',20)}<span class="we">${ws[wi].e}</span>${esc(ws[wi].n)}</button>`;
+  const more=(wi,up)=>`<button class="btn wmore" data-w="${wi}" style="top:${y}px">${ico(up?'arrow-up':'arrow-down',20)}${wBadge(p,wi)}${esc(ws[wi].n)}</button>`;
   if(w0>0){bands+=more(w0-1,true);y+=72}
   for(let wi=w0;wi<=w1;wi++){const w=ws[wi],y0=y,[a,b]=WR[p][wi],canTest=worldOpen(p,wi)&&!worldFinished(p,wi);y+=canTest?132:86;
     for(let i=a;i<=b;i++){pts.push([W/2+Math.sin(i*1.15)*amp,y,i]);y+=106}
-    bands+=`<div class="wband" style="top:${y0}px;height:${y-y0-24}px;background:${w.c}"></div><div class="wtitle" data-w="${wi}" style="top:${y0+14}px">${w.e} ${w.n}${worldFinished(p,wi)?' ✅':''}</div>${canTest?`<button class="btn xs tobtn" data-w="${wi}" style="top:${y0+58}px">⚡ Already know it? Test out!</button>`:''}`;y+=4}
+    bands+=`<div class="wband" style="top:${y0}px;height:${y-y0-24}px;background:${w.c}"></div><div class="wtitle" data-w="${wi}" style="top:${y0+14}px">${wBadge(p,wi)}<span>${esc(w.n)}</span>${worldFinished(p,wi)?ico('check-circle',24,'ic-good'):''}</div>${canTest?`<button class="btn xs tobtn" data-w="${wi}" style="top:${y0+58}px">${ico('bolt',20)}<span>Already know it? Test out!</span></button>`:''}`;y+=4}
   let path='';pts.forEach(([x,yy],k)=>{if(!k)path=`M${x} ${yy}`;else{const[px,py]=pts[k-1];path+=` C${px} ${py+55} ${x} ${yy-55} ${x} ${yy}`}});
   const cur=curNode(p),allDone=N.every((n,i)=>passed(p,i)),end=w1==ws.length-1;
   const nodes=pts.map(([x,yy,i])=>{const n=N[i],s=nInfo(n),st=getSt(p,i),lk=!unlocked(p,i);
-    return`<button class="btn node ${s.area} ${lk?'lock':''} ${st?'done':''} ${i==cur&&!lk&&!allDone?'cur':''}" data-n="${i}" style="left:${x}px;top:${yy}px">${lk?'🔒':s.e}</button>${stopNew(p,i)?`<div class="nnew" style="left:${x}px;top:${yy-50}px">NEW</div>`:''}<div class="nlab" style="left:${x}px;top:${yy+42}px">${esc(n.t)}<div class="nstar">${st?'★'.repeat(st)+'☆'.repeat(3-st):''}</div></div>`}).join('');
+    return`<button class="btn node s-${p} ${s.area} ${lk?'lock':''} ${st?'done':''} ${i==cur&&!lk&&!allDone?'cur':''}" data-n="${i}" style="left:${x}px;top:${yy}px" aria-label="${esc(n.t)}${lk?', locked':''}">${nodeFace(n,lk)}</button>${stopNew(p,i)?`<div class="nnew" style="left:${x}px;top:${yy-50}px">New</div>`:''}<div class="nlab" style="left:${x}px;top:${yy+42}px">${esc(n.t)}<div class="nstar">${st?UI.stars(st,3,16):''}</div></div>`}).join('');
   const cp=pts.find(q=>q[2]==cur),side=cp&&cp[0]>W/2?-66:66;
   let tail=end&&allDone?90:20;
   if(!end){y+=8;bands+=more(w1+1,false);tail=80}
   m.style.height=(y+tail)+'px';
   m.innerHTML=bands+`<svg width="${W}" height="${y+20}"><path d="${path}" fill="none" stroke="#d6c7a8" stroke-width="16" stroke-linecap="round"/><path d="${path}" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="8 10"/></svg>`+nodes
-    +(cp?`<div class="mappet ${petAura()}" style="left:${cp[0]+side}px;top:${cp[1]+18}px">${petHTML()}</div>`:'')+(end&&allDone?`<div class="wtitle" style="top:${y+10}px;font-size:24px">🏆 ${PATHS[p].n} Champion! 🏆</div>`:'');
+    +(cp?`<div class="mappet ${petAura()}" style="left:${cp[0]+side}px;top:${cp[1]+18}px">${petHTML()}</div>`:'')+(end&&allDone?`<div class="wtitle mp-champ" style="top:${y+10}px">${ico('trophy',30)}<span>${esc(PATHS[p].n)} Champion!</span></div>`:'');
   $$('.node').forEach(b=>b.onclick=()=>{const i=+b.dataset.n;if(!unlocked(p,i)){SFX.wrong();anim(b,'sad');fb('Finish the stop before this one!','warn');return}SFX.whoosh();
     open(p,i)});
   $$('.tobtn').forEach(b=>b.onclick=()=>testOut(p,+b.dataset.w));
@@ -307,7 +316,7 @@ function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],ws=PATHS[p].
 function open(p,i){const n=NODES[p][i];if(n.sk=='boss')bossIntro(p,i);else if(n.sk.startsWith('es_')&&n.sk!='es_mix'&&n.lv==1)learn(p,i);else start(p,i)}
 
 function learn(p,i){const n=NODES[p][i],items=SPN[n.sk.slice(3)];
-  view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title">Let's learn!</div><div class="sp"></div><button class="btn big" id="go" style="font-size:20px;padding:10px 18px">¡Vamos! ▶</button></div>
+  view(`<div class="top tbar gx-mtop gx-learn s-es">${UI.ibtn('back','Back',{size:'sm',id:'back'})}<div class="ttl gx-ttl"><span class="gx-tb">${ico('path-es',24)}</span><span>Let's learn!</span></div>${UI.btn('¡Vamos!',{kind:'subject',p:'es',icon:'play',id:'go'})}</div>
   <div class="scroll"><p class="sub" style="text-align:center">Tap each card to hear it in English, then Spanish. Then tap ¡Vamos!</p>
   <div class="lgrid">${items.map(it=>`<button class="btn lcard" data-es="${esc(it[0])}" data-en="${esc(it[1])}"><span class="lp">${picHTML(it,false)}</span><b>${esc(it[0])}</b><small>${esc(it[1])}</small></button>`).join('')}</div></div>`);
   $('#back').onclick=()=>pathMap(p);$('#go').onclick=()=>{SFX.whoosh();start(p,i)};

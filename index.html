@@ -843,14 +843,30 @@ html.notext .pktxt{display:none}
 .viz .vwl{fill:var(--math-tint);stroke:var(--math-shade);stroke-width:2}
 .viz .vwr{fill:var(--play-tint);stroke:var(--play-shade);stroke-width:2}
 /* coins (penny copper, the rest silver) and bills */
-.viz .vcu{fill:var(--play-tint);stroke:var(--play-shade);stroke-width:3}
-.viz .vsv{fill:var(--surface-2);stroke:var(--ink-3);stroke-width:3}
-.viz .vci{fill:none;stroke:var(--ink-3);stroke-width:1.5;stroke-dasharray:2 3}
+.viz .vcu{fill:var(--ill-tan);stroke:var(--ill-tan-3);stroke-width:3}
+.viz .vsv{fill:var(--ill-grey-1);stroke:var(--ill-grey-2);stroke-width:3}
+.viz .vci{fill:none;stroke:var(--ill-grey-2);stroke-width:1.5;stroke-dasharray:2 3}
 .viz .vcc{font-size:13px}
-.viz .vcp{fill:var(--play-shade)}
+.viz .vcp{fill:var(--ill-brown-3)}
 .viz .vbl{fill:var(--good-tint);stroke:var(--good-ink);stroke-width:2}
 .viz .vbi{fill:none;stroke:var(--good-ink);stroke-width:1.5}
 .viz .vcb{font-size:20px;fill:var(--good-ink)}
+/* depth (P4-18; the header of 23-viz.js describes it): counters in the shade tone with a deep rim, a base-tone spot toward the
+   light (.vbs) and a white gloss (.vsp); ledges (.vld), gloss bands (.vgs) and arcs (.vgc); decorations never take taps */
+.viz g.v1>circle{fill:var(--math-shade);stroke:var(--ill-blue-3)}
+.viz g.v2>circle{fill:var(--play-shade);stroke:var(--play-deep)}
+.viz .vbs{fill:none;stroke:var(--math)}
+.viz .v2 .vbs{stroke:var(--play)}
+.viz .vsp{fill:none;stroke:var(--surface);opacity:.6}
+.viz .vld{fill:var(--ledge-soft);stroke:none}
+.viz .vgs{fill:var(--surface);stroke:none;opacity:.3}
+.viz .vgc{fill:none;stroke:var(--surface);opacity:.55}
+.viz .vfs{fill:var(--surface-2);stroke:none}
+.viz .vbd{fill:var(--ill-blue-3)}
+.viz .vcs{fill:var(--ill-grey);stroke:none}
+.viz .vcs.vcp{fill:var(--ill-tan-2)}
+.viz .vci.vcp{fill:none;stroke:var(--ill-tan-3)}
+.viz .vbs,.viz .vsp,.viz .vld,.viz .vgs,.viz .vgc,.viz .vfs,.viz .vcs{pointer-events:none}
 /* P1-08 mastery: the Challenge tag on a question from the next harder stop (51-mastery.js mastShow). Tokens only. */
 .mtag{display:inline-flex;align-items:center;gap:var(--s-1);align-self:center;background:var(--star-tint);color:var(--ink);font-weight:700;
   font-size:var(--fs-2);border-radius:var(--r-pill);padding:var(--s-1) var(--s-3)}
@@ -872,20 +888,37 @@ html.notext .pktxt{display:none}
 .stc-chip.off{color:var(--ink-3);background:var(--surface-2);--ic2:var(--surface-2)}
 .stc-chip.off .stc-fl{opacity:.45}
 .stc-card{background:var(--surface);border-radius:var(--r-card);border:2px solid var(--line);padding:var(--s-4);max-width:520px;margin:0 auto;text-align:center}
-.stc-big{font-size:var(--fs-6);font-weight:700;color:var(--play-shade)}
+.stc-big{font-family:var(--font-display);font-size:var(--fs-7);font-weight:700;line-height:1;color:var(--play-shade);font-variant-numeric:tabular-nums}
+/* P4-18: the flame on a glowing disc, the count beside it; star cells, moon rest days, prize chips */
+.stc-hero{display:flex;align-items:center;justify-content:center;gap:var(--s-3);margin-bottom:var(--s-2)}
+.stc-fd{display:grid;place-items:center;width:88px;height:88px;border-radius:50%;background:var(--play-tint);color:var(--play);--ic2:var(--star);
+  box-shadow:inset 0 0 0 4px var(--try),0 5px 0 var(--play-shade)}
+.stc-hero.off .stc-fd{background:var(--surface-2);color:var(--ledge-soft);--ic2:var(--surface-2);box-shadow:inset 0 0 0 4px var(--line),0 4px 0 var(--line)}
+.stc-hero.off .stc-big{color:var(--ink-3)}
+.stc-sub .ic{vertical-align:-.25em}
+.stc-pzs{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:var(--s-2);margin-top:var(--s-3)}
+.stc-pz{display:inline-flex;align-items:center;gap:2px;padding:2px var(--s-2) 2px var(--s-1);border-radius:var(--r-pill);background:var(--surface-2);color:var(--ink-2);
+  box-shadow:inset 0 0 0 2px var(--line)}
+.stc-pz .ic{color:var(--star-shade)}
+.stc-pz.got{background:var(--good-tint);color:var(--good-ink);box-shadow:inset 0 0 0 2px var(--good)}
+.stc-pz.got .ic{color:var(--good-ink)}
+.stc-m .rs{display:block}
+.stc-m .ic{display:block;color:var(--brand)}
 .stc-sub{font-size:var(--fs-3);margin:var(--s-1) 0;color:var(--ink-2)}
 .stc-sub.small{font-size:var(--fs-1);color:var(--ink-3)}
 .stc-nav{display:flex;align-items:center;justify-content:space-between;margin:var(--s-3) 0 var(--s-2);font-size:var(--fs-3)}
 .stc-nav .btn[disabled]{opacity:.35}
+.stc-nav b{font-family:var(--font-display);font-size:var(--fs-4)}
 .stc-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:var(--s-1)}
 .stc-h{font-size:var(--fs-1);font-weight:700;color:var(--ink-3);padding:var(--s-1) 0}
-.stc-d{min-height:var(--tap);border-radius:var(--r-chip);background:var(--surface-2);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1}
+.stc-d{min-height:var(--tap);border-radius:var(--r-chip);background:var(--surface-2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;line-height:1.1;padding:3px 0}
 .stc-d.stc-pad{background:none}
-.stc-d.on{background:var(--star-tint)}
+.stc-d.on{background:var(--star-tint);box-shadow:inset 0 -3px 0 var(--star)}
+.stc-d.on .stc-n{color:var(--try-ink);font-weight:700}
 .stc-d.rest{background:var(--brand-tint)}
 .stc-d.now{outline:3px solid var(--brand);outline-offset:-3px}
 .stc-n{font-size:var(--fs-1);color:var(--ink-2)}
-.stc-m{font-size:var(--fs-2);min-height:1em}
+.stc-m{display:grid;place-items:center;min-height:22px}
 @media (max-width:420px){.stc-card{padding:var(--s-3)}.stc-grid{gap:2px}}
 /* P2-15 ABC Beach (32-gen-read.js genAbc, genSoundB, genSyl). Tokens only. */
 .choices.syms.sym4{grid-template-columns:repeat(2,1fr)}
@@ -896,7 +929,7 @@ html.notext .pktxt{display:none}
 .rp-entry{display:flex;align-items:center;gap:var(--s-3);flex-wrap:wrap}
 .rp-entry .btn{display:inline-flex;align-items:center;gap:var(--s-2);min-height:var(--tap)}
 .rp-entry .small{flex:1 1 180px}
-.rp-noprint .btn{min-height:var(--tap)}
+.rp-noprint .btn{min-height:var(--tap);min-width:var(--tap)}
 .rp-head{padding:var(--s-2) var(--s-1) 0}
 .rp-t{font-size:var(--fs-5);font-weight:700;line-height:var(--lh-5);overflow-wrap:anywhere}
 .rp-card{overflow-wrap:anywhere}
@@ -911,7 +944,7 @@ html.notext .pktxt{display:none}
 /* this week / last week */
 .rp-wrow{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--s-2);margin-bottom:var(--s-3)}
 .rp-wl{grid-column:1/-1;font-weight:700;color:var(--ink-2)}
-.rp-cell{background:var(--surface-2);border-radius:var(--r-btn);padding:var(--s-2);min-width:0}
+.rp-cell{background:var(--surface-2);border-radius:var(--r-btn);padding:var(--s-2);min-width:0;overflow-wrap:normal;box-shadow:inset 0 3px 0 var(--line)}
 .rp-h{font-size:var(--fs-1);color:var(--ink-3)}
 .rp-n{font-size:var(--fs-5);font-weight:700;line-height:var(--lh-5)}
 .rp-cell .small{font-size:var(--fs-1)}
@@ -961,7 +994,7 @@ html.notext .pktxt{display:none}
 .rp-fr b{flex:1 1 100%}
 .rp-str{display:flex;align-items:center;gap:var(--s-3)}
 .rp-fl{color:var(--play)}
-@media (max-width:480px){.rp-t{font-size:var(--fs-4)}.rp-n{font-size:var(--fs-4)}.rp-sn{flex-basis:78px}}
+@media (max-width:480px){.rp-wrow{grid-template-columns:repeat(2,1fr)}.rp-t{font-size:var(--fs-4)}.rp-n{font-size:var(--fs-4)}.rp-sn{flex-basis:78px}}
 /* print: plain white page, no buttons, all cards in one flow */
 @media print{
   html,body,#app,.scroll{height:auto!important;overflow:visible!important;display:block!important;background:var(--surface)!important;animation:none!important}
@@ -1037,14 +1070,18 @@ html.notext .pktxt{display:none}
 .pl-sub,.pl-no{min-height:var(--tap);font-size:var(--fs-3);font-weight:700;display:inline-flex;align-items:center;gap:var(--s-2);padding:var(--s-2) var(--s-4)}
 .pl-sub{background:var(--surface);color:var(--brand-shade)}
 .pl-no{background:transparent;box-shadow:none;color:var(--ink-2)}
-.pl-pe{font-size:1.3em;line-height:1}
+.pl-pe{display:grid;place-items:center;line-height:1;color:var(--c,var(--brand))}
 .pl-grown{margin-top:var(--s-3)}
 .pl-grown .small{margin-top:var(--s-1)}
 .pl-in{max-width:560px;margin:0 auto}
 .pl-in .rowh{flex-wrap:wrap;justify-content:center}
-.pl-big{font-size:var(--fs-7);line-height:1.2}
-.pl-done{color:var(--star-shade);line-height:1}
-.pl-res{display:inline-flex;align-items:center;gap:var(--s-2);font-size:var(--fs-5);font-weight:700;background:var(--surface);color:var(--ink);
+.pl-big{position:relative;display:grid;place-items:center;width:112px;height:112px;margin:0 auto var(--s-2);border-radius:34px;color:var(--surface);
+  background:linear-gradient(var(--hi),var(--hi-0) 60%) var(--c,var(--brand));box-shadow:inset 0 -6px 0 var(--c-shade,var(--brand-shade)),0 6px 0 var(--ledge-soft)}
+.pl-tg{position:absolute;right:-10px;bottom:-8px;display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--star);color:var(--try-ink);
+  box-shadow:inset 0 0 0 3px var(--surface),0 3px 0 var(--star-shade)}
+.pl-done{display:grid;place-items:center;width:112px;height:112px;margin:0 auto var(--s-2);border-radius:50%;line-height:1;color:var(--star-shade);
+  background:var(--star-tint);--ic2:var(--star-tint);box-shadow:inset 0 0 0 4px var(--star),0 6px 0 var(--star-shade)}
+.pl-res{display:inline-flex;align-items:center;gap:var(--s-3);font-size:var(--fs-5);font-weight:700;background:var(--surface);color:var(--ink);font-family:var(--font-display);
   border-radius:var(--r-card);padding:var(--s-3) var(--s-5);box-shadow:var(--shadow);margin:var(--s-2) 0}
 .pl-skip{display:flex;align-items:center;justify-content:center;gap:var(--s-1);color:var(--ink-2)}
 .pl-skip .ic{color:var(--good);flex:none}
@@ -1052,7 +1089,10 @@ html.notext .pktxt{display:none}
 .pl-dot{width:18px;height:18px;border-radius:var(--r-pill);background:var(--line);transition:transform var(--t) var(--ease)}
 .pl-dot.now{background:var(--brand-tint);box-shadow:inset 0 0 0 3px var(--brand)}
 .pl-dot.on{background:var(--brand)}
-.pl-tag{font-size:var(--fs-2);font-weight:700;color:var(--ink-2);white-space:nowrap}
+.pl-tag{display:flex;align-items:center;gap:var(--s-1);font-size:var(--fs-2);font-weight:700;color:var(--ink-2);white-space:nowrap}
+.pl-tag .ic{color:var(--c,var(--brand))}
+.pl-res .wbadge{width:48px;height:48px}
+.pl-res .wbadge .ic{width:28px;height:28px}
 .pl-pick{outline:4px solid var(--brand);outline-offset:2px}
 .fb.pl-fb{color:var(--brand)}
 @media (max-width:420px){.pl-card{padding:var(--s-3)}}
@@ -1065,17 +1105,8 @@ html.notext .pktxt{display:none}
 .act{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:16px;padding:10px 4px;line-height:1.15}.act span{font-size:34px}
 .act.mix{background:linear-gradient(135deg,#fde68a,#fca5a5)}
 .map{position:relative;margin:10px 0 20px}
-.map svg{position:absolute;left:0;top:0;pointer-events:none}
+.map>svg{position:absolute;left:0;top:0;pointer-events:none}
 .wband{position:absolute;left:0;right:0;border-radius:28px}
-.wtitle{position:absolute;left:50%;transform:translateX(-50%);background:#fff;border-radius:18px;padding:6px 16px;font-weight:700;font-size:20px;box-shadow:0 3px 0 #0001;white-space:nowrap;z-index:1}
-.node{position:absolute;width:76px;height:76px;margin:-38px 0 0 -38px;border-radius:50%;padding:0;font-size:36px;display:flex;align-items:center;justify-content:center;border:4px solid #fff;z-index:2}
-.node.math{background:#bfdbfe}.node.read{background:#fbcfe8}
-.node.done{border-color:#facc15}
-.node.lock{background:#e7e5e4;opacity:.65;font-size:28px}
-.node.cur{animation:pulse 1.4s infinite;border-color:#f59e0b}
-@keyframes pulse{50%{box-shadow:0 0 0 12px #facc1577}}
-.nlab{position:absolute;transform:translateX(-50%);font-size:13px;font-weight:700;text-align:center;width:120px;line-height:1.1;pointer-events:none;z-index:2;text-shadow:0 0 3px #fff,0 0 3px #fff}
-.nstar{color:#f59e0b;font-size:15px;letter-spacing:1px}
 .mappet{position:absolute;font-size:42px;transform:translate(-50%,-100%);pointer-events:none;animation:bob 2.4s ease-in-out infinite;z-index:3}
 .tabs{display:flex;gap:8px;justify-content:center;margin:10px 0}.tab.on{background:#3b82f6;color:#fff}
 .shopgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px}
@@ -1110,7 +1141,6 @@ html.notext .pktxt{display:none}
 .lgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px}
 .lcard{display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 6px}.lcard .lp{font-size:54px;line-height:1.1}.lcard b{font-size:22px;color:#1d4ed8}.lcard small{font-size:15px;color:var(--muted)}
 .lcard.heard{background:#dcfce7}
-.node.es{background:#bbf7d0}
 .ovl .grow,.ovl .grown{font-size:min(160px,30vh)!important}.ovl h1{font-size:min(34px,7vh)}
 
 .bossbar{flex:1;display:flex;align-items:center;gap:8px;position:relative;min-width:0}
@@ -1124,10 +1154,7 @@ html.notext .pktxt{display:none}
 .hp div{height:100%;background:linear-gradient(90deg,#ef4444,#f97316);transition:width .4s}
 #hpn{font-size:13px;white-space:nowrap;max-width:30vw;overflow:hidden}
 .bossbig{font-size:min(140px,26vh);animation:wobble .5s infinite}
-.node.boss{background:#fecaca;width:90px;height:90px;margin:-45px 0 0 -45px;font-size:46px;border-color:#ef4444}
-.node.boss.done{border-color:#facc15}
-.tobtn{position:absolute;left:50%;transform:translateX(-50%);z-index:2;background:#fef3c7;white-space:nowrap}
-.tobtn:active{transform:translateX(-50%) translateY(3px)}
+/* (P4-18: map stops, world titles, labels and the test-out button moved to 47-gfx.css) */
 /* P1-05 world picker strip (one chip per world, grouped by grade), "more worlds" buttons, NEW tag on stops added later */
 .wstrip{display:flex;align-items:center;gap:var(--s-2);flex:none;overflow-x:auto;padding:var(--s-1) var(--s-3) var(--s-3);scrollbar-width:none}
 .wstrip::-webkit-scrollbar{display:none}
@@ -1136,14 +1163,12 @@ html.notext .pktxt{display:none}
   background:var(--surface);color:var(--ink);font:inherit;font-size:var(--fs-2);font-weight:700;white-space:nowrap;cursor:pointer;
   box-shadow:var(--ledge) var(--line);touch-action:manipulation;transition:transform var(--t-fast)}
 .wchip:active{transform:translateY(3px)}
-.wchip .we{font-size:var(--fs-4);line-height:1}
 .wchip.lock{background:var(--surface-2);color:var(--ink-3)}
 .wchip.done .ic{color:var(--good)}
 .wchip.on{background:var(--brand);color:var(--surface);box-shadow:var(--ledge) var(--brand-shade)}
 .wchip.on .ic{color:var(--surface)}
 .wmore{position:absolute;left:50%;transform:translateX(-50%);z-index:2;display:flex;align-items:center;gap:var(--s-2);min-height:var(--tap);white-space:nowrap}
 .wmore:active{transform:translateX(-50%) translateY(3px)}
-.wmore .we{font-size:var(--fs-4);line-height:1}
 .nnew{position:absolute;transform:translateX(-50%);z-index:3;pointer-events:none;background:var(--danger);color:var(--surface);
   font-size:var(--fs-1);font-weight:700;border-radius:var(--r-pill);padding:1px var(--s-2)}
 .rtag{background:#ede9fe;color:#6d28d9;font-weight:700;font-size:16px;border-radius:12px;padding:3px 12px}
@@ -1884,6 +1909,151 @@ button.hm-tile:active{transform:translateY(3px);box-shadow:inset 0 0 0 2px var(-
   .hm-act{min-height:100px}
   .hm-ai{width:48px;height:48px}
 }
+/* P4-18 graphics quality pass: drawn chrome for the screens that still had emoji or flat looks (map stops and world badges,
+   Fact Sprint, Speed Race, streak calendar, placement, Pet Care, setup, Game Room). Tokens only; motion is transform/opacity
+   (calm mode and reduced motion stop it in 20-base.css). Markup ids and classes are the ones the screens always had. */
+
+/* ---- map (until P4-09 draws the world scenes) ---- */
+.mp-top .ttl.mp-ttl{display:flex;align-items:center;gap:var(--s-2);color:var(--ink)}
+.mp-ttl .ic{flex:none;color:var(--c,var(--brand))}
+.mp-ttl span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+/* world badge: a disc in the world's own colour (--wb, from PATHS) with the icon of its first new skill */
+.wbadge{flex:none;display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:var(--wb,var(--c-tint));
+  color:var(--c-shade,var(--brand-shade));box-shadow:inset 0 0 0 2px var(--surface),inset 0 -3px 0 var(--drop),0 2px 0 var(--drop)}
+.wbadge .ic{width:20px;height:20px}
+.wchip.on .wbadge .ic,.wchip.lock .wbadge .ic{color:var(--c-shade,var(--brand-shade))}
+.wchip.lock .wbadge{opacity:.6}
+.wmore .wbadge{width:30px;height:30px}
+.wmore>.ic{color:var(--brand)}
+.wtitle{position:absolute;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:var(--s-2);z-index:1;white-space:nowrap;
+  background:var(--surface);border-radius:var(--r-pill);padding:var(--s-1) var(--s-4) var(--s-1) var(--s-1);font-family:var(--font-display);
+  font-weight:700;font-size:var(--fs-4);line-height:1.2;box-shadow:inset 0 0 0 2px var(--line),0 4px 0 var(--ledge-soft)}
+.wtitle .wbadge{width:40px;height:40px}
+.wtitle .wbadge .ic{width:24px;height:24px}
+.wtitle.mp-champ{padding:var(--s-2) var(--s-5);font-size:var(--fs-5);background:var(--star-tint);box-shadow:inset 0 0 0 3px var(--star),0 5px 0 var(--star-shade)}
+.mp-champ .ic{color:var(--star-shade)}
+.tobtn{position:absolute;left:50%;transform:translateX(-50%);z-index:2;white-space:nowrap;display:flex;align-items:center;gap:var(--s-1);
+  min-height:var(--tap);padding:0 var(--s-4) 0 var(--s-3);background:var(--star-tint);color:var(--try-ink);box-shadow:inset 0 0 0 2px var(--star),0 4px 0 var(--star-shade)}
+.tobtn .ic{color:var(--star-shade)}
+.tobtn:active{transform:translateX(-50%) translateY(3px);box-shadow:inset 0 0 0 2px var(--star),0 1px 0 var(--star-shade)}
+/* stops: 72 px discs with a ledge and a top gloss; open = white with a coloured ring, done = subject fill, cur = fill and a pulsing ring */
+.btn.node{position:absolute;width:72px;height:72px;margin:-36px 0 0 -36px;border-radius:50%;padding:0;display:grid;place-items:center;z-index:2;
+  background:var(--surface);color:var(--c,var(--brand));box-shadow:inset 0 0 0 4px var(--c,var(--brand)),0 5px 0 var(--c-shade,var(--brand-shade))}
+.btn.node .ic{width:38px;height:38px}
+.btn.node.done,.btn.node.cur{background:linear-gradient(var(--hi),var(--hi-0) 55%) var(--c,var(--brand));color:var(--surface);
+  box-shadow:inset 0 3px 0 var(--hi),inset 0 0 0 4px var(--surface),0 5px 0 var(--c-shade,var(--brand-shade))}
+.btn.node.cur::after{content:'';position:absolute;inset:-9px;border:4px solid var(--c,var(--brand));border-radius:50%;opacity:0;
+  animation:k-ring 1.8s var(--ease) infinite;pointer-events:none}
+.btn.node.lock{background:var(--surface-2);color:var(--ink-3);box-shadow:inset 0 0 0 3px var(--line),0 3px 0 var(--line)}
+.btn.node.lock .ic{width:30px;height:30px}
+.btn.node:active{transform:translateY(3px)}
+.btn.node.lock:active{transform:none}
+.btn.node.boss{width:92px;height:92px;margin:-46px 0 0 -46px;overflow:visible;background:var(--c-tint,var(--brand-tint));
+  box-shadow:inset 0 0 0 4px var(--c,var(--brand)),0 6px 0 var(--c-shade,var(--brand-shade))}
+.btn.node.boss.done{box-shadow:inset 0 0 0 4px var(--star),0 0 0 3px var(--star-shade),0 6px 0 3px var(--star-shade)}
+.btn.node.boss.cur{background:var(--c-tint,var(--brand-tint))}
+.btn.node.boss.lock{background:var(--surface-2);box-shadow:inset 0 0 0 3px var(--line),0 3px 0 var(--line)}
+.node .nb-art{width:104px;height:104px;margin-top:-22px;pointer-events:none}
+.node .nb-e{font-size:46px;line-height:1}
+.nlab{position:absolute;transform:translateX(-50%);width:max-content;max-width:140px;font-size:var(--fs-1);font-weight:700;text-align:center;line-height:1.2;
+  pointer-events:none;z-index:2;color:var(--ink);background:var(--surface);border-radius:var(--r-chip);padding:2px var(--s-2);box-shadow:0 2px 0 var(--drop)}
+.nstar{display:flex;justify-content:center;margin-top:2px}
+.nstar:empty{display:none}
+.nstar .rs .rs-b{transform:translateY(2px)}
+
+/* ---- activity cards (GFX.card): the P4-04 path-card look for Fact Sprint sets and modes, Speed Race, Game Room ---- */
+.pathcard.gx-card{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:var(--s-4);padding:var(--s-4);border-radius:var(--r-card);text-align:left}
+.gx-card .pc-badge{position:relative}
+.gx-tag{position:absolute;right:-8px;bottom:-6px;min-width:28px;padding:1px 6px;border-radius:var(--r-pill);font-style:normal;font-family:var(--font-display);
+  font-size:var(--fs-2);font-weight:700;line-height:1.3;text-align:center;color:var(--c-shade,var(--brand-shade));background:var(--surface);
+  box-shadow:inset 0 0 0 2px var(--c,var(--brand)),0 2px 0 var(--c-shade,var(--brand-shade))}
+.gx-txt{min-width:0}
+.gx-sub{display:flex;flex-wrap:wrap;align-items:center;gap:2px var(--s-1);margin-top:var(--s-1);font-size:var(--fs-2);line-height:1.35;color:var(--ink-2)}
+.gx-sub .ic{flex:none;color:var(--c,var(--brand))}
+.gx-ln{display:flex;align-items:center;gap:var(--s-1);flex:1 0 100%}
+.gx-sub b{color:var(--ink)}
+.gx-best{display:flex;flex-direction:column;align-items:center;min-width:56px;font-family:var(--font-display);font-size:var(--fs-4);font-weight:700;line-height:1;color:var(--ink)}
+.gx-best .ic{color:var(--star-shade);margin-bottom:2px}
+.gx-list .games{gap:var(--s-4);max-width:640px;margin:0 auto}
+.gx-lead{margin:var(--s-1) auto var(--s-4);max-width:36ch;text-align:center;font-size:var(--fs-3);font-weight:700;color:var(--ink-2)}
+.gx-note{display:flex;align-items:center;justify-content:center;gap:var(--s-2);margin:var(--s-5) auto 0;font-size:var(--fs-2);color:var(--ink-2)}
+.gx-note .ic{flex:none;color:var(--play)}
+@media (max-width:480px){.pathcard.gx-card{gap:var(--s-3);padding:var(--s-3)}}
+/* menu top bar: back, a coloured badge, the title */
+.gx-ttl{display:flex;align-items:center;gap:var(--s-2)}
+.gx-ttl>span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.gx-tb{flex:none;display:grid;place-items:center;width:40px;height:40px;border-radius:12px;color:var(--surface);
+  background:linear-gradient(var(--hi),var(--hi-0) 60%) var(--c,var(--brand));box-shadow:inset 0 -3px 0 var(--c-shade,var(--brand-shade))}
+.gx-tb .ic{width:24px;height:24px}
+
+/* ---- timed games (Fact Sprint, Speed Race): close, time gauge, chips; the P4-10 keys; the end card ---- */
+.gx-top .gx-bar{flex:1;min-width:64px}
+.gx-top .gauge>i{background:var(--try)}
+.stat.bolt .ic,.stat.trophy .ic{color:var(--star-shade)}
+.stat.timer b,.stat.bolt b{font-variant-numeric:tabular-nums}
+.gx-gap{display:block}
+.gx-end{padding:var(--s-5) var(--s-5) var(--s-5)}
+.gx-disc{position:relative;width:96px;height:96px;background:var(--star-tint);color:var(--star-shade);--ic2:var(--star-tint);
+  box-shadow:inset 0 0 0 4px var(--star),0 5px 0 var(--star-shade)}
+.gx-disc.rec{animation:rw-pop 600ms var(--spring) both}
+.gx-end .rw-rays{position:absolute;left:50%;top:-30px;width:300px;height:300px;margin-left:-150px;opacity:.7;pointer-events:none}
+.rw-card p.gx-best{margin:0 0 var(--s-2);font-weight:700}
+.gx-week{display:flex;justify-content:center;margin:var(--s-2) 0}
+.gx-spark{display:block;max-width:100%}
+.gx-sl{fill:none;stroke:var(--math);stroke-width:3;stroke-linejoin:round;stroke-linecap:round;opacity:.5}
+.gx-sd{fill:var(--surface);stroke:var(--math);stroke-width:2}
+.gx-sn{fill:var(--star);stroke:var(--star-shade);stroke-width:2}
+.rw-card p.gx-earn{display:flex;align-items:center;justify-content:center;gap:var(--s-2);margin:var(--s-2) 0 0;font-weight:700;color:var(--ink)}
+.gx-earn .ic{flex:none;color:var(--play)}
+.gx-earn .ic.ic-coin{color:var(--star-shade)}
+.gx-acts{display:flex;flex-direction:column;gap:var(--s-3)}
+#hpn{display:inline-flex;gap:1px;font-size:inherit;color:var(--read)}
+#hpn .ic{flex:none}
+.gx-rule{display:flex;align-items:center;justify-content:center;gap:var(--s-2);cursor:pointer}
+.gx-rule .ic{flex:none;color:var(--brand)}
+
+/* ---- Game Room: the game-time card ---- */
+.ptcard.gx-pt{background:var(--play-tint);box-shadow:inset 0 0 0 2px var(--play),0 4px 0 var(--play-shade);border-radius:var(--r-card)}
+.ptcard.gx-pt.empty{background:var(--surface-2);box-shadow:inset 0 0 0 2px var(--line),0 4px 0 var(--ledge-soft)}
+.gx-ptd{flex:none;display:grid;place-items:center;width:64px;height:64px;border-radius:50%;background:var(--surface);color:var(--play);--ic2:var(--surface);
+  box-shadow:0 3px 0 var(--play-shade)}
+.gx-pt .hname{font-family:var(--font-display);font-size:var(--fs-4);font-weight:700}
+.gx-center{display:flex;justify-content:center;margin:var(--s-5) 0}
+
+/* ---- Pet Care: icon meters, snack cards with object art and price chips, icon action buttons ---- */
+.gx-cbar{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;align-items:center;gap:var(--s-2);margin:var(--s-2) 0}
+.gx-cbar .gx-ci{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:var(--surface-2);color:var(--c,var(--brand))}
+.gx-cbar .gx-cl{width:auto;min-width:56px}
+.gx-cbar b{width:auto;min-width:44px;text-align:right}
+.gx-cbar.k-food{--c:var(--play);--c-shade:var(--play-shade)}
+.gx-cbar.k-clean{--c:var(--math);--c-shade:var(--math-shade)}
+.gx-cbar.k-fun{--c:var(--good);--c-shade:var(--good-ink)}
+.gx-cbar .gauge{background:var(--surface-2)}
+.gx-h{display:flex;align-items:center;gap:var(--s-2)}
+.gx-h .ic{color:var(--play)}
+.btn.gx-snack{background:var(--surface);box-shadow:inset 0 0 0 2px var(--line),0 4px 0 var(--ledge-soft);border-radius:var(--r-card);padding:var(--s-3) var(--s-2)}
+.gx-snack .gx-sp{display:grid;place-items:center;width:64px;height:64px;font-size:48px;line-height:1}
+.gx-snack .gx-sp .art{width:60px;height:60px}
+.gx-price{display:inline-flex;align-items:center;gap:2px;padding:2px var(--s-2) 2px 2px;border-radius:var(--r-pill);background:var(--star-tint);font-weight:700}
+.gx-acts2{grid-template-columns:1fr 1fr}
+.btn.gx-act{min-height:96px;background:var(--surface);box-shadow:inset 0 0 0 2px var(--line),0 4px 0 var(--ledge-soft);border-radius:var(--r-card)}
+.gx-act .gx-ai{display:grid;place-items:center;width:52px;height:52px;border-radius:50%;background:var(--brand-tint);color:var(--brand);font-size:inherit}
+#play.gx-act .gx-ai{background:var(--good-tint);color:var(--good-ink)}
+
+/* ---- setup: logo, pet cards (the pets themselves are P4-06; the card is the current look) ---- */
+.setup h1.gx-logo{display:flex;align-items:center;justify-content:center;gap:var(--s-3);font-family:var(--font-display)}
+.btn.gx-pet{gap:var(--s-1);padding:var(--s-3) var(--s-2) var(--s-2);border-radius:var(--r-card);background:var(--surface);
+  box-shadow:inset 0 0 0 2px var(--line),0 4px 0 var(--ledge-soft);position:relative}
+.gx-pet .gx-pp{display:grid;place-items:center;width:84px;height:84px;border-radius:50%;background:var(--es-tint);font-size:52px;line-height:1;
+  box-shadow:inset 0 -5px 0 var(--drop)}
+.gx-pet[data-p="dino"] .gx-pp{background:var(--math-tint)}
+.gx-pet[data-p="bird"] .gx-pp{background:var(--star-tint)}
+.gx-pet[data-p="ocean"] .gx-pp{background:var(--disc-tint)}
+.gx-pet b{font-size:var(--fs-3)}
+.btn.gx-pet.sel{outline:0;background:var(--brand-tint);box-shadow:inset 0 0 0 4px var(--brand),0 4px 0 var(--brand-shade)}
+.setup .btn.primary{margin-top:var(--s-3)}
+@media (max-height:520px){.gx-pet .gx-pp{width:60px;height:60px;font-size:36px}}
+@media (max-width:480px){.gx-learn .gx-tb{display:none}.gx-learn .btn.subject{padding-left:var(--s-3);padding-right:var(--s-3)}}
 </style>
 </head>
 <body>
@@ -2041,7 +2211,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S));SAVE_FAILED=fals
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v78'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v79'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -4056,6 +4226,56 @@ const RW = {
     setTimeout(() => b.remove(), 1400);
   },
 };
+/* ---------- P4-18 graphics pass: shared drawn chrome (styles in src/css/47-gfx.css) ----------
+   Small markup helpers for screens that were still built from emoji and flat gradients: activity cards (Fact Sprint sets and
+   modes, Speed Race, Game Room), the timed-game top bar and number pad (Fact Sprint, Speed Race), and the end-of-sprint card.
+   They only return markup; every screen keeps its ids and handlers. */
+const GFX = {
+  // Activity card on the P4-04 path-card look. o: {id, attrs, cls, p (subject colour), icon, badge (html instead of icon),
+  // tag (small text on the badge), title, sub (wraps), go (icon name, default play; '' none), side (html instead of go)}
+  card(o) {
+    const badge = o.badge || ico(o.icon || 'star');
+    const tag = o.tag != null && o.tag !== '' ? `<i class="gx-tag">${esc(o.tag)}</i>` : '';
+    const side = o.side != null ? o.side : o.go === '' ? '' : `<span class="pc-go">${ico(o.go || 'play')}</span>`;
+    return `<button class="pathcard gx-card s-${o.p || 'math'}${o.cls ? ' ' + o.cls : ''}"${o.id ? ` id="${o.id}"` : ''}${o.attrs ? ' ' + o.attrs : ''}>` +
+      `<span class="pc-badge">${badge}${tag}</span><span class="gx-txt"><span class="pc-t">${UI.t(o.title)}</span>` +
+      `${o.sub ? `<span class="gx-sub">${o.sub}</span>` : ''}</span>${side}</button>`;
+  },
+
+  // Top bar of a timed game: close (#quit), a time gauge (fill id), then chips (html). The gauge is set by GFX.bar(el, v 0..1).
+  speedTop(p, barId, v, chips) {
+    return `<div class="top tbar round qtop gx-top s-${p}">${UI.ibtn('close', 'Stop', { size: 'sm', id: 'quit' })}` +
+      `<div class="gauge lg gx-bar" aria-hidden="true"><i id="${barId}" style="--v:${v}"></i></div>${chips}</div>`;
+  },
+  bar(el, v) {
+    if (el) el.style.setProperty('--v', Math.max(0, Math.min(1, v)).toFixed(3));
+  },
+
+  // Fact Sprint pad: the P4-10 keys (.key.k, data-k as before) without a check key: a sprint answers by itself.
+  pad() {
+    const key = (k, face, cls, aria) => `<button class="key k${cls ? ' ' + cls : ''}" data-k="${k}"${aria ? ` aria-label="${aria}"` : ''}>${face}</button>`;
+    return '<div class="keys qpad pad">' + [1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => key(n, n)).join('') +
+      key('del', ico('backspace'), 'del', 'Delete') + key(0, 0) + '<span class="gx-gap"></span></div>';
+  },
+
+  // Boss hearts in the round's top bar (drawn hearts instead of the heart emoji)
+  hearts(n) {
+    return ico('heart', 16, 'gx-ht').repeat(Math.max(0, n | 0));
+  },
+
+  // End-of-game card over a dim backdrop (append the returned element to body). o: {rec, title, best, extra (html), earn (html),
+  // btns (html), icon (the disc's icon when not a record; bolt)}. A record gets light rays and the trophy.
+  // best '' leaves that line out.
+  endCard(o) {
+    const el = document.createElement('div');
+    el.className = 'ovl rw-ovl';
+    el.innerHTML = `<div class="rw-card gx-end${o.rec ? ' rw-growc' : ''}">${o.rec ? RW.rays() : ''}` +
+      `<div class="rw-disc gx-disc${o.rec ? ' rec' : ''}">${ico(o.rec ? 'trophy' : o.icon || 'bolt', 56)}</div>` +
+      `<h1>${esc(o.title)}</h1>${o.rec ? `<p class="gx-best">${UI.tag('New record!', 'new', 'sparkle')}</p>` : o.best ? `<p class="gx-best">${esc(o.best)}</p>` : ''}` +
+      `${o.extra || ''}<p class="gx-earn">${o.earn}</p><div class="rw-acts gx-acts">${o.btns}</div></div>`;
+    return el;
+  },
+};
 /* ---------- word data ---------- */
 const DOL=[
 'a and away big blue can come down find for funny go help here I in is it jump little look make me my not one play red run said see the three to two up we where yellow you'.split(' '),
@@ -4214,7 +4434,17 @@ function genQ(sk,lv,seed){
      coinSVG(v, o)                v cents or a list: coins 1 5 10 25 50, bills 100 500 1000 2000; o.face = false hides values
      tally(n)                     tally marks, 0..50, groups of five
      tableInOut(rows, o)          rows [[in, out], ...] ('?' = unknown box); o.head: ['In', 'Out']
-   New visuals: add a function inside this block and to the returned object; use svg(), f() and counters(). */
+   New visuals: add a function inside this block and to the returned object; use svg(), f() and counters().
+
+   Depth (P4-18). The visuals share the light of the object art (DESIGN_SYSTEM 6.5): light from the top left, a shade tone on
+   the lower right, a white highlight on the upper left, a soft ledge under boards. Still no gradients, filters or ids.
+     counters      the circle is the shade tone with a deep rim; vol() adds a base-tone spot moved toward the light (.vbs,
+                   so a shade crescent shows on the lower right) and a short white gloss (.vsp). Spots are zero-length
+                   round-capped strokes, so every counter is still exactly one <circle>
+     boards        ten frames, dice faces, fraction bars and circles, the clock sit on a .vld ledge (--ledge-soft, 3 units down)
+     gloss         .vgs white band (fraction bars, graph bars), .vgc white arc (fraction circles, clock rim, coins);
+                   decorations never take taps (pointer-events: none), so tap targets and data-v stay as they were
+     blocks        base-ten blocks get a deep-tone ledge (.vbd) under the shade block; coins a shade crescent (.vcs) */
 const VIZ = (() => {
   // one decimal keeps the markup small
   const f = x => Math.round(x * 10) / 10;
@@ -4234,17 +4464,40 @@ const VIZ = (() => {
   // attributes that make an element a tap target
   const tapAttr = (v, cls) => `class="vt${cls ? ' ' + cls : ''}" data-v="${v}" role="button" aria-label="${v}"`;
 
+  // Volume for round counters of radius r at pts (P4-18, see the header): base-tone spots toward the light, then a gloss.
+  function vol(pts, r) {
+    if (!pts.length) return '';
+    const d = r * 0.1, bw = f(2 * (r + 0.7 - d * 1.42)), g = r * 0.4, a = r * 0.15;
+    let b = '', s = '';
+    for (const [x, y] of pts) {
+      b += `M${f(x - d)} ${f(y - d)}h0`;
+      s += `M${f(x - g - a)} ${f(y - g + a)}l${f(2 * a)} ${f(-2 * a)}`;
+    }
+    return `<path class="vbs" stroke-width="${bw}" d="${b}"/><path class="vsp" stroke-width="${f(r * 0.28)}" d="${s}"/>`;
+  }
+
+  // The lower-right crescent of the circle (cx, cy, R): what the same circle moved k toward the top left does not cover.
+  function cres(cx, cy, R, k) {
+    const u = Math.sqrt(R * R - k * k / 2) / Math.SQRT2, mx = cx - k / 2, my = cy - k / 2;
+    const p1 = `${f(mx + u)} ${f(my - u)}`, p2 = `${f(mx - u)} ${f(my + u)}`;
+    return `M${p1}A${R} ${R} 0 1 1 ${p2}A${R} ${R} 0 0 0 ${p1}z`;
+  }
+
+  // A gloss arc on the upper left of a circle (cx, cy), radius R, from 8 o'clock round to 11 o'clock.
+  const glossArc = (cx, cy, R) => `M${f(cx - R * 0.94)} ${f(cy + R * 0.34)}A${f(R)} ${f(R)} 0 0 1 ${f(cx - R * 0.34)} ${f(cy - R * 0.94)}`;
+
   // Counters at points [[x, y], ...]. The last o.b are the second colour, the last o.fade are faded.
   function counters(pts, r, o = {}) {
     const n = pts.length;
     const b = o.b || 0;
     const x = o.fade || 0;
-    const groups = {};
+    const groups = {}, at = {};
     pts.forEach(([cx, cy], i) => {
       const k = (i >= n - b ? 'v2' : 'v1') + (i >= n - x ? ' vx' : '');
       groups[k] = (groups[k] || '') + `<circle cx="${f(cx)}" cy="${f(cy)}" r="${r}"/>`;
+      (at[k] = at[k] || []).push([cx, cy]);
     });
-    return Object.keys(groups).map(k => `<g class="${k}">${groups[k]}</g>`).join('');
+    return Object.keys(groups).map(k => `<g class="${k}">${groups[k]}${vol(at[k], r)}</g>`).join('');
   }
 
   // Stacked fraction a/b centred on x; y is the fraction bar. cls ' vw' makes it white (on a shaded part).
@@ -4269,7 +4522,8 @@ const VIZ = (() => {
       let d = '';
       for (let c = 1; c < 5; c++) d += `M${P + c * C} ${y0}v${fh}`;
       if (rows == 2) d += `M${P} ${y0 + C}h${5 * C}`;
-      body += `<rect class="vo" x="${P}" y="${y0}" width="${5 * C}" height="${fh}" rx="8"/><path class="vl" d="${d}"/>`;
+      body += `<rect class="vld" x="${P}" y="${y0 + 3}" width="${5 * C}" height="${fh}" rx="8"/>` +
+        `<rect class="vo" x="${P}" y="${y0}" width="${5 * C}" height="${fh}" rx="8"/><path class="vl" d="${d}"/>`;
     }
     const pts = [];
     for (let i = 0; i < n; i++) {
@@ -4327,7 +4581,7 @@ const VIZ = (() => {
       x += uc * (p + 1) + (uc - 1) * sg + G;
     }
     const w = Math.max(x - G + P, 2 * P + p + 1);
-    const body = bg ? `<path class="vb" d="${bg}"/><path class="vc" stroke-width="${c}" stroke-dasharray="${c} 1" d="${cells}"/>` : '';
+    const body = bg ? `<path class="vbd" transform="translate(1.5 1.5)" d="${bg}"/><path class="vb" d="${bg}"/><path class="vc" stroke-width="${c}" stroke-dasharray="${c} 1" d="${cells}"/>` : '';
     return svg('b10', w, h + 2 * P, body, 'base ten blocks');
   }
 
@@ -4395,7 +4649,7 @@ const VIZ = (() => {
       }
       body += `<path class="vhop" d="${arcs}"/><path class="vhoa" d="${tips}"/>${txt}`;
     }
-    if (o.marks) body += `<g class="v1">${o.marks.map(v => `<circle cx="${f(X(v))}" cy="${Y}" r="8"/>`).join('')}</g>`;
+    if (o.marks) body += `<g class="v1">${o.marks.map(v => `<circle cx="${f(X(v))}" cy="${Y}" r="8"/>`).join('')}${vol(o.marks.map(v => [X(v), Y]), 8)}</g>`;
     // tap targets reach halfway to their neighbours (24 units past the ends) and cover the labels
     tap.forEach((v, i) => {
       const l = i ? (X(v) - X(tap[i - 1])) / 2 : 24;
@@ -4417,6 +4671,7 @@ const VIZ = (() => {
     let body = '';
     for (let b = 0; b < bars; b++) {
       const y = P + b * (h + G);
+      body += `<rect class="vld" x="${P}" y="${y + 3}" width="${f(w)}" height="${h}" rx="6"/>`;
       for (let i = 0; i < d; i++) {
         const idx = b * d + i, on = idx < n;
         const x0 = P + i * pw + (i ? 0 : 1.5), x1 = P + (i + 1) * pw - (i < d - 1 ? 0 : 1.5);
@@ -4425,7 +4680,8 @@ const VIZ = (() => {
         body += `<rect ${attr} x="${f(x0)}" y="${y + 1.5}" width="${f(x1 - x0)}" height="${h - 3}"/>`;
         if (o.unit && pw >= 30) body += fracText(P + (i + 0.5) * pw, y + h / 2 + 1, 1, d, on ? ' vw' : '');
       }
-      body += `<rect class="ve" x="${P}" y="${y}" width="${f(w)}" height="${h}" rx="6"/>`;
+      body += `<rect class="vgs" x="${P + 4}" y="${y + 5}" width="${f(w - 8)}" height="10" rx="5"/>` +
+        `<rect class="ve" x="${P}" y="${y}" width="${f(w)}" height="${h}" rx="6"/>`;
     }
     return svg('fb', w + 2 * P, bars * h + (bars - 1) * G + 2 * P, body, 'fraction bar', !!o.tap);
   }
@@ -4440,6 +4696,7 @@ const VIZ = (() => {
     let body = '';
     for (let k = 0; k < count; k++) {
       const cx = P + r + k * (2 * r + G), cy = P + r;
+      body += `<circle class="vld" cx="${cx}" cy="${cy + 3}" r="${r}"/>`;
       for (let i = 0; i < d; i++) {
         const idx = k * d + i, on = idx < n;
         const cls = `vp${on ? ' vs' : ''}`;
@@ -4450,7 +4707,7 @@ const VIZ = (() => {
           body += `<path ${attr} d="M${cx} ${cy}L${pt(cx, cy, a0)}A${r} ${r} 0 0 1 ${pt(cx, cy, a1)}z"/>`;
         }
       }
-      body += `<circle class="ve" cx="${cx}" cy="${cy}" r="${r}"/>`;
+      body += `<path class="vgc" stroke-width="${f(r * 0.12)}" d="${glossArc(cx, cy, r * 0.8)}"/><circle class="ve" cx="${cx}" cy="${cy}" r="${r}"/>`;
     }
     return svg('fc', count * 2 * r + (count - 1) * G + 2 * P, 2 * r + 2 * P, body, 'fraction circle', !!o.tap);
   }
@@ -4471,7 +4728,8 @@ const VIZ = (() => {
       const t = a * Math.PI / 180;
       return `<path class="${cls}" d="M${c} ${c}L${f(c + len * Math.sin(t))} ${f(c - len * Math.cos(t))}"/>`;
     };
-    let body = `<circle class="vrim" cx="${c}" cy="${c}" r="54"/>` + ring(48.5, 60, 1.2, 'vt1') + ring(47.8, 12, 2.6, 'vt5');
+    let body = `<circle class="vld" cx="${c}" cy="${c + 2}" r="55"/><circle class="vrim" cx="${c}" cy="${c}" r="54"/>` +
+      `<path class="vfs" d="${cres(c, c, 52, 4)}"/><path class="vgc" stroke-width="1.6" d="${glossArc(c, c, 54)}"/>` + ring(48.5, 60, 1.2, 'vt1') + ring(47.8, 12, 2.6, 'vt5');
     if (def(o.nums, true)) {
       for (let i = 1; i <= 12; i++) {
         const a = i * Math.PI / 6;
@@ -4492,7 +4750,8 @@ const VIZ = (() => {
     for (let r = 0; r < rows; r++) d += `M${P + s / 2} ${P + s / 2 + r * s}h${f((cols - 1) * s + 0.1)}`;
     const W = cols * s + 2 * P, H = rows * s + 2 * P;
     const body = `<rect class="vbg" width="${W}" height="${H}" rx="10"/>` +
-      `<path class="vdd" stroke-dasharray="0 ${s}" d="${d}"/><path class="vd" stroke-dasharray="0 ${s}" d="${d}"/>`;
+      `<path class="vdd" stroke-dasharray="0 ${s}" d="${d}"/><path class="vd" stroke-dasharray="0 ${s}" transform="translate(-1.2 -1.2)" d="${d}"/>` +
+      `<path class="vsp" stroke-width="5" stroke-dasharray="0 ${s}" transform="translate(-4.5 -4.5)" d="${d}"/>`;
     return svg('arr', W, H, body, 'array of dots');
   }
 
@@ -4510,7 +4769,7 @@ const VIZ = (() => {
       const faces = n <= 6 ? [n] : [5, n - 5];
       faces.forEach((k, fi) => {
         const x0 = P + fi * (F + G);
-        body += `<rect class="vo" x="${x0}" y="${P}" width="${F}" height="${F}" rx="16"/>`;
+        body += `<rect class="vld" x="${x0}" y="${P + 3}" width="${F}" height="${F}" rx="16"/><rect class="vo" x="${x0}" y="${P}" width="${F}" height="${F}" rx="16"/>`;
         for (const ch of PIPS[k - 1] || '') pts.push([x0 + (ch % 3 + 0.5) * F / 3, P + (Math.floor(ch / 3) + 0.5) * F / 3]);
       });
       W = faces.length * F + (faces.length - 1) * G + 2 * P;
@@ -4615,7 +4874,8 @@ const VIZ = (() => {
     body += `<path class="vgl" d="${grid}"/><path class="va" d="M${L} ${T - 4}V${base}H${w - 2}"/>${ylab}`;
     data.forEach(([name, v, set], i) => {
       const x = L + i * pitch + (pitch - bw) / 2, h = v / sc * rh;
-      const bar = h > 0 ? `<rect class="${set == 2 ? 'v2' : 'v1'} vbar" x="${f(x)}" y="${f(base - h)}" width="${bw}" height="${f(h)}" rx="3"/>` : '';
+      const bar = h > 0 ? `<rect class="${set == 2 ? 'v2' : 'v1'} vbar" x="${f(x)}" y="${f(base - h)}" width="${bw}" height="${f(h)}" rx="3"/>` +
+        (h > 12 ? `<rect class="vgs" x="${f(x + 4)}" y="${f(base - h + 4)}" width="${f(bw * 0.2)}" height="${f(h - 8)}" rx="2"/>` : '') : '';
       const val = o.vals && h > 0 ? `<text class="vcn" x="${f(x + bw / 2)}" y="${f(base - h - 5)}">${clean(v)}</text>` : '';
       const lab = `<text class="vcn" x="${f(x + bw / 2)}" y="${base + 18}">${ex(String(name).slice(0, 8))}</text>`;
       body += o.tap ? `<g ${tapAttr(i)}><rect class="vh" x="${L + i * pitch}" y="0" width="${pitch}" height="${base + 28}"/>${bar}${lab}</g>` : bar + val + lab;
@@ -4808,7 +5068,7 @@ const VIZ = (() => {
       `<path class="vr" d="M${X(mx) + 16} ${oy}l-7-5v10zM${ox} ${Y(mx) - 16}l-5 7h10z"/>${lab}`;
     const pts = o.points || [];
     if (o.join && pts.length > 1) body += `<path class="vjn" d="M${pts.map(q => X(q[0]) + ' ' + Y(q[1])).join('L')}${o.close ? 'z' : ''}"/>`;
-    if (pts.length) body += `<g class="v1">${pts.map(q => `<circle cx="${X(q[0])}" cy="${Y(q[1])}" r="7"/>`).join('')}</g>` +
+    if (pts.length) body += `<g class="v1">${pts.map(q => `<circle cx="${X(q[0])}" cy="${Y(q[1])}" r="7"/>`).join('')}${vol(pts.map(q => [X(q[0]), Y(q[1])]), 7)}</g>` +
       pts.filter(q => q[2]).map(q => `<text class="vts" x="${X(q[0]) + 10}" y="${Y(q[1]) - 9}">${ex(q[2])}</text>`).join('');
     tapPts.forEach(q => {
       body += `<g ${tapAttr(q[0] + ',' + q[1])}><rect class="vh" x="${X(q[0]) - 24}" y="${Y(q[1]) - 24}" width="48" height="48"/>` +
@@ -4858,9 +5118,10 @@ const VIZ = (() => {
       if (x + d > 300 && row) { mx = Math.max(mx, x); x = 4; y += 64; }
       const cx = x + d / 2, cy = y + 32, r = COIN[c];
       row += r
-        ? `<circle class="${c == 1 ? 'vcu' : 'vsv'}" cx="${f(cx)}" cy="${cy}" r="${r}"/><circle class="vci" cx="${f(cx)}" cy="${cy}" r="${f(r - 4)}"/>` +
+        ? `<circle class="${c == 1 ? 'vcu' : 'vsv'}" cx="${f(cx)}" cy="${cy}" r="${r}"/><path class="vcs${c == 1 ? ' vcp' : ''}" d="${cres(cx, cy, r - 1.5, f(r * 0.16))}"/>` +
+          `<path class="vgc" stroke-width="2.6" d="${glossArc(cx, cy, r - 3.5)}"/><circle class="vci${c == 1 ? ' vcp' : ''}" cx="${f(cx)}" cy="${cy}" r="${f(r - 4)}"/>` +
           (face ? `<text class="vcc${c == 1 ? ' vcp' : ''}" x="${f(cx)}" y="${cy + 5}">${c}¢</text>` : '')
-        : `<rect class="vbl" x="${f(x)}" y="${cy - 22}" width="90" height="44" rx="5"/><rect class="vbi" x="${f(x + 5)}" y="${cy - 17}" width="80" height="34" rx="3"/>` +
+        : `<rect class="vld" x="${f(x)}" y="${cy - 19}" width="90" height="44" rx="5"/><rect class="vbl" x="${f(x)}" y="${cy - 22}" width="90" height="44" rx="5"/><rect class="vbi" x="${f(x + 5)}" y="${cy - 17}" width="80" height="34" rx="3"/>` +
           (face ? `<text class="vcb" x="${f(cx)}" y="${cy + 7}">$${c / 100}</text>` : '');
       x += d + 8;
     }
@@ -7325,7 +7586,7 @@ function placeAsk(){
   if(PLACE_HIDE||!placeOK()||(S.place&&Object.keys(S.place).length))return false;
   return placePaths().every(p=>!NODES[p].some((n,i)=>passed(p,i)));
 }
-const placeSubBtn=p=>`<button class="btn pl-sub" data-place="${p}"><span class="pl-pe">${PATHS[p].e}</span>${esc(placeName(p))}</button>`;
+const placeSubBtn=p=>`<button class="btn pl-sub s-${p}" data-place="${p}"><span class="pl-pe">${ico(UI.SUBJ_ICON[p]||'map',26)}</span>${esc(placeName(p))}</button>`; // P4-18: drawn subject icon
 const placeName=p=>PATHS[p].n.replace(/ Adventure$/,'');
 function placeBanner(){
   if(!placeAsk())return'';
@@ -7358,10 +7619,10 @@ function placeIntro(p,from){
   PL=null;
   if(G)G.dead=true; // a finished or left round must not fire its next-question timer into this screen
   const nm=esc(placeName(p));
-  view(`<div class="center pl-in"><div class="pl-big">${PATHS[p].e}</div><h1>Let's find your level!</h1>
+  view(`<div class="center pl-in s-${p}"><div class="pl-big">${ico(UI.SUBJ_ICON[p]||'map',64)}<i class="pl-tg">${ico('target',26)}</i></div><h1>Let's find your level!</h1>
    <p class="sub">A few ${nm} questions. Some may be tricky, and that's OK. Just do your best!</p>
    <p class="small">No stars to win or lose. You can stop any time.</p>
-   <div class="rowh"><button class="btn big" id="plgo">${ico('play','1em')} Start</button><button class="btn" id="plback">Not now</button></div></div>`);
+   <div class="rowh">${UI.btn('Start',{kind:'primary',size:'lg',icon:'play',id:'plgo'})}${UI.btn('Not now',{id:'plback'})}</div></div>`);
   if(S.voice)say(`Let's find your level! Some questions may be tricky. Just do your best!`);
   $('#plback').onclick=()=>{SFX.click();placeBack(from)};
   $('#plgo').onclick=()=>{
@@ -7385,11 +7646,11 @@ function placeQ(){
   const me=PL,q=PL.its[PL.qi],K=KIND[q.kind];
   PL.q=q;PL.lock=false;PL.typed='';PL.tries=0;PL.built=[];
   const dots=PL.its.map((_,i)=>`<span class="pl-dot ${i<PL.qi?'on':i==PL.qi?'now':''}"></span>`).join('');
-  view(`<div class="top"><button class="btn sm pl-x" id="quit" aria-label="Stop">${ico('close','1em')}</button>
+  view(`<div class="top tbar round qtop pl-top s-${PL.p}">${UI.ibtn('close','Stop',{size:'sm',id:'quit'})}
    <div class="pl-dots" aria-label="Question ${PL.qi+1} of ${PL.its.length}">${dots}</div><div class="sp"></div>
-   <div class="pl-tag">${PATHS[PL.p].e} Find my level</div></div>
-  <div class="play"><div class="qarea">${q.ctx?bankCtx(q.ctx):''}<div class="prompt" id="prompt">${q.html}</div>
-  <div class="tools">${q.say?`<button class="btn sm pl-x" id="spk">${ico('speak','1em')} Hear it</button>`:''}</div></div>
+   <div class="pl-tag">${ico(UI.SUBJ_ICON[PL.p]||'map',24)}<span>Find my level</span></div></div>
+  <div class="play qs s-${PL.p}"><div class="qarea">${q.ctx?bankCtx(q.ctx):''}<div class="prompt" id="prompt">${q.html}</div>
+  <div class="tools">${q.say?UI.btn('Hear it',{size:'sm',icon:'speak',id:'spk'}):''}</div></div>
   <div class="inp">${K.render(q)}</div></div>`);
   $('#quit').onclick=()=>{PL=null;SFX.click();placeBack(me.from)};
   if($('#spk'))$('#spk').onclick=e=>say(q.say,e.currentTarget,q.lang=='es'&&q.auto=='must'?'es':null);
@@ -7425,11 +7686,11 @@ function placeDone(){
   const other=placePaths().find(x=>x!=p&&!(S.place&&S.place[x]));
   view(`<div class="center pl-in"><div class="pl-done">${ico('trophy',64)}</div><h1>All done! Great work${S.name?', '+esc(S.name):''}!</h1>
    <p class="sub">${st.all?`You know a lot! Your ${esc(placeName(p))} map opens at the last world:`:`Your ${esc(placeName(p))} map starts here:`}</p>
-   <div class="pl-res"><span class="pl-pe">${w.e}</span>${esc(w.n)}</div>
+   <div class="pl-res">${wBadge(p,st.at)}${esc(w.n)}</div>
    ${sk.length?`<p class="small pl-skip">${ico('check','1.2em')} Skipped: ${sk.map(x=>esc(x.n)).join(', ')}. You can still play ${sk.length>1?"them":"it"} any time.</p>`:''}
-   <div class="rowh"><button class="btn big" id="plmap">${ico('map','1em')} Go to my map</button>
-    ${other?`<button class="btn" id="plnext" data-place="${other}">${PATHS[other].e} ${esc(placeName(other))} next</button>`:''}
-    <button class="btn" id="plhome">${ico(from=='grown'?'gear':'home','1em')} ${from=='grown'?'Grown-ups':'Home'}</button></div></div>`);
+   <div class="rowh">${UI.btn('Go to my map',{kind:'primary',size:'lg',icon:'map',id:'plmap'})}
+    ${other?UI.btn(placeName(other)+' next',{icon:UI.SUBJ_ICON[other]||'map',id:'plnext',attrs:`data-place="${other}"`}):''}
+    ${UI.btn(from=='grown'?'Grown-ups':'Home',{icon:from=='grown'?'gear':'home',id:'plhome'})}</div></div>`);
   SFX.fanfare();
   if(S.voice)say(`All done! Great work! Your map starts at ${w.n}.`);
   $('#plmap').onclick=()=>{SFX.whoosh();pathMap(p,st.at)};
@@ -7444,13 +7705,13 @@ function gradePickBind(onPick){
     $$('.gr').forEach(x=>{x.classList.toggle('sel',x==b);x.setAttribute('aria-checked',x==b)});
     say(gradeSpoken(g),b);SFX.pop(1);onPick(g)})}
 function setup(){let pet=S.pet,grade=gradeOf();
-  view(`<div class="center setup"><h1>⭐ Star School</h1>
+  view(`<div class="center setup"><h1 class="gx-logo"><span class="hm-mark">${ico('star',36)}</span><span>Star School</span></h1>
   <div class="card"><div class="sub" style="margin-bottom:8px">What's your name?</div><input class="name" id="nm" value="${esc(S.name)}" placeholder="Your name"></div>
   <div class="card"><div class="sub" style="margin-bottom:8px">Pick a pet egg to hatch!</div>
-   <div class="pets">${Object.entries(PETS).map(([k,p])=>`<button class="btn petopt ${k==pet?'sel':''}" data-p="${k}"><span>${petPick(k)}</span>${p.n}</button>`).join('')}</div>
+   <div class="pets">${Object.entries(PETS).map(([k,p])=>`<button class="btn petopt gx-pet ${k==pet?'sel':''}" data-p="${k}"><span class="gx-pp">${petPick(k)}</span><b>${p.n}</b></button>`).join('')}</div>
    <input class="name" id="pn" style="margin-top:12px;width:100%" value="${esc(S.petName)}" placeholder="Name your pet (${PETS[pet].def})"></div>
   <div class="card"><div class="sub" style="margin-bottom:8px">What grade? <span class="small">(Grown-ups can change this later)</span></div>${gradePickHTML(grade)}</div>
-  <button class="btn big" id="go">Let's go! 🚀</button></div>`);
+  ${UI.btn("Let's go!",{kind:'primary',size:'lg',icon:'rocket',id:'go'})}</div>`);
   gradePickBind(g=>{grade=g});
   $$('.petopt').forEach(b=>b.onclick=()=>{pet=b.dataset.p;$$('.petopt').forEach(x=>x.classList.toggle('sel',x==b));$('#pn').placeholder=`Name your pet (${PETS[pet].def})`;SFX.giggle();anim(b.querySelector('span'),'jump')});
   $('#go').onclick=()=>{const n=$('#nm').value.trim();if(!n){fb('Type your name first!','warn');SFX.wrong();return}
@@ -7678,7 +7939,7 @@ function home(first){
   <div class="scroll hm" id="hs"><div class="hm-cols">
    <div class="hm-col">${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
-   <p class="hm-ver">${ico('star', 16)}<span>Star School v78</span></p></div>`);
+   <p class="hm-ver">${ico('star', 16)}<span>Star School v79</span></p></div>`);
   music(true);
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,['💖','✨','⭐']);
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
@@ -7692,13 +7953,22 @@ function home(first){
   if(first&&S.voice)setTimeout(()=>say(`Hi ${S.name}! Pick a game!`),400)}
 
 let MAPP='math',MAPW={}; // MAPW[path] = the world picked in the strip (this session only, not saved)
+/* P4-18: drawn map chrome (until P4-09 draws world scenes). A world badge is a disc in the world's own colour with the icon of
+   the first skill that is new in that world (else its first skill); a stop shows its skill icon, a boss stop the drawn boss. */
+function wBadge(p,wi){const ws=PATHS[p].worlds,w=ws[wi],seen=new Set();
+  ws.slice(0,wi).forEach(x=>x.nodes.forEach(n=>seen.add(n[0])));
+  const sk=(w.nodes.find(n=>!seen.has(n[0]))||w.nodes[0]||['star'])[0];
+  return`<span class="wbadge s-${p}" style="--wb:${w.c}" aria-hidden="true">${ico(icoSk(sk),20)}</span>`}
+function nodeFace(n,lk){if(lk)return ico('lock',32);
+  if(n.sk=='boss')return RW.boss(n.boss[1],'idle','nb-art')||`<span class="nb-e">${n.boss[0]}</span>`;
+  return ico(icoSk(n.sk),38)}
 /* Map of a path (P1-05: long maps). A strip of world chips, grouped by grade, sits above the map; the map draws only the picked
    world and its two neighbours, so it stays fast with 16 worlds and 150 stops. pathMap(p) opens on the world the child is in
    (or the one they just played); pathMap(p, wi) opens on world wi. */
 function pathMap(p,wi){MAPP=p;const P=PATHS[p];
   const last=G&&G.path==p&&G.node>=0&&NODES[p][G.node]?G.node:-1;
   MAPW[p]=wi!=null?wi:last>=0?NODES[p][last].wi:curWorld(p);
-  view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title">${P.e} ${P.n}</div><div class="sp"></div><div class="stars">⭐ ${S.stars}</div></div>
+  view(`<div class="top tbar mp-top s-${p}">${UI.ibtn('back','Back',{size:'sm',id:'back'})}<div class="ttl mp-ttl">${ico(UI.SUBJ_ICON[p]||'map',30)}<span>${esc(P.n)}</span></div>${UI.chip('star',S.stars,{aria:'Stars'})}</div>
   <div class="wstrip" id="wstrip" aria-label="Worlds"></div>
   <div class="scroll" id="ms"><div class="map" id="map"></div></div>`);
   $('#back').onclick=()=>home();drawMap(p);music(true);
@@ -7713,7 +7983,7 @@ function worldStrip(p){
     if(!PATHS[p].byLevel&&w.g!==lastG){lastG=w.g;h+=`<span class="wgl">${gradeLabel(w.g)}</span>`}
     const open=worldOpen(p,wi),done=worldFinished(p,wi),sel=wi==MAPW[p];
     h+=`<button class="wchip${sel?' on':''}${done?' done':''}${open?'':' lock'}${wi==cw?' cur':''}" data-w="${wi}" aria-pressed="${sel}"`
-      +` aria-label="${esc(w.n)}${done?', done':open?'':', locked'}"><span class="we">${w.e}</span>${esc(w.n)}`
+      +` aria-label="${esc(w.n)}${done?', done':open?'':', locked'}">${wBadge(p,wi)}${esc(w.n)}`
       +`${done?ico('check',18):open?'':ico('lock',18)}</button>`;
   });
   return h;
@@ -7723,21 +7993,21 @@ function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],ws=PATHS[p].
   const st=$('#wstrip');if(st){st.innerHTML=worldStrip(p);$$('.wchip').forEach(b=>b.onclick=()=>mapGo(p,+b.dataset.w));
     const on=st.querySelector('.wchip.on');if(on)st.scrollLeft=Math.max(0,on.offsetLeft-(st.clientWidth-on.offsetWidth)/2)}
   let y=10,bands='';
-  const more=(wi,up)=>`<button class="btn wmore" data-w="${wi}" style="top:${y}px">${ico(up?'back':'go',20)}<span class="we">${ws[wi].e}</span>${esc(ws[wi].n)}</button>`;
+  const more=(wi,up)=>`<button class="btn wmore" data-w="${wi}" style="top:${y}px">${ico(up?'arrow-up':'arrow-down',20)}${wBadge(p,wi)}${esc(ws[wi].n)}</button>`;
   if(w0>0){bands+=more(w0-1,true);y+=72}
   for(let wi=w0;wi<=w1;wi++){const w=ws[wi],y0=y,[a,b]=WR[p][wi],canTest=worldOpen(p,wi)&&!worldFinished(p,wi);y+=canTest?132:86;
     for(let i=a;i<=b;i++){pts.push([W/2+Math.sin(i*1.15)*amp,y,i]);y+=106}
-    bands+=`<div class="wband" style="top:${y0}px;height:${y-y0-24}px;background:${w.c}"></div><div class="wtitle" data-w="${wi}" style="top:${y0+14}px">${w.e} ${w.n}${worldFinished(p,wi)?' ✅':''}</div>${canTest?`<button class="btn xs tobtn" data-w="${wi}" style="top:${y0+58}px">⚡ Already know it? Test out!</button>`:''}`;y+=4}
+    bands+=`<div class="wband" style="top:${y0}px;height:${y-y0-24}px;background:${w.c}"></div><div class="wtitle" data-w="${wi}" style="top:${y0+14}px">${wBadge(p,wi)}<span>${esc(w.n)}</span>${worldFinished(p,wi)?ico('check-circle',24,'ic-good'):''}</div>${canTest?`<button class="btn xs tobtn" data-w="${wi}" style="top:${y0+58}px">${ico('bolt',20)}<span>Already know it? Test out!</span></button>`:''}`;y+=4}
   let path='';pts.forEach(([x,yy],k)=>{if(!k)path=`M${x} ${yy}`;else{const[px,py]=pts[k-1];path+=` C${px} ${py+55} ${x} ${yy-55} ${x} ${yy}`}});
   const cur=curNode(p),allDone=N.every((n,i)=>passed(p,i)),end=w1==ws.length-1;
   const nodes=pts.map(([x,yy,i])=>{const n=N[i],s=nInfo(n),st=getSt(p,i),lk=!unlocked(p,i);
-    return`<button class="btn node ${s.area} ${lk?'lock':''} ${st?'done':''} ${i==cur&&!lk&&!allDone?'cur':''}" data-n="${i}" style="left:${x}px;top:${yy}px">${lk?'🔒':s.e}</button>${stopNew(p,i)?`<div class="nnew" style="left:${x}px;top:${yy-50}px">NEW</div>`:''}<div class="nlab" style="left:${x}px;top:${yy+42}px">${esc(n.t)}<div class="nstar">${st?'★'.repeat(st)+'☆'.repeat(3-st):''}</div></div>`}).join('');
+    return`<button class="btn node s-${p} ${s.area} ${lk?'lock':''} ${st?'done':''} ${i==cur&&!lk&&!allDone?'cur':''}" data-n="${i}" style="left:${x}px;top:${yy}px" aria-label="${esc(n.t)}${lk?', locked':''}">${nodeFace(n,lk)}</button>${stopNew(p,i)?`<div class="nnew" style="left:${x}px;top:${yy-50}px">New</div>`:''}<div class="nlab" style="left:${x}px;top:${yy+42}px">${esc(n.t)}<div class="nstar">${st?UI.stars(st,3,16):''}</div></div>`}).join('');
   const cp=pts.find(q=>q[2]==cur),side=cp&&cp[0]>W/2?-66:66;
   let tail=end&&allDone?90:20;
   if(!end){y+=8;bands+=more(w1+1,false);tail=80}
   m.style.height=(y+tail)+'px';
   m.innerHTML=bands+`<svg width="${W}" height="${y+20}"><path d="${path}" fill="none" stroke="#d6c7a8" stroke-width="16" stroke-linecap="round"/><path d="${path}" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="8 10"/></svg>`+nodes
-    +(cp?`<div class="mappet ${petAura()}" style="left:${cp[0]+side}px;top:${cp[1]+18}px">${petHTML()}</div>`:'')+(end&&allDone?`<div class="wtitle" style="top:${y+10}px;font-size:24px">🏆 ${PATHS[p].n} Champion! 🏆</div>`:'');
+    +(cp?`<div class="mappet ${petAura()}" style="left:${cp[0]+side}px;top:${cp[1]+18}px">${petHTML()}</div>`:'')+(end&&allDone?`<div class="wtitle mp-champ" style="top:${y+10}px">${ico('trophy',30)}<span>${esc(PATHS[p].n)} Champion!</span></div>`:'');
   $$('.node').forEach(b=>b.onclick=()=>{const i=+b.dataset.n;if(!unlocked(p,i)){SFX.wrong();anim(b,'sad');fb('Finish the stop before this one!','warn');return}SFX.whoosh();
     open(p,i)});
   $$('.tobtn').forEach(b=>b.onclick=()=>testOut(p,+b.dataset.w));
@@ -7745,7 +8015,7 @@ function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],ws=PATHS[p].
 function open(p,i){const n=NODES[p][i];if(n.sk=='boss')bossIntro(p,i);else if(n.sk.startsWith('es_')&&n.sk!='es_mix'&&n.lv==1)learn(p,i);else start(p,i)}
 
 function learn(p,i){const n=NODES[p][i],items=SPN[n.sk.slice(3)];
-  view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title">Let's learn!</div><div class="sp"></div><button class="btn big" id="go" style="font-size:20px;padding:10px 18px">¡Vamos! ▶</button></div>
+  view(`<div class="top tbar gx-mtop gx-learn s-es">${UI.ibtn('back','Back',{size:'sm',id:'back'})}<div class="ttl gx-ttl"><span class="gx-tb">${ico('path-es',24)}</span><span>Let's learn!</span></div>${UI.btn('¡Vamos!',{kind:'subject',p:'es',icon:'play',id:'go'})}</div>
   <div class="scroll"><p class="sub" style="text-align:center">Tap each card to hear it in English, then Spanish. Then tap ¡Vamos!</p>
   <div class="lgrid">${items.map(it=>`<button class="btn lcard" data-es="${esc(it[0])}" data-en="${esc(it[1])}"><span class="lp">${picHTML(it,false)}</span><b>${esc(it[0])}</b><small>${esc(it[1])}</small></button>`).join('')}</div></div>`);
   $('#back').onclick=()=>pathMap(p);$('#go').onclick=()=>{SFX.whoosh();start(p,i)};
@@ -8459,7 +8729,7 @@ function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;G.re
   const K=KIND[q.kind];
   if(!K)throw new Error('unknown question kind '+q.kind);
   const input=K.render(q),ar=qSubj(q);
-  const track=G.boss?`<div class="bossbar"><span class="bossE" id="bossE">${G.boss.e}<div class="bubble" id="bub"></div></span><div class="hp"><div id="hpf" style="width:${G.hp/7*100}%"></div></div><b id="hpn">${'❤️'.repeat(G.hp)}</b></div>`
+  const track=G.boss?`<div class="bossbar"><span class="bossE" id="bossE">${G.boss.e}<div class="bubble" id="bub"></div></span><div class="hp"><div id="hpf" style="width:${G.hp/7*100}%"></div></div><b id="hpn" aria-label="${G.hp} hearts">${GFX.hearts(G.hp)}</b></div>`
     :`<div class="qtrack" id="qtrack" style="--n:${G.n+1};--p:${Math.min(G.done,G.n)/G.n}">${UI.dots(G.n,G.done,G.res)}`
       +`<span class="qgoal${G.test?' test':''}" aria-hidden="true">${ico(G.test?'bolt':'gift')}</span>`
       +`<div class="qwalk" id="qwalk" style="transform:${qLeft()}"><div class="runner ${petAura()}" id="runner">${petHTML()}<div class="bubble" id="bub"></div></div></div></div>`;
@@ -8523,7 +8793,7 @@ function check(v,el){if(G.lock)return;const q=G.q,K=KIND[q.kind],p=P(q.sk),ok=K.
   qProg();
   fb("Here's the answer",'info');petSay("We'll get it next time!");say(q.after||K.spoken(q),null,q.afterLang);save();setTimeout(next,2600)}
 
-function bossHit(){const b=$('#bossE'),f=$('#hpf'),h=$('#hpn');if(f)f.style.width=G.hp/7*100+'%';if(h)h.textContent='❤️'.repeat(G.hp);
+function bossHit(){const b=$('#bossE'),f=$('#hpf'),h=$('#hpn');if(f)f.style.width=G.hp/7*100+'%';if(h){h.innerHTML=GFX.hearts(G.hp);h.setAttribute('aria-label',G.hp+' hearts')}
   if(b){b.classList.remove('hit');void b.offsetWidth;b.classList.add('hit');const r=b.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,['💥','⚡','✨'])}SFX.hit()}
 function bossKO(){const b=$('#bossE');if(b)b.classList.add('ko');SFX.ko();confetti(40);fb(`You beat ${G.boss.name}! 🏆`);if(S.voice)say(`You beat ${G.boss.name}!`)}
 function award(){const s=pick(STK),isNew=!S.stickers[s];S.stickers[s]=(S.stickers[s]||0)+1;return{s,isNew}}
@@ -8777,8 +9047,9 @@ function balloonRule(area){if(area=='boss'||area=='test')area='math';
     return{txt:`Pop words that rhyme with “${FAM[f][0]}”!`,say:`Pop the words that rhyme with ${FAM[f][0]}!`,gen:()=>Math.random()<.45?[pick(FAM[f]),true]:[pick(FAM[pick(others)]),false]}}
   const L=DOL[R(0,1)],w=pick(L);return{txt:`Pop every “${w}”!`,say:`Pop every balloon that says ${w}!`,gen:()=>Math.random()<.45?[w,true]:[pick(L.filter(x=>x!=w)),false]}}
 function balloons(area,g){const rule=balloonRule(area);let popped=0,left=30;
-  view(`<div class="top"><div class="title" style="font-size:20px">🎈 Bonus!</div><div class="sp"></div><div class="stars" id="bpop">🪙 0</div><div class="stars" id="btime">⏱ 30</div></div>
-   <div class="rule" id="rule">${esc(rule.txt)} 🔊</div><div class="bfield" id="bf"></div>`);
+  // P4-18: drawn top bar, rule speaker and end card (the balloons themselves are the game's own)
+  view(`<div class="top tbar gx-mtop s-play"><div class="ttl gx-ttl"><span class="gx-tb">${ico('balloon',24)}</span><span>Bonus!</span></div>${UI.chip('coin',0,{id:'bpop',aria:'Coins'})}${UI.chip('timer','30',{id:'btime',aria:'Seconds left'})}</div>
+   <div class="rule gx-rule" id="rule"><span>${esc(rule.txt)}</span>${ico('sound-on',24)}</div><div class="bfield" id="bf"></div>`);
   const sayRule=()=>{if(rule.es){say(rule.es,null,'es')}else say(rule.say)};
   $('#rule').onclick=sayRule;setTimeout(sayRule,200);
   const bf=$('#bf'),cols=['#ef4444','#f59e0b','#22c55e','#3b82f6','#a855f7','#ec4899','#14b8a6'];let last=0,spawnT=0;
@@ -8786,16 +9057,17 @@ function balloons(area,g){const rule=balloonRule(area);let popped=0,left=30;
   function spawn(){const[lab,ok,col]=rule.gen(),e=document.createElement('button');e.className='bal';e.style.setProperty('--c',col||pick(cols));e.textContent=lab;
     const W=bf.clientWidth;e.style.left=R(4,Math.max(5,W-94))+'px';const b={e,ok,y:bf.clientHeight+10,v:(bf.clientHeight+130)/R(50,75)*10,dead:false};e.style.top=b.y+'px';
     e.onpointerdown=ev=>{ev.preventDefault();if(b.dead)return;
-      if(b.ok){b.dead=true;popped++;S.coins++;save();SFX.pop(R(2,6));setTimeout(()=>SFX.coin(R(0,4)),60);const r=e.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,['💥','✨','🪙']);e.remove();$('#bpop').textContent='🪙 '+popped;bump('#bpop')}
+      if(b.ok){b.dead=true;popped++;S.coins++;save();SFX.pop(R(2,6));setTimeout(()=>SFX.coin(R(0,4)),60);const r=e.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,['💥','✨','🪙']);e.remove();UI.setChip($('#bpop'),popped)}
       else{SFX.wrong();anim(e,'sad')}};
     bf.appendChild(e);BL.list.push(b)}
   function frame(ts){if(!BL)return;const dt=last?Math.min(.05,(ts-last)/1000):0;last=ts;spawnT-=dt;if(spawnT<=0&&left>0){spawn();spawnT=.75}
     BL.list=BL.list.filter(b=>{if(b.dead)return false;b.y-=b.v*dt;b.e.style.top=b.y+'px';if(b.y<-130){b.e.remove();return false}return true});
     BL.raf=requestAnimationFrame(frame)}
   BL.raf=requestAnimationFrame(frame);
-  BL.tick=setInterval(()=>{left--;const t=$('#btime');if(t)t.textContent='⏱ '+left;if(left<=3&&left>0)tone(880,.08,0,'square',.05);
+  BL.tick=setInterval(()=>{left--;const t=$('#btime b');if(t)t.textContent=left;if(left<=3&&left>0)tone(880,.08,0,'square',.05);
     if(left<=0){stopBalloons();bf.innerHTML='';SFX.fanfare();confetti(24);
-      const o=document.createElement('div');o.className='ovl';o.innerHTML=`<div style="font-size:90px">🎈</div><h1>You popped ${popped}!</h1><h2>+${popped} 🪙 coins</h2><div class="rowh"><button class="btn big" id="bnext">${g.mix||!g.path?'Play more':'Keep going ▶'}</button><button class="btn" id="bhome">${g.path?'🗺️ Map':'🏠 Home'}</button></div>`;
+      const o=GFX.endCard({icon:'balloon',title:`You popped ${popped}!`,best:'',earn:`${ico('coin',28,'ic-coin')}<span>+${popped} coins</span>`,
+        btns:UI.btn(g.mix||!g.path?'Play more':'Keep going',{kind:'primary',size:'lg',wide:true,icon:g.mix||!g.path?'replay':'play',id:'bnext'})+UI.btn(g.path?'Map':'Home',{icon:g.path?'map':'home',wide:true,id:'bhome'})});
       document.body.appendChild(o);if(S.voice)say(`You popped ${popped} balloons!`);
       $('#bhome').onclick=()=>{o.remove();g.path?pathMap(g.path):home()};
       $('#bnext').onclick=()=>{o.remove();if(g.mix||!g.path)return startMix();const p=g.path,i=g.node+1<NODES[p].length&&unlocked(p,g.node+1)&&!passed(p,g.node+1)?g.node+1:g.node;
@@ -8915,10 +9187,13 @@ let RC=null;
 function stopRace(){if(RC){clearInterval(RC.iv);RC=null}}
 const passedAny=(p,sk,lv)=>NODES[p].some((n,i)=>n.sk==sk&&n.lv>=lv&&passed(p,i));
 const RACES={math:['➕','Math Facts','Add and take away, fast!'],sight:['👀','Sight Words','Hear it, tap it!'],es:['🌮','Spanish Words','Escucha y toca!']};
+// P4-18: drawn race badges and colours (the emoji in RACES stay as data)
+const RACE_GX={math:['path-math','math'],sight:['eye','read'],es:['path-es','es']};
 function raceMenu(){S.race=S.race||{};
-  view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title">⚡ Speed Race</div></div>
-  <div class="scroll"><p class="sub" style="text-align:center">How many can you get in 60 seconds? Beat your best score!</p>
-  <div class="games">${Object.entries(RACES).map(([k,[e,t,d]])=>`<button class="btn game" data-r="${k}" style="background:linear-gradient(135deg,#fef3c7,#fde68a)"><span class="ge">${e}</span><span class="gi"><span class="gt">${t}</span><span class="small">${d}</span></span><span class="stars">🏆 ${S.race[k]||0}</span></button>`).join('')}</div></div>`);
+  view(`<div class="top tbar gx-mtop s-play">${UI.ibtn('back','Back',{size:'sm',id:'back'})}<div class="ttl gx-ttl"><span class="gx-tb">${ico('bolt',24)}</span><span>Speed Race</span></div></div>
+  <div class="scroll gx-list"><p class="gx-lead">How many can you get in 60 seconds? Beat your best score!</p>
+  <div class="games">${Object.entries(RACES).map(([k,[e,t,d]])=>GFX.card({cls:'game',attrs:`data-r="${k}"`,p:RACE_GX[k][1],icon:RACE_GX[k][0],title:t,sub:esc(d),
+    side:`<span class="gx-best">${ico('trophy',22)}<b>${S.race[k]||0}</b></span>`})).join('')}</div></div>`);
   $('#back').onclick=()=>home();$$('[data-r]').forEach(b=>b.onclick=()=>race(b.dataset.r))}
 function raceQ(cat){
   if(cat=='math'){const big=passedAny('math','add',1),sub=passedAny('math','sub',1)&&coin(),mx=big?18:10;
@@ -8927,8 +9202,8 @@ function raceQ(cat){
   if(cat=='sight'){const lv=passedAny('read','sight',3)?3:passedAny('read','sight',2)?2:1;return genQ('sight',lv)}
   const sets=Object.keys(SPN).filter(k=>passedAny('es','es_'+k,1));return genQ('es_'+(sets.length?pick(sets):pick(['color','num'])),1)}
 function race(cat){S.race=S.race||{};const best=S.race[cat]||0;
-  view(`<div class="top"><button class="btn sm" id="quit">✕</button><div class="prog"><div id="rbar" style="width:100%;background:linear-gradient(90deg,#ef4444,#f59e0b)"></div></div>
-   <div class="stars" id="rsc">⚡ 0</div><div class="stars">🏆 ${best}</div></div><div class="play" id="rplay"></div>`);
+  const ar=cat=='sight'?'read':cat=='es'?'es':'math';
+  view(`${GFX.speedTop(ar,'rbar',1,UI.chip('bolt',0,{id:'rsc',aria:'Right answers'})+UI.chip('trophy',best,{aria:'Best'}))}<div class="play qs s-${ar}" id="rplay"></div>`);
   RC={cat,score:0,left:60,iv:0,lock:false,typed:''};
   $('#quit').onclick=()=>{stopRace();raceMenu()};
   const rq=()=>{if(!RC)return;const q=raceQ(cat);RC.q=q;RC.typed='';RC.lock=false;
@@ -8938,14 +9213,15 @@ function race(cat){S.race=S.race||{};const best=S.race[cat]||0;
     // same input as a round; race pads take 3 digits, answer as soon as the right number is typed, and stay quiet
     KIND[q.kind].bind(q,RC,ans,{max:3,auto:true,quiet:true})};
   const ans=(v,el)=>{if(!RC||RC.lock)return;RC.lock=true;const q=RC.q;
-    if(String(v)===String(q.ans)){RC.score++;SFX.right(RC.score%10);$('#rsc').textContent='⚡ '+RC.score;bump('#rsc');if(el)el.classList.add('right');KIND[q.kind].right(q);setTimeout(rq,250)}
+    if(String(v)===String(q.ans)){RC.score++;SFX.right(RC.score%10);UI.setChip($('#rsc'),RC.score);if(el)el.classList.add('right');KIND[q.kind].right(q);setTimeout(rq,250)}
     else{SFX.wrong();if(el)el.classList.add('wrong');KIND[q.kind].reveal(q);setTimeout(rq,800)}};
-  setTimeout(()=>{fb('Ready… GO! ⚡');SFX.fanfare();rq()},300);
-  RC.iv=setInterval(()=>{if(!RC)return;RC.left--;const b=$('#rbar');if(b)b.style.width=RC.left/60*100+'%';if(RC.left<=5&&RC.left>0)tone(880,.08,0,'square',.05);
+  setTimeout(()=>{fb('Ready… GO!','zap');SFX.fanfare();rq()},300);
+  RC.iv=setInterval(()=>{if(!RC)return;RC.left--;GFX.bar($('#rbar'),RC.left/60);if(RC.left<=5&&RC.left>0)tone(880,.08,0,'square',.05);
     if(RC.left<=0){const sc=RC.score,rec=sc>best;stopRace();if(rec)S.race[cat]=sc;const coins=Math.floor(sc/2)+(rec&&sc>0?5:0);S.coins+=coins;if(sc>=5)ptEarn(60);save();
       rec&&sc>0?(SFX.fanfare(),confetti(40)):SFX.magic();
-      const o=document.createElement('div');o.className='ovl';o.innerHTML=`<div style="font-size:80px">${rec&&sc>0?'🏆':'⚡'}</div><h1>${sc} in 60 seconds!</h1><h2>${rec&&sc>0?'NEW RECORD! 🎉':`Your best: ${best}`}</h2><h2>+${coins} 🪙${sc>=5?' · 🎟️ +1 min':''}</h2>
-        <div class="rowh"><button class="btn big" id="ragain">Race again</button><button class="btn" id="rhome">🏠 Home</button></div>`;
+      const o=GFX.endCard({rec:rec&&sc>0,title:`${sc} in 60 seconds!`,best:`Your best: ${best}`,
+        earn:`${ico('coin',28,'ic-coin')}<span>+${coins}</span>${sc>=5?`${ico('ticket',28)}<span>+1 min</span>`:''}`,
+        btns:UI.btn('Race again',{kind:'primary',size:'lg',wide:true,icon:'replay',id:'ragain'})+UI.btn('Home',{icon:'home',wide:true,id:'rhome'})});
       document.body.appendChild(o);if(S.voice)say(rec&&sc>0?`New record! ${sc}!`:`You got ${sc}!`);
       o.querySelector('#ragain').onclick=()=>{o.remove();race(cat)};o.querySelector('#rhome').onclick=()=>{o.remove();home()}}},1000)}
 
@@ -9021,6 +9297,8 @@ const STRK={
 };
 function streakTick(){try{return STRK.tick()}catch(e){return{count:0,msg:''}}}
 
+// A played day's star: the P4-04 rating star (ledge behind, star in front)
+const STC_STAR=`<span class="rs on">${ico('star',20,'rs-b')}${ico('star',20,'rs-f')}</span>`;
 // Month grid screen. off = months back from this month (0 = this month).
 function streakCal(off){
   off=Math.max(0,Math.min(off||0,4));
@@ -9031,17 +9309,19 @@ function streakCal(off){
     if(!d){cells+='<div class="stc-d stc-pad"></div>';continue}
     const k=y+'-'+(m+1)+'-'+d,n=+s.days[k]||0;
     cells+=`<div class="stc-d${n?' on':''}${k===tk?' now':''}${rest.has(k)?' rest':''}" aria-label="${STRK.MONTHS[m]} ${d}${n?', played':''}">`+
-      `<span class="stc-n">${d}</span><span class="stc-m">${n?'⭐':rest.has(k)?'🌙':''}</span></div>`;
+      `<span class="stc-n">${d}</span><span class="stc-m">${n?STC_STAR:rest.has(k)?ico('moon',18):''}</span></div>`;
   }
   const msg=inf.count?`${inf.count} day${inf.count>1?'s':''} in a row!`:'Finish a round to light your flame!';
-  view(`<div class="top"><button class="btn sm" id="back" aria-label="Back">◀</button><div class="title">🔥 My Streak</div><div class="sp"></div></div>
+  // P4-18: drawn flame, stars, moon and prize chips (were emoji)
+  const prizes=STRK.MILESTONES.map(([d])=>`<span class="stc-pz${inf.count>=d?' got':''}">${ico(inf.count>=d?'check':'medal',18)}<b>${d}</b></span>`).join('');
+  view(`<div class="top tbar gx-mtop s-play">${UI.ibtn('back','Back',{size:'sm',id:'back'})}<div class="ttl gx-ttl"><span class="gx-tb">${ico('flame',24)}</span><span>My Streak</span></div></div>
    <div class="scroll"><div class="stc-card">
-    <div class="stc-big">🔥 ${inf.count}</div><div class="stc-sub">${msg}</div>
-    <div class="stc-sub small">Best: ${s.best} day${s.best==1?'':'s'}. A rest day 🌙 will not break your streak.</div>
-    <div class="stc-nav"><button class="btn sm" id="stcp" aria-label="Earlier month"${off>=4?' disabled':''}>◀</button>
-     <b>${STRK.MONTHS[m]} ${y}</b><button class="btn sm" id="stcn" aria-label="Later month"${off<=0?' disabled':''}>▶</button></div>
+    <div class="stc-hero${inf.count?'':' off'}"><span class="stc-fd">${ico('flame',64)}</span><span class="stc-big">${inf.count}</span></div><div class="stc-sub">${msg}</div>
+    <div class="stc-sub small">Best: ${s.best} day${s.best==1?'':'s'}. A rest day ${ico('moon','1.2em','ic-brand')} will not break your streak.</div>
+    <div class="stc-nav">${UI.ibtn('chevron-left','Earlier month',{size:'sm',id:'stcp',off:off>=4})}
+     <b>${STRK.MONTHS[m]} ${y}</b>${UI.ibtn('chevron-right','Later month',{size:'sm',id:'stcn',off:off<=0})}</div>
     <div class="stc-grid">${['S','M','T','W','T','F','S'].map(x=>`<div class="stc-h">${x}</div>`).join('')}${cells}</div>
-    <div class="stc-sub small">Next prizes: ${STRK.MILESTONES.map(x=>x[0]).join(', ')} days in a row</div>
+    <div class="stc-sub small stc-pzs"><span>Next prizes, days in a row:</span>${prizes}</div>
    </div></div>`);
   $('#back').onclick=()=>home();
   $('#stcp').onclick=()=>streakCal(off+1);
@@ -9051,14 +9331,16 @@ function streakCal(off){
 function careTick(){const c=S.care||(S.care={food:70,clean:70,fun:70,t:Date.now(),gift:''});const h=(Date.now()-c.t)/36e5;
   if(h>0){c.food=Math.max(0,c.food-h*4);c.clean=Math.max(0,c.clean-h*3);c.fun=Math.max(0,c.fun-h*5);c.t=Date.now()}return c}
 const SNACKS=[['🍎',3,25],['🍪',5,40],['🍕',8,60],['🎂',15,100]];
+const SNACK_W=['apple','cookie','pizza','cake']; // P4-18: snack pictures go through picFor (object art where it exists)
 function care(){const c=careTick();save();const pn=esc(petN()),sc=sceneOf();
-  const mood=c.food<30?`${pn} is hungry! 🍖`:c.clean<30?`${pn} needs a bath! 🛁`:c.fun<30?`${pn} wants to play! 🎾`:Math.min(c.food,c.clean,c.fun)>=80?`${pn} is super happy! 💖`:`${pn} is doing great!`;
-  const bar=(l,v,col)=>`<div class="cbar"><span>${l}</span><div class="meter"><div style="width:${v}%;background:${col}"></div></div><b>${Math.round(v)}%</b></div>`;
-  view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title">🐾 Pet Care</div><div class="sp"></div><div class="stars" id="coinc">${ico('coin','1.2em','ic-coin')} ${S.coins}</div></div>
+  const mood=c.food<30?`${pn} is hungry!`:c.clean<30?`${pn} needs a bath!`:c.fun<30?`${pn} wants to play!`:Math.min(c.food,c.clean,c.fun)>=80?`${pn} is super happy!`:`${pn} is doing great!`;
+  // P4-18: drawn meter icons and gauges, snack pictures, icon buttons (were emoji and raw-colour bars)
+  const bar=(l,icon,v,k)=>`<div class="cbar gx-cbar ${k}"><span class="gx-ci">${ico(icon,26)}</span><span class="gx-cl">${l}</span>${UI.meter(v/100,{label:l+' '+Math.round(v)+'%'})}<b>${Math.round(v)}%</b></div>`;
+  view(`<div class="top tbar gx-mtop s-play">${UI.ibtn('back','Back',{size:'sm',id:'back'})}<div class="ttl gx-ttl"><span class="gx-tb">${ico('paw',24)}</span><span>Pet Care</span></div>${UI.chip('coin',S.coins,{id:'coinc',aria:'Coins'})}</div>
   <div class="scroll">${stageHTML(sc,mood,'',false)}
-  <div class="card">${bar('🍖 Food',c.food,'linear-gradient(90deg,#f59e0b,#ef4444)')}${bar('🛁 Clean',c.clean,'linear-gradient(90deg,#38bdf8,#3b82f6)')}${bar('🎾 Fun',c.fun,'linear-gradient(90deg,#a3e635,#22c55e)')}</div>
-  <h2>Snacks</h2><div class="shopgrid">${SNACKS.map(([e,cost,v],i)=>`<button class="btn item" data-f="${i}"><span>${e}</span><div>${ico('coin','1.2em','ic-coin')} ${cost}</div></button>`).join('')}</div>
-  <div class="actions" style="grid-template-columns:1fr 1fr"><button class="btn act" id="bath"><span>🛁</span>Bath time (free)</button><button class="btn act" id="play"><span>🎾</span>Play (free)</button></div></div>`);
+  <div class="card gx-care">${bar('Food','food',c.food,'k-food')}${bar('Clean','bath',c.clean,'k-clean')}${bar('Fun','ball',c.fun,'k-fun')}</div>
+  <h2 class="gx-h">${ico('food',26)}<span>Snacks</span></h2><div class="shopgrid gx-snacks">${SNACKS.map(([e,cost,v],i)=>`<button class="btn item gx-snack" data-f="${i}" aria-label="${SNACK_W[i]}, ${cost} coins"><span class="gx-sp">${picFor(SNACK_W[i],e)}</span><div class="gx-price">${ico('coin',22,'ic-coin')}<b>${cost}</b></div></button>`).join('')}</div>
+  <div class="actions gx-acts2"><button class="btn act gx-act" id="bath"><span class="gx-ai">${ico('bath',34)}</span>Bath time (free)</button><button class="btn act gx-act" id="play"><span class="gx-ai">${ico('ball',34)}</span>Play (free)</button></div></div>`);
   $('#back').onclick=()=>home();
   const pet=$('#pet'),fly=(emo,n=1)=>{const r=pet.getBoundingClientRect();for(let i=0;i<n;i++)setTimeout(()=>burst(r.left+r.width/2,r.top+r.height/2,[emo]),i*120)};
   const done=()=>{c.t=Date.now();if(Math.min(c.food,c.clean,c.fun)>=80&&c.gift!==today()){c.gift=today();S.coins+=5;setTimeout(()=>{SFX.fanfare();confetti(20);fb(`🎁 ${petN()} gave you 5 coins!`,'',2000)},900)}save();setTimeout(care,1300)};
@@ -9174,26 +9456,31 @@ const fluBest = (key, lower) => {
   return b == null ? 'not yet' : lower ? b + ' s' : '' + b;
 };
 
+// P4-18: drawn set badges (the sign of the facts, and 10 or 20 on a tag) instead of the set emoji
+const fluIco = id => /^add/.test(id) ? 'plus' : /^sub/.test(id) ? 'minus' : /^mf/.test(id) ? 'times' : /^df/.test(id) ? 'divide' : 'bolt';
+const fluTag = id => (/(10|20)$/.exec(id) || [])[1] || '';
+// Top bar of the sprint menus: back, a math badge with the bolt, the title
+const fluTop = (t, icon) => `<div class="top tbar gx-mtop s-math">${UI.ibtn('back', 'Back', { size: 'sm', id: 'back' })}` +
+  `<div class="ttl gx-ttl"><span class="gx-tb">${ico(icon, 24)}</span><span>${esc(t)}</span></div></div>`;
+
 function fluMenu() {
   const sets = FLU.sets();
-  view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title">🔢 Fact Sprint</div></div>
-  <div class="scroll"><p class="sub" style="text-align:center">Pick your facts. Beat your best!</p>
-  <div class="games">${sets.map(s => `<button class="btn game" data-s="${s.id}" style="background:linear-gradient(135deg,#fef3c7,#fde68a)">
-    <span class="ge">${s.e}</span><span class="gi"><span class="gt">${esc(s.t)}</span>
-    <span class="small">60 s best: ${fluBest(s.id, false)} · 20 facts best: ${fluBest(s.id + '-20', true)}</span></span><span class="go">▶</span></button>`).join('')}</div></div>`);
+  view(`${fluTop('Fact Sprint', 'bolt')}
+  <div class="scroll gx-list"><p class="gx-lead">Pick your facts. Beat your best!</p>
+  <div class="games">${sets.map(s => GFX.card({ cls: 'game', attrs: `data-s="${s.id}"`, p: 'math', icon: fluIco(s.id), tag: fluTag(s.id), title: s.t,
+    sub: `<span class="gx-ln">${ico('timer', 18)}<span>60 s best: <b>${fluBest(s.id, false)}</b></span></span>` +
+      `<span class="gx-ln">${ico('target', 18)}<span>20 facts best: <b>${fluBest(s.id + '-20', true)}</b></span></span>` })).join('')}</div></div>`);
   $('#back').onclick = () => home();
   $$('[data-s]').forEach(b => b.onclick = () => fluModes(b.dataset.s));
 }
 
 function fluModes(set) {
   const s = FLU.set(set);
-  view(`<div class="top"><button class="btn sm" id="back">◀</button><div class="title">${s.e} ${esc(s.t)}</div></div>
-  <div class="scroll"><div class="games">
-   <button class="btn game" data-m="t60" style="background:linear-gradient(135deg,#fef3c7,#fde68a)"><span class="ge">⚡</span><span class="gi">
-    <span class="gt">60 seconds</span><span class="small">How many can you get? Best: ${fluBest(set, false)}</span></span><span class="go">▶</span></button>
-   <button class="btn game" data-m="n20" style="background:linear-gradient(135deg,#bbf7d0,#86efac)"><span class="ge">🏆</span><span class="gi">
-    <span class="gt">20 facts</span><span class="small">Beat your time! Best: ${fluBest(set + '-20', true)}</span></span><span class="go">▶</span></button></div>
-   <p class="small" style="text-align:center;margin-top:14px">A first sprint each day earns game time. 🎟️</p></div>`);
+  view(`${fluTop(s.t, fluIco(set))}
+  <div class="scroll gx-list"><div class="games">
+   ${GFX.card({ cls: 'game', attrs: 'data-m="t60"', p: 'play', icon: 'timer', title: '60 seconds', sub: `How many can you get? Best: <b>${fluBest(set, false)}</b>` })}
+   ${GFX.card({ cls: 'game', attrs: 'data-m="n20"', p: 'es', icon: 'target', title: '20 facts', sub: `Beat your time! Best: <b>${fluBest(set + '-20', true)}</b>` })}</div>
+   <p class="gx-note">${ico('ticket', 24)}<span>A first sprint each day earns game time.</span></p></div>`);
   $('#back').onclick = fluMenu;
   $$('[data-m]').forEach(b => b.onclick = () => fluPlay(set, b.dataset.m));
 }
@@ -9201,9 +9488,9 @@ function fluModes(set) {
 function fluPlay(set, mode) {
   stopFlu();
   const timed = mode != 'n20', key = FLU.key(set, mode);
-  view(`<div class="top"><button class="btn sm" id="quit">✕</button><div class="prog"><div id="fbar" style="width:${timed ? 100 : 0}%;background:linear-gradient(90deg,#ef4444,#f59e0b)"></div></div>
-   <div class="stars" id="fsc">${timed ? '⚡ 0' : '0 / ' + FLU.GOAL}</div><div class="stars" id="ftm">${timed ? '' : '0.0 s'}</div></div>
-   <div class="play" id="fplay"></div>`);
+  view(`${GFX.speedTop('math', 'fbar', timed ? 1 : 0, UI.chip('bolt', timed ? 0 : '0 / ' + FLU.GOAL, { id: 'fsc', aria: 'Right answers' }) +
+    UI.chip('timer', timed ? '60 s' : '0.0 s', { id: 'ftm', aria: 'Time' }))}
+   <div class="play qs s-math" id="fplay"></div>`);
   FL = {set, mode, key, timed, right: 0, typed: '', lock: true, clock: {ms: 0, last: Date.now()}, st: {set, last: '', redo: []}, f: null};
   $('#quit').onclick = () => {stopFlu(); fluModes(set)};
   FL.vis = () => {if (FL) FLU.tick(FL.clock, Date.now(), document.hidden)};
@@ -9215,8 +9502,7 @@ function fluPlay(set, mode) {
     FL.typed = '';
     FL.lock = false;
     $('#fplay').innerHTML = `<div class="qarea"><div class="prompt" id="prompt"><div class="eq">${f.a} ${f.op} ${f.b} = ${SLOT}</div></div></div>
-     <div class="inp"><div class="pad">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button class="btn k" data-k="${n}">${n}</button>`).join('')}
-     <button class="btn k del" data-k="del">⌫</button><button class="btn k" data-k="0">0</button><span></span></div></div>`;
+     <div class="inp">${GFX.pad()}</div>`;
     fit();
     $$('.k').forEach(b => b.onclick = () => {
       if (!FL || FL.lock) return;
@@ -9235,10 +9521,10 @@ function fluPlay(set, mode) {
       FL.right++;
       SFX.right(FL.right % 10);
       slot.classList.add('ok');
-      if (timed) {$('#fsc').textContent = '⚡ ' + FL.right; bump('#fsc')}
+      if (timed) UI.setChip($('#fsc'), FL.right);
       else {
-        $('#fsc').textContent = FL.right + ' / ' + FLU.GOAL;
-        $('#fbar').style.width = FL.right / FLU.GOAL * 100 + '%';
+        UI.setChip($('#fsc'), FL.right + ' / ' + FLU.GOAL);
+        GFX.bar($('#fbar'), FL.right / FLU.GOAL);
       }
       if (!timed && FL.right >= FLU.GOAL) return finish();
       FL.to = setTimeout(show, 250);
@@ -9269,7 +9555,7 @@ function fluPlay(set, mode) {
   // Clock counts only while the page is visible. It starts after a short "ready" beat.
   FL.to = setTimeout(() => {
     if (!FL) return;
-    fb('Ready… GO! ⚡');
+    fb('Ready… GO!', 'zap');
     SFX.fanfare();
     FL.clock.last = Date.now();
     show();
@@ -9277,11 +9563,11 @@ function fluPlay(set, mode) {
       if (!FL) return;
       const ms = FLU.tick(FL.clock, Date.now(), document.hidden), left = FLU.SECS - ms / 1000;
       if (timed) {
-        $('#fbar').style.width = Math.max(0, left / FLU.SECS * 100) + '%';
-        $('#ftm').textContent = Math.max(0, Math.ceil(left)) + ' s';
+        GFX.bar($('#fbar'), left / FLU.SECS);
+        $('#ftm b').textContent = Math.max(0, Math.ceil(left)) + ' s';
         if (left <= 5 && left > 0 && Math.ceil(left) != FL.beep) {FL.beep = Math.ceil(left); tone(880, .08, 0, 'square', .05)}
         if (left <= 0) finish();
-      } else $('#ftm').textContent = fluSecs(ms) + ' s';
+      } else $('#ftm b').textContent = fluSecs(ms) + ' s';
     }, 200);
   }, 300);
 }
@@ -9297,19 +9583,18 @@ function fluSpark(vals, lower) {
     return [pad + i * (W - 2 * pad) / 6, H - pad - (got.length > 1 ? up : .5) * (H - 2 * pad)];
   });
   const line = pts.filter(Boolean).map(p => p.map(n => n.toFixed(1)).join(',')).join(' ');
-  const dots = pts.map((p, i) => p ? `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${i == 6 ? 5 : 3.5}" fill="${i == 6 ? '#f59e0b' : '#fff'}"/>` : '').join('');
-  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Your last 7 days"><polyline points="${line}" fill="none" stroke="#fff" stroke-width="2.5" stroke-linejoin="round" opacity=".7"/>${dots}</svg>`;
+  const dots = pts.map((p, i) => p ? `<circle class="${i == 6 ? 'gx-sn' : 'gx-sd'}" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${i == 6 ? 6 : 4}"/>` : '').join('');
+  return `<svg class="gx-spark" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Your last 7 days"><polyline class="gx-sl" points="${line}"/>${dots}</svg>`;
 }
 
 function fluEnd(r) {
   const lower = !r.timed, e = (S.flu || {})[r.key], bestNow = e && e.best;
   const title = r.timed ? `${r.right} in 60 seconds!` : `20 facts in ${r.sec} s!`;
-  const sub = r.rec ? 'NEW RECORD! 🎉' : `Your best: ${lower ? bestNow + ' s' : bestNow}`;
-  const o = document.createElement('div');
-  o.className = 'ovl';
-  o.innerHTML = `<div style="font-size:80px">${r.rec ? '🏆' : '⚡'}</div><h1>${esc(title)}</h1><h2>${sub}</h2>
-    ${fluSpark(FLU.week(e, lower), lower)}<h2>${r.earned ? '🎟️ +' + r.earned / 60 + ' min' : 'Free practice, no game time'}</h2>
-    <div class="rowh"><button class="btn big" id="fagain">Again</button><button class="btn" id="fsets">Sets</button><button class="btn" id="fhome">🏠 Home</button></div>`;
+  const sp = fluSpark(FLU.week(e, lower), lower);
+  const o = GFX.endCard({ rec: r.rec, title, best: `Your best: ${lower ? bestNow + ' s' : bestNow}`, extra: sp ? `<div class="gx-week">${sp}</div>` : '',
+    earn: r.earned ? `${ico('ticket', 28)}<span>+${r.earned / 60} min of game time</span>` : '<span>Free practice, no game time</span>',
+    btns: UI.btn('Again', { kind: 'primary', size: 'lg', wide: true, icon: 'replay', id: 'fagain' }) +
+      `<div class="rw-two">${UI.btn('Sets', { icon: 'path-math', id: 'fsets' })}${UI.btn('Home', { icon: 'home', id: 'fhome' })}</div>` });
   document.body.appendChild(o);
   if (S.voice) say(r.rec ? 'New record!' : 'Good job!');
   o.querySelector('#fagain').onclick = () => {o.remove(); fluPlay(r.set, r.mode)};
@@ -9338,14 +9623,15 @@ function ptCalc(g,sc,n,stars,prev,newPass,testOk,nd){const per=ptCfg().per*60,L=
 function ptWhyNot(){const p=pt(),c=ptCfg();if(c.pause)return'Game time is paused by a grown-up.';if(c.max&&p.used>=c.max*60)return`That's all the game time for today (${c.max} min). Come back tomorrow!`;return'Finish a learning round to earn game time!'}
 
 function gameRoom(){const left=ptLeft(),gs=garageS(),R_=n=>ico(n,'1.2em','ic-play');
-  view(`<div class="top"><button class="btn sm" id="back" aria-label="Back">${ico('back',20)}</button><div class="title">${ico('gamepad','1.1em','ic-play')} Game Room</div><div class="sp"></div><div class="stars">${ico('ticket','1.2em','ic-play')} ${fmtT(left)}</div></div>
-  <div class="scroll"><div class="ptcard ${left>0?'':'empty'}"><div style="font-size:44px">${ico('ticket','1em','ic-play')}</div><div><div class="hname">${left>0?`${fmtT(left)} of game time`:'No game time yet'}</div>
+  // P4-18: drawn top bar, game-time card and game cards (were flat gradient tiles with raw colours)
+  view(`<div class="top tbar gx-mtop s-play">${UI.ibtn('back','Back',{size:'sm',id:'back'})}<div class="ttl gx-ttl"><span class="gx-tb">${ico('gamepad',24)}</span><span>Game Room</span></div>${UI.chip('ticket',fmtT(left),{aria:'Game time'})}</div>
+  <div class="scroll gx-list"><div class="ptcard gx-pt ${left>0?'':'empty'}"><span class="gx-ptd">${ico('ticket',40)}</span><div><div class="hname">${left>0?`${fmtT(left)} of game time`:'No game time yet'}</div>
    <div class="small">${left>0?'Every learning round earns more. Have fun!':esc(ptWhyNot())}</div></div></div>
   <div class="games">
-   <button class="btn game" id="g4x4" style="background:linear-gradient(135deg,#fed7aa,#fdba74)"><span class="ge">${ico('car','1em','ic-play')}</span><span class="gi"><span class="gt">4x4 Hill Climb</span><span class="small">Best: ${Math.max(gs.best.meadow,gs.best.moon)} m · ${ico('nut','1.1em')} ${gs.bolts} bolts</span></span><span class="go">${ico('play','1em')}</span></button>
-   <button class="btn game" id="gcbn" style="background:linear-gradient(135deg,#fbcfe8,#f9a8d4)"><span class="ge">${ico('palette','1em','ic-read')}</span><span class="gi"><span class="gt">Coloring</span><span class="small">Animals, pixel art & free paint</span></span><span class="go">${ico('play','1em')}</span></button>
-   <button class="btn game" id="gbb" style="background:linear-gradient(135deg,#bbf7d0,#86efac)"><span class="ge">${ico('blocks','1em','ic-es')}</span><span class="gi"><span class="gt">Block Builder</span><span class="small">Build your own 3D world</span></span><span class="go">${ico('play','1em')}</span></button></div>
-  ${left>0?'':`<button class="btn big" id="learn" style="display:block;margin:18px auto">${ico('path-read','1.1em')} Go earn game time</button>`}
+   ${GFX.card({id:'g4x4',cls:'game',p:'play',icon:'car',title:'4x4 Hill Climb',sub:`<span class="gx-ln">Best: <b>${Math.max(gs.best.meadow,gs.best.moon)} m</b></span><span class="gx-ln">${ico('nut',18)}<b>${gs.bolts}</b> bolts</span>`})}
+   ${GFX.card({id:'gcbn',cls:'game',p:'read',icon:'palette',title:'Coloring',sub:'Animals, pixel art &amp; free paint'})}
+   ${GFX.card({id:'gbb',cls:'game',p:'es',icon:'blocks',title:'Block Builder',sub:'Build your own 3D world'})}</div>
+  ${left>0?'':`<div class="gx-center">${UI.btn('Go earn game time',{kind:'primary',size:'lg',icon:'path-read',id:'learn'})}</div>`}
   <div class="tipcard ptrules"><b>${ico('ticket','1.2em')} How to earn MORE game time</b><div>${R_('sparkle')} Unlock a new stop <b>+1 min</b></div><div>${R_('star')} Get a perfect score <b>+1 min</b></div><div>${R_('globe')} Play a harder world <b>up to +1½ min</b></div><div>${R_('crown')} Beat a boss <b>+2 min</b></div><div>${R_('review')} Fix an old mistake <b>bonus seconds</b></div><div>${R_('chart')} Beat your old score <b>+½ min</b></div><div>${R_('timer')} Fact Sprint, first one of the day <b>+1 min</b></div><div class="small">Replaying a stop you already mastered, or the same stop over and over, earns less.</div></div></div>`);
   $('#back').onclick=()=>home();if($('#learn'))$('#learn').onclick=()=>home();
   $('#g4x4').onclick=()=>{SFX.whoosh();garage()};$('#gcbn').onclick=()=>{SFX.whoosh();colorMenu()};$('#gbb').onclick=()=>{SFX.whoosh();bbMenu()}}
@@ -10782,7 +11068,7 @@ function grown(){let armed=false;
    <div class="vline"><span class="vtxt">Give a bonus</span><button class="btn xs" id="pt5">+5 min</button><button class="btn xs danger" id="pt0">Empty bank</button></div>
    <label class="tg"><input type="checkbox" id="ptp" ${ptCfg().pause?'checked':''}> Pause game time (games locked)</label></div>
   <div class="card"><div class="tw"><table><tr><th>Skill</th><th>Rounds</th><th>1st try</th><th>Tricky ones</th></tr>${rows}</table></div></div>
-  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v78 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
+  <details class="card" id="applog"><summary><b>App log</b></summary><div class="small" style="margin-top:6px">Version v79 · save size ${(JSON.stringify(S).length/1024).toFixed(1)} KB<br>
    Storage: ${SAVE_FAILED?'<b style="color:#c0392b">could not save (device storage may be full)</b>':'saving OK'}${SAVE_CORRUPT?'<br><b style="color:#c0392b">The old save could not be read. A fresh start was made and the old data was kept on the device.</b>':''}<br>
    Last errors: ${(S.err||[]).length?(S.err||[]).slice().reverse().map(e=>'<br>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+' '+esc(e.msg)).join(''):'none'}</div></details>
   <div class="card"><label class="tg"><input type="checkbox" id="voice" ${S.voice?'checked':''}> Read questions out loud</label>

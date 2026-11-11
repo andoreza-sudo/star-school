@@ -5,18 +5,35 @@
 .stc-chip.off{color:var(--ink-3);background:var(--surface-2);--ic2:var(--surface-2)}
 .stc-chip.off .stc-fl{opacity:.45}
 .stc-card{background:var(--surface);border-radius:var(--r-card);border:2px solid var(--line);padding:var(--s-4);max-width:520px;margin:0 auto;text-align:center}
-.stc-big{font-size:var(--fs-6);font-weight:700;color:var(--play-shade)}
+.stc-big{font-family:var(--font-display);font-size:var(--fs-7);font-weight:700;line-height:1;color:var(--play-shade);font-variant-numeric:tabular-nums}
+/* P4-18: the flame on a glowing disc, the count beside it; star cells, moon rest days, prize chips */
+.stc-hero{display:flex;align-items:center;justify-content:center;gap:var(--s-3);margin-bottom:var(--s-2)}
+.stc-fd{display:grid;place-items:center;width:88px;height:88px;border-radius:50%;background:var(--play-tint);color:var(--play);--ic2:var(--star);
+  box-shadow:inset 0 0 0 4px var(--try),0 5px 0 var(--play-shade)}
+.stc-hero.off .stc-fd{background:var(--surface-2);color:var(--ledge-soft);--ic2:var(--surface-2);box-shadow:inset 0 0 0 4px var(--line),0 4px 0 var(--line)}
+.stc-hero.off .stc-big{color:var(--ink-3)}
+.stc-sub .ic{vertical-align:-.25em}
+.stc-pzs{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:var(--s-2);margin-top:var(--s-3)}
+.stc-pz{display:inline-flex;align-items:center;gap:2px;padding:2px var(--s-2) 2px var(--s-1);border-radius:var(--r-pill);background:var(--surface-2);color:var(--ink-2);
+  box-shadow:inset 0 0 0 2px var(--line)}
+.stc-pz .ic{color:var(--star-shade)}
+.stc-pz.got{background:var(--good-tint);color:var(--good-ink);box-shadow:inset 0 0 0 2px var(--good)}
+.stc-pz.got .ic{color:var(--good-ink)}
+.stc-m .rs{display:block}
+.stc-m .ic{display:block;color:var(--brand)}
 .stc-sub{font-size:var(--fs-3);margin:var(--s-1) 0;color:var(--ink-2)}
 .stc-sub.small{font-size:var(--fs-1);color:var(--ink-3)}
 .stc-nav{display:flex;align-items:center;justify-content:space-between;margin:var(--s-3) 0 var(--s-2);font-size:var(--fs-3)}
 .stc-nav .btn[disabled]{opacity:.35}
+.stc-nav b{font-family:var(--font-display);font-size:var(--fs-4)}
 .stc-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:var(--s-1)}
 .stc-h{font-size:var(--fs-1);font-weight:700;color:var(--ink-3);padding:var(--s-1) 0}
-.stc-d{min-height:var(--tap);border-radius:var(--r-chip);background:var(--surface-2);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1}
+.stc-d{min-height:var(--tap);border-radius:var(--r-chip);background:var(--surface-2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;line-height:1.1;padding:3px 0}
 .stc-d.stc-pad{background:none}
-.stc-d.on{background:var(--star-tint)}
+.stc-d.on{background:var(--star-tint);box-shadow:inset 0 -3px 0 var(--star)}
+.stc-d.on .stc-n{color:var(--try-ink);font-weight:700}
 .stc-d.rest{background:var(--brand-tint)}
 .stc-d.now{outline:3px solid var(--brand);outline-offset:-3px}
 .stc-n{font-size:var(--fs-1);color:var(--ink-2)}
-.stc-m{font-size:var(--fs-2);min-height:1em}
+.stc-m{display:grid;place-items:center;min-height:22px}
 @media (max-width:420px){.stc-card{padding:var(--s-3)}.stc-grid{gap:2px}}

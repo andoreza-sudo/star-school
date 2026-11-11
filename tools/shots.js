@@ -5,7 +5,9 @@ const fs = require('fs');
 const path = require('path');
 const { SIZES, launch, openApp } = require('./lib/browser');
 
-const OUT = path.join(__dirname, 'out');
+// P4-18: SHOTS_OUT=dir writes elsewhere (before/after sets); SHOTS_SIZES=600x960,380x780 picks sizes.
+const OUT = process.env.SHOTS_OUT ? path.resolve(process.env.SHOTS_OUT) : path.join(__dirname, 'out');
+const SHOT_SIZES = process.env.SHOTS_SIZES ? process.env.SHOTS_SIZES.split(',').map(s => s.split('x').map(Number)) : SIZES;
 const KS = require('./kinds-samples');
 
 // P1-03: a sample question of a new kind shown by the real round engine (a one-question round); taps are clicked afterwards.
@@ -75,7 +77,7 @@ const SCREENS = {
     run: async p => {
       await p.evaluate(() => fluPlay('add10', 't60'));
       await p.waitForSelector('.k', { timeout: 4000 });
-      await p.evaluate(() => { FL.right = 7; $('#fsc').textContent = '\u26a1 7'; });
+      await p.evaluate(() => { FL.right = 7; UI.setChip($('#fsc'), 7); });
     },
   },
   'sprint-end': {
@@ -940,12 +942,30 @@ Object.assign(SCREENS, {
   'q-race': { run: async p => { await p.evaluate(() => race('math')); } },
 });
 
+// ---- P4-18 graphics pass: the screens it fixed that had no entry, and the before/after group ----
+// node tools/shots.js @p418 shoots the whole group. For a before/after pair, build the old version, run with SHOTS_OUT=<dir>/before,
+// rebuild, run again with SHOTS_OUT=<dir>/after (SHOTS_SIZES=600x960,380x780 picks sizes).
+Object.assign(SCREENS, {
+  'map-boss': { run: async p => { await p.evaluate(() => { pathMap('math'); const b = document.querySelector('.node.boss'); if (b) b.scrollIntoView({ block: 'center' }); }); } },
+  'race-menu': { run: async p => { await p.evaluate(() => raceMenu()); } },
+  'race-end': { run: async p => { await p.evaluate(() => { race('math'); RC.score = 8; RC.left = 1; }); await p.waitForSelector('#ragain', { timeout: 8000 }); } },
+  balloons: { run: async p => { await p.evaluate(() => balloons('math', { path: 'math', node: 0 })); await p.waitForTimeout(1500); } },
+  'balloons-end': { run: async p => { await p.evaluate(() => balloons('math', { path: 'math', node: 0 })); await p.waitForSelector('#bnext', { timeout: 15000 }); } },
+  'learn-es': { run: async p => { await p.evaluate(() => learn('es', 0)); } },
+});
+const GROUPS = {
+  p418: ['map', 'map-read', 'map-worlds', 'map-boss', 'fluency', 'fluency-modes', 'sprint', 'sprint-end', 'race-menu', 'q-race', 'race-end', 'streak',
+    'place-intro', 'place-q', 'place-done', 'place-grown', 'report-top', 'care', 'setup', 'gameroom', 'balloons', 'balloons-end', 'learn-es', 'q-boss',
+    'viz', 'viz-q', 'bay-coins4', 'clock-time1', 'frac-2-pic', 'sg-tenf2'],
+};
+
 async function main() {
   const args = process.argv.slice(2);
   let fixtureArg = null;
   const names = [];
   for (const a of args) {
     if (a.startsWith('--fixture=')) fixtureArg = a.slice(10);
+    else if (a[0] == '@' && GROUPS[a.slice(1)]) names.push(...GROUPS[a.slice(1)]);
     else names.push(a);
   }
   if (!names.length) {
@@ -959,7 +979,7 @@ async function main() {
   const browser = await launch();
   let bad = 0;
   try {
-    for (const [w, h] of SIZES) {
+    for (const [w, h] of SHOT_SIZES) {
       for (const n of names) {
         const s = SCREENS[n];
         const { ctx, page, errors, network } = await openApp(browser, { fixture: fixtureArg || s.fixture || 'midway', width: w, height: h });
