@@ -245,14 +245,16 @@ function hmPlace() {
 }
 
 // Today row: review (same ids as revCard(); revCardBind() wires #rev), Fact Sprint, Mixed Practice.
+// R-01b: the review tile says how many the next review round asks ("10 to review": the due count, at most REVIEW_N), in the tile's
+// own words, not as a red count bubble over the icon; Fact Sprint only when FLU.on() (grade 1 up, a set open).
 function hmToday() {
-  const n = dueItems().length;
+  const n = Math.min(dueItems().length, REVIEW_N), flu = FLU.on();
   const rev = n
-    ? `<div class="hm-rvw" id="revcard"><button class="hm-tile" id="rev"><span class="hm-ti t-rev">${ico('replay', 32)}<b class="hm-cnt" id="revn">${n}</b></span>` +
-      `<span class="hm-tl">Review</span></button></div>`
+    ? `<div class="hm-rvw" id="revcard"><button class="hm-tile" id="rev"><span class="hm-ti t-rev">${ico('replay', 32)}</span>` +
+      `<span class="hm-tl"><b class="hm-rn" id="revn">${n}</b> to review</span></button></div>`
     : `<div class="hm-tile ok" id="revcard"><span class="hm-ti t-ok">${ico('check', 32)}</span><span class="hm-tl">All caught up!</span></div>`;
-  return `<div class="hm-today">${rev}
-    <button class="hm-tile" id="flu"><span class="hm-ti s-math">${ico('path-math', 32)}<i class="hm-bolt">${ico('bolt', 18)}</i></span><span class="hm-tl">Fact Sprint</span></button>
+  return `<div class="hm-today${flu ? '' : ' n2'}">${rev}
+    ${flu ? `<button class="hm-tile" id="flu"><span class="hm-ti s-math">${ico('path-math', 32)}<i class="hm-bolt">${ico('bolt', 18)}</i></span><span class="hm-tl">Fact Sprint</span></button>` : ''}
     <button class="hm-tile" id="mix"><span class="hm-ti t-mix">${hmMixIco()}</span><span class="hm-tl">Mixed Practice</span></button></div>`;
 }
 
@@ -318,7 +320,7 @@ function home(first){
   placeBannerBind();revCardBind();hmMissionsBind();
   $('#snd').onclick=()=>{S.sound=!S.sound;S.music=S.sound;save();home()};
   $('#stkb').onclick=()=>{SFX.whoosh();streakCal(0)};
-  $('#book').onclick=book;$('#shop').onclick=shop;$('#mix').onclick=()=>{SFX.whoosh();startMix()};$('#race').onclick=raceMenu;$('#flu').onclick=()=>{SFX.whoosh();fluMenu()};$('#care').onclick=care;$('#groom').onclick=()=>{SFX.whoosh();gameRoom()};if($('#btcard'))$('#btcard').onclick=()=>{SFX.whoosh();BT.hub()};
+  $('#book').onclick=book;$('#shop').onclick=shop;$('#mix').onclick=()=>{SFX.whoosh();startMix()};$('#race').onclick=raceMenu;if($('#flu'))$('#flu').onclick=()=>{SFX.whoosh();fluMenu()};$('#care').onclick=care;$('#groom').onclick=()=>{SFX.whoosh();gameRoom()};if($('#btcard'))$('#btcard').onclick=()=>{SFX.whoosh();BT.hub()};
   if($('#hmday'))$('#hmday').onclick=()=>{SFX.whoosh();const d=BT.dailyInfo();if(d&&!d.done)BT.start(d.id,d.band,d.level);else BT.hub()};
   if($('#inst'))$('#inst').onclick=async()=>{try{installEvt.prompt();await installEvt.userChoice}catch(e){}installEvt=null;home()};
   let t;const g=$('#gear');g.onpointerdown=()=>{t=setTimeout(grown,1200)};g.onpointerup=g.onpointerleave=()=>clearTimeout(t);g.onclick=()=>fb('Grown-ups: hold it','warn');

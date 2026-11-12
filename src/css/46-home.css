@@ -90,9 +90,9 @@ button.hm-tile:active{transform:translateY(3px);box-shadow:inset 0 0 0 2px var(-
 .t-rev{--c:var(--play);--c-shade:var(--play-shade)}
 .t-ok{--c:var(--good);--c-shade:var(--good-ink)}
 .t-mix{--c:var(--brand-tint);--c-shade:var(--ledge-soft)}
-.hm-cnt{position:absolute;top:-6px;right:-12px;display:grid;place-items:center;min-width:30px;height:30px;padding:0 var(--s-2);
-  border-radius:var(--r-pill);background:var(--read);color:var(--surface);font-size:var(--fs-2);line-height:1;font-variant-numeric:tabular-nums;
-  box-shadow:0 0 0 3px var(--surface)}
+/* R-01b: the review count is part of the tile's words ("10 to review"), in the ink colour: no red bubble */
+.hm-rn{font-variant-numeric:tabular-nums}
+.hm-today.n2{grid-template-columns:repeat(2,minmax(0,1fr))}
 .hm-bolt{position:absolute;right:-8px;bottom:-4px;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;
   background:var(--star);color:var(--ink);box-shadow:0 0 0 3px var(--surface)}
 .hm-tl{display:block;max-width:100%}

@@ -646,7 +646,7 @@ SF.mount = function (el, p, api) {
 
   /* ---------- start ---------- */
   const fresh_ = all.every(i => st.pc[i].length == 2);
-  tell(fresh_ ? intro : 'Keep going! Drag the pieces into the shape.', '', fresh_ && band == 'A');
+  tell(fresh_ ? intro : 'Keep going! Drag the pieces into the shape.', '', fresh_ && (band == 'A' || band == 'B')); // R-01b: band B speaks its first instruction too
   layout();
   later(layout, 60);
   const inst = {

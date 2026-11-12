@@ -4,6 +4,9 @@
      - starts one grade below the child's grade: the first world with g >= grade - 1 (the last world if none is)
      - a testlet is 4 questions from one world. 3 or 4 right: pass, go up one world. 0 or 1 right: not yet, go down one world.
        2 right: one more testlet at the same world, which then passes at 6 of 8.
+       R-01b: the first pass of a quiz is confirmed: until a world has passed, 3 right also asks one more testlet (6 of 8 passes);
+       4 of 4 passes at once. The quiz still stops at 20 questions, so a child far above the start world is placed a little lower
+       more often (harmless: they can test out); a struggling child is placed too high far less often.
      - stops when a "not yet" world sits directly above a passed world, at either end of the path, or after 5 testlets (20 questions)
      - result: the map starts at the lowest world not passed (the one above the highest passed world). The worlds below it get
        S.skip[worldId] = 1: a check mark, no stars, still playable. With no world passed it starts at the lowest world asked.
@@ -47,8 +50,11 @@ const PLACE={
     const w=s.wi,rec=s.rec[w]||(s.rec[w]={t:0,r:0});
     rec.t++;rec.r+=right;s.k++;s.asked+=PLACE.TL;s.right+=right;
     let v=null;
-    if(rec.t==1)v=right>=3?'pass':right<=1?'fail':null; // 2 right: one more testlet here
-    else v=rec.r>=6?'pass':'fail';                       // two testlets: pass at 6 of 8
+    // R-01b: the quiz's first pass must be confirmed. While no world has passed yet, 3 of 4 is not enough (a lucky guess or two
+    // moved a struggling child up): it asks one more testlet here like 2 of 4 does, and 4 of 4 still passes at once.
+    const first=!Object.values(s.rec).some(x=>x.v=='pass'),need1=first?PLACE.TL:3;
+    if(rec.t==1)v=right>=need1?'pass':right<=1?'fail':null; // 2 right (3 on the first pass): one more testlet here
+    else v=rec.r>=6?'pass':'fail';                          // two testlets: pass at 6 of 8
     if(v)rec.v=v;
     const R=s.rec;
     let stop=s.k>=PLACE.MAX;

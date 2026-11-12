@@ -3,7 +3,8 @@
    the choice that is the same shape turned.
      A (PK-K)  "Which shadow matches?": the shape in colour and 3 dark shadows, one of them its own. 4 squares, 5 from level 9; the
                shadow is not turned on levels 1-6 and turned from level 7. The wrong shadows are other shapes. The question is spoken.
-     B (1-2)   2D turn: 4 choices, one the shape turned (a quarter, half or three-quarter turn), three with one square moved.
+     B (1-2)   2D turn: 4 choices, one the shape turned (a quarter, half or three-quarter turn), three with one square moved;
+               never a mirror image as a wrong choice (checked, R-01b).
                4 squares on levels 1-4, 5 after.
      C (3-4)   turn vs mirror: the shape is chiral (its mirror image cannot be turned to match it), the choices are the shape turned,
                its mirror image (turned too) and two with one square moved. 5 squares, 6 from level 7.
@@ -129,6 +130,10 @@ const ROT = (() => {
       // exactly one choice is the shape turned (A, levels 1-6: exactly one is the very same shadow), and no two choices look the same
       const cr = canonR(s), same = ch.filter(c => band == 'A' && L <= 6 ? key(c.s) == key(s) : canonR(c.s) == cr);
       if (same.length !== 1 || same[0].k !== 'r') continue;
+      // R-01b: band B never has a mirror image among the wrong choices (mirror images are taught in band C). The moved-square
+      // choices already avoid the shape's mirror image (avoid holds canonF); this says it outright. Achiral shapes look the same
+      // turned and mirrored, so for them the right answer is also a mirror image, and nothing is wrong with that.
+      if (band == 'B' && ch.some(c => c.k != 'r' && canonR(c.s) == canonR(flip(s)))) continue;
       if (new Set(ch.map(c => key(c.s))).size !== ch.length) continue;
       shuffle(ch, rnd);
       return { t: s, ch, a: ch.findIndex(c => c.k == 'r'), turn: k };
@@ -268,7 +273,7 @@ const ROT = (() => {
     }
     if (st.h) { msg = hintText(p, p.items[st.i], st.h); mk = 'hint'; }
     render();
-    if (p.band == 'A' && !st.h) api.say(ASK.A);
+    if ((p.band == 'A' || (p.band == 'B' && st.i == 0 && !st.miss)) && !st.h) api.say(ASK[p.band]); // R-01b: band B speaks its first instruction too
     return {
       hint() {
         if (busy || st.i >= N || st.h >= 3) return false;

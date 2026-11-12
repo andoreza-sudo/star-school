@@ -5,15 +5,25 @@
    S.flu[set].paid holds the day game time was last earned for that set. */
 // Highest level (1-4) of a math skill the child has passed, 0 when none.
 const fluLv = sk => [4, 3, 2, 1].find(l => passedAny('math', sk, l)) || 0;
+// R-01b: a set that opens with stop (sk, lv) opens once that stop, or any later stop of the same skill on the math path, is passed,
+// or its world was skipped (placement, test out). passedAny counted any level at or above lv anywhere, so Kindergarten's
+// "Add to 5" (add 4, before "Adding to 10") opened the sums to 10 and to 20.
+function fluFrom(sk, lv) {
+  const N = NODES.math || [], a = N.findIndex(n => n.sk == sk && n.lv == lv);
+  if (a < 0) return passedAny('math', sk, lv);
+  if (worldSkipped('math', N[a].wi)) return true;
+  for (let i = a; i < N.length; i++) if (N[i].sk == sk && passed('math', i)) return true;
+  return false;
+}
 const FLU = {
   GOAL: 20, SECS: 60, KEEP: 30, MIN_RIGHT: 5,
   // Sets. `ok` says whether the child has reached the matching skill; mul/div sets are added here later (P2-05).
   SETS: [
-    {id: 'add10', e: '➕', t: 'Adding to 10', ok: () => true,
+    {id: 'add10', e: '➕', t: 'Adding to 10', ok: () => fluFrom('add', 1), // R-01b: after the first adding stop (was always open)
       gen: () => {const a = R(1, 9), b = R(1, 10 - a); return {a, op: '+', b, c: a + b}}},
     {id: 'sub10', e: '➖', t: 'Take away from 10', ok: () => passedAny('math', 'sub', 1),
       gen: () => {const a = R(2, 10), b = R(1, a); return {a, op: '−', b, c: a - b}}},
-    {id: 'add20', e: '➕', t: 'Adding to 20', ok: () => passedAny('math', 'add', 2),
+    {id: 'add20', e: '➕', t: 'Adding to 20', ok: () => fluFrom('add', 2),
       gen: () => {const a = R(1, 10), b = R(Math.max(1, 11 - a), 10); return {a, op: '+', b, c: a + b}}},
     {id: 'sub20', e: '➖', t: 'Take away from 20', ok: () => passedAny('math', 'sub', 2),
       gen: () => {const a = R(11, 20), b = R(1, Math.min(10, a - 1)); return {a, op: '−', b, c: a - b}}},
@@ -33,6 +43,10 @@ const FLU = {
   ],
   set: id => FLU.SETS.find(s => s.id == id),
   sets: () => FLU.SETS.filter(s => s.ok()),
+  // R-01b (R-01 practice review, Must 1): timed fact practice is for facts a child already knows by a strategy, from grade 1. Fact
+  // Sprint shows (Home tile, daily mission) from grade 1 once a set is open; Pre-K and K never see it. A save with no grade (older
+  // than grades) shows it once a set is open, as before.
+  on: () => (GRADES.includes(S.grade) ? S.grade >= 1 : true) && FLU.sets().length > 0,
   key: (set, mode) => mode == 'n20' ? set + '-20' : set,
   fkey: f => f.a + f.op + f.b,
   // Next fact for a sprint. st = {set, last, redo: [{f, wait}]}. A missed fact comes back after 3 other facts.

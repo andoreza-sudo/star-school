@@ -15,8 +15,9 @@
    bank is in order of difficulty); past the end of the bank a level picks one of the harder half by the seeded rnd. The seeded rnd
    also mirrors the picture (left-right) and picks which pieces the child places and how they lie in the tray:
      A (PK-K)  2 pieces to place (levels 1-6), then 3; only big pieces (the big triangles, the middle triangle, the square); the
-               rest of the picture is already built; the outline of every missing piece is drawn; levels 1-4 the tray pieces already
-               lie the right way round, then they need turning.
+               rest of the picture is already built; the outline of every missing piece is drawn; levels 1-6 the tray pieces already
+               lie the right way round and at most one big triangle is to place (so a piece fits the one outline of its kind that
+               is left without turning; R-01b), then they need turning.
      B (1-2)   4 pieces (levels 1-6), then 5, any of the seven; outlines drawn; turning needed; the parallelogram comes the right way
                up until level 8, then it may need a flip.
      C (3-4)   all seven, outlines hidden, one piece placed for you (levels 1-6 a big triangle, then any other piece).
@@ -57,7 +58,7 @@ const TG = (() => {
   const SAME = 1e-4, EPS_A = 0.02;
   // how each band is helped (section 7): pieces to place by level, outlines, pieces placed for you, tray turned right
   const PLAN = {
-    A: lv => ({ move: lv <= 6 ? 2 : 3, ol: 1, big: 1, turned: lv <= 4, flip: 0 }),
+    A: lv => ({ move: lv <= 6 ? 2 : 3, ol: 1, big: 1, turned: lv <= 6, flip: 0 }), // R-01b: no turning on levels 1-6 (was 1-4)
     B: lv => ({ move: lv <= 6 ? 4 : 5, ol: 1, big: 0, turned: false, flip: lv >= 9 }),
     C: lv => ({ move: 6, ol: 0, big: 0, turned: false, flip: 1, given: lv <= 6 ? 'L' : 'other' }),
     D: () => ({ move: 7, ol: 0, big: 0, turned: false, flip: 1 }),
@@ -198,7 +199,13 @@ const TG = (() => {
     else if (plan.move == 6) {
       const given = plan.given == 'L' ? (rnd() < 0.5 ? 0 : 1) : order.find(i => KIND[i] != 'L');
       move = all.filter(i => i != given);
-    } else move = order.filter(i => !plan.big || 'LMQ'.includes(KIND[i])).slice(0, plan.move).sort((a, b) => a - b);
+    } else {
+      // R-01b: while the tray pieces lie the right way (band A levels 1-6), never both big triangles: the one placed for you fills
+      // the other big triangle's outline, so the piece in the tray fits the one outline left for it without turning
+      const one = plan.turned && plan.big;
+      move = order.filter((i, j) => (!plan.big || 'LMQ'.includes(KIND[i])) && !(one && KIND[i] == 'L' && order.slice(0, j).some(x => KIND[x] == 'L')));
+      move = move.slice(0, plan.move).sort((a, b) => a - b);
+    }
     const tray = pcs.map((pc, i) => {
       if (!move.includes(i)) return [pc[0], pc[1]];
       const f = KIND[i] == 'P' && plan.flip ? 0 : pc[1];
@@ -725,7 +732,7 @@ TG.mount = function (el, p, api) {
 
   /* ---------- start ---------- */
   const fresh_ = mv.every(i => st.pc[i].length == 2);
-  tell(fresh_ ? intro : 'Keep going! Drag the pieces into the shape.', '', fresh_ && band == 'A');
+  tell(fresh_ ? intro : 'Keep going! Drag the pieces into the shape.', '', fresh_ && (band == 'A' || band == 'B')); // R-01b: band B speaks its first instruction too
   layout();
   later(layout, 60); // the stage can still be settling (fonts, the frame's top bar): look again once
   const inst = {

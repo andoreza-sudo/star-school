@@ -87,7 +87,7 @@ const RDL = (() => {
         `<div class="rd-chs n${it.ch.length}">${chs}</div></div>`;
       el.querySelector('.rd-say').onclick = () => api.say(it.q);
       el.querySelectorAll('.rd-ch').forEach(b => b.onclick = () => tap(+b.dataset.c, b));
-      if (band == 'A') api.say(it.q);
+      if (band == 'A' || (band == 'B' && st.i == 0 && !st.miss && !st.x.length)) api.say(it.q); // R-01b: band B speaks its first instruction too (the first riddle)
     }
     const msg = (t, cls) => { const m = el.querySelector('.rd-msg'); if (m) { m.textContent = t; m.className = 'rd-msg' + (cls ? ' ' + cls : ''); } };
     function tap(i, b) {
