@@ -1,0 +1,197 @@
+/* Rewards (P4-11; DESIGN_SYSTEM.md 6.3, 8.1, 9 row 5): round complete, treasure chest, stars, prizes, bosses, test out, pet growth.
+   Drawings: src/js/18-reward-art.js (RW.*). Tokens only. Animate only transform and opacity; keyframes are named rw-*.
+   Calm mode and reduced motion cut every animation to 0.01 ms (20-base.css) and hide the drawn confetti (.rw-burst). */
+
+/* ---- shared ---- */
+.rw-h{margin:0 0 var(--s-2);font-family:var(--font-display);font-size:var(--fs-5);line-height:var(--lh-5);color:var(--ink)}
+.rw-sub{margin:0 0 var(--s-3);font-size:var(--fs-3);line-height:var(--lh-3);font-weight:700;color:var(--ink-2);max-width:30ch}
+.rw-acts{display:flex;flex-wrap:wrap;justify-content:center;gap:var(--s-3);margin-top:var(--s-4)}
+.rw-art{display:block}
+.rw-chest-art,.rw-rays,.rw-boss,.rw-star{display:block;width:100%;height:100%;overflow:visible}
+
+/* ---- before the tap: a big closed chest that rattles until it is tapped ---- */
+.rw-pre{display:flex;flex-direction:column;align-items:center}
+.rw-chest{position:relative;display:block;width:min(240px,60vw,38vh);aspect-ratio:1;margin:var(--s-8) 0;padding:0;border:0;
+  border-radius:var(--r-hero);background:none;cursor:pointer;touch-action:manipulation}
+.rw-chest:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+.rw-chest .rw-glow{position:absolute;inset:-12%;opacity:.7;pointer-events:none}
+.rw-tap{display:inline-flex;align-items:center;gap:var(--s-2);padding:var(--s-2) var(--s-4);border-radius:var(--r-pill);background:var(--surface);
+  box-shadow:var(--shadow);color:var(--ink);max-width:none}
+.rw-tap .ic{flex:none;color:var(--read)}
+.rw-chest .rw-chest-art{position:relative;transform-origin:50% 88%;animation:rw-rattle var(--t-cele) var(--ease) 4}
+.rw-chest:active .rw-chest-art{transform:scale(.96)}
+
+/* ---- after the tap: hero (stars, score), treasure (open chest + stickers), what you earned, messages, the dock ---- */
+.rw-fin.rw-open{justify-content:flex-start;padding:var(--s-4) var(--s-4) 0}
+.rw-res{width:100%;max-width:560px;display:flex;flex-direction:column;gap:var(--s-3);text-align:left}
+.rw-a,.rw-b{display:flex;flex-direction:column;gap:var(--s-3);min-width:0}
+.rw-feed{display:flex;flex-direction:column;gap:var(--s-3)}
+.rw-hero{position:relative;padding:var(--s-5) var(--s-4) var(--s-4);border-radius:var(--r-hero);text-align:center;
+  background:radial-gradient(120% 90% at 50% 0,var(--star-tint) 0 45%,var(--surface) 80%);box-shadow:var(--shadow);
+  animation:rw-rise var(--t-slow) var(--ease) both}
+.rw-score{margin:var(--s-2) 0 0;font-family:var(--font-display);font-size:var(--fs-5);line-height:1.1;color:var(--ink-2);
+  font-variant-numeric:tabular-nums}
+.rw-score b{font-size:var(--fs-7);color:var(--ink)}
+.rw-tip{display:flex;align-items:center;justify-content:center;gap:var(--s-2);margin:var(--s-3) auto 0;padding:var(--s-2) var(--s-4);max-width:34ch;
+  border-radius:var(--r-card);background:var(--brand-tint);font-size:var(--fs-3);line-height:var(--lh-3);font-weight:700;color:var(--ink);text-align:left}
+.rw-tip .ic{flex:none;color:var(--brand)}
+.rw-line{margin:var(--s-1) 0 0;font-size:var(--fs-4);line-height:var(--lh-4);font-weight:700;color:var(--ink)}
+
+/* star rating: three slots, the middle one bigger and lifted; earned stars pop in 120 ms apart */
+.rw-rate{display:flex;justify-content:center;align-items:flex-end;gap:var(--s-1);padding-top:var(--s-3)}
+.rw-st{display:block;width:76px;height:76px}
+.rw-st:nth-child(2){width:96px;height:96px;transform:translateY(-14px)}
+.rw-st .rw-star{animation:rw-in var(--t) var(--ease) both}
+.rw-st.on .rw-star{animation:rw-starpop var(--t-xl) var(--spring) both;animation-delay:calc(250ms + var(--i) * 120ms)}
+
+/* the child's pet cheering instead of stars (no stars yet, Tricky Mix, test out) */
+.rw-pet{font-size:84px;line-height:1;display:flex;justify-content:center;animation:rw-pop var(--t-xl) var(--spring) both}
+.rw-pet .pet-svg{margin:0}
+.rw-pete{font-size:96px;line-height:1.1}
+
+/* treasure: the open chest with its prizes beside it */
+.rw-tre{display:flex;align-items:center;gap:var(--s-3);min-height:104px;padding:var(--s-2) var(--s-4) var(--s-2) var(--s-2);
+  border-radius:var(--r-card);background:var(--star-tint);animation:rw-rise var(--t-slow) var(--ease) 80ms both}
+.rw-chest-o{position:relative;flex:none;width:104px;height:104px}
+.rw-chest-o .rw-rays{position:absolute;inset:-12%;width:124%;height:124%;opacity:.9;animation:rw-rays calc(var(--t-xl) * 1.5) var(--ease) both}
+.rw-chest-o .rw-chest-art{position:relative;animation:rw-pop var(--t-xl) var(--spring) both}
+.rw-prz{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s-3);flex:1;min-width:0;padding:var(--s-2) 0}
+.rw-stk{position:relative;display:inline-grid;place-items:center;width:64px;height:64px;border-radius:20px;background:var(--surface);
+  box-shadow:0 0 0 3px var(--surface),0 4px 10px var(--drop);transform:rotate(var(--r,0deg));animation:rw-stk var(--t-xl) var(--spring) both}
+.rw-se{font-size:42px;line-height:1}
+.rw-stk .tag{position:absolute;top:-12px;right:-16px;padding:1px 8px}
+
+/* what you earned: stars, game time (with the why list), coins */
+.rw-earn{display:grid;gap:var(--s-3);padding:var(--s-3) var(--s-4);border:2px solid var(--line);border-radius:var(--r-card);background:var(--surface)}
+.rw-earn:empty{display:none}
+.rw-er{display:grid;grid-template-columns:44px minmax(0,1fr);gap:var(--s-3);align-items:start;animation:rw-rise var(--t-slow) var(--ease) both}
+.rw-ed{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--star-tint);color:var(--star-shade);--ic2:var(--star-tint)}
+.rw-er.ticket .rw-ed{background:var(--play-tint);color:var(--play);--ic2:var(--play-tint)}
+.rw-er.bump .rw-ed{animation:rw-bump var(--t-slow) var(--spring)}
+.rw-et{padding-top:9px;font-size:var(--fs-4);line-height:var(--lh-4);font-weight:700;color:var(--ink);overflow-wrap:normal}
+.rw-num{font-variant-numeric:tabular-nums}
+.rw-pl{display:grid;gap:2px;margin:var(--s-2) 0 0;padding:0;list-style:none;font-size:var(--fs-2);line-height:var(--lh-2);font-weight:700;color:var(--ink-2)}
+.rw-pl li{display:flex;align-items:center;gap:var(--s-2)}
+.rw-pl .ic{flex:none;color:var(--good-ink)}
+.rw-pl .neg{color:var(--try-ink)}
+.rw-pl .neg .ic{color:var(--try-ink)}
+.rw-ph{display:flex;align-items:center;gap:var(--s-2);margin-top:var(--s-2);font-size:var(--fs-2);line-height:var(--lh-2);font-weight:700;color:var(--bt)}
+.rw-ph .ic{flex:none}
+
+/* message cards: an icon disc (or a little drawn boss) and one line */
+.rw-msgs{display:grid;gap:var(--s-2)}
+/* P4-17: a sticker, row or card already in its place, waiting for its turn (finish() in 50-round.js), so nothing moves when it
+   shows: a faint empty slot (the card or tile; a row keeps only its icon disc), then it rises in */
+.rw-fin .rw-wait{animation:none;opacity:.4}
+.rw-fin .rw-wait>*{visibility:hidden}
+.rw-fin .rw-er.rw-wait>.rw-ed{visibility:visible}
+.rw-msgs:empty{display:none}
+.rw-msg{position:relative;display:grid;grid-template-columns:48px minmax(0,1fr);gap:var(--s-3);align-items:center;padding:var(--s-2) var(--s-4) var(--s-2) var(--s-2);
+  border-radius:var(--r-card);background:var(--surface);box-shadow:inset 0 0 0 2px var(--line);animation:rw-rise var(--t-slow) var(--ease) both}
+.rw-msg.win{background:var(--star-tint);box-shadow:none}
+.rw-msg.tip{background:var(--brand-tint);box-shadow:none}
+.rw-md{display:grid;place-items:center;width:48px;height:48px;border-radius:50%;background:var(--surface);color:var(--brand)}
+.rw-msg.win .rw-md{color:var(--star-shade);--ic2:var(--surface)}
+.rw-msg.boss .rw-md{background:none;overflow:visible}
+.rw-msg.boss .rw-boss{width:60px;height:60px;margin:-8px}
+.rw-mt{font-size:var(--fs-3);line-height:var(--lh-3);font-weight:700;color:var(--ink);overflow-wrap:normal}
+.rw-mt .rw-badge{width:48px;height:48px;vertical-align:middle;margin:-8px 0}
+.rw-mt .rw-be{font-size:20px}
+
+/* the dock: the next step (one primary button), then Bonus game and Map / Home; stays at the bottom while the list scrolls */
+.rw-dock{position:sticky;bottom:0;z-index:1;display:grid;gap:var(--s-3);margin:0 calc(var(--s-4) * -1);padding:var(--s-4) var(--s-4) calc(var(--s-4) + env(safe-area-inset-bottom));
+  background:linear-gradient(var(--hi-0),var(--paper) var(--s-4))}
+.rw-dock.on{animation:rw-rise var(--t-slow) var(--ease) both}
+.rw-two{display:grid;grid-template-columns:1fr 1fr;gap:var(--s-3)}
+.rw-two .btn{width:100%;padding-left:var(--s-3);padding-right:var(--s-3)}
+
+/* wide landscape: hero and treasure on the left; the list scrolls on the right above the dock */
+@media (orientation:landscape) and (min-width:700px){
+  .rw-fin.rw-open{padding:var(--s-4) var(--s-5) 0;overflow:hidden}
+  .rw-res{flex:1;min-height:0;max-width:1000px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:var(--s-5);margin:0 auto}
+  .rw-a{justify-content:center;padding-bottom:var(--s-4)}
+  .rw-b{min-height:0}
+  .rw-feed{flex:1;min-height:0;overflow:auto;padding:2px}
+  .rw-dock{position:static;margin:0;padding:var(--s-3) 0 var(--s-4);background:none}
+}
+@media (max-height:520px){
+  .rw-st{width:60px;height:60px}.rw-st:nth-child(2){width:76px;height:76px;transform:translateY(-10px)}
+  .rw-rate{padding-top:var(--s-2)}
+  .rw-hero{padding:var(--s-3) var(--s-4)}
+  .rw-score b{font-size:var(--fs-6)}
+  .rw-pet{font-size:64px}
+  .rw-chest{margin-bottom:var(--s-3)}
+}
+@media (max-width:480px){
+  .rw-st{width:64px;height:64px}.rw-st:nth-child(2){width:82px;height:82px;transform:translateY(-10px)}
+  .rw-fin.rw-open{padding:var(--s-3) var(--s-3) 0}
+  .rw-res,.rw-a,.rw-b,.rw-feed{gap:var(--s-2)}
+  .rw-hero{padding:var(--s-3) var(--s-3) var(--s-3)}
+  .rw-score b{font-size:var(--fs-6)}
+  .rw-line{font-size:var(--fs-3)}
+  .rw-tre{min-height:88px}.rw-chest-o{width:88px;height:88px}
+  .rw-stk{width:58px;height:58px}.rw-se{font-size:38px}
+  .rw-earn{padding:var(--s-3)}
+  .rw-et{font-size:var(--fs-3);padding-top:10px}
+  .rw-dock{margin:0 calc(var(--s-3) * -1);padding:var(--s-3) var(--s-3) calc(var(--s-3) + env(safe-area-inset-bottom))}
+  .rw-two .btn{font-size:var(--fs-3);gap:6px}
+}
+
+/* ---- drawn confetti: a short burst out of the chest (or a card), about 1 s ---- */
+.rw-burst{position:absolute;left:50%;top:45%;width:0;height:0;pointer-events:none;z-index:2}
+.rw-burst i{position:absolute;width:9px;height:14px;margin:-7px 0 0 -4px;border-radius:3px;animation:rw-cf var(--t-cele) var(--ease) forwards}
+.rw-burst i.r{width:11px;height:11px;border-radius:50%}
+.rw-burst .c0{background:var(--star)}.rw-burst .c1{background:var(--read)}.rw-burst .c2{background:var(--math)}
+.rw-burst .c3{background:var(--good)}.rw-burst .c4{background:var(--bt)}.rw-burst .c5{background:var(--play)}
+html.calm .rw-burst{display:none}
+@media (prefers-reduced-motion:reduce){.rw-burst{display:none}}
+
+/* ---- overlays: pet growth (#yay) and test out (#tgo, #tno) as a card over a dim backdrop ---- */
+.ovl.rw-ovl{background:var(--dim);padding:var(--s-4)}
+.rw-card{position:relative;width:100%;max-width:440px;max-height:100%;overflow:hidden;padding:var(--s-6);border-radius:var(--r-hero);
+  background:var(--surface);color:var(--ink);text-align:center;box-shadow:var(--shadow);animation:rw-up var(--t-slow) var(--ease) both}
+.rw-card h1,.ovl .rw-card h1,.rw-card h2{position:relative;margin:var(--s-3) 0 var(--s-2);font-family:var(--font-display);font-size:var(--fs-5);line-height:var(--lh-5);color:var(--ink)}
+.rw-card p{margin:0 0 var(--s-4);font-size:var(--fs-3);line-height:var(--lh-3);color:var(--ink-2)}
+.rw-card .rw-acts{flex-direction:column;flex-wrap:nowrap;margin-top:var(--s-4)}
+.rw-disc{display:grid;place-items:center;width:88px;height:88px;margin:0 auto;border-radius:50%;background:var(--bt-tint);color:var(--bt)}
+.rw-growc{background:radial-gradient(90% 60% at 50% 32%,var(--star-tint) 0 50%,var(--surface) 90%)}
+.rw-growc .rw-rays{position:absolute;left:50%;top:var(--s-4);width:340px;height:340px;margin-left:-170px;opacity:.75;animation:rw-rays calc(var(--t-xl) * 1.5) var(--ease) both}
+.ovl.rw-ovl .grow,.ovl.rw-ovl .grown{position:relative;display:flex;justify-content:center;font-size:min(124px,24vh)!important;line-height:1}
+.ovl.rw-ovl .grow{animation:rw-wob var(--t-xl) var(--ease) 3}
+.ovl.rw-ovl .grown{animation:rw-pop var(--t-xl) var(--spring) both}
+.rw-card .grown+h1{animation:rw-rise var(--t-slow) var(--ease) 200ms both}
+
+/* ---- boss intro: the boss on a spotlight, seven zaps to win, the prize rosette ---- */
+.rw-bstage{position:relative;width:min(230px,58vw,34vh);aspect-ratio:1;margin:0 0 var(--s-2)}
+.rw-bstage::before{content:'';position:absolute;left:4%;right:4%;bottom:0;height:42%;border-radius:50%;background:var(--star-tint)}
+.rw-bstage .rw-boss{position:relative;animation:rw-pop var(--t-xl) var(--spring) both}
+.rw-bstage .rb-fig{transform-box:fill-box;transform-origin:50% 100%;animation:rw-bob var(--t-cele) var(--ease) 600ms 3}
+.rw-zaps{display:flex;justify-content:center;gap:2px;margin:0 0 var(--s-2);color:var(--try)}
+.rw-badge{position:relative;display:inline-block;width:76px;height:76px;flex:none}
+.rw-rose{display:block;width:100%;height:100%}
+.rw-be{position:absolute;left:0;right:0;top:21%;font-size:34px;line-height:1;text-align:center}
+.rw-bin .bossbig{font-size:min(140px,26vh)}
+
+/* ---- the boss in the round's top bar (renderQ puts G.boss.e, the drawing, in .bossE) ---- */
+.rw-boss .rb-fig{transform-box:fill-box;transform-origin:50% 100%;transition:transform var(--t) var(--ease)}
+.rw-boss .rb-hit{opacity:0}
+.rw-boss.rw-p-hit .rb-idle,.bossE.hit .rw-boss .rb-idle,.bossE.ko .rw-boss .rb-idle{opacity:0}
+.rw-boss.rw-p-hit .rb-hit,.bossE.hit .rw-boss .rb-hit,.bossE.ko .rw-boss .rb-hit{opacity:1}
+.rw-boss.rw-p-hit .rb-fig{transform:rotate(-6deg)}
+.bossE .rw-boss{width:1.3em;height:1.3em}
+.bossE.hit{animation:rw-hit calc(var(--t) * 2.5) var(--ease)}
+
+/* ---- motion ---- */
+@keyframes rw-rise{from{opacity:0;transform:translateY(8px)}}
+@keyframes rw-up{from{opacity:0;transform:translateY(24px)}}
+@keyframes rw-in{from{opacity:0}}
+@keyframes rw-pop{0%{opacity:0;transform:scale(.4)}60%{opacity:1}}
+@keyframes rw-starpop{0%{opacity:0;transform:scale(0) rotate(-40deg)}60%{opacity:1;transform:scale(1.15) rotate(6deg)}100%{transform:none}}
+@keyframes rw-stk{0%{opacity:0;transform:scale(0) rotate(var(--r,0deg))}100%{opacity:1;transform:rotate(var(--r,0deg))}}
+@keyframes rw-rays{0%{opacity:0;transform:scale(.4)}}
+@keyframes rw-rattle{0%,55%,100%{transform:none}62%{transform:rotate(-5deg) scale(1.03)}72%{transform:rotate(5deg) scale(1.03)}82%{transform:rotate(-3deg)}90%{transform:rotate(2deg)}}
+@keyframes rw-bump{40%{transform:scale(1.2)}}
+@keyframes rw-bob{50%{transform:translateY(-6px) scale(1.02,.98)}}
+@keyframes rw-wob{25%{transform:rotate(-5deg)}75%{transform:rotate(5deg)}}
+@keyframes rw-hit{25%{transform:translateX(-7px) scale(.88)}60%{transform:translateX(5px) scale(1.06)}}
+@keyframes rw-cf{0%{opacity:1;transform:translate(0,0) scale(.3) rotate(0)}70%{opacity:1}100%{opacity:0;transform:translate(var(--x),var(--y)) rotate(var(--t))}}

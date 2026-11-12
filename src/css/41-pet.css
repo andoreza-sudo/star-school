@@ -1,0 +1,64 @@
+/* Pet rig (P4-05; DESIGN_SYSTEM.md 6.2). Drawing: src/js/17-pets-svg.js. Tokens only; animates transform and opacity only.
+   Palette roles (--pc-*): shared ones on .pet-svg, body colours per pet on .pet-k-<kind>. */
+.pet-svg{width:1.7em;height:1.7em;display:block;overflow:visible;margin:-.2em -.18em -.1em;
+  --pc-e:var(--ink);--pc-e2:var(--ink-2);--pc-w:var(--surface);--pc-t:var(--read);--pc-ck:var(--read-tint);--pc-d:var(--glow-cool);
+  --pc-gl:var(--star);--pc-gl2:var(--star-tint);--pc-sd:var(--shadow-ink-2)}
+.pet-k-dragon{--pc-b:var(--good);--pc-b2:var(--good-ink);--pc-b3:var(--es-shade);
+  --pc-l:var(--star);--pc-l2:var(--star-shade);--pc-l3:var(--star-tint);
+  --pc-h:var(--try-tint);--pc-h2:var(--star);--pc-x:var(--star-tint);--pc-x2:var(--try-tint);--pc-x3:var(--star-shade);--pc-sh:var(--star-tint);--pc-sh2:var(--try-tint)}
+/* P4-06: dino (blue, cream belly and snout, orange plates), bird (yellow, orange beak and feet, straw nest), sea pal (aqua, white chin, blue fins) */
+.pet-k-dino{--pc-b:var(--ill-blue);--pc-b2:var(--ill-blue-2);--pc-b3:var(--ill-blue-3);--pc-l:var(--ill-cream);--pc-l2:var(--ill-cream-2);--pc-l3:var(--ill-cream-1);
+  --pc-p:var(--ill-orange);--pc-p2:var(--ill-orange-2);--pc-sh:var(--ill-blue-1);--pc-sh2:var(--ill-blue)}
+.pet-k-bird{--pc-b:var(--ill-yellow);--pc-b2:var(--ill-yellow-2);--pc-b3:var(--ill-yellow-3);--pc-l:var(--ill-yellow-1);--pc-l2:var(--ill-yellow);
+  --pc-x:var(--ill-orange);--pc-x2:var(--ill-orange-2);--pc-sh:var(--ill-cream);--pc-sh2:var(--ill-cream-2);--pc-n:var(--ill-tan-2);--pc-n2:var(--ill-brown-2);--pc-n3:var(--ill-tan)}
+.pet-k-ocean{--pc-b:var(--ill-aqua);--pc-b1:var(--ill-aqua-1);--pc-b2:var(--ill-aqua-2);--pc-b3:var(--ill-aqua-3);--pc-l:var(--ill-white);--pc-l2:var(--ill-white-2);
+  --pc-p:var(--ill-blue);--pc-p2:var(--ill-blue-2);--pc-sh:var(--ill-aqua-1);--pc-sh2:var(--ill-aqua)}
+
+/* containers that hold a rig pet (petAura() gives them .rig): no box bob, no shadow; the drawing has its own */
+.rig{text-shadow:none}
+.petbig.rig,.mappet.rig{animation:none}
+.petopt .pet-svg{width:1.3em;height:1.3em;margin:-.1em 0}
+.map .pet-svg{position:static}
+.hero .pet-svg{width:1.95em;height:1.95em;margin:-.3em -.26em -.12em}
+.runner .pet-svg{width:1.5em;height:1.5em;margin:-.2em -.15em -.08em}
+.ovl .pet-svg{width:1.4em;height:1.4em;margin:0 auto}
+
+/* idle: body bob with its shadow, blink every 4 s; the egg rocks instead */
+.pet-svg .pg-fig{transform-box:fill-box;transform-origin:50% 100%;animation:pet-bob 2.4s ease-in-out infinite}
+.pet-svg .pg-shadow{transform-box:fill-box;transform-origin:center;animation:pet-shadow 2.4s ease-in-out infinite}
+.pet-svg .pg-eyes{transform-box:fill-box;transform-origin:center;animation:pet-blink 4s infinite}
+.pet-svg .pg-arm-l,.pet-svg .pg-arm-r{transition:transform var(--t) var(--ease)}
+.pet-s-egg .pg-fig{animation-name:pet-rock}
+@keyframes pet-bob{50%{transform:translateY(-6px)}}
+@keyframes pet-shadow{50%{transform:scaleX(.88);opacity:.7}}
+@keyframes pet-blink{0%,93%,100%{transform:none}96%{transform:scaleY(.12)}}
+@keyframes pet-rock{25%{transform:rotate(-4deg)}75%{transform:rotate(4deg)}}
+
+/* moods (the face is swapped in the markup; these add the body language) */
+.pet-m-happy .pg-eyes,.pet-m-sleepy .pg-eyes{animation:none}
+.pet-m-happy .pg-tail{animation:pet-wag .5s ease-in-out 4}
+.pet-m-sleepy .pg-fig{animation-duration:4s}
+.pet-m-sleepy .pg-head{transform:rotate(-7deg)}
+.pet-m-hungry .pg-head{transform:rotate(5deg)}
+.pet-m-cheer .pg-fig{animation:pet-hop .6s var(--ease) 3}
+.pet-m-cheer .pg-arm-l{transform:rotate(60deg)}
+.pet-m-cheer .pg-arm-r{transform:rotate(-60deg)}
+.pet-m-cheer .pg-xl{animation:pet-flap-l .3s ease-in-out 6}
+.pet-m-cheer .pg-xr{animation:pet-flap-r .3s ease-in-out 6}
+.pet-m-oops .pg-fig{animation:pet-wobble .5s ease-in-out 2}
+@keyframes pet-wag{50%{transform:rotate(-14deg)}}
+@keyframes pet-hop{40%{transform:translateY(-14px)}}
+@keyframes pet-flap-l{50%{transform:rotate(16deg)}}
+@keyframes pet-flap-r{50%{transform:rotate(-16deg)}}
+@keyframes pet-wobble{25%{transform:rotate(-6deg)}75%{transform:rotate(6deg)}}
+
+/* reactions: anim(el, 'jump' | 'sad') on the container shows the cheer / oops face and moves the figure, not the whole box */
+.pf-cheer,.pf-oops{opacity:0}
+.jump .pf-base,.sad .pf-base{opacity:0}
+.jump .pf-cheer,.sad .pf-oops{opacity:1}
+.rig.jump,.rig.sad{animation:none!important}
+.rig.jump .pg-fig{animation:pet-jump .5s var(--ease)}
+.rig.jump .pg-arm-l{transform:rotate(60deg)}
+.rig.jump .pg-arm-r{transform:rotate(-60deg)}
+.rig.sad .pg-fig{animation:pet-wobble .5s ease-in-out}
+@keyframes pet-jump{35%{transform:translateY(-24px) scale(1.04,.98)}70%{transform:translateY(0) scale(1.05,.94)}}

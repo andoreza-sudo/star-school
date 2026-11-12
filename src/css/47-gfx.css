@@ -1,0 +1,145 @@
+/* P4-18 graphics quality pass: drawn chrome for the screens that still had emoji or flat looks (map stops and world badges,
+   Fact Sprint, Speed Race, streak calendar, placement, Pet Care, setup, Game Room). Tokens only; motion is transform/opacity
+   (calm mode and reduced motion stop it in 20-base.css). Markup ids and classes are the ones the screens always had. */
+
+/* ---- map (until P4-09 draws the world scenes) ---- */
+.mp-top .ttl.mp-ttl{display:flex;align-items:center;gap:var(--s-2);color:var(--ink)}
+.mp-ttl .ic{flex:none;color:var(--c,var(--brand))}
+.mp-ttl span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+/* world badge: a disc in the world's own colour (--wb, from PATHS) with the icon of its first new skill */
+.wbadge{flex:none;display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:var(--wb,var(--c-tint));
+  color:var(--c-shade,var(--brand-shade));box-shadow:inset 0 0 0 2px var(--surface),inset 0 -3px 0 var(--drop),0 2px 0 var(--drop)}
+.wbadge .ic{width:20px;height:20px}
+.wchip.on .wbadge .ic,.wchip.lock .wbadge .ic{color:var(--c-shade,var(--brand-shade))}
+.wchip.lock .wbadge{opacity:.6}
+.wmore .wbadge{width:30px;height:30px}
+.wmore>.ic{color:var(--brand)}
+.wtitle{position:absolute;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:var(--s-2);z-index:1;white-space:nowrap;
+  background:var(--surface);border-radius:var(--r-pill);padding:var(--s-1) var(--s-4) var(--s-1) var(--s-1);font-family:var(--font-display);
+  font-weight:700;font-size:var(--fs-4);line-height:1.2;box-shadow:inset 0 0 0 2px var(--line),0 4px 0 var(--ledge-soft)}
+.wtitle .wbadge{width:40px;height:40px}
+.wtitle .wbadge .ic{width:24px;height:24px}
+.wtitle.mp-champ{padding:var(--s-2) var(--s-5);font-size:var(--fs-5);background:var(--star-tint);box-shadow:inset 0 0 0 3px var(--star),0 5px 0 var(--star-shade)}
+.mp-champ .ic{color:var(--star-shade)}
+.tobtn{position:absolute;left:50%;transform:translateX(-50%);z-index:2;white-space:nowrap;display:flex;align-items:center;gap:var(--s-1);
+  min-height:var(--tap);padding:0 var(--s-4) 0 var(--s-3);background:var(--star-tint);color:var(--try-ink);box-shadow:inset 0 0 0 2px var(--star),0 4px 0 var(--star-shade)}
+.tobtn .ic{color:var(--star-shade)}
+.tobtn:active{transform:translateX(-50%) translateY(3px);box-shadow:inset 0 0 0 2px var(--star),0 1px 0 var(--star-shade)}
+/* stops: 72 px discs with a ledge and a top gloss; open = white with a coloured ring, done = subject fill, cur = fill and a pulsing ring */
+.btn.node{position:absolute;width:72px;height:72px;margin:-36px 0 0 -36px;border-radius:50%;padding:0;display:grid;place-items:center;z-index:2;
+  background:var(--surface);color:var(--c,var(--brand));box-shadow:inset 0 0 0 4px var(--c,var(--brand)),0 5px 0 var(--c-shade,var(--brand-shade))}
+.btn.node .ic{width:38px;height:38px}
+.btn.node.done,.btn.node.cur{background:linear-gradient(var(--hi),var(--hi-0) 55%) var(--c,var(--brand));color:var(--surface);
+  box-shadow:inset 0 3px 0 var(--hi),inset 0 0 0 4px var(--surface),0 5px 0 var(--c-shade,var(--brand-shade))}
+.btn.node.cur::after{content:'';position:absolute;inset:-9px;border:4px solid var(--c,var(--brand));border-radius:50%;opacity:0;
+  animation:k-ring var(--t-loop) var(--ease) infinite;pointer-events:none}
+.btn.node.lock{background:var(--surface-2);color:var(--ink-3);box-shadow:inset 0 0 0 3px var(--line),0 3px 0 var(--line)}
+.btn.node.lock .ic{width:30px;height:30px}
+.btn.node:active{transform:translateY(3px)}
+.btn.node.lock:active{transform:none}
+.btn.node.boss{width:92px;height:92px;margin:-46px 0 0 -46px;overflow:visible;background:var(--c-tint,var(--brand-tint));
+  box-shadow:inset 0 0 0 4px var(--c,var(--brand)),0 6px 0 var(--c-shade,var(--brand-shade))}
+.btn.node.boss.done{box-shadow:inset 0 0 0 4px var(--star),0 0 0 3px var(--star-shade),0 6px 0 3px var(--star-shade)}
+.btn.node.boss.cur{background:var(--c-tint,var(--brand-tint))}
+.btn.node.boss.lock{background:var(--surface-2);box-shadow:inset 0 0 0 3px var(--line),0 3px 0 var(--line)}
+.node .nb-art{width:104px;height:104px;margin-top:-22px;pointer-events:none}
+.node .nb-e{font-size:46px;line-height:1}
+.nlab{position:absolute;transform:translateX(-50%);width:max-content;max-width:140px;font-size:var(--fs-1);font-weight:700;text-align:center;line-height:1.2;
+  pointer-events:none;z-index:2;color:var(--ink);background:var(--surface);border-radius:var(--r-chip);padding:2px var(--s-2);box-shadow:0 2px 0 var(--drop)}
+.nstar{display:flex;justify-content:center;margin-top:2px}
+.nstar:empty{display:none}
+.nstar .rs .rs-b{transform:translateY(2px)}
+
+/* ---- activity cards (GFX.card): the P4-04 path-card look for Fact Sprint sets and modes, Speed Race, Game Room ---- */
+.pathcard.gx-card{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:var(--s-4);padding:var(--s-4);border-radius:var(--r-card);text-align:left}
+.gx-card .pc-badge{position:relative}
+.gx-tag{position:absolute;right:-8px;bottom:-6px;min-width:28px;padding:1px 6px;border-radius:var(--r-pill);font-style:normal;font-family:var(--font-display);
+  font-size:var(--fs-2);font-weight:700;line-height:1.3;text-align:center;color:var(--c-shade,var(--brand-shade));background:var(--surface);
+  box-shadow:inset 0 0 0 2px var(--c,var(--brand)),0 2px 0 var(--c-shade,var(--brand-shade))}
+.gx-txt{min-width:0}
+.gx-sub{display:flex;flex-wrap:wrap;align-items:center;gap:2px var(--s-1);margin-top:var(--s-1);font-size:var(--fs-2);line-height:1.35;color:var(--ink-2)}
+.gx-sub .ic{flex:none;color:var(--c,var(--brand))}
+.gx-ln{display:flex;align-items:center;gap:var(--s-1);flex:1 0 100%}
+.gx-sub b{color:var(--ink)}
+.gx-best{display:flex;flex-direction:column;align-items:center;min-width:56px;font-family:var(--font-display);font-size:var(--fs-4);font-weight:700;line-height:1;color:var(--ink)}
+.gx-best .ic{color:var(--star-shade);margin-bottom:2px}
+.gx-list .games{gap:var(--s-4);max-width:640px;margin:0 auto}
+.gx-lead{margin:var(--s-1) auto var(--s-4);max-width:36ch;text-align:center;font-size:var(--fs-3);font-weight:700;color:var(--ink-2)}
+.gx-note{display:flex;align-items:center;justify-content:center;gap:var(--s-2);margin:var(--s-5) auto 0;font-size:var(--fs-2);color:var(--ink-2)}
+.gx-note .ic{flex:none;color:var(--play)}
+@media (max-width:480px){.pathcard.gx-card{gap:var(--s-3);padding:var(--s-3)}}
+/* menu top bar: back, a coloured badge, the title */
+.gx-ttl{display:flex;align-items:center;gap:var(--s-2)}
+.gx-ttl>span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.gx-tb{flex:none;display:grid;place-items:center;width:40px;height:40px;border-radius:12px;color:var(--surface);
+  background:linear-gradient(var(--hi),var(--hi-0) 60%) var(--c,var(--brand));box-shadow:inset 0 -3px 0 var(--c-shade,var(--brand-shade))}
+.gx-tb .ic{width:24px;height:24px}
+
+/* ---- timed games (Fact Sprint, Speed Race): close, time gauge, chips; the P4-10 keys; the end card ---- */
+.gx-top .gx-bar{flex:1;min-width:64px}
+.gx-top .gauge>i{background:var(--try)}
+.stat.bolt .ic,.stat.trophy .ic{color:var(--star-shade)}
+.stat.timer b,.stat.bolt b{font-variant-numeric:tabular-nums}
+.gx-gap{display:block}
+.gx-end{padding:var(--s-5) var(--s-5) var(--s-5)}
+.gx-disc{position:relative;width:96px;height:96px;background:var(--star-tint);color:var(--star-shade);--ic2:var(--star-tint);
+  box-shadow:inset 0 0 0 4px var(--star),0 5px 0 var(--star-shade)}
+.gx-disc.rec{animation:rw-pop var(--t-xl) var(--spring) both}
+.gx-end .rw-rays{position:absolute;left:50%;top:-30px;width:300px;height:300px;margin-left:-150px;opacity:.7;pointer-events:none}
+.rw-card p.gx-best{margin:0 0 var(--s-2);font-weight:700}
+.gx-week{display:flex;justify-content:center;margin:var(--s-2) 0}
+.gx-spark{display:block;max-width:100%}
+.gx-sl{fill:none;stroke:var(--math);stroke-width:3;stroke-linejoin:round;stroke-linecap:round;opacity:.5}
+.gx-sd{fill:var(--surface);stroke:var(--math);stroke-width:2}
+.gx-sn{fill:var(--star);stroke:var(--star-shade);stroke-width:2}
+.rw-card p.gx-earn{display:flex;align-items:center;justify-content:center;gap:var(--s-2);margin:var(--s-2) 0 0;font-weight:700;color:var(--ink)}
+.gx-earn .ic{flex:none;color:var(--play)}
+.gx-earn .ic.ic-coin{color:var(--star-shade)}
+.gx-acts{display:flex;flex-direction:column;gap:var(--s-3)}
+#hpn{display:inline-flex;gap:1px;font-size:inherit;color:var(--read)}
+#hpn .ic{flex:none}
+.gx-rule{display:flex;align-items:center;justify-content:center;gap:var(--s-2);cursor:pointer}
+.gx-rule .ic{flex:none;color:var(--brand)}
+
+/* ---- Game Room: the game-time card ---- */
+.ptcard.gx-pt{background:var(--play-tint);box-shadow:inset 0 0 0 2px var(--play),0 4px 0 var(--play-shade);border-radius:var(--r-card)}
+.ptcard.gx-pt.empty{background:var(--surface-2);box-shadow:inset 0 0 0 2px var(--line),0 4px 0 var(--ledge-soft)}
+.gx-ptd{flex:none;display:grid;place-items:center;width:64px;height:64px;border-radius:50%;background:var(--surface);color:var(--play);--ic2:var(--surface);
+  box-shadow:0 3px 0 var(--play-shade)}
+.gx-pt .hname{font-family:var(--font-display);font-size:var(--fs-4);font-weight:700}
+.gx-center{display:flex;justify-content:center;margin:var(--s-5) 0}
+
+/* ---- Pet Care: icon meters, snack cards with object art and price chips, icon action buttons ---- */
+.gx-cbar{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;align-items:center;gap:var(--s-2);margin:var(--s-2) 0}
+.gx-cbar .gx-ci{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:var(--surface-2);color:var(--c,var(--brand))}
+.gx-cbar .gx-cl{width:auto;min-width:56px}
+.gx-cbar b{width:auto;min-width:44px;text-align:right}
+.gx-cbar.k-food{--c:var(--play);--c-shade:var(--play-shade)}
+.gx-cbar.k-clean{--c:var(--math);--c-shade:var(--math-shade)}
+.gx-cbar.k-fun{--c:var(--good);--c-shade:var(--good-ink)}
+.gx-cbar .gauge{background:var(--surface-2)}
+.gx-h{display:flex;align-items:center;gap:var(--s-2)}
+.gx-h .ic{color:var(--play)}
+.btn.gx-snack{background:var(--surface);box-shadow:inset 0 0 0 2px var(--line),0 4px 0 var(--ledge-soft);border-radius:var(--r-card);padding:var(--s-3) var(--s-2)}
+.gx-snack .gx-sp{display:grid;place-items:center;width:64px;height:64px;font-size:48px;line-height:1}
+.gx-snack .gx-sp .art{width:60px;height:60px}
+.gx-price{display:inline-flex;align-items:center;gap:2px;padding:2px var(--s-2) 2px 2px;border-radius:var(--r-pill);background:var(--star-tint);font-weight:700}
+.gx-acts2{grid-template-columns:1fr 1fr}
+.btn.gx-act{min-height:96px;background:var(--surface);box-shadow:inset 0 0 0 2px var(--line),0 4px 0 var(--ledge-soft);border-radius:var(--r-card)}
+.gx-act .gx-ai{display:grid;place-items:center;width:52px;height:52px;border-radius:50%;background:var(--brand-tint);color:var(--brand);font-size:inherit}
+#play.gx-act .gx-ai{background:var(--good-tint);color:var(--good-ink)}
+
+/* ---- setup: logo, pet cards (the pets themselves are P4-06; the card is the current look) ---- */
+.setup h1.gx-logo{display:flex;align-items:center;justify-content:center;gap:var(--s-3);font-family:var(--font-display)}
+.btn.gx-pet{gap:var(--s-1);padding:var(--s-3) var(--s-2) var(--s-2);border-radius:var(--r-card);background:var(--surface);
+  box-shadow:inset 0 0 0 2px var(--line),0 4px 0 var(--ledge-soft);position:relative}
+.gx-pet .gx-pp{display:grid;place-items:center;width:84px;height:84px;border-radius:50%;background:var(--es-tint);font-size:52px;line-height:1;
+  box-shadow:inset 0 -5px 0 var(--drop)}
+.gx-pet[data-p="dino"] .gx-pp{background:var(--math-tint)}
+.gx-pet[data-p="bird"] .gx-pp{background:var(--star-tint)}
+.gx-pet[data-p="ocean"] .gx-pp{background:var(--disc-tint)}
+.gx-pet b{font-size:var(--fs-3)}
+.btn.gx-pet.sel{outline:0;background:var(--brand-tint);box-shadow:inset 0 0 0 4px var(--brand),0 4px 0 var(--brand-shade)}
+.setup .btn.primary{margin-top:var(--s-3)}
+@media (max-height:520px){.gx-pet .gx-pp{width:60px;height:60px;font-size:36px}}
+@media (max-width:480px){.gx-learn .gx-tb{display:none}.gx-learn .btn.subject{padding-left:var(--s-3);padding-right:var(--s-3)}}

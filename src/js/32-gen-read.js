@@ -1,17 +1,16 @@
 /* ---------- reading generators ---------- */
 function words(t){return t.split(' ').map(w=>`<span class="w" data-w="${esc(w.replace(/[^A-Za-z']/g,''))}">${esc(w)}</span>`).join(' ')}
-function genSight(lv){const L=DOL[lv-1],w=pick(L);
+function genSight(lv){const L=DOL[lv-1],w=pick(L),hw=sameSound(w);
   const sim=x=>(x[0].toLowerCase()==w[0].toLowerCase()?2:0)+(x.length==w.length?1:0);
-  const d=shuffle(shuffle(L.filter(x=>x!==w)).sort((x,y)=>sim(y)-sim(x)).slice(0,6)).slice(0,3);
+  // R-01r: never a word that sounds the same as the one heard (to / two, right / write): the child could not tell which is meant
+  const d=shuffle(shuffle(L.filter(x=>x!==w&&!hw.includes(x.toLowerCase()))).sort((x,y)=>sim(y)-sim(x)).slice(0,6)).slice(0,3);
   return{kind:'choice',html:`<button class="btn hear" data-say="${esc(w)}">🔊</button><div class="sub">Tap the word you hear</div>`,
     say:w,auto:'must',ans:w,choices:shuffle([w,...d]).map(x=>({l:x,v:x})),hint:{k:'say',s:`Listen again. It starts with “${w[0]}”.`,w},label:`hear “${w}”`}}
-function variants(w){const out=new Set(),V='aeiou',C='bcdfghjklmnprstvwz',vi=[...w].findIndex(c=>V.includes(c));
-  for(let t=0;t<40&&out.size<6;t++){let x;const r=t%3;
-    if(r==0&&vi>=0)x=w.slice(0,vi)+pick([...V])+w.slice(vi+1);
-    else if(r==1)x=pick([...C])+w.slice(1);else x=w.slice(0,-1)+pick([...C]);
-    if(x&&x!==w&&!BAD.test(x))out.add(x)}
-  let r=shuffle([...out]).slice(0,3);if(/[aeiou][^aeiou]e$/.test(w)){const ne=w.slice(0,-1);if(!BAD.test(ne)&&!r.includes(ne))r=[ne,...r.slice(0,2)]}
-  return r}
+// R-01r: three real words from the word's checked contrast set (PWC in 20-words.js: cap / cape, boat / boot). Letters are never
+// changed at random any more: that made impossible spellings (snakb) and, about one time in 50, a slur or a rude word.
+// The blocklist check stays as a second guard.
+function variants(w){
+  return shuffle((PWC[w]||[]).filter(x=>x!==w&&!BAD.test(x)&&!ksBad(x,true))).slice(0,3)}
 function genPic(lv){const [w,e]=pick(WL(lv));
   return{kind:'choice',html:`<div class="emo">${picFor(w,e)}</div><div class="sub">Which word is this?</div>`,say:'Which word is this?',after:w,ans:w,
     choices:shuffle([w,...variants(w)]).map(x=>({l:x,v:x})),hint:{k:'say',s:'Listen! Now find it.',w},label:`read “${w}”`}}
@@ -21,12 +20,17 @@ function genBuild(lv){const [w,e]=pick(WL(lv)),abc='abcdefghijklmnoprstuw';
     say:w,auto:true,ans:w,hint:{k:'next'},label:`spell “${w}”`}}
 const T1=['I see {a} {w}.','Look at the {w}!','Here is {a} {w}.','I like the {w}.','Can you see the {w}?','The {w} is big.','The {w} is little.','Where is the {w}?'];
 const T2=['Mom and I see {a} {w} by the door.','We can play with the {w} today.','Look! The {w} is up on the hill.','My friend said, "I want {a} {w}."','Come and find the {w} with me.','The little {w} went down the road.','She saw {a} {w} at the park.','Did you get {a} {w} too?'];
+// R-01r: "I see the sun", "some milk", never "a sun" or "a milk"
+const SENT_ART={sun:'the',milk:'some'};
 function genSent(lv){const [w,e]=pick(lv==1?NOUNS.filter(x=>CVC.includes(x)):NOUNS);
   let pool=NOUNS.filter(x=>x[0]!==w);
   if(lv==2){const near=pool.filter(x=>x[0][0]==w[0]||x[0].slice(-2)==w.slice(-2));if(near.length>=2)pool=near}
-  const d=shuffle(pool).slice(0,2),t=pick(lv==1?T1:T2).replace('{a}',art(w)).replace('{w}',w);
-  return{kind:'choice',cls:'pics',html:`<div class="sent">${words(t)}</div><div class="sub">Tap the picture that matches</div>`,say:'Read it, then tap the picture that matches.',
-    ans:w,after:t,choices:shuffle([[w,e],...d]).map(x=>({l:x[1],v:x[0]})),hint:{k:'text',s:'Tap any word to hear it!'},label:`“${t}”`}}
+  const d=shuffle(pool).slice(0,2),t=pick(lv==1?T1:T2).replace('{a}',SENT_ART[w]||art(w)).replace('{w}',w);
+  // R-01r: pictures go through picFor (drawings where they exist) and are named aloud, so a child knows what each one is meant to be
+  const ch=shuffle([[w,e],...d]),names=ch.map(x=>x[0]);
+  return{kind:'choice',cls:'pics',html:`<div class="sent">${words(t)}</div><div class="sub">Tap the picture that matches</div>`,
+    say:`Read it, then tap the picture that matches: ${names.slice(0,-1).join(', ')} or ${names[names.length-1]}.`,
+    ans:w,after:t,choices:ch.map(x=>({l:picFor(x[0],x[1]),v:x[0],h:true})),hint:{k:'say',s:'Tap any word to hear it!',w:'Tap any word to hear it.'},label:`“${t}”`}}
 
 function genCmp(lv){let a,b;
   if(lv==1){a=R(0,20);b=R(0,20)}else if(lv==2){a=R(10,99);b=coin()?Math.floor(a/10)*10+R(0,9):R(10,99)}else{a=R(100,999);b=coin()?Math.floor(a/100)*100+R(0,99):R(100,999)}
@@ -34,12 +38,6 @@ function genCmp(lv){let a,b;
   return{kind:'choice',cls:'syms',html:`<div class="eq">${a} ${SLOT} ${b}</div><div class="sub">Bigger, smaller, or the same?</div>`,
     say:`Is ${a} greater than, less than, or equal to ${b}?`,ans,after:`${a} is ${w[ans]} ${b}`,choices:['<','=','>'].map(x=>({l:x,v:x})),
     hint:{k:'text',s:lv==1?'The hungry alligator mouth opens toward the BIGGER number! 🐊':`Look at the ${lv==2?'tens':'hundreds'} first. The alligator eats the bigger number! 🐊`},label:`${a} ? ${b}`}}
-function clockSVG(h,m){const ha=((h%12)+m/60)*30,ma=m*6;let n='';
-  for(let i=1;i<=12;i++){const a=i*Math.PI/6;n+=`<text x="${50+35*Math.sin(a)}" y="${50-35*Math.cos(a)+4}" text-anchor="middle" font-size="11" font-weight="700" fill="#2d2a26">${i}</text>`}
-  for(let i=0;i<60;i++){const a=i*Math.PI/30,r1=i%5?45:43;n+=`<line x1="${50+r1*Math.sin(a)}" y1="${50-r1*Math.cos(a)}" x2="${50+47*Math.sin(a)}" y2="${50-47*Math.cos(a)}" stroke="#a8a29e" stroke-width="${i%5?.6:1.4}"/>`}
-  return`<svg class="clock" viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="#fff" stroke="#3b82f6" stroke-width="3"/>${n}
-  <line x1="50" y1="50" x2="${50+22*Math.sin(ha*Math.PI/180)}" y2="${50-22*Math.cos(ha*Math.PI/180)}" stroke="#ef4444" stroke-width="5" stroke-linecap="round"/>
-  <line x1="50" y1="50" x2="${50+33*Math.sin(ma*Math.PI/180)}" y2="${50-33*Math.cos(ma*Math.PI/180)}" stroke="#2563eb" stroke-width="3" stroke-linecap="round" opacity=".9"/><circle cx="50" cy="50" r="3" fill="#2d2a26"/></svg>`}
 const tstr=(h,m)=>`${h}:${String(m).padStart(2,'0')}`;
 function genTime(lv){const h=R(1,12),m=lv==1?0:lv==2?pick([0,30]):pick([0,15,30,45]),ans=tstr(h,m),c=new Set([ans]);
   const hh=x=>((x+11)%12)+1;
@@ -47,8 +45,8 @@ function genTime(lv){const h=R(1,12),m=lv==1?0:lv==2?pick([0,30]):pick([0,15,30,
   for(const x of shuffle(cand)){if(c.size>=4)break;if(lv==1&&!x.endsWith(':00'))continue;c.add(x)}
   while(c.size<4)c.add(tstr(R(1,12),lv==1?0:pick([0,30])));
   const spoken=m==0?`${h} o'clock`:m==30?`half past ${h}`:m==15?`quarter past ${h}`:`quarter to ${hh(h+1)}`;
-  return{kind:'choice',html:`${clockSVG(h,m)}<div class="sub">What time is it?</div>`,say:'What time does the clock show?',ans,after:`It's ${spoken}!`,
-    choices:shuffle([...c]).map(x=>({l:x,v:x})),hint:{k:'text',s:m==0?'The short red hand shows the hour. The long blue hand on 12 means o\'clock.':'Short red hand = hour. Long blue hand: on 3 is :15, on 6 is :30, on 9 is :45.'},label:`clock ${ans}`}}
+  return{kind:'choice',html:`${VIZ.clock(h,m)}<div class="sub">What time is it?</div>`,say:'What time does the clock show?',ans,after:`It's ${spoken}!`,
+    choices:shuffle([...c]).map(x=>({l:x,v:x})),hint:{k:'text',s:m==0?'The short pink hand shows the hour. The long blue hand on 12 means o\'clock.':'Short pink hand = hour. Long blue hand: on 3 is :15, on 6 is :30, on 9 is :45.'},label:`clock ${ans}`}}
 const COIN={1:['1¢','penny','#c2703d',1],5:['5¢','nickel','#b8bcc2',1.2],10:['10¢','dime','#c9cdd3',.95],25:['25¢','quarter','#aeb3b9',1.35]};
 function genCoins(lv){const types=lv==1?[5,1]:lv==2?[10,5,1]:[25,10,5,1];let cs;
   do{cs=Array.from({length:R(lv==1?2:3,lv==1?5:6)},()=>pick(types)).sort((a,b)=>b-a)}while(cs.reduce((a,b)=>a+b,0)>99);
@@ -111,7 +109,8 @@ function genAbc(lv){
     const items=Ls.map(x=>({v:x,l:x})),opts=shuffle(Ls.map(x=>({v:x,l:x.toLowerCase()})));
     return{kind:'match',html:'<div class="sub">Match each big letter to its little letter</div>',say:'Match each big letter to its little letter.',
       items,opts,ans:[...Ls].sort().join('|'),after:'Big and little letters are partners!',
-      hint:{k:'text',s:'Tap a big letter, then tap the little letter that is its partner. They often look alike.'},label:`match ${[...Ls].sort().join('')}`}}
+      hint:{k:'say',s:'Tap a big letter, then tap the little letter that is its partner. They often look alike.',
+        w:'Tap a big letter, then tap the little letter that is its partner. They often look alike.'},label:`match ${[...Ls].sort().join('')}`}}
   // lv 4: what comes after a letter (choice) or fill the gap in a run of four (build)
   const up=coin(),f=s=>up?s.toUpperCase():s;
   if(coin()){
@@ -133,14 +132,15 @@ function genAbc(lv){
 // sound 3 (K): the middle vowel of a picture word. sound 4 (1st): digraph at the start or end of a picture word.
 function genSoundB(lv){
   if(lv==3){
-    const [w,e]=pick(CVCM),mid=w[1];
+    const v=pick([...'aeiou']),[w,e]=pick(CVCM.filter(x=>x[0][1]==v)),mid=w[1]; // R-01r: each vowel as often as the others
     const opts=shuffle([mid,...shuffle([...'aeiou'].filter(x=>x!=mid)).slice(0,2)]);
     return{kind:'choice',cls:'syms',html:`<div class="emo">${picFor(w,e)}</div><div class="sub">Which vowel is in the middle?</div><div class="sent">${w[0]} ${SLOT} ${w[2]}</div>`,
       say:`${w}. Which vowel is in the middle of ${w}?`,auto:true,ans:mid,after:`${w}!`,choices:opts.map(x=>({l:x,v:x})),
       hint:{k:'say',w:`${w}... ${w}`,s:'Say it slowly. Listen to the sound in the middle.'},label:`middle: ${w}`}}
   const dg=pick(['sh','ch','th','ck','sh','ch','th','ck','wh']),[w,e,,pos]=pick(DIGR.filter(x=>x[2]==dg)),st=pos=='s';
   const pool=st?['sh','ch','th','wh']:['sh','ch','th','ck'];
-  return{kind:'choice',cls:'syms sym4',html:`<div class="emo">${picFor(w,e)}</div><div class="sub">Which letters ${st?'start':'end'} <b>${w}</b>?</div>`,
+  // R-01r: the word is spoken (Hear it replays it), never printed: printing it showed the answer letters
+  return{kind:'choice',cls:'syms sym4',html:`<div class="emo">${picFor(w,e)}</div><div class="sub">Which letters ${st?'start':'end'} this word?</div>`,
     say:`${w}. Which letters ${st?'start':'end'} ${w}?`,auto:true,ans:dg,after:`${w}: ${dg}!`,choices:shuffle(pool).map(x=>({l:x,v:x})),
     hint:{k:'say',w:`${w}... ${w}`,s:`Two letters work together to make one sound. Listen to the ${st?'start':'end'} of ${w}.`},label:`${st?'starts':'ends'} ${dg}: ${w}`}}
 
@@ -158,3 +158,103 @@ function genSyl(lv){
   return{kind:'choice',cls:'syms sym4 clps',html:`${HEARBTN(w)}<div class="sent">${esc(w)}</div><div class="sub">How many claps?</div>`,say:`${w}. How many claps in ${w}?`,
     auto:true,ans:String(n),after:`${w} has ${n} ${n==1?'clap':'claps'}!`,choices:sylChoices(4),
     hint:{k:'say',w:`${w}... ${w}`,s:'Clap each beat as you say the word slowly.'},label:`syllables: ${w}`}}
+
+// ---- P2-18 phonics 1st-2nd ----
+// pic 5-6 and build 5-6 (CURRICULUM E-phon): r-controlled vowels and vowel teams. sight 4-5 use genSight with DOL[3] and DOL[4].
+// Wrong choices swap the r-vowel or team inside the same word: bird / bard / berd / burd.
+function phonVariants(w,pair,pool){
+  const i=w.indexOf(pair),endW=i+pair.length==w.length;
+  const out=pool.filter(p=>p!==pair&&!(p=='oy'&&!endW&&!/^[aeiou]/.test(w.slice(i+pair.length)))&&!((p=='ou'||p=='oi')&&endW)) // oy ends a word or meets a vowel (toy, royal)
+    .map(p=>w.slice(0,i)+p+w.slice(i+pair.length)).filter(x=>x!==w&&!BAD.test(x)&&!PHBAD.test(x)&&!RVW.concat(VTW).some(r=>r[0]===x)) // never another picture word of these levels
+    .filter(x=>!ksBad(x,true)&&ksLegal(x)); // R-01r: the blocklist (coin never gives a slur) and English spelling rules
+  return shuffle(out).slice(0,3)}
+const phonList=lv=>lv==5?RVW:VTW,phonPool=lv=>lv==5?RVP:VTP;
+function genPicP(lv){const [w,e,pr]=pick(phonList(lv));
+  return{kind:'choice',html:`<div class="emo">${picFor(w,e)}</div><div class="sub">Which word is this?</div>`,say:'Which word is this?',after:w,ans:w,
+    choices:shuffle([w,...phonVariants(w,pr,phonPool(lv))]).map(x=>({l:x,v:x})),
+    hint:{k:'say',s:`Listen! Look for “${pr}” in the word.`,w},label:`read “${w}”`}}
+function genBuildP(lv){const [w,e]=pick(phonList(lv));
+  // two spare tiles: vowels that are not in the word first (they tempt a wrong r-vowel or team), then any other letter
+  const V=shuffle([...'aeiou'].filter(c=>!w.includes(c))),O=shuffle([...'bcdfghklmnpstw'].filter(c=>!w.includes(c)));
+  return{kind:'build',word:w,tiles:shuffle([...w,...[...V,...O].slice(0,2)]),
+    html:`<div class="emo">${picFor(w,e)}</div><div class="lslots">${[...w].map((_,i)=>`<span class="ls" id="ls${i}"></span>`).join('')}</div>`,
+    say:w,auto:true,ans:w,hint:{k:'next'},label:`spell “${w}”`}}
+
+// ---- P2-24 sentences (sent 3-5) ----
+// Level 3 unscramble (order), level 4 cloze (choice), level 5 picture sentence (choice wide) and story order (order).
+// Each unscramble sentence carries a role string (D determiner, J adjective, N noun, V verb, A adverb or particle, P pronoun,
+// M name, C is/are, Y very, X can/will/do, R preposition, O me/us/you, T to, F please, W question word). tools/test.js
+// shuffles every sentence and proves that only the written order fits the role patterns, so there is one right order.
+const SENT_UN=[
+  ['The dog runs fast.','DNVA'],['The little bird flew away.','DJNVA'],['A red bus went by.','DJNVA'],['My hat is very big.','DNCYJ'],
+  ['I see a red kite.','PVDJN'],['We like to play.','PVTV'],['I can jump high.','PXVA'],['She can run fast.','PXVA'],
+  ['Ben has a new bike.','MVDJN'],['Mia sees a rainbow.','MVDN'],['They can see the stars.','PXVDN'],['He ate a big lunch.','PVDJN'],
+  ['We sat on the rug.','PVRDN'],['The frog can hop far.','DNXVA'],['Dad made a big cake.','MVDJN'],['Please wash your hands.','FVDN'],
+  ['Look at the moon!','VRDN'],['Put on your hat.','VADN'],['We are very happy.','PCYJ'],['Mom is very kind.','MCYJ'],
+  ['Our class is fun.','DNCJ'],['The dog ran to me.','DNVRO'],['The bird sang for us.','DNVRO'],['They will come home.','PXVA'],
+  ['I will help you.','PXVO'],['We can help Dad.','PXVM'],['She is my best friend.','PCDJN'],['It is a sunny day.','PCDJN'],
+  ['The grass is green.','DNCJ'],['I love my red hat.','PVDJN'],['We have a new pet.','PVDJN'],['Birds can fly high.','NXVA'],
+  ['Fish can swim fast.','NXVA'],['Can you see the sun?','XPVDN'],['Where is the cat?','WCDN'],['Is the sun hot?','CDNJ'],
+  ['Do you like red hats?','XPVJN'],['What can you see?','WXPV'],['Where is my red hat?','WCDJN'],['Who can help me?','WXVO']];
+// Cloze: [sentence with ___, right word, wrong word, wrong word]; the three words share a part of speech and only one fits.
+const SENT_CL=[
+  ['A ___ can bark and wag its tail.','dog','bird','fish'],['We use ___ to cut paper.','scissors','crayons','pillows'],
+  ['A ___ gives us milk.','cow','hen','pig'],['Birds build a ___ in a tree.','nest','bed','boat'],
+  ['I wear a ___ on my head when it is cold.','hat','shoe','glove'],['We read a ___ at bedtime.','book','rock','spoon'],
+  ['The warm ___ shines on us at noon.','sun','snow','rain'],['A fish lives in the ___.','water','tree','barn'],
+  ['We drink ___ when we are thirsty.','water','sand','glue'],['A baby cow is called a ___.','calf','chick','cub'],
+  ['You can ride a ___ on the road.','bus','boat','plane'],['I put on my ___ to keep my feet warm.','socks','hats','belts'],
+  ['The ___ hops and says ribbit.','frog','cow','duck'],['A ___ has a long trunk.','elephant','rabbit','turtle'],
+  ['We eat soup with a ___.','spoon','sock','chair'],['The teacher wrote on the ___.','board','tree','pond'],
+  ['Fish ___ in the sea.','swim','climb','bark'],['Birds can ___ in the sky.','fly','bark','dig'],
+  ['We ___ our teeth every day.','brush','kick','bake'],['Mom will ___ a cake for the party.','bake','ride','hop'],
+  ['I ___ with my eyes.','see','hear','taste'],['She ___ the ball to her friend.','threw','ate','slept'],
+  ['The baby will ___ in her bed tonight.','sleep','swim','drive'],['Please ___ the door when you come in.','close','sing','hop'],
+  ['The cat likes to ___ on the sofa.','sit','fly','bark'],['Ice is very ___.','cold','hot','sweet'],
+  ['A feather is ___.','light','heavy','loud'],['The soup is too ___ to eat, so I blow on it.','hot','cold','short'],
+  ['The elephant is very ___.','big','tiny','thin'],['It is ___ outside, so we need coats.','cold','hot','dry'],
+  ['A turtle is ___, but a rabbit is fast.','slow','quick','loud'],['The night sky is dark, but the sun is ___.','bright','dark','sad'],
+  ['I feel ___ when I get a gift.','happy','angry','sick'],['The two dogs ___ happy.','are','is','am'],
+  ['My sister ___ six years old.','is','are','am'],['I ___ a little frog.','am','is','are'],
+  ['We ___ going to the park.','are','is','am'],['Yesterday we ___ to the zoo.','went','go','going'],
+  ['Every day my dad ___ to work.','goes','go','going'],['Yesterday it ___ all day.','rained','rain','raining']];
+// Level 5 stories: three sentences in the right order (a cue word or a thing that must happen first makes it one order).
+const SENT_ST=[
+  ['First, Mia got a seed.','Next, she put it in the dirt.','At last, a flower grew.'],
+  ['First, Ana got a bowl.','Then, she added the milk.','Last, she ate her cereal.'],
+  ['First, we got in the car.','Next, we drove to the lake.','Last, we went for a swim.'],
+  ['At first, the sky was gray.','Then it began to rain.','Later, a rainbow came out.'],
+  ['First, Sam made a card.','Then he drew a star on it.','Last, he gave it to Gran.'],
+  ['First, the pup was asleep.','Then it heard a noise.','Last, it jumped up and ran.'],
+  ['Dad put the bread in the toaster.','The toast popped up.','Dad ate the toast with jam.'],
+  ['Mia put on her coat.','She went out in the snow.','She came inside and drank hot milk.'],
+  ['Ben filled the tub with water.','He got in the tub.','He washed with soap.'],
+  ['I put on my shoes.','I walked to school.','I sat at my desk.'],
+  ['We planted a seed.','We gave it water.','Soon a tall plant grew.'],
+  ['Tom got a ball.','He kicked it hard.','It flew over the fence.']];
+// Nouns safe to show in pictures: one clear picture, no look-alikes.
+const SENT_PIC=['dog','cat','pig','hen','fox','frog','duck','fish','crab','ship','bus','truck','bell','drum','hat','sock','gift','flag','tent','clock','star','egg','bed','cup','bag'];
+const SENT_TPL=['The {a} is by the {b}.','The {a} is next to the {b}.','I see the {a} and the {b}.'];
+function sentOrder(items,ans,say,hint,label){
+  let it=shuffle(items);for(let t=0;t<9&&it.every((x,i)=>x.v===ans[i]);t++)it=shuffle(items); // never hand over the right order
+  return{kind:'order',html:`<div class="sub">${say.html}</div>`,say:say.say,items:it,ans,hint,label,after:ans.join(' ')}}
+function genSentUn(){
+  const [s]=pick(SENT_UN),ws=s.split(' ');
+  return sentOrder(ws.map(w=>({v:w,l:w})),ws,{html:'Tap the words to make a sentence',say:'Tap the words in the right order to make a sentence.'},
+    {k:'text',s:`Start with the word that has a capital letter: “${ws[0]}”. The last word has the end mark.`},`unscramble “${s}”`)}
+function genSentCl(){
+  const [s,a,x,y]=pick(SENT_CL),[pre,post]=s.split('___'),full=s.replace('___',a);
+  return{kind:'choice',html:`<div class="sent">${words(pre.trim())} ${SLOT}${/^[.,!?]/.test(post)?"":" "}${words(post.trim())}</div><div class="sub">Which word fits?</div>`,
+    say:`${s.replace('___','blank')} Which word fits?`,ans:a,after:full,choices:shuffle([a,x,y]).map(w=>({l:w,v:w})),
+    hint:{k:'text',s:'Read the sentence with each word in the blank. Which one makes sense?'},label:`gap “${a}”: ${s}`.slice(0,58)}}
+function genSentPic(){
+  const P=SENT_PIC.map(w=>NOUNS.find(n=>n[0]==w)).filter(Boolean),[a,b,c,d]=shuffle(P),tp=pick(SENT_TPL);
+  const mk=(x,y)=>tp.replace('{a}',x[0]).replace('{b}',y[0]),ans=mk(a,b);
+  return{kind:'choice',cls:'wide',html:`<div class="emo">${picFor(a[0],a[1])} ${picFor(b[0],b[1])}</div><div class="sub">Which sentence tells about the pictures?</div>`,
+    say:'Look at the pictures. Which sentence tells about them?',ans,after:ans,choices:shuffle([ans,mk(a,c),mk(d,b)]).map(x=>({l:x,v:x})),
+    hint:{k:'text',s:`Look at both pictures: ${a[0]} and ${b[0]}. Pick the sentence that names both.`},label:`pictures “${ans}”`}}
+function genSentStory(){
+  const st=pick(SENT_ST);
+  return sentOrder(st.map(x=>({v:x,l:'<span class="sl">'+esc(x)+'</span>',h:true})),st,{html:'Tap the sentences in the order they happen',say:'Tap the sentences in the order they happen, to tell the story.'},
+    {k:'text',s:'What happens first? What happens last? Look for words like First, Then and Last.'},`story “${st[0]}”`.slice(0,58))}
+function genSentB(lv){return lv==3?genSentUn():lv==4?genSentCl():coin()?genSentPic():genSentStory()}

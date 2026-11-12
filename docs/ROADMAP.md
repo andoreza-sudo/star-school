@@ -25,7 +25,7 @@ material for 15 to 20 minutes, and earns a fair amount of fun.
 | 5 | Mastery based | A child moves on by showing they know it. Missed items come back later (spaced review). Hints teach, they do not just reveal. |
 | 6 | Never lose progress | Save data is versioned and migrated. No release may wipe or corrupt a child's stars, map or pet. |
 | 7 | Audio first for little kids | PreK and K screens never require reading. Every prompt is spoken. |
-| 8 | Small and fast | Built file stays under 1.5 MB. 60 fps is not required, but every tap responds within 100 ms. |
+| 8 | Small and fast | Built `index.html` stays under 1.5 MB (data banks, puzzle types and games in files of their own, A11 and A11b). 60 fps is not required, but every tap responds within 100 ms. |
 | 9 | Boring technology | Plain HTML, CSS, JS. No framework, no bundler, no runtime dependencies. Build is one Python script. |
 
 Non-goals: accounts or cloud sync, multiplayer, teacher dashboards, typing tutor (tablets have no keyboard),
@@ -96,7 +96,7 @@ open-ended writing grading, any generative AI at runtime.
 | A8 | Puzzles that need a unique solution (sudoku, MathDoku, logic grids) are generated and verified at dev time by Node tools and shipped as compact banks. Runtime only transforms and checks them. | No heavy solver on a slow tablet; uniqueness is proven by tests. |
 | A9 | Fact content (grammar, vocabulary, passages, science) lives in data files `src/data/d-*.js` using one bank format, consumed by one generic generator. | Content chunks become pure data entry that Sonnet does well, and audits are easy. |
 | A10 | UI chrome uses an inline SVG icon sprite and design tokens. Emoji are allowed only as content pictures, and only from an allowlist known to render on old Android. | Professional look; cheap tablets show blank boxes for newer emoji. |
-| A11 | If built `index.html` passes 1.5 MB, move data banks to a second precached file. Not before. | Keep the simple model until it hurts. |
+| A11 | If built `index.html` passes 1.5 MB, move data banks to a second precached file. Not before. **Done 2026-11-11 (v97)**, ahead of the 5th/6th grade worlds and puzzle types: `src/data/*.js` builds into `data.<VER>.js`, loaded by a plain `<script src>` between the code and `boot.js`, precached under the same `VER` cache; boot refuses to start on a missing or mismatched file (CONTRIBUTING 3.3). **Extended 2026-11-11 (A11b, v105)** when index.html was back at 1.39 MB: the Brain Teaser puzzle types (`src/js/NN-bt-*.js` with their `NN-bt-*.css`) build into `bt.<VER>.js` and the Game Room (`60-blocks` to `72-shapes`, any `NN-game-*.js`) into `games.<VER>.js`, by the `PARTS` list in `tools/build.py`; same plain script tags (code, bt, games, data, boot), same `VER` cache and stamp check. index.html went from 1,394,701 to 1,068,449 bytes. | Keep the simple model until it hurts. |
 
 ### Data model additions (all optional fields, added by migrations)
 
@@ -112,8 +112,15 @@ open-ended writing grading, any generative AI at runtime.
 | `S.flu` | P5-01 | `{setId: {best, hist: [[day, sec, right]] (last 30)}}` |
 | `S.rev` | P5-02 | `[{sk, lv, seed, label, box, due, n}]` max 150 |
 | `S.streak` | P5-04 | `{days: {'YYYY-M-D': rounds}, best}` last 120 days |
+| `S.day.m` | P5-08 | `[{k, p, d}]` three daily missions (k kind, p subject path, d 1 when done); lives inside `S.day` (`{d, r, done, m}`), which is replaced each new day; missing or damaged: drawn again; no migration |
 | `S.log` | P5-05 | `[{d, sec, rounds, by: {math, read, es, bt, disc}}]` last 60 days |
 | `S.bt` | P3-01 | `{type: {lvl, stars, seen: [], best}}`, plus `S.bt.daily` |
+| `S.ptCfg.need` | P5-09 | integer 0-120, minutes of learning needed each day before the Game Room opens (absent = 0) |
+| `S.pt.open`, `S.pt.met` | P5-09 | `open`: day key the grown-up opened the Game Room anyway; `met`: `{day, min}` learn-first already done today (both absent = none) |
+| `S.rally` | G-02 | Star Rally: `{spk, races, best: {track: ms}, stars: {track: 0-3}, paint, paints: {hue: 1}, stk, stks: {id: 1}, body, mode, quiz, tilt, place}`; created when the game is first opened (absent = a new player); every field read with a default and checked (`rlS()`), sparkles never below 0; no migration. `S.race` stays Fact Race's bests |
+| `S.bb.bp` | G-01 | `{blueprintId: stars 1-3}` Block Builder blueprint stars by id (`tower`, `stairs`, `wall`, `gate`, `tree`, `bridge`, `pond`, `snowman`, `boat`, `castle`, `house`, `pyramid`, `palace`); made on first read from the old index array `S.bb.ch` (kept, still written for the ten old blueprints); absent = made again |
+| `S.bb.worlds[i].goals`, `.n`, `.kinds`, `S.bb.seen` | G-01 | per world: free-build goals done `{goalId: 1}`, blocks built (count), block ids used (array); `seen` 1 once the first tip showed. All optional, read with defaults; world data `d` unchanged |
+| `S.snack` | G-04a | Snack Stand: `{coins, days, served, stars: {place: 0-3}, combo, own: {shopId: 1}, awn, sign, ctr, place, mode, till}`; created when the game is first opened (absent = a new player; the hub reads it without creating it, `snPeek()`); every field read with a default and checked by `snS()` (coins an integer >= 0, unknown places and shop ids dropped, a style not owned falls back to the free one, a place not yet open falls back to the park); no migration. Its coins are the game's own, not `S.coins` |
 
 ## 5. Phases
 
@@ -146,12 +153,14 @@ that respects the "Deps" line, but only one chunk at a time lands on `main`.
 | 3 | P1-03, P1-04, P1-05, P1-06, P1-09, P1-10, P1-11 | Grade pick at setup; nothing locked below grade |
 | 4 | P1-07, P1-08, P5-02, P5-03, P5-05, P5-06 | Placement quiz, smarter rounds, spaced review, report card |
 | 5 | P2-01 to P2-07 (math PreK-3), P2-15, P2-18, P2-19, P4-13 | Big content jump for younger grades, with drawn pictures for counting and core nouns |
-| 6 | P4-03, P4-04, P4-05, P4-08, P4-10, P4-11 | App looks new on the main screens |
+| 6 | P4-03, P4-04, P4-05, P4-08, P4-10, P4-11, then P4-18 | App looks new on the main screens; a full graphics pass removes the flat, dated look everywhere |
 | 7 | P2-08 to P2-14 (math 4-6), P2-20 to P2-29 (ELA) | Upper grades |
 | 8 | P3-01 to P3-10 | Brain Teasers open |
 | 9 | P4-06, P4-07, P4-09, P4-12, P4-14 to P4-17, P2-16, P2-17 | Rest of the redesign, tracing |
 | 10 | P2-30 to P2-37, P3-11 to P3-17, P5-07 to P5-10 | Spanish growth, Discover, remaining puzzles |
 | 11 | P6-01 to P6-05 | Version 1.0 |
+| 12 | R-01, R-02 (queued by Andy) | Expert review of every teaching section and of every game, with a prioritised list of improvements |
+| 13 | G-01 to G-04 (queued by Andy) | Fix Block Builder, a racing game, and new games chosen from what children play most |
 
 Rule for anything built after P4-01 and P4-02 land: new UI must use design tokens and `ico()` icons, never new hard-coded colors or emoji chrome.
 Content pictures go through `picFor(word, emoji)` (`src/js/15-pics.js`, added before wave 5) so object art replaces emoji everywhere without touching generators. P4-13 moved from wave 9 to wave 5 for the same reason.
@@ -414,21 +423,27 @@ Spec in DESIGN_SYSTEM.md. Section numbers below refer to it.
 |----|-------|-------|------|------|-----------|
 | P4-01 | Tokens and base layer | Sonnet | M | P0-02 | 2, 3 |
 | P4-02 | Icon system and first 40 icons | **Opus** | M | P4-01 | 5 |
-| P4-03 | Remaining UI icons (about 60) | Sonnet | M | P4-02 | 5 |
-| P4-04 | Core components | Sonnet | M | P4-02 | 4 |
+| P4-03 | Remaining UI icons (about 60) | **Opus** | M | P4-02 | 5 |
+| P4-04 | Core components | **Opus** | M | P4-02 | 4 |
 | P4-05 | Pet rig and dragon (4 stages, 5 moods) | **Opus** | L | P4-01 | 6 |
-| P4-06 | Dino, bird, sea pal on the rig | Sonnet | M | P4-05 | 6 |
-| P4-07 | Wearables, Pet Shop and Stickers screens | Sonnet | M | P4-05 | 6.4, 9 row 7 |
-| P4-08 | Home screen | Sonnet | M | P4-04 | 9 row 2 |
+| P4-06 | Dino, bird, sea pal on the rig | **Opus** | M | P4-05 | 6 |
+| P4-07 | Wearables, Pet Shop and Stickers screens | **Opus** | M | P4-05 | 6.4, 9 row 7 |
+| P4-08 | Home screen | **Opus** | M | P4-04 | 9 row 2 |
 | P4-09 | Map and world scenes | **Opus** | M | P4-04, P1-05 | 7, 9 row 3 |
-| P4-10 | Question screen, keypads, feedback | Sonnet | M | P4-04, P1-02 | 9 row 4 |
-| P4-11 | Rewards: finish, chest, stars, bosses | Sonnet | M | P4-04 | 6.3, 9 row 5 |
-| P4-12 | Setup, Grown-ups, Pet Care, app icon | Sonnet | M | P4-04, P4-05 | 9 rows 1, 6, 10 |
+| P4-10 | Question screen, keypads, feedback | **Opus** | M | P4-04, P1-02 | 9 row 4 |
+| P4-11 | Rewards: finish, chest, stars, bosses | **Opus** | M | P4-04 | 6.3, 9 row 5 |
+| P4-12 | Setup, Grown-ups, Pet Care, app icon | **Opus** | M | P4-04, P4-05 | 9 rows 1, 6, 10 |
 | P4-13 | Object art set A (40 pictures) | Sonnet | M | P4-02 | 6.5 |
-| P4-14 | Object art set B (40 pictures) | Sonnet | M | P4-13 | 6.5 |
-| P4-15 | Object art set C (40 pictures) (STRETCH) | Sonnet | M | P4-14 | 6.5 |
-| P4-16 | Game Room hub and shared game chrome | Sonnet | S | P4-04 | 9 row 8 |
-| P4-17 | Motion and sound polish | Sonnet | M | P4-08, P4-10, P4-11 | 8 |
+| P4-14 | Object art set B (40 pictures) | **Opus** | M | P4-13 | 6.5 |
+| P4-15 | Object art set C (40 pictures) (STRETCH) | **Opus** | M | P4-14 | 6.5 |
+| P4-16 | Game Room hub and shared game chrome | **Opus** | S | P4-04 | 9 row 8 |
+| P4-17 | Motion and sound polish | **Opus** | M | P4-08, P4-10, P4-11 | 8 |
+| P4-18 | Graphics quality pass: no flat clip-art anywhere | **Opus** | L | P4-08, P4-10, P4-11, P4-13b | 2, 5, 6, 7 |
+
+Model change (2026-11-11, Andy): every remaining Phase 4 graphics chunk runs on Opus, because visual judgment matters more than cost here. Content, plumbing and test chunks stay on Sonnet. P4-13 (object art set A) shipped on Sonnet and may get an Opus review pass.
+
+**P4-18 · Graphics quality pass** · Opus · L (added 2026-11-11 at Andy's request): the original plan capped pictures at "flat two-tone, under 900 bytes, no shading" for cheap tablets. Andy never asked for that, and it made the app look dated. Cheap tablets only need: no CSS filters or backdrop blur, animate transform/opacity, modest SVG path counts. This chunk reviews every visual in the app against the new illustration standard (DESIGN_SYSTEM 6.5 as rewritten by P4-13b) and fixes what still looks flat or dated: the 40 UI icons and P4-03 icons (keep them simple but not crude), the coin and flame, world chips and map, every remaining emoji used as a picture or chrome (path tiles, Game Room, stickers, pets other than the dragon, bosses, prizes), the math visuals (23-viz.js), the Fact Sprint, streak, review, placement and report screens, and the games' own art in files 60-72 where it is cheap to improve. Accept: before/after screenshots of every screen at 600x960 and 380x780; no remaining emoji in UI chrome; the art sheet, icon sheet and viz sheet reviewed at real size; check.sh passes; size stays under the 1.2 MB warning. Out: no behaviour or content changes.
+
 
 Shared accept for P4: before and after screenshots at all three sizes attached to PROGRESS.md entry by filename; no layout overflow;
 contrast script passes; no new hard-coded hex colors outside the token file (grep check in `check.sh`); frame time not worse
@@ -476,9 +491,9 @@ Notes:
 
 **P5-06 · Report card** · Sonnet · M: Grown-ups "Report card" screen: this week vs last week (minutes, rounds, accuracy), per subject a grade-level bar (where the child is working vs chosen grade), mastery table grouped by strand (from `S.mast` and the strand tags in CURRICULUM), "Needs practice" top 5 with example items, "Recently mastered" list, fact sprint bests, streak. Plain language, no jargon. Printable via the browser (print stylesheet). Accept: screenshots with `fresh`, `midway`, `maxed` fixtures; empty states read sensibly; nothing clipped at 600x960.
 
-**P5-07 · Backup** · Sonnet · S: Grown-ups: "Save a backup" downloads `starschool-<name>-<date>.json`; "Restore" reads a file, validates it, shows what it contains, asks to confirm, then runs migrations. "Start over" needs typing the child's name. Accept: export then import on a fresh profile reproduces identical `S`; a damaged file is rejected with a clear message.
+**P5-07 · Backup** · Sonnet · S: Grown-ups: "Save a backup" downloads `starschool-<name>-<date>.json`; "Restore" reads a file, validates it, shows what it contains, asks to confirm, then runs migrations. "Start over" needs typing the child's name. Accept: export then import on a fresh profile reproduces identical `S`; a damaged file is rejected with a clear message. Any button that shares or sends the backup file (share sheet, email) shows `onlineNote()` and goes through `needOnline` (CONTRIBUTING section 7, "Sharing needs a connection"); saving the file to the tablet itself works offline.
 
-**P5-08 · Missions v2** · Sonnet · S: three daily missions drawn from a pool that fits the grade (one learning round in the weakest subject, a fact sprint, a brain teaser, clear today's review, a perfect round). Accept: missions never ask for a feature the child has not unlocked.
+**P5-08 · Missions v2** · Sonnet · S: three daily missions drawn from a pool that fits the grade (one learning round in the weakest subject, a fact sprint, a brain teaser, clear today's review, a perfect round). Accept: missions never ask for a feature the child has not unlocked. **Built v129:** seven kinds (round in the weakest subject, a round in another subject, perfect round, Fact Sprint, Brain Teaser, today's review, Mixed Practice); "round" is always one of the three; each mission gives a sticker once, all three the old 5 stars + 5 coins + sticker bonus; PROGRESS.md P5-08.
 
 **P5-09 · Game-time rules v2** · Sonnet · S: extend `ptCalc` to Brain Teasers (by puzzle difficulty and hints used), Daily Review and missions; show the "why you earned this" lines everywhere. Add a grown-up setting "learning minutes needed before Game Room opens each day". Accept: table-driven unit tests for `ptCalc`.
 
@@ -507,12 +522,12 @@ Notes:
 
 - [ ] Only the files named in the chunk were changed (plus tests and built output).
 - [ ] `VER` bumped by one in `tools/build.py`.
-- [ ] `python3 tools/build.py` ran; `index.html`, `sw.js`, `manifest.json` rebuilt and staged.
+- [ ] `python3 tools/build.py` ran; `index.html`, `bt/games/data.<VER>.js` (and the old ones' deletion), `sw.js`, `manifest.json` rebuilt and staged.
 - [ ] `node tools/test.js` exits 0.
 - [ ] `node tools/smoke.js` exits 0 with zero console errors.
 - [ ] Screenshots taken at 600x960, 1024x600, 380x780 for every screen the chunk touched, and looked at.
 - [ ] Loading the `midway` fixture (an old save) still shows the same stars, coins, pet and map progress.
-- [ ] Built size printed; under 1.5 MB.
+- [ ] Built sizes printed; `index.html` under 1.5 MB, each part file under 800 KB, data file under 2 MB, all under 3.3 MB (tools/test.js budgets).
 - [ ] No network requests at runtime (smoke test runs with network blocked).
 - [ ] No new emoji outside the allowlist; no new hard-coded colors after P4-01.
 - [ ] PROGRESS.md entry added (chunk ID, version, date, what changed, anything left over).
@@ -531,10 +546,10 @@ Notes:
 
 | # | Risk | Likelihood | Impact | Mitigation | Owner chunk |
 |---|------|-----------|--------|------------|-------------|
-| R1 | Built file grows past what a cheap tablet parses quickly | Medium | Medium | Size budget in tests (1.5 MB hard, 1.2 MB warn); compact data formats; decision A11 fallback | P0-04, P6-02 |
+| R1 | Built file grows past what a cheap tablet parses quickly | Medium | Medium | Size budget in tests (1.5 MB hard, 1.2 MB warn); compact data formats; decision A11 done in v97 (data file budget 2 MB hard, 1 MB warn; total 3 MB hard, 2 MB warn), extended by A11b in v105 (puzzle types and games in part files, 800 KB hard, 400 KB warn each); G-04a (v142) added a second games part `games2` and raised the total to 3.3 MB hard (2,959,816 -> 3,054,321 bytes): every file still loads at start, so a lazy-loaded games part is the next step if more games come | P0-04, P6-02 |
 | R2 | A release damages or wipes a child's save | Low | Very high | Versioned migrations, automatic backup key, fixture tests on every chunk, export/import | P0-03, P5-07 |
 | R3 | localStorage quota or eviction | Low | High | Save stays small (target under 300 KB; review items stored as seeds); `save()` failures surfaced; backup file | P0-03, P5-02 |
-| R4 | Service worker serves a stale app (this already happened with cache-first) | Medium | High | Keep network-first for navigation; always bump `VER`; single output file so there is nothing else to go stale; version visible on home; never add a second cached JS file without updating the precache list and testing an upgrade | every chunk |
+| R4 | Service worker serves a stale app (this already happened with cache-first) | Medium | High | Keep network-first for navigation; always bump `VER`; the other files, `bt.<VER>.js`, `games.<VER>.js` (A11b) and `data.<VER>.js` (A11), have `VER` in their names, are in the precache list and are checked against the page's `VER` before start; version visible on home; never add another cached JS file without updating the precache list and testing an upgrade | every chunk |
 | R5 | Slow or janky on low-end tablets | Medium | High | Animate only transform and opacity; no blur filters; cap particles; render one world at a time; perf script with CPU throttle | P1-05, P6-02 |
 | R6 | Speech voices missing or poor (especially es-MX, and isolated letter sounds) | High | Medium | Never require speech to answer; show text alternative; avoid tasks that need isolated phonemes (use whole words); existing recorded-voice feature can cover gaps | P2-15, P2-30 |
 | R7 | Emoji show as empty boxes on old Android | High | Medium | Allowlist test; replace chrome with SVG; object art sets | P0-04, P4-13+ |
@@ -581,6 +596,46 @@ If the context is more than about 60% used and the chunk is not done: commit wor
 (what is done, what is left, what was tried), and stop. The next session continues from the note.
 
 Choosing the model: use the model named on the chunk. If Sonnet fails the same acceptance item twice, stop and hand that one item to Opus with the handoff note; do not keep retrying.
+
+## 10b. Queued reviews (added 2026-11-11 at Andy's request; run after wave 11 and P4-18)
+
+These are review chunks: they read the app, play it through the screenshot and smoke tools, and write findings. They do not change the app. Each ends with a prioritised list Andy can approve; approved items become new chunks.
+
+| ID | Title | Model | Size | Deps |
+|----|-------|-------|------|------|
+| R-01 | Teaching and engagement review of every learning section | **Opus** | L (one agent per section) | wave 11, P4-18 |
+| R-02 | Game replay review: what makes children come back again and again | **Opus** | M | wave 11, P4-18 |
+
+**R-01 · Teaching and engagement review** · Opus: one review per section, run in parallel: Math (Pre-K to 6th, every world), Reading and Language Arts, Spanish, Discover, Brain Teasers, and the practice systems (Fact Sprint, Daily Review, Mixed Practice, placement, challenge/support rounds, streaks, rewards). Each review checks the section against current evidence-based teaching practice for that age and subject (for example: concrete to pictorial to abstract and number sense in early math; systematic phonics, decodable text and fluency in reading; comprehensible input and spaced retrieval in a second language; worked examples, immediate specific feedback, desirable difficulty, interleaving and spaced practice, mastery before moving on) and against engagement practice for young children (clear goals, short sessions, autonomy and choice, visible progress, kind feedback with no shaming, audio-first for non-readers, accessibility). It plays real rounds at each grade through the tools, samples generated questions for errors, ambiguity and age-fit, and reads the curriculum spec. Output: `docs/reviews/R-01-<section>.md` with what works, what to improve (each item: problem, evidence, suggested change, effort S/M/L, impact), and a top-10 list; plus a combined summary for Andy. No app changes.
+
+**R-02 · Game replay review** · Opus: analyses every game and game-like feature (Game Room games: 4x4 Hill Climb, Art Studio, Block Builder, colour by number, shape colouring; Balloons, Speed Race, Pet Care, Pet Shop and stickers, Fact Sprint, streaks and missions, boss fights, the game-time economy) for what makes children want to play again and again in a healthy way: short satisfying loops, mastery and visible skill growth, variety and surprise, collection and customisation, goals at several time scales, fair challenge, social-free motivation, and no manipulative patterns (no loss-aversion pressure, no endless scrolling, game time stays earned by learning). It plays each game through the tools and reads its code. Output: `docs/reviews/R-02-games.md` with, per game, what keeps children coming back, what makes them stop, and a prioritised list of improvements (problem, suggested change, effort, impact), plus game-time economy recommendations. No app changes.
+
+## 10c. Queued games (added 2026-11-11 at Andy's request; run after wave 12)
+
+Andy: Block Builder is "really hard to use"; add a racing game and a few more games, looking at what tops the kids' charts on the
+Play Store. The games are original Star School games in those genres (no copies of a specific game's name, characters, art, levels
+or look). R-02's findings on what brings children back feed into all four.
+
+| ID | Title | Model | Size | Deps |
+|----|-------|-------|------|------|
+| G-01 | Block Builder usability fix | **Opus** | M | R-02 |
+| G-02 | Racing game | **Opus** | L | R-02, A11b (games file) |
+| G-03 | Research: genres and mechanics children play most (Play Store kids charts), pick 2-3 new games | **Opus** | S | R-02 |
+| G-04 | Build the new games picked in G-03 (one chunk per game) | **Opus** | M each | G-03 |
+
+**G-01 · Block Builder usability fix** · Opus: watch the game played with real touch at 380x780 and 1024x600, list every point where a
+child gets stuck (placing, rotating, choosing blocks, the camera, undo), fix them, and add smoke steps that build something by touch.
+
+**G-02 · Racing game** · Opus: an original racing game for the Game Room (paid with game time like the others), drawn in the app's
+style, playable by touch on a cheap tablet at 60 fps or close, with simple controls for young children and depth for older ones,
+optional learning tie-ins (answer to boost) only if they don't spoil the fun; new file `src/js/NN-game-race*.js` (goes to the games
+file).
+
+**G-03 · Research** · Opus: look at the current top kids' and family games charts on the Play Store (and similar lists), sum up the
+genres and the mechanics that keep children playing in a healthy way, check them against R-02, and propose 2-3 games for Star School
+with a one-page design each; Andy picks or the merger picks if no answer.
+
+**G-04 · New games** · Opus: one chunk per game picked in G-03, same rules as G-02.
 
 ## 11. Later ideas (not planned)
 

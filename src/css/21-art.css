@@ -1,14 +1,22 @@
-/* Object art palette (P4-13; drawings in src/js/16-art-a.js). Roles map to design tokens; 2 = darker shade, 3 = light tint. */
-.art{
-  fill:currentColor;stroke-linecap:round;stroke-linejoin:round;
-  --a-r:var(--danger);--a-r2:var(--read-shade);
-  --a-o:var(--play);--a-o2:var(--play-shade);
-  --a-y:var(--star);--a-y2:var(--star-shade);--a-y3:var(--star-tint);
-  --a-g:var(--good);--a-g2:var(--good-ink);
-  --a-b:var(--brand);--a-b2:var(--brand-shade);--a-b3:var(--brand-tint);
-  --a-v:var(--bt);--a-v2:var(--bt-shade);
-  --a-p:var(--read);--a-p2:var(--read-tint);
-  --a-n:var(--try-ink);
-  --a-t:var(--try);--a-t2:var(--try-tint);
-  --a-w:var(--surface);--a-s:var(--ink-3);--a-s2:var(--line);
+/* Object art palette (DESIGN_SYSTEM.md 6.5; drawings in src/js/16-art-*.js). Every role maps to an --ill-* token in 00-tokens.css.
+   Per hue: --a-x1 highlight, --a-x base, --a-x2 shade, --a-x3 deep accent. Light comes from the top left.
+   Also on .pw-hat / .pw-toy, the wearables inside a pet drawing (P4-07, src/js/17-wear.js).
+   r red, o orange, y yellow, g green, c aqua, b blue, v purple, p pink, n brown, t tan, s skin, m cream, e grey, w white, k ink. */
+.art,.pw-hat,.pw-toy{
+  fill:var(--a-k);stroke-linecap:round;stroke-linejoin:round;
+  --a-r1:var(--ill-red-1);--a-r:var(--ill-red);--a-r2:var(--ill-red-2);--a-r3:var(--ill-red-3);
+  --a-o1:var(--ill-orange-1);--a-o:var(--ill-orange);--a-o2:var(--ill-orange-2);--a-o3:var(--ill-orange-3);
+  --a-y1:var(--ill-yellow-1);--a-y:var(--ill-yellow);--a-y2:var(--ill-yellow-2);--a-y3:var(--ill-yellow-3);
+  --a-g1:var(--ill-green-1);--a-g:var(--ill-green);--a-g2:var(--ill-green-2);--a-g3:var(--ill-green-3);
+  --a-c1:var(--ill-aqua-1);--a-c:var(--ill-aqua);--a-c2:var(--ill-aqua-2);--a-c3:var(--ill-aqua-3);
+  --a-b1:var(--ill-blue-1);--a-b:var(--ill-blue);--a-b2:var(--ill-blue-2);--a-b3:var(--ill-blue-3);
+  --a-v1:var(--ill-purple-1);--a-v:var(--ill-purple);--a-v2:var(--ill-purple-2);--a-v3:var(--ill-purple-3);
+  --a-p1:var(--ill-pink-1);--a-p:var(--ill-pink);--a-p2:var(--ill-pink-2);--a-p3:var(--ill-pink-3);
+  --a-n1:var(--ill-brown-1);--a-n:var(--ill-brown);--a-n2:var(--ill-brown-2);--a-n3:var(--ill-brown-3);
+  --a-t1:var(--ill-tan-1);--a-t:var(--ill-tan);--a-t2:var(--ill-tan-2);--a-t3:var(--ill-tan-3);
+  --a-s1:var(--ill-skin-1);--a-s:var(--ill-skin);--a-s2:var(--ill-skin-2);--a-s3:var(--ill-skin-3);
+  --a-m1:var(--ill-cream-1);--a-m:var(--ill-cream);--a-m2:var(--ill-cream-2);--a-m3:var(--ill-cream-3);
+  --a-e1:var(--ill-grey-1);--a-e:var(--ill-grey);--a-e2:var(--ill-grey-2);--a-e3:var(--ill-grey-3);
+  --a-w:var(--ill-white);--a-w2:var(--ill-white-2);--a-w3:var(--ill-white-3);
+  --a-k:var(--ill-ink);--a-k2:var(--ill-ink-2);
 }

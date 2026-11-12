@@ -312,3 +312,50 @@
 🪞  # risky: mirror
 🪣  # risky: bucket
 🪨  # risky: rock
+🧮  # abacus (ooo, P2-11)
+🚪  # door (es_house, P2-31)
+🪟  # risky: window (es_house, P2-31)
+🪑  # risky: chair (es_house, P2-31)
+🍳  # cooking (es_house, P2-31)
+🛋  # couch and lamp (es_house, P2-31)
+👕  # t-shirt (es_clothes, P2-31)
+👖  # jeans (es_clothes, P2-31)
+👗  # dress (es_clothes, P2-31)
+👟  # athletic shoe (es_clothes, P2-31)
+✂  # scissors (es_school, P2-31)
+🎒  # school satchel (es_school, P2-31)
+📄  # page facing up (es_school, P2-31)
+🏫  # school (es_school, P2-31)
+😢  # crying face (es_feel, P2-31)
+😠  # angry face (es_feel, P2-31)
+😴  # sleeping face (es_feel, P2-31)
+😨  # fearful face (es_feel, P2-31)
+🤒  # face with thermometer (es_feel, P2-31)
+🥳  # partying face (es_feel, P2-31)
+😌  # relieved face (es_feel, P2-31)
+😮  # face with open mouth (es_feel, P2-31)
+☔  # umbrella with rain drops
+🍂  # fallen leaf
+💨  # dash symbol (wind)
+📅  # calendar
+📆  # tear-off calendar
+🥵  # hot face
+🥶  # cold face
+🏪  # convenience store
+🏥  # hospital
+⛪  # church
+🥕  # carrot
+🏦  # bank
+🎬  # clapper board
+🏃  # runner
+🦘  # kangaroo
+🛌  # person in bed
+🎤  # microphone
+💃  # dancer
+📱  # mobile phone (pic 3 phone, R-01r)
+🧶  # ball of yarn (pic 5 yarn, R-01r)
+🧣  # scarf (pic 5 scarf, R-01r)
+🛒  # shopping trolley (pic 5 cart, R-01r)
+🌽  # ear of maize (pic 5 corn, R-01r)
+🤡  # clown face (pic 6 clown, R-01r)
+🧹  # broom (pic 6 broom, R-01r)

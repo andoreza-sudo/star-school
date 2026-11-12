@@ -29,8 +29,12 @@
        the mode down: challenge -> normal, normal -> support.
      Star thresholds, round length, coins and locks never change. Everything is decided from the answers alone, so the
      same answers give the same questions' stops (tests rely on it).
-   Hooks in 50-round.js: makeQ() calls mastQ() first, check() calls mastTry(q, ok) on a first try, renderQ() calls
-   mastShow(q) last, finish() adds G.forgive to the score for the star rating. */
+   Hooks in 50-round.js: makeQ() calls mastQ() first, check() calls mastTry(q, ok, ms, helped) on a first try, renderQ() calls
+   mastShow(q) last, finish() adds G.forgive to the score for the star rating.
+   R-01b, answers given with the hint showing (G.hq: support mode, an easier question with its hint, or Help before the first try):
+   a right one counts 0.5 in the mastery record (mastAdd) and half toward the stop's pass and stars (G.helped; finish() takes
+   helped / 2 off the score for the rating and for test out). Coins, stars collected in the round, praise and adaptation are
+   unchanged, and the 7-of-10 pass threshold is unchanged. */
 const MAST={
   AT:5,              // adaptation is decided after this many questions
   FAST:12000,        // median first-try time (ms) that counts as fast, 1st grade and up
@@ -73,12 +77,14 @@ function mastNear(nd,dir){
 }
 const harder=nd=>mastNear(nd,1),easier=nd=>mastNear(nd,-1);
 
-/* Adds one first try to S.mast[k]. Returns the record. */
+/* Adds one first try to S.mast[k]. Returns the record. ok: true / false, or a number 0..1 (R-01b: 0.5 for a right answer given with
+   the hint showing, so it counts half toward the accuracy that makes a stop practised or mastered). */
 function mastAdd(k,ok,ms){
   const M=S.mast||(S.mast={}),r=M[k]||(M[k]={n:0,p:0,ms:0,d:0,last:0}),dn=mastDay();
   ms=Math.max(0,Math.min(MAST.CAP,Math.round(ms)||0));
   r.n++;
-  r.p=Math.round((r.p+((ok?1:0)-r.p)*Math.max(1/r.n,MAST.ALPHA))*1000)/1000;
+  const v=typeof ok=='number'?Math.max(0,Math.min(1,ok)):ok?1:0;
+  r.p=Math.round((r.p+(v-r.p)*Math.max(1/r.n,MAST.ALPHA))*1000)/1000;
   // running median: step toward the new time by at most an eighth of the estimate (at least 250 ms)
   if(r.n==1)r.ms=ms;
   else{const step=Math.min(Math.abs(ms-r.ms),Math.max(250,r.ms/8));r.ms=Math.round((r.ms+Math.sign(ms-r.ms)*step)/10)*10}
@@ -124,11 +130,12 @@ function mastQ(){
   (G.mq||(G.mq=new Map())).set(q,pk.tag);
   return q;
 }
-/* check hook, on the first try at a question (not a retry). ms defaults to the time since mastShow. */
-function mastTry(q,ok,ms){
+/* check hook, on the first try at a question (not a retry). ms defaults to the time since mastShow. helped: the hint was showing
+   before this first try (support mode, an easier question, or the Help button); a right answer then counts half (R-01b). */
+function mastTry(q,ok,ms,helped){
   if(!G||G.nomast)return;
   if(ms==null)ms=Date.now()-(G.qt||Date.now());
-  if(q&&q.sk&&mastStop(q.sk,q.lv))mastAdd(nid(q),ok,ms);
+  if(q&&q.sk&&mastStop(q.sk,q.lv))mastAdd(nid(q),ok?(helped?.5:1):0,ms);
   (G.fr||(G.fr=[])).push({ok:!!ok,ms});
   if(!mastOn(G))return;
   if(!ok&&mastTag(q)=='ch')G.forgive=(G.forgive||0)+1;
@@ -153,7 +160,7 @@ function mastShow(q){
   }
   if(mastHint(q)){
     const h=$('#hint'),s=hintHTML(q);
-    if(h&&s)h.innerHTML=s;
+    if(h&&s){h.innerHTML=s;G.hq=true}
     if(tag=='easy')petSay("Here's a hint!");
   }
 }

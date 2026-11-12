@@ -1,0 +1,57 @@
+/* Brain Teasers: Unscramble (P3-15, src/js/88-bt-scramble.js). Tokens only; motion is transform and opacity. Letter tiles are raised
+   cream tiles (light face, tan ledge); empty boxes are dashed dents; a tile that left the tray leaves a dent behind. --ts is the tile
+   size: at least 48 px on every screen (rows wrap on a phone). */
+.us{--ts:64px;display:flex;flex-direction:column;align-items:center;gap:var(--s-3);width:100%;max-width:760px;min-height:100%;margin:0 auto}
+.us-card{position:relative;display:flex;flex-direction:column;align-items:center;gap:var(--s-2);width:100%;padding:var(--s-3) var(--s-4) var(--s-4);
+  border-radius:var(--r-card);background:var(--surface);box-shadow:inset 0 0 0 2px var(--bt-tint),0 4px 0 var(--ledge-soft)}
+.us-dots{display:flex;gap:6px;min-height:var(--tap);align-items:center}
+.us-dots i{width:12px;height:12px;border-radius:50%;background:var(--surface);box-shadow:inset 0 0 0 3px var(--bt-tint)}
+.us-dots i.now{box-shadow:inset 0 0 0 3px var(--bt)}
+.us-dots i.on{background:var(--bt);box-shadow:none}
+.us-pic{display:flex;align-items:center;justify-content:center;font-size:clamp(96px,20vh,160px);line-height:1}
+.us-pic .art{width:1em;height:1em}
+.us-clue{margin:0;font-size:var(--fs-4);font-weight:700;line-height:1.45;text-align:center;color:var(--ink)}
+.us-gap{display:inline-block;width:3em;height:1em;margin:0 .15em;border-bottom:4px solid var(--bt);vertical-align:-.2em}
+.us-msg{box-sizing:border-box;width:100%;min-height:26px;margin:0;font-size:var(--fs-3);font-weight:700;line-height:1.3;color:var(--ink-2);text-align:center}
+.us-msg.good{color:var(--good-ink)}
+.us-msg.try{color:var(--try-ink)}
+.us-msg.hint{color:var(--bt-shade)}
+.us-row{box-sizing:border-box;display:flex;flex-wrap:wrap;justify-content:center;gap:10px 8px;width:100%;padding:10px;
+  max-width:calc(var(--ts) * var(--cols, 6) + 8px * (var(--cols, 6) - 1) + 20px)}
+/* the word's boxes sit on a soft strip; the letters wait below it */
+.us-boxes{margin-top:auto;border-radius:var(--r-card);background:var(--bt-tint);padding-bottom:14px}
+.us-tray{margin-bottom:auto}
+/* boxes and tiles share one size and one letter */
+.us-box,.us-tile{position:relative;display:flex;align-items:center;justify-content:center;width:var(--ts);height:calc(var(--ts) + 4px);margin:0;padding:0;
+  border:0;border-radius:var(--r-btn);font:inherit;font-size:calc(var(--ts) * .55);font-weight:700;line-height:1;color:var(--ink);touch-action:manipulation}
+.us-box{background:var(--surface-2);box-shadow:inset 0 0 0 3px var(--ill-grey-1);cursor:default}
+.us-box::after{content:'';position:absolute;inset:7px;border-radius:calc(var(--r-btn) - 6px);border:2px dashed var(--ill-grey);opacity:.9}
+.us-box.full::after{content:none}
+.us-tile,.us-box.full{background:var(--ill-cream-1);box-shadow:inset 0 0 0 2px var(--ill-cream-2),inset 0 -5px 0 var(--ill-cream),0 4px 0 var(--ill-tan-2);cursor:pointer}
+.us-tile:active,.us-box.full:active{transform:translateY(3px);box-shadow:inset 0 0 0 2px var(--ill-cream-2),0 1px 0 var(--ill-tan-2)}
+.us-box.full span{animation:k-pop var(--t) var(--spring)}
+.us-tile.gone{background:var(--surface-2);box-shadow:inset 0 0 0 2px var(--line);cursor:default}
+.us-box.lk{box-shadow:inset 0 0 0 3px var(--star),0 4px 0 var(--star-shade);cursor:default}
+.us-box.no{background:var(--try-tint);box-shadow:inset 0 0 0 3px var(--try),0 4px 0 var(--try-ink);color:var(--try-ink);animation:k-shake 240ms linear}
+.us-boxes.ok .us-box{background:var(--good-tint);box-shadow:inset 0 0 0 3px var(--good),0 4px 0 var(--good-ink);color:var(--good-ink);
+  animation:k-pop var(--t-slow) var(--spring)}
+.us-C{--ts:58px}
+.us-D{--ts:54px}
+.us-C .us-clue,.us-D .us-clue{padding:0 var(--s-6)}
+@media (max-width:480px){
+  .us-B{--ts:60px}
+  .us-C{--ts:50px}
+  .us-D{--ts:48px}
+  .us-clue{font-size:var(--fs-3)}
+  .us-msg{font-size:var(--fs-2)}
+}
+/* a short wide screen: the picture or sentence on the left, the boxes and letters on the right */
+@media (orientation:landscape) and (min-width:700px) and (max-height:700px){
+  .us{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);grid-template-rows:1fr auto auto 1fr;column-gap:var(--s-6);max-width:1000px;
+    align-items:center}
+  .us-card{grid-column:1;grid-row:1 / span 4;align-self:center}
+  .us-msg{grid-column:2;grid-row:1;align-self:end}
+  .us-boxes{grid-column:2;grid-row:2;margin:0;justify-self:center}
+  .us-tray{grid-column:2;grid-row:3;margin:0;justify-self:center}
+  .us-pic{font-size:clamp(120px,30vh,180px)}
+}

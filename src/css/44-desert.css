@@ -1,0 +1,3 @@
+/* P2-10 Decimal Desert: three long words as choices (parallel, perpendicular, equilateral ...) go one under the other */
+.choices.dsw{grid-template-columns:1fr}
+.choices.dsw .choice.ch{min-height:var(--tap-primary);font-size:clamp(20px,3.6vh,28px)}

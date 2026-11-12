@@ -2,25 +2,35 @@
 let G;
 const newG=o=>(bankRound(),Object.assign({n:10,done:0,score:0,streak:0,best:0,missed:[],last:null,node:-1,path:null},o));
 function start(p,i){const n=NODES[p][i];G=newG({path:p,node:i,sk:n.sk,lv:n.lv,n:gradeCfg().n});
-  if(SK[n.sk].round){G.pool=SK[n.sk].round(n.lv);G.n=G.pool.length}
+  const rd=SK[n.sk].round&&SK[n.sk].round(n.lv); // a skill's own list of questions (passages); null = the usual round
+  if(rd){G.pool=rd;G.n=rd.length}
   next()}
-// The 10 questions of Tricky Mix / Mixed Practice: up to 7 due review items, then stops the child has reached (never a boss stop)
-function mixQs(){const qs=allMiss().slice(0,7).map(revQ).filter(Boolean),pool=[]; // P5-02: rebuilt from review items
-  for(const p in NODES)NODES[p].forEach((n,i)=>{if(n.sk!='boss'&&SK[n.sk]&&unlocked(p,i)&&i<=curNode(p))pool.push(n)});
-  if(!pool.length)pool.push(NODES.math[0]);
-  while(qs.length<10){const n=pick(pool),q=genQ(n.sk,n.lv);qs.push(q)}
+// The 10 questions of Tricky Mix / Mixed Practice: up to 7 due review items, then stops the child has reached (never a boss stop).
+// R-01b: the stops are weighted toward what is recent and what is weak (it was an even pick over everything reached, so a 3rd
+// grader got 38% Pre-K and K questions): each question is drawn from "recent" (the last MIX_RECENT stops reached on each path)
+// 50% of the time, "weak" (other reached stops tried 3+ times with first-try accuracy under 80%, or passed with 1 star) 30%, and
+// "older" (the rest) 20%. A group with nothing in it gives its share to recent.
+const MIX_W={recent:.5,weak:.3,old:.2},MIX_RECENT=10;
+function mixGroups(){const out={recent:[],weak:[],old:[]};
+  for(const p in NODES){const c=curNode(p),ps=[];
+    NODES[p].forEach((n,i)=>{if(n.sk!='boss'&&SK[n.sk]&&i<=c&&unlocked(p,i))ps.push([n,i])});
+    ps.forEach(([n,i],j)=>{if(j>=ps.length-MIX_RECENT)return out.recent.push(n);const r=mastRec(nid(n));out[r&&r.n>=3&&r.p<.8||getSt(p,i)==1?'weak':'old'].push(n)})}
+  if(!out.recent.length)out.recent.push(NODES.math[0]);
+  return out}
+function mixPick(gr){const x=rnd(),k=x<MIX_W.recent?'recent':x<MIX_W.recent+MIX_W.weak?'weak':'old';return pick(gr[k].length?gr[k]:gr.recent)}
+function mixQs(){const qs=allMiss().slice(0,7).map(revQ).filter(Boolean),gr=mixGroups(); // P5-02: rebuilt from review items
+  while(qs.length<10){const n=mixPick(gr),q=genQ(n.sk,n.lv);qs.push(q)}
   return qs}
 function startMix(){G=newG({mix:true,pool:shuffle(mixQs()),sk:'mix'});next()}
 const back=()=>G&&G.path?pathMap(G.path):home();
 function worldPool(p,wi,k){const ns=NODES[p].filter(n=>n.wi==wi&&n.sk!='boss');return Array.from({length:k},()=>{const n=pick(ns),q=genQ(n.sk,n.lv);return q})}
 function bossIntro(p,i){const n=NODES[p][i],[e,name]=n.boss;
-  view(`<div class="center"><div class="bossbig">${e}</div><h1>${name} appears!</h1><p class="sub">Every right answer zaps ${name}. Zap 7 times to win a prize: ${n.prize}</p>
-   <div class="rowh"><button class="btn big" id="fight" style="background:#dc2626">⚔️ Let's go!</button><button class="btn" id="nope">🗺️ Map</button></div></div>`);
+  view(RW.bossIn(p,name,e,n.prize)); // P4-11 (18-reward-art.js)
   SFX.rattle();setTimeout(SFX.rattle,500);if(S.voice)say(`Oh no! ${name} appears! Answer questions to zap ${name}!`);
-  $('#nope').onclick=()=>pathMap(p);$('#fight').onclick=()=>{SFX.whoosh();G=newG({path:p,node:i,sk:'boss',boss:{e,name},hp:7,pool:worldPool(p,n.wi,10)});next()}}
-function testOut(p,wi){const w=PATHS[p].worlds[wi],o=document.createElement('div');o.className='ovl';
-  o.innerHTML=`<div style="background:#fff;color:var(--ink);border-radius:24px;padding:20px;max-width:520px;text-align:center"><div style="font-size:64px">⚡</div><h2 style="margin:4px 0">Test out of ${w.e} ${w.n}?</h2>
-   <p>10 questions from this whole world. Get <b>9 right</b> and you skip all of its stops!</p><div class="rowh"><button class="btn big" id="tgo">Let's do it!</button><button class="btn" id="tno">Not now</button></div></div>`;
+  $('#nope').onclick=()=>pathMap(p);$('#fight').onclick=()=>{SFX.whoosh();G=newG({path:p,node:i,sk:'boss',boss:{e:RW.boss(name,'idle')||e,name},hp:7,pool:worldPool(p,n.wi,10)});next()}}
+function testOut(p,wi){const w=PATHS[p].worlds[wi],o=document.createElement('div');o.className='ovl rw-ovl';
+  o.innerHTML=`<div class="rw-card" role="dialog" aria-modal="true"><div class="rw-disc">${ico('bolt',52)}</div><h2>Test out of ${esc(w.n)}?</h2>
+   <p>10 questions from this whole world. Get <b>9 right</b> and you skip all of its stops!</p><div class="rw-acts">${UI.btn("Let's do it!",{kind:'primary',size:'lg',wide:true,icon:'bolt',id:'tgo'})}${UI.btn('Not now',{kind:'ghost',wide:true,id:'tno'})}</div></div>`;
   document.body.appendChild(o);o.querySelector('#tno').onclick=()=>o.remove();
   o.querySelector('#tgo').onclick=()=>{o.remove();SFX.whoosh();const bi=NODES[p].findIndex(n=>n.sk=='boss'&&n.wi==wi);G=newG({path:p,node:bi,sk:'test',test:{wi},pool:worldPool(p,wi,10)});next()}}
 function makeQ(){if(G.pool)return G.pool.shift();
@@ -39,29 +49,45 @@ function next(){if(!G||G.dead)return;
 function fit(){const qa=$('.qarea'),pr=$('#prompt');if(!qa||!pr)return;let k=1;pr.style.setProperty('--k',1);
   while(k>.42&&(qa.scrollHeight>qa.clientHeight+1||pr.scrollWidth>pr.clientWidth+1)){k-=.05;pr.style.setProperty('--k',k)}}
 let rsT;addEventListener('resize',()=>{fit();clearTimeout(rsT);rsT=setTimeout(()=>{if($('#map'))drawMap(MAPP)},150)});
+// R-01m: after a miss opens the hint, scroll the prompt card so the whole hint shows above the answer pad (on a phone the card
+// scrolls, and the hint sat below its fold). The Help button already does this (smoothly) in renderQ.
+function hintIn(){const h=$('#hint');if(h&&h.firstChild)h.scrollIntoView({block:'nearest'})}
 function petSay(t){const b=$('#bub');if(!b)return;b.textContent=t;const far=G&&G.done/G.n>.5;b.style.left=far?'auto':'0';b.style.right=far?'0':'auto';b.classList.add('on');clearTimeout(b._t);b._t=setTimeout(()=>b.classList.remove('on'),1400)}
-function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;
-  actQStart(q.sk); // P5-05
+// P4-10: the question screen. Top bar: close, the track (one dot per question, the pet walks to the gift), streak and star chips.
+// Then the prompt card (.qarea) and the input area (.inp) of the question's kind. Subject colour from the question's skill.
+const qSubj=q=>{const a=skArea(q.sk,q.lv)||G.path;return['math','read','es','disc','bt'].includes(a)?a:'math'};
+// the pet stands on the dot of the current question; after the last one it reaches the gift (column n+1 of the track)
+const qLeft=()=>`translateX(${+((Math.min(G.done,G.n)+.5)/(G.n+1)*100).toFixed(3)}%)`; // moves #qwalk, a layer as wide as the track
+// move the pet and refresh the dots after an answer (G.res marks questions that needed another try)
+function qProg(){const w=$('#qwalk'),tr=$('#qtrack');if(w)w.style.transform=qLeft();
+  if(tr){tr.style.setProperty('--p',Math.min(G.done,G.n)/G.n);const d=tr.querySelector('.dots');if(d)d.outerHTML=UI.dots(G.n,G.done,G.res)}}
+// the streak chip: lit from 2 in a row, bumps when it grows
+function qStreak(){const sk=$('#stk');if(!sk)return;sk.querySelector('b').textContent=G.streak;sk.classList.toggle('off',G.streak<2);if(G.streak>=2)bump(sk)}
+function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;G.res=G.res||[];G.hq=false; // G.hq: the hint showed before the first try (R-01b)
+  actQStart(q.sk,q.lv); // P5-05 (P2-17: the level picks the area of a skill with lvArea)
   const K=KIND[q.kind];
   if(!K)throw new Error('unknown question kind '+q.kind);
-  const input=K.render(q);
-  const pos=`calc(${G.done/G.n} * (100% - 70px))`;
-  view(`<div class="top"><button class="btn sm" id="quit">✕</button>
-   ${G.boss?`<div class="bossbar"><span class="bossE" id="bossE">${G.boss.e}<div class="bubble" id="bub"></div></span><div class="hp"><div id="hpf" style="width:${G.hp/7*100}%"></div></div><b id="hpn">${'❤️'.repeat(G.hp)}</b></div>`
-    :`<div class="track"><div class="line"></div><div class="chest">${G.test?'⚡':'🎁'}</div><div class="runner ${petAura()}" id="runner" style="left:${pos}">${petHTML()}<div class="bubble" id="bub"></div></div></div>`}
-   <div class="streak ${G.streak>=2?'on':''}" id="stk">🔥 ${G.streak}</div><div class="stars" id="starc">⭐ ${G.score}</div></div>
-  <div class="play"><div class="qarea">${q.review?'<div class="rtag">🔁 Remember this one?</div>':''}${q.ctx?bankCtx(q.ctx):''}<div class="prompt" id="prompt">${q.html}</div>
-  <div class="tools">${q.say?(q.pk?`<button class="btn pkspk" id="spk" aria-label="Hear it again">${ico('speak',44)}</button>`:'<button class="btn sm" id="spk">🔊 Hear it</button>'):''}<button class="btn sm" id="hb">💡 Help</button></div><div id="hint" class="hint"></div></div>
+  const input=K.render(q),ar=qSubj(q);
+  const track=G.boss?`<div class="bossbar"><span class="bossE" id="bossE">${G.boss.e}<div class="bubble" id="bub"></div></span><div class="hp"><div id="hpf" style="transform:scaleX(${G.hp/7})"></div></div><b id="hpn" aria-label="${G.hp} hearts">${GFX.hearts(G.hp)}</b></div>`
+    :`<div class="qtrack" id="qtrack" style="--n:${G.n+1};--p:${Math.min(G.done,G.n)/G.n}">${UI.dots(G.n,G.done,G.res)}`
+      +`<span class="qgoal${G.test?' test':''}" aria-hidden="true">${ico(G.test?'bolt':'gift')}</span>`
+      +`<div class="qwalk" id="qwalk" style="transform:${qLeft()}"><div class="runner ${petAura()}" id="runner">${petHTML()}<div class="bubble" id="bub"></div></div></div></div>`;
+  const spk=!q.say?'':q.pk?UI.ibtn('speak','Hear it again',{kind:'primary',size:'lg',id:'spk',cls:'pkspk'}):UI.btn('Hear it',{size:'sm',icon:'speak',id:'spk'});
+  const help=q.pk?UI.ibtn('hint','Help',{size:'lg',id:'hb',cls:'pkhb'}):UI.btn('Help',{size:'sm',icon:'hint',id:'hb'});
+  view(`<div class="top tbar round qtop s-${ar}">${UI.ibtn('close','Stop',{size:'sm',id:'quit'})}${track}
+   ${UI.chip('flame',G.streak,{id:'stk',off:G.streak<2,aria:'In a row'})}${UI.chip('star',G.score,{id:'starc',aria:'Stars'})}</div>
+  <div class="play qs s-${ar}"><div class="qarea">${q.review?UI.tag('Remember this one?','rtag','replay'):''}${q.ctx?bankCtx(q.ctx):''}<div class="prompt" id="prompt">${q.html}</div>
+  <div class="tools">${spk}${help}</div><div class="qhint"><div id="hint" class="hint"></div><span class="hb" aria-hidden="true">${ico('hint')}</span></div></div>
   <div class="inp">${input}</div></div>`);
   $('#quit').onclick=()=>{G.dead=true;back()};
   if($('#spk'))$('#spk').onclick=e=>say(q.say,e.currentTarget,q.lang=='es'&&q.auto=='must'?'es':null);
   $$('[data-sayes]').forEach(b=>b.onclick=()=>say(b.dataset.sayes,b,'es'));
-  $('#hb').onclick=()=>{const h=$('#hint');h.innerHTML=hintHTML(q);h.classList.remove('pop');void h.offsetWidth;h.classList.add('pop');SFX.pop(3);fit();h.scrollIntoView({block:'nearest',behavior:'smooth'})};
+  $('#hb').onclick=()=>{if(G.tries==0&&!G.retry)G.hq=true;if(hintStep(q))return;const h=$('#hint');h.innerHTML=hintHTML(q);h.classList.remove('pop');void h.offsetWidth;h.classList.add('pop');SFX.pop(3);fit();h.scrollIntoView({block:'nearest',behavior:'smooth'})};
   $$('[data-say]').forEach(b=>b.onclick=()=>say(b.dataset.say,b));
   $$('.w').forEach(s=>s.onclick=()=>{say(s.dataset.w);SFX.pop(1)});
-  K.bind(q,G,check);
+  K.bind(q,G,check);esQFix(q);
   if(q.review)petSay('Remember this?');
-  if(G.retry){fb("Let's try this one again!",'warn');petSay('One more time!')}
+  if(G.retry){fb("Let's try this one again!",'again');petSay('One more time!')}
   else if(G.done==0)petSay(G.mix?'Tricky mix!':"Let's go!");
   else if(G.done==G.n-1)petSay('Last one!');
   mastShow(q); // P1-08: Challenge tag, hint before the first try, answer clock
@@ -70,100 +96,118 @@ function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;
 function addMiss(q){const p=P(q.sk),m=p.miss[q.label]||{tot:0};m.tot=(m.tot||0)+1;m.q={label:q.label};delete m.n;p.miss[q.label]=m; // P5-02: a tally only
   const ks=Object.keys(p.miss);if(ks.length>40){ks.sort((a,b)=>p.miss[a].tot-p.miss[b].tot);delete p.miss[ks[0]]}
   revMiss(q)} // P5-02: the review item (59-review.js)
-const PRAISE=['Great job!','You got it!','Awesome!','Super!','Nice!','Yes!','Way to go!','Brilliant!','Boom! 💥','Nailed it!'];
+const PRAISE=['Great job!','You got it!','Awesome!','Super!','Nice!','Yes!','Way to go!','Brilliant!','Boom!','Nailed it!'];
 function check(v,el){if(G.lock)return;const q=G.q,K=KIND[q.kind],p=P(q.sk),ok=K.same?K.same(q,v):String(v)===String(q.ans);
-  if(G.tries==0&&!G.retry)mastTry(q,ok); // P1-08: mastery record and in-round adaptation
+  if(G.tries==0&&!G.retry)mastTry(q,ok,null,G.hq); // P1-08: mastery record and in-round adaptation (R-01b: a right answer with the hint showing counts half)
   const src=el||$('#slot')||$('.lslots')||$('.inp');
   if(ok){G.lock=true;if(el)el.classList.add('right');
     K.right(q);
     actQEnd(G.tries==0&&!G.retry,G.retry); // P5-05
     const first=G.tries==0&&!G.retry;
-    if(!G.retry){G.done++;p.t++;if(G.tries==0){G.score++;p.c++}}
+    if(!G.retry){G.done++;p.t++;if(G.tries==0){G.score++;p.c++;if(G.hq)G.helped=(G.helped||0)+1}} // R-01b: helped first tries, counted half for the pass
     if(first&&revRight(q))G.fixed=(G.fixed||0)+1; // P5-02: a due review item moves up a box (59-review.js)
-    G.streak=G.tries==0?G.streak+1:0;G.best=Math.max(G.best,G.streak);
+    G.streak=first?G.streak+1:0;G.best=Math.max(G.best,G.streak); // R-01b: first tries only (the end-of-round retries made a 6 of 10 round "10 in a row")
     SFX.right(G.streak);
     if(first)setTimeout(()=>flyStar(src),150);
     const r=src.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2);
-    const run=$('#runner');if(run){run.style.left=`calc(${G.done/G.n} * (100% - 70px))`;anim(run,'jump')}
+    if(!G.retry)G.res[G.done-1]=G.tries?'try':'';qProg();anim($('#runner'),'jump');
     let ko=false;if(G.boss&&!G.retry){G.hp=Math.max(0,G.hp-1);bossHit();if(G.hp==0){ko=true;G.won=true;G.asked=G.done;G.done=G.n;G.missed=[]}}
-    const sk=$('#stk');sk.textContent='🔥 '+G.streak;sk.classList.toggle('on',G.streak>=2);if(G.streak>=2)bump(sk);
+    qStreak();
     let wait=q.after?1900:1200;
     if(ko){wait+=1500;setTimeout(bossKO,500)}
-    else if([3,5,8,10].includes(G.streak)){setTimeout(SFX.streak,350);fb(`🔥 ${G.streak} in a row!`);petSay("You're on fire!");
+    else if([3,5,8,10].includes(G.streak)){setTimeout(SFX.streak,350);fb(`${G.streak} in a row!`,'streak');petSay("You're on fire!");
       if(!q.after&&!playClip('cheer')&&S.voice)say(`${G.streak} in a row! ${pick(['Amazing','Wow','Incredible','Super'])}, ${S.name}!`);wait+=300}
-    else if(G.boss){fb(pick(['ZAP! ⚡','POW! 💥','BAM! 💫','Zing! ✨']));petSay(pick(['Ouch!','Hey!','Oof!','No fair!']))}
+    else if(G.boss){fb(pick(['Zap!','Pow!','Bam!','Zing!']),'zap');petSay(pick(['Ouch!','Hey!','Oof!','No fair!']))}
     else{fb(pick(PRAISE));petSay(pick(PET_YAY));if(!q.after&&Math.random()<.3&&playClip('cheer'))wait+=400}
     if(q.after)say(q.after,null,q.afterLang);save();setTimeout(next,wait);return}
-  G.tries++;G.streak=0;const sk=$('#stk');sk.classList.remove('on');
+  G.tries++;G.streak=0;qStreak();
   SFX.wrong();anim($('#runner'),'sad');if(G.boss){anim($('#bossE'),'jump');setTimeout(SFX.giggle,250)}const pr=$('#prompt');pr.classList.remove('shake');void pr.offsetWidth;pr.classList.add('shake');
   if(el){el.classList.add('wrong');el.disabled=true}
-  if(G.tries==1){addMiss(q);fb('Try again!','warn');petSay(G.boss?pick(['Ha ha! Missed me!','Hee hee!','Try again!']):pick(PET_OOPS));if(Math.random()<.5)setTimeout(()=>playClip('oops'),300);$('#hint').innerHTML=hintHTML(q);fit();
-    K.retry(q,G,()=>{$('#hint').innerHTML=hintHTML(q);fit()});
+  if(G.tries==1){addMiss(q);fb('Try again!','again');petSay(G.boss?pick(['Ha ha! Missed me!','Hee hee!','Try again!']):pick(PET_OOPS));if(Math.random()<.5)setTimeout(()=>playClip('oops'),300);$('#hint').innerHTML=hintHTML(q);fit();hintIn();
+    K.retry(q,G,()=>{$('#hint').innerHTML=hintHTML(q);fit();hintIn()});
     save();return}
   G.lock=true;
   K.reveal(q);
-  if(!G.retry){G.done++;p.t++;if(!G.boss)G.missed.push(q)}
-  const run=$('#runner');if(run)run.style.left=`calc(${G.done/G.n} * (100% - 70px))`;
-  fb("Here's the answer",'warn');petSay("We'll get it next time!");say(q.after||K.spoken(q),null,q.afterLang);save();setTimeout(next,2600)}
+  if(!G.retry){G.done++;p.t++;if(!G.boss)G.missed.push(q);G.res[G.done-1]='try'}
+  qProg();
+  fb("Here's the answer",'info');petSay("We'll get it next time!");say(q.after||K.spoken(q),null,q.afterLang);save();setTimeout(next,2600)}
 
-function bossHit(){const b=$('#bossE'),f=$('#hpf'),h=$('#hpn');if(f)f.style.width=G.hp/7*100+'%';if(h)h.textContent='❤️'.repeat(G.hp);
-  if(b){b.classList.remove('hit');void b.offsetWidth;b.classList.add('hit');const r=b.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,['💥','⚡','✨'])}SFX.hit()}
-function bossKO(){const b=$('#bossE');if(b)b.classList.add('ko');SFX.ko();confetti(40);fb(`You beat ${G.boss.name}! 🏆`);if(S.voice)say(`You beat ${G.boss.name}!`)}
+function bossHit(){const b=$('#bossE'),f=$('#hpf'),h=$('#hpn');if(f)f.style.transform=`scaleX(${G.hp/7})`;if(h){h.innerHTML=GFX.hearts(G.hp);h.setAttribute('aria-label',G.hp+' hearts')}
+  if(b){b.classList.remove('hit');void b.offsetWidth;b.classList.add('hit');const r=b.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'zap')}SFX.hit()}
+function bossKO(){const b=$('#bossE');if(b)b.classList.add('ko');SFX.ko();confetti(40);fb(`You beat ${G.boss.name}!`);if(S.voice)say(`You beat ${G.boss.name}!`)}
 function award(){const s=pick(STK),isNew=!S.stickers[s];S.stickers[s]=(S.stickers[s]||0)+1;return{s,isNew}}
 function finish(){
   const g=G,sc=g.score,n=g.n,best=g.best,before=S.stars,d=day(),p=g.path,ni=g.node,nd=p?NODES[p][ni]:null;
   let stars=0,newPass=false,wDone=false;
   let testOk=false,prize=null;
-  if(g.test){testOk=sc>=9;if(testOk){NODES[p].forEach((n,i)=>{if(n.wi==g.test.wi&&getSt(p,i)<2)setSt(p,i,2)});newPass=true;
+  const hp=(g.helped||0)/2; // R-01b: a right first try with the hint showing (support mode, an easier question, or Help) counts half for the pass and stars
+  if(g.test){testOk=sc-hp>=9;if(testOk){NODES[p].forEach((n,i)=>{if(n.wi==g.test.wi&&getSt(p,i)<2)setSt(p,i,2)});newPass=true;
     (S.skip=S.skip||{})[worldId(p,g.test.wi)]=1}} // a tested-out world stays finished even if stops are added to it later
-  else if(!g.mix){if(g.boss)stars=g.won?(g.asked<=7?3:g.asked<=8?2:1):0;else{P(g.sk).r++;const ss=Math.min(n,sc+(g.forgive||0));stars=ss>=n?3:ss>=Math.floor(n*.8+.01)?2:ss>=Math.floor(n*.7+.01)?1:0} // P1-08: wrong challenge answers do not cost stars
+  else if(!g.mix){if(g.boss)stars=g.won?(g.asked<=7?3:g.asked<=8?2:1):0;else{P(g.sk).r++;const ss=Math.min(n,sc-hp+(g.forgive||0));stars=ss>=n?3:ss>=Math.floor(n*.8+.01)?2:ss>=Math.floor(n*.7+.01)?1:0} // P1-08: wrong challenge answers do not cost stars
     const prev=getSt(p,ni);g.prevSt=prev;setSt(p,ni,Math.max(prev,stars));newPass=!prev&&stars>0;
     if(g.boss&&g.won&&!S.owned[nd.prize]){prize=nd.prize;S.owned[prize]=1;S.wear.hat=prize}}
   if(newPass){const wk=nd.wid;if(!S.wdone[wk]&&worldDone(p,nd.wi)){S.wdone[wk]=1;wDone=true}}
   const prizes=[award()];if(sc==n)prizes.push(award());
   actRound(); // P5-05
-  d.r++;const stk=streakTick();let mission=false;if(d.r>=3&&!d.done){d.done=true;mission=true;prizes.push(award())}
+  d.r++;const stk=streakTick();
+  const mi=MIS.done({k:'round',p:g.path||'',mix:!!g.mix,test:!!g.test,boss:!!g.boss,daily:!!g.daily,perfect:!g.boss&&sc>=n,n:d.r}); // P5-08 (R-01b: n = rounds today)
+  mi.won.forEach(w=>prizes.push(w.st));
+  const mission=mi.bonus;if(mission)prizes.push(award());
   if(wDone)prizes.push(award());
-  const bonus=(mission?5:0),coins=sc+bonus+(wDone?20:0),prevSt=g.test||g.mix?0:(g.prevSt||0),PT=ptCalc(g,sc,n,stars,prevSt,newPass,testOk,nd),ptSec=PT.sec;ptEarn(ptSec);
+  const bonus=(mission?5:0),coins=sc+bonus+(wDone?20:0),prevSt=g.test||g.mix?0:(g.prevSt||0),PT=ptCalc(g,sc,n,stars,prevSt,newPass,testOk,nd,{mission}),ptSec=PT.sec;ptEarn(ptSec);
   S.stars+=sc+bonus;S.coins+=coins;S.best=Math.max(S.best||0,best);
   const grew=stage(S.stars)>stage(before);save();
-  view(`<div class="center" id="fin"><h1>Round complete!</h1><p class="sub">Tap the treasure chest!</p>
-   <button class="btn chestbtn" id="chest">🎁</button></div>`);
-  setTimeout(SFX.rattle,300);const rt=setInterval(()=>{if(!$('#chest'))return clearInterval(rt);SFX.rattle()},1200);
+  // P4-11: the drawn chest, star rating, earned list and message cards come from RW (18-reward-art.js, 42-rewards.css).
+  // The rewards above, the order of the sequence and its sounds are unchanged.
+  view(RW.pre());
+  // P4-17: the chest rattles 4 times (sound and CSS), then waits quietly; nothing loops forever
+  setTimeout(SFX.rattle,300);let rn=1;const rt=setInterval(()=>{if(!$('#chest')||rn>=4)return clearInterval(rt);rn++;SFX.rattle()},1200);
   let opened=false;
-  $('#chest').onclick=()=>{if(opened)return;opened=true;clearInterval(rt);SFX.open();confetti(sc>=7?40:16);const f=$('#fin');
+  $('#chest').onclick=()=>{if(opened)return;opened=true;clearInterval(rt);SFX.open();const f=$('#fin');
     const nextI=!g.mix&&ni+1<NODES[p].length&&unlocked(p,ni+1)?ni+1:-1;
-    f.innerHTML=`<div id="prz"></div><div class="bigstars" id="bs"></div><h1 id="sc" style="margin:0">${sc} out of ${n}${!g.mix&&!g.test?` <span class="nstar" style="font-size:.8em">${'★'.repeat(stars)+'☆'.repeat(3-stars)}</span>`:''}</h1>
-     <div class="rowh" id="btns" style="visibility:hidden;margin:10px 0"><button class="btn big" id="bonus" style="background:#ec4899">🎈 Bonus game!</button>
-      ${nextI>=0&&newPass?'<button class="btn big" id="nxt">Next stop ▶</button>':'<button class="btn" id="again">Play again</button>'}<button class="btn" id="menu">${g.mix?'🏠 Home':'🗺️ Map'}</button></div><div id="msgs"></div>`;
+    const low=!g.mix&&!g.test&&stars==0;
+    const line=sc>=9?'You are a superstar!':sc>=7?'Fantastic work!':sc>=5?'Good job! Keep practicing!':'Nice try! Practice makes you stronger!';
+    f.classList.add('rw-open');
+    // a low score is met kindly, with the next step right under the score (it was the last message line before)
+    const need=Math.floor(n*.7+.01),half=hp>0&&(sc>=need||g.test&&sc>=9); // R-01b: say why when the hints are what kept it from passing
+    const tip=g.test&&!testOk?(half?'So close! Answers with the hint showing count half. Get 9 right on your own to test out.':'So close! Get 9 right to test out. Or play the stops one by one.'):!g.mix&&!g.test&&!g.boss&&stars==0?(half?`Answers with the hint showing count half. Get ${need} right on your own to open the next stop. You can do it!`:`Get ${need} right to open the next stop. You can do it!`):'';
+    f.innerHTML=RW.done({sc,n,line,tip,rate:g.mix||g.test||!stars?-1:stars,next:nextI>=0&&newPass,again:low||(g.test&&!testOk)?'Try again':'Play again',menu:g.mix?'Home':'Map'});
+    RW.burst(f.querySelector('.rw-chest-o'),sc>=7?28:14);
     const live=()=>f.isConnected;let t=0;
-    prizes.forEach(pz=>{setTimeout(()=>{if(!live())return;$('#prz').insertAdjacentHTML('beforeend',`<span class="prize">${pz.s}</span>${pz.isNew?'<span class="newtag">NEW!</span>':''}`);SFX.magic()},t);t+=600});
-    for(let i=0;i<sc;i++){setTimeout(()=>{if(!live())return;$('#bs').insertAdjacentHTML('beforeend','<span>⭐</span>');SFX.coin(i)},t);t+=150}
-    setTimeout(()=>{if(!live())return;$('#btns').style.visibility='visible';
-      $('#bonus').onclick=()=>balloons(g.mix||g.boss||g.test?(p||pick(['math','read','es'])):SK[g.sk].area,g);
+    // P4-17: every sticker, row and card goes in at once, hidden in its place (.rw-wait), and is shown in turn: nothing on the screen moves
+    const add=(id,h)=>{const c=$('#'+id);c.insertAdjacentHTML('beforeend',h);const e=c.lastElementChild;e.classList.add('rw-wait');return e};
+    prizes.forEach((pz,k)=>{const e=add('prz',RW.sticker(pz.s,pz.isNew,k));setTimeout(()=>{if(!live())return;e.classList.remove('rw-wait');SFX.magic()},t);t+=600});
+    for(let i=0;i<sc;i++){setTimeout(()=>{if(!live())return;RW.count(i+1);SFX.coin(i)},t);t+=150}
+    setTimeout(()=>{if(!live())return;const d=$('#btns');d.style.visibility='visible';d.classList.add('on');
+      $('#bonus').onclick=()=>balloons(g.mix||g.boss||g.test?(p||pick(['math','read','es'])):skArea(g.sk,g.lv),g);
       if($('#nxt'))$('#nxt').onclick=()=>{SFX.whoosh();open(p,nextI)};
       if($('#again'))$('#again').onclick=()=>{SFX.whoosh();g.mix?(g.daily?startReview():startMix()):g.test?testOut(p,g.test.wi):open(p,ni)};$('#menu').onclick=()=>g.mix?home():pathMap(p);
       if(grew)setTimeout(()=>growShow(before),300);else if(!playClip('done')&&S.voice)say(`You got ${sc} stars!`+(newPass?' You unlocked the next stop!':''))},t);
     t+=300;
-    const msgs=[[`🎟️ +${fmtM(ptSec)} of game time!<div class="ptlines">${PT.lines.map(([v,l])=>`<span class="${v<0?'neg':''}">${v<0?'−':'+'}${fmtM(Math.abs(v))} ${l}</span>`).join('')}</div>${PT.mast&&nextI>=0?'<div class="pthint">💡 New stops earn way more game time!</div>':PT.rep>=1?'<div class="pthint">💡 Try a different stop to earn more!</div>':''}`,'coin'],[`+${coins} 🪙 coins for the pet shop!`,null]];
-    if(best>=3)msgs.push([`🔥 Best streak: ${best} in a row!`,null]);
-    if(newPass&&nextI>=0)msgs.push([`🗺️ Next stop unlocked: ${NODES[p][nextI].t}!`,'fanfare']);
-    if(wDone)msgs.push([`🌍 You finished ${PATHS[p].worlds[nd.wi].n}! +20 🪙`,'fanfare']);
-    if(g.boss)msgs.push(g.won?[`💥 You beat ${g.boss.name}!`,'fanfare']:[`${g.boss.e} ${g.boss.name} got away! Try again, you can beat it!`,null]);
-    if(prize)msgs.push([`🎁 New costume for ${petN()}: ${prize}`,'magic']);
-    if(g.test)msgs.push(testOk?[`🚀 You tested out of ${PATHS[p].worlds[g.test.wi].n}!`,'fanfare']:['So close! Get 9 right to test out. Or play the stops one by one.',null]);
-    if(!g.mix&&!g.test&&!g.boss&&stars==0)msgs.push([`Get ${Math.floor(n*.7+.01)} right to open the next stop. You can do it!`,null]);
-    if(mission)msgs.push([`🏆 Daily mission done! +5 bonus stars!`,'fanfare']);
-    if(stk.msg)msgs.push([stk.msg,'fanfare']);
-    if(g.mix)msgs.push(['🎯 Great practice on the tricky ones!',null]);
-    msgs.push([sc>=9?'You are a superstar!':sc>=7?'Fantastic work!':sc>=5?'Good job! Keep practicing!':'Nice try! Practice makes you stronger!',null]);
-    msgs.forEach(([m,s])=>{setTimeout(()=>{if(!live())return;$('#msgs').insertAdjacentHTML('beforeend',`<div class="msg">${m}</div>`);if(s)SFX[s]();if(s&&m.startsWith('🌍'))confetti(40)},t);t+=650});
+    // what the child earned (game time with its reasons, coins), then one card per message: [where, html, sound, burst]
+    const why=`<ul class="rw-pl">${PT.lines.map(([v,l])=>`<li${v<0?' class="neg"':''}>${ico(v<0?'replay':RW.ptIcon(l),18)}<span>${v<0?'−':'+'}${fmtM(Math.abs(v))} ${esc(l)}</span></li>`).join('')}</ul>`+
+      (PT.mast&&nextI>=0?`<div class="rw-ph">${ico('hint',20)}<span>New stops earn way more game time!</span></div>`:PT.rep>=1?`<div class="rw-ph">${ico('hint',20)}<span>Try a different stop to earn more!</span></div>`:'');
+    const msgs=[['earn',RW.row('ticket','ticket',`+${fmtM(ptSec)} of game time!${why}`),'coin'],['earn',RW.row('coin','coin',`+${coins} coins for the pet shop!`),null]];
+    const M=(art,h,s,kind,x)=>msgs.push(['msgs',RW.msg(art,h,kind),s,x]);
+    if(best>=3)M('flame',`Best streak: ${best} in a row!`,null);
+    if(newPass&&nextI>=0)M('map',`Next stop unlocked: ${esc(NODES[p][nextI].t)}!`,'fanfare','win');
+    if(wDone)M('trophy',`You finished ${esc(PATHS[p].worlds[nd.wi].n)}! +20 coins`,'fanfare','win',1);
+    if(g.boss){const nm=esc(g.boss.name);g.won?M(RW.boss(g.boss.name,'hit')||'crown',`You beat ${nm}!`,'fanfare','win boss'):M(RW.boss(g.boss.name)||'heart',`${nm} got away! Try again, you can beat it!`,null,'boss')}
+    if(prize)M('gift',`New costume for ${esc(petN())}: ${RW.badge(prize)}`,'magic','win');
+    if(g.test&&testOk)M('bolt',`You tested out of ${esc(PATHS[p].worlds[g.test.wi].n)}!`,'fanfare','win');
+    mi.won.forEach(w=>M('target',`Mission done: ${esc(MIS.title(w.x))}!`,'fanfare','win'));
+    if(mission)M('calendar','All 3 missions done! +5 bonus stars!','fanfare','win');
+    if(stk.msg)M('flame',esc(RW.clean(stk.msg)),'fanfare','win');
+    if(g.mix)M('target','Great practice on the tricky ones!',null);
+    msgs.forEach(([to,h,s,x])=>{const e=add(to,h);setTimeout(()=>{if(!live())return;e.classList.remove('rw-wait');if(s)SFX[s]();if(x)RW.burst(e,28)},t);t+=650});
     };
 }
-function growShow(before){const o=document.createElement('div');o.className='ovl';const hatch=stage(before)==0;
-  o.innerHTML=`<div class="grow">${petE(before)}</div><h1>${hatch?'Your egg is hatching!':`Whoa! ${esc(petN())} is growing!`}</h1>`;document.body.appendChild(o);
-  hatch?SFX.hatch():SFX.rattle();setTimeout(()=>{if(!o.isConnected)return;SFX.magic();confetti(30);
-    o.innerHTML=`<div class="grown ${petAura()}">${petHTML()}</div><h1>${stage()>=4?`${esc(petN())} is a SUPER pet!`:hatch?`Meet ${esc(petN())}!`:`${esc(petN())} grew up!`}</h1><button class="btn big" id="yay">Yay! 🎉</button>`;
+function growShow(before){const o=document.createElement('div');o.className='ovl rw-ovl';const hatch=stage(before)==0;
+  o.innerHTML=`<div class="rw-card rw-growc">${RW.rays()}<div class="grow">${petArt(before)}</div><h1>${hatch?'Your egg is hatching!':`Whoa! ${esc(petN())} is growing!`}</h1></div>`;document.body.appendChild(o);
+  hatch?SFX.hatch():SFX.rattle();setTimeout(()=>{if(!o.isConnected)return;SFX.magic();
+    o.innerHTML=`<div class="rw-card rw-growc rw-again">${RW.rays()}<div class="grown ${petAura()}">${petHTML()}</div><h1>${stage()>=4?`${esc(petN())} is a SUPER pet!`:hatch?`Meet ${esc(petN())}!`:`${esc(petN())} grew up!`}</h1>`+
+      `<div class="rw-acts">${UI.btn('Yay!',{kind:'primary',size:'lg',wide:true,icon:'star',id:'yay'})}</div></div>`;
+    RW.burst(o.querySelector('.rw-card'),30);
     if(S.voice)say(hatch?`Your egg hatched! Meet ${petN()}!`:`Wow! ${petN()} grew!`);
     const y=o.querySelector('#yay');if(y)y.onclick=()=>{o.remove()}},1800)}
 /* Error guard hook (called from logErr in 00-core.js): if a round is on screen, show a friendly way home instead of a frozen screen. */

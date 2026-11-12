@@ -1,0 +1,206 @@
+/* Home (P4-08; DESIGN_SYSTEM.md 9 row 2). Markup in src/js/46-home.js home(). Tokens only; animates transform and opacity only. */
+
+/* ---- top bar: logo, sound, grown-ups gear ---- */
+.hm-top{gap:var(--s-2)}
+.hm-logo{display:flex;align-items:center;gap:var(--s-2);min-width:0;font-family:var(--font-display);font-size:var(--fs-5);font-weight:700;
+  line-height:1.1;white-space:nowrap}
+.hm-mark{display:grid;place-items:center;flex:none;width:44px;height:44px;border-radius:14px;color:var(--star);
+  background:linear-gradient(var(--hi),var(--hi-0) 60%) var(--brand);box-shadow:inset 0 -3px 0 var(--brand-shade)}
+.hm-top .btn.icon .ic{color:var(--ink-2)}
+
+/* ---- page: one column; two columns on a wide landscape screen ---- */
+.scroll.hm{padding:var(--s-1) var(--s-4) var(--s-5)}
+.hm-cols{display:grid;gap:0 var(--s-6);max-width:720px;margin:0 auto}
+.hm-col{min-width:0}
+@media (min-width:900px){.hm-cols{grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);max-width:1120px}.hm-col>:first-child{margin-top:0}
+  .hm-cols .hm-hero{grid-template-columns:clamp(184px,42%,240px) minmax(0,1fr);grid-template-areas:"st nm" "st gr" "st ms" "ch ch"}}
+.hm-h{display:flex;align-items:center;gap:var(--s-2);margin:var(--s-6) var(--s-1) var(--s-3);font-family:var(--font-display);
+  font-size:var(--fs-4);line-height:1.2;color:var(--ink)}
+.hm-h .ic{color:var(--brand)}
+
+/* ---- hero: the pet on its scene, name, grow meter, mission, chips ---- */
+.hm-hero{display:grid;grid-template-columns:clamp(128px,36%,230px) minmax(0,1fr);grid-template-areas:"st nm" "st gr" "st ms" "ch ch";
+  align-items:center;gap:var(--s-2) var(--s-4);padding:var(--s-3);border-radius:var(--r-hero);background:var(--surface);
+  box-shadow:var(--shadow),0 4px 0 var(--ledge-soft)}
+.hm-stage{grid-area:st;align-self:stretch;position:relative;display:flex;align-items:flex-end;justify-content:center;min-height:150px;
+  border-radius:20px;overflow:hidden;background:linear-gradient(var(--ill-blue-1),var(--ill-aqua-1) 75%)}
+.hm-scene{position:absolute;inset:0;width:100%;height:100%}
+.hm .hm-stage .petbig{position:relative;font-size:64px;margin-bottom:4px}
+.hm-stage .pet-svg{width:1.95em;height:1.95em;margin:-.3em -.26em -.12em}
+.sc-beach{background:linear-gradient(var(--ill-blue-1),var(--ill-white) 80%)}
+.sc-candy{background:linear-gradient(var(--ill-pink-1),var(--ill-purple-1))}
+.sc-rainbow{background:linear-gradient(var(--ill-white),var(--ill-blue-1))}
+.sc-space{background:linear-gradient(var(--ill-ink),var(--ill-purple-3))}
+.sc-castle{background:linear-gradient(var(--ill-purple-1),var(--ill-pink-1))}
+.hm-think{position:absolute;top:var(--s-2);right:var(--s-2);display:grid;place-items:center;width:44px;height:44px;border-radius:50%;
+  font-size:30px;background:var(--surface);box-shadow:0 3px 0 var(--drop);animation:hm-bob calc(var(--t-loop) * .75) var(--ease) 4}
+.hm-think::after{content:"";position:absolute;left:-2px;bottom:-6px;width:12px;height:12px;border-radius:50%;background:var(--surface)}
+@keyframes hm-bob{50%{transform:translateY(-4px)}}
+.hm-name{grid-area:nm;align-self:end;font-family:var(--font-display);font-size:var(--fs-4);font-weight:700;line-height:1.2;overflow-wrap:break-word}
+.hm-name span{color:var(--ink-2);font-weight:400}
+.hm-grow{grid-area:gr;min-width:0}
+.hm-gt{margin-top:var(--s-1);font-size:var(--fs-2);font-weight:700;line-height:1.3;color:var(--try-ink)}
+.hm-gt .ic{color:var(--star-shade)}
+.hm-ms{grid-area:ms;align-self:start;display:flex;flex-wrap:wrap;align-items:center;gap:var(--s-1) var(--s-2);font-size:var(--fs-2);
+  font-weight:700;line-height:1.3;color:var(--ink-2)}
+.hm-ms>.ic{color:var(--read)}
+.hm-ms.done{color:var(--good-ink)}
+.hm-ms.done>.ic{color:var(--star-shade)}
+.hm-pips{display:inline-flex;gap:var(--s-1)}
+.hm-pips i{width:18px;height:18px;border-radius:50%;background:var(--surface-2);box-shadow:inset 0 0 0 2px var(--ledge-soft)}
+.hm-pips i.on{background:var(--good);box-shadow:inset 0 -3px 0 var(--good-ink)}
+.hm-chips{grid-area:ch;display:flex;flex-wrap:wrap;gap:var(--s-2)}
+.hm-chips .stat{gap:2px;padding:0 var(--s-3) 0 var(--s-1);font-size:var(--fs-3)}
+.hm-chips .stat .ic{width:28px;height:28px}
+@media (min-width:560px){
+  .hm-hero{grid-template-areas:"st nm" "st ch" "st gr" "st ms";padding:var(--s-4);row-gap:var(--s-3)}
+  .hm-stage{min-height:200px}
+  .hm .hm-stage .petbig{font-size:88px}
+  .hm-name{font-size:var(--fs-5)}
+  .hm-gt,.hm-ms{font-size:var(--fs-3)}
+  .hm-think{width:56px;height:56px;font-size:38px}
+}
+
+/* ---- "Find my level" card ---- */
+.hm-place{margin-top:var(--s-4);padding:var(--s-4);border-radius:var(--r-card);background:var(--brand-tint)}
+.hm-plt{display:flex;align-items:center;gap:var(--s-3);font-size:var(--fs-3);line-height:var(--lh-3)}
+.hm-pli{display:grid;place-items:center;flex:none;width:48px;height:48px;border-radius:50%;color:var(--surface);
+  background:linear-gradient(var(--hi),var(--hi-0) 60%) var(--brand);box-shadow:inset 0 -3px 0 var(--brand-shade)}
+.hm-plr{display:flex;flex-wrap:wrap;gap:var(--s-2);margin-top:var(--s-3)}
+.hm .hm-plb,.hm .hm-pln{display:inline-flex;align-items:center;gap:var(--s-2);min-height:var(--tap-primary);padding:var(--s-2) var(--s-4) var(--s-2) var(--s-3);
+  border-radius:var(--r-btn);font-family:var(--font-display);font-size:var(--fs-3);line-height:1.2}
+.hm .hm-plb{background:var(--surface);color:var(--ink);box-shadow:inset 0 0 0 2px var(--line),var(--ledge) var(--ledge-soft)}
+.hm .hm-plb .ic{color:var(--c)}
+.hm .hm-plb:active{transform:translateY(3px);box-shadow:inset 0 0 0 2px var(--line),var(--ledge-press) var(--ledge-soft)}
+.hm .hm-pln{padding:var(--s-2) var(--s-4);background:transparent;box-shadow:none;color:var(--ink-2)}
+.hm .hm-pln:active{transform:translateY(2px);box-shadow:none}
+
+/* ---- Today row: review, Fact Sprint, Mixed Practice ---- */
+.hm-today{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--s-3)}
+.hm-rvw{display:flex;min-width:0}
+.hm-tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--s-2);width:100%;min-width:0;min-height:124px;
+  padding:var(--s-3) var(--s-1);border:0;border-radius:var(--r-card);background:var(--surface);color:var(--ink);font:inherit;
+  font-family:var(--font-display);font-size:var(--fs-3);font-weight:700;line-height:1.2;text-align:center;overflow-wrap:normal;
+  box-shadow:inset 0 0 0 2px var(--line),var(--ledge) var(--ledge-soft);transition:transform var(--t-fast) var(--ease)}
+button.hm-tile{cursor:pointer}
+button.hm-tile:active{transform:translateY(3px);box-shadow:inset 0 0 0 2px var(--line),var(--ledge-press) var(--ledge-soft)}
+.hm-tile.ok{background:var(--good-tint);color:var(--good-ink);box-shadow:none}
+.hm-ti{position:relative;display:grid;place-items:center;flex:none;width:60px;height:60px;border-radius:50%;color:var(--surface);
+  background:linear-gradient(var(--hi),var(--hi-0) 60%) var(--c,var(--brand));box-shadow:inset 0 -4px 0 var(--c-shade,var(--brand-shade))}
+.t-rev{--c:var(--play);--c-shade:var(--play-shade)}
+.t-ok{--c:var(--good);--c-shade:var(--good-ink)}
+.t-mix{--c:var(--brand-tint);--c-shade:var(--ledge-soft)}
+/* R-01b: the review count is part of the tile's words ("10 to review"), in the ink colour: no red bubble */
+.hm-rn{font-variant-numeric:tabular-nums}
+.hm-today.n2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.hm-bolt{position:absolute;right:-8px;bottom:-4px;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;
+  background:var(--star);color:var(--ink);box-shadow:0 0 0 3px var(--surface)}
+.hm-tl{display:block;max-width:100%}
+
+/* ---- Puzzle of the Day (P3-17): a small white card under the Today row, Brain Teasers purple art; green when done ---- */
+.hm .hm-pod{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:var(--s-3);width:100%;min-height:84px;margin-top:var(--s-3);
+  padding:var(--s-2) var(--s-3) var(--s-2) var(--s-2);border:0;border-radius:var(--r-card);background:var(--surface);color:var(--ink);font:inherit;text-align:left;
+  cursor:pointer;box-shadow:inset 0 0 0 2px var(--line),var(--ledge) var(--ledge-soft);transition:transform var(--t-fast) var(--ease)}
+.hm .hm-pod:active{transform:translateY(3px);box-shadow:inset 0 0 0 2px var(--line),var(--ledge-press) var(--ledge-soft)}
+.hm-podi{display:grid;place-items:center;flex:none;width:64px;height:64px;border-radius:18px;background:var(--bt-tint)}
+.hm .hm-podi .hm-svg{width:52px;height:52px}
+.hm-podt{min-width:0}
+.hm-podt b{display:block;font-family:var(--font-display);font-size:var(--fs-4);line-height:1.2;overflow-wrap:normal}
+.hm-podt span{display:block;margin-top:2px;font-size:var(--fs-2);font-weight:700;line-height:1.3;color:var(--bt-shade)}
+.hm-podr{display:inline-flex;align-items:center;gap:2px;padding:var(--s-1) var(--s-3) var(--s-1) var(--s-1);border-radius:var(--r-pill);
+  background:var(--star-tint);color:var(--try-ink);font-size:var(--fs-3);font-weight:700;line-height:1;white-space:nowrap}
+.hm-podk{display:grid;place-items:center;width:48px;height:48px;border-radius:50%;color:var(--surface);
+  background:linear-gradient(var(--hi),var(--hi-0) 60%) var(--good);box-shadow:inset 0 -3px 0 var(--good-ink)}
+.hm .hm-pod.done{background:var(--good-tint);box-shadow:none}
+.hm-pod.done .hm-podt span{color:var(--good-ink)}
+
+/* ---- path cards and the Game Room: a big subject-colour button with a drawing ---- */
+.hm-paths{display:grid;gap:var(--s-3)}
+.hm .hm-path{position:relative;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:var(--s-4);width:100%;
+  min-height:108px;padding:var(--s-3) var(--s-4) var(--s-3) var(--s-3);border:0;border-radius:var(--r-card);overflow:hidden;
+  font:inherit;text-align:left;color:var(--surface);cursor:pointer;
+  background:radial-gradient(circle at 96% -20%,var(--hi) 0 30%,var(--hi-0) 30.5%),linear-gradient(var(--hi),var(--hi-0) 45%) var(--c-fill,var(--c));
+  box-shadow:0 5px 0 var(--c-ledge,var(--c-shade));transition:transform var(--t-fast) var(--ease)}
+.hm .hm-path:active{transform:translateY(4px);box-shadow:0 1px 0 var(--c-ledge,var(--c-shade))}
+.hm-art{display:grid;place-items:center;flex:none;width:84px;height:84px;border-radius:24px;background:var(--surface);
+  box-shadow:inset 0 -5px 0 var(--c-tint),0 3px 0 var(--drop)}
+.hm-art>.ic{color:var(--c)}
+.hm-svg{display:block;width:70px;height:70px;overflow:visible}
+.hm-svg text{font-family:var(--font-display);font-weight:700;text-anchor:middle}
+.hm-pi{min-width:0}
+.hm-pt{display:block;font-family:var(--font-display);font-size:var(--fs-5);font-weight:700;line-height:1.15}
+.hm-pm{display:flex;align-items:center;gap:var(--s-2);margin-top:var(--s-2)}
+.hm-pm .gauge{flex:1;background:var(--drop);box-shadow:none}
+.hm-pm .gauge>i{background:var(--star);box-shadow:inset 0 3px 0 var(--hi)}
+.hm-pm b{font-size:var(--fs-2);line-height:1;font-variant-numeric:tabular-nums}
+.hm-pn{display:block;margin-top:var(--s-1);font-size:var(--fs-2);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hm-gsub{display:flex;align-items:center;gap:var(--s-1);white-space:normal}
+.hm-gsub .ic{color:var(--star)}
+.hm-go{display:grid;place-items:center;flex:none;width:56px;height:56px;border-radius:50%;background:var(--surface);color:var(--c-fill,var(--c));
+  box-shadow:0 4px 0 var(--drop)}
+.hm-go .ic{margin-left:2px}
+.hm-path.shut .hm-go{color:var(--ink-3)}
+.hm-path.shut .hm-go .ic{margin-left:0}
+
+/* ---- secondary actions: icon tiles ---- */
+.hm-acts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--s-3);margin-top:var(--s-5)}
+.hm-act{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--s-2);min-width:0;min-height:108px;
+  padding:var(--s-3) var(--s-1);border:0;border-radius:var(--r-card);background:var(--surface);color:var(--ink);font:inherit;
+  font-family:var(--font-display);font-size:var(--fs-2);font-weight:700;line-height:1.2;text-align:center;overflow-wrap:normal;cursor:pointer;
+  box-shadow:inset 0 0 0 2px var(--line),var(--ledge) var(--ledge-soft);transition:transform var(--t-fast) var(--ease)}
+.hm-act:active{transform:translateY(3px);box-shadow:inset 0 0 0 2px var(--line),var(--ledge-press) var(--ledge-soft)}
+.hm-ai{position:relative;display:grid;place-items:center;flex:none;width:52px;height:52px;border-radius:16px;color:var(--surface);
+  background:linear-gradient(var(--hi),var(--hi-0) 60%) var(--c);box-shadow:inset 0 -4px 0 var(--c-shade)}
+.t-race{--c:var(--bt);--c-shade:var(--bt-shade)}
+.t-care{--c:var(--good);--c-shade:var(--good-ink)}
+.t-shop{--c:var(--read);--c-shade:var(--read-shade)}
+.t-book{--c:var(--star);--c-shade:var(--star-shade);color:var(--try-ink);--ic2:var(--star)}
+.hm-need{position:absolute;top:-8px;right:-10px;display:grid;place-items:center;width:26px;height:26px;border-radius:50%;
+  background:var(--play);color:var(--surface);font-size:var(--fs-2);font-style:normal;font-weight:700;line-height:1;box-shadow:0 0 0 3px var(--surface)}
+
+.hm-ver{display:flex;align-items:center;justify-content:center;gap:var(--s-1);margin:var(--s-6) 0 var(--s-1);font-size:var(--fs-2);color:var(--ink-3)}
+.hm-ver .ic{color:var(--star-shade)}
+
+/* ---- phones ---- */
+@media (max-width:480px){
+  .scroll.hm{padding:var(--s-1) var(--s-3) var(--s-5)}
+  .hm-logo{font-size:var(--fs-4)}
+  .hm-mark{width:40px;height:40px;border-radius:12px}
+  .hm-today,.hm-acts{gap:var(--s-2)}
+  .hm-tile{min-height:116px;font-size:var(--fs-2)}
+  .hm-ti{width:56px;height:56px}
+  .hm .hm-path{gap:var(--s-3);min-height:96px;padding:var(--s-3) var(--s-3) var(--s-3) var(--s-2)}
+  .hm-art{width:72px;height:72px;border-radius:20px}
+  .hm-svg{width:60px;height:60px}
+  .hm-pt{font-size:var(--fs-4)}
+  .hm-go{width:48px;height:48px}
+  .hm-act{min-height:100px}
+  .hm-ai{width:48px;height:48px}
+  .hm .hm-pod{gap:var(--s-2)}
+  .hm-podt b{font-size:var(--fs-3)}
+}
+
+/* ---- Today's missions (P5-08): three rows, each a button (a tick card when done); a subject-coloured disc, two lines, a go arrow ---- */
+.hm-mis{display:grid;gap:var(--s-2)}
+.hm .hm-mi{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:var(--s-3);width:100%;min-height:64px;
+  padding:var(--s-2) var(--s-3) var(--s-2) var(--s-2);border:0;border-radius:var(--r-card);background:var(--surface);color:var(--ink);font:inherit;
+  text-align:left;box-shadow:inset 0 0 0 2px var(--line),var(--ledge) var(--ledge-soft)}
+.hm button.hm-mi{cursor:pointer;transition:transform var(--t-fast) var(--ease)}
+.hm button.hm-mi:active{transform:translateY(3px);box-shadow:inset 0 0 0 2px var(--line),var(--ledge-press) var(--ledge-soft)}
+.hm .hm-mi.done{background:var(--good-tint);color:var(--good-ink);box-shadow:none}
+.hm-mic{display:grid;place-items:center;flex:none;width:48px;height:48px;border-radius:50%;color:var(--surface);
+  background:linear-gradient(var(--hi),var(--hi-0) 60%) var(--c,var(--brand));box-shadow:inset 0 -3px 0 var(--c-shade,var(--brand-shade))}
+.hm-mi.done .hm-mic{--c:var(--good);--c-shade:var(--good-ink)}
+.hm-mt{display:grid;gap:2px;min-width:0}
+.hm-mt b{font-family:var(--font-display);font-size:var(--fs-3);line-height:1.2}
+.hm-mt span{font-size:var(--fs-2);line-height:1.3;color:var(--ink-2)}
+.hm-mi.done .hm-mt span{color:var(--good-ink)}
+.hm-mg{display:grid;place-items:center;color:var(--brand)}
+.hm-mi.done .hm-mg{color:var(--good-ink)}
+/* what a finished mission won, on the sprint and puzzle end cards */
+.mis-win{display:grid;gap:var(--s-2);margin:var(--s-3) 0 0;padding:0;list-style:none;font-size:var(--fs-2);line-height:var(--lh-2);font-weight:700;color:var(--good-ink)}
+.mis-win li{display:flex;align-items:center;justify-content:center;gap:var(--s-3)}
+.mis-win .ic{flex:none}
+.mis-win .rw-stk{width:48px;height:48px;border-radius:16px}
+.mis-win .rw-se{font-size:30px}
+@media (min-width:900px){.hm-mis{gap:var(--s-3)}}
