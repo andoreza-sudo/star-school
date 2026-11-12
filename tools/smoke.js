@@ -236,7 +236,7 @@ async function main() {
         || g.spell !== 'function' || !g.vq || g.pz !== '3:16:16' || g.ix < 0) {
         fail('A11 data globals: ' + JSON.stringify(g));
       }
-      if (!['maze', 'pattern', 'pyramid', 'balance', 'target'].every(id => g.bt.split(',').includes(id)) || g.css !== 'main,css-bt,css-games' // P4-16: the games file adds its own <style> (48-game-hub.css)
+      if (!['maze', 'pattern', 'pyramid', 'balance', 'target'].every(id => g.bt.split(',').includes(id)) || g.css !== 'main,css-bt,css-games,css-games2' // P4-16: the games file adds its own <style> (48-game-hub.css); G-04a: games2 too
         || g.games !== 'function,function,function') fail('A11b part files: ' + JSON.stringify(g));
       await d.page.evaluate(ix => start('read', ix), g.ix);
       await d.page.waitForSelector('.bctx-p .w', { timeout: 8000 });
@@ -342,6 +342,12 @@ async function main() {
       fs.writeFileSync(path.join(tmp, gamesF), fs.readFileSync(path.join(ROOT, gamesF), 'utf8').replace("var GAMES_VER='" + g.dv + "'", "var GAMES_VER='v1'"));
       const a4 = await guard(gamesF + ' of another release', /^$/, 'games file v1 does not match');
       await a4.ctx.close();
+      fs.copyFileSync(path.join(ROOT, gamesF), path.join(tmp, gamesF));
+      // 5. G-04a: a games2 file (the newer games) from another release
+      const games2F = 'games2.' + g.dv + '.js';
+      fs.writeFileSync(path.join(tmp, games2F), fs.readFileSync(path.join(ROOT, games2F), 'utf8').replace("var GAMES2_VER='" + g.dv + "'", "var GAMES2_VER='v1'"));
+      const a5 = await guard(games2F + ' of another release', /^$/, 'games2 file v1 does not match');
+      await a5.ctx.close();
       fs.rmSync(tmp, { recursive: true, force: true });
     }
 
@@ -8042,6 +8048,160 @@ async function main() {
         'wall by taps; a Build tap on TNT builds on top; Boom lights it and Undo brings the blocks back; Undo / Redo of the wall; drag pans, pinch zooms, Farther keeps the middle, ' +
         'Right turns (animated), hold-and-slide aims and builds; 48 px targets, no sideways scroll, messages clear of Pause; Stone Tower and Stairs ' +
         'built by tapping see-through blocks: no mistakes, 3 stars, saved by id');
+    }
+
+    // G-04a Snack Stand (src/js/65-game-snack.js, games2 part). Midway save with 20 min of game time, real touch (CDP touch events,
+    //    touch emulation on) at 380x780 and 1024x600: Home -> Game Room -> the Snack Stand card -> the menu (shared bar, 5 places, only the
+    //    park open, Calm) -> Open the stand -> a Calm day: every customer served by touching the station tabs and the food the order
+    //    bubble shows (the first food of the day dragged onto the plate instead of tapped), then Serve; Undo takes a food off; the day's
+    //    clock runs 3x faster (SN_DEV.fast, a test hook) -> the sign turns to Closed -> the shared end card (stars, customers, coins, best
+    //    combo); game time was spent and the clock stopped -> Stand shop -> an upgrade bought with Buy (coins down by its price, saved).
+    //    Main controls (food, tabs, Undo, Serve, Buy) at least 64 px, every other button at least 48 px, no sideways scroll.
+    {
+      const bad = [], notes = [];
+      for (const [w, h] of [[380, 780], [1024, 600]]) {
+        const ga = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ga.page, at = 'G-04a ' + w + 'x' + h + ' ';
+        const cdp = await pg.context().newCDPSession(pg);
+        await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 2 });
+        const box = sel => pg.evaluate(s => {
+          const e = document.querySelector(s);
+          if (!e) return null;
+          if (!e.closest('.sn')) e.scrollIntoView({ block: 'center' });
+          const r = e.getBoundingClientRect();
+          return { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height };
+        }, sel);
+        const pt1 = (x, y) => [{ x: Math.round(x), y: Math.round(y), id: 1, radiusX: 8, radiusY: 8, force: 1 }];
+        const touch = async sel => {
+          const b = await box(sel);
+          if (!b) throw new Error('nothing to touch: ' + sel);
+          await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: pt1(b.x, b.y) });
+          await pg.waitForTimeout(40);
+          await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+          await pg.waitForTimeout(90);
+          return b;
+        };
+        const drag = async (sel, to) => {
+          const a = await box(sel), b = await box(to);
+          await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: pt1(a.x, a.y) });
+          for (let s = 1; s <= 10; s++) {
+            await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: pt1(a.x + (b.x - a.x) * s / 10, a.y + (b.y - a.y) * s / 10) });
+            await pg.waitForTimeout(16);
+          }
+          // rest the finger on the plate before lifting it, so the lift is not a fling (a fling would swallow the next tap)
+          for (let s = 0; s < 4; s++) {
+            await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: pt1(b.x, b.y) });
+            await pg.waitForTimeout(30);
+          }
+          await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+          await pg.waitForTimeout(500);
+        };
+        const look = () => {
+          const vw = document.documentElement.clientWidth, out = [];
+          for (const e of document.querySelectorAll('.gh-top button, .sn-menu button, .sn button, .gh-end button, .sn-shop button')) {
+            const r = e.getBoundingClientRect();
+            if (!r.width || r.bottom < 0 || r.top > innerHeight) continue;
+            const main = e.matches('.sn-ing, .sn-tab, #snundo, #snserve, #snopen, #snbuy');
+            if (Math.min(r.width, r.height) < (main ? 63.5 : 47.5)) out.push('small ' + (e.id || e.className) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
+            if (r.left < -1 || r.right > vw + 1) out.push('outside ' + (e.id || e.className));
+          }
+          if (document.documentElement.scrollWidth > vw) out.push('sideways scroll ' + document.documentElement.scrollWidth);
+          for (const s of document.querySelectorAll('.scroll')) if (s.scrollWidth > s.clientWidth + 1) out.push('sideways scroll in ' + s.className);
+          for (const t of document.querySelectorAll('.gh-top')) if (t.getBoundingClientRect().right > vw + 1) out.push('top bar wider than the screen');
+          return out;
+        };
+        try {
+          await pg.evaluate(() => { S.pt = { bank: 1200, day: today(), used: 0 }; save(); home(); });
+          await touch('#groom');
+          await pg.waitForSelector('#gsnack', { timeout: 8000 });
+          await pg.waitForTimeout(450);
+          await touch('#gsnack');
+          await pg.waitForSelector('#snopen', { timeout: 8000 });
+          await pg.waitForTimeout(450);
+          const m = await pg.evaluate(() => ({ g: document.querySelector('.gh-top').dataset.g, places: document.querySelectorAll('.sn-place').length,
+            locked: document.querySelectorAll('.sn-place.lock').length, calm: !!document.querySelector('#snmode [data-v="calm"][aria-pressed="true"]'), back: !!document.querySelector('.gh-top #back') }));
+          if (m.g !== 'snack' || m.places !== 5 || m.locked !== 4 || !m.calm || !m.back) bad.push(at + 'menu ' + JSON.stringify(m));
+          for (const o of await pg.evaluate(look)) bad.push(at + 'menu: ' + o);
+          const used0 = await pg.evaluate(() => pt().used);
+          await touch('#snopen');
+          await pg.waitForSelector('.sn-ing', { timeout: 8000 });
+          await pg.evaluate(() => { SN_DEV.fast = 3; });
+          let served = 0, taps = 0, dragged = false, undone = false, lookedPlay = false;
+          for (let guard = 0; guard < 40; guard++) {
+            const c = await pg.waitForFunction(() => {
+              if (document.querySelector('.gh-end')) return { end: true };
+              const st = SN && SN.st, c = st && st.at.find(x => x.state == 'wait');
+              return c && !st.plate.length && document.querySelector('.sn-cu .sn-bub .sn-oi') ? { order: c.order } : null;
+            }, null, { timeout: 20000 }).then(x => x.jsonValue());
+            if (c.end) break;
+            if (!lookedPlay) {
+              lookedPlay = true;
+              for (const o of await pg.evaluate(look)) bad.push(at + 'day: ' + o);
+              const ui = await pg.evaluate(() => ({ pause: !!document.querySelector('.gh-top #gpause'), bub: Math.round(document.querySelector('.sn-oi').getBoundingClientRect().width) }));
+              if (!ui.pause || ui.bub < 48) bad.push(at + 'day screen ' + JSON.stringify(ui));
+            }
+            for (const id of c.order) {
+              const st = await pg.evaluate(i => SN_ING[i][1], id);
+              if (await pg.evaluate(s => SN.tab !== s, st)) await touch(`.sn-tab[data-st="${st}"]`);
+              if (!dragged) {
+                await drag(`.sn-ing[data-ing="${id}"]`, '#snplate');
+                dragged = true;
+              } else await touch(`.sn-ing[data-ing="${id}"]`);
+              taps++;
+            }
+            if (!undone) {
+              // Undo takes the last food off; put it back by touch
+              const last = c.order[c.order.length - 1];
+              await touch('#snundo');
+              const n = await pg.evaluate(() => SN.st.plate.length);
+              if (n !== c.order.length - 1) bad.push(at + 'Undo did not take one food off (' + n + ')');
+              await touch(`.sn-ing[data-ing="${last}"]`);
+              undone = true;
+            }
+            const ok = await pg.evaluate(o => snKey(SN.st.plate) === snKey(o), c.order);
+            if (!ok) bad.push(at + 'the plate does not match the order after the taps: ' + c.order);
+            await touch('#snserve');
+            served++;
+          }
+          await pg.waitForSelector('.gh-end #snmenu', { timeout: 20000 });
+          await pg.waitForTimeout(600);
+          const e = await pg.evaluate(() => ({ title: (document.querySelector('.gh-end h1') || {}).textContent, pic: !!document.querySelector('.gh-end .gh-epic svg'),
+            stars: !!document.querySelector('.gh-end .rate'), stats: document.querySelectorAll('.gh-end .gh-stat').length, used: pt().used, gt: !!GT, day: !!SN,
+            days: S.snack.days, served: S.snack.served, coins: S.snack.coins, star: S.snack.stars.park }));
+          await pg.evaluate(() => { SN_DEV.fast = 1; });
+          if (e.title !== 'Closed for today!' || !e.pic || !e.stars || e.stats !== 3) bad.push(at + 'end card ' + JSON.stringify(e));
+          if (!(e.used > used0) || e.gt || e.day) bad.push(at + 'game time: used ' + used0 + ' -> ' + e.used + ', clock still running ' + e.gt + ', day ' + e.day);
+          if (e.days !== 1 || e.served !== served || served < 8 || served > 12 || !(e.coins > 0) || e.star !== 3) bad.push(at + 'saved after the day ' + JSON.stringify(e) + ' served ' + served);
+          for (const o of await pg.evaluate(look)) bad.push(at + 'end card: ' + o);
+          notes.push(`${w}x${h}: ${served} customers, ${taps} food touches, ${e.coins} coins, game time ${used0} -> ${e.used} s`);
+          // the shop: buy the first thing the coins pay for
+          await touch('#snendshop');
+          await pg.waitForSelector('.sn-item', { timeout: 8000 });
+          const want = await pg.evaluate(() => SN_SHOP.find(x => x[3] <= S.snack.coins)[0]);
+          await touch(`.sn-item[data-it="${want}"]`);
+          await pg.waitForSelector('#snbuy:not([disabled])', { timeout: 5000 });
+          for (const o of await pg.evaluate(look)) bad.push(at + 'shop: ' + o);
+          const c0 = await pg.evaluate(() => S.snack.coins);
+          await touch('#snbuy');
+          await pg.waitForTimeout(300);
+          const b = await pg.evaluate(id => ({ own: !!S.snack.own[id], coins: S.snack.coins, price: SN_SHOP.find(x => x[0] === id)[3],
+            kept: !!JSON.parse(localStorage.getItem('starschool-v2')).snack.own[id], tile: !!document.querySelector(`.sn-item[data-it="${id}"]:not(.new)`) }), want);
+          if (!b.own || b.coins !== c0 - b.price || !b.kept || !b.tile) bad.push(at + 'buying ' + want + ': ' + JSON.stringify(b) + ' from ' + c0);
+          notes.push('bought ' + want);
+          await touch('#back');
+          await pg.waitForSelector('#snopen', { timeout: 5000 });
+        } catch (x) {
+          bad.push(at + 'taps: ' + x.message.split('\n')[0]);
+        }
+        await pg.evaluate(() => { if (typeof SN_DEV != 'undefined') SN_DEV.fast = 1; });
+        network.push(...ga.network);
+        for (const e of ga.errors) fail(e);
+        await ga.ctx.close();
+      }
+      if (bad.length) fail('G-04a Snack Stand:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('G-04a: Snack Stand by real touch at 380x780 and 1024x600: hub card -> menu -> a Calm day, every customer served by touching ' +
+        'the tabs and food (one dragged onto the plate, one Undo) -> Closed -> shared end card (3 stars) -> shop: an upgrade bought and saved; ' +
+        'game time spent, clock stopped; main controls 64 px, buttons 48 px, no sideways scroll; ' + notes.join('; '));
     }
 
     for (const u of network) fail('network request: ' + u);

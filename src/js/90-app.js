@@ -11,9 +11,9 @@ if('serviceWorker' in navigator&&navigator.serviceWorker.controller){let rl=0;na
 try{speechSynthesis.getVoices();speechSynthesis.onvoiceschanged=()=>{}}catch(e){}
 /* ---------- A11, A11b, A11c: data banks and on-demand code live in more files ----------
    tools/build.py writes the question generators (gen, gen2), the Brain Teaser puzzle types and the Game Room (PARTS in build.py)
-   to gen.<VER>.js, gen2.<VER>.js, bt.<VER>.js and games.<VER>.js,
+   to gen.<VER>.js, gen2.<VER>.js, bt.<VER>.js, games.<VER>.js and games2.<VER>.js (G-04a: the newer games),
    and src/data/*.js to data.<VER>.js. index.html loads them with their own script tags after this code and before src/boot.js:
-   gen, gen2, bt, games, then data. Each file's last line is `var <NAME>_VER='<VER>'`. src/boot.js starts the app only if dataReady():
+   gen, gen2, bt, games, games2, then data. Each file's last line is `var <NAME>_VER='<VER>'`. src/boot.js starts the app only if dataReady():
    every file ran to the end and comes from the same release as this page. If not (one could not be downloaded, or a cache kept
    one half of an update), the app does not start, because a round or a puzzle would break on missing code or a missing bank.
    It asks to go online and try again. Nothing in the save changes except one line in the App log (S.err).
@@ -24,6 +24,7 @@ function appFiles() {
     ['gen2', typeof GEN2_VER === 'undefined' ? null : GEN2_VER],
     ['bt', typeof BT_VER === 'undefined' ? null : BT_VER],
     ['games', typeof GAMES_VER === 'undefined' ? null : GAMES_VER],
+    ['games2', typeof GAMES2_VER === 'undefined' ? null : GAMES2_VER],
     ['data', typeof DATA_VER === 'undefined' ? null : DATA_VER],
   ];
 }
