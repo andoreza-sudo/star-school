@@ -33,12 +33,49 @@ const DISC_HINT = {
 // Grade band of each level (CURRICULUM 6: Lv 1 is K-2, Lv 2 is 3-4, Lv 3 is 5-6). Every item carries it as `grade`.
 const DISC_GRADE = {1: 'K-2', 2: '3-4', 3: '5-6'};
 
+/* R-01d: picture answers for Nature Trail (K-2). A K-2 item whose every choice is in this list shows the choices as pictures (bank
+   field cp), each with its word under it. Only things a child would name from the picture: no baby animals drawn as grown-ups, no
+   actions, no places. Art names are ART drawings where one exists (src/js/16-art-a.js, d-art-b.js, d-art-c.js); the emoji is the
+   fallback and is in tools/emoji-allow.txt. */
+const DISC_PIC = {
+  'a tree': ['tree', '🌳'], 'a rock': ['rock', '🪨'], 'a chair': ['chair', '🪑'], 'a ball': ['ball', '⚽'], 'a daisy': ['daisy', '🌼'],
+  'a brick': ['brick', '🧱'], 'a cup': ['cup', '🥤'], 'a shoe': ['shoes', '👟'], 'a goldfish': ['goldfish', '🐠'], 'a pebble': ['pebble', '🪨'],
+  'a book': ['book', '📖'], 'a toy boat': ['boat', '⛵'], 'a bird': ['bird', '🐦'], 'a flower': ['flower', '🌷'], 'a fish': ['fish', '🐟'],
+  'a spoon': ['spoon', '🥄'], 'a frog': ['frog', '🐸'], 'a bee': ['bee', '🐝'], 'a toy robot': ['robot', '🤖'], 'a duck': ['duck', '🦆'],
+  'a tulip': ['tulip', '🌷'], 'a bicycle': ['bike', '🚲'], 'a horse': ['horse', '🐴'], 'a rose': ['rose', '🌹'], 'a hen': ['hen', '🐔'],
+  'a snowman': ['snowman', '⛄'], 'a rabbit': ['rabbit', '🐰'], 'a sunflower': ['sunflower', '🌻'], 'a turtle': ['turtle', '🐢'],
+  'a chick': ['chick', '🐤'], dog: ['dog', '🐶'], cat: ['cat', '🐱'], horse: ['horse', '🐴'], cow: ['cow', '🐄'], sheep: ['sheep', '🐑'],
+  hen: ['hen', '🐔'], frog: ['frog', '🐸'], fish: ['fish', '🐟'], duck: ['duck', '🦆'], snake: ['snake', '🐍'], 'a cat': ['cat', '🐱'],
+  'a bear': ['bear', '🐻'], 'a sheep': ['sheep', '🐑'], 'a cow': ['cow', '🐄'], 'a pig': ['pig', '🐷'], 'a dog': ['dog', '🐶'],
+  'a whale': ['whale', '🐳'], 'water': ['water', '💧'], 'a toy': ['teddy', '🧸'], 'a bed': ['bed', '🛏️'], 'shoes': ['shoes', '👟'],
+  'ears': ['ear', '👂'], 'eyes': ['eyes', '👀'], 'nose': ['nose', '👃'], 'hands': ['hand', '✋'], 'feet': ['foot', '🦶'],
+  'sunny': ['sun', '☀️'], 'snowy': ['snowflake', '❄️'], 'rainy': ['rain', '🌧️'], 'windy': ['wind', '💨'], 'cloudy': ['cloud', '☁️'],
+  'rain': ['rain', '🌧️'], 'wind': ['wind', '💨'], 'snow': ['snowflake', '❄️'], 'an owl': ['owl', '🦉'], 'a robin': ['bird', '🐦'],
+  'a butterfly': ['butterfly', '🦋'], 'the moon': ['moon', '🌙'], 'the sun': ['sun', '☀️'], 'a rainbow': ['rainbow', '🌈'], 'sun': ['sun', '☀️'],
+  'moon': ['moon', '🌙'], 'stars': ['star', '⭐'], 'clouds': ['cloud', '☁️'], 'rainbows': ['rainbow', '🌈'], 'kites': ['kite', '🪁'],
+  'a cloud': ['cloud', '☁️'], 'the wind': ['wind', '💨'], 'a window': ['window', '🪟'], 'a brick wall': ['brick', '🧱'],
+  'a wooden door': ['door', '🚪'], 'a sponge': ['sponge', '🧽'], 'a plastic cup': ['cup', '🥤'], 'a mirror': ['mirror', '🪞'],
+  'the bald eagle': ['eagle', '🦅'], 'a kangaroo': ['kangaroo', '🦘'], 'a panda': ['panda', '🐼'], 'a lion': ['lion', '🦁'],
+  volcano: ['volcano', '🌋'], island: ['island', '🏝️'], desert: ['desert', '🏜️'], beach: ['beach', '🏖️'],
+};
+
 // grade: the grade band of a bank whose levels do not follow DISC_GRADE (P2-37: geo_us and civ start at levels 3-4 and 5-6)
+// R-01d: a K-2 item is read aloud with its choices and its hint (aloud), and gets picture answers when DISC_PIC has every choice (cp).
+// A seventh field, the grid "max;x,y,L;x,y" (R-01d, geo_world 2), draws a coordinate grid with the points the question names.
 function discRows(lv, text, grade) {
   return text.trim().split('\n').map(r => {
     const f = r.split('|'), it = {lv, grade: grade || DISC_GRADE[lv], q: f[0], a: f[1], d: f[2].split(';'), topic: f[3]};
     if (f[4]) it.em = f[4].split(',');
     it.hint = f[5] || DISC_HINT[f[3]];
+    if (f[6]) {
+      const [mx, ...pts] = f[6].split(';');
+      it.grid = {max: +mx, points: pts.map(p => p.split(',').map((v, i) => i < 2 ? +v : v))};
+    }
+    if (it.grade === 'K-2') {
+      it.aloud = true;
+      const all = [it.a, ...it.d];
+      if (all.every(x => DISC_PIC[x])) it.cp = Object.fromEntries(all.map(x => [x, DISC_PIC[x]]));
+    }
     return it;
   });
 }
@@ -91,12 +128,12 @@ Where does a fish live?|in water|in a tree;in a nest;in a burrow|habitat|fish,�
 The place where an animal lives is its ___.|habitat|habit;hobby;hatch|habitat||It is the animal's home in nature, with food, water and shelter.
 Which animal lives in the ocean?|a whale|a cow;a hen;a rabbit|habitat
 Which animal lives in a pond?|a frog|a camel;a polar bear;a monkey|habitat
-Which animal lives in a very cold, icy place?|a penguin|a camel;a monkey;a parrot|habitat
+Which animal lives in a very cold, icy place?|a polar bear|a camel;a monkey;a parrot|habitat
 Which animal lives in a hot, dry desert?|a camel|a penguin;a frog;a duck|habitat
 Which animal lives on a farm?|a cow|a lion;a shark;a camel|habitat
 Which animal lives in a tree?|a monkey|a fish;a crab;a whale|habitat
-Where does a bird build its nest?|in a tree|in the ocean;in a puddle;under the sand|habitat
-Where does a bee live?|in a hive|in a pond;in a cave;in a burrow|habitat
+Where do many birds build their nests?|in trees|in the ocean;in puddles|habitat
+Where does a honeybee live?|in a hive|in a pond;in a cave;in a burrow|habitat
 Where does a rabbit make its home?|in a burrow|in a hive;in a pond;in a treetop|habitat||A rabbit digs a hole in the ground to be safe.
 Which animal lives in a forest?|a deer|a shark;a camel;a penguin|habitat
 A polar bear lives in a place that is ___.|cold and icy|hot and sandy;warm and wet|habitat
@@ -117,8 +154,8 @@ The pretty rose is the plant's ___.|flower|root;stem;seed|plants|rose,🌹|Think
 Where do most plants get their water?|from the soil|from a feather;from the moon;from a rock|plants
 Which part of a flower smells sweet and has bright colors?|petals|roots;bark;soil|plants
 The tall, strong middle part of a tree is its ___.|trunk|petal;seed;fruit|plants
-What do plants need to grow?|sunlight and water|candy and toys;noise and music;dark and dust|needs
-What do animals need to live?|food, water and air|toys, books and games;candy, soda and chips;blankets and pillows|needs
+What do plants need to grow?|sunlight and water|only soil;noise and music;dark and dust|needs
+What do animals need to live?|food, water and air|sunlight and soil;toys and games;blankets and pillows|needs
 Which one do all living things need?|water|a toy;a bed;shoes|needs||Without it, plants droop and animals get thirsty. Think about what you drink every day.
 A plant on a dark shelf gets weak. What is it missing?|light|sand;sound;salt|needs
 A dog is thirsty. What does it need?|water|a ball;a blanket;a brush|needs
@@ -190,7 +227,7 @@ How does the sun make us feel on a bright summer day?|warm|cold;wet;frozen|sunmo
 The sun looks small because it is very ___ away.|far|close;near|sunmoon
 The star closest to Earth is the ___.|sun|moon;North Star|sunmoon
 The sun gives our world ___.|light and heat|rain and snow;wind and clouds;rocks and sand|sunmoon
-What is the moon mostly made of?|rock|cheese;wood;sugar|sunmoon||Look at photos of the moon: the ground is gray, bumpy and dusty.
+What is the moon mostly made of?|rock|ice;clouds;fire|sunmoon||Look at photos of the moon: the ground is gray, bumpy and dusty.
 Most of the Earth is covered by ___.|water|land;sand|landwater
 A very big body of salty water is an ___.|ocean|pond;puddle;river|landwater
 Water that flows along in a long line is a ___.|river|hill;pond;beach|landwater
@@ -235,7 +272,7 @@ Which one soaks up water best?|a sponge|a plastic cup;a rock;a spoon|stuff
 What could keep you dry in the rain?|a raincoat|a net;a paper towel;a sock|stuff
 Which one can you bend easily?|paper|a brick;a glass bottle;a rock|stuff
 How do you make sound with a drum?|hit it|smell it;paint it;freeze it|soundlight|drum,🥁
-When you pluck a guitar string you can see it ___.|shake|melt;glow;grow|soundlight|guitar,🎸
+When you pluck a guitar string you can see it ___.|shake|stay still;get longer;change color|soundlight|guitar,🎸
 Which one is the loudest?|a fire truck siren|a whisper;a mouse squeak;a falling leaf|soundlight
 Which one is the quietest?|a whisper|a siren;a trumpet;a drum|soundlight
 Which one makes its own light?|a flashlight|a mirror;a book;the moon|soundlight

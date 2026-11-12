@@ -1,7 +1,7 @@
 /* ---------- hints ---------- */
 function rod(n,c,cls='',x=0){if(n<=0)return'';let s='';for(let i=0;i<n;i++)s+=`<i class="${i>=n-x?'x':''}"></i>`;return`<span class="rod ${cls}" style="--c:${c||PAL[(n-1)%10]}">${s}</span>`}
 function hintHTML(q){const h=q.hint;if(!h)return'';
-  if(h.k=='text')return esc(h.s);
+  if(h.k=='text'){if(h.w)setTimeout(()=>say(h.w),150);return esc(h.s)} // R-01d: h.w (Pre-K and K bank items) is read aloud
   if(h.k=='steps')return hintSteps(q); // P2-08
   if(h.k=='say'){setTimeout(()=>say(h.w,null,h.lang,0,h.slow),150);return esc(h.s)} // h.slow (R-01s): replay slower
   if(h.k=='trace')return TR.hint(q); // P2-16: the hint plays on the tracing board (47-trace.js)
