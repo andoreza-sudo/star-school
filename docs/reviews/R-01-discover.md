@@ -35,20 +35,28 @@ Sizes: **S** = an hour or two, **M** = about a day, **L** = several days.
 1. **One wrong answer (S).** "In a pond, most of the insects that frogs eat die. Over time the number of insects will ___." The app marks
    "go up" as right. If the insects die, their number goes down. The writer surely meant "most of the frogs die". Cells & Ecosystems
    (`sci_life` 3, seed 201), src/data/d-disc2-sci.js.
+   **Done in R-01d (v140):** "Most of the frogs in a pond die. Over time the number of insects the frogs ate will ___." → go up ("go down" is now a wrong answer).
 2. **Two right answers (S).** "Freedom of religion means people may ___." "Choose their own beliefs" is marked right, but "not practice
    at all" is offered as a wrong answer, and it is also true. Freedom of religion protects people who follow no religion. The app
    currently teaches the opposite. Government & Money (`civ` 2, seed 40), src/data/d-disc2-soc.js.
+   **Done in R-01d (v140):** wrong answers are now "be punished for their beliefs", "be forced to join one religion", "follow only the leader's religion".
 3. **Kindergarteners cannot play Nature Trail on their own (M).** Nature Trail is the K-2 world. The question is read aloud, but the
    answer buttons are written words ("calf", "foal", "lamb", "piglet") and nothing reads them out. A 5-year-old who cannot read yet can
    only guess. The help text is not read aloud either. The app's own rule for Pre-K and K is "no reading required" (CURRICULUM 1.4). Read
    the choices aloud as part of the question ("A baby cow is called a ... calf, foal, lamb or piglet?") or let a child tap a choice to hear
    it, read hints aloud for K, and use pictures as answers where the answer is a thing (baby animals, weather, landforms). All five Nature
    Trail stops; 37-bank.js (`bankBuild`, `say`), 39-hints.js (text hints), src/data/d-disc.js, d-disc2-soc.js.
+   **Done in R-01d (v140):** every K-2 item is read with its choices in the order shown ("A baby cow is called a... calf, foal, lamb or
+   piglet?", bank field `aloud`) and its hint is read aloud (`hint.w`, 39-hints.js); 39 items show picture answers with the word under
+   each (bank field `cp`, table `DISC_PIC` in d-disc.js): living or not, animal coverings, grown-up animals, weather, sky, senses,
+   materials, the eagle, landforms. Baby animal names stay words (a picture would show the grown-up).
 4. **The map questions have no maps (M).** Grids & Climate asks "Start at (0, 0). Go 3 across and 2 up. Where are you?" and the hint
    says "Count the squares ... starting from the corner marked (0, 0)", but no grid is drawn (`geo_world` 2, seed 66). States & Capitals
    asks which region or neighbouring state with no map of the country. Children are never asked to read a map, which is the main skill
    geography is meant to teach at this age. The math section already has a coordinate-grid picture (`VIZ.coordGrid`). Draw the grid for
    the 15 grid questions now, and add simple maps (see Should 6).
+   **Grid done in R-01d (v140):** all 15 grid items draw `VIZ.coordGrid` (bank field `grid`) with the (0, 0) corner and the places the
+   question names (never the answer). **Not done:** the US and world maps (Should 6, L).
 
 **Should fix**
 5. **Nothing explains the answer (M to L).** After a second wrong try the app shows the right button and says "Here's the answer", with
@@ -66,6 +74,10 @@ Sizes: **S** = an hour or two, **M** = about a day, **L** = several days.
    adults make. Moon phases offer "cold, rainy, frozen" but not "Earth's shadow". About 20 wrong answers are jokes ("turns to ice cream",
    "free candy", "only in winter") that any child can rule out. In civics the right answer is also the longest one 41-45% of the time
    (25% would be fair), which lets a child guess.
+   **Partly done in R-01d (v140):** the joke choices listed in 2.7 are replaced (with the mistakes children make where one fits:
+   seasons offer "distance from the Sun", moon phases "Earth's shadow covers part of it", the troposphere "gets warmer, since it is
+   nearer the Sun", a scar "only if the scar is big"); civics answers are the longest choice 24.6% (civ 1) and 25.0% (civ 2) of the
+   time. **Not done:** rewriting the other wrong answers as misconceptions (M).
 9. **Missing topics (L in total).** Big gaps: there is **no history at all** in any grade (the C3 social-studies framework has history from
    kindergarten), almost nothing about people and cultures around the world, no civics for grades 3-4, no world geography for grades
    5-6. In science: severe weather and staying safe, how young animals look like their parents, slow and fast changes to the land,
@@ -79,18 +91,27 @@ Sizes: **S** = an hour or two, **M** = about a day, **L** = several days.
     249). "The United States is in the Northern and ___ Hemispheres" marks Eastern wrong, but Alaska's western Aleutian Islands are in the
     Eastern Hemisphere (`geo_world` 2, seed 225; say "Most of the United States"). "Which is NOT a right of every citizen?" lists "voting
     at 18" as a right of every citizen; a 9-year-old citizen cannot vote (`civ` 2, seed 86).
+   **Done in R-01d (v140):** Nevada and Utah are left out of region items (region "-"), "Most of the United States is in...", and
+   "Which is NOT a right of United States citizens?" → voting at age 10 ("voting at age 18 and over" is a wrong answer).
 12. **Names that changed (S).** Since 2025 the US government calls Denali "Mount McKinley" and the Gulf of Mexico the "Gulf of America";
     Alaska still says Denali, and most of the world says Gulf of Mexico. A child may meet either name in a newer book. Give both names
     without taking a side ("Denali, also called Mount McKinley") (`geo_us` 2, seeds 50, 239). Most US maps now show five oceans,
     including the Southern Ocean (National Geographic 2021, NOAA), and the app never mentions it.
+   **Done in R-01d (v140):** "Denali (also called Mount McKinley)", "Denali, also called Mount McKinley", "Gulf of Mexico, also called
+   Gulf of America"; Nature Trail asks which ocean flows around Antarctica and names the five oceans.
 13. **Hints that cannot help (M).** Most hints are one general sentence per topic. "Think about the continent where this famous place is"
     is the hint for "The Ganges flows through ___" (answer India, a country) and for Mount Fuji and the Yangtze. "Picture the planets in
     order" does not help a child who does not know the order; a memory sentence would ("My Very Educated Mother Just Served Us
     Noodles"). The fossil hint says fossils are from "a time before there were any people", but the same stop teaches woolly mammoths,
     which lived alongside people. Write hints that give a clue for that item.
+    **Partly done in R-01d (v140):** the fossil hint (dinosaurs and mammoths, "many thousands of years before today"), the features
+    hint no longer asks for a continent, and Ganges, Mount Fuji and Yangtze have their own country clue. **Not done:** item hints for
+    the rest (planet order memory sentence and so on, M).
 14. **On a phone, the question shrinks to tiny print when the hint opens (S to M).** With a long question, four full-width answer buttons
     and the hint, the question text is squeezed to about 11 px at 380 px wide (screenshot `11-life3-insects-hint-380x780`). Keep the
     question at a readable size and let the card scroll, or put long answers two to a row.
+    **Done in R-01d (v140):** a Discover question never goes below 18 px, and one-per-row answers are more compact on a phone; the
+    frogs item with its hint open keeps the question at about 22 px at 380x780 (smoke `// R-01d`).
 
 **Could do**
 15. Use the other answer types the app already has: put a life cycle or the planets in order, match baby animals to parents, "tap every
@@ -100,6 +121,9 @@ Sizes: **S** = an hour or two, **M** = about a day, **L** = several days.
 17. Small wording fixes: "A simple machine helps us by making work easier" (it makes the push or pull smaller; the work stays the
     same), "Mountain Time is ___ hour(s) ahead" (spoken as "hour s"), "Where does a bee live? in a hive" (true for honeybees; most bees
     live alone in the ground), "Which animal lives in a very cold, icy place? a penguin" (some penguins live in warm places) (S).
+    **Done in R-01d (v140):** "How does a simple machine, like a ramp or a lever, help us?" → we can push or pull less hard; "How many
+    hours ahead of Pacific Time is Mountain Time?"; "Where does a honeybee live?"; a polar bear; "Where do many birds build their
+    nests?" without "under the sand".
 18. Show the topic tags (water cycle, food chains, branches...) on the grown-ups report so a parent sees which topics are shaky (M).
 19. When people and history are added, include Native nations and people from many places, and give names their origin
     (Denali is a Koyukon Athabascan name) (part of 9).
@@ -167,6 +191,8 @@ Sizes: **S** = an hour or two, **M** = about a day, **L** = several days.
 | 6 | Branches, Constitution, rights, federalism covered | Goods, services, supply and demand covered | **No world level** (geo_world stops at 3-4); US landmarks only | **Missing**: early civilisations or world history (the usual grade 6 course) |
 
 ### 2.4 Fact check: every item that needs a change
+
+Every row below is **done in R-01d (v140)** (the grid row: grid drawn; the Australia row: "mostly one country").
 
 | Skill, level, seed | Item | Problem | Fix |
 |---|---|---|---|

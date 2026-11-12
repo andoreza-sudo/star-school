@@ -1098,6 +1098,20 @@ html.notext .pktxt{display:none}
 .choices.pics.dlg .choice.ch{font-size:clamp(30px,5vh,44px);padding:var(--s-2);min-height:var(--tap)}
 .choices.pics.dlg .ch .pcap small{font-size:.4em;color:var(--ink-2)}
 .dl-l:not(:has(.dl-b)){grid-template-columns:1fr;padding:var(--s-1) 0} /* no Spanish voice: the buttons are gone, the text takes the whole row */
+
+/* R-01d: Discover. The question never shrinks below 18 px when the hint opens on a phone (fit() shrinks the rest; the card scrolls).
+   Picture answers (bank field cp): two to a row (three when there are three), the word small under each picture. The coordinate grid
+   of the map questions sits above the question. */
+.qs.s-disc .bq{font-size:max(.55em,18px)}
+.choices.pics.bpics{grid-template-columns:repeat(2,1fr)}
+.choices.pics.bpics.n3{grid-template-columns:repeat(3,1fr)}
+.choices.pics.bpics .choice.ch{font-size:clamp(40px,7vh,60px);padding:var(--s-2);min-height:var(--tap-pk)}
+.choices.pics.bpics .ch .pcap small{font-size:max(.3em,15px);color:var(--ink-2);white-space:normal;overflow-wrap:anywhere;margin-top:2px}
+.bgrid{margin-bottom:0}
+/* on a phone the one-per-row answers of Discover are a little more compact, so a long question, its hint and four answers fit */
+@media (orientation:portrait) and (max-height:900px){
+  .qs.s-disc .choices.wide .choice.ch{font-size:clamp(18px,2.9vh,24px);padding:6px var(--s-6);min-height:var(--tap);line-height:1.2}
+}
 /* Placement quiz "Find my level" (P1-07): home card, Grown-ups row, quiz dots, result. Tokens only. */
 .pl-card{background:var(--brand-tint);border-radius:var(--r-card);padding:var(--s-3) var(--s-4);margin:var(--s-4) 0 0;color:var(--ink)}
 .pl-ct{display:flex;align-items:center;gap:var(--s-2);font-size:var(--fs-3);line-height:var(--lh-3);color:var(--ink)}
@@ -2948,7 +2962,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S));SAVE_FAILED=fals
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v139'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v140'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -5844,7 +5858,7 @@ const skArea=(sk,lv)=>{const s=SK[sk];return s?(s.lvArea&&s.lvArea[lv])||s.area:
 /* ---------- hints ---------- */
 function rod(n,c,cls='',x=0){if(n<=0)return'';let s='';for(let i=0;i<n;i++)s+=`<i class="${i>=n-x?'x':''}"></i>`;return`<span class="rod ${cls}" style="--c:${c||PAL[(n-1)%10]}">${s}</span>`}
 function hintHTML(q){const h=q.hint;if(!h)return'';
-  if(h.k=='text')return esc(h.s);
+  if(h.k=='text'){if(h.w)setTimeout(()=>say(h.w),150);return esc(h.s)} // R-01d: h.w (Pre-K and K bank items) is read aloud
   if(h.k=='steps')return hintSteps(q); // P2-08
   if(h.k=='say'){setTimeout(()=>say(h.w,null,h.lang,0,h.slow),150);return esc(h.s)} // h.slow (R-01s): replay slower
   if(h.k=='trace')return TR.hint(q); // P2-16: the hint plays on the tracing board (47-trace.js)
@@ -6963,7 +6977,7 @@ function home(first){
   <div class="scroll hm" id="hs"><div class="hm-cols">
    <div class="hm-col">${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('target', 26)}<span>Today's missions</span></h2>${hmMissions()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}${hmDaily()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
-   <p class="hm-ver">${ico('star', 16)}<span>Star School v139</span></p></div>`);
+   <p class="hm-ver">${ico('star', 16)}<span>Star School v140</span></p></div>`);
   music(true);
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'heart');
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
@@ -10528,7 +10542,7 @@ function grown(){let armed=false;
     {sub:'Rounds played and first-try accuracy for every skill on the maps, with the questions missed most.'})}
   ${GW.card('gw-how','info','How it works',`<p class="gw-p">Each subject has its own map. Getting 7 of 10 right opens the next stop (8 earns 2 stars, 10 earns 3), and each world stretches further. Missed questions come back at the end of a round, in later rounds, in Daily Review and in the Tricky Mix. Each right answer earns a star (the pet grows) and a coin (spent in the shop). Everything is saved on this tablet only.</p>`)}
   <details class="gw-card gw-det" id="applog"><summary class="gw-h"><span class="gw-hi">${ico('doc',24)}</span><span>App log</span>${ico('chevron-right',22,'chev')}</summary><div class="gw-log">
-   <div><b>Version</b> v139</div><div><b>Save size</b> ${(JSON.stringify(S).length/1024).toFixed(1)} KB</div>
+   <div><b>Version</b> v140</div><div><b>Save size</b> ${(JSON.stringify(S).length/1024).toFixed(1)} KB</div>
    <div><b>Storage</b> ${SAVE_FAILED?'<span class="gw-bad">could not save (device storage may be full)</span>':'saving OK'}</div>
    ${SAVE_CORRUPT?'<div class="gw-bad">The old save could not be read. A fresh start was made and the old data was kept on the device.</div>':''}
    <div><b>Last errors</b> ${(S.err||[]).length?'<ul class="gw-errs">'+(S.err||[]).slice().reverse().map(e=>'<li><span>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+'</span> '+esc(e.msg)+'</li>').join('')+'</ul>':'none'}</div></div></details>
@@ -10582,7 +10596,7 @@ const BAK = {
   MAX: 5e6, // bytes: a save is under 300 KB, so a bigger file is not a backup
   // The file text: a small header, then the whole save in "data".
   make() {
-    return JSON.stringify({app: BAK.APP, ver: 'v139', save: LATEST, date: new Date().toISOString(), name: S.name || '', data: S});
+    return JSON.stringify({app: BAK.APP, ver: 'v140', save: LATEST, date: new Date().toISOString(), name: S.name || '', data: S});
   },
   fileName() {
     const nm = String(S.name || 'child').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'child';
@@ -11039,20 +11053,20 @@ function appFiles() {
   ];
 }
 function dataReady() {
-  return appFiles().every(f => f[1] === 'v139');
+  return appFiles().every(f => f[1] === 'v140');
 }
 function dataMissing() {
-  logErr(appFiles().filter(f => f[1] !== 'v139').map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v139)');
+  logErr(appFiles().filter(f => f[1] !== 'v140').map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v140)');
   const again = UI.btn('Try again', { kind: 'primary', size: 'lg', icon: 'replay', id: 'dataretry' });
   view(`<div class="scroll" id="datamiss">${UI.empty('download', 'Star School needs to finish updating. Connect to the internet, then tap Try again.', again)}</div>`);
   $('#dataretry').onclick = () => location.reload();
 }
 </script>
-<script src="gen.v139.js"></script>
-<script src="gen2.v139.js"></script>
-<script src="bt.v139.js"></script>
-<script src="games.v139.js"></script>
-<script src="data.v139.js"></script>
+<script src="gen.v140.js"></script>
+<script src="gen2.v140.js"></script>
+<script src="bt.v140.js"></script>
+<script src="games.v140.js"></script>
+<script src="data.v140.js"></script>
 <script>
 if (dataReady()) {
   loadClips();
