@@ -8042,6 +8042,160 @@ async function main() {
         'built by tapping see-through blocks: no mistakes, 3 stars, saved by id');
     }
 
+    // P5-10 children at 380x780 and 1024x600, real taps (midway save = Ava): hold the gear, Children card, Add a child runs the first-run
+    //    setup (Back is offered), Ben is set up with another pet and plays a round; hold the Home switch button, the "Who is playing?"
+    //    picker, Ava plays a round; each child's stars, coins and pet stay their own (Ben's stored save does not move while Ava plays);
+    //    a new visit opens on the picker; Ben deletes Ava with the double confirm (Keep first changes nothing). Targets at least 48 px,
+    //    nothing wider than the screen, no emoji chrome, on every screen.
+    {
+      const look = () => {
+        const vw = document.documentElement.clientWidth, out = [];
+        for (const e of document.querySelectorAll('#app button, #app summary, #app label.switch')) {
+          const r = e.getBoundingClientRect();
+          if (!r.width || e.closest('svg')) continue;
+          if (Math.min(e.offsetWidth, e.offsetHeight) < 48) out.push('small ' + (e.id || e.className || e.tagName) + ' ' + e.offsetWidth + 'x' + e.offsetHeight);
+          if (r.left < -1 || r.right > vw + 1) out.push('outside ' + (e.id || e.className) + ' ' + Math.round(r.left) + '..' + Math.round(r.right));
+        }
+        for (const s of [document.documentElement, ...document.querySelectorAll('#app .scroll')])
+          if (s.scrollWidth > s.clientWidth + 1 && getComputedStyle(s).overflowX != 'hidden') out.push('sideways scroll ' + (s.className || 'page') + ' ' + s.scrollWidth);
+        const w = document.createTreeWalker(document.querySelector('#app'), NodeFilter.SHOW_TEXT);
+        for (let n; (n = w.nextNode());) {
+          const el = n.parentElement;
+          if (!el || el.closest('.pet-svg, .gx-pp, .gx-sp, .petbig, .tblw, .hm-paths, .hm-today, .mis')) continue;
+          const m = n.textContent.match(/\p{Extended_Pictographic}|[◀▶✕★✓]/u);
+          if (m) out.push('emoji chrome ' + m[0] + ' in ' + (el.id || el.className));
+        }
+        return out;
+      };
+      const bad = [], notes = [];
+      for (const [w, h] of [[380, 780], [1024, 600]]) {
+        const tag = w + 'x' + h;
+        const pa = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = pa.page;
+        const chk = async what => { for (const o of await pg.evaluate('(' + look.toString() + ')()')) bad.push(tag + ' ' + what + ': ' + o); };
+        const hold = async sel => {
+          const b = await (await pg.$(sel)).boundingBox();
+          await pg.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+          await pg.mouse.down();
+          await vwait(pg, 1600);
+          await pg.mouse.up();
+        };
+        const kid = () => pg.evaluate(() => ({ id: PRF.cur, name: S.name, stars: S.stars, coins: S.coins, pet: S.pet, n: PRF.count() }));
+        const round = async label => {
+          await pg.evaluate(() => home());
+          await pg.click('.game[data-p="math"]');
+          await pg.waitForSelector('.node');
+          // the first open stop on the world the map shows (not a boss)
+          const n = await pg.evaluate(() => [...document.querySelectorAll('.node:not(.lock)')].map(e => +e.dataset.n).find(i => NODES.math[i].sk != 'boss'));
+          await pg.click(`.node[data-n="${n}"]`);
+          await pg.waitForSelector('#prompt');
+          await playRound(pg, tag + ' ' + label);
+          await pg.click('#menu');
+          await pg.waitForSelector('#map');
+          await pg.evaluate(() => home());
+          await pg.waitForSelector('#gear');
+        };
+        try {
+          await pg.waitForSelector('.game[data-p="math"]');
+          const ava0 = await kid();
+          if (await pg.$('#who')) bad.push(tag + ' one child: Home shows the switch button');
+          // Grown-ups: the Children card, Add a child
+          await hold('#gear');
+          await pg.waitForSelector('#gw-kids', { timeout: 3000 });
+          await pg.evaluate(() => document.querySelector('#gw-kids').scrollIntoView({ block: 'start' }));
+          await pg.waitForTimeout(300);
+          await chk('Children card, one child');
+          if (await pg.$('[data-pdel]')) bad.push(tag + ' one child can be deleted (that is Start over)');
+          await Promise.all([pg.waitForNavigation(), pg.click('#pf-add')]);
+          await pg.waitForSelector('.su-step');
+          await chk('setup for the new child');
+          if (!(await pg.$('#suback'))) bad.push(tag + ' setup of a second child has no Back');
+          // first-run setup by taps: name, another pet, grade K
+          await pg.click('#nm');
+          await pg.keyboard.type('Ben');
+          const pet2 = await pg.evaluate(p => Object.keys(PETS).find(k => k !== p), ava0.pet);
+          await pg.click(`.petopt[data-p="${pet2}"]`);
+          await pg.click('.gr[data-g="0"]');
+          await pg.click('#go');
+          await pg.waitForSelector('#gear');
+          const ben0 = await kid();
+          if (ben0.id !== 'p2' || ben0.name !== 'Ben' || ben0.stars !== 0 || ben0.pet !== pet2 || ben0.n !== 2) bad.push(tag + ' Ben after setup: ' + JSON.stringify(ben0));
+          if (!(await pg.$('#who'))) bad.push(tag + ' two children: no switch button on Home');
+          await chk('Home as Ben');
+          await round('Ben');
+          const ben1 = await kid();
+          if (!(ben1.stars > 0)) bad.push(tag + ' Ben earned no stars: ' + JSON.stringify(ben1));
+          // a tap on the switch button only says to hold it; holding opens the picker
+          await pg.click('#who');
+          if (await pg.$('.pf-kid')) bad.push(tag + ' a tap on the switch button opened the picker');
+          await hold('#who');
+          await pg.waitForSelector('.pf-kid', { timeout: 3000 });
+          await pg.waitForTimeout(400);
+          await chk('picker');
+          const cards = await pg.evaluate(() => [...document.querySelectorAll('.pf-kid')].map(b => ({ id: b.dataset.kid, t: b.textContent.trim(), h: b.offsetHeight, pet: !!b.querySelector('.pet-svg') })));
+          if (cards.length !== 2 || !/Ava/.test(cards[0].t) || !/Ben/.test(cards[1].t) || cards.some(c => c.h < 120 || !c.pet)) bad.push(tag + ' picker cards: ' + JSON.stringify(cards));
+          await Promise.all([pg.waitForNavigation(), pg.click('.pf-kid[data-kid="p1"]')]);
+          await pg.waitForSelector('#gear');
+          const benRaw = await pg.evaluate(() => localStorage.getItem(PRF.key('p2'))); // Ben's save as he left it
+          const ava1 = await kid();
+          if (ava1.id !== 'p1' || ava1.name !== 'Ava' || ava1.stars !== ava0.stars || ava1.coins !== ava0.coins || ava1.pet !== ava0.pet) bad.push(tag + ' Ava after the switch: ' + JSON.stringify(ava1) + ' vs ' + JSON.stringify(ava0));
+          await round('Ava');
+          const ava2 = await kid();
+          const benNow = await pg.evaluate(() => localStorage.getItem(PRF.key('p2')));
+          const benS = JSON.parse(benNow);
+          if (!(ava2.stars > ava1.stars) || benNow !== benRaw) bad.push(tag + ' Ava played: her stars ' + ava1.stars + ' -> ' + ava2.stars + (benNow !== benRaw ? ', Ben\'s save changed' : ''));
+          if (ava2.stars === benS.stars || ava2.coins === benS.coins || ava2.pet === benS.pet) bad.push(tag + ' the two children share something: ' + JSON.stringify(ava2) + ' / ' + JSON.stringify({ stars: benS.stars, coins: benS.coins, pet: benS.pet }));
+          // a new visit (the app opened again): "Who is playing?" first; Ben picks himself
+          await pg.reload();
+          await pg.waitForSelector('.pf-kid');
+          await Promise.all([pg.waitForNavigation(), pg.click('.pf-kid[data-kid="p2"]')]);
+          await pg.waitForSelector('#gear');
+          const ben2 = await kid();
+          if (ben2.id !== 'p2' || ben2.stars !== ben1.stars || ben2.coins !== ben1.coins || ben2.pet !== pet2) bad.push(tag + ' Ben after the picker: ' + JSON.stringify(ben2) + ' vs ' + JSON.stringify(ben1));
+          // Ben's Grown-ups: delete Ava. Keep first (nothing changes), then Delete, then Yes (the double confirm)
+          await hold('#gear');
+          await pg.waitForSelector('#gw-kids', { timeout: 3000 });
+          await pg.evaluate(() => document.querySelector('#gw-kids').scrollIntoView({ block: 'start' }));
+          await pg.waitForTimeout(300);
+          await chk('Children card, two children');
+          await pg.click('[data-pdel="p1"]');
+          await pg.waitForSelector('#pf-del1');
+          await pg.waitForTimeout(400);
+          await chk('delete sheet');
+          const sh = await pg.evaluate(() => ({ t: document.querySelector('.sheet').textContent, bk: !!document.querySelector('.sheet #pf-bk'),
+            note: !!document.querySelector('.sheet .online-note') }));
+          if (!/Delete Ava\?/.test(sh.t) || !sh.bk || !sh.note) bad.push(tag + ' delete sheet: ' + JSON.stringify(sh));
+          await pg.click('#pf-keep');
+          await pg.waitForSelector('.sheet', { state: 'detached' });
+          if (await pg.evaluate(() => !localStorage.getItem(KEY) || PRF.count() !== 2)) bad.push(tag + ' Keep deleted something');
+          await pg.click('[data-pdel="p1"]');
+          await pg.waitForSelector('#pf-del1');
+          await pg.click('#pf-del1');
+          await pg.waitForSelector('#pf-del2');
+          await pg.waitForTimeout(300);
+          await chk('delete sheet, second question');
+          if (!/Really delete Ava\?/.test(await pg.evaluate(() => document.querySelector('.sheet').textContent))) bad.push(tag + ' the second question is missing');
+          if (await pg.evaluate(() => !localStorage.getItem(KEY))) bad.push(tag + ' Ava deleted after one tap');
+          await pg.click('#pf-del2');
+          await pg.waitForFunction(() => PRF.count() === 1 && !document.querySelector('.sheet'));
+          const gone = await pg.evaluate(() => ({ ava: localStorage.getItem(KEY), rows: document.querySelectorAll('#gw-kids .pf-row').length, name: S.name, stars: S.stars }));
+          if (gone.ava !== null || gone.rows !== 1 || gone.name !== 'Ben' || gone.stars !== ben1.stars) bad.push(tag + ' after deleting Ava: ' + JSON.stringify(gone));
+          await chk('Children card after delete');
+          await pg.evaluate(() => home());
+          await pg.waitForSelector('#gear');
+          if (await pg.$('#who')) bad.push(tag + ' one child left: the switch button is still on Home');
+          notes.push(`${tag}: Ava ${ava2.stars} stars ${ava2.coins} coins (${ava2.pet}), Ben ${ben2.stars} stars ${ben2.coins} coins (${pet2})`);
+        } catch (e) { bad.push(tag + ' ' + e.message.split('\n')[0]); }
+        network.push(...pa.network);
+        for (const e of pa.errors) fail(e);
+        await pa.ctx.close();
+      }
+      if (bad.length) fail('P5-10 children:\n  ' + bad.slice(0, 40).join('\n  '));
+      else step('P5-10 children by real taps at 380x780 and 1024x600: Add a child through the first-run setup, a round as each child, the ' +
+        'switch button (hold) and the "Who is playing?" picker, a new visit opens on the picker, Delete with Keep and the double confirm; ' +
+        notes.join('; ') + '; 48 px targets, no sideways scroll, no emoji chrome');
+    }
+
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');
   } catch (e) {

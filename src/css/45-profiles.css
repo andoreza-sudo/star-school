@@ -1,0 +1,44 @@
+/* Children (P5-10; src/js/01-profiles.js): the "Who is playing?" picker, the Children card in Grown-ups, the delete sheet.
+   Tokens only; animates transform and opacity only. Sorted before 46-home.css so its place backgrounds (.sc-beach ...) win. */
+
+/* ---- "Who is playing?": one big drawn card per child (their pet on their place, the name, their stars) ---- */
+.scroll.pf-who{display:flex;flex-direction:column;align-items:center;gap:var(--s-5);padding:var(--s-5) var(--s-4) var(--s-7)}
+.pf-top{margin-top:auto;display:flex;align-items:center;justify-content:center;gap:var(--s-3);width:min(760px,100%)}
+.pf-t{display:flex;align-items:center;gap:var(--s-3);min-width:0;margin:0;font-family:var(--font-display);font-size:var(--fs-6);
+  font-weight:700;line-height:1.15}
+.pf-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s-4);width:min(760px,100%)}
+.pf-kid{display:flex;flex-direction:column;align-items:stretch;gap:var(--s-2);min-width:0;min-height:var(--tap);padding:var(--s-3) var(--s-3) var(--s-4);
+  border:0;border-radius:var(--r-hero);background:var(--surface);color:var(--ink);font:inherit;text-align:center;cursor:pointer;
+  box-shadow:inset 0 0 0 2px var(--line),0 5px 0 var(--ledge-soft);transition:transform var(--t-fast) var(--ease)}
+.pf-kid:active{transform:translateY(4px)}
+.pf-stage{position:relative;display:flex;align-items:flex-end;justify-content:center;height:clamp(120px,24vh,210px);border-radius:20px;
+  overflow:hidden;background:linear-gradient(var(--ill-blue-1),var(--ill-aqua-1) 75%)}
+.pf-pet{position:relative;display:block;height:92%;aspect-ratio:1}
+.pf-pet .pet-svg{display:block;width:100%;height:100%}
+.pf-nm{font-family:var(--font-display);font-size:var(--fs-5);font-weight:700;line-height:1.15;overflow-wrap:anywhere}
+.pf-st{display:flex;align-items:center;justify-content:center;gap:var(--s-1);font-size:var(--fs-3);color:var(--ink-2);font-variant-numeric:tabular-nums}
+.pf-st .ic{color:var(--star-shade)}
+.pf-who #pf-msg{width:min(760px,100%);margin-bottom:auto} /* the auto margins centre the picker when there is room */
+@media (max-width:480px){.pf-t{font-size:var(--fs-5)}.pf-grid{gap:var(--s-3)}.pf-nm{font-size:var(--fs-4)}}
+/* a wide screen: three or four children in one row */
+@media (min-width:900px){.pf-grid.n3{grid-template-columns:repeat(3,minmax(0,1fr));width:min(960px,100%)}
+  .pf-grid.n4{grid-template-columns:repeat(4,minmax(0,1fr));width:min(1100px,100%)}}
+@media (max-height:620px) and (orientation:landscape){.scroll.pf-who{gap:var(--s-3);padding-top:var(--s-3)}.pf-t{font-size:var(--fs-5)}
+  .pf-stage{height:clamp(110px,34vh,200px)}}
+
+/* ---- Grown-ups: the Children card, and the rows of a backup of all children ---- */
+.pf-list{display:grid;gap:var(--s-2);margin:0 0 var(--s-4)}
+.pf-row{display:flex;align-items:center;gap:var(--s-3);min-height:var(--tap);padding:var(--s-2) var(--s-2) var(--s-2) var(--s-3);
+  border-radius:var(--r-btn);background:var(--surface-2);text-align:left}
+.pf-row.me{background:var(--brand-tint)}
+.pf-av{position:relative;flex:none;display:flex;align-items:flex-end;justify-content:center;width:56px;height:56px;border-radius:16px;
+  overflow:hidden;background:linear-gradient(var(--ill-blue-1),var(--ill-aqua-1) 75%)}
+.pf-av .pet-svg{display:block;width:54px;height:54px}
+.pf-rt{flex:1;min-width:0;display:grid;gap:2px}
+.pf-rt b{font-size:var(--fs-3);line-height:1.25;overflow-wrap:anywhere}
+.pf-rt>span{display:flex;align-items:center;gap:var(--s-1);color:var(--ink-2)}
+.pf-ra{flex:none;display:flex;gap:var(--s-2)}
+.pf-rt>.tag.pf-now{display:inline-flex;justify-self:start;margin-top:2px;color:var(--surface)}
+.sheet .pf-list{margin:0 0 var(--s-4)}
+.sheet .sh-art.pf-dz{background:var(--surface-2);color:var(--danger)}
+.sheet .gw-f{margin:0 0 var(--s-4);text-align:left}
