@@ -34,7 +34,7 @@ const CB_PICS=[
    [[2,2],[14,3],[1.5,14],[14.5,14]].forEach(([a,b])=>cbShape(G,'blanco',box(a,b,a+.9,b+.9)));return G}]];
 function cbData(id){const p=CB_PICS.find(x=>x[0]==id),G=p[2]();const keys=[];G.forEach(k=>{if(!keys.includes(k))keys.push(k)});return{id,name:p[1],G,keys,num:G.map(k=>keys.indexOf(k)+1)}}
 function cbS(){return S.cbn=Object.assign({done:{},prog:{},art:[]},S.cbn||{})}
-function cbThumb(G,fill,size=96){const c=document.createElement('canvas');c.width=c.height=size;const x=c.getContext('2d'),s=size/CBN;
+function cbThumb(G,fill,size=96){const c=document.createElement('canvas');c.setAttribute('aria-hidden','true');c.width=c.height=size;const x=c.getContext('2d'),s=size/CBN;
   G.forEach((k,i)=>{x.fillStyle=fill&&fill[i]=='1'||fill===true?CB_COL[k][0]:shade(CB_COL[k][0],.72);x.fillRect((i%CBN)*s,Math.floor(i/CBN)*s,s+.5,s+.5)});return c.toDataURL()}
 
 let CBTAB='shape';

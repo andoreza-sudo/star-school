@@ -1,5 +1,5 @@
-const C='starschool-v145';
-const F=['./','./index.html','./gen.v145.js','./gen2.v145.js','./bt.v145.js','./games.v145.js','./games2.v145.js','./data.v145.js','./manifest.json','./icon-192.png','./icon-512.png'];
+const C='starschool-v146';
+const F=['./','./index.html','./gen.v146.js','./gen2.v146.js','./bt.v146.js','./games.v146.js','./games2.v146.js','./data.v146.js','./manifest.json','./icon-192.png','./icon-512.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(F.map(u=>new Request(u,{cache:'reload'})))));self.skipWaiting()});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
 self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;

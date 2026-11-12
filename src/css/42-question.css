@@ -28,7 +28,7 @@
 /* the part of the rail already walked, grown with transform (--p = done / total) */
 .qtrack::after{background:var(--good);opacity:.45;transform-origin:left center;transform:scaleX(var(--p,0));transition:transform var(--t-slow) var(--ease)}
 .qgoal{position:relative;z-index:1;display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:var(--star-tint);
-  color:var(--star-shade);--ic2:var(--star-tint);box-shadow:inset 0 0 0 2px var(--star),0 3px 0 var(--star-shade)}
+  color:var(--star-ink);--ic2:var(--star-tint);box-shadow:inset 0 0 0 2px var(--star),0 3px 0 var(--star-shade)}
 .qgoal .ic{width:26px;height:26px}
 .qgoal.test{background:var(--brand-tint);color:var(--brand);box-shadow:inset 0 0 0 2px var(--brand),0 3px 0 var(--brand-shade)}
 /* #qwalk is as wide as the track, so translateX(%) (set by qLeft in 50-round.js) puts the pet's centre on a column centre */
@@ -75,11 +75,11 @@
 .tag.rtag .ic{width:18px;height:18px}
 /* the review tag sits in the card's top corner and takes no height, so a review question fits exactly where it did as a
    normal question (a ten-frame count at 380x780 overflowed by 25 px with the tag in the flow) */
-.qs .qarea>.tag.rtag{position:absolute;top:var(--s-2);right:var(--s-2);margin:0;z-index:1;font-size:var(--fs-1);padding:2px var(--s-2) 2px var(--s-1)}
+.qs .qarea>.tag.rtag{position:absolute;top:var(--s-2);right:var(--s-2);margin:0;z-index:1;font-size:var(--fs-2);padding:2px var(--s-2) 2px var(--s-1)}
 .qs .qarea>.tag.rtag .ic{width:16px;height:16px}
 .qarea>.tag.rtag+*{margin-top:auto}
 /* the challenge tag (51-mastery.js) is pinned the same way, in the top-left corner so it never meets the review chip */
-.qs .qarea>.mtag{position:absolute;top:var(--s-2);left:var(--s-2);margin:0;z-index:1;font-size:var(--fs-1);padding:2px var(--s-2) 2px var(--s-1)}
+.qs .qarea>.mtag{position:absolute;top:var(--s-2);left:var(--s-2);margin:0;z-index:1;font-size:var(--fs-2);padding:2px var(--s-2) 2px var(--s-1)}
 .qs .qarea>.mtag .ic{width:16px;height:16px}
 .qarea>.mtag+*{margin-top:auto}
 .qs .mtag{background:var(--bt);color:var(--surface);padding:var(--s-1) var(--s-3) var(--s-1) var(--s-2);line-height:1.2}

@@ -916,13 +916,13 @@ function blockBuilder(ci) {
   const blockBtn = i => {
     const b = BLOCKS[i], left = need ? 0 : lockLeft(b);
     return `<button class="bb-k${left ? ' lock' : ''}" data-b="${i}" aria-pressed="false" aria-label="${esc(b.n + (left ? ': ' + left + ' more stars to unlock' : ''))}">` +
-      `<canvas width="96" height="96" data-bc="${i}"></canvas>` +
+      `<canvas width="96" height="96" data-bc="${i}" aria-hidden="true"></canvas>` +
       (left ? `<span class="bb-kn bb-kl">${ico('lock', 16)}${left} more</span>` : `<span class="bb-kn">${esc(b.n)}</span>`) + '</button>';
   };
   const groups = need ? [['Blocks for this build', need]] : BB_GROUPS;
   const pal = groups.map(([g, ids]) => `<div class="bb-grp"><span class="bb-gh">${esc(g)}</span><div class="bb-gb">${ids.map(blockBtn).join('')}</div></div>`).join('');
   const stamps = BBSTAMPS.map((t, i) => `<button class="bb-k bb-sk" data-stamp="${i}" aria-pressed="${i == 0}" aria-label="${esc(t.n)}">` +
-    `<canvas width="96" height="96" data-sc="${i}"></canvas><span class="bb-kn">${esc(t.n)}</span></button>`).join('');
+    `<canvas width="96" height="96" data-sc="${i}" aria-hidden="true"></canvas><span class="bb-kn">${esc(t.n)}</span></button>`).join('');
   const seg = `<div class="bb-seg" role="group" aria-label="Tool">${bbTB('bbm-build', 'build', 'Build', { v: 'build', on: true })}` +
     `${bbTB('bbm-break', 'break', 'Break', { v: 'break', on: false })}${bbTB('bbm-stamp', 'stamp', 'Stamp', { v: 'stamp', on: false })}</div>`;
   const hist = bbTB('bbundo', 'undo', 'Undo') + bbTB('bbredo', 'redo', 'Redo');
@@ -934,7 +934,7 @@ function blockBuilder(ci) {
   const chips = bp ? `<span class="stat gh-st bb-prog" aria-label="Blocks built">${ico('blocks', 28)}<b id="bbprog"></b></span>`
     : `<span class="stat gh-st bb-prog" aria-label="Goals done">${ico('target', 28)}<b id="bbgoal"></b></span>`;
   view(`${GH.top('blocks', { play: true, sub: bp ? bp.n : world.name, chips })}
-   <div class="bb-wrap${bp ? ' bb-isbp' : ''}"><div class="bb-cv" id="bbcv"><canvas id="bbc"></canvas><div class="bb-msg" id="bbmsg" aria-live="polite"></div><div class="bb-tip" id="bbtip"></div></div>
+   <div class="bb-wrap${bp ? ' bb-isbp' : ''}"><div class="bb-cv" id="bbcv"><canvas id="bbc" role="img" aria-label="Your build"></canvas><div class="bb-msg" id="bbmsg" aria-live="polite"></div><div class="bb-tip" id="bbtip"></div></div>
     <div class="bb-side"><div class="bb-bar">${bar}</div>
      <div class="bb-pal" id="bbpal"><div class="bb-ps">${pal}</div></div>${bp ? '' : `<div class="bb-pal" id="bbst" hidden><div class="bb-ps"><div class="bb-grp"><span class="bb-gh">Stamps</span><div class="bb-gb">${stamps}</div></div></div></div>`}</div></div>`);
   const cv = $('#bbc'), x = cv.getContext('2d'), wrap = $('#bbcv');
@@ -1626,13 +1626,13 @@ function bbMenu() {
   const bpCard = (b, i) => {
     const ok = bbOpen(i), sv = bbStars(i), n = b.c().length;
     return `<button class="bb-bp${ok ? '' : ' lock'}${sv ? ' done' : ''}" data-ch="${i}" aria-label="${esc((i + 1) + '. ' + b.n + (ok ? '' : ', locked'))}">` +
-      `<span class="bb-bpic"><canvas width="200" height="150" data-bpc="${i}"></canvas>${ok ? '' : `<span class="bb-lk">${ico('lock', 26)}</span>`}</span>` +
+      `<span class="bb-bpic"><canvas width="200" height="150" data-bpc="${i}" aria-hidden="true"></canvas>${ok ? '' : `<span class="bb-lk">${ico('lock', 26)}</span>`}</span>` +
       `<span class="bb-bpn">${i + 1}. ${esc(b.n)}</span>` +
       (ok ? `<span class="bb-bps">${UI.stars(sv, 3, 20)}<span>${n} blocks</span></span>` : `<span class="bb-bpl">Finish ${esc(BBP[i - 1].n)} first</span>`) + '</button>';
   };
   const wCard = (w, i) => {
     const d = bbDecode(w.d), n = d.filter(v => v).length, gn = bbGoalN(w);
-    return `<div class="bb-wrow"><button class="bb-w" data-w="${i}" aria-label="${esc('Play ' + w.name)}"><span class="bb-wpic"><canvas width="220" height="150" data-wc="${i}"></canvas></span>` +
+    return `<div class="bb-wrow"><button class="bb-w" data-w="${i}" aria-label="${esc('Play ' + w.name)}"><span class="bb-wpic"><canvas width="220" height="150" data-wc="${i}" aria-hidden="true"></canvas></span>` +
       `<span class="bb-wi"><b>${esc(w.name)}</b><span>${n} blocks</span><span class="bb-wg">${ico('target', 18)}${gn} of ${BB_GOALS.length} goals</span></span>` +
       `<span class="bb-go" aria-hidden="true">${ico('play')}</span></button>` +
       (bs.worlds.length > 1 ? UI.ibtn('trash', 'Delete ' + w.name, { size: 'sm', cls: 'bb-del', attrs: `data-del="${i}"` }) : '') + '</div>';
@@ -1670,7 +1670,7 @@ function bbMenu() {
     s.el.querySelector('#bbdelw').onclick = () => { s.close(); bs.worlds.splice(i, 1); bs.cur = 0; save(); SFX.del(); bbMenu(); };
   };
   if ($('#bbnew')) $('#bbnew').onclick = () => {
-    const s = UI.sheet(`<div class="bb-sheet"><h2>Pick a world</h2><div class="bb-wl">${BBWT.map(([k, n, d]) => `<button class="bb-w" data-t="${k}"><span class="bb-wpic"><canvas width="220" height="150" data-tc="${k}"></canvas></span>` +
+    const s = UI.sheet(`<div class="bb-sheet"><h2>Pick a world</h2><div class="bb-wl">${BBWT.map(([k, n, d]) => `<button class="bb-w" data-t="${k}"><span class="bb-wpic"><canvas width="220" height="150" data-tc="${k}" aria-hidden="true"></canvas></span>` +
       `<span class="bb-wi"><b>${esc(n)}</b><span>${esc(d)}</span></span></button>`).join('')}</div><div class="acts">${UI.btn('Cancel', { icon: 'close', id: 'bbwx', wide: true })}</div></div>`);
     s.el.querySelector('#bbwx').onclick = () => s.close();
     for (const c of s.el.querySelectorAll('[data-tc]')) bbMini(c, bbCells(bbGen(c.dataset.tc, 7)));

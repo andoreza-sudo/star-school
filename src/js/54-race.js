@@ -28,6 +28,7 @@ function race(cat){S.race=S.race||{};const best=S.race[cat]||0;
   const rq=()=>{if(!RC)return;const q=raceQ(cat);RC.q=q;RC.typed='';RC.lock=false;
     $('#rplay').innerHTML=`<div class="qarea"><div class="prompt" id="prompt">${q.html}</div></div><div class="inp">${KIND[q.kind].render(q)}</div>`;
     fit();if(q.auto)say(q.say,null,q.lang=='es'?'es':null);esQFix(q);
+    UI.hear(); // P6-01
     $$('[data-sayes]').forEach(b=>b.onclick=()=>say(b.dataset.sayes,b,'es'));
     // same input as a round; race pads take 3 digits, answer as soon as the right number is typed, and stay quiet
     KIND[q.kind].bind(q,RC,ans,{max:3,auto:true,quiet:true})};

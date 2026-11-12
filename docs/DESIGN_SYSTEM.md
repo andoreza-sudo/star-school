@@ -32,7 +32,7 @@ All tokens are CSS custom properties on `:root` in `src/css/00-tokens.css`. Afte
 |-------|-----|-----|
 | `--ink` | `#1F2440` | Main text, icons |
 | `--ink-2` | `#3D4263` | Secondary text |
-| `--ink-3` | `#6B7090` | Hints, captions (still AA on white) |
+| `--ink-3` | `#676C8A` | Hints, captions (AA on white and on `--surface-2`; P6-01 darkened it 4% from `#6B7090`, which was 4.44:1 on `--surface-2`) |
 | `--line` | `#E3E5EF` | Borders, dividers |
 | `--paper` | `#FFF9EF` | App background |
 | `--surface` | `#FFFFFF` | Cards, buttons |
@@ -43,6 +43,7 @@ All tokens are CSS custom properties on `:root` in `src/css/00-tokens.css`. Afte
 | `--star` | `#FFC93C` | Stars, coins, highlights (never text on white) |
 | `--star-shade` | `#F5A800` | Star outline, ledge |
 | `--star-tint` | `#FFF1C7` | Reward backgrounds |
+| `--star-ink` | `#B06E00` | Gold icons on `--star-tint` discs (3.7:1; P6-01: `--star-shade` there was 1.8:1) |
 | `--good` | `#20A556` | Correct fill |
 | `--good-ink` | `#147A3C` | Correct text |
 | `--good-tint` | `#DDF5E7` | Correct background |
@@ -121,7 +122,8 @@ Rules: sentence case everywhere, no all-caps words. Left-aligned for anything lo
 - Background: `--paper` with one very soft radial highlight top-left. No busy gradients behind content.
 - Layout shell: `.top` (bar), `.scroll` or `.center` (content), optional `.dock` (bottom actions). Safe-area padding via `env()`.
 - Breakpoints: phone `max-width: 480px`; tablet portrait is the default; landscape `(orientation: landscape)`; short landscape `(max-height: 520px)`.
-- Focus: `:focus-visible` shows a 3 px `--brand` ring with 2 px offset.
+- Focus: `:focus-visible` shows a 3 px `--brand` ring with 2 px offset (P6-01: `!important`, so a state's own outline never hides it, and a
+  `--s-3` scroll margin, so Tab brings the whole ring into view).
 - Reduced motion: `@media (prefers-reduced-motion: reduce)` and `html.calm` both set all animation and transition durations to 0.01 ms and hide confetti.
 
 P4-01 changes tokens and base only. It maps old variables to new ones so the app looks nearly the same but slightly cleaner; real screen changes come later.
@@ -480,15 +482,57 @@ For each screen chunk: take "before" screenshots first, restyle, take "after" sc
 
 ## 10. Accessibility checklist (used by every P4 chunk and audited in P6-01)
 
-- [ ] Text contrast at least 4.5:1 (3:1 for 24 px bold and larger); verified by `tools/contrast.js`.
-- [ ] Every tappable thing is at least 48x48 CSS px with 8 px between targets (36 px allowed only inside 9x9 puzzle grids on phones).
-- [ ] Colour is never the only signal: right and wrong also use an icon and a sound; puzzle symbols also differ by shape.
-- [ ] Sound is never the only signal: every spoken prompt can also be read or seen, except listening tasks, which have a replay button and a "no voice" fallback.
-- [ ] Icon-only buttons have `aria-label`. Decorative SVG has `aria-hidden="true"`.
-- [ ] Visible focus ring; logical focus order; Enter and Space activate buttons (helps with external keyboards and switch devices).
-- [ ] `prefers-reduced-motion` respected, plus an in-app "Calm mode" switch in Grown-ups.
-- [ ] No flashing more than 3 times per second.
-- [ ] Text never below 16 px on child screens; layouts survive the browser's 130% text zoom without overlap.
-- [ ] Reading content uses Andika; no italics for early readers; line length under 60 characters in passages.
-- [ ] No time pressure by default: timers appear only in Fact Sprint and Fact Race (once Speed Race), which are optional.
-- [ ] Works in portrait and landscape; nothing depends on hover.
+- [x] Text contrast at least 4.5:1 (3:1 for 24 px bold and larger); verified by `tools/contrast.js`.
+- [x] Every tappable thing is at least 48x48 CSS px with 8 px between targets (36 px allowed only inside 9x9 puzzle grids on phones).
+- [x] Colour is never the only signal: right and wrong also use an icon and a sound; puzzle symbols also differ by shape.
+- [x] Sound is never the only signal: every spoken prompt can also be read or seen, except listening tasks, which have a replay button and a "no voice" fallback.
+- [x] Icon-only buttons have `aria-label`. Decorative SVG has `aria-hidden="true"`.
+- [x] Visible focus ring; logical focus order; Enter and Space activate buttons (helps with external keyboards and switch devices). (Ring and reach measured; the order is the page order, not measured.)
+- [x] `prefers-reduced-motion` respected, plus an in-app "Calm mode" switch in Grown-ups.
+- [ ] No flashing more than 3 times per second. (Not measured by a11y.js; nothing flashes since P4-17.)
+- [x] Text never below 16 px on child screens; layouts survive the browser's 130% text zoom without overlap. (16 px measured; 130% zoom not measured.)
+- [ ] Reading content uses Andika; no italics for early readers; line length under 60 characters in passages. (Not measured by a11y.js.)
+- [ ] No time pressure by default: timers appear only in Fact Sprint and Fact Race (once Speed Race), which are optional. (Not measured.)
+- [x] Works in portrait and landscape; nothing depends on hover. (380x780 and 1024x600 scanned.)
+
+### 10.1 As built (P6-01, v145)
+
+`node tools/a11y.js` (in `tools/check.sh`, after smoke) opens the built app like smoke (tools/lib/browser.js, real clock) and scans
+31 screens: the 12 the roadmap names (setup, Home, the math map, a math, a reading and a Spanish question, the reward
+screen, Pet Shop, Pet Care, the Game Room hub, a Brain Teaser (Sudoku), Grown-ups) plus the sticker book, the Brain Teasers hub, a maze,
+the report card and every game screen (Hill Climb garage, drive and end card; Art Studio menu, page and pixel art; Block Builder menu
+and build; Star Rally menu, garage and race; Snack Stand menu, day and shop; the time-up card) at 380x780 and 1024x600, each three times (normal, `prefers-reduced-motion`, Calm mode). It must print zero failures.
+Rules (the first word of each failure line; details in the file's header):
+
+| Rule | What it checks |
+|------|----------------|
+| `target` | Every tappable thing (buttons, links, inputs, roles a person presses, tabindex, press listeners, a pointer cursor) is 48x48 or more; a game's main controls 64 (Hill Climb pedals, Star Rally steer buttons, Block Builder palette, Snack Stand food buttons, Serve and Undo). Only exception: the Sudoku 9x9 square at 36 (this section). Colouring games: the picture is the main control, the swatches are pickers at 48 |
+| `keys` | Every tappable thing can be reached with the keyboard (a play surface, a canvas or an area over a third of the screen, is touch) |
+| `name` | Every button, link and control has a name with a letter or digit: an emoji-only or icon-only button needs `aria-label` |
+| `text` | Visible text (HTML, and SVG text at its drawn size) is 16 px or more on child screens, 14 on Grown-ups and the report card. Letters drawn inside an aria-hidden picture (an icon's digits) are art |
+| `focus` | Tab reaches every control; each shows a ring (outline 2 px or more) that no scrolling or clipping parent cuts off |
+| `image` | `img` has `alt`; every outer `svg` and `canvas` is `aria-hidden` or `role="img"` with a name |
+| `landmark` | One `main` (`<main id="app">`, shell.html); one h1 per screen (or a heading in the open dialog); heading levels never skip going down |
+| `signal` | After a wrong and a right answer (math, reading, Spanish questions): every `.right`/`.ok`/`.wrong`/`.no` mark has a badge, icon or shape too, and the toast says it in words |
+| `sound` | Every sound (`SFX.*`, `tone`, `noise`, `playClip`) comes with a change on screen within 600 ms; every spoken line is on screen, or the screen has a "Hear it again" button |
+| `motion` | With reduced motion and with Calm mode: no CSS or Web animation longer than 100 ms or repeating, no particle shown (canvases are games and are not checked) |
+| `sheet` | A sheet or overlay takes focus when it opens, Tab stays inside and reaches all of it, Escape (or Enter on its button) closes it and focus is back on the page |
+| `contrast` | `tools/contrast.js` passes: the named token pairs plus every colour/background pair a CSS rule sets together (text 4.5, large text and icons 3; three ornaments listed in `DECOR` with why) |
+
+Shared fixes (one place each, so every screen gets them):
+- `src/shell.html`: `<main id="app">`. `view()` (40-view.js) calls `UI.heading`: the top bar's `.ttl` becomes the page heading
+  (`role="heading" aria-level="1"`); a screen without a shown title gets an h1 only screen readers see (`.a11y-h`, 20-base.css).
+- `UI.modal` (14-ui.js): every `.sheet-bg` (UI.sheet) and `.ovl` (reward overlays, end cards, time-up) is a modal dialog: named by its
+  heading, the page behind is `aria-hidden` while it is open, focus moves to its first button (never a text field), Tab and Shift+Tab
+  stay inside, Escape closes a sheet that a backdrop tap closes, focus returns where it was. Enter and Space press anything drawn as a
+  button that is not a `<button>` (`role="button" tabindex="0"`, e.g. Home's pet). Keyboard focus scrolls the whole control into view.
+- 20-base.css: the focus ring wins over state outlines (`!important`) and has a `--s-3` scroll margin; `.scroll` has an 8 px top so the
+  first card's ring shows; legacy `.btn.sm` is 48 px tall; the pet shows a hand only where it can be patted. 10-components.css: the
+  switch's hidden checkbox covers the whole row (Tab scrolls the row into view). Grids that clip (Sudoku squares, Snack Stand customers)
+  draw the ring inside (`outline-offset: -4px`).
+- Tokens: `--ink-3` darkened 4% (`#676C8A`); new `--star-ink` for gold icons on star-tint discs; `--fs-1` (14 px) is now used only in
+  Grown-ups and the report card (every child-screen use became `--fs-2`), and legacy 11-15 px sizes in 30-learn, 40-games and
+  60-game-blocks became `--fs-2`.
+- Icon-only and emoji-only buttons got names (the listening "Hear it again" button, now the drawn speaker icon instead of the emoji;
+  Art Studio palettes, swatches, brush sizes and picture tiles; Hill Climb paints), decorative canvases are `aria-hidden`, play canvases
+  are `role="img"` with a name; Grown-ups fields are labelled.
