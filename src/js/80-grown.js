@@ -12,7 +12,7 @@ const GW = {
   },
   // a labelled text field (label above, white well with an icon)
   field(label, icon, attrs, help) {
-    return `<div class="gw-f"><span class="gw-fl">${label}</span>${fldHTML(icon, attrs)}${help ? `<span class="gw-help">${help}</span>` : ''}</div>`;
+    return `<div class="gw-f"><span class="gw-fl">${label}</span>${fldHTML(icon, `${attrs} aria-label="${label}"`)}${help ? `<span class="gw-help">${help}</span>` : ''}</div>`;
   },
   // a small number tile: icon, value, caption
   stat(icon, cls, v, cap) {

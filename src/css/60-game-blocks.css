@@ -8,7 +8,7 @@
 .bb-row{display:flex;gap:var(--s-1);align-items:stretch}
 .bb-tb{flex:1 1 0;min-width:48px;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
   padding:4px 2px;border:0;border-radius:var(--r-btn);background:var(--surface);color:var(--ink);box-shadow:0 3px 0 var(--line),inset 0 0 0 2px var(--line);
-  font:inherit;font-family:var(--font-display);font-size:15px;font-weight:700;line-height:1.1;cursor:pointer;transition:transform var(--t-fast) var(--ease)}
+  font:inherit;font-family:var(--font-display);font-size:var(--fs-2);font-weight:700;line-height:1.1;cursor:pointer;transition:transform var(--t-fast) var(--ease)}
 .bb-tb span{white-space:nowrap}
 .bb-tb .ic{width:26px;height:26px;flex:none}
 .bb-tb:active{transform:translateY(2px)}
@@ -22,14 +22,14 @@
 /* the palette: groups with a heading, scrolls; soft fades show there is more on a side */
 .bb-pal{position:relative;flex:none;min-height:0;min-width:0}
 .bb-pal[hidden]{display:none}
-.bb-ps{display:flex;gap:var(--s-3);overflow-x:auto;overflow-y:hidden;padding:2px var(--s-1) 6px;scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.bb-ps{display:flex;gap:var(--s-3);overflow-x:auto;overflow-y:hidden;padding:6px var(--s-1) 6px;scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 .bb-ps::-webkit-scrollbar{display:none}
 .bb-grp{flex:none;display:flex;flex-direction:column;gap:2px}
-.bb-gh{font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--ink-2);padding-left:4px;white-space:nowrap}
+.bb-gh{font-family:var(--font-display);font-size:var(--fs-2);font-weight:700;color:var(--ink-2);padding-left:4px;white-space:nowrap}
 .bb-gb{display:flex;gap:var(--s-1)}
 .bb-k{flex:none;position:relative;width:72px;min-height:84px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:0;padding:4px 2px 6px;
   border:0;border-radius:var(--r-btn);background:var(--surface);color:var(--ink);box-shadow:0 3px 0 var(--line),inset 0 0 0 2px var(--line);
-  font:inherit;font-size:14px;font-weight:700;line-height:1.05;cursor:pointer;transition:transform var(--t-fast) var(--ease)}
+  font:inherit;font-size:var(--fs-2);font-weight:700;line-height:1.05;cursor:pointer;transition:transform var(--t-fast) var(--ease)}
 .bb-k canvas{width:46px;height:46px;flex:none}
 .bb-kn{display:flex;align-items:center;justify-content:center;gap:2px;text-align:center;min-height:30px}
 .bb-kl{color:var(--ink-2)}
@@ -86,7 +86,7 @@
 .bb-sec h2 .ic{flex:none;color:var(--es)}
 .bb-sc{margin-left:auto;display:inline-flex;align-items:center;gap:4px;font-size:var(--fs-3);color:var(--ink-2)}
 .bb-lead{margin:0 0 var(--s-3);font-size:var(--fs-2);color:var(--ink-2)}
-.bb-bpg{display:flex;gap:var(--s-2);overflow-x:auto;margin:0 -14px;padding:2px 14px 8px;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+.bb-bpg{display:flex;gap:var(--s-2);overflow-x:auto;margin:0 -14px;padding:6px 14px 8px;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
 .bb-bpg .bb-bp{flex:none;width:118px}
 .bb-bp{display:flex;flex-direction:column;align-items:center;gap:2px;min-height:148px;padding:var(--s-2) var(--s-1);border:0;border-radius:var(--r-card);
   background:var(--surface);color:var(--ink);box-shadow:0 4px 0 var(--line),inset 0 0 0 2px var(--line);font:inherit;cursor:pointer;text-align:center}
@@ -97,8 +97,8 @@
 .bb-lk{position:absolute;inset:0;display:grid;place-items:center;color:var(--ink-2)}
 .bb-bpic canvas{width:88px;height:66px}
 .bb-bpn{font-family:var(--font-display);font-size:var(--fs-2);font-weight:700;line-height:1.2}
-.bb-bps{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:14px;color:var(--ink-2)}
-.bb-bpl{font-size:14px;line-height:1.2}
+.bb-bps{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:var(--fs-2);color:var(--ink-2)}
+.bb-bpl{font-size:var(--fs-2);line-height:1.2}
 .bb-wl{display:flex;flex-direction:column;gap:var(--s-2)}
 .bb-wrow{display:flex;gap:var(--s-2);align-items:center}
 .bb-w{flex:1;min-width:0;display:flex;align-items:center;gap:var(--s-3);min-height:88px;padding:var(--s-2);border:0;border-radius:var(--r-card);background:var(--surface);
@@ -114,3 +114,6 @@
 .bb-how li{display:flex;align-items:center;gap:var(--s-3);font-size:var(--fs-2);color:var(--ink-2)}
 .bb-how li .ic{flex:none;color:var(--es)}
 @media (min-width:860px){.bb-how ul{grid-template-columns:1fr 1fr}}
+
+/* P6-01: the palette scrolls and clips, so a block's focus ring sits inside its button */
+.bb-k:focus-visible{outline-offset:-4px}

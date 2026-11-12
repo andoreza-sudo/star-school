@@ -1327,7 +1327,7 @@ function rlRace(tid) {
     `${txt ? `<span>${txt}</span>` : ''}</button>`;
   view(`${GH.top('rally', { play: true, hud: true, sub: t.name, chips: `<span class="stat rl-pos" id="rlpos" aria-label="Place">${ico('trophy', 32)}` +
     `<b>5th</b></span><span class="stat rl-lap" id="rllap" aria-label="Lap">${ico('replay', 32)}<b>1/${t.laps}</b></span>${rlSpkChip(0)}` })}
-  <div class="rl rl-${mode}" id="rl"><canvas id="rlcv"></canvas><div class="rl-msg" id="rlmsg" aria-live="polite"></div>
+  <div class="rl rl-${mode}" id="rl"><canvas id="rlcv" role="img" aria-label="The race track"></canvas><div class="rl-msg" id="rlmsg" aria-live="polite"></div>
   <div class="rl-q" id="rlq" hidden></div><div class="rl-ctl">${btn('rll', 'arrow-left', 'Steer left')}${btn('rlr', 'arrow-right', 'Steer right')}` +
     `${mode == 'pro' ? btn('rlgo', 'bolt', 'Go faster', 'Go') : ''}</div></div>`);
   const st = rlNew(tid, { mode, quiz: r.quiz, grade: S.grade, seed: ((Date.now() & 0xffffff) ^ (r.races * 7919)) >>> 0 || 1 });

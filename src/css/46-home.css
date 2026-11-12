@@ -156,7 +156,7 @@ button.hm-tile:active{transform:translateY(3px);box-shadow:inset 0 0 0 2px var(-
 .t-shop{--c:var(--read);--c-shade:var(--read-shade)}
 .t-book{--c:var(--star);--c-shade:var(--star-shade);color:var(--try-ink);--ic2:var(--star)}
 .hm-need{position:absolute;top:-8px;right:-10px;display:grid;place-items:center;width:26px;height:26px;border-radius:50%;
-  background:var(--play);color:var(--surface);font-size:var(--fs-2);font-style:normal;font-weight:700;line-height:1;box-shadow:0 0 0 3px var(--surface)}
+  background:var(--play-shade);color:var(--surface);font-size:var(--fs-2);font-style:normal;font-weight:700;line-height:1;box-shadow:0 0 0 3px var(--surface)}
 
 .hm-ver{display:flex;align-items:center;justify-content:center;gap:var(--s-1);margin:var(--s-6) 0 var(--s-1);font-size:var(--fs-2);color:var(--ink-3)}
 .hm-ver .ic{color:var(--star-shade)}
