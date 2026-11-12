@@ -27,7 +27,25 @@ for (const g of ['play-shade', 'good-ink']) rules.push([g, 'surface', 3, 'viz gr
 // mastery (P1-08): the Challenge tag (ink text, try-ink bolt on star-tint)
 rules.push(['try-ink', 'star-tint', 3, 'challenge tag icon']);
 rules.push(['ink-3', 'star-tint', 3, 'viz ruler edge'], ['ink-3', 'surface-2', 3, 'viz coin edge'], ['play-shade', 'play-tint', 3, 'viz penny edge']);
+// components (P4-04): ghost buttons and selected segments, hint panel, tables and tags, tinted panels, filled buttons and badges
+for (const bg of ['surface', 'paper', 'brand-tint']) rules.push(['brand-shade', bg, 4.5, 'component text']);
+rules.push(['ink', 'try-tint', 4.5, 'hint text'], ['ink-2', 'try-tint', 4.5, 'hint step'], ['surface', 'try-ink', 4.5, 'hint step number']);
+rules.push(['ink-2', 'surface-2', 4.5, 'table header, seg, skipped tag'], ['ink-2', 'paper', 4.5, 'zebra row']);
+for (const s of ['math', 'read', 'es', 'disc', 'bt', 'play', 'brand', 'star']) {
+  rules.push(['ink', s + '-tint', 4.5, 'text on tinted panel'], ['ink-2', s + '-tint', 4.5, 'secondary text on tinted panel']);
+}
+rules.push(['surface', 'play-shade', 4.5, 'white text on play button fill']);
+rules.push(['try-ink', 'try', 3, 'wrong badge and try toast icon'], ['ink-3', 'surface', 3, 'switch track off'], ['brand', 'paper', 3, 'focus ring']);
 let fail = 0;
+// Home (P4-08): placement card text, the logo star, the stickers and Fact Sprint badge icons, the review count
+rules.push(['ink', 'brand-tint', 4.5, 'home placement card text'], ['star', 'brand', 3, 'home logo star'], ['try-ink', 'star', 3, 'home stickers icon'],
+  ['ink', 'star', 3, 'home bolt badge'], ['surface', 'read', 4.5, 'home review count']);
+// map scenes (P4-09): every scene sky and ground behind the map stops is quiet: ink 7:1, and the path colours 3:1 (the stop rings,
+// WCAG 1.4.11); the night skies (space headers) hold only the white title pill and the moon
+for (const t of Object.keys(T).filter(k => k.startsWith('sc-') && !k.startsWith('sc-night'))) {
+  rules.push(['ink', t, 7, 'map scene']);
+  for (const s of ['math', 'read', 'es', 'disc']) rules.push([s, t, 3, 'stop ring on map scene']);
+}
 for (const [a, b, min, what] of rules) {
   const r = ratio(a, b), ok = r >= min;
   if (!ok) fail++;

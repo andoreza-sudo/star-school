@@ -1,26 +1,48 @@
 /* ---------- games (paths), maps ---------- */
 const PATHS={
  math:{n:'Math Adventure',e:'🔢',c:'linear-gradient(135deg,#dbeafe,#bfdbfe)',worlds:[
-  {id:'m_tiny',g:-1,n:'Tiny Town',e:'🏠',c:'#fef9c3',nodes:[['pk_count',1,'Count to 5'],['shape',1,'Find the Shape'],['pk_num',1,'Hear a Number'],['sort',1,'Which One Is Different'],['pk_more',1,'Which Has More'],['pk_count',2,'Count to 10'],['pat',1,'What Comes Next'],['pk_num',2,'Numbers to 10'],['sort',2,'Big and Small']]},
+  {id:'m_tiny',g:-1,n:'Tiny Town',e:'🏠',c:'#fef9c3',nodes:[['pk_count',1,'Count to 5'],['shape',1,'Find the Shape'],['pk_num',1,'Hear a Number'],['sort',1,'Which One Is Different'],['pk_more',1,'Which Has More'],['pk_count',2,'Count to 10'],['pat',1,'What Comes Next'],['pk_num',2,'Numbers to 10'],['sort',2,'Big and Small'],['trace',1,'Trace Numbers']]},
+  {id:'m_shape',g:0,n:'Shape Garden',e:'🌷',c:'#dcfce7',nodes:[['pk_count',3,'Count to 20'],['pk_num',3,'Hear 11 to 20'],['tenf',1,'Ten Frames'],['pk_more',2,'More, Fewer, Same'],['shape',2,'More Shapes'],['add',4,'Add to 5'],['pat',2,'Harder Patterns'],['tenf',2,'Make Ten'],['cnt',4,'Count On & Back'],['shape',3,'Solid Shapes'],['sort',3,'Sort by Kind'],['pos',1,'Where Is It'],['meas',1,'Measure'],['tenf',3,'Ten and More']]},
   {id:'m_meadow',g:0,n:'Number Meadow',e:'🌻',c:'#dcfce7',nodes:[['add',1,'Adding to 10'],['cnt',1,'Count by 1s & 10s'],['eo',1,'Even or Odd'],['miss',1,'Missing Number'],['sub',1,'Take Away'],['story',1,'Story Problems']]},
   {id:'m_candy',g:1,n:'Candy Canyon',e:'🍭',c:'#fce7f3',nodes:[['add',2,'+9 & Doubles'],['big',1,'Tens & Hundreds'],['cnt',2,'Count by 2s & 5s'],['cmp',1,'Bigger or Smaller'],['miss',2,'Missing to 18'],['sub',2,'Take Away to 18'],['story',2,'Story Problems 2']]},
+  {id:'m_clock',g:1,n:'Clock Tower',e:'🗼',c:'#fef3c7',nodes:[['pv',1,'Tens & Ones'],['add',5,'Add Three'],['meas',2,'Measure with Cubes'],['add',6,'Mental Math'],['data',1,'Picture Graphs'],['shape',4,'Sides & Corners'],['frac',1,'Equal Parts']]},
   {id:'m_reef',g:1,n:'Ocean Reef',e:'🐠',c:'#e0f2fe',nodes:[['add',3,'All the Facts'],['time',1,"O'Clock"],['big',2,'2-Digit Adding'],['coins',1,'Pennies & Nickels'],['eo',2,'Even/Odd to 99'],['cmp',2,'Compare to 100'],['time',2,'Half Past'],['sub',3,'2-Digit Take Away'],['story',3,'Story Problems 3']]},
   {id:'m_space',g:2,n:'Space Station',e:'🚀',c:'#ede9fe',nodes:[['big',3,'Carry the 1'],['mult',1,'Equal Groups'],['coins',2,'Dimes Too'],['cnt',3,'Skip Count Big'],['sub',4,'Borrowing'],['time',3,'Quarter Hours'],['big',4,'3-Digit Adding'],['mult',2,'Groups to 5×5'],['cmp',3,'Compare to 999'],['coins',3,'Quarters']]},
-  {id:'m_mult',g:3,n:'Multiply Mountain',e:'🏔️',c:'#ffedd5',nodes:[['arr',2,'Arrays'],['mfact',1,'Easy Times Facts'],['mfact',2,'Times 3 & 4'],['dfact',1,'Easy Dividing'],['mfact',3,'Times 6 to 9'],['dfact',2,'Divide by 3 & 4'],['mfact',4,'All Times Facts'],['dfact',3,'Divide by 6 to 9'],['dfact',4,'All Dividing'],['mbig',1,'Times Tens & Hundreds'],['story',5,'Story Problems 5']]}]},
+  {id:'m_bay',g:2,n:'Treasure Bay',e:'🗺️',c:'#ccfbf1',nodes:[['pv',2,'Place Value to 999'],['big',5,'Add 3-Digit Numbers'],['pv',3,'Expanded Form'],['sub',5,'Take Away 3-Digit'],['time',4,'Clocks to 5 Minutes'],['coins',4,'Dollars & Coins'],['meas',3,'Rulers'],['data',2,'Bar Graphs'],['arr',1,'Rows & Columns'],['cnt',5,'Skip Counting More'],['coins',5,'Making Change'],['story',4,'Two-Step Stories'],['pat',3,'Growing Patterns']]},
+  {id:'m_mult',g:3,n:'Multiply Mountain',e:'🏔️',c:'#ffedd5',nodes:[['arr',2,'Arrays'],['mfact',1,'Easy Times Facts'],['mfact',2,'Times 3 & 4'],['dfact',1,'Easy Dividing'],['mfact',3,'Times 6 to 9'],['dfact',2,'Divide by 3 & 4'],['mfact',4,'All Times Facts'],['dfact',3,'Divide by 6 to 9'],['dfact',4,'All Dividing'],['mbig',1,'Times Tens & Hundreds'],['story',5,'Story Problems 5']]},
+  {id:'m_frac',g:3,n:'Fraction Forest',e:'🌳',c:'#dcfce7',nodes:[['frac',2,'Name the Fraction'],['round',1,'Round to 10'],['frac',3,'Fractions on a Line'],['sub',6,'3-Digit Take Away'],['geo',1,'Perimeter'],['frac',4,'Compare Fractions'],['round',2,'Round to 100'],['time',5,'Time to the Minute'],['geo',2,'Area'],['frac',5,'Equal Fractions'],['sub',7,'Take Away Across Zeros'],['data',3,'Scaled Graphs'],['shape',5,'Shape Families'],['time',6,'How Much Time Passed'],['meas',4,'Rulers & Scales'],['story',6,'Story Problems 6']]},
+  {id:'m_factory',g:4,n:'Factor Factory',e:'⚙️',c:'#e0e7ff',nodes:[['mfact',5,'Times 11 & 12'],['pv',4,'Place Value to 999,999'],['mbig',2,'2-Digit Times 1-Digit'],['big',6,'Add 4-Digit Numbers'],['dbig',1,'Divide 2-Digit Numbers'],['mbig',3,'Big Times 1-Digit'],['sub',8,'Take Away Big Numbers'],['dbig',2,'Divide with Leftovers'],['fact',1,'Factors & Multiples'],['mbig',4,'2-Digit Times 2-Digit'],['big',7,'Add Big Numbers'],['dbig',3,'Divide Big Numbers'],['fact',2,'Prime or Composite'],['round',3,'Round Big Numbers']]},
+  {id:'m_desert',g:4,n:'Decimal Desert',e:'🏜️',c:'#fef08a',nodes:[['frac',6,'Unlike Fractions'],['frac',7,'Simplest Form'],['fop',1,'Add & Subtract Parts'],['frac',8,'Mixed Numbers'],['fop',2,'Whole × Fraction'],['dec',1,'Tenths & Hundredths'],['dec',2,'Compare Decimals'],['ang',1,'Kinds of Angles'],['ang',2,'Measure Angles'],['geo',3,'Find the Missing Side'],['shape',6,'Symmetry & Lines'],['meas',5,'Convert Units'],['pat',4,'In and Out Tables'],['story',7,'Remainder Stories']]},
+  {id:'m_volcano',g:5,n:'Volcano Lab',e:'🌋',c:'#ffe4e6',nodes:[['pv',5,'Decimal Place Value'],['mbig',5,'3-Digit Times 2-Digit'],['dec',3,'Add/Subtract Decimals'],['pv',6,'Powers of Ten'],['dbig',4,'Divide by 2-Digit'],['dec',4,'Multiply Decimals'],['round',4,'Round Decimals'],['ooo',1,'Order of Operations'],['dec',5,'Divide Decimals']]},
+  {id:'m_caves',g:5,n:'Crystal Caves',e:'💎',c:'#f3e8ff',nodes:[['fop',3,'Unlike Denominators'],['fop',4,'Mixed Numbers'],['geo',4,'Volume of a Box'],['fop',5,'Multiply Fractions'],['coord',1,'Coordinate Grid'],['fop',6,'Unit Fraction Division'],['meas',6,'Convert Both Ways'],['data',4,'Line Plots'],['pat',5,'Two Rules'],['story',8,'Fraction Stories']]},
+  {id:'m_sky',g:6,n:'Sky City',e:'☁️',c:'#e0f2fe',nodes:[['ratio',1,'Ratios and Tables'],['ratio',2,'Unit Rates'],['int',1,'Integers on a Line'],['ratio',3,'Percent of a Number'],['int',2,'Absolute Value'],['ratio',4,'Fractions and Percents'],['fop',7,'Divide Fractions'],['int',3,'Integer Add & Subtract']]},
+  {id:'m_galaxy',g:6,n:'Galaxy Core',e:'🌌',c:'#e0e7ff',nodes:[['ooo',2,'Exponents'],['alg',1,'One-Step Equations'],['ooo',3,'Evaluate Expressions'],['alg',2,'Solve with × and ÷'],['geo',5,'Triangles & Trapezoids'],['coord',2,'Four Quadrants'],['fact',3,'GCF and LCM'],['data',5,'Mean, Median, Mode'],['alg',3,'Two-Step Equations'],['story',9,'Rate & Percent Stories']]}]},
  read:{n:'Reading Adventure',e:'📖',c:'linear-gradient(135deg,#fce7f3,#fbcfe8)',worlds:[
-  {id:'r_abc',g:-1,n:'ABC Beach',e:'🏖️',c:'#e0f2fe',nodes:[['abc',1,'Big Letters'],['abc',2,'Little Letters'],['abc',3,'Match Big & Little'],['syl',1,'Clap the Syllables'],['abc',4,'ABC Order']]},
-  {id:'r_meadow',g:0,n:'Letter Meadow',e:'🌻',c:'#dcfce7',nodes:[['sound',1,'First Sounds'],['sight',1,'Sight Words'],['rhyme',1,'Rhyme Time'],['pic',1,'Picture Words'],['sound',2,'Last Sounds'],['build',1,'Build a Word'],['sent',1,'Read & Match'],['sound',3,'Middle Sounds']]},
+  {id:'r_abc',g:-1,n:'ABC Beach',e:'🏖️',c:'#e0f2fe',nodes:[['abc',1,'Big Letters'],['abc',2,'Little Letters'],['trace',2,'Trace Big Letters'],['abc',3,'Match Big & Little'],['syl',1,'Clap the Syllables'],['trace',3,'Trace Little Letters'],['abc',4,'ABC Order']]},
+  {id:'r_meadow',g:0,n:'Letter Meadow',e:'🌻',c:'#dcfce7',nodes:[['sound',1,'First Sounds'],['sight',1,'Sight Words'],['rhyme',1,'Rhyme Time'],['sound',3,'Middle Sounds'],['pic',1,'Picture Words'],['sound',2,'Last Sounds'],['build',1,'Build a Word'],['sent',1,'Read & Match']]}, // R-01r: Middle Sounds before the child reads and builds CVC words
   {id:'r_candy',g:1,n:'Candy Canyon',e:'🍭',c:'#fce7f3',nodes:[['sight',2,'More Sight Words'],['rhyme',2,'Rhyme & Read'],['pic',2,'Blends'],['build',2,'Build Blends'],['sent',2,'Read Sentences'],['comp',1,'Story Time'],['sound',4,'Letter Teams'],['syl',2,'Count the Claps'],['spell',1,'Spell Short Words']]},
-  {id:'r_reef',g:1,n:'Ocean Reef',e:'🐠',c:'#e0f2fe',nodes:[['sight',3,'Sight Words 3'],['pic',3,'Magic E'],['build',3,'Build Magic E'],['comp',2,'Story Time 2'],['spell',2,'Spell Blends']]},
-  {id:'r_space',g:2,n:'Space Station',e:'🚀',c:'#ede9fe',nodes:[['pic',4,'Vowel Teams'],['build',4,'Build Vowel Teams'],['spell',3,'Spell Magic E & Teams']]},
-  {id:'r_summit',g:3,n:'Story Summit',e:'🏔️',c:'#e2e8f0',nodes:[['spell',4,'Spell Tricky Sounds']]},
-  {id:'r_library',g:4,n:'Dragon Library',e:'🐉',c:'#fee2e2',nodes:[['spell',5,'Spell Word Parts']]},
-  {id:'r_island',g:5,n:'Author Island',e:'🏝️',c:'#fef9c3',nodes:[['spell',6,'Spell Big Words']]},
-  {id:'r_legend',g:6,n:'Legend Lab',e:'🏰',c:'#f3e8ff',nodes:[['spell',7,'Spell Tough Words']]}]},
+  {id:'r_reef',g:1,n:'Ocean Reef',e:'🐠',c:'#e0f2fe',nodes:[['sight',3,'Sight Words 3'],['pic',3,'Magic E'],['build',3,'Build Magic E'],['comp',2,'Story Time 2'],['spell',2,'Spell Blends'],['vocab',1,'Opposites'],['gram',1,'Capitals & End Marks']]},
+  {id:'r_space',g:2,n:'Space Station',e:'🚀',c:'#ede9fe',nodes:[['pic',4,'Vowel Teams'],['build',4,'Build Vowel Teams'],['sight',4,'Sight Words 4'],['pic',5,'Bossy R'],['build',5,'Build Bossy R'],['spell',3,'Spell Magic E & Teams'],['sent',3,'Build Sentences']]},
+  {id:'r_workshop',g:2,n:'Word Workshop',e:'🔧',c:'#fef3c7',nodes:[['sight',5,'Sight Words 5'],['pic',6,'Vowel Teams 2'],['build',6,'Build Vowel Teams 2'],['gram',2,'Parts of Speech'],['vocab',2,'Synonyms'],['sent',4,'Fill the Gap'],['vocab',3,'Compound Words'],['gram',3,'Plurals'],['sent',5,'Sentence Stories'],['comp',3,'Read a Story'],['info',1,'Learn About It']]},
+  {id:'r_summit',g:3,n:'Story Summit',e:'🏔️',c:'#e2e8f0',nodes:[['spell',4,'Spell Tricky Sounds'],['gram',4,'Verb Tenses'],['vocab',4,'Prefixes'],['gram',5,'Contractions & Agreeing'],['vocab',5,'Suffixes'],['comp',4,'Read a Story 2'],['info',2,'Learn About It 2']]},
+  {id:'r_library',g:4,n:'Dragon Library',e:'🐉',c:'#fee2e2',nodes:[['spell',5,'Spell Word Parts'],['gram',6,'Pronouns & Look-Alikes'],['vocab',6,'Homophones'],['vocab',7,'Context Clues'],['gram',7,'Commas & Quotes'],['vocab',8,'Figurative Language'],['comp',5,'Read a Story 3'],['info',3,'Learn About It 3']]},
+  {id:'r_island',g:5,n:'Author Island',e:'🏝️',c:'#fef9c3',nodes:[['spell',6,'Spell Big Words'],['gram',8,'More Parts of Speech'],['vocab',9,'Word Roots'],['comp',6,'Read a Story 4'],['info',4,'Learn About It 4']]},
+  {id:'r_legend',g:6,n:'Legend Lab',e:'🏰',c:'#f3e8ff',nodes:[['spell',7,'Spell Tough Words'],['gram',9,'Sentence Craft'],['vocab',10,'Analogies'],['comp',7,'Read a Story 5'],['info',5,'Learn About It 5']]}]},
  es:{n:'Spanish Adventure',e:'🌮',c:'linear-gradient(135deg,#dcfce7,#fef9c3)',byLevel:true,worlds:[
   {id:'e_plaza',g:-1,n:'Hola Plaza',e:'🌮',c:'#fef9c3',nodes:[['es_greet',1,'¡Hola! Listen'],['es_color',1,'Colors'],['es_num',1,'Numbers 1–10'],['es_animal',1,'Animals'],['es_greet',2,'¡Hola! Read'],['es_color',2,'Read Colors'],['es_num',2,'Read Numbers'],['es_animal',2,'Read Animals']]},
   {id:'e_fiesta',g:-1,n:'Fiesta Island',e:'🪅',c:'#ffedd5',nodes:[['es_food',1,'Food'],['es_body',1,'My Body'],['es_family',1,'Family'],['es_teen',1,'Numbers 11–20'],['es_food',2,'Read Food'],['es_body',2,'Read Body'],['es_family',2,'Read Family'],['es_teen',2,'Read 11–20']]},
-  {id:'e_repaso',g:-1,n:'Gran Repaso',e:'🏆',c:'#e0e7ff',nodes:[['es_mix',1,'Big Review: Listen'],['es_mix',2,'Big Review: Read']]}]}};
+  {id:'e_repaso',g:-1,n:'Gran Repaso',e:'🏆',c:'#e0e7ff',nodes:[['es_mix',1,'Big Review: Listen'],['es_mix',2,'Big Review: Read']]},
+  {id:'e_casa',g:-1,n:'La Casa',e:'🏠',c:'#fde68a',nodes:[['es_house',1,'Casa Dulce Casa'],['es_house',2,'Read the House'],['es_clothes',1,'¡A Vestirse!'],['es_clothes',2,'Read Clothes'],['es_school',1,'A la Escuela'],['es_school',2,'Read School'],['es_feel',1,'¿Cómo Estás?'],['es_feel',2,'Read Feelings'],['es_house',3,'Spell the House'],['es_clothes',3,'Spell Clothes'],['es_school',3,'Spell School']]},
+  {id:'e_tiempo',g:-1,n:'El Tiempo',e:'⏰',c:'#e0f2fe',nodes:[['es_days',1,'Days: Listen'],['es_days',2,'Read the Days'],['es_months',1,'Months: Listen'],['es_months',2,'Read Months'],['es_weather',1,'Weather: Listen'],['es_weather',2,'Read Weather'],['es_big',1,'Big Numbers: Listen'],['es_big',2,'Read Big Numbers'],['es_time',1,'Time: Listen'],['es_time',2,'Read the Time']]},
+  {id:'e_ciudad',g:-1,n:'La Ciudad',e:'🏙',c:'#e0f2fe',nodes:[['es_place',1,'Places in Town'],['es_place',2,'Read Places'],['es_trans',1,'Transport'],['es_trans',2,'Read Transport'],['es_verb',1,'Action Words'],['es_verb',2,'Read Action Words'],['es_adj',1,'Opposites'],['es_adj',2,'Read Opposites']]},
+  {id:'e_frases',g:-1,n:'Las Frases',e:'🎤',c:'#fce7f3',nodes:[['es_phrase',1,'Phrases: Listen'],['es_phrase',2,'Phrases: Reply'],['es_art',1,'El or La?'],['es_art',2,'Un, Una & Plurals'],['es_ser',1,'Ser: Who I Am'],['es_ser',2,'Estar: How & Where'],['es_ser',3,'Tener: Have & Am'],['es_gusta',1,'Me Gusta'],['es_gusta',2,'Gusta or Gustan'],['es_sent',1,'Build a Sentence'],['es_sent',2,'Sentences & Places']]},
+  {id:'e_cuentos',g:-1,n:'Los Cuentos',e:'📚',c:'#ccfbf1',nodes:[['es_story',1,'Mini Stories'],['es_story',2,'Stories: Pictures'],['es_story',3,'Stories: Spanish']]}]},
+ /* Discover (P2-36, P2-37): graded like Math and Reading, but no placement quiz (noPlace). Worlds and stops follow CURRICULUM 2.4.
+    Nature Trail grew geo_world 1 and civ 1 in P2-37 (a child who had finished it keeps the boss open and sees them as NEW stops). */
+ disc:{n:'Discover',e:'🌍',c:'linear-gradient(135deg,#ccfbf1,#99f6e4)',noPlace:true,startBelow:true,worlds:[
+  {id:'d_nature',g:0,n:'Nature Trail',e:'🌲',c:'#ccfbf1',nodes:[['sci_life',1,'Living Things'],['sci_earth',1,'Sky & Earth'],['sci_phys',1,'Push, Pull & Stuff'],['geo_world',1,'Maps & Land'],['civ',1,'Our Community']]},
+  {id:'d_lab',g:3,n:'Science Lab',e:'💡',c:'#e0f2fe',nodes:[['sci_life',2,'Life Cycles & Food'],['sci_earth',2,'Water, Rocks & Moon'],['sci_phys',2,'Forces & Matter'],['geo_us',1,'States & Capitals'],['geo_world',2,'Grids & Climate']]},
+  {id:'d_cosmos',g:5,n:'Star Observatory',e:'🌌',c:'#ede9fe',nodes:[['sci_life',3,'Cells & Ecosystems'],['sci_earth',3,'Earth & Space'],['sci_phys',3,'Energy & Change'],['geo_us',2,'US Landmarks'],['civ',2,'Government & Money']]}]}};
 const BOSSES=[['👾','Gloop'],['🤖','Robo-Bonk'],['🐙','Captain Inky'],['👽','Zorp']];
 const BPRIZE=['🌼','⭐','🎉','🪐','🌈','🔥','💎','🍀','🌙','⚡','🍩','🎵'];
 /* World ids (`id`) and grade tags (`g`) come from CURRICULUM.md section 2. An id is permanent: anything saved per world uses it,
@@ -88,24 +110,31 @@ function unlocked(p,i){
   if(S.unlockAll||passed(p,i))return true; // passed stops are always replayable
   const wi=NODES[p][i].wi;
   if(!worldOpen(p,wi))return false;
-  return i==WR[p][wi][0]||passed(p,i-1)||worldSkipped(p,wi)||stopBehind(p,i);
+  return i==WR[p][wi][0]||passed(p,i-1)||sideOpen(p,i-1)||worldSkipped(p,wi)||stopBehind(p,i);
 }
+/* P2-17: a stop of a side skill (SK[sk].side: tracing) never holds back the stop after it; that stop opens with it. Tracing stops sit
+   between older stops (ABC Beach trace 2 and 3), so a save that had the next stop open keeps it open. */
+const sideOpen=(p,i)=>!!(SK[NODES[p][i].sk]||{}).side&&unlocked(p,i);
 const stopNew=(p,i)=>!passed(p,i)&&passed(p,WR[p][NODES[p][i].wi][1]);
 /* The world where a child starts: the first one at or above their grade (the last world if none is). byLevel paths start at 0. */
 function startWorld(p){
   if(PATHS[p].byLevel)return 0;
   const pw=placeWorld(p);if(pw>=0)return pw; // P1-07: a placement result taken at the current grade
-  const ws=PATHS[p].worlds,k=ws.findIndex(w=>w.g>=gradeOf());
+  const ws=PATHS[p].worlds,g0=gradeOf(),k=ws.findIndex(w=>w.g>=g0);
+  // P2-37: Discover has worlds only for K, 3 and 5, so the first world at or above a 1st, 2nd or 4th grader's grade is still locked.
+  // startBelow paths start such a child at the last world at or below their grade (Nature Trail for K-2, Science Lab for 4th grade).
+  if(PATHS[p].startBelow&&k>=0&&ws[k].g>g0){let j=-1;ws.forEach((w,i)=>{if(w.g<=g0)j=i});if(j>=0)return j}
   return k<0?ws.length-1:k;
 }
 /* The stop the map opens on: the first open, unpassed stop, not counting NEW stops or untouched worlds below the start world.
    Falls back to any open unpassed stop (not in an untouched world below the start world), then to the very last stop (everything done). */
 function curNode(p){
-  const N=NODES[p],sw=startWorld(p);let any=-1;
+  const N=NODES[p],sw=startWorld(p);let any=-1,lp=-1;
+  for(let i=0;i<N.length;i++)if(passed(p,i))lp=Math.max(lp,N[i].wi); // the furthest world with a passed stop
   for(let i=0;i<N.length;i++){
     if(passed(p,i)||!unlocked(p,i))continue;
-    const wi=N[i].wi,below=wi<sw&&(!worldHasProgress(p,wi)||worldSkipped(p,wi)); // an untouched world below the start world (Pre-K Tiny Town for a K child)
-    if(any<0&&!below)any=i; // a finished child is not sent back down to a world they never needed
+    const wi=N[i].wi,below=(wi<sw&&(!worldHasProgress(p,wi)||worldSkipped(p,wi)))||(wi<lp&&!worldHasProgress(p,wi)); // an untouched world below the start world (Pre-K Tiny Town for a K child), or behind the child's furthest progress (a K world added in front of Number Meadow)
+    if(any<0&&!below&&!stopNew(p,i))any=i; // (P2-24: a NEW stop never becomes the fallback) a finished child is not sent back down to a world they never needed
     if(stopNew(p,i)||below)continue; // skipped by placement: start above it
     return i;
   }
@@ -123,12 +152,12 @@ function worldStep(p,wi){
 }
 migrate(); /* save upgrades (MIGRATIONS in 00-core.js) run here: the first place NODES exists, before any other code reads S */
 for(const p in PATHS)S.maps[p]=S.maps[p]||{};
-const nInfo=n=>n.sk=='boss'?{e:n.boss[0],area:'boss'}:SK[n.sk];
+const nInfo=n=>n.sk=='boss'?{e:n.boss[0],area:'boss'}:SK[n.sk]&&SK[n.sk].lvArea?Object.assign({},SK[n.sk],{area:skArea(n.sk,n.lv)}):SK[n.sk];
 const SHOP={hat:[['🧢',10],['🎀',10],['🎩',20],['⛑️',25],['🎓',40],['👑',60]],
  toy:[['🎈',10],['🍭',10],['⚽',15],['🧸',20],['🪁',30],['🪄',45],['🏆',80]],
  scene:[['meadow',0,'🌻','linear-gradient(135deg,#fef3c7,#fde68a)','Meadow'],['beach',30,'🏖️','linear-gradient(180deg,#bae6fd,#fef3c7 75%)','Beach'],['candy',40,'🍭','linear-gradient(135deg,#fbcfe8,#ddd6fe)','Candy'],
   ['rainbow',40,'🌈','linear-gradient(135deg,#fecaca,#fde68a,#bbf7d0,#bfdbfe,#ddd6fe)','Rainbow'],['space',50,'🌌','linear-gradient(135deg,#1e1b4b,#581c87)','Space'],['castle',60,'🏰','linear-gradient(135deg,#fae8ff,#c7d2fe)','Castle']]};
 const sceneOf=()=>SHOP.scene.find(x=>x[0]==S.wear.scene)||SHOP.scene[0];
-function petHTML(st=S.stars){const w=S.wear;return`<span class="petwrap"><span class="pe">${petE(st)}</span>${w.hat?`<span class="hat">${w.hat}</span>`:''}${w.toy?`<span class="toy">${w.toy}</span>`:''}</span>`}
+function petHTML(st=S.stars){return petRigHTML(st)} // P4-06: every pet is drawn on the rig (17-pets-svg.js)
 const allMiss=()=>dueItems(); // P5-02: review items due today, most urgent first (59-review.js); home shows the count
 

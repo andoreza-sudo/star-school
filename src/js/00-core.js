@@ -137,6 +137,7 @@ const MIGRATIONS=[null,
 ];
 /* Run once at load, from 42-paths.js (needs NODES, which no code before it reads). Backs up the old string first. */
 function migrate(){
+  if(S.maps&&typeof PATHS!='undefined')for(const p in PATHS)S.maps[p]=S.maps[p]||{}; // a path added after the save was written starts empty (Discover, P2-36): a default, not a migration
   const from=Number.isInteger(S.v)&&S.v>=1?S.v:1;
   if(from>=LATEST)return; // current, or written by a newer app: leave it alone
   if(SAVE_RAW!==null)try{localStorage.setItem(KEY+'-bak',SAVE_RAW)}catch(e){}
@@ -144,7 +145,11 @@ function migrate(){
   S.v=LATEST;
   save();
 }
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S));SAVE_FAILED=false}catch(e){SAVE_FAILED=true}}
+// SAVE_HOLD: set once the save in storage was replaced or erased on purpose and the page is about to reload (Start over, load a
+// backup, undo a load). From then on save() writes nothing, so a timer or screen that saves the old progress before the reload
+// cannot put it back (the reload starts fresh, and resets this flag).
+let SAVE_HOLD=false;
+function save(){if(SAVE_HOLD)return;try{localStorage.setItem(KEY,JSON.stringify(S));SAVE_FAILED=false}catch(e){SAVE_FAILED=true}}
 /* ---------- error guard (P0-05): last 20 errors kept in S.err, on this device only; nothing is sent anywhere ---------- */
 function logErr(msg){
   try{

@@ -18,8 +18,14 @@ echo "== test.js (named checks; includes the size budget, which lives in tools/t
 node tools/test.js
 echo "== smoke.js"
 node tools/smoke.js
-echo "== sizes (bytes)"
-for f in index.html sw.js manifest.json icon-192.png icon-512.png; do
+echo "== sizes (bytes; budgets in tools/test.js: index.html warn 1.2 MB / fail 1.5 MB, each part file warn 400 KB / fail 800 KB,"
+echo "   data warn 1 MB / fail 2 MB, total warn 2 MB / fail 3.3 MB)"
+# the files index.html loads, in its order (A11, A11b): gen.<VER>.js, gen2.<VER>.js, bt.<VER>.js, games.<VER>.js, data.<VER>.js
+files=$(grep -o '<script src="[^"]*"' index.html | sed 's/<script src="//; s/"$//')
+total=$(wc -c < index.html)
+for f in index.html $files sw.js manifest.json icon-192.png icon-512.png; do
   [ -f "$f" ] && printf '%10d  %s\n' "$(wc -c < "$f")" "$f"
 done
+for f in $files; do total=$(( total + $(wc -c < "$f") )); done
+printf '%10d  %s\n' "$total" "total: index.html + $(echo $files | sed 's/ / + /g') (A11, A11b, A11c)"
 echo "== check OK"

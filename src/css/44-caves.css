@@ -1,0 +1,9 @@
+/* P2-12 Crystal Caves: unit cubes drawn on a box (VIZ.solid with o.grid), and the (x, y) answer boxes of coord 1 */
+.viz .vcg{fill:none;stroke:var(--surface);stroke-width:1.5;opacity:.75}
+.viz .vcg.vct{stroke:var(--math-shade);opacity:.55}
+.viz .vsl.c2 .vcg.vct{stroke:var(--play-shade)}
+.ccxy{display:inline-flex;align-items:center;gap:.12em}
+.ccsep{font-weight:700;margin:0 .1em;color:var(--ink-3)}
+/* long choices (y = 5x + 2, B is 5 times A) go one under the other so no word is cut */
+.choices.ccw{grid-template-columns:1fr}
+.choices.ccw .choice.ch{min-height:var(--tap-primary);font-size:clamp(20px,3.6vh,28px)}

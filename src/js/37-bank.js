@@ -11,7 +11,14 @@
      form   'choice' (default) | 'wide' | 'tap' | 'spell' | 'order' | 'match' | 'multi'
      sent   tap: the sentence; the child taps the word that is the answer
      order  order: the items in the right order      pairs  match: [[left, right], ...]
+     label  short unique name for the report and review (default: q + answer; passages use title + number)
      topic  strand tag for the report card   hint  teaching hint   pic  icon name from ICONS   say  text to read instead of q
+     em     [art name, emoji]: a picture of a thing above the prompt, through picFor (P2-22)
+     grid   {max, points: [[x, y, 'A'?]]}: a coordinate grid (VIZ.coordGrid) above the prompt; points only mark what the prompt
+            names, never the answer (R-01d)
+     aloud  true (R-01d, Pre-K and K): the spoken prompt ends with the choices in the order shown ("... calf, foal, lamb or
+            piglet?") and the text hint is read aloud too (hint.w)
+     cp     {choice: [art name, emoji]} for every choice (R-01d): picture answers through picFor, the word small under each picture
    choice and wide make a `choice` question (wide = one button per row), tap a `choice` over the words of the sentence,
    spell a `build` question. order, match and multi need their own question kind (P1-03/P1-04): such a kind registers its
    builder as BANKF.form=(item, id)=>question; until it does, those items are never drawn.
@@ -64,14 +71,27 @@ function bankChoose(key,cands,s){
   return i;
 }
 const bankCan=it=>it.form=='order'||it.form=='match'||it.form=='multi'?!!(BANKF[it.form]&&KIND[it.form]):true;
-const bankTxt=t=>esc(t).replace(/___/g,SLOT);
-const bankSay=t=>String(t).replace(/___/g,'blank');
+const bankTxt=t=>esc(t).replace(/\*([^*]+)\*/g,'<b>$1</b>').replace(/___/g,SLOT); // a word between * stars * prints in bold (P2-23)
+const bankSay=t=>String(t).replace(/\*/g,'').replace(/___/g,'blank');
 const bankWords=t=>String(t).split(/[^A-Za-z']+/).filter(Boolean);
+// R-01d: the prompt read aloud with its choices, in the order shown. "A baby cow is called a ___." -> "A baby cow is called a...
+// calf, foal, lamb or piglet?"; a blank inside the sentence stays "blank" and the choices follow ("Is it ..."). Choices that hold a
+// comma or "and" are read one by one ("food, water and air? Or sunlight and soil?") so the list is not one long blur.
+function bankSayAll(t,vs){
+  const ch=vs.map(String),many=ch.some(x=>/,| and /.test(x));
+  const list=many?ch.join('? Or ')+'?':ch.slice(0,-1).join(', ')+' or '+ch[ch.length-1]+'?';
+  const s=String(t).replace(/\*/g,'');
+  if(/___[.?]?$/.test(s))return bankSay(s.replace(/\s*___[.?]?$/,''))+'... '+list;
+  return bankSay(s)+(s.includes('___')?' Is it ':' ')+list;
+}
+// R-01d: a picture answer: the picture with its word under it (the word is for grown-ups and readers; it is also spoken)
+const bankPicCh=(x,p)=>`<span class="pcap">${picFor(p[0],p[1])}<small>${esc(x)}</small></span>`;
 
 // One question from one item. Call it inside bankWith so shuffle() uses the item's own random stream.
 function bankBuild(id,it,pass){
   const form=it.form||'choice';
-  const pic=it.pic&&ICONS[it.pic]?`<div class="bpic">${ico(it.pic,64)}</div>`:'';
+  const pic=it.em?`<div class="bpic bem">${picFor(it.em[0],it.em[1])}</div>`:it.pic&&ICONS[it.pic]?`<div class="bpic">${ico(it.pic,64)}</div>`
+    :it.grid?`<div class="bpic bgrid">${VIZ.coordGrid(it.grid)}</div>`:''; // R-01d: the grid the coordinate question talks about
   let q;
   if(form=='spell'){
     const w=it.a,abc='abcdefghijklmnoprstuw';
@@ -86,12 +106,19 @@ function bankBuild(id,it,pass){
       html:`${pic}<div class="bq">${esc(it.q)}</div><div class="bsent">${esc(it.sent)}</div>`};
   }
   else if(form!='choice'&&form!='wide')q=BANKF[form](it,id);
-  else q={kind:'choice',cls:form=='wide'?'wide':'',ans:it.a,choices:shuffle([it.a,...it.d]).map(x=>({v:x,l:x})),
+  // a word longer than 7 letters does not fit a half-width button at 380 px ("remember", "basketball"): such items get one choice per row
+  // R-01d: picture answers (cp): a 2 x 2 grid of pictures (3 in a row when there are 3), each with its word under it
+  else if(it.cp&&form=='choice'&&!pass){const xs=shuffle([it.a,...it.d]);
+    q={kind:'choice',cls:'pics bpics'+(xs.length==3?' n3':''),ans:it.a,choices:xs.map(x=>({v:x,l:bankPicCh(x,it.cp[x]),h:true})),
+      html:`${pic}<div class="bq">${bankTxt(it.q)}</div>`}}
+  else q={kind:'choice',cls:(form=='wide'||!pass&&[it.a,...it.d].some(x=>String(x).length>7)?'wide':'')+(pass?' bpass':''),ans:it.a,choices:shuffle([it.a,...it.d]).map(x=>({v:x,l:x})),
     html:`${pic}<div class="bq">${bankTxt(it.q)}</div>`};
   if(!q.hint)q.hint={k:'text',s:it.hint||'Read it again slowly. Which one fits best?'};
   else if(it.hint&&q.hint.k=='text')q.hint.s=it.hint;
-  q.say=it.say||bankSay(it.q);
-  q.label=it.q.slice(0,60)+' = '+(Array.isArray(it.a)?it.a.join(','):it.a);
+  if(it.aloud&&q.hint.k=='text')q.hint.w=q.hint.s; // R-01d: Pre-K and K hear the hint (39-hints.js)
+  q.say=it.say||(it.aloud&&(form=='choice'||form=='wide')?bankSayAll(it.q,q.choices.map(c=>c.v)):bankSay(it.q));
+  if(it.label)q.label=it.label; // label: optional, for long prompts (passages)
+  else{const a=(Array.isArray(it.a)?it.a.join(','):it.a).slice(0,24);q.label=it.q.replace(/\*/g,'').slice(0,56-a.length)+' = '+a} // under 60 letters in all (P2-23)
   if(it.topic)q.topic=it.topic;
   if(pass)q.ctx={title:pass.title,text:pass.text};
   return q;
@@ -148,14 +175,17 @@ function bankRebuild(bk){
    renderQ puts bankCtx(q.ctx) above the prompt. The words use the existing .w spans, so renderQ's tap-to-hear works.
    The "Hear it" button uses data-say, which renderQ also binds. ontoggle re-fits the question after open/close. */
 function bankCtx(c){
-  return `<details class="bctx" open ontoggle="fit()"><summary class="bctx-h"><span class="bctx-t">${esc(c.title||'Read')}</span>`
+  // c.html (P2-35 Spanish dialogues): the panel body is made by the generator (a speak button per line) instead of the English text
+  if(c.html)return `<details class="bctx dlg" open ontoggle="fit()"><summary class="bctx-h"><span class="bctx-t">${esc(c.title||'Read')}</span>`
+    +`<span class="bctx-s"><span class="bctx-hide">Hide</span><span class="bctx-show">Show</span></span></summary><div class="bctx-b">${c.html}</div></details>`;
+  return `<details class="bctx${c.text.length>700?' long':''}" open ontoggle="fit()"><summary class="bctx-h"><span class="bctx-t">${esc(c.title||'Read')}</span>`
     +'<span class="bctx-s"><span class="bctx-hide">Hide</span><span class="bctx-show">Show</span></span></summary>'
     +`<div class="bctx-b"><button class="btn sm bctx-say" data-say="${esc(c.text)}">${ico('speak',22)} Hear the story</button>`
     +`<p class="bctx-p">${words(c.text)}</p></div></details>`;
 }
 
 /* ---------- validator (run by tools/test.js; reused by content chunks) ---------- */
-const BANKLIM={q:140,choice:60,hint:140,text:1200,title:40};
+const BANKLIM={q:140,choice:60,hint:140,text:2000,title:40};
 function bankBadWords(t){return bankWords(t).map(w=>w.toLowerCase()).filter(w=>BAD.test(w))}
 // problems with one item; where is a label for the message
 function bankItemProblems(it,where){
@@ -172,6 +202,13 @@ function bankItemProblems(it,where){
   if(it.hint!=null)str(it.hint,BANKLIM.hint,'hint');
   if(it.say!=null)str(it.say,BANKLIM.q,'say');
   if(it.pic!=null&&typeof ICONS!=='undefined'&&!ICONS[it.pic])p.push(w+'pic '+it.pic+' is not an icon');
+  if(it.em!=null&&!(Array.isArray(it.em)&&it.em.length==2&&/^[a-z-]+$/.test(it.em[0])&&typeof it.em[1]=='string'&&it.em[1]))p.push(w+'em must be [art name, emoji]');
+  // R-01d: grid, aloud and cp
+  if(it.grid!=null&&!(it.grid&&Number.isInteger(it.grid.max)&&it.grid.max>=1&&it.grid.max<=10&&Array.isArray(it.grid.points)
+    &&it.grid.points.every(q=>Array.isArray(q)&&q[0]>=0&&q[1]>=0&&q[0]<=it.grid.max&&q[1]<=it.grid.max)))p.push(w+'grid must be {max 1-10, points inside it}');
+  if(it.aloud!=null&&it.aloud!==true)p.push(w+'aloud must be true or left out');
+  if(it.cp!=null&&(form!=='choice'||!Array.isArray(it.d)||![it.a,...it.d].every(x=>Array.isArray(it.cp[x])&&it.cp[x].length==2
+    &&/^[a-z-]+$/.test(it.cp[x][0])&&typeof it.cp[x][1]=='string'&&it.cp[x][1])))p.push(w+'cp needs [art name, emoji] for every choice');
   const distinct=(a,name)=>{if(new Set(a.map(x=>String(x).toLowerCase())).size!==a.length)p.push(w+name+' has duplicates')};
   if(form=='choice'||form=='wide'||form=='multi'){
     const as=form=='multi'?it.a:[it.a];

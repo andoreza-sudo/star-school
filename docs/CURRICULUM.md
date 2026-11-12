@@ -276,6 +276,11 @@ Hints: `mfact` shows the skip-count row and, for 6-9, a known-fact strategy ("7 
 it shows the final small computation ("Now add 120 + 18"). Step builders required: `stepsAdd(a,b)`, `stepsSub(a,b)` (with regrouping
 marks), `stepsMul(a,b)` (partial products for up to 3x2 digits), `stepsDiv(a,b)` (long division rounds), `stepsEquivFrac`, `stepsCommonDen`,
 `stepsStory(list)`. All multi-digit skills from here on must use them.
+As shipped (`src/js/39b-steps.js`): each builder returns the whole hint, so a generator writes `hint: stepsAdd(a, b)`.
+`stepsAdd(a, b, ...)` takes 2+ addends and decimal strings ('3.4', '12.75'); `stepsSub(a, b)` needs a >= b, decimals too;
+`stepsMul(a, b, how)` with how 'pp' (default up to 3x2 digits) or 'std'; `stepsDiv(a, b)` needs a >= b, whole numbers, remainder
+as the last step (pair it with `sep:'R'`); `stepsEquivFrac(n, d, n2, d2)` with one of n2, d2 null; `stepsCommonDen(a, b, c, d, op)`
+with op '+', '-' or 'cmp'. Prompts: `ST.vert(nums, op)` (stacked, points lined up) and `ST.ldiv(a, b, slot)` (long division).
 
 ### M-4a: Grade 4 whole numbers (chunk P2-09) (4.NBT, 4.OA)
 
@@ -505,7 +510,7 @@ Existing pattern (frozen): each unit skill `es_<unit>` has level 1 = hear the wo
 
 ### S-frame (chunk P2-30)
 
-- Unit data moves to `d-es.js` in the form `[spanish, english, picture, article]` (`article` = `el`/`la`/`''`). Existing units keep their words.
+- Unit data lives in `d-es.js` (`ES_UNITS`, shipped in P2-30; format in the file header): items `[spanish, english, picture, article, art?, say?]`, `article` = `el`/`la`/`los`/`las`/`''`. Existing units keep their words; a unit with `spell:1` has level 3.
 - New level 3 for vocabulary units: hear the word and spell it (`spell` kind with the accent row). Level 3 exists only where listed in section 2.3.
 - New item types for phrase units: hear a phrase -> pick the meaning; read a question -> pick the best reply; fill the blank; build the sentence (`order`).
 - If no Spanish voice is installed: show the word in text and a small "no Spanish voice on this tablet" note once per session.
@@ -517,8 +522,8 @@ Existing pattern (frozen): each unit skill `es_<unit>` has level 1 = hear the wo
 | Chunk | Unit skill | Words (author the full list; these are the anchors) |
 |-------|-----------|------------------------------------------------------|
 | P2-31 | `es_house` | la casa, la puerta, la ventana, la mesa, la silla, la cama, la cocina, el baño, el jardín, la lámpara |
-| P2-31 | `es_clothes` | la camisa, los pantalones, el vestido, los zapatos, el sombrero, la chaqueta, los calcetines, la falda |
-| P2-31 | `es_school` | el libro, el lápiz, la mochila, el papel, la maestra, el maestro, la escuela, la clase, las tijeras, el borrador |
+| P2-31 | `es_clothes` | la camisa, los pantalones, el vestido, los zapatos, el sombrero, la chamarra (R-01s; not "la chaqueta"), los calcetines, la falda |
+| P2-31 | `es_school` | el libro, el lápiz, la mochila, el papel, la maestra, el maestro, la escuela, la clase, las tijeras, la goma (R-01s; not "el borrador") |
 | P2-31 | `es_feel` | feliz, triste, enojado, cansado, asustado, enfermo, emocionado, tranquilo (faces) |
 | P2-32 | `es_days` | lunes to domingo, hoy, mañana, ayer |
 | P2-32 | `es_months` | enero to diciembre; seasons: primavera, verano, otoño, invierno |
@@ -571,6 +576,8 @@ school textbook would. Loosely follows NGSS topics and typical state social-stud
 
 Map skills use generated grid maps (`VIZ.coordGrid` with icons), not geographic outlines.
 
+Shipped (P2-37): the level numbers of a skill count only the grade bands it has, so they match the stop table in 2.4: `geo_world` 1-2 (K-2, 3-4), `geo_us` 1-2 (3-4, 5-6), `civ` 1-2 (K-2, 5-6), the three sciences 1-3. Each item carries its band in `grade`. Map skills are asked in words (map words, coordinates written as pairs like (3, 2), a key described in a sentence), so no question needs a map image.
+
 ---
 
 ## 7. Scope and sequence at a glance
@@ -610,6 +617,9 @@ BANK.gram = [
 | `topic` | strand tag for the report card |
 | `hint` | optional teaching hint; if missing, the level's default hint text is used |
 | `pic` | optional icon or object-art name |
+| `grid` | optional coordinate grid above the prompt, `{max, points}` (`VIZ.coordGrid`; R-01d). Points mark only what the prompt names |
+| `aloud` | `true` for Pre-K/K items (R-01d): the spoken prompt ends with the choices in the order shown, and the hint is spoken |
+| `cp` | optional picture answers, `{choice: [art name, emoji]}` for every choice (R-01d); the word shows small under each picture |
 
 Validator rules (run by `tools/test.js`): required fields per form; lengths (`q` <= 140 chars, choices <= 60); no `BAD` words;
 at least 40 items per level unless the level is generator-based; no two items with the same `q` + `a`.

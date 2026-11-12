@@ -1,0 +1,69 @@
+/* Brain Teasers: Cube Count (P3-16, src/js/84-bt-cubes.js), and the talk line shared by the three spatial types. Tokens only; motion
+   is transform and opacity. The light comes from the top left: top faces light (-1), left faces the base tone, right faces the
+   shade (-2), edges the deep tone (-3). */
+.cb{display:flex;flex-direction:column;gap:var(--s-2);width:100%;max-width:1000px;height:100%;margin:0 auto}
+.cb-say,.ro-say,.mr-say{flex:none;display:flex;align-items:center;gap:var(--s-2);min-height:var(--tap);padding:var(--s-1) var(--s-1) var(--s-1) var(--s-3);
+  border-radius:var(--r-card);background:var(--surface);box-shadow:inset 0 0 0 2px var(--line),0 3px 0 var(--ledge-soft)}
+.cb-msg,.ro-msg,.mr-msg{flex:1;min-width:0;margin:0;text-align:left;font-size:var(--fs-3);font-weight:700;line-height:1.3;color:var(--ink)}
+:is(.cb-msg,.ro-msg,.mr-msg).good{color:var(--good-ink)}
+:is(.cb-msg,.ro-msg,.mr-msg).try{color:var(--try-ink)}
+:is(.cb-msg,.ro-msg,.mr-msg).hint{color:var(--bt-shade)}
+:is(.cb-spk,.ro-spk,.mr-spk){flex:none}
+.cb-main{flex:1;min-height:0;display:flex;flex-direction:column;gap:var(--s-3)}
+/* the stack stands on a soft purple card */
+.cb-board{flex:1;min-height:150px;display:flex;align-items:center;justify-content:center;padding:var(--s-3);border-radius:var(--r-card);background:var(--bt-tint);
+  box-shadow:0 4px 0 var(--ledge-soft)}
+.cb-board.got{box-shadow:inset 0 0 0 3px var(--good),0 4px 0 var(--good-ink)}
+.cb-svg{width:100%;height:100%;max-width:520px;overflow:visible}
+.cb-side{flex:none;display:flex;flex-direction:column;align-items:center;gap:var(--s-3)}
+/* hint 2: the layers side by side, bottom first; hint 3 adds each layer's count */
+.cb-layers{display:flex;justify-content:center;gap:var(--s-2);width:100%}
+.cb-ly{flex:0 1 104px;min-width:0;display:flex;flex-direction:column;align-items:center;gap:2px;margin:0;padding:var(--s-1) var(--s-1) var(--s-2);border-radius:var(--r-btn);
+  background:var(--star-tint);box-shadow:0 3px 0 var(--star)}
+.cb-lsvg{width:100%;height:52px}
+.cb-ly figcaption{display:flex;align-items:center;gap:4px;font-size:var(--fs-1);font-weight:700;line-height:1.1;color:var(--ink-2);white-space:nowrap}
+.cb-ly b{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;padding:0 4px;border-radius:13px;background:var(--surface);color:var(--ink);
+  font-size:var(--fs-2);box-shadow:inset 0 0 0 2px var(--star-shade)}
+/* the answer: dots for the three stacks, the typed number, the pad */
+.cb-ans{display:flex;align-items:center;justify-content:center;gap:var(--s-3)}
+.cb-dots,.ro-dots{flex:none;display:flex;gap:6px}
+.cb-dots i,.ro-dots i{width:12px;height:12px;border-radius:50%;background:var(--surface);box-shadow:inset 0 0 0 3px var(--bt-tint)}
+.cb-dots i.now,.ro-dots i.now{box-shadow:inset 0 0 0 3px var(--bt)}
+.cb-dots i.on,.ro-dots i.on{background:var(--bt);box-shadow:none}
+.cb-box{display:flex;align-items:center;justify-content:center;min-width:96px;height:58px;padding:0 var(--s-3);border-radius:var(--r-btn);background:var(--surface);
+  color:var(--ink-3);font-family:var(--font-display);font-size:var(--fs-6);font-weight:700;line-height:1;font-variant-numeric:tabular-nums;
+  box-shadow:inset 0 0 0 3px var(--bt),0 4px 0 var(--bt-shade)}
+.cb-box.on{color:var(--ink)}
+.cb-box.no{background:var(--try-tint);box-shadow:inset 0 0 0 3px var(--try),0 4px 0 var(--try);animation:k-shake 240ms linear}
+.cb-box.ok{background:var(--good-tint);color:var(--good-ink);box-shadow:inset 0 0 0 3px var(--good),0 4px 0 var(--good-ink);animation:k-pop var(--t-slow) var(--spring)}
+.cb-unit{font-size:var(--fs-4);font-weight:700;color:var(--ink-2)}
+.cb .cb-pad{grid-template-columns:repeat(6,minmax(0,1fr));gap:var(--s-2);width:100%;max-width:460px}
+.cb .cb-pad .key{min-height:52px;font-size:var(--fs-5)}
+.cb .cb-pad .key .ic{width:30px;height:30px}
+/* faces and the tray */
+.cb-c0{--t:var(--ill-blue-1);--l:var(--ill-blue);--r:var(--ill-blue-2);--e:var(--ill-blue-3)}
+.cb-c1{--t:var(--ill-orange-1);--l:var(--ill-orange);--r:var(--ill-orange-2);--e:var(--ill-orange-3)}
+.cb-c2{--t:var(--ill-green-1);--l:var(--ill-green);--r:var(--ill-green-2);--e:var(--ill-green-3)}
+.cb-c3{--t:var(--ill-aqua-1);--l:var(--ill-aqua);--r:var(--ill-aqua-2);--e:var(--ill-aqua-3)}
+.cb-c4{--t:var(--ill-red-1);--l:var(--ill-red);--r:var(--ill-red-2);--e:var(--ill-red-3)}
+.cb-c5{--t:var(--ill-purple-1);--l:var(--ill-purple);--r:var(--ill-purple-2);--e:var(--ill-purple-3)}
+.cb-t{fill:var(--t)}
+.cb-l{fill:var(--l)}
+.cb-r{fill:var(--r)}
+.cb-t,.cb-l,.cb-r{stroke:var(--e);stroke-width:2;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.cb-ft{fill:var(--ill-white)}
+.cb-fl{fill:var(--ill-grey)}
+.cb-fr{fill:var(--ill-grey-2)}
+.cb-ft,.cb-fl,.cb-fr{stroke:var(--ill-grey-3);stroke-width:1.5;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.cb-fg{fill:none;stroke:var(--ill-grey-1);stroke-width:2;stroke-linecap:round;vector-effect:non-scaling-stroke}
+.cb-lsvg :is(.cb-t,.cb-l,.cb-r){stroke-width:1.2}
+.cb-lsvg :is(.cb-ft,.cb-fl,.cb-fr,.cb-fg){stroke-width:1}
+@media (max-width:560px){
+  .cb-msg,.ro-msg,.mr-msg{font-size:var(--fs-2)}
+}
+/* landscape tablets: the stack on the left, the layers and the pad on the right */
+@media (orientation:landscape) and (min-width:700px){
+  .cb-main{flex-direction:row;gap:var(--s-5)}
+  .cb-board{flex:1 1 55%;min-width:0}
+  .cb-side{flex:0 1 420px;justify-content:center}
+}

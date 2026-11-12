@@ -22,9 +22,10 @@
      dueItems(n, path, d)   up to n items due on day d (default today), most urgent first (oldest due, lowest box, most
                             missed). path ('math', 'read', 'es') keeps only items whose skill and level is a stop on that path.
                             dueItems().length is "N due today".
-     revQ(it)               the question for an item: rebuilt exactly (bankRebuild(bk) or genQ(sk, lv, seed)); when the rebuilt
-                            label differs (the generator changed) a fresh question of the same skill and level, and the item is
-                            kept. Carries q.rvk, the item key, so the answer is booked to the item.
+     revQ(it)               the question for an item: a single fact (revFact, R-01b) is rebuilt exactly (bankRebuild(bk) or
+                            genQ(sk, lv, seed)); anything else, or a fact whose rebuilt label differs (the generator changed), is a
+                            fresh question of the same skill and level, and the item is kept. Carries q.rvk, the item key, so the
+                            answer is booked to the item.
      revMiss(q, d)          a first wrong try (called by addMiss): item to box 0, due d, n + 1; creates it when new
      revRight(q, d)         a right first try (called by check): when the matching item is due, up one box (or out after
                             box 4). Returns true when an item moved (counted as "fixed" for game time).
@@ -58,6 +59,7 @@ const REV={
 };
 const revLabel=l=>String(l==null?'':l).slice(0,REV.LABEL);
 const revKey=o=>o.sk+'|'+o.lv+'|'+revLabel(o.label);
+const revNoArt=l=>String(l).replace(/^(el|la|los|las) /,''); // R-01s: a Spanish label without its leading article
 const revDue=(it,d)=>it.due<=d||it.due>d+REV.INT[REV.INT.length-1];
 const revOk=it=>!!(SK[it.sk]&&SK[it.sk].gen&&it.lv>=1&&it.lv<=(SK[it.sk].max||1));
 const revOnPath=(it,p)=>!!NODES[p]&&NODES[p].some(n=>n.sk==it.sk&&n.lv==it.lv);
@@ -113,7 +115,27 @@ function revRight(q,d){
   return true;
 }
 
-// the exact question again, or a fresh one of the same skill and level when the generator has changed
+/* R-01b: is a review item a single fact, worth asking again exactly? Number facts (two numbers up to 20 added or taken away, up to
+   12 times or divided by 12, with one number missing: "7 + 5 = ?", "? + 6 = 14", "6 × 7 = ?", "32 ÷ ? = 4") and single-item
+   knowledge (a sight word, a picture word, a spelling word, a letter, a Spanish word: "hear “said”", "spelling “night”",
+   "el pato (read)"). Everything else (two-choice questions, word problems, multi-step sums, comprehension, grammar ...) comes back as
+   a fresh question of the same skill and level, so the child cannot just remember that one item's answer. q: the rebuilt
+   question (a question with two choices is never a fact). */
+const REV_ARITH=/^(\d+|\?) ([+−×÷-]) (\d+|\?) = (\d+|\?)$/;
+const REV_WORD=/^(hear|read|spell|spelling) “[^”]+”$|^(big|little) [A-Za-z]$|^[^()]+ \((listen|read|spell)\)$/;
+function revFact(it,q){
+  if(q&&q.kind=='choice'&&Array.isArray(q.choices)&&q.choices.length<=2)return false;
+  const l=String(it.label),m=REV_ARITH.exec(l);
+  if(m){
+    const n=x=>x=='?'?0:+x,a=n(m[1]),op=m[2],b=n(m[3]),c=n(m[4]);
+    if(op=='×')return a<=12&&b<=12&&c<=144;
+    if(op=='÷')return a<=144&&b<=12&&c<=12;
+    return a<=20&&b<=20&&c<=20;
+  }
+  return REV_WORD.test(l);
+}
+// the exact question again when it is a single fact (revFact), else (or when the generator has changed) a fresh one of the same
+// skill and level, with another label when one comes within a few tries
 function revQ(it){
   if(!it||!revOk(it))return null;
   let q=null;
@@ -126,7 +148,13 @@ function revQ(it){
       for(let s=1;s<=REV.FIND;s++){const t=genQ(it.sk,it.lv,s);if(revLabel(t.label)===it.label){it.seed=s;q=t;break}}
     }
   }catch(e){q=null}
-  if(!q||revLabel(q.label)!==it.label)q=genQ(it.sk,it.lv);
+  // R-01s: the first Spanish units gained el / la ("pato (read)" is now "el pato (read)"): a Spanish item rebuilt from its seed whose
+  // label differs only by that article is the same question, and the item takes the new label (so a new miss finds it)
+  if(q&&/^es_/.test(it.sk)&&revLabel(q.label)!==it.label&&revNoArt(revLabel(q.label))===revNoArt(it.label))it.label=revLabel(q.label);
+  if(!q||revLabel(q.label)!==it.label||!revFact(it,q)){
+    q=null;
+    for(let t=0;t<8&&(!q||revLabel(q.label)===it.label);t++)q=genQ(it.sk,it.lv);
+  }
   q.sk=it.sk;
   q.lv=it.lv;
   q.rvk=revKey(it);

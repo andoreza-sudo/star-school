@@ -1,0 +1,50 @@
+/* Brain Teasers: Copy Cat (P3-14, src/js/83-bt-copycat.js). Tokens only; motion is transform and opacity (a lit pad grows a little
+   and its light layer fades in; reduced motion and calm mode make that instant, the light itself still shows). --cols and --ps come
+   from the JS layout. */
+.cc{display:flex;flex-direction:column;gap:var(--s-2);width:100%;max-width:1040px;margin:0 auto}
+.cc-say{flex:none;display:flex;align-items:center;gap:var(--s-2);min-height:56px;padding:var(--s-1) var(--s-1) var(--s-1) var(--s-2);border-radius:var(--r-card);
+  background:var(--surface);box-shadow:inset 0 0 0 2px var(--line),0 3px 0 var(--ledge-soft)}
+.cc-cat{flex:none;display:flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:50%;background:var(--bt-tint);color:var(--bt-shade)}
+.cc-msg{flex:1;min-width:0;margin:0;text-align:left;font-size:var(--fs-3);font-weight:700;line-height:1.3;color:var(--ink-2)}
+.cc-msg.turn{color:var(--bt-shade)}
+.cc-msg.good{color:var(--good-ink)}
+.cc-msg.try{color:var(--try-ink)}
+.cc-msg.hint{color:var(--bt-shade)}
+.cc-spk{flex:none}
+.cc-bar{flex:none;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--s-2) var(--s-3);padding:0 var(--s-2);min-height:28px}
+.cc-rounds,.cc-steps{display:flex;gap:6px}
+.cc-rounds i{width:14px;height:14px;border-radius:50%;background:var(--surface);box-shadow:inset 0 0 0 3px var(--bt-tint)}
+.cc-rounds i.now{box-shadow:inset 0 0 0 3px var(--bt)}
+.cc-rounds i.on{background:var(--bt);box-shadow:none}
+.cc-steps i{width:10px;height:10px;border-radius:3px;background:var(--line)}
+.cc-steps i.on{background:var(--good)}
+.cc-area{flex:1;min-height:0;display:flex;align-items:center;justify-content:center}
+.cc-pads{display:grid;grid-template-columns:repeat(var(--cols),var(--ps));gap:16px;justify-content:center}
+/* a pad: a white tile on a ledge with its shape; lit, its colour's light tone fills the tile and it grows a little */
+.cc-pad{position:relative;display:flex;align-items:center;justify-content:center;width:var(--ps);height:var(--ps);padding:0;border:0;border-radius:var(--r-hero);
+  background:var(--surface);box-shadow:inset 0 0 0 3px var(--line),0 6px 0 var(--ledge-soft);cursor:pointer;transition:transform var(--t-fast) var(--ease)}
+.cc-pad:active{transform:translateY(4px)}
+.cc-lit{position:absolute;inset:0;border-radius:inherit;background:var(--p1);box-shadow:inset 0 0 0 5px var(--p);opacity:0;transition:opacity 90ms linear}
+.cc-sh{position:relative;width:72%;height:72%}
+.cc-pad.on{transform:scale(1.05)}
+.cc-pad.on .cc-lit{opacity:1}
+.cc-pads.wait .cc-pad{cursor:default}
+.cc-pads.wait .cc-pad:active{transform:none}
+.cc-pads.wait .cc-pad.on{transform:scale(1.05)}
+/* the next pad (hint 2 and 3): a star-yellow ring; a wrong pad: amber with a dashed ring */
+.cc-pad.tip{box-shadow:inset 0 0 0 6px var(--star),0 6px 0 var(--star-shade)}
+.cc-pad.no{background:var(--try-tint);box-shadow:inset 0 0 0 4px var(--try),0 6px 0 var(--try);outline:3px dashed var(--try-ink);outline-offset:-12px}
+.cc-pad:focus-visible{outline:3px solid var(--brand);outline-offset:3px}
+/* colours: highlight, base and shade tones of one hue (DESIGN_SYSTEM 6.5); the light comes from the top left */
+.cc-c0{--p1:var(--ill-red-1);--p:var(--ill-red);--p2:var(--ill-red-2)}
+.cc-c1{--p1:var(--ill-blue-1);--p:var(--ill-blue);--p2:var(--ill-blue-2)}
+.cc-c2{--p1:var(--ill-yellow-1);--p:var(--ill-yellow);--p2:var(--ill-yellow-2)}
+.cc-c3{--p1:var(--ill-green-1);--p:var(--ill-green);--p2:var(--ill-green-2)}
+.cc-c4{--p1:var(--ill-purple-1);--p:var(--ill-purple);--p2:var(--ill-purple-2)}
+.cc-c5{--p1:var(--ill-orange-1);--p:var(--ill-orange);--p2:var(--ill-orange-2)}
+.cc-sh path{stroke-linejoin:round;stroke-linecap:round}
+.cc-sw{fill:var(--ledge-soft);stroke:var(--ledge-soft);stroke-width:8}
+.cc-sd{fill:var(--p2);stroke:var(--p2);stroke-width:8}
+.cc-sb{fill:var(--p);stroke:var(--p);stroke-width:7}
+.cc-sg{fill:none;stroke:var(--ill-white);stroke-width:6;opacity:.75}
+@media (max-width:560px){ .cc-msg{font-size:var(--fs-2)} }

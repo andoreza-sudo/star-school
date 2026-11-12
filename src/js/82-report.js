@@ -217,30 +217,35 @@ const REP = {
   },
   html(m) {
     const nm = m.name ? esc(m.name) : 'your child';
-    const sec = (id, h, body) => `<section class="card rp-card" id="${id}"><h2 class="rp-h2">${h}</h2>${body}</section>`;
+    // P4-12: each section is a Grown-ups card with an icon header (styles in 48-setup-grown-care.css)
+    const sec = (id, icon, h, body) => `<section class="gw-card rp-card" id="${id}"><h2 class="rp-h2 gw-h"><span class="gw-hi">${ico(icon, 24)}</span>`
+      + `<span>${h}</span></h2>${body}</section>`;
     return `<div class="rp-head"><div class="rp-t">Report card for ${nm}</div><div class="small">${esc(m.date)}, ${m.year} · grade ${esc(gradeLabel(m.grade))} · Star School</div></div>`
-      + sec('rp-weeks', 'This week and last week', REP.weeks(m) + '<div class="small rp-key">A week is the last 7 days, ending today. Accuracy is the share of questions right on the first try. Only time with a question on screen counts.</div>')
-      + sec('rp-level', 'Where ' + nm + ' is working', REP.level(m))
-      + sec('rp-top', 'Skills by topic', REP.strands(m))
-      + sec('rp-needs', 'Needs practice', REP.needs(m))
-      + sec('rp-recent', 'Recently mastered', REP.recent(m))
-      + sec('rp-flu', 'Fact Sprint bests', REP.fluency(m))
-      + sec('rp-streak', 'Streak', REP.streak(m));
+      + sec('rp-weeks', 'calendar', 'This week and last week', REP.weeks(m) + '<div class="small rp-key">A week is the last 7 days, ending today. Accuracy is the share of questions right on the first try. Only time with a question on screen counts.</div>')
+      + sec('rp-level', 'map', 'Where ' + nm + ' is working', REP.level(m))
+      + sec('rp-top', 'chart', 'Skills by topic', REP.strands(m))
+      + sec('rp-needs', 'target', 'Needs practice', REP.needs(m))
+      + sec('rp-recent', 'medal', 'Recently mastered', REP.recent(m))
+      + sec('rp-flu', 'bolt', 'Fact Sprint bests', REP.fluency(m))
+      + sec('rp-streak', 'flame', 'Streak', REP.streak(m));
   },
 };
 function report() {
   let m;
   try {m = REP.data()} catch (e) {m = null}
-  view(`<div class="top rp-noprint"><button class="btn sm" id="back" aria-label="Back">${ico('back', 20)}</button><div class="title">Report card</div>`
-    + `<button class="btn sm" id="rp-print" style="margin-left:auto">Print</button></div><div class="scroll rp-scroll">`
-    + (m ? REP.html(m) : '<div class="card rp-empty">The report card could not be drawn.</div>') + `</div>`);
+  view(`<div class="top tbar adult gw-top rp-noprint">${UI.ibtn('back', 'Back', {size: 'sm', id: 'back'})}`
+    + `<div class="ttl gx-ttl"><span class="gx-tb gw-tb">${ico('chart', 24)}</span><span>Report card</span></div>`
+    + `${UI.btn('Print', {size: 'sm', icon: 'doc', id: 'rp-print'})}</div>`
+    + `<div class="rp-noprint rp-online">${onlineNote()}</div><div class="scroll rp-scroll gw">`
+    + (m ? REP.html(m) : '<div class="gw-card rp-empty">The report card could not be drawn.</div>') + `</div>`);
   $('#back').onclick = () => grown();
-  $('#rp-print').onclick = () => {try {window.print()} catch (e) {}};
+  // printing can still save a PDF offline, so offline only warns (needOnline block:false)
+  $('#rp-print').onclick = () => needOnline(() => {try {window.print()} catch (e) {}}, {block: false});
 }
-/* Grown-ups entry (80-grown.js): one card with one button. */
+/* Grown-ups entry (80-grown.js): one card (GW.card) with one button. */
 function reportGrownHTML() {
-  return `<div class="card rp-entry"><button class="btn sm" id="rp-open">${ico('target', 22)} Report card</button>`
-    + `<span class="small">Time, accuracy, where ${esc(S.name || 'your child')} is working, what to practise.</span></div>`;
+  return GW.card('', 'chart', 'Report card', UI.btn('Open the report card', {kind: 'primary', size: 'sm', icon: 'chart', id: 'rp-open'}),
+    {cls: 'rp-entry', sub: `Time, accuracy, where ${esc(S.name || 'your child')} is working, what to practise. You can print it.`});
 }
 function reportGrownBind() {
   $('#rp-open').onclick = () => report();

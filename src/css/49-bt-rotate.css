@@ -1,0 +1,46 @@
+/* Brain Teasers: Turn It (P3-16, src/js/85-bt-rotate.js). Tokens only; motion is transform and opacity (the .choice component).
+   Pieces are drawn like the pattern tiles: a soft ledge down-right, the shade tone, the base tone toward the top-left light, a gloss.
+   The talk line and the dots are shared with Cube Count (49-bt-cubes.css). */
+.ro{display:flex;flex-direction:column;gap:var(--s-3);width:100%;max-width:980px;min-height:100%;margin:0 auto}
+.ro-main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--s-4);padding-bottom:var(--s-2)}
+.ro-top{display:flex;align-items:center;justify-content:center;gap:var(--s-3);width:100%}
+/* the shape on a soft purple card, with a turn badge */
+.ro-card{position:relative;flex:none;width:min(40vw,150px);aspect-ratio:1;padding:var(--s-2);border-radius:var(--r-card);background:var(--bt-tint);
+  box-shadow:0 4px 0 var(--ledge-soft)}
+.ro-card .ro-t{display:block;width:100%;height:100%}
+.ro-card.got{box-shadow:inset 0 0 0 3px var(--good),0 4px 0 var(--good-ink)}
+.ro-tag{position:absolute;top:-8px;left:-8px;display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;background:var(--bt);
+  color:var(--surface);box-shadow:0 3px 0 var(--bt-shade)}
+/* hint 2: the four turns */
+.ro-turns{display:grid;grid-template-columns:repeat(2,minmax(0,62px));gap:var(--s-2);padding:var(--s-2);border-radius:var(--r-btn);background:var(--star-tint);
+  box-shadow:0 3px 0 var(--star)}
+.ro-tn{display:block;aspect-ratio:1;border-radius:var(--r-chip);background:var(--surface)}
+.ro-tn .ro-t{display:block;width:100%;height:100%}
+/* choices */
+.ro-chs{display:grid;gap:var(--s-3);width:100%;max-width:400px}
+.ro-chs.n4{grid-template-columns:repeat(2,minmax(0,1fr))}
+.ro-chs.n3{grid-template-columns:repeat(3,minmax(0,1fr));max-width:460px}
+.ro-A .ro-card{width:min(56vw,220px)}
+.ro-ch.choice{aspect-ratio:1;min-height:var(--tap-pk);padding:var(--s-2)}
+.ro-ch .ro-t{display:block;width:100%;height:100%}
+.ro-ch:is(.right,.wrong)::before,.ro-ch.wrong::after{transform:scale(.8);transform-origin:top right}
+.ro-ch.right::after{transform:rotate(45deg) scale(.8)}
+.ro-c0{--p:var(--ill-blue);--p2:var(--ill-blue-2)}
+.ro-c1{--p:var(--ill-orange);--p2:var(--ill-orange-2)}
+.ro-c2{--p:var(--ill-green);--p2:var(--ill-green-2)}
+.ro-c3{--p:var(--ill-purple);--p2:var(--ill-purple-2)}
+.ro-c4{--p:var(--ill-aqua);--p2:var(--ill-aqua-2)}
+.ro-lg{fill:var(--ledge-soft)}
+.ro-sd{fill:var(--p2)}
+.ro-bs{fill:var(--p)}
+.ro-gl{fill:none;stroke:var(--ill-white);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;opacity:.75}
+.ro-sh{fill:var(--ill-grey-3)}
+/* landscape tablets: the shape on the left, the choices on the right */
+@media (orientation:landscape) and (min-width:700px){
+  .ro-main{flex-direction:row;gap:var(--s-7)}
+  .ro-top{flex-direction:column;width:auto}
+  .ro-card{width:min(190px,30vh)}
+  .ro-turns{grid-template-columns:repeat(4,minmax(0,56px))}
+  .ro-chs.n4{max-width:min(400px,calc(100vh - 264px))}
+  .ro-chs.n3{max-width:560px}
+}

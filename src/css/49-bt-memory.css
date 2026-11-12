@@ -1,0 +1,58 @@
+/* Brain Teasers: Memory Match (P3-14, src/js/82-bt-memory.js). Tokens only; motion is transform and opacity (the flip turns the card
+   on its Y axis; reduced motion and calm mode make it instant, 20-base.css). --cols, --cw and --gap come from the JS layout. */
+.mm{display:flex;flex-direction:column;gap:var(--s-2);width:100%;max-width:1040px;margin:0 auto}
+.mm-say{flex:none;display:flex;align-items:center;gap:var(--s-2);min-height:var(--tap);padding:var(--s-1) var(--s-1) var(--s-1) var(--s-3);border-radius:var(--r-card);
+  background:var(--surface);box-shadow:inset 0 0 0 2px var(--line),0 3px 0 var(--ledge-soft)}
+.mm-msg{flex:1;min-width:0;margin:0;text-align:left;font-size:var(--fs-2);font-weight:700;line-height:1.3;color:var(--ink-2)}
+.mm-msg.good{color:var(--good-ink)}
+.mm-msg.try{color:var(--try-ink)}
+.mm-msg.hint{color:var(--bt-shade)}
+.mm-spk{flex:none}
+.mm-bar{flex:none;display:flex;align-items:center;justify-content:space-between;gap:var(--s-3);padding:0 var(--s-2);min-height:24px}
+.mm-got{display:flex;flex-wrap:wrap;gap:5px}
+.mm-got i{width:14px;height:14px;border-radius:4px;background:var(--surface);box-shadow:inset 0 0 0 3px var(--bt-tint)}
+.mm-got i.on{background:var(--good);box-shadow:0 2px 0 var(--good-ink)}
+.mm-turns{font-size:var(--fs-2);font-weight:700;color:var(--ink-3);font-variant-numeric:tabular-nums;white-space:nowrap}
+.mm-area{flex:1;min-height:0;display:flex;align-items:center;justify-content:center}
+.mm-grid{display:grid;grid-template-columns:repeat(var(--cols),var(--cw));gap:var(--gap);justify-content:center}
+/* a card: a button that holds two faces back to back */
+.mm-c{position:relative;width:var(--cw);height:var(--ch,calc(var(--cw) * 1.25));padding:0;border:0;background:none;cursor:pointer;perspective:600px;border-radius:var(--r-btn)}
+.mm-in{position:absolute;inset:0;transform-style:preserve-3d;transition:transform var(--t-slow) var(--ease)}
+.mm-c.up .mm-in{transform:rotateY(180deg)}
+.mm-back,.mm-face{position:absolute;inset:0 0 4px;display:flex;align-items:center;justify-content:center;border-radius:var(--r-btn);backface-visibility:hidden;
+  -webkit-backface-visibility:hidden}
+/* the back: brain-teaser purple, a lighter inset frame toward the light, a star, a ledge */
+.mm-back{background:var(--bt);color:var(--bt-tint);box-shadow:0 4px 0 var(--bt-shade)}
+.mm-back i{position:absolute;inset:6px;border-radius:calc(var(--r-btn) - 5px);box-shadow:inset 2px 2px 0 var(--bt-tint);opacity:.35}
+.mm-back .ic{width:calc(var(--cw) * .34);height:calc(var(--cw) * .34);color:var(--star)}
+.mm-c:active .mm-back{transform:translateY(3px);box-shadow:0 1px 0 var(--bt-shade)}
+.mm-face{transform:rotateY(180deg);flex-direction:column;padding:4px;background:var(--surface);color:var(--ink);box-shadow:inset 0 0 0 3px var(--bt-tint),0 4px 0 var(--ledge-soft)}
+.mm-c.got .mm-face{background:var(--good-tint);box-shadow:inset 0 0 0 3px var(--good),0 4px 0 var(--good-ink)}
+.mm-c.hint .mm-face{background:var(--star-tint);box-shadow:inset 0 0 0 3px var(--star),0 4px 0 var(--star-shade)}
+.mm-c.no .mm-face{background:var(--try-tint);box-shadow:inset 0 0 0 3px var(--try),0 4px 0 var(--try)}
+.mm-c.peek .mm-face{box-shadow:inset 0 0 0 4px var(--star),0 4px 0 var(--star-shade)}
+.mm-c.got .mm-face::after,.mm-c.hint .mm-face::after{content:'';position:absolute;top:5px;right:5px;width:18px;height:18px;border-radius:50%;background:var(--good)}
+.mm-c.hint .mm-face::after{background:var(--star-shade)}
+.mm-c.got .mm-face::before,.mm-c.hint .mm-face::before{content:'';position:absolute;z-index:1;top:8px;right:11px;width:4px;height:8px;border:solid var(--surface);
+  border-width:0 3px 3px 0;transform:rotate(45deg)}
+.mm-c.got,.mm-c.hint{cursor:default}
+.mm-c.got .mm-in{animation:k-pop var(--t-slow) var(--spring)}
+.mm-c.no .mm-in{animation:mm-no 420ms var(--ease)}
+@keyframes mm-no{0%,100%{transform:rotateY(180deg)}30%{transform:rotateY(180deg) translateX(-4px)}65%{transform:rotateY(180deg) translateX(4px)}}
+.mm-c:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+/* faces */
+.mm-pic{display:flex;align-items:center;justify-content:center;font-size:calc(var(--cw) * .62);line-height:1}
+.mm-pic .art{width:1em;height:1em}
+.mm-let,.mm-num{font-family:var(--font-display);font-size:calc(var(--cw) * .5);line-height:1;color:var(--bt-shade);font-variant-numeric:tabular-nums}
+.mm-num{font-size:min(calc(var(--cw) * .36),40px)}
+.mm-let{font-family:inherit;font-size:calc(var(--cw) * .56)}
+.mm-txt{font-size:clamp(16px,calc(var(--cw) * .24),28px);font-weight:700;line-height:1.15;text-align:center;overflow-wrap:anywhere}
+.mm-txt.long{font-size:clamp(16px,calc(var(--cw) * .19),24px)}
+.mm-es{color:var(--es-shade)}
+.mm-root{color:var(--bt-shade)}
+.mm-root::after{content:'-';opacity:.6}
+.mm-viz{display:flex;align-items:center;justify-content:center;width:100%;height:100%}
+.mm-viz .viz{width:86%;height:auto;max-height:86%}
+.mm-fr{display:inline-flex;flex-direction:column;align-items:center;font-family:var(--font-display);font-size:min(calc(var(--cw) * .3),34px);line-height:1.05;
+  color:var(--ink);font-variant-numeric:tabular-nums}
+.mm-fr b+b{border-top:3px solid currentColor;padding:0 4px}

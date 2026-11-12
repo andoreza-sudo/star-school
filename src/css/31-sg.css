@@ -1,0 +1,62 @@
+/* Kindergarten math, world Shape Garden (P2-02): ten frames of objects, shapes, scenes for position and measuring.
+   Builds on 31-pk.css (same audio-first presentation). Tokens only; sizes follow the prompt's font size (em). */
+/* objects in ten frames (rows of 5): the first frame is the full ten */
+.sgfrs{display:flex;flex-wrap:wrap;justify-content:center;gap:var(--s-3);max-width:100%}
+.sgfr{display:grid;grid-template-columns:repeat(5,1.25em);grid-auto-rows:1.25em;gap:2px;padding:2px;border:3px solid var(--ink-3);border-radius:var(--r-btn);background:var(--surface)}
+.sgfr.sgten{border-color:var(--math)}
+.sgc{display:flex;align-items:center;justify-content:center;border:2px solid var(--line);border-radius:4px;font-size:.85em}
+.sgc .pko{min-width:0}
+/* two plates of up to 10 objects */
+.pkpl.sgp10{grid-template-columns:repeat(4,auto);font-size:.72em}
+.sgpl{min-width:clamp(120px,38vw,170px);min-height:calc(var(--tap-pk)*2)}
+/* pairing up objects (the hint for more / fewer / same) */
+.sgpairs{display:flex;flex-wrap:nowrap;gap:.1em;justify-content:center;font-size:.55em;max-width:100%}
+.pkhint .sgfrs{font-size:.5em}
+.sgpr{display:flex;flex-direction:column;align-items:center;padding:0 .05em;border-radius:6px;background:var(--surface-2)}
+.sgpr.sgx{background:var(--star-tint)}
+.sgs{display:block;min-height:1.2em;min-width:1.1em;text-align:center}
+.sgs .pko{min-width:0}
+/* shapes and solids */
+.sgsh{display:flex;align-items:center;justify-content:center;width:100%}
+.ch .sgsh .viz{--k:.8;max-width:100%}
+.sgbigshape .viz{--k:1.1}
+.sgobj{display:inline-block;font-size:1.6em;line-height:1}
+.sgobj .art{width:1em;height:1em}
+/* eight shapes in a pattern row */
+.pkpat.sgpat{gap:var(--s-1)}
+.pkpat.sgpat .pks,.pkpat.sgpat .pkunk{width:clamp(30px,9.4vw,60px)}
+.pkpat.sgpat .pko .pks{width:clamp(30px,9.4vw,60px)}
+/* tap targets in scenes: pictures with a tap-sized box, right and wrong as colour */
+.sgt{display:inline-flex;align-items:center;justify-content:center;min-width:var(--tap-pk);min-height:var(--tap-pk);padding:var(--s-1);
+  border:4px solid var(--line);border-radius:var(--r-card);background:var(--surface);cursor:pointer;font-size:1.5em;line-height:1}
+.sgt .art{width:1em;height:1em}
+.sgt.right{background:var(--good-tint);border-color:var(--good);animation:bump .4s}
+.sgt.wrong{background:var(--try-tint);border-color:var(--try);opacity:.6}
+.sgscene{display:flex;align-items:center;justify-content:center;gap:var(--s-3)}
+.sgref{display:inline-flex;align-items:center;justify-content:center;font-size:2em;line-height:1;min-width:1.1em}
+.sgref .art{width:1em;height:1em}
+.sgcol{flex-direction:column}
+.sggrid{display:grid;grid-template-columns:auto auto;justify-content:center;gap:var(--s-3);align-items:center;justify-items:center}
+.sggrid.sgflip{direction:rtl}
+.sgrow{flex-direction:row}
+/* in front of / behind: the one in front overlaps the lower right of the thing, the one behind peeks out above and left */
+.sgdepth{position:relative;display:block;width:min(100%,9em);height:clamp(200px,32vh,280px);margin-bottom:var(--s-3)}
+.sgdepth .sgref{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);z-index:2;font-size:2.4em}
+.sgdepth .sgbk{position:absolute;left:36%;top:0;z-index:1;font-size:.9em}
+.sgdepth .sgfk{position:absolute;left:30%;bottom:0;z-index:3;font-size:.9em}
+.sgdepth .sgt{border-color:transparent;background:none}
+.sgdepth .sgt.right{background:var(--good-tint);border-color:var(--good)}
+/* measuring: crayons (left edges), towers (standing on the floor), a tipped scale with two tap zones */
+.sgbars{display:flex;flex-direction:column;align-items:flex-start;gap:var(--s-2);max-width:100%}
+.sgbars .sgt{padding:var(--s-1) var(--s-2);min-height:var(--tap);justify-content:flex-start}
+.sgbarrow{display:inline-flex;align-items:center}
+.sgaligned{border-left:3px dashed var(--brand);padding-left:var(--s-1)}
+.sgtowers{align-items:flex-end}
+.sgtowers .sgt{align-items:flex-end}
+.sgbal{position:relative;max-width:100%}
+.sgbal i{position:absolute;top:0;bottom:0;width:50%;border-radius:var(--r-card);cursor:pointer}
+.sgbal i[data-v=l]{left:0}
+.sgbal i[data-v=r]{right:0}
+.sgbal i.right{background:var(--good-tint);outline:4px solid var(--good)}
+.sgbal i.wrong{background:var(--try-tint);outline:4px solid var(--try)}
+.choices.syms.pk4,.choices.syms.pk2{grid-template-columns:1fr 1fr}

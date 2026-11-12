@@ -1,0 +1,115 @@
+/* P2-08 step hints (CURRICULUM M-hints). Markup: hintSteps in 39-hints.js wraps one step of a builder in 39b-steps.js:
+   .hs (+ txt | mid | wide) > .hs-pips + .hs-step > .hsb (the work board) + p.hsc (the caption).
+   The board is a grid of i cells (one column per place): .cy carries, .n digits, .ln lines, .op the operator column, .pt the
+   point column; cell states .on (used in this step), .nw (written in this step), .x (crossed out), .pz (a 0 written to line up),
+   .ask (the "?"), .src (a digit just brought down), .sg (minus sign). Fractions: .hsf with .hfr (stacked), .har (x3 labels).
+   Also the prompt layouts ST.vert (.veq .gh: hidden zeros that keep the points lined up) and ST.ldiv (.ldq).
+   Tokens only; animate transform and opacity only; no filter. */
+
+/* ---------- the step panel: board beside the caption, or above it when the board is wide ---------- */
+.hs{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto 1fr;grid-template-areas:"b p" "b c";
+  column-gap:var(--s-4);row-gap:var(--s-2);
+  align-items:start;width:100%;text-align:left;font-weight:400}
+.hs-step{display:contents}
+.hs .hsb{grid-area:b}
+.hs .hsc{grid-area:c}
+.hs-pips{grid-area:p;display:flex;align-items:center;gap:6px;min-height:12px;padding-top:2px;color:var(--try-ink);font-size:var(--fs-2)}
+.hs.txt{grid-template-columns:minmax(0,1fr);grid-template-areas:"p" "c"}
+.hs.wide{grid-template-columns:minmax(0,1fr);grid-template-areas:"p" "b" "c"}
+.hs.wide .hsb{justify-self:center}
+@media (max-width:480px){
+  .hs.mid{grid-template-columns:minmax(0,1fr);grid-template-areas:"p" "b" "c"}
+  .hs.mid .hsb{justify-self:center}
+}
+.hs-pips i{width:8px;height:8px;border-radius:var(--r-pill);box-shadow:inset 0 0 0 2px var(--try-ink);opacity:.55}
+.hs-pips i.dn{background:var(--try-ink);opacity:1}
+.hs-pips i.on{width:22px;background:var(--try-ink);opacity:1;transform-origin:left center;animation:k-hsgrow var(--t-slow) var(--ease)}
+@keyframes k-hsgrow{from{transform:scaleX(.4)}}
+.hsc{margin:0;color:var(--ink);font-size:var(--fs-3);font-weight:400;line-height:1.4;animation:k-hsin var(--t-slow) var(--ease)}
+.hsc b{color:var(--try-ink);font-weight:700}
+@keyframes k-hsin{from{opacity:0;transform:translateY(6px)}}
+
+/* ---------- the work board ---------- */
+.hsb{--hsw:1.2em;--hpt:.45em;display:grid;align-items:center;justify-content:start;padding:var(--s-2) var(--s-3);border-radius:var(--r-btn);
+  background:var(--surface);box-shadow:inset 0 0 0 2px var(--try),0 3px 0 var(--try);color:var(--ink);font-family:var(--font-display);
+  font-size:var(--fs-4);font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.hsb>i{position:relative;display:grid;place-items:center;height:1.3em;font-style:normal;border-radius:var(--r-chip)}
+.hsb>i.cy{height:1.25em;font-size:.62em;color:var(--read)}
+.hsb>i.op{place-items:center end;min-width:.8em;padding-right:.15em;color:var(--ink-2)}
+.hsb>i.pt{place-items:end center;padding-bottom:.1em}
+.hsb>i.pt.cy{padding:0}
+/* lines: under the numbers, under each product in long division */
+.hsb>i.ln{height:.4em}
+.hsb>i.ln::after{content:'';position:absolute;left:-1px;right:-1px;top:50%;height:3px;margin-top:-1.5px;background:var(--ink)}
+.hsb>i.ln.l0::after{display:none}
+.hsb>i.ln.nw::after{transform-origin:right center;animation:k-hsline var(--t-slow) var(--ease)}
+@keyframes k-hsline{from{transform:scaleX(0)}}
+/* states */
+.hsb>i.on{background:var(--try-tint);box-shadow:inset 0 0 0 2px var(--try)}
+.hsb>i.nw{color:var(--brand);animation:k-hspop var(--t-slow) var(--spring)}
+.hsb>i.cy.nw{color:var(--read)}
+@keyframes k-hspop{from{opacity:0;transform:translateY(-.35em) scale(.6)}}
+.hsb>i.pz{color:var(--ink-3)}
+.hsb>i.x{color:var(--ink-3)}
+.hsb>i.x::after{content:'';position:absolute;left:20%;right:20%;top:50%;height:2px;margin-top:-1px;border-radius:var(--r-pill);
+  background:var(--read);transform:rotate(-60deg)}
+.hsb>i.x.nw{animation:none}
+.hsb>i.x.nw::after{animation:k-hsx var(--t-slow) var(--ease)}
+@keyframes k-hsx{from{transform:rotate(-60deg) scaleX(0)}}
+.hsb>i.ask{color:var(--try-ink);background:var(--try-tint);outline:2px dashed var(--try-ink);outline-offset:-2px;
+  animation:k-hspop var(--t-slow) var(--spring)}
+.hsb>i.src{color:var(--brand);box-shadow:inset 0 -3px 0 var(--brand);border-radius:0}
+
+/* long division: the divisor sits in the operator column with the bracket on its right; a line (.vn) runs over the dividend */
+.hsdiv>i.op.dd{padding-right:.4em;color:var(--ink)}
+.hsdiv>i.op.dd::after{content:'';position:absolute;right:0;top:-.2em;bottom:.05em;width:.26em;border-right:3px solid var(--ink);
+  border-radius:0 100% 100% 0/0 50% 50% 0}
+.hsdiv>i.op.vn.l0::after{display:block;left:auto;right:-1px;width:.3em}
+.hsdiv>i.op.n:not(.dd){color:var(--ink)}
+.hsdiv>i.sg{color:var(--ink)}
+
+/* fractions: stacked fractions, the "x3" steps between them, and two lines for a common bottom */
+.hsf{display:flex;align-items:center;gap:var(--s-2);padding:var(--s-2) var(--s-3)}
+.hsf.hsfs{flex-direction:column;align-items:flex-start;gap:var(--s-2)}
+.hfl{display:flex;align-items:center;gap:var(--s-2)}
+.hfr{position:relative;display:inline-grid;justify-items:center;row-gap:.3em}
+.hfr::before{content:'';position:absolute;left:0;right:0;top:50%;height:3px;margin-top:-1.5px;border-radius:var(--r-pill);background:var(--ink)}
+.hfr>i{display:grid;place-items:center;min-width:1.5em;height:1.3em;padding:0 .15em;font-style:normal;border-radius:var(--r-chip)}
+.hfr>i.on{background:var(--try-tint);box-shadow:inset 0 0 0 2px var(--try)}
+.hfr>i.nw{color:var(--brand);animation:k-hspop var(--t-slow) var(--spring)}
+.hfr>i.ask{color:var(--try-ink);background:var(--try-tint);outline:2px dashed var(--try-ink);outline-offset:-2px}
+.hfr>i.dm{background:var(--surface-2)}
+.hop{color:var(--ink-2)}
+.har{display:grid;row-gap:.7em}
+.hk{display:flex;align-items:center;gap:2px;height:1.2em;color:var(--read);font-size:.7em}
+.hk .ic{width:1.1em;height:1.1em}
+.hk.l0{visibility:hidden}
+.hk.nw{animation:k-hspop var(--t-slow) var(--spring)}
+
+/* phones: a smaller board so it fits beside its caption */
+@media (max-width:480px){
+  .hsb{font-size:var(--fs-3)}
+}
+/* folded (.qarea.hs-fold, set by hintSteps when the card overflows): the stacked prompt goes onto one line ("159 + 206 = [ ]"),
+   rows get tighter, older rows hide (a line marks the fold), and the common-bottom board drops its first line (the prompt has it) */
+.hs-fold .hsb>i{height:1.22em}
+.hs-fold .hs{row-gap:var(--s-1)}
+.hs-fold .hsc{font-size:var(--fs-2);line-height:1.35}
+.hs-fold .hsb>i.od,.hs-fold .hsfs>.hfl:first-child,.hs-fold .hsfs>.hfl:last-child>.hop:first-child{display:none}
+.hs-fold .hsb>i.ct{border-radius:0;box-shadow:inset 0 2px 0 var(--line)}
+.hs-fold .hsb>i.ct.on{box-shadow:inset 0 0 0 2px var(--try)}
+.hs-fold .prompt .veq{display:inline-flex;align-items:center;gap:.25em}
+.hs-fold .prompt .veq>.bar,.hs-fold .prompt .veq .gh{display:none}
+.hs-fold .prompt .veq .op{margin-right:.25em}
+.hs-fold .prompt .veq .oh{display:inline}
+.hs-fold .prompt .veq>div:last-child::before{content:'=';margin-right:.25em}
+
+/* ---------- prompt layouts ---------- */
+.veq .gh{visibility:hidden}
+.veq .oh{display:none}
+.ldq{display:inline-grid;grid-template-columns:auto auto;align-items:end;font-variant-numeric:tabular-nums;line-height:1.15}
+.ldq-q{grid-column:2;justify-self:end;margin-bottom:.12em}
+.ldq-b{grid-column:1;padding-right:.4em}
+.ldq-a{position:relative;grid-column:2;padding:.08em .08em 0 .4em;border-top:.07em solid var(--ink)}
+.ldq-a::before{content:'';position:absolute;left:0;top:-.07em;bottom:.02em;width:.22em;border-right:.07em solid var(--ink);
+  border-radius:0 100% 100% 0/0 50% 50% 0}
