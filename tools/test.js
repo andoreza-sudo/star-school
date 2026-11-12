@@ -2434,6 +2434,205 @@ run('backup P5-07: round trip of every fixture, old backups migrate, bad files a
   return{problems:[...p,...r.bad],note:r.n+' fixtures round-tripped, '+'19 bad files refused'};
 });
 
+// ---- P5-10 children: up to 4 children on one tablet, each save under its own key (src/js/01-profiles.js) ----
+run('profiles P5-10: every fixture round-trips byte for byte in the profile store, children never mix, switch, add, rename, delete, backup one and all, full storage, damaged store',()=>{
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const names=fs.readdirSync(path.join(__dirname,'fixtures')).filter(n=>n.endsWith('.json')).map(n=>n.slice(0,-5));
+  const FX={};for(const n of names)FX[n]=fx(n);
+  const src=n=>fs.readFileSync(path.join(SRC,'js',n),'utf8');
+  const p=[];
+  const r=eval(js+`
+  const FX=${JSON.stringify(FX)};
+  const store={};let full=false,reloads=0;
+  const ls={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{if(full)throw new Error('quota');store[k]=String(v)},removeItem:k=>{delete store[k]}};
+  global.localStorage=ls;
+  global.location.reload=()=>{reloads++};
+  const bad=[],notes=[];
+  const sort=o=>Array.isArray(o)?o.map(sort):o&&typeof o=='object'?Object.fromEntries(Object.keys(o).sort().map(k=>[k,sort(o[k])])):o;
+  const same=(a,b)=>JSON.stringify(sort(a))===JSON.stringify(sort(b));
+  const pfClear=()=>{for(const k in store)delete store[k]};
+  // what the page does at every start: 00-core.js reads child 1, PRF.boot() picks the child who played last, 42-paths.js migrates
+  const pfLoad=()=>{SKEY=KEY;SAVE_OFF=false;loadSave(ls.getItem(KEY));PRF.boot()};
+  const pfStart=()=>{pfLoad();migrate()};
+  const pfSnap=()=>JSON.stringify(store);
+  const K=id=>PRF.key(id);
+  const otherPet=p=>Object.keys(PETS).find(k=>k!==p);
+  // play as the current child: progress, pet, coins, stickers, game time bank, missions, streak, Brain Teasers, Block Builder, Star Rally
+  const pfPlay=tag=>{
+    S.name=S.name||tag;S.stars=(S.stars||0)+37;S.coins=(S.coins||0)+21;S.pet=otherPet(S.pet);S.stickers=Object.assign({},S.stickers,{[STK[3]]:2});
+    ptEarn(300);S.day={d:today(),r:4,done:false,m:[{k:'round',p:'math',d:1}]};S.streak={days:{[today()]:3},best:5};
+    S.bt=Object.assign({},S.bt,{maze:{lvl:4,stars:[3,3,2],seen:[],best:{}}});S.bb={worlds:[{n:'W '+tag,d:[[1,2,3,4]]}],bp:{tower:3}};
+    S.rally={spk:9,races:2,best:{meadow:61000}};S.maps.math[nid(NODES.math[0])]=3;S.voice=S.voice;save();
+  };
+
+  // 1. every fixture: loading never rewrites it, it becomes child 1 with every field, a first save is the reference A; children 2 and 3
+  //    play, child 1's bytes never change; the same fixture stored as child 3 migrates to exactly A; switching back gives A again.
+  for(const name of NAMES){
+    const raw=FX[name];
+    pfClear();store[KEY]=raw;pfLoad();
+    if(PRF.count()!==1||PRF.cur!=='p1'||SKEY!==KEY||PRF.many()||PRF.needPick())bad.push(name+': one save should be child 1 alone');
+    if(store[KEY]!==raw||PRF.IDX in store)bad.push(name+': loading changed the save or wrote an index');
+    migrate();save();
+    const A=store[KEY],sA=JSON.parse(A),orig=JSON.parse(raw);
+    for(const k in orig)if(k!=='v'&&k!=='maps'&&k!=='prog'&&k!=='map'&&k!=='mapv'&&k!=='wdone'&&k!=='ptRep'&&JSON.stringify(sA[k])!==JSON.stringify(orig[k]))bad.push(name+': field '+k+' changed when it became child 1');
+    if(PRF.homeBtn()!==''||/data-pdel/.test(PRF.card())||/bk-all/.test(BAK.card()))bad.push(name+': one child shows children controls beyond the Grown-ups card');
+    // a second child, set up and played
+    const ad=PRF.add(null,true);
+    if(ad.msg||ad.id!=='p2'||store[KEY]!==A||!store[K('p2')])bad.push(name+': add a child '+JSON.stringify(ad));
+    PRF.setWho('p2');pfStart();
+    if(PRF.cur!=='p2'||SKEY!==K('p2')||S.name!==''||S.stars!==0||PRF.needPick())bad.push(name+': the new child does not start fresh '+PRF.cur+' '+S.name+' '+S.stars);
+    for(const k of PRF.SHARED)if(S[k]!==sA[k])bad.push(name+': the new child did not get the tablet setting '+k);
+    if(sA.ptCfg&&!same(S.ptCfg,sA.ptCfg))bad.push(name+': the new child did not start with the game-time rules');
+    pfPlay('Kid two');
+    const B=store[K('p2')];
+    if(store[KEY]!==A)bad.push(name+': playing as child 2 changed child 1');
+    // the same fixture as child 3: untouched until it plays, then migrated to exactly what child 1 became
+    store[K('p3')]=raw;PRF.writeIdx(['p1','p2','p3'],'p3');PRF.setWho('p3');
+    pfLoad();
+    if(PRF.cur!=='p3'||store[K('p3')]!==raw||PRF.count()!==3)bad.push(name+': child 3 not loaded as stored');
+    migrate();save();
+    if(store[K('p3')]!==A||JSON.stringify(S)!==A)bad.push(name+': as child 3 the fixture does not round-trip byte for byte to child 1\\'s save');
+    if(sA.v!==JSON.parse(raw).v&&store[K('p3')+'-bak']!==raw)bad.push(name+': child 3 migration backup not kept under its own key');
+    if(store[KEY+'-bak']!==undefined&&store[KEY+'-bak']!==raw)bad.push(name+': child 3 overwrote child 1\\'s backup');
+    pfPlay('Kid three');
+    if(store[KEY]!==A||store[K('p2')]!==B)bad.push(name+': playing as child 3 changed another child');
+    // back to child 1 by the switch (the app starts again): exactly A
+    const C=store[K('p3')];
+    if(PRF.go('p1')!==''||reloads<1)bad.push(name+': switch to child 1');
+    pfStart();
+    if(PRF.cur!=='p1'||JSON.stringify(S)!==A||store[KEY]!==A||store[K('p2')]!==B||store[K('p3')]!==C)bad.push(name+': back as child 1 the save is not A byte for byte');
+    // and again from storage: a save at the latest version is never rewritten by a start
+    const before=pfSnap();pfStart();if(pfSnap()!==before)bad.push(name+': a plain start rewrote something');
+  }
+  notes.push(NAMES.length+' fixtures');
+
+  // 2. the tablet's sound goes with the tablet; nothing else of the next child changes; needPick only with 2+ children not picked yet
+  pfClear();store[KEY]=FX.midway;pfStart();save();PRF.add(null,false);
+  S.sound=true;S.music=true;S.voice=false;save();
+  const p2=JSON.parse(store[K('p2')]);
+  if(PRF.go('p2')!=='')bad.push('switch to child 2');
+  const p2b=JSON.parse(store[K('p2')]);
+  if(p2b.sound!==true||p2b.music!==true||p2b.voice!==false||!same(Object.assign({},p2b,{sound:p2.sound,music:p2.music,voice:p2.voice}),p2))bad.push('carry changed more than the three sound settings');
+  pfStart();if(PRF.needPick()||PRF.GO in store)bad.push('just switched: the next start should go straight to the child');
+  pfStart();if(!PRF.needPick())bad.push('a new visit with two children: the picker should show');
+  PRF.setWho(PRF.cur);if(PRF.needPick())bad.push('picked: no picker again in this visit');
+  if(PRF.go('p9')==='')bad.push('a child who is not there');
+
+  // 3. rename (another child and the one playing), refused names
+  pfClear();store[KEY]=FX.midway;pfStart();save();PRF.add(null,false);
+  const r0=JSON.parse(store[K('p2')]);
+  if(PRF.rename('p2','  <b>Zed</b>  ')!==''||JSON.parse(store[K('p2')]).name!=='<b>Zed</b>'||!same(Object.assign({},JSON.parse(store[K('p2')]),{name:r0.name}),r0))bad.push('rename child 2');
+  if(!/&lt;b&gt;Zed/.test(PRF.card())||/<b>Zed/.test(PRF.card()))bad.push('names are not escaped in the Children card');
+  if(PRF.rename('p1','Ava Rose')!==''||S.name!=='Ava Rose'||JSON.parse(store[KEY]).name!=='Ava Rose')bad.push('rename the child playing');
+  if(PRF.rename('p2','   ')===''||PRF.rename('p4','X')==='')bad.push('an empty name or a missing child should be refused');
+
+  // 4. delete: everything kept for that child goes, nothing of the others; never the last one; deleting the one playing
+  pfClear();store[KEY]=FX.midway;pfStart();save();PRF.add(null,false);PRF.add(null,false);
+  store[K('p2')+'-bak']='x';store[K('p2')+'-undo']='{}';store['starschool-neon-p2']='[]';store['starschool-neon']='[1]';store[K('p2')+'-corrupt']='y';
+  const keep1=store[KEY],keep3=store[K('p3')];
+  PRF.remove('p2');
+  if(Object.keys(store).some(k=>/-p2/.test(k))||store[KEY]!==keep1||store[K('p3')]!==keep3||store['starschool-neon']!=='[1]'||PRF.ids.join()!=='p1,p3')bad.push('delete child 2: '+Object.keys(store).join());
+  pfStart();if(PRF.ids.join()!=='p1,p3')bad.push('after delete the next start lists '+PRF.ids.join());
+  PRF.go('p3');pfStart();
+  PRF.remove('p3');
+  if(!SAVE_OFF||(save(),store[K('p3')]!==undefined))bad.push('the deleted child playing was written back');
+  pfStart();
+  if(PRF.cur!=='p1'||PRF.ids.join()!=='p1'||JSON.stringify(S)!==keep1||PRF.many())bad.push('after deleting the child playing, child 1 is not back alone');
+  const one=pfSnap();PRF.remove('p1');if(pfSnap()!==one||PRF.ids.join()!=='p1')bad.push('the last child must not be deleted');
+  // child 1 deleted: the others keep their keys, child 1's key is free again for the next new child
+  PRF.add(null,false);PRF.rename('p2','Two');PRF.remove('p1');pfStart();
+  if(PRF.cur!=='p2'||S.name!=='Two'||KEY in store||PRF.many())bad.push('delete child 1: '+PRF.cur+' '+S.name);
+  if(PRF.add(null,false).id!=='p1'||PRF.ids.join()!=='p2,p1')bad.push('the free slot p1 is used again: '+PRF.ids.join());
+  // voice clips: child 1 keeps the plain ids; the others get a prefix
+  if(PRF.clipOf('1731300000000')!=='p1'||PRF.clipOf('p3:99')!=='p3'||PRF.clipOf('p9:1')!=='p1')bad.push('clipOf');
+  if(!/^p2:\\d+$/.test(PRF.clipId()))bad.push('a clip id of child 2: '+PRF.clipId());
+  if(PRF.k('starschool-neon','p1')!=='starschool-neon'||PRF.k('starschool-neon','p4')!=='starschool-neon-p4')bad.push('Art Studio key per child');
+
+  // 5. at most 4 children
+  pfClear();store[KEY]=FX.midway;pfStart();save();
+  for(let i=0;i<3;i++)if(PRF.add(null,false).msg)bad.push('add child '+(i+2));
+  const four=pfSnap();
+  const fifth=PRF.add(null,false);
+  if(!fifth.msg||pfSnap()!==four||PRF.count()!==4)bad.push('a fifth child should be refused with nothing changed');
+  if(!/data-pdel="p4"/.test(PRF.card())||!/id="pf-add" disabled/.test(PRF.card()))bad.push('Children card with 4 children');
+
+  // 6. backup: one child (the one playing, or another), all children, which child a load replaces, add as new, undo
+  pfClear();store[KEY]=FX.maxed;pfStart();save();PRF.add(null,false);store[K('p2')]=FX.legacy_single_map||FX['legacy-single-map'];
+  const mine=JSON.parse(BAK.make()),his=JSON.parse(BAK.make('p2'));
+  if(!same(mine.data,S)||his.name!=='Mia'||his.data.v!==LATEST||his.data.stars!==JSON.parse(FX['legacy-single-map']).stars)bad.push('save a backup of one child');
+  const all=BAK.read(BAK.makeAll());
+  if(!all.ok||!all.all||all.kids.length!==2||!same(all.kids[0].data,S)||!same(all.kids[1].data,his.data)||!/all-children/.test(BAK.fileName('all-children')))bad.push('save all children: '+JSON.stringify(all.ok?all.info:all));
+  if(!/id="bk-all"/.test(BAK.card())||!/'bk-all'[^\\n]*onlineNote\\(\\)/.test(BAK.card.toString()))bad.push('Save all children button or its online note');
+  // load child 2's file over child 1? no: over child 2, from child 1's Grown-ups. Child 1 is untouched, undo puts child 2 back.
+  const c1=store[KEY],c2=store[K('p2')],ivy=BAK.read(BAK.make()).data;ivy.name='Ivy';
+  if(BAK.apply(ivy,'p2')!==''||!same(JSON.parse(store[K('p2')]),ivy)||store[KEY]!==c1||!same(S,JSON.parse(c1)))bad.push('load a backup over child 2');
+  if(!BAK.hasUndo()||BAK.UNDO!==K('p2')+'-undo'||store[BAK.UNDO]!==c2)bad.push('undo copy of child 2');
+  if(BAK.apply(BAK.read(BAK.make()).data)!==''||Object.keys(store).filter(k=>/-undo$/.test(k)).join()!==KEY+'-undo')bad.push('only the last load can be undone');
+  if(BAK.undo()!==''||store[KEY]!==c1||BAK.hasUndo())bad.push('undo of child 1');
+  const prev2=store[K('p2')];BAK.apply(BAK.read(BAK.make()).data,'p2');
+  if(BAK.undo()!==''||store[K('p2')]!==prev2||store[KEY]!==c1||!same(S,JSON.parse(c1)))bad.push('undo of child 2');
+  // add as a new child from a backup, every fixture: playing that child gives the exported save exactly
+  for(const name of NAMES){
+    pfClear();store[KEY]=FX[name];pfStart();save();const before=JSON.parse(JSON.stringify(S)),text=BAK.make();
+    pfClear();store[KEY]=FX.midway;pfStart();save();
+    const rd=BAK.read(text),ad=PRF.add(rd.ok&&rd.data,false);
+    if(!rd.ok||ad.msg||PRF.cur!=='p1')bad.push(name+': add from a backup '+JSON.stringify(ad));
+    PRF.writeIdx(PRF.ids,ad.id);pfStart();
+    if(!same(S,before))bad.push(name+': the child added from a backup is not identical to the export');
+  }
+  // bad all-children files are refused
+  const okAll=JSON.parse(BAK.makeAll());
+  for(const [k,f] of [['none',o=>{o.kids=[]}],['five',o=>{o.kids=[0,1,2,3,4].map(()=>o.kids[0])}],['damaged',o=>{o.kids[0].data=[1]}],
+    ['newer',o=>{o.kids[0].data.v=LATEST+1}],['types',o=>{o.kids[0].data.stars='many'}],['noKid',o=>{o.kids[0]=null}]]){
+    const o=JSON.parse(JSON.stringify(okAll));f(o);const x=BAK.read(JSON.stringify(o));
+    if(x.ok||!x.msg)bad.push('all-children file '+k+' should be refused');
+  }
+
+  // 7. a full tablet: nothing changes and each action says so
+  pfClear();store[KEY]=FX.midway;pfStart();save();PRF.add(null,false);
+  const fs0=pfSnap(),S0=JSON.stringify(S),rl=reloads;full=true;
+  const msgs=[PRF.add(null,false).msg,PRF.rename('p2','Nope'),PRF.go('p2'),BAK.apply(BAK.read(BAK.make()).data,'p2')];
+  let wiped='';PRF.wipe().then(m=>{wiped=m});
+  full=false;
+  if(pfSnap()!==fs0||JSON.stringify(S)!==S0||reloads!==rl||SAVE_OFF)bad.push('a full tablet changed something');
+  if(msgs.some(m=>!m||!/full|room/i.test(m)))bad.push('full storage messages: '+JSON.stringify(msgs));
+  if(!/full/i.test(PRF.FULL))bad.push('PRF.FULL');
+  // Start over with two children: this child gets a fresh save in the same place, the other is untouched
+  const o2=store[K('p2')];PRF.wipe();
+  if(!SAVE_OFF||JSON.parse(store[KEY]).name!==''||JSON.parse(store[KEY]).stars!==0||store[K('p2')]!==o2)bad.push('Start over with two children');
+  pfStart();if(PRF.ids.join()!=='p1,p2'||S.name!=='')bad.push('after Start over child 1 is a new child in the same place');
+
+  // 8. a damaged profile store: nothing is lost, the app starts
+  for(const [k,idx] of [['broken','{"ids":'],['array','[1,2]'],['null','null'],['number','42'],['noIds','{"cur":"p2"}']]){
+    pfClear();store[KEY]=FX.midway;store[K('p2')]=FX.maxed;store[PRF.IDX]=idx;
+    try{pfStart()}catch(e){bad.push('damaged index '+k+' crashed: '+e.message);continue}
+    if(PRF.ids.join()!=='p1,p2'||PRF.cur!=='p1'||!PRF.idxBad||store[PRF.IDX+'-corrupt']!==idx||S.name!=='Ava'||store[K('p2')]!==FX.maxed)bad.push('damaged index '+k+': '+PRF.ids.join()+' '+PRF.cur);
+    if(!/rebuilt/.test(PRF.logLine()))bad.push('damaged index '+k+' not shown in the App log');
+  }
+  pfClear();store[KEY]=FX.midway;store[K('p3')]=FX.maxed;store[PRF.IDX]=JSON.stringify({ids:['p9','__proto__',5,'p4','p3','p3'],cur:'zz'});
+  pfStart();if(PRF.ids.join()!=='p3,p1'||PRF.cur!=='p3'||S.name!=='Max')bad.push('odd index: '+PRF.ids.join()+' '+PRF.cur);
+  pfClear();store[K('p2')]=FX.maxed;pfStart();if(PRF.ids.join()!=='p2'||S.name!=='Max'||PRF.many())bad.push('no index, only child 2: '+PRF.ids.join());
+  pfClear();pfStart();if(PRF.ids.join()!=='p1'||S.v!==LATEST||S.stars!==0)bad.push('nothing stored: one new child');
+  // the save of the child playing is damaged: kept aside under that child's key, the others untouched
+  pfClear();store[KEY]=FX.midway;store[K('p2')]='{"stars":5,';PRF.writeIdx(['p1','p2'],'p2');pfStart();
+  if(PRF.cur!=='p2'||!SAVE_CORRUPT||store[K('p2')+'-corrupt']!=='{"stars":5,'||store[K('p2')]!=='{"stars":5,'||store[KEY]!==FX.midway||KEY+'-corrupt' in store)bad.push('damaged save of child 2');
+  // a damaged other child: shown as "Child 2", cannot be exported, never crashes the card or the picker data
+  pfClear();store[KEY]=FX.midway;store[K('p2')]='nope';pfStart();
+  const i2=PRF.info('p2');
+  if(i2.ok||PRF.label(i2)!=='Child 2'||BAK.make('p2')!==''||JSON.parse(BAK.makeAll()).kids.length!==1||!/Child 2/.test(PRF.card()))bad.push('damaged child 2 in the lists');
+
+  // 9. no network, tokens: the new code makes no requests
+  delete global.location.reload;
+  ({bad,notes});`.replace('NAMES',JSON.stringify(names)));
+  const pr=src('01-profiles.js');
+  if(/XMLHttpRequest|fetch\(|sendBeacon|https?:\/\//.test(pr.replace(/\/\*[\s\S]*?\*\//g,'')))p.push('01-profiles.js must not make requests');
+  if(/#[0-9a-fA-F]{3,8}\b/.test(fs.readFileSync(path.join(SRC,'css','45-profiles.css'),'utf8')))p.push('45-profiles.css has a raw colour');
+  if(!/PRF\.needPick\(\)\) PRF\.pick\(\)/.test(fs.readFileSync(path.join(SRC,'boot.js'),'utf8')))p.push('boot.js does not show the picker first');
+  if(!/filter\(c=>PRF\.clipOf\(c\.id\)===PRF\.cur\)/.test(src('44-clips.js'))||!/id:PRF\.clipId\(\)/.test(src('80-grown.js')))p.push('voice clips are not kept per child');
+  if((src('70-art.js').match(/PRF\.k\('starschool-neon'\)/g)||[]).length!==3)p.push('Art Studio neon pictures are not kept per child');
+  return{problems:[...p,...r.bad],note:r.notes.join(', ')};
+});
+
 // ---- P2-06 fractions core: frac 2-8 generators (math checked), Fraction Forest stops, saves ----
 run('fractions P2-06: frac 2-8 maths per level, hints, say, labels, 3,000 samples per level',()=>{
   const out=eval(js+`
@@ -15385,7 +15584,7 @@ run('save hold before a reload',()=>{
   if(!r.held)p.push('save() wrote while SAVE_HOLD was set');
   if(!r.after)p.push('save() did not write after the hold was lifted');
   const src=fs.readFileSync(path.join(__dirname,'..','src','js','80-grown.js'),'utf8'),bk=fs.readFileSync(path.join(__dirname,'..','src','js','81-backup.js'),'utf8');
-  if(!/SAVE_HOLD=true;try\{localStorage\.removeItem\(KEY\)/.test(src))p.push('Start over does not hold saves before it erases');
+  if(!/SAVE_HOLD=true;try\{localStorage\.removeItem\(S?KEY\)/.test(src))p.push('Start over does not hold saves before it erases');
   if(/await DB\.open\(\)/.test(src)||!/setTimeout\(go,1500\)/.test(src))p.push('Start over waits on IndexedDB before it reloads');
   if((bk.match(/SAVE_HOLD = true; location\.reload\(\)/g)||[]).length!==2)p.push('load and undo do not hold saves before the reload');
   return{problems:p,note:'save() is held during Start over, load and undo'};

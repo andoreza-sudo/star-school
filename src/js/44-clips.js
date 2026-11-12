@@ -5,7 +5,7 @@ const DB={db:null,open(){return new Promise((res,rej)=>{if(this.db)return res(th
   async put(v){const d=await this.open();return new Promise((res,rej)=>{const t=d.transaction('clips','readwrite');t.objectStore('clips').put(v);t.oncomplete=()=>res();t.onerror=()=>rej(t.error)})},
   async del(id){const d=await this.open();return new Promise(res=>{const t=d.transaction('clips','readwrite');t.objectStore('clips').delete(id);t.oncomplete=()=>res();t.onerror=()=>res()})}};
 let CLIPS=[];
-async function loadClips(){try{CLIPS.forEach(c=>URL.revokeObjectURL(c.url));CLIPS=(await DB.all()).map(c=>({...c,url:URL.createObjectURL(c.blob)}))}catch(e){CLIPS=[]}}
+async function loadClips(){try{CLIPS.forEach(c=>URL.revokeObjectURL(c.url));CLIPS=(await DB.all()).filter(c=>PRF.clipOf(c.id)===PRF.cur).map(c=>({...c,url:URL.createObjectURL(c.blob)}))}catch(e){CLIPS=[]}}
 const BAG={};
 function playClip(kind){const cs=CLIPS.filter(c=>c.kind==kind);if(!cs.length||!S.sound)return false;
   let b=(BAG[kind]||[]).filter(id=>cs.some(c=>c.id==id));

@@ -63,7 +63,7 @@ JS files created by the split, with the source line ranges of `src/src.html` at 
 
 | File | Lines | Contents |
 |------|-------|----------|
-| `00-core.js` | 322-335 | `$`, `$$`, `R`, `pick`, `shuffle`, `esc`, state `S`, `save()`, `P()`, `today()`, `day()` |
+| `00-core.js` | 322-335 | `$`, `$$`, `R`, `pick`, `shuffle`, `esc`, state `S`, `save()` (writes `SKEY`, the playing child's key, P5-10), `P()`, `today()`, `day()` |
 | `05-pets.js` | 336-345 | `PETS`, growth stages, stickers list |
 | `10-sfx.js` | 346-387 | Sound engine `SFX`, `tone()`, `noise()`, music |
 | `12-speech.js` | 388-407 | `say()`, voices, `fb()` toast |
@@ -101,6 +101,7 @@ Files added by later chunks (names are fixed by the roadmap so everyone agrees):
 
 | File | Chunk | Contents |
 |------|-------|----------|
+| `01-profiles.js`, `src/css/45-profiles.css` | P5-10 | `PRF`: up to 4 children per tablet, one save each (keys in the file header); picks the child at load, the "Who is playing?" picker, Home's switch button, the Grown-ups Children card, add / rename / delete |
 | `14-ui.js` | P4-04 | `UI.*` helpers that return component markup (classes in `src/css/10-components.css`) |
 | `15-icons.js`, `15-pics.js`, `16-art-*.js`, `17-pets-svg.js` | P4-02, pre-wave 5, P4-13+, P4-05 | Icon sprite; `ART`/`picArt`/`picFor`; object art (`Object.assign(ART, {...})`; set A in `16-art-a.js`, sets B and C and later in `src/data/d-art-b.js`, `d-art-c.js` ...); pet rig |
 | `18-reward-art.js` | P4-11 | Reward art (chest, stars, bosses, prize rosette) and the reward screens' markup (`RW.*`); CSS in `src/css/42-rewards.css` |
@@ -290,7 +291,7 @@ How updates reach tablets: the service worker fetches the page network-first, so
 | Helpers | Use what exists: `$`, `$$`, `R(a,b)`, `pick`, `shuffle`, `esc`, `view(html)`, `fb(text, kind)`, `say(text, btn, lang)`, `SFX.*`, `save()`. Grep for a helper before writing a new one. |
 | Screens | A screen is a function that calls `view(templateString)` and then wires handlers with `$('#id').onclick = ...`. `view()` replaces the whole `#app`. |
 | Cleanup | If a screen starts a timer, interval, animation frame or audio loop, it must have a stop function, and `view()` must call it (follow how `stopRace` and `stopHC` are done). |
-| State | Everything persistent lives in `S`; call `save()` after changing it. New fields need defaults when read. Read ROADMAP.md section 9 before touching saved data. |
+| State | Everything persistent lives in `S`; call `save()` after changing it. New fields need defaults when read. Read ROADMAP.md section 9 before touching saved data. `S` is the save of the child who is playing (P5-10: up to 4 children, each with their own `S` under their own key; `save()` writes `SKEY`, never `KEY` directly). Anything a child owns goes in `S`; another per-child store (like Art Studio's) takes its key from `PRF.k(name)`. Never read or write another child's save except through `PRF` and `BAK` (01-profiles.js, 81-backup.js). |
 | Escaping | Anything that is not a literal (child's name, words, data) goes through `esc()` before entering HTML. |
 | Randomness | In generators use `rnd()`, `R`, `pick`, `shuffle`, `coin` only (after P1-01). Games may use `Math.random`. |
 | Style of new code | Existing code is very dense. New files should be readable: one statement per line, lines under 140 characters, short comments on anything non-obvious. Do not reformat old code. |
