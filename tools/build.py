@@ -2,7 +2,7 @@ import base64, json, os, re
 from PIL import Image, ImageDraw
 # Build: python3 tools/build.py   (run from anywhere; writes index.html, bt/games/data.<VER>.js, sw.js, manifest.json, icons to the repo root)
 # Bump VER on every release so tablets pick up the update.
-VER = 'v140'
+VER = 'v141'
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = ROOT
 F = os.path.join(ROOT, 'tools', 'fonts', 'andika-latin-%s-normal.woff2')
@@ -15,7 +15,8 @@ PARTS = [
     ('gen', r'(23-viz|30-gen-math|31-gen-math-early|32-gen-read|33-gen-math-mid|34-gen-es)\.js'),  # A11c: math visuals and the question generators, part 1
     ('gen2', r'(35-gen-math-upper|36-gen-phonics|37-bank|37-comp|39b-steps)\.js'),  # A11c: question generators, part 2 (35 is the big one)
     ('bt', r'\d+-bt-[\w-]+\.(js|css)'),  # Brain Teaser puzzle types NN-bt-*.js and NN-bt-*.css (74-teasers.js, the framework, stays)
-    ('games', r'(60-blocks|62-hill|64-gtimer|66-colornum|68-lowpoly|70-art|72-shapes|\d+-game-[\w-]+)\.js|\d+-game-[\w-]+\.css'),  # the Game Room (P4-16: and its NN-game-*.css)
+    ('games', r'(60-blocks|62-hill|64-gtimer|66-colornum|68-lowpoly|70-art|72-shapes|59-game-hub|63-game-race)\.js|(48-game-hub|49-game-race|60-game-blocks)\.css'),  # the Game Room: hub (P4-16) and the first five games
+    ('games2', r'\d+-game-[\w-]+\.(js|css)'),  # G-04a: every newer Game Room game NN-game-*.js / .css (Snack Stand, then Sky Hop, Fishing Day ...)
 ]
 def part_of(name):
     return next((stem for stem, rx in PARTS if re.fullmatch(rx, name)), None)

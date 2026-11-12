@@ -2202,6 +2202,21 @@ Object.assign(SCREENS, {
 });
 GROUPS.g01 = ['game-blocks-menu', 'game-blocks-play', 'game-blocks-bp', 'game-blocks-stamp', 'game-blocks-more', 'game-blocks-win'];
 
+// G-04a: Snack Stand (menu, a Calm day with a half-made order, a Busy day with the grill, give change, the shop, the end card).
+//    node tools/shots.js @g04a   (the day shots wait for the first customers)
+const snSave = () => { S.pt = { bank: 1200, day: today(), used: 0 }; S.grade = 3; const r = snS(); r.coins = 80; r.days = 2; r.stars = { park: 3, beach: 1 };
+  r.own = { tomato: 1, straw: 1, choc: 1, milk: 1, cake: 1, pancake: 1, grape: 1, flowers: 1, plant: 1, bunting: 1 }; save(); };
+const snShot = (fn, wait = 2500, then) => ({ run: async p => { await p.evaluate(snSave); await p.evaluate(fn); await p.waitForTimeout(wait); if (then) await p.evaluate(then); } });
+Object.assign(SCREENS, {
+  'snack-menu': snShot(() => snMenu(), 600),
+  'snack-day': snShot(() => snDay(), 2500, () => { const c = SN.st.at[0]; snAddFood(c.order[0]); }),
+  'snack-busy': snShot(() => { S.snack.mode = 'busy'; snDay(); }, 5000, () => { SN.tab = 'grill'; snTabs(); snAddFood('pancake'); snAddFood('pancake'); }),
+  'snack-till': snShot(() => { S.snack.till = true; snDay(); }, 2500, () => { for (const i of SN.st.at[0].order) snAddFood(i); snDoServe(); }),
+  'snack-shop': snShot(() => snShop('lettuce'), 600),
+  'snack-end': snShot(() => snDay(), 1500, () => { SN.st.served = SN.st.n; SN.st.right = SN.st.n - 1; SN.st.best = 5; SN.st.coins = 44; snFinish(); }),
+});
+GROUPS.g04a = ['snack-menu', 'snack-day', 'snack-busy', 'snack-till', 'snack-shop', 'snack-end'];
+
 async function main() {
   const args = process.argv.slice(2);
   let fixtureArg = null;
