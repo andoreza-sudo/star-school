@@ -19,7 +19,7 @@ node tools/test.js
 echo "== smoke.js"
 node tools/smoke.js
 echo "== sizes (bytes; budgets in tools/test.js: index.html warn 1.2 MB / fail 1.5 MB, each part file warn 400 KB / fail 800 KB,"
-echo "   data warn 1 MB / fail 2 MB, total warn 2 MB / fail 3 MB)"
+echo "   data warn 1 MB / fail 2 MB, total warn 2 MB / fail 3.3 MB)"
 # the files index.html loads, in its order (A11, A11b): gen.<VER>.js, gen2.<VER>.js, bt.<VER>.js, games.<VER>.js, data.<VER>.js
 files=$(grep -o '<script src="[^"]*"' index.html | sed 's/<script src="//; s/"$//')
 total=$(wc -c < index.html)
