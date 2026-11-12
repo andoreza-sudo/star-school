@@ -7560,7 +7560,9 @@ async function main() {
         await bp.click('#reset');
         await bp.waitForFunction(() => /Tap again/.test(document.querySelector('#reset').textContent));
         await Promise.all([bp.waitForNavigation({ timeout: 60000 }), bp.click('#reset')]); // the page reloads, empty
-        await bp.waitForSelector('.su-step', { timeout: 60000 });
+        await bp.waitForSelector('.su-step', { timeout: 60000 }).catch(async e => { // say what is on screen instead, if setup never shows
+          const seen = await bp.evaluate(() => ({ url: location.href, app: (document.querySelector('#app') || document.body).textContent.slice(0, 200), name: typeof S != 'undefined' && S.name })).catch(x => 'page gone: ' + x.message);
+          throw new Error('P5-07 Start over: setup did not show: ' + JSON.stringify(seen)); });
         const z = await bp.evaluate(() => ({ stars: S.stars, name: S.name, undo: !!localStorage.getItem(BAK.UNDO) }));
         if (z.stars !== 0 || z.name !== '' || z.undo) bad.push(tag + ' Start over: ' + JSON.stringify(z));
         await bp.evaluate(() => { grown(); });
