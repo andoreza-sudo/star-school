@@ -3,7 +3,7 @@
    (two BFS passes), so the way is always long for the size. Built at runtime from the seeded rnd, solvable by construction and
    checked again by a state BFS (the par).
 
-   Bands and levels (MZ.size; four levels per size step):
+   Bands and levels (MZ.size; four levels per size step; on a phone capped by MZ.cap so squares stay 28 px or more, R-01b):
      A  5x5 (levels 1-6), then 6x6; strong bias toward long straight corridors; wide paths.
      B  8x8, 9x9, 10x10.
      C  12x12, 13x13, 14x14 + 3 stars in dead ends off the way; the flag's gate opens when all 3 are picked up.
@@ -38,6 +38,18 @@ const MZ = {
     if (band == 'A') return l <= 6 ? 5 : 6;
     const base = { B: 8, C: 12, D: 16 }[band] || 8;
     return base + Math.floor((l - 1) / 4);
+  },
+  // R-01b: on a phone a maze is never so big that its squares are under MIN_PX (BRAIN_TEASERS 8: 28 px). make() caps the side by
+  // the screen: the board gets about the short side less 40 px (portrait) or the height less 130 px (landscape), with an 8 px
+  // margin on each side. At 380 x 780 that is 11 squares (bands C and D are 12-18). Tablets (short side 600 px and up) and the
+  // tests (no screen) keep the level's size. The puzzle is stored whole, so a turned phone does not change a maze in play.
+  MIN_PX: 28,
+  cap() {
+    if (typeof innerWidth != 'number' || typeof innerHeight != 'number' || !(innerWidth > 0) || !(innerHeight > 0)) return 99;
+    const w = innerWidth, h = innerHeight;
+    if (Math.min(w, h) >= 600) return 99;
+    const bs = h >= w ? w - 40 : h - 130;
+    return Math.max(5, Math.floor((bs - 16) / MZ.MIN_PX));
   },
   pop: m => (m & 1) + (m >> 1 & 1) + (m >> 2 & 1) + (m >> 3 & 1),
   decode: s => Array.from(s, c => parseInt(c, 16)),
@@ -115,7 +127,7 @@ const MZ = {
 
   // Build a level. Returns the puzzle or null (the caller carves again with the next numbers from rnd).
   build(band, level, rnd) {
-    const n = MZ.size(band, level), w = n, h = n, N = w * h;
+    const n = Math.min(MZ.size(band, level), MZ.cap()), w = n, h = n, N = w * h;
     const o = MZ.carve(w, h, rnd, Math.max(0.05, MZ.BIAS[band] - (level - 1) * 0.01));
     let s = MZ.far(MZ.bfs(o, w, 0).dist);
     const b1 = MZ.bfs(o, w, s);
@@ -690,7 +702,7 @@ BT.reg({
     msg(intro);
     status();
     layout();
-    if (st.t.length == 1 && band == 'A') api.say(intro);
+    if (st.t.length == 1 && (band == 'A' || band == 'B')) api.say(intro); // R-01b: band B speaks its first instruction too
     const inst = {
       hint: hintNow,
       destroy() {

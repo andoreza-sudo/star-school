@@ -4,8 +4,9 @@
    The draw is seeded by the day key, the child's name and grade, and only offers what the child can do right now:
      round    one learning round in the subject that needs the most practice (lowest mastery, else the least played)
      other    a learning round in a different subject
-     perfect  a round with every answer right (the subject with the best mastery, to make it fair)
-     sprint   one Fact Sprint (grade K and up)
+     perfect  a round with every answer right (the subject with the best mastery, to make it fair); grade 1 and up
+     more     Pre-K and K, in place of perfect (R-01b: an effort goal, not a "never slip" goal): finish 2 rounds today
+     sprint   one Fact Sprint (grade 1 and up, once a set is open: FLU.on(); R-01b, was K and up)
      teaser   solve one Brain Teaser (only when a puzzle type is offered at the child's grade)
      review   do today's review (only when something is due)
      mix      one Mixed Practice round
@@ -14,7 +15,8 @@
    Hooks: finish() in 50-round.js (rounds, mixes, reviews), the sprint's finish in 57-fluency.js, BT.finish in 74-teasers.js. */
 const MIS = {
   N: 3,
-  KINDS: ['round', 'other', 'perfect', 'sprint', 'teaser', 'review', 'mix'],
+  KINDS: ['round', 'other', 'perfect', 'more', 'sprint', 'teaser', 'review', 'mix'],
+  MORE: 2, // rounds today that finish the "more" mission
   BONUS_STARS: 5,
   BONUS_COINS: 5,
   SUBJ: { math: 'Math', read: 'Reading', es: 'Spanish', disc: 'Discover' },
@@ -59,7 +61,7 @@ const MIS = {
     const g = gradeOf();
     let bt = false, spr = false, due = 0;
     try { bt = BT.offered().length > 0; } catch (e) {}
-    try { spr = g >= 0 && FLU.sets().length > 0; } catch (e) {}
+    try { spr = FLU.on(); } catch (e) {}
     try { due = dueItems().length; } catch (e) {}
     return { g, subs: MIS.subjects(), bt, spr, due };
   },
@@ -72,7 +74,7 @@ const MIS = {
     const first = { k: 'round', p: subs[0].p, d: 0 };
     const rest = [];
     if (subs.length > 1) rest.push({ k: 'other', p: pickOf(subs.slice(1)).p, d: 0 });
-    rest.push({ k: 'perfect', p: subs[subs.length - 1].p, d: 0 }, { k: 'mix', d: 0 });
+    rest.push(c.g <= 0 ? { k: 'more', d: 0 } : { k: 'perfect', p: subs[subs.length - 1].p, d: 0 }, { k: 'mix', d: 0 });
     if (c.spr) rest.push({ k: 'sprint', d: 0 });
     if (c.bt) rest.push({ k: 'teaser', d: 0 });
     if (c.due > 0) rest.push({ k: 'review', d: 0 });
@@ -94,12 +96,13 @@ const MIS = {
     return d.m;
   },
   count() { try { return MIS.get().filter(x => x.d).length; } catch (e) { return 0; } },
-  // Does a finished thing count for mission x? ev: {k:'round', p, mix, test, boss, daily, perfect} | {k:'sprint'} | {k:'teaser'}
+  // Does a finished thing count for mission x? ev: {k:'round', p, mix, test, boss, daily, perfect, n (rounds today)} | {k:'sprint'} | {k:'teaser'}
   hit(x, ev) {
     if (x.k == 'sprint' || x.k == 'teaser') return ev.k == x.k;
     if (ev.k != 'round') return false;
     if (x.k == 'round' || x.k == 'other') return !!ev.p && ev.p === x.p && !ev.mix && !ev.test;
     if (x.k == 'perfect') return !!ev.perfect;
+    if (x.k == 'more') return !ev.test && (ev.n | 0) >= MIS.MORE;
     if (x.k == 'mix') return !!ev.mix && !ev.daily;
     if (x.k == 'review') { let n = 1; try { n = dueItems().length; } catch (e) {} return !!ev.daily || (!!ev.mix && n == 0); }
     return false;
@@ -123,18 +126,18 @@ const MIS = {
   },
   title(x) {
     const s = MIS.SUBJ[x.p] || 'Math';
-    return { round: `Play a ${s} round`, other: `Try a ${s} round`, perfect: 'Get a perfect round', sprint: 'Do a Fact Sprint', teaser: 'Solve a Brain Teaser',
+    return { round: `Play a ${s} round`, other: `Try a ${s} round`, perfect: 'Get a perfect round', more: `Play ${MIS.MORE} rounds today`, sprint: 'Do a Fact Sprint', teaser: 'Solve a Brain Teaser',
       review: "Do today's review", mix: 'Play Mixed Practice' }[x.k];
   },
   sub(x) {
-    return { round: 'Make it stronger!', other: 'Visit another subject!', perfect: 'Every answer right!', sprint: 'Beat your best!', teaser: 'Think hard!',
+    return { round: 'Make it stronger!', other: 'Visit another subject!', perfect: 'Every answer right!', more: 'Keep practicing!', sprint: 'Beat your best!', teaser: 'Think hard!',
       review: 'Practice what you learned', mix: 'A bit of everything!' }[x.k];
   },
   icon(x) {
-    return { round: UI.SUBJ_ICON[x.p] || 'path-math', other: UI.SUBJ_ICON[x.p] || 'path-math', perfect: 'star', sprint: 'bolt', teaser: 'puzzle', review: 'replay', mix: 'sparkle' }[x.k];
+    return { round: UI.SUBJ_ICON[x.p] || 'path-math', other: UI.SUBJ_ICON[x.p] || 'path-math', perfect: 'star', more: 'replay', sprint: 'bolt', teaser: 'puzzle', review: 'replay', mix: 'sparkle' }[x.k];
   },
   // The subject colour class of a mission
-  cls(x) { return { round: 's-' + x.p, other: 's-' + x.p, perfect: 's-play', sprint: 's-math', teaser: 's-bt', review: 's-play', mix: 's-es' }[x.k]; },
+  cls(x) { return { round: 's-' + x.p, other: 's-' + x.p, perfect: 's-play', more: 's-play', sprint: 's-math', teaser: 's-bt', review: 's-play', mix: 's-es' }[x.k]; },
   // What the child sees after finishing: one line and one sticker per mission, then the bonus
   winHTML(mi) {
     const row = (icon, text, st, i) => `<li>${ico(icon, 20)}<span>${text}</span>${RW.sticker(st.s, st.isNew, i)}</li>`;

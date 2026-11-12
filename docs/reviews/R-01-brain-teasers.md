@@ -3,6 +3,8 @@
 Review of the Brain Teasers section (all 19 puzzle types, bands A to D, 12 levels each), as of v138 (56d3d17).
 Written 2026-11-11 by Claude for Andy. No app changes were made.
 
+**Status (R-01b, v143, 2026-11-11):** done: Must 1 and 2, Shoulds 3, 4, 5, 6, 9 and 10, the Robot Path part of Should 7 and the Patterns part of Should 8 (marked "Done in R-01b" below). Not done (M): the rest of Should 7 (spreading sizes and givens over 12 levels) and the strategy lines of Should 8 for mazes, Tangram and Shape Fit; the Coulds.
+
 ---
 
 ## Part 1. For parents: the short version
@@ -41,11 +43,13 @@ Sizes: **S** = an hour or two, **M** = about a day, **L** = several days.
    same as that one" is marked wrong, and a colour-blind child cannot use orange against yellow to tell them apart. About 1 in 3
    "What comes next?" questions in Pre-K/K levels 1-4 has a size-only wrong choice. Fix: draw the choices at the same scale as the
    row, or leave size-only wrong choices out of band A. Patterns, `src/js/76-bt-pattern.js` and `src/css/49-bt-pattern.css`.
+   **Done in R-01b (v143):** picture choices are drawn at the size of the pictures on the board (the width of a board picture is measured, `--pt-ts`; at 380 x 780 every band A choice is within 0.05 px of the row, smoke), so the very large orange and the medium yellow of `pattern A 4 2026-1-1` item 3 now look big and medium, like the row. No puzzle changed for this (drawing only).
 2. **First and second graders must read long instructions (S).** Only band A speaks the first instruction by itself. A 1st grader
    opening MathDoku sees "Each row and column needs 1, 2 and 3 once. The numbers in a cage add up to its number. Tap a square, then
    a number." (25 words, with "cage"), and Logic Grid says "Tap a square once for a cross (no), twice for a tick (yes)". There is a
    speak button, but a child who cannot read it may not know to press it. Fix: speak the first instruction in band B too
    (the `band == 'A'` tests on the intro line in each type file).
+   **Done in R-01b (v143):** every type with band B now says its first instruction by itself when a fresh puzzle opens (Mazes, Patterns, Pyramid, Balance, Make the Number, Sudoku, Tangram, Shape Fit, Robot Path, Riddles (the first riddle), Memory Match, Copy Cat (which then waits 2.4 s, as in band A, before the cat starts), Cubes, Turn It). MathDoku, Logic Grid, Mirror, Word Search and Unscramble already did (MathDoku and Logic Grid speak band B since P3-05 and P3-07). Checked for all 19 band B types by tools/test.js and smoke.
 
 I found no broken puzzle and no puzzle with two right answers by the rules.
 
@@ -53,29 +57,37 @@ I found no broken puzzle and no puzzle with two right answers by the rules.
 3. **Tangram for Pre-K starts with pieces turned the wrong way (S).** The very first Pre-K tangram (two pieces to place) needs a
    triangle to be turned before it fits; turning by tapping a piece is hard at 4. Shape Fit already lets band A pieces lie the
    right way. Let band A tangram pieces arrive turned correctly for levels 1-6. `src/js/80-bt-tangram.js`.
+   **Done in R-01b (v143):** band A tray pieces lie the right way on levels 1-6 (was 1-4), and on those levels at most one big triangle is to place, so a piece always fits the one outline of its kind that is left without turning (the "Sailboat" problem was a big triangle dropped into the other big triangle's outline). Levels 7-12 still need turning.
 4. **Copy Cat asks for longer sequences than most children of that age can hold (S).** Level 12 asks a Pre-K child for 5 in a row,
    a 3rd-4th grader for 7, and a 5th-6th grader for 6 backwards. Typical memory span is about 3-4 at age 5, about 5 at 8-9, and
    about 4-5 backwards at 11. Cap the targets near the age average plus one. `src/js/83-bt-copycat.js`.
+   **Done in R-01b (v143):** targets by tier (levels 1-4 / 5-8 / 9-12): A 3 / 4 / 4 (was 3 / 4 / 5), B 4 / 5 / 5 (4 / 5 / 6), C 5 / 5 / 6 (5 / 6 / 7), D forward 6 (7), backward 4 / 5 (5 / 6): the typical span for the age plus about one, using the norms quoted here (forward about 3-4 at 5, 5 at 8-9, 5-6 at 11; backward 4-5 at 11; Gathercole et al. 2004, Farrell Pagulayan et al. 2006). Each level's sequence is the old one cut shorter.
 5. **Turn It gives 1st-2nd graders a mirror image as a wrong choice before mirror images are taught (S).** In band B about 1 shape in 4
    has its mirror image among the choices. Children this age often see a mirror image as "the same" (that is normal, and fades with
    reading). Keep mirror images for band C, where the puzzle is about them. `src/js/85-bt-rotate.js`.
+   **Done in R-01b (v143):** checked again: in 1,920 band B shapes no wrong choice is a mirror image of the shape (the moved-square choices already avoided it). The 26% counted the shapes that look the same mirrored (490 of 1,920 are symmetric), where the right answer is the shape turned and also its mirror image; no wrong choice is involved. make() now says the rule outright (a band B item with a mirror-image wrong choice is refused), and tools/test.js checks it. No puzzle changed.
 6. **Using hints halves the game time a puzzle pays (S).** A first solve pays 45-120 seconds with no hints, half that with two.
    Asking for help when stuck is a good habit; stars can show "no hints" but game time should not shrink. `BT.gameSec` in
    `src/js/74-teasers.js`, `ptBT` in `58-playtime.js`.
+   **Done in R-01b (v143):** a first solve pays by the stars it earns with hints not counted (`paid`, BT.rate with 0 hints), so two hints still give 1 star but the full game time (band B: 60 s, was 30 s). Mistakes can still lower it. The win card line still says "Puzzle solved with 2 hints". The Game Room's earn list says "up to 2 min" (it said "fewer with hints").
 7. **Difficulty climbs in steps, not a ramp (M).** Most types change only every 4 levels (levels 1-4 are the same size, then a
    jump), and there are big jumps between bands: a maze goes from a 27-step route at Pre-K/K level 12 to 45 steps at grade 1-2 level 1,
    Sudoku from a nearly empty 4x4 to a 6x6, and Robot Path band C's shortest program goes 2, 3, 5, 5, 6, 4, 4, 6 blocks over levels
    1-8. Spread the size and given counts over all 12 levels and sort Robot Path's bank by length. Type files and banks.
+   **Done in R-01b (v143), the Robot Path part:** band C levels take the bank's worlds sorted by the shortest program (stable, same bank file), so the shortest program by level is now 2-3, 3, 4, 4, 5, 5, 5-6, 6, 6, 7, 7, 7 (never drops). The nested-loop worlds (4 blocks) moved to levels 3-4 and the two-loop worlds (5 blocks) to level 5. Not done (M): spreading sizes and givens over all 12 levels, and the jumps between bands.
 8. **Some hints show the way but do not teach a way to think (S each).** Maze hints draw dots ("Follow the dots"), Tangram and Shape
    Fit hints place a piece, and the second Patterns hint in bands C-D states every rule at once (which is the answer). Add one
    strategy line first ("Try the big triangles first", "Find the corner only one piece fits", "In a dead end, go back to the last
    turn", "Look only at the arrows: which way do they point?").
+   **Done in R-01b (v143), the Patterns part:** in bands C and D hint 2 gives the rule of one changing attribute and then says "Now check ... yourself" (for example "In each row, the shapes get bigger. Now check the shapes and how many there are yourself."). Bands A and B keep the full rule. Not done (M): strategy lines for maze, Tangram and Shape Fit hints.
 9. **Pre-K patterns are short (S).** "ABC" and "AABB" patterns show only 1.5 to 1.7 copies of the repeating part before the question
    ("A A B B A A ?"). Young children find the repeating unit much more easily after two full copies. Show at least two full units in
    band A.
+   **Done in R-01b (v143):** band A rows show at least two whole copies of the unit: AB AB, ABC ABC, AAB AAB, ABB ABB, AABB AABB (up to 8 pictures; a long row wraps into two rows on a phone). Band A Patterns puzzles changed (their rows are longer, and the seeded stream moves on).
 10. **Big mazes are small on a phone (M).** At 380 x 780 an 18 x 18 maze (grades 5-6, levels 9-12) has 18 px squares (the design
     said at least 28 px). Dragging works, but it is fiddly. Offer the arrow pad by default there, or use 14 x 14 on phones.
     `src/js/75-bt-maze.js`.
+   **Done in R-01b (v143):** a maze is made no bigger than the screen allows for 28 px squares: on a phone the side is capped (380 x 780: 11 x 11 squares of 29-30 px, was 18 x 18 at 18 px; a phone held sideways 8 x 8). Tablets (short side 600 px and up) keep the level's size. On a phone, bands C and D mazes are therefore 11 x 11 at every level (stars, keys and doors as before).
 
 **Could do**
 11. Hide the running clock in bands C and D, or make it optional (S): it does not affect stars and can add pressure.

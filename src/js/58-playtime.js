@@ -33,9 +33,11 @@ function ptLine(){const t=ptState(),min=Math.ceil(t.more/60),saved=t.bank>0?`You
   if(t.why=='empty')return'Finish a learning round to earn game time!';
   return t.max&&t.left<t.bank?`You can play ${fmtT(t.left)} more today (the daily limit is ${t.max} min).`:'Every learning round earns more. Have fun!'}
 function ptWhyNot(){return ptLine()}
-// P5-09: a Brain Teaser result. b = {band, stars, hints, first, daily, room (seconds still allowed today)}. Amounts: BT.gameSec / REPLAY_SEC / DAILY_SEC.
+// P5-09: a Brain Teaser result. b = {band, stars, paid, hints, first, daily, room (seconds still allowed today)}. Amounts: BT.gameSec / REPLAY_SEC / DAILY_SEC.
+// R-01b: a first solve pays by `paid`, the stars the solve earns with its hints not counted (BT.finish), so hints no longer cut
+// the game time; without `paid` it falls back to the stars (an old caller).
 function ptBT(b,mis){const L=[];let t=0;const add=(v,l)=>{if(v>0){t+=v;L.push([v,l])}};
-  if(b.first)add(BT.gameSec(b.band,b.stars),b.hints?`Puzzle solved with ${b.hints} hint${b.hints>1?'s':''}`:b.stars>=3?'Puzzle solved, no hints':'Puzzle solved');
+  if(b.first)add(BT.gameSec(b.band,b.paid>=1?b.paid:b.stars),b.hints?`Puzzle solved with ${b.hints} hint${b.hints>1?'s':''}`:b.stars>=3?'Puzzle solved, no hints':'Puzzle solved');
   else add(BT.REPLAY_SEC,'Played this one again');
   if(b.daily)add(BT.DAILY_SEC,'Puzzle of the Day');
   if(mis)add(60,'Daily mission done');
@@ -62,7 +64,7 @@ function ptCalc(g,sc,n,stars,prev,newPass,testOk,nd,x){const mis=!!(x&&x.mission
 function ptRace(cat,sc){if(sc<5)return 0;const rp=S.ptRep&&S.ptRep.day==today()?S.ptRep:(S.ptRep={day:today(),n:{}}),k='race_'+cat;if(rp.n[k])return 0;rp.n[k]=1;return 60}
 // the lines of "How to earn more game time" (Game Room); R_ draws a small icon
 // the lines of "How to earn more game time": [icon, what, how much]; the Game Room hub (59-game-hub.js) shows them, ptRules as HTML
-function ptEarnList(){return[['sparkle','Unlock a new stop','+1 min'],['star','Get a perfect score','+1 min'],['globe','Play a harder world','up to +1½ min'],['crown','Beat a boss','+2 min'],['review','Do your Daily Review','a full round'],['review','Fix an old mistake','bonus seconds'],['chart','Beat your old score','+½ min'],['puzzle','Solve a Brain Teaser','up to 2 min, fewer with hints'],['calendar',"Finish all three of today's missions",'+1 min'],['timer','Fact Sprint or Fact Race, first one of the day','+1 min']]}
+function ptEarnList(){return[['sparkle','Unlock a new stop','+1 min'],['star','Get a perfect score','+1 min'],['globe','Play a harder world','up to +1½ min'],['crown','Beat a boss','+2 min'],['review','Do your Daily Review','a full round'],['review','Fix an old mistake','bonus seconds'],['chart','Beat your old score','+½ min'],['puzzle','Solve a Brain Teaser','up to 2 min'],['calendar',"Finish all three of today's missions",'+1 min'],['timer','Fact Sprint or Fact Race, first one of the day','+1 min']]}
 function ptRules(R_){return ptEarnList().map(([i,t,v])=>`<div>${R_(i)} ${t} <b>${v}</b></div>`).join('')+'<div class="small">Replaying a stop you already mastered, or the same stop over and over, earns less.</div>'}
 
 // P4-16: the Game Room hub (scene, game-time ticket, a drawn card per registered game) lives in games.<VER>.js with the games:

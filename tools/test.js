@@ -1167,7 +1167,11 @@ run('placement: state machine rules, scripted answers, simulated students, never
     const run1=(ws,g,seq)=>{let st=PLACE.begin(ws,g,7);const path=[];for(const r of seq){if(st.done)break;path.push(st.wi);st=PLACE.step(st,r)}return{st,path}};
     const want=(name,got,exp)=>{if(JSON.stringify(got)!==JSON.stringify(exp))bad(name+': got '+JSON.stringify(got)+', expected '+JSON.stringify(exp))};
     {const{st,path}=run1(FAKE,3,[4,4,1]);want('up, up, not yet',[path,st.done,st.at,st.skip,st.asked],[[6,7,8],true,8,[0,1,2,3,4,5,6,7],12])}
-    {const{st,path}=run1(FAKE,3,[0,1,3]);want('down, down, pass',[path,st.done,st.at,st.skip.length],[[6,5,4],true,5,5])}
+    {const{st,path}=run1(FAKE,3,[0,1,4]);want('down, down, pass',[path,st.done,st.at,st.skip.length],[[6,5,4],true,5,5])}
+    // R-01b: the quiz's first pass is confirmed: 3 of 4 asks one more testlet there (6 of 8 passes); 4 of 4 passes at once (above)
+    {const{st,path}=run1(FAKE,3,[0,1,3,3]);want('down, down, 3 of 4 confirmed by 6 of 8',[path,st.done,st.at,st.skip.length],[[6,5,4,4],true,5,5])}
+    {const{st,path}=run1(FAKE,3,[3,2]);want('a first 3 of 4 then 2: 5 of 8 is not yet',[path,st.rec[6].v,st.wi],[[6,6],'fail',5])}
+    {const{st,path}=run1(FAKE,3,[4,3,1]);want('after a pass, 3 of 4 passes as before',[path,st.done,st.at],[[6,7,8],true,8])}
     {const{st,path}=run1(FAKE,3,[2,4,0]);want('2 right repeats, 6 of 8 passes',[path,st.done,st.at,st.rec[6].t],[[6,6,7],true,7,2])}
     {const{st,path}=run1(FAKE,3,[2,3,4]);want('2 then 5 of 8 is not yet, then a pass below stops',[path,st.done,st.at,st.skip.length],[[6,6,5],true,6,6])}
     {const{st}=run1(FAKE,3,[2,3,2]);want('5 of 8 fails, going down',[st.rec[6].v,st.wi],['fail',5])}
@@ -1573,7 +1577,8 @@ run('review: migration 5 keeps progress and shrinks the save, exact rebuilds, 60
         // R-01m changed sub 2 (even facts) and story 1 (new kinds, a picture) on purpose: their stored seeds now give another question,
         // and revQ falls back to a fresh question of the same skill and level (checked just above), as for any changed generator
         // R-01s: a Spanish noun of the first units now has el / la in front: the same question with the article (taken off both sides)
-        else if(o.q.seed!=null&&!['sub|2','story|1'].includes(it.sk+'|'+it.lv)&&(noArt(normPic(q.html))!==noArt(normPic(o.q.html))||noArt(q.ans)!==noArt(o.q.ans)||noArt(q.label)!==noArt(o.q.label)))bad(name+': not the same question '+revKey(it));
+        // R-01b: only a single fact (revFact) is asked again exactly; anything else is a fresh question of the same skill and level
+        else if(o.q.seed!=null&&!['sub|2','story|1'].includes(it.sk+'|'+it.lv)&&revFact(it,o.q)&&(noArt(normPic(q.html))!==noArt(normPic(o.q.html))||noArt(q.ans)!==noArt(o.q.ans)||noArt(q.label)!==noArt(o.q.label)))bad(name+': not the same question '+revKey(it));
         else if(o.q.seed==null&&!('seed' in it))bad(name+': seed search did not run for '+revKey(it));
       }
       if(name=='tricky'){
@@ -1616,7 +1621,9 @@ run('review: migration 5 keeps progress and shrinks the save, exact rebuilds, 60
       const it=revMiss(q,D0);
       if(!it){bad('no item for '+sk+lv);continue}
       const r=revQ(it);nb++;
-      if(r.html!==q.html||r.label!==q.label||JSON.stringify(r.ans)!==JSON.stringify(q.ans)||r.kind!==q.kind)bad('not rebuilt exactly: '+sk+lv+' seed '+q.seed);
+      // R-01b: a single fact comes back exactly; anything else as a fresh question of the same skill and level, booked to its item
+      if(!revFact(it,q)){nb--;if(r.sk!==sk||r.lv!==lv||r.rvk!==revKey(it))bad('fresh review question not booked: '+sk+lv);}
+      else if(r.html!==q.html||r.label!==q.label||JSON.stringify(r.ans)!==JSON.stringify(q.ans)||r.kind!==q.kind)bad('not rebuilt exactly: '+sk+lv+' seed '+q.seed);
       if(JSON.stringify(it).length>200)bad('item too big: '+JSON.stringify(it));
     }
     bankReset();delete SK.__bk;delete SK.__ps;
@@ -3795,7 +3802,8 @@ run('home (P4-08): tokens only, transform/opacity motion, drawings well formed, 
   // every icon Home asks for exists
   for(const n of ['star','calendar','map','replay','check','path-math','bolt','paw','bag','sticker-book','trophy','target','play','lock','ticket','plus','gear','sound-on','sound-off','flame','coin'])
     if(!ICONS[n])bad.push('missing icon '+n);
-  // the parts keep the ids and selectors other code and smoke.js use
+  // the parts keep the ids and selectors other code and smoke.js use (R-01b: Fact Sprint shows from grade 1 once Adding to 10 is passed)
+  S.grade=1;(S.maps.math=S.maps.math||{}).add1=1;
   const part=hmHero()+hmToday()+hmPaths()+hmActs();
   for(const s of ['id="pet"','id="starc"','id="stkb"','id="revcard"','id="flu"','id="mix"','id="groom"','id="race"','id="care"','id="shop"','id="book"',
     'class="hm-path game s-math" data-p="math"','class="hm-path game s-read" data-p="read"','class="hm-path game s-es" data-p="es"'])if(!part.includes(s))bad.push('Home lost '+s);
@@ -6615,7 +6623,7 @@ run('teaser framework P3-01',()=>{
   o=fin(1);
   if(o.first||o.added||S.stars!==3||o.sec!==15||pt().bank!==gtb+75)bad.push('replay of a solved level: '+JSON.stringify(o));
   o=fin(2,0,{hints:2});
-  if(o.stars!==1||o.sec!==30||S.stars!==4)bad.push('first solve with 2 hints: 1 star, half time: '+JSON.stringify(o));
+  if(o.stars!==1||o.sec!==60||S.stars!==4)bad.push('first solve with 2 hints: 1 star, the full time (R-01b; it was half): '+JSON.stringify(o));
   o=fin(2);
   if(!o.improved||o.added!==2||S.stars!==6||o.sec!==15)bad.push('an improved replay pays only the new stars: '+JSON.stringify(o));
   o=fin(2,0,{mistakes:5,hints:1});
@@ -11473,8 +11481,9 @@ run('tangrams P3-11',()=>{
       p.tray.forEach(([k,f],i)=>{
         if(!mv.includes(i))return;
         const s=p.pcs[i];
-        if(band==='A'&&lv<=4&&(k!==s[0]||f!==s[1]))bad(w+': band A level '+lv+' tray piece '+i+' not turned right');
-        if(!(band==='A'&&lv<=4)&&k===s[0]&&f===s[1])bad(w+': tray piece '+i+' already turned right');
+        // R-01b: band A tray pieces lie the right way on levels 1-6 (it was 1-4)
+        if(band==='A'&&lv<=6&&(k!==s[0]||f!==s[1]))bad(w+': band A level '+lv+' tray piece '+i+' not turned right');
+        if(!(band==='A'&&lv<=6)&&k===s[0]&&f===s[1])bad(w+': tray piece '+i+' already turned right');
         if(KIND[i]==='P'&&(band==='C'||band==='D'||(band==='B'&&lv>=9))&&f!==0)bad(w+': the parallelogram starts flipped');
         if(KIND[i]==='P'&&band==='B'&&lv<9&&f!==s[1])bad(w+': band B parallelogram needs a flip before level 9');
       });
@@ -11664,7 +11673,8 @@ run('robot path P3-13',()=>{
         // a corridor: the open cells are one path from the start to the goal
         const deg=c=>[0,1,2,3].filter(d=>front(w,c,d)>=0).length;
         for(let c=0;c<w.n*w.n;c++)if(w.w[c]=='.'&&deg(c)!==(c===w.s||c===w.g?1:2)){bad(tag+': not a corridor at '+c);break}
-        const e=P.robot[band][w.k].split('|');if(+e[5]!==w.par||w.k<3*(lv-1)||w.k>=3*lv)bad(tag+': bank world '+w.k+' for level '+lv);
+        // R-01b: level L uses entries 3(L-1)..3L-1 of RB.order(band) (band C sorted by par; band D the bank order)
+        const e=P.robot[band][w.k].split('|'),oi=RB.order(band).indexOf(w.k);if(+e[5]!==w.par||oi<3*(lv-1)||oi>=3*lv)bad(tag+': bank world '+w.k+' for level '+lv);
         xs.add(w.x);
       }
       // solve(): a program the editor could make, of exactly par blocks, that wins in the test's simulator and in RB.run
@@ -13891,13 +13901,14 @@ run('missions v2 P5-08: three distinct doable missions, same all day, new each d
       if(n.sk=='boss'||!unlocked(x.p,st.i)||!SK[n.sk])bad.push(w+': '+x.k+' target is a boss, locked or unknown '+x.p+st.i);
       else if(!genQ(n.sk,n.lv))bad.push(w+': no question at '+x.p+' '+n.sk+n.lv);
     }
-    if(x.k=='sprint'&&!(gradeOf()>=0&&FLU.sets().length))bad.push(w+': sprint not doable');
+    if(x.k=='sprint'&&!(gradeOf()>=1&&FLU.sets().length))bad.push(w+': sprint not doable'); // R-01b: from grade 1 (was K)
+    if(x.k=='perfect'&&gradeOf()<=0)bad.push(w+': a perfect round for Pre-K or K (R-01b: "more" instead)');
     if(x.k=='teaser'&&!BT.offered().length)bad.push(w+': teaser with no puzzle type');
     if(x.k=='review'&&!dueItems().length)bad.push(w+': review with nothing due');
     if(x.d!==0)bad.push(w+': a new mission starts undone');
   };
-  const ev=x=>({round:{k:'round',p:x.p},other:{k:'round',p:x.p},perfect:{k:'round',p:'math',perfect:true},sprint:{k:'sprint'},teaser:{k:'teaser'},
-    review:{k:'round',mix:true,daily:true},mix:{k:'round',mix:true}})[x.k];
+  const ev=x=>({round:{k:'round',p:x.p},other:{k:'round',p:x.p},perfect:{k:'round',p:'math',perfect:true},more:{k:'round',p:'math',n:2},sprint:{k:'sprint'},teaser:{k:'teaser'},
+    review:{k:'round',mix:true,daily:true},mix:{k:'round',mix:true}})[x.k]; // R-01b: "more" (Pre-K, K) is done by the day's second round
   const stk=()=>Object.values(S.stickers).reduce((a,b)=>a+b,0);
   const btTypes=BT.types;
   try{
@@ -14118,7 +14129,7 @@ run('game time v2 P5-09',()=>{
       let g0=pt().bank,o=fin(1);
       eq([o.sec,pt().bank-g0,o.pt.lines],[60,60,[[60,'Puzzle solved, no hints']]],'finish: first solve');
       g0=pt().bank;o=fin(2,0,{hints:1});
-      eq([o.sec,pt().bank-g0,o.pt.lines[0][1]],[40,40,'Puzzle solved with 1 hint'],'finish: one hint');
+      eq([o.sec,pt().bank-g0,o.pt.lines[0][1]],[60,60,'Puzzle solved with 1 hint'],'finish: one hint (R-01b: full time, it was 40)');
       g0=pt().bank;o=fin(1);
       eq([o.sec,o.pt.lines],[15,[[15,'Played this one again']]],'finish: a replay');
       load(null);S.grade=1;ptCfg().max=0;BT.st().daily={day:today(),done:['zzp'],pick:{id:'zzp',band:'B',level:1}};S.day={};
@@ -15493,6 +15504,207 @@ run('Discover review fixes R-01d',()=>{
   };
   eval(js+';('+body.toString()+')()');
   return{problems:uniq(p).slice(0,80),note:note.pics+' Nature Trail items with picture answers; longest-answer share '+(note.long||[]).join(', ')};
+});
+
+// ---- R-01b: Brain Teasers and practice review fixes (docs/reviews/R-01-brain-teasers.md, docs/reviews/R-01-practice.md: the must
+// items and the S-sized should items). Each part below names the review item it checks and puts its numbers in the note.
+run('Brain Teasers and practice fixes R-01b',()=>{
+  const rd=f=>fs.readFileSync(path.join(SRC,f),'utf8');
+  const pre=[];
+  // Patterns, Must 1: a picture choice is drawn at the size of a board picture (its CSS width is the measured --pt-ts; smoke measures it)
+  if(!/\.pt-ch \.pt-t\{width:var\(--pt-ts,100%\);height:var\(--pt-ts,100%\)\}/.test(rd('css/49-bt-pattern.css')))pre.push('pattern choices are not drawn at the row scale (--pt-ts)');
+  if(!/setProperty\('--pt-ts'/.test(rd('js/76-bt-pattern.js')))pre.push('76-bt-pattern.js does not measure the row picture (--pt-ts)');
+  // Fact Race, Should 11: the clock skips its tick while the app is hidden
+  if(!/RC\.iv=setInterval\(\(\)=>\{if\(!RC\|\|document\.hidden\)return;/.test(rd('js/54-race.js')))pre.push('the Fact Race clock does not pause when the app is hidden');
+  // the review tile has no red count bubble
+  if(/hm-cnt/.test(rd('css/46-home.css')+rd('js/46-home.js')))pre.push('the red review count bubble (.hm-cnt) is still there');
+  const body=()=>{
+    const store={};
+    localStorage.getItem=k=>k in store?store[k]:null;localStorage.setItem=(k,v)=>{store[k]=String(v)};localStorage.removeItem=k=>{delete store[k]};
+    const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
+    const bad=[],add=m=>{if(bad.length<80)bad.push(m)},note=[],J=JSON.stringify;
+    const days=Array.from({length:40},(_,i)=>'2026-'+(1+i%12)+'-'+(1+i%28));
+    // a fake element for the screens: every property is another fake, every call returns one
+    const fk=new Proxy(function(){},{get:(t,p)=>p===Symbol.toPrimitive?(()=>''):p==='getBoundingClientRect'?(()=>({left:0,top:0,width:300,height:300,right:300,bottom:300})):
+      p==='length'?0:p===Symbol.iterator?(function*(){}):['clientWidth','clientHeight','offsetWidth','offsetHeight','width','height'].includes(p)?300:fk,apply:()=>fk,set:()=>true});
+    const g=globalThis,saved={},GK=['window','getComputedStyle','requestAnimationFrame','cancelAnimationFrame','innerWidth','innerHeight','devicePixelRatio','removeEventListener'];
+    const D=['querySelector','querySelectorAll','createElement','createElementNS'],dsaved={};
+    const fakeOn=()=>{for(const k of GK)saved[k]=[k in g,g[k]];for(const k of D)dsaved[k]=[k in document,document[k]];
+      g.getComputedStyle=()=>({getPropertyValue:()=>'',paddingLeft:'0',paddingRight:'0',paddingTop:'0',paddingBottom:'0'});g.requestAnimationFrame=()=>0;g.cancelAnimationFrame=()=>{};
+      g.removeEventListener=()=>{};g.window=g;g.innerWidth=1024;g.innerHeight=768;g.devicePixelRatio=1;
+      document.querySelector=()=>fk;document.querySelectorAll=()=>[];document.createElement=()=>fk;document.createElementNS=()=>fk};
+    const fakeOff=()=>{for(const k of GK){if(saved[k][0])g[k]=saved[k][1];else delete g[k]}for(const k of D){if(dsaved[k][0])document[k]=dsaved[k][1];else delete document[k]}};
+    load(null);S.name='Ava';
+    // ===== Brain Teasers =====
+    // Patterns, Should 9: band A rows show at least two whole copies of every repeating unit (they showed 1.5 of AABB, 1.67 of ABC)
+    {const cop={};let seen=0;
+     for(let lv=1;lv<=12;lv++)for(const day of days){const pz=BT.make('pattern','A',lv,{day});
+       pz.items.forEach((it,i)=>{if(it.k!='seq')return;seen++;
+         for(const k of Object.keys(it.spec)){const u=it.spec[k];if(/^[+-]/.test(u))continue;const c=it.show.length/u.length;cop[u]=Math.min(cop[u]==null?9:cop[u],c);
+           if(c<2)add('pattern A'+lv+' '+day+' item '+(i+1)+': '+it.show.length+' pictures show '+c.toFixed(2)+' copies of '+u)}})}
+     // the review's examples: pattern A 4 and A 1 on 2026-1-1, item 3 (drawn at row scale: smoke measures them)
+     for(const lv of [1,4]){const it=BT.make('pattern','A',lv,{day:'2026-1-1'}).items[2];if(!it||!it.ch)add('pattern A'+lv+' 2026-1-1 item 3 missing')}
+     note.push('band A pattern rows: '+seen+' sequences, fewest copies of a unit '+Object.entries(cop).map(([u,c])=>u+' '+c.toFixed(2)).join(', ')+' (was AABB 1.5, ABC/AAB/ABB 1.67)')}
+    // Patterns, Should 8: hint 2 in bands C and D gives the rule of one changing attribute and names the others to check
+    {let n=0;
+     for(const b of 'CD')for(let lv=1;lv<=12;lv++)for(const day of days.slice(0,10)){const pz=BT.make('pattern',b,lv,{day});
+       for(const it of pz.items){if(!(it.k=='seq'||it.k=='mat')||it.at.length<2)continue;n++;
+         const h=PAT.hintText(it,2,b),one=a=>PAT.hintText(Object.assign({},it,{at:[a]}),2,b);
+         if(!h.startsWith(one(it.at[0]))||!/Now check .* yourself\.$/.test(h))add('pattern '+b+lv+' '+day+': hint 2 "'+h+'"');
+         for(const a of it.at.slice(1))if(h.includes(one(a)))add('pattern '+b+lv+' '+day+': hint 2 states a second rule: '+h)}}
+     note.push('C-D hint 2 gives one rule: '+n+' items with 2-3 changing attributes')}
+    // Must 2: every type with band B speaks its first instruction when a fresh puzzle opens (mounted on fake elements, say recorded)
+    {const said={},silent=[];fakeOn();
+     try{for(const d of BT.list()){if(!d.bands.includes('B'))continue;const l=[];
+       try{const inst=d.mount(fk,BT.make(d.id,'B',1,{day:'2026-6-15'}),{win(){},sfx:SFX,band:'B',level:1,say:t=>l.push(String(t)),saveState(){},loadState:()=>null});
+         if(inst&&inst.destroy)try{inst.destroy()}catch(e){}}catch(e){add('band B '+d.id+': mount threw '+e.message)}
+       said[d.id]=l[0];if(!l.length)silent.push(d.id)}}finally{fakeOff()}
+     if(silent.length)add('band B types that say nothing when they open: '+silent.join(', '));
+     note.push('band B speaks at the start: '+Object.keys(said).length+' types ('+Object.entries(said).slice(0,3).map(([k,v])=>k+' "'+String(v).slice(0,24)+'..."').join(', ')+' ...)')}
+    // Should 3: band A tangram, levels 1-6: every tray piece lies as its outline does, and at most one big triangle is to place
+    {let n=0,turned7=0;
+     for(let lv=1;lv<=12;lv++)for(const day of days){const p=BT.make('tangram','A',lv,{day}),mv=[0,1,2,3,4,5,6].filter(i=>!p.fix.includes(i));
+       if(lv<=6){n++;if(mv.filter(i=>TG.KIND[i]=='L').length>1)add('tangram A'+lv+' '+day+': both big triangles to place');
+         for(const i of mv)if(p.tray[i][0]!==p.pcs[i][0]||p.tray[i][1]!==p.pcs[i][1])add('tangram A'+lv+' '+day+': piece '+i+' needs turning')}
+       else if(mv.some(i=>p.tray[i][0]!==p.pcs[i][0]))turned7++}
+     if(!turned7)add('tangram A7-12: turning is never needed any more');
+     note.push('tangram A1-6: '+n+' puzzles, every piece the right way up, one big triangle at most (A7-12: '+turned7+' of 240 need a turn)')}
+    // Should 4: Copy Cat targets near the typical span for the age plus about one (Gathercole et al. 2004; Farrell Pagulayan et al. 2006):
+    // forward about 3-4 at 5, 5 at 8-9, 5-6 at 11; backward 4-5 at 11. Caps: A 4, B 5, C 6, D forward 6, backward 5.
+    {const CAP={A:[4,4],B:[5,5],C:[6,6],D:[6,5]},got={};
+     for(const b of 'ABCD'){got[b]=[];for(const lv of [1,5,9,12]){const p=BT.make('copycat',b,lv,{day:'2026-1-1'});got[b].push(p.len+(p.rev?'b':''));
+       if(p.len>CAP[b][p.rev?1:0])add('copycat '+b+lv+': '+p.len+(p.rev?' backwards':'')+' is over '+CAP[b][p.rev?1:0])}}
+     if(J(got)!==J({A:['3','4','4','4'],B:['4','5','5','5'],C:['5','5','6','6'],D:['6','4b','5b','5b']}))add('copycat lengths '+J(got));
+     note.push('copycat targets (levels 1/5/9/12): '+Object.entries(got).map(([b,v])=>b+' '+v.join('/')).join(', ')+' (was A 3/4/5/5, B 4/5/6/6, C 5/6/7/7, D 7/5b/6b/6b)')}
+    // Should 5: Turn It band B never has a mirror image of the shape among the wrong choices
+    {let n=0,ach=0;
+     for(let lv=1;lv<=12;lv++)for(const day of days){const p=BT.make('rotate','B',lv,{day});
+       for(const it of p.items){n++;const fr=ROT.canonR(ROT.flip(it.t));if(ROT.canonR(it.t)==fr)ach++;
+         it.ch.forEach((c,i)=>{if(i!==it.a&&ROT.canonR(c.s)==fr)add('rotate B'+lv+' '+day+': a mirror image is a wrong choice')})}}
+     note.push('Turn It B: '+n+' shapes, 0 mirror-image wrong choices ('+ach+' shapes look the same mirrored, so their right answer is one)')}
+    // Should 6: hints cost a star, not game time
+    {const pb=o=>ptCalc({bt:Object.assign({band:'B',stars:3,hints:0,first:true,daily:false},o)},0,0,0,0,false,false,null).sec;
+     const rows=[[{},60],[{stars:2,hints:1,paid:3},60],[{stars:1,hints:3,paid:3},60],[{band:'D',stars:1,hints:2,paid:3},120],[{stars:1,hints:2,paid:2},40]];
+     for(const[o,w]of rows){load(null);const v=pb(o);if(v!==w)add('puzzle game time '+J(o)+': '+v+' s, want '+w)}
+     load(null);S.grade=1;ptCfg().max=0;
+     const o2=BT.finish({id:'maze',band:'B',level:1,puzzle:{},state:null,hints:2,sec:30,day:today()},{mistakes:0,hints:2,sec:30});
+     if(o2.stars!==1||o2.sec!==60)add('a band B first solve with 2 hints: '+o2.stars+' star(s), '+o2.sec+' s (want 1 star, 60 s; it paid 30 s)');
+     note.push('two hints: 1 star and the full 60 s (band B; it paid 30 s)')}
+    // Should 10: mazes on a phone keep squares of 28 px or more (the side is capped by the screen at make time; tablets unchanged)
+    {const sc={},G0=['innerWidth','innerHeight'].map(k=>[k,k in g,g[k]]);
+     try{for(const[w,h]of[[380,780],[780,380],[600,960],[1024,600]]){g.innerWidth=w;g.innerHeight=h;const cap=MZ.cap();let big=0;
+         for(const b of 'ABCD')for(let lv=1;lv<=12;lv++)for(const day of days.slice(0,6)){const p=BT.make('maze',b,lv,{day});big=Math.max(big,p.w);
+           if(p.w>Math.min(cap,MZ.size(b,lv))||!(p.par>0))add('maze '+b+lv+' at '+w+'x'+h+': '+p.w+' squares, cap '+cap)}
+         const bs=h>=w?w-40:h-130;sc[w+'x'+h]=cap>=99?'the level size (largest '+big+')':big+' squares, '+((bs-16)/big).toFixed(1)+' px';
+         if(cap<99&&(bs-16)/big<28)add('maze squares under 28 px at '+w+'x'+h)}}
+     finally{for(const[k,had,v]of G0){if(had)g[k]=v;else delete g[k]}}
+     if(MZ.cap()!==99)add('no screen: the maze size must not be capped');
+     note.push('maze on a phone: '+Object.entries(sc).map(([k,v])=>k+' '+v).join(', '))}
+    // Should 7, the Robot Path part: band C shortest programs never drop from one level to the next
+    {const lvs=[];let pm=0,px=0;
+     for(let lv=1;lv<=12;lv++){const ps=new Set();for(const day of days)ps.add(BT.make('robot','C',lv,{day}).par);const a=[...ps].sort((x,y)=>x-y),mn=a[0],mx=a[a.length-1];
+       lvs.push(mn==mx?String(mn):mn+'-'+mx);if(mn<pm||mx<px)add('robot C'+lv+' par '+a+' after '+pm+'-'+px);pm=mn;px=mx}
+     note.push('robot C par by level '+lvs.join(', ')+' (was 2-3, 3, 5, 5, 5-6, 4, 4, 6 ...)')}
+    // ===== practice =====
+    const ni=(p,sk,lv)=>NODES[p].findIndex(n=>n.sk==sk&&n.lv==lv);
+    // Must 1: Fact Sprint from grade 1, after the first adding stop; no sprint mission before that
+    {const res=[];
+     for(const gr of GRADES){load(null);S.grade=gr;for(const n of NODES.math)if(n.sk!='boss')S.maps.math[nid(n)]=2;
+       if(FLU.on()!==(gr>=1))add('grade '+gr+' with every stop passed: Fact Sprint shown '+FLU.on());
+       const html=hmToday();if(/id="flu"/.test(html)!==(gr>=1))add('grade '+gr+': Home tile '+/id="flu"/.test(html));
+       for(const day of days){const m=MIS.draw(day,'Ava',MIS.ctx()).map(x=>x.k);
+         if(gr<1&&m.includes('sprint'))add('grade '+gr+' '+day+': a sprint mission');
+         if(gr<=0&&m.includes('perfect'))add('grade '+gr+' '+day+': a perfect round mission');
+         if(gr>=1&&m.includes('more'))add('grade '+gr+' '+day+': the Pre-K/K effort mission')}}
+     load(null);S.grade=1;
+     if(FLU.on()||FLU.sets().length)res.push('nothing passed: open');
+     S.maps.math[nid(NODES.math[ni('math','add',4)])]=2;if(FLU.set('add10').ok()||FLU.set('add20').ok())res.push('"Add to 5" alone opens adding sets');
+     S.maps.math.add1=1;if(!FLU.on()||!FLU.set('add10').ok()||FLU.set('add20').ok())res.push('Adding to 10 passed: '+FLU.on()+' '+FLU.set('add20').ok());
+     load(null);S.grade=1;S.maps.math.add2=1;if(!FLU.set('add10').ok()||!FLU.set('add20').ok())res.push('a later adding stop does not open the sets');
+     load(null);S.grade=2;(S.skip=S.skip||{})[NODES.math[ni('math','add',1)].wid]=1;if(!FLU.on())res.push('a skipped Number Meadow does not open Adding to 10');
+     load(null);delete S.grade;S.maps.math.add1=1;if(!FLU.on())res.push('a save with no grade that passed Adding to 10');
+     if(res.length)add('Fact Sprint gating: '+res.join('; '));
+     note.push('Fact Sprint: Pre-K and K never (tile, sprint mission); grade 1 up once Adding to 10 or a later adding stop is passed')}
+    // Should 6: Pre-K and K missions: "Play 2 rounds today" in place of "Get a perfect round"
+    {load(null);S.grade=-1;S.day={d:today(),r:0,done:false};S.day.m=[{k:'round',p:'math',d:0},{k:'more',d:0},{k:'mix',d:0}];
+     if(!MIS.valid(S.day.m))add('the "more" mission is not a valid mission');
+     let w=MIS.done({k:'round',p:'read',n:1});if(w.won.length)add('one round finished the "more" mission');
+     w=MIS.done({k:'round',p:'read',n:2});if(!w.won.some(x=>x.x.k=='more'))add('the second round did not finish the "more" mission');
+     if(MIS.title({k:'more'})!=='Play 2 rounds today')add('more title '+MIS.title({k:'more'}));
+     note.push('Pre-K/K: "Play 2 rounds today" in place of the perfect round')}
+    // Should 2: Mixed Practice weighted to recent (50%) and weak (30%) stops, older 20%. A 3rd grader at maths stop 90 and reading stop 60.
+    {const grd=n=>PATHS[n.p].worlds[n.wi].g;
+     const setup=weak=>{load(null);S.grade=3;NODES.math.forEach((n,i)=>{if(i<90)S.maps.math[nid(n)]=2});NODES.read.forEach((n,i)=>{if(i<60)S.maps.read[nid(n)]=2});
+       S.mast={};for(const k of weak)S.mast[k]={n:6,p:.5,ms:3000,d:2,last:1}};
+     setup([]);let gr=mixGroups();const N=3000,o={recent:0,pk:0,near:0},rs=new Set(gr.recent);
+     for(let i=0;i<N;i++){const n=mixPick(gr);if(rs.has(n))o.recent++;if(grd(n)<=0)o.pk++;if(grd(n)>=2)o.near++}
+     const pc=x=>Math.round(100*x/N);
+     if(pc(o.near)<65||pc(o.pk)>20||pc(o.recent)<70)add('Mixed Practice for a 3rd grader: '+J(o));
+     // with weak stops: about 30% from them
+     const wk=NODES.math.filter((n,i)=>i<40&&n.sk!='boss').slice(0,6).map(nid);setup(wk);gr=mixGroups();const ws=new Set(gr.weak);let wn=0;
+     for(let i=0;i<N;i++)if(ws.has(mixPick(gr)))wn++;
+     if(Math.abs(pc(wn)-30)>4)add('weak stops get '+pc(wn)+'% (want about 30%)');
+     setup([]);if(mixQs().length!==10)add('mixQs does not give 10 questions');
+     note.push(`Mixed Practice (3rd grader, maths stop 90, reading 60): grade 2-3 worlds ${pc(o.near)}%, Pre-K/K ${pc(o.pk)}%, last 10 stops ${pc(o.recent)}% `+
+       `(was 35%, 39%, 24%); with 6 weak stops ${pc(wn)}% from them`)}
+    // Should 3: placement confirms the first pass. Simulated: grade 3 children whose right world is 2 or 3 below the start (knows 90%, guesses 30%)
+    {const ws=PATHS.math.worlds,s0=PLACE.begin(ws,3,1),s1=PLACE.step(s0,3);
+     if(s1.wi!==s0.wi||s1.rec[s0.wi].v)add('3 of 4 on the first testlet moved on: '+J(s1));
+     const s2=PLACE.step(s1,3);if(s2.rec[s0.wi].v!=='pass'||s2.wi!==s0.wi+1)add('6 of 8 did not pass the start world');
+     if(PLACE.step(s0,4).wi!==s0.wi+1)add('4 of 4 does not pass at once');
+     if(PLACE.step(PLACE.step(s0,4),3).wi!==s0.wi+2)add('after a pass, 3 of 4 passes as before');
+     const sim=dl=>{let hi=0,ex=0,q=0;const M=400;for(let k=1;k<=M;k++){const st0=PLACE.begin(ws,3,k*7919),tw=st0.wi+dl,r=mulberry32(k*31+7);
+         const st=PLACE.sim(ws,3,k*7919,wi=>r()<(wi<=tw?.9:.3)),want=Math.min(tw+1,ws.length-1);hi+=st.at>want;ex+=st.at==want;q+=st.asked;if(st.asked>20)add('placement asked '+st.asked)}
+       return [Math.round(100*hi/M),Math.round(100*ex/M),+(q/M).toFixed(1)]};
+     const a=sim(-3),b=sim(-2),c=sim(0);
+     if(a[0]>10||b[0]>8)add('placement too high: 3 below '+a+', 2 below '+b);
+     note.push(`placement (400 quizzes each): right world 3 below the start placed too high ${a[0]}% (was 22%), exact ${a[1]}%, ${a[2]} questions; 2 below ${b[0]}% (was 17%); at the start ${c[0]}%`)}
+    // Should 5: review asks a fresh question of the same skill and level unless the item is a single fact
+    {load(null);let fact=0,fresh=0,same=0;const kinds={};
+     for(const[sk,lv]of[['add',1],['sub',2],['mfact',3],['dfact',2],['sight',2],['build',3],['es_animal',2],['eo',1],['story',1],['big',3],['cmp',2],['time',2],['vocab',1]])
+       for(let sd=1;sd<=30;sd++){const q0=genQ(sk,lv,sd),it={sk,lv,seed:sd,label:revLabel(q0.label),box:0,due:0,n:1};if(q0.bk)it.bk=q0.bk;
+         const q=revQ(it),f=revFact(it,q0);kinds[sk]=f;
+         if(q.rvk!==revKey(it)||q.sk!==sk||q.lv!==lv)add('revQ '+sk+lv+': not booked to its item');
+         if(f){fact++;if(revLabel(q.label)!==it.label)add('a fact came back changed: '+it.label+' -> '+q.label)}
+         else{fresh++;if(revLabel(q.label)===it.label)same++}}
+     if(same>fresh*.15)add('fresh review questions: '+same+' of '+fresh+' were the same item again');
+     for(const sk of ['add','sub','mfact','dfact','sight','build','es_animal'])if(!kinds[sk])add(sk+' should count as a fact');
+     for(const sk of ['eo','story','big','cmp','time','vocab'])if(kinds[sk])add(sk+' should not count as a fact');
+     // a fresh question still moves its item up when answered right
+     load(null);const it={sk:'eo',lv:1,seed:5,label:revLabel(genQ('eo',1,5).label),box:0,due:0,n:1};S.rev=[it];const q=revQ(it);
+     if(!revRight(q)||S.rev[0].box!==1)add('a fresh review question did not move its item up a box');
+     note.push(`review: ${fact} facts asked again exactly, ${fresh} other items asked fresh (${same} came back as the same item by chance)`)}
+    // Should 7 and Should 9: whole rounds through check() and finish() on fake elements. A right first try with the hint showing counts
+    // half for the pass and stars and 0.5 in the mastery record; the in-round streak counts first tries only.
+    {fakeOn();const KN=KIND.num;
+     say=()=>{};burst=()=>{};anim=()=>{};fb=()=>{};petSay=()=>{};playClip=()=>false;qProg=()=>{};qStreak=()=>{};hintIn=()=>{};fit=()=>{};next=()=>{};
+     KIND.num=Object.assign({},KN,{right(){},reveal(){},retry(){}});
+     try{const round=(firsts,helped)=>{load(null);S.grade=1;S.mast={};const i0=ni('math','add',1);
+         G=newG({path:'math',node:i0,sk:'add',lv:1,n:10});G.res=[];
+         for(let i=0;i<10;i++){G.q=genQ('add',1,i+1);G.tries=0;G.retry=false;G.lock=false;G.hq=helped.includes(i);G.qt=Date.now()-3000;
+           if(firsts[i])check(G.q.ans,fk);else{check('999',fk);G.lock=false;check('998',fk)}}
+         while(G.missed.length){G.q=G.missed.shift();G.retry=true;G.tries=0;G.lock=false;check(G.q.ans,fk)}
+         const gg=G;finish();return [gg.score,gg.helped||0,getSt('math',i0),mastRec('add1').p,gg.best]};
+       const T=[['10 right',[1,1,1,1,1,1,1,1,1,1],[],[10,0,3,1,10]],['10 right, 4 with the hint',[1,1,1,1,1,1,1,1,1,1],[0,1,2,3],[10,4,2,.801,10]],
+         ['7 right',[1,1,1,1,1,1,1,0,0,0],[],[7,0,1,.7,7]],['7 right, 2 with the hint',[1,1,1,1,1,1,1,0,0,0],[5,6],[7,2,0,.6,7]],
+         ['6 of 10, the misses fixed at the end',[1,1,1,0,1,1,0,1,0,0],[],[6,0,0,.6,3]]];
+       for(const[nm,f,h,w]of T){const r=round(f,h);if(J(r)!==J(w))add('round "'+nm+'": [score, helped, stars, mastery p, best streak] '+J(r)+', want '+J(w))}}
+     catch(e){add('round simulation threw '+e.message)}
+     finally{fakeOff();KIND.num=KN}
+     note.push('rounds: hint-showing answers count half (10 right, 4 with the hint: 2 stars, mastery 0.8; 7 right, 2 with the hint: not passed); a 6-of-10 round with its misses fixed at the end: best streak 3 (it said 10)')}
+    // Should 10: the review tile shows the next round's size, at most 10, in words
+    {load(null);S.grade=1;S.rev=Array.from({length:21},(_,i)=>({sk:'add',lv:1,seed:i+1,label:'x'+i,box:0,due:0,n:1}));let h=hmToday();
+     if(!/id="revn">10<\/b> to review/.test(h)||/hm-cnt/.test(h))add('review tile with 21 due: '+h.slice(0,200));
+     S.rev=S.rev.slice(0,3);h=hmToday();if(!/id="revn">3<\/b> to review/.test(h))add('review tile with 3 due');
+     note.push('review tile: "10 to review" with 21 due (it was a red 21)')}
+    // Should 11: Fact Race coins only with the race that pays game time (the first race of the day in a category with 5 or more right)
+    {load(null);const r1=ptRace('math',12),c1=raceCoins(12,true,r1),r2=ptRace('math',14),c2=raceCoins(14,true,r2),r3=ptRace('read',3),c3=raceCoins(3,true,r3);
+     if(J([c1,c2,c3])!==J([11,0,0]))add('Fact Race coins '+J([c1,c2,c3]));
+     note.push('Fact Race coins: the first race 11 (12 right and a record), later races 0 (it paid every race)')}
+    return{bad,note};
+  };
+  const r=eval(js+';('+body.toString()+')()');
+  return{problems:pre.concat(r.bad),note:r.note.join('; ')};
 });
 
 // ---- report ----

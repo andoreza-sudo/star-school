@@ -18,9 +18,11 @@
    library (a cycle of 1-4 seen at least once, steady growth; numbers: + - x, xa+b, second differences, Fibonacci, alternating,
    interleaved, growing differences), and every distractor must fail it; matrices are read by rows or by columns, attribute by
    attribute. tools/test.js re-checks every item with its own independent checker.
-   Hints (per item; the frame counts them): 1 names the attribute to watch, 2 states the rule for one row, 3 removes two wrong
-   choices. A wrong tap counts a mistake, the choice turns amber and stays out; the child always finishes.
+   Hints (per item; the frame counts them): 1 names the attribute to watch, 2 states the rule (bands C and D: the rule of one
+   changing attribute, then "now check ... yourself"; R-01b), 3 removes two wrong choices. A wrong tap counts a mistake, the choice turns amber and stays out; the child always finishes.
    State (api.saveState): {i item, miss, h hint tier of this item, x wrong taps, g choices removed by hint 3}.
+   Band A rows show at least two whole copies of a repeating unit (ABC ABC, AABB AABB; up to 8 pictures; R-01b).
+   Picture choices are drawn at the size of the pictures on the board (--pt-ts, measured; R-01b), so size is compared like with like.
    Drawing: tiles are inline SVG, light from the top left (shadow, shade, base moved toward the light, white gloss), colours
    from the --ill-* tokens through classes in src/css/49-bt-pattern.css; no ids, filters or gradients. */
 const PAT = (() => {
@@ -199,7 +201,8 @@ const PAT = (() => {
     }
 
     // ---- what comes next (pictures) ----
-    function seq(opts) {
+    // two: show at least two whole copies of a repeating unit (band A, R-01b: Pre-K children find the unit after two copies)
+    function seq(opts, two) {
       const spec = pick(opts), ch = Object.keys(spec);
       const zch = 'z' in spec, nGrow = /^[+-]/.test(spec.n || '');
       const base = {
@@ -228,10 +231,11 @@ const PAT = (() => {
         const nx = seqNext(v.slice(0, L), KIND[k]);
         return nx.size == 1 && nx.has(v[L]);
       });
-      // a cycle is shown once whole and two more (AB AB, ABC AB, AAB AAB); growth from 4 pictures
-      const L0 = Math.max(4, ...ch.map(k => /^[+-]/.test(spec[k]) ? 4 : spec[k].length + 2));
+      // a cycle is shown once whole and two more (AB AB, ABC AB, AAB AAB); growth from 4 pictures. Band A (two): two whole
+      // copies at least (AB AB, ABC ABC, AABB AABB), so up to 8 pictures
+      const L0 = Math.max(4, ...ch.map(k => /^[+-]/.test(spec[k]) ? 4 : two ? 2 * spec[k].length : spec[k].length + 2));
       let L = 0;
-      for (let l = L0; l <= 7 && !L; l++) if (okAt(l)) L = l;
+      for (let l = L0; l <= (two ? 8 : 7) && !L; l++) if (okAt(l)) L = l;
       if (!L) return null;
       if (L < 6 && okAt(L + 1) && rnd() < 0.5) L++;
       const tiles = range(L + 1).map(i => { const t = Object.assign({}, base); for (const k of ch) t[k] = vals[k](i); return t; });
@@ -392,7 +396,7 @@ const PAT = (() => {
   function make(band, level, rnd) {
     const m = maker(rnd), t = tierOf(level);
     const plan = {
-      A: [() => m.seq(SEQ.A1[t]), () => m.odd(t == 0 ? 's' : m.pick(t == 1 ? ['z', 'n'] : ['s', 'z', 'n']), t == 2 ? 1 : 0), () => m.seq(SEQ.A2[t])],
+      A: [() => m.seq(SEQ.A1[t], true), () => m.odd(t == 0 ? 's' : m.pick(t == 1 ? ['z', 'n'] : ['s', 'z', 'n']), t == 2 ? 1 : 0), () => m.seq(SEQ.A2[t], true)],
       B: [() => m.num(NUM.B[t], 100), () => m.seq(SEQ.B[t]), () => m.ana(t == 2 ? 2 : 1, t > 0), () => m.odd(m.pick(['s', 'z', 'n']), t == 2 ? 2 : 1)],
       C: [() => m.mat(t == 0 ? 1 : 2, ['latin', 'prog', 'rowc']), () => m.num(NUM.C[t], 999), () => m.seq(SEQ.C[t]), () => m.mat(t == 0 ? 1 : 2, ['latin', 'prog', 'rowc'])],
       D: [() => m.mat(t == 0 ? 2 : 3, ['latin', 'prog', 'rowc']), () => m.num(NUM.D[t], 999), () => m.seq(SEQ.D[t]), () => m.mat(t == 0 ? 2 : 3, t == 2 ? ['latin', 'prog'] : ['latin', 'prog', 'rowc'])],
@@ -465,13 +469,15 @@ const PAT = (() => {
     return 'From the first picture to the second, ' + and(it.x.map(k => k == 's' ? `the ${SHAPES[A.s]} turns into a ${SHAPES[B.s]}`
       : k == 'z' ? `it gets ${B.z > A.z ? 'bigger' : 'smaller'}` : `${A.n} ${A.n > 1 ? 'shapes become' : 'shape becomes'} ${B.n}`)) + '.';
   }
-  // the hint words of tier 1 and 2
-  function hintText(it, tier) {
+  // the hint words of tier 1 and 2. band: bands C and D (R-01b) get the rule of ONE changing attribute at tier 2 and are told
+  // which others to check, so the hint teaches a way in and does not state the whole answer; A and B keep every rule
+  function hintText(it, tier, band) {
     if (it.k == 'num') return tier == 1 ? (NUMWATCH[it.rule] || 'Look at how each number changes from the one before.') : NUMRULE[it.rule](it.show);
     if (tier == 1) return 'Look at ' + and(it.at.map(k => WATCH[k])) + '.';
-    const k = it.at[0];
-    if (it.k == 'seq') return it.at.map(a => seqRule(it, a)).join(' ');
-    if (it.k == 'mat') return it.at.map(a => matRule(it, a)).join(' ');
+    const k = it.at[0], one = (band == 'C' || band == 'D') && it.at.length > 1;
+    const rest = () => ' Now check ' + and(it.at.slice(1).map(a => WATCH[a])) + ' yourself.';
+    if (it.k == 'seq') return one ? seqRule(it, k) + rest() : it.at.map(a => seqRule(it, a)).join(' ');
+    if (it.k == 'mat') return one ? matRule(it, k) + rest() : it.at.map(a => matRule(it, a)).join(' ');
     if (it.k == 'ana') return anaRule(it);
     const t = it.ch[(it.a + 1) % 4];
     return { s: `Three of them are ${SHAPES[t.s]}s.`, z: `Three of them are ${SIZES[t.z]}.`, n: `Three of them have ${t.n} ${t.n > 1 ? 'shapes' : 'shape'}.` }[k];
@@ -545,11 +551,23 @@ const PAT = (() => {
       }).join('');
       el.innerHTML = `<div class="pt pt-${it.k}"><div class="pt-head"><span class="pt-dots" role="img" aria-label="Question ${st.i + 1} of ${N}">${dots}</span>` +
         `<p class="pt-ask">${esc(ASK[it.k])}</p>${UI.ibtn('speak', 'Hear the question', { size: 'sm', cls: 'pt-say' })}</div>` +
-        `<div class="pt-main">${board(it)}<div class="pt-side"><p class="pt-tip" role="status"${st.h && st.h < 3 ? '' : ' hidden'}>${ico('hint', 24)}<span>${st.h && st.h < 3 ? esc(hintText(it, st.h)) : ''}</span></p>` +
+        `<div class="pt-main">${board(it)}<div class="pt-side"><p class="pt-tip" role="status"${st.h && st.h < 3 ? '' : ' hidden'}>${ico('hint', 24)}<span>${st.h && st.h < 3 ? esc(hintText(it, st.h, p.band)) : ''}</span></p>` +
         `<div class="pt-chs n${it.ch.length}">${chs}</div></div></div></div>`;
       el.querySelector('.pt-say').onclick = () => api.say(ASK[it.k]);
       el.querySelectorAll('.pt-ch').forEach(b => b.onclick = () => tap(+b.dataset.c, b));
+      rowScale();
     }
+    // R-01b: picture choices are drawn at the scale of the pictures on the board (a choice tile was about 1.6 times a row tile,
+    // so a medium wrong choice looked as big as the row's big ones). --pt-ts = the width of one board picture, in px.
+    function rowScale() {
+      const box = el.querySelector('.pt'), t = el.querySelector('.pt-board .pt-t');
+      if (!box || !t) return;
+      const w = t.getBoundingClientRect().width;
+      if (w > 0) box.style.setProperty('--pt-ts', (Math.round(w * 10) / 10) + 'px');
+    }
+    let rz = 0;
+    const onResize = () => { clearTimeout(rz); rz = setTimeout(() => { if (alive) rowScale(); }, 80); };
+    addEventListener('resize', onResize);
     function tap(i, b) {
       const it = p.items[st.i];
       if (busy || !alive || st.x.includes(i) || st.g.includes(i)) return;
@@ -574,7 +592,9 @@ const PAT = (() => {
       busy = setTimeout(() => { busy = 0; if (alive) { draw(); if (api.band == 'A') api.say(ASK[p.items[st.i].k]); } }, 1100);
     }
     draw();
-    if (api.band == 'A') api.say(ASK[p.items[st.i].k]);
+    setTimeout(() => { if (alive) rowScale(); }, 60); // the frame can still be settling (fonts, the top bar)
+    // band A says every question; band B says the first one of a fresh puzzle (R-01b: first graders are not asked to read it)
+    if (api.band == 'A' || (api.band == 'B' && st.i == 0 && !st.miss && !st.h && !st.x.length)) api.say(ASK[p.items[st.i].k]);
     return {
       hint() {
         if (busy || st.i >= N) return false;
@@ -583,7 +603,7 @@ const PAT = (() => {
         if (st.h < 2) {
           st.h++;
           api.saveState(st);
-          const tip = el.querySelector('.pt-tip'), w = hintText(it, st.h);
+          const tip = el.querySelector('.pt-tip'), w = hintText(it, st.h, p.band);
           tip.querySelector('span').textContent = w;
           tip.hidden = false;
           api.say(w);
@@ -600,7 +620,7 @@ const PAT = (() => {
         el.querySelector('.pt-tip').hidden = true;
         return true;
       },
-      destroy() { alive = false; clearTimeout(busy); },
+      destroy() { alive = false; clearTimeout(busy); clearTimeout(rz); removeEventListener('resize', onResize); },
     };
   }
 

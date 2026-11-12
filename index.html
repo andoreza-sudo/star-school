@@ -2146,9 +2146,9 @@ button.hm-tile:active{transform:translateY(3px);box-shadow:inset 0 0 0 2px var(-
 .t-rev{--c:var(--play);--c-shade:var(--play-shade)}
 .t-ok{--c:var(--good);--c-shade:var(--good-ink)}
 .t-mix{--c:var(--brand-tint);--c-shade:var(--ledge-soft)}
-.hm-cnt{position:absolute;top:-6px;right:-12px;display:grid;place-items:center;min-width:30px;height:30px;padding:0 var(--s-2);
-  border-radius:var(--r-pill);background:var(--read);color:var(--surface);font-size:var(--fs-2);line-height:1;font-variant-numeric:tabular-nums;
-  box-shadow:0 0 0 3px var(--surface)}
+/* R-01b: the review count is part of the tile's words ("10 to review"), in the ink colour: no red bubble */
+.hm-rn{font-variant-numeric:tabular-nums}
+.hm-today.n2{grid-template-columns:repeat(2,minmax(0,1fr))}
 .hm-bolt{position:absolute;right:-8px;bottom:-4px;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;
   background:var(--star);color:var(--ink);box-shadow:0 0 0 3px var(--surface)}
 .hm-tl{display:block;max-width:100%}
@@ -2952,7 +2952,7 @@ function save(){if(SAVE_HOLD)return;try{localStorage.setItem(KEY,JSON.stringify(
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v142'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v143'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -6443,6 +6443,9 @@ function micHelp(kind){const o=document.createElement('div');o.className='ovl';o
      - starts one grade below the child's grade: the first world with g >= grade - 1 (the last world if none is)
      - a testlet is 4 questions from one world. 3 or 4 right: pass, go up one world. 0 or 1 right: not yet, go down one world.
        2 right: one more testlet at the same world, which then passes at 6 of 8.
+       R-01b: the first pass of a quiz is confirmed: until a world has passed, 3 right also asks one more testlet (6 of 8 passes);
+       4 of 4 passes at once. The quiz still stops at 20 questions, so a child far above the start world is placed a little lower
+       more often (harmless: they can test out); a struggling child is placed too high far less often.
      - stops when a "not yet" world sits directly above a passed world, at either end of the path, or after 5 testlets (20 questions)
      - result: the map starts at the lowest world not passed (the one above the highest passed world). The worlds below it get
        S.skip[worldId] = 1: a check mark, no stars, still playable. With no world passed it starts at the lowest world asked.
@@ -6486,8 +6489,11 @@ const PLACE={
     const w=s.wi,rec=s.rec[w]||(s.rec[w]={t:0,r:0});
     rec.t++;rec.r+=right;s.k++;s.asked+=PLACE.TL;s.right+=right;
     let v=null;
-    if(rec.t==1)v=right>=3?'pass':right<=1?'fail':null; // 2 right: one more testlet here
-    else v=rec.r>=6?'pass':'fail';                       // two testlets: pass at 6 of 8
+    // R-01b: the quiz's first pass must be confirmed. While no world has passed yet, 3 of 4 is not enough (a lucky guess or two
+    // moved a struggling child up): it asks one more testlet here like 2 of 4 does, and 4 of 4 still passes at once.
+    const first=!Object.values(s.rec).some(x=>x.v=='pass'),need1=first?PLACE.TL:3;
+    if(rec.t==1)v=right>=need1?'pass':right<=1?'fail':null; // 2 right (3 on the first pass): one more testlet here
+    else v=rec.r>=6?'pass':'fail';                          // two testlets: pass at 6 of 8
     if(v)rec.v=v;
     const R=s.rec;
     let stop=s.k>=PLACE.MAX;
@@ -6902,14 +6908,16 @@ function hmPlace() {
 }
 
 // Today row: review (same ids as revCard(); revCardBind() wires #rev), Fact Sprint, Mixed Practice.
+// R-01b: the review tile says how many the next review round asks ("10 to review": the due count, at most REVIEW_N), in the tile's
+// own words, not as a red count bubble over the icon; Fact Sprint only when FLU.on() (grade 1 up, a set open).
 function hmToday() {
-  const n = dueItems().length;
+  const n = Math.min(dueItems().length, REVIEW_N), flu = FLU.on();
   const rev = n
-    ? `<div class="hm-rvw" id="revcard"><button class="hm-tile" id="rev"><span class="hm-ti t-rev">${ico('replay', 32)}<b class="hm-cnt" id="revn">${n}</b></span>` +
-      `<span class="hm-tl">Review</span></button></div>`
+    ? `<div class="hm-rvw" id="revcard"><button class="hm-tile" id="rev"><span class="hm-ti t-rev">${ico('replay', 32)}</span>` +
+      `<span class="hm-tl"><b class="hm-rn" id="revn">${n}</b> to review</span></button></div>`
     : `<div class="hm-tile ok" id="revcard"><span class="hm-ti t-ok">${ico('check', 32)}</span><span class="hm-tl">All caught up!</span></div>`;
-  return `<div class="hm-today">${rev}
-    <button class="hm-tile" id="flu"><span class="hm-ti s-math">${ico('path-math', 32)}<i class="hm-bolt">${ico('bolt', 18)}</i></span><span class="hm-tl">Fact Sprint</span></button>
+  return `<div class="hm-today${flu ? '' : ' n2'}">${rev}
+    ${flu ? `<button class="hm-tile" id="flu"><span class="hm-ti s-math">${ico('path-math', 32)}<i class="hm-bolt">${ico('bolt', 18)}</i></span><span class="hm-tl">Fact Sprint</span></button>` : ''}
     <button class="hm-tile" id="mix"><span class="hm-ti t-mix">${hmMixIco()}</span><span class="hm-tl">Mixed Practice</span></button></div>`;
 }
 
@@ -6967,7 +6975,7 @@ function home(first){
   <div class="scroll hm" id="hs"><div class="hm-cols">
    <div class="hm-col">${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('target', 26)}<span>Today's missions</span></h2>${hmMissions()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}${hmDaily()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
-   <p class="hm-ver">${ico('star', 16)}<span>Star School v142</span></p></div>`);
+   <p class="hm-ver">${ico('star', 16)}<span>Star School v143</span></p></div>`);
   music(true);
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'heart');
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
@@ -6975,7 +6983,7 @@ function home(first){
   placeBannerBind();revCardBind();hmMissionsBind();
   $('#snd').onclick=()=>{S.sound=!S.sound;S.music=S.sound;save();home()};
   $('#stkb').onclick=()=>{SFX.whoosh();streakCal(0)};
-  $('#book').onclick=book;$('#shop').onclick=shop;$('#mix').onclick=()=>{SFX.whoosh();startMix()};$('#race').onclick=raceMenu;$('#flu').onclick=()=>{SFX.whoosh();fluMenu()};$('#care').onclick=care;$('#groom').onclick=()=>{SFX.whoosh();gameRoom()};if($('#btcard'))$('#btcard').onclick=()=>{SFX.whoosh();BT.hub()};
+  $('#book').onclick=book;$('#shop').onclick=shop;$('#mix').onclick=()=>{SFX.whoosh();startMix()};$('#race').onclick=raceMenu;if($('#flu'))$('#flu').onclick=()=>{SFX.whoosh();fluMenu()};$('#care').onclick=care;$('#groom').onclick=()=>{SFX.whoosh();gameRoom()};if($('#btcard'))$('#btcard').onclick=()=>{SFX.whoosh();BT.hub()};
   if($('#hmday'))$('#hmday').onclick=()=>{SFX.whoosh();const d=BT.dailyInfo();if(d&&!d.done)BT.start(d.id,d.band,d.level);else BT.hub()};
   if($('#inst'))$('#inst').onclick=async()=>{try{installEvt.prompt();await installEvt.userChoice}catch(e){}installEvt=null;home()};
   let t;const g=$('#gear');g.onpointerdown=()=>{t=setTimeout(grown,1200)};g.onpointerup=g.onpointerleave=()=>clearTimeout(t);g.onclick=()=>fb('Grown-ups: hold it','warn');
@@ -8453,11 +8461,21 @@ function start(p,i){const n=NODES[p][i];G=newG({path:p,node:i,sk:n.sk,lv:n.lv,n:
   const rd=SK[n.sk].round&&SK[n.sk].round(n.lv); // a skill's own list of questions (passages); null = the usual round
   if(rd){G.pool=rd;G.n=rd.length}
   next()}
-// The 10 questions of Tricky Mix / Mixed Practice: up to 7 due review items, then stops the child has reached (never a boss stop)
-function mixQs(){const qs=allMiss().slice(0,7).map(revQ).filter(Boolean),pool=[]; // P5-02: rebuilt from review items
-  for(const p in NODES)NODES[p].forEach((n,i)=>{if(n.sk!='boss'&&SK[n.sk]&&unlocked(p,i)&&i<=curNode(p))pool.push(n)});
-  if(!pool.length)pool.push(NODES.math[0]);
-  while(qs.length<10){const n=pick(pool),q=genQ(n.sk,n.lv);qs.push(q)}
+// The 10 questions of Tricky Mix / Mixed Practice: up to 7 due review items, then stops the child has reached (never a boss stop).
+// R-01b: the stops are weighted toward what is recent and what is weak (it was an even pick over everything reached, so a 3rd
+// grader got 38% Pre-K and K questions): each question is drawn from "recent" (the last MIX_RECENT stops reached on each path)
+// 50% of the time, "weak" (other reached stops tried 3+ times with first-try accuracy under 80%, or passed with 1 star) 30%, and
+// "older" (the rest) 20%. A group with nothing in it gives its share to recent.
+const MIX_W={recent:.5,weak:.3,old:.2},MIX_RECENT=10;
+function mixGroups(){const out={recent:[],weak:[],old:[]};
+  for(const p in NODES){const c=curNode(p),ps=[];
+    NODES[p].forEach((n,i)=>{if(n.sk!='boss'&&SK[n.sk]&&i<=c&&unlocked(p,i))ps.push([n,i])});
+    ps.forEach(([n,i],j)=>{if(j>=ps.length-MIX_RECENT)return out.recent.push(n);const r=mastRec(nid(n));out[r&&r.n>=3&&r.p<.8||getSt(p,i)==1?'weak':'old'].push(n)})}
+  if(!out.recent.length)out.recent.push(NODES.math[0]);
+  return out}
+function mixPick(gr){const x=rnd(),k=x<MIX_W.recent?'recent':x<MIX_W.recent+MIX_W.weak?'weak':'old';return pick(gr[k].length?gr[k]:gr.recent)}
+function mixQs(){const qs=allMiss().slice(0,7).map(revQ).filter(Boolean),gr=mixGroups(); // P5-02: rebuilt from review items
+  while(qs.length<10){const n=mixPick(gr),q=genQ(n.sk,n.lv);qs.push(q)}
   return qs}
 function startMix(){G=newG({mix:true,pool:shuffle(mixQs()),sk:'mix'});next()}
 const back=()=>G&&G.path?pathMap(G.path):home();
@@ -8501,7 +8519,7 @@ function qProg(){const w=$('#qwalk'),tr=$('#qtrack');if(w)w.style.transform=qLef
   if(tr){tr.style.setProperty('--p',Math.min(G.done,G.n)/G.n);const d=tr.querySelector('.dots');if(d)d.outerHTML=UI.dots(G.n,G.done,G.res)}}
 // the streak chip: lit from 2 in a row, bumps when it grows
 function qStreak(){const sk=$('#stk');if(!sk)return;sk.querySelector('b').textContent=G.streak;sk.classList.toggle('off',G.streak<2);if(G.streak>=2)bump(sk)}
-function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;G.res=G.res||[];
+function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;G.res=G.res||[];G.hq=false; // G.hq: the hint showed before the first try (R-01b)
   actQStart(q.sk,q.lv); // P5-05 (P2-17: the level picks the area of a skill with lvArea)
   const K=KIND[q.kind];
   if(!K)throw new Error('unknown question kind '+q.kind);
@@ -8520,7 +8538,7 @@ function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;G.re
   $('#quit').onclick=()=>{G.dead=true;back()};
   if($('#spk'))$('#spk').onclick=e=>say(q.say,e.currentTarget,q.lang=='es'&&q.auto=='must'?'es':null);
   $$('[data-sayes]').forEach(b=>b.onclick=()=>say(b.dataset.sayes,b,'es'));
-  $('#hb').onclick=()=>{if(hintStep(q))return;const h=$('#hint');h.innerHTML=hintHTML(q);h.classList.remove('pop');void h.offsetWidth;h.classList.add('pop');SFX.pop(3);fit();h.scrollIntoView({block:'nearest',behavior:'smooth'})};
+  $('#hb').onclick=()=>{if(G.tries==0&&!G.retry)G.hq=true;if(hintStep(q))return;const h=$('#hint');h.innerHTML=hintHTML(q);h.classList.remove('pop');void h.offsetWidth;h.classList.add('pop');SFX.pop(3);fit();h.scrollIntoView({block:'nearest',behavior:'smooth'})};
   $$('[data-say]').forEach(b=>b.onclick=()=>say(b.dataset.say,b));
   $$('.w').forEach(s=>s.onclick=()=>{say(s.dataset.w);SFX.pop(1)});
   K.bind(q,G,check);esQFix(q);
@@ -8536,15 +8554,15 @@ function addMiss(q){const p=P(q.sk),m=p.miss[q.label]||{tot:0};m.tot=(m.tot||0)+
   revMiss(q)} // P5-02: the review item (59-review.js)
 const PRAISE=['Great job!','You got it!','Awesome!','Super!','Nice!','Yes!','Way to go!','Brilliant!','Boom!','Nailed it!'];
 function check(v,el){if(G.lock)return;const q=G.q,K=KIND[q.kind],p=P(q.sk),ok=K.same?K.same(q,v):String(v)===String(q.ans);
-  if(G.tries==0&&!G.retry)mastTry(q,ok); // P1-08: mastery record and in-round adaptation
+  if(G.tries==0&&!G.retry)mastTry(q,ok,null,G.hq); // P1-08: mastery record and in-round adaptation (R-01b: a right answer with the hint showing counts half)
   const src=el||$('#slot')||$('.lslots')||$('.inp');
   if(ok){G.lock=true;if(el)el.classList.add('right');
     K.right(q);
     actQEnd(G.tries==0&&!G.retry,G.retry); // P5-05
     const first=G.tries==0&&!G.retry;
-    if(!G.retry){G.done++;p.t++;if(G.tries==0){G.score++;p.c++}}
+    if(!G.retry){G.done++;p.t++;if(G.tries==0){G.score++;p.c++;if(G.hq)G.helped=(G.helped||0)+1}} // R-01b: helped first tries, counted half for the pass
     if(first&&revRight(q))G.fixed=(G.fixed||0)+1; // P5-02: a due review item moves up a box (59-review.js)
-    G.streak=G.tries==0?G.streak+1:0;G.best=Math.max(G.best,G.streak);
+    G.streak=first?G.streak+1:0;G.best=Math.max(G.best,G.streak); // R-01b: first tries only (the end-of-round retries made a 6 of 10 round "10 in a row")
     SFX.right(G.streak);
     if(first)setTimeout(()=>flyStar(src),150);
     const r=src.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2);
@@ -8578,16 +8596,17 @@ function finish(){
   const g=G,sc=g.score,n=g.n,best=g.best,before=S.stars,d=day(),p=g.path,ni=g.node,nd=p?NODES[p][ni]:null;
   let stars=0,newPass=false,wDone=false;
   let testOk=false,prize=null;
-  if(g.test){testOk=sc>=9;if(testOk){NODES[p].forEach((n,i)=>{if(n.wi==g.test.wi&&getSt(p,i)<2)setSt(p,i,2)});newPass=true;
+  const hp=(g.helped||0)/2; // R-01b: a right first try with the hint showing (support mode, an easier question, or Help) counts half for the pass and stars
+  if(g.test){testOk=sc-hp>=9;if(testOk){NODES[p].forEach((n,i)=>{if(n.wi==g.test.wi&&getSt(p,i)<2)setSt(p,i,2)});newPass=true;
     (S.skip=S.skip||{})[worldId(p,g.test.wi)]=1}} // a tested-out world stays finished even if stops are added to it later
-  else if(!g.mix){if(g.boss)stars=g.won?(g.asked<=7?3:g.asked<=8?2:1):0;else{P(g.sk).r++;const ss=Math.min(n,sc+(g.forgive||0));stars=ss>=n?3:ss>=Math.floor(n*.8+.01)?2:ss>=Math.floor(n*.7+.01)?1:0} // P1-08: wrong challenge answers do not cost stars
+  else if(!g.mix){if(g.boss)stars=g.won?(g.asked<=7?3:g.asked<=8?2:1):0;else{P(g.sk).r++;const ss=Math.min(n,sc-hp+(g.forgive||0));stars=ss>=n?3:ss>=Math.floor(n*.8+.01)?2:ss>=Math.floor(n*.7+.01)?1:0} // P1-08: wrong challenge answers do not cost stars
     const prev=getSt(p,ni);g.prevSt=prev;setSt(p,ni,Math.max(prev,stars));newPass=!prev&&stars>0;
     if(g.boss&&g.won&&!S.owned[nd.prize]){prize=nd.prize;S.owned[prize]=1;S.wear.hat=prize}}
   if(newPass){const wk=nd.wid;if(!S.wdone[wk]&&worldDone(p,nd.wi)){S.wdone[wk]=1;wDone=true}}
   const prizes=[award()];if(sc==n)prizes.push(award());
   actRound(); // P5-05
   d.r++;const stk=streakTick();
-  const mi=MIS.done({k:'round',p:g.path||'',mix:!!g.mix,test:!!g.test,boss:!!g.boss,daily:!!g.daily,perfect:!g.boss&&sc>=n}); // P5-08
+  const mi=MIS.done({k:'round',p:g.path||'',mix:!!g.mix,test:!!g.test,boss:!!g.boss,daily:!!g.daily,perfect:!g.boss&&sc>=n,n:d.r}); // P5-08 (R-01b: n = rounds today)
   mi.won.forEach(w=>prizes.push(w.st));
   const mission=mi.bonus;if(mission)prizes.push(award());
   if(wDone)prizes.push(award());
@@ -8606,7 +8625,8 @@ function finish(){
     const line=sc>=9?'You are a superstar!':sc>=7?'Fantastic work!':sc>=5?'Good job! Keep practicing!':'Nice try! Practice makes you stronger!';
     f.classList.add('rw-open');
     // a low score is met kindly, with the next step right under the score (it was the last message line before)
-    const tip=g.test&&!testOk?'So close! Get 9 right to test out. Or play the stops one by one.':!g.mix&&!g.test&&!g.boss&&stars==0?`Get ${Math.floor(n*.7+.01)} right to open the next stop. You can do it!`:'';
+    const need=Math.floor(n*.7+.01),half=hp>0&&(sc>=need||g.test&&sc>=9); // R-01b: say why when the hints are what kept it from passing
+    const tip=g.test&&!testOk?(half?'So close! Answers with the hint showing count half. Get 9 right on your own to test out.':'So close! Get 9 right to test out. Or play the stops one by one.'):!g.mix&&!g.test&&!g.boss&&stars==0?(half?`Answers with the hint showing count half. Get ${need} right on your own to open the next stop. You can do it!`:`Get ${need} right to open the next stop. You can do it!`):'';
     f.innerHTML=RW.done({sc,n,line,tip,rate:g.mix||g.test||!stars?-1:stars,next:nextI>=0&&newPass,again:low||(g.test&&!testOk)?'Try again':'Play again',menu:g.mix?'Home':'Map'});
     RW.burst(f.querySelector('.rw-chest-o'),sc>=7?28:14);
     const live=()=>f.isConnected;let t=0;
@@ -8686,8 +8706,12 @@ function roundOops(){
        the mode down: challenge -> normal, normal -> support.
      Star thresholds, round length, coins and locks never change. Everything is decided from the answers alone, so the
      same answers give the same questions' stops (tests rely on it).
-   Hooks in 50-round.js: makeQ() calls mastQ() first, check() calls mastTry(q, ok) on a first try, renderQ() calls
-   mastShow(q) last, finish() adds G.forgive to the score for the star rating. */
+   Hooks in 50-round.js: makeQ() calls mastQ() first, check() calls mastTry(q, ok, ms, helped) on a first try, renderQ() calls
+   mastShow(q) last, finish() adds G.forgive to the score for the star rating.
+   R-01b, answers given with the hint showing (G.hq: support mode, an easier question with its hint, or Help before the first try):
+   a right one counts 0.5 in the mastery record (mastAdd) and half toward the stop's pass and stars (G.helped; finish() takes
+   helped / 2 off the score for the rating and for test out). Coins, stars collected in the round, praise and adaptation are
+   unchanged, and the 7-of-10 pass threshold is unchanged. */
 const MAST={
   AT:5,              // adaptation is decided after this many questions
   FAST:12000,        // median first-try time (ms) that counts as fast, 1st grade and up
@@ -8730,12 +8754,14 @@ function mastNear(nd,dir){
 }
 const harder=nd=>mastNear(nd,1),easier=nd=>mastNear(nd,-1);
 
-/* Adds one first try to S.mast[k]. Returns the record. */
+/* Adds one first try to S.mast[k]. Returns the record. ok: true / false, or a number 0..1 (R-01b: 0.5 for a right answer given with
+   the hint showing, so it counts half toward the accuracy that makes a stop practised or mastered). */
 function mastAdd(k,ok,ms){
   const M=S.mast||(S.mast={}),r=M[k]||(M[k]={n:0,p:0,ms:0,d:0,last:0}),dn=mastDay();
   ms=Math.max(0,Math.min(MAST.CAP,Math.round(ms)||0));
   r.n++;
-  r.p=Math.round((r.p+((ok?1:0)-r.p)*Math.max(1/r.n,MAST.ALPHA))*1000)/1000;
+  const v=typeof ok=='number'?Math.max(0,Math.min(1,ok)):ok?1:0;
+  r.p=Math.round((r.p+(v-r.p)*Math.max(1/r.n,MAST.ALPHA))*1000)/1000;
   // running median: step toward the new time by at most an eighth of the estimate (at least 250 ms)
   if(r.n==1)r.ms=ms;
   else{const step=Math.min(Math.abs(ms-r.ms),Math.max(250,r.ms/8));r.ms=Math.round((r.ms+Math.sign(ms-r.ms)*step)/10)*10}
@@ -8781,11 +8807,12 @@ function mastQ(){
   (G.mq||(G.mq=new Map())).set(q,pk.tag);
   return q;
 }
-/* check hook, on the first try at a question (not a retry). ms defaults to the time since mastShow. */
-function mastTry(q,ok,ms){
+/* check hook, on the first try at a question (not a retry). ms defaults to the time since mastShow. helped: the hint was showing
+   before this first try (support mode, an easier question, or the Help button); a right answer then counts half (R-01b). */
+function mastTry(q,ok,ms,helped){
   if(!G||G.nomast)return;
   if(ms==null)ms=Date.now()-(G.qt||Date.now());
-  if(q&&q.sk&&mastStop(q.sk,q.lv))mastAdd(nid(q),ok,ms);
+  if(q&&q.sk&&mastStop(q.sk,q.lv))mastAdd(nid(q),ok?(helped?.5:1):0,ms);
   (G.fr||(G.fr=[])).push({ok:!!ok,ms});
   if(!mastOn(G))return;
   if(!ok&&mastTag(q)=='ch')G.forgive=(G.forgive||0)+1;
@@ -8810,7 +8837,7 @@ function mastShow(q){
   }
   if(mastHint(q)){
     const h=$('#hint'),s=hintHTML(q);
-    if(h&&s)h.innerHTML=s;
+    if(h&&s){h.innerHTML=s;G.hq=true}
     if(tag=='easy')petSay("Here's a hint!");
   }
 }
@@ -8984,6 +9011,9 @@ function raceQ(cat){
     const a=R(0,Math.min(9,mx)),b=R(0,Math.min(9,mx-a));return{kind:'num',html:`<div class="eq">${a} + ${b} = ${SLOT}</div>`,ans:String(a+b),say:''}}
   if(cat=='sight'){const lv=passedAny('read','sight',3)?3:passedAny('read','sight',2)?2:1;return genQ('sight',lv)}
   const sets=Object.keys(SPN).filter(k=>passedAny('es','es_'+k,1));return genQ('es_'+(sets.length?pick(sets):pick(['color','num'])),1)}
+// R-01b: coins come with the race that pays game time (the first race of the day in a category with 5 or more right, ptRace), so
+// they are capped per day like the game time: half a coin per right answer, +5 for a new record. Other races pay nothing.
+const raceCoins=(sc,rec,ps)=>ps?Math.floor(sc/2)+(rec&&sc>0?5:0):0;
 function race(cat){S.race=S.race||{};const best=S.race[cat]||0;
   const ar=cat=='sight'?'read':cat=='es'?'es':'math';
   view(`${GFX.speedTop(ar,'rbar',1,UI.chip('bolt',0,{id:'rsc',aria:'Right answers'})+UI.chip('trophy',best,{aria:'Best'}))}<div class="play qs s-${ar}" id="rplay"></div>`);
@@ -8999,11 +9029,11 @@ function race(cat){S.race=S.race||{};const best=S.race[cat]||0;
     if(String(v)===String(q.ans)){RC.score++;SFX.right(RC.score%10);UI.setChip($('#rsc'),RC.score);if(el)el.classList.add('right');KIND[q.kind].right(q);setTimeout(rq,250)}
     else{SFX.wrong();if(el)el.classList.add('wrong');KIND[q.kind].reveal(q);setTimeout(rq,800)}};
   setTimeout(()=>{fb('Ready… GO!','zap');SFX.fanfare();rq()},300);
-  RC.iv=setInterval(()=>{if(!RC)return;RC.left--;GFX.bar($('#rbar'),RC.left/60);if(RC.left<=5&&RC.left>0)SFX.tick();
-    if(RC.left<=0){const sc=RC.score,rec=sc>best;stopRace();if(rec)S.race[cat]=sc;const coins=Math.floor(sc/2)+(rec&&sc>0?5:0);S.coins+=coins;const ps=ptRace(cat,sc);if(ps)ptEarn(ps);save();
+  RC.iv=setInterval(()=>{if(!RC||document.hidden)return;RC.left--; // R-01b: the clock stops while the app is hidden, like Fact Sprint'sGFX.bar($('#rbar'),RC.left/60);if(RC.left<=5&&RC.left>0)SFX.tick();
+    if(RC.left<=0){const sc=RC.score,rec=sc>best;stopRace();if(rec)S.race[cat]=sc;const ps=ptRace(cat,sc),coins=raceCoins(sc,rec,ps);S.coins+=coins;if(ps)ptEarn(ps);save();
       rec&&sc>0?(SFX.fanfare(),confetti(40)):SFX.magic();
       const o=GFX.endCard({rec:rec&&sc>0,title:`${sc} in 60 seconds!`,best:`Your best: ${best}`,
-        earn:`${ico('coin',28,'ic-coin')}<span>+${coins}</span>${ps?`${ico('ticket',28)}<span>+1 min of game time</span>`:sc>=5?`<span>Free practice: the first race each day pays</span>`:''}`,
+        earn:ps?`${ico('coin',28,'ic-coin')}<span>+${coins}</span>${ico('ticket',28)}<span>+1 min of game time</span>`:sc>=5?`<span>Free practice: the first race each day pays</span>`:'<span>Get 5 right to earn coins and game time</span>',
         btns:UI.btn('Race again',{kind:'primary',size:'lg',wide:true,icon:'replay',id:'ragain'})+UI.btn('Home',{icon:'home',wide:true,id:'rhome'})});
       document.body.appendChild(o);if(S.voice)say(rec&&sc>0?`New record! ${sc}!`:`You got ${sc}!`);
       o.querySelector('#ragain').onclick=()=>{o.remove();race(cat)};o.querySelector('#rhome').onclick=()=>{o.remove();home()}}},1000)}
@@ -9014,8 +9044,9 @@ function race(cat){S.race=S.race||{};const best=S.race[cat]||0;
    The draw is seeded by the day key, the child's name and grade, and only offers what the child can do right now:
      round    one learning round in the subject that needs the most practice (lowest mastery, else the least played)
      other    a learning round in a different subject
-     perfect  a round with every answer right (the subject with the best mastery, to make it fair)
-     sprint   one Fact Sprint (grade K and up)
+     perfect  a round with every answer right (the subject with the best mastery, to make it fair); grade 1 and up
+     more     Pre-K and K, in place of perfect (R-01b: an effort goal, not a "never slip" goal): finish 2 rounds today
+     sprint   one Fact Sprint (grade 1 and up, once a set is open: FLU.on(); R-01b, was K and up)
      teaser   solve one Brain Teaser (only when a puzzle type is offered at the child's grade)
      review   do today's review (only when something is due)
      mix      one Mixed Practice round
@@ -9024,7 +9055,8 @@ function race(cat){S.race=S.race||{};const best=S.race[cat]||0;
    Hooks: finish() in 50-round.js (rounds, mixes, reviews), the sprint's finish in 57-fluency.js, BT.finish in 74-teasers.js. */
 const MIS = {
   N: 3,
-  KINDS: ['round', 'other', 'perfect', 'sprint', 'teaser', 'review', 'mix'],
+  KINDS: ['round', 'other', 'perfect', 'more', 'sprint', 'teaser', 'review', 'mix'],
+  MORE: 2, // rounds today that finish the "more" mission
   BONUS_STARS: 5,
   BONUS_COINS: 5,
   SUBJ: { math: 'Math', read: 'Reading', es: 'Spanish', disc: 'Discover' },
@@ -9069,7 +9101,7 @@ const MIS = {
     const g = gradeOf();
     let bt = false, spr = false, due = 0;
     try { bt = BT.offered().length > 0; } catch (e) {}
-    try { spr = g >= 0 && FLU.sets().length > 0; } catch (e) {}
+    try { spr = FLU.on(); } catch (e) {}
     try { due = dueItems().length; } catch (e) {}
     return { g, subs: MIS.subjects(), bt, spr, due };
   },
@@ -9082,7 +9114,7 @@ const MIS = {
     const first = { k: 'round', p: subs[0].p, d: 0 };
     const rest = [];
     if (subs.length > 1) rest.push({ k: 'other', p: pickOf(subs.slice(1)).p, d: 0 });
-    rest.push({ k: 'perfect', p: subs[subs.length - 1].p, d: 0 }, { k: 'mix', d: 0 });
+    rest.push(c.g <= 0 ? { k: 'more', d: 0 } : { k: 'perfect', p: subs[subs.length - 1].p, d: 0 }, { k: 'mix', d: 0 });
     if (c.spr) rest.push({ k: 'sprint', d: 0 });
     if (c.bt) rest.push({ k: 'teaser', d: 0 });
     if (c.due > 0) rest.push({ k: 'review', d: 0 });
@@ -9104,12 +9136,13 @@ const MIS = {
     return d.m;
   },
   count() { try { return MIS.get().filter(x => x.d).length; } catch (e) { return 0; } },
-  // Does a finished thing count for mission x? ev: {k:'round', p, mix, test, boss, daily, perfect} | {k:'sprint'} | {k:'teaser'}
+  // Does a finished thing count for mission x? ev: {k:'round', p, mix, test, boss, daily, perfect, n (rounds today)} | {k:'sprint'} | {k:'teaser'}
   hit(x, ev) {
     if (x.k == 'sprint' || x.k == 'teaser') return ev.k == x.k;
     if (ev.k != 'round') return false;
     if (x.k == 'round' || x.k == 'other') return !!ev.p && ev.p === x.p && !ev.mix && !ev.test;
     if (x.k == 'perfect') return !!ev.perfect;
+    if (x.k == 'more') return !ev.test && (ev.n | 0) >= MIS.MORE;
     if (x.k == 'mix') return !!ev.mix && !ev.daily;
     if (x.k == 'review') { let n = 1; try { n = dueItems().length; } catch (e) {} return !!ev.daily || (!!ev.mix && n == 0); }
     return false;
@@ -9133,18 +9166,18 @@ const MIS = {
   },
   title(x) {
     const s = MIS.SUBJ[x.p] || 'Math';
-    return { round: `Play a ${s} round`, other: `Try a ${s} round`, perfect: 'Get a perfect round', sprint: 'Do a Fact Sprint', teaser: 'Solve a Brain Teaser',
+    return { round: `Play a ${s} round`, other: `Try a ${s} round`, perfect: 'Get a perfect round', more: `Play ${MIS.MORE} rounds today`, sprint: 'Do a Fact Sprint', teaser: 'Solve a Brain Teaser',
       review: "Do today's review", mix: 'Play Mixed Practice' }[x.k];
   },
   sub(x) {
-    return { round: 'Make it stronger!', other: 'Visit another subject!', perfect: 'Every answer right!', sprint: 'Beat your best!', teaser: 'Think hard!',
+    return { round: 'Make it stronger!', other: 'Visit another subject!', perfect: 'Every answer right!', more: 'Keep practicing!', sprint: 'Beat your best!', teaser: 'Think hard!',
       review: 'Practice what you learned', mix: 'A bit of everything!' }[x.k];
   },
   icon(x) {
-    return { round: UI.SUBJ_ICON[x.p] || 'path-math', other: UI.SUBJ_ICON[x.p] || 'path-math', perfect: 'star', sprint: 'bolt', teaser: 'puzzle', review: 'replay', mix: 'sparkle' }[x.k];
+    return { round: UI.SUBJ_ICON[x.p] || 'path-math', other: UI.SUBJ_ICON[x.p] || 'path-math', perfect: 'star', more: 'replay', sprint: 'bolt', teaser: 'puzzle', review: 'replay', mix: 'sparkle' }[x.k];
   },
   // The subject colour class of a mission
-  cls(x) { return { round: 's-' + x.p, other: 's-' + x.p, perfect: 's-play', sprint: 's-math', teaser: 's-bt', review: 's-play', mix: 's-es' }[x.k]; },
+  cls(x) { return { round: 's-' + x.p, other: 's-' + x.p, perfect: 's-play', more: 's-play', sprint: 's-math', teaser: 's-bt', review: 's-play', mix: 's-es' }[x.k]; },
   // What the child sees after finishing: one line and one sticker per mission, then the bonus
   winHTML(mi) {
     const row = (icon, text, st, i) => `<li>${ico(icon, 20)}<span>${text}</span>${RW.sticker(st.s, st.isNew, i)}</li>`;
@@ -9357,15 +9390,25 @@ function care(){const c=careTick();save();const pn=esc(petN()),sc=sceneOf();
    S.flu[set].paid holds the day game time was last earned for that set. */
 // Highest level (1-4) of a math skill the child has passed, 0 when none.
 const fluLv = sk => [4, 3, 2, 1].find(l => passedAny('math', sk, l)) || 0;
+// R-01b: a set that opens with stop (sk, lv) opens once that stop, or any later stop of the same skill on the math path, is passed,
+// or its world was skipped (placement, test out). passedAny counted any level at or above lv anywhere, so Kindergarten's
+// "Add to 5" (add 4, before "Adding to 10") opened the sums to 10 and to 20.
+function fluFrom(sk, lv) {
+  const N = NODES.math || [], a = N.findIndex(n => n.sk == sk && n.lv == lv);
+  if (a < 0) return passedAny('math', sk, lv);
+  if (worldSkipped('math', N[a].wi)) return true;
+  for (let i = a; i < N.length; i++) if (N[i].sk == sk && passed('math', i)) return true;
+  return false;
+}
 const FLU = {
   GOAL: 20, SECS: 60, KEEP: 30, MIN_RIGHT: 5,
   // Sets. `ok` says whether the child has reached the matching skill; mul/div sets are added here later (P2-05).
   SETS: [
-    {id: 'add10', e: '➕', t: 'Adding to 10', ok: () => true,
+    {id: 'add10', e: '➕', t: 'Adding to 10', ok: () => fluFrom('add', 1), // R-01b: after the first adding stop (was always open)
       gen: () => {const a = R(1, 9), b = R(1, 10 - a); return {a, op: '+', b, c: a + b}}},
     {id: 'sub10', e: '➖', t: 'Take away from 10', ok: () => passedAny('math', 'sub', 1),
       gen: () => {const a = R(2, 10), b = R(1, a); return {a, op: '−', b, c: a - b}}},
-    {id: 'add20', e: '➕', t: 'Adding to 20', ok: () => passedAny('math', 'add', 2),
+    {id: 'add20', e: '➕', t: 'Adding to 20', ok: () => fluFrom('add', 2),
       gen: () => {const a = R(1, 10), b = R(Math.max(1, 11 - a), 10); return {a, op: '+', b, c: a + b}}},
     {id: 'sub20', e: '➖', t: 'Take away from 20', ok: () => passedAny('math', 'sub', 2),
       gen: () => {const a = R(11, 20), b = R(1, Math.min(10, a - 1)); return {a, op: '−', b, c: a - b}}},
@@ -9385,6 +9428,10 @@ const FLU = {
   ],
   set: id => FLU.SETS.find(s => s.id == id),
   sets: () => FLU.SETS.filter(s => s.ok()),
+  // R-01b (R-01 practice review, Must 1): timed fact practice is for facts a child already knows by a strategy, from grade 1. Fact
+  // Sprint shows (Home tile, daily mission) from grade 1 once a set is open; Pre-K and K never see it. A save with no grade (older
+  // than grades) shows it once a set is open, as before.
+  on: () => (GRADES.includes(S.grade) ? S.grade >= 1 : true) && FLU.sets().length > 0,
   key: (set, mode) => mode == 'n20' ? set + '-20' : set,
   fkey: f => f.a + f.op + f.b,
   // Next fact for a sprint. st = {set, last, redo: [{f, wait}]}. A missed fact comes back after 3 other facts.
@@ -9637,9 +9684,11 @@ function ptLine(){const t=ptState(),min=Math.ceil(t.more/60),saved=t.bank>0?`You
   if(t.why=='empty')return'Finish a learning round to earn game time!';
   return t.max&&t.left<t.bank?`You can play ${fmtT(t.left)} more today (the daily limit is ${t.max} min).`:'Every learning round earns more. Have fun!'}
 function ptWhyNot(){return ptLine()}
-// P5-09: a Brain Teaser result. b = {band, stars, hints, first, daily, room (seconds still allowed today)}. Amounts: BT.gameSec / REPLAY_SEC / DAILY_SEC.
+// P5-09: a Brain Teaser result. b = {band, stars, paid, hints, first, daily, room (seconds still allowed today)}. Amounts: BT.gameSec / REPLAY_SEC / DAILY_SEC.
+// R-01b: a first solve pays by `paid`, the stars the solve earns with its hints not counted (BT.finish), so hints no longer cut
+// the game time; without `paid` it falls back to the stars (an old caller).
 function ptBT(b,mis){const L=[];let t=0;const add=(v,l)=>{if(v>0){t+=v;L.push([v,l])}};
-  if(b.first)add(BT.gameSec(b.band,b.stars),b.hints?`Puzzle solved with ${b.hints} hint${b.hints>1?'s':''}`:b.stars>=3?'Puzzle solved, no hints':'Puzzle solved');
+  if(b.first)add(BT.gameSec(b.band,b.paid>=1?b.paid:b.stars),b.hints?`Puzzle solved with ${b.hints} hint${b.hints>1?'s':''}`:b.stars>=3?'Puzzle solved, no hints':'Puzzle solved');
   else add(BT.REPLAY_SEC,'Played this one again');
   if(b.daily)add(BT.DAILY_SEC,'Puzzle of the Day');
   if(mis)add(60,'Daily mission done');
@@ -9666,7 +9715,7 @@ function ptCalc(g,sc,n,stars,prev,newPass,testOk,nd,x){const mis=!!(x&&x.mission
 function ptRace(cat,sc){if(sc<5)return 0;const rp=S.ptRep&&S.ptRep.day==today()?S.ptRep:(S.ptRep={day:today(),n:{}}),k='race_'+cat;if(rp.n[k])return 0;rp.n[k]=1;return 60}
 // the lines of "How to earn more game time" (Game Room); R_ draws a small icon
 // the lines of "How to earn more game time": [icon, what, how much]; the Game Room hub (59-game-hub.js) shows them, ptRules as HTML
-function ptEarnList(){return[['sparkle','Unlock a new stop','+1 min'],['star','Get a perfect score','+1 min'],['globe','Play a harder world','up to +1½ min'],['crown','Beat a boss','+2 min'],['review','Do your Daily Review','a full round'],['review','Fix an old mistake','bonus seconds'],['chart','Beat your old score','+½ min'],['puzzle','Solve a Brain Teaser','up to 2 min, fewer with hints'],['calendar',"Finish all three of today's missions",'+1 min'],['timer','Fact Sprint or Fact Race, first one of the day','+1 min']]}
+function ptEarnList(){return[['sparkle','Unlock a new stop','+1 min'],['star','Get a perfect score','+1 min'],['globe','Play a harder world','up to +1½ min'],['crown','Beat a boss','+2 min'],['review','Do your Daily Review','a full round'],['review','Fix an old mistake','bonus seconds'],['chart','Beat your old score','+½ min'],['puzzle','Solve a Brain Teaser','up to 2 min'],['calendar',"Finish all three of today's missions",'+1 min'],['timer','Fact Sprint or Fact Race, first one of the day','+1 min']]}
 function ptRules(R_){return ptEarnList().map(([i,t,v])=>`<div>${R_(i)} ${t} <b>${v}</b></div>`).join('')+'<div class="small">Replaying a stop you already mastered, or the same stop over and over, earns less.</div>'}
 
 // P4-16: the Game Room hub (scene, game-time ticket, a drawn card per registered game) lives in games.<VER>.js with the games:
@@ -9696,9 +9745,10 @@ function gameRoom(){GH.hub()}
      dueItems(n, path, d)   up to n items due on day d (default today), most urgent first (oldest due, lowest box, most
                             missed). path ('math', 'read', 'es') keeps only items whose skill and level is a stop on that path.
                             dueItems().length is "N due today".
-     revQ(it)               the question for an item: rebuilt exactly (bankRebuild(bk) or genQ(sk, lv, seed)); when the rebuilt
-                            label differs (the generator changed) a fresh question of the same skill and level, and the item is
-                            kept. Carries q.rvk, the item key, so the answer is booked to the item.
+     revQ(it)               the question for an item: a single fact (revFact, R-01b) is rebuilt exactly (bankRebuild(bk) or
+                            genQ(sk, lv, seed)); anything else, or a fact whose rebuilt label differs (the generator changed), is a
+                            fresh question of the same skill and level, and the item is kept. Carries q.rvk, the item key, so the
+                            answer is booked to the item.
      revMiss(q, d)          a first wrong try (called by addMiss): item to box 0, due d, n + 1; creates it when new
      revRight(q, d)         a right first try (called by check): when the matching item is due, up one box (or out after
                             box 4). Returns true when an item moved (counted as "fixed" for game time).
@@ -9788,7 +9838,27 @@ function revRight(q,d){
   return true;
 }
 
-// the exact question again, or a fresh one of the same skill and level when the generator has changed
+/* R-01b: is a review item a single fact, worth asking again exactly? Number facts (two numbers up to 20 added or taken away, up to
+   12 times or divided by 12, with one number missing: "7 + 5 = ?", "? + 6 = 14", "6 × 7 = ?", "32 ÷ ? = 4") and single-item
+   knowledge (a sight word, a picture word, a spelling word, a letter, a Spanish word: "hear “said”", "spelling “night”",
+   "el pato (read)"). Everything else (two-choice questions, word problems, multi-step sums, comprehension, grammar ...) comes back as
+   a fresh question of the same skill and level, so the child cannot just remember that one item's answer. q: the rebuilt
+   question (a question with two choices is never a fact). */
+const REV_ARITH=/^(\d+|\?) ([+−×÷-]) (\d+|\?) = (\d+|\?)$/;
+const REV_WORD=/^(hear|read|spell|spelling) “[^”]+”$|^(big|little) [A-Za-z]$|^[^()]+ \((listen|read|spell)\)$/;
+function revFact(it,q){
+  if(q&&q.kind=='choice'&&Array.isArray(q.choices)&&q.choices.length<=2)return false;
+  const l=String(it.label),m=REV_ARITH.exec(l);
+  if(m){
+    const n=x=>x=='?'?0:+x,a=n(m[1]),op=m[2],b=n(m[3]),c=n(m[4]);
+    if(op=='×')return a<=12&&b<=12&&c<=144;
+    if(op=='÷')return a<=144&&b<=12&&c<=12;
+    return a<=20&&b<=20&&c<=20;
+  }
+  return REV_WORD.test(l);
+}
+// the exact question again when it is a single fact (revFact), else (or when the generator has changed) a fresh one of the same
+// skill and level, with another label when one comes within a few tries
 function revQ(it){
   if(!it||!revOk(it))return null;
   let q=null;
@@ -9804,7 +9874,10 @@ function revQ(it){
   // R-01s: the first Spanish units gained el / la ("pato (read)" is now "el pato (read)"): a Spanish item rebuilt from its seed whose
   // label differs only by that article is the same question, and the item takes the new label (so a new miss finds it)
   if(q&&/^es_/.test(it.sk)&&revLabel(q.label)!==it.label&&revNoArt(revLabel(q.label))===revNoArt(it.label))it.label=revLabel(q.label);
-  if(!q||revLabel(q.label)!==it.label)q=genQ(it.sk,it.lv);
+  if(!q||revLabel(q.label)!==it.label||!revFact(it,q)){
+    q=null;
+    for(let t=0;t<8&&(!q||revLabel(q.label)===it.label);t++)q=genQ(it.sk,it.lv);
+  }
   q.sk=it.sk;
   q.lv=it.lv;
   q.rvk=revKey(it);
@@ -9889,7 +9962,8 @@ function revCardBind(){
      S.bt.badges = {got: {badge id: day}, n: puzzles solved, dd: {day, n, best}}       badges (P3-17), see BADGES below
      S.bt.earn = {day, sec} game time earned today.   S.bt.rnd = {day, n} solves today.
    STARS: 3 = no hint and mistakes <= allow, 2 = at most one hint, 1 = finished.
-   REWARDS (section 9): first solve of a level: its stars, and game time 45/60/90/120 s (band A/B/C/D) x stars/3, least a half;
+   REWARDS (section 9): first solve of a level: its stars, and game time 45/60/90/120 s (band A/B/C/D) x stars/3, least a half,
+   where the stars for game time leave hints out (R-01b: a hint costs a star, not game time; BT.rate(0, mistakes));
    replay or Endless: 15 s, and only stars that improve the level's best are paid. The Puzzle of the Day adds 5 coins and 60 s once
    a day. Game time from puzzles stops at half of the grown-up's daily cap. Three solves in a day make one round (day().r, streak,
    activity log, the daily mission). Nothing here is sent anywhere.
@@ -10152,7 +10226,10 @@ const BT = {
     const daily = !!(dl && !dl.done && dl.id == run.id && dl.band == band && String(dl.level) == String(run.level));
     if (daily) { coins += BT.DAILY_COINS; BT.st().daily.done.push(run.id); }
     const round = BT.round(), mi = MIS.done({ k: 'teaser' }); // P5-08: the missions it completes (the bonus once all three are done)
-    const PT = ptCalc({ bt: { band, stars, hints: res.hints | 0, first, daily, room: BT.room() } }, 0, 0, 0, 0, false, false, null,
+    // R-01b: game time follows the stars the solve earns without counting hints (BT.rate with 0 hints): asking for help is a
+    // good habit, so hints cost a star but not game time; mistakes can still lower it
+    const paid = BT.rate(0, res.mistakes, d && d.allow);
+    const PT = ptCalc({ bt: { band, stars, paid, hints: res.hints | 0, first, daily, room: BT.room() } }, 0, 0, 0, 0, false, false, null,
       { mission: mi.bonus });
     const sec = PT.sec, want = PT.want;
     if (sec > 0) {
@@ -10532,7 +10609,7 @@ function grown(){let armed=false;
     {sub:'Rounds played and first-try accuracy for every skill on the maps, with the questions missed most.'})}
   ${GW.card('gw-how','info','How it works',`<p class="gw-p">Each subject has its own map. Getting 7 of 10 right opens the next stop (8 earns 2 stars, 10 earns 3), and each world stretches further. Missed questions come back at the end of a round, in later rounds, in Daily Review and in the Tricky Mix. Each right answer earns a star (the pet grows) and a coin (spent in the shop). Everything is saved on this tablet only.</p>`)}
   <details class="gw-card gw-det" id="applog"><summary class="gw-h"><span class="gw-hi">${ico('doc',24)}</span><span>App log</span>${ico('chevron-right',22,'chev')}</summary><div class="gw-log">
-   <div><b>Version</b> v142</div><div><b>Save size</b> ${(JSON.stringify(S).length/1024).toFixed(1)} KB</div>
+   <div><b>Version</b> v143</div><div><b>Save size</b> ${(JSON.stringify(S).length/1024).toFixed(1)} KB</div>
    <div><b>Storage</b> ${SAVE_FAILED?'<span class="gw-bad">could not save (device storage may be full)</span>':'saving OK'}</div>
    ${SAVE_CORRUPT?'<div class="gw-bad">The old save could not be read. A fresh start was made and the old data was kept on the device.</div>':''}
    <div><b>Last errors</b> ${(S.err||[]).length?'<ul class="gw-errs">'+(S.err||[]).slice().reverse().map(e=>'<li><span>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+'</span> '+esc(e.msg)+'</li>').join('')+'</ul>':'none'}</div></div></details>
@@ -10591,7 +10668,7 @@ const BAK = {
   MAX: 5e6, // bytes: a save is under 300 KB, so a bigger file is not a backup
   // The file text: a small header, then the whole save in "data".
   make() {
-    return JSON.stringify({app: BAK.APP, ver: 'v142', save: LATEST, date: new Date().toISOString(), name: S.name || '', data: S});
+    return JSON.stringify({app: BAK.APP, ver: 'v143', save: LATEST, date: new Date().toISOString(), name: S.name || '', data: S});
   },
   fileName() {
     const nm = String(S.name || 'child').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'child';
@@ -11049,21 +11126,21 @@ function appFiles() {
   ];
 }
 function dataReady() {
-  return appFiles().every(f => f[1] === 'v142');
+  return appFiles().every(f => f[1] === 'v143');
 }
 function dataMissing() {
-  logErr(appFiles().filter(f => f[1] !== 'v142').map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v142)');
+  logErr(appFiles().filter(f => f[1] !== 'v143').map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v143)');
   const again = UI.btn('Try again', { kind: 'primary', size: 'lg', icon: 'replay', id: 'dataretry' });
   view(`<div class="scroll" id="datamiss">${UI.empty('download', 'Star School needs to finish updating. Connect to the internet, then tap Try again.', again)}</div>`);
   $('#dataretry').onclick = () => location.reload();
 }
 </script>
-<script src="gen.v142.js"></script>
-<script src="gen2.v142.js"></script>
-<script src="bt.v142.js"></script>
-<script src="games.v142.js"></script>
-<script src="games2.v142.js"></script>
-<script src="data.v142.js"></script>
+<script src="gen.v143.js"></script>
+<script src="gen2.v143.js"></script>
+<script src="bt.v143.js"></script>
+<script src="games.v143.js"></script>
+<script src="games2.v143.js"></script>
+<script src="data.v143.js"></script>
 <script>
 if (dataReady()) {
   loadClips();

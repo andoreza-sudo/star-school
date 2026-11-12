@@ -314,7 +314,7 @@ const MM = (() => {
     layout();
     paint();
     msg(ASK[p.kind], '');
-    if (band == 'A') api.say(ASK[p.kind]);
+    if (band == 'A' || (band == 'B' && !st.m.length && !st.turns)) api.say(ASK[p.kind]); // R-01b: band B speaks its first instruction too
     return {
       hint(t) {
         if (!alive || winT || done(p, st)) return false;

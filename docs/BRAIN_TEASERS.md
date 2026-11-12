@@ -193,7 +193,7 @@ shows the children's two blocks side by side with the third on a tab, or (band D
 
 Keys and doors: put a door on the solution path, put its key in a side branch that starts before the door. Verify with the state BFS.
 
-**UI**: drag from the character; the trail follows cell to cell and cannot cross walls; lifting the finger keeps the place; dragging back erases. An on-screen arrow pad is offered in settings for children who struggle with dragging. Drawn on one canvas; walls 4 px; cell at least 28 px.
+**UI**: drag from the character; the trail follows cell to cell and cannot cross walls; lifting the finger keeps the place; dragging back erases. An on-screen arrow pad is offered in settings for children who struggle with dragging. Drawn on one canvas; walls 4 px; cell at least 28 px (R-01b: on a phone the maze side is capped by the screen to keep that, `MZ.cap`: 11 x 11 at 380 x 780).
 
 **Hints**: 1) flashes the direction of the goal. 2) shows the next 5 cells of the route. 3) shows the route to the next junction past the child's position.
 
@@ -330,8 +330,9 @@ As built (P3-14, `src/js/81-bt-riddle.js`, `82-bt-memory.js`, `83-bt-copycat.js`
   different, so each card has exactly one partner. Face-down cards hold no face in the page. A "slip" is a miss when the partner of
   the first card, or the second card, had been seen; the win reports the slips over the band's free ones (A 0, B 1, C 2, D 3), `allow` 1.
   Hints: peek one card, show one pair, match one pair.
-- Copy Cat (`copycat`): A 4 pads from length 1 to 3 / 4 / 5; B 4 pads from 2 to 4 / 5 / 6, faster; C 6 pads from 2 to 5 / 6 / 7;
-  D 6 pads from 3 to 7 forward, then 5 and 6 backwards (levels 5-12). The "4 / 6 / 8" star thresholds became these target lengths
+- Copy Cat (`copycat`): A 4 pads from length 1 to 3 / 4 / 4; B 4 pads from 2 to 4 / 5 / 5, faster; C 6 pads from 2 to 5 / 5 / 6;
+  D 6 pads from 3 to 6 forward, then 4 and 5 backwards (levels 5-12). (R-01b: was 3/4/5, 4/5/6, 5/6/7, 7 then 5/6; now the typical
+  span for the age plus about one.) The "4 / 6 / 8" star thresholds became these target lengths
   (the frame's stars count hints and mistakes). A wrong pad: amber ring, "Oops! Watch again.", the round shown again a little slower
   (one mistake, `allow` 2). Hints: the round again slower, the next pad ringed, the next pad tapped for the child.
 
@@ -411,10 +412,10 @@ After level 12: "Endless" serves random level 9-12 puzzles. If a child fails or 
 
 | Event | Stars | Game time (tuned in P5-09) |
 |-------|-------|----------------------------|
-| First solve of a level, band A / B / C / D | 1-3 | 45 s / 60 s / 90 s / 120 s, multiplied by stars/3 (minimum half) |
+| First solve of a level, band A / B / C / D | 1-3 | 45 s / 60 s / 90 s / 120 s, multiplied by stars/3 (minimum half), the stars counted without hints (R-01b) |
 | Replay of a solved level | none new unless improved | 15 s |
 | Puzzle of the Day | 1-3 + 5 coins | +60 s bonus |
-| Hints | lower stars only | no change |
+| Hints | lower stars only | no change (R-01b: until v143 two hints halved it) |
 
 Teaser-earned game time is capped at half of the grown-up's daily cap, so puzzles cannot replace all coursework. Three puzzles solved counts as one "round" for daily missions and the streak.
 

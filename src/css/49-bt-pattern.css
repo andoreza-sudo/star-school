@@ -34,6 +34,9 @@
 .pt-chs.n6{grid-template-columns:repeat(3,minmax(0,1fr));max-width:420px}
 .pt-ch.choice{aspect-ratio:1;min-height:var(--tap-pk);padding:var(--s-1)}
 .pt-ch .pt-t{width:100%;height:100%;max-width:132px;max-height:132px}
+/* R-01b: a picture choice is drawn at the size of a picture on the board (--pt-ts, set by 76-bt-pattern.js), so a wrong size never
+   looks like the right one; the button stays big */
+.pt-ch .pt-t{width:var(--pt-ts,100%);height:var(--pt-ts,100%)}
 .pt-ch:is(.right,.wrong)::before,.pt-ch.wrong::after{transform:scale(.8);transform-origin:top right}
 .pt-ch.right::after{transform:rotate(45deg) scale(.8)}
 .pt-num .pt-ch.choice{aspect-ratio:auto;min-height:72px}
