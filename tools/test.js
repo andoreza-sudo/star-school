@@ -15356,6 +15356,29 @@ run('snack stand G-04a',()=>{
   return{problems:[...new Set(p)].slice(0,60),note:notes.join('; ')};
 });
 
+// ---- save hold before a reload (Start over, load a backup, undo a load) ----
+// Once the save in storage was replaced or erased on purpose, nothing may write the old progress back before the page reloads:
+// save() writes nothing while SAVE_HOLD is set, and the three buttons that reload set it first.
+run('save hold before a reload',()=>{
+  const p=[];
+  const r=eval(js+`
+  const store={};
+  global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+  loadSave(null);migrate();S.name='Ava';S.stars=40;save();
+  const before=store[KEY];
+  SAVE_HOLD=true;delete store[KEY];save();
+  const held=!(KEY in store);
+  SAVE_HOLD=false;save();
+  ({held,after:KEY in store,before:!!before})`);
+  if(!r.before)p.push('save() did not write before the hold');
+  if(!r.held)p.push('save() wrote while SAVE_HOLD was set');
+  if(!r.after)p.push('save() did not write after the hold was lifted');
+  const src=fs.readFileSync(path.join(__dirname,'..','src','js','80-grown.js'),'utf8'),bk=fs.readFileSync(path.join(__dirname,'..','src','js','81-backup.js'),'utf8');
+  if(!/SAVE_HOLD=true;localStorage\.removeItem\(KEY\)/.test(src))p.push('Start over does not hold saves before it erases');
+  if((bk.match(/SAVE_HOLD = true; location\.reload\(\)/g)||[]).length!==2)p.push('load and undo do not hold saves before the reload');
+  return{problems:p,note:'save() is held during Start over, load and undo'};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){

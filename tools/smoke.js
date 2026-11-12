@@ -7597,7 +7597,7 @@ async function main() {
         await bp.setInputFiles('#bk-file', file);
         await bp.waitForSelector('#bk-yes');
         await Promise.all([bp.waitForNavigation(), bp.click('#bk-yes')]); // the page reloads
-        await bp.waitForFunction(x => typeof S != 'undefined' && S && S.stars === x, s0.stars);
+        await bp.waitForFunction(x => typeof S != 'undefined' && S && S.stars === x, s0.stars).catch(async e => { const seen = await bp.evaluate(() => ({ url: location.href, app: (document.querySelector('#app') || document.body).textContent.slice(0, 160), stars: typeof S != 'undefined' && S ? S.stars : null, name: typeof S != 'undefined' && S ? S.name : null, raw: (localStorage.getItem(KEY) || '').slice(0, 80) })).catch(x => 'page gone: ' + x.message); throw new Error('P5-07 after Yes the loaded progress did not show: ' + JSON.stringify(seen)); });
         const s1 = await bp.evaluate(() => ({ stars: S.stars, coins: S.coins, name: S.name, pet: S.pet, grade: S.grade, maps: JSON.stringify(S.maps), undo: !!localStorage.getItem(BAK.UNDO) }));
         if (JSON.stringify(Object.assign({}, s1, { undo: 0 })) !== JSON.stringify(Object.assign({}, s0, { undo: 0 })) || !s1.undo) bad.push(tag + ' progress after load: ' + JSON.stringify(s1) + ' vs ' + JSON.stringify(s0));
         // Undo last load: the empty save from before comes back and the button goes
@@ -7607,7 +7607,7 @@ async function main() {
         await bp.evaluate(() => document.querySelector('#gw-bak').scrollIntoView({ block: 'start' }));
         await chk('Backup card with Undo');
         await Promise.all([bp.waitForNavigation(), bp.click('#bk-undo')]);
-        await bp.waitForFunction(() => typeof S != 'undefined' && S && S.stars === 0 && S.name === '');
+        await bp.waitForFunction(() => typeof S != 'undefined' && S && S.stars === 0 && S.name === '').catch(async e => { const seen = await bp.evaluate(() => ({ url: location.href, app: (document.querySelector('#app') || document.body).textContent.slice(0, 160), stars: typeof S != 'undefined' && S ? S.stars : null, name: typeof S != 'undefined' && S ? S.name : null, raw: (localStorage.getItem(KEY) || '').slice(0, 80) })).catch(x => 'page gone: ' + x.message); throw new Error('P5-07 after Undo the empty save did not come back: ' + JSON.stringify(seen)); });
         await bp.evaluate(() => { grown(); });
         await bp.waitForSelector('#bk-load');
         const u = await bp.evaluate(() => ({ undo: !!document.querySelector('#bk-undo'), key: !!localStorage.getItem(BAK.UNDO) }));

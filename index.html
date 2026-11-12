@@ -2929,7 +2929,11 @@ function migrate(){
   S.v=LATEST;
   save();
 }
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S));SAVE_FAILED=false}catch(e){SAVE_FAILED=true}}
+// SAVE_HOLD: set once the save in storage was replaced or erased on purpose and the page is about to reload (Start over, load a
+// backup, undo a load). From then on save() writes nothing, so a timer or screen that saves the old progress before the reload
+// cannot put it back (the reload starts fresh, and resets this flag).
+let SAVE_HOLD=false;
+function save(){if(SAVE_HOLD)return;try{localStorage.setItem(KEY,JSON.stringify(S));SAVE_FAILED=false}catch(e){SAVE_FAILED=true}}
 /* ---------- error guard (P0-05): last 20 errors kept in S.err, on this device only; nothing is sent anywhere ---------- */
 function logErr(msg){
   try{
@@ -10544,7 +10548,7 @@ function grown(){let armed=false;
   $$('[data-play]').forEach(b=>b.onclick=()=>{const c=CLIPS.find(x=>x.id==b.dataset.play);if(c)new Audio(c.url).play().catch(()=>{})});
   $$('[data-del]').forEach(b=>b.onclick=async()=>{await DB.del(b.dataset.del);await loadClips();grown()});
   $$('[data-rec]').forEach(b=>b.onclick=()=>{const[k,l]=b.dataset.rec.split('|');record(k,l=='x'?null:+l,b)});
-  $('#reset').onclick=async e=>{if(!armed){armed=true;e.currentTarget.querySelector('span').textContent='Tap again to erase ALL progress';return}try{localStorage.removeItem(KEY);localStorage.removeItem(BAK.UNDO);const d=await DB.open();d.close();indexedDB.deleteDatabase('starschool')}catch(x){}location.reload()}}
+  $('#reset').onclick=async e=>{if(!armed){armed=true;e.currentTarget.querySelector('span').textContent='Tap again to erase ALL progress';return}try{SAVE_HOLD=true;localStorage.removeItem(KEY);localStorage.removeItem(BAK.UNDO);const d=await DB.open();d.close();indexedDB.deleteDatabase('starschool')}catch(x){}location.reload()}}
 async function record(kind,line,btn){if(inFrame)return micHelp('frame');if(!navigator.mediaDevices||!window.MediaRecorder)return micHelp('frame');
   try{const pm=await navigator.permissions.query({name:'microphone'});if(pm.state=='denied')return micHelp('denied')}catch(e){}
   let st;try{st=await navigator.mediaDevices.getUserMedia({audio:true})}catch(e){return micHelp(e&&e.name=='NotFoundError'?'none':'denied')}
@@ -10686,7 +10690,7 @@ const BAK = {
     sh.el.querySelector('#bk-yes').onclick = () => {
       const bad = BAK.apply(r.data);
       sh.close();
-      if (bad) BAK.msg(bad); else location.reload();
+      if (bad) BAK.msg(bad); else { SAVE_HOLD = true; location.reload(); } // nothing saves over the loaded backup before the reload
     };
   },
   card() {
@@ -10710,7 +10714,7 @@ const BAK = {
       BAK.review(text);
     };
     const u = $('#bk-undo');
-    if (u) u.onclick = () => { const bad = BAK.undo(); if (bad) BAK.msg(bad); else location.reload(); };
+    if (u) u.onclick = () => { const bad = BAK.undo(); if (bad) BAK.msg(bad); else { SAVE_HOLD = true; location.reload(); } };
   },
 };
 /* ---------- Grown-ups report card (P5-06) ----------
