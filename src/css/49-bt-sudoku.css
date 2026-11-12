@@ -118,3 +118,6 @@
 .sd.land .sd-side{display:flex;flex-direction:column;gap:var(--s-3);flex:none;width:min(380px,42%)}
 .sd.land .sd-say{align-self:stretch}
 .sd.land .sd-ctl{max-width:none}
+
+/* P6-01: the focus ring sits inside a square of the grid (the box clips anything outside) */
+.sd-c:focus-visible{outline-offset:-4px}

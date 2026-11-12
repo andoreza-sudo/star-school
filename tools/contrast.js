@@ -46,6 +46,35 @@ for (const t of Object.keys(T).filter(k => k.startsWith('sc-') && !k.startsWith(
   rules.push(['ink', t, 7, 'map scene']);
   for (const s of ['math', 'read', 'es', 'disc']) rules.push([s, t, 3, 'stop ring on map scene']);
 }
+// P6-01: every pair the CSS sets together. Each rule block (any src/css file) that sets both color and background to plain tokens
+// is a pair on screen: text 4.5:1, large text (24 px and up, or --fs-5 and up) 3:1, an icon or other graphic 3:1 (WCAG 1.4.11).
+// DECOR lists the few pairs that are placeholders or ornament only (aria-hidden, nothing to read), with why.
+const ICONISH = /(\.ti|\.hb|\.ic|badge|-fd|disc|-tg|-ed|-go|-mi|>\s*i|qgoal|pl-done|heart|-ptd|\.sw)\s*$/;
+const DECOR = {
+  '.sb-no': 'empty sticker slot (aria-hidden placeholder: a faint star in the cream slot)',
+  '.stc-hero.off .stc-fd': 'the grey flame when there is no streak yet (the 0 beside it says it)',
+  '.sn-s-heart': 'a heart painted on the Snack Stand sign (ornament)',
+};
+const cssDir = path.join(__dirname, '..', 'src', 'css');
+let pairs = 0;
+for (const f of fs.readdirSync(cssDir).filter(f => f.endsWith('.css') && f != '00-tokens.css').sort()) {
+  const src = fs.readFileSync(path.join(cssDir, f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  for (const m of src.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    const body = m[2];
+    const c = body.match(/(?:^|;)\s*color:\s*var\(--([a-z0-9-]+)\)\s*(?:!important)?\s*(?:;|$)/);
+    const b = body.match(/(?:^|;)\s*background(?:-color)?:\s*var\(--([a-z0-9-]+)\)\s*(?:!important)?\s*(?:;|$)/);
+    if (!c || !b || !T[c[1]] || !T[b[1]]) continue;
+    for (const sel of m[1].split(',').map(x => x.trim()).filter(Boolean)) {
+      if (DECOR[sel]) continue;
+      const fsz = (body.match(/font-size:\s*(?:var\(--fs-(\d)\)|(\d+)px)/) || []);
+      const large = (fsz[1] && +fsz[1] >= 5) || (fsz[2] && +fsz[2] >= 24);
+      const icon = ICONISH.test(sel);
+      const min = icon || large ? 3 : 4.5;
+      rules.push([c[1], b[1], min, f + ' ' + sel + (icon ? ' (icon)' : large ? ' (large text)' : '')]);
+      pairs++;
+    }
+  }
+}
 for (const [a, b, min, what] of rules) {
   const r = ratio(a, b), ok = r >= min;
   if (!ok) fail++;

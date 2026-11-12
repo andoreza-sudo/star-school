@@ -179,6 +179,7 @@ function placeQ(){
   <div class="inp">${K.render(q)}</div></div>`);
   $('#quit').onclick=()=>{PL=null;SFX.click();placeBack(me.from)};
   if($('#spk'))$('#spk').onclick=e=>say(q.say,e.currentTarget,q.lang=='es'&&q.auto=='must'?'es':null);
+  UI.hear(); // P6-01
   $$('[data-sayes]').forEach(b=>b.onclick=()=>say(b.dataset.sayes,b,'es'));
   $$('[data-say]').forEach(b=>b.onclick=()=>say(b.dataset.say,b));
   $$('.w').forEach(s=>s.onclick=()=>{say(s.dataset.w);SFX.pop(1)});
