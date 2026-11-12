@@ -7,6 +7,8 @@ const BUILD_PY=fs.readFileSync(path.join(ROOT,'tools','build.py'),'utf8');
 // A11b: PARTS in tools/build.py: [stem, regex on whole src/js and src/css file names]. Matching files go to <stem>.<VER>.js, in this order.
 const PARTS=[...((BUILD_PY.match(/^PARTS = \[\n([\s\S]*?)^\]/m)||[])[1]||'').matchAll(/^ +\('(\w+)', r'([^']+)'\),/gm)].map(m=>({stem:m[1],re:new RegExp('^(?:'+m[2]+')$')}));
 const partOf=n=>(PARTS.find(p=>p.re.test(n))||{}).stem;
+// P6-02: LAZY in tools/build.py: the parts index.html does not load at start (partsThen() in src/js/90-app.js loads them on demand)
+const LAZY=[...(((BUILD_PY.match(/^LAZY = \(([^)]*)\)/m)||[])[1]||'').matchAll(/'(\w+)'/g))].map(m=>m[1]);
 const names=(d,ext,part)=>fs.readdirSync(path.join(SRC,d)).filter(n=>n.endsWith(ext)&&partOf(n)===part).sort();
 const cat=(d,part,ext='.js')=>names(d,ext,part).map(n=>fs.readFileSync(path.join(SRC,d,n),'utf8')).join('');
 // all code and data, without boot.js, in the order the built page runs it: index.html's own code, each part file, the data file
@@ -18,10 +20,14 @@ const SIZE_WARN=1200000,SIZE_FAIL=1500000; // bytes of the built index.html (ROA
 // code; the total is what a tablet downloads once and parses at every start (all files load before the app starts).
 const DATA_WARN=1000000,DATA_FAIL=2000000; // bytes of the built data.<VER>.js
 const PART_WARN=400000,PART_FAIL=800000; // A11b: bytes of each built part file (bt.<VER>.js, games.<VER>.js)
-const TOTAL_WARN=2000000,TOTAL_FAIL=3300000; // bytes of index.html + the part files + data.<VER>.js (G-04a: 3.0 -> 3.3 MB for games2; owner to confirm, ROADMAP R1)
+// P6-02: bytes LOADED AT START, index.html + the part files it loads at start + data.<VER>.js (back to 3.0 MB: the games parts load on demand);
+// and bytes PRECACHED, every built file (G-04a raised the old all-files total from 3.0 to 3.3 MB for games2; that limit now holds the precache)
+const TOTAL_WARN=2000000,TOTAL_FAIL=3000000,CACHE_FAIL=3300000;
 const BUILD_VER=(BUILD_PY.match(/^VER = '(v\d+)'/m)||[])[1];
 const DATA_FILE='data.'+BUILD_VER+'.js'; // the built data file at the repo root (tools/build.py)
-const PART_FILES=PARTS.map(p=>p.stem+'.'+BUILD_VER+'.js'); // A11b: the built part files, in load order
+const PART_FILES=PARTS.map(p=>p.stem+'.'+BUILD_VER+'.js'); // A11b: the built part files, in PARTS order
+const START_FILES=[...PART_FILES.filter((f,i)=>!LAZY.includes(PARTS[i].stem)),DATA_FILE]; // P6-02: the <script src> tags of index.html, in order
+const LAZY_FILES=PART_FILES.filter((f,i)=>LAZY.includes(PARTS[i].stem)); // P6-02: loaded on demand, after everything else
 const KNOWN={ // check name -> exact problem strings that are known content issues, not test failures
   // Spanish level 2 ("How do you say it in Spanish?") shows a picture and asks for the Spanish word, so it has no `say` on purpose:
   // reading the answer aloud would give it away (genEs in src/js/34-gen-es.js). Logged in PROGRESS.md; a later chunk may add a
@@ -66,6 +72,7 @@ global.localStorage={getItem:()=>null,setItem:()=>{}};
 global.document={querySelector:()=>null,querySelectorAll:()=>[],addEventListener:()=>{}};
 global.navigator={};global.addEventListener=()=>{};global.location={protocol:'file:'};
 global.speechSynthesis={getVoices:()=>[]};
+global.getComputedStyle=()=>({}); // P6-02: view() reads a computed style to restart the screen-in animation
 global.setTimeout=()=>{};
 
 const results=[]; // {name, problems, known, note}
@@ -7606,11 +7613,13 @@ run('code split A11b (and data file split A11)',()=>{
   for(const f of ['index.html',...FILES,'sw.js'])if(!fs.existsSync(path.join(ROOT,f)))p.push(f+' not built; run python3 tools/build.py first');
   if(p.length)return{problems:p};
   const html=rd('index.html'),data=rd(DATA_FILE),sw=rd('sw.js'),parts=PART_FILES.map(rd);
-  // index.html: the code (inline), then one external script per file in this order (parts, then data), then boot (inline)
+  // index.html: the code (inline), then one external script per start-up file in this order (parts, then data), then boot (inline).
+  // P6-02: the LAZY parts (games, games2) have no tag: partsThen() loads them on demand (the check "performance P6-02")
   const tags=[...html.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/g)].map(m=>({attrs:m[1],src:(m[1].match(/src="([^"]*)"/)||[])[1],body:m[2]}));
-  const srcs=tags.filter(t=>t.src!==undefined).map(t=>t.src),n=FILES.length+2;
-  if(JSON.stringify(srcs)!==JSON.stringify(FILES))p.push('index.html loads '+JSON.stringify(srcs)+', expected exactly '+JSON.stringify(FILES));
-  if(tags.length!==n||tags[0].src!==undefined||tags[n-1].src!==undefined||FILES.some((f,i)=>tags[i+1].src!==f))p.push('index.html scripts are not code, '+FILES.join(', ')+', boot');
+  const srcs=tags.filter(t=>t.src!==undefined).map(t=>t.src),n=START_FILES.length+2;
+  if(JSON.stringify(LAZY)!=='["games","games2"]')p.push('LAZY in tools/build.py read as '+JSON.stringify(LAZY));
+  if(JSON.stringify(srcs)!==JSON.stringify(START_FILES))p.push('index.html loads '+JSON.stringify(srcs)+', expected exactly '+JSON.stringify(START_FILES));
+  if(tags.length!==n||tags[0].src!==undefined||tags[n-1].src!==undefined||START_FILES.some((f,i)=>tags[i+1].src!==f))p.push('index.html scripts are not code, '+START_FILES.join(', ')+', boot');
   else if(!/dataReady\(\)/.test(tags[n-1].body)||!/home\(true\)/.test(tags[n-1].body))p.push('boot script does not check dataReady() before home(true)');
   if(tags.some(t=>/\b(async|defer)\b|type=/.test(t.attrs)))p.push('a script is async, defer or typed: the files must load in order');
   if(!html.includes('Star School '+BUILD_VER))p.push('index.html is not '+BUILD_VER);
@@ -7647,6 +7656,7 @@ run('code split A11b (and data file split A11)',()=>{
   const listed=[...app.matchAll(/\['(\w+)', typeof (\w+) === 'undefined' \? null : \2\]/g)].map(m=>[m[1],m[2]]);
   if(JSON.stringify(listed)!==JSON.stringify(stamps))p.push('appFiles() in 90-app.js lists '+JSON.stringify(listed)+', expected '+JSON.stringify(stamps));
   // load the built files in Node: the code alone, the code with the data but no parts, everything, and each file missing or stale.
+  // P6-02: in the page's order: the code, the start-up parts, the data, then (on demand) the LAZY parts
   // Like the page: each file is its own classic script in one fresh global (vm context), so nothing leaks in from the other checks'
   // eval and a function declared in a later file is not hoisted into an earlier one. A fake document.head collects the parts' <style>s.
   const vm=require('vm'),styles=[];
@@ -7664,7 +7674,8 @@ run('code split A11b (and data file split A11)',()=>{
     if(nop.err)p.push('code + gen parts + '+DATA_FILE+' do not load without the bt and games parts: '+nop.err);
     else if(nop.ready||nop.bt||nop.game!=='undefined')p.push('without the part files: '+JSON.stringify(nop));
     styles.length=0;
-    const g=load([code,...parts,data],`({ready:dataReady(),files:appFiles(),gram:BANK.gram.length,vocab:BANK.vocab.length,
+    const startParts=parts.filter((_,i)=>!LAZY.includes(PARTS[i].stem)),lazyParts=parts.filter((_,i)=>LAZY.includes(PARTS[i].stem));
+    const g=load([code,...startParts,data,...lazyParts],`({ready:dataReady(),files:appFiles(),gram:BANK.gram.length,vocab:BANK.vocab.length,
       demo:BANK.demo.length,comp:PASS.comp.length,info:PASS.info.length,passages:COMP.length,spell:Object.keys(SPELL_WORDS).length,
       spellGen:typeof genSpell,sudoku:Object.keys(PUZ.sudoku).join(''),sudokuA:PUZ.sudoku.A.easy.length,
       bt:['maze','pattern','pyramid','balance','target'].filter(id=>BT.get(id)).length,mz:typeof MZ,pat:typeof PAT,btn:typeof BTN,
@@ -7680,15 +7691,31 @@ run('code split A11b (and data file split A11)',()=>{
       const want=PARTS.map(x=>cat('css',x.stem,'.css')).filter(Boolean);
       if(styles.length!==want.length||styles.some((s,i)=>s.tag!=='style'||s.textContent!==want[i]))p.push('the parts did not add their CSS: '+styles.map(s=>s.id).join());
     }
+    const byFile=Object.fromEntries([...PART_FILES.map((f,i)=>[f,parts[i]]),[DATA_FILE,data]]);
     FILES.forEach((f,i)=>{
-      const all=[code,...parts,data],stamp=stamps[i][1]+"='"+BUILD_VER+"'";
-      const miss=load(all.filter((_,j)=>j!==i+1),'({ready:dataReady(),bad:appFiles().filter(f=>f[1]!==\''+BUILD_VER+'\').map(f=>f[0]+":"+f[1]).join()})');
+      const stamp=stamps[i][1]+"='"+BUILD_VER+"'",lazy=LAZY_FILES.includes(f);
+      // the start-up files as index.html loads them, then the LAZY parts in order, with this one left out (null) or changed
+      const set=mod=>[code,...START_FILES.map(x=>x===f?mod(byFile[x]):byFile[x]),...LAZY_FILES.map(x=>x===f?mod(byFile[x]):byFile[x])].filter(t=>t!==null);
+      if(lazy){
+        // P6-02: a LAZY part is not needed to start (dataReady() stays true), but it is refused when it is missing or stale: partReady()
+        // is false, so partsThen() shows Try again instead of the games (the check "performance P6-02" runs the loader itself).
+        // Without the games file, games2 stops at GH.reg while loading, so its stamp is not set either.
+        const tail='({ready:dataReady(),part:partReady(\''+stamps[i][0]+'\'),bad:appFiles().filter(f=>f[1]!==\''+BUILD_VER+'\').map(f=>f[0]+":"+f[1]).join()})';
+        const start=load([code,...START_FILES.map(x=>byFile[x])],tail);
+        if(start.err||!start.ready||start.part||start.bad!==LAZY.map(x=>x+':null').join())p.push('at start, without the LAZY parts: '+JSON.stringify(start));
+        const miss=load(set(()=>null),tail),old=load(set(t=>t.replace(stamp,stamps[i][1]+"='v1'")),tail);
+        if((miss.err&&!/is not defined/.test(miss.err))||(!miss.err&&(!miss.ready||miss.part)))p.push('without '+f+': '+JSON.stringify(miss));
+        if(old.err||!old.ready||old.part!==false||!old.bad.includes(stamps[i][0]+':v1'))p.push('partReady() does not refuse a '+f+' of another release: '+JSON.stringify(old));
+        return;
+      }
+      const miss=load(set(()=>null),'({ready:dataReady(),bad:appFiles().filter(f=>f[1]!==\''+BUILD_VER+'\').map(f=>f[0]+":"+f[1]).join()})');
       // the data file calls the generators' helpers while loading (esReg, COMPSPEC): without a gen part it stops with a ReferenceError,
-      // so its stamp is never set; the app is just as refused (A11c)
-      // G-04a: likewise games2 calls GH.reg (games) while loading, so without the games file it stops there
-      const genGone=f!==DATA_FILE&&(PARTS[i].stem.startsWith('gen')||PARTS[i].stem==='games');
-      if(genGone?(!miss.err&&(miss.ready||miss.bad!==stamps[i][0]+':null'))||(miss.err&&!/is not defined/.test(miss.err)):(miss.err||miss.ready||miss.bad!==stamps[i][0]+':null'))p.push('without '+f+': '+JSON.stringify(miss));
-      const old=load(all.map((t,j)=>j===i+1?t.replace(stamp,stamps[i][1]+"='v1'"):t),'dataReady()');
+      // so its stamp is never set; the app is just as refused (A11c). (G-04a: games2 likewise stops at GH.reg without games; P6-02 above.)
+      // Without a start-up file the LAZY parts may not load either (their code needs it), so only the start-up stamps are compared.
+      const genGone=f!==DATA_FILE&&PARTS[i].stem.startsWith('gen');
+      const badStart=miss.bad&&miss.bad.split(',').filter(x=>!LAZY.includes(x.split(':')[0])).join();
+      if(genGone?(miss.err&&!/is not defined/.test(miss.err))||(!miss.err&&(miss.ready||badStart!==stamps[i][0]+':null')):(miss.err||miss.ready||badStart!==stamps[i][0]+':null'))p.push('without '+f+': '+JSON.stringify(miss));
+      const old=load(set(t=>t.replace(stamp,stamps[i][1]+"='v1'")),'dataReady()');
       if(old!==false)p.push('dataReady() does not refuse a '+f+' of another release: '+JSON.stringify(old));
     });
   }
@@ -7703,12 +7730,15 @@ run('code split A11b (and data file split A11)',()=>{
   // sources: the shell loads the parts and the data file between the code and boot
   const shell=fs.readFileSync(path.join(SRC,'shell.html'),'utf8');
   if(!/\/\*@@JS@@\*\/\s*<\/script>\s*<!--@@PARTS@@-->\s*<script src="data\.__VER__\.js"><\/script>\s*<script>\s*\/\*@@BOOT@@\*\//.test(shell))p.push('src/shell.html: code, parts, data.__VER__.js, boot not in that order');
-  // budgets (ROADMAP R1, A11, A11b; index.html alone is the 'size: index.html under budget' check)
-  const nd=Buffer.byteLength(data),np=parts.map(t=>Buffer.byteLength(t)),nt=Buffer.byteLength(html)+nd+np.reduce((a,b)=>a+b,0),w=[];
+  // budgets (ROADMAP R1, A11, A11b; index.html alone is the 'size: index.html under budget' check). P6-02: the total is what loads at
+  // start (index.html + the start-up parts + the data file); every file together (the precache) has its own limit
+  const nd=Buffer.byteLength(data),np=parts.map(t=>Buffer.byteLength(t)),w=[];
+  const nt=Buffer.byteLength(html)+nd+np.filter((_,i)=>!LAZY.includes(PARTS[i].stem)).reduce((a,b)=>a+b,0),nc=Buffer.byteLength(html)+nd+np.reduce((a,b)=>a+b,0);
   if(nd>DATA_FAIL)p.push(DATA_FILE+' is '+nd+' bytes, over the '+DATA_FAIL+' limit');else if(nd>DATA_WARN)w.push('data over '+DATA_WARN);
   np.forEach((b,i)=>{if(b>PART_FAIL)p.push(PART_FILES[i]+' is '+b+' bytes, over the '+PART_FAIL+' limit');else if(b>PART_WARN)w.push(PARTS[i].stem+' over '+PART_WARN)});
-  if(nt>TOTAL_FAIL)p.push('index.html + '+FILES.join(' + ')+' is '+nt+' bytes, over the '+TOTAL_FAIL+' limit');else if(nt>TOTAL_WARN)w.push('total over '+TOTAL_WARN);
-  return{problems:p,note:PART_FILES.map((f,i)=>f+' '+Math.round(np[i]/1000)+' KB').join(', ')+', '+DATA_FILE+' '+Math.round(nd/1000)+' KB, total '+Math.round(nt/1000)+' KB'+
+  if(nt>TOTAL_FAIL)p.push('loaded at start, index.html + '+START_FILES.join(' + ')+' is '+nt+' bytes, over the '+TOTAL_FAIL+' limit');else if(nt>TOTAL_WARN)w.push('start-up total over '+TOTAL_WARN);
+  if(nc>CACHE_FAIL)p.push('precached, index.html + '+FILES.join(' + ')+' is '+nc+' bytes, over the '+CACHE_FAIL+' limit');
+  return{problems:p,note:PART_FILES.map((f,i)=>f+' '+Math.round(np[i]/1000)+' KB').join(', ')+', '+DATA_FILE+' '+Math.round(nd/1000)+' KB, at start '+Math.round(nt/1000)+' KB, precached '+Math.round(nc/1000)+' KB'+
     ' ('+moved.length+' src files in parts)'+(w.length?'  WARN: '+w.join(', '):'')};
 });
 
@@ -7741,14 +7771,16 @@ run('parts split A11c',()=>{
   // Every part stamp equals the page's VER; then a question from each subject is built with the loaded files.
   const tags=[...html.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/g)];
   const srcs=tags.filter(t=>/src="/.test(t[1])).map(t=>t[1].match(/src="([^"]*)"/)[1]);
-  if(JSON.stringify(srcs)!==JSON.stringify(FILES))p.push('index.html loads '+JSON.stringify(srcs)+', expected '+JSON.stringify(FILES));
+  if(JSON.stringify(srcs)!==JSON.stringify(START_FILES))p.push('index.html loads '+JSON.stringify(srcs)+', expected '+JSON.stringify(START_FILES)); // P6-02: not the LAZY parts
   const sw=rd('sw.js');
   for(const f of FILES)if(!sw.includes("'./"+f+"'"))p.push('sw.js does not precache '+f);
   const doc=Object.assign({},global.document,{createElement:t=>({tag:t}),head:{appendChild:()=>{}}});
   const ctx=vm.createContext({localStorage:global.localStorage,document:doc,navigator:{},addEventListener:()=>{},location:{protocol:'file:'},
     speechSynthesis:{getVoices:()=>[]},setTimeout:()=>{},console});
   try{
-    for(const t of [tags[0][2],...parts,data])vm.runInContext(t,ctx);
+    // P6-02: the page's order: code, start-up parts, data, then the LAZY parts (loaded on demand)
+    const inOrder=a=>[a[0],...PARTS.map((x,i)=>LAZY.includes(x.stem)?undefined:a[i+1]),a[a.length-1],...PARTS.map((x,i)=>LAZY.includes(x.stem)?a[i+1]:undefined)].filter(t=>t!=null);
+    for(const t of inOrder([tags[0][2],...parts,data]))vm.runInContext(t,ctx);
     const r=vm.runInContext(`(()=>{const files=appFiles(),qs={};
       for(const [k,sk,lv] of [['math','add',1],['math','mult',1],['math','frac',3],['read','abc',1],['read','sound',1],['es','es_color',1],['disc','sci_life',1]]){
         try{const q=genQ(sk,lv,7);qs[k+':'+sk]=!!(q&&q.html&&q.sk===sk)}catch(e){qs[k+':'+sk]=String(e)}}
@@ -7763,13 +7795,115 @@ run('parts split A11c',()=>{
       for(const [label,mod] of [['missing',t=>null],['stale',t=>t.replace(stamp,stem.toUpperCase()+"_VER='v1'")]]){
         const c2=vm.createContext({localStorage:global.localStorage,document:doc,navigator:{},addEventListener:()=>{},location:{protocol:'file:'},
           speechSynthesis:{getVoices:()=>[]},setTimeout:()=>{},console});
-        const all=[tags[0][2],...parts,data].map((t,j)=>j===i+1?mod(t):t).filter(t=>t!==null);
+        const all=inOrder([tags[0][2],...parts,data].map((t,j)=>j===i+1?mod(t):t));
         for(const t of all){try{vm.runInContext(t,c2)}catch(e){if(!/is not defined/.test(String(e)))throw e}} // data stops at esReg without gen
         if(vm.runInContext('dataReady()',c2)!==false)p.push('dataReady() does not refuse a '+label+' '+PART_FILES[i]);
       }
     }
   }catch(e){p.push('fresh load of index.html + parts + data failed: '+String(e).split('\n')[0])}
   return{problems:p,note:'index.html '+Math.round(nh/1000)+' KB, '+PART_FILES.map((f,i)=>f+' '+Math.round(Buffer.byteLength(parts[i])/1000)+' KB').join(', ')};
+});
+
+// ---- P6-02: the Game Room's part files load on demand (LAZY in tools/build.py, partsThen() in src/js/90-app.js); start-up bytes under 3.0 MB ----
+run('performance P6-02',()=>{
+  const p=[],rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8'),vm=require('vm');
+  for(const f of ['index.html',...START_FILES,...LAZY_FILES,'sw.js'])if(!fs.existsSync(path.join(ROOT,f)))return{problems:[f+' not built; run python3 tools/build.py first']};
+  const html=rd('index.html'),sw=rd('sw.js'),files=Object.fromEntries([...START_FILES,...LAZY_FILES].map(f=>[f,rd(f)]));
+  // 1. what loads at start: index.html names only the start-up files; the games parts are LAZY, in build.py and in 90-app.js alike
+  if(JSON.stringify(LAZY)!=='["games","games2"]')p.push('LAZY in tools/build.py should be the games parts: '+JSON.stringify(LAZY));
+  const srcs=[...html.matchAll(/<script src="([^"]*)"/g)].map(m=>m[1]);
+  for(const f of LAZY_FILES)if(srcs.includes(f))p.push(f+' has a <script> tag in index.html: it must load only on demand');
+  if(JSON.stringify(srcs)!==JSON.stringify(START_FILES))p.push('index.html loads '+srcs.join(', ')+', expected '+START_FILES.join(', '));
+  const lz=(fs.readFileSync(path.join(SRC,'js','90-app.js'),'utf8').match(/const LAZY_PARTS = (\[[^\]]*\]);/)||[])[1];
+  if(!lz||lz.replace(/'/g,'"').replace(/\s/g,'')!==JSON.stringify(LAZY))p.push('LAZY_PARTS in 90-app.js ('+lz+') is not LAZY in tools/build.py ('+LAZY+')');
+  // 2. bytes loaded at start under 3.0 MB (TOTAL_FAIL); the precache may be bigger (CACHE_FAIL, the A11b check)
+  const nb=f=>Buffer.byteLength(files[f]),start=Buffer.byteLength(html)+START_FILES.reduce((a,f)=>a+nb(f),0),lazy=LAZY_FILES.reduce((a,f)=>a+nb(f),0);
+  if(TOTAL_FAIL!==3000000)p.push('the start-up budget should be 3.0 MB, it is '+TOTAL_FAIL);
+  if(start>=TOTAL_FAIL)p.push('loaded at start: '+start+' bytes, not under '+TOTAL_FAIL);
+  // 3. offline: sw.js precaches the games parts and answers from its cache first (so the Game Room opens with no network)
+  for(const f of LAZY_FILES)if(!sw.includes("'./"+f+"'"))p.push('sw.js does not precache '+f);
+  if(!/e\.respondWith\(caches\.match\(e\.request/.test(sw))p.push('sw.js does not answer scripts from its cache first');
+  // 4. the page in a fresh Node vm, as index.html runs it: the code, then the start-up files. A stand-in DOM records what view()
+  //    draws and the <script> elements partLoad() adds; the test then "serves" each one (runs the file, or fails it) and fires its
+  //    onload / onerror. Timers and animation frames wait in a queue that the test runs (flush); promises settle after each step.
+  const code=(html.match(/<script>([\s\S]*?)<\/script>/)||[])[1];
+  const page=()=>{
+    const T=[],scripts=[],styles=[],els={},store={};let reloads=0;
+    const app={id:'app',style:{},innerHTML:'',isConnected:true};
+    const el=id=>els[id]||(els[id]={id,style:{},dataset:{},onclick:null,innerHTML:'',classList:{add(){},remove(){},toggle(){},contains(){return false}},
+      get isConnected(){return app.innerHTML.includes('id="'+id+'"')},querySelector:()=>null,querySelectorAll:()=>[],appendChild(){},remove(){},scrollIntoView(){},
+      getBoundingClientRect:()=>({left:0,top:0,right:0,bottom:0,width:0,height:0})});
+    const doc={documentElement:el("html"),hidden:false,addEventListener(){},querySelectorAll:()=>[],getElementById:()=>null,
+      querySelector:s=>{if(s==='#app')return app;const m=/^#([\w-]+)$/.exec(s);return m&&app.innerHTML.includes('id="'+m[1]+'"')?el(m[1]):null},
+      createElement:t=>({tag:t,style:{},remove(){this.removed=true}}),head:{appendChild:e=>styles.push(e.id)},body:{insertAdjacentHTML(){},appendChild:e=>{if(e.tag==="script")scripts.push(e)}}};
+    const ctx=vm.createContext({document:doc,navigator:{},location:{protocol:'file:',reload:()=>{reloads++}},addEventListener(){},console,innerWidth:380,innerHeight:780,
+      localStorage:{getItem:k=>store[k]||null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}},speechSynthesis:{getVoices:()=>[],cancel(){},speak(){}},
+      setTimeout:f=>T.push(f),clearTimeout(){},setInterval:()=>0,clearInterval(){},requestAnimationFrame:f=>T.push(f),cancelAnimationFrame(){},
+      getComputedStyle:()=>({}),btoa,atob,matchMedia:()=>({matches:false,addEventListener(){}}),__T:T},{microtaskMode:'afterEvaluate'});
+    const run_=t=>vm.runInContext(t,ctx);
+    run_(code);for(const f of START_FILES)run_(files[f]);
+    run_('loadSave(null);migrate();S.sound=false;S.voice=false;S.name="Ava";S.pt={bank:300,day:today(),used:0}');
+    return{ctx,run:run_,app,scripts,styles,el,reloads:()=>reloads,
+      flush:()=>run_('for(let i=0;i<40&&__T.length;i++)__T.shift()()'),
+      // serve the oldest script the page asked for: its file (mod changes it; null = not there), then its onload or onerror
+      serve:(mod=t=>t)=>{const s=scripts.shift();if(!s)return'';ctx.__cur=s;const t=files[s.src]==null?null:mod(files[s.src],s.src);
+        if(t==null)run_('__cur.onerror()');else{run_(t);run_('__cur.onload()')}return s.src}};
+  };
+  const VER=BUILD_VER,[GF,G2F]=LAZY_FILES,stale=(f,t)=>t.replace(new RegExp("var "+f.split('.')[0].toUpperCase()+"_VER='"+VER+"'"),"var "+f.split('.')[0].toUpperCase()+"_VER='v1'");
+  const state=pg=>pg.run('({ready:dataReady(),parts:LAZY_PARTS.map(partReady).join(),gh:typeof GH,err:(S.err||[]).map(e=>e.msg).pop()||""})');
+  try{
+    // a. a cold start: no games code, no games <style>; the app is ready
+    let pg=page(),s=state(pg);
+    if(!s.ready||s.parts!=='false,false'||s.gh!=='undefined'||pg.styles.join()!=='css-bt'||pg.scripts.length)p.push('at start: '+JSON.stringify(s)+' styles '+pg.styles.join());
+    // b. Home -> Game Room: "Getting the games ready..." with Back at once, nothing requested until that screen is painted, then games,
+    //    then games2 (one at a time, in PARTS order), then the hub with every registered game, and a game's first screen opens
+    pg.run('gameRoom()');
+    const wait=pg.app.innerHTML;
+    if(!/id="partwait"/.test(wait)||!wait.includes('Getting the games ready...')||!/id="back"/.test(wait)||pg.scripts.length)p.push('Game Room: no waiting screen first: '+wait.slice(0,200));
+    pg.flush();
+    const asked=[];
+    for(let i=0;i<4&&pg.scripts.length;i++){asked.push(pg.scripts.map(x=>x.src).join('+'));pg.serve()}
+    if(asked.join()!==LAZY_FILES.join())p.push('the Game Room asked for '+asked.join(', ')+', expected '+LAZY_FILES.join(', ')+' one after the other');
+    s=state(pg);
+    const hub=pg.app.innerHTML,ids=pg.run('GH.games.map(g=>g.btn)');
+    if(s.parts!=='true,true'||!/class="gh-room"/.test(hub)||ids.length<5||ids.some(b=>!hub.includes('id="'+b+'"'))||pg.styles.join()!=='css-bt,css-games,css-games2')
+      p.push('after the lazy load: '+JSON.stringify(s)+' hub '+/gh-room/.test(hub)+' cards '+ids+' styles '+pg.styles.join());
+    for(const [id,want] of [['snack','snopen'],['art','']]){ // a games2 game (Snack Stand) and a games one (Coloring), through their hub cards
+      try{const b=pg.run(`GH.get('${id}').btn`);pg.el(b).onclick();const h=pg.app.innerHTML;
+        if(!h.includes('data-g="'+id+'"')||(want&&!h.includes('id="'+want+'"')))p.push('the '+id+' card did not open its first screen: '+h.slice(0,160));}
+      catch(e){p.push('the '+id+' card threw after the lazy load: '+String(e).split('\n')[0])}
+      pg.run('GH.hub()');
+    }
+    pg.run('view("<div id=\\"elsewhere\\"></div>");gameRoom()');
+    if(!/class="gh-room"/.test(pg.app.innerHTML)||pg.scripts.length)p.push('the second Game Room open should draw the hub at once, with no new request');
+    // c. the child taps Back while the games load: they stay where they went; the parts finish loading and the next open is immediate
+    pg=page();pg.run('gameRoom()');pg.flush();pg.run('view("<div id=\\"elsewhere\\"></div>")');
+    while(pg.scripts.length)pg.serve();pg.flush();
+    s=state(pg);
+    if(!pg.app.innerHTML.includes('elsewhere')||s.parts!=='true,true')p.push('Back while loading: '+pg.app.innerHTML.slice(0,80)+' '+JSON.stringify(s));
+    pg.run('gameRoom()');if(!/gh-room/.test(pg.app.innerHTML))p.push('after Back while loading, the Game Room did not open at once');
+    // d. a games or games2 file of another release is refused: Try again (it reloads), the App log line, games2 never asked for after a
+    //    stale games file; asking again does not run the stale file twice; nothing else in the save changes
+    for(const [f,log] of [[GF,'games file v1 does not match'],[G2F,'games2 file v1 does not match']]){
+      pg=page();const before=pg.run('JSON.stringify({stars:S.stars,coins:S.coins,maps:S.maps})');
+      pg.run('gameRoom()');pg.flush();const got=[];
+      while(pg.scripts.length)got.push(pg.serve((t,src)=>src===f?stale(f,t):t));
+      s=state(pg);
+      if(!/id="datamiss"/.test(pg.app.innerHTML)||/gh-room/.test(pg.app.innerHTML)||s.err!==log+' (app '+VER+')'||got.join()!==LAZY_FILES.slice(0,LAZY_FILES.indexOf(f)+1).join())
+        p.push('stale '+f+': '+JSON.stringify(s)+' asked '+got.join()+' '+pg.app.innerHTML.slice(0,100));
+      pg.run('gameRoom()');pg.flush();
+      if(pg.scripts.length||!/id="datamiss"/.test(pg.app.innerHTML))p.push('stale '+f+': a second open asked again or did not refuse ('+pg.scripts.map(x=>x.src)+')');
+      pg.el('dataretry').onclick();if(pg.reloads()!==1)p.push('stale '+f+': Try again does not reload the page');
+      if(pg.run('JSON.stringify({stars:S.stars,coins:S.coins,maps:S.maps})')!==before)p.push('stale '+f+': the save changed');
+    }
+    // e. a games file that cannot be read (offline before it was cached): Try again; once it is there, opening again loads it
+    pg=page();pg.run('gameRoom()');pg.flush();pg.serve(()=>null);
+    s=state(pg);
+    if(!/id="datamiss"/.test(pg.app.innerHTML)||s.err!=='games file missing (app '+VER+')'||pg.scripts.length)p.push('missing games file: '+JSON.stringify(s));
+    pg.run('gameRoom()');pg.flush();while(pg.scripts.length)pg.serve();
+    if(!/gh-room/.test(pg.app.innerHTML)||state(pg).parts!=='true,true')p.push('after a missing games file, the next open did not load the Game Room');
+  }catch(e){p.push('the on-demand load could not be run: '+String(e.stack||e).split('\n').slice(0,3).join(' | '))}
+  return{problems:p,note:'loaded at start '+Math.round(start/1000)+' KB (budget '+TOTAL_FAIL/1e6+' MB), on demand '+Math.round(lazy/1000)+' KB ('+LAZY_FILES.join(', ')+')'};
 });
 
 run('Crystal Caves P2-12: stops in CURRICULUM order, 3,000 samples per new level with the maths recomputed, hints, say, labels, reproducible, old levels unchanged',()=>{
@@ -13659,7 +13793,8 @@ run('game room P4-16',()=>{
   if(!o.hub.off.includes('Needs game time')||!o.hub.off.includes('id="learn"')||!o.hub.off.includes('No game time yet'))p.push('no game time: the hub must say so, flag the cards and offer Go earn game time');
   if(!/id="gzz" data-g="zz"/.test(o.hub.extra)||!/gh-card s-math lock" id="gzz"/.test(o.hub.extra)||!o.hub.extra.includes('Soon'))p.push('registering one more game did not add its card (with its lock reason)');
   if(o.hub.back.includes('gzz'))p.push('a removed game kept its card');
-  if(!/^function gameRoom\(\)\{GH\.hub\(\)\}$/.test(o.src.gameRoom))p.push('gameRoom() (58-playtime.js) should only call GH.hub(): '+o.src.gameRoom.slice(0,80));
+  // P6-02: the games parts load on demand, so gameRoom() loads them first (partsThen, 90-app.js) and then only calls GH.hub()
+  if(!/^function gameRoom\(\)\{partsThen\(LAZY_PARTS,\(\)=>GH\.hub\(\)\)\}$/.test(o.src.gameRoom))p.push('gameRoom() (58-playtime.js) should only load the games parts and call GH.hub(): '+o.src.gameRoom.slice(0,80));
   for(const k of ['on','off'])if(PICT.test(o.hub[k].replace(/<svg[\s\S]*?<\/svg>/g,'')))p.push('hub ('+k+'): emoji in the chrome');
   for(const id of ['back','gtm'])if(!o.hub.on.includes('id="'+id+'"'))p.push('hub: no #'+id);
   // 2. every drawing follows the object-art rules (DESIGN_SYSTEM 6.5): tokens only, no ids/defs/gradients/filters/use/text/style

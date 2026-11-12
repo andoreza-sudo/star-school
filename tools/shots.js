@@ -2241,6 +2241,9 @@ async function main() {
       for (const n of names) {
         const s = SCREENS[n];
         const { ctx, page, errors, network } = await openApp(browser, { fixture: fixtureArg || s.fixture || 'midway', width: w, height: h, scale: +process.env.SHOTS_SCALE || 1 });
+        // P6-02: the games parts load on demand; game screens are drawn by calling the games directly, so load them first
+        // (as the Game Room does the first time it opens; the other screens look the same with them in)
+        await page.evaluate(() => typeof partsLoad == 'function' && partsLoad());
         await s.run(page);
         await page.waitForTimeout(700);
         const file = path.join(OUT, `${n}-${w}x${h}.png`);
