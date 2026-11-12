@@ -1057,6 +1057,7 @@ function snDragWire() {
   box.addEventListener('pointerdown', e => {
     const b = e.target.closest('.sn-ing');
     if (!b || !SN) return;
+    SN.noClick = false; // a new touch: the click a finished drag left behind (if any) has been and gone
     SN.drag = { id: b.dataset.ing, x: e.clientX, y: e.clientY, on: false, pid: e.pointerId };
   });
   addEventListener('pointermove', snDragMove);
@@ -1085,8 +1086,8 @@ function snDragEnd(e) {
   if (!d || e.pointerId !== d.pid) return;
   SN.drag = null;
   if (!d.on) return;
-  SN.noClick = true;
-  setTimeout(() => { if (SN) SN.noClick = false; }, 400);
+  SN.noClick = true; // the click this drag leaves behind is ignored; it is cleared by the next touch, never by a timer (a slow
+                     // tablet could send it late, and the food went on the plate twice)
   if (SN.ghost) SN.ghost.remove();
   SN.ghost = null;
   // dropped on the counter (the plate's row) or above it: on the plate
