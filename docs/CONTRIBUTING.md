@@ -107,6 +107,7 @@ Files added by later chunks (names are fixed by the roadmap so everyone agrees):
 | `17-wear.js`, `src/data/d-wear.js` | P4-07 | Wearables: helpers, names, `wearOf` / `wearPic` / `wearBox` (code), and the drawings `WEAR` / `WEAR_EMB` keyed by the saved item ids (data file); Pet Shop and sticker book CSS in `src/css/43-shop.css` |
 | `59-game-hub.js`, `src/css/48-game-hub.css` | P4-16 | Game Room hub (`GH.hub`, called by `gameRoom()`), the game registry (`GH.reg`), the drawn hub scene, ticket and game pictures, and the shared game chrome: top bar `GH.top`/`GH.wire`, pause sheet `GH.pause`, end card `GH.end`. Both go into `games.<VER>.js` (section 3.3, "Adding a game") |
 | `65-game-snack.js`, `src/css/49-game-snack.css` | G-04a | Snack Stand (games2 file): food, places, the stand shop, drawings (food, stand, places, decorations), the day simulation (`snNew`, `snStep`, `snAdd`, `snServe`, `snChange`; no DOM, seeded), menu, shop, the day and its end card; save `S.snack` |
+| `67-game-skyhop.js`, `src/css/49-game-skyhop.css` | G-04b | Sky Hop (games2 file): worlds and the 24 courses in a short text format (`HOP_PH` phrases, `hopBuild`), the simulation (`hopNew`, `hopStep`, `hopHelp`, `hopClone`, `hopRecord`; no DOM, fixed 1/60 s step, deterministic, the tests play every course with bots), drawings (SVG made once into canvases), the child's pet as a picture, the canvas renderer, menu, course and end card; save `S.hop` |
 | `63-game-race.js`, `src/css/49-game-race.css` | G-02 | Star Rally, the racing game (games file): places and tracks, rivals and catch-up, the race simulation (`rlNew`, `rlStep`; no DOM, the tests run whole races), the canvas renderer (sprites from SVG, the road as one path per colour), menu, garage, race and end card; save `S.rally` |
 | `23-viz.js` | P1-10 | Math visuals |
 | `31-gen-math-early.js`, `33-gen-math-mid.js`, `35-gen-math-upper.js` | P2-01+ | New math generators |
@@ -133,7 +134,7 @@ gen2.<VER>.js     question generators, part 2 (A11c): src/js/35-gen-math-upper, 
 bt.<VER>.js       Brain Teaser puzzle types: a <style> with src/css/NN-bt-*.css, then src/js/NN-bt-*.js, then  var BT_VER='<VER>';
 games.<VER>.js    the Game Room: src/js/60-blocks, 62-hill, 64-gtimer, 66-colornum, 68-lowpoly, 70-art, 72-shapes, 59-game-hub, 63-game-race (and their CSS
                   48-game-hub, 49-game-race, 60-game-blocks), then  var GAMES_VER='<VER>';
-games2.<VER>.js   the newer Game Room games (G-04a on): every other src/js/NN-game-*.js and src/css/NN-game-*.css (65-game-snack, 49-game-snack),
+games2.<VER>.js   the newer Game Room games (G-04a on): every other src/js/NN-game-*.js and src/css/NN-game-*.css (65-game-snack, 67-game-skyhop, 49-game-snack, 49-game-skyhop),
                   then  var GAMES2_VER='<VER>';
 data.<VER>.js     src/data/*.js in filename order, then the last line  var DATA_VER='<VER>';
 sw.js             cache 'starschool-<VER>', precaches ./, index.html, gen/gen2/bt/games/games2/data.<VER>.js, manifest.json, icons
@@ -154,7 +155,7 @@ The rule lives in one place, `PARTS` in `tools/build.py`: a file stem and a regu
   `48-game-hub.css`, `63-game-race.js` with `49-game-race.css` (G-02, Star Rally) and `60-game-blocks.css` (G-01). `58-playtime.js` (game time and
   `gameRoom()`, which calls `GH.hub()`) and `40-games.css` (shared by Home, the map and the rewards) stay in index.html.
 - `games2` (G-04a, v142): every other `src/js/NN-game-*.js` and `src/css/NN-game-*.css`, so a new game goes here by itself (G-04a: `65-game-snack.js`
-  and `49-game-snack.css`, Snack Stand). It was added when the games file reached 394 KB of its 400 KB warning. It loads after `games`, so a game here
+  and `49-game-snack.css`, Snack Stand; G-04b: `67-game-skyhop.js` and `49-game-skyhop.css`, Sky Hop). It was added when the games file reached 394 KB of its 400 KB warning. It loads after `games`, so a game here
   may call `GH.reg` and the `gh*` drawing helpers while it loads; `appFiles()` lists it, so a missing or stale games2 file stops the start-up like the others.
 
 How it fits together:
@@ -204,10 +205,12 @@ GH.reg({
 });
 ```
 
-The five games registered today: Hill Climb, Coloring, Block Builder (in `59-game-hub.js`), Star Rally (`63-game-race.js`, G-02: a
+The six games registered today: Hill Climb, Coloring, Block Builder (in `59-game-hub.js`), Star Rally (`63-game-race.js`, G-02: a
 canvas game with its own loop, stopped by `view()` through `rlStop`, like `stopHC`; it is a worked example of a canvas game on `GH.reg`) and
 Snack Stand (`65-game-snack.js` in games2, G-04a: an HTML and SVG game with a 200 ms tick, stopped by `view()` through `snStop`; a worked example
-of a game whose rules are a pure simulation the tests play whole days of, and of a game shop with its own coins).
+of a game whose rules are a pure simulation the tests play whole days of, and of a game shop with its own coins) and
+Sky Hop (`67-game-skyhop.js` in games2, G-04b: a canvas platform game on a fixed 1/60 s step, stopped by `view()` through `hopStop`; a worked
+example of drawing the child's own pet into a canvas picture, and of a deterministic simulation that bots play to check every level).
 
 Every screen of the game starts its `view()` with `${GH.top('race', {...})}` (Back on menus; `{play: true}` gives Pause; `sub`, `tools`,
 `chips`, `sound` as in 59-game-hub.js), then calls `GH.wire({quit: () => ...})` on a play screen (Quit runs it; `hold: on => ...` pauses
