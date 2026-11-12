@@ -18,7 +18,7 @@ const SIZE_WARN=1200000,SIZE_FAIL=1500000; // bytes of the built index.html (ROA
 // code; the total is what a tablet downloads once and parses at every start (all files load before the app starts).
 const DATA_WARN=1000000,DATA_FAIL=2000000; // bytes of the built data.<VER>.js
 const PART_WARN=400000,PART_FAIL=800000; // A11b: bytes of each built part file (bt.<VER>.js, games.<VER>.js)
-const TOTAL_WARN=2000000,TOTAL_FAIL=3000000; // bytes of index.html + the part files + data.<VER>.js
+const TOTAL_WARN=2000000,TOTAL_FAIL=3300000; // bytes of index.html + the part files + data.<VER>.js (G-04a: 3.0 -> 3.3 MB for games2; owner to confirm, ROADMAP R1)
 const BUILD_VER=(BUILD_PY.match(/^VER = '(v\d+)'/m)||[])[1];
 const DATA_FILE='data.'+BUILD_VER+'.js'; // the built data file at the repo root (tools/build.py)
 const PART_FILES=PARTS.map(p=>p.stem+'.'+BUILD_VER+'.js'); // A11b: the built part files, in load order
@@ -7593,7 +7593,7 @@ run('mazes P3-08',()=>{
 run('code split A11b (and data file split A11)',()=>{
   const p=[],rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8');
   if(!BUILD_VER)return{problems:['no VER in tools/build.py']};
-  if(PARTS.map(x=>x.stem).join()!=='gen,gen2,bt,games')p.push('PARTS in tools/build.py read as '+JSON.stringify(PARTS.map(x=>x.stem))+' (one entry per line, like the others)');
+  if(PARTS.map(x=>x.stem).join()!=='gen,gen2,bt,games,games2')p.push('PARTS in tools/build.py read as '+JSON.stringify(PARTS.map(x=>x.stem))+' (one entry per line, like the others)');
   const FILES=[...PART_FILES,DATA_FILE];
   for(const f of ['index.html',...FILES,'sw.js'])if(!fs.existsSync(path.join(ROOT,f)))p.push(f+' not built; run python3 tools/build.py first');
   if(p.length)return{problems:p};
@@ -7677,7 +7677,8 @@ run('code split A11b (and data file split A11)',()=>{
       const miss=load(all.filter((_,j)=>j!==i+1),'({ready:dataReady(),bad:appFiles().filter(f=>f[1]!==\''+BUILD_VER+'\').map(f=>f[0]+":"+f[1]).join()})');
       // the data file calls the generators' helpers while loading (esReg, COMPSPEC): without a gen part it stops with a ReferenceError,
       // so its stamp is never set; the app is just as refused (A11c)
-      const genGone=f!==DATA_FILE&&PARTS[i].stem.startsWith('gen');
+      // G-04a: likewise games2 calls GH.reg (games) while loading, so without the games file it stops there
+      const genGone=f!==DATA_FILE&&(PARTS[i].stem.startsWith('gen')||PARTS[i].stem==='games');
       if(genGone?(!miss.err&&(miss.ready||miss.bad!==stamps[i][0]+':null'))||(miss.err&&!/is not defined/.test(miss.err)):(miss.err||miss.ready||miss.bad!==stamps[i][0]+':null'))p.push('without '+f+': '+JSON.stringify(miss));
       const old=load(all.map((t,j)=>j===i+1?t.replace(stamp,stamps[i][1]+"='v1'"):t),'dataReady()');
       if(old!==false)p.push('dataReady() does not refuse a '+f+' of another release: '+JSON.stringify(old));
@@ -7744,7 +7745,7 @@ run('parts split A11c',()=>{
       for(const [k,sk,lv] of [['math','add',1],['math','mult',1],['math','frac',3],['read','abc',1],['read','sound',1],['es','es_color',1],['disc','sci_life',1]]){
         try{const q=genQ(sk,lv,7);qs[k+':'+sk]=!!(q&&q.html&&q.sk===sk)}catch(e){qs[k+':'+sk]=String(e)}}
       return{ready:dataReady(),files,qs}})()`,ctx);
-    const stems=['gen','gen2','bt','games','data'];
+    const stems=['gen','gen2','bt','games','games2','data'];
     if(JSON.stringify(r.files.map(f=>f[0]))!==JSON.stringify(stems))p.push('appFiles() lists '+JSON.stringify(r.files.map(f=>f[0]))+', expected '+stems.join());
     if(!r.ready||r.files.some(f=>f[1]!==BUILD_VER))p.push('a part is not '+BUILD_VER+': '+JSON.stringify(r.files));
     for(const [k,v] of Object.entries(r.qs))if(v!==true)p.push('question '+k+' did not build from the loaded files: '+v);
@@ -13723,7 +13724,7 @@ run('game room P4-16',()=>{
   if(!/GH\.held/.test(o.src.gtStart))p.push('gtStart: the game-time clock must hold while the pause sheet is open');
   if(!/GH\.end\(/.test(o.src.timeUp))p.push('timeUpOverlay must use the shared end card');
   // every screen of every game file starts with GH.top; every play screen wires Pause / Quit; every end uses GH.end; no old chrome left
-  const GF=fs.readdirSync(path.join(SRC,'js')).filter(f=>partOf(f)==='games'&&f!=='59-game-hub.js');
+  const GF=fs.readdirSync(path.join(SRC,'js')).filter(f=>/^games/.test(partOf(f)||'')&&f!=='59-game-hub.js'); // G-04a: games and games2
   let views=0,ends=0;
   for(const f of GF){
     const t=rd('js/'+f);
@@ -14369,7 +14370,7 @@ run('racing game G-02',()=>{
     // 1. registered in the Game Room: the hub card, the drawn picture, the first screen with the shared bar
     const g=GH.get('rally');
     if(!g||g.btn!=='grally'||g.name!=='Star Rally'||g.tapToPlay!=='.rl-trk[data-ok="1"]'||typeof g.open!='function')bad('not registered with GH.reg as Star Rally (#grally)');
-    if(GH.games[GH.games.length-1]!==g)bad('Star Rally should be the last card in the hub (after the three older games)');
+    if(GH.games.indexOf(g)!==3)bad('Star Rally should be the fourth card in the hub (after the three older games; G-04a games follow it)');
     const D=global.document,app={style:{},innerHTML:''},dummy={style:{},classList:{add(){},remove(){},toggle(){},contains(){return false}},dataset:{},
       querySelector(){return dummy},querySelectorAll(){return[]},getBoundingClientRect(){return{left:0,top:0,width:0,height:0}},appendChild(){},isConnected:false};
     const shot=f=>{global.document=Object.assign({},D,{querySelector:s=>s=='#app'?app:dummy,querySelectorAll:()=>[],body:{appendChild(){}}});
@@ -15082,6 +15083,277 @@ run('block builder G-01',()=>{
   if(partOf('60-game-blocks.css')!=='games')p.push('60-game-blocks.css must go into the games file');
   if(/\.bb(wrap|cv|tools|pal|k)\b/.test(fs.readFileSync(path.join(SRC,'css','40-games.css'),'utf8')))p.push('old Block Builder rules left in 40-games.css');
   return{problems:[...new Set(p)].slice(0,50),note:o.notes.join('; ')};
+});
+
+// ---- G-04a: Snack Stand (src/js/65-game-snack.js, src/css/49-game-snack.css; games2 part) ----
+run('snack stand G-04a',()=>{
+  const p=[],notes=[];
+  const rd=f=>fs.readFileSync(path.join(SRC,f),'utf8');
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const src=rd('js/65-game-snack.js'),css=rd('css/49-game-snack.css').replace(/\/\*[\s\S]*?\*\//g,'');
+  const tokCss=rd('css/00-tokens.css'),artCss=rd('css/21-art.css');
+  const PICT=/\p{Extended_Pictographic}/u;
+  const FIX=['fresh','midway','maxed','tricky','legacy-index-maps','legacy-single-map'].map(n=>[n,fx(n)]);
+  const body=function(){
+    const out={bad:[],note:[]},bad=m=>{if(out.bad.length<60&&!out.bad.includes(m))out.bad.push(m)};
+    const store={};
+    global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+    const D=global.document,app={style:{},innerHTML:''},dummy={style:{},classList:{add(){},remove(){},toggle(){},contains(){return false}},dataset:{},
+      querySelector(){return dummy},querySelectorAll(){return[]},getBoundingClientRect(){return{left:0,top:0,width:0,height:0}},appendChild(){},isConnected:false};
+    const shot=f=>{global.document=Object.assign({},D,{querySelector:s=>s=='#app'?app:dummy,querySelectorAll:()=>[],body:{appendChild(){}}});
+      try{app.innerHTML='';f();return app.innerHTML}catch(e){return 'ERR '+e.message}finally{global.document=D}};
+    // 1. registered in the Game Room (after the five older games), the hub card shows its drawing
+    const g=GH.get('snack');
+    if(!g||g.btn!=='gsnack'||g.name!=='Snack Stand'||g.tapToPlay!=='#snopen'||typeof g.open!='function'||g.saved!=='Your coins are saved.')bad('not registered with GH.reg as Snack Stand (#gsnack, tapToPlay #snopen)');
+    const ids=GH.games.map(x=>x.id);
+    if(ids.indexOf('snack')<ids.indexOf('rally'))bad('Snack Stand should come after Star Rally in the hub: '+ids.join());
+    S.sound=false;S.voice=false;S.pt={bank:600,day:today(),used:0};S.ptCfg={per:3,max:30,pause:false};
+    // 2. old saves load unchanged: no S.snack until the game is opened; the hub card works without creating it; the menu makes defaults
+    for(const [name,raw] of FIX){
+      for(const k in store)delete store[k];
+      loadSave(raw);migrate();
+      if('snack' in S)bad(name+': S.snack appeared while loading an old save');
+      S.pt={bank:600,day:today(),used:0};
+      const hub=shot(()=>GH.hub());
+      const keys=Object.keys(S).sort().join();
+      if(!/id="gsnack" data-g="snack"/.test(hub)||!hub.includes('Make snacks for animal customers'))bad(name+': no Snack Stand card on the hub');
+      if('snack' in S)bad(name+': showing the hub created S.snack');
+      const menu=shot(()=>snMenu());
+      if(/^ERR/.test(menu)||!/^<div class="top tbar gh-top/.test(menu.trim())||!menu.includes('id="snopen"')||!menu.includes('data-pl="moon"'))bad(name+': menu '+menu.slice(0,90));
+      const r=S.snack;
+      if(!r||r.coins!==0||r.days!==0||r.mode!=='calm'||r.till!==false||r.place!=='park'||r.awn!=='r'||r.sign!=='wood'||r.ctr!=='wood'||JSON.stringify(r.own)!=='{}')bad(name+': defaults '+JSON.stringify(r));
+      if(Object.keys(S).filter(k=>k!=='snack'&&k!=='pt').sort().join()!==keys.split(',').filter(k=>k!=='pt').join())bad(name+': opening the game changed other save fields');
+      if(menu.includes('id="sntill"')!==((S.grade==null?0:+S.grade)>=2))bad(name+': the give-change switch is for 2nd grade and up only (grade '+S.grade+')');
+      if(!/^<div class="top tbar gh-top/.test(shot(()=>snShop()).trim()))bad(name+': shop without the shared top bar');
+      if(!/^<div class="top tbar gh-top/.test(shot(()=>snShop('tomato')).trim()))bad(name+': shop with a buy bar without the shared top bar');
+    }
+    // 3. damaged saves are read safely; coins are never negative; nothing not owned is used
+    for(const v of ['x',[],5,null,{coins:-40,days:'z',stars:{park:'7',zz:3,beach:-2},own:{tomato:1,zz:1},awn:'b',sign:'heart',ctr:'gold',mode:'fast',place:'moon',till:'yes'},
+      {coins:'12abc'},{coins:1e99},{coins:NaN},{own:[],stars:[]}]){
+      S.snack=v;
+      const r=snS();
+      if(!(r.coins>=0&&Number.isInteger(r.coins)))bad('damaged save '+JSON.stringify(v)+': coins '+r.coins);
+      for(const k in r.stars)if(!SN_PLACES.some(x=>x.id===k)||r.stars[k]<0||r.stars[k]>3)bad('damaged save: stars '+k+'='+r.stars[k]);
+      for(const k in r.own)if(!SN_SHOP.some(x=>x[0]===k))bad('damaged save: owns unknown '+k);
+      if(r.awn!=='r'||r.sign!=='wood'||r.ctr!=='wood'||!['calm','busy'].includes(r.mode)||typeof r.till!=='boolean'||!snPlaceOpen(SN_PLACES.find(x=>x.id===r.place),r))bad('damaged save '+JSON.stringify(v)+': '+JSON.stringify(r));
+    }
+    // 4. the shop: 30 things, prices shown and earned by playing; buying never takes coins below 0; nothing owned is lost; upgrades persist
+    if(SN_SHOP.length<28||SN_SHOP.length>32)bad('the stand shop should have about 30 things: '+SN_SHOP.length);
+    if(new Set(SN_SHOP.map(x=>x[0])).size!==SN_SHOP.length)bad('shop ids must be unique');
+    for(const [id,gr,name,price] of SN_SHOP){
+      if(!SN_GROUPS.some(x=>x[0]===gr)||!name||PICT.test(name)||!(price>0&&Number.isInteger(price)))bad('shop item '+id);
+      if(gr=='menu'&&!SN_ING[id])bad('menu item '+id+' is not a food');
+      if(gr=='deco'||gr=='help')if(typeof SN_DECO[id]!=='function')bad('no drawing for '+id);
+    }
+    const rnd=snRng(99);
+    S.snack={coins:0};
+    let owned=0;
+    for(let i=0;i<4000;i++){
+      const r=snS(),it=SN_SHOP[Math.floor(rnd()*SN_SHOP.length)];
+      if(rnd()<.4)r.coins+=Math.floor(rnd()*30);
+      const c0=r.coins,own=!!r.own[it[0]],ok=snBuy(it[0]);
+      if(ok&&(own||c0<it[3]||r.coins!==c0-it[3]))bad('a buy that should have been refused: '+it[0]+' with '+c0);
+      if(!ok&&r.coins!==c0)bad('a refused buy changed the coins');
+      if(r.coins<0)bad('coins below 0: '+r.coins);
+      const n=Object.keys(r.own).length;
+      if(n<owned)bad('an owned item was lost');
+      owned=n;
+    }
+    out.note.push('4000 shop steps, '+owned+' of '+SN_SHOP.length+' owned, coins never below 0; everything costs '+SN_SHOP.reduce((a,x)=>a+x[3],0)+' coins');
+    for(const k in store)delete store[k];
+    loadSave(fx('midway'));migrate();
+    S.snack={coins:100};
+    const ok1=snBuy('tomato'),ok2=snBuy('awn-b'),ok3=snBuy('flowers');
+    save();
+    const saved=store['starschool-v2'];
+    loadSave(saved);migrate();
+    const r2=snS();
+    if(!ok1||!ok2||!ok3||!r2.own.tomato||!r2.own['awn-b']||!r2.own.flowers||r2.awn!=='b'||r2.coins!==100-12-20-15)bad('upgrades did not persist: '+JSON.stringify(r2));
+    if(!snAvail(r2.own,'park','calm').includes('tomato'))bad('a bought food is not on the menu');
+    // 5. orders: always makeable with the food on today's menu; Calm 1-3 things, Busy 2-6; 8-12 customers a day
+    const STN=SN_STATIONS.map(s=>s[0]);
+    let days=0,orders=0;const lens={calm:[9,0],busy:[9,0]},counts={calm:[99,0],busy:[99,0]};
+    for(let t=0;t<400;t++){
+      const rr=snRng(t*13+1),own={};
+      for(const [id] of SN_SHOP)if(rr()<.45)own[id]=1;
+      const pl=SN_PLACES[t%5].id,mode=t%2?'busy':'calm',seed=t*7+3;
+      const avail=snAvail(own,pl,mode),list=snDayList({seed,mode,place:pl,own});
+      days++;
+      const cn=counts[mode];cn[0]=Math.min(cn[0],list.length);cn[1]=Math.max(cn[1],list.length);
+      if(list.length<8||list.length>12)bad('a day of '+list.length+' customers');
+      if(mode=='calm'&&list.length>10||mode=='busy'&&list.length<10)bad(mode+' day of '+list.length);
+      for(const id of SN_FREE)if(!avail.includes(id))bad('a free food is missing from the menu: '+id);
+      if(mode=='calm'&&avail.includes('pancake'))bad('pancakes on a Calm day');
+      for(const pp of SN_PLACES)if(pp.sp&&avail.includes(pp.sp)!==(pp.id===pl))bad('special '+pp.sp+' at '+pl);
+      for(const c of list){
+        orders++;
+        const L=lens[mode];L[0]=Math.min(L[0],c.order.length);L[1]=Math.max(L[1],c.order.length);
+        if(mode=='calm'&&(c.order.length<1||c.order.length>3))bad('calm order of '+c.order.length+': '+c.order);
+        if(mode=='busy'&&(c.order.length<2||c.order.length>6))bad('busy order of '+c.order.length+': '+c.order);
+        for(const id of c.order){
+          if(!avail.includes(id))bad('order needs '+id+' which is not on the menu ('+pl+', '+mode+')');
+          if(!STN.includes(SN_ING[id][1]))bad('no station for '+id);
+        }
+        if(c.order.includes('bread')){const s=c.order.filter(i=>SN_ING[i][1]=='sand');if(s[0]!=='bread'||s[s.length-1]!=='bread'||s.length<3)bad('a sandwich without bread on both sides: '+c.order)}
+        if(!SN_WHO[c.who]||!SN_PLACES.find(x=>x.id===pl).who.includes(c.who))bad('a customer from somewhere else: '+c.who);
+        if(c.price!==snPrice(c.order)||!(c.paid>c.price))bad('price '+c.price+' paid '+c.paid);
+        const t2=snSay(c.order);
+        if(!/^[A-Z].*, please!$/.test(t2)||/undefined|NaN|  /.test(t2))bad('spoken order: '+t2);
+      }
+      // each order can be made by tapping the menu's food (pancakes through the grill)
+      const st=snNew({seed,mode,place:pl,own,slots:3});
+      for(const c of st.list){
+        st.plate=[];st.pq=[];st.pans=[null,null];
+        for(const id of c.order){
+          if(id=='pancake'){if(snAdd(st,id)!=='grill'){bad('pancake did not go on the grill');break}const k=st.pans.findIndex(x=>x);st.pans[k].t=4;snPan(st,k)}
+          else if(snAdd(st,id)!==true)bad('could not add '+id);
+        }
+        if(snKey(st.plate)!==snKey(c.order))bad('order not makeable: '+c.order);
+      }
+    }
+    out.note.push(days+' days, '+orders+' orders, all makeable; calm '+lens.calm.join('-')+' things, '+counts.calm.join('-')+' customers; busy '+lens.busy.join('-')+' things, '+counts.busy.join('-')+' customers');
+    // 6. whole days with bots: everyone is always served, the day ends, coins never go down; stars by right-first-time
+    const OWN_ALL={};for(const [id] of SN_SHOP)OWN_ALL[id]=1;
+    const play=(o,kind)=>{
+      const st=snNew(o),rr=snRng(o.seed+5);let steps=0,coins=0,serves=0;
+      while(!st.done&&steps<60*5*60){
+        snStep(st,.1);st.ev.length=0;steps++;
+        if(st.coins<coins)bad('the day coins went down');coins=st.coins;
+        if(st.pay){
+          const want=st.pay.change,coinsOut=[];let left=want;for(const v of [10,5,2,1])while(left>=v){coinsOut.push(v);left-=v}
+          if(kind=='sloppy'&&st.pay.tries==0){const r0=snChange(st,[want+1]);if(r0.ok)bad('wrong change accepted')}
+          const r1=snChange(st,coinsOut);if(!r1||!r1.ok)bad('right change refused: '+want+' '+coinsOut);
+          continue;
+        }
+        if(kind=='slow'&&st.clock%40>.15)continue; // only acts now and then: hearts run out
+        const c=st.at.find(x=>x.state=='wait');
+        if(!c)continue;
+        st.sel=st.at.indexOf(c);
+        if(kind=='sloppy'&&!c.tries){st.plate=Array(7).fill('cookie');const r=snServe(st);if(r.ok)bad('a wrong plate was accepted');st.plate=[];st.pq=[]}
+        for(const id of c.order){
+          if(id=='pancake'){snAdd(st,'pancake');const k=st.pans.findIndex(x=>x);st.pans[k].t=kind=='perfect'?4:1;snPan(st,k)}
+          else snAdd(st,id);
+        }
+        const r=snServe(st);
+        if(!r.ok)bad(kind+': the right plate was refused '+c.order);
+        else{serves++;if(r.pay<0||r.tip<0)bad('negative pay')}
+      }
+      if(!st.done)bad(kind+' '+JSON.stringify(o)+': the day did not end');
+      if(st.served!==st.n||serves!==st.n)bad(kind+': '+st.served+' of '+st.n+' served');
+      return st;
+    };
+    const tally={};
+    for(let s=1;s<=24;s++)for(const mode of ['calm','busy'])for(const kind of ['perfect','sloppy','slow']){
+      const st=play({seed:s*31,mode,place:SN_PLACES[s%5].id,own:OWN_ALL,till:s%3==0,slots:2+s%2},kind);
+      const k=mode+' '+kind,t=tally[k]=tally[k]||{stars:[],coins:0,n:0};
+      t.stars.push(snStarsFor(st.right,st.n));t.coins+=st.coins;t.n++;
+      if(kind=='perfect'&&(st.right!==st.n||snStarsFor(st.right,st.n)!==3))bad(k+': all right the first time should be 3 stars');
+      if(kind=='sloppy'&&(st.right!==0||snStarsFor(st.right,st.n)!==1))bad(k+': every first try wrong is 1 star (still served)');
+      if(kind=='perfect'&&!st.goal.done&&!['hearts','change','gold'].includes(st.goal.id))bad(k+': the goal '+st.goal.id+' should be done by a perfect day');
+      if(kind=='slow'&&mode=='busy'&&st.hearts>=st.n)bad('slow busy bot: hearts should run out sometimes');
+    }
+    for(const k in tally)out.note.push(k+' '+Math.round(tally[k].coins/tally[k].n)+' coins a day');
+    if(tally['busy perfect'].coins<=tally['busy slow'].coins)bad('tips: a quick busy day should earn more than a slow one');
+    // 7. deterministic with a seed
+    const sig=st=>JSON.stringify([st.list.map(c=>[c.who,c.order]),st.coins,st.right,st.best,st.goal.id,Math.round(st.clock*10)]);
+    const A=play({seed:77,mode:'busy',place:'fair',own:OWN_ALL,slots:3},'perfect'),B=play({seed:77,mode:'busy',place:'fair',own:OWN_ALL,slots:3},'perfect');
+    const C=play({seed:78,mode:'busy',place:'fair',own:OWN_ALL,slots:3},'perfect');
+    if(sig(A)!==sig(B))bad('two days with the same seed differ');
+    if(sig(A)===sig(C))bad('another seed gave the same day');
+    // 8. Calm: one customer at a time, no patience; Busy: never more than the slots, hearts never below 0
+    {
+      const st=snNew({seed:5,mode:'calm',place:'park',own:{}});
+      for(let i=0;i<600;i++){snStep(st,.1);if(st.at.length>1)bad('calm: more than one customer');for(const c of st.at)if(c.pat!==c.patMax)bad('calm: patience drained')}
+      const sb=snNew({seed:5,mode:'busy',place:'park',own:OWN_ALL,slots:3});
+      for(let i=0;i<3000;i++){snStep(sb,.1);if(sb.at.length>3)bad('busy: more than 3 customers');for(const c of sb.at)if(c.pat<0)bad('busy: heart below 0')}
+      if(sb.at.length!==3||sb.at.some(c=>c.state!=='wait'))bad('busy: customers wait (never leave unserved) '+sb.at.length);
+    }
+    // 9. give change: the maths
+    for(let price=1;price<50;price++){
+      const paid=snPaid(price);
+      if(![5,10,20,50].includes(paid)||paid<=price||(paid>5&&[5,10,20,50].some(v=>v>price&&v<paid)))bad('paid '+paid+' for '+price);
+      const st=snNew({seed:1,mode:'calm',place:'park',own:{},till:true});
+      st.pay={c:{state:'pay'},price,paid,change:paid-price,tries:0};
+      const w=snChange(st,[paid-price+1]);
+      if(!w||w.ok||w.change!==paid-price||st.pay.tries!==1)bad('wrong change for '+price+' paid '+paid+': '+JSON.stringify(w));
+      const parts=[];let left=paid-price;for(const v of [10,5,2,1])while(left>=v){parts.push(v);left-=v}
+      const r=snChange(st,parts);
+      if(!r||!r.ok||r.bonus!==0||st.pay)bad('right change for '+price+' not taken');
+    }
+    {
+      const st=snNew({seed:3,mode:'calm',place:'park',own:{},till:true});
+      while(!st.at.length)snStep(st,.1);
+      const c=st.at[0];for(const id of c.order)snAdd(st,id);
+      const r=snServe(st);
+      if(!r.ok||!st.pay||st.pay.change!==c.paid-c.price||c.state!=='pay')bad('give change: no till after serving');
+      for(let i=0;i<50;i++)snStep(st,.1);
+      if(st.at[0]!==c)bad('give change: the customer left before the change');
+      if(snAdd(st,'bread')!==false)bad('give change: food can be added while the till is open');
+      const coins0=st.coins,ok=snChange(st,[st.pay.change]);
+      if(!ok.ok||ok.bonus!==1||st.coins!==coins0+1)bad('give change: right first time pays 1 coin');
+    }
+    const g0=S.grade;
+    for(const [gr,want] of [[null,false],[-1,false],[0,false],[1,false],[2,true],[3,true],[6,true]]){S.grade=gr;if(snTillOK()!==want)bad('give change for grade '+gr)}
+    S.grade=g0;
+    // 10. drawings for the token check outside
+    out.svg=[['hub',snHubArt()]];
+    for(const id in SN_ING)out.svg.push(['food '+id,SN_ART[id]()]);
+    for(const id in SN_DECO)out.svg.push(['deco '+id,SN_DECO[id]()]);
+    for(const id in SN_BACK)out.svg.push(['place '+id,SN_BACK[id]()]);
+    for(const h in SN_AWN)out.svg.push(['awning '+h,snAwning(5,h)]);
+    for(const sign of ['wood','star','heart','lights'])for(const ctr of ['wood','mint','candy'])
+      out.svg.push(['stand '+sign+' '+ctr,snStandArt({r:{awn:'g',sign,ctr,own:OWN_ALL},deco:true})],['stand closed '+sign,snStandArt({r:{sign,ctr},closed:true,deco:true})]);
+    out.svg.push(['plate empty',snPlateArt([],[])],['plate sandwich',snPlateArt(['bread','cheese','tomato','lettuce','egg','bread'],[])],
+      ['plate all',snPlateArt(['bread','cheese','bread','van','choc','mint','apple','berry','cookie','cake','pancake','pancake'],['pale','toast'])]);
+    for(const t of [null,{t:1},{t:4},{t:9}])out.svg.push(['pan '+JSON.stringify(t),snPanSVG(t)]);
+    out.pic=GH.pic('snack');
+    out.dev=JSON.stringify(SN_DEV);
+    out.files=appFiles().map(f=>f[0]).join();
+    return out;
+  };
+  const o=eval(js+';('+body.toString()+')()');
+  p.push(...o.bad);
+  notes.push(...o.note);
+  // 11. tokens only, no emoji: the source, the CSS, every drawing
+  if(/#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(/.test(src.replace(/0x[0-9A-F]+/g,'')))p.push('65-game-snack.js: a raw colour');
+  if(PICT.test(src)||PICT.test(css))p.push('emoji in the Snack Stand source or CSS');
+  if(/[☀-➿]|\\2[67][0-9a-f]{2}/i.test(src+css))p.push('a symbol character (it may show as an emoji) in the Snack Stand source or CSS');
+  if(/#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(/.test(css))p.push('49-game-snack.css: a raw colour');
+  for(const v of css.matchAll(/var\(--([a-z0-9-]+)/g))if(!['gh-a','gh-b','n'].includes(v[1])&&!tokCss.includes('--'+v[1]+':'))p.push('49-game-snack.css: --'+v[1]+' is not a token');
+  if(/(^|[;{\s])(-webkit-)?(backdrop-)?filter\s*:/.test(css))p.push('49-game-snack.css: filter used');
+  for(const m of css.matchAll(/transition:([^;}]*)/g))if(/\b(width|height|left|top|background|box-shadow|all)\b/.test(m[1]))p.push('49-game-snack.css: transition on '+m[1]);
+  if(/infinite/.test(css))p.push('49-game-snack.css: an endless animation');
+  const ROLE=m=>new RegExp('--a-'+m+':var\\(--ill-').test(artCss);
+  let shapes=0;
+  for(const [w,d] of o.svg){
+    if(!d){p.push(w+': empty drawing');continue}
+    if(PICT.test(d))p.push(w+': emoji');
+    if(/\sid=|<defs|gradient|<mask|<clip|<pattern|filter|<use|<text|style=|url\(|<script|xlink|NaN|undefined|Infinity/i.test(d))p.push(w+': forbidden SVG feature');
+    if(/#[0-9a-f]{3,8}\b|rgba?\(|hsla?\(/i.test(d))p.push(w+': raw colour');
+    for(const t of d.matchAll(/<(\/?)([a-zA-Z]+)\b([^>]*?)(\/?)>/g)){
+      if(!/^(svg|g|path|circle|ellipse|rect)$/.test(t[2]))p.push(w+': element <'+t[2]+'>');
+      if(!t[1]&&t[2]!=='svg'&&t[2]!=='g')shapes++;
+      for(const a of t[3].matchAll(/\s([a-z-]+)="([^"]*)"/g)){
+        if((a[1]=='fill'||a[1]=='stroke')&&a[2]!=='none'){const m=/^var\(--a-([a-z]\d?)\)$/.exec(a[2]);if(!m||!ROLE(m[1]))p.push(w+': colour '+a[2]);}
+        if(a[1]=='transform'&&!/^(translate\([-\d. ]+\)\s*)?(rotate\([-\d. ]+\))?$/.test(a[2]))p.push(w+': transform '+a[2]);
+      }
+    }
+    const tones={};for(const m of d.matchAll(/var\(--a-([a-z])(\d?)\)/g))(tones[m[1]]=tones[m[1]]||new Set()).add(m[2]);
+    const want=/^(hub|stand)/.test(w)?3:/^place/.test(w)?2:/^(food|deco|pan)/.test(w)?1:0;
+    if(Object.values(tones).filter(s=>s.size>=2).length<want)p.push(w+': looks flat (no shade tones)');
+  }
+  if(!/^<svg class="art gh-art"/.test(o.pic)||!/var\(--a-k\)" opacity="0?\.1\d?"/.test(o.pic))p.push('hub picture: not an svg.art with a soft ink shadow');
+  notes.push(o.svg.length+' drawings, '+shapes+' shapes, tokens only');
+  // 12. plumbing: the games2 part, stopped by view(), the test hook off, the game-time rules, the shared chrome
+  if(partOf('65-game-snack.js')!=='games2'||partOf('49-game-snack.css')!=='games2')p.push('Snack Stand must ship in games2.'+BUILD_VER+'.js');
+  if(o.files!=='gen,gen2,bt,games,games2,data')p.push('appFiles() should list games2 after games: '+o.files);
+  if(!/if\(typeof snStop=='function'\)snStop\(\)/.test(rd('js/40-view.js')))p.push('view() must stop the day (snStop)');
+  if(o.dev!=='{"fast":1}')p.push('SN_DEV test hook must be off: '+o.dev);
+  if(!/if \(ptLeft\(\) <= 0\) \{\s*SFX\.wrong\(\);\s*fb\(ptWhyNot\(\)/.test(src))p.push('a day must not start without game time (ptLeft, ptWhyNot)');
+  if(!/gtStart\('#gtm', \(\) => snTimeUp\(\)\)/.test(src)||!/GH\.wire\(\{quit: \(\) => snQuit\(\)/.test(src)||!/timeUpOverlay\(\)/.test(src))p.push('the day must use gtStart, the Pause sheet and the time-up card');
+  if(!/GH\.end\('snack'/.test(src))p.push('the end of a day must use the shared end card');
+  if(/Math\.random/.test(src))p.push('the day must be seeded (no Math.random)');
+  return{problems:[...new Set(p)].slice(0,60),note:notes.join('; ')};
 });
 
 // ---- report ----

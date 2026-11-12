@@ -106,6 +106,7 @@ Files added by later chunks (names are fixed by the roadmap so everyone agrees):
 | `18-reward-art.js` | P4-11 | Reward art (chest, stars, bosses, prize rosette) and the reward screens' markup (`RW.*`); CSS in `src/css/42-rewards.css` |
 | `17-wear.js`, `src/data/d-wear.js` | P4-07 | Wearables: helpers, names, `wearOf` / `wearPic` / `wearBox` (code), and the drawings `WEAR` / `WEAR_EMB` keyed by the saved item ids (data file); Pet Shop and sticker book CSS in `src/css/43-shop.css` |
 | `59-game-hub.js`, `src/css/48-game-hub.css` | P4-16 | Game Room hub (`GH.hub`, called by `gameRoom()`), the game registry (`GH.reg`), the drawn hub scene, ticket and game pictures, and the shared game chrome: top bar `GH.top`/`GH.wire`, pause sheet `GH.pause`, end card `GH.end`. Both go into `games.<VER>.js` (section 3.3, "Adding a game") |
+| `65-game-snack.js`, `src/css/49-game-snack.css` | G-04a | Snack Stand (games2 file): food, places, the stand shop, drawings (food, stand, places, decorations), the day simulation (`snNew`, `snStep`, `snAdd`, `snServe`, `snChange`; no DOM, seeded), menu, shop, the day and its end card; save `S.snack` |
 | `63-game-race.js`, `src/css/49-game-race.css` | G-02 | Star Rally, the racing game (games file): places and tracks, rivals and catch-up, the race simulation (`rlNew`, `rlStep`; no DOM, the tests run whole races), the canvas renderer (sprites from SVG, the road as one path per colour), menu, garage, race and end card; save `S.rally` |
 | `23-viz.js` | P1-10 | Math visuals |
 | `31-gen-math-early.js`, `33-gen-math-mid.js`, `35-gen-math-upper.js` | P2-01+ | New math generators |
@@ -118,25 +119,27 @@ Files added by later chunks (names are fixed by the roadmap so everyone agrees):
 Build order is: `src/js/*.js` sorted by name (minus the part files), then each part file (bt, games; their `src/js` sorted by name),
 then `src/data/*.js` sorted by name, then `src/boot.js`.
 
-### 3.3 Built output: index.html and five more files (A11 since v97, A11b since v105, A11c since v126)
+### 3.3 Built output: index.html and six more files (A11 since v97, A11b since v105, A11c since v126, games2 since G-04a)
 
 ```
 index.html        shell + CSS + fonts + <script>src/js</script>                      (src minus the PARTS files below)
                   + <script src="gen.<VER>.js"></script> + <script src="gen2.<VER>.js"></script>
-                  + <script src="bt.<VER>.js"></script> + <script src="games.<VER>.js"></script>
+                  + <script src="bt.<VER>.js"></script> + <script src="games.<VER>.js"></script> + <script src="games2.<VER>.js"></script>
                   + <script src="data.<VER>.js"></script> + <script>src/boot.js</script>
 gen.<VER>.js      question generators, part 1 (A11c): src/js/23-viz, 30-gen-math, 31-gen-math-early, 32-gen-read, 33-gen-math-mid,
                   34-gen-es, then  var GEN_VER='<VER>';
 gen2.<VER>.js     question generators, part 2 (A11c): src/js/35-gen-math-upper, 36-gen-phonics, 37-bank, 37-comp, 39b-steps,
                   then  var GEN2_VER='<VER>';
 bt.<VER>.js       Brain Teaser puzzle types: a <style> with src/css/NN-bt-*.css, then src/js/NN-bt-*.js, then  var BT_VER='<VER>';
-games.<VER>.js    the Game Room: src/js/60-blocks, 62-hill, 64-gtimer, 66-colornum, 68-lowpoly, 70-art, 72-shapes and any NN-game-*.js (59-game-hub, 63-game-race),
-                  then  var GAMES_VER='<VER>';
+games.<VER>.js    the Game Room: src/js/60-blocks, 62-hill, 64-gtimer, 66-colornum, 68-lowpoly, 70-art, 72-shapes, 59-game-hub, 63-game-race (and their CSS
+                  48-game-hub, 49-game-race, 60-game-blocks), then  var GAMES_VER='<VER>';
+games2.<VER>.js   the newer Game Room games (G-04a on): every other src/js/NN-game-*.js and src/css/NN-game-*.css (65-game-snack, 49-game-snack),
+                  then  var GAMES2_VER='<VER>';
 data.<VER>.js     src/data/*.js in filename order, then the last line  var DATA_VER='<VER>';
-sw.js             cache 'starschool-<VER>', precaches ./, index.html, gen/gen2/bt/games/data.<VER>.js, manifest.json, icons
+sw.js             cache 'starschool-<VER>', precaches ./, index.html, gen/gen2/bt/games/games2/data.<VER>.js, manifest.json, icons
 ```
 
-(The text below says "part" for gen, gen2, bt and games alike. Load order is the order of PARTS: gen, gen2, bt, games, then data.)
+(The text below says "part" for gen, gen2, bt, games and games2 alike. Load order is the order of PARTS: gen, gen2, bt, games, games2, then data.)
 
 The rule lives in one place, `PARTS` in `tools/build.py`: a file stem and a regular expression on whole file names in `src/js` and
 `src/css`. A matching file goes into `<stem>.<VER>.js` (in filename order) instead of into index.html:
@@ -147,9 +150,12 @@ The rule lives in one place, `PARTS` in `tools/build.py`: a file stem and a regu
   Index.html's own code may call them only inside functions that run after start-up. The one table that named them at load time, `SK`
   in `38-skills.js`, wraps each generator in an arrow (`gen:lv=>genAbc(lv)`); keep doing that for a new skill whose generator is in these files.
   A new generator file named `NN-gen-*.js` is NOT picked up by itself: add it to the `gen` or `gen2` regular expression in build.py.
-- `games`: the seven Game Room files listed above, and any new `src/js/NN-game-*.js` and `src/css/NN-game-*.css` (G-02: `63-game-race.js` and `49-game-race.css`, Star Rally; P4-16: `59-game-hub.js`,
-  the hub and the shared game chrome, and `48-game-hub.css`). `58-playtime.js` (game time and `gameRoom()`, which calls `GH.hub()`)
-  and `40-games.css` (shared by Home, the map and the rewards) stay in index.html.
+- `games`: the seven Game Room files listed above, plus by name `59-game-hub.js` (P4-16: the hub and the shared game chrome) with
+  `48-game-hub.css`, `63-game-race.js` with `49-game-race.css` (G-02, Star Rally) and `60-game-blocks.css` (G-01). `58-playtime.js` (game time and
+  `gameRoom()`, which calls `GH.hub()`) and `40-games.css` (shared by Home, the map and the rewards) stay in index.html.
+- `games2` (G-04a, v142): every other `src/js/NN-game-*.js` and `src/css/NN-game-*.css`, so a new game goes here by itself (G-04a: `65-game-snack.js`
+  and `49-game-snack.css`, Snack Stand). It was added when the games file reached 394 KB of its 400 KB warning. It loads after `games`, so a game here
+  may call `GH.reg` and the `gh*` drawing helpers while it loads; `appFiles()` lists it, so a missing or stale games2 file stops the start-up like the others.
 
 How it fits together:
 - All scripts are plain classic scripts: they run in this order, synchronously, and share one global scope (a `const` in one file is
@@ -168,7 +174,7 @@ How it fits together:
   updating. Connect to the internet, then tap Try again." and logs one line in the App log, such as `bt file missing (app v105)` or
   `games file v104 does not match (app v105)`. Nothing else in the save changes.
 - Sizes (budgets in `tools/test.js`): index.html warn 1.2 MB / fail 1.5 MB (ROADMAP R1; the check `parts split A11c` wants it under 1.0 MB), each part file warn 400 KB / fail 800 KB,
-  data file warn 1 MB / fail 2 MB, all files together warn 2 MB / fail 3 MB. `bash tools/check.sh` prints them all.
+  data file warn 1 MB / fail 2 MB, all files together warn 2 MB / fail 3.3 MB (3 MB until G-04a, raised for `games2`: owner to confirm). `bash tools/check.sh` prints them all.
 - The check `code split A11b (and data file split A11)` in `tools/test.js` covers all of this: script order, nothing of a part left in
   index.html, index.html's code loads alone and with only the data, each file's stamp, a missing or stale file refused, the precache
   list, no stale files, the budgets. It loads the built files in a fresh Node `vm` context, one script after the other, like the page.
@@ -181,7 +187,7 @@ How it fits together:
 Adding a puzzle type: name it `src/js/NN-bt-<id>.js` (and `src/css/49-bt-<id>.css`) and it goes into `bt.<VER>.js` by itself; no change
 to build.py, sw.js, the shell or 90-app.js. At load it may call `BT.reg({...})` and anything else from index.html's code.
 
-Adding a game (P4-16): name it `src/js/NN-game-<name>.js` (it goes into `games.<VER>.js`, after `59-game-hub.js`) and register it with one
+Adding a game (P4-16): name it `src/js/NN-game-<name>.js` (since G-04a it goes into `games2.<VER>.js`, which loads after the hub in `games.<VER>.js`) and register it with one
 `GH.reg({...})` call at load. That entry is the whole hook: the hub card, its drawn picture, the top-bar badge, the pause sheet and the end
 card come from it, and the smoke `// P4-16` block and the test.js check "game room P4-16" pick it up by themselves.
 
@@ -198,8 +204,10 @@ GH.reg({
 });
 ```
 
-The four games registered today: Hill Climb, Coloring, Block Builder (in `59-game-hub.js`) and Star Rally (`63-game-race.js`, G-02: a
-canvas game with its own loop, stopped by `view()` through `rlStop`, like `stopHC`; it is a worked example of a canvas game on `GH.reg`).
+The five games registered today: Hill Climb, Coloring, Block Builder (in `59-game-hub.js`), Star Rally (`63-game-race.js`, G-02: a
+canvas game with its own loop, stopped by `view()` through `rlStop`, like `stopHC`; it is a worked example of a canvas game on `GH.reg`) and
+Snack Stand (`65-game-snack.js` in games2, G-04a: an HTML and SVG game with a 200 ms tick, stopped by `view()` through `snStop`; a worked example
+of a game whose rules are a pure simulation the tests play whole days of, and of a game shop with its own coins).
 
 Every screen of the game starts its `view()` with `${GH.top('race', {...})}` (Back on menus; `{play: true}` gives Pause; `sub`, `tools`,
 `chips`, `sound` as in 59-game-hub.js), then calls `GH.wire({quit: () => ...})` on a play screen (Quit runs it; `hold: on => ...` pauses

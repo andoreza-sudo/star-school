@@ -120,6 +120,7 @@ open-ended writing grading, any generative AI at runtime.
 | `S.rally` | G-02 | Star Rally: `{spk, races, best: {track: ms}, stars: {track: 0-3}, paint, paints: {hue: 1}, stk, stks: {id: 1}, body, mode, quiz, tilt, place}`; created when the game is first opened (absent = a new player); every field read with a default and checked (`rlS()`), sparkles never below 0; no migration. `S.race` stays Fact Race's bests |
 | `S.bb.bp` | G-01 | `{blueprintId: stars 1-3}` Block Builder blueprint stars by id (`tower`, `stairs`, `wall`, `gate`, `tree`, `bridge`, `pond`, `snowman`, `boat`, `castle`, `house`, `pyramid`, `palace`); made on first read from the old index array `S.bb.ch` (kept, still written for the ten old blueprints); absent = made again |
 | `S.bb.worlds[i].goals`, `.n`, `.kinds`, `S.bb.seen` | G-01 | per world: free-build goals done `{goalId: 1}`, blocks built (count), block ids used (array); `seen` 1 once the first tip showed. All optional, read with defaults; world data `d` unchanged |
+| `S.snack` | G-04a | Snack Stand: `{coins, days, served, stars: {place: 0-3}, combo, own: {shopId: 1}, awn, sign, ctr, place, mode, till}`; created when the game is first opened (absent = a new player; the hub reads it without creating it, `snPeek()`); every field read with a default and checked by `snS()` (coins an integer >= 0, unknown places and shop ids dropped, a style not owned falls back to the free one, a place not yet open falls back to the park); no migration. Its coins are the game's own, not `S.coins` |
 
 ## 5. Phases
 
@@ -526,7 +527,7 @@ Notes:
 - [ ] `node tools/smoke.js` exits 0 with zero console errors.
 - [ ] Screenshots taken at 600x960, 1024x600, 380x780 for every screen the chunk touched, and looked at.
 - [ ] Loading the `midway` fixture (an old save) still shows the same stars, coins, pet and map progress.
-- [ ] Built sizes printed; `index.html` under 1.5 MB, each part file under 800 KB, data file under 2 MB, all under 3 MB (tools/test.js budgets).
+- [ ] Built sizes printed; `index.html` under 1.5 MB, each part file under 800 KB, data file under 2 MB, all under 3.3 MB (tools/test.js budgets).
 - [ ] No network requests at runtime (smoke test runs with network blocked).
 - [ ] No new emoji outside the allowlist; no new hard-coded colors after P4-01.
 - [ ] PROGRESS.md entry added (chunk ID, version, date, what changed, anything left over).
@@ -545,7 +546,7 @@ Notes:
 
 | # | Risk | Likelihood | Impact | Mitigation | Owner chunk |
 |---|------|-----------|--------|------------|-------------|
-| R1 | Built file grows past what a cheap tablet parses quickly | Medium | Medium | Size budget in tests (1.5 MB hard, 1.2 MB warn); compact data formats; decision A11 done in v97 (data file budget 2 MB hard, 1 MB warn; total 3 MB hard, 2 MB warn), extended by A11b in v105 (puzzle types and games in part files, 800 KB hard, 400 KB warn each) | P0-04, P6-02 |
+| R1 | Built file grows past what a cheap tablet parses quickly | Medium | Medium | Size budget in tests (1.5 MB hard, 1.2 MB warn); compact data formats; decision A11 done in v97 (data file budget 2 MB hard, 1 MB warn; total 3 MB hard, 2 MB warn), extended by A11b in v105 (puzzle types and games in part files, 800 KB hard, 400 KB warn each); G-04a (v142) added a second games part `games2` and raised the total to 3.3 MB hard (2,959,816 -> 3,054,321 bytes): every file still loads at start, so a lazy-loaded games part is the next step if more games come | P0-04, P6-02 |
 | R2 | A release damages or wipes a child's save | Low | Very high | Versioned migrations, automatic backup key, fixture tests on every chunk, export/import | P0-03, P5-07 |
 | R3 | localStorage quota or eviction | Low | High | Save stays small (target under 300 KB; review items stored as seeds); `save()` failures surfaced; backup file | P0-03, P5-02 |
 | R4 | Service worker serves a stale app (this already happened with cache-first) | Medium | High | Keep network-first for navigation; always bump `VER`; the other files, `bt.<VER>.js`, `games.<VER>.js` (A11b) and `data.<VER>.js` (A11), have `VER` in their names, are in the precache list and are checked against the page's `VER` before start; version visible on home; never add another cached JS file without updating the precache list and testing an upgrade | every chunk |
