@@ -2,7 +2,7 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** P5-10, G-04b (Sky Hop), P6-01 to P6-05
+**Next up:** P5-10 (wip/P5-10), G-04b Sky Hop (wip/G-04b-wip), P6-01 (wip/P6-01-wip), P6-02, P6-03/P6-04, P6-05; see Handoff notes
 
 **Current version:** v143
 
@@ -133,7 +133,16 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 
 ## Handoff notes
 
-(none)
+**Paused 2026-11-12 at v143** (the owner asked to stop for the week). Everything up to v143 is merged, checked and on `main`. What is left, in the order it was planned:
+
+1. **P5-10 Multiple child profiles** (Opus, M). Built but not merged: branch `wip/P5-10` (from v140). Its own full check was still running when it was stopped. Merge it on top of v143; expect conflicts in `80-grown.js` and `81-backup.js` (Start over and backup now set `SAVE_HOLD` before reloading, and Start over no longer awaits `DB.open()`).
+2. **G-04b Sky Hop** (Opus, M). Mostly built, not checked: branch `wip/G-04b-wip` (from v141). Finish, run `tools/check.sh`, renumber VER.
+3. **P6-01 Accessibility pass** (Opus, M). Started: branch `wip/P6-01-wip` (from v143) has a first `tools/a11y.js` and some fixes; not checked.
+4. **P6-02 Low-end performance pass** (Opus, M). Not started. Includes loading the `games` / `games2` part files only when the Game Room opens, so start-up is back under 3.0 MB (G-04a raised the total budget to 3.3 MB).
+5. **P6-03 / P6-04 Content audits** (Opus). Mostly covered by the R-01 reviews and their fixes (R-01m, R-01r, R-01s, R-01d, R-01b); what remains is a lighter pass over the M/L items each review lists as not done.
+6. **P6-05 Release 1.0** (Sonnet, S).
+7. Optional: **G-04c Fishing Day** (the third game in docs/GAMES_RESEARCH.md); not asked for yet.
+8. The review files in `docs/reviews/` each list M/L improvements not done yet (fluency practice and decodable stories in reading; speaking practice in Spanish; diagrams and maps in Discover; spaced check-ins in practice; and others).
 
 ## Ideas and issues
 - (R-01b) Pass threshold, recommendation only (practice review Should 8; NOT changed in R-01b, a stop still opens the next at 7 of 10): rather than raising the bar, use the mastery record. A stop passed below 8 of 10 (1 star) and not "mastered" (90% over 20 tries on 2 days) could get one check-in question in the review slots of later rounds until it is mastered. R-01b already makes 1-star stops "weak" for Mixed Practice (30% of its questions) and counts answers given with the hint showing as half, so a supported round no longer passes on its own.
