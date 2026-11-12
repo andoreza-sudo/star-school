@@ -65,7 +65,7 @@
 .rw-earn{display:grid;gap:var(--s-3);padding:var(--s-3) var(--s-4);border:2px solid var(--line);border-radius:var(--r-card);background:var(--surface)}
 .rw-earn:empty{display:none}
 .rw-er{display:grid;grid-template-columns:44px minmax(0,1fr);gap:var(--s-3);align-items:start;animation:rw-rise var(--t-slow) var(--ease) both}
-.rw-ed{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--star-tint);color:var(--star-shade);--ic2:var(--star-tint)}
+.rw-ed{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--star-tint);color:var(--star-ink);--ic2:var(--star-tint)}
 .rw-er.ticket .rw-ed{background:var(--play-tint);color:var(--play);--ic2:var(--play-tint)}
 .rw-er.bump .rw-ed{animation:rw-bump var(--t-slow) var(--spring)}
 .rw-et{padding-top:9px;font-size:var(--fs-4);line-height:var(--lh-4);font-weight:700;color:var(--ink);overflow-wrap:normal}

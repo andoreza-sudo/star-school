@@ -40,7 +40,7 @@
 .rl-trk.lock .rl-tn{background:var(--surface);color:var(--ink-3)}
 .rl-rivals{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:var(--s-2)}
 .rl-rv{display:flex;flex-direction:column;align-items:center;text-align:center;line-height:1.2}
-.rl-rv svg{width:min(76px,100%);height:auto}.rl-rv b{font-size:var(--fs-2)}.rl-rv span{font-size:var(--fs-1);color:var(--ink-2)}
+.rl-rv svg{width:min(76px,100%);height:auto}.rl-rv b{font-size:var(--fs-2)}.rl-rv span{font-size:var(--fs-2);color:var(--ink-2)}
 .rl-opts{margin-top:var(--s-2)}
 .rl-mode{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s-2) var(--s-4)}
 .rl-mode p{margin:0;flex:1 1 220px;font-size:var(--fs-2);color:var(--ink-2)}
@@ -93,6 +93,6 @@
 .rl-btn.on{transform:translateY(5px) scale(.96);opacity:1}
 #rll{left:14px}#rlr{right:14px}
 .rl-pro #rlr{left:calc(28px + clamp(96px,15vw,132px));right:auto}
-.rl-pro #rlgo{right:14px;background:var(--play);color:var(--surface);box-shadow:inset 0 0 0 3px var(--wash),0 6px 0 var(--play-shade)}
+.rl-pro #rlgo{right:14px;background:var(--play-shade);color:var(--surface);box-shadow:inset 0 0 0 3px var(--wash),0 6px 0 var(--play-deep)}
 .rl-pro #rlgo .ic{width:44px;height:44px}
 @media (max-width:420px){.rl-pro .rl-btn{width:96px;height:96px}.rl-pro #rlr{left:118px}}
