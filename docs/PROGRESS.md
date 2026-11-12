@@ -465,6 +465,7 @@ Things noticed while working that are outside the current chunk. One line each, 
 ### Fix: Start over, load a backup and undo can no longer be undone by a stray save (v141, 2026-11-12, Claude)
 - What changed: `save()` (00-core.js) writes nothing while `SAVE_HOLD` is set. Start over (80-grown.js) sets it before it erases (it then waits for the voice clips to be deleted, and anything that saved in that wait put the old progress back, so setup never showed); load a backup and undo (81-backup.js) set it before the reload.
 - Found by: two full checks failing in the P5-07 smoke block at a reload (Start over: setup did not show; after Yes: the loaded stars did not show). The P5-07 smoke waits now say what was on screen if they time out.
+- Second cause (next full check): Start over awaited `DB.open()` before reloading, and on a busy machine the open never finished, so the page never reloaded and the old progress stayed on screen. It now deletes the voice clips without waiting on an open, and reloads when the delete is done, blocked or failed, or after 1.5 s at most.
 - Tests: new test.js check "save hold before a reload".
 
 ### G-04a Snack Stand game (v141, 2026-11-11, Claude)

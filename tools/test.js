@@ -15374,7 +15374,8 @@ run('save hold before a reload',()=>{
   if(!r.held)p.push('save() wrote while SAVE_HOLD was set');
   if(!r.after)p.push('save() did not write after the hold was lifted');
   const src=fs.readFileSync(path.join(__dirname,'..','src','js','80-grown.js'),'utf8'),bk=fs.readFileSync(path.join(__dirname,'..','src','js','81-backup.js'),'utf8');
-  if(!/SAVE_HOLD=true;localStorage\.removeItem\(KEY\)/.test(src))p.push('Start over does not hold saves before it erases');
+  if(!/SAVE_HOLD=true;try\{localStorage\.removeItem\(KEY\)/.test(src))p.push('Start over does not hold saves before it erases');
+  if(/await DB\.open\(\)/.test(src)||!/setTimeout\(go,1500\)/.test(src))p.push('Start over waits on IndexedDB before it reloads');
   if((bk.match(/SAVE_HOLD = true; location\.reload\(\)/g)||[]).length!==2)p.push('load and undo do not hold saves before the reload');
   return{problems:p,note:'save() is held during Start over, load and undo'};
 });
