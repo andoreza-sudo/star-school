@@ -128,7 +128,7 @@ const BAK = {
     sh.el.querySelector('#bk-yes').onclick = () => {
       const bad = BAK.apply(r.data);
       sh.close();
-      if (bad) BAK.msg(bad); else location.reload();
+      if (bad) BAK.msg(bad); else { SAVE_HOLD = true; location.reload(); } // nothing saves over the loaded backup before the reload
     };
   },
   card() {
@@ -152,6 +152,6 @@ const BAK = {
       BAK.review(text);
     };
     const u = $('#bk-undo');
-    if (u) u.onclick = () => { const bad = BAK.undo(); if (bad) BAK.msg(bad); else location.reload(); };
+    if (u) u.onclick = () => { const bad = BAK.undo(); if (bad) BAK.msg(bad); else { SAVE_HOLD = true; location.reload(); } };
   },
 };
