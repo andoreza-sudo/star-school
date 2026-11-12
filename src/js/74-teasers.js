@@ -36,7 +36,8 @@
      S.bt.badges = {got: {badge id: day}, n: puzzles solved, dd: {day, n, best}}       badges (P3-17), see BADGES below
      S.bt.earn = {day, sec} game time earned today.   S.bt.rnd = {day, n} solves today.
    STARS: 3 = no hint and mistakes <= allow, 2 = at most one hint, 1 = finished.
-   REWARDS (section 9): first solve of a level: its stars, and game time 45/60/90/120 s (band A/B/C/D) x stars/3, least a half;
+   REWARDS (section 9): first solve of a level: its stars, and game time 45/60/90/120 s (band A/B/C/D) x stars/3, least a half,
+   where the stars for game time leave hints out (R-01b: a hint costs a star, not game time; BT.rate(0, mistakes));
    replay or Endless: 15 s, and only stars that improve the level's best are paid. The Puzzle of the Day adds 5 coins and 60 s once
    a day. Game time from puzzles stops at half of the grown-up's daily cap. Three solves in a day make one round (day().r, streak,
    activity log, the daily mission). Nothing here is sent anywhere.
@@ -299,7 +300,10 @@ const BT = {
     const daily = !!(dl && !dl.done && dl.id == run.id && dl.band == band && String(dl.level) == String(run.level));
     if (daily) { coins += BT.DAILY_COINS; BT.st().daily.done.push(run.id); }
     const round = BT.round(), mi = MIS.done({ k: 'teaser' }); // P5-08: the missions it completes (the bonus once all three are done)
-    const PT = ptCalc({ bt: { band, stars, hints: res.hints | 0, first, daily, room: BT.room() } }, 0, 0, 0, 0, false, false, null,
+    // R-01b: game time follows the stars the solve earns without counting hints (BT.rate with 0 hints): asking for help is a
+    // good habit, so hints cost a star but not game time; mistakes can still lower it
+    const paid = BT.rate(0, res.mistakes, d && d.allow);
+    const PT = ptCalc({ bt: { band, stars, paid, hints: res.hints | 0, first, daily, room: BT.room() } }, 0, 0, 0, 0, false, false, null,
       { mission: mi.bonus });
     const sec = PT.sec, want = PT.want;
     if (sec > 0) {

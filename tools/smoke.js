@@ -167,7 +167,8 @@ async function main() {
     }
 
     // 2b. Fact Sprint: play a 20-facts sprint (first answer wrong on purpose), then check the end screen and the saved record
-    await page.evaluate(() => home());
+    //     (R-01b: Fact Sprint is shown from grade 1 once Adding to 10 is passed; the fresh child is in Kindergarten, so move them up)
+    await page.evaluate(() => { S.grade = 1; S.maps.math.add1 = Math.max(1, S.maps.math.add1 || 0); save(); home(); });
     await page.click('#flu');
     await page.waitForSelector('.game[data-s="add10"]');
     await page.click('.game[data-s="add10"]');
@@ -936,8 +937,9 @@ async function main() {
       await rp.waitForSelector('#rev');
       const h0 = await rp.evaluate(() => ({ btn: document.querySelector('#rev').offsetHeight, n: document.querySelector('#revn').textContent,
         over: document.querySelector('.scroll').scrollWidth - document.querySelector('.scroll').clientWidth, card: document.querySelector('#revcard').offsetHeight }));
-      if (h0.btn < 48 || h0.n !== '21' || h0.over > 0 || h0.card < 48) fail('daily review card: ' + JSON.stringify(h0));
-      else step(`daily review card: ${h0.n} due, Start ${h0.btn} px high, nothing wider than the screen`);
+      // R-01b: the tile says how many the next review asks ("10 to review"), at most 10, not the whole backlog (21)
+      if (h0.btn < 48 || h0.n !== '10' || h0.over > 0 || h0.card < 48) fail('daily review card: ' + JSON.stringify(h0));
+      else step(`daily review card: ${h0.n} to review (21 due), Start ${h0.btn} px high, nothing wider than the screen`);
       await rp.click('#rev');
       await rp.waitForSelector('#prompt');
       const g0 = await rp.evaluate(() => ({ n: G.n, daily: !!G.daily, rv: G.pool.filter(q => q.rvk).length + (G.q.rvk ? 1 : 0) }));
@@ -948,8 +950,8 @@ async function main() {
       else step(`daily review: 10 due items asked first, ${g1.fixed} fixed, ${g1.due} still due`);
       await rp.evaluate(() => { G.dead = true; home(); });
       await rp.waitForSelector('#rev');
-      const h1 = await rp.evaluate(() => document.querySelector('#revn').textContent);
-      if (h1 !== '11') fail('home after the daily review says ' + h1 + ' due');
+      const h1 = await rp.evaluate(() => document.querySelector('#revn').textContent + '/' + dueItems().length);
+      if (h1 !== '10/11') fail('home after the daily review says ' + h1 + ' (shown / due)');
       await rp.evaluate(() => { S.rev = []; save(); home(); });
       await rp.waitForSelector('#revcard');
       const h2 = await rp.evaluate(() => ({ btn: !!document.querySelector('#rev'), text: document.querySelector('#revcard').textContent }));
@@ -1797,7 +1799,7 @@ async function main() {
       await hp.waitForTimeout(450);
       const bits = await hp.evaluate(() => ({ think: !!document.querySelector('.hm-think svg'), need: !!document.querySelector('#care .hm-need'),
         flame: !document.querySelector('#stkb').classList.contains('off'), revn: (document.querySelector('#revn') || {}).textContent }));
-      if (!bits.think || !bits.need || !bits.flame || bits.revn !== '21') fail('P4-08 home state: ' + JSON.stringify(bits));
+      if (!bits.think || !bits.need || !bits.flame || bits.revn !== '10') fail('P4-08 home state: ' + JSON.stringify(bits));
       const anim = () => hp.evaluate(() => parseFloat(getComputedStyle(document.querySelector('.hm-think')).animationDuration));
       const a0 = await anim();
       await hp.evaluate(() => document.documentElement.classList.add('calm'));
@@ -2694,6 +2696,7 @@ async function main() {
         await pg.click('#hb');
         const hint = await pg.evaluate(() => document.querySelector('#hint').textContent);
         if (!hint.trim()) fail('P2-26 ' + id + ': empty hint');
+        await goStop26(id); // R-01b: an answer given with the hint showing counts half, so the 10/10 round starts fresh after the peek
         await playRound(pg, 'P2-26 ' + id, 10);
         const st = await pg.evaluate(id => S.maps.read[id] || 0, id);
         if (st !== 3) fail('P2-26 ' + id + ': a 10/10 round should save 3 stars, got ' + st);
@@ -3745,7 +3748,8 @@ async function main() {
         }
         await pg.waitForSelector('#chest', { timeout: 10000 });
         const fin = await pg.evaluate(() => ({ score: G.score, n: G.n, stars: S.maps.math.trace1 || 0, misses: window.__trm, wide: Math.max(...window.__pw) }));
-        if (fin.score !== 5 || fin.n !== 5 || fin.stars !== 3 || fin.misses.join() !== '1,0,0,0,0') bad.push('round end: ' + JSON.stringify(fin));
+        // R-01b: glyph 2 was traced with Help showing (demo, then lead dots), which counts half: 4.5 of 5 is 2 stars (it was 3)
+        if (fin.score !== 5 || fin.n !== 5 || fin.stars !== 2 || fin.misses.join() !== '1,0,0,0,0') bad.push('round end: ' + JSON.stringify(fin));
         if (touch && !(fin.wide > 60)) bad.push('no palm touch went down (widest ' + fin.wide + ' px)');
         await pg.click('#chest');
         await pg.waitForSelector('#btns', { state: 'visible', timeout: 10000 });
@@ -7786,6 +7790,94 @@ async function main() {
       if (bad.length) fail('R-01s Spanish review fixes:\n  ' + bad.join('\n  '));
       else step('R-01s: weather and feelings level 1 opened from the map with real taps at 380x780: ' + notes.join('; ') +
         '; no two choices mean the same, captions on cool/hot/cold, both forms of a feeling, the hint replays slowly and gives nothing away');
+      network.push(...rx.network);
+      for (const e of rx.errors) fail(e);
+      await rx.ctx.close();
+    }
+
+    // R-01b Brain Teasers and practice review fixes at 380x780 (2x), midway save. (1) A Pre-K child's Home has no Fact Sprint tile and no
+    //    sprint or "perfect round" mission, and the review tile says "N to review" (N at most 10, no red count bubble). (2) Band A
+    //    patterns (Pre-K/K levels 1-4, the review's day 2026-1-1 and the smoke day): every picture choice is drawn at the size of the
+    //    pictures in the row (within 1 px), and every row shows two whole copies of its unit. (3) Every type that has band B, opened at
+    //    level 1 with `say` stubbed: it speaks its first instruction by itself. (4) A grades 5-6 maze at level 12 has squares of 28 px or
+    //    more. Screenshots: tools/out/r01b-* (or the folder in R01B_SHOTS).
+    {
+      const rx = await openApp(browser, { fixture: 'midway', width: 380, height: 780, scale: 2 });
+      const rp = rx.page;
+      const dir = process.env.R01B_SHOTS || require('path').join(__dirname, 'out');
+      const shot = n => rp.screenshot({ path: require('path').join(dir, 'r01b-' + n + '-380x780.png') }).catch(() => {});
+      const bad = [], notes = [];
+      // (1) Pre-K Home
+      const hm = await rp.evaluate(() => {
+        S.grade = -1; S.day.m = null; S.voice = true;
+        S.rev = Array.from({ length: 14 }, (_, i) => ({ sk: 'add', lv: 1, seed: i + 1, label: genQ('add', 1, i + 1).label + ' #' + i, box: 0, due: 0, n: 1 }));
+        save(); home();
+        const t = document.querySelector('#revcard');
+        return { flu: !!document.querySelector('#flu'), kinds: MIS.get().map(x => x.k), rev: t ? t.textContent.trim() : '', bubble: !!document.querySelector('.hm-cnt'),
+          revn: (document.querySelector('#revn') || {}).textContent, w: document.documentElement.scrollWidth, cols: getComputedStyle(document.querySelector('.hm-today')).gridTemplateColumns.split(' ').length };
+      });
+      if (hm.flu || hm.kinds.includes('sprint') || hm.kinds.includes('perfect')) bad.push('Pre-K Home: ' + JSON.stringify(hm));
+      if (hm.bubble || hm.revn !== '10' || !/10 to review/.test(hm.rev) || hm.w > 380 || hm.cols !== 2) bad.push('review tile: ' + JSON.stringify(hm));
+      await rp.evaluate(() => document.querySelector('.hm-today').scrollIntoView({ block: 'center' }));
+      await shot('home-prek');
+      notes.push('Pre-K Home: no Fact Sprint, missions ' + hm.kinds.join(', ') + ', review tile "' + hm.rev + '"');
+      // a 1st grader who passed Adding to 10 does see it
+      const g1 = await rp.evaluate(() => { S.grade = 1; S.maps.math.add1 = Math.max(1, S.maps.math.add1 || 0); S.day.m = null; save(); home(); return !!document.querySelector('#flu'); });
+      if (!g1) bad.push('a 1st grader who passed Adding to 10 has no Fact Sprint tile');
+      // (2) band A patterns at row scale
+      await rp.evaluate(() => { S.grade = 0; save(); });
+      let items = 0, worst = 0, minCopies = 9;
+      for (const day of ['2026-1-1', null]) for (const lv of [1, 2, 3, 4]) {
+        const n = await rp.evaluate(([day, lv]) => BT.make('pattern', 'A', lv, day ? { day } : {}).items.length, [day, lv]);
+        for (let i = 0; i < n; i++) {
+          const r = await rp.evaluate(([day, lv, i]) => {
+            const puzzle = BT.make('pattern', 'A', lv, day ? { day } : {}), it = puzzle.items[i];
+            BT.st().cur = { id: 'pattern', band: 'A', level: lv, puzzle, state: { i, miss: 0, h: 0, x: [], g: [] }, hints: 0, sec: 0, day: today() };
+            BT.play(BT.st().cur);
+            return { k: it.k, u: it.spec ? Math.min(...Object.keys(it.spec).filter(k => !/^[+-]/.test(it.spec[k])).map(k => it.show.length / it.spec[k].length).concat([9])) : 9 };
+          }, [day, lv, i]);
+          await rp.waitForTimeout(250);
+          const m = await rp.evaluate(() => {
+            const row = document.querySelector('.pt-board .pt-t'), chs = [...document.querySelectorAll('.pt-ch .pt-t')];
+            if (!row) return null;
+            const w = row.getBoundingClientRect().width;
+            return { w, ch: chs.map(c => c.getBoundingClientRect().width), btn: Math.min(...[...document.querySelectorAll('.pt-ch')].map(b => b.getBoundingClientRect().height)),
+              sw: document.documentElement.scrollWidth };
+          });
+          if (r.k === 'seq') minCopies = Math.min(minCopies, r.u);
+          if (!m) continue; // odd one out: no row
+          items++;
+          const d = Math.max(...m.ch.map(c => Math.abs(c - m.w)));
+          worst = Math.max(worst, d);
+          if (d > 1 || m.btn < 48 || m.sw > 380) bad.push(`pattern A${lv} ${day || 'today'} item ${i + 1}: row ${m.w.toFixed(1)} px, choices ${m.ch.map(c => c.toFixed(1)).join('/')}, buttons ${m.btn}`);
+          if (day && lv === 4 && i === 2) await shot('pattern-A4-item3');
+          if (!day && lv === 1 && i === 0) await shot('pattern-A1-today');
+        }
+      }
+      if (minCopies < 2) bad.push('a band A row shows ' + minCopies + ' copies of its unit');
+      notes.push(`band A patterns: ${items} rows, choices drawn at row scale (worst ${worst.toFixed(2)} px off), at least ${minCopies} whole copies of the unit`);
+      // (3) band B speaks its first instruction
+      const types = await rp.evaluate(() => BT.list().filter(d => d.bands.includes('B')).map(d => d.id));
+      const silent = [];
+      for (const id of types) {
+        await rp.evaluate(id => { window.__said = []; say = t => { window.__said.push(String(t)); }; S.voice = true; S.grade = 1; delete BT.st().cur; save(); BT.start(id, 'B', 1); }, id);
+        await rp.waitForTimeout(400);
+        const said = await rp.evaluate(() => window.__said.slice());
+        if (!said.length) silent.push(id);
+        if (id === 'mdoku') await shot('mdoku-B1');
+      }
+      if (silent.length) bad.push('band B types that say nothing at the start: ' + silent.join(', '));
+      notes.push(`band B: all ${types.length} types speak their first instruction`);
+      // (4) a band D maze on a phone
+      const mz = await rp.evaluate(() => { delete BT.st().cur; S.grade = 5; save(); BT.start('maze', 'D', 12); const c = document.querySelector('.mz-cv'); return { n: MZ.cur ? MZ.cur.p.w : (BT.st().cur.puzzle.w), side: c.getBoundingClientRect().width }; });
+      await rp.waitForTimeout(300);
+      const mz2 = await rp.evaluate(() => ({ side: document.querySelector('.mz-cv').getBoundingClientRect().width, n: BT.st().cur.puzzle.w, sw: document.documentElement.scrollWidth }));
+      const cell = (mz2.side - 16) / mz2.n;
+      if (cell < 28 || mz2.sw > 380) bad.push('maze D12 at 380x780: ' + JSON.stringify(mz2) + ', ' + cell.toFixed(1) + ' px squares');
+      await shot('maze-D12');
+      notes.push(`maze D12: ${mz2.n} x ${mz2.n}, ${cell.toFixed(1)} px squares`);
+      if (bad.length) fail('R-01b:\n  ' + bad.join('\n  '));
+      else step('R-01b at 380x780: ' + notes.join('; '));
       network.push(...rx.network);
       for (const e of rx.errors) fail(e);
       await rx.ctx.close();
