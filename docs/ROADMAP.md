@@ -119,6 +119,7 @@ open-ended writing grading, any generative AI at runtime.
 | `S.pt.open`, `S.pt.met` | P5-09 | `open`: day key the grown-up opened the Game Room anyway; `met`: `{day, min}` learn-first already done today (both absent = none) |
 | `S.rally` | G-02 | Star Rally: `{spk, races, best: {track: ms}, stars: {track: 0-3}, paint, paints: {hue: 1}, stk, stks: {id: 1}, body, mode, quiz, tilt, place}`; created when the game is first opened (absent = a new player); every field read with a default and checked (`rlS()`), sparkles never below 0; no migration. `S.race` stays Fact Race's bests |
 | `S.bb.bp` | G-01 | `{blueprintId: stars 1-3}` Block Builder blueprint stars by id (`tower`, `stairs`, `wall`, `gate`, `tree`, `bridge`, `pond`, `snowman`, `boat`, `castle`, `house`, `pyramid`, `palace`); made on first read from the old index array `S.bb.ch` (kept, still written for the ten old blueprints); absent = made again |
+| Children (outside `S`) | P5-10 | up to 4 saves, one `S` each: child 1 stays `starschool-v2` (unchanged, never moved), children 2-4 `starschool-v2-p2` .. `-p4`; index `starschool-v2-profiles` = `{v: 1, ids: [slot order], cur}` (only written once a second child is added; never the only copy: slots that exist are children, a damaged index is kept under `-profiles-corrupt` and rebuilt); `starschool-v2-go` = the child just picked, read once by the next start. Per child: `<key>-bak`, `<key>-corrupt`, `<key>-undo`, `starschool-neon[-pN]`; voice clip ids of children 2-4 start with `pN:`. No field of `S` changes and no migration: each child's save is the same `S` (01-profiles.js header) |
 | `S.bb.worlds[i].goals`, `.n`, `.kinds`, `S.bb.seen` | G-01 | per world: free-build goals done `{goalId: 1}`, blocks built (count), block ids used (array); `seen` 1 once the first tip showed. All optional, read with defaults; world data `d` unchanged |
 | `S.snack` | G-04a | Snack Stand: `{coins, days, served, stars: {place: 0-3}, combo, own: {shopId: 1}, awn, sign, ctr, place, mode, till}`; created when the game is first opened (absent = a new player; the hub reads it without creating it, `snPeek()`); every field read with a default and checked by `snS()` (coins an integer >= 0, unknown places and shop ids dropped, a style not owned falls back to the free one, a place not yet open falls back to the park); no migration. Its coins are the game's own, not `S.coins` |
 
@@ -497,7 +498,7 @@ Notes:
 
 **P5-09 · Game-time rules v2** · Sonnet · S: extend `ptCalc` to Brain Teasers (by puzzle difficulty and hints used), Daily Review and missions; show the "why you earned this" lines everywhere. Add a grown-up setting "learning minutes needed before Game Room opens each day". Accept: table-driven unit tests for `ptCalc`.
 
-**P5-10 · Profiles (STRETCH)** · Opus · M: up to 4 children per tablet. Save becomes `starschool-v2` = index plus one key per child; voice clips in IndexedDB get a profile prefix; migration wraps the existing child as profile 1. Accept: fixtures migrate; switching profiles never mixes data (test); backup works per child.
+**P5-10 · Profiles (STRETCH)** · Opus · M: up to 4 children per tablet. Save becomes `starschool-v2` = index plus one key per child; voice clips in IndexedDB get a profile prefix; migration wraps the existing child as profile 1. Accept: fixtures migrate; switching profiles never mixes data (test); backup works per child. **Built v141:** the index lives in `starschool-v2-profiles` and child 1's save stays in `starschool-v2` itself (so an older cached app still opens child 1, rule 9, and no data moves); "Who is playing?" picker, hold-to-switch on Home, Children card in Grown-ups, Save all children; PROGRESS.md P5-10.
 
 ---
 
@@ -564,7 +565,8 @@ Notes:
 
 ## 9. Save-data migration rules
 
-1. The key is `starschool-v2` forever. Voice clips stay in IndexedDB `starschool`.
+1. The key is `starschool-v2` forever. Voice clips stay in IndexedDB `starschool`. Since P5-10 it holds child 1's save; children 2-4
+   have their own keys next to it (`starschool-v2-p2` ...), each the same `S` with the same migrations (section 4 table, "Children").
 2. `S.v` is the schema version. Missing means 2 (v30 and earlier).
 3. `MIGRATIONS[n]` is a function that upgrades `S` from version `n` to `n+1`. They run in order at startup, before anything else reads `S`.
    Each one is idempotent, never throws on missing fields, and is never edited after release (fix mistakes with a new migration).

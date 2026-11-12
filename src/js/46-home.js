@@ -20,7 +20,8 @@ function setup() {
   const pets = Object.entries(PETS).map(([k, p]) => `<button class="btn petopt gx-pet ${k == pet ? 'sel' : ''}" data-p="${k}" aria-pressed="${k == pet}">` +
     `<span class="gx-pp">${petPick(k)}</span><b>${p.n}</b></button>`).join('');
   view(`<div class="center setup su"><header class="su-top"><h1 class="gx-logo su-logo"><span class="hm-mark su-mark">${ico('star', 36)}</span><span>Star School</span></h1>` +
-    `<p class="su-hello">Hi! Let's get you ready.<span> A grown-up can help.</span></p>${UI.ibtn('speak', 'Hear the steps', { id: 'suspk' })}</header>` +
+    `<p class="su-hello">Hi! Let's get you ready.<span> A grown-up can help.</span></p>${UI.ibtn('speak', 'Hear the steps', { id: 'suspk' })}` +
+    `${PRF.many() ? UI.ibtn('back', 'Back to who is playing', { id: 'suback', size: 'sm' }) : ''}</header>` +
     `<div class="su-grid">` +
     suStep(1, 'user', "What's your name?", '', fldHTML('edit', `id="nm" value="${esc(S.name)}" placeholder="Your name" aria-label="Your name"`)) +
     suStep(2, 'paw', 'Pick a pet egg to hatch!', '', `<div class="pets su-pets">${pets}</div>` +
@@ -32,6 +33,7 @@ function setup() {
   nameOk();
   $('#nm').oninput = nameOk;
   $('#suspk').onclick = e => say(SU_SAY, e.currentTarget);
+  if ($('#suback')) $('#suback').onclick = PRF.cancelNew; // P5-10: a new child who changes their mind goes away again
   gradePickBind(g => { grade = g; ok(3, 1); });
   $$('.petopt').forEach(b => b.onclick = () => {
     pet = b.dataset.p;
@@ -308,7 +310,7 @@ function home(first){
   const inst = installEvt && !isApp() ? UI.btn('Install', { kind: 'primary', size: 'sm', icon: 'plus', id: 'inst' }) : '';
   view(`<div class="top tbar hm-top"><div class="hm-logo"><span class="hm-mark">${ico('star', 30)}</span><span>Star School</span></div><div class="sp"></div>${inst}
     ${UI.ibtn(S.sound ? 'sound-on' : 'sound-off', S.sound ? 'Sound is on' : 'Sound is off', { id: 'snd', size: 'sm' })}
-    ${UI.ibtn('gear', 'Grown-ups: hold', { id: 'gear', size: 'sm' })}</div>
+    ${PRF.homeBtn()}${UI.ibtn('gear', 'Grown-ups: hold', { id: 'gear', size: 'sm' })}</div>
   <div class="scroll hm" id="hs"><div class="hm-cols">
    <div class="hm-col">${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('target', 26)}<span>Today's missions</span></h2>${hmMissions()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}${hmDaily()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
@@ -317,7 +319,7 @@ function home(first){
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'heart');
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
   $$('.game').forEach(b=>b.onclick=()=>{SFX.whoosh();pathMap(b.dataset.p)});
-  placeBannerBind();revCardBind();hmMissionsBind();
+  placeBannerBind();revCardBind();hmMissionsBind();PRF.homeBind();
   $('#snd').onclick=()=>{S.sound=!S.sound;S.music=S.sound;save();home()};
   $('#stkb').onclick=()=>{SFX.whoosh();streakCal(0)};
   $('#book').onclick=book;$('#shop').onclick=shop;$('#mix').onclick=()=>{SFX.whoosh();startMix()};$('#race').onclick=raceMenu;if($('#flu'))$('#flu').onclick=()=>{SFX.whoosh();fluMenu()};$('#care').onclick=care;$('#groom').onclick=()=>{SFX.whoosh();gameRoom()};if($('#btcard'))$('#btcard').onclick=()=>{SFX.whoosh();BT.hub()};

@@ -10,6 +10,9 @@ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 const KEY='starschool-v2';
 const LATEST=6; // newest save schema version = MIGRATIONS.length (ROADMAP section 9)
 let S,SAVE_RAW=null,SAVE_CORRUPT=false,SAVE_FAILED=false;
+/* P5-10: the key of the child who is playing. Child 1 is KEY itself (unchanged since v30); 01-profiles.js picks another child's
+   key at load. SAVE_OFF stops save() while the page reloads after a child was deleted. */
+let SKEY=KEY,SAVE_OFF=false;
 /* Read the save string into S. Corrupt or non-object JSON is kept in KEY-corrupt; KEY itself is untouched until the first save(). */
 function loadSave(raw){
   SAVE_RAW=null;SAVE_CORRUPT=false;S=null;
@@ -18,7 +21,7 @@ function loadSave(raw){
     if(S&&typeof S=='object'&&!Array.isArray(S))SAVE_RAW=raw;
     else{
       S=null;SAVE_CORRUPT=true;
-      try{localStorage.setItem(KEY+'-corrupt',raw)}catch(e){}
+      try{localStorage.setItem(SKEY+'-corrupt',raw)}catch(e){}
     }
   }
   if(!S){
@@ -140,16 +143,16 @@ function migrate(){
   if(S.maps&&typeof PATHS!='undefined')for(const p in PATHS)S.maps[p]=S.maps[p]||{}; // a path added after the save was written starts empty (Discover, P2-36): a default, not a migration
   const from=Number.isInteger(S.v)&&S.v>=1?S.v:1;
   if(from>=LATEST)return; // current, or written by a newer app: leave it alone
-  if(SAVE_RAW!==null)try{localStorage.setItem(KEY+'-bak',SAVE_RAW)}catch(e){}
+  if(SAVE_RAW!==null)try{localStorage.setItem(SKEY+'-bak',SAVE_RAW)}catch(e){}
   for(let n=from;n<LATEST;n++)MIGRATIONS[n]();
   S.v=LATEST;
   save();
 }
 // SAVE_HOLD: set once the save in storage was replaced or erased on purpose and the page is about to reload (Start over, load a
 // backup, undo a load). From then on save() writes nothing, so a timer or screen that saves the old progress before the reload
-// cannot put it back (the reload starts fresh, and resets this flag).
+// cannot put it back (the reload starts fresh, and resets this flag). SAVE_OFF (P5-10) does the same after a child is deleted.
 let SAVE_HOLD=false;
-function save(){if(SAVE_HOLD)return;try{localStorage.setItem(KEY,JSON.stringify(S));SAVE_FAILED=false}catch(e){SAVE_FAILED=true}}
+function save(){if(SAVE_HOLD||SAVE_OFF)return;try{localStorage.setItem(SKEY,JSON.stringify(S));SAVE_FAILED=false}catch(e){SAVE_FAILED=true}}
 /* ---------- error guard (P0-05): last 20 errors kept in S.err, on this device only; nothing is sent anywhere ---------- */
 function logErr(msg){
   try{
