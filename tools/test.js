@@ -15707,6 +15707,278 @@ run('Brain Teasers and practice fixes R-01b',()=>{
   return{problems:pre.concat(r.bad),note:r.note.join('; ')};
 });
 
+run('sky hop G-04b',()=>{
+  const p=[],notes=[];
+  const rd=f=>fs.readFileSync(path.join(SRC,f),'utf8');
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const src=rd('js/67-game-skyhop.js'),css=rd('css/49-game-skyhop.css').replace(/\/\*[\s\S]*?\*\//g,'');
+  const tokCss=rd('css/00-tokens.css'),artCss=rd('css/21-art.css');
+  const PICT=/\p{Extended_Pictographic}/u;
+  const FIX=['fresh','midway','maxed','tricky','legacy-index-maps','legacy-single-map'].map(n=>[n,fx(n)]);
+  const t0=Date.now();
+  const body=function(){
+    const out={bad:[],note:[]},bad=m=>{if(out.bad.length<60&&!out.bad.includes(m))out.bad.push(m)};
+    const store={};
+    global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+    const D=global.document,app={style:{},innerHTML:''},dummy={style:{},classList:{add(){},remove(){},toggle(){},contains(){return false}},dataset:{},
+      querySelector(){return dummy},querySelectorAll(){return[]},getBoundingClientRect(){return{left:0,top:0,width:0,height:0}},appendChild(){},isConnected:false};
+    const shot=f=>{global.document=Object.assign({},D,{querySelector:s=>s=='#app'?app:dummy,querySelectorAll:()=>[],body:{appendChild(){}}});
+      try{app.innerHTML='';f();return app.innerHTML}catch(e){return 'ERR '+e.message}finally{global.document=D}};
+    // 1. registered in the Game Room, after Snack Stand
+    const g=GH.get('hop');
+    if(!g||g.btn!=='ghop'||g.name!=='Sky Hop'||g.tapToPlay!=='#hopgo'||typeof g.open!='function'||g.saved!=='Your stars are saved.')bad('not registered with GH.reg as Sky Hop (#ghop, tapToPlay #hopgo)');
+    const ids=GH.games.map(x=>x.id);
+    if(ids.indexOf('hop')<ids.indexOf('snack'))bad('Sky Hop should come after Snack Stand in the hub: '+ids.join());
+    S.sound=false;S.voice=false;S.pt={bank:600,day:today(),used:0};S.ptCfg={per:3,max:30,pause:false};
+    // 2. old saves load unchanged: no S.hop until the game is opened; the hub card works without it; the menu makes the defaults
+    for(const [name,raw] of FIX){
+      for(const k in store)delete store[k];
+      loadSave(raw);migrate();
+      if('hop' in S)bad(name+': S.hop appeared while loading an old save');
+      S.pt={bank:600,day:today(),used:0};
+      const hub=shot(()=>GH.hub());
+      const keys=Object.keys(S).sort().join();
+      if(!/id="ghop" data-g="hop"/.test(hub)||!hub.includes('Hop through the clouds with your pet'))bad(name+': no Sky Hop card on the hub');
+      if('hop' in S)bad(name+': showing the hub created S.hop');
+      const menu=shot(()=>hopMenu());
+      if(/^ERR/.test(menu)||!/^<div class="top tbar gh-top/.test(menu.trim())||!menu.includes('id="hopgo"')||(menu.match(/data-c="/g)||[]).length!==6||(menu.match(/data-w="/g)||[]).length!==4)bad(name+': menu '+menu.slice(0,90));
+      const r=S.hop,mode=(S.grade==null?0:+S.grade)<=2?'one':'free';
+      if(!r||r.runs!==0||r.mode!==mode||r.cur!=='m1'||r.world!==0||r.trail!=='none'||JSON.stringify([r.best,r.stars,r.medal])!=='[{},{},{}]')bad(name+': defaults '+JSON.stringify(r));
+      if(Object.keys(S).filter(k=>k!=='hop'&&k!=='pt').sort().join()!==keys.split(',').filter(k=>k!=='pt').join())bad(name+': opening the game changed other save fields');
+      if((menu.match(/data-ok="1"/g)||[]).length!==1)bad(name+': only the first course should be open');
+    }
+    // 3. damaged saves are read safely
+    for(const v of ['x',[],5,null,{runs:-4,best:{m1:'40000',zz:5,m2:-3,m3:'abc'},stars:{m1:99,m2:'2',p1:-1},medal:{m1:7},mode:'fast',trail:'rainbow',cur:'r6',world:9},
+      {best:[]},{stars:'x'},{runs:1e99},{cur:'m2',world:2}]){
+      S.hop=v;
+      const r=hopS();
+      if(!(r.runs>=0&&Number.isInteger(r.runs)))bad('damaged save '+JSON.stringify(v)+': runs '+r.runs);
+      for(const [k,lo,hi] of [['best',1,36e5],['stars',1,7],['medal',1,3]])for(const id in r[k])if(!HOP_BY[id]||!(r[k][id]>=lo&&r[k][id]<=hi))bad('damaged save: '+k+' '+id+'='+r[k][id]);
+      if(!['one','free'].includes(r.mode)||r.trail!=='none'||!hopOpen(HOP_BY[r.cur],r)||!hopOpen(HOP_COURSES[r.world*6],r))bad('damaged save '+JSON.stringify(v)+': '+JSON.stringify(r));
+    }
+    // 4. the courses: 24 in 4 worlds, each with 3 stars, checkpoints every few seconds, a flag; what each world adds
+    if(HOP_COURSES.length!==24||HOP_WORLDS.length!==4)bad('24 courses in 4 worlds expected');
+    if(new Set(HOP_COURSES.map(c=>c.id)).size!==24||new Set(HOP_COURSES.map(c=>c.name)).size!==24)bad('course ids and names must be unique');
+    const feat={springs:[],winds:[],lifts:[],movers:[],gates:[]};
+    for(const c of HOP_COURSES){
+      const C=hopBuild(c.id),w=c.id+' ';
+      if(c.w!==Math.floor(c.i/6))bad(w+'world');
+      if(!c.name||PICT.test(c.name))bad(w+'name');
+      if(C.stars.length!==3)bad(w+C.stars.length+' stars (3 wanted)');
+      if(!C.goal||C.goal.x<150)bad(w+'no flag, or too short');
+      if(C.cps.length<4)bad(w+'too few checkpoints');
+      for(let i=1;i<C.cps.length;i++)if(C.cps[i].x-C.cps[i-1].x>48)bad(w+'checkpoints too far apart at '+C.cps[i].x);
+      if(C.goal&&C.goal.x-C.cps[C.cps.length-1].x>60)bad(w+'the last checkpoint is far from the flag');
+      if(C.dj!==(c.w>0))bad(w+'the second hop is for Windy Peaks on');
+      if(c.gold<40||c.gold>90)bad(w+'gold target '+c.gold+' s (40-90)');
+      for(const k in feat)feat[k][c.w]=(feat[k][c.w]||0)+C[k].length;
+      for(const g of C.gates)if(!C.pads.some(d=>d.g===C.gates.indexOf(g)))bad(w+'a gate without a switch');
+      if(C.floors.some(f=>!(f.x1>f.x0))||C.spk.some(q=>!isFinite(q.x+q.y)))bad(w+'bad geometry');
+    }
+    if(!feat.springs[0]||feat.winds[0]||feat.lifts[0]||feat.movers[0]||feat.gates[0])bad('Cloud Meadow: springs only '+JSON.stringify(feat));
+    if(!feat.winds[1]||!feat.lifts[1]||feat.movers[1]||feat.gates[1])bad('Windy Peaks adds wind '+JSON.stringify(feat));
+    if(!feat.movers[2]||feat.gates[2])bad('Starry Night adds kite clouds '+JSON.stringify(feat));
+    if(!feat.gates[3])bad('Rainbow Bridge adds switches and gates');
+    // 5. bots play every course: one-touch (a press is the only input) with no falls, at or under the gold target; free move within 90 s;
+    //    and each star is reached by a bot from the checkpoint before it (free move). A beam search over the input every 4 steps (1/15 s).
+    const OPT={one:[{jump:false},{jump:true}],free:[[1,0],[1,1],[0,0],[0,1],[-1,0],[-1,1]].map(([d,j])=>({dir:d,jump:!!j}))};
+    const keyOf=n=>{const q=n.p;return Math.round(q.x*6)+','+Math.round(q.y*6)+','+Math.round(q.vx*2)+','+Math.round(q.vy)+','+q.gr+q.jl+n.stars+'.'+n.gates+n.wait+q.held};
+    const keep=(all,B,score)=>{
+      all.sort((a,b)=>b.sc-a.sc);
+      const beam=all.slice(0,B>>1),bins=new Map();
+      for(const s of all.slice(B>>1)){const k=Math.floor(s.p.x)+','+Math.floor(s.p.y)+','+(s.p.gr?'g':Math.round(s.p.vy/4));if(!bins.has(k))bins.set(k,s)}
+      return beam.concat([...bins.values()].slice(0,B));
+    };
+    const bot=(id,mode,B)=>{
+      let beam=[hopNew(id,{mode})];
+      for(let L=0;L<1400;L++){
+        const next=new Map();
+        for(const s of beam)for(const inp of OPT[mode]){
+          const n=hopClone(s);
+          for(let k=0;k<4&&!n.done;k++){hopStep(n,inp);if(n.wait=='offer')hopHelp(n,true)}
+          n.sc=(n.anim?n.anim.x1:n.p.x)-n.falls*200-n.bumps*6+(n.done?1e6-n.t*100:0);
+          const k=keyOf(n),o=next.get(k);
+          if(!o||o.sc<n.sc)next.set(k,n);
+        }
+        beam=keep([...next.values()],B);
+        const d=beam.find(s=>s.done);
+        if(d)return d;
+        if(beam[0].t>95)break;
+      }
+      return null;
+    };
+    const reach=(id,k)=>{
+      const s0=hopNew(id,{mode:'free'}),C=s0.C,star=C.stars[k];
+      let ci=0;for(let i=0;i<C.cps.length;i++)if(C.cps[i].x<star.x-8)ci=i; // a checkpoint a little before it (not just past a spring)
+      for(const ofs of [OPT.free.slice(0,2),OPT.free.slice(0,4),OPT.free]){
+        const s1=hopClone(s0);s1.cp=ci;s1.p.x=C.cps[ci].x;s1.p.y=C.cps[ci].y;
+        let beam=[s1];
+        for(let L=0;L<180&&beam.length;L++){
+          const next=new Map();
+          for(const s of beam)for(const inp of ofs){
+            const n=hopClone(s);
+            for(let q=0;q<4;q++)hopStep(n,inp);
+            if(n.stars>>k&1)return true;
+            if(n.falls||n.wait=='back')continue;
+            n.sc=-Math.hypot(star.x-n.p.x,star.y-n.p.y-.6)+(n.p.gr?.3:0);
+            const kk=keyOf(n),o=next.get(kk);
+            if(!o||o.sc<n.sc)next.set(kk,n);
+          }
+          beam=keep([...next.values()],48);
+        }
+      }
+      return false;
+    };
+    const times={one:[],free:[]};let reached=0,hard=0;
+    for(const c of HOP_COURSES){
+      let a=bot(c.id,'one',30);
+      if(!a||a.falls)a=bot(c.id,'one',48);
+      if(!a)bad(c.id+': the one-touch bot did not reach the flag');
+      else{
+        if(a.falls)bad(c.id+': the one-touch bot fell '+a.falls+' times');
+        if(a.t>c.gold)bad(c.id+': one-touch took '+a.t.toFixed(1)+' s, over the gold target '+c.gold);
+        if(a.t<38||a.t>90)bad(c.id+': one-touch course time '+a.t.toFixed(1)+' s (40-90)');
+        times.one.push(a.t);
+      }
+      let b=bot(c.id,'free',32);
+      if(!b)b=bot(c.id,'free',56);
+      if(!b||b.t>90)bad(c.id+': the free-move bot did not reach the flag within 90 s'+(b?' ('+b.t.toFixed(1)+')':''));
+      else{times.free.push(b.t);if(b.falls)hard++}
+      for(let k=0;k<3;k++){if(reach(c.id,k))reached++;else bad(c.id+': star '+(k+1)+' cannot be reached')}
+    }
+    const mm=a=>a.length?Math.min(...a).toFixed(0)+'-'+Math.max(...a).toFixed(0)+' s':'-';
+    out.note.push('bots: one-touch '+times.one.length+'/24 courses, no falls, '+mm(times.one)+'; free move '+times.free.length+'/24, '+mm(times.free)+
+      (hard?' ('+hard+' with a fall at a kite cloud)':'')+'; '+reached+'/72 stars reached');
+    // 6. deterministic: the same presses give the same course, another plan another one
+    const play=(id,mode,seed)=>{const st=hopNew(id,{mode});let x=seed;for(let i=0;i<60*40&&!st.done;i++){x=(x*1103515245+12345)>>>0;hopStep(st,{jump:(x>>16)%9<2,dir:(x>>20)%5?1:-1});if(st.wait=='offer')hopHelp(st,(x>>8)%2==0)}
+      return JSON.stringify([st.t.toFixed(4),st.p.x.toFixed(4),st.p.y.toFixed(4),st.falls,st.bumps,st.stars,st.spk,st.cp,st.gates,st.helped])};
+    for(const [id,m] of [['m3','one'],['p2','free'],['n4','one'],['r5','free']]){
+      if(play(id,m,7)!==play(id,m,7))bad(id+': not deterministic');
+      if(play(id,m,7)===play(id,m,8))bad(id+': another plan gave the same run');
+    }
+    // 7. checkpoints and the helper balloon: running into the first gap without hopping
+    {
+      const st=hopNew('m1',{mode:'one'}),C=st.C;
+      let offers=0,backs=0,steps=0;
+      const go=()=>{while(st.wait!=='offer'&&steps<60*60){hopStep(st,{});steps++;for(const e of st.ev){if(e[0]=='back')backs++;if(e[0]=='offer')offers++}st.ev.length=0}};
+      go();
+      if(st.wait!=='offer'||st.falls!==3||st.cp!==0||st.cpF[0]!==3||Math.abs(st.p.x-C.cps[0].x)>.01||Math.abs(st.p.y-C.cps[0].y)>.01||backs!==3)bad('three falls should bring the pet back to the checkpoint and offer the balloon: '+JSON.stringify({w:st.wait,f:st.falls,cp:st.cp,x:st.p.x,backs}));
+      const t=st.t;for(let i=0;i<30;i++)hopStep(st,{jump:true});
+      if(st.t!==t||st.wait!=='offer')bad('the course should wait while the balloon asks');
+      hopHelp(st,false);
+      if(st.wait==='offer'||st.cpF[0]!==0)bad('No, thanks should play on');
+      go();
+      if(st.falls!==6||st.wait!=='offer'||offers!==2)bad('the balloon should ask again after three more falls: '+st.falls+' '+offers);
+      hopHelp(st,true);
+      for(let i=0;i<60*8&&st.wait;i++)hopStep(st,{});
+      if(st.cp!==1||st.helped!==1||Math.abs(st.p.x-C.cps[1].x)>.01||Math.abs(st.p.y-C.cps[1].y)>.01)bad('Yes, please should carry the pet to the next checkpoint: '+JSON.stringify({cp:st.cp,x:st.p.x}));
+      // a fall now goes back to the new checkpoint
+      st.p.x+=4;st.p.y=-6;st.p.gr=false;
+      for(let i=0;i<60;i++)hopStep(st,{});
+      if(st.falls!==7||st.cp!==1||Math.abs(st.p.x-C.cps[1].x)>.01||st.cpF[1]!==1)bad('after the lift a fall goes back to the new checkpoint: '+JSON.stringify({f:st.falls,cp:st.cp,x:st.p.x}));
+      // a bot pass collects checkpoints in order
+      const b=bot('m2','one',30);
+      if(!b||b.cp!==b.C.cps.length-1)bad('every checkpoint should be passed on the way to the flag');
+    }
+    // 8. gates: the bot that skips the switch bounces back; pressing it opens the gate
+    {
+      const id='r1',C=hopBuild(id),gi=0,g=C.gates[gi],d=C.pads.find(q=>q.g===gi);
+      const st=hopNew(id,{mode:'free'});
+      Object.assign(st.p,{x:g.x0-1.4,y:g.y0,gr:true});st.wait=null;
+      let bounced=false;for(let i=0;i<60;i++){hopStep(st,{dir:1});if(st.ev.some(e=>e[0]=='gate'))bounced=true;st.ev.length=0}
+      if(!bounced||st.p.x>g.x0)bad('a closed gate should bounce the pet back');
+      for(let i=0;i<120;i++)hopStep(st,{});
+      if(Math.abs(st.p.x-g.back.x)>.01)bad('the bounce should land before the switch');
+      const s2=hopNew(id,{mode:'free'});
+      Object.assign(s2.p,{x:(d.x0+d.x1)/2,y:d.y,gr:true});s2.wait=null;hopStep(s2,{});
+      if(!(s2.gates&1))bad('standing on the switch should open the gate');
+      Object.assign(s2.p,{x:g.x0-1.4,y:g.y0,gr:true});
+      for(let i=0;i<40;i++)hopStep(s2,{dir:1});
+      if(s2.p.x<g.x1||s2.bumps)bad('an open gate should let the pet through');
+    }
+    // 9. medals, stars and times are saved; courses open in order; trails open with stars
+    {
+      for(const k in store)delete store[k];
+      loadSave(fx('midway'));migrate();
+      delete S.hop;
+      const r=hopS(),c=HOP_BY.m1;
+      if(hopOpen(HOP_BY.m2,r))bad('course 2 open before course 1 is finished');
+      const a=hopRecord(r,c,{t:c.gold-1,stars:5});
+      if(a.md!==3||!a.rec||!a.opening||a.next!==HOP_BY.m2||r.best.m1!==(c.gold-1)*1000||r.stars.m1!==5||r.medal.m1!==3||r.runs!==1||r.cur!=='m2'||a.trails.length)bad('first finish: '+JSON.stringify([a.md,a.rec,a.opening,r]));
+      const b2=hopRecord(r,c,{t:c.gold*1.2,stars:2});
+      if(b2.md!==2||b2.rec||!b2.trails.length||b2.trails[0][0]!=='sun'||r.best.m1!==(c.gold-1)*1000||r.stars.m1!==7||r.medal.m1!==3||r.runs!==2||b2.opening)bad('a slower run must keep the best time and medal, and add the stars: '+JSON.stringify(r));
+      if(hopMedal(c,c.gold*2)!==1||hopMedal(c,c.gold)!==3||hopMedal(c,Math.ceil(c.gold*1.3))!==2)bad('medal thresholds');
+      if(!hopOpen(HOP_BY.m2,r)||hopOpen(HOP_BY.m3,r))bad('a course opens when the one before it is finished');
+      r.trail='pink';
+      save();
+      loadSave(store['starschool-v2']);migrate();
+      const r2=hopS();
+      if(r2.best.m1!==(c.gold-1)*1000||r2.stars.m1!==7||r2.medal.m1!==3||r2.runs!==2||r2.cur!=='m2')bad('not saved: '+JSON.stringify(r2));
+      if(r2.trail!=='none')bad('a trail needs its stars ('+hopStarsAll(r2)+' stars, pink needs 9)');
+      r2.stars={m1:7,m2:7,m3:7};r2.trail='pink';
+      if(hopS().trail!=='pink')bad('a trail with enough stars stays on');
+      const hub=shot(()=>GH.hub());
+      if(!/<b>9<\/b> of 72 stars/.test(hub))bad('the hub card should show the stars found');
+    }
+    // 10. drawings for the token check outside
+    out.svg=[['hub',hopHubArt()]];
+    for(const k in HOP_ART)out.svg.push(['art '+k,typeof HOP_ART[k]=='function'&&HOP_ART[k].length?HOP_ART[k](0)+HOP_ART[k](1):HOP_ART[k]()]);
+    for(const W of HOP_WORLDS){
+      out.svg.push(['cloud '+W.id,hopCloudArt(5,1.2,W.cloud)],['cloud tall '+W.id,hopCloudArt(2,4.2,W.cloud)],['sky '+W.id,HOP_SKY[W.id]()],
+        ['far '+W.id,HOP_BACK[W.id].far()],['near '+W.id,HOP_BACK[W.id].near()],['world '+W.id,hopWorldPic(W)]);
+    }
+    out.svg.push(['bridge',hopBridgeArt(6,false)],['rainbow bridge',hopBridgeArt(7,true)]);
+    out.pic=GH.pic('hop');
+    out.dev=JSON.stringify(HOP_DEV);
+    return out;
+  };
+  const o=eval(js+';('+body.toString()+')()');
+  p.push(...o.bad);
+  notes.push(...o.note);
+  // 11. tokens only, no emoji: the source, the CSS, every drawing
+  if(/#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(/.test(src))p.push('67-game-skyhop.js: a raw colour');
+  if(PICT.test(src)||PICT.test(css))p.push('emoji in the Sky Hop source or CSS');
+  if(/[☀-➿]|\\2[67][0-9a-f]{2}/i.test(src+css))p.push('a symbol character (it may show as an emoji) in the Sky Hop source or CSS');
+  if(/#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(/.test(css))p.push('49-game-skyhop.css: a raw colour');
+  for(const v of css.matchAll(/var\(--([a-z0-9-]+)/g))if(!['gh-a','gh-b'].includes(v[1])&&!tokCss.includes('--'+v[1]+':'))p.push('49-game-skyhop.css: --'+v[1]+' is not a token');
+  if(/(^|[;{\s])(-webkit-)?(backdrop-)?filter\s*:/.test(css))p.push('49-game-skyhop.css: filter used');
+  for(const m of css.matchAll(/transition:([^;}]*)/g))if(/\b(width|height|left|top|background|box-shadow|all)\b/.test(m[1]))p.push('49-game-skyhop.css: transition on '+m[1]);
+  if(/infinite|@keyframes/.test(css))p.push('49-game-skyhop.css: CSS animation (the canvas does the motion)');
+  const ROLE=m=>new RegExp('--a-'+m+':var\\(--ill-').test(artCss);
+  let shapes=0;
+  for(const [w,d] of o.svg){
+    if(!d){p.push(w+': empty drawing');continue}
+    if(PICT.test(d))p.push(w+': emoji');
+    if(/\sid=|<defs|gradient|<mask|<clip|<pattern|filter|<use|<text|style=|url\(|<script|xlink|NaN|undefined|Infinity/i.test(d))p.push(w+': forbidden SVG feature');
+    if(/#[0-9a-f]{3,8}\b|rgba?\(|hsla?\(/i.test(d))p.push(w+': raw colour');
+    for(const t of d.matchAll(/<(\/?)([a-zA-Z]+)\b([^>]*?)(\/?)>/g)){
+      if(!/^(svg|g|path|circle|ellipse|rect)$/.test(t[2]))p.push(w+': element <'+t[2]+'>');
+      if(!t[1]&&t[2]!=='svg'&&t[2]!=='g')shapes++;
+      for(const a of t[3].matchAll(/\s([a-z-]+)="([^"]*)"/g)){
+        if((a[1]=='fill'||a[1]=='stroke')&&a[2]!=='none'){const m=/^var\(--a-([a-z]\d?)\)$/.exec(a[2]);if(!m||!ROLE(m[1]))p.push(w+': colour '+a[2]);}
+        if(a[1]=='transform'&&!/^(translate\([-\d. ]+\)\s*)?(rotate\([-\d. ]+\))?$/.test(a[2]))p.push(w+': transform '+a[2]);
+      }
+    }
+    const tones={};for(const m of d.matchAll(/var\(--a-([a-z])(\d?)\)/g))(tones[m[1]]=tones[m[1]]||new Set()).add(m[2]);
+    const want=/^hub/.test(w)?3:/^(far|near|world)/.test(w)?1:/^sky/.test(w)?0:1;
+    if(Object.values(tones).filter(s=>s.size>=2).length<want)p.push(w+': looks flat (no shade tones)');
+  }
+  if(!/^<svg class="art gh-art"/.test(o.pic)||!/var\(--a-k\)" opacity="0?\.1\d?"/.test(o.pic))p.push('hub picture: not an svg.art with a soft ink shadow');
+  notes.push(o.svg.length+' drawings, '+shapes+' shapes, tokens only');
+  // 12. plumbing: the games2 part, stopped by view(), the test hook off, the game-time rules, the shared chrome, no Math.random
+  if(partOf('67-game-skyhop.js')!=='games2'||partOf('49-game-skyhop.css')!=='games2')p.push('Sky Hop must ship in games2.'+BUILD_VER+'.js');
+  if(!/if\(typeof hopStop=='function'\)hopStop\(\)/.test(rd('js/40-view.js')))p.push('view() must stop the course (hopStop)');
+  if(o.dev!=='{"fast":1}')p.push('HOP_DEV test hook must be off: '+o.dev);
+  if(!/if \(ptLeft\(\) <= 0\) \{\s*SFX\.wrong\(\);\s*fb\(ptWhyNot\(\)/.test(src))p.push('a course must not start without game time (ptLeft, ptWhyNot)');
+  if(!/gtStart\('#gtm', \(\) => hopTimeUp\(\)\)/.test(src)||!/GH\.wire\(\{quit: \(\) => hopQuit\(\)/.test(src)||!/timeUpOverlay\(\)/.test(src))p.push('the course must use gtStart, the Pause sheet and the time-up card');
+  if(!/GH\.end\('hop'/.test(src))p.push('the flag must use the shared end card');
+  if(/Math\.random/.test(src))p.push('nothing random (no Math.random)');
+  if(/requestAnimationFrame/.test(src)&&!/cancelAnimationFrame\(HP\.raf\)/.test(src))p.push('hopStop must cancel the animation frame');
+  if(!/hopCalm\(\)/.test(src)||!/S\.calm/.test(src))p.push('calm mode must soften the course (no shake)');
+  notes.push(((Date.now()-t0)/1000).toFixed(0)+' s');
+  return{problems:[...new Set(p)].slice(0,60),note:notes.join('; ')};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){

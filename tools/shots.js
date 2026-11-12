@@ -2217,6 +2217,33 @@ Object.assign(SCREENS, {
 });
 GROUPS.g04a = ['snack-menu', 'snack-day', 'snack-busy', 'snack-till', 'snack-shop', 'snack-end'];
 
+// G-04b: Sky Hop (menu, a course in each world, free move with its buttons, the helper balloon's question, the end card).
+//    node tools/shots.js @g04b   (the course shots move the pet along the course first and wait for the pictures)
+const hopSave = () => { S.pt = { bank: 1200, day: today(), used: 0 }; const r = hopS(); r.mode = 'one'; r.runs = 9;
+  for (const c of HOP_COURSES.slice(0, 13)) r.best[c.id] = (c.gold - 2) * 1000;
+  Object.assign(r.stars, { m1: 7, m2: 5, m3: 7, m4: 3, p1: 6 }); Object.assign(r.medal, { m1: 3, m2: 2, m3: 3, m4: 1, p1: 2 }); r.world = 0; save(); };
+const hopShot = (fn, at, then, wait = 1800) => ({ run: async p => {
+  await p.evaluate(hopSave);
+  await p.evaluate(fn);
+  if (at != null) {
+    await p.waitForFunction(() => HP && HP.ready, null, { timeout: 15000 });
+    await p.evaluate(x => { const st = HP.st, C = st.C; const f = C.floors.find(q => q.x0 >= x && q.x1 - q.x0 >= 3) || C.floors[2];
+      Object.assign(st.p, { x: f.x0 + 1, y: f.y, gr: true, vy: 0 }); HP.cx = null; }, at);
+  }
+  await p.waitForTimeout(wait);
+  if (then) { await p.evaluate(then); await p.waitForTimeout(700); }
+} });
+Object.assign(SCREENS, {
+  'skyhop-menu': hopShot(() => hopMenu(), null, null, 600),
+  'skyhop-meadow': hopShot(() => hopPlay('m3'), 0, null, 900),
+  'skyhop-peaks': hopShot(() => { S.hop.mode = 'free'; hopPlay('p1'); }, 26),
+  'skyhop-night': hopShot(() => hopPlay('n1'), 10),
+  'skyhop-rainbow': hopShot(() => hopPlay('r1'), 20),
+  'skyhop-offer': hopShot(() => hopPlay('m2'), null, () => { const st = HP.st; st.cpF[0] = 3; st.p.y = -6; }, 1500),
+  'skyhop-end': hopShot(() => hopPlay('m4'), null, () => { HP.st.t = 47.3; HP.st.stars = 5; HP.st.spk = 31; hopFinish(); }, 1200),
+});
+GROUPS.g04b = ['skyhop-menu', 'skyhop-meadow', 'skyhop-peaks', 'skyhop-night', 'skyhop-rainbow', 'skyhop-offer', 'skyhop-end'];
+
 async function main() {
   const args = process.argv.slice(2);
   let fixtureArg = null;
