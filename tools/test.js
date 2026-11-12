@@ -14897,6 +14897,121 @@ run('reading review fixes R-01r',()=>{
   return{problems:uniq(p).slice(0,80),note:note.scan+'; middle vowels '+note.vowels+'; '+note.same+' untouched levels unchanged by seed'};
 });
 
+// ---- R-01d: Discover review fixes (docs/reviews/R-01-discover.md: must 1-4, the fact-check table 2.4, should 8, 11, 12, 14, 17) ----
+run('Discover review fixes R-01d',()=>{
+  const p=[],bad=m=>p.push(m),note={};
+  const body=function(){
+    const IDS=['sci_life','sci_earth','sci_phys','geo_world','geo_us','civ'];
+    const all=IDS.flatMap(id=>BANK[id].map((it,bi)=>({id,bi,it})));
+    const find=(id,re)=>BANK[id].filter(it=>re.test(it.q));
+    const one=(id,re,w)=>{const f=find(id,re);if(f.length!==1)bad(w+': '+f.length+' items match '+re);return f[0]||{q:'',a:'',d:[],hint:''}};
+    // 1. the reported items, each with one defensible right answer (seeds from the review; a level whose item count changed draws
+    //    another item from the same seed now, so each fix is also checked on the item itself)
+    const g=(id,lv,s)=>BANK[id][genQ(id,lv,s).bk.bi];
+    let it=g('sci_life',3,201);
+    if(!/^Most of the frogs in a pond die\./.test(it.q)||it.a!=='go up'||!it.d.includes('go down'))bad('sci_life 3 seed 201: '+it.q+' = '+it.a);
+    if(find('sci_life',/most of the insects that frogs eat die/i).length)bad('the insects item with the wrong key is still there');
+    it=g('civ',2,40);
+    if(it.q!=='Freedom of religion means people may ___.'||it.a!=='choose their own beliefs'||it.d.some(d=>/not practice|hide their/.test(d)))bad('civ 2 seed 40: '+it.a+' | '+it.d.join(', '));
+    for(const s of [10,249]){it=g('geo_us',1,s);if(/Nevada|Utah/.test(it.q)&&it.topic==='regions')bad('geo_us 1 seed '+s+': '+it.q)}
+    if(BANK.geo_us.some(x=>x.topic==='regions'&&/ (Nevada|Utah) in\?$/.test(x.q)))bad('Nevada or Utah is still asked as a region');
+    it=g('geo_world',2,225);
+    if(!/^Most of the United States is in the Northern and ___ Hemispheres\.$/.test(it.q))bad('geo_world 2 seed 225: '+it.q);
+    if(all.some(x=>[x.it.a,...(x.it.d||[])].includes('voting at 18')))bad('"voting at 18" is still offered as a right of every citizen');
+    it=one('civ',/is NOT a right of/,'voting');
+    if(!/citizens\?$/.test(it.q)||!it.d.includes('voting at age 18 and over')||it.a!=='voting at age 10')bad('rights item: '+it.q+' = '+it.a);
+    for(const x of all.filter(x=>/Denali/.test(x.it.q+x.it.a)))if(!/Mount McKinley/.test(x.it.q+x.it.a))bad(x.id+': Denali without its other name: '+x.it.q);
+    for(const x of all.filter(x=>/Gulf of (Mexico|America)/.test(x.it.q+x.it.a)))if(!/Gulf of Mexico/.test(x.it.q+x.it.a)||!/Gulf of America/.test(x.it.q+x.it.a))bad(x.id+': one gulf name only: '+x.it.q);
+    if(!BANK.geo_world.some(x=>x.lv===1&&/Southern Ocean|^Southern$/.test(x.a))||!BANK.geo_world.some(x=>x.lv===1&&/five oceans/.test(x.q)))bad('the Southern Ocean is not taught');
+    it=one('sci_life',/^Fossils are the traces/,'fossils');
+    if(/before there were any people/.test(it.hint)||!/mammoth/.test(it.hint))bad('fossil hint: '+it.hint);
+    if(/continent/i.test(DISC_HINT.features))bad('the features hint still asks for a continent');
+    for(const re of [/Ganges/,/Mount Fuji/,/Yangtze/]){it=one('geo_world',re,'features');if(it.hint===DISC_HINT.features||/continent/i.test(it.hint))bad(it.q+': hint '+it.hint)}
+    if(!find('geo_world',/^Which continent is mostly one country\?$/).length)bad('Australia item');
+    if(all.some(x=>/making work|hour\(s\)|under the sand/.test(x.it.q+'|'+(x.it.d||[]).join('|'))))bad('a wording fix is missing (work, hour(s), sand)');
+    if(!find('sci_life',/^Where does a honeybee live\?$/).length||BANK.sci_life.some(x=>/cold, icy place/.test(x.q)&&x.a==='a penguin'))bad('bee or penguin');
+    it=one('sci_earth',/^The seasons are caused mainly/,'seasons');
+    if(!it.d.includes('distance from the Sun'))bad('seasons: no "distance from the Sun"');
+    it=one('sci_earth',/change shape over a month/,'moon phases');
+    if(!it.d.some(d=>/Earth's shadow/.test(d)))bad('moon phases: no "Earth\'s shadow"');
+    // 2. every item of every Discover bank: one right answer string, no repeated choice, the answer never also a wrong answer
+    for(const {id,it} of all){
+      const ch=[it.a,...it.d].map(x=>String(x).trim().toLowerCase());
+      if(typeof it.a!=='string'||!it.a.trim())bad(id+': '+it.q+': no answer');
+      if(new Set(ch).size!==ch.length)bad(id+': '+it.q+': a choice repeats');
+    }
+    // 3. the joke choices the review listed (2.7) are gone from every bank
+    const JOKES=['candy and toys','candy, soda and chips','toys, books and games','dreamed','only in winter','turn blue','cheese','glows','glow',
+      'turns to ice cream','tasty','ice cream','stuck','a dragon','a unicorn','a candy bar','candy','free candy','a free car','vacations','video games'];
+    for(const {id,it} of all)for(const c of [it.a,...it.d])if(JOKES.includes(c))bad(id+': '+it.q+': joke choice "'+c+'"');
+    // 4. Nature Trail (Pre-K and K play it): the choices are spoken with the prompt, the hint is spoken, pictures where a thing has one
+    const NT=NODES.disc.filter(n=>n.wi===0&&n.sk!=='boss');
+    if(NT.map(nid).join(' ')!=='sci_life1 sci_earth1 sci_phys1 geo_world1 civ1')bad('Nature Trail stops: '+NT.map(nid).join(' '));
+    const heard=[],sv=say,st=global.setTimeout;
+    let pics=0;
+    say=t=>{heard.push(t)};global.setTimeout=f=>f();
+    try{
+      for(const n of NT){
+        for(const x of BANK[n.sk].filter(x=>x.lv===n.lv))if(!x.aloud)bad(nid(n)+': '+x.q+': not read aloud');
+        for(let s=1;s<=400;s++){
+          const q=genQ(n.sk,n.lv,s),w=nid(n)+' '+q.label+': ',x=BANK[n.sk][q.bk.bi];
+          const say1=q.say.toLowerCase();
+          if(q.choices.some(c=>!say1.includes(String(c.v).toLowerCase())))bad(w+'a choice is not spoken: '+q.say);
+          const vs=q.choices.map(c=>String(c.v).toLowerCase());
+          if(!say1.endsWith(vs.slice(0,-1).join(', ')+' or '+vs[vs.length-1]+'?')&&!say1.endsWith(vs.join('? or ')+'?'))bad(w+'choices not spoken in the order shown: '+q.say);
+          if(!q.hint||q.hint.k!=='text'||q.hint.w!==q.hint.s)bad(w+'the hint is not spoken');
+          heard.length=0;hintHTML(q);
+          if(heard[0]!==q.hint.s)bad(w+'hintHTML did not speak the hint');
+          if(x.cp){
+            if(!/\bpics\b/.test(q.cls)||q.choices.some(c=>!c.h||!/<small>/.test(c.l)))bad(w+'picture choices not drawn');
+            const ps=q.choices.map(c=>c.l.replace(/<small>.*$/,''));
+            if(new Set(ps).size!==ps.length)bad(w+'two choices share a picture');
+          }
+        }
+        pics+=BANK[n.sk].filter(x=>x.lv===n.lv&&x.cp).length;
+      }
+    }finally{say=sv;global.setTimeout=st}
+    if(pics<35)bad('only '+pics+' Nature Trail items have picture answers');
+    for(const x of all.filter(x=>x.it.grade!=='K-2'))if(x.it.aloud||x.it.cp)bad(x.id+': '+x.it.q+': aloud or pictures outside Nature Trail');
+    // every picture answer's emoji is allowed and its drawing name is a word (picFor), never a bare emoji in the label
+    const allow=new Set(fs.readFileSync(path.join(ROOT,'tools','emoji-allow.txt'),'utf8').split('\n').map(l=>l.split('#')[0].trim().replace(/️/g,'')).filter(Boolean));
+    for(const k in DISC_PIC)if(!allow.has(DISC_PIC[k][1].replace(/️/g,''))||!/^[a-z-]+$/.test(DISC_PIC[k][0]))bad('DISC_PIC '+k+': '+DISC_PIC[k].join(' '));
+    note.pics=pics;
+    // 5. the 15 coordinate items draw the grid (VIZ.coordGrid); its points are the places the prompt names, never the answer
+    const G2=BANK.geo_world.map((x,bi)=>[x,bi]).filter(([x])=>x.topic==='grid');
+    if(G2.length!==15)bad(G2.length+' grid items');
+    for(const [x,bi] of G2){
+      if(!x.grid){bad('grid item without a grid: '+x.q);continue}
+      const q=genBank('geo_world',2,{bi,s:7});
+      if(!/class="bpic bgrid"/.test(q.html)||!/aria-label="coordinate grid"/.test(q.html))bad(x.q+': no grid drawn');
+      const nums=[x.q,x.a,...x.d].join(' ').match(/\((\d+), (\d+)\)/g)||[];
+      for(const pr of nums){const [a,b]=pr.match(/\d+/g).map(Number);if(a>x.grid.max||b>x.grid.max)bad(x.q+': '+pr+' is off the grid')}
+      const m=x.a.match(/^\((\d+), (\d+)\)$/);
+      // the answer point is never singled out: it is marked only when every choice is (which point is farthest east?)
+      const marked=pr=>{const [a,b]=pr.match(/\d+/g).map(Number);return x.grid.points.some(pt=>pt[0]==a&&pt[1]==b)};
+      if(m&&marked(x.a)&&![x.a,...x.d].every(marked))bad(x.q+': the grid marks the answer');
+      for(const pt of x.grid.points)if(!x.q.includes('('+pt[0]+', '+pt[1]+')'))bad(x.q+': marks a point the prompt does not name');
+    }
+    // 6. civics: the right answer is the single longest choice in under 40% of 3000 questions per level
+    note.long=[];
+    for(const lv of [1,2]){
+      let k=0;
+      for(let s=1;s<=3000;s++){const q=genQ('civ',lv,s),L=q.choices.map(c=>String(c.v).length),mx=Math.max(...L);
+        if(String(q.ans).length===mx&&L.filter(v=>v===mx).length===1)k++}
+      if(k/3000>=.4)bad('civ '+lv+': the right answer is the longest choice in '+(100*k/3000).toFixed(1)+'% of questions');
+      note.long.push('civ '+lv+' '+(100*k/3000).toFixed(1)+'%');
+    }
+    // 7. the one Discover level R-01d does not touch (sci_phys 3) asks the same questions as v139 (seeds 1-150, emoji fallback)
+    const artKeep=Object.assign({},ART);for(const k in ART)delete ART[k];
+    try{const a=[];for(let s=1;s<=150;s++)a.push(JSON.stringify(genQ('sci_phys',3,s)));
+      const h=require('crypto').createHash('md5').update(a.join('\n')).digest('hex').slice(0,12);
+      if(h!=='d7726a821099')bad('sci_phys 3 changed by seed ('+h+'), but R-01d does not touch it')}
+    finally{Object.assign(ART,artKeep)}
+  };
+  eval(js+';('+body.toString()+')()');
+  return{problems:uniq(p).slice(0,80),note:note.pics+' Nature Trail items with picture answers; longest-answer share '+(note.long||[]).join(', ')};
+});
+
 // ---- report ----
 let failed=0;
 for(const r of results){

@@ -7791,6 +7791,102 @@ async function main() {
       await rx.ctx.close();
     }
 
+    // R-01d Discover review fixes at 380x780 (2x), a Kindergartner (midway save, grade K). Home -> Discover -> Nature Trail -> Living
+    //    Things with real taps; the round shows a picture-answer item (the review's seed-free item "Which animal has thick wool?"): four
+    //    pictures with their words, the prompt is spoken with every choice in the order shown, a wrong tap opens the hint and speaks it, a
+    //    right tap answers. Then Science Lab -> Grids & Climate with real taps (world chip, stop): the review's coordinate item (geo_world 2
+    //    seed 66) draws the grid with its 0 corner on screen; after a wrong tap the hint and the whole grid are on screen and the question
+    //    stays at 18 px or more. Then the review's phone item (sci_life 3 seed 201, the frogs) with its hint open: question 18 px or more.
+    //    48 px buttons, no sideways scroll. Screenshots: tools/out/disc-r01d-* (or the folder in R01D_SHOTS).
+    {
+      const dx = await openApp(browser, { fixture: 'midway', width: 380, height: 780, scale: 2 });
+      const dp = dx.page, bad = [], notes = [];
+      const dir = process.env.R01D_SHOTS || require('path').join(__dirname, 'out');
+      const shot = n => dp.screenshot({ path: require('path').join(dir, 'disc-r01d-' + n + '-380x780.png') }).catch(() => {});
+      await dp.evaluate(() => {
+        S.grade = 0; S.unlockAll = true; save();
+        window.__said = [];
+        const o = say;
+        say = (t, ...a) => { window.__said.push(String(t)); return o(t, ...a); };
+      });
+      // the same item the seed gives outside a round (a round picks the least recently shown item, so the seed is applied off-round)
+      const show = (sk, lv, seed) => dp.evaluate(([sk, lv, seed]) => {
+        const was = BANKLIVE;
+        BANKLIVE = false;
+        G.q = genQ(sk, lv, seed);
+        BANKLIVE = was;
+        window.__said = [];
+        renderQ();
+        return G.q.label;
+      }, [sk, lv, seed]);
+      const look = () => dp.evaluate(() => {
+        const chs = [...document.querySelectorAll('.ch')], bq = document.querySelector('.bq'), g = document.querySelector('.bgrid svg');
+        const r = g && g.getBoundingClientRect(), qa = document.querySelector('.qarea').getBoundingClientRect();
+        return { n: chs.length, minH: Math.min(...chs.map(c => c.offsetHeight)), wide: document.documentElement.scrollWidth > innerWidth,
+          pics: chs.filter(c => c.querySelector('svg.art, small')).length, caps: chs.map(c => (c.querySelector('small') || {}).textContent || ''),
+          bq: bq ? parseFloat(getComputedStyle(bq).fontSize) : 0, grid: r ? { top: r.top, bottom: r.bottom, w: r.width, in: r.top >= qa.top - 1 && r.bottom <= qa.bottom + 1 } : null,
+          zero: !!(g && [...g.querySelectorAll('text')].some(t => t.textContent === '0')), said: window.__said.slice(), ans: G.q.ans,
+          vs: G.q.choices.map(c => c.v), hint: (document.querySelector('#hint') || {}).textContent || '' };
+      });
+      const tapWrong = async () => { await dp.click(`.ch[data-i="${await dp.evaluate(() => G.q.choices.findIndex(c => c.v !== G.q.ans))}"]`); await dp.waitForTimeout(500); };
+      const tapRight = async () => { await dp.click(`.ch[data-i="${await dp.evaluate(() => G.q.choices.findIndex(c => c.v === G.q.ans))}"]`); };
+      // Nature Trail, Living Things
+      await dp.click('.game[data-p="disc"]');
+      await dp.waitForSelector('.wchip.on');
+      await dp.click('.wchip[data-w="0"]');
+      await dp.click(`.node[data-n="${await dp.evaluate(() => NODES.disc.findIndex(n => nid(n) === 'sci_life1'))}"]`);
+      await dp.waitForSelector('#prompt');
+      await show('sci_life', 1, 4);
+      await dp.waitForTimeout(700);
+      let s = await look();
+      if (s.n !== 4 || s.pics !== 4 || s.caps.join() !== s.vs.join() || s.minH < 48 || s.wide) bad.push('Nature Trail pictures: ' + JSON.stringify(s));
+      const spoken = (s.said.find(t => /thick wool/i.test(t)) || '').toLowerCase();
+      if (!/thick wool/.test(spoken) || s.vs.some(v => !spoken.includes(v)) || s.vs.map(v => spoken.lastIndexOf(v)).some((x, i, a) => i && x <= a[i - 1]))
+        bad.push('Nature Trail prompt not spoken with its choices in order: ' + JSON.stringify(s.said));
+      await shot('nature-pictures');
+      await tapWrong();
+      s = await look();
+      if (!s.hint || !s.said.includes(s.hint)) bad.push('Nature Trail hint not spoken: ' + JSON.stringify([s.hint, s.said]));
+      await shot('nature-hint');
+      await tapRight();
+      if (!(await dp.evaluate(() => G.lock && !!document.querySelector('.ch.right')))) bad.push('Nature Trail: the right tap did not answer');
+      notes.push('Nature Trail: ' + s.caps.join(', ') + ', said "' + spoken.slice(0, 60) + '..."');
+      // Science Lab, Grids & Climate
+      await dp.evaluate(() => { G.dead = true; home(); });
+      await dp.click('.game[data-p="disc"]');
+      await dp.waitForSelector('.wchip.on');
+      await dp.click('.wchip[data-w="1"]');
+      await dp.waitForSelector('.wchip.on[data-w="1"]');
+      await dp.click(`.node[data-n="${await dp.evaluate(() => NODES.disc.findIndex(n => nid(n) === 'geo_world2'))}"]`);
+      await dp.waitForSelector('#prompt');
+      await show('geo_world', 2, 66);
+      await dp.waitForTimeout(400);
+      s = await look();
+      if (!s.grid || !s.zero || !s.grid.in || s.grid.w < 120 || s.wide || s.minH < 48) bad.push('grid question: ' + JSON.stringify(s));
+      await shot('grid');
+      await tapWrong();
+      s = await look();
+      const hintBox = await dp.evaluate(() => { const r = document.querySelector('#hint').getBoundingClientRect(); return r.bottom <= innerHeight && r.top >= 0; });
+      if (!s.grid || !s.grid.in || !/\(0, 0\)/.test(s.hint) || !hintBox || s.bq < 18) bad.push('grid with hint: ' + JSON.stringify(s));
+      await shot('grid-hint');
+      await tapRight();
+      notes.push('grid ' + Math.round(s.grid ? s.grid.w : 0) + ' px wide with the hint open, question ' + s.bq + ' px');
+      // the review's phone item: the frogs, hint open (after the round has moved on from the grid question)
+      await dp.waitForTimeout(800);
+      await show('sci_life', 3, 201);
+      await dp.waitForTimeout(300);
+      await tapWrong();
+      s = await look();
+      if (s.bq < 18 || s.wide || s.minH < 48 || !/frogs in a pond die/.test(await dp.evaluate(() => G.q.label))) bad.push('frogs with hint: ' + JSON.stringify(s));
+      await shot('frogs-hint');
+      notes.push('frogs question ' + s.bq + ' px with the hint open');
+      if (bad.length) fail('R-01d Discover review fixes:\n  ' + bad.join('\n  '));
+      else step('R-01d at 380x780: ' + notes.join('; ') + '; 48 px buttons, no sideways scroll');
+      network.push(...dx.network);
+      for (const e of dx.errors) fail(e);
+      await dx.ctx.close();
+    }
+
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');
   } catch (e) {

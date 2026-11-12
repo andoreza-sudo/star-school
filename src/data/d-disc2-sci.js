@@ -102,11 +102,11 @@ Bees carry a yellow dust from flower to flower. It is called ___.|pollen|sap;see
 Seeds can be spread by wind, by water or by ___.|animals|rocks;shadows;sunlight|plantfn
 A dandelion seed floats away on the wind. This helps the plant ___.|spread its seeds|make food;drink water;stay warm|plantfn
 Plants need light, water and air. Which of these does a plant NOT need?|chocolate|sunlight;water;air|plantfn
-Fossils are the traces of living things from ___.|long ago|yesterday;next year;this week|fossils||Think about animals like dinosaurs. Was it this year, or a time before there were any people?
+Fossils are the traces of living things from ___.|long ago|yesterday;next year;this week|fossils||Think of animals like dinosaurs and mammoths. Did they live this year, or many thousands of years before today?
 Where would you most likely find a fossil?|in a layer of rock|on a tree branch;in a bird's nest;in a puddle|fossils
 Which part of an animal is most likely to become a fossil?|a bone|its fur;its skin;its voice|fossils
 Scientists who study fossils are called ___.|paleontologists|astronomers;chemists;meteorologists|fossils
-A fossil footprint can show how an animal ___.|walked|sounded;smelled;dreamed|fossils
+A fossil footprint can show how an animal ___.|walked|sounded;smelled;breathed|fossils
 Which of these animals is extinct, with none alive today?|a woolly mammoth|an elephant;a tiger;a horse|fossils
 Fossils of sea shells are found high on a mountain. The place was once ___.|under the sea|a desert;a big city;a volcano|fossils
 Older fossils are usually found in ___ layers of rock.|deeper|higher;thinner;warmer|fossils
@@ -132,7 +132,7 @@ All the different populations living in one area form a ___.|community|populatio
 Parts of an ecosystem that are not alive, like water and sunlight, are ___ factors.|abiotic|biotic;animal;plant|ecosystem
 Which of these is a living, or biotic, part of an ecosystem?|a mushroom|sunlight;a stream;a rock|ecosystem
 Many connected food chains in one ecosystem make a food ___.|web|net;tower;ladder|ecosystem
-In a pond, most of the insects that frogs eat die. Over time the number of insects will ___.|go up|vanish;turn into frogs;stay exactly the same|ecosystem
+Most of the frogs in a pond die. Over time the number of insects the frogs ate will ___.|go up|go down;vanish;stay exactly the same|ecosystem
 Two animals trying to eat the same food are in ___.|competition|cooperation;migration;photosynthesis|ecosystem
 A clownfish and a sea anemone protect and feed each other. This kind of partnership is ___.|mutualism|competition;predation;decay|ecosystem
 Which ecosystem is hot and dry and gets very little rain?|a desert|a rain forest;the tundra;an ocean|ecosystem
@@ -148,7 +148,7 @@ The food a plant makes in its leaves is a kind of ___.|sugar|plastic;salt;oil|ph
 The green material in leaves that traps sunlight is ___.|chlorophyll|pollen;nectar;sap|photo
 Leaves take in air through tiny openings called ___.|stomata|roots;petals;veins|photo
 Which part of the plant takes in the water used for photosynthesis?|the roots|the flowers;the petals;the seeds|photo
-A plant kept in the dark for weeks would ___.|become weak and pale|grow taller and greener;turn blue;make more sugar|photo
+A plant kept in the dark for weeks would ___.|become weak and pale|grow taller and greener;stay exactly the same;make more sugar|photo
 Which of these can make food by photosynthesis?|a tree|a mushroom;a dog;a worm|photo
 Photosynthesis changes light energy into ___ energy stored in food.|chemical|sound;wind;magnetic|photo
 Animals depend on photosynthesis because it gives them food and ___.|oxygen|sunlight;gravity;soil|photo
@@ -170,7 +170,7 @@ Which trait is inherited?|eye color|riding a bike;speaking Spanish;knowing a son
 Which is a learned behavior?|riding a bike|having curly hair;eye color;skin color|traits
 The instructions for traits are carried in ___.|genes|bones;muscles;nerves|traits
 A baby gets genes from ___ of its parents.|both|only one;neither;a friend|traits
-Can a scar from a cut be passed on to a child?|no|yes;always;only in winter|traits
+Can a scar from a cut be passed on to a child?|no|yes;always;only if the scar is big|traits
 Identical twins have almost exactly the same ___.|genes|friends;clothes;memories|traits
 Which of these did a lion cub get from its parents?|its golden fur|a scar from a fight;a trick it was taught;a name|traits
 Members of one kind of animal are not all exactly alike. This is called ___.|variation|migration;adaptation;extinction|traits
@@ -204,7 +204,7 @@ Moving water or wind drops the pieces it carried in a new place. This is called 
 The Grand Canyon was carved mostly by ___.|a river|an earthquake;a volcano;a meteor|erosion
 Plant roots slow down erosion because they ___.|hold soil in place|make rain;create wind;melt rock|erosion
 Weathering is when rock is slowly ___.|broken into smaller pieces|turned into metal;grown bigger;painted|erosion
-Water freezes in a crack in a rock. As it turns to ice it ___.|expands and widens the crack|shrinks;melts the rock;glows|erosion
+Water freezes in a crack in a rock. As it turns to ice it ___.|expands and widens the crack|shrinks;melts the rock;seals the crack shut|erosion
 A fast river can carry ___ soil and rock than a slow river.|more|less;exactly the same|erosion
 Which can slow erosion on a hillside?|planting grass and trees|cutting down all the plants;digging up the soil;adding more rain|erosion
 A glacier is a slow-moving river of ___.|ice|sand;lava;mud|erosion||Think about a very cold place where snow piles up for years and slowly squeezes into something solid.
@@ -226,7 +226,7 @@ When we cannot see the Moon's lit side at all, it is a ___ Moon.|new|full;half;c
 About how long does the Moon take to go through all its phases?|one month|one day;one week;one year|moonphase
 The Moon travels around the ___.|Earth|Mars;Jupiter;the stars|moonphase
 A Moon that looks like a thin curved slice is a ___ Moon.|crescent|full;new;round|moonphase
-Moon phases happen because we see different amounts of the Moon's ___ side.|sunlit|cold;rainy;frozen|moonphase
+Why does the Moon seem to change shape over a month?|more or less of its sunlit side faces Earth|Earth's shadow covers part of it;the Moon grows and then shrinks;clouds hide part of it|moonphase
 After a new Moon, the lit part we see gets bigger each night. This is called ___.|waxing|waning;falling;shrinking|moonphase
 Which is true about the Moon?|it has no air|it has oceans;it has rain;it has forests|moonphase
 The same side of the Moon always faces ___.|Earth|the Sun;Mars;away from us|moonphase
@@ -288,7 +288,7 @@ Air pressure is greatest ___.|at sea level|at the top of a mountain;in space;hig
 A barometer measures ___.|air pressure|temperature;wind speed;rainfall|atmosphere
 Which layer is the highest, where the air is very thin and fades into space?|the exosphere|the troposphere;the stratosphere;the mesosphere|atmosphere
 Gases such as carbon dioxide trap heat near Earth. This is called the ___ effect.|greenhouse|rainbow;ozone;wind|atmosphere
-In the troposphere, the temperature ___ as you go higher.|gets colder|gets warmer;stays the same;turns to ice cream|atmosphere
+In the troposphere, the temperature ___ as you go higher.|gets colder|gets warmer, since it is nearer the Sun;stays the same;changes only at night|atmosphere
 The colorful lights called auroras glow in the upper atmosphere, in the ___.|thermosphere|troposphere;stratosphere;mesosphere|atmosphere
 Light from the Sun takes about ___ to reach Earth.|8 minutes|8 seconds;8 hours;8 days|solarscale
 About how many Earths could fit side by side across the Sun?|100|10;1,000;1,000,000|solarscale
@@ -308,7 +308,7 @@ The Sun holds about ___ of all the mass in our solar system.|99 percent|50 perce
 Earth spins once on its axis about every ___.|24 hours|365 days;12 hours;one month|rotrev
 Earth travels once around the Sun in about ___.|365 days|24 hours;30 days;7 days|rotrev
 Day and night are caused by Earth's ___.|rotation|revolution;tilt;orbit|rotrev
-The seasons are caused mainly by Earth's ___ as it travels around the Sun.|tilt|speed;size;color|rotrev
+The seasons are caused mainly by Earth's ___ as it travels around the Sun.|tilt|distance from the Sun;speed;size|rotrev
 Earth's axis is tilted about ___ degrees.|23|90;45;10|rotrev
 When it is summer in the Northern Hemisphere, it is ___ in the Southern Hemisphere.|winter|summer;autumn;spring|rotrev
 Earth spins in one direction, so the Sun seems to rise in the ___.|east|west;north;south|rotrev
@@ -359,7 +359,7 @@ A seesaw is a ___.|lever|ramp;pulley;wedge|machines
 A knife blade works as a ___.|wedge|screw;pulley;wheel and axle|machines
 A flagpole uses a rope and a wheel called a ___.|pulley|lever;wedge;screw|machines
 A jar lid works like a ___.|screw|wedge;pulley;lever|machines
-A simple machine helps us by making work ___.|easier|louder;colder;slower|machines
+How does a simple machine, like a ramp or a lever, help us?|we can push or pull less hard|the load weighs less;it needs electricity to work;it does the work all by itself|machines
 Lever, pulley, wheel and axle, inclined plane, wedge and ___ are the six simple machines.|screw|spring;gear;engine|machines
 A doorknob is an example of a ___.|wheel and axle|wedge;ramp;pulley|machines
 A crowbar is a ___.|lever|wedge;screw;pulley|machines
@@ -390,7 +390,7 @@ A material that lets electricity flow easily is a ___.|conductor|insulator;shado
 The plastic around a wire keeps us safe because plastic is a good ___.|insulator|conductor;battery;magnet|circuits
 Which would NOT carry electricity in a circuit?|a rubber band|a metal paper clip;a copper wire;a steel key|circuits
 Which part of a flashlight gives it power?|the batteries|the case;the switch;the lens|circuits
-Electricity from a wall outlet can be very ___, so never touch it.|dangerous|tasty;slow;quiet|circuits
+Electricity from a wall outlet can be very ___, so never touch it.|dangerous|weak;slow;quiet|circuits
 In a circuit, the wire is like a ___ for the electricity.|path|battery;storm;door|circuits
 Lightning is a huge spark of ___ electricity.|static|battery;solar;wall|circuits
 Rubbing a balloon on your hair can make ___ electricity.|static|solar;nuclear;wind|circuits
