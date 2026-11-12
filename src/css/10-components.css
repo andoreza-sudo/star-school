@@ -316,6 +316,11 @@ button.stat:active{transform:translateY(2px);box-shadow:inset 0 0 0 2px var(--li
 .blank .bi{display:grid;place-items:center;width:96px;height:96px;border-radius:50%;background:var(--brand-tint);color:var(--brand)}
 .blank .bi .ic{width:52px;height:52px}
 .blank p{max-width:28ch;margin:0;font-size:var(--fs-3);line-height:var(--lh-3);color:var(--ink-2)}
+/* P6-02: a part file loading on demand ("Getting the games ready...", partsThen in 90-app.js): the disc pulses a few times */
+.blank.pw{min-height:60%;justify-content:center}
+.blank.pw .bi{position:relative;background:var(--play-tint);color:var(--play)}
+.blank.pw .bi::after{content:'';position:absolute;inset:0;border:4px solid var(--play);border-radius:50%;opacity:0;
+  animation:k-ring var(--t-loop) var(--ease) 12;pointer-events:none}
 
 /* ---- map node (DS 7): .mapnode (+ .lock .open .done .mast .skip .boss), subject via --c; stars and tags hang off it ---- */
 .mapnode{position:relative;display:grid;place-items:center;width:64px;height:64px;padding:0;border:0;border-radius:50%;
