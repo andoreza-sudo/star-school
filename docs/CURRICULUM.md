@@ -617,6 +617,9 @@ BANK.gram = [
 | `topic` | strand tag for the report card |
 | `hint` | optional teaching hint; if missing, the level's default hint text is used |
 | `pic` | optional icon or object-art name |
+| `grid` | optional coordinate grid above the prompt, `{max, points}` (`VIZ.coordGrid`; R-01d). Points mark only what the prompt names |
+| `aloud` | `true` for Pre-K/K items (R-01d): the spoken prompt ends with the choices in the order shown, and the hint is spoken |
+| `cp` | optional picture answers, `{choice: [art name, emoji]}` for every choice (R-01d); the word shows small under each picture |
 
 Validator rules (run by `tools/test.js`): required fields per form; lengths (`q` <= 140 chars, choices <= 60); no `BAD` words;
 at least 40 items per level unless the level is generator-based; no two items with the same `q` + `a`.

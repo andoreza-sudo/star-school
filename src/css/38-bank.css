@@ -49,3 +49,17 @@
 .choices.pics.dlg .choice.ch{font-size:clamp(30px,5vh,44px);padding:var(--s-2);min-height:var(--tap)}
 .choices.pics.dlg .ch .pcap small{font-size:.4em;color:var(--ink-2)}
 .dl-l:not(:has(.dl-b)){grid-template-columns:1fr;padding:var(--s-1) 0} /* no Spanish voice: the buttons are gone, the text takes the whole row */
+
+/* R-01d: Discover. The question never shrinks below 18 px when the hint opens on a phone (fit() shrinks the rest; the card scrolls).
+   Picture answers (bank field cp): two to a row (three when there are three), the word small under each picture. The coordinate grid
+   of the map questions sits above the question. */
+.qs.s-disc .bq{font-size:max(.55em,18px)}
+.choices.pics.bpics{grid-template-columns:repeat(2,1fr)}
+.choices.pics.bpics.n3{grid-template-columns:repeat(3,1fr)}
+.choices.pics.bpics .choice.ch{font-size:clamp(40px,7vh,60px);padding:var(--s-2);min-height:var(--tap-pk)}
+.choices.pics.bpics .ch .pcap small{font-size:max(.3em,15px);color:var(--ink-2);white-space:normal;overflow-wrap:anywhere;margin-top:2px}
+.bgrid{margin-bottom:0}
+/* on a phone the one-per-row answers of Discover are a little more compact, so a long question, its hint and four answers fit */
+@media (orientation:portrait) and (max-height:900px){
+  .qs.s-disc .choices.wide .choice.ch{font-size:clamp(18px,2.9vh,24px);padding:6px var(--s-6);min-height:var(--tap);line-height:1.2}
+}
