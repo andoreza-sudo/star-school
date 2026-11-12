@@ -625,7 +625,7 @@ const SD = (() => {
 
     /* ---------- start ---------- */
     const fresh_ = !st.v.replace(/0/g, '') && !st.m.length;
-    tell(fresh_ ? intro : A ? 'Keep going! Tap an empty square.' : 'Keep going! Tap an empty square.', '', fresh_ && A);
+    tell(fresh_ ? intro : A ? 'Keep going! Tap an empty square.' : 'Keep going! Tap an empty square.', '', fresh_ && (A || p.b == 'B')); // R-01b: band B speaks its first instruction too
     layout();
     // the stage can still be settling (fonts, the frame's top bar): look again once
     later(layout, 60);

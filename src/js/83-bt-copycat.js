@@ -4,10 +4,15 @@
    Pads differ by shape, colour, place and sound (never colour alone): red circle, blue square, yellow triangle, green star, then
    purple heart and orange diamond.
      band  pads  start  target length, levels 1-4 / 5-8 / 9-12   light on + gap (ms, a little faster each level of a tier)
-     A     4     1      3 / 4 / 5                                700 + 320
-     B     4     2      4 / 5 / 6        (faster)                520 + 240
-     C     6     2      5 / 6 / 7                                480 + 220
-     D     6     3      7 / 5 / 6        levels 5-12 backwards   440 + 200
+     A     4     1      3 / 4 / 4                                700 + 320
+     B     4     2      4 / 5 / 5        (faster)                520 + 240
+     C     6     2      5 / 5 / 6                                480 + 220
+     D     6     3      6 / 4 / 5        levels 5-12 backwards   440 + 200
+   R-01b: the targets stay within the typical span for the age plus about one, so the top levels are a stretch, not out of reach
+   (spatial span norms, Gathercole, Pickering, Ambridge & Wearing 2004; Farrell Pagulayan et al. 2006; as quoted in the R-01 review:
+   forward about 3-4 at age 5, about 5 at 8-9, 5-6 at 11; backward about 4-5 at 11). Pre-K/K top 4 (was 5), grades 1-2 top 5 (was 6),
+   grades 3-4 top 6 (was 7), grades 5-6 forward 6 (was 7) and backward 4 then 5 (was 5 then 6). The sequence of a level is the
+   same as before, only shorter (the first pads of the old one).
    (BRAIN_TEASERS 5.9 "star thresholds 4 / 6 / 8, scaled by band" became these target lengths: the frame's stars follow hints and
    mistakes, so the length is what a level asks for, and it grows with the band and the level, section 7 "steps".)
    The sequence is made once from the seeded rnd (same for a band, level and day): bands A and B never light the same pad twice in a
@@ -19,10 +24,10 @@
    State (api.saveState after each round and each mistake): {r the round (its length), miss}; a resume shows that round again. */
 const CC = (() => {
   const CFG = {
-    A: { pads: 4, start: 1, len: [3, 4, 5], on: 700, gap: 320, rev: [0, 0, 0], run: 1 },
-    B: { pads: 4, start: 2, len: [4, 5, 6], on: 520, gap: 240, rev: [0, 0, 0], run: 1 },
-    C: { pads: 6, start: 2, len: [5, 6, 7], on: 480, gap: 220, rev: [0, 0, 0], run: 2 },
-    D: { pads: 6, start: 3, len: [7, 5, 6], on: 440, gap: 200, rev: [0, 1, 1], run: 2 },
+    A: { pads: 4, start: 1, len: [3, 4, 4], on: 700, gap: 320, rev: [0, 0, 0], run: 1 },
+    B: { pads: 4, start: 2, len: [4, 5, 5], on: 520, gap: 240, rev: [0, 0, 0], run: 1 },
+    C: { pads: 6, start: 2, len: [5, 5, 6], on: 480, gap: 220, rev: [0, 0, 0], run: 2 },
+    D: { pads: 6, start: 3, len: [6, 4, 5], on: 440, gap: 200, rev: [0, 1, 1], run: 2 },
   };
   const NAMES = ['red circle', 'blue square', 'yellow triangle', 'green star', 'purple heart', 'orange diamond'];
   const TONE = { 4: [0, 2, 4, 7], 6: [0, 1, 2, 4, 5, 7] }; // SFX.key steps: C E G C, or C D E G A C
@@ -185,8 +190,8 @@ const CC = (() => {
     bar();
     setTurn(false);
     msg(ASK, '');
-    if (band == 'A') api.say(ASK);
-    later(() => showRound(), band == 'A' ? 2400 : 1200);
+    if (band == 'A' || (band == 'B' && st.r == p.start && !st.miss)) api.say(ASK); // R-01b: band B speaks its first instruction too
+    later(() => showRound(), band == 'A' || band == 'B' ? 2400 : 1200); // time to hear it before the cat starts
     return {
       hint(t) {
         if (!alive || phase != 'input') return false;

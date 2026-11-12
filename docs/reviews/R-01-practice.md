@@ -4,6 +4,8 @@ Review of the systems that sit across the subjects: Fact Sprint, Fact Race, Dail
 placement ("Find my level"), challenge and support rounds (mastery and adaptation), streaks, daily missions, rewards and game time,
 as of v138 (56d3d17). Written 2026-11-11 by Claude for Andy. No app changes were made.
 
+**Status (R-01b, v143, 2026-11-11):** done: Must 1 and the S-sized Shoulds 2, 3, 5, 6, 7, 9, 10 and 11 (marked "Done in R-01b" below). Not done: Should 4 (spaced check-ins for learned and skipped stops, M), Should 12 (per-fact Fact Sprint, M); Should 8 (the 7-of-10 pass) is unchanged on purpose, with a recommendation in PROGRESS Ideas; the Coulds.
+
 R-02 (games) already covered the game-time economy, Fact Race's game-time loop, pet meters, stickers and the Pet Shop; this
 review does not repeat those and looks at the teaching side.
 
@@ -41,17 +43,20 @@ Sizes: **S** = an hour or two, **M** = about a day, **L** = several days.
    for facts a child already knows by strategy (grade 1 up), and timed tests are linked to early maths anxiety. Show Fact Sprint from
    grade 1, open "Adding to 10" only after the first adding stop is passed, and leave the sprint mission out before grade 1.
    `FLU.SETS` in `src/js/57-fluency.js`, `hmToday` in `46-home.js`, mission draw in `55-missions.js`.
+   **Done in R-01b (v143):** Fact Sprint (the Home tile and the "Do a Fact Sprint" mission) shows from grade 1, once "Adding to 10" or a later adding stop is passed (or its world was skipped). Pre-K and K never see it. "Add to 5" no longer opens the sums to 10 and 20. A save with no grade keeps the stop rule only. `FLU.on()`, `fluFrom()`.
 
 **Should fix**
 2. **Mixed Practice is mostly old, easy material (S).** It fills the round with random stops from everything the child has reached,
    evenly. For a 3rd grader 90 stops into maths and 60 into reading, 59% of Mixed Practice questions come from 26 or more stops back,
    38% are Pre-K or Kindergarten content, and only 10% are at the child's grade. Weight the pick toward the last 10 stops of each
    path and stops not yet mastered (for example 50% recent, 30% weak, 20% older). `mixQs` in `src/js/50-round.js`.
+   **Done in R-01b (v143):** each Mixed Practice question comes from "recent" (the last 10 stops reached on each path) 50% of the time, "weak" (other reached stops tried 3+ times under 80% first-try accuracy, or passed with 1 star) 30%, "older" 20%; an empty group gives its share to recent. The same 3rd grader: grade 2-3 worlds 79% (was 35%), Pre-K/K 14% (39%), the last 10 stops 80% (24%); with weak stops about 30% come from them.
 3. **Placement can put a struggling child 2-3 worlds too high (S).** One lucky set of 4 (3 right by guessing) at the start world
    moves the child up. In simulation, a child whose right world is 2-3 worlds below the start world is placed too high 14-28% of
    the time, and 3 or more worlds too high about 1 time in 10. Confirm the first "pass" with a second set before moving up,
    or pass the start world only at 4 of 4. `PLACE.step` in `src/js/45-placement.js`. (R-01 math also suggests one question per
    topic strand, so whole topics are not skipped unasked.)
+   **Done in R-01b (v143):** the quiz's first pass needs 4 of 4, or 6 of 8 after one more testlet (3 of 4 no longer moves up on its own). Still 20 questions at most. Simulated (400 quizzes, knows 90%, guesses 30%): right world 3 below the start, placed too high 5% (was 22%), exact 79% (77%); 2 below, 4% (17%). A child 4 worlds above the start is placed exactly less often (50%, was 73%) and never too high (they can test out).
 4. **Only mistakes are reviewed (M).** Things a child got right are never scheduled again, and stops skipped by placement or test
    out never get review. Forgetting is fastest in the first weeks; a short check of each passed stop after about 1, 7 and 30 days
    (one question each, in the review slots that already exist) would keep them. `59-review.js`.
@@ -59,22 +64,28 @@ Sizes: **S** = an hour or two, **M** = about a day, **L** = several days.
    right (the fact is the thing to learn), but for two-choice questions, word problems and multi-step skills the child can
    remember the answer to that one item. Use a fresh question of the same skill and level for everything that is not a single fact.
    `revQ` in `59-review.js`.
+   **Done in R-01b (v143):** only a single fact is asked again exactly (number facts to 20 and to 12 x 12 with one number missing, sight words, picture words, spelling words, letters, Spanish words: `revFact`); everything else, and every two-choice question, comes back as a fresh question of the same skill and level, booked to the same item. "9: even or odd?" now comes back as another number.
 6. **A "perfect round" daily mission, even for Pre-K on day one (S).** "Get a perfect round: Every answer right!" rewards never
    making a mistake. Missions that reward effort and fixing mistakes ("Fix 3 tricky ones", "Try a Challenge question", "Use a hint and
    then get it right") build better habits. `MIS` in `src/js/55-missions.js`.
+   **Done in R-01b (v143):** Pre-K and K get "Play 2 rounds today" (an effort mission, done by the day's second round) in place of "Get a perfect round". Grade 1 and up keep the perfect round (not changed here).
 7. **Answers given with the hint already showing count as full right answers (S).** In support mode the hint shows before the first
    try (and any child can open it with Help), and those answers count towards the stop's pass, its stars and the mastery record. Count them half, or not at all,
    towards mastery. `mastTry` in `src/js/51-mastery.js`.
+   **Done in R-01b (v143):** a right first try with the hint showing (support mode, an easier question shown with its hint, or Help before the first try) counts half: 0.5 in the mastery record, and half a right answer for the stop's pass and stars (and for test out). Example: 10 right with 4 helped rates as 8 (2 stars), 7 right with 2 helped as 6 (not passed yet; the end card says "Answers with the hint showing count half"). Coins, stars collected in the round and praise are unchanged.
 8. **A stop opens the next one at 7 of 10 (S, a design decision).** Mastery learning research uses 80-90%. The mastery record already
    knows when a stop is really learned (90% over 20 tries on 2 days); use it, for example by asking a mastered-check question from
    any stop passed below 8 of 10 in the next rounds, rather than raising the bar and blocking children.
 9. **"Best streak: 10 in a row!" after 6 of 10 (S).** The in-round streak also counts the missed questions answered at the end, so a
    6-of-10 round celebrated a "New Best streak: 10 in a row!". Count first tries only. `check` in `50-round.js`.
+   **Done in R-01b (v143):** the in-round streak counts first tries only; a right answer to a missed question asked again at the end resets it, so that 6-of-10 round now says "Best streak: 3", not 10.
 10. **The Review tile shows the whole backlog as a red number (S).** A child with 21 items due sees a red "21" bubble, the way phones
     show unread messages. Show the round size ("10 to review") in a calm colour. `hmToday` in `46-home.js`.
+   **Done in R-01b (v143):** the tile says "10 to review" (the next round's size: the due count, at most 10) in its own words, no red bubble.
 11. **Fact Race pays coins every race (S).** Half a coin per right answer plus 5 for a record, with no daily limit (R-02 fixed the
     game time, not the coins), and its 60-second clock keeps running when the app is in the background. Pay coins for the first
     race of the day only; pause the clock when hidden like Fact Sprint. `race` in `src/js/54-race.js`.
+   **Done in R-01b (v143):** coins come only with the race that pays game time (the first race of the day in a category with 5 or more right): half a coin per right answer and +5 for a record; later races are free practice. The clock stops while the app is hidden.
 12. **Fact Sprint forgets which facts are slow (M).** Already in R-01 math (Could 17): keep per-fact misses and times, and ask the
     weak facts more often.
 

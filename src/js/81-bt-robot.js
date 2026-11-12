@@ -14,7 +14,8 @@
    never touches itself, walls every cell off it, then opens walls in random order as long as the shortest route stays as long as the
    walk (a BFS over (cell, gems held) after each one). par = that BFS. C and D come from the bank PUZ.robot (src/data/d-puz-robot.js,
    made and proven by tools/puzzles/robot.js: the exact shortest program is a search too heavy for a tablet). Level L uses bank worlds
-   3(L-1)..3L-1; the seeded rnd picks one and one of the 8 turns and mirrors (a mirror swaps turn left and turn right in the program).
+   3(L-1)..3L-1 of RB.order(band) (band C: sorted by par, R-01b); the seeded rnd picks one and one of the 8 turns and mirrors (a
+   mirror swaps turn left and turn right in the program).
 
    Puzzle (JSON): {b band, n, w: cells ('.' open, '#' wall, reading order), s start, d facing (0 up 1 right 2 down 3 left), g goal,
      gems: [cells], par, slots, kit: 'abs' (A, B) | '' (C) | 'u' | 'f', ref: {m, f} a shortest program (the BFS route in A and B,
@@ -269,10 +270,22 @@ const RB = {
     return { b: band, n, w: w.join(''), s: map(+e[2]), d, g: map(+e[4]), gems: [], par: +e[5], slots: +e[5] + RB.EXTRA[band], kit: e[6],
       ref: { m: toks(e[7]), f: toks(e[8]) }, k, x, tpl: e[9] };
   },
+  // The bank worlds in level order. R-01b: band C takes them sorted by par (fewest blocks first; the sort is stable, so worlds of
+  // the same par keep the bank's order), so the shortest program never gets shorter from one level to the next. In the bank
+  // order it went 2, 3, 5, 5, 6, 4, 4, 6 ... (the nested loops of the "turn" and "ring" worlds are short programs); now 2-3, 3,
+  // 4, 4, 5, 5, 5-6, 6, 6, 7, 7, 7. Band D keeps the bank's order (its pars already never drop).
+  order(band) {
+    const L = (typeof PUZ != 'undefined' && PUZ.robot && PUZ.robot[band]) || [];
+    const idx = L.map((_, i) => i);
+    if (band != 'C') return idx;
+    const par = i => +String(L[i]).split('|')[5] || 0;
+    return idx.sort((a, b) => par(a) - par(b) || a - b);
+  },
   make(band, level, rnd) {
     if (band == 'A' || band == 'B') return RB.makeAB(band, level, rnd);
     const lv = Math.max(1, Math.min(12, +level || 1)), k = 3 * (lv - 1) + Math.floor(rnd() * 3), x = Math.floor(rnd() * 8);
-    return RB.fromBank(band, k, x);
+    const o = RB.order(band);
+    return RB.fromBank(band, o[k] == null ? k : o[k], x);
   },
 
   /* ---------- saved state ---------- */
@@ -836,7 +849,7 @@ RB.mount = (el, p, api) => {
   // ---- start ----
   home();
   render();
-  msg(intro, '', !st.m.length && !st.runs && band == 'A');
+  msg(intro, '', !st.m.length && !st.runs && (band == 'A' || band == 'B')); // R-01b: band B speaks its first instruction too
   const inst = {
     hint: hintNow,
     destroy() {

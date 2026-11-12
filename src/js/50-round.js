@@ -5,11 +5,21 @@ function start(p,i){const n=NODES[p][i];G=newG({path:p,node:i,sk:n.sk,lv:n.lv,n:
   const rd=SK[n.sk].round&&SK[n.sk].round(n.lv); // a skill's own list of questions (passages); null = the usual round
   if(rd){G.pool=rd;G.n=rd.length}
   next()}
-// The 10 questions of Tricky Mix / Mixed Practice: up to 7 due review items, then stops the child has reached (never a boss stop)
-function mixQs(){const qs=allMiss().slice(0,7).map(revQ).filter(Boolean),pool=[]; // P5-02: rebuilt from review items
-  for(const p in NODES)NODES[p].forEach((n,i)=>{if(n.sk!='boss'&&SK[n.sk]&&unlocked(p,i)&&i<=curNode(p))pool.push(n)});
-  if(!pool.length)pool.push(NODES.math[0]);
-  while(qs.length<10){const n=pick(pool),q=genQ(n.sk,n.lv);qs.push(q)}
+// The 10 questions of Tricky Mix / Mixed Practice: up to 7 due review items, then stops the child has reached (never a boss stop).
+// R-01b: the stops are weighted toward what is recent and what is weak (it was an even pick over everything reached, so a 3rd
+// grader got 38% Pre-K and K questions): each question is drawn from "recent" (the last MIX_RECENT stops reached on each path)
+// 50% of the time, "weak" (other reached stops tried 3+ times with first-try accuracy under 80%, or passed with 1 star) 30%, and
+// "older" (the rest) 20%. A group with nothing in it gives its share to recent.
+const MIX_W={recent:.5,weak:.3,old:.2},MIX_RECENT=10;
+function mixGroups(){const out={recent:[],weak:[],old:[]};
+  for(const p in NODES){const c=curNode(p),ps=[];
+    NODES[p].forEach((n,i)=>{if(n.sk!='boss'&&SK[n.sk]&&i<=c&&unlocked(p,i))ps.push([n,i])});
+    ps.forEach(([n,i],j)=>{if(j>=ps.length-MIX_RECENT)return out.recent.push(n);const r=mastRec(nid(n));out[r&&r.n>=3&&r.p<.8||getSt(p,i)==1?'weak':'old'].push(n)})}
+  if(!out.recent.length)out.recent.push(NODES.math[0]);
+  return out}
+function mixPick(gr){const x=rnd(),k=x<MIX_W.recent?'recent':x<MIX_W.recent+MIX_W.weak?'weak':'old';return pick(gr[k].length?gr[k]:gr.recent)}
+function mixQs(){const qs=allMiss().slice(0,7).map(revQ).filter(Boolean),gr=mixGroups(); // P5-02: rebuilt from review items
+  while(qs.length<10){const n=mixPick(gr),q=genQ(n.sk,n.lv);qs.push(q)}
   return qs}
 function startMix(){G=newG({mix:true,pool:shuffle(mixQs()),sk:'mix'});next()}
 const back=()=>G&&G.path?pathMap(G.path):home();
@@ -53,7 +63,7 @@ function qProg(){const w=$('#qwalk'),tr=$('#qtrack');if(w)w.style.transform=qLef
   if(tr){tr.style.setProperty('--p',Math.min(G.done,G.n)/G.n);const d=tr.querySelector('.dots');if(d)d.outerHTML=UI.dots(G.n,G.done,G.res)}}
 // the streak chip: lit from 2 in a row, bumps when it grows
 function qStreak(){const sk=$('#stk');if(!sk)return;sk.querySelector('b').textContent=G.streak;sk.classList.toggle('off',G.streak<2);if(G.streak>=2)bump(sk)}
-function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;G.res=G.res||[];
+function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;G.res=G.res||[];G.hq=false; // G.hq: the hint showed before the first try (R-01b)
   actQStart(q.sk,q.lv); // P5-05 (P2-17: the level picks the area of a skill with lvArea)
   const K=KIND[q.kind];
   if(!K)throw new Error('unknown question kind '+q.kind);
@@ -72,7 +82,7 @@ function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;G.re
   $('#quit').onclick=()=>{G.dead=true;back()};
   if($('#spk'))$('#spk').onclick=e=>say(q.say,e.currentTarget,q.lang=='es'&&q.auto=='must'?'es':null);
   $$('[data-sayes]').forEach(b=>b.onclick=()=>say(b.dataset.sayes,b,'es'));
-  $('#hb').onclick=()=>{if(hintStep(q))return;const h=$('#hint');h.innerHTML=hintHTML(q);h.classList.remove('pop');void h.offsetWidth;h.classList.add('pop');SFX.pop(3);fit();h.scrollIntoView({block:'nearest',behavior:'smooth'})};
+  $('#hb').onclick=()=>{if(G.tries==0&&!G.retry)G.hq=true;if(hintStep(q))return;const h=$('#hint');h.innerHTML=hintHTML(q);h.classList.remove('pop');void h.offsetWidth;h.classList.add('pop');SFX.pop(3);fit();h.scrollIntoView({block:'nearest',behavior:'smooth'})};
   $$('[data-say]').forEach(b=>b.onclick=()=>say(b.dataset.say,b));
   $$('.w').forEach(s=>s.onclick=()=>{say(s.dataset.w);SFX.pop(1)});
   K.bind(q,G,check);esQFix(q);
@@ -88,15 +98,15 @@ function addMiss(q){const p=P(q.sk),m=p.miss[q.label]||{tot:0};m.tot=(m.tot||0)+
   revMiss(q)} // P5-02: the review item (59-review.js)
 const PRAISE=['Great job!','You got it!','Awesome!','Super!','Nice!','Yes!','Way to go!','Brilliant!','Boom!','Nailed it!'];
 function check(v,el){if(G.lock)return;const q=G.q,K=KIND[q.kind],p=P(q.sk),ok=K.same?K.same(q,v):String(v)===String(q.ans);
-  if(G.tries==0&&!G.retry)mastTry(q,ok); // P1-08: mastery record and in-round adaptation
+  if(G.tries==0&&!G.retry)mastTry(q,ok,null,G.hq); // P1-08: mastery record and in-round adaptation (R-01b: a right answer with the hint showing counts half)
   const src=el||$('#slot')||$('.lslots')||$('.inp');
   if(ok){G.lock=true;if(el)el.classList.add('right');
     K.right(q);
     actQEnd(G.tries==0&&!G.retry,G.retry); // P5-05
     const first=G.tries==0&&!G.retry;
-    if(!G.retry){G.done++;p.t++;if(G.tries==0){G.score++;p.c++}}
+    if(!G.retry){G.done++;p.t++;if(G.tries==0){G.score++;p.c++;if(G.hq)G.helped=(G.helped||0)+1}} // R-01b: helped first tries, counted half for the pass
     if(first&&revRight(q))G.fixed=(G.fixed||0)+1; // P5-02: a due review item moves up a box (59-review.js)
-    G.streak=G.tries==0?G.streak+1:0;G.best=Math.max(G.best,G.streak);
+    G.streak=first?G.streak+1:0;G.best=Math.max(G.best,G.streak); // R-01b: first tries only (the end-of-round retries made a 6 of 10 round "10 in a row")
     SFX.right(G.streak);
     if(first)setTimeout(()=>flyStar(src),150);
     const r=src.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2);
@@ -130,16 +140,17 @@ function finish(){
   const g=G,sc=g.score,n=g.n,best=g.best,before=S.stars,d=day(),p=g.path,ni=g.node,nd=p?NODES[p][ni]:null;
   let stars=0,newPass=false,wDone=false;
   let testOk=false,prize=null;
-  if(g.test){testOk=sc>=9;if(testOk){NODES[p].forEach((n,i)=>{if(n.wi==g.test.wi&&getSt(p,i)<2)setSt(p,i,2)});newPass=true;
+  const hp=(g.helped||0)/2; // R-01b: a right first try with the hint showing (support mode, an easier question, or Help) counts half for the pass and stars
+  if(g.test){testOk=sc-hp>=9;if(testOk){NODES[p].forEach((n,i)=>{if(n.wi==g.test.wi&&getSt(p,i)<2)setSt(p,i,2)});newPass=true;
     (S.skip=S.skip||{})[worldId(p,g.test.wi)]=1}} // a tested-out world stays finished even if stops are added to it later
-  else if(!g.mix){if(g.boss)stars=g.won?(g.asked<=7?3:g.asked<=8?2:1):0;else{P(g.sk).r++;const ss=Math.min(n,sc+(g.forgive||0));stars=ss>=n?3:ss>=Math.floor(n*.8+.01)?2:ss>=Math.floor(n*.7+.01)?1:0} // P1-08: wrong challenge answers do not cost stars
+  else if(!g.mix){if(g.boss)stars=g.won?(g.asked<=7?3:g.asked<=8?2:1):0;else{P(g.sk).r++;const ss=Math.min(n,sc-hp+(g.forgive||0));stars=ss>=n?3:ss>=Math.floor(n*.8+.01)?2:ss>=Math.floor(n*.7+.01)?1:0} // P1-08: wrong challenge answers do not cost stars
     const prev=getSt(p,ni);g.prevSt=prev;setSt(p,ni,Math.max(prev,stars));newPass=!prev&&stars>0;
     if(g.boss&&g.won&&!S.owned[nd.prize]){prize=nd.prize;S.owned[prize]=1;S.wear.hat=prize}}
   if(newPass){const wk=nd.wid;if(!S.wdone[wk]&&worldDone(p,nd.wi)){S.wdone[wk]=1;wDone=true}}
   const prizes=[award()];if(sc==n)prizes.push(award());
   actRound(); // P5-05
   d.r++;const stk=streakTick();
-  const mi=MIS.done({k:'round',p:g.path||'',mix:!!g.mix,test:!!g.test,boss:!!g.boss,daily:!!g.daily,perfect:!g.boss&&sc>=n}); // P5-08
+  const mi=MIS.done({k:'round',p:g.path||'',mix:!!g.mix,test:!!g.test,boss:!!g.boss,daily:!!g.daily,perfect:!g.boss&&sc>=n,n:d.r}); // P5-08 (R-01b: n = rounds today)
   mi.won.forEach(w=>prizes.push(w.st));
   const mission=mi.bonus;if(mission)prizes.push(award());
   if(wDone)prizes.push(award());
@@ -158,7 +169,8 @@ function finish(){
     const line=sc>=9?'You are a superstar!':sc>=7?'Fantastic work!':sc>=5?'Good job! Keep practicing!':'Nice try! Practice makes you stronger!';
     f.classList.add('rw-open');
     // a low score is met kindly, with the next step right under the score (it was the last message line before)
-    const tip=g.test&&!testOk?'So close! Get 9 right to test out. Or play the stops one by one.':!g.mix&&!g.test&&!g.boss&&stars==0?`Get ${Math.floor(n*.7+.01)} right to open the next stop. You can do it!`:'';
+    const need=Math.floor(n*.7+.01),half=hp>0&&(sc>=need||g.test&&sc>=9); // R-01b: say why when the hints are what kept it from passing
+    const tip=g.test&&!testOk?(half?'So close! Answers with the hint showing count half. Get 9 right on your own to test out.':'So close! Get 9 right to test out. Or play the stops one by one.'):!g.mix&&!g.test&&!g.boss&&stars==0?(half?`Answers with the hint showing count half. Get ${need} right on your own to open the next stop. You can do it!`:`Get ${need} right to open the next stop. You can do it!`):'';
     f.innerHTML=RW.done({sc,n,line,tip,rate:g.mix||g.test||!stars?-1:stars,next:nextI>=0&&newPass,again:low||(g.test&&!testOk)?'Try again':'Play again',menu:g.mix?'Home':'Map'});
     RW.burst(f.querySelector('.rw-chest-o'),sc>=7?28:14);
     const live=()=>f.isConnected;let t=0;

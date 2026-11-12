@@ -650,7 +650,7 @@ const BTN = (() => {
       (p.tricky ? `<p class="bn-tag">${UI.tag('Tricky', 'new', 'sparkle')}</p>` : ''), pad());
     k.bind();
     const intro = 'Each brick is the two bricks under it added together. Tap a missing brick and type its number.';
-    k.say(st.done.length ? 'Keep going! Tap a missing brick.' : intro, '', api.band == 'A');
+    k.say(st.done.length ? 'Keep going! Tap a missing brick.' : intro, '', api.band == 'A' || (api.band == 'B' && !st.done.length)); // R-01b: band B speaks its first instruction too
     draw();
     const fill = b => {
       st.done.push(b);
@@ -822,7 +822,7 @@ const BTN = (() => {
     }[api.band] || 'How much does each picture weigh?';
     el.innerHTML = frame('bal', `<div class="bn-scs n${p.eqs.length}"></div>`, `<div class="bn-slots"></div>${pad()}`);
     k.bind();
-    k.say(st.done.length ? 'Keep going!' : ask, '', api.band == 'A');
+    k.say(st.done.length ? 'Keep going!' : ask, '', api.band == 'A' || (api.band == 'B' && !st.done.length)); // R-01b: band B speaks its first instruction too
     drawScales();
     drawSlots();
     const fill = s => {
@@ -902,7 +902,7 @@ const BTN = (() => {
     k.bind();
     const intro = p.use == 2 ? `Pick two numbers and + or − to make ${p.target}.`
       : `Use every number once to make ${p.target}. Tap a number, a sign, then another number.`;
-    k.say(st.hist.length ? 'Keep going!' : intro, '', api.band == 'A');
+    k.say(st.hist.length ? 'Keep going!' : intro, '', api.band == 'A' || (api.band == 'B' && !st.hist.length)); // R-01b: band B speaks its first instruction too
     const draw = () => {
       el.querySelector('.bn-undo').classList.remove('hl');
       el.querySelector('.bn-tiles').innerHTML = st.tiles.map(t => `<button class="bn-tile${t.id == pick ? ' sel' : ''}` +

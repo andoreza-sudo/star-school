@@ -265,6 +265,7 @@ const CUB = (() => {
     document.addEventListener('keydown', hw);
     if (st.h) msg = hintText(p.items[st.i], st.h), mk = 'hint';
     render();
+    if (p.band == 'B' && st.i == 0 && !st.miss && !st.h) api.say('How many cubes are in the stack?'); // R-01b: band B speaks its first instruction too
     return {
       hint() {
         if (busy || st.i >= N_ || st.h >= 3) return false;
