@@ -2,7 +2,7 @@ import base64, json, os, re
 from PIL import Image, ImageDraw
 # Build: python3 tools/build.py   (run from anywhere; writes index.html, bt/games/data.<VER>.js, sw.js, manifest.json, icons to the repo root)
 # Bump VER on every release so tablets pick up the update.
-VER = 'v144'
+VER = 'v145'
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = ROOT
 F = os.path.join(ROOT, 'tools', 'fonts', 'andika-latin-%s-normal.woff2')
@@ -18,6 +18,9 @@ PARTS = [
     ('games', r'(60-blocks|62-hill|64-gtimer|66-colornum|68-lowpoly|70-art|72-shapes|59-game-hub|63-game-race)\.js|(48-game-hub|49-game-race|60-game-blocks)\.css'),  # the Game Room: hub (P4-16) and the first five games
     ('games2', r'\d+-game-[\w-]+\.(js|css)'),  # G-04a: every newer Game Room game NN-game-*.js / .css (Snack Stand, then Sky Hop, Fishing Day ...)
 ]
+# P6-02: parts that index.html does NOT load at start (no <script> tag): partsThen() in src/js/90-app.js (LAZY_PARTS, the same list,
+# checked by tools/test.js) loads them the first time they are needed (the Game Room). sw.js still precaches every part, so they work offline.
+LAZY = ('games', 'games2')
 def part_of(name):
     return next((stem for stem, rx in PARTS if re.fullmatch(rx, name)), None)
 def cat(sub, ext, part=None):
@@ -30,9 +33,10 @@ def cat(sub, ext, part=None):
 # file's stamp matches the VER compiled into index.html (dataReady() in src/js/90-app.js).
 DATA = 'data.%s.js' % VER
 FILES = ['%s.%s.js' % (stem, VER) for stem, _ in PARTS] + [DATA]
+START = ['%s.%s.js' % (stem, VER) for stem, _ in PARTS if stem not in LAZY] + [DATA]  # P6-02: the files index.html loads at start
 src = open(os.path.join(S_DIR, 'shell.html'), newline='').read()
 src = src.replace('/*@@CSS@@*/\n', cat('css', '.css')).replace('/*@@JS@@*/\n', cat('js', '.js'))
-src = src.replace('<!--@@PARTS@@-->\n', ''.join('<script src="%s"></script>\n' % f for f in FILES[:-1]))
+src = src.replace('<!--@@PARTS@@-->\n', ''.join('<script src="%s"></script>\n' % f for f in START[:-1]))
 src = src.replace('/*@@BOOT@@*/\n', open(os.path.join(S_DIR, 'boot.js'), newline='').read())
 src = src.replace('__VER__', VER)
 for w in ('400', '700'):
@@ -42,7 +46,8 @@ for stem, _ in PARTS:
     names = [n for sub in ('css', 'js') for n in sorted(os.listdir(os.path.join(S_DIR, sub))) if part_of(n) == stem]
     css = cat('css', '.css', stem)
     part = ('/* Star School ' + stem + ' ' + VER + '. BUILT by tools/build.py from ' + ', '.join(names) + ': never edit by hand.\n'
-            '   index.html ' + VER + ' loads this file with <script src="' + stem + '.' + VER + '.js"> after its own code, before ' + DATA + '. */\n'
+            + ('   index.html ' + VER + ' loads this file on demand (partsThen in src/js/90-app.js, P6-02), after ' + DATA + '. */\n' if stem in LAZY else
+               '   index.html ' + VER + ' loads this file with <script src="' + stem + '.' + VER + '.js"> after its own code, before ' + DATA + '. */\n')
             + ("(function(){var s=document.createElement('style');s.id='css-" + stem + "';s.textContent=" + json.dumps(css, ensure_ascii=False)
                + ";document.head.appendChild(s)})(); // its src/css, after index.html's own CSS (the cascade order of a build without parts)\n" if css else '')
             + cat('js', '.js', stem) + "\nvar " + stem.upper() + "_VER='" + VER + "'; // last line: the whole file ran (checked by dataReady() before the app starts)\n")

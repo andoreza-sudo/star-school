@@ -103,7 +103,6 @@
 .mrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:10px 12px;border-radius:18px;text-align:left}.mrow .ge{font-size:30px}.mrow .gt{font-weight:700;font-size:19px;flex:1}.mrow>div{display:flex;gap:6px;flex-wrap:wrap;width:100%}.mrow .btn{flex:1;background:#fff;font-size:15px}
 .chip.eshard .sw{background:repeating-linear-gradient(45deg,#e7e5e4,#e7e5e4 4px,#fafaf9 4px,#fafaf9 8px)}.chip.eshard.found .sw{background:var(--cc)}.chip.eshard small{font-size:15px;font-weight:700}
 .chip.wide b{font-size:13px;white-space:nowrap}.cbdh{margin:14px 4px 4px;font-size:18px}
-.shwrap svg{filter:drop-shadow(0 4px 6px #0003)}
 .stwrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;min-height:0;padding:4px 6px 8px}
 .stcv{background:#fff;border-radius:16px;box-shadow:0 4px 14px #0003;overflow:hidden;touch-action:none;flex:none}.stcv svg{display:block;width:100%;height:100%}.stcv.neon{background:#05010f}.stcv canvas{display:block;width:100%;height:100%;touch-action:none}
 .stbar{width:100%;max-width:640px;display:flex;flex-direction:column;gap:6px}.stmodes,.stpals,.stcols{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}.stmodes .btn,.stpals .btn{background:#fff;font-size:15px;padding:6px 10px}.stmodes .btn.on,.stpals .btn.on{background:#fde047;box-shadow:0 0 0 3px #ca8a04 inset}
@@ -135,6 +134,7 @@
 .vehs{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}.veh{display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 6px;font-size:15px}.veh canvas{width:150px;height:90px}.veh.on{outline:4px solid #22c55e;background:#f0fdf4}
 .mis{cursor:default}
 .shthumb{width:100px;height:100px;border-radius:10px;box-shadow:0 2px 6px #0002;background:#fff}
-.shwrap svg{width:100%;height:100%;display:block;border-radius:12px;background:#fff;box-shadow:0 4px 14px #0002;touch-action:none}
+/* P6-02: the drop-shadow filter (0 4px 6px #0003) was repainted with every fill; the svg is an opaque rounded box, so it is the same shadow as a box-shadow */
+.shwrap svg{width:100%;height:100%;display:block;border-radius:12px;background:#fff;box-shadow:0 4px 6px #0003,0 4px 14px #0002;touch-action:none}
 .shwrap path{cursor:pointer;transition:fill .2s}.shl{font-family:Andika,sans-serif;font-weight:700;fill:#78716c;pointer-events:none}.shl.on{fill:#1d4ed8}
 .popfill{animation:popf .35s}@keyframes popf{50%{opacity:.6}}
