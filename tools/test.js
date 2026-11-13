@@ -7822,7 +7822,7 @@ run('code split A11b (and data file split A11)',()=>{
   if(tags.length!==n||tags[0].src!==undefined||tags[n-1].src!==undefined||START_FILES.some((f,i)=>tags[i+1].src!==f))p.push('index.html scripts are not code, '+START_FILES.join(', ')+', boot');
   else if(!/dataReady\(\)/.test(tags[n-1].body)||!/home\(true\)/.test(tags[n-1].body))p.push('boot script does not check dataReady() before home(true)');
   if(tags.some(t=>/\b(async|defer)\b|type=/.test(t.attrs)))p.push('a script is async, defer or typed: the files must load in order');
-  if(!html.includes('Star School '+BUILD_VER))p.push('index.html is not '+BUILD_VER);
+  if(!html.includes('(build '+BUILD_VER+')'))p.push('index.html is not '+BUILD_VER);
   if(/PUZ\.sudoku = \{|COMPSPEC\[2\]=|BANK\.vocab = |SPELL_WORDS=\{/.test(html))p.push('index.html still holds data banks');
   if(/__VER__/.test(html+data+parts.join('')))p.push('a built file still has __VER__');
   // index.html's own code and CSS: every src file that is not in a part, in name order, and nothing of a part's files
@@ -16312,6 +16312,47 @@ run('sky hop G-04b',()=>{
   if(!/hopCalm\(\)/.test(src)||!/S\.calm/.test(src))p.push('calm mode must soften the course (no shake)');
   notes.push(((Date.now()-t0)/1000).toFixed(0)+' s');
   return{problems:[...new Set(p)].slice(0,60),note:notes.join('; ')};
+});
+
+// ---- P6-05 release 1.0 ----
+run('release 1.0 P6-05',()=>{
+  // RELEASE is the one place the release number lives; VER stays the build stamp; Home's footer and Grown-ups > About show both;
+  // About lists the licences (Andika, SIL OFL 1.1, the copyright line from the font files) and says what stays on the device;
+  // LICENSES/OFL-Andika.txt exists and matches the text in the app; the README has the parents' section and the 1.0.0 release notes.
+  const p=[],rdf=f=>fs.readFileSync(path.join(ROOT,f),'utf8'),rs=f=>fs.readFileSync(path.join(SRC,f),'utf8');
+  const r=eval(js+`
+  ({rel:RELEASE,about:aboutCard(),ofl:OFL_TEXT})`);
+  if(r.rel!=='1.0.0')p.push("RELEASE is '"+r.rel+"', wanted '1.0.0'");
+  if((rs('js/00-core.js').match(/^const RELEASE=/gm)||[]).length!==1)p.push('RELEASE must be defined once, in src/js/00-core.js');
+  if(/RELEASE\s*=\s*['"]/.test(rdf('tools/build.py')))p.push('build.py must not carry a second release number (VER is the build stamp)');
+  if(!/\$\{RELEASE\} \(build __VER__\)/.test(rs('js/46-home.js')))p.push('the Home footer must show RELEASE and the build (VER)');
+  if(!/\$\{RELEASE\} \(build __VER__\)/.test(rs('js/80-grown.js')))p.push('the Grown-ups app log must show RELEASE and the build (VER)');
+  if(!/\$\{aboutCard\(\)\}/.test(rs('js/80-grown.js')))p.push('grown() must show the About card');
+  const ab=r.about.replace(/<[^>]*>/g,' ').replace(/&#39;/g,"'");
+  for(const need of ['About Star School','Andika','SIL Open Font License 1.1','Copyright (c) 2004-2022 SIL International','Nothing is sent anywhere','only on this device','without internet','Version','Build'])
+    if(!ab.includes(need))p.push('About does not say: '+need);
+  if(!/id="ab-rel">1\.0\.0</.test(r.about)||!/id="ab-build">__VER__</.test(r.about))p.push('About must show the release and the build');
+  if(/#[0-9a-fA-F]{3,8}\b|[\u{1F300}-\u{1FAFF}]/u.test(r.about))p.push('About uses a raw colour or an emoji');
+  const css=rs('css/48-setup-grown-care.css'),ci=css.indexOf('P6-05 About Star School');
+  if(ci<0||/#[0-9a-fA-F]{3,8}\b/.test(css.slice(ci)))p.push('About CSS must use tokens only (no raw colours)');
+  // the licence files
+  const ofl=path.join(ROOT,'LICENSES','OFL-Andika.txt');
+  if(!fs.existsSync(ofl))p.push('LICENSES/OFL-Andika.txt is missing');
+  else{
+    const t=rdf('LICENSES/OFL-Andika.txt'),i=t.indexOf('SIL OPEN FONT LICENSE Version 1.1');
+    if(!/Copyright \(c\) 2004-2022 SIL International/.test(t)||i<0||!/DISCLAIMER/.test(t))p.push('OFL-Andika.txt lacks the copyright line or the licence');
+    else if(t.slice(i).replace(/\n+$/,'')!==r.ofl)p.push('the licence text in the app (src/data/d-licences.js) differs from LICENSES/OFL-Andika.txt');
+  }
+  if(!/SIL Open Font License/.test(rdf('tools/fonts/README.md')))p.push('tools/fonts/README.md must name the licence');
+  const fonts=fs.readdirSync(path.join(ROOT,'tools','fonts')).filter(n=>/\.woff2?$|\.ttf$|\.otf$/.test(n));
+  if(!fonts.length||fonts.some(n=>!/^andika-/.test(n)))p.push('a bundled font other than Andika: list its licence in About and LICENSES/ ('+fonts.join(', ')+')');
+  const faces=[...new Set(rs('css/20-base.css').match(/font-family:[A-Za-z]+;/g)||[])];
+  if(faces.join()!=='font-family:Andika;')p.push('src/css/20-base.css embeds a font other than Andika: '+faces.join(' '));
+  // the README
+  const rm=rdf('README.md');
+  for(const need of ['## For parents','Add to Home screen','How updates arrive','Privacy','## Release notes: 1.0.0','Subjects','Brain Teasers','Game Room','Grown-ups','LICENSES/OFL-Andika.txt'])
+    if(!rm.includes(need))p.push('README.md lacks: '+need);
+  return{problems:p,note:'1.0.0, Andika OFL, README, licence file'};
 });
 
 // ---- report ----
