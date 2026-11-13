@@ -2,7 +2,7 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** P5-10 (wip/P5-10), G-04b Sky Hop (wip/G-04b-wip), P6-01 (wip/P6-01-wip), P6-02, P6-03/P6-04, P6-05; see Handoff notes
+**Next up:** G-04b Sky Hop (wip/G-04b-wip), P6-03/P6-04, P6-05; see Handoff notes
 
 **Current version:** v146
 
@@ -136,16 +136,15 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 
 ## Handoff notes
 
-**Paused 2026-11-12 at v143** (the owner asked to stop for the week). Everything up to v143 is merged, checked and on `main`. What is left, in the order it was planned:
+**Paused 2026-11-13 at v146** (the owner asked to stop for the day). Everything up to v146 is merged, checked and on `main`: child profiles (v144), the Snack Stand drag fix, games loading on demand (P6-02, v145) and the accessibility pass (P6-01, v146). What is left, in order:
 
-1. **P5-10 Multiple child profiles**: merged as v144 (2026-11-12). Was built but not merged: branch `wip/P5-10` (from v140). Its own full check was still running when it was stopped. Merge it on top of v143; expect conflicts in `80-grown.js` and `81-backup.js` (Start over and backup now set `SAVE_HOLD` before reloading, and Start over no longer awaits `DB.open()`).
-2. **G-04b Sky Hop** (Opus, M). Mostly built, not checked: branch `wip/G-04b-wip` (from v141). Finish, run `tools/check.sh`, renumber VER.
-3. **P6-01 Accessibility pass**: merged as v146 (2026-11-12). Was started: branch `wip/P6-01-wip` (from v143) has a first `tools/a11y.js` and some fixes; not checked.
-4. **P6-02 Low-end performance pass**: merged as v145 (2026-11-12). Includes loading the `games` / `games2` part files only when the Game Room opens, so start-up is back under 3.0 MB (G-04a raised the total budget to 3.3 MB).
-5. **P6-03 / P6-04 Content audits** (Opus). Mostly covered by the R-01 reviews and their fixes (R-01m, R-01r, R-01s, R-01d, R-01b); what remains is a lighter pass over the M/L items each review lists as not done.
-6. **P6-05 Release 1.0** (Sonnet, S).
-7. Optional: **G-04c Fishing Day** (the third game in docs/GAMES_RESEARCH.md); not asked for yet.
-8. The review files in `docs/reviews/` each list M/L improvements not done yet (fluency practice and decodable stories in reading; speaking practice in Spanish; diagrams and maps in Discover; spaced check-ins in practice; and others).
+1. **G-04b Sky Hop** (Opus, M). Built as one commit on `wip/G-04b-wip` (a16c5ac, from v143); its own full check was stopped part way. Merge on top of v146 (VER renumber; games now load on demand, so any smoke or shots step that calls a Sky Hop function directly must open the Game Room or `await partsLoad()` first), then run `tools/check.sh`.
+2. **Known flaky step**: the P5-07 smoke block's Start over step sometimes shows the old child's Home after the reload in a full run, but never when run alone (tried many times). Its failure message now records the localStorage keys, the fixture seed flag, SAVE_HOLD and the navigation type; read them the next time it fails.
+3. **P6-03 / P6-04 Content audits** (Opus). Mostly covered by the R-01 reviews and their fixes; what remains is a lighter pass over the M/L items each review lists as not done.
+4. **P6-05 Release 1.0** (Sonnet, S): version 1.0.0 next to the build number, About screen, fresh-install and upgrade test.
+5. The child picker and the Grown-ups Children card (P5-10) are not yet among the screens `tools/a11y.js` scans.
+6. Optional: **G-04c Fishing Day** (docs/GAMES_RESEARCH.md).
+7. The review files in `docs/reviews/` list M/L improvements not done yet (fluency practice and decodable stories in reading; speaking practice in Spanish; diagrams and maps in Discover; spaced check-ins in practice; and others).
 
 ## Ideas and issues
 - (P5-10) All built files together are 2,988,673 bytes, 11 KB under the 3 MB total fail budget (tools/test.js); the next chunk that adds code or data will need a lever first (comments in the bigger files, or moving `ART` to src/data as the A11 notes say, which only shifts bytes between files; the total budget itself may want a review).
