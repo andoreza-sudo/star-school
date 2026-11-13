@@ -3003,12 +3003,17 @@ function migrate(){
 // backup, undo a load). From then on save() writes nothing, so a timer or screen that saves the old progress before the reload
 // cannot put it back (the reload starts fresh, and resets this flag). SAVE_OFF (P5-10) does the same after a child is deleted.
 let SAVE_HOLD=false;
+// reloadSaved(): reload after the save in storage was changed on purpose (Start over, load or undo a backup, switch, add or
+// delete a child). Saves are held, and the reload waits a moment, so the browser has finished writing storage first (a reload
+// straight after the write sometimes came back with the old save on a busy machine).
+function reloadSaved(){SAVE_HOLD=true;if(RELOAD_WAIT)setTimeout(()=>location.reload(),RELOAD_WAIT);else location.reload()}
+let RELOAD_WAIT=250; // tools/test.js sets 0 (its fake browser has no timers)
 function save(){if(SAVE_HOLD||SAVE_OFF)return;try{localStorage.setItem(SKEY,JSON.stringify(S));SAVE_FAILED=false}catch(e){SAVE_FAILED=true}}
 /* ---------- error guard (P0-05): last 20 errors kept in S.err, on this device only; nothing is sent anywhere ---------- */
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v146'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v147'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -3172,7 +3177,7 @@ const PRF = {
     if (!PRF.writeIdx(PRF.ids, id)) return PRF.FULL;
     PRF.carry(id);
     PRF.setWho(id);
-    location.reload();
+    reloadSaved();
     return '';
   },
 
@@ -3241,7 +3246,7 @@ const PRF = {
   async cancelNew() {
     if (PRF.many() && !S.name && !(S.stars > 0)) await PRF.remove(PRF.cur);
     PRF.setWho('');
-    location.reload();
+    reloadSaved();
   },
 
   // ---- voice clips: child 1 keeps the plain ids it always had; another child's start with 'pN:' ----
@@ -3314,7 +3319,7 @@ const PRF = {
       const r = PRF.add(null, true);
       if (r.msg) return PRF.msg(r.msg);
       PRF.setWho(r.id);
-      location.reload(); // starts with the first-run setup for the new child
+      reloadSaved(); // starts with the first-run setup for the new child
     };
     if ($('#pf-who')) $('#pf-who').onclick = PRF.pick;
     $$('[data-pren]').forEach(b => b.onclick = () => PRF.renameSheet(b.dataset.pren));
@@ -3359,7 +3364,7 @@ const PRF = {
         if (bad) return PRF.msg(bad);
         if (wasMe) {
           PRF.setWho('');
-          location.reload(); // the next child starts (the picker, when more than one is left)
+          reloadSaved(); // the next child starts (the picker, when more than one is left)
           return;
         }
         grown();
@@ -6467,7 +6472,7 @@ function hintStep(q) {
 // P4-17: calm mode (Grown-ups switch, S.calm, read with a default) sets html.calm: no large movement, no confetti, no loops.
 // Every screen adds it when S.calm is on; the switch (80-grown.js) turns it off again with calmApply(true).
 function calmApply(sync){try{const c=document.documentElement.classList;if(S.calm)c.add('calm');else if(sync)c.remove('calm')}catch(e){}}
-const view=h=>{music(false);calmApply();stopBalloons();if(typeof stopRace=='function')stopRace();if(typeof stopFlu=='function')stopFlu();if(typeof stopHC=='function')stopHC();if(typeof rlStop=='function')rlStop();if(typeof snStop=='function')snStop();if(typeof gtStop=='function')gtStop();if(typeof BT!='undefined')BT.stop();if(typeof TR!='undefined')TR.stop();const a=$('#app');a.style.animation='none';void getComputedStyle(a).animationName;a.style.animation='';if(a.removeAttribute)a.removeAttribute('aria-hidden');a.innerHTML=h;UI.modal.init();UI.heading(a)}; // P6-02: a style read restarts the screen-in (offsetWidth laid out the old screen first); P6-01: dialogs, keyboard, the screen's h1 (14-ui.js)
+const view=h=>{music(false);calmApply();stopBalloons();if(typeof stopRace=='function')stopRace();if(typeof stopFlu=='function')stopFlu();if(typeof stopHC=='function')stopHC();if(typeof rlStop=='function')rlStop();if(typeof snStop=='function')snStop();if(typeof hopStop=='function')hopStop();if(typeof gtStop=='function')gtStop();if(typeof BT!='undefined')BT.stop();if(typeof TR!='undefined')TR.stop();const a=$('#app');a.style.animation='none';void getComputedStyle(a).animationName;a.style.animation='';if(a.removeAttribute)a.removeAttribute('aria-hidden');a.innerHTML=h;UI.modal.init();UI.heading(a)}; // P6-02: a style read restarts the screen-in (offsetWidth laid out the old screen first); P6-01: dialogs, keyboard, the screen's h1 (14-ui.js)
 const PET_YAY=['Yay!','Woo-hoo!','You did it!','So smart!','High five!','Awesome!','Super!'];
 const PET_OOPS=['Oops! Try again!','You can do it!','Almost!','Hmm, look again!'];
 
@@ -7529,7 +7534,7 @@ function home(first){
   <div class="scroll hm" id="hs"><div class="hm-cols">
    <div class="hm-col">${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('target', 26)}<span>Today's missions</span></h2>${hmMissions()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}${hmDaily()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
-   <p class="hm-ver">${ico('star', 16)}<span>Star School v146</span></p></div>`);
+   <p class="hm-ver">${ico('star', 16)}<span>Star School v147</span></p></div>`);
   music(true);
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'heart');
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
@@ -11169,7 +11174,7 @@ function grown(){let armed=false;
     {sub:'Rounds played and first-try accuracy for every skill on the maps, with the questions missed most.'})}
   ${GW.card('gw-how','info','How it works',`<p class="gw-p">Each subject has its own map. Getting 7 of 10 right opens the next stop (8 earns 2 stars, 10 earns 3), and each world stretches further. Missed questions come back at the end of a round, in later rounds, in Daily Review and in the Tricky Mix. Each right answer earns a star (the pet grows) and a coin (spent in the shop). Everything is saved on this tablet only.</p>`)}
   <details class="gw-card gw-det" id="applog"><summary class="gw-h"><span class="gw-hi">${ico('doc',24)}</span><span>App log</span>${ico('chevron-right',22,'chev')}</summary><div class="gw-log">
-   <div><b>Version</b> v146</div><div><b>Save size</b> ${(JSON.stringify(S).length/1024).toFixed(1)} KB</div>
+   <div><b>Version</b> v147</div><div><b>Save size</b> ${(JSON.stringify(S).length/1024).toFixed(1)} KB</div>
    ${PRF.logLine()}<div><b>Storage</b> ${SAVE_FAILED?'<span class="gw-bad">could not save (device storage may be full)</span>':'saving OK'}</div>
    ${SAVE_CORRUPT?'<div class="gw-bad">The old save could not be read. A fresh start was made and the old data was kept on the device.</div>':''}
    <div><b>Last errors</b> ${(S.err||[]).length?'<ul class="gw-errs">'+(S.err||[]).slice().reverse().map(e=>'<li><span>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+'</span> '+esc(e.msg)+'</li>').join('')+'</ul>':'none'}</div></div></details>
@@ -11201,11 +11206,11 @@ function grown(){let armed=false;
   $$('[data-del]').forEach(b=>b.onclick=async()=>{await DB.del(b.dataset.del);await loadClips();grown()});
   $$('[data-rec]').forEach(b=>b.onclick=()=>{const[k,l]=b.dataset.rec.split('|');record(k,l=='x'?null:+l,b)});
   $('#reset').onclick=async e=>{if(!armed){armed=true;e.currentTarget.querySelector('span').textContent=PRF.many()?'Tap again to erase '+(S.name||'this child'):'Tap again to erase ALL progress';return}
-    if(PRF.many()){const bad=await PRF.wipe();if(bad)return fb(bad,'warn');SAVE_HOLD=true;PRF.setWho(PRF.cur);location.reload();return} // P5-10: only this child
+    if(PRF.many()){const bad=await PRF.wipe();if(bad)return fb(bad,'warn');PRF.setWho(PRF.cur);reloadSaved();return} // P5-10: only this child
     SAVE_HOLD=true;try{localStorage.removeItem(SKEY);localStorage.removeItem(BAK.UNDO)}catch(x){}
     // the voice clips (IndexedDB) go too; the reload never waits on IndexedDB for long (an open that never finished on a busy
     // tablet left the old progress on screen): it comes when the delete is done, blocked or failed, or after 1.5 s at most
-    let gone=false;const go=()=>{if(!gone){gone=true;location.reload()}};
+    let gone=false;const go=()=>{if(!gone){gone=true;reloadSaved()}};
     try{if(DB.db){DB.db.close();DB.db=null}const r=indexedDB.deleteDatabase('starschool');r.onsuccess=r.onerror=r.onblocked=go}catch(x){go()}
     setTimeout(go,1500)}}
 async function record(kind,line,btn){if(inFrame)return micHelp('frame');if(!navigator.mediaDevices||!window.MediaRecorder)return micHelp('frame');
@@ -11239,12 +11244,12 @@ const BAK = {
   make(id) {
     const d = id && id !== PRF.cur ? PRF.up(PRF.get(PRF.key(id))) : S;
     if (!d) return '';
-    return JSON.stringify({app: BAK.APP, ver: 'v146', save: LATEST, date: new Date().toISOString(), name: d.name || '', data: d});
+    return JSON.stringify({app: BAK.APP, ver: 'v147', save: LATEST, date: new Date().toISOString(), name: d.name || '', data: d});
   },
   // Every child in one file (P5-10)
   makeAll() {
     const kids = PRF.ids.map(id => id === PRF.cur ? S : PRF.up(PRF.get(PRF.key(id)))).filter(Boolean);
-    return JSON.stringify({app: BAK.APP, ver: 'v146', save: LATEST, date: new Date().toISOString(), all: true,
+    return JSON.stringify({app: BAK.APP, ver: 'v147', save: LATEST, date: new Date().toISOString(), all: true,
       kids: kids.map(d => ({name: d.name || '', data: d}))});
   },
   fileName(name) {
@@ -11406,7 +11411,7 @@ const BAK = {
       if (bad) BAK.msg(bad);
       else if (id === PRF.cur) {
         PRF.setWho(id);
-        SAVE_HOLD = true; location.reload(); // nothing saves over the new save before the reload
+        reloadSaved(); // nothing saves over the new save before the reload
       }
       else {
         grown();
@@ -11463,7 +11468,7 @@ const BAK = {
       const bad = BAK.undo();
       if (bad) return BAK.msg(bad);
       PRF.setWho(PRF.cur);
-      SAVE_HOLD = true; location.reload(); // nothing saves over the new save before the reload
+      reloadSaved(); // nothing saves over the new save before the reload
     };
   },
 };
@@ -11781,12 +11786,12 @@ function appFiles() {
 }
 // P6-02: the start-up files only; the parts in LAZY_PARTS load later (partsThen below)
 function dataReady() {
-  return appFiles().every(f => LAZY_PARTS.includes(f[0]) || f[1] === 'v146');
+  return appFiles().every(f => LAZY_PARTS.includes(f[0]) || f[1] === 'v147');
 }
 // the Try again screen and one line in the App log: for the start-up files, or (P6-02) for the parts in stems that did not load on demand
 function dataMissing(stems) {
-  logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0])) && f[1] !== 'v146')
-    .map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v146)');
+  logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0])) && f[1] !== 'v147')
+    .map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v147)');
   const again = UI.btn('Try again', { kind: 'primary', size: 'lg', icon: 'replay', id: 'dataretry' });
   view(`<div class="scroll" id="datamiss">${UI.empty('download', 'Star School needs to finish updating. Connect to the internet, then tap Try again.', again)}</div>`);
   $('#dataretry').onclick = () => location.reload();
@@ -11806,15 +11811,15 @@ const LAZY_PARTS = ['games', 'games2'];
 const partsAsked = {};
 function partReady(stem) {
   const f = appFiles().find(x => x[0] === stem);
-  return !!f && f[1] === 'v146';
+  return !!f && f[1] === 'v147';
 }
 function partLoad(stem) {
   const f = appFiles().find(x => x[0] === stem);
-  if (!f || f[1] === 'v146') return Promise.resolve(!!f);
+  if (!f || f[1] === 'v147') return Promise.resolve(!!f);
   if (f[1] !== null) return Promise.resolve(false); // a file of another release ran: refused
   return partsAsked[stem] || (partsAsked[stem] = new Promise(res => {
     const s = document.createElement('script');
-    s.src = stem + '.v146.js';
+    s.src = stem + '.v147.js';
     s.onload = () => { delete partsAsked[stem]; res(partReady(stem)); };
     s.onerror = () => { delete partsAsked[stem]; s.remove(); res(false); };
     document.body.appendChild(s);
@@ -11839,10 +11844,10 @@ function partsThen(stems, go, o = {}) {
   }), 0));
 }
 </script>
-<script src="gen.v146.js"></script>
-<script src="gen2.v146.js"></script>
-<script src="bt.v146.js"></script>
-<script src="data.v146.js"></script>
+<script src="gen.v147.js"></script>
+<script src="gen2.v147.js"></script>
+<script src="bt.v147.js"></script>
+<script src="data.v147.js"></script>
 <script>
 if (dataReady()) {
   loadClips();

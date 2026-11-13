@@ -185,7 +185,7 @@ const BAK = {
       if (bad) BAK.msg(bad);
       else if (id === PRF.cur) {
         PRF.setWho(id);
-        SAVE_HOLD = true; location.reload(); // nothing saves over the new save before the reload
+        reloadSaved(); // nothing saves over the new save before the reload
       }
       else {
         grown();
@@ -242,7 +242,7 @@ const BAK = {
       const bad = BAK.undo();
       if (bad) return BAK.msg(bad);
       PRF.setWho(PRF.cur);
-      SAVE_HOLD = true; location.reload(); // nothing saves over the new save before the reload
+      reloadSaved(); // nothing saves over the new save before the reload
     };
   },
 };

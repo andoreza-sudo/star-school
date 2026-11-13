@@ -8683,6 +8683,191 @@ async function main() {
       else step('P6-02: ' + notes.join('; ') + '; "Getting the games ready..." then the hub, Snack Stand started, the second open immediate, no request while offline');
     }
 
+    // G-04b Sky Hop (src/js/67-game-skyhop.js, games2 part). Midway save with 20 min of game time, real touch (CDP touch events,
+    //    touch emulation on) at 380x780 and 1024x600: Home -> Game Room -> the Sky Hop card -> the menu (shared bar, 4 worlds, 6 courses,
+    //    only the first open; One-touch picked by touch) -> Play -> the course (Pause, stars, course clock and time chips, a 96 px Hop
+    //    button); a touch on the sky makes the pet hop; then course 1 is played to the flag in one-touch mode by real touches: a helper
+    //    in the page looks a moment ahead in the simulation and says when to tap (or hold), the touches are real, the course runs 2x
+    //    faster (HOP_DEV.fast, a test hook); a helper-balloon question is answered by touch -> the shared end card (stars, time,
+    //    sparkles, medal) -> the time, stars and medal saved, the next course open; game time was spent and the clock stopped.
+    //    Main controls (Hop, Play, the balloon's answers) at least 64 px, every other button at least 48 px, no sideways scroll. At
+    //    1024x600 also the frame time while hopping under 6x CPU throttle: the median interval between frames at most 34 ms (measured
+    //    again on a busy machine, up to 3 more times, like G-02).
+    {
+      const bad = [], notes = [];
+      const os = require('os'), cores = os.cpus().length;
+      for (const [w, h] of [[380, 780], [1024, 600]]) {
+        const ga = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ga.page, at = 'G-04b ' + w + 'x' + h + ' ';
+        const cdp = await pg.context().newCDPSession(pg);
+        await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 2 });
+        const box = sel => pg.evaluate(s => {
+          const e = document.querySelector(s);
+          if (!e) return null;
+          if (!e.closest('.hpg')) e.scrollIntoView({ block: 'center' });
+          const r = e.getBoundingClientRect();
+          return { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height };
+        }, sel);
+        const press = async (x, y, ms) => {
+          await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: Math.round(x), y: Math.round(y), id: 1, radiusX: 8, radiusY: 8, force: 1 }] });
+          await pg.waitForTimeout(ms || 40);
+          await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+        };
+        const touch = async (sel, ms) => {
+          const b = await box(sel);
+          if (!b) throw new Error('nothing to touch: ' + sel);
+          await press(b.x, b.y, ms);
+          await pg.waitForTimeout(90);
+          return b;
+        };
+        const look = () => {
+          const vw = document.documentElement.clientWidth, out = [];
+          for (const e of document.querySelectorAll('.gh-top button, .hp-menu button, .hpg button, .gh-end button')) {
+            const r = e.getBoundingClientRect();
+            if (!r.width || r.bottom < 0 || r.top > innerHeight || e.closest('[hidden]')) continue;
+            const main = e.matches('.hp-btn, #hopgo, #hpyes, #hpno');
+            if (Math.min(r.width, r.height) < (main ? 63.5 : 47.5)) out.push('small ' + (e.id || e.className) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
+            if (r.left < -1 || r.right > vw + 1) out.push('outside ' + (e.id || e.className));
+          }
+          if (document.documentElement.scrollWidth > vw) out.push('sideways scroll ' + document.documentElement.scrollWidth);
+          for (const s of document.querySelectorAll('.scroll')) if (s.scrollWidth > s.clientWidth + 1) out.push('sideways scroll in ' + s.className);
+          for (const t of document.querySelectorAll('.gh-top')) if (t.getBoundingClientRect().right > vw + 1) out.push('top bar wider than the screen');
+          return out;
+        };
+        try {
+          await pg.evaluate(() => { S.pt = { bank: 1200, day: today(), used: 0 }; save(); home(); });
+          await touch('#groom');
+          await pg.waitForSelector('#ghop', { timeout: 8000 });
+          await pg.waitForTimeout(450);
+          await touch('#ghop');
+          await pg.waitForSelector('#hopgo', { timeout: 8000 });
+          await pg.waitForTimeout(450);
+          if (await pg.evaluate(() => S.hop.mode != 'one')) {
+            await touch('#hpmode [data-v="one"]');
+            await pg.waitForSelector('#hpmode [data-v="one"][aria-pressed="true"]', { timeout: 5000 });
+          }
+          const m = await pg.evaluate(() => ({ g: document.querySelector('.gh-top').dataset.g, worlds: document.querySelectorAll('.hp-world').length,
+            crs: document.querySelectorAll('.hp-crs').length, open: document.querySelectorAll('.hp-crs[data-ok="1"]').length, back: !!document.querySelector('.gh-top #back'),
+            mode: S.hop.mode, pet: !!document.querySelector('.hp-pet svg.pet-svg') }));
+          if (m.g !== 'hop' || m.worlds !== 4 || m.crs !== 6 || m.open !== 1 || !m.back || m.mode !== 'one' || !m.pet) bad.push(at + 'menu ' + JSON.stringify(m));
+          for (const o of await pg.evaluate(look)) bad.push(at + 'menu: ' + o);
+          const used0 = await pg.evaluate(() => pt().used);
+          await touch('#hopgo');
+          await pg.waitForSelector('#hpcv', { timeout: 8000 });
+          await pg.waitForFunction(() => HP && HP.ready && !HP.st.wait && HP.st.p.gr, null, { timeout: 15000 });
+          const ui = await pg.evaluate(() => ({ pause: !!document.querySelector('.gh-top #gpause'), chips: ['hpst', 'hpclk', 'gtm'].every(i => document.getElementById(i)),
+            btn: [...document.querySelectorAll('.hp-btn')].map(b => Math.round(Math.min(b.getBoundingClientRect().width, b.getBoundingClientRect().height))),
+            mode: HP.st.mode, course: HP.c.id, pet: !!(HP.v.pet.happy.c && HP.v.pet.cheer.c), px: HP.cv.width }));
+          if (!ui.pause || !ui.chips || ui.btn.length !== 1 || ui.btn[0] < 96 || ui.mode !== 'one' || ui.course !== 'm1' || !ui.pet) bad.push(at + 'course screen ' + JSON.stringify(ui));
+          for (const o of await pg.evaluate(look)) bad.push(at + 'course: ' + o);
+          // a touch on the sky: the pet hops
+          const y0 = await pg.evaluate(() => HP.st.p.y);
+          await press(w * .45, h * .4, 60);
+          const hopped = await pg.waitForFunction(y => HP.st.p.y > y + .6, y0, { timeout: 3000 }).then(() => true, () => false);
+          if (!hopped) bad.push(at + 'a touch on the sky did not make the pet hop');
+          // to the flag by real touches, 2x faster (test hook); the page-side helper looks ahead in the simulation
+          await pg.evaluate(() => {
+            HOP_DEV.fast = 2;
+            window.__hopAdv = () => {
+              if (!HP || !HP.ready) return 'wait';
+              const st = HP.st;
+              if (st.done) return 'done';
+              if (st.wait == 'offer') return 'offer';
+              const badS = s => s.falls > st.falls || s.wait == 'back' || s.bumps > st.bumps;
+              const run = (hold, n) => {
+                const s = hopClone(st);
+                if (!hold) {
+                  for (let i = 0; i < n; i++) { hopStep(s, {}); if (badS(s)) return false; if (s.done) return true; }
+                  return s.p.x > st.p.x + 1 || s.p.on >= 1000 || !!st.wait;
+                }
+                let air = !s.p.gr;
+                for (let i = 0; i < n; i++) {
+                  hopStep(s, { jump: i < hold });
+                  if (badS(s)) return false;
+                  if (s.done) return true;
+                  if (!s.p.gr) air = true;
+                  else if (air && i > hold) { for (let k = 0; k < 24; k++) { hopStep(s, {}); if (badS(s)) return false; } return true; }
+                }
+                return true;
+              };
+              if (run(0, 48)) return 'no';
+              if (run(3, 150)) return 'tap';
+              if (run(36, 150)) return 'hold';
+              return 'no';
+            };
+          });
+          const t0 = Date.now();
+          let taps = 0, holds = 0, offers = 0;
+          for (;;) {
+            const d = await pg.evaluate(() => window.__hopAdv());
+            if (d == 'done') break;
+            if (d == 'offer') {
+              offers++;
+              await pg.waitForSelector('#hpoffer:not([hidden]) #hpyes', { timeout: 3000 });
+              for (const o of await pg.evaluate(look)) bad.push(at + 'balloon question: ' + o);
+              await touch('#hpyes');
+            } else if (d == 'tap' || d == 'hold') {
+              await press(w * .45, h * .4, d == 'tap' ? 40 : 300);
+              d == 'tap' ? taps++ : holds++;
+            } else await pg.waitForTimeout(10);
+            if (Date.now() - t0 > 90000) { bad.push(at + 'did not reach the flag in 90 s'); break; }
+          }
+          await pg.waitForSelector('.gh-end #hpmenu', { timeout: 15000 });
+          await pg.waitForTimeout(600);
+          const e = await pg.evaluate(() => ({ title: (document.querySelector('.gh-end h1') || {}).textContent, pic: !!document.querySelector('.gh-end .gh-epic svg'),
+            stars: !!document.querySelector('.gh-end .rate'), stats: document.querySelectorAll('.gh-end .gh-stat').length, used: pt().used, gt: !!GT, course: !!HP,
+            best: S.hop.best.m1, runs: S.hop.runs, medal: S.hop.medal.m1, starBits: S.hop.stars.m1 || 0, cur: S.hop.cur,
+            kept: JSON.parse(localStorage.getItem('starschool-v2')).hop.best.m1 }));
+          await pg.evaluate(() => { HOP_DEV.fast = 1; });
+          if (e.title !== 'You reached the flag!' || !e.pic || !e.stars || e.stats !== 3) bad.push(at + 'end card ' + JSON.stringify(e));
+          if (!(e.used > used0) || e.gt || e.course) bad.push(at + 'game time: used ' + used0 + ' -> ' + e.used + ', clock still running ' + e.gt + ', course ' + e.course);
+          if (!(e.best > 30000) || e.kept !== e.best || e.runs !== 1 || !(e.medal >= 1) || e.cur !== 'm2') bad.push(at + 'saved after the course ' + JSON.stringify(e));
+          for (const o of await pg.evaluate(look)) bad.push(at + 'end card: ' + o);
+          notes.push(`${w}x${h}: flag in ${(e.best / 1000).toFixed(1)} s course time, ${taps} taps, ${holds} holds, ${offers} balloon lifts, stars ${e.starBits.toString(2)}, medal ${e.medal}, game time ${used0} -> ${e.used} s`);
+          await touch('#hpmenu');
+          await pg.waitForSelector('.hp-crs[data-ok="1"]', { timeout: 8000 });
+          const after = await pg.evaluate(() => document.querySelectorAll('.hp-crs[data-ok="1"]').length);
+          if (after !== 2) bad.push(at + 'menu after the flag: ' + after + ' courses open');
+          // the frame time while hopping at 6x CPU throttle (1024x600)
+          if (w == 1024) {
+            await touch('[data-c="m1"]');
+            await pg.waitForFunction(() => HP && HP.ready && !HP.st.wait, null, { timeout: 15000 });
+            await pg.waitForTimeout(1200);
+            let best = null, tries = 0, load = os.loadavg()[0];
+            for (;;) {
+              await cdp.send('Emulation.setCPUThrottlingRate', { rate: 6 });
+              await pg.evaluate(() => { HP.fi.length = 0; HP.ft.length = 0; });
+              await pg.waitForTimeout(3000);
+              const r = await pg.evaluate(() => {
+                const q = (a, p) => a.slice().sort((x, y) => x - y)[Math.floor(a.length * p)];
+                return { med: q(HP.fi, .5), p90: q(HP.fi, .9), work: q(HP.ft, .5), n: HP.fi.length, q: HP.q };
+              });
+              await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+              tries++;
+              load = os.loadavg()[0];
+              if (!best || r.med < best.med) best = r;
+              if (best.med <= 34 || tries >= 4 || load <= cores) break;
+              await pg.waitForTimeout(1000);
+            }
+            const how = `${tries} pass${tries > 1 ? 'es' : ''}, load ${load.toFixed(1)} on ${cores} cores`;
+            if (best.med > 34) bad.push(at + `frame interval at 6x throttle: median ${best.med.toFixed(1)} ms (${how}, limit 34)`);
+            notes.push(`6x throttle: median frame ${best.med.toFixed(1)} ms, 90th ${best.p90.toFixed(1)} ms, JS ${best.work.toFixed(1)} ms a frame, ` +
+              `${best.n} frames in 3 s, pixel scale ${best.q} (${how})`);
+            await pg.evaluate(() => hopQuit());
+          }
+        } catch (x) {
+          bad.push(at + 'taps: ' + x.message.split('\n')[0]);
+        }
+        await pg.evaluate(() => { if (typeof HOP_DEV != 'undefined') HOP_DEV.fast = 1; });
+        network.push(...ga.network);
+        for (const e of ga.errors) fail(e);
+        await ga.ctx.close();
+      }
+      if (bad.length) fail('G-04b Sky Hop:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('G-04b: Sky Hop by real touch at 380x780 and 1024x600: hub card -> menu (One-touch) -> course 1 to the flag by real taps -> shared end card ' +
+        '-> time, stars and medal saved, course 2 open; game time spent, clock stopped; main controls 64 px, buttons 48 px, no sideways scroll; ' + notes.join('; '));
+    }
+
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');
   } catch (e) {
