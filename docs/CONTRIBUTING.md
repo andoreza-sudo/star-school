@@ -39,7 +39,7 @@ No other dependencies. Nothing is installed for the app itself.
 src/src.html        THE source: HTML + CSS + one <script>, 2,442 lines, 323 KB
 tools/build.py      builds index.html (fonts embedded), sw.js, manifest.json, icons into the repo root
 tools/test.js       fuzzes every question generator
-tools/fonts/        Andika woff2 (SIL OFL)
+tools/fonts/        Andika woff2 (SIL OFL); the licence text is in LICENSES/OFL-Andika.txt and in Grown-ups > About (src/data/d-licences.js)
 index.html, sw.js, manifest.json, icon-*.png    BUILT output, committed (GitHub Pages serves the repo root)
 docs/               this plan
 ```
