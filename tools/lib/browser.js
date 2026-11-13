@@ -85,8 +85,11 @@ async function openApp(browser, opts = {}) {
     // Seed once per context: a later reload keeps whatever the app saved since.
     await ctx.addInitScript(([key, raw]) => {
       try {
-        if (sessionStorage.getItem('__seeded')) return;
+        // two marks, so the fixture is never put back by a later reload: sessionStorage alone was sometimes empty after the
+        // app's own reloads in a long run (Start over / load / undo then showed the fixture again)
+        if (sessionStorage.getItem('__seeded') || localStorage.getItem('__smoke_seeded')) return;
         sessionStorage.setItem('__seeded', '1');
+        localStorage.setItem('__smoke_seeded', '1');
         if (raw) localStorage.setItem(key, raw); else localStorage.removeItem(key);
       } catch (e) {}
     }, [SAVE_KEY, seed]);
