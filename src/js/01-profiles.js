@@ -150,7 +150,7 @@ const PRF = {
     if (!PRF.writeIdx(PRF.ids, id)) return PRF.FULL;
     PRF.carry(id);
     PRF.setWho(id);
-    location.reload();
+    reloadSaved();
     return '';
   },
 
@@ -219,7 +219,7 @@ const PRF = {
   async cancelNew() {
     if (PRF.many() && !S.name && !(S.stars > 0)) await PRF.remove(PRF.cur);
     PRF.setWho('');
-    location.reload();
+    reloadSaved();
   },
 
   // ---- voice clips: child 1 keeps the plain ids it always had; another child's start with 'pN:' ----
@@ -292,7 +292,7 @@ const PRF = {
       const r = PRF.add(null, true);
       if (r.msg) return PRF.msg(r.msg);
       PRF.setWho(r.id);
-      location.reload(); // starts with the first-run setup for the new child
+      reloadSaved(); // starts with the first-run setup for the new child
     };
     if ($('#pf-who')) $('#pf-who').onclick = PRF.pick;
     $$('[data-pren]').forEach(b => b.onclick = () => PRF.renameSheet(b.dataset.pren));
@@ -337,7 +337,7 @@ const PRF = {
         if (bad) return PRF.msg(bad);
         if (wasMe) {
           PRF.setWho('');
-          location.reload(); // the next child starts (the picker, when more than one is left)
+          reloadSaved(); // the next child starts (the picker, when more than one is left)
           return;
         }
         grown();

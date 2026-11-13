@@ -2459,7 +2459,8 @@ run('profiles P5-10: every fixture round-trips byte for byte in the profile stor
   const same=(a,b)=>JSON.stringify(sort(a))===JSON.stringify(sort(b));
   const pfClear=()=>{for(const k in store)delete store[k]};
   // what the page does at every start: 00-core.js reads child 1, PRF.boot() picks the child who played last, 42-paths.js migrates
-  const pfLoad=()=>{SKEY=KEY;SAVE_OFF=false;loadSave(ls.getItem(KEY));PRF.boot()};
+  RELOAD_WAIT=0;
+  const pfLoad=()=>{SKEY=KEY;SAVE_OFF=false;SAVE_HOLD=false;loadSave(ls.getItem(KEY));PRF.boot()};
   const pfStart=()=>{pfLoad();migrate()};
   const pfSnap=()=>JSON.stringify(store);
   const K=id=>PRF.key(id);
@@ -15721,7 +15722,7 @@ run('save hold before a reload',()=>{
   const src=fs.readFileSync(path.join(__dirname,'..','src','js','80-grown.js'),'utf8'),bk=fs.readFileSync(path.join(__dirname,'..','src','js','81-backup.js'),'utf8');
   if(!/SAVE_HOLD=true;try\{localStorage\.removeItem\(S?KEY\)/.test(src))p.push('Start over does not hold saves before it erases');
   if(/await DB\.open\(\)/.test(src)||!/setTimeout\(go,1500\)/.test(src))p.push('Start over waits on IndexedDB before it reloads');
-  if((bk.match(/SAVE_HOLD = true; location\.reload\(\)/g)||[]).length!==2)p.push('load and undo do not hold saves before the reload');
+  if((bk.match(/reloadSaved\(\)/g)||[]).length!==2)p.push('load and undo do not hold saves before the reload');
   return{problems:p,note:'save() is held during Start over, load and undo'};
 });
 
