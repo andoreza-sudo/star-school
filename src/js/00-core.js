@@ -152,6 +152,11 @@ function migrate(){
 // backup, undo a load). From then on save() writes nothing, so a timer or screen that saves the old progress before the reload
 // cannot put it back (the reload starts fresh, and resets this flag). SAVE_OFF (P5-10) does the same after a child is deleted.
 let SAVE_HOLD=false;
+// reloadSaved(): reload after the save in storage was changed on purpose (Start over, load or undo a backup, switch, add or
+// delete a child). Saves are held, and the reload waits a moment, so the browser has finished writing storage first (a reload
+// straight after the write sometimes came back with the old save on a busy machine).
+function reloadSaved(){SAVE_HOLD=true;if(RELOAD_WAIT)setTimeout(()=>location.reload(),RELOAD_WAIT);else location.reload()}
+let RELOAD_WAIT=250; // tools/test.js sets 0 (its fake browser has no timers)
 function save(){if(SAVE_HOLD||SAVE_OFF)return;try{localStorage.setItem(SKEY,JSON.stringify(S));SAVE_FAILED=false}catch(e){SAVE_FAILED=true}}
 /* ---------- error guard (P0-05): last 20 errors kept in S.err, on this device only; nothing is sent anywhere ---------- */
 function logErr(msg){
