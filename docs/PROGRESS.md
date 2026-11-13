@@ -2,7 +2,7 @@
 
 The running record of what has shipped. Newest entry first. Every chunk adds one entry (see CONTRIBUTING.md section 5).
 
-**Next up:** G-04b Sky Hop (wip/G-04b-wip), P6-03/P6-04, P6-05; see Handoff notes
+**Next up:** P6-05 (wip/batch-N, map timing), the P5-07 flaky step; see Handoff notes
 
 **Current version:** v147
 
@@ -137,15 +137,12 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 
 ## Handoff notes
 
-**Paused 2026-11-13 at v146** (the owner asked to stop for the day). Everything up to v146 is merged, checked and on `main`: child profiles (v144), the Snack Stand drag fix, games loading on demand (P6-02, v145) and the accessibility pass (P6-01, v146). What is left, in order:
+**Paused 2026-11-13 at v147** (on `main`). Merged and checked: child profiles (v144), games on demand (v145), accessibility (v146), Sky Hop (v147), and the reload fix (`reloadSaved()`). What is left:
 
-1. **G-04b Sky Hop**: merged as v147 (2026-11-13). Was built as one commit on `wip/G-04b-wip` (a16c5ac, from v143); its own full check was stopped part way. Merge on top of v146 (VER renumber; games now load on demand, so any smoke or shots step that calls a Sky Hop function directly must open the Game Room or `await partsLoad()` first), then run `tools/check.sh`.
-2. **Known flaky step**: the P5-07 smoke block's Start over step sometimes shows the old child's Home after the reload in a full run, but never when run alone (tried many times). Its failure message now records the localStorage keys, the fixture seed flag, SAVE_HOLD and the navigation type; read them the next time it fails.
-3. **P6-03 / P6-04 Content audits** (Opus). Mostly covered by the R-01 reviews and their fixes; what remains is a lighter pass over the M/L items each review lists as not done.
-4. **P6-05 Release 1.0** (Sonnet, S): version 1.0.0 next to the build number, About screen, fresh-install and upgrade test.
-5. The child picker and the Grown-ups Children card (P5-10) are not yet among the screens `tools/a11y.js` scans.
-6. Optional: **G-04c Fishing Day** (docs/GAMES_RESEARCH.md).
-7. The review files in `docs/reviews/` list M/L improvements not done yet (fluency practice and decodable stories in reading; speaking practice in Spanish; diagrams and maps in Discover; spaced check-ins in practice; and others).
+1. **P6-05 Release 1.0.0** (v148): built and merged on `wip/batch-N` (5e3d84b: About card, 1.0.0 label, README for parents, LICENSES/OFL-Andika.txt, profile screens in a11y.js, fresh-install and upgrade smoke). Its full check failed twice on the map-draw timing (51.5 and 51.7 ms at 6x throttle, limit 50, on a quiet machine; v147 passed) - find what v148 adds to `drawMap()` time (the 1.0 footer? a11y label sizing?) or measure why - and once on the P5-07 Undo step. Then merge, check and tag v1.0.0 after real-tablet checks (ROADMAP 7.2).
+2. **Flaky P5-07 smoke step**: after Undo (and once after Start over) the reloaded page still shows the earlier save, only in full runs. `reloadSaved()` (hold saves, reload after 250 ms) did not cure the Undo case. The failure message records the page state; next idea: check whether the smoke fixture init script or an earlier page in the same context writes the save.
+3. **P6-03 / P6-04 Content audits**: mostly covered by the R-01 reviews; the M/L items each review lists as not done remain.
+4. Optional: **G-04c Fishing Day** (docs/GAMES_RESEARCH.md), and the M/L ideas in `docs/reviews/`.
 
 ## Ideas and issues
 - (P5-10) All built files together are 2,988,673 bytes, 11 KB under the 3 MB total fail budget (tools/test.js); the next chunk that adds code or data will need a lever first (comments in the bigger files, or moving `ART` to src/data as the A11 notes say, which only shifts bytes between files; the total budget itself may want a review).
