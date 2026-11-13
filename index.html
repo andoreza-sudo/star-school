@@ -13,10 +13,10 @@
 /* Design tokens (DESIGN_SYSTEM.md section 2). The only file that may contain raw hex colours. */
 :root{
 /* colour */
---ink:#1F2440;--ink-2:#3D4263;--ink-3:#6B7090;--line:#E3E5EF;
+--ink:#1F2440;--ink-2:#3D4263;--ink-3:#676C8A;--line:#E3E5EF;
 --paper:#FFF9EF;--surface:#FFFFFF;--surface-2:#F4F5FB;
 --brand:#3B5BDB;--brand-shade:#2F49B8;--brand-tint:#E3E9FF;
---star:#FFC93C;--star-shade:#F5A800;--star-tint:#FFF1C7;
+--star:#FFC93C;--star-shade:#F5A800;--star-tint:#FFF1C7;--star-ink:#B06E00; /* P6-01: star-ink = gold icons on star-tint (3:1) */
 --good:#20A556;--good-ink:#147A3C;--good-tint:#DDF5E7;
 --try:#FFB020;--try-ink:#8A4B00;--try-tint:#FFE8B8;
 --danger:#C92A2A;
@@ -365,7 +365,7 @@ button.stat:active{transform:translateY(2px);box-shadow:inset 0 0 0 2px var(--li
 
 /* ---- switch: <label class="switch"><input type="checkbox" role="switch"><span class="sw"></span><span>Label</span></label> ---- */
 .switch{position:relative;display:flex;align-items:center;gap:var(--s-3);min-height:var(--tap);font-size:var(--fs-3);line-height:1.3;color:var(--ink);cursor:pointer;text-align:left}
-.switch>input{position:absolute;width:1px;height:1px;margin:0;opacity:0}
+.switch>input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer} /* P6-01: covers the switch, so Tab scrolls the whole row (and its ring) into view */
 .switch>.sw{position:relative;flex:none;width:56px;height:32px;border-radius:var(--r-pill);background:var(--ink-3)}
 .switch>.sw::before{content:'';position:absolute;inset:0;border-radius:inherit;background:var(--brand);opacity:0;transition:opacity var(--t) var(--ease)}
 .switch>.sw::after{content:'';position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:var(--surface);
@@ -390,6 +390,11 @@ button.stat:active{transform:translateY(2px);box-shadow:inset 0 0 0 2px var(--li
 .blank .bi{display:grid;place-items:center;width:96px;height:96px;border-radius:50%;background:var(--brand-tint);color:var(--brand)}
 .blank .bi .ic{width:52px;height:52px}
 .blank p{max-width:28ch;margin:0;font-size:var(--fs-3);line-height:var(--lh-3);color:var(--ink-2)}
+/* P6-02: a part file loading on demand ("Getting the games ready...", partsThen in 90-app.js): the disc pulses a few times */
+.blank.pw{min-height:60%;justify-content:center}
+.blank.pw .bi{position:relative;background:var(--play-tint);color:var(--play-shade)}
+.blank.pw .bi::after{content:'';position:absolute;inset:0;border:4px solid var(--play);border-radius:50%;opacity:0;
+  animation:k-ring var(--t-loop) var(--ease) 12;pointer-events:none}
 
 /* ---- map node (DS 7): .mapnode (+ .lock .open .done .mast .skip .boss), subject via --c; stars and tags hang off it ---- */
 .mapnode{position:relative;display:grid;place-items:center;width:64px;height:64px;padding:0;border:0;border-radius:50%;
@@ -417,7 +422,8 @@ button.stat:active{transform:translateY(2px);box-shadow:inset 0 0 0 2px var(--li
 @font-face{font-family:Andika;font-weight:700;src:url(data:font/woff2;base64,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) format('woff2')}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 button,a,.btn{touch-action:manipulation}
-:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+:focus-visible{outline:3px solid var(--brand)!important;outline-offset:2px;scroll-margin:var(--s-3)} /* P6-01: a state's own outline never hides the ring; Tab scrolls the ring fully into view */
+.a11y-h{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0} /* P6-01: a heading only screen readers see */
 html,body{margin:0;height:100%;color:var(--ink);font-family:var(--font-body);-webkit-user-select:none;user-select:none;overscroll-behavior:none;overflow:hidden}
 body{background:radial-gradient(circle at 20% 10%,var(--glow-warm) 0,transparent 40%),radial-gradient(circle at 90% 90%,var(--glow-cool) 0,transparent 45%),var(--paper)}
 input{font:inherit;-webkit-user-select:text;user-select:text}
@@ -431,7 +437,7 @@ input{font:inherit;-webkit-user-select:text;user-select:text}
 @keyframes bump{40%{transform:scale(1.2)}}
 .btn{border:0;border-radius:var(--r-btn);background:var(--surface);box-shadow:var(--ledge) var(--shadow-ink-2);font:inherit;font-weight:700;color:var(--ink);padding:12px 16px;cursor:pointer;touch-action:manipulation;transition:transform var(--t-fast) var(--ease)}
 .btn:active{transform:translateY(3px) scale(.97);box-shadow:var(--ledge-press) var(--shadow-ink-2)}
-.btn.sm{font-size:18px;padding:10px 14px}
+.btn.sm{font-size:18px;padding:10px 14px;min-height:var(--tap)} /* P6-01: 48 px tall */
 .btn.xs{padding:4px 10px;font-size:var(--fs-2);border-radius:var(--r-chip)}
 .btn.big{font-size:24px;padding:16px 26px;background:var(--good-ink);color:var(--surface)}
 .center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:16px;text-align:center;overflow:auto;min-height:0}
@@ -439,7 +445,7 @@ input{font:inherit;-webkit-user-select:text;user-select:text}
 h1{font-size:34px;margin:0 0 14px}
 h2{font-size:24px;margin:18px 4px 10px}
 .small{font-size:var(--fs-2);color:var(--ink-3);font-weight:400}
-.scroll{flex:1;overflow:auto;padding:0 14px 24px;-webkit-overflow-scrolling:touch}
+.scroll{flex:1;overflow:auto;padding:var(--s-2) 14px 24px;-webkit-overflow-scrolling:touch}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
 .tile{display:flex;flex-direction:column;align-items:center;gap:4px;padding:16px 8px;font-size:19px}
 .tile.math{background:var(--math-tint)}.tile.read{background:var(--read-tint)}
@@ -447,8 +453,10 @@ h2{font-size:24px;margin:18px 4px 10px}
 .lv{color:var(--star-shade);font-size:20px;letter-spacing:2px}
 /* hero */
 .hero{display:flex;gap:16px;align-items:center;background:linear-gradient(135deg,var(--star-tint),var(--star));border-radius:var(--r-hero);padding:14px 18px;margin:4px 0 6px;box-shadow:var(--ledge) var(--shadow-ink)}
-.petbig{font-size:96px;line-height:1;cursor:pointer;animation:bob var(--t-loop) ease-in-out infinite;text-shadow:0 6px 4px var(--shadow-ink-2)}
+.petbig{font-size:96px;line-height:1;animation:bob var(--t-loop) ease-in-out infinite;text-shadow:0 6px 4px var(--shadow-ink-2)}
 .pet.aura,.petbig.aura{text-shadow:0 0 12px var(--star),0 0 4px var(--surface)}
+/* P6-01: the pet shows a hand only where it can be patted (Home: role=button) */
+.petbig[role=button]{cursor:pointer}
 @keyframes bob{50%{transform:translateY(-8px) rotate(3deg)}}
 .jump{animation:jump var(--t-xl) var(--ease)!important}
 @keyframes jump{30%{transform:translateY(-30px) scale(1.15) rotate(-8deg)}60%{transform:translateY(0) scale(.95)}}
@@ -500,7 +508,7 @@ html.calm *,html.calm *::before,html.calm *::after{animation-duration:.01ms!impo
 .track .line{position:absolute;left:0;right:30px;top:34px;border-top:5px dotted #d6cfc4}
 .track .chest{position:absolute;right:0;top:12px;font-size:34px}
 .runner{position:absolute;top:2px;font-size:40px;line-height:1}
-.bubble{position:absolute;top:46px;left:0;background:#fff;border-radius:14px;padding:4px 10px;font-size:15px;font-weight:700;white-space:nowrap;box-shadow:0 3px 10px #0002;opacity:0;transition:opacity var(--t) var(--ease);z-index:5}
+.bubble{position:absolute;top:46px;left:0;background:#fff;border-radius:14px;padding:4px 10px;font-size:var(--fs-2);font-weight:700;white-space:nowrap;box-shadow:0 3px 10px #0002;opacity:0;transition:opacity var(--t) var(--ease);z-index:5}
 .bubble.on{opacity:1}
 .streak{font-size:20px;flex:none;font-weight:700;color:#ea580c;background:#ffedd5;border-radius:14px;padding:4px 10px;white-space:nowrap;display:none}
 .streak.on{display:block;animation:bump .4s}
@@ -572,10 +580,10 @@ html.calm *,html.calm *::before,html.calm *::after{animation-duration:.01ms!impo
 @media (max-width:420px){.pets{grid-template-columns:1fr 1fr}}
 .petopt{display:flex;flex-direction:column;align-items:center;font-size:16px;padding:10px 4px}
 .petopt span{font-size:52px}
-table{width:100%;border-collapse:collapse;font-size:15px}td,th{padding:6px 4px;border-bottom:1px solid #f0ebe3;text-align:left}.nw{white-space:nowrap}.tr{color:var(--ink-3)}
+table{width:100%;border-collapse:collapse;font-size:var(--fs-2)}td,th{padding:6px 4px;border-bottom:1px solid #f0ebe3;text-align:left}.nw{white-space:nowrap}.tr{color:var(--ink-3)}
 @media (orientation:landscape){.play{flex-direction:row;align-items:stretch}.inp{width:46%;display:flex;flex-direction:column;justify-content:center}}
 @media (max-width:560px){.hero{padding:10px;gap:10px}.petbig{font-size:64px}.hname{font-size:21px}.top{gap:6px;padding:8px}.btn.sm{font-size:16px;padding:8px 10px}.stars{font-size:18px;padding:5px 9px}.streak{font-size:16px;padding:4px 7px}.runner{font-size:32px}.track .chest{font-size:28px}.title{font-size:20px}.grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}.tile{font-size:17px;padding:12px 6px}.te{font-size:38px}.chestbtn{font-size:100px}.bigstars{font-size:26px}.msg{font-size:19px}h1{font-size:28px}}
-@media (max-height:520px){.setup h1{font-size:24px;margin:0 0 6px}.setup .card{margin:6px 0;padding:10px}.petopt{padding:6px 4px}.petopt span{font-size:36px}.prize{font-size:64px}.chestbtn{font-size:90px}.msg{font-size:18px;margin:2px 0}h1{font-size:26px;margin:0 0 8px}.top{padding:6px 10px}.play{padding-top:8px}.tools .btn{padding:6px 10px;font-size:15px}}
+@media (max-height:520px){.setup h1{font-size:24px;margin:0 0 6px}.setup .card{margin:6px 0;padding:10px}.petopt{padding:6px 4px}.petopt span{font-size:36px}.prize{font-size:64px}.chestbtn{font-size:90px}.msg{font-size:18px;margin:2px 0}h1{font-size:26px;margin:0 0 8px}.top{padding:6px 10px}.play{padding-top:8px}.tools .btn{padding:6px 10px;font-size:var(--fs-2)}}
 
 /* v4: map, new skills, shop, balloons */
 
@@ -915,19 +923,19 @@ html.notext .pktxt{display:none}
 .stc-m .rs{display:block}
 .stc-m .ic{display:block;color:var(--brand)}
 .stc-sub{font-size:var(--fs-3);margin:var(--s-1) 0;color:var(--ink-2)}
-.stc-sub.small{font-size:var(--fs-1);color:var(--ink-3)}
+.stc-sub.small{font-size:var(--fs-2);color:var(--ink-3)}
 .stc-nav{display:flex;align-items:center;justify-content:space-between;margin:var(--s-3) 0 var(--s-2);font-size:var(--fs-3)}
 .stc-nav .btn[disabled]{opacity:.35}
 .stc-nav b{font-family:var(--font-display);font-size:var(--fs-4)}
 .stc-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:var(--s-1)}
-.stc-h{font-size:var(--fs-1);font-weight:700;color:var(--ink-3);padding:var(--s-1) 0}
+.stc-h{font-size:var(--fs-2);font-weight:700;color:var(--ink-3);padding:var(--s-1) 0}
 .stc-d{min-height:var(--tap);border-radius:var(--r-chip);background:var(--surface-2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;line-height:1.1;padding:3px 0}
 .stc-d.stc-pad{background:none}
 .stc-d.on{background:var(--star-tint);box-shadow:inset 0 -3px 0 var(--star)}
 .stc-d.on .stc-n{color:var(--try-ink);font-weight:700}
 .stc-d.rest{background:var(--brand-tint)}
 .stc-d.now{outline:3px solid var(--brand);outline-offset:-3px}
-.stc-n{font-size:var(--fs-1);color:var(--ink-2)}
+.stc-n{font-size:var(--fs-2);color:var(--ink-2)}
 .stc-m{display:grid;place-items:center;min-height:22px}
 @media (max-width:420px){.stc-card{padding:var(--s-3)}.stc-grid{gap:2px}}
 /* P2-15 ABC Beach (32-gen-read.js genAbc, genSoundB, genSyl). Tokens only. */
@@ -1096,7 +1104,7 @@ html.notext .pktxt{display:none}
 .dl-n{margin-right:.35em;color:var(--brand-shade)}
 .dl-l.s1 .dl-n{color:var(--ink-2)}
 .choices.pics.dlg .choice.ch{font-size:clamp(30px,5vh,44px);padding:var(--s-2);min-height:var(--tap)}
-.choices.pics.dlg .ch .pcap small{font-size:.4em;color:var(--ink-2)}
+.choices.pics.dlg .ch .pcap small{font-size:max(.4em,var(--fs-2));color:var(--ink-2)}
 .dl-l:not(:has(.dl-b)){grid-template-columns:1fr;padding:var(--s-1) 0} /* no Spanish voice: the buttons are gone, the text takes the whole row */
 
 /* R-01d: Discover. The question never shrinks below 18 px when the hint opens on a phone (fit() shrinks the rest; the card scrolls).
@@ -1106,7 +1114,7 @@ html.notext .pktxt{display:none}
 .choices.pics.bpics{grid-template-columns:repeat(2,1fr)}
 .choices.pics.bpics.n3{grid-template-columns:repeat(3,1fr)}
 .choices.pics.bpics .choice.ch{font-size:clamp(40px,7vh,60px);padding:var(--s-2);min-height:var(--tap-pk)}
-.choices.pics.bpics .ch .pcap small{font-size:max(.3em,15px);color:var(--ink-2);white-space:normal;overflow-wrap:anywhere;margin-top:2px}
+.choices.pics.bpics .ch .pcap small{font-size:max(.3em,var(--fs-2));color:var(--ink-2);white-space:normal;overflow-wrap:anywhere;margin-top:2px}
 .bgrid{margin-bottom:0}
 /* on a phone the one-per-row answers of Discover are a little more compact, so a long question, its hint and four answers fit */
 @media (orientation:portrait) and (max-height:900px){
@@ -1129,7 +1137,7 @@ html.notext .pktxt{display:none}
   background:linear-gradient(var(--hi),var(--hi-0) 60%) var(--c,var(--brand));box-shadow:inset 0 -6px 0 var(--c-shade,var(--brand-shade)),0 6px 0 var(--ledge-soft)}
 .pl-tg{position:absolute;right:-10px;bottom:-8px;display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--star);color:var(--try-ink);
   box-shadow:inset 0 0 0 3px var(--surface),0 3px 0 var(--star-shade)}
-.pl-done{display:grid;place-items:center;width:112px;height:112px;margin:0 auto var(--s-2);border-radius:50%;line-height:1;color:var(--star-shade);
+.pl-done{display:grid;place-items:center;width:112px;height:112px;margin:0 auto var(--s-2);border-radius:50%;line-height:1;color:var(--star-ink);
   background:var(--star-tint);--ic2:var(--star-tint);box-shadow:inset 0 0 0 4px var(--star),0 6px 0 var(--star-shade)}
 .pl-res{display:inline-flex;align-items:center;gap:var(--s-3);font-size:var(--fs-5);font-weight:700;background:var(--surface);color:var(--ink);font-family:var(--font-display);
   border-radius:var(--r-card);padding:var(--s-3) var(--s-5);box-shadow:var(--shadow);margin:var(--s-2) 0}
@@ -1275,7 +1283,7 @@ html.notext .pktxt{display:none}
 .mappet{position:absolute;font-size:42px;transform:translate(-50%,-100%);pointer-events:none;animation:bob 2.4s ease-in-out infinite;z-index:3}
 .tabs{display:flex;gap:8px;justify-content:center;margin:10px 0}.tab.on{background:#3b82f6;color:#fff}
 .shopgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px}
-.item{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;font-size:15px}.item span{font-size:44px}
+.item{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;font-size:var(--fs-2)}.item span{font-size:44px}
 .clock{width:calc(clamp(170px,40vmin,300px)*var(--k));height:auto;display:block;margin:0 auto}
 .coins{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center;max-width:520px;margin:0 auto 6px}
 .cn{width:calc(70px*var(--s)*var(--k));height:calc(70px*var(--s)*var(--k));border-radius:50%;background:radial-gradient(circle at 35% 30%,#fffa,var(--c) 62%);border:3px solid #0003;display:flex;align-items:center;justify-content:center;font-size:calc(20px*var(--s)*var(--k));font-weight:700;color:#2d2a26;box-shadow:0 3px 0 #0002}
@@ -1299,12 +1307,12 @@ html.notext .pktxt{display:none}
 .swatch{display:inline-block;width:1em;height:1em;border-radius:50%;background:var(--sw);border:4px solid #0002;box-shadow:inset -6px -6px 0 #0001;vertical-align:middle}
 .numpic{display:inline-flex;align-items:center;justify-content:center;min-width:1.2em;height:1.2em;padding:0 .15em;border-radius:.3em;background:#fff;border:4px solid #93c5fd;font-weight:700;font-size:.8em;line-height:1;color:#1d4ed8}
 .clkpic{display:inline-flex;vertical-align:middle}.clkpic .viz{width:1.15em;height:1.15em}.emo .clkpic .viz{width:1.6em;height:1.6em}
-.pcap{display:inline-flex;flex-direction:column;align-items:center;line-height:1.05}.pcap small{font-size:.3em;font-weight:700;color:var(--ink-3)}
-.choices.pics .ch .pcap small{font-size:.32em}
+.pcap{display:inline-flex;flex-direction:column;align-items:center;line-height:1.05}.pcap small{font-size:max(.3em,var(--fs-2));font-weight:700;color:var(--ink-3)}
+.choices.pics .ch .pcap small{font-size:max(.32em,var(--fs-2))}
 /* P2-34 me gusta card: the face over the picture */
 .gcd{display:inline-flex;flex-direction:column;align-items:center;line-height:1.05;gap:2px}.gcd i{font-style:normal;font-size:.5em}.gcd b{font-weight:400}
 .lgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px}
-.lcard{display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 6px}.lcard .lp{font-size:54px;line-height:1.1}.lcard b{font-size:22px;color:#1d4ed8}.lcard small{font-size:15px;color:var(--ink-3)}
+.lcard{display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 6px}.lcard .lp{font-size:54px;line-height:1.1}.lcard b{font-size:22px;color:#1d4ed8}.lcard small{font-size:var(--fs-2);color:var(--ink-3)}
 .lcard.heard{background:#dcfce7}
 .ovl .grow,.ovl .grown{font-size:min(160px,30vh)!important}.ovl h1{font-size:min(34px,7vh)}
 
@@ -1316,13 +1324,13 @@ html.notext .pktxt{display:none}
 /* P4-17: the boss life bar: token colours, shrinks with transform (no layout), a soft gloss on top */
 .hp{flex:1;height:18px;background:var(--surface);border-radius:var(--r-pill);overflow:hidden;box-shadow:inset 0 0 0 2px var(--line),inset 0 3px 0 var(--surface-2);min-width:40px;position:relative}
 .hp div{height:100%;background:linear-gradient(var(--ill-red-1),var(--ill-red) 45%,var(--ill-red-2));border-radius:inherit;transform-origin:0 50%;transition:transform var(--t-slow) var(--ease)}
-#hpn{font-size:13px;white-space:nowrap;max-width:30vw;overflow:hidden}
+#hpn{font-size:var(--fs-2);white-space:nowrap;max-width:30vw;overflow:hidden}
 .bossbig{font-size:min(140px,26vh);animation:wobble .5s 3}
 /* (P4-18: map stops, world titles, labels and the test-out button moved to 47-gfx.css) */
 /* P1-05 world picker strip (one chip per world, grouped by grade), "more worlds" buttons, NEW tag on stops added later */
 .wstrip{display:flex;align-items:center;gap:var(--s-2);flex:none;overflow-x:auto;padding:var(--s-1) var(--s-3) var(--s-3);scrollbar-width:none}
 .wstrip::-webkit-scrollbar{display:none}
-.wgl{flex:none;font-size:var(--fs-1);font-weight:700;color:var(--ink-3);padding-left:var(--s-1)}
+.wgl{flex:none;font-size:var(--fs-2);font-weight:700;color:var(--ink-3);padding-left:var(--s-1)}
 .wchip{flex:none;display:flex;align-items:center;gap:var(--s-1);min-height:var(--tap);padding:0 var(--s-3);border:0;border-radius:var(--r-pill);
   background:var(--surface);color:var(--ink);font:inherit;font-size:var(--fs-2);font-weight:700;white-space:nowrap;cursor:pointer;
   box-shadow:var(--ledge) var(--line);touch-action:manipulation;transition:transform var(--t-fast)}
@@ -1334,10 +1342,10 @@ html.notext .pktxt{display:none}
 .wmore{position:absolute;left:50%;transform:translateX(-50%);z-index:2;display:flex;align-items:center;gap:var(--s-2);min-height:var(--tap);white-space:nowrap}
 .wmore:active{transform:translateX(-50%) translateY(3px)}
 .nnew{position:absolute;transform:translateX(-50%);z-index:3;pointer-events:none;background:var(--danger);color:var(--surface);
-  font-size:var(--fs-1);font-weight:700;border-radius:var(--r-pill);padding:1px var(--s-2)}
+  font-size:var(--fs-2);font-weight:700;border-radius:var(--r-pill);padding:1px var(--s-2)}
 .rtag{background:#ede9fe;color:#6d28d9;font-weight:700;font-size:16px;border-radius:12px;padding:3px 12px}
 .cbar{display:flex;align-items:center;gap:10px;margin:6px 0;font-weight:700}.cbar span{width:90px}.cbar .meter{flex:1;margin:0;background:#f5f5f4}.cbar b{width:48px;text-align:right}
-.dot{position:absolute;top:4px;right:8px;background:#ef4444;color:#fff;font-style:normal;border-radius:50%;width:22px;height:22px;font-size:15px;display:flex;align-items:center;justify-content:center}
+.dot{position:absolute;top:4px;right:8px;background:#ef4444;color:#fff;font-style:normal;border-radius:50%;width:22px;height:22px;font-size:var(--fs-2);display:flex;align-items:center;justify-content:center}
 .stage{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;border-radius:0 0 28px 28px;padding:10px 12px 12px;margin:0 -14px 6px;position:relative;overflow:hidden;box-shadow:0 4px 10px #0001}
 .stage.sticky{position:sticky;top:0;z-index:5}
 .stage .petbig{font-size:clamp(100px,24vmin,180px);padding:.38em .5em .05em;line-height:1}
@@ -1346,7 +1354,7 @@ html.notext .pktxt{display:none}
 .ptcard{display:flex;gap:14px;align-items:center;background:linear-gradient(135deg,#fef3c7,#fde68a);border-radius:22px;padding:14px 16px;margin:6px 0 14px}.ptcard.empty{background:#f5f5f4}
 .game.soon{opacity:.55;cursor:default}
 .upg{cursor:default}.upg .gi{gap:2px}
-.paints{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px}.paint{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:14px;padding:8px 4px}
+.paints{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px}.paint{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:var(--fs-2);padding:8px 4px}
 .paint span{width:36px;height:36px;border-radius:50%;border:3px solid #0002}.paint.on{outline:4px solid #22c55e}
 .btn.xs.on{background:#3b82f6;color:#fff}
 .hc{position:fixed;inset:0;touch-action:none;background:#000}.hc canvas{position:absolute;inset:0;width:100%;height:100%}
@@ -1354,39 +1362,38 @@ html.notext .pktxt{display:none}
 .hcfuel{flex:1;display:flex;align-items:center;gap:6px;max-width:260px;font-size:22px}.hcfuel>div{flex:1;height:16px;background:#fff9;border-radius:9px;overflow:hidden;border:2px solid #0003}.hcfuel>div>div{height:100%;transition:width .3s}
 .hchud .stars{font-size:clamp(14px,3.2vw,20px);padding:4px 9px}
 .pedal{position:absolute;bottom:14px;width:clamp(96px,16vw,140px);height:clamp(96px,16vw,140px);border-radius:28px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:44px;font-weight:700;color:#fff;box-shadow:0 6px 0 #0004;pointer-events:none;opacity:.9}
-.pedal small{font-size:15px}.pedal.brake{left:14px;background:#ef4444}.pedal.gas{right:14px;background:#16a34a}.pedal.on{transform:translateY(4px) scale(.96);box-shadow:0 2px 0 #0004;opacity:1}
+.pedal small{font-size:var(--fs-2)}.pedal.brake{left:14px;background:#ef4444}.pedal.gas{right:14px;background:#16a34a}.pedal.on{transform:translateY(4px) scale(.96);box-shadow:0 2px 0 #0004;opacity:1}
 .hcmsg{position:absolute;left:50%;top:22%;transform:translateX(-50%);background:#fffe;border-radius:18px;padding:10px 18px;font-size:clamp(18px,4vw,26px);font-weight:700;opacity:0;transition:opacity .3s;pointer-events:none;text-align:center;max-width:90vw}.hcmsg.on{opacity:1}
 .hcpop{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%) scale(.4);font-size:clamp(26px,6vw,44px);font-weight:700;color:#fde047;text-shadow:0 3px 0 #b45309,0 0 12px #0008;opacity:0;pointer-events:none;white-space:nowrap}
 .hcpop.on{animation:hcpop 1.4s ease-out}@keyframes hcpop{15%{opacity:1;transform:translate(-50%,-50%) scale(1.15) rotate(-4deg)}70%{opacity:1;transform:translate(-50%,-60%) scale(1)}100%{opacity:0;transform:translate(-50%,-80%) scale(.9)}}
 .lvgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px;margin:10px 0}
 .lvb{display:flex;flex-direction:column;align-items:center;padding:10px 4px;background:linear-gradient(180deg,#fff,#fef3c7);border-radius:18px;min-height:96px}
-.lvb b{font-size:30px;line-height:1}.lvb .lvs{font-size:16px;letter-spacing:1px}.lvb small{font-size:11px;color:#78716c}.lvb.lock{opacity:.5;background:#e7e5e4}.lvb.done{background:linear-gradient(180deg,#fff,#bbf7d0)}
+.lvb b{font-size:30px;line-height:1}.lvb .lvs{font-size:16px;letter-spacing:1px}.lvb small{font-size:var(--fs-2);color:#78716c}.lvb.lock{opacity:.5;background:#e7e5e4}.lvb.done{background:linear-gradient(180deg,#fff,#bbf7d0)}
 .lvhead{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-radius:18px;color:#fff;font-size:20px;text-shadow:0 2px 4px #0006;margin-top:8px}
 .lvstars{font-size:56px;margin:4px 0 8px}.lvstar{display:inline-block;filter:grayscale(1) opacity(.3);transform:scale(.6)}.lvstar.on{animation:lvpop .5s both;filter:none}
 @keyframes lvpop{0%{transform:scale(0) rotate(-60deg)}70%{transform:scale(1.3)}100%{transform:scale(1)}}
-.mrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:10px 12px;border-radius:18px;text-align:left}.mrow .ge{font-size:30px}.mrow .gt{font-weight:700;font-size:19px;flex:1}.mrow>div{display:flex;gap:6px;flex-wrap:wrap;width:100%}.mrow .btn{flex:1;background:#fff;font-size:15px}
-.chip.eshard .sw{background:repeating-linear-gradient(45deg,#e7e5e4,#e7e5e4 4px,#fafaf9 4px,#fafaf9 8px)}.chip.eshard.found .sw{background:var(--cc)}.chip.eshard small{font-size:15px;font-weight:700}
-.chip.wide b{font-size:13px;white-space:nowrap}.cbdh{margin:14px 4px 4px;font-size:18px}
-.shwrap svg{filter:drop-shadow(0 4px 6px #0003)}
+.mrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:10px 12px;border-radius:18px;text-align:left}.mrow .ge{font-size:30px}.mrow .gt{font-weight:700;font-size:19px;flex:1}.mrow>div{display:flex;gap:6px;flex-wrap:wrap;width:100%}.mrow .btn{flex:1;background:#fff;font-size:var(--fs-2)}
+.chip.eshard .sw{background:repeating-linear-gradient(45deg,#e7e5e4,#e7e5e4 4px,#fafaf9 4px,#fafaf9 8px)}.chip.eshard.found .sw{background:var(--cc)}.chip.eshard small{font-size:var(--fs-2);font-weight:700}
+.chip.wide b{font-size:var(--fs-2);white-space:nowrap}.cbdh{margin:14px 4px 4px;font-size:18px}
 .stwrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;min-height:0;padding:4px 6px 8px}
 .stcv{background:#fff;border-radius:16px;box-shadow:0 4px 14px #0003;overflow:hidden;touch-action:none;flex:none}.stcv svg{display:block;width:100%;height:100%}.stcv.neon{background:#05010f}.stcv canvas{display:block;width:100%;height:100%;touch-action:none}
-.stbar{width:100%;max-width:640px;display:flex;flex-direction:column;gap:6px}.stmodes,.stpals,.stcols{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}.stmodes .btn,.stpals .btn{background:#fff;font-size:15px;padding:6px 10px}.stmodes .btn.on,.stpals .btn.on{background:#fde047;box-shadow:0 0 0 3px #ca8a04 inset}
-.stc{width:40px;height:40px;border-radius:50%;padding:0;background:var(--cc)!important;box-shadow:0 0 0 2px #0002 inset,0 2px 4px #0003}.stc.on{box-shadow:0 0 0 3px #fff,0 0 0 6px #111;transform:scale(1.1)}
-.stcols .stc{width:44px;height:44px}.dot{display:inline-block;border-radius:50%;background:#111;vertical-align:middle}
+.stbar{width:100%;max-width:640px;display:flex;flex-direction:column;gap:6px}.stmodes,.stpals,.stcols{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}.stmodes .btn,.stpals .btn{background:#fff;font-size:var(--fs-2);padding:6px 10px;min-width:var(--tap);min-height:var(--tap)}.stmodes .btn.on,.stpals .btn.on{background:#fde047;box-shadow:0 0 0 3px #ca8a04 inset}
+.stc{width:var(--tap);height:var(--tap);border-radius:50%;padding:0;background:var(--cc)!important;box-shadow:0 0 0 2px #0002 inset,0 2px 4px #0003}.stc.on{box-shadow:0 0 0 3px #fff,0 0 0 6px #111;transform:scale(1.1)}
+.stcols .stc{width:var(--tap);height:var(--tap)}.dot{display:inline-block;border-radius:50%;background:#111;vertical-align:middle}
 .stgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin:8px 0}.sttile{padding:5px;background:#fff;border-radius:16px;aspect-ratio:1;overflow:hidden}.sttile svg,.sttile img{width:100%;height:100%;display:block;border-radius:12px}
 .sttabs{flex-wrap:wrap}
-@media (orientation:landscape) and (max-height:700px){.stwrap{flex-direction:row;align-items:flex-start;justify-content:center}.stbar{width:230px;flex:none;overflow-y:auto;max-height:100%}.stcols .stc{width:38px;height:38px}}
-.hcmodes{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:6px 0 10px}.hcmode{display:flex;flex-direction:column;align-items:center;padding:10px 6px;background:#fff;border-radius:16px;text-align:center}.hcmode span{font-size:30px}.hcmode b{font-size:17px}.hcmode small{font-size:11px;color:#78716c}.hcmode.on{background:#fde68a;box-shadow:0 0 0 3px #f59e0b inset}
-.ptlines{display:flex;flex-direction:column;font-size:14px;font-weight:600;color:#57534e;margin-top:4px;gap:1px}.ptlines .neg{color:#b91c1c}.pthint{margin-top:6px;font-size:15px;color:#7c3aed;font-weight:700}
+@media (orientation:landscape) and (max-height:700px){.stwrap{flex-direction:row;align-items:flex-start;justify-content:center}.stbar{width:230px;flex:none;overflow-y:auto;max-height:100%;padding:var(--s-2)}.stcols .stc{width:var(--tap);height:var(--tap)}}
+.hcmodes{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:6px 0 10px}.hcmode{display:flex;flex-direction:column;align-items:center;padding:10px 6px;background:#fff;border-radius:16px;text-align:center}.hcmode span{font-size:30px}.hcmode b{font-size:17px}.hcmode small{font-size:var(--fs-2);color:#78716c}.hcmode.on{background:#fde68a;box-shadow:0 0 0 3px #f59e0b inset}
+.ptlines{display:flex;flex-direction:column;font-size:var(--fs-2);font-weight:600;color:#57534e;margin-top:4px;gap:1px}.ptlines .neg{color:#b91c1c}.pthint{margin-top:6px;font-size:var(--fs-2);color:#7c3aed;font-weight:700}
 .ptrules{margin-top:14px;line-height:1.6}.ptrules b{color:#b45309}.ptrules div b{float:right}
-.tipcard{background:#fff;border-radius:16px;padding:10px 14px;margin:10px 0;font-size:15px;box-shadow:0 2px 6px #0001;line-height:1.4}
+.tipcard{background:#fff;border-radius:16px;padding:10px 14px;margin:10px 0;font-size:var(--fs-2);box-shadow:0 2px 6px #0001;line-height:1.4}
 .cbgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:10px}
 .cbitem{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;font-size:16px}.cbitem img{width:96px;height:96px;border-radius:10px;image-rendering:pixelated;box-shadow:0 2px 6px #0002}
 .cbwrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:10px;padding:6px 10px 12px;min-height:0}
 .cbcv{flex:none;touch-action:none}.cbcv canvas{display:block;border-radius:10px;box-shadow:0 4px 14px #0002;touch-action:none;background:#fff}
 .cbpal{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:640px}
 .chip{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 8px;min-width:64px;font-size:18px}.chip .sw{width:34px;height:34px;border-radius:50%;background:var(--cc);border:3px solid #0002}
-.chip small{font-size:13px;color:var(--ink-3)}.chip.on{outline:4px solid #3b82f6;transform:translateY(-3px)}
+.chip small{font-size:var(--fs-2);color:var(--ink-3)}.chip.on{outline:4px solid #3b82f6;transform:translateY(-3px)}
 .cbpal.fp .chip{min-width:52px;padding:6px}
 @media (orientation:landscape){.cbwrap{flex-direction:row;justify-content:center;align-items:center}.cbpal{flex-direction:column;flex-wrap:wrap;max-height:calc(100vh - 80px);max-width:240px;align-content:flex-start}.cbpal.fp{flex-direction:row;max-width:200px}}
 .hcprog{position:absolute;top:60px;left:50%;transform:translateX(-50%);width:min(320px,50vw);height:8px;background:#0004;border-radius:6px;z-index:2}.hcprog>div{height:100%;background:linear-gradient(90deg,#22c55e,#facc15);border-radius:6px}
@@ -1395,11 +1402,12 @@ html.notext .pktxt{display:none}
 .hcfuel>div.low{animation:hc-low 1s infinite}
 @keyframes hc-low{50%{opacity:.55}}
 .endcard{background:#fff;color:var(--ink);border-radius:26px;padding:18px 22px;max-width:560px;width:92vw;text-align:center;box-shadow:0 10px 40px #0006;animation:spin .5s cubic-bezier(.5,1.6,.5,1)}
-.endstats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}.endstats div{background:#f5f5f4;border-radius:14px;padding:8px 4px;display:flex;flex-direction:column}.endstats b{font-size:22px}.endstats span{font-size:12px;color:var(--ink-3)}
-.vehs{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}.veh{display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 6px;font-size:15px}.veh canvas{width:150px;height:90px}.veh.on{outline:4px solid #22c55e;background:#f0fdf4}
+.endstats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}.endstats div{background:#f5f5f4;border-radius:14px;padding:8px 4px;display:flex;flex-direction:column}.endstats b{font-size:22px}.endstats span{font-size:var(--fs-2);color:var(--ink-3)}
+.vehs{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}.veh{display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 6px;font-size:var(--fs-2)}.veh canvas{width:150px;height:90px}.veh.on{outline:4px solid #22c55e;background:#f0fdf4}
 .mis{cursor:default}
 .shthumb{width:100px;height:100px;border-radius:10px;box-shadow:0 2px 6px #0002;background:#fff}
-.shwrap svg{width:100%;height:100%;display:block;border-radius:12px;background:#fff;box-shadow:0 4px 14px #0002;touch-action:none}
+/* P6-02: the drop-shadow filter (0 4px 6px #0003) was repainted with every fill; the svg is an opaque rounded box, so it is the same shadow as a box-shadow */
+.shwrap svg{width:100%;height:100%;display:block;border-radius:12px;background:#fff;box-shadow:0 4px 6px #0003,0 4px 14px #0002;touch-action:none}
 .shwrap path{cursor:pointer;transition:fill .2s}.shl{font-family:Andika,sans-serif;font-weight:700;fill:#78716c;pointer-events:none}.shl.on{fill:#1d4ed8}
 .popfill{animation:popf .35s}@keyframes popf{50%{opacity:.6}}
 /* Pet rig (P4-05; DESIGN_SYSTEM.md 6.2). Drawing: src/js/17-pets-svg.js. Tokens only; animates transform and opacity only.
@@ -1496,7 +1504,7 @@ html.notext .pktxt{display:none}
 /* the part of the rail already walked, grown with transform (--p = done / total) */
 .qtrack::after{background:var(--good);opacity:.45;transform-origin:left center;transform:scaleX(var(--p,0));transition:transform var(--t-slow) var(--ease)}
 .qgoal{position:relative;z-index:1;display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:var(--star-tint);
-  color:var(--star-shade);--ic2:var(--star-tint);box-shadow:inset 0 0 0 2px var(--star),0 3px 0 var(--star-shade)}
+  color:var(--star-ink);--ic2:var(--star-tint);box-shadow:inset 0 0 0 2px var(--star),0 3px 0 var(--star-shade)}
 .qgoal .ic{width:26px;height:26px}
 .qgoal.test{background:var(--brand-tint);color:var(--brand);box-shadow:inset 0 0 0 2px var(--brand),0 3px 0 var(--brand-shade)}
 /* #qwalk is as wide as the track, so translateX(%) (set by qLeft in 50-round.js) puts the pet's centre on a column centre */
@@ -1543,11 +1551,11 @@ html.notext .pktxt{display:none}
 .tag.rtag .ic{width:18px;height:18px}
 /* the review tag sits in the card's top corner and takes no height, so a review question fits exactly where it did as a
    normal question (a ten-frame count at 380x780 overflowed by 25 px with the tag in the flow) */
-.qs .qarea>.tag.rtag{position:absolute;top:var(--s-2);right:var(--s-2);margin:0;z-index:1;font-size:var(--fs-1);padding:2px var(--s-2) 2px var(--s-1)}
+.qs .qarea>.tag.rtag{position:absolute;top:var(--s-2);right:var(--s-2);margin:0;z-index:1;font-size:var(--fs-2);padding:2px var(--s-2) 2px var(--s-1)}
 .qs .qarea>.tag.rtag .ic{width:16px;height:16px}
 .qarea>.tag.rtag+*{margin-top:auto}
 /* the challenge tag (51-mastery.js) is pinned the same way, in the top-left corner so it never meets the review chip */
-.qs .qarea>.mtag{position:absolute;top:var(--s-2);left:var(--s-2);margin:0;z-index:1;font-size:var(--fs-1);padding:2px var(--s-2) 2px var(--s-1)}
+.qs .qarea>.mtag{position:absolute;top:var(--s-2);left:var(--s-2);margin:0;z-index:1;font-size:var(--fs-2);padding:2px var(--s-2) 2px var(--s-1)}
 .qs .qarea>.mtag .ic{width:16px;height:16px}
 .qarea>.mtag+*{margin-top:auto}
 .qs .mtag{background:var(--bt);color:var(--surface);padding:var(--s-1) var(--s-3) var(--s-1) var(--s-2);line-height:1.2}
@@ -1786,7 +1794,7 @@ body:has(.qtop) .toast{top:calc(env(safe-area-inset-top) + 84px)}
 .rw-earn{display:grid;gap:var(--s-3);padding:var(--s-3) var(--s-4);border:2px solid var(--line);border-radius:var(--r-card);background:var(--surface)}
 .rw-earn:empty{display:none}
 .rw-er{display:grid;grid-template-columns:44px minmax(0,1fr);gap:var(--s-3);align-items:start;animation:rw-rise var(--t-slow) var(--ease) both}
-.rw-ed{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--star-tint);color:var(--star-shade);--ic2:var(--star-tint)}
+.rw-ed{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--star-tint);color:var(--star-ink);--ic2:var(--star-tint)}
 .rw-er.ticket .rw-ed{background:var(--play-tint);color:var(--play);--ic2:var(--play-tint)}
 .rw-er.bump .rw-ed{animation:rw-bump var(--t-slow) var(--spring)}
 .rw-et{padding-top:9px;font-size:var(--fs-4);line-height:var(--lh-4);font-weight:700;color:var(--ink);overflow-wrap:normal}
@@ -2054,6 +2062,50 @@ html.calm .rw-burst{display:none}
 .choices.galr .choice.ch{min-height:var(--tap-primary)}
 /* the balance of a one-step equation hint stays small so the hint card keeps the keypad in view */
 .galbal .viz{--vz:.42}
+/* Children (P5-10; src/js/01-profiles.js): the "Who is playing?" picker, the Children card in Grown-ups, the delete sheet.
+   Tokens only; animates transform and opacity only. Sorted before 46-home.css so its place backgrounds (.sc-beach ...) win. */
+
+/* ---- "Who is playing?": one big drawn card per child (their pet on their place, the name, their stars) ---- */
+.scroll.pf-who{display:flex;flex-direction:column;align-items:center;gap:var(--s-5);padding:var(--s-5) var(--s-4) var(--s-7)}
+.pf-top{margin-top:auto;display:flex;align-items:center;justify-content:center;gap:var(--s-3);width:min(760px,100%)}
+.pf-t{display:flex;align-items:center;gap:var(--s-3);min-width:0;margin:0;font-family:var(--font-display);font-size:var(--fs-6);
+  font-weight:700;line-height:1.15}
+.pf-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s-4);width:min(760px,100%)}
+.pf-kid{display:flex;flex-direction:column;align-items:stretch;gap:var(--s-2);min-width:0;min-height:var(--tap);padding:var(--s-3) var(--s-3) var(--s-4);
+  border:0;border-radius:var(--r-hero);background:var(--surface);color:var(--ink);font:inherit;text-align:center;cursor:pointer;
+  box-shadow:inset 0 0 0 2px var(--line),0 5px 0 var(--ledge-soft);transition:transform var(--t-fast) var(--ease)}
+.pf-kid:active{transform:translateY(4px)}
+.pf-stage{position:relative;display:flex;align-items:flex-end;justify-content:center;height:clamp(120px,24vh,210px);border-radius:20px;
+  overflow:hidden;background:linear-gradient(var(--ill-blue-1),var(--ill-aqua-1) 75%)}
+.pf-pet{position:relative;display:block;height:92%;aspect-ratio:1}
+.pf-pet .pet-svg{display:block;width:100%;height:100%}
+.pf-nm{font-family:var(--font-display);font-size:var(--fs-5);font-weight:700;line-height:1.15;overflow-wrap:anywhere}
+.pf-st{display:flex;align-items:center;justify-content:center;gap:var(--s-1);font-size:var(--fs-3);color:var(--ink-2);font-variant-numeric:tabular-nums}
+.pf-st .ic{color:var(--star-shade)}
+.pf-who #pf-msg{width:min(760px,100%);margin-bottom:auto} /* the auto margins centre the picker when there is room */
+@media (max-width:480px){.pf-t{font-size:var(--fs-5)}.pf-grid{gap:var(--s-3)}.pf-nm{font-size:var(--fs-4)}}
+/* a wide screen: three or four children in one row */
+@media (min-width:900px){.pf-grid.n3{grid-template-columns:repeat(3,minmax(0,1fr));width:min(960px,100%)}
+  .pf-grid.n4{grid-template-columns:repeat(4,minmax(0,1fr));width:min(1100px,100%)}}
+@media (max-height:620px) and (orientation:landscape){.scroll.pf-who{gap:var(--s-3);padding-top:var(--s-3)}.pf-t{font-size:var(--fs-5)}
+  .pf-stage{height:clamp(110px,34vh,200px)}}
+
+/* ---- Grown-ups: the Children card, and the rows of a backup of all children ---- */
+.pf-list{display:grid;gap:var(--s-2);margin:0 0 var(--s-4)}
+.pf-row{display:flex;align-items:center;gap:var(--s-3);min-height:var(--tap);padding:var(--s-2) var(--s-2) var(--s-2) var(--s-3);
+  border-radius:var(--r-btn);background:var(--surface-2);text-align:left}
+.pf-row.me{background:var(--brand-tint)}
+.pf-av{position:relative;flex:none;display:flex;align-items:flex-end;justify-content:center;width:56px;height:56px;border-radius:16px;
+  overflow:hidden;background:linear-gradient(var(--ill-blue-1),var(--ill-aqua-1) 75%)}
+.pf-av .pet-svg{display:block;width:54px;height:54px}
+.pf-rt{flex:1;min-width:0;display:grid;gap:2px}
+.pf-rt b{font-size:var(--fs-3);line-height:1.25;overflow-wrap:anywhere}
+.pf-rt>span{display:flex;align-items:center;gap:var(--s-1);color:var(--ink-2)}
+.pf-ra{flex:none;display:flex;gap:var(--s-2)}
+.pf-rt>.tag.pf-now{display:inline-flex;justify-self:start;margin-top:2px;color:var(--surface)}
+.sheet .pf-list{margin:0 0 var(--s-4)}
+.sheet .sh-art.pf-dz{background:var(--surface-2);color:var(--danger)}
+.sheet .gw-f{margin:0 0 var(--s-4);text-align:left}
 /* Home (P4-08; DESIGN_SYSTEM.md 9 row 2). Markup in src/js/46-home.js home(). Tokens only; animates transform and opacity only. */
 
 /* ---- top bar: logo, sound, grown-ups gear ---- */
@@ -2212,7 +2264,7 @@ button.hm-tile:active{transform:translateY(3px);box-shadow:inset 0 0 0 2px var(-
 .t-shop{--c:var(--read);--c-shade:var(--read-shade)}
 .t-book{--c:var(--star);--c-shade:var(--star-shade);color:var(--try-ink);--ic2:var(--star)}
 .hm-need{position:absolute;top:-8px;right:-10px;display:grid;place-items:center;width:26px;height:26px;border-radius:50%;
-  background:var(--play);color:var(--surface);font-size:var(--fs-2);font-style:normal;font-weight:700;line-height:1;box-shadow:0 0 0 3px var(--surface)}
+  background:var(--play-shade);color:var(--surface);font-size:var(--fs-2);font-style:normal;font-weight:700;line-height:1;box-shadow:0 0 0 3px var(--surface)}
 
 .hm-ver{display:flex;align-items:center;justify-content:center;gap:var(--s-1);margin:var(--s-6) 0 var(--s-1);font-size:var(--fs-2);color:var(--ink-3)}
 .hm-ver .ic{color:var(--star-shade)}
@@ -2306,7 +2358,8 @@ button.hm-tile:active{transform:translateY(3px);box-shadow:inset 0 0 0 2px var(-
 .btn.node.boss.lock{background:var(--surface-2);box-shadow:inset 0 0 0 3px var(--line),0 3px 0 var(--line)}
 .node .nb-art{width:104px;height:104px;margin-top:-22px;pointer-events:none}
 .node .nb-e{font-size:46px;line-height:1}
-.nlab{position:absolute;transform:translateX(-50%);width:max-content;max-width:140px;font-size:var(--fs-1);font-weight:700;text-align:center;line-height:1.2;
+/* P6-01: 46-home.js lets a label grow to 180 px where the map has room on both sides, so 16 px names stay on one line */
+.nlab{position:absolute;transform:translateX(-50%);width:max-content;max-width:140px;font-size:var(--fs-2);font-weight:700;text-align:center;line-height:1.2;
   pointer-events:none;z-index:2;color:var(--ink);background:var(--surface);border-radius:var(--r-chip);padding:2px var(--s-2);box-shadow:0 2px 0 var(--drop)}
 .nstar{display:flex;justify-content:center;margin-top:2px}
 .nstar:empty{display:none}
@@ -2344,7 +2397,7 @@ button.hm-tile:active{transform:translateY(3px);box-shadow:inset 0 0 0 2px var(-
 .stat.timer b,.stat.bolt b{font-variant-numeric:tabular-nums}
 .gx-gap{display:block}
 .gx-end{padding:var(--s-5) var(--s-5) var(--s-5)}
-.gx-disc{position:relative;width:96px;height:96px;background:var(--star-tint);color:var(--star-shade);--ic2:var(--star-tint);
+.gx-disc{position:relative;width:96px;height:96px;background:var(--star-tint);color:var(--star-ink);--ic2:var(--star-tint);
   box-shadow:inset 0 0 0 4px var(--star),0 5px 0 var(--star-shade)}
 .gx-disc.rec{animation:rw-pop var(--t-xl) var(--spring) both}
 .gx-end .rw-rays{position:absolute;left:50%;top:-30px;width:300px;height:300px;margin-left:-150px;opacity:.7;pointer-events:none}
@@ -2678,7 +2731,7 @@ html.calm .pc-fx{display:none}
 .bt-h{display:flex;align-items:center;gap:var(--s-2);max-width:640px;margin:var(--s-5) auto var(--s-3);font-family:var(--font-display);font-size:var(--fs-4);line-height:1.2}
 .bt-h .ic{flex:none;color:var(--bt)}
 .bt-type .gx-ln,.bt-keep .gx-ln,.bt-day .gx-ln{gap:var(--s-2);flex-wrap:wrap}
-.bt-day .pc-badge{background:var(--star-tint);color:var(--star-shade)}
+.bt-day .pc-badge{background:var(--star-tint);color:var(--star-ink)}
 .bt-hub .blank{margin-top:var(--s-7)}
 /* level strip */
 .bt-bands{display:flex;justify-content:center;margin:var(--s-2) 0 var(--s-3)}
@@ -2699,7 +2752,7 @@ html.calm .pc-fx{display:none}
 .bt-bar .ttl{flex:1;white-space:normal}
 .bt-tt{display:flex;flex-direction:column;min-width:0;line-height:1.1}
 .bt-nm{overflow-wrap:normal}
-.bt-tt small{font-size:var(--fs-1);font-weight:700;color:var(--ink-2)}
+.bt-tt small{font-size:var(--fs-2);font-weight:700;color:var(--ink-2)}
 @media (max-width:480px){
   .bt-bar.timed .gx-tb{display:none}
   .bt-bar.timed .ttl{font-size:var(--fs-3)}
@@ -2794,7 +2847,7 @@ html.calm .burst,html.calm .rw-burst,html.calm .fly,html.calm .pc-fx{display:non
 </style>
 </head>
 <body>
-<div id="app"></div>
+<main id="app"></main>
 <script>
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 /* Seedable randomness (P1-01). Generators use only rnd(), R, pick, shuffle, coin. genQ() swaps RNG for a seeded stream so a question can be rebuilt from (sk, lv, seed). Games and art keep Math.random. */
@@ -2808,6 +2861,9 @@ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 const KEY='starschool-v2';
 const LATEST=6; // newest save schema version = MIGRATIONS.length (ROADMAP section 9)
 let S,SAVE_RAW=null,SAVE_CORRUPT=false,SAVE_FAILED=false;
+/* P5-10: the key of the child who is playing. Child 1 is KEY itself (unchanged since v30); 01-profiles.js picks another child's
+   key at load. SAVE_OFF stops save() while the page reloads after a child was deleted. */
+let SKEY=KEY,SAVE_OFF=false;
 /* Read the save string into S. Corrupt or non-object JSON is kept in KEY-corrupt; KEY itself is untouched until the first save(). */
 function loadSave(raw){
   SAVE_RAW=null;SAVE_CORRUPT=false;S=null;
@@ -2816,7 +2872,7 @@ function loadSave(raw){
     if(S&&typeof S=='object'&&!Array.isArray(S))SAVE_RAW=raw;
     else{
       S=null;SAVE_CORRUPT=true;
-      try{localStorage.setItem(KEY+'-corrupt',raw)}catch(e){}
+      try{localStorage.setItem(SKEY+'-corrupt',raw)}catch(e){}
     }
   }
   if(!S){
@@ -2938,21 +2994,21 @@ function migrate(){
   if(S.maps&&typeof PATHS!='undefined')for(const p in PATHS)S.maps[p]=S.maps[p]||{}; // a path added after the save was written starts empty (Discover, P2-36): a default, not a migration
   const from=Number.isInteger(S.v)&&S.v>=1?S.v:1;
   if(from>=LATEST)return; // current, or written by a newer app: leave it alone
-  if(SAVE_RAW!==null)try{localStorage.setItem(KEY+'-bak',SAVE_RAW)}catch(e){}
+  if(SAVE_RAW!==null)try{localStorage.setItem(SKEY+'-bak',SAVE_RAW)}catch(e){}
   for(let n=from;n<LATEST;n++)MIGRATIONS[n]();
   S.v=LATEST;
   save();
 }
 // SAVE_HOLD: set once the save in storage was replaced or erased on purpose and the page is about to reload (Start over, load a
 // backup, undo a load). From then on save() writes nothing, so a timer or screen that saves the old progress before the reload
-// cannot put it back (the reload starts fresh, and resets this flag).
+// cannot put it back (the reload starts fresh, and resets this flag). SAVE_OFF (P5-10) does the same after a child is deleted.
 let SAVE_HOLD=false;
-function save(){if(SAVE_HOLD)return;try{localStorage.setItem(KEY,JSON.stringify(S));SAVE_FAILED=false}catch(e){SAVE_FAILED=true}}
+function save(){if(SAVE_HOLD||SAVE_OFF)return;try{localStorage.setItem(SKEY,JSON.stringify(S));SAVE_FAILED=false}catch(e){SAVE_FAILED=true}}
 /* ---------- error guard (P0-05): last 20 errors kept in S.err, on this device only; nothing is sent anywhere ---------- */
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v143'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v146'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -2964,6 +3020,361 @@ function P(sk){return S.prog[sk]||(S.prog[sk]={lv:1,r:0,c:0,t:0,miss:{}})}
 const today=()=>{const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()};
 function day(){if(S.day.d!==today())S.day={d:today(),r:0,done:false};return S.day}
 
+/* ---------- children (P5-10): up to 4 children share one tablet, each with a whole save of their own ----------
+   Storage (localStorage). Every child's save is the same S as always, under a key of its own:
+     starschool-v2              child 1 (slot p1): the save every earlier version wrote, unchanged and never moved, so an older
+                                cached app on an offline tablet still opens child 1 (ROADMAP section 9, rule 9)
+     starschool-v2-p2 .. -p4    children 2 to 4 (slots p2-p4); each migrates like child 1 the first time it is played
+     starschool-v2-profiles     the index {v: 1, ids: [slot order], cur: who played last}. It is never the only copy of anything:
+                                a slot key that exists is a child even if the index forgot it, a listed slot whose key is gone is
+                                dropped, a damaged index is kept under starschool-v2-profiles-corrupt and rebuilt from the slots
+     per child: <key>-bak (migration backup), <key>-corrupt, <key>-undo (the backup load that can be undone, 81-backup.js),
+     starschool-neon or starschool-neon-pN (Art Studio's neon pictures).
+   Voice clips (IndexedDB 'starschool', 44-clips.js): child 1's clip ids are as before; another child's ids start with 'pN:'.
+   With one child nothing changes: no index is written, the save stays where it was, no picker and no switch button on Home.
+   Shared by the tablet: Sound effects, Music and Read questions out loud (the tablet's sound stays as it is when another child
+   starts). Per child: everything else, including the game-time rules (bank, minutes per round, daily max, learn first, pause:
+   siblings are different ages, so a grown-up sets them for each), grade, calm mode and the recorded voice lines (they say the
+   child's name). A new child starts with the game-time rules of the child who was playing.
+   Switching child writes the index and starts the app again (location.reload), like loading a backup (P5-07), so nothing of one
+   child can stay in memory for the next. starschool-v2-go names the child just picked for that start only (then it is removed), so
+   the app opens on "Who is playing?" at every new visit but not after a switch. Only functions here touch the page; at load this file only picks the save (PRF.boot). */
+const PRF = {
+  MAX: 4,
+  SLOTS: ['p1', 'p2', 'p3', 'p4'],
+  IDX: KEY + '-profiles',
+  GO: KEY + '-go', // the child just picked, read once by the next start: a switch goes straight to Home, a new visit asks again
+  SHARED: ['voice', 'sound', 'music'],
+  FULL: "The tablet's storage is full, so nothing was changed. Save a backup, then delete something to make room.",
+  cur: 'p1',
+  ids: ['p1'],
+  idxBad: false,
+  picked: '', // the child picked in this visit (in memory only)
+
+  // storage key of a slot's save; per-child name of another store (Art Studio)
+  key(id) { return id === 'p1' ? KEY : KEY + '-' + id; },
+  k(base, id = PRF.cur) { return id === 'p1' ? base : base + '-' + id; },
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  put(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } },
+  drop(k) { try { localStorage.removeItem(k); } catch (e) {} },
+  has(id) { return PRF.get(PRF.key(id)) !== null; },
+  obj(raw) {
+    let o = null;
+    try { o = JSON.parse(raw); } catch (e) {}
+    return o && typeof o == 'object' && !Array.isArray(o) ? o : null;
+  },
+
+  // the index as stored, with only known slots: {ids, cur}, or null (none, or damaged: then kept aside)
+  readIdx() {
+    const raw = PRF.get(PRF.IDX);
+    if (raw === null) return null;
+    const o = PRF.obj(raw);
+    if (!o || !Array.isArray(o.ids)) {
+      PRF.idxBad = true;
+      PRF.put(PRF.IDX + '-corrupt', raw);
+      return null;
+    }
+    const ids = [...new Set(o.ids.filter(id => PRF.SLOTS.includes(id)))];
+    return { ids, cur: PRF.SLOTS.includes(o.cur) ? o.cur : ids[0] };
+  },
+  writeIdx(ids, cur) { return PRF.put(PRF.IDX, JSON.stringify({ v: 1, ids, cur })); },
+  // At load, before 42-paths.js migrates S: the children that exist (the index order, then any slot it does not list) and the
+  // one who played last, whose save is loaded. 00-core.js already loaded child 1, so that is read again only for another child.
+  boot() {
+    PRF.idxBad = false;
+    PRF.picked = PRF.get(PRF.GO) || '';
+    if (PRF.picked) PRF.drop(PRF.GO);
+    const idx = PRF.readIdx();
+    const listed = (idx ? idx.ids : []).filter(PRF.has);
+    const ids = listed.concat(PRF.SLOTS.filter(id => !listed.includes(id) && PRF.has(id)));
+    const cur = idx && ids.includes(idx.cur) ? idx.cur : ids[0] || 'p1';
+    if (!ids.length) ids.push(cur);
+    PRF.ids = ids;
+    PRF.cur = cur;
+    const k = PRF.key(cur);
+    if (k !== SKEY) {
+      SKEY = k;
+      loadSave(PRF.get(k));
+    }
+  },
+  count() { return PRF.ids.length; },
+  many() { return PRF.ids.length > 1; },
+
+  // what the picker and Grown-ups show of a child (the one playing from S, the others from their save)
+  info(id) {
+    const raw = id === PRF.cur ? null : PRF.get(PRF.key(id));
+    const d = id === PRF.cur ? S : PRF.obj(raw), ok = !!d, s = d || {};
+    const w = s.wear && typeof s.wear == 'object' ? s.wear : {};
+    const str = (v, def) => typeof v == 'string' ? v : def;
+    return {
+      id, ok, name: str(s.name, '').trim(), pet: typeof PETS != 'undefined' && PETS[s.pet] ? s.pet : 'dragon',
+      stars: Number.isFinite(s.stars) && s.stars > 0 ? Math.floor(s.stars) : 0,
+      hat: str(w.hat, ''), toy: str(w.toy, ''), scene: str(w.scene, 'meadow'),
+      kb: (id === PRF.cur ? JSON.stringify(S) : raw || '').length / 1024,
+    };
+  },
+  label(i) { return i.name || (i.ok ? 'New child' : 'Child ' + (PRF.SLOTS.indexOf(i.id) + 1)); },
+  pet(i) {
+    return petSVG(i.pet, stage(i.stars), 'happy', { hat: wearOf(i.hat), toy: wearOf(i.toy) });
+  },
+
+  // a copy of a save string loaded and migrated the way it would be if that child played now (null when it cannot be read)
+  up(raw) {
+    if (!PRF.obj(raw)) return null;
+    const keep = [S, SAVE_RAW, SAVE_CORRUPT];
+    let m = null;
+    try {
+      loadSave(raw);
+      if (S.maps && typeof PATHS != 'undefined') for (const p in PATHS) S.maps[p] = S.maps[p] || {};
+      const from = Number.isInteger(S.v) && S.v >= 1 ? S.v : 1;
+      for (let n = from; n < LATEST; n++) MIGRATIONS[n]();
+      if (from < LATEST) S.v = LATEST;
+      m = S;
+    } catch (e) { m = null; }
+    [S, SAVE_RAW, SAVE_CORRUPT] = keep;
+    return m;
+  },
+  // a fresh save for a new child (what a first start makes), with the tablet's sound and the game-time rules of the child playing
+  fresh() {
+    const keep = [S, SAVE_RAW, SAVE_CORRUPT];
+    loadSave(null);
+    const f = S;
+    [S, SAVE_RAW, SAVE_CORRUPT] = keep;
+    for (const k of PRF.SHARED) f[k] = S[k];
+    if (S.ptCfg && typeof S.ptCfg == 'object') f.ptCfg = JSON.parse(JSON.stringify(S.ptCfg));
+    return f;
+  },
+
+  // ---- switching ----
+  // id: the child picked, for this visit and the start that follows (a switch, a load); '' asks "Who is playing?" again
+  setWho(id) {
+    PRF.picked = id;
+    if (id) PRF.put(PRF.GO, id);
+    else PRF.drop(PRF.GO);
+  },
+  needPick() { return PRF.many() && PRF.picked !== PRF.cur; },
+  // the tablet's sound settings go with the tablet: the next child's three switches are set like the current ones (only if they differ)
+  carry(id) {
+    const d = PRF.obj(PRF.get(PRF.key(id)));
+    if (!d || PRF.SHARED.every(k => d[k] === S[k])) return;
+    for (const k of PRF.SHARED) d[k] = S[k];
+    PRF.put(PRF.key(id), JSON.stringify(d));
+  },
+  // Play as child id. Returns '' (the app starts again for them, or Home for the same child) or a message; then nothing changed.
+  go(id) {
+    if (!PRF.ids.includes(id)) return 'That child is not on this tablet.';
+    if (id === PRF.cur) {
+      PRF.setWho(id);
+      home(true);
+      return '';
+    }
+    save();
+    if (!PRF.writeIdx(PRF.ids, id)) return PRF.FULL;
+    PRF.carry(id);
+    PRF.setWho(id);
+    location.reload();
+    return '';
+  },
+
+  // ---- add, rename, delete (Grown-ups) ----
+  // Add a child: data is a save (a loaded backup), or null for a new child, who does the first-run setup.
+  // Returns {id} or {msg}; with a message nothing was changed.
+  add(data, playNow) {
+    if (PRF.ids.length >= PRF.MAX) return { msg: 'There are already 4 children on this tablet. Delete one to make room.' };
+    save();
+    if (SAVE_FAILED || !PRF.has(PRF.cur)) return { msg: PRF.FULL };
+    const id = PRF.SLOTS.find(s => !PRF.ids.includes(s)), k = PRF.key(id);
+    for (const x of ['-bak', '-corrupt', '-undo']) PRF.drop(k + x); // left by nothing normally; a new child starts clean
+    if (!PRF.put(k, JSON.stringify(data || PRF.fresh()))) {
+      PRF.drop(k);
+      return { msg: PRF.FULL };
+    }
+    const ids = PRF.ids.concat(id);
+    if (!PRF.writeIdx(ids, playNow ? id : PRF.cur)) {
+      PRF.drop(k);
+      return { msg: PRF.FULL };
+    }
+    PRF.ids = ids;
+    return { id };
+  },
+  // Returns '' or a message (then nothing changed).
+  rename(id, name) {
+    name = String(name || '').trim().slice(0, 40);
+    if (!name) return 'Type a name first.';
+    if (!PRF.ids.includes(id)) return 'That child is not on this tablet.';
+    if (id === PRF.cur) {
+      const old = S.name;
+      S.name = name;
+      save();
+      if (SAVE_FAILED) {
+        S.name = old;
+        return PRF.FULL;
+      }
+      return '';
+    }
+    const d = PRF.obj(PRF.get(PRF.key(id)));
+    if (!d) return "That child's progress could not be read, so the name was not changed.";
+    d.name = name;
+    return PRF.put(PRF.key(id), JSON.stringify(d)) ? '' : PRF.FULL;
+  },
+  // Delete a child and everything kept for them (never the last one: that is Start over). Resolves to '' or a message.
+  async remove(id) {
+    if (!PRF.ids.includes(id) || PRF.ids.length < 2) return 'That child cannot be deleted.';
+    const k = PRF.key(id), ids = PRF.ids.filter(x => x !== id);
+    if (id === PRF.cur) SAVE_OFF = true; // nothing may write the deleted save back before the app starts again
+    for (const x of ['', '-bak', '-corrupt', '-undo']) PRF.drop(k + x);
+    PRF.drop(PRF.k('starschool-neon', id));
+    PRF.writeIdx(ids, id === PRF.cur ? ids[0] : PRF.cur); // if this fails, the next start drops the missing child by itself
+    PRF.ids = ids;
+    await PRF.dropClips(id);
+    return '';
+  },
+  // Start over with more than one child: this child's save becomes a fresh one in the same place (setup runs again).
+  async wipe() {
+    if (!PRF.put(SKEY, JSON.stringify(PRF.fresh()))) return PRF.FULL;
+    SAVE_OFF = true;
+    PRF.drop(SKEY + '-undo');
+    await PRF.dropClips(PRF.cur);
+    return '';
+  },
+  // Back from setup when another child exists: a new child who never finished setup is removed again (nothing is lost).
+  async cancelNew() {
+    if (PRF.many() && !S.name && !(S.stars > 0)) await PRF.remove(PRF.cur);
+    PRF.setWho('');
+    location.reload();
+  },
+
+  // ---- voice clips: child 1 keeps the plain ids it always had; another child's start with 'pN:' ----
+  clipOf(cid) {
+    const m = /^(p[2-4]):/.exec(String(cid));
+    return m ? m[1] : 'p1';
+  },
+  clipId() { return (PRF.cur === 'p1' ? '' : PRF.cur + ':') + Date.now(); },
+  async dropClips(id) {
+    try {
+      for (const c of await DB.all()) if (PRF.clipOf(c.id) === id) await DB.del(c.id);
+    } catch (e) {}
+  },
+
+  // ---- screens ----
+  msg(t) {
+    const el = $('#pf-msg');
+    if (el) el.innerHTML = t ? `<p class="gw-warn">${ico('warning', 22)}<span>${esc(t)}</span></p>` : '';
+  },
+  // "Who is playing?": one big card per child (their pet on their place, the name, their stars). Tapping it plays as them.
+  pick() {
+    const cards = PRF.ids.map(id => {
+      const i = PRF.info(id), nm = PRF.label(i);
+      return `<button class="pf-kid" data-kid="${id}" aria-label="${esc(nm)}"><span class="pf-stage sc-${esc(i.scene)}">` +
+        `${hmScene(i.scene)}<span class="pf-pet">${PRF.pet(i)}</span></span><span class="pf-nm">${esc(nm)}</span>` +
+        `<span class="pf-st" aria-hidden="true">${ico('star', 24)}<b>${i.stars}</b></span></button>`;
+    }).join('');
+    view(`<div class="scroll pf-who" id="pfwho"><header class="pf-top"><h1 class="pf-t"><span class="hm-mark">${ico('star', 30)}</span>` +
+      `<span>Who is playing?</span></h1>${UI.ibtn('speak', 'Hear it', { id: 'pfspk' })}</header>` +
+      `<div class="pf-grid n${PRF.count()}">${cards}</div><div id="pf-msg" role="status"></div></div>`);
+    $('#pfspk').onclick = e => say('Who is playing? Tap your picture.', e.currentTarget);
+    $$('.pf-kid').forEach(b => b.onclick = () => {
+      SFX.giggle();
+      anim(b.querySelector('.pf-pet'), 'jump');
+      const bad = PRF.go(b.dataset.kid);
+      if (bad) PRF.msg(bad);
+    });
+  },
+  // Home's top bar: hold to change who is playing (a tap only says so), shown only with more than one child
+  homeBtn() { return PRF.many() ? UI.ibtn('users', 'Who is playing? Hold to change', { id: 'who', size: 'sm' }) : ''; },
+  homeBind() {
+    const b = $('#who');
+    if (!b) return;
+    let t;
+    b.onpointerdown = () => { t = setTimeout(PRF.pick, 1000); };
+    b.onpointerup = b.onpointerleave = () => clearTimeout(t);
+    b.onclick = () => fb('Hold it to change who is playing', 'warn');
+  },
+  // Grown-ups: the Children card
+  card() {
+    const rows = PRF.ids.map(id => {
+      const i = PRF.info(id), nm = PRF.label(i), me = id === PRF.cur;
+      return `<div class="pf-row${me ? ' me' : ''}"><span class="pf-av sc-${esc(i.scene)}">${PRF.pet(i)}</span><span class="pf-rt">` +
+        `<b>${esc(nm)}</b><span>${ico('star', 18, 'ic-star')}<span>${i.stars} star${i.stars == 1 ? '' : 's'}</span></span>` +
+        `${me ? '<span class="tag pf-now">Playing now</span>' : ''}</span>` +
+        `<span class="pf-ra">${UI.ibtn('edit', 'Rename ' + nm, { size: 'sm', attrs: `data-pren="${id}"` })}` +
+        (PRF.many() ? UI.ibtn('trash', 'Delete ' + nm, { size: 'sm', cls: 'gw-del', attrs: `data-pdel="${id}"` }) : '') + '</span></div>';
+    }).join('');
+    const full = PRF.count() >= PRF.MAX;
+    return GW.card('gw-kids', 'users', 'Children',
+      `<div class="pf-list">${rows}</div><div class="gw-bkrow">` +
+      UI.btn('Add a child', { kind: 'primary', size: 'sm', icon: 'plus', id: 'pf-add', off: full }) +
+      (PRF.many() ? UI.btn('Who is playing?', { size: 'sm', icon: 'users', id: 'pf-who' }) : '') + '</div>' +
+      (full ? `<p class="gw-note">${ico('info', 22)}<span>Up to 4 children can share this tablet.</span></p>` : '') + '<div id="pf-msg" role="status"></div>',
+      { sub: 'Up to 4 children can share this tablet, each with their own progress, pet, stars, coins, stickers and game time. ' +
+        'Sound settings are shared by the tablet; game-time rules, grade and calm mode are set for each child.' });
+  },
+  bind() {
+    $('#pf-add').onclick = () => {
+      const r = PRF.add(null, true);
+      if (r.msg) return PRF.msg(r.msg);
+      PRF.setWho(r.id);
+      location.reload(); // starts with the first-run setup for the new child
+    };
+    if ($('#pf-who')) $('#pf-who').onclick = PRF.pick;
+    $$('[data-pren]').forEach(b => b.onclick = () => PRF.renameSheet(b.dataset.pren));
+    $$('[data-pdel]').forEach(b => b.onclick = () => PRF.deleteSheet(b.dataset.pdel));
+  },
+  renameSheet(id) {
+    const nm = PRF.label(PRF.info(id));
+    const sh = UI.sheet(`<h2>Rename ${esc(nm)}</h2>` + GW.field('Name', 'user', `id="pf-nm" value="${esc(PRF.info(id).name)}" maxlength="40"`) +
+      `<div id="pf-rmsg" role="status"></div><div class="acts">${UI.btn('Save the name', { kind: 'primary', wide: true, icon: 'check', id: 'pf-rok' })}` +
+      `${UI.btn('Cancel', { kind: 'ghost', wide: true, id: 'pf-rno' })}</div>`);
+    sh.el.querySelector('#pf-rno').onclick = sh.close;
+    sh.el.querySelector('#pf-rok').onclick = () => {
+      const bad = PRF.rename(id, sh.el.querySelector('#pf-nm').value);
+      if (bad) {
+        sh.el.querySelector('#pf-rmsg').innerHTML = `<p class="gw-warn">${ico('warning', 22)}<span>${esc(bad)}</span></p>`;
+        return;
+      }
+      sh.close();
+      grown();
+    };
+  },
+  // Delete asks twice; the first sheet also offers to save that child's backup first.
+  deleteSheet(id) {
+    const nm = esc(PRF.label(PRF.info(id)));
+    const sh = UI.sheet(`<div class="sh-art pf-dz">${ico('trash', 48)}</div><h2>Delete ${nm}?</h2>` +
+      `<p>This erases ${nm}'s progress, pet, stars, coins, stickers, game time and voice recordings on this tablet.</p>` +
+      `<div class="acts"><div class="gw-bkrow">${UI.btn('Save a backup first', { size: 'sm', icon: 'download', id: 'pf-bk' })}${onlineNote()}</div>` +
+      `${UI.btn('Delete ' + PRF.label(PRF.info(id)), { kind: 'risk', wide: true, icon: 'trash', id: 'pf-del1' })}` +
+      `${UI.btn('Keep ' + PRF.label(PRF.info(id)), { kind: 'ghost', wide: true, id: 'pf-keep' })}</div>`);
+    sh.el.querySelector('#pf-bk').onclick = () => BAK.save(id);
+    sh.el.querySelector('#pf-keep').onclick = sh.close;
+    sh.el.querySelector('#pf-del1').onclick = () => {
+      const acts = sh.el.querySelector('.acts'), wasMe = id === PRF.cur;
+      sh.el.querySelector('h2').textContent = 'Really delete ' + PRF.label(PRF.info(id)) + '?';
+      sh.el.querySelector('p').textContent = 'This cannot be undone.';
+      acts.innerHTML = UI.btn('Yes, delete ' + PRF.label(PRF.info(id)), { kind: 'risk', wide: true, icon: 'trash', id: 'pf-del2' }) +
+        UI.btn('Keep ' + PRF.label(PRF.info(id)), { kind: 'ghost', wide: true, id: 'pf-keep' });
+      sh.el.querySelector('#pf-keep').onclick = sh.close;
+      sh.el.querySelector('#pf-del2').onclick = async () => {
+        const name = PRF.label(PRF.info(id)), bad = await PRF.remove(id);
+        sh.close();
+        if (bad) return PRF.msg(bad);
+        if (wasMe) {
+          PRF.setWho('');
+          location.reload(); // the next child starts (the picker, when more than one is left)
+          return;
+        }
+        grown();
+        fb(name + ' was deleted', 'info');
+      };
+    };
+  },
+  // App log: one line with each child's save size
+  logLine() {
+    if (!PRF.many()) return '';
+    return `<div><b>Children</b> ${PRF.ids.map(id => { const i = PRF.info(id); return esc(PRF.label(i)) + ' ' + i.kb.toFixed(1) + ' KB'; }).join(', ')}` +
+      `${PRF.idxBad ? ' <span class="gw-bad">(the list of children was damaged and was rebuilt)</span>' : ''}</div>`;
+  },
+};
+PRF.boot();
 /* ---------- pets ---------- */
 const PETS={dragon:{n:'Dragon',s:['🥚','🐍','🐲','🐉'],def:'Sparky'},dino:{n:'Dino',s:['🥚','🦎','🦕','🦖'],def:'Rex'},
   bird:{n:'Bird',s:['🥚','🐣','🐥','🦅'],def:'Tweety'},ocean:{n:'Sea pal',s:['🥚','🐟','🐬','🐳'],def:'Bubbles'}};
@@ -3287,14 +3698,154 @@ const UI = {
     const close = () => {
       if (shut) return;
       shut = true;
+      bg._closing = true; // P6-01: no longer the open dialog: the page comes back for keys and screen readers now
+      UI.modal.shut(bg);
       bg.classList.remove('on');
       setTimeout(() => bg.remove(), 340);
       if (o.onClose) o.onClose();
     };
-    if (!o.stay) bg.onclick = e => { if (e.target === bg) close(); };
+    if (!o.stay) {
+      bg.onclick = e => { if (e.target === bg) close(); };
+      bg._esc = close; // P6-01: Escape closes it like a tap on the backdrop (UI.modal)
+    }
     requestAnimationFrame(() => requestAnimationFrame(() => bg.classList.add('on')));
     return { el: bg.firstChild, close };
   },
+};
+
+/* ---------- keyboard and screen readers (P6-01; DESIGN_SYSTEM 10) ----------
+   One place for every screen: the modal sheets and overlays (.sheet-bg from UI.sheet, .ovl cards such as the reward overlays, the
+   game end card and time-up) are dialogs: the page behind is aria-hidden while one is open, focus moves into the newest one when it
+   opens, Tab and Shift+Tab stay inside it, Escape
+   closes a sheet that a backdrop tap closes, and focus goes back to where it was when it closes. An element drawn as a button that is
+   not a <button> (role="button" tabindex="0") is pressed with Enter or Space like one. Every screen has one h1: view() names the
+   top bar's title the page heading, or adds one only screen readers see (UI.heading). */
+UI.modal = {
+  SEL: '.sheet-bg, .ovl',
+  FOCUS: 'button:not([disabled]), a[href], input:not([disabled]):not([type=hidden]), select, textarea, summary, [tabindex]:not([tabindex="-1"])',
+  // the open dialog on top (the last one in the page that is shown)
+  top() {
+    const all = [...document.querySelectorAll(UI.modal.SEL)].filter(e => e.isConnected && e.getClientRects().length && !e._closing);
+    return all.pop() || null;
+  },
+  items(m) {
+    return [...m.querySelectorAll(UI.modal.FOCUS)].filter(e => e.getClientRects().length && getComputedStyle(e).visibility != 'hidden');
+  },
+  // a dialog was added: mark it, remember the focus, focus its first control (its default action) once it is drawn
+  open(m) {
+    if (m._a11y) return;
+    m._a11y = true;
+    if (m.classList.contains('ovl')) {
+      m.setAttribute('role', 'dialog');
+      m.setAttribute('aria-modal', 'true');
+    }
+    const h = m.querySelector('h1, h2');
+    const box = m.matches('[role=dialog]') ? m : m.querySelector('[role=dialog]');
+    if (h && box && !box.hasAttribute('aria-labelledby') && !box.hasAttribute('aria-label')) {
+      if (!h.id) h.id = 'dlg-h' + (UI.modal.n = (UI.modal.n || 0) + 1);
+      box.setAttribute('aria-labelledby', h.id);
+    }
+    const prev = document.activeElement;
+    m._prev = prev && prev !== document.body ? prev : null;
+    // hide the page behind from screen readers: the siblings of the dialog and of each parent up to <body> (not the toast)
+    m._hid = [];
+    for (let e = m; e && e.parentElement && e !== document.body; e = e.parentElement) {
+      for (const sib of e.parentElement.children) {
+        if (sib === e || sib.id == 'toast' || /^(SCRIPT|STYLE)$/.test(sib.tagName) || sib.getAttribute('aria-hidden') == 'true') continue;
+        sib.setAttribute('aria-hidden', 'true');
+        m._hid.push(sib);
+      }
+    }
+    const go = (tries) => {
+      if (!m.isConnected || m.contains(document.activeElement)) return;
+      // its first button (not a text field: that would open the on-screen keyboard)
+      const f = UI.modal.items(m).find(e => !e.matches('input, textarea, select'));
+      if (f) f.focus({ preventScroll: true });
+      else if (tries > 0) setTimeout(() => go(tries - 1), 120); // controls that arrive a moment later (a reward card's buttons)
+      else { m.tabIndex = -1; m.focus({ preventScroll: true }); }
+    };
+    requestAnimationFrame(() => go(25));
+  },
+  // a dialog left the page: give focus back to where it was (or to the screen's first control)
+  shut(m) {
+    for (const e of m._hid || []) e.removeAttribute('aria-hidden');
+    m._hid = [];
+    if (UI.modal.top()) return;
+    const a = document.activeElement;
+    if (a && a !== document.body && a.isConnected && !m.contains(a)) return;
+    const p = m._prev;
+    if (p && p.isConnected && p.getClientRects().length) p.focus({ preventScroll: true });
+  },
+  key(e) {
+    const t = e.target;
+    // Enter or Space on something drawn as a button that is not a <button>
+    if ((e.key == 'Enter' || e.key == ' ') && t && t.matches && t.matches('[role=button]:not(button):not(a), [role=switch]:not(input), [role=tab]:not(button)')) {
+      e.preventDefault();
+      t.click();
+      return;
+    }
+    const m = UI.modal.top();
+    if (!m) return;
+    if (e.key == 'Escape' && m._esc) {
+      e.preventDefault();
+      m._esc();
+      return;
+    }
+    if (e.key != 'Tab') return;
+    const f = UI.modal.items(m);
+    if (!f.length) { e.preventDefault(); return; }
+    const i = f.indexOf(document.activeElement);
+    if (i < 0) { e.preventDefault(); f[e.shiftKey ? f.length - 1 : 0].focus(); return; }
+    if (!e.shiftKey && i == f.length - 1) { e.preventDefault(); f[0].focus(); }
+    else if (e.shiftKey && i == 0) { e.preventDefault(); f[f.length - 1].focus(); }
+  },
+  init() {
+    if (UI.modal.on || typeof MutationObserver == 'undefined' || !document.body) return;
+    UI.modal.on = true;
+    const isM = n => n.nodeType == 1 && n.matches(UI.modal.SEL);
+    new MutationObserver(ms => {
+      for (const r of ms) {
+        for (const n of r.addedNodes) if (isM(n)) UI.modal.open(n);
+        for (const n of r.removedNodes) if (isM(n)) UI.modal.shut(n);
+        // an overlay inside a screen that view() replaced
+        for (const n of r.removedNodes) if (n.nodeType == 1 && !isM(n) && n.querySelectorAll) n.querySelectorAll(UI.modal.SEL).forEach(UI.modal.shut);
+      }
+    }).observe(document.body, { childList: true, subtree: true });
+    document.addEventListener('keydown', UI.modal.key, true);
+    // keyboard focus: bring the whole control and its ring into view (the browser leaves a half-shown one where it is; the
+    // ring's room is the :focus-visible scroll-margin in 20-base.css)
+    document.addEventListener('focusin', e => {
+      const t = e.target;
+      try { if (t.matches(':focus-visible') && t.scrollIntoView) t.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch (x) {}
+    });
+  },
+};
+
+// The "hear it" buttons a question's prompt carries (data-say / data-sayes, made by the generators): one with no words (the old
+// speaker emoji, or an icon) shows the drawn speaker and is named "Hear it again". Done when the prompt is drawn, so the generators'
+// output (and the tests that pin it by seed) stays the same.
+UI.hear = (root = document) => {
+  for (const b of root.querySelectorAll('button[data-say], button[data-sayes]')) {
+    if (/[\p{L}\p{N}]/u.test(b.textContent) || b.getAttribute('aria-label')) continue;
+    if (!b.querySelector('svg')) b.innerHTML = ico('speak', '1em');
+    b.setAttribute('aria-label', 'Hear it again');
+  }
+};
+
+// The screen's one h1 (called by view()): the top bar's title (.ttl) is the heading; a screen without one, or whose title is not
+// shown at this size (a game's title over the canvas on a phone), gets an h1 only screen readers see, with the title's words.
+UI.heading = (root, name) => {
+  if (!root || !root.querySelectorAll || !root.insertAdjacentHTML) return;
+  const outside = h => !h.closest('[role=dialog], .ovl, .sheet-bg');
+  if ([...root.querySelectorAll('h1, [role=heading][aria-level="1"]')].some(outside)) return;
+  const t = [...root.querySelectorAll('.ttl, .title')].find(outside);
+  if (t && t.getClientRects && t.getClientRects().length) {
+    t.setAttribute('role', 'heading');
+    t.setAttribute('aria-level', '1');
+    return;
+  }
+  const words = t ? t.textContent.replace(/\s+/g, ' ').trim() : '';
+  root.insertAdjacentHTML('afterbegin', `<h1 class="a11y-h">${esc(words || name || 'Star School')}</h1>`);
 };
 /* ---------- icons (P4-02, P4-03; DESIGN_SYSTEM.md section 5) ----------
    ico(name, size = 24, cls = '') returns an inline <svg class="ic"> that points at the sprite symbol #i-<name>.
@@ -5916,7 +6467,7 @@ function hintStep(q) {
 // P4-17: calm mode (Grown-ups switch, S.calm, read with a default) sets html.calm: no large movement, no confetti, no loops.
 // Every screen adds it when S.calm is on; the switch (80-grown.js) turns it off again with calmApply(true).
 function calmApply(sync){try{const c=document.documentElement.classList;if(S.calm)c.add('calm');else if(sync)c.remove('calm')}catch(e){}}
-const view=h=>{music(false);calmApply();stopBalloons();if(typeof stopRace=='function')stopRace();if(typeof stopFlu=='function')stopFlu();if(typeof stopHC=='function')stopHC();if(typeof rlStop=='function')rlStop();if(typeof snStop=='function')snStop();if(typeof gtStop=='function')gtStop();if(typeof BT!='undefined')BT.stop();if(typeof TR!='undefined')TR.stop();const a=$('#app');a.style.animation='none';void a.offsetWidth;a.style.animation='';a.innerHTML=h};
+const view=h=>{music(false);calmApply();stopBalloons();if(typeof stopRace=='function')stopRace();if(typeof stopFlu=='function')stopFlu();if(typeof stopHC=='function')stopHC();if(typeof rlStop=='function')rlStop();if(typeof snStop=='function')snStop();if(typeof gtStop=='function')gtStop();if(typeof BT!='undefined')BT.stop();if(typeof TR!='undefined')TR.stop();const a=$('#app');a.style.animation='none';void getComputedStyle(a).animationName;a.style.animation='';if(a.removeAttribute)a.removeAttribute('aria-hidden');a.innerHTML=h;UI.modal.init();UI.heading(a)}; // P6-02: a style read restarts the screen-in (offsetWidth laid out the old screen first); P6-01: dialogs, keyboard, the screen's h1 (14-ui.js)
 const PET_YAY=['Yay!','Woo-hoo!','You did it!','So smart!','High five!','Awesome!','Super!'];
 const PET_OOPS=['Oops! Try again!','You can do it!','Almost!','Hmm, look again!'];
 
@@ -6415,7 +6966,7 @@ const DB={db:null,open(){return new Promise((res,rej)=>{if(this.db)return res(th
   async put(v){const d=await this.open();return new Promise((res,rej)=>{const t=d.transaction('clips','readwrite');t.objectStore('clips').put(v);t.oncomplete=()=>res();t.onerror=()=>rej(t.error)})},
   async del(id){const d=await this.open();return new Promise(res=>{const t=d.transaction('clips','readwrite');t.objectStore('clips').delete(id);t.oncomplete=()=>res();t.onerror=()=>res()})}};
 let CLIPS=[];
-async function loadClips(){try{CLIPS.forEach(c=>URL.revokeObjectURL(c.url));CLIPS=(await DB.all()).map(c=>({...c,url:URL.createObjectURL(c.blob)}))}catch(e){CLIPS=[]}}
+async function loadClips(){try{CLIPS.forEach(c=>URL.revokeObjectURL(c.url));CLIPS=(await DB.all()).filter(c=>PRF.clipOf(c.id)===PRF.cur).map(c=>({...c,url:URL.createObjectURL(c.blob)}))}catch(e){CLIPS=[]}}
 const BAG={};
 function playClip(kind){const cs=CLIPS.filter(c=>c.kind==kind);if(!cs.length||!S.sound)return false;
   let b=(BAG[kind]||[]).filter(id=>cs.some(c=>c.id==id));
@@ -6618,6 +7169,7 @@ function placeQ(){
   <div class="inp">${K.render(q)}</div></div>`);
   $('#quit').onclick=()=>{PL=null;SFX.click();placeBack(me.from)};
   if($('#spk'))$('#spk').onclick=e=>say(q.say,e.currentTarget,q.lang=='es'&&q.auto=='must'?'es':null);
+  UI.hear(); // P6-01
   $$('[data-sayes]').forEach(b=>b.onclick=()=>say(b.dataset.sayes,b,'es'));
   $$('[data-say]').forEach(b=>b.onclick=()=>say(b.dataset.say,b));
   $$('.w').forEach(s=>s.onclick=()=>{say(s.dataset.w);SFX.pop(1)});
@@ -6683,7 +7235,8 @@ function setup() {
   const pets = Object.entries(PETS).map(([k, p]) => `<button class="btn petopt gx-pet ${k == pet ? 'sel' : ''}" data-p="${k}" aria-pressed="${k == pet}">` +
     `<span class="gx-pp">${petPick(k)}</span><b>${p.n}</b></button>`).join('');
   view(`<div class="center setup su"><header class="su-top"><h1 class="gx-logo su-logo"><span class="hm-mark su-mark">${ico('star', 36)}</span><span>Star School</span></h1>` +
-    `<p class="su-hello">Hi! Let's get you ready.<span> A grown-up can help.</span></p>${UI.ibtn('speak', 'Hear the steps', { id: 'suspk' })}</header>` +
+    `<p class="su-hello">Hi! Let's get you ready.<span> A grown-up can help.</span></p>${UI.ibtn('speak', 'Hear the steps', { id: 'suspk' })}` +
+    `${PRF.many() ? UI.ibtn('back', 'Back to who is playing', { id: 'suback', size: 'sm' }) : ''}</header>` +
     `<div class="su-grid">` +
     suStep(1, 'user', "What's your name?", '', fldHTML('edit', `id="nm" value="${esc(S.name)}" placeholder="Your name" aria-label="Your name"`)) +
     suStep(2, 'paw', 'Pick a pet egg to hatch!', '', `<div class="pets su-pets">${pets}</div>` +
@@ -6695,6 +7248,7 @@ function setup() {
   nameOk();
   $('#nm').oninput = nameOk;
   $('#suspk').onclick = e => say(SU_SAY, e.currentTarget);
+  if ($('#suback')) $('#suback').onclick = PRF.cancelNew; // P5-10: a new child who changes their mind goes away again
   gradePickBind(g => { grade = g; ok(3, 1); });
   $$('.petopt').forEach(b => b.onclick = () => {
     pet = b.dataset.p;
@@ -6892,7 +7446,7 @@ function hmHero() {
     `<button class="stat flame${n ? '' : ' off'}" id="stkb" aria-label="Streak calendar">${ico('flame', 32)}<b>${n}</b></button>` +
     (left > 0 ? UI.chip('ticket', fmtT(left), { aria: 'Game time' }) : '');
   return `<div class="hm-hero">
-    <div class="hm-stage sc-${esc(S.wear.scene || 'meadow')}">${hmScene(S.wear.scene)}<div class="petbig ${petAura()}" id="pet">${petHTML()}</div>${need}</div>
+    <div class="hm-stage sc-${esc(S.wear.scene || 'meadow')}">${hmScene(S.wear.scene)}<div class="petbig ${petAura()}" id="pet" role="button" tabindex="0" aria-label="Pat ${esc(petN())}">${petHTML()}</div>${need}</div>
     <div class="hm-name"><b>${esc(S.name)}</b> <span>&amp; ${pn}</span></div>
     <div class="hm-grow">${UI.meter(v, { kind: 'grow', label: growTxt('stars', petN()) })}<div class="hm-gt">${grow}</div></div>
     ${mission}
@@ -6971,16 +7525,16 @@ function home(first){
   const inst = installEvt && !isApp() ? UI.btn('Install', { kind: 'primary', size: 'sm', icon: 'plus', id: 'inst' }) : '';
   view(`<div class="top tbar hm-top"><div class="hm-logo"><span class="hm-mark">${ico('star', 30)}</span><span>Star School</span></div><div class="sp"></div>${inst}
     ${UI.ibtn(S.sound ? 'sound-on' : 'sound-off', S.sound ? 'Sound is on' : 'Sound is off', { id: 'snd', size: 'sm' })}
-    ${UI.ibtn('gear', 'Grown-ups: hold', { id: 'gear', size: 'sm' })}</div>
+    ${PRF.homeBtn()}${UI.ibtn('gear', 'Grown-ups: hold', { id: 'gear', size: 'sm' })}</div>
   <div class="scroll hm" id="hs"><div class="hm-cols">
    <div class="hm-col">${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('target', 26)}<span>Today's missions</span></h2>${hmMissions()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}${hmDaily()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
-   <p class="hm-ver">${ico('star', 16)}<span>Star School v143</span></p></div>`);
+   <p class="hm-ver">${ico('star', 16)}<span>Star School v146</span></p></div>`);
   music(true);
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'heart');
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
   $$('.game').forEach(b=>b.onclick=()=>{SFX.whoosh();pathMap(b.dataset.p)});
-  placeBannerBind();revCardBind();hmMissionsBind();
+  placeBannerBind();revCardBind();hmMissionsBind();PRF.homeBind();
   $('#snd').onclick=()=>{S.sound=!S.sound;S.music=S.sound;save();home()};
   $('#stkb').onclick=()=>{SFX.whoosh();streakCal(0)};
   $('#book').onclick=book;$('#shop').onclick=shop;$('#mix').onclick=()=>{SFX.whoosh();startMix()};$('#race').onclick=raceMenu;if($('#flu'))$('#flu').onclick=()=>{SFX.whoosh();fluMenu()};$('#care').onclick=care;$('#groom').onclick=()=>{SFX.whoosh();gameRoom()};if($('#btcard'))$('#btcard').onclick=()=>{SFX.whoosh();BT.hub()};
@@ -7027,8 +7581,7 @@ function worldStrip(p){
 }
 function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],ws=PATHS[p].worlds,W=m.clientWidth||360,amp=Math.min(W*.3,200),pts=[];
   const sel=Math.min(Math.max(MAPW[p]|0,0),ws.length-1),w0=Math.max(0,sel-1),w1=Math.min(ws.length-1,sel+1);MAPW[p]=sel;
-  const st=$('#wstrip');if(st){st.innerHTML=worldStrip(p);$$('.wchip').forEach(b=>b.onclick=()=>mapGo(p,+b.dataset.w));
-    const on=st.querySelector('.wchip.on');if(on)st.scrollLeft=Math.max(0,on.offsetLeft-(st.clientWidth-on.offsetWidth)/2)}
+  const st=$('#wstrip');if(st){st.innerHTML=worldStrip(p);$$('.wchip').forEach(b=>b.onclick=()=>mapGo(p,+b.dataset.w))} // P6-02: its scroll is set at the end (one layout, not two)
   let y=10,bands='';
   const more=(wi,up)=>`<button class="btn wmore" data-w="${wi}" style="top:${y}px">${ico(up?'arrow-up':'arrow-down',20)}${wBadge(p,wi)}${esc(ws[wi].n)}</button>`;
   if(w0>0){bands+=more(w0-1,true);y+=72}
@@ -7040,7 +7593,7 @@ function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],ws=PATHS[p].
     bands+=`<div class="wtitle" data-w="${wi}" style="top:${y0+14}px">${wBadge(p,wi)}<span>${esc(w.n)}</span>${worldFinished(p,wi)?ico('check-circle',24,'ic-good'):''}</div>${canTest?`<button class="btn xs tobtn" data-w="${wi}" style="top:${y0+58}px">${ico('bolt',20)}<span>Already know it? Test out!</span></button>`:''}`;y+=4}
   const cur=curNode(p),allDone=N.every((n,i)=>passed(p,i)),end=w1==ws.length-1;
   const nodes=pts.map(([x,yy,i])=>{const n=N[i],s=nInfo(n),st=getSt(p,i),lk=!unlocked(p,i);
-    return`<button class="btn node s-${p} ${s.area} ${lk?'lock':''} ${st?'done':''} ${i==cur&&!lk&&!allDone?'cur':''}" data-n="${i}" style="left:${x}px;top:${yy}px" aria-label="${esc(n.t)}${lk?', locked':''}">${nodeFace(n,lk)}</button>${stopNew(p,i)?`<div class="nnew" style="left:${x}px;top:${yy-50}px">New</div>`:''}<div class="nlab" style="left:${x}px;top:${yy+42}px">${esc(n.t)}<div class="nstar">${st?UI.stars(st,3,16):''}</div></div>`}).join('');
+    return`<button class="btn node s-${p} ${s.area} ${lk?'lock':''} ${st?'done':''} ${i==cur&&!lk&&!allDone?'cur':''}" data-n="${i}" style="left:${x}px;top:${yy}px" aria-label="${esc(n.t)}${lk?', locked':''}">${nodeFace(n,lk)}</button>${stopNew(p,i)?`<div class="nnew" style="left:${x}px;top:${yy-50}px">New</div>`:''}<div class="nlab" style="left:${x}px;top:${yy+42}px;max-width:${Math.round(Math.max(140,Math.min(180,2*Math.min(x,W-x)-8)))}px">${esc(n.t)}<div class="nstar">${st?UI.stars(st,3,16):''}</div></div>`}).join('');
   const cp=pts.find(q=>q[2]==cur),side=cp&&cp[0]>W/2?-66:66;
   let tail=end&&allDone?90:20;
   if(!end){y+=8;bands+=more(w1+1,false);tail=80}
@@ -7055,7 +7608,8 @@ function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],ws=PATHS[p].
   $$('.node').forEach(b=>b.onclick=()=>{const i=+b.dataset.n;if(!unlocked(p,i)){SFX.wrong();anim(b,'sad');fb('Finish the stop before this one!','warn');return}SFX.whoosh();
     open(p,i)});
   $$('.tobtn').forEach(b=>b.onclick=()=>testOut(p,+b.dataset.w));
-  $$('.wmore').forEach(b=>b.onclick=()=>mapGo(p,+b.dataset.w))}
+  $$('.wmore').forEach(b=>b.onclick=()=>mapGo(p,+b.dataset.w));
+  const on=st&&st.querySelector('.wchip.on');if(on)st.scrollLeft=Math.max(0,on.offsetLeft-(st.clientWidth-on.offsetWidth)/2)}
 function open(p,i){const n=NODES[p][i];if(n.sk=='boss')bossIntro(p,i);else if(n.sk.startsWith('es_')&&SPN[n.sk.slice(3)]&&n.lv==1)learn(p,i);else start(p,i)}
 
 function learn(p,i){const n=NODES[p][i],items=SPN[n.sk.slice(3)];
@@ -8535,6 +9089,7 @@ function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;G.re
   <div class="play qs s-${ar}"><div class="qarea">${q.review?UI.tag('Remember this one?','rtag','replay'):''}${q.ctx?bankCtx(q.ctx):''}<div class="prompt" id="prompt">${q.html}</div>
   <div class="tools">${spk}${help}</div><div class="qhint"><div id="hint" class="hint"></div><span class="hb" aria-hidden="true">${ico('hint')}</span></div></div>
   <div class="inp">${input}</div></div>`);
+  UI.hear(); // P6-01: named speaker buttons in the prompt
   $('#quit').onclick=()=>{G.dead=true;back()};
   if($('#spk'))$('#spk').onclick=e=>say(q.say,e.currentTarget,q.lang=='es'&&q.auto=='must'?'es':null);
   $$('[data-sayes]').forEach(b=>b.onclick=()=>say(b.dataset.sayes,b,'es'));
@@ -9022,6 +9577,7 @@ function race(cat){S.race=S.race||{};const best=S.race[cat]||0;
   const rq=()=>{if(!RC)return;const q=raceQ(cat);RC.q=q;RC.typed='';RC.lock=false;
     $('#rplay').innerHTML=`<div class="qarea"><div class="prompt" id="prompt">${q.html}</div></div><div class="inp">${KIND[q.kind].render(q)}</div>`;
     fit();if(q.auto)say(q.say,null,q.lang=='es'?'es':null);esQFix(q);
+    UI.hear(); // P6-01
     $$('[data-sayes]').forEach(b=>b.onclick=()=>say(b.dataset.sayes,b,'es'));
     // same input as a round; race pads take 3 digits, answer as soon as the right number is typed, and stay quiet
     KIND[q.kind].bind(q,RC,ans,{max:3,auto:true,quiet:true})};
@@ -9719,8 +10275,9 @@ function ptEarnList(){return[['sparkle','Unlock a new stop','+1 min'],['star','G
 function ptRules(R_){return ptEarnList().map(([i,t,v])=>`<div>${R_(i)} ${t} <b>${v}</b></div>`).join('')+'<div class="small">Replaying a stop you already mastered, or the same stop over and over, earns less.</div>'}
 
 // P4-16: the Game Room hub (scene, game-time ticket, a drawn card per registered game) lives in games.<VER>.js with the games:
-// GH.hub() in src/js/59-game-hub.js. Called only from taps, after every file has loaded.
-function gameRoom(){GH.hub()}
+// GH.hub() in src/js/59-game-hub.js. P6-02: those files load the first time the Game Room opens (partsThen, 90-app.js), so
+// gameRoom() is the one way into the games; a game is opened from the hub (or, later, partsThen(LAZY_PARTS, () => GH.get(id).open())).
+function gameRoom(){partsThen(LAZY_PARTS,()=>GH.hub())}
 /* ---------- spaced review engine (P5-02) ----------
    Leitner boxes over missed questions. Saved data: S.rev = [{sk, lv, seed, label, box, due, n, bk?}], at most REV.CAP items.
      sk, lv  skill and level of the question (genQ coordinates)
@@ -10544,7 +11101,9 @@ const BT = {
    switches, segmented controls, fields and a readable table from the P4-04 components; two columns on a wide screen. Styles in
    src/css/48-setup-grown-care.css. Every id the code and the tests use is kept: #back, #nm, #pn, #bd, .gr[data-g], .pl-grown,
    #ula, #rp-open, [data-rec], [data-play], [data-del], [data-per], [data-max], #pt5, #pt0, #ptp, #applog, #voice, #snd, #mus, #calm,
-   #test, #reset. The report card's Print button (82-report.js) and the backup Save buttons (81-backup.js, P5-07) carry the online note. */
+   #test, #reset. The report card's Print button (82-report.js) and the backup Save buttons (81-backup.js, P5-07) carry the online note.
+   P5-10: the Children card (PRF.card in 01-profiles.js) comes right after the summary; with more than one child, Start over
+   erases only the child who is playing (their place stays, with a fresh save) and recorded clips get the child's id prefix. */
 const GW = {
   // a section: icon disc + title, an optional line under it, then the body. tone: a subject or token class for the disc colour.
   card(id, icon, title, body, o = {}) {
@@ -10553,7 +11112,7 @@ const GW = {
   },
   // a labelled text field (label above, white well with an icon)
   field(label, icon, attrs, help) {
-    return `<div class="gw-f"><span class="gw-fl">${label}</span>${fldHTML(icon, attrs)}${help ? `<span class="gw-help">${help}</span>` : ''}</div>`;
+    return `<div class="gw-f"><span class="gw-fl">${label}</span>${fldHTML(icon, `${attrs} aria-label="${label}"`)}${help ? `<span class="gw-help">${help}</span>` : ''}</div>`;
   },
   // a small number tile: icon, value, caption
   stat(icon, cls, v, cap) {
@@ -10588,6 +11147,7 @@ function grown(){let armed=false;
     `<div class="gw-stats">${GW.stat('star','ic-star',S.stars,'stars')}${GW.stat('coin','ic-coin',S.coins,'coins')}${GW.stat('sticker-book','ic-brand',nstk+'/'+STK.length,'stickers')}${GW.stat('flame','ic-flame',S.best||0,'best streak')}</div>
     <h3 class="gw-h3">${ico('map',22,'ic-brand')}<span>Stops passed</span></h3><div class="gw-paths">${paths}</div>
     ${SAVE_FAILED?warn('Could not save progress: the device storage may be full.'):''}`,{sub:esc(gradeSpoken(gradeOf()))+'. Everything is saved on this tablet only.'})}
+  ${PRF.card()}
   ${reportGrownHTML()}
   ${GW.card('gw-kid','edit','Names',GW.field('Child','user',`id="nm" value="${esc(S.name)}"`)+GW.field('Pet name','paw',`id="pn" value="${esc(S.petName)}" placeholder="${PETS[S.pet].def}"`)+
     GW.field('Buddy','users',`id="bd" value="${esc(S.buddy)}" placeholder="A sibling or friend"`,'Used in story problems.'))}
@@ -10609,12 +11169,12 @@ function grown(){let armed=false;
     {sub:'Rounds played and first-try accuracy for every skill on the maps, with the questions missed most.'})}
   ${GW.card('gw-how','info','How it works',`<p class="gw-p">Each subject has its own map. Getting 7 of 10 right opens the next stop (8 earns 2 stars, 10 earns 3), and each world stretches further. Missed questions come back at the end of a round, in later rounds, in Daily Review and in the Tricky Mix. Each right answer earns a star (the pet grows) and a coin (spent in the shop). Everything is saved on this tablet only.</p>`)}
   <details class="gw-card gw-det" id="applog"><summary class="gw-h"><span class="gw-hi">${ico('doc',24)}</span><span>App log</span>${ico('chevron-right',22,'chev')}</summary><div class="gw-log">
-   <div><b>Version</b> v143</div><div><b>Save size</b> ${(JSON.stringify(S).length/1024).toFixed(1)} KB</div>
-   <div><b>Storage</b> ${SAVE_FAILED?'<span class="gw-bad">could not save (device storage may be full)</span>':'saving OK'}</div>
+   <div><b>Version</b> v146</div><div><b>Save size</b> ${(JSON.stringify(S).length/1024).toFixed(1)} KB</div>
+   ${PRF.logLine()}<div><b>Storage</b> ${SAVE_FAILED?'<span class="gw-bad">could not save (device storage may be full)</span>':'saving OK'}</div>
    ${SAVE_CORRUPT?'<div class="gw-bad">The old save could not be read. A fresh start was made and the old data was kept on the device.</div>':''}
    <div><b>Last errors</b> ${(S.err||[]).length?'<ul class="gw-errs">'+(S.err||[]).slice().reverse().map(e=>'<li><span>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+'</span> '+esc(e.msg)+'</li>').join('')+'</ul>':'none'}</div></div></details>
   ${BAK.card()}
-  ${GW.card('gw-reset','warning','Start over',`<div class="gw-bkrow">${UI.btn('Save a backup first',{size:'sm',icon:'download',id:'bk-first'})}${onlineNote()}</div>${UI.btn('Erase everything',{size:'sm',kind:'risk',icon:'trash',id:'reset'})}`,{tone:'gw-dz',sub:'Erases all progress, the pet, stars, coins and voice recordings on this tablet. This cannot be undone, so save a backup first if you may want it back.'})}
+  ${GW.card('gw-reset','warning','Start over',`<div class="gw-bkrow">${UI.btn('Save a backup first',{size:'sm',icon:'download',id:'bk-first'})}${onlineNote()}</div>${UI.btn('Erase everything',{size:'sm',kind:'risk',icon:'trash',id:'reset'})}`,{tone:'gw-dz',sub:(PRF.many()?'Erases '+esc(S.name||'this child')+"'s progress, pet, stars, coins and voice recordings. The other children are kept.":'Erases all progress, the pet, stars, coins and voice recordings on this tablet.')+' This cannot be undone, so save a backup first if you may want it back.'})}
   </div></div>`);
   $('#back').onclick=()=>home(true);
   $('#nm').oninput=e=>{if(e.target.value.trim()){S.name=e.target.value.trim();save()}};
@@ -10624,6 +11184,7 @@ function grown(){let armed=false;
   placeGrownBind();
   reportGrownBind();
   BAK.bind();
+  PRF.bind();
   $('#ula').onchange=e=>{S.unlockAll=e.target.checked;save()};
   $$('[data-per]').forEach(b=>b.onclick=()=>{ptCfg().per=+b.dataset.per;save();grown()});
   $$('[data-max]').forEach(b=>b.onclick=()=>{ptCfg().max=+b.dataset.max;save();grown()});
@@ -10639,7 +11200,9 @@ function grown(){let armed=false;
   $$('[data-play]').forEach(b=>b.onclick=()=>{const c=CLIPS.find(x=>x.id==b.dataset.play);if(c)new Audio(c.url).play().catch(()=>{})});
   $$('[data-del]').forEach(b=>b.onclick=async()=>{await DB.del(b.dataset.del);await loadClips();grown()});
   $$('[data-rec]').forEach(b=>b.onclick=()=>{const[k,l]=b.dataset.rec.split('|');record(k,l=='x'?null:+l,b)});
-  $('#reset').onclick=async e=>{if(!armed){armed=true;e.currentTarget.querySelector('span').textContent='Tap again to erase ALL progress';return}SAVE_HOLD=true;try{localStorage.removeItem(KEY);localStorage.removeItem(BAK.UNDO)}catch(x){}
+  $('#reset').onclick=async e=>{if(!armed){armed=true;e.currentTarget.querySelector('span').textContent=PRF.many()?'Tap again to erase '+(S.name||'this child'):'Tap again to erase ALL progress';return}
+    if(PRF.many()){const bad=await PRF.wipe();if(bad)return fb(bad,'warn');SAVE_HOLD=true;PRF.setWho(PRF.cur);location.reload();return} // P5-10: only this child
+    SAVE_HOLD=true;try{localStorage.removeItem(SKEY);localStorage.removeItem(BAK.UNDO)}catch(x){}
     // the voice clips (IndexedDB) go too; the reload never waits on IndexedDB for long (an open that never finished on a busy
     // tablet left the old progress on screen): it comes when the delete is done, blocked or failed, or after 1.5 s at most
     let gone=false;const go=()=>{if(!gone){gone=true;location.reload()}};
@@ -10650,7 +11213,7 @@ async function record(kind,line,btn){if(inFrame)return micHelp('frame');if(!navi
   let st;try{st=await navigator.mediaDevices.getUserMedia({audio:true})}catch(e){return micHelp(e&&e.name=='NotFoundError'?'none':'denied')}
   music(false);const mr=new MediaRecorder(st),ch=[];mr.ondataavailable=e=>{if(e.data.size)ch.push(e.data)};
   mr.onstop=async()=>{st.getTracks().forEach(t=>t.stop());const blob=new Blob(ch,{type:mr.mimeType||'audio/webm'});
-    try{await DB.put({id:String(Date.now()),kind,line,blob});await loadClips();const c=CLIPS.find(x=>x.blob===blob)||CLIPS[CLIPS.length-1];if(c)new Audio(c.url).play().catch(()=>{})}catch(e){fb("Couldn't save the clip",'warn')}
+    try{await DB.put({id:PRF.clipId(),kind,line,blob});await loadClips();const c=CLIPS.find(x=>x.blob===blob)||CLIPS[CLIPS.length-1];if(c)new Audio(c.url).play().catch(()=>{})}catch(e){fb("Couldn't save the clip",'warn')}
     grown()};
   mr.start();let s=4;btn.innerHTML=ico('record',22,'ic-rec')+'<span>Recording… '+s+'</span>';btn.classList.add('is-rec');
   const iv=setInterval(()=>{s--;if(s<=0){clearInterval(iv);if(mr.state=='recording')mr.stop()}else btn.innerHTML=ico('record',22,'ic-rec')+'<span>Recording… '+s+'</span>'},1000);
@@ -10661,17 +11224,31 @@ async function record(kind,line,btn){if(inFrame)return micHelp('frame');if(!navi
    the tablet and handed to the share sheet or a download link. Because sending a file off the tablet needs a connection, the Save
    buttons carry onlineNote() and run through needOnline(..., {block:false}): offline they warn, then still download the file.
    Loading checks everything first (right app, a save version we can migrate, sane types) on a copy, and only then replaces the save.
-   The save it replaces is kept under KEY-undo until the next load or Start over. */
+   The save it replaces is kept under KEY-undo until the next load or Start over.
+   P5-10 (children, 01-profiles.js): "Save a backup" saves the child who is playing (any child from the Delete sheet); "Save all
+   children" saves every child in one file ({..., all: true, kids: [{name, data}]}). Loading one child's file asks which child it
+   replaces, or adds it as a new child; a file of all children lists them and loads one at a time. The copy kept for "Undo last load"
+   is the replaced child's: <their key>-undo (child 1: KEY-undo as before); only the last load is kept. */
 const BAK = {
   APP: 'Star School',
-  UNDO: KEY + '-undo',
+  // the copy kept for "Undo last load": the replaced child's <key>-undo (only one is kept); without one, the playing child's name for it
+  get UNDO() { return BAK.undoKey() || SKEY + '-undo'; },
+  undoKey() { return PRF.SLOTS.map(id => PRF.key(id) + '-undo').find(k => PRF.get(k) !== null) || ''; },
   MAX: 5e6, // bytes: a save is under 300 KB, so a bigger file is not a backup
-  // The file text: a small header, then the whole save in "data".
-  make() {
-    return JSON.stringify({app: BAK.APP, ver: 'v143', save: LATEST, date: new Date().toISOString(), name: S.name || '', data: S});
+  // The file text: a small header, then the whole save in "data". id: another child (P5-10), migrated as it would be to play.
+  make(id) {
+    const d = id && id !== PRF.cur ? PRF.up(PRF.get(PRF.key(id))) : S;
+    if (!d) return '';
+    return JSON.stringify({app: BAK.APP, ver: 'v146', save: LATEST, date: new Date().toISOString(), name: d.name || '', data: d});
   },
-  fileName() {
-    const nm = String(S.name || 'child').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'child';
+  // Every child in one file (P5-10)
+  makeAll() {
+    const kids = PRF.ids.map(id => id === PRF.cur ? S : PRF.up(PRF.get(PRF.key(id)))).filter(Boolean);
+    return JSON.stringify({app: BAK.APP, ver: 'v146', save: LATEST, date: new Date().toISOString(), all: true,
+      kids: kids.map(d => ({name: d.name || '', data: d}))});
+  },
+  fileName(name) {
+    const nm = String((name === undefined ? S.name : name) || 'child').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'child';
     const d = new Date();
     const p = n => String(n).padStart(2, '0');
     return `starschool-${nm}-${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}.json`;
@@ -10697,10 +11274,24 @@ const BAK = {
     let f;
     try { f = JSON.parse(text); } catch (e) { return no('That file is damaged, so it cannot be read.'); }
     if (!f || typeof f != 'object' || f.app !== BAK.APP) return no("That isn't a Star School backup.");
-    const d = f.data;
+    if (Array.isArray(f.kids)) { // P5-10: every child; each one is checked like a one-child file
+      if (!f.kids.length || f.kids.length > PRF.MAX) return no('That backup is damaged: the children are missing.');
+      const kids = [];
+      for (const k of f.kids) {
+        const r = BAK.one(k && k.data, f.save, f.date);
+        if (!r.ok) return r;
+        kids.push(r);
+      }
+      return {ok: true, all: true, kids, info: {n: kids.length, date: f.date}};
+    }
+    return BAK.one(f.data, f.save, f.date);
+  },
+  // One child's save from a file: checked, then migrated on a copy. {ok:true, data, info} or {ok:false, msg}.
+  one(d, save, date) {
+    const no = msg => ({ok: false, msg});
     if (!d || typeof d != 'object' || Array.isArray(d)) return no('That backup is damaged: the progress is missing.');
-    if (!Number.isInteger(f.save) || f.save < 1) return no('That backup is damaged: it has no save version.');
-    if (f.save > LATEST || (Number.isInteger(d.v) && d.v > LATEST))
+    if (!Number.isInteger(save) || save < 1) return no('That backup is damaged: it has no save version.');
+    if (save > LATEST || (Number.isInteger(d.v) && d.v > LATEST))
       return no('That backup was made by a newer Star School. Update the app on this tablet first, then try again.');
     const bad = BAK.types(d);
     if (bad) return no('That backup is damaged (' + bad + ').');
@@ -10709,7 +11300,7 @@ const BAK = {
     let m = null;
     try {
       S = JSON.parse(JSON.stringify(d));
-      const from = Number.isInteger(S.v) && S.v >= 1 ? S.v : f.save;
+      const from = Number.isInteger(S.v) && S.v >= 1 ? S.v : save;
       if (S.maps && typeof PATHS != 'undefined') for (const p in PATHS) S.maps[p] = S.maps[p] || {};
       for (let n = from; n < LATEST; n++) MIGRATIONS[n]();
       S.v = LATEST;
@@ -10717,40 +11308,50 @@ const BAK = {
     } catch (e) { m = null; }
     S = keep;
     if (!m) return no('That backup is damaged: it could not be brought up to date.');
-    return {ok: true, data: m, info: {name: m.name || '', grade: m.grade, stars: m.stars || 0, coins: m.coins || 0, date: f.date}};
+    return {ok: true, data: m, info: {name: m.name || '', grade: m.grade, stars: m.stars || 0, coins: m.coins || 0, date}};
   },
-  hasUndo() { try { return !!localStorage.getItem(BAK.UNDO); } catch (e) { return false; } },
-  // Replaces the save with data from read(). Returns '' or a message; on a message nothing was changed.
-  apply(data) {
-    const raw = JSON.stringify(data);
-    try { localStorage.setItem(BAK.UNDO, JSON.stringify(S)); }
+  hasUndo() { return !!BAK.undoKey(); },
+  // Replaces a child's save (the one playing unless id says another, P5-10) with data from read(). Returns '' or a message;
+  // on a message nothing was changed. The replaced save is kept for "Undo last load" (only the last load: other copies go).
+  apply(data, id = PRF.cur) {
+    const raw = JSON.stringify(data), k = PRF.key(id), me = id === PRF.cur;
+    const old = me ? JSON.stringify(S) : PRF.get(k);
+    if (old === null || !PRF.ids.includes(id)) return 'That child is not on this tablet.';
+    try { localStorage.setItem(k + '-undo', old); }
     catch (e) { return 'There is no room to keep a copy of the current progress, so nothing was changed.'; }
-    try { localStorage.setItem(KEY, raw); }
+    try { localStorage.setItem(k, raw); }
     catch (e) {
-      try { localStorage.removeItem(BAK.UNDO); } catch (x) {}
+      try { localStorage.removeItem(k + '-undo'); } catch (x) {}
       return 'The tablet storage is full, so nothing was changed.';
     }
-    loadSave(raw);
-    migrate();
+    for (const s of PRF.SLOTS) if (s !== id) PRF.drop(PRF.key(s) + '-undo');
+    if (me) {
+      loadSave(raw);
+      migrate();
+    }
     return '';
   },
-  // Puts back the save that the last load replaced. Returns '' or a message.
+  // Puts back the save that the last load replaced (whichever child it was). Returns '' or a message.
   undo() {
-    let raw = null;
-    try { raw = localStorage.getItem(BAK.UNDO); } catch (e) {}
+    const u = BAK.undoKey(), raw = u ? PRF.get(u) : null, k = u.slice(0, -5);
     let o = null;
     try { o = JSON.parse(raw); } catch (e) {}
     if (!o || typeof o != 'object' || Array.isArray(o)) return 'There is nothing to undo.';
-    try { localStorage.setItem(KEY, raw); localStorage.removeItem(BAK.UNDO); } catch (e) { return 'The tablet storage is full, so nothing was changed.'; }
-    loadSave(raw);
-    migrate();
+    try { localStorage.setItem(k, raw); localStorage.removeItem(u); } catch (e) { return 'The tablet storage is full, so nothing was changed.'; }
+    if (k === SKEY) {
+      loadSave(raw);
+      migrate();
+    }
     return '';
   },
   // Save a backup: share sheet with the file when the browser has one, else a download link (works offline).
-  save() {
+  // what: 'all' (every child, P5-10), a child's slot id (the Delete sheet), else the child playing.
+  save(what) {
     let file;
-    const text = BAK.make();
-    try { file = new File([text], BAK.fileName(), {type: 'application/json'}); } catch (e) { file = null; }
+    const all = what === 'all', id = PRF.SLOTS.includes(what) ? what : PRF.cur;
+    const text = all ? BAK.makeAll() : BAK.make(id), name = BAK.fileName(all ? 'all-children' : PRF.info(id).name);
+    if (!text) return fb("That child's progress could not be read.", 'warn');
+    try { file = new File([text], name, {type: 'application/json'}); } catch (e) { file = null; }
     needOnline(async () => {
       if (file && navigator.canShare && navigator.canShare({files: [file]})) {
         try { await navigator.share({files: [file], title: 'Star School backup'}); fb('Backup shared'); return; }
@@ -10758,7 +11359,7 @@ const BAK = {
       }
       const a = document.createElement('a');
       a.href = URL.createObjectURL(new Blob([text], {type: 'application/json'}));
-      a.download = BAK.fileName();
+      a.download = name;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -10770,28 +11371,75 @@ const BAK = {
     const el = $('#bk-msg');
     if (el) el.innerHTML = t ? `<p class="gw-warn">${ico('warning', 22)}<span>${esc(t)}</span></p>` : '';
   },
-  // The summary sheet, then Yes / Not now.
+  when(date) {
+    const d = date ? new Date(date) : null;
+    return d && !isNaN(d) ? d.toLocaleDateString(undefined, {year: 'numeric', month: 'long', day: 'numeric'}) : 'not known';
+  },
+  // The summary sheet. One child on the tablet: Yes / Not now as before, plus "Add as a new child" (P5-10); with more children,
+  // one Replace button per child (the one playing first, #bk-yes). A file of all children: pick the child to load first.
   review(text) {
     const r = BAK.read(text);
     if (!r.ok) return BAK.msg(r.msg);
     BAK.msg('');
-    const i = r.info, d = i.date ? new Date(i.date) : null;
-    const when = d && !isNaN(d) ? d.toLocaleDateString(undefined, {year: 'numeric', month: 'long', day: 'numeric'}) : 'not known';
+    if (r.all) return BAK.pickKid(r);
+    BAK.ask(r);
+  },
+  ask(r) {
+    const i = r.info, many = PRF.many(), room = PRF.count() < PRF.MAX;
     const row = (k, v) => `<dt>${k}</dt><dd>${esc(v)}</dd>`;
-    const sh = UI.sheet(`<h2>Replace this tablet's progress?</h2><dl class="gw-bks">${row('Name', String(i.name).slice(0, 40) || 'No name')}` +
-      `${row('Grade', GRADES.includes(i.grade) ? gradeSpoken(i.grade) : 'Not set')}${row('Stars', i.stars)}${row('Coins', i.coins)}${row('Backed up on', when)}</dl>` +
-      `<p>This tablet has ${S.stars} stars now. A copy of it is kept, so you can undo.</p><div class="acts">` +
-      UI.btn('Yes, replace', {kind: 'primary', size: 'lg', wide: true, icon: 'check', id: 'bk-yes'}) + UI.btn('Not now', {kind: 'ghost', wide: true, id: 'bk-no'}) + '</div>');
+    const dl = `<dl class="gw-bks">${row('Name', String(i.name).slice(0, 40) || 'No name')}` +
+      `${row('Grade', GRADES.includes(i.grade) ? gradeSpoken(i.grade) : 'Not set')}${row('Stars', i.stars)}${row('Coins', i.coins)}` +
+      `${row('Backed up on', BAK.when(i.date))}</dl>`;
+    const add = room ? UI.btn('Add as a new child', {wide: true, icon: 'plus', id: 'bk-new'}) : '';
+    const no = UI.btn('Not now', {kind: 'ghost', wide: true, id: 'bk-no'});
+    const sh = UI.sheet(many
+      ? `<h2>Load this backup?</h2>${dl}<p>Pick the child it replaces. A copy of their progress is kept, so you can undo.</p><div class="acts">` +
+        PRF.ids.map(id => UI.btn('Replace ' + PRF.label(PRF.info(id)), {kind: id === PRF.cur ? 'primary' : 'soft', wide: true, icon: 'check',
+          id: id === PRF.cur ? 'bk-yes' : '', attrs: `data-bkto="${id}"`})).join('') + add + no + '</div>'
+      : `<h2>Replace this tablet's progress?</h2>${dl}` +
+        `<p>This tablet has ${S.stars} stars now. A copy of it is kept, so you can undo.</p><div class="acts">` +
+        UI.btn('Yes, replace', {kind: 'primary', size: 'lg', wide: true, icon: 'check', id: 'bk-yes', attrs: `data-bkto="${PRF.cur}"`}) + add + no + '</div>');
     sh.el.querySelector('#bk-no').onclick = sh.close;
-    sh.el.querySelector('#bk-yes').onclick = () => {
-      const bad = BAK.apply(r.data);
+    sh.el.querySelectorAll('[data-bkto]').forEach(b => b.onclick = () => {
+      const id = b.dataset.bkto, bad = BAK.apply(r.data, id);
       sh.close();
-      if (bad) BAK.msg(bad); else { SAVE_HOLD = true; location.reload(); } // nothing saves over the loaded backup before the reload
+      if (bad) BAK.msg(bad);
+      else if (id === PRF.cur) {
+        PRF.setWho(id);
+        SAVE_HOLD = true; location.reload(); // nothing saves over the new save before the reload
+      }
+      else {
+        grown();
+        fb(PRF.label(PRF.info(id)) + "'s progress was loaded", 'info');
+      }
+    });
+    const nb = sh.el.querySelector('#bk-new');
+    if (nb) nb.onclick = () => {
+      const res = PRF.add(r.data, false);
+      sh.close();
+      if (res.msg) return BAK.msg(res.msg);
+      grown();
+      fb(PRF.label(PRF.info(res.id)) + ' was added', 'info');
     };
+  },
+  pickKid(r) {
+    const n = r.kids.length;
+    const sh = UI.sheet(`<h2>Backup of ${n} ${n == 1 ? 'child' : 'children'}</h2>` +
+      `<p>Backed up on ${esc(BAK.when(r.info.date))}. Load one child at a time.</p><div class="pf-list">` +
+      r.kids.map((k, j) => `<div class="pf-row"><span class="pf-rt"><b>${esc(String(k.info.name).slice(0, 40) || 'No name')}</b>` +
+        `<span>${ico('star', 18, 'ic-star')}<span>${k.info.stars} star${k.info.stars == 1 ? '' : 's'}</span></span></span>` +
+        `<span class="pf-ra">${UI.btn('Load', {size: 'sm', icon: 'upload', attrs: `data-bkkid="${j}"`})}</span></div>`).join('') +
+      `</div><div class="acts">${UI.btn('Not now', {kind: 'ghost', wide: true, id: 'bk-no'})}</div>`);
+    sh.el.querySelector('#bk-no').onclick = sh.close;
+    sh.el.querySelectorAll('[data-bkkid]').forEach(b => b.onclick = () => {
+      sh.close();
+      BAK.ask(r.kids[+b.dataset.bkkid]);
+    });
   },
   card() {
     return GW.card('gw-bak', 'download', 'Backup',
       `<div class="gw-bk"><div class="gw-bkrow">${UI.btn('Save a backup', {kind: 'primary', size: 'sm', icon: 'download', id: 'bk-save'})}${onlineNote()}</div>` +
+      (PRF.many() ? `<div class="gw-bkrow">${UI.btn('Save all children', {size: 'sm', icon: 'download', id: 'bk-all'})}${onlineNote()}</div>` : '') +
       `<div class="gw-bkrow">${UI.btn('Load a backup', {size: 'sm', icon: 'upload', id: 'bk-load'})}<input type="file" id="bk-file" accept=".json,application/json" hidden>` +
       `${BAK.hasUndo() ? UI.btn('Undo last load', {size: 'sm', kind: 'ghost', icon: 'undo', id: 'bk-undo'}) : ''}</div>` +
       `<div id="bk-msg" role="status"></div></div>`,
@@ -10800,6 +11448,7 @@ const BAK = {
   bind() {
     $('#bk-save').onclick = BAK.save;
     $('#bk-first').onclick = BAK.save;
+    if ($('#bk-all')) $('#bk-all').onclick = () => BAK.save('all');
     $('#bk-load').onclick = () => $('#bk-file').click();
     $('#bk-file').onchange = async e => {
       const f = e.target.files[0];
@@ -10810,7 +11459,12 @@ const BAK = {
       BAK.review(text);
     };
     const u = $('#bk-undo');
-    if (u) u.onclick = () => { const bad = BAK.undo(); if (bad) BAK.msg(bad); else { SAVE_HOLD = true; location.reload(); } };
+    if (u) u.onclick = () => {
+      const bad = BAK.undo();
+      if (bad) return BAK.msg(bad);
+      PRF.setWho(PRF.cur);
+      SAVE_HOLD = true; location.reload(); // nothing saves over the new save before the reload
+    };
   },
 };
 /* ---------- Grown-ups report card (P5-06) ----------
@@ -11125,26 +11779,75 @@ function appFiles() {
     ['data', typeof DATA_VER === 'undefined' ? null : DATA_VER],
   ];
 }
+// P6-02: the start-up files only; the parts in LAZY_PARTS load later (partsThen below)
 function dataReady() {
-  return appFiles().every(f => f[1] === 'v143');
+  return appFiles().every(f => LAZY_PARTS.includes(f[0]) || f[1] === 'v146');
 }
-function dataMissing() {
-  logErr(appFiles().filter(f => f[1] !== 'v143').map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v143)');
+// the Try again screen and one line in the App log: for the start-up files, or (P6-02) for the parts in stems that did not load on demand
+function dataMissing(stems) {
+  logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0])) && f[1] !== 'v146')
+    .map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v146)');
   const again = UI.btn('Try again', { kind: 'primary', size: 'lg', icon: 'replay', id: 'dataretry' });
   view(`<div class="scroll" id="datamiss">${UI.empty('download', 'Star School needs to finish updating. Connect to the internet, then tap Try again.', again)}</div>`);
   $('#dataretry').onclick = () => location.reload();
 }
+/* ---------- P6-02: part files loaded on demand ----------
+   The parts in LAZY_PARTS (the same list as LAZY in tools/build.py, in PARTS order) have no <script> tag in index.html, so a
+   cheap tablet does not read and parse them at every start: the Game Room (games, games2) loads the first time it opens.
+   sw.js still precaches every part, so this works offline. Each one is the same file with the same stamp as before: partLoad(stem)
+   adds one plain script element, src <stem>.<VER>.js (a classic script, so it shares the one global scope like the others) and resolves
+   true once its stamp equals the page's VER. A file that cannot be loaded resolves false and may be tried again later; a file of
+   another release has already run, so it stays refused (Try again reloads the page).
+   partsThen(stems, go) is the way in: go() runs at once when those parts are in. Otherwise it draws "Getting the games ready..."
+   (with Back), loads the parts one after the other (games2 calls GH.reg from games while it loads), then runs go() only if that
+   screen is still showing, so a child who tapped Back meanwhile is never pulled into the games. A part that does not load shows
+   the Try again screen. Keep it generic: a new game in games2 needs nothing here. */
+const LAZY_PARTS = ['games', 'games2'];
+const partsAsked = {};
+function partReady(stem) {
+  const f = appFiles().find(x => x[0] === stem);
+  return !!f && f[1] === 'v146';
+}
+function partLoad(stem) {
+  const f = appFiles().find(x => x[0] === stem);
+  if (!f || f[1] === 'v146') return Promise.resolve(!!f);
+  if (f[1] !== null) return Promise.resolve(false); // a file of another release ran: refused
+  return partsAsked[stem] || (partsAsked[stem] = new Promise(res => {
+    const s = document.createElement('script');
+    s.src = stem + '.v146.js';
+    s.onload = () => { delete partsAsked[stem]; res(partReady(stem)); };
+    s.onerror = () => { delete partsAsked[stem]; s.remove(); res(false); };
+    document.body.appendChild(s);
+  }));
+}
+// load the parts in order; resolves with the first one that did not load, or null when all of them are in
+async function partsLoad(stems = LAZY_PARTS) {
+  for (const s of stems) if (!(await partLoad(s))) return s;
+  return null;
+}
+function partsThen(stems, go, o = {}) {
+  if (stems.every(partReady)) return go();
+  const { title = 'Game Room', icon = 'gamepad', line = 'Getting the games ready...' } = o;
+  view(`<div class="top tbar s-play">${UI.ibtn('back', 'Back', { size: 'sm', id: 'back' })}<div class="ttl">${ico(icon, 30)}<span>${esc(title)}</span></div></div>` +
+    `<div class="scroll" id="partwait"><div class="blank pw" role="status"><span class="bi">${ico(icon)}</span><p>${UI.t(line)}</p></div></div>`);
+  $('#back').onclick = () => home();
+  const wait = $('#partwait');
+  // start once the waiting screen is painted: reading a part is one long parse on a cheap tablet
+  requestAnimationFrame(() => setTimeout(() => partsLoad(stems).then(bad => {
+    if (!wait.isConnected) return; // the child went elsewhere; what loaded stays loaded for next time
+    if (bad) dataMissing([bad]); else go();
+  }), 0));
+}
 </script>
-<script src="gen.v143.js"></script>
-<script src="gen2.v143.js"></script>
-<script src="bt.v143.js"></script>
-<script src="games.v143.js"></script>
-<script src="games2.v143.js"></script>
-<script src="data.v143.js"></script>
+<script src="gen.v146.js"></script>
+<script src="gen2.v146.js"></script>
+<script src="bt.v146.js"></script>
+<script src="data.v146.js"></script>
 <script>
 if (dataReady()) {
   loadClips();
-  home(true);
+  if (PRF.needPick()) PRF.pick(); // P5-10: more than one child: "Who is playing?" first
+  else home(true);
 } else dataMissing(); // A11, A11b: bt/games/data.<VER>.js missing or from another release (src/js/90-app.js)
 </script>
 </body>

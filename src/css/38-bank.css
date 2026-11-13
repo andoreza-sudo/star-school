@@ -47,7 +47,7 @@
 .dl-n{margin-right:.35em;color:var(--brand-shade)}
 .dl-l.s1 .dl-n{color:var(--ink-2)}
 .choices.pics.dlg .choice.ch{font-size:clamp(30px,5vh,44px);padding:var(--s-2);min-height:var(--tap)}
-.choices.pics.dlg .ch .pcap small{font-size:.4em;color:var(--ink-2)}
+.choices.pics.dlg .ch .pcap small{font-size:max(.4em,var(--fs-2));color:var(--ink-2)}
 .dl-l:not(:has(.dl-b)){grid-template-columns:1fr;padding:var(--s-1) 0} /* no Spanish voice: the buttons are gone, the text takes the whole row */
 
 /* R-01d: Discover. The question never shrinks below 18 px when the hint opens on a phone (fit() shrinks the rest; the card scrolls).
@@ -57,7 +57,7 @@
 .choices.pics.bpics{grid-template-columns:repeat(2,1fr)}
 .choices.pics.bpics.n3{grid-template-columns:repeat(3,1fr)}
 .choices.pics.bpics .choice.ch{font-size:clamp(40px,7vh,60px);padding:var(--s-2);min-height:var(--tap-pk)}
-.choices.pics.bpics .ch .pcap small{font-size:max(.3em,15px);color:var(--ink-2);white-space:normal;overflow-wrap:anywhere;margin-top:2px}
+.choices.pics.bpics .ch .pcap small{font-size:max(.3em,var(--fs-2));color:var(--ink-2);white-space:normal;overflow-wrap:anywhere;margin-top:2px}
 .bgrid{margin-bottom:0}
 /* on a phone the one-per-row answers of Discover are a little more compact, so a long question, its hint and four answers fit */
 @media (orientation:portrait) and (max-height:900px){

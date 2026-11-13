@@ -68,5 +68,6 @@ function ptEarnList(){return[['sparkle','Unlock a new stop','+1 min'],['star','G
 function ptRules(R_){return ptEarnList().map(([i,t,v])=>`<div>${R_(i)} ${t} <b>${v}</b></div>`).join('')+'<div class="small">Replaying a stop you already mastered, or the same stop over and over, earns less.</div>'}
 
 // P4-16: the Game Room hub (scene, game-time ticket, a drawn card per registered game) lives in games.<VER>.js with the games:
-// GH.hub() in src/js/59-game-hub.js. Called only from taps, after every file has loaded.
-function gameRoom(){GH.hub()}
+// GH.hub() in src/js/59-game-hub.js. P6-02: those files load the first time the Game Room opens (partsThen, 90-app.js), so
+// gameRoom() is the one way into the games; a game is opened from the hub (or, later, partsThen(LAZY_PARTS, () => GH.get(id).open())).
+function gameRoom(){partsThen(LAZY_PARTS,()=>GH.hub())}

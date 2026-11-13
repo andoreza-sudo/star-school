@@ -1,10 +1,10 @@
 /* Design tokens (DESIGN_SYSTEM.md section 2). The only file that may contain raw hex colours. */
 :root{
 /* colour */
---ink:#1F2440;--ink-2:#3D4263;--ink-3:#6B7090;--line:#E3E5EF;
+--ink:#1F2440;--ink-2:#3D4263;--ink-3:#676C8A;--line:#E3E5EF;
 --paper:#FFF9EF;--surface:#FFFFFF;--surface-2:#F4F5FB;
 --brand:#3B5BDB;--brand-shade:#2F49B8;--brand-tint:#E3E9FF;
---star:#FFC93C;--star-shade:#F5A800;--star-tint:#FFF1C7;
+--star:#FFC93C;--star-shade:#F5A800;--star-tint:#FFF1C7;--star-ink:#B06E00; /* P6-01: star-ink = gold icons on star-tint (3:1) */
 --good:#20A556;--good-ink:#147A3C;--good-tint:#DDF5E7;
 --try:#FFB020;--try-ink:#8A4B00;--try-tint:#FFE8B8;
 --danger:#C92A2A;

@@ -79,6 +79,7 @@ function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;G.re
   <div class="play qs s-${ar}"><div class="qarea">${q.review?UI.tag('Remember this one?','rtag','replay'):''}${q.ctx?bankCtx(q.ctx):''}<div class="prompt" id="prompt">${q.html}</div>
   <div class="tools">${spk}${help}</div><div class="qhint"><div id="hint" class="hint"></div><span class="hb" aria-hidden="true">${ico('hint')}</span></div></div>
   <div class="inp">${input}</div></div>`);
+  UI.hear(); // P6-01: named speaker buttons in the prompt
   $('#quit').onclick=()=>{G.dead=true;back()};
   if($('#spk'))$('#spk').onclick=e=>say(q.say,e.currentTarget,q.lang=='es'&&q.auto=='must'?'es':null);
   $$('[data-sayes]').forEach(b=>b.onclick=()=>say(b.dataset.sayes,b,'es'));
