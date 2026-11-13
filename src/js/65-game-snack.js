@@ -1045,16 +1045,14 @@ function snDragWire() {
   box.addEventListener('click', e => {
     const b = e.target.closest('.sn-ing');
     if (!b || !SN) return;
-    if (SN.noClick) {
-      SN.noClick = false;
-      return;
-    }
+    // a drop already put the food on the plate: the click (and the mouse-compatibility press) the same finger leaves behind
+    // comes within 0.4 s of the drop and is ignored; times are the events' own, so no app clock can stretch them
+    if (SN.dropT != null && e.timeStamp - SN.dropT < 400) return;
     snAddFood(b.dataset.ing);
   });
   box.addEventListener('pointerdown', e => {
     const b = e.target.closest('.sn-ing');
     if (!b || !SN) return;
-    SN.noClick = false; // a new touch: the click a finished drag left behind (if any) has been and gone
     SN.drag = { id: b.dataset.ing, x: e.clientX, y: e.clientY, on: false, pid: e.pointerId };
   });
   addEventListener('pointermove', snDragMove);
@@ -1083,8 +1081,7 @@ function snDragEnd(e) {
   if (!d || e.pointerId !== d.pid) return;
   SN.drag = null;
   if (!d.on) return;
-  SN.noClick = true; // the click this drag leaves behind is ignored; it is cleared by the next touch, never by a timer (a slow
-                     // tablet could send it late, and the food went on the plate twice)
+  SN.dropT = e.timeStamp; // clicks on a food within 0.4 s of this are the same finger (see snDragWire)
   if (SN.ghost) SN.ghost.remove();
   SN.ghost = null;
   // dropped on the counter (the plate's row) or above it: on the plate
