@@ -69,8 +69,8 @@
 .sn-awn{display:block;width:100%;height:52px}
 .sn-bunt{position:absolute;left:0;right:0;top:48px;height:24px;z-index:2}.sn-bunt svg{display:block;width:100%;height:100%}
 .sn-sign{position:absolute;top:14px;left:50%;z-index:3;display:grid;min-width:150px;padding:5px 16px;border-radius:10px;transform:translateX(-50%);
-  background:var(--ill-brown);color:var(--ill-white);font-family:var(--font-display);font-size:var(--fs-3);font-weight:700;text-align:center;line-height:1.2;
-  box-shadow:inset 0 2px 0 var(--ill-brown-1),inset 0 -3px 0 var(--ill-brown-3),0 3px 0 var(--shadow-ink);transition:transform var(--t-slow) var(--ease)}
+  background:var(--ill-brown-2);color:var(--ill-white);font-family:var(--font-display);font-size:var(--fs-3);font-weight:700;text-align:center;line-height:1.2;
+  box-shadow:inset 0 2px 0 var(--ill-brown),inset 0 -3px 0 var(--ill-brown-3),0 3px 0 var(--shadow-ink);transition:transform var(--t-slow) var(--ease)}
 .sn-sign>span{grid-area:1/1;transition:opacity var(--t) var(--ease)}
 .sn-sign .sn-sb{opacity:0}
 .sn-sign.shut{animation:sn-flip var(--t-slow) var(--ease)}
@@ -177,7 +177,7 @@
 .sn-ctl[hidden],.sn-till[hidden]{display:none}
 .sn-tabs{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));gap:6px;max-width:640px;width:100%;margin:0 auto}
 .sn-tab{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-height:64px;padding:4px 2px;border:0;
-  border-radius:var(--r-btn);background:var(--wash);color:var(--ink);font:inherit;font-size:var(--fs-1);font-weight:700;line-height:1.1;cursor:pointer;
+  border-radius:var(--r-btn);background:var(--wash);color:var(--ink);font:inherit;font-size:var(--fs-2);font-weight:700;line-height:1.1;cursor:pointer;
   touch-action:manipulation;box-shadow:0 3px 0 var(--shadow-ink);transition:transform var(--t-fast) var(--ease)}
 .sn-tab:active{transform:translateY(3px)}
 .sn-tpic{width:34px;height:34px}.sn-tpic svg{display:block}
@@ -194,7 +194,7 @@
 .sn-ipc{width:52px;height:52px}.sn-ipc svg{display:block}
 .sn-pan svg{width:60px;height:56px}
 .sn-pan[data-q="gold"]{box-shadow:inset 0 0 0 3px var(--good),0 4px 0 var(--good-ink)}
-.sn-in{font-size:var(--fs-1);font-weight:700;line-height:1.1;text-align:center}
+.sn-in{font-size:var(--fs-2);font-weight:700;line-height:1.1;text-align:center}
 .sn-ghost{position:fixed;left:0;top:0;z-index:50;width:72px;height:72px;pointer-events:none}
 .sn-ghost svg{display:block}
 @media (max-height:620px){
@@ -224,4 +224,7 @@
 .sn-tundo,.sn-give{min-height:64px;flex-direction:column;gap:2px;padding:6px 12px}
 
 /* top-bar chips */
-.sn-cust{grid-area:2/1;display:block;font-family:var(--font-body);font-size:var(--fs-1);font-weight:400;opacity:.92}
+.sn-cust{grid-area:2/1;display:block;font-family:var(--font-body);font-size:var(--fs-2);font-weight:400;opacity:.92}
+
+/* P6-01: a customer at the edge of the scene keeps its whole focus ring (the scene clips) */
+.sn-an:focus-visible{outline-offset:-4px}

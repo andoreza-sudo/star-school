@@ -119,6 +119,7 @@ open-ended writing grading, any generative AI at runtime.
 | `S.pt.open`, `S.pt.met` | P5-09 | `open`: day key the grown-up opened the Game Room anyway; `met`: `{day, min}` learn-first already done today (both absent = none) |
 | `S.rally` | G-02 | Star Rally: `{spk, races, best: {track: ms}, stars: {track: 0-3}, paint, paints: {hue: 1}, stk, stks: {id: 1}, body, mode, quiz, tilt, place}`; created when the game is first opened (absent = a new player); every field read with a default and checked (`rlS()`), sparkles never below 0; no migration. `S.race` stays Fact Race's bests |
 | `S.bb.bp` | G-01 | `{blueprintId: stars 1-3}` Block Builder blueprint stars by id (`tower`, `stairs`, `wall`, `gate`, `tree`, `bridge`, `pond`, `snowman`, `boat`, `castle`, `house`, `pyramid`, `palace`); made on first read from the old index array `S.bb.ch` (kept, still written for the ten old blueprints); absent = made again |
+| Children (outside `S`) | P5-10 | up to 4 saves, one `S` each: child 1 stays `starschool-v2` (unchanged, never moved), children 2-4 `starschool-v2-p2` .. `-p4`; index `starschool-v2-profiles` = `{v: 1, ids: [slot order], cur}` (only written once a second child is added; never the only copy: slots that exist are children, a damaged index is kept under `-profiles-corrupt` and rebuilt); `starschool-v2-go` = the child just picked, read once by the next start. Per child: `<key>-bak`, `<key>-corrupt`, `<key>-undo`, `starschool-neon[-pN]`; voice clip ids of children 2-4 start with `pN:`. No field of `S` changes and no migration: each child's save is the same `S` (01-profiles.js header) |
 | `S.bb.worlds[i].goals`, `.n`, `.kinds`, `S.bb.seen` | G-01 | per world: free-build goals done `{goalId: 1}`, blocks built (count), block ids used (array); `seen` 1 once the first tip showed. All optional, read with defaults; world data `d` unchanged |
 | `S.snack` | G-04a | Snack Stand: `{coins, days, served, stars: {place: 0-3}, combo, own: {shopId: 1}, awn, sign, ctr, place, mode, till}`; created when the game is first opened (absent = a new player; the hub reads it without creating it, `snPeek()`); every field read with a default and checked by `snS()` (coins an integer >= 0, unknown places and shop ids dropped, a style not owned falls back to the free one, a place not yet open falls back to the park); no migration. Its coins are the game's own, not `S.coins` |
 
@@ -497,7 +498,7 @@ Notes:
 
 **P5-09 · Game-time rules v2** · Sonnet · S: extend `ptCalc` to Brain Teasers (by puzzle difficulty and hints used), Daily Review and missions; show the "why you earned this" lines everywhere. Add a grown-up setting "learning minutes needed before Game Room opens each day". Accept: table-driven unit tests for `ptCalc`.
 
-**P5-10 · Profiles (STRETCH)** · Opus · M: up to 4 children per tablet. Save becomes `starschool-v2` = index plus one key per child; voice clips in IndexedDB get a profile prefix; migration wraps the existing child as profile 1. Accept: fixtures migrate; switching profiles never mixes data (test); backup works per child.
+**P5-10 · Profiles (STRETCH)** · Opus · M: up to 4 children per tablet. Save becomes `starschool-v2` = index plus one key per child; voice clips in IndexedDB get a profile prefix; migration wraps the existing child as profile 1. Accept: fixtures migrate; switching profiles never mixes data (test); backup works per child. **Built v141:** the index lives in `starschool-v2-profiles` and child 1's save stays in `starschool-v2` itself (so an older cached app still opens child 1, rule 9, and no data moves); "Who is playing?" picker, hold-to-switch on Home, Children card in Grown-ups, Save all children; PROGRESS.md P5-10.
 
 ---
 
@@ -546,11 +547,11 @@ Notes:
 
 | # | Risk | Likelihood | Impact | Mitigation | Owner chunk |
 |---|------|-----------|--------|------------|-------------|
-| R1 | Built file grows past what a cheap tablet parses quickly | Medium | Medium | Size budget in tests (1.5 MB hard, 1.2 MB warn); compact data formats; decision A11 done in v97 (data file budget 2 MB hard, 1 MB warn; total 3 MB hard, 2 MB warn), extended by A11b in v105 (puzzle types and games in part files, 800 KB hard, 400 KB warn each); G-04a (v142) added a second games part `games2` and raised the total to 3.3 MB hard (2,959,816 -> 3,054,321 bytes): every file still loads at start, so a lazy-loaded games part is the next step if more games come | P0-04, P6-02 |
+| R1 | Built file grows past what a cheap tablet parses quickly | Medium | Medium | Size budget in tests (1.5 MB hard, 1.2 MB warn); compact data formats; decision A11 done in v97 (data file budget 2 MB hard, 1 MB warn; total 3 MB hard, 2 MB warn), extended by A11b in v105 (puzzle types and games in part files, 800 KB hard, 400 KB warn each); G-04a (v142) added a second games part `games2` and raised the total to 3.3 MB hard (2,959,816 -> 3,054,321 bytes): P6-02 (v146) loads `games` and `games2` on demand (the first Game Room open, `partsThen` in 90-app.js; still precached, so offline works): the total is now split into **loaded at start** (index.html + gen + gen2 + bt + data; warn 2 MB, fail 3.0 MB; 3,079,697 -> 2,595,346 bytes) and **precached** (every file; fail 3.3 MB; 3,084,007 bytes). `bt` stays at start (Home reads `BT.list()`); the next lever if start grows is another LAZY part | P0-04, P6-02 |
 | R2 | A release damages or wipes a child's save | Low | Very high | Versioned migrations, automatic backup key, fixture tests on every chunk, export/import | P0-03, P5-07 |
 | R3 | localStorage quota or eviction | Low | High | Save stays small (target under 300 KB; review items stored as seeds); `save()` failures surfaced; backup file | P0-03, P5-02 |
 | R4 | Service worker serves a stale app (this already happened with cache-first) | Medium | High | Keep network-first for navigation; always bump `VER`; the other files, `bt.<VER>.js`, `games.<VER>.js` (A11b) and `data.<VER>.js` (A11), have `VER` in their names, are in the precache list and are checked against the page's `VER` before start; version visible on home; never add another cached JS file without updating the precache list and testing an upgrade | every chunk |
-| R5 | Slow or janky on low-end tablets | Medium | High | Animate only transform and opacity; no blur filters; cap particles; render one world at a time; perf script with CPU throttle | P1-05, P6-02 |
+| R5 | Slow or janky on low-end tablets | Medium | High | Animate only transform and opacity; no blur filters; cap particles; render one world at a time; perf script with CPU throttle (`tools/perf.js`, P6-02: start, map, question, Game Room, long tasks and memory at 6x; `tools/check.sh` fails if start is over 2.5 s) | P1-05, P6-02 |
 | R6 | Speech voices missing or poor (especially es-MX, and isolated letter sounds) | High | Medium | Never require speech to answer; show text alternative; avoid tasks that need isolated phonemes (use whole words); existing recorded-voice feature can cover gaps | P2-15, P2-30 |
 | R7 | Emoji show as empty boxes on old Android | High | Medium | Allowlist test; replace chrome with SVG; object art sets | P0-04, P4-13+ |
 | R8 | Refactor of the round engine breaks existing play | Medium | High | Do it once, early, by Opus, with before/after screenshots and smoke bot | P1-02 |
@@ -564,7 +565,8 @@ Notes:
 
 ## 9. Save-data migration rules
 
-1. The key is `starschool-v2` forever. Voice clips stay in IndexedDB `starschool`.
+1. The key is `starschool-v2` forever. Voice clips stay in IndexedDB `starschool`. Since P5-10 it holds child 1's save; children 2-4
+   have their own keys next to it (`starschool-v2-p2` ...), each the same `S` with the same migrations (section 4 table, "Children").
 2. `S.v` is the schema version. Missing means 2 (v30 and earlier).
 3. `MIGRATIONS[n]` is a function that upgrades `S` from version `n` to `n+1`. They run in order at startup, before anything else reads `S`.
    Each one is idempotent, never throws on missing fields, and is never edited after release (fix mistakes with a new migration).

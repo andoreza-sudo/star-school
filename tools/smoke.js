@@ -219,6 +219,9 @@ async function main() {
     // maze, a pattern and a number pyramid open from the Brain Teasers hub; the Game Room opens. Then the version guard: a copy of
     // index.html with one file missing, or with a file of another release, shows "Try again" instead of starting and changes no
     // progress; Try again with the file back starts the app.
+    // P6-02: the games parts (LAZY_PARTS) are not loaded at start: index.html has no tag for them and their CSS is not in yet; the
+    // Game Room loads them (and their CSS) when it opens. A games or games2 file that is stale or missing lets the app start, and
+    // the Game Room shows Try again instead (with the App log line); with the file back, Try again opens the Game Room.
     {
       const d = await openApp(browser, { fixture: 'midway' });
       const g = await d.page.evaluate(() => {
@@ -226,19 +229,21 @@ async function main() {
         const vq = genQ('vocab', 1, 4242);
         const pz = PUZ.sudoku.A.easy[0].split('|');
         const ix = NODES.read.findIndex(n => n.sk === 'info' && n.lv === 1);
-        return { src, files: appFiles(), dv: DATA_VER, ready: dataReady(), gram: BANK.gram.length, vocab: BANK.vocab.length, comp: PASS.comp.length,
+        return { src, files: appFiles(), lazy: LAZY_PARTS, dv: DATA_VER, ready: dataReady(), gram: BANK.gram.length, vocab: BANK.vocab.length, comp: PASS.comp.length,
           info: PASS.info.length, spell: typeof genSpell, vq: !!(vq.kind && vq.ans && vq.html && vq.sk === 'vocab'),
           pz: pz.length + ':' + pz[0].length + ':' + pz[1].length, ix, bt: BT.list().map(t => t.id).join(),
           css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(), games: [typeof garage, typeof blockBuilder, typeof colorMenu].join() };
       });
       const files = g.files.map(f => f[0] + '.' + g.dv + '.js'), want = 'data.' + g.dv + '.js';
+      const startFiles = g.files.filter(f => !g.lazy.includes(f[0])).map(f => f[0] + '.' + g.dv + '.js'); // P6-02: the <script> tags at start
       const btF = 'bt.' + g.dv + '.js', gamesF = 'games.' + g.dv + '.js'; // A11c: the order of the parts is build.py's, so name them
-      if (JSON.stringify(g.src) !== JSON.stringify(files) || files[files.length - 1] !== want || !g.ready || !(g.gram > 0 && g.vocab > 0 && g.comp > 0 && g.info > 0)
+      if (JSON.stringify(g.lazy) !== '["games","games2"]' || JSON.stringify(g.src) !== JSON.stringify(startFiles) || files[files.length - 1] !== want || !g.ready || !(g.gram > 0 && g.vocab > 0 && g.comp > 0 && g.info > 0)
         || g.spell !== 'function' || !g.vq || g.pz !== '3:16:16' || g.ix < 0) {
         fail('A11 data globals: ' + JSON.stringify(g));
       }
-      if (!['maze', 'pattern', 'pyramid', 'balance', 'target'].every(id => g.bt.split(',').includes(id)) || g.css !== 'main,css-bt,css-games,css-games2' // P4-16: the games file adds its own <style> (48-game-hub.css); G-04a: games2 too
-        || g.games !== 'function,function,function') fail('A11b part files: ' + JSON.stringify(g));
+      // P6-02: at start only bt's <style> is in, and no game code (the games parts load when the Game Room opens, below)
+      if (!['maze', 'pattern', 'pyramid', 'balance', 'target'].every(id => g.bt.split(',').includes(id)) || g.css !== 'main,css-bt'
+        || g.games !== 'undefined,undefined,undefined') fail('A11b part files: ' + JSON.stringify(g));
       await d.page.evaluate(ix => start('read', ix), g.ix);
       await d.page.waitForSelector('.bctx-p .w', { timeout: 8000 });
       const words = await d.page.evaluate(() => document.querySelectorAll('.bctx-p .w').length);
@@ -275,11 +280,15 @@ async function main() {
         } catch (e) { fail('A11b: ' + id + ' puzzle did not open from the hub: ' + e.message.split('\n')[0]); }
         await d.page.evaluate(() => { BT.stop(); home(); });
       }
-      // A11b: the Game Room (games.<VER>.js) opens and lists the games
+      // A11b: the Game Room (games.<VER>.js) opens and lists the games; P6-02: it loads games and games2 (code and <style>) on the way
       await d.page.evaluate(() => gameRoom());
       await d.page.waitForSelector('#gbb', { timeout: 5000 }).catch(() => {});
       const room = await d.page.evaluate(() => ['#g4x4', '#gcbn', '#gbb'].filter(s => document.querySelector(s)).length);
       if (room !== 3) fail('A11b: the Game Room did not open (' + room + ' of 3 games)');
+      const lz = await d.page.evaluate(() => ({ css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(), games: [typeof garage, typeof blockBuilder, typeof colorMenu].join(),
+        ready: LAZY_PARTS.map(partReady).join(), tags: [...document.scripts].filter(s => s.src).map(s => s.getAttribute('src')).join() }));
+      if (lz.css !== 'main,css-bt,css-games,css-games2' || lz.games !== 'function,function,function' || lz.ready !== 'true,true'
+        || lz.tags !== startFiles.concat(g.lazy.map(x => x + '.' + g.dv + '.js')).join()) fail('P6-02: the Game Room did not load the games parts: ' + JSON.stringify(lz));
       if (opened.length === 3 && room === 3) step('A11b: puzzle types ' + g.bt + ' registered from ' + btF + ', its <style> in, opened from the hub: '
         + opened.join(', ') + '; Game Room from ' + gamesF + ' opened');
       await d.page.evaluate(() => home());
@@ -339,16 +348,43 @@ async function main() {
           return ', a maze opened from the hub';
         } catch (e) { return 'NO MAZE: ' + e.message.split('\n')[0] + ' '; }
       });
+      // P6-02: a games part is loaded on demand, so a bad one does not stop the start: Home opens, and the Game Room shows Try again
+      // (after "Getting the games ready...") with the App log line, progress unchanged
+      const lazyGuard = async (label, allowed, log) => {
+        const a = await openApp(browser, { fixture: 'midway', url });
+        const home = await a.page.evaluate(() => ({ home: !!document.querySelector('#groom'), ready: dataReady() }));
+        await a.page.click('#groom');
+        await a.page.waitForSelector('#dataretry', { timeout: 8000 }).catch(() => {});
+        const r = await a.page.evaluate(() => ({ retry: !!document.querySelector('#datamiss #dataretry'), room: !!document.querySelector('.gh-room'),
+          stars: S.stars, coins: S.coins, err: (S.err || []).map(e => e.msg).pop() || '', wide: document.documentElement.scrollWidth > innerWidth }));
+        const bad = a.errors.filter(e => !allowed.test(e));
+        if (!home.home || !home.ready || !r.retry || r.room || r.stars !== 85 || r.coins !== 64 || r.err !== log + ' (app ' + g.dv + ')' || r.wide || bad.length || a.network.length) {
+          fail('P6-02 guard (' + label + '): ' + JSON.stringify(home) + ' ' + JSON.stringify(r) + ' ' + bad.concat(a.network).join(' | '));
+        } else step('P6-02 guard, ' + label + ': Home opens, the Game Room shows Try again, progress unchanged, App log: ' + r.err);
+        return a;
+      };
       // 4. A11b: a games file from another release
       fs.writeFileSync(path.join(tmp, gamesF), fs.readFileSync(path.join(ROOT, gamesF), 'utf8').replace("var GAMES_VER='" + g.dv + "'", "var GAMES_VER='v1'"));
-      const a4 = await guard(gamesF + ' of another release', /^$/, 'games file v1 does not match');
+      const a4 = await lazyGuard(gamesF + ' of another release', /^$/, 'games file v1 does not match');
       await a4.ctx.close();
       fs.copyFileSync(path.join(ROOT, gamesF), path.join(tmp, gamesF));
       // 5. G-04a: a games2 file (the newer games) from another release
       const games2F = 'games2.' + g.dv + '.js';
       fs.writeFileSync(path.join(tmp, games2F), fs.readFileSync(path.join(ROOT, games2F), 'utf8').replace("var GAMES2_VER='" + g.dv + "'", "var GAMES2_VER='v1'"));
-      const a5 = await guard(games2F + ' of another release', /^$/, 'games2 file v1 does not match');
+      const a5 = await lazyGuard(games2F + ' of another release', /^$/, 'games2 file v1 does not match');
       await a5.ctx.close();
+      fs.copyFileSync(path.join(ROOT, games2F), path.join(tmp, games2F));
+      // 6. P6-02: no games file (never cached, offline); with it back, Try again starts the app and the Game Room opens
+      fs.rmSync(path.join(tmp, gamesF));
+      const a6 = await lazyGuard(gamesF + ' missing', NOFILE, 'games file missing');
+      fs.copyFileSync(path.join(ROOT, gamesF), path.join(tmp, gamesF));
+      await retry(a6, gamesF, async pg => {
+        try {
+          await pg.click('#groom');
+          await pg.waitForSelector('.gh-room #gbb', { timeout: 8000 });
+          return ', the Game Room opened';
+        } catch (e) { return 'NO GAME ROOM: ' + e.message.split('\n')[0] + ' '; }
+      });
       fs.rmSync(tmp, { recursive: true, force: true });
     }
 
@@ -1703,6 +1739,8 @@ async function main() {
     {
       const ia = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
       const ip = ia.page;
+      // P6-02: the games parts load on demand; look() calls gameRoom() and reads the screen at once, so load them first, as the app does
+      if (await ip.evaluate(() => partsLoad())) fail('P4-03: the games parts did not load');
       const look = fn => ip.evaluate(fn => {
         window[fn]();
         const uses = [...document.querySelectorAll('#app svg.ic use')];
@@ -2139,6 +2177,8 @@ async function main() {
       for (const [w, h] of [[380, 780], [600, 960]]) {
         const ga = await openApp(browser, { fixture: 'midway', width: w, height: h });
         const gp = ga.page;
+        // P6-02: 'game room' is read after a fixed wait, so load the games parts first, as the app does when it first opens
+        if (await gp.evaluate(() => partsLoad())) fail('P4-18: the games parts did not load');
         for (const [name, fn, wait, after] of screens) {
           await gp.evaluate('(' + fn.toString() + ')()');
           await vwait(gp, wait || 300);
@@ -7571,8 +7611,8 @@ async function main() {
         await bp.waitForFunction(() => /Tap again/.test(document.querySelector('#reset').textContent));
         await Promise.all([bp.waitForNavigation({ timeout: 60000 }), bp.click('#reset')]); // the page reloads, empty
         await bp.waitForSelector('.su-step', { timeout: 60000 }).catch(async e => { // say what is on screen instead, if setup never shows
-          const seen = await bp.evaluate(() => ({ url: location.href, app: (document.querySelector('#app') || document.body).textContent.slice(0, 200), name: typeof S != 'undefined' && S.name })).catch(x => 'page gone: ' + x.message);
-          throw new Error('P5-07 Start over: setup did not show: ' + JSON.stringify(seen)); });
+          const seen = await bp.evaluate(() => ({ url: location.href, app: (document.querySelector('#app') || document.body).textContent.slice(0, 120), name: typeof S != 'undefined' && S.name, keys: Object.keys(localStorage), seeded: sessionStorage.getItem('__seeded'), hold: typeof SAVE_HOLD != 'undefined' && SAVE_HOLD, nav: performance.getEntriesByType('navigation').map(n => n.type) })).catch(x => 'page gone: ' + x.message);
+          throw new Error('P5-07 Start over (' + tag + '): setup did not show: ' + JSON.stringify(seen)); });
         const z = await bp.evaluate(() => ({ stars: S.stars, name: S.name, undo: !!localStorage.getItem(BAK.UNDO) }));
         if (z.stars !== 0 || z.name !== '' || z.undo) bad.push(tag + ' Start over: ' + JSON.stringify(z));
         await bp.evaluate(() => { grown(); });
@@ -8390,6 +8430,257 @@ async function main() {
       network.push(...dx.network);
       for (const e of dx.errors) fail(e);
       await dx.ctx.close();
+    }
+
+    // P5-10 children at 380x780 and 1024x600, real taps (midway save = Ava): hold the gear, Children card, Add a child runs the first-run
+    //    setup (Back is offered), Ben is set up with another pet and plays a round; hold the Home switch button, the "Who is playing?"
+    //    picker, Ava plays a round; each child's stars, coins and pet stay their own (Ben's stored save does not move while Ava plays);
+    //    a new visit opens on the picker; Ben deletes Ava with the double confirm (Keep first changes nothing). Targets at least 48 px,
+    //    nothing wider than the screen, no emoji chrome, on every screen.
+    {
+      const look = () => {
+        const vw = document.documentElement.clientWidth, out = [];
+        for (const e of document.querySelectorAll('#app button, #app summary, #app label.switch')) {
+          const r = e.getBoundingClientRect();
+          if (!r.width || e.closest('svg')) continue;
+          if (Math.min(e.offsetWidth, e.offsetHeight) < 48) out.push('small ' + (e.id || e.className || e.tagName) + ' ' + e.offsetWidth + 'x' + e.offsetHeight);
+          if (r.left < -1 || r.right > vw + 1) out.push('outside ' + (e.id || e.className) + ' ' + Math.round(r.left) + '..' + Math.round(r.right));
+        }
+        for (const s of [document.documentElement, ...document.querySelectorAll('#app .scroll')])
+          if (s.scrollWidth > s.clientWidth + 1 && getComputedStyle(s).overflowX != 'hidden') out.push('sideways scroll ' + (s.className || 'page') + ' ' + s.scrollWidth);
+        const w = document.createTreeWalker(document.querySelector('#app'), NodeFilter.SHOW_TEXT);
+        for (let n; (n = w.nextNode());) {
+          const el = n.parentElement;
+          if (!el || el.closest('.pet-svg, .gx-pp, .gx-sp, .petbig, .tblw, .hm-paths, .hm-today, .mis')) continue;
+          const m = n.textContent.match(/\p{Extended_Pictographic}|[◀▶✕★✓]/u);
+          if (m) out.push('emoji chrome ' + m[0] + ' in ' + (el.id || el.className));
+        }
+        return out;
+      };
+      const bad = [], notes = [];
+      for (const [w, h] of [[380, 780], [1024, 600]]) {
+        const tag = w + 'x' + h;
+        const pa = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = pa.page;
+        const chk = async what => { for (const o of await pg.evaluate('(' + look.toString() + ')()')) bad.push(tag + ' ' + what + ': ' + o); };
+        const hold = async sel => {
+          const b = await (await pg.$(sel)).boundingBox();
+          await pg.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+          await pg.mouse.down();
+          await vwait(pg, 1600);
+          await pg.mouse.up();
+        };
+        const kid = () => pg.evaluate(() => ({ id: PRF.cur, name: S.name, stars: S.stars, coins: S.coins, pet: S.pet, n: PRF.count() }));
+        const round = async label => {
+          await pg.evaluate(() => home());
+          await pg.click('.game[data-p="math"]');
+          await pg.waitForSelector('.node');
+          // the first open stop on the world the map shows (not a boss)
+          const n = await pg.evaluate(() => [...document.querySelectorAll('.node:not(.lock)')].map(e => +e.dataset.n).find(i => NODES.math[i].sk != 'boss'));
+          await pg.click(`.node[data-n="${n}"]`);
+          await pg.waitForSelector('#prompt');
+          await playRound(pg, tag + ' ' + label);
+          await pg.click('#menu');
+          await pg.waitForSelector('#map');
+          await pg.evaluate(() => home());
+          await pg.waitForSelector('#gear');
+        };
+        try {
+          await pg.waitForSelector('.game[data-p="math"]');
+          const ava0 = await kid();
+          if (await pg.$('#who')) bad.push(tag + ' one child: Home shows the switch button');
+          // Grown-ups: the Children card, Add a child
+          await hold('#gear');
+          await pg.waitForSelector('#gw-kids', { timeout: 3000 });
+          await pg.evaluate(() => document.querySelector('#gw-kids').scrollIntoView({ block: 'start' }));
+          await pg.waitForTimeout(300);
+          await chk('Children card, one child');
+          if (await pg.$('[data-pdel]')) bad.push(tag + ' one child can be deleted (that is Start over)');
+          await Promise.all([pg.waitForNavigation(), pg.click('#pf-add')]);
+          await pg.waitForSelector('.su-step');
+          await chk('setup for the new child');
+          if (!(await pg.$('#suback'))) bad.push(tag + ' setup of a second child has no Back');
+          // first-run setup by taps: name, another pet, grade K
+          await pg.click('#nm');
+          await pg.keyboard.type('Ben');
+          const pet2 = await pg.evaluate(p => Object.keys(PETS).find(k => k !== p), ava0.pet);
+          await pg.click(`.petopt[data-p="${pet2}"]`);
+          await pg.click('.gr[data-g="0"]');
+          await pg.click('#go');
+          await pg.waitForSelector('#gear');
+          const ben0 = await kid();
+          if (ben0.id !== 'p2' || ben0.name !== 'Ben' || ben0.stars !== 0 || ben0.pet !== pet2 || ben0.n !== 2) bad.push(tag + ' Ben after setup: ' + JSON.stringify(ben0));
+          if (!(await pg.$('#who'))) bad.push(tag + ' two children: no switch button on Home');
+          await chk('Home as Ben');
+          await round('Ben');
+          const ben1 = await kid();
+          if (!(ben1.stars > 0)) bad.push(tag + ' Ben earned no stars: ' + JSON.stringify(ben1));
+          // a tap on the switch button only says to hold it; holding opens the picker
+          await pg.click('#who');
+          if (await pg.$('.pf-kid')) bad.push(tag + ' a tap on the switch button opened the picker');
+          await hold('#who');
+          await pg.waitForSelector('.pf-kid', { timeout: 3000 });
+          await pg.waitForTimeout(400);
+          await chk('picker');
+          const cards = await pg.evaluate(() => [...document.querySelectorAll('.pf-kid')].map(b => ({ id: b.dataset.kid, t: b.textContent.trim(), h: b.offsetHeight, pet: !!b.querySelector('.pet-svg') })));
+          if (cards.length !== 2 || !/Ava/.test(cards[0].t) || !/Ben/.test(cards[1].t) || cards.some(c => c.h < 120 || !c.pet)) bad.push(tag + ' picker cards: ' + JSON.stringify(cards));
+          await Promise.all([pg.waitForNavigation(), pg.click('.pf-kid[data-kid="p1"]')]);
+          await pg.waitForSelector('#gear');
+          const benRaw = await pg.evaluate(() => localStorage.getItem(PRF.key('p2'))); // Ben's save as he left it
+          const ava1 = await kid();
+          if (ava1.id !== 'p1' || ava1.name !== 'Ava' || ava1.stars !== ava0.stars || ava1.coins !== ava0.coins || ava1.pet !== ava0.pet) bad.push(tag + ' Ava after the switch: ' + JSON.stringify(ava1) + ' vs ' + JSON.stringify(ava0));
+          await round('Ava');
+          const ava2 = await kid();
+          const benNow = await pg.evaluate(() => localStorage.getItem(PRF.key('p2')));
+          const benS = JSON.parse(benNow);
+          if (!(ava2.stars > ava1.stars) || benNow !== benRaw) bad.push(tag + ' Ava played: her stars ' + ava1.stars + ' -> ' + ava2.stars + (benNow !== benRaw ? ', Ben\'s save changed' : ''));
+          if (ava2.stars === benS.stars || ava2.coins === benS.coins || ava2.pet === benS.pet) bad.push(tag + ' the two children share something: ' + JSON.stringify(ava2) + ' / ' + JSON.stringify({ stars: benS.stars, coins: benS.coins, pet: benS.pet }));
+          // a new visit (the app opened again): "Who is playing?" first; Ben picks himself
+          await pg.reload();
+          await pg.waitForSelector('.pf-kid');
+          await Promise.all([pg.waitForNavigation(), pg.click('.pf-kid[data-kid="p2"]')]);
+          await pg.waitForSelector('#gear');
+          const ben2 = await kid();
+          if (ben2.id !== 'p2' || ben2.stars !== ben1.stars || ben2.coins !== ben1.coins || ben2.pet !== pet2) bad.push(tag + ' Ben after the picker: ' + JSON.stringify(ben2) + ' vs ' + JSON.stringify(ben1));
+          // Ben's Grown-ups: delete Ava. Keep first (nothing changes), then Delete, then Yes (the double confirm)
+          await hold('#gear');
+          await pg.waitForSelector('#gw-kids', { timeout: 3000 });
+          await pg.evaluate(() => document.querySelector('#gw-kids').scrollIntoView({ block: 'start' }));
+          await pg.waitForTimeout(300);
+          await chk('Children card, two children');
+          await pg.click('[data-pdel="p1"]');
+          await pg.waitForSelector('#pf-del1');
+          await pg.waitForTimeout(400);
+          await chk('delete sheet');
+          const sh = await pg.evaluate(() => ({ t: document.querySelector('.sheet').textContent, bk: !!document.querySelector('.sheet #pf-bk'),
+            note: !!document.querySelector('.sheet .online-note') }));
+          if (!/Delete Ava\?/.test(sh.t) || !sh.bk || !sh.note) bad.push(tag + ' delete sheet: ' + JSON.stringify(sh));
+          await pg.click('#pf-keep');
+          await pg.waitForSelector('.sheet', { state: 'detached' });
+          if (await pg.evaluate(() => !localStorage.getItem(KEY) || PRF.count() !== 2)) bad.push(tag + ' Keep deleted something');
+          await pg.click('[data-pdel="p1"]');
+          await pg.waitForSelector('#pf-del1');
+          await pg.click('#pf-del1');
+          await pg.waitForSelector('#pf-del2');
+          await pg.waitForTimeout(300);
+          await chk('delete sheet, second question');
+          if (!/Really delete Ava\?/.test(await pg.evaluate(() => document.querySelector('.sheet').textContent))) bad.push(tag + ' the second question is missing');
+          if (await pg.evaluate(() => !localStorage.getItem(KEY))) bad.push(tag + ' Ava deleted after one tap');
+          await pg.click('#pf-del2');
+          await pg.waitForFunction(() => PRF.count() === 1 && !document.querySelector('.sheet'));
+          const gone = await pg.evaluate(() => ({ ava: localStorage.getItem(KEY), rows: document.querySelectorAll('#gw-kids .pf-row').length, name: S.name, stars: S.stars }));
+          if (gone.ava !== null || gone.rows !== 1 || gone.name !== 'Ben' || gone.stars !== ben1.stars) bad.push(tag + ' after deleting Ava: ' + JSON.stringify(gone));
+          await chk('Children card after delete');
+          await pg.evaluate(() => home());
+          await pg.waitForSelector('#gear');
+          if (await pg.$('#who')) bad.push(tag + ' one child left: the switch button is still on Home');
+          notes.push(`${tag}: Ava ${ava2.stars} stars ${ava2.coins} coins (${ava2.pet}), Ben ${ben2.stars} stars ${ben2.coins} coins (${pet2})`);
+        } catch (e) { bad.push(tag + ' ' + e.message.split('\n')[0]); }
+        network.push(...pa.network);
+        for (const e of pa.errors) fail(e);
+        await pa.ctx.close();
+      }
+      if (bad.length) fail('P5-10 children:\n  ' + bad.slice(0, 40).join('\n  '));
+      else step('P5-10 children by real taps at 380x780 and 1024x600: Add a child through the first-run setup, a round as each child, the ' +
+        'switch button (hold) and the "Who is playing?" picker, a new visit opens on the picker, Delete with Keep and the double confirm; ' +
+        notes.join('; ') + '; 48 px targets, no sideways scroll, no emoji chrome');
+    }
+
+    // P6-02 the Game Room loads on demand, offline, after a cold start. The built files are served over http://127.0.0.1 by a tiny
+    //    static server in this process, so the service worker installs and precaches every file (the games parts too). Then the
+    //    server is stopped and the context goes offline; a new page cold-starts from the cache with only the start-up files (no games
+    //    code, no games <style>); Home -> Game Room shows "Getting the games ready..." and then the hub (games and games2 come from
+    //    the cache), and Snack Stand (games2) starts with real taps. No request reaches the server once it is offline.
+    {
+      const http = require('http'), fs = require('fs'), path = require('path'), { ROOT, loadFixture, SAVE_KEY } = require('./lib/browser');
+      const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.png': 'image/png' };
+      const served = [], socks = new Set();
+      const srv = http.createServer((req, res) => {
+        const u = decodeURIComponent(req.url.split('?')[0]).replace(/^\/+/, '') || 'index.html', f = path.join(ROOT, u);
+        served.push(u);
+        if (!f.startsWith(ROOT + path.sep) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404); return res.end(); }
+        res.writeHead(200, { 'Content-Type': TYPES[path.extname(f)] || 'application/octet-stream', 'Cache-Control': 'no-cache' });
+        fs.createReadStream(f).pipe(res);
+      });
+      srv.on('connection', s => { socks.add(s); s.on('close', () => socks.delete(s)); });
+      await new Promise(r => srv.listen(0, '127.0.0.1', r));
+      const base = 'http://127.0.0.1:' + srv.address().port + '/';
+      const bad = [], notes = [];
+      const ctx = await browser.newContext({ viewport: { width: 380, height: 780 } });
+      const errs = [];
+      await ctx.addInitScript(([key, raw]) => {
+        try { if (!localStorage.getItem(key)) localStorage.setItem(key, raw); } catch (e) {}
+      }, [SAVE_KEY, JSON.stringify(loadFixture('midway'))]);
+      try {
+        // 1. online: the first visit installs the service worker, which precaches every built file
+        const p1 = await ctx.newPage();
+        p1.on('pageerror', e => errs.push('exception: ' + e.message));
+        p1.on('console', m => { if (m.type() === 'error') errs.push('console: ' + m.text()); });
+        await p1.goto(base + 'index.html');
+        await p1.locator('#groom').waitFor({ timeout: 15000 });
+        await p1.waitForFunction(() => navigator.serviceWorker && navigator.serviceWorker.controller, null, { timeout: 20000 });
+        const c1 = await p1.evaluate(async () => {
+          const ver = DATA_VER, c = await caches.open('starschool-' + ver);
+          return { ver, cached: (await c.keys()).map(r => r.url.split('/').pop()).sort(), tags: [...document.scripts].filter(s => s.src).map(s => s.getAttribute('src')) };
+        });
+        const lazyF = ['games', 'games2'].map(x => x + '.' + c1.ver + '.js');
+        if (!lazyF.every(f => c1.cached.includes(f)) || !c1.cached.includes('index.html')) bad.push('the service worker did not precache the games parts: ' + c1.cached.join(' '));
+        if (lazyF.some(f => c1.tags.includes(f))) bad.push('index.html loaded a games part at start: ' + c1.tags.join(' '));
+        await p1.close();
+        // 2. offline: the server stops and the context is offline; a cold start comes from the cache
+        await ctx.setOffline(true);
+        await new Promise(r => { srv.close(r); for (const s of socks) s.destroy(); });
+        const n0 = served.length;
+        const p2 = await ctx.newPage();
+        p2.on('pageerror', e => errs.push('exception: ' + e.message));
+        p2.on('console', m => { if (m.type() === 'error') errs.push('console: ' + m.text()); });
+        await p2.goto(base + 'index.html');
+        await p2.locator('#groom').waitFor({ timeout: 15000 });
+        const s2 = await p2.evaluate(() => {
+          S.pt = { bank: 900, day: today(), used: 0 }; save(); home();
+          return { ready: dataReady(), games: typeof GH, parts: LAZY_PARTS.map(partReady).join(), css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(),
+            tags: [...document.scripts].filter(s => s.src).map(s => s.getAttribute('src')).join() };
+        });
+        if (!s2.ready || s2.games !== 'undefined' || s2.parts !== 'false,false' || s2.css !== 'main,css-bt' || lazyF.some(f => s2.tags.includes(f))) bad.push('offline cold start: ' + JSON.stringify(s2));
+        // 3. Home -> Game Room with real taps: the waiting screen, then the hub from the cached games parts
+        // (the waiting screen is seen by an observer: from the cache it can be gone before the next look)
+        await p2.evaluate(() => {
+          window.__w = null;
+          new MutationObserver(() => {
+            const w = document.querySelector('#partwait');
+            if (w && !window.__w) window.__w = { line: w.textContent.trim(), back: !!document.querySelector('.top #back'), hub: !!document.querySelector('.gh-room') };
+          }).observe(document.querySelector('#app'), { childList: true });
+        });
+        await p2.click('#groom');
+        await p2.locator('.gh-room .gh-card').first().waitFor({ timeout: 15000 });
+        const wait = await p2.evaluate(() => window.__w);
+        const s3 = await p2.evaluate(() => ({ parts: LAZY_PARTS.map(partReady).join(), css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(),
+          cards: document.querySelectorAll('.gh-card').length, games: GH.games.map(g => g.id).join() }));
+        if (!wait || wait.line !== 'Getting the games ready...' || !wait.back || wait.hub) bad.push('no "Getting the games ready..." screen first: ' + JSON.stringify(wait));
+        if (s3.parts !== 'true,true' || s3.css !== 'main,css-bt,css-games,css-games2' || s3.cards < 5 || !/snack/.test(s3.games)) bad.push('Game Room offline: ' + JSON.stringify(s3));
+        // 4. a game from games2 starts: Snack Stand's card, then its Open button, then the day is on screen with the shared Pause
+        await p2.click('#gsnack');
+        await p2.click('#snopen', { timeout: 8000 });
+        await p2.locator('#gpause').waitFor({ timeout: 8000 }).catch(() => {});
+        const s4 = await p2.evaluate(() => ({ day: typeof SN != 'undefined' && !!SN, pause: !!document.querySelector('#gpause') }));
+        if (!s4.day || !s4.pause) bad.push('Snack Stand did not start offline: ' + JSON.stringify(s4));
+        await p2.evaluate(() => home());
+        // the Game Room again opens at once (the parts stay loaded)
+        await p2.click('#groom');
+        const again = await p2.evaluate(() => ({ hub: !!document.querySelector('.gh-room'), wait: !!document.querySelector('#partwait') }));
+        if (!again.hub || again.wait) bad.push('the second Game Room open was not immediate: ' + JSON.stringify(again));
+        if (served.length !== n0) bad.push('requests reached the server while offline: ' + served.slice(n0).join(' '));
+        notes.push('precached ' + c1.cached.length + ' files; offline cold start with ' + s2.tags.replace(/,/g, ', ') + '; the hub showed ' + s3.cards + ' games');
+        await p2.close();
+      } catch (e) {
+        bad.push(e.message.split('\n')[0]);
+      } finally {
+        await ctx.close();
+        srv.close();
+      }
+      for (const e of errs) bad.push(e);
+      if (bad.length) fail('P6-02 Game Room on demand, offline:\n  ' + bad.join('\n  '));
+      else step('P6-02: ' + notes.join('; ') + '; "Getting the games ready..." then the hub, Snack Stand started, the second open immediate, no request while offline');
     }
 
     for (const u of network) fail('network request: ' + u);

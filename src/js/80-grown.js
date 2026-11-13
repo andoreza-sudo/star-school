@@ -3,7 +3,9 @@
    switches, segmented controls, fields and a readable table from the P4-04 components; two columns on a wide screen. Styles in
    src/css/48-setup-grown-care.css. Every id the code and the tests use is kept: #back, #nm, #pn, #bd, .gr[data-g], .pl-grown,
    #ula, #rp-open, [data-rec], [data-play], [data-del], [data-per], [data-max], #pt5, #pt0, #ptp, #applog, #voice, #snd, #mus, #calm,
-   #test, #reset. The report card's Print button (82-report.js) and the backup Save buttons (81-backup.js, P5-07) carry the online note. */
+   #test, #reset. The report card's Print button (82-report.js) and the backup Save buttons (81-backup.js, P5-07) carry the online note.
+   P5-10: the Children card (PRF.card in 01-profiles.js) comes right after the summary; with more than one child, Start over
+   erases only the child who is playing (their place stays, with a fresh save) and recorded clips get the child's id prefix. */
 const GW = {
   // a section: icon disc + title, an optional line under it, then the body. tone: a subject or token class for the disc colour.
   card(id, icon, title, body, o = {}) {
@@ -12,7 +14,7 @@ const GW = {
   },
   // a labelled text field (label above, white well with an icon)
   field(label, icon, attrs, help) {
-    return `<div class="gw-f"><span class="gw-fl">${label}</span>${fldHTML(icon, attrs)}${help ? `<span class="gw-help">${help}</span>` : ''}</div>`;
+    return `<div class="gw-f"><span class="gw-fl">${label}</span>${fldHTML(icon, `${attrs} aria-label="${label}"`)}${help ? `<span class="gw-help">${help}</span>` : ''}</div>`;
   },
   // a small number tile: icon, value, caption
   stat(icon, cls, v, cap) {
@@ -47,6 +49,7 @@ function grown(){let armed=false;
     `<div class="gw-stats">${GW.stat('star','ic-star',S.stars,'stars')}${GW.stat('coin','ic-coin',S.coins,'coins')}${GW.stat('sticker-book','ic-brand',nstk+'/'+STK.length,'stickers')}${GW.stat('flame','ic-flame',S.best||0,'best streak')}</div>
     <h3 class="gw-h3">${ico('map',22,'ic-brand')}<span>Stops passed</span></h3><div class="gw-paths">${paths}</div>
     ${SAVE_FAILED?warn('Could not save progress: the device storage may be full.'):''}`,{sub:esc(gradeSpoken(gradeOf()))+'. Everything is saved on this tablet only.'})}
+  ${PRF.card()}
   ${reportGrownHTML()}
   ${GW.card('gw-kid','edit','Names',GW.field('Child','user',`id="nm" value="${esc(S.name)}"`)+GW.field('Pet name','paw',`id="pn" value="${esc(S.petName)}" placeholder="${PETS[S.pet].def}"`)+
     GW.field('Buddy','users',`id="bd" value="${esc(S.buddy)}" placeholder="A sibling or friend"`,'Used in story problems.'))}
@@ -69,11 +72,11 @@ function grown(){let armed=false;
   ${GW.card('gw-how','info','How it works',`<p class="gw-p">Each subject has its own map. Getting 7 of 10 right opens the next stop (8 earns 2 stars, 10 earns 3), and each world stretches further. Missed questions come back at the end of a round, in later rounds, in Daily Review and in the Tricky Mix. Each right answer earns a star (the pet grows) and a coin (spent in the shop). Everything is saved on this tablet only.</p>`)}
   <details class="gw-card gw-det" id="applog"><summary class="gw-h"><span class="gw-hi">${ico('doc',24)}</span><span>App log</span>${ico('chevron-right',22,'chev')}</summary><div class="gw-log">
    <div><b>Version</b> __VER__</div><div><b>Save size</b> ${(JSON.stringify(S).length/1024).toFixed(1)} KB</div>
-   <div><b>Storage</b> ${SAVE_FAILED?'<span class="gw-bad">could not save (device storage may be full)</span>':'saving OK'}</div>
+   ${PRF.logLine()}<div><b>Storage</b> ${SAVE_FAILED?'<span class="gw-bad">could not save (device storage may be full)</span>':'saving OK'}</div>
    ${SAVE_CORRUPT?'<div class="gw-bad">The old save could not be read. A fresh start was made and the old data was kept on the device.</div>':''}
    <div><b>Last errors</b> ${(S.err||[]).length?'<ul class="gw-errs">'+(S.err||[]).slice().reverse().map(e=>'<li><span>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+'</span> '+esc(e.msg)+'</li>').join('')+'</ul>':'none'}</div></div></details>
   ${BAK.card()}
-  ${GW.card('gw-reset','warning','Start over',`<div class="gw-bkrow">${UI.btn('Save a backup first',{size:'sm',icon:'download',id:'bk-first'})}${onlineNote()}</div>${UI.btn('Erase everything',{size:'sm',kind:'risk',icon:'trash',id:'reset'})}`,{tone:'gw-dz',sub:'Erases all progress, the pet, stars, coins and voice recordings on this tablet. This cannot be undone, so save a backup first if you may want it back.'})}
+  ${GW.card('gw-reset','warning','Start over',`<div class="gw-bkrow">${UI.btn('Save a backup first',{size:'sm',icon:'download',id:'bk-first'})}${onlineNote()}</div>${UI.btn('Erase everything',{size:'sm',kind:'risk',icon:'trash',id:'reset'})}`,{tone:'gw-dz',sub:(PRF.many()?'Erases '+esc(S.name||'this child')+"'s progress, pet, stars, coins and voice recordings. The other children are kept.":'Erases all progress, the pet, stars, coins and voice recordings on this tablet.')+' This cannot be undone, so save a backup first if you may want it back.'})}
   </div></div>`);
   $('#back').onclick=()=>home(true);
   $('#nm').oninput=e=>{if(e.target.value.trim()){S.name=e.target.value.trim();save()}};
@@ -83,6 +86,7 @@ function grown(){let armed=false;
   placeGrownBind();
   reportGrownBind();
   BAK.bind();
+  PRF.bind();
   $('#ula').onchange=e=>{S.unlockAll=e.target.checked;save()};
   $$('[data-per]').forEach(b=>b.onclick=()=>{ptCfg().per=+b.dataset.per;save();grown()});
   $$('[data-max]').forEach(b=>b.onclick=()=>{ptCfg().max=+b.dataset.max;save();grown()});
@@ -98,7 +102,9 @@ function grown(){let armed=false;
   $$('[data-play]').forEach(b=>b.onclick=()=>{const c=CLIPS.find(x=>x.id==b.dataset.play);if(c)new Audio(c.url).play().catch(()=>{})});
   $$('[data-del]').forEach(b=>b.onclick=async()=>{await DB.del(b.dataset.del);await loadClips();grown()});
   $$('[data-rec]').forEach(b=>b.onclick=()=>{const[k,l]=b.dataset.rec.split('|');record(k,l=='x'?null:+l,b)});
-  $('#reset').onclick=async e=>{if(!armed){armed=true;e.currentTarget.querySelector('span').textContent='Tap again to erase ALL progress';return}SAVE_HOLD=true;try{localStorage.removeItem(KEY);localStorage.removeItem(BAK.UNDO)}catch(x){}
+  $('#reset').onclick=async e=>{if(!armed){armed=true;e.currentTarget.querySelector('span').textContent=PRF.many()?'Tap again to erase '+(S.name||'this child'):'Tap again to erase ALL progress';return}
+    if(PRF.many()){const bad=await PRF.wipe();if(bad)return fb(bad,'warn');SAVE_HOLD=true;PRF.setWho(PRF.cur);location.reload();return} // P5-10: only this child
+    SAVE_HOLD=true;try{localStorage.removeItem(SKEY);localStorage.removeItem(BAK.UNDO)}catch(x){}
     // the voice clips (IndexedDB) go too; the reload never waits on IndexedDB for long (an open that never finished on a busy
     // tablet left the old progress on screen): it comes when the delete is done, blocked or failed, or after 1.5 s at most
     let gone=false;const go=()=>{if(!gone){gone=true;location.reload()}};
@@ -109,7 +115,7 @@ async function record(kind,line,btn){if(inFrame)return micHelp('frame');if(!navi
   let st;try{st=await navigator.mediaDevices.getUserMedia({audio:true})}catch(e){return micHelp(e&&e.name=='NotFoundError'?'none':'denied')}
   music(false);const mr=new MediaRecorder(st),ch=[];mr.ondataavailable=e=>{if(e.data.size)ch.push(e.data)};
   mr.onstop=async()=>{st.getTracks().forEach(t=>t.stop());const blob=new Blob(ch,{type:mr.mimeType||'audio/webm'});
-    try{await DB.put({id:String(Date.now()),kind,line,blob});await loadClips();const c=CLIPS.find(x=>x.blob===blob)||CLIPS[CLIPS.length-1];if(c)new Audio(c.url).play().catch(()=>{})}catch(e){fb("Couldn't save the clip",'warn')}
+    try{await DB.put({id:PRF.clipId(),kind,line,blob});await loadClips();const c=CLIPS.find(x=>x.blob===blob)||CLIPS[CLIPS.length-1];if(c)new Audio(c.url).play().catch(()=>{})}catch(e){fb("Couldn't save the clip",'warn')}
     grown()};
   mr.start();let s=4;btn.innerHTML=ico('record',22,'ic-rec')+'<span>Recording… '+s+'</span>';btn.classList.add('is-rec');
   const iv=setInterval(()=>{s--;if(s<=0){clearInterval(iv);if(mr.state=='recording')mr.stop()}else btn.innerHTML=ico('record',22,'ic-rec')+'<span>Recording… '+s+'</span>'},1000);

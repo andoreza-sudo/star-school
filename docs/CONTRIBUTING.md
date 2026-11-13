@@ -63,7 +63,7 @@ JS files created by the split, with the source line ranges of `src/src.html` at 
 
 | File | Lines | Contents |
 |------|-------|----------|
-| `00-core.js` | 322-335 | `$`, `$$`, `R`, `pick`, `shuffle`, `esc`, state `S`, `save()`, `P()`, `today()`, `day()` |
+| `00-core.js` | 322-335 | `$`, `$$`, `R`, `pick`, `shuffle`, `esc`, state `S`, `save()` (writes `SKEY`, the playing child's key, P5-10), `P()`, `today()`, `day()` |
 | `05-pets.js` | 336-345 | `PETS`, growth stages, stickers list |
 | `10-sfx.js` | 346-387 | Sound engine `SFX`, `tone()`, `noise()`, music |
 | `12-speech.js` | 388-407 | `say()`, voices, `fb()` toast |
@@ -101,6 +101,7 @@ Files added by later chunks (names are fixed by the roadmap so everyone agrees):
 
 | File | Chunk | Contents |
 |------|-------|----------|
+| `01-profiles.js`, `src/css/45-profiles.css` | P5-10 | `PRF`: up to 4 children per tablet, one save each (keys in the file header); picks the child at load, the "Who is playing?" picker, Home's switch button, the Grown-ups Children card, add / rename / delete |
 | `14-ui.js` | P4-04 | `UI.*` helpers that return component markup (classes in `src/css/10-components.css`) |
 | `15-icons.js`, `15-pics.js`, `16-art-*.js`, `17-pets-svg.js` | P4-02, pre-wave 5, P4-13+, P4-05 | Icon sprite; `ART`/`picArt`/`picFor`; object art (`Object.assign(ART, {...})`; set A in `16-art-a.js`, sets B and C and later in `src/data/d-art-b.js`, `d-art-c.js` ...); pet rig |
 | `18-reward-art.js` | P4-11 | Reward art (chest, stars, bosses, prize rosette) and the reward screens' markup (`RW.*`); CSS in `src/css/42-rewards.css` |
@@ -119,13 +120,13 @@ Files added by later chunks (names are fixed by the roadmap so everyone agrees):
 Build order is: `src/js/*.js` sorted by name (minus the part files), then each part file (bt, games; their `src/js` sorted by name),
 then `src/data/*.js` sorted by name, then `src/boot.js`.
 
-### 3.3 Built output: index.html and six more files (A11 since v97, A11b since v105, A11c since v126, games2 since G-04a)
+### 3.3 Built output: index.html and six more files (A11 since v97, A11b since v105, A11c since v126, games2 since G-04a, games on demand since P6-02)
 
 ```
 index.html        shell + CSS + fonts + <script>src/js</script>                      (src minus the PARTS files below)
-                  + <script src="gen.<VER>.js"></script> + <script src="gen2.<VER>.js"></script>
-                  + <script src="bt.<VER>.js"></script> + <script src="games.<VER>.js"></script> + <script src="games2.<VER>.js"></script>
+                  + <script src="gen.<VER>.js"></script> + <script src="gen2.<VER>.js"></script> + <script src="bt.<VER>.js"></script>
                   + <script src="data.<VER>.js"></script> + <script>src/boot.js</script>
+                  (P6-02: no tag for games.<VER>.js and games2.<VER>.js: they are LAZY, loaded the first time the Game Room opens)
 gen.<VER>.js      question generators, part 1 (A11c): src/js/23-viz, 30-gen-math, 31-gen-math-early, 32-gen-read, 33-gen-math-mid,
                   34-gen-es, then  var GEN_VER='<VER>';
 gen2.<VER>.js     question generators, part 2 (A11c): src/js/35-gen-math-upper, 36-gen-phonics, 37-bank, 37-comp, 39b-steps,
@@ -136,10 +137,11 @@ games.<VER>.js    the Game Room: src/js/60-blocks, 62-hill, 64-gtimer, 66-colorn
 games2.<VER>.js   the newer Game Room games (G-04a on): every other src/js/NN-game-*.js and src/css/NN-game-*.css (65-game-snack, 49-game-snack),
                   then  var GAMES2_VER='<VER>';
 data.<VER>.js     src/data/*.js in filename order, then the last line  var DATA_VER='<VER>';
-sw.js             cache 'starschool-<VER>', precaches ./, index.html, gen/gen2/bt/games/games2/data.<VER>.js, manifest.json, icons
+sw.js             cache 'starschool-<VER>', precaches ./, index.html, gen/gen2/bt/games/games2/data.<VER>.js (the LAZY ones too), manifest.json, icons
 ```
 
-(The text below says "part" for gen, gen2, bt, games and games2 alike. Load order is the order of PARTS: gen, gen2, bt, games, games2, then data.)
+(The text below says "part" for gen, gen2, bt, games and games2 alike. Load order at start is the order of PARTS without the LAZY ones:
+gen, gen2, bt, then data; the LAZY parts games, games2 follow on demand, in PARTS order.)
 
 The rule lives in one place, `PARTS` in `tools/build.py`: a file stem and a regular expression on whole file names in `src/js` and
 `src/css`. A matching file goes into `<stem>.<VER>.js` (in filename order) instead of into index.html:
@@ -157,10 +159,24 @@ The rule lives in one place, `PARTS` in `tools/build.py`: a file stem and a regu
   and `49-game-snack.css`, Snack Stand). It was added when the games file reached 394 KB of its 400 KB warning. It loads after `games`, so a game here
   may call `GH.reg` and the `gh*` drawing helpers while it loads; `appFiles()` lists it, so a missing or stale games2 file stops the start-up like the others.
 
+Loaded on demand (P6-02): `LAZY` in `tools/build.py` (`('games', 'games2')`) names the parts that index.html does not load at start, and
+`LAZY_PARTS` in `src/js/90-app.js` is the same list (the A11b and P6-02 checks compare them). They are built, stamped and precached like
+the others. `partsThen(stems, go)` (90-app.js) is the one way in: when those parts are in it runs `go()` at once; otherwise it draws
+"Getting the games ready..." (a Back button and a drawn disc; `#partwait`), adds one plain `<script src="<stem>.<VER>.js">` per part, one
+after the other (games2 needs games), and runs `go()` only if that screen is still showing (a child who tapped Back is never pulled into
+the games). A part that cannot be read (offline before it was cached), or whose stamp is from another release, shows the Try again
+screen (`dataMissing([stem])`, one App log line such as `games file v1 does not match (app v146)`); a stale file stays refused until the
+reload. `gameRoom()` is `partsThen(LAZY_PARTS, () => GH.hub())`; every game is opened from the hub, so a new game in games2 needs nothing
+here. Code that opens a game from elsewhere (a mission, a test hook) goes through `partsThen(LAZY_PARTS, ...)` too, never straight to a
+game's function: index.html's code must not call LAZY code outside `partsThen`. Tests and smoke steps that call game functions directly
+first `await partsLoad()` in the page (smoke P4-03 and P4-18, tools/shots.js); `node tools/test.js` evaluates every source together, so
+its checks see the games as before. Making `bt` LAZY too was looked at and left: Home's Brain Teasers card and the daily puzzle read the
+registered puzzle types (`BT.list()`, from bt) at start.
+
 How it fits together:
 - All scripts are plain classic scripts: they run in this order, synchronously, and share one global scope (a `const` in one file is
   visible to the others the same way as before). This works over `file://` too, so open `index.html` directly as always.
-- Load order: index.html's own code, gen, gen2, bt, games, data, boot. So a part file may use anything in index.html's code while it loads
+- Load order: index.html's own code, gen, gen2, bt, data, boot (then, on demand, games and games2). So a part file may use anything in index.html's code while it loads
   (`BT.reg`, `padHTML`, `ICONS`, `UI` ...), and the data file still loads after all code. index.html's code may call
   part code only inside functions that run after start-up (opening a puzzle or a game), never while loading: a `function` in a part
   file is not hoisted into index.html's script. Part code must not read data while loading either.
@@ -170,11 +186,13 @@ How it fits together:
 - Every file name carries `VER`, so an index.html can only ever ask for its own release's files, and no HTTP cache can hand it an older
   file under the same name. `tools/build.py` deletes every other `name.vNN.js` at the repo root.
 - `src/boot.js` starts the app only if `dataReady()` (src/js/90-app.js): every stamp in `appFiles()` (`GEN_VER`, `GEN2_VER`, `BT_VER`,
-  `GAMES_VER`, `DATA_VER`) exists, so the whole file ran, and equals the page's `VER`. Otherwise `dataMissing()` shows "Star School needs to finish
+  `DATA_VER`; P6-02: not the LAZY `GAMES_VER`, `GAMES2_VER`, which `partReady()` checks when they load) exists, so the whole file ran, and equals the page's `VER`. Otherwise `dataMissing()` shows "Star School needs to finish
   updating. Connect to the internet, then tap Try again." and logs one line in the App log, such as `bt file missing (app v105)` or
   `games file v104 does not match (app v105)`. Nothing else in the save changes.
 - Sizes (budgets in `tools/test.js`): index.html warn 1.2 MB / fail 1.5 MB (ROADMAP R1; the check `parts split A11c` wants it under 1.0 MB), each part file warn 400 KB / fail 800 KB,
-  data file warn 1 MB / fail 2 MB, all files together warn 2 MB / fail 3.3 MB (3 MB until G-04a, raised for `games2`: owner to confirm). `bash tools/check.sh` prints them all.
+  data file warn 1 MB / fail 2 MB. P6-02: **loaded at start** (index.html + the start-up parts + the data file) warn 2 MB / fail 3.0 MB;
+  **precached** (every built file, the LAZY parts too) fail 3.3 MB (the all-files limit G-04a raised from 3.0 to 3.3 MB for `games2`; with the
+  games on demand, 3.0 MB holds again for what loads at start). `bash tools/check.sh` prints them all, and `node tools/perf.js` the timings.
 - The check `code split A11b (and data file split A11)` in `tools/test.js` covers all of this: script order, nothing of a part left in
   index.html, index.html's code loads alone and with only the data, each file's stamp, a missing or stale file refused, the precache
   list, no stale files, the budgets. It loads the built files in a fresh Node `vm` context, one script after the other, like the page.
@@ -187,7 +205,7 @@ How it fits together:
 Adding a puzzle type: name it `src/js/NN-bt-<id>.js` (and `src/css/49-bt-<id>.css`) and it goes into `bt.<VER>.js` by itself; no change
 to build.py, sw.js, the shell or 90-app.js. At load it may call `BT.reg({...})` and anything else from index.html's code.
 
-Adding a game (P4-16): name it `src/js/NN-game-<name>.js` (since G-04a it goes into `games2.<VER>.js`, which loads after the hub in `games.<VER>.js`) and register it with one
+Adding a game (P4-16): name it `src/js/NN-game-<name>.js` (since G-04a it goes into `games2.<VER>.js`, which loads after the hub in `games.<VER>.js`; since P6-02 both load when the Game Room first opens) and register it with one
 `GH.reg({...})` call at load. That entry is the whole hook: the hub card, its drawn picture, the top-bar badge, the pause sheet and the end
 card come from it, and the smoke `// P4-16` block and the test.js check "game room P4-16" pick it up by themselves.
 
@@ -214,11 +232,12 @@ Every screen of the game starts its `view()` with `${GH.top('race', {...})}` (Ba
 the game while the sheet is open). The game-time clock is `gtStart('#gtm', onEnd)` (64-gtimer.js); it holds by itself while the sheet is
 open. End of a game: `GH.end('race', {title, stars, stats, lines, btns, win})`; time running out: `timeUpOverlay()`. CSS goes in
 `src/css/NN-game-<name>.css`: since P4-16 the games rule also moves `NN-game-*.css` into `games.<VER>.js` (keep it scoped to the game's
-own classes). Do not change `gameRoom()`; it only calls `GH.hub()`.
+own classes). Do not change `gameRoom()`; it only loads the games parts and calls `GH.hub()` (`partsThen(LAZY_PARTS, () => GH.hub())`, P6-02).
 
 Adding another part file (only if a part passes its budget, or a big new on-demand area comes): one line in `PARTS` (build.py), one line
 in `appFiles()` (90-app.js, same order), and the expected stems in the A11b check and smoke's `// A11` block. sw.js and the shell
-follow from build.py.
+follow from build.py. To load it on demand, add its stem to `LAZY` (build.py) and `LAZY_PARTS` (90-app.js), or pass its stems to
+`partsThen()` from the screen that needs it; nothing in index.html's code may call it outside that.
 
 Adding a data file:
 1. Create `src/data/d-name.js` (data only; it may call code helpers such as `compAdd`, `GR` or `BANK.x = ...` at load time, because all
@@ -238,8 +257,10 @@ Run from anywhere:
 python3 tools/build.py           # writes index.html, bt/games/data.<VER>.js, sw.js, manifest.json, icons to the repo root
 node tools/test.js               # generator fuzz + data checks; must exit 0
 node tools/smoke.js              # bot plays through the app in headless Chrome; must exit 0   (after P0-01)
+node tools/perf.js               # timings at 6x CPU throttle and memory over 30 rounds; exit 1 only if start is over 2.5 s   (P6-02)
 node tools/shots.js home map question   # screenshots to tools/out/ at 600x960, 1024x600, 380x780   (after P0-01)
-bash tools/check.sh              # all of the above plus size report                                (after P0-01)
+node tools/a11y.js [screen...]   # accessibility scan, DESIGN_SYSTEM 10 (P6-01); must print zero failures
+bash tools/check.sh              # all of the above plus a11y and the size report                                (after P0-01)
 node tools/puzzles/build-banks.js [sudoku|mathdoku|logic|robot] # regenerate puzzle banks into src/data/d-puz-*.js from fixed seeds (after P3-02)
 node tools/puzzles/build-banks.js --check    # regenerate in memory, compare with the committed bank files byte for byte
 node tools/puzzles/verify-banks.js           # re-check every stored puzzle (also part of test.js)
@@ -290,7 +311,7 @@ How updates reach tablets: the service worker fetches the page network-first, so
 | Helpers | Use what exists: `$`, `$$`, `R(a,b)`, `pick`, `shuffle`, `esc`, `view(html)`, `fb(text, kind)`, `say(text, btn, lang)`, `SFX.*`, `save()`. Grep for a helper before writing a new one. |
 | Screens | A screen is a function that calls `view(templateString)` and then wires handlers with `$('#id').onclick = ...`. `view()` replaces the whole `#app`. |
 | Cleanup | If a screen starts a timer, interval, animation frame or audio loop, it must have a stop function, and `view()` must call it (follow how `stopRace` and `stopHC` are done). |
-| State | Everything persistent lives in `S`; call `save()` after changing it. New fields need defaults when read. Read ROADMAP.md section 9 before touching saved data. |
+| State | Everything persistent lives in `S`; call `save()` after changing it. New fields need defaults when read. Read ROADMAP.md section 9 before touching saved data. `S` is the save of the child who is playing (P5-10: up to 4 children, each with their own `S` under their own key; `save()` writes `SKEY`, never `KEY` directly). Anything a child owns goes in `S`; another per-child store (like Art Studio's) takes its key from `PRF.k(name)`. Never read or write another child's save except through `PRF` and `BAK` (01-profiles.js, 81-backup.js). |
 | Escaping | Anything that is not a literal (child's name, words, data) goes through `esc()` before entering HTML. |
 | Randomness | In generators use `rnd()`, `R`, `pick`, `shuffle`, `coin` only (after P1-01). Games may use `Math.random`. |
 | Style of new code | Existing code is very dense. New files should be readable: one statement per line, lines under 140 characters, short comments on anything non-obvious. Do not reformat old code. |

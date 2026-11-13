@@ -5,7 +5,7 @@
 .bt-h{display:flex;align-items:center;gap:var(--s-2);max-width:640px;margin:var(--s-5) auto var(--s-3);font-family:var(--font-display);font-size:var(--fs-4);line-height:1.2}
 .bt-h .ic{flex:none;color:var(--bt)}
 .bt-type .gx-ln,.bt-keep .gx-ln,.bt-day .gx-ln{gap:var(--s-2);flex-wrap:wrap}
-.bt-day .pc-badge{background:var(--star-tint);color:var(--star-shade)}
+.bt-day .pc-badge{background:var(--star-tint);color:var(--star-ink)}
 .bt-hub .blank{margin-top:var(--s-7)}
 /* level strip */
 .bt-bands{display:flex;justify-content:center;margin:var(--s-2) 0 var(--s-3)}
@@ -26,7 +26,7 @@
 .bt-bar .ttl{flex:1;white-space:normal}
 .bt-tt{display:flex;flex-direction:column;min-width:0;line-height:1.1}
 .bt-nm{overflow-wrap:normal}
-.bt-tt small{font-size:var(--fs-1);font-weight:700;color:var(--ink-2)}
+.bt-tt small{font-size:var(--fs-2);font-weight:700;color:var(--ink-2)}
 @media (max-width:480px){
   .bt-bar.timed .gx-tb{display:none}
   .bt-bar.timed .ttl{font-size:var(--fs-3)}

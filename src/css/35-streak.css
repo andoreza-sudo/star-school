@@ -22,18 +22,18 @@
 .stc-m .rs{display:block}
 .stc-m .ic{display:block;color:var(--brand)}
 .stc-sub{font-size:var(--fs-3);margin:var(--s-1) 0;color:var(--ink-2)}
-.stc-sub.small{font-size:var(--fs-1);color:var(--ink-3)}
+.stc-sub.small{font-size:var(--fs-2);color:var(--ink-3)}
 .stc-nav{display:flex;align-items:center;justify-content:space-between;margin:var(--s-3) 0 var(--s-2);font-size:var(--fs-3)}
 .stc-nav .btn[disabled]{opacity:.35}
 .stc-nav b{font-family:var(--font-display);font-size:var(--fs-4)}
 .stc-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:var(--s-1)}
-.stc-h{font-size:var(--fs-1);font-weight:700;color:var(--ink-3);padding:var(--s-1) 0}
+.stc-h{font-size:var(--fs-2);font-weight:700;color:var(--ink-3);padding:var(--s-1) 0}
 .stc-d{min-height:var(--tap);border-radius:var(--r-chip);background:var(--surface-2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;line-height:1.1;padding:3px 0}
 .stc-d.stc-pad{background:none}
 .stc-d.on{background:var(--star-tint);box-shadow:inset 0 -3px 0 var(--star)}
 .stc-d.on .stc-n{color:var(--try-ink);font-weight:700}
 .stc-d.rest{background:var(--brand-tint)}
 .stc-d.now{outline:3px solid var(--brand);outline-offset:-3px}
-.stc-n{font-size:var(--fs-1);color:var(--ink-2)}
+.stc-n{font-size:var(--fs-2);color:var(--ink-2)}
 .stc-m{display:grid;place-items:center;min-height:22px}
 @media (max-width:420px){.stc-card{padding:var(--s-3)}.stc-grid{gap:2px}}

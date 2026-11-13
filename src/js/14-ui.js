@@ -186,12 +186,152 @@ const UI = {
     const close = () => {
       if (shut) return;
       shut = true;
+      bg._closing = true; // P6-01: no longer the open dialog: the page comes back for keys and screen readers now
+      UI.modal.shut(bg);
       bg.classList.remove('on');
       setTimeout(() => bg.remove(), 340);
       if (o.onClose) o.onClose();
     };
-    if (!o.stay) bg.onclick = e => { if (e.target === bg) close(); };
+    if (!o.stay) {
+      bg.onclick = e => { if (e.target === bg) close(); };
+      bg._esc = close; // P6-01: Escape closes it like a tap on the backdrop (UI.modal)
+    }
     requestAnimationFrame(() => requestAnimationFrame(() => bg.classList.add('on')));
     return { el: bg.firstChild, close };
   },
+};
+
+/* ---------- keyboard and screen readers (P6-01; DESIGN_SYSTEM 10) ----------
+   One place for every screen: the modal sheets and overlays (.sheet-bg from UI.sheet, .ovl cards such as the reward overlays, the
+   game end card and time-up) are dialogs: the page behind is aria-hidden while one is open, focus moves into the newest one when it
+   opens, Tab and Shift+Tab stay inside it, Escape
+   closes a sheet that a backdrop tap closes, and focus goes back to where it was when it closes. An element drawn as a button that is
+   not a <button> (role="button" tabindex="0") is pressed with Enter or Space like one. Every screen has one h1: view() names the
+   top bar's title the page heading, or adds one only screen readers see (UI.heading). */
+UI.modal = {
+  SEL: '.sheet-bg, .ovl',
+  FOCUS: 'button:not([disabled]), a[href], input:not([disabled]):not([type=hidden]), select, textarea, summary, [tabindex]:not([tabindex="-1"])',
+  // the open dialog on top (the last one in the page that is shown)
+  top() {
+    const all = [...document.querySelectorAll(UI.modal.SEL)].filter(e => e.isConnected && e.getClientRects().length && !e._closing);
+    return all.pop() || null;
+  },
+  items(m) {
+    return [...m.querySelectorAll(UI.modal.FOCUS)].filter(e => e.getClientRects().length && getComputedStyle(e).visibility != 'hidden');
+  },
+  // a dialog was added: mark it, remember the focus, focus its first control (its default action) once it is drawn
+  open(m) {
+    if (m._a11y) return;
+    m._a11y = true;
+    if (m.classList.contains('ovl')) {
+      m.setAttribute('role', 'dialog');
+      m.setAttribute('aria-modal', 'true');
+    }
+    const h = m.querySelector('h1, h2');
+    const box = m.matches('[role=dialog]') ? m : m.querySelector('[role=dialog]');
+    if (h && box && !box.hasAttribute('aria-labelledby') && !box.hasAttribute('aria-label')) {
+      if (!h.id) h.id = 'dlg-h' + (UI.modal.n = (UI.modal.n || 0) + 1);
+      box.setAttribute('aria-labelledby', h.id);
+    }
+    const prev = document.activeElement;
+    m._prev = prev && prev !== document.body ? prev : null;
+    // hide the page behind from screen readers: the siblings of the dialog and of each parent up to <body> (not the toast)
+    m._hid = [];
+    for (let e = m; e && e.parentElement && e !== document.body; e = e.parentElement) {
+      for (const sib of e.parentElement.children) {
+        if (sib === e || sib.id == 'toast' || /^(SCRIPT|STYLE)$/.test(sib.tagName) || sib.getAttribute('aria-hidden') == 'true') continue;
+        sib.setAttribute('aria-hidden', 'true');
+        m._hid.push(sib);
+      }
+    }
+    const go = (tries) => {
+      if (!m.isConnected || m.contains(document.activeElement)) return;
+      // its first button (not a text field: that would open the on-screen keyboard)
+      const f = UI.modal.items(m).find(e => !e.matches('input, textarea, select'));
+      if (f) f.focus({ preventScroll: true });
+      else if (tries > 0) setTimeout(() => go(tries - 1), 120); // controls that arrive a moment later (a reward card's buttons)
+      else { m.tabIndex = -1; m.focus({ preventScroll: true }); }
+    };
+    requestAnimationFrame(() => go(25));
+  },
+  // a dialog left the page: give focus back to where it was (or to the screen's first control)
+  shut(m) {
+    for (const e of m._hid || []) e.removeAttribute('aria-hidden');
+    m._hid = [];
+    if (UI.modal.top()) return;
+    const a = document.activeElement;
+    if (a && a !== document.body && a.isConnected && !m.contains(a)) return;
+    const p = m._prev;
+    if (p && p.isConnected && p.getClientRects().length) p.focus({ preventScroll: true });
+  },
+  key(e) {
+    const t = e.target;
+    // Enter or Space on something drawn as a button that is not a <button>
+    if ((e.key == 'Enter' || e.key == ' ') && t && t.matches && t.matches('[role=button]:not(button):not(a), [role=switch]:not(input), [role=tab]:not(button)')) {
+      e.preventDefault();
+      t.click();
+      return;
+    }
+    const m = UI.modal.top();
+    if (!m) return;
+    if (e.key == 'Escape' && m._esc) {
+      e.preventDefault();
+      m._esc();
+      return;
+    }
+    if (e.key != 'Tab') return;
+    const f = UI.modal.items(m);
+    if (!f.length) { e.preventDefault(); return; }
+    const i = f.indexOf(document.activeElement);
+    if (i < 0) { e.preventDefault(); f[e.shiftKey ? f.length - 1 : 0].focus(); return; }
+    if (!e.shiftKey && i == f.length - 1) { e.preventDefault(); f[0].focus(); }
+    else if (e.shiftKey && i == 0) { e.preventDefault(); f[f.length - 1].focus(); }
+  },
+  init() {
+    if (UI.modal.on || typeof MutationObserver == 'undefined' || !document.body) return;
+    UI.modal.on = true;
+    const isM = n => n.nodeType == 1 && n.matches(UI.modal.SEL);
+    new MutationObserver(ms => {
+      for (const r of ms) {
+        for (const n of r.addedNodes) if (isM(n)) UI.modal.open(n);
+        for (const n of r.removedNodes) if (isM(n)) UI.modal.shut(n);
+        // an overlay inside a screen that view() replaced
+        for (const n of r.removedNodes) if (n.nodeType == 1 && !isM(n) && n.querySelectorAll) n.querySelectorAll(UI.modal.SEL).forEach(UI.modal.shut);
+      }
+    }).observe(document.body, { childList: true, subtree: true });
+    document.addEventListener('keydown', UI.modal.key, true);
+    // keyboard focus: bring the whole control and its ring into view (the browser leaves a half-shown one where it is; the
+    // ring's room is the :focus-visible scroll-margin in 20-base.css)
+    document.addEventListener('focusin', e => {
+      const t = e.target;
+      try { if (t.matches(':focus-visible') && t.scrollIntoView) t.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch (x) {}
+    });
+  },
+};
+
+// The "hear it" buttons a question's prompt carries (data-say / data-sayes, made by the generators): one with no words (the old
+// speaker emoji, or an icon) shows the drawn speaker and is named "Hear it again". Done when the prompt is drawn, so the generators'
+// output (and the tests that pin it by seed) stays the same.
+UI.hear = (root = document) => {
+  for (const b of root.querySelectorAll('button[data-say], button[data-sayes]')) {
+    if (/[\p{L}\p{N}]/u.test(b.textContent) || b.getAttribute('aria-label')) continue;
+    if (!b.querySelector('svg')) b.innerHTML = ico('speak', '1em');
+    b.setAttribute('aria-label', 'Hear it again');
+  }
+};
+
+// The screen's one h1 (called by view()): the top bar's title (.ttl) is the heading; a screen without one, or whose title is not
+// shown at this size (a game's title over the canvas on a phone), gets an h1 only screen readers see, with the title's words.
+UI.heading = (root, name) => {
+  if (!root || !root.querySelectorAll || !root.insertAdjacentHTML) return;
+  const outside = h => !h.closest('[role=dialog], .ovl, .sheet-bg');
+  if ([...root.querySelectorAll('h1, [role=heading][aria-level="1"]')].some(outside)) return;
+  const t = [...root.querySelectorAll('.ttl, .title')].find(outside);
+  if (t && t.getClientRects && t.getClientRects().length) {
+    t.setAttribute('role', 'heading');
+    t.setAttribute('aria-level', '1');
+    return;
+  }
+  const words = t ? t.textContent.replace(/\s+/g, ' ').trim() : '';
+  root.insertAdjacentHTML('afterbegin', `<h1 class="a11y-h">${esc(words || name || 'Star School')}</h1>`);
 };

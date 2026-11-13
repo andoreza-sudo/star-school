@@ -2137,6 +2137,24 @@ Object.assign(SCREENS, {
 });
 GROUPS.p509 = ['gt-home-shut', 'gt-room-shut', 'gt-room-open', 'gt-room-empty', 'gt-grown', 'bt-win'];
 
+// P5-10 children: the "Who is playing?" picker with 2 and 4 children, the Grown-ups Children card, the delete sheet and loading a
+// backup with more than one child. The other children are made from the midway save (another name, pet, place and stars).
+const kidsSet = n => `(() => { const mk = (name, pet, scene, stars) => { const d = JSON.parse(JSON.stringify(S)); d.name = name; d.pet = pet;
+  d.stars = stars; d.coins = stars; d.wear = { hat: '', toy: '', scene }; return d; };
+  [['Ben', 'dino', 'candy', 12], ['Zoe', 'bird', 'space', 160], ['Sam', 'ocean', 'castle', 0]].slice(0, ${n} - 1).forEach(k => PRF.add(mk(...k), false)); })();`;
+Object.assign(SCREENS, {
+  'kids-picker': { run: async p => { await p.evaluate(kidsSet(2) + ' PRF.pick();'); } },
+  'kids-picker4': { run: async p => { await p.evaluate(kidsSet(4) + ' PRF.pick();'); } },
+  'kids-grown': { run: async p => { await p.evaluate(kidsSet(3) + ' grown(); document.querySelector("#gw-kids").scrollIntoView({ block: "start" });'); } },
+  'kids-delete': { run: async p => { await p.evaluate(kidsSet(2) + ' grown();'); await p.click('[data-pdel="p2"]'); await p.click('#pf-del1'); } },
+  'kids-load': { run: async p => {
+    await p.evaluate(kidsSet(2) + ' grown();');
+    await p.setInputFiles('#bk-file', { name: 'b.json', mimeType: 'application/json', buffer: Buffer.from(await p.evaluate(() => BAK.make())) });
+    await p.waitForSelector('#bk-yes');
+  } },
+});
+GROUPS.p510 = ['kids-picker', 'kids-picker4', 'kids-grown', 'kids-delete', 'kids-load'];
+
 async function artSheet(p, names, title) {
   await p.evaluate(([names, title]) => {
     const sizes = [24, 48, 96], list = names || Object.keys(ART);
@@ -2241,6 +2259,9 @@ async function main() {
       for (const n of names) {
         const s = SCREENS[n];
         const { ctx, page, errors, network } = await openApp(browser, { fixture: fixtureArg || s.fixture || 'midway', width: w, height: h, scale: +process.env.SHOTS_SCALE || 1 });
+        // P6-02: the games parts load on demand; game screens are drawn by calling the games directly, so load them first
+        // (as the Game Room does the first time it opens; the other screens look the same with them in)
+        await page.evaluate(() => typeof partsLoad == 'function' && partsLoad());
         await s.run(page);
         await page.waitForTimeout(700);
         const file = path.join(OUT, `${n}-${w}x${h}.png`);

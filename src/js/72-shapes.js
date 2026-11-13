@@ -159,7 +159,7 @@ function cbLayout(n){const land=innerWidth>innerHeight,avW=land?innerWidth-260:i
 function colorPic(id,mode){const d=cbData(id),cs=cbS(),fill=(cs.prog[id]||'0'.repeat(CBN*CBN)).split('');let sel=1,count=fill.filter(c=>c=='1').length;
   const ml=mode=='math3'?3:mode=='math2'?2:1,esHard=mode=='es2';if(mode.startsWith('math'))mode='math';if(esHard)mode='es';const facts=d.keys.map((k,i)=>mode=='math'?cbFact(i+1,ml):null);
   view(`${GH.top('art',{play:true,sub:d.name,chips:'<span class="stat gh-st" aria-label="Colored"><b id="cbp">0%</b></span>'})}
-   <div class="cbwrap"><div class="cbcv"><canvas id="cbc"></canvas></div><div class="cbpal">${d.keys.map((k,i)=>`<button class="btn chip" data-n="${i+1}" style="--cc:${CB_COL[k][0]}"><span class="sw"></span><b>${mode=='math'?facts[i]:i+1}</b>${mode=='es'?`<small>${k}</small>`:''}</button>`).join('')}</div></div>`);
+   <div class="cbwrap"><div class="cbcv"><canvas id="cbc" role="img" aria-label="Your picture"></canvas></div><div class="cbpal">${d.keys.map((k,i)=>`<button class="btn chip" data-n="${i+1}" style="--cc:${CB_COL[k][0]}"><span class="sw"></span><b>${mode=='math'?facts[i]:i+1}</b>${mode=='es'?`<small>${k}</small>`:''}</button>`).join('')}</div></div>`);
   const cv=$('#cbc'),x=cv.getContext('2d');let cs2=cbLayout(d.keys.length),dpr=Math.min(2,devicePixelRatio||1),flash=-1,flashT=0;
   const size=()=>{cs2=cbLayout(d.keys.length);cv.width=cv.height=cs2*CBN*dpr;cv.style.width=cv.style.height=cs2*CBN+'px';draw()};
   function draw(){const s=cs2*dpr;x.clearRect(0,0,cv.width,cv.height);x.textAlign='center';x.textBaseline='middle';x.font=`bold ${Math.floor(s*.5)}px Andika, sans-serif`;
@@ -192,7 +192,7 @@ function colorPic(id,mode){const d=cbData(id),cs=cbS(),fill=(cs.prog[id]||'0'.re
 const FP_COLS=['rojo','naranja','amarillo','verde','verde oscuro','celeste','azul','morado','rosa','café','gris','negro','blanco'];
 function freePaint(ai){const cs=cbS();const G=ai>=0?cs.art[ai].split(',').map(k=>k||'blanco'):cbGrid('blanco');let sel='rojo',saved=ai>=0,idx=ai;
   view(`${GH.top('art',{play:true,sub:'Free Paint',tools:GH.tool('download','Save to My Drawings','fsave')})}
-   <div class="cbwrap"><div class="cbcv"><canvas id="cbc"></canvas></div><div class="cbpal fp">${FP_COLS.map(k=>`<button class="btn chip" data-k="${k}" style="--cc:${CB_COL[k][0]}"><span class="sw"></span></button>`).join('')}
+   <div class="cbwrap"><div class="cbcv"><canvas id="cbc" role="img" aria-label="Your picture"></canvas></div><div class="cbpal fp">${FP_COLS.map(k=>`<button class="btn chip" data-k="${k}" style="--cc:${CB_COL[k][0]}"><span class="sw"></span></button>`).join('')}
     <button class="btn chip" data-k="fill" title="Fill">🪣</button><button class="btn chip" id="fclear">🗑️</button></div></div>`);
   const cv=$('#cbc'),x=cv.getContext('2d');let cs2=cbLayout(14),dpr=Math.min(2,devicePixelRatio||1),bucket=false;
   const size=()=>{cs2=cbLayout(14);cv.width=cv.height=cs2*CBN*dpr;cv.style.width=cv.style.height=cs2*CBN+'px';draw()};

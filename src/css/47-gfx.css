@@ -44,7 +44,8 @@
 .btn.node.boss.lock{background:var(--surface-2);box-shadow:inset 0 0 0 3px var(--line),0 3px 0 var(--line)}
 .node .nb-art{width:104px;height:104px;margin-top:-22px;pointer-events:none}
 .node .nb-e{font-size:46px;line-height:1}
-.nlab{position:absolute;transform:translateX(-50%);width:max-content;max-width:140px;font-size:var(--fs-1);font-weight:700;text-align:center;line-height:1.2;
+/* P6-01: 46-home.js lets a label grow to 180 px where the map has room on both sides, so 16 px names stay on one line */
+.nlab{position:absolute;transform:translateX(-50%);width:max-content;max-width:140px;font-size:var(--fs-2);font-weight:700;text-align:center;line-height:1.2;
   pointer-events:none;z-index:2;color:var(--ink);background:var(--surface);border-radius:var(--r-chip);padding:2px var(--s-2);box-shadow:0 2px 0 var(--drop)}
 .nstar{display:flex;justify-content:center;margin-top:2px}
 .nstar:empty{display:none}
@@ -82,7 +83,7 @@
 .stat.timer b,.stat.bolt b{font-variant-numeric:tabular-nums}
 .gx-gap{display:block}
 .gx-end{padding:var(--s-5) var(--s-5) var(--s-5)}
-.gx-disc{position:relative;width:96px;height:96px;background:var(--star-tint);color:var(--star-shade);--ic2:var(--star-tint);
+.gx-disc{position:relative;width:96px;height:96px;background:var(--star-tint);color:var(--star-ink);--ic2:var(--star-tint);
   box-shadow:inset 0 0 0 4px var(--star),0 5px 0 var(--star-shade)}
 .gx-disc.rec{animation:rw-pop var(--t-xl) var(--spring) both}
 .gx-end .rw-rays{position:absolute;left:50%;top:-30px;width:300px;height:300px;margin-left:-150px;opacity:.7;pointer-events:none}
