@@ -150,7 +150,7 @@ async function main() {
     await page.click('#go');
     await page.waitForSelector('.game[data-p]');
     step('setup done, home shown');
-    const ver = await page.evaluate(() => (document.querySelector('.scroll').textContent.match(/Star School (v\d+)/) || [])[1]);
+    const ver = await page.evaluate(() => (document.querySelector('.scroll').textContent.match(/Star School (\d+\.\d+\.\d+ \(build v\d+\))/) || [])[1]);
     if (!ver) fail('version label missing at the bottom of home'); else step('version label ' + ver);
 
     // 2. one full round on each path
@@ -6554,7 +6554,7 @@ async function main() {
         if (seen.length) bad.push(tag + ' sections not shown: ' + seen.join(', '));
         await sp.click('#applog summary');
         const log = await sp.evaluate(() => ({ open: document.querySelector('#applog').open, txt: document.querySelector('.gw-log').textContent }));
-        if (!log.open || !/Version v\d+/.test(log.txt) || !/saving OK/.test(log.txt)) bad.push(tag + ' App log: ' + JSON.stringify(log));
+        if (!log.open || !/Version 1\.0\.0 \(build v\d+\)/.test(log.txt) || !/saving OK/.test(log.txt)) bad.push(tag + ' App log: ' + JSON.stringify(log));
         await sp.click('[data-per="5"]');
         await sp.waitForSelector('[data-per="5"][aria-pressed="true"]');
         await sp.click('[data-max="0"]');
@@ -8584,6 +8584,75 @@ async function main() {
       else step('P5-10 children by real taps at 380x780 and 1024x600: Add a child through the first-run setup, a round as each child, the ' +
         'switch button (hold) and the "Who is playing?" picker, a new visit opens on the picker, Delete with Keep and the double confirm; ' +
         notes.join('; ') + '; 48 px targets, no sideways scroll, no emoji chrome');
+    }
+
+    // P6-05 release 1.0: a fresh install and an upgrade, with the ROADMAP 7.2 checks that a script can make. (a) Empty storage goes through
+    //    setup to Home (the footer says "Star School 1.0.0 (build vNNN)", the build being tools/build.py's VER); (b) the oldest fixture save
+    //    (legacy-single-map), the other legacy one and the midway save open Home with the same stars and name they were saved with, the
+    //    saved stars still in storage after the first save, and Grown-ups > About Star School shows 1.0.0, the build, the privacy lines and
+    //    the Andika licence (its full text opens). Real taps: the gear is held to open Grown-ups. 380x780 and 1024x600; no network.
+    {
+      const fs = require('fs'), path = require('path'), { ROOT, loadFixture } = require('./lib/browser');
+      const build = (fs.readFileSync(path.join(ROOT, 'tools', 'build.py'), 'utf8').match(/^VER = '(v\d+)'/m) || [])[1];
+      const bad = [], notes = [];
+      for (const [w, h] of [[380, 780], [1024, 600]]) {
+        const tag = w + 'x' + h;
+        const cases = [['fresh', null], ['legacy-single-map', loadFixture('legacy-single-map')], ['midway', loadFixture('midway')]];
+        if (w === 380) cases.push(['legacy-index-maps', loadFixture('legacy-index-maps')]);
+        for (const [fx, saved] of cases) {
+          const pa = await openApp(browser, { fixture: fx, width: w, height: h });
+          const pg = pa.page, t = tag + ' ' + fx;
+          try {
+            if (!saved) {
+              if (!(await pg.$('#nm'))) throw new Error('empty storage did not show the setup screen');
+              await pg.fill('#nm', 'Fresh');
+              await pg.click('#go');
+            }
+            await pg.waitForSelector('.game[data-p]', { timeout: 10000 });
+            const home = await pg.evaluate(() => ({ stars: S.stars, name: S.name, chip: (document.querySelector('#starc') || {}).textContent || '', ver: (document.querySelector('.hm-ver') || {}).textContent || '' }));
+            const want = 'Star School 1.0.0 (build ' + build + ')';
+            if (home.ver.trim() !== want) bad.push(t + ': the Home footer says "' + home.ver.trim() + '", wanted "' + want + '"');
+            if (saved) {
+              if (home.stars !== saved.stars) bad.push(t + ': Home has ' + home.stars + ' stars, the save had ' + saved.stars);
+              if (home.name !== saved.name) bad.push(t + ': Home has the name "' + home.name + '", the save had "' + saved.name + '"');
+              if (!home.chip.includes(String(saved.stars))) bad.push(t + ': the star chip says "' + home.chip + '", the save had ' + saved.stars);
+              const kept = await pg.evaluate(() => { const o = JSON.parse(localStorage.getItem(KEY) || 'null'); return o && o.stars; });
+              if (kept !== saved.stars) bad.push(t + ': after the upgrade the stored save has ' + kept + ' stars, wanted ' + saved.stars);
+            } else if (home.stars !== 0 || home.name !== 'Fresh') bad.push(t + ': a fresh install has ' + home.stars + ' stars and the name "' + home.name + '"');
+            // Grown-ups by the held gear, then the About card
+            const b = await (await pg.$('#gear')).boundingBox();
+            await pg.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+            await pg.mouse.down();
+            await vwait(pg, 1600);
+            await pg.mouse.up();
+            await pg.waitForSelector('#gw-about', { timeout: 3000 });
+            await pg.evaluate(() => document.querySelector('#gw-about').scrollIntoView({ block: 'start' }));
+            await pg.waitForTimeout(300);
+            const ab = await pg.evaluate(() => {
+              const c = document.querySelector('#gw-about'), r = c.getBoundingClientRect(), vw = document.documentElement.clientWidth;
+              const small = [...c.querySelectorAll('summary, button, a')].filter(e => Math.min(e.offsetWidth, e.offsetHeight) < 48).length;
+              return { text: c.textContent, rel: (c.querySelector('#ab-rel') || {}).textContent, bld: (c.querySelector('#ab-build') || {}).textContent, small, inside: r.left >= -1 && r.right <= vw + 1 };
+            });
+            if (ab.rel !== '1.0.0') bad.push(t + ': About shows the version "' + ab.rel + '"');
+            if (ab.bld !== build) bad.push(t + ': About shows the build "' + ab.bld + '", wanted ' + build);
+            for (const need of ['Andika', 'SIL Open Font License', 'Copyright (c) 2004-2022 SIL International', 'Nothing is sent anywhere', 'only on this device'])
+              if (!ab.text.includes(need)) bad.push(t + ': About does not say "' + need + '"');
+            if (ab.small) bad.push(t + ': About has ' + ab.small + ' targets under 48 px');
+            if (!ab.inside) bad.push(t + ': the About card is wider than the screen');
+            await pg.click('#ab-ofl > summary');
+            await pg.waitForTimeout(300);
+            const ofl = await pg.evaluate(() => (document.querySelector('#ab-ofl .ab-ofl') || {}).textContent || '');
+            if (!/SIL OPEN FONT LICENSE Version 1\.1/.test(ofl) || !/DISCLAIMER/.test(ofl)) bad.push(t + ': the Andika licence text does not open');
+            notes.push(fx + (saved ? ' ' + saved.stars + ' stars' : ' (setup)'));
+          } catch (e) { bad.push(t + ' ' + e.message.split('\n')[0]); }
+          network.push(...pa.network);
+          for (const e of pa.errors) fail(e);
+          await pa.ctx.close();
+        }
+      }
+      if (bad.length) fail('P6-05 release:\n  ' + bad.slice(0, 40).join('\n  '));
+      else step('P6-05 release 1.0 at 380x780 and 1024x600: a fresh install (setup to Home) and an upgrade from the legacy and midway saves (' + notes.join(', ') +
+        ') opened Home with the same stars and name, the footer and Grown-ups > About Star School say 1.0.0 and build ' + build + ', the Andika licence is listed and opens');
     }
 
     // P6-02 the Game Room loads on demand, offline, after a cold start. The built files are served over http://127.0.0.1 by a tiny

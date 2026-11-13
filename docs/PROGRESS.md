@@ -4,7 +4,7 @@ The running record of what has shipped. Newest entry first. Every chunk adds one
 
 **Next up:** P6-05 (wip/batch-N, map timing), the P5-07 flaky step; see Handoff notes
 
-**Current version:** v147
+**Current version:** v148 (release 1.0.0)
 
 ## Chunk status
 
@@ -129,6 +129,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - P6-02 v145
 - P6-01 v146
 - G-04b v147
+- P6-05 v148
 - R-01 reading done
 - R-01 spanish done
 - R-01 discover done
@@ -143,6 +144,13 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 2. **Flaky P5-07 smoke step**: after Undo (and once after Start over) the reloaded page still shows the earlier save, only in full runs. `reloadSaved()` (hold saves, reload after 250 ms) did not cure the Undo case. The failure message records the page state; next idea: check whether the smoke fixture init script or an earlier page in the same context writes the save.
 3. **P6-03 / P6-04 Content audits**: mostly covered by the R-01 reviews; the M/L items each review lists as not done remain.
 4. Optional: **G-04c Fishing Day** (docs/GAMES_RESEARCH.md), and the M/L ideas in `docs/reviews/`.
+1. **G-04b Sky Hop**: merged as v147 (2026-11-13). Was built as one commit on `wip/G-04b-wip` (a16c5ac, from v143); its own full check was stopped part way. Merge on top of v146 (VER renumber; games now load on demand, so any smoke or shots step that calls a Sky Hop function directly must open the Game Room or `await partsLoad()` first), then run `tools/check.sh`.
+2. **Known flaky step**: the P5-07 smoke block's Start over step sometimes shows the old child's Home after the reload in a full run, but never when run alone (tried many times). Its failure message now records the localStorage keys, the fixture seed flag, SAVE_HOLD and the navigation type; read them the next time it fails.
+3. **P6-03 / P6-04 Content audits** (Opus). Mostly covered by the R-01 reviews and their fixes; what remains is a lighter pass over the M/L items each review lists as not done.
+4. **P6-05 Release 1.0**: built as v148 (provisional VER, renumber at merge). **Ready to tag as v1.0.0** after it is merged and Andy has run ROADMAP 7.2 on a real tablet (the fresh-install and upgrade steps the script can make are in smoke.js `// P6-05`). The owner makes the tag; none was created.
+5. Done in P6-05: the child picker (`who-picker`) and the Grown-ups Children card (`grown-children`) are scanned by `tools/a11y.js` (33 screens now), zero failures.
+6. Optional: **G-04c Fishing Day** (docs/GAMES_RESEARCH.md).
+7. The review files in `docs/reviews/` list M/L improvements not done yet (fluency practice and decodable stories in reading; speaking practice in Spanish; diagrams and maps in Discover; spaced check-ins in practice; and others).
 
 ## Ideas and issues
 - (P5-10) All built files together are 2,988,673 bytes, 11 KB under the 3 MB total fail budget (tools/test.js); the next chunk that adds code or data will need a lever first (comments in the bigger files, or moving `ART` to src/data as the A11 notes say, which only shifts bytes between files; the total budget itself may want a review).
@@ -478,6 +486,18 @@ Things noticed while working that are outside the current chunk. One line each, 
 
 ## Log
 
+### P6-05 Release 1.0.0 (v148, 2026-11-13, Claude)
+- What a parent sees: Home's footer and Grown-ups > App log say "Star School 1.0.0 (build v148)". Grown-ups has a new card, **About Star School** (after Backup, before Start over): what the app is (offline math, reading and Spanish practice with earned game time, no accounts, ads or tracking), that it works without internet and keeps progress only on this device ("Nothing is sent anywhere"), Version 1.0.0 and Build, and Licences: Andika, Copyright (c) 2004-2022 SIL International (the line stored in the font files), SIL Open Font License 1.1, with a "Read the Andika licence" button that opens the full text; a line says everything else (pictures, icons, sounds, games, questions) was made for Star School and no other fonts, libraries or outside files are used. Drawn card style, tokens only, 48 px targets, text at the Grown-ups 14 px minimum.
+- Licence audit: the only third-party asset bundled is Andika (latin 400 and 700, tools/fonts, embedded as base64 by build.py). The app icons are drawn by build.py (Pillow, build time only), the art is the app's own SVG, speech uses the tablet's voices; playwright-core is dev tooling and is not shipped. New file `LICENSES/OFL-Andika.txt` (copyright line plus the OFL 1.1 text); the same licence text is `OFL_TEXT` in the new `src/data/d-licences.js` (4.4 KB in data), and the test checks the two are identical.
+- Version: `RELEASE='1.0.0'` is defined once, in `src/js/00-core.js`; `VER` in build.py stays the build stamp. The smoke label check and test.js's "index.html is not VER" check now read "(build vNNN)".
+- README: new "For parents" (what it is, install by Add to Home screen, how updates arrive, privacy, licences), "Release notes: 1.0.0" (subjects, practice, Brain Teasers, pet, the six games, Grown-ups features) and a refreshed Status (it still said v30).
+- a11y: `tools/a11y.js` has two new screens, `who-picker` ("Who is playing?" with two children) and `grown-children` (the Grown-ups Children card, scrolled into view), both at 380x780 and 1024x600: zero failures with no fixes needed. The About card's licence text box (a scrolling `pre`) first failed the keys rule (focusable without a role) and got `role="region"` and a label; `grown` and the new screens pass at both sizes.
+- Tests: test.js new named check **"release 1.0 P6-05"** (RELEASE is '1.0.0' and defined once; Home and the app log show release and build; About lists Andika, the OFL 1.1, the copyright line and the privacy lines, with tokens only and no emoji; LICENSES/OFL-Andika.txt exists and equals the app's text; no font but Andika is bundled; the README has the parents' section and the release notes). smoke.js new `// P6-05` block, real taps at 380x780 and 1024x600: (a) a fresh install (empty storage, setup, Home) and (b) upgrades from the oldest fixture (legacy-single-map, 40 stars), midway (85) and, at 380x780, legacy-index-maps (60): Home opens with the same stars and name, the star chip and the stored save keep the stars, the footer reads "Star School 1.0.0 (build VER)", and the gear hold opens Grown-ups where the About card shows 1.0.0, the build, the licence lines and the full licence text, with 48 px targets and nothing wider than the screen; no console errors or network requests.
+- Not done here (needs a person): the ROADMAP 7.2 checklist on a real tablet (airplane mode, rotation, voice, Hill Climb) and the upgrade from a real v30 install; the tag. No tag was created: when this is merged and the tablet checks are done, tag the merge commit `v1.0.0`.
+- Sizes: index.html 911,401 -> 914,042; data 678,582 -> 682,973; loaded at start 2,640,498 bytes (fail 3.0 MB); precached, all files, 3,208,214 (fail 3.3 MB).
+- Check: `bash tools/check.sh` printed "check OK" on its third full run: build, contrast (504 pairs), test.js (all 132 checks, including the new one), smoke.js (the new `// P6-05` block passes at both sizes), a11y.js (33 screens, zero failures), perf.js, sizes. The first two runs each failed on one step outside this chunk or fixed since: run 1 on the P4-12 smoke step (it still expected "Version vNNN" in the App log; the regex now reads "Version 1.0.0 (build vNNN)") and the known Snack Stand 1024x600 flake (Undo); run 2 on P5-10 children at 380x780 (a waitForSelector timeout that passed in run 1 and run 3; the P5-07 Start over step did not fail).
+- Checklist 7.1: [x] chunk files [x] VER v148 (provisional) [x] build [x] contrast [x] test.js [x] smoke.js [x] a11y.js [x] midway fixture [x] sizes [x] no network [x] no new emoji or raw colour [x] PROGRESS entry [x] one commit (not pushed, not tagged).
+- Merge: built on branch P6-05-release from 23afc74 (v147); VER v148 is provisional, renumber to one more than main at merge, rebuild and `git add -A`. Conflicts to expect: `tools/build.py` (VER), `tools/smoke.js` (the version-label regex and one block before the P6-02 offline block), `tools/test.js` (the "(build VER)" line and one check before `// ---- report ----`), `tools/a11y.js` (two screens after `grown`), `src/js/80-grown.js`, `src/js/46-home.js`, `src/css/48-setup-grown-care.css` (appended), `README.md`, `docs/CONTRIBUTING.md`, this file, built files (rebuild, `git add -A`).
 ### Fix: reload only after storage has settled (v147, 2026-11-13, Claude)
 - What changed: every reload after the save was changed on purpose (Start over, load or undo a backup, switch, add or delete a child) goes through `reloadSaved()` (00-core.js): saves are held and the reload waits 250 ms. In full smoke runs a reload straight after the write sometimes read back the old save (Start over showed the old child, Undo showed the loaded backup); run alone it never did.
 - Tests: the save-hold check now looks for `reloadSaved()`; the P5-10 test reloads at once (`RELOAD_WAIT=0`, its fake browser has no timers) and clears the hold on its simulated reload.

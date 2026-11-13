@@ -121,6 +121,12 @@ const SCREENS = {
     },
   },
   grown: { adult: true, run: ev(() => grown()) },
+  // P5-10 profile screens (P6-05): the "Who is playing?" picker (two children) and the Grown-ups Children card
+  'who-picker': { run: ev(() => { if (!PRF.many()) PRF.add(Object.assign(PRF.fresh(), { name: 'Ben', pet: 'dino' })); PRF.pick(); }) },
+  'grown-children': {
+    adult: true,
+    run: ev(() => { if (!PRF.many()) PRF.add(Object.assign(PRF.fresh(), { name: 'Ben', pet: 'dino' })); grown(); document.querySelector('#gw-kids').scrollIntoView(); }),
+  },
   // more: the sticker book, the Brain Teasers hub, the report card, and every game screen
   stickers: { run: ev(() => book()) },
   'bt-hub': { run: ev(() => { S.grade = 2; BT.hub(); }) },
