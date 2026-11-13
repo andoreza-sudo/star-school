@@ -1017,10 +1017,10 @@ function snPlate() {
 }
 function snAddFood(id) {
   if (!SN || SN.st.pay) return;
-  // one touch adds one food: the same food again within 250 ms is the same touch reported twice (a drag's drop and its click,
-  // or a touch and a mouse event), never a second tap by a child
+  // one touch adds one food: the same food again within 80 ms is the same touch reported twice (a drag's drop and its click,
+  // or a touch and a mouse event), never a second tap by a child (an order can need the same food twice, tapped quickly)
   const now = performance.now();
-  if (SN.last && SN.last.id === id && now - SN.last.t < 250) return;
+  if (SN.last && SN.last.id === id && now - SN.last.t < 80) return;
   SN.last = { id, t: now };
   const ok = snAdd(SN.st, id);
   if (!ok) {
