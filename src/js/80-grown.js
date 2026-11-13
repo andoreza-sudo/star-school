@@ -103,11 +103,11 @@ function grown(){let armed=false;
   $$('[data-del]').forEach(b=>b.onclick=async()=>{await DB.del(b.dataset.del);await loadClips();grown()});
   $$('[data-rec]').forEach(b=>b.onclick=()=>{const[k,l]=b.dataset.rec.split('|');record(k,l=='x'?null:+l,b)});
   $('#reset').onclick=async e=>{if(!armed){armed=true;e.currentTarget.querySelector('span').textContent=PRF.many()?'Tap again to erase '+(S.name||'this child'):'Tap again to erase ALL progress';return}
-    if(PRF.many()){const bad=await PRF.wipe();if(bad)return fb(bad,'warn');SAVE_HOLD=true;PRF.setWho(PRF.cur);location.reload();return} // P5-10: only this child
+    if(PRF.many()){const bad=await PRF.wipe();if(bad)return fb(bad,'warn');PRF.setWho(PRF.cur);reloadSaved();return} // P5-10: only this child
     SAVE_HOLD=true;try{localStorage.removeItem(SKEY);localStorage.removeItem(BAK.UNDO)}catch(x){}
     // the voice clips (IndexedDB) go too; the reload never waits on IndexedDB for long (an open that never finished on a busy
     // tablet left the old progress on screen): it comes when the delete is done, blocked or failed, or after 1.5 s at most
-    let gone=false;const go=()=>{if(!gone){gone=true;location.reload()}};
+    let gone=false;const go=()=>{if(!gone){gone=true;reloadSaved()}};
     try{if(DB.db){DB.db.close();DB.db=null}const r=indexedDB.deleteDatabase('starschool');r.onsuccess=r.onerror=r.onblocked=go}catch(x){go()}
     setTimeout(go,1500)}}
 async function record(kind,line,btn){if(inFrame)return micHelp('frame');if(!navigator.mediaDevices||!window.MediaRecorder)return micHelp('frame');
