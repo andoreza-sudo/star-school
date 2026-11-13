@@ -1020,6 +1020,11 @@ function snPlate() {
 }
 function snAddFood(id) {
   if (!SN || SN.st.pay) return;
+  // one touch adds one food: the same food again within 250 ms is the same touch reported twice (a drag's drop and its click,
+  // or a touch and a mouse event), never a second tap by a child
+  const now = performance.now();
+  if (SN.last && SN.last.id === id && now - SN.last.t < 250) return;
+  SN.last = { id, t: now };
   const ok = snAdd(SN.st, id);
   if (!ok) {
     if (id == 'pancake') snMsg('Both pans are busy. Take a pancake off first!', 2000);
