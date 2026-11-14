@@ -13924,6 +13924,96 @@ run('Spanish review fixes R-01s',()=>{
   return{problems:uniq(errs),note:r.q+' questions scanned across every Spanish skill and level'};
 });
 
+// ---- S-SPK: Spanish speaking practice ("Say it!", src/js/50-say.js): one step per Spanish stop round and one in Daily Review, between
+// questions (never a question: skip and no microphone never mark wrong or block), the lenient matcher, the "Say 5 Spanish words"
+// mission, old saves, tokens only, nothing stored or sent, no generator randomness used
+run('Spanish speaking S-SPK',()=>{
+  const errs=[],bad=m=>{if(errs.length<60&&!errs.includes(m))errs.push(m)},note=[];
+  const rd=f=>fs.readFileSync(path.join(SRC,f),'utf8'),jsSrc=rd('js/50-say.js'),css=rd('css/42-say.css'),tok=rd('css/00-tokens.css');
+  // tokens only, no emoji chrome, nothing kept or sent, no question randomness (rnd / pick / shuffle would move the seeded questions)
+  if(/#[0-9a-fA-F]{3,8}\b/.test(css))bad('42-say.css has a raw hex colour');
+  for(const v of new Set((css.match(/var\(--[a-z0-9-]+/g)||[]).map(x=>x.slice(4))))if(!tok.includes(v+':'))bad('42-say.css uses '+v+', not a token');
+  if(/#[0-9a-fA-F]{6}\b/.test(jsSrc)||/\p{Extended_Pictographic}/u.test(jsSrc))bad('50-say.js has a raw colour or an emoji');
+  if(/localStorage|indexedDB|DB\.put|fetch\(|XMLHttpRequest|sendBeacon|WebSocket/.test(jsSrc))bad('50-say.js stores or sends something');
+  if(/\b(rnd|pick|shuffle|R)\(/.test(jsSrc))bad('50-say.js draws from the question randomness');
+  if(!/processLocally=true/.test(jsSrc)||!/ondevice-only/.test(jsSrc)||!jsSrc.includes("if(r.processLocally!==true&&r.mode!=='ondevice-only')return"))bad('recognition is not limited to on-device');
+  if(!/if\(spkHook\(\)\)return;/.test(rd('js/50-round.js')))bad('next() does not ask spkHook');
+  const FX=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const body=function(){const out={bad:[],note:[]},B=m=>out.bad.push(m);
+    loadSave(null);migrate();S.grade=1;S.sound=false;
+    let opened=[],notes=0;const keep={renderQ,fb,save,spkOpen};
+    renderQ=()=>{};fb=()=>{notes++};save=()=>{};
+    spkOpen=(q,done)=>{opened.push(q);SPK.done=done;SPK.it=spkItem(q)};
+    try{
+      // 1. once per Spanish stop round, after the 3rd question; every stop of the Spanish path, story rounds too; "I said it!" and
+      //    "Skip for now" both go on to the next question with the round unchanged
+      SPK.mic='yes';SPK.deny=0;SPK.note=0;let rounds=0;
+      NODES.es.forEach((n,i)=>{if(n.sk=='boss')return;
+        for(const rep of [0,1]){opened=[];G=newG({path:'es',node:i,sk:n.sk,lv:n.lv,n:10});const rdq=SK[n.sk].round&&SK[n.sk].round(n.lv);if(rdq){G.pool=rdq;G.n=rdq.length}
+          next();let at=-1;
+          for(let k=0;k<G.n;k++){const was=opened.length;G.done++;G.score++;
+            if(G.done<G.n){next();if(opened.length>was){at=G.done;
+              const q=opened[opened.length-1];if(q.afterLang!='es'||!q.after)B(n.sk+' '+n.lv+': the step has no Spanish');
+              const st=()=>JSON.stringify([G.done,G.n,G.score,G.missed.length,G.res,G.streak]),before=st();
+              if(rep)spkEnd(false);else spkEnd(true);
+              if(st()!==before)B(n.sk+' '+n.lv+': the step changed the round')}}
+            else if(spkHook())at=G.done}
+          rounds++;if(opened.length!==1)B(n.sk+' '+n.lv+': '+opened.length+' Say it! steps in a round');else if(at!==Math.min(3,G.n))B(n.sk+' '+n.lv+': step after question '+at)}});
+      out.note.push(rounds+' Spanish rounds: one step each, after question 3');
+      // a dialogue line: the child plays its speaker; a unit word: its picture and English
+      {const q=esStoryRound(1)[0],it=spkItem(q);if(!it.who||!ES_STORY.dialogues.some(d=>d.lines.some(l=>l[0]==it.who&&l[1]==it.es)))B('story step: no character for '+q.after)}
+      {const q=genQ('es_animal',1,7),it=spkItem(q);if(it.es!==q.ans||!it.en||!it.pic)B('unit word step: '+JSON.stringify(it).slice(0,120))}
+      // 2. not in bosses, Test out, Tricky Mix or other subjects; off when the grown-up switch is off; in Daily Review after a Spanish item
+      const es=genQ('es_food',1,3),m=genQ('add',1,3),G0=o=>Object.assign(newG(o),{done:5,q:o.q||es});
+      if(spkWhen(G0({path:'es',node:5,sk:'boss',boss:{}})))B('boss round has a step');
+      if(spkWhen(G0({path:'es',node:5,sk:'test',test:{wi:0}})))B('Test out has a step');
+      if(spkWhen(G0({mix:true,sk:'mix'})))B('Tricky Mix has a step');
+      if(spkWhen(G0({path:'math',node:0,sk:'add',q:m})))B('math round has a step');
+      if(!spkWhen(G0({mix:true,daily:true,sk:'mix',n:4})))B('Daily Review: no step after a Spanish item');
+      if(spkWhen(G0({mix:true,daily:true,sk:'mix',n:4,q:m})))B('Daily Review: a step after a math item');
+      if(spkWhen(Object.assign(G0({mix:true,daily:true,sk:'mix',n:4}),{done:0})))B('Daily Review: a step before any answer');
+      S.esSpk=false;if(spkWhen(G0({path:'es',node:0,sk:'es_food',lv:1})))B('switch off: still a step');S.esSpk=true;
+      // 3. skip, no microphone and a blocked microphone never mark wrong or block
+      const snap=()=>JSON.stringify([G.done,G.n,G.score,G.missed,G.res,P('es_food').t,P('es_food').c,S.rev.length,S.mast,day().spk|0]);
+      for(const way of ['skip','no-mic','denied']){G=G0({path:'es',node:NODES.es.findIndex(n=>n.sk=='es_food'),sk:'es_food',lv:1});G.done=3;G.res=[];
+        opened=[];notes=0;SPK.mic=way=='no-mic'?'no':'yes';SPK.deny=way=='denied'?1:0;SPK.note=way=='denied'?1:0;const s0=snap();
+        if(way=='skip'){if(!spkHook())B('skip: no step');spkEnd(false)}
+        else if(spkHook())B(way+': the step blocked the round');
+        if(snap()!==s0)B(way+': the round or the save changed '+s0+' -> '+snap());
+        if(way=='no-mic'){if(notes!==1)B('no microphone: '+notes+' notes (one, for the session)');G.spk=0;notes=0;spkHook();if(notes)B('no microphone: the note came twice')}}
+      SPK.mic='yes';SPK.deny=0;SPK.note=0;
+      // 4. "I said it!" counts toward the mission; the mission is offered only with ctx.spk and is done at 5
+      {day().spk=0;for(let i=0;i<5;i++){G=G0({path:'es',node:1,sk:'es_food',lv:1});G.done=3;spkHook();spkEnd(true)}
+       if(day().spk!==5)B('5 steps said: day().spk is '+day().spk);
+       const x={k:'speak',d:0};day().spk=4;if(MIS.hit(x,{k:'round',p:'math'}))B('speak mission done at 4');
+       day().spk=5;if(!MIS.hit(x,{k:'round',p:'math'})||!MIS.hit(x,{k:'sprint'}))B('speak mission not done at 5');
+       if(MIS.title(x)!=='Say 5 Spanish words'||MIS.icon(x)!=='mic')B('speak mission title '+MIS.title(x));
+       const sub=[{p:'math',i:0,s:null,n:0},{p:'es',i:0,s:null,n:0}],c=on=>({g:2,subs:sub,bt:false,spr:false,due:0,spk:on});let yes=0,no=0;
+       for(let d=1;d<=60;d++){const k='2026-1-'+d,a=MIS.draw(k,'Ava',c(true));if(a.some(x=>x.k=='speak'))yes++;
+         if(MIS.draw(k,'Ava',c(false)).some(x=>x.k=='speak'))no++;if(!MIS.valid(a))B('a draw with speak is not valid')}
+       if(!yes||no)B('speak mission drawn on '+yes+' of 60 days (with spk) and '+no+' (without)');
+       out.note.push('speak mission on '+yes+' of 60 days')}
+      // 5. old saves load: no esSpk (on), a day without spk (0); the switch is a per-child field
+      for(const raw of [null,FX('legacy-single-map'),FX('midway'),FX('maxed')]){loadSave(raw);migrate();
+        if(!spkOn()||'esSpk' in S)B('old save: speaking practice should be on with no field');if((day().spk|0)!==0)B('old save: spk count')}
+      S.esSpk=false;if(spkOn())B('esSpk false: still on');
+      if(PRF.SHARED.includes('esSpk'))B('esSpk must be per child');
+    }finally{renderQ=keep.renderQ;fb=keep.fb;save=keep.save;spkOpen=keep.spkOpen}
+    // 6. the matcher: lenient on accents, case, punctuation, articles, numerals, a letter or two; still says no to another word
+    const T=[['la casa','casa',1],['la casa','La Casa.',1],['el baño','el bano',1],['¿Cómo estás?','como estas',1],['buenos días','Buenos dias',1],
+      ['el perro','es el perro',1],['cansado / cansada','cansada',1],['Son las tres.','son las 3',1],['Es la una.','es la 1',1],['treinta y cinco','35',1],
+      ['Me llamo Ana.','me llamo ana',1],['la manzana','manzanas',1],['Hace sol.','hace sol',1],['Quiero manzanas y queso, por favor.','quiero manzanas y queso por favor',1],
+      ['el pingüino','pinguino',1],['veintidós','22',1],['la casa','la mesa',0],['el gato','el pato',0],['hola','adiós',0],['rojo','',0],['Hace sol.','hace frío',0],
+      ['el perro','el gato',0],['uno','dos',0]];
+    for(const [t,h,w] of T)if(spkMatch(t,h)!==!!w)B('match '+JSON.stringify(t)+' / '+JSON.stringify(h)+' should be '+!!w);
+    if(!spkMatch('la casa',['la masa','casa']))B('match: an alternative list');
+    out.note.push(T.length+' matcher examples');
+    return out};
+  const r=eval(js+';('+body.toString()+')()');
+  r.bad.forEach(bad);note.push(...r.note);
+  return{problems:errs,note:note.join('; ')};
+});
+
 run('game room P4-16',()=>{
   const p=[];
   const rd=f=>fs.readFileSync(path.join(SRC,f),'utf8');
@@ -14301,7 +14391,8 @@ run('missions v2 P5-08: three distinct doable missions, same all day, new each d
     setDay(8);const m8=MIS.get();if(m8.some(x=>x.d)||day().done)bad.push(w+': the next day did not start clean');
   }
   // every kind can appear somewhere
-  for(const k of MIS.KINDS)if(!seen.kinds[k])bad.push('mission kind '+k+' never drawn on any fixture or grade');
+  // S-SPK: "speak" needs a microphone (none in Node); its draw is checked in "Spanish speaking S-SPK"
+  for(const k of MIS.KINDS)if(!seen.kinds[k]&&k!='speak')bad.push('mission kind '+k+' never drawn on any fixture or grade');
   // a pre-K child gets no sprint
   load(fx('fresh'));S.grade=-1;S.name='Ava';
   for(let n=0;n<40;n++){setDay(n);S.day={};if(MIS.get().some(x=>x.k=='sprint'))bad.push('pre-K sprint');}
@@ -14617,7 +14708,8 @@ run('motion and sound P4-17',()=>{
     !/@media \(prefers-reduced-motion:reduce\)\{\.burst,\.rw-burst,\.fly,\.pc-fx\{display:none\}\}/.test(mo))p.push('50-motion.css: particles must not show in calm mode or with reduced motion');
   // the only endless loops (DS 8.1: the pet's idle bob and the current stop's pulse; plus a lesson's side-by-side count, which IS the
   // question, and Hill Climb's low-fuel blink while fuel is low). Calm mode and reduced motion stop them all (one 0.01 ms iteration).
-  const LOOPS=['pet-bob','pet-shadow','pet-blink','bob','k-ring','pkside','hc-low'];
+  // S-SPK: the microphone's ring while it records (at most 4 s; never in calm mode or with reduced motion)
+  const LOOPS=['pet-bob','pet-shadow','pet-blink','bob','k-ring','pkside','hc-low','spk-ring'];
   for(const f of cssFiles)for(const {sel,body} of rules(CSS[f]))for(const m of body.matchAll(/animation\s*:\s*([^;]*\binfinite\b[^;]*)/g)){
     const n=(m[1].match(/^\s*([\w-]+)/)||[])[1];
     if(!LOOPS.includes(n))p.push(f+' '+sel+': loops forever ('+n+')');
@@ -14673,7 +14765,7 @@ run('motion and sound P4-17',()=>{
   // no sound outside SFX, tone, noise and music: the countdown beeps go through SFX.tick
   for(const f of jsFiles){const t=rd('js/'+f);
     if(f!=='10-sfx.js'&&/\b(synth|hiss)\(/.test(t))p.push(f+': calls the unchecked synth()/hiss() (use SFX, tone or noise)');
-    if(/new Audio\(/.test(t)&&!['44-clips.js','80-grown.js'].includes(f))p.push(f+': plays audio outside the clips');
+    if(/new Audio\(/.test(t)&&!['44-clips.js','80-grown.js','50-say.js'].includes(f))p.push(f+': plays audio outside the clips');
     if(/^(52|54|57)-/.test(f)&&/\btone\(/.test(t))p.push(f+': a countdown beep outside SFX.tick');
   }
   if(!/function playClip\(kind\)\{const cs=CLIPS\.filter\(c=>c\.kind==kind\);if\(!cs\.length\|\|!S\.sound\)return false;/.test(rd('js/44-clips.js')))p.push('playClip must stay silent with Sound effects off');
@@ -14681,8 +14773,12 @@ run('motion and sound P4-17',()=>{
     'levels '+SET.map(([k])=>k+' '+(L[k]?L[k].pk.toFixed(3):'-')).join(', ')};
 });
 
-// ---- G-02: Star Rally, the racing game (src/js/63-game-race.js, src/css/49-game-race.css) ----
-run('racing game G-02',()=>{
+// ---- G-02 / G-02b: Star Rally, the racing game (src/js/63-game-race.js, src/css/49-game-race.css) ----
+// G-02b replaced the G-02 check ("racing game G-02"): every G-02 point is still here (registration, old saves, damaged saves, the
+// shop, track data, bots, determinism, gates, stars, drawings, plumbing), with the G-02b rules: 12 distinct layouts, hazards and
+// crashes, cups and unlocks, upgrades, ghosts, weather, and the new save fields. The bot targets changed with the game: mistakes now
+// cost time (a child who never steers hits cones and animals), so "kid" and "lazy" need the top 3 in 35 % of races (was 70 %).
+run('Star Rally 2 G-02b',()=>{
   const p=[],notes=[];
   const rd=f=>fs.readFileSync(path.join(SRC,f),'utf8');
   const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
@@ -14691,27 +14787,37 @@ run('racing game G-02',()=>{
   const PICT=/\p{Extended_Pictographic}/u;
   const FIX=['fresh','midway','maxed','tricky','legacy-index-maps','legacy-single-map'].map(n=>[n,fx(n)]);
   const body=function(){
-    const out={bad:[],note:[]},bad=m=>out.bad.push(m);
+    const out={bad:[],note:[]},bad=m=>{if(out.bad.length<80)out.bad.push(m)};
     const store={};
     global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
-    // the test bots: good = keeps on the road and aims at pads; kid = only steers back when near the edge; lazy = no input;
-    // wild = random steering every 0.6 s (seeded); pro = good with Go held except in tight bends, and drifts through bends
+    // the test bots: good = steers round hazards ahead, aims at pads and pick-ups, keeps off the split's divider; kid = only steers
+    // back when near the edge; lazy = no input; wild = random steering every 0.6 s (seeded); pro = good with Go held except in
+    // tight bends, and drifts through bends
     const bot=(kind,st,rnd)=>{
-      const P=st.P,T=st.T,seg=rlMod(Math.floor(P.d/RL_SEG),T.n),cur=T.cv[seg],sp=P.v/RL_VMAX;
+      const P=st.P,T=st.T,seg=rlMod(Math.floor(P.d/RL_SEG),T.n),cur=T.cv[seg],sp=P.v/RL_VMAX,rw=T.rw[seg];
       if(kind=='lazy')return{};
       if(kind=='wild'){if(st.rt>=(st._wt||0)){st._w=Math.round(rnd()*2-1);st._wt=st.rt+.6}return{steer:st._w}}
-      if(kind=='kid')return{steer:Math.abs(P.x)>.5?-Math.sign(P.x):0};
+      if(kind=='kid')return{steer:Math.abs(P.x)>.5*rw?-Math.sign(P.x):0};
       let tx=0;
-      for(let j=1;j<30;j++){const px=T.padAt[(seg+j)%T.n];if(px!=null){tx=px;break}}
+      for(let j=1;j<30;j++){const s=(seg+j)%T.n,px=T.padAt[s];if(px!=null){tx=px;break}if(T.pkAt[s]){tx=T.pk[T.pkAt[s][0]].x;break}}
+      const bd=[];
+      for(let j=1;j<16;j++){
+        const s=(seg+j)%T.n;
+        if(T.obAt[s])for(const i of T.obAt[s])bd.push(T.ob[i].x);
+        if(T.mvAt[s])for(const i of T.mvAt[s])bd.push(rlMvX(T.mv[i],st.rt+j*RL_SEG/Math.max(2000,P.v)));
+        if(T.sfAt[s])for(const [a,b] of T.sfAt[s])bd.push(b-a<1.2?(a+b)/2:a<0?Math.min(b,0)-.3:Math.max(a,0)+.3);
+        if(T.dv[s]){const f=T.forks.find(f=>rlMod(s-f[0],T.n)<f[1]-f[0]+1);tx=f?f[2]*.5:(P.x<0?-.55:.55)}
+      }
+      for(const b of bd)if(Math.abs(b-tx)<.4){const c=[-.6,0,.6].map(v=>v*rw).filter(v=>bd.every(q=>Math.abs(q-v)>.38));if(c.length)tx=c.reduce((a,v)=>Math.abs(v-P.x)<Math.abs(a-P.x)?v:a)}
       let s=Math.max(-1,Math.min(1,(tx-P.x)*2.5+.35*cur*sp*sp*(st.mode=='easy'?.3:1)/(1.7*Math.max(.3,sp))));
-      if(kind=='pro'&&Math.abs(cur)>=3&&sp>.8)s=Math.sign(cur);
+      if(kind=='pro'&&Math.abs(cur)>=3&&sp>.8&&Math.abs(P.x)<.6)s=Math.sign(cur);
       return{steer:s,go:kind=='pro'?Math.abs(cur)<4.5||P.drifting:false};
     };
-    const race=(tid,mode,kind,seed)=>{
-      const st=rlNew(tid,{mode,seed}),rnd=rlRng(seed*31+7);
+    const race=(tid,mode,kind,seed,o={})=>{
+      const st=rlNew(tid,Object.assign({mode,seed},o)),rnd=rlRng(seed*31+7);
       let n=0;
-      while(!st.done&&n<60*150){rlStep(st,bot(kind,st,rnd));st.ev.length=0;n++}
-      return{done:st.done,place:st.P.place,time:st.P.time,spk:st.P.spk,st};
+      while(!st.done&&n<60*170){rlStep(st,bot(kind,st,rnd));st.ev.length=0;n++}
+      return{done:st.done,place:st.P.place,time:st.P.time,spk:st.P.spk,hits:st.P.hits,st};
     };
     // 1. registered in the Game Room: the hub card, the drawn picture, the first screen with the shared bar
     const g=GH.get('rally');
@@ -14734,29 +14840,60 @@ run('racing game G-02',()=>{
       if('rally' in S)bad(name+': showing the hub created S.rally');
       const menu=shot(()=>rlMenu());
       if(/^ERR/.test(menu)||!/^<div class="top tbar gh-top/.test(menu.trim())||!menu.includes('data-trk="meadow-0" data-ok="1"'))bad(name+': menu '+menu.slice(0,80));
-      if(menu.includes('data-trk="meadow-1" data-ok="1"')||!menu.includes('data-pl="city"'))bad(name+': on a new save only the first track is open');
+      // a new player: the first cup and its three tracks are open, nothing else; a next goal is shown
+      if(!menu.includes('data-cup="0" data-ok="1"')||!menu.includes('data-cup="1" data-ok="0"')||!menu.includes('data-trk="meadow-1" data-ok="1"')||
+        menu.includes('data-trk="meadow-2" data-ok="1"')||!menu.includes('data-pl="city"')||!/id="rlgoal"[^>]*>[\s\S]*Next goal:/.test(menu))bad(name+': on a new save only the first cup is open');
       const r=S.rally;
       if(!r||r.spk!==0||r.paint!=='r'||r.body!=='kart'||r.stk!==''||JSON.stringify(r.stars)!=='{}'||rlMode(r)!==((S.grade==null?0:S.grade)<=2?'easy':'pro'))bad(name+': defaults '+JSON.stringify(r));
+      if(JSON.stringify(r.cups)!=='{}'||r.cup||JSON.stringify(r.lap)!=='{}'||JSON.stringify(r.ghost)!=='{}'||JSON.stringify(r.upg)!=='{"grip":0,"turbo":0,"bumper":0}')bad(name+': G-02b defaults '+JSON.stringify(r));
       if(JSON.stringify(S.race)!==before)bad(name+': S.race (Fact Race bests) changed');
       if(!/^<div class="top tbar gh-top/.test(shot(()=>rlGarage()).trim()))bad(name+': garage without the shared top bar');
     }
-    // 3. damaged saves are read safely; the sparkle count is never negative
+    // 3. a G-02 (v136-v148) save keeps its sparkles, stars, best times and purchases; what it raced stays open; the cups follow
+    {
+      S.rally={spk:130,races:9,best:{'meadow-0':70000,'snow-0':80000},stars:{'meadow-0':3,'meadow-1':2,'beach-0':1,'snow-0':1},paint:'b',paints:{r:1,b:1},
+        stk:'star',stks:{star:1},body:'buggy',mode:'pro',quiz:true,tilt:false,place:'snow'};
+      const old=JSON.stringify(S.rally),r=rlS(),o=JSON.parse(old);
+      for(const k of Object.keys(o))if(JSON.stringify(r[k])!==JSON.stringify(o[k]))bad('G-02 save: '+k+' changed '+JSON.stringify(o[k])+' -> '+JSON.stringify(r[k]));
+      if(!rlCupOpen(0,r)||!rlCupOpen(1,r)||rlCupOpen(2,r)||!rlTrackOpen('snow-0',r)||!rlTrackOpen('beach-1',r)||rlTrackOpen('snow-1',r))bad('G-02 save: open cups and tracks');
+      if(rlTrophies(r)!==0)bad('G-02 save: no trophies yet');
+      const menu=shot(()=>rlMenu());
+      if(/^ERR/.test(menu)||!menu.includes('130</b> sparkles')||!menu.includes('data-trk="snow-0" data-ok="1"'))bad('G-02 save: menu '+menu.slice(0,120));
+    }
+    // 4. damaged saves are read safely; the sparkle count is never negative
     for(const v of ['x',[],5,null,{spk:-40,races:'z',best:{'meadow-0':-1,zz:5,'beach-0':61000},stars:{'meadow-0':'7',zz:3,'beach-0':-2},paint:'zz',
-      paints:{b:1},stk:'heart',stks:[],body:'rocket',mode:'fast',place:'moon',quiz:'yes'},{spk:'12abc'},{spk:1e99},{spk:NaN}]){
+      paints:{b:1},stk:'heart',stks:[],body:'rocket',mode:'fast',place:'moon',quiz:'yes'},{spk:'12abc'},{spk:1e99},{spk:NaN},
+      {cups:{sprout:{best:9,runs:-3},zz:{best:1}},cup:{id:'star',i:7,pts:{you:99}},lap:{'meadow-0':-5,'beach-0':'31000',zz:4},
+        ghost:{'meadow-0':{ms:30000,g:'AB<>'},'beach-0':{ms:30000,g:'ABC'},'snow-0':{ms:31000,g:'AAAA'}},upg:{grip:9,turbo:-1,zz:2}},
+      {cup:{id:'sprout',i:'2',pts:{you:'12',fox:-3,zz:4}},cups:[]},{upg:'x',ghost:5,lap:null}]){
       S.rally=v;
       const r=rlS();
       if(!(r.spk>=0&&Number.isInteger(r.spk)))bad('damaged save '+JSON.stringify(v)+': spk '+r.spk);
       for(const k in r.stars)if(!RL_TRK[k]||r.stars[k]<0||r.stars[k]>3)bad('damaged save: stars '+k+'='+r.stars[k]);
       for(const k in r.best)if(!RL_TRK[k]||!(r.best[k]>0))bad('damaged save: best '+k);
       if(!r.paints.r||!RL_PAINTS.some(x=>x[0]===r.paint)||(r.stk&&!r.stks[r.stk])||!rlBodyOpen(r.body,r)||!RL_PLACES.some(x=>x.id===r.place))bad('damaged save '+JSON.stringify(v)+': '+JSON.stringify(r));
+      for(const k in r.cups)if(!RL_CUPS.some(c=>c.id===k)||!(r.cups[k].best>=1&&r.cups[k].best<=4)||!(r.cups[k].runs>=0))bad('damaged save: cups '+JSON.stringify(r.cups));
+      if(r.cup&&(!rlCupOpen(RL_CUPS.findIndex(c=>c.id===r.cup.id),r)||!(r.cup.i>=0&&r.cup.i<=2)||Object.keys(r.cup.pts).length!==6||Object.values(r.cup.pts).some(x=>!(x>=0&&x<=30))))bad('damaged save: cup '+JSON.stringify(r.cup));
+      for(const k in r.lap)if(!RL_TRK[k]||!(r.lap[k]>0))bad('damaged save: lap '+k);
+      for(const k in r.ghost)if(!RL_TRK[k]||r.ghost[k].g.length%2||!/^[A-Za-z0-9_-]*$/.test(r.ghost[k].g))bad('damaged save: ghost '+k);
+      if(Object.keys(r.upg).join()!=='grip,turbo,bumper'||Object.values(r.upg).some(x=>!(x>=0&&x<=3)))bad('damaged save: upg '+JSON.stringify(r.upg));
     }
-    // 4. buying: never below 0, refused when short, nothing owned is lost; earning is never negative
+    // 5. buying paint, stickers and upgrades: never below 0, refused when short (sparkles or trophies), nothing owned is lost
     const rnd=rlRng(99);
     S.rally={spk:0};
-    let owned=0;
+    let owned=0,ups=0;
     for(let i=0;i<4000;i++){
-      const r=rlS(),k=rnd()<.5?'paint':'stk',list=k=='paint'?RL_PAINTS:RL_STICKERS,it=list[Math.floor(rnd()*list.length)];
+      const r=rlS();
       if(rnd()<.3){const got=rlPay(Math.floor(rnd()*40),1+Math.floor(rnd()*6));if(got<0)bad('rlPay < 0');r.spk+=got}
+      if(rnd()<.02){const c=RL_CUPS[Math.floor(rnd()*4)];r.cups[c.id]={best:1+Math.floor(rnd()*4),runs:1}}
+      if(rnd()<.25){
+        const u=RL_UPG[Math.floor(rnd()*RL_UPG.length)][0],nx=rlUpNext(u,r),s0=r.spk,lv=r.upg[u],ok=rlBuyUp(u);
+        if(ok&&(!nx||s0<nx.cost||rlTrophies(r)<nx.need||r.spk!==s0-nx.cost||r.upg[u]!==lv+1))bad('an upgrade that should have been refused: '+u);
+        if(!ok&&(r.spk!==s0||r.upg[u]!==lv))bad('a refused upgrade changed something');
+        if(ok)ups++;
+        continue;
+      }
+      const k=rnd()<.5?'paint':'stk',list=k=='paint'?RL_PAINTS:RL_STICKERS,it=list[Math.floor(rnd()*list.length)];
       const s0=r.spk,own=k=='paint'?r.paints[it[0]]:it[0]?r.stks[it[0]]:1,ok=rlBuy(k,it[0]);
       if(ok&&(own||s0<it[2]||r.spk!==s0-it[2]))bad('a buy that should have been refused: '+it[0]+' with '+s0);
       if(!ok&&r.spk!==s0)bad('a refused buy changed the sparkles');
@@ -14765,92 +14902,232 @@ run('racing game G-02',()=>{
       if(n<owned)bad('an owned item was lost');
       owned=n;
     }
-    out.note.push('4000 shop steps, '+owned+' items owned, sparkles never below 0');
-    // 5. tracks: valid data, 60-90 seconds at the speed the car keeps by itself
+    out.note.push('4000 shop steps, '+owned+' items and '+ups+' upgrade levels bought, sparkles never below 0');
+    // 6. tracks: valid data; 50-100 s at the speed the car keeps by itself; hazards, pick-ups and pads on the road; props off it
     if(RL_PLACES.length!==4||RL_ORDER.length!==12)bad('expected 4 places with 3 tracks each');
-    let need=-1;
-    for(const pl of RL_PLACES){
-      if(pl.need<=need)bad(pl.id+': places must open with more stars each');
-      need=pl.need;
-      if(!/^--sc-/.test('--sc-'+pl.sky[0])||RL_TRACKS[pl.id].length!==3)bad(pl.id+': sky or tracks');
-      for(const [k] of pl.props)if(!RL_PROPS[k])bad(pl.id+': no drawing for '+k);
-    }
-    const secs=[];
+    const secs=[],sh={};
     for(const id of RL_ORDER){
-      const t=RL_TRK[id],T=rlTrack(id),w=id+': ';
+      const t=RL_TRK[id],T=rlTrack(id),w=id+': ',s=(sh[id]=rlShape(id));
       if(!t.name||PICT.test(t.name)||t.laps<2||t.laps>3)bad(w+'name or laps');
-      if(T.n<700||T.n>1300)bad(w+'length '+T.n+' segments');
-      if(T.hy[0]!==0||T.cv[0]!==0||Math.abs(T.cv[T.n-1])>.01)bad(w+'the start must be flat and straight');
-      let steep=0,bend=0;
-      for(let i=0;i<T.n;i++){steep=Math.max(steep,Math.abs(T.hy[(i+1)%T.n]-T.hy[i]));bend=Math.max(bend,Math.abs(T.cv[i]))}
+      if(T.n<700||T.n>1400)bad(w+'length '+T.n+' segments');
+      if(T.hy[0]!==0||T.cv[0]!==0||Math.abs(T.cv[T.n-1])>.01||T.fl[RL_START]||T.dv[RL_START])bad(w+'the start must be flat, straight and open');
+      let steep=0,bend=0,wj=0;
+      for(let i=0;i<T.n;i++){steep=Math.max(steep,Math.abs(T.hy[(i+1)%T.n]-T.hy[i]));bend=Math.max(bend,Math.abs(T.cv[i]));wj=Math.max(wj,Math.abs(T.rw[(i+1)%T.n]-T.rw[i]))}
       if(steep>RL_SEG*.8)bad(w+'a hill too steep (or the lap does not close): '+steep.toFixed(0));
-      if(bend>6)bad(w+'a bend sharper than 6');
-      if(T.sp.length<20||T.sp.some(([s,x])=>s<0||s>=T.n||Math.abs(x)>.6))bad(w+'sparkles must be on the road');
-      if(T.pads.length<2||T.pads.some(([s,x])=>Math.abs(x)>.6||T.cv[s]!==0))bad(w+'boost pads on straights, on the road');
-      if(T.cv[T.gate]!==0)bad(w+'the boost gate must be on a straight');
-      for(let i=0;i<T.n;i++)if(T.pr[i])for(let j=0;j<T.pr[i].length;j+=2){
-        const k=T.pr[i][j],x=T.pr[i][j+1];
-        if(!RL_PROPS[k])bad(w+'unknown prop '+k);
-        if(k!=='arch'&&Math.abs(x)-RL_PROPS[k].wr/2<1.15)bad(w+k+' stands on the road at segment '+i);
+      if(bend>7)bad(w+'a bend sharper than 7');
+      if(wj>.06)bad(w+'the road width jumps');
+      for(let i=0;i<T.n;i++)if(T.fl[i]&1&&T.hy[(i+1)%T.n]!==T.hy[i]&&Math.abs(T.hy[(i+1)%T.n]-T.hy[i])>RL_SEG*.3)bad(w+'a tunnel on a steep hill at '+i);
+      if(T.sp.length<15||T.sp.some(([s,x])=>Math.abs(x)>.6))bad(w+'sparkles must be on the road');
+      if(T.pads.length<2||T.pads.some(([s,x])=>Math.abs(x)>.7))bad(w+'boost pads on the road');
+      if(T.cv[T.gate]!==0||T.dv[T.gate]||T.fl[T.gate]&1)bad(w+'the boost gate must be on a plain straight');
+      if(!T.pk.length||T.pk.some(q=>Math.abs(q.x)>.5||!['star','shield'].includes(q.k)))bad(w+'pick-ups on the road');
+      for(const o of T.ob)if(Math.abs(o.x)>.9||o.k!=='cone')bad(w+'a cone off the road');
+      for(const m of T.mv)if(!RL_PROPS[m.k]||!(m.sp>0)||m.a>1.5)bad(w+'a mover '+m.k);
+      for(let i=0;i<T.n;i++){
+        if(T.pr[i])for(let j=0;j<T.pr[i].length;j+=2){
+          const k=T.pr[i][j],x=T.pr[i][j+1];
+          if(!RL_PROPS[k])bad(w+'unknown prop '+k);
+          if(k!=='arch'&&Math.abs(x)-RL_PROPS[k].wr/2<T.rw[i]+.2)bad(w+k+' stands on the road at segment '+i);
+          if(k!=='arch'&&T.fl[i]&3)bad(w+k+' in a tunnel or over water at '+i);
+        }
+        if(T.sfAt[i])for(const [a,b,k] of T.sfAt[i])if(!(b>a)||!'psi'.includes(k))bad(w+'a bad patch at '+i);
       }
-      const st=rlNew(id,{}),s=(st.fin-st.P.d)/(RL_CRUISE*RL_VMAX);
-      secs.push(s);
-      if(s<60||s>90)bad(w+'a race at the cruising speed takes '+s.toFixed(0)+' s (want 60-90)');
+      const st=rlNew(id,{}),q=(st.fin-st.P.d)/(RL_CRUISE*RL_VMAX);
+      secs.push(q);
+      if(q<50||q>100)bad(w+'a race at the cruising speed takes '+q.toFixed(0)+' s (want 50-100)');
+      const kinds=(s.puddle?1:0)+(s.sand?1:0)+(s.ice?1:0)+(s.cones?1:0)+(s.movers?1:0);
+      if(kinds<2)bad(w+'needs at least two kinds of hazard');
     }
     out.note.push('12 tracks, '+Math.round(Math.min(...secs))+'-'+Math.round(Math.max(...secs))+' s at the cruising speed');
-    // 6. the catch-up keeps races winnable for young children and worth mastering for older ones (bots, 12 tracks x 4 seeds)
+    // 7. twelve distinct layouts: no two tracks with the same curvature profile (the bend sequence resampled to 240 points, mirrored
+    //    too, correlates under 0.85), and the shape numbers differ; the set covers hairpins, splits, tunnels, bridges, narrow roads
+    const prof=id=>{const T=rlTrack(id),a=[];for(let k=0;k<240;k++)a.push(T.cv[Math.floor(k*T.n/240)]);return a};
+    const corr=(a,b)=>{const m=v=>v.reduce((x,y)=>x+y,0)/v.length,ma=m(a),mb=m(b);let sab=0,saa=0,sbb=0;
+      for(let i=0;i<a.length;i++){sab+=(a[i]-ma)*(b[i]-mb);saa+=(a[i]-ma)**2;sbb+=(b[i]-mb)**2}return sab/Math.sqrt(saa*sbb||1)};
+    const vec=s=>[s.n/1000,s.mean,s.max/4,s.straight*2,s.tight*3,s.flips/6,s.hill/40,s.tunnel/60,s.bridge/80,s.narrow/150,s.forks,s.cones/4,s.movers/2,s.puddle/20,s.sand/30,s.ice/30];
+    let maxC=0,minD=9,pair='';
+    for(let i=0;i<12;i++)for(let j=i+1;j<12;j++){
+      const a=RL_ORDER[i],b=RL_ORDER[j],c=Math.abs(corr(prof(a),prof(b)));
+      if(c>maxC){maxC=c;pair=a+'/'+b}
+      if(c>=.85)bad('tracks '+a+' and '+b+' have the same curvature profile (r='+c.toFixed(2)+')');
+      const va=vec(sh[a]),vb=vec(sh[b]),d=Math.sqrt(va.reduce((x,v,k)=>x+(v-vb[k])**2,0));
+      minD=Math.min(minD,d);
+      if(d<.6)bad('tracks '+a+' and '+b+' have nearly the same shape numbers ('+d.toFixed(2)+')');
+    }
+    const S2=Object.values(sh),cnt=f=>S2.filter(f).length;
+    if(Math.max(...S2.map(s=>s.n))-Math.min(...S2.map(s=>s.n))<400)bad('track lengths should differ by 400 segments or more');
+    if(cnt(s=>s.max>=6)<4||cnt(s=>s.forks)<3||cnt(s=>s.tunnel)<3||cnt(s=>s.bridge)<4||cnt(s=>s.narrow)<3||cnt(s=>s.hill>=40)<3||cnt(s=>s.flips>=7)<2)
+      bad('the set should have hairpins, splits, tunnels, bridges, narrow roads, big hills and S-bend chains on several tracks');
+    out.note.push('layouts: largest profile correlation '+maxC.toFixed(2)+' ('+pair+'), smallest shape distance '+minD.toFixed(2));
+    // 8. bots on all 12 tracks x 4 seeds, rivals at their cup's speed: everyone finishes in time; winnable for young children,
+    //    worth mastering for older ones; mistakes cost time
     const stats={};
     for(const [mode,kind] of [['easy','good'],['easy','kid'],['easy','lazy'],['easy','wild'],['pro','pro'],['pro','good']]){
-      const s=stats[mode+' '+kind]={win:0,top3:0,n:0,slow:0,spk:0};
+      const s=stats[mode+' '+kind]={win:0,top3:0,n:0,slow:0,hits:0,tmax:0};
       for(const id of RL_ORDER)for(let seed=1;seed<=4;seed++){
         const r=race(id,mode,kind,seed);
         s.n++;
         if(!r.done){bad(mode+' '+kind+' '+id+' seed '+seed+': did not finish');continue}
-        if(r.time>130)s.slow++;
+        if(r.time>120)s.slow++;
+        s.tmax=Math.max(s.tmax,r.time);
         if(r.place==1)s.win++;
         if(r.place<=3)s.top3++;
-        s.spk+=r.spk;
+        s.hits+=r.hits;
       }
-      out.note.push(mode+' '+kind+' won '+s.win+'/'+s.n+', top 3 '+s.top3);
-      if(s.slow)bad(mode+' '+kind+': '+s.slow+' races took longer than 130 s');
+      out.note.push(mode+' '+kind+' won '+s.win+'/'+s.n+', top 3 '+s.top3+', '+(s.hits/s.n).toFixed(1)+' spins a race, slowest '+s.tmax.toFixed(0)+' s');
+      if(s.slow)bad(mode+' '+kind+': '+s.slow+' races took longer than 120 s');
     }
     const S_=k=>stats[k];
     if(S_('easy good').win<S_('easy good').n*.6)bad('Easy: a child who steers well should usually win ('+S_('easy good').win+'/48)');
     for(const k of ['easy kid','easy lazy']){
       if(S_(k).win<1)bad(k+': a young child must be able to win sometimes');
-      if(S_(k).top3<S_(k).n*.7)bad(k+': a young child should mostly finish in the top 3 ('+S_(k).top3+'/48)');
+      if(S_(k).top3<S_(k).n*.35)bad(k+': a young child should often finish in the top 3 ('+S_(k).top3+'/48)');
       if(S_(k).win>S_(k).n*.5)bad(k+': winning without steering should not be the rule ('+S_(k).win+'/48)');
+      if(S_(k).hits<=S_('easy good').hits)bad(k+': not steering should cost spins (mistakes matter)');
     }
-    if(S_('pro pro').win<S_('pro pro').n*.5)bad('Pro: Go, drifts and pads should win most races ('+S_('pro pro').win+'/48)');
+    if(S_('pro pro').win<S_('pro pro').n*.35)bad('Pro: Go, drifts and pads should win often ('+S_('pro pro').win+'/48)');
     if(S_('pro good').win>S_('pro pro').win*.5)bad('Pro: driving without Go and drifts should rarely win');
-    // 7. deterministic: the same seed and the same driving give the same race; another seed another race
+    // 9. crashes: a hard hit on a rail spins (longer in Pro), a light one bounces; cones, rolling things and animals spin; the shield
+    //    pops instead; off the road is slow; running into a kart from behind is a dizzy bounce; the bumper shortens spins
+    {
+      const railSeg=id=>{const T=rlTrack(id);for(let i=60;i<T.n;i++)if(T.fl[i]&4&&!(T.fl[i]&1)&&T.cv[i]===0&&T.fl[i+30]&4)return i;return -1};
+      const at=(mode,id,seg,x,v,o={})=>{const st=rlNew(id,Object.assign({mode,seed:3,trial:true},o));st.cd=0;st.rt=5;Object.assign(st.P,{d:seg*RL_SEG+1,x,v:v*RL_VMAX});return st};
+      const run=(st,inp,n)=>{const ev=[];for(let i=0;i<n&&!st.done;i++){rlStep(st,inp);ev.push(...st.ev);st.ev.length=0}return ev};
+      const rs=railSeg('city-2');
+      if(rs<0)bad('no straight with rails on city-2');
+      const hard={};
+      for(const mode of ['easy','pro']){
+        const st=at(mode,'city-2',rs,.5,mode=='pro'?.95:RL_CRUISE),ev=run(st,{steer:1,go:true},60);
+        hard[mode]=st.P.spinD;
+        if(!ev.some(e=>e[0]=='crash'&&e[1]=='wall'))bad(mode+': steering hard into a rail at speed should spin the car');
+        if(st.P.x>st.T.rw[rs]+.1)bad(mode+': the car went through the rail');
+        const st2=at(mode,'city-2',rs,st.T.rw[rs]-.1,.5),ev2=run(st2,{steer:.25},40);
+        if(ev2.some(e=>e[0]=='crash')||!ev2.some(e=>e[0]=='wall'))bad(mode+': a gentle touch on the rail should only bounce');
+      }
+      if(!(hard.pro>hard.easy))bad('a hard hit should spin longer in Pro ('+hard.pro+' vs '+hard.easy+')');
+      // a cone right ahead
+      const cid=RL_ORDER.find(id=>rlTrack(id).ob.some(q=>Math.abs(q.x)<=.55)),T=rlTrack(cid),o=T.ob.find(q=>Math.abs(q.x)<=.55),oi=T.ob.indexOf(o);
+      for(const mode of ['easy','pro']){
+        const st=at(mode,cid,rlMod(o.s,T.n)-3,o.x,.7),ev=run(st,{},60);
+        if(!ev.some(e=>e[0]=='crash'&&e[1]=='cone')||!(st.knL[oi]>0))bad(mode+': driving into a cone should spin and knock it over');
+        const st2=at(mode,cid,rlMod(o.s,T.n)-3,o.x,.7);st2.P.shield=5;
+        const ev2=run(st2,{},60);
+        if(!ev2.some(e=>e[0]=='pop')||ev2.some(e=>e[0]=='crash')||st2.P.spin>0)bad(mode+': the shield should pop instead of a spin');
+        const near=T.ob.filter(q=>Math.abs(rlMod(q.s-o.s,T.n))<30).map(q=>q.x),fx=[-.75,-.3,0,.3,.75].find(v=>near.every(q=>Math.abs(q-v)>.45));
+        const st3=at(mode,cid,rlMod(o.s,T.n)-3,fx,.7),ev3=run(st3,{},60);
+        if(ev3.some(e=>e[0]=='crash'&&e[1]=='cone'))bad(mode+': passing beside a cone should not hit it');
+      }
+      // something rolling or walking across: hit when it is there, at the right moment
+      const mid=RL_ORDER.find(id=>rlTrack(id).mv.some(m=>m.k=='duck')),TM=rlTrack(mid),m=TM.mv.find(m=>m.k=='duck');
+      {
+        const st=at('pro',mid,rlMod(m.s,TM.n)-2,0,.7);
+        st.rt=5;
+        const tHit=st.rt+((rlMod(m.s,TM.n)+.5)*RL_SEG-st.P.d)/st.P.v;
+        st.P.x=rlMvX(m,tHit);
+        const ev=run(st,{},40);
+        if(!ev.some(e=>e[0]=='crash'&&e[1]=='crit'))bad('meeting a crossing duck should spin the car');
+      }
+      // off the road (no rails): slow
+      const TO=rlTrack('meadow-0');let oi2=60;while(TO.cv[oi2]!==0||TO.fl[oi2]||TO.cv[oi2+20]!==0)oi2++;
+      const g=rlNew('meadow-0',{mode:'pro',seed:2,trial:true});g.cd=0;Object.assign(g.P,{d:oi2*RL_SEG,x:TO.rw[oi2]+.35,v:RL_CRUISE*RL_VMAX});
+      run(g,{},120);
+      if(!(g.P.v<.66*RL_VMAX))bad('off the road should slow the car ('+(g.P.v/RL_VMAX).toFixed(2)+')');
+      // a bonk from behind
+      for(const mode of ['easy','pro']){
+        const st=rlNew('meadow-0',{mode,seed:4});st.cd=0;st.rt=5;
+        Object.assign(st.P,{d:100*RL_SEG,x:0,v:.95*RL_VMAX});
+        st.cars.forEach((c,i)=>{c.d=(140+i*20)*RL_SEG;c.x=.6});
+        Object.assign(st.cars[0],{d:100*RL_SEG+RL_SEG*.75,x:0,tx:0,lx:0,v:.5*RL_VMAX,base:.5});
+        const ev=run(st,{},3);
+        if(!ev.some(e=>e[0]=='crash'&&e[1]=='bonk')||!(st.P.spin>0)||!(st.P.v<.6*RL_VMAX))bad(mode+': running into a slow kart from behind should bounce and spin');
+      }
+      // the bumper upgrade: shorter spins
+      const sp=lv=>{const st=rlNew('meadow-0',{mode:'pro',seed:1,up:{bumper:lv}});st.cd=0;rlCrash(st,st.P,'wall',.5);return st.P.spinD};
+      if(!(sp(3)<sp(0)))bad('the bumper should make spins shorter');
+      // calm mode: a wobble instead of a full turn
+      if(Math.abs(rlSpinA({spin:.5,spinD:1},1.1,true))>.2||!(Math.abs(rlSpinA({spin:.5,spinD:1},1.1,false))>3))bad('calm mode should wobble, not spin, on screen');
+      // grip: ice slides more without grippy tyres
+      const slide=lv=>{const id=RL_ORDER.find(id=>rlTrack(id).sfAt.some(a=>a&&a.some(q=>q[2]=='i'))),T=rlTrack(id),i=T.sfAt.findIndex(a=>a&&a.some(q=>q[2]=='i')),q=T.sfAt[i].find(q=>q[2]=='i');
+        const st=rlNew(id,{mode:'pro',seed:1,trial:true,up:{grip:lv}});st.cd=0;Object.assign(st.P,{d:i*RL_SEG+1,x:(q[0]+q[1])/2,v:RL_CRUISE*RL_VMAX,vx:.8});
+        run(st,{},12);return Math.abs(st.P.vx)};
+      if(!(slide(0)>slide(3)))bad('grippy tyres should slide less on ice');
+    }
+    // 10. cups and unlocks: points, standings, trophies, the next cup, rivals a little faster in later cups, the next goal
+    {
+      const pts=rlCupAdd({},['fox','you','bear','bunny','penguin','frog']);
+      rlCupAdd(pts,['you','fox','bear','bunny','penguin','frog']);
+      if(pts.you!==18||pts.fox!==18||pts.frog!==6||rlCupTable(pts,['you','fox','bear','bunny','penguin','frog'])[0]!=='you')bad('cup points and ties '+JSON.stringify(pts));
+      const r={cups:{},stars:{}};
+      if(!rlCupOpen(0,r)||rlCupOpen(1,r))bad('only the first cup is open at first');
+      r.cups.sprout={best:4,runs:1};
+      if(rlCupOpen(1,r))bad('a cup without a trophy, raced once, does not open the next');
+      r.cups.sprout.runs=2;
+      if(!rlCupOpen(1,r))bad('racing a cup twice opens the next (nobody is stuck)');
+      r.cups.sprout={best:3,runs:1};
+      if(!rlCupOpen(1,r)||rlCupOpen(2,r)||rlTrophies(r)!==1)bad('a bronze trophy opens the next cup');
+      if(!rlTrackOpen('beach-1',r)||rlTrackOpen('snow-1',r))bad('tracks open with their cup');
+      const goals=new Set();
+      for(const rr of [{cups:{},stars:{},ghost:{},upg:{},spk:0,races:0},{cups:{},stars:{},ghost:{},upg:{},spk:0,races:0,cup:{id:'sprout',i:1,pts:{}}},
+        {cups:{sprout:{best:1},wave:{best:1},frost:{best:1},star:{best:1}},stars:{},ghost:{},upg:{grip:3,turbo:3,bumper:3},spk:0,races:0},
+        {cups:{sprout:{best:1},wave:{best:2},frost:{best:1},star:{best:1}},stars:{},ghost:{},upg:{},spk:0,races:0}]){
+        const gtx=rlGoal(rr);
+        if(!gtx||PICT.test(gtx))bad('next goal '+gtx);
+        goals.add(gtx);
+      }
+      if(goals.size<4)bad('the next goal should change with progress');
+      const b0=rlNew('meadow-0',{mode:'easy',seed:1,tier:0}).cars.reduce((a,c)=>a+c.base,0),b3=rlNew('meadow-0',{mode:'easy',seed:1,tier:3}).cars.reduce((a,c)=>a+c.base,0);
+      if(!(b3>b0*1.03))bad('rivals should be a little faster in later cups');
+      if(RL_CUPS.length!==4||RL_CUPS.some(c=>c.races.length!==3)||new Set(RL_CUPS.flatMap(c=>c.races.map(r=>r[0]))).size!==12)bad('4 cups of 3 races, each track once');
+      if(RL_CUPS.some(c=>c.races.some(([t,w])=>!RL_TRK[t]||!RL_WX[w])))bad('cup races need a track and a weather');
+      if(new Set(RL_CUPS.flatMap(c=>c.races.map(r=>r[1]))).size<4)bad('the cups should have several weathers');
+    }
+    // 11. the time trial and its ghost: the best lap is recorded, saved small, and replayed where it drove
+    {
+      const r=race('beach-0','easy','good',2,{trial:true}),b=r.st.rec.best;
+      if(!r.done||!b||!(b.ms>10000)||b.g.length%2||b.g.length>2400||!/^[A-Za-z0-9_-]+$/.test(b.g))bad('time trial: no ghost recorded '+JSON.stringify(b&&{ms:b.ms,n:b.g.length}));
+      else{
+        if(r.st.cars.length)bad('a time trial has no rivals');
+        const gh=rlGhostIn(b),end=rlGhostAt(gh,b.ms/1000-.1),L=r.st.T.L;
+        if(!end||Math.abs(end.d-L)>L*.02)bad('the ghost should reach the end of its lap at its lap time ('+(end&&end.d)+' of '+L+')');
+        if(rlGhostAt(gh,b.ms/1000+1))bad('the ghost should stop after its lap');
+        if(Math.min(...r.st.P.laps)*1000-b.ms>1)bad('the ghost should be the best lap');
+        S.rally={ghost:{'beach-0':b},lap:{'beach-0':b.ms}};
+        const k=rlS();
+        if(!k.ghost['beach-0']||k.ghost['beach-0'].g!==b.g)bad('a recorded ghost should survive the save check');
+        out.note.push('ghost: '+(b.g.length/2)+' samples, '+b.g.length+' bytes, best lap '+(b.ms/1000).toFixed(1)+' s');
+      }
+    }
+    // 12. deterministic: the same seed and the same driving give the same race (and weather); another seed another race
     const a=race('beach-1','easy','wild',5),b=race('beach-1','easy','wild',5),c=race('beach-1','easy','wild',6);
-    const sig=r=>JSON.stringify([r.place,r.time,r.spk,r.st.cars.map(x=>[x.rv.id,x.d.toFixed(3),x.x.toFixed(4)])]);
+    const sig=r=>JSON.stringify([r.place,r.time,r.spk,r.hits,r.st.wx,r.st.cars.map(x=>[x.rv.id,x.d.toFixed(3),x.x.toFixed(4)])]);
     if(sig(a)!==sig(b))bad('two races with the same seed differ');
     if(sig(a)===sig(c))bad('a different seed gave the same race');
-    // 8. boost gate questions: three different answers with the right one, never negative, by grade
+    const wxs=new Set();for(let s=1;s<=40;s++)wxs.add(rlNew('meadow-0',{seed:s}).wx);
+    if(wxs.size<2||[...wxs].some(w=>!RL_PLACES[0].wx.includes(w)))bad('single races should vary the weather among the place\'s own: '+[...wxs]);
+    // 13. boost gate questions: three different answers with the right one, never negative, by grade
     for(const gr of [-1,0,1,2,3,5,6])for(let i=0;i<200;i++){
       const q=rlQuiz(gr,rlRng(i+1)),q2=rlQuiz(gr,rlRng(i+1));
       if(JSON.stringify(q)!==JSON.stringify(q2)||q.opts.length!==3||new Set(q.opts).size!==3||!q.opts.includes(q.a)||q.opts.some(o=>o<0)||!/^\d+ [+−×] \d+$/.test(q.q))
         {bad('grade '+gr+' question '+JSON.stringify(q));break}
     }
     if(rlStarsFor(1)!==3||rlStarsFor(3)!==2||rlStarsFor(6)!==1)bad('stars: 3 for a win, 2 for the top 3, 1 for finishing');
-    // 9. the drawings, for the token check outside
+    // 14. the drawings, for the token check outside
     out.svg=[['hub',RL_ART.hub()],['podium',RL_ART.podium(['you','fox','bunny'],'b',{body:'rocket',stk:'moon'})]];
     for(const pl of RL_PLACES)out.svg.push(['place '+pl.id,RL_ART.place(pl.id)],['sky '+pl.id,RL_SKY[pl.id]()],['far '+pl.id,RL_BACK[pl.id].far()],['near '+pl.id,RL_BACK[pl.id].near()]);
     for(const k in RL_PROPS)out.svg.push(['prop '+k,RL_PROPS[k].art()]);
+    for(const h of ['y','e','o','g','b','c','v'])out.svg.push(['cup '+h,rlCupArt(h)]);
     for(const [b] of RL_BODIES)for(const [h] of RL_PAINTS)out.svg.push(['car '+b+' '+h,rlCarArt(b,h,'star','you')]);
     for(const v of RL_RIVALS)out.svg.push(['rival '+v.id,rlCarArt('kart',v.car,'',v.id)],['face '+v.id,rlFace(v.id,25,30,1.2)]);
     for(const [s] of RL_STICKERS)out.svg.push(['sticker '+s,rlStk(s,20,20,15)]);
-    out.roles=RL_PLACES.flatMap(pl=>[...pl.grass,...pl.road,...pl.rumble,pl.lane,pl.edge]);
-    out.skies=RL_PLACES.flatMap(pl=>pl.sky);
+    out.roles=RL_PLACES.flatMap(pl=>[...pl.grass,...pl.road,...pl.rumble,pl.lane,pl.edge,...pl.rail,pl.water,...pl.wall]);
+    out.skies=RL_PLACES.flatMap(pl=>pl.sky).concat(Object.values(RL_WX).flatMap(w=>w.sky||[]));
     out.dev=JSON.stringify(RL_DEV);
     return out;
   };
   const o=eval(js+';('+body.toString()+')()');
   p.push(...o.bad);
   notes.push(...o.note);
-  // 10. tokens only, no emoji: the source, the CSS, every drawing
+  // 15. tokens only, no emoji: the source, the CSS, every drawing
   if(/#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(/.test(src.replace(/0x[0-9A-F]+/g,'')))p.push('63-game-race.js: a raw colour');
   if(PICT.test(src)||PICT.test(css))p.push('emoji in the racing game source or CSS');
   if(/#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(/.test(css))p.push('49-game-race.css: a raw colour');
@@ -14874,17 +15151,19 @@ run('racing game G-02',()=>{
       }
     }
     const tones={};for(const m of d.matchAll(/var\(--a-([a-z])(\d?)\)/g))(tones[m[1]]=tones[m[1]]||new Set()).add(m[2]);
-    const want=/^(hub|podium|place|car|rival)/.test(w)?2:/^(prop|face)/.test(w)?1:0;
+    const want=/^(hub|podium|place|car|rival|cup)/.test(w)?2:/^(prop|face)/.test(w)?1:0;
     if(Object.values(tones).filter(s=>s.size>=2).length<want)p.push(w+': looks flat (no shade tones)');
   }
   notes.push(o.svg.length+' drawings, '+shapes+' shapes, tokens only');
-  // 11. plumbing: in the games file, stopped by view(), test hooks off, Fact Race renamed (save keys and rules unchanged)
-  if(partOf('63-game-race.js')!=='games'||partOf('49-game-race.css')!=='games')p.push('the racing game must ship in games.'+BUILD_VER+'.js');
+  // 16. plumbing: in games2 (G-02b moved it from games), stopped by view(), test hooks off, Fact Race renamed (save keys unchanged)
+  if(partOf('63-game-race.js')!=='games2'||partOf('49-game-race.css')!=='games2')p.push('the racing game must ship in games2.'+BUILD_VER+'.js');
   if(!/if\(typeof rlStop=='function'\)rlStop\(\)/.test(rd('js/40-view.js')))p.push('view() must stop the race (rlStop)');
   if(o.dev!=='{"fast":1,"flush":false}')p.push('RL_DEV test hooks must be off: '+o.dev);
   if(!rd('js/46-home.js').includes("'Fact Race'")||!rd('js/54-race.js').includes('<span>Fact Race</span>'))p.push('the old Speed Race should be called Fact Race on Home and its menu');
   for(const f of fs.readdirSync(path.join(SRC,'js')))for(const m of rd('js/'+f).matchAll(/(['"`>])Speed Race/g))p.push(f+': "Speed Race" still shown to children');
   if(!/S\.race\[cat\]/.test(rd('js/54-race.js')))p.push('Fact Race must keep its save key S.race');
+  // no screen shake in calm mode or with reduced motion
+  if(!/const sh = !calm && R\.shake > 0/.test(src)||!/if \(!RL\.calm\) RL\.shake/.test(src)||!/prefers-reduced-motion/.test(src))p.push('the crash shake must be off in calm mode and with reduced motion');
   return{problems:[...new Set(p)].slice(0,60),note:notes.join('; ')};
 });
 

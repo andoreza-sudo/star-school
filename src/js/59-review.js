@@ -188,6 +188,7 @@ function reviewQs(){
 function startReview(){
   const qs=reviewQs();
   if(!qs.length)return startMix();
+  if(qs.some(q=>/^es_/.test(q.sk)))spkProbe(); // S-SPK: a "Say it!" step after the first Spanish item (50-say.js)
   G=newG({mix:true,daily:true,pool:qs,n:qs.length,sk:'mix'});
   next();
 }
