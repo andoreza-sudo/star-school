@@ -8937,6 +8937,166 @@ async function main() {
         '-> time, stars and medal saved, course 2 open; game time spent, clock stopped; main controls 64 px, buttons 48 px, no sideways scroll; ' + notes.join('; '));
     }
 
+    // S-SPK: Spanish speaking practice ("Say it!", src/js/50-say.js) at 380x780 and 1024x600, with a fake microphone (getUserMedia
+    // gives an oscillator's stream; the real MediaRecorder records it), a fake Spanish voice (speak() logs and ends), a fake on-device
+    // recogniser, and Audio.play logged. A Spanish round shows Say it! after question 3: model voice, record, compare playback (the
+    // model, then the recording), the "That sounded like" hint, Try again, I said it! (the round goes on, nothing scored); a skip;
+    // a story round (the child plays a character); a blocked microphone (the grown-up note, then it goes on by itself); no microphone
+    // (no step, the round goes on); the Grown-ups switch. SSPK_SHOTS=<dir> saves screenshots at 2x.
+    {
+      const bad = [], notes = [], SH = process.env.SSPK_SHOTS || '';
+      const fakeMedia = mode => {
+        window.__spk = { said: [], played: [] };
+        const md = navigator.mediaDevices;
+        md.enumerateDevices = async () => mode == 'none' ? [] : [{ kind: 'audioinput', deviceId: 'fake', label: '' }];
+        md.getUserMedia = async () => {
+          if (mode == 'denied') { const e = new Error('blocked'); e.name = 'NotAllowedError'; throw e; }
+          const ac = new AudioContext(), o = ac.createOscillator(), d = ac.createMediaStreamDestination(); o.connect(d); o.start(); return d.stream;
+        };
+        speechSynthesis.getVoices = () => [{ lang: 'es-MX', name: 'es' }, { lang: 'en-US', name: 'en' }];
+        window.SpeechSynthesisUtterance = function (t) { this.text = t; };
+        speechSynthesis.speak = u => { window.__spk.said.push([u.lang, u.text]); setTimeout(() => u.onend && u.onend(), 50); };
+        const play = HTMLMediaElement.prototype.play;
+        HTMLMediaElement.prototype.play = function () { window.__spk.played.push([String(this.src).slice(0, 5), window.__spk.said.length]); return play.call(this); };
+        function FakeSR() { this.processLocally = false; }
+        FakeSR.available = async () => 'available';
+        FakeSR.prototype.start = function () { setTimeout(() => this.onresult && this.onresult({ results: [[{ transcript: String(SPK.it.es).toUpperCase() }]] }), 200); };
+        FakeSR.prototype.stop = FakeSR.prototype.abort = function () {};
+        window.SpeechRecognition = window.webkitSpeechRecognition = FakeSR;
+      };
+      const sk = (pg, sk, lv) => pg.evaluate(([sk, lv]) => start('es', NODES.es.findIndex(n => n.sk == sk && n.lv == lv)), [sk, lv]);
+      // answer until the Say it! step shows (or k questions)
+      const toStep = async (pg, k = 6) => {
+        for (let i = 0; i < k; i++) {
+          const st = await (await pg.waitForFunction(() => document.querySelector('.spk-card') ? 'spk' : G && G.q && !G.lock && document.querySelector('#prompt') ? 'ask' : false, null, { timeout: 10000 })).jsonValue();
+          if (st == 'spk') return true;
+          await pg.evaluate(() => { window.__q = G.q; });
+          await answer(pg);
+          await pg.waitForFunction(() => document.querySelector('.spk-card') || (G && G.q !== window.__q), null, { timeout: 10000 });
+        }
+        return !!(await pg.$('.spk-card'));
+      };
+      const sizes = async (pg, at) => {
+        const r = await pg.evaluate(() => ({ sw: document.documentElement.scrollWidth - innerWidth,
+          small: [...document.querySelectorAll('#app button')].filter(b => b.offsetParent).map(b => { const r = b.getBoundingClientRect(); return [b.id || b.className, Math.round(r.width), Math.round(r.height)]; }).filter(x => x[1] < 48 || x[2] < 48),
+          mic: (b => b ? Math.min(b.getBoundingClientRect().width, b.getBoundingClientRect().height) : 0)(document.querySelector('#spkmic')) }));
+        if (r.sw > 0) bad.push(at + 'sideways scroll ' + r.sw);
+        if (r.small.length) bad.push(at + 'buttons under 48 px: ' + JSON.stringify(r.small));
+        return r;
+      };
+      const shot = async (pg, n) => { if (SH) await pg.waitForTimeout(500), await pg.screenshot({ path: require('path').join(SH, 'sspk-' + n + '.png') }); };
+      for (const [w, h] of [[380, 780], [1024, 600]]) {
+        const at = `${w}x${h}: `, tag = `${w}x${h}`;
+        const sa = await openApp(browser, { fixture: 'midway', width: w, height: h, scale: SH ? 2 : 1 });
+        const pg = sa.page;
+        try {
+          await sa.ctx.addInitScript(fakeMedia, 'ok');
+          await pg.reload();
+          await pg.waitForSelector('#app *');
+          await pg.evaluate(() => { S.grade = 1; save(); });
+          // 1. a vocabulary round: Say it! after question 3
+          await sk(pg, 'es_animal', 1);
+          if (!(await toStep(pg))) throw new Error('no Say it! step in a Spanish round');
+          const g0 = await pg.evaluate(() => ({ done: G.done, score: G.score, n: G.n, spk: day().spk | 0, es: SPK.it.es }));
+          if (g0.done !== 3) bad.push(at + 'the step came after question ' + g0.done);
+          await pg.waitForFunction(() => __spk.said.some(s => s[0] == 'es-MX' && s[1] == SPK.it.say), null, { timeout: 5000 }).catch(() => bad.push(at + 'the model was not spoken'));
+          const r1 = await sizes(pg, at + 'ready: ');
+          if (r1.mic < 64) bad.push(at + 'microphone ' + r1.mic + ' px');
+          await shot(pg, 'ready-' + tag);
+          await pg.evaluate(() => { __spk.said = []; __spk.played = []; });
+          await pg.click('#spkmic');
+          await pg.waitForSelector('.spk-mic.on', { timeout: 5000 });
+          if ((await pg.getAttribute('#spkmic', 'aria-label')) !== 'Stop recording') bad.push(at + 'recording: mic name');
+          if (SH) await pg.screenshot({ path: require('path').join(SH, 'sspk-recording-' + tag + '.png') }); // at once: 4 s is 0.5 s on the smoke clock
+          await pg.waitForSelector('.spk-lis', { timeout: 15000 });
+          await shot(pg, 'listen-' + tag);
+          await pg.waitForSelector('#spkok', { timeout: 15000 });
+          const pl = await pg.evaluate(() => ({ said: __spk.said, played: __spk.played, heard: (document.querySelector('#spkheard.on') || {}).textContent || '' }));
+          const mi = pl.said.findIndex(s => s[0] == 'es-MX'), bl = pl.played.find(p => p[0] == 'blob:');
+          if (mi < 0 || !bl || bl[1] <= mi) bad.push(at + 'compare: the model then the recording ' + JSON.stringify(pl).slice(0, 200));
+          await pg.waitForSelector('#spkheard.on', { timeout: 5000 }).catch(() => {});
+          const heard = await pg.evaluate(() => (document.querySelector('#spkheard.on') || {}).textContent || '');
+          if (!/That sounded like .*Muy bien/.test(heard)) bad.push(at + 'hint: ' + heard);
+          await sizes(pg, at + 'check: ');
+          await shot(pg, 'check-' + tag);
+          await pg.click('#spkagain');
+          await pg.waitForSelector('#spkmic:not(.on)', { timeout: 5000 });
+          if (await pg.$('#spkheard.on')) bad.push(at + 'try again kept the old hint');
+          await pg.click('#spkmic');
+          await pg.waitForSelector('#spkok', { timeout: 15000 });
+          await pg.click('#spkok');
+          await pg.waitForSelector('#prompt', { timeout: 5000 });
+          const g1 = await pg.evaluate(() => ({ done: G.done, score: G.score, n: G.n, spk: day().spk | 0, step: G.spk, res: G.res.filter(x => x == 'try').length }));
+          if (g1.done !== 3 || g1.score !== g0.score || g1.n !== g0.n || g1.res || g1.spk !== g0.spk + 1 || g1.step !== 1) bad.push(at + 'after I said it: ' + JSON.stringify([g0, g1]));
+          if (await toStep(pg, 3)) bad.push(at + 'a second step in the round');
+          // 2. skip: the next question, nothing counted or marked
+          await sk(pg, 'es_food', 1);
+          if (!(await toStep(pg))) throw new Error('no step to skip');
+          const s0 = await pg.evaluate(() => [G.done, G.score, G.missed.length, day().spk | 0]);
+          await pg.click('#spkskip');
+          await pg.waitForSelector('#prompt', { timeout: 5000 });
+          const s1 = await pg.evaluate(() => [G.done, G.score, G.missed.length, day().spk | 0]);
+          if (JSON.stringify(s0) !== JSON.stringify(s1)) bad.push(at + 'skip changed ' + JSON.stringify([s0, s1]));
+          // 3. a dialogue: the child plays a character
+          await sk(pg, 'es_story', 1);
+          if (!(await toStep(pg))) throw new Error('no step in a story round');
+          const role = await pg.evaluate(() => (document.querySelector('.spk-role') || {}).textContent || '');
+          if (!/^You are .+! Say .+ line\.$/.test(role)) bad.push(at + 'story role: ' + role);
+          await sizes(pg, at + 'story: ');
+          await shot(pg, 'story-' + tag);
+          await pg.click('#spkskip');
+          // 4. the Grown-ups switch turns it off for this child
+          await pg.evaluate(() => grown());
+          await pg.click('#esspk');
+          if (await pg.evaluate(() => S.esSpk !== false)) bad.push(at + 'switch did not save esSpk');
+          await sk(pg, 'es_animal', 1);
+          if (await toStep(pg, 4)) bad.push(at + 'switched off, still a step');
+          await pg.evaluate(() => { S.esSpk = true; save(); });
+        } catch (x) { bad.push(at + x.message.split('\n')[0]); }
+        network.push(...sa.network);
+        for (const e of sa.errors) fail('S-SPK ' + at + e);
+        await sa.ctx.close();
+        // 5. a blocked microphone: the grown-up note, then the round goes on by itself; 6. no microphone: no step at all
+        for (const mode of ['denied', 'none']) {
+          const sb = await openApp(browser, { fixture: 'midway', width: w, height: h, scale: SH ? 2 : 1 });
+          const pb = sb.page;
+          try {
+            await sb.ctx.addInitScript(fakeMedia, mode);
+            await pb.reload();
+            await pb.waitForSelector('#app *');
+            await pb.evaluate(() => { S.grade = 1; save(); });
+            await sk(pb, 'es_animal', 1);
+            if (mode == 'denied') {
+              if (!(await toStep(pb))) throw new Error('denied: no step');
+              await pb.click('#spkmic');
+              await pb.waitForSelector('.spk-gu', { timeout: 5000 });
+              const t = await pb.textContent('.spk-gu');
+              if (!/Permissions/.test(t) || !/Microphone/.test(t)) bad.push(at + 'denied note: ' + t.slice(0, 80));
+              await sizes(pb, at + 'denied: ');
+              await shot(pb, 'denied-' + tag);
+              const d0 = await pb.evaluate(() => [G.done, G.score, G.missed.length]);
+              await pb.waitForSelector('#prompt', { timeout: 15000 }); // goes on by itself (15 s on the app's clock)
+              const d1 = await pb.evaluate(() => [G.done, G.score, G.missed.length, SPK.deny]);
+              if (JSON.stringify(d0) !== JSON.stringify(d1.slice(0, 3)) || d1[3] !== 1) bad.push(at + 'denied changed the round ' + JSON.stringify([d0, d1]));
+              await pb.evaluate(() => start('es', NODES.es.findIndex(n => n.sk == 'es_food' && n.lv == 1)));
+              if (await toStep(pb, 4)) bad.push(at + 'denied: a second step the same session');
+            } else {
+              if (await toStep(pb, 4)) bad.push(at + 'no microphone: a step showed');
+              const g = await pb.evaluate(() => [G.done, G.spk, SPK.mic]);
+              if (g[0] !== 4 || g[1] !== 1 || g[2] !== 'no') bad.push(at + 'no microphone: ' + JSON.stringify(g));
+            }
+          } catch (x) { bad.push(at + mode + ': ' + x.message.split('\n')[0]); }
+          network.push(...sb.network);
+          for (const e of sb.errors) fail('S-SPK ' + at + mode + ' ' + e);
+          await sb.ctx.close();
+        }
+      }
+      if (bad.length) fail('S-SPK Say it!:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('S-SPK: Say it! at 380x780 and 1024x600: after question 3 of a Spanish round, the model spoken, record (fake microphone), the model then the recording, ' +
+        '"That sounded like ... ¡Muy bien!", Try again, I said it! (the round goes on, nothing scored, 1 said today); skip; a story character; ' +
+        'the Grown-ups switch; a blocked microphone (grown-up note, goes on by itself, no second step); no microphone (no step); mic 64+ px, buttons 48+, no sideways scroll');
+    }
+
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');
   } catch (e) {
