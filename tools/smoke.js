@@ -6993,21 +6993,24 @@ async function main() {
         '48 px targets, no sideways scroll, no emoji chrome');
     }
 
-    // G-02 Star Rally, the racing game (src/js/63-game-race.js). Midway save with 20 min of game time, real touch (CDP touch events,
-    //    touch emulation on) at 380x780 and 1024x600: Home -> Game Room -> the Star Rally card -> the menu (shared bar, 4 places, 3
-    //    tracks, only the first open on a new save) -> the first track: the race screen (Pause, place, lap, sparkles and time chips,
-    //    steer buttons of 96 px or more); after the countdown a held touch on the right button moves the car right and one on the
-    //    left button moves it left; then the race runs 12x faster (RL_DEV.fast, a test hook) to the finish: the shared end card with
-    //    the podium, stars, place, time and sparkles; game time was spent and the clock stopped; Tracks goes back to the menu with
-    //    the stars shown. Buttons 48 px or more, no sideways scroll. At 1024x600 also the frame time while racing under 6x CPU
-    //    throttle: the median interval between frames at most 34 ms (30 fps or better); a busy machine (load above its cores) is
-    //    measured again, up to 3 more times, and the best pass counts, like the map-draw budget.
+    // G-02 / G-02b Star Rally, the racing game (src/js/63-game-race.js). Midway save with 20 min of game time, real touch (CDP touch
+    //    events, touch emulation on) at 380x780 and 1024x600: Home -> Game Room -> the Star Rally card -> the menu (shared bar, the next
+    //    goal, 4 cups with only the first open, 4 places, 3 tracks each, the first cup's tracks open) -> the Sprout Cup by its card: race 1
+    //    (Pause, place, lap, sparkles and time chips, steer buttons of 96 px or more); a held touch on Right moves the car right, one
+    //    on Left left; then, put just before the pond bridge (test hook), a held touch on Right drives into the rail at speed: the car
+    //    spins with dizzy stars and slows, then recovers to cruising speed by itself; to the finish 12x faster (RL_DEV.fast): the end
+    //    card with the standings (6 rows, the child's marked) and "Race 2 of 3"; race 2 and race 3 the same way, then the trophy card
+    //    (or "You raced the whole Sprout Cup!") and the cup saved; the Wave Cup now open (a trophy, or not yet: then racing the cup
+    //    again is offered). A time trial on Daisy Lane saves a best lap and a ghost; racing it again shows the ghost. Game time spent,
+    //    clock stopped after each race. Buttons 48 px or more, no sideways scroll. At 1024x600 also the frame time while racing (Windmill
+    //    Hill, with its tunnel) under 6x CPU throttle: the median frame at most 34 ms; a busy machine is measured again, up to 3 more
+    //    times, and the best pass counts, like the map-draw budget.
     {
       const bad = [], notes = [];
       const os = require('os'), cores = os.cpus().length;
       for (const [w, h] of [[380, 780], [1024, 600]]) {
         const ga = await openApp(browser, { fixture: 'midway', width: w, height: h });
-        const pg = ga.page, at = 'G-02 ' + w + 'x' + h + ' ';
+        const pg = ga.page, at = 'G-02b ' + w + 'x' + h + ' ';
         const cdp = await pg.context().newCDPSession(pg);
         await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 2 });
         const box = sel => pg.evaluate(s => {
@@ -7034,9 +7037,20 @@ async function main() {
             if (r.left < -1 || r.right > vw + 1) out.push('outside ' + (e.id || e.className));
           }
           if (document.documentElement.scrollWidth > vw) out.push('sideways scroll ' + document.documentElement.scrollWidth);
-          for (const s of document.querySelectorAll('.scroll')) if (s.scrollWidth > s.clientWidth + 1) out.push('sideways scroll in ' + s.className);
+          for (const s of document.querySelectorAll('.scroll, .gh-end')) if (s.scrollWidth > s.clientWidth + 1) out.push('sideways scroll in ' + s.className);
           for (const t of document.querySelectorAll('.gh-top')) if (t.getBoundingClientRect().right > vw + 1) out.push('top bar wider than the screen');
           return out;
+        };
+        // a race to its finish, 12x faster (test hook), then the end card
+        const finish = async () => {
+          await pg.evaluate(() => { RL_DEV.fast = 12; });
+          await pg.waitForSelector('.gh-end #rlmenu', { timeout: 40000 });
+          await pg.evaluate(() => { RL_DEV.fast = 1; });
+          await pg.waitForTimeout(500);
+          return pg.evaluate(() => ({ title: (document.querySelector('.gh-end h1') || {}).textContent, rows: document.querySelectorAll('.gh-end .rl-stand li').length,
+            me: document.querySelectorAll('.gh-end .rl-stand li.me').length, stats: document.querySelectorAll('.gh-end .gh-stat').length,
+            next: (document.querySelector('.gh-end #rlnextc') || {}).textContent || '', again: !!document.querySelector('.gh-end #rlagain'),
+            used: pt().used, gt: !!GT, race: !!RL, red: /last/i.test(document.querySelector('.gh-end').textContent) }));
         };
         try {
           await pg.evaluate(() => { S.pt = { bank: 1200, day: today(), used: 0 }; save(); home(); });
@@ -7044,20 +7058,24 @@ async function main() {
           await pg.waitForSelector('#grally', { timeout: 8000 });
           await pg.waitForTimeout(450);
           await touch('#grally');
-          await pg.waitForSelector('.rl-trk[data-ok="1"]', { timeout: 8000 });
+          await pg.waitForSelector('.rl-cup[data-ok="1"]', { timeout: 8000 });
           await pg.waitForTimeout(450);
-          const m = await pg.evaluate(() => ({ g: document.querySelector('.gh-top').dataset.g, trk: document.querySelectorAll('.rl-trk').length,
-            open: document.querySelectorAll('.rl-trk[data-ok="1"]').length, places: document.querySelectorAll('.rl-place').length, back: !!document.querySelector('.gh-top #back') }));
-          if (m.g !== 'rally' || m.trk !== 3 || m.open !== 1 || m.places !== 4 || !m.back) bad.push(at + 'menu ' + JSON.stringify(m));
+          const m = await pg.evaluate(() => ({ g: document.querySelector('.gh-top').dataset.g, cups: document.querySelectorAll('.rl-cup').length,
+            cupsOpen: document.querySelectorAll('.rl-cup[data-ok="1"]').length, trk: document.querySelectorAll('.rl-trk').length,
+            open: document.querySelectorAll('.rl-trk[data-ok="1"]').length, places: document.querySelectorAll('.rl-place').length, back: !!document.querySelector('.gh-top #back'),
+            goal: (document.querySelector('#rlgoal') || {}).textContent || '' }));
+          if (m.g !== 'rally' || m.cups !== 4 || m.cupsOpen !== 1 || m.trk !== 3 || m.open !== 2 || m.places !== 4 || !m.back || !/Next goal: .*Sprout Cup/.test(m.goal))
+            bad.push(at + 'menu ' + JSON.stringify(m));
           for (const o of await pg.evaluate(look)) bad.push(at + 'menu: ' + o);
           const used0 = await pg.evaluate(() => pt().used);
-          await touch('.rl-trk[data-ok="1"]');
+          await touch('.rl-cup[data-cup="0"]');
           await pg.waitForSelector('#rlcv', { timeout: 8000 });
           await pg.waitForFunction(() => RL && RL.st.cd <= 0 && RL.st.P.v > 3000, null, { timeout: 15000 });
           const ui = await pg.evaluate(() => ({ pause: !!document.querySelector('.gh-top #gpause'), chips: ['rlpos', 'rllap', 'rlspk', 'gtm'].every(i => document.getElementById(i)),
             btn: [...document.querySelectorAll('.rl-btn')].map(b => Math.round(Math.min(b.getBoundingClientRect().width, b.getBoundingClientRect().height))),
-            px: RL.cv.width, sprites: !!(RL.v.me.c && RL.v.far.c) }));
-          if (!ui.pause || !ui.chips || ui.btn.length !== 2 || ui.btn.some(s => s < 96) || !ui.sprites) bad.push(at + 'race screen ' + JSON.stringify(ui));
+            sub: document.querySelector('.gh-top').textContent, tid: RL.st.tid, sprites: !!(RL.v.me.c && RL.v.far.c) }));
+          if (!ui.pause || !ui.chips || ui.btn.length !== 2 || ui.btn.some(s => s < 96) || !ui.sprites || ui.tid !== 'meadow-0' || !/Sprout Cup 1\/3/.test(ui.sub))
+            bad.push(at + 'race screen ' + JSON.stringify(ui));
           for (const o of await pg.evaluate(look)) bad.push(at + 'race: ' + o);
           // steer with real touches on the two big buttons
           const x0 = await pg.evaluate(() => RL.st.P.x);
@@ -7066,26 +7084,66 @@ async function main() {
           await touch('#rll', 900);
           const x2 = await pg.evaluate(() => RL.st.P.x);
           if (!(x1 > x0 + .2) || !(x2 < x1 - .2)) bad.push(at + 'steering by touch: x ' + [x0, x1, x2].map(v => v.toFixed(2)).join(' -> '));
-          // to the finish, faster (test hook)
-          await pg.evaluate(() => { RL_DEV.fast = 12; });
-          await pg.waitForSelector('.gh-end #rlmenu', { timeout: 40000 });
-          await pg.waitForTimeout(500);
-          const e = await pg.evaluate(() => ({ title: (document.querySelector('.gh-end h1') || {}).textContent, pic: !!document.querySelector('.gh-end .gh-epic svg'),
-            stars: !!document.querySelector('.gh-end .rate'), stats: document.querySelectorAll('.gh-end .gh-stat').length, used: pt().used, gt: !!GT, race: !!RL,
-            saved: JSON.stringify([S.rally.stars['meadow-0'], S.rally.races, S.rally.spk > 0, S.rally.best['meadow-0'] > 0]), red: /last/i.test(document.querySelector('.gh-end').textContent) }));
-          await pg.evaluate(() => { RL_DEV.fast = 1; });
-          if (!/^(You won!|\dnd place!|\drd place!|You finished the race!)$/.test(e.title || '') || !e.pic || !e.stars || e.stats !== 3 || e.red) bad.push(at + 'end card ' + JSON.stringify(e));
-          if (!(e.used > used0) || e.gt || e.race) bad.push(at + 'game time: used ' + used0 + ' -> ' + e.used + ', clock still running ' + e.gt + ', race ' + e.race);
-          if (!/^\[[123],1,true,true\]$/.test(e.saved)) bad.push(at + 'saved after the race ' + e.saved);
-          for (const o of await pg.evaluate(look)) bad.push(at + 'end card: ' + o);
-          notes.push(w + 'x' + h + ' ' + e.title + ' (game time ' + used0 + ' -> ' + e.used + ' s)');
+          // a crash: put just before the pond bridge (its rails), then drive into the rail with a held touch on Right
+          await pg.evaluate(() => {
+            const T = RL.st.T, P = RL.st.P;
+            let i = Math.floor(P.d / RL_SEG) % T.n;
+            while (!(T.fl[i] & 2)) i = (i + 1) % T.n;
+            P.d += (rlMod(i - Math.floor(P.d / RL_SEG), T.n) + 6) * RL_SEG;
+            P.x = 0;
+            P.vx = 0;
+            P.v = RL_CRUISE * RL_VMAX;
+            window.__spin = 0;
+            window.__msg = '';
+            const watch = () => { if (!RL) return; if (RL.st.P.spin > 0) window.__spin = Math.max(window.__spin, RL.st.P.spinD); const m = document.querySelector('#rlmsg.on'); if (m && /Dizzy/.test(m.textContent)) window.__msg = m.textContent; requestAnimationFrame(watch); };
+            watch();
+          });
+          await touch('#rlr', 1200);
+          await pg.waitForTimeout(300);
+          const c1 = await pg.evaluate(() => ({ spin: window.__spin, msg: window.__msg, x: RL.st.P.x, hits: RL.st.P.hits }));
+          await pg.waitForTimeout(3500);
+          const c2 = await pg.evaluate(() => ({ spin: RL.st.P.spin, v: RL.st.P.v / RL_VMAX }));
+          if (!(c1.spin > 0) || !c1.msg || !(c1.hits >= 1)) bad.push(at + 'no spin after driving into the rail ' + JSON.stringify(c1));
+          if (!(c2.spin <= 0) || !(c2.v > .7)) bad.push(at + 'the car did not recover after the spin ' + JSON.stringify(c2));
+          notes.push(w + 'x' + h + ' crash: spin ' + c1.spin.toFixed(2) + ' s, "' + c1.msg + '", back to ' + (c2.v * 100).toFixed(0) + ' % speed');
+          // the rest of the cup: race 1 to its end, races 2 and 3
+          const titles = [];
+          for (let k = 1; k <= 3; k++) {
+            if (k > 1) {
+              await touch('#rlnextc');
+              await pg.waitForFunction(n => RL && RL.st.cd <= 0 && document.querySelector('.gh-top').textContent.includes('Sprout Cup ' + n + '/3'), k, { timeout: 15000 });
+            }
+            const e = await finish();
+            titles.push(e.title);
+            if (e.rows !== 6 || e.me !== 1 || e.stats !== 3 || e.red || e.gt || e.race) bad.push(at + 'cup race ' + k + ' end card ' + JSON.stringify(e));
+            if (k < 3 && !new RegExp('Race ' + (k + 1) + ' of 3').test(e.next)) bad.push(at + 'cup race ' + k + ': no next race button ' + JSON.stringify(e));
+            if (k == 3 && (!/^(Gold|Silver|Bronze) trophy!$|^You raced the whole Sprout Cup!$/.test(e.title) || !e.again)) bad.push(at + 'cup end ' + JSON.stringify(e));
+            for (const o of await pg.evaluate(look)) bad.push(at + 'end card ' + k + ': ' + o);
+          }
+          const sv = await pg.evaluate(() => ({ cups: JSON.stringify(S.rally.cups), cup: S.rally.cup || null, open: rlCupOpen(1), used: pt().used,
+            stars: ['meadow-0', 'beach-0', 'meadow-1'].map(t => S.rally.stars[t] || 0) }));
+          const won = /trophy/.test(titles[2]);
+          if (!/"sprout":\{"best":[1-4],"runs":1\}/.test(sv.cups) || sv.cup || sv.open !== won || sv.stars.some(s => !s) || !(sv.used > used0))
+            bad.push(at + 'cup saved ' + JSON.stringify(sv) + ' after ' + titles.join(' / '));
+          notes.push(w + 'x' + h + ' Sprout Cup: ' + titles.join(' / '));
           await touch('#rlmenu');
-          await pg.waitForSelector('.rl-trk[data-ok="1"]', { timeout: 8000 });
-          const after = await pg.evaluate(() => ({ open: document.querySelectorAll('.rl-trk[data-ok="1"]').length, rated: document.querySelector('[data-trk="meadow-0"] .rs.on') != null }));
-          if (after.open !== 2 || !after.rated) bad.push(at + 'menu after the race ' + JSON.stringify(after));
-          // the frame time while racing at 6x CPU throttle (1024x600)
+          await pg.waitForSelector('.rl-tt[data-tt="meadow-0"]', { timeout: 8000 });
+          // a time trial: a best lap and a ghost are saved; the next trial shows the ghost
+          await touch('.rl-tt[data-tt="meadow-0"]');
+          await pg.waitForFunction(() => RL && RL.st.cd <= 0 && RL.st.trial, null, { timeout: 15000 });
+          const t1 = await finish();
+          const gs = await pg.evaluate(() => ({ lap: S.rally.lap['meadow-0'], g: (S.rally.ghost['meadow-0'] || {}).g || '' }));
+          if (!/best lap|Time trial/.test(t1.title) || !(gs.lap > 10000) || !(gs.g.length > 100)) bad.push(at + 'time trial ' + JSON.stringify([t1, gs.lap, gs.g.length]));
+          await touch('#rlagain');
+          await pg.waitForFunction(() => RL && RL.st.cd <= 0 && RL.st.trial, null, { timeout: 15000 });
+          await pg.waitForTimeout(2500);
+          const gh = await pg.evaluate(() => ({ gh: !!RL.st.gh, drawn: !!(RL.ghost && RL.ghost.d > 0) }));
+          if (!gh.gh || !gh.drawn) bad.push(at + 'the ghost is not raced ' + JSON.stringify(gh));
+          await pg.evaluate(() => rlQuit());
+          await pg.waitForSelector('.rl-cup', { timeout: 8000 });
+          // the frame time while racing at 6x CPU throttle (1024x600), on Windmill Hill (tunnel, rails, hills)
           if (w == 1024) {
-            await touch('.rl-trk[data-ok="1"]');
+            await pg.evaluate(() => rlRace('meadow-1'));
             await pg.waitForFunction(() => RL && RL.st.cd <= 0, null, { timeout: 15000 });
             await pg.waitForTimeout(1500);
             let best = null, tries = 0, load = os.loadavg()[0];
@@ -7106,7 +7164,7 @@ async function main() {
             }
             const how = `${tries} pass${tries > 1 ? 'es' : ''}, load ${load.toFixed(1)} on ${cores} cores`;
             if (best.med > 34) bad.push(at + `frame interval at 6x throttle: median ${best.med.toFixed(1)} ms (${how}, limit 34)`);
-            notes.push(`6x throttle: median frame ${best.med.toFixed(1)} ms, 90th ${best.p90.toFixed(1)} ms, JS ${best.work.toFixed(1)} ms a frame, ` +
+            notes.push(`6x throttle (Windmill Hill): median frame ${best.med.toFixed(1)} ms, 90th ${best.p90.toFixed(1)} ms, JS ${best.work.toFixed(1)} ms a frame, ` +
               `${best.n} frames in 3 s, pixel scale ${best.q} (${how})`);
             await pg.evaluate(() => rlQuit());
           }
@@ -7118,9 +7176,10 @@ async function main() {
         for (const e of ga.errors) fail(e);
         await ga.ctx.close();
       }
-      if (bad.length) fail('G-02 racing game:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
-      else step('G-02: Star Rally by real touch at 380x780 and 1024x600: hub card -> menu -> race (steered right and left with the 96 px buttons) -> ' +
-        'finish -> shared end card -> menu with the stars; game time spent, clock stopped; 48 px targets, no sideways scroll; ' + notes.join('; '));
+      if (bad.length) fail('G-02b racing game:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('G-02b: Star Rally by real touch at 380x780 and 1024x600: hub card -> menu (next goal, cups) -> the Sprout Cup (steered with the 96 px ' +
+        'buttons, a crash into the bridge rail spun and recovered, 3 races with standings, the cup saved) -> a time trial and its ghost; game time spent, ' +
+        'clock stopped; 48 px targets, no sideways scroll; ' + notes.join('; '));
     }
 
     // P4-15 Object art set C (src/data/d-art-c.js), midway save at 380x780: questions that use the new drawings, drawn by the real
