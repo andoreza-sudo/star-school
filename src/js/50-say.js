@@ -81,7 +81,7 @@ function spkLeave(){SPK.tok++;clearInterval(SPK.iv);SPK.tm.forEach(clearTimeout)
 const spkT=(f,ms)=>{const t=SPK.tok;SPK.tm.push(setTimeout(()=>{if(spkLive(t))f()},ms))};
 // an English line on screen; spoken too for Pre-K and K (and with "Read questions out loud" on)
 function spkTip(t,speak){const e=$('#spktip');if(e)e.textContent=t;if(speak&&(SPK.pk||S.voice))say(t)}
-function spkOpen(q,done){spkLeave();const it=spkItem(q),nov=esVoice()=='no';SPK.it=it;SPK.done=done;SPK.pk=gradeOf()<=0;SPK.nov=nov;SPK.heard=null;
+function spkOpen(q,done){spkLeave();const it=spkItem(q),nov=esVoice()=='no'&&!esHas(it.say);SPK.it=it;SPK.done=done;SPK.pk=gradeOf()<=0;SPK.nov=nov;SPK.heard=null;
   view(`<div class="top tbar gx-mtop spk-top s-es">${UI.ibtn('close','Stop',{size:'sm',id:'quit'})}<div class="ttl gx-ttl"><span class="gx-tb">${ico('mic',24)}</span><span>Say it!</span></div></div>
   <div class="play spk s-es"><div class="spk-card">
    ${it.who?`<p class="spk-role">You are <b>${esc(it.who)}</b>! Say ${esc(it.who)}’s line.</p>`:''}
@@ -103,13 +103,17 @@ function spkOpen(q,done){spkLeave();const it=spkItem(q),nov=esVoice()=='no';SPK.
 function spkReady(first){SPK.state='ready';const a=$('#spkact');
   a.innerHTML=`<button class="spk-mic" id="spkmic" aria-label="Record: say it in Spanish">${ico('mic',48)}</button><span class="spk-ml" aria-hidden="true">Tap, then say it</span>`;
   $('#spkmic').onclick=spkRec;
-  spkTip(first?(SPK.nov?'Read it out loud: tap the microphone, then say it!':'Listen, then tap the microphone and say it!'):'Tap the microphone and say it again!',true);
-  if(!SPK.nov)say(SPK.it.say,null,'es',1)} // the model, after the English line
+  // the English tip is spoken only the first time this session (or when there is no Spanish voice): an English line right
+  // before the Spanish model made the tablet switch its speech engine, a gap of seconds; after that only the model is spoken.
+  // ES-AUDIO: a recorded model plays straight after the English (no engine switch), so the tip is spoken every time
+  const tipSay=SPK.nov||!spkReady.told||esHas(SPK.it.say);spkReady.told=true;
+  spkTip(first?(SPK.nov?'Read it out loud: tap the microphone, then say it!':'Listen, then tap the microphone and say it!'):'Tap the microphone and say it again!',tipSay);
+  if(!SPK.nov)say(SPK.it.say,null,'es',tipSay?1:0)} // the model (after the English line only the first time)
 async function spkRec(){if(SPK.state=='rec')return spkStop();if(SPK.state!='ready')return;
   SPK.state='ask';const t=SPK.tok;let st;
   try{st=await navigator.mediaDevices.getUserMedia({audio:true})}catch(e){if(spkLive(t))spkGU(e&&e.name=='NotFoundError'?'none':'denied');return}
   if(!spkLive(t)){st.getTracks().forEach(x=>x.stop());return}
-  try{speechSynthesis.cancel()}catch(e){}
+  hush();
   SPK.st=st;const ch=[];let mr;
   try{mr=new MediaRecorder(st)}catch(e){st.getTracks().forEach(x=>x.stop());SPK.st=null;return spkGU('none')}
   SPK.mr=mr;mr.ondataavailable=e=>{if(e.data&&e.data.size)ch.push(e.data)};
@@ -138,7 +142,7 @@ function spkHeard(){const e=$('#spkheard'),h=SPK.heard;if(!e||SPK.state!='check'
   e.innerHTML=`${ico(ok?'check-circle':'ear',22,ok?'ic-good':'ic-brand')}<span>That sounded like “<span lang="es">${esc(said)}</span>”.${ok?' ¡Muy bien!':' Listen again and compare.'}</span>`;e.classList.add('on')}
 // the model, then the child's own recording, then the self-check
 function spkModel(cb){const t=SPK.tok;if(SPK.nov)return spkT(cb,200);say(SPK.it.say,null,'es');const t0=Date.now();
-  const w=()=>{if(!spkLive(t))return;let busy=false;try{busy=speechSynthesis.speaking||speechSynthesis.pending}catch(e){}
+  const w=()=>{if(!spkLive(t))return;const busy=speakBusy(); // the voice or the recording (ES-AUDIO)
     if(busy&&Date.now()-t0<6000)spkT(w,150);else spkT(cb,250)};spkT(w,400)}
 function spkMine(cb){const t=SPK.tok;let fired=false;const go=()=>{if(fired||!spkLive(t))return;fired=true;cb()};
   try{const a=new Audio(SPK.url);SPK.au=a;a.onended=a.onerror=go;a.play().catch(go);sfxDuck(()=>!a.ended&&!a.paused)}catch(e){return go()}
