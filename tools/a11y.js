@@ -152,6 +152,9 @@ const SCREENS = {
     main: '.bb-pal button',
     sheet: async p => { await p.click('#bbmore'); await p.waitForTimeout(500); return { close: 'escape' }; },
   },
+  // G-01b: a picture build (the task card with its picture button) and the menu with a gallery picture and every chapter open
+  'blocks-pic': { run: ev(() => { gtime(); for (let i = 0; i < 16; i++) bbBP()[BBP[i].id] = 2; blockBuilder(16); }), main: '.bb-pal button', sheet: pauseSheet },
+  'blocks-journey': { run: ev(() => { gtime(); for (let i = 0; i < 20; i++) bbBP()[BBP[i].id] = 3; const g = bbGal(); if (!g.length) g.push({ n: 'My Island', d: bbPack(bbGen('island', 7)), t: today() }); bbMenu(); }) },
   'rally-menu': { run: ev(() => { rlSave(); rlMenu(); }) },
   'rally-garage': { run: ev(() => { rlSave(); rlGarage({ k: 'paint', id: 'b' }); }) },
   'rally-race': { run: async p => { await p.evaluate(() => rlSave()); await p.evaluate(() => rlRace('meadow-0')); await p.waitForTimeout(4500); }, main: '.rl-btn', sheet: pauseSheet },
