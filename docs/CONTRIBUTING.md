@@ -194,7 +194,7 @@ How it fits together:
   `games file v104 does not match (app v105)`. Nothing else in the save changes.
 - Sizes (budgets in `tools/test.js`): index.html warn 1.2 MB / fail 1.5 MB (ROADMAP R1; the check `parts split A11c` wants it under 1.0 MB), each part file warn 400 KB / fail 800 KB,
   data file warn 1 MB / fail 2 MB. P6-02: **loaded at start** (index.html + the start-up parts + the data file) warn 2 MB / fail 3.0 MB;
-  **precached** (every built file, the LAZY parts too) fail 3.3 MB (the all-files limit G-04a raised from 3.0 to 3.3 MB for `games2`; with the
+  **precached** (every built file, the LAZY parts too) fail 3.6 MB (the all-files limit G-04a raised from 3.0 to 3.3 MB for `games2`, G-01b to 3.6 MB for the Block Builder journey; with the
   games on demand, 3.0 MB holds again for what loads at start; ES-AUDIO raised it to 3.4 MB for the recordings' 28 KB manifest in the data file).
   ES-AUDIO: **audio** (`audio/es/*.ogg`, the recorded Spanish) is its own budget: warn 2.5 MB / fail 3.0 MB in all, 40 KB a file
   (`AUDIO_*` in tools/test.js). It never counts toward the start-up bytes: say() fetches a file the first time its line is said (from the
