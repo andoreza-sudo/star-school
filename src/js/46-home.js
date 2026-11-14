@@ -341,7 +341,7 @@ function nodeFace(n,lk){if(lk)return ico('lock',32);
 /* Map of a path (P1-05: long maps). A strip of world chips, grouped by grade, sits above the map; the map draws only the picked
    world and its two neighbours, so it stays fast with 16 worlds and 150 stops. pathMap(p) opens on the world the child is in
    (or the one they just played); pathMap(p, wi) opens on world wi. */
-function pathMap(p,wi){MAPP=p;const P=PATHS[p];
+function pathMap(p,wi){MAPP=p;const P=PATHS[p];if(p=="es")warmVoices(); // wake the Spanish and English voices before the first card or question
   const last=G&&G.path==p&&G.node>=0&&NODES[p][G.node]?G.node:-1;
   MAPW[p]=wi!=null?wi:last>=0?NODES[p][last].wi:curWorld(p);
   view(`<div class="top tbar mp-top s-${p}">${UI.ibtn('back','Back',{size:'sm',id:'back'})}<div class="ttl mp-ttl">${ico(UI.SUBJ_ICON[p]||'map',30)}<span>${esc(P.n)}</span></div>${UI.chip('star',S.stars,{aria:'Stars'})}</div>
