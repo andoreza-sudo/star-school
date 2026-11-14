@@ -117,3 +117,49 @@
 
 /* P6-01: the palette scrolls and clips, so a block's focus ring sits inside its button */
 .bb-k:focus-visible{outline-offset:-4px}
+
+/* G-01b: the task of a build in the scene (bottom left): its kind, what to do, and for a picture or a fix the picture (tap: bigger) */
+.bb-task{position:absolute;left:var(--s-2);bottom:var(--s-2);z-index:2;display:flex;align-items:flex-end;gap:var(--s-2);max-width:calc(100% - 16px);pointer-events:none}
+.bb-tt{margin:0;display:flex;flex-direction:column;gap:2px;max-width:260px;padding:6px 12px 8px;border-radius:var(--r-card);background:var(--surface);color:var(--ink);
+  box-shadow:var(--shadow),inset 0 0 0 2px var(--line);font-size:var(--fs-2);line-height:1.25}
+.bb-tm{display:inline-flex;align-items:center;gap:4px;font-family:var(--font-display);font-weight:700;color:var(--es-shade)}
+.bb-tm .ic{flex:none;color:var(--es)}
+.bb-tpic{pointer-events:auto;flex:none;display:grid;place-items:center;width:96px;height:76px;padding:2px;border:0;border-radius:var(--r-card);
+  background:var(--surface);box-shadow:var(--shadow),inset 0 0 0 3px var(--es);cursor:pointer;transform-origin:0 100%;transition:transform var(--t) var(--ease)}
+.bb-tpic canvas{width:100%;height:100%}
+.bb-tpic[aria-pressed="true"]{transform:scale(1.9)}
+@media (max-width:420px){.bb-tt{max-width:200px}}
+/* the menu: the next goal line, chapters, the day's build, the gallery */
+.bb-goal{display:flex;align-items:center;gap:var(--s-3);margin:var(--s-2) 0 var(--s-3);padding:var(--s-2) var(--s-3);border-radius:var(--r-card);
+  background:var(--surface);color:var(--ink);font-size:var(--fs-3);line-height:1.3;box-shadow:inset 0 0 0 2px var(--es-tint),0 4px 0 var(--ledge-soft)}
+.bb-gi{flex:none;display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--es-tint);color:var(--es-shade)}
+.bb-sep{display:inline-block;width:var(--s-2)}
+.bb-chap{margin:0 0 var(--s-3);padding:var(--s-2) 0 0;border-radius:var(--r-card)}
+.bb-chh{display:flex;align-items:center;gap:var(--s-2);margin:0 0 2px;padding:var(--s-1) var(--s-2);border-radius:var(--r-btn);background:var(--sc-green);color:var(--ink);font-size:var(--fs-3)}
+.s-beach .bb-chh{background:var(--sc-sand)}.s-snow .bb-chh{background:var(--sc-sea)}.s-sky .bb-chh{background:var(--sc-peach)}
+.bb-chap.lock .bb-chh{background:var(--surface-2)}
+.bb-chi{flex:none;display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:var(--surface);color:var(--es-shade)}
+.bb-cht{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.2}
+.bb-cht b{font-family:var(--font-display);font-size:var(--fs-4)}
+.bb-cht span{font-size:var(--fs-2);font-weight:400;color:var(--ink-2)}
+.bb-chn{flex:none;display:inline-flex;align-items:center;gap:4px;font-family:var(--font-display);font-size:var(--fs-3)}
+.bb-bm{display:inline-flex;align-items:center;gap:3px;font-size:var(--fs-2);color:var(--es-shade);font-weight:700}
+.bb-bm .ic{flex:none}
+.bb-bp.lock .bb-bm{color:var(--ink-3)}
+.bb-bpg .bb-bp{min-height:170px}
+.bb-w.lock{background:var(--surface-2);color:var(--ink-3)}
+.bb-w.lock canvas{opacity:.35}
+.bb-wpic{position:relative}
+.bb-gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:var(--s-2)}
+.bb-gc{display:flex;flex-direction:column;align-items:center;gap:4px;min-height:120px;padding:var(--s-2);border:0;border-radius:var(--r-card);background:var(--surface);color:var(--ink);
+  box-shadow:0 4px 0 var(--line),inset 0 0 0 2px var(--line);font:inherit;cursor:pointer}
+.bb-gpic{display:grid;place-items:center;width:100%;aspect-ratio:22/15;border-radius:var(--r-btn);background:linear-gradient(var(--sc-sky-1),var(--sc-sky))}
+.bb-gpic canvas{width:100%;height:100%}
+.bb-gcn{font-family:var(--font-display);font-size:var(--fs-2);font-weight:700;line-height:1.2;text-align:center}
+.bb-gbig canvas{display:block;width:100%;max-width:600px;aspect-ratio:3/2;margin:0 auto;border-radius:var(--r-card);background:linear-gradient(var(--sc-sky-1),var(--sc-sky))}
+.bb-gn{font-family:var(--font-body);font-size:var(--fs-2);font-weight:400;color:var(--ink-2);margin-left:var(--s-2)}
+.bb-alldone{display:flex;align-items:center;gap:var(--s-2);color:var(--good-ink)}
+.bb-sheet .btn.wide{margin-top:var(--s-2)}
+/* the end card: the child's build (or the trophy) as its picture */
+.gh-epic>.bb-epic{display:block;width:100%;height:100%;object-fit:contain}
+.gh-epic>.bb-etro{display:block;height:100%;margin:0 auto}

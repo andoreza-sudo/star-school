@@ -1,6 +1,6 @@
-/* Star School games v153. BUILT by tools/build.py from 48-game-hub.css, 60-game-blocks.css, 59-game-hub.js, 60-blocks.js, 62-hill.js, 64-gtimer.js, 66-colornum.js, 68-lowpoly.js, 70-art.js, 72-shapes.js: never edit by hand.
-   index.html v153 loads this file on demand (partsThen in src/js/90-app.js, P6-02), after data.v153.js. */
-(function(){var s=document.createElement('style');s.id='css-games';s.textContent="/* Game Room hub and shared game chrome (P4-16; src/js/59-game-hub.js; DESIGN_SYSTEM.md 9 row 8). Ships in games.<VER>.js (A11b),\n   after index.html's own CSS. Tokens only; motion is transform/opacity. The hub: a fair scene with the game-time ticket, a drawn\n   card per registered game, how to earn more. Every game screen: one top bar .gh-top (back or pause, badge and name, tools, chips,\n   the time chip, sound), the pause sheet .gh-sheet and the end card .gh-end. Game canvases are not restyled. */\n\n/* ---- the hub ---- */\n.gh-room{display:flex;flex-direction:column;flex:1;min-height:0}\n.gh-scroll{padding:var(--s-1) var(--s-4) var(--s-7)}\n.gh-hero{position:relative;height:220px;max-width:1040px;margin:0 auto var(--s-5);border-radius:var(--r-hero);overflow:hidden;\n  background:linear-gradient(var(--sc-sky-1),var(--sc-sky) 62%,var(--sc-green) 63%);box-shadow:inset 0 0 0 2px var(--wash),0 5px 0 var(--sc-green-2)}\n.gh-scene{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}\n.gh-tk{position:absolute;left:50%;bottom:14px;width:min(300px,82%);aspect-ratio:300/104;transform:translateX(-50%)}\n.gh-tks{position:absolute;inset:0;display:block;width:100%;height:100%}\n.gh-tkt{position:absolute;left:34%;right:5%;top:13%;bottom:18%;display:flex;flex-direction:column;align-items:center;justify-content:center;\n  text-align:center;line-height:1;color:var(--ink)}\n.gh-tkt b{font-family:var(--font-display);font-size:var(--fs-7);font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:.01em}\n.gh-tkt span{margin-top:var(--s-1);font-size:var(--fs-2);font-weight:700;color:var(--ink-2);white-space:nowrap}\n.gh-hero.off .gh-tkt b{color:var(--ink-3)}\n.gh-why{display:flex;flex-direction:column;align-items:center;gap:var(--s-3);margin:0 auto var(--s-6);text-align:center}\n.gh-why .btn.lg{padding-left:var(--s-5);padding-right:var(--s-5)}\n@media (max-width:480px){.gh-why .btn.lg{font-size:var(--fs-4)}}\n.gh-why.on{margin-bottom:var(--s-4)}\n.gh-why p{max-width:34ch;margin:0;font-size:var(--fs-3);font-weight:700;line-height:1.35;color:var(--ink-2)}\n\n/* a card per game: the drawn picture on its backdrop, the name and one line, the play disc */\n.gh-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,272px),1fr));gap:var(--s-5);max-width:1040px;margin:0 auto}\n.gh-card{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:var(--s-3);\n  padding:var(--s-3) var(--s-3) var(--s-4);border:0;border-radius:var(--r-hero);background:var(--surface);color:var(--ink);font:inherit;\n  text-align:left;cursor:pointer;touch-action:manipulation;box-shadow:inset 0 0 0 2px var(--line),0 6px 0 var(--ledge-soft),0 12px 18px var(--drop);\n  transition:transform var(--t-fast) var(--ease)}\n.gh-card:active,.gh-card.is-press{transform:translateY(4px)}\n.gh-card{--c-fill:var(--c);--c-ledge:var(--c-shade)}\n.gh-card.s-play{--c-fill:var(--play-shade);--c-ledge:var(--play-deep)}\n.gh-pic{position:relative;grid-column:1/-1;display:block;height:150px;border-radius:var(--r-card);overflow:hidden;\n  background:linear-gradient(var(--gh-a),var(--gh-b));box-shadow:inset 0 -4px 0 var(--shadow-ink)}\n.gh-art{display:block;width:100%;height:100%}\n.gh-info{min-width:0;padding:0 0 0 var(--s-2)}\n.gh-name{display:block;font-family:var(--font-display);font-size:var(--fs-5);font-weight:700;line-height:1.15;color:var(--ink)}\n.gh-sub{display:flex;flex-wrap:wrap;gap:2px var(--s-3);margin-top:var(--s-1);font-size:var(--fs-2);line-height:1.35;color:var(--ink-2)}\n.gh-sub>span{display:inline-flex;align-items:center;gap:var(--s-1)}\n.gh-sub b{color:var(--ink)}\n.gh-sub .ic{flex:none;color:var(--star-shade)}\n.gh-go{display:grid;place-items:center;width:64px;height:64px;margin-right:var(--s-1);border-radius:50%;color:var(--surface);\n  background:linear-gradient(var(--hi),var(--hi-0) 60%) var(--c-fill,var(--c));box-shadow:inset 0 2px 0 var(--hi),0 5px 0 var(--c-ledge,var(--c-shade))}\n.gh-go .ic{width:30px;height:30px;margin-left:3px}\n.gh-flag{position:absolute;left:var(--s-3);bottom:var(--s-3);display:inline-flex;align-items:center;gap:var(--s-1);padding:var(--s-1) var(--s-3) var(--s-1) var(--s-2);\n  border-radius:var(--r-pill);background:var(--surface);color:var(--ink);font-size:var(--fs-2);font-weight:700;line-height:1.2;\n  box-shadow:0 3px 0 var(--ledge-soft)}\n.gh-flag .ic{flex:none;color:var(--play)}\n.gh-card:is(.need,.lock) .gh-pic::after{content:'';position:absolute;inset:0;background:var(--wash)}\n.gh-card:is(.need,.lock) .gh-flag{z-index:1}\n.gh-card:is(.need,.lock) .gh-go{background:var(--surface-2);color:var(--ink-3);box-shadow:inset 0 0 0 2px var(--line),0 5px 0 var(--ledge-soft)}\n.gh-card.lock{cursor:default}\n.gh-card.lock .gh-go .ic{margin-left:0}\n\n/* how to earn more game time */\n.gh-earn{max-width:1040px;margin:var(--s-7) auto 0;padding:var(--s-5);border-radius:var(--r-card);background:var(--surface);\n  box-shadow:inset 0 0 0 2px var(--line),0 5px 0 var(--ledge-soft)}\n.gh-earn h2{display:flex;align-items:center;gap:var(--s-2);margin:0 0 var(--s-4);font-family:var(--font-display);font-size:var(--fs-4);line-height:1.2;color:var(--ink)}\n.gh-earn h2 .ic{flex:none;color:var(--play);--ic2:var(--surface)}\n.gh-earn ul{display:grid;gap:var(--s-2) var(--s-6);margin:0;padding:0;list-style:none}\n.gh-earn li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:var(--s-3);font-size:var(--fs-3);line-height:1.3;color:var(--ink)}\n.gh-ei{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:var(--play-tint);color:var(--play-shade);--ic2:var(--play-tint)}\n.gh-earn li b{color:var(--play-shade);text-align:right}\n.gh-earn p{margin:var(--s-4) 0 0;font-size:var(--fs-2);line-height:1.4;color:var(--ink-2)}\n@media (min-width:860px){.gh-earn ul{grid-template-columns:1fr 1fr}}\n\n/* ---- the shared top bar ---- */\n.gh-top .gh-ttl{display:flex;align-items:center;gap:var(--s-2)}\n.gh-tb{flex:none;display:grid;place-items:center;width:44px;height:44px;border-radius:14px;color:var(--surface);\n  background:linear-gradient(var(--hi),var(--hi-0) 60%) var(--c);box-shadow:inset 0 -3px 0 var(--c-shade)}\n.gh-tb .ic{width:26px;height:26px}\n.gh-tt{display:flex;flex-direction:column;min-width:0;line-height:1.15}\n.gh-gn,.gh-gs{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}\n.gh-tt.two .gh-gn{font-size:var(--fs-2);color:var(--c-shade)}\n.gh-tt.two .gh-gs{font-size:var(--fs-4);color:var(--ink)}\n.gh-tools{display:flex;flex:none;gap:var(--s-2)}\n.gh-top .btn.icon.on{background:var(--brand-tint);box-shadow:inset 0 0 0 2px var(--brand),0 4px 0 var(--brand-shade)}\n.gh-top #gpause .ic{color:var(--c-shade)}\n.gh-top .stat.gh-up{background:var(--try-tint);color:var(--try-ink);box-shadow:inset 0 0 0 2px var(--try),0 3px 0 var(--try)}\n.gh-top .stat.gh-up .ic{color:var(--try-ink);--ic2:var(--try-tint)}\n.gh-top .stat.gh-st .ic{color:var(--c-shade)}\n.gh-top .stat.gh-nut .ic{color:var(--star-shade);--ic2:var(--star-tint)}\n@media (max-width:480px){\n  .gh-tb{width:40px;height:40px;border-radius:12px}.gh-tb .ic{width:24px;height:24px}\n  .gh-top.gh-wrap{flex-wrap:wrap}.gh-wrap .gh-tools{order:9;flex-basis:100%;justify-content:flex-end}\n  .gh-top:not(.gh-mtop):not(.gh-hud) .gh-tb{display:none}\n  .gh-tt.two .gh-gs{font-size:var(--fs-3)}\n}\n/* over a full-screen canvas (Hill Climb): no paper behind; the name shows where there is room */\n.gh-top.gh-hud{position:absolute;left:0;right:0;top:0;z-index:2;min-height:0;padding:var(--s-2) var(--s-3);background:none}\n.gh-hud .gh-ttl{flex:0 1 auto;padding:var(--s-1) var(--s-3) var(--s-1) var(--s-1);border-radius:var(--r-pill);background:var(--surface);\n  box-shadow:inset 0 0 0 2px var(--line),0 3px 0 var(--ledge-soft)}\n.gh-hud .gh-ttl .gh-gn{font-size:var(--fs-4)}\n.gh-hud .hcfuel{flex:1;min-width:56px;max-width:240px}\n.gh-hud .hcfuel .ic{flex:none;width:26px;height:26px;color:var(--surface)}\n.gh-hud~.hcprog{top:70px}\n.gh-hud .stat{flex:none;min-height:44px;padding:0 var(--s-3) 0 var(--s-1);font-size:var(--fs-3)}\n.gh-hud .stat .ic{width:28px;height:28px}\n.gh-hud .stat.gh-dist{flex:0 1 auto;min-width:0;padding-left:var(--s-3)}\n.gh-hud .gh-dist b{overflow:hidden;text-overflow:ellipsis}\n@media (max-width:719px){.gh-hud .gh-ttl{display:none}}\n@media (max-width:480px){.gh-top.gh-hud{gap:var(--s-1);padding:var(--s-2)}.gh-hud .stat{padding:0 var(--s-2) 0 2px}.gh-hud .stat .ic{width:24px;height:24px}\n  .gh-hud .hcfuel{min-width:40px}}\n\n/* ---- the pause sheet ---- */\n.gh-sheet{text-align:center}\n.gh-spic{position:relative;height:128px;margin:0 0 var(--s-4);border-radius:var(--r-card);overflow:hidden;background:linear-gradient(var(--gh-a),var(--gh-b))}\n.gh-sheet .gh-acts{display:flex;flex-direction:column;gap:var(--s-3)}\n@media (max-height:520px){.gh-spic{height:84px;margin-bottom:var(--s-2)}.sheet .gh-sheet p{margin-bottom:var(--s-3)}}\n\n/* ---- the end card ---- */\n.ovl.gh-ovl{z-index:65}\n.gh-end{max-width:480px;padding:var(--s-5);overflow-y:auto;overscroll-behavior:contain}\n.gh-epic{position:relative;height:clamp(88px,20vh,140px);border-radius:var(--r-card);overflow:hidden;background:linear-gradient(var(--gh-a),var(--gh-b));\n  box-shadow:inset 0 -4px 0 var(--shadow-ink)}\n.gh-epic.made{display:grid;place-items:center;height:clamp(120px,26vh,200px);background:var(--surface-2)}\n.gh-epic.made>*{width:auto;height:88%;max-width:88%;aspect-ratio:1;border-radius:var(--r-btn);background:var(--surface);\n  box-shadow:0 4px 0 var(--ledge-soft)}\n.gh-epic.made img{image-rendering:pixelated}\n.gh-end .rw-rays{top:-40px}\n.rw-card p.gh-ename{position:relative;margin:var(--s-3) 0 0;font-size:var(--fs-2);font-weight:700;color:var(--c-shade)}\n.rw-card.gh-end h1{margin-top:0}\n.gh-estars{position:relative;margin:0 0 var(--s-2)}\n.rw-card p.gh-etag{position:relative;margin:0 0 var(--s-2)}\n.gh-stats{position:relative;display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,1fr));gap:var(--s-2);margin:var(--s-2) 0 var(--s-3)}\n.gh-stat{display:flex;flex-direction:column;align-items:center;gap:2px;padding:var(--s-2) var(--s-1);border-radius:var(--r-btn);background:var(--surface-2)}\n.gh-stat .ic{color:var(--c-shade)}\n.gh-stat .ic.ic-coin{color:var(--star-shade);--ic2:var(--star-tint)}\n.gh-stat b{font-family:var(--font-display);font-size:var(--fs-4);line-height:1.1;color:var(--ink);font-variant-numeric:tabular-nums}\n.gh-stat span{font-size:var(--fs-2);line-height:1.2;color:var(--ink-2)}\n.gh-extra{position:relative;margin:var(--s-2) 0 var(--s-3)}\n.rw-card p.gh-line{position:relative;display:flex;align-items:center;justify-content:center;gap:var(--s-2);margin:var(--s-2) 0 0;\n  font-size:var(--fs-3);font-weight:700;line-height:1.3;color:var(--ink);text-align:left}\n.gh-line .ic{flex:none;color:var(--c-shade)}\n.gh-end .gh-acts{position:relative;display:flex;flex-direction:column;gap:var(--s-3);margin-top:var(--s-4)}\n.gh-acts .btn.lg{padding-left:var(--s-4);padding-right:var(--s-4)}\n@media (max-width:480px){.gh-stats.n4{grid-template-columns:repeat(2,minmax(0,1fr))}.gh-acts .btn.lg{font-size:var(--fs-4)}\n  .rw-card p.gh-line{font-size:var(--fs-2)}}\n@media (max-height:620px) and (orientation:landscape){\n  .gh-end{max-width:780px;display:grid;grid-template-columns:minmax(0,280px) minmax(0,1fr);column-gap:var(--s-5);align-content:start;padding:var(--s-4)}\n  .gh-end>*{grid-column:2}\n  .gh-end>.gh-epic{grid-column:1;grid-row:1/span 12;align-self:center;height:auto;min-height:0;aspect-ratio:240/120}\n  .gh-end>.gh-epic.made{height:auto;aspect-ratio:1}.gh-epic.made>*{height:auto;width:88%}\n  .gh-end .gh-acts{flex-direction:row;flex-wrap:wrap;justify-content:center}\n  .gh-end .gh-acts .btn{flex:1 1 150px;white-space:nowrap}.gh-end .gh-acts .btn.lg{flex-basis:100%;font-size:var(--fs-4)}\n}\n\n/* the hub on phones and in short landscape */\n@media (max-width:480px){\n  .gh-scroll{padding:var(--s-1) var(--s-3) var(--s-7)}\n  .gh-hero{height:196px}\n  .gh-tk{width:min(256px,76%);bottom:10px}\n  .gh-tkt b{font-size:var(--fs-6)}\n  .gh-pic{height:132px}\n  .gh-name{font-size:var(--fs-4)}\n  .gh-go{width:56px;height:56px}.gh-go .ic{width:26px;height:26px}\n  .gh-earn{padding:var(--s-4)}.gh-earn li{font-size:var(--fs-2)}\n}\n@media (max-height:620px) and (orientation:landscape){\n  .gh-hero{height:196px;margin-bottom:var(--s-4)}\n  .gh-tk{width:min(256px,40%);bottom:10px}\n  .gh-tkt b{font-size:var(--fs-6)}\n  .gh-pic{height:118px}\n}\n/* Block Builder (G-01; src/js/60-blocks.js). Goes into games.<VER>.js with the game. Tokens only.\n   Play screen: the scene, then the tool bar and the palette under it (portrait) or beside it (landscape). Every button 48 px and up. */\n.bb-wrap{flex:1;display:flex;flex-direction:column;min-height:0;gap:var(--s-2);padding:0 var(--s-2) var(--s-2)}\n.bb-cv{flex:1;position:relative;min-height:160px;border-radius:var(--r-card);overflow:hidden;background:var(--sc-sky);box-shadow:inset 0 0 0 2px var(--line)}\n.bb-cv canvas{display:block;width:100%;height:100%;touch-action:none;-webkit-user-select:none;user-select:none}\n.bb-side{flex:none;display:flex;flex-direction:column;gap:var(--s-2);min-height:0;min-width:0}\n.bb-bar{display:flex;flex-direction:column;gap:var(--s-1)}\n.bb-row{display:flex;gap:var(--s-1);align-items:stretch}\n.bb-tb{flex:1 1 0;min-width:48px;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;\n  padding:4px 2px;border:0;border-radius:var(--r-btn);background:var(--surface);color:var(--ink);box-shadow:0 3px 0 var(--line),inset 0 0 0 2px var(--line);\n  font:inherit;font-family:var(--font-display);font-size:var(--fs-2);font-weight:700;line-height:1.1;cursor:pointer;transition:transform var(--t-fast) var(--ease)}\n.bb-tb span{white-space:nowrap}\n.bb-tb .ic{width:26px;height:26px;flex:none}\n.bb-tb:active{transform:translateY(2px)}\n.bb-tb[aria-pressed=\"true\"]{background:var(--brand-tint);color:var(--brand-shade);box-shadow:inset 0 0 0 3px var(--brand),0 3px 0 var(--brand-shade)}\n.bb-tb[aria-disabled=\"true\"]{color:var(--ink-3)}\n.bb-flip .ic{transform:scaleX(-1)}\n#bbboom[aria-pressed=\"true\"]{background:var(--try-tint);color:var(--try-ink);box-shadow:inset 0 0 0 3px var(--try),0 3px 0 var(--try-ink)}\n.bb-seg{flex:3 1 0;display:flex;gap:2px;padding:3px;border-radius:var(--r-btn);background:var(--surface-2);box-shadow:inset 0 0 0 2px var(--line)}\n.bb-seg .bb-tb{min-height:52px;background:transparent;box-shadow:none}\n.bb-seg .bb-tb[aria-pressed=\"true\"]{background:var(--surface);color:var(--brand-shade);box-shadow:inset 0 0 0 3px var(--brand),0 2px 0 var(--brand-shade)}\n/* the palette: groups with a heading, scrolls; soft fades show there is more on a side */\n.bb-pal{position:relative;flex:none;min-height:0;min-width:0}\n.bb-pal[hidden]{display:none}\n.bb-ps{display:flex;gap:var(--s-3);overflow-x:auto;overflow-y:hidden;padding:6px var(--s-1) 6px;scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}\n.bb-ps::-webkit-scrollbar{display:none}\n.bb-grp{flex:none;display:flex;flex-direction:column;gap:2px}\n.bb-gh{font-family:var(--font-display);font-size:var(--fs-2);font-weight:700;color:var(--ink-2);padding-left:4px;white-space:nowrap}\n.bb-gb{display:flex;gap:var(--s-1)}\n.bb-k{flex:none;position:relative;width:72px;min-height:84px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:0;padding:4px 2px 6px;\n  border:0;border-radius:var(--r-btn);background:var(--surface);color:var(--ink);box-shadow:0 3px 0 var(--line),inset 0 0 0 2px var(--line);\n  font:inherit;font-size:var(--fs-2);font-weight:700;line-height:1.05;cursor:pointer;transition:transform var(--t-fast) var(--ease)}\n.bb-k canvas{width:46px;height:46px;flex:none}\n.bb-kn{display:flex;align-items:center;justify-content:center;gap:2px;text-align:center;min-height:30px}\n.bb-kl{color:var(--ink-2)}\n.bb-kl .ic{width:16px;height:16px;flex:none}\n.bb-k[aria-pressed=\"true\"]{background:var(--brand-tint);color:var(--brand-shade);box-shadow:inset 0 0 0 3px var(--brand),0 3px 0 var(--brand-shade);transform:translateY(-2px)}\n.bb-k.lock canvas{opacity:.35}\n.bb-k.hint{box-shadow:inset 0 0 0 4px var(--try),0 3px 0 var(--try-ink);animation:bb-hint .6s var(--ease) 3}\n@keyframes bb-hint{50%{transform:translateY(-6px) scale(1.06)}}\n.bb-pal::before,.bb-pal::after{content:\"\";position:absolute;z-index:1;pointer-events:none;opacity:0;transition:opacity var(--t)}\n.bb-pal::before{left:0;top:0;bottom:0;width:28px;background:linear-gradient(90deg,var(--paper),transparent)}\n.bb-pal::after{right:0;top:0;bottom:0;width:28px;background:linear-gradient(270deg,var(--paper),transparent)}\n.bb-pal.vert::before{right:0;bottom:auto;width:auto;height:28px;background:linear-gradient(180deg,var(--paper),transparent)}\n.bb-pal.vert::after{left:0;top:auto;width:auto;height:28px;background:linear-gradient(0deg,var(--paper),transparent)}\n.bb-pal.can-a::before,.bb-pal.can-b::after{opacity:1}\n/* messages inside the scene, under the top bar (never over Pause or the progress chip) */\n.bb-msg{position:absolute;left:50%;top:var(--s-2);z-index:2;display:flex;align-items:center;gap:var(--s-2);max-width:calc(100% - 16px);\n  padding:6px 14px 6px 6px;border-radius:var(--r-pill);background:var(--surface);color:var(--ink);box-shadow:var(--shadow),inset 0 0 0 2px var(--line);\n  font-family:var(--font-display);font-size:var(--fs-2);font-weight:700;line-height:1.25;pointer-events:none;opacity:0;transform:translate(-50%,-8px);\n  transition:opacity var(--t) var(--ease),transform var(--t) var(--ease)}\n.bb-msg.on{opacity:1;transform:translate(-50%,0)}\n.bb-mi{flex:none;display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:var(--brand);color:var(--surface)}\n.bb-msg.try{color:var(--try-ink)}.bb-msg.try .bb-mi{background:var(--try);color:var(--try-ink)}\n.bb-msg.good{color:var(--good-ink)}.bb-msg.good .bb-mi{background:var(--good)}\n.bb-tip{position:absolute;left:50%;bottom:var(--s-2);z-index:2;max-width:calc(100% - 16px);padding:6px 14px;border-radius:var(--r-pill);\n  background:var(--ink);color:var(--surface);font-size:var(--fs-2);line-height:1.3;text-align:center;pointer-events:none;opacity:0;\n  transform:translate(-50%,8px);transition:opacity var(--t) var(--ease),transform var(--t) var(--ease)}\n.bb-tip.on{opacity:.92;transform:translate(-50%,0)}\n.gh-top .bb-prog b{white-space:nowrap}\n/* landscape (tablets, phones on their side): the tools and the palette in a column beside the scene */\n@media (min-aspect-ratio:5/4) and (min-width:640px){\n  .bb-wrap{flex-direction:row}\n  .bb-side{width:322px}\n  .bb-pal{flex:1}\n  .bb-ps{flex-direction:column;height:100%;overflow-x:hidden;overflow-y:auto;padding:2px 2px 6px}\n  .bb-gb{flex-wrap:wrap}\n}\n/* sheets: Clear area, More, delete a world, pick a world */\n.bb-sheet h2{margin:var(--s-2) 0;font-size:var(--fs-5)}\n.bb-sheet h3{margin:var(--s-4) 0 var(--s-2);font-size:var(--fs-4)}\n.bb-sheet p{margin:0 0 var(--s-3);color:var(--ink-2)}\n.bb-sheet .acts{display:flex;flex-direction:column;gap:var(--s-2);margin-top:var(--s-4)}\n.bb-mts{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s-2);margin-bottom:var(--s-3)}\n.bb-mt{min-height:72px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:0;border-radius:var(--r-btn);\n  background:var(--surface);color:var(--ink);box-shadow:0 3px 0 var(--line),inset 0 0 0 2px var(--line);font:inherit;font-size:var(--fs-2);font-weight:700;cursor:pointer}\n.bb-mt[aria-pressed=\"true\"]{background:var(--brand-tint);color:var(--brand-shade);box-shadow:inset 0 0 0 3px var(--brand),0 3px 0 var(--brand-shade)}\n.bb-goals{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--s-1)}\n.bb-goals li{display:flex;align-items:center;gap:var(--s-2);min-height:40px;font-size:var(--fs-2);color:var(--ink-2);text-align:left}\n.bb-goals li .ic{flex:none;color:var(--ink-3)}\n.bb-goals li.on{color:var(--good-ink)}.bb-goals li.on .ic{color:var(--good)}\n/* the menu */\n.bb-menu{padding-top:var(--s-1)}\n.bb-sec{margin:0 0 var(--s-5)}\n.bb-sec h2{display:flex;align-items:center;gap:var(--s-2);margin:var(--s-2) 0 var(--s-1);font-size:var(--fs-5)}\n.bb-sec h2 .ic{flex:none;color:var(--es)}\n.bb-sc{margin-left:auto;display:inline-flex;align-items:center;gap:4px;font-size:var(--fs-3);color:var(--ink-2)}\n.bb-lead{margin:0 0 var(--s-3);font-size:var(--fs-2);color:var(--ink-2)}\n.bb-bpg{display:flex;gap:var(--s-2);overflow-x:auto;margin:0 -14px;padding:6px 14px 8px;scrollbar-width:thin;-webkit-overflow-scrolling:touch}\n.bb-bpg .bb-bp{flex:none;width:118px}\n.bb-bp{display:flex;flex-direction:column;align-items:center;gap:2px;min-height:148px;padding:var(--s-2) var(--s-1);border:0;border-radius:var(--r-card);\n  background:var(--surface);color:var(--ink);box-shadow:0 4px 0 var(--line),inset 0 0 0 2px var(--line);font:inherit;cursor:pointer;text-align:center}\n.bb-bp.done{background:var(--es-tint)}\n.bb-bp.lock{background:var(--surface-2);color:var(--ink-3)}\n.bb-bpic{position:relative;display:grid;place-items:center;width:100%;height:66px}\n.bb-bp.lock canvas{opacity:.35}\n.bb-lk{position:absolute;inset:0;display:grid;place-items:center;color:var(--ink-2)}\n.bb-bpic canvas{width:88px;height:66px}\n.bb-bpn{font-family:var(--font-display);font-size:var(--fs-2);font-weight:700;line-height:1.2}\n.bb-bps{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:var(--fs-2);color:var(--ink-2)}\n.bb-bpl{font-size:var(--fs-2);line-height:1.2}\n.bb-wl{display:flex;flex-direction:column;gap:var(--s-2)}\n.bb-wrow{display:flex;gap:var(--s-2);align-items:center}\n.bb-w{flex:1;min-width:0;display:flex;align-items:center;gap:var(--s-3);min-height:88px;padding:var(--s-2);border:0;border-radius:var(--r-card);background:var(--surface);\n  color:var(--ink);box-shadow:0 4px 0 var(--line),inset 0 0 0 2px var(--line);font:inherit;text-align:left;cursor:pointer}\n.bb-wpic{flex:none;display:grid;place-items:center;width:110px;height:75px;border-radius:var(--r-btn);background:linear-gradient(var(--sc-sky-1),var(--sc-sky))}\n.bb-wpic canvas{width:110px;height:75px}\n.bb-plus{color:var(--es)}\n.bb-wi{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;font-size:var(--fs-2);color:var(--ink-2)}\n.bb-wi b{font-family:var(--font-display);font-size:var(--fs-4);color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}\n.bb-wg{display:inline-flex;align-items:center;gap:4px}\n.bb-go{flex:none;display:grid;place-items:center;width:48px;height:48px;border-radius:50%;background:var(--es);color:var(--surface)}\n.bb-how ul{list-style:none;margin:0;padding:0;display:grid;gap:var(--s-2)}\n.bb-how li{display:flex;align-items:center;gap:var(--s-3);font-size:var(--fs-2);color:var(--ink-2)}\n.bb-how li .ic{flex:none;color:var(--es)}\n@media (min-width:860px){.bb-how ul{grid-template-columns:1fr 1fr}}\n\n/* P6-01: the palette scrolls and clips, so a block's focus ring sits inside its button */\n.bb-k:focus-visible{outline-offset:-4px}\n";document.head.appendChild(s)})(); // its src/css, after index.html's own CSS (the cascade order of a build without parts)
+/* Star School games v155. BUILT by tools/build.py from 48-game-hub.css, 60-game-blocks.css, 59-game-hub.js, 60-blocks.js, 62-hill.js, 64-gtimer.js, 66-colornum.js, 68-lowpoly.js, 70-art.js, 72-shapes.js: never edit by hand.
+   index.html v155 loads this file on demand (partsThen in src/js/90-app.js, P6-02), after data.v155.js. */
+(function(){var s=document.createElement('style');s.id='css-games';s.textContent="/* Game Room hub and shared game chrome (P4-16; src/js/59-game-hub.js; DESIGN_SYSTEM.md 9 row 8). Ships in games.<VER>.js (A11b),\n   after index.html's own CSS. Tokens only; motion is transform/opacity. The hub: a fair scene with the game-time ticket, a drawn\n   card per registered game, how to earn more. Every game screen: one top bar .gh-top (back or pause, badge and name, tools, chips,\n   the time chip, sound), the pause sheet .gh-sheet and the end card .gh-end. Game canvases are not restyled. */\n\n/* ---- the hub ---- */\n.gh-room{display:flex;flex-direction:column;flex:1;min-height:0}\n.gh-scroll{padding:var(--s-1) var(--s-4) var(--s-7)}\n.gh-hero{position:relative;height:220px;max-width:1040px;margin:0 auto var(--s-5);border-radius:var(--r-hero);overflow:hidden;\n  background:linear-gradient(var(--sc-sky-1),var(--sc-sky) 62%,var(--sc-green) 63%);box-shadow:inset 0 0 0 2px var(--wash),0 5px 0 var(--sc-green-2)}\n.gh-scene{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}\n.gh-tk{position:absolute;left:50%;bottom:14px;width:min(300px,82%);aspect-ratio:300/104;transform:translateX(-50%)}\n.gh-tks{position:absolute;inset:0;display:block;width:100%;height:100%}\n.gh-tkt{position:absolute;left:34%;right:5%;top:13%;bottom:18%;display:flex;flex-direction:column;align-items:center;justify-content:center;\n  text-align:center;line-height:1;color:var(--ink)}\n.gh-tkt b{font-family:var(--font-display);font-size:var(--fs-7);font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:.01em}\n.gh-tkt span{margin-top:var(--s-1);font-size:var(--fs-2);font-weight:700;color:var(--ink-2);white-space:nowrap}\n.gh-hero.off .gh-tkt b{color:var(--ink-3)}\n.gh-why{display:flex;flex-direction:column;align-items:center;gap:var(--s-3);margin:0 auto var(--s-6);text-align:center}\n.gh-why .btn.lg{padding-left:var(--s-5);padding-right:var(--s-5)}\n@media (max-width:480px){.gh-why .btn.lg{font-size:var(--fs-4)}}\n.gh-why.on{margin-bottom:var(--s-4)}\n.gh-why p{max-width:34ch;margin:0;font-size:var(--fs-3);font-weight:700;line-height:1.35;color:var(--ink-2)}\n\n/* a card per game: the drawn picture on its backdrop, the name and one line, the play disc */\n.gh-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,272px),1fr));gap:var(--s-5);max-width:1040px;margin:0 auto}\n.gh-card{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:var(--s-3);\n  padding:var(--s-3) var(--s-3) var(--s-4);border:0;border-radius:var(--r-hero);background:var(--surface);color:var(--ink);font:inherit;\n  text-align:left;cursor:pointer;touch-action:manipulation;box-shadow:inset 0 0 0 2px var(--line),0 6px 0 var(--ledge-soft),0 12px 18px var(--drop);\n  transition:transform var(--t-fast) var(--ease)}\n.gh-card:active,.gh-card.is-press{transform:translateY(4px)}\n.gh-card{--c-fill:var(--c);--c-ledge:var(--c-shade)}\n.gh-card.s-play{--c-fill:var(--play-shade);--c-ledge:var(--play-deep)}\n.gh-pic{position:relative;grid-column:1/-1;display:block;height:150px;border-radius:var(--r-card);overflow:hidden;\n  background:linear-gradient(var(--gh-a),var(--gh-b));box-shadow:inset 0 -4px 0 var(--shadow-ink)}\n.gh-art{display:block;width:100%;height:100%}\n.gh-info{min-width:0;padding:0 0 0 var(--s-2)}\n.gh-name{display:block;font-family:var(--font-display);font-size:var(--fs-5);font-weight:700;line-height:1.15;color:var(--ink)}\n.gh-sub{display:flex;flex-wrap:wrap;gap:2px var(--s-3);margin-top:var(--s-1);font-size:var(--fs-2);line-height:1.35;color:var(--ink-2)}\n.gh-sub>span{display:inline-flex;align-items:center;gap:var(--s-1)}\n.gh-sub b{color:var(--ink)}\n.gh-sub .ic{flex:none;color:var(--star-shade)}\n.gh-go{display:grid;place-items:center;width:64px;height:64px;margin-right:var(--s-1);border-radius:50%;color:var(--surface);\n  background:linear-gradient(var(--hi),var(--hi-0) 60%) var(--c-fill,var(--c));box-shadow:inset 0 2px 0 var(--hi),0 5px 0 var(--c-ledge,var(--c-shade))}\n.gh-go .ic{width:30px;height:30px;margin-left:3px}\n.gh-flag{position:absolute;left:var(--s-3);bottom:var(--s-3);display:inline-flex;align-items:center;gap:var(--s-1);padding:var(--s-1) var(--s-3) var(--s-1) var(--s-2);\n  border-radius:var(--r-pill);background:var(--surface);color:var(--ink);font-size:var(--fs-2);font-weight:700;line-height:1.2;\n  box-shadow:0 3px 0 var(--ledge-soft)}\n.gh-flag .ic{flex:none;color:var(--play)}\n.gh-card:is(.need,.lock) .gh-pic::after{content:'';position:absolute;inset:0;background:var(--wash)}\n.gh-card:is(.need,.lock) .gh-flag{z-index:1}\n.gh-card:is(.need,.lock) .gh-go{background:var(--surface-2);color:var(--ink-3);box-shadow:inset 0 0 0 2px var(--line),0 5px 0 var(--ledge-soft)}\n.gh-card.lock{cursor:default}\n.gh-card.lock .gh-go .ic{margin-left:0}\n\n/* how to earn more game time */\n.gh-earn{max-width:1040px;margin:var(--s-7) auto 0;padding:var(--s-5);border-radius:var(--r-card);background:var(--surface);\n  box-shadow:inset 0 0 0 2px var(--line),0 5px 0 var(--ledge-soft)}\n.gh-earn h2{display:flex;align-items:center;gap:var(--s-2);margin:0 0 var(--s-4);font-family:var(--font-display);font-size:var(--fs-4);line-height:1.2;color:var(--ink)}\n.gh-earn h2 .ic{flex:none;color:var(--play);--ic2:var(--surface)}\n.gh-earn ul{display:grid;gap:var(--s-2) var(--s-6);margin:0;padding:0;list-style:none}\n.gh-earn li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:var(--s-3);font-size:var(--fs-3);line-height:1.3;color:var(--ink)}\n.gh-ei{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:var(--play-tint);color:var(--play-shade);--ic2:var(--play-tint)}\n.gh-earn li b{color:var(--play-shade);text-align:right}\n.gh-earn p{margin:var(--s-4) 0 0;font-size:var(--fs-2);line-height:1.4;color:var(--ink-2)}\n@media (min-width:860px){.gh-earn ul{grid-template-columns:1fr 1fr}}\n\n/* ---- the shared top bar ---- */\n.gh-top .gh-ttl{display:flex;align-items:center;gap:var(--s-2)}\n.gh-tb{flex:none;display:grid;place-items:center;width:44px;height:44px;border-radius:14px;color:var(--surface);\n  background:linear-gradient(var(--hi),var(--hi-0) 60%) var(--c);box-shadow:inset 0 -3px 0 var(--c-shade)}\n.gh-tb .ic{width:26px;height:26px}\n.gh-tt{display:flex;flex-direction:column;min-width:0;line-height:1.15}\n.gh-gn,.gh-gs{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}\n.gh-tt.two .gh-gn{font-size:var(--fs-2);color:var(--c-shade)}\n.gh-tt.two .gh-gs{font-size:var(--fs-4);color:var(--ink)}\n.gh-tools{display:flex;flex:none;gap:var(--s-2)}\n.gh-top .btn.icon.on{background:var(--brand-tint);box-shadow:inset 0 0 0 2px var(--brand),0 4px 0 var(--brand-shade)}\n.gh-top #gpause .ic{color:var(--c-shade)}\n.gh-top .stat.gh-up{background:var(--try-tint);color:var(--try-ink);box-shadow:inset 0 0 0 2px var(--try),0 3px 0 var(--try)}\n.gh-top .stat.gh-up .ic{color:var(--try-ink);--ic2:var(--try-tint)}\n.gh-top .stat.gh-st .ic{color:var(--c-shade)}\n.gh-top .stat.gh-nut .ic{color:var(--star-shade);--ic2:var(--star-tint)}\n@media (max-width:480px){\n  .gh-tb{width:40px;height:40px;border-radius:12px}.gh-tb .ic{width:24px;height:24px}\n  .gh-top.gh-wrap{flex-wrap:wrap}.gh-wrap .gh-tools{order:9;flex-basis:100%;justify-content:flex-end}\n  .gh-top:not(.gh-mtop):not(.gh-hud) .gh-tb{display:none}\n  .gh-tt.two .gh-gs{font-size:var(--fs-3)}\n}\n/* over a full-screen canvas (Hill Climb): no paper behind; the name shows where there is room */\n.gh-top.gh-hud{position:absolute;left:0;right:0;top:0;z-index:2;min-height:0;padding:var(--s-2) var(--s-3);background:none}\n.gh-hud .gh-ttl{flex:0 1 auto;padding:var(--s-1) var(--s-3) var(--s-1) var(--s-1);border-radius:var(--r-pill);background:var(--surface);\n  box-shadow:inset 0 0 0 2px var(--line),0 3px 0 var(--ledge-soft)}\n.gh-hud .gh-ttl .gh-gn{font-size:var(--fs-4)}\n.gh-hud .hcfuel{flex:1;min-width:56px;max-width:240px}\n.gh-hud .hcfuel .ic{flex:none;width:26px;height:26px;color:var(--surface)}\n.gh-hud~.hcprog{top:70px}\n.gh-hud .stat{flex:none;min-height:44px;padding:0 var(--s-3) 0 var(--s-1);font-size:var(--fs-3)}\n.gh-hud .stat .ic{width:28px;height:28px}\n.gh-hud .stat.gh-dist{flex:0 1 auto;min-width:0;padding-left:var(--s-3)}\n.gh-hud .gh-dist b{overflow:hidden;text-overflow:ellipsis}\n@media (max-width:719px){.gh-hud .gh-ttl{display:none}}\n@media (max-width:480px){.gh-top.gh-hud{gap:var(--s-1);padding:var(--s-2)}.gh-hud .stat{padding:0 var(--s-2) 0 2px}.gh-hud .stat .ic{width:24px;height:24px}\n  .gh-hud .hcfuel{min-width:40px}}\n\n/* ---- the pause sheet ---- */\n.gh-sheet{text-align:center}\n.gh-spic{position:relative;height:128px;margin:0 0 var(--s-4);border-radius:var(--r-card);overflow:hidden;background:linear-gradient(var(--gh-a),var(--gh-b))}\n.gh-sheet .gh-acts{display:flex;flex-direction:column;gap:var(--s-3)}\n@media (max-height:520px){.gh-spic{height:84px;margin-bottom:var(--s-2)}.sheet .gh-sheet p{margin-bottom:var(--s-3)}}\n\n/* ---- the end card ---- */\n.ovl.gh-ovl{z-index:65}\n.gh-end{max-width:480px;padding:var(--s-5);overflow-y:auto;overscroll-behavior:contain}\n.gh-epic{position:relative;height:clamp(88px,20vh,140px);border-radius:var(--r-card);overflow:hidden;background:linear-gradient(var(--gh-a),var(--gh-b));\n  box-shadow:inset 0 -4px 0 var(--shadow-ink)}\n.gh-epic.made{display:grid;place-items:center;height:clamp(120px,26vh,200px);background:var(--surface-2)}\n.gh-epic.made>*{width:auto;height:88%;max-width:88%;aspect-ratio:1;border-radius:var(--r-btn);background:var(--surface);\n  box-shadow:0 4px 0 var(--ledge-soft)}\n.gh-epic.made img{image-rendering:pixelated}\n.gh-end .rw-rays{top:-40px}\n.rw-card p.gh-ename{position:relative;margin:var(--s-3) 0 0;font-size:var(--fs-2);font-weight:700;color:var(--c-shade)}\n.rw-card.gh-end h1{margin-top:0}\n.gh-estars{position:relative;margin:0 0 var(--s-2)}\n.rw-card p.gh-etag{position:relative;margin:0 0 var(--s-2)}\n.gh-stats{position:relative;display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,1fr));gap:var(--s-2);margin:var(--s-2) 0 var(--s-3)}\n.gh-stat{display:flex;flex-direction:column;align-items:center;gap:2px;padding:var(--s-2) var(--s-1);border-radius:var(--r-btn);background:var(--surface-2)}\n.gh-stat .ic{color:var(--c-shade)}\n.gh-stat .ic.ic-coin{color:var(--star-shade);--ic2:var(--star-tint)}\n.gh-stat b{font-family:var(--font-display);font-size:var(--fs-4);line-height:1.1;color:var(--ink);font-variant-numeric:tabular-nums}\n.gh-stat span{font-size:var(--fs-2);line-height:1.2;color:var(--ink-2)}\n.gh-extra{position:relative;margin:var(--s-2) 0 var(--s-3)}\n.rw-card p.gh-line{position:relative;display:flex;align-items:center;justify-content:center;gap:var(--s-2);margin:var(--s-2) 0 0;\n  font-size:var(--fs-3);font-weight:700;line-height:1.3;color:var(--ink);text-align:left}\n.gh-line .ic{flex:none;color:var(--c-shade)}\n.gh-end .gh-acts{position:relative;display:flex;flex-direction:column;gap:var(--s-3);margin-top:var(--s-4)}\n.gh-acts .btn.lg{padding-left:var(--s-4);padding-right:var(--s-4)}\n@media (max-width:480px){.gh-stats.n4{grid-template-columns:repeat(2,minmax(0,1fr))}.gh-acts .btn.lg{font-size:var(--fs-4)}\n  .rw-card p.gh-line{font-size:var(--fs-2)}}\n@media (max-height:620px) and (orientation:landscape){\n  .gh-end{max-width:780px;display:grid;grid-template-columns:minmax(0,280px) minmax(0,1fr);column-gap:var(--s-5);align-content:start;padding:var(--s-4)}\n  .gh-end>*{grid-column:2}\n  .gh-end>.gh-epic{grid-column:1;grid-row:1/span 12;align-self:center;height:auto;min-height:0;aspect-ratio:240/120}\n  .gh-end>.gh-epic.made{height:auto;aspect-ratio:1}.gh-epic.made>*{height:auto;width:88%}\n  .gh-end .gh-acts{flex-direction:row;flex-wrap:wrap;justify-content:center}\n  .gh-end .gh-acts .btn{flex:1 1 150px;white-space:nowrap}.gh-end .gh-acts .btn.lg{flex-basis:100%;font-size:var(--fs-4)}\n}\n\n/* the hub on phones and in short landscape */\n@media (max-width:480px){\n  .gh-scroll{padding:var(--s-1) var(--s-3) var(--s-7)}\n  .gh-hero{height:196px}\n  .gh-tk{width:min(256px,76%);bottom:10px}\n  .gh-tkt b{font-size:var(--fs-6)}\n  .gh-pic{height:132px}\n  .gh-name{font-size:var(--fs-4)}\n  .gh-go{width:56px;height:56px}.gh-go .ic{width:26px;height:26px}\n  .gh-earn{padding:var(--s-4)}.gh-earn li{font-size:var(--fs-2)}\n}\n@media (max-height:620px) and (orientation:landscape){\n  .gh-hero{height:196px;margin-bottom:var(--s-4)}\n  .gh-tk{width:min(256px,40%);bottom:10px}\n  .gh-tkt b{font-size:var(--fs-6)}\n  .gh-pic{height:118px}\n}\n/* Block Builder (G-01; src/js/60-blocks.js). Goes into games.<VER>.js with the game. Tokens only.\n   Play screen: the scene, then the tool bar and the palette under it (portrait) or beside it (landscape). Every button 48 px and up. */\n.bb-wrap{flex:1;display:flex;flex-direction:column;min-height:0;gap:var(--s-2);padding:0 var(--s-2) var(--s-2)}\n.bb-cv{flex:1;position:relative;min-height:160px;border-radius:var(--r-card);overflow:hidden;background:var(--sc-sky);box-shadow:inset 0 0 0 2px var(--line)}\n.bb-cv canvas{display:block;width:100%;height:100%;touch-action:none;-webkit-user-select:none;user-select:none}\n.bb-side{flex:none;display:flex;flex-direction:column;gap:var(--s-2);min-height:0;min-width:0}\n.bb-bar{display:flex;flex-direction:column;gap:var(--s-1)}\n.bb-row{display:flex;gap:var(--s-1);align-items:stretch}\n.bb-tb{flex:1 1 0;min-width:48px;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;\n  padding:4px 2px;border:0;border-radius:var(--r-btn);background:var(--surface);color:var(--ink);box-shadow:0 3px 0 var(--line),inset 0 0 0 2px var(--line);\n  font:inherit;font-family:var(--font-display);font-size:var(--fs-2);font-weight:700;line-height:1.1;cursor:pointer;transition:transform var(--t-fast) var(--ease)}\n.bb-tb span{white-space:nowrap}\n.bb-tb .ic{width:26px;height:26px;flex:none}\n.bb-tb:active{transform:translateY(2px)}\n.bb-tb[aria-pressed=\"true\"]{background:var(--brand-tint);color:var(--brand-shade);box-shadow:inset 0 0 0 3px var(--brand),0 3px 0 var(--brand-shade)}\n.bb-tb[aria-disabled=\"true\"]{color:var(--ink-3)}\n.bb-flip .ic{transform:scaleX(-1)}\n#bbboom[aria-pressed=\"true\"]{background:var(--try-tint);color:var(--try-ink);box-shadow:inset 0 0 0 3px var(--try),0 3px 0 var(--try-ink)}\n.bb-seg{flex:3 1 0;display:flex;gap:2px;padding:3px;border-radius:var(--r-btn);background:var(--surface-2);box-shadow:inset 0 0 0 2px var(--line)}\n.bb-seg .bb-tb{min-height:52px;background:transparent;box-shadow:none}\n.bb-seg .bb-tb[aria-pressed=\"true\"]{background:var(--surface);color:var(--brand-shade);box-shadow:inset 0 0 0 3px var(--brand),0 2px 0 var(--brand-shade)}\n/* the palette: groups with a heading, scrolls; soft fades show there is more on a side */\n.bb-pal{position:relative;flex:none;min-height:0;min-width:0}\n.bb-pal[hidden]{display:none}\n.bb-ps{display:flex;gap:var(--s-3);overflow-x:auto;overflow-y:hidden;padding:6px var(--s-1) 6px;scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}\n.bb-ps::-webkit-scrollbar{display:none}\n.bb-grp{flex:none;display:flex;flex-direction:column;gap:2px}\n.bb-gh{font-family:var(--font-display);font-size:var(--fs-2);font-weight:700;color:var(--ink-2);padding-left:4px;white-space:nowrap}\n.bb-gb{display:flex;gap:var(--s-1)}\n.bb-k{flex:none;position:relative;width:72px;min-height:84px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:0;padding:4px 2px 6px;\n  border:0;border-radius:var(--r-btn);background:var(--surface);color:var(--ink);box-shadow:0 3px 0 var(--line),inset 0 0 0 2px var(--line);\n  font:inherit;font-size:var(--fs-2);font-weight:700;line-height:1.05;cursor:pointer;transition:transform var(--t-fast) var(--ease)}\n.bb-k canvas{width:46px;height:46px;flex:none}\n.bb-kn{display:flex;align-items:center;justify-content:center;gap:2px;text-align:center;min-height:30px}\n.bb-kl{color:var(--ink-2)}\n.bb-kl .ic{width:16px;height:16px;flex:none}\n.bb-k[aria-pressed=\"true\"]{background:var(--brand-tint);color:var(--brand-shade);box-shadow:inset 0 0 0 3px var(--brand),0 3px 0 var(--brand-shade);transform:translateY(-2px)}\n.bb-k.lock canvas{opacity:.35}\n.bb-k.hint{box-shadow:inset 0 0 0 4px var(--try),0 3px 0 var(--try-ink);animation:bb-hint .6s var(--ease) 3}\n@keyframes bb-hint{50%{transform:translateY(-6px) scale(1.06)}}\n.bb-pal::before,.bb-pal::after{content:\"\";position:absolute;z-index:1;pointer-events:none;opacity:0;transition:opacity var(--t)}\n.bb-pal::before{left:0;top:0;bottom:0;width:28px;background:linear-gradient(90deg,var(--paper),transparent)}\n.bb-pal::after{right:0;top:0;bottom:0;width:28px;background:linear-gradient(270deg,var(--paper),transparent)}\n.bb-pal.vert::before{right:0;bottom:auto;width:auto;height:28px;background:linear-gradient(180deg,var(--paper),transparent)}\n.bb-pal.vert::after{left:0;top:auto;width:auto;height:28px;background:linear-gradient(0deg,var(--paper),transparent)}\n.bb-pal.can-a::before,.bb-pal.can-b::after{opacity:1}\n/* messages inside the scene, under the top bar (never over Pause or the progress chip) */\n.bb-msg{position:absolute;left:50%;top:var(--s-2);z-index:2;display:flex;align-items:center;gap:var(--s-2);max-width:calc(100% - 16px);\n  padding:6px 14px 6px 6px;border-radius:var(--r-pill);background:var(--surface);color:var(--ink);box-shadow:var(--shadow),inset 0 0 0 2px var(--line);\n  font-family:var(--font-display);font-size:var(--fs-2);font-weight:700;line-height:1.25;pointer-events:none;opacity:0;transform:translate(-50%,-8px);\n  transition:opacity var(--t) var(--ease),transform var(--t) var(--ease)}\n.bb-msg.on{opacity:1;transform:translate(-50%,0)}\n.bb-mi{flex:none;display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:var(--brand);color:var(--surface)}\n.bb-msg.try{color:var(--try-ink)}.bb-msg.try .bb-mi{background:var(--try);color:var(--try-ink)}\n.bb-msg.good{color:var(--good-ink)}.bb-msg.good .bb-mi{background:var(--good)}\n.bb-tip{position:absolute;left:50%;bottom:var(--s-2);z-index:2;max-width:calc(100% - 16px);padding:6px 14px;border-radius:var(--r-pill);\n  background:var(--ink);color:var(--surface);font-size:var(--fs-2);line-height:1.3;text-align:center;pointer-events:none;opacity:0;\n  transform:translate(-50%,8px);transition:opacity var(--t) var(--ease),transform var(--t) var(--ease)}\n.bb-tip.on{opacity:.92;transform:translate(-50%,0)}\n.gh-top .bb-prog b{white-space:nowrap}\n/* landscape (tablets, phones on their side): the tools and the palette in a column beside the scene */\n@media (min-aspect-ratio:5/4) and (min-width:640px){\n  .bb-wrap{flex-direction:row}\n  .bb-side{width:322px}\n  .bb-pal{flex:1}\n  .bb-ps{flex-direction:column;height:100%;overflow-x:hidden;overflow-y:auto;padding:2px 2px 6px}\n  .bb-gb{flex-wrap:wrap}\n}\n/* sheets: Clear area, More, delete a world, pick a world */\n.bb-sheet h2{margin:var(--s-2) 0;font-size:var(--fs-5)}\n.bb-sheet h3{margin:var(--s-4) 0 var(--s-2);font-size:var(--fs-4)}\n.bb-sheet p{margin:0 0 var(--s-3);color:var(--ink-2)}\n.bb-sheet .acts{display:flex;flex-direction:column;gap:var(--s-2);margin-top:var(--s-4)}\n.bb-mts{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s-2);margin-bottom:var(--s-3)}\n.bb-mt{min-height:72px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:0;border-radius:var(--r-btn);\n  background:var(--surface);color:var(--ink);box-shadow:0 3px 0 var(--line),inset 0 0 0 2px var(--line);font:inherit;font-size:var(--fs-2);font-weight:700;cursor:pointer}\n.bb-mt[aria-pressed=\"true\"]{background:var(--brand-tint);color:var(--brand-shade);box-shadow:inset 0 0 0 3px var(--brand),0 3px 0 var(--brand-shade)}\n.bb-goals{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--s-1)}\n.bb-goals li{display:flex;align-items:center;gap:var(--s-2);min-height:40px;font-size:var(--fs-2);color:var(--ink-2);text-align:left}\n.bb-goals li .ic{flex:none;color:var(--ink-3)}\n.bb-goals li.on{color:var(--good-ink)}.bb-goals li.on .ic{color:var(--good)}\n/* the menu */\n.bb-menu{padding-top:var(--s-1)}\n.bb-sec{margin:0 0 var(--s-5)}\n.bb-sec h2{display:flex;align-items:center;gap:var(--s-2);margin:var(--s-2) 0 var(--s-1);font-size:var(--fs-5)}\n.bb-sec h2 .ic{flex:none;color:var(--es)}\n.bb-sc{margin-left:auto;display:inline-flex;align-items:center;gap:4px;font-size:var(--fs-3);color:var(--ink-2)}\n.bb-lead{margin:0 0 var(--s-3);font-size:var(--fs-2);color:var(--ink-2)}\n.bb-bpg{display:flex;gap:var(--s-2);overflow-x:auto;margin:0 -14px;padding:6px 14px 8px;scrollbar-width:thin;-webkit-overflow-scrolling:touch}\n.bb-bpg .bb-bp{flex:none;width:118px}\n.bb-bp{display:flex;flex-direction:column;align-items:center;gap:2px;min-height:148px;padding:var(--s-2) var(--s-1);border:0;border-radius:var(--r-card);\n  background:var(--surface);color:var(--ink);box-shadow:0 4px 0 var(--line),inset 0 0 0 2px var(--line);font:inherit;cursor:pointer;text-align:center}\n.bb-bp.done{background:var(--es-tint)}\n.bb-bp.lock{background:var(--surface-2);color:var(--ink-3)}\n.bb-bpic{position:relative;display:grid;place-items:center;width:100%;height:66px}\n.bb-bp.lock canvas{opacity:.35}\n.bb-lk{position:absolute;inset:0;display:grid;place-items:center;color:var(--ink-2)}\n.bb-bpic canvas{width:88px;height:66px}\n.bb-bpn{font-family:var(--font-display);font-size:var(--fs-2);font-weight:700;line-height:1.2}\n.bb-bps{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:var(--fs-2);color:var(--ink-2)}\n.bb-bpl{font-size:var(--fs-2);line-height:1.2}\n.bb-wl{display:flex;flex-direction:column;gap:var(--s-2)}\n.bb-wrow{display:flex;gap:var(--s-2);align-items:center}\n.bb-w{flex:1;min-width:0;display:flex;align-items:center;gap:var(--s-3);min-height:88px;padding:var(--s-2);border:0;border-radius:var(--r-card);background:var(--surface);\n  color:var(--ink);box-shadow:0 4px 0 var(--line),inset 0 0 0 2px var(--line);font:inherit;text-align:left;cursor:pointer}\n.bb-wpic{flex:none;display:grid;place-items:center;width:110px;height:75px;border-radius:var(--r-btn);background:linear-gradient(var(--sc-sky-1),var(--sc-sky))}\n.bb-wpic canvas{width:110px;height:75px}\n.bb-plus{color:var(--es)}\n.bb-wi{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;font-size:var(--fs-2);color:var(--ink-2)}\n.bb-wi b{font-family:var(--font-display);font-size:var(--fs-4);color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}\n.bb-wg{display:inline-flex;align-items:center;gap:4px}\n.bb-go{flex:none;display:grid;place-items:center;width:48px;height:48px;border-radius:50%;background:var(--es);color:var(--surface)}\n.bb-how ul{list-style:none;margin:0;padding:0;display:grid;gap:var(--s-2)}\n.bb-how li{display:flex;align-items:center;gap:var(--s-3);font-size:var(--fs-2);color:var(--ink-2)}\n.bb-how li .ic{flex:none;color:var(--es)}\n@media (min-width:860px){.bb-how ul{grid-template-columns:1fr 1fr}}\n\n/* P6-01: the palette scrolls and clips, so a block's focus ring sits inside its button */\n.bb-k:focus-visible{outline-offset:-4px}\n\n/* G-01b: the task of a build in the scene (bottom left): its kind, what to do, and for a picture or a fix the picture (tap: bigger) */\n.bb-task{position:absolute;left:var(--s-2);bottom:var(--s-2);z-index:2;display:flex;align-items:flex-end;gap:var(--s-2);max-width:calc(100% - 16px);pointer-events:none}\n.bb-tt{margin:0;display:flex;flex-direction:column;gap:2px;max-width:260px;padding:6px 12px 8px;border-radius:var(--r-card);background:var(--surface);color:var(--ink);\n  box-shadow:var(--shadow),inset 0 0 0 2px var(--line);font-size:var(--fs-2);line-height:1.25}\n.bb-tm{display:inline-flex;align-items:center;gap:4px;font-family:var(--font-display);font-weight:700;color:var(--es-shade)}\n.bb-tm .ic{flex:none;color:var(--es)}\n.bb-tpic{pointer-events:auto;flex:none;display:grid;place-items:center;width:96px;height:76px;padding:2px;border:0;border-radius:var(--r-card);\n  background:var(--surface);box-shadow:var(--shadow),inset 0 0 0 3px var(--es);cursor:pointer;transform-origin:0 100%;transition:transform var(--t) var(--ease)}\n.bb-tpic canvas{width:100%;height:100%}\n.bb-tpic[aria-pressed=\"true\"]{transform:scale(1.9)}\n@media (max-width:420px){.bb-tt{max-width:200px}}\n/* the menu: the next goal line, chapters, the day's build, the gallery */\n.bb-goal{display:flex;align-items:center;gap:var(--s-3);margin:var(--s-2) 0 var(--s-3);padding:var(--s-2) var(--s-3);border-radius:var(--r-card);\n  background:var(--surface);color:var(--ink);font-size:var(--fs-3);line-height:1.3;box-shadow:inset 0 0 0 2px var(--es-tint),0 4px 0 var(--ledge-soft)}\n.bb-gi{flex:none;display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--es-tint);color:var(--es-shade)}\n.bb-sep{display:inline-block;width:var(--s-2)}\n.bb-chap{margin:0 0 var(--s-3);padding:var(--s-2) 0 0;border-radius:var(--r-card)}\n.bb-chh{display:flex;align-items:center;gap:var(--s-2);margin:0 0 2px;padding:var(--s-1) var(--s-2);border-radius:var(--r-btn);background:var(--sc-green);color:var(--ink);font-size:var(--fs-3)}\n.s-beach .bb-chh{background:var(--sc-sand)}.s-snow .bb-chh{background:var(--sc-sea)}.s-sky .bb-chh{background:var(--sc-peach)}\n.bb-chap.lock .bb-chh{background:var(--surface-2)}\n.bb-chi{flex:none;display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:var(--surface);color:var(--es-shade)}\n.bb-cht{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.2}\n.bb-cht b{font-family:var(--font-display);font-size:var(--fs-4)}\n.bb-cht span{font-size:var(--fs-2);font-weight:400;color:var(--ink-2)}\n.bb-chn{flex:none;display:inline-flex;align-items:center;gap:4px;font-family:var(--font-display);font-size:var(--fs-3)}\n.bb-bm{display:inline-flex;align-items:center;gap:3px;font-size:var(--fs-2);color:var(--es-shade);font-weight:700}\n.bb-bm .ic{flex:none}\n.bb-bp.lock .bb-bm{color:var(--ink-3)}\n.bb-bpg .bb-bp{min-height:170px}\n.bb-w.lock{background:var(--surface-2);color:var(--ink-3)}\n.bb-w.lock canvas{opacity:.35}\n.bb-wpic{position:relative}\n.bb-gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:var(--s-2)}\n.bb-gc{display:flex;flex-direction:column;align-items:center;gap:4px;min-height:120px;padding:var(--s-2);border:0;border-radius:var(--r-card);background:var(--surface);color:var(--ink);\n  box-shadow:0 4px 0 var(--line),inset 0 0 0 2px var(--line);font:inherit;cursor:pointer}\n.bb-gpic{display:grid;place-items:center;width:100%;aspect-ratio:22/15;border-radius:var(--r-btn);background:linear-gradient(var(--sc-sky-1),var(--sc-sky))}\n.bb-gpic canvas{width:100%;height:100%}\n.bb-gcn{font-family:var(--font-display);font-size:var(--fs-2);font-weight:700;line-height:1.2;text-align:center}\n.bb-gbig canvas{display:block;width:100%;max-width:600px;aspect-ratio:3/2;margin:0 auto;border-radius:var(--r-card);background:linear-gradient(var(--sc-sky-1),var(--sc-sky))}\n.bb-gn{font-family:var(--font-body);font-size:var(--fs-2);font-weight:400;color:var(--ink-2);margin-left:var(--s-2)}\n.bb-alldone{display:flex;align-items:center;gap:var(--s-2);color:var(--good-ink)}\n.bb-sheet .btn.wide{margin-top:var(--s-2)}\n/* the end card: the child's build (or the trophy) as its picture */\n.gh-epic>.bb-epic{display:block;width:100%;height:100%;object-fit:contain}\n.gh-epic>.bb-etro{display:block;height:100%;margin:0 auto}\n";document.head.appendChild(s)})(); // its src/css, after index.html's own CSS (the cascade order of a build without parts)
 /* ---------- Game Room hub and shared game chrome (P4-16; DESIGN_SYSTEM.md 9 row 8; CSS src/css/48-game-hub.css) ----------
    Lives in games.<VER>.js (A11b) and loads before the games (60-blocks ... 72-shapes, NN-game-*.js), so a game file may call GH.reg()
    while it loads. gameRoom() (58-playtime.js, index.html) calls GH.hub() inside a tap, never while loading.
@@ -478,12 +478,16 @@ const BLOCKS = [null,
   { k: 'gold', n: 'Gold', need: 100 }, { k: 'diamond', n: 'Diamond', need: 200 }, { k: 'rainbow', n: 'Rainbow', need: 300 },
   { k: 'flower', n: 'Flower', deco: 1 }, { k: 'mush', n: 'Mushroom', deco: 1 }, { k: 'pet', n: 'My Pet', deco: 1 },
   { k: 'tnt', n: 'TNT' }, { k: 'lava', n: 'Lava', glow: 'orange' }, { k: 'lamp', n: 'Lamp', glow: 'yellow' }, { k: 'pumpkin', n: 'Pumpkin' },
-  { k: 'cactus', n: 'Cactus' }, { k: 'obsidian', n: 'Obsidian' }, { k: 'ice', n: 'Ice', see: 1 }];
+  { k: 'cactus', n: 'Cactus' }, { k: 'obsidian', n: 'Obsidian' }, { k: 'ice', n: 'Ice', see: 1 },
+  // G-01b: the journey's block sets (a chapter opens them) and prizes (a chapter's trophy gives them); BB_CHS says which
+  { k: 'coral', n: 'Coral' }, { k: 'stripe', n: 'Beach Stripe' }, { k: 'shell', n: 'Shell', deco: 1 }, { k: 'icebrick', n: 'Ice Brick' },
+  { k: 'roof', n: 'Roof Tiles' }, { k: 'pine', n: 'Pine Tree', deco: 1 }, { k: 'cloud', n: 'Cloud' }, { k: 'crystal', n: 'Crystal', glow: 'purple' },
+  { k: 'starb', n: 'Star Block', glow: 'yellow' }, { k: 'flag', n: 'Flag', deco: 1 }];
 const BB_TNT = 20, BB_PET = 19;
 // the palette, grouped; TNT is last (R-02 M3)
 const BB_GROUPS = [
-  ['Nature', [1, 2, 3, 9, 10, 11, 26, 5, 6, 24, 23, 17, 18]],
-  ['Building', [4, 8, 7, 12, 13, 22, 25, 14, 15, 16]],
+  ['Nature', [1, 2, 3, 9, 10, 11, 26, 5, 6, 24, 23, 17, 18, 27, 29, 32]],
+  ['Building', [4, 8, 7, 12, 13, 22, 25, 14, 15, 16, 28, 30, 31, 33, 34, 35, 36]],
   ['Special', [19, 21, 20]],
 ];
 const BBPAL = BB_GROUPS.flatMap(g => g[1]);
@@ -750,6 +754,62 @@ function bbTex(k) {
         rect('white', 5, 4, 7, 1.6, .6); x.globalAlpha = .9; x.strokeStyle = bbCol('white'); x.lineWidth = 2; x.strokeRect(1, 1, 30, 30);
       });
       break;
+    case 'coral':
+      top = side = mk(() => {
+        fill('pink');
+        for (let i = 0; i < 7; i++) dot('orange-1', R(4, 28), R(4, 28), R(2.5, 4.5), .8);
+        for (let i = 0; i < 9; i++) dot('pink-2', R(3, 29), R(3, 29), R(.9, 1.6), .7);
+        bevel();
+      });
+      break;
+    case 'stripe':
+      top = side = mk(() => { for (let i = 0; i < 4; i++) rect(i % 2 ? 'white' : 'blue', i * 8, 0, 8, BBT); rect('blue-2', 0, 0, BBT, 2, .4); bevel(); });
+      break;
+    case 'icebrick':
+      top = side = mk(() => {
+        fill('white');
+        for (let row = 0; row < 4; row++) for (let c = -1; c < 3; c++) {
+          const X = c * 16 + (row % 2) * 8 + 1, Y = row * 8 + 1;
+          rr('aqua', X, Y, 14.5, 6.6, 2); rr('aqua-1', X, Y, 13.6, 5.8, 2); rect('white', X + 2, Y + 1, 8, 1.2, .7);
+        }
+        bevel(.6);
+      });
+      break;
+    case 'roof':
+      top = side = mk(() => {
+        fill('red-2');
+        for (const y of [0, 8, 16, 24]) for (let c = -1; c < 4; c++) { const X = c * 8 + (y % 16 ? 4 : 0); rr('red', X + .5, y, 7, 7.2, 3.4); rect('red-1', X + 2, y + 1, 3, 1.1, .6); }
+        bevel();
+      });
+      break;
+    case 'cloud':
+      top = side = mk(() => {
+        fill('white');
+        for (let i = 0; i < 6; i++) dot('white-2', R(4, 28), R(8, 28), R(4, 6), .55);
+        for (let i = 0; i < 5; i++) dot('white', R(4, 28), R(4, 24), R(3, 5));
+        bevel(.4);
+      });
+      break;
+    case 'crystal':
+      top = side = mk(() => {
+        fill('purple');
+        for (const [a, b, c, t, al] of [[[0, 0], [16, 0], [0, 16], 'purple-1', .8], [[32, 32], [16, 32], [32, 16], 'purple-2', .7], [[16, 32], [0, 32], [0, 16], 'purple-1', .35]]) {
+          x.globalAlpha = al; x.fillStyle = bbCol(t); x.beginPath(); x.moveTo(...a); x.lineTo(...b); x.lineTo(...c); x.fill();
+        }
+        dot('white', 10, 9, 1.8, .9); dot('pink-1', 22, 21, 1.4, .8);
+        bevel(.6);
+      });
+      break;
+    case 'starb':
+      top = side = mk(() => {
+        fill('yellow');
+        x.globalAlpha = 1; x.beginPath();
+        for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, q = i % 2 ? 5 : 12; x.lineTo(16 + Math.cos(a) * q, 17 + Math.sin(a) * q); }
+        x.closePath(); x.fillStyle = bbCol('orange'); x.fill();
+        x.save(); x.translate(16, 17); x.scale(.7, .7); x.translate(-16, -17); x.fillStyle = bbCol('yellow-1'); x.fill(); x.restore();
+        bevel(.7);
+      });
+      break;
     default: top = side = mk(() => { fill('grey'); bevel(); });
   }
   return (BBTEX[k] = { top, side });
@@ -841,6 +901,20 @@ function bbSprite(k) {
     x.fillStyle = bbCol('cream'); bbRR(x, 23, 34, 14, 24, 6); x.fill();
     for (const [t, d] of [['red-2', 1.5], ['red', 0]]) { x.fillStyle = bbCol(t); x.beginPath(); x.ellipse(32 + d, 34 + d, 24, 20, 0, Math.PI, 0); x.closePath(); x.fill(); }
     dot('white', 22, 26, 4); dot('white', 36, 20, 3.6); dot('white', 45, 29, 3); ell('white', 25, 18, 5, 2.5, .45, -.5);
+  } else if (k == 'shell') { // a scallop shell: a fan of ribs
+    for (let i = 0; i < 7; i++) { const a = -Math.PI + (i + .5) * Math.PI / 7; ell(i % 2 ? 'pink-1' : 'pink', 32 + Math.cos(a) * 11, 52 + Math.sin(a) * 11, 6, 13, 1, a + Math.PI / 2); }
+    ell('pink-2', 32, 54, 7, 4); dot('white', 26, 38, 2.2, .7);
+  } else if (k == 'pine') { // a pine tree: a trunk and three tiers
+    x.globalAlpha = 1; x.fillStyle = bbCol('brown-2'); x.fillRect(29, 46, 7, 14);
+    for (const [y, w, t] of [[48, 22, 'green-2'], [38, 18, 'green-2'], [28, 13, 'green-2'], [46, 19, 'green'], [36, 15, 'green'], [26, 11, 'green']]) {
+      x.fillStyle = bbCol(t); x.beginPath(); x.moveTo(32, y - 22); x.lineTo(32 + w, y); x.lineTo(32 - w, y); x.closePath(); x.fill();
+    }
+    dot('white', 27, 22, 2, .6);
+  } else if (k == 'flag') { // a flag on a pole
+    x.globalAlpha = 1; x.fillStyle = bbCol('grey-2'); x.fillRect(22, 8, 4, 52); dot('yellow', 24, 8, 4);
+    x.fillStyle = bbCol('red-2'); x.beginPath(); x.moveTo(26, 13); x.lineTo(54, 21); x.lineTo(26, 31); x.closePath(); x.fill();
+    x.fillStyle = bbCol('red'); x.beginPath(); x.moveTo(26, 12); x.lineTo(52, 19); x.lineTo(26, 28); x.closePath(); x.fill();
+    dot('yellow-1', 34, 20, 2.6);
   }
   x.globalAlpha = 1;
   return (BBSPR[k] = c);
@@ -861,19 +935,34 @@ function bbGen(type, seed) {
   const r = rng(seed * 31 + 5), w = new Uint8Array(BW * BD * BH), p = [r() * 6, r() * 6, r() * 6, r() * 6];
   const set = (x, y, z, v) => { if (x >= 0 && y >= 0 && x < BW && y < BD && z >= 0 && z < BH) w[bbI(x, y, z)] = v; };
   if (type == 'flat') { for (let x = 0; x < BW; x++) for (let y = 0; y < BD; y++) w[bbI(x, y, 0)] = 1; return w; }
+  if (type == 'sky') { // G-01b: floating islands over the clouds
+    for (const [cx, cy, z0, rr] of [[5, 6, 3, 3.4], [11.5, 10.5, 5, 2.8], [11, 3.5, 1, 2.2], [3.5, 12, 0, 1.8]]) {
+      for (let x = 0; x < BW; x++) for (let y = 0; y < BD; y++) {
+        const d = Math.hypot(x - cx, y - cy) / rr;
+        if (d > 1) continue;
+        const deep = Math.round((1 - d) * 2.4);
+        for (let z = z0 - deep; z <= z0; z++) set(x, y, z, z == z0 ? 1 : z == z0 - deep && deep > 1 ? 3 : 2);
+        if (d < .5 && r() < .12) set(x, y, z0 + 1, r() < .5 ? 17 : 18);
+      }
+    }
+    for (let n = 0; n < 14; n++) { const x = Math.floor(r() * BW), y = Math.floor(r() * BD); if (!w[bbI(x, y, 0)] && !w[bbI(x, y, 1)]) { set(x, y, 0, 33); if (r() < .5) set(x + 1, y, 0, 33); } }
+    return w;
+  }
   const H = (x, y) => Math.sin(x * .45 + p[0]) * 1.2 + Math.sin(y * .38 + p[1]) * 1.2 + Math.sin((x + y) * .25 + p[2]) * 1.5 + Math.sin((x - y) * .6 + p[3]) * .6;
   for (let x = 0; x < BW; x++) for (let y = 0; y < BD; y++) {
     const dc = Math.hypot(x - 7.5, y - 7.5) / 8;
     let h;
     if (type == 'island') h = Math.round(2.6 + H(x, y) * .8 - dc * dc * 4.2);
-    else if (type == 'mountain') h = Math.round(3 + H(x, y) * 1.4 + (1 - dc) * 5.5);
+    else if (type == 'beach') h = Math.round(1.9 + H(x, y) * .5 - dc * dc * 3.4 + (x - 7.5) * -.12);
+    else if (type == 'mountain' || type == 'snow') h = Math.round(3 + H(x, y) * 1.4 + (1 - dc) * 5.5 - (type == 'snow' ? 1 : 0));
     else h = Math.round(1.6 + H(x, y) * .6);
-    if (type == 'island' && h < 1) { set(x, y, 0, 10); continue; }
+    if ((type == 'island' || type == 'beach') && h < 1) { set(x, y, 0, 10); continue; }
     h = Math.max(1, Math.min(BH - 3, h));
     for (let z = 0; z < h; z++) {
       const top = z == h - 1;
       let v;
-      if (type == 'desert') v = z < h - 2 ? 3 : 9;
+      if (type == 'desert' || type == 'beach') v = z < h - 2 ? 3 : 9;
+      else if (type == 'snow') v = top ? 11 : z < h - 3 ? 3 : 2;
       else if (type == 'mountain') v = top ? (z >= 7 ? 11 : z >= 5 ? 3 : 1) : (z < h - 3 ? 3 : 2);
       else v = top ? (h <= 2 && dc > .55 ? 9 : 1) : (z < h - 2 ? 3 : 2);
       set(x, y, z, v);
@@ -887,8 +976,25 @@ function bbGen(type, seed) {
     } else if (type == 'island' && w[bbI(x, y, T - 1)] == 1 && r() < .06) set(x, y, T, r() < .6 ? 17 : 18);
     else if (type == 'desert' && r() < .045) { const n = 2 + Math.floor(r() * 2); for (let z = T; z < T + n; z++) set(x, y, z, 24); }
     else if (type == 'mountain' && w[bbI(x, y, T - 1)] == 1 && r() < .08) { set(x, y, T, 5); set(x, y, T + 1, 6); set(x, y, T + 2, 6); }
+    else if (type == 'snow' && r() < .07) set(x, y, T, 32);
+    else if (type == 'beach' && r() < .035 && x > 1 && y > 1 && x < BW - 2 && y < BD - 2) { // a palm: a trunk and a leafy top
+      for (let z = T; z < T + 3; z++) set(x, y, z, 5);
+      for (const [a, b] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) set(x + a, y + b, T + 3, 6);
+    } else if (type == 'beach' && h <= 2 && r() < .05) set(x, y, T, 29);
   }
   if (type == 'desert') { for (let x = 1; x < 5; x++) for (let y = 10; y < 14; y++) if (Math.max(Math.abs(x - 2.5), Math.abs(y - 11.5)) < 2) set(x, y, 1, 10); }
+  return w;
+}
+// G-01b: the ground of a chapter's blueprints: meadow grass, a beach with the sea in front, snow, or a small sky island
+function bbBase(g) {
+  const w = new Uint8Array(BW * BD * BH);
+  for (let x = 0; x < BW; x++) for (let y = 0; y < BD; y++) {
+    const i = bbI(x, y, 0);
+    if (g == 'beach') w[i] = x >= 13 || y >= 13 ? 10 : 9;
+    else if (g == 'snow') w[i] = 11;
+    else if (g == 'sky') { if (Math.hypot(x - 7.5, y - 7.5) < 6.6) w[i] = 1; }
+    else w[i] = 1;
+  }
   return w;
 }
 function bbFlat() {
@@ -918,7 +1024,8 @@ let BB = null;
 // stamps: offsets from the tapped cell (the view's turn is applied so a stamp faces the child)
 const BBSTAMPS = (() => {
   const L = [];
-  const add = (n, f) => { const c = []; f((x, y, z, v) => c.push([x, y, z, v])); L.push({ n, c }); };
+  // ch: the journey chapter that opens the stamp (G-01b); none = open from the start
+  const add = (n, f, ch) => { const c = []; f((x, y, z, v) => c.push([x, y, z, v])); L.push({ n, c, ch }); };
   add('Tree', p => { for (let z = 0; z < 4; z++) p(0, 0, z, 5); for (let x = -2; x <= 2; x++) for (let y = -2; y <= 2; y++) for (let z = 3; z <= 4; z++) if (!(Math.abs(x) == 2 && Math.abs(y) == 2) && !(x == 0 && y == 0 && z == 3)) p(x, y, z, 6); for (let x = -1; x <= 1; x++) for (let y = -1; y <= 1; y++) if (!(x && y)) p(x, y, 5, 6); });
   add('House', p => { for (let x = -2; x <= 2; x++) for (let y = -2; y <= 2; y++) { const edge = Math.abs(x) == 2 || Math.abs(y) == 2; if (edge) for (let z = 0; z < 3; z++) { if (x == 0 && y == 2 && z < 2) continue; p(x, y, z, z == 1 && ((Math.abs(x) == 2 && y == 0) || (x == 0 && y == -2) || (Math.abs(x) == 1 && y == 2)) ? 7 : 4); } p(x, y, 3, 8); } for (let x = -1; x <= 1; x++) for (let y = -1; y <= 1; y++) p(x, y, 4, 8); p(0, 0, 5, 8); p(0, 0, 0, 22); });
   add('Tower', p => { for (let x = -1; x <= 1; x++) for (let y = -1; y <= 1; y++) { if (!x && !y) continue; for (let z = 0; z < 6; z++) p(x, y, z, z == 3 && (!x || !y) ? 7 : 3); if (x && y) p(x, y, 6, 3); } p(0, 0, 5, 14); });
@@ -931,27 +1038,104 @@ const BBSTAMPS = (() => {
   add('Volcano', p => { for (let k = 0; k < 3; k++) for (let x = -3 + k; x <= 3 - k; x++) for (let y = -3 + k; y <= 3 - k; y++) p(x, y, k, k == 2 && !x && !y ? 21 : k < 1 ? 3 : 25); p(0, 0, 3, 21); });
   add('Bridge', p => { for (let x = -3; x <= 3; x++) { const z = 3 - Math.min(3, Math.abs(x)); p(x, 0, z, 4); p(x, 1, z, 4); p(x, -1, z + 1, 5); p(x, 2, z + 1, 5); } });
   add('Flowers', p => { for (const [x, y] of [[0, 0], [1, 1], [-1, 1], [2, -1], [-2, 0], [1, -2], [-1, -1]]) p(x, y, 0, (x + y) % 2 ? 17 : 18); });
+  add('Palm Tree', p => { for (let z = 0; z < 4; z++) p(0, 0, z, 5); for (const [x, y] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1], [2, 0], [-2, 0], [0, 2], [0, -2]]) p(x, y, 4, 6); p(0, 0, 5, 6); }, 1);
+  add('Beach Hut', p => { for (let x = -1; x <= 1; x++) for (let y = -1; y <= 1; y++) { if (x || y) for (let z = 0; z < 2; z++) { if (x == 0 && y == 1) continue; p(x, y, z, 28); } p(x, y, 2, 31); } p(0, 0, 3, 31); }, 1);
+  add('Igloo', p => { for (let x = -2; x <= 2; x++) for (let y = -2; y <= 2; y++) { const d = Math.max(Math.abs(x), Math.abs(y)); if (d == 2 && Math.abs(x) + Math.abs(y) < 4 && !(x == 0 && y == 2)) { p(x, y, 0, 30); p(x, y, 1, 30); } if (d == 1) p(x, y, 2, 30); } p(0, 0, 3, 30); p(0, 2, 1, 30); }, 2);
+  add('Snow Pine', p => { p(0, 0, 0, 11); p(0, 0, 1, 32); p(1, 1, 0, 11); p(1, 1, 1, 32); p(-1, 1, 0, 11); p(-1, 1, 1, 32); }, 2);
+  add('Cloud', p => { for (let x = -2; x <= 2; x++) for (let y = -1; y <= 1; y++) if (Math.abs(x) + Math.abs(y) < 3) p(x, y, 0, 33); for (let x = -1; x <= 1; x++) p(x, 0, 1, 33); }, 3);
+  add('Crystal Spire', p => { for (let z = 0; z < 5; z++) p(0, 0, z, 34); for (const [x, y] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { p(x, y, 0, 34); p(x, y, 1, 34); } p(0, 0, 5, 35); }, 3);
   return L;
 })();
 
-/* ---- blueprints: copy the see-through build. Saved by id (S.bb.bp); old: the index in the old list (S.bb.ch) ---- */
+/* ---- blueprints (G-01, G-01b): saved by id (S.bb.bp); old: the index in the oldest list (S.bb.ch) ----
+   m, the kind of challenge: copy (the see-through build, one layer at a time; the default), count ("4 wide and 2 tall": nothing
+   is shown, any spot, any way round), pat (the next layer is see-through but white: continue the colour pattern; pre = how many
+   blocks of it are there already), pic (build it from a picture: no see-through blocks), fix (the build is there with blocks
+   missing: find the holes; fx = the missing cells). New builds are short strings (bbStr): layers by |, rows by /, a letter a block. */
+const BB_LM = { s: 3, p: 4, l: 5, v: 6, g: 7, b: 8, a: 9, w: 10, n: 11, k: 12, u: 13, o: 14, d: 15, r: 16, m: 22, c: 27, t: 28, i: 30, f: 31, q: 33, x: 34, y: 35, z: 2 };
+const bbStr = (s, ox = 0, oy = 0) => {
+  const o = [];
+  s.split('|').forEach((L, z) => L.split('/').forEach((row, y) => [...row].forEach((ch, x) => { if (BB_LM[ch]) o.push([ox + x, oy + y, z + 1, BB_LM[ch]]); })));
+  return o;
+};
+const bbS2 = (s, ox, oy) => () => bbStr(s, ox, oy);
 const BBP = [
+  // chapter 1, Meadow Village
   { id: 'tower', n: 'Stone Tower', old: 0, c: () => [1, 2, 3].map(z => [6, 6, z, 3]) },
   { id: 'stairs', n: 'Stairs', c: () => { const o = []; for (let x = 5; x <= 7; x++) for (let z = 1; z <= 8 - x; z++) o.push([x, 6, z, 4]); return o; } },
-  { id: 'wall', n: 'Brick Wall', old: 1, c: () => { const o = []; for (let x = 4; x <= 7; x++) for (let z = 1; z <= 2; z++) o.push([x, 6, z, 8]); return o; } },
+  { id: 'wall', n: 'Brick Wall', old: 1, m: 'count', c: () => { const o = []; for (let x = 4; x <= 7; x++) for (let z = 1; z <= 2; z++) o.push([x, 6, z, 8]); return o; } },
   { id: 'gate', n: 'Garden Gate', c: () => { const o = []; for (const x of [5, 8]) for (let z = 1; z <= 3; z++) o.push([x, 6, z, 3]); for (let x = 5; x <= 8; x++) o.push([x, 6, 4, 4]); return o; } },
   { id: 'tree', n: 'Tree', old: 2, c: () => { const o = [[6, 6, 1, 5], [6, 6, 2, 5], [6, 6, 3, 5], [6, 6, 5, 6]]; for (let x = 5; x <= 7; x++) for (let y = 5; y <= 7; y++) o.push([x, y, 4, 6]); return o; } },
   { id: 'bridge', n: 'Rainbow Bridge', old: 5, c: () => [[3, 6, 1, 12], [4, 6, 2, 12], [5, 6, 3, 12], [6, 6, 3, 12], [7, 6, 3, 12], [8, 6, 2, 12], [9, 6, 1, 12], [4, 6, 1, 13], [5, 6, 2, 13], [7, 6, 2, 13], [8, 6, 1, 13], [6, 6, 1, 10], [5, 6, 1, 10], [7, 6, 1, 10]] },
+  // chapter 2, Sunny Beach
   { id: 'pond', n: 'Pond', old: 3, c: () => { const o = []; for (let x = 4; x <= 7; x++) for (let y = 4; y <= 7; y++) o.push([x, y, 1, x > 4 && x < 7 && y > 4 && y < 7 ? 10 : 9]); return o; } },
-  { id: 'snowman', n: 'Snowman', old: 4, c: () => { const o = []; for (let x = 5; x <= 7; x++) for (let y = 5; y <= 7; y++) o.push([x, y, 1, 11]); for (const [x, y] of [[6, 6], [5, 6], [7, 6], [6, 5], [6, 7]]) o.push([x, y, 2, 11]); o.push([6, 6, 3, 11], [6, 6, 4, 13]); return o; } },
+  { id: 'snowman', n: 'Sand Snowman', old: 4, c: () => { const o = []; for (let x = 5; x <= 7; x++) for (let y = 5; y <= 7; y++) o.push([x, y, 1, 9]); for (const [x, y] of [[6, 6], [5, 6], [7, 6], [6, 5], [6, 7]]) o.push([x, y, 2, 9]); o.push([6, 6, 3, 9], [6, 6, 4, 13]); return o; } },
   { id: 'boat', n: 'Sail Boat', c: () => { const o = []; for (let x = 4; x <= 8; x++) o.push([x, 6, 1, 4]); for (let x = 5; x <= 7; x++) o.push([x, 5, 1, 4], [x, 7, 1, 4]); o.push([4, 6, 2, 4], [8, 6, 2, 4]); for (let z = 2; z <= 4; z++) o.push([6, 6, z, 5]); o.push([7, 6, 3, 12], [7, 6, 4, 12], [6, 6, 5, 13]); return o; } },
-  { id: 'castle', n: 'Castle Tower', old: 7, c: () => { const o = []; for (let x = 5; x <= 7; x++) for (let y = 5; y <= 7; y++) { if (x == 6 && y == 6) continue; for (let z = 1; z <= 3; z++) o.push([x, y, z, 3]); if ((x + y) % 2 == 0) o.push([x, y, 4, 3]); } o.push([6, 6, 1, 14]); return o; } },
+  { id: 'stripes', n: 'Stripy Beach Wall', m: 'pat', pre: 3, c: bbS2('ctctctc|ctctctc|ctctctc', 3, 6) },
+  { id: 'castle', n: 'Castle Tower', old: 7, m: 'fix', fx: '7,6,1;6,7,2;7,7,3;5,7,2;7,5,4', c: () => { const o = []; for (let x = 5; x <= 7; x++) for (let y = 5; y <= 7; y++) { if (x == 6 && y == 6) continue; for (let z = 1; z <= 3; z++) o.push([x, y, z, 3]); if ((x + y) % 2 == 0) o.push([x, y, 4, 3]); } o.push([6, 6, 1, 14]); return o; } },
   { id: 'house', n: 'Little House', old: 6, c: () => { const o = []; for (let x = 5; x <= 7; x++) for (let y = 5; y <= 7; y++) { if (x == 6 && y == 6) continue; for (let z = 1; z <= 2; z++) { if (x == 6 && y == 7 && z == 1) continue; o.push([x, y, z, x == 5 && y == 6 && z == 2 || x == 7 && y == 6 && z == 2 ? 7 : 4]); } } for (let x = 4; x <= 8; x++) for (let y = 5; y <= 7; y++) o.push([x, y, 3, 8]); return o; } },
-  { id: 'pyramid', n: 'Pyramid', old: 8, c: () => { const o = []; for (let x = 4; x <= 8; x++) for (let y = 4; y <= 8; y++) o.push([x, y, 1, 9]); for (let x = 5; x <= 7; x++) for (let y = 5; y <= 7; y++) o.push([x, y, 2, 9]); o.push([6, 6, 3, 14]); return o; } },
+  // chapter 3, Snowy Peaks
+  { id: 'snowwall', n: 'Ice Wall', m: 'count', c: bbS2('iiiii|iiiii|iiiii|iiiii', 4, 6) },
+  { id: 'lodge', n: 'Log Cabin Layers', m: 'pat', pre: 16, c: bbS2('lll/l.l/lll|ppp/p.p/ppp|lll/l.l/lll|ppp/p.p/ppp', 5, 5) },
+  { id: 'igloo', n: 'Igloo', c: bbS2('.iii./i...i/i...i/i...i/.i.i.|.iii./i...i/i...i/i...i/.iii.|...../.iii./.i.i./.iii./.....|...../...../..i../...../.....', 4, 4) },
+  { id: 'cabin', n: 'Snowy Cabin', m: 'fix', fx: '7,6,1;5,7,2;7,5,2;6,6,3;4,6,4', c: bbS2('pppp/p..p/pp.p|pppp/p..g/pg.p|ffff/ffff/ffff|..../ffff/....', 4, 5) },
+  { id: 'pyramid', n: 'Ice Pyramid', old: 8, m: 'pic', c: () => { const o = []; for (let x = 4; x <= 8; x++) for (let y = 4; y <= 8; y++) o.push([x, y, 1, 30]); for (let x = 5; x <= 7; x++) for (let y = 5; y <= 7; y++) o.push([x, y, 2, 30]); o.push([6, 6, 3, 14]); return o; } },
   { id: 'palace', n: 'Diamond Palace', old: 9, c: () => { const o = []; for (let x = 3; x <= 8; x++) for (let y = 3; y <= 8; y++) { const edge = x == 3 || x == 8 || y == 3 || y == 8; if (!edge) continue; const corner = (x == 3 || x == 8) && (y == 3 || y == 8); for (let z = 1; z <= (corner ? 4 : 2); z++) o.push([x, y, z, corner ? 3 : (z == 2 && (x == 5 || x == 6 || y == 5 || y == 6) ? 7 : 8)]); } for (let z = 1; z <= 3; z++) o.push([5, 5, z, 15]); o.push([5, 5, 4, 16]); return o; } },
+  // chapter 4, Sky Islands
+  { id: 'cloudfloor', n: 'Cloud Floor', m: 'count', c: bbS2('qqqq/qqqq/qqqq', 4, 5) },
+  { id: 'starstairs', n: 'Star Stairs', m: 'pic', c: () => { const o = []; for (let k = 0; k < 8; k++) { const [x, y] = [[1, 0], [2, 1], [1, 2], [0, 1]][k % 4]; o.push([5 + x, 5 + y, k + 1, 4], [6, 6, k + 1, 34]); } o.push([6, 6, 9, 35]); return o; } },
+  { id: 'arch', n: 'Cloud Arch', c: bbS2('q...q/q...q|q...q/q...q|qq.qq/qq.qq|xxxxx/xxxxx', 4, 6) },
+  { id: 'rtower', n: 'Rainbow Tower', m: 'pat', pre: 12, c: bbS2('kk/kk|uu/uu|cc/cc|kk/kk|uu/uu|cc/cc|kk/kk', 5, 5) },
+  { id: 'skyship', n: 'Sky Ship', m: 'fix', fx: '3,5,2;9,6,2;6,6,3;4,6,4;6,7,1', c: bbS2('.ppppp./ppppppp/.ppppp.|ppppppp/p..l..p/ppppppp|......./...l.../.......|......./.qqlqq./.......|......./..qlq../.......|......./...x.../.......', 3, 5) },
+  { id: 'skycastle', n: 'Sky Castle', c: bbS2('sssss/s...s/s...s/s...s/ss.ss|sgsgs/s...s/g...g/s...s/sg.gs|sssss/s...s/s...s/s...s/sssss|x.x.x/...../x...x/...../x.x.x|y...y/...../...../...../y...y', 4, 4) },
 ];
 const BB_OLD = BBP.filter(b => b.old != null).sort((a, b) => a.old - b.old).map(b => b.id); // the old list's order (S.bb.ch)
 const bbGoal = bp => new Map(bp.c().map(([a, b, z, v]) => [bbI(a + 2, b + 2, z), v]));
+// the chapters of the journey (6 builds each, in BBP order): ground, sky, the block set a chapter opens, the prize its trophy gives,
+// the free-build world it opens. A chapter opens with 4 builds done in the one before (or any build of its own done: old saves).
+const BB_CHS = [
+  { id: 'meadow', n: 'Meadow Village', g: 'grass', sky: ['sky', 'sky-1'], set: [], prize: 36, world: 'island', ico: 'home' },
+  { id: 'beach', n: 'Sunny Beach', g: 'beach', sky: ['sun', 'sky-1'], set: [27, 28], prize: 29, world: 'beach', ico: 'wave' },
+  { id: 'snow', n: 'Snowy Peaks', g: 'snow', sky: ['lilac', 'sky-1'], set: [30, 31], prize: 32, world: 'snow', ico: 'sparkle' },
+  { id: 'sky', n: 'Sky Islands', g: 'sky', sky: ['peach', 'candy'], set: [33, 34], prize: 35, world: 'sky', ico: 'rocket' },
+];
+const BB_PER = 6, BB_OPEN_AT = 4;
+BB_CHS.forEach((c, k) => { c.bps = BBP.slice(k * BB_PER, k * BB_PER + BB_PER).map(b => b.id); });
+const bbChOf = i => Math.floor(i / BB_PER);
+const BB_MODES = { copy: ['Copy', 'blocks'], count: ['Count', 'skill-count'], pat: ['Pattern', 'skill-pattern'], pic: ['Picture', 'image'], fix: ['Fix it', 'hint'] };
+const bbMode = bp => bp.m || 'copy';
+// the cells of a fix build that are missing at the start (as goal indices)
+const bbFixMiss = bp => new Set((bp.fx || '').split(';').filter(Boolean).map(t => { const [a, b, z] = t.split(',').map(Number); return bbI(a + 2, b + 2, z); }));
+// a count build: its size, any way round (w along x, d along y, h up), and how to say it
+function bbDims(goal) {
+  let b = null;
+  for (const i of goal.keys()) {
+    const x = i % BW, y = Math.floor(i / BW) % BD, z = Math.floor(i / (BW * BD));
+    b = b ? [Math.min(b[0], x), Math.min(b[1], y), Math.min(b[2], z), Math.max(b[3], x), Math.max(b[4], y), Math.max(b[5], z)] : [x, y, z, x, y, z];
+  }
+  return { w: b[3] - b[0] + 1, d: b[4] - b[1] + 1, h: b[5] - b[2] + 1 };
+}
+// the size of what the child built so far (x, y, z), said the same way as the size asked
+const bbBoxSay = (a, b, c, D) => D.h == 1 ? `${Math.max(a, b)} wide and ${Math.min(a, b)} deep` : D.d == 1 && Math.min(a, b) == 1 ? `${Math.max(a, b)} wide and ${c} tall` : `${a} wide, ${b} deep and ${c} tall`;
+const bbDimsSay = ({ w, d, h }) => h == 1 ? `${w} wide and ${d} deep` : d == 1 ? `${w} wide and ${h} tall` : `${w} wide, ${d} deep and ${h} tall`;
+// what the child is asked to do in a build
+function bbTask(bp) {
+  const m = bbMode(bp), g = bbGoal(bp), kinds = [...new Set(g.values())].map(v => BLOCKS[v].n);
+  if (m == 'count') return `Build it ${bbDimsSay(bbDims(g))}. Count as you go!`;
+  if (m == 'pat') return 'Look at the colours. Which block comes next?';
+  if (m == 'pic') return 'Build what the picture shows. There are no see-through blocks!';
+  if (m == 'fix') return `${bbFixMiss(bp).size} blocks are missing. Find the holes and fix it.`;
+  return kinds.length == 1 ? `Copy the see-through blocks with ${kinds[0]}.` : 'Copy the see-through blocks, one layer at a time.';
+}
+// a blueprint's chapter (the build of the day: the chapter of its ground), and the world it starts from: the chapter's ground, with
+// the first blocks of a pattern, or the whole build but its holes for a fix
+const bbChapOf = bp => bp.id == 'day' ? BB_CHS.find(c => c.g == bp.g) : BB_CHS[bbChOf(BBP.indexOf(bp))];
+function bbStart(bp) {
+  const w = bbBase(bbChapOf(bp).g), m = bbMode(bp);
+  if (m == 'pat') for (const [a, b, z, v] of bp.c().slice(0, bp.pre)) w[bbI(a + 2, b + 2, z)] = v;
+  if (m == 'fix') { const miss = bbFixMiss(bp); for (const [i, v] of bbGoal(bp)) if (!miss.has(i)) w[i] = v; }
+  return w;
+}
 // blueprint stars by id; made once from the old index array (S.bb.ch), which is kept
 function bbBP() {
   const b = bbS();
@@ -962,18 +1146,72 @@ function bbBP() {
   return b.bp;
 }
 const bbStars = i => { const s = bbBP()[BBP[i].id]; return s > 0 ? Math.min(3, s | 0) : 0; };
-// a blueprint is open when it is the first, or one before it (or itself, or any later one) has stars: nothing done ever locks again
+const bbChDone = k => BB_CHS[k].bps.filter(id => bbBP()[id] > 0).length;
+// a chapter is open when it is the first, when 4 builds of the one before are done, or when one of its own builds is done (old saves)
+const bbChOpen = k => k <= 0 || bbChDone(k - 1) >= BB_OPEN_AT || bbChDone(k) > 0;
+const bbTrophy = k => bbChDone(k) >= BB_PER; // every build of the chapter done: its trophy and its prize
+// a blueprint is open when its chapter is open and it is the chapter's first, or one before it (or itself, or a later one in the
+// chapter) has stars: nothing done ever locks again
 function bbOpen(i) {
-  if (i <= 0) return true;
-  for (let j = i - 1; j < BBP.length; j++) if (bbStars(j) > 0) return true;
+  const k = bbChOf(i), f = k * BB_PER;
+  if (!bbChOpen(k)) return false;
+  if (i <= f) return true;
+  for (let j = i - 1; j < f + BB_PER; j++) if (bbStars(j) > 0) return true;
   return false;
 }
+// a block of a chapter's set or a prize that is not open yet: {k, why, short}; null = open (or locked by learning stars only)
+function bbBlockLock(v) {
+  for (let k = 0; k < BB_CHS.length; k++) {
+    const c = BB_CHS[k];
+    if (c.set.includes(v) && !bbChOpen(k)) return { k, why: `Open ${c.n} in the blueprints to unlock it.`, short: c.n.split(' ').pop() };
+    if (c.prize == v && !bbTrophy(k)) return { k, why: `Build all of ${c.n} to win it.`, short: 'Prize' };
+  }
+  return null;
+}
+const bbStampOk = st => st.ch == null || bbChOpen(st.ch);
 function bbHubLine() {
   const n = BBP.filter((b, i) => bbStars(i) > 0).length;
   return `<span>Build your own 3D world</span><span>${ico('blocks', 18)}<b>${n} of ${BBP.length}</b> blueprints</span>`;
 }
 
-/* ---- free-build goals (saved per world as goals {id: 1}) ---- */
+/* ---- the build of the day (G-01b): made from the date, the same all day, another one tomorrow ---- */
+function bbHash(s) { let h = 2166136261; for (const c of String(s)) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return (h >>> 0) % 2147483646 + 1; }
+function bbDaily(key) {
+  const r = rng(bbHash('bb' + key)), ri = (a, b) => a + Math.floor(r() * (b - a + 1)), pk = a => a[Math.floor(r() * a.length)];
+  const mats = [[3, 'Stone'], [8, 'Brick'], [4, 'Wood'], [12, 'Pink'], [13, 'Blue'], [30, 'Ice'], [33, 'Cloud'], [9, 'Sand']];
+  const kind = ri(0, 5), [v, vn] = pk(mats), g = pk(['grass', 'beach', 'snow', 'sky']);
+  const o = [];
+  let bp;
+  if (kind == 0) { // a tower to copy, with a lamp on top
+    const h = ri(3, 5);
+    for (let z = 1; z <= h; z++) for (let x = 5; x <= 6; x++) for (let y = 5; y <= 6; y++) o.push([x, y, z, z == h && x == 5 && y == 5 ? 22 : v]);
+    bp = { n: vn + ' Tower', m: 'copy' };
+  } else if (kind == 1 || kind == 2) { // count: a wall or a floor
+    const w = ri(3, 6), d = kind == 2 ? ri(2, 4) : 1, h = kind == 1 ? ri(2, 3) : 1;
+    for (let x = 0; x < w; x++) for (let y = 0; y < d; y++) for (let z = 1; z <= h; z++) o.push([4 + x, 5 + y, z, v]);
+    bp = { n: vn + (kind == 1 ? ' Wall' : ' Floor'), m: 'count' };
+  } else if (kind == 3) { // a pattern: stripes along a wall, or layers
+    const cols = [[12, 13], [27, 28], [4, 5], [8, 30], [33, 34], [9, 3]][ri(0, 5)], byRow = r() < .5, w = ri(4, 6), h = byRow ? ri(3, 4) : ri(2, 3);
+    for (let z = 1; z <= h; z++) for (let x = 0; x < w; x++) o.push([4 + x, 6, z, cols[(byRow ? z - 1 : x) % 2]]);
+    bp = { n: byRow ? 'Layer Pattern' : 'Stripe Pattern', m: 'pat', pre: byRow ? 2 * w : 3 };
+  } else if (kind == 4) { // a pyramid from a picture
+    const b = r() < .5 ? 1 : 2;
+    for (let k = 0; k <= b; k++) for (let x = 6 - b + k; x <= 6 + b - k; x++) for (let y = 6 - b + k; y <= 6 + b - k; y++) o.push([x, y, k + 1, k == b ? 14 : v]);
+    bp = { n: vn + ' Pyramid', m: 'pic' };
+  } else { // fix a little house
+    for (let x = 5; x <= 7; x++) for (let y = 5; y <= 7; y++) {
+      if (x != 6 || y != 6) for (let z = 1; z <= 2; z++) if (!(x == 6 && y == 7)) o.push([x, y, z, z == 2 && (x == 7 || y == 7) && (x + y) % 2 ? 7 : v]);
+      o.push([x, y, 3, 31]);
+    }
+    const holes = [[7, 6, 1], [5, 7, 2], [7, 5, 2], [7, 7, 1], [5, 7, 1], [7, 6, 3], [6, 5, 3]], fx = [];
+    while (fx.length < 3) { const h = holes[ri(0, holes.length - 1)].join(); if (!fx.includes(h)) fx.push(h); }
+    bp = { n: 'Fix the House', m: 'fix', fx: fx.join(';') };
+  }
+  return Object.assign(bp, { id: 'day', day: key, g, c: () => o.map(q => q.slice()) });
+}
+
+/* ---- free-build goals (saved per world as goals {id: 1}). G-01b: each kind of world has its own list; three are shown at a time and
+   the next one comes when one is done, so the goals change as the child builds. bk {block: n} counts blocks built (themed goals). ---- */
 const BB_GOALS = [
   ['ten', 'Build 10 blocks', 'plus'],
   ['tower', 'Build a tower 6 blocks tall', 'arrow-up'],
@@ -981,16 +1219,37 @@ const BB_GOALS = [
   ['pethouse', 'Make a house for your pet: a roof over My Pet', 'home'],
   ['night', 'Light a lamp at night', 'moon'],
   ['boom', 'Set off a TNT block with Boom', 'sparkle'],
+  ['fifty', 'Build 50 blocks', 'plus'],
+  ['stamp3', 'Use 3 different stamps', 'stamp'],
+  ['zoo', 'Have 5 animals at once', 'paw'],
+  ['tall10', 'Build a tower 10 blocks tall', 'arrow-up'],
+  ['kinds10', 'Use 10 kinds of blocks', 'palette'],
+  ['gal', 'Save a picture of this world to your gallery', 'image'],
+  ['flowers', 'Plant 5 flowers', 'heart'],
+  ['snow5', 'Build 5 Snow blocks', 'sparkle'],
+  ['cactus', 'Grow 3 Cactus blocks', 'sparkle'],
+  ['coral', 'Build 5 Coral blocks', 'wave'],
+  ['ice', 'Build 6 Ice Brick blocks', 'sparkle'],
+  ['cloud', 'Build 8 Cloud blocks', 'sparkle'],
 ];
+const BB_GBLK = { flowers: [17, 5], snow5: [11, 5], cactus: [24, 3], coral: [27, 5], ice: [30, 6], cloud: [33, 8] }; // themed: block, how many
+const BB_GREST = 'stamp3 pethouse night boom fifty zoo tall10 kinds10 gal';
+const BB_WG = { island: 'ten flowers kinds tower', mountain: 'ten snow5 tower kinds', desert: 'ten cactus kinds tower', flat: 'ten kinds tower',
+  beach: 'ten coral kinds tower', snow: 'ten ice tower kinds', sky: 'ten cloud tower kinds' };
+// a world's kind: saved as t (G-01b); an older world's from its name ("Mountains 2"), else an island
+const bbWType = w => (w && BB_WG[w.t] ? w.t : ((BBWT.find(q => w && typeof w.name == 'string' && w.name.startsWith(q[1])) || ['island'])[0]));
+const bbWGoals = w => (BB_WG[bbWType(w)] + ' ' + BB_GREST).split(' ').map(id => BB_GOALS.find(g => g[0] == id));
 const bbGoalsOf = w => (w && w.goals && typeof w.goals == 'object' ? w.goals : {});
-const bbGoalN = w => BB_GOALS.filter(g => bbGoalsOf(w)[g[0]]).length;
+const bbGoalN = w => bbWGoals(w).filter(g => bbGoalsOf(w)[g[0]]).length;
+const bbGoalNext = (w, n = 3) => bbWGoals(w).filter(g => !bbGoalsOf(w)[g[0]]).slice(0, n);
 
 /* ---- the builder's logic, with no screen: camera, drawing, hit test, targets, blueprint layers, undo ----
-   bbMake(w, goal): w the world (Uint8Array), goal a Map index -> block for a blueprint (or null). The play screen sizes it (size),
+   bbMake(w, goal, mode): w the world (Uint8Array), goal a Map index -> block for a blueprint (or null), mode the blueprint's kind
+   (copy, count, pat, pic, fix; G-01b: only copy and pat show see-through blocks). The play screen sizes it (size),
    draws it (render) and sends it taps (tap). Coordinates passed in are canvas pixels (CSS px x dpr). */
-function bbMake(w, goal) {
+function bbMake(w, goal, mode) {
   const E = {
-    w, goal: goal || null, sel: 4, tool: 'build', side: false, miss: 0, missAt: new Set(), undo: [], redo: [], placed: new Set(),
+    w, goal: goal || null, mode: goal ? mode || 'copy' : null, base: w.slice(), tries: new Map(), sel: 4, tool: 'build', side: false, miss: 0, missAt: new Set(), undo: [], redo: [], placed: new Set(),
     zoom: 1, F: [8, 8, 2], ang: 0, rot: 0, night: false, faces: [], W: 320, H: 320, dpr: 1, a0: 10, drop: null,
   };
   const get = E.get = (i, j, k) => (i < 0 || j < 0 || k < 0 || i >= BW || j >= BD || k >= BH ? 0 : E.w[bbI(i, j, k)]);
@@ -1066,15 +1325,41 @@ function bbMake(w, goal) {
   E.above = (i, j, k) => { while (k < BH && bbSolid(get(i, j, k))) k++; return k; };
 
   /* blueprint layers: the lowest height with a see-through block still to build. Only that layer can be built (and tapped). */
+  E.ghosts = () => E.mode == 'copy' || E.mode == 'pat';
   E.layer = () => {
     if (!E.goal) return null;
     let L = null;
     for (const [i, v] of E.goal) if (E.w[i] != v) { const z = Math.floor(i / (BW * BD)); if (L == null || z < L) L = z; }
     return L;
   };
-  E.todo = () => { const L = E.layer(); return L == null ? [] : [...E.goal].filter(([i, v]) => E.w[i] != v && Math.floor(i / (BW * BD)) == L).map(([i]) => i); };
-  E.prog = () => (E.goal ? [...E.goal].filter(([i, v]) => E.w[i] == v).length : 0);
-  E.done = () => !!E.goal && E.prog() == E.goal.size;
+  E.todo = () => {
+    if (E.goal && !E.ghosts()) return E.mode == 'count' ? [] : [...E.goal].filter(([i, v]) => E.w[i] != v && E.ready(i)).map(([i]) => i);
+    const L = E.layer();
+    return L == null ? [] : [...E.goal].filter(([i, v]) => E.w[i] != v && Math.floor(i / (BW * BD)) == L).map(([i]) => i);
+  };
+  E.prog = () => (!E.goal ? 0 : E.mode == 'count' ? E.mine().length : [...E.goal].filter(([i, v]) => E.w[i] == v).length);
+  E.done = () => !!E.goal && (E.mode == 'count' ? E.fits(E.mine()) == 'done' : E.prog() == E.goal.size);
+  /* G-01b, the builds with no see-through blocks (pic, fix): a cell can be built when something holds it (a block under it or beside it) */
+  E.ready = i => {
+    const a = i % BW, b = Math.floor(i / BW) % BD, z = Math.floor(i / (BW * BD));
+    return z == 0 || bbSolid(get(a, b, z - 1)) || [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => bbSolid(get(a + dx, b + dy, z)));
+  };
+  /* count builds: the blocks the child built (not the ground), and whether they fit the size asked, any way round:
+     'done' (exactly that block), 'ok' (it can still become it), or what is too big: 'w', 'h' */
+  E.dims = E.goal && E.mode == 'count' ? bbDims(E.goal) : null;
+  E.mine = () => { const o = []; for (let n = 0; n < E.w.length; n++) if (E.w[n] && E.w[n] != E.base[n]) o.push(n); return o; };
+  E.box = cells => {
+    if (!cells.length) return [0, 0, 0];
+    let b = null;
+    for (const n of cells) { const x = n % BW, y = Math.floor(n / BW) % BD, z = Math.floor(n / (BW * BD)); b = b ? [Math.min(b[0], x), Math.min(b[1], y), Math.min(b[2], z), Math.max(b[3], x), Math.max(b[4], y), Math.max(b[5], z)] : [x, y, z, x, y, z]; }
+    return [b[3] - b[0] + 1, b[4] - b[1] + 1, b[5] - b[2] + 1];
+  };
+  E.fits = cells => {
+    const D = E.dims, [x, y, z] = E.box(cells);
+    if (z > D.h) return 'h';
+    if (!(x <= D.w && y <= D.d) && !(x <= D.d && y <= D.w)) return 'w';
+    return cells.length == D.w * D.d * D.h ? 'done' : 'ok';
+  };
 
   /* history: whole states (blocks + mistakes), so Undo / Redo bring back the progress and the mistake count with the blocks */
   const state = () => ({ w: E.w.slice(), miss: E.miss, at: [...E.missAt] });
@@ -1092,12 +1377,12 @@ function bbMake(w, goal) {
       const rx = nx * c - ny * s, ry = nx * s + ny * c;
       return { nx, ny, vis: rx + ry > 1e-6, left: rx - ry < 0 };
     }).filter(q => q.vis);
-    const L = E.layer(), faces = [], items = [];
+    const showG = !!E.goal && E.ghosts(), L = showG ? E.layer() : null, faces = [], items = [], pat = E.mode == 'pat';
     const drop = E.drop;
     for (let k = 0; k < BH; k++) for (let j = 0; j < BD; j++) for (let i = 0; i < BW; i++) {
       const idx = bbI(i, j, k), v = E.w[idx];
       let g = 0;
-      if (!v) { if (E.goal && E.goal.has(idx)) g = E.goal.get(idx); else continue; }
+      if (!v) { if (showG && E.goal.has(idx)) g = E.goal.get(idx); else continue; }
       else if (!BLOCKS[v]) continue;
       if (v) {
         // skip blocks with no face open to the view
@@ -1140,8 +1425,10 @@ function bbMake(w, goal) {
         const cur = k === L, al = cur ? .62 : .1;
         if (x) {
           x.globalAlpha = al;
-          const fl = bbFlat3(g), im = fast ? null : bbFaceImgs(g);
-          cube(it, (f, nx, ny, O, U, V) => { if (im) tf(im[(f == 'top' ? 't' : f) + (E.night ? 'n' : '')], O, U, V, false); else fillPoly(poly4(O, U, V), fl[f == 'top' ? 0 : f == 'l' ? 1 : 2]); });
+          const fl = bbFlat3(g), im = fast || pat ? null : bbFaceImgs(g);
+          // a pattern build's next blocks are white: the colour is the question
+          if (pat) x.globalAlpha = cur ? .5 : .12;
+          cube(it, (f, nx, ny, O, U, V) => { if (im) tf(im[(f == 'top' ? 't' : f) + (E.night ? 'n' : '')], O, U, V, false); else fillPoly(poly4(O, U, V), pat ? bbCol(f == 'top' ? 'white' : f == 'l' ? 'white-2' : 'white-3') : fl[f == 'top' ? 0 : f == 'l' ? 1 : 2]); });
           x.setTransform(1, 0, 0, 1, 0, 0);
           x.globalAlpha = 1;
           if (cur) { // a high-contrast outline: dark under a white dashed line
@@ -1255,7 +1542,7 @@ function bbMake(w, goal) {
   /* a short tap at a canvas point. Returns what happened: {kind: 'place'|'break'|'light'|'wrong'|'miss'|'none'|'high'|'deco'|'notnt', ...};
      the screen adds sound, messages, effects and saving. A Build tap on TNT builds on top of it: lighting is only the Boom tool. */
   E.tap = (px, py) => {
-    if (E.goal) return E.bpTap(px, py);
+    if (E.goal) return E.mode == 'count' ? E.cntTap(px, py) : E.ghosts() ? E.bpTap(px, py) : E.aimTap(px, py);
     const T = E.tool;
     if (T == 'break') {
       const h = E.hit(px, py, q => !q.ghost);
@@ -1299,15 +1586,61 @@ function bbMake(w, goal) {
       idx = best; sure = false;
     }
     if (idx == null) return { kind: 'miss' }; // nowhere near: a tip, never a mistake
+    return E.place(idx, sure);
+  };
+  // build the goal block at idx if the chosen block is right; a wrong block counts one mistake per spot (only when sure);
+  // tries: how many wrong blocks this spot had (a pattern build shows the right block from the second)
+  E.place = (idx, sure) => {
     const want = E.goal.get(idx);
     if (E.sel != want) {
       const counted = sure && !E.missAt.has(idx);
       if (counted) { E.miss++; E.missAt.add(idx); }
-      return { kind: 'wrong', want, idx, counted };
+      E.tries.set(idx, (E.tries.get(idx) || 0) + 1);
+      return { kind: 'wrong', want, idx, counted, tries: E.tries.get(idx) };
     }
     E.push();
     E.w[idx] = want;
     return { kind: 'place', cells: [idx], layer: E.layer(), win: E.done() };
+  };
+  /* G-01b: a tap in a build with no see-through blocks (pic, fix): the column under the finger, its lowest block still to build
+     (a hole under a roof too); if nothing in that column is wanted, the nearest buildable spot within about a block (a guess, never
+     a mistake); a spot that nothing holds yet: wait. */
+  E.aimTap = (px, py) => {
+    let idx = null, sure = true, wait = false;
+    const h = E.hit(px, py, q => !q.ghost) || E.ground(px, py);
+    if (h) {
+      let { i, j } = h;
+      if (E.side && h.f == 'side' && !h.deco) { i += h.nx; j += h.ny; }
+      const col = [];
+      for (let z = 0; z < BH; z++) { const n = bbI(i, j, z); if (E.goal.has(n) && E.w[n] != E.goal.get(n)) col.push(n); }
+      if (col.length) { if (E.ready(col[0])) idx = col[0]; else wait = true; }
+    }
+    if (idx == null && !wait) {
+      let bd = E.a() * 1.15;
+      for (const n of E.todo()) {
+        const p = E.proj(n % BW + .5, Math.floor(n / BW) % BD + .5, Math.floor(n / (BW * BD)) + 1), d = Math.hypot(p[0] - px, p[1] - py);
+        if (d < bd) { bd = d; idx = n; sure = false; }
+      }
+    }
+    if (idx == null) return { kind: wait ? 'wait' : 'miss' };
+    return E.place(idx, sure);
+  };
+  /* G-01b: a tap in a count build: the block goes on top of the column under the finger, anywhere on the ground; a block that would
+     make it too wide or too tall is not built and counts one mistake per spot (the message says what the size should be) */
+  E.cntTap = (px, py) => {
+    const t = E.target(px, py);
+    if (!t) return { kind: 'miss' };
+    if (t.high) return { kind: 'high' };
+    if (t.k < 1) return { kind: 'miss' };
+    const n = bbI(t.i, t.j, t.k), mine = E.mine(), f = E.fits(mine.concat(n));
+    if (f == 'w' || f == 'h') {
+      const counted = !E.missAt.has(n);
+      if (counted) { E.miss++; E.missAt.add(n); }
+      return { kind: 'big', why: f, idx: n, counted, box: E.box(mine.concat(n)) };
+    }
+    E.push();
+    E.w[n] = E.sel;
+    return { kind: 'place', cells: [n], win: E.done(), box: E.box(mine.concat(n)) };
   };
   return E;
 }
@@ -1352,25 +1685,36 @@ function bbMini(cv, cells, o = {}) {
 }
 
 /* ---- the play screen ---- */
+// ci: a blueprint's index in BBP, 'day' (the build of the day, G-01b) or nothing (free build in the current world)
 function blockBuilder(ci) {
-  const bs = bbS(), bp = ci == null ? null : BBP[ci], world = bp ? null : bs.worlds[bs.cur];
-  const E = BB = bbMake(bp ? bbFlat() : bbDecode(world.d), bp ? bbGoal(bp) : null);
+  const bs = bbS(), bp = ci == null ? null : ci == 'day' ? bbDaily(today()) : BBP[ci], world = bp ? null : bs.worlds[bs.cur];
+  const mode = bp ? bbMode(bp) : null, goalMap = bp ? bbGoal(bp) : null;
+  const chap = bp ? bbChapOf(bp) : null;
+  const E = BB = bbMake(bp ? bbStart(bp) : bbDecode(world.d), goalMap, mode);
   E.ch = bp ? ci : null;
+  E.bp = bp;
   E.world = world;
   E.stamp = 0;
+  // the sky: the chapter's, or the world's kind's (G-01b)
+  const wt = world ? bbWType(world) : null;
+  E.sky = chap ? chap.sky : (BB_CHS.find(c => c.world == wt) || BB_CHS[0]).sky;
   const need = bp ? [...new Set(E.goal.values())] : null;
   if (need) E.sel = need[0];
   const lockLeft = b => (b.need && S.stars < b.need ? b.need - S.stars : 0);
   const blockBtn = i => {
-    const b = BLOCKS[i], left = need ? 0 : lockLeft(b);
-    return `<button class="bb-k${left ? ' lock' : ''}" data-b="${i}" aria-pressed="false" aria-label="${esc(b.n + (left ? ': ' + left + ' more stars to unlock' : ''))}">` +
+    const b = BLOCKS[i], left = need ? 0 : lockLeft(b), jl = need ? null : bbBlockLock(i);
+    const lab = left ? ': ' + left + ' more stars to unlock' : jl ? ': ' + jl.why : '';
+    return `<button class="bb-k${left || jl ? ' lock' : ''}" data-b="${i}" aria-pressed="false" aria-label="${esc(b.n + lab)}">` +
       `<canvas width="96" height="96" data-bc="${i}" aria-hidden="true"></canvas>` +
-      (left ? `<span class="bb-kn bb-kl">${ico('lock', 16)}${left} more</span>` : `<span class="bb-kn">${esc(b.n)}</span>`) + '</button>';
+      (left ? `<span class="bb-kn bb-kl">${ico('lock', 16)}${left} more</span>` : jl ? `<span class="bb-kn bb-kl">${ico('lock', 16)}${esc(jl.short)}</span>` : `<span class="bb-kn">${esc(b.n)}</span>`) + '</button>';
   };
   const groups = need ? [['Blocks for this build', need]] : BB_GROUPS;
   const pal = groups.map(([g, ids]) => `<div class="bb-grp"><span class="bb-gh">${esc(g)}</span><div class="bb-gb">${ids.map(blockBtn).join('')}</div></div>`).join('');
-  const stamps = BBSTAMPS.map((t, i) => `<button class="bb-k bb-sk" data-stamp="${i}" aria-pressed="${i == 0}" aria-label="${esc(t.n)}">` +
-    `<canvas width="96" height="96" data-sc="${i}" aria-hidden="true"></canvas><span class="bb-kn">${esc(t.n)}</span></button>`).join('');
+  const stamps = BBSTAMPS.map((t, i) => { const ok = bbStampOk(t); return `<button class="bb-k bb-sk${ok ? '' : ' lock'}" data-stamp="${i}" aria-pressed="${i == 0}" aria-label="${esc(t.n + (ok ? '' : ': open ' + BB_CHS[t.ch].n + ' to unlock'))}">` +
+    `<canvas width="96" height="96" data-sc="${i}" aria-hidden="true"></canvas>` + (ok ? `<span class="bb-kn">${esc(t.n)}</span>` : `<span class="bb-kn bb-kl">${ico('lock', 16)}${esc(BB_CHS[t.ch].n.split(' ').pop())}</span>`) + '</button>'; }).join('');
+  // G-01b: the task of a build, in the scene: what to do, and for a picture or a fix the picture of the finished build (tap: bigger)
+  const task = bp ? `<div class="bb-task" id="bbtask">${mode == 'pic' || mode == 'fix' ? `<button class="bb-tpic" id="bbtpic" aria-label="The picture of the build. Tap to make it bigger" aria-pressed="false"><canvas width="240" height="180" id="bbtpc" aria-hidden="true"></canvas></button>` : ''}` +
+    `<p class="bb-tt"><span class="bb-tm">${ico(BB_MODES[mode][1], 22)}${esc(BB_MODES[mode][0])}</span><span id="bbtaskt">${esc(bbTask(bp))}</span></p></div>` : '';
   const seg = `<div class="bb-seg" role="group" aria-label="Tool">${bbTB('bbm-build', 'build', 'Build', { v: 'build', on: true })}` +
     `${bbTB('bbm-break', 'break', 'Break', { v: 'break', on: false })}${bbTB('bbm-stamp', 'stamp', 'Stamp', { v: 'stamp', on: false })}</div>`;
   const hist = bbTB('bbundo', 'undo', 'Undo') + bbTB('bbredo', 'redo', 'Redo');
@@ -1382,7 +1726,7 @@ function blockBuilder(ci) {
   const chips = bp ? `<span class="stat gh-st bb-prog" aria-label="Blocks built">${ico('blocks', 28)}<b id="bbprog"></b></span>`
     : `<span class="stat gh-st bb-prog" aria-label="Goals done">${ico('target', 28)}<b id="bbgoal"></b></span>`;
   view(`${GH.top('blocks', { play: true, sub: bp ? bp.n : world.name, chips })}
-   <div class="bb-wrap${bp ? ' bb-isbp' : ''}"><div class="bb-cv" id="bbcv"><canvas id="bbc" role="img" aria-label="Your build"></canvas><div class="bb-msg" id="bbmsg" aria-live="polite"></div><div class="bb-tip" id="bbtip"></div></div>
+   <div class="bb-wrap${bp ? ' bb-isbp' : ''}"><div class="bb-cv" id="bbcv"><canvas id="bbc" role="img" aria-label="Your build"></canvas><div class="bb-msg" id="bbmsg" aria-live="polite"></div><div class="bb-tip" id="bbtip"></div>${task}</div>
     <div class="bb-side"><div class="bb-bar">${bar}</div>
      <div class="bb-pal" id="bbpal"><div class="bb-ps">${pal}</div></div>${bp ? '' : `<div class="bb-pal" id="bbst" hidden><div class="bb-ps"><div class="bb-grp"><span class="bb-gh">Stamps</span><div class="bb-gb">${stamps}</div></div></div></div>`}</div></div>`);
   const cv = $('#bbc'), x = cv.getContext('2d'), wrap = $('#bbcv');
@@ -1397,8 +1741,8 @@ function blockBuilder(ci) {
   function scene(fast) {
     const W = cv.width, H = cv.height, A = E.a();
     const g = bgx.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, bbCol(E.night ? 'sc:night' : 'sc:sky'));
-    g.addColorStop(1, bbCol(E.night ? 'sc:night-1' : 'sc:sky-1'));
+    g.addColorStop(0, bbCol(E.night ? 'sc:night' : 'sc:' + E.sky[0]));
+    g.addColorStop(1, bbCol(E.night ? 'sc:night-1' : 'sc:' + E.sky[1]));
     bgx.setTransform(1, 0, 0, 1, 0, 0);
     bgx.fillStyle = g; bgx.fillRect(0, 0, W, H);
     if (E.night) {
@@ -1517,6 +1861,7 @@ function blockBuilder(ci) {
         const e = pick(['🐷', '🐔', '🐑', '🐄', '🐰', '🐱', '🐶', '🦆']);
         E.animals.push({ e, x: a, y: b, z, fx: a, fy: b, fz: z, tx: a, ty: b, tz: z, hop: 1, t: .5, dir: 1 });
         tone(660, .08, 0, 'sine', .12); tone(990, .08, .08, 'sine', .12);
+        if (E.animals.length >= 5) goal('zoo');
         return;
       }
     }
@@ -1530,18 +1875,29 @@ function blockBuilder(ci) {
     g[id] = 1;
     save();
     const G = BB_GOALS.find(q => q[0] == id);
-    setTimeout(() => { SFX.magic(); say1('Goal done: ' + G[1] + '!', 'good', 2600); }, 250);
+    // a goal of this world's list: say it, and the next one that comes in its place
+    if (bbWGoals(world).includes(G)) setTimeout(() => { SFX.magic(); const nx = bbGoalNext(world, 3)[2]; say1('Goal done: ' + G[1] + '!' + (nx ? ' New goal: ' + nx[1] + '.' : ''), 'good', 3200); }, 250);
     goalChip();
   }
-  function goalChip() { const c = $('#bbgoal'); if (c) c.textContent = bbGoalN(world) + '/' + BB_GOALS.length; }
-  function checkGoals(placed) {
+  function goalChip() { const c = $('#bbgoal'); if (c) c.textContent = bbGoalN(world) + '/' + bbWGoals(world).length; }
+  function checkGoals(placed, tool) {
     if (!world) return;
     world.n = (world.n | 0) + placed.length;
     const kinds = new Set(Array.isArray(world.kinds) ? world.kinds : []);
-    for (const n of placed) kinds.add(E.w[n]);
+    const bk = world.bk = world.bk && typeof world.bk == 'object' && !Array.isArray(world.bk) ? world.bk : {};
+    for (const n of placed) { const v = E.w[n]; kinds.add(v); if (v > 0 && v < BLOCKS.length) bk[v] = (bk[v] | 0) + 1; }
     world.kinds = [...kinds].filter(v => v > 0 && v < BLOCKS.length);
+    if (tool == 'stamp') {
+      const st = new Set(Array.isArray(world.st) ? world.st : []);
+      st.add(E.stamp | 0);
+      world.st = [...st].filter(q => q >= 0 && q < BBSTAMPS.length);
+      if (world.st.length >= 3) goal('stamp3');
+    }
     if (world.n >= 10) goal('ten');
+    if (world.n >= 50) goal('fifty');
     if (world.kinds.length >= 5) goal('kinds');
+    if (world.kinds.length >= 10) goal('kinds10');
+    for (const id in BB_GBLK) if ((bk[BB_GBLK[id][0]] | 0) >= BB_GBLK[id][1]) goal(id);
     for (const n of placed) {
       const [i, j, k] = cellXYZ(n);
       // a stack of 6 blocks built here (this visit), ending at or through this cell
@@ -1549,6 +1905,7 @@ function blockBuilder(ci) {
       while (lo > 0 && E.placed.has(bbI(i, j, lo - 1)) && E.w[bbI(i, j, lo - 1)]) lo--;
       while (hi < BH - 1 && E.placed.has(bbI(i, j, hi + 1)) && E.w[bbI(i, j, hi + 1)]) hi++;
       if (hi - lo + 1 >= 6) goal('tower');
+      if (hi - lo + 1 >= 10) goal('tall10');
       if (E.w[n] == 22 && E.night) goal('night');
     }
     for (let n = 0; n < E.w.length; n++) if (E.w[n] == BB_PET) {
@@ -1562,6 +1919,7 @@ function blockBuilder(ci) {
   function bbProg() {
     const p = $('#bbprog');
     if (p) p.textContent = E.prog() + '/' + E.goal.size + (E.miss ? ' · ' + E.miss + (E.miss == 1 ? ' mistake' : ' mistakes') : '');
+    if (mode == 'count') { const [a, b, c] = E.box(E.mine()), t = $('#bbtaskt'); if (t) t.textContent = `Build it ${bbDimsSay(E.dims)}.` + (E.prog() ? ` Now: ${bbBoxSay(a, b, c, E.dims)}.` : ' Count as you go!'); }
   }
   function after() {
     if (bp) bbProg(); else bbSave();
@@ -1571,8 +1929,9 @@ function blockBuilder(ci) {
   let lastLayer = E.layer();
   function layerNote() {
     const L = E.layer();
-    if (!bp || L == null || L === lastLayer) { lastLayer = L; return; }
+    if (!bp || !E.ghosts() || L == null || L === lastLayer) { lastLayer = L; return; }
     lastLayer = L;
+    if (mode == 'pat') { say1('Next layer! Keep the pattern going.', 'info', 2200); return; }
     const want = [...new Set(E.todo().map(n => E.goal.get(n)))];
     say1('Next layer! ' + (want.length == 1 ? 'It needs ' + BLOCKS[want[0]].n + '.' : 'Copy the see-through blocks.'), 'info', 2200);
     if (!want.includes(E.sel)) hintBlock(want[0], false);
@@ -1595,7 +1954,7 @@ function blockBuilder(ci) {
       if (r.cells.length > 3) { tone(800, .08, .08, 'sine', .1); tone(1000, .1, .14, 'sine', .1); }
       flash(r.cells);
       after();
-      if (bp) { if (r.win) setTimeout(bbWin, 450); else layerNote(); } else checkGoals(r.cells);
+      if (bp) { if (r.win) setTimeout(bbWin, 450); else layerNote(); } else checkGoals(r.cells, r.tool);
     } else if (r.kind == 'break') {
       SFX.hit(); puff(...r.at, r.v); after();
     } else if (r.kind == 'light') {
@@ -1604,13 +1963,23 @@ function blockBuilder(ci) {
       say1('Boom lights TNT. Tap a red TNT block!', 'info');
     } else if (r.kind == 'wrong') {
       SFX.wrong();
-      say1('This one needs ' + BLOCKS[r.want].n + '. It is shining below.', 'try', 2400);
-      hintBlock(r.want);
+      // a pattern build: the first wrong colour at a spot asks the child to look again; the second shows the right block
+      if (mode == 'pat' && r.tries < 2) say1('Look at the pattern again. Which colour comes next?', 'try', 2600);
+      else { say1('This one needs ' + BLOCKS[r.want].n + '. It is shining below.', 'try', 2400); hintBlock(r.want); }
       bbProg();
       FX.pulse = { n: r.idx, t: performance.now() };
-    } else if (r.kind == 'miss') {
-      say1('Tap a see-through block to build it.', 'info');
+    } else if (r.kind == 'big') { // G-01b count: that block would make it too wide or too tall; it is not built
+      SFX.wrong();
+      const D = E.dims;
+      say1(r.why == 'h' ? `That makes it ${r.box[2]} tall. It should be ${D.h} tall.` : `That makes it too big. It should be ${bbDimsSay(D)}.`, 'try', 2800);
+      bbProg();
+      FX.pulse = { n: r.idx, t: performance.now() };
+    } else if (r.kind == 'wait') {
+      say1('Build the blocks that hold it up first.', 'info', 2200);
       FX.pulse = { all: 1, t: performance.now() };
+    } else if (r.kind == 'miss') {
+      say1(!bp || E.ghosts() ? 'Tap a see-through block to build it.' : mode == 'count' ? 'Tap on the ground to build.' : mode == 'fix' ? 'Tap where a block is missing.' : 'Build it on the ground, like the picture.', 'info');
+      FX.pulse = E.ghosts() || mode == 'fix' ? { all: 1, t: performance.now() } : null;
     } else if (r.kind == 'high') say1('That is as high as it goes!', 'info');
     else if (r.kind == 'deco') { SFX.wrong(); say1('Put it on top of a block.', 'try'); }
     else if (r.clear) tip('Clear area: hold, then slide over the blocks to clear.');
@@ -1919,8 +2288,9 @@ function blockBuilder(ci) {
   }
   for (const b of $$('.bb-seg [data-tool], #bbboom')) b.onclick = () => { const t = b.dataset.tool; setTool(E.tool == t && t == 'boom' ? 'build' : t); SFX.pop(1); };
   for (const b of $$('[data-b]')) b.onclick = () => {
-    const i = +b.dataset.b, B = BLOCKS[i], left = need ? 0 : lockLeft(B);
+    const i = +b.dataset.b, B = BLOCKS[i], left = need ? 0 : lockLeft(B), jl = need ? null : bbBlockLock(i);
     if (left) { SFX.wrong(); anim(b, 'sad'); say1(`Earn ${left} more ${left == 1 ? 'star' : 'stars'} in learning to unlock ${B.n}.`, 'info', 2800); return; }
+    if (jl) { SFX.wrong(); anim(b, 'sad'); say1(B.n + ': ' + jl.why, 'info', 2800); return; }
     E.sel = i;
     for (const q of $$('[data-b]')) q.setAttribute('aria-pressed', String(q == b));
     SFX.pop(2);
@@ -1928,6 +2298,8 @@ function blockBuilder(ci) {
     if (!bp && (E.tool == 'break' || E.tool == 'boom' || E.tool == 'clear')) { setTool('build', true); say1('Build: ' + B.n, 'info', 1400); anim($('#bbm-build'), 'jump'); }
   };
   for (const b of $$('[data-stamp]')) b.onclick = () => {
+    const st = BBSTAMPS[+b.dataset.stamp];
+    if (!bbStampOk(st)) { SFX.wrong(); anim(b, 'sad'); say1(`${st.n}: open ${BB_CHS[st.ch].n} in the blueprints to unlock it.`, 'info', 2800); return; }
     E.stamp = +b.dataset.stamp;
     for (const q of $$('[data-stamp]')) q.setAttribute('aria-pressed', String(q == b));
     SFX.pop(2);
@@ -1958,17 +2330,20 @@ function blockBuilder(ci) {
   $('#bbzi').onclick = () => zoomBy(1.4);
   $('#bbzo').onclick = () => zoomBy(1 / 1.4);
   if ($('#bbmore')) $('#bbmore').onclick = () => more();
-  // More: the shape tools, Clear area, night, animals, building on the sides, the goals
+  // More: the shape tools, Clear area, night, animals, building on the sides, save to the gallery, this world's next goals
   function more() {
     const t = (id, icon, label, on) => `<button class="bb-mt" data-mt="${id}" aria-pressed="${on ? 'true' : 'false'}">${bbIco(icon, 28)}<span>${esc(label)}</span></button>`;
-    const g = bbGoalsOf(world);
+    const nx = bbGoalNext(world, 3), gn = bbGoalN(world), gt = bbWGoals(world).length;
     const s = UI.sheet(`<div class="bb-sheet bb-more"><h2>More tools</h2>
       <div class="bb-mts">${t('line', 'line', 'Line', E.tool == 'line')}${t('wall', 'wall', 'Wall', E.tool == 'wall')}${t('floor', 'floor', 'Floor', E.tool == 'floor')}` +
       `${t('clear', 'trash', 'Clear area', E.tool == 'clear')}${t('night', E.night ? 'sparkle' : 'moon', E.night ? 'Day' : 'Night', false)}${t('pet', 'paw', 'Add animal', false)}</div>
       ${UI.sw('Build on the sides of blocks', E.side, 'bbside')}
-      <h3>Goals in this world</h3><ul class="bb-goals">${BB_GOALS.map(([id, txt, ic]) => `<li class="${g[id] ? 'on' : ''}">${ico(g[id] ? 'check-circle' : ic, 24)}<span>${esc(txt)}</span></li>`).join('')}</ul>
+      ${UI.btn('Save a picture to my gallery', { size: 'lg', icon: 'image', id: 'bbgal', wide: true })}
+      <h3>Goals in this world <span class="bb-gn">${gn} of ${gt} done</span></h3>` +
+      (nx.length ? `<ul class="bb-goals">${nx.map(([id, txt, ic]) => `<li>${bbIco(ic, 24)}<span>${esc(txt)}</span></li>`).join('')}</ul>` : `<p class="bb-alldone">${ico('check-circle', 24)}<span>Every goal in this world is done!</span></p>`) + `
       <div class="acts">${UI.btn('Done', { kind: 'primary', size: 'lg', icon: 'check', id: 'bbmdone', wide: true })}</div></div>`);
     s.el.querySelector('#bbmdone').onclick = () => s.close();
+    s.el.querySelector('#bbgal').onclick = () => { s.close(); galSave(); };
     const sw = s.el.querySelector('#bbside');
     if (sw) sw.onchange = () => { E.side = !!sw.checked; say1(E.side ? 'Tap the side of a block to build next to it.' : 'Taps build on top again.', 'info'); };
     for (const b of s.el.querySelectorAll('[data-mt]')) b.onclick = () => {
@@ -1981,11 +2356,28 @@ function blockBuilder(ci) {
     };
   }
   E.setNight = on => { E.night = !!on; E.dirty = 1; };
+  // G-01b: a picture of this world into the gallery (12 at most: a full gallery asks to delete one on the menu first)
+  function galSave() {
+    const gal = bbGal();
+    if (gal.length >= BB_GAL_MAX) { SFX.wrong(); say1(`Your gallery is full (${BB_GAL_MAX}). Delete one on the Block Builder menu first.`, 'info', 3200); return; }
+    bbSave();
+    gal.push({ n: world.name, d: bbPack(E.w), t: today() });
+    save();
+    SFX.magic();
+    say1('Saved to your gallery! It is on the Block Builder menu.', 'good', 2800);
+    goal('gal');
+  }
+  E.galSave = galSave;
 
   GH.wire({quit: () => { bbSave(); gtStop(); bbMenu(); }});
   // the palette pictures, the stamp pictures
   for (const c of $$('[data-bc]')) bbIcon(c.getContext('2d'), +c.dataset.bc, c.width);
   for (const c of $$('[data-sc]')) bbMini(c, BBSTAMPS[+c.dataset.sc].c.map(([a, b, z, v]) => [a + 8, b + 8, z, v]));
+  // the task's picture (a picture or a fix build): the finished build; a tap makes it bigger or smaller
+  if ($('#bbtpc')) {
+    bbMini($('#bbtpc'), bp.c().map(([a, b, z, v]) => [a + 2, b + 2, z, v]));
+    $('#bbtpic').onclick = () => { const t = $('#bbtpic'), on = t.getAttribute('aria-pressed') != 'true'; t.setAttribute('aria-pressed', String(on)); SFX.pop(1); };
+  }
   const selBtn = $(`[data-b="${E.sel}"]`);
   if (selBtn) selBtn.setAttribute('aria-pressed', 'true');
   BB.api = { tap: E.tap, hit: E.hit, get faces() { return E.faces; }, proj: E.proj, size, scene: () => scene(false), say: say1 };
@@ -2010,7 +2402,7 @@ function blockBuilder(ci) {
   }
   gtStart('#gtm', () => { bbSave(); timeUpOverlay(); });
   if (!bp && !bbS().seen) { bbS().seen = 1; save(); setTimeout(() => tip(TIPS.build), 500); }
-  if (S.voice) setTimeout(() => say(bp ? `Build the ${bp.n}! Tap the see-through blocks.` : 'Tap to build! Drag to look around.'), 300);
+  if (S.voice) setTimeout(() => say(bp ? `${bp.n}! ${bbTask(bp)}` : 'Tap to build! Drag to look around.'), 300);
 }
 const BB_HOLD = 300, BB_SLOP = 10; // ms a finger rests before aiming starts; CSS px a finger moves before it drags the view
 // convex hull of points (the outline of a cube on screen)
@@ -2021,28 +2413,87 @@ function bbHull(pts) {
   for (let n = p.length - 1; n >= 0; n--) { const q = p[n]; while (hi.length >= 2 && cr(hi[hi.length - 2], hi[hi.length - 1], q) <= 0) hi.pop(); hi.push(q); }
   return lo.slice(0, -1).concat(hi.slice(0, -1));
 }
+// a blueprint (or the build of the day) is built: stars by id, coins, and what it opened (the next build, a new chapter with its
+// blocks and world, a chapter's trophy and prize); the end card shows the child's build
 function bbWin() {
   if (!BB || BB.ch == null || !$('#bbc')) return;
-  const ci = BB.ch, P0 = BBP[ci], st = BB.miss <= 1 ? 3 : BB.miss <= 4 ? 2 : 1, bp = bbBP(), old = bp[P0.id] || 0;
-  bp[P0.id] = Math.max(old, st);
-  if (P0.old != null) { const ch = bbS().ch = Array.isArray(bbS().ch) ? bbS().ch : []; ch[P0.old] = Math.max(ch[P0.old] || 0, st); }
-  const coins = Math.max(0, st - old) * 3 + 1;
+  const ci = BB.ch, day = ci == 'day', P0 = BB.bp, st = BB.miss <= 1 ? 3 : BB.miss <= 4 ? 2 : 1, bs = bbS();
+  const before = BB_CHS.map((c, k) => [bbChOpen(k), bbTrophy(k)]);
+  let old;
+  if (day) {
+    const d = bs.day && typeof bs.day == 'object' && bs.day.k == P0.day ? bs.day : { k: P0.day, s: 0 };
+    old = d.s | 0;
+    if (!old) bs.days = (bs.days | 0) + 1;
+    d.s = Math.max(old, st);
+    bs.day = d;
+  } else {
+    const bp = bbBP();
+    old = bp[P0.id] || 0;
+    bp[P0.id] = Math.max(old, st);
+    if (P0.old != null) { const ch = bs.ch = Array.isArray(bs.ch) ? bs.ch : []; ch[P0.old] = Math.max(ch[P0.old] || 0, st); }
+  }
+  const coins = Math.max(0, st - old) * 3 + 1 + (day && !old ? 4 : 0);
   S.coins += coins;
   save();
   SFX.fanfare();
-  if (S.voice) say(st == 3 ? 'Perfect build! Three stars!' : 'You built it!');
+  // what opened
+  const lines = BB.miss ? [] : [['check-circle', 'No mistakes!']];
+  let won = null;
+  BB_CHS.forEach((c, k) => {
+    if (!before[k][1] && bbTrophy(k)) { won = k; lines.push(['trophy', `The ${esc(c.n)} trophy! Prize: ${esc(BLOCKS[c.prize].n)}.`]); }
+    if (!before[k][0] && bbChOpen(k)) lines.push(['map', `${esc(c.n)} is open: ${c.set.map(v => esc(BLOCKS[v].n)).join(' and ')} blocks and a new world.`]);
+  });
+  const nx = day ? -1 : BBP.findIndex((b, i) => i > ci && bbOpen(i) && !bbStars(i));
+  if (nx > 0 && !lines.some(l => l[0] == 'map')) lines.push(['go', `Next: ${esc(BBP[nx].n)}` + (bbChOf(nx) == bbChOf(ci) ? ` (${bbChDone(bbChOf(ci))} of ${BB_PER} in ${esc(BB_CHS[bbChOf(ci)].n)})` : '')]);
+  if (S.voice) say(won != null ? `You won the ${BB_CHS[won].n} trophy!` : st == 3 ? 'Perfect build! Three stars!' : 'You built it!');
+  // the child's build as the picture (or the trophy)
+  let pic = '';
+  try {
+    const c = bbCanvas(360, 240);
+    bbMini(c, P0.c().map(([a, b, z, v]) => [a + 2, b + 2, z, v]));
+    pic = `<img class="bb-epic" src="${c.toDataURL()}" alt="Your ${esc(P0.n)}">`;
+  } catch (e) { pic = ''; }
+  if (won != null && typeof rlCupArt == 'function') pic = `<svg viewBox="0 0 100 100" class="art bb-etro" role="img" aria-label="Trophy">${rlCupArt('y')}</svg>`;
   // P4-16: the shared end card
   const o = GH.end('blocks', {
-    win: true, title: `${P0.n} built!`, stars: st,
+    win: true, title: `${P0.n} built!`, stars: st, pic: pic || undefined,
     stats: [[String(BB.miss), BB.miss == 1 ? 'mistake' : 'mistakes', 'blocks'], ['+' + coins, 'coins', 'coin']],
-    lines: BB.miss ? [] : [['check-circle', 'No mistakes!']],
-    btns: (ci + 1 < BBP.length ? UI.btn('Next build', { kind: 'primary', size: 'lg', icon: 'go', id: 'bbnx', wide: true }) : '') +
+    lines,
+    btns: (nx > 0 ? UI.btn('Next build', { kind: 'primary', size: 'lg', icon: 'go', id: 'bbnx', wide: true }) : '') +
       UI.btn('Again', { icon: 'replay', id: 'bbre', wide: true }) + UI.btn('All builds', { icon: 'blocks', id: 'bbls', wide: true }),
   });
   const go = f => { o.remove(); f(); };
-  if (o.querySelector('#bbnx')) o.querySelector('#bbnx').onclick = () => go(() => blockBuilder(ci + 1));
+  if (o.querySelector('#bbnx')) o.querySelector('#bbnx').onclick = () => go(() => blockBuilder(nx));
   o.querySelector('#bbre').onclick = () => go(() => blockBuilder(ci));
   o.querySelector('#bbls').onclick = () => go(() => { gtStop(); bbMenu(); });
+}
+/* ---- the gallery (G-01b): S.bb.gal [{n, d, t}], a picture of a world saved by the child (d: the world packed in runs, bbPack) ---- */
+const BB_GAL_MAX = 12, BB_PK = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+function bbGal() {
+  const b = bbS();
+  if (!Array.isArray(b.gal)) b.gal = [];
+  if (b.gal.some(g => !g || typeof g.d != 'string')) b.gal = b.gal.filter(g => g && typeof g.d == 'string');
+  return b.gal;
+}
+// a world as runs: a letter for the block, then how many of it (when more than one)
+function bbPack(w) {
+  let s = '';
+  for (let n = 0; n < w.length;) {
+    let k = 1;
+    while (n + k < w.length && w[n + k] == w[n]) k++;
+    s += BB_PK[w[n]] + (k > 1 ? k : '');
+    n += k;
+  }
+  return s;
+}
+function bbUnpack(s) {
+  const w = new Uint8Array(BW * BD * BH);
+  let n = 0;
+  for (const m of String(s).matchAll(/([a-zA-Z])(\d*)/g)) {
+    const v = BB_PK.indexOf(m[1]), k = m[2] ? +m[2] : 1;
+    for (let q = 0; q < k && n < w.length; q++) w[n++] = v < BLOCKS.length ? v : 0;
+  }
+  return w;
 }
 function bbSave() {
   if (!BB || BB.ch != null || !BB.world) return;
@@ -2066,42 +2517,89 @@ function bbIcon(x, i, sz) {
   x.setTransform(1, 0, 0, 1, 0, 0);
 }
 
-/* ---- the menu: blueprints first (visible without scrolling), then the worlds with their goals, then how to play ---- */
-const BBWT = [['island', 'Island', 'Hills, beach, trees and sea'], ['mountain', 'Mountains', 'Tall peaks with snow on top'], ['desert', 'Desert', 'Sand, cactus and an oasis'], ['flat', 'Flat', 'Empty grass for big builds']];
+/* ---- the menu (G-01b): the next goal, the build of the day, the journey (four chapters of six builds), my worlds, my gallery,
+   how to build. The first chapter's first builds are visible without scrolling. ---- */
+// world kinds: id, name, line, the chapter that opens it (none: open from the start)
+const BBWT = [['island', 'Island', 'Hills, beach, trees and sea'], ['mountain', 'Mountains', 'Tall peaks with snow on top'], ['desert', 'Desert', 'Sand, cactus and an oasis'],
+  ['flat', 'Flat', 'Empty grass for big builds'], ['beach', 'Beach', 'Sand, sea, palms and shells', 1], ['snow', 'Snowy', 'Snow, ice and pine trees', 2],
+  ['sky', 'Sky', 'Islands floating over the clouds', 3]];
+const BB_WMAX = 8;
 const bbCells = w => { const o = []; for (let n = 0; n < w.length; n++) if (w[n]) o.push([n % BW, Math.floor(n / BW) % BD, Math.floor(n / (BW * BD)), w[n]]); return o; };
+const bbDayStars = () => { const d = bbS().day; return d && typeof d == 'object' && d.k == today() ? Math.min(3, d.s | 0) : 0; };
+// the one line that says what to do next (like Star Rally's): the journey first, then today's build, more stars, a world's goal
+function bbNextGoal() {
+  for (let k = 0; k < BB_CHS.length; k++) {
+    const c = BB_CHS[k], done = bbChDone(k);
+    if (done >= BB_PER) continue;
+    const i = BBP.findIndex((b, j) => bbChOf(j) == k && bbOpen(j) && !bbStars(j));
+    if (i < 0) break;
+    const then = k + 1 < BB_CHS.length && !bbChOpen(k + 1) ? ` ${BB_OPEN_AT - done} more ${BB_OPEN_AT - done == 1 ? 'opens' : 'open'} ${BB_CHS[k + 1].n}.` : ` Build all ${BB_PER} for the ${c.n} trophy.`;
+    return `Build the ${BBP[i].n} in ${c.n}.` + then;
+  }
+  if (!bbDayStars()) return `Try today's build of the day: ${bbDaily(today()).n}.`;
+  const lo = BBP.findIndex((b, i) => bbStars(i) && bbStars(i) < 3);
+  if (lo >= 0) return `Get 3 stars on the ${BBP[lo].n}.`;
+  for (const w of bbS().worlds) { const g = bbGoalNext(w, 1)[0]; if (g) return `In ${w.name}: ${g[1]}.`; }
+  return 'Build something new and save it to your gallery.';
+}
 function bbMenu() {
-  const bs = bbS(), stars = BBP.reduce((s, b, i) => s + bbStars(i), 0);
+  const bs = bbS(), stars = BBP.reduce((s, b, i) => s + bbStars(i), 0), tro = BB_CHS.filter((c, k) => bbTrophy(k)).length;
+  const day = bbDaily(today()), dst = bbDayStars(), gal = bbGal();
   const bpCard = (b, i) => {
-    const ok = bbOpen(i), sv = bbStars(i), n = b.c().length;
-    return `<button class="bb-bp${ok ? '' : ' lock'}${sv ? ' done' : ''}" data-ch="${i}" aria-label="${esc((i + 1) + '. ' + b.n + (ok ? '' : ', locked'))}">` +
+    const ok = bbOpen(i), sv = bbStars(i), n = b.c().length, m = BB_MODES[bbMode(b)], k = bbChOf(i);
+    const lockWhy = ok ? '' : !bbChOpen(k) ? `Opens with ${BB_CHS[k].n}` : `Finish ${BBP[i - 1].n} first`;
+    return `<button class="bb-bp${ok ? '' : ' lock'}${sv ? ' done' : ''}" data-ch="${i}" aria-label="${esc((i % BB_PER + 1) + '. ' + b.n + ', ' + m[0] + (ok ? '' : ', locked'))}">` +
       `<span class="bb-bpic"><canvas width="200" height="150" data-bpc="${i}" aria-hidden="true"></canvas>${ok ? '' : `<span class="bb-lk">${ico('lock', 26)}</span>`}</span>` +
-      `<span class="bb-bpn">${i + 1}. ${esc(b.n)}</span>` +
-      (ok ? `<span class="bb-bps">${UI.stars(sv, 3, 20)}<span>${n} blocks</span></span>` : `<span class="bb-bpl">Finish ${esc(BBP[i - 1].n)} first</span>`) + '</button>';
+      `<span class="bb-bpn">${i % BB_PER + 1}. ${esc(b.n)}</span><span class="bb-bm">${ico(m[1], 18)}${esc(m[0])}</span>` +
+      (ok ? `<span class="bb-bps">${UI.stars(sv, 3, 20)}<span>${n} blocks</span></span>` : `<span class="bb-bpl">${esc(lockWhy)}</span>`) + '</button>';
+  };
+  const chap = (c, k) => {
+    const open = bbChOpen(k), n = bbChDone(k), tr = bbTrophy(k);
+    const sub = !open ? `Build ${BB_OPEN_AT} in ${BB_CHS[k - 1].n} to open it.` : tr ? `Trophy won! Prize: ${BLOCKS[c.prize].n}.` : `Build all ${BB_PER} for the trophy and the ${BLOCKS[c.prize].n}.`;
+    return `<div class="bb-chap s-${c.id}${open ? '' : ' lock'}" data-chap="${k}"><h3 class="bb-chh"><span class="bb-chi">${ico(open ? c.ico : 'lock', 24)}</span>` +
+      `<span class="bb-cht"><b>${esc(c.n)}</b><span>${esc(sub)}</span></span><span class="bb-chn">${tr ? ico('trophy', 22, 'ic-star') : ''}${n}/${BB_PER}</span></h3>` +
+      `<div class="bb-bpg">${BBP.slice(k * BB_PER, k * BB_PER + BB_PER).map((b, j) => bpCard(b, k * BB_PER + j)).join('')}</div></div>`;
   };
   const wCard = (w, i) => {
     const d = bbDecode(w.d), n = d.filter(v => v).length, gn = bbGoalN(w);
     return `<div class="bb-wrow"><button class="bb-w" data-w="${i}" aria-label="${esc('Play ' + w.name)}"><span class="bb-wpic"><canvas width="220" height="150" data-wc="${i}" aria-hidden="true"></canvas></span>` +
-      `<span class="bb-wi"><b>${esc(w.name)}</b><span>${n} blocks</span><span class="bb-wg">${ico('target', 18)}${gn} of ${BB_GOALS.length} goals</span></span>` +
+      `<span class="bb-wi"><b>${esc(w.name)}</b><span>${n} blocks</span><span class="bb-wg">${ico('target', 18)}${gn} of ${bbWGoals(w).length} goals</span></span>` +
       `<span class="bb-go" aria-hidden="true">${ico('play')}</span></button>` +
       (bs.worlds.length > 1 ? UI.ibtn('trash', 'Delete ' + w.name, { size: 'sm', cls: 'bb-del', attrs: `data-del="${i}"` }) : '') + '</div>';
   };
+  const gCard = (g, i) => `<button class="bb-gc" data-gal="${i}" aria-label="${esc('Picture ' + (i + 1) + ': ' + (g.n || 'My build'))}"><span class="bb-gpic"><canvas width="220" height="150" data-gc="${i}" aria-hidden="true"></canvas></span>` +
+    `<span class="bb-gcn">${esc(g.n || 'My build')}</span></button>`;
   const how = [['build', 'Tap a spot to build on top of it.'], ['arrow-right', 'Drag one finger to look around. Pinch with two to zoom.'],
     ['closer', 'Closer and Farther zoom. Left and Right turn the island.'], ['stamp', 'Build, Break and Stamp are at the bottom.'],
     ['undo', 'Undo takes a step back. Redo puts it back.'], ['boom', 'Boom lights a TNT block. Building on TNT is safe.'],
-    ['hint', 'Hold your finger still, then slide: the bubble shows where it goes.']];
+    ['hint', 'Hold your finger still, then slide: the bubble shows where it goes.'],
+    ['skill-count', 'Count builds: build it the size asked, any way round.'], ['image', 'Picture builds: no see-through blocks. Look at the picture.'],
+    ['skill-pattern', 'Pattern builds: the new blocks are white. Which colour comes next?']];
   view(`${GH.top('blocks')}
-  <div class="scroll bb-menu"><section class="bb-sec"><h2>${ico('blocks', 28)}<span>Blueprints</span><span class="bb-sc">${ico('star', 20, 'ic-star')}${stars} of ${BBP.length * 3}</span></h2>
-   <p class="bb-lead">Copy the see-through build, one layer at a time.</p><div class="bb-bpg">${BBP.map(bpCard).join('')}</div></section>
+  <div class="scroll bb-menu"><p class="bb-goal" id="bbnext"><span class="bb-gi">${ico('target', 24)}</span><span><b>Next goal:</b> ${esc(bbNextGoal())}</span></p>
+   <section class="bb-sec"><h2>${ico('map', 28)}<span>Blueprints</span><span class="bb-sc" aria-label="${tro} trophies, ${stars} of ${BBP.length * 3} stars">${ico('trophy', 20, 'ic-star')}${tro}<span class="bb-sep"></span>${ico('star', 20, 'ic-star')}${stars}/${BBP.length * 3}</span></h2>
+    ${BB_CHS.map(chap).join('')}</section>
+   <section class="bb-sec"><h2>${ico('calendar', 28)}<span>Build of the day</span></h2>
+    <button class="bb-w bb-day" id="bbday" aria-label="${esc('Build of the day: ' + day.n + ', ' + BB_MODES[bbMode(day)][0])}"><span class="bb-wpic"><canvas width="220" height="150" id="bbdc" aria-hidden="true"></canvas></span>` +
+    `<span class="bb-wi"><b>${esc(day.n)}</b><span class="bb-wg">${ico(BB_MODES[bbMode(day)][1], 18)}${esc(BB_MODES[bbMode(day)][0])}</span>` +
+    `<span>${dst ? UI.stars(dst, 3, 18) : 'A new build every day'}</span></span><span class="bb-go" aria-hidden="true">${ico('play')}</span></button></section>
   <section class="bb-sec"><h2>${ico('home', 28)}<span>My worlds</span></h2><div class="bb-wl">${bs.worlds.map(wCard).join('')}
-   ${bs.worlds.length < 4 ? `<button class="bb-w bb-new" id="bbnew"><span class="bb-wpic bb-plus">${ico('plus', 40)}</span><span class="bb-wi"><b>New world</b><span>Island, mountains, desert or flat</span></span></button>` : ''}</div></section>
+   ${bs.worlds.length < BB_WMAX ? `<button class="bb-w bb-new" id="bbnew"><span class="bb-wpic bb-plus">${ico('plus', 40)}</span><span class="bb-wi"><b>New world</b><span>${BBWT.filter(t => t[3] == null || bbChOpen(t[3])).length} kinds to choose from</span></span></button>` : ''}</div></section>
+  <section class="bb-sec"><h2>${ico('image', 28)}<span>My gallery</span><span class="bb-sc">${gal.length} of ${BB_GAL_MAX}</span></h2>` +
+    (gal.length ? `<div class="bb-gal">${gal.map(gCard).join('')}</div>` : `<p class="bb-lead">Save a picture of a world: in a world, tap More, then Save a picture to my gallery.</p>`) + `</section>
   <section class="bb-sec bb-how"><h2>${ico('info', 28)}<span>How to build</span></h2><ul>${how.map(([i, t]) => `<li>${bbIco(i, 26)}<span>${esc(t)}</span></li>`).join('')}</ul></section></div>`);
   GH.wire({ back: gameRoom });
   for (const b of $$('[data-ch]')) b.onclick = () => {
-    const i = +b.dataset.ch;
-    if (!bbOpen(i)) { SFX.wrong(); anim(b, 'sad'); fb('Finish ' + BBP[i - 1].n + ' first!', 'warn'); return; }
+    const i = +b.dataset.ch, k = bbChOf(i);
+    if (!bbOpen(i)) { SFX.wrong(); anim(b, 'sad'); fb(!bbChOpen(k) ? `Build ${BB_OPEN_AT} in ${BB_CHS[k - 1].n} to open ${BB_CHS[k].n}!` : 'Finish ' + BBP[i - 1].n + ' first!', 'warn'); return; }
     if (ptLeft() <= 0) { SFX.wrong(); fb(ptWhyNot(), 'warn long', 3000); return; }
     SFX.whoosh();
     blockBuilder(i);
+  };
+  $('#bbday').onclick = () => {
+    if (ptLeft() <= 0) { SFX.wrong(); fb(ptWhyNot(), 'warn long', 3000); return; }
+    SFX.whoosh();
+    blockBuilder('day');
   };
   for (const b of $$('[data-w]')) b.onclick = () => {
     if (ptLeft() <= 0) { SFX.wrong(); fb(ptWhyNot(), 'warn long', 3000); return; }
@@ -2117,14 +2615,32 @@ function bbMenu() {
     s.el.querySelector('#bbkeepw').onclick = () => s.close();
     s.el.querySelector('#bbdelw').onclick = () => { s.close(); bs.worlds.splice(i, 1); bs.cur = 0; save(); SFX.del(); bbMenu(); };
   };
+  // a gallery picture: big, with Close and Delete (Delete asks first)
+  for (const b of $$('[data-gal]')) b.onclick = () => {
+    const i = +b.dataset.gal, g = gal[i];
+    SFX.pop(2);
+    const s = UI.sheet(`<div class="bb-sheet bb-gbig"><h2>${esc(g.n || 'My build')}</h2><canvas width="600" height="400" id="bbgbc" role="img" aria-label="${esc('Your build: ' + (g.n || 'My build'))}"></canvas>` +
+      `<div class="acts">${UI.btn('Close', { kind: 'primary', size: 'lg', icon: 'check', id: 'bbgx', wide: true })}${UI.btn('Delete this picture', { icon: 'trash', id: 'bbgdel', wide: true })}</div></div>`);
+    bbMini(s.el.querySelector('#bbgbc'), bbCells(bbUnpack(g.d)), { pet: BBPETIMG && BBPETIMG.img });
+    s.el.querySelector('#bbgx').onclick = () => s.close();
+    const del = s.el.querySelector('#bbgdel');
+    del.onclick = () => {
+      if (!del.dataset.sure) { del.dataset.sure = '1'; del.querySelector('span:last-child').textContent = 'Tap again to delete it'; SFX.pop(1); return; }
+      s.close(); gal.splice(i, 1); save(); SFX.del(); bbMenu();
+    };
+  };
   if ($('#bbnew')) $('#bbnew').onclick = () => {
-    const s = UI.sheet(`<div class="bb-sheet"><h2>Pick a world</h2><div class="bb-wl">${BBWT.map(([k, n, d]) => `<button class="bb-w" data-t="${k}"><span class="bb-wpic"><canvas width="220" height="150" data-tc="${k}" aria-hidden="true"></canvas></span>` +
-      `<span class="bb-wi"><b>${esc(n)}</b><span>${esc(d)}</span></span></button>`).join('')}</div><div class="acts">${UI.btn('Cancel', { icon: 'close', id: 'bbwx', wide: true })}</div></div>`);
+    const s = UI.sheet(`<div class="bb-sheet"><h2>Pick a world</h2><div class="bb-wl">${BBWT.map(([k, n, d, ch]) => {
+      const ok = ch == null || bbChOpen(ch);
+      return `<button class="bb-w${ok ? '' : ' lock'}" data-t="${k}"${ok ? '' : ' aria-disabled="true"'}><span class="bb-wpic"><canvas width="220" height="150" data-tc="${k}" aria-hidden="true"></canvas>${ok ? '' : `<span class="bb-lk">${ico('lock', 26)}</span>`}</span>` +
+        `<span class="bb-wi"><b>${esc(n)}</b><span>${esc(ok ? d : `Open ${BB_CHS[ch].n} in the blueprints`)}</span></span></button>`;
+    }).join('')}</div><div class="acts">${UI.btn('Cancel', { icon: 'close', id: 'bbwx', wide: true })}</div></div>`);
     s.el.querySelector('#bbwx').onclick = () => s.close();
     for (const c of s.el.querySelectorAll('[data-tc]')) bbMini(c, bbCells(bbGen(c.dataset.tc, 7)));
     for (const b of s.el.querySelectorAll('[data-t]')) b.onclick = () => {
       const t = BBWT.find(q => q[0] == b.dataset.t);
-      bs.worlds.push({ name: `${t[1]} ${bs.worlds.length + 1}`, d: bbEncode(bbGen(t[0], R(1, 9999))) });
+      if (t[3] != null && !bbChOpen(t[3])) { SFX.wrong(); anim(b, 'sad'); fb(`Open ${BB_CHS[t[3]].n} in the blueprints first!`, 'warn'); return; }
+      bs.worlds.push({ name: `${t[1]} ${bs.worlds.length + 1}`, d: bbEncode(bbGen(t[0], R(1, 9999))), t: t[0] });
       bs.cur = bs.worlds.length - 1;
       save();
       s.close();
@@ -2132,13 +2648,22 @@ function bbMenu() {
       if (ptLeft() > 0) blockBuilder(); else bbMenu();
     };
   };
-  // the pictures: each blueprint as it will look, each world as it is now
+  // the pictures: each blueprint as it will look, today's build, each world as it is now, the gallery (one a frame, so the menu opens at once)
+  const jobs = [];
+  for (const c of $$('[data-bpc]')) jobs.push(() => bbMini(c, BBP[+c.dataset.bpc].c().map(([a, b, z, v]) => [a + 2, b + 2, z, v])));
+  jobs.push(() => bbMini($('#bbdc'), day.c().map(([a, b, z, v]) => [a + 2, b + 2, z, v])));
   const petImg = bbPetImg(() => { for (const c of $$('[data-wc]')) bbMini(c, bbCells(bbDecode(bs.worlds[+c.dataset.wc].d)), { pet: BBPETIMG && BBPETIMG.img }); });
-  for (const c of $$('[data-bpc]')) bbMini(c, BBP[+c.dataset.bpc].c().map(([a, b, z, v]) => [a + 2, b + 2, z, v]));
-  // the row of blueprints starts at the next one to build
-  const nx = BBP.findIndex((b, i) => bbOpen(i) && !bbStars(i)), card = nx > 0 && $(`[data-ch="${nx}"]`);
-  if (card && card.parentNode) card.parentNode.scrollLeft = Math.max(0, card.offsetLeft - card.parentNode.offsetLeft - 24);
-  for (const c of $$('[data-wc]')) bbMini(c, bbCells(bbDecode(bs.worlds[+c.dataset.wc].d)), { pet: petImg });
+  for (const c of $$('[data-wc]')) jobs.push(() => bbMini(c, bbCells(bbDecode(bs.worlds[+c.dataset.wc].d)), { pet: petImg }));
+  for (const c of $$('[data-gc]')) jobs.push(() => bbMini(c, bbCells(bbUnpack(gal[+c.dataset.gc].d)), { pet: BBPETIMG && BBPETIMG.img }));
+  const view0 = $('.bb-menu');
+  for (let n = 0; n < 8 && jobs.length; n++) jobs.shift()(); // the first chapter at once
+  const step = () => { if (!view0 || !document.body.contains(view0) || !jobs.length) return; jobs.shift()(); requestAnimationFrame(step); };
+  requestAnimationFrame(step);
+  // each chapter's row starts at its next build to make
+  for (let k = 0; k < BB_CHS.length; k++) {
+    const nx = BBP.findIndex((b, i) => bbChOf(i) == k && bbOpen(i) && !bbStars(i)), card = nx > k * BB_PER && $(`[data-ch="${nx}"]`);
+    if (card && card.parentNode) card.parentNode.scrollLeft = Math.max(0, card.offsetLeft - card.parentNode.offsetLeft - 24);
+  }
 }
 /* ---------- 4x4 hill climb ---------- */
 /* truck sound pack */
@@ -3099,4 +3624,4 @@ function freePaint(ai){const cs=cbS();const G=ai>=0?cs.art[ai].split(',').map(k=
   gtStart('#gtm',()=>{if(G.some(k=>k!='blanco'))doSave();timeUpOverlay()})}
 
 
-var GAMES_VER='v153'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var GAMES_VER='v155'; // last line: the whole file ran (checked by dataReady() before the app starts)

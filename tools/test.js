@@ -21,8 +21,9 @@ const SIZE_WARN=1200000,SIZE_FAIL=1500000; // bytes of the built index.html (ROA
 const DATA_WARN=1000000,DATA_FAIL=2000000; // bytes of the built data.<VER>.js
 const PART_WARN=400000,PART_FAIL=800000; // A11b: bytes of each built part file (bt.<VER>.js, games.<VER>.js)
 // P6-02: bytes LOADED AT START, index.html + the part files it loads at start + data.<VER>.js (back to 3.0 MB: the games parts load on demand);
-// and bytes PRECACHED, every built file (G-04a raised the old all-files total from 3.0 to 3.3 MB for games2; that limit now holds the precache)
-const TOTAL_WARN=2000000,TOTAL_FAIL=3000000,CACHE_FAIL=3300000;
+// and bytes PRECACHED, every built file (G-04a raised the old all-files total from 3.0 to 3.3 MB for games2; that limit now holds the precache;
+// G-01b raised it to 3.6 MB for the Block Builder journey; the start-up limit stays 3.0 MB)
+const TOTAL_WARN=2000000,TOTAL_FAIL=3000000,CACHE_FAIL=3600000; // G-01b: precache 3.3 -> 3.6 MB (the Block Builder journey)
 const BUILD_VER=(BUILD_PY.match(/^VER = '(v\d+)'/m)||[])[1];
 const DATA_FILE='data.'+BUILD_VER+'.js'; // the built data file at the repo root (tools/build.py)
 const PART_FILES=PARTS.map(p=>p.stem+'.'+BUILD_VER+'.js'); // A11b: the built part files, in PARTS order
@@ -15641,8 +15642,9 @@ run('block builder G-01',()=>{
     }
   }
   r.notes.push('blueprints '+sizes.join(', '));
-  if(sizes[0]!==3||sizes.some((s,i)=>i&&s<sizes[i-1])||!sizes.includes(6)||!sizes.includes(10)||!sizes.includes(16))bad('blueprint steps: '+sizes);
-  for(let i=1;i<sizes.length;i++)if(sizes[i]>sizes[i-1]*2.1)bad('blueprint jump '+sizes[i-1]+' -> '+sizes[i]);
+  // G-01b: the blueprints are chapters of BB_PER builds; the steps rise within a chapter (each chapter starts small again)
+  if(sizes[0]!==3||sizes.some((s,i)=>i%BB_PER&&s<sizes[i-1])||!sizes.includes(6)||!sizes.includes(10)||!sizes.includes(16))bad('blueprint steps: '+sizes);
+  for(let i=1;i<sizes.length;i++)if(i%BB_PER&&sizes[i]>sizes[i-1]*2.1)bad('blueprint jump '+sizes[i-1]+' -> '+sizes[i]);
   if(new Set(BBP.map(b=>b.id)).size!==BBP.length)bad('blueprint ids repeat');
   // a wrong block: counted once per spot; a guess (nothing under the finger) is never counted
   {
@@ -15707,6 +15709,214 @@ run('block builder G-01',()=>{
   if(/(^|[;{\s])(-webkit-)?(backdrop-)?filter\s*:/.test(css))p.push('60-game-blocks.css: filter used');
   if(partOf('60-game-blocks.css')!=='games')p.push('60-game-blocks.css must go into the games file');
   if(/\.bb(wrap|cv|tools|pal|k)\b/.test(fs.readFileSync(path.join(SRC,'css','40-games.css'),'utf8')))p.push('old Block Builder rules left in 40-games.css');
+  return{problems:[...new Set(p)].slice(0,50),note:o.notes.join('; ')};
+});
+
+// ---- G-01b: Block Builder journey (src/js/60-blocks.js): chapters, challenge kinds, the build of the day, the gallery, old saves ----
+run('Block Builder journey G-01b',()=>{
+  const p=[];
+  const o=(()=>eval(js+`;(()=>{
+  const r={bad:[],notes:[]},bad=m=>{if(r.bad.length<60&&!r.bad.includes(m))r.bad.push(m)};
+  const keep=S.bb;
+  const XYZ=n=>[n%BW,Math.floor(n/BW)%BD,Math.floor(n/(BW*BD))];
+  const mid=f=>[(Math.min(...f.poly.map(q=>q[0]))+Math.max(...f.poly.map(q=>q[0])))/2,(Math.min(...f.poly.map(q=>q[1]))+Math.max(...f.poly.map(q=>q[1])))/2];
+  // the bot: builds a blueprint the way blockBuilder() starts it, by taps a careful child would make, with the right block; returns
+  // {done, miss, taps, guesses}. copy / pat: a see-through top; pic / fix: a visible face of the cell's column (else the spot itself,
+  // a guess); count: the top under the next cell (far ones first)
+  function bot(bp,W,H,rot){
+    const m=bbMode(bp),goal=bbGoal(bp),E=bbMake(bbStart(bp),goal,m);
+    E.size(W,H,1);E.home();E.rot=rot;E.ang=rot*Math.PI/2;
+    let taps=0,guess=0;
+    while(!E.done()&&taps<400){
+      E.render({});taps++;
+      if(m=='copy'||m=='pat'){
+        const f=E.faces.filter(q=>q.ghost&&q.f=='top').pop();
+        if(!f)return{err:'no see-through top'};
+        const i=bbI(f.i,f.j,f.k);E.sel=goal.get(i);
+        const res=E.tap(...mid(f));
+        if(res.kind!=='place'||res.cells[0]!==i)return{err:'copy tap '+res.kind};
+        continue;
+      }
+      let did=false;
+      const c0=Math.cos(E.ang),s0=Math.sin(E.ang),far=n=>{const [i,j,k]=XYZ(n),dx=i-E.F[0],dy=j-E.F[1];return k*1000+dx*c0-dy*s0+dx*s0+dy*c0};
+      const cand=(m=='count'?[...goal.keys()].filter(n=>!E.w[n]):E.todo()).sort((a,b)=>far(a)-far(b));
+      // a face's middle, then four spots between the middle and its corners (a child taps the part that shows)
+      const spots=f=>{const c=mid(f);return [c].concat(f.poly.map(q=>[c[0]+(q[0]-c[0])*.55,c[1]+(q[1]-c[1])*.55]))};
+      for(const n of cand){
+        const [i,j,k]=XYZ(n);
+        if(m=='count'&&k>Math.min(...cand.map(q=>XYZ(q)[2])))break;
+        const col=[];for(let z=0;z<BH;z++){const q=bbI(i,j,z);if(goal.has(q)&&E.w[q]!=goal.get(q))col.push(q)}
+        if(m!='count'&&col[0]!==n)continue;
+        tapped:for(const f of E.faces.filter(q=>!q.ghost&&q.i==i&&q.j==j&&(m!='count'||(q.f=='top'&&q.k==k-1))))for(const c of spots(f)){
+          const h=E.hit(...c,q=>!q.ghost);
+          if(!h||h.i!==i||h.j!==j)continue;
+          if(m=='count'){const t=E.target(...c);if(!t||bbI(t.i,t.j,t.k)!==n)continue}
+          E.sel=goal.get(n);const res=E.tap(...c);
+          if(res.kind!=='place'||res.cells[0]!==n)return{err:m+' tap on '+[i,j,k]+': '+res.kind};
+          did=true;break tapped;
+        }
+        if(did)break;
+      }
+      if(!did&&m!='count'){ // every column hidden: tap the spot itself (the nearest buildable spot: a guess, never a mistake)
+        const n=cand[0],[i,j,k]=XYZ(n),c=E.proj(i+.5,j+.5,k+1);E.sel=goal.get(n);const res=E.tap(...c);guess++;
+        if(res.kind!=='place')return{err:m+' guess at '+[i,j,k]+': '+res.kind+' (miss '+E.miss+')'};
+        did=true;
+      }
+      if(!did)return{err:'nowhere to tap'};
+    }
+    return{done:E.done(),miss:E.miss,taps,guess};
+  }
+  // 1. the journey: 4 chapters of 6, in order; sizes rise in a chapter; every kind of challenge; the data is well formed
+  if(BB_CHS.length!==4||BBP.length!==24)bad('4 chapters of 6 builds: '+BB_CHS.length+' / '+BBP.length);
+  if(new Set(BBP.map(b=>b.id)).size!==BBP.length)bad('blueprint ids repeat');
+  const tok=require('fs').readFileSync(require('path').join(SRC,'css','00-tokens.css'),'utf8');
+  const kinds={};
+  BB_CHS.forEach((c,k)=>{
+    if(c.bps.length!==6||c.bps.some((id,j)=>BBP[k*6+j].id!==id))bad(c.id+': not the 6 builds in BBP order');
+    const sz=c.bps.map(id=>bbGoal(BBP.find(b=>b.id==id)).size);
+    for(let j=1;j<6;j++){if(sz[j]<sz[j-1])bad(c.n+': a build smaller than the one before: '+sz);if(sz[j]>sz[j-1]*2.1)bad(c.n+': a jump '+sz[j-1]+' -> '+sz[j])}
+    const ms=new Set(c.bps.map(id=>bbMode(BBP.find(b=>b.id==id))));
+    if(ms.size<2)bad(c.n+': only one kind of challenge');
+    for(const s of c.sky)if(!tok.includes('--sc-'+s+':'))bad(c.n+': sky --sc-'+s+' is not a token');
+    for(const v of c.set.concat(c.prize))if(!BLOCKS[v]||!BBPAL.includes(v))bad(c.n+': block '+v+' is not in the palette');
+    if(!BBWT.some(t=>t[0]==c.world))bad(c.n+': no world kind '+c.world);
+    r.notes.push(c.n+' '+sz.join('/'));
+  });
+  if(BB_CHS.reduce((s,c,k)=>s+(k&&bbGoal(BBP[k*6+5]).size>bbGoal(BBP[(k-1)*6+5]).size?1:0),0)<3)bad('the chapters do not grow: each last build should be bigger than the last one before');
+  for(const b of BBP){
+    const m=bbMode(b),g=bbGoal(b),cells=b.c();kinds[m]=(kinds[m]||0)+1;
+    if(!BB_MODES[m])bad(b.id+': unknown kind '+m);
+    for(const [x,y,z,v] of cells)if(!(v>0&&v<BLOCKS.length)||BLOCKS[v].deco||v===26||z<1||x+2<0||y+2<0||x+2>=BW||y+2>=BD||z>=BH)bad(b.id+': a bad cell '+[x,y,z,v]);
+    if(g.size!==cells.length)bad(b.id+': two blocks in one cell');
+    if(!bbTask(b)||/undefined|NaN/.test(bbTask(b)))bad(b.id+': no task line');
+    if(m=='count'){const D=bbDims(g);if(D.w*D.d*D.h!==g.size||new Set(g.values()).size!==1)bad(b.id+': a count build must be one kind of block filling a box '+JSON.stringify(D))}
+    if(m=='pat'){const pre=cells.slice(0,b.pre).map(q=>q[3]);if(!(b.pre>0&&b.pre<g.size)||new Set(pre).size<2)bad(b.id+': a pattern must show 2 colours first: '+b.pre)}
+    if(m=='fix'){const fx=bbFixMiss(b);if(fx.size<3||fx.size>6||[...fx].some(n=>!g.has(n)))bad(b.id+': 3-6 missing blocks, all in the build: '+b.fx)}
+    if(m=='pic'&&g.size<10)bad(b.id+': a picture build should be 10 blocks or more');
+  }
+  for(const m of Object.keys(BB_MODES))if(!kinds[m])bad('no '+m+' build in the journey');
+  r.notes.push('kinds '+JSON.stringify(kinds));
+  // 2. every blueprint built by the bot with no mistakes, at four turns, on a phone and a tablet canvas
+  let guesses=0,maxTaps=0;
+  for(const b of BBP)for(const [W,H] of [[353,440],[660,460]])for(const rot of [0,1,2,3]){
+    const q=bot(b,W,H,rot);
+    if(q.err||!q.done||q.miss)bad(b.id+' '+W+'x'+H+' turn '+rot+': '+(q.err||'not built ('+q.miss+' mistakes)'));
+    else{guesses+=q.guess;maxTaps=Math.max(maxTaps,q.taps)}
+  }
+  r.notes.push('bot: every build at 2 sizes x 4 turns, no mistakes, '+guesses+' spot taps, at most '+maxTaps+' taps');
+  // 3. the challenge kinds are kind: a count build never takes a block that makes it too big (one mistake per spot); a pattern's first
+  //    wrong colour asks again, the second shows the block; a tap far away and a spot nothing holds yet are never mistakes
+  {
+    const b=BBP.find(x=>x.id=='wall'),E=bbMake(bbStart(b),bbGoal(b),'count');E.size(660,460,1);E.home();E.render({});
+    const col=(i,j)=>{E.render({});const f=E.faces.find(q=>q.i==i&&q.j==j&&q.f=='top');return mid(f)};
+    E.sel=8;for(let n=0;n<4;n++)E.tap(...col(4+n,8));
+    const r1=E.tap(...col(8,8));
+    if(r1.kind!=='big'||!r1.counted||E.miss!==1||E.get(8,8,1))bad('count: a 5th block in a row of 4 should not be built: '+JSON.stringify(r1));
+    const r1b=E.tap(...col(8,8));if(r1b.counted||E.miss!==1)bad('count: the same spot counted twice');
+    E.tap(...col(4,8));E.tap(...col(4,8));
+    const r2=E.tap(...col(4,8));if(r2.kind!=='big'||r2.why!=='h')bad('count: a 3rd layer of a wall 2 tall: '+JSON.stringify(r2));
+    // any way round: the same wall along y is right too
+    const E2=bbMake(bbStart(b),bbGoal(b),'count');E2.size(660,460,1);E2.home();E2.sel=8;
+    for(let n=0;n<4;n++)for(let z=0;z<2;z++){E2.render({});const f=E2.faces.find(q=>q.i==6&&q.j==4+n&&q.f=='top');E2.tap(...mid(f))}
+    if(!E2.done()||E2.miss)bad('count: the wall turned round is not accepted');
+    if(E2.tap(2,2).kind=='place')bad('count: a tap in the sky built something');
+    const P=BBP.find(x=>x.id=='stripes'),E3=bbMake(bbStart(P),bbGoal(P),'pat');E3.size(660,460,1);E3.home();E3.render({});
+    const g3=E3.faces.filter(q=>q.ghost&&q.f=='top').pop(),i3=bbI(g3.i,g3.j,g3.k),want=bbGoal(P).get(i3);
+    E3.sel=want==27?28:27;const w1=E3.tap(...mid(g3)),w2=E3.tap(...mid(g3));
+    if(w1.kind!=='wrong'||w1.tries!==1||w2.tries!==2||E3.miss!==1)bad('pattern: wrong colours '+JSON.stringify([w1,w2]));
+    const S2=BBP.find(x=>x.id=='starstairs'),E4=bbMake(bbStart(S2),bbGoal(S2),'pic');E4.size(660,460,1);E4.home();E4.render({});
+    // the second step (on air, held only by the middle column) before the column: wait, no mistake
+    const st=[...bbGoal(S2)].find(([n,v])=>v==4&&XYZ(n)[2]==2)[0],[si,sj]=XYZ(st);
+    const fg=E4.faces.find(q=>q.i==si&&q.j==sj&&q.f=='top');E4.sel=4;
+    const rw=E4.tap(...mid(fg));if(rw.kind!=='wait'||E4.miss)bad('picture: a step nothing holds yet: '+JSON.stringify(rw));
+    if(E4.tap(3,3).kind!=='miss'||E4.miss)bad('picture: a tap far away should be a tip, not a mistake');
+    E4.sel=3;const fc=E4.faces.find(q=>q.i==8&&q.j==8&&q.f=='top');const rc=E4.tap(...mid(fc));
+    if(rc.kind!=='wrong'||!rc.counted)bad('picture: a wrong block on the right spot: '+JSON.stringify(rc));
+  }
+  // 4. chapters open in order (4 builds open the next; all 6 win the trophy and its prize); blocks, stamps and worlds open with them;
+  //    the next-goal line follows; nothing done ever locks again
+  {
+    S.bb={worlds:[],cur:0};bbS();
+    const open=()=>BB_CHS.map((c,k)=>bbChOpen(k)?1:0).join('');
+    if(open()!=='1000'||!bbOpen(0)||bbOpen(1)||bbOpen(6))bad('fresh: only the first build of Meadow Village is open: '+open());
+    if(!bbBlockLock(27)||!bbBlockLock(36)||bbBlockLock(3)||!BBSTAMPS.some(s=>!bbStampOk(s)))bad('fresh: set blocks, prizes and stamps should be locked');
+    const g0=bbNextGoal();if(!/Stone Tower/.test(g0)||!/Sunny Beach/.test(g0))bad('next goal, fresh: '+g0);
+    const lines=new Set([g0]);
+    for(let i=0;i<24;i++){
+      const k=bbChOf(i);
+      if(!bbOpen(i))bad('build '+(i+1)+' not open when its turn comes');
+      if(i<23&&bbOpen(i+1)&&bbChOf(i+1)==k)bad('build '+(i+2)+' open before '+(i+1)+' is done');
+      bbBP()[BBP[i].id]=2;
+      const n=i%6+1;
+      if(k<3&&bbChOpen(k+1)!==(n>=4))bad(BB_CHS[k].n+' with '+n+' done: '+BB_CHS[k+1].n+' open '+bbChOpen(k+1));
+      if(k<3&&n==4&&(bbBlockLock(BB_CHS[k+1].set[0])||!BBSTAMPS.filter(s=>s.ch==k+1).every(bbStampOk)))bad(BB_CHS[k+1].n+': its blocks or stamps did not open');
+      if(bbTrophy(k)!==(n==6))bad(BB_CHS[k].n+' trophy with '+n+' done');
+      if(n==6&&bbBlockLock(BB_CHS[k].prize))bad(BB_CHS[k].n+': the prize did not open');
+      lines.add(bbNextGoal());
+    }
+    if(lines.size<12)bad('the next goal line should change as the journey goes: '+lines.size+' different');
+    if(!/build of the day/.test(bbNextGoal()))bad('next goal after the journey: '+bbNextGoal());
+    S.bb.day={k:today(),s:2};if(!/3 stars/.test(bbNextGoal()))bad('next goal with stars to win: '+bbNextGoal());
+    r.notes.push('next goals: '+[...lines].slice(0,3).join(' | '));
+    // old saves: the oldest index stars (S.bb.ch) and G-01 stars by id keep everything open that was open, nothing re-locks
+    S.bb={worlds:[{name:'Mountains 2',d:bbEncode(bbGen('mountain',3)),goals:{ten:1,boom:1}}],cur:0,ch:[3,2,1,0,3,0,0,0,2,1]};
+    const bpS=bbBP();
+    if(JSON.stringify(bpS)!=='{"tower":3,"wall":2,"tree":1,"snowman":3,"pyramid":2,"palace":1}')bad('old index stars by id: '+JSON.stringify(bpS));
+    for(const id in bpS)if(!bbOpen(BBP.findIndex(b=>b.id==id)))bad('old save: '+id+' was done and is now locked');
+    if(!bbChOpen(2)||bbChOpen(3))bad('old save: Snowy Peaks (pyramid, palace done) should be open, Sky Islands not');
+    if(bbWType(S.bb.worlds[0])!=='mountain'||bbGoalN(S.bb.worlds[0])!==2||bbS().worlds.length!==1)bad('old world: kind '+bbWType(S.bb.worlds[0])+', goals '+bbGoalN(S.bb.worlds[0]));
+    S.bb={worlds:[{name:'My Island',d:bbEncode(bbGen('island',7))}],cur:0,bp:{tower:3,stairs:3,wall:2,gate:1,bridge:3},seen:1};
+    if(!bbOpen(4)||!bbChOpen(1)||bbChOpen(2)||bbS().seen!==1||bbStars(5)!==3)bad('a G-01 save: open '+[bbOpen(4),bbChOpen(1),bbChOpen(2)]);
+    for(const v of [null,{worlds:[],day:'x',gal:'no',days:'z'},{worlds:[],gal:[null,5,{n:'a'},{n:'b',d:'b3'}],day:[1]}]){
+      S.bb=v;try{bbS();bbBP();const g=bbGal();if(!Array.isArray(g)||g.some(x=>typeof x.d!='string'))bad('damaged gallery '+JSON.stringify(v));bbNextGoal();bbDayStars()}catch(e){bad('damaged S.bb '+JSON.stringify(v)+' crashed: '+e.message)}
+    }
+  }
+  // 5. the build of the day: the same all day, another the next day, every kind over a month, always buildable with no mistakes
+  {
+    const a=bbDaily('2026-11-14'),b=bbDaily('2026-11-14');
+    if(JSON.stringify([a.n,a.m,a.g,a.c()])!==JSON.stringify([b.n,b.m,b.g,b.c()]))bad('the build of the day is not the same all day');
+    const seen=new Set(),ms={};
+    for(let d=1;d<=60;d++){
+      const key='2026-'+(1+Math.floor((d-1)/28))+'-'+(1+(d-1)%28),q=bbDaily(key);
+      seen.add(JSON.stringify(q.c()));ms[q.m]=(ms[q.m]||0)+1;
+      const g=bbGoal(q);if(g.size<3||g.size>40)bad(key+': '+g.size+' blocks');
+      if(q.m=='pat'&&new Set(q.c().slice(0,q.pre).map(c=>c[3])).size<2)bad(key+': pattern shows one colour');
+      const t=bot(q,353,440,d%4);if(t.err||!t.done||t.miss)bad(key+' '+q.n+': '+(t.err||'not built'));
+    }
+    if(seen.size<30||Object.keys(ms).length<5)bad('the build of the day hardly changes: '+seen.size+' different, kinds '+JSON.stringify(ms));
+    r.notes.push('60 days: '+seen.size+' different builds, '+JSON.stringify(ms));
+  }
+  // 6. the gallery: a world packed and unpacked is the same; small; damaged values are dropped; at most 12
+  {
+    let big=0;
+    for(const t of ['island','mountain','desert','flat','beach','snow','sky'])for(const sd of [1,7,99]){
+      const w=bbGen(t,sd),s=bbPack(w);big=Math.max(big,s.length);
+      if(bbUnpack(s).join()!==w.join())bad('gallery: a '+t+' world changed when saved');
+    }
+    if(big>3000)bad('gallery: a picture takes '+big+' letters (want under 3000)');
+    S.bb={worlds:[],cur:0};const g=bbGal();g.push({n:'Mine',d:bbPack(bbGen('sky',3)),t:today()});
+    const back=JSON.parse(JSON.stringify(S.bb));S.bb=back;
+    if(bbGal().length!==1||bbUnpack(bbGal()[0].d).join()!==bbGen('sky',3).join())bad('gallery: a saved picture did not survive save and load');
+    if(BB_GAL_MAX!==12||BB_WMAX!==8)bad('gallery 12 and worlds 8: '+BB_GAL_MAX+' '+BB_WMAX);
+    r.notes.push('a world picture is at most '+big+' letters');
+  }
+  // 7. free-build goals: each kind of world has its own list, three shown at a time; themed goals use blocks that kind of world opens with
+  for(const t of BBWT){
+    const L=bbWGoals({t:t[0]});
+    if(L.length<10||L.some(x=>!x)||new Set(L).size!==L.length)bad('world '+t[0]+': goals '+L.length);
+    for(const x of L){const q=BB_GBLK[x[0]];if(q&&BB_CHS.some((c,k)=>c.set.includes(q[0])&&(t[3]==null||t[3]<k)))bad('world '+t[0]+': goal '+x[0]+' needs a block it may not have')}
+    if(bbGoalNext({t:t[0],goals:{ten:1}},3).length!==3||bbGoalNext({t:t[0],goals:{ten:1}},3)[0][0]==='ten')bad('world '+t[0]+': the next 3 goals');
+  }
+  // every new block and stamp drawing is on the palette and named; the new world kinds make land
+  for(const t of ['beach','snow','sky']){const w=bbGen(t,5);if(w.filter(v=>v).length<60)bad('world '+t+' is nearly empty')}
+  S.bb=keep;
+  return r})()`))();
+  for(const m of o.bad)p.push(m);
+  // 8. tokens only (the G-01 check covers the code and the CSS); no new emoji; the new CSS animates only transform / opacity
+  const css=fs.readFileSync(path.join(SRC,'css','60-game-blocks.css'),'utf8').replace(/\/\*[\s\S]*?\*\//g,'');
+  for(const m of css.matchAll(/transition:([^;}]*)/g))if(/\b(width|height|left|top|margin)\b/.test(m[1]))p.push('60-game-blocks.css: a transition on layout: '+m[1]);
+  const src=fs.readFileSync(path.join(SRC,'js','60-blocks.js'),'utf8');
+  if(!/ptLeft\(\) <= 0\) \{ SFX\.wrong\(\); fb\(ptWhyNot\(\)/.test(src.slice(src.indexOf("$('#bbday').onclick"))))p.push('the build of the day does not check game time');
   return{problems:[...new Set(p)].slice(0,50),note:o.notes.join('; ')};
 });
 
