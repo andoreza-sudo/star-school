@@ -4,7 +4,7 @@ The running record of what has shipped. Newest entry first. Every chunk adds one
 
 **Next up:** P6-05 (wip/batch-N, map timing), the P5-07 flaky step; see Handoff notes
 
-**Current version:** v151
+**Current version:** v152
 
 ## Chunk status
 
@@ -487,6 +487,11 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-11) Icons wanted from P4-03: `balloon` (Bonus game, today `gamepad`), `sparkle` / `confetti`, `unlock` (open padlock for "Next stop unlocked", today `map`), `zap` (a lightning with a spark for boss hits; today `bolt`), `sticker` (single sticker for the prize row), `medal` (the prize rosette as an icon), `heart-half` (boss life bar), `chest` (the treasure chest at icon size, e.g. for the round track where renderQ shows the gift emoji).
 
 ## Log
+
+### Fix: Spanish and English voices start without long pauses (v152, 2026-11-14, Claude)
+- Owner report: long delays when the app speaks English and Spanish, from the first Spanish section.
+- What changed (12-speech.js): `pickVoice()` prefers a voice stored on the tablet (`localService`) over a network voice, which waits for the internet on every word (and says nothing offline); the choice is kept per language. `warmVoices()` speaks a silent word in each language when the Spanish map opens, so the first card or question does not wait for the speech engine to load.
+- Not testable here (headless Chrome has no voices): check on the tablet that a Spanish voice is downloaded for offline use (Settings, Text-to-speech).
 
 ### G-02b Star Rally 2: real tracks, crashes, cups (v149, 2026-11-13, Claude)
 - Why (the owner, after playing v148): "only had one track that went around and around ... the same track. Cars flashed. You couldn't wreck. Better racing game", and the games "very, very repetitive ... like you're on level one and stuck there".
