@@ -1,5 +1,5 @@
-/* Star School gen v148. BUILT by tools/build.py from 23-viz.js, 30-gen-math.js, 31-gen-math-early.js, 32-gen-read.js, 33-gen-math-mid.js, 34-gen-es.js: never edit by hand.
-   index.html v148 loads this file with <script src="gen.v148.js"> after its own code, before data.v148.js. */
+/* Star School gen v151. BUILT by tools/build.py from 23-viz.js, 30-gen-math.js, 31-gen-math-early.js, 32-gen-read.js, 33-gen-math-mid.js, 34-gen-es.js: never edit by hand.
+   index.html v151 loads this file with <script src="gen.v151.js"> after its own code, before data.v151.js. */
 /* ---------- math visuals (P1-10; P1-11 adds part 2 in this same file) ----------
    Every VIZ.* function returns one inline <svg> string for a question's html (or a hint). No ids, no defs, no filters,
    no Math.random: the same arguments always give the same markup, so a question rebuilt from its seed looks the same.
@@ -3013,4 +3013,4 @@ function esStoryRound(lv){const D=ES_STORY.dialogues,s0=bankSeed(),out=[];let po
     D[di].qs.forEach((_,qi)=>{const q=bankWith(bankSub(s0,di*8+qi),()=>stQ(lv,di,qi));q.sk='es_story';q.lv=lv;out.push(q)})}
   return out}
 
-var GEN_VER='v148'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var GEN_VER='v151'; // last line: the whole file ran (checked by dataReady() before the app starts)

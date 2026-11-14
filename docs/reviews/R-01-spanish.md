@@ -6,8 +6,9 @@ Written 2026-11-11 by Claude for Andy. No app changes were made.
 
 **Status (R-01s, v138, 2026-11-11):** done: Must 1, 2, 3 and the S-sized Shoulds 8 to 13 (marked "Done in R-01s" below).
 Not done yet: Must 4 (days and months listening, M), Must 5 (Pre-K and K reading stops, M), Should 6 (sentences from world 1, L),
-7 (speaking, M), 14 (review of later units, near-miss numbers and times, M), 15 (culture, M), 16 (pictures, M), 17 (more dialogues, M),
+14 (review of later units, near-miss numbers and times, M), 15 (culture, M), 16 (pictures, M), 17 (more dialogues, M),
 and the Could items 18 to 21.
+**S-SPK (v150, 2026-11-13):** Should 7 (speaking practice) done.
 
 ---
 
@@ -72,6 +73,9 @@ Sizes: **S** = an hour or two, **M** = about a day, **L** = several days.
 7. **No speaking practice at all (M).** The child never says anything in Spanish: no "say it after me", no record-and-listen, no prompt
    to answer out loud. Speaking does not need speech recognition: a "Say it! Then tap to check" step on the learn screen, or recording the
    child's voice on the tablet and playing it next to the model, would work offline.
+   **Done in S-SPK (v150):** a "Say it!" step in every Spanish stop round (after question 3) and in Daily Review: hear the model, tap the
+   microphone, record up to 4 s, hear the model then yourself, tap "I said it!" or "Try again"; "Skip for now" never counts as wrong; an optional
+   "That sounded like ..." hint only with on-device speech recognition; a daily mission "Say 5 Spanish words"; a Grown-ups switch. Recordings are not kept.
 8. **The first 85 nouns have no "el" or "la" (S to M).** Hola Plaza and Fiesta Island teach "perro", "manzana", "leche" bare, while later
    worlds teach "la casa", "el libro". Children should learn every noun with its article from the first day; gender is much harder to add
    later. `src/data/d-es.js` (the first 8 units).

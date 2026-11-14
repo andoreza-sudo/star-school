@@ -4,6 +4,7 @@ const newG=o=>(bankRound(),Object.assign({n:10,done:0,score:0,streak:0,best:0,mi
 function start(p,i){const n=NODES[p][i];G=newG({path:p,node:i,sk:n.sk,lv:n.lv,n:gradeCfg().n});
   const rd=SK[n.sk].round&&SK[n.sk].round(n.lv); // a skill's own list of questions (passages); null = the usual round
   if(rd){G.pool=rd;G.n=rd.length}
+  if(p=='es')spkProbe(); // S-SPK: is there a microphone (asked once per session)
   next()}
 // The 10 questions of Tricky Mix / Mixed Practice: up to 7 due review items, then stops the child has reached (never a boss stop).
 // R-01b: the stops are weighted toward what is recent and what is weak (it was an even pick over everything reached, so a 3rd
@@ -42,6 +43,7 @@ function makeQ(){if(G.pool)return G.pool.shift();
   for(let t=0;t<10&&(!q||q.label===G.last);t++)q=genQ(G.sk,G.lv);
   G.last=q.label;return q}
 function next(){if(!G||G.dead)return;
+  if(spkHook())return; // S-SPK: a "Say it!" step between two questions (50-say.js); not a question, never scored
   if(G.done<G.n){G.q=makeQ();G.retry=false}
   else if(G.missed.length){G.q=G.missed.shift();G.retry=true}
   else return finish();

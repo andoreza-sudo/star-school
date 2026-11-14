@@ -2,7 +2,7 @@
    P4-12 (DESIGN_SYSTEM 9 row 6): a calm adult layout in the same system. Each section is a card with an icon header (GW.card);
    switches, segmented controls, fields and a readable table from the P4-04 components; two columns on a wide screen. Styles in
    src/css/48-setup-grown-care.css. Every id the code and the tests use is kept: #back, #nm, #pn, #bd, .gr[data-g], .pl-grown,
-   #ula, #rp-open, [data-rec], [data-play], [data-del], [data-per], [data-max], #pt5, #pt0, #ptp, #applog, #voice, #snd, #mus, #calm,
+   #ula, #rp-open, [data-rec], [data-play], [data-del], [data-per], [data-max], #pt5, #pt0, #ptp, #applog, #voice, #snd, #mus, #calm, #esspk (S-SPK),
    #test, #reset. The report card's Print button (82-report.js) and the backup Save buttons (81-backup.js, P5-07) carry the online note.
    P5-10: the Children card (PRF.card in 01-profiles.js) comes right after the summary; with more than one child, Start over
    erases only the child who is playing (their place stays, with a fresh save) and recorded clips get the child's id prefix. */
@@ -33,6 +33,7 @@ function aboutCard(){
   return GW.card('gw-about','info','About Star School',
     `<p class="gw-p">Star School is offline practice in math, reading and Spanish for children, with game time earned by learning. It has no accounts, no ads and no tracking.</p>
     <p class="gw-note">${ico('lock',22)}<span>It works without internet once it has loaded. Progress is stored only on this device. Nothing is sent anywhere.</span></p>
+    <p class="gw-note" id="ab-spk">${ico('mic',22)}<span>Spanish “Say it!” recordings never leave the tablet and are not kept: each one is gone when the step ends. Speech recognition is used only when the tablet can do it on the device itself.</span></p>
     <div class="gw-log ab-ver"><div><b>Version</b> <span id="ab-rel">${RELEASE}</span></div><div><b>Build</b> <span id="ab-build">__VER__</span></div></div>
     <h3 class="gw-h3">${ico('doc',22,'ic-brand')}<span>Licences</span></h3>
     <p class="gw-p ab-lic-line"><b>Andika</b> (the lettering in the app), Copyright (c) 2004-2022 SIL International. Licensed under the SIL Open Font License 1.1 (openfontlicense.org).</p>
@@ -76,7 +77,8 @@ function grown(){let armed=false;
     <div class="gw-sw">${UI.sw('Open the Game Room today anyway',bank.open===today(),'pto')}</div>`:''}
     <div class="gw-row"><span class="gw-rl">Bank</span><span class="gw-btns">${UI.btn('+5 min',{size:'sm',icon:'plus',id:'pt5'})}${UI.btn('Empty bank',{size:'sm',kind:'ghost',icon:'trash',id:'pt0',cls:'gw-risk'})}</span></div>
     <div class="gw-sw">${UI.sw('Pause game time (games locked)',pc.pause,'ptp')}</div>`,{tone:'s-play',sub:'Each learning round earns game time, plus a bonus for 10 out of 10, bosses, tests, puzzles and the Daily Review.'})}
-  ${GW.card('gw-snd','sound-on','Sound and voice',`<div class="gw-sw">${UI.sw('Read questions out loud',S.voice,'voice')}${UI.sw('Sound effects',S.sound,'snd')}${UI.sw('Music on the home screen',S.music,'mus')}${UI.sw('Calm mode: less movement, no confetti',!!S.calm,'calm')}</div>
+  ${GW.card('gw-snd','sound-on','Sound and voice',`<div class="gw-sw">${UI.sw('Read questions out loud',S.voice,'voice')}${UI.sw('Sound effects',S.sound,'snd')}${UI.sw('Music on the home screen',S.music,'mus')}${UI.sw('Calm mode: less movement, no confetti',!!S.calm,'calm')}${UI.sw('Spanish speaking practice',spkOn(),'esspk')}</div>
+    <p class="gw-sub">Speaking practice: in Spanish rounds your child says a word or line, then hears the Spanish voice and their own recording. The recording stays on this tablet for that moment only.</p>
     ${UI.btn('Test voice',{size:'sm',icon:'speak',id:'test'})}`)}
   ${GW.card('gw-rec','mic','Your voice',(inFrame?warn('Recording only works on the tablet app, not in this preview.'):!canRec?warn("Recording isn't available in this browser. Use Chrome or the installed app."):'')+clips,
     {sub:`Tap Record and say the line (up to 4 seconds). Record as many as you like; the app shuffles them so the same one doesn't play twice in a row.`})}
@@ -112,6 +114,7 @@ function grown(){let armed=false;
   $('#snd').onchange=e=>{S.sound=e.target.checked;save()};
   $('#mus').onchange=e=>{S.music=e.target.checked;save()};
   $('#calm').onchange=e=>{S.calm=e.target.checked;save();calmApply(true)}; // P4-17
+  $('#esspk').onchange=e=>{S.esSpk=e.target.checked;save()}; // S-SPK: per child (absent = on)
   $('#test').onclick=e=>say(`Hello ${S.name}! I can read to you.`,e.currentTarget);
   $$('[data-play]').forEach(b=>b.onclick=()=>{const c=CLIPS.find(x=>x.id==b.dataset.play);if(c)new Audio(c.url).play().catch(()=>{})});
   $$('[data-del]').forEach(b=>b.onclick=async()=>{await DB.del(b.dataset.del);await loadClips();grown()});

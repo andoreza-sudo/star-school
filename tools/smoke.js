@@ -6993,21 +6993,24 @@ async function main() {
         '48 px targets, no sideways scroll, no emoji chrome');
     }
 
-    // G-02 Star Rally, the racing game (src/js/63-game-race.js). Midway save with 20 min of game time, real touch (CDP touch events,
-    //    touch emulation on) at 380x780 and 1024x600: Home -> Game Room -> the Star Rally card -> the menu (shared bar, 4 places, 3
-    //    tracks, only the first open on a new save) -> the first track: the race screen (Pause, place, lap, sparkles and time chips,
-    //    steer buttons of 96 px or more); after the countdown a held touch on the right button moves the car right and one on the
-    //    left button moves it left; then the race runs 12x faster (RL_DEV.fast, a test hook) to the finish: the shared end card with
-    //    the podium, stars, place, time and sparkles; game time was spent and the clock stopped; Tracks goes back to the menu with
-    //    the stars shown. Buttons 48 px or more, no sideways scroll. At 1024x600 also the frame time while racing under 6x CPU
-    //    throttle: the median interval between frames at most 34 ms (30 fps or better); a busy machine (load above its cores) is
-    //    measured again, up to 3 more times, and the best pass counts, like the map-draw budget.
+    // G-02 / G-02b Star Rally, the racing game (src/js/63-game-race.js). Midway save with 20 min of game time, real touch (CDP touch
+    //    events, touch emulation on) at 380x780 and 1024x600: Home -> Game Room -> the Star Rally card -> the menu (shared bar, the next
+    //    goal, 4 cups with only the first open, 4 places, 3 tracks each, the first cup's tracks open) -> the Sprout Cup by its card: race 1
+    //    (Pause, place, lap, sparkles and time chips, steer buttons of 96 px or more); a held touch on Right moves the car right, one
+    //    on Left left; then, put just before the pond bridge (test hook), a held touch on Right drives into the rail at speed: the car
+    //    spins with dizzy stars and slows, then recovers to cruising speed by itself; to the finish 12x faster (RL_DEV.fast): the end
+    //    card with the standings (6 rows, the child's marked) and "Race 2 of 3"; race 2 and race 3 the same way, then the trophy card
+    //    (or "You raced the whole Sprout Cup!") and the cup saved; the Wave Cup now open (a trophy, or not yet: then racing the cup
+    //    again is offered). A time trial on Daisy Lane saves a best lap and a ghost; racing it again shows the ghost. Game time spent,
+    //    clock stopped after each race. Buttons 48 px or more, no sideways scroll. At 1024x600 also the frame time while racing (Windmill
+    //    Hill, with its tunnel) under 6x CPU throttle: the median frame at most 34 ms; a busy machine is measured again, up to 3 more
+    //    times, and the best pass counts, like the map-draw budget.
     {
       const bad = [], notes = [];
       const os = require('os'), cores = os.cpus().length;
       for (const [w, h] of [[380, 780], [1024, 600]]) {
         const ga = await openApp(browser, { fixture: 'midway', width: w, height: h });
-        const pg = ga.page, at = 'G-02 ' + w + 'x' + h + ' ';
+        const pg = ga.page, at = 'G-02b ' + w + 'x' + h + ' ';
         const cdp = await pg.context().newCDPSession(pg);
         await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 2 });
         const box = sel => pg.evaluate(s => {
@@ -7034,9 +7037,20 @@ async function main() {
             if (r.left < -1 || r.right > vw + 1) out.push('outside ' + (e.id || e.className));
           }
           if (document.documentElement.scrollWidth > vw) out.push('sideways scroll ' + document.documentElement.scrollWidth);
-          for (const s of document.querySelectorAll('.scroll')) if (s.scrollWidth > s.clientWidth + 1) out.push('sideways scroll in ' + s.className);
+          for (const s of document.querySelectorAll('.scroll, .gh-end')) if (s.scrollWidth > s.clientWidth + 1) out.push('sideways scroll in ' + s.className);
           for (const t of document.querySelectorAll('.gh-top')) if (t.getBoundingClientRect().right > vw + 1) out.push('top bar wider than the screen');
           return out;
+        };
+        // a race to its finish, 12x faster (test hook), then the end card
+        const finish = async () => {
+          await pg.evaluate(() => { RL_DEV.fast = 12; });
+          await pg.waitForSelector('.gh-end #rlmenu', { timeout: 40000 });
+          await pg.evaluate(() => { RL_DEV.fast = 1; });
+          await pg.waitForTimeout(500);
+          return pg.evaluate(() => ({ title: (document.querySelector('.gh-end h1') || {}).textContent, rows: document.querySelectorAll('.gh-end .rl-stand li').length,
+            me: document.querySelectorAll('.gh-end .rl-stand li.me').length, stats: document.querySelectorAll('.gh-end .gh-stat').length,
+            next: (document.querySelector('.gh-end #rlnextc') || {}).textContent || '', again: !!document.querySelector('.gh-end #rlagain'),
+            used: pt().used, gt: !!GT, race: !!RL, red: /last/i.test(document.querySelector('.gh-end').textContent) }));
         };
         try {
           await pg.evaluate(() => { S.pt = { bank: 1200, day: today(), used: 0 }; save(); home(); });
@@ -7044,20 +7058,24 @@ async function main() {
           await pg.waitForSelector('#grally', { timeout: 8000 });
           await pg.waitForTimeout(450);
           await touch('#grally');
-          await pg.waitForSelector('.rl-trk[data-ok="1"]', { timeout: 8000 });
+          await pg.waitForSelector('.rl-cup[data-ok="1"]', { timeout: 8000 });
           await pg.waitForTimeout(450);
-          const m = await pg.evaluate(() => ({ g: document.querySelector('.gh-top').dataset.g, trk: document.querySelectorAll('.rl-trk').length,
-            open: document.querySelectorAll('.rl-trk[data-ok="1"]').length, places: document.querySelectorAll('.rl-place').length, back: !!document.querySelector('.gh-top #back') }));
-          if (m.g !== 'rally' || m.trk !== 3 || m.open !== 1 || m.places !== 4 || !m.back) bad.push(at + 'menu ' + JSON.stringify(m));
+          const m = await pg.evaluate(() => ({ g: document.querySelector('.gh-top').dataset.g, cups: document.querySelectorAll('.rl-cup').length,
+            cupsOpen: document.querySelectorAll('.rl-cup[data-ok="1"]').length, trk: document.querySelectorAll('.rl-trk').length,
+            open: document.querySelectorAll('.rl-trk[data-ok="1"]').length, places: document.querySelectorAll('.rl-place').length, back: !!document.querySelector('.gh-top #back'),
+            goal: (document.querySelector('#rlgoal') || {}).textContent || '' }));
+          if (m.g !== 'rally' || m.cups !== 4 || m.cupsOpen !== 1 || m.trk !== 3 || m.open !== 2 || m.places !== 4 || !m.back || !/Next goal: .*Sprout Cup/.test(m.goal))
+            bad.push(at + 'menu ' + JSON.stringify(m));
           for (const o of await pg.evaluate(look)) bad.push(at + 'menu: ' + o);
           const used0 = await pg.evaluate(() => pt().used);
-          await touch('.rl-trk[data-ok="1"]');
+          await touch('.rl-cup[data-cup="0"]');
           await pg.waitForSelector('#rlcv', { timeout: 8000 });
           await pg.waitForFunction(() => RL && RL.st.cd <= 0 && RL.st.P.v > 3000, null, { timeout: 15000 });
           const ui = await pg.evaluate(() => ({ pause: !!document.querySelector('.gh-top #gpause'), chips: ['rlpos', 'rllap', 'rlspk', 'gtm'].every(i => document.getElementById(i)),
             btn: [...document.querySelectorAll('.rl-btn')].map(b => Math.round(Math.min(b.getBoundingClientRect().width, b.getBoundingClientRect().height))),
-            px: RL.cv.width, sprites: !!(RL.v.me.c && RL.v.far.c) }));
-          if (!ui.pause || !ui.chips || ui.btn.length !== 2 || ui.btn.some(s => s < 96) || !ui.sprites) bad.push(at + 'race screen ' + JSON.stringify(ui));
+            sub: document.querySelector('.gh-top').textContent, tid: RL.st.tid, sprites: !!(RL.v.me.c && RL.v.far.c) }));
+          if (!ui.pause || !ui.chips || ui.btn.length !== 2 || ui.btn.some(s => s < 96) || !ui.sprites || ui.tid !== 'meadow-0' || !/Sprout Cup 1\/3/.test(ui.sub))
+            bad.push(at + 'race screen ' + JSON.stringify(ui));
           for (const o of await pg.evaluate(look)) bad.push(at + 'race: ' + o);
           // steer with real touches on the two big buttons
           const x0 = await pg.evaluate(() => RL.st.P.x);
@@ -7066,26 +7084,66 @@ async function main() {
           await touch('#rll', 900);
           const x2 = await pg.evaluate(() => RL.st.P.x);
           if (!(x1 > x0 + .2) || !(x2 < x1 - .2)) bad.push(at + 'steering by touch: x ' + [x0, x1, x2].map(v => v.toFixed(2)).join(' -> '));
-          // to the finish, faster (test hook)
-          await pg.evaluate(() => { RL_DEV.fast = 12; });
-          await pg.waitForSelector('.gh-end #rlmenu', { timeout: 40000 });
-          await pg.waitForTimeout(500);
-          const e = await pg.evaluate(() => ({ title: (document.querySelector('.gh-end h1') || {}).textContent, pic: !!document.querySelector('.gh-end .gh-epic svg'),
-            stars: !!document.querySelector('.gh-end .rate'), stats: document.querySelectorAll('.gh-end .gh-stat').length, used: pt().used, gt: !!GT, race: !!RL,
-            saved: JSON.stringify([S.rally.stars['meadow-0'], S.rally.races, S.rally.spk > 0, S.rally.best['meadow-0'] > 0]), red: /last/i.test(document.querySelector('.gh-end').textContent) }));
-          await pg.evaluate(() => { RL_DEV.fast = 1; });
-          if (!/^(You won!|\dnd place!|\drd place!|You finished the race!)$/.test(e.title || '') || !e.pic || !e.stars || e.stats !== 3 || e.red) bad.push(at + 'end card ' + JSON.stringify(e));
-          if (!(e.used > used0) || e.gt || e.race) bad.push(at + 'game time: used ' + used0 + ' -> ' + e.used + ', clock still running ' + e.gt + ', race ' + e.race);
-          if (!/^\[[123],1,true,true\]$/.test(e.saved)) bad.push(at + 'saved after the race ' + e.saved);
-          for (const o of await pg.evaluate(look)) bad.push(at + 'end card: ' + o);
-          notes.push(w + 'x' + h + ' ' + e.title + ' (game time ' + used0 + ' -> ' + e.used + ' s)');
+          // a crash: put just before the pond bridge (its rails), then drive into the rail with a held touch on Right
+          await pg.evaluate(() => {
+            const T = RL.st.T, P = RL.st.P;
+            let i = Math.floor(P.d / RL_SEG) % T.n;
+            while (!(T.fl[i] & 2)) i = (i + 1) % T.n;
+            P.d += (rlMod(i - Math.floor(P.d / RL_SEG), T.n) + 6) * RL_SEG;
+            P.x = 0;
+            P.vx = 0;
+            P.v = RL_CRUISE * RL_VMAX;
+            window.__spin = 0;
+            window.__msg = '';
+            const watch = () => { if (!RL) return; if (RL.st.P.spin > 0) window.__spin = Math.max(window.__spin, RL.st.P.spinD); const m = document.querySelector('#rlmsg.on'); if (m && /Dizzy/.test(m.textContent)) window.__msg = m.textContent; requestAnimationFrame(watch); };
+            watch();
+          });
+          await touch('#rlr', 1200);
+          await pg.waitForTimeout(300);
+          const c1 = await pg.evaluate(() => ({ spin: window.__spin, msg: window.__msg, x: RL.st.P.x, hits: RL.st.P.hits }));
+          await pg.waitForTimeout(3500);
+          const c2 = await pg.evaluate(() => ({ spin: RL.st.P.spin, v: RL.st.P.v / RL_VMAX }));
+          if (!(c1.spin > 0) || !c1.msg || !(c1.hits >= 1)) bad.push(at + 'no spin after driving into the rail ' + JSON.stringify(c1));
+          if (!(c2.spin <= 0) || !(c2.v > .7)) bad.push(at + 'the car did not recover after the spin ' + JSON.stringify(c2));
+          notes.push(w + 'x' + h + ' crash: spin ' + c1.spin.toFixed(2) + ' s, "' + c1.msg + '", back to ' + (c2.v * 100).toFixed(0) + ' % speed');
+          // the rest of the cup: race 1 to its end, races 2 and 3
+          const titles = [];
+          for (let k = 1; k <= 3; k++) {
+            if (k > 1) {
+              await touch('#rlnextc');
+              await pg.waitForFunction(n => RL && RL.st.cd <= 0 && document.querySelector('.gh-top').textContent.includes('Sprout Cup ' + n + '/3'), k, { timeout: 15000 });
+            }
+            const e = await finish();
+            titles.push(e.title);
+            if (e.rows !== 6 || e.me !== 1 || e.stats !== 3 || e.red || e.gt || e.race) bad.push(at + 'cup race ' + k + ' end card ' + JSON.stringify(e));
+            if (k < 3 && !new RegExp('Race ' + (k + 1) + ' of 3').test(e.next)) bad.push(at + 'cup race ' + k + ': no next race button ' + JSON.stringify(e));
+            if (k == 3 && (!/^(Gold|Silver|Bronze) trophy!$|^You raced the whole Sprout Cup!$/.test(e.title) || !e.again)) bad.push(at + 'cup end ' + JSON.stringify(e));
+            for (const o of await pg.evaluate(look)) bad.push(at + 'end card ' + k + ': ' + o);
+          }
+          const sv = await pg.evaluate(() => ({ cups: JSON.stringify(S.rally.cups), cup: S.rally.cup || null, open: rlCupOpen(1), used: pt().used,
+            stars: ['meadow-0', 'beach-0', 'meadow-1'].map(t => S.rally.stars[t] || 0) }));
+          const won = /trophy/.test(titles[2]);
+          if (!/"sprout":\{"best":[1-4],"runs":1\}/.test(sv.cups) || sv.cup || sv.open !== won || sv.stars.some(s => !s) || !(sv.used > used0))
+            bad.push(at + 'cup saved ' + JSON.stringify(sv) + ' after ' + titles.join(' / '));
+          notes.push(w + 'x' + h + ' Sprout Cup: ' + titles.join(' / '));
           await touch('#rlmenu');
-          await pg.waitForSelector('.rl-trk[data-ok="1"]', { timeout: 8000 });
-          const after = await pg.evaluate(() => ({ open: document.querySelectorAll('.rl-trk[data-ok="1"]').length, rated: document.querySelector('[data-trk="meadow-0"] .rs.on') != null }));
-          if (after.open !== 2 || !after.rated) bad.push(at + 'menu after the race ' + JSON.stringify(after));
-          // the frame time while racing at 6x CPU throttle (1024x600)
+          await pg.waitForSelector('.rl-tt[data-tt="meadow-0"]', { timeout: 8000 });
+          // a time trial: a best lap and a ghost are saved; the next trial shows the ghost
+          await touch('.rl-tt[data-tt="meadow-0"]');
+          await pg.waitForFunction(() => RL && RL.st.cd <= 0 && RL.st.trial, null, { timeout: 15000 });
+          const t1 = await finish();
+          const gs = await pg.evaluate(() => ({ lap: S.rally.lap['meadow-0'], g: (S.rally.ghost['meadow-0'] || {}).g || '' }));
+          if (!/best lap|Time trial/.test(t1.title) || !(gs.lap > 10000) || !(gs.g.length > 100)) bad.push(at + 'time trial ' + JSON.stringify([t1, gs.lap, gs.g.length]));
+          await touch('#rlagain');
+          await pg.waitForFunction(() => RL && RL.st.cd <= 0 && RL.st.trial, null, { timeout: 15000 });
+          await pg.waitForTimeout(2500);
+          const gh = await pg.evaluate(() => ({ gh: !!RL.st.gh, drawn: !!(RL.ghost && RL.ghost.d > 0) }));
+          if (!gh.gh || !gh.drawn) bad.push(at + 'the ghost is not raced ' + JSON.stringify(gh));
+          await pg.evaluate(() => rlQuit());
+          await pg.waitForSelector('.rl-cup', { timeout: 8000 });
+          // the frame time while racing at 6x CPU throttle (1024x600), on Windmill Hill (tunnel, rails, hills)
           if (w == 1024) {
-            await touch('.rl-trk[data-ok="1"]');
+            await pg.evaluate(() => rlRace('meadow-1'));
             await pg.waitForFunction(() => RL && RL.st.cd <= 0, null, { timeout: 15000 });
             await pg.waitForTimeout(1500);
             let best = null, tries = 0, load = os.loadavg()[0];
@@ -7106,7 +7164,7 @@ async function main() {
             }
             const how = `${tries} pass${tries > 1 ? 'es' : ''}, load ${load.toFixed(1)} on ${cores} cores`;
             if (best.med > 34) bad.push(at + `frame interval at 6x throttle: median ${best.med.toFixed(1)} ms (${how}, limit 34)`);
-            notes.push(`6x throttle: median frame ${best.med.toFixed(1)} ms, 90th ${best.p90.toFixed(1)} ms, JS ${best.work.toFixed(1)} ms a frame, ` +
+            notes.push(`6x throttle (Windmill Hill): median frame ${best.med.toFixed(1)} ms, 90th ${best.p90.toFixed(1)} ms, JS ${best.work.toFixed(1)} ms a frame, ` +
               `${best.n} frames in 3 s, pixel scale ${best.q} (${how})`);
             await pg.evaluate(() => rlQuit());
           }
@@ -7118,9 +7176,10 @@ async function main() {
         for (const e of ga.errors) fail(e);
         await ga.ctx.close();
       }
-      if (bad.length) fail('G-02 racing game:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
-      else step('G-02: Star Rally by real touch at 380x780 and 1024x600: hub card -> menu -> race (steered right and left with the 96 px buttons) -> ' +
-        'finish -> shared end card -> menu with the stars; game time spent, clock stopped; 48 px targets, no sideways scroll; ' + notes.join('; '));
+      if (bad.length) fail('G-02b racing game:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('G-02b: Star Rally by real touch at 380x780 and 1024x600: hub card -> menu (next goal, cups) -> the Sprout Cup (steered with the 96 px ' +
+        'buttons, a crash into the bridge rail spun and recovered, 3 races with standings, the cup saved) -> a time trial and its ghost; game time spent, ' +
+        'clock stopped; 48 px targets, no sideways scroll; ' + notes.join('; '));
     }
 
     // P4-15 Object art set C (src/data/d-art-c.js), midway save at 380x780: questions that use the new drawings, drawn by the real
@@ -8935,6 +8994,166 @@ async function main() {
       if (bad.length) fail('G-04b Sky Hop:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
       else step('G-04b: Sky Hop by real touch at 380x780 and 1024x600: hub card -> menu (One-touch) -> course 1 to the flag by real taps -> shared end card ' +
         '-> time, stars and medal saved, course 2 open; game time spent, clock stopped; main controls 64 px, buttons 48 px, no sideways scroll; ' + notes.join('; '));
+    }
+
+    // S-SPK: Spanish speaking practice ("Say it!", src/js/50-say.js) at 380x780 and 1024x600, with a fake microphone (getUserMedia
+    // gives an oscillator's stream; the real MediaRecorder records it), a fake Spanish voice (speak() logs and ends), a fake on-device
+    // recogniser, and Audio.play logged. A Spanish round shows Say it! after question 3: model voice, record, compare playback (the
+    // model, then the recording), the "That sounded like" hint, Try again, I said it! (the round goes on, nothing scored); a skip;
+    // a story round (the child plays a character); a blocked microphone (the grown-up note, then it goes on by itself); no microphone
+    // (no step, the round goes on); the Grown-ups switch. SSPK_SHOTS=<dir> saves screenshots at 2x.
+    {
+      const bad = [], notes = [], SH = process.env.SSPK_SHOTS || '';
+      const fakeMedia = mode => {
+        window.__spk = { said: [], played: [] };
+        const md = navigator.mediaDevices;
+        md.enumerateDevices = async () => mode == 'none' ? [] : [{ kind: 'audioinput', deviceId: 'fake', label: '' }];
+        md.getUserMedia = async () => {
+          if (mode == 'denied') { const e = new Error('blocked'); e.name = 'NotAllowedError'; throw e; }
+          const ac = new AudioContext(), o = ac.createOscillator(), d = ac.createMediaStreamDestination(); o.connect(d); o.start(); return d.stream;
+        };
+        speechSynthesis.getVoices = () => [{ lang: 'es-MX', name: 'es' }, { lang: 'en-US', name: 'en' }];
+        window.SpeechSynthesisUtterance = function (t) { this.text = t; };
+        speechSynthesis.speak = u => { window.__spk.said.push([u.lang, u.text]); setTimeout(() => u.onend && u.onend(), 50); };
+        const play = HTMLMediaElement.prototype.play;
+        HTMLMediaElement.prototype.play = function () { window.__spk.played.push([String(this.src).slice(0, 5), window.__spk.said.length]); return play.call(this); };
+        function FakeSR() { this.processLocally = false; }
+        FakeSR.available = async () => 'available';
+        FakeSR.prototype.start = function () { setTimeout(() => this.onresult && this.onresult({ results: [[{ transcript: String(SPK.it.es).toUpperCase() }]] }), 200); };
+        FakeSR.prototype.stop = FakeSR.prototype.abort = function () {};
+        window.SpeechRecognition = window.webkitSpeechRecognition = FakeSR;
+      };
+      const sk = (pg, sk, lv) => pg.evaluate(([sk, lv]) => start('es', NODES.es.findIndex(n => n.sk == sk && n.lv == lv)), [sk, lv]);
+      // answer until the Say it! step shows (or k questions)
+      const toStep = async (pg, k = 6) => {
+        for (let i = 0; i < k; i++) {
+          const st = await (await pg.waitForFunction(() => document.querySelector('.spk-card') ? 'spk' : G && G.q && !G.lock && document.querySelector('#prompt') ? 'ask' : false, null, { timeout: 10000 })).jsonValue();
+          if (st == 'spk') return true;
+          await pg.evaluate(() => { window.__q = G.q; });
+          await answer(pg);
+          await pg.waitForFunction(() => document.querySelector('.spk-card') || (G && G.q !== window.__q), null, { timeout: 10000 });
+        }
+        return !!(await pg.$('.spk-card'));
+      };
+      const sizes = async (pg, at) => {
+        const r = await pg.evaluate(() => ({ sw: document.documentElement.scrollWidth - innerWidth,
+          small: [...document.querySelectorAll('#app button')].filter(b => b.offsetParent).map(b => { const r = b.getBoundingClientRect(); return [b.id || b.className, Math.round(r.width), Math.round(r.height)]; }).filter(x => x[1] < 48 || x[2] < 48),
+          mic: (b => b ? Math.min(b.getBoundingClientRect().width, b.getBoundingClientRect().height) : 0)(document.querySelector('#spkmic')) }));
+        if (r.sw > 0) bad.push(at + 'sideways scroll ' + r.sw);
+        if (r.small.length) bad.push(at + 'buttons under 48 px: ' + JSON.stringify(r.small));
+        return r;
+      };
+      const shot = async (pg, n) => { if (SH) await pg.waitForTimeout(500), await pg.screenshot({ path: require('path').join(SH, 'sspk-' + n + '.png') }); };
+      for (const [w, h] of [[380, 780], [1024, 600]]) {
+        const at = `${w}x${h}: `, tag = `${w}x${h}`;
+        const sa = await openApp(browser, { fixture: 'midway', width: w, height: h, scale: SH ? 2 : 1 });
+        const pg = sa.page;
+        try {
+          await sa.ctx.addInitScript(fakeMedia, 'ok');
+          await pg.reload();
+          await pg.waitForSelector('#app *');
+          await pg.evaluate(() => { S.grade = 1; save(); });
+          // 1. a vocabulary round: Say it! after question 3
+          await sk(pg, 'es_animal', 1);
+          if (!(await toStep(pg))) throw new Error('no Say it! step in a Spanish round');
+          const g0 = await pg.evaluate(() => ({ done: G.done, score: G.score, n: G.n, spk: day().spk | 0, es: SPK.it.es }));
+          if (g0.done !== 3) bad.push(at + 'the step came after question ' + g0.done);
+          await pg.waitForFunction(() => __spk.said.some(s => s[0] == 'es-MX' && s[1] == SPK.it.say), null, { timeout: 5000 }).catch(() => bad.push(at + 'the model was not spoken'));
+          const r1 = await sizes(pg, at + 'ready: ');
+          if (r1.mic < 64) bad.push(at + 'microphone ' + r1.mic + ' px');
+          await shot(pg, 'ready-' + tag);
+          await pg.evaluate(() => { __spk.said = []; __spk.played = []; });
+          await pg.click('#spkmic');
+          await pg.waitForSelector('.spk-mic.on', { timeout: 5000 });
+          if ((await pg.getAttribute('#spkmic', 'aria-label')) !== 'Stop recording') bad.push(at + 'recording: mic name');
+          if (SH) await pg.screenshot({ path: require('path').join(SH, 'sspk-recording-' + tag + '.png') }); // at once: 4 s is 0.5 s on the smoke clock
+          await pg.waitForSelector('.spk-lis', { timeout: 15000 });
+          await shot(pg, 'listen-' + tag);
+          await pg.waitForSelector('#spkok', { timeout: 15000 });
+          const pl = await pg.evaluate(() => ({ said: __spk.said, played: __spk.played, heard: (document.querySelector('#spkheard.on') || {}).textContent || '' }));
+          const mi = pl.said.findIndex(s => s[0] == 'es-MX'), bl = pl.played.find(p => p[0] == 'blob:');
+          if (mi < 0 || !bl || bl[1] <= mi) bad.push(at + 'compare: the model then the recording ' + JSON.stringify(pl).slice(0, 200));
+          await pg.waitForSelector('#spkheard.on', { timeout: 5000 }).catch(() => {});
+          const heard = await pg.evaluate(() => (document.querySelector('#spkheard.on') || {}).textContent || '');
+          if (!/That sounded like .*Muy bien/.test(heard)) bad.push(at + 'hint: ' + heard);
+          await sizes(pg, at + 'check: ');
+          await shot(pg, 'check-' + tag);
+          await pg.click('#spkagain');
+          await pg.waitForSelector('#spkmic:not(.on)', { timeout: 5000 });
+          if (await pg.$('#spkheard.on')) bad.push(at + 'try again kept the old hint');
+          await pg.click('#spkmic');
+          await pg.waitForSelector('#spkok', { timeout: 15000 });
+          await pg.click('#spkok');
+          await pg.waitForSelector('#prompt', { timeout: 5000 });
+          const g1 = await pg.evaluate(() => ({ done: G.done, score: G.score, n: G.n, spk: day().spk | 0, step: G.spk, res: G.res.filter(x => x == 'try').length }));
+          if (g1.done !== 3 || g1.score !== g0.score || g1.n !== g0.n || g1.res || g1.spk !== g0.spk + 1 || g1.step !== 1) bad.push(at + 'after I said it: ' + JSON.stringify([g0, g1]));
+          if (await toStep(pg, 3)) bad.push(at + 'a second step in the round');
+          // 2. skip: the next question, nothing counted or marked
+          await sk(pg, 'es_food', 1);
+          if (!(await toStep(pg))) throw new Error('no step to skip');
+          const s0 = await pg.evaluate(() => [G.done, G.score, G.missed.length, day().spk | 0]);
+          await pg.click('#spkskip');
+          await pg.waitForSelector('#prompt', { timeout: 5000 });
+          const s1 = await pg.evaluate(() => [G.done, G.score, G.missed.length, day().spk | 0]);
+          if (JSON.stringify(s0) !== JSON.stringify(s1)) bad.push(at + 'skip changed ' + JSON.stringify([s0, s1]));
+          // 3. a dialogue: the child plays a character
+          await sk(pg, 'es_story', 1);
+          if (!(await toStep(pg))) throw new Error('no step in a story round');
+          const role = await pg.evaluate(() => (document.querySelector('.spk-role') || {}).textContent || '');
+          if (!/^You are .+! Say .+ line\.$/.test(role)) bad.push(at + 'story role: ' + role);
+          await sizes(pg, at + 'story: ');
+          await shot(pg, 'story-' + tag);
+          await pg.click('#spkskip');
+          // 4. the Grown-ups switch turns it off for this child
+          await pg.evaluate(() => grown());
+          await pg.click('#esspk');
+          if (await pg.evaluate(() => S.esSpk !== false)) bad.push(at + 'switch did not save esSpk');
+          await sk(pg, 'es_animal', 1);
+          if (await toStep(pg, 4)) bad.push(at + 'switched off, still a step');
+          await pg.evaluate(() => { S.esSpk = true; save(); });
+        } catch (x) { bad.push(at + x.message.split('\n')[0]); }
+        network.push(...sa.network);
+        for (const e of sa.errors) fail('S-SPK ' + at + e);
+        await sa.ctx.close();
+        // 5. a blocked microphone: the grown-up note, then the round goes on by itself; 6. no microphone: no step at all
+        for (const mode of ['denied', 'none']) {
+          const sb = await openApp(browser, { fixture: 'midway', width: w, height: h, scale: SH ? 2 : 1 });
+          const pb = sb.page;
+          try {
+            await sb.ctx.addInitScript(fakeMedia, mode);
+            await pb.reload();
+            await pb.waitForSelector('#app *');
+            await pb.evaluate(() => { S.grade = 1; save(); });
+            await sk(pb, 'es_animal', 1);
+            if (mode == 'denied') {
+              if (!(await toStep(pb))) throw new Error('denied: no step');
+              await pb.click('#spkmic');
+              await pb.waitForSelector('.spk-gu', { timeout: 5000 });
+              const t = await pb.textContent('.spk-gu');
+              if (!/Permissions/.test(t) || !/Microphone/.test(t)) bad.push(at + 'denied note: ' + t.slice(0, 80));
+              await sizes(pb, at + 'denied: ');
+              await shot(pb, 'denied-' + tag);
+              const d0 = await pb.evaluate(() => [G.done, G.score, G.missed.length]);
+              await pb.waitForSelector('#prompt', { timeout: 15000 }); // goes on by itself (15 s on the app's clock)
+              const d1 = await pb.evaluate(() => [G.done, G.score, G.missed.length, SPK.deny]);
+              if (JSON.stringify(d0) !== JSON.stringify(d1.slice(0, 3)) || d1[3] !== 1) bad.push(at + 'denied changed the round ' + JSON.stringify([d0, d1]));
+              await pb.evaluate(() => start('es', NODES.es.findIndex(n => n.sk == 'es_food' && n.lv == 1)));
+              if (await toStep(pb, 4)) bad.push(at + 'denied: a second step the same session');
+            } else {
+              if (await toStep(pb, 4)) bad.push(at + 'no microphone: a step showed');
+              const g = await pb.evaluate(() => [G.done, G.spk, SPK.mic]);
+              if (g[0] !== 4 || g[1] !== 1 || g[2] !== 'no') bad.push(at + 'no microphone: ' + JSON.stringify(g));
+            }
+          } catch (x) { bad.push(at + mode + ': ' + x.message.split('\n')[0]); }
+          network.push(...sb.network);
+          for (const e of sb.errors) fail('S-SPK ' + at + mode + ' ' + e);
+          await sb.ctx.close();
+        }
+      }
+      if (bad.length) fail('S-SPK Say it!:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('S-SPK: Say it! at 380x780 and 1024x600: after question 3 of a Spanish round, the model spoken, record (fake microphone), the model then the recording, ' +
+        '"That sounded like ... ¡Muy bien!", Try again, I said it! (the round goes on, nothing scored, 1 said today); skip; a story character; ' +
+        'the Grown-ups switch; a blocked microphone (grown-up note, goes on by itself, no second step); no microphone (no step); mic 64+ px, buttons 48+, no sideways scroll');
     }
 
     for (const u of network) fail('network request: ' + u);

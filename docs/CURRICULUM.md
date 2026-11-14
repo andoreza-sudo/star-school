@@ -514,6 +514,7 @@ Existing pattern (frozen): each unit skill `es_<unit>` has level 1 = hear the wo
 - New level 3 for vocabulary units: hear the word and spell it (`spell` kind with the accent row). Level 3 exists only where listed in section 2.3.
 - New item types for phrase units: hear a phrase -> pick the meaning; read a question -> pick the best reply; fill the blank; build the sentence (`order`).
 - If no Spanish voice is installed: show the word in text and a small "no Spanish voice on this tablet" note once per session.
+- Speaking (S-SPK, `src/js/50-say.js`): every Spanish stop round has one "Say it!" step after question 3 (the Spanish of that question: a word, phrase, sentence or the child's dialogue line), and Daily Review has one after its first Spanish item. It is a step between questions, never scored; the generators and seeds are unchanged.
 
 ### S-units: vocabulary (chunks P2-31 to P2-33)
 
