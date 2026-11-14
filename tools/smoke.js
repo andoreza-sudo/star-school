@@ -5150,7 +5150,7 @@ async function main() {
       const st3 = await cp.evaluate(() => S.maps.es.es_house3);
       if (!(st3 > 0)) fail('La Casa: stars not saved for es_house3 (' + st3 + ')');
       // no Spanish voice: level 1 shows the word big and has no speaker; still playable, stars saved
-      await cp.evaluate(() => { speechSynthesis.getVoices = () => [{ lang: 'en-US', name: 'en-US' }]; ESNOTE = 0; S.maps.es.es_clothes1 = 0; save(); pathMap('es', 3); });
+      await cp.evaluate(() => { speechSynthesis.getVoices = () => [{ lang: 'en-US', name: 'en-US' }]; ESNOTE = 0; ESA.off = true; S.maps.es.es_clothes1 = 0; save(); pathMap('es', 3); }); // ES-AUDIO: lines without a recording
       await cp.waitForSelector('.wchip.on[data-w="3"]');
       const nc = await cp.evaluate(() => NODES.es.findIndex(x => x.sk === 'es_clothes' && x.lv === 1));
       await cp.click('.node[data-n="' + nc + '"]');
@@ -8714,6 +8714,85 @@ async function main() {
         ') opened Home with the same stars and name, the footer and Grown-ups > About Star School say 1.0.0 and build ' + build + ', the Andika licence is listed and opens');
     }
 
+    // ES-AUDIO recorded Spanish at 380x780 (midway save), on a tablet with NO Spanish voice (English only): play() of the <audio> element is
+    //    stubbed (it resolves and ends the clip 150 ms later, logged with its src and text) and speak() logs and ends after 120 ms, so the
+    //    order and the gap between them are measured. (1) A Spanish word card (Animals): the line says "English, then Spanish", there is
+    //    no "No Spanish voice" note, one tap says the English and then plays the right file at once (no gap). (2) A question
+    //    (es_animal 1): read out on show from its file; the speaker keeps its place (no word shown big); "Hear it" plays the file with the
+    //    button talking. (3) A file that does not load: the line falls back to the tablet's voice. (4) English, Spanish, English queued with
+    //    say(..., q): each starts on the end event of the one before. Times are on the smoke clock (8x: 400 ms there is 50 ms real).
+    {
+      const sa = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
+      const pg = sa.page, bad = [];
+      try {
+        await pg.evaluate(() => {
+          window.__lg = [];
+          const T = () => Math.round(performance.now());
+          speechSynthesis.getVoices = () => [{ lang: 'en-US', name: 'en-US' }];
+          window.SpeechSynthesisUtterance = function (t) { this.text = t; };
+          speechSynthesis.speak = u => { __lg.push({ k: 'speak', lang: u.lang, t: u.text, at: T() }); setTimeout(() => { __lg.push({ k: 'spoke', t: u.text, at: T() }); u.onend && u.onend(); }, 120 * 8); };
+          HTMLMediaElement.prototype.play = function () {
+            const src = this.getAttribute('src'), el = this;
+            __lg.push({ k: 'play', src, t: this.dataset.say, at: T() });
+            if (!/nofile/.test(src)) setTimeout(() => { if (el.getAttribute('src') === src) el.dispatchEvent(new Event('ended')); }, 150 * 8);
+            return Promise.resolve();
+          };
+          ESNOTE = 0; S.voice = true; save();
+        });
+        const note = () => pg.evaluate(() => [...document.querySelectorAll('.toast, #toast, [role="status"]')].map(e => e.textContent).join(' '));
+        const file = k => pg.evaluate(k => ES_AUDIO.dir + ES_AUDIO.lines[esKey(k)][0] + ES_AUDIO.ext, k);
+        // (1) the word cards
+        await pg.evaluate(() => learn('es', NODES.es.findIndex(n => n.sk == 'es_animal' && n.lv == 1)));
+        await pg.waitForSelector('.lcard');
+        const intro = await pg.textContent('.scroll .sub');
+        if (!/English, then Spanish/.test(intro)) bad.push('word cards: the line does not say English, then Spanish: ' + intro);
+        await vwait(pg, 2400); // the spoken instruction ends
+        await pg.evaluate(() => { __lg = []; });
+        await pg.click('.lcard');
+        await pg.waitForFunction(() => __lg.some(x => x.k == 'play'), null, { timeout: 5000 }).catch(() => {});
+        const c = await pg.evaluate(() => ({ lg: __lg, es: document.querySelector('.lcard').dataset.es, en: document.querySelector('.lcard').dataset.en, talk: document.querySelector('.lcard').classList.contains('talking') }));
+        const sp = c.lg.find(x => x.k == 'speak'), done = c.lg.find(x => x.k == 'spoke'), pl = c.lg.find(x => x.k == 'play');
+        if (!sp || sp.t !== c.en || sp.lang !== 'en-US' || !pl || pl.src !== await file(c.es) || pl.t !== c.es || !done || pl.at < done.at) bad.push('word card: English then the Spanish file: ' + JSON.stringify(c.lg));
+        else if (pl.at - done.at > 400) bad.push('word card: ' + (pl.at - done.at) + ' ms between the English and the Spanish (wants back to back)');
+        if (!c.talk) bad.push('word card: the card is not talking while the Spanish plays');
+        if (/No Spanish voice/.test(await note())) bad.push('word cards: the no-voice note showed although every card is recorded');
+        // (2) a question: read on show from its file, the speaker stays, Hear it plays the file
+        await pg.evaluate(() => { __lg = []; start('es', NODES.es.findIndex(n => n.sk == 'es_animal' && n.lv == 1)); });
+        await pg.waitForSelector('#prompt .hear');
+        await pg.waitForFunction(() => __lg.some(x => x.k == 'play'), null, { timeout: 5000 }).catch(() => {});
+        const q = await pg.evaluate(() => ({ say: G.q.say, lg: __lg.filter(x => x.k == 'play'), big: !!document.querySelector('.esbig'), hear: !!document.querySelector('#prompt .hear') }));
+        if (!q.lg.length || q.lg[0].src !== await file(q.say)) bad.push('question: not read out from its file: ' + JSON.stringify(q));
+        if (q.big || !q.hear) bad.push('question: the speaker was replaced although the line is recorded ' + JSON.stringify(q));
+        await vwait(pg, 1500);
+        await pg.evaluate(() => { __lg = []; });
+        await pg.click('#prompt .hear');
+        const h = await pg.evaluate(() => ({ lg: __lg.slice(), talk: document.querySelector('#prompt .hear').classList.contains('talking'), say: G.q.say, au: ESA.au && ESA.au.getAttribute('src') }));
+        if (!h.lg.length || h.lg[0].k !== 'play' || h.lg[0].src !== await file(h.say) || !h.talk || h.au !== h.lg[0].src) bad.push('Hear it: ' + JSON.stringify(h));
+        if (/No Spanish voice/.test(await note())) bad.push('question: the no-voice note showed for a recorded line');
+        // (3) a file that does not load: the tablet's voice says the line (here a Spanish voice is there for the fallback)
+        await vwait(pg, 1500);
+        const fb = await pg.evaluate(() => new Promise(res => {
+          speechSynthesis.getVoices = () => [{ lang: 'es-MX', name: 'es-MX' }, { lang: 'en-US', name: 'en-US' }];
+          const k = esKey('la vaca'), keep = ES_AUDIO.lines[k];ES_AUDIO.lines[k] = ['nofile000000', 'leo']; __lg = [];
+          say('la vaca', null, 'es');
+          setTimeout(() => { ES_AUDIO.lines[k] = keep; res({ lg: __lg, bad: Object.keys(ESA.bad) }); }, 3000);
+        }));
+        const fs1 = fb.lg.findIndex(x => x.k == 'play'), fs2 = fb.lg.findIndex(x => x.k == 'speak' && x.lang == 'es-MX' && x.t == 'la vaca');
+        if (fs2 < 0 || (fs1 >= 0 && fs1 > fs2) || !fb.bad.includes('nofile000000')) bad.push('a missing file did not fall back to the voice: ' + JSON.stringify(fb));
+        // (4) English then queued Spanish through say() itself, and the other way round: back to back on the end events
+        const qq = await pg.evaluate(() => new Promise(res => { __lg = []; say('Listen!', null); say('el gato', null, 'es', 1); say('cat', null, null, 1);
+          setTimeout(() => res(__lg), 6000); }));
+        const ord = qq.map(x => x.k + ':' + (x.t || '')).join(' | ');
+        if (ord !== 'speak:Listen! | spoke:Listen! | play:el gato | speak:cat | spoke:cat') bad.push('queue English, Spanish, English: ' + ord);
+        else { const g1 = qq[2].at - qq[1].at, g2 = qq[3].at - qq[2].at - 150 * 8; if (g1 > 400 || g2 > 400) bad.push('queue gaps ' + g1 + ' / ' + g2 + ' ms'); }
+      } catch (e) { bad.push(e.message.split('\n')[0]); }
+      network.push(...sa.network);
+      for (const e of sa.errors) if (!/ERR_FILE_NOT_FOUND/.test(e)) fail('ES-AUDIO ' + e); // the deliberately missing file of (3)
+      await sa.ctx.close();
+      if (bad.length) fail('ES-AUDIO recorded Spanish:\n  ' + bad.join('\n  '));
+      else step('ES-AUDIO: no Spanish voice, 380x780: a word card says the English then plays its Spanish file back to back (no note); a question is read from its file, the speaker stays, Hear it plays it (talking); a missing file falls back to the voice; English, Spanish, English queue on their end events');
+    }
+
     // P6-02 the Game Room loads on demand, offline, after a cold start. The built files are served over http://127.0.0.1 by a tiny
     //    static server in this process, so the service worker installs and precaches every file (the games parts too). Then the
     //    server is stopped and the context goes offline; a new page cold-starts from the cache with only the start-up files (no games
@@ -8721,7 +8800,7 @@ async function main() {
     //    the cache), and Snack Stand (games2) starts with real taps. No request reaches the server once it is offline.
     {
       const http = require('http'), fs = require('fs'), path = require('path'), { ROOT, loadFixture, SAVE_KEY } = require('./lib/browser');
-      const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.png': 'image/png' };
+      const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.png': 'image/png', '.ogg': 'audio/ogg' };
       const served = [], socks = new Set();
       const srv = http.createServer((req, res) => {
         const u = decodeURIComponent(req.url.split('?')[0]).replace(/^\/+/, '') || 'index.html', f = path.join(ROOT, u);
@@ -8754,6 +8833,14 @@ async function main() {
         const lazyF = ['games', 'games2'].map(x => x + '.' + c1.ver + '.js');
         if (!lazyF.every(f => c1.cached.includes(f)) || !c1.cached.includes('index.html')) bad.push('the service worker did not precache the games parts: ' + c1.cached.join(' '));
         if (lazyF.some(f => c1.tags.includes(f))) bad.push('index.html loaded a games part at start: ' + c1.tags.join(' '));
+        // ES-AUDIO: the recordings are cached at install too, in their own cache (none of them was loaded by the page itself)
+        const a1 = await p1.evaluate(async () => {
+          const want = [...new Set(Object.values(ES_AUDIO.lines).map(m => m[0] + ES_AUDIO.ext))], c = await caches.open('starschool-audio');
+          const have = new Set((await c.keys()).map(r => r.url.split('/').pop()));
+          return { want: want.length, have: have.size, missing: want.filter(f => !have.has(f)).slice(0, 5) };
+        });
+        if (!a1.want || a1.missing.length || a1.have !== a1.want) bad.push('ES-AUDIO: the service worker did not cache every recording: ' + JSON.stringify(a1));
+        if (served.some(u => /^audio\//.test(u) && served.indexOf(u) < served.indexOf('sw.js'))) bad.push('ES-AUDIO: a recording was loaded before the service worker (at start)');
         await p1.close();
         // 2. offline: the server stops and the context is offline; a cold start comes from the cache
         await ctx.setOffline(true);
@@ -8797,8 +8884,18 @@ async function main() {
         await p2.click('#groom');
         const again = await p2.evaluate(() => ({ hub: !!document.querySelector('.gh-room'), wait: !!document.querySelector('#partwait') }));
         if (!again.hub || again.wait) bad.push('the second Game Room open was not immediate: ' + JSON.stringify(again));
+        // ES-AUDIO offline: say() plays a recorded Spanish line for real from the cache (no fallback to the tablet's voice)
+        const a2 = await p2.evaluate(() => new Promise(res => {
+          ESA.off = false; say('el perro', null, 'es');
+          const a = ESA.au, t = setTimeout(() => res({ src: a && a.src, err: 'timeout', bad: Object.keys(ESA.bad) }), 8000);
+          if (!a) return res({ err: 'no audio element' });
+          a.addEventListener('ended', () => { clearTimeout(t); res({ src: a.src, dur: a.duration, bad: Object.keys(ESA.bad) }); }, { once: true });
+          a.addEventListener('error', () => { clearTimeout(t); res({ src: a.src, err: 'error ' + (a.error && a.error.code), bad: Object.keys(ESA.bad) }); }, { once: true });
+        }));
+        if (a2.err || !(a2.dur > 0.3) || a2.bad.length || !/\/audio\/es\/[0-9a-f]{12}\.ogg$/.test(a2.src || '')) bad.push('ES-AUDIO offline: the recording did not play from the cache: ' + JSON.stringify(a2));
+        else notes.push('a recording played offline (' + a2.dur.toFixed(2) + ' s)');
         if (served.length !== n0) bad.push('requests reached the server while offline: ' + served.slice(n0).join(' '));
-        notes.push('precached ' + c1.cached.length + ' files; offline cold start with ' + s2.tags.replace(/,/g, ', ') + '; the hub showed ' + s3.cards + ' games');
+        notes.push('precached ' + c1.cached.length + ' files and ' + a1.have + ' recordings; offline cold start with ' + s2.tags.replace(/,/g, ', ') + '; the hub showed ' + s3.cards + ' games');
         await p2.close();
       } catch (e) {
         bad.push(e.message.split('\n')[0]);
@@ -9016,7 +9113,8 @@ async function main() {
         window.SpeechSynthesisUtterance = function (t) { this.text = t; };
         speechSynthesis.speak = u => { window.__spk.said.push([u.lang, u.text]); setTimeout(() => u.onend && u.onend(), 50); };
         const play = HTMLMediaElement.prototype.play;
-        HTMLMediaElement.prototype.play = function () { window.__spk.played.push([String(this.src).slice(0, 5), window.__spk.said.length]); return play.call(this); };
+        // ES-AUDIO: a recorded model plays on the shared <audio> (data-say holds its text): logged as said in Spanish
+        HTMLMediaElement.prototype.play = function () { if (this.dataset && this.dataset.say && /\/audio\/es\//.test(this.src)) window.__spk.said.push(['es-MX', this.dataset.say]); window.__spk.played.push([String(this.src).slice(0, 5), window.__spk.said.length]); return play.call(this); };
         function FakeSR() { this.processLocally = false; }
         FakeSR.available = async () => 'available';
         FakeSR.prototype.start = function () { setTimeout(() => this.onresult && this.onresult({ results: [[{ transcript: String(SPK.it.es).toUpperCase() }]] }), 200); };

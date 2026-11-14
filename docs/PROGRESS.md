@@ -4,7 +4,7 @@ The running record of what has shipped. Newest entry first. Every chunk adds one
 
 **Next up:** P6-05 (wip/batch-N, map timing), the P5-07 flaky step; see Handoff notes
 
-**Current version:** v152
+**Current version:** v154
 
 ## Chunk status
 
@@ -137,6 +137,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - R-01 practice done
 - S-SPK v150
 - G-02b v149
+- ES-AUDIO v154
 
 ## Handoff notes
 
@@ -487,6 +488,48 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-11) Icons wanted from P4-03: `balloon` (Bonus game, today `gamepad`), `sparkle` / `confetti`, `unlock` (open padlock for "Next stop unlocked", today `map`), `zap` (a lightning with a spark for boss hits; today `bolt`), `sticker` (single sticker for the prize row), `medal` (the prize rosette as an icon), `heart-half` (boss life bar), `chest` (the treasure chest at icon size, e.g. for the round track where renderQ shows the gift emoji).
 
 ## Log
+
+### ES-AUDIO Recorded Spanish voices, no pause between English and Spanish (v154, 2026-11-14, Claude)
+- Owner report: when the app says English then Spanish with the tablet's voices, there is about a 5 s pause while the speech engine
+  switches language, on every tablet without an offline Spanish voice. Fix: every Spanish line the app can say is recorded once at build
+  time and shipped as audio; English stays on the tablet's voice.
+- `tools/es-audio.js` collects every Spanish line (unit words in their shown and spoken forms and the bare words the spelling hint says,
+  the balloon and colouring colour names, every phrase, reply, article + noun, plural, ser / estar / tener sentence, gusta / gustan sentence,
+  word-order sentence, Los Cuentos line and Spanish question; then every Spanish skill and level over 600 seeds each, taking what each
+  question says in Spanish: `say` with lang 'es', `after` with afterLang 'es', 'say' hints, `data-sayes` buttons; the generator run found
+  nothing the list missed). Keys are NFC, trimmed, spaces collapsed. A hint that reads a list ("el perro. la vaca. el gato") plays piece by
+  piece, so it is not recorded whole. Each line is recorded with xAI text to speech (es-MX, speed 0.9, WAV 24 kHz), the silence trimmed,
+  then Opus 16 kbps mono in Ogg (`audio/es/<hash>.ogg`; the hash covers the text, the voice and the recipe). Only lines without a file
+  are sent (retry with backoff, 4 at a time); it prints the counts and the characters sent. Run: `node tools/es-audio.js` (`--dry` counts only).
+- Recorded: **670 lines, 9,403 characters**: **Leo 514, Eve 156**. Leo is the main voice. Eve: Los Cuentos lines said by a woman or a girl
+  (a speaker whose picture in ES_STORY.people is 👧 👩 or 👵: Ana, Sofía, Lucía, Mamá, Abuela, La maestra), and the words of every second unit
+  in ES_UNITS order (colors, numbers 11-20, food, family, clothes, feelings, months, numbers to 100, places, action words). A line is recorded
+  once: a dialogue line takes its first speaker's voice, else a unit word its first unit's voice, else Leo.
+- Sizes: 670 files, **1,782 KB** (largest 7.7 KB). Opus 16 kbps mono, the usual floor for clear wideband speech (12 kbps would save about a quarter more;
+  not chosen without a listening test on a tablet); Ogg because it is about 1 KB a file smaller than WebM and Android Chrome plays both. Manifest `src/data/d-es-audio.js` 28 KB (in the data file). Budgets: audio warn 2.5 MB / fail 3.0 MB, 40 KB a file
+  (AUDIO_* in tools/test.js); loaded at start unchanged at 3.0 MB (2,700 KB used: no audio loads at start); the precache limit (code and
+  data files) went from 3.3 to 3.4 MB for the manifest (3,320 KB used).
+- Playback (12-speech.js): `say(t, btn, 'es')` plays the recording with one shared `<audio>` element (the button gets `talking`, effects duck,
+  `slow` is the playback rate, say without q stops it, `hush()` stops voice and recording; the Say it! microphone and the clips use it).
+  Queued lines (q) start on the end event of the one before, across voice and recordings, so English then Spanish is back to back. No
+  recording, a browser that cannot play Opus, or a file that fails: the tablet's voice exactly as before (a failed file is not tried again
+  that session). With no Spanish voice, recorded lines keep their speaker buttons and no note shows; the note and the big word stay for lines
+  without a recording.
+- Word cards (46-home.js learn): back to one tap = the English then the Spanish, because with every card recorded there is no engine switch
+  (the v153 one-language-per-tap stays for a unit with an unrecorded card). The Say it! English tip is spoken every time again when the model is recorded.
+- Offline: sw.js caches every recording at install in a second cache, `starschool-audio`, kept across releases (file names are hashes, so a
+  file never changes; an update fetches only new files and activate drops unused ones); the VER cache rules are unchanged. sw.js answers a
+  media Range request from the cache with a 206.
+- Tests: test.js "recorded Spanish audio ES-AUDIO" (every collected line, and a second generator run, has an entry and a file; mono Ogg Opus
+  under 40 KB; budget; voice rule; manifest in the data file; sw.js list; say() with a stand-in Audio: plays, slow rate, list hint, queues
+  both ways, stop, fallbacks). Smoke `// ES-AUDIO` at 380x780 with no Spanish voice: word card English then the right file back to back,
+  a question read from its file with the speaker kept, Hear it, a missing file falls back to the voice, a queue English-Spanish-English;
+  P6-02 offline: every recording cached after the first visit and one played for real with the network off. Old no-voice smoke steps
+  (P2-30, P2-31, P2-35) now run with the recordings off (`ESA.off`, set by tools/lib/es-fx.js for an English-only voice list): they test
+  lines without a recording. S-SPK logs a recorded model as said.
+- Merge: VER is v154 (provisional; renumber on merge). After a merge that changes any Spanish text, run `node tools/es-audio.js` (needs the
+  xAI proxy) and commit the new files and the manifest, or the ES-AUDIO check fails and names the lines. `tools/node_modules` stays untracked.
+  If a later branch also touches `say()` in 12-speech.js, keep the recording lookup first.
 
 ### Fix: Spanish and English voices start without long pauses (v152, 2026-11-14, Claude)
 - Owner report: long delays when the app speaks English and Spanish, from the first Spanish section.

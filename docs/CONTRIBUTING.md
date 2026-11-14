@@ -138,7 +138,9 @@ games.<VER>.js    the Game Room: src/js/60-blocks, 62-hill, 64-gtimer, 66-colorn
 games2.<VER>.js   the newer Game Room games (G-04a on): every other src/js/NN-game-*.js and src/css/NN-game-*.css (63-game-race since G-02b, 65-game-snack, 67-game-skyhop, 49-game-race, 49-game-snack, 49-game-skyhop),
                   then  var GAMES2_VER='<VER>';
 data.<VER>.js     src/data/*.js in filename order, then the last line  var DATA_VER='<VER>';
-sw.js             cache 'starschool-<VER>', precaches ./, index.html, gen/gen2/bt/games/games2/data.<VER>.js (the LAZY ones too), manifest.json, icons
+sw.js             cache 'starschool-<VER>', precaches ./, index.html, gen/gen2/bt/games/games2/data.<VER>.js (the LAZY ones too), manifest.json, icons;
+                  ES-AUDIO: cache 'starschool-audio' (kept across releases) gets every audio/es/*.ogg at install
+audio/es/*.ogg    ES-AUDIO: the recorded Spanish (tools/es-audio.js); not loaded at start, fetched the first time a line is said
 ```
 
 (The text below says "part" for gen, gen2, bt, games and games2 alike. Load order at start is the order of PARTS without the LAZY ones:
@@ -193,7 +195,14 @@ How it fits together:
 - Sizes (budgets in `tools/test.js`): index.html warn 1.2 MB / fail 1.5 MB (ROADMAP R1; the check `parts split A11c` wants it under 1.0 MB), each part file warn 400 KB / fail 800 KB,
   data file warn 1 MB / fail 2 MB. P6-02: **loaded at start** (index.html + the start-up parts + the data file) warn 2 MB / fail 3.0 MB;
   **precached** (every built file, the LAZY parts too) fail 3.3 MB (the all-files limit G-04a raised from 3.0 to 3.3 MB for `games2`; with the
-  games on demand, 3.0 MB holds again for what loads at start). `bash tools/check.sh` prints them all, and `node tools/perf.js` the timings.
+  games on demand, 3.0 MB holds again for what loads at start; ES-AUDIO raised it to 3.4 MB for the recordings' 28 KB manifest in the data file).
+  ES-AUDIO: **audio** (`audio/es/*.ogg`, the recorded Spanish) is its own budget: warn 2.5 MB / fail 3.0 MB in all, 40 KB a file
+  (`AUDIO_*` in tools/test.js). It never counts toward the start-up bytes: say() fetches a file the first time its line is said (from the
+  service worker's cache once installed). `python3 tools/build.py` prints the audio total. `bash tools/check.sh` prints them all, and `node tools/perf.js` the timings.
+- ES-AUDIO: every Spanish line the app can say needs a recording. After changing Spanish text (d-es*.js, 34-gen-es.js, a new `say(..., 'es')`),
+  run `node tools/es-audio.js` (records only the new lines, rewrites src/data/d-es-audio.js, deletes unused files) and commit audio/es and the
+  manifest; the test.js check "recorded Spanish audio ES-AUDIO" names any line without one. A new place that says Spanish must be found by
+  its collector (tools/es-audio.js): through a generator's `say`/`after`/hint/`data-sayes`, or added to its list.
 - The check `code split A11b (and data file split A11)` in `tools/test.js` covers all of this: script order, nothing of a part left in
   index.html, index.html's code loads alone and with only the data, each file's stamp, a missing or stale file refused, the precache
   list, no stale files, the budgets. It loads the built files in a fresh Node `vm` context, one script after the other, like the page.

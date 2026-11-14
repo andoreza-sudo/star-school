@@ -12,6 +12,10 @@ opens the Game Room. There are no accounts, no ads and no tracking.
 **Install on a tablet (add to home screen).** Open https://andoreza-sudo.github.io/star-school/ in Chrome while the tablet is on wifi.
 Tap the menu (three dots), then **Install app** (or **Add to Home screen**). Open it once; after that it works with no internet.
 
+**Spanish voices.** Spanish is spoken by recorded voices (a man's voice, and a woman's for the women and girls in the stories and some
+units), so it sounds the same on every tablet and needs no Spanish voice on the tablet. The recordings come with the app and work offline
+after the first visit. English is read by the tablet's own voice.
+
 **How updates arrive.** Whenever the tablet is on wifi and the app is opened, it checks for a new version and keeps it ready; the new version
 starts the next time the app is opened (close it fully once and open it again). The version is at the bottom of the home screen
 ("Star School 1.0.0", then the build number) and in Grown-ups, under **About Star School**. Progress is kept when the app updates.
