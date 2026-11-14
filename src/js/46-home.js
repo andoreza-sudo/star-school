@@ -402,13 +402,17 @@ function open(p,i){const n=NODES[p][i];if(n.sk=='boss')bossIntro(p,i);else if(n.
 
 function learn(p,i){const n=NODES[p][i],items=SPN[n.sk.slice(3)];
   view(`<div class="top tbar gx-mtop gx-learn s-es">${UI.ibtn('back','Back',{size:'sm',id:'back'})}<div class="ttl gx-ttl"><span class="gx-tb">${ico('path-es',24)}</span><span>Let's learn!</span></div>${UI.btn('¡Vamos!',{kind:'subject',p:'es',icon:'play',id:'go'})}</div>
-  <div class="scroll"><p class="sub" style="text-align:center">Tap each card to hear it in English, then Spanish. Then tap ¡Vamos!</p>
+  <div class="scroll"><p class="sub" style="text-align:center">Tap a card to hear it in Spanish. Tap it again for English. Then tap ¡Vamos!</p>
   <div class="lgrid">${items.map(it=>`<button class="btn lcard" data-es="${esc(it[5]||esFull(it))}" data-en="${esc(it[1])}"><span class="lp">${picHTML(it,false)}</span><b>${esc(esFull(it))}</b><small>${esc(it[1])}</small></button>`).join('')}</div></div>`);
   if(esVoice()=='no')esNote();
   $('#back').onclick=()=>pathMap(p);$('#go').onclick=()=>{SFX.whoosh();start(p,i)};
-  $$('.lcard').forEach(b=>b.onclick=()=>{say(b.dataset.en,b);say(b.dataset.es,null,'es',1);anim(b,'jump');b.classList.add('heard');
+  // one language per tap: the tablet's speech engine takes seconds to switch language, so English right after Spanish
+  // (or the other way) left a long gap. First tap: the Spanish (the word to learn); the next tap on the same card: the English.
+  let lastCard=null;
+  $$('.lcard').forEach(b=>b.onclick=()=>{const en=lastCard===b;lastCard=en?null:b;
+    if(en)say(b.dataset.en,b);else say(b.dataset.es,b,'es');anim(b,'jump');b.classList.add('heard');
     if($$('.lcard').every(x=>x.classList.contains('heard'))){bump('#go');fb('¡Muy bien! Tap ¡Vamos!')}});
-  if(S.voice)setTimeout(()=>say('Tap each card to hear it in English and Spanish!'),300)}
+  if(S.voice)setTimeout(()=>say('Tap a card to hear it in Spanish. Tap it again for English!'),300)}
 
 // P4-07 sticker book (DESIGN_SYSTEM 6.4; CSS 43-shop.css): pages of 12; a sticker is its emoji (content) cut out die-cut style;
 // empty slots show a faint star. S.stickers is only read.

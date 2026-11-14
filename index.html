@@ -3070,7 +3070,7 @@ function save(){if(SAVE_HOLD||SAVE_OFF)return;try{localStorage.setItem(SKEY,JSON
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v152'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v153'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -7602,7 +7602,7 @@ function home(first){
   <div class="scroll hm" id="hs"><div class="hm-cols">
    <div class="hm-col">${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('target', 26)}<span>Today's missions</span></h2>${hmMissions()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}${hmDaily()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
-   <p class="hm-ver">${ico('star', 16)}<span>Star School ${RELEASE} (build v152)</span></p></div>`);
+   <p class="hm-ver">${ico('star', 16)}<span>Star School ${RELEASE} (build v153)</span></p></div>`);
   music(true);
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'heart');
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
@@ -7690,13 +7690,17 @@ function open(p,i){const n=NODES[p][i];if(n.sk=='boss')bossIntro(p,i);else if(n.
 
 function learn(p,i){const n=NODES[p][i],items=SPN[n.sk.slice(3)];
   view(`<div class="top tbar gx-mtop gx-learn s-es">${UI.ibtn('back','Back',{size:'sm',id:'back'})}<div class="ttl gx-ttl"><span class="gx-tb">${ico('path-es',24)}</span><span>Let's learn!</span></div>${UI.btn('¡Vamos!',{kind:'subject',p:'es',icon:'play',id:'go'})}</div>
-  <div class="scroll"><p class="sub" style="text-align:center">Tap each card to hear it in English, then Spanish. Then tap ¡Vamos!</p>
+  <div class="scroll"><p class="sub" style="text-align:center">Tap a card to hear it in Spanish. Tap it again for English. Then tap ¡Vamos!</p>
   <div class="lgrid">${items.map(it=>`<button class="btn lcard" data-es="${esc(it[5]||esFull(it))}" data-en="${esc(it[1])}"><span class="lp">${picHTML(it,false)}</span><b>${esc(esFull(it))}</b><small>${esc(it[1])}</small></button>`).join('')}</div></div>`);
   if(esVoice()=='no')esNote();
   $('#back').onclick=()=>pathMap(p);$('#go').onclick=()=>{SFX.whoosh();start(p,i)};
-  $$('.lcard').forEach(b=>b.onclick=()=>{say(b.dataset.en,b);say(b.dataset.es,null,'es',1);anim(b,'jump');b.classList.add('heard');
+  // one language per tap: the tablet's speech engine takes seconds to switch language, so English right after Spanish
+  // (or the other way) left a long gap. First tap: the Spanish (the word to learn); the next tap on the same card: the English.
+  let lastCard=null;
+  $$('.lcard').forEach(b=>b.onclick=()=>{const en=lastCard===b;lastCard=en?null:b;
+    if(en)say(b.dataset.en,b);else say(b.dataset.es,b,'es');anim(b,'jump');b.classList.add('heard');
     if($$('.lcard').every(x=>x.classList.contains('heard'))){bump('#go');fb('¡Muy bien! Tap ¡Vamos!')}});
-  if(S.voice)setTimeout(()=>say('Tap each card to hear it in English and Spanish!'),300)}
+  if(S.voice)setTimeout(()=>say('Tap a card to hear it in Spanish. Tap it again for English!'),300)}
 
 // P4-07 sticker book (DESIGN_SYSTEM 6.4; CSS 43-shop.css): pages of 12; a sticker is its emoji (content) cut out die-cut style;
 // empty slots show a faint star. S.stickers is only read.
@@ -9413,8 +9417,11 @@ function spkOpen(q,done){spkLeave();const it=spkItem(q),nov=esVoice()=='no';SPK.
 function spkReady(first){SPK.state='ready';const a=$('#spkact');
   a.innerHTML=`<button class="spk-mic" id="spkmic" aria-label="Record: say it in Spanish">${ico('mic',48)}</button><span class="spk-ml" aria-hidden="true">Tap, then say it</span>`;
   $('#spkmic').onclick=spkRec;
-  spkTip(first?(SPK.nov?'Read it out loud: tap the microphone, then say it!':'Listen, then tap the microphone and say it!'):'Tap the microphone and say it again!',true);
-  if(!SPK.nov)say(SPK.it.say,null,'es',1)} // the model, after the English line
+  // the English tip is spoken only the first time this session (or when there is no Spanish voice): an English line right
+  // before the Spanish model made the tablet switch its speech engine, a gap of seconds; after that only the model is spoken
+  const tipSay=SPK.nov||!spkReady.told;spkReady.told=true;
+  spkTip(first?(SPK.nov?'Read it out loud: tap the microphone, then say it!':'Listen, then tap the microphone and say it!'):'Tap the microphone and say it again!',tipSay);
+  if(!SPK.nov)say(SPK.it.say,null,'es',tipSay?1:0)} // the model (after the English line only the first time)
 async function spkRec(){if(SPK.state=='rec')return spkStop();if(SPK.state!='ready')return;
   SPK.state='ask';const t=SPK.tok;let st;
   try{st=await navigator.mediaDevices.getUserMedia({audio:true})}catch(e){if(spkLive(t))spkGU(e&&e.name=='NotFoundError'?'none':'denied');return}
@@ -11389,7 +11396,7 @@ function aboutCard(){
     `<p class="gw-p">Star School is offline practice in math, reading and Spanish for children, with game time earned by learning. It has no accounts, no ads and no tracking.</p>
     <p class="gw-note">${ico('lock',22)}<span>It works without internet once it has loaded. Progress is stored only on this device. Nothing is sent anywhere.</span></p>
     <p class="gw-note" id="ab-spk">${ico('mic',22)}<span>Spanish “Say it!” recordings never leave the tablet and are not kept: each one is gone when the step ends. Speech recognition is used only when the tablet can do it on the device itself.</span></p>
-    <div class="gw-log ab-ver"><div><b>Version</b> <span id="ab-rel">${RELEASE}</span></div><div><b>Build</b> <span id="ab-build">v152</span></div></div>
+    <div class="gw-log ab-ver"><div><b>Version</b> <span id="ab-rel">${RELEASE}</span></div><div><b>Build</b> <span id="ab-build">v153</span></div></div>
     <h3 class="gw-h3">${ico('doc',22,'ic-brand')}<span>Licences</span></h3>
     <p class="gw-p ab-lic-line"><b>Andika</b> (the lettering in the app), Copyright (c) 2004-2022 SIL International. Licensed under the SIL Open Font License 1.1 (openfontlicense.org).</p>
     <p class="gw-sub ab-lic-line">Everything else (pictures, icons, sounds, games and questions) was made for Star School. No other fonts, libraries or outside files are used.</p>
@@ -11441,7 +11448,7 @@ function grown(){let armed=false;
     {sub:'Rounds played and first-try accuracy for every skill on the maps, with the questions missed most.'})}
   ${GW.card('gw-how','info','How it works',`<p class="gw-p">Each subject has its own map. Getting 7 of 10 right opens the next stop (8 earns 2 stars, 10 earns 3), and each world stretches further. Missed questions come back at the end of a round, in later rounds, in Daily Review and in the Tricky Mix. Each right answer earns a star (the pet grows) and a coin (spent in the shop). Everything is saved on this tablet only.</p>`)}
   <details class="gw-card gw-det" id="applog"><summary class="gw-h"><span class="gw-hi">${ico('doc',24)}</span><span>App log</span>${ico('chevron-right',22,'chev')}</summary><div class="gw-log">
-   <div><b>Version</b> ${RELEASE} (build v152)</div><div><b>Save size</b> ${(JSON.stringify(S).length/1024).toFixed(1)} KB</div>
+   <div><b>Version</b> ${RELEASE} (build v153)</div><div><b>Save size</b> ${(JSON.stringify(S).length/1024).toFixed(1)} KB</div>
    ${PRF.logLine()}<div><b>Storage</b> ${SAVE_FAILED?'<span class="gw-bad">could not save (device storage may be full)</span>':'saving OK'}</div>
    ${SAVE_CORRUPT?'<div class="gw-bad">The old save could not be read. A fresh start was made and the old data was kept on the device.</div>':''}
    <div><b>Last errors</b> ${(S.err||[]).length?'<ul class="gw-errs">'+(S.err||[]).slice().reverse().map(e=>'<li><span>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+'</span> '+esc(e.msg)+'</li>').join('')+'</ul>':'none'}</div></div></details>
@@ -11513,12 +11520,12 @@ const BAK = {
   make(id) {
     const d = id && id !== PRF.cur ? PRF.up(PRF.get(PRF.key(id))) : S;
     if (!d) return '';
-    return JSON.stringify({app: BAK.APP, ver: 'v152', save: LATEST, date: new Date().toISOString(), name: d.name || '', data: d});
+    return JSON.stringify({app: BAK.APP, ver: 'v153', save: LATEST, date: new Date().toISOString(), name: d.name || '', data: d});
   },
   // Every child in one file (P5-10)
   makeAll() {
     const kids = PRF.ids.map(id => id === PRF.cur ? S : PRF.up(PRF.get(PRF.key(id)))).filter(Boolean);
-    return JSON.stringify({app: BAK.APP, ver: 'v152', save: LATEST, date: new Date().toISOString(), all: true,
+    return JSON.stringify({app: BAK.APP, ver: 'v153', save: LATEST, date: new Date().toISOString(), all: true,
       kids: kids.map(d => ({name: d.name || '', data: d}))});
   },
   fileName(name) {
@@ -12055,12 +12062,12 @@ function appFiles() {
 }
 // P6-02: the start-up files only; the parts in LAZY_PARTS load later (partsThen below)
 function dataReady() {
-  return appFiles().every(f => LAZY_PARTS.includes(f[0]) || f[1] === 'v152');
+  return appFiles().every(f => LAZY_PARTS.includes(f[0]) || f[1] === 'v153');
 }
 // the Try again screen and one line in the App log: for the start-up files, or (P6-02) for the parts in stems that did not load on demand
 function dataMissing(stems) {
-  logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0])) && f[1] !== 'v152')
-    .map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v152)');
+  logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0])) && f[1] !== 'v153')
+    .map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v153)');
   const again = UI.btn('Try again', { kind: 'primary', size: 'lg', icon: 'replay', id: 'dataretry' });
   view(`<div class="scroll" id="datamiss">${UI.empty('download', 'Star School needs to finish updating. Connect to the internet, then tap Try again.', again)}</div>`);
   $('#dataretry').onclick = () => location.reload();
@@ -12080,15 +12087,15 @@ const LAZY_PARTS = ['games', 'games2'];
 const partsAsked = {};
 function partReady(stem) {
   const f = appFiles().find(x => x[0] === stem);
-  return !!f && f[1] === 'v152';
+  return !!f && f[1] === 'v153';
 }
 function partLoad(stem) {
   const f = appFiles().find(x => x[0] === stem);
-  if (!f || f[1] === 'v152') return Promise.resolve(!!f);
+  if (!f || f[1] === 'v153') return Promise.resolve(!!f);
   if (f[1] !== null) return Promise.resolve(false); // a file of another release ran: refused
   return partsAsked[stem] || (partsAsked[stem] = new Promise(res => {
     const s = document.createElement('script');
-    s.src = stem + '.v152.js';
+    s.src = stem + '.v153.js';
     s.onload = () => { delete partsAsked[stem]; res(partReady(stem)); };
     s.onerror = () => { delete partsAsked[stem]; s.remove(); res(false); };
     document.body.appendChild(s);
@@ -12113,10 +12120,10 @@ function partsThen(stems, go, o = {}) {
   }), 0));
 }
 </script>
-<script src="gen.v152.js"></script>
-<script src="gen2.v152.js"></script>
-<script src="bt.v152.js"></script>
-<script src="data.v152.js"></script>
+<script src="gen.v153.js"></script>
+<script src="gen2.v153.js"></script>
+<script src="bt.v153.js"></script>
+<script src="data.v153.js"></script>
 <script>
 if (dataReady()) {
   loadClips();

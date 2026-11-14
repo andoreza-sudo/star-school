@@ -103,8 +103,11 @@ function spkOpen(q,done){spkLeave();const it=spkItem(q),nov=esVoice()=='no';SPK.
 function spkReady(first){SPK.state='ready';const a=$('#spkact');
   a.innerHTML=`<button class="spk-mic" id="spkmic" aria-label="Record: say it in Spanish">${ico('mic',48)}</button><span class="spk-ml" aria-hidden="true">Tap, then say it</span>`;
   $('#spkmic').onclick=spkRec;
-  spkTip(first?(SPK.nov?'Read it out loud: tap the microphone, then say it!':'Listen, then tap the microphone and say it!'):'Tap the microphone and say it again!',true);
-  if(!SPK.nov)say(SPK.it.say,null,'es',1)} // the model, after the English line
+  // the English tip is spoken only the first time this session (or when there is no Spanish voice): an English line right
+  // before the Spanish model made the tablet switch its speech engine, a gap of seconds; after that only the model is spoken
+  const tipSay=SPK.nov||!spkReady.told;spkReady.told=true;
+  spkTip(first?(SPK.nov?'Read it out loud: tap the microphone, then say it!':'Listen, then tap the microphone and say it!'):'Tap the microphone and say it again!',tipSay);
+  if(!SPK.nov)say(SPK.it.say,null,'es',tipSay?1:0)} // the model (after the English line only the first time)
 async function spkRec(){if(SPK.state=='rec')return spkStop();if(SPK.state!='ready')return;
   SPK.state='ask';const t=SPK.tok;let st;
   try{st=await navigator.mediaDevices.getUserMedia({audio:true})}catch(e){if(spkLive(t))spkGU(e&&e.name=='NotFoundError'?'none':'denied');return}
