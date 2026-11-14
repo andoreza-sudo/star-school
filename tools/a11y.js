@@ -105,6 +105,8 @@ const SCREENS = {
   'math-question': qScreen(() => { window.say = window.__a11y.say; start('math', 0); }),
   'read-question': qScreen(() => start('read', NODES.read.findIndex(n => n.sk == 'pic'))),
   'es-question': qScreen(() => start('es', 0)),
+  // S-SPK: the Spanish "Say it!" step (src/js/50-say.js) over the first question of a Spanish round; the microphone is the main control (64 px)
+  'say-it': { run: ev(() => { SPK.mic = 'yes'; start('es', NODES.es.findIndex(n => n.sk == 'es_animal' && n.lv == 1)); G.spk = 1; spkOpen(G.q, () => next()); }), main: '.spk-mic' },
   reward: { run: rwRun },
   shop: {
     run: ev(() => { S.coins = 5000; shop(); }),
