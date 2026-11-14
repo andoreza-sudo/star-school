@@ -23,7 +23,7 @@ node tools/a11y.js
 echo "== perf.js (P6-02: 6x CPU throttle, best of 3 runs; fails only when start to interactive is over 2.5 s)"
 node tools/perf.js
 echo "== sizes (bytes; budgets in tools/test.js: index.html warn 1.2 MB / fail 1.5 MB, each part file warn 400 KB / fail 800 KB,"
-echo "   data warn 1 MB / fail 2 MB, loaded at start warn 2 MB / fail 3.0 MB, precached (every file) fail 3.4 MB; audio fail 3.0 MB)"
+echo "   data warn 1 MB / fail 2 MB, loaded at start warn 2 MB / fail 3.0 MB, precached (every file) fail 3.6 MB; audio fail 3.0 MB)"
 # the files index.html loads at start, in its order (A11, A11b, A11c): gen.<VER>.js, gen2.<VER>.js, bt.<VER>.js, data.<VER>.js;
 # P6-02: games.<VER>.js and games2.<VER>.js load on demand (the Game Room) and are precached by sw.js
 files=$(grep -o '<script src="[^"]*"' index.html | sed 's/<script src="//; s/"$//')

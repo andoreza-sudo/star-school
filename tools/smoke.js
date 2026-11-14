@@ -7998,7 +7998,9 @@ async function main() {
     //    built); a pinch zooms in; Closer keeps the middle; Right turns the island a quarter (animated); hold then slide aims with the
     //    magnifier and lifting builds; no sideways scroll; messages never cover Pause or the progress chip. Blueprints: Pause -> Quit ->
     //    the first blueprint, built by tapping its see-through blocks, Next build -> Stairs, built the same way: no mistakes, 3 stars each,
-    //    saved by id; a tap far away is a tip, never a mistake.
+    //    saved by id; a tap far away is a tip, never a mistake. G-01b: the Stairs end card names the next build; Next build -> the Brick
+    //    Wall count build by taps (a 5th block in the row refused, one mistake, 3 stars); the menu's next goal and the locked Sunny Beach;
+    //    a world -> More -> Save a picture to my gallery -> Pause -> Quit: the picture is on the menu.
     {
       const bad = [];
       const notes = [];
@@ -8228,6 +8230,56 @@ async function main() {
             await pg.waitForTimeout(400);
             if (ci == 0) await tapSel('#bbnx');
           }
+          // G-01b: the end card of Stairs says what opened next; Next build -> Brick Wall, a count build ("4 wide and 2 tall", nothing
+          // see-through): one row by taps on the grass, a 5th block in the row is refused with the size it should be (one mistake),
+          // then the second row; 3 stars. The menu's next goal moves on, Sunny Beach stays locked until 4 are built. Then a world:
+          // More -> Save a picture to my gallery -> the picture is on the menu.
+          stage = 'G-01b next unlock';
+          const nextLine = await pg.evaluate(() => [...document.querySelectorAll('.gh-end .gh-line')].map(e => e.textContent).join(' | '));
+          if (!/Next: Brick Wall/.test(nextLine)) bad.push(at + 'G-01b: the Stairs end card does not say what is next: ' + nextLine);
+          await tapSel('#bbnx');
+          stage = 'G-01b count'; await pg.waitForSelector('#bbtaskt');
+          await pg.waitForTimeout(500);
+          const cnt0 = await pg.evaluate(() => ({ mode: BB.mode, task: $('#bbtaskt').textContent, ghosts: BB.faces.filter(f => f.ghost).length }));
+          if (cnt0.mode != 'count' || !/4 wide and 2 tall/.test(cnt0.task) || cnt0.ghosts) bad.push(at + 'G-01b count build: ' + JSON.stringify(cnt0));
+          const cells = await pg.evaluate(() => [...BB.goal.keys()].map(n => [n % BW, Math.floor(n / BW) % BD, Math.floor(n / 256)]).sort((a, b) => a[2] - b[2] || (a[0] + a[1]) - (b[0] + b[1])));
+          for (const [i, j, k] of cells.filter(c => c[2] == 1)) await tap(await topAt(i, j, k - 1));
+          const row = cells.filter(c => c[2] == 1), far = row[row.length - 1];
+          await tap(await topAt(far[0] + 1, far[1], 0)); // a 5th block: too wide
+          await pg.waitForTimeout(200);
+          const big = await pg.evaluate(([i, j]) => ({ msg: ($('#bbmsg.on') || {}).textContent || '', miss: BB.miss, n: BB.prog(), there: BB.get(i, j, 1) }), [far[0] + 1, far[1]]);
+          if (!/should be 4 wide and 2 tall/.test(big.msg) || big.miss != 1 || big.n != 4 || big.there) bad.push(at + 'G-01b count: a 5th block in the row: ' + JSON.stringify(big));
+          for (const [i, j, k] of cells.filter(c => c[2] == 2)) await tap(await topAt(i, j, k - 1));
+          stage = 'G-01b count end'; await pg.waitForSelector('.gh-end', { timeout: 5000 });
+          const cres = await pg.evaluate(() => ({ miss: BB.miss, st: bbBP().wall, goal: bbNextGoal(), beach: bbChOpen(1) }));
+          if (cres.miss != 1 || cres.st != 3 || !/Garden Gate/.test(cres.goal) || cres.beach) bad.push(at + 'G-01b count end: ' + JSON.stringify(cres));
+          await pg.waitForTimeout(400);
+          await tapSel('#bbls');
+          stage = 'G-01b menu'; await pg.waitForSelector('#bbnext');
+          await pg.waitForTimeout(400);
+          const mn = await pg.evaluate(() => ({ goal: $('#bbnext').textContent, beachLock: !!document.querySelector('.bb-chap.lock[data-chap="1"]'), day: !!$('#bbday'), gal: document.querySelectorAll('[data-gal]').length }));
+          if (!/Garden Gate/.test(mn.goal) || !mn.beachLock || !mn.day) bad.push(at + 'G-01b menu: ' + JSON.stringify(mn));
+          for (const o of await look()) bad.push(at + 'G-01b menu: ' + o);
+          stage = 'G-01b gallery';
+          await tapSel('[data-w="0"]');
+          await pg.waitForSelector('#bbmore');
+          await pg.waitForTimeout(600);
+          await tapSel('#bbmore');
+          await pg.waitForSelector('.sheet-bg.on #bbgal');
+          await pg.waitForTimeout(450);
+          await tapSel('#bbgal');
+          await pg.waitForTimeout(500);
+          const gs = await pg.evaluate(() => ({ n: bbGal().length, unpack: bbUnpack(bbGal()[bbGal().length - 1].d).join() == BB.w.join() }));
+          if (gs.n != mn.gal + 1 || !gs.unpack) bad.push(at + 'G-01b gallery save: ' + JSON.stringify(gs));
+          await tapSel('#gpause');
+          await pg.waitForSelector('.sheet-bg.on #gquit');
+          await pg.waitForTimeout(450);
+          await tapSel('#gquit');
+          await pg.waitForSelector('#bbnext');
+          await pg.waitForTimeout(400);
+          const gm = await pg.evaluate(() => document.querySelectorAll('[data-gal]').length);
+          if (gm != gs.n) bad.push(at + 'G-01b: the gallery on the menu shows ' + gm + ' of ' + gs.n);
+          notes.push(at + 'count build with one refused block, gallery ' + gm);
           notes.push(at + 'tops ' + Math.round(sz.min) + '-' + Math.round(sz.med) + ' px');
         } catch (e) { if (e.message != 'skip') bad.push(at + stage + ': ' + e.message.split('\n')[0]); }
         network.push(...ga.network);
@@ -8238,7 +8290,8 @@ async function main() {
       else step('G-01 Block Builder by real touch at 380x780 and 1024x600 (' + notes.join(', ') + '): Game Room -> menu -> world; Stone tower and Brick ' +
         'wall by taps; a Build tap on TNT builds on top; Boom lights it and Undo brings the blocks back; Undo / Redo of the wall; drag pans, pinch zooms, Farther keeps the middle, ' +
         'Right turns (animated), hold-and-slide aims and builds; 48 px targets, no sideways scroll, messages clear of Pause; Stone Tower and Stairs ' +
-        'built by tapping see-through blocks: no mistakes, 3 stars, saved by id');
+        'built by tapping see-through blocks: no mistakes, 3 stars, saved by id; G-01b: the end card names the next build, the Brick Wall count build ' +
+        '(a 5th block refused with its size, 3 stars), the next goal moves on, Sunny Beach locked, a world saved to the gallery and shown on the menu');
     }
 
     // G-04a Snack Stand (src/js/65-game-snack.js, games2 part). Midway save with 20 min of game time, real touch (CDP touch events,
