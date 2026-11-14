@@ -12,10 +12,21 @@ function esQFix(q){if(!q||!(q.lang=='es'||q.dl)||esVoice()!='no')return;
   // P2-35: a dialogue line (.dl-b) already shows its text beside the button, so the button just goes; an English question keeps "Hear it"
   $$('[data-sayes]').forEach(b=>{if(b.classList.contains('dl-b')){b.remove();return}const d=document.createElement('div');d.className='esbig';d.textContent=b.dataset.sayes;b.replaceWith(d)});
   const k=$('#spk');if(k&&q.lang=='es')k.style.display='none';esNote()}
+/* the voice for a language: one stored on the tablet first (localService), because a network voice waits for the internet on
+   every word (a long pause, and nothing at all offline); then es-MX / es-US, en-US, then any voice of that language. Kept per
+   language, so a Spanish word after an English one does not search again. */
+const VOICE={};
+function pickVoice(es){const k=es?'es':'en';if(VOICE[k]&&VOICE.n===speechSynthesis.getVoices().length)return VOICE[k];
+  const vs=speechSynthesis.getVoices(),re=es?/^es/i:/^en/i,best=es?/^es[-_](MX|US)/i:/^en[-_]US/i,all=vs.filter(v=>re.test(v.lang)),loc=all.filter(v=>v.localService!==false);
+  VOICE.n=vs.length;return VOICE[k]=loc.find(v=>best.test(v.lang))||loc[0]||all.find(v=>best.test(v.lang))||all[0]||null}
+// warmVoices(): on a Spanish screen, wake both voices with a silent word so the first real word does not wait for the engine to load
+let VOICE_WARM=0;
+function warmVoices(){if(VOICE_WARM||!canSpeak())return;VOICE_WARM=1;
+  try{for(const es of [true,false]){const u=new SpeechSynthesisUtterance(' ');u.volume=0;u.lang=es?'es-MX':'en-US';const v=pickVoice(es);if(v)u.voice=v;speechSynthesis.speak(u)}}catch(e){}}
 // slow (R-01s): a number under 1 slows the voice down (a hint replays a Spanish word at .75 of the normal speed)
 function say(t,btn,lang,q,slow){if(lang=='es'&&esVoice()=='no'){esNote();if(btn)btn.classList.remove('talking');return}if(!canSpeak()){if(btn)noVoice(btn);return}
   try{if(!q)speechSynthesis.cancel();const es=lang=='es',u=new SpeechSynthesisUtterance(String(t).replace(/−/g,' minus '));u.rate=(es?.8:.88)*(slow>0&&slow<1?slow:1);u.pitch=1.1;u.lang=es?'es-MX':'en-US';
-  const vs=speechSynthesis.getVoices(),v=es?(vs.find(v=>/^es[-_](MX|US)/i.test(v.lang))||vs.find(v=>/^es/i.test(v.lang))):(vs.find(v=>/^en[-_]US/i.test(v.lang))||vs.find(v=>/^en/i.test(v.lang)));if(v)u.voice=v;
+  const v=pickVoice(es);if(v)u.voice=v;
   if(btn){let started=false;btn.classList.add('talking');u.onstart=()=>{started=true};u.onend=u.onerror=()=>btn.classList.remove('talking');
     setTimeout(()=>{if(!started&&!speechSynthesis.speaking)noVoice(btn)},2500)}
   speechSynthesis.speak(u);sfxDuck(()=>speechSynthesis.speaking||speechSynthesis.pending)}catch(e){if(btn)noVoice(btn)}}
