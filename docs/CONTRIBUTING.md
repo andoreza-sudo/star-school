@@ -192,8 +192,8 @@ How it fits together:
   `games file v104 does not match (app v105)`. Nothing else in the save changes.
 - Sizes (budgets in `tools/test.js`): index.html warn 1.2 MB / fail 1.5 MB (ROADMAP R1; the check `parts split A11c` wants it under 1.0 MB), each part file warn 400 KB / fail 800 KB,
   data file warn 1 MB / fail 2 MB. P6-02: **loaded at start** (index.html + the start-up parts + the data file) warn 2 MB / fail 3.0 MB;
-  **precached** (every built file, the LAZY parts too) fail 3.3 MB (the all-files limit G-04a raised from 3.0 to 3.3 MB for `games2`; with the
-  games on demand, 3.0 MB holds again for what loads at start). `bash tools/check.sh` prints them all, and `node tools/perf.js` the timings.
+  **precached** (every built file, the LAZY parts too) fail 3.6 MB (the all-files limit G-04a raised from 3.0 to 3.3 MB for `games2`, and G-01b
+  to 3.6 MB for the Block Builder journey; with the games on demand, 3.0 MB holds again for what loads at start). `bash tools/check.sh` prints them all, and `node tools/perf.js` the timings.
 - The check `code split A11b (and data file split A11)` in `tools/test.js` covers all of this: script order, nothing of a part left in
   index.html, index.html's code loads alone and with only the data, each file's stamp, a missing or stale file refused, the precache
   list, no stale files, the budgets. It loads the built files in a fresh Node `vm` context, one script after the other, like the page.
