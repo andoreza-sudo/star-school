@@ -7,11 +7,44 @@ function esVoiceMode(vs,spk,ms){if(!spk)return'no';if(vs.some(v=>/^(es|spa)/i.te
 function esVoice(){let vs=[];try{vs=speechSynthesis.getVoices()}catch(e){}return esVoiceMode(vs,canSpeak(),typeof performance!='undefined'?performance.now():9e9)}
 let ESNOTE=0; // the grown-up note shows once per session
 function esNote(){if(ESNOTE)return;ESNOTE=1;fb('No Spanish voice on this tablet. Grown-ups: add one in the tablet’s text-to-speech settings. The words are shown to read.','info long',5000)}
-// after a Spanish question is drawn: with no Spanish voice, the speaker button becomes the word shown big and "Hear it" goes away
-function esQFix(q){if(!q||!(q.lang=='es'||q.dl)||esVoice()!='no')return;
+// after a Spanish question is drawn: with no Spanish voice, a speaker button whose line has no recording (ES-AUDIO) becomes the word
+// shown big, and "Hear it" goes away when its line has none; the grown-up note shows only when something was taken away
+function esQFix(q){if(!q||!(q.lang=='es'||q.dl)||esVoice()!='no')return;let miss=0;
   // P2-35: a dialogue line (.dl-b) already shows its text beside the button, so the button just goes; an English question keeps "Hear it"
-  $$('[data-sayes]').forEach(b=>{if(b.classList.contains('dl-b')){b.remove();return}const d=document.createElement('div');d.className='esbig';d.textContent=b.dataset.sayes;b.replaceWith(d)});
-  const k=$('#spk');if(k&&q.lang=='es')k.style.display='none';esNote()}
+  $$('[data-sayes]').forEach(b=>{if(esHas(b.dataset.sayes))return;miss=1;if(b.classList.contains('dl-b')){b.remove();return}const d=document.createElement('div');d.className='esbig';d.textContent=b.dataset.sayes;b.replaceWith(d)});
+  const k=$('#spk');if(k&&q.lang=='es'&&!(q.say&&esHas(q.say))){k.style.display='none';if(q.say)miss=1}if(miss)esNote()}
+/* ES-AUDIO: recorded Spanish. ES_AUDIO (src/data/d-es-audio.js, made by tools/es-audio.js) maps every Spanish line the app can say
+   (esKey: NFC, trimmed, spaces collapsed) to a recording, audio/es/<file>.ogg (Opus), in the voice of Leo or Eve. say(t, btn, 'es')
+   plays it with one shared <audio> element, so the tablet's speech engine never has to switch language (seconds of silence on a tablet
+   with no offline Spanish voice), and a tablet with no Spanish voice at all still hears it. A line with no recording, a browser that
+   cannot play Opus, or a file that does not load or play: the tablet's voice, exactly as before (with no Spanish voice: the note).
+   English is always the tablet's voice. A queued line (say's q) waits for the speech or recording before it and starts on its end
+   event, so English then Spanish (or Spanish then English) runs back to back. ESA.off (tests) turns the recordings off. */
+const esKey=t=>String(t).normalize('NFC').replace(/\s+/g,' ').trim();
+const ESA={off:false,ok:null,au:null,cur:null,q:[],gen:0,tts:0,us:[],bad:{},poll:0,t0:0};
+function esaOk(){if(ESA.ok==null){try{ESA.ok=typeof Audio!='undefined'&&!!new Audio().canPlayType('audio/ogg; codecs="opus"')}catch(e){ESA.ok=false}}return ESA.ok}
+// the recordings for a line: [[file, voice]], or for a hint that reads a list ("el perro. la vaca. el gato") one per piece; null = none
+function esFiles(t){if(ESA.off||typeof ES_AUDIO=='undefined'||t==null||!esaOk())return null;const m=ES_AUDIO.lines,k=esKey(t),ok=f=>f&&!ESA.bad[f[0]];
+  if(m[k])return ok(m[k])?[m[k]]:null;const ps=k.split(/\.\s+/).map(x=>x.replace(/\.$/,''));
+  return ps.length>1&&ps.every(x=>ok(m[x]))?ps.map(x=>m[x]):null}
+const esHas=t=>!!esFiles(t);
+// something is talking or waiting to: a recording, our queue, or the speech engine
+function speakBusy(){if(ESA.cur||ESA.q.length||ESA.tts>0)return true;try{return !!(speechSynthesis.speaking||speechSynthesis.pending)}catch(e){return false}}
+// stop everything: the speech engine, the recording, and what was queued (say without q, and the Say it! microphone)
+function hush(){ESA.gen++;ESA.q=[];ESA.tts=0;try{speechSynthesis.cancel()}catch(e){}const c=ESA.cur;ESA.cur=null;
+  if(ESA.au){ESA.au.onended=ESA.au.onerror=null;try{ESA.au.pause()}catch(e){}}if(c&&c.btn)c.btn.classList.remove('talking')}
+// the next queued line, once nothing plays
+function esaPump(){if(ESA.cur||ESA.tts>0)return;const n=ESA.q.shift();if(!n)return;if(n.a)esaPlay(n);else ttsSay(...n.s)}
+function esaPlay(it){const a=ESA.au||(ESA.au=new Audio()),g=ESA.gen,f=it.a[it.i],r=it.slow>0&&it.slow<1?it.slow:1;ESA.cur=it;
+  a.onended=()=>{if(ESA.cur!==it)return;if(++it.i<it.a.length)return esaPlay(it);ESA.cur=null;if(it.btn)it.btn.classList.remove('talking');esaPump()};
+  a.onerror=()=>esaFail(it,g,f);
+  a.src=ES_AUDIO.dir+f[0]+ES_AUDIO.ext;a.dataset.say=it.t;a.defaultPlaybackRate=a.playbackRate=r; // slow (a hint replay): the same file, slower
+  if(it.btn)it.btn.classList.add('talking');
+  try{const p=a.play();if(p&&p.catch)p.catch(e=>{if(!(e&&e.name=='AbortError'))esaFail(it,g,f)})}catch(e){return esaFail(it,g,f)}
+  sfxDuck(speakBusy)}
+// a file that does not load or play: never tried again this session; the line goes to the tablet's voice
+function esaFail(it,g,f){if(ESA.cur!==it||g!==ESA.gen)return;ESA.bad[f[0]]=1;ESA.cur=null;if(it.btn)it.btn.classList.remove('talking');
+  if(esVoice()=='no'||!canSpeak()){esNote();esaPump();return}ttsSay(it.t,it.btn,true,it.slow)}
 /* the voice for a language: one stored on the tablet first (localService), because a network voice waits for the internet on
    every word (a long pause, and nothing at all offline); then es-MX / es-US, en-US, then any voice of that language. Kept per
    language, so a Spanish word after an English one does not search again. */
@@ -24,12 +57,22 @@ let VOICE_WARM=0;
 function warmVoices(){if(VOICE_WARM||!canSpeak())return;VOICE_WARM=1;
   try{for(const es of [true,false]){const u=new SpeechSynthesisUtterance(' ');u.volume=0;u.lang=es?'es-MX':'en-US';const v=pickVoice(es);if(v)u.voice=v;speechSynthesis.speak(u)}}catch(e){}}
 // slow (R-01s): a number under 1 slows the voice down (a hint replays a Spanish word at .75 of the normal speed)
-function say(t,btn,lang,q,slow){if(lang=='es'&&esVoice()=='no'){esNote();if(btn)btn.classList.remove('talking');return}if(!canSpeak()){if(btn)noVoice(btn);return}
-  try{if(!q)speechSynthesis.cancel();const es=lang=='es',u=new SpeechSynthesisUtterance(String(t).replace(/−/g,' minus '));u.rate=(es?.8:.88)*(slow>0&&slow<1?slow:1);u.pitch=1.1;u.lang=es?'es-MX':'en-US';
+function say(t,btn,lang,q,slow){const es=lang=='es',fs=es?esFiles(t):null;
+  if(fs){if(!q)hush();const it={a:fs,i:0,t:String(t),btn,slow};if(q&&speakBusy())ESA.q.push(it);else esaPlay(it);return} // ES-AUDIO
+  if(es&&esVoice()=='no'){esNote();if(btn)btn.classList.remove('talking');return}if(!canSpeak()){if(btn)noVoice(btn);return}
+  if(!q)hush();if(q&&(ESA.cur||ESA.q.length))ESA.q.push({s:[t,btn,es,slow]});else ttsSay(t,btn,es,slow)}
+// the tablet's voice. ESA.tts counts our utterances still to end (a queued recording starts when it is 0); a slow poll stands in
+// for an end event that some engines never fire
+function ttsSay(t,btn,es,slow){
+  try{const u=new SpeechSynthesisUtterance(String(t).replace(/−/g,' minus '));u.rate=(es?.8:.88)*(slow>0&&slow<1?slow:1);u.pitch=1.1;u.lang=es?'es-MX':'en-US';
   const v=pickVoice(es);if(v)u.voice=v;
-  if(btn){let started=false;btn.classList.add('talking');u.onstart=()=>{started=true};u.onend=u.onerror=()=>btn.classList.remove('talking');
-    setTimeout(()=>{if(!started&&!speechSynthesis.speaking)noVoice(btn)},2500)}
-  speechSynthesis.speak(u);sfxDuck(()=>speechSynthesis.speaking||speechSynthesis.pending)}catch(e){if(btn)noVoice(btn)}}
+  const g=ESA.gen;let fin=false;const end=()=>{if(fin)return;fin=true;ESA.us=ESA.us.filter(x=>x!==u);if(g!==ESA.gen)return;ESA.tts=Math.max(0,ESA.tts-1);esaPump()};
+  ESA.tts++;ESA.us.push(u);ESA.t0=Date.now(); // ESA.us keeps the utterance alive until it ends (an engine may drop the end event of a collected one)
+  if(btn){let started=false;btn.classList.add('talking');u.onstart=()=>{started=true};u.onend=u.onerror=()=>{btn.classList.remove('talking');end()};
+    setTimeout(()=>{if(!started&&!speechSynthesis.speaking)noVoice(btn)},2500)}else u.onend=u.onerror=end;
+  speechSynthesis.speak(u);sfxDuck(speakBusy);ttsPoll()}catch(e){if(btn)noVoice(btn)}}
+function ttsPoll(){if(ESA.poll)return;ESA.poll=1;const w=()=>{ESA.poll=0;if(ESA.tts<=0)return;let busy=true;try{busy=speechSynthesis.speaking||speechSynthesis.pending}catch(e){}
+  if(!busy&&Date.now()-ESA.t0>1500){ESA.tts=0;esaPump();return}ESA.poll=1;setTimeout(w,300)};setTimeout(w,300)}
 // P4-10: feedback is the P4-04 toast (UI.toast in 14-ui.js). cls picks its look: '' right (green, tick), 'warn' / 'bad' try again (amber),
 // 'again' amber with the replay arrow, 'info' / 'pl-fb' neutral (blue, bulb), 'streak' (flame), 'zap' (bolt). The #fb element is no longer used.
 let fbT;function fb(t,cls='',ms=1000){const c=String(cls||'');

@@ -21,8 +21,12 @@ const SIZE_WARN=1200000,SIZE_FAIL=1500000; // bytes of the built index.html (ROA
 const DATA_WARN=1000000,DATA_FAIL=2000000; // bytes of the built data.<VER>.js
 const PART_WARN=400000,PART_FAIL=800000; // A11b: bytes of each built part file (bt.<VER>.js, games.<VER>.js)
 // P6-02: bytes LOADED AT START, index.html + the part files it loads at start + data.<VER>.js (back to 3.0 MB: the games parts load on demand);
-// and bytes PRECACHED, every built file (G-04a raised the old all-files total from 3.0 to 3.3 MB for games2; that limit now holds the precache)
-const TOTAL_WARN=2000000,TOTAL_FAIL=3000000,CACHE_FAIL=3300000;
+// and bytes PRECACHED, every built file (G-04a raised the old all-files total from 3.0 to 3.3 MB for games2; that limit now holds the precache; ES-AUDIO 3.4 MB)
+// ES-AUDIO raised the precache limit from 3.3 to 3.4 MB for the recordings' manifest in the data file (src/data/d-es-audio.js, 28 KB); the start-up limit is unchanged
+const TOTAL_WARN=2000000,TOTAL_FAIL=3000000,CACHE_FAIL=3400000;
+// ES-AUDIO: the recorded Spanish, audio/es/*.ogg. Not loaded at start (say() fetches a file the first time its line is said) but
+// precached by sw.js in its own cache: all files together under AUDIO_FAIL, each file under AUDIO_FILE_FAIL
+const AUDIO_WARN=2500000,AUDIO_FAIL=3000000,AUDIO_FILE_FAIL=40000;
 const BUILD_VER=(BUILD_PY.match(/^VER = '(v\d+)'/m)||[])[1];
 const DATA_FILE='data.'+BUILD_VER+'.js'; // the built data file at the repo root (tools/build.py)
 const PART_FILES=PARTS.map(p=>p.stem+'.'+BUILD_VER+'.js'); // A11b: the built part files, in PARTS order
@@ -12662,7 +12666,8 @@ run('word search and unscramble P3-15',()=>{
   const BUILT=PART_FILES.map(f=>fs.existsSync(path.join(ROOT,f))?fs.readFileSync(path.join(ROOT,f),'utf8'):'').join('');
   const DATAB=fs.existsSync(path.join(ROOT,DATA_FILE))?fs.readFileSync(path.join(ROOT,DATA_FILE),'utf8'):'';
   // every word the app's lists hold: all the data files and the word lists of 20-words.js (sentences, passages, riddles too)
-  const HARVEST=fs.readdirSync(path.join(SRC,'data')).map(n=>fs.readFileSync(path.join(SRC,'data',n),'utf8')).join(' ')+fs.readFileSync(path.join(SRC,'js','20-words.js'),'utf8');
+  // ES-AUDIO: not the recordings' manifest (its text is in d-es*.js already; its hex file names are not words)
+  const HARVEST=fs.readdirSync(path.join(SRC,'data')).filter(n=>n!=='d-es-audio.js').map(n=>fs.readFileSync(path.join(SRC,'data',n),'utf8')).join(' ')+fs.readFileSync(path.join(SRC,'js','20-words.js'),'utf8');
   const body=function(HARVEST){
     const out=[],bad=m=>{if(out.length<40&&!out.includes(m))out.push(m)};
     const J=JSON.stringify,days=['2026-6-1','2026-6-2','2026-6-3','2026-6-4','2026-6-5'];
@@ -14765,7 +14770,7 @@ run('motion and sound P4-17',()=>{
   // no sound outside SFX, tone, noise and music: the countdown beeps go through SFX.tick
   for(const f of jsFiles){const t=rd('js/'+f);
     if(f!=='10-sfx.js'&&/\b(synth|hiss)\(/.test(t))p.push(f+': calls the unchecked synth()/hiss() (use SFX, tone or noise)');
-    if(/new Audio\(/.test(t)&&!['44-clips.js','80-grown.js','50-say.js'].includes(f))p.push(f+': plays audio outside the clips');
+    if(/new Audio\(/.test(t)&&!['44-clips.js','80-grown.js','50-say.js','12-speech.js'].includes(f))p.push(f+': plays audio outside the clips'); // 12-speech.js: the recorded Spanish (ES-AUDIO), ducked like the voice
     if(/^(52|54|57)-/.test(f)&&/\btone\(/.test(t))p.push(f+': a countdown beep outside SFX.tick');
   }
   if(!/function playClip\(kind\)\{const cs=CLIPS\.filter\(c=>c\.kind==kind\);if\(!cs\.length\|\|!S\.sound\)return false;/.test(rd('js/44-clips.js')))p.push('playClip must stay silent with Sound effects off');
@@ -16632,6 +16637,98 @@ run('release 1.0 P6-05',()=>{
   for(const need of ['## For parents','Add to Home screen','How updates arrive','Privacy','## Release notes: 1.0.0','Subjects','Brain Teasers','Game Room','Grown-ups','LICENSES/OFL-Andika.txt'])
     if(!rm.includes(need))p.push('README.md lacks: '+need);
   return{problems:p,note:'1.0.0, Andika OFL, README, licence file'};
+});
+
+
+// ---- ES-AUDIO: every Spanish line the app can say is recorded (tools/es-audio.js), and say() plays the recording ----
+run('recorded Spanish audio ES-AUDIO',()=>{
+  const p=[],E=require('./es-audio.js'),vm=require('vm'),rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8'),dir=path.join(ROOT,E.DIR);
+  // 1. the collector (the same one the tool records from), then a second generator run with other seeds: every line has a manifest
+  //    entry with the right file name and voice, and the file exists; the manifest has no line the app cannot say
+  const ctx=E.loadApp(),{lines,dlg}=E.collect(ctx),again=E.collect(ctx,{fuzz:300,seed0:50001}).lines;
+  for(const k of again.keys())if(!lines.has(k))p.push('a second generator run says a line the first did not: '+k);
+  const M=vm.runInContext('ES_AUDIO',ctx),man=M.lines,files=fs.existsSync(dir)?fs.readdirSync(dir).sort():[];
+  if(M.dir!==E.DIR||M.ext!==E.EXT)p.push('ES_AUDIO dir/ext '+M.dir+' '+M.ext);
+  const need=new Map([...again,...lines]);
+  for(const [k,o] of need){const m=man[k];
+    if(!m){p.push('no recording for "'+k+'" ('+[...o.from].slice(0,2).join(', ')+'): run node tools/es-audio.js');continue}
+    if(m[1]!==o.voice)p.push('"'+k+'" is recorded by '+m[1]+', the rule says '+o.voice);
+    if(m[0]!==E.fileOf(k,m[1]))p.push('"'+k+'": file '+m[0]+' is not the hash of its text and voice');
+    if(!files.includes(m[0]+E.EXT))p.push('"'+k+'": '+E.DIR+m[0]+E.EXT+' is missing');}
+  for(const k in man)if(!need.has(k))p.push('the manifest has a line the app never says: '+k);
+  // 2. the files: Ogg Opus, mono, a sensible size; no file the manifest does not name; the audio budget
+  const used=new Set(Object.values(man).map(m=>m[0]+E.EXT));let total=0,big=0;
+  for(const f of files){const b=fs.readFileSync(path.join(dir,f));total+=b.length;big=Math.max(big,b.length);
+    if(!used.has(f))p.push(E.DIR+f+' is not in the manifest');
+    const h=b.indexOf('OpusHead');
+    if(b.slice(0,4).toString()!=='OggS'||h<0||h>80||b[h+9]!==1)p.push(E.DIR+f+' is not mono Ogg Opus');
+    if(b.length<600||b.length>AUDIO_FILE_FAIL)p.push(E.DIR+f+' is '+b.length+' bytes (600 to '+AUDIO_FILE_FAIL+')');}
+  if(total>AUDIO_FAIL)p.push('the recordings are '+total+' bytes, over the '+AUDIO_FAIL+' limit');
+  // 3. voices: a Los Cuentos line said by a woman or a girl is Eve, by a man or a boy Leo (the first speaker of a line); the other
+  //    lines are Eve when they are words of every second unit, else Leo; Leo is the main voice
+  const {ES_STORY,ES_UNITS}=vm.runInContext('({ES_STORY,ES_UNITS})',ctx),firstWho={};
+  for(const D of ES_STORY.dialogues)for(const [who,t] of D.lines){const k=E.esKey(t);if(!(k in firstWho))firstWho[k]=who}
+  for(const [k,who] of Object.entries(firstWho)){const want=E.FEMALE.includes(ES_STORY.people[who])?'eve':'leo';
+    if(man[k]&&man[k][1]!==want)p.push(who+' says "'+k+'" in the voice of '+man[k][1]);}
+  for(const who of ['Mamá','Abuela','La maestra','Ana','Sofía','Lucía'])if(!E.FEMALE.includes(ES_STORY.people[who]))p.push(who+' is not read as a female speaker');
+  for(const who of ['Papá','Abuelo','Luis','Carlos','Mateo','Pablo'])if(E.FEMALE.includes(ES_STORY.people[who]))p.push(who+' is read as a female speaker');
+  const ue=ES_UNITS[1].items.map(it=>E.esKey(it[3]?it[3]+' '+it[0]:it[0])).filter(k=>!dlg.has(k));
+  if(!ue.length||ue.some(k=>!man[k]||man[k][1]!=='eve'))p.push('the words of unit '+ES_UNITS[1].id+' are not all Eve');
+  const nv={leo:0,eve:0};Object.values(man).forEach(m=>nv[m[1]]++);
+  if(!nv.leo||!nv.eve||nv.leo<nv.eve)p.push('voices: Leo '+nv.leo+', Eve '+nv.eve+' (Leo is the main voice)');
+  // 4. the manifest is in the data part, not in index.html; sw.js precaches every file in its own cache, which activate keeps
+  const html=rd('index.html'),data=rd(DATA_FILE),sw=rd('sw.js');
+  if(!fs.existsSync(path.join(SRC,'data','d-es-audio.js'))||!data.includes('const ES_AUDIO=')||html.includes('const ES_AUDIO='))p.push('the manifest must be src/data/d-es-audio.js, in '+DATA_FILE+' and not in index.html');
+  const af=((sw.match(/const AF=\[([^\]]*)\]/)||[])[1]||'').split(',').filter(Boolean).map(s=>s.replace(/'/g,''));
+  if(JSON.stringify(af)!==JSON.stringify(files.map(f=>'./'+E.DIR+f)))p.push('sw.js AF does not list exactly the '+files.length+' recordings ('+af.length+')');
+  if(!/const A='starschool-audio'/.test(sw)||!/k!==C&&k!==A/.test(sw)||!/caches\.open\(A\)/.test(sw))p.push('sw.js: no audio cache kept across activate');
+  if(/audio\/es\/[0-9a-f]/.test(html))p.push('index.html loads a recording at start');
+  // 5. say() in a stand-in browser: recordings play with one shared <audio>, slow is the playback rate, a list hint plays piece by
+  //    piece, queued lines chain on the end events, a missing line or a file that fails goes to the tablet's voice
+  const log=[],audios=[],utt=[],notes=[];let voices=[{lang:'es-MX'},{lang:'en-US'}];
+  class FakeAudio{constructor(){this.dataset={};this.paused=true;audios.push(this)}canPlayType(t){return /opus/.test(t)?'probably':''}
+    play(){this.paused=false;this.used=1;log.push('play '+this.src+' @'+this.playbackRate);return Promise.resolve()}pause(){this.paused=true;log.push('pause')}}
+  const btn=()=>{const c=new Set();return{classList:{add:x=>c.add(x),remove:x=>c.delete(x),contains:x=>c.has(x)}}};
+  const s=E.loadApp(null,{Audio:FakeAudio,window:{speechSynthesis:1},SpeechSynthesisUtterance:function(t){this.text=t},
+    speechSynthesis:{getVoices:()=>voices,speak:u=>{utt.push(u);log.push('speak '+u.lang+' '+u.text)},cancel:()=>log.push('cancel'),speaking:false,pending:false}});
+  const R=t=>vm.runInContext(t,s),f=k=>M.dir+man[k][0]+M.ext;s.__fb=t=>notes.push(t);R('fb=__fb');
+  const players=()=>audios.filter(a=>a.used),last=()=>players()[players().length-1],L=()=>log.filter(x=>x!=='pause').join(),end=()=>last().onended(),fail=()=>last().onerror(),clear=()=>{log.length=0;utt.length=0},plays=()=>log.filter(x=>/^play/.test(x));
+  try{
+    s.__b=btn();R("say('el perro',__b,'es')");
+    if(players().length!==1||last().src!==f('el perro')||L()!=='cancel,play '+f('el perro')+' @1'||!s.__b.classList.contains('talking'))p.push('say(recorded): '+log.join(' | ')+' '+players().length+' '+s.__b.classList.contains('talking'));
+    end();if(s.__b.classList.contains('talking'))p.push('say(recorded): the button still talks after the end');
+    clear();R("say('el perro',null,'es',0,.75)");if(log.pop()!=='play '+f('el perro')+' @0.75')p.push('slow replay is not playbackRate .75');end();
+    // a list hint: each piece in turn, on the one element
+    clear();R("say('el perro. la vaca. el gato',null,'es')");end();end();
+    if(plays().join()!==['el perro','la vaca','el gato'].map(k=>'play '+f(k)+' @1').join()||players().length!==1)p.push('list hint: '+log.join(' | '));end();
+    // English, then queued Spanish: the recording starts on the English end event (no gap); Spanish then queued English likewise
+    clear();R("say('dog',null);say('el perro',null,'es',1)");
+    if(L()!=='cancel,speak en-US dog')p.push('English then Spanish: '+log.join(' | '));
+    utt[0].onend();if(log.pop()!=='play '+f('el perro')+' @1')p.push('the queued Spanish did not start on the English end');end();
+    clear();R("say('el perro',null,'es');say('dog',null,null,1)");if(log.some(x=>/^speak/.test(x)))p.push('queued English spoke over the recording');
+    end();if(log.pop()!=='speak en-US dog')p.push('the queued English did not start on the recording end: '+log.join(' | '));utt[0].onend();
+    // say() without q stops the recording
+    clear();R("say('el perro',null,'es');say('cat',null)");if(!log.includes('pause')||log.pop()!=='speak en-US cat')p.push('a new line does not stop the recording: '+log.join(' | '));utt[0].onend();
+    // no recording: the tablet's voice, as before
+    clear();R("say('zzz no grabado',null,'es')");if(log.pop()!=='speak es-MX zzz no grabado')p.push('an unrecorded line did not use the tablet voice');utt[0].onend();
+    // a file that fails: the tablet's voice for that line, and the file is not tried again
+    clear();R("say('la vaca',null,'es')");fail();if(log.pop()!=='speak es-MX la vaca')p.push('a failed file did not fall back to the voice');utt[0].onend();
+    clear();R("say('la vaca',null,'es')");if(plays().length)p.push('a failed file was tried again');if(utt[0])utt[0].onend();
+    // no Spanish voice: recorded lines still play and no note; an unrecorded one is silent with the note once
+    voices=[{lang:'en-US'}];R('ESNOTE=0');clear();R("say('el gato',null,'es')");
+    if(log.pop()!=='play '+f('el gato')+' @1'||notes.length)p.push('no Spanish voice: a recorded line did not play, or the note showed');end();
+    clear();R("say('zzz no grabado',null,'es')");if(log.some(x=>/^speak|^play/.test(x))||notes.length!==1)p.push('no Spanish voice, unrecorded: '+log.join(' | ')+' notes '+notes.length);
+    // turned off (tests): the tablet's voice
+    voices=[{lang:'es-MX'}];R('ESA.off=true');clear();R("say('el gato',null,'es')");if(log.pop()!=='speak es-MX el gato')p.push('ESA.off: did not use the voice');R('ESA.off=false');
+    if(R("esHas('el gato')")!==true||R("esHas('zzz')")!==false)p.push('esHas');
+  }catch(e){p.push('say() could not be run: '+String(e.stack||e).split('\n').slice(0,2).join(' | '))}
+  // a browser that cannot play Opus: no recordings
+  const s2=E.loadApp(null,{Audio:class{canPlayType(){return''}}});if(vm.runInContext("esHas('el gato')",s2)!==false)p.push('esHas is true where Opus cannot play');
+  // 6. the code: say() takes the recording first; hush() is how the Say it! step and the clips stop the voice
+  const sp=fs.readFileSync(path.join(SRC,'js','12-speech.js'),'utf8');
+  if(!/function say\(t,btn,lang,q,slow\)\{const es=lang=='es',fs=es\?esFiles\(t\):null;/.test(sp))p.push('say() does not look up the recording first');
+  for(const f of ['44-clips.js','50-say.js'])if(/speechSynthesis\.cancel\(/.test(fs.readFileSync(path.join(SRC,'js',f),'utf8')))p.push(f+' cancels the voice without hush() (a recording would go on)');
+  return{problems:p,note:need.size+' lines (Leo '+nv.leo+', Eve '+nv.eve+'), '+files.length+' files, '+Math.round(total/1000)+' KB (budget '+AUDIO_FAIL/1e6+' MB), largest '+Math.round(big/100)/10+' KB'+(total>AUDIO_WARN?'  WARN: over '+AUDIO_WARN:'')};
 });
 
 // ---- report ----

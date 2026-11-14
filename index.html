@@ -3070,7 +3070,7 @@ function save(){if(SAVE_HOLD||SAVE_OFF)return;try{localStorage.setItem(SKEY,JSON
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v153'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v154'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -3529,11 +3529,44 @@ function esVoiceMode(vs,spk,ms){if(!spk)return'no';if(vs.some(v=>/^(es|spa)/i.te
 function esVoice(){let vs=[];try{vs=speechSynthesis.getVoices()}catch(e){}return esVoiceMode(vs,canSpeak(),typeof performance!='undefined'?performance.now():9e9)}
 let ESNOTE=0; // the grown-up note shows once per session
 function esNote(){if(ESNOTE)return;ESNOTE=1;fb('No Spanish voice on this tablet. Grown-ups: add one in the tablet’s text-to-speech settings. The words are shown to read.','info long',5000)}
-// after a Spanish question is drawn: with no Spanish voice, the speaker button becomes the word shown big and "Hear it" goes away
-function esQFix(q){if(!q||!(q.lang=='es'||q.dl)||esVoice()!='no')return;
+// after a Spanish question is drawn: with no Spanish voice, a speaker button whose line has no recording (ES-AUDIO) becomes the word
+// shown big, and "Hear it" goes away when its line has none; the grown-up note shows only when something was taken away
+function esQFix(q){if(!q||!(q.lang=='es'||q.dl)||esVoice()!='no')return;let miss=0;
   // P2-35: a dialogue line (.dl-b) already shows its text beside the button, so the button just goes; an English question keeps "Hear it"
-  $$('[data-sayes]').forEach(b=>{if(b.classList.contains('dl-b')){b.remove();return}const d=document.createElement('div');d.className='esbig';d.textContent=b.dataset.sayes;b.replaceWith(d)});
-  const k=$('#spk');if(k&&q.lang=='es')k.style.display='none';esNote()}
+  $$('[data-sayes]').forEach(b=>{if(esHas(b.dataset.sayes))return;miss=1;if(b.classList.contains('dl-b')){b.remove();return}const d=document.createElement('div');d.className='esbig';d.textContent=b.dataset.sayes;b.replaceWith(d)});
+  const k=$('#spk');if(k&&q.lang=='es'&&!(q.say&&esHas(q.say))){k.style.display='none';if(q.say)miss=1}if(miss)esNote()}
+/* ES-AUDIO: recorded Spanish. ES_AUDIO (src/data/d-es-audio.js, made by tools/es-audio.js) maps every Spanish line the app can say
+   (esKey: NFC, trimmed, spaces collapsed) to a recording, audio/es/<file>.ogg (Opus), in the voice of Leo or Eve. say(t, btn, 'es')
+   plays it with one shared <audio> element, so the tablet's speech engine never has to switch language (seconds of silence on a tablet
+   with no offline Spanish voice), and a tablet with no Spanish voice at all still hears it. A line with no recording, a browser that
+   cannot play Opus, or a file that does not load or play: the tablet's voice, exactly as before (with no Spanish voice: the note).
+   English is always the tablet's voice. A queued line (say's q) waits for the speech or recording before it and starts on its end
+   event, so English then Spanish (or Spanish then English) runs back to back. ESA.off (tests) turns the recordings off. */
+const esKey=t=>String(t).normalize('NFC').replace(/\s+/g,' ').trim();
+const ESA={off:false,ok:null,au:null,cur:null,q:[],gen:0,tts:0,us:[],bad:{},poll:0,t0:0};
+function esaOk(){if(ESA.ok==null){try{ESA.ok=typeof Audio!='undefined'&&!!new Audio().canPlayType('audio/ogg; codecs="opus"')}catch(e){ESA.ok=false}}return ESA.ok}
+// the recordings for a line: [[file, voice]], or for a hint that reads a list ("el perro. la vaca. el gato") one per piece; null = none
+function esFiles(t){if(ESA.off||typeof ES_AUDIO=='undefined'||t==null||!esaOk())return null;const m=ES_AUDIO.lines,k=esKey(t),ok=f=>f&&!ESA.bad[f[0]];
+  if(m[k])return ok(m[k])?[m[k]]:null;const ps=k.split(/\.\s+/).map(x=>x.replace(/\.$/,''));
+  return ps.length>1&&ps.every(x=>ok(m[x]))?ps.map(x=>m[x]):null}
+const esHas=t=>!!esFiles(t);
+// something is talking or waiting to: a recording, our queue, or the speech engine
+function speakBusy(){if(ESA.cur||ESA.q.length||ESA.tts>0)return true;try{return !!(speechSynthesis.speaking||speechSynthesis.pending)}catch(e){return false}}
+// stop everything: the speech engine, the recording, and what was queued (say without q, and the Say it! microphone)
+function hush(){ESA.gen++;ESA.q=[];ESA.tts=0;try{speechSynthesis.cancel()}catch(e){}const c=ESA.cur;ESA.cur=null;
+  if(ESA.au){ESA.au.onended=ESA.au.onerror=null;try{ESA.au.pause()}catch(e){}}if(c&&c.btn)c.btn.classList.remove('talking')}
+// the next queued line, once nothing plays
+function esaPump(){if(ESA.cur||ESA.tts>0)return;const n=ESA.q.shift();if(!n)return;if(n.a)esaPlay(n);else ttsSay(...n.s)}
+function esaPlay(it){const a=ESA.au||(ESA.au=new Audio()),g=ESA.gen,f=it.a[it.i],r=it.slow>0&&it.slow<1?it.slow:1;ESA.cur=it;
+  a.onended=()=>{if(ESA.cur!==it)return;if(++it.i<it.a.length)return esaPlay(it);ESA.cur=null;if(it.btn)it.btn.classList.remove('talking');esaPump()};
+  a.onerror=()=>esaFail(it,g,f);
+  a.src=ES_AUDIO.dir+f[0]+ES_AUDIO.ext;a.dataset.say=it.t;a.defaultPlaybackRate=a.playbackRate=r; // slow (a hint replay): the same file, slower
+  if(it.btn)it.btn.classList.add('talking');
+  try{const p=a.play();if(p&&p.catch)p.catch(e=>{if(!(e&&e.name=='AbortError'))esaFail(it,g,f)})}catch(e){return esaFail(it,g,f)}
+  sfxDuck(speakBusy)}
+// a file that does not load or play: never tried again this session; the line goes to the tablet's voice
+function esaFail(it,g,f){if(ESA.cur!==it||g!==ESA.gen)return;ESA.bad[f[0]]=1;ESA.cur=null;if(it.btn)it.btn.classList.remove('talking');
+  if(esVoice()=='no'||!canSpeak()){esNote();esaPump();return}ttsSay(it.t,it.btn,true,it.slow)}
 /* the voice for a language: one stored on the tablet first (localService), because a network voice waits for the internet on
    every word (a long pause, and nothing at all offline); then es-MX / es-US, en-US, then any voice of that language. Kept per
    language, so a Spanish word after an English one does not search again. */
@@ -3546,12 +3579,22 @@ let VOICE_WARM=0;
 function warmVoices(){if(VOICE_WARM||!canSpeak())return;VOICE_WARM=1;
   try{for(const es of [true,false]){const u=new SpeechSynthesisUtterance(' ');u.volume=0;u.lang=es?'es-MX':'en-US';const v=pickVoice(es);if(v)u.voice=v;speechSynthesis.speak(u)}}catch(e){}}
 // slow (R-01s): a number under 1 slows the voice down (a hint replays a Spanish word at .75 of the normal speed)
-function say(t,btn,lang,q,slow){if(lang=='es'&&esVoice()=='no'){esNote();if(btn)btn.classList.remove('talking');return}if(!canSpeak()){if(btn)noVoice(btn);return}
-  try{if(!q)speechSynthesis.cancel();const es=lang=='es',u=new SpeechSynthesisUtterance(String(t).replace(/−/g,' minus '));u.rate=(es?.8:.88)*(slow>0&&slow<1?slow:1);u.pitch=1.1;u.lang=es?'es-MX':'en-US';
+function say(t,btn,lang,q,slow){const es=lang=='es',fs=es?esFiles(t):null;
+  if(fs){if(!q)hush();const it={a:fs,i:0,t:String(t),btn,slow};if(q&&speakBusy())ESA.q.push(it);else esaPlay(it);return} // ES-AUDIO
+  if(es&&esVoice()=='no'){esNote();if(btn)btn.classList.remove('talking');return}if(!canSpeak()){if(btn)noVoice(btn);return}
+  if(!q)hush();if(q&&(ESA.cur||ESA.q.length))ESA.q.push({s:[t,btn,es,slow]});else ttsSay(t,btn,es,slow)}
+// the tablet's voice. ESA.tts counts our utterances still to end (a queued recording starts when it is 0); a slow poll stands in
+// for an end event that some engines never fire
+function ttsSay(t,btn,es,slow){
+  try{const u=new SpeechSynthesisUtterance(String(t).replace(/−/g,' minus '));u.rate=(es?.8:.88)*(slow>0&&slow<1?slow:1);u.pitch=1.1;u.lang=es?'es-MX':'en-US';
   const v=pickVoice(es);if(v)u.voice=v;
-  if(btn){let started=false;btn.classList.add('talking');u.onstart=()=>{started=true};u.onend=u.onerror=()=>btn.classList.remove('talking');
-    setTimeout(()=>{if(!started&&!speechSynthesis.speaking)noVoice(btn)},2500)}
-  speechSynthesis.speak(u);sfxDuck(()=>speechSynthesis.speaking||speechSynthesis.pending)}catch(e){if(btn)noVoice(btn)}}
+  const g=ESA.gen;let fin=false;const end=()=>{if(fin)return;fin=true;ESA.us=ESA.us.filter(x=>x!==u);if(g!==ESA.gen)return;ESA.tts=Math.max(0,ESA.tts-1);esaPump()};
+  ESA.tts++;ESA.us.push(u);ESA.t0=Date.now(); // ESA.us keeps the utterance alive until it ends (an engine may drop the end event of a collected one)
+  if(btn){let started=false;btn.classList.add('talking');u.onstart=()=>{started=true};u.onend=u.onerror=()=>{btn.classList.remove('talking');end()};
+    setTimeout(()=>{if(!started&&!speechSynthesis.speaking)noVoice(btn)},2500)}else u.onend=u.onerror=end;
+  speechSynthesis.speak(u);sfxDuck(speakBusy);ttsPoll()}catch(e){if(btn)noVoice(btn)}}
+function ttsPoll(){if(ESA.poll)return;ESA.poll=1;const w=()=>{ESA.poll=0;if(ESA.tts<=0)return;let busy=true;try{busy=speechSynthesis.speaking||speechSynthesis.pending}catch(e){}
+  if(!busy&&Date.now()-ESA.t0>1500){ESA.tts=0;esaPump();return}ESA.poll=1;setTimeout(w,300)};setTimeout(w,300)}
 // P4-10: feedback is the P4-04 toast (UI.toast in 14-ui.js). cls picks its look: '' right (green, tick), 'warn' / 'bad' try again (amber),
 // 'again' amber with the replay arrow, 'info' / 'pl-fb' neutral (blue, bulb), 'streak' (flame), 'zap' (bolt). The #fb element is no longer used.
 let fbT;function fb(t,cls='',ms=1000){const c=String(cls||'');
@@ -7045,7 +7088,7 @@ function playClip(kind){const cs=CLIPS.filter(c=>c.kind==kind);if(!cs.length||!S
   let b=(BAG[kind]||[]).filter(id=>cs.some(c=>c.id==id));
   if(!b.length){b=shuffle(cs.map(c=>c.id));if(b.length>1&&b[0]==BAG['last_'+kind])b.push(b.shift())}
   const id=b.shift();BAG[kind]=b;BAG['last_'+kind]=id;const c=cs.find(x=>x.id==id);
-  try{speechSynthesis.cancel();const a=new Audio(c.url);a.play().catch(()=>{});sfxDuck(()=>!a.ended&&!a.paused);return true}catch(e){return false}}
+  try{hush();const a=new Audio(c.url);a.play().catch(()=>{});sfxDuck(()=>!a.ended&&!a.paused);return true}catch(e){return false}}
 const CLIPKINDS=[
  ['cheer','Cheers','Played after right answers.',['Great job, {name}!','You\'re so smart!','Way to go!','Boom! You nailed it!','I\'m so proud of you!','High five!'],'party'],
  ['oops','Try again','Played sometimes after a miss.',['That\'s okay, try again!','Almost! Look again.','You can do it!','Mistakes help us learn!','Take your time, buddy.','Give it another try!'],'thumbs-up'],
@@ -7602,7 +7645,7 @@ function home(first){
   <div class="scroll hm" id="hs"><div class="hm-cols">
    <div class="hm-col">${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('target', 26)}<span>Today's missions</span></h2>${hmMissions()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}${hmDaily()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
-   <p class="hm-ver">${ico('star', 16)}<span>Star School ${RELEASE} (build v153)</span></p></div>`);
+   <p class="hm-ver">${ico('star', 16)}<span>Star School ${RELEASE} (build v154)</span></p></div>`);
   music(true);
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'heart');
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
@@ -7688,19 +7731,21 @@ function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],ws=PATHS[p].
   const on=st&&st.querySelector('.wchip.on');if(on)st.scrollLeft=Math.max(0,on.offsetLeft-(st.clientWidth-on.offsetWidth)/2)}
 function open(p,i){const n=NODES[p][i];if(n.sk=='boss')bossIntro(p,i);else if(n.sk.startsWith('es_')&&SPN[n.sk.slice(3)]&&n.lv==1)learn(p,i);else start(p,i)}
 
-function learn(p,i){const n=NODES[p][i],items=SPN[n.sk.slice(3)];
+function learn(p,i){const n=NODES[p][i],items=SPN[n.sk.slice(3)],rec=items.every(it=>esHas(it[5]||esFull(it))); // ES-AUDIO: every card recorded
   view(`<div class="top tbar gx-mtop gx-learn s-es">${UI.ibtn('back','Back',{size:'sm',id:'back'})}<div class="ttl gx-ttl"><span class="gx-tb">${ico('path-es',24)}</span><span>Let's learn!</span></div>${UI.btn('¡Vamos!',{kind:'subject',p:'es',icon:'play',id:'go'})}</div>
-  <div class="scroll"><p class="sub" style="text-align:center">Tap a card to hear it in Spanish. Tap it again for English. Then tap ¡Vamos!</p>
+  <div class="scroll"><p class="sub" style="text-align:center">${rec?'Tap each card to hear it in English, then Spanish. Then tap ¡Vamos!':'Tap a card to hear it in Spanish. Tap it again for English. Then tap ¡Vamos!'}</p>
   <div class="lgrid">${items.map(it=>`<button class="btn lcard" data-es="${esc(it[5]||esFull(it))}" data-en="${esc(it[1])}"><span class="lp">${picHTML(it,false)}</span><b>${esc(esFull(it))}</b><small>${esc(it[1])}</small></button>`).join('')}</div></div>`);
-  if(esVoice()=='no')esNote();
+  if(esVoice()=='no'&&!rec)esNote();
   $('#back').onclick=()=>pathMap(p);$('#go').onclick=()=>{SFX.whoosh();start(p,i)};
-  // one language per tap: the tablet's speech engine takes seconds to switch language, so English right after Spanish
-  // (or the other way) left a long gap. First tap: the Spanish (the word to learn); the next tap on the same card: the English.
+  // ES-AUDIO: with every card recorded, one tap says the English (the tablet's voice) and then the Spanish (the recording), back
+  // to back: the speech engine never switches language, so there is no gap. Without recordings (v153): one language per tap, because
+  // the engine took seconds to switch: first tap the Spanish (the word to learn), the next tap on the same card the English.
   let lastCard=null;
-  $$('.lcard').forEach(b=>b.onclick=()=>{const en=lastCard===b;lastCard=en?null:b;
-    if(en)say(b.dataset.en,b);else say(b.dataset.es,b,'es');anim(b,'jump');b.classList.add('heard');
+  $$('.lcard').forEach(b=>b.onclick=()=>{
+    if(rec){say(b.dataset.en,b);say(b.dataset.es,b,'es',1)}else{const en=lastCard===b;lastCard=en?null:b;if(en)say(b.dataset.en,b);else say(b.dataset.es,b,'es')}
+    anim(b,'jump');b.classList.add('heard');
     if($$('.lcard').every(x=>x.classList.contains('heard'))){bump('#go');fb('¡Muy bien! Tap ¡Vamos!')}});
-  if(S.voice)setTimeout(()=>say('Tap a card to hear it in Spanish. Tap it again for English!'),300)}
+  if(S.voice)setTimeout(()=>say(rec?'Tap each card to hear it in English and Spanish!':'Tap a card to hear it in Spanish. Tap it again for English!'),300)}
 
 // P4-07 sticker book (DESIGN_SYSTEM 6.4; CSS 43-shop.css): pages of 12; a sticker is its emoji (content) cut out die-cut style;
 // empty slots show a faint star. S.stickers is only read.
@@ -9395,7 +9440,7 @@ function spkLeave(){SPK.tok++;clearInterval(SPK.iv);SPK.tm.forEach(clearTimeout)
 const spkT=(f,ms)=>{const t=SPK.tok;SPK.tm.push(setTimeout(()=>{if(spkLive(t))f()},ms))};
 // an English line on screen; spoken too for Pre-K and K (and with "Read questions out loud" on)
 function spkTip(t,speak){const e=$('#spktip');if(e)e.textContent=t;if(speak&&(SPK.pk||S.voice))say(t)}
-function spkOpen(q,done){spkLeave();const it=spkItem(q),nov=esVoice()=='no';SPK.it=it;SPK.done=done;SPK.pk=gradeOf()<=0;SPK.nov=nov;SPK.heard=null;
+function spkOpen(q,done){spkLeave();const it=spkItem(q),nov=esVoice()=='no'&&!esHas(it.say);SPK.it=it;SPK.done=done;SPK.pk=gradeOf()<=0;SPK.nov=nov;SPK.heard=null;
   view(`<div class="top tbar gx-mtop spk-top s-es">${UI.ibtn('close','Stop',{size:'sm',id:'quit'})}<div class="ttl gx-ttl"><span class="gx-tb">${ico('mic',24)}</span><span>Say it!</span></div></div>
   <div class="play spk s-es"><div class="spk-card">
    ${it.who?`<p class="spk-role">You are <b>${esc(it.who)}</b>! Say ${esc(it.who)}’s line.</p>`:''}
@@ -9418,15 +9463,16 @@ function spkReady(first){SPK.state='ready';const a=$('#spkact');
   a.innerHTML=`<button class="spk-mic" id="spkmic" aria-label="Record: say it in Spanish">${ico('mic',48)}</button><span class="spk-ml" aria-hidden="true">Tap, then say it</span>`;
   $('#spkmic').onclick=spkRec;
   // the English tip is spoken only the first time this session (or when there is no Spanish voice): an English line right
-  // before the Spanish model made the tablet switch its speech engine, a gap of seconds; after that only the model is spoken
-  const tipSay=SPK.nov||!spkReady.told;spkReady.told=true;
+  // before the Spanish model made the tablet switch its speech engine, a gap of seconds; after that only the model is spoken.
+  // ES-AUDIO: a recorded model plays straight after the English (no engine switch), so the tip is spoken every time
+  const tipSay=SPK.nov||!spkReady.told||esHas(SPK.it.say);spkReady.told=true;
   spkTip(first?(SPK.nov?'Read it out loud: tap the microphone, then say it!':'Listen, then tap the microphone and say it!'):'Tap the microphone and say it again!',tipSay);
   if(!SPK.nov)say(SPK.it.say,null,'es',tipSay?1:0)} // the model (after the English line only the first time)
 async function spkRec(){if(SPK.state=='rec')return spkStop();if(SPK.state!='ready')return;
   SPK.state='ask';const t=SPK.tok;let st;
   try{st=await navigator.mediaDevices.getUserMedia({audio:true})}catch(e){if(spkLive(t))spkGU(e&&e.name=='NotFoundError'?'none':'denied');return}
   if(!spkLive(t)){st.getTracks().forEach(x=>x.stop());return}
-  try{speechSynthesis.cancel()}catch(e){}
+  hush();
   SPK.st=st;const ch=[];let mr;
   try{mr=new MediaRecorder(st)}catch(e){st.getTracks().forEach(x=>x.stop());SPK.st=null;return spkGU('none')}
   SPK.mr=mr;mr.ondataavailable=e=>{if(e.data&&e.data.size)ch.push(e.data)};
@@ -9455,7 +9501,7 @@ function spkHeard(){const e=$('#spkheard'),h=SPK.heard;if(!e||SPK.state!='check'
   e.innerHTML=`${ico(ok?'check-circle':'ear',22,ok?'ic-good':'ic-brand')}<span>That sounded like “<span lang="es">${esc(said)}</span>”.${ok?' ¡Muy bien!':' Listen again and compare.'}</span>`;e.classList.add('on')}
 // the model, then the child's own recording, then the self-check
 function spkModel(cb){const t=SPK.tok;if(SPK.nov)return spkT(cb,200);say(SPK.it.say,null,'es');const t0=Date.now();
-  const w=()=>{if(!spkLive(t))return;let busy=false;try{busy=speechSynthesis.speaking||speechSynthesis.pending}catch(e){}
+  const w=()=>{if(!spkLive(t))return;const busy=speakBusy(); // the voice or the recording (ES-AUDIO)
     if(busy&&Date.now()-t0<6000)spkT(w,150);else spkT(cb,250)};spkT(w,400)}
 function spkMine(cb){const t=SPK.tok;let fired=false;const go=()=>{if(fired||!spkLive(t))return;fired=true;cb()};
   try{const a=new Audio(SPK.url);SPK.au=a;a.onended=a.onerror=go;a.play().catch(go);sfxDuck(()=>!a.ended&&!a.paused)}catch(e){return go()}
@@ -11396,7 +11442,7 @@ function aboutCard(){
     `<p class="gw-p">Star School is offline practice in math, reading and Spanish for children, with game time earned by learning. It has no accounts, no ads and no tracking.</p>
     <p class="gw-note">${ico('lock',22)}<span>It works without internet once it has loaded. Progress is stored only on this device. Nothing is sent anywhere.</span></p>
     <p class="gw-note" id="ab-spk">${ico('mic',22)}<span>Spanish “Say it!” recordings never leave the tablet and are not kept: each one is gone when the step ends. Speech recognition is used only when the tablet can do it on the device itself.</span></p>
-    <div class="gw-log ab-ver"><div><b>Version</b> <span id="ab-rel">${RELEASE}</span></div><div><b>Build</b> <span id="ab-build">v153</span></div></div>
+    <div class="gw-log ab-ver"><div><b>Version</b> <span id="ab-rel">${RELEASE}</span></div><div><b>Build</b> <span id="ab-build">v154</span></div></div>
     <h3 class="gw-h3">${ico('doc',22,'ic-brand')}<span>Licences</span></h3>
     <p class="gw-p ab-lic-line"><b>Andika</b> (the lettering in the app), Copyright (c) 2004-2022 SIL International. Licensed under the SIL Open Font License 1.1 (openfontlicense.org).</p>
     <p class="gw-sub ab-lic-line">Everything else (pictures, icons, sounds, games and questions) was made for Star School. No other fonts, libraries or outside files are used.</p>
@@ -11448,7 +11494,7 @@ function grown(){let armed=false;
     {sub:'Rounds played and first-try accuracy for every skill on the maps, with the questions missed most.'})}
   ${GW.card('gw-how','info','How it works',`<p class="gw-p">Each subject has its own map. Getting 7 of 10 right opens the next stop (8 earns 2 stars, 10 earns 3), and each world stretches further. Missed questions come back at the end of a round, in later rounds, in Daily Review and in the Tricky Mix. Each right answer earns a star (the pet grows) and a coin (spent in the shop). Everything is saved on this tablet only.</p>`)}
   <details class="gw-card gw-det" id="applog"><summary class="gw-h"><span class="gw-hi">${ico('doc',24)}</span><span>App log</span>${ico('chevron-right',22,'chev')}</summary><div class="gw-log">
-   <div><b>Version</b> ${RELEASE} (build v153)</div><div><b>Save size</b> ${(JSON.stringify(S).length/1024).toFixed(1)} KB</div>
+   <div><b>Version</b> ${RELEASE} (build v154)</div><div><b>Save size</b> ${(JSON.stringify(S).length/1024).toFixed(1)} KB</div>
    ${PRF.logLine()}<div><b>Storage</b> ${SAVE_FAILED?'<span class="gw-bad">could not save (device storage may be full)</span>':'saving OK'}</div>
    ${SAVE_CORRUPT?'<div class="gw-bad">The old save could not be read. A fresh start was made and the old data was kept on the device.</div>':''}
    <div><b>Last errors</b> ${(S.err||[]).length?'<ul class="gw-errs">'+(S.err||[]).slice().reverse().map(e=>'<li><span>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+'</span> '+esc(e.msg)+'</li>').join('')+'</ul>':'none'}</div></div></details>
@@ -11520,12 +11566,12 @@ const BAK = {
   make(id) {
     const d = id && id !== PRF.cur ? PRF.up(PRF.get(PRF.key(id))) : S;
     if (!d) return '';
-    return JSON.stringify({app: BAK.APP, ver: 'v153', save: LATEST, date: new Date().toISOString(), name: d.name || '', data: d});
+    return JSON.stringify({app: BAK.APP, ver: 'v154', save: LATEST, date: new Date().toISOString(), name: d.name || '', data: d});
   },
   // Every child in one file (P5-10)
   makeAll() {
     const kids = PRF.ids.map(id => id === PRF.cur ? S : PRF.up(PRF.get(PRF.key(id)))).filter(Boolean);
-    return JSON.stringify({app: BAK.APP, ver: 'v153', save: LATEST, date: new Date().toISOString(), all: true,
+    return JSON.stringify({app: BAK.APP, ver: 'v154', save: LATEST, date: new Date().toISOString(), all: true,
       kids: kids.map(d => ({name: d.name || '', data: d}))});
   },
   fileName(name) {
@@ -12062,12 +12108,12 @@ function appFiles() {
 }
 // P6-02: the start-up files only; the parts in LAZY_PARTS load later (partsThen below)
 function dataReady() {
-  return appFiles().every(f => LAZY_PARTS.includes(f[0]) || f[1] === 'v153');
+  return appFiles().every(f => LAZY_PARTS.includes(f[0]) || f[1] === 'v154');
 }
 // the Try again screen and one line in the App log: for the start-up files, or (P6-02) for the parts in stems that did not load on demand
 function dataMissing(stems) {
-  logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0])) && f[1] !== 'v153')
-    .map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v153)');
+  logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0])) && f[1] !== 'v154')
+    .map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v154)');
   const again = UI.btn('Try again', { kind: 'primary', size: 'lg', icon: 'replay', id: 'dataretry' });
   view(`<div class="scroll" id="datamiss">${UI.empty('download', 'Star School needs to finish updating. Connect to the internet, then tap Try again.', again)}</div>`);
   $('#dataretry').onclick = () => location.reload();
@@ -12087,15 +12133,15 @@ const LAZY_PARTS = ['games', 'games2'];
 const partsAsked = {};
 function partReady(stem) {
   const f = appFiles().find(x => x[0] === stem);
-  return !!f && f[1] === 'v153';
+  return !!f && f[1] === 'v154';
 }
 function partLoad(stem) {
   const f = appFiles().find(x => x[0] === stem);
-  if (!f || f[1] === 'v153') return Promise.resolve(!!f);
+  if (!f || f[1] === 'v154') return Promise.resolve(!!f);
   if (f[1] !== null) return Promise.resolve(false); // a file of another release ran: refused
   return partsAsked[stem] || (partsAsked[stem] = new Promise(res => {
     const s = document.createElement('script');
-    s.src = stem + '.v153.js';
+    s.src = stem + '.v154.js';
     s.onload = () => { delete partsAsked[stem]; res(partReady(stem)); };
     s.onerror = () => { delete partsAsked[stem]; s.remove(); res(false); };
     document.body.appendChild(s);
@@ -12120,10 +12166,10 @@ function partsThen(stems, go, o = {}) {
   }), 0));
 }
 </script>
-<script src="gen.v153.js"></script>
-<script src="gen2.v153.js"></script>
-<script src="bt.v153.js"></script>
-<script src="data.v153.js"></script>
+<script src="gen.v154.js"></script>
+<script src="gen2.v154.js"></script>
+<script src="bt.v154.js"></script>
+<script src="data.v154.js"></script>
 <script>
 if (dataReady()) {
   loadClips();
