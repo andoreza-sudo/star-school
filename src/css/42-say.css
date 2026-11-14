@@ -1,0 +1,47 @@
+/* S-SPK: the Spanish "Say it!" step (src/js/50-say.js). Tokens only. One card like the question card (.qs .qarea), the Spanish
+   with its picture, the big microphone (96 px, the main control), then the compare and self-check buttons; "Skip for now" under it.
+   The microphone's ring pulses only while recording, and never in Calm mode or with reduced motion. */
+.play.spk{flex-direction:column;align-items:center;gap:var(--s-3);padding:var(--s-2) var(--s-4) var(--s-4);overflow:auto}
+.spk-card{width:100%;max-width:640px;display:flex;flex-direction:column;align-items:center;gap:var(--s-3);text-align:center;
+  padding:var(--s-5) var(--s-4) var(--s-4);border-top:6px solid var(--es);border-radius:var(--r-hero);background:var(--surface);
+  box-shadow:inset 0 0 0 2px var(--line),var(--shadow);color:var(--ink)}
+.spk-role{margin:0;font-size:var(--fs-3);color:var(--ink-2)}
+.spk-cue{margin:0;padding:var(--s-2) var(--s-3);border-radius:var(--r-card);background:var(--surface-2);color:var(--ink-2);font-size:var(--fs-3)}
+.spk-pic{font-size:clamp(64px,16vmin,112px);line-height:1.1}
+.spk-pic svg{width:1.1em;height:1.1em}
+.spk-word{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:var(--s-3)}
+.spk-es{font-family:var(--font-display);font-weight:700;font-size:clamp(30px,7vmin,52px);line-height:1.2;color:var(--es-shade)}
+.spk-en{margin:-4px 0 0;font-size:var(--fs-3);color:var(--ink-3)}
+.spk-tip{margin:0;min-height:1.4em;font-size:var(--fs-3);font-weight:700;color:var(--ink)}
+.spk-act{display:flex;flex-direction:column;align-items:center;gap:var(--s-3);width:100%}
+.spk-mic{position:relative;display:grid;place-items:center;width:96px;height:96px;border:0;border-radius:50%;cursor:pointer;
+  background:linear-gradient(var(--hi),var(--hi-0) 60%) var(--es);color:var(--surface);box-shadow:inset 0 2px 0 var(--hi),0 6px 0 var(--es-shade)}
+.spk-mic .ic{width:48px;height:48px}
+.spk-mic:active{transform:translateY(4px);box-shadow:inset 0 2px 0 var(--hi),0 2px 0 var(--es-shade)}
+.spk-mic.on{background:linear-gradient(var(--hi),var(--hi-0) 60%) var(--danger);box-shadow:inset 0 2px 0 var(--hi),0 6px 0 var(--danger-shade)}
+.spk-mic.on::after{content:'';position:absolute;inset:-8px;border-radius:50%;border:4px solid var(--danger);opacity:0;pointer-events:none}
+@media (prefers-reduced-motion:no-preference){html:not(.calm) .spk-mic.on::after{animation:spk-ring 1.2s var(--ease) infinite}}
+@keyframes spk-ring{from{opacity:.6;transform:scale(.92)}to{opacity:0;transform:scale(1.18)}}
+.spk-ml{font-size:var(--fs-2);color:var(--ink-2)}
+.spk-dots{display:flex;gap:var(--s-2)}
+.spk-dots i{width:18px;height:18px;border-radius:50%;background:var(--surface-2);box-shadow:inset 0 0 0 3px var(--ledge-soft)}
+.spk-dots i.on{background:var(--danger);box-shadow:none}
+.spk-lis{display:grid;place-items:center;width:96px;height:96px;border-radius:50%;background:var(--es-tint);color:var(--es-shade)}
+.spk-lis .ic{width:40px;height:40px}
+.spk-cmp,.spk-self{display:flex;flex-wrap:wrap;justify-content:center;gap:var(--s-2) var(--s-3)}
+.spk-self .btn{min-width:150px}
+.spk-heard{display:none;align-items:center;gap:var(--s-2);margin:0;padding:var(--s-2) var(--s-3);border-radius:var(--r-card);background:var(--surface-2);
+  color:var(--ink);font-size:var(--fs-3);text-align:left}
+.spk-heard.on{display:flex}
+.spk-heard .ic{flex:none}
+.spk-gu{width:100%;padding:var(--s-3) var(--s-4);border-radius:var(--r-card);background:var(--try-tint);color:var(--ink);text-align:left;font-size:var(--fs-3)}
+.spk-gu p,.spk-gu ol{margin:var(--s-2) 0}
+.spk-gu ol{padding-left:1.4em}
+.spk-guh{display:flex;align-items:center;gap:var(--s-2);margin:0;font-size:var(--fs-4);color:var(--try-ink)}
+@media (max-width:480px){.spk-card.chk .spk-pic{display:none}}
+.spk-card.gu .spk-pic,.spk-card.gu .spk-en{display:none}
+.spk-foot{width:100%;max-width:640px;display:flex;justify-content:center}
+@media (orientation:landscape) and (max-height:640px){
+  .spk-card{padding:var(--s-3) var(--s-4);gap:var(--s-2)}
+  .spk-pic{font-size:64px}
+  .spk-mic,.spk-lis{width:80px;height:80px}}

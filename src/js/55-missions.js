@@ -10,12 +10,14 @@
      teaser   solve one Brain Teaser (only when a puzzle type is offered at the child's grade)
      review   do today's review (only when something is due)
      mix      one Mixed Practice round
+     speak    say 5 Spanish words in "Say it!" steps (S-SPK, 50-say.js; S.day.spk counts them). Optional: offered only when the child
+              can play Spanish, speaking practice is on and the tablet may have a microphone (ctx.spk). Done at the next finish().
    "round" is always one of the three; the other two are drawn from what is left. Finishing a mission gives a sticker, once (it is
    marked done first). All three together give the old mission bonus once a day: 5 stars, 5 coins and a sticker (S.day.done).
    Hooks: finish() in 50-round.js (rounds, mixes, reviews), the sprint's finish in 57-fluency.js, BT.finish in 74-teasers.js. */
 const MIS = {
   N: 3,
-  KINDS: ['round', 'other', 'perfect', 'more', 'sprint', 'teaser', 'review', 'mix'],
+  KINDS: ['round', 'other', 'perfect', 'more', 'sprint', 'teaser', 'review', 'mix', 'speak'],
   MORE: 2, // rounds today that finish the "more" mission
   BONUS_STARS: 5,
   BONUS_COINS: 5,
@@ -63,7 +65,10 @@ const MIS = {
     try { bt = BT.offered().length > 0; } catch (e) {}
     try { spr = FLU.on(); } catch (e) {}
     try { due = dueItems().length; } catch (e) {}
-    return { g, subs: MIS.subjects(), bt, spr, due };
+    const subs = MIS.subjects();
+    let spk = false; // S-SPK: speaking practice on, a Spanish stop to play, and a microphone not ruled out
+    try { spkProbe(); spk = spkOn() && subs.some(x => x.p == 'es') && SPK.mic != 'no'; } catch (e) {}
+    return { g, subs, bt, spr, due, spk };
   },
   // Pure: three missions [{k, p?, d:0}] for a day key, a child name and a ctx
   draw(dayKey, name, c) {
@@ -78,6 +83,7 @@ const MIS = {
     if (c.spr) rest.push({ k: 'sprint', d: 0 });
     if (c.bt) rest.push({ k: 'teaser', d: 0 });
     if (c.due > 0) rest.push({ k: 'review', d: 0 });
+    if (c.spk) rest.push({ k: 'speak', d: 0 });
     for (let i = rest.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [rest[i], rest[j]] = [rest[j], rest[i]]; }
     return [first].concat(rest.slice(0, MIS.N - 1)).sort((a, b) => MIS.KINDS.indexOf(a.k) - MIS.KINDS.indexOf(b.k));
   },
@@ -98,6 +104,7 @@ const MIS = {
   count() { try { return MIS.get().filter(x => x.d).length; } catch (e) { return 0; } },
   // Does a finished thing count for mission x? ev: {k:'round', p, mix, test, boss, daily, perfect, n (rounds today)} | {k:'sprint'} | {k:'teaser'}
   hit(x, ev) {
+    if (x.k == 'speak') return (day().spk | 0) >= SPK.GOAL; // S-SPK: counted in the "Say it!" steps, booked by whatever finishes next
     if (x.k == 'sprint' || x.k == 'teaser') return ev.k == x.k;
     if (ev.k != 'round') return false;
     if (x.k == 'round' || x.k == 'other') return !!ev.p && ev.p === x.p && !ev.mix && !ev.test;
@@ -127,17 +134,17 @@ const MIS = {
   title(x) {
     const s = MIS.SUBJ[x.p] || 'Math';
     return { round: `Play a ${s} round`, other: `Try a ${s} round`, perfect: 'Get a perfect round', more: `Play ${MIS.MORE} rounds today`, sprint: 'Do a Fact Sprint', teaser: 'Solve a Brain Teaser',
-      review: "Do today's review", mix: 'Play Mixed Practice' }[x.k];
+      review: "Do today's review", mix: 'Play Mixed Practice', speak: `Say ${SPK.GOAL} Spanish words` }[x.k];
   },
   sub(x) {
     return { round: 'Make it stronger!', other: 'Visit another subject!', perfect: 'Every answer right!', more: 'Keep practicing!', sprint: 'Beat your best!', teaser: 'Think hard!',
-      review: 'Practice what you learned', mix: 'A bit of everything!' }[x.k];
+      review: 'Practice what you learned', mix: 'A bit of everything!', speak: 'Say it out loud!' }[x.k];
   },
   icon(x) {
-    return { round: UI.SUBJ_ICON[x.p] || 'path-math', other: UI.SUBJ_ICON[x.p] || 'path-math', perfect: 'star', more: 'replay', sprint: 'bolt', teaser: 'puzzle', review: 'replay', mix: 'sparkle' }[x.k];
+    return { round: UI.SUBJ_ICON[x.p] || 'path-math', other: UI.SUBJ_ICON[x.p] || 'path-math', perfect: 'star', more: 'replay', sprint: 'bolt', teaser: 'puzzle', review: 'replay', mix: 'sparkle', speak: 'mic' }[x.k];
   },
   // The subject colour class of a mission
-  cls(x) { return { round: 's-' + x.p, other: 's-' + x.p, perfect: 's-play', more: 's-play', sprint: 's-math', teaser: 's-bt', review: 's-play', mix: 's-es' }[x.k]; },
+  cls(x) { return { round: 's-' + x.p, other: 's-' + x.p, perfect: 's-play', more: 's-play', sprint: 's-math', teaser: 's-bt', review: 's-play', mix: 's-es', speak: 's-es' }[x.k]; },
   // What the child sees after finishing: one line and one sticker per mission, then the bonus
   winHTML(mi) {
     const row = (icon, text, st, i) => `<li>${ico(icon, 20)}<span>${text}</span>${RW.sticker(st.s, st.isNew, i)}</li>`;
@@ -158,6 +165,7 @@ const MIS = {
     }
     if (x.k == 'review') return startReview();
     if (x.k == 'mix') return startMix();
+    if (x.k == 'speak') x = { k: 'round', p: 'es' }; // S-SPK: the open Spanish stop (its round has a "Say it!" step)
     const st = MIS.stop(x.p) || MIS.stop('math');
     if (st) open(st.p, st.i); else startMix();
   },

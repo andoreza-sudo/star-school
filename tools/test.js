@@ -13924,6 +13924,96 @@ run('Spanish review fixes R-01s',()=>{
   return{problems:uniq(errs),note:r.q+' questions scanned across every Spanish skill and level'};
 });
 
+// ---- S-SPK: Spanish speaking practice ("Say it!", src/js/50-say.js): one step per Spanish stop round and one in Daily Review, between
+// questions (never a question: skip and no microphone never mark wrong or block), the lenient matcher, the "Say 5 Spanish words"
+// mission, old saves, tokens only, nothing stored or sent, no generator randomness used
+run('Spanish speaking S-SPK',()=>{
+  const errs=[],bad=m=>{if(errs.length<60&&!errs.includes(m))errs.push(m)},note=[];
+  const rd=f=>fs.readFileSync(path.join(SRC,f),'utf8'),jsSrc=rd('js/50-say.js'),css=rd('css/42-say.css'),tok=rd('css/00-tokens.css');
+  // tokens only, no emoji chrome, nothing kept or sent, no question randomness (rnd / pick / shuffle would move the seeded questions)
+  if(/#[0-9a-fA-F]{3,8}\b/.test(css))bad('42-say.css has a raw hex colour');
+  for(const v of new Set((css.match(/var\(--[a-z0-9-]+/g)||[]).map(x=>x.slice(4))))if(!tok.includes(v+':'))bad('42-say.css uses '+v+', not a token');
+  if(/#[0-9a-fA-F]{6}\b/.test(jsSrc)||/\p{Extended_Pictographic}/u.test(jsSrc))bad('50-say.js has a raw colour or an emoji');
+  if(/localStorage|indexedDB|DB\.put|fetch\(|XMLHttpRequest|sendBeacon|WebSocket/.test(jsSrc))bad('50-say.js stores or sends something');
+  if(/\b(rnd|pick|shuffle|R)\(/.test(jsSrc))bad('50-say.js draws from the question randomness');
+  if(!/processLocally=true/.test(jsSrc)||!/ondevice-only/.test(jsSrc)||!jsSrc.includes("if(r.processLocally!==true&&r.mode!=='ondevice-only')return"))bad('recognition is not limited to on-device');
+  if(!/if\(spkHook\(\)\)return;/.test(rd('js/50-round.js')))bad('next() does not ask spkHook');
+  const FX=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const body=function(){const out={bad:[],note:[]},B=m=>out.bad.push(m);
+    loadSave(null);migrate();S.grade=1;S.sound=false;
+    let opened=[],notes=0;const keep={renderQ,fb,save,spkOpen};
+    renderQ=()=>{};fb=()=>{notes++};save=()=>{};
+    spkOpen=(q,done)=>{opened.push(q);SPK.done=done;SPK.it=spkItem(q)};
+    try{
+      // 1. once per Spanish stop round, after the 3rd question; every stop of the Spanish path, story rounds too; "I said it!" and
+      //    "Skip for now" both go on to the next question with the round unchanged
+      SPK.mic='yes';SPK.deny=0;SPK.note=0;let rounds=0;
+      NODES.es.forEach((n,i)=>{if(n.sk=='boss')return;
+        for(const rep of [0,1]){opened=[];G=newG({path:'es',node:i,sk:n.sk,lv:n.lv,n:10});const rdq=SK[n.sk].round&&SK[n.sk].round(n.lv);if(rdq){G.pool=rdq;G.n=rdq.length}
+          next();let at=-1;
+          for(let k=0;k<G.n;k++){const was=opened.length;G.done++;G.score++;
+            if(G.done<G.n){next();if(opened.length>was){at=G.done;
+              const q=opened[opened.length-1];if(q.afterLang!='es'||!q.after)B(n.sk+' '+n.lv+': the step has no Spanish');
+              const st=()=>JSON.stringify([G.done,G.n,G.score,G.missed.length,G.res,G.streak]),before=st();
+              if(rep)spkEnd(false);else spkEnd(true);
+              if(st()!==before)B(n.sk+' '+n.lv+': the step changed the round')}}
+            else if(spkHook())at=G.done}
+          rounds++;if(opened.length!==1)B(n.sk+' '+n.lv+': '+opened.length+' Say it! steps in a round');else if(at!==Math.min(3,G.n))B(n.sk+' '+n.lv+': step after question '+at)}});
+      out.note.push(rounds+' Spanish rounds: one step each, after question 3');
+      // a dialogue line: the child plays its speaker; a unit word: its picture and English
+      {const q=esStoryRound(1)[0],it=spkItem(q);if(!it.who||!ES_STORY.dialogues.some(d=>d.lines.some(l=>l[0]==it.who&&l[1]==it.es)))B('story step: no character for '+q.after)}
+      {const q=genQ('es_animal',1,7),it=spkItem(q);if(it.es!==q.ans||!it.en||!it.pic)B('unit word step: '+JSON.stringify(it).slice(0,120))}
+      // 2. not in bosses, Test out, Tricky Mix or other subjects; off when the grown-up switch is off; in Daily Review after a Spanish item
+      const es=genQ('es_food',1,3),m=genQ('add',1,3),G0=o=>Object.assign(newG(o),{done:5,q:o.q||es});
+      if(spkWhen(G0({path:'es',node:5,sk:'boss',boss:{}})))B('boss round has a step');
+      if(spkWhen(G0({path:'es',node:5,sk:'test',test:{wi:0}})))B('Test out has a step');
+      if(spkWhen(G0({mix:true,sk:'mix'})))B('Tricky Mix has a step');
+      if(spkWhen(G0({path:'math',node:0,sk:'add',q:m})))B('math round has a step');
+      if(!spkWhen(G0({mix:true,daily:true,sk:'mix',n:4})))B('Daily Review: no step after a Spanish item');
+      if(spkWhen(G0({mix:true,daily:true,sk:'mix',n:4,q:m})))B('Daily Review: a step after a math item');
+      if(spkWhen(Object.assign(G0({mix:true,daily:true,sk:'mix',n:4}),{done:0})))B('Daily Review: a step before any answer');
+      S.esSpk=false;if(spkWhen(G0({path:'es',node:0,sk:'es_food',lv:1})))B('switch off: still a step');S.esSpk=true;
+      // 3. skip, no microphone and a blocked microphone never mark wrong or block
+      const snap=()=>JSON.stringify([G.done,G.n,G.score,G.missed,G.res,P('es_food').t,P('es_food').c,S.rev.length,S.mast,day().spk|0]);
+      for(const way of ['skip','no-mic','denied']){G=G0({path:'es',node:NODES.es.findIndex(n=>n.sk=='es_food'),sk:'es_food',lv:1});G.done=3;G.res=[];
+        opened=[];notes=0;SPK.mic=way=='no-mic'?'no':'yes';SPK.deny=way=='denied'?1:0;SPK.note=way=='denied'?1:0;const s0=snap();
+        if(way=='skip'){if(!spkHook())B('skip: no step');spkEnd(false)}
+        else if(spkHook())B(way+': the step blocked the round');
+        if(snap()!==s0)B(way+': the round or the save changed '+s0+' -> '+snap());
+        if(way=='no-mic'){if(notes!==1)B('no microphone: '+notes+' notes (one, for the session)');G.spk=0;notes=0;spkHook();if(notes)B('no microphone: the note came twice')}}
+      SPK.mic='yes';SPK.deny=0;SPK.note=0;
+      // 4. "I said it!" counts toward the mission; the mission is offered only with ctx.spk and is done at 5
+      {day().spk=0;for(let i=0;i<5;i++){G=G0({path:'es',node:1,sk:'es_food',lv:1});G.done=3;spkHook();spkEnd(true)}
+       if(day().spk!==5)B('5 steps said: day().spk is '+day().spk);
+       const x={k:'speak',d:0};day().spk=4;if(MIS.hit(x,{k:'round',p:'math'}))B('speak mission done at 4');
+       day().spk=5;if(!MIS.hit(x,{k:'round',p:'math'})||!MIS.hit(x,{k:'sprint'}))B('speak mission not done at 5');
+       if(MIS.title(x)!=='Say 5 Spanish words'||MIS.icon(x)!=='mic')B('speak mission title '+MIS.title(x));
+       const sub=[{p:'math',i:0,s:null,n:0},{p:'es',i:0,s:null,n:0}],c=on=>({g:2,subs:sub,bt:false,spr:false,due:0,spk:on});let yes=0,no=0;
+       for(let d=1;d<=60;d++){const k='2026-1-'+d,a=MIS.draw(k,'Ava',c(true));if(a.some(x=>x.k=='speak'))yes++;
+         if(MIS.draw(k,'Ava',c(false)).some(x=>x.k=='speak'))no++;if(!MIS.valid(a))B('a draw with speak is not valid')}
+       if(!yes||no)B('speak mission drawn on '+yes+' of 60 days (with spk) and '+no+' (without)');
+       out.note.push('speak mission on '+yes+' of 60 days')}
+      // 5. old saves load: no esSpk (on), a day without spk (0); the switch is a per-child field
+      for(const raw of [null,FX('legacy-single-map'),FX('midway'),FX('maxed')]){loadSave(raw);migrate();
+        if(!spkOn()||'esSpk' in S)B('old save: speaking practice should be on with no field');if((day().spk|0)!==0)B('old save: spk count')}
+      S.esSpk=false;if(spkOn())B('esSpk false: still on');
+      if(PRF.SHARED.includes('esSpk'))B('esSpk must be per child');
+    }finally{renderQ=keep.renderQ;fb=keep.fb;save=keep.save;spkOpen=keep.spkOpen}
+    // 6. the matcher: lenient on accents, case, punctuation, articles, numerals, a letter or two; still says no to another word
+    const T=[['la casa','casa',1],['la casa','La Casa.',1],['el baño','el bano',1],['¿Cómo estás?','como estas',1],['buenos días','Buenos dias',1],
+      ['el perro','es el perro',1],['cansado / cansada','cansada',1],['Son las tres.','son las 3',1],['Es la una.','es la 1',1],['treinta y cinco','35',1],
+      ['Me llamo Ana.','me llamo ana',1],['la manzana','manzanas',1],['Hace sol.','hace sol',1],['Quiero manzanas y queso, por favor.','quiero manzanas y queso por favor',1],
+      ['el pingüino','pinguino',1],['veintidós','22',1],['la casa','la mesa',0],['el gato','el pato',0],['hola','adiós',0],['rojo','',0],['Hace sol.','hace frío',0],
+      ['el perro','el gato',0],['uno','dos',0]];
+    for(const [t,h,w] of T)if(spkMatch(t,h)!==!!w)B('match '+JSON.stringify(t)+' / '+JSON.stringify(h)+' should be '+!!w);
+    if(!spkMatch('la casa',['la masa','casa']))B('match: an alternative list');
+    out.note.push(T.length+' matcher examples');
+    return out};
+  const r=eval(js+';('+body.toString()+')()');
+  r.bad.forEach(bad);note.push(...r.note);
+  return{problems:errs,note:note.join('; ')};
+});
+
 run('game room P4-16',()=>{
   const p=[];
   const rd=f=>fs.readFileSync(path.join(SRC,f),'utf8');
@@ -14301,7 +14391,8 @@ run('missions v2 P5-08: three distinct doable missions, same all day, new each d
     setDay(8);const m8=MIS.get();if(m8.some(x=>x.d)||day().done)bad.push(w+': the next day did not start clean');
   }
   // every kind can appear somewhere
-  for(const k of MIS.KINDS)if(!seen.kinds[k])bad.push('mission kind '+k+' never drawn on any fixture or grade');
+  // S-SPK: "speak" needs a microphone (none in Node); its draw is checked in "Spanish speaking S-SPK"
+  for(const k of MIS.KINDS)if(!seen.kinds[k]&&k!='speak')bad.push('mission kind '+k+' never drawn on any fixture or grade');
   // a pre-K child gets no sprint
   load(fx('fresh'));S.grade=-1;S.name='Ava';
   for(let n=0;n<40;n++){setDay(n);S.day={};if(MIS.get().some(x=>x.k=='sprint'))bad.push('pre-K sprint');}
@@ -14617,7 +14708,8 @@ run('motion and sound P4-17',()=>{
     !/@media \(prefers-reduced-motion:reduce\)\{\.burst,\.rw-burst,\.fly,\.pc-fx\{display:none\}\}/.test(mo))p.push('50-motion.css: particles must not show in calm mode or with reduced motion');
   // the only endless loops (DS 8.1: the pet's idle bob and the current stop's pulse; plus a lesson's side-by-side count, which IS the
   // question, and Hill Climb's low-fuel blink while fuel is low). Calm mode and reduced motion stop them all (one 0.01 ms iteration).
-  const LOOPS=['pet-bob','pet-shadow','pet-blink','bob','k-ring','pkside','hc-low'];
+  // S-SPK: the microphone's ring while it records (at most 4 s; never in calm mode or with reduced motion)
+  const LOOPS=['pet-bob','pet-shadow','pet-blink','bob','k-ring','pkside','hc-low','spk-ring'];
   for(const f of cssFiles)for(const {sel,body} of rules(CSS[f]))for(const m of body.matchAll(/animation\s*:\s*([^;]*\binfinite\b[^;]*)/g)){
     const n=(m[1].match(/^\s*([\w-]+)/)||[])[1];
     if(!LOOPS.includes(n))p.push(f+' '+sel+': loops forever ('+n+')');
@@ -14673,7 +14765,7 @@ run('motion and sound P4-17',()=>{
   // no sound outside SFX, tone, noise and music: the countdown beeps go through SFX.tick
   for(const f of jsFiles){const t=rd('js/'+f);
     if(f!=='10-sfx.js'&&/\b(synth|hiss)\(/.test(t))p.push(f+': calls the unchecked synth()/hiss() (use SFX, tone or noise)');
-    if(/new Audio\(/.test(t)&&!['44-clips.js','80-grown.js'].includes(f))p.push(f+': plays audio outside the clips');
+    if(/new Audio\(/.test(t)&&!['44-clips.js','80-grown.js','50-say.js'].includes(f))p.push(f+': plays audio outside the clips');
     if(/^(52|54|57)-/.test(f)&&/\btone\(/.test(t))p.push(f+': a countdown beep outside SFX.tick');
   }
   if(!/function playClip\(kind\)\{const cs=CLIPS\.filter\(c=>c\.kind==kind\);if\(!cs\.length\|\|!S\.sound\)return false;/.test(rd('js/44-clips.js')))p.push('playClip must stay silent with Sound effects off');
