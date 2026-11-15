@@ -1,6 +1,6 @@
-/* Star School games2 v155. BUILT by tools/build.py from 49-game-race.css, 49-game-skyhop.css, 49-game-snack.css, 63-game-race.js, 65-game-snack.js, 67-game-skyhop.js: never edit by hand.
-   index.html v155 loads this file on demand (partsThen in src/js/90-app.js, P6-02), after data.v155.js. */
-(function(){var s=document.createElement('style');s.id='css-games2';s.textContent="/* Star Rally, the racing game (G-02, G-02b; src/js/63-game-race.js). Ships in games2.<VER>.js. Tokens only; motion is\n   transform/opacity. The menu (next goal, cups, single races and time trials, rivals, how to drive), the garage with upgrades, the\n   race: a full-screen canvas under the shared top bar (.gh-hud), big steer buttons, a message bubble and the boost-gate question;\n   the cup standings on the end card. */\n\n/* ---- menu ---- */\n.rl-menu,.rl-gar{padding:var(--s-2) var(--s-4) var(--s-7)}\n.rl-menu>*,.rl-gar>*{max-width:1000px;margin-left:auto;margin-right:auto}\n.rl-h{margin:var(--s-5) auto var(--s-3);font-size:var(--fs-4);color:var(--ink)}\n.rl-hero{display:flex;align-items:center;gap:var(--s-4);padding:var(--s-3) var(--s-4);border-radius:var(--r-hero);\n  background:linear-gradient(var(--sc-sky-1),var(--sc-sky) 70%,var(--sc-green) 71%);box-shadow:inset 0 0 0 2px var(--wash),0 5px 0 var(--sc-green-2)}\n.rl-hcar{flex:1 1 50%;max-width:260px}.rl-hcar svg{display:block;width:100%;height:auto}\n.rl-hinfo{flex:1 1 50%;display:flex;flex-direction:column;gap:var(--s-3);align-items:stretch}\n.rl-hl{display:flex;align-items:center;gap:var(--s-2);margin:0;font-size:var(--fs-3);color:var(--ink)}\n.rl-hl .ic,.rl-psub .ic,.rl-iprice .ic.rs-f{color:var(--star-shade)}\n.rl-places{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s-3)}\n@media (min-width:760px){.rl-places{grid-template-columns:repeat(4,minmax(0,1fr))}}\n.rl-place{display:flex;flex-direction:column;gap:var(--s-1);min-height:var(--tap);padding:var(--s-2);border:0;border-radius:var(--r-card);\n  background:var(--surface);color:var(--ink);font:inherit;text-align:left;cursor:pointer;touch-action:manipulation;\n  box-shadow:inset 0 0 0 2px var(--line),0 4px 0 var(--ledge-soft);transition:transform var(--t-fast) var(--ease)}\n.rl-place:active{transform:translateY(3px)}\n.rl-place.on{box-shadow:inset 0 0 0 3px var(--math),0 4px 0 var(--math-shade)}\n.rl-ppic{position:relative;display:block;aspect-ratio:240/100;border-radius:var(--r-btn);overflow:hidden;background:linear-gradient(var(--gh-a),var(--gh-b))}\n.rl-ppic svg{position:absolute;inset:0;width:100%;height:100%;display:block}\n.rl-place.lock .rl-ppic svg{opacity:.45}\n.rl-plock{position:absolute;inset:0;display:grid;place-items:center;color:var(--ink-2)}\n.rl-pname{font-size:var(--fs-3);font-weight:700;line-height:1.2}\n.rl-psub{display:flex;align-items:center;gap:var(--s-1);font-size:var(--fs-2);color:var(--ink-2)}\n.rl-trks{display:grid;gap:var(--s-3)}\n@media (min-width:760px){.rl-trks{grid-template-columns:repeat(2,minmax(0,1fr))}}\n.rl-trk{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:var(--s-3);min-height:72px;padding:var(--s-3);\n  border:0;border-radius:var(--r-card);background:var(--surface);color:var(--ink);font:inherit;text-align:left;cursor:pointer;touch-action:manipulation;\n  box-shadow:inset 0 0 0 2px var(--line),0 5px 0 var(--ledge-soft);transition:transform var(--t-fast) var(--ease)}\n.rl-trk:active{transform:translateY(4px)}\n.rl-tn{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--math-tint);color:var(--math-shade);\n  font-family:var(--font-display);font-size:var(--fs-4);font-weight:700}\n.rl-ti{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:0;line-height:1.25}\n.rl-ti b{font-size:var(--fs-3)}.rl-ti span{font-size:var(--fs-2);color:var(--ink-2)}\n.rl-go{display:grid;place-items:center;width:48px;height:48px;border-radius:50%;background:var(--math);color:var(--surface);box-shadow:0 3px 0 var(--math-shade)}\n.rl-trk.lock{background:var(--surface-2)}.rl-trk.lock .rl-go{background:var(--surface);color:var(--ink-3);box-shadow:inset 0 0 0 2px var(--line)}\n.rl-trk.lock .rl-tn{background:var(--surface);color:var(--ink-3)}\n.rl-rivals{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:var(--s-2)}\n.rl-rv{display:flex;flex-direction:column;align-items:center;text-align:center;line-height:1.2}\n.rl-rv svg{width:min(76px,100%);height:auto}.rl-rv b{font-size:var(--fs-2)}.rl-rv span{font-size:var(--fs-2);color:var(--ink-2)}\n.rl-opts{margin-top:var(--s-2)}\n.rl-mode{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s-2) var(--s-4)}\n.rl-mode p{margin:0;flex:1 1 220px;font-size:var(--fs-2);color:var(--ink-2)}\n.rl-how{display:grid;gap:var(--s-2);margin:var(--s-4) 0;padding:0;list-style:none}\n@media (min-width:760px){.rl-how{grid-template-columns:1fr 1fr}}\n.rl-how li{display:flex;align-items:center;gap:var(--s-3);font-size:var(--fs-3);line-height:1.3;color:var(--ink)}\n.rl-hi{flex:none;display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:var(--math-tint);color:var(--math-shade)}\n.rl-opts .switch{margin-top:var(--s-3)}\n.stat.rl-spk .ic,.stat.rl-pos .ic{color:var(--star-shade);--ic2:var(--star-tint)}\n.stat.rl-lap .ic{color:var(--math-shade)}\n\n/* G-02b: the next goal, cups, time trial buttons, cup standings, upgrades */\n.rl-goal{display:flex;align-items:center;gap:var(--s-3);margin-top:var(--s-4);margin-bottom:0;padding:var(--s-3) var(--s-4);border-radius:var(--r-card);\n  background:var(--surface);color:var(--ink);font-size:var(--fs-3);line-height:1.3;box-shadow:inset 0 0 0 2px var(--math-tint),0 4px 0 var(--ledge-soft)}\n.rl-goal .rl-hi{width:44px;height:44px}\n.rl-cups{display:grid;gap:var(--s-3)}\n@media (min-width:760px){.rl-cups{grid-template-columns:repeat(2,minmax(0,1fr))}}\n.rl-cup{display:grid;grid-template-columns:76px minmax(0,1fr) auto;align-items:center;gap:var(--s-3);min-height:96px;padding:var(--s-3);border:0;\n  border-radius:var(--r-card);background:var(--surface);color:var(--ink);font:inherit;text-align:left;cursor:pointer;touch-action:manipulation;\n  box-shadow:inset 0 0 0 2px var(--line),0 5px 0 var(--ledge-soft);transition:transform var(--t-fast) var(--ease)}\n.rl-cup:active{transform:translateY(4px)}\n.rl-cup.won{box-shadow:inset 0 0 0 3px var(--star),0 5px 0 var(--star-shade)}\n.rl-cpic{position:relative;display:grid;place-items:center;width:76px;height:76px;border-radius:var(--r-btn);background:var(--surface-2)}\n.rl-cpic svg{width:64px;height:64px}\n.rl-cup.lock{background:var(--surface-2)}.rl-cup.lock .rl-cpic svg{opacity:.35}\n.rl-cup.lock .rl-go{background:var(--surface);color:var(--ink-3);box-shadow:inset 0 0 0 2px var(--line)}\n.rl-ci{display:flex;flex-direction:column;gap:2px;min-width:0;line-height:1.25}\n.rl-ci b{font-size:var(--fs-4)}.rl-ci span{font-size:var(--fs-2);color:var(--ink-2)}.rl-ci .rl-cs{color:var(--ink);font-weight:700}\n.rl-h3{margin:var(--s-4) auto var(--s-3);font-size:var(--fs-3);color:var(--ink)}\n.rl-trow{display:flex;gap:var(--s-2);min-width:0}.rl-trow .rl-trk{flex:1 1 auto;min-width:0}\n.rl-tt{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:84px;min-height:72px;padding:var(--s-1);border:0;\n  border-radius:var(--r-card);background:var(--surface);color:var(--math-shade);font:inherit;font-size:var(--fs-2);font-weight:700;line-height:1.1;text-align:center;\n  cursor:pointer;touch-action:manipulation;box-shadow:inset 0 0 0 2px var(--line),0 5px 0 var(--ledge-soft);transition:transform var(--t-fast) var(--ease)}\n.rl-tt:active{transform:translateY(4px)}\n.rl-sth{margin:var(--s-2) 0 var(--s-1);font-size:var(--fs-2);font-weight:700;color:var(--ink-2)}\n.rl-stand{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s-1) var(--s-2);margin:0;padding:0;list-style:none;text-align:left}\n.rl-stand li{display:grid;grid-template-columns:auto 30px minmax(0,1fr);grid-template-rows:auto auto;column-gap:var(--s-1);align-items:center;padding:2px var(--s-2);\n  border-radius:var(--r-btn);background:var(--surface-2);line-height:1.15}\n.rl-stand li.me{background:var(--star-tint);box-shadow:inset 0 0 0 2px var(--star)}\n.rl-stand .rl-sn{grid-row:1/span 2;font-family:var(--font-display);font-size:var(--fs-3);font-weight:700;color:var(--ink-2)}\n.rl-stand svg{grid-row:1/span 2;width:30px;height:32px}\n.rl-stand b{font-size:var(--fs-2);color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rl-stand span:last-child{font-size:var(--fs-2);color:var(--ink-2)}\n.rl-epic{display:grid;place-items:center;width:100%;height:100%}.rl-etro{height:90%;width:auto}\n.rl-ups{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}\n.rl-upic{display:grid;place-items:center;color:var(--math-shade)}.rl-upic .ic{width:36px;height:36px}\n.rl-pips{display:flex;gap:4px}.rl-pips i{width:14px;height:14px;border-radius:50%;background:var(--surface-2);box-shadow:inset 0 0 0 2px var(--line)}\n.rl-pips i.on{background:var(--good);box-shadow:none}\n.rl-iwhat{font-size:var(--fs-2);color:var(--ink-2);text-align:center;line-height:1.2}\n\n/* ---- garage ---- */\n.rl-gcar{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:var(--s-3) var(--s-5);padding:var(--s-4);border-radius:var(--r-hero);\n  background:linear-gradient(var(--gh-a),var(--gh-b))}\n.rl-gcar .rl-big{width:min(300px,80%);height:auto}\n.rl-buy{flex:1 1 260px;max-width:420px;padding:var(--s-3) var(--s-4);border-radius:var(--r-card);background:var(--surface);box-shadow:inset 0 0 0 2px var(--line)}\n.rl-buy p{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s-1);margin:0 0 var(--s-2);font-size:var(--fs-3);color:var(--ink)}\n.rl-buy p+p{font-size:var(--fs-2);color:var(--ink-2)}\n.rl-buy .ic{color:var(--star-shade)}\n.rl-bacts{display:flex;flex-wrap:wrap;gap:var(--s-2)}\n.rl-items{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:var(--s-3)}\n.rl-item{display:flex;flex-direction:column;align-items:center;gap:2px;min-height:var(--tap);padding:var(--s-2);border:0;border-radius:var(--r-card);\n  background:var(--surface);color:var(--ink);font:inherit;cursor:pointer;touch-action:manipulation;box-shadow:inset 0 0 0 2px var(--line),0 4px 0 var(--ledge-soft);\n  transition:transform var(--t-fast) var(--ease)}\n.rl-item:active{transform:translateY(3px)}\n.rl-item.on{box-shadow:inset 0 0 0 3px var(--good),0 4px 0 var(--good-ink)}\n.rl-ipic{display:block;width:64px;height:48px}.rl-ipic svg{width:100%;height:100%}\n.rl-iname{font-size:var(--fs-2);font-weight:700;text-align:center;line-height:1.2}\n.rl-iprice{display:flex;align-items:center;gap:2px;font-size:var(--fs-2);color:var(--ink-2)}\n.rl-iprice .ic{color:var(--star-shade)}.rl-item.on .rl-iprice{color:var(--good-ink)}.rl-item.on .rl-iprice .ic{color:var(--good)}\n.rl-note{margin:var(--s-2) auto 0;font-size:var(--fs-2);color:var(--ink-2)}\n\n/* ---- the race ---- */\n.rl{position:fixed;inset:0;z-index:0;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;background:var(--sc-sky)}\n.rl canvas{position:absolute;inset:0;width:100%;height:100%;display:block}\n.rl-msg{position:absolute;left:50%;top:28%;padding:var(--s-2) var(--s-5);border-radius:var(--r-pill);background:var(--surface);color:var(--ink);\n  font-family:var(--font-display);font-size:var(--fs-5);font-weight:700;width:max-content;max-width:calc(100% - 32px);text-align:center;line-height:1.2;pointer-events:none;box-shadow:0 4px 0 var(--ledge-soft);\n  opacity:0;transform:translate(-50%,-12px) scale(.9);transition:opacity var(--t) var(--ease),transform var(--t) var(--spring)}\n.rl-msg.on{opacity:1;transform:translate(-50%,0) scale(1)}\n.rl-msg.big{font-size:var(--fs-7);padding:var(--s-2) var(--s-6)}\n.rl-q{position:absolute;left:50%;top:84px;transform:translateX(-50%);padding:var(--s-2) var(--s-5);border-radius:var(--r-pill);background:var(--bt);\n  color:var(--surface);font-family:var(--font-display);font-size:var(--fs-6);font-weight:700;white-space:nowrap;pointer-events:none;box-shadow:0 4px 0 var(--bt-shade)}\n.rl-q[hidden]{display:none}\n.rl-ctl{position:absolute;left:0;right:0;bottom:0;pointer-events:none}\n.rl-btn{position:absolute;bottom:calc(14px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;align-items:center;justify-content:center;\n  width:clamp(96px,15vw,132px);height:clamp(96px,15vw,132px);padding:0;border:0;border-radius:32px;background:var(--surface);color:var(--math-shade);\n  font:inherit;font-family:var(--font-display);font-size:var(--fs-4);font-weight:700;pointer-events:auto;touch-action:none;opacity:.92;\n  box-shadow:inset 0 0 0 3px var(--wash),0 6px 0 var(--math-shade);transition:transform var(--t-fast) var(--ease)}\n.rl-btn .ic{width:56px;height:56px}\n.rl-btn.on{transform:translateY(5px) scale(.96);opacity:1}\n#rll{left:14px}#rlr{right:14px}\n.rl-pro #rlr{left:calc(28px + clamp(96px,15vw,132px));right:auto}\n.rl-pro #rlgo{right:14px;background:var(--play-shade);color:var(--surface);box-shadow:inset 0 0 0 3px var(--wash),0 6px 0 var(--play-deep)}\n.rl-pro #rlgo .ic{width:44px;height:44px}\n@media (max-width:420px){.rl-pro .rl-btn{width:96px;height:96px}.rl-pro #rlr{left:118px}}\n/* Sky Hop (G-04b; src/js/67-game-skyhop.js). Ships in games2.<VER>.js. Tokens only; motion is transform/opacity on --t-* tokens.\n   The menu (the child's pet on a cloud, One-touch / Free move, the worlds, the courses, sparkle trails) and the course: a full-screen\n   canvas under the shared top bar (.gh-hud), big hop and walk buttons, a message bubble and the helper balloon's question. */\n\n/* ---- menu ---- */\n.hp-menu{padding:var(--s-2) var(--s-4) var(--s-7)}\n.hp-menu>*{max-width:1000px;margin-left:auto;margin-right:auto}\n.hp-h{margin:var(--s-5) auto var(--s-3);font-size:var(--fs-4);color:var(--ink)}\n.hp-hero{display:flex;align-items:center;gap:var(--s-4);padding:var(--s-3) var(--s-4);border-radius:var(--r-hero);\n  background:linear-gradient(var(--gh-a),var(--gh-b));box-shadow:inset 0 0 0 2px var(--wash),0 5px 0 var(--disc-shade)}\n.hp-hpet{position:relative;flex:1 1 45%;max-width:280px;margin:0 auto;padding-bottom:var(--s-2)}\n.hp-pet{position:relative;z-index:1;display:block;width:62%;margin:0 auto -12%}\n.hp-pet svg{display:block;width:100%;height:auto}\n.hp-hcl{display:block;width:100%;height:auto}\n.hp-hinfo{flex:1 1 55%;display:flex;flex-direction:column;gap:var(--s-3);align-items:stretch;min-width:0}\n.hp-hl{display:flex;align-items:center;gap:var(--s-2);margin:0;font-size:var(--fs-3);color:var(--ink)}\n.hp-hl .ic,.hp-wsub .ic,.hp-tr small .ic{color:var(--star-shade)}\n@media (max-width:560px){.hp-hero{flex-direction:column;align-items:stretch}.hp-hpet{width:60%}}\n.hp-mode{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s-2) var(--s-4)}\n.hp-mode p{margin:0;flex:1 1 220px;font-size:var(--fs-2);color:var(--ink-2)}\n.hp-worlds{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s-3)}\n@media (min-width:760px){.hp-worlds{grid-template-columns:repeat(4,minmax(0,1fr))}}\n.hp-world{display:flex;flex-direction:column;gap:var(--s-1);min-height:var(--tap);padding:var(--s-2);border:0;border-radius:var(--r-card);\n  background:var(--surface);color:var(--ink);font:inherit;text-align:left;cursor:pointer;touch-action:manipulation;\n  box-shadow:inset 0 0 0 2px var(--line),0 4px 0 var(--ledge-soft);transition:transform var(--t-fast) var(--ease)}\n.hp-world:active,.hp-crs:active,.hp-tr:active{transform:translateY(3px)}\n.hp-world.on{box-shadow:inset 0 0 0 3px var(--disc),0 4px 0 var(--disc-shade)}\n.hp-wpic{position:relative;display:block;aspect-ratio:12/5;border-radius:var(--r-btn);overflow:hidden;background:linear-gradient(var(--gh-a),var(--gh-b))}\n.hp-wpic svg{position:absolute;inset:0;width:100%;height:100%;display:block}\n.hp-world.lock .hp-wpic svg{opacity:.45}\n.hp-wlock{position:absolute;inset:0;display:grid;place-items:center;color:var(--ink-2)}\n.hp-wname{font-size:var(--fs-3);font-weight:700;line-height:1.2}\n.hp-wsub{display:flex;align-items:center;gap:var(--s-1);min-height:22px;font-size:var(--fs-2);color:var(--ink-2)}\n.hp-crss{display:grid;gap:var(--s-3)}\n@media (min-width:700px){.hp-crss{grid-template-columns:repeat(2,minmax(0,1fr))}}\n@media (min-width:980px){.hp-crss{grid-template-columns:repeat(3,minmax(0,1fr))}}\n.hp-crs{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:var(--s-2) var(--s-3);min-height:72px;padding:var(--s-3);\n  border:0;border-radius:var(--r-card);background:var(--surface);color:var(--ink);font:inherit;text-align:left;cursor:pointer;touch-action:manipulation;\n  box-shadow:inset 0 0 0 2px var(--line),0 5px 0 var(--ledge-soft);transition:transform var(--t-fast) var(--ease)}\n.hp-crs.on{box-shadow:inset 0 0 0 3px var(--disc),0 5px 0 var(--disc-shade)}\n.hp-cn{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--disc-tint);color:var(--disc-shade);\n  font-family:var(--font-display);font-size:var(--fs-4);font-weight:700}\n.hp-ci{display:flex;flex-direction:column;min-width:0;line-height:1.25}\n.hp-ci b{font-size:var(--fs-3)}.hp-ci span{font-size:var(--fs-2);color:var(--ink-2)}\n.hp-cr{display:flex;flex-direction:column;align-items:flex-end;gap:2px}\n.hp-md{display:grid;place-items:center;color:var(--ill-brown-1)}\n.hp-md.m2{color:var(--ill-grey-1)}.hp-md.m3{color:var(--star-shade)}\n.hp-go{display:grid;place-items:center;width:48px;height:48px;border-radius:50%;background:var(--disc);color:var(--surface);box-shadow:0 3px 0 var(--disc-shade)}\n.hp-crs.lock{background:var(--surface-2)}.hp-crs.lock .hp-go{background:var(--surface);color:var(--ink-3);box-shadow:inset 0 0 0 2px var(--line)}\n.hp-crs.lock .hp-cn{background:var(--surface);color:var(--ink-3)}\n.hp-trs{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:var(--s-2)}\n.hp-tr{display:flex;align-items:center;gap:var(--s-2);min-height:var(--tap);padding:var(--s-2) var(--s-3);border:0;border-radius:var(--r-pill);\n  background:var(--surface);color:var(--ink);font:inherit;font-size:var(--fs-2);font-weight:700;cursor:pointer;touch-action:manipulation;\n  box-shadow:inset 0 0 0 2px var(--line),0 3px 0 var(--ledge-soft);transition:transform var(--t-fast) var(--ease)}\n.hp-tr.on{box-shadow:inset 0 0 0 3px var(--good),0 3px 0 var(--good-ink)}\n.hp-tr.lock{background:var(--surface-2);color:var(--ink-3)}\n.hp-tr small{display:flex;align-items:center;margin-left:auto;font-size:var(--fs-1)}\n.hp-dot{flex:none;width:22px;height:22px;border-radius:50%;background:var(--ill-yellow);box-shadow:inset -3px -3px 0 var(--ill-yellow-2)}\n.hp-t-none{background:var(--surface-2);box-shadow:inset 0 0 0 2px var(--line)}\n.hp-t-pink{background:var(--ill-pink);box-shadow:inset -3px -3px 0 var(--ill-pink-2)}\n.hp-t-sky{background:var(--ill-aqua);box-shadow:inset -3px -3px 0 var(--ill-aqua-2)}\n.hp-t-leaf{background:var(--ill-green);box-shadow:inset -3px -3px 0 var(--ill-green-2)}\n.hp-t-grape{background:var(--ill-purple);box-shadow:inset -3px -3px 0 var(--ill-purple-2)}\n.hp-t-rainbow{background:conic-gradient(var(--ill-red),var(--ill-orange),var(--ill-yellow),var(--ill-green),var(--ill-blue),var(--ill-purple),var(--ill-red))}\n.hp-how{display:grid;gap:var(--s-2);margin:var(--s-4) 0;padding:0;list-style:none}\n@media (min-width:760px){.hp-how{grid-template-columns:1fr 1fr}}\n.hp-how li{display:flex;align-items:center;gap:var(--s-3);font-size:var(--fs-3);line-height:1.3;color:var(--ink)}\n.hp-hi{flex:none;display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:var(--disc-tint);color:var(--disc-shade)}\n\n/* ---- the course ---- */\n.hpg{position:fixed;inset:0;z-index:0;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;background:var(--sc-sky)}\n.hpg canvas{position:absolute;inset:0;width:100%;height:100%;display:block}\n.hp-msg{position:absolute;left:50%;top:22%;max-width:calc(100% - 32px);padding:var(--s-2) var(--s-5);border-radius:var(--r-pill);background:var(--surface);\n  color:var(--ink);font-family:var(--font-display);font-size:var(--fs-4);font-weight:700;text-align:center;pointer-events:none;box-shadow:0 4px 0 var(--ledge-soft);\n  opacity:0;transform:translate(-50%,-12px) scale(.9);transition:opacity var(--t) var(--ease),transform var(--t) var(--spring)}\n.hp-msg.on{opacity:1;transform:translate(-50%,0) scale(1)}\n.hp-msg.big{font-size:var(--fs-6);padding:var(--s-2) var(--s-6)}\n.hp-ctl{position:absolute;left:0;right:0;bottom:0;pointer-events:none}\n.hp-btn{position:absolute;bottom:calc(14px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;align-items:center;justify-content:center;\n  width:clamp(96px,14vw,124px);height:clamp(96px,14vw,124px);padding:0;border:0;border-radius:32px;background:var(--disc-tint);color:var(--disc-shade);\n  font:inherit;font-family:var(--font-display);font-size:var(--fs-3);font-weight:700;pointer-events:auto;touch-action:none;opacity:.92;\n  box-shadow:inset 0 0 0 3px var(--wash),0 6px 0 var(--disc-shade);transition:transform var(--t-fast) var(--ease)}\n.hp-btn .ic{width:44px;height:44px}\n.hp-btn.on{transform:translateY(5px) scale(.96);opacity:1}\n#hpj{right:14px;background:var(--disc);color:var(--surface)}\n#hpl{left:14px}#hpr{left:calc(28px + clamp(96px,14vw,124px))}\n@media (max-width:400px){.hp-free .hp-btn{width:96px;height:96px}.hp-free #hpr{left:118px}}\n.hp-offer{position:absolute;inset:0;z-index:3;display:grid;place-items:center;padding:var(--s-4);background:var(--dim)}\n.hp-offer[hidden]{display:none}\n.hp-ocard{display:flex;flex-direction:column;align-items:center;gap:var(--s-3);width:min(420px,100%);padding:var(--s-4) var(--s-5) var(--s-5);\n  border-radius:var(--r-hero);background:var(--surface);box-shadow:0 8px 0 var(--ledge-soft);text-align:center}\n.hp-obal{width:84px;height:auto}\n.hp-ocard p{margin:0;font-size:var(--fs-4);font-weight:700;line-height:1.3;color:var(--ink)}\n.hp-oacts{display:flex;flex-wrap:wrap;justify-content:center;gap:var(--s-3);width:100%}\n.hp-oacts .btn{flex:1 1 150px;min-height:64px}\n/* Snack Stand (G-04a; src/js/65-game-snack.js). Ships in games2.<VER>.js. Tokens only; motion is transform/opacity on --t-* tokens.\n   The menu (hero with the child's stand, places, Calm / Busy, give change), the stand shop, and the day: the place behind the stand,\n   the awning and sign, the customers with their order bubbles, the counter (Undo, the plate, Serve), the stations and the food. */\n\n/* ---- menu ---- */\n.sn-menu,.sn-shop{padding:var(--s-2) var(--s-4) var(--s-7)}\n.sn-menu>*,.sn-shop>*{max-width:1000px;margin-left:auto;margin-right:auto}\n.sn-h{display:flex;align-items:baseline;gap:var(--s-2);margin:var(--s-5) auto var(--s-3);font-size:var(--fs-4);color:var(--ink)}\n.sn-got{font-size:var(--fs-2);font-weight:400;color:var(--ink-2)}\n.sn-hero{display:flex;align-items:center;gap:var(--s-4);padding:var(--s-3) var(--s-4);border-radius:var(--r-hero);\n  background:linear-gradient(var(--gh-a),var(--gh-b) 72%,var(--sc-green) 73%);box-shadow:inset 0 0 0 2px var(--wash),0 5px 0 var(--sc-green-2)}\n.sn-hpic{flex:1 1 58%;min-width:0}.sn-hpic svg{display:block;width:100%;height:auto}\n.sn-hinfo{flex:1 1 42%;display:flex;flex-direction:column;gap:var(--s-3);align-items:stretch;min-width:0}\n.sn-hl{display:flex;align-items:center;gap:var(--s-2);margin:0;font-size:var(--fs-3);color:var(--ink)}\n.sn-hl .ic:not(.ic-coin),.sn-psub .ic{color:var(--star-shade)}\n@media (max-width:560px){.sn-hero{flex-direction:column;align-items:stretch}.sn-hpic{max-width:420px;margin:0 auto;width:100%}}\n.sn-places{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s-3)}\n@media (min-width:760px){.sn-places{grid-template-columns:repeat(5,minmax(0,1fr))}}\n.sn-place{display:flex;flex-direction:column;gap:var(--s-1);min-height:var(--tap);padding:var(--s-2);border:0;border-radius:var(--r-card);\n  background:var(--surface);color:var(--ink);font:inherit;text-align:left;cursor:pointer;touch-action:manipulation;\n  box-shadow:inset 0 0 0 2px var(--line),0 4px 0 var(--ledge-soft);transition:transform var(--t-fast) var(--ease)}\n.sn-place:active{transform:translateY(3px)}\n.sn-place.on{box-shadow:inset 0 0 0 3px var(--bt),0 4px 0 var(--bt-shade)}\n.sn-ppic{position:relative;display:block;aspect-ratio:2/1;border-radius:var(--r-btn);overflow:hidden;background:linear-gradient(var(--gh-a),var(--gh-b))}\n.sn-ppic svg{position:absolute;inset:0;width:100%;height:100%;display:block}\n.sn-place.lock .sn-ppic svg{opacity:.45}\n.sn-plock{position:absolute;inset:0;display:grid;place-items:center;color:var(--ink-2)}\n.sn-pname{font-size:var(--fs-3);font-weight:700;line-height:1.2}\n.sn-psub{display:flex;align-items:center;gap:var(--s-1);min-height:22px;font-size:var(--fs-2);color:var(--ink-2)}\n.sn-opts{margin-top:var(--s-2)}\n.sn-mode{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s-2) var(--s-4);margin-bottom:var(--s-3)}\n.sn-mode p{margin:0;flex:1 1 220px;font-size:var(--fs-2);color:var(--ink-2)}\n.sn-how{display:grid;gap:var(--s-2);margin:var(--s-4) 0;padding:0;list-style:none}\n@media (min-width:760px){.sn-how{grid-template-columns:1fr 1fr}}\n.sn-how li{display:flex;align-items:center;gap:var(--s-3);font-size:var(--fs-3);line-height:1.3;color:var(--ink)}\n.sn-hi{flex:none;display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:var(--bt-tint);color:var(--bt-shade)}\n\n/* ---- shop ---- */\n.sn-shero{position:relative;padding:var(--s-3);border-radius:var(--r-hero);background:linear-gradient(var(--gh-a),var(--gh-b) 72%,var(--sc-green) 73%);\n  box-shadow:inset 0 0 0 2px var(--wash),0 5px 0 var(--sc-green-2)}\n.sn-shero>svg{display:block;width:100%;max-width:560px;height:auto;margin:0 auto}\n.sn-buy{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:var(--s-2) var(--s-3);margin-top:var(--s-3);padding:var(--s-3);\n  border-radius:var(--r-card);background:var(--surface);box-shadow:inset 0 0 0 2px var(--bt),0 4px 0 var(--bt-shade)}\n.sn-bpic{width:72px;height:72px;display:grid;place-items:center}.sn-bpic svg{width:100%;height:100%}\n.sn-btxt p{margin:0;font-size:var(--fs-3);line-height:1.35;color:var(--ink)}.sn-btxt p+p{font-size:var(--fs-2);color:var(--ink-2)}\n.sn-btxt .ic{vertical-align:-4px}\n.sn-bacts{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:var(--s-2)}.sn-bacts .btn{flex:1 1 140px}\n.sn-note{margin:var(--s-3) auto 0;font-size:var(--fs-2);color:var(--ink-2)}\n.sn-items{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:var(--s-3)}\n.sn-item{display:flex;flex-direction:column;align-items:center;gap:var(--s-1);min-height:var(--tap);padding:var(--s-2);border:0;border-radius:var(--r-card);\n  background:var(--surface);color:var(--ink);font:inherit;cursor:pointer;touch-action:manipulation;box-shadow:inset 0 0 0 2px var(--line),0 4px 0 var(--ledge-soft);\n  transition:transform var(--t-fast) var(--ease)}\n.sn-item:active{transform:translateY(3px)}\n.sn-item.on{box-shadow:inset 0 0 0 3px var(--good),0 4px 0 var(--good-ink)}\n.sn-item.sel{box-shadow:inset 0 0 0 3px var(--bt),0 4px 0 var(--bt-shade)}\n.sn-ipic{display:grid;place-items:center;width:100%;height:64px}.sn-ipic svg{max-width:100%;height:64px}\n.sn-iname{font-size:var(--fs-2);font-weight:700;line-height:1.2;text-align:center}\n.sn-iprice{display:flex;align-items:center;gap:2px;font-size:var(--fs-2);color:var(--ink-2)}\n.sn-item.on .sn-iprice{color:var(--good-ink)}\n\n/* ---- the day: the scene, the counter, the controls ---- */\n.sn{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;user-select:none;-webkit-user-select:none;background:var(--ill-brown-2)}\n.sn-scene{position:relative;flex:1 1 0;min-height:150px;overflow:hidden;background:linear-gradient(var(--gh-a),var(--gh-b))}\n.sn-back{position:absolute;inset:0;width:100%;height:100%;display:block}\n.sn-scene::before,.sn-scene::after{content:'';position:absolute;bottom:0;top:40px;width:14px;z-index:1;\n  background:linear-gradient(90deg,var(--ill-brown-1),var(--ill-brown) 40%,var(--ill-brown-2))}\n.sn-scene::before{left:6px}.sn-scene::after{right:6px}\n.sn-awnw{position:absolute;left:0;right:0;top:0;height:52px;z-index:2}\n.sn-awn{display:block;width:100%;height:52px}\n.sn-bunt{position:absolute;left:0;right:0;top:48px;height:24px;z-index:2}.sn-bunt svg{display:block;width:100%;height:100%}\n.sn-sign{position:absolute;top:14px;left:50%;z-index:3;display:grid;min-width:150px;padding:5px 16px;border-radius:10px;transform:translateX(-50%);\n  background:var(--ill-brown-2);color:var(--ill-white);font-family:var(--font-display);font-size:var(--fs-3);font-weight:700;text-align:center;line-height:1.2;\n  box-shadow:inset 0 2px 0 var(--ill-brown),inset 0 -3px 0 var(--ill-brown-3),0 3px 0 var(--shadow-ink);transition:transform var(--t-slow) var(--ease)}\n.sn-sign>span{grid-area:1/1;transition:opacity var(--t) var(--ease)}\n.sn-sign .sn-sb{opacity:0}\n.sn-sign.shut{animation:sn-flip var(--t-slow) var(--ease)}\n.sn-sign.shut .sn-sf{opacity:0}.sn-sign.shut .sn-sb{opacity:1}\n.sn-s-star{background:var(--ill-yellow);color:var(--ill-brown-3);box-shadow:inset 0 2px 0 var(--ill-yellow-1),inset 0 -3px 0 var(--ill-yellow-3),0 3px 0 var(--shadow-ink)}\n.sn-s-heart{background:var(--ill-pink);color:var(--ill-white);box-shadow:inset 0 2px 0 var(--ill-pink-1),inset 0 -3px 0 var(--ill-pink-3),0 3px 0 var(--shadow-ink)}\n.sn-s-lights{background:var(--ill-purple-2);color:var(--ill-yellow-1);\n  box-shadow:inset 0 0 0 3px var(--ill-yellow-1),inset 0 -3px 0 var(--ill-purple-3),0 3px 0 var(--shadow-ink)}\n@keyframes sn-flip{0%{transform:translateX(-50%) rotateX(0)}50%{transform:translateX(-50%) rotateX(90deg)}100%{transform:translateX(-50%) rotateX(0)}}\n.sn-deco,.sn-bird{position:absolute;z-index:1;pointer-events:none}.sn-deco svg,.sn-bird svg{display:block;width:100%;height:auto}\n.sn-d-flowers{left:22px;bottom:0;width:58px}\n.sn-d-board{left:78px;bottom:0;width:58px}\n.sn-d-balloons{left:20px;top:78px;width:62px}\n.sn-d-plant{right:22px;bottom:0;width:66px}\n.sn-d-jar{right:88px;bottom:0;width:40px}\n.sn-d-bell{right:130px;bottom:0;width:38px}\n.sn-d-lantern{right:30px;top:52px;width:40px}\n.sn-bird{right:16%;top:-14px;width:46px;z-index:3}\n.sn-msg{position:absolute;left:50%;bottom:8px;z-index:6;max-width:calc(100% - 32px);padding:var(--s-2) var(--s-4);border-radius:var(--r-pill);\n  background:var(--surface);color:var(--ink);font-size:var(--fs-3);font-weight:700;text-align:center;line-height:1.25;\n  box-shadow:inset 0 0 0 2px var(--line),0 4px 0 var(--ledge-soft);opacity:0;transform:translate(-50%,8px);pointer-events:none;\n  transition:opacity var(--t) var(--ease),transform var(--t) var(--ease)}\n.sn-msg.on{opacity:1;transform:translate(-50%,0)}\n.sn-msg.good{background:var(--good-tint);color:var(--good-ink);box-shadow:inset 0 0 0 2px var(--good),0 4px 0 var(--good)}\n.sn-msg.try{background:var(--try-tint);color:var(--try-ink);box-shadow:inset 0 0 0 2px var(--try),0 4px 0 var(--try)}\n\n/* customers: the order bubble over (or beside) the animal; the animal stands behind the counter */\n.sn-line{position:absolute;left:0;right:0;bottom:0;z-index:4;display:flex;justify-content:center;align-items:flex-end;gap:var(--s-2);padding:0 26px}\n.sn-cu{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;animation:sn-in var(--t-slow) var(--spring)}\n@keyframes sn-in{from{opacity:0;transform:translateX(40px)}}\n.sn-bub{position:relative;display:grid;grid-template-columns:repeat(3,48px);gap:4px;padding:6px;border-radius:18px;background:var(--surface);\n  box-shadow:inset 0 0 0 2px var(--line),0 4px 0 var(--shadow-ink)}\n.sn-bub::after{content:'';position:absolute;left:50%;bottom:-9px;width:16px;height:16px;margin-left:-8px;background:var(--surface);\n  transform:rotate(45deg);box-shadow:2px 2px 0 var(--line);z-index:-1}\n.sn-bub.n1{grid-template-columns:48px}.sn-bub.n2,.sn-bub.n4{grid-template-columns:repeat(2,48px)}\n.sn-oi{position:relative;display:block;width:48px;height:48px;border-radius:10px;background:var(--surface-2)}\n.sn-oi>svg{display:block;width:100%;height:100%}\n.sn-oi.ok{background:var(--good-tint)}\n.sn-oi>i{position:absolute;right:-4px;top:-4px;display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--good);color:var(--surface);\n  animation:sn-pop var(--t) var(--spring)}\n.sn-oi.look{animation:sn-look var(--t-shake) var(--ease) 2}\n@keyframes sn-pop{from{transform:scale(0)}}\n@keyframes sn-look{50%{transform:translateY(-6px) scale(1.08)}}\n.sn-bub.yum{display:flex;align-items:center;gap:6px;padding:8px 12px;color:var(--ill-pink-2);font-weight:700;font-size:var(--fs-2);white-space:nowrap}\n.sn-bub.yum span{color:var(--ink)}\n.sn-heart{display:flex;align-items:center;gap:4px;color:var(--ill-pink-2)}\n.sn-hbar{display:block;width:64px;height:10px;border-radius:5px;background:var(--surface);box-shadow:inset 0 0 0 2px var(--ill-pink-1);overflow:hidden}\n.sn-hbar i{display:block;height:100%;background:var(--ill-pink);transform-origin:left center;transition:transform var(--t) linear}\n.sn-heart.out{color:var(--ink-3)}.sn-heart.out .sn-hbar{box-shadow:inset 0 0 0 2px var(--line)}\n.sn-an{display:block;width:96px;height:96px;margin-bottom:-14px;padding:0;border:0;background:none;cursor:pointer;touch-action:manipulation;border-radius:50%}\n.sn-an svg{display:block;width:100%;height:100%}\n.sn-cu.sel .sn-bub{box-shadow:inset 0 0 0 3px var(--bt),0 4px 0 var(--bt-shade)}\n.sn-cu.happy .sn-an{animation:sn-hop var(--t-slow) var(--ease) 2}\n@keyframes sn-hop{50%{transform:translateY(-14px)}}\n.sn-line.big .sn-an{width:124px;height:124px}\n.sn-line.big .sn-bub{grid-template-columns:repeat(3,58px)}\n.sn-line.big .sn-bub.n1{grid-template-columns:58px}.sn-line.big .sn-bub.n2{grid-template-columns:repeat(2,58px)}\n.sn-line.big .sn-oi{width:58px;height:58px}\n@media (min-height:720px){\n  .sn-line.big .sn-an{width:140px;height:140px;margin-bottom:-18px}\n  .sn-line.big .sn-bub{grid-template-columns:repeat(3,64px);gap:6px;padding:8px}\n  .sn-line.big .sn-bub.n1{grid-template-columns:64px}.sn-line.big .sn-bub.n2{grid-template-columns:repeat(2,64px)}\n  .sn-line.big .sn-oi{width:64px;height:64px}\n  .sn-plate{height:128px}\n}\n\n@media (min-height:880px) and (min-width:560px){\n  .sn-line.big .sn-an{width:190px;height:190px;margin-bottom:-24px}\n  .sn-line.big .sn-bub{grid-template-columns:repeat(3,84px)}\n  .sn-line.big .sn-bub.n1{grid-template-columns:84px}.sn-line.big .sn-bub.n2{grid-template-columns:repeat(2,84px)}\n  .sn-line.big .sn-oi{width:84px;height:84px}\n  .sn-an{width:124px;height:124px}\n  .sn-bub{grid-template-columns:repeat(3,60px)}.sn-bub.n1{grid-template-columns:60px}.sn-bub.n2,.sn-bub.n4{grid-template-columns:repeat(2,60px)}\n  .sn-oi{width:60px;height:60px}\n  .sn-plate{height:150px}\n}\n/* short landscape screens: the bubble beside the animal */\n@media (min-aspect-ratio:4/3) and (max-height:700px){\n  .sn-cu{flex-direction:row-reverse;align-items:flex-end;gap:10px}\n  .sn-cu .sn-heart{position:absolute;margin:0 0 -2px}\n  .sn-cu{position:relative}\n  .sn-bub{margin-bottom:22px}\n  .sn-bub::after{left:-6px;bottom:22px;margin:0;box-shadow:-2px 2px 0 var(--line)}\n  .sn-cu .sn-heart{left:6px;top:-18px}\n  .sn-line{gap:var(--s-5)}\n  .sn-line.big .sn-an{width:110px;height:110px}\n}\n\n/* the counter: Undo, the plate, Serve */\n.sn-counter{position:relative;z-index:5;flex:none;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:var(--s-2);\n  padding:10px var(--s-3) 8px;background:linear-gradient(var(--ill-brown-1) 0 8px,var(--ill-tan-1) 8px);box-shadow:0 -2px 0 var(--ill-brown-2)}\n.sn-undo,.sn-serve{min-width:80px;min-height:64px;flex-direction:column;gap:2px;padding:6px 10px}\n.sn-serve{min-width:92px}\n.sn-plate{position:relative;height:96px;display:grid;place-items:end center}\n.sn-plsvg{display:block;width:100%;height:100%}\n.sn-plate.bump .sn-plsvg{animation:sn-bump var(--t) var(--spring)}\n@keyframes sn-bump{50%{transform:scale(1.05)}}\n.sn-ph{position:absolute;left:0;right:0;top:30%;text-align:center;font-size:var(--fs-2);color:var(--ink-2)}\n.sn-ctl,.sn-till{position:relative;z-index:5;flex:none;display:flex;flex-direction:column;gap:var(--s-2);padding:var(--s-2) var(--s-3) var(--s-3);\n  background:repeating-linear-gradient(90deg,var(--ill-brown) 0 58px,var(--ill-brown-2) 58px 60px)}\n.sn-c-mint .sn-ctl,.sn-c-mint .sn-till{background:var(--ill-aqua);background-image:linear-gradient(var(--ill-aqua-2) 2px,transparent 2px),\n  linear-gradient(90deg,var(--ill-aqua-2) 2px,transparent 2px);background-size:40px 40px}\n.sn-c-candy .sn-ctl,.sn-c-candy .sn-till{background:repeating-linear-gradient(110deg,var(--ill-pink) 0 22px,var(--ill-white-2) 22px 44px)}\n.sn-ctl[hidden],.sn-till[hidden]{display:none}\n.sn-tabs{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));gap:6px;max-width:640px;width:100%;margin:0 auto}\n.sn-tab{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-height:64px;padding:4px 2px;border:0;\n  border-radius:var(--r-btn);background:var(--wash);color:var(--ink);font:inherit;font-size:var(--fs-2);font-weight:700;line-height:1.1;cursor:pointer;\n  touch-action:manipulation;box-shadow:0 3px 0 var(--shadow-ink);transition:transform var(--t-fast) var(--ease)}\n.sn-tab:active{transform:translateY(3px)}\n.sn-tpic{width:34px;height:34px}.sn-tpic svg{display:block}\n.sn-tab[aria-selected=\"true\"]{background:var(--surface);box-shadow:inset 0 0 0 3px var(--bt),0 3px 0 var(--bt-shade)}\n.sn-dot{position:absolute;right:6px;top:6px;width:12px;height:12px;border-radius:50%;background:var(--good);opacity:0;transform:scale(.4);\n  transition:opacity var(--t) var(--ease),transform var(--t) var(--spring)}\n.sn-tab.ready .sn-dot{opacity:1;transform:none}\n.sn-ings{display:flex;justify-content:center;gap:6px}\n.sn-ing{flex:0 1 96px;min-width:64px}.sn-pan{flex:0 1 128px;min-width:96px}\n.sn-ing,.sn-pan{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;min-height:80px;padding:4px 2px;border:0;\n  border-radius:var(--r-btn);background:var(--surface);color:var(--ink);font:inherit;cursor:pointer;touch-action:none;\n  box-shadow:inset 0 0 0 2px var(--line),0 4px 0 var(--shadow-ink);transition:transform var(--t-fast) var(--ease)}\n.sn-ing:active,.sn-pan:active{transform:translateY(3px)}\n.sn-ipc{width:52px;height:52px}.sn-ipc svg{display:block}\n.sn-pan svg{width:60px;height:56px}\n.sn-pan[data-q=\"gold\"]{box-shadow:inset 0 0 0 3px var(--good),0 4px 0 var(--good-ink)}\n.sn-in{font-size:var(--fs-2);font-weight:700;line-height:1.1;text-align:center}\n.sn-ghost{position:fixed;left:0;top:0;z-index:50;width:72px;height:72px;pointer-events:none}\n.sn-ghost svg{display:block}\n@media (max-height:620px){\n  .sn-plate{height:84px}\n  .sn-counter{padding-top:8px;padding-bottom:4px}\n  .sn-tab{min-height:64px}\n  .sn-ing,.sn-pan{min-height:72px}\n  .sn-ipc{width:44px;height:44px}\n  .sn-ctl{gap:6px;padding-top:6px;padding-bottom:var(--s-2)}\n}\n@media (min-width:900px){.sn-ing{flex-basis:112px}}\n\n/* give change: the till */\n.sn-till{align-items:center}\n.sn-tq{margin:0;padding:var(--s-2) var(--s-3);border-radius:var(--r-btn);background:var(--surface);font-size:var(--fs-3);line-height:1.3;text-align:center;color:var(--ink)}\n.sn-tray{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:4px;min-height:48px;padding:4px var(--s-3);border-radius:var(--r-pill);background:var(--wash)}\n.sn-tc{position:relative;width:40px;height:40px}.sn-tc svg{display:block;width:100%;height:100%}\n.sn-tc b,.sn-coin b{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--font-display);color:var(--ill-brown-3)}\n.sn-tc b{font-size:var(--fs-2)}\n.sn-tph{font-size:var(--fs-2);color:var(--ink)}\n.sn-tsum{margin-left:var(--s-2);font-size:var(--fs-3);color:var(--ink)}\n.sn-tbtns{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}\n.sn-coin{position:relative;width:64px;height:64px;padding:0;border:0;border-radius:50%;background:none;cursor:pointer;touch-action:manipulation;\n  transition:transform var(--t-fast) var(--ease)}\n.sn-coin:active{transform:translateY(3px)}\n.sn-coin svg{display:block;width:100%;height:100%}.sn-coin b{font-size:var(--fs-4);padding-bottom:4px}\n.sn-tundo,.sn-give{min-height:64px;flex-direction:column;gap:2px;padding:6px 12px}\n\n/* top-bar chips */\n.sn-cust{grid-area:2/1;display:block;font-family:var(--font-body);font-size:var(--fs-2);font-weight:400;opacity:.92}\n\n/* P6-01: a customer at the edge of the scene keeps its whole focus ring (the scene clips) */\n.sn-an:focus-visible{outline-offset:-4px}\n";document.head.appendChild(s)})(); // its src/css, after index.html's own CSS (the cascade order of a build without parts)
+/* Star School games2 v159. BUILT by tools/build.py from 49-game-race.css, 49-game-skyhop.css, 49-game-snack.css, 63-game-race.js, 65-game-snack.js, 67-game-skyhop.js: never edit by hand.
+   index.html v159 loads this file on demand (partsThen in src/js/90-app.js, P6-02), after data.v159.js. */
+(function(){var s=document.createElement('style');s.id='css-games2';s.textContent="/* Star Rally, the racing game (G-02, G-02b; src/js/63-game-race.js). Ships in games2.<VER>.js. Tokens only; motion is\n   transform/opacity. The menu (next goal, cups, single races and time trials, rivals, how to drive), the garage with upgrades, the\n   race: a full-screen canvas under the shared top bar (.gh-hud), big steer buttons, a message bubble and the boost-gate question;\n   the cup standings on the end card. */\n\n/* ---- menu ---- */\n.rl-menu,.rl-gar{padding:var(--s-2) var(--s-4) var(--s-7)}\n.rl-menu>*,.rl-gar>*{max-width:1000px;margin-left:auto;margin-right:auto}\n.rl-h{margin:var(--s-5) auto var(--s-3);font-size:var(--fs-4);color:var(--ink)}\n.rl-hero{display:flex;align-items:center;gap:var(--s-4);padding:var(--s-3) var(--s-4);border-radius:var(--r-hero);\n  background:linear-gradient(var(--sc-sky-1),var(--sc-sky) 70%,var(--sc-green) 71%);box-shadow:inset 0 0 0 2px var(--wash),0 5px 0 var(--sc-green-2)}\n.rl-hcar{flex:1 1 50%;max-width:260px}.rl-hcar svg{display:block;width:100%;height:auto}\n.rl-hinfo{flex:1 1 50%;display:flex;flex-direction:column;gap:var(--s-3);align-items:stretch}\n.rl-hl{display:flex;align-items:center;gap:var(--s-2);margin:0;font-size:var(--fs-3);color:var(--ink)}\n.rl-hl .ic,.rl-psub .ic,.rl-iprice .ic.rs-f{color:var(--star-shade)}\n.rl-places{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s-3)}\n@media (min-width:760px){.rl-places{grid-template-columns:repeat(4,minmax(0,1fr))}}\n.rl-place{display:flex;flex-direction:column;gap:var(--s-1);min-height:var(--tap);padding:var(--s-2);border:0;border-radius:var(--r-card);\n  background:var(--surface);color:var(--ink);font:inherit;text-align:left;cursor:pointer;touch-action:manipulation;\n  box-shadow:inset 0 0 0 2px var(--line),0 4px 0 var(--ledge-soft);transition:transform var(--t-fast) var(--ease)}\n.rl-place:active{transform:translateY(3px)}\n.rl-place.on{box-shadow:inset 0 0 0 3px var(--math),0 4px 0 var(--math-shade)}\n.rl-ppic{position:relative;display:block;aspect-ratio:240/100;border-radius:var(--r-btn);overflow:hidden;background:linear-gradient(var(--gh-a),var(--gh-b))}\n.rl-ppic svg{position:absolute;inset:0;width:100%;height:100%;display:block}\n.rl-place.lock .rl-ppic svg{opacity:.45}\n.rl-plock{position:absolute;inset:0;display:grid;place-items:center;color:var(--ink-2)}\n.rl-pname{font-size:var(--fs-3);font-weight:700;line-height:1.2}\n.rl-psub{display:flex;align-items:center;gap:var(--s-1);font-size:var(--fs-2);color:var(--ink-2)}\n.rl-trks{display:grid;gap:var(--s-3)}\n@media (min-width:760px){.rl-trks{grid-template-columns:repeat(2,minmax(0,1fr))}}\n.rl-trk{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:var(--s-3);min-height:72px;padding:var(--s-3);\n  border:0;border-radius:var(--r-card);background:var(--surface);color:var(--ink);font:inherit;text-align:left;cursor:pointer;touch-action:manipulation;\n  box-shadow:inset 0 0 0 2px var(--line),0 5px 0 var(--ledge-soft);transition:transform var(--t-fast) var(--ease)}\n.rl-trk:active{transform:translateY(4px)}\n.rl-tn{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--math-tint);color:var(--math-shade);\n  font-family:var(--font-display);font-size:var(--fs-4);font-weight:700}\n.rl-ti{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:0;line-height:1.25}\n.rl-ti b{font-size:var(--fs-3)}.rl-ti span{font-size:var(--fs-2);color:var(--ink-2)}\n.rl-go{display:grid;place-items:center;width:48px;height:48px;border-radius:50%;background:var(--math);color:var(--surface);box-shadow:0 3px 0 var(--math-shade)}\n.rl-trk.lock{background:var(--surface-2)}.rl-trk.lock .rl-go{background:var(--surface);color:var(--ink-3);box-shadow:inset 0 0 0 2px var(--line)}\n.rl-trk.lock .rl-tn{background:var(--surface);color:var(--ink-3)}\n.rl-rivals{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:var(--s-2)}\n.rl-rv{display:flex;flex-direction:column;align-items:center;text-align:center;line-height:1.2}\n.rl-rv svg{width:min(76px,100%);height:auto}.rl-rv b{font-size:var(--fs-2)}.rl-rv span{font-size:var(--fs-2);color:var(--ink-2)}\n.rl-opts{margin-top:var(--s-2)}\n.rl-mode{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s-2) var(--s-4)}\n.rl-mode p{margin:0;flex:1 1 220px;font-size:var(--fs-2);color:var(--ink-2)}\n.rl-how{display:grid;gap:var(--s-2);margin:var(--s-4) 0;padding:0;list-style:none}\n@media (min-width:760px){.rl-how{grid-template-columns:1fr 1fr}}\n.rl-how li{display:flex;align-items:center;gap:var(--s-3);font-size:var(--fs-3);line-height:1.3;color:var(--ink)}\n.rl-hi{flex:none;display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:var(--math-tint);color:var(--math-shade)}\n.rl-opts .switch{margin-top:var(--s-3)}\n.stat.rl-spk .ic,.stat.rl-pos .ic{color:var(--star-shade);--ic2:var(--star-tint)}\n.stat.rl-lap .ic{color:var(--math-shade)}\n\n/* G-02b: the next goal, cups, time trial buttons, cup standings, upgrades */\n.rl-goal{display:flex;align-items:center;gap:var(--s-3);margin-top:var(--s-4);margin-bottom:0;padding:var(--s-3) var(--s-4);border-radius:var(--r-card);\n  background:var(--surface);color:var(--ink);font-size:var(--fs-3);line-height:1.3;box-shadow:inset 0 0 0 2px var(--math-tint),0 4px 0 var(--ledge-soft)}\n.rl-goal .rl-hi{width:44px;height:44px}\n.rl-cups{display:grid;gap:var(--s-3)}\n@media (min-width:760px){.rl-cups{grid-template-columns:repeat(2,minmax(0,1fr))}}\n.rl-cup{display:grid;grid-template-columns:76px minmax(0,1fr) auto;align-items:center;gap:var(--s-3);min-height:96px;padding:var(--s-3);border:0;\n  border-radius:var(--r-card);background:var(--surface);color:var(--ink);font:inherit;text-align:left;cursor:pointer;touch-action:manipulation;\n  box-shadow:inset 0 0 0 2px var(--line),0 5px 0 var(--ledge-soft);transition:transform var(--t-fast) var(--ease)}\n.rl-cup:active{transform:translateY(4px)}\n.rl-cup.won{box-shadow:inset 0 0 0 3px var(--star),0 5px 0 var(--star-shade)}\n.rl-cpic{position:relative;display:grid;place-items:center;width:76px;height:76px;border-radius:var(--r-btn);background:var(--surface-2)}\n.rl-cpic svg{width:64px;height:64px}\n.rl-cup.lock{background:var(--surface-2)}.rl-cup.lock .rl-cpic svg{opacity:.35}\n.rl-cup.lock .rl-go{background:var(--surface);color:var(--ink-3);box-shadow:inset 0 0 0 2px var(--line)}\n.rl-ci{display:flex;flex-direction:column;gap:2px;min-width:0;line-height:1.25}\n.rl-ci b{font-size:var(--fs-4)}.rl-ci span{font-size:var(--fs-2);color:var(--ink-2)}.rl-ci .rl-cs{color:var(--ink);font-weight:700}\n.rl-h3{margin:var(--s-4) auto var(--s-3);font-size:var(--fs-3);color:var(--ink)}\n.rl-trow{display:flex;gap:var(--s-2);min-width:0}.rl-trow .rl-trk{flex:1 1 auto;min-width:0}\n.rl-tt{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:84px;min-height:72px;padding:var(--s-1);border:0;\n  border-radius:var(--r-card);background:var(--surface);color:var(--math-shade);font:inherit;font-size:var(--fs-2);font-weight:700;line-height:1.1;text-align:center;\n  cursor:pointer;touch-action:manipulation;box-shadow:inset 0 0 0 2px var(--line),0 5px 0 var(--ledge-soft);transition:transform var(--t-fast) var(--ease)}\n.rl-tt:active{transform:translateY(4px)}\n.rl-sth{margin:var(--s-2) 0 var(--s-1);font-size:var(--fs-2);font-weight:700;color:var(--ink-2)}\n.rl-stand{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s-1) var(--s-2);margin:0;padding:0;list-style:none;text-align:left}\n.rl-stand li{display:grid;grid-template-columns:auto 30px minmax(0,1fr);grid-template-rows:auto auto;column-gap:var(--s-1);align-items:center;padding:2px var(--s-2);\n  border-radius:var(--r-btn);background:var(--surface-2);line-height:1.15}\n.rl-stand li.me{background:var(--star-tint);box-shadow:inset 0 0 0 2px var(--star)}\n.rl-stand .rl-sn{grid-row:1/span 2;font-family:var(--font-display);font-size:var(--fs-3);font-weight:700;color:var(--ink-2)}\n.rl-stand svg{grid-row:1/span 2;width:30px;height:32px}\n.rl-stand b{font-size:var(--fs-2);color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rl-stand span:last-child{font-size:var(--fs-2);color:var(--ink-2)}\n.rl-epic{display:grid;place-items:center;width:100%;height:100%}.rl-etro{height:90%;width:auto}\n.rl-ups{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}\n.rl-upic{display:grid;place-items:center;color:var(--math-shade)}.rl-upic .ic{width:36px;height:36px}\n.rl-pips{display:flex;gap:4px}.rl-pips i{width:14px;height:14px;border-radius:50%;background:var(--surface-2);box-shadow:inset 0 0 0 2px var(--line)}\n.rl-pips i.on{background:var(--good);box-shadow:none}\n.rl-iwhat{font-size:var(--fs-2);color:var(--ink-2);text-align:center;line-height:1.2}\n\n/* ---- garage ---- */\n.rl-gcar{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:var(--s-3) var(--s-5);padding:var(--s-4);border-radius:var(--r-hero);\n  background:linear-gradient(var(--gh-a),var(--gh-b))}\n.rl-gcar .rl-big{width:min(300px,80%);height:auto}\n.rl-buy{flex:1 1 260px;max-width:420px;padding:var(--s-3) var(--s-4);border-radius:var(--r-card);background:var(--surface);box-shadow:inset 0 0 0 2px var(--line)}\n.rl-buy p{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s-1);margin:0 0 var(--s-2);font-size:var(--fs-3);color:var(--ink)}\n.rl-buy p+p{font-size:var(--fs-2);color:var(--ink-2)}\n.rl-buy .ic{color:var(--star-shade)}\n.rl-bacts{display:flex;flex-wrap:wrap;gap:var(--s-2)}\n.rl-items{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:var(--s-3)}\n.rl-item{display:flex;flex-direction:column;align-items:center;gap:2px;min-height:var(--tap);padding:var(--s-2);border:0;border-radius:var(--r-card);\n  background:var(--surface);color:var(--ink);font:inherit;cursor:pointer;touch-action:manipulation;box-shadow:inset 0 0 0 2px var(--line),0 4px 0 var(--ledge-soft);\n  transition:transform var(--t-fast) var(--ease)}\n.rl-item:active{transform:translateY(3px)}\n.rl-item.on{box-shadow:inset 0 0 0 3px var(--good),0 4px 0 var(--good-ink)}\n.rl-ipic{display:block;width:64px;height:48px}.rl-ipic svg{width:100%;height:100%}\n.rl-iname{font-size:var(--fs-2);font-weight:700;text-align:center;line-height:1.2}\n.rl-iprice{display:flex;align-items:center;gap:2px;font-size:var(--fs-2);color:var(--ink-2)}\n.rl-iprice .ic{color:var(--star-shade)}.rl-item.on .rl-iprice{color:var(--good-ink)}.rl-item.on .rl-iprice .ic{color:var(--good)}\n.rl-note{margin:var(--s-2) auto 0;font-size:var(--fs-2);color:var(--ink-2)}\n\n/* ---- the race ---- */\n.rl{position:fixed;inset:0;z-index:0;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;background:var(--sc-sky)}\n.rl canvas{position:absolute;inset:0;width:100%;height:100%;display:block}\n.rl-msg{position:absolute;left:50%;top:28%;padding:var(--s-2) var(--s-5);border-radius:var(--r-pill);background:var(--surface);color:var(--ink);\n  font-family:var(--font-display);font-size:var(--fs-5);font-weight:700;width:max-content;max-width:calc(100% - 32px);text-align:center;line-height:1.2;pointer-events:none;box-shadow:0 4px 0 var(--ledge-soft);\n  opacity:0;transform:translate(-50%,-12px) scale(.9);transition:opacity var(--t) var(--ease),transform var(--t) var(--spring)}\n.rl-msg.on{opacity:1;transform:translate(-50%,0) scale(1)}\n.rl-msg.big{font-size:var(--fs-7);padding:var(--s-2) var(--s-6)}\n.rl-q{position:absolute;left:50%;top:84px;transform:translateX(-50%);padding:var(--s-2) var(--s-5);border-radius:var(--r-pill);background:var(--bt);\n  color:var(--surface);font-family:var(--font-display);font-size:var(--fs-6);font-weight:700;white-space:nowrap;pointer-events:none;box-shadow:0 4px 0 var(--bt-shade)}\n.rl-q[hidden]{display:none}\n.rl-ctl{position:absolute;left:0;right:0;bottom:0;pointer-events:none}\n.rl-btn{position:absolute;bottom:calc(14px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;align-items:center;justify-content:center;\n  width:clamp(96px,15vw,132px);height:clamp(96px,15vw,132px);padding:0;border:0;border-radius:32px;background:var(--surface);color:var(--math-shade);\n  font:inherit;font-family:var(--font-display);font-size:var(--fs-4);font-weight:700;pointer-events:auto;touch-action:none;opacity:.92;\n  box-shadow:inset 0 0 0 3px var(--wash),0 6px 0 var(--math-shade);transition:transform var(--t-fast) var(--ease)}\n.rl-btn .ic{width:56px;height:56px}\n.rl-btn.on{transform:translateY(5px) scale(.96);opacity:1}\n#rll{left:14px}#rlr{right:14px}\n.rl-pro #rlr{left:calc(28px + clamp(96px,15vw,132px));right:auto}\n.rl-pro #rlgo{right:14px;background:var(--play-shade);color:var(--surface);box-shadow:inset 0 0 0 3px var(--wash),0 6px 0 var(--play-deep)}\n.rl-pro #rlgo .ic{width:44px;height:44px}\n@media (max-width:420px){.rl-pro .rl-btn{width:96px;height:96px}.rl-pro #rlr{left:118px}}\n/* Sky Hop (G-04b; src/js/67-game-skyhop.js). Ships in games2.<VER>.js. Tokens only; motion is transform/opacity on --t-* tokens.\n   The menu (the child's pet on a cloud, One-touch / Free move, the worlds, the courses, sparkle trails) and the course: a full-screen\n   canvas under the shared top bar (.gh-hud), big hop and walk buttons, a message bubble and the helper balloon's question. */\n\n/* ---- menu ---- */\n.hp-menu{padding:var(--s-2) var(--s-4) var(--s-7)}\n.hp-menu>*{max-width:1000px;margin-left:auto;margin-right:auto}\n.hp-h{margin:var(--s-5) auto var(--s-3);font-size:var(--fs-4);color:var(--ink)}\n.hp-hero{display:flex;align-items:center;gap:var(--s-4);padding:var(--s-3) var(--s-4);border-radius:var(--r-hero);\n  background:linear-gradient(var(--gh-a),var(--gh-b));box-shadow:inset 0 0 0 2px var(--wash),0 5px 0 var(--disc-shade)}\n.hp-hpet{position:relative;flex:1 1 45%;max-width:280px;margin:0 auto;padding-bottom:var(--s-2)}\n.hp-pet{position:relative;z-index:1;display:block;width:62%;margin:0 auto -12%}\n.hp-pet svg{display:block;width:100%;height:auto}\n.hp-hcl{display:block;width:100%;height:auto}\n.hp-hinfo{flex:1 1 55%;display:flex;flex-direction:column;gap:var(--s-3);align-items:stretch;min-width:0}\n.hp-hl{display:flex;align-items:center;gap:var(--s-2);margin:0;font-size:var(--fs-3);color:var(--ink)}\n.hp-hl .ic,.hp-wsub .ic,.hp-tr small .ic{color:var(--star-shade)}\n@media (max-width:560px){.hp-hero{flex-direction:column;align-items:stretch}.hp-hpet{width:60%}}\n.hp-mode{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s-2) var(--s-4)}\n.hp-mode p{margin:0;flex:1 1 220px;font-size:var(--fs-2);color:var(--ink-2)}\n.hp-worlds{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s-3)}\n@media (min-width:760px){.hp-worlds{grid-template-columns:repeat(4,minmax(0,1fr))}}\n.hp-world{display:flex;flex-direction:column;gap:var(--s-1);min-height:var(--tap);padding:var(--s-2);border:0;border-radius:var(--r-card);\n  background:var(--surface);color:var(--ink);font:inherit;text-align:left;cursor:pointer;touch-action:manipulation;\n  box-shadow:inset 0 0 0 2px var(--line),0 4px 0 var(--ledge-soft);transition:transform var(--t-fast) var(--ease)}\n.hp-world:active,.hp-crs:active,.hp-tr:active{transform:translateY(3px)}\n.hp-world.on{box-shadow:inset 0 0 0 3px var(--disc),0 4px 0 var(--disc-shade)}\n.hp-wpic{position:relative;display:block;aspect-ratio:12/5;border-radius:var(--r-btn);overflow:hidden;background:linear-gradient(var(--gh-a),var(--gh-b))}\n.hp-wpic svg{position:absolute;inset:0;width:100%;height:100%;display:block}\n.hp-world.lock .hp-wpic svg{opacity:.45}\n.hp-wlock{position:absolute;inset:0;display:grid;place-items:center;color:var(--ink-2)}\n.hp-wname{font-size:var(--fs-3);font-weight:700;line-height:1.2}\n.hp-wsub{display:flex;align-items:center;gap:var(--s-1);min-height:22px;font-size:var(--fs-2);color:var(--ink-2)}\n.hp-crss{display:grid;gap:var(--s-3)}\n@media (min-width:700px){.hp-crss{grid-template-columns:repeat(2,minmax(0,1fr))}}\n@media (min-width:980px){.hp-crss{grid-template-columns:repeat(3,minmax(0,1fr))}}\n.hp-crs{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:var(--s-2) var(--s-3);min-height:72px;padding:var(--s-3);\n  border:0;border-radius:var(--r-card);background:var(--surface);color:var(--ink);font:inherit;text-align:left;cursor:pointer;touch-action:manipulation;\n  box-shadow:inset 0 0 0 2px var(--line),0 5px 0 var(--ledge-soft);transition:transform var(--t-fast) var(--ease)}\n.hp-crs.on{box-shadow:inset 0 0 0 3px var(--disc),0 5px 0 var(--disc-shade)}\n.hp-cn{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--disc-tint);color:var(--disc-shade);\n  font-family:var(--font-display);font-size:var(--fs-4);font-weight:700}\n.hp-ci{display:flex;flex-direction:column;min-width:0;line-height:1.25}\n.hp-ci b{font-size:var(--fs-3)}.hp-ci span{font-size:var(--fs-2);color:var(--ink-2)}\n.hp-cr{display:flex;flex-direction:column;align-items:flex-end;gap:2px}\n.hp-md{display:grid;place-items:center;color:var(--ill-brown-1)}\n.hp-md.m2{color:var(--ill-grey-1)}.hp-md.m3{color:var(--star-shade)}\n.hp-go{display:grid;place-items:center;width:48px;height:48px;border-radius:50%;background:var(--disc);color:var(--surface);box-shadow:0 3px 0 var(--disc-shade)}\n.hp-crs.lock{background:var(--surface-2)}.hp-crs.lock .hp-go{background:var(--surface);color:var(--ink-3);box-shadow:inset 0 0 0 2px var(--line)}\n.hp-crs.lock .hp-cn{background:var(--surface);color:var(--ink-3)}\n.hp-trs{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:var(--s-2)}\n.hp-tr{display:flex;align-items:center;gap:var(--s-2);min-height:var(--tap);padding:var(--s-2) var(--s-3);border:0;border-radius:var(--r-pill);\n  background:var(--surface);color:var(--ink);font:inherit;font-size:var(--fs-2);font-weight:700;cursor:pointer;touch-action:manipulation;\n  box-shadow:inset 0 0 0 2px var(--line),0 3px 0 var(--ledge-soft);transition:transform var(--t-fast) var(--ease)}\n.hp-tr.on{box-shadow:inset 0 0 0 3px var(--good),0 3px 0 var(--good-ink)}\n.hp-tr.lock{background:var(--surface-2);color:var(--ink-3)}\n.hp-tr small{display:flex;align-items:center;margin-left:auto;font-size:var(--fs-1)}\n.hp-dot{flex:none;width:22px;height:22px;border-radius:50%;background:var(--ill-yellow);box-shadow:inset -3px -3px 0 var(--ill-yellow-2)}\n.hp-t-none{background:var(--surface-2);box-shadow:inset 0 0 0 2px var(--line)}\n.hp-t-pink{background:var(--ill-pink);box-shadow:inset -3px -3px 0 var(--ill-pink-2)}\n.hp-t-sky{background:var(--ill-aqua);box-shadow:inset -3px -3px 0 var(--ill-aqua-2)}\n.hp-t-leaf{background:var(--ill-green);box-shadow:inset -3px -3px 0 var(--ill-green-2)}\n.hp-t-grape{background:var(--ill-purple);box-shadow:inset -3px -3px 0 var(--ill-purple-2)}\n.hp-t-rainbow{background:conic-gradient(var(--ill-red),var(--ill-orange),var(--ill-yellow),var(--ill-green),var(--ill-blue),var(--ill-purple),var(--ill-red))}\n.hp-how{display:grid;gap:var(--s-2);margin:var(--s-4) 0;padding:0;list-style:none}\n@media (min-width:760px){.hp-how{grid-template-columns:1fr 1fr}}\n.hp-how li{display:flex;align-items:center;gap:var(--s-3);font-size:var(--fs-3);line-height:1.3;color:var(--ink)}\n.hp-hi{flex:none;display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:var(--disc-tint);color:var(--disc-shade)}\n/* G-04b2: the costume behind the pet, the next goal, today's twist, stars to spend and the costume shop */\n.hp-pet .pet-svg{position:relative}\n.hp-cos{position:absolute;inset:0;width:100%;height:100%;display:block}\n.hp-goal{display:flex;align-items:center;gap:var(--s-3);margin-top:var(--s-4);margin-bottom:0;padding:var(--s-3) var(--s-4);border-radius:var(--r-card);\n  background:var(--surface);color:var(--ink);font-size:var(--fs-3);line-height:1.3;box-shadow:inset 0 0 0 2px var(--line),0 4px 0 var(--ledge-soft)}\n.hp-goal .hp-hi{width:44px;height:44px}\n.hp-day{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s-3) var(--s-4);margin-top:var(--s-4);padding:var(--s-3) var(--s-4) var(--s-4);\n  border-radius:var(--r-card);background:var(--disc-tint);box-shadow:inset 0 0 0 2px var(--wash),0 4px 0 var(--ledge-soft)}\n.hp-dtx{flex:1 1 280px;min-width:0}\n.hp-day .hp-h{margin:var(--s-2) 0}\n.hp-dtx p{margin:0 0 var(--s-2);font-size:var(--fs-3);line-height:1.35;color:var(--ink)}\n.hp-dst{display:flex;align-items:center;gap:var(--s-2);font-weight:700}\n.hp-dst .ic{color:var(--disc-shade)}\n.hp-day .btn{flex:1 1 200px;min-height:64px}\n.hp-cash{display:flex;align-items:center;gap:var(--s-2);margin:0 auto var(--s-3);font-size:var(--fs-3);line-height:1.3;color:var(--ink)}\n.hp-cash .ic{flex:none;color:var(--star-shade)}\n.hp-wears{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:var(--s-3)}\n.hp-wear{display:flex;flex-direction:column;align-items:center;gap:var(--s-1);min-height:var(--tap);padding:var(--s-2) var(--s-2) var(--s-3);border:0;\n  border-radius:var(--r-card);background:var(--surface);color:var(--ink);font:inherit;cursor:pointer;touch-action:manipulation;\n  box-shadow:inset 0 0 0 2px var(--line),0 4px 0 var(--ledge-soft);transition:transform var(--t-fast) var(--ease)}\n.hp-wear:active{transform:translateY(3px)}\n.hp-wear.on{box-shadow:inset 0 0 0 3px var(--good),0 4px 0 var(--good-ink)}\n.hp-wear.lock{background:var(--surface-2)}\n.hp-wear.lock .hp-wart{opacity:.55}\n.hp-wpet{display:block;width:84px;height:84px;border-radius:50%;background:var(--sc-sky)}\n.hp-wart{display:block;width:100%;height:100%}\n.hp-wn{font-size:var(--fs-2);font-weight:700;text-align:center;line-height:1.2}\n.hp-wp{display:flex;align-items:center;gap:2px;font-size:var(--fs-2);color:var(--ink-2)}\n.hp-wp .ic{color:var(--star-shade)}\n\n/* ---- the course ---- */\n.hpg{position:fixed;inset:0;z-index:0;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;background:var(--sc-sky)}\n.hpg canvas{position:absolute;inset:0;width:100%;height:100%;display:block}\n.hp-msg{position:absolute;left:50%;top:22%;width:max-content;max-width:calc(100% - 32px);padding:var(--s-2) var(--s-5);border-radius:var(--r-card);background:var(--surface);\n  color:var(--ink);font-family:var(--font-display);font-size:var(--fs-4);font-weight:700;text-align:center;pointer-events:none;box-shadow:0 4px 0 var(--ledge-soft);\n  opacity:0;transform:translate(-50%,-12px) scale(.9);transition:opacity var(--t) var(--ease),transform var(--t) var(--spring)}\n.hp-msg.on{opacity:1;transform:translate(-50%,0) scale(1)}\n.hp-msg.big{font-size:var(--fs-6);padding:var(--s-2) var(--s-6)}\n.hp-ctl{position:absolute;left:0;right:0;bottom:0;pointer-events:none}\n.hp-btn{position:absolute;bottom:calc(14px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;align-items:center;justify-content:center;\n  width:clamp(96px,14vw,124px);height:clamp(96px,14vw,124px);padding:0;border:0;border-radius:32px;background:var(--disc-tint);color:var(--disc-shade);\n  font:inherit;font-family:var(--font-display);font-size:var(--fs-3);font-weight:700;pointer-events:auto;touch-action:none;opacity:.92;\n  box-shadow:inset 0 0 0 3px var(--wash),0 6px 0 var(--disc-shade);transition:transform var(--t-fast) var(--ease)}\n.hp-btn .ic{width:44px;height:44px}\n.hp-btn.on{transform:translateY(5px) scale(.96);opacity:1}\n#hpj{right:14px;background:var(--disc);color:var(--surface)}\n#hpl{left:14px}#hpr{left:calc(28px + clamp(96px,14vw,124px))}\n@media (max-width:400px){.hp-free .hp-btn{width:96px;height:96px}.hp-free #hpr{left:118px}}\n.hp-offer{position:absolute;inset:0;z-index:3;display:grid;place-items:center;padding:var(--s-4);background:var(--dim)}\n.hp-offer[hidden]{display:none}\n.hp-ocard{display:flex;flex-direction:column;align-items:center;gap:var(--s-3);width:min(420px,100%);padding:var(--s-4) var(--s-5) var(--s-5);\n  border-radius:var(--r-hero);background:var(--surface);box-shadow:0 8px 0 var(--ledge-soft);text-align:center}\n.hp-obal{width:84px;height:auto}\n.hp-ocard p{margin:0;font-size:var(--fs-4);font-weight:700;line-height:1.3;color:var(--ink)}\n.hp-oacts{display:flex;flex-wrap:wrap;justify-content:center;gap:var(--s-3);width:100%}\n.hp-oacts .btn{flex:1 1 150px;min-height:64px}\n/* Snack Stand (G-04a; src/js/65-game-snack.js). Ships in games2.<VER>.js. Tokens only; motion is transform/opacity on --t-* tokens.\n   The menu (hero with the child's stand, places, Calm / Busy, give change), the stand shop, and the day: the place behind the stand,\n   the awning and sign, the customers with their order bubbles, the counter (Undo, the plate, Serve), the stations and the food. */\n\n/* ---- menu ---- */\n.sn-menu,.sn-shop{padding:var(--s-2) var(--s-4) var(--s-7)}\n.sn-menu>*,.sn-shop>*{max-width:1000px;margin-left:auto;margin-right:auto}\n.sn-h{display:flex;align-items:baseline;gap:var(--s-2);margin:var(--s-5) auto var(--s-3);font-size:var(--fs-4);color:var(--ink)}\n.sn-got{font-size:var(--fs-2);font-weight:400;color:var(--ink-2)}\n.sn-hero{display:flex;align-items:center;gap:var(--s-4);padding:var(--s-3) var(--s-4);border-radius:var(--r-hero);\n  background:linear-gradient(var(--gh-a),var(--gh-b) 72%,var(--sc-green) 73%);box-shadow:inset 0 0 0 2px var(--wash),0 5px 0 var(--sc-green-2)}\n.sn-hpic{flex:1 1 58%;min-width:0}.sn-hpic svg{display:block;width:100%;height:auto}\n.sn-hinfo{flex:1 1 42%;display:flex;flex-direction:column;gap:var(--s-3);align-items:stretch;min-width:0}\n.sn-hl{display:flex;align-items:center;gap:var(--s-2);margin:0;font-size:var(--fs-3);color:var(--ink)}\n.sn-hl .ic:not(.ic-coin),.sn-psub .ic{color:var(--star-shade)}\n@media (max-width:560px){.sn-hero{flex-direction:column;align-items:stretch}.sn-hpic{max-width:420px;margin:0 auto;width:100%}}\n.sn-places{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s-3)}\n@media (min-width:760px){.sn-places{grid-template-columns:repeat(5,minmax(0,1fr))}}\n.sn-place{display:flex;flex-direction:column;gap:var(--s-1);min-height:var(--tap);padding:var(--s-2);border:0;border-radius:var(--r-card);\n  background:var(--surface);color:var(--ink);font:inherit;text-align:left;cursor:pointer;touch-action:manipulation;\n  box-shadow:inset 0 0 0 2px var(--line),0 4px 0 var(--ledge-soft);transition:transform var(--t-fast) var(--ease)}\n.sn-place:active{transform:translateY(3px)}\n.sn-place.on{box-shadow:inset 0 0 0 3px var(--bt),0 4px 0 var(--bt-shade)}\n.sn-ppic{position:relative;display:block;aspect-ratio:2/1;border-radius:var(--r-btn);overflow:hidden;background:linear-gradient(var(--gh-a),var(--gh-b))}\n.sn-ppic svg{position:absolute;inset:0;width:100%;height:100%;display:block}\n.sn-place.lock .sn-ppic svg{opacity:.45}\n.sn-plock{position:absolute;inset:0;display:grid;place-items:center;color:var(--ink-2)}\n.sn-pname{font-size:var(--fs-3);font-weight:700;line-height:1.2}\n.sn-psub{display:flex;align-items:center;gap:var(--s-1);min-height:22px;font-size:var(--fs-2);color:var(--ink-2)}\n.sn-opts{margin-top:var(--s-2)}\n.sn-mode{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s-2) var(--s-4);margin-bottom:var(--s-3)}\n.sn-mode p{margin:0;flex:1 1 220px;font-size:var(--fs-2);color:var(--ink-2)}\n.sn-how{display:grid;gap:var(--s-2);margin:var(--s-4) 0;padding:0;list-style:none}\n@media (min-width:760px){.sn-how{grid-template-columns:1fr 1fr}}\n.sn-how li{display:flex;align-items:center;gap:var(--s-3);font-size:var(--fs-3);line-height:1.3;color:var(--ink)}\n.sn-hi{flex:none;display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:var(--bt-tint);color:var(--bt-shade)}\n\n/* ---- shop ---- */\n.sn-shero{position:relative;padding:var(--s-3);border-radius:var(--r-hero);background:linear-gradient(var(--gh-a),var(--gh-b) 72%,var(--sc-green) 73%);\n  box-shadow:inset 0 0 0 2px var(--wash),0 5px 0 var(--sc-green-2)}\n.sn-shero>svg{display:block;width:100%;max-width:560px;height:auto;margin:0 auto}\n.sn-buy{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:var(--s-2) var(--s-3);margin-top:var(--s-3);padding:var(--s-3);\n  border-radius:var(--r-card);background:var(--surface);box-shadow:inset 0 0 0 2px var(--bt),0 4px 0 var(--bt-shade)}\n.sn-bpic{width:72px;height:72px;display:grid;place-items:center}.sn-bpic svg{width:100%;height:100%}\n.sn-btxt p{margin:0;font-size:var(--fs-3);line-height:1.35;color:var(--ink)}.sn-btxt p+p{font-size:var(--fs-2);color:var(--ink-2)}\n.sn-btxt .ic{vertical-align:-4px}\n.sn-bacts{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:var(--s-2)}.sn-bacts .btn{flex:1 1 140px}\n.sn-note{margin:var(--s-3) auto 0;font-size:var(--fs-2);color:var(--ink-2)}\n.sn-items{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:var(--s-3)}\n.sn-item{display:flex;flex-direction:column;align-items:center;gap:var(--s-1);min-height:var(--tap);padding:var(--s-2);border:0;border-radius:var(--r-card);\n  background:var(--surface);color:var(--ink);font:inherit;cursor:pointer;touch-action:manipulation;box-shadow:inset 0 0 0 2px var(--line),0 4px 0 var(--ledge-soft);\n  transition:transform var(--t-fast) var(--ease)}\n.sn-item:active{transform:translateY(3px)}\n.sn-item.on{box-shadow:inset 0 0 0 3px var(--good),0 4px 0 var(--good-ink)}\n.sn-item.sel{box-shadow:inset 0 0 0 3px var(--bt),0 4px 0 var(--bt-shade)}\n.sn-ipic{display:grid;place-items:center;width:100%;height:64px}.sn-ipic svg{max-width:100%;height:64px}\n.sn-iname{font-size:var(--fs-2);font-weight:700;line-height:1.2;text-align:center}\n.sn-iprice{display:flex;align-items:center;gap:2px;font-size:var(--fs-2);color:var(--ink-2)}\n.sn-item.on .sn-iprice{color:var(--good-ink)}\n\n/* ---- the day: the scene, the counter, the controls ---- */\n.sn{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;user-select:none;-webkit-user-select:none;background:var(--ill-brown-2)}\n.sn-scene{position:relative;flex:1 1 0;min-height:150px;overflow:hidden;background:linear-gradient(var(--gh-a),var(--gh-b))}\n.sn-back{position:absolute;inset:0;width:100%;height:100%;display:block}\n.sn-scene::before,.sn-scene::after{content:'';position:absolute;bottom:0;top:40px;width:14px;z-index:1;\n  background:linear-gradient(90deg,var(--ill-brown-1),var(--ill-brown) 40%,var(--ill-brown-2))}\n.sn-scene::before{left:6px}.sn-scene::after{right:6px}\n.sn-awnw{position:absolute;left:0;right:0;top:0;height:52px;z-index:2}\n.sn-awn{display:block;width:100%;height:52px}\n.sn-bunt{position:absolute;left:0;right:0;top:48px;height:24px;z-index:2}.sn-bunt svg{display:block;width:100%;height:100%}\n.sn-sign{position:absolute;top:14px;left:50%;z-index:3;display:grid;min-width:150px;padding:5px 16px;border-radius:10px;transform:translateX(-50%);\n  background:var(--ill-brown-2);color:var(--ill-white);font-family:var(--font-display);font-size:var(--fs-3);font-weight:700;text-align:center;line-height:1.2;\n  box-shadow:inset 0 2px 0 var(--ill-brown),inset 0 -3px 0 var(--ill-brown-3),0 3px 0 var(--shadow-ink);transition:transform var(--t-slow) var(--ease)}\n.sn-sign>span{grid-area:1/1;transition:opacity var(--t) var(--ease)}\n.sn-sign .sn-sb{opacity:0}\n.sn-sign.shut{animation:sn-flip var(--t-slow) var(--ease)}\n.sn-sign.shut .sn-sf{opacity:0}.sn-sign.shut .sn-sb{opacity:1}\n.sn-s-star{background:var(--ill-yellow);color:var(--ill-brown-3);box-shadow:inset 0 2px 0 var(--ill-yellow-1),inset 0 -3px 0 var(--ill-yellow-3),0 3px 0 var(--shadow-ink)}\n.sn-s-heart{background:var(--ill-pink);color:var(--ill-white);box-shadow:inset 0 2px 0 var(--ill-pink-1),inset 0 -3px 0 var(--ill-pink-3),0 3px 0 var(--shadow-ink)}\n.sn-s-lights{background:var(--ill-purple-2);color:var(--ill-yellow-1);\n  box-shadow:inset 0 0 0 3px var(--ill-yellow-1),inset 0 -3px 0 var(--ill-purple-3),0 3px 0 var(--shadow-ink)}\n@keyframes sn-flip{0%{transform:translateX(-50%) rotateX(0)}50%{transform:translateX(-50%) rotateX(90deg)}100%{transform:translateX(-50%) rotateX(0)}}\n.sn-deco,.sn-bird{position:absolute;z-index:1;pointer-events:none}.sn-deco svg,.sn-bird svg{display:block;width:100%;height:auto}\n.sn-d-flowers{left:22px;bottom:0;width:58px}\n.sn-d-board{left:78px;bottom:0;width:58px}\n.sn-d-balloons{left:20px;top:78px;width:62px}\n.sn-d-plant{right:22px;bottom:0;width:66px}\n.sn-d-jar{right:88px;bottom:0;width:40px}\n.sn-d-bell{right:130px;bottom:0;width:38px}\n.sn-d-lantern{right:30px;top:52px;width:40px}\n.sn-bird{right:16%;top:-14px;width:46px;z-index:3}\n.sn-msg{position:absolute;left:50%;bottom:8px;z-index:6;max-width:calc(100% - 32px);padding:var(--s-2) var(--s-4);border-radius:var(--r-pill);\n  background:var(--surface);color:var(--ink);font-size:var(--fs-3);font-weight:700;text-align:center;line-height:1.25;\n  box-shadow:inset 0 0 0 2px var(--line),0 4px 0 var(--ledge-soft);opacity:0;transform:translate(-50%,8px);pointer-events:none;\n  transition:opacity var(--t) var(--ease),transform var(--t) var(--ease)}\n.sn-msg.on{opacity:1;transform:translate(-50%,0)}\n.sn-msg.good{background:var(--good-tint);color:var(--good-ink);box-shadow:inset 0 0 0 2px var(--good),0 4px 0 var(--good)}\n.sn-msg.try{background:var(--try-tint);color:var(--try-ink);box-shadow:inset 0 0 0 2px var(--try),0 4px 0 var(--try)}\n\n/* customers: the order bubble over (or beside) the animal; the animal stands behind the counter */\n.sn-line{position:absolute;left:0;right:0;bottom:0;z-index:4;display:flex;justify-content:center;align-items:flex-end;gap:var(--s-2);padding:0 26px}\n.sn-cu{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;animation:sn-in var(--t-slow) var(--spring)}\n@keyframes sn-in{from{opacity:0;transform:translateX(40px)}}\n.sn-bub{position:relative;display:grid;grid-template-columns:repeat(3,48px);gap:4px;padding:6px;border-radius:18px;background:var(--surface);\n  box-shadow:inset 0 0 0 2px var(--line),0 4px 0 var(--shadow-ink)}\n.sn-bub::after{content:'';position:absolute;left:50%;bottom:-9px;width:16px;height:16px;margin-left:-8px;background:var(--surface);\n  transform:rotate(45deg);box-shadow:2px 2px 0 var(--line);z-index:-1}\n.sn-bub.n1{grid-template-columns:48px}.sn-bub.n2,.sn-bub.n4{grid-template-columns:repeat(2,48px)}\n.sn-oi{position:relative;display:block;width:48px;height:48px;border-radius:10px;background:var(--surface-2)}\n.sn-oi>svg{display:block;width:100%;height:100%}\n.sn-oi.ok{background:var(--good-tint)}\n.sn-oi>i{position:absolute;right:-4px;top:-4px;display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--good);color:var(--surface);\n  animation:sn-pop var(--t) var(--spring)}\n.sn-oi.look{animation:sn-look var(--t-shake) var(--ease) 2}\n@keyframes sn-pop{from{transform:scale(0)}}\n@keyframes sn-look{50%{transform:translateY(-6px) scale(1.08)}}\n.sn-bub.yum{display:flex;align-items:center;gap:6px;padding:8px 12px;color:var(--ill-pink-2);font-weight:700;font-size:var(--fs-2);white-space:nowrap}\n.sn-bub.yum span{color:var(--ink)}\n.sn-heart{display:flex;align-items:center;gap:4px;color:var(--ill-pink-2)}\n.sn-hbar{display:block;width:64px;height:10px;border-radius:5px;background:var(--surface);box-shadow:inset 0 0 0 2px var(--ill-pink-1);overflow:hidden}\n.sn-hbar i{display:block;height:100%;background:var(--ill-pink);transform-origin:left center;transition:transform var(--t) linear}\n.sn-heart.out{color:var(--ink-3)}.sn-heart.out .sn-hbar{box-shadow:inset 0 0 0 2px var(--line)}\n.sn-an{display:block;width:96px;height:96px;margin-bottom:-14px;padding:0;border:0;background:none;cursor:pointer;touch-action:manipulation;border-radius:50%}\n.sn-an svg{display:block;width:100%;height:100%}\n.sn-cu.sel .sn-bub{box-shadow:inset 0 0 0 3px var(--bt),0 4px 0 var(--bt-shade)}\n.sn-cu.happy .sn-an{animation:sn-hop var(--t-slow) var(--ease) 2}\n@keyframes sn-hop{50%{transform:translateY(-14px)}}\n.sn-line.big .sn-an{width:124px;height:124px}\n.sn-line.big .sn-bub{grid-template-columns:repeat(3,58px)}\n.sn-line.big .sn-bub.n1{grid-template-columns:58px}.sn-line.big .sn-bub.n2{grid-template-columns:repeat(2,58px)}\n.sn-line.big .sn-oi{width:58px;height:58px}\n@media (min-height:720px){\n  .sn-line.big .sn-an{width:140px;height:140px;margin-bottom:-18px}\n  .sn-line.big .sn-bub{grid-template-columns:repeat(3,64px);gap:6px;padding:8px}\n  .sn-line.big .sn-bub.n1{grid-template-columns:64px}.sn-line.big .sn-bub.n2{grid-template-columns:repeat(2,64px)}\n  .sn-line.big .sn-oi{width:64px;height:64px}\n  .sn-plate{height:128px}\n}\n\n@media (min-height:880px) and (min-width:560px){\n  .sn-line.big .sn-an{width:190px;height:190px;margin-bottom:-24px}\n  .sn-line.big .sn-bub{grid-template-columns:repeat(3,84px)}\n  .sn-line.big .sn-bub.n1{grid-template-columns:84px}.sn-line.big .sn-bub.n2{grid-template-columns:repeat(2,84px)}\n  .sn-line.big .sn-oi{width:84px;height:84px}\n  .sn-an{width:124px;height:124px}\n  .sn-bub{grid-template-columns:repeat(3,60px)}.sn-bub.n1{grid-template-columns:60px}.sn-bub.n2,.sn-bub.n4{grid-template-columns:repeat(2,60px)}\n  .sn-oi{width:60px;height:60px}\n  .sn-plate{height:150px}\n}\n/* short landscape screens: the bubble beside the animal */\n@media (min-aspect-ratio:4/3) and (max-height:700px){\n  .sn-cu{flex-direction:row-reverse;align-items:flex-end;gap:10px}\n  .sn-cu .sn-heart{position:absolute;margin:0 0 -2px}\n  .sn-cu{position:relative}\n  .sn-bub{margin-bottom:22px}\n  .sn-bub::after{left:-6px;bottom:22px;margin:0;box-shadow:-2px 2px 0 var(--line)}\n  .sn-cu .sn-heart{left:6px;top:-18px}\n  .sn-line{gap:var(--s-5)}\n  .sn-line.big .sn-an{width:110px;height:110px}\n}\n\n/* the counter: Undo, the plate, Serve */\n.sn-counter{position:relative;z-index:5;flex:none;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:var(--s-2);\n  padding:10px var(--s-3) 8px;background:linear-gradient(var(--ill-brown-1) 0 8px,var(--ill-tan-1) 8px);box-shadow:0 -2px 0 var(--ill-brown-2)}\n.sn-undo,.sn-serve{min-width:80px;min-height:64px;flex-direction:column;gap:2px;padding:6px 10px}\n.sn-serve{min-width:92px}\n.sn-plate{position:relative;height:96px;display:grid;place-items:end center}\n.sn-plsvg{display:block;width:100%;height:100%}\n.sn-plate.bump .sn-plsvg{animation:sn-bump var(--t) var(--spring)}\n@keyframes sn-bump{50%{transform:scale(1.05)}}\n.sn-ph{position:absolute;left:0;right:0;top:30%;text-align:center;font-size:var(--fs-2);color:var(--ink-2)}\n.sn-ctl,.sn-till{position:relative;z-index:5;flex:none;display:flex;flex-direction:column;gap:var(--s-2);padding:var(--s-2) var(--s-3) var(--s-3);\n  background:repeating-linear-gradient(90deg,var(--ill-brown) 0 58px,var(--ill-brown-2) 58px 60px)}\n.sn-c-mint .sn-ctl,.sn-c-mint .sn-till{background:var(--ill-aqua);background-image:linear-gradient(var(--ill-aqua-2) 2px,transparent 2px),\n  linear-gradient(90deg,var(--ill-aqua-2) 2px,transparent 2px);background-size:40px 40px}\n.sn-c-candy .sn-ctl,.sn-c-candy .sn-till{background:repeating-linear-gradient(110deg,var(--ill-pink) 0 22px,var(--ill-white-2) 22px 44px)}\n.sn-ctl[hidden],.sn-till[hidden]{display:none}\n.sn-tabs{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));gap:6px;max-width:640px;width:100%;margin:0 auto}\n.sn-tab{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-height:64px;padding:4px 2px;border:0;\n  border-radius:var(--r-btn);background:var(--wash);color:var(--ink);font:inherit;font-size:var(--fs-2);font-weight:700;line-height:1.1;cursor:pointer;\n  touch-action:manipulation;box-shadow:0 3px 0 var(--shadow-ink);transition:transform var(--t-fast) var(--ease)}\n.sn-tab:active{transform:translateY(3px)}\n.sn-tpic{width:34px;height:34px}.sn-tpic svg{display:block}\n.sn-tab[aria-selected=\"true\"]{background:var(--surface);box-shadow:inset 0 0 0 3px var(--bt),0 3px 0 var(--bt-shade)}\n.sn-dot{position:absolute;right:6px;top:6px;width:12px;height:12px;border-radius:50%;background:var(--good);opacity:0;transform:scale(.4);\n  transition:opacity var(--t) var(--ease),transform var(--t) var(--spring)}\n.sn-tab.ready .sn-dot{opacity:1;transform:none}\n.sn-ings{display:flex;justify-content:center;gap:6px}\n.sn-ing{flex:0 1 96px;min-width:64px}.sn-pan{flex:0 1 128px;min-width:96px}\n.sn-ing,.sn-pan{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;min-height:80px;padding:4px 2px;border:0;\n  border-radius:var(--r-btn);background:var(--surface);color:var(--ink);font:inherit;cursor:pointer;touch-action:none;\n  box-shadow:inset 0 0 0 2px var(--line),0 4px 0 var(--shadow-ink);transition:transform var(--t-fast) var(--ease)}\n.sn-ing:active,.sn-pan:active{transform:translateY(3px)}\n.sn-ipc{width:52px;height:52px}.sn-ipc svg{display:block}\n.sn-pan svg{width:60px;height:56px}\n.sn-pan[data-q=\"gold\"]{box-shadow:inset 0 0 0 3px var(--good),0 4px 0 var(--good-ink)}\n.sn-in{font-size:var(--fs-2);font-weight:700;line-height:1.1;text-align:center}\n.sn-ghost{position:fixed;left:0;top:0;z-index:50;width:72px;height:72px;pointer-events:none}\n.sn-ghost svg{display:block}\n@media (max-height:620px){\n  .sn-plate{height:84px}\n  .sn-counter{padding-top:8px;padding-bottom:4px}\n  .sn-tab{min-height:64px}\n  .sn-ing,.sn-pan{min-height:72px}\n  .sn-ipc{width:44px;height:44px}\n  .sn-ctl{gap:6px;padding-top:6px;padding-bottom:var(--s-2)}\n}\n@media (min-width:900px){.sn-ing{flex-basis:112px}}\n\n/* give change: the till */\n.sn-till{align-items:center}\n.sn-tq{margin:0;padding:var(--s-2) var(--s-3);border-radius:var(--r-btn);background:var(--surface);font-size:var(--fs-3);line-height:1.3;text-align:center;color:var(--ink)}\n.sn-tray{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:4px;min-height:48px;padding:4px var(--s-3);border-radius:var(--r-pill);background:var(--wash)}\n.sn-tc{position:relative;width:40px;height:40px}.sn-tc svg{display:block;width:100%;height:100%}\n.sn-tc b,.sn-coin b{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--font-display);color:var(--ill-brown-3)}\n.sn-tc b{font-size:var(--fs-2)}\n.sn-tph{font-size:var(--fs-2);color:var(--ink)}\n.sn-tsum{margin-left:var(--s-2);font-size:var(--fs-3);color:var(--ink)}\n.sn-tbtns{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}\n.sn-coin{position:relative;width:64px;height:64px;padding:0;border:0;border-radius:50%;background:none;cursor:pointer;touch-action:manipulation;\n  transition:transform var(--t-fast) var(--ease)}\n.sn-coin:active{transform:translateY(3px)}\n.sn-coin svg{display:block;width:100%;height:100%}.sn-coin b{font-size:var(--fs-4);padding-bottom:4px}\n.sn-tundo,.sn-give{min-height:64px;flex-direction:column;gap:2px;padding:6px 12px}\n\n/* top-bar chips */\n.sn-cust{grid-area:2/1;display:block;font-family:var(--font-body);font-size:var(--fs-2);font-weight:400;opacity:.92}\n\n/* P6-01: a customer at the edge of the scene keeps its whole focus ring (the scene clips) */\n.sn-an:focus-visible{outline-offset:-4px}\n";document.head.appendChild(s)})(); // its src/css, after index.html's own CSS (the cascade order of a build without parts)
 /* ---------- Star Rally: the racing game (G-02, G-02b; CSS src/css/49-game-race.css; both go into games2.<VER>.js) ----------
    An original Star School game. Races against five friendly animal drivers, seen from behind the car on a pseudo-3D road
    (the road is drawn in strips, cheap on a canvas). A race lasts about 60-90 seconds, then the shared end card.
@@ -3698,32 +3698,40 @@ GH.reg({
   },
   open: () => snMenu(), tapToPlay: '#snopen', saved: 'Your coins are saved.',
 });
-/* ---------- Sky Hop: bounce your pet through short obstacle courses in the clouds (G-04b; CSS src/css/49-game-skyhop.css) ----------
+/* ---------- Sky Hop: bounce your pet through short obstacle courses in the clouds (G-04b, G-04b2; CSS src/css/49-game-skyhop.css) ----------
    An original Star School game (docs/GAMES_RESEARCH.md, "Game B"). Both files go into games2.<VER>.js (tools/build.py PARTS) and
-   load after games.<VER>.js, so GH.reg, the gh* drawing helpers and Star Rally's colour helpers (rlCol, rlRes) are there.
+   load after games.<VER>.js, so GH.reg, the gh* drawing helpers and Star Rally's colour helpers (rlCol, rlRes, rlRidge) are there.
 
    How it plays
-   - The hero is the child's own drawn pet (the pet rig, 17-pets-svg.js, wearing its hat and toy), drawn once into a picture.
-     It bounces along puffy cloud paths to a checkered flag and looks for 3 stars hidden off the main path.
+   - The hero is the child's own drawn pet (the pet rig, 17-pets-svg.js, wearing its hat and toy and a Sky Hop costume), drawn once
+     into a picture. It bounces along puffy cloud paths to a checkered flag and looks for 3 stars hidden off the main path.
    - One-touch (the default up to 2nd grade): the pet runs by itself; tap anywhere to hop; hold to float down slowly; from
      Windy Peaks on, a tap in the air is a second hop. Free move (the default from 3rd grade; a switch on the menu): left and
      right buttons and a jump button; a short press is a small hop, a long press a big one; go back for a missed star.
    - Kind timing: a hop still works a moment after running off an edge, and a tap just before landing counts.
-   - 24 courses of 40 to 90 seconds in four drawn worlds (Cloud Meadow, Windy Peaks, Starry Night, Rainbow Bridge). Each world
-     adds one thing: flower springs, wind (gusts and updrafts), moving kite clouds, switches that open gates. A course opens when
-     the one before it is finished. Stars open sparkle trails for the pet (cosmetic).
+   - Season 1: 24 courses in four worlds (Cloud Meadow, Windy Peaks, Starry Night, Rainbow Bridge), each adding one thing:
+     flower springs, wind (gusts and updrafts), moving kite clouds, switches that open gates. Season 2 (G-04b2, R-03 K1): 24 remix
+     courses in four more worlds (Sunset Isles: clouds that crumble; Whirly Heights: clouds that go round; Aurora Night: keys and
+     doors; Star Castle: all of it together). All 48 courses open in order, one after the other.
+   - Goals: 3 stars a course, time medals (fixed targets), a ghost of your own best run to race, a "Next goal" line on the menu,
+     "Today's twist" (a course and one special rule picked from the date: the same all day, another tomorrow; 2 bonus stars the
+     first time a day; nothing lost on a missed day, no streaks), and costumes for the pet bought with stars (a fixed list).
    - No lives, no game over: a fall puts the pet back on the last cloud checkpoint in a second; after 3 falls from the same
      checkpoint a friendly helper balloon offers a lift to the next one (the child can say no). Friendly puffs only bounce the
-     pet back a little. Time medals are fixed targets per course plus the child's own best time; nobody else's times.
+     pet back a little. Nobody else's times.
    - Nothing changes while the app is closed, nothing is random, no streaks, no ads.
 
    Code: worlds and courses (a short text format, hopBuild), the simulation (hopNew, hopStep, hopHelp, hopClone: no DOM, fixed
-   1/60 s step, deterministic; the tests play every course with bots), the drawings (SVG in the --a-* roles, object-art style
-   DESIGN_SYSTEM 6.5, made once into canvases with the colours read from the tokens), the canvas renderer and the screens.
+   1/60 s step, deterministic; the tests play every course with bots), the ghost (hopRec, hopGhostIn, hopGhostAt), today's twist
+   (hopDaily), the drawings (SVG in the --a-* roles, object-art style DESIGN_SYSTEM 6.5, made once into canvases with the colours
+   read from the tokens), the 2.5D canvas renderer (R-03 4.3: the far layers composed into one backdrop picture, each nearer layer
+   cached at its own band height and faded toward the sky, sprites for every particle, adaptive render scale), the music and
+   the screens.
    Game time: exactly like the other games (ptLeft() before a course, gtStart while it runs, held by the pause sheet, the shared
    time-up card). view() stops the course through hopStop().
    Save: S.hop (created when the game is first opened; old saves load unchanged), read field by field by hopS():
-   {runs, best: {course: ms}, stars: {course: 0-7 bits}, medal: {course: 0-3}, mode, world, trail}. */
+   {runs, best: {course: ms}, stars: {course: 0-7 bits}, medal: {course: 0-3}, mode, world, trail, cur,
+    G-04b2: ghost: {course: text}, own: {costume: 1}, wear, spent, bonus, day: {k, c, tw, done}}. */
 
 const HOP_DEV = { fast: 1 }; // test hook (smoke): the course runs this many times faster
 
@@ -3756,13 +3764,23 @@ const HOP_P = {
      P<dx>,<dy> a friendly puff   K a 2-tile floor with a switch   X a 1-tile floor with a gate (opened by the last switch)
      R the place a closed gate bounces you back to   *<dx>,<dy> a hidden star   f<w>,<dx>,<dy> a side cloud
      o<n> a row of n sparkles   C a checkpoint (more are added every ~36 tiles)   E the end: a floor with the flag
+     G-04b2: Q<n> a cloud floor that crumbles a moment after the pet lands on it and comes back later
+     O<w>,<r> a cloud w wide that goes round a circle of radius r (fills w+2r)   Y<dx>,<dy> a key (opens the next door)
+     Z a 1-tile floor with a door (opened by the key before it; a closed door bounces you back like a gate)
    Phrases (HOP_PH) are named bits of course; a course's plan is phrase names and plain tokens. */
+// sky: the menu's two --sc-* colours; grad: the course sky from the top to the horizon (roles or sc- tokens); cloud: [base, shade, deep]
 const HOP_WORLDS = [
-  { id: 'meadow', name: 'Cloud Meadow', sky: ['sky-1', 'sky'], cloud: ['w', 'w2', 'w3'], dj: false, adds: 'Flower springs' },
-  { id: 'peaks', name: 'Windy Peaks', sky: ['blue', 'sky-1'], cloud: ['w', 'c1', 'c'], dj: true, adds: 'Wind and a second hop' },
-  { id: 'night', name: 'Starry Night', sky: ['night', 'night-1'], cloud: ['v1', 'v', 'v2'], dj: true, adds: 'Kite clouds that move' },
-  { id: 'rainbow', name: 'Rainbow Bridge', sky: ['candy-1', 'candy'], cloud: ['w', 'p1', 'p'], dj: true, adds: 'Switches and gates' },
+  { id: 'meadow', name: 'Cloud Meadow', sky: ['sky-1', 'sky'], grad: ['b1', 'sc-sky', 'sc-sky-1'], cloud: ['w', 'w2', 'w3'], dj: false, adds: 'Flower springs' },
+  { id: 'peaks', name: 'Windy Peaks', sky: ['blue', 'sky-1'], grad: ['b1', 'sc-blue-2', 'sc-sea-1'], cloud: ['w', 'c1', 'c'], dj: true, adds: 'Wind and a second hop' },
+  { id: 'night', name: 'Starry Night', sky: ['night', 'night-1'], grad: ['sc-night', 'v2', 'sc-night-1'], cloud: ['v1', 'v', 'v2'], dj: true, adds: 'Kite clouds that move' },
+  { id: 'rainbow', name: 'Rainbow Bridge', sky: ['candy-1', 'candy'], grad: ['p1', 'sc-candy', 'sc-candy-1'], cloud: ['w', 'p1', 'p'], dj: true, adds: 'Switches and gates' },
+  // season 2 (G-04b2): remixes of the first four, each with one new thing
+  { id: 'sunset', name: 'Sunset Isles', sky: ['dusk', 'peach'], grad: ['o1', 'sc-dusk', 'sc-sun'], cloud: ['m1', 'p1', 'p'], dj: true, adds: 'Clouds that crumble', s2: 1 },
+  { id: 'whirl', name: 'Whirly Heights', sky: ['sea', 'blue'], grad: ['c', 'c1', 'sc-sea-1'], cloud: ['w', 'w2', 'c1'], dj: true, adds: 'Clouds that go round', s2: 1 },
+  { id: 'aurora', name: 'Aurora Night', sky: ['night', 'mint-2'], grad: ['sc-night', 'b3', 'c3'], cloud: ['c1', 'c', 'c2'], dj: true, adds: 'Keys and doors', s2: 1 },
+  { id: 'castle', name: 'Star Castle', sky: ['lilac', 'candy'], grad: ['v1', 'sc-lilac-2', 'sc-candy'], cloud: ['w', 'v1', 'v'], dj: true, adds: 'All the tricks together', s2: 1 },
 ];
+const HOP_SEASONS = [[0, 'Season 1: Sky Trip'], [4, 'Season 2: Sky Remix']]; // [first world, title]
 const HOP_PH = {
   // Cloud Meadow
   gap: 'F6 G2 F5', gap3: 'F5 G3 F4', up: 'F4 U1 F5', down: 'F4 D1 F5', step: 'F4 U1 F4 U1 F5 D2 F5',
@@ -3780,6 +3798,15 @@ const HOP_PH = {
   // Rainbow Bridge
   gate: 'F3 R F3 U1 K D1 F2 X F5', gateHi: 'F3 R F2 U2 K D2 F2 X F5', gateLow: 'F3 R F2 G2 U1 K D1 F2 X F5',
   rbow: 'F3 B7 F4', starGate: 'F3 R F2 U2 K *1,2.5 D2 F2 X F5',
+  // Sunset Isles: clouds that crumble a moment after you land on them (and come back)
+  crumble: 'F4 G1 Q3 G2 F5', crumbles: 'F4 G1 Q2 G2 Q2 G2 F5', crumbleUp: 'F4 G1 U1 Q3 G2 D1 F5', crumbleRow: 'F3 G2 Q2 G2 Q2 G2 Q2 G2 F5',
+  crumbleSpr: 'F4 S G2 U3 Q4 D3 G1 F4', starCrumble: 'F4 G1 Q2 *1,3.6 G2 F5', starCrumbleLow: 'F4 G1 Q2 f2,1.5,-2.6 *2.6,-1.6 G3 F5',
+  // Whirly Heights: clouds that go round in a circle
+  circ: 'F4 O3,2 F5', circHi: 'F4 O3,2 U2 F4 D2 F4', circs: 'F4 O3,1.5 F3 O3,1.5 F5', circWind: 'W10,2 F4 O3,1.5 F5',
+  starCirc: 'F4 *4.5,4.8 O3,2.5 F5',
+  // Aurora Night: a key opens the next door (R marks where a closed door bounces you back to)
+  door: 'F3 R F3 Y-1.5,1 F2 Z F5', doorHi: 'F3 R F2 U2 F3 Y-1.5,1.2 D2 F2 Z F5', doorJump: 'F3 R F3 Y-1,3 F2 Z F5',
+  doorGap: 'F3 R F2 G2 F3 Y-1.5,1 G2 F2 Z F5', starDoor: 'F3 R F3 Y-1.5,1 F2 *1,3.6 Z F5',
 };
 // [id, name, world, gold target in seconds (the one-touch bot of tools/test.js with no falls, plus 3 s), plan]
 const HOP_COURSES = [
@@ -3807,6 +3834,31 @@ const HOP_COURSES = [
   ['r4', 'Twisty Rainbow', 3, 64, 'F8 gateLow kites starGate windGap gate liftHi rbow starKite kiteV gateHi dbl puffs springg starDbl gate kite liftHi gateLow rbow E'],
   ['r5', 'Sky Castle Road', 3, 64, 'F8 gateHi liftHi kites starGate gust gate kiteV dblUp starKiteH rbow gateLow kiteHi puffs starLift gate kite liftHi gateLow rbow E'],
   ['r6', 'Over the Rainbow', 3, 66, 'F8 gate kiteHi starGate liftHi gateLow kites dblUp starKite rbow gateHi kiteV gust dbl lift starDbl gate kite liftHi gateLow rbow E'],
+  // season 2: remixes of the season 1 bits with one new thing per world
+  ['q1', 'Golden Hour', 4, 48, 'F8 crumble gap3 row starHigh crumbles spring dbl starCrumble puff crumbleUp bridge starArc crumble hole dbl E'],
+  ['q2', 'Crumbly Clouds', 4, 46, 'F8 crumbles stones starCrumble springg crumbleUp dbl puffs starLow crumbleRow gap3 spring starSpring crumble E'],
+  ['q3', 'Peach Puffs', 4, 46, 'F8 puffs crumble starDbl crumbleSpr hole crumbles starCrumbleLow puff crumbleUp step dbl starHigh crumbleRow E'],
+  ['q4', 'Sunset Springs', 4, 45, 'F8 crumbleSpr springg starSpring crumbles lift dbl crumbleUp starCrumble gust crumbleRow spring starNook crumble E'],
+  ['q5', 'Amber Arches', 4, 50, 'F8 crumbleRow wind starCrumbleLow kite crumbles liftHi dbl starCrumble crumbleSpr kiteV puffs starDbl crumbleUp crumble E'],
+  ['q6', 'Last Light', 4, 53, 'F8 crumbleUp kites starCrumble crumbleRow gate dbl starCrumbleLow crumbleSpr liftHi crumbles starKite crumble windGap crumbleRow E'],
+  ['t1', 'Round and Round', 5, 46, 'F8 circ gap3 row starCirc crumble dbl circWind lift starDbl circ spring puff starHigh circs E'],
+  ['t2', 'Whirlwind Way', 5, 47, 'F8 circWind circ starCirc gust dbl crumbles circHi starLift lift circs windGap starDbl circ E'],
+  ['t3', 'Twirl Top', 5, 46, 'F8 circHi liftHi starCirc circs crumbleUp dbl gust starDbl circWind kite puffs starLift circ E'],
+  ['t4', 'Breezy Loop', 5, 44, 'F8 circs windGap starDbl circ crumbles liftHi starCirc circWind kiteV dbl starCrumble circHi E'],
+  ['t5', 'Merry-Go-Cloud', 5, 48, 'F8 circ circHi starCirc crumbleRow circs dblUp starLift circWind kites gust starDbl circ crumble E'],
+  ['t6', 'High Twirl', 5, 46, 'F8 circHi circWind starCirc liftHi circs crumbleSpr starKite gate circ dbl starDbl circs E'],
+  ['a1', 'Key Keeper', 6, 45, 'F8 door gap3 row starDoor kite dbl doorHi lift starHigh crumble door circ starDbl doorGap E'],
+  ['a2', 'Northern Lights', 6, 43, 'F8 doorHi kite starDoor crumbles door circ starKite doorJump lift dbl starDbl doorGap E'],
+  ['a3', 'Lantern Lock', 6, 48, 'F8 doorJump kiteV starDoor circs doorGap crumbleUp starCirc door liftHi starDbl kites doorHi E'],
+  ['a4', 'Shimmer Door', 6, 45, 'F8 doorGap circ starDoor kites doorHi crumbleRow starKite doorJump gust dbl starCrumble door E'],
+  ['a5', 'Dream Door', 6, 43, 'F8 door crumbles starDoor kiteHi doorJump circWind starCirc doorGap liftHi starDbl kite doorHi E'],
+  ['a6', 'Aurora Peak', 6, 47, 'F8 doorHi circHi starDoor kites doorGap crumbleSpr starKite doorJump circs starCrumble liftHi door E'],
+  ['c1', 'Castle Gate', 7, 47, 'F8 gate crumble starGate circ door kite starDoor lift dbl gateLow starCirc crumbles doorHi E'],
+  ['c2', 'Tower Hop', 7, 44, 'F8 doorHi gateHi starCrumble circs kiteV starGate crumbleUp door liftHi starDoor circ gate E'],
+  ['c3', 'Moat Jump', 7, 48, 'F8 crumbleRow gate starCirc doorGap kites starDoor circHi gateLow crumbleSpr starKite door circ E'],
+  ['c4', 'Royal Road', 7, 45, 'F8 circWind doorJump starGate crumbles kiteHi starCrumble gate circs doorHi starDoor liftHi gateLow E'],
+  ['c5', 'Throne in the Clouds', 7, 48, 'F8 gateHi circHi starDoor crumbleSpr door kites starCirc doorGap gate crumbleUp starKite circs E'],
+  ['c6', 'Star Castle Top', 7, 52, 'F8 doorGap gateLow starCirc crumbleRow circHi starDoor kiteHi gate doorJump starCrumble circWind gateHi crumbles door E'],
 ].map(([id, name, w, gold, plan], i) => ({ id, name, w, gold, plan, i }));
 const HOP_BY = {};
 for (const c of HOP_COURSES) HOP_BY[c.id] = c;
@@ -3817,14 +3869,14 @@ function hopBuild(id) {
   if (HOP_BUILT[id]) return HOP_BUILT[id];
   const c = HOP_BY[id], W = HOP_WORLDS[c.w];
   const C = { id, c, W, floors: [], movers: [], springs: [], puffs: [], winds: [], lifts: [], stars: [], spk: [], cps: [], pads: [], gates: [],
-    side: [], goal: null, L: 0, dj: W.dj };
+    keys: [], side: [], goal: null, L: 0, dj: W.dj };
   const toks = c.plan.split(/\s+/).flatMap(t => (HOP_PH[t] ? HOP_PH[t].split(' ') : [t]));
   let x = 0, h = 2, lastCp = 0, retry = null, pad = null, prevEnd = null;
   const floor = (n, kind) => {
     const f = { x0: x, x1: x + n, y: h, k: kind };
     C.floors.push(f);
-    // a checkpoint at the start of a floor every ~36 tiles (none on the first)
-    if (n >= 2 && x - lastCp >= 36 && C.cps.length) {
+    // a checkpoint at the start of a floor every ~36 tiles (none on the first, none on a cloud that crumbles)
+    if (n >= 2 && kind != 'q' && x - lastCp >= 36 && C.cps.length) {
       C.cps.push({ x: x + 1.2, y: h });
       lastCp = x;
     }
@@ -3845,6 +3897,7 @@ function hopBuild(id) {
     const k = t[0], a = t.slice(1).split(',').map(Number), n = a[0] || 0;
     if (k == 'F') floor(n, 'c');
     else if (k == 'B') floor(n, 'b');
+    else if (k == 'Q') floor(n, 'q');
     else if (k == 'G') x += n;
     else if (k == 'U') h += n;
     else if (k == 'D') h -= n;
@@ -3859,6 +3912,10 @@ function hopBuild(id) {
       C.movers.push({ x: x, y: h, w: n, ax: 0, ay: a[1], T: 1.6 + a[1] * .45 });
       x += n;
       prevEnd = null;
+    } else if (k == 'O') {
+      C.movers.push({ x: x, y: h, w: n, ax: 0, ay: 0, r: a[1], T: 3 + a[1] * .8 });
+      x += n + 2 * a[1];
+      prevEnd = null;
     } else if (k == 'W') C.winds.push({ x0: x, x1: x + n, s: a[1] });
     else if (k == 'L') C.lifts.push({ x0: x, x1: x + n, y0: h - 7, y1: h + a[1] });
     else if (k == 'P') C.puffs.push({ x: x + n, y: h + a[1] });
@@ -3866,9 +3923,10 @@ function hopBuild(id) {
       floor(2, 'c');
       pad = { x0: x - 1.6, x1: x - .4, y: h, g: C.gates.length };
       C.pads.push(pad);
-    } else if (k == 'X') {
+    } else if (k == 'Y') C.keys.push({ x: x + n, y: h + a[1], g: C.gates.length });
+    else if (k == 'X' || k == 'Z') {
       floor(1, 'c');
-      C.gates.push({ x0: x - .8, x1: x - .2, y0: h, y1: h + 3.2, back: retry || C.cps[C.cps.length - 1] });
+      C.gates.push({ x0: x - .8, x1: x - .2, y0: h, y1: h + 3.2, back: retry || C.cps[C.cps.length - 1], door: k == 'Z' });
       retry = null;
     } else if (k == 'R') retry = { x: x - .6, y: h };
     else if (k == '*') C.stars.push({ x: x + n, y: h + a[1] });
@@ -3886,7 +3944,7 @@ function hopBuild(id) {
   // a floor next to a lower one reaches down to it (a step is a wall, not a ledge to walk under)
   for (const f of C.floors) {
     f.dep = 1.2;
-    if (f.k != 's') for (const g of C.floors) if (g.k != 's' && (g.x1 == f.x0 || g.x0 == f.x1)) f.dep = Math.max(f.dep, f.y - g.y + 1.2);
+    if (f.k != 's' && f.k != 'q') for (const g of C.floors) if (g.k != 's' && g.k != 'q' && (g.x1 == f.x0 || g.x0 == f.x1)) f.dep = Math.max(f.dep, f.y - g.y + 1.2);
   }
   // a floor a kite cloud starts next to: one-touch waits there for it
   for (const f of C.floors) f.mv = C.movers.findIndex(m => Math.abs(m.x - f.x1) < .01 && Math.abs(m.y - f.y) < .01);
@@ -3901,7 +3959,7 @@ function hopBuild(id) {
   const put = (a, b, k, v) => {
     for (let i = Math.max(0, Math.floor(a) - 2); i <= Math.min(C.near.length - 1, Math.ceil(b) + 2); i++) C.near[i][k].push(v);
   };
-  C.movers.forEach((m, j) => put(m.x, m.x + m.w + m.ax, 'mv', j));
+  C.movers.forEach((m, j) => put(m.x, m.x + m.w + m.ax + 2 * (m.r || 0), 'mv', j));
   C.springs.forEach(q => put(q.x, q.x, 'sp', q));
   C.puffs.forEach(q => put(q.x, q.x, 'pf', q));
   C.spk.forEach((q, j) => put(q.x, q.x, 'sk', j));
@@ -3911,14 +3969,29 @@ function hopBuild(id) {
 /* ---- the simulation (no DOM; the tests play whole courses) ---- */
 // a kite cloud's place at time t (it glides with an easy-in-out to and fro)
 function hopMover(m, t) {
+  if (m.r) { // round and round: from its start over the top to the far side, then back underneath
+    const a = 2 * Math.PI * t / m.T;
+    return { x: m.x + m.r * (1 - Math.cos(a)), y: m.y + m.r * Math.sin(a) };
+  }
   const u = .5 - Math.cos(2 * Math.PI * t / m.T) / 2;
   return { x: m.x + m.ax * u, y: m.y + m.ay * u };
 }
 const hopPuffY = (p, t) => p.y + Math.sin(t * 2.2 + p.x) * .3;
+// a crumbling cloud shakes for CR_FALL s after the pet lands on it, is gone from CR_FALL to CR_BACK s, then it is back
+const HOP_CR = { FALL: .7, BACK: 3.2 };
+// today's twists (hopDaily): [id, name, what it does, physics: gravity x, hop speed x, run speed x]
+const HOP_TW = [
+  ['moon', 'Moon hops', 'Floaty hops today: your pet floats like on the moon!', .78, .883, 1],
+  ['zoom', 'Zoomy shoes', 'Zoomy shoes today: your pet runs extra fast!', 1, 1, 1.2],
+  ['spark', 'Sparkle hunt', 'Sparkle hunt today: catch lots of sparkles!', 1, 1, 1],
+  ['lamp', 'Lantern night', 'Lantern night today: hop through the dark with a lantern!', 1, 1, 1],
+];
+const HOP_TWB = {};
+for (const t of HOP_TW) HOP_TWB[t[0]] = t;
 function hopNew(id, o = {}) {
-  const C = hopBuild(id), c0 = C.cps[0];
+  const C = hopBuild(id), c0 = C.cps[0], tw = HOP_TWB[o.tw] || HOP_TW[2];
   return {
-    C, id, mode: o.mode == 'free' ? 'free' : 'one', t: 0, dj: C.dj,
+    C, id, mode: o.mode == 'free' ? 'free' : 'one', t: 0, dj: C.dj, tw: HOP_TWB[o.tw] ? o.tw : '', gm: tw[3], jm: tw[4], sm: tw[5], crum: {},
     p: { x: c0.x, y: c0.y, vx: 0, vy: 0, gr: true, on: -1, jl: 0, coy: 0, buf: 0, held: false, face: 1, kb: 0, hit: 0 },
     cp: 0, cpF: C.cps.map(() => 0), falls: 0, bumps: 0, got: new Uint8Array(C.spk.length), spk: 0, stars: 0, gates: 0,
     wait: 'start', wt: .8, anim: null, offer: -1, helped: 0, done: false, ev: [],
@@ -3930,15 +4003,18 @@ function hopClone(st) {
   s.cpF = st.cpF.slice();
   s.got = st.got.slice();
   s.anim = st.anim && Object.assign({}, st.anim);
+  s.crum = Object.assign({}, st.crum);
   s.ev = [];
   return s;
 }
+// a floor is there unless it is a crumbling cloud that has fallen
+const hopThere = (st, j) => { const t0 = st.crum[j]; return t0 == null || st.t - t0 < HOP_CR.FALL || st.t - t0 >= HOP_CR.BACK; };
 // the surfaces under the pet: floors (solid) and kite clouds (land on top only)
 function hopSupport(st, x, y, eps) {
   const C = st.C, P = HOP_P, l = x - P.PW / 2 + .06, r = x + P.PW / 2 - .06;
   for (const j of C.col[Math.max(0, Math.min(C.col.length - 1, Math.floor(x)))] || []) {
     const f = C.floors[j];
-    if (r > f.x0 && l < f.x1 && Math.abs(y - f.y) <= eps) return j;
+    if (hopThere(st, j) && r > f.x0 && l < f.x1 && Math.abs(y - f.y) <= eps) return j;
   }
   for (const j of hopNear(C, x).mv) {
     const m = C.movers[j], q = hopMover(m, st.t);
@@ -3953,7 +4029,7 @@ function hopStep(st, inp = {}) {
   if (st.done || st.wait == 'offer') return;
   const C = st.C, P = HOP_P, p = st.p, dt = HOP_DT;
   const press = !!inp.jump && !p.held;
-  if (!inp.jump && p.held && st.mode == 'free' && p.vy > P.LOW && !p.spr) p.vy = P.LOW; // a short press: a small hop
+  if (!inp.jump && p.held && st.mode == 'free' && p.vy > P.LOW * st.jm && !p.spr) p.vy = P.LOW * st.jm; // a short press: a small hop
   p.held = !!inp.jump;
   st.t += dt;
   // waits: falling (back on the checkpoint in a moment), bounced back by a gate, carried by the helper balloon, ready
@@ -4014,7 +4090,7 @@ function hopStep(st, inp = {}) {
       stay = q.x > f.x1 + .2 || Math.abs(q.y - f.y) > .12;
     }
   }
-  const want = (one ? (ready && !stay ? P.RUN : 0) : (ready ? (inp.dir || 0) * P.FREE : 0)) + (ready ? wind : 0);
+  const want = (one ? (ready && !stay ? P.RUN * st.sm : 0) : (ready ? (inp.dir || 0) * P.FREE * st.sm : 0)) + (ready ? wind : 0);
   if (p.kb > 0) p.kb -= dt;
   else {
     const acc = (one ? (p.gr ? 30 : 14) : (p.gr ? 45 : 26)) * dt;
@@ -4026,7 +4102,7 @@ function hopStep(st, inp = {}) {
   if (p.gr) p.jl = st.dj ? 1 : 0;
   if (p.buf > 0 && ready) {
     if (p.gr || p.coy > 0) {
-      p.vy = P.JUMP;
+      p.vy = P.JUMP * st.jm;
       p.gr = false;
       p.on = -1;
       p.coy = 0;
@@ -4034,7 +4110,7 @@ function hopStep(st, inp = {}) {
       p.spr = false;
       st.ev.push(['jump']);
     } else if (press && st.dj && p.jl > 0) {
-      p.vy = P.JUMP2;
+      p.vy = P.JUMP2 * st.jm;
       p.jl--;
       p.buf = 0;
       p.spr = false;
@@ -4045,7 +4121,7 @@ function hopStep(st, inp = {}) {
   p.coy = Math.max(0, p.coy - dt);
   // gravity, floating (hold), updrafts
   if (!p.gr) {
-    p.vy -= P.G * dt;
+    p.vy -= P.G * st.gm * dt;
     if (p.held && p.vy < P.FLOAT) p.vy = P.FLOAT;
     for (const z of C.lifts) if (hopIn(z, p.x) && p.y > z.y0 && p.y < z.y1) p.vy = Math.min(7, p.vy + P.LIFT * dt);
     p.vy = Math.max(P.FALL, p.vy);
@@ -4065,7 +4141,7 @@ function hopStep(st, inp = {}) {
   for (let i = Math.max(0, Math.floor(p.x) - 1); i <= Math.min(C.col.length - 1, Math.floor(p.x) + 1); i++) {
     for (const j of C.col[i]) {
       const f = C.floors[j];
-      if (f.k != 's') solidHit(f.x0, f.x1, f.y - f.dep, f.y);
+      if (f.k != 's' && f.k != 'q') solidHit(f.x0, f.x1, f.y - f.dep, f.y);
     }
   }
   C.gates.forEach((g, i) => {
@@ -4088,7 +4164,7 @@ function hopStep(st, inp = {}) {
     for (let i = Math.max(0, Math.floor(p.x) - 1); i <= Math.min(C.col.length - 1, Math.floor(p.x) + 1); i++) {
       for (const j of C.col[i]) {
         const f = C.floors[j];
-        if (r > f.x0 && l < f.x1 && oy >= f.y - .001 && p.y <= f.y && f.y > by) {
+        if (r > f.x0 && l < f.x1 && oy >= f.y - .001 && p.y <= f.y && f.y > by && hopThere(st, j)) {
           best = j;
           by = f.y;
         }
@@ -4129,6 +4205,12 @@ function hopStep(st, inp = {}) {
       p.coy = P.COY;
       p.vy = Math.min(p.vy, 0);
     } else p.on = j;
+  }
+  // a crumbling cloud starts to shake when the pet stands on it; a fallen one comes back after a while
+  for (const j in st.crum) if (st.t - st.crum[j] >= HOP_CR.BACK) delete st.crum[j];
+  if (p.gr && p.on >= 0 && p.on < 1000 && C.floors[p.on].k == 'q' && st.crum[p.on] == null) {
+    st.crum[p.on] = st.t;
+    st.ev.push(['crumble', p.on]);
   }
   // a spring under the pet when it walks onto it
   if (p.gr && p.on < 1000) {
@@ -4176,6 +4258,12 @@ function hopStep(st, inp = {}) {
       st.ev.push(['star', i]);
     }
   });
+  for (const q of C.keys) {
+    if (!(st.gates & (1 << q.g)) && near(q, .4)) {
+      st.gates |= 1 << q.g;
+      st.ev.push(['key', q.g]);
+    }
+  }
   if (p.gr) {
     for (const d of C.pads) {
       if (!(st.gates & (1 << d.g)) && p.x > d.x0 - .3 && p.x < d.x1 + .3 && Math.abs(p.y - d.y) < .01) {
@@ -4223,21 +4311,114 @@ function hopHelp(st, yes) {
 const hopGold = c => c.gold || 90;
 const hopMedal = (c, sec) => (sec <= hopGold(c) ? 3 : sec <= Math.ceil(hopGold(c) * 1.3) ? 2 : 1);
 
+/* ---- the ghost: the pet's place every 0.2 s of the best run, two letters a sample (G-04b2) ----
+   A sample is the move since the last one: across in 1/16 tile (-31..32), up in 1/8 tile; a bigger jump (a fall back to a flag,
+   a balloon ride) is '.' and the place itself (x in 1/8 tile, 3 letters; y + 20 in 1/8 tile, 2 letters). The place is carried
+   exactly (the next move makes up for rounding), so the ghost never drifts. At most HOP_GMAX letters (about 160 s). */
+const HOP_G64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_', HOP_GMAX = 1600;
+const hopG = (v, n) => { let s = ''; for (let i = 0; i < n; i++, v = Math.floor(v / 64)) s += HOP_G64[v % 64]; return s; };
+const hopGv = (s, i, n) => { let v = 0; for (let k = n - 1; k >= 0; k--) { const d = HOP_G64.indexOf(s[i + k]); if (d < 0) return NaN; v = v * 64 + d; } return v; };
+function hopRec(R, st) {
+  if (R.k++ % 12) return;
+  const p = st.p, qx = Math.round((p.x - R.x) * 16), qy = Math.round((p.y - R.y) * 8);
+  if (R.s.length >= HOP_GMAX - 5) return;
+  if (!R.s.length || Math.abs(qx - .5) > 31.5 || Math.abs(qy - .5) > 31.5) {
+    const ax = Math.max(0, Math.min(262143, Math.round(p.x * 8))), ay = Math.max(0, Math.min(4095, Math.round((p.y + 20) * 8)));
+    R.s += '.' + hopG(ax, 3) + hopG(ay, 2);
+    R.x = ax / 8;
+    R.y = ay / 8 - 20;
+  } else {
+    R.s += HOP_G64[qx + 31] + HOP_G64[qy + 31];
+    R.x += qx / 16;
+    R.y += qy / 8;
+  }
+}
+const hopRecNew = () => ({ k: 0, x: 0, y: 0, s: '' });
+// a saved ghost as its places ({x: [], y: []}, one every 0.2 s), or null when the text is damaged
+function hopGhostIn(s) {
+  if (typeof s != 'string' || !s.length || s.length > HOP_GMAX || s[0] != '.') return null;
+  const x = [], y = [];
+  let cx = 0, cy = 0;
+  for (let i = 0; i < s.length;) {
+    if (s[i] == '.') {
+      cx = hopGv(s, i + 1, 3) / 8;
+      cy = hopGv(s, i + 4, 2) / 8 - 20;
+      i += 6;
+    } else {
+      const a = HOP_G64.indexOf(s[i]), b = HOP_G64.indexOf(s[i + 1]);
+      if (a < 0 || b < 0) return null;
+      cx += (a - 31) / 16;
+      cy += (b - 31) / 8;
+      i += 2;
+    }
+    if (!isFinite(cx) || !isFinite(cy)) return null;
+    x.push(cx);
+    y.push(cy);
+  }
+  return { x, y };
+}
+// where the ghost is t seconds into the course (between two samples), or null after its run
+function hopGhostAt(g, t) {
+  if (!g || t < 0) return null;
+  const f = t * 5, i = Math.floor(f);
+  if (i + 1 >= g.x.length) return null;
+  const u = f - i, x = g.x[i] + (g.x[i + 1] - g.x[i]) * u, y = g.y[i] + (g.y[i + 1] - g.y[i]) * u;
+  return { x, y, jump: Math.abs(g.x[i + 1] - g.x[i]) > 3 || Math.abs(g.y[i + 1] - g.y[i]) > 5 };
+}
+
+/* ---- today's twist: a course the child has finished and one special rule, from the date (G-04b2, R-03 A5) ----
+   The same all day, another one tomorrow; the first finish a day that keeps the rule earns 2 stars to spend. Nothing is lost on a
+   missed day and nothing counts days in a row. */
+const hopHash = s => { let h = 2166136261; for (const ch of String(s)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
+// day: a day key (today()); done: how many courses are finished in order (0-48) -> {c: course id, tw: twist id}
+function hopDaily(day, done) {
+  const h = hopHash('hop' + day), n = Math.max(1, Math.min(HOP_COURSES.length, done));
+  return { c: HOP_COURSES[(h >>> 3) % n].id, tw: HOP_TW[h % HOP_TW.length][0] };
+}
+// what the twist asks for its bonus: Sparkle hunt wants about half the sparkles; the others want the flag
+const hopTwNeed = (tw, id) => (tw == 'spark' ? Math.max(10, Math.floor(hopBuild(id).spk.length * .5)) : 0);
+const hopTwOk = (st) => !st.tw || st.tw != 'spark' || st.spk >= hopTwNeed('spark', st.id);
+
+/* ---- costumes for the pet, bought with stars (G-04b2, R-03 K3): a fixed list, each with its price; never random ----
+   Stars to spend = stars found + 1 for each gold medal + today's-twist bonus stars - stars spent. Buying never takes a found star
+   off a course. [id, name, price] */
+const HOP_WEAR = [['leaf', 'Leaf Cape', 4], ['cape', 'Hero Cape', 8], ['bal', 'Balloon Bunch', 12], ['fairy', 'Fairy Wings', 16],
+  ['kite', 'Kite Tail', 20], ['brolly', 'Cloud Umbrella', 25], ['jet', 'Bubble Jetpack', 30], ['halo', 'Star Ring', 36],
+  ['dragon', 'Dragon Wings', 42], ['rbow', 'Rainbow Cape', 50]];
+const HOP_WEARB = {};
+for (const w of HOP_WEAR) HOP_WEARB[w[0]] = w;
+
 /* ---- drawings (SVG in the --a-* roles; a tile is 40 units; made once into canvases) ---- */
 // round puffs as one path: [x, y, r] each
 const hopPuffs = (list, c, o) => ghP(list.map(([x, y, r]) => `M${gh1(x - r)} ${gh1(y)}a${gh1(r)} ${gh1(r)} 0 1 0 ${gh1(2 * r)} 0` +
   `a${gh1(r)} ${gh1(r)} 0 1 0 ${gh1(-2 * r)} 0`).join(''), c, o);
 // swap colour roles in a drawing ({w: 'v1'}: white becomes light purple)
 const hopTint = (svg, map) => svg.replace(/var\(--a-([a-z]\d?)\)/g, (m, r) => `var(--a-${map[r] || r})`);
-// a cloud floor w tiles wide and dep tiles deep: puffy top, shaded underside; pal = [base, shade, deep]; the walking surface is y 10
-function hopCloudArt(w, dep, pal) {
+// a cloud floor w tiles wide and dep tiles deep, as a thick 2.5D block lit from the top left (G-04b2): a flat top face seen a
+// little from above with a puffy back rim and a light front edge, a shaded side face with puffs underneath, a soft dark band
+// under the top's lip; crack: a crumbling cloud (dashed cracks on the side). pal = [base, shade, deep]; the walking surface is y 10
+function hopCloudArt(w, dep, pal, crack) {
   const W = w * 40, D = Math.max(34, dep * 40 - 4), top = [], bot = [];
-  const nt = Math.max(1, Math.round(W / 30)), nb = Math.max(1, Math.round(W / 26));
-  for (let i = 0; i < nt; i++) top.push([8 + (i + .5) * W / nt, 13, Math.min(10, W / nt * .5)]);
+  const nt = Math.max(1, Math.round(W / 26)), nb = Math.max(1, Math.round(W / 26));
+  for (let i = 0; i < nt; i++) top.push([8 + (i + .5) * W / nt, 7, Math.min(8, W / nt * .5)]);
   for (let i = 0; i < nb; i++) bot.push([8 + (i + .5) * W / nb, 4 + D, Math.min(13, W / nb * .62)]);
   const sh = (l, dx, dy) => l.map(([x, y, r]) => [x + dx, y + dy, r]);
-  return hopPuffs(sh(bot, 2, 4), pal[2]) + ghR(10, 14, W - 2, D - 8, 14, pal[2]) + hopPuffs(bot, pal[1]) + ghR(8, 10, W, D - 8, 14, pal[1]) +
-    ghR(8, 8, W - 3, Math.min(D - 16, 22), 12, pal[0]) + hopPuffs(sh(top, -1, -2), pal[0]) + ghE(8 + Math.min(W * .25, 22), 8, Math.min(W * .18, 14), 2.6, 'w', .8);
+  let s = hopPuffs(sh(bot, 2, 4), pal[2]) + ghR(10, 16, W - 2, D - 10, 14, pal[2]) + hopPuffs(bot, pal[1]) + ghR(8, 14, W, D - 12, 14, pal[1]);
+  // a tall cloud: puffy sides and a side face that darkens toward the bottom
+  if (D > 60) {
+    const side = [];
+    for (let y = 34; y < D - 6; y += 24) side.push([10, y, 8], [6 + W, y + 12, 8]);
+    s += hopPuffs(side, pal[1]);
+    for (let k = 0; k < 3; k++) s += ghR(8, 14 + (D - 12) * (.35 + k * .2), W, (D - 12) * (.65 - k * .2), 14, pal[2], .2);
+  }
+  s += ghR(12, 19, W - 8, 6, 3, pal[2], .45) + hopPuffs(sh(top, 1, 1), pal[1]) + hopPuffs(top, pal[0]) + ghR(8, 5, W, 14, 7, pal[0]) +
+    ghR(10, 15.5, W - 4, 2.4, 1.2, 'w', .7) + ghE(8 + Math.min(W * .22, 20), 5, Math.min(W * .16, 12), 2.2, 'w', .5);
+  if (crack) {
+    let d = '';
+    for (let x = 22; x < W - 6; x += 30) d += `M${x} 22l5 7l-4 6l6 8`;
+    s += ghL(d, 'k2', 1.6, .35) + ghR(8, 5, W, 3, 1.5, 'o1', .7);
+  }
+  return s;
 }
 // a bridge: wood planks on rope rails, or a rainbow bridge in the last world (the walking surface is y 10)
 function hopBridgeArt(w, rainbow) {
@@ -4294,12 +4475,163 @@ const HOP_ART = {
     ghE(28, 22, 9, 5, 'w', .6, -35) + ghC(31, 38, 3, 'k2') + ghC(47, 38, 3, 'k2') + ghC(30, 37, 1.1, 'w') + ghC(46, 37, 1.1, 'w') +
     ghE(25, 46, 4, 2.4, 'p1', .9) + ghE(53, 46, 4, 2.4, 'p1', .9) + ghL('M32 48Q39 55 46 48', 'k2', 2.4),
 };
-// the worlds' far and near layers (960 x 200 and 960 x 120) and what stays put in the sky (100 x 100). Hills: Star Rally's rlRidge.
-const HOP_SKY = {
-  meadow: () => ghSun(50, 50, 24), peaks: () => ghSun(50, 50, 20), rainbow: () => ghSun(50, 50, 22),
-  night: () => ghC(50, 50, 30, 'y1', .22) + `<path ${ghF('m')} d="M46 26a24 24 0 1 0 22 34a19 19 0 0 1 -22 -34Z"/>`,
+/* ---- the worlds' scenery (G-04b2, R-03 K2): 4-5 depth layers a world, each 960 wide and periodic (it wraps) ----
+   bd: the backdrop, 960 x 260 (sky things, far islands or mountains; composed once with the sky into one picture, it hardly moves);
+   far: 960 x 150 hills; near: 960 x 130 hills with trees, houses or towers; bank: 960 x 120 a bank of clouds. The renderer fades
+   each layer toward the sky colour by its distance (atmospheric perspective) and draws each at its own band height. */
+// the crest line of a ridge (a light rim along the top of a hill)
+const hopCrest = (base, waves) => {
+  let d = '';
+  for (let x = 0; x <= 960; x += 16) d += `${x ? 'L' : 'M'}${x} ${gh1(rlWave(base, waves, x))}`;
+  return d;
 };
-// a bank of clouds along the bottom of the near layer
+// a lit hill: a darker copy shifted right for the shade side, the hill, a light rim just inside its crest
+const hopHill = (base, waves, bot, c, c2, rimO = .45) => ghP(rlRidge(base, waves, bot, 10, 5), c2) + ghP(rlRidge(base, waves, bot), c) +
+  ghL(hopCrest(base + 3, waves), 'w', 3, rimO);
+// things in a row along a ridge (kept inside 30..930 so nothing is cut where the layer wraps)
+const hopRow = (base, waves, n, f) => {
+  let s = '';
+  for (let i = 0; i < n; i++) { const x = 30 + (i + .5) * 900 / n + ((i * 37) % 23) - 11; s += f(x, rlWave(base, waves, x) + 3, i); }
+  return s;
+};
+const hopPine = (x, y, s, c) => ghP(`M${gh1(x + 2 * s)} ${gh1(y - 30 * s)}L${gh1(x + 13 * s)} ${gh1(y)}L${gh1(x - 9 * s)} ${gh1(y)}Z`, c + '2') +
+  ghP(`M${gh1(x)} ${gh1(y - 30 * s)}L${gh1(x + 10 * s)} ${gh1(y - 1)}L${gh1(x - 10 * s)} ${gh1(y - 1)}Z`, c) + ghR(x - 1.5 * s, y - 2, 3 * s, 4, 0, 'n2');
+const hopPalm = (x, y, s) => ghL(`M${x} ${y}Q${gh1(x + 6 * s)} ${gh1(y - 14 * s)} ${gh1(x + 2 * s)} ${gh1(y - 28 * s)}`, 'n', 3 * s) +
+  hopPuffs([[x - 6 * s, y - 28 * s, 6 * s], [x + 10 * s, y - 28 * s, 6 * s], [x + 2 * s, y - 32 * s, 6 * s]], 'g2') +
+  hopPuffs([[x - 5 * s, y - 30 * s, 5 * s], [x + 9 * s, y - 30 * s, 5 * s], [x + 2 * s, y - 34 * s, 5 * s]], 'g');
+const hopHouse = (x, y, s, c) => ghR(x - 9 * s, y - 14 * s, 18 * s, 14 * s, 1, c) + ghP(`M${gh1(x - 11 * s)} ${gh1(y - 13 * s)}L${x} ${gh1(y - 24 * s)}` +
+  `L${gh1(x + 11 * s)} ${gh1(y - 13 * s)}Z`, c + '2') + ghR(x - 4 * s, y - 10 * s, 4 * s, 4 * s, .5, 'y1') + ghR(x + 2 * s, y - 10 * s, 4 * s, 4 * s, .5, 'y', .8);
+const hopTower = (x, y, s, c, roof) => ghR(x - 7 * s, y - 34 * s, 14 * s, 34 * s, 1, c) + ghR(x + 2 * s, y - 34 * s, 5 * s, 34 * s, 0, c + '2', .5) +
+  ghP(`M${gh1(x - 10 * s)} ${gh1(y - 33 * s)}L${x} ${gh1(y - 52 * s)}L${gh1(x + 10 * s)} ${gh1(y - 33 * s)}Z`, roof) +
+  ghR(x - 2 * s, y - 26 * s, 4 * s, 7 * s, 2, 'y1') + ghL(`M${x} ${gh1(y - 52 * s)}V${gh1(y - 60 * s)}`, 'e2', 1.4) + ghR(x, y - 60 * s, 7 * s, 4 * s, 0, 'p');
+const hopMill = (x, y, s) => ghP(`M${gh1(x - 5 * s)} ${y}L${gh1(x - 3 * s)} ${gh1(y - 26 * s)}H${gh1(x + 3 * s)}L${gh1(x + 5 * s)} ${y}Z`, 'w2') +
+  ghL(`M${gh1(x - 14 * s)} ${gh1(y - 40 * s)}L${gh1(x + 14 * s)} ${gh1(y - 12 * s)}M${gh1(x - 14 * s)} ${gh1(y - 12 * s)}L${gh1(x + 14 * s)} ${gh1(y - 40 * s)}`, 'w', 3 * s) +
+  ghC(x, y - 26 * s, 2.4 * s, 'r');
+const hopLolly = (x, y, s) => ghL(`M${x} ${y}V${gh1(y - 20 * s)}`, 'w', 2 * s) + ghBall(x, y - 26 * s, 8 * s, ['p', 'y', 'c', 'v'][Math.round(x) % 4]) +
+  ghL(`M${gh1(x - 4 * s)} ${gh1(y - 26 * s)}a${gh1(4 * s)} ${gh1(4 * s)} 0 1 1 ${gh1(4 * s)} ${gh1(4 * s)}`, 'w', 1.6 * s, .8);
+// a floating island: a grassy top on a rock that tapers down, with something on top
+const hopIsle = (x, y, s, top, rock, on = '') => ghP(`M${gh1(x - 34 * s)} ${y}Q${gh1(x - 22 * s)} ${gh1(y + 30 * s)} ${gh1(x + 2 * s)} ${gh1(y + 50 * s)}` +
+  `Q${gh1(x + 22 * s)} ${gh1(y + 28 * s)} ${gh1(x + 34 * s)} ${y}Z`, rock + '2') +
+  ghP(`M${gh1(x - 34 * s)} ${y}Q${gh1(x - 22 * s)} ${gh1(y + 26 * s)} ${gh1(x - 4 * s)} ${gh1(y + 44 * s)}Q${gh1(x + 4 * s)} ${gh1(y + 20 * s)} ${gh1(x + 10 * s)} ${y}Z`, rock) +
+  ghE(x, y, 35 * s, 7 * s, top + '2') + ghE(x - 1, y - 1.5 * s, 34 * s, 6 * s, top) + ghE(x - 14 * s, y - 3 * s, 10 * s, 2 * s, top + '1', .8) + on;
+const hopRbow = (x, y, r, w, o) => ['r', 'o', 'y', 'g', 'b', 'v'].map((c, i) => ghL(`M${x - r + i * w} ${y}A${r - i * w} ${r - i * w} 0 0 1 ${x + r - i * w} ${y}`, c, w, o)).join('');
+const hopAurora = () => ghP('M0 70C120 30 220 110 360 60S600 20 720 80S900 40 960 70V100C860 80 760 120 640 100S400 70 300 110S80 80 0 100Z', 'g1', .35) +
+  ghP('M0 110C160 80 260 140 420 100S700 70 820 120S940 100 960 110V128C860 120 720 150 560 130S280 120 160 140S40 120 0 128Z', 'c1', .3);
+const HOP_SCENE = {
+  meadow: {
+    sky: () => ghSun(50, 50, 24),
+    bd: () => ghCloud(140, 40, 1.4) + ghCloud(520, 70, 1.8) + ghCloud(820, 30, 1.2) + hopIsle(300, 110, .6, 'g', 'n') +
+      hopIsle(720, 70, .45, 'g', 'n', ghTree(720, 66, .6)) + hopHill(236, [[14, 3, .5], [8, 7, 1.2]], 260, 'b1', 'b2', .3),
+    far: () => hopHill(70, [[16, 2, .4], [9, 5, 1.1]], 150, 'g1', 'g', .5) + hopRow(70, [[16, 2, .4], [9, 5, 1.1]], 9, (x, y) => ghTree(x, y, .8)),
+    near: () => hopHill(64, [[12, 3, 1.4], [6, 8, .3]], 130, 'g', 'g2') + hopRow(64, [[12, 3, 1.4], [6, 8, .3]], 7, (x, y) => ghTree(x, y, 1.4)),
+    bank: () => hopBank(70, 'w', 'w2'),
+  },
+  peaks: {
+    sky: () => ghSun(50, 50, 20),
+    bd: () => {
+      const m = [[46, 3, .2], [24, 6, 1.4], [10, 11, .5]];
+      return ghCloud(240, 40, 1.3) + ghCloud(760, 60, 1.1) + ghP(rlRidge(170, m, 260, 8, 5), 'b2') + ghP(rlRidge(170, m, 260), 'b1') + ghP(rlCap(170, m, 12), 'w', .85);
+    },
+    far: () => {
+      const m = [[30, 2, 1], [14, 5, .2], [6, 9, 2]];
+      return hopHill(70, m, 150, 'c1', 'c') + ghP(rlCap(70, m, 8), 'w');
+    },
+    near: () => hopHill(70, [[10, 3, .6], [6, 7, 2]], 130, 'g2', 'g3') + hopRow(70, [[10, 3, .6], [6, 7, 2]], 14, (x, y) => hopPine(x, y, 1, 'g')),
+    bank: () => hopBank(66, 'w', 'w2'),
+  },
+  night: {
+    sky: () => ghC(50, 50, 30, 'y1', .22) + `<path ${ghF('m')} d="M46 26a24 24 0 1 0 22 34a19 19 0 0 1 -22 -34Z"/>`,
+    bd: () => rlStars(60) + hopTint(ghCloud(420, 150, 1.3) + ghCloud(820, 120, 1), { w: 'v1', w2: 'v' }) + hopIsle(220, 130, .6, 'v', 'v') +
+      hopIsle(640, 160, .5, 'v', 'v', hopHouse(640, 157, .7, 'v')),
+    far: () => hopHill(76, [[10, 3, .7], [6, 8, 2]], 150, 'v2', 'v3', .25),
+    near: () => hopHill(72, [[12, 2, 1.2], [5, 6, .4]], 130, 'v3', 'k2', .2) + hopRow(72, [[12, 2, 1.2], [5, 6, .4]], 6, (x, y) => hopHouse(x, y, 1.3, 'v')),
+    bank: () => hopBank(72, 'v1', 'v'),
+  },
+  rainbow: {
+    sky: () => ghSun(50, 50, 22),
+    bd: () => hopRbow(480, 260, 300, 10, .55) + ghCloud(180, 220, 1.8) + ghCloud(790, 220, 1.8) + ghCloud(500, 90, 1.1) +
+      hopIsle(120, 120, .7, 'p', 'v', hopLolly(120, 116, .9)),
+    far: () => hopHill(74, [[14, 2, 1], [7, 6, .2]], 150, 'p1', 'p'),
+    near: () => hopHill(70, [[12, 3, .2], [5, 7, 1.6]], 130, 'g1', 'g') + hopRow(70, [[12, 3, .2], [5, 7, 1.6]], 9, (x, y) => hopLolly(x, y, 1.3)),
+    bank: () => hopBank(70, 'w', 'w2'),
+  },
+  sunset: {
+    sky: () => ghC(50, 50, 46, 'o1', .3) + ghBall(50, 50, 30, 'o'),
+    bd: () => hopTint(ghCloud(160, 60, 1.6) + ghCloud(600, 40, 1.2) + ghCloud(860, 90, 1.4), { w: 'p1', w2: 'o1' }) +
+      hopIsle(360, 130, .7, 't', 'o', hopPalm(366, 127, .8)) + hopIsle(760, 160, .5, 't', 'o') + hopHill(240, [[10, 3, .3], [6, 6, 1]], 260, 'o1', 'o'),
+    far: () => hopHill(74, [[12, 2, 2], [8, 5, .7]], 150, 'p1', 'p', .4),
+    near: () => hopHill(76, [[9, 3, .9], [6, 6, .1]], 130, 't', 't2') + hopRow(76, [[9, 3, .9], [6, 6, .1]], 6, (x, y) => hopPalm(x, y, 1.4)),
+    bank: () => hopBank(70, 'm1', 'm'),
+  },
+  whirl: {
+    sky: () => ghSun(50, 50, 20),
+    bd: () => {
+      const m = [[36, 2, 1.7], [18, 5, .3], [8, 12, 1]];
+      return ghCloud(120, 50, 1.2) + ghCloud(470, 30, 1.6) + ghCloud(800, 70, 1.3) + ghP(rlRidge(180, m, 260, 8, 5), 'b2') + ghP(rlRidge(180, m, 260), 'b1') +
+        ghP(rlCap(180, m, 10), 'w', .85);
+    },
+    far: () => hopHill(72, [[12, 2, .2], [8, 6, 1.4]], 150, 'g1', 'g') + hopRow(72, [[12, 2, .2], [8, 6, 1.4]], 4, (x, y) => hopMill(x, y, 1.1)),
+    near: () => hopHill(66, [[12, 3, 1.1], [5, 8, .6]], 130, 'g', 'g2') + hopRow(66, [[12, 3, 1.1], [5, 8, .6]], 8, (x, y, i) => (i % 2 ? ghTree(x, y, 1.3) : hopPine(x, y, 1, 'g'))),
+    bank: () => hopBank(68, 'w', 'w2'),
+  },
+  aurora: {
+    sky: () => ghC(50, 50, 22, 'w', .25) + ghC(50, 50, 16, 'm'),
+    bd: () => {
+      const m = [[40, 3, .9], [20, 6, .1], [9, 13, 1.3]];
+      return rlStars(70) + hopAurora() + ghP(rlRidge(196, m, 260, 8, 5), 'b3') + ghP(rlRidge(196, m, 260), 'b2') + ghP(rlCap(196, m, 22), 'c1', .8);
+    },
+    far: () => {
+      const m = [[24, 2, .4], [12, 5, 1.6]];
+      return hopHill(72, m, 150, 'c2', 'c3', .3) + ghP(rlCap(72, m, 12), 'c1');
+    },
+    near: () => hopHill(74, [[10, 3, 2], [5, 7, .5]], 130, 'b3', 'k2', .2) + hopRow(74, [[10, 3, 2], [5, 7, .5]], 15, (x, y) => hopPine(x, y, 1.1, 'b')),
+    bank: () => hopBank(72, 'c1', 'c'),
+  },
+  castle: {
+    sky: () => ghSun(50, 50, 20),
+    bd: () => ghCloud(160, 50, 1.4) + ghCloud(820, 40, 1.2) + hopRbow(700, 230, 160, 7, .4) +
+      hopIsle(420, 160, 1, 'v', 'e', hopTower(400, 156, 1.1, 'w', 'v') + hopTower(440, 156, .8, 'w', 'p')),
+    far: () => hopHill(74, [[12, 2, .8], [7, 6, 2]], 150, 'v1', 'v'),
+    near: () => hopHill(70, [[12, 3, 1.5], [5, 7, .3]], 130, 'p1', 'p') + hopRow(70, [[12, 3, 1.5], [5, 7, .3]], 5, (x, y, i) => hopTower(x, y, 1.1, 'w', ['v', 'p', 'b'][i % 3])),
+    bank: () => hopBank(70, 'w', 'w2'),
+  },
+};
+// what goes in the sky now and then: a drifting cloud, a bird (two wing pictures), a firefly
+const HOP_DECO = {
+  drift: () => ghCloud(60, 30, 1.6),
+  bird0: () => ghL('M3 12Q10 3 18 10Q26 3 33 12', 'k2', 2.6, .75),
+  bird1: () => ghL('M3 7Q10 15 18 10Q26 15 33 7', 'k2', 2.6, .75),
+  shadow: () => ghE(40, 12, 38, 11, 'k', .07) + ghE(40, 12, 28, 8, 'k', .08) + ghE(40, 12, 18, 5, 'k', .1),
+  glint: () => rwSpark(20, 20, 18, 'w', .95),
+  key: () => ghL('M12 22a7 7 0 1 0 0.1 0', 'y2', 6) + ghL('M12 21a7 7 0 1 0 0.1 0', 'y', 4.4) + ghR(18, 18, 18, 5, 2, 'y2') + ghR(18, 17, 17, 4.4, 2, 'y') +
+    ghR(30, 20, 3.4, 7, 1, 'y') + ghR(24, 20, 3.4, 5, 1, 'y') + ghE(8, 16, 2.6, 1.4, 'w', .7, -40),
+  // a door in a cloud-stone arch: closed (a wooden door with a keyhole) or open (swung back) (40 x 140, the floor at the bottom)
+  door: open => ghShad(20, 138, 18, 2.4) + ghP('M0 140V30A20 22 0 0 1 40 30V140Z', 'e2') + ghP('M2 140V32A18 20 0 0 1 38 32V140Z', 'e1') +
+    (open ? ghP('M7 140V36A13 15 0 0 1 33 36V140Z', 'v3') + ghR(26, 34, 7, 104, 2, 'n2') + ghR(27, 34, 4, 104, 2, 'n') :
+      ghP('M6 140V36A14 16 0 0 1 34 36V140Z', 'n2') + ghP('M6 140V36A13 15 0 0 1 32 36V140Z', 'n') + ghL('M14 34V140M24 32V140', 'n2', 1.6, .7) +
+      ghC(20, 86, 4, 'k2') + ghR(18.5, 87, 3, 8, 1, 'k2') + ghBall(28, 96, 3, 'y') + ghE(12, 44, 3, 6, 'n1', .5)),
+};
+// pet costumes (200 x 200, drawn behind the pet with its picture; the pet's feet at y 184, its middle about x 100)
+const hopCape = (cs, o = 1) => cs.map((c, i) => ghP(`M${70 + i * 3} ${104 + i * 3}Q100 ${96 + i * 3} ${130 - i * 3} ${104 + i * 3}L${150 - i * 4} ${178 - i * 3}` +
+  `Q100 ${190 - i * 4} ${50 + i * 4} ${178 - i * 3}Z`, c, o)).join('');
+const hopWing = (x, y, rx, ry, a, c) => ghE(x, y, rx, ry, c + '2', .9, a) + ghE(x - 1, y - 1, rx * .9, ry * .86, c, .9, a) + ghE(x - rx * .3, y - ry * .3, rx * .3, ry * .2, 'w', .7, a);
+const HOP_COSTUME = {
+  leaf: () => hopCape(['g2', 'g']) + ghL('M100 104V180M100 130L78 150M100 130L122 150M100 158L84 172M100 158L116 172', 'g3', 2, .6),
+  cape: () => hopCape(['r2', 'r']) + ghE(84, 112, 10, 4, 'r1', .6, -10),
+  bal: () => ghL('M118 112Q130 70 150 46M118 112Q150 80 176 64M118 112Q128 86 132 70', 'k2', 1.4, .7) + ghBall(150, 34, 14, 'r') + ghBall(176, 52, 13, 'b') +
+    ghBall(132, 58, 12, 'y'),
+  fairy: () => hopWing(64, 96, 30, 16, -35, 'c') + hopWing(136, 96, 30, 16, 35, 'c') + hopWing(70, 132, 20, 11, 30, 'p') + hopWing(130, 132, 20, 11, -30, 'p'),
+  kite: () => ghL('M80 150C60 130 50 160 30 140S10 150 0 132', 'k2', 2, .7) + ['r', 'y', 'b'].map((c, i) => ghP(`M${54 - i * 22} 140l10-10l3 13Z`, c + '2') + ghP(`M${54 - i * 22} 140l9-9l1 8Z`, c)).join(''),
+  brolly: () => ghL('M128 150V44', 'n2', 4) + hopPuffs([[86, 40, 18], [114, 32, 22], [142, 32, 22], [170, 40, 18]], 'w2') +
+    hopPuffs([[86, 36, 18], [114, 28, 22], [142, 28, 22], [170, 36, 18]], 'w') + ghE(104, 22, 10, 4, 'w', .9, -10),
+  jet: () => ghR(44, 102, 40, 58, 14, 'c2') + ghR(42, 100, 38, 56, 13, 'c') + ghR(50, 106, 10, 30, 5, 'c1', .8) + ghC(52, 172, 6, 'w', .9) + ghC(70, 176, 5, 'w', .8) +
+    ghC(60, 188, 4, 'w', .7),
+  halo: () => [0, 1, 2, 3, 4].map(i => { const a = i * 1.257, x = 100 + Math.cos(a) * 34, y = 22 + Math.sin(a) * 9; return `<path ${ghF('y2')} d="${rwStarD(x + 1, y + 1, 8, 4)}"/><path ${ghF('y')} d="${rwStarD(x, y, 8, 4)}"/>`; }).join(''),
+  dragon: () => ['M78 112L20 64L36 100L8 102L40 124L22 140L74 136Z', 'M122 112L180 64L164 100L192 102L160 124L178 140L126 136Z'].map(d => ghP(d, 'v2')).join('') +
+    ghP('M78 110L26 70L40 102L16 106L44 124L30 136L74 132Z', 'v') + ghP('M122 110L174 70L160 102L184 106L156 124L170 136L126 132Z', 'v'),
+  rbow: () => hopCape(['v2', 'v', 'b', 'g', 'y', 'o', 'r']),
+};
+// a bank of clouds along the bottom of a layer
 function hopBank(y, c1, c2) {
   const a = [], b = [];
   for (let x = 0; x <= 960; x += 60) {
@@ -4309,34 +4641,6 @@ function hopBank(y, c1, c2) {
   }
   return hopPuffs(a, c2) + ghR(0, y + 4, 960, 120, 0, c2) + hopPuffs(b, c1) + ghR(0, y + 10, 960, 120, 0, c1);
 }
-const HOP_BACK = {
-  meadow: {
-    far: () => ghCloud(300, 50, 1.6) + ghCloud(700, 70, 1.3) + ghP(rlRidge(168, [[14, 3, .5], [8, 7, 1.2]], 200), 'g1', .8) +
-      ghP(rlRidge(184, [[8, 4, 1.4], [5, 9, .3]], 200), 'g', .7),
-    near: () => hopBank(70, 'w', 'w2'),
-  },
-  peaks: {
-    far: () => {
-      const m = [[40, 3, .2], [22, 6, 1.4], [10, 11, .5]];
-      return ghCloud(240, 46, 1.3) + ghCloud(760, 64, 1.1) + ghP(rlRidge(130, m, 200, 6, 4), 'b2', .45) + ghP(rlRidge(130, m, 200), 'b1') +
-        ghP(rlCap(130, m, 22), 'w');
-    },
-    near: () => hopBank(66, 'w', 'w2'),
-  },
-  night: {
-    far: () => rlStars(46) + hopTint(ghCloud(420, 110, 1.3) + ghCloud(820, 80, 1), { w: 'v1', w2: 'v' }) +
-      ghP(rlRidge(178, [[10, 3, .7], [6, 8, 2]], 200, 6, 3), 'v3', .5) + ghP(rlRidge(178, [[10, 3, .7], [6, 8, 2]], 200), 'v2', .8),
-    near: () => hopBank(72, 'v1', 'v'),
-  },
-  rainbow: {
-    far: () => {
-      let s = '';
-      ['r', 'o', 'y', 'g', 'b', 'v'].forEach((c, i) => { s += ghL(`M${200 + i * 9} 200A${280 - i * 9} ${230 - i * 9} 0 0 1 ${760 - i * 9} 200`, c, 9, .6); });
-      return s + ghCloud(180, 160, 1.8) + ghCloud(790, 160, 1.8) + ghCloud(500, 50, 1.1);
-    },
-    near: () => hopBank(70, 'w', 'w2'),
-  },
-};
 // the Game Room card (240 x 100): a little green critter mid-hop between clouds, a flower spring, a star and the checkered flag
 function hopHubArt() {
   const cl = (x, y, w) => hopPuffs([[x + 8, y + 9, 8], [x + w - 8, y + 9, 8]], 'w3') + ghR(x, y, w, 12, 6, 'w2') + ghR(x, y - 2, w - 2, 9, 5, 'w') +
@@ -4350,9 +4654,13 @@ function hopHubArt() {
     `<path ${ghF('y2')} d="${rwStarD(158, 20, 9, 4.5)}"/><path ${ghF('y')} d="${rwStarD(157, 19, 8, 4)}"/>` + ghShad(206, 59, 7, 1.4) +
     ghR(202, 12, 3, 46, 1.5, 'e2') + ghBall(203.5, 11, 3, 'y') + ghR(207, 15, 22, 14, 1, 'k') + ghR(206, 14, 22, 14, 1, 'w') + ghP(sq, 'k2');
 }
-// a world's picture for the menu (its far and near layers over the sky colours)
-const hopWorldPic = w => `<svg class="art" viewBox="0 0 960 200" preserveAspectRatio="xMidYMax slice" aria-hidden="true" focusable="false">` +
-  `${HOP_BACK[w.id].far()}<g transform="translate(0 104)">${HOP_BACK[w.id].near()}</g></svg>`;
+// a world's picture for the menu (its layers over the sky colours)
+const hopWorldPic = w => {
+  const L = HOP_SCENE[w.id];
+  return `<svg class="art" viewBox="0 0 960 200" preserveAspectRatio="xMidYMax slice" aria-hidden="true" focusable="false">` +
+    `<g transform="translate(0 -96)">${L.bd()}</g><g transform="translate(0 70)">${L.far()}</g><g transform="translate(0 104)">${L.near()}</g>` +
+    `<g transform="translate(0 150)">${L.bank()}</g></svg>`;
+};
 
 /* ---- the save (S.hop): read with defaults, every value checked ---- */
 const hopNum = (v, lo, hi) => Math.max(lo, Math.min(hi, Math.floor(+v || 0)));
@@ -4373,8 +4681,41 @@ function hopS() {
   const tr = HOP_TRAILS.find(t => t[0] === r.trail);
   if (!tr || hopStarsAll(r) < tr[2]) r.trail = 'none';
   if (!HOP_BY[r.cur] || !hopOpen(HOP_BY[r.cur], r)) r.cur = (HOP_COURSES.find(c => hopOpen(c, r) && !r.best[c.id]) || HOP_COURSES[0]).id;
-  r.world = hopOpen(HOP_COURSES[hopNum(r.world, 0, 3) * 6], r) ? hopNum(r.world, 0, 3) : HOP_BY[r.cur].w;
+  const nw = HOP_WORLDS.length - 1;
+  r.world = hopOpen(HOP_COURSES[hopNum(r.world, 0, nw) * 6], r) ? hopNum(r.world, 0, nw) : HOP_BY[r.cur].w;
+  // G-04b2: ghosts of the best runs (only for finished courses), costumes, stars spent and earned, today's twist
+  const gh = hopObj(r.ghost);
+  r.ghost = {};
+  for (const id in gh) if (r.best[id] && HOP_BY[id] && hopGhostIn(gh[id])) r.ghost[id] = gh[id];
+  const own = hopObj(r.own);
+  r.own = {};
+  for (const w of HOP_WEAR) if (own[w[0]]) r.own[w[0]] = 1;
+  r.bonus = hopNum(r.bonus, 0, 1e6);
+  r.spent = hopNum(r.spent, 0, 1e6);
+  if (!r.own[r.wear]) r.wear = 'none';
+  const d = hopObj(r.day);
+  r.day = typeof d.k == 'string' && HOP_BY[d.c] && HOP_TWB[d.tw] ? { k: d.k, c: d.c, tw: d.tw, done: d.done ? 1 : 0 } : {};
   return r;
+}
+// today's twist (made once a day from the date and kept, so finishing a course today does not change it)
+function hopToday(r) {
+  const k = today();
+  if (r.day.k !== k) {
+    const n = HOP_COURSES.findIndex(c => !r.best[c.id]);
+    r.day = Object.assign({ k, done: 0 }, hopDaily(k, n < 0 ? HOP_COURSES.length : n));
+  }
+  return r.day;
+}
+const hopGolds = (r = hopPeek()) => HOP_COURSES.filter(c => hopNum(hopObj(r.medal)[c.id], 0, 3) == 3).length;
+// stars to spend: found + gold medals + twist bonus - spent (never below 0)
+const hopWallet = r => Math.max(0, hopStarsAll(r) + hopGolds(r) + hopNum(r.bonus, 0, 1e6) - hopNum(r.spent, 0, 1e6));
+function hopBuy(r, id) {
+  const w = HOP_WEARB[id];
+  if (!w || r.own[id] || hopWallet(r) < w[2]) return false;
+  r.spent += w[2];
+  r.own[id] = 1;
+  r.wear = id;
+  return true;
 }
 const hopPeek = () => (S.hop && typeof S.hop == 'object' && !Array.isArray(S.hop) ? S.hop : {});
 const hopBits = v => (v & 1) + (v >> 1 & 1) + (v >> 2 & 1);
@@ -4383,12 +4724,37 @@ const hopDone = (r = hopPeek()) => HOP_COURSES.filter(c => hopNum(hopObj(r.best)
 // a course opens when the one before it is finished
 const hopOpen = (c, r = hopPeek()) => !c.i || hopNum(hopObj(r.best)[HOP_COURSES[c.i - 1].id], 0, 36e5) > 0;
 const hopTime = ms => (ms / 1000).toFixed(1) + ' s';
+// the menu's "Next goal" line: the next course, then missing stars, then gold medals, then a costume to save for, then ghosts
+function hopGoal(r) {
+  const nx = HOP_COURSES.find(c => !r.best[c.id]);
+  if (nx) {
+    const after = HOP_COURSES[nx.i + 1];
+    if (!nx.i) return `Hop to the flag on ${nx.name}.`;
+    if (!after) return `Finish ${nx.name}, the very last course!`;
+    if (HOP_WORLDS[after.w].s2 && !HOP_WORLDS[nx.w].s2) return `Finish ${nx.name} to start Season 2!`;
+    return after.w != nx.w ? `Finish ${nx.name} to open ${HOP_WORLDS[after.w].name}.` : `Finish ${nx.name} to open ${after.name}.`;
+  }
+  const st = HOP_COURSES.find(c => hopBits(r.stars[c.id] || 0) < 3);
+  if (st) return `Find the ${3 - hopBits(r.stars[st.id] || 0) == 1 ? 'last star' : 'missing stars'} on ${st.name}.`;
+  const md = HOP_COURSES.find(c => (r.medal[c.id] || 0) < 3);
+  const w = HOP_WEAR.find(x => !r.own[x[0]]), cash = hopWallet(r);
+  if (w && cash >= w[2]) return `You have ${cash} stars: get the ${w[1]} for your pet!`;
+  if (md) return `Win gold on ${md.name}: be quicker than ${hopGold(md)} s.`;
+  if (w) return `Save ${w[2] - cash} more stars for the ${w[1]}. Play today's twist for bonus stars!`;
+  const c = HOP_COURSES[r.runs % HOP_COURSES.length];
+  return `Race your ghost on ${c.name}: your best is ${hopTime(r.best[c.id])}.`;
+}
 
-/* ---- the renderer: sprites, colours and the canvas ---- */
+/* ---- the renderer: sprites, colours and the canvas ----
+   R-03 4.3 (G-04b2): the sky gradient, the sun and the far scenery are composed once into one opaque backdrop picture that slides
+   very slowly; the nearer layers are cached each at its own band height (so only that band's pixels are copied each frame) and
+   faded toward the horizon colour by distance; platforms, the pet, its costume, its shadow and every particle are cached
+   sprites; the canvas has at most 1.2 M pixels and drops to 85 / 70 / 60 % when frames run long (adaptive render scale). */
 const HOP_SPR = {};
-// an SVG drawing as a canvas pxw pixels wide (cached; .c is set once it has loaded, .p resolves then)
-function hopSprite(key, vw, vh, inner, pxw) {
-  const k = key + '@' + Math.round(pxw);
+// an SVG drawing as a canvas pxw pixels wide (cached; .c is set once it has loaded, .p resolves then); fade: [colour, 0-1] mixes
+// the picture toward a colour (the far layers toward the sky)
+function hopSprite(key, vw, vh, inner, pxw, fade) {
+  const k = key + '@' + Math.round(pxw) + (fade ? fade.join() : '');
   if (HOP_SPR[k]) return HOP_SPR[k];
   const w = Math.max(2, Math.round(pxw)), h = Math.max(2, Math.round(pxw * vh / vw)), s = (HOP_SPR[k] = { c: null, w, h, vw, vh });
   s.p = new Promise(ok => {
@@ -4397,7 +4763,14 @@ function hopSprite(key, vw, vh, inner, pxw) {
       const c = document.createElement('canvas');
       c.width = w;
       c.height = h;
-      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      const x = c.getContext('2d');
+      x.drawImage(img, 0, 0, w, h);
+      if (fade && fade[1] > 0) {
+        x.globalCompositeOperation = 'source-atop';
+        x.globalAlpha = fade[1];
+        x.fillStyle = fade[0];
+        x.fillRect(0, 0, w, h);
+      }
       s.c = c;
       ok();
     };
@@ -4407,7 +4780,8 @@ function hopSprite(key, vw, vh, inner, pxw) {
   });
   return s;
 }
-// the child's pet with its hat and toy: the rig's colours are CSS roles, so they are read from a hidden copy first
+// the child's pet with its hat and toy: the rig's colours are CSS roles, so they are read from a hidden copy first. Its own
+// ground shadow is left out: the course draws a soft shadow on the cloud under the pet that shrinks as it hops (G-04b2)
 function hopPetSprite(mood, px) {
   const w = S.wear || {}, key = ['pet', S.pet, stage(S.stars), mood, w.hat || '', w.toy || ''].join('-');
   if (HOP_SPR[key + '@' + px]) return HOP_SPR[key + '@' + px];
@@ -4418,7 +4792,7 @@ function hopPetSprite(mood, px) {
     host.innerHTML = petSVG(S.pet, stage(S.stars), mood, { hat: wearOf(w.hat), toy: wearOf(w.toy) });
     document.body.appendChild(host);
     const svg = host.querySelector('svg');
-    const els = [...svg.querySelectorAll('*')], gone = els.filter(el => getComputedStyle(el).display == 'none');
+    const els = [...svg.querySelectorAll('*')], gone = els.filter(el => getComputedStyle(el).display == 'none' || el.classList.contains('pg-shadow'));
     for (const el of els) {
       if (!/^(path|circle|ellipse|rect|polygon|text)$/.test(el.tagName)) continue;
       const cs = getComputedStyle(el);
@@ -4437,6 +4811,8 @@ const hopNow = () => (window.__realNow || (() => performance.now()))();
 const hopCalm = () => !!S.calm || (typeof matchMedia == 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches);
 // sounds: through tone() and SFX (silent with Sound effects off); softer in calm mode
 const hopTone = (f, d, t, type, vol, slide) => tone(f, d, t, type, vol * (hopCalm() ? .6 : 1), slide);
+const HOP_DOTS = ['w', 'w2', 'y', 'y1', 'p', 'c', 'g', 'v', 'r', 'o', 'b', 'c1'];
+const HOP_DARK = { night: 1, aurora: 1 };
 // sizes and the pictures at this screen size
 function hopSize(R) {
   const cv = R.cv, cw = Math.max(1, cv.clientWidth), ch = Math.max(1, cv.clientHeight);
@@ -4444,46 +4820,134 @@ function hopSize(R) {
   cv.width = Math.round(cw * k);
   cv.height = Math.round(ch * k);
   const C = R.st.C, W = C.W, T0 = Math.min(ch / 9.5, cw / 9), T = T0 * k, sp = T0 * k0; // T: canvas pixels a tile; sp: sprite pixels a tile
-  const V = { cw, ch, k, T, sc: (R.q || 1), W: cv.width, H: cv.height, base: Math.round(cv.height * .64) };
-  V.sky = R.ctx.createLinearGradient(0, 0, 0, V.H);
-  V.sky.addColorStop(0, rlCol('sc-' + W.sky[0]));
-  V.sky.addColorStop(1, rlCol('sc-' + W.sky[1]));
-  const B = HOP_BACK[W.id], fh = Math.max(ch * .42, 120) * k0, nh = Math.max(ch * .2, 70) * k0;
-  V.far = hopSprite('far-' + W.id, 960, 200, B.far(), 960 * fh / 200);
-  V.near = hopSprite('near-' + W.id, 960, 120, B.near(), 960 * nh / 120);
-  V.sun = hopSprite('sky-' + W.id, 100, 100, HOP_SKY[W.id](), T0 * k0 * 2.2);
+  const V = { cw, ch, k, T, sc: (R.q || 1), W: cv.width, H: cv.height, base: Math.round(cv.height * .64), ps: cw < 600 && ch > cw ? 1.4 : 1 };
+  V.sky = R.ctx.createLinearGradient(0, 0, 0, V.H * .8);
+  W.grad.forEach((g, i) => V.sky.addColorStop(i / (W.grad.length - 1), rlCol(g)));
+  const hz = rlCol(W.grad[W.grad.length - 1]), L = HOP_SCENE[W.id], H0 = ch * k0;
+  // the backdrop (composed below once it has loaded), then three bands, each faded toward the horizon by its distance
+  V.bdh = H0 * .62;
+  V.bd = hopSprite('bd-' + W.id, 960, 260, L.bd(), 960 * V.bdh / 260, [hz, .45]);
+  V.far = hopSprite('far-' + W.id, 960, 150, L.far(), 960 * Math.max(H0 * .3, 110 * k0) / 150, [hz, .3]);
+  // the near hills and the cloud bank in front of them share one band (one copy a frame instead of two)
+  V.near = hopSprite('near-' + W.id, 960, 190, L.near() + `<g transform="translate(0 70)">${L.bank()}</g>`, 960 * Math.max(H0 * .34, 120 * k0) / 190, [hz, .06]);
+  V.sun = hopSprite('sky-' + W.id, 100, 100, L.sky(), T0 * k0 * 2.2);
+  const pal = W.cloud;
   V.fl = C.floors.map(f => {
     if (f.k == 'b') return hopSprite(`br-${W.id}-${f.x1 - f.x0}`, (f.x1 - f.x0) * 40 + 16, 40, hopBridgeArt(f.x1 - f.x0, W.id == 'rainbow'), ((f.x1 - f.x0) + .4) * sp);
     const dep = Math.round((f.dep || 1.2) * 4) / 4, w = f.x1 - f.x0;
-    return hopSprite(`cl-${W.id}-${w}-${dep}`, w * 40 + 16, dep * 40 + 24, hopCloudArt(w, dep, W.cloud), (w + .4) * sp);
+    return hopSprite(`cl-${W.id}-${w}-${dep}${f.k == 'q' ? 'q' : ''}`, w * 40 + 16, dep * 40 + 24, hopCloudArt(w, dep, pal, f.k == 'q'), (w + .4) * sp);
   });
-  V.mv = C.movers.map(m => hopSprite(`cl-${W.id}-${m.w}-1`, m.w * 40 + 16, 64, hopCloudArt(m.w, 1, W.cloud), (m.w + .4) * sp));
+  V.mv = C.movers.map(m => hopSprite(`cl-${W.id}-${m.w}-1`, m.w * 40 + 16, 64, hopCloudArt(m.w, 1, pal), (m.w + .4) * sp));
   for (const [n, vw, vh, art, wt] of [['spring', 48, 48, HOP_ART.spring(), 1.2], ['puff', 48, 48, HOP_ART.puff(), 1.3], ['star', 40, 40, HOP_ART.star(), 1],
     ['spark', 24, 24, HOP_ART.spark(), .55], ['flag0', 40, 80, HOP_ART.flag(0), 1], ['flag1', 40, 80, HOP_ART.flag(1), 1], ['goal', 80, 140, HOP_ART.goal(), 2],
     ['pad0', 48, 24, HOP_ART.pad(0), 1.2], ['pad1', 48, 24, HOP_ART.pad(1), 1.2], ['gate0', 40, 140, HOP_ART.gate(0), 1],
-    ['gate1', 40, 140, HOP_ART.gate(1), 1], ['kite', 40, 80, HOP_ART.kite(), 1], ['balloon', 80, 120, HOP_ART.balloon(), 2]]) {
+    ['gate1', 40, 140, HOP_ART.gate(1), 1], ['kite', 40, 80, HOP_ART.kite(), 1], ['balloon', 80, 120, HOP_ART.balloon(), 2],
+    ['door0', 40, 140, HOP_DECO.door(0), 1], ['door1', 40, 140, HOP_DECO.door(1), 1], ['key', 40, 40, HOP_DECO.key(), 1], ['glint', 40, 40, HOP_DECO.glint(), 1],
+    ['shadow', 80, 24, HOP_DECO.shadow(), 2], ['drift', 120, 60, HOP_DECO.drift(), 3], ['fore', 120, 60, hopTint(HOP_DECO.drift(), { w: pal[0], w2: pal[1] }), 3], ['bird0', 36, 18, HOP_DECO.bird0(), .7], ['bird1', 36, 18, HOP_DECO.bird1(), .7]]) {
     V[n] = hopSprite('h-' + n, vw, vh, art, wt * sp);
   }
-  const ps = Math.round(sp * 2.1);
+  V.dot = {};
+  for (const c of HOP_DOTS) V.dot[c] = hopSprite('dot-' + c, 24, 24, ghC(12, 12, 12, c, .22) + ghC(12, 12, 8.5, c, .5) + ghC(12, 12, 5.5, c), .5 * sp);
+  const ps = Math.round(sp * 2.1 * V.ps);
   V.pet = { happy: hopPetSprite('happy', ps), cheer: hopPetSprite('cheer', ps), oops: hopPetSprite('oops', ps) };
-  V.col = {};
-  for (const r of ['w', 'w2', 'y', 'y1', 'p', 'c', 'g', 'v', 'r', 'o', 'b']) V.col[r] = rlCol(r);
+  V.cos = HOP_COSTUME[R.r.wear] ? hopSprite('cos-' + R.r.wear, 200, 200, HOP_COSTUME[R.r.wear](), ps) : null;
+  V.col = { w: rlCol('w') };
+  V.dark = HOP_DARK[W.id] || R.st.tw == 'lamp';
   R.v = V;
-  const all = Object.values(V).flatMap(x => (x && x.p ? [x] : Array.isArray(x) ? x : x && typeof x == 'object' && x.happy ? Object.values(x) : []));
+  const all = Object.values(V).flatMap(x => (x && x.p ? [x] : Array.isArray(x) ? x : x && typeof x == 'object' && !(x instanceof CanvasGradient) ? Object.values(x).filter(y => y && y.p) : []));
+  const done = () => {
+    hopBackdrop(V);
+    V.farB = hopBand(V.far, V.sc);
+    V.nearB = hopBand(V.near, V.sc);
+    if (R.st.tw == 'lamp') hopLamp(V);
+    R.ready = true;
+  };
+  // a new render scale: every picture is already there, so the new backdrop is made at once (no frame without it)
+  if (all.every(s => s.c)) return done();
   R.ready = false;
-  Promise.all(all.map(s => s.p)).then(() => { if (R.v === V) R.ready = true; });
+  Promise.all(all.map(s => s.p)).then(() => { if (R.v === V) done(); });
+}
+// the backdrop: the sky, the sun or moon and the far scenery in one opaque picture one layer-period wide
+function hopBackdrop(V) {
+  const s = V.bd, w = Math.max(V.W, Math.round(s.w * V.sc)), c = document.createElement('canvas');
+  c.width = w;
+  c.height = V.H;
+  const b = c.getContext('2d', { alpha: false });
+  b.fillStyle = V.sky;
+  b.fillRect(0, 0, w, V.H);
+  hopImg(b, V.sun, V.W * .8 - V.sun.w * V.sc, V.T * 1.3, V.sun.w * V.sc);
+  if (s.c) for (let x = 0; x < w; x += s.w * V.sc) b.drawImage(s.c, Math.round(x), Math.round(V.H * .74 - s.h * V.sc), Math.ceil(s.w * V.sc) + 1, Math.ceil(s.h * V.sc));
+  V.bg = c;
+}
+// Lantern night (today's twist): a dark sky-coloured cover with a soft round hole, at half size, drawn round the pet
+function hopLamp(V) {
+  const c = document.createElement('canvas'), w = Math.ceil(V.W / 2) * 2, h = Math.ceil(V.H / 2) * 2;
+  c.width = w;
+  c.height = h;
+  const x = c.getContext('2d');
+  x.fillStyle = rlCol('sc-night');
+  x.globalAlpha = .78;
+  x.fillRect(0, 0, w, h);
+  x.globalAlpha = 1;
+  x.globalCompositeOperation = 'destination-out';
+  const r = Math.min(w, h) * .2, g = x.createRadialGradient(w / 2, h / 2, r * .35, w / 2, h / 2, r);
+  g.addColorStop(0, rlCol('k'));
+  g.addColorStop(1, 'transparent');
+  x.fillStyle = g;
+  x.fillRect(0, 0, w, h);
+  V.lamp = c;
 }
 // draw a picture (a cached canvas) with its top left at x, y and w canvas pixels wide
 function hopImg(c, s, x, y, w, h) {
   if (s && s.c) c.drawImage(s.c, Math.round(x), Math.round(y), Math.round(w), Math.round(h || w * s.h / s.w));
 }
-function hopTile(c, s, off, y, W) {
-  if (!s.c) return;
-  const w = s.w * HP.v.sc, h = s.h * HP.v.sc;
-  for (let x = -(((off % w) + w) % w); x < W; x += w) c.drawImage(s.c, Math.round(x), Math.round(y - h), Math.ceil(w) + 1, Math.ceil(h));
+// a layer across the screen, repeated; y is its bottom
+// (a band: a copy made at the canvas's own scale without the layer's empty top rows, so each frame copies it pixel for pixel,
+// with no scaling, and only where it has something to show)
+function hopTile(c, b, off, y, W) {
+  if (!b) return;
+  const w = b.w, top = Math.round(y - b.h);
+  for (let x = -Math.round(((off % w) + w) % w); x < W; x += w) c.drawImage(b.c, x, top);
+}
+function hopBand(s, sc) {
+  if (!s.c) return null;
+  if (s.y0 == null) {
+    s.y0 = 0;
+    try {
+      const d = s.c.getContext('2d').getImageData(0, 0, s.w, s.h).data;
+      let y = 0;
+      for (; y < s.h; y++) {
+        let any = false;
+        for (let i = y * s.w * 4 + 3, e = (y + 1) * s.w * 4; i < e; i += 8) if (d[i]) { any = true; break; }
+        if (any) break;
+      }
+      s.y0 = Math.max(0, y - 2);
+    } catch (e) {}
+  }
+  const w = Math.max(1, Math.round(s.w * sc)), h = Math.max(1, Math.round((s.h - s.y0) * sc)), c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  c.getContext('2d').drawImage(s.c, 0, s.y0, s.w, s.h - s.y0, 0, 0, w, h);
+  return { c, w, h, full: Math.round(s.h * sc) };
+}
+// the top of the floor or kite cloud under x at or below y (for the pet's shadow), or null
+function hopGround(st, x, y) {
+  const C = st.C;
+  let g = null;
+  for (const j of C.col[Math.max(0, Math.min(C.col.length - 1, Math.floor(x)))] || []) {
+    const f = C.floors[j];
+    if (x > f.x0 - .2 && x < f.x1 + .2 && f.y <= y + .01 && (g == null || f.y > g) && hopThere(st, j)) g = f.y;
+  }
+  for (const j of hopNear(C, x).mv) {
+    const m = C.movers[j], q = hopMover(m, st.t);
+    if (x > q.x - .2 && x < q.x + m.w + .2 && q.y <= y + .05 && (g == null || q.y > g)) g = q.y;
+  }
+  return g;
 }
 function hopDraw(R, dt) {
-  const c = R.ctx, V = R.v, st = R.st, C = st.C, p = st.p, T = V.T;
+  const c = R.ctx, V = R.v, st = R.st, C = st.C, p = st.p, T = V.T, calm = hopCalm();
+  R.tt = (R.tt || 0) + dt;
+  const tt = R.tt;
   // the camera: the pet a third in from the left (looking ahead), its feet a little below the middle; it eases along
   const lead = st.mode == 'one' ? .3 : .4, tx = p.x - V.W * lead / T, ty = p.y;
   if (R.cx == null) { R.cx = tx; R.cy = ty; }
@@ -4491,33 +4955,44 @@ function hopDraw(R, dt) {
   R.cx += (tx - R.cx) * Math.min(1, dt * 10);
   R.cy += (ty - R.cy) * (p.y < R.cy - 3 ? Math.min(1, dt * 12) : e);
   let sx = 0, sy = 0;
-  if (R.shake > 0 && !hopCalm()) {
+  if (R.shake > 0 && !calm) {
     R.shake = Math.max(0, R.shake - dt * 2);
     sx = Math.sin(st.t * 70) * R.shake * T * .25;
     sy = Math.cos(st.t * 55) * R.shake * T * .2;
   }
   const X = x => (x - R.cx) * T + sx, Y = y => V.base - (y - R.cy) * T + sy;
-  // the sky and the sun or moon: made once into an opaque picture of the screen's size (one quick copy a frame)
-  if (!V.bg && V.sun.c) {
-    V.bg = document.createElement('canvas');
-    V.bg.width = V.W;
-    V.bg.height = V.H;
-    const b = V.bg.getContext('2d', { alpha: false });
-    b.fillStyle = V.sky;
-    b.fillRect(0, 0, V.W, V.H);
-    hopImg(b, V.sun, V.W - V.sun.w * V.sc - T * .8, T * 1.6, V.sun.w * V.sc);
-  }
-  if (V.bg) c.drawImage(V.bg, 0, 0);
-  else {
+  // 1. the backdrop (sky, sun, far scenery): one opaque picture that slides very slowly
+  if (V.bg) {
+    const bw = V.bg.width, o = ((R.cx * T * .03) % bw + bw) % bw;
+    c.drawImage(V.bg, -Math.round(o), 0);
+    if (bw - o < V.W) c.drawImage(V.bg, Math.round(bw - o), 0);
+  } else {
     c.fillStyle = V.sky;
     c.fillRect(0, 0, V.W, V.H);
   }
-  // far hills and a bank of clouds below, moving slower than the course (they sink a little as the pet climbs)
+  // 2. what moves in the sky by itself: drifting clouds, birds by day, fireflies by night (not in calm mode)
+  if (!calm) {
+    const s = V.drift, w = s.w * V.sc;
+    hopImg(c, s, V.W - ((tt * T * .3) % (V.W + w)), V.H * .12, w);
+    if (V.dark) {
+      for (let i = 0; i < 7; i++) {
+        c.globalAlpha = .45 + .45 * Math.sin(tt * 2.3 + i * 1.7);
+        hopImg(c, V.dot.y1, ((i * .23 + tt * .015 * (1 + i % 3)) % 1) * V.W, V.H * (.3 + ((i * .37) % 1) * .4) + Math.sin(tt + i) * T * .4, T * .35);
+      }
+      c.globalAlpha = 1;
+    } else {
+      for (let i = 0; i < 2; i++) {
+        const s = V[(Math.floor(tt * 5 + i * 2) % 2) ? 'bird1' : 'bird0'], u = ((tt * .045 + i * .5) % 1.4) - .2;
+        hopImg(c, s, u * V.W, V.H * (.16 + i * .08) + Math.sin(tt * 1.5 + i) * T * .25, s.w * V.sc * (1 - i * .2));
+      }
+    }
+  }
+  // 3. the hills and the cloud bank, moving slower than the course (they sink a little as the pet climbs)
   const dv = Math.max(-V.H * .04, Math.min(V.H * .1, (R.cy - 2) * T * .06));
-  hopTile(c, V.far, R.cx * T * .1, V.H * .9 + dv, V.W);
-  hopTile(c, V.near, R.cx * T * .3, V.H + dv * 1.6 + V.near.h * V.sc * .12, V.W);
+  hopTile(c, V.farB, R.cx * T * .12, V.H * .86 + dv, V.W);
+  if (V.nearB) hopTile(c, V.nearB, R.cx * T * .3, V.H + dv * 1.5 + V.nearB.full * .08, V.W);
   const x0 = R.cx - 2, x1 = R.cx + V.W / T + 2, vis = (a, b) => b > x0 && a < x1;
-  // wind (streaks) and updrafts (rising dots)
+  // wind (moving lines) and updrafts (rising dots)
   c.globalAlpha = .5;
   c.fillStyle = V.col.w;
   for (const z of C.winds) {
@@ -4531,41 +5006,87 @@ function hopDraw(R, dt) {
     if (!vis(z.x0, z.x1)) continue;
     for (let i = 0; i < (z.x1 - z.x0) * 2; i++) {
       const u = ((i * .29 + st.t * .5) % 1), wx = z.x0 + ((i * .61) % 1) * (z.x1 - z.x0), wy = z.y0 + 4 + u * (z.y1 - z.y0 - 4);
-      c.beginPath();
-      c.arc(X(wx + Math.sin(st.t * 3 + i) * .2), Y(wy), T * .07, 0, 6.3);
-      c.fill();
+      hopImg(c, V.dot.w, X(wx + Math.sin(st.t * 3 + i) * .2) - T * .1, Y(wy) - T * .1, T * .2);
     }
   }
   c.globalAlpha = 1;
-  // floors, springs, switches, gates, checkpoints, the flag
+  // floors (a crumbling cloud shakes, drops and fades, and fades back in), springs, switches, gates and doors, keys, flags
   C.floors.forEach((f, i) => {
     if (!vis(f.x0, f.x1)) return;
-    const s = V.fl[i];
-    if (f.k == 'b') hopImg(c, s, X(f.x0 - .2), Y(f.y) - T * .25, (f.x1 - f.x0 + .4) * T);
-    else hopImg(c, s, X(f.x0 - .2), Y(f.y) - T * .25, (f.x1 - f.x0 + .4) * T);
+    let dx = 0, dy = 0, a = 1;
+    const t0 = st.crum[i];
+    if (t0 != null) {
+      const u = st.t - t0, F = HOP_CR.FALL;
+      if (u < F) dx = calm ? 0 : Math.sin(u * 55) * T * .05 * (u / F);
+      else if (u < F + .45) { dy = (u - F) * (u - F) * 30 * T; a = 1 - (u - F) / .45; }
+      else if (u < HOP_CR.BACK - .45) return;
+      else a = 1 - (HOP_CR.BACK - u) / .45;
+    }
+    c.globalAlpha = Math.max(0, Math.min(1, a));
+    hopImg(c, V.fl[i], X(f.x0 - .2) + dx, Y(f.y) - T * .25 + dy, (f.x1 - f.x0 + .4) * T);
   });
+  c.globalAlpha = 1;
   for (const s of C.springs) if (vis(s.x - 1, s.x + 1)) {
     const sq = R.boing && R.boing.x == s.x ? 1 - Math.max(0, R.boing.t) * 1.5 : 1;
     const h = 1.2 * T * Math.max(.55, sq);
     hopImg(c, V.spring, X(s.x - .6), Y(s.y) - h + T * .05, 1.2 * T, h);
   }
   C.pads.forEach(d => { if (vis(d.x0, d.x1)) hopImg(c, V[(st.gates >> d.g) & 1 ? 'pad1' : 'pad0'], X(d.x0 - .1), Y(d.y) - .55 * T, 1.4 * T); });
-  C.gates.forEach((g, i) => { if (vis(g.x0 - 1, g.x1 + 1)) hopImg(c, V[(st.gates >> i) & 1 ? 'gate1' : 'gate0'], X(g.x0 - .2), Y(g.y1) - T * .2, T, 3.5 * T); });
+  C.gates.forEach((g, i) => {
+    if (vis(g.x0 - 1, g.x1 + 1)) hopImg(c, V[(g.door ? 'door' : 'gate') + ((st.gates >> i) & 1)], X(g.x0 - .2), Y(g.y1) - T * .2, T, 3.5 * T);
+  });
+  const bob = Math.sin(st.t * 3) * .12;
+  C.keys.forEach(q => {
+    if ((st.gates >> q.g) & 1 || !vis(q.x - 1, q.x + 1)) return;
+    hopImg(c, V.key, X(q.x - .5), Y(q.y + .5 + bob), T);
+    const g = (st.t * .7 + q.x * .13) % 1;
+    if (g < .3) { c.globalAlpha = Math.sin(g / .3 * Math.PI); hopImg(c, V.glint, X(q.x - .1), Y(q.y + .6 + bob), T * .5); c.globalAlpha = 1; }
+  });
   C.cps.forEach((q, i) => { if (i && vis(q.x - 1, q.x + 1)) hopImg(c, V[i <= st.cp ? 'flag1' : 'flag0'], X(q.x - .3), Y(q.y) - 2 * T, T, 2 * T); });
   if (C.goal && vis(C.goal.x - 2, C.goal.x + 3)) hopImg(c, V.goal, X(C.goal.x - .45), Y(C.goal.y) - 3.5 * T, 2 * T, 3.5 * T);
-  // kite clouds with their kites
+  // kite clouds with their kites; a cloud that goes round shows its path as faint dots
   C.movers.forEach((m, i) => {
     const q = hopMover(m, st.t);
-    if (!vis(q.x - 1, q.x + m.w + 2)) return;
-    hopImg(c, V.kite, X(q.x + m.w - .4), Y(q.y + 2.6), T, 2 * T);
+    if (!vis(m.x - 1, m.x + m.w + m.ax + 2 * (m.r || 0) + 2)) return;
+    if (m.r) {
+      c.globalAlpha = .35;
+      for (let k = 0; k < 12; k++) {
+        const a = k * Math.PI / 6;
+        hopImg(c, V.dot.w, X(m.x + m.w / 2 + m.r * (1 - Math.cos(a))) - T * .12, Y(m.y + m.r * Math.sin(a) - .3) - T * .12, T * .24);
+      }
+      c.globalAlpha = 1;
+    } else hopImg(c, V.kite, X(q.x + m.w - .4), Y(q.y + 2.6), T, 2 * T);
     hopImg(c, V.mv[i], X(q.x - .2), Y(q.y) - T * .25, (m.w + .4) * T);
   });
-  // sparkles, stars, puffs
-  const bob = Math.sin(st.t * 3) * .12;
+  // sparkles, stars (with a glint now and then), puffs
   C.spk.forEach((s, i) => { if (!st.got[i] && vis(s.x - 1, s.x + 1)) hopImg(c, V.spark, X(s.x - .275), Y(s.y + .275 + bob), .55 * T); });
-  C.stars.forEach((s, i) => { if (!(st.stars >> i & 1) && vis(s.x - 1, s.x + 1)) hopImg(c, V.star, X(s.x - .5), Y(s.y + .5 - bob), T); });
+  C.stars.forEach((s, i) => {
+    if ((st.stars >> i & 1) || !vis(s.x - 1, s.x + 1)) return;
+    hopImg(c, V.star, X(s.x - .5), Y(s.y + .5 - bob), T);
+    const g = (st.t * .5 + i * .31) % 1;
+    if (g < .25 && !calm) { c.globalAlpha = Math.sin(g / .25 * Math.PI); hopImg(c, V.glint, X(s.x + .05), Y(s.y + .65 - bob), T * .55); c.globalAlpha = 1; }
+  });
   for (const f of C.puffs) if (vis(f.x - 1, f.x + 1)) hopImg(c, V.puff, X(f.x - .65), Y(hopPuffY(f, st.t) + .65), 1.3 * T);
-  // little bits: dust when landing, sparkles when collecting, the trail, the poof of a fall
+  // the pet's soft shadow on the cloud under it: smaller and lighter the higher it is
+  const hidden = st.wait == 'fall';
+  if (!hidden) {
+    const gy = hopGround(st, p.x, p.y);
+    if (gy != null && p.y - gy < 7) {
+      const u = Math.max(.25, 1 - (p.y - gy) / 6), w = 1.8 * T * V.ps * u;
+      c.globalAlpha = u;
+      hopImg(c, V.shadow, X(p.x) - w / 2, Y(gy) - w * .15 - T * .06, w);
+      c.globalAlpha = 1;
+    }
+  }
+  // the ghost of the best run: the pet's picture, see-through
+  const g = R.gh && hopGhostAt(R.gh, st.t);
+  if (g && !g.jump && V.pet.happy.c) {
+    const wid = 2.1 * T * V.ps;
+    c.globalAlpha = .38;
+    c.drawImage(V.pet.happy.c, X(g.x) - wid / 2, Y(g.y) + T * .08 - wid * .92, wid, wid);
+    c.globalAlpha = 1;
+  }
+  // little bits: dust when landing, sparkles when collecting, the trail, the poof of a fall (sprites)
   for (let i = R.fx.length - 1; i >= 0; i--) {
     const q = R.fx[i];
     q.life -= dt;
@@ -4573,21 +5094,20 @@ function hopDraw(R, dt) {
     q.x += q.vx * dt;
     q.y += q.vy * dt;
     c.globalAlpha = Math.min(1, q.life * 2.5);
-    c.fillStyle = V.col[q.c] || V.col.w;
-    c.beginPath();
-    c.arc(X(q.x), Y(q.y), q.r * T * (q.grow ? 1 + (1 - q.life) : 1), 0, 6.3);
-    c.fill();
+    const r = q.r * T * (q.grow ? 1 + (1 - q.life) : 1) * 2.2;
+    hopImg(c, V.dot[q.c] || V.dot.w, X(q.x) - r, Y(q.y) - r, 2 * r);
   }
   c.globalAlpha = 1;
-  // the pet: stretched when it hops, squashed when it lands, tipped a little forward when it runs; hidden while it poofs
-  if (st.wait != 'fall') {
+  // the pet (with its costume behind it): stretched when it hops, squashed when it lands, tipped a little forward when it runs
+  if (!hidden) {
     const s = V.pet[p.vy > 1 && !p.gr ? 'cheer' : st.wait == 'back' || p.kb > 0 ? 'oops' : 'happy'];
     R.sq = Math.max(0, (R.sq || 0) - dt * 4);
-    const str = p.gr ? 1 - R.sq * .18 : 1 + Math.min(.12, Math.abs(p.vy) * .008), wid = 2.1 * T / Math.sqrt(str);
+    const str = p.gr ? 1 - R.sq * .18 : 1 + Math.min(.12, Math.abs(p.vy) * .008), wid = 2.1 * T * V.ps / Math.sqrt(str);
     c.save();
     c.translate(X(p.x), Y(p.y) + T * .08);
     c.rotate(p.gr ? Math.max(-.12, Math.min(.12, p.vx * .012)) : Math.max(-.2, Math.min(.2, p.vx * .02 - p.vy * .004)));
     if (p.face < 0) c.scale(-1, 1);
+    if (V.cos && V.cos.c) c.drawImage(V.cos.c, -wid / 2, -wid * str * .92, wid, wid * str);
     if (s.c) c.drawImage(s.c, -wid / 2, -wid * str * .92, wid, wid * str);
     c.restore();
   }
@@ -4596,6 +5116,13 @@ function hopDraw(R, dt) {
     const lift = st.wait == 'lift', bx = lift ? p.x - .1 : p.x + 1.4, by = (lift ? p.y + 1.2 : p.y + 1.6) + Math.sin(st.t * 2) * .15;
     hopImg(c, V.balloon, X(bx - 1), Y(by + 3), 2 * T, 3 * T);
   }
+  // foreground clouds that pass in front, low on the screen (faster than the course: they are nearer)
+  {
+    const s = V.fore, w = s.w * V.sc * 1.9, gap = 26 * T * 1.6, o = R.cx * T * 1.6;
+    for (let x = -((o % gap) + gap) % gap - w; x < V.W; x += gap) if (Math.floor((x + o) / gap) % 3 != 1) hopImg(c, s, x, V.H - w * .24, w);
+  }
+  // Lantern night: the dark around the pet
+  if (V.lamp) c.drawImage(V.lamp, Math.round(X(p.x) - V.W), Math.round(Y(p.y + .6) - V.H), V.W * 2, V.H * 2);
 }
 // the bits: [x, y, vx, vy, life, radius, colour, grows]
 function hopFx(x, y, n, c, sp, r = .08, grow) {
@@ -4606,17 +5133,42 @@ function hopFx(x, y, n, c, sp, r = .08, grow) {
   }
   if (HP.fx.length > 80) HP.fx.splice(0, HP.fx.length - 80);
 }
-
+// music (R-03 A1): a gentle loop for each world, made of soft notes; only with Sound effects and Music on and not in calm mode;
+// it waits while the course waits (paused, hidden, the balloon's question) and goes quiet under the voice (the shared duck)
+const HOP_SCALE5 = [[0, 2, 4, 7, 9, 12, 14, 16, 19], [0, 3, 5, 7, 10, 12, 15, 17, 19]];
+const HOP_MEL = [[4, 2, 4, 5, 4, 2, 0, -1, 2, 4, 5, 7, 5, 4, 2, -1], [0, 2, 4, 2, 5, 4, 2, -1, 4, 5, 7, 5, 4, 2, 0, -1],
+  [7, 5, 4, 5, 4, 2, 4, -1, 2, 0, 2, 4, 5, 4, 2, -1], [2, 4, 5, 7, 5, 4, 2, 4, 5, 7, 8, 7, 5, -1, 4, -1]];
+// per world: [root note, melody, minor (0/1), step in seconds]
+const HOP_TUNE = { meadow: [67, 0, 0, .26], peaks: [69, 1, 0, .24], night: [64, 2, 1, .3], rainbow: [72, 3, 0, .24],
+  sunset: [65, 1, 0, .28], whirl: [70, 3, 0, .22], aurora: [62, 0, 1, .3], castle: [67, 2, 0, .25] };
+function hopMusic(R, run) {
+  const a = typeof AC != 'undefined' && AC;
+  if (!run || !S.sound || !S.music || hopCalm() || !a || a.state != 'running') { R.mb = 0; return; }
+  const [root, mi, minor, step] = HOP_TUNE[R.st.C.W.id], sc = HOP_SCALE5[minor], mel = HOP_MEL[mi];
+  if (!R.mb || R.mb < a.currentTime) R.mb = a.currentTime + .05;
+  while (R.mb < a.currentTime + .15) {
+    const i = R.mi = ((R.mi || 0) + 1) % 64, n = mel[i % 16], t = R.mb - a.currentTime;
+    if (n >= 0) tone(NOTE(root + sc[n] + (i >= 32 && i % 2 ? 12 : 0)), step * 1.6, t, 'triangle', .028);
+    if (i % 4 == 0) tone(NOTE(root - 24 + [0, 5, 7, 5][(i >> 4) % 4]), step * 3.6, t, 'sine', .04);
+    R.mb += step;
+  }
+}
 /* ---- the screens ---- */
 const hopStarChip = (n, of = 3, id = 'hpst') => `<span class="stat star" id="${id}" aria-label="Stars found">${ico('star', 32)}<b>${n}/${of}</b></span>`;
 const hopPetPic = () => {
   const w = S.wear || {};
   return petSVG(S.pet, stage(S.stars), 'happy', { hat: wearOf(w.hat), toy: wearOf(w.toy) });
 };
+const hopCosPic = (id, cls = 'hp-cos') => (HOP_COSTUME[id] ? `<svg class="art ${cls}" viewBox="0 0 200 200" aria-hidden="true" focusable="false">${HOP_COSTUME[id]()}</svg>` : '');
+// a shop card's picture: the costume on a soft pet-shaped stand
+const hopShopPic = id => `<svg class="art hp-wart" viewBox="0 0 200 200" aria-hidden="true" focusable="false">${HOP_COSTUME[id] ? HOP_COSTUME[id]() : ''}` +
+  `${ghShad(100, 184, 44, 6)}${ghE(100, 146, 40, 38, 'w3')}${ghE(98, 144, 37, 35, 'w2')}${ghC(100, 86, 36, 'w3')}${ghC(98, 84, 33, 'w2')}${ghE(86, 70, 10, 6, 'w', .8, -30)}</svg>`;
 function hopMenu(world) {
-  const r = hopS();
-  if (world != null && hopOpen(HOP_COURSES[world * 6], r)) r.world = world;
-  const W = HOP_WORLDS[r.world], cur = HOP_BY[r.cur], all = hopStarsAll(r), done = hopDone(r), one = r.mode == 'one';
+  const r = hopS(), nw = HOP_WORLDS.length;
+  if (world != null && world >= 0 && world < nw && hopOpen(HOP_COURSES[world * 6], r)) r.world = world;
+  const W = HOP_WORLDS[r.world], cur = HOP_BY[r.cur], all = hopStarsAll(r), done = hopDone(r), one = r.mode == 'one', cash = hopWallet(r);
+  const day = hopToday(r), dc = HOP_BY[day.c], tw = HOP_TWB[day.tw], need = hopTwNeed(day.tw, day.c);
+  save();
   const wcard = (w, i) => {
     const open = hopOpen(HOP_COURSES[i * 6], r), got = HOP_COURSES.filter(c => c.w == i).reduce((a, c) => a + hopBits(r.stars[c.id] || 0), 0);
     return `<button class="hp-world${i == r.world ? ' on' : ''}${open ? '' : ' lock'}" data-w="${i}" aria-pressed="${i == r.world}">` +
@@ -4638,24 +5190,41 @@ function hopMenu(world) {
       `<span class="hp-dot hp-t-${t[0]}" aria-hidden="true"></span><span>${esc(t[1])}</span>` +
       `${ok ? '' : `<small>${ico('star', 16)}${t[2]}</small>`}</button>`;
   };
+  const wear = w => {
+    const own = !!r.own[w[0]], on = r.wear === w[0];
+    return `<button class="hp-wear${on ? ' on' : ''}${own || cash >= w[2] ? '' : ' lock'}" data-wear="${w[0]}" aria-pressed="${on}">` +
+      `<span class="hp-wpet">${hopShopPic(w[0])}</span><span class="hp-wn">${esc(w[1])}</span>` +
+      `<span class="hp-wp">${own ? (on ? 'Wearing' : 'Wear it') : `${ico('star', 18)}<b>${w[2]}</b>`}</span></button>`;
+  };
+  const seasons = HOP_SEASONS.map(([w0, t], k) => `<h2 class="hp-h">${esc(t)}</h2><div class="hp-worlds">` +
+    HOP_WORLDS.slice(w0, (HOP_SEASONS[k + 1] || [nw])[0]).map((w, j) => wcard(w, w0 + j)).join('') + '</div>').join('');
   view(`${GH.top('hop')}<div class="scroll hp-menu">
   <section class="hp-hero" style="--gh-a:var(--sc-${W.sky[0]});--gh-b:var(--sc-${W.sky[1]})">
-   <div class="hp-hpet"><span class="hp-pet">${hopPetPic()}</span><svg class="art hp-hcl" viewBox="0 0 136 60" aria-hidden="true" focusable="false">` +
+   <div class="hp-hpet"><span class="hp-pet">${hopCosPic(r.wear)}${hopPetPic()}</span><svg class="art hp-hcl" viewBox="0 0 136 60" aria-hidden="true" focusable="false">` +
      `${hopCloudArt(3, .9, W.cloud)}</svg></div>
-   <div class="hp-hinfo"><p class="hp-hl">${ico('star', 26)}<b>${all}</b> of 72 stars</p><p class="hp-hl">${ico('trophy', 26)}<b>${done}</b> of 24 courses</p>
+   <div class="hp-hinfo"><p class="hp-hl">${ico('star', 26)}<b>${all}</b> of ${HOP_COURSES.length * 3} stars found</p><p class="hp-hl">${ico('trophy', 26)}<b>${done}</b> of ${HOP_COURSES.length} courses</p>
    ${UI.btn('Play ' + cur.name, { kind: 'primary', size: 'lg', icon: 'play', id: 'hopgo', wide: true })}</div></section>
+  <p class="hp-goal" id="hpgoal"><span class="hp-hi">${ico('target', 22)}</span><span><b>Next goal:</b> ${esc(hopGoal(r))}</span></p>
+  <section class="hp-day" aria-label="Today's twist"><div class="hp-dtx"><h2 class="hp-h">Today's twist: ${esc(tw[1])}</h2>
+   <p>${esc(tw[2])} The course: <b>${esc(dc.name)}</b>.${need ? ` Catch ${need} sparkles.` : ''}</p>
+   <p class="hp-dst">${day.done ? `${ico('check', 20)} Done today! A new twist comes tomorrow.` : `${ico('star', 20)} Finish it for 2 bonus stars.`}</p></div>
+   ${UI.btn('Play the twist', { kind: day.done ? 'soft' : 'primary', size: 'lg', icon: 'play', id: 'hptw' })}</section>
   <section class="hp-opts"><h2 class="hp-h">How do you hop?</h2>
    <div class="hp-mode">${UI.seg([['one', 'One-touch'], ['free', 'Free move']], r.mode, { id: 'hpmode', label: 'How to hop' })}
    <p>${one ? 'One-touch: your pet runs by itself. Tap anywhere to hop. Hold to float down slowly.' :
     'Free move: the arrows walk left and right. Jump hops; hold it longer to hop higher. Go back for a star you missed!'}</p></div></section>
-  <h2 class="hp-h">Worlds</h2><div class="hp-worlds">${HOP_WORLDS.map(wcard).join('')}</div>
+  ${seasons}
   <h2 class="hp-h">${esc(W.name)}: ${esc(W.adds.toLowerCase())}</h2><div class="hp-crss">${HOP_COURSES.filter(c => c.w == r.world).map(ccard).join('')}</div>
+  <h2 class="hp-h">Costumes for your pet</h2><p class="hp-cash" id="hpcash">${ico('star', 26)}<span><b>${cash}</b> stars to spend. Stars come from the stars you find, gold medals and today's twist.</span></p>
+  <div class="hp-wears"><button class="hp-wear${r.wear === 'none' ? ' on' : ''}" data-wear="none" aria-pressed="${r.wear === 'none'}"><span class="hp-wpet">${hopShopPic('none')}</span>` +
+    `<span class="hp-wn">No costume</span><span class="hp-wp">${r.wear === 'none' ? 'Wearing' : 'Wear it'}</span></button>${HOP_WEAR.map(wear).join('')}</div>
   <h2 class="hp-h">Sparkle trail</h2><div class="hp-trs">${HOP_TRAILS.map(trail).join('')}</div>
   <ul class="hp-how">${[['flag', 'Hop to the checkered flag.'], ['star', 'Three stars hide on every course. Look up high and down low!'],
-    ['replay', 'Fall off? No problem: you start again at the last little flag.'], ['medal', 'Be quick for a gold medal. Beat your own best time!']]
+    ['replay', 'Fall off? No problem: you start again at the last little flag.'], ['medal', 'Be quick for a gold medal. Race the ghost of your best run!']]
     .map(([i, t]) => `<li><span class="hp-hi">${ico(i == 'flag' ? 'target' : i, 22)}</span><span>${esc(t)}</span></li>`).join('')}</ul></div>`);
   GH.wire({ back: () => gameRoom() });
   $('#hopgo').onclick = () => hopTry(r.cur);
+  $('#hptw').onclick = () => hopTry(day.c, day.tw);
   $$('[data-c]').forEach(b => b.onclick = () => {
     const c = HOP_BY[b.dataset.c];
     if (!hopOpen(c, r)) {
@@ -4691,6 +5260,23 @@ function hopMenu(world) {
     save();
     hopKeep(() => hopMenu());
   });
+  $$('[data-wear]').forEach(b => b.onclick = () => {
+    const id = b.dataset.wear, w = HOP_WEARB[id];
+    if (id == 'none' || r.own[id]) {
+      SFX.pop(3);
+      r.wear = id;
+    } else if (hopBuy(r, id)) {
+      SFX.coin();
+      SFX.magic();
+      fb(`You got the ${w[1]}! Your pet wears it now.`, 'good', 2400);
+    } else {
+      SFX.wrong();
+      fb(`You need ${w[2] - cash} more stars for the ${w[1]}. Find stars, win gold medals and play today's twist!`, 'warn long', 3000);
+      return;
+    }
+    save();
+    hopKeep(() => hopMenu());
+  });
   UI.segOn($('#hpmode'), v => {
     r.mode = v;
     save();
@@ -4703,14 +5289,14 @@ function hopKeep(f) {
   f();
   if ($('.scroll')) $('.scroll').scrollTop = y;
 }
-function hopTry(id) {
+function hopTry(id, tw) {
   if (ptLeft() <= 0) {
     SFX.wrong();
     fb(ptWhyNot(), 'warn long', 3000);
     return;
   }
   SFX.whoosh();
-  hopPlay(id);
+  hopPlay(id, tw);
 }
 
 /* ---- a course ---- */
@@ -4731,23 +5317,27 @@ function hopMsg(t, ms = 1300, cls = '') {
   clearTimeout(m._t);
   m._t = setTimeout(() => m.classList.remove('on'), ms);
 }
-function hopPlay(id) {
-  const r = hopS(), c = HOP_BY[id], mode = r.mode, W = HOP_WORLDS[c.w];
-  r.cur = id;
-  r.world = c.w;
+function hopPlay(id, tw) {
+  const r = hopS(), c = HOP_BY[id], mode = r.mode, W = HOP_WORLDS[c.w], twist = HOP_TWB[tw];
+  if (!twist) {
+    r.cur = id;
+    r.world = c.w;
+  }
   save();
   const btn = (bid, icon, aria, txt) => `<button class="hp-btn" id="${bid}" data-k="${bid.slice(2)}" aria-label="${aria}">${ico(icon, 44)}` +
     `${txt ? `<span>${txt}</span>` : ''}</button>`;
-  view(`${GH.top('hop', { play: true, hud: true, sub: c.name, chips: hopStarChip(0) + UI.chip('timer', '0:00', { id: 'hpclk', aria: 'Course time' }) })}
+  view(`${GH.top('hop', { play: true, hud: true, sub: twist ? twist[1] + ': ' + c.name : c.name, chips: hopStarChip(0) + UI.chip('timer', '0:00', { id: 'hpclk', aria: 'Course time' }) })}
   <div class="hpg hp-${mode} hp-w-${W.id}" id="hp"><canvas id="hpcv"></canvas><div class="hp-msg" id="hpmsg" aria-live="polite"></div>
   <div class="hp-ctl">${mode == 'free' ? btn('hpl', 'arrow-left', 'Walk left') + btn('hpr', 'arrow-right', 'Walk right') : ''}${btn('hpj', 'arrow-up', 'Hop', mode == 'free' ? 'Jump' : 'Hop')}</div>
   <div class="hp-offer" id="hpoffer" hidden><div class="hp-ocard" role="dialog" aria-label="The helper balloon">
    <svg class="art hp-obal" viewBox="0 0 80 120" aria-hidden="true" focusable="false">${HOP_ART.balloon()}</svg>
    <p>Need a lift? The balloon can carry you to the next flag.</p>
    <div class="hp-oacts">${UI.btn('Yes, please', { kind: 'primary', size: 'lg', icon: 'balloon', id: 'hpyes' })}${UI.btn('No, thanks', { size: 'lg', icon: 'replay', id: 'hpno' })}</div></div></div></div>`);
-  const st = hopNew(id, { mode }), cv = $('#hpcv');
+  const st = hopNew(id, { mode, tw: twist && twist[0] }), cv = $('#hpcv');
   HP = { st, c, r, cv, ctx: cv.getContext('2d', { alpha: false }), ptr: {}, key: {}, pend: false, acc: 0, last: 0, raf: 0, paused: false,
-    ft: [], fi: [], q: 1, fc: 0, qAt: 0, fx: [], shake: 0, sec: -1, said: {} };
+    ft: [], fi: [], q: 1, fc: 0, qAt: 0, fx: [], shake: 0, sec: -1, said: {},
+    rec: hopRecNew(), gh: twist ? null : hopGhostIn(r.ghost[id]), ghMs: r.best[id] || 0 };
+  hopRec(HP.rec, st);
   hopSize(HP);
   HP.rs = () => { if (HP) hopSize(HP); };
   addEventListener('resize', HP.rs);
@@ -4803,10 +5393,11 @@ function hopPlay(id) {
   const first = !r.runs && !c.i;
   setTimeout(() => {
     if (!HP || HP.st !== st) return;
-    const tip = c.w && !HOP_COURSES.slice(0, c.i).some(x => x.w == c.w && r.best[x.id]) ? ['', 'Tap again in the air to hop higher!', 'Hop onto a kite cloud for a ride!',
-      'Step on the red switch to open the gate!'][c.w] : '';
-    hopMsg(first || !tip ? (mode == 'one' ? 'Tap to hop!' : 'Arrows to walk, Jump to hop!') : tip, 2200);
-    if (S.voice) say(first ? 'Tap to hop! Find the three stars and reach the flag!' : tip || c.name);
+    const tip = twist ? twist[1] + '!' : c.w && !HOP_COURSES.slice(0, c.i).some(x => x.w == c.w && r.best[x.id]) ? ['', 'Tap again in the air to hop higher!',
+      'Hop onto a kite cloud for a ride!', 'Step on the red switch to open the gate!', 'Clouds with cracks crumble: keep hopping!',
+      'Ride a cloud that goes round and round!', 'Grab the key to open the door!', 'All the tricks together. You can do it!'][c.w] : HP.gh ? 'Race your ghost!' : '';
+    hopMsg(first || !tip ? (mode == 'one' ? 'Tap to hop!' : 'Arrows to walk, Jump to hop!') : tip, 2400);
+    if (S.voice) say(first ? 'Tap to hop! Find the three stars and reach the flag!' : twist ? twist[2] : tip || c.name);
   }, 250);
   const loop = ts => {
     if (!HP || HP.st !== st) return;
@@ -4817,12 +5408,15 @@ function hopPlay(id) {
       if (HP.fi.length > 240) HP.fi.shift();
     }
     HP.last = ts;
-    if (HP.ready && !document.hidden && !HP.paused && !GH.held && !st.done && st.wait != 'offer') {
+    const run = HP.ready && !document.hidden && !HP.paused && !GH.held && !st.done && st.wait != 'offer';
+    hopMusic(HP, run);
+    if (run) {
       HP.acc += dt * HOP_DEV.fast;
       let n = 0;
       while (HP.acc >= HOP_DT && n < 8 * HOP_DEV.fast && !st.done && st.wait != 'offer') {
         const on = HP.on || new Set();
         hopStep(st, { jump: HP.pend || on.has('j'), dir: (on.has('r') ? 1 : 0) - (on.has('l') ? 1 : 0) });
+        hopRec(HP.rec, st);
         HP.pend = false;
         hopEvents();
         HP.acc -= HOP_DT;
@@ -4835,8 +5429,8 @@ function hopPlay(id) {
     HP.ft.push(hopNow() - t0);
     if (HP.ft.length > 240) HP.ft.shift();
     // a slow tablet: fewer pixels (down to 60 %) when frames take long; back up when there is time to spare
-    if (++HP.fc % 90 == 0 && HP.fi.length >= 60) {
-      const med = HP.fi.slice(-60).sort((a, b) => a - b)[30], q = HP.q;
+    if (++HP.fc % 30 == 0 && HP.fi.length >= 30 && HP.fc - HP.qAt >= 30) {
+      const med = HP.fi.slice(-30).sort((a, b) => a - b)[15], q = HP.q;
       if (med > 26 && HP.q > .6) HP.q = Math.max(.6, HP.q - .15);
       else if (med < 18 && HP.q < 1 && HP.fc - HP.qAt > 300) HP.q = Math.min(1, HP.q + .1);
       if (HP.q != q) {
@@ -4862,7 +5456,7 @@ function hopEvents() {
       HP.shake = .5;
       hopMsg('Boing!', 700);
     } else if (k == 'land') {
-      if (!hopCalm()) hopFx(p.x, p.y + .05, 4, 'w', 1.4, .1);
+      if (!hopCalm()) hopFx(p.x, p.y + .05, 5, 'w', 1.6, .11);
       HP.sq = 1;
     } else if (k == 'spk') {
       hopTone(NOTE(HOP_SCALE[(a - 1) % 8] + 12), .08, 0, 'sine', .06);
@@ -4879,7 +5473,14 @@ function hopEvents() {
       hopMsg('Boing! A friendly puff.', 1000);
     } else if (k == 'gate') {
       hopTone(300, .3, 0, 'triangle', .08, 120);
-      hopMsg('Step on the switch to open the gate!', 1800);
+      hopMsg(st.C.gates[a].door ? 'Grab the key to open the door!' : 'Step on the switch to open the gate!', 1800);
+    } else if (k == 'key') {
+      [0, 4, 7, 12].forEach((d, i) => hopTone(NOTE(76 + d), .14, i * .06, 'triangle', .06));
+      hopFx(p.x, p.y + .8, 6, 'y', 2.4, .09);
+      hopMsg('The key! The door is open.', 1300);
+    } else if (k == 'crumble') {
+      noise(.18, 0, .03, 900, 400);
+      if (!hopCalm()) hopFx(p.x, p.y - .1, 3, 'w2', 1, .1);
     } else if (k == 'switch') {
       hopTone(660, .08, 0, 'square', .04);
       hopTone(990, .14, .08, 'triangle', .06);
@@ -4887,6 +5488,7 @@ function hopEvents() {
     } else if (k == 'cp') {
       [0, 4, 7].forEach((d, i) => hopTone(NOTE(79 + d), .12, i * .07, 'triangle', .06));
       if (st.wait != 'lift') hopMsg('Checkpoint!', 900);
+      if (!hopCalm()) hopFx(st.C.cps[a].x, st.C.cps[a].y + 1.6, 6, 'g', 1.8, .08);
     } else if (k == 'fall') {
       noise(.25, 0, .06, 300, 1400);
       hopTone(500, .25, 0, 'sine', .05, 200);
@@ -4946,41 +5548,65 @@ function hopTimeUp() {
   timeUpOverlay();
 }
 // the flag: the time and the medal, the stars, what opened; the shared end card
-// what a finished course changes in the save: the best time (lowest), the stars found (added), the medal (highest), the next course
-function hopRecord(r, c, st) {
-  const before = hopStarsAll(r), had = r.best[c.id], ms = Math.max(1, Math.round(st.t * 1000)), md = hopMedal(c, st.t);
-  const next = HOP_COURSES[c.i + 1], opening = !!next && !hopOpen(next, r), rec = !had || ms < had;
-  if (rec) r.best[c.id] = ms;
+// what a finished course changes in the save: the best time (lowest) and its ghost, the stars found (added), the medal (highest), the
+// next course; today's twist instead keeps its stars and gives its bonus once a day (its time is not a course record)
+function hopRecord(r, c, st, rec) {
+  const before = hopStarsAll(r), cash0 = hopWallet(r), had = r.best[c.id], ms = Math.max(1, Math.round(st.t * 1000)), md = hopMedal(c, st.t);
+  const tw = st.tw, next = HOP_COURSES[c.i + 1], opening = !tw && !!next && !hopOpen(next, r), isRec = !tw && (!had || ms < had);
+  if (isRec) r.best[c.id] = ms;
+  if (!tw && rec && rec.s.length >= 8 && (isRec || !r.ghost[c.id]) && hopGhostIn(rec.s)) r.ghost[c.id] = rec.s;
   r.stars[c.id] = (r.stars[c.id] || 0) | st.stars;
-  r.medal[c.id] = Math.max(r.medal[c.id] || 0, md);
+  if (!tw) r.medal[c.id] = Math.max(r.medal[c.id] || 0, md);
   r.runs++;
-  if (next) r.cur = next.id;
+  if (!tw && next) r.cur = next.id;
+  let bonus = 0;
+  if (tw) {
+    const d = hopToday(r);
+    if (d.c == c.id && d.tw == tw && !d.done && hopTwOk(st)) {
+      d.done = 1;
+      r.bonus += 2;
+      bonus = 2;
+    }
+  }
   const trails = HOP_TRAILS.filter(t => t[2] && before < t[2] && hopStarsAll(r) >= t[2]);
-  return { ms, md, had, rec, next, opening, trails, gotNow: hopBits(st.stars), gotAll: hopBits(r.stars[c.id]) };
+  const wear = HOP_WEAR.find(w => !r.own[w[0]] && cash0 < w[2] && hopWallet(r) >= w[2]);
+  return { ms, md, had, rec: isRec, next, opening, trails, gotNow: hopBits(st.stars), gotAll: hopBits(r.stars[c.id]), bonus, wear, tw };
 }
 function hopFinish() {
-  const st = HP.st, c = HP.c, r = hopS(), id = c.id;
-  const { ms, md, had, rec, next, opening, trails, gotNow, gotAll } = hopRecord(r, c, st);
+  const st = HP.st, c = HP.c, r = hopS(), id = c.id, gh = HP.gh;
+  const { ms, md, had, rec, next, opening, trails, gotNow, gotAll, bonus, wear, tw } = hopRecord(r, c, st, HP.rec);
   save();
   hopStop();
-  const lines = [], MED = ['', 'Bronze', 'Silver', 'Gold'];
-  lines.push(['medal', `${MED[md]} medal! Gold: ${hopGold(c)} s.` + (had && !rec ? ` Your best: ${hopTime(had)}.` : '')]);
+  const lines = [], MED = ['', 'Bronze', 'Silver', 'Gold'], twist = HOP_TWB[tw];
+  if (twist) {
+    const need = hopTwNeed(tw, id);
+    lines.push(['star', bonus ? `Today's twist done: 2 bonus stars to spend!` : r.day.done && r.day.c == id && r.day.tw == tw ? 'You did today\'s twist already. A new one comes tomorrow!' :
+      need ? `Catch ${need} sparkles for the bonus: you caught ${st.spk}. Try again!` : 'Well done!']);
+  } else {
+    lines.push(['medal', `${MED[md]} medal! Gold: ${hopGold(c)} s.` + (had && !rec ? ` Your best: ${hopTime(had)}.` : '')]);
+    if (gh) {
+      const gms = (gh.x.length - 1) * 200, d = Math.abs(ms - gms) / 1000;
+      lines.push(['replay', ms < gms ? `You beat your ghost by ${d.toFixed(1)} s!` : `Your ghost was ${d.toFixed(1)} s quicker. Race it again!`]);
+    }
+  }
   lines.push(['star', gotAll == 3 ? 'You found all three stars on this course!' : `Stars found on this course: ${gotAll} of 3. Look up high and down low!`]);
-  if (opening) lines.push(['sparkle', next.w != c.w ? `New world: ${esc(HOP_WORLDS[next.w].name)}!` : `New course: ${esc(next.name)}!`]);
+  if (opening) lines.push(['sparkle', next.w != c.w ? (HOP_WORLDS[next.w].s2 && !HOP_WORLDS[c.w].s2 ? `Season 2 is open: ${esc(HOP_WORLDS[next.w].name)}!` :
+    `New world: ${esc(HOP_WORLDS[next.w].name)}!`) : `New course: ${esc(next.name)}!`]);
   for (const t of trails) lines.push(['sparkle', `New sparkle trail: ${esc(t[1])}!`]);
+  if (wear) lines.push(['gift', `You have enough stars for the ${esc(wear[1])}! Get it on the menu.`]);
   if (st.helped) lines.push(['balloon', 'The helper balloon gave you a lift. Try it on your own next time!']);
-  const time = ptLeft() > 0;
+  const time = ptLeft() > 0, nx = !twist && next;
   const o = GH.end('hop', { win: true, title: 'You reached the flag!', stars: gotNow, tag: rec && had ? 'New best time!' : '',
-    stats: [[hopTime(ms), 'time', 'timer'], [String(st.spk), 'sparkles', 'sparkle'], [MED[md], 'medal', 'medal']], lines,
-    btns: (time ? (next ? UI.btn('Next course', { kind: 'primary', size: 'lg', icon: 'play', id: 'hpnext', wide: true }) : '') +
-      UI.btn('Play again', { kind: next ? 'soft' : 'primary', size: next ? 'md' : 'lg', icon: 'replay', id: 'hpagain', wide: true }) :
+    stats: [[hopTime(ms), 'time', 'timer'], [String(st.spk), 'sparkles', 'sparkle'], twist ? [String(hopWallet(r)), 'stars to spend', 'star'] : [MED[md], 'medal', 'medal']], lines,
+    btns: (time ? (nx ? UI.btn('Next course', { kind: 'primary', size: 'lg', icon: 'play', id: 'hpnext', wide: true }) : '') +
+      UI.btn('Play again', { kind: nx ? 'soft' : 'primary', size: nx ? 'md' : 'lg', icon: 'replay', id: 'hpagain', wide: true }) :
       UI.btn('Earn more game time', { kind: 'primary', size: 'lg', icon: 'path-read', id: 'hplearn', wide: true })) +
       UI.btn('Courses', { icon: 'map', id: 'hpmenu', wide: true }) });
   if (S.voice) say(`You reached the flag! ${gotNow ? `You found ${gotNow} ${gotNow == 1 ? 'star' : 'stars'}. ` : ''}Well done, ${S.name || 'friend'}!`);
   const go = f => { o.remove(); f(); };
-  const again = cid => go(() => (ptLeft() > 0 ? hopPlay(cid) : hopMenu()));
+  const again = (cid, t) => go(() => (ptLeft() > 0 ? hopPlay(cid, t) : hopMenu()));
   if (o.querySelector('#hpnext')) o.querySelector('#hpnext').onclick = () => again(next.id);
-  if (o.querySelector('#hpagain')) o.querySelector('#hpagain').onclick = () => again(id);
+  if (o.querySelector('#hpagain')) o.querySelector('#hpagain').onclick = () => again(id, tw);
   if (o.querySelector('#hplearn')) o.querySelector('#hplearn').onclick = () => go(() => home());
   o.querySelector('#hpmenu').onclick = () => go(() => hopMenu());
 }
@@ -4990,10 +5616,10 @@ GH.reg({
   id: 'hop', btn: 'ghop', name: 'Sky Hop', icon: 'balloon', p: 'disc', sky: ['sky-1', 'sky'], art: () => hopHubArt(),
   sub: () => {
     const r = hopPeek();
-    return hopNum(r.runs, 0, 1e7) ? `<span>${ico('star', 18)}<b>${hopStarsAll(r)}</b> of 72 stars</span><span>${ico('trophy', 18)}<b>${hopDone(r)}</b> of 24</span>`
+    return hopNum(r.runs, 0, 1e7) ? `<span>${ico('star', 18)}<b>${hopStarsAll(r)}</b> of ${HOP_COURSES.length * 3} stars</span><span>${ico('trophy', 18)}<b>${hopDone(r)}</b> of ${HOP_COURSES.length}</span>`
       : '<span>Hop through the clouds with your pet</span>';
   },
   open: () => hopMenu(), tapToPlay: '#hopgo', saved: 'Your stars are saved.',
 });
 
-var GAMES2_VER='v155'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var GAMES2_VER='v159'; // last line: the whole file ran (checked by dataReady() before the app starts)

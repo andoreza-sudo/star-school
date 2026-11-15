@@ -2259,8 +2259,16 @@ Object.assign(SCREENS, {
   'skyhop-rainbow': hopShot(() => hopPlay('r1'), 20),
   'skyhop-offer': hopShot(() => hopPlay('m2'), null, () => { const st = HP.st; st.cpF[0] = 3; st.p.y = -6; }, 1500),
   'skyhop-end': hopShot(() => hopPlay('m4'), null, () => { HP.st.t = 47.3; HP.st.stars = 5; HP.st.spk = 31; hopFinish(); }, 1200),
+  // G-04b2: season 2 worlds, the costume shop, today's twist (Lantern night) with a costume on
+  'skyhop-sunset': hopShot(() => hopPlay('q2'), 0, null, 900),
+  'skyhop-whirl': hopShot(() => hopPlay('t2'), 30),
+  'skyhop-aurora': hopShot(() => hopPlay('a1'), 8),
+  'skyhop-castle': hopShot(() => { const r = hopS(); r.own.cape = 1; r.wear = 'cape'; hopPlay('c3'); }, 20),
+  'skyhop-shop': hopShot(() => { const r = hopS(); r.bonus = 20; r.own.leaf = 1; r.wear = 'leaf'; hopMenu(); document.querySelector('.hp-wears').scrollIntoView(); }, null, null, 600),
+  'skyhop-twist': hopShot(() => { const r = hopS(); r.own.fairy = 1; r.wear = 'fairy'; hopPlay('m3', 'lamp'); }, 0),
 });
-GROUPS.g04b = ['skyhop-menu', 'skyhop-meadow', 'skyhop-peaks', 'skyhop-night', 'skyhop-rainbow', 'skyhop-offer', 'skyhop-end'];
+GROUPS.g04b = ['skyhop-menu', 'skyhop-meadow', 'skyhop-peaks', 'skyhop-night', 'skyhop-rainbow', 'skyhop-offer', 'skyhop-end', 'skyhop-sunset', 'skyhop-whirl',
+  'skyhop-aurora', 'skyhop-castle', 'skyhop-shop', 'skyhop-twist'];
 
 async function main() {
   const args = process.argv.slice(2);
