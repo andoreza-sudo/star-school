@@ -133,7 +133,7 @@ gen.<VER>.js      question generators, part 1 (A11c): src/js/23-viz, 30-gen-math
 gen2.<VER>.js     question generators, part 2 (A11c): src/js/35-gen-math-upper, 36-gen-phonics, 37-bank, 37-comp, 39b-steps,
                   then  var GEN2_VER='<VER>';
 bt.<VER>.js       Brain Teaser puzzle types: a <style> with src/css/NN-bt-*.css, then src/js/NN-bt-*.js, then  var BT_VER='<VER>';
-games.<VER>.js    the Game Room: src/js/60-blocks, 62-hill, 64-gtimer, 66-colornum, 68-lowpoly, 70-art, 72-shapes, 59-game-hub (and their CSS
+games.<VER>.js    the Game Room: src/js/62-hill, 64-gtimer, 66-colornum, 68-lowpoly, 70-art, 72-shapes, 59-game-hub (and their CSS
                   48-game-hub, 60-game-blocks), then  var GAMES_VER='<VER>';
 games2.<VER>.js   the newer Game Room games (G-04a on): every other src/js/NN-game-*.js and src/css/NN-game-*.css (63-game-race since G-02b, 65-game-snack, 67-game-skyhop, 49-game-race, 49-game-snack, 49-game-skyhop),
                   then  var GAMES2_VER='<VER>';
@@ -162,6 +162,8 @@ The rule lives in one place, `PARTS` in `tools/build.py`: a file stem and a regu
 - `games2` (G-04a, v142): every other `src/js/NN-game-*.js` and `src/css/NN-game-*.css`, so a new game goes here by itself (G-04a: `65-game-snack.js`
   and `49-game-snack.css`, Snack Stand; G-04b: `67-game-skyhop.js` and `49-game-skyhop.css`, Sky Hop). It was added when the games file reached 394 KB of its 400 KB warning. It loads after `games`, so a game here
   may call `GH.reg` and the `gh*` drawing helpers while it loads; `appFiles()` lists it, so a missing or stale games2 file stops the start-up like the others.
+- `games3` (G-BB2, v164): Block Builder (`60-blocks.js`, `60-game-blocks.css`) and its WebGL renderer `61-bb-gl.js`, moved out of `games` when that
+  file passed its 400 KB warning (games 419 -> 263 KB). LAZY like the other two, loaded after games2; the games2 rule skips `60-game-blocks.css` by name.
 
 Loaded on demand (P6-02): `LAZY` in `tools/build.py` (`('games', 'games2')`) names the parts that index.html does not load at start, and
 `LAZY_PARTS` in `src/js/90-app.js` is the same list (the A11b and P6-02 checks compare them). They are built, stamped and precached like
