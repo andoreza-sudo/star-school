@@ -287,7 +287,7 @@ async function main() {
       if (room !== 3) fail('A11b: the Game Room did not open (' + room + ' of 3 games)');
       const lz = await d.page.evaluate(() => ({ css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(), games: [typeof garage, typeof blockBuilder, typeof colorMenu].join(),
         ready: LAZY_PARTS.map(partReady).join(), tags: [...document.scripts].filter(s => s.src).map(s => s.getAttribute('src')).join() }));
-      if (lz.css !== 'main,css-bt,css-games,css-rally,css-games2,css-games3' || lz.games !== 'function,function,function' || lz.ready !== 'true,true,true'
+      if (lz.css !== 'main,css-bt,css-games,css-rally,css-games2,css-games3' || lz.games !== 'function,function,function' || lz.ready !== 'true,true,true,true'
         || lz.tags !== startFiles.concat(g.lazy.map(x => x + '.' + g.dv + '.js')).join()) fail('P6-02: the Game Room did not load the games parts: ' + JSON.stringify(lz));
       if (opened.length === 3 && room === 3) step('A11b: puzzle types ' + g.bt + ' registered from ' + btF + ', its <style> in, opened from the hub: '
         + opened.join(', ') + '; Game Room from ' + gamesF + ' opened');
@@ -9733,7 +9733,7 @@ async function main() {
           return { ready: dataReady(), games: typeof GH, parts: LAZY_PARTS.map(partReady).join(), css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(),
             tags: [...document.scripts].filter(s => s.src).map(s => s.getAttribute('src')).join() };
         });
-        if (!s2.ready || s2.games !== 'undefined' || s2.parts !== 'false,false,false' || s2.css !== 'main,css-bt' || lazyF.some(f => s2.tags.includes(f))) bad.push('offline cold start: ' + JSON.stringify(s2));
+        if (!s2.ready || s2.games !== 'undefined' || s2.parts !== 'false,false,false,false' || s2.css !== 'main,css-bt' || lazyF.some(f => s2.tags.includes(f))) bad.push('offline cold start: ' + JSON.stringify(s2));
         // 3. Home -> Game Room with real taps: the waiting screen, then the hub from the cached games parts
         // (the waiting screen is seen by an observer: from the cache it can be gone before the next look)
         await p2.evaluate(() => {
@@ -9749,7 +9749,7 @@ async function main() {
         const s3 = await p2.evaluate(() => ({ parts: LAZY_PARTS.map(partReady).join(), css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(),
           cards: document.querySelectorAll('.gh-card').length, games: GH.games.map(g => g.id).join() }));
         if (!wait || wait.line !== 'Getting the games ready...' || !wait.back || wait.hub) bad.push('no "Getting the games ready..." screen first: ' + JSON.stringify(wait));
-        if (s3.parts !== 'true,true,true' || s3.css !== 'main,css-bt,css-games,css-rally,css-games2,css-games3' || s3.cards < 5 || !/snack/.test(s3.games)) bad.push('Game Room offline: ' + JSON.stringify(s3));
+        if (s3.parts !== 'true,true,true,true' || s3.css !== 'main,css-bt,css-games,css-rally,css-games2,css-games3' || s3.cards < 5 || !/snack/.test(s3.games)) bad.push('Game Room offline: ' + JSON.stringify(s3));
         // 4. a game from games2 starts: Snack Stand's card, then its Open button, then the day is on screen with the shared Pause
         await p2.click('#gsnack');
         await p2.click('#snopen', { timeout: 8000 });
