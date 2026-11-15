@@ -79,7 +79,7 @@ function grown(){let armed=false;
     <div class="gw-sw">${UI.sw('Open the Game Room today anyway',bank.open===today(),'pto')}</div>`:''}
     <div class="gw-row"><span class="gw-rl">Bank</span><span class="gw-btns">${UI.btn('+5 min',{size:'sm',icon:'plus',id:'pt5'})}${UI.btn('Empty bank',{size:'sm',kind:'ghost',icon:'trash',id:'pt0',cls:'gw-risk'})}</span></div>
     <div class="gw-sw">${UI.sw('Pause game time (games locked)',pc.pause,'ptp')}</div>`,{tone:'s-play',sub:'Each learning round earns game time, plus a bonus for 10 out of 10, bosses, tests, puzzles and the Daily Review.'})}
-  ${GW.card('gw-snd','sound-on','Sound and voice',`<div class="gw-sw">${UI.sw('Read questions out loud',S.voice,'voice')}${UI.sw('Sound effects',S.sound,'snd')}${UI.sw('Music on the home screen',S.music,'mus')}${UI.sw('Calm mode: less movement, no confetti',!!S.calm,'calm')}${UI.sw('Spanish speaking practice',spkOn(),'esspk')}</div>
+  ${GW.card('gw-snd','sound-on','Sound and voice',`<div class="gw-sw">${UI.sw('Read questions out loud',S.voice,'voice')}${UI.sw('Sound effects',S.sound,'snd')}${UI.sw('Music on the home screen',S.music,'mus')}${UI.sw('Calm mode: less movement, no confetti',!!S.calm,'calm')}${UI.sw('Buzz: a short vibration in games (tablets that can)',S.buzz!==false,'buzz')}${UI.sw('Spanish speaking practice',spkOn(),'esspk')}</div>
     <p class="gw-sub">Speaking practice: in Spanish rounds your child says a word or line, then hears the Spanish voice and their own recording, and the tablet says kindly how close it sounded. Recordings stay on this tablet (see the Listening corner).</p>
     ${UI.btn('Test voice',{size:'sm',icon:'speak',id:'test'})}
     <div class="gw-row" id="gw-cheer"><span class="gw-rl">Cheer voices</span>${GW.seg('cheer',['mix','f','m','tts'],cheerMode(),'Cheer voices: who says Great job',v=>CHEER_NAMES[v])}</div>`)}
@@ -118,6 +118,7 @@ function grown(){let armed=false;
   $('#voice').onchange=e=>{S.voice=e.target.checked;save()};
   $('#snd').onchange=e=>{S.sound=e.target.checked;save()};
   $('#mus').onchange=e=>{S.music=e.target.checked;save()};
+  $('#buzz').onchange=e=>{S.buzz=e.target.checked;save()}; // R-03 A4 (10-sfx.js buzz)
   $('#calm').onchange=e=>{S.calm=e.target.checked;save();calmApply(true)}; // P4-17
   $('#esspk').onchange=e=>{S.esSpk=e.target.checked;save()}; // S-SPK: per child (absent = on)
   spkLisBind();spkCornerBind(); // S-SPK2

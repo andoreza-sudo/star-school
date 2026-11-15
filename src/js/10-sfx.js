@@ -65,6 +65,9 @@ function sfxDuck(talking){if(!AC||!MG)return;clearInterval(DUCK);const t0=Date.n
   try{MG.gain.setTargetAtTime(MG_V*.3,AC.currentTime,.03)}catch(e){}
   DUCK=setInterval(()=>{if(Date.now()-t0<400||(talking()&&Date.now()-t0<30000))return;clearInterval(DUCK);DUCK=null;
     try{MG.gain.setTargetAtTime(MG_V,AC.currentTime,.08)}catch(e){}},200)}
+// R-03 A4: a short buzz on tablets that can vibrate (a crash, a finish in Star Rally). Grown-ups switch "Buzz" (S.buzz; on unless a
+// grown-up turns it off), never in Calm mode. Returns true when the tablet took it.
+function buzz(ms){if(S.buzz===false||S.calm)return false;try{return !!(navigator.vibrate&&navigator.vibrate(ms))}catch(e){return false}}
 let musT=null;
 function music(on){clearInterval(musT);musT=null;if(!on||!S.music)return;let i=0;const sc=[60,62,64,67,69,72,74,76,79],bass=[48,53,55,52];
   musT=setInterval(()=>{if(!AC||AC.state!='running')return;
