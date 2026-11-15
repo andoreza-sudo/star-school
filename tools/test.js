@@ -13120,7 +13120,7 @@ run('wearables and shop P4-07: every item drawn (valid SVG, roles only), fits ev
       if(Object.keys(before).length)store[KEY]=raw;
       loadSave(Object.keys(before).length?raw:null);migrate();
       const f={name,before:[before.owned||null,before.wear||null],after:[JSON.parse(JSON.stringify(S.owned||{})),JSON.parse(JSON.stringify(S.wear||{}))],w:Object.assign({},S.wear)};
-      f.pet=petHTML();f.rw=RW.pet();f.nstk=STK.filter(s=>S.stickers[s]).length;
+      f.pet=petHTML();f.rw=RW.pet();f.nstk=STK.filter(s=>stkN(s)).length; // CONTENT-01: the fish counts an old sticker too
       const k0=keep();
       f.shop={};
       for(const t of ['hat','toy','scene']){shopTab=t;shopSel=null;shop();f.shop[t]=app.innerHTML}
@@ -15892,7 +15892,7 @@ run('reading review fixes R-01r',()=>{
       'comp2:acfa177fed10 comp3:b70aa1dffd71 comp4:bfd8a77b0656 comp5:3c064be2d179 comp7:9ead20baae65 info1:c4031e7def5a info3:25ad998d9e5b '+
       'info4:8edd1307198b sight2:37ed72d3dc40 sight3:03216fa7fca5 sight5:7b324e4e7522 build1:4db265ad9f39 sent3:f0054eae04f3 sent4:06a31dd5bb11 '+
       'sent5:04c90646fac0 spell1:35ddedc8fd46 spell4:201a12f0db2d spell5:e6a4a11ef010 gram1:51ea83d72579 gram3:2ee838affdca gram5:98e3569be110 '+
-      'gram6:ef46db97c3e0 gram7:4d0a9714bf4a vocab1:3f264da86a43 vocab2:305b1d815e94 vocab3:8db3b2e3838c vocab4:7b71ef3d8a97 vocab7:a7bbbd9d0539 '+
+      'gram6:ef46db97c3e0 gram7:4d0a9714bf4a vocab1:3f264da86a43 vocab2:305b1d815e94 vocab3:8db3b2e3838c vocab4:7b71ef3d8a97 vocab7:7a8f9ffae5f2 '+
       'vocab8:e9c52e884e42 vocab9:b56f0001a6cb vocab10:c440a0af5eb4').split(' ').map(x=>x.split(':'));
     const artKeep=Object.assign({},ART);for(const k in ART)delete ART[k];
     try{for(const [k,h] of OLD){const [,id,lv]=k.match(/^([a-z]+)(\d+)$/),a=[];

@@ -359,3 +359,4 @@
 🤡  # clown face (pic 6 clown, R-01r)
 🧹  # broom (pic 6 broom, R-01r)
 🍴  # fork and knife
+🔦  # flashlight (torch)
