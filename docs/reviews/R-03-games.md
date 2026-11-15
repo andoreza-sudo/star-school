@@ -64,11 +64,11 @@ could = nice to have. "Visit" = a sitting of about 10 minutes of game time in th
 
 | # | Pri | Problem | Change | Size |
 |---|-----|---------|--------|------|
-| A1 | Must | No game has music (only Home and the map play a tune); modern children's games always have a theme per place | A short calm loop per game (and per place in Rally, Sky Hop, Snack Stand), made with `tone()` like the Home tune, on the existing Music switch (`S.music`), off in Calm mode, ducked under the voice | M |
+| A1 | Must | No game has music (only Home and the map play a tune); modern children's games always have a theme per place | A short calm loop per game (and per place in Rally, Sky Hop, Snack Stand), made with `tone()` like the Home tune, on the existing Music switch (`S.music`), off in Calm mode, ducked under the voice **Sky Hop: done in G-04b2 (v159)**, a loop per world. | M |
 | A2 | Must | Each game's currency stops meaning anything once its shop is bought (Rally 12,940 sparkles, Snack 5,977 coins, Hill 7,200 bolts unspent at visit 50) | A second, fixed and visible catalogue per game that opens when the first is done (section 2.2-2.7), never random, never pay-to-win; show "next thing to save for" on the menu | M each |
-| A3 | Should | Only Star Rally and Block Builder have a "Next goal" line on the menu | Add one to Sky Hop, Snack Stand, Hill Climb and Art Studio (the same component) | S each |
+| A3 | Should | Only Star Rally and Block Builder have a "Next goal" line on the menu | Add one to Sky Hop, Snack Stand, Hill Climb and Art Studio (the same component) **Sky Hop: done in G-04b2 (v159).** | S each |
 | A4 | Should | No haptics anywhere | A 10-20 ms `navigator.vibrate` on landing, crash, serve, block placed; a Grown-ups switch, off in Calm mode | S |
-| A5 | Should | Every game's world is the same every visit apart from Block Builder's build of the day | A "today's twist" from the date (like `bbDaily`): Rally weather or reverse track, Sky Hop a remixed course, Snack Stand a special customer, Hill Climb a daily challenge run; a small bonus the first time a day, nothing lost on a missed day, no streak | M |
+| A5 | Should | Every game's world is the same every visit apart from Block Builder's build of the day | A "today's twist" from the date (like `bbDaily`): Rally weather or reverse track, Sky Hop a remixed course, Snack Stand a special customer, Hill Climb a daily challenge run; a small bonus the first time a day, nothing lost on a missed day, no streak **Sky Hop: done in G-04b2 (v159)**: a finished course and one of 4 rules a day, +2 stars to spend once a day. | M |
 | A6 | Could | The emoji left in game scenes and menus (Block Builder animals, Hill Climb driver and the Earth on the moon, Art Studio tabs and palette buttons, Hill Climb garage) break the drawn look and render differently on old Android emoji fonts | Draw them (object-art style, tokens) | M |
 
 ### 2.2 Block Builder
@@ -111,9 +111,9 @@ could = nice to have. "Visit" = a sitting of about 10 minutes of game time in th
 
 | # | Pri | Problem | Change | Size |
 |---|-----|---------|--------|------|
-| K1 | Must | Runs out first: 24 courses by about visit 5, 72 stars by visit 10-15 | 24 remix courses opened by stars (mirrored, wind added, night, "collect every sparkle"); a ghost of your best run (Star Rally's ghost code); a "next goal" line | L |
-| K2 | Must | Looks sparse: one band of hills, pale sky, flat cloud strips, a tall unfinished-looking grey cloud pillar, the pet about 50 px on a phone | Richer 2.5D (section 4.3): 4-5 parallax layers per world (far islands, clouds, hills, near bushes), thick shaded platforms with a light top edge and a soft shadow under the pet, foreground clouds that pass in front, dust on landing, a 1.4x bigger pet on phones | M |
-| K3 | Should | Stars only open trails | Costumes or a hat for the pet from stars, shown in the pet's own Pet Shop too | M |
+| K1 | Must | Runs out first: 24 courses by about visit 5, 72 stars by visit 10-15 | 24 remix courses opened by stars (mirrored, wind added, night, "collect every sparkle"); a ghost of your best run (Star Rally's ghost code); a "next goal" line. **Done in G-04b2 (v159):** Season 2, 24 courses in 4 new worlds (crumbling clouds, clouds that go round, keys and doors, all together), opened in order; a ghost of the best run; the next-goal line; time medals for all 48. | L |
+| K2 | Must | Looks sparse: one band of hills, pale sky, flat cloud strips, a tall unfinished-looking grey cloud pillar, the pet about 50 px on a phone | Richer 2.5D (section 4.3): 4-5 parallax layers per world (far islands, clouds, hills, near bushes), thick shaded platforms with a light top edge and a soft shadow under the pet, foreground clouds that pass in front, dust on landing, a 1.4x bigger pet on phones **Done in G-04b2 (v159):** a backdrop picture plus 3 band layers and foreground clouds per world, faded toward the sky; thick lit platforms; a shadow under the pet; drifting clouds, birds or fireflies, glints; sprite particles; the pet 1.4x on phones; a quicker adaptive scale. Same frame time as v155 at 6x. | M |
+| K3 | Should | Stars only open trails | Costumes or a hat for the pet from stars, shown in the pet's own Pet Shop too. **Done in G-04b2 (v159):** 10 costumes bought with stars to spend (found stars, gold medals, twist bonus), a fixed list; in Sky Hop only (the Pet Shop is not changed). | M |
 
 ### 2.7 Art Studio (Coloring, Neon, pixel art)
 
