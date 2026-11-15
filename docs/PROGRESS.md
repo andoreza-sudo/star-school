@@ -4,7 +4,7 @@ The running record of what has shipped. Newest entry first. Every chunk adds one
 
 **Next up:** P6-05 (wip/batch-N, map timing), the P5-07 flaky step; see Handoff notes
 
-**Current version:** v166
+**Current version:** v167
 
 ## Chunk status
 
@@ -149,6 +149,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - G-BB2 v164
 - G-RALLY2 v163
 - G-HC3 v166
+- G-BB3 v167
 
 ## Handoff notes
 
@@ -499,6 +500,17 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-11) Icons wanted from P4-03: `balloon` (Bonus game, today `gamepad`), `sparkle` / `confetti`, `unlock` (open padlock for "Next stop unlocked", today `map`), `zap` (a lightning with a spark for boss hits; today `bolt`), `sticker` (single sticker for the prize row), `medal` (the prize rosette as an icon), `heart-half` (boss life bar), `chest` (the treasure chest at icon size, e.g. for the round track where renderQ shows the gift emoji).
 
 ## Log
+
+### G-BB3 Block Builder: themed goals and big projects per world (v167, 2026-11-15, Claude)
+- Why: R-03 B4 (only 18 free-build goals, 9 the same in every world; the owner: "like you're on level one and stuck there").
+- **42 new goals (60 in all, 18-19 a world)**: for each of the 7 kinds of world 4 themed goals and 2 big projects of 3-4 steps (island: bridge over the water, raft, garden, animal pen, farm, harbour; mountain: Planks stairs, a lamp on the top, log cabin, lava-safe hut, mine, castle; desert: pyramid, well, palm, cactus fence, oasis, town; flat: pool, long wall, rainbow path, checkerboard, playground, big castle; beach: lighthouse, sandcastle, beach umbrella, pier, beach house, pirate ship; snowy: snowman, snowman family, igloo, ski jump, snowy village, ice palace; sky: cloud bridge, crystal tower, hot air balloon, 3 lamps at night, castle in the clouds, rocket). Only blocks open in that kind of world.
+- **Checked by code** after each build (after the frame is painted, R-03 B1), like the old goals: `BB_GOALS` entries carry a check (`bbRow`, `bbWall`, `bbSeqs`, `bbFloor`, `bbRing`, `bbPlus`, `bbStairs`, `bbNext` on `bbGC`); they read only the child's own blocks (the built mask `mk`: Build, Line, Wall, Floor; not stamps), so a world as it was made never counts. A project's steps go in order and stay done (`pj`); what was found sparkles (the overlay outline, both looks).
+- **Rotation**: the 3 goals shown (`bbGoalNext`) turn two places a day by the date, the same all day; Build 10 blocks first in a new world, a project started first after that; over two weeks every themed goal and project of a world comes up.
+- **Read aloud**: a goal done, a step done and the next goal are said (`say()`, with Voice on); each goal in More and the project in the scene read themselves when tapped. **Progress display**: the big project in the scene (bottom left: name, a dot a step, n/m, the next step) and a "Big projects" list in More. Goals give no stars, as before; nothing is taken away (old goals and counts unchanged).
+- 3D (`61-bb-gl.js`) needed no change: the goal UI is HTML over both looks, and the sparkle uses `E.proj`, which the 3D camera sets.
+- Save (ROADMAP row `S.bb.worlds[i].mk`, `.pj`): both optional; old worlds load with nothing marked (blocks from before v167 do not count for the new goals).
+- Sizes: games3 196,685 -> 221,764 bytes (warn 400 KB); other parts unchanged (gen 218,806, gen2 241,119, bt 583,558, games 283,181, rally 181,291, games2 302,596, data 720,860, index.html 973,338).
+- Tests: test.js new check **"Block Builder goals G-BB3"** (counts, lines, icons; every goal met by a scripted build, project steps one by one and never early, an empty world meets none; blocks open in that kind and standing on something; sea and peak room in 20 seeds; rotation per date; old and damaged saves; mask save and load; 3.7 ms for a full world). smoke.js new `// G-BB3` block (real touch, 380x780 2D look and 1024x600 3D look: a raft by one touch, the harbour's first step by three more, More, Quit and back). Results: test.js all 143 checks passed; smoke.js 319 steps, smoke OK, no failures. check.sh not run, as asked.
 
 ### G-HC3 Hill Climb: game speed, depth, today's drive, music, garage level 2 (v166, 2026-11-15, Claude)
 - Why (the owner): the games feel "like you're on level one and stuck there"; more 3D-looking detail where cheap tablets allow (R-03 H1-H4, A1-A5).
