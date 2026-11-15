@@ -237,7 +237,7 @@ async function main() {
       const files = g.files.map(f => f[0] + '.' + g.dv + '.js'), want = 'data.' + g.dv + '.js';
       const startFiles = g.files.filter(f => !g.lazy.includes(f[0])).map(f => f[0] + '.' + g.dv + '.js'); // P6-02: the <script> tags at start
       const btF = 'bt.' + g.dv + '.js', gamesF = 'games.' + g.dv + '.js'; // A11c: the order of the parts is build.py's, so name them
-      if (JSON.stringify(g.lazy) !== '["games","games2"]' || JSON.stringify(g.src) !== JSON.stringify(startFiles) || files[files.length - 1] !== want || !g.ready || !(g.gram > 0 && g.vocab > 0 && g.comp > 0 && g.info > 0)
+      if (JSON.stringify(g.lazy) !== '["games","rally","games2"]' || JSON.stringify(g.src) !== JSON.stringify(startFiles) || files[files.length - 1] !== want || !g.ready || !(g.gram > 0 && g.vocab > 0 && g.comp > 0 && g.info > 0)
         || g.spell !== 'function' || !g.vq || g.pz !== '3:16:16' || g.ix < 0) {
         fail('A11 data globals: ' + JSON.stringify(g));
       }
@@ -287,7 +287,7 @@ async function main() {
       if (room !== 3) fail('A11b: the Game Room did not open (' + room + ' of 3 games)');
       const lz = await d.page.evaluate(() => ({ css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(), games: [typeof garage, typeof blockBuilder, typeof colorMenu].join(),
         ready: LAZY_PARTS.map(partReady).join(), tags: [...document.scripts].filter(s => s.src).map(s => s.getAttribute('src')).join() }));
-      if (lz.css !== 'main,css-bt,css-games,css-games2' || lz.games !== 'function,function,function' || lz.ready !== 'true,true'
+      if (lz.css !== 'main,css-bt,css-games,css-rally,css-games2' || lz.games !== 'function,function,function' || lz.ready !== 'true,true,true'
         || lz.tags !== startFiles.concat(g.lazy.map(x => x + '.' + g.dv + '.js')).join()) fail('P6-02: the Game Room did not load the games parts: ' + JSON.stringify(lz));
       if (opened.length === 3 && room === 3) step('A11b: puzzle types ' + g.bt + ' registered from ' + btF + ', its <style> in, opened from the hub: '
         + opened.join(', ') + '; Game Room from ' + gamesF + ' opened');
@@ -374,6 +374,12 @@ async function main() {
       const a5 = await lazyGuard(games2F + ' of another release', /^$/, 'games2 file v1 does not match');
       await a5.ctx.close();
       fs.copyFileSync(path.join(ROOT, games2F), path.join(tmp, games2F));
+      // 5b. G-RALLY2: a rally file (Star Rally's own part) from another release
+      const rallyF = 'rally.' + g.dv + '.js';
+      fs.writeFileSync(path.join(tmp, rallyF), fs.readFileSync(path.join(ROOT, rallyF), 'utf8').replace("var RALLY_VER='" + g.dv + "'", "var RALLY_VER='v1'"));
+      const a5b = await lazyGuard(rallyF + ' of another release', /^$/, 'rally file v1 does not match');
+      await a5b.ctx.close();
+      fs.copyFileSync(path.join(ROOT, rallyF), path.join(tmp, rallyF));
       // 6. P6-02: no games file (never cached, offline); with it back, Try again starts the app and the Game Room opens
       fs.rmSync(path.join(tmp, gamesF));
       const a6 = await lazyGuard(gamesF + ' missing', NOFILE, 'games file missing');
@@ -7064,7 +7070,8 @@ async function main() {
             cupsOpen: document.querySelectorAll('.rl-cup[data-ok="1"]').length, trk: document.querySelectorAll('.rl-trk').length,
             open: document.querySelectorAll('.rl-trk[data-ok="1"]').length, places: document.querySelectorAll('.rl-place').length, back: !!document.querySelector('.gh-top #back'),
             goal: (document.querySelector('#rlgoal') || {}).textContent || '' }));
-          if (m.g !== 'rally' || m.cups !== 4 || m.cupsOpen !== 1 || m.trk !== 3 || m.open !== 2 || m.places !== 4 || !m.back || !/Next goal: .*Sprout Cup/.test(m.goal))
+          // G-RALLY2: 5 + 5 cups, mirror tracks next to each track, Maple Woods
+          if (m.g !== 'rally' || m.cups !== 10 || m.cupsOpen !== 1 || m.trk !== 6 || m.open !== 2 || m.places !== 5 || !m.back || !/Next goal: .*Sprout Cup/.test(m.goal))
             bad.push(at + 'menu ' + JSON.stringify(m));
           for (const o of await pg.evaluate(look)) bad.push(at + 'menu: ' + o);
           const used0 = await pg.evaluate(() => pt().used);
@@ -7180,6 +7187,151 @@ async function main() {
       else step('G-02b: Star Rally by real touch at 380x780 and 1024x600: hub card -> menu (next goal, cups) -> the Sprout Cup (steered with the 96 px ' +
         'buttons, a crash into the bridge rail spun and recovered, 3 races with standings, the cup saved) -> a time trial and its ghost; game time spent, ' +
         'clock stopped; 48 px targets, no sideways scroll; ' + notes.join('; '));
+    }
+
+    // G-RALLY2 Star Rally's second season (src/js/63-game-race.js, rally part). Midway save with the four trophies and 700 sparkles,
+    //    Sound and Music on, real touch at 380x780 and 1024x600: Home -> Game Room -> Star Rally -> the menu (next goal at the mirror
+    //    cups, what to save for, today's twist, 5 + 5 cups with the Maple Cup and the first mirror cup open, 5 places) -> today's twist by
+    //    its card (the race says "Today's twist", the place's music plays while racing and stops in Calm mode) -> to the finish 12x
+    //    faster: the bonus line, sparkles + 25, the date saved, a buzz at the finish (navigator.vibrate seen) -> the menu says "Done
+    //    today" -> the garage: level 2 locked (a touch on a kit buys nothing) -> after a mirror cup is raced (save), a kit bought by touch
+    //    and on the car. Buttons 48 px or more, no sideways scroll.
+    {
+      const bad = [], notes = [];
+      for (const [w, h] of [[380, 780], [1024, 600]]) {
+        const ga = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ga.page, at = 'G-RALLY2 ' + w + 'x' + h + ' ';
+        const cdp = await pg.context().newCDPSession(pg);
+        await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 2 });
+        const box = sel => pg.evaluate(s => {
+          const e = document.querySelector(s);
+          if (!e) return null;
+          if (!e.closest('.rl')) e.scrollIntoView({ block: 'center' });
+          const r = e.getBoundingClientRect();
+          return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+        }, sel);
+        const touch = async sel => {
+          const b = await box(sel);
+          if (!b) throw new Error('nothing to touch: ' + sel);
+          await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: b.x, y: b.y, id: 1, radiusX: 8, radiusY: 8, force: 1 }] });
+          await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+        };
+        const look = () => {
+          const vw = document.documentElement.clientWidth, out = [];
+          for (const e of document.querySelectorAll('.gh-top button, .rl-menu button, .gh-end button, .rl-gar button')) {
+            const r = e.getBoundingClientRect();
+            if (!r.width || r.bottom < 0 || r.top > innerHeight) continue;
+            if (Math.min(r.width, r.height) < 47.5) out.push('small ' + (e.id || e.className) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
+          }
+          if (document.documentElement.scrollWidth > vw) out.push('sideways scroll ' + document.documentElement.scrollWidth);
+          for (const s of document.querySelectorAll('.scroll, .gh-end')) if (s.scrollWidth > s.clientWidth + 1) out.push('sideways scroll in ' + s.className);
+          return out;
+        };
+        try {
+          await pg.evaluate(() => {
+            S.pt = { bank: 1200, day: today(), used: 0 };
+            S.sound = true;
+            S.music = true;
+            S.calm = false;
+            S.rally = { spk: 700, cups: { sprout: { best: 1, runs: 1 }, wave: { best: 2, runs: 1 }, frost: { best: 3, runs: 2 }, star: { best: 1, runs: 1 } } };
+            save();
+            home();
+            window.__vib = [];
+            navigator.vibrate = ms => { window.__vib.push(ms); return true; };
+          });
+          await touch('#groom');
+          await pg.waitForSelector('#grally', { timeout: 8000 });
+          await pg.waitForTimeout(450);
+          await touch('#grally');
+          await pg.waitForSelector('#rltwist', { timeout: 8000 });
+          await pg.waitForTimeout(450);
+          const m = await pg.evaluate(() => ({ cups: document.querySelectorAll('.rl-cup').length, open: [...document.querySelectorAll('.rl-cup[data-ok="1"]')].map(b => b.dataset.cup).join(),
+            places: document.querySelectorAll('.rl-place').length, goal: document.querySelector('#rlgoal').textContent, save: document.querySelector('#rlsave').textContent,
+            tw: document.querySelector('#rltwist').textContent, mir: document.querySelectorAll('.rl-cup.mir').length }));
+          if (m.cups !== 10 || m.open !== '0,1,2,3,4,5' || m.places !== 5 || m.mir !== 5 || !/Mirror Sprout Cup/.test(m.goal) || !/Star|Save for|buy/.test(m.save) ||
+            !/Today's twist.*\+25 sparkles/.test(m.tw)) bad.push(at + 'menu ' + JSON.stringify(m));
+          for (const o of await pg.evaluate(look)) bad.push(at + 'menu: ' + o);
+          // today's twist by its card
+          const spk0 = await pg.evaluate(() => S.rally.spk);
+          await touch('#rltwist');
+          await pg.waitForSelector('#rlcv', { timeout: 8000 });
+          await pg.waitForFunction(() => RL && RL.st.cd <= 0 && RL.st.P.v > 3000, null, { timeout: 15000 });
+          await pg.waitForTimeout(1200);
+          const ra = await pg.evaluate(() => ({ sub: document.querySelector('.gh-top').textContent, tw: !!RL.twist, tid: RL.st.tid, want: rlTwist().tid, on: rlMusicOn(RL),
+            mb: RL.mb || 0, ac: typeof AC != 'undefined' && AC ? AC.state : 'none' }));
+          if (!/Today's twist/.test(ra.sub) || !ra.tw || ra.tid !== ra.want || !ra.on || (ra.ac === 'running' && !(ra.mb > 0))) bad.push(at + 'twist race ' + JSON.stringify(ra));
+          const calm = await pg.evaluate(() => { S.calm = true; const r = { on: rlMusicOn(RL), buzz: buzz(20) }; S.calm = false; return r; });
+          if (calm.on || calm.buzz) bad.push(at + 'Calm mode must stop the music and the buzz ' + JSON.stringify(calm));
+          notes.push(w + 'x' + h + ' twist: ' + ra.tid + ', music ' + (ra.mb > 0 ? 'scheduled' : 'audio ' + ra.ac));
+          await pg.evaluate(() => { RL_DEV.fast = 12; });
+          await pg.waitForSelector('.gh-end #rlmenu', { timeout: 40000 });
+          await pg.evaluate(() => { RL_DEV.fast = 1; });
+          await pg.waitForTimeout(400);
+          const e = await pg.evaluate(() => ({ line: /Today's twist done: \+25/.test(document.querySelector('.gh-end').textContent), tw: S.rally.tw, today: today(), spk: S.rally.spk,
+            vib: window.__vib.slice() }));
+          if (!e.line || e.tw !== e.today || !(e.spk >= spk0 + 25) || !e.vib.includes(40)) bad.push(at + 'twist finish ' + JSON.stringify(e));
+          for (const o of await pg.evaluate(look)) bad.push(at + 'end card: ' + o);
+          await touch('#rlmenu');
+          await pg.waitForSelector('#rltwist', { timeout: 8000 });
+          if (!/Done today/.test(await pg.evaluate(() => document.querySelector('#rltwist').textContent))) bad.push(at + 'the twist card should say Done today');
+          // the garage: level 2 locked; a mirror cup raced opens it; a kit bought by touch
+          await touch('#rlgar');
+          await pg.waitForSelector('#rlt2', { timeout: 8000 });
+          const s1 = await pg.evaluate(() => S.rally.spk);
+          await touch('.rl-item[data-k="kit"][data-id="stripes"]');
+          await pg.waitForTimeout(300);
+          const g1 = await pg.evaluate(() => ({ lock: document.querySelector('#rlt2').classList.contains('lock'), spk: S.rally.spk, kits: JSON.stringify(S.rally.kits), bar: !!document.querySelector('#rlbuy') }));
+          if (!g1.lock || g1.spk !== s1 || g1.kits !== '{}' || g1.bar) bad.push(at + 'locked level 2 ' + JSON.stringify(g1));
+          for (const o of await pg.evaluate(look)) bad.push(at + 'garage: ' + o);
+          await pg.evaluate(() => { S.rally.cups.msprout = { best: 4, runs: 1 }; save(); rlGarage(); });
+          await pg.waitForSelector('#rlt2:not(.lock)', { timeout: 8000 });
+          await touch('.rl-item[data-k="kit"][data-id="stripes"]');
+          await pg.waitForSelector('#rlbuy', { timeout: 8000 });
+          await touch('#rlbuy');
+          await pg.waitForTimeout(400);
+          const g2 = await pg.evaluate(() => ({ kits: JSON.stringify(S.rally.kits), kit: S.rally.kit, spk: S.rally.spk, on: !!document.querySelector('.rl-item.on[data-k="kit"][data-id="stripes"]') }));
+          if (g2.kits !== '{"stripes":1}' || g2.kit !== 'stripes' || g2.spk !== s1 - 250 || !g2.on) bad.push(at + 'buying a kit ' + JSON.stringify(g2));
+          notes.push(w + 'x' + h + ' racing stripes bought (' + s1 + ' -> ' + g2.spk + ' sparkles)');
+          // cheap tablets: the frame time at 6x CPU throttle (1024x600) on a mirror track of the new place, with the rainbow trail and
+          // a kit on the car: the median frame at most 34 ms (a busy machine is measured again, up to 3 more times, like G-02b)
+          if (w == 1024) {
+            const os = require('os'), cores = os.cpus().length;
+            await pg.evaluate(() => { const r = S.rally; r.trails = { rainbow: 1 }; r.trail = 'rainbow'; r.whls = { monster: 1 }; r.whl = 'monster'; save(); rlRace('woods-1m'); });
+            await pg.waitForFunction(() => RL && RL.st.cd <= 0, null, { timeout: 15000 });
+            await pg.waitForTimeout(2500);
+            let best = null, tries = 0, load = os.loadavg()[0];
+            for (;;) {
+              await cdp.send('Emulation.setCPUThrottlingRate', { rate: 6 });
+              await pg.evaluate(() => { RL.fi.length = 0; RL.ft.length = 0; });
+              await pg.waitForTimeout(3000);
+              const r = await pg.evaluate(() => {
+                const q = (a, p) => a.slice().sort((x, y) => x - y)[Math.floor(a.length * p)];
+                return { med: q(RL.fi, .5), work: q(RL.ft, .5), n: RL.fi.length, q: RL.q, trail: !!RL.v.trail, live: [...RL.tr.life].filter(x => x > 0).length };
+              });
+              await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+              tries++;
+              load = os.loadavg()[0];
+              if (!best || r.med < best.med) best = r;
+              if (best.med <= 34 || tries >= 4 || load <= cores) break;
+              await pg.waitForTimeout(1000);
+            }
+            if (best.med > 34 || !best.trail || !best.live) bad.push(at + `frame interval at 6x throttle with the trail: ${JSON.stringify(best)} (limit 34 ms)`);
+            notes.push(`6x throttle (Mirror Mushroom Meander, rainbow trail): median frame ${best.med.toFixed(1)} ms, JS ${best.work.toFixed(1)} ms a frame, ` +
+              `${best.live} trail pieces, pixel scale ${best.q} (${tries} pass${tries > 1 ? 'es' : ''})`);
+            await pg.evaluate(() => rlQuit());
+          }
+        } catch (x) {
+          bad.push(at + 'taps: ' + x.message.split('\n')[0]);
+        }
+        await pg.evaluate(() => { if (typeof RL_DEV != 'undefined') RL_DEV.fast = 1; });
+        network.push(...ga.network);
+        for (const e of ga.errors) fail(e);
+        await ga.ctx.close();
+      }
+      if (bad.length) fail('G-RALLY2 Star Rally season 2:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('G-RALLY2: Star Rally season 2 by real touch at 380x780 and 1024x600: the menu (mirror cups, the Maple Cup, what to save for, today\'s ' +
+        'twist) -> today\'s twist raced with its music (off in Calm mode), the +25 bonus once, a buzz at the finish -> garage level 2 locked, then a kit ' +
+        'bought by touch; 48 px targets, no sideways scroll; ' + notes.join('; '));
     }
 
     // G-HC2 Hill Climb journey (src/js/62-hill.js). Midway save, a fresh garage, 1st grade (easy driving on), 20 min of game time, real
@@ -9357,7 +9509,7 @@ async function main() {
           const ver = DATA_VER, c = await caches.open('starschool-' + ver);
           return { ver, cached: (await c.keys()).map(r => r.url.split('/').pop()).sort(), tags: [...document.scripts].filter(s => s.src).map(s => s.getAttribute('src')) };
         });
-        const lazyF = ['games', 'games2'].map(x => x + '.' + c1.ver + '.js');
+        const lazyF = ['games', 'rally', 'games2'].map(x => x + '.' + c1.ver + '.js');
         if (!lazyF.every(f => c1.cached.includes(f)) || !c1.cached.includes('index.html')) bad.push('the service worker did not precache the games parts: ' + c1.cached.join(' '));
         if (lazyF.some(f => c1.tags.includes(f))) bad.push('index.html loaded a games part at start: ' + c1.tags.join(' '));
         // ES-AUDIO: the recordings are cached at install too, in their own cache (none of them was loaded by the page itself)
@@ -9383,7 +9535,7 @@ async function main() {
           return { ready: dataReady(), games: typeof GH, parts: LAZY_PARTS.map(partReady).join(), css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(),
             tags: [...document.scripts].filter(s => s.src).map(s => s.getAttribute('src')).join() };
         });
-        if (!s2.ready || s2.games !== 'undefined' || s2.parts !== 'false,false' || s2.css !== 'main,css-bt' || lazyF.some(f => s2.tags.includes(f))) bad.push('offline cold start: ' + JSON.stringify(s2));
+        if (!s2.ready || s2.games !== 'undefined' || s2.parts !== 'false,false,false' || s2.css !== 'main,css-bt' || lazyF.some(f => s2.tags.includes(f))) bad.push('offline cold start: ' + JSON.stringify(s2));
         // 3. Home -> Game Room with real taps: the waiting screen, then the hub from the cached games parts
         // (the waiting screen is seen by an observer: from the cache it can be gone before the next look)
         await p2.evaluate(() => {
@@ -9399,7 +9551,7 @@ async function main() {
         const s3 = await p2.evaluate(() => ({ parts: LAZY_PARTS.map(partReady).join(), css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(),
           cards: document.querySelectorAll('.gh-card').length, games: GH.games.map(g => g.id).join() }));
         if (!wait || wait.line !== 'Getting the games ready...' || !wait.back || wait.hub) bad.push('no "Getting the games ready..." screen first: ' + JSON.stringify(wait));
-        if (s3.parts !== 'true,true' || s3.css !== 'main,css-bt,css-games,css-games2' || s3.cards < 5 || !/snack/.test(s3.games)) bad.push('Game Room offline: ' + JSON.stringify(s3));
+        if (s3.parts !== 'true,true,true' || s3.css !== 'main,css-bt,css-games,css-rally,css-games2' || s3.cards < 5 || !/snack/.test(s3.games)) bad.push('Game Room offline: ' + JSON.stringify(s3));
         // 4. a game from games2 starts: Snack Stand's card, then its Open button, then the day is on screen with the shared Pause
         await p2.click('#gsnack');
         await p2.click('#snopen', { timeout: 8000 });

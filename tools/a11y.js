@@ -184,6 +184,11 @@ const SCREENS = {
   'blocks-journey': { run: ev(() => { gtime(); for (let i = 0; i < 20; i++) bbBP()[BBP[i].id] = 3; const g = bbGal(); if (!g.length) g.push({ n: 'My Island', d: bbPack(bbGen('island', 7)), t: today() }); bbMenu(); }) },
   'rally-menu': { run: ev(() => { rlSave(); rlMenu(); }) },
   'rally-garage': { run: ev(() => { rlSave(); rlGarage({ k: 'paint', id: 'b' }); }) },
+  // G-RALLY2: the menu later (mirror cups open, today's twist, what to save for) and garage level 2 open with a kit tried on
+  'rally-menu2': { run: ev(() => { rlSave(); S.rally.cups = { sprout: { best: 1, runs: 1 }, wave: { best: 1, runs: 1 }, frost: { best: 2, runs: 1 }, star: { best: 3, runs: 1 },
+    msprout: { best: 2, runs: 1 } }; rlMenu(); }) },
+  'rally-garage2': { run: ev(() => { rlSave(); S.rally.spk = 900; S.rally.cups = { msprout: { best: 2, runs: 1 } }; S.rally.trails = { star: 1 }; S.rally.trail = 'star';
+    rlGarage({ k: 'kit', id: 'fins' }); }) },
   'rally-race': { run: async p => { await p.evaluate(() => rlSave()); await p.evaluate(() => rlRace('meadow-0')); await p.waitForTimeout(4500); }, main: '.rl-btn', sheet: pauseSheet },
   'snack-menu': { run: ev(() => { snSave(); snMenu(); }) },
   'snack-day': { run: async p => { await p.evaluate(() => snSave()); await p.evaluate(() => snDay()); await p.waitForTimeout(2500); }, main: '.sn-fb, .sn-serve, .sn-undo', sheet: pauseSheet },
