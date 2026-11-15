@@ -8846,6 +8846,83 @@ async function main() {
       else step('ES-AUDIO: no Spanish voice, 380x780: a word card says the English then plays its Spanish file back to back (no note); a question is read from its file, the speaker stays, Hear it plays it (talking); a missing file falls back to the voice; English, Spanish, English queue on their end events');
     }
 
+    // EN-PRAISE recorded encouragement at 380x780 (midway save). play() of every <audio> is stubbed (logged with its src and line, ends
+    //    150 ms later) and speak() logs and ends. (1) A right answer in a math round plays a recorded praise file (audio/en/) of the line
+    //    the toast shows. (2) The next right answer is said in a different voice. (3) Grown-ups -> Cheer voices -> Tablet voice (saved for
+    //    the child): the sample and a right answer are spoken by the tablet's voice, no file. (4) A grown-up's own cheer clip wins over
+    //    the recordings (the clip's 30% chance forced).
+    {
+      const sa = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
+      const pg = sa.page, bad = [];
+      try {
+        await pg.evaluate(() => {
+          window.__lg = [];
+          speechSynthesis.getVoices = () => [{ lang: 'en-US', name: 'en-US' }];
+          window.SpeechSynthesisUtterance = function (t) { this.text = t; };
+          speechSynthesis.speak = u => { __lg.push({ k: 'speak', t: u.text }); setTimeout(() => { u.onend && u.onend(); }, 120 * 8); };
+          HTMLMediaElement.prototype.play = function () {
+            const src = this.getAttribute('src') || this.src, el = this;
+            __lg.push({ k: 'play', src, t: this.dataset && this.dataset.say });
+            setTimeout(() => { if ((el.getAttribute('src') || el.src) === src) el.dispatchEvent(new Event('ended')); }, 150 * 8);
+            return Promise.resolve();
+          };
+          S.voice = true; S.sound = true; delete S.cheerV; CLIPS = []; save();
+        });
+        // the voice index of a recorded file (-1: not a recording)
+        const voiceOf = src => pg.evaluate(src => { const f = String(src || '').split('/').pop().replace(EN_AUDIO.ext, '');
+          for (const k in EN_AUDIO.lines) { const i = EN_AUDIO.lines[k][1].indexOf(f); if (i >= 0) return i; } return -1; }, src);
+        const rightOnce = async () => {
+          await pg.waitForSelector('#prompt');
+          await vwait(pg, 1500); // the question is read out first
+          await pg.evaluate(() => { __lg = []; });
+          const before = await pg.evaluate(() => G.done);
+          await answer(pg);
+          await pg.waitForFunction(b => G.done > b, before, { timeout: 5000 });
+          await vwait(pg, 600);
+          return pg.evaluate(() => ({ lg: __lg.slice(), toast: [...document.querySelectorAll('.toast, [role="status"]')].map(e => e.textContent).join(' ') }));
+        };
+        await pg.evaluate(() => start('math', 0));
+        // (1) a right answer: a recorded praise file of the line shown
+        const r1 = await rightOnce(), p1 = r1.lg.find(x => x.k == 'play' && /audio\/en\//.test(x.src)), v1 = p1 ? await voiceOf(p1.src) : -1;
+        if (!p1 || v1 < 0 || !(await pg.evaluate(t => CHEERS.includes(t), p1.t)) || !r1.toast.includes(p1.t)) bad.push('a right answer did not play a recorded praise file of the toast line: ' + JSON.stringify(r1));
+        if (r1.lg.some(x => x.k == 'speak' && x.t == (p1 && p1.t))) bad.push('the praise was also spoken by the tablet voice');
+        // (2) the next right answer: another voice
+        await vwait(pg, 1500);
+        const r2 = await rightOnce(), p2 = r2.lg.find(x => x.k == 'play' && /audio\/en\//.test(x.src)), v2 = p2 ? await voiceOf(p2.src) : -1;
+        if (!p2 || v2 < 0 || v2 === v1) bad.push('two right answers: voices ' + v1 + ' then ' + v2 + ' ' + JSON.stringify(r2.lg));
+        // (3) Grown-ups: Cheer voices -> Tablet voice, saved per child; the sample and a right answer use the tablet's voice
+        await vwait(pg, 3000); // the round's next question is drawn first
+        await pg.evaluate(() => { home(); __lg = []; grown(); });
+        await pg.waitForSelector('#gw-cheer [data-cheer="tts"]');
+        await vwait(pg, 500);
+        await pg.click('#gw-cheer [data-cheer="tts"]');
+        await vwait(pg, 300);
+        const g = await pg.evaluate(() => ({ v: S.cheerV, saved: Object.keys(localStorage).some(k => String(localStorage.getItem(k)).includes('"cheerV":"tts"')), on: document.querySelector('#gw-cheer [data-cheer="tts"]').getAttribute('aria-pressed'), lg: __lg.slice() }));
+        if (g.v !== 'tts' || !g.saved || g.on !== 'true') bad.push('Cheer voices: Tablet voice was not chosen and saved: ' + JSON.stringify(g));
+        if (!g.lg.some(x => x.k == 'speak') || g.lg.some(x => x.k == 'play')) bad.push('Cheer voices: the Tablet voice sample did not use speech: ' + JSON.stringify(g.lg));
+        await vwait(pg, 1500);
+        const CH = await pg.evaluate(() => CHEERS);
+        await pg.evaluate(() => start('math', 0));
+        const r3 = await rightOnce();
+        if (r3.lg.some(x => x.k == 'play' && /audio\/en\//.test(x.src)) || !r3.lg.some(x => x.k == 'speak' && CH.includes(x.t))) bad.push('Tablet voice: a right answer was not spoken by the tablet: ' + JSON.stringify(r3.lg));
+        // (4) a grown-up's own cheer clip wins
+        const clip = await pg.evaluate(() => { S.cheerV = 'mix'; save(); const f = EN_AUDIO.dir + EN_AUDIO.lines['Yay!'][1][0] + EN_AUDIO.ext + '#my-clip';
+          CLIPS = [{ id: 'smoke-clip', kind: 'cheer', url: f }]; window.__rnd = Math.random; Math.random = () => 0.1; return f; });
+        await vwait(pg, 3000);
+        // a stop whose questions read no answer after them (with q.after a parent clip stays quiet, as before EN-PRAISE)
+        await pg.evaluate(() => start('math', NODES.math.findIndex(n => [1, 2, 3, 4, 5, 6].every(s => { const q = genQ(n.sk, n.lv, s); return q && !q.after && (q.kind == 'choice' || q.kind == 'num'); }))));
+        const r4 = await rightOnce();
+        await pg.evaluate(() => { Math.random = __rnd; CLIPS = []; });
+        if (!r4.lg.some(x => x.k == 'play' && String(x.src).endsWith('#my-clip')) || r4.lg.some(x => x.k == 'play' && /audio\/en\//.test(x.src) && !String(x.src).endsWith('#my-clip')))
+          bad.push('a parent clip did not win over the recordings: ' + JSON.stringify(r4.lg) + ' clip ' + clip);
+      } catch (e) { bad.push(e.message.split('\n')[0]); }
+      network.push(...sa.network);
+      for (const e of sa.errors) fail('EN-PRAISE ' + e);
+      await sa.ctx.close();
+      if (bad.length) fail('EN-PRAISE recorded encouragement:\n  ' + bad.join('\n  '));
+      else step('EN-PRAISE: 380x780: a right answer plays a recorded praise file of its toast line, the next one another voice; Grown-ups Cheer voices -> Tablet voice is saved and speaks the praise; a parent cheer clip wins');
+    }
+
     // P6-02 the Game Room loads on demand, offline, after a cold start. The built files are served over http://127.0.0.1 by a tiny
     //    static server in this process, so the service worker installs and precaches every file (the games parts too). Then the
     //    server is stopped and the context goes offline; a new page cold-starts from the cache with only the start-up files (no games
@@ -8888,7 +8965,7 @@ async function main() {
         if (lazyF.some(f => c1.tags.includes(f))) bad.push('index.html loaded a games part at start: ' + c1.tags.join(' '));
         // ES-AUDIO: the recordings are cached at install too, in their own cache (none of them was loaded by the page itself)
         const a1 = await p1.evaluate(async () => {
-          const want = [...new Set(Object.values(ES_AUDIO.lines).map(m => m[0] + ES_AUDIO.ext))], c = await caches.open('starschool-audio');
+          const want = [...new Set(Object.values(ES_AUDIO.lines).map(m => m[0] + ES_AUDIO.ext).concat(Object.values(EN_AUDIO.lines).flatMap(m => m[1].map(f => f + EN_AUDIO.ext))))], c = await caches.open('starschool-audio'); // EN-PRAISE: the English recordings too
           const have = new Set((await c.keys()).map(r => r.url.split('/').pop()));
           return { want: want.length, have: have.size, missing: want.filter(f => !have.has(f)).slice(0, 5) };
         });

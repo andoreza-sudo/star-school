@@ -31,20 +31,54 @@ const esHas=t=>!!esFiles(t);
 // something is talking or waiting to: a recording, our queue, or the speech engine
 function speakBusy(){if(ESA.cur||ESA.q.length||ESA.tts>0)return true;try{return !!(speechSynthesis.speaking||speechSynthesis.pending)}catch(e){return false}}
 // stop everything: the speech engine, the recording, and what was queued (say without q, and the Say it! microphone)
-function hush(){ESA.gen++;ESA.q=[];ESA.tts=0;try{speechSynthesis.cancel()}catch(e){}const c=ESA.cur;ESA.cur=null;
+function hush(){ESA.gen++;ESA.q=[];ESA.tts=0;ESA.tc=null;try{speechSynthesis.cancel()}catch(e){}const c=ESA.cur;ESA.cur=null;
   if(ESA.au){ESA.au.onended=ESA.au.onerror=null;try{ESA.au.pause()}catch(e){}}if(c&&c.btn)c.btn.classList.remove('talking')}
 // the next queued line, once nothing plays
 function esaPump(){if(ESA.cur||ESA.tts>0)return;const n=ESA.q.shift();if(!n)return;if(n.a)esaPlay(n);else ttsSay(...n.s)}
 function esaPlay(it){const a=ESA.au||(ESA.au=new Audio()),g=ESA.gen,f=it.a[it.i],r=it.slow>0&&it.slow<1?it.slow:1;ESA.cur=it;
-  a.onended=()=>{if(ESA.cur!==it)return;if(++it.i<it.a.length)return esaPlay(it);ESA.cur=null;if(it.btn)it.btn.classList.remove('talking');esaPump()};
+  a.onended=()=>{if(ESA.cur!==it)return;if(++it.i<it.a.length)return esaPlay(it);ESA.cur=null;if(it.en)ENA.t=Date.now();if(it.btn)it.btn.classList.remove('talking');esaPump()};
   a.onerror=()=>esaFail(it,g,f);
-  a.src=ES_AUDIO.dir+f[0]+ES_AUDIO.ext;a.dataset.say=it.t;a.defaultPlaybackRate=a.playbackRate=r; // slow (a hint replay): the same file, slower
+  const M=it.en?EN_AUDIO:ES_AUDIO;a.src=M.dir+f[0]+M.ext;a.dataset.say=it.t;a.defaultPlaybackRate=a.playbackRate=r; // slow (a hint replay): the same file, slower
   if(it.btn)it.btn.classList.add('talking');
   try{const p=a.play();if(p&&p.catch)p.catch(e=>{if(!(e&&e.name=='AbortError'))esaFail(it,g,f)})}catch(e){return esaFail(it,g,f)}
   sfxDuck(speakBusy)}
 // a file that does not load or play: never tried again this session; the line goes to the tablet's voice
 function esaFail(it,g,f){if(ESA.cur!==it||g!==ESA.gen)return;ESA.bad[f[0]]=1;ESA.cur=null;if(it.btn)it.btn.classList.remove('talking');
+  if(it.en){if(!canSpeak()){esaPump();return}return ttsSay(it.ts.slice(it.i).join(' '),it.btn,false,it.slow,1)} // EN-PRAISE: the rest of the cheer, tablet voice
   if(esVoice()=='no'||!canSpeak()){esNote();esaPump();return}ttsSay(it.t,it.btn,true,it.slow)}
+/* EN-PRAISE: recorded English encouragement. EN_AUDIO (src/data/d-en-audio.js, made by tools/en-audio.js) maps every fixed praise,
+   try-again and well-done line say() speaks ("Great job!", "Almost!", "You got 7 stars!", "New record!") to six recordings, one per
+   voice (three female, three male: EN_AUDIO.voices). say(t) in English plays the line in one voice, chosen so the same voice never
+   says two cheers in a row; a line queued (q) right behind a cheer, or within 0.8 s of its end, keeps that voice, so "Great job!" then
+   "5 in a row!" is one speaker. A line whose first sentences are recorded ("New record! 120 meters!") plays those, then the rest with
+   the tablet's voice. The grown-up's own clips (44-clips.js) win: a line of kind cheer / oops / done plays their clip when they have
+   one of that kind. Cheer voices (Grown-ups, S.cheerV per child): 'mix' (default, all six), 'f', 'm', or 'tts' (the tablet's voice).
+   A missing file, a browser that cannot play Opus, or a file that fails: the tablet's voice. A cheer is never cut off: a new line
+   waits for it to end. ENA.off (tests) turns the recordings off. */
+const ENA={off:false,last:-1,seq:-1,t:0};
+function cheerMode(){const m=typeof S!='undefined'&&S?S.cheerV:'';return m=='f'||m=='m'||m=='tts'?m:'mix'}
+// the voices the choice allows (indexes into EN_AUDIO.voices); none for the tablet's voice, or where the recordings cannot play
+function enVoices(){if(ENA.off||typeof EN_AUDIO=='undefined'||!esaOk())return[];const m=cheerMode();if(m=='tts')return[];
+  return EN_AUDIO.voices.map((v,i)=>m=='mix'||v[1]==m?i:-1).filter(i=>i>=0)}
+const enCheerOn=()=>enVoices().length>0;
+const enSplit=k=>(k.match(/[^.!?]+[.!?]+["”]?|[^.!?]+$/g)||[k]).map(x=>x.trim()).filter(Boolean);
+// enPlan(t): {kind, keys (the recorded lines, in order), rest (said with the tablet's voice)}, or null when nothing is recorded
+function enPlan(t){if(t==null||typeof EN_AUDIO=='undefined')return null;const m=EN_AUDIO.lines,k=esKey(t);if(m[k])return{kind:m[k][0],keys:[k],rest:''};
+  const ps=enSplit(k);let i=0;while(i<ps.length&&m[ps[i]])i++;
+  return i?{kind:i==ps.length?m[ps[0]][0]:'',keys:ps.slice(0,i),rest:ps.slice(i).join(' ')}:null}
+// the voice for a new cheer: never the last one (a random other one the choice allows); seq: keep the voice of the cheer just said
+function enPick(seq){const vs=enVoices();if(!vs.length)return -1;if(seq&&vs.includes(ENA.seq))return ENA.seq;
+  const c=vs.length>1?vs.filter(i=>i!==ENA.last):vs,v=c[Math.floor(Math.random()*c.length)];ENA.last=ENA.seq=v;return v}
+const cheerBusy=()=>!!((ESA.cur&&ESA.cur.en)||(ESA.tc&&ESA.tts>0));
+// say() in English: true when the line was taken (a clip, a recording, or a cheer in the tablet's voice)
+function enSay(t,btn,q,slow){const pl=enPlan(t);if(!pl)return false;
+  if(pl.kind&&typeof hasClips=='function'&&hasClips(pl.kind)&&playClip(pl.kind))return true;
+  const seq=q&&((ESA.cur&&ESA.cur.en)||ESA.q.some(x=>x.en)||Date.now()-ENA.t<800),v=enPick(seq);
+  const fs=[];if(v>=0)for(const k of pl.keys){const f=EN_AUDIO.lines[k][1][v];if(!f||ESA.bad[f])break;fs.push([f,v])}
+  if(!fs.length){if(!canSpeak())return false;if(!q)hush();if(q&&(ESA.cur||ESA.q.length))ESA.q.push({s:[t,btn,false,slow,1]});else ttsSay(t,btn,false,slow,1);return true}
+  if(!q)hush();const ts=pl.keys.slice(0,fs.length),rest=pl.keys.slice(fs.length).concat(pl.rest?[pl.rest]:[]).join(' ');
+  const it={a:fs,i:0,t:ts.join(' '),ts,btn,slow,en:1};if(q&&speakBusy())ESA.q.push(it);else esaPlay(it);
+  if(rest)ESA.q.push({s:[rest,btn,false,slow]});return true}
 /* the voice for a language: one stored on the tablet first (localService), because a network voice waits for the internet on
    every word (a long pause, and nothing at all offline); then es-MX / es-US, en-US, then any voice of that language. Kept per
    language, so a Spanish word after an English one does not search again. */
@@ -58,15 +92,17 @@ function warmVoices(){if(VOICE_WARM||!canSpeak())return;VOICE_WARM=1;
   try{for(const es of [true,false]){const u=new SpeechSynthesisUtterance(' ');u.volume=0;u.lang=es?'es-MX':'en-US';const v=pickVoice(es);if(v)u.voice=v;speechSynthesis.speak(u)}}catch(e){}}
 // slow (R-01s): a number under 1 slows the voice down (a hint replays a Spanish word at .75 of the normal speed)
 function say(t,btn,lang,q,slow){const es=lang=='es',fs=es?esFiles(t):null;
+  if(!q&&cheerBusy()){q=1;ESA.q=[]} // EN-PRAISE: a cheer is not cut off: the new line waits for it (what was queued goes, as with hush)
+  if(!es&&enSay(t,btn,q,slow))return; // EN-PRAISE: a recorded cheer (or the grown-up's clip)
   if(fs){if(!q)hush();const it={a:fs,i:0,t:String(t),btn,slow};if(q&&speakBusy())ESA.q.push(it);else esaPlay(it);return} // ES-AUDIO
   if(es&&esVoice()=='no'){esNote();if(btn)btn.classList.remove('talking');return}if(!canSpeak()){if(btn)noVoice(btn);return}
   if(!q)hush();if(q&&(ESA.cur||ESA.q.length))ESA.q.push({s:[t,btn,es,slow]});else ttsSay(t,btn,es,slow)}
 // the tablet's voice. ESA.tts counts our utterances still to end (a queued recording starts when it is 0); a slow poll stands in
 // for an end event that some engines never fire
-function ttsSay(t,btn,es,slow){
-  try{const u=new SpeechSynthesisUtterance(String(t).replace(/−/g,' minus '));u.rate=(es?.8:.88)*(slow>0&&slow<1?slow:1);u.pitch=1.1;u.lang=es?'es-MX':'en-US';
+function ttsSay(t,btn,es,slow,cheer){
+  try{const u=new SpeechSynthesisUtterance(String(t).replace(/−/g,' minus '));if(cheer)ESA.tc=u;u.rate=(es?.8:.88)*(slow>0&&slow<1?slow:1);u.pitch=1.1;u.lang=es?'es-MX':'en-US';
   const v=pickVoice(es);if(v)u.voice=v;
-  const g=ESA.gen;let fin=false;const end=()=>{if(fin)return;fin=true;ESA.us=ESA.us.filter(x=>x!==u);if(g!==ESA.gen)return;ESA.tts=Math.max(0,ESA.tts-1);esaPump()};
+  const g=ESA.gen;let fin=false;const end=()=>{if(fin)return;fin=true;ESA.us=ESA.us.filter(x=>x!==u);if(ESA.tc===u)ESA.tc=null;if(g!==ESA.gen)return;ESA.tts=Math.max(0,ESA.tts-1);esaPump()};
   ESA.tts++;ESA.us.push(u);ESA.t0=Date.now(); // ESA.us keeps the utterance alive until it ends (an engine may drop the end event of a collected one)
   if(btn){let started=false;btn.classList.add('talking');u.onstart=()=>{started=true};u.onend=u.onerror=()=>{btn.classList.remove('talking');end()};
     setTimeout(()=>{if(!started&&!speechSynthesis.speaking)noVoice(btn)},2500)}else u.onend=u.onerror=end;

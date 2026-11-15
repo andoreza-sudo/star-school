@@ -26,7 +26,8 @@ const PART_WARN=400000,PART_FAIL=800000; // A11b: bytes of each built part file 
 const TOTAL_WARN=2000000,TOTAL_FAIL=3000000,CACHE_FAIL=3600000;
 // ES-AUDIO: the recorded Spanish, audio/es/*.ogg. Not loaded at start (say() fetches a file the first time its line is said) but
 // precached by sw.js in its own cache: all files together under AUDIO_FAIL, each file under AUDIO_FILE_FAIL
-const AUDIO_WARN=2500000,AUDIO_FAIL=3000000,AUDIO_FILE_FAIL=40000;
+// EN-PRAISE: the recorded English encouragement (audio/en, six voices) shares that cache and that budget: 3.0 -> 4.5 MB (warn 2.5 -> 4.0)
+const AUDIO_WARN=4000000,AUDIO_FAIL=4500000,AUDIO_FILE_FAIL=40000;
 const BUILD_VER=(BUILD_PY.match(/^VER = '(v\d+)'/m)||[])[1];
 const DATA_FILE='data.'+BUILD_VER+'.js'; // the built data file at the repo root (tools/build.py)
 const PART_FILES=PARTS.map(p=>p.stem+'.'+BUILD_VER+'.js'); // A11b: the built part files, in PARTS order
@@ -16888,7 +16889,7 @@ run('recorded Spanish audio ES-AUDIO',()=>{
   // 4. the manifest is in the data part, not in index.html; sw.js precaches every file in its own cache, which activate keeps
   const html=rd('index.html'),data=rd(DATA_FILE),sw=rd('sw.js');
   if(!fs.existsSync(path.join(SRC,'data','d-es-audio.js'))||!data.includes('const ES_AUDIO=')||html.includes('const ES_AUDIO='))p.push('the manifest must be src/data/d-es-audio.js, in '+DATA_FILE+' and not in index.html');
-  const af=((sw.match(/const AF=\[([^\]]*)\]/)||[])[1]||'').split(',').filter(Boolean).map(s=>s.replace(/'/g,''));
+  const af=((sw.match(/const AF=\[([^\]]*)\]/)||[])[1]||'').split(',').filter(Boolean).map(s=>s.replace(/'/g,'')).filter(u=>u.startsWith('./'+E.DIR)); // EN-PRAISE: audio/en follows
   if(JSON.stringify(af)!==JSON.stringify(files.map(f=>'./'+E.DIR+f)))p.push('sw.js AF does not list exactly the '+files.length+' recordings ('+af.length+')');
   if(!/const A='starschool-audio'/.test(sw)||!/k!==C&&k!==A/.test(sw)||!/caches\.open\(A\)/.test(sw))p.push('sw.js: no audio cache kept across activate');
   if(/audio\/es\/[0-9a-f]/.test(html))p.push('index.html loads a recording at start');
@@ -16938,6 +16939,104 @@ run('recorded Spanish audio ES-AUDIO',()=>{
   if(!/function say\(t,btn,lang,q,slow\)\{const es=lang=='es',fs=es\?esFiles\(t\):null;/.test(sp))p.push('say() does not look up the recording first');
   for(const f of ['44-clips.js','50-say.js'])if(/speechSynthesis\.cancel\(/.test(fs.readFileSync(path.join(SRC,'js',f),'utf8')))p.push(f+' cancels the voice without hush() (a recording would go on)');
   return{problems:p,note:need.size+' lines (Leo '+nv.leo+', Eve '+nv.eve+'), '+files.length+' files, '+Math.round(total/1000)+' KB (budget '+AUDIO_FAIL/1e6+' MB), largest '+Math.round(big/100)/10+' KB'+(total>AUDIO_WARN?'  WARN: over '+AUDIO_WARN:'')};
+});
+
+// ---- EN-PRAISE: the fixed English encouragement lines are recorded in six voices (tools/en-audio.js); say() plays them in turn ----
+run('recorded encouragement EN-PRAISE',()=>{
+  const p=[],EA=require('./en-audio.js'),E=require('./es-audio.js'),vm=require('vm'),rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8'),dir=path.join(ROOT,EA.DIR);
+  // 1. every collected line has a manifest entry with its kind and one file per voice (the hash of its text and voice), each a mono
+  //    Ogg Opus file of a sensible size; the manifest has no other line, the folder no other file
+  const ctx=E.loadApp(),lines=EA.collect(ctx),M=vm.runInContext('EN_AUDIO',ctx),man=M.lines,files=fs.existsSync(dir)?fs.readdirSync(dir).sort():[];
+  if(M.dir!==EA.DIR||M.ext!==EA.EXT)p.push('EN_AUDIO dir/ext '+M.dir+' '+M.ext);
+  if(JSON.stringify(M.voices)!==JSON.stringify(EA.VOICES.map(v=>[v[0],v[1]])))p.push('EN_AUDIO voices '+JSON.stringify(M.voices));
+  const nf=M.voices.filter(v=>v[1]=='f').length,nm=M.voices.filter(v=>v[1]=='m').length;
+  if(M.voices.length!==6||nf!==3||nm!==3||new Set(M.voices.map(v=>v[0])).size!==6)p.push('wants 3 female and 3 male voices: '+JSON.stringify(M.voices));
+  let total=0,big=0;const used=new Set();
+  for(const [k,o] of lines){const m=man[k];
+    if(!m){p.push('no recording for "'+k+'" ('+o.from[0]+'): run node tools/en-audio.js');continue}
+    if(m[0]!==o.kind)p.push('"'+k+'" has kind '+m[0]+', the list says '+o.kind);
+    if(!Array.isArray(m[1])||m[1].length!==6)p.push('"'+k+'" has '+(m[1]||[]).length+' files, wants 6');
+    M.voices.forEach(([v],i)=>{const f=(m[1]||[])[i];if(f!==EA.fileOf(k,v))p.push('"'+k+'" '+v+': file '+f+' is not the hash of its text and voice');
+      else if(!files.includes(f+EA.EXT))p.push('"'+k+'" '+v+': '+EA.DIR+f+EA.EXT+' is missing');else used.add(f+EA.EXT)});}
+  for(const k in man)if(!lines.has(k))p.push('the manifest has a line the list does not: '+k);
+  for(const f of files){const b=fs.readFileSync(path.join(dir,f));total+=b.length;big=Math.max(big,b.length);
+    if(!used.has(f))p.push(EA.DIR+f+' is not in the manifest');
+    const h=b.indexOf('OpusHead');
+    if(b.slice(0,4).toString()!=='OggS'||h<0||h>80||b[h+9]!==1)p.push(EA.DIR+f+' is not mono Ogg Opus');
+    if(b.length<600||b.length>AUDIO_FILE_FAIL)p.push(EA.DIR+f+' is '+b.length+' bytes (600 to '+AUDIO_FILE_FAIL+')');}
+  const esDir=path.join(ROOT,E.DIR),esBytes=fs.existsSync(esDir)?fs.readdirSync(esDir).reduce((s,f)=>s+fs.statSync(path.join(esDir,f)).size,0):0;
+  if(esBytes+total>AUDIO_FAIL)p.push('the recordings (Spanish '+esBytes+' + English '+total+' bytes) are over the '+AUDIO_FAIL+' limit');
+  // 2. the lines are the app's: the right-answer list is CHEERS (PRAISE + PET_YAY), the misses PET_OOPS, and every other line is in
+  //    the source as written (a line changed in the app needs a new recording); kinds are the grown-up clip kinds or ''
+  const R=t=>vm.runInContext(t,ctx),src=fs.readdirSync(path.join(SRC,'js')).map(f=>fs.readFileSync(path.join(SRC,'js',f),'utf8')).join('\n');
+  for(const t of [...R('PRAISE'),...R('PET_YAY'),...R('PET_OOPS')])if(!man[E.esKey(t)])p.push('not recorded: "'+t+'"');
+  for(const [k,o] of lines)if(o.lit&&!src.includes(k))p.push('"'+k+'" ('+o.from[0]+') is no longer in src/js');
+  for(const k in man)if(!['cheer','oops','done',''].includes(man[k][0]))p.push('"'+k+'": kind '+man[k][0]);
+  for(const k of ['Great job!','Way to go!','Yay!','Almost!','Try again!','You got 7 stars!','5 in a row!','New record!','Perfect!'])if(!man[k])p.push('not recorded: '+k);
+  // 3. the build: the manifest is in the data file, not index.html; sw.js precaches every English file in the audio cache too
+  const html=rd('index.html'),data=rd(DATA_FILE),sw=rd('sw.js');
+  if(!fs.existsSync(path.join(SRC,'data','d-en-audio.js'))||!data.includes('const EN_AUDIO=')||html.includes('const EN_AUDIO='))p.push('the manifest must be src/data/d-en-audio.js, in '+DATA_FILE+' and not in index.html');
+  const af=((sw.match(/const AF=\[([^\]]*)\]/)||[])[1]||'').split(',').filter(Boolean).map(s=>s.replace(/'/g,'')).filter(u=>u.startsWith('./'+EA.DIR));
+  if(JSON.stringify(af)!==JSON.stringify(files.map(f=>'./'+EA.DIR+f)))p.push('sw.js AF does not list exactly the '+files.length+' English recordings ('+af.length+')');
+  if(!/audio\\\/e\[ns\]/.test(sw))p.push('sw.js: a Range request for an English recording is not answered from the cache');
+  if(/audio\/en\/[0-9a-f]/.test(html))p.push('index.html loads a recording at start');
+  // 4. say() in a stand-in browser
+  const log=[],audios=[],utt=[];let rnd=null;
+  class FakeAudio{constructor(u){this.dataset={};this.paused=true;if(u)this.src=u;audios.push(this)}canPlayType(t){return /opus/.test(t)?'probably':''}
+    play(){this.paused=false;this.used=1;log.push('play '+this.src);return Promise.resolve()}pause(){this.paused=true;log.push('pause')}}
+  const s=E.loadApp(null,{Audio:FakeAudio,window:{speechSynthesis:1},SpeechSynthesisUtterance:function(t){this.text=t},
+    speechSynthesis:{getVoices:()=>[{lang:'en-US'}],speak:u=>{utt.push(u);log.push('speak '+u.text)},cancel:()=>log.push('cancel'),speaking:false,pending:false}});
+  const S2=t=>vm.runInContext(t,s),cur=()=>S2('ESA.au'),end=()=>{const a=cur();if(a&&a.onended)a.onended()},clear=()=>{log.length=0;utt.length=0};
+  const vOf=src=>{const f=String(src||'').split('/').pop().replace(EA.EXT,'');for(const k in man){const i=man[k][1].indexOf(f);if(i>=0)return i}return -1};
+  const plays=()=>log.filter(x=>/^play audio\/en\//.test(x)),lastV=()=>vOf(plays().slice(-1)[0]);
+  try{
+    S2("S.voice=true;S.sound=true;delete S.cheerV;CLIPS=[];ENA.t=0");
+    // a cheer plays the file of its line in one of the six voices
+    clear();S2("say('Great job!')");const v0=lastV();
+    if(plays().length!==1||v0<0||plays()[0]!=='play '+M.dir+man['Great job!'][1][v0]+M.ext)p.push('say("Great job!"): '+log.join(' | '));end();
+    // rotation: 60 cheers in a row never use the same voice twice running, and every voice is heard
+    const seen=[];for(let i=0;i<60;i++){clear();S2("ENA.t=0;say(pick(CHEERS))");seen.push(lastV());end()}
+    if(seen.some((v,i)=>v<0||(i&&v===seen[i-1])))p.push('rotation: the same voice twice in a row: '+seen.join(','));
+    if(new Set(seen).size!==6)p.push('rotation: not every voice in 60 cheers: '+[...new Set(seen)]);
+    // one speaker per short sequence: a cheer queued right behind another keeps its voice; the next cheer changes it
+    clear();S2("ENA.t=0;say('Great job!');say('5 in a row!',null,null,1)");const a1=lastV();end();const a2=lastV();end();
+    if(plays().length!==2||a1!==a2)p.push('a queued cheer changed voice: '+log.join(' | '));
+    S2('ENA.t=0');clear();S2("say('Super!')");if(lastV()===a2)p.push('the next cheer used the same voice again');end();
+    // a line with a recorded first sentence: that file, then the rest in the tablet's voice; the cheer is not cut by a new line
+    clear();S2("ENA.t=0;say('New record! 120 meters!')");if(plays().length!==1||vOf(plays()[0])<0||log.some(x=>/^speak/.test(x)))p.push('New record + number: '+log.join(' | '));
+    end();if(log.pop()!=='speak 120 meters!')p.push('the number was not said after the recorded part: '+log.join(' | '));utt[0]&&utt[0].onend&&utt[0].onend();
+    clear();S2("say('Woo-hoo!');say('What is 2 + 3?')");if(log.slice(log.findIndex(x=>/^play/.test(x))).some(x=>x=='cancel'||x=='pause'||/^speak/.test(x)))p.push('a new line cut the cheer off: '+log.join(' | '));
+    end();if(log.pop()!=='speak What is 2 + 3?')p.push('the line after a cheer did not follow it: '+log.join(' | '));utt[0]&&utt[0].onend&&utt[0].onend();
+    // not a cheer: the tablet's voice as before
+    clear();S2("say('What is 4 + 4?')");if(plays().length||log.pop()!=='speak What is 4 + 4?')p.push('a question went to a recording: '+log.join(' | '));utt[0]&&utt[0].onend&&utt[0].onend();
+    // the Cheer voices choice: female only, male only, the tablet's voice
+    for(const [m,want] of [['f','f'],['m','m']]){S2("S.cheerV='"+m+"'");const vs=[];for(let i=0;i<20;i++){clear();S2("ENA.t=0;say(pick(CHEERS))");vs.push(lastV());end()}
+      if(vs.some(v=>v<0||M.voices[v][1]!==want)||vs.some((v,i)=>i&&v===vs[i-1]))p.push('Cheer voices '+m+': '+vs.join(','));}
+    S2("S.cheerV='tts'");clear();S2("say('Great job!')");if(plays().length||log.pop()!=='speak Great job!')p.push('Tablet voice: '+log.join(' | '));
+    if(S2('enCheerOn()')!==false)p.push('Tablet voice: enCheerOn');utt[0]&&utt[0].onend&&utt[0].onend();S2("S.cheerV='mix'");
+    if(S2("(S.cheerV='zzz',cheerMode())")!=='mix'||S2("(delete S.cheerV,cheerMode())")!=='mix')p.push('an unknown or missing choice is not Mixed');
+    // the grown-up's own clips win: a cheer line plays their clip (kind cheer), never a recorded default; a line of no kind does not
+    S2("CLIPS=[{id:'c1',kind:'cheer',url:'blob:mine'}]");clear();S2("say('Great job!')");
+    if(plays().length||!log.includes('play blob:mine'))p.push('a parent clip did not win over the recording: '+log.join(' | '));
+    clear();S2("ENA.t=0;say('New record!')");if(log.includes('play blob:mine')||plays().length!==1)p.push('a parent cheer clip replaced "New record!": '+log.join(' | '));end();
+    clear();rnd=S2('Math.random');S2('Math.random=()=>0');const r1=S2("cheerSay('cheer','Yay!',.3)");S2('Math.random=()=>0.9');const r2=S2("cheerSay('cheer','Yay!',.3)");s.__r0=rnd;S2('Math.random=__r0');
+    if(r1!=='clip'||r2!==false||plays().length)p.push('cheerSay with clips: '+r1+' '+r2+' '+log.join(' | '));
+    S2("CLIPS=[]");clear();if(S2("cheerSay('cheer','Yay!',.3)")!=='say'||plays().length!==1)p.push('cheerSay without clips does not say the line');end();
+    S2("S.voice=false");clear();if(S2("cheerSay('cheer','Yay!',.3)")!==false||log.length)p.push('cheerSay with the voice off still spoke');S2("S.voice=true");
+    // fallbacks: a file that fails -> the tablet's voice for that line, and that file is not tried again; recordings off -> the voice
+    clear();S2("ENA.t=0;say('Brilliant!')");const bf=cur().src;cur().onerror();if(log.pop()!=='speak Brilliant!')p.push('a failed file did not fall back to the voice: '+log.join(' | '));
+    utt.forEach(u=>u.onend&&u.onend());if(!S2('ESA.bad')[String(bf).split('/').pop().replace(EA.EXT,'')])p.push('the failed file is not marked bad');
+    S2('ENA.off=true');clear();S2("say('Brilliant!')");if(plays().length||log.pop()!=='speak Brilliant!')p.push('ENA.off: did not use the voice');utt.forEach(u=>u.onend&&u.onend());S2('ENA.off=false');
+  }catch(e){p.push('say() could not be run: '+String(e.stack||e).split('\n').slice(0,2).join(' | '))}
+  // a browser that cannot play Opus: the tablet's voice
+  const s3=E.loadApp(null,{Audio:class{canPlayType(){return''}}});if(vm.runInContext('enCheerOn()',s3)!==false)p.push('enCheerOn is true where Opus cannot play');
+  // 5. the round says the cheer it shows, through cheerSay (clips first); Grown-ups has the Cheer voices row
+  const rnd50=fs.readFileSync(path.join(SRC,'js','50-round.js'),'utf8'),gr=fs.readFileSync(path.join(SRC,'js','80-grown.js'),'utf8');
+  if(!/const pr=pick\(CHEERS\);fb\(pr\);[^\n]*cheerSay\('cheer',pr,\.3\)/.test(rnd50)||!/cheerSay\('oops',oo,\.5,300\)/.test(rnd50))p.push('50-round.js: a right answer / a miss does not say its cheer through cheerSay');
+  if(!/GW\.seg\('cheer',\['mix','f','m','tts'\],cheerMode\(\)/.test(gr)||!/S\.cheerV=b\.dataset\.cheer;save\(\)/.test(gr))p.push('Grown-ups: no Cheer voices choice saved per child');
+  if(vm.runInContext("PRF.SHARED.includes('cheerV')",ctx))p.push('cheerV must be per child');
+  const kb=Math.round(total/1000);
+  return{problems:p,note:lines.size+' lines x 6 voices ('+M.voices.map(v=>v[0]).join(', ')+'), '+files.length+' files, '+kb+' KB, largest '+Math.round(big/100)/10+' KB; all audio '+Math.round((esBytes+total)/1000)+' KB (budget '+AUDIO_FAIL/1e6+' MB)'+(esBytes+total>AUDIO_WARN?'  WARN: over '+AUDIO_WARN:'')};
 });
 
 // ---- report ----
