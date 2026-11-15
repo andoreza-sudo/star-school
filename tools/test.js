@@ -16134,6 +16134,229 @@ run('snack stand G-04a',()=>{
     const g0=S.grade;
     for(const [gr,want] of [[null,false],[-1,false],[0,false],[1,false],[2,true],[3,true],[6,true]]){S.grade=gr;if(snTillOK()!==want)bad('give change for grade '+gr)}
     S.grade=g0;
+    // ---- G-04a2: kinds of days, recipes with steps, unlocks, the café journey, today's guest, old saves, one food per touch ----
+    // 12. the kinds of days open one after another with days played (never close again); Mix plays every open kind in turn; rush is Busy only
+    {
+      for(let i=1;i<SN_KINDS.length;i++)if(SN_KINDS[i].days<SN_KINDS[i-1].days)bad('G-04a2: kinds must open in order of days played');
+      let was=[];
+      for(let d=0;d<=14;d++){
+        const o=SN_KINDS.filter(k=>snKindOpen(k.id,{days:d,mode:'busy'})).map(k=>k.id);
+        if(was.some(x=>!o.includes(x)))bad('G-04a2: a kind of day closed again on day '+d);
+        if(o.join()!==SN_KINDS.slice(0,o.length).map(k=>k.id).join())bad('G-04a2: kinds open out of order on day '+d+': '+o);
+        was=o;
+      }
+      if(was.length!==SN_KINDS.length)bad('G-04a2: every kind of day should be open by day 14');
+      if(snKindOpen('rush',{days:30,mode:'calm'})||!snKindOpen('rush',{days:30,mode:'busy'}))bad('G-04a2: rush hour is for Busy days only');
+      const g0=S.grade;S.grade=0;
+      const seen=new Set();for(let d=20;d<20+SN_KINDS.length;d++)seen.add(snKindFor({days:d,mode:'busy',kind:'mix'}));
+      if(seen.size!==SN_KINDS.length)bad('G-04a2: Mix should play every open kind in turn: '+[...seen]);
+      if(snKindFor({days:0,kind:'mix'})!=='plain')bad('G-04a2: the very first day is an open day');
+      if(snKindFor({days:9,mode:'calm',kind:'party'})!=='party'||snKindFor({days:2,mode:'calm',kind:'party'})==='party')bad('G-04a2: a chosen kind plays only once it is open');
+      S.grade=g0;
+      out.note.push('kinds open on days '+SN_KINDS.map(k=>k.days).join('/'));
+    }
+    // places open in order of stars, all reachable with the stars there are
+    for(let i=1;i<SN_PLACES.length;i++)if(SN_PLACES[i].need<=SN_PLACES[i-1].need)bad('G-04a2: places must open in order');
+    if(SN_PLACES.length!==8||SN_PLACES[SN_PLACES.length-1].need>SN_MAXSTARS-3)bad('G-04a2: 8 places, the last one reachable with the stars of the others');
+    for(const pp of SN_PLACES){
+      if(!pp.day||!pp.day.name||!pp.day.how||!pp.day.st||pp.day.st.length>5)bad('G-04a2: '+pp.id+' needs its own kind of day (at most 5 stations)');
+      if(pp.who.some(w=>!SN_WHO[w]))bad('G-04a2: a customer without a name at '+pp.id);
+      if(pp.sp&&!SN_ING[pp.sp])bad('G-04a2: special food of '+pp.id);
+    }
+    // 13. every kind of day, at every place, in both modes, is played to the end by bots (perfect and sloppy): everyone is served,
+    // orders are makeable from that day's food, at most 5 station tabs, a perfect bot wins 3 stars and the kind's own goal
+    const play2=(o,kind2)=>{
+      const st=snNew(o),avail=snAvail(o.own,o.place,o.mode,o.kind),stn=new Set(avail.map(i=>SN_ING[i][1]));
+      if(stn.size>5)bad('G-04a2: '+o.kind+' at '+o.place+' has '+stn.size+' station tabs');
+      let steps=0;
+      while(!st.done&&steps<60*5*80){
+        snStep(st,.1);st.ev.length=0;steps++;
+        if(st.pay){let left=st.pay.change;const cs=[];for(const v of [10,5,2,1])while(left>=v){cs.push(v);left-=v}snChange(st,cs);continue}
+        const c=st.at.find(x=>x.state=='wait');
+        if(!c)continue;
+        st.sel=st.at.indexOf(c);
+        for(const id of c.order)if(!avail.includes(id)&&!c.any)bad('G-04a2: '+o.kind+' order needs '+id+' (not on the day\'s menu at '+o.place+')');
+        if(kind2=='sloppy'&&!c.tries){
+          if(c.steps&&c.order.length>1){if(snAdd(st,c.order[1])!=='step')bad('G-04a2: a recipe step out of order was taken')}
+          st.plate=['cookie','cookie','cookie','cookie','cookie','cookie','cookie'];if(snServe(st).ok)bad('G-04a2: a wrong plate was accepted');st.plate=[];st.pq=[];
+        }
+        const want=c.any?[c.any.find(x=>!st.tasted[x])||c.any[0]]:c.order;
+        for(const id of want){
+          if(id=='pancake'){snAdd(st,'pancake');const k=st.pans.findIndex(x=>x);st.pans[k].t=4;snPan(st,k)}
+          else if(snAdd(st,id)!==true)bad('G-04a2: could not add '+id+' for '+o.kind+' '+c.order);
+        }
+        const r=snServe(st);
+        if(!r.ok)bad('G-04a2: the right plate was refused ('+o.kind+' at '+o.place+'): '+c.order);
+      }
+      if(!st.done||st.served!==st.n)bad('G-04a2: '+o.kind+' at '+o.place+' '+o.mode+': the day did not end with everyone served ('+st.served+' of '+st.n+')');
+      return st;
+    };
+    const OWN2={};for(const [id] of SN_SHOP)OWN2[id]=1;
+    const kindTally={};
+    for(const pl2 of SN_PLACES)for(const k of SN_KINDS)for(const mode of ['calm','busy'])for(const seed of [3,8]){
+      if(k.busy&&mode!='busy')continue;
+      const own=seed==3?{}:OWN2;
+      const st=play2({seed:seed*97+pl2.need,mode,place:pl2.id,own,kind:k.id,slots:2+seed%2,till:seed==8},'perfect');
+      const how=snHow(k.id,pl2.id);
+      (kindTally[how]=kindTally[how]||[]).push(st.n);
+      if(snStarsFor(st.right,st.n)!==3)bad('G-04a2: a perfect '+how+' day should win 3 stars');
+      if(SN_KGOAL[how]&&st.goal.id===SN_KGOAL[how][0]&&!st.goal.done&&st.goal.id!=='hearts')bad('G-04a2: a perfect '+how+' day should reach its goal '+st.goal.text+' ('+st.goal.got+'/'+st.goal.need+')');
+      for(const c of st.list){
+        const lim=c.group?8:mode=='calm'?(how=='picnic'||c.req?4:3):6;
+        if(c.order.length<1||c.order.length>lim)bad('G-04a2: '+how+' '+mode+' order of '+c.order.length+': '+c.order);
+        if(c.order.includes('bread')){const s2=c.order.filter(i=>SN_ING[i][1]=='sand');if(s2[0]!=='bread'||s2[s2.length-1]!=='bread'||s2.length<3)bad('G-04a2: a sandwich without bread on both sides: '+c.order)}
+        if(c.req){
+          if(c.req.no==='bread')bad('G-04a2: a picky order without bread');
+          const exp=c.req.no?c.req.base.filter(i=>i!==c.req.no):null;
+          if(exp&&snKey(exp)!==snKey(c.order))bad('G-04a2: "no '+c.req.no+'" order is wrong: '+c.order);
+          if(c.req.extra&&snKey(c.req.base.concat([c.req.extra]))!==snKey(c.order))bad('G-04a2: "extra '+c.req.extra+'" order is wrong: '+c.order);
+        }
+        const t=snSayC(c);if(!/^[A-Z].*[.!?]$/.test(t)||/undefined|NaN|  /.test(t))bad('G-04a2: spoken order: '+t);
+      }
+      if(how=='special'&&st.list.filter(c=>c.special).length<3)bad('G-04a2: a special day needs the special 3 times or more');
+      if((how=='party'||how=='stars')&&st.list.filter(c=>c.group).length!==2)bad('G-04a2: a party day has two party orders');
+      if(how=='feast'&&!st.list.some(c=>c.group=='feast'))bad('G-04a2: a royal feast without the feast');
+      if(how=='recipe'&&st.list.filter(c=>c.steps).length<3)bad('G-04a2: a recipe day needs 3 recipes or more');
+      if(how=='taste'&&st.list.some(c=>!c.any||!c.any.length))bad('G-04a2: a taste test customer without a choice');
+    }
+    for(const how in kindTally)out.note.push(how+' '+Math.min(...kindTally[how])+'-'+Math.max(...kindTally[how])+' customers');
+    // a sloppy bot (every first try wrong, a recipe step out of order first) still serves everyone on every kind; 1 star
+    for(const k of SN_KINDS){const st=play2({seed:41,mode:'busy',place:'park',own:OWN2,kind:k.id,slots:3},'sloppy');if(st.right!==0)bad('G-04a2: sloppy '+k.id+': every first try was wrong')}
+    // 14. recipes with steps: valid foods, numbered steps, only the next step goes on the plate, the order on the plate is the order served
+    for(const d of SN_DISHES){
+      if(!d.items.length||d.items.some(i=>!SN_ING[i]))bad('G-04a2: dish '+d.id+' has an unknown food');
+      if(d.where&&!SN_PLACES.some(p=>p.id===d.where))bad('G-04a2: dish '+d.id+' at an unknown place');
+    }
+    if(new Set(SN_DISHES.map(d=>d.id)).size!==SN_DISHES.length)bad('G-04a2: dish ids must be unique');
+    const REC=SN_DISHES.filter(d=>d.steps);
+    if(REC.length<6)bad('G-04a2: at least 6 recipes with steps');
+    for(const d of REC){
+      if(d.items.length<3)bad('G-04a2: a recipe has 3 steps or more: '+d.id);
+      const st=snNew({seed:1,mode:'busy',place:d.where||'snow',own:OWN2,kind:'recipe'});
+      const c={i:0,who:'cat',name:'Mimi',order:d.items.slice(),steps:1,dish:d.id,state:'wait',tries:0,pat:30,patMax:30};
+      st.at=[c];st.sel=0;st.next=st.n;
+      const cells=snCells(c);if(cells.map(x=>x.step).join()!==d.items.map((x,j)=>j+1).join())bad('G-04a2: recipe '+d.id+' steps are not numbered 1, 2, 3');
+      // every wrong first step is refused; the right steps go on one by one
+      for(const id of new Set(d.items.slice(1)))if(id!==d.items[0]&&id!='pancake'&&snAdd(st,id)!=='step')bad('G-04a2: recipe '+d.id+': '+id+' before '+d.items[0]+' was taken');
+      if(st.plate.length)bad('G-04a2: a refused step changed the plate');
+      for(let j=0;j<d.items.length;j++){
+        const id=d.items[j];
+        if(id=='pancake'){snAdd(st,id);const k=st.pans.findIndex(x=>x);st.pans[k].t=4;snPan(st,k)}
+        else if(snAdd(st,id)!==true)bad('G-04a2: recipe '+d.id+' step '+(j+1)+' refused');
+        if(j==0){snUndo(st);if(st.plate.length!==0)bad('G-04a2: Undo in a recipe');if(id=='pancake'){snAdd(st,id);const k=st.pans.findIndex(x=>x);st.pans[k].t=4;snPan(st,k)}else snAdd(st,id)}
+      }
+      if(!snFits(c,d.items)||snFits(c,d.items.slice().reverse())&&d.items.join()!==d.items.slice().reverse().join())bad('G-04a2: recipe '+d.id+' must be served in its order');
+      const r=snServe(st);
+      if(!r.ok||r.dish!==d.id)bad('G-04a2: recipe '+d.id+' not served into the book: '+JSON.stringify(r.dish));
+    }
+    // taste test: any one food of the station fits, two do not, another station does not
+    {
+      const c={any:['van','straw'],ast:'ice',order:['van']};
+      if(!snFits(c,['straw'])||snFits(c,['straw','van'])||snFits(c,['apple']))bad('G-04a2: taste test matching');
+    }
+    // 15. the café journey: closed until 12 things or 8 days; each stage needs the one before; upgrades need their stage;
+    // coins never below 0; everything persists through save and load
+    for(const k in store)delete store[k];
+    loadSave(fx('midway'));migrate();
+    S.snack={coins:5000};
+    {
+      const r=snS();
+      if(snCafeOpen(r)||snBuyCafe('cart')||r.coins!==5000)bad('G-04a2: the café journey must be closed at first');
+      r.days=8;
+      if(!snCafeOpen(r))bad('G-04a2: 8 days open the café journey');
+      if(snBuyCafe('cafe')||snBuyCafe('tables')||snBuyCafe('diner'))bad('G-04a2: a café stage or upgrade before its stage');
+      if(!snBuyCafe('cart')||snBuyCafe('cart')||!snBuyCafe('lights')||snBuyCafe('booth')||!snBuyCafe('cafe')||!snBuyCafe('tables')||!snBuyCafe('diner')||!snBuyCafe('neon'))bad('G-04a2: café journey buys in order');
+      const spent=150+60+300+90+600+140;
+      if(r.coins!==5000-spent)bad('G-04a2: café prices: '+r.coins);
+      r.coins=10;if(snBuyCafe('booth')||r.coins!==10)bad('G-04a2: a café buy without the coins');
+      r.book={cheesy:3};r.kd={party:2};r.kind='party';r.tw='2026-11-15';
+      save();
+      loadSave(store['starschool-v2']);migrate();
+      const r2=snS();
+      if(snStage(r2)!==3||!r2.cafe.lights||!r2.cafe.neon||!r2.cafe.tables||r2.coins!==10||r2.book.cheesy!==3||r2.kd.party!==2||r2.kind!=='party'||r2.tw!=='2026-11-15')bad('G-04a2: the journey did not persist: '+JSON.stringify(r2));
+      const st2=new Set();for(let s2=0;s2<=3;s2++)st2.add(snStandArt({r:Object.assign({},r2),stage:s2,deco:true}));
+      if(st2.size!==4)bad('G-04a2: each café stage must look different');
+      const g=snNextGoal(r2);if(!g||/undefined|NaN/.test(g))bad('G-04a2: next goal '+g);
+    }
+    // the next goal line moves on and never breaks
+    {
+      const goals=new Set();
+      for(const r of [{},{days:1},{days:3},{days:5,stars:{park:3,beach:3}},{days:9,coins:40,own:Object.fromEntries(SN_SHOP.slice(0,12).map(x=>[x[0],1]))},
+        {days:20,coins:900,cafe:{cart:1,cafe:1}},{days:40,coins:9000,cafe:Object.fromEntries(SN_CAFE.map(x=>[x[0],1])),stars:Object.fromEntries(SN_PLACES.map(p=>[p.id,3]))}]){
+        const g=snNextGoal(r);
+        if(!g||/undefined|NaN|null/.test(g))bad('G-04a2: next goal for '+JSON.stringify(r)+': '+g);
+        goals.add(g);
+      }
+      if(goals.size<6)bad('G-04a2: the next goal should change as the child goes on: '+[...goals].join(' | '));
+    }
+    // 16. today's twist: the same for a date, different over days; the guest comes once a day until served and pays +5
+    {
+      const a=snTwist('2026-11-15'),b=snTwist('2026-11-15');
+      if(JSON.stringify(a)!==JSON.stringify(b))bad('G-04a2: today\'s guest must be the same all day');
+      const who=new Set(),fav=new Set();
+      for(let d=1;d<=60;d++){const t=snTwist('2026-'+(1+d%12)+'-'+(1+d%28));who.add(t.who);fav.add(t.fav);if(!SN_WHO[t.who]||!SN_ING[t.fav])bad('G-04a2: twist '+JSON.stringify(t))}
+      if(who.size<10||fav.size<5)bad('G-04a2: the guests should vary over 60 days: '+who.size+' guests, '+fav.size+' foods');
+      const st=snNew({seed:9,mode:'calm',place:'park',own:{},guest:a}),g=st.list.filter(c=>c.guest);
+      if(g.length!==1||g[0].who!==a.who)bad('G-04a2: today\'s guest should visit once');
+      if(snNew({seed:9,mode:'calm',place:'park',own:{}}).list.some(c=>c.guest))bad('G-04a2: no guest once served today');
+      const p=play2({seed:9,mode:'calm',place:'park',own:{},kind:'plain',guest:a},'perfect');
+      if(!p.guest)bad('G-04a2: serving the guest should be counted');
+    }
+    // 17. old saves keep coins, upgrades, places and stars; new fields come by id with defaults; damaged new fields are cleaned
+    {
+      S.snack={coins:812,days:31,served:290,stars:{park:3,beach:3,snow:2,fair:3,moon:1},combo:7,own:{tomato:1,'awn-b':1,bird:1},awn:'b',sign:'wood',ctr:'wood',place:'moon',mode:'busy',till:true};
+      const r=snS();
+      if(r.coins!==812||r.days!==31||r.stars.moon!==1||!r.own.bird||r.awn!=='b'||r.place!=='moon'||r.mode!=='busy'||!r.till)bad('G-04a2: an old save lost something: '+JSON.stringify(r));
+      if(r.kind!=='mix'||JSON.stringify(r.book)!=='{}'||JSON.stringify(r.cafe)!=='{}'||JSON.stringify(r.kd)!=='{}'||r.tw!=='')bad('G-04a2: new fields defaults: '+JSON.stringify(r));
+      S.snack={coins:5,book:'x',cafe:[1],kd:{party:9,zz:2},kind:'rush',tw:{a:1}};
+      const r3=snS();
+      if(JSON.stringify(r3.book)!=='{}'||JSON.stringify(r3.cafe)!=='{}'||r3.kd.party!==3||'zz' in r3.kd||r3.kind!=='mix'||r3.tw!=='')bad('G-04a2: damaged new fields: '+JSON.stringify(r3));
+      S.snack={book:{cheesy:'4',zz:1},cafe:{cart:1,zz:1}};
+      const r4=snS();
+      if(r4.book.cheesy!==4||'zz' in r4.book||!r4.cafe.cart||'zz' in r4.cafe)bad('G-04a2: unknown ids are dropped, known kept');
+    }
+    // 18. one touch adds one food (the 1024x600 smoke bug): the gesture rule and the real listeners with fake events
+    {
+      const run=evs=>{const g={},got=[];for(const e of evs){const id=snGest(g,e);if(id)got.push(id)}return got};
+      const D2=(id,t,pt='touch',pid=1,x=100,y=500)=>({type:'down',id,x,y,pid,pt,t}),U=(t,plate=false,pid=1)=>({type:'up',pid,t,plate}),C=(id,t,kbd=false)=>({type:'click',id,t,kbd});
+      const M=(x,y,pid=1)=>({type:'move',x,y,pid});
+      const cases=[
+        ['a tap',[D2('van',0),U(40),C('van',45)],1],
+        ['a tap with its click reported twice',[D2('van',0),U(40),C('van',45),C('van',46)],1],
+        ['a tap with a mouse-compatibility press',[D2('van',0),U(40),D2('van',42,'mouse',2),U(43,false,2),C('van',45)],1],
+        ['a press reported twice',[D2('van',0),D2('van',1),U(40),C('van',45)],1],
+        ['a drag onto the plate',[D2('van',0),M(100,450),M(100,300),U(300,true)],1],
+        ['a drag and its click',[D2('van',0),M(100,450),M(100,300),U(300,true),C('van',305),C('van',900)],1],
+        ['a drop reported twice',[D2('van',0),M(100,400),U(300,true),U(301,true),{type:'cancel',pid:1}],1],
+        ['a drag dropped off the plate',[D2('van',0),M(100,400),U(300,false),C('van',305)],0],
+        ['a press moved to another food',[D2('van',0),U(40),C('choc',45)],0],
+        ['a cancelled press',[D2('van',0),{type:'cancel',pid:1},C('van',45)],0],
+        ['two quick taps',[D2('van',0),U(40),C('van',41),D2('van',120),U(160),C('van',161)],2],
+        ['a keyboard press',[C('van',10,true),C('van',500,true)],2],
+        ['a pointer click with no press before it (a stray)',[C('van',10)],0],
+      ];
+      for(const [n,evs,want] of cases){const got=run(evs);if(got.length!==want)bad('G-04a2 one touch, one food: '+n+' added '+got.length+' (want '+want+')')}
+      // the real listeners, wired twice on purpose, fed fake events: exactly one food per gesture
+      const lis={},win={},box={addEventListener:(t,f)=>{(lis[t]=lis[t]||[]).push(f)}},btn={dataset:{ing:'van'},closest:s=>s=='.sn-ing'?btn:null};
+      const D=global.document,ae=global.addEventListener,re=global.removeEventListener;
+      global.document=Object.assign({},D,{querySelector:s=>s=='#snings'?box:s=='.sn-counter'?{getBoundingClientRect:()=>({bottom:400})}:dummy,querySelectorAll:()=>[],
+        createElement:()=>({style:{},remove(){}}),body:{appendChild(){}}});
+      global.addEventListener=(t,f)=>{(win[t]=win[t]||new Set()).add(f)};global.removeEventListener=(t,f)=>{if(win[t])win[t].delete(f)};
+      try{
+        SN={st:snNew({seed:2,mode:'calm',place:'park',own:{}}),r:{days:1,own:{},cafe:{}},pl:SN_PLACES[0],stations:SN_STATIONS,tab:'ice',gest:{}};
+        SN.st.at=[Object.assign({},SN.st.list[0],{state:'wait',tries:0,patMax:30,came:0})];
+        snDragWire();snDragWire();
+        const fire=(t,e)=>{for(const f of lis[t]||[])f(e);for(const f of win[t]||[])f(e)};
+        const ev=(o)=>Object.assign({target:btn,pointerId:1,pointerType:'touch',clientX:100,clientY:500,timeStamp:0,detail:1,type:''},o);
+        fire('pointerdown',ev({timeStamp:1}));fire('pointerup',ev({type:'pointerup',timeStamp:40}));fire('click',ev({timeStamp:42}));fire('click',ev({timeStamp:43}));
+        if(SN.st.plate.length!==1)bad('G-04a2 one touch, one food: a tap through the listeners added '+SN.st.plate.length);
+        fire('pointerdown',ev({timeStamp:300}));fire('pointermove',ev({type:'pointermove',clientY:420,timeStamp:320}));fire('pointermove',ev({type:'pointermove',clientY:300,timeStamp:340}));
+        fire('pointerup',ev({type:'pointerup',clientY:300,timeStamp:360}));fire('pointercancel',ev({type:'pointercancel',clientY:300,timeStamp:361}));fire('click',ev({timeStamp:365}));
+        if(SN.st.plate.length!==2)bad('G-04a2 one touch, one food: a drag through the listeners left '+SN.st.plate.length+' on the plate (want 2)');
+        if((win.pointerup||new Set()).size!==1)bad('G-04a2: the window listeners must not pile up');
+      }catch(e){bad('G-04a2 listener check crashed: '+e.message)}
+      finally{global.document=D;global.addEventListener=ae;global.removeEventListener=re;SN=null}
+    }
     // 10. drawings for the token check outside
     out.svg=[['hub',snHubArt()]];
     for(const id in SN_ING)out.svg.push(['food '+id,SN_ART[id]()]);
@@ -16145,6 +16368,11 @@ run('snack stand G-04a',()=>{
     out.svg.push(['plate empty',snPlateArt([],[])],['plate sandwich',snPlateArt(['bread','cheese','tomato','lettuce','egg','bread'],[])],
       ['plate all',snPlateArt(['bread','cheese','bread','van','choc','mint','apple','berry','cookie','cake','pancake','pancake'],['pale','toast'])]);
     for(const t of [null,{t:1},{t:4},{t:9}])out.svg.push(['pan '+JSON.stringify(t),snPanSVG(t)]);
+    // G-04a2: the café upgrades, the four stages, the plate with toast, a smoothie (before and after blending), ice cubes
+    for(const id in SN_CDECO)out.svg.push(['deco '+id,SN_CDECO[id]()]);
+    for(const stage of [0,1,2,3])out.svg.push(['stand stage '+stage,snStandArt({r:{awn:'b',sign:'star',ctr:'wood',own:OWN_ALL,cafe:Object.fromEntries(SN_CAFE.map(x=>[x[0],1]))},stage,deco:true})]);
+    out.svg.push(['plate toast',snPlateArt(['toast','jam','banana','cream','berries','mallow','honey'],[])],['plate smoothie',snPlateArt(['banana','berries','yogurt'],[])],
+      ['plate blended',snPlateArt(['berries','yogurt','blend','apple','icecube','icecube'],[])],['plate cocoa',snPlateArt(['cocoa','cream','mallow','corn','pie','jelly'],[])]);
     out.pic=GH.pic('snack');
     out.dev=JSON.stringify(SN_DEV);
     out.files=appFiles().map(f=>f[0]).join();
@@ -16162,6 +16390,9 @@ run('snack stand G-04a',()=>{
   if(/(^|[;{\s])(-webkit-)?(backdrop-)?filter\s*:/.test(css))p.push('49-game-snack.css: filter used');
   for(const m of css.matchAll(/transition:([^;}]*)/g))if(/\b(width|height|left|top|background|box-shadow|all)\b/.test(m[1]))p.push('49-game-snack.css: transition on '+m[1]);
   if(/infinite/.test(css))p.push('49-game-snack.css: an endless animation');
+  // G-04a2: the plate takes no touches: a tap on Undo or Serve next to it was taken by the plate's picture while it was redrawn and
+  // bumped (the 1024x600 smoke failures "Undo did not take one food off" and the extra food after it)
+  if(!/\.sn-plate\{[^}]*pointer-events:none/.test(css))p.push('49-game-snack.css: the plate must not take touches (pointer-events:none)');
   const ROLE=m=>new RegExp('--a-'+m+':var\\(--ill-').test(artCss);
   let shapes=0;
   for(const [w,d] of o.svg){

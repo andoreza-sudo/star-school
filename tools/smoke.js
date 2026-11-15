@@ -8295,12 +8295,17 @@ async function main() {
     }
 
     // G-04a Snack Stand (src/js/65-game-snack.js, games2 part). Midway save with 20 min of game time, real touch (CDP touch events,
-    //    touch emulation on) at 380x780 and 1024x600: Home -> Game Room -> the Snack Stand card -> the menu (shared bar, 5 places, only the
-    //    park open, Calm) -> Open the stand -> a Calm day: every customer served by touching the station tabs and the food the order
-    //    bubble shows (the first food of the day dragged onto the plate instead of tapped), then Serve; Undo takes a food off; the day's
-    //    clock runs 3x faster (SN_DEV.fast, a test hook) -> the sign turns to Closed -> the shared end card (stars, customers, coins, best
-    //    combo); game time was spent and the clock stopped -> Stand shop -> an upgrade bought with Buy (coins down by its price, saved).
-    //    Main controls (food, tabs, Undo, Serve, Buy) at least 64 px, every other button at least 48 px, no sideways scroll.
+    //    touch emulation on) at 380x780 and 1024x600: Home -> Game Room -> the Snack Stand card -> the menu (shared bar, 8 places, only the
+    //    park open, Calm, the Next goal line) -> Open the stand -> a Calm day: every customer served by touching the station tabs and the
+    //    food the order bubble shows (the first food of the day dragged onto the plate instead of tapped), then Serve; Undo takes a food
+    //    off; every touch adds exactly one food (the plate is checked after each one); the day's clock runs 3x faster (SN_DEV.fast, a test
+    //    hook) -> the sign turns to Closed -> the shared end card (stars, customers, coins, best combo); game time was spent and the clock
+    //    stopped -> Stand shop -> an upgrade bought with Buy (coins down by its price, saved).
+    //    G-04a2: 12 days later (save edit) the menu's Next goal line and the kinds of days show; a Birthday party day chosen by touch and
+    //    played to the end (the party orders served by touch, counted on the bubble); a Recipe day: a step out of order is refused (the
+    //    plate stays empty), then the steps in order, through to the end card; the shop: the Food cart and String lights bought by touch,
+    //    saved, shown on the stand; the next goal moved on. Main controls (food, tabs, Undo, Serve, Buy) at least 64 px, every other
+    //    button at least 48 px, no sideways scroll; the first message of a day never covers a customer.
     {
       const bad = [], notes = [];
       for (const [w, h] of [[380, 780], [1024, 600]]) {
@@ -8354,43 +8359,66 @@ async function main() {
           for (const t of document.querySelectorAll('.gh-top')) if (t.getBoundingClientRect().right > vw + 1) out.push('top bar wider than the screen');
           return out;
         };
-        try {
-          await pg.evaluate(() => { S.pt = { bank: 1200, day: today(), used: 0 }; save(); home(); });
-          await touch('#groom');
-          await pg.waitForSelector('#gsnack', { timeout: 8000 });
-          await pg.waitForTimeout(450);
-          await touch('#gsnack');
-          await pg.waitForSelector('#snopen', { timeout: 8000 });
-          await pg.waitForTimeout(450);
-          const m = await pg.evaluate(() => ({ g: document.querySelector('.gh-top').dataset.g, places: document.querySelectorAll('.sn-place').length,
-            locked: document.querySelectorAll('.sn-place.lock').length, calm: !!document.querySelector('#snmode [data-v="calm"][aria-pressed="true"]'), back: !!document.querySelector('.gh-top #back') }));
-          if (m.g !== 'snack' || m.places !== 5 || m.locked !== 4 || !m.calm || !m.back) bad.push(at + 'menu ' + JSON.stringify(m));
-          for (const o of await pg.evaluate(look)) bad.push(at + 'menu: ' + o);
-          const used0 = await pg.evaluate(() => pt().used);
-          await touch('#snopen');
-          await pg.waitForSelector('.sn-ing', { timeout: 8000 });
-          await pg.evaluate(() => { SN_DEV.fast = 3; });
-          let served = 0, taps = 0, dragged = false, undone = false, lookedPlay = false;
+        // the message at the top of the scene must not cover a customer or an order bubble (R-03 N4)
+        const msgClear = () => {
+          const m = document.querySelector('#snmsg.on');
+          if (!m) return '';
+          const a = m.getBoundingClientRect();
+          for (const e of document.querySelectorAll('.sn-cu .sn-an, .sn-cu .sn-bub')) {
+            const b = e.getBoundingClientRect();
+            if (a.left < b.right && b.left < a.right && a.top < b.bottom - 4 && b.top < a.bottom - 4) return 'the message covers ' + e.className;
+          }
+          return '';
+        };
+        // one day by touch: every waiting customer's order tapped (tab by tab), checking that each touch adds exactly one food.
+        // o.drag: drag the first food; o.undo: one Undo; o.step: on the first recipe, touch step 2 first (refused)
+        const playDay = async (o = {}) => {
+          let served = 0, taps = 0, dragged = !o.drag, undone = !o.undo, stepped = !o.step, looked = false, groups = 0, recipes = 0;
           for (let guard = 0; guard < 40; guard++) {
             const c = await pg.waitForFunction(() => {
               if (document.querySelector('.gh-end')) return { end: true };
               const st = SN && SN.st, c = st && st.at.find(x => x.state == 'wait');
-              return c && !st.plate.length && document.querySelector('.sn-cu .sn-bub .sn-oi') ? { order: c.order } : null;
+              if (!c || st.plate.length || !document.querySelector('.sn-cu .sn-bub .sn-oi')) return null;
+              st.sel = st.at.indexOf(c);
+              return { order: c.any ? [c.any[0]] : c.order, steps: !!c.steps, group: !!c.group };
             }, null, { timeout: 20000 }).then(x => x.jsonValue());
             if (c.end) break;
-            if (!lookedPlay) {
-              lookedPlay = true;
-              for (const o of await pg.evaluate(look)) bad.push(at + 'day: ' + o);
-              const ui = await pg.evaluate(() => ({ pause: !!document.querySelector('.gh-top #gpause'), bub: Math.round(document.querySelector('.sn-oi').getBoundingClientRect().width) }));
-              if (!ui.pause || ui.bub < 48) bad.push(at + 'day screen ' + JSON.stringify(ui));
+            if (!looked) {
+              looked = true;
+              for (const x of await pg.evaluate(look)) bad.push(at + 'day: ' + x);
+              const ui = await pg.evaluate(() => ({ pause: !!document.querySelector('.gh-top #gpause'), bub: Math.round(document.querySelector('.sn-oi').getBoundingClientRect().width),
+                goal: !!document.querySelector('#sngoal b') }));
+              if (!ui.pause || ui.bub < 48 || !ui.goal) bad.push(at + 'day screen ' + JSON.stringify(ui));
+              const mc = await pg.evaluate(msgClear);
+              if (mc) bad.push(at + mc);
+            }
+            if (c.group) groups++;
+            if (c.steps) recipes++;
+            if (!stepped && c.steps) {
+              stepped = true;
+              const s2 = await pg.evaluate(i => SN_ING[i][1], c.order[1]);
+              if (await pg.evaluate(s => SN.tab !== s, s2)) await touch(`.sn-tab[data-st="${s2}"]`);
+              await touch(`.sn-ing[data-ing="${c.order[1]}"]`);
+              const r0 = await pg.evaluate(() => ({ n: SN.st.plate.length, msg: document.querySelector('#snmsg').textContent }));
+              if (r0.n !== 0 || !/^Step 1 first/.test(r0.msg)) bad.push(at + 'a recipe step out of order was not refused: ' + JSON.stringify(r0));
+              notes.push('step 2 first refused: "' + r0.msg + '"');
             }
             for (const id of c.order) {
               const st = await pg.evaluate(i => SN_ING[i][1], id);
               if (await pg.evaluate(s => SN.tab !== s, st)) await touch(`.sn-tab[data-st="${st}"]`);
+              const n0 = await pg.evaluate(() => SN.st.plate.length + SN.st.pans.filter(Boolean).length);
               if (!dragged) {
                 await drag(`.sn-ing[data-ing="${id}"]`, '#snplate');
                 dragged = true;
               } else await touch(`.sn-ing[data-ing="${id}"]`);
+              if (id == 'pancake') {
+                // on the grill: wait for golden, then take it off by touch
+                await pg.waitForFunction(() => SN.st.pans.some(p => p && p.t >= 3), null, { timeout: 15000 });
+                const k = await pg.evaluate(() => SN.st.pans.findIndex(p => p && p.t >= 3));
+                await touch(`.sn-pan[data-pan="${k}"]`);
+              }
+              const n1 = await pg.evaluate(() => SN.st.plate.length + SN.st.pans.filter(Boolean).length);
+              if (n1 !== n0 + 1 && id != 'pancake') bad.push(at + 'one touch added ' + (n1 - n0) + ' foods (' + id + ')');
               taps++;
             }
             if (!undone) {
@@ -8399,25 +8427,46 @@ async function main() {
               await touch('#snundo');
               const n = await pg.evaluate(() => SN.st.plate.length);
               if (n !== c.order.length - 1) bad.push(at + 'Undo did not take one food off (' + n + ')');
+              const s3 = await pg.evaluate(i => SN_ING[i][1], last);
+              if (await pg.evaluate(s => SN.tab !== s, s3)) await touch(`.sn-tab[data-st="${s3}"]`);
               await touch(`.sn-ing[data-ing="${last}"]`);
               undone = true;
             }
-            const ok = await pg.evaluate(o => snKey(SN.st.plate) === snKey(o), c.order);
-            if (!ok) bad.push(at + 'the plate does not match the order after the taps: ' + c.order);
+            const ok = await pg.evaluate(() => { const c = SN.st.at[SN.st.sel]; return !!c && snFits(c, SN.st.plate); });
+            if (!ok) bad.push(at + 'the plate does not match the order after the taps: ' + c.order + ' plate ' + (await pg.evaluate(() => SN.st.plate.join())));
             await touch('#snserve');
             served++;
           }
           await pg.waitForSelector('.gh-end #snmenu', { timeout: 20000 });
           await pg.waitForTimeout(600);
+          return { served, taps, groups, recipes };
+        };
+        try {
+          await pg.evaluate(() => { S.pt = { bank: 2400, day: today(), used: 0 }; save(); home(); });
+          await touch('#groom');
+          await pg.waitForSelector('#gsnack', { timeout: 8000 });
+          await pg.waitForTimeout(450);
+          await touch('#gsnack');
+          await pg.waitForSelector('#snopen', { timeout: 8000 });
+          await pg.waitForTimeout(450);
+          const m = await pg.evaluate(() => ({ g: document.querySelector('.gh-top').dataset.g, places: document.querySelectorAll('.sn-place').length,
+            locked: document.querySelectorAll('.sn-place.lock').length, calm: !!document.querySelector('#snmode [data-v="calm"][aria-pressed="true"]'), back: !!document.querySelector('.gh-top #back'),
+            next: (document.querySelector('#snnext') || {}).textContent || '', kinds: document.querySelectorAll('.sn-kind').length }));
+          if (m.g !== 'snack' || m.places !== 8 || m.locked !== 7 || !m.calm || !m.back || !/^Next goal: \S/.test(m.next) || m.kinds !== 9) bad.push(at + 'menu ' + JSON.stringify(m));
+          for (const o of await pg.evaluate(look)) bad.push(at + 'menu: ' + o);
+          const used0 = await pg.evaluate(() => pt().used);
+          await touch('#snopen');
+          await pg.waitForSelector('.sn-ing', { timeout: 8000 });
+          await pg.evaluate(() => { SN_DEV.fast = 3; });
+          const d1 = await playDay({ drag: true, undo: true });
           const e = await pg.evaluate(() => ({ title: (document.querySelector('.gh-end h1') || {}).textContent, pic: !!document.querySelector('.gh-end .gh-epic svg'),
             stars: !!document.querySelector('.gh-end .rate'), stats: document.querySelectorAll('.gh-end .gh-stat').length, used: pt().used, gt: !!GT, day: !!SN,
             days: S.snack.days, served: S.snack.served, coins: S.snack.coins, star: S.snack.stars.park }));
-          await pg.evaluate(() => { SN_DEV.fast = 1; });
           if (e.title !== 'Closed for today!' || !e.pic || !e.stars || e.stats !== 3) bad.push(at + 'end card ' + JSON.stringify(e));
           if (!(e.used > used0) || e.gt || e.day) bad.push(at + 'game time: used ' + used0 + ' -> ' + e.used + ', clock still running ' + e.gt + ', day ' + e.day);
-          if (e.days !== 1 || e.served !== served || served < 8 || served > 12 || !(e.coins > 0) || e.star !== 3) bad.push(at + 'saved after the day ' + JSON.stringify(e) + ' served ' + served);
+          if (e.days !== 1 || e.served !== d1.served || d1.served < 8 || d1.served > 12 || !(e.coins > 0) || e.star !== 3) bad.push(at + 'saved after the day ' + JSON.stringify(e) + ' served ' + d1.served);
           for (const o of await pg.evaluate(look)) bad.push(at + 'end card: ' + o);
-          notes.push(`${w}x${h}: ${served} customers, ${taps} food touches, ${e.coins} coins, game time ${used0} -> ${e.used} s`);
+          notes.push(`${w}x${h}: ${d1.served} customers, ${d1.taps} food touches, ${e.coins} coins, game time ${used0} -> ${e.used} s`);
           // the shop: buy the first thing the coins pay for
           await touch('#snendshop');
           await pg.waitForSelector('.sn-item', { timeout: 8000 });
@@ -8434,6 +8483,53 @@ async function main() {
           notes.push('bought ' + want);
           await touch('#back');
           await pg.waitForSelector('#snopen', { timeout: 5000 });
+          // ---- G-04a2: twelve days later (a save edit: days and coins only), the kinds of days are open ----
+          await pg.evaluate(() => { const r = snS(); r.days = 12; r.coins += 600; save(); snMenu(); });
+          await pg.waitForSelector('.sn-kind[data-k="party"]:not(.lock)', { timeout: 5000 });
+          // a Birthday party day, chosen by touch
+          await touch('.sn-kind[data-k="party"]');
+          await pg.waitForSelector('.sn-kind[data-k="party"][aria-pressed="true"]', { timeout: 5000 });
+          await touch('#snopen');
+          await pg.waitForSelector('.sn-ing', { timeout: 8000 });
+          await pg.evaluate(() => { SN_DEV.fast = 3; });
+          const kind1 = await pg.evaluate(() => SN.st.how);
+          const d2 = await playDay();
+          if (kind1 !== 'party' || d2.groups !== 2) bad.push(at + 'party day: kind ' + kind1 + ', ' + d2.groups + ' party orders served by touch');
+          const e2 = await pg.evaluate(() => ({ party: S.snack.kd.party, days: S.snack.days, lines: [...document.querySelectorAll('.gh-end .gh-line')].map(x => x.textContent) }));
+          if (e2.party !== 3 || e2.days !== 13 || !e2.lines.some(l => /^Next goal: /.test(l))) bad.push(at + 'after the party day ' + JSON.stringify(e2));
+          notes.push(`party day ${d2.served} customers, ${d2.taps} touches`);
+          // a Recipe day: a step out of order is refused, then every recipe made step by step
+          await touch('#snmenu');
+          await pg.waitForSelector('.sn-kind[data-k="recipe"]', { timeout: 5000 });
+          await touch('.sn-kind[data-k="recipe"]');
+          await pg.waitForSelector('.sn-kind[data-k="recipe"][aria-pressed="true"]', { timeout: 5000 });
+          await touch('#snopen');
+          await pg.waitForSelector('.sn-ing', { timeout: 8000 });
+          await pg.evaluate(() => { SN_DEV.fast = 3; });
+          const d3 = await playDay({ step: true });
+          const e3 = await pg.evaluate(() => ({ book: SN_DISHES.filter(d => d.steps && S.snack.book[d.id]).length, kd: S.snack.kd.recipe }));
+          if (d3.recipes < 3 || e3.book < 1 || e3.kd !== 3) bad.push(at + 'recipe day: ' + d3.recipes + ' recipes, ' + JSON.stringify(e3));
+          notes.push(`recipe day ${d3.recipes} recipes, ${e3.book} in the book`);
+          // the shop: the café journey (open after 8 days): the Food cart, then String lights, by touch
+          await touch('#snendshop');
+          await pg.waitForSelector('.sn-item[data-cf="cart"]', { timeout: 8000 });
+          for (const id of ['cart', 'lights']) {
+            await touch(`.sn-item[data-cf="${id}"]`);
+            await pg.waitForSelector('#snbuy:not([disabled])', { timeout: 5000 });
+            for (const o of await pg.evaluate(look)) bad.push(at + 'café shop: ' + o);
+            const k0 = await pg.evaluate(() => S.snack.coins);
+            await touch('#snbuy');
+            await pg.waitForTimeout(300);
+            const k = await pg.evaluate(i => ({ own: !!S.snack.cafe[i], coins: S.snack.coins, price: SN_CAFE.find(x => x[0] === i)[3],
+              kept: !!JSON.parse(localStorage.getItem('starschool-v2')).snack.cafe[i] }), id);
+            if (!k.own || k.coins !== k0 - k.price || !k.kept) bad.push(at + 'café buy ' + id + ': ' + JSON.stringify(k));
+          }
+          await touch('#back');
+          await pg.waitForSelector('#snopen', { timeout: 5000 });
+          const mm = await pg.evaluate(() => ({ next: document.querySelector('#snnext').textContent, open: document.querySelector('#snopen').textContent.trim() }));
+          if (mm.next === m.next || !/^Next goal: \S/.test(mm.next) || mm.open !== 'Open the cart') bad.push(at + 'after the café buys: ' + JSON.stringify(mm) + ' first ' + m.next);
+          for (const o of await pg.evaluate(look)) bad.push(at + 'menu after: ' + o);
+          notes.push('cart and lights bought; next goal: ' + mm.next.replace(/^Next goal: /, ''));
         } catch (x) {
           bad.push(at + 'taps: ' + x.message.split('\n')[0]);
         }
@@ -8444,8 +8540,10 @@ async function main() {
       }
       if (bad.length) fail('G-04a Snack Stand:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
       else step('G-04a: Snack Stand by real touch at 380x780 and 1024x600: hub card -> menu -> a Calm day, every customer served by touching ' +
-        'the tabs and food (one dragged onto the plate, one Undo) -> Closed -> shared end card (3 stars) -> shop: an upgrade bought and saved; ' +
-        'game time spent, clock stopped; main controls 64 px, buttons 48 px, no sideways scroll; ' + notes.join('; '));
+        'the tabs and food (one dragged onto the plate, one Undo, every touch one food) -> Closed -> shared end card (3 stars) -> shop: an upgrade bought ' +
+        'and saved; game time spent, clock stopped; G-04a2: next goal line, a Birthday party day and a Recipe day (a step out of order refused) ' +
+        'played by touch, the Food cart and String lights bought; main controls 64 px, buttons 48 px, no sideways scroll, the day message clear of ' +
+        'the customers; ' + notes.join('; '));
     }
 
     // R-01d Discover review fixes at 380x780 (2x), a Kindergartner (midway save, grade K). Home -> Discover -> Nature Trail -> Living
