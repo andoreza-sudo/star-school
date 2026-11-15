@@ -56,6 +56,8 @@ function cases(ctx, opt = {}) {
     if (near[3]) out.push({ kind: 'similar', tgt: t, say: near[3], mod: 'up', want: 0 });
     const far = keys[(keys.indexOf(t) + Math.floor(keys.length / 2)) % keys.length];
     if (!R('spkMatch')(t, far)) out.push({ kind: 'other', tgt: t, say: far, mod: 'up', want: 0 });
+    const far2 = keys[(keys.indexOf(t) + Math.floor(keys.length / 3)) % keys.length]; // a second unrelated word, a third of the list away
+    if (!R('spkMatch')(t, far2) && opt.other2 !== false) out.push({ kind: 'other2', tgt: t, say: far2, mod: 'up', want: 0 });
   }
   for (const t of targets.slice(0, 20)) for (const m of ['silence', 'hiss', 'click']) out.push({ kind: 'silence', tgt: t, say: null, mod: m, want: 0 });
   return out;
@@ -114,7 +116,7 @@ if (require.main === module) {
   show(score(res, abs, ratio), abs, ratio);
   if (process.argv.includes('--grid')) {
     const qs = k => { const v = res.filter(r => r.kind === k && isFinite(r.d)).map(r => r.d).sort((a, b) => a - b); return [0.1, 0.5, 0.9].map(q => v[Math.floor(q * (v.length - 1))]?.toFixed(3)); };
-    for (const k of ['voice', 'child', 'similar', 'other']) console.log(k, 'd quantiles 10/50/90', qs(k).join(' '));
+    for (const k of ['voice', 'child', 'similar', 'other', 'other2']) console.log(k, 'd quantiles 10/50/90', qs(k).join(' '));
     for (const r of [1, 1.05, 1.1, 1.15, 1.2, 1.25]) for (const a of [1.4, 1.5, 1.6, 1.7, 1.8]) show(score(res, a, r), a, r);
   }
   console.log(list.length + ' cases in ' + ((Date.now() - t0) / 1000).toFixed(1) + ' s');
