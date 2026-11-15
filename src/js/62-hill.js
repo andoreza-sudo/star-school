@@ -562,7 +562,7 @@ function garage(){const gs=garageS(),ng=hcNextGoal(),day=hcDay(),DW=HCW[day.wi];
   ${UI.btn(`Play stage ${pi+1}: ${ps[1]}`,{kind:'primary',size:'lg',icon:'play',id:'hcgo',wide:true})}
   ${UI.sw('Easy driving: keeps the car level and brings balloons',hcEasy(),'hceasy')}
   <button class="btn hc-day${day.done?' done':''}" id="hcday">
-    <span class="hc-dayi">${ico(day.done?'check-circle':'sparkle',32)}</span><span class="hc-dayt"><b>Today's drive: ${esc(DW.n)}</b><span>${esc(day.label)}</span>
+    <span class="hc-daydisc">${ico(day.done?'check-circle':'sparkle',32)}</span><span class="hc-dayt"><b>Today's drive: ${esc(DW.n)}</b><span>${esc(day.label)}</span>
     <small>${day.done?'Done today! A new drive comes tomorrow.':`Gold flag at ${day.goal} m: plus ${HC_DAY_BONUS} bolts the first time today.`}</small></span>${ico('play',32)}</button>
   <h2>Distance drive</h2><p class="hc-note">Go as far as you can. A new road every day. Fuel cans get further apart. Your best is a flag on the road.</p>
   <div class="hc-dist">${HCW.map((D,k)=>hcWOpen(k)?`<button class="btn hc-dw" data-st="${D.id}" style="--hc-a:var(--${D.sky[0]});--hc-b:var(--${D.sky[1]})">${ico('ruler',24)}<span><b>${esc(D.n)}</b><small>${gs.best[D.id]?'Best '+gs.best[D.id]+' m':'No best yet'}</small></span></button>`:'').join('')}</div>
