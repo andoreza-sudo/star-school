@@ -8066,7 +8066,7 @@ run('performance P6-02',()=>{
   try{
     // a. a cold start: no games code, no games <style>; the app is ready
     let pg=page(),s=state(pg);
-    if(!s.ready||s.parts!=='false,false,false'||s.gh!=='undefined'||pg.styles.join()!=='css-bt'||pg.scripts.length)p.push('at start: '+JSON.stringify(s)+' styles '+pg.styles.join());
+    if(!s.ready||s.parts!=='false,false,false,false'||s.gh!=='undefined'||pg.styles.join()!=='css-bt'||pg.scripts.length)p.push('at start: '+JSON.stringify(s)+' styles '+pg.styles.join());
     // b. Home -> Game Room: "Getting the games ready..." with Back at once, nothing requested until that screen is painted, then games,
     //    then games2 (one at a time, in PARTS order), then the hub with every registered game, and a game's first screen opens
     pg.run('gameRoom()');
@@ -8078,7 +8078,7 @@ run('performance P6-02',()=>{
     if(asked.join()!==LAZY_FILES.join())p.push('the Game Room asked for '+asked.join(', ')+', expected '+LAZY_FILES.join(', ')+' one after the other');
     s=state(pg);
     const hub=pg.app.innerHTML,ids=pg.run('GH.games.map(g=>g.btn)');
-    if(s.parts!=='true,true,true'||!/class="gh-room"/.test(hub)||ids.length<5||ids.some(b=>!hub.includes('id="'+b+'"'))||pg.styles.join()!=='css-bt,css-games,css-rally,css-games2,css-games3')
+    if(s.parts!=='true,true,true,true'||!/class="gh-room"/.test(hub)||ids.length<5||ids.some(b=>!hub.includes('id="'+b+'"'))||pg.styles.join()!=='css-bt,css-games,css-rally,css-games2,css-games3')
       p.push('after the lazy load: '+JSON.stringify(s)+' hub '+/gh-room/.test(hub)+' cards '+ids+' styles '+pg.styles.join());
     for(const [id,want] of [['snack','snopen'],['art',''],['rally','rlgar']]){ // a games2 game (Snack Stand), a games one (Coloring), Star Rally (rally), through their hub cards
       try{const b=pg.run(`GH.get('${id}').btn`);pg.el(b).onclick();const h=pg.app.innerHTML;
@@ -8092,7 +8092,7 @@ run('performance P6-02',()=>{
     pg=page();pg.run('gameRoom()');pg.flush();pg.run('view("<div id=\\"elsewhere\\"></div>")');
     while(pg.scripts.length)pg.serve();pg.flush();
     s=state(pg);
-    if(!pg.app.innerHTML.includes('elsewhere')||s.parts!=='true,true,true')p.push('Back while loading: '+pg.app.innerHTML.slice(0,80)+' '+JSON.stringify(s));
+    if(!pg.app.innerHTML.includes('elsewhere')||s.parts!=='true,true,true,true')p.push('Back while loading: '+pg.app.innerHTML.slice(0,80)+' '+JSON.stringify(s));
     pg.run('gameRoom()');if(!/gh-room/.test(pg.app.innerHTML))p.push('after Back while loading, the Game Room did not open at once');
     // d. a games or games2 file of another release is refused: Try again (it reloads), the App log line, games2 never asked for after a
     //    stale games file; asking again does not run the stale file twice; nothing else in the save changes
@@ -8113,7 +8113,7 @@ run('performance P6-02',()=>{
     s=state(pg);
     if(!/id="datamiss"/.test(pg.app.innerHTML)||s.err!=='games file missing (app '+VER+')'||pg.scripts.length)p.push('missing games file: '+JSON.stringify(s));
     pg.run('gameRoom()');pg.flush();while(pg.scripts.length)pg.serve();
-    if(!/gh-room/.test(pg.app.innerHTML)||state(pg).parts!=='true,true,true')p.push('after a missing games file, the next open did not load the Game Room');
+    if(!/gh-room/.test(pg.app.innerHTML)||state(pg).parts!=='true,true,true,true')p.push('after a missing games file, the next open did not load the Game Room');
   }catch(e){p.push('the on-demand load could not be run: '+String(e.stack||e).split('\n').slice(0,3).join(' | '))}
   return{problems:p,note:'loaded at start '+Math.round(start/1000)+' KB (budget '+TOTAL_FAIL/1e6+' MB), on demand '+Math.round(lazy/1000)+' KB ('+LAZY_FILES.join(', ')+')'};
 });
