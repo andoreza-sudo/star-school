@@ -102,9 +102,9 @@
 
 /* ---- the pause sheet ---- */
 .gh-sheet{text-align:center}
-.gh-fcvp{position:relative;height:128px;margin:0 0 var(--s-4);border-radius:var(--r-card);overflow:hidden;background:linear-gradient(var(--gh-a),var(--gh-b))}
+.gh-scpic{position:relative;height:128px;margin:0 0 var(--s-4);border-radius:var(--r-card);overflow:hidden;background:linear-gradient(var(--gh-a),var(--gh-b))}
 .gh-sheet .gh-acts{display:flex;flex-direction:column;gap:var(--s-3)}
-@media (max-height:520px){.gh-fcvp{height:84px;margin-bottom:var(--s-2)}.sheet .gh-sheet p{margin-bottom:var(--s-3)}}
+@media (max-height:520px){.gh-scpic{height:84px;margin-bottom:var(--s-2)}.sheet .gh-sheet p{margin-bottom:var(--s-3)}}
 
 /* ---- the end card ---- */
 .ovl.gh-ovl{z-index:65}

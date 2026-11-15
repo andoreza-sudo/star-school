@@ -174,14 +174,14 @@ async function main() {
     await page.click('.game[data-s="add10"]');
     await page.click('.game[data-m="n20"]');
     for (let i = 0; i < 40; i++) {
-      await page.waitForFunction(() => document.querySelector('#fagain') || (FL && FL.f && !FL.lock), null, { timeout: 8000 });
-      if (await page.$('#fagain')) break;
+      await page.waitForFunction(() => document.querySelector('#frepeat') || (FL && FL.f && !FL.lock), null, { timeout: 8000 });
+      if (await page.$('#frepeat')) break;
       let c = await page.evaluate(() => String(FL.f.c));
       // one wrong answer with the same digit count (so it auto-submits): shown for 1 s, comes back later
       if (i === 0) c = String(+c + 1).length === c.length ? String(+c + 1) : String(+c - 1);
       for (const d of c) await page.click(`.k[data-k="${d}"]`);
     }
-    await page.waitForSelector('#fagain', { timeout: 8000 });
+    await page.waitForSelector('#frepeat', { timeout: 8000 });
     const flu = await page.evaluate(() => ({ best: S.flu['add10-20'].best, n: S.flu['add10-20'].hist.length, paid: !!S.flu.add10.paid }));
     if (!(flu.best > 0) || flu.n !== 1 || !flu.paid) fail('fact sprint not saved: ' + JSON.stringify(flu));
     else step('Fact Sprint 20 facts played, saved ' + JSON.stringify(flu));
@@ -1225,12 +1225,12 @@ async function main() {
       await mp.click('.game[data-s="mfact"]');
       await mp.click('.game[data-m="n20"]');
       for (let i = 0; i < 40; i++) {
-        await mp.waitForFunction(() => document.querySelector('#fagain') || (FL && FL.f && !FL.lock), null, { timeout: 8000 });
-        if (await mp.$('#fagain')) break;
+        await mp.waitForFunction(() => document.querySelector('#frepeat') || (FL && FL.f && !FL.lock), null, { timeout: 8000 });
+        if (await mp.$('#frepeat')) break;
         for (const d of await mp.evaluate(() => String(FL.f.c))) await mp.click(`.k[data-k="${d}"]`);
         if (await mp.$('.k[data-k="go"]')) await mp.click('.k[data-k="go"]'); // the Fact Sprint pad submits by itself; waiting for a missing key cost 30 s per fact
       }
-      await mp.waitForSelector('#fagain', { timeout: 8000 });
+      await mp.waitForSelector('#frepeat', { timeout: 8000 });
       const fl = await mp.evaluate(() => ({ n: S.flu['mfact-20'] && S.flu['mfact-20'].hist.length }));
       if (fl.n !== 1) fail('times sprint not saved: ' + JSON.stringify(fl));
       else step('P2-05: Multiply Mountain opens for a 3rd grader (12 stops), Arrays and Times facts rounds played, Fact Sprint lists Times facts and a sprint is saved');
@@ -7727,17 +7727,17 @@ async function main() {
       await pg.click('#hmmis [data-mi="1"]');
       await pg.waitForSelector('#fplay');
       for (let i = 0; i < 400; i++) {
-        await pg.waitForFunction(() => document.querySelector('#fagain') || (FL && FL.f && !FL.lock), null, { timeout: 15000 });
-        if (await pg.$('#fagain')) break;
+        await pg.waitForFunction(() => document.querySelector('#frepeat') || (FL && FL.f && !FL.lock), null, { timeout: 15000 });
+        if (await pg.$('#frepeat')) break;
         const c = await pg.evaluate(() => String(FL.f.c));
         for (const d of c) await pg.click(`.k[data-k="${d}"]`, { timeout: 2000 }).catch(() => {}); // the 60 s may end between two digits
       }
-      await pg.waitForSelector('#fagain', { timeout: 15000 });
+      await pg.waitForSelector('#frepeat', { timeout: 15000 });
       const r2 = await pg.evaluate(() => ({ win: document.querySelectorAll('.gx-end .mis-win li').length, txt: (document.querySelector('.gx-end .mis-win') || {}).textContent || '',
         stk: document.querySelectorAll('.gx-end .mis-win .rw-stk').length, done: S.day.m.map(x => x.d).join(''), bonus: !!S.day.done }));
       if (r2.win !== 1 || !/Mission done! Do a Fact Sprint/.test(r2.txt) || r2.stk !== 1 || r2.done !== '110' || r2.bonus) bad.push('sprint mission reward: ' + JSON.stringify(r2));
       await chk('sprint end');
-      await pg.click('#fagain'); // a second sprint pays nothing more
+      await pg.click('#frepeat'); // a second sprint pays nothing more
       await pg.waitForSelector('#fplay');
       await pg.evaluate(() => { stopFlu(); home(); });
       await pg.waitForSelector('#hmmis');

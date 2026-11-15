@@ -18456,6 +18456,12 @@ run('content: no magic or evolution theme CONTENT-01',()=>{
     if(R("JSON.stringify([S.owned,S.wear.toy,S.stickers])")!==JSON.stringify([{'\u{1FA80}':1},'\u{1FA80}',{'\u{1F420}':3}]))p.push('old save not moved: '+R("JSON.stringify([S.owned,S.wear.toy,S.stickers])"));
     if(!R("SHOP.toy.some(t=>t[0]=='\u{1FA80}')&&!!WEAR['\u{1FA80}']&&WEAR_NAME['\u{1FA80}']=='Yo-yo'"))p.push('the yo-yo is not in the shop with its drawing and name');
   }catch(e){p.push('save check could not run: '+String(e.message||e).split('\n')[0])}
+  // and no rude word or slur in plain text anywhere in the project (the app's filters keep theirs in ROT13); the list is in ROT13 too
+  const unrot=x=>x.replace(/[a-z]/g,c=>String.fromCharCode((c.charCodeAt(0)-84)%26+97));
+  const RUDE=new RegExp('\\b('+unrot('a[v1]tt?(re|n)|avt|shpx(vat|re|rq)?|shx|fuvg(gl)?|phag|gjng|fyhg|snt(tbg)?|pbpx|qvpx|jnax|cbea|juber|ovgpu|ergneq(rq)?|puvax|fcvp|xvxr|pbba')+')s?\\b','i');let m2=0;
+  const walk3=d=>{for(const f of fs.readdirSync(d)){if(f=='node_modules'||f[0]=='.'||f=='audio')continue;const q=path.join(d,f);if(fs.statSync(q).isDirectory()){walk3(q);continue}
+    if(!/\.(js|css|html|md|py|sh|json|txt)$/.test(f))continue;m2++;fs.readFileSync(q,'utf8').split('\n').forEach((l,i)=>{if(RUDE.test(l))p.push(path.relative(ROOT,q)+':'+(i+1)+': a rude word in plain text')})}};
+  walk3(ROOT);n+=m2;
   return{problems:p,note:n+' files searched'};
 });
 
