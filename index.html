@@ -3041,6 +3041,7 @@ const MIGRATIONS=[null,
 ];
 /* Run once at load, from 42-paths.js (needs NODES, which no code before it reads). Backs up the old string first. */
 function migrate(){
+  if(S.owned&&S.owned['\u{1FA84}']){S.owned['\u{1FA80}']=1;delete S.owned['\u{1FA84}']}if(S.wear&&S.wear.toy=='\u{1FA84}')S.wear.toy='\u{1FA80}';if(S.stickers&&S.stickers['\u{1F984}']){S.stickers['\u{1F420}']=(S.stickers['\u{1F420}']||0)+S.stickers['\u{1F984}'];delete S.stickers['\u{1F984}']} // an old toy (U+1FA84) became the yo-yo and an old sticker (U+1F984) the fish (the parent asked for none of that theme): same price, kept by whoever had it
   if(S.maps&&typeof PATHS!='undefined')for(const p in PATHS)S.maps[p]=S.maps[p]||{}; // a path added after the save was written starts empty (Discover, P2-36): a default, not a migration
   const from=Number.isInteger(S.v)&&S.v>=1?S.v:1;
   if(from>=LATEST)return; // current, or written by a newer app: leave it alone
@@ -3063,7 +3064,7 @@ function save(){if(SAVE_HOLD||SAVE_OFF)return;try{localStorage.setItem(SKEY,JSON
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v167'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v168'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -3439,7 +3440,7 @@ const stage=(st=S.stars)=>GROW.filter(g=>st>=g).length-1;
 const petE=(st=S.stars)=>PETS[S.pet].s[Math.min(stage(st),3)];
 const petAura=(st=S.stars)=>'rig'; // P4-05/P4-06: 'rig' = drawn pet (17-pets-svg.js); every pet is drawn now
 const petN=()=>S.petName||PETS[S.pet].def;
-const STK=[...'🦄🐬🦖🚀🌈🍩🎸🏆🦁🐼🍕🎈🌟🐙🦋🍦🚂⚽🎨🐢🦊🍉🏰🛸🌻🐝🍪🎃🐳🦉🏀🚁🧁🍓🐧🦒🎡⛵🌋🦜🧸🎺🐞🍭🌙🦈🚒🐘'.matchAll(/\p{Extended_Pictographic}️?/gu)].map(m=>m[0]);
+const STK=[...'🐠🐬🦖🚀🌈🍩🎸🏆🦁🐼🍕🎈🌟🐙🦋🍦🚂⚽🎨🐢🦊🍉🏰🛸🌻🐝🍪🎃🐳🦉🏀🚁🧁🍓🐧🦒🎡⛵🌋🦜🧸🎺🐞🍭🌙🦈🚒🐘'.matchAll(/\p{Extended_Pictographic}️?/gu)].map(m=>m[0]);
 
 /* ---------- sound engine (all synthesized, works offline) ----------
    P4-17 (DESIGN_SYSTEM 8.2): one soft, consistent set of sounds.
@@ -3490,7 +3491,7 @@ const RAW={
   del:()=>synth(500,.1,0,'sine',.08,280),
   pop:(i=0)=>synth(420+i*90,.09,0,'sine',.12,900+i*120),
   streak:()=>{[0,4,7,11,14,19].forEach((x,i)=>synth(NOTE(79+x),.15,i*.045,'sine',.08));hiss(.3,0,.03,3000,9000)},
-  magic:()=>{for(let i=0;i<10;i++)synth(NOTE(72+i*2),.22,i*.06,'sine',.06);hiss(.6,.15,.03,4000,10000)},
+  chime:()=>{for(let i=0;i<10;i++)synth(NOTE(72+i*2),.22,i*.06,'sine',.06);hiss(.6,.15,.03,4000,10000)},
   rattle:()=>{for(let i=0;i<5;i++)synth(150+Math.random()*120,.05,i*.07,'triangle',.08)},
   giggle:()=>{for(let i=0;i<5;i++)synth(700+i*60+Math.random()*80,.07,i*.08,'sine',.09,900+i*60)},
   hatch:()=>{hiss(.15,0,.14,800,800);hiss(.15,.2,.14,900,900);hiss(.4,.45,.14,500,3000)},
@@ -6171,9 +6172,9 @@ const DOL=[
 'after again an any as ask by could every fly from give going had has her him his how just know let live may of old once open over put round some stop take thank them then think walk were when'.split(' ')];
 const CVC=[['cat','🐱'],['dog','🐶'],['pig','🐷'],['sun','☀️'],['bus','🚌'],['hat','🎩'],['bed','🛏️'],['cup','🥤'],['fox','🦊'],['bat','🦇'],['bug','🐛'],['hen','🐔'],['box','📦'],['map','🗺️'],['pen','🖊️'],['web','🕸️'],['van','🚐'],['can','🥫'],['bag','👜'],['ant','🐜'],['rat','🐀'],['nut','🥜'],['leg','🦵'],['pin','📌'],['egg','🥚'],['man','👨'],['tub','🛁'],['mug','☕'],['ten','🔟'],['six','6️⃣']];
 const BLEND=[['frog','🐸'],['crab','🦀'],['drum','🥁'],['fish','🐟'],['duck','🦆'],['ship','🚢'],['star','⭐'],['milk','🥛'],['tent','⛺'],['hand','✋'],['gift','🎁'],['flag','🚩'],['sock','🧦'],['bell','🔔'],['clock','🕐'],['truck','🚚'],['chick','🐤'],['sled','🛷'],['plug','🔌'],['ring','💍'],['shell','🐚'],['dress','👗']];
-const MAGICE=[['cake','🎂'],['kite','🪁'],['bike','🚲'],['ice','🧊'],['rose','🌹'],['bone','🦴'],['note','🎵'],['nose','👃'],['frame','🖼️'],['five','5️⃣'],['nine','9️⃣'],['pine','🌲'],['plane','✈️'],['whale','🐳'],['snake','🐍'],['smile','😊'],['globe','🌍'],['skate','⛸️'],['dice','🎲'],['rice','🍚'],['phone','📱'],['grape','🍇'],['wave','🌊'],['fire','🔥'],['plate','🍽️']];
+const SILENTE=[['cake','🎂'],['kite','🪁'],['bike','🚲'],['ice','🧊'],['rose','🌹'],['bone','🦴'],['note','🎵'],['nose','👃'],['frame','🖼️'],['five','5️⃣'],['nine','9️⃣'],['pine','🌲'],['plane','✈️'],['whale','🐳'],['snake','🐍'],['smile','😊'],['globe','🌍'],['skate','⛸️'],['dice','🎲'],['rice','🍚'],['phone','📱'],['grape','🍇'],['wave','🌊'],['fire','🔥'],['plate','🍽️']];
 const TEAMS=[['rain','🌧️'],['boat','⛵'],['tree','🌳'],['bee','🐝'],['goat','🐐'],['coat','🧥'],['feet','🦶'],['sheep','🐑'],['leaf','🍃'],['beach','🏖️'],['train','🚂'],['snail','🐌'],['road','🛣️'],['soap','🧼'],['moon','🌙'],['book','📖'],['spoon','🥄'],['boot','👢'],['cheese','🧀'],['tooth','🦷'],['mail','📬'],['peach','🍑'],['seed','🌱'],['pie','🥧'],['tie','👔'],['cow','🐄'],['owl','🦉'],['mouse','🐭'],['cloud','☁️'],['bowl','🥣']];
-const WL=lv=>[CVC,BLEND,MAGICE,TEAMS][Math.min(lv,4)-1];
+const WL=lv=>[CVC,BLEND,SILENTE,TEAMS][Math.min(lv,4)-1];
 const NOUNS=[...CVC,...BLEND].filter(w=>!['ten','six','man','leg','pin'].includes(w[0]));
 const BAD=/^(fuck|fuk|shit|dick|cock|suck|tit|tits|fag|cum|sex|ass|piss|crap|damn|dam|hell|hoe|slut|cunt|twat|nig|fap|wank|porn|poop|butt|pee|kill|gun)$/;
 const art=w=>/^[aeiou]/.test(w)?'an':'a';
@@ -6219,7 +6220,7 @@ DOL.push(
 'about better bring carry clean cut done draw drink eight fall far full got grow hold hot hurt if keep kind laugh light long much myself never only own pick seven shall show six small start ten today together try warm'.split(' '));
 // pic 5 / build 5: r-controlled vowels. [word, emoji, the r-vowel]. Wrong choices swap the r-vowel (bird / bard / burd).
 const RVW=[['car','🚗','ar'],['star','⭐','ar'],['yarn','🧶','ar'],['shark','🦈','ar'],['scarf','🧣','ar'],['cart','🛒','ar'],['dart','🎯','ar'],
-  ['horse','🐴','or'],['unicorn','🦄','or'],['corn','🌽','or'],['forest','🌲','or'],['sword','⚔️','or'],
+  ['horse','🐴','or'],['fork','🍴','or'],['corn','🌽','or'],['forest','🌲','or'],['sword','⚔️','or'],
   ['hammer','🔨','er'],['monster','👾','er'],['flower','🌸','er'],['water','💧','er'],['tower','🗼','er'],
   ['bird','🐦','ir'],['girl','👧','ir'],['circle','⚪','ir'],['birthday','🎉','ir'],
   ['turtle','🐢','ur'],['purse','👜','ur'],['church','⛪','ur']];
@@ -6349,7 +6350,7 @@ cloud:loud cloth proud
 bowl:bow howl blow`.split('\n').map(r=>{const [w,d]=r.split(':');return [w,d.split(' ')]}));
 // Words that sound the same: a listening question never offers two of them together (hear "two", see "to" and "two").
 const SAMESOUND=['to two too','for four','right write','there their','no know','eight ate','by buy','red read','new knew','our hour','one won',
-  'blue blew','be bee','see sea','so sew','some sum','here hear','would wood','which witch','whole hole','its it\'s','your you\'re',
+  'blue blew','be bee','see sea','so sew','some sum','here hear','would wood','whole hole','its it\'s','your you\'re',
   'not knot','i eye','made maid','wait weight','been bin','sun son','tail tale','mail male','road rode','rain rein','feet feat',
   'meet meat','week weak','pair pear','flour flower','night knight','dear deer','where wear'].map(g=>g.split(' '));
 const sameSound=w=>{const k=String(w).toLowerCase();return SAMESOUND.filter(g=>g.includes(k)).flat().filter(x=>x!==k)};
@@ -6643,8 +6644,8 @@ const PATHS={
   {id:'r_abc',g:-1,n:'ABC Beach',e:'🏖️',c:'#e0f2fe',nodes:[['abc',1,'Big Letters'],['abc',2,'Little Letters'],['trace',2,'Trace Big Letters'],['abc',3,'Match Big & Little'],['syl',1,'Clap the Syllables'],['trace',3,'Trace Little Letters'],['abc',4,'ABC Order']]},
   {id:'r_meadow',g:0,n:'Letter Meadow',e:'🌻',c:'#dcfce7',nodes:[['sound',1,'First Sounds'],['sight',1,'Sight Words'],['rhyme',1,'Rhyme Time'],['sound',3,'Middle Sounds'],['pic',1,'Picture Words'],['sound',2,'Last Sounds'],['build',1,'Build a Word'],['sent',1,'Read & Match']]}, // R-01r: Middle Sounds before the child reads and builds CVC words
   {id:'r_candy',g:1,n:'Candy Canyon',e:'🍭',c:'#fce7f3',nodes:[['sight',2,'More Sight Words'],['rhyme',2,'Rhyme & Read'],['pic',2,'Blends'],['build',2,'Build Blends'],['sent',2,'Read Sentences'],['comp',1,'Story Time'],['sound',4,'Letter Teams'],['syl',2,'Count the Claps'],['spell',1,'Spell Short Words']]},
-  {id:'r_reef',g:1,n:'Ocean Reef',e:'🐠',c:'#e0f2fe',nodes:[['sight',3,'Sight Words 3'],['pic',3,'Magic E'],['build',3,'Build Magic E'],['comp',2,'Story Time 2'],['spell',2,'Spell Blends'],['vocab',1,'Opposites'],['gram',1,'Capitals & End Marks']]},
-  {id:'r_space',g:2,n:'Space Station',e:'🚀',c:'#ede9fe',nodes:[['pic',4,'Vowel Teams'],['build',4,'Build Vowel Teams'],['sight',4,'Sight Words 4'],['pic',5,'Bossy R'],['build',5,'Build Bossy R'],['spell',3,'Spell Magic E & Teams'],['sent',3,'Build Sentences']]},
+  {id:'r_reef',g:1,n:'Ocean Reef',e:'🐠',c:'#e0f2fe',nodes:[['sight',3,'Sight Words 3'],['pic',3,'Silent E'],['build',3,'Build Silent E'],['comp',2,'Story Time 2'],['spell',2,'Spell Blends'],['vocab',1,'Opposites'],['gram',1,'Capitals & End Marks']]},
+  {id:'r_space',g:2,n:'Space Station',e:'🚀',c:'#ede9fe',nodes:[['pic',4,'Vowel Teams'],['build',4,'Build Vowel Teams'],['sight',4,'Sight Words 4'],['pic',5,'Bossy R'],['build',5,'Build Bossy R'],['spell',3,'Spell Silent E & Teams'],['sent',3,'Build Sentences']]},
   {id:'r_workshop',g:2,n:'Word Workshop',e:'🔧',c:'#fef3c7',nodes:[['sight',5,'Sight Words 5'],['pic',6,'Vowel Teams 2'],['build',6,'Build Vowel Teams 2'],['gram',2,'Parts of Speech'],['vocab',2,'Synonyms'],['sent',4,'Fill the Gap'],['vocab',3,'Compound Words'],['gram',3,'Plurals'],['sent',5,'Sentence Stories'],['comp',3,'Read a Story'],['info',1,'Learn About It']]},
   {id:'r_summit',g:3,n:'Story Summit',e:'🏔️',c:'#e2e8f0',nodes:[['spell',4,'Spell Tricky Sounds'],['gram',4,'Verb Tenses'],['vocab',4,'Prefixes'],['gram',5,'Contractions & Agreeing'],['vocab',5,'Suffixes'],['comp',4,'Read a Story 2'],['info',2,'Learn About It 2']]},
   {id:'r_library',g:4,n:'Dragon Library',e:'🐉',c:'#fee2e2',nodes:[['spell',5,'Spell Word Parts'],['gram',6,'Pronouns & Look-Alikes'],['vocab',6,'Homophones'],['vocab',7,'Context Clues'],['gram',7,'Commas & Quotes'],['vocab',8,'Figurative Language'],['comp',5,'Read a Story 3'],['info',3,'Learn About It 3']]},
@@ -6776,7 +6777,7 @@ migrate(); /* save upgrades (MIGRATIONS in 00-core.js) run here: the first place
 for(const p in PATHS)S.maps[p]=S.maps[p]||{};
 const nInfo=n=>n.sk=='boss'?{e:n.boss[0],area:'boss'}:SK[n.sk]&&SK[n.sk].lvArea?Object.assign({},SK[n.sk],{area:skArea(n.sk,n.lv)}):SK[n.sk];
 const SHOP={hat:[['🧢',10],['🎀',10],['🎩',20],['⛑️',25],['🎓',40],['👑',60]],
- toy:[['🎈',10],['🍭',10],['⚽',15],['🧸',20],['🪁',30],['🪄',45],['🏆',80]],
+ toy:[['🎈',10],['🍭',10],['⚽',15],['🧸',20],['🪁',30],['🪀',45],['🏆',80]],
  scene:[['meadow',0,'🌻','linear-gradient(135deg,#fef3c7,#fde68a)','Meadow'],['beach',30,'🏖️','linear-gradient(180deg,#bae6fd,#fef3c7 75%)','Beach'],['candy',40,'🍭','linear-gradient(135deg,#fbcfe8,#ddd6fe)','Candy'],
   ['rainbow',40,'🌈','linear-gradient(135deg,#fecaca,#fde68a,#bbf7d0,#bfdbfe,#ddd6fe)','Rainbow'],['space',50,'🌌','linear-gradient(135deg,#1e1b4b,#581c87)','Space'],['castle',60,'🏰','linear-gradient(135deg,#fae8ff,#c7d2fe)','Castle']]};
 const sceneOf=()=>SHOP.scene.find(x=>x[0]==S.wear.scene)||SHOP.scene[0];
@@ -7417,7 +7418,7 @@ function setup() {
   $('#go').onclick = () => {
     const n = $('#nm').value.trim();
     if (!n) { fb('Type your name first!', 'warn'); SFX.wrong(); $('#nm').focus(); return; }
-    S.name = n; S.pet = pet; S.petName = $('#pn').value.trim(); setGrade(grade); SFX.magic(); home(true);
+    S.name = n; S.pet = pet; S.petName = $('#pn').value.trim(); setGrade(grade); SFX.chime(); home(true);
   };
 }
 
@@ -7685,7 +7686,7 @@ function home(first){
   <div class="scroll hm" id="hs"><div class="hm-cols">
    <div class="hm-col">${spkStarHTML()}${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('target', 26)}<span>Today's missions</span></h2>${hmMissions()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}${hmDaily()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
-   <p class="hm-ver">${ico('star', 16)}<span>Star School ${RELEASE} (build v167)</span></p></div>`);
+   <p class="hm-ver">${ico('star', 16)}<span>Star School ${RELEASE} (build v168)</span></p></div>`);
   music(true);
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'heart');
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
@@ -8377,7 +8378,7 @@ TR.passDone = c => {
   void dn.getBoundingClientRect();
   dn.classList.add('pop');
   if (c.pass + 1 < c.passes.length) {
-    SFX.magic();
+    SFX.chime();
     TR.later(c, () => TR.startPass(c, c.pass + 1), 1000);
   } else TR.later(c, () => TR.finish(c), 450);
 };
@@ -8537,7 +8538,7 @@ function shopBuy(it, btn) {
     if (t == 'scene') S.wear.scene = it[0]; else S.wear[t] = it[0];
     shopSel = it[0];
     save();
-    SFX.coin(0); setTimeout(() => SFX.coin(4), 120); setTimeout(() => SFX.magic(), 260);
+    SFX.coin(0); setTimeout(() => SFX.coin(4), 120); setTimeout(() => SFX.chime(), 260);
     shop();
     const c = $('#coinc');
     if (c) { c.classList.add('bump'); }
@@ -9355,7 +9356,7 @@ function finish(){
     const live=()=>f.isConnected;let t=0;
     // P4-17: every sticker, row and card goes in at once, hidden in its place (.rw-wait), and is shown in turn: nothing on the screen moves
     const add=(id,h)=>{const c=$('#'+id);c.insertAdjacentHTML('beforeend',h);const e=c.lastElementChild;e.classList.add('rw-wait');return e};
-    prizes.forEach((pz,k)=>{const e=add('prz',RW.sticker(pz.s,pz.isNew,k));setTimeout(()=>{if(!live())return;e.classList.remove('rw-wait');SFX.magic()},t);t+=600});
+    prizes.forEach((pz,k)=>{const e=add('prz',RW.sticker(pz.s,pz.isNew,k));setTimeout(()=>{if(!live())return;e.classList.remove('rw-wait');SFX.chime()},t);t+=600});
     for(let i=0;i<sc;i++){setTimeout(()=>{if(!live())return;RW.count(i+1);SFX.coin(i)},t);t+=150}
     setTimeout(()=>{if(!live())return;const d=$('#btns');d.style.visibility='visible';d.classList.add('on');
       $('#bonus').onclick=()=>balloons(g.mix||g.boss||g.test?(p||pick(['math','read','es'])):skArea(g.sk,g.lv),g);
@@ -9372,7 +9373,7 @@ function finish(){
     if(newPass&&nextI>=0)M('map',`Next stop unlocked: ${esc(NODES[p][nextI].t)}!`,'fanfare','win');
     if(wDone)M('trophy',`You finished ${esc(PATHS[p].worlds[nd.wi].n)}! +20 coins`,'fanfare','win',1);
     if(g.boss){const nm=esc(g.boss.name);g.won?M(RW.boss(g.boss.name,'hit')||'crown',`You beat ${nm}!`,'fanfare','win boss'):M(RW.boss(g.boss.name)||'heart',`${nm} got away! Try again, you can beat it!`,null,'boss')}
-    if(prize)M('gift',`New costume for ${esc(petN())}: ${RW.badge(prize)}`,'magic','win');
+    if(prize)M('gift',`New costume for ${esc(petN())}: ${RW.badge(prize)}`,'chime','win');
     if(g.test&&testOk)M('bolt',`You tested out of ${esc(PATHS[p].worlds[g.test.wi].n)}!`,'fanfare','win');
     mi.won.forEach(w=>M('target',`Mission done: ${esc(MIS.title(w.x))}!`,'fanfare','win'));
     if(mission)M('calendar','All 3 missions done! +5 bonus stars!','fanfare','win');
@@ -9383,7 +9384,7 @@ function finish(){
 }
 function growShow(before){const o=document.createElement('div');o.className='ovl rw-ovl';const hatch=stage(before)==0;
   o.innerHTML=`<div class="rw-card rw-growc">${RW.rays()}<div class="grow">${petArt(before)}</div><h1>${hatch?'Your egg is hatching!':`Whoa! ${esc(petN())} is growing!`}</h1></div>`;document.body.appendChild(o);
-  hatch?SFX.hatch():SFX.rattle();setTimeout(()=>{if(!o.isConnected)return;SFX.magic();
+  hatch?SFX.hatch():SFX.rattle();setTimeout(()=>{if(!o.isConnected)return;SFX.chime();
     o.innerHTML=`<div class="rw-card rw-growc rw-again">${RW.rays()}<div class="grown ${petAura()}">${petHTML()}</div><h1>${stage()>=4?`${esc(petN())} is a SUPER pet!`:hatch?`Meet ${esc(petN())}!`:`${esc(petN())} grew up!`}</h1>`+
       `<div class="rw-acts">${UI.btn('Yay!',{kind:'primary',size:'lg',wide:true,icon:'star',id:'yay'})}</div></div>`;
     RW.burst(o.querySelector('.rw-card'),30);
@@ -9595,7 +9596,7 @@ async function spkCornerFill(){const L=$('#lc-list');if(!L)return;const rs=await
     <span class="lc-b">${UI.btn('Listen',{size:'sm',icon:'play',attrs:`data-lcp="${i}" aria-label="Listen: ${esc(r.es)}, the Spanish then ${nm}"`})}
     <button class="btn soft sm lc-star${r.star?' on':''}" data-lcs="${i}" aria-pressed="${!!r.star}" aria-label="${r.star?'Star given for ':'Give a star for '}${esc(r.es)}">${ico('star',24,r.star?'ic-star':'')}<span>${r.star?'Star given':'Star'}</span></button></span></div>`).join('');
   $$('[data-lcp]').forEach(b=>b.onclick=()=>spkCornerPlay(rs[+b.dataset.lcp],b));
-  $$('[data-lcs]').forEach(b=>b.onclick=async()=>{const r=rs[+b.dataset.lcs];if(r.star)return;await spkrStar(r);SFX.magic();
+  $$('[data-lcs]').forEach(b=>b.onclick=async()=>{const r=rs[+b.dataset.lcs];if(r.star)return;await spkrStar(r);SFX.chime();
     fb((S.name||'Your child')+' will see your star on Home.');spkCornerFill()})}
 // the model (the recording of the line, or the tablet's voice), then the child's recording
 function spkCornerPlay(r,btn){if(!r)return;hush();say(r.say||r.es,btn,'es');const t0=Date.now();
@@ -9797,7 +9798,7 @@ function spkGU(kind){SPK.state='gu';SPK.note=1;if(kind=='denied')SPK.deny=1;else
   spkT(()=>spkEnd(false),15000)}
 // leave the step: "I said it!" counts one Spanish thing said today (the mission); a skip counts nothing and is never a miss
 function spkEnd(said){const cb=SPK.done;spkLeave();
-  if(said){const d=day();d.spk=Math.min(99,(d.spk|0)+1);save();SFX.magic();fb(d.spk==SPK.GOAL?'¡Muy bien! 5 Spanish words said today!':'¡Muy bien!')}
+  if(said){const d=day();d.spk=Math.min(99,(d.spk|0)+1);save();SFX.chime();fb(d.spk==SPK.GOAL?'¡Muy bien! 5 Spanish words said today!':'¡Muy bien!')}
   SPK.done=null;if(cb)cb()}
 /* ---------- mastery tracking and in-round adaptation (P1-08; ROADMAP 3.3) ----------
    Saved data: S.mast = {nid: {n, p, ms, d, last, md}}, keyed by stop id nid() = skill + level ('add1'). Optional field:
@@ -10156,7 +10157,7 @@ function race(cat){S.race=S.race||{};const best=S.race[cat]||0;
   setTimeout(()=>{fb('Ready… GO!','zap');SFX.fanfare();rq()},300);
   RC.iv=setInterval(()=>{if(!RC||document.hidden)return;RC.left--; // R-01b: the clock stops while the app is hidden, like Fact Sprint'sGFX.bar($('#rbar'),RC.left/60);if(RC.left<=5&&RC.left>0)SFX.tick();
     if(RC.left<=0){const sc=RC.score,rec=sc>best;stopRace();if(rec)S.race[cat]=sc;const ps=ptRace(cat,sc),coins=raceCoins(sc,rec,ps);S.coins+=coins;if(ps)ptEarn(ps);save();
-      rec&&sc>0?(SFX.fanfare(),confetti(40)):SFX.magic();
+      rec&&sc>0?(SFX.fanfare(),confetti(40)):SFX.chime();
       const o=GFX.endCard({rec:rec&&sc>0,title:`${sc} in 60 seconds!`,best:`Your best: ${best}`,
         earn:ps?`${ico('coin',28,'ic-coin')}<span>+${coins}</span>${ico('ticket',28)}<span>+1 min of game time</span>`:sc>=5?`<span>Free practice: the first race each day pays</span>`:'<span>Get 5 right to earn coins and game time</span>',
         btns:UI.btn('Race again',{kind:'primary',size:'lg',wide:true,icon:'replay',id:'ragain'})+UI.btn('Home',{icon:'home',wide:true,id:'rhome'})});
@@ -10729,7 +10730,7 @@ function fluPlay(set, mode) {
     if (earned) ptEarn(earned);
     const mis = MIS.pay(MIS.done({k: 'sprint'})); // P5-08
     save();
-    rec ? (SFX.fanfare(), confetti(40)) : SFX.magic();
+    rec ? (SFX.fanfare(), confetti(40)) : SFX.chime();
     fluEnd({set, mode, key, timed, sec, right, rec, earned, mis});
   };
 
@@ -11493,7 +11494,7 @@ const BT = {
     sh.el.classList.add('bt-nbs');
     sh.el.querySelector('#btok').onclick = sh.close;
     sh.el.querySelector('#btsee').onclick = () => { sh.close(); BT.badgeView(() => BT.hub()); };
-    SFX.magic();
+    SFX.chime();
     if (S.voice) say((xs.length > 1 ? 'New badges! ' : 'New badge! ') + BT.badgeNames(xs));
   },
   badgeNames(xs) { return xs.length > 4 ? xs.slice(0, 3).map(x => x.name).join(', ') + ` and ${xs.length - 3} more` : xs.map(x => x.name).join(', '); },
@@ -11663,7 +11664,7 @@ const BT = {
         `<div class="rw-two">${UI.btn('Again', { icon: 'replay', id: 'btagain' })}${UI.btn('Levels', { icon: 'puzzle', id: 'btlvls' })}</div>` });
     card.classList.add('bt-win');
     document.body.appendChild(card);
-    (o.stars == 3 ? SFX.fanfare : SFX.magic)();
+    (o.stars == 3 ? SFX.fanfare : SFX.chime)();
     RW.burst(card.querySelector('.rw-card'), o.stars == 3 ? 30 : 16);
     if (S.voice) say((o.stars == 3 ? 'Perfect!' : 'You solved it!') + (nb ? ' And a new badge: ' + BT.badgeNames(o.badges) + '!' : ''));
     if (o.grew) setTimeout(() => { if (card.isConnected) growShow(o.before); }, 1200);
@@ -11711,7 +11712,7 @@ function aboutCard(){
     `<p class="gw-p">Star School is offline practice in math, reading and Spanish for children, with game time earned by learning. It has no accounts, no ads and no tracking.</p>
     <p class="gw-note">${ico('lock',22)}<span>It works without internet once it has loaded. Progress is stored only on this device. Nothing is sent anywhere.</span></p>
     <p class="gw-note" id="ab-spk">${ico('mic',22)}<span>Spanish “Say it!” recordings stay on this tablet and are deleted automatically (after 1 day, or as you choose in the Listening corner). Nothing is sent. Speech recognition is used only when the tablet can do it on the device itself.</span></p>
-    <div class="gw-log ab-ver"><div><b>Version</b> <span id="ab-rel">${RELEASE}</span></div><div><b>Build</b> <span id="ab-build">v167</span></div></div>
+    <div class="gw-log ab-ver"><div><b>Version</b> <span id="ab-rel">${RELEASE}</span></div><div><b>Build</b> <span id="ab-build">v168</span></div></div>
     <h3 class="gw-h3">${ico('doc',22,'ic-brand')}<span>Licences</span></h3>
     <p class="gw-p ab-lic-line"><b>Andika</b> (the lettering in the app), Copyright (c) 2004-2022 SIL International. Licensed under the SIL Open Font License 1.1 (openfontlicense.org).</p>
     <p class="gw-sub ab-lic-line">Everything else (pictures, icons, sounds, games and questions) was made for Star School. No other fonts, libraries or outside files are used.</p>
@@ -11767,7 +11768,7 @@ function grown(){let armed=false;
     {sub:'Rounds played and first-try accuracy for every skill on the maps, with the questions missed most.'})}
   ${GW.card('gw-how','info','How it works',`<p class="gw-p">Each subject has its own map. Getting 7 of 10 right opens the next stop (8 earns 2 stars, 10 earns 3), and each world stretches further. Missed questions come back at the end of a round, in later rounds, in Daily Review and in the Tricky Mix. Each right answer earns a star (the pet grows) and a coin (spent in the shop). Everything is saved on this tablet only.</p>`)}
   <details class="gw-card gw-det" id="applog"><summary class="gw-h"><span class="gw-hi">${ico('doc',24)}</span><span>App log</span>${ico('chevron-right',22,'chev')}</summary><div class="gw-log">
-   <div><b>Version</b> ${RELEASE} (build v167)</div><div><b>Save size</b> ${(JSON.stringify(S).length/1024).toFixed(1)} KB</div>
+   <div><b>Version</b> ${RELEASE} (build v168)</div><div><b>Save size</b> ${(JSON.stringify(S).length/1024).toFixed(1)} KB</div>
    ${PRF.logLine()}<div><b>Storage</b> ${SAVE_FAILED?'<span class="gw-bad">could not save (device storage may be full)</span>':'saving OK'}</div>
    ${SAVE_CORRUPT?'<div class="gw-bad">The old save could not be read. A fresh start was made and the old data was kept on the device.</div>':''}
    <div><b>Last errors</b> ${(S.err||[]).length?'<ul class="gw-errs">'+(S.err||[]).slice().reverse().map(e=>'<li><span>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+'</span> '+esc(e.msg)+'</li>').join('')+'</ul>':'none'}</div></div></details>
@@ -11844,12 +11845,12 @@ const BAK = {
   make(id) {
     const d = id && id !== PRF.cur ? PRF.up(PRF.get(PRF.key(id))) : S;
     if (!d) return '';
-    return JSON.stringify({app: BAK.APP, ver: 'v167', save: LATEST, date: new Date().toISOString(), name: d.name || '', data: d});
+    return JSON.stringify({app: BAK.APP, ver: 'v168', save: LATEST, date: new Date().toISOString(), name: d.name || '', data: d});
   },
   // Every child in one file (P5-10)
   makeAll() {
     const kids = PRF.ids.map(id => id === PRF.cur ? S : PRF.up(PRF.get(PRF.key(id)))).filter(Boolean);
-    return JSON.stringify({app: BAK.APP, ver: 'v167', save: LATEST, date: new Date().toISOString(), all: true,
+    return JSON.stringify({app: BAK.APP, ver: 'v168', save: LATEST, date: new Date().toISOString(), all: true,
       kids: kids.map(d => ({name: d.name || '', data: d}))});
   },
   fileName(name) {
@@ -12389,12 +12390,12 @@ function appFiles() {
 }
 // P6-02: the start-up files only; the parts in LAZY_PARTS load later (partsThen below)
 function dataReady() {
-  return appFiles().every(f => LAZY_PARTS.includes(f[0]) || f[1] === 'v167');
+  return appFiles().every(f => LAZY_PARTS.includes(f[0]) || f[1] === 'v168');
 }
 // the Try again screen and one line in the App log: for the start-up files, or (P6-02) for the parts in stems that did not load on demand
 function dataMissing(stems) {
-  logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0])) && f[1] !== 'v167')
-    .map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v167)');
+  logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0])) && f[1] !== 'v168')
+    .map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v168)');
   const again = UI.btn('Try again', { kind: 'primary', size: 'lg', icon: 'replay', id: 'dataretry' });
   view(`<div class="scroll" id="datamiss">${UI.empty('download', 'Star School needs to finish updating. Connect to the internet, then tap Try again.', again)}</div>`);
   $('#dataretry').onclick = () => location.reload();
@@ -12414,15 +12415,15 @@ const LAZY_PARTS = ['games', 'rally', 'games2', 'games3'];
 const partsAsked = {};
 function partReady(stem) {
   const f = appFiles().find(x => x[0] === stem);
-  return !!f && f[1] === 'v167';
+  return !!f && f[1] === 'v168';
 }
 function partLoad(stem) {
   const f = appFiles().find(x => x[0] === stem);
-  if (!f || f[1] === 'v167') return Promise.resolve(!!f);
+  if (!f || f[1] === 'v168') return Promise.resolve(!!f);
   if (f[1] !== null) return Promise.resolve(false); // a file of another release ran: refused
   return partsAsked[stem] || (partsAsked[stem] = new Promise(res => {
     const s = document.createElement('script');
-    s.src = stem + '.v167.js';
+    s.src = stem + '.v168.js';
     s.onload = () => { delete partsAsked[stem]; res(partReady(stem)); };
     s.onerror = () => { delete partsAsked[stem]; s.remove(); res(false); };
     document.body.appendChild(s);
@@ -12447,10 +12448,10 @@ function partsThen(stems, go, o = {}) {
   }), 0));
 }
 </script>
-<script src="gen.v167.js"></script>
-<script src="gen2.v167.js"></script>
-<script src="bt.v167.js"></script>
-<script src="data.v167.js"></script>
+<script src="gen.v168.js"></script>
+<script src="gen2.v168.js"></script>
+<script src="bt.v168.js"></script>
+<script src="data.v168.js"></script>
 <script>
 if (dataReady()) {
   loadClips();

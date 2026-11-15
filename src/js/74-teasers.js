@@ -432,7 +432,7 @@ const BT = {
     sh.el.classList.add('bt-nbs');
     sh.el.querySelector('#btok').onclick = sh.close;
     sh.el.querySelector('#btsee').onclick = () => { sh.close(); BT.badgeView(() => BT.hub()); };
-    SFX.magic();
+    SFX.chime();
     if (S.voice) say((xs.length > 1 ? 'New badges! ' : 'New badge! ') + BT.badgeNames(xs));
   },
   badgeNames(xs) { return xs.length > 4 ? xs.slice(0, 3).map(x => x.name).join(', ') + ` and ${xs.length - 3} more` : xs.map(x => x.name).join(', '); },
@@ -602,7 +602,7 @@ const BT = {
         `<div class="rw-two">${UI.btn('Again', { icon: 'replay', id: 'btagain' })}${UI.btn('Levels', { icon: 'puzzle', id: 'btlvls' })}</div>` });
     card.classList.add('bt-win');
     document.body.appendChild(card);
-    (o.stars == 3 ? SFX.fanfare : SFX.magic)();
+    (o.stars == 3 ? SFX.fanfare : SFX.chime)();
     RW.burst(card.querySelector('.rw-card'), o.stars == 3 ? 30 : 16);
     if (S.voice) say((o.stars == 3 ? 'Perfect!' : 'You solved it!') + (nb ? ' And a new badge: ' + BT.badgeNames(o.badges) + '!' : ''));
     if (o.grew) setTimeout(() => { if (card.isConnected) growShow(o.before); }, 1200);

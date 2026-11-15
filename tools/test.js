@@ -1078,7 +1078,7 @@ run('pictures: picFor fallback and art swap; picture generators use picFor',()=>
   delete ART.zzz;
   const ART0={...ART}; // real drawings (P4-13+) must survive this test
   // the picture generators go through picFor: with a drawing for every word, no word emoji is left in their html
-  const PW=[...CVC,...BLEND,...MAGICE,...TEAMS,...RVW,...VTW];
+  const PW=[...CVC,...BLEND,...SILENTE,...TEAMS,...RVW,...VTW];
   for(const [w] of PW)ART[w]='<rect width="64" height="64"/>';
   for(const sk of ['pic','build'])for(let lv=1;lv<=SK[sk].max;lv++)for(let s=1;s<=60;s++){
     const q=genQ(sk,lv,s);
@@ -1946,7 +1946,7 @@ run('art set A: 40 pictures present, size, allowed elements and attributes, toke
   const css=${JSON.stringify(fs.readFileSync(path.join(SRC,'css','21-art.css'),'utf8'))};
   for(const n of ${JSON.stringify(NAMES)})for(const m of ART[n].match(/--a-[a-z0-9]+/g)||[])if(!css.includes(m+':'))bad.push(n+': '+m+' not defined in 21-art.css');
   // picture-word questions show the drawing, not the emoji, for set A words that are picture words
-  const PW=[...CVC,...BLEND,...MAGICE,...TEAMS,...RVW,...VTW].filter(([w])=>ART[w]&&${JSON.stringify(NAMES)}.includes(w)); // P4-14: set A's own words
+  const PW=[...CVC,...BLEND,...SILENTE,...TEAMS,...RVW,...VTW].filter(([w])=>ART[w]&&${JSON.stringify(NAMES)}.includes(w)); // P4-14: set A's own words
   let shown=0;
   for(const sk of ['pic','build'])for(let lv=1;lv<=SK[sk].max;lv++)for(let s=1;s<=60;s++){
     const q=genQ(sk,lv,s);
@@ -13555,7 +13555,7 @@ run('object art set B P4-14',()=>{
   //    bank pictures (vocabulary, Discover), Spanish art names, riddle and Memory Match pictures, logic-grid pictures
   const used={};
   const use=(w,s)=>{(used[w]=used[w]||new Set()).add(s)};
-  for(const L of [CVC,BLEND,MAGICE,TEAMS,RVW,VTW])for(const x of L)use(x[0],'words');
+  for(const L of [CVC,BLEND,SILENTE,TEAMS,RVW,VTW])for(const x of L)use(x[0],'words');
   for(const o of PK.OBJ)use(o[0],'counting');
   for(const id in BANK)for(const it of BANK[id]||[])if(it&&it.em)use(it.em[0],'bank');
   for(const u of ES_UNITS)for(const it of u.items)if(it[4])use(it[4],'es');
@@ -13564,7 +13564,7 @@ run('object art set B P4-14',()=>{
   for(const c in PUZ.logic.cats)for(const w in PUZ.logic.cats[c].pics||{})use(w,'logic');
   for(const n of BN)if(!used[n])bad.push(n+': no content asks for this picture');
   // 4. the content shows the drawing: picture-word and build-a-word questions for these words
-  const PW=new Set([...CVC,...BLEND,...MAGICE,...TEAMS,...RVW,...VTW].map(x=>x[0]).filter(w=>BN.includes(w)));
+  const PW=new Set([...CVC,...BLEND,...SILENTE,...TEAMS,...RVW,...VTW].map(x=>x[0]).filter(w=>BN.includes(w)));
   let shown=0,asked=new Set();
   for(const sk of ['pic','build'])for(let lv=1;lv<=SK[sk].max;lv++)for(let s=1;s<=120;s++){
     const q=genQ(sk,lv,s),w=q.kind=='build'?q.word:q.ans;
@@ -14091,7 +14091,7 @@ run('Spanish speaking check S-SPK2',()=>{
     {const n=spkcNear('el gato');if(n.length!==3||n.some(s=>spkMatch('el gato',s))||JSON.stringify(n)!==JSON.stringify(spkcNear('el gato')))B('distractors of el gato: '+n);
      out.note.push('el gato is compared with '+n.join(', '))}
     // 5. the listening corner: an in-memory store stands in for IndexedDB (SPKR.all / put / del)
-    loadSave(null);migrate();S.name='Ava';let saved=0;const keep={save,fb,SFX:SFX.magic};save=()=>{saved++};fb=()=>{};
+    loadSave(null);migrate();S.name='Ava';let saved=0;const keep={save,fb,SFX:SFX.chime};save=()=>{saved++};fb=()=>{};
     const mem=new Map();SPKR.all=async()=>[...mem.values()];SPKR.put=async v=>{mem.set(v.id,Object.assign({},v))};SPKR.del=async id=>{mem.delete(id)};
     const blob={size:10},now=Date.now(),D=SPKR.DAY;
     // the pure rule: older than the period or past the newest MAX go; 'never' keeps none
@@ -14372,7 +14372,7 @@ run('object art set C P4-15',()=>{
   //    syllable lists), counting objects, bank pictures (vocabulary, Discover), Spanish art names, riddle, Memory Match and logic pictures
   const used={};
   const use=(w,s)=>{(used[w]=used[w]||new Set()).add(s)};
-  for(const L of [CVC,BLEND,MAGICE,TEAMS,RVW,VTW,DIGR,SYLP])for(const x of L)use(x[0],'words');
+  for(const L of [CVC,BLEND,SILENTE,TEAMS,RVW,VTW,DIGR,SYLP])for(const x of L)use(x[0],'words');
   for(const o of PK.OBJ)use(o[0],'counting');
   for(const id in BANK)for(const it of BANK[id]||[])if(it&&it.em)use(it.em[0],'bank');
   for(const u of ES_UNITS)for(const it of u.items)if(it[4])use(it[4],'es');
@@ -14384,7 +14384,7 @@ run('object art set C P4-15',()=>{
   for(const u of ES_UNITS)for(const it of u.items)if(it[4]&&!ART[it[4]])bad.push('es_'+u.id+' '+it[1]+': art name '+it[4]+' has no drawing');
   for(const id in BANK)for(const it of BANK[id]||[])if(it&&it.em&&CN.includes(it.em[0])&&picFor(it.em[0],it.em[1])!==picArt(it.em[0]))bad.push(id+': picture '+it.em[0]+' does not show the drawing');
   // 4. the content shows the drawing: picture-word, build-a-word, digraph and syllable questions for these words
-  const PW=new Set([...CVC,...BLEND,...MAGICE,...TEAMS,...RVW,...VTW,...DIGR,...SYLP].map(x=>x[0]).filter(w=>CN.includes(w)));
+  const PW=new Set([...CVC,...BLEND,...SILENTE,...TEAMS,...RVW,...VTW,...DIGR,...SYLP].map(x=>x[0]).filter(w=>CN.includes(w)));
   let shown=0,asked=new Set();
   for(const sk of ['pic','build','dig','syl'])if(SK[sk])for(let lv=1;lv<=SK[sk].max;lv++)for(let s=1;s<=120;s++){
     const q=genQ(sk,lv,s),w=q.kind=='build'?q.word:(q.after||q.ans);
@@ -15745,10 +15745,10 @@ run('reading review fixes R-01r',()=>{
     // 2. spelling rules for made-up strings
     for(const w of ['snakb','cnake','socb','bgg','pih','nuj','cnt','bpoon','cpoon','crah','vrab','pif'.replace('f','h'),'flowouo','tbe','oi'])
       if(ksLegal(w))bad('ksLegal accepts the impossible spelling '+w);
-    for(const L of [CVC,BLEND,MAGICE,TEAMS,RVW,VTW,DIGR,SYLP,CVCM])for(const x of L)if(!ksLegal(x[0]))bad('ksLegal refuses the real word '+x[0]);
+    for(const L of [CVC,BLEND,SILENTE,TEAMS,RVW,VTW,DIGR,SYLP,CVCM])for(const x of L)if(!ksLegal(x[0]))bad('ksLegal refuses the real word '+x[0]);
     for(const w of ['bird','bard','berd','burd','cake','kite','boat','boot','flowar','jewel'])if(!ksLegal(w))bad('ksLegal refuses '+w);
     // 3. picture words 1-4: wrong choices come from the checked real-word sets only
-    const PW=[CVC,BLEND,MAGICE,TEAMS];
+    const PW=[CVC,BLEND,SILENTE,TEAMS];
     for(const L of PW)for(const [w] of L){
       const d=PWC[w];
       if(!d||d.length<3||new Set(d).size!==d.length||d.includes(w)){bad('PWC '+w+': needs 3 or more different wrong words');continue}
@@ -15864,7 +15864,7 @@ run('reading review fixes R-01r',()=>{
       if(new RegExp('\\b'+w+'\\b').test(strip(q.html))){bad('sound4 seed '+s+': the word '+w+' is printed');break}
       if(!q.say.startsWith(w+'.')||q.auto!==true){bad('sound4 seed '+s+': the word is not spoken');break}}
     // picture words that named something else are gone from the lists (review 2.4 and Should 13)
-    const ALLW=[CVC,BLEND,MAGICE,TEAMS,RVW,VTW,DIGR].flat().map(x=>x[0]);
+    const ALLW=[CVC,BLEND,SILENTE,TEAMS,RVW,VTW,DIGR].flat().map(x=>x[0]);
     for(const w of ['queen','cube','cone','home','game','vase','farm','arm','chart','burn','morning','down','new','stew','king','moth'])
       if(ALLW.includes(w))bad('picture word '+w+' still shows a picture of something else');
     // 9. small fixes: passages, vocabulary wording, spelling, gram 2 positions, Middle Sounds
@@ -18437,6 +18437,26 @@ run('recorded encouragement EN-PRAISE',()=>{
   if(vm.runInContext("PRF.SHARED.includes('cheerV')",ctx))p.push('cheerV must be per child');
   const kb=Math.round(total/1000);
   return{problems:p,note:lines.size+' lines x 6 voices ('+M.voices.map(v=>v[0]).join(', ')+'), '+files.length+' files, '+kb+' KB, largest '+Math.round(big/100)/10+' KB; all audio '+Math.round((esBytes+total)/1000)+' KB (budget '+AUDIO_FAIL/1e6+' MB)'+(esBytes+total>AUDIO_WARN?'  WARN: over '+AUDIO_WARN:'')};
+});
+
+// CONTENT-01: the parent asked for no magic or spells theme and no evolution questions or themes. Every file in src/ (code,
+// data, CSS, comments) is searched, so nothing of either comes back. "Spell" as in spelling words is fine; "switch" is not "witch".
+run('content: no magic or evolution theme CONTENT-01',()=>{
+  const E=require('./es-audio.js'),vm=require('vm');
+  const BADW=/\b(magic\w*|wizards?|witch(es|craft)?|wands?|potions?|sorcer\w*|enchant\w*|spellbooks?|unicorns?|fairy|fairies|genies?|warlocks?|evolv\w*|evolution\w*|natural selection|common ancestors?|millions? of years|billions? of years)\b|cast(s|ing)? a spell|under a spell/i;
+  const p=[];let n=0;
+  const walk=d=>{for(const f of fs.readdirSync(d)){const q=path.join(d,f);if(fs.statSync(q).isDirectory()){walk(q);continue}if(!/\.(js|css|html)$/.test(f))continue;n++;
+    fs.readFileSync(q,'utf8').split('\n').forEach((l,i)=>{const m=l.match(BADW);if(m)p.push(path.relative(ROOT,q)+':'+(i+1)+' "'+m[0]+'"')})}};
+  walk(SRC);
+  const em=['\u{1FA84}','\u{1F984}','\u{1F9D9}','\u{1F9DA}','\u{1F52E}','\u{1F9DE}']; // wand, unicorn, mage, fairy, crystal ball, genie
+  for(const d of ['js','data'])for(const f of fs.readdirSync(path.join(SRC,d))){const x=fs.readFileSync(path.join(SRC,d,f),'utf8');for(const e of em)if(x.includes(e))p.push('src/'+d+'/'+f+': emoji U+'+e.codePointAt(0).toString(16).toUpperCase())}
+  // old saves: the wand toy and the unicorn sticker move to the yo-yo and the fish, kept by whoever had them
+  try{const ctx=E.loadApp(null);const R=x=>vm.runInContext(x,ctx);
+    R("loadSave(null);S.owned={'\u{1FA84}':1};S.wear.toy='\u{1FA84}';S.stickers={'\u{1F984}':2,'\u{1F420}':1};migrate()");
+    if(R("JSON.stringify([S.owned,S.wear.toy,S.stickers])")!==JSON.stringify([{'\u{1FA80}':1},'\u{1FA80}',{'\u{1F420}':3}]))p.push('old save not moved: '+R("JSON.stringify([S.owned,S.wear.toy,S.stickers])"));
+    if(!R("SHOP.toy.some(t=>t[0]=='\u{1FA80}')&&!!WEAR['\u{1FA80}']&&WEAR_NAME['\u{1FA80}']=='Yo-yo'"))p.push('the yo-yo is not in the shop with its drawing and name');
+  }catch(e){p.push('save check could not run: '+String(e.message||e).split('\n')[0])}
+  return{problems:p,note:n+' files searched'};
 });
 
 // ---- report ----

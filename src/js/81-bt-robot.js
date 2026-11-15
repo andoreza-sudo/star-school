@@ -772,7 +772,7 @@ RB.mount = (el, p, api) => {
     if (tr.out == 'win') {
       won = true;
       playClass('hop');
-      api.sfx.magic();
+      api.sfx.chime();
       const over = cnt() > p.par;
       render();
       msg(over ? `You made it with ${cnt()} blocks! It can be done with ${p.par}.` : 'You made it!', 'good', true);

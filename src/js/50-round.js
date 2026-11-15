@@ -180,7 +180,7 @@ function finish(){
     const live=()=>f.isConnected;let t=0;
     // P4-17: every sticker, row and card goes in at once, hidden in its place (.rw-wait), and is shown in turn: nothing on the screen moves
     const add=(id,h)=>{const c=$('#'+id);c.insertAdjacentHTML('beforeend',h);const e=c.lastElementChild;e.classList.add('rw-wait');return e};
-    prizes.forEach((pz,k)=>{const e=add('prz',RW.sticker(pz.s,pz.isNew,k));setTimeout(()=>{if(!live())return;e.classList.remove('rw-wait');SFX.magic()},t);t+=600});
+    prizes.forEach((pz,k)=>{const e=add('prz',RW.sticker(pz.s,pz.isNew,k));setTimeout(()=>{if(!live())return;e.classList.remove('rw-wait');SFX.chime()},t);t+=600});
     for(let i=0;i<sc;i++){setTimeout(()=>{if(!live())return;RW.count(i+1);SFX.coin(i)},t);t+=150}
     setTimeout(()=>{if(!live())return;const d=$('#btns');d.style.visibility='visible';d.classList.add('on');
       $('#bonus').onclick=()=>balloons(g.mix||g.boss||g.test?(p||pick(['math','read','es'])):skArea(g.sk,g.lv),g);
@@ -197,7 +197,7 @@ function finish(){
     if(newPass&&nextI>=0)M('map',`Next stop unlocked: ${esc(NODES[p][nextI].t)}!`,'fanfare','win');
     if(wDone)M('trophy',`You finished ${esc(PATHS[p].worlds[nd.wi].n)}! +20 coins`,'fanfare','win',1);
     if(g.boss){const nm=esc(g.boss.name);g.won?M(RW.boss(g.boss.name,'hit')||'crown',`You beat ${nm}!`,'fanfare','win boss'):M(RW.boss(g.boss.name)||'heart',`${nm} got away! Try again, you can beat it!`,null,'boss')}
-    if(prize)M('gift',`New costume for ${esc(petN())}: ${RW.badge(prize)}`,'magic','win');
+    if(prize)M('gift',`New costume for ${esc(petN())}: ${RW.badge(prize)}`,'chime','win');
     if(g.test&&testOk)M('bolt',`You tested out of ${esc(PATHS[p].worlds[g.test.wi].n)}!`,'fanfare','win');
     mi.won.forEach(w=>M('target',`Mission done: ${esc(MIS.title(w.x))}!`,'fanfare','win'));
     if(mission)M('calendar','All 3 missions done! +5 bonus stars!','fanfare','win');
@@ -208,7 +208,7 @@ function finish(){
 }
 function growShow(before){const o=document.createElement('div');o.className='ovl rw-ovl';const hatch=stage(before)==0;
   o.innerHTML=`<div class="rw-card rw-growc">${RW.rays()}<div class="grow">${petArt(before)}</div><h1>${hatch?'Your egg is hatching!':`Whoa! ${esc(petN())} is growing!`}</h1></div>`;document.body.appendChild(o);
-  hatch?SFX.hatch():SFX.rattle();setTimeout(()=>{if(!o.isConnected)return;SFX.magic();
+  hatch?SFX.hatch():SFX.rattle();setTimeout(()=>{if(!o.isConnected)return;SFX.chime();
     o.innerHTML=`<div class="rw-card rw-growc rw-again">${RW.rays()}<div class="grown ${petAura()}">${petHTML()}</div><h1>${stage()>=4?`${esc(petN())} is a SUPER pet!`:hatch?`Meet ${esc(petN())}!`:`${esc(petN())} grew up!`}</h1>`+
       `<div class="rw-acts">${UI.btn('Yay!',{kind:'primary',size:'lg',wide:true,icon:'star',id:'yay'})}</div></div>`;
     RW.burst(o.querySelector('.rw-card'),30);

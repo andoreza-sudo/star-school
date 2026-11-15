@@ -210,13 +210,12 @@ Which can slow erosion on a hillside?|planting grass and trees|cutting down all 
 A glacier is a slow-moving river of ___.|ice|sand;lava;mud|erosion||Think about a very cold place where snow piles up for years and slowly squeezes into something solid.
 Sand dunes in a desert are shaped by ___.|wind|volcanoes;glaciers;the Moon|erosion
 Resources that can be used again and again, like sunlight and wind, are ___.|renewable|nonrenewable;plastic;extinct|resources
-Coal, oil and natural gas take millions of years to form, so they are ___ resources.|nonrenewable|renewable;endless;new|resources
+Coal, oil and natural gas cannot be made again once they are used up, so they are ___ resources.|nonrenewable|renewable;endless;new|resources
 Which energy source is renewable?|wind|coal;oil;natural gas|resources
 Which of these is a natural resource?|water|a car;a phone;a bicycle|resources
 Using less and not wasting a resource is called ___.|conservation|pollution;erosion;evaporation|resources
 Trees cut for wood can be replaced by planting new ones, so wood can be a ___ resource.|renewable|nonrenewable;useless;endless|resources
 Reduce, reuse and ___ are three ways to help the Earth.|recycle|remove;replace;repeat|resources
-Oil and coal formed from plants and animals that lived ___.|millions of years ago|last year;last week;yesterday|resources
 Solar panels change sunlight into ___.|electricity|rain;rocks;sound|resources
 Dirty air, water or land is called ___.|pollution|conservation;erosion;weather|resources
 The Moon shines because it ___ light from the Sun.|reflects|makes;eats;hides|moonphase

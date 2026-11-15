@@ -102,7 +102,7 @@ function shopBuy(it, btn) {
     if (t == 'scene') S.wear.scene = it[0]; else S.wear[t] = it[0];
     shopSel = it[0];
     save();
-    SFX.coin(0); setTimeout(() => SFX.coin(4), 120); setTimeout(() => SFX.magic(), 260);
+    SFX.coin(0); setTimeout(() => SFX.coin(4), 120); setTimeout(() => SFX.chime(), 260);
     shop();
     const c = $('#coinc');
     if (c) { c.classList.add('bump'); }

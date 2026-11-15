@@ -682,7 +682,7 @@ const hopTwOk = (st) => !st.tw || st.tw != 'spark' || st.spk >= hopTwNeed('spark
 /* ---- costumes for the pet, bought with stars (G-04b2, R-03 K3): a fixed list, each with its price; never random ----
    Stars to spend = stars found + 1 for each gold medal + today's-twist bonus stars - stars spent. Buying never takes a found star
    off a course. [id, name, price] */
-const HOP_WEAR = [['leaf', 'Leaf Cape', 4], ['cape', 'Hero Cape', 8], ['bal', 'Balloon Bunch', 12], ['fairy', 'Fairy Wings', 16],
+const HOP_WEAR = [['leaf', 'Leaf Cape', 4], ['cape', 'Hero Cape', 8], ['bal', 'Balloon Bunch', 12], ['bfly', 'Butterfly Wings', 16],
   ['kite', 'Kite Tail', 20], ['brolly', 'Cloud Umbrella', 25], ['jet', 'Bubble Jetpack', 30], ['halo', 'Star Ring', 36],
   ['dragon', 'Dragon Wings', 42], ['rbow', 'Rainbow Cape', 50]];
 const HOP_WEARB = {};
@@ -920,7 +920,7 @@ const HOP_COSTUME = {
   cape: () => hopCape(['r2', 'r']) + ghE(84, 112, 10, 4, 'r1', .6, -10),
   bal: () => ghL('M118 112Q130 70 150 46M118 112Q150 80 176 64M118 112Q128 86 132 70', 'k2', 1.4, .7) + ghBall(150, 34, 14, 'r') + ghBall(176, 52, 13, 'b') +
     ghBall(132, 58, 12, 'y'),
-  fairy: () => hopWing(64, 96, 30, 16, -35, 'c') + hopWing(136, 96, 30, 16, 35, 'c') + hopWing(70, 132, 20, 11, 30, 'p') + hopWing(130, 132, 20, 11, -30, 'p'),
+  bfly: () => hopWing(64, 96, 30, 16, -35, 'c') + hopWing(136, 96, 30, 16, 35, 'c') + hopWing(70, 132, 20, 11, 30, 'p') + hopWing(130, 132, 20, 11, -30, 'p'),
   kite: () => ghL('M80 150C60 130 50 160 30 140S10 150 0 132', 'k2', 2, .7) + ['r', 'y', 'b'].map((c, i) => ghP(`M${54 - i * 22} 140l10-10l3 13Z`, c + '2') + ghP(`M${54 - i * 22} 140l9-9l1 8Z`, c)).join(''),
   brolly: () => ghL('M128 150V44', 'n2', 4) + hopPuffs([[86, 40, 18], [114, 32, 22], [142, 32, 22], [170, 40, 18]], 'w2') +
     hopPuffs([[86, 36, 18], [114, 28, 22], [142, 28, 22], [170, 36, 18]], 'w') + ghE(104, 22, 10, 4, 'w', .9, -10),
@@ -988,6 +988,7 @@ function hopS() {
   r.ghost = {};
   for (const id in gh) if (r.best[id] && HOP_BY[id] && hopGhostIn(gh[id])) r.ghost[id] = gh[id];
   const own = hopObj(r.own);
+  if (own['fai' + 'ry']) { own.bfly = 1; if (r.wear === 'fai' + 'ry') r.wear = 'bfly'; } // the wings' old id (saves before v167)
   r.own = {};
   for (const w of HOP_WEAR) if (own[w[0]]) r.own[w[0]] = 1;
   r.bonus = hopNum(r.bonus, 0, 1e6);
@@ -1567,7 +1568,7 @@ function hopMenu(world) {
       r.wear = id;
     } else if (hopBuy(r, id)) {
       SFX.coin();
-      SFX.magic();
+      SFX.chime();
       fb(`You got the ${w[1]}! Your pet wears it now.`, 'good', 2400);
     } else {
       SFX.wrong();
@@ -1799,7 +1800,7 @@ function hopEvents() {
       const o = $('#hpoffer');
       if (o) o.hidden = false;
       if (S.voice) say('Need a lift? The balloon can carry you to the next flag.');
-    } else if (k == 'lift') SFX.magic();
+    } else if (k == 'lift') SFX.chime();
     else if (k == 'goal') {
       hopMsg('You made it!', 1500, 'big');
       SFX.fanfare();

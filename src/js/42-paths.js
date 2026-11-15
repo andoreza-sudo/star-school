@@ -21,8 +21,8 @@ const PATHS={
   {id:'r_abc',g:-1,n:'ABC Beach',e:'🏖️',c:'#e0f2fe',nodes:[['abc',1,'Big Letters'],['abc',2,'Little Letters'],['trace',2,'Trace Big Letters'],['abc',3,'Match Big & Little'],['syl',1,'Clap the Syllables'],['trace',3,'Trace Little Letters'],['abc',4,'ABC Order']]},
   {id:'r_meadow',g:0,n:'Letter Meadow',e:'🌻',c:'#dcfce7',nodes:[['sound',1,'First Sounds'],['sight',1,'Sight Words'],['rhyme',1,'Rhyme Time'],['sound',3,'Middle Sounds'],['pic',1,'Picture Words'],['sound',2,'Last Sounds'],['build',1,'Build a Word'],['sent',1,'Read & Match']]}, // R-01r: Middle Sounds before the child reads and builds CVC words
   {id:'r_candy',g:1,n:'Candy Canyon',e:'🍭',c:'#fce7f3',nodes:[['sight',2,'More Sight Words'],['rhyme',2,'Rhyme & Read'],['pic',2,'Blends'],['build',2,'Build Blends'],['sent',2,'Read Sentences'],['comp',1,'Story Time'],['sound',4,'Letter Teams'],['syl',2,'Count the Claps'],['spell',1,'Spell Short Words']]},
-  {id:'r_reef',g:1,n:'Ocean Reef',e:'🐠',c:'#e0f2fe',nodes:[['sight',3,'Sight Words 3'],['pic',3,'Magic E'],['build',3,'Build Magic E'],['comp',2,'Story Time 2'],['spell',2,'Spell Blends'],['vocab',1,'Opposites'],['gram',1,'Capitals & End Marks']]},
-  {id:'r_space',g:2,n:'Space Station',e:'🚀',c:'#ede9fe',nodes:[['pic',4,'Vowel Teams'],['build',4,'Build Vowel Teams'],['sight',4,'Sight Words 4'],['pic',5,'Bossy R'],['build',5,'Build Bossy R'],['spell',3,'Spell Magic E & Teams'],['sent',3,'Build Sentences']]},
+  {id:'r_reef',g:1,n:'Ocean Reef',e:'🐠',c:'#e0f2fe',nodes:[['sight',3,'Sight Words 3'],['pic',3,'Silent E'],['build',3,'Build Silent E'],['comp',2,'Story Time 2'],['spell',2,'Spell Blends'],['vocab',1,'Opposites'],['gram',1,'Capitals & End Marks']]},
+  {id:'r_space',g:2,n:'Space Station',e:'🚀',c:'#ede9fe',nodes:[['pic',4,'Vowel Teams'],['build',4,'Build Vowel Teams'],['sight',4,'Sight Words 4'],['pic',5,'Bossy R'],['build',5,'Build Bossy R'],['spell',3,'Spell Silent E & Teams'],['sent',3,'Build Sentences']]},
   {id:'r_workshop',g:2,n:'Word Workshop',e:'🔧',c:'#fef3c7',nodes:[['sight',5,'Sight Words 5'],['pic',6,'Vowel Teams 2'],['build',6,'Build Vowel Teams 2'],['gram',2,'Parts of Speech'],['vocab',2,'Synonyms'],['sent',4,'Fill the Gap'],['vocab',3,'Compound Words'],['gram',3,'Plurals'],['sent',5,'Sentence Stories'],['comp',3,'Read a Story'],['info',1,'Learn About It']]},
   {id:'r_summit',g:3,n:'Story Summit',e:'🏔️',c:'#e2e8f0',nodes:[['spell',4,'Spell Tricky Sounds'],['gram',4,'Verb Tenses'],['vocab',4,'Prefixes'],['gram',5,'Contractions & Agreeing'],['vocab',5,'Suffixes'],['comp',4,'Read a Story 2'],['info',2,'Learn About It 2']]},
   {id:'r_library',g:4,n:'Dragon Library',e:'🐉',c:'#fee2e2',nodes:[['spell',5,'Spell Word Parts'],['gram',6,'Pronouns & Look-Alikes'],['vocab',6,'Homophones'],['vocab',7,'Context Clues'],['gram',7,'Commas & Quotes'],['vocab',8,'Figurative Language'],['comp',5,'Read a Story 3'],['info',3,'Learn About It 3']]},
@@ -154,7 +154,7 @@ migrate(); /* save upgrades (MIGRATIONS in 00-core.js) run here: the first place
 for(const p in PATHS)S.maps[p]=S.maps[p]||{};
 const nInfo=n=>n.sk=='boss'?{e:n.boss[0],area:'boss'}:SK[n.sk]&&SK[n.sk].lvArea?Object.assign({},SK[n.sk],{area:skArea(n.sk,n.lv)}):SK[n.sk];
 const SHOP={hat:[['🧢',10],['🎀',10],['🎩',20],['⛑️',25],['🎓',40],['👑',60]],
- toy:[['🎈',10],['🍭',10],['⚽',15],['🧸',20],['🪁',30],['🪄',45],['🏆',80]],
+ toy:[['🎈',10],['🍭',10],['⚽',15],['🧸',20],['🪁',30],['🪀',45],['🏆',80]],
  scene:[['meadow',0,'🌻','linear-gradient(135deg,#fef3c7,#fde68a)','Meadow'],['beach',30,'🏖️','linear-gradient(180deg,#bae6fd,#fef3c7 75%)','Beach'],['candy',40,'🍭','linear-gradient(135deg,#fbcfe8,#ddd6fe)','Candy'],
   ['rainbow',40,'🌈','linear-gradient(135deg,#fecaca,#fde68a,#bbf7d0,#bfdbfe,#ddd6fe)','Rainbow'],['space',50,'🌌','linear-gradient(135deg,#1e1b4b,#581c87)','Space'],['castle',60,'🏰','linear-gradient(135deg,#fae8ff,#c7d2fe)','Castle']]};
 const sceneOf=()=>SHOP.scene.find(x=>x[0]==S.wear.scene)||SHOP.scene[0];

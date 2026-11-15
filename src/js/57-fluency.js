@@ -211,7 +211,7 @@ function fluPlay(set, mode) {
     if (earned) ptEarn(earned);
     const mis = MIS.pay(MIS.done({k: 'sprint'})); // P5-08
     save();
-    rec ? (SFX.fanfare(), confetti(40)) : SFX.magic();
+    rec ? (SFX.fanfare(), confetti(40)) : SFX.chime();
     fluEnd({set, mode, key, timed, sec, right, rec, earned, mis});
   };
 

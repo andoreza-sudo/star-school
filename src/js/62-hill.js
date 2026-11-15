@@ -495,7 +495,7 @@ function hcEnd(why){const H=HC;if(!H||H.shown)return;H.shown=true;H.over=true;co
   if(H.st){gs.bolts+=H.bolts;save();if(why=='quit'){stopHC();return hcLevels(H.wi)}return hcStageCard(H,why)}
   const m=Math.floor((H.maxX-60)/20),D=H.day,rec=!D&&m>gs.best[H.w];if(rec)gs.best[H.w]=m;const pay=hcDayPay(H);gs.bolts+=H.bolts;save();
   if(why=='quit'){stopHC();return garage()}
-  const win=(rec&&m>20)||(D&&H.dayHit);win?SFX.fanfare():SFX.magic();
+  const win=(rec&&m>20)||(D&&H.dayHit);win?SFX.fanfare():SFX.chime();
   const dayLine=!D?[]:H.dayHit?[['sparkle',pay?`Today's drive done: plus ${pay} bolts! A new drive comes tomorrow.`:`Today's drive done again! A new drive comes tomorrow.`]]:
     [['target',`Today's gold flag is at ${D.goal} m. Try again: nothing is lost.`]];
   const o=hcGuard(GH.end('hill',{win,title:why=='time'?"Game time's up!":D&&H.dayHit?"Today's drive done!":'Out of gas!',tag:rec&&m>0?'New record!':'',
@@ -509,7 +509,7 @@ function hcEnd(why){const H=HC;if(!H||H.shown)return;H.shown=true;H.over=true;co
   if(o.querySelector('#hlearn'))o.querySelector('#hlearn').onclick=()=>go(()=>home());
   o.querySelector('#hgar').onclick=()=>go(garage)}
 // game time ran out in a stage: bolts kept, no stars lost
-function hcStageCard(H,why){SFX.magic();const C=H.C,m=Math.min(Math.floor((H.maxX-60)/20),Math.floor((C.fin-60)/20)),L=Math.floor((C.fin-60)/20);
+function hcStageCard(H,why){SFX.chime();const C=H.C,m=Math.min(Math.floor((H.maxX-60)/20),Math.floor((C.fin-60)/20)),L=Math.floor((C.fin-60)/20);
   if(S.voice)say(`Game time is up! Let's learn and earn more!`);
   hcCard(H,{title:"Game time's up!",extra:UI.meter(m/L,{lg:true,kind:'good',label:`${m} of ${L} m`}),lines:[['nut',`Your ${H.bolts} bolts are saved.`],['go',`Only <b>${Math.max(0,L-m)} m</b> to the flag next time!`]],
    btns:UI.btn('Earn more game time',{kind:'primary',size:'lg',icon:'path-read',attrs:'data-go="learn"',wide:true})+UI.btn('Stages',{icon:'map',attrs:'data-go="list"',wide:true})})}
@@ -525,7 +525,7 @@ function hcCard(H,c){const o=hcGuard(GH.end('hill',c));const go=f=>{o.remove();s
 function hcAfter(w,i){if(i+1<HC_SPW)return hcSOpen(w,i+1)?[w,i+1]:null;return w+1<HC_ST.length&&hcWOpen(w+1)?[w+1,0]:null}
 function hcWin(){const H=HC;if(!H||H.shown)return;H.shown=true;H.over=true;H.result='win';hcEngOff(H);
   const s=H.st,r=hcBank(H);save();const all=garageS().st[s[0]]||0,stars=hcBits(all),ok=r.bits&1,tm=Math.round(H.t),nx=hcAfter(H.wi,H.si);
-  ok?SFX.fanfare():SFX.magic();if(S.voice)say(!ok?'So close! Try again!':stars==3?'Three stars! Amazing!':'You made it!');
+  ok?SFX.fanfare():SFX.chime();if(S.voice)say(!ok?'So close! Try again!':stars==3?'Three stars! Amazing!':'You made it!');
   const g=s[2],goal=g[0]=='coins'?`Collect ${g[1]} bolts (you got ${H.bolts})`:g[0]=='cargo'?`Carry the crates to the flag (${H.crates} of ${H.crates0})`:'Reach the flag';
   const lines=[[ok?'check-circle':'target',esc(goal)+(r.bits&1&&!(r.old&1)?' <b>New star!</b>':'')],
     ...s[3].map((m,k)=>{const now=r.bits>>(k+1)&1,was=r.old>>(k+1)&1;return[now||was?'check-circle':HC_MIC[m[0]],esc(hcMisText(m)[0].toUpperCase()+hcMisText(m).slice(1))+(now&&!was?' <b>New star!</b>':was?' (done before)':'')]}),
@@ -613,7 +613,7 @@ function hcGarage(){const gs=garageS();
   const again=()=>{const y=$('.scroll').scrollTop;hcGarage();$('.scroll').scrollTop=y};
   $$('[data-v]').forEach(b=>b.onclick=()=>{const k=b.dataset.v,V=VEH[k];if(!gs.vehs[k]){if(gs.bolts<V.cost)return short(b,V.cost);gs.bolts-=V.cost;gs.vehs[k]=1;SFX.fanfare();confetti(30)}else SFX.pop(2);gs.veh=k;save();again()});
   $$('[data-up]').forEach(b=>b.onclick=()=>{const k=b.dataset.up;hcBuyUp(k)?(SFX.fanfare(),confetti(16),again()):short(b,UPCOST[gs.up[k]])});
-  $$('[data-pc]').forEach(b=>b.onclick=()=>{const c=b.dataset.pc,cost=PAINTS.find(x=>x[0]==c)[2];if(!gs.paints[c]){if(gs.bolts<cost)return short(b,cost);gs.bolts-=cost;gs.paints[c]=1;SFX.magic()}else SFX.pop(2);gs.paint=c;save();again()})}
+  $$('[data-pc]').forEach(b=>b.onclick=()=>{const c=b.dataset.pc,cost=PAINTS.find(x=>x[0]==c)[2];if(!gs.paints[c]){if(gs.bolts<cost)return short(b,cost);gs.bolts-=cost;gs.paints[c]=1;SFX.chime()}else SFX.pop(2);gs.paint=c;save();again()})}
 // buy the next level of an upgrade with bolts: true when bought (never below 0 bolts, never above level 5)
 function hcBuyUp(k){const gs=garageS(),lv=gs.up[k];if(!(lv<5)||gs.bolts<UPCOST[lv])return false;gs.bolts-=UPCOST[lv];gs.up[k]=lv+1;save();return true}
 // G-HC3: a level 2 item: buy it (and use it), use it, or take it off. 'locked' | 'short' | 'bought' | 'on' | 'off'

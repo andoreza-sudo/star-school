@@ -602,7 +602,7 @@ TG.mount = function (el, p, api) {
     sel = -1;
     st.h = -1;
     root.classList.add('won');
-    api.sfx.magic();
+    api.sfx.chime();
     tell(`You made the ${p.name.toLowerCase()}!`, 'good', true);
     store();
     draw();
