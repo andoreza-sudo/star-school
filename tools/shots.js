@@ -2211,6 +2211,29 @@ Object.assign(SCREENS, {
   'race-end': { run: async p => { await p.evaluate(rlSave); await p.evaluate(() => { rlRace('meadow-0'); RL_DEV.fast = 20; }); await p.waitForSelector('.gh-end', { timeout: 40000 }); } },
 });
 GROUPS.g02 = ['race-menu', 'race-garage', 'race-meadow', 'race-beach', 'race-snow', 'race-city', 'race-pro', 'race-pause', 'race-end'];
+// G-RALLY2: the second season: a later save (the four trophies, a mirror cup raced, garage level 2 open, a kit, wheels and a trail on),
+//    the menu (next goal, save for, today's twist, mirror cups), the locked level 2 garage, trying a kit on, Maple Woods, a mirror
+//    track with the rainbow trail, today's twist and its end card.   node tools/shots.js @rally2
+const rl2Save = (t2 = true) => { const r = S.rally; r.spk = 640;
+  r.cups = { sprout: { best: 1, runs: 1 }, wave: { best: 2, runs: 1 }, frost: { best: 1, runs: 2 }, star: { best: 3, runs: 1 } };
+  if (t2) { r.cups.msprout = { best: 2, runs: 1 }; r.kits = { spoiler: 1 }; r.kit = 'spoiler'; r.whls = { gold: 1 }; r.whl = 'gold'; r.trails = { rainbow: 1 }; r.trail = 'rainbow'; }
+  save(); };
+const rl2Shot = (fn, wait = 5500, t2 = true) => ({ run: async p => { await p.evaluate(rlSave); await p.evaluate(rl2Save, t2); await p.evaluate(fn); await p.waitForTimeout(wait); } });
+Object.assign(SCREENS, {
+  'rally2-menu': rl2Shot(() => rlMenu(), 600),
+  'rally2-mirror': rl2Shot(() => { rlMenu(); document.querySelector('#rlmnote').scrollIntoView(); }, 600),
+  'rally2-tracks': rl2Shot(() => { rlMenu('meadow'); document.querySelector('.rl-trks').scrollIntoView(); }, 600),
+  'rally2-garage-lock': rl2Shot(() => { rlGarage(); document.querySelector('#rlt2').scrollIntoView(); }, 600, false),
+  'rally2-garage': rl2Shot(() => { rlGarage({ k: 'kit', id: 'fins' }); }, 600),
+  'rally2-garage-t2': rl2Shot(() => { rlGarage(); document.querySelector('#rlt2').scrollIntoView(); }, 600),
+  'rally2-woods': rl2Shot(() => rlRace('woods-0')),
+  'rally2-mirror-race': rl2Shot(() => rlRace('meadow-0m'), 7000),
+  'rally2-twist': rl2Shot(() => { const tw = rlTwist(); rlRace(tw.tid, { twist: tw }); }),
+  'rally2-twist-end': { run: async p => { await p.evaluate(rlSave); await p.evaluate(rl2Save, true); await p.evaluate(() => { const tw = rlTwist(); rlRace(tw.tid, { twist: tw }); RL_DEV.fast = 20; });
+    await p.waitForSelector('.gh-end', { timeout: 40000 }); await p.evaluate(() => { RL_DEV.fast = 1; }); } },
+});
+GROUPS.rally2 = ['rally2-menu', 'rally2-mirror', 'rally2-tracks', 'rally2-garage-lock', 'rally2-garage', 'rally2-garage-t2', 'rally2-woods', 'rally2-mirror-race',
+  'rally2-twist', 'rally2-twist-end'];
 
 // G-01: Block Builder by touch: a blueprint (only the next layer), the stamps, the More sheet. node tools/shots.js @g01
 Object.assign(SCREENS, {
