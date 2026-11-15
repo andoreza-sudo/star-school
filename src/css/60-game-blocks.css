@@ -6,7 +6,7 @@
 /* G-BB2: the 3D scene under the 2D canvas (which takes the touches and draws outlines and effects over it) */
 .bb-cv #bbgl{position:absolute;inset:0;pointer-events:none}
 .bb-cv #bbgl[hidden]{display:none}
-.bb-cv #bbc{position:relative}
+.bb-cv [id="bbc"]{position:relative}
 .bb-side{flex:none;display:flex;flex-direction:column;gap:var(--s-2);min-height:0;min-width:0}
 .bb-bar{display:flex;flex-direction:column;gap:var(--s-1)}
 .bb-row{display:flex;gap:var(--s-1);align-items:stretch}
