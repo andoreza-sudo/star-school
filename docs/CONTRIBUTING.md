@@ -139,8 +139,9 @@ games2.<VER>.js   the newer Game Room games (G-04a on): every other src/js/NN-ga
                   then  var GAMES2_VER='<VER>';
 data.<VER>.js     src/data/*.js in filename order, then the last line  var DATA_VER='<VER>';
 sw.js             cache 'starschool-<VER>', precaches ./, index.html, gen/gen2/bt/games/games2/data.<VER>.js (the LAZY ones too), manifest.json, icons;
-                  ES-AUDIO: cache 'starschool-audio' (kept across releases) gets every audio/es/*.ogg at install
+                  ES-AUDIO: cache 'starschool-audio' (kept across releases) gets every audio/es/*.ogg and audio/en/*.ogg at install
 audio/es/*.ogg    ES-AUDIO: the recorded Spanish (tools/es-audio.js); not loaded at start, fetched the first time a line is said
+audio/en/*.ogg    EN-PRAISE: the recorded English encouragement, six voices (tools/en-audio.js); the same way
 ```
 
 (The text below says "part" for gen, gen2, bt, games and games2 alike. Load order at start is the order of PARTS without the LAZY ones:
@@ -196,13 +197,20 @@ How it fits together:
   data file warn 1 MB / fail 2 MB. P6-02: **loaded at start** (index.html + the start-up parts + the data file) warn 2 MB / fail 3.0 MB;
   **precached** (every built file, the LAZY parts too) fail 4.5 MB (R-03 raised it from 3.6 MB for the game updates; the all-files limit G-04a raised from 3.0 to 3.3 MB for `games2`, G-01b to 3.6 MB for the Block Builder journey; with the
   games on demand, 3.0 MB holds again for what loads at start; ES-AUDIO raised it to 3.4 MB for the recordings' 28 KB manifest in the data file).
-  ES-AUDIO: **audio** (`audio/es/*.ogg`, the recorded Spanish) is its own budget: warn 2.5 MB / fail 3.0 MB in all, 40 KB a file
+  ES-AUDIO: **audio** (`audio/es/*.ogg`, the recorded Spanish, and since EN-PRAISE `audio/en/*.ogg`, the recorded encouragement) is its
+  own budget: warn 4.0 MB / fail 4.5 MB in all (EN-PRAISE raised it from 2.5 / 3.0 MB), 40 KB a file
   (`AUDIO_*` in tools/test.js). It never counts toward the start-up bytes: say() fetches a file the first time its line is said (from the
   service worker's cache once installed). `python3 tools/build.py` prints the audio total. `bash tools/check.sh` prints them all, and `node tools/perf.js` the timings.
 - ES-AUDIO: every Spanish line the app can say needs a recording. After changing Spanish text (d-es*.js, 34-gen-es.js, a new `say(..., 'es')`),
   run `node tools/es-audio.js` (records only the new lines, rewrites src/data/d-es-audio.js, deletes unused files) and commit audio/es and the
   manifest; the test.js check "recorded Spanish audio ES-AUDIO" names any line without one. A new place that says Spanish must be found by
   its collector (tools/es-audio.js): through a generator's `say`/`after`/hint/`data-sayes`, or added to its list.
+- EN-PRAISE: the fixed English praise, try-again and well-done lines say() speaks are recorded in six voices (GROUPS in tools/en-audio.js).
+  After adding or changing such a line (PRAISE, PET_YAY, PET_OOPS, an end card's cheer), add it to GROUPS if it is new, run
+  `node tools/en-audio.js` (records the new lines in every voice, checks each file with speech to text, rewrites src/data/d-en-audio.js)
+  and commit audio/en and the manifest; the check "recorded encouragement EN-PRAISE" names a listed line that is missing or no longer in
+  src/js. Recording and encoding are shared with ES-AUDIO in tools/voice-audio.js. Questions, hints and anything with a name or a
+  generated part stay the tablet's voice (a line may start with a recorded sentence: "New record! 120 meters!").
 - The check `code split A11b (and data file split A11)` in `tools/test.js` covers all of this: script order, nothing of a part left in
   index.html, index.html's code loads alone and with only the data, each file's stamp, a missing or stale file refused, the precache
   list, no stale files, the budgets. It loads the built files in a fresh Node `vm` context, one script after the other, like the page.
