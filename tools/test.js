@@ -16800,6 +16800,8 @@ run('Brain Teasers and practice fixes R-01b',()=>{
   return{problems:pre.concat(r.bad),note:r.note.join('; ')};
 });
 
+// G-04b2 (R-03 K1-K3, A1, A5): season 2 (24 more courses: crumbling clouds, clouds that go round, keys and doors), the ghost of the best
+// run, today's twist from the date, costumes bought with stars, the next-goal line, the 2.5D renderer's rules and the music
 run('sky hop G-04b',()=>{
   const p=[],notes=[];
   const rd=f=>fs.readFileSync(path.join(SRC,f),'utf8');
@@ -16834,25 +16836,37 @@ run('sky hop G-04b',()=>{
       if(!/id="ghop" data-g="hop"/.test(hub)||!hub.includes('Hop through the clouds with your pet'))bad(name+': no Sky Hop card on the hub');
       if('hop' in S)bad(name+': showing the hub created S.hop');
       const menu=shot(()=>hopMenu());
-      if(/^ERR/.test(menu)||!/^<div class="top tbar gh-top/.test(menu.trim())||!menu.includes('id="hopgo"')||(menu.match(/data-c="/g)||[]).length!==6||(menu.match(/data-w="/g)||[]).length!==4)bad(name+': menu '+menu.slice(0,90));
+      if(/^ERR/.test(menu)||!/^<div class="top tbar gh-top/.test(menu.trim())||!menu.includes('id="hopgo"')||(menu.match(/data-c="/g)||[]).length!==6||(menu.match(/data-w="/g)||[]).length!==8)bad(name+': menu '+menu.slice(0,90));
+      if(!menu.includes('id="hpgoal"')||!menu.includes('Next goal:</b> Hop to the flag on First Hops.')||!menu.includes('id="hptw"')||(menu.match(/data-wear="/g)||[]).length!==HOP_WEAR.length+1)bad(name+': menu without the next goal, today\'s twist or the costumes');
+      if(!menu.includes('Season 1: Sky Trip')||!menu.includes('Season 2: Sky Remix')||!/of 144 stars found/.test(menu))bad(name+': menu without the two seasons');
       const r=S.hop,mode=(S.grade==null?0:+S.grade)<=2?'one':'free';
       if(!r||r.runs!==0||r.mode!==mode||r.cur!=='m1'||r.world!==0||r.trail!=='none'||JSON.stringify([r.best,r.stars,r.medal])!=='[{},{},{}]')bad(name+': defaults '+JSON.stringify(r));
+      if(JSON.stringify([r.ghost,r.own,r.wear,r.spent,r.bonus])!=='[{},{},"none",0,0]'||r.day.k!==today()||r.day.c!=='m1'||!HOP_TWB[r.day.tw]||r.day.done!==0)bad(name+': G-04b2 defaults '+JSON.stringify(r));
       if(Object.keys(S).filter(k=>k!=='hop'&&k!=='pt').sort().join()!==keys.split(',').filter(k=>k!=='pt').join())bad(name+': opening the game changed other save fields');
       if((menu.match(/data-ok="1"/g)||[]).length!==1)bad(name+': only the first course should be open');
     }
     // 3. damaged saves are read safely
     for(const v of ['x',[],5,null,{runs:-4,best:{m1:'40000',zz:5,m2:-3,m3:'abc'},stars:{m1:99,m2:'2',p1:-1},medal:{m1:7},mode:'fast',trail:'rainbow',cur:'r6',world:9},
-      {best:[]},{stars:'x'},{runs:1e99},{cur:'m2',world:2}]){
+      {best:[]},{stars:'x'},{runs:1e99},{cur:'m2',world:2},{cur:'c6',world:7,best:{c6:5000}},
+      {best:{m1:40000},ghost:{m1:'.AAAAA!!',m2:'.AAAAA',zz:'.AAAAA'},own:{cape:1,zz:1,jet:0},wear:'jet',spent:-5,bonus:'x',day:{k:5,c:'zz',tw:'moon'}},
+      {ghost:[],own:'x',wear:5,spent:1e99,day:[]},{day:{k:'2026-1-1',c:'m1',tw:'nope',done:1}}]){
       S.hop=v;
       const r=hopS();
+      for(const id in r.ghost)if(!r.best[id]||!hopGhostIn(r.ghost[id]))bad('damaged save: a ghost kept for '+id);
+      for(const id in r.own)if(!HOP_WEARB[id]||r.own[id]!==1)bad('damaged save: costume '+id);
+      if(r.wear!=='none'&&!r.own[r.wear])bad('damaged save: wearing '+r.wear+' without having it');
+      if(!(Number.isInteger(r.spent)&&r.spent>=0&&Number.isInteger(r.bonus)&&r.bonus>=0)||!(hopWallet(r)>=0))bad('damaged save: stars spent '+r.spent+', bonus '+r.bonus);
+      if(r.day.k!=null&&(!HOP_BY[r.day.c]||!HOP_TWB[r.day.tw]))bad('damaged save: today\'s twist '+JSON.stringify(r.day));
       if(!(r.runs>=0&&Number.isInteger(r.runs)))bad('damaged save '+JSON.stringify(v)+': runs '+r.runs);
       for(const [k,lo,hi] of [['best',1,36e5],['stars',1,7],['medal',1,3]])for(const id in r[k])if(!HOP_BY[id]||!(r[k][id]>=lo&&r[k][id]<=hi))bad('damaged save: '+k+' '+id+'='+r[k][id]);
       if(!['one','free'].includes(r.mode)||r.trail!=='none'||!hopOpen(HOP_BY[r.cur],r)||!hopOpen(HOP_COURSES[r.world*6],r))bad('damaged save '+JSON.stringify(v)+': '+JSON.stringify(r));
     }
     // 4. the courses: 24 in 4 worlds, each with 3 stars, checkpoints every few seconds, a flag; what each world adds
-    if(HOP_COURSES.length!==24||HOP_WORLDS.length!==4)bad('24 courses in 4 worlds expected');
-    if(new Set(HOP_COURSES.map(c=>c.id)).size!==24||new Set(HOP_COURSES.map(c=>c.name)).size!==24)bad('course ids and names must be unique');
-    const feat={springs:[],winds:[],lifts:[],movers:[],gates:[]};
+    if(HOP_COURSES.length!==48||HOP_WORLDS.length!==8)bad('48 courses in 8 worlds expected (season 2, G-04b2)');
+    if(new Set(HOP_COURSES.map(c=>c.id)).size!==48||new Set(HOP_COURSES.map(c=>c.name)).size!==48)bad('course ids and names must be unique');
+    if(HOP_WORLDS.map(w=>!!w.s2).join()!=='false,false,false,false,true,true,true,true'||JSON.stringify(HOP_SEASONS.map(x=>x[0]))!=='[0,4]')bad('worlds 5-8 are season 2');
+    for(const W of HOP_WORLDS)if(!HOP_SCENE[W.id]||!HOP_TUNE[W.id]||W.grad.length<2||W.cloud.length!==3)bad(W.id+': scenery, tune, sky and cloud colours');
+    const feat={springs:[],winds:[],lifts:[],movers:[],gates:[],crumble:[],round:[],keys:[]};
     for(const c of HOP_COURSES){
       const C=hopBuild(c.id),w=c.id+' ';
       if(c.w!==Math.floor(c.i/6))bad(w+'world');
@@ -16864,10 +16878,23 @@ run('sky hop G-04b',()=>{
       if(C.goal&&C.goal.x-C.cps[C.cps.length-1].x>60)bad(w+'the last checkpoint is far from the flag');
       if(C.dj!==(c.w>0))bad(w+'the second hop is for Windy Peaks on');
       if(c.gold<40||c.gold>90)bad(w+'gold target '+c.gold+' s (40-90)');
-      for(const k in feat)feat[k][c.w]=(feat[k][c.w]||0)+C[k].length;
-      for(const g of C.gates)if(!C.pads.some(d=>d.g===C.gates.indexOf(g)))bad(w+'a gate without a switch');
+      const cnt={crumble:C.floors.filter(f=>f.k=='q').length,round:C.movers.filter(m=>m.r).length,movers:C.movers.filter(m=>!m.r).length};
+      for(const k in feat)feat[k][c.w]=(feat[k][c.w]||0)+(k in cnt?cnt[k]:C[k].length);
+      C.gates.forEach((g,gi)=>{
+        const pad=C.pads.some(d=>d.g===gi),key=C.keys.some(q=>q.g===gi);
+        if(g.door?!key||pad:!pad||key)bad(w+'gate '+gi+': a gate needs its switch, a door its key');
+        const k=C.keys.find(q=>q.g===gi);
+        if(k&&!(k.x<g.x0&&k.x>g.back.x))bad(w+'the key of door '+gi+' must be between where the door bounces you back to and the door');
+      });
+      for(const q of C.cps){const f=C.floors.find(f=>q.x>=f.x0&&q.x<=f.x1&&Math.abs(f.y-q.y)<.01);if(!f||f.k=='q')bad(w+'a checkpoint must stand on a cloud that stays: '+q.x)}
+      for(const m of C.movers)if(m.r&&!(m.r>=1&&m.r<=3&&m.T>=3))bad(w+'a round cloud with radius '+m.r);
       if(C.floors.some(f=>!(f.x1>f.x0))||C.spk.some(q=>!isFinite(q.x+q.y)))bad(w+'bad geometry');
     }
+    for(let i=0;i<4;i++)if(feat.crumble[i]||feat.round[i]||feat.keys[i])bad('season 1 has no crumbling or round clouds or keys '+JSON.stringify(feat));
+    if(!feat.crumble[4]||feat.round[4]||feat.keys[4])bad('Sunset Isles adds clouds that crumble '+JSON.stringify(feat));
+    if(!feat.round[5]||feat.keys[5])bad('Whirly Heights adds clouds that go round '+JSON.stringify(feat));
+    if(!feat.keys[6])bad('Aurora Night adds keys and doors');
+    if(!feat.crumble[7]||!feat.round[7]||!feat.keys[7]||!feat.gates[7]||!feat.movers[7])bad('Star Castle has all the tricks '+JSON.stringify(feat));
     if(!feat.springs[0]||feat.winds[0]||feat.lifts[0]||feat.movers[0]||feat.gates[0])bad('Cloud Meadow: springs only '+JSON.stringify(feat));
     if(!feat.winds[1]||!feat.lifts[1]||feat.movers[1]||feat.gates[1])bad('Windy Peaks adds wind '+JSON.stringify(feat));
     if(!feat.movers[2]||feat.gates[2])bad('Starry Night adds kite clouds '+JSON.stringify(feat));
@@ -16875,19 +16902,20 @@ run('sky hop G-04b',()=>{
     // 5. bots play every course: one-touch (a press is the only input) with no falls, at or under the gold target; free move within 90 s;
     //    and each star is reached by a bot from the checkpoint before it (free move). A beam search over the input every 4 steps (1/15 s).
     const OPT={one:[{jump:false},{jump:true}],free:[[1,0],[1,1],[0,0],[0,1],[-1,0],[-1,1]].map(([d,j])=>({dir:d,jump:!!j}))};
-    const keyOf=n=>{const q=n.p;return Math.round(q.x*6)+','+Math.round(q.y*6)+','+Math.round(q.vx*2)+','+Math.round(q.vy)+','+q.gr+q.jl+n.stars+'.'+n.gates+n.wait+q.held};
+    const keyOf=n=>{const q=n.p;return Math.round(q.x*6)+','+Math.round(q.y*6)+','+Math.round(q.vx*2)+','+Math.round(q.vy)+','+q.gr+q.jl+n.stars+'.'+n.gates+n.wait+q.held+Object.keys(n.crum).join('')};
     const keep=(all,B,score)=>{
       all.sort((a,b)=>b.sc-a.sc);
       const beam=all.slice(0,B>>1),bins=new Map();
       for(const s of all.slice(B>>1)){const k=Math.floor(s.p.x)+','+Math.floor(s.p.y)+','+(s.p.gr?'g':Math.round(s.p.vy/4));if(!bins.has(k))bins.set(k,s)}
       return beam.concat([...bins.values()].slice(0,B));
     };
-    const bot=(id,mode,B)=>{
-      let beam=[hopNew(id,{mode})];
+    const bot=(id,mode,B,tw)=>{
+      let beam=[hopNew(id,{mode,tw})];
       for(let L=0;L<1400;L++){
         const next=new Map();
         for(const s of beam)for(const inp of OPT[mode]){
           const n=hopClone(s);
+          n.h=(s.h||'')+OPT[mode].indexOf(inp); // the presses so far (the ghost check replays them)
           for(let k=0;k<4&&!n.done;k++){hopStep(n,inp);if(n.wait=='offer')hopHelp(n,true)}
           n.sc=(n.anim?n.anim.x1:n.p.x)-n.falls*200-n.bumps*6+(n.done?1e6-n.t*100:0);
           const k=keyOf(n),o=next.get(k);
@@ -16940,12 +16968,25 @@ run('sky hop G-04b',()=>{
       for(let k=0;k<3;k++){if(reach(c.id,k))reached++;else bad(c.id+': star '+(k+1)+' cannot be reached')}
     }
     const mm=a=>a.length?Math.min(...a).toFixed(0)+'-'+Math.max(...a).toFixed(0)+' s':'-';
-    out.note.push('bots: one-touch '+times.one.length+'/24 courses, no falls, '+mm(times.one)+'; free move '+times.free.length+'/24, '+mm(times.free)+
-      (hard?' ('+hard+' with a fall at a kite cloud)':'')+'; '+reached+'/72 stars reached');
+    out.note.push('bots: one-touch '+times.one.length+'/48 courses, no falls, '+mm(times.one)+'; free move '+times.free.length+'/48, '+mm(times.free)+
+      (hard?' ('+hard+' with a fall)':'')+'; '+reached+'/144 stars reached');
+    // today's twists that change how the pet moves (Moon hops, Zoomy shoes): the one-touch bot reaches the flag with them on every third course
+    //    (all 48 passed with both while G-04b2 was built; this keeps the check's time down)
+    const tws={};
+    for(const tw of ['moon','zoom']){
+      tws[tw]=[];
+      for(const c of HOP_COURSES.filter(c=>c.i%3==0)){
+        let a=bot(c.id,'one',24,tw);
+        if(!a||a.falls)a=bot(c.id,'one',48,tw);
+        if(!a||a.t>95)bad(c.id+': the one-touch bot did not reach the flag with the twist '+tw);
+        else tws[tw].push(a.t);
+      }
+    }
+    out.note.push('twists: Moon hops '+tws.moon.length+'/16 '+mm(tws.moon)+', Zoomy shoes '+tws.zoom.length+'/16 '+mm(tws.zoom));
     // 6. deterministic: the same presses give the same course, another plan another one
     const play=(id,mode,seed)=>{const st=hopNew(id,{mode});let x=seed;for(let i=0;i<60*40&&!st.done;i++){x=(x*1103515245+12345)>>>0;hopStep(st,{jump:(x>>16)%9<2,dir:(x>>20)%5?1:-1});if(st.wait=='offer')hopHelp(st,(x>>8)%2==0)}
-      return JSON.stringify([st.t.toFixed(4),st.p.x.toFixed(4),st.p.y.toFixed(4),st.falls,st.bumps,st.stars,st.spk,st.cp,st.gates,st.helped])};
-    for(const [id,m] of [['m3','one'],['p2','free'],['n4','one'],['r5','free']]){
+      return JSON.stringify([st.t.toFixed(4),st.p.x.toFixed(4),st.p.y.toFixed(4),st.falls,st.bumps,st.stars,st.spk,st.cp,st.gates,st.helped,st.crum])};
+    for(const [id,m] of [['m3','one'],['p2','free'],['n4','one'],['r5','free'],['q4','one'],['t3','free'],['a2','one'],['c5','free']]){
       if(play(id,m,7)!==play(id,m,7))bad(id+': not deterministic');
       if(play(id,m,7)===play(id,m,8))bad(id+': another plan gave the same run');
     }
@@ -17011,15 +17052,141 @@ run('sky hop G-04b',()=>{
       r2.stars={m1:7,m2:7,m3:7};r2.trail='pink';
       if(hopS().trail!=='pink')bad('a trail with enough stars stays on');
       const hub=shot(()=>GH.hub());
-      if(!/<b>9<\/b> of 72 stars/.test(hub))bad('the hub card should show the stars found');
+      if(!/<b>9<\/b> of 144 stars/.test(hub)||!/<b>1<\/b> of 48/.test(hub))bad('the hub card should show the stars found and the courses');
+    }
+    // 9b. G-04b2 mechanics: a crumbling cloud, a cloud that goes round, keys and doors
+    {
+      const C=hopBuild('q2'),j=C.floors.findIndex(f=>f.k=='q'),f=C.floors[j],st=hopNew('q2',{mode:'free'});
+      Object.assign(st.p,{x:(f.x0+f.x1)/2,y:f.y,gr:true});st.wait=null;
+      let crum=0,fellAt=-1;
+      for(let i=0;i<60*2&&fellAt<0;i++){hopStep(st,{});if(st.ev.some(e=>e[0]=='crumble'))crum++;st.ev.length=0;if(!st.p.gr&&st.p.y<f.y-.2)fellAt=st.t}
+      if(crum!==1||!(fellAt>=HOP_CR.FALL&&fellAt<HOP_CR.FALL+.3))bad('standing on a crumbling cloud: it should crumble once and drop the pet after '+HOP_CR.FALL+' s: '+crum+' '+fellAt);
+      if(hopThere(st,j))bad('a crumbled cloud should be gone for a while');
+      const s2=hopClone(st);s2.t=st.crum[j]+HOP_CR.BACK+.01;
+      if(!hopThere(s2,j))bad('a crumbled cloud should come back');
+      hopStep(s2,{});if(s2.crum[j]!=null&&!(s2.p.gr&&s2.p.on===j))bad('a cloud that came back forgets that it crumbled');
+      const m=hopBuild('t1').movers.find(q=>q.r),a=hopMover(m,0),b=hopMover(m,m.T/2),c=hopMover(m,m.T/4),d=hopMover(m,m.T);
+      if(Math.abs(a.x-m.x)>1e-9||Math.abs(a.y-m.y)>1e-9||Math.abs(b.x-(m.x+2*m.r))>1e-9||Math.abs(b.y-m.y)>1e-9||Math.abs(c.y-(m.y+m.r))>1e-9||Math.abs(d.x-m.x)>1e-9)bad('a round cloud should start at its floor, go over the top to the far side and come back');
+      // a door: running past the key is fine, skipping it bounces back; the key opens the door
+      const K=hopBuild('a1'),g=K.gates[0],key=K.keys.find(q=>q.g===0);
+      const s3=hopNew('a1',{mode:'free'});Object.assign(s3.p,{x:g.x0-1.4,y:g.y0,gr:true});s3.wait=null;
+      let bounced=false;for(let i=0;i<60;i++){hopStep(s3,{dir:1});if(s3.ev.some(e=>e[0]=='gate'))bounced=true;s3.ev.length=0}
+      if(!bounced||s3.p.x>g.x0)bad('a closed door should bounce the pet back');
+      const s4=hopNew('a1',{mode:'free'});Object.assign(s4.p,{x:key.x,y:key.y-.6,gr:false,vy:0});s4.wait=null;hopStep(s4,{});
+      if(!(s4.gates&1)||!s4.ev.some(e=>e[0]=='key'))bad('touching the key should open the door');
+      Object.assign(s4.p,{x:g.x0-1.4,y:g.y0,gr:true,vy:0});for(let i=0;i<40;i++)hopStep(s4,{dir:1});
+      if(s4.p.x<g.x1||s4.bumps)bad('an open door should let the pet through');
+    }
+    // 9c. season 2 opens in order, after the last course of season 1; the next goal says so
+    {
+      S.hop={};const r=hopS();
+      for(const c of HOP_COURSES.slice(0,23))r.best[c.id]=50000;
+      if(hopOpen(HOP_BY.q1,r)||!hopOpen(HOP_BY.r6,r))bad('season 2 must wait for the last course of season 1');
+      if(hopGoal(r)!=='Finish Over the Rainbow to start Season 2!')bad('next goal before season 2: '+hopGoal(r));
+      if(!/data-w="4"[^>]*>/.test(shot(()=>hopMenu()))||!shot(()=>hopMenu(4)).includes('hp-world lock'))bad('season 2 worlds should show, locked');
+      const a=hopRecord(r,HOP_BY.r6,{t:60,stars:0});
+      if(!a.opening||a.next!==HOP_BY.q1||!hopOpen(HOP_BY.q1,r)||hopOpen(HOP_BY.q2,r)||r.cur!=='q1')bad('finishing Over the Rainbow opens Golden Hour and only it');
+      if(hopGoal(r)!=='Finish Golden Hour to open Crumbly Clouds.')bad('next goal in season 2: '+hopGoal(r));
+      for(const c of HOP_COURSES.slice(24))if(c.i>24&&hopOpen(c,r))bad(c.id+' open too early');
+      for(const c of HOP_COURSES.slice(24))r.best[c.id]=40000;
+      for(const c of HOP_COURSES)r.stars[c.id]=7;
+      if(!/^Win gold on |You have \d+ stars: get the /.test(hopGoal(r)))bad('next goal when every course is done: '+hopGoal(r));
+      for(const c of HOP_COURSES)r.medal[c.id]=3;
+      r.own={};for(const w of HOP_WEAR)r.own[w[0]]=1;
+      if(!/^Race your ghost on /.test(hopGoal(r)))bad('next goal at the very end: '+hopGoal(r));
+    }
+    // 9d. the ghost: the best run, two letters every 0.2 s; it follows the run, a slower run keeps it, a damaged one is dropped
+    {
+      S.hop={};const r=hopS(),c=HOP_BY.m2;
+      // the one-touch bot's run on Puffy Path, replayed press by press and recorded as it goes
+      const b0=bot('m2','one',30),s1=hopNew('m2',{mode:'one'}),R1=hopRecNew(),P1=[];hopRec(R1,s1);P1.push([s1.p.x,s1.p.y]);
+      for(const ch of (b0&&b0.h)||'')for(let k=0;k<4&&!s1.done;k++){
+        hopStep(s1,OPT.one[+ch]);if(s1.wait=='offer')hopHelp(s1,true);
+        hopRec(R1,s1);if(R1.k%12==1)P1.push([s1.p.x,s1.p.y]);
+      }
+      if(!b0||!s1.done||Math.abs(s1.t-b0.t)>1e-9)bad('replaying the bot\'s presses should give the same run');
+      const G=hopGhostIn(R1.s);
+      if(!G||G.x.length!==P1.length)bad('the ghost should have one place every 0.2 s: '+(G&&G.x.length)+' / '+P1.length);
+      else{
+        let worst=0;for(let i=0;i<P1.length;i++)worst=Math.max(worst,Math.abs(G.x[i]-P1[i][0]),Math.abs(G.y[i]-P1[i][1]));
+        if(worst>.07)bad('the ghost is '+worst.toFixed(3)+' tiles away from the run');
+        const at=hopGhostAt(G,1.1),u=.5;
+        if(!at||Math.abs(at.x-(G.x[5]+(G.x[6]-G.x[5])*u))>1e-9)bad('the ghost between two places');
+        if(hopGhostAt(G,G.x.length*.2+1))bad('the ghost stops after its run');
+      }
+      if(R1.s.length>HOP_GMAX)bad('the ghost text is too long: '+R1.s.length);
+      if(s1.done){
+        const a=hopRecord(r,c,s1,R1);
+        if(!a.rec||r.ghost.m2!==R1.s)bad('the first finish keeps its ghost');
+        const slow=Object.assign(hopClone(s1),{t:s1.t+5}),b=hopRecord(r,c,slow,hopRecNew());
+        if(b.rec||r.ghost.m2!==R1.s)bad('a slower run keeps the best ghost');
+        const tw=Object.assign(hopClone(s1),{t:s1.t-5,tw:'moon'});hopRecord(r,c,tw,R1);
+        if(r.best.m2!==Math.round(s1.t*1000))bad('a twist run is not a course record');
+        save();loadSave(store['starschool-v2']);migrate();
+        if(hopS().ghost.m2!==R1.s)bad('the ghost is saved');
+      }else bad('the ghost check run did not reach the flag');
+      for(const t of ['','x','.AAA','.AAAAA!','AAAA','.AAAAAA'+'A'.repeat(2000),'.AAAAAA!'])if(hopGhostIn(t))bad('a damaged ghost text should be refused: '+t.slice(0,12));
+    }
+    // 9e. costumes: a fixed list with prices, bought with stars to spend (found + gold medals + twist bonus - spent), never below 0
+    {
+      if(HOP_WEAR.length<8||new Set(HOP_WEAR.map(w=>w[0])).size!==HOP_WEAR.length||HOP_WEAR.some((w,i)=>i&&w[2]<=HOP_WEAR[i-1][2])||HOP_WEAR.some(w=>!HOP_COSTUME[w[0]]||!w[1]))bad('costumes: a fixed list, prices going up, each drawn');
+      S.hop={};const r=hopS();
+      r.stars={m1:7,m2:3};r.medal={m1:3,m2:2};r.bonus=2;
+      if(hopWallet(r)!==8)bad('stars to spend: 5 found + 1 gold + 2 bonus = 8, got '+hopWallet(r));
+      if(hopBuy(r,'cape')!==true||r.spent!==8||!r.own.cape||r.wear!=='cape'||hopWallet(r)!==0)bad('buying the Hero Cape for 8 '+JSON.stringify(r));
+      if(hopBuy(r,'leaf')||hopBuy(r,'cape')||hopBuy(r,'zz')||r.spent!==8)bad('no buying without enough stars, twice, or what is not on the list');
+      if(hopStarsAll(r)!==5)bad('buying never takes a found star away');
+      let x=7;
+      for(let i=0;i<3000;i++){
+        x=(x*1103515245+12345)>>>0;
+        const w=HOP_WEAR[(x>>>8)%HOP_WEAR.length],op=(x>>>4)%4;
+        if(op==0)r.bonus+=(x>>>12)%5;else if(op==1)hopBuy(r,w[0]);else if(op==2&&r.own[w[0]])r.wear=w[0];else{const id='p'+(1+(x>>>16)%6);r.stars[id]=(r.stars[id]||0)|(x>>>20)%8}
+        if(hopWallet(r)<0||hopStarsAll(r)+hopGolds(r)+r.bonus-r.spent<0)bad('stars to spend went below 0');
+      }
+      if(Object.keys(r.own).length<3)bad('the shop steps bought too little to mean anything');
+      save();loadSave(store['starschool-v2']);migrate();
+      const r2=hopS();
+      if(Object.keys(r2.own).sort().join()!==Object.keys(r.own).sort().join()||r2.spent!==r.spent||r2.bonus!==r.bonus)bad('costumes are saved');
+      const m=shot(()=>hopMenu());
+      if(!m.includes('data-wear="'+r2.wear+'" aria-pressed="true"')||!new RegExp('<b>'+hopWallet(r2)+'</b> stars to spend').test(m))bad('the menu shows the costume worn and the stars to spend');
+    }
+    // 9f. today's twist: from the date, the same all day, nothing lost on a missed day, the bonus once a day
+    {
+      const days=[];for(let i=1;i<=90;i++)days.push('2026-'+(1+(i>>5))+'-'+(1+i%28));
+      const tw=new Set(),cs=new Set();
+      for(const d of days){
+        const a=hopDaily(d,30),b=hopDaily(d,30);
+        if(JSON.stringify(a)!==JSON.stringify(b))bad('the twist must be the same for the same day');
+        if(HOP_BY[a.c].i>=30||!HOP_TWB[a.tw])bad('the twist course must be one already finished: '+JSON.stringify(a));
+        tw.add(a.tw);cs.add(a.c);
+        if(hopDaily(d,0).c!=='m1')bad('before any finish the twist course is the first');
+      }
+      if(tw.size!==HOP_TW.length||cs.size<12)bad('twists over 90 days: '+tw.size+' rules, '+cs.size+' courses');
+      S.hop={};const r=hopS();r.best.m1=50000;r.best.m2=50000;
+      const d0=hopToday(r);
+      r.best.m3=50000;r.best.m4=50000;
+      if(JSON.stringify(hopToday(r))!==JSON.stringify(d0))bad('finishing courses must not change today\'s twist');
+      const fin=(tw,spk)=>{const st=Object.assign(hopNew(d0.c,{tw}),{t:50,done:true,spk:spk==null?999:spk});return hopRecord(r,HOP_BY[d0.c],st)};
+      if(d0.tw=='spark'&&fin('spark',1).bonus)bad('Sparkle hunt needs its sparkles');
+      const a=fin(d0.tw),b=fin(d0.tw);
+      if(a.bonus!==2||b.bonus!==0||r.bonus!==2||!r.day.done)bad('the twist bonus is 2 stars once a day: '+JSON.stringify([a.bonus,b.bonus,r.bonus]));
+      if(fin(HOP_TW.find(t=>t[0]!=d0.tw)[0]).bonus)bad('another rule is not today\'s twist');
+      r.day.k='2000-1-1';
+      const d1=hopToday(r);
+      if(d1.k!==today()||d1.done||r.bonus!==2)bad('a new day: a new twist, nothing lost');
+      if(!(hopTwNeed('spark','m1')>=10&&hopTwNeed('spark','m1')<=hopBuild('m1').spk.length)||hopTwNeed('moon','m1'))bad('Sparkle hunt asks for about half the sparkles');
+      if(!src.includes('Nothing is lost on a')&&!/nothing lost/i.test(src))bad('the twist must say nothing is lost on a missed day');
     }
     // 10. drawings for the token check outside
     out.svg=[['hub',hopHubArt()]];
     for(const k in HOP_ART)out.svg.push(['art '+k,typeof HOP_ART[k]=='function'&&HOP_ART[k].length?HOP_ART[k](0)+HOP_ART[k](1):HOP_ART[k]()]);
     for(const W of HOP_WORLDS){
-      out.svg.push(['cloud '+W.id,hopCloudArt(5,1.2,W.cloud)],['cloud tall '+W.id,hopCloudArt(2,4.2,W.cloud)],['sky '+W.id,HOP_SKY[W.id]()],
-        ['far '+W.id,HOP_BACK[W.id].far()],['near '+W.id,HOP_BACK[W.id].near()],['world '+W.id,hopWorldPic(W)]);
+      const L=HOP_SCENE[W.id];
+      out.svg.push(['cloud '+W.id,hopCloudArt(5,1.2,W.cloud)],['cloud tall '+W.id,hopCloudArt(2,4.2,W.cloud)],['cloud crumble '+W.id,hopCloudArt(3,1.2,W.cloud,1)],
+        ['sky '+W.id,L.sky()],['bd '+W.id,L.bd()],['far '+W.id,L.far()],['near '+W.id,L.near()],['bank '+W.id,L.bank()],['world '+W.id,hopWorldPic(W)]);
     }
+    for(const k in HOP_DECO)out.svg.push([(/^(bird|shadow|glint|drift)/.test(k)?'sky deco ':'art ')+k,HOP_DECO[k].length?HOP_DECO[k](0)+HOP_DECO[k](1):HOP_DECO[k]()]);
+    for(const k in HOP_COSTUME)out.svg.push(['costume '+k,HOP_COSTUME[k]()],['shop '+k,hopShopPic(k)]);
     out.svg.push(['bridge',hopBridgeArt(6,false)],['rainbow bridge',hopBridgeArt(7,true)]);
     out.pic=GH.pic('hop');
     out.dev=JSON.stringify(HOP_DEV);
@@ -17058,6 +17225,20 @@ run('sky hop G-04b',()=>{
   }
   if(!/^<svg class="art gh-art"/.test(o.pic)||!/var\(--a-k\)" opacity="0?\.1\d?"/.test(o.pic))p.push('hub picture: not an svg.art with a soft ink shadow');
   notes.push(o.svg.length+' drawings, '+shapes+' shapes, tokens only');
+  // 11b. the 2.5D renderer (R-03 4.3): cached pictures only, nothing drawn path by path each frame, at most 1.2 M pixels, an adaptive
+  //      render scale; the music only with sound and music on and never in calm mode; frame time itself is measured by smoke.js
+  {
+    const fn=n=>{const i=src.indexOf('function '+n+'('),j=src.indexOf('\n}\n',i);return i<0?'':src.slice(i,j)};
+    const draw=fn('hopDraw');
+    if(!draw)p.push('hopDraw not found');
+    for(const w of ['shadowBlur','filter','createLinearGradient','createRadialGradient','.arc(','.fill()','.stroke()','getImageData','fillText','new Image','createElement'])
+      if(draw.includes(w))p.push('hopDraw draws '+w+' every frame: use a cached picture');
+    if((draw.match(/hopTile\(/g)||[]).length>3)p.push('more than three band layers copied a frame');
+    if(!/Math\.sqrt\(1\.2e6 \/ \(cw \* ch\)\)/.test(src)||!/HP\.q = Math\.max\(\.6, HP\.q - \.15\)/.test(src))p.push('the pixel cap and the adaptive render scale');
+    const mus=fn('hopMusic');
+    if(!/!S\.sound \|\| !S\.music \|\| hopCalm\(\)/.test(mus)||/Math\.random/.test(mus))p.push('the music: only with sound and music on, never in calm mode, nothing random');
+    if(/\bstreak/i.test(src.replace(/no streaks?|nothing counts days in a row/gi,'')))p.push('Sky Hop must not count streaks');
+  }
   // 12. plumbing: the games2 part, stopped by view(), the test hook off, the game-time rules, the shared chrome, no Math.random
   if(partOf('67-game-skyhop.js')!=='games2'||partOf('49-game-skyhop.css')!=='games2')p.push('Sky Hop must ship in games2.'+BUILD_VER+'.js');
   if(!/if\(typeof hopStop=='function'\)hopStop\(\)/.test(rd('js/40-view.js')))p.push('view() must stop the course (hopStop)');
