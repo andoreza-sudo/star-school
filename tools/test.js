@@ -14129,7 +14129,7 @@ run('Spanish speaking check S-SPK2',()=>{
   // the corner runs on promises (IndexedDB): the check finishes when they do (run() waits for a returned promise)
   return Promise.resolve(r.async).then(()=>{r.bad.forEach(bad);note.push(...r.note);
     // 7. the thresholds on the calibration set (tools/spk-calib.js, every 6th line as the target): the numbers in docs/PROGRESS.md
-    try{const C=require('./spk-calib.js'),ctx=C.app(),list=C.cases(ctx,{every:6}),res=C.run(ctx,list),s=C.score(res,...require('vm').runInContext('[SPKC.ABS,SPKC.RATIO]',ctx));
+    try{const C=require('./spk-calib.js'),ctx=C.app(),list=C.cases(ctx,{every:6,other2:false}),res=C.run(ctx,list),s=C.score(res,...require('vm').runInContext('[SPKC.ABS,SPKC.RATIO]',ctx));
       const want={npos:236,nneg:230,voice:56,child:170,similar:25,other:4,silence:0};
       const got={npos:s.npos,nneg:s.nneg,voice:s.by.voice.great,child:s.by.child.great,similar:s.by.similar.great,other:s.by.other.great,silence:s.by.silence.great};
       if(JSON.stringify(got)!==JSON.stringify(want))bad('calibration set: '+JSON.stringify(got)+', PROGRESS reports '+JSON.stringify(want));
