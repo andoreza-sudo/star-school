@@ -9197,15 +9197,19 @@ async function main() {
     }
 
     // G-04b Sky Hop (src/js/67-game-skyhop.js, games2 part). Midway save with 20 min of game time, real touch (CDP touch events,
-    //    touch emulation on) at 380x780 and 1024x600: Home -> Game Room -> the Sky Hop card -> the menu (shared bar, 4 worlds, 6 courses,
-    //    only the first open; One-touch picked by touch) -> Play -> the course (Pause, stars, course clock and time chips, a 96 px Hop
-    //    button); a touch on the sky makes the pet hop; then course 1 is played to the flag in one-touch mode by real touches: a helper
-    //    in the page looks a moment ahead in the simulation and says when to tap (or hold), the touches are real, the course runs 2x
-    //    faster (HOP_DEV.fast, a test hook); a helper-balloon question is answered by touch -> the shared end card (stars, time,
-    //    sparkles, medal) -> the time, stars and medal saved, the next course open; game time was spent and the clock stopped.
-    //    Main controls (Hop, Play, the balloon's answers) at least 64 px, every other button at least 48 px, no sideways scroll. At
-    //    1024x600 also the frame time while hopping under 6x CPU throttle: the median interval between frames at most 34 ms (measured
-    //    again on a busy machine, up to 3 more times, like G-02).
+    //    touch emulation on) at 380x780 and 1024x600: Home -> Game Room -> the Sky Hop card -> the menu (shared bar, 8 worlds in two
+    //    seasons, 6 courses, only the first open, the next-goal line, today's twist, the costumes; One-touch picked by touch) -> Play ->
+    //    the course (Pause, stars, course clock and time chips, a 96 px Hop button); a touch on the sky makes the pet hop; then course 1
+    //    is played to the flag in one-touch mode by real touches: a helper in the page looks a moment ahead in the simulation and says
+    //    when to tap (or hold), the touches are real, the course runs 2x faster (HOP_DEV.fast, a test hook); a helper-balloon question
+    //    is answered by touch -> the shared end card (stars, time, sparkles, medal) -> the time, stars, medal and ghost saved, the next
+    //    course open, the next goal names it; game time was spent and the clock stopped.
+    //    G-04b2: a costume bought by touch on the menu (stars to spend go down, the pet wears it in the course); a season 2 course
+    //    (Golden Hour: clouds that crumble) played to the flag by real touches after season 1 is done, Crumbly Clouds opens and the
+    //    next goal says so. Main controls (Hop, Play, the balloon's answers, Play the twist) at least 64 px, every other button at
+    //    least 48 px, no sideways scroll. At 1024x600 also the frame time while hopping (with the ghost of the first run on screen)
+    //    under 6x CPU throttle: the median interval between frames at most 34 ms (measured again on a busy machine, up to 3 more
+    //    times, like G-02).
     {
       const bad = [], notes = [];
       const os = require('os'), cores = os.cpus().length;
@@ -9238,7 +9242,7 @@ async function main() {
           for (const e of document.querySelectorAll('.gh-top button, .hp-menu button, .hpg button, .gh-end button')) {
             const r = e.getBoundingClientRect();
             if (!r.width || r.bottom < 0 || r.top > innerHeight || e.closest('[hidden]')) continue;
-            const main = e.matches('.hp-btn, #hopgo, #hpyes, #hpno');
+            const main = e.matches('.hp-btn, #hopgo, #hpyes, #hpno, #hptw');
             if (Math.min(r.width, r.height) < (main ? 63.5 : 47.5)) out.push('small ' + (e.id || e.className) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
             if (r.left < -1 || r.right > vw + 1) out.push('outside ' + (e.id || e.className));
           }
@@ -9247,38 +9251,8 @@ async function main() {
           for (const t of document.querySelectorAll('.gh-top')) if (t.getBoundingClientRect().right > vw + 1) out.push('top bar wider than the screen');
           return out;
         };
-        try {
-          await pg.evaluate(() => { S.pt = { bank: 1200, day: today(), used: 0 }; save(); home(); });
-          await touch('#groom');
-          await pg.waitForSelector('#ghop', { timeout: 8000 });
-          await pg.waitForTimeout(450);
-          await touch('#ghop');
-          await pg.waitForSelector('#hopgo', { timeout: 8000 });
-          await pg.waitForTimeout(450);
-          if (await pg.evaluate(() => S.hop.mode != 'one')) {
-            await touch('#hpmode [data-v="one"]');
-            await pg.waitForSelector('#hpmode [data-v="one"][aria-pressed="true"]', { timeout: 5000 });
-          }
-          const m = await pg.evaluate(() => ({ g: document.querySelector('.gh-top').dataset.g, worlds: document.querySelectorAll('.hp-world').length,
-            crs: document.querySelectorAll('.hp-crs').length, open: document.querySelectorAll('.hp-crs[data-ok="1"]').length, back: !!document.querySelector('.gh-top #back'),
-            mode: S.hop.mode, pet: !!document.querySelector('.hp-pet svg.pet-svg') }));
-          if (m.g !== 'hop' || m.worlds !== 4 || m.crs !== 6 || m.open !== 1 || !m.back || m.mode !== 'one' || !m.pet) bad.push(at + 'menu ' + JSON.stringify(m));
-          for (const o of await pg.evaluate(look)) bad.push(at + 'menu: ' + o);
-          const used0 = await pg.evaluate(() => pt().used);
-          await touch('#hopgo');
-          await pg.waitForSelector('#hpcv', { timeout: 8000 });
-          await pg.waitForFunction(() => HP && HP.ready && !HP.st.wait && HP.st.p.gr, null, { timeout: 15000 });
-          const ui = await pg.evaluate(() => ({ pause: !!document.querySelector('.gh-top #gpause'), chips: ['hpst', 'hpclk', 'gtm'].every(i => document.getElementById(i)),
-            btn: [...document.querySelectorAll('.hp-btn')].map(b => Math.round(Math.min(b.getBoundingClientRect().width, b.getBoundingClientRect().height))),
-            mode: HP.st.mode, course: HP.c.id, pet: !!(HP.v.pet.happy.c && HP.v.pet.cheer.c), px: HP.cv.width }));
-          if (!ui.pause || !ui.chips || ui.btn.length !== 1 || ui.btn[0] < 96 || ui.mode !== 'one' || ui.course !== 'm1' || !ui.pet) bad.push(at + 'course screen ' + JSON.stringify(ui));
-          for (const o of await pg.evaluate(look)) bad.push(at + 'course: ' + o);
-          // a touch on the sky: the pet hops
-          const y0 = await pg.evaluate(() => HP.st.p.y);
-          await press(w * .45, h * .4, 60);
-          const hopped = await pg.waitForFunction(y => HP.st.p.y > y + .6, y0, { timeout: 3000 }).then(() => true, () => false);
-          if (!hopped) bad.push(at + 'a touch on the sky did not make the pet hop');
-          // to the flag by real touches, 2x faster (test hook); the page-side helper looks ahead in the simulation
+        // a course to the flag by real touches, 2x faster (test hook); the page-side helper looks ahead in the simulation
+        const toFlag = async name => {
           await pg.evaluate(() => {
             HOP_DEV.fast = 2;
             window.__hopAdv = () => {
@@ -9310,41 +9284,104 @@ async function main() {
             };
           });
           const t0 = Date.now();
-          let taps = 0, holds = 0, offers = 0;
+          const n = { taps: 0, holds: 0, offers: 0 };
           for (;;) {
             const d = await pg.evaluate(() => window.__hopAdv());
             if (d == 'done') break;
             if (d == 'offer') {
-              offers++;
+              n.offers++;
               await pg.waitForSelector('#hpoffer:not([hidden]) #hpyes', { timeout: 3000 });
-              for (const o of await pg.evaluate(look)) bad.push(at + 'balloon question: ' + o);
+              for (const o of await pg.evaluate(look)) bad.push(at + name + ' balloon question: ' + o);
               await touch('#hpyes');
             } else if (d == 'tap' || d == 'hold') {
               await press(w * .45, h * .4, d == 'tap' ? 40 : 300);
-              d == 'tap' ? taps++ : holds++;
+              d == 'tap' ? n.taps++ : n.holds++;
             } else await pg.waitForTimeout(10);
-            if (Date.now() - t0 > 90000) { bad.push(at + 'did not reach the flag in 90 s'); break; }
+            if (Date.now() - t0 > 90000) { bad.push(at + name + ' did not reach the flag in 90 s'); break; }
           }
           await pg.waitForSelector('.gh-end #hpmenu', { timeout: 15000 });
           await pg.waitForTimeout(600);
+          await pg.evaluate(() => { HOP_DEV.fast = 1; });
+          return n;
+        };
+        try {
+          await pg.evaluate(() => { S.pt = { bank: 1200, day: today(), used: 0 }; save(); home(); });
+          await touch('#groom');
+          await pg.waitForSelector('#ghop', { timeout: 8000 });
+          await pg.waitForTimeout(450);
+          await touch('#ghop');
+          await pg.waitForSelector('#hopgo', { timeout: 8000 });
+          await pg.waitForTimeout(450);
+          if (await pg.evaluate(() => S.hop.mode != 'one')) {
+            await touch('#hpmode [data-v="one"]');
+            await pg.waitForSelector('#hpmode [data-v="one"][aria-pressed="true"]', { timeout: 5000 });
+          }
+          const m = await pg.evaluate(() => ({ g: document.querySelector('.gh-top').dataset.g, worlds: document.querySelectorAll('.hp-world').length,
+            crs: document.querySelectorAll('.hp-crs').length, open: document.querySelectorAll('.hp-crs[data-ok="1"]').length, back: !!document.querySelector('.gh-top #back'),
+            mode: S.hop.mode, pet: !!document.querySelector('.hp-pet svg.pet-svg'), goal: (document.querySelector('#hpgoal') || {}).textContent,
+            twist: !!document.querySelector('#hptw'), wears: document.querySelectorAll('.hp-wear').length }));
+          if (m.g !== 'hop' || m.worlds !== 8 || m.crs !== 6 || m.open !== 1 || !m.back || m.mode !== 'one' || !m.pet || m.goal !== 'Next goal: Hop to the flag on First Hops.' ||
+            !m.twist || m.wears < 9) bad.push(at + 'menu ' + JSON.stringify(m));
+          for (const o of await pg.evaluate(look)) bad.push(at + 'menu: ' + o);
+          const used0 = await pg.evaluate(() => pt().used);
+          await touch('#hopgo');
+          await pg.waitForSelector('#hpcv', { timeout: 8000 });
+          await pg.waitForFunction(() => HP && HP.ready && !HP.st.wait && HP.st.p.gr, null, { timeout: 15000 });
+          const ui = await pg.evaluate(() => ({ pause: !!document.querySelector('.gh-top #gpause'), chips: ['hpst', 'hpclk', 'gtm'].every(i => document.getElementById(i)),
+            btn: [...document.querySelectorAll('.hp-btn')].map(b => Math.round(Math.min(b.getBoundingClientRect().width, b.getBoundingClientRect().height))),
+            mode: HP.st.mode, course: HP.c.id, pet: !!(HP.v.pet.happy.c && HP.v.pet.cheer.c), px: HP.cv.width, bg: !!HP.v.bg, ghost: !!HP.gh }));
+          if (!ui.pause || !ui.chips || ui.btn.length !== 1 || ui.btn[0] < 96 || ui.mode !== 'one' || ui.course !== 'm1' || !ui.pet || !ui.bg || ui.ghost) bad.push(at + 'course screen ' + JSON.stringify(ui));
+          for (const o of await pg.evaluate(look)) bad.push(at + 'course: ' + o);
+          // a touch on the sky: the pet hops
+          const y0 = await pg.evaluate(() => HP.st.p.y);
+          await press(w * .45, h * .4, 60);
+          const hopped = await pg.waitForFunction(y => HP.st.p.y > y + .6, y0, { timeout: 3000 }).then(() => true, () => false);
+          if (!hopped) bad.push(at + 'a touch on the sky did not make the pet hop');
+          const n1 = await toFlag('First Hops');
           const e = await pg.evaluate(() => ({ title: (document.querySelector('.gh-end h1') || {}).textContent, pic: !!document.querySelector('.gh-end .gh-epic svg'),
             stars: !!document.querySelector('.gh-end .rate'), stats: document.querySelectorAll('.gh-end .gh-stat').length, used: pt().used, gt: !!GT, course: !!HP,
-            best: S.hop.best.m1, runs: S.hop.runs, medal: S.hop.medal.m1, starBits: S.hop.stars.m1 || 0, cur: S.hop.cur,
+            best: S.hop.best.m1, runs: S.hop.runs, medal: S.hop.medal.m1, starBits: S.hop.stars.m1 || 0, cur: S.hop.cur, ghost: (S.hop.ghost.m1 || '').length,
             kept: JSON.parse(localStorage.getItem('starschool-v2')).hop.best.m1 }));
-          await pg.evaluate(() => { HOP_DEV.fast = 1; });
           if (e.title !== 'You reached the flag!' || !e.pic || !e.stars || e.stats !== 3) bad.push(at + 'end card ' + JSON.stringify(e));
           if (!(e.used > used0) || e.gt || e.course) bad.push(at + 'game time: used ' + used0 + ' -> ' + e.used + ', clock still running ' + e.gt + ', course ' + e.course);
-          if (!(e.best > 30000) || e.kept !== e.best || e.runs !== 1 || !(e.medal >= 1) || e.cur !== 'm2') bad.push(at + 'saved after the course ' + JSON.stringify(e));
+          if (!(e.best > 30000) || e.kept !== e.best || e.runs !== 1 || !(e.medal >= 1) || e.cur !== 'm2' || !(e.ghost > 100)) bad.push(at + 'saved after the course ' + JSON.stringify(e));
           for (const o of await pg.evaluate(look)) bad.push(at + 'end card: ' + o);
-          notes.push(`${w}x${h}: flag in ${(e.best / 1000).toFixed(1)} s course time, ${taps} taps, ${holds} holds, ${offers} balloon lifts, stars ${e.starBits.toString(2)}, medal ${e.medal}, game time ${used0} -> ${e.used} s`);
+          notes.push(`${w}x${h}: flag in ${(e.best / 1000).toFixed(1)} s course time, ${n1.taps} taps, ${n1.holds} holds, ${n1.offers} balloon lifts, stars ${e.starBits.toString(2)}, medal ${e.medal}, ghost ${e.ghost} letters, game time ${used0} -> ${e.used} s`);
           await touch('#hpmenu');
           await pg.waitForSelector('.hp-crs[data-ok="1"]', { timeout: 8000 });
-          const after = await pg.evaluate(() => document.querySelectorAll('.hp-crs[data-ok="1"]').length);
-          if (after !== 2) bad.push(at + 'menu after the flag: ' + after + ' courses open');
-          // the frame time while hopping at 6x CPU throttle (1024x600)
+          const after = await pg.evaluate(() => ({ open: document.querySelectorAll('.hp-crs[data-ok="1"]').length, goal: document.querySelector('#hpgoal').textContent }));
+          if (after.open !== 2 || after.goal !== 'Next goal: Finish Puffy Path to open Spring Garden.') bad.push(at + 'menu after the flag: ' + JSON.stringify(after));
+          // a costume by touch: 4 stars to spend are enough for the Leaf Cape (the stars found and a little bonus, set here)
+          await pg.evaluate(() => { const r = hopS(); r.bonus = Math.max(0, 4 - hopWallet(r) + r.bonus); save(); hopMenu(); });
+          await pg.waitForSelector('[data-wear="leaf"]', { timeout: 5000 });
+          const cash0 = await pg.evaluate(() => hopWallet(S.hop));
+          await touch('[data-wear="leaf"]');
+          await pg.waitForSelector('[data-wear="leaf"][aria-pressed="true"]', { timeout: 5000 });
+          const buy = await pg.evaluate(() => ({ own: !!S.hop.own.leaf, wear: S.hop.wear, spent: S.hop.spent, cash: hopWallet(S.hop), menuPet: !!document.querySelector('.hp-pet .hp-cos'),
+            saved: JSON.parse(localStorage.getItem('starschool-v2')).hop.wear }));
+          if (!buy.own || buy.wear !== 'leaf' || buy.spent !== 4 || buy.cash !== cash0 - 4 || !buy.menuPet || buy.saved !== 'leaf') bad.push(at + 'buying the Leaf Cape: ' + JSON.stringify(buy));
+          for (const o of await pg.evaluate(look)) bad.push(at + 'costumes: ' + o);
+          // season 2: with season 1 done, Golden Hour (clouds that crumble) by real touches; the pet wears its costume
+          await pg.evaluate(() => { const r = hopS(); for (const c of HOP_COURSES.slice(0, 24)) r.best[c.id] = r.best[c.id] || 60000; r.world = 4; save(); hopMenu(4); });
+          await pg.waitForSelector('[data-c="q1"][data-ok="1"]', { timeout: 5000 });
+          await touch('[data-c="q1"]');
+          await pg.waitForFunction(() => HP && HP.ready && !HP.st.wait && HP.st.p.gr, null, { timeout: 15000 });
+          const s2 = await pg.evaluate(() => ({ id: HP.c.id, cos: !!(HP.v.cos && HP.v.cos.c), crumble: HP.st.C.floors.some(f => f.k == 'q') }));
+          if (s2.id !== 'q1' || !s2.cos || !s2.crumble) bad.push(at + 'season 2 course ' + JSON.stringify(s2));
+          const n2 = await toFlag('Golden Hour');
+          const e2 = await pg.evaluate(() => ({ best: S.hop.best.q1, cur: S.hop.cur, crumbled: true }));
+          await touch('#hpmenu');
+          await pg.waitForSelector('#hpgoal', { timeout: 8000 });
+          const g2 = await pg.evaluate(() => ({ goal: document.querySelector('#hpgoal').textContent, q2: !!document.querySelector('[data-c="q2"][data-ok="1"]'),
+            q3: !!document.querySelector('[data-c="q3"][data-ok="1"]') }));
+          if (!(e2.best > 30000) || e2.cur !== 'q2' || !g2.q2 || g2.q3 || g2.goal !== 'Next goal: Finish Crumbly Clouds to open Peach Puffs.') bad.push(at + 'after Golden Hour ' + JSON.stringify([e2, g2]));
+          notes.push(`Golden Hour (season 2) in ${(e2.best / 1000).toFixed(1)} s, ${n2.taps} taps, ${n2.offers} lifts; Leaf Cape bought (${cash0} -> ${buy.cash} stars)`);
+          // the frame time while hopping at 6x CPU throttle (1024x600), with the ghost of the first run
           if (w == 1024) {
+            await pg.evaluate(() => hopMenu(0));
             await touch('[data-c="m1"]');
             await pg.waitForFunction(() => HP && HP.ready && !HP.st.wait, null, { timeout: 15000 });
+            if (!(await pg.evaluate(() => !!HP.gh))) bad.push(at + 'no ghost on the second run of First Hops');
             await pg.waitForTimeout(1200);
             let best = null, tries = 0, load = os.loadavg()[0];
             for (;;) {
@@ -9377,8 +9414,9 @@ async function main() {
         await ga.ctx.close();
       }
       if (bad.length) fail('G-04b Sky Hop:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
-      else step('G-04b: Sky Hop by real touch at 380x780 and 1024x600: hub card -> menu (One-touch) -> course 1 to the flag by real taps -> shared end card ' +
-        '-> time, stars and medal saved, course 2 open; game time spent, clock stopped; main controls 64 px, buttons 48 px, no sideways scroll; ' + notes.join('; '));
+      else step('G-04b: Sky Hop by real touch at 380x780 and 1024x600: hub card -> menu (One-touch, next goal, twist, costumes) -> course 1 to the flag by real taps -> ' +
+        'shared end card -> time, stars, medal and ghost saved, course 2 open, the next goal names it; a costume bought by touch; a season 2 course to the flag; ' +
+        'game time spent, clock stopped; main controls 64 px, buttons 48 px, no sideways scroll; ' + notes.join('; '));
     }
 
     // S-SPK: Spanish speaking practice ("Say it!", src/js/50-say.js) at 380x780 and 1024x600, with a fake microphone (getUserMedia
