@@ -4,7 +4,7 @@ The running record of what has shipped. Newest entry first. Every chunk adds one
 
 **Next up:** P6-05 (wip/batch-N, map timing), the P5-07 flaky step; see Handoff notes
 
-**Current version:** v155
+**Current version:** v158
 
 ## Chunk status
 
@@ -139,6 +139,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - G-02b v149
 - ES-AUDIO v154
 - G-01b v155
+- EN-PRAISE v158
 
 ## Handoff notes
 
@@ -489,6 +490,62 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-11) Icons wanted from P4-03: `balloon` (Bonus game, today `gamepad`), `sparkle` / `confetti`, `unlock` (open padlock for "Next stop unlocked", today `map`), `zap` (a lightning with a spark for boss hits; today `bolt`), `sticker` (single sticker for the prize row), `medal` (the prize rosette as an icon), `heart-half` (boss life bar), `chest` (the treasure chest at icon size, e.g. for the round track where renderQ shows the gift emoji).
 
 ## Log
+
+### EN-PRAISE Recorded encouragement in six voices (v158, 2026-11-15, Claude)
+- Owner: "the voices that tell [the child] good job ... there should be default voices that say that beyond the tablet voice, which is pretty
+  generic ... record a variety of voices, male and female, saying all that is the default encouragement."
+- Lines (`GROUPS` in the new `tools/en-audio.js`): **73 lines**, every fixed English praise, try-again and well-done line say() speaks:
+  right-answer praise `CHEERS` (new in 50-round.js: PRAISE + PET_YAY, 15), streaks ("3/5/8/10 in a row!", "Amazing!", "Wow!", "Incredible!"),
+  `PET_OOPS` + "Try again!", the round end "You got 1 star!" ... "You got 10 stars!" + "You unlocked the next stop!", "Your egg hatched!",
+  placement, "New record!", game end cards (Block Builder, Hill Climb, Star Rally, Fact Sprint), Hill Climb crash / trick lines, "Beautiful!",
+  puzzle end cards and badges, the band-A puzzle cheers, trace "Great!" / "Keep going!", and the three Say it! feedback lines. Kinds:
+  cheer 23, oops 8, done 22, none 20. Not recorded: questions, hints, instructions, names, generated text, the pet's own lines (pet care,
+  shop: the pet talking, not a grown-up). A line with a number or a name plays its recorded first sentences, then the rest with the
+  tablet's voice ("New record!" + "120 meters!"); the streak line drops the child's name when recorded voices are on (all one speaker).
+- Voices (xAI TTS, `GET /v1/tts/voices` and the docs' voice descriptions; English, speed 1.0, no speech tags: they could not be judged by
+  ear here and the plain "!" lines already sound cheerful): female **Eve** (energetic, upbeat), **Iris** (friendly, upbeat, charming),
+  **Luna** (gentle, patient, nurturing; education); male **Castor** (charismatic, easygoing), **Lumen** (warm, engaging; education),
+  **Sirius** (playful). Chosen from 13 candidates by description and a rough pitch track of trial cheers ("Great job!", "Woo-hoo! You did it!",
+  five more): the chosen ones have a wide pitch range; Ara / Ursa were flatter, Helios deep and flat, Leo "authoritative". Every new file is
+  checked with xAI speech to text (letters compared, fillers like "Hmm" ignored, 2 letters or 1 in 10 allowed); about 10% were recorded again.
+- Sizes: 438 files (73 x 6), **1,205 KB** (largest 9.3 KB), Opus 16 kbps mono Ogg in `audio/en/`; manifest `src/data/d-en-audio.js` 9.5 KB
+  (line -> [kind, [file per voice]]). All audio now 2,987 KB (Spanish 1,782): budget raised to warn 4.0 / fail 4.5 MB (`AUDIO_*`,
+  CONTRIBUTING 3.3, check.sh), per file 40 KB unchanged; start-up 2,715 KB and the precache under 3.6 MB unchanged.
+- Tools: `tools/voice-audio.js` is the shared recorder (curl to xAI with `Authorization: Bearer proxy-injected`, retries, trim, Opus, hash
+  names, prune, speech to text). `tools/es-audio.js` now uses it (its file names and recipe are unchanged: 0 lines to record).
+  `node tools/en-audio.js` (`--dry` counts) records missing lines in all six voices and writes the manifest.
+- Playback (12-speech.js, after the ES-AUDIO lookup, which stays first): `enSay()` takes an English line that is in EN_AUDIO (whole, or its
+  first sentences); the voice is a random one of the allowed voices that is not the last one used, so no voice cheers twice in a row; a
+  line queued (q) behind a cheer, or within 0.8 s of its end, keeps that voice. The same shared `<audio>` element and queue as ES-AUDIO;
+  a cheer is never cut off (a new say() waits for it). Fallbacks: missing file / no Opus / a file that fails (marked bad) / `ENA.off`: the
+  tablet's voice. 50-round.js: a right answer says the line its toast shows (`cheerSay('cheer', ...)`), a first miss the pet's oops line
+  (not in boss fights), and with `q.after` the answer is read after the cheer. Grown-up clips win: `cheerSay` plays a clip of that kind at
+  its old rate (30% cheer, 50% oops) and never the default when the grown-up has clips of that kind; say() itself plays a clip for any
+  line of kind cheer / oops / done when there are clips of that kind.
+- Grown-ups, Sound and voice: one row **Cheer voices: Mixed / Female / Male / Tablet voice** (`[data-cheer]`, default Mixed), saved per
+  child as `S.cheerV` (ROADMAP save table); a tap plays a sample.
+- Offline: sw.js caches `audio/en` with `audio/es` at install in the same `starschool-audio` cache (AF lists both; Range requests for both).
+- Tests: test.js **"recorded encouragement EN-PRAISE"** (every line, 6 files each with the right hash, mono Ogg Opus 600 B - 40 KB, no stray
+  files, total budget, 3 f + 3 m voices, CHEERS / PET_OOPS recorded, every listed literal still in src/js, sw.js list and Range rule, the
+  manifest in the data file; a stand-in browser: plays the right file, 60 cheers never repeat a voice and use all six, a queued cheer keeps
+  its voice, the next changes it, "New record! 120 meters!" file then voice, a cheer is not cut off, a question stays the voice, Female /
+  Male / Tablet voice, unknown choice = Mixed, a parent clip wins, cheerSay rates, voice off, a failed file falls back and is not retried,
+  ENA.off, no Opus). ES-AUDIO's sw.js check now compares only the audio/es part of AF. smoke.js `// EN-PRAISE` at 380x780 (play stubbed): a
+  right answer plays a praise file of its toast line, the next right answer another voice, Grown-ups -> Cheer voices -> Tablet voice saved
+  and spoken, a parent cheer clip wins; P6-02 offline now also checks every English recording is in the audio cache.
+- Check: `bash tools/check.sh` ran once: build, contrast, test.js (all 136 checks) passed; smoke.js stopped at the known flaky P5-07
+  Start over step (Handoff note 2: "setup did not show" after the reload). The smoke steps after it were then run on their own: all
+  passed (the new `// EN-PRAISE`, ES-AUDIO, P6-02 offline with 1108 recordings cached and one played offline, S-SPK) except one G-04a
+  Snack Stand 1024x600 taps timeout, which passed twice when run alone; a11y.js 36 screens x 2 sizes, zero failures; perf.js OK.
+- Samples ("Great job!"): Eve audio/en/c9893f443e6f.ogg, Iris audio/en/b7edf0b4cfdd.ogg, Luna audio/en/fd517209847f.ogg,
+  Castor audio/en/dea4dbebccda.ogg, Lumen audio/en/f32702b06e9b.ogg, Sirius audio/en/f0dca4538029.ogg.
+- Merge: built on branch EN-PRAISE from origin/main (v155). VER v158 is provisional: renumber at merge, rebuild, `git add -A`. Overlaps to
+  expect: 12-speech.js (say(): keep the ES-AUDIO lookup first, then the cheerBusy line and enSay), 80-grown.js (one row in the Sound and
+  voice card under Test voice, a CHEER_NAMES const, one bind line; the parallel Spanish-speaking-check chunk edits the same card),
+  50-round.js (right answer, miss, round-end lines), tools/test.js (AUDIO_* line, the ES-AUDIO AF filter, the new check before
+  `// ---- report ----`), smoke.js (new block before P6-02, one line in P6-02), build.py (VER, AUDIO list, sw Range regex), check.sh, sw.js.
+  62-hill.js and 50-say.js are not touched (their lines are recorded and play through say()). After a merge that changes any listed line,
+  run `node tools/en-audio.js` (needs the xAI proxy) and commit audio/en and the manifest.
 
 ### G-01b Block Builder journey, challenges, gallery (v155, 2026-11-14, Claude)
 - Why (the owner): the games are "very, very repetitive. Same thing after one another... it's like you're on level one and stuck there. You never go anywhere else."

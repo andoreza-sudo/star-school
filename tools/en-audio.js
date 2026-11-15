@@ -1,0 +1,116 @@
+// EN-PRAISE: record every fixed English encouragement line the app says, in six voices, with xAI text to speech, and write the manifest.
+//   node tools/en-audio.js          collect the lines, record the ones without a file (audio/en/<hash>.ogg), check each new file with
+//                                   xAI speech to text, write src/data/d-en-audio.js, delete files no line uses any more
+//   node tools/en-audio.js --dry    collect and print the counts only (no API calls, nothing written)
+// Recording, trimming, encoding and the file names are the shared recorder, tools/voice-audio.js (as tools/es-audio.js).
+// tools/test.js "recorded encouragement EN-PRAISE" uses collect() from this file, so a line added here, or a line here that the app
+// no longer says, fails the tests until this tool has been run and its files committed.
+//
+// What is recorded: the praise, try-again and well-done lines that say() (src/js/12-speech.js) speaks: right-answer praise (CHEERS =
+// PRAISE + PET_YAY), streaks, PET_OOPS, the round end, game and puzzle end cards, Say it! feedback. Not questions, hints, instructions,
+// names or anything generated. A line with a number or a name in it is recorded only as its fixed first sentence ("New record!"): say()
+// plays the recorded first sentences, then the rest with the tablet's voice. The pet's own lines (pet care, the shop) stay the tablet's
+// voice: they are the pet talking, not a grown-up cheering.
+// Each line has a kind: 'cheer' (right answers), 'oops' (try again) and 'done' (a round or game is won) are the kinds of the grown-up's
+// own clips (src/js/44-clips.js): when the grown-up has recorded clips of that kind, theirs play instead of these.
+const fs = require('fs'), path = require('path'), vm = require('vm');
+const VA = require('./voice-audio.js'), E = require('./es-audio.js');
+const ROOT = VA.ROOT, SRC = path.join(ROOT, 'src');
+const DIR = 'audio/en/', EXT = '.ogg', LANG = 'en', SPEED = 1.0;
+const FORMAT = 'xai-tts en wav24k speed1 trim opus16k-mono ogg v1'; // part of every file's hash: changing the recipe records everything again
+const MANIFEST = path.join(SRC, 'data', 'd-en-audio.js');
+// The six voices (GET /v1/tts/voices; descriptions from the xAI voice list). Chosen for children: warm, friendly and lively, with a wide
+// pitch range on short cheers (a rough pitch track of "Great job!", "Woo-hoo! You did it!" and others in 13 voices). Left out: Ara and
+// Ursa (warm but flatter on short cheers), Helios ("upbeat" but deep and flat here), Leo ("authoritative"), the sales and narration voices.
+const VOICES = [
+  ['eve', 'f', 'Energetic and upbeat'],
+  ['iris', 'f', 'Friendly, upbeat, and naturally charming'],
+  ['luna', 'f', 'Gentle, patient, and deeply nurturing (education)'],
+  ['castor', 'm', 'Charismatic, down-to-earth, and easygoing'],
+  ['lumen', 'm', 'Warm, articulate, and engaging (education)'],
+  ['sirius', 'm', 'Quick-witted, clever, and playful'],
+];
+// [kind, where, lines]: lines is a list, or a function of the app (R evaluates in it) for a list the app defines. lit: every line
+// must be in the source as written (a quoted string), so a line changed in the app is noticed.
+const GROUPS = [
+  ['cheer', 'right answer (CHEERS in 50-round.js: PRAISE + PET_YAY)', R => R('CHEERS')],
+  ['cheer', 'streak (50-round.js: "5 in a row! Wow!")', ['3 in a row!', '5 in a row!', '8 in a row!', '10 in a row!', 'Amazing!', 'Wow!', 'Incredible!']],
+  ['cheer', 'trace (TR_SAY.p2, first sentence)', ['Great!']],
+  ['oops', 'miss (PET_OOPS in 40-view.js)', R => R('PET_OOPS')],
+  ['oops', 'miss', ['Try again!']],
+  ['done', 'round end (50-round.js finish)', [...Array(10)].map((_, i) => i ? `You got ${i + 1} stars!` : 'You got 1 star!')],
+  ['done', 'round end, a new stop', ['You unlocked the next stop!']],
+  ['', 'pet grows (first sentence)', ['Your egg hatched!'], 1],
+  ['', 'placement', ["Let's find your level! Some questions may be tricky. Just do your best!", 'All done!', 'Great work!'], 1],
+  ['', 'records (first sentence)', ['New record!'], 1],
+  ['done', 'game end cards', ['Good job!', 'Perfect build! Three stars!', 'You built it!', 'Three stars! Amazing!', 'You made it!', 'New best lap!', 'Good driving!', 'You finished the race! Well done!'], 1],
+  ['oops', 'Hill Climb', ['So close! Try again!', 'Oops! Ease off the gas!', 'Splash! Go faster to jump!'], 1],
+  ['', 'Hill Climb tricks', ['Backflip!', 'Front flip!'], 1],
+  ['', 'colouring (first sentence)', ['Beautiful!'], 1],
+  ['done', 'puzzle end cards', ['Perfect!', 'You solved it!', 'Solved!'], 1],
+  ['', 'puzzle badges (first sentence)', ['New badge!', 'New badges!'], 1],
+  ['', 'puzzles, band A', ['Yes! That is its shadow.', 'Yes! The same shape, turned.', 'The picture matches!', 'You found every word!', 'You filled the whole shape!', 'You did it! Every row, column and box has every animal.'], 1],
+  ['', 'trace', ['Keep going!'], 1],
+  ['', 'Say it! feedback', ['I didn’t hear anything. Tap the microphone and try again!', 'Did you say it? Tap the thumbs up, or try again!', 'Did it sound the same? Tap “I said it!” or “Try again”.'], 1],
+];
+const enKey = E.esKey; // NFC, trimmed, spaces collapsed: the same key as say() uses
+
+// collect(ctx?) -> Map key -> {text, kind, from:[where], lit}
+function collect(ctx) {
+  ctx = ctx || E.loadApp();
+  const R = s => vm.runInContext(s, ctx), lines = new Map();
+  for (const [kind, from, ls, lit] of GROUPS) {
+    for (const t of (typeof ls == 'function' ? ls(R) : ls)) {
+      const k = enKey(t);
+      if (!lines.has(k)) lines.set(k, { text: k, kind, from: [], lit: !!lit });
+      lines.get(k).from.push(from);
+    }
+  }
+  return lines;
+}
+const fileOf = (k, voice) => VA.fileOf(FORMAT, voice, k);
+
+function manifestText(lines) {
+  const keys = [...lines.keys()].sort();
+  return '/* ---------- EN-PRAISE: recorded English encouragement (BUILT by tools/en-audio.js: never edit by hand; run node tools/en-audio.js) ----------\n'
+    + '   Every fixed praise / try-again / well-done line say() speaks -> [kind, [file per voice]]: the file is ' + DIR + '<file>' + EXT + ' (xAI text to\n'
+    + '   speech, English, speed ' + SPEED + ', Opus 16 kbps mono). voices: [id, f|m] in the order of the files. kind: the grown-up clip kind that\n'
+    + '   replaces the line (cheer, oops, done) or "". Keys are esKey(text). ' + keys.length + ' lines x ' + VOICES.length + ' voices. */\n'
+    + 'const EN_AUDIO={dir:' + JSON.stringify(DIR) + ',ext:' + JSON.stringify(EXT) + ',voices:' + JSON.stringify(VOICES.map(v => [v[0], v[1]])) + ',lines:{\n'
+    + keys.map(k => JSON.stringify(k) + ':[' + JSON.stringify(lines.get(k).kind) + ',' + JSON.stringify(VOICES.map(v => fileOf(k, v[0]))) + ']').join(',\n') + '}};\n';
+}
+
+// a new file must say its line: xAI speech to text, compared letters only (so "Woohoo" is "Woo-hoo", digits are words), without
+// the fillers it leaves out ("Hmm"), and a near miss allowed (2 letters, or 1 in 10: it hears "I said it" as "I set it")
+const NUM = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
+const norm = s => String(s).toLowerCase().replace(/\b(\d+)\b/g, (m, d) => NUM[+d] || d).replace(/\b(hmm+|um+|uh+)\b/g, '').replace(/[^a-z]/g, '');
+function dist(a, b) {
+  let d = [...Array(b.length + 1).keys()];
+  for (let i = 1; i <= a.length; i++) { const n = [i]; for (let j = 1; j <= b.length; j++) n[j] = Math.min(d[j] + 1, n[j - 1] + 1, d[j - 1] + (a[i - 1] != b[j - 1])); d = n; }
+  return d[b.length];
+}
+function check(j, file) {
+  const heard = VA.stt(file, LANG);
+  if (heard == null) return null; // speech to text not reachable: keep the file (the test checks size and format)
+  const a = norm(heard), b = norm(j.text);
+  return dist(a, b) <= Math.max(2, Math.floor(b.length / 10)) ? null : 'heard "' + heard + '"';
+}
+
+async function main() {
+  const dry = process.argv.includes('--dry');
+  const lines = collect(), all = [...lines.values()];
+  console.log(`lines: ${all.length} x ${VOICES.length} voices = ${all.length * VOICES.length} files, ${all.reduce((s, o) => s + o.text.length, 0) * VOICES.length} characters`);
+  const jobs = [];
+  for (const o of all) for (const [v] of VOICES) jobs.push({ text: o.text, voice: v, file: fileOf(o.text, v) });
+  const { failed } = await VA.record(jobs, { dir: DIR, ext: EXT, lang: LANG, speed: SPEED, dry, check });
+  if (dry) return;
+  // the manifest lists only lines with a file in every voice (a failed line keeps the tablet's voice until the next run)
+  const dir = path.join(ROOT, DIR), have = new Map([...lines].filter(([k]) => VOICES.every(([v]) => fs.existsSync(path.join(dir, fileOf(k, v) + EXT)))));
+  fs.writeFileSync(MANIFEST, manifestText(have));
+  const keep = new Set([...have.keys()].flatMap(k => VOICES.map(([v]) => fileOf(k, v) + EXT))), [gone, bytes] = VA.prune(DIR, EXT, keep);
+  console.log(`manifest: ${have.size} lines, ${fs.statSync(MANIFEST).size} bytes; audio: ${keep.size} files, ${bytes} bytes; removed ${gone} old files`);
+  if (failed.length) process.exitCode = 1;
+}
+
+module.exports = { collect, fileOf, enKey, DIR, EXT, FORMAT, VOICES, GROUPS };
+if (require.main === module) main().catch(e => { console.error(e); process.exit(1); });

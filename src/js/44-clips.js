@@ -12,6 +12,13 @@ function playClip(kind){const cs=CLIPS.filter(c=>c.kind==kind);if(!cs.length||!S
   if(!b.length){b=shuffle(cs.map(c=>c.id));if(b.length>1&&b[0]==BAG['last_'+kind])b.push(b.shift())}
   const id=b.shift();BAG[kind]=b;BAG['last_'+kind]=id;const c=cs.find(x=>x.id==id);
   try{hush();const a=new Audio(c.url);a.play().catch(()=>{});sfxDuck(()=>!a.ended&&!a.paused);return true}catch(e){return false}}
+/* EN-PRAISE: a cheer in the round (kind 'cheer' after a right answer, 'oops' after a first miss). The grown-up's own clips of that kind
+   win: when there are any, one plays at the old rate p (after ms), and the recorded default never plays instead. Without clips, with
+   "Read questions out loud" on, the line t is said: in a recorded voice (say() in 12-speech.js, the Cheer voices choice) or the tablet's.
+   Returns 'clip', 'say' or false. */
+const hasClips=kind=>CLIPS.some(c=>c.kind==kind);
+function cheerSay(kind,t,p,ms){if(hasClips(kind)){if(Math.random()>=p)return false;if(ms){setTimeout(()=>playClip(kind),ms);return 'clip'}return playClip(kind)?'clip':false}
+  if(!S.voice)return false;say(t);return 'say'}
 const CLIPKINDS=[
  ['cheer','Cheers','Played after right answers.',['Great job, {name}!','You\'re so smart!','Way to go!','Boom! You nailed it!','I\'m so proud of you!','High five!'],'party'],
  ['oops','Try again','Played sometimes after a miss.',['That\'s okay, try again!','Almost! Look again.','You can do it!','Mistakes help us learn!','Take your time, buddy.','Give it another try!'],'thumbs-up'],
