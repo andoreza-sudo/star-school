@@ -3041,7 +3041,7 @@ const MIGRATIONS=[null,
 ];
 /* Run once at load, from 42-paths.js (needs NODES, which no code before it reads). Backs up the old string first. */
 function migrate(){
-  if(S.owned&&S.owned['\u{1FA84}']){S.owned['\u{1FA80}']=1;delete S.owned['\u{1FA84}']}if(S.wear&&S.wear.toy=='\u{1FA84}')S.wear.toy='\u{1FA80}';if(S.stickers&&S.stickers['\u{1F984}']){S.stickers['\u{1F420}']=(S.stickers['\u{1F420}']||0)+S.stickers['\u{1F984}'];delete S.stickers['\u{1F984}']} // an old toy (U+1FA84) became the yo-yo and an old sticker (U+1F984) the fish (the parent asked for none of that theme): same price, kept by whoever had it
+  if(S.owned&&S.owned['\u{1FA84}']){S.owned['\u{1FA80}']=1;delete S.owned['\u{1FA84}']}if(S.wear&&S.wear.toy=='\u{1FA84}')S.wear.toy='\u{1FA80}'; // an old toy (U+1FA84) became the yo-yo (the parent asked for none of that theme): same price, kept by whoever had it
   if(S.maps&&typeof PATHS!='undefined')for(const p in PATHS)S.maps[p]=S.maps[p]||{}; // a path added after the save was written starts empty (Discover, P2-36): a default, not a migration
   const from=Number.isInteger(S.v)&&S.v>=1?S.v:1;
   if(from>=LATEST)return; // current, or written by a newer app: leave it alone
@@ -3441,6 +3441,8 @@ const petE=(st=S.stars)=>PETS[S.pet].s[Math.min(stage(st),3)];
 const petAura=(st=S.stars)=>'rig'; // P4-05/P4-06: 'rig' = drawn pet (17-pets-svg.js); every pet is drawn now
 const petN=()=>S.petName||PETS[S.pet].def;
 const STK=[...'🐠🐬🦖🚀🌈🍩🎸🏆🦁🐼🍕🎈🌟🐙🦋🍦🚂⚽🎨🐢🦊🍉🏰🛸🌻🐝🍪🎃🐳🦉🏀🚁🧁🍓🐧🦒🎡⛵🌋🦜🧸🎺🐞🍭🌙🦈🚒🐘'.matchAll(/\p{Extended_Pictographic}️?/gu)].map(m=>m[0]);
+// how many of a sticker the child has; the fish also counts an old sticker (U+1F984) a save may still hold (CONTENT-01: no such theme, saves are not rewritten)
+const stkN=s=>(S.stickers[s]||0)+(s=='\u{1F420}'?(S.stickers['\u{1F984}']||0):0);
 
 /* ---------- sound engine (all synthesized, works offline) ----------
    P4-17 (DESIGN_SYSTEM 8.2): one soft, consistent set of sounds.
@@ -6222,7 +6224,7 @@ DOL.push(
 'about better bring carry clean cut done draw drink eight fall far full got grow hold hot hurt if keep kind laugh light long much myself never only own pick seven shall show six small start ten today together try warm'.split(' '));
 // pic 5 / build 5: r-controlled vowels. [word, emoji, the r-vowel]. Wrong choices swap the r-vowel (bird / bard / burd).
 const RVW=[['car','🚗','ar'],['star','⭐','ar'],['yarn','🧶','ar'],['shark','🦈','ar'],['scarf','🧣','ar'],['cart','🛒','ar'],['dart','🎯','ar'],
-  ['horse','🐴','or'],['fork','🍴','or'],['corn','🌽','or'],['forest','🌲','or'],['sword','⚔️','or'],
+  ['horse','🐴','or'],['corn','🌽','or'],['forest','🌲','or'],['sword','⚔️','or'],
   ['hammer','🔨','er'],['monster','👾','er'],['flower','🌸','er'],['water','💧','er'],['tower','🗼','er'],
   ['bird','🐦','ir'],['girl','👧','ir'],['circle','⚪','ir'],['birthday','🎉','ir'],
   ['turtle','🐢','ur'],['purse','👜','ur'],['church','⛪','ur']];
@@ -7792,14 +7794,14 @@ function learn(p,i){const n=NODES[p][i],items=SPN[n.sk.slice(3)],rec=items.every
 
 // P4-07 sticker book (DESIGN_SYSTEM 6.4; CSS 43-shop.css): pages of 12; a sticker is its emoji (content) cut out die-cut style;
 // empty slots show a faint star. S.stickers is only read.
-function book(){const have=STK.filter(s=>S.stickers[s]).length,per=12,pages=[];
+function book(){const have=STK.filter(s=>stkN(s)).length,per=12,pages=[];
   for(let i=0;i<STK.length;i+=per)pages.push(STK.slice(i,i+per));
   const turn=i=>[-6,4,-2,7,-4,3,-7,5,-3,6,-5,2][i%12];
-  const slot=(s,i)=>{const n=S.stickers[s]||0;
+  const slot=(s,i)=>{const n=stkN(s);
     return n?`<button class="sb-slot sb-stk" data-s="${esc(s)}" style="--r:${turn(i)}deg" aria-label="Sticker ${i+1}${n>1?', you have '+n:''}">`+
       `<span class="sb-e">${esc(s)}</span>${n>1?`<b class="sb-n">×${n}</b>`:''}</button>`
       :`<span class="sb-slot sb-no" aria-hidden="true">${ico('star',30)}</span>`};
-  const page=(p,k)=>{const got=p.filter(s=>S.stickers[s]).length;
+  const page=(p,k)=>{const got=p.filter(s=>stkN(s)).length;
     return`<section class="sb-page${got==p.length?' full':''}"><h2 class="sb-ph"><span>Page ${k+1}</span><span class="sb-pc">${got==p.length?ico('check',20):''}${got} of ${p.length}</span></h2>`+
       `<div class="sb-grid">${p.map((s,j)=>slot(s,k*per+j)).join('')}</div></section>`};
   view(`<div class="top tbar gx-mtop s-read">${UI.ibtn('back','Back',{size:'sm',id:'back'})}<div class="ttl gx-ttl"><span class="gx-tb">${ico('sticker-book',24)}</span><span>My Stickers</span></div>`+
@@ -9317,7 +9319,7 @@ function check(v,el){if(G.lock)return;const q=G.q,K=KIND[q.kind],p=P(q.sk),ok=K.
 function bossHit(){const b=$('#bossE'),f=$('#hpf'),h=$('#hpn');if(f)f.style.transform=`scaleX(${G.hp/7})`;if(h){h.innerHTML=GFX.hearts(G.hp);h.setAttribute('aria-label',G.hp+' hearts')}
   if(b){b.classList.remove('hit');void b.offsetWidth;b.classList.add('hit');const r=b.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'zap')}SFX.hit()}
 function bossKO(){const b=$('#bossE');if(b)b.classList.add('ko');SFX.ko();confetti(40);fb(`You beat ${G.boss.name}!`);if(S.voice)say(`You beat ${G.boss.name}!`)}
-function award(){const s=pick(STK),isNew=!S.stickers[s];S.stickers[s]=(S.stickers[s]||0)+1;return{s,isNew}}
+function award(){const s=pick(STK),isNew=!stkN(s);S.stickers[s]=(S.stickers[s]||0)+1;return{s,isNew}}
 function finish(){
   const g=G,sc=g.score,n=g.n,best=g.best,before=S.stars,d=day(),p=g.path,ni=g.node,nd=p?NODES[p][ni]:null;
   let stars=0,newPass=false,wDone=false;
@@ -11737,7 +11739,7 @@ function grown(){let armed=false;
       ${lines.map((t,i)=>row('“'+esc(t.replace('{name}',S.name))+'”',cs.find(c=>c.line==i),i)).join('')}
       ${extra.map((c,i)=>row('Your own #'+(i+1),c,null)).join('')}
       <div class="vline gw-vl"><span class="vtxt">${ico('plus',22,'ic-off')}<span>Say anything you like</span></span>${UI.btn('Record',{size:'sm',icon:'record',cls:'rec gw-rec',attrs:`data-rec="${k}|x"`})}</div></div>`}).join('');
-  const nstk=STK.filter(s=>S.stickers[s]).length;
+  const nstk=STK.filter(s=>stkN(s)).length;
   view(`<div class="top tbar adult gw-top">${UI.ibtn('back','Back',{size:'sm',id:'back'})}<div class="ttl gx-ttl"><span class="gx-tb gw-tb">${ico('gear',24)}</span><span><span class="nw">Grown-ups</span></span></div></div>
   <div class="scroll gw"><div class="gw-cols">
   ${GW.card('gw-sum','user',esc(S.name||'Your child')+' at a glance',
