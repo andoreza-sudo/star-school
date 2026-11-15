@@ -80,11 +80,16 @@ global.getComputedStyle=()=>({}); // P6-02: view() reads a computed style to res
 global.setTimeout=()=>{};
 
 const results=[]; // {name, problems, known, note}
+const PENDING=[]; // S-SPK2: a check may return a promise of {problems, note} (IndexedDB-style code); the report waits for it, in place
 const run=(name,fn)=>{
+  const put=(problems,note)=>{const kn=new Set(KNOWN[name]||[]),known=problems.filter(p=>kn.has(p));
+    return{name,problems:problems.filter(p=>!kn.has(p)),known,note,unusedKnown:[...kn].filter(k=>!problems.includes(k))}};
   let problems=[],note='';
-  try{const r=fn();problems=r.problems||[];note=r.note||''}catch(e){problems=['check crashed: '+(e&&e.stack||e)]}
-  const kn=new Set(KNOWN[name]||[]),known=problems.filter(p=>kn.has(p));
-  results.push({name,problems:problems.filter(p=>!kn.has(p)),known,note,unusedKnown:[...kn].filter(k=>!problems.includes(k))});
+  try{const r=fn();
+    if(r&&typeof r.then=='function'){const i=results.length;results.push(put(['check did not finish'],''));
+      PENDING.push(r.then(x=>{results[i]=put(x.problems||[],x.note||'')},e=>{results[i]=put(['check crashed: '+(e&&e.stack||e)],'')}));return}
+    problems=r.problems||[];note=r.note||''}catch(e){problems=['check crashed: '+(e&&e.stack||e)]}
+  results.push(put(problems,note));
 };
 const uniq=a=>[...new Set(a)];
 
@@ -14019,6 +14024,121 @@ run('Spanish speaking S-SPK',()=>{
   return{problems:errs,note:note.join('; ')};
 });
 
+// ---- S-SPK2: the speaking check of "Say it!" (A: the tablet's own on-device recognition, B: the offline sound check in
+// src/js/50-say-cmp.js, C: the grown-ups' listening corner in src/js/50-say-corner.js). The matcher, the MFCC + DTW pipeline on
+// synthetic sounds, the calibrated thresholds on a calibration set made from the recordings (tools/spk-calib.js; needs ffmpeg),
+// corner retention and deletion per child, the grown-up's star and the Home message once, privacy (no network in the new code,
+// on-device recognition only), old saves.
+run('Spanish speaking check S-SPK2',()=>{
+  const errs=[],bad=m=>{if(errs.length<60&&!errs.includes(m))errs.push(m)},note=[];
+  const rd=f=>fs.readFileSync(path.join(SRC,f),'utf8'),cmpS=rd('js/50-say-cmp.js'),corS=rd('js/50-say-corner.js'),sayS=rd('js/50-say.js'),css=rd('css/42-say.css');
+  // 1. privacy: nothing in the new code reaches the network; the only fetch is the app's own recording of the line; recognition is
+  //    on the device only (processLocally / ondevice-only, and install only for processLocally); the recordings stay in IndexedDB
+  const strip=s=>s.replace(/\/\*[\s\S]*?\*\//g,'').replace(/\/\/[^\n]*/g,'');
+  for(const [f,s] of [['50-say-cmp.js',cmpS],['50-say-corner.js',corS],['50-say.js',sayS]]){const c=strip(s);
+    if(/XMLHttpRequest|sendBeacon|WebSocket|EventSource|https?:\/\/|navigator\.share|\.src\s*=\s*['"`]http/.test(c))bad(f+' has a network call');
+    if(/\p{Extended_Pictographic}/u.test(s)||/#[0-9a-fA-F]{6}\b/.test(s))bad(f+' has an emoji or a raw colour')}
+  const fetches=strip(cmpS).match(/fetch\([^)]*\)/g)||[];
+  if(fetches.join()!=='fetch(ES_AUDIO.dir+f+ES_AUDIO.ext)')bad('50-say-cmp.js fetches something other than its own recording: '+fetches.join());
+  if(/fetch\(/.test(strip(corS))||/fetch\(/.test(strip(sayS)))bad('the corner or the step fetches something');
+  if(/localStorage|indexedDB\.open\('(?!starschool-say)/.test(strip(corS)))bad('the corner stores outside its IndexedDB database');
+  if(!/install\(\{langs:\[lang\],processLocally:true\}\)/.test(corS)||!/available\(\{langs:\[l\],processLocally:true\}\)/.test(corS))bad('Spanish listening does not ask for on-device recognition');
+  if(!/needOnline\(async\(\)=>/.test(corS)||!/onlineNote\('/.test(corS))bad('the download has no online note or needOnline');
+  if(/#[0-9a-fA-F]{3,8}\b/.test(css))bad('42-say.css has a raw colour');
+  // 2. the corner and the step are wired: each recording is kept, the check runs, Grown-ups shows both cards, Start over and a child's
+  //    removal delete the recordings, the About line says they stay on the tablet and go automatically
+  if(!/spkJudge\(b\);if\(typeof spkrAdd=='function'\)spkrAdd\(b,SPK\.it\);spkPlay\(\)/.test(sayS))bad('the step does not judge and keep the recording');
+  const gr=rd('js/80-grown.js');
+  if(!/\$\{spkLisCard\(\)\}\s*\$\{spkCornerCard\(\)\}/.test(gr)||!/spkLisBind\(\);spkCornerBind\(\)/.test(gr))bad('Grown-ups lacks the listening cards');
+  if(!/deleteDatabase\('starschool-say'\)/.test(gr))bad('Start over keeps the Say it! recordings');
+  if(!/spkrDrop\(id\)/.test(rd('js/01-profiles.js')))bad('removing a child keeps their recordings');
+  if(!/stay on this tablet and are deleted automatically/.test(gr)||!/Nothing is sent/.test(gr))bad('About: the privacy line');
+  if(!/\$\{spkStarHTML\(\)\}/.test(rd('js/46-home.js')))bad('Home does not show the star message');
+  const FX=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const body=function(){const out={bad:[],note:[]},B=m=>out.bad.push(m);
+    // 3. the matcher (A uses it on what the tablet heard)
+    for(const [t,h,w] of [['la mariposa','mariposa',1],['la mariposa','Mariposa.',1],['la mariposa','la mesa',0],['el gato','el pato',0],['Buenos días.','buenos dias',1]])
+      if(spkMatch(t,h)!==!!w)B('match '+t+' / '+h);
+    // 4. the pipeline on synthetic sounds: FFT, levels (silence, too short, too loud), MFCC + DTW (a sound matches itself, a slower
+    //    copy of it, a softer and noisier copy; not a different sound)
+    {const re=new Float32Array(64),im=new Float32Array(64);for(let i=0;i<64;i++)re[i]=Math.cos(2*Math.PI*5*i/64);spkcFFT(re,im);
+     let mx=0;for(let i=1;i<32;i++)if(Math.hypot(re[i],im[i])>Math.hypot(re[mx],im[mx]))mx=i;if(mx!==5||Math.abs(Math.hypot(re[5],im[5])-32)>1e-3)B('FFT peak '+mx)}
+    let z=7;const rnd0=()=>{z=(z*1103515245+12345)&0x7fffffff;return z/0x7fffffff-0.5};
+    // a "word": two vowel-like parts (harmonics shaped by formants) with a noisy consonant between them
+    const word=(f1,f2,f3,f4,sp=1,g=0.3,nz=0)=>{const n=Math.floor(16000*0.9*sp),x=new Float32Array(16000*0.3+n+8000);
+      for(let i=0;i<n;i++){const t=i/n,o=4800+i,v=t<0.4?[f1,f2]:t<0.55?null:[f3,f4];
+        if(!v){x[o]=g*0.6*rnd0();continue}
+        x[o]=g*Math.sin(Math.PI*t)*[...Array(30)].reduce((a,_,h)=>a+(Math.exp(-Math.pow((130*(h+1)-v[0])/150,2))+0.6*Math.exp(-Math.pow((130*(h+1)-v[1])/200,2))+0.05/(h+1))*Math.sin(2*Math.PI*130*(h+1)*i/16000),0)/4}
+      if(nz)for(let i=0;i<x.length;i++)x[i]+=nz*rnd0();return x};
+    const A=word(700,1200,300,2300),A2=word(700,1200,300,2300,1.25,0.12,0.004),Bw=word(300,2300,700,1200),Cw=word(500,900,400,800);
+    const fa=spkcFeat(A),fa2=spkcFeat(A2,true),fB=spkcFeat(Bw),fc=spkcFeat(Cw);
+    if([fa,fa2,fB,fc].some(f=>f.k!=='ok'))B('synthetic words not ok: '+[fa,fa2,fB,fc].map(f=>f.k));
+    else{const self=spkcDTW(fa.f,fa.f),same=spkcDist(fa2,fa),diff=Math.min(spkcDist(fa2,fB),spkcDist(fa2,fc));
+      if(self!==0)B('DTW of a sound with itself is '+self);
+      if(!(same<diff))B('a slower, softer, noisier copy is not closer than other sounds: '+same.toFixed(3)+' vs '+diff.toFixed(3));
+      if(spkcDecide(fa2,fa,[fB,fc]).k!=='great')B('the copy is not judged great '+JSON.stringify(spkcDecide(fa2,fa,[fB,fc])));
+      if(spkcDecide(spkcFeat(Bw,true),fa,[fc]).k!=='again')B('a different sound is not "listen again"');
+      if(fa2.fw.length!==SPKC.WARPS.length||fa.fw.length)B('warps: the child side only');
+      out.note.push('synthetic: itself 0, slower copy '+same.toFixed(2)+', other '+diff.toFixed(2))}
+    if(spkcFeat(new Float32Array(32000)).k!=='quiet')B('silence is not quiet');
+    {const x=new Float32Array(32000);for(let i=16000;i<16800;i++)x[i]=0.4*Math.sin(i/3);if(spkcFeat(x).k!=='quiet')B('a 0.05 s click is not too short')}
+    {const x=new Float32Array(32000);for(let i=0;i<x.length;i++)x[i]=Math.sin(i/9)>0?1:-1;if(spkcFeat(x).k!=='loud')B('a clipped sound is not too loud')}
+    if(spkcDecide({k:'quiet'},fa,[]).k!=='quiet')B('quiet passes through');
+    // the distractors: close spelling, never a line the matcher accepts, same voice first, deterministic
+    {const n=spkcNear('el gato');if(n.length!==3||n.some(s=>spkMatch('el gato',s))||JSON.stringify(n)!==JSON.stringify(spkcNear('el gato')))B('distractors of el gato: '+n);
+     out.note.push('el gato is compared with '+n.join(', '))}
+    // 5. the listening corner: an in-memory store stands in for IndexedDB (SPKR.all / put / del)
+    loadSave(null);migrate();S.name='Ava';let saved=0;const keep={save,fb,SFX:SFX.magic};save=()=>{saved++};fb=()=>{};
+    const mem=new Map();SPKR.all=async()=>[...mem.values()];SPKR.put=async v=>{mem.set(v.id,Object.assign({},v))};SPKR.del=async id=>{mem.delete(id)};
+    const blob={size:10},now=Date.now(),D=SPKR.DAY;
+    // the pure rule: older than the period or past the newest MAX go; 'never' keeps none
+    const recs=[0,0.5,1.5,3,8].map((d,i)=>({id:'spk:'+i,t:now-d*D}));
+    if(spkrGone(recs,now,'day').join()!=='spk:2,spk:3,spk:4')B('1 day keeps '+spkrGone(recs,now,'day'));
+    if(spkrGone(recs,now,'week').join()!=='spk:4')B('1 week: '+spkrGone(recs,now,'week'));
+    if(spkrGone(recs,now,'never').length!==5)B('never: something kept');
+    if(spkrGone([...Array(9)].map((_,i)=>({id:'spk:'+i,t:now-i*1000})),now,'week').join()!=='spk:6,spk:7,spk:8')B('more than MAX kept');
+    out.async=(async()=>{try{
+      if(spkKeep()!=='day')B('default keep is not 1 day');
+      PRF.cur='p1';await spkrAdd(blob,{es:'la mariposa',say:'la mariposa'});PRF.cur='p2';await spkrAdd(blob,{es:'el gato',say:'el gato'});
+      PRF.cur='p1';let l=await spkrList();if(l.length!==1||l[0].es!=='la mariposa'||!l[0].id.startsWith('spk:'))B('child 1 lists '+JSON.stringify(l.map(r=>r.id)));
+      PRF.cur='p2';l=await spkrList();if(l.length!==1||!l[0].id.startsWith('spk-p2:'))B('child 2 lists '+JSON.stringify(l.map(r=>r.id)));
+      // an old one goes when listed; 'never' keeps nothing new and deletes what there is
+      PRF.cur='p1';mem.set('spk:old',{id:'spk:old',t:now-2*D,es:'el sol'});l=await spkrList();if(mem.has('spk:old')||l.length!==1)B('a 2-day-old recording was not deleted');
+      S.spkKeep='never';await spkrAdd(blob,{es:'el sol',say:'el sol'});l=await spkrList();if(l.length||[...mem.keys()].some(k=>k.startsWith('spk:')))B('never: kept '+l.length);
+      S.spkKeep='week';await spkrAdd(blob,{es:'la luna',say:'la luna'});
+      // the star: on the recording and once on Home, with a sticker
+      l=await spkrList();const st0=Object.values(S.stickers||{}).reduce((a,b)=>a+b,0);await spkrStar(l[0]);await spkrStar(l[0]);
+      if(!mem.get(l[0].id).star||S.spkStars.length!==1||S.spkStars[0].es!=='la luna')B('star: '+JSON.stringify(S.spkStars));
+      const h=spkStarHTML();if(!/Your grown-up gave you a star for <span lang="es">‘la luna’<\/span>!/.test(h)||!/id="hmgstar" role="status"/.test(h))B('Home star message: '+h.slice(0,160));
+      if(Object.values(S.stickers).reduce((a,b)=>a+b,0)!==st0+1)B('the star gave no sticker');
+      if(spkStarHTML()!==''||S.spkStars.length)B('the Home star message showed twice');
+      // Delete all: this child's only; removing child 2 deletes theirs
+      await spkrDrop();if([...mem.keys()].some(k=>k.startsWith('spk:'))||!mem.size)B('Delete all: '+[...mem.keys()]);
+      await spkrDrop('p2');if(mem.size)B('child 2 removed, recordings left: '+[...mem.keys()]);
+      out.note.push('corner: per child, 1 day / 1 week / never, max '+SPKR.MAX+', delete all, star once on Home');
+    }catch(e){B('corner: '+String(e.stack||e).split('\n')[0])}finally{save=keep.save;fb=keep.fb;PRF.cur='p1'}})();
+    // 6. old saves load: 1 day, no stars, no message
+    for(const raw of [null,FX('legacy-single-map'),FX('midway'),FX('maxed')]){loadSave(raw);migrate();
+      if(spkKeep()!=='day'||'spkKeep' in S||'spkStars' in S)B('old save: new fields should be absent with defaults');
+      const sv=save;save=()=>{};const h=spkStarHTML();save=sv;if(h!=='')B('old save: a star message')}
+    return out};
+  const r=eval(js+';('+body.toString()+')()');
+  // the corner runs on promises (IndexedDB): the check finishes when they do (run() waits for a returned promise)
+  return Promise.resolve(r.async).then(()=>{r.bad.forEach(bad);note.push(...r.note);
+    // 7. the thresholds on the calibration set (tools/spk-calib.js, every 6th line as the target): the numbers in docs/PROGRESS.md
+    try{const C=require('./spk-calib.js'),ctx=C.app(),list=C.cases(ctx,{every:6}),res=C.run(ctx,list),s=C.score(res,...require('vm').runInContext('[SPKC.ABS,SPKC.RATIO]',ctx));
+      const want={npos:236,nneg:230,voice:56,child:170,similar:25,other:4,silence:0};
+      const got={npos:s.npos,nneg:s.nneg,voice:s.by.voice.great,child:s.by.child.great,similar:s.by.similar.great,other:s.by.other.great,silence:s.by.silence.great};
+      if(JSON.stringify(got)!==JSON.stringify(want))bad('calibration set: '+JSON.stringify(got)+', PROGRESS reports '+JSON.stringify(want));
+      if(s.tmr<0.95)bad('true match rate '+s.tmr+' under 95%');if(s.by.silence.great)bad('silence or noise judged great');
+      note.push('calibration set (every 6th line): true match '+(100*s.tmr).toFixed(1)+'% of '+s.npos+', false accept '+(100*s.far).toFixed(1)+'% of '+s.nneg+
+        ' (other voice '+s.by.voice.great+'/'+s.by.voice.n+', similar word '+s.by.similar.great+'/'+s.by.similar.n+', other word '+s.by.other.great+'/'+s.by.other.n+')')}
+    catch(e){bad('calibration could not run (needs ffmpeg): '+String(e.message||e).split('\n')[0])}
+    const pr=fs.readFileSync(path.join(ROOT,'docs','PROGRESS.md'),'utf8');
+    if(!/S-SPK2[\s\S]{0,4000}true match 99\.1%[\s\S]{0,400}false accept 15\.0%/.test(pr))bad('PROGRESS.md does not report the calibration numbers');
+    return{problems:errs,note:note.join('; ')}});
+});
+
 run('game room P4-16',()=>{
   const p=[];
   const rd=f=>fs.readFileSync(path.join(SRC,f),'utf8');
@@ -14770,7 +14890,7 @@ run('motion and sound P4-17',()=>{
   // no sound outside SFX, tone, noise and music: the countdown beeps go through SFX.tick
   for(const f of jsFiles){const t=rd('js/'+f);
     if(f!=='10-sfx.js'&&/\b(synth|hiss)\(/.test(t))p.push(f+': calls the unchecked synth()/hiss() (use SFX, tone or noise)');
-    if(/new Audio\(/.test(t)&&!['44-clips.js','80-grown.js','50-say.js','12-speech.js'].includes(f))p.push(f+': plays audio outside the clips'); // 12-speech.js: the recorded Spanish (ES-AUDIO), ducked like the voice
+    if(/new Audio\(/.test(t)&&!['44-clips.js','80-grown.js','50-say.js','12-speech.js','50-say-corner.js'].includes(f))p.push(f+': plays audio outside the clips'); // 12-speech.js: the recorded Spanish (ES-AUDIO), ducked like the voice; 50-say-corner.js: the Grown-ups listening corner (S-SPK2) plays a kept Say it! recording
     if(/^(52|54|57)-/.test(f)&&/\btone\(/.test(t))p.push(f+': a countdown beep outside SFX.tick');
   }
   if(!/function playClip\(kind\)\{const cs=CLIPS\.filter\(c=>c\.kind==kind\);if\(!cs\.length\|\|!S\.sound\)return false;/.test(rd('js/44-clips.js')))p.push('playClip must stay silent with Sound effects off');
@@ -16941,6 +17061,7 @@ run('recorded Spanish audio ES-AUDIO',()=>{
 });
 
 // ---- report ----
+Promise.all(PENDING).then(()=>{
 let failed=0;
 for(const r of results){
   const ok=!r.problems.length;if(!ok)failed++;
@@ -16951,3 +17072,4 @@ for(const r of results){
 }
 console.log(failed?failed+' of '+results.length+' checks FAILED':'all '+results.length+' checks passed');
 process.exitCode=failed?1:0;
+});

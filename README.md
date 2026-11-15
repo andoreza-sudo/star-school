@@ -21,7 +21,9 @@ starts the next time the app is opened (close it fully once and open it again). 
 ("Star School 1.0.0", then the build number) and in Grown-ups, under **About Star School**. Progress is kept when the app updates.
 
 **Privacy.** The app works offline and keeps progress only on the device it runs on, in the browser's own storage. Nothing is sent anywhere.
-Voice recordings you make stay on the device too. Clearing the browser's site data erases progress, so use **Save a backup** in Grown-ups
+Voice recordings you make stay on the device too. Your child's Spanish "Say it!" recordings never leave the tablet: the tablet checks them
+itself (by its own on-device listening, or by comparing with the recorded Spanish), keeps the last few for the Listening corner in Grown-ups,
+and deletes them automatically (after 1 day unless you choose 1 week or not to keep them). Clearing the browser's site data erases progress, so use **Save a backup** in Grown-ups
 now and then. Grown-ups is behind a hold of the gear button on the home screen.
 
 **Licences.** Lettering is Andika by SIL International, under the SIL Open Font License 1.1 ([LICENSES/OFL-Andika.txt](LICENSES/OFL-Andika.txt);
