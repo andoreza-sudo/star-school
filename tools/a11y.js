@@ -142,6 +142,13 @@ const SCREENS = {
     run: async p => { await p.evaluate(() => { gtime(); hcStart('meadow'); }); await p.waitForTimeout(600); await p.evaluate(() => hcEnd('fuel')); await p.waitForTimeout(900); },
     sheet: async () => ({ close: 'enter' }), // the shared end card (an overlay) is already open
   },
+  // G-HC2: the garage (vehicles, upgrades, paint), a stage's drive in the rain and its end card with stars and missions
+  'hill-shop': { run: ev(() => { gtime(); garageS().bolts = 200; hcGarage(); }) },
+  'hill-stage': { run: ev(() => { gtime(); hcStart(2, 1); }), main: '.pedal', sheet: pauseSheet },
+  'hill-win': {
+    run: async p => { await p.evaluate(() => { gtime(); hcStart(0, 0); }); await p.waitForTimeout(600); await p.evaluate(() => { HC.t = 20; hcWin(); }); await p.waitForTimeout(900); },
+    sheet: async () => ({ close: 'enter' }),
+  },
   'art-menu': { run: ev(() => { gtime(); colorMenu('mandala'); }) },
   // colouring: the picture is the main control (tap a shape); the colour swatches are pickers (48 px)
   'art-page': { run: ev(() => { gtime(); artPage('m:17'); }), sheet: pauseSheet },
