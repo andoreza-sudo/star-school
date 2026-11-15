@@ -16414,6 +16414,157 @@ run('Block Builder journey G-01b',()=>{
   return{problems:[...new Set(p)].slice(0,50),note:o.notes.join('; ')};
 });
 
+// ---- G-BB3: Block Builder themed goals and big projects (src/js/60-blocks.js; games3 part) ----
+// R-03 B4: every kind of world has 4 themed goals and 2 big projects of 3-4 steps (42 new, 60 in all). Each goal is checked by code
+// on the blocks the child built (the built mask): a scripted build meets it (each project step in order, and not before its turn),
+// an empty world and a world as it was made meet none; the blocks a script uses are open in that kind of world; every scripted
+// block stands on something (it can be built by taps on top). The three goals shown turn with the date (the same all day); a project
+// started comes first; old saves (no mask, no pj, damaged values) load; the mask survives save and load; the checks are fast.
+run('Block Builder goals G-BB3',()=>{
+  const o=(()=>eval(js+`;(()=>{
+  const r={bad:[],notes:[]},bad=m=>{if(r.bad.length<60&&!r.bad.includes(m))r.bad.push(m)};
+  const keep=S.bb;
+  const R=(x,y,z,n,v,ax)=>Array.from({length:n},(_,s)=>ax?[x,y+s,z,v]:[x+s,y,z,v]);
+  const COL=(x,y,z,vs)=>vs.map((v,q)=>[x,y,z+q,v]);
+  const FL=(x,y,z,a,b,v)=>{const o=[];for(let i=0;i<a;i++)for(let j=0;j<b;j++)o.push([x+i,y+j,z,typeof v=='function'?v(i,j):v]);return o};
+  const WALL=(x,y,n,h,v)=>{const o=[];for(let z=1;z<=h;z++)o.push(...R(x,y,z,n,v));return o};
+  const RING=(x,y,v)=>FL(x,y,1,3,3,v).filter(c=>!(c[0]==x+1&&c[1]==y+1));
+  const PLUS=(x,y,c,v)=>[[x,y,1,c],[x+1,y,1,v],[x-1,y,1,v],[x,y+1,1,v],[x,y-1,1,v]];
+  // the scripted builds: a themed goal's cells, or a project's cells step by step; o: animals / night for the check
+  const SC={
+    bridge:R(10,3,1,3,4), raft:[[12,3,1,4]], garden:R(2,2,1,4,17), pen:RING(2,2,4),
+    farm:[R(1,1,1,5,4),R(1,3,1,3,23),WALL(1,5,4,2,8),[[4,3,1,19]]],
+    harbour:[R(10,8,1,4,4),COL(2,8,1,[5,5,22]),[[13,12,1,4],[13,12,2,12]]],
+    stairs:[[1,1,1,4],[2,1,1,3],[2,1,2,4],...COL(3,1,1,[3,3,4]),...COL(4,1,1,[3,3,3,4])], peak:[[2,2,1,22]], cabin:WALL(1,1,4,2,5),
+    lavahut:[...PLUS(3,3,19,25),[7,3,1,21]],
+    mine:[R(1,1,1,6,4),[[3,1,2,8]],COL(1,4,1,[3,3,22])],
+    castle:[WALL(1,1,5,2,8),COL(1,4,1,[8,8,8,8,8]),[[1,7,1,8],[2,7,1,7],[3,7,1,8]],[[1,1,3,22]]],
+    pyramid:[...FL(2,2,1,3,3,9),[3,3,2,9]], well:PLUS(3,3,10,3), palm:COL(2,2,1,[5,5,5,6]), cactusrow:R(2,2,1,4,24),
+    oasis:[R(1,1,1,4,10),[...COL(1,4,1,[5,5,5,6]),...COL(4,4,1,[5,5,5,6])],[...R(1,7,1,3,12),...R(1,7,2,3,13)],[[4,7,1,22]]],
+    town:[R(1,1,1,6,3),WALL(1,3,4,2,8),COL(1,6,1,[5,5,22])],
+    pool:PLUS(3,3,10,8), longwall:WALL(1,1,8,2,8), rainbow:[3,4,8,12,13,9].map((v,s)=>[1+s,1,1,v]), checker:FL(2,2,1,3,3,(i,j)=>(i+j)%2?13:12),
+    playground:[[[1,1,1,13],[2,1,1,13],[2,1,2,13],...COL(3,1,1,[13,13,13])],FL(1,4,1,2,2,9),[...COL(1,8,1,[5,5,5]),...COL(3,8,1,[5,5,5])],[]],
+    bigcastle:[WALL(1,1,6,2,3),COL(1,4,1,[3,3,3,3,3]),R(1,7,1,4,10),[[1,1,3,22]]],
+    lighthouse:COL(2,2,1,[28,28,28,22]), sandcastle:[...FL(2,2,1,2,2,9),...FL(2,2,2,2,2,9)], umbrella:COL(2,2,1,[5,5,28]), pier:R(9,4,1,5,4),
+    beachhouse:[FL(1,1,1,3,3,4),WALL(1,5,3,2,12),[[1,8,1,12],[2,8,1,7],[3,8,1,12]],[[4,5,1,22]]],
+    ship:[R(11,2,1,5,4),COL(13,2,2,[5,5,5]),[[12,2,2,12]],[[13,2,5,22]]],
+    snowman:COL(2,2,1,[11,11,23]), snowfamily:[2,4,6].flatMap(x=>COL(x,2,1,[11,11,23])), igloo:RING(2,2,30),
+    skijump:[[1,1,1,11],...COL(2,1,1,[11,11]),...COL(3,1,1,[11,11,11]),...COL(4,1,1,[11,11,11,11])],
+    village:[WALL(1,1,4,2,5),R(1,1,3,4,31),[[5,1,1,22]]],
+    palace:[WALL(1,1,5,2,30),COL(1,4,1,[30,30,30,30,30]),[[1,7,1,30],[2,7,1,7],[3,7,1,30]],[[1,1,3,22]]],
+    cloudbridge:R(1,1,1,5,33), crystal:COL(2,2,1,[34,34,34,34,34]), balloon:COL(2,2,1,[4,12,13]), stars:[[2,2,1,22],[4,2,1,22],[6,2,1,22]],
+    skycastle:[WALL(1,1,5,2,33),[...COL(1,4,1,[34,34,34]),...COL(3,4,1,[34,34,34])],[[1,8,1,33],[2,8,1,7],[3,8,1,33]],[[1,4,4,22]]],
+    rocket:[FL(1,1,1,3,3,3),COL(2,2,2,[13,13,13,13]),[[2,2,6,12]],COL(6,6,1,[13,7,13])],
+  };
+  const OPT={stars:{night:true},playground:{an:3}};
+  // the ground for the scripts: grass, with the sea at x >= 10
+  const base=()=>{const w=bbFlat();for(let x=10;x<BW;x++)for(let y=0;y<BD;y++)w[bbI(x,y,0)]=10;return w};
+  const build=(cells)=>{const w=base(),mk=new Uint8Array(w.length);for(const [x,y,z,v] of cells){w[bbI(x,y,z)]=v;mk[bbI(x,y,z)]=1}return{w,mk}};
+  // 1. how many, and every world: 4 themed goals and 2 big projects of 3-4 steps, each with a short line to read aloud
+  const NEW=BB_GOALS.filter(G=>G[3]||G[4]);
+  if(NEW.length<42||BB_GOALS.length<60)bad('new goals '+NEW.length+', all '+BB_GOALS.length);
+  if(new Set(BB_GOALS.map(G=>G[0])).size!==BB_GOALS.length)bad('goal ids are not unique');
+  for(const G of BB_GOALS){
+    if(!G[1]||G[1].length>80||/[<>{}]/.test(G[1]))bad(G[0]+': its line "'+G[1]+'"');
+    if(!(BBI[G[2]]||ICONS[G[2]]))bad(G[0]+': no icon '+G[2]);
+    if(G[4]){if(G[4].length<3||G[4].length>4||!G[5])bad(G[0]+': '+G[4].length+' steps');for(const s of G[4])if(!s[0]||s[0].length>70||typeof s[1]!='function')bad(G[0]+': step "'+s[0]+'"')}
+  }
+  const owners={};
+  for(const t of BBWT){
+    const L=bbWGoals({t:t[0]}),th=L.filter(G=>G[3]),pj=L.filter(G=>G[4]);
+    if(th.length!==4||pj.length!==2||L.some(x=>!x)||new Set(L).size!==L.length)bad('world '+t[0]+': themed '+th.length+', projects '+pj.length);
+    for(const G of th.concat(pj))owners[G[0]]=t;
+  }
+  if(Object.keys(owners).length!==NEW.length)bad('a new goal is in no world, or in two: '+Object.keys(owners).length);
+  // 2. every goal reachable: its script meets it (a project: step by step, never a step early); an empty world meets nothing
+  const empty=build([]),gen={};
+  for(const t of BBWT)gen[t[0]]=[1,7,99].map(sd=>bbGen(t[0],sd));
+  for(const G of NEW){
+    const t=owners[G[0]],sc=SC[G[0]],opt=OPT[G[0]]||{},chap=t&&t[3]!=null?t[3]:0;
+    if(!sc){bad(G[0]+': no scripted build in the test');continue}
+    const W={t:t[0],goals:{}};
+    const met=(cells,w,last=1)=>{const b=build(cells);return bbGoalsMet(w||W,b.w,b.mk,last?opt:{}).find(m=>m[0]===G)};
+    if(bbGoalsMet(W,empty.w,empty.mk,Object.assign({an:10,night:true})).length)bad('an empty world meets goals: '+bbGoalsMet(W,empty.w,empty.mk,{an:10,night:true}).map(m=>m[0][0]));
+    for(const w of gen[t[0]])if(bbGoalsMet(W,w,new Uint8Array(w.length),{an:10,night:true}).length)bad(t[0]+': a world as it was made meets a goal');
+    const all=G[4]?sc.flat():sc;
+    // the blocks are open in this kind of world (no star blocks, no prize, no later chapter's set) and each stands on something
+    for(const [x,y,z,v] of all){
+      if(BLOCKS[v].need||BB_CHS.some((c,k)=>c.prize==v||(k>chap&&c.set.includes(v))))bad(G[0]+': uses '+BLOCKS[v].n+', not open in a '+t[0]+' world');
+      const b=build(all).w,under=z?b[bbI(x,y,z-1)]:1;
+      if(!under||BLOCKS[v].deco&&!bbOpaque(under)&&under!=10)bad(G[0]+': the '+BLOCKS[v].n+' at '+[x,y,z]+' stands on nothing');
+    }
+    if(G[3]){
+      const m=met(sc);
+      if(!m)bad(G[0]+': the scripted build does not meet it');
+      else if(!m[1].length)bad(G[0]+': no cells to sparkle');
+      if(sc.length>1&&met(sc.slice(0,-1)))bad(G[0]+': met one block early');
+    }else{
+      let cells=[];
+      for(let s=0;s<G[4].length;s++){
+        const last=s==G[4].length-1,before=met(cells,null,last),pjw={t:t[0],goals:{},pj:{[G[0]]:s}};
+        if(sc[s].length&&before&&before[2]>s)bad(G[0]+': step '+(s+1)+' met before it was built');
+        cells=cells.concat(sc[s]);
+        const m=met(cells,pjw,last);
+        if(!m||m[2]!==s+1)bad(G[0]+': step '+(s+1)+' "'+G[4][s][0]+'" not met by its script ('+(m?m[2]:'none')+')');
+      }
+      const m=met(cells);
+      if(!m||m[2]!==G[4].length)bad(G[0]+': the whole project from the start: '+(m?m[2]:'none'));
+      if(bbGoalLine({t:t[0]},G).indexOf('step 1 of '+G[4].length)<0)bad(G[0]+': its line '+bbGoalLine({t:t[0]},G));
+    }
+  }
+  // the sea and the top are there in the worlds that need them: a row of 5 open sea cells (pier, ship), any (bridge, raft, dock, boat);
+  // a mountain's top leaves room for a lamp
+  for(const [t,n] of [['beach',5],['island',4]])for(let sd=1;sd<=20;sd++){
+    const w=bbGen(t,sd),sea=(x,y)=>x>=0&&y>=0&&x<BW&&y<BD&&w[bbI(x,y,0)]==10&&!w[bbI(x,y,1)];
+    let ok=false;for(let x=0;x<BW&&!ok;x++)for(let y=0;y<BD&&!ok;y++)ok=[...Array(n).keys()].every(s=>sea(x+s,y))||[...Array(n).keys()].every(s=>sea(x,y+s));
+    if(!ok)bad(t+' world '+sd+': no '+n+' sea cells in a row');
+  }
+  for(let sd=1;sd<=20;sd++){const C=bbGC(bbGen('mountain',sd),new Uint8Array(BW*BD*BH));if(C.top>BH-2)bad('mountain '+sd+': no room for a lamp on top ('+C.top+')')}
+  // 3. the goals shown turn with the date: the same all day; over two weeks every themed goal and project of a world comes up
+  for(const t of BBWT){
+    const w={t:t[0],goals:{ten:1}},seen=new Set(),lists=new Set();
+    for(let d=1;d<=14;d++){
+      const key='2026-12-'+d,a=bbGoalNext(w,3,key),b=bbGoalNext(w,3,key);
+      if(a.map(G=>G[0]).join()!==b.map(G=>G[0]).join())bad(t[0]+': the goals shown change during a day');
+      if(a.length!==3||!a.some(G=>G[3]||G[4]))bad(t[0]+' '+key+': shown '+a.map(G=>G[0]));
+      a.forEach(G=>seen.add(G[0]));lists.add(a.map(G=>G[0]).join());
+    }
+    const own=bbWGoals(w).filter(G=>G[3]||G[4]).filter(G=>!seen.has(G[0]));
+    if(own.length)bad(t[0]+': not shown in two weeks: '+own.map(G=>G[0]));
+    if(lists.size<5)bad(t[0]+': only '+lists.size+' different lists in two weeks');
+    if(bbGoalNext({t:t[0]},1,'2026-12-3')[0][0]!=='ten')bad(t[0]+': Build 10 blocks should come first in a new world');
+    const P=bbWGoals(w).filter(G=>G[4])[1],w2={t:t[0],goals:{ten:1},pj:{[P[0]]:1}};
+    for(let d=1;d<=5;d++)if(bbGoalNext(w2,1,'2026-12-'+d)[0]!==P||bbPjCur(w2,'2026-12-'+d)!==P)bad(t[0]+': a project started should come first');
+    // a goal done: the next one in its place, the others stay where they were
+    const key='2026-12-9',a=bbGoalNext(w,3,key),w3={t:t[0],goals:{ten:1,[a[0][0]]:1}},b=bbGoalNext(w3,3,key);
+    if(!a.slice(1,3).every(G=>b.includes(G))||b.includes(a[0]))bad(t[0]+': a goal done: the other two should stay shown: '+a.map(G=>G[0])+' / '+b.map(G=>G[0]));
+  }
+  r.notes.push('island on 2026-12-1..3: '+[1,2,3].map(d=>bbGoalNext({t:'island',goals:{ten:1}},3,'2026-12-'+d).map(G=>G[0]).join(' ')).join(' | '));
+  // 4. old saves: no mask, no pj, damaged values; the goals done before count as before; the mask survives save and load
+  S.bb={worlds:[{name:'Mountains 2',d:bbEncode(bbGen('mountain',3)),goals:{ten:1,boom:1}}],cur:0};
+  const ow=bbS().worlds[0];
+  if(bbGoalN(ow)!==2||bbWGoals(ow).length!==19||JSON.stringify(bbPjOf(ow))!=='{}'||bbMaskDec(ow.mk).some(v=>v))bad('an old world: goals '+bbGoalN(ow)+' of '+bbWGoals(ow).length);
+  for(const [mk,pj] of [['zz!*',[1,2]],[42,'x'],['AAAA',{mine:99,castle:-3}],[null,null]]){
+    const w={t:'mountain',goals:{},mk,pj};
+    try{const m=bbMaskDec(w.mk);if(m.length!==BW*BD*BH||m.some(v=>v))bad('a damaged mask reads as '+m.filter(v=>v).length+' cells');
+      for(const G of bbWGoals(w).filter(G=>G[4])){const s=bbPjN(w,G);if(!(s>=0&&s<G[4].length))bad('damaged pj: '+G[0]+' '+s)}
+      bbGoalNext(w,3,'2026-12-1');bbPjCur(w);bbGoalLine(w,bbGoalId('mine'))}catch(e){bad('damaged mk / pj crashed: '+e.message)}
+  }
+  if(bbPjN({goals:{mine:1},pj:{}},bbGoalId('mine'))!==3)bad('a project done shows all its steps');
+  const mk=new Uint8Array(BW*BD*BH);[0,7,8,999,3583].forEach(n=>mk[n]=1);
+  const enc=bbMaskEnc(mk),back=JSON.parse(JSON.stringify({mk:enc})).mk;
+  if(bbMaskDec(back).join()!==mk.join()||enc.length>600||bbMaskEnc(new Uint8Array(BW*BD*BH))!=='')bad('the mask after save and load ('+enc.length+' letters)');
+  // 5. fast enough for every tap: a whole world marked as built, every goal of its kind checked
+  let worst=0;
+  for(const t of BBWT){const w=bbGen(t[0],5),m=new Uint8Array(w.length);for(let n=0;n<w.length;n++)if(w[n])m[n]=1;
+    const t0=Date.now();for(let q=0;q<10;q++)bbGoalsMet({t:t[0]},w,m,{});worst=Math.max(worst,(Date.now()-t0)/10)}
+  if(worst>20)bad('checking the goals takes '+worst+' ms on a full world');
+  r.notes.push(NEW.length+' new goals ('+BB_GOALS.length+' in all, '+bbWGoals({t:'island'}).length+' in an island), check on a full world '+worst.toFixed(1)+' ms');
+  S.bb=keep;
+  return r})()`))();
+  return{problems:o.bad,note:o.notes.join('; ')};
+});
+
 // ---- G-HC2: Hill Climb journey (src/js/62-hill.js, src/css/61-hill.css; games part) ----
 // Worlds of hand-shaped stages, missions and stars, the garage, easy driving. The simulation runs here without a page: bots drive
 // every stage (a young child holding the gas with easy driving on; a careful driver with it off, who levels the car in the air).

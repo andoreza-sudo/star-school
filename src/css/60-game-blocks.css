@@ -167,3 +167,23 @@
 /* the end card: the child's build (or the trophy) as its picture */
 .gh-epic>.bb-epic{display:block;width:100%;height:100%;object-fit:contain}
 .gh-epic>.bb-etro{display:block;height:100%;margin:0 auto}
+/* G-BB3: a goal in More reads itself aloud; the big projects with a dot a step; the project in the scene (bottom left, a tap reads it) */
+.bb-gl{flex:1;display:flex;align-items:center;gap:var(--s-2);min-height:48px;padding:4px var(--s-2);border:0;border-radius:var(--r-btn);background:var(--surface-2);
+  color:var(--ink-2);font:inherit;font-size:var(--fs-2);line-height:1.25;text-align:left;cursor:pointer}
+.bb-gl>span{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.bb-gl .ic{flex:none;color:var(--ink-3)}
+.bb-gl.on{color:var(--good-ink)}.bb-gl.on .ic{color:var(--good)}
+.bb-pjr b{font-family:var(--font-display);color:var(--ink)}
+.bb-pjd{display:flex;gap:4px}
+.bb-pjd i{width:12px;height:12px;border-radius:50%;background:var(--line)}
+.bb-pjd i.on{background:var(--good)}
+.bb-pjd i.now{background:var(--surface);box-shadow:inset 0 0 0 3px var(--es)}
+.bb-pj{position:absolute;left:var(--s-2);bottom:var(--s-2);z-index:2;display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-height:48px;max-width:min(300px,calc(100% - 16px));
+  padding:6px 12px 8px;border:0;border-radius:var(--r-card);background:var(--surface);color:var(--ink);box-shadow:var(--shadow),inset 0 0 0 2px var(--es-tint);
+  font:inherit;font-size:var(--fs-2);line-height:1.25;text-align:left;cursor:pointer}
+.bb-pj[hidden]{display:none}
+.bb-pjh{display:flex;align-items:center;gap:4px;font-family:var(--font-display);font-weight:700}
+.bb-pjh .ic{flex:none;color:var(--es)}
+.bb-pjn{margin-left:4px;color:var(--es-shade)}
+.bb-pjt{color:var(--ink-2)}
+@media (max-width:420px){.bb-pj{max-width:210px}.bb-pjh b{font-size:var(--fs-2)}}
