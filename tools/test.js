@@ -7820,7 +7820,7 @@ run('mazes P3-08',()=>{
 run('code split A11b (and data file split A11)',()=>{
   const p=[],rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8');
   if(!BUILD_VER)return{problems:['no VER in tools/build.py']};
-  if(PARTS.map(x=>x.stem).join()!=='gen,gen2,bt,games,games2')p.push('PARTS in tools/build.py read as '+JSON.stringify(PARTS.map(x=>x.stem))+' (one entry per line, like the others)');
+  if(PARTS.map(x=>x.stem).join()!=='gen,gen2,bt,games,rally,games2')p.push('PARTS in tools/build.py read as '+JSON.stringify(PARTS.map(x=>x.stem))+' (one entry per line, like the others)');
   const FILES=[...PART_FILES,DATA_FILE];
   for(const f of ['index.html',...FILES,'sw.js'])if(!fs.existsSync(path.join(ROOT,f)))p.push(f+' not built; run python3 tools/build.py first');
   if(p.length)return{problems:p};
@@ -7829,7 +7829,7 @@ run('code split A11b (and data file split A11)',()=>{
   // P6-02: the LAZY parts (games, games2) have no tag: partsThen() loads them on demand (the check "performance P6-02")
   const tags=[...html.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/g)].map(m=>({attrs:m[1],src:(m[1].match(/src="([^"]*)"/)||[])[1],body:m[2]}));
   const srcs=tags.filter(t=>t.src!==undefined).map(t=>t.src),n=START_FILES.length+2;
-  if(JSON.stringify(LAZY)!=='["games","games2"]')p.push('LAZY in tools/build.py read as '+JSON.stringify(LAZY));
+  if(JSON.stringify(LAZY)!=='["games","rally","games2"]')p.push('LAZY in tools/build.py read as '+JSON.stringify(LAZY)); // G-RALLY2: Star Rally's own part
   if(JSON.stringify(srcs)!==JSON.stringify(START_FILES))p.push('index.html loads '+JSON.stringify(srcs)+', expected exactly '+JSON.stringify(START_FILES));
   if(tags.length!==n||tags[0].src!==undefined||tags[n-1].src!==undefined||START_FILES.some((f,i)=>tags[i+1].src!==f))p.push('index.html scripts are not code, '+START_FILES.join(', ')+', boot');
   else if(!/dataReady\(\)/.test(tags[n-1].body)||!/home\(true\)/.test(tags[n-1].body))p.push('boot script does not check dataReady() before home(true)');
@@ -7997,7 +7997,7 @@ run('parts split A11c',()=>{
       for(const [k,sk,lv] of [['math','add',1],['math','mult',1],['math','frac',3],['read','abc',1],['read','sound',1],['es','es_color',1],['disc','sci_life',1]]){
         try{const q=genQ(sk,lv,7);qs[k+':'+sk]=!!(q&&q.html&&q.sk===sk)}catch(e){qs[k+':'+sk]=String(e)}}
       return{ready:dataReady(),files,qs}})()`,ctx);
-    const stems=['gen','gen2','bt','games','games2','data'];
+    const stems=['gen','gen2','bt','games','rally','games2','data'];
     if(JSON.stringify(r.files.map(f=>f[0]))!==JSON.stringify(stems))p.push('appFiles() lists '+JSON.stringify(r.files.map(f=>f[0]))+', expected '+stems.join());
     if(!r.ready||r.files.some(f=>f[1]!==BUILD_VER))p.push('a part is not '+BUILD_VER+': '+JSON.stringify(r.files));
     for(const [k,v] of Object.entries(r.qs))if(v!==true)p.push('question '+k+' did not build from the loaded files: '+v);
@@ -8022,7 +8022,7 @@ run('performance P6-02',()=>{
   for(const f of ['index.html',...START_FILES,...LAZY_FILES,'sw.js'])if(!fs.existsSync(path.join(ROOT,f)))return{problems:[f+' not built; run python3 tools/build.py first']};
   const html=rd('index.html'),sw=rd('sw.js'),files=Object.fromEntries([...START_FILES,...LAZY_FILES].map(f=>[f,rd(f)]));
   // 1. what loads at start: index.html names only the start-up files; the games parts are LAZY, in build.py and in 90-app.js alike
-  if(JSON.stringify(LAZY)!=='["games","games2"]')p.push('LAZY in tools/build.py should be the games parts: '+JSON.stringify(LAZY));
+  if(JSON.stringify(LAZY)!=='["games","rally","games2"]')p.push('LAZY in tools/build.py should be the games parts: '+JSON.stringify(LAZY));
   const srcs=[...html.matchAll(/<script src="([^"]*)"/g)].map(m=>m[1]);
   for(const f of LAZY_FILES)if(srcs.includes(f))p.push(f+' has a <script> tag in index.html: it must load only on demand');
   if(JSON.stringify(srcs)!==JSON.stringify(START_FILES))p.push('index.html loads '+srcs.join(', ')+', expected '+START_FILES.join(', '));
@@ -8061,12 +8061,12 @@ run('performance P6-02',()=>{
       serve:(mod=t=>t)=>{const s=scripts.shift();if(!s)return'';ctx.__cur=s;const t=files[s.src]==null?null:mod(files[s.src],s.src);
         if(t==null)run_('__cur.onerror()');else{run_(t);run_('__cur.onload()')}return s.src}};
   };
-  const VER=BUILD_VER,[GF,G2F]=LAZY_FILES,stale=(f,t)=>t.replace(new RegExp("var "+f.split('.')[0].toUpperCase()+"_VER='"+VER+"'"),"var "+f.split('.')[0].toUpperCase()+"_VER='v1'");
+  const VER=BUILD_VER,[GF,RF,G2F]=LAZY_FILES,stale=(f,t)=>t.replace(new RegExp("var "+f.split('.')[0].toUpperCase()+"_VER='"+VER+"'"),"var "+f.split('.')[0].toUpperCase()+"_VER='v1'");
   const state=pg=>pg.run('({ready:dataReady(),parts:LAZY_PARTS.map(partReady).join(),gh:typeof GH,err:(S.err||[]).map(e=>e.msg).pop()||""})');
   try{
     // a. a cold start: no games code, no games <style>; the app is ready
     let pg=page(),s=state(pg);
-    if(!s.ready||s.parts!=='false,false'||s.gh!=='undefined'||pg.styles.join()!=='css-bt'||pg.scripts.length)p.push('at start: '+JSON.stringify(s)+' styles '+pg.styles.join());
+    if(!s.ready||s.parts!=='false,false,false'||s.gh!=='undefined'||pg.styles.join()!=='css-bt'||pg.scripts.length)p.push('at start: '+JSON.stringify(s)+' styles '+pg.styles.join());
     // b. Home -> Game Room: "Getting the games ready..." with Back at once, nothing requested until that screen is painted, then games,
     //    then games2 (one at a time, in PARTS order), then the hub with every registered game, and a game's first screen opens
     pg.run('gameRoom()');
@@ -8078,9 +8078,9 @@ run('performance P6-02',()=>{
     if(asked.join()!==LAZY_FILES.join())p.push('the Game Room asked for '+asked.join(', ')+', expected '+LAZY_FILES.join(', ')+' one after the other');
     s=state(pg);
     const hub=pg.app.innerHTML,ids=pg.run('GH.games.map(g=>g.btn)');
-    if(s.parts!=='true,true'||!/class="gh-room"/.test(hub)||ids.length<5||ids.some(b=>!hub.includes('id="'+b+'"'))||pg.styles.join()!=='css-bt,css-games,css-games2')
+    if(s.parts!=='true,true,true'||!/class="gh-room"/.test(hub)||ids.length<5||ids.some(b=>!hub.includes('id="'+b+'"'))||pg.styles.join()!=='css-bt,css-games,css-rally,css-games2')
       p.push('after the lazy load: '+JSON.stringify(s)+' hub '+/gh-room/.test(hub)+' cards '+ids+' styles '+pg.styles.join());
-    for(const [id,want] of [['snack','snopen'],['art','']]){ // a games2 game (Snack Stand) and a games one (Coloring), through their hub cards
+    for(const [id,want] of [['snack','snopen'],['art',''],['rally','rlgar']]){ // a games2 game (Snack Stand), a games one (Coloring), Star Rally (rally), through their hub cards
       try{const b=pg.run(`GH.get('${id}').btn`);pg.el(b).onclick();const h=pg.app.innerHTML;
         if(!h.includes('data-g="'+id+'"')||(want&&!h.includes('id="'+want+'"')))p.push('the '+id+' card did not open its first screen: '+h.slice(0,160));}
       catch(e){p.push('the '+id+' card threw after the lazy load: '+String(e).split('\n')[0])}
@@ -8092,11 +8092,11 @@ run('performance P6-02',()=>{
     pg=page();pg.run('gameRoom()');pg.flush();pg.run('view("<div id=\\"elsewhere\\"></div>")');
     while(pg.scripts.length)pg.serve();pg.flush();
     s=state(pg);
-    if(!pg.app.innerHTML.includes('elsewhere')||s.parts!=='true,true')p.push('Back while loading: '+pg.app.innerHTML.slice(0,80)+' '+JSON.stringify(s));
+    if(!pg.app.innerHTML.includes('elsewhere')||s.parts!=='true,true,true')p.push('Back while loading: '+pg.app.innerHTML.slice(0,80)+' '+JSON.stringify(s));
     pg.run('gameRoom()');if(!/gh-room/.test(pg.app.innerHTML))p.push('after Back while loading, the Game Room did not open at once');
     // d. a games or games2 file of another release is refused: Try again (it reloads), the App log line, games2 never asked for after a
     //    stale games file; asking again does not run the stale file twice; nothing else in the save changes
-    for(const [f,log] of [[GF,'games file v1 does not match'],[G2F,'games2 file v1 does not match']]){
+    for(const [f,log] of [[GF,'games file v1 does not match'],[RF,'rally file v1 does not match'],[G2F,'games2 file v1 does not match']]){
       pg=page();const before=pg.run('JSON.stringify({stars:S.stars,coins:S.coins,maps:S.maps})');
       pg.run('gameRoom()');pg.flush();const got=[];
       while(pg.scripts.length)got.push(pg.serve((t,src)=>src===f?stale(f,t):t));
@@ -8113,7 +8113,7 @@ run('performance P6-02',()=>{
     s=state(pg);
     if(!/id="datamiss"/.test(pg.app.innerHTML)||s.err!=='games file missing (app '+VER+')'||pg.scripts.length)p.push('missing games file: '+JSON.stringify(s));
     pg.run('gameRoom()');pg.flush();while(pg.scripts.length)pg.serve();
-    if(!/gh-room/.test(pg.app.innerHTML)||state(pg).parts!=='true,true')p.push('after a missing games file, the next open did not load the Game Room');
+    if(!/gh-room/.test(pg.app.innerHTML)||state(pg).parts!=='true,true,true')p.push('after a missing games file, the next open did not load the Game Room');
   }catch(e){p.push('the on-demand load could not be run: '+String(e.stack||e).split('\n').slice(0,3).join(' | '))}
   return{problems:p,note:'loaded at start '+Math.round(start/1000)+' KB (budget '+TOTAL_FAIL/1e6+' MB), on demand '+Math.round(lazy/1000)+' KB ('+LAZY_FILES.join(', ')+')'};
 });
@@ -14287,7 +14287,7 @@ run('game room P4-16',()=>{
   if(!/GH\.held/.test(o.src.gtStart))p.push('gtStart: the game-time clock must hold while the pause sheet is open');
   if(!/GH\.end\(/.test(o.src.timeUp))p.push('timeUpOverlay must use the shared end card');
   // every screen of every game file starts with GH.top; every play screen wires Pause / Quit; every end uses GH.end; no old chrome left
-  const GF=fs.readdirSync(path.join(SRC,'js')).filter(f=>/^games/.test(partOf(f)||'')&&f!=='59-game-hub.js'); // G-04a: games and games2
+  const GF=fs.readdirSync(path.join(SRC,'js')).filter(f=>/^(games|rally)/.test(partOf(f)||'')&&f!=='59-game-hub.js'); // G-04a: games and games2; G-RALLY2: rally
   let views=0,ends=0;
   for(const f of GF){
     const t=rd('js/'+f);
@@ -15032,7 +15032,7 @@ run('Star Rally 2 G-02b',()=>{
     }
     out.note.push('4000 shop steps, '+owned+' items and '+ups+' upgrade levels bought, sparkles never below 0');
     // 6. tracks: valid data; 50-100 s at the speed the car keeps by itself; hazards, pick-ups and pads on the road; props off it
-    if(RL_PLACES.length!==4||RL_ORDER.length!==12)bad('expected 4 places with 3 tracks each');
+    if(RL_PLACES.length!==5||RL_ORDER.length!==15)bad('expected 5 places with 3 tracks each (G-RALLY2: Maple Woods is the fifth)');
     const secs=[],sh={};
     for(const id of RL_ORDER){
       const t=RL_TRK[id],T=rlTrack(id),w=id+': ',s=(sh[id]=rlShape(id));
@@ -15066,7 +15066,7 @@ run('Star Rally 2 G-02b',()=>{
       const kinds=(s.puddle?1:0)+(s.sand?1:0)+(s.ice?1:0)+(s.cones?1:0)+(s.movers?1:0);
       if(kinds<2)bad(w+'needs at least two kinds of hazard');
     }
-    out.note.push('12 tracks, '+Math.round(Math.min(...secs))+'-'+Math.round(Math.max(...secs))+' s at the cruising speed');
+    out.note.push(RL_ORDER.length+' tracks, '+Math.round(Math.min(...secs))+'-'+Math.round(Math.max(...secs))+' s at the cruising speed');
     // 7. twelve distinct layouts: no two tracks with the same curvature profile (the bend sequence resampled to 240 points, mirrored
     //    too, correlates under 0.85), and the shape numbers differ; the set covers hairpins, splits, tunnels, bridges, narrow roads
     const prof=id=>{const T=rlTrack(id),a=[];for(let k=0;k<240;k++)a.push(T.cv[Math.floor(k*T.n/240)]);return a};
@@ -15074,7 +15074,7 @@ run('Star Rally 2 G-02b',()=>{
       for(let i=0;i<a.length;i++){sab+=(a[i]-ma)*(b[i]-mb);saa+=(a[i]-ma)**2;sbb+=(b[i]-mb)**2}return sab/Math.sqrt(saa*sbb||1)};
     const vec=s=>[s.n/1000,s.mean,s.max/4,s.straight*2,s.tight*3,s.flips/6,s.hill/40,s.tunnel/60,s.bridge/80,s.narrow/150,s.forks,s.cones/4,s.movers/2,s.puddle/20,s.sand/30,s.ice/30];
     let maxC=0,minD=9,pair='';
-    for(let i=0;i<12;i++)for(let j=i+1;j<12;j++){
+    for(let i=0;i<RL_ORDER.length;i++)for(let j=i+1;j<RL_ORDER.length;j++){
       const a=RL_ORDER[i],b=RL_ORDER[j],c=Math.abs(corr(prof(a),prof(b)));
       if(c>maxC){maxC=c;pair=a+'/'+b}
       if(c>=.85)bad('tracks '+a+' and '+b+' have the same curvature profile (r='+c.toFixed(2)+')');
@@ -15196,7 +15196,7 @@ run('Star Rally 2 G-02b',()=>{
       if(!rlTrackOpen('beach-1',r)||rlTrackOpen('snow-1',r))bad('tracks open with their cup');
       const goals=new Set();
       for(const rr of [{cups:{},stars:{},ghost:{},upg:{},spk:0,races:0},{cups:{},stars:{},ghost:{},upg:{},spk:0,races:0,cup:{id:'sprout',i:1,pts:{}}},
-        {cups:{sprout:{best:1},wave:{best:1},frost:{best:1},star:{best:1}},stars:{},ghost:{},upg:{grip:3,turbo:3,bumper:3},spk:0,races:0},
+        {cups:Object.fromEntries(RL_CUPS.map(c=>[c.id,{best:1,runs:1}])),stars:{},ghost:{},upg:{grip:3,turbo:3,bumper:3},spk:0,races:0}, // G-RALLY2: every cup, gold
         {cups:{sprout:{best:1},wave:{best:2},frost:{best:1},star:{best:1}},stars:{},ghost:{},upg:{},spk:0,races:0}]){
         const gtx=rlGoal(rr);
         if(!gtx||PICT.test(gtx))bad('next goal '+gtx);
@@ -15205,7 +15205,7 @@ run('Star Rally 2 G-02b',()=>{
       if(goals.size<4)bad('the next goal should change with progress');
       const b0=rlNew('meadow-0',{mode:'easy',seed:1,tier:0}).cars.reduce((a,c)=>a+c.base,0),b3=rlNew('meadow-0',{mode:'easy',seed:1,tier:3}).cars.reduce((a,c)=>a+c.base,0);
       if(!(b3>b0*1.03))bad('rivals should be a little faster in later cups');
-      if(RL_CUPS.length!==4||RL_CUPS.some(c=>c.races.length!==3)||new Set(RL_CUPS.flatMap(c=>c.races.map(r=>r[0]))).size!==12)bad('4 cups of 3 races, each track once');
+      if(RL_CUPS.length!==10||RL_CUPS.some(c=>c.races.length!==3)||new Set(RL_CUPS.flatMap(c=>c.races.map(r=>r[0]))).size!==30)bad('10 cups of 3 races, each track once (G-RALLY2: the Maple Cup and 5 mirror cups)');
       if(RL_CUPS.some(c=>c.races.some(([t,w])=>!RL_TRK[t]||!RL_WX[w])))bad('cup races need a track and a weather');
       if(new Set(RL_CUPS.flatMap(c=>c.races.map(r=>r[1]))).size<4)bad('the cups should have several weathers');
     }
@@ -15284,7 +15284,7 @@ run('Star Rally 2 G-02b',()=>{
   }
   notes.push(o.svg.length+' drawings, '+shapes+' shapes, tokens only');
   // 16. plumbing: in games2 (G-02b moved it from games), stopped by view(), test hooks off, Fact Race renamed (save keys unchanged)
-  if(partOf('63-game-race.js')!=='games2'||partOf('49-game-race.css')!=='games2')p.push('the racing game must ship in games2.'+BUILD_VER+'.js');
+  if(partOf('63-game-race.js')!=='rally'||partOf('49-game-race.css')!=='rally')p.push('the racing game must ship in rally.'+BUILD_VER+'.js (G-RALLY2; games2 before)');
   if(!/if\(typeof rlStop=='function'\)rlStop\(\)/.test(rd('js/40-view.js')))p.push('view() must stop the race (rlStop)');
   if(o.dev!=='{"fast":1,"flush":false}')p.push('RL_DEV test hooks must be off: '+o.dev);
   if(!rd('js/46-home.js').includes("'Fact Race'")||!rd('js/54-race.js').includes('<span>Fact Race</span>'))p.push('the old Speed Race should be called Fact Race on Home and its menu');
@@ -15292,6 +15292,258 @@ run('Star Rally 2 G-02b',()=>{
   if(!/S\.race\[cat\]/.test(rd('js/54-race.js')))p.push('Fact Race must keep its save key S.race');
   // no screen shake in calm mode or with reduced motion
   if(!/const sh = !calm && R\.shake > 0/.test(src)||!/if \(!RL\.calm\) RL\.shake/.test(src)||!/prefers-reduced-motion/.test(src))p.push('the crash shake must be off in calm mode and with reduced motion');
+  return{problems:[...new Set(p)].slice(0,60),note:notes.join('; ')};
+});
+
+// ---- G-RALLY2: Star Rally's second season (R-03 R1, R2, A1, A2, A4, A5): mirror cups, the Maple Cup, garage level 2, what to save for,
+//      today's twist, music per place, the buzz ----
+run('Star Rally season 2 G-RALLY2',()=>{
+  const p=[],notes=[];
+  const src=fs.readFileSync(path.join(SRC,'js','63-game-race.js'),'utf8');
+  const body=function(){
+    const out={bad:[],note:[]},bad=m=>{if(out.bad.length<80)out.bad.push(m)};
+    const store={};
+    global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+    const D=global.document,app={style:{},innerHTML:''},dummy={style:{},classList:{add(){},remove(){},toggle(){},contains(){return false}},dataset:{},
+      querySelector(){return dummy},querySelectorAll(){return[]},getBoundingClientRect(){return{left:0,top:0,width:0,height:0}},appendChild(){},isConnected:false};
+    const shot=f=>{global.document=Object.assign({},D,{querySelector:s=>s=='#app'?app:dummy,querySelectorAll:()=>[],body:{appendChild(){}}});
+      try{app.innerHTML='';f();return app.innerHTML}catch(e){return 'ERR '+e.message}finally{global.document=D}};
+    S.sound=false;S.voice=false;S.pt={bank:600,day:today(),used:0};S.ptCfg={per:3,max:30,pause:false};
+    const prof=id=>{const T=rlTrack(id),a=[];for(let k=0;k<240;k++)a.push(T.cv[Math.floor(k*T.n/240)]);return a};
+    const corr=(a,b)=>{const m=v=>v.reduce((x,y)=>x+y,0)/v.length,ma=m(a),mb=m(b);let sab=0,saa=0,sbb=0;
+      for(let i=0;i<a.length;i++){sab+=(a[i]-ma)*(b[i]-mb);saa+=(a[i]-ma)**2;sbb+=(b[i]-mb)**2}return sab/Math.sqrt(saa*sbb||1)};
+    // 1. mirror tracks (R1): one for every track, raced the other way round: sections reversed, every bend and hill the other way,
+    //    the same length, laps and hazards; valid track data; a new profile to the child (not the same bends as the track forwards)
+    if(RL_MIRROR.length!==RL_ORDER.length||RL_ALL.length!==30)bad('a mirror track for every track: '+RL_MIRROR.length+' of '+RL_ORDER.length);
+    let maxC=0,secs=[];
+    for(const id of RL_MIRROR){
+      const m=RL_TRK[id],b=RL_TRK[m.mirror],w=id+': ',T=rlTrack(id),TB=rlTrack(b.id);
+      if(id!==b.id+'m'||m.place!==b.place||m.laps!==b.laps||m.name!=='Mirror '+b.name)bad(w+'id, place, laps or name');
+      const want=b.plan.slice().reverse().map(([a,h,l,c,dy,f])=>[l,h,a,-c||0,-dy||0,f]);
+      if(JSON.stringify(m.plan)!==JSON.stringify(want))bad(w+'the plan is not the track reversed with its bends and hills turned');
+      if(T.n!==TB.n)bad(w+'a different length '+T.n+' / '+TB.n);
+      const sum=a=>a.reduce((x,v)=>x+v,0);
+      if(Math.abs(sum(T.cv)+sum(TB.cv))>1e-3*T.n)bad(w+'the bends should turn the other way on the whole ('+sum(T.cv).toFixed(1)+' / '+sum(TB.cv).toFixed(1)+')');
+      const sh=rlShape(id),sb=rlShape(b.id);
+      if(Math.abs(sh.hill-sb.hill)>1||sh.tunnel!==sb.tunnel||sh.bridge!==sb.bridge||sh.forks!==sb.forks||sh.movers!==sb.movers)bad(w+'hills, tunnels, bridges, splits or movers differ from the track forwards');
+      const c=corr(prof(id),prof(b.id));maxC=Math.max(maxC,Math.abs(c));
+      if(Math.abs(c)>=.85)bad(w+'the same bends as the track forwards (r='+c.toFixed(2)+')');
+      if(T.hy[0]!==0||T.cv[0]!==0||T.fl[RL_START]||T.dv[RL_START])bad(w+'the start must be flat, straight and open');
+      let steep=0,bend=0,wj=0;
+      for(let i=0;i<T.n;i++){steep=Math.max(steep,Math.abs(T.hy[(i+1)%T.n]-T.hy[i]));bend=Math.max(bend,Math.abs(T.cv[i]));wj=Math.max(wj,Math.abs(T.rw[(i+1)%T.n]-T.rw[i]))}
+      if(steep>RL_SEG*.8||bend>7||wj>.06)bad(w+'too steep, too sharp or a width jump');
+      for(let i=0;i<T.n;i++)if(T.pr[i])for(let j=0;j<T.pr[i].length;j+=2){const k=T.pr[i][j],x=T.pr[i][j+1];
+        if(!RL_PROPS[k]||(k!=='arch'&&(Math.abs(x)-RL_PROPS[k].wr/2<T.rw[i]+.2||T.fl[i]&3)))bad(w+'a roadside thing on the road '+k+' at '+i)}
+      if(T.sp.some(([s,x])=>Math.abs(x)>.6)||T.pk.some(q=>Math.abs(q.x)>.5)||T.cv[T.gate]!==0)bad(w+'sparkles, pick-ups or the gate off the road');
+      if(JSON.stringify(T.pr)===JSON.stringify(TB.pr))bad(w+'the same scenery as the track forwards');
+      const st=rlNew(id,{}),q=(st.fin-st.P.d)/(RL_CRUISE*RL_VMAX);secs.push(q);
+      if(q<50||q>100)bad(w+'a race at the cruising speed takes '+q.toFixed(0)+' s');
+    }
+    out.note.push('15 mirror tracks, '+Math.round(Math.min(...secs))+'-'+Math.round(Math.max(...secs))+' s, largest profile correlation with the track forwards '+maxC.toFixed(2));
+    // 2. the bots finish every mirror track (Easy steering child, Easy good driver, Pro): in time, and a good driver wins often
+    // the same bots as the G-02b check (good: steers round hazards, aims at pads and pick-ups; kid: only steers back from the edge)
+    const bot=(kind,st,rnd)=>{
+      const P=st.P,T=st.T,seg=rlMod(Math.floor(P.d/RL_SEG),T.n),cur=T.cv[seg],sp=P.v/RL_VMAX,rw=T.rw[seg];
+      if(kind=='lazy')return{};
+      if(kind=='wild'){if(st.rt>=(st._wt||0)){st._w=Math.round(rnd()*2-1);st._wt=st.rt+.6}return{steer:st._w}}
+      if(kind=='kid')return{steer:Math.abs(P.x)>.5*rw?-Math.sign(P.x):0};
+      let tx=0;
+      for(let j=1;j<30;j++){const s=(seg+j)%T.n,px=T.padAt[s];if(px!=null){tx=px;break}if(T.pkAt[s]){tx=T.pk[T.pkAt[s][0]].x;break}}
+      const bd=[];
+      for(let j=1;j<16;j++){
+        const s=(seg+j)%T.n;
+        if(T.obAt[s])for(const i of T.obAt[s])bd.push(T.ob[i].x);
+        if(T.mvAt[s])for(const i of T.mvAt[s])bd.push(rlMvX(T.mv[i],st.rt+j*RL_SEG/Math.max(2000,P.v)));
+        if(T.sfAt[s])for(const [a,b] of T.sfAt[s])bd.push(b-a<1.2?(a+b)/2:a<0?Math.min(b,0)-.3:Math.max(a,0)+.3);
+        if(T.dv[s]){const f=T.forks.find(f=>rlMod(s-f[0],T.n)<f[1]-f[0]+1);tx=f?f[2]*.5:(P.x<0?-.55:.55)}
+      }
+      for(const b of bd)if(Math.abs(b-tx)<.4){const c=[-.6,0,.6].map(v=>v*rw).filter(v=>bd.every(q=>Math.abs(q-v)>.38));if(c.length)tx=c.reduce((a,v)=>Math.abs(v-P.x)<Math.abs(a-P.x)?v:a)}
+      let s=Math.max(-1,Math.min(1,(tx-P.x)*2.5+.35*cur*sp*sp*(st.mode=='easy'?.3:1)/(1.7*Math.max(.3,sp))));
+      if(kind=='pro'&&Math.abs(cur)>=3&&sp>.8&&Math.abs(P.x)<.6)s=Math.sign(cur);
+      return{steer:s,go:kind=='pro'?Math.abs(cur)<4.5||P.drifting:false};
+    };
+    const stats={};
+    for(const [mode,k] of [['easy','kid'],['easy','good'],['pro','pro']]){
+      const s=stats[mode+' '+k]={n:0,win:0,top3:0,tmax:0};
+      for(const id of RL_MIRROR){
+        const cup=RL_CUPS[RL_TRK[id].cup],st=rlNew(id,{mode,seed:7,tier:cup.tier}),rnd=rlRng(11);let n=0;
+        while(!st.done&&n<60*170){rlStep(st,bot(k,st,rnd));st.ev.length=0;n++}
+        s.n++;if(!st.done){bad(mode+' '+k+' '+id+': did not finish');continue}
+        if(st.P.place==1)s.win++;if(st.P.place<=3)s.top3++;s.tmax=Math.max(s.tmax,st.P.time);
+        if(st.P.time>120)bad(mode+' '+k+' '+id+': '+st.P.time.toFixed(0)+' s');
+      }
+      out.note.push('mirror '+mode+' '+k+': won '+s.win+'/'+s.n+', top 3 '+s.top3+', slowest '+s.tmax.toFixed(0)+' s');
+    }
+    if(stats['easy good'].win<stats['easy good'].n*.5)bad('Easy: a good driver should often win the mirror tracks ('+stats['easy good'].win+'/15)');
+    if(stats['easy kid'].top3<2)bad('Easy: a young child should sometimes reach the top 3 on the mirror tracks');
+    // 3. the fifth place and cup: three new layouts (not reskins: their plans differ from every other track's, forwards or mirrored)
+    const woods=RL_TRACKS.woods||[];
+    if(woods.length!==3||rlPl('woods').id!=='woods'||!RL_PROPS[rlPl('woods').roll]||!RL_CRIT[rlPl('woods').crit])bad('Maple Woods: 3 tracks, its own roller and crossing animal');
+    for(const t of woods)for(const o of RL_ORDER.filter(x=>x!==t.id)){
+      const a=JSON.stringify(t.plan.map(s=>s.slice(0,5))),b=RL_TRK[o];
+      if(a===JSON.stringify(b.plan.map(s=>s.slice(0,5)))||a===JSON.stringify(rlMirrorPlan(b.plan).map(s=>s.slice(0,5))))bad(t.id+' has the layout of '+o);
+    }
+    if(RL_CUPS[4].id!=='maple'||RL_CUPS[4].races.some(([t])=>RL_TRK[t].place!=='woods')||RL_CUPS[4].mirror)bad('the fifth cup is the Maple Cup with the three new tracks');
+    if(RL_CUPS.filter(c=>c.mirror).length!==5||RL_CUPS.slice(RL_M0).some(c=>!c.mirror||c.races.some(([t])=>!RL_TRK[t].mirror)))bad('five mirror cups of mirror tracks');
+    if(RL_CUPS.some(c=>!(c.tier>=0&&c.tier<=3)))bad('every cup a tier 0-3');
+    // 4. what opens what: the Maple Cup after the Star Cup; the mirror cups with the four trophies (or each of the four raced 3 times),
+    //    then in order; racing a mirror track (today's twist) never opens a mirror cup; the tracks follow their cups
+    {
+      const four={sprout:{best:1,runs:1},wave:{best:3,runs:1},frost:{best:2,runs:1},star:{best:1,runs:1}};
+      const o=cups=>({cups:JSON.parse(JSON.stringify(cups)),stars:{}});
+      if(rlCupOpen(4,o({sprout:{best:1},wave:{best:1},frost:{best:1}}))||!rlCupOpen(4,o({sprout:{best:1},wave:{best:1},frost:{best:1},star:{best:2}})))bad('the Maple Cup opens with a trophy in the Star Cup');
+      if(!rlCupOpen(4,o({star:{best:4,runs:2}})))bad('racing the Star Cup twice opens the Maple Cup (nobody is stuck)');
+      const three=o(four);delete three.cups.frost;
+      if(rlCupOpen(RL_M0,three)||rlMirrorOpen(three))bad('three trophies must not open the mirror cups');
+      three.cups.frost={best:4,runs:2};if(rlCupOpen(RL_M0,three))bad('a cup raced twice without a trophy must not open the mirror cups');
+      three.cups.frost.runs=3;if(!rlCupOpen(RL_M0,three))bad('a cup raced 3 times counts for the mirror cups (nobody is stuck)');
+      const all=o(four);
+      if(!rlCupOpen(RL_M0,all)||rlCupOpen(RL_M0+1,all)||!rlTrackOpen('meadow-0m',all)||rlTrackOpen('beach-1m',all))bad('the four trophies open the first mirror cup and its tracks only');
+      all.cups.msprout={best:3,runs:1};if(!rlCupOpen(RL_M0+1,all)||rlCupOpen(RL_M0+2,all))bad('a trophy in a mirror cup opens the next one');
+      const tw={cups:{},stars:{'meadow-0m':2,'city-2m':1}};
+      if(RL_CUPS.some((c,i)=>c.mirror&&rlCupOpen(i,tw))||rlCupOpen(4,tw))bad('racing a mirror track (today\'s twist) must not open a mirror cup or the Maple Cup');
+      if(!rlTrackOpen('meadow-0m',tw))bad('a track raced before stays open for single races');
+      if(rlTrophies({cups:Object.fromEntries(RL_CUPS.map(c=>[c.id,{best:2}]))})!==10)bad('ten trophies to win');
+    }
+    // 5. garage level 2 (R2): kits, wheels, horns and trails with fixed prices (7,250 in all), closed until a mirror cup is raced to the
+    //    end; buying never goes below 0, is refused when short or closed, and never loses what was bought; the first item is free
+    {
+      let tot=0;
+      for(const k of RL_T2){const [list,ownK,cur,tier]=RL_SHOP[k];if(tier!==2||list[0][2]!==0||list.length<5||list.slice(1).some(x=>!(x[2]>0)||!x[0]))bad('shop list '+k);
+        tot+=list.reduce((a,x)=>a+x[2],0)}
+      if(tot!==7250)bad('garage level 2 should cost 7,250 sparkles in all, not '+tot);
+      S.rally={spk:5000,cups:{sprout:{best:1,runs:1},wave:{best:1,runs:1},frost:{best:1,runs:1},star:{best:1,runs:1}}};
+      let r=rlS();
+      if(rlT2Open(r)||rlBuy('kit','spoiler')||r.spk!==5000)bad('level 2 must stay closed until a mirror cup is raced to the end');
+      r.cup={id:'msprout',i:2,pts:{}};if(rlT2Open(r))bad('a mirror cup still being raced does not open level 2');
+      delete r.cup;r.cups.msprout={best:4,runs:1};
+      if(!rlT2Open(r)||!rlBuy('kit','spoiler')||r.spk!==4700||!r.kits.spoiler||rlBuy('kit','spoiler'))bad('buying a kit once level 2 is open');
+      r.spk=100;if(rlBuy('whl','monster')||r.spk!==100||r.whls.monster)bad('a buy without enough sparkles must be refused');
+      if(rlBuy('horn','beep')||rlBuy('trail','')||rlBuy('kit','zz'))bad('free or unknown items are not bought');
+      const rnd=rlRng(4242);let owned=0;
+      for(let i=0;i<3000;i++){
+        r=rlS();if(rnd()<.35)r.spk+=Math.floor(rnd()*200);
+        const k=RL_T2[Math.floor(rnd()*4)],[list,ownK]=RL_SHOP[k],it=list[Math.floor(rnd()*list.length)],s0=r.spk,had=!!r[ownK][it[0]],ok=rlBuy(k,it[0]);
+        if(ok&&(had||!it[2]||s0<it[2]||r.spk!==s0-it[2]))bad('a level 2 buy that should have been refused: '+it[0]);
+        if(!ok&&r.spk!==s0)bad('a refused buy changed the sparkles');
+        if(r.spk<0)bad('sparkles below 0');
+        const n=RL_T2.reduce((a,k2)=>a+Object.keys(r[RL_SHOP[k2][1]]).length,0);if(n<owned)bad('a bought item was lost');owned=n;
+        if(rnd()<.2){r[RL_SHOP[k][2]]=it[0];}
+        S.rally=JSON.parse(JSON.stringify(S.rally)); // through the save as text
+      }
+      out.note.push('3000 level 2 shop steps, '+owned+' things bought');
+    }
+    // 6. the save: new fields by id with defaults (an old save loads unchanged); damaged values are cleaned
+    {
+      S.rally={spk:130,races:9,best:{'meadow-0':70000},stars:{'meadow-0':3,'meadow-1':3},paint:'b',paints:{r:1,b:1},stk:'star',stks:{star:1},body:'buggy',mode:'pro',
+        cups:{sprout:{best:2,runs:1}},lap:{},ghost:{},upg:{grip:1,turbo:0,bumper:0}};
+      const old=JSON.stringify(S.rally),r=rlS(),o=JSON.parse(old);
+      for(const k of Object.keys(o))if(JSON.stringify(r[k])!==JSON.stringify(o[k]))bad('a G-02b save: '+k+' changed');
+      if(r.kit!==''||r.whl!==''||r.horn!=='beep'||r.trail!==''||JSON.stringify([r.kits,r.whls,r.horns,r.trails])!=='[{},{},{},{}]'||'tw' in r)bad('level 2 defaults '+JSON.stringify(r));
+      for(const v of [{kit:'zz',kits:{spoiler:1,zz:1,'':1},whl:'gold',whls:[],horn:5,horns:'x',trail:'rainbow',trails:{rainbow:'x'},tw:{}},
+        {kit:'fins',kits:{fins:1},tw:'2026-11-15'},{kits:null,trail:null,tw:'x'.repeat(40)}]){
+        S.rally=v;const d=rlS();
+        for(const k of RL_T2){const [list,ownK,cur]=RL_SHOP[k];
+          if(typeof d[cur]!='string'||!list.some(x=>x[0]===d[cur])||(d[cur]!==list[0][0]&&!d[ownK][d[cur]]))bad('damaged save: '+cur+'='+d[cur]);
+          for(const id in d[ownK])if(!list.some(x=>x[0]===id&&x[2]>0)||d[ownK][id]!==1)bad('damaged save: '+ownK+' '+id)}
+        if('tw' in d&&(typeof d.tw!='string'||d.tw.length>12))bad('damaged save: tw '+d.tw);
+      }
+      if(S.rally.kit!=='fins'&&rlS().kit!=='')bad('an unowned kit must be dropped');
+    }
+    // 7. the next thing to save for (A2): the cheapest thing open to buy; "level 2" when only it is left; nothing when all is bought
+    {
+      const r={spk:10,paints:{r:1},stks:{},upg:{},cups:{}};
+      let s=rlSaveFor(r);if(!s||s.cost!==30||s.kind!=='stk')bad('save for on a new save: '+JSON.stringify(s));
+      for(const [id] of RL_PAINTS)r.paints[id]=1;for(const [id] of RL_STICKERS)if(id)r.stks[id]=1;r.upg={grip:3,turbo:3,bumper:3};
+      s=rlSaveFor(r);if(!s||!s.lock||!/mirror cup/.test(rlSaveLine(r)))bad('with the first garage bought, the line should point at level 2: '+JSON.stringify(s));
+      r.cups={msprout:{best:1,runs:1}};s=rlSaveFor(r);if(!s||s.cost!==150||s.id!=='quack')bad('level 2 open: the cheapest is the duck horn: '+JSON.stringify(s));
+      r.spk=200;if(!/can buy Duck quack/.test(rlSaveLine(r)))bad('enough sparkles: "you can buy" '+rlSaveLine(r));
+      r.spk=40;if(!/110 more to go/.test(rlSaveLine(r)))bad('short: how many more '+rlSaveLine(r));
+      for(const k of RL_T2){const [list,ownK]=RL_SHOP[k];r[ownK]={};for(const [id,,c] of list)if(c)r[ownK][id]=1}
+      if(rlSaveFor(r)!==null||!/Everything/.test(rlSaveLine(r)))bad('everything bought: '+rlSaveLine(r));
+    }
+    // 8. today's twist (A5): from the date only, the same all day, an open track forwards in a weather or the other way round; the
+    //    bonus once a day; a missed day loses nothing (no streak)
+    {
+      const r={cups:{},stars:{}},lab=new Set(),kinds=new Set();
+      for(let d=1;d<=40;d++){
+        const k='2026-'+(1+Math.floor(d/29))+'-'+(1+d%28),a=rlTwist(k,r),b=rlTwist(k,r);
+        if(JSON.stringify(a)!==JSON.stringify(b))bad('the twist changes within a day '+k);
+        if(!rlTrackOpen(a.base,r)||!RL_TRK[a.tid]||(a.rev?a.tid!==a.base+'m':a.tid!==a.base)||!RL_WX[a.wx]||!a.label||/undefined|NaN/.test(a.label))bad('twist '+JSON.stringify(a));
+        lab.add(a.label);kinds.add(a.rev?'rev':a.wx);
+      }
+      if(lab.size<10||kinds.size<4)bad('the twist should vary: '+lab.size+' twists, kinds '+[...kinds]);
+      const rr={},t1=rlTwist('2026-11-15',r),t2=rlTwist('2026-11-17',r);
+      if(rlTwistPay(rr,t1)!==RL_TW_BONUS||rlTwistPay(rr,t1)!==0||rr.tw!=='2026-11-15'||rlTwistPay(rr,t2)!==RL_TW_BONUS)bad('the twist bonus: once a day, again on another day after a missed one');
+      if(rlTwistPay(rr,null)!==0)bad('no bonus without a twist');
+      if(/streak/i.test(src.slice(src.indexOf('function rlTwist'),src.indexOf('function rlTwist')+1500)))bad('no streak in the twist');
+    }
+    // 9. music (A1): a loop for every place; on only with Sound effects and Music on, not in Calm mode, not while paused or finished;
+    //    scheduled with tone() (so it goes through the shared duck under the voice)
+    {
+      for(const pl of RL_PLACES){const t=RL_TUNE[pl.id];if(!t||t[0].length!==16||t[1].length!==4||!(t[2]>.15&&t[2]<.4))bad('music for '+pl.id)}
+      const st=rlNew('woods-0',{seed:1}),R={st,paused:false};const was=[S.sound,S.music,S.calm,AC,tone];
+      const notes=[];AC={state:'running',currentTime:10};tone=(...a)=>notes.push(a);
+      S.sound=true;S.music=true;S.calm=false;
+      if(!rlMusicOn(R))bad('music should play while racing with Music on');
+      rlMusic(R);const n1=notes.length;
+      S.calm=true;notes.length=0;rlMusic(R);if(notes.length||rlMusicOn(R))bad('music must be off in Calm mode');
+      S.calm=false;S.music=false;if(rlMusicOn(R))bad('music must follow the Music switch');
+      S.music=true;R.paused=true;if(rlMusicOn(R))bad('music waits while paused');R.paused=false;st.done=true;if(rlMusicOn(R))bad('music stops at the finish');
+      if(!(n1>=1))bad('rlMusic scheduled no notes');
+      [S.sound,S.music,S.calm]=was;AC=was[3];tone=was[4];
+      if(!/rlEngine\(\);\n\s*rlMusic\(RL\);/.test(src))bad('the race loop should run rlMusic');
+    }
+    // 10. the buzz (A4): navigator.vibrate on a crash and at the finish; off with the Grown-ups switch and in Calm mode
+    {
+      // Node's own navigator has only a getter: replace it for the test, then put it back
+      const got=[],nd=Object.getOwnPropertyDescriptor(globalThis,'navigator'),setNav=v=>Object.defineProperty(globalThis,'navigator',{value:v,configurable:true,writable:true});
+      setNav({vibrate:ms=>{got.push(ms);return true}});
+      const was=[S.buzz,S.calm];
+      delete S.buzz;S.calm=false;if(!buzz(25)||got.length!==1)bad('buzz should be on by default');
+      S.buzz=false;if(buzz(25)||got.length!==1)bad('the Buzz switch turns it off');
+      S.buzz=true;S.calm=true;if(buzz(25)||got.length!==1)bad('no buzz in Calm mode');
+      setNav({});S.calm=false;if(buzz(25))bad('a tablet without vibrate: nothing happens');
+      if(nd)Object.defineProperty(globalThis,'navigator',nd);[S.buzz,S.calm]=was;
+      if(!/RL\.shake = \.3;\n\s*buzz\(25\);/.test(src)||!/SFX\.fanfare\(\);\n\s*buzz\(40\);/.test(src))bad('Star Rally should buzz on a crash and at the finish');
+    }
+    // 11. the screens: the menu (twist, save for, 5 + 5 cups, 5 places, mirror tracks), the garage with level 2 locked or open
+    {
+      S.rally={spk:50};
+      const m=shot(()=>rlMenu());
+      if(/^ERR/.test(m)||!m.includes('id="rltwist"')||!m.includes("Today's twist")||!/id="rlsave"[\s\S]*Star/.test(m)||(m.match(/class="rl-cup[ "]/g)||[]).length!==10||
+        (m.match(/class="rl-cup[^"]*mir/g)||[]).length!==5||m.includes('data-cup="'+RL_M0+'" data-ok="1"')||(m.match(/data-pl=/g)||[]).length!==5||
+        !m.includes('data-trk="meadow-0m" data-ok="0"')||!m.includes('of 90 stars')||!m.includes('of 10 trophies')||/undefined|NaN/.test(m))bad('the menu on a new save: '+m.slice(0,200));
+      const g=shot(()=>rlGarage());
+      if(/^ERR/.test(g)||!g.includes('class="rl-t2 lock" id="rlt2"')||RL_T2.some(k=>RL_SHOP[k][0].slice(1).some(([id,n,c])=>!g.includes('data-k="'+k+'" data-id="'+id+'"')||!g.includes('</svg>'+c+'</span>'))))
+        bad('the garage should show level 2 locked with every price: '+g.slice(0,160));
+      S.rally={spk:900,cups:{sprout:{best:1,runs:1},wave:{best:1,runs:1},frost:{best:1,runs:1},star:{best:1,runs:1},msprout:{best:2,runs:1}},kits:{fins:1},kit:'fins',whls:{gold:1},whl:'gold',
+        trails:{star:1},trail:'star',horns:{moo:1},horn:'moo'};
+      const m2=shot(()=>rlMenu('woods')),g2=shot(()=>rlGarage({k:'trail',id:'rainbow'}));
+      if(/^ERR/.test(m2)||!m2.includes('data-cup="'+RL_M0+'" data-ok="1"')||!m2.includes('data-trk="woods-0" data-ok="1"')||!/Mirror Wave Cup/.test(m2))bad('the menu later: '+m2.slice(0,160));
+      if(/^ERR/.test(g2)||g2.includes('class="rl-t2 lock"')||!g2.includes('id="rlbuy"')||!g2.includes('Rainbow trail'))bad('the garage with level 2 open: '+g2.slice(0,160));
+      out.svg=[];
+      for(const b of ['kart','buggy','rocket'])for(const [k] of RL_KITS)for(const [w] of RL_WHEELS)out.svg.push(['car '+b+' '+k+' '+w,rlCarArt(b,'g',k?'star':'',
+        'you',false,{kit:k,whl:w})]);
+      for(const t in RL_TRAIL_ART)RL_TRAIL_ART[t]().forEach((a,i)=>out.svg.push(['trail '+t+i,a]));
+    }
+    return out;
+  };
+  const o=eval(js+';('+body.toString()+')()');
+  p.push(...o.bad);
+  notes.push(...o.note);
+  // 12. the new drawings: tokens only, object-art roles
+  for(const [w,d] of o.svg||[]){
+    if(/#[0-9a-f]{3,8}\b|rgba?\(|hsla?\(|NaN|undefined/i.test(d.replace(/var\(--[a-z0-9-]+\)/g,'')))p.push(w+': raw colour, NaN or undefined');
+    for(const a of d.matchAll(/\s(fill|stroke)="([^"]*)"/g))if(a[2]!=='none'&&!/^var\(--a-[a-z]\d?\)$/.test(a[2]))p.push(w+': colour '+a[2]);
+  }
+  // 13. cheap tablets: the trail is a fixed pool of typed arrays (nothing made per frame); the flashing-cars fix and wrecks are kept
+  const trail=src.slice(src.indexOf('function rlTrail('),src.indexOf('/* ---- the screens:'));
+  if(!trail||/\bnew [A-Z]|\[\]|=> \{|\.push\(|\.map\(/.test(trail.replace(/\/\/.*$/gm,'')))p.push('rlTrail should not make anything while racing');
+  if(!/R\.tr = \{ x: new Float32Array\(32\)/.test(src))p.push('the trail pool should be made once, in rlSize');
+  if(!/if \(car === P\) \{ rlDrawMe\(R\); meOK = 1; continue; \}/.test(src))p.push('the cars must still be drawn in the order of their distance (G-02b flashing fix)');
+  if(!/function rlCrash\(st, car, why, sev = 0\)/.test(src))p.push('crashes (G-02b) must stay');
+  if(!/UI\.sw\('Buzz: /.test(fs.readFileSync(path.join(SRC,'js','80-grown.js'),'utf8')))p.push('Grown-ups needs the Buzz switch');
   return{problems:[...new Set(p)].slice(0,60),note:notes.join('; ')};
 });
 
@@ -16790,7 +17042,7 @@ run('snack stand G-04a',()=>{
   notes.push(o.svg.length+' drawings, '+shapes+' shapes, tokens only');
   // 12. plumbing: the games2 part, stopped by view(), the test hook off, the game-time rules, the shared chrome
   if(partOf('65-game-snack.js')!=='games2'||partOf('49-game-snack.css')!=='games2')p.push('Snack Stand must ship in games2.'+BUILD_VER+'.js');
-  if(o.files!=='gen,gen2,bt,games,games2,data')p.push('appFiles() should list games2 after games: '+o.files);
+  if(o.files!=='gen,gen2,bt,games,rally,games2,data')p.push('appFiles() should list games2 after games (and rally, G-RALLY2): '+o.files);
   if(!/if\(typeof snStop=='function'\)snStop\(\)/.test(rd('js/40-view.js')))p.push('view() must stop the day (snStop)');
   if(o.dev!=='{"fast":1}')p.push('SN_DEV test hook must be off: '+o.dev);
   if(!/if \(ptLeft\(\) <= 0\) \{\s*SFX\.wrong\(\);\s*fb\(ptWhyNot\(\)/.test(src))p.push('a day must not start without game time (ptLeft, ptWhyNot)');

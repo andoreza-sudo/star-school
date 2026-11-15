@@ -14,7 +14,7 @@
 .rl-hl{display:flex;align-items:center;gap:var(--s-2);margin:0;font-size:var(--fs-3);color:var(--ink)}
 .rl-hl .ic,.rl-psub .ic,.rl-iprice .ic.rs-f{color:var(--star-shade)}
 .rl-places{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s-3)}
-@media (min-width:760px){.rl-places{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (min-width:760px){.rl-places{grid-template-columns:repeat(5,minmax(0,1fr))}}
 .rl-place{display:flex;flex-direction:column;gap:var(--s-1);min-height:var(--tap);padding:var(--s-2);border:0;border-radius:var(--r-card);
   background:var(--surface);color:var(--ink);font:inherit;text-align:left;cursor:pointer;touch-action:manipulation;
   box-shadow:inset 0 0 0 2px var(--line),0 4px 0 var(--ledge-soft);transition:transform var(--t-fast) var(--ease)}
@@ -90,6 +90,22 @@
 .rl-pips{display:flex;gap:4px}.rl-pips i{width:14px;height:14px;border-radius:50%;background:var(--surface-2);box-shadow:inset 0 0 0 2px var(--line)}
 .rl-pips i.on{background:var(--good);box-shadow:none}
 .rl-iwhat{font-size:var(--fs-2);color:var(--ink-2);text-align:center;line-height:1.2}
+
+/* G-RALLY2: what to save for, today's twist, mirror cups and tracks, garage level 2 */
+.rl-save{margin-top:var(--s-3);box-shadow:inset 0 0 0 2px var(--star-tint),0 4px 0 var(--ledge-soft)}
+.rl-tw{display:grid;grid-template-columns:120px minmax(0,1fr) auto;align-items:center;gap:var(--s-3);width:100%;min-height:96px;margin-top:var(--s-3);
+  padding:var(--s-3);border:0;border-radius:var(--r-card);background:var(--surface);color:var(--ink);font:inherit;text-align:left;cursor:pointer;
+  touch-action:manipulation;box-shadow:inset 0 0 0 3px var(--play),0 5px 0 var(--play-shade);transition:transform var(--t-fast) var(--ease)}
+.rl-tw:active{transform:translateY(4px)}
+.rl-tw .rl-go{background:var(--play-shade)}
+@media (max-width:420px){.rl-tw{grid-template-columns:84px minmax(0,1fr) auto}}
+.rl-cup.mir .rl-cpic{background:var(--math-tint)}
+.rl-trk.mir .rl-tn{background:var(--bt-tint);color:var(--bt-shade)}.rl-trk.mir .rl-tn .ic{width:24px;height:24px}
+.rl-t2{margin-top:var(--s-5);padding:var(--s-1) var(--s-4) var(--s-4);border-radius:var(--r-hero);background:var(--surface-2);box-shadow:inset 0 0 0 2px var(--line)}
+.rl-t2>.rl-h{display:flex;align-items:center;gap:var(--s-2)}.rl-t2>.rl-h .ic{color:var(--star-shade)}
+.rl-t2.lock>.rl-h .ic{color:var(--ink-3)}
+.rl-item.lock .rl-ipic{opacity:.55}
+.rl-t2 .rl-ipic{width:72px;height:52px}
 
 /* ---- garage ---- */
 .rl-gcar{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:var(--s-3) var(--s-5);padding:var(--s-4);border-radius:var(--r-hero);

@@ -109,7 +109,7 @@ Files added by later chunks (names are fixed by the roadmap so everyone agrees):
 | `59-game-hub.js`, `src/css/48-game-hub.css` | P4-16 | Game Room hub (`GH.hub`, called by `gameRoom()`), the game registry (`GH.reg`), the drawn hub scene, ticket and game pictures, and the shared game chrome: top bar `GH.top`/`GH.wire`, pause sheet `GH.pause`, end card `GH.end`. Both go into `games.<VER>.js` (section 3.3, "Adding a game") |
 | `65-game-snack.js`, `src/css/49-game-snack.css` | G-04a | Snack Stand (games2 file): food, places, the stand shop, drawings (food, stand, places, decorations), the day simulation (`snNew`, `snStep`, `snAdd`, `snServe`, `snChange`; no DOM, seeded), menu, shop, the day and its end card; save `S.snack` |
 | `67-game-skyhop.js`, `src/css/49-game-skyhop.css` | G-04b | Sky Hop (games2 file): worlds and the 24 courses in a short text format (`HOP_PH` phrases, `hopBuild`), the simulation (`hopNew`, `hopStep`, `hopHelp`, `hopClone`, `hopRecord`; no DOM, fixed 1/60 s step, deterministic, the tests play every course with bots), drawings (SVG made once into canvases), the child's pet as a picture, the canvas renderer, menu, course and end card; save `S.hop` |
-| `63-game-race.js`, `src/css/49-game-race.css` | G-02, G-02b | Star Rally, the racing game (games2 file since G-02b): places, 12 tracks with their own layouts and hazards, cups, crashes, ghosts, upgrades, rivals and catch-up, the race simulation (`rlNew`, `rlStep`; no DOM, the tests run whole races), the canvas renderer (sprites from SVG, the road as one path per colour), menu, garage, race and end card; save `S.rally` |
+| `63-game-race.js`, `src/css/49-game-race.css` | G-02, G-02b, G-RALLY2 | Star Rally, the racing game (its own rally file since G-RALLY2; games2 from G-02b): places, 12 tracks (G-RALLY2: 15, plus 15 mirror tracks, garage level 2, today's twist, music) with their own layouts and hazards, cups, crashes, ghosts, upgrades, rivals and catch-up, the race simulation (`rlNew`, `rlStep`; no DOM, the tests run whole races), the canvas renderer (sprites from SVG, the road as one path per colour), menu, garage, race and end card; save `S.rally` |
 | `23-viz.js` | P1-10 | Math visuals |
 | `31-gen-math-early.js`, `33-gen-math-mid.js`, `35-gen-math-upper.js` | P2-01+ | New math generators |
 | `37-bank.js` | P1-09 | Content bank engine |
@@ -135,6 +135,7 @@ gen2.<VER>.js     question generators, part 2 (A11c): src/js/35-gen-math-upper, 
 bt.<VER>.js       Brain Teaser puzzle types: a <style> with src/css/NN-bt-*.css, then src/js/NN-bt-*.js, then  var BT_VER='<VER>';
 games.<VER>.js    the Game Room: src/js/60-blocks, 62-hill, 64-gtimer, 66-colornum, 68-lowpoly, 70-art, 72-shapes, 59-game-hub (and their CSS
                   48-game-hub, 60-game-blocks), then  var GAMES_VER='<VER>';
+rally.<VER>.js    G-RALLY2: Star Rally on its own (src/js/63-game-race.js, src/css/49-game-race.css), then  var RALLY_VER='<VER>'; loads after games, before games2
 games2.<VER>.js   the newer Game Room games (G-04a on): every other src/js/NN-game-*.js and src/css/NN-game-*.css (63-game-race since G-02b, 65-game-snack, 67-game-skyhop, 49-game-race, 49-game-snack, 49-game-skyhop),
                   then  var GAMES2_VER='<VER>';
 data.<VER>.js     src/data/*.js in filename order, then the last line  var DATA_VER='<VER>';
@@ -157,13 +158,13 @@ The rule lives in one place, `PARTS` in `tools/build.py`: a file stem and a regu
   in `38-skills.js`, wraps each generator in an arrow (`gen:lv=>genAbc(lv)`); keep doing that for a new skill whose generator is in these files.
   A new generator file named `NN-gen-*.js` is NOT picked up by itself: add it to the `gen` or `gen2` regular expression in build.py.
 - `games`: the seven Game Room files listed above, plus by name `59-game-hub.js` (P4-16: the hub and the shared game chrome) with
-  `48-game-hub.css` and `60-game-blocks.css` (G-01). (G-02b moved `63-game-race.js` / `49-game-race.css`, Star Rally, to games2.) `58-playtime.js` (game time and
+  `48-game-hub.css` and `60-game-blocks.css` (G-01). (G-02b moved `63-game-race.js` / `49-game-race.css`, Star Rally, to games2; G-RALLY2 to its own part `rally`, listed before games2 in `PARTS`.) `58-playtime.js` (game time and
   `gameRoom()`, which calls `GH.hub()`) and `40-games.css` (shared by Home, the map and the rewards) stay in index.html.
 - `games2` (G-04a, v142): every other `src/js/NN-game-*.js` and `src/css/NN-game-*.css`, so a new game goes here by itself (G-04a: `65-game-snack.js`
   and `49-game-snack.css`, Snack Stand; G-04b: `67-game-skyhop.js` and `49-game-skyhop.css`, Sky Hop). It was added when the games file reached 394 KB of its 400 KB warning. It loads after `games`, so a game here
   may call `GH.reg` and the `gh*` drawing helpers while it loads; `appFiles()` lists it, so a missing or stale games2 file stops the start-up like the others.
 
-Loaded on demand (P6-02): `LAZY` in `tools/build.py` (`('games', 'games2')`) names the parts that index.html does not load at start, and
+Loaded on demand (P6-02): `LAZY` in `tools/build.py` (`('games', 'rally', 'games2')`) names the parts that index.html does not load at start, and
 `LAZY_PARTS` in `src/js/90-app.js` is the same list (the A11b and P6-02 checks compare them). They are built, stamped and precached like
 the others. `partsThen(stems, go)` (90-app.js) is the one way in: when those parts are in it runs `go()` at once; otherwise it draws
 "Getting the games ready..." (a Back button and a drawn disc; `#partwait`), adds one plain `<script src="<stem>.<VER>.js">` per part, one
@@ -240,7 +241,7 @@ GH.reg({
 });
 ```
 
-The six games registered today: Hill Climb, Coloring, Block Builder (in `59-game-hub.js`), Star Rally (`63-game-race.js` in games2 since G-02b, G-02: a
+The six games registered today: Hill Climb, Coloring, Block Builder (in `59-game-hub.js`), Star Rally (`63-game-race.js`, in its own rally part since G-RALLY2, G-02: a
 canvas game with its own loop, stopped by `view()` through `rlStop`, like `stopHC`; it is a worked example of a canvas game on `GH.reg`) and
 Snack Stand (`65-game-snack.js` in games2, G-04a: an HTML and SVG game with a 200 ms tick, stopped by `view()` through `snStop`; a worked example
 of a game whose rules are a pure simulation the tests play whole days of, and of a game shop with its own coins) and
