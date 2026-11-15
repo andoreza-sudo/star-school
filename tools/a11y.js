@@ -166,6 +166,13 @@ const SCREENS = {
   // colouring: the picture is the main control (tap a shape); the colour swatches are pickers (48 px)
   'art-page': { run: ev(() => { gtime(); artPage('m:17'); }), sheet: pauseSheet },
   'art-pixel': { run: ev(() => { gtime(); colorPic(CB_PICS[0][0], 'num'); }) },
+  // G-ART2: the picture packs (next goal, today's picture), the gallery with its big view, Neon with its Done (a main control, 64 px)
+  'art-packs': { run: ev(() => { gtime(); colorMenu('packs'); }) },
+  'art-gallery': {
+    run: ev(() => { gtime(); artDone({ k: 'v', key: 'm:3', n: 'Mandala', d: { p: ['c:#f97316'], s: '#' }, star: true }); colorMenu('gallery'); }),
+    sheet: async p => { await p.click('[data-gi]'); await p.waitForTimeout(500); return { close: 'escape' }; },
+  },
+  'art-neon': { run: ev(() => { gtime(); neonDraw(); }), main: '#adone', sheet: pauseSheet },
   'blocks-menu': { run: ev(() => { gtime(); bbMenu(); }) },
   'blocks-build': {
     run: ev(() => { gtime(); blockBuilder(); }),

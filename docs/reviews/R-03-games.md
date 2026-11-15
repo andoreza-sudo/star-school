@@ -119,11 +119,11 @@ could = nice to have. "Visit" = a sitting of about 10 minutes of game time in th
 
 | # | Pri | Problem | Change | Size |
 |---|-----|---------|--------|------|
-| T1 | Must | No goals, no finish, no gallery for most modes (Neon saves to its own browser store outside the main save) | A Done button on every page, one gallery in `S` for all modes (the shared end card shows the picture), and a "show a grown-up" full-screen view | M |
-| T2 | Must | Pixel art squares are about 22 px on a phone with a number in every square; it looks like a spreadsheet | Zoom in on phones (40 px+ squares), drag to colour, hide the number once a square is coloured, draw coloured squares as rounded beads with a light edge | M |
-| T3 | Should | Menus and palettes still use emoji tabs and buttons (P4-16 left them) | The shared components and drawn icons | M |
-| T4 | Should | Nothing opens: the same 8 mandala and 6 glass designs, 8 animals, 14 number pictures, 12 pixel pictures | Picture packs (animals, vehicles, space, seasons) that open with learning stars; a sticker for each finished picture in the sticker book | M |
-| T5 | Could | Fills are instant colour | A short fill animation from the tap point, texture fills (dots, stripes, sparkles), and a finished picture that "comes alive" (a gentle shine or wiggle); pixel art shown as a 3D block model with the B3 renderer | M |
+| T1 | Must | **Done in G-ART2 (v161).** No goals, no finish, no gallery for most modes (Neon saves to its own browser store outside the main save) | A Done button on every page, one gallery in `S` for all modes (the shared end card shows the picture), and a "show a grown-up" full-screen view | M |
+| T2 | Must | **Done in G-ART2 (v161)** (32 px squares, beads, fading numbers, a framed finish; drag to colour as before). Pixel art squares are about 22 px on a phone with a number in every square; it looks like a spreadsheet | Zoom in on phones (40 px+ squares), drag to colour, hide the number once a square is coloured, draw coloured squares as rounded beads with a light edge | M |
+| T3 | Should | **Done in G-ART2 (v161).** Menus and palettes still use emoji tabs and buttons (P4-16 left them) | The shared components and drawn icons | M |
+| T4 | Should | **Done in G-ART2 (v161)** (8 packs of 6 that open with stars won by Done, 17 new pixel pictures; no stickers yet). Nothing opens: the same 8 mandala and 6 glass designs, 8 animals, 14 number pictures, 12 pixel pictures | Picture packs (animals, vehicles, space, seasons) that open with learning stars; a sticker for each finished picture in the sticker book | M |
+| T5 | Could | **Partly done in G-ART2 (v161)** (crayon, marker, glitter that twinkles three times, rainbow fills; sparkles and a shine on Done; no 3D block model). Fills are instant colour | A short fill animation from the tap point, texture fills (dots, stripes, sparkles), and a finished picture that "comes alive" (a gentle shine or wiggle); pixel art shown as a 3D block model with the B3 renderer | M |
 
 ---
 
