@@ -1353,22 +1353,7 @@ html.notext .pktxt{display:none}
 .stage.dark{color:#fff}.stage.dark .htxt{color:#fde68a}
 .ptcard{display:flex;gap:14px;align-items:center;background:linear-gradient(135deg,#fef3c7,#fde68a);border-radius:22px;padding:14px 16px;margin:6px 0 14px}.ptcard.empty{background:#f5f5f4}
 .game.soon{opacity:.55;cursor:default}
-.upg{cursor:default}.upg .gi{gap:2px}
-.paints{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px}.paint{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:var(--fs-2);padding:8px 4px}
-.paint span{width:36px;height:36px;border-radius:50%;border:3px solid #0002}.paint.on{outline:4px solid #22c55e}
 .btn.xs.on{background:#3b82f6;color:#fff}
-.hc{position:fixed;inset:0;touch-action:none;background:#000}.hc canvas{position:absolute;inset:0;width:100%;height:100%}
-.hchud{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;gap:8px;padding:8px 10px;z-index:2}
-.hcfuel{flex:1;display:flex;align-items:center;gap:6px;max-width:260px;font-size:22px}.hcfuel>div{flex:1;height:16px;background:#fff9;border-radius:9px;overflow:hidden;border:2px solid #0003}.hcfuel>div>div{height:100%;transition:width .3s}
-.hchud .stars{font-size:clamp(14px,3.2vw,20px);padding:4px 9px}
-.pedal{position:absolute;bottom:14px;width:clamp(96px,16vw,140px);height:clamp(96px,16vw,140px);border-radius:28px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:44px;font-weight:700;color:#fff;box-shadow:0 6px 0 #0004;pointer-events:none;opacity:.9}
-.pedal small{font-size:var(--fs-2)}.pedal.brake{left:14px;background:#ef4444}.pedal.gas{right:14px;background:#16a34a}.pedal.on{transform:translateY(4px) scale(.96);box-shadow:0 2px 0 #0004;opacity:1}
-.hcmsg{position:absolute;left:50%;top:22%;transform:translateX(-50%);background:#fffe;border-radius:18px;padding:10px 18px;font-size:clamp(18px,4vw,26px);font-weight:700;opacity:0;transition:opacity .3s;pointer-events:none;text-align:center;max-width:90vw}.hcmsg.on{opacity:1}
-.hcpop{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%) scale(.4);font-size:clamp(26px,6vw,44px);font-weight:700;color:#fde047;text-shadow:0 3px 0 #b45309,0 0 12px #0008;opacity:0;pointer-events:none;white-space:nowrap}
-.hcpop.on{animation:hcpop 1.4s ease-out}@keyframes hcpop{15%{opacity:1;transform:translate(-50%,-50%) scale(1.15) rotate(-4deg)}70%{opacity:1;transform:translate(-50%,-60%) scale(1)}100%{opacity:0;transform:translate(-50%,-80%) scale(.9)}}
-.lvgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px;margin:10px 0}
-.lvb{display:flex;flex-direction:column;align-items:center;padding:10px 4px;background:linear-gradient(180deg,#fff,#fef3c7);border-radius:18px;min-height:96px}
-.lvb b{font-size:30px;line-height:1}.lvb .lvs{font-size:16px;letter-spacing:1px}.lvb small{font-size:var(--fs-2);color:#78716c}.lvb.lock{opacity:.5;background:#e7e5e4}.lvb.done{background:linear-gradient(180deg,#fff,#bbf7d0)}
 .lvhead{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-radius:18px;color:#fff;font-size:20px;text-shadow:0 2px 4px #0006;margin-top:8px}
 .lvstars{font-size:56px;margin:4px 0 8px}.lvstar{display:inline-block;filter:grayscale(1) opacity(.3);transform:scale(.6)}.lvstar.on{animation:lvpop .5s both;filter:none}
 @keyframes lvpop{0%{transform:scale(0) rotate(-60deg)}70%{transform:scale(1.3)}100%{transform:scale(1)}}
@@ -1383,7 +1368,6 @@ html.notext .pktxt{display:none}
 .stgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin:8px 0}.sttile{padding:5px;background:#fff;border-radius:16px;aspect-ratio:1;overflow:hidden}.sttile svg,.sttile img{width:100%;height:100%;display:block;border-radius:12px}
 .sttabs{flex-wrap:wrap}
 @media (orientation:landscape) and (max-height:700px){.stwrap{flex-direction:row;align-items:flex-start;justify-content:center}.stbar{width:230px;flex:none;overflow-y:auto;max-height:100%;padding:var(--s-2)}.stcols .stc{width:var(--tap);height:var(--tap)}}
-.hcmodes{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:6px 0 10px}.hcmode{display:flex;flex-direction:column;align-items:center;padding:10px 6px;background:#fff;border-radius:16px;text-align:center}.hcmode span{font-size:30px}.hcmode b{font-size:17px}.hcmode small{font-size:var(--fs-2);color:#78716c}.hcmode.on{background:#fde68a;box-shadow:0 0 0 3px #f59e0b inset}
 .ptlines{display:flex;flex-direction:column;font-size:var(--fs-2);font-weight:600;color:#57534e;margin-top:4px;gap:1px}.ptlines .neg{color:#b91c1c}.pthint{margin-top:6px;font-size:var(--fs-2);color:#7c3aed;font-weight:700}
 .ptrules{margin-top:14px;line-height:1.6}.ptrules b{color:#b45309}.ptrules div b{float:right}
 .tipcard{background:#fff;border-radius:16px;padding:10px 14px;margin:10px 0;font-size:var(--fs-2);box-shadow:0 2px 6px #0001;line-height:1.4}
@@ -1396,15 +1380,8 @@ html.notext .pktxt{display:none}
 .chip small{font-size:var(--fs-2);color:var(--ink-3)}.chip.on{outline:4px solid #3b82f6;transform:translateY(-3px)}
 .cbpal.fp .chip{min-width:52px;padding:6px}
 @media (orientation:landscape){.cbwrap{flex-direction:row;justify-content:center;align-items:center}.cbpal{flex-direction:column;flex-wrap:wrap;max-height:calc(100vh - 80px);max-width:240px;align-content:flex-start}.cbpal.fp{flex-direction:row;max-width:200px}}
-.hcprog{position:absolute;top:60px;left:50%;transform:translateX(-50%);width:min(320px,50vw);height:8px;background:#0004;border-radius:6px;z-index:2}.hcprog>div{height:100%;background:linear-gradient(90deg,#22c55e,#facc15);border-radius:6px}
-.hcprog span{position:absolute;top:-6px;width:4px;height:20px;background:#facc15;border-radius:2px;box-shadow:0 0 0 2px #713f12}
-.hccombo{position:absolute;right:14px;top:80px;font-size:clamp(20px,4vw,30px);font-weight:700;color:#fff;background:linear-gradient(135deg,#f97316,#ef4444);padding:4px 14px;border-radius:14px;opacity:0;transition:opacity .2s;transform:rotate(4deg)}.hccombo.on{opacity:1;animation:bump .4s}
-.hcfuel>div.low{animation:hc-low 1s infinite}
-@keyframes hc-low{50%{opacity:.55}}
 .endcard{background:#fff;color:var(--ink);border-radius:26px;padding:18px 22px;max-width:560px;width:92vw;text-align:center;box-shadow:0 10px 40px #0006;animation:spin .5s cubic-bezier(.5,1.6,.5,1)}
 .endstats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}.endstats div{background:#f5f5f4;border-radius:14px;padding:8px 4px;display:flex;flex-direction:column}.endstats b{font-size:22px}.endstats span{font-size:var(--fs-2);color:var(--ink-3)}
-.vehs{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}.veh{display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 6px;font-size:var(--fs-2)}.veh canvas{width:150px;height:90px}.veh.on{outline:4px solid #22c55e;background:#f0fdf4}
-.mis{cursor:default}
 .shthumb{width:100px;height:100px;border-radius:10px;box-shadow:0 2px 6px #0002;background:#fff}
 /* P6-02: the drop-shadow filter (0 4px 6px #0003) was repainted with every fill; the svg is an opaque rounded box, so it is the same shadow as a box-shadow */
 .shwrap svg{width:100%;height:100%;display:block;border-radius:12px;background:#fff;box-shadow:0 4px 6px #0003,0 4px 14px #0002;touch-action:none}
@@ -3086,7 +3063,7 @@ function save(){if(SAVE_HOLD||SAVE_OFF)return;try{localStorage.setItem(SKEY,JSON
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v158'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v159'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -7705,7 +7682,7 @@ function home(first){
   <div class="scroll hm" id="hs"><div class="hm-cols">
    <div class="hm-col">${spkStarHTML()}${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('target', 26)}<span>Today's missions</span></h2>${hmMissions()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}${hmDaily()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
-   <p class="hm-ver">${ico('star', 16)}<span>Star School ${RELEASE} (build v158)</span></p></div>`);
+   <p class="hm-ver">${ico('star', 16)}<span>Star School ${RELEASE} (build v159)</span></p></div>`);
   music(true);
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'heart');
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
@@ -11731,7 +11708,7 @@ function aboutCard(){
     `<p class="gw-p">Star School is offline practice in math, reading and Spanish for children, with game time earned by learning. It has no accounts, no ads and no tracking.</p>
     <p class="gw-note">${ico('lock',22)}<span>It works without internet once it has loaded. Progress is stored only on this device. Nothing is sent anywhere.</span></p>
     <p class="gw-note" id="ab-spk">${ico('mic',22)}<span>Spanish “Say it!” recordings stay on this tablet and are deleted automatically (after 1 day, or as you choose in the Listening corner). Nothing is sent. Speech recognition is used only when the tablet can do it on the device itself.</span></p>
-    <div class="gw-log ab-ver"><div><b>Version</b> <span id="ab-rel">${RELEASE}</span></div><div><b>Build</b> <span id="ab-build">v158</span></div></div>
+    <div class="gw-log ab-ver"><div><b>Version</b> <span id="ab-rel">${RELEASE}</span></div><div><b>Build</b> <span id="ab-build">v159</span></div></div>
     <h3 class="gw-h3">${ico('doc',22,'ic-brand')}<span>Licences</span></h3>
     <p class="gw-p ab-lic-line"><b>Andika</b> (the lettering in the app), Copyright (c) 2004-2022 SIL International. Licensed under the SIL Open Font License 1.1 (openfontlicense.org).</p>
     <p class="gw-sub ab-lic-line">Everything else (pictures, icons, sounds, games and questions) was made for Star School. No other fonts, libraries or outside files are used.</p>
@@ -11787,7 +11764,7 @@ function grown(){let armed=false;
     {sub:'Rounds played and first-try accuracy for every skill on the maps, with the questions missed most.'})}
   ${GW.card('gw-how','info','How it works',`<p class="gw-p">Each subject has its own map. Getting 7 of 10 right opens the next stop (8 earns 2 stars, 10 earns 3), and each world stretches further. Missed questions come back at the end of a round, in later rounds, in Daily Review and in the Tricky Mix. Each right answer earns a star (the pet grows) and a coin (spent in the shop). Everything is saved on this tablet only.</p>`)}
   <details class="gw-card gw-det" id="applog"><summary class="gw-h"><span class="gw-hi">${ico('doc',24)}</span><span>App log</span>${ico('chevron-right',22,'chev')}</summary><div class="gw-log">
-   <div><b>Version</b> ${RELEASE} (build v158)</div><div><b>Save size</b> ${(JSON.stringify(S).length/1024).toFixed(1)} KB</div>
+   <div><b>Version</b> ${RELEASE} (build v159)</div><div><b>Save size</b> ${(JSON.stringify(S).length/1024).toFixed(1)} KB</div>
    ${PRF.logLine()}<div><b>Storage</b> ${SAVE_FAILED?'<span class="gw-bad">could not save (device storage may be full)</span>':'saving OK'}</div>
    ${SAVE_CORRUPT?'<div class="gw-bad">The old save could not be read. A fresh start was made and the old data was kept on the device.</div>':''}
    <div><b>Last errors</b> ${(S.err||[]).length?'<ul class="gw-errs">'+(S.err||[]).slice().reverse().map(e=>'<li><span>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+'</span> '+esc(e.msg)+'</li>').join('')+'</ul>':'none'}</div></div></details>
@@ -11863,12 +11840,12 @@ const BAK = {
   make(id) {
     const d = id && id !== PRF.cur ? PRF.up(PRF.get(PRF.key(id))) : S;
     if (!d) return '';
-    return JSON.stringify({app: BAK.APP, ver: 'v158', save: LATEST, date: new Date().toISOString(), name: d.name || '', data: d});
+    return JSON.stringify({app: BAK.APP, ver: 'v159', save: LATEST, date: new Date().toISOString(), name: d.name || '', data: d});
   },
   // Every child in one file (P5-10)
   makeAll() {
     const kids = PRF.ids.map(id => id === PRF.cur ? S : PRF.up(PRF.get(PRF.key(id)))).filter(Boolean);
-    return JSON.stringify({app: BAK.APP, ver: 'v158', save: LATEST, date: new Date().toISOString(), all: true,
+    return JSON.stringify({app: BAK.APP, ver: 'v159', save: LATEST, date: new Date().toISOString(), all: true,
       kids: kids.map(d => ({name: d.name || '', data: d}))});
   },
   fileName(name) {
@@ -12406,12 +12383,12 @@ function appFiles() {
 }
 // P6-02: the start-up files only; the parts in LAZY_PARTS load later (partsThen below)
 function dataReady() {
-  return appFiles().every(f => LAZY_PARTS.includes(f[0]) || f[1] === 'v158');
+  return appFiles().every(f => LAZY_PARTS.includes(f[0]) || f[1] === 'v159');
 }
 // the Try again screen and one line in the App log: for the start-up files, or (P6-02) for the parts in stems that did not load on demand
 function dataMissing(stems) {
-  logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0])) && f[1] !== 'v158')
-    .map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v158)');
+  logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0])) && f[1] !== 'v159')
+    .map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v159)');
   const again = UI.btn('Try again', { kind: 'primary', size: 'lg', icon: 'replay', id: 'dataretry' });
   view(`<div class="scroll" id="datamiss">${UI.empty('download', 'Star School needs to finish updating. Connect to the internet, then tap Try again.', again)}</div>`);
   $('#dataretry').onclick = () => location.reload();
@@ -12431,15 +12408,15 @@ const LAZY_PARTS = ['games', 'games2'];
 const partsAsked = {};
 function partReady(stem) {
   const f = appFiles().find(x => x[0] === stem);
-  return !!f && f[1] === 'v158';
+  return !!f && f[1] === 'v159';
 }
 function partLoad(stem) {
   const f = appFiles().find(x => x[0] === stem);
-  if (!f || f[1] === 'v158') return Promise.resolve(!!f);
+  if (!f || f[1] === 'v159') return Promise.resolve(!!f);
   if (f[1] !== null) return Promise.resolve(false); // a file of another release ran: refused
   return partsAsked[stem] || (partsAsked[stem] = new Promise(res => {
     const s = document.createElement('script');
-    s.src = stem + '.v158.js';
+    s.src = stem + '.v159.js';
     s.onload = () => { delete partsAsked[stem]; res(partReady(stem)); };
     s.onerror = () => { delete partsAsked[stem]; s.remove(); res(false); };
     document.body.appendChild(s);
@@ -12464,10 +12441,10 @@ function partsThen(stems, go, o = {}) {
   }), 0));
 }
 </script>
-<script src="gen.v158.js"></script>
-<script src="gen2.v158.js"></script>
-<script src="bt.v158.js"></script>
-<script src="data.v158.js"></script>
+<script src="gen.v159.js"></script>
+<script src="gen2.v159.js"></script>
+<script src="bt.v159.js"></script>
+<script src="data.v159.js"></script>
 <script>
 if (dataReady()) {
   loadClips();
