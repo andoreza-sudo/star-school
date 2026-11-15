@@ -427,11 +427,8 @@ const GH = {
 // The Game Room's games, in hub order. Each game file keeps its own code; only these entries tell the hub about it.
 GH.reg({
   id: 'hill', btn: 'g4x4', name: '4x4 Hill Climb', short: 'Hill Climb', icon: 'car', p: 'play', sky: ['sky-1', 'sky'], art: GH_ART.hill,
-  sub: () => {
-    const gs = garageS();
-    return `<span>Best <b>${Math.max(gs.best.meadow || 0, gs.best.moon || 0)} m</b></span><span>${ico('nut', 18)}<b>${gs.bolts}</b> bolts</span>`;
-  },
-  open: () => garage(), tapToPlay: '[data-st="meadow"]',
+  sub: () => hcHubLine(), // G-HC2: stars won and bolts (62-hill.js)
+  open: () => garage(), tapToPlay: '#hcgo',
 });
 GH.reg({
   id: 'art', btn: 'gcbn', name: 'Coloring', icon: 'palette', p: 'read', sky: ['lilac', 'pink'], art: GH_ART.art,
