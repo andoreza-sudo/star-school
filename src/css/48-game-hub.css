@@ -92,16 +92,13 @@
 .gh-hud .gh-ttl{flex:0 1 auto;padding:var(--s-1) var(--s-3) var(--s-1) var(--s-1);border-radius:var(--r-pill);background:var(--surface);
   box-shadow:inset 0 0 0 2px var(--line),0 3px 0 var(--ledge-soft)}
 .gh-hud .gh-ttl .gh-gn{font-size:var(--fs-4)}
-.gh-hud .hcfuel{flex:1;min-width:56px;max-width:240px}
-.gh-hud .hcfuel .ic{flex:none;width:26px;height:26px;color:var(--surface)}
-.gh-hud~.hcprog{top:70px}
 .gh-hud .stat{flex:none;min-height:44px;padding:0 var(--s-3) 0 var(--s-1);font-size:var(--fs-3)}
 .gh-hud .stat .ic{width:28px;height:28px}
 .gh-hud .stat.gh-dist{flex:0 1 auto;min-width:0;padding-left:var(--s-3)}
 .gh-hud .gh-dist b{overflow:hidden;text-overflow:ellipsis}
 @media (max-width:719px){.gh-hud .gh-ttl{display:none}}
 @media (max-width:480px){.gh-top.gh-hud{gap:var(--s-1);padding:var(--s-2)}.gh-hud .stat{padding:0 var(--s-2) 0 2px}.gh-hud .stat .ic{width:24px;height:24px}
-  .gh-hud .hcfuel{min-width:40px}}
+}
 
 /* ---- the pause sheet ---- */
 .gh-sheet{text-align:center}

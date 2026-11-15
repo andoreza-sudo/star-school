@@ -16045,6 +16045,150 @@ run('Block Builder journey G-01b',()=>{
   return{problems:[...new Set(p)].slice(0,50),note:o.notes.join('; ')};
 });
 
+// ---- G-HC2: Hill Climb journey (src/js/62-hill.js, src/css/61-hill.css; games part) ----
+// Worlds of hand-shaped stages, missions and stars, the garage, easy driving. The simulation runs here without a page: bots drive
+// every stage (a young child holding the gas with easy driving on; a careful driver with it off, who levels the car in the air).
+run('Hill Climb journey G-HC2',()=>{
+  const p=[],rd=f=>fs.readFileSync(path.join(SRC,f),'utf8');
+  function T(){
+    const r={bad:[],notes:[]},bad=m=>{if(r.bad.length<60&&!r.bad.includes(m))r.bad.push(m)};
+    const keepG=S.garage,keepGr=S.grade;
+    // a bot drive: 'kid' easy driving on, always on the gas; 'driver' easy off, eases off on steep ground and levels in the air;
+    // 'naive' easy off, always on the gas (what a young child does without the helper)
+    const drive=(w,i,kind,o={})=>{const H=hcNew(w,i,Object.assign({easy:kind=='kid'},o));
+      while(!H.over&&H.t<(o.max||200)){
+        if(kind!='driver'){H.gas=true;H.brake=false}
+        else{const air=!H.w1.g&&!H.w2.g,cx=(H.w1.x+H.w2.x)/2,err=hcWrap(hcAng(H)-(air?hcSlopeL(H.C,cx):hcSlopeL(H.C,cx,20)));
+          if(air){H.gas=err<-.12;H.brake=err>.12}else{H.gas=err<.32;H.brake=err>.6}}
+        hcStep(H,1/120)}
+      return H};
+    // 1. the journey's data: 6 worlds of 5 stages, every piece known, a goal, two missions, weather, checkpoints, a finish
+    const KINDS=['bolts','time','flips','air','perfect','nocrash','crates','star'],WX=['day','dusk','night','rain','snow','ash','dust'];
+    if(HC_ST.length!==6||HC_ST.some(a=>a.length!==HC_SPW||HC_SPW!==5))bad('expected 6 worlds of 5 stages');
+    const ids=new Set(),strs=new Set(),wxs=new Set(),use={},profs=[];
+    HC_ST.forEach((ws,w)=>{const goals=new Set(),pcs=new Set();
+      ws.forEach((s,i)=>{const tag=s[0]+' '+s[1];
+        if(ids.has(s[0]))bad(tag+': id repeats');ids.add(s[0]);if(strs.has(s[5]))bad(tag+': same pieces as another stage');strs.add(s[5]);
+        const toks=s[5].trim().split(/\s+/);if(hcParse(s[5]).length!==toks.length)bad(tag+': a piece that is not known');
+        for(const t of toks){pcs.add(t[0]);use[t[0]]=(use[t[0]]||0)+1}
+        if(!['flag','coins','cargo'].includes(s[2][0]))bad(tag+': goal '+s[2]);goals.add(s[2][0]);
+        if(s[3].length!==2||s[3].some(m=>!KINDS.includes(m[0])||!hcMisText(m)))bad(tag+': two missions of known kinds');
+        if(s[3][0][0]===s[3][1][0])bad(tag+': the two missions are the same kind');
+        if(s[3].some(m=>m[0]=='crates')&&s[2][0]!='cargo')bad(tag+': a crates mission without cargo');
+        if(s[3].some(m=>m[0]=='star')&&!s[5].includes('S'))bad(tag+': a star mission with no hidden star');
+        if(!WX.includes(s[4]))bad(tag+': weather '+s[4]);wxs.add(s[4]);
+        const C=hcCourse(s,w);
+        if(!(C.fin>2000&&C.fin<12000))bad(tag+': length '+C.fin);if(C.cps.length<2)bad(tag+': no checkpoint');
+        if(C.h.some(v=>!isFinite(v)))bad(tag+': a height that is not a number');
+        for(let x=0;x<C.fin;x+=10){const a=hcSlope(C,x);if(!(C.fl[hcIx(C,x)]&1)&&!(C.fl[hcIx(C,x-20)]&1)&&!(C.fl[hcIx(C,x+20)]&1)&&C.rocks.concat(C.kicks).every(q=>x<q.x0-20||x>q.x1+20)&&Math.abs(a)>.75){bad(tag+': a slope too steep at '+Math.round(x/20)+' m ('+a.toFixed(2)+')');break}}
+        if(C.balloons.length&&C.balloons.some(b=>!C.pits.some(q=>q.x0>b&&q.x0-b<=320)))bad(tag+': a balloon that is not just before a gap');
+        if(C.coins.length<15)bad(tag+': only '+C.coins.length+' bolts');
+        if(s[2][0]=='coins'&&s[2][1]>C.coins.length*.8)bad(tag+': collect '+s[2][1]+' of only '+C.coins.length+' bolts on the road');
+        const pr=[];for(let k=0;k<=100;k++)pr.push(hcH(C,C.fin*k/100));profs.push([tag,pr])});
+      if(goals.size<3)bad(HCW[w].n+': every world has a flag, a bolts and a cargo stage');
+      if(pcs.size<9)bad(HCW[w].n+': only '+pcs.size+' kinds of piece');
+      if(HCW[w].id!==['meadow','desert','jungle','snow','volcano','moon'][w])bad('world order '+HCW[w].id)});
+    for(const k of 'fuhvwkpbormic$FAS')if(!use[k])bad('no stage uses the piece '+k);
+    if(wxs.size<6)bad('weathers: '+[...wxs]);
+    // stages differ in shape: the height profiles (101 points) of any two stages correlate under 0.97
+    const corr=(a,b)=>{const ma=a.reduce((s,v)=>s+v,0)/a.length,mb=b.reduce((s,v)=>s+v,0)/b.length;let n=0,da=0,db=0;for(let k=0;k<a.length;k++){n+=(a[k]-ma)*(b[k]-mb);da+=(a[k]-ma)**2;db+=(b[k]-mb)**2}return n/Math.sqrt(da*db||1)};
+    let mx=0;for(let a=0;a<profs.length;a++)for(let b=a+1;b<profs.length;b++){const c=corr(profs[a][1],profs[b][1]);if(c>mx)mx=c;if(c>.97)bad('stages too alike: '+profs[a][0]+' / '+profs[b][0]+' '+c.toFixed(3))}
+    r.notes.push('30 stages, largest profile correlation '+mx.toFixed(2));
+    // 2. deterministic terrain: building again gives the same heights and things; the distance drive too
+    const sig=C=>[C.n,Array.from(C.h).reduce((a,v,k)=>(a*31+Math.round(v)*(k%7+1))%1000000007,7),C.coins.length,C.pits.length,C.cps.length,C.fuel.join()].join('/');
+    const before=HC_ST.map((ws,w)=>ws.map(s=>sig(hcCourse(s,w)))).flat().concat(HCW.map((_,w)=>sig(hcEndless(w))));
+    for(const k in HC_CC)delete HC_CC[k];
+    const after=HC_ST.map((ws,w)=>ws.map(s=>sig(hcCourse(s,w)))).flat().concat(HCW.map((_,w)=>sig(hcEndless(w))));
+    if(before.join()!==after.join())bad('terrain is not the same when built again');
+    HCW.forEach((W,w)=>{const C=hcEndless(w);if(!(C.n*10>=70000)||C.fin!=null||C.cps.length<30||C.fuel.length<8)bad('distance drive '+W.id+': '+[C.n,C.cps.length,C.fuel.length])});
+    // 3. every stage driven to the flag by the young child with easy driving and by the careful driver without it; every mission won by one of them
+    let kidCr=0,naiveCr=0,naiveFail=0,tk=0,td=0;
+    HC_ST.forEach((ws,w)=>ws.forEach((s,i)=>{const tag=s[0]+' '+s[1];
+      const K=drive(w,i,'kid'),D=drive(w,i,'driver'),N=drive(w,i,'naive',{max:120});
+      if(K.result!=='win')bad(tag+': easy driving, always on the gas, did not reach the flag ('+Math.round((K.maxX-60)/20)+' m, '+K.crashes+' restarts)');
+      if(D.result!=='win')bad(tag+': the driver without easy driving did not reach the flag ('+Math.round((D.maxX-60)/20)+' m, '+D.crashes+' restarts)');
+      if(K.crashes>1)bad(tag+': easy driving restarted '+K.crashes+' times');
+      const b=hcBitsOf(K)|hcBitsOf(D);if(b!==7)bad(tag+': no bot won every star ('+b+')');
+      if(K.t>60||D.t>60)bad(tag+': longer than 60 s');
+      kidCr+=K.crashes;naiveCr+=N.crashes;naiveFail+=N.result!=='win';tk+=K.t;td+=D.t}));
+    if(naiveCr<kidCr*10+20)bad('easy driving should save many flips: '+kidCr+' restarts with it, '+naiveCr+' without');
+    r.notes.push('bots: easy driving '+kidCr+' restarts, '+Math.round(tk)+' s for 30 stages; driver '+Math.round(td)+' s; always-gas without easy driving '+naiveCr+' restarts, '+naiveFail+' stages not finished in 120 s');
+    // 4. stars and unlocks in order: a fresh garage, then every stage the menu's next goal names, won with just the goal's star
+    S.garage={};S.grade=1;const g=garageS();
+    if(!hcSOpen(0,0)||hcSOpen(0,1)||HC_ST.some((_,w)=>w&&hcWOpen(w)))bad('fresh: only the first stage open');
+    if(!hcEasy())bad('easy driving should be on for 1st grade');S.grade=4;if(hcEasy())bad('easy driving should be off for 4th grade');g.easy=true;if(!hcEasy())bad('the switch turns easy driving on');delete g.easy;
+    const hcBankAs=(H,bits)=>{H.result='win';H.over=true;const s=H.st;H.gotStar=false;H.bolts=s[2][0]=='coins'?s[2][1]:10;H.crates=H.crates0>1?1:H.crates0;H.t=999;H.crashes=1;H.flips=0;H.airs=0;H.perfect=0;return hcBank(H)};
+    const lines=new Set();let steps=0,stuck=null,openOrder=[0];
+    while(steps<40){const ng=hcNextGoal();lines.add(ng.t);if(ng.i==null||hcStars(HC_ST[ng.w][ng.i][0])){stuck=ng;break}
+      if(!hcSOpen(ng.w,ng.i))bad('the next goal names a locked stage '+HC_ST[ng.w][ng.i][0]);
+      for(let i=ng.i+1;i<HC_SPW;i++)if(hcSOpen(ng.w,i))bad(HC_ST[ng.w][i][0]+' open before '+HC_ST[ng.w][ng.i][0]+' is finished');
+      const res=hcBankAs(hcNew(ng.w,ng.i,{}),1);steps++;
+      if(!(res.bits&1))bad(HC_ST[ng.w][ng.i][0]+': the goal star was not won');
+      HC_ST.forEach((_,w)=>{if(hcWOpen(w)&&!openOrder.includes(w)){if(w!==openOrder.length)bad('world '+w+' opened before world '+openOrder.length);openOrder.push(w)}})}
+    if(hcTot()!==20||!stuck||!/more stars? to open Volcano Island/.test(stuck.t))bad('with only goal stars the journey should stop at Volcano Island (22 stars): '+hcTot()+' '+(stuck&&stuck.t));
+    if(!/Try this one: /.test(stuck&&stuck.t||''))bad('the next goal should suggest a mission when stars are needed');
+    // missions on finished stages open the next worlds
+    let guard=0;while(hcTot()<hcMax()&&guard++<200){const ng=hcNextGoal();if(ng.i==null)break;const s=HC_ST[ng.w][ng.i];const H=hcNew(ng.w,ng.i,{});H.result='win';H.over=true;H.bolts=999;H.t=1;H.crashes=0;H.flips=9;H.airs=9;H.perfect=9;H.gotStar=true;H.crates=H.crates0;hcBank(H);lines.add(ng.t);
+      HC_ST.forEach((_,w)=>{if(hcWOpen(w)&&!openOrder.includes(w)){if(w!==openOrder.length)bad('world '+w+' opened out of order');openOrder.push(w)}})}
+    if(hcTot()!==90||openOrder.length!==6)bad('all 90 stars and 6 worlds: '+hcTot()+' '+openOrder);
+    if(!/Every star won/.test(hcNextGoal().t))bad('the last next goal: '+hcNextGoal().t);
+    if(lines.size<40)bad('the next goal line should change as the child goes: '+lines.size+' lines');
+    r.notes.push('journey: '+steps+' stages with the goal star, then '+guard+' runs for missions; '+lines.size+' next-goal lines');
+    // new stars pay bolts once (a stage played again pays only for new stars)
+    S.garage={};const g2=garageS();const H1=hcNew(1,0,{});H1.result='win';H1.bolts=5;H1.t=999;H1.crashes=1;const r1=hcBank(H1),b1=g2.bolts;const H2=hcNew(1,0,{});H2.result='win';H2.bolts=5;H2.t=999;H2.crashes=1;const r2=hcBank(H2);
+    if(r1.gain!==12||r2.gain!==0||g2.bolts!==b1+5)bad('star bolts: '+[r1.gain,r2.gain,b1,g2.bolts]);
+    // 5. upgrades change the drive, measurably
+    const run=(w,i,up,veh,secs,easy)=>{const H=hcNew(w,i,{up,veh,easy});let vmax=0;while(H.t<secs&&!H.over){H.gas=true;hcStep(H,1/120);vmax=Math.max(vmax,H.speed)}return{x:(H.w1.x+H.w2.x)/2,v:vmax,fuel:H.fuel,H}};
+    const e0=run(0,0,{},'jeep',6,true),e5=run(0,0,{engine:5},'jeep',6,true);
+    if(!(e5.v>e0.v*1.4))bad('engine: top speed '+e0.v.toFixed(0)+' -> '+e5.v.toFixed(0));
+    const ice=w=>{const H=hcNew(3,0,{up:{tires:w}});const C=H.C,x0=C.soft[0].x0;Object.assign(H.w1,{x:x0,px:x0,y:hcH(C,x0)+H.R,py:hcH(C,x0)+H.R});Object.assign(H.w2,{x:x0+H.L,px:x0+H.L,y:hcH(C,x0+H.L)+H.R,py:hcH(C,x0+H.L)+H.R});while(H.t<.8){H.gas=true;hcStep(H,1/120)}return(H.w1.x-x0)/20};
+    const i0=ice(0),i5=ice(5);if(!(i5>i0*1.25))bad('tyres: metres on ice in 0.8 s '+i0.toFixed(1)+' -> '+i5.toFixed(1));
+    const drop=s=>{const H=hcNew(0,3,{up:{susp:s}});H.safeT=0;for(const q of[H.w1,H.w2]){q.y+=200;q.py=q.y+7}while(H.t<1.2){hcStep(H,1/120)}return H.crates};
+    const d0=drop(0),d5=drop(5);if(!(d5>d0))bad('suspension: crates after a 10 m drop '+d0+' -> '+d5);
+    const f0=run(0,0,{},'jeep',5,true).fuel,f5=run(0,0,{tank:5},'jeep',5,true).fuel;if(!(f5>f0+10))bad('fuel tank: fuel left after 5 s '+f0.toFixed(0)+' -> '+f5.toFixed(0));
+    const m=run(0,0,{},'monster',4,true),bk=run(0,0,{},'bike',4,true);if(Math.abs(m.v-bk.v)<40)bad('vehicles should handle differently');
+    r.notes.push('upgrades: top speed '+e0.v.toFixed(0)+' -> '+e5.v.toFixed(0)+' px/s, ice '+i0.toFixed(1)+' -> '+i5.toFixed(1)+' m, crates kept '+d0+' -> '+d5+', fuel left '+f0.toFixed(0)+' -> '+f5.toFixed(0));
+    // buying: never below 0 bolts, never above level 5
+    S.garage={bolts:100};let n=0;for(let k=0;k<20;k++)if(hcBuyUp('engine'))n++;const g3=garageS();
+    if(n!==2||g3.bolts!==10||g3.up.engine!==2)bad('buying upgrades: '+[n,g3.bolts,g3.up.engine]);
+    g3.bolts=99999;for(let k=0;k<9;k++)hcBuyUp('susp');if(g3.up.susp!==5||g3.bolts!==99999-UPCOST.reduce((a,b)=>a+b,0))bad('upgrade levels stop at 5: '+g3.up.susp);
+    // 6. old saves: v155 fields kept (bolts, best distances, vehicles, upgrades, paint, old level stars open their worlds)
+    S.garage={bolts:120,up:{engine:2,tires:1,tank:3},paint:'#3b82f6',paints:{'#ef4444':1,'#3b82f6':1},best:{meadow:170,desert:320,city:40},veh:'monster',vehs:{jeep:1,monster:1},
+      missions:[{k:'dist',goal:300,t:'Drive 300 m',r:40,p:300,done:true},{k:'flips',goal:1,t:'Do a flip',r:40,p:0,done:false}],mode:'night',rush:{meadow:30},lv:{snow:[2,1]}};
+    const o=garageS();
+    if(o.bolts!==160||o.up.engine!==2||o.up.tires!==1||o.up.tank!==3||o.up.susp!==0||o.paint!=='b'||!o.paints.b||!o.paints.r||o.best.meadow!==170||o.best.desert!==320||o.best.city!==40||o.veh!=='monster'||!o.vehs.monster)
+      bad('old save: '+JSON.stringify(o));
+    if(!hcWOpen(1)||!hcWOpen(3)||hcWOpen(2))bad('old save: desert (320 m) and snow (level stars) stay open, jungle not: '+[1,2,3].map(hcWOpen));
+    garageS();if(o.bolts!==160)bad('old missions pay only once');
+    S.garage={bolts:'x',up:null,best:[],st:{zz:3,m1:9,m2:'2'},veh:'rocket',paint:'#123456',paints:null,easy:'yes'};const q=garageS();
+    if(q.bolts!==0||q.up.engine!==0||q.st.m1!==1||q.st.m2!==2||q.st.zz||q.veh!=='jeep'||q.paint!=='r'||'easy' in q||q.best.meadow!==0)bad('damaged save: '+JSON.stringify(q));
+    S.garage=keepG;S.grade=keepGr;
+    return r}
+  const o=(()=>eval(js+';('+T.toString()+')()'))();
+  for(const m of o.bad)p.push(m);
+  // 7. tokens only, no emoji, the shared chrome
+  const src=rd('js/62-hill.js'),code=src.replace(/\/\*[\s\S]*?\*\//g,'').replace(/(^|[^:'"`])\/\/[^\n]*/g,'$1'),css=rd('css/61-hill.css').replace(/\/\*[\s\S]*?\*\//g,''),tok=rd('css/00-tokens.css');
+  if(/#[0-9a-fA-F]{3,8}\b/.test(code.replace(/HC_OLDPAINT=\{[^}]*\}/,'')))p.push('62-hill.js: a raw colour: '+(code.match(/.{20}#[0-9a-fA-F]{3,8}\b.{10}/)||[''])[0]);
+  if(/\b(rgb|rgba|hsl|hsla)\((?!\$\{)/.test(code))p.push('62-hill.js: a raw rgb()/hsl() colour');
+  if(/\p{Extended_Pictographic}|[◀▶✕]/u.test(src))p.push('62-hill.js: emoji');
+  for(const m of css.matchAll(/(?:color|background|fill|stroke|box-shadow|outline)[a-z-]*:([^;}]*)/g))if(/#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(|\b(white|black|red|green|blue)\b/.test(m[1].replace(/var\([^)]*\)/g,'')))p.push('61-hill.css: a raw colour: '+m[0]);
+  const roles=new Set([...code.matchAll(/\b(?:K|hcC|hcA)\('([a-z][a-z0-9-]*)'/g)].map(m=>m[1]));
+  for(const m of code.matchAll(/(?:top|top2|dirt|dirt2|far|far2|mid|water|c|c2):'([a-z]\d?)'/g))roles.add(m[1]);
+  for(const m of code.matchAll(/'(sc-[a-z0-9-]+)'/g))roles.add(m[1]);
+  for(const ro of roles){const t=ro.startsWith('sc-')?'--'+ro:'--ill-'+({r:'red',o:'orange',y:'yellow',g:'green',c:'aqua',b:'blue',v:'purple',p:'pink',n:'brown',t:'tan',s:'skin',m:'cream',e:'grey',w:'white',k:'ink'})[ro[0]]+(ro[1]?'-'+ro[1]:'');if(!tok.includes(t+':'))p.push('62-hill.js: colour role '+ro+' is not a token ('+t+')')}
+  if(roles.size<30)p.push('expected the drawing roles to be found: '+roles.size);
+  for(const m of css.matchAll(/var\((--[a-z0-9-]+)\)/g))if(!tok.includes(m[1]+':')&&!['--hc-a','--hc-b','--v'].includes(m[1]))p.push('61-hill.css: '+m[1]+' is not a token');
+  if(!/if\(landV>520&&!H\.calm\)H\.shake/.test(src)||!/H\.shake>0&&!H\.calm/.test(src)||!/H\.calm=hcCalm\(\)/.test(src))p.push('no shake in calm mode or with reduced motion');
+  if(/\.pedal\{[^}]*\b(width|height):clamp\((\d+)px/.test(css)&&+css.match(/\.pedal\{[^}]*width:clamp\((\d+)px/)[1]<64)p.push('pedals under 64 px');
+  // R-03 H1: the renderer draws cached images (sky and parallax strips, ground chunks, sprites), at most 1 million pixels with a lower
+  // pixel scale on a slow tablet; the driver is the child's drawn pet
+  if(!/function hcStrip\(/.test(src)||!/function hcChunk\(/.test(src)||!/Math\.sqrt\(1e6\/\(cw\*ch\)\)/.test(src)||!/H\.q=H\.q>\.9\?\.85:\.7/.test(src))p.push('the cached renderer, the pixel cap or the pixel scale steps are missing');
+  if(!/hopPetSprite\('happy'/.test(src))p.push('the driver should be the drawn pet');
+  if(/fillText\([^)]*\p{Extended_Pictographic}/u.test(src)||/petE\(\)/.test(src))p.push('emoji drawn on the canvas');
+  if(!/data-st="\$\{D\.id\}"/.test(src)||!/id:'hcgo'/.test(src))p.push('the menu needs the play button #hcgo and the distance drive buttons');
+  return{problems:[...new Set(p)].slice(0,50),note:o.notes.join('; ')};
+});
+
 // ---- G-04a: Snack Stand (src/js/65-game-snack.js, src/css/49-game-snack.css; games2 part) ----
 run('snack stand G-04a',()=>{
   const p=[],notes=[];

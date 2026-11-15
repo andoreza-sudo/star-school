@@ -7182,6 +7182,164 @@ async function main() {
         'clock stopped; 48 px targets, no sideways scroll; ' + notes.join('; '));
     }
 
+    // G-HC2 Hill Climb journey (src/js/62-hill.js). Midway save, a fresh garage, 1st grade (easy driving on), 20 min of game time, real
+    //    touch (CDP touch events) at 380x780 and 1024x600: Home -> Game Room -> the Hill Climb card -> the menu (next goal names First
+    //    Hills, 6 worlds with only Green Meadow open, stage 2 locked) -> Play (#hcgo) -> a held touch on the right half (gas) drives
+    //    stage 1 to the flag -> the end card (stars, "Muddy Puddles is open") -> Stages: stage 2 open, the next goal names it -> Garage:
+    //    buy the engine upgrade with the bolts just earned (bolts go down, the level and the top speed line go up) -> a flip past the
+    //    first checkpoint (the car set on its roof by a test hook) starts again at that checkpoint with "Flipped" -> at 1024x600 the
+    //    frame time while driving Log Bridges in the rain under 6x CPU throttle, after 2 s to settle its pixel scale (median at most 34 ms; a busy machine measures again,
+    //    up to 3 more times). Every screen: 48 px buttons, 64 px pedals, no sideways scroll, the distance and fuel readable.
+    {
+      const bad = [], notes = [];
+      const os = require('os'), cores = os.cpus().length;
+      for (const [w, h] of [[380, 780], [1024, 600]]) {
+        const ga = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ga.page, at = 'G-HC2 ' + w + 'x' + h + ' ';
+        const cdp = await pg.context().newCDPSession(pg);
+        await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 2 });
+        const box = sel => pg.evaluate(s => {
+          const e = document.querySelector(s);
+          if (!e) return null;
+          if (!e.closest('.hc')) e.scrollIntoView({ block: 'center' });
+          const r = e.getBoundingClientRect();
+          return { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height };
+        }, sel);
+        const down = async (x, y) => cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y, id: 1, radiusX: 8, radiusY: 8, force: 1 }] });
+        const up = async () => cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+        const touch = async sel => { const b = await box(sel); if (!b) throw new Error('nothing to touch: ' + sel); await down(b.x, b.y); await pg.waitForTimeout(60); await up(); return b; };
+        const look = () => {
+          const vw = document.documentElement.clientWidth, out = [];
+          for (const e of document.querySelectorAll('.gh-top button, .hc-menu button, .gh-end button')) {
+            const r = e.getBoundingClientRect();
+            if (!r.width || r.bottom < 0 || r.top > innerHeight) continue;
+            if (Math.min(r.width, r.height) < 47.5) out.push('small ' + (e.id || e.className) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
+            if (r.left < -1 || r.right > vw + 1) out.push('outside ' + (e.id || e.className));
+          }
+          for (const e of document.querySelectorAll('.pedal')) { const r = e.getBoundingClientRect(); if (Math.min(r.width, r.height) < 64) out.push('pedal ' + Math.round(r.width)); }
+          const d = document.querySelector('#hcd'), g = document.querySelector('.hc-gauge');
+          if (d && d.scrollWidth > d.clientWidth + 1) out.push('distance cut: ' + d.textContent);
+          if (g && g.getBoundingClientRect().height < 16) out.push('fuel gauge ' + g.getBoundingClientRect().height + ' px tall');
+          if (document.documentElement.scrollWidth > vw) out.push('sideways scroll ' + document.documentElement.scrollWidth);
+          for (const s of document.querySelectorAll('.scroll, .gh-end')) if (s.scrollWidth > s.clientWidth + 1) out.push('sideways scroll in ' + s.className);
+          for (const t of document.querySelectorAll('.gh-top')) if (t.getBoundingClientRect().right > vw + 1) out.push('top bar wider than the screen');
+          return out;
+        };
+        try {
+          await pg.evaluate(() => { S.pt = { bank: 1200, day: today(), used: 0 }; S.garage = {}; S.grade = 1; save(); home(); });
+          await touch('#groom');
+          await pg.waitForSelector('#g4x4', { timeout: 8000 });
+          await pg.waitForTimeout(450);
+          await touch('#g4x4');
+          await pg.waitForSelector('.hc-menu #hcgo', { timeout: 8000 });
+          await pg.waitForTimeout(450);
+          const m0 = await pg.evaluate(() => ({ goal: document.querySelector('.hc-goal').textContent, worlds: document.querySelectorAll('.hc-wt').length,
+            open: document.querySelectorAll('.hc-wt:not(.lock)').length, s2: document.querySelector('[data-stg="1"]').classList.contains('lock'), easy: document.querySelector('#hceasy').checked }));
+          if (!/First Hills/.test(m0.goal) || m0.worlds !== 6 || m0.open !== 1 || !m0.s2 || !m0.easy) bad.push(at + 'menu: ' + JSON.stringify(m0));
+          for (const o of await pg.evaluate(look)) bad.push(at + 'menu: ' + o);
+          await touch('#hcgo');
+          await pg.waitForSelector('.hc .pedal.gas', { timeout: 8000 });
+          await pg.waitForTimeout(700);
+          for (const o of await pg.evaluate(look)) bad.push(at + 'drive: ' + o);
+          const gb = await box('#pg');
+          await down(gb.x, gb.y);
+          const t0 = Date.now();
+          let res = null;
+          while (Date.now() - t0 < 60000) { await pg.waitForTimeout(500); res = await pg.evaluate(() => document.querySelector('.gh-end') ? 'end' : HC && HC.gas ? 'gas' : 'no gas'); if (res !== 'gas') break; }
+          await up();
+          if (res !== 'end') bad.push(at + 'stage 1 not finished by holding the gas: ' + res);
+          await pg.waitForSelector('.gh-end [data-go="list"]', { timeout: 8000 });
+          await pg.waitForTimeout(500);
+          const e1 = await pg.evaluate(() => ({ title: document.querySelector('.gh-end h1').textContent, stars: document.querySelectorAll('.gh-end .rs.on').length,
+            next: /Muddy Puddles is open/.test(document.querySelector('.gh-end').textContent), btn: !!document.querySelector('.gh-end [data-go="next"]'), bolts: garageS().bolts, st: garageS().st.m1 }));
+          if (e1.title !== 'First Hills done!' || e1.stars < 1 || !e1.next || !e1.btn || !(e1.bolts >= 30) || !(e1.st & 1)) bad.push(at + 'end card: ' + JSON.stringify(e1));
+          for (const o of await pg.evaluate(look)) bad.push(at + 'end card: ' + o);
+          notes.push(w + 'x' + h + ': stage 1 in ' + Math.round((Date.now() - t0) / 1000) + ' s held gas, ' + e1.stars + ' stars, ' + e1.bolts + ' bolts');
+          await touch('.gh-end [data-go="list"]');
+          await pg.waitForSelector('.hc-menu #hcgo', { timeout: 8000 });
+          await pg.waitForTimeout(450);
+          const m1 = await pg.evaluate(() => ({ s2: document.querySelector('[data-stg="1"]').classList.contains('lock'), goal: document.querySelector('.hc-goal').textContent, go: document.querySelector('#hcgo').textContent }));
+          if (m1.s2 || !/Muddy Puddles/.test(m1.goal) || !/Muddy Puddles/.test(m1.go)) bad.push(at + 'menu after stage 1: ' + JSON.stringify(m1));
+          // the garage: the engine upgrade
+          await touch('#hcgar');
+          await pg.waitForSelector('[data-up="engine"]', { timeout: 8000 });
+          await pg.waitForTimeout(450);
+          for (const o of await pg.evaluate(look)) bad.push(at + 'garage: ' + o);
+          const u0 = await pg.evaluate(() => ({ b: garageS().bolts, lv: garageS().up.engine, line: document.querySelector('.hc-up .hc-num').textContent }));
+          await touch('[data-up="engine"]');
+          await pg.waitForTimeout(500);
+          const u1 = await pg.evaluate(() => ({ b: garageS().bolts, lv: garageS().up.engine, line: document.querySelector('.hc-up .hc-num').textContent }));
+          if (u1.lv !== 1 || u1.b !== u0.b - 30 || u1.line === u0.line) bad.push(at + 'engine upgrade: ' + JSON.stringify([u0, u1]));
+          await touch('#back');
+          await pg.waitForSelector('.hc-menu #hcgo', { timeout: 8000 });
+          // a flip past the first checkpoint starts again there (test hook: the car put on its roof just past it)
+          await touch('#hcgo');
+          await pg.waitForSelector('.hc .pedal.gas', { timeout: 8000 });
+          await pg.waitForTimeout(600);
+          await pg.evaluate(() => {
+            const H = HC, C = H.C, x = C.cps[1] + 40, y = hcH(C, x) + H.R + 2, y2 = hcH(C, x + H.L) + H.R + 2;
+            Object.assign(H.w1, { x, y, px: x, py: y }); Object.assign(H.w2, { x: x + H.L, y: y2, px: x + H.L, py: y2 }); H.lockT = 0;
+          });
+          await pg.waitForFunction(() => HC && HC.cpi >= 1, null, { timeout: 8000 });
+          const f0 = await pg.evaluate(() => {
+            const H = HC, C = H.C, x = (H.w1.x + H.w2.x) / 2, y = hcH(C, x) + H.R + 4;
+            Object.assign(H.w1, { x: x + H.L / 2, y, px: x + H.L / 2, py: y }); Object.assign(H.w2, { x: x - H.L / 2, y, px: x - H.L / 2, py: y }); H.safeT = 0;
+            return { cp: C.cps[1] };
+          });
+          await pg.waitForFunction(() => HC && HC.crashes > 0, null, { timeout: 8000 });
+          const fm = await pg.evaluate(() => document.querySelector('#hcm').textContent);
+          await pg.waitForFunction(() => HC && HC.crashT <= 0, null, { timeout: 8000 });
+          const f1 = await pg.evaluate(() => ({ x: Math.round(HC.w1.x), cp: HC.cp, cr: HC.crashes, why: HC.why }));
+          if (!/Flipped/.test(fm) || f1.cp !== f0.cp || Math.abs(f1.x - f0.cp) > 30 || f1.cr !== 1) bad.push(at + 'flip restart: ' + JSON.stringify([fm, f0, f1]));
+          // the frame time at 6x CPU throttle, holding the gas on Log Bridges in the rain
+          if (w == 1024) {
+            await pg.evaluate(() => { document.querySelectorAll('.ovl').forEach(o => o.remove()); hcStart(2, 1); });
+            await pg.waitForTimeout(800);
+            await pg.evaluate(() => {
+              window.__hcF = []; window.__hcW = [];
+              const now = window.__realNow || performance.now.bind(performance), d0 = window.hcDraw; window.hcDraw = function () { const t = now(); const r = d0.apply(this, arguments); window.__hcW.push(now() - t); return r; };
+              let last = 0; const f = ts => { if (last) window.__hcF.push(ts - last); last = ts; if (window.__hcF.length < 2000) requestAnimationFrame(f); }; requestAnimationFrame(f);
+            });
+            const gb2 = await box('#pg');
+            await down(gb2.x, gb2.y);
+            let best = null, tries = 0, load = os.loadavg()[0];
+            for (;;) {
+              await cdp.send('Emulation.setCPUThrottlingRate', { rate: 6 });
+              await pg.waitForTimeout(2000); // the drive lowers its pixel scale on a slow machine within about 1.5 s
+              await pg.evaluate(() => { window.__hcF.length = 0; window.__hcW.length = 0; });
+              await pg.waitForTimeout(3000);
+              const r = await pg.evaluate(() => {
+                const q = (a, p) => a.slice().sort((x, y) => x - y)[Math.floor(a.length * p)];
+                return { med: q(window.__hcF, .5), p90: q(window.__hcF, .9), work: q(window.__hcW, .5), n: window.__hcF.length, q: HC.q };
+              });
+              await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+              tries++;
+              load = os.loadavg()[0];
+              if (!best || r.med < best.med) best = r;
+              if (best.med <= 34 || tries >= 4 || load <= cores) break;
+              await pg.waitForTimeout(500);
+              await pg.evaluate(() => { document.querySelectorAll('.ovl').forEach(o => o.remove()); hcStart(2, 1); });
+              await pg.waitForTimeout(600);
+            }
+            await up();
+            const how = `${tries} pass${tries > 1 ? 'es' : ''}, load ${load.toFixed(1)} on ${cores} cores`;
+            if (best.med > 34) bad.push(at + `frame interval at 6x throttle: median ${best.med.toFixed(1)} ms (${how}, limit 34)`);
+            notes.push(`6x throttle (Log Bridges, rain): median frame ${best.med.toFixed(1)} ms, 90th ${best.p90.toFixed(1)} ms, drawing ${best.work.toFixed(1)} ms a frame, ${best.n} frames in 3 s, pixel scale ${best.q} (${how})`);
+          }
+          await pg.evaluate(() => { document.querySelectorAll('.ovl').forEach(o => o.remove()); if (HC) hcEnd('quit'); });
+        } catch (x) {
+          bad.push(at + 'taps: ' + x.message.split('\n')[0] + ' (on ' + await pg.evaluate(() => (document.querySelector('.gh-top') || {}).textContent + ' | ' + !!document.querySelector('.gh-end')).catch(() => '?') + ')');
+        }
+        network.push(...ga.network);
+        for (const e of ga.errors) fail(e);
+        await ga.ctx.close();
+      }
+      if (bad.length) fail('G-HC2 Hill Climb:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('G-HC2: Hill Climb by real touch at 380x780 and 1024x600: menu (next goal, 6 worlds, 1 open) -> stage 1 driven to the flag by a held ' +
+        'gas touch with easy driving -> end card with stars and the next stage open -> Stages: stage 2 open and named -> garage: engine bought with the bolts ' +
+        '-> a flip past the first checkpoint started again there; 48 px buttons, 64 px pedals, the distance and fuel readable; ' + notes.join('; '));
+    }
+
     // P4-15 Object art set C (src/data/d-art-c.js), midway save at 380x780: questions that use the new drawings, drawn by the real
     //    round engine (start, a seeded question in G.q, renderQ): a picture word (vowel teams), Spanish house (drawings as the answer
     //    choices), weather and places. Every drawing is inline SVG with its shapes, at least 16 px, no emoji in its place, no sideways scroll.
