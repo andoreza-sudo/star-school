@@ -1,0 +1,80 @@
+/* G-ART2 Art Studio: drawn tool icons, picture packs, the gallery, Done, pixel art you can move and zoom (src/js/70-art.js,
+   66-colornum.js, 72-shapes.js). Tokens only; motion on transform and opacity, a few times at most, nothing in calm mode or with
+   reduced motion. Lives in games2.<VER>.js (its name matches the games2 part), loaded with the Game Room. */
+.art-ic{display:inline-block;vertical-align:middle;flex:none}
+.sttabs .tab{display:inline-flex;align-items:center;gap:6px;padding:6px 12px}
+.art-menu{padding-bottom:var(--s-6)}
+.stmodes.art-tools{gap:4px}
+.stmodes .art-tool,.stpals .stp{padding:0;min-width:var(--tap);width:var(--tap);display:inline-grid;place-items:center}
+.btn.art-done{min-height:var(--tap-pk);min-width:160px;align-self:center;font-size:var(--fs-4);gap:8px;display:inline-flex;align-items:center;justify-content:center}
+.stbar .art-done{width:100%;max-width:320px}
+.cbpal .art-done{min-width:120px}
+/* menu: next goal, today's picture, packs */
+.art-goal{display:flex;align-items:center;gap:var(--s-3);background:var(--surface);border-radius:var(--r-card);padding:var(--s-3) var(--s-4);margin:var(--s-2) 0;box-shadow:0 3px 0 var(--ledge-soft);color:var(--ink)}
+.art-goal>.ic{color:var(--read)}
+.art-goal p{flex:1;margin:0;display:flex;flex-direction:column;font-size:var(--fs-3);line-height:var(--lh-3)}
+.art-goal p b{font-size:var(--fs-2);color:var(--ink-2)}
+.art-stars{display:inline-flex;align-items:center;gap:4px;font-size:var(--fs-3);white-space:nowrap;color:var(--ink)}
+.art-stars .ic,.art-badge .ic,.art-lv .ic{color:var(--star)}
+.art-day{display:flex;align-items:center;gap:var(--s-3);width:100%;text-align:left;padding:var(--s-2) var(--s-3);margin:var(--s-2) 0 var(--s-3);background:var(--read-tint);border-radius:var(--r-card);min-height:var(--tap-primary)}
+.art-day .art-th{width:72px;height:72px;flex:none;border-radius:var(--r-btn);overflow:hidden;background:var(--surface)}
+.art-day .gi{flex:1;display:flex;flex-direction:column}
+.art-day .gt{font-size:var(--fs-4);font-weight:700}
+.art-th{display:block;width:100%;height:100%}
+.art-th svg,.art-th img{display:block;width:100%;height:100%;border-radius:12px}
+.art-th.px{width:96px;height:96px}
+.art-pack h2{display:flex;align-items:center;gap:var(--s-2)}
+.art-pack h2 small{margin-left:auto;font-size:var(--fs-2);color:var(--ink-2);display:inline-flex;align-items:center;gap:4px}
+.art-pk{grid-template-columns:repeat(auto-fill,minmax(100px,1fr))}
+.sttile{position:relative}
+.sttile.lock .art-th{opacity:.35}
+.sttile.done{box-shadow:0 0 0 3px var(--star) inset}
+.art-badge{position:absolute;right:6px;top:6px;width:32px;height:32px;border-radius:50%;background:var(--surface);display:grid;place-items:center;box-shadow:0 2px 0 var(--ledge-soft)}
+.art-badge.lk .ic{color:var(--ink-2)}
+.art-badge.hrt .ic{color:var(--danger)}
+.art-empty{display:flex;flex-direction:column;align-items:center;gap:var(--s-2);text-align:center;color:var(--ink-2);font-size:var(--fs-3);margin:var(--s-6) 0}
+.art-more{display:flex;align-items:center;gap:6px;justify-content:center}
+.btn.art-new{width:100%;background:var(--read-tint);margin:var(--s-2) 0}
+.btn.art-new .gi{flex:1;display:flex;flex-direction:column}
+.btn.art-new.neon{background:var(--ill-ink);color:var(--ill-white)}
+.btn.art-new.neon .small{color:var(--ill-pink-1)}
+.art-lv{display:inline-flex;vertical-align:middle}
+.art-dot{display:inline-block;border-radius:50%;background:var(--ink);vertical-align:middle}
+/* the mode chooser */
+.art-chooser{background:var(--surface);color:var(--ink);border-radius:var(--r-hero);padding:var(--s-5);max-width:520px;width:92vw;text-align:center;max-height:92vh;overflow-y:auto}
+.art-chooser h2{margin:0 0 10px}
+.art-mode{width:100%}
+.art-mrow{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s-2);padding:var(--s-3);border-radius:var(--r-card);background:var(--surface-2);margin-top:var(--s-2)}
+.art-mrow>div{display:flex;flex-wrap:wrap;gap:6px;width:100%;justify-content:center}
+.art-mrow .btn{display:inline-flex;align-items:center;gap:4px}
+.art-cx{margin-top:10px}
+/* the pixel picture: a window you can move and zoom */
+.pxv{position:relative;overflow:hidden;border-radius:var(--r-btn);background:var(--surface-2);box-shadow:0 4px 0 var(--ledge-soft)}
+.pxv canvas{position:absolute;left:0;top:0;border-radius:0;box-shadow:none;background:var(--surface)}
+/* sparkles over a finished picture (drawn; never in calm mode or with reduced motion) */
+.art-spk{position:fixed;pointer-events:none;z-index:80}
+.art-spk svg{position:absolute;transform:translate(-50%,-50%) scale(0);animation:art-pop var(--t-cele) var(--ease) both}
+@keyframes art-pop{0%{opacity:0;transform:translate(-50%,-50%) scale(.2) rotate(0)}45%{opacity:1;transform:translate(-50%,-50%) scale(1.25) rotate(45deg)}100%{opacity:0;transform:translate(-50%,-50%) scale(.6) rotate(90deg)}}
+html.calm .art-spk{display:none}
+@media (prefers-reduced-motion:reduce){.art-spk{display:none}}
+/* the finished picture in a frame, with one shine */
+.gh-epic.made>.art-frame{position:relative;box-sizing:border-box;padding:8px;background:var(--ill-brown);border-radius:var(--r-btn);box-shadow:inset 0 0 0 3px var(--ill-brown-2),0 4px 0 var(--ledge-soft);overflow:hidden}
+.art-frame>svg,.art-frame>img{display:block;width:100%;height:100%;border-radius:4px;background:var(--surface)}
+.art-frame img.px{image-rendering:pixelated}
+.art-shine{position:absolute;inset:0;background:linear-gradient(105deg,transparent 35%,var(--hi) 50%,transparent 65%);transform:translateX(-120%);animation:art-shine var(--t-xl) var(--ease) .5s 2 both;pointer-events:none}
+@keyframes art-shine{to{transform:translateX(120%)}}
+html.calm .art-shine{display:none}
+@media (prefers-reduced-motion:reduce){.art-shine{display:none}}
+/* glitter twinkles a few times */
+#stsvg .tw{animation:art-tw var(--t-loop) ease-in-out 3}
+#stsvg .tw2{animation-delay:.6s}
+@keyframes art-tw{50%{opacity:.15}}
+/* the gallery's big view */
+.art-big{text-align:center}
+.art-big canvas,.art-bp{display:block;margin:0 auto var(--s-2);width:min(78vw,46vh,360px);height:min(78vw,46vh,360px);border-radius:var(--r-btn);overflow:hidden;background:var(--surface-2)}
+.art-bp svg,.art-bp img{display:block;width:100%;height:100%}
+.art-big h2{margin:var(--s-2) 0 0}
+.art-acts{flex-wrap:wrap;justify-content:center}
+.art-acts #ghrt.on .ic{color:var(--danger)}
+.art-mode.s-read{background:var(--read-tint)}.art-mode.s-es{background:var(--math-tint)}
+.art-mrow.s-math{background:var(--star-tint)}.art-mrow.s-es{background:var(--es-tint)}
