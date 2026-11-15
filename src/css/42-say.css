@@ -45,3 +45,19 @@
   .spk-card{padding:var(--s-3) var(--s-4);gap:var(--s-2)}
   .spk-pic{font-size:64px}
   .spk-mic,.spk-lis{width:80px;height:80px}}
+/* S-SPK2: the Grown-ups listening corner (50-say-corner.js) and the star message on Home. Tokens only. */
+.lc-list{display:flex;flex-direction:column;gap:var(--s-2)}
+.lc-row{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s-2) var(--s-3);padding:var(--s-2) var(--s-3);border-radius:var(--r-card);background:var(--surface-2)}
+.lc-w{display:flex;flex-direction:column;flex:1 1 160px;min-width:0}
+.lc-b{display:flex;flex-wrap:wrap;gap:var(--s-2)}
+.lc-w b{font-size:var(--fs-4);color:var(--es-shade);overflow-wrap:anywhere}
+.lc-w small{font-size:var(--fs-2);color:var(--ink-2)}
+.lc-star.on{background:var(--star-tint);color:var(--ink)}
+.lc-star.on .ic{color:var(--star-shade)}
+.hm-gstar{display:flex;align-items:center;gap:var(--s-3);margin-bottom:var(--s-4);padding:var(--s-3) var(--s-4);border-radius:var(--r-card);
+  background:var(--star-tint);color:var(--ink);box-shadow:inset 0 0 0 2px var(--star)}
+.hm-gstar p{margin:0;font-size:var(--fs-3);font-weight:700}
+.hm-gsi{flex:none;display:grid;place-items:center;width:56px;height:56px;border-radius:50%;background:var(--star);color:var(--ink)}
+.hm-gsi .ic{width:36px;height:36px}
+.hm-gsk{display:block;font-weight:400;color:var(--ink-2)}
+.hm-gse{font-size:var(--fs-5)}
