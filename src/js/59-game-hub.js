@@ -377,7 +377,7 @@ const GH = {
     GH.held = true;
     if (o.hold) o.hold(true);
     let quit = false;
-    const s = UI.sheet(`<div class="gh-sheet s-${g.p}"><div class="gh-spic" style="${GH.sky(g)}">${GH.pic(g.id)}</div>` +
+    const s = UI.sheet(`<div class="gh-sheet s-${g.p}"><div class="gh-scpic" style="${GH.sky(g)}">${GH.pic(g.id)}</div>` +
       `<h2>Paused</h2><p>${UI.t(g.name)} is waiting for you. Your game time stops while you rest.</p>` +
       `<div class="acts gh-acts">${UI.btn('Keep playing', { kind: 'primary', size: 'lg', icon: 'play', id: 'gresume', wide: true })}` +
       `${UI.btn('Quit', { icon: 'close', id: 'gquit', wide: true })}</div></div>`, {

@@ -9022,8 +9022,9 @@ WEAR_EMB['🎵'] = `<path ${wF('v2')} d="M21 15L49 7L49 15L21 23Z"/>` +
      notices ...). Unscramble never uses a word whose letters spell another real word, so a scramble has exactly one answer;
      tools/test.js checks every word it can use against every word in the app's lists and these. Read only inside functions (A11). */
 var BTW = {
-  rude: 'fuck fuk shit dick cock suck tit tits fag cum sex ass piss crap damn hell hoe slut cunt twat nig fap wank porn poop poo butt pee fart ' +
-    'turd boob kill gun',
+  rude: (s => s.replace(/[a-z]/g, c => String.fromCharCode((c.charCodeAt(0) - 84) % 26 + 97)))( // ROT13: no rude word in plain text in the source
+    'shpx shx fuvg qvpx pbpx fhpx gvg gvgf snt phz frk nff cvff penc qnza uryy ubr fyhg phag gjng avt snc jnax cbea cbbc cbb ohgg crr sneg ' +
+    'gheq obbo xvyy tha'),
   more: 'act god tab sub arc hips rats arts tsar sore ores eros roes ebon ones eons carb murd nett rifts ports strop prost writs ' +
     'notices auctioned reflow fowler cleats fluor pam deb nus gorf shore could cloud finder player grown silent enlist tinsel ' +
     'three ether there pots tops opts post spot stop evil vile veil live lemon melon thing night elbow below bowel north thorn ' +

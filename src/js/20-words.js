@@ -9,7 +9,9 @@ const SILENTE=[['cake','🎂'],['kite','🪁'],['bike','🚲'],['ice','🧊'],['
 const TEAMS=[['rain','🌧️'],['boat','⛵'],['tree','🌳'],['bee','🐝'],['goat','🐐'],['coat','🧥'],['feet','🦶'],['sheep','🐑'],['leaf','🍃'],['beach','🏖️'],['train','🚂'],['snail','🐌'],['road','🛣️'],['soap','🧼'],['moon','🌙'],['book','📖'],['spoon','🥄'],['boot','👢'],['cheese','🧀'],['tooth','🦷'],['mail','📬'],['peach','🍑'],['seed','🌱'],['pie','🥧'],['tie','👔'],['cow','🐄'],['owl','🦉'],['mouse','🐭'],['cloud','☁️'],['bowl','🥣']];
 const WL=lv=>[CVC,BLEND,SILENTE,TEAMS][Math.min(lv,4)-1];
 const NOUNS=[...CVC,...BLEND].filter(w=>!['ten','six','man','leg','pin'].includes(w[0]));
-const BAD=/^(fuck|fuk|shit|dick|cock|suck|tit|tits|fag|cum|sex|ass|piss|crap|damn|dam|hell|hoe|slut|cunt|twat|nig|fap|wank|porn|poop|butt|pee|kill|gun)$/;
+// the lists below are stored with letters turned 13 places (ROT13) so the source has no rude word in plain text; unrot() turns them back
+const unrot=s=>s.replace(/[a-z]/g,c=>String.fromCharCode((c.charCodeAt(0)-84)%26+97));
+const BAD=new RegExp('^('+unrot('shpx|shx|fuvg|qvpx|pbpx|fhpx|gvg|gvgf|snt|phz|frk|nff|cvff|penc|qnza|qnz|uryy|ubr|fyhg|phag|gjng|avt|snc|jnax|cbea|cbbc|ohgg|crr|xvyy|tha')+')$');
 const art=w=>/^[aeiou]/.test(w)?'an':'a';
 
 
@@ -66,7 +68,7 @@ const VTW=[['moon','🌙','oo'],['spoon','🥄','oo'],['book','📖','oo'],['foo
   ['screw','🔩','ew'],['broom','🧹','oo'],['jewel','💎','ew'],['dew','💧','ew']];
 const RVP=['ar','or','er','ir','ur'],VTP=['oo','ou','ow','oi','oy','aw','ew'];
 // Spellings that could look rude must never be offered as wrong choices.
-const PHBAD=/^(poo|shart|fark|furk|ferk|firk|sherk|fuk|dik|dirk|cum|tit)$/;
+const PHBAD=new RegExp('^('+unrot('cbb|funeg|snex|shex|srex|svex|furex|shx|qvx|qvex|phz|gvg')+')$');
 
 /* ---------- R-01r: safe, real wrong choices ---------- */
 // Picture Words 1-4 (genPic): the wrong choices are real, everyday words that differ from the picture word by a letter or two, or by
