@@ -4,7 +4,7 @@ The running record of what has shipped. Newest entry first. Every chunk adds one
 
 **Next up:** P6-05 (wip/batch-N, map timing), the P5-07 flaky step; see Handoff notes
 
-**Current version:** v155
+**Current version:** v156
 
 ## Chunk status
 
@@ -139,6 +139,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - G-02b v149
 - ES-AUDIO v154
 - G-01b v155
+- S-SPK2 v156
 
 ## Handoff notes
 
@@ -490,6 +491,76 @@ Things noticed while working that are outside the current chunk. One line each, 
 
 ## Log
 
+### S-SPK2 Spanish speaking check, on-device listening, listening corner (v156, 2026-11-14, Claude)
+- Owner-approved additions to "Say it!" (S-SPK): A, B and C below; no online check, never a server recogniser. Order in the step: A when
+  the tablet can recognise Spanish on the device, else B (also when A heard nothing); "I said it!" / "Try again" stay, and the line is
+  never "wrong": "Great job!", "Close! Listen again", "I couldn't hear you" (or "Try your normal voice" when clipped). Pre-K, K and
+  Read out loud hear the short form once per try.
+- **A. The tablet's own on-device recognition** (`src/js/50-say-corner.js` SPKL, Grown-ups card **Spanish listening** `#gw-lis`). The API
+  was checked in this Chromium (153): `SpeechRecognition.available({langs, processLocally:true})` returns 'available' / 'downloadable' /
+  'downloading' / 'unavailable', `SpeechRecognition.install({langs, processLocally:true})` downloads, the recogniser has `processLocally`
+  (the spec pages could not be fetched from this session; the older `availableOnDevice` / `installOnDevice` / `mode 'ondevice-only'` are
+  still handled). **Here es-MX on-device is 'downloadable'** (and 'available' only without processLocally, i.e. a server, which is never
+  used). The card says what the tablet can do; with 'downloadable' it shows **Download Spanish listening** with an online note ("Needs
+  the internet once, for the download.") and runs through `needOnline` (offline: "You're offline. Connect to wifi to download Spanish
+  listening."); `onlineNote(t)` and `needOnline(..., {msg})` take an optional text (88-online.js; the share/print defaults unchanged).
+  After a download, `spkSrProbe()` runs again, and Say it! says "That sounded like “...”. Great job! ¡Muy bien!" or "... Close! Listen
+  again and compare." (the lenient matcher).
+- **B. The offline sound check on every tablet** (`src/js/50-say-cmp.js`, SPKC; standard method): decode the child's recording and the
+  line's own model recording (audio/es, from the service worker's cache) with Web Audio at 16 kHz mono; levels (no 0.15 s of voice:
+  quiet; over 6% clipped: loud; an empty recording: quiet); trim silence (30 dB under the loudest frame); MFCC (25 ms Hamming, 10 ms hop,
+  512 FFT, 26 mel filters 80-6800 Hz, c1-c12, cepstral mean normalisation); DTW (Sakoe-Chiba band, Euclidean, path cost / (n + m)).
+  The child's side is also measured with the filters warped by 0.85, 0.92, 1.08 and 1.16 (vocal tract length normalisation by grid
+  search; a child's formants are higher) and the closest is used, against the model and the distractors alike. Distractors: the 3
+  recorded lines spelled closest (`spkcNear`: edit distance without articles, each a different word, never a line the matcher accepts,
+  same voice first so the voice never decides). **Great** when d(target) <= **ABS 1.6** and d(target) <= **RATIO 1.15** x the nearest
+  distractor; else "Close! Listen again". Lenient on purpose: the ratio above 1 lets a child who is about as close to a similar word
+  still hear "Great job!".
+- **Calibration** (`node tools/spk-calib.js [--grid]`, ffmpeg decodes like the tablet; cases made from the recordings themselves, 2,219):
+  right word by **the other voice** (the 17 words recorded by both Leo and Eve, e.g. la manzana / manzana / una manzana: 66 pairs), right
+  word in **a child-like voice** (each 1-3 word line's own recording raised and sped up 12%, or slowed 10%, with noise at 30 dB SNR: 1,048),
+  **a similar word** (the 4th closest-spelled line, so not one compared with, child-like voice: 524), **another word** (half the list away:
+  521), **silence, hiss and a click** (60). Result with ABS 1.6 / RATIO 1.15: **true match 99.1%** of 1,114 right words (other voice
+  56/66 = 85%, child-like 1048/1048), **false accept 15.0%** of 1,105 (similar word 149/524 = 28%, another word 17/521 = 3.3%, silence
+  and noise 0/60). Grid (true match / false accept): RATIO 1.0 98.1 / 8.8, 1.1 98.8 / 13.9, 1.15 99.1 / 15.0; ABS 1.4 97.6 / 4.9. Chosen
+  for "rarely tell a right child to listen again": a similar word sometimes passes, a different word or silence almost never.
+  tools/test.js recomputes a smaller set (every 6th line as target, 466 cases: true match 95.8% of 236, other voice 56/66, false accept
+  12.6% of 230: similar 25/85, other 4/85, silence 0/60) and fails if it moves. Real children's voices differ more than Leo and Eve, so
+  expect fewer "Great job!" for right words than here; the self-check stays the real decision.
+- A page opened from a file (file://, the test harness) cannot read its own recordings, so there is no sound check there (no fetch is
+  tried); the installed app and GitHub Pages (https, service worker cache) have it.
+- Speed: the check runs while the model and the recording play back (a yield between files; features of model lines cached for the
+  session). Measured in the smoke at **6x CPU throttle: 490-573 ms** (one recording, model and 3 distractors decoded). About 10 KB of code,
+  no library.
+- **C. Listening corner** (Grown-ups card `#gw-corner`): each Say it! recording is kept ON THE TABLET (IndexedDB 'starschool-say', store
+  'rec', ids `spk:<time>` for child 1 and `spk-pN:<time>` for the others via `PRF.k`), at most 6 per child, deleted after **1 day**
+  (default) / 1 week / Don't keep (`S.spkKeep`; Don't keep saves nothing and removes the rest). Rows: the word, the time, **Listen** (the
+  model, then the child), **Star** (the recording is marked and "Your grown-up gave you a star for ‘el perro’!" waits for Home in
+  `S.spkStars`; Home shows it once at the top with a sticker per star, at most 3, spoken for Pre-K, K and Read out loud), **Delete all
+  recordings** (two taps). Start over deletes the database; removing a child or starting over one child (`PRF.dropClips`) deletes that
+  child's. About card privacy line and README "For parents" updated (recordings stay on this tablet, are deleted automatically, nothing
+  is sent).
+- Where the code lives: `50-say-cmp.js` and `50-say-corner.js` are in index.html (about 22 KB of source; index.html 945 KB -> 970 KB).
+  Not in an on-demand part: a third LAZY part would change the Game Room loader (`gameRoom()` loads `LAZY_PARTS`) and the P6-02 checks
+  that pin LAZY to the games parts; with a parallel chunk in the Game Room files that was left alone. A later chunk can move
+  `50-say-cmp.js` to a `say` part loaded by `partLoad('say')` when the step opens.
+- Save fields (ROADMAP table): `S.spkKeep` ('day' | 'week' | 'never', absent = 'day'), `S.spkStars` ([{es, t}], at most 10, absent =
+  none); read with defaults, no migration.
+- Tests: tools/test.js **"Spanish speaking check S-SPK2"** (privacy: no network call in the new code, the only fetch is the line's own
+  recording, on-device recognition only, the online note; the matcher; FFT, levels, MFCC + DTW and the decision on synthetic sounds; the
+  distractors; the calibration set and these numbers; corner retention 1 day / 1 week / never / max 6, per child, delete all, a removed
+  child; the star and the Home message once with a sticker; old saves). `run()` now accepts a check that returns a promise (the corner
+  is IndexedDB code): the report waits for it, in place. "motion and sound P4-17": 50-say-corner.js may play audio (the corner).
+  smoke.js **`// S-SPK2`** block (380x780 and 1024x600, served over http://127.0.0.1 because file:// cannot fetch the model; a fake
+  microphone plays a file into the real MediaRecorder): the model recording is judged Great job (d 0.1-0.3, nearest other 1.1-1.4),
+  another single word "Close! Listen again", silence "I couldn't hear you", the self-check buttons stay; Grown-ups Spanish listening
+  (a stand-in recogniser: downloadable, the button and online note, the download), the Listening corner (3 recordings, Listen plays model
+  then child, star, keep 1 week, delete all), Home star once with a sticker, 48 px, mic 64+, no sideways scroll, no other network.
+  tools/a11y.js: `say-it-check`, `grown-listen`, `home-star` (zero failures). Contrast: the new pairs use --ink on --star / --star-tint.
+- Merge: rebased on v155 (G-01b Block Builder, merged meanwhile); VER v156 (provisional; renumber at merge if needed). No Game Room file
+  was touched. Conflicts to expect only in docs (PROGRESS, ROADMAP save table) and in tools/test.js / smoke.js near the S-SPK blocks.
+  If the Block Builder chunk moves `run()` or the report at the end of tools/test.js, keep the PENDING wait.
+
 ### G-01b Block Builder journey, challenges, gallery (v155, 2026-11-14, Claude)
 - Why (the owner): the games are "very, very repetitive. Same thing after one another... it's like you're on level one and stuck there. You never go anywhere else."
 - What felt repetitive (played v153 by touch at 380x780 and 1024x600, shots in `g01b/before/`): all 13 blueprints were the same task (copy the see-through blocks, layer by layer) on the same flat grass under the same sky, one long row on the menu; after the 52-block Diamond Palace the end card had no Next and nothing else opened; the end card showed the hub picture, not the build; free build had the same 6 goals in every world, at most 4 worlds and 4 kinds, nothing to unlock but Gold / Diamond / Rainbow by learning stars, no way to keep a build; the menu said nothing about what to do next.
@@ -509,6 +580,7 @@ Things noticed while working that are outside the current chunk. One line each, 
 - Left over (Ideas): the top bar's progress chip with "1 mistake" squeezes the build's name on a 380 px phone (as in G-01); a gallery picture could be opened as a new world; more builds of the day kinds (an arch, a bridge); the journey could get a fifth chapter.
 - Checklist 7.1: [x] chunk files [x] VER v155 (provisional) [x] build [x] contrast [x] test.js [x] smoke.js [x] a11y.js [x] screenshots [x] no network [x] no new emoji or raw colour [x] PROGRESS entry [x] one commit (not pushed).
 - Merge: built on branch G-01b-blocks from b5dbe36 (wip/batch-P, v153). VER v155 is provisional: renumber at merge, rebuild, `git add -A` (built files). Overlaps to expect: `tools/build.py` (VER only), `tools/test.js` (the `CACHE_FAIL` line and its comment at the top, one line pair in "block builder G-01", the new check right after it before `// ---- G-04a`), `tools/smoke.js` (inside the `// G-01` block only), `tools/a11y.js` (two screens before `rally-menu`), `tools/check.sh` (the sizes echo line), docs/ROADMAP.md (one save row, R1, the 7.x size line), CONTRIBUTING 3.3, this file. The parallel recorded-Spanish-audio chunk has its own size budget and touches 12-speech.js / sw.js / build.py audio: if it also edits the `CACHE_FAIL` line, keep 3.6 MB for the code precache and its separate audio budget.
+
 ### ES-AUDIO Recorded Spanish voices, no pause between English and Spanish (v154, 2026-11-14, Claude)
 - Owner report: when the app says English then Spanish with the tablet's voices, there is about a 5 s pause while the speech engine
   switches language, on every tablet without an offline Spanish voice. Fix: every Spanish line the app can say is recorded once at build

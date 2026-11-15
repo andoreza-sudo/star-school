@@ -9,9 +9,10 @@
 const ONLINE_NOTE = 'Make sure the tablet is online to share or print.';
 const OFFLINE_MSG = "You're offline. Connect to wifi to share or print.";
 
-// The small note that sits under or beside a share / send / print button.
-function onlineNote() {
-  return `<div class="online-note">${esc(ONLINE_NOTE)}</div>`;
+// The small note that sits under or beside a share / send / print button. S-SPK2: t, another line for another kind of action
+// (the one-time download of Spanish listening, 50-say-corner.js).
+function onlineNote(t) {
+  return `<div class="online-note">${esc(t || ONLINE_NOTE)}</div>`;
 }
 
 // true when the browser says it is offline (navigator.onLine is only reliable when false).
@@ -19,10 +20,10 @@ function isOffline() {
   return typeof navigator != 'undefined' && navigator.onLine === false;
 }
 
-// Runs action() unless offline and blocked; returns true when the action ran.
+// Runs action() unless offline and blocked; returns true when the action ran. o.msg: the offline message for another kind of action.
 function needOnline(action, o = {}) {
   if (isOffline()) {
-    fb(OFFLINE_MSG, 'bad', 2600);
+    fb(o.msg || OFFLINE_MSG, 'bad', 2600);
     if (o.block !== false) return false;
   }
   action();
