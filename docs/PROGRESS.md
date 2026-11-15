@@ -139,6 +139,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - G-02b v149
 - ES-AUDIO v154
 - G-01b v155
+- R-03 done
 
 ## Handoff notes
 
@@ -489,6 +490,13 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-11) Icons wanted from P4-03: `balloon` (Bonus game, today `gamepad`), `sparkle` / `confetti`, `unlock` (open padlock for "Next stop unlocked", today `map`), `zap` (a lightning with a spark for boss hits; today `bolt`), `sticker` (single sticker for the prize row), `medal` (the prize rosette as an icon), `heart-half` (boss life bar), `chest` (the treasure chest at icon size, e.g. for the round track where renderQ shows the gift emoji).
 
 ## Log
+
+### R-03 Game look, feel and staying power (2026-11-15, Claude)
+- What: new `docs/reviews/R-03-games.md` for the owner's question ("do they match current graphics ... do the games get boring?"): all six Game Room games (Block Builder, Hill Climb, Star Rally, Snack Stand, Sky Hop, Art Studio) screenshotted at 380x780 and 1024x600 (2x, 78 shots, looked at), played by touch with frame times and tap-to-screen times at 6x CPU slow-down, fast-forwarded by save edits to a child's visit 1, 5, 20 and 50, and two throwaway prototypes (a hand-written WebGL low-poly scene, a 2.5D canvas scene) measured on software WebGL (SwiftShader) and the software canvas.
+- Findings: graphics 2-3 of 5 (flat scenes, few depth layers, no particles in most games, emoji left in Block Builder animals, the Hill Climb driver and Art Studio menus, and no music in any game). Boring from about visit 5-10 in Sky Hop, Snack Stand and Star Rally (all content and shop gone; at visit 50 Rally has 12,940 sparkles and Snack Stand 5,977 coins with nothing to buy), visit 10-12 for Block Builder's goals, 20-25 for Hill Climb; Art Studio has no goals or finish. Hill Climb runs at 67 ms a frame (1x) and 100-117 ms (2x) at 6x; Block Builder taps take 0.2-0.4 s (up to 0.9 s) and turning costs 56 ms of script a frame. All main controls are 48 px or more; pixel-art squares are about 22 px on a phone.
+- 3D / detail: a low-poly WebGL scene of 300 objects (12,772 triangles, merged) costs 0.9-1.4 ms of script a frame at 6x; SwiftShader fill holds 30 fps only at 0.75 render scale without shadow maps (shadows add 35-100 %); 600 separate draw calls cost 3.3 ms. Canvas 2.5D: drawing every frame live is about 5 fps, band-cropped cached layers 50 ms, 33 ms at 0.75 scale. three.js (692 KB minified) does not fit the 237 KB precache headroom; recommended: an app-made WebGL renderer (15-25 KB) for Block Builder with the current renderer as fallback (Chrome no longer falls back to software WebGL), rich 2.5D canvas for Hill Climb and Sky Hop, particles and light for Star Rally, animated HTML/SVG for Snack Stand and Art Studio.
+- Output: a parent summary table (graphics score, boring point, top 3 fixes per game), a must / should / could plan per game with sizes (A1-A6, B1-B5, H1-H4, R1-R3, N1-N4, K1-K3, T1-T5), the top 10, measured tables, session tables, playability table. Prototypes and scripts in the session scratchpad `r03/` (listed in the review, section 8).
+- No code changes, no VER bump, no build.
 
 ### G-01b Block Builder journey, challenges, gallery (v155, 2026-11-14, Claude)
 - Why (the owner): the games are "very, very repetitive. Same thing after one another... it's like you're on level one and stuck there. You never go anywhere else."
