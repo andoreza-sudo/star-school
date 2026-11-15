@@ -432,7 +432,7 @@ GH.reg({
 });
 GH.reg({
   id: 'art', btn: 'gcbn', name: 'Coloring', icon: 'palette', p: 'read', sky: ['lilac', 'pink'], art: GH_ART.art,
-  sub: () => '<span>Mandalas, animals, pixel art and free paint</span>',
+  sub: () => (typeof artHubLine == 'function' ? artHubLine() : '<span>Mandalas, animals, pixel art and free paint</span>'), // G-ART2: stars and gallery (70-art.js)
   open: () => colorMenu(), tapToPlay: '.sttile[data-k]', saved: 'Your picture is saved.',
 });
 GH.reg({

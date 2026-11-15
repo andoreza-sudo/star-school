@@ -2647,7 +2647,9 @@ run('profiles P5-10: every fixture round-trips byte for byte in the profile stor
   if(/#[0-9a-fA-F]{3,8}\b/.test(fs.readFileSync(path.join(SRC,'css','45-profiles.css'),'utf8')))p.push('45-profiles.css has a raw colour');
   if(!/PRF\.needPick\(\)\) PRF\.pick\(\)/.test(fs.readFileSync(path.join(SRC,'boot.js'),'utf8')))p.push('boot.js does not show the picker first');
   if(!/filter\(c=>PRF\.clipOf\(c\.id\)===PRF\.cur\)/.test(src('44-clips.js'))||!/id:PRF\.clipId\(\)/.test(src('80-grown.js')))p.push('voice clips are not kept per child');
-  if((src('70-art.js').match(/PRF\.k\('starschool-neon'\)/g)||[]).length!==3)p.push('Art Studio neon pictures are not kept per child');
+  // G-ART2: the old neon store is only read (once, by artNeonMigrate, into the child's own gallery), always by the child's key
+  {const a=src('70-art.js'),all=(a.match(/'starschool-neon'/g)||[]).length,per=(a.match(/PRF\.k\('starschool-neon'\)/g)||[]).length;
+    if(!per||per!==all||/localStorage\.setItem\([^)]*starschool-neon/.test(a))p.push('Art Studio neon pictures are not kept per child');}
   return{problems:[...p,...r.bad],note:r.notes.join(', ')};
 });
 
@@ -16187,6 +16189,113 @@ run('Hill Climb journey G-HC2',()=>{
   if(/fillText\([^)]*\p{Extended_Pictographic}/u.test(src)||/petE\(\)/.test(src))p.push('emoji drawn on the canvas');
   if(!/data-st="\$\{D\.id\}"/.test(src)||!/id:'hcgo'/.test(src))p.push('the menu needs the play button #hcgo and the distance drive buttons');
   return{problems:[...new Set(p)].slice(0,50),note:o.notes.join('; ')};
+});
+
+// ---- G-ART2: Art Studio Done and one gallery, picture packs, better pixel art (src/js/70-art.js, 66-colornum.js, 72-shapes.js,
+//      src/css/49-game-art.css). Pure checks in the app's own code (no browser): the smoke step "// G-ART2" plays it by touch.
+run('Art Studio gallery and packs G-ART2',()=>{
+  const p=[];
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const FIX=['fresh','legacy-index-maps','legacy-single-map','maxed','midway','tricky'].map(n=>[n,fx(n)]);
+  const o=(()=>eval(js+`;(()=>{
+  const r={bad:[],notes:[]},bad=m=>{if(r.bad.length<60&&!r.bad.includes(m))r.bad.push(m)};
+  const store={};global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+  const load=raw=>{for(const k in store)if(k!=='__keep')delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
+  const PIC=/\\p{Extended_Pictographic}/u;
+  // 1. the data: every pack picture exists; packs open in order with a fixed, reachable number of stars; the new pixel pictures are well formed
+  const seen=new Set();
+  ART_PACKS.forEach((pk,i)=>{if(pk.pics.length!==6)bad(pk.id+': not 6 pictures');
+    if(i&&!(pk.need>ART_PACKS[i-1].need))bad(pk.id+': needs no more stars than the pack before');if(pk.need>i*6-(i?2:0))bad(pk.id+': needs more stars than the packs before can give');
+    for(const k of pk.pics){if(seen.has(k))bad('picture in two packs: '+k);seen.add(k);const[t,v]=k.split(':');
+      const ok=t=='px'?CB_PICS.some(x=>x[0]==v):t=='sh'?SHAPES.some(x=>x[0]==v):t=='p'?!!POLYART[v]:t=='m'||t=='g'?+v>0:false;if(!ok)bad('unknown pack picture '+k);
+      if(/^Picture$|undefined/.test(artName(k)))bad('no name for '+k)}});
+  if(ART_PACKS[0].need!==0)bad('the first pack must be open from the start');
+  if(CB_PICS.length<28)bad('pixel pictures: '+CB_PICS.length);
+  for(const [id,n] of CB_PICS){const d=cbData(id);if(d.G.length!==256||d.G.some(k=>!CB_COL[k]))bad(id+': not 256 squares of known colours');if(d.keys.length<3||d.keys.length>8)bad(id+': '+d.keys.length+' colours')}
+  CB_PICS.slice(12).forEach(([id])=>{if(!ART_ALL.includes('px:'+id))bad('new pixel picture '+id+' is in no pack')});
+  // 2. pixel squares at least 32 px on a phone (380 x 780) and a tablet (1024 x 600), whatever the palette
+  for(const [W,H] of [[380,780],[360,640],[1024,600],[800,1280]])for(const n of [3,6,8]){const c=pxCell(W,H,n);if(c<32)bad('pixel squares '+c+' px at '+W+'x'+H);}
+  r.notes.push('squares '+pxCell(380,780,6)+' px at 380x780, '+pxCell(1024,600,6)+' at 1024x600');
+  // 3. compact data: fills, pixel bits and neon strokes come back exactly
+  const regs=mandala(17),f={};regs.forEach((x,i)=>{if(i%3==0)f[i]=['c:#f97316','k:#3b82f6','s:#facc15','r:#22c55e','m:#a855f7','g:#ef4444'][i%6]});
+  const pk=artPack(f,regs.length);if(JSON.stringify(artUnpack(JSON.parse(JSON.stringify(pk))))!==JSON.stringify(f))bad('fills do not come back');
+  const many={};for(let i=0;i<300;i++)many[i]='c:#'+(i*4099%16777215).toString(16).padStart(6,'0');if(JSON.stringify(artUnpack(artPack(many,300)))!==JSON.stringify(many))bad('fills with more than 90 colours do not come back');
+  const bits=Array.from({length:256},(_,i)=>i%7==0||i>200?'1':'0');if(pxUnbits(pxBits(bits)).join('')!==bits.join('')||pxBits(Array(256).fill('1'))!=='all'||pxUnbits('all').some(c=>c!='1'))bad('pixel bits do not come back');
+  const st0=[{b:'stars',h:120,z:.015,y:8,m:1,r:77,P:[[0,0],[.5,.25],[1,1],[.1234,.9876]]}],dec=neonDec({s:JSON.parse(JSON.stringify(neonEnc(st0)))});
+  if(dec.length!==1||dec[0].P.some((q,i)=>Math.abs(q[0]-st0[0].P[i][0])>1/8000||Math.abs(q[1]-st0[0].P[i][1])>1/8000)||dec[0].b!=='stars'||dec[0].y!==8)bad('neon strokes do not come back');
+  if(JSON.stringify(pk).length>regs.length+400)bad('fills are not compact: '+JSON.stringify(pk).length);
+  // 4. Done keeps the picture in the gallery, gives the star once, and is saved
+  load(fx('midway'));S.coins=0;stS();
+  const c0=S.coins;let res=artDone({k:'v',key:'m:3',n:'Mandala',d:pk,star:true});
+  const sv=JSON.parse(store[KEY]);
+  if(!res.first||res.stars!==1||!sv.studio||!sv.studio.gal.length||sv.studio.gal[0].v!=='m:3'||sv.studio.gal[0].k!=='v'||!sv.studio.done['m:3'])bad('Done did not keep the picture and its star: '+JSON.stringify({res:{first:res.first,stars:res.stars},gal:sv.studio&&sv.studio.gal.length}));
+  if(JSON.stringify(artUnpack(sv.studio.gal[0].d))!==JSON.stringify(f))bad('the saved picture is not the one colored');
+  if(S.coins-c0<2)bad('the first star of a picture gives no coins');
+  res=artDone({k:'v',key:'m:3',n:'Mandala',d:pk,star:true});if(res.first||stS().gal.filter(e=>e.v=='m:3').length!==1)bad('the same picture again: a second star or a second copy');
+  res=artDone({k:'px',key:'px:cat',n:'Kitty',d:pxBits(bits),star:false});if(res.first||artIsDone('px:cat')||stS().gal[0].k!=='px')bad('an unfinished pixel picture won its star');
+  // 5. gallery cap, hearts and delete
+  load(fx('fresh'));let s=stS();for(let i=0;i<40;i++){const e=galAdd({k:'fp',n:'B'+i,d:'#'});if(i<3)e.h=1}
+  if(s.gal.length!==GAL_MAX||['B0','B1','B2'].some(n=>!s.gal.some(e=>e.n==n))||s.gal[0].n!=='B39'||s.gal.some(e=>/^B([3-9]|1[0-2])$/.test(e.n)))bad('gallery cap: '+s.gal.map(e=>e.n).join());
+  for(const e of s.gal)if(!e.h)galHeart(e.i);const hs=s.gal.filter(e=>e.h).length;if(hs!==GAL_HEARTS)bad('hearts are not capped: '+hs);
+  galAdd({k:'fp',n:'new',d:'#'});if(s.gal.length!==GAL_MAX||!s.gal.some(e=>e.n=='new')||s.gal.filter(e=>e.h).length!==GAL_HEARTS)bad('a full gallery of hearts did not make room for a new picture');
+  const one=s.gal[0].i;if(!galDel(one)||galGet(one))bad('delete');
+  // 6. Neon: the separate store moves in once, every drawing kept (with a heart) and in order, per child; the old store is untouched
+  for(const cur of ['p1','p2']){load(fx('midway'));PRF.cur=cur;const key=PRF.k('starschool-neon'),old=Array.from({length:8},(_,i)=>'data:image/jpeg;base64,'+'AB'.repeat(i+3)+i);
+    store[key]=JSON.stringify(old.concat([42,'junk']));const raw=store[key];const n=artNeonMigrate();s=stS();const ni=s.gal.filter(e=>e.k=='ni');
+    if(n!==8||ni.length!==8||ni.map(e=>e.d).join()!==old.join()||ni.some(e=>!e.h))bad(cur+': neon drawings not all moved in order: '+n+' '+ni.length);
+    if(store[key]!==raw)bad(cur+': the old neon store was changed');if(artNeonMigrate()!==0||stS().gal.filter(e=>e.k=='ni').length!==8)bad(cur+': moved twice');
+    const sv2=JSON.parse(store[SKEY]);if(!sv2.studio||sv2.studio.gal.filter(e=>e.k=='ni').length!==8)bad(cur+': moved drawings not saved');
+    for(let i=0;i<40;i++)galAdd({k:'fp',n:'x'+i,d:'#'});if(stS().gal.filter(e=>e.k=='ni').length!==8)bad(cur+': a moved neon drawing was trimmed');
+    PRF.cur='p1'}
+  load(fx('midway'));store['starschool-neon']='not json';if(artNeonMigrate()!==0||!stS().nm)bad('a damaged neon store breaks the move');
+  // 7. packs open in order, star by star; each opens once; the next-goal line follows
+  load(fx('fresh'));const goals=new Set();let opened=[];
+  for(const pk2 of ART_PACKS){if(!artPackOpen(pk2))bad(pk2.id+' is not open when the packs before it are full');
+    for(const k of pk2.pics){goals.add(artNextGoal());const st=artStars(),nxt=ART_PACKS.find(q=>!artPackOpen(q,st));
+      const d=artDone({k:'v',key:k,n:artName(k),d:{p:[],s:''},star:true});if(d.opened)opened.push(d.opened.id);
+      if(nxt&&artStars()<nxt.need&&artPackOpen(nxt))bad(nxt.id+' opened early')}}
+  if(opened.join()!==ART_PACKS.slice(1).map(q=>q.id).join())bad('packs opened out of order: '+opened.join());
+  if(artStars()!==ART_ALL.length||goals.size<ART_ALL.length-2)bad('stars '+artStars()+', goal lines '+goals.size);
+  if(!/Every pack is full/.test(artNextGoal()))bad('last goal line: '+artNextGoal());
+  // pictures finished before G-ART2 count; a new pixel picture shows once its pack is open
+  load(fx('fresh'));S.cbn={done:{truck:1,heart:1},prog:{},art:[]};S.cbs={done:{elephant:1},prog:{},free:{}};
+  if(!artIsDone('px:truck')||!artIsDone('sh:elephant')||artStars()!==2)bad('old finished pictures do not count: '+artStars());
+  if(!cbOpen('heart')||!cbOpen('cat')||cbOpen('planet'))bad('which pixel pictures are open');
+  // 8. today's picture: from the date only, the same all day, many different ones; its bonus once a day
+  const days=Array.from({length:60},(_,i)=>{const d=new Date(2026,10,1+i);return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()});
+  const ks=days.map(d=>artDaily(d).key);if(days.some((d,i)=>artDaily(d).key!==ks[i]))bad('today\\'s picture is not the same for a date');
+  if(new Set(ks).size<40)bad('today\\'s picture repeats: '+new Set(ks).size+' of 60');
+  if(!ks.some(k=>/^m:/.test(k))||!ks.some(k=>/^g:/.test(k))||!ks.some(k=>ART_ALL.includes(k)))bad('today\\'s picture uses only some kinds');
+  load(fx('fresh'));S.coins=0;const tk=artDaily(today()).key;const d1=artDone({k:'v',key:tk,n:'x',d:{p:[],s:''},star:true}),d2=artDone({k:'v',key:tk,n:'x',d:{p:[],s:''},star:true});
+  if(!d1.daily||d2.daily||d1.coins<3||d2.coins)bad('today\\'s bonus: '+JSON.stringify([d1.coins,d2.coins]));
+  // 9. old saves: every fixture loads, keeps its coloured pictures and progress, and every menu draws; damaged values are mended
+  const prog=()=>JSON.stringify([S.studio&&S.studio.items||{},S.studio&&S.studio.order||[],...['done','prog','art'].map(k=>(S.cbn||{})[k]||(k=='art'?[]:{})),...['done','prog','free'].map(k=>(S.cbs||{})[k]||{})]);
+  for(const [n,raw] of FIX){load(raw);const keep=prog();
+    try{stS();artStars();artNextGoal();for(const t of ART_TABS)artMenuHTML(t[0]);classicHTML('shape');classicHTML('pixel')}catch(e){bad(n+': '+e.message)}
+    if(prog()!==keep)bad(n+': coloured pictures or progress changed')}
+  load(fx('midway'));S.studio={items:{'m:17':{f:{0:'c:#f97316',3:'s:#22c55e'},t:1}},order:['m:17'],pal:String.fromCodePoint(0x1F30A)+' Ocean',gal:'x',done:[1]};
+  s=stS();if(palKey(s.pal)!=='Ocean'||!Array.isArray(s.gal)||Array.isArray(s.done)||s.items['m:17'].f[3]!=='s:#22c55e'||s.order[0]!=='m:17')bad('a v155 studio save: '+JSON.stringify(s));
+  if(palKey('Forest')!=='Forest'||palKey(undefined)!=='Sunset')bad('palette names');
+  S.studio.gal=[null,{k:'v',v:'m:3',d:null,i:1},'x'];if(stS().gal.length!==1)bad('damaged gallery entries are not dropped');
+  // 10. no emoji in the menus, tools and palettes (drawn icons; the pictures inside are SVG)
+  load(fx('midway'));S.cbn={done:{},prog:{},art:[]};artDone({k:'v',key:'m:3',n:'Mandala',d:pk,star:true});
+  const html=ART_TABS.map(t=>artMenuHTML(t[0])).concat(['shape','pixel','paint'].map(classicHTML),[artBarHTML('Sunset','c'),neonBarHTML(8,1,'neon',6),artHubLine(),Object.keys(AIC).map(k=>artIco(k)).join(''),NEON_SY.map(n=>artIco(n)).join('')]);
+  html.forEach((h,i)=>{const m=h.match(PIC);if(m)bad('emoji in menu/tools '+i+': '+m[0]);if(/undefined|NaN|\\[object /.test(h))bad('menu '+i+' has undefined/NaN')});
+  if(ART_TOOLS.length<7||!['k','m','s','r'].every(t=>ART_TOOLS.some(x=>x[0]==t)))bad('crayon, marker, glitter and rainbow tools');
+  const defs=new Set();defs.out=[];for(const t of ['k','m','s','r','g'])if(!/^url\\(#/.test(fillVal(t+':#3b82f6',defs)))bad('fill '+t+' is not a texture');if(defs.out.length!==5)bad('fill textures: '+defs.out.length);
+  r.notes.push(ART_PACKS.length+' packs, '+ART_ALL.length+' pictures, '+CB_PICS.length+' pixel pictures');
+  return r})()`))();
+  p.push(...o.bad);
+  // sources: no emoji in the Art Studio files, tokens only in its CSS, nothing that loops forever, calm and reduced motion stop the sparkles
+  for(const f of ['66-colornum.js','68-lowpoly.js','70-art.js','72-shapes.js']){const m=fs.readFileSync(path.join(SRC,'js',f),'utf8').match(/\p{Extended_Pictographic}/u);if(m)p.push(f+': emoji '+m[0])}
+  const css=fs.readFileSync(path.join(SRC,'css','49-game-art.css'),'utf8');
+  if(/#[0-9a-fA-F]{3,8}\b/.test(css))p.push('49-game-art.css has a raw colour');if(/infinite/.test(css))p.push('49-game-art.css loops forever');
+  if(!/html\.calm \.art-spk\{display:none\}/.test(css)||!/prefers-reduced-motion:reduce\)\{\.art-spk\{display:none\}\}/.test(css))p.push('sparkles show in calm mode or with reduced motion');
+  const a=fs.readFileSync(path.join(SRC,'js','70-art.js'),'utf8');
+  if(!/function artSparkle\(el,then\)\{if\(artCalm\(\)/.test(a))p.push('artSparkle must draw nothing in calm mode or with reduced motion');
+  if(!/function artMusicOk\(\)\{return S\.sound&&S\.music!==false&&!S\.calm\}/.test(a)||/\bsynth\(/.test(a))p.push('the music must follow Sound, Music and calm mode (tone(), never synth())');
+  if(partOf('49-game-art.css')!=='games2'||partOf('70-art.js')!=='games')p.push('Art Studio files are not in the games parts');
+  return{problems:p,note:o.notes.join('; ')};
 });
 
 // ---- G-04a: Snack Stand (src/js/65-game-snack.js, src/css/49-game-snack.css; games2 part) ----

@@ -8452,6 +8452,147 @@ async function main() {
         '(a 5th block refused with its size, 3 stars), the next goal moves on, Sunny Beach locked, a world saved to the gallery and shown on the menu');
     }
 
+    // G-ART2 Art Studio by real touch (CDP touch events), midway save with 20 min of game time and two Neon pictures in the old
+    //    separate store, the real clock. At 380x780 and 1024x600: Home -> Game Room -> Coloring opens on the picture packs (next goal,
+    //    today's picture, packs; the two Neon pictures are in the gallery with a heart, the old store untouched); the first pack picture
+    //    (Kitty, pixel art) has squares of 32 px or more and a tap colours a square; Pause -> Quit back to the packs; a mandala coloured by
+    //    taps, Done -> the end card with the framed picture -> My gallery shows it first -> its big view opens and closes; a Neon drawing
+    //    drawn with one finger -> Done -> kept as strokes. Every button 48 px or more (Done 64), no emoji in the menus and tools, no
+    //    sideways scroll.
+    {
+      const bad = [], notes = [];
+      for (const [w, h] of [[380, 780], [1024, 600]]) {
+        const at = w + 'x' + h + ' ';
+        const ga = await openApp(browser, { fixture: 'midway', width: w, height: h, speed: 1 });
+        const pg = ga.page;
+        let stage = 'open';
+        try {
+          const cdp = await pg.context().newCDPSession(pg);
+          await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
+          const T = (x, y, id = 1) => ({ x: Math.round(x), y: Math.round(y), radiusX: 6, radiusY: 6, force: 1, id });
+          const send = (type, touchPoints) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints });
+          const tap = async ([x, y]) => { await send('touchStart', [T(x, y)]); await pg.waitForTimeout(40); await send('touchEnd', []); await pg.waitForTimeout(150); };
+          const tapSel = async sel => {
+            const r = await pg.evaluate(s => { const e = document.querySelector(s); if (!e) return null; e.scrollIntoView({ block: 'nearest', inline: 'nearest' }); const b = e.getBoundingClientRect(); return [b.left + b.width / 2, b.top + b.height / 2]; }, sel);
+            if (!r) throw new Error('no ' + sel);
+            await pg.waitForTimeout(80);
+            await tap(r);
+          };
+          const look = (what, main) => pg.evaluate(([what, main]) => {
+            const out = [], vw = document.documentElement.clientWidth;
+            for (const e of document.querySelectorAll('#app button, .gh-ovl button, .sheet button')) {
+              const r = e.getBoundingClientRect();
+              if (!r.width || r.bottom < 0 || r.top > innerHeight) continue;
+              const min = main && e.matches(main) ? 63.5 : 47.5;
+              if (Math.min(r.width, r.height) < min) out.push(what + ': small ' + (e.id || e.className) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
+            }
+            if (document.documentElement.scrollWidth > vw + 1) out.push(what + ': sideways scroll');
+            for (const s of document.querySelectorAll('#app .scroll')) if (s.scrollWidth > s.clientWidth + 1) out.push(what + ': sideways scroll in ' + s.className);
+            const tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+            for (let n; (n = tw.nextNode());) { const el = n.parentElement; if (!el || el.closest('svg') || !el.getClientRects().length) continue; const m = n.textContent.match(/\p{Extended_Pictographic}/u); if (m) out.push(what + ': emoji ' + m[0] + ' in ' + (el.id || el.className)); }
+            return out;
+          }, [what, main || '']);
+          stage = 'seed';
+          await pg.evaluate(() => {
+            window.say = () => {}; S.pt = { bank: 1200, day: today(), used: 0 }; save();
+            const c = document.createElement('canvas'); c.width = c.height = 40; const x = c.getContext('2d'); x.fillStyle = '#05010f'; x.fillRect(0, 0, 40, 40); x.fillStyle = '#ff00aa'; x.fillRect(10, 10, 20, 20);
+            window.__neon = [c.toDataURL('image/jpeg', .8), c.toDataURL('image/png')]; localStorage.setItem(PRF.k('starschool-neon'), JSON.stringify(window.__neon)); home();
+          });
+          stage = 'packs';
+          await tapSel('#groom');
+          await pg.waitForSelector('#gcbn', { timeout: 30000 });
+          await tapSel('#gcbn');
+          await pg.waitForSelector('.art-goal');
+          await pg.waitForTimeout(500);
+          const pk = await pg.evaluate(() => ({ goal: document.querySelector('#artgoal').textContent, day: !!document.querySelector('[data-day]'), packs: document.querySelectorAll('.art-pack').length,
+            shut: document.querySelectorAll('.art-pack.shut').length, ni: stS().gal.filter(e => e.k == 'ni' && e.h).length, old: localStorage.getItem(PRF.k('starschool-neon')) === JSON.stringify(window.__neon),
+            first: (document.querySelector('.sttile[data-k]') || {}).dataset.k }));
+          if (!/^Finish the /.test(pk.goal) || !pk.day || pk.packs != 8 || pk.shut < 6 || pk.ni != 2 || !pk.old || pk.first != 'px:cat') bad.push(at + 'packs menu: ' + JSON.stringify(pk));
+          bad.push(...await look(at + 'packs'));
+          stage = 'pixel';
+          await tapSel('.sttile[data-k]');
+          await pg.waitForSelector('#cbc');
+          await pg.waitForTimeout(400);
+          const px = await pg.evaluate(() => { const r = document.querySelector('#cbc').getBoundingClientRect(), v = document.querySelector('#pxv').getBoundingClientRect(), d = cbData('cat');
+            const i = d.num.findIndex((n, j) => n == 1 && r.left + (j % 16 + .5) * r.width / 16 > v.left + 4 && r.left + (j % 16 + .5) * r.width / 16 < v.right - 4 && r.top + ((j / 16 | 0) + .5) * r.width / 16 < v.bottom - 4);
+            return { sq: r.width / 16, i, pt: [r.left + (i % 16 + .5) * r.width / 16, r.top + ((i / 16 | 0) + .5) * r.width / 16], in: v.right <= innerWidth + 1 }; });
+          if (px.sq < 32 || px.i < 0 || !px.in) bad.push(at + 'pixel squares: ' + JSON.stringify(px));
+          const c0 = await pg.evaluate(() => document.querySelector('#cbc').dataset.n);
+          await tap(px.pt);
+          await pg.waitForTimeout(200);
+          const c1 = await pg.evaluate(() => ({ p: document.querySelector('#cbc').dataset.n }));
+          if (+c1.p != +c0 + 1) bad.push(at + 'a tap on a square did not colour it: ' + c0 + ' ' + c1.p);
+          bad.push(...await look(at + 'pixel', '#adone'));
+          notes.push(at + 'pixel squares ' + Math.round(px.sq) + ' px');
+          await tapSel('#gpause');
+          await pg.waitForSelector('.sheet-bg.on #gquit');
+          await pg.waitForTimeout(450);
+          await tapSel('#gquit');
+          await pg.waitForSelector('.art-goal');
+          stage = 'mandala';
+          await tapSel('[data-t="mandala"]');
+          await pg.waitForSelector('.sttile[data-k^="m:"]');
+          await tapSel('.sttile[data-k^="m:"]');
+          await pg.waitForSelector('#stsvg');
+          await pg.waitForTimeout(400);
+          const g0 = await pg.evaluate(() => stS().gal.length);
+          for (let k = 0; k < 10; k++) {
+            const pt = await pg.evaluate(k => { const ps = [...document.querySelectorAll('#stsvg path[data-i]')].filter(p => !p.getAttribute('pointer-events')); const p = ps[(k * 17 + 3) % ps.length], b = p.getBoundingClientRect();
+              for (let y = .3; y < .8; y += .1) for (let x = .3; x < .8; x += .1) { const X = b.left + b.width * x, Y = b.top + b.height * y; if (document.elementFromPoint(X, Y) === p) return [X, Y]; } return null; }, k);
+            if (pt) await tap(pt);
+            if (k == 4) await tapSel('[data-md="k"]');
+          }
+          const col = await pg.evaluate(() => Object.keys((stS().items[Object.keys(stS().items).find(k => k[0] == 'm') || ''] || { f: {} }).f).length);
+          if (!(col > 8)) bad.push(at + 'mandala taps coloured only ' + col + ' pieces');
+          bad.push(...await look(at + 'mandala', '#adone'));
+          await tapSel('#adone');
+          await pg.waitForSelector('.gh-end #agal', { timeout: 8000 });
+          await pg.waitForTimeout(500);
+          const end = await pg.evaluate(() => ({ frame: !!document.querySelector('.gh-end .art-frame svg'), n: stS().gal.length, k: stS().gal[0].k, v: stS().gal[0].v, title: document.querySelector('.gh-end h1').textContent }));
+          if (!end.frame || end.n != g0 + 1 || end.k != 'v' || !/^m:/.test(end.v)) bad.push(at + 'Done on a mandala: ' + JSON.stringify(end));
+          bad.push(...await look(at + 'end card', '#amore'));
+          stage = 'gallery';
+          await tapSel('#agal');
+          await pg.waitForSelector('[data-gi]');
+          await pg.waitForTimeout(400);
+          const gl = await pg.evaluate(() => ({ first: +document.querySelector('[data-gi]').dataset.gi, want: stS().gal[0].i, pic: !!document.querySelector('[data-gi] .art-th svg') }));
+          if (gl.first != gl.want || !gl.pic) bad.push(at + 'gallery: ' + JSON.stringify(gl));
+          await tapSel('[data-gi]');
+          await pg.waitForSelector('.sheet-bg.on .art-big');
+          await pg.waitForTimeout(400);
+          bad.push(...await look(at + 'big view'));
+          await tapSel('#gcls');
+          await pg.waitForTimeout(600);
+          stage = 'neon';
+          await tapSel('[data-t="neon"]');
+          await pg.waitForSelector('#newn');
+          await tapSel('#newn');
+          await pg.waitForSelector('#ncv');
+          await pg.waitForTimeout(300);
+          const b = await pg.evaluate(() => { const r = document.querySelector('#ncv').getBoundingClientRect(); return [r.left, r.top, r.width]; });
+          await send('touchStart', [T(b[0] + b[2] * .55, b[1] + b[2] * .3)]);
+          for (let s = 1; s <= 14; s++) { await send('touchMove', [T(b[0] + b[2] * (.55 + Math.sin(s / 3) * .15), b[1] + b[2] * (.3 + s * .02))]); await pg.waitForTimeout(16); }
+          await send('touchEnd', []);
+          await pg.waitForTimeout(200);
+          bad.push(...await look(at + 'neon', '#adone'));
+          await tapSel('#adone');
+          await pg.waitForSelector('.gh-end #amore', { timeout: 8000 });
+          const ne = await pg.evaluate(() => { const e = stS().gal[0]; return { k: e.k, n: e.d && e.d.s && e.d.s.length, pts: e.d && e.d.s && e.d.s[0].p.length / 4, saved: JSON.parse(localStorage.getItem(SKEY)).studio.gal[0].i == e.i }; });
+          if (ne.k != 'n' || ne.n != 1 || !(ne.pts > 5) || !ne.saved) bad.push(at + 'Neon Done: ' + JSON.stringify(ne));
+          await tapSel('#amore');
+          await pg.waitForSelector('.sttabs');
+          notes.push(at + 'gallery ' + (await pg.evaluate(() => stS().gal.length)) + ' pictures, mandala ' + col + ' pieces');
+        } catch (e) { bad.push(at + stage + ': ' + e.message.split('\n')[0]); }
+        network.push(...ga.network);
+        for (const e of ga.errors) fail(e);
+        await ga.ctx.close();
+      }
+      if (bad.length) fail('G-ART2 Art Studio:\n  ' + [...new Set(bad)].slice(0, 40).join('\n  '));
+      else step('G-ART2 Art Studio by real touch at 380x780 and 1024x600 (' + notes.join(', ') + '): packs menu with the next goal and today\'s picture, ' +
+        'old Neon pictures moved into the gallery (old store untouched); pixel art with 32 px+ squares coloured by a tap; a mandala coloured by taps, Done -> framed end card -> ' +
+        'My gallery shows it first and its big view; a Neon drawing kept as strokes; 48 px targets (Done 64), no emoji, no sideways scroll');
+    }
+
     // G-04a Snack Stand (src/js/65-game-snack.js, games2 part). Midway save with 20 min of game time, real touch (CDP touch events,
     //    touch emulation on) at 380x780 and 1024x600: Home -> Game Room -> the Snack Stand card -> the menu (shared bar, 5 places, only the
     //    park open, Calm) -> Open the stand -> a Calm day: every customer served by touching the station tabs and the food the order

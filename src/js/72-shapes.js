@@ -118,7 +118,7 @@ function shSVG(d,fills,opts={}){const lit=r=>{const f=fills[r.i];return r.o.fix|
   return`<svg viewBox="0 0 300 300" class="${opts.cls||''}" ${opts.id?`id="${opts.id}"`:''}>${SHN}${d.R.map(r=>`<path d="${r.d}" data-i="${r.i}" fill="${r.o.fix?CB_COL[r.c][0]:fills[r.i]||(opts.faded?shade(CB_COL[r.c][0],.72):'#fff')}" stroke="#27272a" stroke-width="${opts.thin?1.6:2.4}" stroke-linejoin="round"/>${lit(r)&&r.i>0?`<path d="${r.d}" fill="url(#shn)" pointer-events="none"/>`:''}`).join('')}${opts.labels||''}</svg>`}
 function shMenuItems(lv){const cs=shS();return SHAPES.filter(([id])=>!lv||shDiff(id)==lv).map(([id,n])=>{const d=shData(id),done=cs.done[id],pr=cs.prog[id]||[],fl={};
   if(done)d.R.forEach(r=>fl[r.i]=CB_COL[r.c][0]);else pr.forEach(i=>fl[i]=CB_COL[d.R[i].c][0]);const free=cs.free[id];
-  const tot=d.R.filter(r=>!r.o.fix).length;return`<button class="btn cbitem" data-sh="${id}">${shSVG(d,free&&!done&&!pr.length?free:fl,{thin:1,faded:!done&&!pr.length&&!free,cls:'shthumb'})}<b>${n}</b><span class="small">${done?'✅ Done':pr.length?Math.round(pr.length/tot*100)+'%':free?'🖌️ Colored':'New'}</span></button>`}).join('')}
+  const tot=d.R.filter(r=>!r.o.fix).length;return`<button class="btn cbitem" data-sh="${id}">${shSVG(d,free&&!done&&!pr.length?free:fl,{thin:1,faded:!done&&!pr.length&&!free,cls:'shthumb'})}<b>${n}</b><span class="small">${done?ico('check',18)+' Done':pr.length?Math.round(pr.length/tot*100)+'%':free?'Colored':'New'}</span></button>`}).join('')}
 
 function shapePage(id,mode){const d=shData(id),cs=shS(),free=mode=='free',fills={};let sel=free?'rojo':1;
   const filled=new Set(free?[]:(cs.prog[id]||[]));if(free){Object.assign(fills,cs.free[id]||{})}else filled.forEach(i=>fills[i]=CB_COL[d.R[i].c][0]);
@@ -126,8 +126,8 @@ function shapePage(id,mode){const d=shData(id),cs=shS(),free=mode=='free',fills=
   const ml=mode=='math3'?3:mode=='math2'?2:1,esHard=mode=='es2';if(mode.startsWith('math'))mode='math';if(esHard)mode='es';const facts=d.keys.map((k,i)=>mode=='math'?cbFact(i+1,ml):null);
   const pal=free?FP_COLS.concat(['gris oscuro','café oscuro','azul oscuro','beige','turquesa']).map(k=>`<button class="btn chip" data-k="${k}" style="--cc:${CB_COL[k][0]}"><span class="sw"></span></button>`).join('')
     :d.keys.map((k,i)=>`<button class="btn chip ${esHard?'eshard':''} ${mode=='math'&&ml>1?'wide':''}" data-n="${i+1}" style="--cc:${CB_COL[k][0]}"><span class="sw"></span><b>${mode=='math'?facts[i]:esHard?'':i+1}</b>${mode=='es'?`<small>${k}</small>`:''}</button>`).join('');
-  view(`${GH.top('art',{play:true,sub:d.name,tools:free?GH.tool('trash','Clear','shclr'):'',chips:free?'':'<span class="stat gh-st" aria-label="Colored"><b id="cbp">0%</b></span>'})}
-   <div class="cbwrap"><div class="cbcv shwrap" id="shw"></div><div class="cbpal ${free?'fp':''}">${pal}</div></div>`);
+  view(`${GH.top('art',{play:true,sub:d.name,tools:(free?GH.tool('trash','Clear','shclr'):'')+artMusicTool(),chips:free?'':'<span class="stat gh-st" aria-label="Colored"><b id="cbp">0%</b></span>'})}
+   <div class="cbwrap"><div class="cbcv shwrap" id="shw"></div><div class="cbpal ${free?'fp':''}">${pal}${UI.btn('Done',{kind:'primary',icon:'check',id:'adone',cls:'art-done'})}</div></div>`);
   const w=$('#shw');
   function render(){const sz=cbLayout(free?18:d.keys.length)*CBN;w.style.width=w.style.height=sz+'px';
     const labels=free?'':regs.filter(r=>!filled.has(r.i)).map(r=>`<text data-l="${r.i}" class="shl ${r.n==sel?'on':''}" text-anchor="middle" dominant-baseline="central">${r.n}</text>`).join('');
@@ -145,55 +145,89 @@ function shapePage(id,mode){const d=shData(id),cs=shS(),free=mode=='free',fills=
     filled.add(r.i);fills[r.i]=CB_COL[r.c][0];SFX.pop(filled.size%6);cs.prog[id]=[...filled];save();render();if(esHard){const c=$(`.chip[data-n="${r.n}"]`);if(c)c.classList.add('found')}
     if(regs.every(x=>filled.has(x.i)))finish()});
   if(free)$('#shclr').onclick=()=>{for(const k in fills)delete fills[k];cs.free[id]={};save();SFX.whoosh();render()};
-  GH.wire({quit:()=>{gtStop();classicColor('shape')}});
-  function finish(){cs.done[id]=1;delete cs.prog[id];S.coins+=5;save();gtStop();SFX.fanfare();
-    setTimeout(()=>{const all={};d.R.forEach(r=>all[r.i]=CB_COL[r.c][0]);
-      // P4-16: the shared end card with the finished picture
-      const o=GH.end('art',{win:true,made:true,pic:shSVG(d,all),title:`You colored the ${d.name}!`,stats:[['+5','coins','coin']],
-        btns:UI.btn('More pictures',{kind:'primary',size:'lg',icon:'palette',id:'cbm',wide:true})});if(S.voice)say(`Beautiful! You colored the ${d.name}!`);o.querySelector('#cbm').onclick=()=>{o.remove();classicColor('shape')}},600)}
+  GH.wire({quit:()=>{gtStop();artMusic(false);artBack()}});artMusicWire();
+  // G-ART2: Done keeps the picture in the gallery (a free picture a third colored wins its star); the last number finishes it
+  const shPack=fl=>{const o={};for(const k in fl)o[k]='c:'+fl[k];return artPack(o,d.R.length)};
+  $('#adone').onclick=()=>{const cnt=free?Object.keys(fills).length:filled.size;if(!cnt){fb('Color a piece first, then tap Done.','warn',2000);return}
+    if(!free&&regs.every(x=>filled.has(x.i)))return;const star=free&&cnt*3>=regs.length,cur=Object.assign({},fills);
+    artSparkle(w,()=>{const res=artDone({k:'sh',key:'sh:'+id,n:d.name,d:shPack(cur),star});
+      artEnd(res,{n:d.name,star,keep:true,why:free?`Color ${Math.ceil(regs.length/3)-cnt} more pieces to win its star.`:'Color every piece by number to win its star.',pic:shSVG(d,cur)})})};
+  function finish(){delete cs.prog[id];save();gtStop();const all={};d.R.forEach(r=>all[r.i]=CB_COL[r.c][0]);
+    setTimeout(()=>artSparkle(w,()=>{const res=artDone({k:'sh',key:'sh:'+id,n:d.name,d:shPack(all),star:true,coins:5});cs.done[id]=1;save();
+      artEnd(res,{n:d.name,pic:shSVG(d,all)})}),400)}
   pick(sel);let rs;addEventListener('resize',()=>{clearTimeout(rs);rs=setTimeout(()=>{if($('#shw'))render()},120)});
   gtStart('#gtm',()=>timeUpOverlay());
   if(S.voice)setTimeout(()=>say(free?'Pick a color and tap to paint!':mode=='math'?'Solve the fact to find each color!':mode=='es'?'Tap a color to hear it in Spanish!':'Match the numbers to the colors!'),300)}
 
 function cbLayout(n){const land=innerWidth>innerHeight,avW=land?innerWidth-260:innerWidth-24,avH=land?innerHeight-80:innerHeight-80-(n>6?190:120);return Math.max(14,Math.floor(Math.min(avW,avH)/CBN))}
+// G-ART2 (R-03 T2): pixel art that looks like art. Squares are at least 32 px (pxCell); on a phone the picture is bigger than the
+// screen: two fingers (or the Move tool) move it, pinch or the zoom tool shows it whole. A coloured square is a bead with a light
+// edge and its number fades away; unfinished squares show a faint tint of their colour. Done keeps it in the gallery; the last
+// square shows the finished picture in a frame.
+function pxCell(W,H,n){const land=W>H,avW=land?W-260:W-24,avH=land?H-80:H-80-(n>6?200:130);return Math.max(32,Math.floor(Math.min(avW,avH)/CBN))}
+// the room the picture has on screen: below the top bar, beside (landscape) or above (portrait) the palette as it is laid out
+function pxArea(n){const land=innerWidth>innerHeight,t=$('.gh-top'),pal=$('.cbpal'),top=t?t.getBoundingClientRect().bottom+8:84;
+  if(land)return[innerWidth-(pal?pal.getBoundingClientRect().width+44:260),innerHeight-top-12];return[innerWidth-24,innerHeight-top-(pal?pal.getBoundingClientRect().height+28:(n>6?200:130))]}
 function colorPic(id,mode){const d=cbData(id),cs=cbS(),fill=(cs.prog[id]||'0'.repeat(CBN*CBN)).split('');let sel=1,count=fill.filter(c=>c=='1').length;
   const ml=mode=='math3'?3:mode=='math2'?2:1,esHard=mode=='es2';if(mode.startsWith('math'))mode='math';if(esHard)mode='es';const facts=d.keys.map((k,i)=>mode=='math'?cbFact(i+1,ml):null);
-  view(`${GH.top('art',{play:true,sub:d.name,chips:'<span class="stat gh-st" aria-label="Colored"><b id="cbp">0%</b></span>'})}
-   <div class="cbwrap"><div class="cbcv"><canvas id="cbc" role="img" aria-label="Your picture"></canvas></div><div class="cbpal">${d.keys.map((k,i)=>`<button class="btn chip" data-n="${i+1}" style="--cc:${CB_COL[k][0]}"><span class="sw"></span><b>${mode=='math'?facts[i]:i+1}</b>${mode=='es'?`<small>${k}</small>`:''}</button>`).join('')}</div></div>`);
-  const cv=$('#cbc'),x=cv.getContext('2d');let cs2=cbLayout(d.keys.length),dpr=Math.min(2,devicePixelRatio||1),flash=-1,flashT=0;
-  const size=()=>{cs2=cbLayout(d.keys.length);cv.width=cv.height=cs2*CBN*dpr;cv.style.width=cv.style.height=cs2*CBN+'px';draw()};
-  function draw(){const s=cs2*dpr;x.clearRect(0,0,cv.width,cv.height);x.textAlign='center';x.textBaseline='middle';x.font=`bold ${Math.floor(s*.5)}px Andika, sans-serif`;
-    d.num.forEach((n,i)=>{const cx=(i%CBN)*s,cy=Math.floor(i/CBN)*s;if(fill[i]=='1'){x.fillStyle=CB_COL[d.G[i]][0];x.fillRect(cx,cy,s+.5,s+.5)}
-      else{x.fillStyle=n==sel?'#fef9c3':'#fff';x.fillRect(cx,cy,s,s);x.strokeStyle='#e7e5e4';x.lineWidth=1;x.strokeRect(cx+.5,cy+.5,s-1,s-1);x.fillStyle=n==sel?'#1d4ed8':'#a8a29e';x.fillText(n,cx+s/2,cy+s/2+1)}
+  view(`${GH.top('art',{play:true,sub:d.name,tools:`<button class="btn icon sm gh-tool" id="pmove" aria-label="Move the picture" aria-pressed="false">${artIco('move',26)}</button>`+GH.tool('eye','Zoom','pzm')+artMusicTool(),chips:'<span class="stat gh-st" aria-label="Colored"><b id="cbp">0%</b></span>'})}
+   <div class="cbwrap"><div class="cbcv pxv" id="pxv"><canvas id="cbc" role="img" aria-label="Your picture: tap a square with the chosen number"></canvas></div><div class="cbpal">${d.keys.map((k,i)=>`<button class="btn chip" data-n="${i+1}" style="--cc:${CB_COL[k][0]}"><span class="sw"></span><b>${mode=='math'?facts[i]:i+1}</b>${mode=='es'?`<small>${k}</small>`:''}</button>`).join('')}${UI.btn('Done',{kind:'primary',icon:'check',id:'adone',cls:'art-done'})}</div></div>`);
+  const vw$=$('#pxv'),cv=$('#cbc'),x=cv.getContext('2d'),dpr=Math.min(2,devicePixelRatio||1),fade=new Map();
+  let cell=pxCell(innerWidth,innerHeight,d.keys.length),fit=cell,ox=0,oy=0,VW=0,VH=0,flash=-1,flashT=0,moving=false,anim=0;
+  const place=()=>{const W=CBN*cell;ox=W<=VW?(VW-W)/2:Math.min(0,Math.max(VW-W,ox));oy=W<=VH?(VH-W)/2:Math.min(0,Math.max(VH-W,oy));cv.style.transform=`translate(${ox}px,${oy}px)`};
+  const layout=(keep)=>{const[aw,ah]=pxArea(d.keys.length);fit=Math.max(12,Math.floor(Math.min(aw,ah)/CBN));if(!keep)cell=pxCell(innerWidth,innerHeight,d.keys.length);
+    VW=Math.min(aw,CBN*Math.max(cell,fit));VH=Math.min(ah,CBN*Math.max(cell,fit));vw$.style.width=VW+'px';vw$.style.height=VH+'px';
+    cv.width=cv.height=Math.round(CBN*cell*dpr);cv.style.width=cv.style.height=CBN*cell+'px';place();draw()};
+  function draw(){const s=cell*dpr,now=performance.now();x.clearRect(0,0,cv.width,cv.height);x.fillStyle='#f5f5f4';x.fillRect(0,0,cv.width,cv.height);
+    x.textAlign='center';x.textBaseline='middle';x.font=`bold ${Math.floor(s*.46)}px Andika, sans-serif`;let live=false;
+    d.num.forEach((n,i)=>{const cx=(i%CBN)*s,cy=Math.floor(i/CBN)*s,c=CB_COL[d.G[i]][0];
+      if(fill[i]=='1'){pxBead(x,cx,cy,s,c);const f=fade.get(i);if(f!=null){const a=1-(now-f)/320;if(a>0){live=true;x.globalAlpha=a;x.fillStyle='#fff';x.fillText(n,cx+s/2,cy+s/2+1);x.globalAlpha=1}else fade.delete(i)}}
+      else{x.fillStyle=n==sel?'#fef08a':shade(c,.86);x.fillRect(cx+1,cy+1,s-2,s-2);x.fillStyle=n==sel?'#1e3a8a':'#78716c';x.fillText(n,cx+s/2,cy+s/2+1)}
       if(i==flash){x.strokeStyle='#ef4444';x.lineWidth=3*dpr;x.strokeRect(cx+2,cy+2,s-4,s-4)}});
-    const pc=Math.round(count/fill.length*100),p=$('#cbp');if(p)p.textContent=pc+'%'}
+    const p=$('#cbp');if(p)p.textContent=Math.round(count/fill.length*100)+'%';cv.dataset.n=count;
+    cancelAnimationFrame(anim);if(live)anim=requestAnimationFrame(draw)}
   const pick=n=>{sel=n;$$('.chip').forEach(c=>c.classList.toggle('on',+c.dataset.n==n));const k=d.keys[n-1];if(mode=='es')say(k,null,'es');else SFX.pop(n);draw()};
   $$('.chip').forEach(c=>c.onclick=()=>pick(+c.dataset.n));
-  let down=false,dragged=false,last=-1;
-  const cellAt=e=>{const r=cv.getBoundingClientRect(),cx=Math.floor((e.clientX-r.left)/cs2),cy=Math.floor((e.clientY-r.top)/cs2);return cx>=0&&cy>=0&&cx<CBN&&cy<CBN?cy*CBN+cx:-1};
+  const cellAt=(px,py)=>{const r=cv.getBoundingClientRect(),cx=Math.floor((px-r.left)/cell),cy=Math.floor((py-r.top)/cell);return cx>=0&&cy>=0&&cx<CBN&&cy<CBN?cy*CBN+cx:-1};
   const paint=(i,tap)=>{if(i<0||fill[i]=='1')return;if(d.num[i]!=sel){if(tap){SFX.wrong();flash=i;clearTimeout(flashT);flashT=setTimeout(()=>{flash=-1;draw()},500);draw();
       if(mode=='es')say(d.keys[d.num[i]-1],null,'es')}return}
-    fill[i]='1';count++;SFX.pop(count%6);draw();
+    fill[i]='1';count++;if(!artCalm())fade.set(i,performance.now());SFX.pop(count%6);draw();
     if(count%16==0){cs.prog[id]=fill.join('');save()}
     if(fill.every(c=>c=='1'))finishPic()};
-  cv.addEventListener('pointerdown',e=>{e.preventDefault();down=true;dragged=false;last=cellAt(e);try{cv.setPointerCapture(e.pointerId)}catch(_){}});
-  cv.addEventListener('pointermove',e=>{if(!down)return;const i=cellAt(e);if(i!=last){if(!dragged)paint(last,false);dragged=true;last=i;paint(i,false)}});
-  cv.addEventListener('pointerup',e=>{if(down&&!dragged)paint(cellAt(e),true);down=false});
+  // one finger colours (tap or drag); two fingers, or one with Move on, move the picture; pinch zooms
+  const ptrs=new Map();let one=null,pin=null;
+  vw$.addEventListener('pointerdown',e=>{e.preventDefault();try{vw$.setPointerCapture(e.pointerId)}catch(_){}ptrs.set(e.pointerId,[e.clientX,e.clientY]);
+    if(ptrs.size==1)one={x:e.clientX,y:e.clientY,ox,oy,i:cellAt(e.clientX,e.clientY),drag:false,pan:moving};
+    else if(ptrs.size==2){one=null;const[a,b]=[...ptrs.values()];pin={d:Math.hypot(a[0]-b[0],a[1]-b[1]),c:cell,mx:(a[0]+b[0])/2,my:(a[1]+b[1])/2,ox,oy}}});
+  vw$.addEventListener('pointermove',e=>{if(!ptrs.has(e.pointerId))return;ptrs.set(e.pointerId,[e.clientX,e.clientY]);
+    if(pin&&ptrs.size==2){const[a,b]=[...ptrs.values()],dd=Math.hypot(a[0]-b[0],a[1]-b[1]),mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2,nc=Math.max(fit,Math.min(64,pin.c*dd/Math.max(1,pin.d)));
+      const r=vw$.getBoundingClientRect(),k=nc/pin.c,px=pin.mx-r.left,py=pin.my-r.top;ox=px-(px-pin.ox)*k+(mx-pin.mx);oy=py-(py-pin.oy)*k+(my-pin.my);
+      if(Math.abs(nc-cell)>.5){cell=nc;cv.style.width=cv.style.height=CBN*cell+'px'}place();return}
+    if(!one)return;if(one.pan){ox=one.ox+e.clientX-one.x;oy=one.oy+e.clientY-one.y;place();return}
+    const i=cellAt(e.clientX,e.clientY);if(i!=one.i){if(!one.drag)paint(one.i,false);one.drag=true;one.i=i;paint(i,false)}});
+  const up=e=>{ptrs.delete(e.pointerId);if(pin&&ptrs.size<2){pin=null;cell=Math.round(cell);layout(true)}
+    if(one&&ptrs.size==0){if(!one.drag&&!one.pan)paint(cellAt(e.clientX,e.clientY),true);one=null}};
+  vw$.addEventListener('pointerup',up);vw$.addEventListener('pointercancel',e=>{ptrs.delete(e.pointerId);one=null;if(ptrs.size<2&&pin){pin=null;layout(true)}});
+  vw$.addEventListener('wheel',e=>{e.preventDefault();cell=Math.max(fit,Math.min(64,Math.round(cell*(e.deltaY>0?.88:1.14))));layout(true)},{passive:false});
+  $('#pmove').onclick=e=>{moving=!moving;e.currentTarget.classList.toggle('on',moving);e.currentTarget.setAttribute('aria-pressed',String(moving));fb(moving?'Move: drag to look around':'Color: tap and drag to color','ok',1400)};
+  $('#pzm').onclick=()=>{const big=pxCell(innerWidth,innerHeight,d.keys.length);cell=cell>fit?fit:big;layout(true);SFX.whoosh()};
   const leave=()=>{cs.prog[id]=fill.join('');save()};
-  GH.wire({quit:()=>{leave();gtStop();classicColor('pixel')}});
-  function finishPic(){leave();cs.done[id]=1;delete cs.prog[id];S.coins+=5;save();gtStop();draw();SFX.fanfare();
-    setTimeout(()=>{ // P4-16: the shared end card with the finished picture
-      const o=GH.end('art',{win:true,made:true,pic:`<img src="${cbThumb(d.G,true,200)}" alt="">`,title:`You finished ${d.name}!`,stats:[['+5','coins','coin']],
-        btns:UI.btn('More pictures',{kind:'primary',size:'lg',icon:'palette',id:'cbm',wide:true})});if(S.voice)say(`Beautiful! You finished ${d.name}!`);o.querySelector('#cbm').onclick=()=>{o.remove();classicColor('pixel')}},700)}
-  pick(1);size();let rs;const onR=()=>{clearTimeout(rs);rs=setTimeout(()=>{if($('#cbc'))size()},120)};addEventListener('resize',onR);
+  $('#adone').onclick=()=>{if(!count){fb('Color a square first, then tap Done.','warn',2000);return}if(fill.every(c=>c=='1'))return;leave();
+    artSparkle(vw$,()=>{const res=artDone({k:'px',key:'px:'+id,n:d.name,d:pxBits(fill),star:false});
+      artEnd(res,{n:d.name,star:false,keep:true,why:`Color every square to win its star (${fill.length-count} to go).`,pic:`<img class="px" src="${pxImg(d.G,fill,320)}" alt="">`})})};
+  GH.wire({quit:()=>{leave();gtStop();artMusic(false);artBack()}});artMusicWire();
+  function finishPic(){leave();gtStop();cell=fit;layout(true);
+    setTimeout(()=>artSparkle(vw$,()=>{const res=artDone({k:'px',key:'px:'+id,n:d.name,d:'all',star:true,coins:5});cs.done[id]=1;delete cs.prog[id];save();
+      artEnd(res,{n:d.name,pic:`<img class="px" src="${pxImg(d.G,fill,320)}" alt="">`})}),350)}
+  pick(1);layout();let rs;const onR=()=>{clearTimeout(rs);rs=setTimeout(()=>{if($('#cbc')&&$('#pxv'))layout()},120)};addEventListener('resize',onR);
   gtStart('#gtm',()=>{leave();timeUpOverlay()});
   if(S.voice)setTimeout(()=>say(mode=='math'?'Solve the fact to find each color!':mode=='es'?'Tap a color to hear it in Spanish!':'Match the numbers to the colors!'),300)}
 
 const FP_COLS=['rojo','naranja','amarillo','verde','verde oscuro','celeste','azul','morado','rosa','café','gris','negro','blanco'];
 function freePaint(ai){const cs=cbS();const G=ai>=0?cs.art[ai].split(',').map(k=>k||'blanco'):cbGrid('blanco');let sel='rojo',saved=ai>=0,idx=ai;
-  view(`${GH.top('art',{play:true,sub:'Free Paint',tools:GH.tool('download','Save to My Drawings','fsave')})}
+  view(`${GH.top('art',{play:true,sub:'Free Paint',tools:GH.tool('download','Save to My Drawings','fsave')+artMusicTool()})}
    <div class="cbwrap"><div class="cbcv"><canvas id="cbc" role="img" aria-label="Your picture"></canvas></div><div class="cbpal fp">${FP_COLS.map(k=>`<button class="btn chip" data-k="${k}" style="--cc:${CB_COL[k][0]}"><span class="sw"></span></button>`).join('')}
-    <button class="btn chip" data-k="fill" title="Fill">🪣</button><button class="btn chip" id="fclear">🗑️</button></div></div>`);
+    <button class="btn chip" data-k="fill" aria-label="Fill" title="Fill">${artIco('bucket',34)}</button><button class="btn chip" id="fclear" aria-label="Clear">${ico('trash',30)}</button>${UI.btn('Done',{kind:'primary',icon:'check',id:'adone',cls:'art-done'})}</div></div>`);
   const cv=$('#cbc'),x=cv.getContext('2d');let cs2=cbLayout(14),dpr=Math.min(2,devicePixelRatio||1),bucket=false;
   const size=()=>{cs2=cbLayout(14);cv.width=cv.height=cs2*CBN*dpr;cv.style.width=cv.style.height=cs2*CBN+'px';draw()};
   function draw(){const s=cs2*dpr;G.forEach((k,i)=>{x.fillStyle=CB_COL[k][0];x.fillRect((i%CBN)*s,Math.floor(i/CBN)*s,s+.5,s+.5)});x.strokeStyle='#0000000f';x.lineWidth=1;for(let i=1;i<CBN;i++){x.beginPath();x.moveTo(i*s,0);x.lineTo(i*s,CBN*s);x.moveTo(0,i*s);x.lineTo(CBN*s,i*s);x.stroke()}}
@@ -208,7 +242,9 @@ function freePaint(ai){const cs=cbS();const G=ai>=0?cs.art[ai].split(',').map(k=
   const doSave=()=>{const str=G.join(',');if(idx>=0)cs.art[idx]=str;else{cs.art.unshift(str);cs.art=cs.art.slice(0,12);idx=0}saved=true;save()};
   $('#fsave').onclick=()=>{doSave();SFX.fanfare();confetti(20);fb('Saved to My Drawings!')};
   $('#fclear').onclick=()=>{G.fill('blanco');SFX.whoosh();saved=false;draw()};
-  GH.wire({quit:()=>{if(!saved&&G.some(k=>k!='blanco'))doSave();gtStop();classicColor('paint')}});
+  $('#adone').onclick=()=>{if(!G.some(k=>k!='blanco')){fb('Paint a square first, then tap Done.','warn',2000);return}doSave();
+    artSparkle(cv,()=>{const res=artDone({k:'fp',n:'Block painting',d:G.map(k=>AB[Math.max(0,FP_COLS.indexOf(k))]).join(''),star:false});artEnd(res,{n:'Block painting',keep:true,pic:`<img class="px" src="${cbThumb(G,true,320)}" alt="">`})})};
+  GH.wire({quit:()=>{if(!saved&&G.some(k=>k!='blanco'))doSave();gtStop();artMusic(false);classicColor('paint')}});artMusicWire();
   pick('rojo');size();addEventListener('resize',()=>{if($('#cbc')&&$('.fp'))size()});
   gtStart('#gtm',()=>{if(G.some(k=>k!='blanco'))doSave();timeUpOverlay()})}
 
