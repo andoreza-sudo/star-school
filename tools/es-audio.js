@@ -3,6 +3,7 @@
 //                                   delete files no line uses any more. Prints the counts and the characters sent (what the API bills).
 //   node tools/es-audio.js --dry    collect and print the counts only (no API calls, nothing written)
 // The network proxy adds the real API key: the request carries "Authorization: Bearer proxy-injected" and no key is stored anywhere.
+// Recording, trimming, encoding and the file names are the shared recorder, tools/voice-audio.js (EN-PRAISE uses it too).
 // tools/test.js "recorded Spanish audio ES-AUDIO" uses collect() from this file (the same collector), so a new Spanish line
 // in the data or the generators fails the tests until this tool has been run and its files committed.
 //
@@ -23,7 +24,7 @@
 //   - the words of every second unit in ES_UNITS order (index 1, 3, 5 ...: colors, numbers 11-20, food, family, clothes, feelings,
 //     months, numbers to 100, places, action words): Eve, for variety
 //   A line is recorded once: a dialogue line takes its first speaker's voice, else a unit word takes its first unit's voice, else Leo.
-const fs = require('fs'), path = require('path'), vm = require('vm'), crypto = require('crypto'), os = require('os'), cp = require('child_process');
+const fs = require('fs'), path = require('path'), vm = require('vm');
 const ROOT = path.join(__dirname, '..'), SRC = path.join(ROOT, 'src');
 const DIR = 'audio/es/', EXT = '.ogg', SPEED = 0.9, LANG = 'es-MX';
 const FORMAT = 'xai-tts wav24k speed0.9 trim opus16k-mono ogg v1'; // part of every file's hash: changing the recipe records everything again
@@ -135,7 +136,8 @@ function harvest(q, from, add, addList, ctx) {
   for (const h of [q.html, q.ctx && q.ctx.html]) if (typeof h == 'string') for (const m of h.matchAll(/data-sayes="([^"]*)"/g)) add(unesc(m[1]), from);
 }
 
-const fileOf = (k, voice) => crypto.createHash('sha1').update(FORMAT + '\n' + voice + '\n' + k).digest('hex').slice(0, 12);
+const VA = require('./voice-audio.js'); // the shared recorder (EN-PRAISE uses it too)
+const fileOf = (k, voice) => VA.fileOf(FORMAT, voice, k);
 
 function manifestText(lines) {
   const keys = [...lines.keys()].sort();
@@ -149,44 +151,6 @@ function manifestText(lines) {
     + keys.map(k => JSON.stringify(k) + ':[' + JSON.stringify(fileOf(k, lines.get(k).voice)) + ',' + JSON.stringify(lines.get(k).voice) + ']').join(',\n') + '}};\n';
 }
 
-// ---- recording ----
-const sleep = ms => new Promise(r => setTimeout(r, ms));
-// curl, not fetch: curl follows the session's HTTPS proxy settings (Node's fetch does not). The body goes in on stdin, the audio comes out on stdout.
-function curl(body) {
-  return new Promise(res => {
-    const p = cp.spawn('curl', ['-sS', '--max-time', '120', '-w', '\n%{http_code}', '-X', 'POST', 'https://api.x.ai/v1/tts',
-      '-H', 'Authorization: Bearer proxy-injected', '-H', 'Content-Type: application/json', '--data-binary', '@-']);
-    const out = [], err = [];
-    p.stdout.on('data', d => out.push(d)); p.stderr.on('data', d => err.push(d));
-    p.on('close', code => {
-      const b = Buffer.concat(out), nl = b.lastIndexOf(10);
-      res({ code, status: nl >= 0 ? +b.slice(nl + 1).toString() : 0, body: nl >= 0 ? b.slice(0, nl) : b, err: Buffer.concat(err).toString().trim() });
-    });
-    p.stdin.end(JSON.stringify(body));
-  });
-}
-async function tts(text, voice) {
-  for (let a = 0; ; a++) {
-    const r = await curl({ text, voice_id: voice, language: LANG, speed: SPEED, output_format: { codec: 'wav', sample_rate: 24000 } });
-    let err;
-    if (r.status == 200 && r.body.length > 1000 && r.body.slice(0, 4).toString() == 'RIFF') return r.body;
-    err = r.status ? 'HTTP ' + r.status + ' ' + r.body.slice(0, 120).toString() : 'curl ' + r.code + ' ' + r.err;
-    const retry = !r.status || r.status == 200 || r.status == 429 || r.status >= 500;
-    if (!retry || a >= 6) throw new Error(err);
-    await sleep(Math.min(30000, 1000 * 2 ** a) + Math.random() * 500);
-  }
-}
-// trim the silence (keep 30 ms before and 120 ms after the voice), then Opus 16 kbps mono in Ogg, no tags
-function transcode(wav, out) {
-  const tmp = path.join(os.tmpdir(), 'esaudio-' + process.pid + '-' + crypto.randomBytes(4).toString('hex') + '.wav');
-  fs.writeFileSync(tmp, wav);
-  try {
-    cp.execFileSync('ffmpeg', ['-v', 'error', '-y', '-i', tmp, '-af',
-      'silenceremove=start_periods=1:start_threshold=-50dB:start_silence=0.03,areverse,silenceremove=start_periods=1:start_threshold=-50dB:start_silence=0.12,areverse',
-      '-ac', '1', '-c:a', 'libopus', '-b:a', '16k', '-application', 'voip', '-vbr', 'on', '-map_metadata', '-1', '-fflags', '+bitexact', '-flags:a', '+bitexact', out]);
-  } finally { fs.rmSync(tmp, { force: true }); }
-}
-
 async function main() {
   const dry = process.argv.includes('--dry');
   const t0 = Date.now(), { lines, fuzzNew } = collect();
@@ -194,31 +158,13 @@ async function main() {
   const chars = a => a.reduce((s, o) => s + o.text.length, 0);
   console.log(`lines: ${all.length} (Leo ${by('leo').length}, Eve ${by('eve').length}), ${chars(all)} characters; found only by the generator run: ${fuzzNew.size}` + (fuzzNew.size ? ' ' + JSON.stringify([...fuzzNew].slice(0, 12)) : '') + ` (${Date.now() - t0} ms)`);
   const dir = path.join(ROOT, DIR);
-  fs.mkdirSync(dir, { recursive: true });
-  const todo = all.filter(o => !fs.existsSync(path.join(dir, fileOf(o.text, o.voice) + EXT)));
-  console.log(`to record: ${todo.length} lines, ${chars(todo)} characters (already recorded: ${all.length - todo.length})`);
+  const { failed } = await VA.record(all.map(o => ({ text: o.text, voice: o.voice, file: fileOf(o.text, o.voice) })), { dir: DIR, ext: EXT, lang: LANG, speed: SPEED, dry });
   if (dry) return;
-  let done = 0, sent = 0, failed = [];
-  const queue = todo.slice();
-  const worker = async () => {
-    for (let o; (o = queue.shift());) {
-      try {
-        const wav = await tts(o.text, o.voice);
-        sent += o.text.length;
-        transcode(wav, path.join(dir, fileOf(o.text, o.voice) + EXT));
-        if (++done % 25 == 0) console.log(`  ${done}/${todo.length} recorded`);
-      } catch (e) { failed.push(o.text + ': ' + e.message); }
-    }
-  };
-  await Promise.all(Array.from({ length: 4 }, worker));
   // the manifest lists only lines whose file exists (a failed line keeps the tablet's voice until the next run)
   const have = new Map([...lines].filter(([k, o]) => fs.existsSync(path.join(dir, fileOf(k, o.voice) + EXT))));
   fs.writeFileSync(MANIFEST, manifestText(have));
-  const keep = new Set([...have].map(([k, o]) => fileOf(k, o.voice) + EXT)), gone = fs.readdirSync(dir).filter(f => !keep.has(f));
-  gone.forEach(f => fs.rmSync(path.join(dir, f)));
-  const bytes = [...keep].reduce((s, f) => s + fs.statSync(path.join(dir, f)).size, 0);
-  console.log(`recorded ${done}, characters sent ${sent}; failed ${failed.length}${failed.length ? ':\n  ' + failed.join('\n  ') : ''}`);
-  console.log(`manifest: ${have.size} lines, ${fs.statSync(MANIFEST).size} bytes; audio: ${keep.size} files, ${bytes} bytes; removed ${gone.length} old files`);
+  const keep = new Set([...have].map(([k, o]) => fileOf(k, o.voice) + EXT)), [gone, bytes] = VA.prune(DIR, EXT, keep);
+  console.log(`manifest: ${have.size} lines, ${fs.statSync(MANIFEST).size} bytes; audio: ${keep.size} files, ${bytes} bytes; removed ${gone} old files`);
   if (failed.length) process.exitCode = 1;
 }
 

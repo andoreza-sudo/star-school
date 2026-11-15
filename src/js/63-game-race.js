@@ -1,4 +1,4 @@
-/* ---------- Star Rally: the racing game (G-02, G-02b; CSS src/css/49-game-race.css; both go into games2.<VER>.js) ----------
+/* ---------- Star Rally: the racing game (G-02, G-02b, G-RALLY2; CSS src/css/49-game-race.css; both go into rally.<VER>.js) ----------
    An original Star School game. Races against five friendly animal drivers, seen from behind the car on a pseudo-3D road
    (the road is drawn in strips, cheap on a canvas). A race lasts about 60-90 seconds, then the shared end card.
 
@@ -21,12 +21,21 @@
      one clear next goal. Nothing is random in what you earn; nothing changes while the app is closed. No lives, no game over.
    - Rivals keep the race close (gentle catch-up); each race they get a seeded pace style (fast start or strong finish, the same
      on average) and the same small chance to miss a hazard. Nothing ever says "last" or shows red.
+   - G-RALLY2 (R-03 R1, R2, A1, A2, A4, A5): a second season. Maple Woods, a fifth place with three new layouts, and its Maple Cup
+     after the Star Cup; five mirror cups (every track raced the other way round: its sections reversed, bends and hills turned the
+     other way, new scenery) that open when the first four cups each have a trophy (or were each raced 3 times); a second garage
+     tier (body kits, wheels, horns, trails; 7,250 sparkles, every price shown) that opens when a mirror cup is raced to the end; the
+     next thing to save for on the menu; today's twist from the date (a track the other way round or in a weather; +25 sparkles the
+     first time a day, nothing lost on a missed day, no streak); a calm music loop per place (Music switch, never in Calm mode); a
+     short buzz on a crash and at the finish (Grown-ups "Buzz" switch, buzz() in 10-sfx.js, never in Calm mode).
 
    Game time: paid exactly like the other games (gtStart: 1 s a second while racing, held while paused or hidden, 20 s of grace,
    then the shared time-up card). A race cannot start without game time (ptLeft(), ptWhyNot()).
    Save: S.rally (created when the game is first opened; an old save loads unchanged): {spk, best: {track: ms}, stars: {track: 0-3},
    paint, paints: {hue: 1}, stk, stks: {id: 1}, body, mode, quiz, tilt, place, races} and from G-02b {cups: {cup: {best: 1-4, runs}},
-   cup: {id, i, pts: {who: n}} (a cup being raced), lap: {track: ms}, ghost: {track: {ms, g}}, upg: {grip, turbo, bumper}}.
+   cup: {id, i, pts: {who: n}} (a cup being raced), lap: {track: ms}, ghost: {track: {ms, g}}, upg: {grip, turbo, bumper}} and from
+   G-RALLY2 {kit, kits: {id: 1}, whl, whls, horn, horns, trail, trails, tw (the date today's twist paid its bonus)}; the mirror and
+   Maple tracks use the same maps (stars, best, lap, ghost) under their own ids ('meadow-0m', 'woods-1').
    Drawing: object-art style (DESIGN_SYSTEM 6.5). Sprites are SVG in the --a-* roles, turned into cached canvases once (with
    half-size copies for far away, so small things do not shimmer); the road is drawn as one path per colour each frame; the sky and
    two parallax layers are cached canvases. No raw colours anywhere in this file. */
@@ -61,8 +70,14 @@ const RL_PLACES = [
   { id: 'city', name: 'Night City', sky: ['night', 'night-1'], grass: ['k2', 'v3'], road: ['k2', 'e3'], rumble: ['y', 'k2'],
     lane: 'y', edge: 'v3', night: true, props: [['tower', 2], ['tower2', 2], ['lamp', 3], ['cone', 1]],
     rail: ['r', 'w'], water: 'b3', wall: ['v3', 'k2'], roll: 'barrel', crit: '', wx: ['night', 'rain'] },
+  // G-RALLY2: the fifth place (its cup opens after the Star Cup): autumn woods, pumpkins rolling, hedgehogs crossing
+  { id: 'woods', name: 'Maple Woods', sky: ['sky', 'peach'], grass: ['o1', 't'], road: ['e2', 'e'], rumble: ['o', 'w'],
+    lane: 'w', edge: 'n1', props: [['maple', 5], ['mushroom', 3], ['leaves', 2], ['fence', 2], ['rock', 1]],
+    rail: ['n', 'm'], water: 'b', wall: ['n2', 'n3'], roll: 'pumpkin', crit: 'hedgehog', wx: ['sun', 'fog', 'rain'] },
 ];
 const rlPl = id => RL_PLACES.find(p => p.id === id) || RL_PLACES[0];
+// the animals that cross the road (a crash with one says its name)
+const RL_CRIT = { duck: 'duck', crab: 'crab', chick: 'penguin chick', hedgehog: 'hedgehog' };
 // weather: sky tokens (none = the place's own), grip on puddles and the road, what falls, fog
 const RL_WX = {
   sun: { name: '' }, night: { name: '' },
@@ -129,6 +144,21 @@ const RL_TRACKS = {
       [0, 90, 0, 0, 0, 'Fbg'], [30, 100, 30, 5, 15, 'Ri*'], [0, 40, 0, 0, -15, 'Rp'], [15, 30, 15, -6, 0, 'R'], [0, 50, 0, 0, 0, 'Ro'],
       [20, 60, 20, 3, 0, 'Rg']] },
   ],
+  // G-RALLY2: three new layouts for the fifth cup
+  woods: [
+    // a corkscrew: two long bends the same way climbing round the hill, a hollow-log tunnel, the drop, a zigzag of short flicks
+    { name: 'Acorn Spiral', laps: 3, plan: [[0, 40, 0, 0, 0, 'z'], [20, 70, 20, 4, 18, 'g'], [0, 20, 0, 0, 6, 'a'], [20, 70, 20, 4, 18, 'R*'],
+      [0, 60, 0, 0, 0, 'Tg'], [30, 50, 30, -2, -42, 'G'], [6, 10, 6, -3, 0, 'c'], [6, 10, 6, 3, 0, ''], [6, 10, 6, -3, 0, 'p'], [6, 10, 6, 3, 0, ''],
+      [0, 50, 0, 0, 0, 'zo'], [25, 40, 25, -5, 0, 'b']] },
+    // long and winding by a stream: bends that grow tighter, a narrow log bridge, a split round a big oak, hedgehogs, puddles
+    { name: 'Mushroom Meander', laps: 2, plan: [[30, 40, 30, 1, 0, 'Wg'], [30, 40, 30, -2, 0, 'p'], [25, 35, 25, 3, 8, 'a'], [20, 30, 20, -4, -8, 'g'],
+      [15, 25, 15, 5, 0, 'R'], [0, 60, 0, 0, 0, 'NB*'], [0, 40, 0, 0, 0, 'z'], [0, 110, 0, 0, 0, 'Fbg'], [20, 30, 20, 5, 12, 'a'], [20, 30, 20, -4, 0, 'pG'],
+      [25, 35, 25, 3, -12, 'o'], [30, 40, 30, -2, 0, 'b'], [30, 50, 30, 1, 0, 'gz']] },
+    // a pumpkin farm: a square of four sharp right corners, a long hill straight with pumpkins rolling down, a hairpin back
+    { name: 'Pumpkin Patch', laps: 3, plan: [[0, 90, 0, 0, 0, 'bg'], [10, 15, 10, 6, 0, 'R'], [0, 80, 0, 0, 20, 'z'], [10, 15, 10, 6, 0, 'Rc'],
+      [0, 110, 0, 0, -20, 'bbG'], [10, 15, 10, 6, 0, 'R*'], [0, 70, 0, 0, 0, 'Ta'], [15, 30, 15, -7, 0, 'R'], [0, 70, 0, 0, 0, 'po'],
+      [15, 30, 15, 4, 0, 'gz']] },
+  ],
 };
 // every track by id ('meadow-0'), in order
 const RL_TRK = {};
@@ -142,14 +172,35 @@ for (const pl of RL_PLACES) {
     RL_ORDER.push(t.id);
   });
 }
-// the cups: 3 races each (track, weather), harder in order; tier makes the rivals a little faster
+// G-RALLY2 (R-03 R1): mirror tracks: every track raced the other way round. Its sections come in reverse order, each bend turns
+// the other way and each hill goes the other way (what was uphill is now downhill), with the same hazards on each section. The
+// roadside things are placed again from the new id, so the scenery is new too. Id: the track's id + 'm' ('meadow-0m').
+const rlMirrorPlan = plan => plan.slice().reverse().map(([a, h, l, c, dy, f]) => [l, h, a, c ? -c : 0, dy ? -dy : 0, f]);
+const RL_MIRROR = RL_ORDER.map(id => {
+  const b = RL_TRK[id], m = { name: 'Mirror ' + b.name, laps: b.laps, plan: rlMirrorPlan(b.plan), id: id + 'm', place: b.place, i: b.i, mirror: id };
+  RL_TRK[m.id] = m;
+  return m.id;
+});
+const RL_ALL = RL_ORDER.concat(RL_MIRROR); // every track: the 15 forwards, then the 15 mirror tracks
+// the tracks of a place, forwards then mirror
+const rlPlaceTracks = pid => RL_ALL.filter(id => RL_TRK[id].place === pid).map(id => RL_TRK[id]);
+// the cups: 3 races each (track, weather), harder in order; tier makes the rivals a little faster (0-3).
+// G-RALLY2: the Maple Cup (the fifth, new tracks) follows the Star Cup; the five mirror cups open when the first four cups each
+// have a trophy (R-03 R1), then follow one another.
 const RL_CUPS = [
-  { id: 'sprout', name: 'Sprout Cup', hue: 'g', races: [['meadow-0', 'sun'], ['beach-0', 'sun'], ['meadow-1', 'dusk']] },
-  { id: 'wave', name: 'Wave Cup', hue: 'b', races: [['beach-1', 'sun'], ['snow-0', 'snow'], ['meadow-2', 'rain']] },
-  { id: 'frost', name: 'Frost Cup', hue: 'c', races: [['snow-1', 'snow'], ['city-0', 'night'], ['beach-2', 'fog']] },
-  { id: 'star', name: 'Star Cup', hue: 'v', races: [['city-1', 'rain'], ['snow-2', 'sun'], ['city-2', 'night']] },
+  { id: 'sprout', name: 'Sprout Cup', hue: 'g', tier: 0, races: [['meadow-0', 'sun'], ['beach-0', 'sun'], ['meadow-1', 'dusk']] },
+  { id: 'wave', name: 'Wave Cup', hue: 'b', tier: 1, races: [['beach-1', 'sun'], ['snow-0', 'snow'], ['meadow-2', 'rain']] },
+  { id: 'frost', name: 'Frost Cup', hue: 'c', tier: 2, races: [['snow-1', 'snow'], ['city-0', 'night'], ['beach-2', 'fog']] },
+  { id: 'star', name: 'Star Cup', hue: 'v', tier: 3, races: [['city-1', 'rain'], ['snow-2', 'sun'], ['city-2', 'night']] },
+  { id: 'maple', name: 'Maple Cup', hue: 'o', tier: 3, races: [['woods-0', 'sun'], ['woods-1', 'fog'], ['woods-2', 'rain']] },
+  { id: 'msprout', name: 'Mirror Sprout Cup', hue: 'g', tier: 1, mirror: 1, races: [['meadow-0m', 'dusk'], ['beach-0m', 'fog'], ['meadow-1m', 'rain']] },
+  { id: 'mwave', name: 'Mirror Wave Cup', hue: 'b', tier: 2, mirror: 1, races: [['beach-1m', 'dusk'], ['snow-0m', 'fog'], ['meadow-2m', 'sun']] },
+  { id: 'mfrost', name: 'Mirror Frost Cup', hue: 'c', tier: 3, mirror: 1, races: [['snow-1m', 'sun'], ['city-0m', 'rain'], ['beach-2m', 'dusk']] },
+  { id: 'mstar', name: 'Mirror Star Cup', hue: 'v', tier: 3, mirror: 1, races: [['city-1m', 'night'], ['snow-2m', 'snow'], ['city-2m', 'rain']] },
+  { id: 'mmaple', name: 'Mirror Maple Cup', hue: 'o', tier: 3, mirror: 1, races: [['woods-0m', 'dusk'], ['woods-1m', 'sun'], ['woods-2m', 'fog']] },
 ];
-RL_CUPS.forEach((c, i) => { c.tier = i; for (const [t] of c.races) RL_TRK[t].cup = i; });
+RL_CUPS.forEach((c, i) => { for (const [t] of c.races) RL_TRK[t].cup = i; });
+const RL_M0 = RL_CUPS.findIndex(c => c.mirror); // the first mirror cup
 const RL_PTS = [10, 8, 6, 5, 4, 3]; // cup points by place
 const RL_TROPHY = ['', 'Gold', 'Silver', 'Bronze'];
 
@@ -175,6 +226,21 @@ const RL_UPG = [
   ['turbo', 'Turbo', 'Zooms from pads, stars and drifts last longer.', 'bolt', [[60, 0], [120, 1], [200, 3]]],
   ['bumper', 'Bouncy bumper', 'Spins after a bump are shorter.', 'replay', [[50, 0], [100, 1], [180, 2]]],
 ];
+// G-RALLY2 (R-03 R2, A2): the second garage tier, opened by finishing a mirror cup: body kits, wheels, horns and a trail, each with
+// its fixed price (7,250 sparkles in all; the first tier is 2,060). [id, name, sparkles]; the first of each list is free and owned.
+// They only change how the car looks and sounds: nothing drives faster.
+const RL_KITS = [['', 'No kit', 0], ['stripes', 'Racing stripes', 250], ['spoiler', 'Big spoiler', 300], ['fins', 'Tail fins', 450],
+  ['lights', 'Light bar', 500]];
+const RL_WHEELS = [['', 'Black tyres', 0], ['white', 'White walls', 200], ['gold', 'Gold rims', 400], ['stars', 'Star wheels', 600],
+  ['monster', 'Monster tyres', 800]];
+const RL_HORNS = [['beep', 'Beep beep', 0], ['quack', 'Duck quack', 150], ['tune', 'Happy tune', 250], ['choo', 'Choo choo', 300],
+  ['moo', 'Cow moo', 350]];
+const RL_TRAILS = [['', 'No trail', 0], ['sparkle', 'Sparkle trail', 500], ['bubble', 'Bubble trail', 600], ['star', 'Star trail', 700],
+  ['rainbow', 'Rainbow trail', 900]];
+// every shop list by kind: [items, the save's owned map, the save's chosen field, tier]
+const RL_SHOP = { paint: [RL_PAINTS, 'paints', 'paint', 1], stk: [RL_STICKERS, 'stks', 'stk', 1], kit: [RL_KITS, 'kits', 'kit', 2],
+  whl: [RL_WHEELS, 'whls', 'whl', 2], horn: [RL_HORNS, 'horns', 'horn', 2], trail: [RL_TRAILS, 'trails', 'trail', 2] };
+const RL_T2 = ['kit', 'whl', 'horn', 'trail'];
 
 /* ---- the save (S.rally): read with defaults, every number checked; the sparkle count can never go below 0 ---- */
 const rlNum = (v, lo, hi) => Math.max(lo, Math.min(hi, Math.floor(+v || 0)));
@@ -227,23 +293,39 @@ function rlS() {
   const u = (r.upg = rlObj(r.upg));
   for (const k in u) if (!RL_UPG.some(x => x[0] === k)) delete u[k];
   for (const [k] of RL_UPG) u[k] = rlNum(u[k], 0, 3);
+  // G-RALLY2 fields (absent in older saves): the second garage tier (owned maps and the chosen one; the free first item is
+  // always owned), and tw, the date (today()) the day's twist paid its bonus
+  for (const kind of RL_T2) {
+    const [list, own, cur] = RL_SHOP[kind], o = (r[own] = rlObj(r[own]));
+    for (const k in o) if (!list.some(x => x[0] === k && x[2] > 0)) delete o[k];
+    else o[k] = 1;
+    if (typeof r[cur] != 'string' || !list.some(x => x[0] === r[cur]) || (r[cur] !== list[0][0] && !o[r[cur]])) r[cur] = list[0][0];
+  }
+  if (typeof r.tw != 'string' || r.tw.length > 12) delete r.tw;
   return r;
 }
 // the hub and the tests read without creating S.rally
 const rlPeek = () => (S.rally && typeof S.rally == 'object' && !Array.isArray(S.rally) ? S.rally : {});
-const rlStarsAll = (r = rlPeek()) => RL_ORDER.reduce((a, k) => a + rlNum((r.stars || {})[k], 0, 3), 0);
+const rlStarsAll = (r = rlPeek()) => RL_ALL.reduce((a, k) => a + rlNum((r.stars || {})[k], 0, 3), 0);
 const rlMode = (r = rlPeek()) => r.mode || ((S.grade == null ? 0 : +S.grade) <= 2 ? 'easy' : 'pro');
 const rlCupRec = (r, id) => rlObj(rlObj(r.cups)[id]);
 // trophies: cups finished in the top 3
 const rlTrophies = (r = rlPeek()) => RL_CUPS.filter(c => { const b = rlNum(rlCupRec(r, c.id).best, 0, 4); return b >= 1 && b <= 3; }).length;
-// a cup opens with a trophy in the one before, after racing the one before twice, or when one of its tracks was raced (old saves)
+const rlWon = (r, c) => { const b = rlNum(rlCupRec(r, c.id).best, 0, 4); return b >= 1 && b <= 3; };
+// G-RALLY2: the mirror cups open when the first four cups each have a trophy (so nobody is stuck: or each was raced 3 times)
+const rlMirrorOpen = (r = rlPeek()) => RL_CUPS.slice(0, 4).every(c => rlWon(r, c) || rlNum(rlCupRec(r, c.id).runs, 0, 1e6) >= 3);
+// a cup opens with a trophy in the one before, after racing the one before twice, or (the first four cups) when one of its tracks
+// was raced (old saves); the first mirror cup opens with rlMirrorOpen
 function rlCupOpen(i, r = rlPeek()) {
   const cup = RL_CUPS[i];
   if (!cup) return false;
-  if (i == 0 || cup.races.some(([t]) => rlNum((r.stars || {})[t], 0, 3) > 0)) return true;
-  const p = rlCupRec(r, RL_CUPS[i - 1].id), b = rlNum(p.best, 0, 4);
-  return (b >= 1 && b <= 3) || rlNum(p.runs, 0, 1e6) >= 2;
+  if (i == 0 || (i < 4 && cup.races.some(([t]) => rlNum((r.stars || {})[t], 0, 3) > 0))) return true;
+  if (i == RL_M0) return rlMirrorOpen(r);
+  const p = rlCupRec(r, RL_CUPS[i - 1].id);
+  return rlWon(r, RL_CUPS[i - 1]) || rlNum(p.runs, 0, 1e6) >= 2;
 }
+// G-RALLY2: the second garage tier opens when a mirror cup was raced to the end
+const rlT2Open = (r = rlPeek()) => RL_CUPS.some(c => c.mirror && rlNum(rlCupRec(r, c.id).runs, 0, 1e6) >= 1);
 // a track can be raced on its own (and timed) when its cup is open or it was raced before
 const rlTrackOpen = (id, r = rlPeek()) => !!RL_TRK[id] && (rlCupOpen(RL_TRK[id].cup, r) || rlNum((r.stars || {})[id], 0, 3) > 0);
 function rlBodyOpen(id, r) {
@@ -251,10 +333,13 @@ function rlBodyOpen(id, r) {
   return !!b && rlStarsAll(r) >= b[2];
 }
 // buy an item: true when bought; never takes more sparkles than there are
+// (kind: paint, stk, or since G-RALLY2 kit, whl, horn, trail: those only once the second tier is open)
 function rlBuy(kind, id) {
-  const r = rlS(), list = kind == 'paint' ? RL_PAINTS : RL_STICKERS, own = kind == 'paint' ? r.paints : r.stks;
-  const it = list.find(x => x[0] === id);
-  if (!it || !id || own[id]) return false;
+  const r = rlS(), sh = RL_SHOP[kind];
+  if (!sh) return false;
+  const [list, ownK, , tier] = sh, own = r[ownK], it = list.find(x => x[0] === id);
+  if (!it || !it[2] || own[id]) return false;
+  if (tier == 2 && !rlT2Open(r)) return false;
   if (r.spk < it[2]) return false;
   r.spk -= it[2];
   own[id] = 1;
@@ -274,6 +359,30 @@ function rlBuyUp(id) {
   r.upg[id] = nx.lv;
   return true;
 }
+// G-RALLY2 (R-03 A2): the next thing to save for, shown on the menu: the cheapest thing the child can buy now or soon (an
+// upgrade level whose trophies are won, paint, a sticker, and once the second tier is open its kits, wheels, horns and trails).
+// {name, cost, kind, id} or {lock: true} when only the closed second tier is left, or null when everything is bought.
+function rlSaveFor(r = rlPeek()) {
+  const all = [], t2 = rlT2Open(r);
+  for (const kind in RL_SHOP) {
+    const [list, ownK, , tier] = RL_SHOP[kind], own = rlObj(r[ownK]);
+    if (tier == 2 && !t2) continue;
+    for (const [id, name, cost] of list) if (cost && !own[id]) all.push({ name, cost, kind, id });
+  }
+  for (const u of RL_UPG) {
+    const nx = rlUpNext(u[0], r);
+    if (nx && rlTrophies(r) >= nx.need) all.push({ name: u[1] + ' level ' + nx.lv, cost: nx.cost, kind: 'upg', id: u[0] });
+  }
+  if (!all.length) return t2 ? null : { lock: true };
+  return all.sort((a, b) => a.cost - b.cost)[0];
+}
+// the menu's line for it
+function rlSaveLine(r) {
+  const s = rlSaveFor(r), spk = rlNum(r.spk, 0, 1e7);
+  if (!s) return 'Everything in the garage is yours!';
+  if (s.lock) return 'Race a mirror cup to open new things in the garage: body kits, wheels, horns and trails.';
+  return spk >= s.cost ? `You can buy ${s.name} in the garage now (${s.cost} sparkles)!` : `Save for ${s.name}: ${s.cost} sparkles, ${s.cost - spk} more to go.`;
+}
 // a time in ms as 1:05.3
 const rlTime = ms => {
   const t = Math.max(0, Math.round(ms / 100)), m = Math.floor(t / 600), s = (t % 600) / 10;
@@ -286,6 +395,39 @@ const rlOrd = n => n + (n == 1 ? 'st' : n == 2 ? 'nd' : n == 3 ? 'rd' : 'th');
 const rlTyre = (x, y, w, h, lite) => ghR(x + 1.2, y + 1.2, w, h, gh1(w * .32), 'k') + ghR(x, y, w, h, gh1(w * .32), 'k2') +
   ghR(x + w * .16, y + h * .1, w * .2, h * .76, gh1(w * .1), 'e3', .6) + (lite ? '' : ghL(`M${gh1(x + w * .2)} ${gh1(y + h * .32)}h${gh1(w * .6)}M${gh1(x + w * .2)} ${gh1(y + h * .52)}h${gh1(w * .6)}` +
     `M${gh1(x + w * .2)} ${gh1(y + h * .72)}h${gh1(w * .6)}`, 'k', 1.4, .55));
+// G-RALLY2: a tyre with the chosen wheels: white walls, gold rims, star wheels, monster tyres (bigger, chunky tread)
+function rlWheel(x, y, w, h, lite, whl) {
+  if (whl == 'monster') {
+    const W = w * 1.22, H = h * 1.18;
+    x -= (W - w) / 2;
+    y -= H - h;
+    w = W;
+    h = H;
+  }
+  let s = rlTyre(x, y, w, h, lite);
+  // the outer half of a tyre shows beside the body: decorations go there
+  const cx = x + w * (x < 60 ? .3 : .7);
+  if (whl == 'white') s += ghR(cx - w * .14, y + h * .08, w * .28, h * .84, gh1(w * .12), 'w', .95) + ghR(cx - w * .06, y + h * .14, w * .12, h * .72, gh1(w * .05), 'k2');
+  else if (whl == 'gold') s += ghR(cx - w * .2, y + h * .26, w * .4, h * .48, gh1(w * .16), 'y2') + ghR(cx - w * .18, y + h * .28, w * .33, h * .4, gh1(w * .14), 'y') +
+    ghE(cx - w * .06, y + h * .38, w * .07, h * .08, 'y1', .9);
+  else if (whl == 'stars') s += `<path ${ghF('y')} d="${rwStarD(cx, y + h * .3, w * .26, w * .11)}"/><path ${ghF('y')} d="${rwStarD(cx, y + h * .72, w * .26, w * .11)}"/>`;
+  else if (whl == 'monster') s += ghL(`M${gh1(x + w * .1)} ${gh1(y + h * .2)}h${gh1(w * .8)}M${gh1(x + w * .1)} ${gh1(y + h * .45)}h${gh1(w * .8)}` +
+    `M${gh1(x + w * .1)} ${gh1(y + h * .7)}h${gh1(w * .8)}`, 'e3', gh1(h * .07), .8);
+  return s;
+}
+// G-RALLY2: body kits seen from behind (viewBox 120 x 84): racing stripes go on the body (under the sticker), the spoiler, the tail
+// fins and the light bar stand above it; hue h is the paint
+function rlKitArt(kit, body, h, layer) {
+  const top = body == 'rocket' ? 29 : 33, bot = body == 'rocket' ? 67 : 65;
+  if (layer == 'under') return kit == 'stripes' ? ghR(48, top, 7, bot - top, 1, 'w', .92) + ghR(65, top, 7, bot - top, 1, 'w', .92) : '';
+  if (kit == 'spoiler') return ghR(33, top - 8, 5, 9, 1, 'k2') + ghR(82, top - 8, 5, 9, 1, 'k2') + ghR(13, top - 13, 94, 8, 3, h + '2') +
+    ghR(12, top - 14, 94, 6.5, 3, h) + ghR(16, top - 13, 40, 1.6, .8, h + '1', .9);
+  if (kit == 'fins') return ghP(`M14 ${top + 14}L10 ${top - 16}L30 ${top + 2}Z`, h + '2') + ghP(`M15 ${top + 12}L11.6 ${top - 13}L28 ${top + 2}Z`, h) +
+    ghP(`M106 ${top + 14}L110 ${top - 16}L90 ${top + 2}Z`, h + '2') + ghP(`M105 ${top + 12}L108.4 ${top - 13}L92 ${top + 2}Z`, h);
+  if (kit == 'lights') return ghL('M44 9V3M76 9V3', 'e3', 2.4) + ghR(36, 0, 48, 6, 3, 'e3') + ghBall(44, 3, 3.4, 'r') + ghBall(60, 3, 3.4, 'y') +
+    ghBall(76, 3, 3.4, 'b');
+  return '';
+}
 // a heart path around (x, y), r about its half-width
 const rlHeartD = (x, y, r) => `M${gh1(x)} ${gh1(y + r * .85)}C${gh1(x - r * 1.3)} ${gh1(y)} ${gh1(x - r * .9)} ${gh1(y - r * 1.05)}` +
   ` ${gh1(x)} ${gh1(y - r * .4)}C${gh1(x + r * .9)} ${gh1(y - r * 1.05)} ${gh1(x + r * 1.3)} ${gh1(y)} ${gh1(x)} ${gh1(y + r * .85)}Z`;
@@ -355,26 +497,31 @@ function rlBackHead(who, h) {
 }
 // a car seen from behind, viewBox 120 x 84 (ground at 80): body kart | buggy | rocket, paint hue h, sticker st, driver who;
 // lite leaves out the small details (pipes, glints, tread) for small pictures
-function rlCarArt(body, h, st, who, lite) {
+function rlCarArt(body, h, st, who, lite, kx) {
   let s = ghShad(60, 79, 56, 5, .18);
+  const kit = (kx && kx.kit) || '', whl = (kx && kx.whl) || '', over = kit ? rlKitArt(kit, body, h, 'over') : '', under = kit ? rlKitArt(kit, body, h, 'under') : '';
+  // the light bar sits behind the driver's head; the spoiler and the fins in front of it
+  const head = (kit == 'lights' ? over : '') + rlBackHead(who, h), front = kit == 'lights' ? '' : over;
   if (body == 'rocket') {
-    return s + rlTyre(12, 62, 16, 16) + rlTyre(92, 62, 16, 16) + rlBackHead(who, h) +
+    return s + rlWheel(12, 62, 16, 16, lite, whl) + rlWheel(92, 62, 16, 16, lite, whl) + head +
       ghP('M30 36L6 72H34Z', h + '2') + ghP('M30 36.6L8.6 70.6H32.6Z', h) + ghP('M90 36L114 72H86Z', h + '2') + ghP('M90 36.6L111.4 70.6H87.4Z', h) +
       ghR(25, 31, 72, 40, 18, h + '2') + ghR(23, 29, 71, 38, 17, h) + ghR(30, 32, 36, 5, 2.5, h + '1', .85) +
       ghR(27, 56, 66, 9, 4.5, h + '3', .45) + ghC(60, 51, 12, 'e3') + ghC(59.4, 50.4, 10.6, 'e1') + ghC(60, 51, 8, 'o') +
-      ghC(60, 51, 4.6, 'y1') + ghE(57, 48, 2.2, 1.4, 'w', .8, -30) + ghR(11, 66, 10, 4, 2, 'y') + ghR(99, 66, 10, 4, 2, 'y') +
-      rlStk(st, 40, 42, 7.5);
+      ghC(60, 51, 4.6, 'y1') + ghE(57, 48, 2.2, 1.4, 'w', .8, -30) + ghR(11, 66, 10, 4, 2, 'y') + ghR(99, 66, 10, 4, 2, 'y') + under +
+      rlStk(st, 40, 42, 7.5) + front;
   }
   const big = body == 'buggy', ty = big ? 40 : 46, th = big ? 38 : 31, tw = big ? 27 : 24;
-  s += rlTyre(big ? 3 : 6, ty, tw, th, lite) + rlTyre(90, ty, tw, th, lite) + ghR(26, 58, 68, 6, 3, 'k2') + rlBackHead(who, h);
+  s += rlWheel(big ? 3 : 6, ty, tw, th, lite, whl) + rlWheel(90, ty, tw, th, lite, whl) + ghR(26, 58, 68, 6, 3, 'k2') + head;
   if (big) s += ghL('M35 38C35 7 85 7 85 38', 'e3', 5.4) + ghL('M34.2 36C34.2 8.6 83.6 8.6 83.6 34', 'e1', 2, .9);
   return s + ghR(20, 35, 82, 34, 13, h + '2') + ghR(18, 33, 80, 32, 12, h) + ghR(25, 36, 42, 5, 2.5, h + '1', .85) +
-    ghR(21, 55, 78, 8, 4, h + '3', .4) +
+    ghR(21, 55, 78, 8, 4, h + '3', .4) + under +
     ghR(23, 41, 13, 8, 4, 'y2') + ghR(22.4, 40.4, 12, 7, 3.5, 'y') + ghR(84, 41, 13, 8, 4, 'y2') + ghR(83.4, 40.4, 12, 7, 3.5, 'y') +
     ghR(27, 66, 67, 7, 3.5, 'e3') + ghR(26, 65, 67, 6, 3, 'e1') + rlStk(st, 60, 47, 9) + (lite ? '' : ghE(25.6, 42.4, 2.4, 1.2, 'w', .8) +
     ghE(86.6, 42.4, 2.4, 1.2, 'w', .8) + ghR(30, 66, 30, 1.6, .8, 'w', .7) + ghC(47, 71, 4, 'e3') + ghC(46.5, 70.5, 3, 'e1') + ghC(47, 71, 1.6, 'k2') +
-    ghC(73, 71, 4, 'e3') + ghC(72.5, 70.5, 3, 'e1') + ghC(73, 71, 1.6, 'k2'));
+    ghC(73, 71, 4, 'e3') + ghC(72.5, 70.5, 3, 'e1') + ghC(73, 71, 1.6, 'k2')) + front;
 }
+// the child's car drawing with everything chosen in the garage (look: optional overrides while trying something on)
+const rlMyKx = (r, look = {}) => ({ kit: look.kit != null ? look.kit : r.kit || '', whl: look.whl != null ? look.whl : r.whl || '' });
 // a face from the front (menus, the podium): the five animals or the player's helmet (hue h); centre x, y, scale k (head radius 15k)
 function rlFace(who, x, y, k, h = 'r') {
   const X = v => gh1(x + v * k), Y = v => gh1(y + v * k);
@@ -551,6 +698,27 @@ Object.assign(RL_PROPS, {
   bubble: { vb: [48, 48], wr: .3, art: () => ghC(24, 24, 22, 'c1', .5) + ghC(25, 25, 17, 'c2', .25) + ghL('M24 3a21 21 0 1 1 -.1 0', 'c', 2.6) +
     ghE(15, 14, 6, 3.4, 'w', .85, -40) + ghC(31, 33, 2, 'w', .7) },
 });
+// G-RALLY2: Maple Woods: a maple tree, a red mushroom, a pile of leaves, a rolling pumpkin and a hedgehog that crosses
+Object.assign(RL_PROPS, {
+  maple: { vb: [80, 110], wr: 1.1, art: () => ghShad(42, 106, 30, 4.5, .15) + ghR(35.5, 62, 10, 44, 3, 'n2') + ghR(35, 62, 7.5, 44, 3, 'n') +
+    ghL('M40 70L28 56M41 64L54 52', 'n2', 3) + ghBall(22, 54, 16, 'o') + ghBall(58, 52, 17, 'r') + ghBall(40, 32, 23, 'o') +
+    ghBall(30, 40, 12, 'y') + ghBall(54, 34, 10, 'o') + ghE(32, 22, 7, 4, 'y1', .6, -30) + ghC(16, 70, 3, 'o') + ghC(64, 72, 2.6, 'r') },
+  mushroom: { vb: [60, 56], wr: .55, art: () => ghShad(30, 53, 24, 3, .15) + ghR(23, 28, 15, 26, 6, 'm2') + ghR(22, 28, 12, 26, 6, 'm') +
+    ghP('M3 32C3 10 18 3 30 3C42 3 57 10 57 32Z', 'r2') + ghP('M3 30C3 10 18 4.6 30 4.6C41 4.6 54 10 54 30Z', 'r') +
+    ghC(18, 16, 4, 'w') + ghC(34, 11, 3.4, 'w') + ghC(44, 22, 4.4, 'w') + ghC(26, 25, 2.8, 'w') + ghE(16, 9, 6, 3, 'r1', .7, -25) },
+  leaves: { vb: [90, 40], wr: .8, art: () => ghShad(45, 38, 42, 3, .12) + ghE(45, 30, 40, 9, 'o2') + ghE(28, 27, 18, 8, 'o') +
+    ghE(58, 26, 20, 8, 'r') + ghE(44, 22, 16, 8, 'y') + ghE(70, 30, 12, 5, 'o') + ghE(20, 32, 10, 4, 'y2') + ghE(40, 18, 6, 3, 'y1', .7) },
+  pumpkin: { vb: [64, 64], wr: .46, art: () => ghShad(32, 62, 24, 3, .16) + ghE(33, 37, 28, 24, 'o2') + ghE(32, 36, 27, 23, 'o') +
+    ghE(20, 36, 9, 21, 'o2', .45) + ghE(44, 36, 9, 21, 'o2', .45) + ghE(32, 36, 7, 22, 'o1', .5) + ghR(29, 8, 7, 9, 2, 'g2') +
+    ghP('M35 12C44 6 50 10 48 16C44 12 40 13 35 15Z', 'g') + ghE(18, 26, 6, 3.4, 'o1', .8, -35) },
+  hedgehog: { vb: [66, 50], wr: .3, art: () => {
+    let sp = '';
+    for (let i = 0; i < 9; i++) { const x = 8 + i * 5.4; sp += `M${gh1(x)} ${gh1(30 - Math.sin(i * .38) * 18)}L${gh1(x + 4)} ${gh1(16 - Math.sin(i * .38) * 12)}L${gh1(x + 8)} ${gh1(30 - Math.sin(i * .4) * 16)}Z`; }
+    return ghShad(33, 47, 25, 3, .16) + ghP(sp, 'n2') + ghE(30, 33, 23, 14, 'n2') + ghE(29, 32, 22, 13, 'n') + ghE(50, 36, 12, 9, 't1') +
+      ghE(48, 34, 10, 7, 't') + ghC(61, 37, 2.6, 'k') + ghC(52, 32, 1.8, 'k') + ghC(52.5, 31.5, .6, 'w') + ghE(50, 39, 2.4, 1.4, 'p', .6) +
+      ghL('M22 46V50M36 46V50', 'n3', 2.6) + ghE(18, 26, 6, 3, 'n1', .6, -20);
+  } },
+});
 // a trophy cup (viewBox 0 0 100 100) in gold y, silver e or bronze o
 const rlCupArt = h => ghShad(50, 95, 30, 4, .14) + ghR(30, 80, 40, 13, 3, 'n2') + ghR(29, 79, 40, 12, 3, 'n') + ghR(33, 82, 18, 2, 1, 'n1', .7) +
   ghR(42, 61, 16, 20, 2, h + '2') + ghR(41, 61, 14, 20, 2, h) + ghL('M25 21C8 21 10 45 32 47', h + '2', 6) + ghL('M75 21C92 21 90 45 68 47', h + '2', 6) +
@@ -582,6 +750,7 @@ const rlStars = n => {
 const RL_SKY = {
   meadow: () => ghSun(50, 50, 24), beach: () => ghSun(50, 50, 26), snow: () => ghC(50, 50, 34, 'w', .3) + ghC(50, 50, 24, 'w', .85),
   city: () => ghC(50, 50, 30, 'y1', .22) + `<path ${ghF('m')} d="M46 26a24 24 0 1 0 22 34a19 19 0 0 1 -22 -34Z"/>`,
+  woods: () => ghC(50, 50, 32, 'o1', .3) + ghSun(50, 50, 24),
 };
 const RL_BACK = {
   meadow: {
@@ -669,6 +838,26 @@ const RL_BACK = {
       return s + rlRects(win, 'y', .9) + ghR(0, 112, 960, 8, 0, 'k2');
     },
   },
+  // G-RALLY2: rolling autumn hills, a far line of red and orange woods; near, a ridge of maples and a little log cabin
+  woods: {
+    far: () => {
+      const m = [[24, 2, .9], [14, 5, .2], [6, 11, 1.4]], h = [[9, 4, .6], [5, 9, 1.9]];
+      let s = ghCloud(220, 56, 1.4) + ghCloud(700, 72, 1.2) + ghP(rlRidge(146, m, 200, 6, 4), 'o2', .45) + ghP(rlRidge(146, m, 200), 'o1', .8);
+      let d = '';
+      for (let x = 8; x < 960; x += 22) { const y = rlWave(176, h, x) + 2; d += `M${x} ${gh1(y)}a11 12 0 0 1 22 0Z`; }
+      return s + ghP(d, 'r', .55) + ghP(rlRidge(180, h, 200), 'y2', .9);
+    },
+    near: () => {
+      const w = [[10, 3, 1.1], [5, 8, .4]];
+      let s = ghP(rlRidge(94, w, 120, 0, 2), 'o2') + ghP(rlRidge(94, w, 120, -4, 0), 'o1');
+      for (const x of [50, 76, 260, 470, 500, 760, 900]) s += rlNest(x - 18, rlWave(94, w, x + 4) - 48, 36, 50, 80, 110, RL_PROPS.maple.art());
+      const bx = 620, by = rlWave(94, w, bx + 4) + 6;
+      s += ghShad(bx + 20, by, 28, 3) + ghR(bx, by - 24, 40, 24, 1, 'n2') + ghR(bx, by - 24, 36, 24, 1, 'n') +
+        ghL(`M${bx} ${by - 16}h36M${bx} ${by - 8}h36`, 'n2', 1.4, .8) + ghP(`M${bx - 4} ${by - 22}L${bx + 18} ${by - 38}L${bx + 44} ${by - 22}Z`, 'r2') +
+        ghR(bx + 14, by - 14, 9, 14, 1, 'n3') + ghR(bx + 26, by - 19, 7, 6, 1, 'y1') + ghR(bx + 30, by - 44, 5, 10, 1, 'e2');
+      return s;
+    },
+  },
 };
 
 /* ---- pictures for the hub card, the places and the podium (240 x 100, the --a-* roles) ---- */
@@ -699,13 +888,15 @@ const RL_ART = {
   // a place: its ground and road, two of its things by the road
   place(id) {
     const pl = RL_PLACES.find(p => p.id === id) || RL_PLACES[0], [g] = pl.grass;
-    const P = RL_PROPS, a = { meadow: ['tree', 'bush'], beach: ['palm', 'umbrella'], snow: ['pine', 'snowman'], city: ['tower', 'lamp'] }[pl.id];
+    const P = RL_PROPS, a = { meadow: ['tree', 'bush'], beach: ['palm', 'umbrella'], snow: ['pine', 'snowman'], city: ['tower', 'lamp'],
+      woods: ['maple', 'mushroom'] }[pl.id];
     const pa = P[a[0]], pb = P[a[1]], aw = Math.min(48, 70 * pa.vb[0] / pa.vb[1]), bw = Math.min(50, 54 * pb.vb[0] / pb.vb[1]);
     const far = { meadow: ghSun(30, 18, 8) + ghP('M0 50Q50 30 110 44T240 40V100H0Z', 'b1', .6),
       beach: ghSun(30, 18, 8) + ghR(0, 40, 240, 12, 0, 'c') + ghR(0, 40, 240, 3, 0, 'c1'),
       snow: ghP('M0 50L30 26L52 40L84 14L120 42L150 22L186 44L214 24L240 38V100H0Z', 'b1') + ghP('M72 24L84 14L96 26L88 23L84 27Z', 'w') +
         ghP('M140 30L150 22L160 30L154 28L150 31Z', 'w'),
-      city: rlStars(8) + ghR(0, 26, 30, 30, 2, 'v3') + ghR(34, 16, 26, 40, 2, 'b3') + ghR(180, 20, 30, 36, 2, 'v3') + ghR(214, 30, 26, 26, 2, 'b3') }[pl.id];
+      city: rlStars(8) + ghR(0, 26, 30, 30, 2, 'v3') + ghR(34, 16, 26, 40, 2, 'b3') + ghR(180, 20, 30, 36, 2, 'v3') + ghR(214, 30, 26, 26, 2, 'b3'),
+      woods: ghSun(30, 18, 8) + ghP('M0 50Q40 30 90 42T170 36T240 44V100H0Z', 'o2', .55) + ghP('M0 52Q60 40 120 48T240 46V100H0Z', 'r', .35) }[pl.id];
     return far + ghR(0, 50, 240, 50, 0, g) + rlRoadPic(120, 50, pl.rumble[0], pl.road[0]) +
       rlNest(4, 92 - aw * pa.vb[1] / pa.vb[0], aw, aw * pa.vb[1] / pa.vb[0], pa.vb[0], pa.vb[1], pa.art()) +
       rlNest(206 - bw / 2, 96 - bw * pb.vb[1] / pb.vb[0], bw, bw * pb.vb[1] / pb.vb[0], pb.vb[0], pb.vb[1], pb.art()) +
@@ -719,7 +910,7 @@ const RL_ART = {
     const at = [[120, 30], [48, 44], [192, 52]];
     who.slice(0, 3).forEach((w, i) => {
       const [x, y] = at[i], k = i ? 1 : 1.15;
-      s += w == 'you' ? rlNest(x - 26 * k, y - 22 * k, 52 * k, 36.4 * k, 120, 84, rlCarArt(r.body || 'kart', h, r.stk || '', 'you')) : rlFace(w, x, y, k, h);
+      s += w == 'you' ? rlNest(x - 26 * k, y - 22 * k, 52 * k, 36.4 * k, 120, 84, rlCarArt(r.body || 'kart', h, r.stk || '', 'you', false, rlMyKx(r))) : rlFace(w, x, y, k, h);
     });
     for (const [x, y, c, a] of [[30, 14, 'r', 20], [70, 8, 'b', -30], [168, 12, 'g', 40], [212, 22, 'p', -15], [100, 6, 'y', 10], [146, 20, 'v', -40]]) {
       s += ghR(x, y, 7, 3.4, 1, c, null) .replace('/>', ` transform="rotate(${a} ${x} ${y})"/>`);
@@ -1025,7 +1216,7 @@ function rlHits(st, car, d0, d1) {
     if (ma) for (const i of ma) {
       const m = T.mv[i], z = (Math.floor(s / T.n) * T.n + seg) * RL_SEG + RL_SEG / 2;
       if (z <= d0 || z > d1) continue;
-      if (Math.abs(car.x - rlMvX(m, st.rt)) < (RL_CARW * .5 + m.w) * k) rlCrash(st, car, m.k == 'duck' || m.k == 'crab' || m.k == 'chick' ? 'crit' : 'roll', .6);
+      if (Math.abs(car.x - rlMvX(m, st.rt)) < (RL_CARW * .5 + m.w) * k) rlCrash(st, car, RL_CRIT[m.k] ? 'crit' : 'roll', .6);
     }
     if (me && T.pkAt[seg]) for (const i of T.pkAt[seg]) {
       const p = T.pk[i], z = (Math.floor(s / T.n) * T.n + seg) * RL_SEG + RL_SEG / 2;
@@ -1384,7 +1575,12 @@ function rlSize(R) {
   V.sun = rlSprite('sky-' + pl.id, 100, 100, RL_SKY[pl.id](), hz / sc * .4);
   // cars: the player's and the five rivals'; props, sparkle, arch, gate, hazards and pick-ups at a size they are often seen at
   const rs = rw / sc, cw2 = Math.min(360, RL_CARW * rs * 1.25), r = rlS();
-  V.me = rlSprite(`me-${r.body}-${r.paint}-${r.stk}`, 120, 84, rlCarArt(r.body, r.paint, r.stk, 'you'), cw2);
+  const kx = rlMyKx(r);
+  V.me = rlSprite(`me-${r.body}-${r.paint}-${r.stk}-${kx.kit}-${kx.whl}`, 120, 84, rlCarArt(r.body, r.paint, r.stk, 'you', false, kx), cw2);
+  // G-RALLY2: the trail's pieces (small sprites, made once) and a fixed pool of 32 pieces (no allocation while racing)
+  V.trail = r.trail && RL_TRAIL_ART[r.trail] ? RL_TRAIL_ART[r.trail]().map((a, i) => rlSprite('tr-' + r.trail + i, 40, 40, a, Math.max(8, cw2 * .22))) : null;
+  if (!R.tr) R.tr = { x: new Float32Array(32), y: new Float32Array(32), vx: new Float32Array(32), vy: new Float32Array(32), life: new Float32Array(32),
+    k: new Uint8Array(32), n: 0, acc: 0 };
   V.rv = {};
   for (const rv of RL_RIVALS) V.rv[rv.id] = rlSprite('rv-' + rv.id, 120, 84, rlCarArt('kart', rv.car, '', rv.id), cw2 * .8);
   V.pr = {};
@@ -1666,7 +1862,7 @@ function rlDraw(R) {
       } else rlStand(c, s, X + Wd * o.x, Y, s.wr * Wd, clip);
     }
     if (mv) for (const k of mv) {
-      const m = T.mv[k], s = V.pr[m.k], mx = rlMvX(m, st.rt), crit = m.k == 'duck' || m.k == 'crab' || m.k == 'chick';
+      const m = T.mv[k], s = V.pr[m.k], mx = rlMvX(m, st.rt), crit = !!RL_CRIT[m.k];
       const hop = crit && !calm ? Math.abs(Math.sin(t * 9 + k)) * Wd * .05 : 0;
       rlStand(c, s, X + Wd * mx, Y - hop, s.wr * Wd, clip, null, crit ? 0 : mx * 3.2);
     }
@@ -1724,6 +1920,7 @@ function rlDrawMe(R) {
   if (!s.c) return;
   const h = w * s.ar, bob = P.off && !calm ? Math.sin(t * 40) * 2 * V.k : Math.sin(t * 9) * .6 * V.k;
   const ang = P.s * .05 + (P.drifting ? Math.sign(P.s) * .12 : 0) + rlSpinA(P, t, calm), x = V.W / 2 + P.s * w * .06, y = V.ground + bob;
+  if (V.trail) rlTrail(R, x, y, w, h);
   c.save();
   c.translate(x, y - h / 2);
   c.rotate(ang);
@@ -1767,12 +1964,51 @@ function rlDrawMe(R) {
   }
 }
 
+// G-RALLY2: the trail behind the car: pieces come out from behind the car on both sides and float up and out as they fade (fewer
+// and slower in calm mode). A fixed pool (R.tr), moved by the race clock; nothing is made while racing.
+const RL_TRAIL_ART = {
+  sparkle: () => [RL_PROPS.sparkle.art()],
+  bubble: () => [rlNest(0, 0, 40, 40, 48, 48, RL_PROPS.bubble.art())],
+  star: () => [rlNest(0, 0, 40, 40, 48, 48, RL_PROPS.pstar.art())],
+  rainbow: () => ['r', 'o', 'y', 'g', 'b', 'v'].map(h => ghBall(20, 20, 13, h)),
+};
+function rlTrail(R, x, y, w, h) {
+  const c = R.ctx, V = R.v, tr = R.tr, P = R.st.P, pcs = V.trail, dt = Math.max(0, Math.min(.1, (R.t || 0) - (tr.t || 0)));
+  tr.t = R.t || 0;
+  // new pieces: up to 18 a second at speed (8 in calm mode), only while the race runs
+  if (dt > 0 && !R.st.done && P.v > RL_VMAX * .2) {
+    tr.acc += dt * (R.calm ? 8 : 18) * Math.min(1, P.v / (RL_VMAX * .7));
+    while (tr.acc >= 1) {
+      tr.acc--;
+      const i = tr.n = (tr.n + 1) % 32, side = i % 2 ? 1 : -1;
+      tr.x[i] = x + side * w * .3;
+      tr.y[i] = y - h * .3;
+      tr.vx[i] = side * w * (.35 + (i % 5) * .1);
+      tr.vy[i] = -h * (R.calm ? .3 : .45 + (i % 3) * .15);
+      tr.life[i] = 1;
+      tr.k[i] = (i >> 1) % pcs.length;
+    }
+  }
+  for (let i = 0; i < 32; i++) {
+    if (tr.life[i] <= 0) continue;
+    tr.life[i] -= dt * 1.25;
+    tr.x[i] += tr.vx[i] * dt;
+    tr.y[i] += tr.vy[i] * dt;
+    const sp = pcs[tr.k[i]], L = tr.life[i];
+    if (L <= 0 || !sp.c) continue;
+    const sz = w * (.12 + (1 - L) * .14);
+    c.globalAlpha = Math.min(1, L * 1.4) * .9;
+    c.drawImage(rlMip(sp, sz), tr.x[i] - sz / 2, tr.y[i] - sz / 2, sz, sz);
+  }
+  c.globalAlpha = 1;
+}
+
 /* ---- the screens: menu (next goal, cups, single races and time trials, how to drive), garage, the race, the end cards ---- */
 let RL = null; // the race on screen
 const rlPic = (inner, cls = '') => `<svg class="art${cls ? ' ' + cls : ''}" viewBox="0 0 240 100" preserveAspectRatio="xMidYMid slice" ` +
   `aria-hidden="true" focusable="false">${inner}</svg>`;
-const rlCarSVG = (body, h, st, cls = '') => `<svg class="art${cls ? ' ' + cls : ''}" viewBox="0 0 120 84" aria-hidden="true" focusable="false">` +
-  `${rlCarArt(body, h, st, 'you')}</svg>`;
+const rlCarSVG = (body, h, st, cls = '', kx) => `<svg class="art${cls ? ' ' + cls : ''}" viewBox="0 0 120 84" aria-hidden="true" focusable="false">` +
+  `${rlCarArt(body, h, st, 'you', false, kx)}</svg>`;
 const rlCupSVG = (h, cls = '') => `<svg class="art${cls ? ' ' + cls : ''}" viewBox="0 0 100 100" aria-hidden="true" focusable="false">${rlCupArt(h)}</svg>`;
 const rlSpkChip = (n, id = 'rlspk') => `<span class="stat rl-spk" id="${id}" aria-label="Sparkles">${ico('sparkle', 32)}<b>${n}</b></span>`;
 const rlSnd = () => !!S.sound;
@@ -1780,50 +2016,113 @@ const rlTone = (...a) => { if (rlSnd()) tone(...a); };
 const rlTiltOK = () => typeof window != 'undefined' && 'DeviceOrientationEvent' in window && (navigator.maxTouchPoints || 0) > 0;
 const rlTrophyHue = b => ['', 'y', 'e', 'o'][b] || '';
 const rlWho = id => (id == 'you' ? (S.name || 'You') : (RL_RIVALS.find(v => v.id === id) || {}).name || id);
+const rlAnd = a => (a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1]);
+// G-RALLY2: the horns (the second garage tier): a short sound made with tone() (silent with Sound effects off)
+const RL_HORN_SND = {
+  beep: () => { rlTone(NOTE(76), .1, 0, 'square', .05); rlTone(NOTE(76), .14, .15, 'square', .05); },
+  quack: () => { rlTone(560, .13, 0, 'sawtooth', .04, 330); rlTone(520, .16, .17, 'sawtooth', .04, 300); },
+  tune: () => [72, 76, 79, 84].forEach((m, i) => rlTone(NOTE(m), .12, i * .1, 'triangle', .07)),
+  choo: () => { for (const t of [0, .42]) { rlTone(NOTE(74), .34, t, 'triangle', .06); rlTone(NOTE(78), .34, t, 'triangle', .05); } },
+  moo: () => { rlTone(210, .7, 0, 'sawtooth', .035, 150); rlTone(105, .7, 0, 'sine', .05, 80); },
+};
+const rlHorn = id => (RL_HORN_SND[id] || RL_HORN_SND.beep)();
+// R-03 A5: today's twist, from the date (the same all day, another tomorrow): one open track raced the other way round, or in a
+// weather; the first race of it each day pays a small bonus. A missed day loses nothing, and there is no streak.
+const RL_TWX = ['rev', 'rain', 'snow', 'fog', 'dusk', 'rev'];
+const RL_TW_BONUS = 25;
+// the bonus for finishing today's twist: RL_TW_BONUS the first time that day (marks the save), else 0
+function rlTwistPay(r, twist) {
+  if (!twist || !twist.key || r.tw === twist.key) return 0;
+  r.tw = twist.key;
+  return RL_TW_BONUS;
+}
+function rlTwist(key = today(), r = rlPeek()) {
+  const h = rlHash('rally' + key), open = RL_ORDER.filter(id => rlTrackOpen(id, r)), base = open[h % open.length], pl = rlPl(RL_TRK[base].place);
+  let k = RL_TWX[(h >>> 8) % RL_TWX.length];
+  if (k == 'dusk' && pl.night) k = 'fog';
+  const rev = k == 'rev', name = RL_TRK[base].name;
+  const label = rev ? `${name}, the other way round` : `${name} ${{ rain: 'in the rain', snow: 'in the snow', fog: 'in the fog', dusk: 'at sunset' }[k]}`;
+  return { key, base, tid: rev ? base + 'm' : base, wx: rev ? pl.wx[0] : k, rev, label, done: r.tw === key };
+}
+// R-03 A1: music while racing: a short calm loop for each place, made of soft notes with tone() (the same way as Sky Hop and Snack
+// Stand); only with Sound effects and Music on, never in Calm mode; it waits while the race waits (paused, hidden, finished) and
+// goes quiet under the voice (the shared duck of every sound). Notes are MIDI numbers (0 a rest): [melody, bass, step in s].
+const RL_TUNE = {
+  meadow: [[72, 76, 79, 76, 74, 0, 72, 0, 76, 79, 81, 79, 76, 0, 74, 0], [48, 53, 55, 53], .26],
+  beach: [[74, 0, 79, 81, 79, 76, 74, 0, 71, 74, 76, 0, 74, 71, 69, 0], [50, 55, 57, 55], .28],
+  snow: [[76, 79, 84, 0, 83, 79, 76, 0, 74, 76, 79, 0, 76, 74, 72, 0], [52, 47, 45, 47], .3],
+  city: [[69, 0, 72, 74, 76, 0, 74, 72, 69, 0, 67, 69, 72, 0, 74, 0], [45, 41, 43, 45], .24],
+  woods: [[67, 72, 0, 72, 74, 76, 74, 72, 0, 69, 71, 72, 74, 0, 72, 0], [48, 43, 45, 43], .28],
+};
+const rlMusicOn = R => !!(R && S.sound && S.music && !S.calm && !R.paused && !GH.held && !document.hidden && !R.st.done);
+function rlMusic(R) {
+  const a = typeof AC != 'undefined' && AC;
+  if (!rlMusicOn(R) || !a || a.state != 'running') { R.mb = 0; return; }
+  const [mel, bass, step] = RL_TUNE[R.st.T.pl.id] || RL_TUNE.meadow;
+  if (!R.mb || R.mb < a.currentTime) R.mb = a.currentTime + .05;
+  while (R.mb < a.currentTime + .15) {
+    const i = R.mi = ((R.mi || 0) + 1) % 64, n = mel[i % 16], t = R.mb - a.currentTime;
+    if (n) tone(NOTE(n + (i >= 32 && i % 4 == 2 ? 12 : 0)), step * 1.5, t, 'triangle', .024);
+    if (i % 4 == 0) tone(NOTE(bass[(i >> 2) % 4]), step * 3.6, t, 'sine', .035);
+    R.mb += step;
+  }
+}
 // the one next goal on the menu
 function rlGoal(r) {
   if (r.cup) {
     const c = RL_CUPS.find(x => x.id === r.cup.id);
     return `Finish the ${c.name}: race ${r.cup.i + 1} of 3 is next.`;
   }
-  const open = RL_CUPS.map((c, i) => rlCupOpen(i, r)), k = open.lastIndexOf(true), b = rlNum(rlCupRec(r, RL_CUPS[k].id).best, 0, 4);
-  if (k < RL_CUPS.length - 1 && !(b >= 1 && b <= 3)) return `Win a trophy in the ${RL_CUPS[k].name} to open the ${RL_CUPS[k + 1].name}.`;
+  const open = RL_CUPS.map((c, i) => rlCupOpen(i, r)), last = (a, b) => { let k = -1; for (let i = a; i < b; i++) if (open[i]) k = i; return k; };
+  // the first season and the Maple Cup: a trophy in the last open cup opens the next one
+  const k = last(0, RL_M0);
+  if (k < RL_M0 - 1 && !rlWon(r, RL_CUPS[k])) return `Win a trophy in the ${RL_CUPS[k].name} to open the ${RL_CUPS[k + 1].name}.`;
+  // G-RALLY2: the mirror cups open with a trophy in each of the first four cups, then follow one another
+  if (!open[RL_M0]) {
+    const miss = RL_CUPS.slice(0, 4).filter(c => !rlWon(r, c)).map(c => c.name);
+    return `Win a trophy in the ${rlAnd(miss)} to open the mirror cups: every track the other way round!`;
+  }
+  const m = last(RL_M0, RL_CUPS.length);
+  if (m < RL_CUPS.length - 1 && !rlWon(r, RL_CUPS[m])) return `Win a trophy in the ${RL_CUPS[m].name} to open the ${RL_CUPS[m + 1].name}.`;
+  if (!rlT2Open(r)) return `Race the whole ${RL_CUPS[RL_M0].name} to open new things in the garage.`;
   const g = RL_CUPS.findIndex((c, i) => open[i] && rlNum(rlCupRec(r, c.id).best, 0, 4) != 1);
   if (g >= 0) return `Win the gold trophy in the ${RL_CUPS[g].name}.`;
   const up = RL_UPG.map(u => [u, rlUpNext(u[0], r)]).find(([, nx]) => nx && rlTrophies(r) >= nx.need);
   if (up) return r.spk >= up[1].cost ? `Get ${up[0][1]} level ${up[1].lv} in the garage.` : `Collect ${up[1].cost - r.spk} more sparkles for ${up[0][1]} level ${up[1].lv}.`;
-  const tt = RL_ORDER.find(id => !r.ghost[id]);
+  const tt = RL_ALL.find(id => !r.ghost[id] && rlTrackOpen(id, r));
   if (tt) return `Race a time trial on ${RL_TRK[tt].name} to make your ghost.`;
-  const id = RL_ORDER[r.races % RL_ORDER.length];
+  const ids = RL_ALL.filter(id => r.ghost[id]), id = ids[r.races % ids.length];
   return `Beat your ghost on ${RL_TRK[id].name}: best lap ${rlTime(r.ghost[id].ms)}.`;
 }
 function rlMenu(place) {
   const r = rlS();
   if (place && RL_PLACES.some(p => p.id === place)) r.place = place;
   let pl = rlPl(r.place);
-  const tracksOpen = p => RL_TRACKS[p.id].some(t => rlTrackOpen(t.id, r));
+  const tracksOpen = p => rlPlaceTracks(p.id).some(t => rlTrackOpen(t.id, r));
   if (!tracksOpen(pl)) pl = RL_PLACES[0];
-  const stars = rlStarsAll(r), mode = rlMode(r);
+  const stars = rlStarsAll(r), mode = rlMode(r), tw = rlTwist(today(), r), twT = RL_TRK[tw.tid];
   const ccard = (c, i) => {
     const open = rlCupOpen(i, r), rec = rlCupRec(r, c.id), b = rlNum(rec.best, 0, 4), run = r.cup && r.cup.id === c.id ? r.cup : null;
-    const sub = !open ? `Win a trophy in the ${esc(RL_CUPS[i - 1].name)} to open` : run ? `Go on: race ${run.i + 1} of 3` :
-      b >= 1 && b <= 3 ? `${RL_TROPHY[b]} trophy` : rec.runs ? 'Raced, no trophy yet' : 'Not raced yet';
-    return `<button class="rl-cup${open ? '' : ' lock'}${b >= 1 && b <= 3 ? ' won' : ''}" data-cup="${i}" data-ok="${open ? 1 : 0}">` +
+    const sub = !open ? (i == RL_M0 ? 'Win a trophy in the first four cups to open' : `Win a trophy in the ${esc(RL_CUPS[i - 1].name)} to open`) :
+      run ? `Go on: race ${run.i + 1} of 3` : b >= 1 && b <= 3 ? `${RL_TROPHY[b]} trophy` : rec.runs ? 'Raced, no trophy yet' : 'Not raced yet';
+    return `<button class="rl-cup${open ? '' : ' lock'}${b >= 1 && b <= 3 ? ' won' : ''}${c.mirror ? ' mir' : ''}" data-cup="${i}" data-ok="${open ? 1 : 0}">` +
       `<span class="rl-cpic s-${c.hue}">${rlCupSVG(rlTrophyHue(b) || c.hue)}${open ? '' : `<span class="rl-plock">${ico('lock', 22)}</span>`}</span>` +
-      `<span class="rl-ci"><b>${esc(c.name)}</b><span>${c.races.map(([t]) => esc(RL_TRK[t].name)).join(', ')}</span><span class="rl-cs">${sub}</span></span>` +
-      `<span class="rl-go" aria-hidden="true">${ico(open ? 'play' : 'lock')}</span></button>`;
+      `<span class="rl-ci"><b>${esc(c.name)}</b><span>${c.races.map(([t]) => esc(RL_TRK[t].name.replace(/^Mirror /, ''))).join(', ')}</span>` +
+      `<span class="rl-cs">${sub}</span></span><span class="rl-go" aria-hidden="true">${ico(open ? 'play' : 'lock')}</span></button>`;
   };
   const pcard = p => {
-    const open = tracksOpen(p), got = RL_TRACKS[p.id].reduce((a, t) => a + (r.stars[t.id] || 0), 0);
+    const open = tracksOpen(p), list = rlPlaceTracks(p.id), got = list.reduce((a, t) => a + (r.stars[t.id] || 0), 0);
     return `<button class="rl-place${p.id === pl.id ? ' on' : ''}${open ? '' : ' lock'}" data-pl="${p.id}" aria-pressed="${p.id === pl.id}">` +
       `<span class="rl-ppic" style="--gh-a:var(--sc-${p.sky[0]});--gh-b:var(--sc-${p.sky[1]})">${rlPic(RL_ART.place(p.id))}` +
       `${open ? '' : `<span class="rl-plock">${ico('lock', 22)}</span>`}</span><span class="rl-pname">${esc(p.name)}</span>` +
-      `<span class="rl-psub">${ico('star', 18)}${open ? `<b>${got}</b> of 9` : 'Opens with a cup'}</span></button>`;
+      `<span class="rl-psub">${ico('star', 18)}${open ? `<b>${got}</b> of ${list.length * 3}` : 'Opens with a cup'}</span></button>`;
   };
   const tcard = t => {
     const ok = rlTrackOpen(t.id, r), best = r.best[t.id], lap = r.lap[t.id];
-    return `<div class="rl-trow"><button class="rl-trk${ok ? '' : ' lock'}" data-trk="${t.id}" data-ok="${ok ? 1 : 0}"><span class="rl-tn">${t.i + 1}</span>` +
-      `<span class="rl-ti"><b>${esc(t.name)}</b><span>${ok ? (best ? 'Best time ' + rlTime(best) : t.laps + ' laps') : `Opens with the ${esc(RL_CUPS[t.cup].name)}`}</span>` +
+    return `<div class="rl-trow"><button class="rl-trk${ok ? '' : ' lock'}${t.mirror ? ' mir' : ''}" data-trk="${t.id}" data-ok="${ok ? 1 : 0}">` +
+      `<span class="rl-tn">${t.mirror ? ico('replay', 24) : t.i + 1}</span>` +
+      `<span class="rl-ti"><b>${esc(t.name)}</b><span>${ok ? (best ? 'Best time ' + rlTime(best) : t.laps + ' laps' + (t.mirror ? ', the other way round' : '')) :
+        `Opens with the ${esc(RL_CUPS[t.cup].name)}`}</span>` +
       (ok ? UI.stars(r.stars[t.id] || 0, 3, 22) : '') + `</span><span class="rl-go" aria-hidden="true">${ico(ok ? 'play' : 'lock')}</span></button>` +
       (ok ? `<button class="rl-tt" data-tt="${t.id}" aria-label="Time trial on ${esc(t.name)}">${ico('timer', 24)}<span>${lap ? rlTime(lap) : 'Time trial'}</span></button>` : '') + '</div>';
   };
@@ -1832,16 +2131,25 @@ function rlMenu(place) {
     .concat([['warning', 'Rails, cones, rolling things and animals make you spin. Off the road is slow.'],
       ['star', 'Grab a boost star to zoom, or a bubble to keep you safe from one bump.'], ['play', 'Drive over the orange pads to zoom.'],
       ['trophy', 'A cup is 3 races. Points for every place, a trophy at the end.'], ['timer', 'Time trial: race your ghost, your own best lap.'],
-      ['sparkle', 'Collect sparkles. Spend them on paint, stickers and upgrades.']]);
+      ['replay', 'Mirror cups: every track the other way round.'], ['sparkle', 'Collect sparkles. Spend them on paint, stickers, upgrades and more.']]);
+  const mOpen = rlCupOpen(RL_M0, r);
   view(`${GH.top('rally')}<div class="scroll rl-menu">
-  <section class="rl-hero"><div class="rl-hcar">${rlCarSVG(r.body, r.paint, r.stk)}</div><div class="rl-hinfo">
-   <p class="rl-hl">${ico('trophy', 22)}<b>${rlTrophies(r)}</b> of 4 trophies</p><p class="rl-hl">${ico('star', 22)}<b>${stars}</b> of 36 stars</p>
+  <section class="rl-hero"><div class="rl-hcar">${rlCarSVG(r.body, r.paint, r.stk, '', rlMyKx(r))}</div><div class="rl-hinfo">
+   <p class="rl-hl">${ico('trophy', 22)}<b>${rlTrophies(r)}</b> of ${RL_CUPS.length} trophies</p><p class="rl-hl">${ico('star', 22)}<b>${stars}</b> of ${RL_ALL.length * 3} stars</p>
    <p class="rl-hl">${ico('sparkle', 22)}<b>${r.spk}</b> sparkles</p>
    ${UI.btn('Garage', { icon: 'palette', id: 'rlgar', wide: true })}</div></section>
   <p class="rl-goal" id="rlgoal"><span class="rl-hi">${ico('target', 22)}</span><span><b>Next goal:</b> ${esc(rlGoal(r))}</span></p>
-  <h2 class="rl-h">Cups</h2><div class="rl-cups">${RL_CUPS.map(ccard).join('')}</div>
+  <p class="rl-goal rl-save" id="rlsave"><span class="rl-hi">${ico('sparkle', 22)}</span><span>${esc(rlSaveLine(r))}</span></p>
+  <button class="rl-tw" id="rltwist" data-tw="${tw.tid}"><span class="rl-ppic" style="--gh-a:var(--sc-${rlPl(twT.place).sky[0]});--gh-b:var(--sc-${rlPl(twT.place).sky[1]})">` +
+    `${rlPic(RL_ART.place(twT.place))}</span><span class="rl-ci"><b>Today's twist</b><span>${esc(tw.label)}</span>` +
+    `<span class="rl-cs">${tw.done ? 'Done today. Race it again any time!' : `+${RL_TW_BONUS} sparkles the first time today`}</span></span>` +
+    `<span class="rl-go" aria-hidden="true">${ico('play')}</span></button>
+  <h2 class="rl-h">Cups</h2><div class="rl-cups">${RL_CUPS.slice(0, RL_M0).map((c, i) => ccard(c, i)).join('')}</div>
+  <h2 class="rl-h">Mirror cups</h2><p class="rl-note" id="rlmnote">${mOpen ? 'Every track the other way round: the bends and hills turn the other way.' :
+    'Every track the other way round! They open when the Sprout, Wave, Frost and Star Cups each have a trophy.'}</p>
+  <div class="rl-cups">${RL_CUPS.slice(RL_M0).map((c, j) => ccard(c, RL_M0 + j)).join('')}</div>
   <h2 class="rl-h">Single races</h2><div class="rl-places">${RL_PLACES.map(pcard).join('')}</div>
-  <h3 class="rl-h3">${esc(pl.name)}</h3><div class="rl-trks">${RL_TRACKS[pl.id].map(tcard).join('')}</div>
+  <h3 class="rl-h3">${esc(pl.name)}</h3><div class="rl-trks">${rlPlaceTracks(pl.id).map(tcard).join('')}</div>
   <h2 class="rl-h">Your rivals</h2><div class="rl-rivals">${RL_RIVALS.map(v => `<div class="rl-rv"><svg class="art" viewBox="0 0 50 54" aria-hidden="true" focusable="false">` +
     `${rlFace(v.id, 25, 30, 1.2)}</svg><b>${esc(v.name)}</b><span>${esc(v.kind)}</span></div>`).join('')}</div>
   <section class="rl-opts"><h2 class="rl-h">How to drive</h2>
@@ -1859,11 +2167,17 @@ function rlMenu(place) {
     return false;
   };
   $('#rlgar').onclick = () => { SFX.whoosh(); rlGarage(); };
+  $('#rltwist').onclick = () => {
+    if (!gt()) return;
+    SFX.whoosh();
+    rlRace(tw.tid, { twist: tw });
+  };
   $$('[data-cup]').forEach(b => b.onclick = () => {
     const i = +b.dataset.cup, c = RL_CUPS[i];
     if (!rlCupOpen(i, r)) {
       SFX.wrong();
-      fb(`Win a trophy in the ${RL_CUPS[i - 1].name} to open the ${c.name}!`, 'warn long', 2800);
+      fb(i == RL_M0 ? 'Win a trophy in the Sprout, Wave, Frost and Star Cups to open the mirror cups!' :
+        `Win a trophy in the ${RL_CUPS[i - 1].name} to open the ${c.name}!`, 'warn long', 2800);
       return;
     }
     if (!gt()) return;
@@ -1919,11 +2233,13 @@ function rlCupGo(i) {
   rlRace(c.races[r.cup.i][0], { cup: c });
 }
 
-/* ---- the garage: try a paint, sticker or car shape on the car; buy it, or an upgrade, with sparkles (prices shown) ---- */
+/* ---- the garage: try a paint, sticker or car shape on the car; buy it, or an upgrade, with sparkles (prices shown).
+   G-RALLY2: a second tier below (body kits, wheels, horns, trails), every price shown, opened by finishing a mirror cup ---- */
+const RL_T2NAME = { kit: 'Body kits', whl: 'Wheels', horn: 'Horns', trail: 'Trails' };
 function rlGarage(sel) {
-  const r = rlS(), stars = rlStarsAll(r), tro = rlTrophies(r);
+  const r = rlS(), stars = rlStarsAll(r), tro = rlTrophies(r), t2 = rlT2Open(r);
   sel = sel || null;
-  const look = { body: r.body, paint: r.paint, stk: r.stk };
+  const look = { body: r.body, paint: r.paint, stk: r.stk, kit: r.kit, whl: r.whl };
   let bar = '';
   if (sel) {
     let name, cost;
@@ -1932,8 +2248,8 @@ function rlGarage(sel) {
       name = `${u[1]} level ${nx.lv}`;
       cost = nx.cost;
     } else {
-      const it = (sel.k == 'paint' ? RL_PAINTS : RL_STICKERS).find(x => x[0] === sel.id);
-      look[sel.k == 'paint' ? 'paint' : 'stk'] = sel.id;
+      const it = RL_SHOP[sel.k][0].find(x => x[0] === sel.id);
+      look[RL_SHOP[sel.k][2]] = sel.id;
       name = it[1];
       cost = it[2];
     }
@@ -1955,8 +2271,30 @@ function rlGarage(sel) {
       `<span class="rl-iprice">${!nx ? ico('check', 18) + 'Top level' : tro < nx.need ? ico('lock', 18) + nx.need + ' ' + ico('trophy', 18) : ico('sparkle', 18) + nx.cost}</span>` +
       `<span class="rl-iwhat">${esc(what)}</span></button>`;
   };
+  // the second tier's pictures: the car with the kit or the wheels, a horn, three pieces of a trail
+  const pic2 = (kind, id) => {
+    if (kind == 'kit') return rlCarSVG(r.body, r.paint, '', '', Object.assign(rlMyKx(r), { kit: id }));
+    if (kind == 'whl') return `<svg class="art" viewBox="0 0 64 52" aria-hidden="true" focusable="false">${ghShad(32, 50, 28, 2.4, .16)}` +
+      `${rlWheel(5, 12, 22, 36, false, id)}${rlWheel(37, 12, 22, 36, false, id)}</svg>`;
+    if (kind == 'horn') return `<svg class="art" viewBox="0 0 64 48" aria-hidden="true" focusable="false">${ghBall(14, 24, 11, 'r')}` +
+      ghP('M22 20L52 8V40L22 28Z', 'y2') + ghP('M22 20L50 9.4V24L22 24Z', 'y') + ghE(52, 24, 5, 16, 'y2') +
+      (id == 'beep' ? '' : ghL('M57 14Q62 24 57 34', 'e3', 2.4)) + '</svg>';
+    if (!id) return stk('');
+    const a = RL_TRAIL_ART[id]();
+    return `<svg class="art" viewBox="0 0 64 48" aria-hidden="true" focusable="false">${[0, 1, 2].map(i =>
+      rlNest(4 + i * 18, 26 - i * 10, 20 - i * 3, 20 - i * 3, 40, 40, a[i % a.length])).join('')}</svg>`;
+  };
+  const tile2 = kind => {
+    const [list, ownK, cur] = RL_SHOP[kind];
+    return list.map(([id, n, c]) => {
+      const own = !c || !!r[ownK][id], on = r[cur] === id && !sel;
+      return `<button class="rl-item${on ? ' on' : ''}${own ? '' : ' new'}${t2 || own ? '' : ' lock'}" data-k="${kind}" data-id="${id}" aria-pressed="${on}">` +
+        `<span class="rl-ipic">${pic2(kind, id)}</span><span class="rl-iname">${esc(n)}</span><span class="rl-iprice">` +
+        (on ? ico('check', 18) + 'On' : own ? 'Yours' : (t2 ? '' : ico('lock', 18)) + ico('sparkle', 18) + c) + '</span></button>';
+    }).join('');
+  };
   view(`${GH.top('rally', { sub: 'Garage', chips: rlSpkChip(r.spk) })}<div class="scroll rl-gar">
-  <section class="rl-gcar" style="--gh-a:var(--sc-sky-1);--gh-b:var(--sc-sky)">${rlCarSVG(look.body, look.paint, look.stk, 'rl-big')}${bar}</section>
+  <section class="rl-gcar" style="--gh-a:var(--sc-sky-1);--gh-b:var(--sc-sky)">${rlCarSVG(look.body, look.paint, look.stk, 'rl-big', rlMyKx(r, look))}${bar}</section>
   <h2 class="rl-h">Upgrades</h2><div class="rl-items rl-ups">${RL_UPG.map(upTile).join('')}</div>
   <p class="rl-note">Upgrades open with trophies from the cups and make the car easier to drive.</p>
   <h2 class="rl-h">Cars</h2><div class="rl-items">${RL_BODIES.map(([id, n, need]) => tile('body', id, n, rlCarSVG(id, r.paint, ''),
@@ -1964,6 +2302,10 @@ function rlGarage(sel) {
   <p class="rl-note">New car shapes open with stars from racing. They all drive the same.</p>
   <h2 class="rl-h">Paint</h2><div class="rl-items">${RL_PAINTS.map(([id, n, c]) => tile('paint', id, n, swatch(id), !!r.paints[id], r.paint === id && !sel, c)).join('')}</div>
   <h2 class="rl-h">Stickers</h2><div class="rl-items">${RL_STICKERS.map(([id, n, c]) => tile('stk', id, n, stk(id), !id || !!r.stks[id], r.stk === id && !sel, c)).join('')}</div>
+  <section class="rl-t2${t2 ? '' : ' lock'}" id="rlt2"><h2 class="rl-h">${ico(t2 ? 'sparkle' : 'lock', 28)}Garage level 2</h2>
+  <p class="rl-note">${t2 ? 'Body kits, wheels, horns and trails. They change how your car looks and sounds.' :
+    'Race a whole mirror cup to open these. Every price is here, so you can start saving now!'}</p>
+  ${RL_T2.map(k => `<h3 class="rl-h3">${RL_T2NAME[k]}</h3><div class="rl-items">${tile2(k)}</div>`).join('')}</section>
   </div>`);
   GH.wire({ back: () => rlMenu() });
   $$('.rl-item').forEach(b => b.onclick = () => {
@@ -1986,10 +2328,16 @@ function rlGarage(sel) {
         return;
       }
       r.body = id;
-    } else if (k == 'paint' ? r.paints[id] : !id || r.stks[id]) {
-      if (k == 'paint') r.paint = id;
-      else r.stk = id;
-    } else return SFX.pop(1), rlGarage({ k, id });
+    } else {
+      const [list, ownK, cur, tier] = RL_SHOP[k], it = list.find(x => x[0] === id);
+      if (k == 'horn') rlHorn(id);
+      if (!it[2] || r[ownK][id]) r[cur] = id;
+      else if (tier == 2 && !t2) {
+        SFX.wrong();
+        fb('Race a whole mirror cup to open the new garage things!', 'warn long', 2600);
+        return;
+      } else return SFX.pop(1), rlGarage({ k, id });
+    }
     SFX.pop(2);
     save();
     rlGarage();
@@ -2001,8 +2349,7 @@ function rlGarage(sel) {
         SFX.wrong();
         return;
       }
-      if (sel.k == 'paint') r.paint = sel.id;
-      else if (sel.k == 'stk') r.stk = sel.id;
+      if (sel.k != 'upg') r[RL_SHOP[sel.k][2]] = sel.id;
       save();
       SFX.fanfare();
       rlGarage();
@@ -2037,17 +2384,17 @@ function rlMsg(t, ms = 1200, cls = '') {
   clearTimeout(m._t);
   m._t = setTimeout(() => m.classList.remove('on'), ms);
 }
-// o: {cup (a cup being raced: its race r.cup.i), trial (a time trial against the ghost)}
+// o: {cup (a cup being raced: its race r.cup.i), trial (a time trial against the ghost), twist (today's twist, rlTwist)}
 function rlRace(tid, o = {}) {
-  const r = rlS(), t = RL_TRK[tid], mode = rlMode(r), cup = o.cup || null, trial = !!o.trial;
+  const r = rlS(), t = RL_TRK[tid], mode = rlMode(r), cup = o.cup || null, trial = !!o.trial, twist = !cup && !trial && o.twist ? o.twist : null;
   r.place = t.place;
   save();
   const btn = (id, icon, aria, txt) => `<button class="rl-btn" id="${id}" data-k="${id.slice(2)}" aria-label="${aria}">${ico(icon, 48)}` +
     `${txt ? `<span>${txt}</span>` : ''}</button>`;
   const seed = ((Date.now() & 0xffffff) ^ (r.races * 7919)) >>> 0 || 1;
   const st = rlNew(tid, { mode, quiz: r.quiz, grade: S.grade, seed, up: r.upg, trial, ghost: trial ? r.ghost[tid] : null,
-    tier: cup ? cup.tier : null, wx: cup ? cup.races[r.cup.i][1] : null });
-  const wxn = st.W.name, sub = (cup ? `${cup.name} ${r.cup.i + 1}/3: ` : trial ? 'Time trial: ' : '') + t.name + (wxn ? ', ' + wxn : '');
+    tier: cup ? cup.tier : null, wx: cup ? cup.races[r.cup.i][1] : twist ? twist.wx : null });
+  const wxn = st.W.name, sub = (cup ? `${cup.name} ${r.cup.i + 1}/3: ` : trial ? 'Time trial: ' : twist ? "Today's twist: " : '') + t.name + (wxn ? ', ' + wxn : '');
   view(`${GH.top('rally', { play: true, hud: true, sub, chips: (trial ? `<span class="stat rl-pos" id="rlpos" aria-label="Lap time">${ico('timer', 32)}<b>0:00.0</b></span>` :
     `<span class="stat rl-pos" id="rlpos" aria-label="Place">${ico('trophy', 32)}<b>6th</b></span>`) +
     `<span class="stat rl-lap" id="rllap" aria-label="Lap">${ico('replay', 32)}<b>1/${t.laps}</b></span>${rlSpkChip(0)}` })}
@@ -2056,7 +2403,7 @@ function rlRace(tid, o = {}) {
     `${mode == 'pro' ? btn('rlgo', 'bolt', 'Go faster', 'Go') : ''}</div></div>`);
   const cv = $('#rlcv');
   RL = { st, cv, ctx: cv.getContext('2d', { alpha: false }), ptr: {}, key: {}, tilt: 0, bgx: 0, t: 0, acc: 0, last: 0, raf: 0, paused: false, ft: [], fi: [],
-    cd: 4, chips: {}, q: 1, fc: 0, qAt: 0, cup, trial, shake: 0, calm: rlCalm(), msgT: 0 };
+    cd: 4, chips: {}, q: 1, fc: 0, qAt: 0, cup, trial, twist, shake: 0, calm: rlCalm(), msgT: 0, hornT: 0, horn: r.horn || 'beep' };
   rlSize(RL);
   RL.rs = () => { if (RL) rlSize(RL); };
   addEventListener('resize', RL.rs);
@@ -2141,6 +2488,7 @@ function rlRace(tid, o = {}) {
       rlEvents();
     }
     rlEngine();
+    rlMusic(RL);
     rlDraw(RL);
     if (RL_DEV.flush) RL.ctx.getImageData(0, 0, 1, 1);
     RL.ft.push(rlNow() - t0);
@@ -2186,7 +2534,6 @@ function rlEngine() {
     }
   } catch (e) {}
 }
-const RL_CRIT = { duck: 'duck', crab: 'crab', chick: 'penguin chick' };
 // what happened in the race: sounds, messages, the chips
 function rlEvents() {
   const st = RL.st, P = st.P;
@@ -2201,6 +2548,8 @@ function rlEvents() {
       rlMsg('Go!', 900, 'big');
       rlTone(1040, .3, 0, 'square', .1);
       rlTone(1560, .3, .08, 'triangle', .08);
+      RL.hornT = RL.t + 4;
+      setTimeout(() => { if (RL && RL.st === st) rlHorn(RL.horn); }, 450);
     } else if (k == 'spark') {
       const m = [72, 74, 76, 79, 81, 84][a % 6];
       rlTone(NOTE(m + 12), .08, 0, 'sine', .07);
@@ -2215,6 +2564,7 @@ function rlEvents() {
       rlTone(900, .5, 0, 'sine', .09, 260);
       rlTone(180, .2, .05, 'triangle', .12, 90);
       if (!RL.calm) RL.shake = .3;
+      buzz(25);
       rlMsg(a == 'crit' ? `Whoa! The ${RL_CRIT[st.T.pl.crit] || 'animal'} hopped away. Dizzy!` : a == 'cone' ? 'Bonk! A cone! Dizzy!' :
         a == 'bonk' ? 'Bonk! Too close! Dizzy!' : 'Whoa! Spin! Dizzy!', 1300);
     } else if (k == 'pop') {
@@ -2239,13 +2589,16 @@ function rlEvents() {
       rlMsg('Best lap! ' + rlTime(a), 1300);
     } else if (k == 'pass') {
       rlMsg('You passed ' + a.name + '!', 1000);
-      rlTone(600, .12, 0, 'sine', .08, 900);
+      // G-RALLY2: the car's horn as it passes (not more than every 4 s)
+      if (RL.t > RL.hornT) { RL.hornT = RL.t + 4; rlHorn(RL.horn); }
+      else rlTone(600, .12, 0, 'sine', .08, 900);
     } else if (k == 'gate') {
       if (a) { SFX.right(3); rlMsg('Right! Zoom!', 1000); }
       else { rlTone(320, .18, 0, 'triangle', .12, 200); rlMsg('It was ' + b + '. Next time!', 1400); }
     } else if (k == 'finish') {
       rlMsg('Finish!', 1500, 'big');
       SFX.fanfare();
+      buzz(40);
       RL.endT = setTimeout(() => { if (RL && RL.st === st) rlFinish(); }, 1100);
     }
   }
@@ -2293,8 +2646,8 @@ function rlStandHTML(pts, order, h) {
 }
 // the finish: stars, the best time, sparkles, what opened; a cup's standings and trophy; a time trial's best lap and ghost
 function rlFinish() {
-  const st = RL.st, P = st.P, r = rlS(), tid = st.tid, t = RL_TRK[tid], cup = RL.cup, trial = st.trial;
-  const openCups = RL_CUPS.map((c, i) => rlCupOpen(i, r)), bodies = RL_BODIES.filter(b => rlBodyOpen(b[0], r)).map(b => b[0]);
+  const st = RL.st, P = st.P, r = rlS(), tid = st.tid, t = RL_TRK[tid], cup = RL.cup, trial = st.trial, twist = RL.twist;
+  const openCups = RL_CUPS.map((c, i) => rlCupOpen(i, r)), bodies = RL_BODIES.filter(b => rlBodyOpen(b[0], r)).map(b => b[0]), t2 = rlT2Open(r);
   const ms = Math.round(P.time * 1000), lines = [], order = rlOrder(st);
   let n = null, pay, title, extra = '', pic = '', rec = false, had = r.best[tid], tag = '', win = P.place <= 3, stats;
   if (trial) {
@@ -2339,6 +2692,13 @@ function rlFinish() {
       lines.push(['trophy', rank <= 3 ? `You won the ${RL_TROPHY[rank].toLowerCase()} trophy in the ${esc(cup.name)}!` : `${rlOrd(rank)} in the cup. Race it again for a trophy!`]);
     }
   }
+  // R-03 A5: today's twist pays its bonus the first time it is finished each day
+  const twb = rlTwistPay(r, twist);
+  if (twb) {
+    pay += twb;
+    stats[2][0] = '+' + pay;
+    lines.push(['sparkle', `Today's twist done: +${RL_TW_BONUS} sparkles! A new twist comes tomorrow.`]);
+  }
   r.spk += pay;
   r.races++;
   save();
@@ -2346,10 +2706,11 @@ function rlFinish() {
   gtStop();
   RL_CUPS.forEach((c, i) => { if (rlCupOpen(i, r) && !openCups[i]) lines.push(['sparkle', `New cup open: ${esc(c.name)}! Its tracks are open too.`]); });
   for (const b of RL_BODIES) if (rlBodyOpen(b[0], r) && !bodies.includes(b[0])) lines.push(['car', `New car in the garage: ${esc(b[1])}!`]);
+  if (rlT2Open(r) && !t2) lines.push(['palette', 'Garage level 2 is open: body kits, wheels, horns and trails!']);
   if (!trial && P.hits) lines.push(['replay', `${P.hits} ${P.hits == 1 ? 'spin' : 'spins'} this race. ${P.hits > 2 ? 'Steer round the cones, rails and animals to go faster!' : ''}`]);
   if (!trial && P.place > 3 && !cup) lines.push(['hint', st.mode == 'pro' ? 'Tip: drift through the bends, then let go to zoom.' : 'Tip: drive over the orange pads and grab the stars to zoom past.']);
   const time = ptLeft() > 0, nextC = cup && !final;
-  const next = RL_ORDER[RL_ORDER.indexOf(tid) + 1], nextOk = !cup && !trial && next && rlTrackOpen(next, r) && !r.stars[next];
+  const next = RL_ALL[RL_ALL.indexOf(tid) + 1], nextOk = !cup && !trial && !twist && next && rlTrackOpen(next, r) && !r.stars[next];
   const o = GH.end('rally', { win, title, stars: n, tag, pic: pic || undefined, stats, lines, extra,
     btns: (time ? (nextC ? UI.btn(`Race ${r.cup.i + 1} of 3`, { kind: 'primary', size: 'lg', icon: 'arrow-right', id: 'rlnextc', wide: true }) :
       UI.btn(final ? 'Race the cup again' : 'Race again', { kind: 'primary', size: 'lg', icon: 'replay', id: 'rlagain', wide: true })) +
@@ -2361,7 +2722,7 @@ function rlFinish() {
   const go = f => { o.remove(); f(); };
   const ci = cup ? RL_CUPS.indexOf(cup) : -1;
   if (o.querySelector('#rlnextc')) o.querySelector('#rlnextc').onclick = () => go(() => (ptLeft() > 0 ? rlCupGo(ci) : rlMenu()));
-  if (o.querySelector('#rlagain')) o.querySelector('#rlagain').onclick = () => go(() => (cup ? rlCupGo(ci) : rlRace(tid, { trial })));
+  if (o.querySelector('#rlagain')) o.querySelector('#rlagain').onclick = () => go(() => (cup ? rlCupGo(ci) : rlRace(tid, { trial, twist })));
   if (o.querySelector('#rlnext')) o.querySelector('#rlnext').onclick = () => go(() => rlRace(next));
   if (o.querySelector('#rllearn')) o.querySelector('#rllearn').onclick = () => go(() => home());
   o.querySelector('#rlmenu').onclick = () => go(() => rlMenu(t.place));
@@ -2372,8 +2733,8 @@ GH.reg({
   id: 'rally', btn: 'grally', name: 'Star Rally', icon: 'car', p: 'math', sky: ['sky-1', 'sky'], art: () => RL_ART.hub(),
   sub: () => {
     const r = rlPeek(), n = rlStarsAll(r);
-    return n || r.spk ? `<span>${ico('trophy', 18)}<b>${rlTrophies(r)}</b> of 4 cups</span><span>${ico('star', 18)}<b>${n}</b> of 36 stars</span>`
-      : '<span>Race the animals: 4 cups, 12 tracks</span>';
+    return n || r.spk ? `<span>${ico('trophy', 18)}<b>${rlTrophies(r)}</b> of ${RL_CUPS.length} cups</span><span>${ico('star', 18)}<b>${n}</b> of ${RL_ALL.length * 3} stars</span>`
+      : `<span>Race the animals: ${RL_CUPS.length} cups, ${RL_ALL.length} tracks</span>`;
   },
   open: () => rlMenu(), tapToPlay: '.rl-trk[data-ok="1"]', saved: 'Your sparkles are saved.',
 });

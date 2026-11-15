@@ -232,6 +232,7 @@ const PRF = {
     try {
       for (const c of await DB.all()) if (PRF.clipOf(c.id) === id) await DB.del(c.id);
     } catch (e) {}
+    if (typeof spkrDrop == 'function') await spkrDrop(id); // S-SPK2: that child's Say it! recordings
   },
 
   // ---- screens ----
