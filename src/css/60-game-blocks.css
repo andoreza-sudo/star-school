@@ -1,8 +1,12 @@
-/* Block Builder (G-01; src/js/60-blocks.js). Goes into games.<VER>.js with the game. Tokens only.
+/* Block Builder (G-01; src/js/60-blocks.js). Goes into games3.<VER>.js with the game (G-BB2). Tokens only.
    Play screen: the scene, then the tool bar and the palette under it (portrait) or beside it (landscape). Every button 48 px and up. */
 .bb-wrap{flex:1;display:flex;flex-direction:column;min-height:0;gap:var(--s-2);padding:0 var(--s-2) var(--s-2)}
 .bb-cv{flex:1;position:relative;min-height:160px;border-radius:var(--r-card);overflow:hidden;background:var(--sc-sky);box-shadow:inset 0 0 0 2px var(--line)}
 .bb-cv canvas{display:block;width:100%;height:100%;touch-action:none;-webkit-user-select:none;user-select:none}
+/* G-BB2: the 3D scene under the 2D canvas (which takes the touches and draws outlines and effects over it) */
+.bb-cv #bbgl{position:absolute;inset:0;pointer-events:none}
+.bb-cv #bbgl[hidden]{display:none}
+.bb-cv [id="bbc"]{position:relative}
 .bb-side{flex:none;display:flex;flex-direction:column;gap:var(--s-2);min-height:0;min-width:0}
 .bb-bar{display:flex;flex-direction:column;gap:var(--s-1)}
 .bb-row{display:flex;gap:var(--s-1);align-items:stretch}

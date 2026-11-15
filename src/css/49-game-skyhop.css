@@ -66,11 +66,40 @@
 @media (min-width:760px){.hp-how{grid-template-columns:1fr 1fr}}
 .hp-how li{display:flex;align-items:center;gap:var(--s-3);font-size:var(--fs-3);line-height:1.3;color:var(--ink)}
 .hp-hi{flex:none;display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:var(--disc-tint);color:var(--disc-shade)}
+/* G-04b2: the costume behind the pet, the next goal, today's twist, stars to spend and the costume shop */
+.hp-pet .pet-svg{position:relative}
+.hp-cos{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hp-goal{display:flex;align-items:center;gap:var(--s-3);margin-top:var(--s-4);margin-bottom:0;padding:var(--s-3) var(--s-4);border-radius:var(--r-card);
+  background:var(--surface);color:var(--ink);font-size:var(--fs-3);line-height:1.3;box-shadow:inset 0 0 0 2px var(--line),0 4px 0 var(--ledge-soft)}
+.hp-goal .hp-hi{width:44px;height:44px}
+.hp-day{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s-3) var(--s-4);margin-top:var(--s-4);padding:var(--s-3) var(--s-4) var(--s-4);
+  border-radius:var(--r-card);background:var(--disc-tint);box-shadow:inset 0 0 0 2px var(--wash),0 4px 0 var(--ledge-soft)}
+.hp-dtx{flex:1 1 280px;min-width:0}
+.hp-day .hp-h{margin:var(--s-2) 0}
+.hp-dtx p{margin:0 0 var(--s-2);font-size:var(--fs-3);line-height:1.35;color:var(--ink)}
+.hp-dst{display:flex;align-items:center;gap:var(--s-2);font-weight:700}
+.hp-dst .ic{color:var(--disc-shade)}
+.hp-day .btn{flex:1 1 200px;min-height:64px}
+.hp-cash{display:flex;align-items:center;gap:var(--s-2);margin:0 auto var(--s-3);font-size:var(--fs-3);line-height:1.3;color:var(--ink)}
+.hp-cash .ic{flex:none;color:var(--star-shade)}
+.hp-wears{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:var(--s-3)}
+.hp-wear{display:flex;flex-direction:column;align-items:center;gap:var(--s-1);min-height:var(--tap);padding:var(--s-2) var(--s-2) var(--s-3);border:0;
+  border-radius:var(--r-card);background:var(--surface);color:var(--ink);font:inherit;cursor:pointer;touch-action:manipulation;
+  box-shadow:inset 0 0 0 2px var(--line),0 4px 0 var(--ledge-soft);transition:transform var(--t-fast) var(--ease)}
+.hp-wear:active{transform:translateY(3px)}
+.hp-wear.on{box-shadow:inset 0 0 0 3px var(--good),0 4px 0 var(--good-ink)}
+.hp-wear.lock{background:var(--surface-2)}
+.hp-wear.lock .hp-wart{opacity:.55}
+.hp-wpet{display:block;width:84px;height:84px;border-radius:50%;background:var(--sc-sky)}
+.hp-wart{display:block;width:100%;height:100%}
+.hp-wn{font-size:var(--fs-2);font-weight:700;text-align:center;line-height:1.2}
+.hp-wp{display:flex;align-items:center;gap:2px;font-size:var(--fs-2);color:var(--ink-2)}
+.hp-wp .ic{color:var(--star-shade)}
 
 /* ---- the course ---- */
 .hpg{position:fixed;inset:0;z-index:0;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;background:var(--sc-sky)}
 .hpg canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
-.hp-msg{position:absolute;left:50%;top:22%;max-width:calc(100% - 32px);padding:var(--s-2) var(--s-5);border-radius:var(--r-pill);background:var(--surface);
+.hp-msg{position:absolute;left:50%;top:22%;width:max-content;max-width:calc(100% - 32px);padding:var(--s-2) var(--s-5);border-radius:var(--r-card);background:var(--surface);
   color:var(--ink);font-family:var(--font-display);font-size:var(--fs-4);font-weight:700;text-align:center;pointer-events:none;box-shadow:0 4px 0 var(--ledge-soft);
   opacity:0;transform:translate(-50%,-12px) scale(.9);transition:opacity var(--t) var(--ease),transform var(--t) var(--spring)}
 .hp-msg.on{opacity:1;transform:translate(-50%,0) scale(1)}

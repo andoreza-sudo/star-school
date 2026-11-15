@@ -237,7 +237,7 @@ async function main() {
       const files = g.files.map(f => f[0] + '.' + g.dv + '.js'), want = 'data.' + g.dv + '.js';
       const startFiles = g.files.filter(f => !g.lazy.includes(f[0])).map(f => f[0] + '.' + g.dv + '.js'); // P6-02: the <script> tags at start
       const btF = 'bt.' + g.dv + '.js', gamesF = 'games.' + g.dv + '.js'; // A11c: the order of the parts is build.py's, so name them
-      if (JSON.stringify(g.lazy) !== '["games","games2"]' || JSON.stringify(g.src) !== JSON.stringify(startFiles) || files[files.length - 1] !== want || !g.ready || !(g.gram > 0 && g.vocab > 0 && g.comp > 0 && g.info > 0)
+      if (JSON.stringify(g.lazy) !== '["games","rally","games2","games3"]' || JSON.stringify(g.src) !== JSON.stringify(startFiles) || files[files.length - 1] !== want || !g.ready || !(g.gram > 0 && g.vocab > 0 && g.comp > 0 && g.info > 0)
         || g.spell !== 'function' || !g.vq || g.pz !== '3:16:16' || g.ix < 0) {
         fail('A11 data globals: ' + JSON.stringify(g));
       }
@@ -287,7 +287,7 @@ async function main() {
       if (room !== 3) fail('A11b: the Game Room did not open (' + room + ' of 3 games)');
       const lz = await d.page.evaluate(() => ({ css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(), games: [typeof garage, typeof blockBuilder, typeof colorMenu].join(),
         ready: LAZY_PARTS.map(partReady).join(), tags: [...document.scripts].filter(s => s.src).map(s => s.getAttribute('src')).join() }));
-      if (lz.css !== 'main,css-bt,css-games,css-games2' || lz.games !== 'function,function,function' || lz.ready !== 'true,true'
+      if (lz.css !== 'main,css-bt,css-games,css-rally,css-games2,css-games3' || lz.games !== 'function,function,function' || lz.ready !== 'true,true,true,true'
         || lz.tags !== startFiles.concat(g.lazy.map(x => x + '.' + g.dv + '.js')).join()) fail('P6-02: the Game Room did not load the games parts: ' + JSON.stringify(lz));
       if (opened.length === 3 && room === 3) step('A11b: puzzle types ' + g.bt + ' registered from ' + btF + ', its <style> in, opened from the hub: '
         + opened.join(', ') + '; Game Room from ' + gamesF + ' opened');
@@ -374,6 +374,12 @@ async function main() {
       const a5 = await lazyGuard(games2F + ' of another release', /^$/, 'games2 file v1 does not match');
       await a5.ctx.close();
       fs.copyFileSync(path.join(ROOT, games2F), path.join(tmp, games2F));
+      // 5b. G-RALLY2: a rally file (Star Rally's own part) from another release
+      const rallyF = 'rally.' + g.dv + '.js';
+      fs.writeFileSync(path.join(tmp, rallyF), fs.readFileSync(path.join(ROOT, rallyF), 'utf8').replace("var RALLY_VER='" + g.dv + "'", "var RALLY_VER='v1'"));
+      const a5b = await lazyGuard(rallyF + ' of another release', /^$/, 'rally file v1 does not match');
+      await a5b.ctx.close();
+      fs.copyFileSync(path.join(ROOT, rallyF), path.join(tmp, rallyF));
       // 6. P6-02: no games file (never cached, offline); with it back, Try again starts the app and the Game Room opens
       fs.rmSync(path.join(tmp, gamesF));
       const a6 = await lazyGuard(gamesF + ' missing', NOFILE, 'games file missing');
@@ -7064,7 +7070,8 @@ async function main() {
             cupsOpen: document.querySelectorAll('.rl-cup[data-ok="1"]').length, trk: document.querySelectorAll('.rl-trk').length,
             open: document.querySelectorAll('.rl-trk[data-ok="1"]').length, places: document.querySelectorAll('.rl-place').length, back: !!document.querySelector('.gh-top #back'),
             goal: (document.querySelector('#rlgoal') || {}).textContent || '' }));
-          if (m.g !== 'rally' || m.cups !== 4 || m.cupsOpen !== 1 || m.trk !== 3 || m.open !== 2 || m.places !== 4 || !m.back || !/Next goal: .*Sprout Cup/.test(m.goal))
+          // G-RALLY2: 5 + 5 cups, mirror tracks next to each track, Maple Woods
+          if (m.g !== 'rally' || m.cups !== 10 || m.cupsOpen !== 1 || m.trk !== 6 || m.open !== 2 || m.places !== 5 || !m.back || !/Next goal: .*Sprout Cup/.test(m.goal))
             bad.push(at + 'menu ' + JSON.stringify(m));
           for (const o of await pg.evaluate(look)) bad.push(at + 'menu: ' + o);
           const used0 = await pg.evaluate(() => pt().used);
@@ -7180,6 +7187,309 @@ async function main() {
       else step('G-02b: Star Rally by real touch at 380x780 and 1024x600: hub card -> menu (next goal, cups) -> the Sprout Cup (steered with the 96 px ' +
         'buttons, a crash into the bridge rail spun and recovered, 3 races with standings, the cup saved) -> a time trial and its ghost; game time spent, ' +
         'clock stopped; 48 px targets, no sideways scroll; ' + notes.join('; '));
+    }
+
+    // G-RALLY2 Star Rally's second season (src/js/63-game-race.js, rally part). Midway save with the four trophies and 700 sparkles,
+    //    Sound and Music on, real touch at 380x780 and 1024x600: Home -> Game Room -> Star Rally -> the menu (next goal at the mirror
+    //    cups, what to save for, today's twist, 5 + 5 cups with the Maple Cup and the first mirror cup open, 5 places) -> today's twist by
+    //    its card (the race says "Today's twist", the place's music plays while racing and stops in Calm mode) -> to the finish 12x
+    //    faster: the bonus line, sparkles + 25, the date saved, a buzz at the finish (navigator.vibrate seen) -> the menu says "Done
+    //    today" -> the garage: level 2 locked (a touch on a kit buys nothing) -> after a mirror cup is raced (save), a kit bought by touch
+    //    and on the car. Buttons 48 px or more, no sideways scroll.
+    {
+      const bad = [], notes = [];
+      for (const [w, h] of [[380, 780], [1024, 600]]) {
+        const ga = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ga.page, at = 'G-RALLY2 ' + w + 'x' + h + ' ';
+        const cdp = await pg.context().newCDPSession(pg);
+        await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 2 });
+        const box = sel => pg.evaluate(s => {
+          const e = document.querySelector(s);
+          if (!e) return null;
+          if (!e.closest('.rl')) e.scrollIntoView({ block: 'center' });
+          const r = e.getBoundingClientRect();
+          return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+        }, sel);
+        const touch = async sel => {
+          const b = await box(sel);
+          if (!b) throw new Error('nothing to touch: ' + sel);
+          await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: b.x, y: b.y, id: 1, radiusX: 8, radiusY: 8, force: 1 }] });
+          await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+        };
+        const look = () => {
+          const vw = document.documentElement.clientWidth, out = [];
+          for (const e of document.querySelectorAll('.gh-top button, .rl-menu button, .gh-end button, .rl-gar button')) {
+            const r = e.getBoundingClientRect();
+            if (!r.width || r.bottom < 0 || r.top > innerHeight) continue;
+            if (Math.min(r.width, r.height) < 47.5) out.push('small ' + (e.id || e.className) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
+          }
+          if (document.documentElement.scrollWidth > vw) out.push('sideways scroll ' + document.documentElement.scrollWidth);
+          for (const s of document.querySelectorAll('.scroll, .gh-end')) if (s.scrollWidth > s.clientWidth + 1) out.push('sideways scroll in ' + s.className);
+          return out;
+        };
+        try {
+          await pg.evaluate(() => {
+            S.pt = { bank: 1200, day: today(), used: 0 };
+            S.sound = true;
+            S.music = true;
+            S.calm = false;
+            S.rally = { spk: 700, cups: { sprout: { best: 1, runs: 1 }, wave: { best: 2, runs: 1 }, frost: { best: 3, runs: 2 }, star: { best: 1, runs: 1 } } };
+            save();
+            home();
+            window.__vib = [];
+            navigator.vibrate = ms => { window.__vib.push(ms); return true; };
+          });
+          await touch('#groom');
+          await pg.waitForSelector('#grally', { timeout: 8000 });
+          await pg.waitForTimeout(450);
+          await touch('#grally');
+          await pg.waitForSelector('#rltwist', { timeout: 8000 });
+          await pg.waitForTimeout(450);
+          const m = await pg.evaluate(() => ({ cups: document.querySelectorAll('.rl-cup').length, open: [...document.querySelectorAll('.rl-cup[data-ok="1"]')].map(b => b.dataset.cup).join(),
+            places: document.querySelectorAll('.rl-place').length, goal: document.querySelector('#rlgoal').textContent, save: document.querySelector('#rlsave').textContent,
+            tw: document.querySelector('#rltwist').textContent, mir: document.querySelectorAll('.rl-cup.mir').length }));
+          if (m.cups !== 10 || m.open !== '0,1,2,3,4,5' || m.places !== 5 || m.mir !== 5 || !/Mirror Sprout Cup/.test(m.goal) || !/Star|Save for|buy/.test(m.save) ||
+            !/Today's twist.*\+25 sparkles/.test(m.tw)) bad.push(at + 'menu ' + JSON.stringify(m));
+          for (const o of await pg.evaluate(look)) bad.push(at + 'menu: ' + o);
+          // today's twist by its card
+          const spk0 = await pg.evaluate(() => S.rally.spk);
+          await touch('#rltwist');
+          await pg.waitForSelector('#rlcv', { timeout: 8000 });
+          await pg.waitForFunction(() => RL && RL.st.cd <= 0 && RL.st.P.v > 3000, null, { timeout: 15000 });
+          await pg.waitForTimeout(1200);
+          const ra = await pg.evaluate(() => ({ sub: document.querySelector('.gh-top').textContent, tw: !!RL.twist, tid: RL.st.tid, want: rlTwist().tid, on: rlMusicOn(RL),
+            mb: RL.mb || 0, ac: typeof AC != 'undefined' && AC ? AC.state : 'none' }));
+          if (!/Today's twist/.test(ra.sub) || !ra.tw || ra.tid !== ra.want || !ra.on || (ra.ac === 'running' && !(ra.mb > 0))) bad.push(at + 'twist race ' + JSON.stringify(ra));
+          const calm = await pg.evaluate(() => { S.calm = true; const r = { on: rlMusicOn(RL), buzz: buzz(20) }; S.calm = false; return r; });
+          if (calm.on || calm.buzz) bad.push(at + 'Calm mode must stop the music and the buzz ' + JSON.stringify(calm));
+          notes.push(w + 'x' + h + ' twist: ' + ra.tid + ', music ' + (ra.mb > 0 ? 'scheduled' : 'audio ' + ra.ac));
+          await pg.evaluate(() => { RL_DEV.fast = 12; });
+          await pg.waitForSelector('.gh-end #rlmenu', { timeout: 40000 });
+          await pg.evaluate(() => { RL_DEV.fast = 1; });
+          await pg.waitForTimeout(400);
+          const e = await pg.evaluate(() => ({ line: /Today's twist done: \+25/.test(document.querySelector('.gh-end').textContent), tw: S.rally.tw, today: today(), spk: S.rally.spk,
+            vib: window.__vib.slice() }));
+          if (!e.line || e.tw !== e.today || !(e.spk >= spk0 + 25) || !e.vib.includes(40)) bad.push(at + 'twist finish ' + JSON.stringify(e));
+          for (const o of await pg.evaluate(look)) bad.push(at + 'end card: ' + o);
+          await touch('#rlmenu');
+          await pg.waitForSelector('#rltwist', { timeout: 8000 });
+          if (!/Done today/.test(await pg.evaluate(() => document.querySelector('#rltwist').textContent))) bad.push(at + 'the twist card should say Done today');
+          // the garage: level 2 locked; a mirror cup raced opens it; a kit bought by touch
+          await touch('#rlgar');
+          await pg.waitForSelector('#rlt2', { timeout: 8000 });
+          const s1 = await pg.evaluate(() => S.rally.spk);
+          await touch('.rl-item[data-k="kit"][data-id="stripes"]');
+          await pg.waitForTimeout(300);
+          const g1 = await pg.evaluate(() => ({ lock: document.querySelector('#rlt2').classList.contains('lock'), spk: S.rally.spk, kits: JSON.stringify(S.rally.kits), bar: !!document.querySelector('#rlbuy') }));
+          if (!g1.lock || g1.spk !== s1 || g1.kits !== '{}' || g1.bar) bad.push(at + 'locked level 2 ' + JSON.stringify(g1));
+          for (const o of await pg.evaluate(look)) bad.push(at + 'garage: ' + o);
+          await pg.evaluate(() => { S.rally.cups.msprout = { best: 4, runs: 1 }; save(); rlGarage(); });
+          await pg.waitForSelector('#rlt2:not(.lock)', { timeout: 8000 });
+          await touch('.rl-item[data-k="kit"][data-id="stripes"]');
+          await pg.waitForSelector('#rlbuy', { timeout: 8000 });
+          await touch('#rlbuy');
+          await pg.waitForTimeout(400);
+          const g2 = await pg.evaluate(() => ({ kits: JSON.stringify(S.rally.kits), kit: S.rally.kit, spk: S.rally.spk, on: !!document.querySelector('.rl-item.on[data-k="kit"][data-id="stripes"]') }));
+          if (g2.kits !== '{"stripes":1}' || g2.kit !== 'stripes' || g2.spk !== s1 - 250 || !g2.on) bad.push(at + 'buying a kit ' + JSON.stringify(g2));
+          notes.push(w + 'x' + h + ' racing stripes bought (' + s1 + ' -> ' + g2.spk + ' sparkles)');
+          // cheap tablets: the frame time at 6x CPU throttle (1024x600) on a mirror track of the new place, with the rainbow trail and
+          // a kit on the car: the median frame at most 34 ms (a busy machine is measured again, up to 3 more times, like G-02b)
+          if (w == 1024) {
+            const os = require('os'), cores = os.cpus().length;
+            await pg.evaluate(() => { const r = S.rally; r.trails = { rainbow: 1 }; r.trail = 'rainbow'; r.whls = { monster: 1 }; r.whl = 'monster'; save(); rlRace('woods-1m'); });
+            await pg.waitForFunction(() => RL && RL.st.cd <= 0, null, { timeout: 15000 });
+            await pg.waitForTimeout(2500);
+            let best = null, tries = 0, load = os.loadavg()[0];
+            for (;;) {
+              await cdp.send('Emulation.setCPUThrottlingRate', { rate: 6 });
+              await pg.evaluate(() => { RL.fi.length = 0; RL.ft.length = 0; });
+              await pg.waitForTimeout(3000);
+              const r = await pg.evaluate(() => {
+                const q = (a, p) => a.slice().sort((x, y) => x - y)[Math.floor(a.length * p)];
+                return { med: q(RL.fi, .5), work: q(RL.ft, .5), n: RL.fi.length, q: RL.q, trail: !!RL.v.trail, live: [...RL.tr.life].filter(x => x > 0).length };
+              });
+              await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+              tries++;
+              load = os.loadavg()[0];
+              if (!best || r.med < best.med) best = r;
+              if (best.med <= 34 || tries >= 4 || load <= cores) break;
+              await pg.waitForTimeout(1000);
+            }
+            if (best.med > 34 || !best.trail || !best.live) bad.push(at + `frame interval at 6x throttle with the trail: ${JSON.stringify(best)} (limit 34 ms)`);
+            notes.push(`6x throttle (Mirror Mushroom Meander, rainbow trail): median frame ${best.med.toFixed(1)} ms, JS ${best.work.toFixed(1)} ms a frame, ` +
+              `${best.live} trail pieces, pixel scale ${best.q} (${tries} pass${tries > 1 ? 'es' : ''})`);
+            await pg.evaluate(() => rlQuit());
+          }
+        } catch (x) {
+          bad.push(at + 'taps: ' + x.message.split('\n')[0]);
+        }
+        await pg.evaluate(() => { if (typeof RL_DEV != 'undefined') RL_DEV.fast = 1; });
+        network.push(...ga.network);
+        for (const e of ga.errors) fail(e);
+        await ga.ctx.close();
+      }
+      if (bad.length) fail('G-RALLY2 Star Rally season 2:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('G-RALLY2: Star Rally season 2 by real touch at 380x780 and 1024x600: the menu (mirror cups, the Maple Cup, what to save for, today\'s ' +
+        'twist) -> today\'s twist raced with its music (off in Calm mode), the +25 bonus once, a buzz at the finish -> garage level 2 locked, then a kit ' +
+        'bought by touch; 48 px targets, no sideways scroll; ' + notes.join('; '));
+    }
+
+    // G-HC2 Hill Climb journey (src/js/62-hill.js). Midway save, a fresh garage, 1st grade (easy driving on), 20 min of game time, real
+    //    touch (CDP touch events) at 380x780 and 1024x600: Home -> Game Room -> the Hill Climb card -> the menu (next goal names First
+    //    Hills, 6 worlds with only Green Meadow open, stage 2 locked) -> Play (#hcgo) -> a held touch on the right half (gas) drives
+    //    stage 1 to the flag -> the end card (stars, "Muddy Puddles is open") -> Stages: stage 2 open, the next goal names it -> Garage:
+    //    buy the engine upgrade with the bolts just earned (bolts go down, the level and the top speed line go up) -> a flip past the
+    //    first checkpoint (the car set on its roof by a test hook) starts again at that checkpoint with "Flipped" -> at 1024x600 the
+    //    frame time while driving Log Bridges in the rain under 6x CPU throttle, after 2 s to settle its pixel scale (median at most 34 ms; a busy machine measures again,
+    //    up to 3 more times). Every screen: 48 px buttons, 64 px pedals, no sideways scroll, the distance and fuel readable.
+    {
+      const bad = [], notes = [];
+      const os = require('os'), cores = os.cpus().length;
+      for (const [w, h] of [[380, 780], [1024, 600]]) {
+        const ga = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ga.page, at = 'G-HC2 ' + w + 'x' + h + ' ';
+        const cdp = await pg.context().newCDPSession(pg);
+        await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 2 });
+        const box = sel => pg.evaluate(s => {
+          const e = document.querySelector(s);
+          if (!e) return null;
+          if (!e.closest('.hc')) e.scrollIntoView({ block: 'center' });
+          const r = e.getBoundingClientRect();
+          return { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height };
+        }, sel);
+        const down = async (x, y) => cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y, id: 1, radiusX: 8, radiusY: 8, force: 1 }] });
+        const up = async () => cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+        const touch = async sel => { const b = await box(sel); if (!b) throw new Error('nothing to touch: ' + sel); await down(b.x, b.y); await pg.waitForTimeout(60); await up(); return b; };
+        const look = () => {
+          const vw = document.documentElement.clientWidth, out = [];
+          for (const e of document.querySelectorAll('.gh-top button, .hc-menu button, .gh-end button')) {
+            const r = e.getBoundingClientRect();
+            if (!r.width || r.bottom < 0 || r.top > innerHeight) continue;
+            if (Math.min(r.width, r.height) < 47.5) out.push('small ' + (e.id || e.className) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
+            if (r.left < -1 || r.right > vw + 1) out.push('outside ' + (e.id || e.className));
+          }
+          for (const e of document.querySelectorAll('.pedal')) { const r = e.getBoundingClientRect(); if (Math.min(r.width, r.height) < 64) out.push('pedal ' + Math.round(r.width)); }
+          const d = document.querySelector('#hcd'), g = document.querySelector('.hc-gauge');
+          if (d && d.scrollWidth > d.clientWidth + 1) out.push('distance cut: ' + d.textContent);
+          if (g && g.getBoundingClientRect().height < 16) out.push('fuel gauge ' + g.getBoundingClientRect().height + ' px tall');
+          if (document.documentElement.scrollWidth > vw) out.push('sideways scroll ' + document.documentElement.scrollWidth);
+          for (const s of document.querySelectorAll('.scroll, .gh-end')) if (s.scrollWidth > s.clientWidth + 1) out.push('sideways scroll in ' + s.className);
+          for (const t of document.querySelectorAll('.gh-top')) if (t.getBoundingClientRect().right > vw + 1) out.push('top bar wider than the screen');
+          return out;
+        };
+        try {
+          await pg.evaluate(() => { S.pt = { bank: 1200, day: today(), used: 0 }; S.garage = {}; S.grade = 1; save(); home(); });
+          await touch('#groom');
+          await pg.waitForSelector('#g4x4', { timeout: 8000 });
+          await pg.waitForTimeout(450);
+          await touch('#g4x4');
+          await pg.waitForSelector('.hc-menu #hcgo', { timeout: 8000 });
+          await pg.waitForTimeout(450);
+          const m0 = await pg.evaluate(() => ({ goal: document.querySelector('.hc-goal').textContent, worlds: document.querySelectorAll('.hc-wt').length,
+            open: document.querySelectorAll('.hc-wt:not(.lock)').length, s2: document.querySelector('[data-stg="1"]').classList.contains('lock'), easy: document.querySelector('#hceasy').checked }));
+          if (!/First Hills/.test(m0.goal) || m0.worlds !== 6 || m0.open !== 1 || !m0.s2 || !m0.easy) bad.push(at + 'menu: ' + JSON.stringify(m0));
+          for (const o of await pg.evaluate(look)) bad.push(at + 'menu: ' + o);
+          await touch('#hcgo');
+          await pg.waitForSelector('.hc .pedal.gas', { timeout: 8000 });
+          await pg.waitForTimeout(700);
+          for (const o of await pg.evaluate(look)) bad.push(at + 'drive: ' + o);
+          const gb = await box('#pg');
+          await down(gb.x, gb.y);
+          const t0 = Date.now();
+          let res = null;
+          while (Date.now() - t0 < 60000) { await pg.waitForTimeout(500); res = await pg.evaluate(() => document.querySelector('.gh-end') ? 'end' : HC && HC.gas ? 'gas' : 'no gas'); if (res !== 'gas') break; }
+          await up();
+          if (res !== 'end') bad.push(at + 'stage 1 not finished by holding the gas: ' + res);
+          await pg.waitForSelector('.gh-end [data-go="list"]', { timeout: 8000 });
+          await pg.waitForTimeout(500);
+          const e1 = await pg.evaluate(() => ({ title: document.querySelector('.gh-end h1').textContent, stars: document.querySelectorAll('.gh-end .rs.on').length,
+            next: /Muddy Puddles is open/.test(document.querySelector('.gh-end').textContent), btn: !!document.querySelector('.gh-end [data-go="next"]'), bolts: garageS().bolts, st: garageS().st.m1 }));
+          if (e1.title !== 'First Hills done!' || e1.stars < 1 || !e1.next || !e1.btn || !(e1.bolts >= 30) || !(e1.st & 1)) bad.push(at + 'end card: ' + JSON.stringify(e1));
+          for (const o of await pg.evaluate(look)) bad.push(at + 'end card: ' + o);
+          notes.push(w + 'x' + h + ': stage 1 in ' + Math.round((Date.now() - t0) / 1000) + ' s held gas, ' + e1.stars + ' stars, ' + e1.bolts + ' bolts');
+          await touch('.gh-end [data-go="list"]');
+          await pg.waitForSelector('.hc-menu #hcgo', { timeout: 8000 });
+          await pg.waitForTimeout(450);
+          const m1 = await pg.evaluate(() => ({ s2: document.querySelector('[data-stg="1"]').classList.contains('lock'), goal: document.querySelector('.hc-goal').textContent, go: document.querySelector('#hcgo').textContent }));
+          if (m1.s2 || !/Muddy Puddles/.test(m1.goal) || !/Muddy Puddles/.test(m1.go)) bad.push(at + 'menu after stage 1: ' + JSON.stringify(m1));
+          // the garage: the engine upgrade
+          await touch('#hcgar');
+          await pg.waitForSelector('[data-up="engine"]', { timeout: 8000 });
+          await pg.waitForTimeout(450);
+          for (const o of await pg.evaluate(look)) bad.push(at + 'garage: ' + o);
+          const u0 = await pg.evaluate(() => ({ b: garageS().bolts, lv: garageS().up.engine, line: document.querySelector('.hc-up .hc-num').textContent }));
+          await touch('[data-up="engine"]');
+          await pg.waitForTimeout(500);
+          const u1 = await pg.evaluate(() => ({ b: garageS().bolts, lv: garageS().up.engine, line: document.querySelector('.hc-up .hc-num').textContent }));
+          if (u1.lv !== 1 || u1.b !== u0.b - 30 || u1.line === u0.line) bad.push(at + 'engine upgrade: ' + JSON.stringify([u0, u1]));
+          await touch('#back');
+          await pg.waitForSelector('.hc-menu #hcgo', { timeout: 8000 });
+          // a flip past the first checkpoint starts again there (test hook: the car put on its roof just past it)
+          await touch('#hcgo');
+          await pg.waitForSelector('.hc .pedal.gas', { timeout: 8000 });
+          await pg.waitForTimeout(600);
+          await pg.evaluate(() => {
+            const H = HC, C = H.C, x = C.cps[1] + 40, y = hcH(C, x) + H.R + 2, y2 = hcH(C, x + H.L) + H.R + 2;
+            Object.assign(H.w1, { x, y, px: x, py: y }); Object.assign(H.w2, { x: x + H.L, y: y2, px: x + H.L, py: y2 }); H.lockT = 0;
+          });
+          await pg.waitForFunction(() => HC && HC.cpi >= 1, null, { timeout: 8000 });
+          const f0 = await pg.evaluate(() => {
+            const H = HC, C = H.C, x = (H.w1.x + H.w2.x) / 2, y = hcH(C, x) + H.R + 4;
+            Object.assign(H.w1, { x: x + H.L / 2, y, px: x + H.L / 2, py: y }); Object.assign(H.w2, { x: x - H.L / 2, y, px: x - H.L / 2, py: y }); H.safeT = 0;
+            return { cp: C.cps[1] };
+          });
+          await pg.waitForFunction(() => HC && HC.crashes > 0, null, { timeout: 8000 });
+          const fm = await pg.evaluate(() => document.querySelector('#hcm').textContent);
+          await pg.waitForFunction(() => HC && HC.crashT <= 0, null, { timeout: 8000 });
+          const f1 = await pg.evaluate(() => ({ x: Math.round(HC.w1.x), cp: HC.cp, cr: HC.crashes, why: HC.why }));
+          if (!/Flipped/.test(fm) || f1.cp !== f0.cp || Math.abs(f1.x - f0.cp) > 30 || f1.cr !== 1) bad.push(at + 'flip restart: ' + JSON.stringify([fm, f0, f1]));
+          // the frame time at 6x CPU throttle, holding the gas on Log Bridges in the rain
+          if (w == 1024) {
+            await pg.evaluate(() => { document.querySelectorAll('.ovl').forEach(o => o.remove()); hcStart(2, 1); });
+            await pg.waitForTimeout(800);
+            await pg.evaluate(() => {
+              window.__hcF = []; window.__hcW = [];
+              const now = window.__realNow || performance.now.bind(performance), d0 = window.hcDraw; window.hcDraw = function () { const t = now(); const r = d0.apply(this, arguments); window.__hcW.push(now() - t); return r; };
+              let last = 0; const f = ts => { if (last) window.__hcF.push(ts - last); last = ts; if (window.__hcF.length < 2000) requestAnimationFrame(f); }; requestAnimationFrame(f);
+            });
+            const gb2 = await box('#pg');
+            await down(gb2.x, gb2.y);
+            let best = null, tries = 0, load = os.loadavg()[0];
+            for (;;) {
+              await cdp.send('Emulation.setCPUThrottlingRate', { rate: 6 });
+              await pg.waitForTimeout(2000); // the drive lowers its pixel scale on a slow machine within about 1.5 s
+              await pg.evaluate(() => { window.__hcF.length = 0; window.__hcW.length = 0; });
+              await pg.waitForTimeout(3000);
+              const r = await pg.evaluate(() => {
+                const q = (a, p) => a.slice().sort((x, y) => x - y)[Math.floor(a.length * p)];
+                return { med: q(window.__hcF, .5), p90: q(window.__hcF, .9), work: q(window.__hcW, .5), n: window.__hcF.length, q: HC.q };
+              });
+              await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+              tries++;
+              load = os.loadavg()[0];
+              if (!best || r.med < best.med) best = r;
+              if (best.med <= 34 || tries >= 4 || load <= cores) break;
+              await pg.waitForTimeout(500);
+              await pg.evaluate(() => { document.querySelectorAll('.ovl').forEach(o => o.remove()); hcStart(2, 1); });
+              await pg.waitForTimeout(600);
+            }
+            await up();
+            const how = `${tries} pass${tries > 1 ? 'es' : ''}, load ${load.toFixed(1)} on ${cores} cores`;
+            if (best.med > 34) bad.push(at + `frame interval at 6x throttle: median ${best.med.toFixed(1)} ms (${how}, limit 34)`);
+            notes.push(`6x throttle (Log Bridges, rain): median frame ${best.med.toFixed(1)} ms, 90th ${best.p90.toFixed(1)} ms, drawing ${best.work.toFixed(1)} ms a frame, ${best.n} frames in 3 s, pixel scale ${best.q} (${how})`);
+          }
+          await pg.evaluate(() => { document.querySelectorAll('.ovl').forEach(o => o.remove()); if (HC) hcEnd('quit'); });
+        } catch (x) {
+          bad.push(at + 'taps: ' + x.message.split('\n')[0] + ' (on ' + await pg.evaluate(() => (document.querySelector('.gh-top') || {}).textContent + ' | ' + !!document.querySelector('.gh-end')).catch(() => '?') + ')');
+        }
+        network.push(...ga.network);
+        for (const e of ga.errors) fail(e);
+        await ga.ctx.close();
+      }
+      if (bad.length) fail('G-HC2 Hill Climb:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('G-HC2: Hill Climb by real touch at 380x780 and 1024x600: menu (next goal, 6 worlds, 1 open) -> stage 1 driven to the flag by a held ' +
+        'gas touch with easy driving -> end card with stars and the next stage open -> Stages: stage 2 open and named -> garage: engine bought with the bolts ' +
+        '-> a flip past the first checkpoint started again there; 48 px buttons, 64 px pedals, the distance and fuel readable; ' + notes.join('; '));
     }
 
     // P4-15 Object art set C (src/data/d-art-c.js), midway save at 380x780: questions that use the new drawings, drawn by the real
@@ -8048,7 +8358,8 @@ async function main() {
             }
             return out;
           });
-          await pg.evaluate(() => { S.pt = { bank: 1500, day: today(), used: 0 }; save(); home(); });
+          // G-BB2: this block checks the 2D look (the fallback when WebGL is missing; S.bb.gl = 0); the 3D look is checked below
+          await pg.evaluate(() => { S.pt = { bank: 1500, day: today(), used: 0 }; S.bb = S.bb || {}; S.bb.gl = 0; save(); home(); });
           await tapSel('#groom');
           await pg.waitForSelector('#gbb');
           await pg.waitForTimeout(400);
@@ -8158,12 +8469,16 @@ async function main() {
           await pg.waitForTimeout(400);
           const v3 = await pg.evaluate(() => ({ F: BB.F.slice(), z: BB.zoom }));
           if (!(v3.z < v2.z) || Math.hypot(v3.F[0] - v2.F[0], v3.F[1] - v2.F[1]) > .01) bad.push(at + 'Farther (keeps the middle): ' + JSON.stringify([v2, v3]));
+          // G-BB2: the angle is sampled in the page every frame from before the tap (one look 120 ms after it was flaky on a busy
+          // machine: the 360 ms turn could already be over, or not started); an in-between angle must be seen, then exactly a quarter
+          await pg.evaluate(() => { window.__angs = []; const f = () => { if (!window.__angs) return; window.__angs.push(BB.ang); requestAnimationFrame(f); }; requestAnimationFrame(f); });
           await tapSel('#bbrr');
-          await pg.waitForTimeout(120);
-          const mid = await pg.evaluate(() => BB.ang);
-          await pg.waitForTimeout(500);
+          await pg.waitForFunction(() => Math.abs(BB.ang - Math.PI / 2) < 1e-9, null, { timeout: 5000 }).catch(() => {});
+          await pg.waitForTimeout(100);
+          const angs = await pg.evaluate(() => { const a = window.__angs; window.__angs = null; return a; });
+          const mid = angs.find(a => a > .05 && a < Math.PI / 2 - .05);
           const turned = await pg.evaluate(() => [BB.rot, BB.ang]);
-          if (!(mid > 0.05 && mid < Math.PI / 2 - .05) || turned[0] != 1 || Math.abs(turned[1] - Math.PI / 2) > 1e-6) bad.push(at + 'turn (animated): ' + [mid, turned]);
+          if (mid == null || turned[0] != 1 || Math.abs(turned[1] - Math.PI / 2) > 1e-6) bad.push(at + 'turn (animated): ' + [mid, angs.length, turned]);
           stage = 'hold, then slide';
           // hold, then slide: the magnifier aims and lifting builds there
           await tapSel('[data-b="4"]');
@@ -8287,20 +8602,359 @@ async function main() {
         await ga.ctx.close();
       }
       if (bad.length) fail('G-01 Block Builder:\n  ' + bad.slice(0, 40).join('\n  '));
-      else step('G-01 Block Builder by real touch at 380x780 and 1024x600 (' + notes.join(', ') + '): Game Room -> menu -> world; Stone tower and Brick ' +
+      else step('G-01 Block Builder (2D look) by real touch at 380x780 and 1024x600 (' + notes.join(', ') + '): Game Room -> menu -> world; Stone tower and Brick ' +
         'wall by taps; a Build tap on TNT builds on top; Boom lights it and Undo brings the blocks back; Undo / Redo of the wall; drag pans, pinch zooms, Farther keeps the middle, ' +
         'Right turns (animated), hold-and-slide aims and builds; 48 px targets, no sideways scroll, messages clear of Pause; Stone Tower and Stairs ' +
         'built by tapping see-through blocks: no mistakes, 3 stars, saved by id; G-01b: the end card names the next build, the Brick Wall count build ' +
         '(a 5th block refused with its size, 3 stars), the next goal moves on, Sunny Beach locked, a world saved to the gallery and shown on the menu');
     }
 
+    // G-BB2 Block Builder in 3D by real touch (CDP touch events), midway save, the real clock. At 380x780 and 1024x600: Home ->
+    //    Game Room -> Block Builder -> My Island opens in the 3D look (WebGL; this Chrome draws it in software) and keeps drawing;
+    //    block tops in the middle at least 48 px; a tap on the top of a block builds on that very column, twice (exact picking), and
+    //    the world is saved; tap-to-paint time at 4x CPU slow-down; a one-finger drag turns the view (the focus stays, nothing built), a
+    //    flick keeps turning and stops by itself on whole quarters for stamps; a pinch zooms; Right turns a quarter (in-between angles
+    //    seen); hold then slide aims and builds; More -> Add animal: a drawn animal (no emoji) hops; More -> 3D look off: the 2D look
+    //    (saved as S.bb.gl = 0), on again: 3D; Pause -> Quit -> the first blueprint built by tapping its see-through blocks: 3 stars.
+    {
+      const bad = [], notes = [];
+      for (const [w, h] of [[380, 780], [1024, 600]]) {
+        const at = w + 'x' + h + ' ';
+        const ga = await openApp(browser, { fixture: 'midway', width: w, height: h, speed: 1 });
+        const pg = ga.page;
+        let stage = 'open';
+        try {
+          const cdp = await pg.context().newCDPSession(pg);
+          await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
+          const T = (x, y, id = 1) => ({ x: Math.round(x), y: Math.round(y), radiusX: 8, radiusY: 8, force: 1, id });
+          const send = (type, touchPoints) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints });
+          const tap = async ([x, y]) => { await send('touchStart', [T(x, y)]); await pg.waitForTimeout(40); await send('touchEnd', []); await pg.waitForTimeout(150); };
+          const tapSel = async sel => {
+            const r = await pg.evaluate(s => { const e = document.querySelector(s); if (!e) return null; e.scrollIntoView({ block: 'nearest', inline: 'nearest' }); const b = e.getBoundingClientRect(); return [b.left + b.width / 2, b.top + b.height / 2]; }, sel);
+            if (!r) throw new Error('no ' + sel);
+            await pg.waitForTimeout(80);
+            await tap(r);
+          };
+          const toCss = 'const r = $("#bbc").getBoundingClientRect(), d = BB.dpr; ';
+          const count = () => pg.evaluate(() => BB.w.filter(v => v).length);
+          await pg.evaluate(() => { S.pt = { bank: 1500, day: today(), used: 0 }; if (S.bb) delete S.bb.gl; save(); home(); });
+          await tapSel('#groom');
+          await pg.waitForSelector('#gbb');
+          await pg.waitForTimeout(400);
+          await tapSel('#gbb');
+          await pg.waitForSelector('.bb-menu [data-w="0"]');
+          await pg.waitForTimeout(400);
+          await tapSel('[data-w="0"]');
+          await pg.waitForSelector('#bbc');
+          await pg.waitForTimeout(900);
+          stage = '3D look';
+          const g0 = await pg.evaluate(() => ({ look: BB.look, f: BB.api.frame(), gl: !document.querySelector('#bbgl').hidden, faces: BB.gl ? BB.gl.ch.reduce((a, b) => a + b.no + b.nt, 0) / 6 : 0 }));
+          await pg.waitForTimeout(300);
+          const f1 = await pg.evaluate(() => BB.api.frame());
+          if (g0.look != '3d' || !g0.gl || !(g0.faces > 200) || !(f1 > g0.f)) { bad.push(at + 'the 3D look is not drawing: ' + JSON.stringify(g0) + ' ' + f1); throw new Error('skip'); }
+          // block tops near the middle, and a column to build on: its top is the face under its own middle
+          stage = 'targets';
+          const sp = await pg.evaluate(() => {
+            let best = null;
+            for (let j = 0; j < BD; j++) for (let i = 0; i < BW; i++) {
+              const k = BB.topZ(i, j) - 1, v = BB.get(i, j, k);
+              if (k < 0 || k > 8 || !v || BLOCKS[v].deco || BLOCKS[v].see) continue;
+              const p = BB.proj(i + .5, j + .5, k + 1), h = BB.hit(p[0], p[1]);
+              if (!h || h.i != i || h.j != j || h.k != k || h.f != 'top') continue;
+              const d = Math.hypot(p[0] - BB.W / 2, p[1] - BB.H * .55), xs = BB.facePoly(i, j, k, 'top').map(q => q[0]);
+              if (!best || d < best.d) best = { i, j, k, d, wd: (Math.max(...xs) - Math.min(...xs)) / BB.dpr };
+            }
+            return best;
+          });
+          if (!sp) { bad.push(at + 'no open column near the middle'); throw new Error('skip'); }
+          if (!(sp.wd >= 48)) bad.push(at + '3D block top in the middle ' + sp.wd.toFixed(1) + ' px wide');
+          const topAt = (i, j, k) => pg.evaluate(new Function('a', toCss + 'const p = BB.proj(a[0] + .5, a[1] + .5, a[2] + 1); return [r.left + p[0] / d, r.top + p[1] / d];'), [i, j, k]);
+          stage = 'exact taps';
+          await tapSel('[data-b="3"]');
+          await tap(await topAt(sp.i, sp.j, sp.k));
+          await pg.waitForTimeout(250);
+          await tap(await topAt(sp.i, sp.j, sp.k + 1));
+          await pg.waitForTimeout(400);
+          const col = await pg.evaluate(a => [BB.get(a[0], a[1], a[2] + 1), BB.get(a[0], a[1], a[2] + 2)], [sp.i, sp.j, sp.k]);
+          if (col.join() != '3,3') bad.push(at + 'taps on the top of (' + [sp.i, sp.j, sp.k] + ') built ' + col);
+          const saved = await pg.evaluate(() => bbDecode(bbS().worlds[bbS().cur].d).join() == BB.w.join());
+          if (!saved) bad.push(at + 'the world was not saved after the taps');
+          // tap to paint at 4x slow-down (Event Timing: from the touch to the next frame on the screen)
+          stage = 'tap time';
+          await pg.evaluate(() => { window.__ev = []; try { new PerformanceObserver(l => { for (const e of l.getEntries()) if (/pointerup|touchend/.test(e.name)) window.__ev.push(e.duration); }).observe({ type: 'event', durationThreshold: 16 }); } catch (e) {} });
+          await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
+          const n0 = await count();
+          for (let n = 0; n < 3; n++) { await tap(await topAt(sp.i, sp.j, sp.k + 2 + n)); await pg.waitForTimeout(300); }
+          await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+          await pg.waitForTimeout(300);
+          const ev = await pg.evaluate(() => window.__ev.slice().sort((a, b) => a - b));
+          const n1 = await count();
+          if (n1 != n0 + 3) bad.push(at + 'three taps at 4x built ' + (n1 - n0));
+          const tmax = ev.length ? ev[ev.length - 1] : 0;
+          if (tmax > 800) bad.push(at + 'a tap took ' + tmax + ' ms to show at 4x');
+          notes.push(at + 'tap to paint at 4x ' + (ev.length ? Math.round(ev[ev.length >> 1]) + '/' + Math.round(tmax) + ' ms' : 'under 16 ms'));
+          await tapSel('#bbundo'); await tapSel('#bbundo'); await tapSel('#bbundo');
+          // one finger turns; a flick keeps turning and stops on its own; nothing is built
+          stage = 'turn with one finger';
+          const cr = await pg.evaluate(() => { const r = $('#bbc').getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; });
+          const v0 = await pg.evaluate(() => ({ a: BB.ang, F: BB.F.join(), n: BB.w.filter(v => v).length }));
+          await send('touchStart', [T(cr[0], cr[1])]);
+          for (let s = 1; s <= 8; s++) { await send('touchMove', [T(cr[0] - s * 14, cr[1])]); await pg.waitForTimeout(30); }
+          await send('touchEnd', []);
+          await pg.waitForTimeout(250);
+          const v1 = await pg.evaluate(() => ({ a: BB.ang, F: BB.F.join(), n: BB.w.filter(v => v).length }));
+          if (!(Math.abs(v1.a - v0.a) > .2) || v1.F != v0.F || v1.n != v0.n) bad.push(at + 'one-finger drag: ' + JSON.stringify([v0, v1]));
+          await send('touchStart', [T(cr[0] - 80, cr[1])]);
+          for (let s = 1; s <= 4; s++) { await send('touchMove', [T(cr[0] - 80 + s * 40, cr[1])]); await pg.waitForTimeout(16); }
+          await send('touchEnd', []);
+          const fl = await pg.evaluate(() => BB.ang);
+          await pg.waitForFunction(() => !BB.gest.spin, null, { timeout: 6000 }).catch(() => {});
+          const v2 = await pg.evaluate(() => ({ a: BB.ang, spin: BB.gest.spin, rot: BB.rot }));
+          if (v2.spin || Math.abs(v2.a - fl) < .05 || !Number.isInteger(v2.rot)) bad.push(at + 'flick: ' + JSON.stringify([fl, v2]));
+          // pinch zooms
+          stage = 'pinch';
+          const z0 = await pg.evaluate(() => BB.zoom);
+          await send('touchStart', [T(cr[0] - 30, cr[1], 1), T(cr[0] + 30, cr[1], 2)]);
+          for (let s = 1; s <= 8; s++) { await send('touchMove', [T(cr[0] - 30 - s * 8, cr[1], 1), T(cr[0] + 30 + s * 8, cr[1], 2)]); await pg.waitForTimeout(16); }
+          await send('touchEnd', []);
+          await pg.waitForTimeout(200);
+          const z1 = await pg.evaluate(() => BB.zoom);
+          if (!(z1 > z0 * 1.3)) bad.push(at + 'pinch: ' + [z0, z1]);
+          await tapSel('#bbzo'); await pg.waitForTimeout(400);
+          // Right turns a quarter from where the view is, animated (angles sampled every frame)
+          stage = 'Right';
+          await pg.evaluate(() => { window.__angs = []; const f = () => { if (!window.__angs) return; window.__angs.push(BB.ang); requestAnimationFrame(f); }; requestAnimationFrame(f); });
+          const r0 = await pg.evaluate(() => Math.round(BB.ang / (Math.PI / 2)));
+          await tapSel('#bbrr');
+          await pg.waitForFunction(r0 => Math.abs(BB.ang - (r0 + 1) * Math.PI / 2) < 1e-9, r0, { timeout: 5000 }).catch(() => {});
+          const angs = await pg.evaluate(() => { const a = window.__angs; window.__angs = null; return a; });
+          const tr = await pg.evaluate(() => [BB.rot, BB.ang]);
+          const a0 = r0 * Math.PI / 2;
+          if (tr[0] != r0 + 1 || Math.abs(tr[1] - (r0 + 1) * Math.PI / 2) > 1e-6 || !angs.some(a => a > a0 + .05 && a < a0 + Math.PI / 2 - .05)) bad.push(at + 'Right: ' + JSON.stringify([r0, tr, angs.length]));
+          // hold, then slide: aims (magnifier) and lifting builds
+          stage = 'hold and slide';
+          await pg.waitForTimeout(300);
+          const sp2 = await pg.evaluate(new Function(toCss + 'for (let j = 0; j < BD; j++) for (let i = 0; i < BW; i++) { const k = BB.topZ(i, j) - 1, v = BB.get(i, j, k); if (k < 0 || !v || BLOCKS[v].deco || BLOCKS[v].see) continue; const p = BB.proj(i + .5, j + .5, k + 1), h = BB.hit(p[0], p[1]); if (h && h.i == i && h.j == j && h.f == "top" && p[0] > BB.W * .15 && p[0] < BB.W * .85 && p[1] > BB.H * .3 && p[1] < BB.H * .85) return [r.left + p[0] / d, r.top + p[1] / d]; } return null;'));
+          if (sp2) {
+            const m0 = await count();
+            await send('touchStart', [T(sp2[0], sp2[1] - 30)]);
+            await pg.waitForTimeout(450);
+            await send('touchMove', [T(sp2[0], sp2[1] - 15)]);
+            await send('touchMove', [T(sp2[0], sp2[1])]);
+            await pg.waitForTimeout(80);
+            const aim = await pg.evaluate(() => ({ aim: BB.gest.aim, prev: (BB.gest.prev || []).length, fp: !!BB.gest.fp }));
+            await send('touchEnd', []);
+            await pg.waitForTimeout(250);
+            const m1 = await count();
+            if (!aim.aim || !aim.prev || !aim.fp || m1 != m0 + 1) bad.push(at + 'hold and slide: ' + JSON.stringify(aim) + ' ' + [m0, m1]);
+          } else bad.push(at + 'no spot for hold and slide');
+          // More -> Add animal: a drawn animal hops (the picture is made from the object art)
+          stage = 'animals';
+          await tapSel('#bbmore');
+          await pg.waitForSelector('.sheet-bg.on [data-mt="pet"]');
+          await pg.waitForTimeout(400);
+          await tapSel('.sheet-bg.on [data-mt="pet"]');
+          await pg.waitForTimeout(1600);
+          const an = await pg.evaluate(() => ({ n: BB.animals.length, kinds: BB.animals.map(a => a.k).join(), drawn: BB.animals.filter(a => BB.gl.anOk[a.k]).length, hop: BB.animals.some(a => a.hop < 1) || BB.animals.some(a => a.fx != null && (a.fx != a.x || a.fy != a.y)), emoji: BB.animals.some(a => a.e), all: BB_AN.join() }));
+          if (an.n < 3 || an.drawn != an.n || an.emoji || an.kinds.split(',').some(k => !an.all.split(',').includes(k))) bad.push(at + 'animals: ' + JSON.stringify(an));
+          // More -> 3D look off: the 2D look, saved; on again: 3D
+          stage = '3D look switch';
+          await tapSel('#bbmore');
+          await pg.waitForSelector('.sheet-bg.on #bb3d');
+          await pg.waitForTimeout(400);
+          await pg.click('.sheet-bg.on label:has(#bb3d), .sheet-bg.on #bb3d', { force: true }).catch(async () => { await pg.evaluate(() => { const c = document.querySelector('.sheet-bg.on #bb3d'); c.checked = !c.checked; c.onchange(); }); });
+          await pg.waitForTimeout(600);
+          const l2 = await pg.evaluate(() => ({ look: BB.look, gl: bbS().gl, hidden: document.querySelector('#bbgl').hidden }));
+          if (l2.look != '2d' || l2.gl !== 0 || !l2.hidden) bad.push(at + '3D look off: ' + JSON.stringify(l2));
+          await pg.evaluate(() => { delete bbS().gl; save(); blockBuilder(); });
+          await pg.waitForTimeout(500);
+          if ((await pg.evaluate(() => BB.look)) != '3d') bad.push(at + '3D look on again: still 2D');
+          // the first blueprint, built by tapping its see-through blocks in 3D
+          stage = 'blueprint';
+          await tapSel('#gpause');
+          await pg.waitForSelector('.sheet-bg.on #gquit');
+          await pg.waitForTimeout(450);
+          await tapSel('#gquit');
+          await pg.waitForSelector('[data-ch="0"]');
+          await pg.waitForTimeout(400);
+          await tapSel('[data-ch="0"]');
+          await pg.waitForSelector('#bbprog');
+          await pg.waitForTimeout(800);
+          for (let n = 0; n < 40; n++) {
+            const t = await pg.evaluate(new Function(toCss + 'if (!BB || !BB.goal || BB.done()) return null; const c = BB.todo()[0]; if (c == null) return null; const i = c % BW, j = Math.floor(c / BW) % BD, k = Math.floor(c / (BW * BD)); const v = BB.goal.get(c); if (BB.sel != v) return { sel: v }; const p = BB.proj(i + .5, j + .5, k + 1); return { p: [r.left + p[0] / d, r.top + p[1] / d] };'));
+            if (!t) break;
+            if (t.sel) { await tapSel('[data-b="' + t.sel + '"]'); continue; }
+            await tap(t.p);
+            await pg.waitForTimeout(120);
+          }
+          await pg.waitForSelector('.gh-end', { timeout: 5000 });
+          const res = await pg.evaluate(() => ({ miss: BB.miss, st: bbBP()[BBP[0].id], look: BB.look }));
+          if (res.miss || res.st != 3 || res.look != '3d') bad.push(at + 'blueprint in 3D: ' + JSON.stringify(res));
+          notes.push(at + 'top ' + Math.round(sp.wd) + ' px');
+        } catch (e) { if (e.message != 'skip') bad.push(at + stage + ': ' + e.message.split('\n')[0]); }
+        network.push(...ga.network);
+        for (const e of ga.errors) fail(e);
+        await ga.ctx.close();
+      }
+      if (bad.length) fail('G-BB2 Block Builder 3D:\n  ' + bad.slice(0, 40).join('\n  '));
+      else step('G-BB2 Block Builder in 3D by real touch at 380x780 and 1024x600 (' + notes.join(', ') + '): the 3D look draws; exact taps build on the tapped ' +
+        'column and are saved; one finger turns (a flick slows to a stop on a whole quarter), pinch zooms, Right turns a quarter (animated); hold-and-slide ' +
+        'builds; drawn animals hop; the 3D look switch saves S.bb.gl; the first blueprint built in 3D with no mistakes, 3 stars');
+    }
+
+    // G-ART2 Art Studio by real touch (CDP touch events), midway save with 20 min of game time and two Neon pictures in the old
+    //    separate store, the real clock. At 380x780 and 1024x600: Home -> Game Room -> Coloring opens on the picture packs (next goal,
+    //    today's picture, packs; the two Neon pictures are in the gallery with a heart, the old store untouched); the first pack picture
+    //    (Kitty, pixel art) has squares of 32 px or more and a tap colours a square; Pause -> Quit back to the packs; a mandala coloured by
+    //    taps, Done -> the end card with the framed picture -> My gallery shows it first -> its big view opens and closes; a Neon drawing
+    //    drawn with one finger -> Done -> kept as strokes. Every button 48 px or more (Done 64), no emoji in the menus and tools, no
+    //    sideways scroll.
+    {
+      const bad = [], notes = [];
+      for (const [w, h] of [[380, 780], [1024, 600]]) {
+        const at = w + 'x' + h + ' ';
+        const ga = await openApp(browser, { fixture: 'midway', width: w, height: h, speed: 1 });
+        const pg = ga.page;
+        let stage = 'open';
+        try {
+          const cdp = await pg.context().newCDPSession(pg);
+          await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
+          const T = (x, y, id = 1) => ({ x: Math.round(x), y: Math.round(y), radiusX: 6, radiusY: 6, force: 1, id });
+          const send = (type, touchPoints) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints });
+          const tap = async ([x, y]) => { await send('touchStart', [T(x, y)]); await pg.waitForTimeout(40); await send('touchEnd', []); await pg.waitForTimeout(150); };
+          const tapSel = async sel => {
+            const r = await pg.evaluate(s => { const e = document.querySelector(s); if (!e) return null; e.scrollIntoView({ block: 'nearest', inline: 'nearest' }); const b = e.getBoundingClientRect(); return [b.left + b.width / 2, b.top + b.height / 2]; }, sel);
+            if (!r) throw new Error('no ' + sel);
+            await pg.waitForTimeout(80);
+            await tap(r);
+          };
+          const look = (what, main) => pg.evaluate(([what, main]) => {
+            const out = [], vw = document.documentElement.clientWidth;
+            for (const e of document.querySelectorAll('#app button, .gh-ovl button, .sheet button')) {
+              const r = e.getBoundingClientRect();
+              if (!r.width || r.bottom < 0 || r.top > innerHeight) continue;
+              const min = main && e.matches(main) ? 63.5 : 47.5;
+              if (Math.min(r.width, r.height) < min) out.push(what + ': small ' + (e.id || e.className) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
+            }
+            if (document.documentElement.scrollWidth > vw + 1) out.push(what + ': sideways scroll');
+            for (const s of document.querySelectorAll('#app .scroll')) if (s.scrollWidth > s.clientWidth + 1) out.push(what + ': sideways scroll in ' + s.className);
+            const tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+            for (let n; (n = tw.nextNode());) { const el = n.parentElement; if (!el || el.closest('svg') || !el.getClientRects().length) continue; const m = n.textContent.match(/\p{Extended_Pictographic}/u); if (m) out.push(what + ': emoji ' + m[0] + ' in ' + (el.id || el.className)); }
+            return out;
+          }, [what, main || '']);
+          stage = 'seed';
+          await pg.evaluate(() => {
+            window.say = () => {}; S.pt = { bank: 1200, day: today(), used: 0 }; save();
+            const c = document.createElement('canvas'); c.width = c.height = 40; const x = c.getContext('2d'); x.fillStyle = '#05010f'; x.fillRect(0, 0, 40, 40); x.fillStyle = '#ff00aa'; x.fillRect(10, 10, 20, 20);
+            window.__neon = [c.toDataURL('image/jpeg', .8), c.toDataURL('image/png')]; localStorage.setItem(PRF.k('starschool-neon'), JSON.stringify(window.__neon)); home();
+          });
+          stage = 'packs';
+          await tapSel('#groom');
+          await pg.waitForSelector('#gcbn', { timeout: 30000 });
+          await tapSel('#gcbn');
+          await pg.waitForSelector('.art-goal');
+          await pg.waitForTimeout(500);
+          const pk = await pg.evaluate(() => ({ goal: document.querySelector('#artgoal').textContent, day: !!document.querySelector('[data-day]'), packs: document.querySelectorAll('.art-pack').length,
+            shut: document.querySelectorAll('.art-pack.shut').length, ni: stS().gal.filter(e => e.k == 'ni' && e.h).length, old: localStorage.getItem(PRF.k('starschool-neon')) === JSON.stringify(window.__neon),
+            first: (document.querySelector('.sttile[data-k]') || {}).dataset.k }));
+          if (!/^Finish the /.test(pk.goal) || !pk.day || pk.packs != 8 || pk.shut < 6 || pk.ni != 2 || !pk.old || pk.first != 'px:cat') bad.push(at + 'packs menu: ' + JSON.stringify(pk));
+          bad.push(...await look(at + 'packs'));
+          stage = 'pixel';
+          await tapSel('.sttile[data-k]');
+          await pg.waitForSelector('#cbc');
+          await pg.waitForTimeout(400);
+          const px = await pg.evaluate(() => { const r = document.querySelector('#cbc').getBoundingClientRect(), v = document.querySelector('#pxv').getBoundingClientRect(), d = cbData('cat');
+            const i = d.num.findIndex((n, j) => n == 1 && r.left + (j % 16 + .5) * r.width / 16 > v.left + 4 && r.left + (j % 16 + .5) * r.width / 16 < v.right - 4 && r.top + ((j / 16 | 0) + .5) * r.width / 16 < v.bottom - 4);
+            return { sq: r.width / 16, i, pt: [r.left + (i % 16 + .5) * r.width / 16, r.top + ((i / 16 | 0) + .5) * r.width / 16], in: v.right <= innerWidth + 1 }; });
+          if (px.sq < 32 || px.i < 0 || !px.in) bad.push(at + 'pixel squares: ' + JSON.stringify(px));
+          const c0 = await pg.evaluate(() => document.querySelector('#cbc').dataset.n);
+          await tap(px.pt);
+          await pg.waitForTimeout(200);
+          const c1 = await pg.evaluate(() => ({ p: document.querySelector('#cbc').dataset.n }));
+          if (+c1.p != +c0 + 1) bad.push(at + 'a tap on a square did not colour it: ' + c0 + ' ' + c1.p);
+          bad.push(...await look(at + 'pixel', '#adone'));
+          notes.push(at + 'pixel squares ' + Math.round(px.sq) + ' px');
+          await tapSel('#gpause');
+          await pg.waitForSelector('.sheet-bg.on #gquit');
+          await pg.waitForTimeout(450);
+          await tapSel('#gquit');
+          await pg.waitForSelector('.art-goal');
+          stage = 'mandala';
+          await tapSel('[data-t="mandala"]');
+          await pg.waitForSelector('.sttile[data-k^="m:"]');
+          await tapSel('.sttile[data-k^="m:"]');
+          await pg.waitForSelector('#stsvg');
+          await pg.waitForTimeout(400);
+          const g0 = await pg.evaluate(() => stS().gal.length);
+          for (let k = 0; k < 10; k++) {
+            const pt = await pg.evaluate(k => { const ps = [...document.querySelectorAll('#stsvg path[data-i]')].filter(p => !p.getAttribute('pointer-events')); const p = ps[(k * 17 + 3) % ps.length], b = p.getBoundingClientRect();
+              for (let y = .3; y < .8; y += .1) for (let x = .3; x < .8; x += .1) { const X = b.left + b.width * x, Y = b.top + b.height * y; if (document.elementFromPoint(X, Y) === p) return [X, Y]; } return null; }, k);
+            if (pt) await tap(pt);
+            if (k == 4) await tapSel('[data-md="k"]');
+          }
+          const col = await pg.evaluate(() => Object.keys((stS().items[Object.keys(stS().items).find(k => k[0] == 'm') || ''] || { f: {} }).f).length);
+          if (!(col > 8)) bad.push(at + 'mandala taps coloured only ' + col + ' pieces');
+          bad.push(...await look(at + 'mandala', '#adone'));
+          await tapSel('#adone');
+          await pg.waitForSelector('.gh-end #agal', { timeout: 8000 });
+          await pg.waitForTimeout(500);
+          const end = await pg.evaluate(() => ({ frame: !!document.querySelector('.gh-end .art-frame svg'), n: stS().gal.length, k: stS().gal[0].k, v: stS().gal[0].v, title: document.querySelector('.gh-end h1').textContent }));
+          if (!end.frame || end.n != g0 + 1 || end.k != 'v' || !/^m:/.test(end.v)) bad.push(at + 'Done on a mandala: ' + JSON.stringify(end));
+          bad.push(...await look(at + 'end card', '#amore'));
+          stage = 'gallery';
+          await tapSel('#agal');
+          await pg.waitForSelector('[data-gi]');
+          await pg.waitForTimeout(400);
+          const gl = await pg.evaluate(() => ({ first: +document.querySelector('[data-gi]').dataset.gi, want: stS().gal[0].i, pic: !!document.querySelector('[data-gi] .art-th svg') }));
+          if (gl.first != gl.want || !gl.pic) bad.push(at + 'gallery: ' + JSON.stringify(gl));
+          await tapSel('[data-gi]');
+          await pg.waitForSelector('.sheet-bg.on .art-big');
+          await pg.waitForTimeout(400);
+          bad.push(...await look(at + 'big view'));
+          await tapSel('#gcls');
+          await pg.waitForTimeout(600);
+          stage = 'neon';
+          await tapSel('[data-t="neon"]');
+          await pg.waitForSelector('#newn');
+          await tapSel('#newn');
+          await pg.waitForSelector('#ncv');
+          await pg.waitForTimeout(300);
+          const b = await pg.evaluate(() => { const r = document.querySelector('#ncv').getBoundingClientRect(); return [r.left, r.top, r.width]; });
+          await send('touchStart', [T(b[0] + b[2] * .55, b[1] + b[2] * .3)]);
+          for (let s = 1; s <= 14; s++) { await send('touchMove', [T(b[0] + b[2] * (.55 + Math.sin(s / 3) * .15), b[1] + b[2] * (.3 + s * .02))]); await pg.waitForTimeout(16); }
+          await send('touchEnd', []);
+          await pg.waitForTimeout(200);
+          bad.push(...await look(at + 'neon', '#adone'));
+          await tapSel('#adone');
+          await pg.waitForSelector('.gh-end #amore', { timeout: 8000 });
+          const ne = await pg.evaluate(() => { const e = stS().gal[0]; return { k: e.k, n: e.d && e.d.s && e.d.s.length, pts: e.d && e.d.s && e.d.s[0].p.length / 4, saved: JSON.parse(localStorage.getItem(SKEY)).studio.gal[0].i == e.i }; });
+          if (ne.k != 'n' || ne.n != 1 || !(ne.pts > 5) || !ne.saved) bad.push(at + 'Neon Done: ' + JSON.stringify(ne));
+          await tapSel('#amore');
+          await pg.waitForSelector('.sttabs');
+          notes.push(at + 'gallery ' + (await pg.evaluate(() => stS().gal.length)) + ' pictures, mandala ' + col + ' pieces');
+        } catch (e) { bad.push(at + stage + ': ' + e.message.split('\n')[0]); }
+        network.push(...ga.network);
+        for (const e of ga.errors) fail(e);
+        await ga.ctx.close();
+      }
+      if (bad.length) fail('G-ART2 Art Studio:\n  ' + [...new Set(bad)].slice(0, 40).join('\n  '));
+      else step('G-ART2 Art Studio by real touch at 380x780 and 1024x600 (' + notes.join(', ') + '): packs menu with the next goal and today\'s picture, ' +
+        'old Neon pictures moved into the gallery (old store untouched); pixel art with 32 px+ squares coloured by a tap; a mandala coloured by taps, Done -> framed end card -> ' +
+        'My gallery shows it first and its big view; a Neon drawing kept as strokes; 48 px targets (Done 64), no emoji, no sideways scroll');
+    }
+
     // G-04a Snack Stand (src/js/65-game-snack.js, games2 part). Midway save with 20 min of game time, real touch (CDP touch events,
-    //    touch emulation on) at 380x780 and 1024x600: Home -> Game Room -> the Snack Stand card -> the menu (shared bar, 5 places, only the
-    //    park open, Calm) -> Open the stand -> a Calm day: every customer served by touching the station tabs and the food the order
-    //    bubble shows (the first food of the day dragged onto the plate instead of tapped), then Serve; Undo takes a food off; the day's
-    //    clock runs 3x faster (SN_DEV.fast, a test hook) -> the sign turns to Closed -> the shared end card (stars, customers, coins, best
-    //    combo); game time was spent and the clock stopped -> Stand shop -> an upgrade bought with Buy (coins down by its price, saved).
-    //    Main controls (food, tabs, Undo, Serve, Buy) at least 64 px, every other button at least 48 px, no sideways scroll.
+    //    touch emulation on) at 380x780 and 1024x600: Home -> Game Room -> the Snack Stand card -> the menu (shared bar, 8 places, only the
+    //    park open, Calm, the Next goal line) -> Open the stand -> a Calm day: every customer served by touching the station tabs and the
+    //    food the order bubble shows (the first food of the day dragged onto the plate instead of tapped), then Serve; Undo takes a food
+    //    off; every touch adds exactly one food (the plate is checked after each one); the day's clock runs 3x faster (SN_DEV.fast, a test
+    //    hook) -> the sign turns to Closed -> the shared end card (stars, customers, coins, best combo); game time was spent and the clock
+    //    stopped -> Stand shop -> an upgrade bought with Buy (coins down by its price, saved).
+    //    G-04a2: 12 days later (save edit) the menu's Next goal line and the kinds of days show; a Birthday party day chosen by touch and
+    //    played to the end (the party orders served by touch, counted on the bubble); a Recipe day: a step out of order is refused (the
+    //    plate stays empty), then the steps in order, through to the end card; the shop: the Food cart and String lights bought by touch,
+    //    saved, shown on the stand; the next goal moved on. Main controls (food, tabs, Undo, Serve, Buy) at least 64 px, every other
+    //    button at least 48 px, no sideways scroll; the first message of a day never covers a customer.
     {
       const bad = [], notes = [];
       for (const [w, h] of [[380, 780], [1024, 600]]) {
@@ -8354,43 +9008,66 @@ async function main() {
           for (const t of document.querySelectorAll('.gh-top')) if (t.getBoundingClientRect().right > vw + 1) out.push('top bar wider than the screen');
           return out;
         };
-        try {
-          await pg.evaluate(() => { S.pt = { bank: 1200, day: today(), used: 0 }; save(); home(); });
-          await touch('#groom');
-          await pg.waitForSelector('#gsnack', { timeout: 8000 });
-          await pg.waitForTimeout(450);
-          await touch('#gsnack');
-          await pg.waitForSelector('#snopen', { timeout: 8000 });
-          await pg.waitForTimeout(450);
-          const m = await pg.evaluate(() => ({ g: document.querySelector('.gh-top').dataset.g, places: document.querySelectorAll('.sn-place').length,
-            locked: document.querySelectorAll('.sn-place.lock').length, calm: !!document.querySelector('#snmode [data-v="calm"][aria-pressed="true"]'), back: !!document.querySelector('.gh-top #back') }));
-          if (m.g !== 'snack' || m.places !== 5 || m.locked !== 4 || !m.calm || !m.back) bad.push(at + 'menu ' + JSON.stringify(m));
-          for (const o of await pg.evaluate(look)) bad.push(at + 'menu: ' + o);
-          const used0 = await pg.evaluate(() => pt().used);
-          await touch('#snopen');
-          await pg.waitForSelector('.sn-ing', { timeout: 8000 });
-          await pg.evaluate(() => { SN_DEV.fast = 3; });
-          let served = 0, taps = 0, dragged = false, undone = false, lookedPlay = false;
+        // the message at the top of the scene must not cover a customer or an order bubble (R-03 N4)
+        const msgClear = () => {
+          const m = document.querySelector('#snmsg.on');
+          if (!m) return '';
+          const a = m.getBoundingClientRect();
+          for (const e of document.querySelectorAll('.sn-cu .sn-an, .sn-cu .sn-bub')) {
+            const b = e.getBoundingClientRect();
+            if (a.left < b.right && b.left < a.right && a.top < b.bottom - 4 && b.top < a.bottom - 4) return 'the message covers ' + e.className;
+          }
+          return '';
+        };
+        // one day by touch: every waiting customer's order tapped (tab by tab), checking that each touch adds exactly one food.
+        // o.drag: drag the first food; o.undo: one Undo; o.step: on the first recipe, touch step 2 first (refused)
+        const playDay = async (o = {}) => {
+          let served = 0, taps = 0, dragged = !o.drag, undone = !o.undo, stepped = !o.step, looked = false, groups = 0, recipes = 0;
           for (let guard = 0; guard < 40; guard++) {
             const c = await pg.waitForFunction(() => {
               if (document.querySelector('.gh-end')) return { end: true };
               const st = SN && SN.st, c = st && st.at.find(x => x.state == 'wait');
-              return c && !st.plate.length && document.querySelector('.sn-cu .sn-bub .sn-oi') ? { order: c.order } : null;
+              if (!c || st.plate.length || !document.querySelector('.sn-cu .sn-bub .sn-oi')) return null;
+              st.sel = st.at.indexOf(c);
+              return { order: c.any ? [c.any[0]] : c.order, steps: !!c.steps, group: !!c.group };
             }, null, { timeout: 20000 }).then(x => x.jsonValue());
             if (c.end) break;
-            if (!lookedPlay) {
-              lookedPlay = true;
-              for (const o of await pg.evaluate(look)) bad.push(at + 'day: ' + o);
-              const ui = await pg.evaluate(() => ({ pause: !!document.querySelector('.gh-top #gpause'), bub: Math.round(document.querySelector('.sn-oi').getBoundingClientRect().width) }));
-              if (!ui.pause || ui.bub < 48) bad.push(at + 'day screen ' + JSON.stringify(ui));
+            if (!looked) {
+              looked = true;
+              for (const x of await pg.evaluate(look)) bad.push(at + 'day: ' + x);
+              const ui = await pg.evaluate(() => ({ pause: !!document.querySelector('.gh-top #gpause'), bub: Math.round(document.querySelector('.sn-oi').getBoundingClientRect().width),
+                goal: !!document.querySelector('#sngoal b') }));
+              if (!ui.pause || ui.bub < 48 || !ui.goal) bad.push(at + 'day screen ' + JSON.stringify(ui));
+              const mc = await pg.evaluate(msgClear);
+              if (mc) bad.push(at + mc);
+            }
+            if (c.group) groups++;
+            if (c.steps) recipes++;
+            if (!stepped && c.steps) {
+              stepped = true;
+              const s2 = await pg.evaluate(i => SN_ING[i][1], c.order[1]);
+              if (await pg.evaluate(s => SN.tab !== s, s2)) await touch(`.sn-tab[data-st="${s2}"]`);
+              await touch(`.sn-ing[data-ing="${c.order[1]}"]`);
+              const r0 = await pg.evaluate(() => ({ n: SN.st.plate.length, msg: document.querySelector('#snmsg').textContent }));
+              if (r0.n !== 0 || !/^Step 1 first/.test(r0.msg)) bad.push(at + 'a recipe step out of order was not refused: ' + JSON.stringify(r0));
+              notes.push('step 2 first refused: "' + r0.msg + '"');
             }
             for (const id of c.order) {
               const st = await pg.evaluate(i => SN_ING[i][1], id);
               if (await pg.evaluate(s => SN.tab !== s, st)) await touch(`.sn-tab[data-st="${st}"]`);
+              const n0 = await pg.evaluate(() => SN.st.plate.length + SN.st.pans.filter(Boolean).length);
               if (!dragged) {
                 await drag(`.sn-ing[data-ing="${id}"]`, '#snplate');
                 dragged = true;
               } else await touch(`.sn-ing[data-ing="${id}"]`);
+              if (id == 'pancake') {
+                // on the grill: wait for golden, then take it off by touch
+                await pg.waitForFunction(() => SN.st.pans.some(p => p && p.t >= 3), null, { timeout: 15000 });
+                const k = await pg.evaluate(() => SN.st.pans.findIndex(p => p && p.t >= 3));
+                await touch(`.sn-pan[data-pan="${k}"]`);
+              }
+              const n1 = await pg.evaluate(() => SN.st.plate.length + SN.st.pans.filter(Boolean).length);
+              if (n1 !== n0 + 1 && id != 'pancake') bad.push(at + 'one touch added ' + (n1 - n0) + ' foods (' + id + ')');
               taps++;
             }
             if (!undone) {
@@ -8399,25 +9076,46 @@ async function main() {
               await touch('#snundo');
               const n = await pg.evaluate(() => SN.st.plate.length);
               if (n !== c.order.length - 1) bad.push(at + 'Undo did not take one food off (' + n + ')');
+              const s3 = await pg.evaluate(i => SN_ING[i][1], last);
+              if (await pg.evaluate(s => SN.tab !== s, s3)) await touch(`.sn-tab[data-st="${s3}"]`);
               await touch(`.sn-ing[data-ing="${last}"]`);
               undone = true;
             }
-            const ok = await pg.evaluate(o => snKey(SN.st.plate) === snKey(o), c.order);
-            if (!ok) bad.push(at + 'the plate does not match the order after the taps: ' + c.order);
+            const ok = await pg.evaluate(() => { const c = SN.st.at[SN.st.sel]; return !!c && snFits(c, SN.st.plate); });
+            if (!ok) bad.push(at + 'the plate does not match the order after the taps: ' + c.order + ' plate ' + (await pg.evaluate(() => SN.st.plate.join())));
             await touch('#snserve');
             served++;
           }
           await pg.waitForSelector('.gh-end #snmenu', { timeout: 20000 });
           await pg.waitForTimeout(600);
+          return { served, taps, groups, recipes };
+        };
+        try {
+          await pg.evaluate(() => { S.pt = { bank: 2400, day: today(), used: 0 }; save(); home(); });
+          await touch('#groom');
+          await pg.waitForSelector('#gsnack', { timeout: 8000 });
+          await pg.waitForTimeout(450);
+          await touch('#gsnack');
+          await pg.waitForSelector('#snopen', { timeout: 8000 });
+          await pg.waitForTimeout(450);
+          const m = await pg.evaluate(() => ({ g: document.querySelector('.gh-top').dataset.g, places: document.querySelectorAll('.sn-place').length,
+            locked: document.querySelectorAll('.sn-place.lock').length, calm: !!document.querySelector('#snmode [data-v="calm"][aria-pressed="true"]'), back: !!document.querySelector('.gh-top #back'),
+            next: (document.querySelector('#snnext') || {}).textContent || '', kinds: document.querySelectorAll('.sn-kind').length }));
+          if (m.g !== 'snack' || m.places !== 8 || m.locked !== 7 || !m.calm || !m.back || !/^Next goal: \S/.test(m.next) || m.kinds !== 9) bad.push(at + 'menu ' + JSON.stringify(m));
+          for (const o of await pg.evaluate(look)) bad.push(at + 'menu: ' + o);
+          const used0 = await pg.evaluate(() => pt().used);
+          await touch('#snopen');
+          await pg.waitForSelector('.sn-ing', { timeout: 8000 });
+          await pg.evaluate(() => { SN_DEV.fast = 3; });
+          const d1 = await playDay({ drag: true, undo: true });
           const e = await pg.evaluate(() => ({ title: (document.querySelector('.gh-end h1') || {}).textContent, pic: !!document.querySelector('.gh-end .gh-epic svg'),
             stars: !!document.querySelector('.gh-end .rate'), stats: document.querySelectorAll('.gh-end .gh-stat').length, used: pt().used, gt: !!GT, day: !!SN,
             days: S.snack.days, served: S.snack.served, coins: S.snack.coins, star: S.snack.stars.park }));
-          await pg.evaluate(() => { SN_DEV.fast = 1; });
           if (e.title !== 'Closed for today!' || !e.pic || !e.stars || e.stats !== 3) bad.push(at + 'end card ' + JSON.stringify(e));
           if (!(e.used > used0) || e.gt || e.day) bad.push(at + 'game time: used ' + used0 + ' -> ' + e.used + ', clock still running ' + e.gt + ', day ' + e.day);
-          if (e.days !== 1 || e.served !== served || served < 8 || served > 12 || !(e.coins > 0) || e.star !== 3) bad.push(at + 'saved after the day ' + JSON.stringify(e) + ' served ' + served);
+          if (e.days !== 1 || e.served !== d1.served || d1.served < 8 || d1.served > 12 || !(e.coins > 0) || e.star !== 3) bad.push(at + 'saved after the day ' + JSON.stringify(e) + ' served ' + d1.served);
           for (const o of await pg.evaluate(look)) bad.push(at + 'end card: ' + o);
-          notes.push(`${w}x${h}: ${served} customers, ${taps} food touches, ${e.coins} coins, game time ${used0} -> ${e.used} s`);
+          notes.push(`${w}x${h}: ${d1.served} customers, ${d1.taps} food touches, ${e.coins} coins, game time ${used0} -> ${e.used} s`);
           // the shop: buy the first thing the coins pay for
           await touch('#snendshop');
           await pg.waitForSelector('.sn-item', { timeout: 8000 });
@@ -8434,6 +9132,53 @@ async function main() {
           notes.push('bought ' + want);
           await touch('#back');
           await pg.waitForSelector('#snopen', { timeout: 5000 });
+          // ---- G-04a2: twelve days later (a save edit: days and coins only), the kinds of days are open ----
+          await pg.evaluate(() => { const r = snS(); r.days = 12; r.coins += 600; save(); snMenu(); });
+          await pg.waitForSelector('.sn-kind[data-k="party"]:not(.lock)', { timeout: 5000 });
+          // a Birthday party day, chosen by touch
+          await touch('.sn-kind[data-k="party"]');
+          await pg.waitForSelector('.sn-kind[data-k="party"][aria-pressed="true"]', { timeout: 5000 });
+          await touch('#snopen');
+          await pg.waitForSelector('.sn-ing', { timeout: 8000 });
+          await pg.evaluate(() => { SN_DEV.fast = 3; });
+          const kind1 = await pg.evaluate(() => SN.st.how);
+          const d2 = await playDay();
+          if (kind1 !== 'party' || d2.groups !== 2) bad.push(at + 'party day: kind ' + kind1 + ', ' + d2.groups + ' party orders served by touch');
+          const e2 = await pg.evaluate(() => ({ party: S.snack.kd.party, days: S.snack.days, lines: [...document.querySelectorAll('.gh-end .gh-line')].map(x => x.textContent) }));
+          if (e2.party !== 3 || e2.days !== 13 || !e2.lines.some(l => /^Next goal: /.test(l))) bad.push(at + 'after the party day ' + JSON.stringify(e2));
+          notes.push(`party day ${d2.served} customers, ${d2.taps} touches`);
+          // a Recipe day: a step out of order is refused, then every recipe made step by step
+          await touch('#snmenu');
+          await pg.waitForSelector('.sn-kind[data-k="recipe"]', { timeout: 5000 });
+          await touch('.sn-kind[data-k="recipe"]');
+          await pg.waitForSelector('.sn-kind[data-k="recipe"][aria-pressed="true"]', { timeout: 5000 });
+          await touch('#snopen');
+          await pg.waitForSelector('.sn-ing', { timeout: 8000 });
+          await pg.evaluate(() => { SN_DEV.fast = 3; });
+          const d3 = await playDay({ step: true });
+          const e3 = await pg.evaluate(() => ({ book: SN_DISHES.filter(d => d.steps && S.snack.book[d.id]).length, kd: S.snack.kd.recipe }));
+          if (d3.recipes < 3 || e3.book < 1 || e3.kd !== 3) bad.push(at + 'recipe day: ' + d3.recipes + ' recipes, ' + JSON.stringify(e3));
+          notes.push(`recipe day ${d3.recipes} recipes, ${e3.book} in the book`);
+          // the shop: the café journey (open after 8 days): the Food cart, then String lights, by touch
+          await touch('#snendshop');
+          await pg.waitForSelector('.sn-item[data-cf="cart"]', { timeout: 8000 });
+          for (const id of ['cart', 'lights']) {
+            await touch(`.sn-item[data-cf="${id}"]`);
+            await pg.waitForSelector('#snbuy:not([disabled])', { timeout: 5000 });
+            for (const o of await pg.evaluate(look)) bad.push(at + 'café shop: ' + o);
+            const k0 = await pg.evaluate(() => S.snack.coins);
+            await touch('#snbuy');
+            await pg.waitForTimeout(300);
+            const k = await pg.evaluate(i => ({ own: !!S.snack.cafe[i], coins: S.snack.coins, price: SN_CAFE.find(x => x[0] === i)[3],
+              kept: !!JSON.parse(localStorage.getItem('starschool-v2')).snack.cafe[i] }), id);
+            if (!k.own || k.coins !== k0 - k.price || !k.kept) bad.push(at + 'café buy ' + id + ': ' + JSON.stringify(k));
+          }
+          await touch('#back');
+          await pg.waitForSelector('#snopen', { timeout: 5000 });
+          const mm = await pg.evaluate(() => ({ next: document.querySelector('#snnext').textContent, open: document.querySelector('#snopen').textContent.trim() }));
+          if (mm.next === m.next || !/^Next goal: \S/.test(mm.next) || mm.open !== 'Open the cart') bad.push(at + 'after the café buys: ' + JSON.stringify(mm) + ' first ' + m.next);
+          for (const o of await pg.evaluate(look)) bad.push(at + 'menu after: ' + o);
+          notes.push('cart and lights bought; next goal: ' + mm.next.replace(/^Next goal: /, ''));
         } catch (x) {
           bad.push(at + 'taps: ' + x.message.split('\n')[0]);
         }
@@ -8444,8 +9189,10 @@ async function main() {
       }
       if (bad.length) fail('G-04a Snack Stand:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
       else step('G-04a: Snack Stand by real touch at 380x780 and 1024x600: hub card -> menu -> a Calm day, every customer served by touching ' +
-        'the tabs and food (one dragged onto the plate, one Undo) -> Closed -> shared end card (3 stars) -> shop: an upgrade bought and saved; ' +
-        'game time spent, clock stopped; main controls 64 px, buttons 48 px, no sideways scroll; ' + notes.join('; '));
+        'the tabs and food (one dragged onto the plate, one Undo, every touch one food) -> Closed -> shared end card (3 stars) -> shop: an upgrade bought ' +
+        'and saved; game time spent, clock stopped; G-04a2: next goal line, a Birthday party day and a Recipe day (a step out of order refused) ' +
+        'played by touch, the Food cart and String lights bought; main controls 64 px, buttons 48 px, no sideways scroll, the day message clear of ' +
+        'the customers; ' + notes.join('; '));
     }
 
     // R-01d Discover review fixes at 380x780 (2x), a Kindergartner (midway save, grade K). Home -> Discover -> Nature Trail -> Living
@@ -8846,6 +9593,83 @@ async function main() {
       else step('ES-AUDIO: no Spanish voice, 380x780: a word card says the English then plays its Spanish file back to back (no note); a question is read from its file, the speaker stays, Hear it plays it (talking); a missing file falls back to the voice; English, Spanish, English queue on their end events');
     }
 
+    // EN-PRAISE recorded encouragement at 380x780 (midway save). play() of every <audio> is stubbed (logged with its src and line, ends
+    //    150 ms later) and speak() logs and ends. (1) A right answer in a math round plays a recorded praise file (audio/en/) of the line
+    //    the toast shows. (2) The next right answer is said in a different voice. (3) Grown-ups -> Cheer voices -> Tablet voice (saved for
+    //    the child): the sample and a right answer are spoken by the tablet's voice, no file. (4) A grown-up's own cheer clip wins over
+    //    the recordings (the clip's 30% chance forced).
+    {
+      const sa = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
+      const pg = sa.page, bad = [];
+      try {
+        await pg.evaluate(() => {
+          window.__lg = [];
+          speechSynthesis.getVoices = () => [{ lang: 'en-US', name: 'en-US' }];
+          window.SpeechSynthesisUtterance = function (t) { this.text = t; };
+          speechSynthesis.speak = u => { __lg.push({ k: 'speak', t: u.text }); setTimeout(() => { u.onend && u.onend(); }, 120 * 8); };
+          HTMLMediaElement.prototype.play = function () {
+            const src = this.getAttribute('src') || this.src, el = this;
+            __lg.push({ k: 'play', src, t: this.dataset && this.dataset.say });
+            setTimeout(() => { if ((el.getAttribute('src') || el.src) === src) el.dispatchEvent(new Event('ended')); }, 150 * 8);
+            return Promise.resolve();
+          };
+          S.voice = true; S.sound = true; delete S.cheerV; CLIPS = []; save();
+        });
+        // the voice index of a recorded file (-1: not a recording)
+        const voiceOf = src => pg.evaluate(src => { const f = String(src || '').split('/').pop().replace(EN_AUDIO.ext, '');
+          for (const k in EN_AUDIO.lines) { const i = EN_AUDIO.lines[k][1].indexOf(f); if (i >= 0) return i; } return -1; }, src);
+        const rightOnce = async () => {
+          await pg.waitForSelector('#prompt');
+          await vwait(pg, 1500); // the question is read out first
+          await pg.evaluate(() => { __lg = []; });
+          const before = await pg.evaluate(() => G.done);
+          await answer(pg);
+          await pg.waitForFunction(b => G.done > b, before, { timeout: 5000 });
+          await vwait(pg, 600);
+          return pg.evaluate(() => ({ lg: __lg.slice(), toast: [...document.querySelectorAll('.toast, [role="status"]')].map(e => e.textContent).join(' ') }));
+        };
+        await pg.evaluate(() => start('math', 0));
+        // (1) a right answer: a recorded praise file of the line shown
+        const r1 = await rightOnce(), p1 = r1.lg.find(x => x.k == 'play' && /audio\/en\//.test(x.src)), v1 = p1 ? await voiceOf(p1.src) : -1;
+        if (!p1 || v1 < 0 || !(await pg.evaluate(t => CHEERS.includes(t), p1.t)) || !r1.toast.includes(p1.t)) bad.push('a right answer did not play a recorded praise file of the toast line: ' + JSON.stringify(r1));
+        if (r1.lg.some(x => x.k == 'speak' && x.t == (p1 && p1.t))) bad.push('the praise was also spoken by the tablet voice');
+        // (2) the next right answer: another voice
+        await vwait(pg, 1500);
+        const r2 = await rightOnce(), p2 = r2.lg.find(x => x.k == 'play' && /audio\/en\//.test(x.src)), v2 = p2 ? await voiceOf(p2.src) : -1;
+        if (!p2 || v2 < 0 || v2 === v1) bad.push('two right answers: voices ' + v1 + ' then ' + v2 + ' ' + JSON.stringify(r2.lg));
+        // (3) Grown-ups: Cheer voices -> Tablet voice, saved per child; the sample and a right answer use the tablet's voice
+        await vwait(pg, 3000); // the round's next question is drawn first
+        await pg.evaluate(() => { home(); __lg = []; grown(); });
+        await pg.waitForSelector('#gw-cheer [data-cheer="tts"]');
+        await vwait(pg, 500);
+        await pg.click('#gw-cheer [data-cheer="tts"]');
+        await vwait(pg, 300);
+        const g = await pg.evaluate(() => ({ v: S.cheerV, saved: Object.keys(localStorage).some(k => String(localStorage.getItem(k)).includes('"cheerV":"tts"')), on: document.querySelector('#gw-cheer [data-cheer="tts"]').getAttribute('aria-pressed'), lg: __lg.slice() }));
+        if (g.v !== 'tts' || !g.saved || g.on !== 'true') bad.push('Cheer voices: Tablet voice was not chosen and saved: ' + JSON.stringify(g));
+        if (!g.lg.some(x => x.k == 'speak') || g.lg.some(x => x.k == 'play')) bad.push('Cheer voices: the Tablet voice sample did not use speech: ' + JSON.stringify(g.lg));
+        await vwait(pg, 1500);
+        const CH = await pg.evaluate(() => CHEERS);
+        await pg.evaluate(() => start('math', 0));
+        const r3 = await rightOnce();
+        if (r3.lg.some(x => x.k == 'play' && /audio\/en\//.test(x.src)) || !r3.lg.some(x => x.k == 'speak' && CH.includes(x.t))) bad.push('Tablet voice: a right answer was not spoken by the tablet: ' + JSON.stringify(r3.lg));
+        // (4) a grown-up's own cheer clip wins
+        const clip = await pg.evaluate(() => { S.cheerV = 'mix'; save(); const f = EN_AUDIO.dir + EN_AUDIO.lines['Yay!'][1][0] + EN_AUDIO.ext + '#my-clip';
+          CLIPS = [{ id: 'smoke-clip', kind: 'cheer', url: f }]; window.__rnd = Math.random; Math.random = () => 0.1; return f; });
+        await vwait(pg, 3000);
+        // a stop whose questions read no answer after them (with q.after a parent clip stays quiet, as before EN-PRAISE)
+        await pg.evaluate(() => start('math', NODES.math.findIndex(n => [1, 2, 3, 4, 5, 6].every(s => { const q = genQ(n.sk, n.lv, s); return q && !q.after && (q.kind == 'choice' || q.kind == 'num'); }))));
+        const r4 = await rightOnce();
+        await pg.evaluate(() => { Math.random = __rnd; CLIPS = []; });
+        if (!r4.lg.some(x => x.k == 'play' && String(x.src).endsWith('#my-clip')) || r4.lg.some(x => x.k == 'play' && /audio\/en\//.test(x.src) && !String(x.src).endsWith('#my-clip')))
+          bad.push('a parent clip did not win over the recordings: ' + JSON.stringify(r4.lg) + ' clip ' + clip);
+      } catch (e) { bad.push(e.message.split('\n')[0]); }
+      network.push(...sa.network);
+      for (const e of sa.errors) fail('EN-PRAISE ' + e);
+      await sa.ctx.close();
+      if (bad.length) fail('EN-PRAISE recorded encouragement:\n  ' + bad.join('\n  '));
+      else step('EN-PRAISE: 380x780: a right answer plays a recorded praise file of its toast line, the next one another voice; Grown-ups Cheer voices -> Tablet voice is saved and speaks the praise; a parent cheer clip wins');
+    }
+
     // P6-02 the Game Room loads on demand, offline, after a cold start. The built files are served over http://127.0.0.1 by a tiny
     //    static server in this process, so the service worker installs and precaches every file (the games parts too). Then the
     //    server is stopped and the context goes offline; a new page cold-starts from the cache with only the start-up files (no games
@@ -8883,12 +9707,12 @@ async function main() {
           const ver = DATA_VER, c = await caches.open('starschool-' + ver);
           return { ver, cached: (await c.keys()).map(r => r.url.split('/').pop()).sort(), tags: [...document.scripts].filter(s => s.src).map(s => s.getAttribute('src')) };
         });
-        const lazyF = ['games', 'games2'].map(x => x + '.' + c1.ver + '.js');
+        const lazyF = ['games', 'rally', 'games2', 'games3'].map(x => x + '.' + c1.ver + '.js');
         if (!lazyF.every(f => c1.cached.includes(f)) || !c1.cached.includes('index.html')) bad.push('the service worker did not precache the games parts: ' + c1.cached.join(' '));
         if (lazyF.some(f => c1.tags.includes(f))) bad.push('index.html loaded a games part at start: ' + c1.tags.join(' '));
         // ES-AUDIO: the recordings are cached at install too, in their own cache (none of them was loaded by the page itself)
         const a1 = await p1.evaluate(async () => {
-          const want = [...new Set(Object.values(ES_AUDIO.lines).map(m => m[0] + ES_AUDIO.ext))], c = await caches.open('starschool-audio');
+          const want = [...new Set(Object.values(ES_AUDIO.lines).map(m => m[0] + ES_AUDIO.ext).concat(Object.values(EN_AUDIO.lines).flatMap(m => m[1].map(f => f + EN_AUDIO.ext))))], c = await caches.open('starschool-audio'); // EN-PRAISE: the English recordings too
           const have = new Set((await c.keys()).map(r => r.url.split('/').pop()));
           return { want: want.length, have: have.size, missing: want.filter(f => !have.has(f)).slice(0, 5) };
         });
@@ -8909,7 +9733,7 @@ async function main() {
           return { ready: dataReady(), games: typeof GH, parts: LAZY_PARTS.map(partReady).join(), css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(),
             tags: [...document.scripts].filter(s => s.src).map(s => s.getAttribute('src')).join() };
         });
-        if (!s2.ready || s2.games !== 'undefined' || s2.parts !== 'false,false' || s2.css !== 'main,css-bt' || lazyF.some(f => s2.tags.includes(f))) bad.push('offline cold start: ' + JSON.stringify(s2));
+        if (!s2.ready || s2.games !== 'undefined' || s2.parts !== 'false,false,false,false' || s2.css !== 'main,css-bt' || lazyF.some(f => s2.tags.includes(f))) bad.push('offline cold start: ' + JSON.stringify(s2));
         // 3. Home -> Game Room with real taps: the waiting screen, then the hub from the cached games parts
         // (the waiting screen is seen by an observer: from the cache it can be gone before the next look)
         await p2.evaluate(() => {
@@ -8925,7 +9749,7 @@ async function main() {
         const s3 = await p2.evaluate(() => ({ parts: LAZY_PARTS.map(partReady).join(), css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(),
           cards: document.querySelectorAll('.gh-card').length, games: GH.games.map(g => g.id).join() }));
         if (!wait || wait.line !== 'Getting the games ready...' || !wait.back || wait.hub) bad.push('no "Getting the games ready..." screen first: ' + JSON.stringify(wait));
-        if (s3.parts !== 'true,true' || s3.css !== 'main,css-bt,css-games,css-games2' || s3.cards < 5 || !/snack/.test(s3.games)) bad.push('Game Room offline: ' + JSON.stringify(s3));
+        if (s3.parts !== 'true,true,true,true' || s3.css !== 'main,css-bt,css-games,css-rally,css-games2,css-games3' || s3.cards < 5 || !/snack/.test(s3.games)) bad.push('Game Room offline: ' + JSON.stringify(s3));
         // 4. a game from games2 starts: Snack Stand's card, then its Open button, then the day is on screen with the shared Pause
         await p2.click('#gsnack');
         await p2.click('#snopen', { timeout: 8000 });
@@ -8962,15 +9786,19 @@ async function main() {
     }
 
     // G-04b Sky Hop (src/js/67-game-skyhop.js, games2 part). Midway save with 20 min of game time, real touch (CDP touch events,
-    //    touch emulation on) at 380x780 and 1024x600: Home -> Game Room -> the Sky Hop card -> the menu (shared bar, 4 worlds, 6 courses,
-    //    only the first open; One-touch picked by touch) -> Play -> the course (Pause, stars, course clock and time chips, a 96 px Hop
-    //    button); a touch on the sky makes the pet hop; then course 1 is played to the flag in one-touch mode by real touches: a helper
-    //    in the page looks a moment ahead in the simulation and says when to tap (or hold), the touches are real, the course runs 2x
-    //    faster (HOP_DEV.fast, a test hook); a helper-balloon question is answered by touch -> the shared end card (stars, time,
-    //    sparkles, medal) -> the time, stars and medal saved, the next course open; game time was spent and the clock stopped.
-    //    Main controls (Hop, Play, the balloon's answers) at least 64 px, every other button at least 48 px, no sideways scroll. At
-    //    1024x600 also the frame time while hopping under 6x CPU throttle: the median interval between frames at most 34 ms (measured
-    //    again on a busy machine, up to 3 more times, like G-02).
+    //    touch emulation on) at 380x780 and 1024x600: Home -> Game Room -> the Sky Hop card -> the menu (shared bar, 8 worlds in two
+    //    seasons, 6 courses, only the first open, the next-goal line, today's twist, the costumes; One-touch picked by touch) -> Play ->
+    //    the course (Pause, stars, course clock and time chips, a 96 px Hop button); a touch on the sky makes the pet hop; then course 1
+    //    is played to the flag in one-touch mode by real touches: a helper in the page looks a moment ahead in the simulation and says
+    //    when to tap (or hold), the touches are real, the course runs 2x faster (HOP_DEV.fast, a test hook); a helper-balloon question
+    //    is answered by touch -> the shared end card (stars, time, sparkles, medal) -> the time, stars, medal and ghost saved, the next
+    //    course open, the next goal names it; game time was spent and the clock stopped.
+    //    G-04b2: a costume bought by touch on the menu (stars to spend go down, the pet wears it in the course); a season 2 course
+    //    (Golden Hour: clouds that crumble) played to the flag by real touches after season 1 is done, Crumbly Clouds opens and the
+    //    next goal says so. Main controls (Hop, Play, the balloon's answers, Play the twist) at least 64 px, every other button at
+    //    least 48 px, no sideways scroll. At 1024x600 also the frame time while hopping (with the ghost of the first run on screen)
+    //    under 6x CPU throttle: the median interval between frames at most 34 ms (measured again on a busy machine, up to 3 more
+    //    times, like G-02).
     {
       const bad = [], notes = [];
       const os = require('os'), cores = os.cpus().length;
@@ -9003,7 +9831,7 @@ async function main() {
           for (const e of document.querySelectorAll('.gh-top button, .hp-menu button, .hpg button, .gh-end button')) {
             const r = e.getBoundingClientRect();
             if (!r.width || r.bottom < 0 || r.top > innerHeight || e.closest('[hidden]')) continue;
-            const main = e.matches('.hp-btn, #hopgo, #hpyes, #hpno');
+            const main = e.matches('.hp-btn, #hopgo, #hpyes, #hpno, #hptw');
             if (Math.min(r.width, r.height) < (main ? 63.5 : 47.5)) out.push('small ' + (e.id || e.className) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
             if (r.left < -1 || r.right > vw + 1) out.push('outside ' + (e.id || e.className));
           }
@@ -9012,38 +9840,8 @@ async function main() {
           for (const t of document.querySelectorAll('.gh-top')) if (t.getBoundingClientRect().right > vw + 1) out.push('top bar wider than the screen');
           return out;
         };
-        try {
-          await pg.evaluate(() => { S.pt = { bank: 1200, day: today(), used: 0 }; save(); home(); });
-          await touch('#groom');
-          await pg.waitForSelector('#ghop', { timeout: 8000 });
-          await pg.waitForTimeout(450);
-          await touch('#ghop');
-          await pg.waitForSelector('#hopgo', { timeout: 8000 });
-          await pg.waitForTimeout(450);
-          if (await pg.evaluate(() => S.hop.mode != 'one')) {
-            await touch('#hpmode [data-v="one"]');
-            await pg.waitForSelector('#hpmode [data-v="one"][aria-pressed="true"]', { timeout: 5000 });
-          }
-          const m = await pg.evaluate(() => ({ g: document.querySelector('.gh-top').dataset.g, worlds: document.querySelectorAll('.hp-world').length,
-            crs: document.querySelectorAll('.hp-crs').length, open: document.querySelectorAll('.hp-crs[data-ok="1"]').length, back: !!document.querySelector('.gh-top #back'),
-            mode: S.hop.mode, pet: !!document.querySelector('.hp-pet svg.pet-svg') }));
-          if (m.g !== 'hop' || m.worlds !== 4 || m.crs !== 6 || m.open !== 1 || !m.back || m.mode !== 'one' || !m.pet) bad.push(at + 'menu ' + JSON.stringify(m));
-          for (const o of await pg.evaluate(look)) bad.push(at + 'menu: ' + o);
-          const used0 = await pg.evaluate(() => pt().used);
-          await touch('#hopgo');
-          await pg.waitForSelector('#hpcv', { timeout: 8000 });
-          await pg.waitForFunction(() => HP && HP.ready && !HP.st.wait && HP.st.p.gr, null, { timeout: 15000 });
-          const ui = await pg.evaluate(() => ({ pause: !!document.querySelector('.gh-top #gpause'), chips: ['hpst', 'hpclk', 'gtm'].every(i => document.getElementById(i)),
-            btn: [...document.querySelectorAll('.hp-btn')].map(b => Math.round(Math.min(b.getBoundingClientRect().width, b.getBoundingClientRect().height))),
-            mode: HP.st.mode, course: HP.c.id, pet: !!(HP.v.pet.happy.c && HP.v.pet.cheer.c), px: HP.cv.width }));
-          if (!ui.pause || !ui.chips || ui.btn.length !== 1 || ui.btn[0] < 96 || ui.mode !== 'one' || ui.course !== 'm1' || !ui.pet) bad.push(at + 'course screen ' + JSON.stringify(ui));
-          for (const o of await pg.evaluate(look)) bad.push(at + 'course: ' + o);
-          // a touch on the sky: the pet hops
-          const y0 = await pg.evaluate(() => HP.st.p.y);
-          await press(w * .45, h * .4, 60);
-          const hopped = await pg.waitForFunction(y => HP.st.p.y > y + .6, y0, { timeout: 3000 }).then(() => true, () => false);
-          if (!hopped) bad.push(at + 'a touch on the sky did not make the pet hop');
-          // to the flag by real touches, 2x faster (test hook); the page-side helper looks ahead in the simulation
+        // a course to the flag by real touches, 2x faster (test hook); the page-side helper looks ahead in the simulation
+        const toFlag = async name => {
           await pg.evaluate(() => {
             HOP_DEV.fast = 2;
             window.__hopAdv = () => {
@@ -9075,41 +9873,104 @@ async function main() {
             };
           });
           const t0 = Date.now();
-          let taps = 0, holds = 0, offers = 0;
+          const n = { taps: 0, holds: 0, offers: 0 };
           for (;;) {
             const d = await pg.evaluate(() => window.__hopAdv());
             if (d == 'done') break;
             if (d == 'offer') {
-              offers++;
+              n.offers++;
               await pg.waitForSelector('#hpoffer:not([hidden]) #hpyes', { timeout: 3000 });
-              for (const o of await pg.evaluate(look)) bad.push(at + 'balloon question: ' + o);
+              for (const o of await pg.evaluate(look)) bad.push(at + name + ' balloon question: ' + o);
               await touch('#hpyes');
             } else if (d == 'tap' || d == 'hold') {
               await press(w * .45, h * .4, d == 'tap' ? 40 : 300);
-              d == 'tap' ? taps++ : holds++;
+              d == 'tap' ? n.taps++ : n.holds++;
             } else await pg.waitForTimeout(10);
-            if (Date.now() - t0 > 90000) { bad.push(at + 'did not reach the flag in 90 s'); break; }
+            if (Date.now() - t0 > 90000) { bad.push(at + name + ' did not reach the flag in 90 s'); break; }
           }
           await pg.waitForSelector('.gh-end #hpmenu', { timeout: 15000 });
           await pg.waitForTimeout(600);
+          await pg.evaluate(() => { HOP_DEV.fast = 1; });
+          return n;
+        };
+        try {
+          await pg.evaluate(() => { S.pt = { bank: 1200, day: today(), used: 0 }; save(); home(); });
+          await touch('#groom');
+          await pg.waitForSelector('#ghop', { timeout: 8000 });
+          await pg.waitForTimeout(450);
+          await touch('#ghop');
+          await pg.waitForSelector('#hopgo', { timeout: 8000 });
+          await pg.waitForTimeout(450);
+          if (await pg.evaluate(() => S.hop.mode != 'one')) {
+            await touch('#hpmode [data-v="one"]');
+            await pg.waitForSelector('#hpmode [data-v="one"][aria-pressed="true"]', { timeout: 5000 });
+          }
+          const m = await pg.evaluate(() => ({ g: document.querySelector('.gh-top').dataset.g, worlds: document.querySelectorAll('.hp-world').length,
+            crs: document.querySelectorAll('.hp-crs').length, open: document.querySelectorAll('.hp-crs[data-ok="1"]').length, back: !!document.querySelector('.gh-top #back'),
+            mode: S.hop.mode, pet: !!document.querySelector('.hp-pet svg.pet-svg'), goal: (document.querySelector('#hpgoal') || {}).textContent,
+            twist: !!document.querySelector('#hptw'), wears: document.querySelectorAll('.hp-wear').length }));
+          if (m.g !== 'hop' || m.worlds !== 8 || m.crs !== 6 || m.open !== 1 || !m.back || m.mode !== 'one' || !m.pet || m.goal !== 'Next goal: Hop to the flag on First Hops.' ||
+            !m.twist || m.wears < 9) bad.push(at + 'menu ' + JSON.stringify(m));
+          for (const o of await pg.evaluate(look)) bad.push(at + 'menu: ' + o);
+          const used0 = await pg.evaluate(() => pt().used);
+          await touch('#hopgo');
+          await pg.waitForSelector('#hpcv', { timeout: 8000 });
+          await pg.waitForFunction(() => HP && HP.ready && !HP.st.wait && HP.st.p.gr, null, { timeout: 15000 });
+          const ui = await pg.evaluate(() => ({ pause: !!document.querySelector('.gh-top #gpause'), chips: ['hpst', 'hpclk', 'gtm'].every(i => document.getElementById(i)),
+            btn: [...document.querySelectorAll('.hp-btn')].map(b => Math.round(Math.min(b.getBoundingClientRect().width, b.getBoundingClientRect().height))),
+            mode: HP.st.mode, course: HP.c.id, pet: !!(HP.v.pet.happy.c && HP.v.pet.cheer.c), px: HP.cv.width, bg: !!HP.v.bg, ghost: !!HP.gh }));
+          if (!ui.pause || !ui.chips || ui.btn.length !== 1 || ui.btn[0] < 96 || ui.mode !== 'one' || ui.course !== 'm1' || !ui.pet || !ui.bg || ui.ghost) bad.push(at + 'course screen ' + JSON.stringify(ui));
+          for (const o of await pg.evaluate(look)) bad.push(at + 'course: ' + o);
+          // a touch on the sky: the pet hops
+          const y0 = await pg.evaluate(() => HP.st.p.y);
+          await press(w * .45, h * .4, 60);
+          const hopped = await pg.waitForFunction(y => HP.st.p.y > y + .6, y0, { timeout: 3000 }).then(() => true, () => false);
+          if (!hopped) bad.push(at + 'a touch on the sky did not make the pet hop');
+          const n1 = await toFlag('First Hops');
           const e = await pg.evaluate(() => ({ title: (document.querySelector('.gh-end h1') || {}).textContent, pic: !!document.querySelector('.gh-end .gh-epic svg'),
             stars: !!document.querySelector('.gh-end .rate'), stats: document.querySelectorAll('.gh-end .gh-stat').length, used: pt().used, gt: !!GT, course: !!HP,
-            best: S.hop.best.m1, runs: S.hop.runs, medal: S.hop.medal.m1, starBits: S.hop.stars.m1 || 0, cur: S.hop.cur,
+            best: S.hop.best.m1, runs: S.hop.runs, medal: S.hop.medal.m1, starBits: S.hop.stars.m1 || 0, cur: S.hop.cur, ghost: (S.hop.ghost.m1 || '').length,
             kept: JSON.parse(localStorage.getItem('starschool-v2')).hop.best.m1 }));
-          await pg.evaluate(() => { HOP_DEV.fast = 1; });
           if (e.title !== 'You reached the flag!' || !e.pic || !e.stars || e.stats !== 3) bad.push(at + 'end card ' + JSON.stringify(e));
           if (!(e.used > used0) || e.gt || e.course) bad.push(at + 'game time: used ' + used0 + ' -> ' + e.used + ', clock still running ' + e.gt + ', course ' + e.course);
-          if (!(e.best > 30000) || e.kept !== e.best || e.runs !== 1 || !(e.medal >= 1) || e.cur !== 'm2') bad.push(at + 'saved after the course ' + JSON.stringify(e));
+          if (!(e.best > 30000) || e.kept !== e.best || e.runs !== 1 || !(e.medal >= 1) || e.cur !== 'm2' || !(e.ghost > 100)) bad.push(at + 'saved after the course ' + JSON.stringify(e));
           for (const o of await pg.evaluate(look)) bad.push(at + 'end card: ' + o);
-          notes.push(`${w}x${h}: flag in ${(e.best / 1000).toFixed(1)} s course time, ${taps} taps, ${holds} holds, ${offers} balloon lifts, stars ${e.starBits.toString(2)}, medal ${e.medal}, game time ${used0} -> ${e.used} s`);
+          notes.push(`${w}x${h}: flag in ${(e.best / 1000).toFixed(1)} s course time, ${n1.taps} taps, ${n1.holds} holds, ${n1.offers} balloon lifts, stars ${e.starBits.toString(2)}, medal ${e.medal}, ghost ${e.ghost} letters, game time ${used0} -> ${e.used} s`);
           await touch('#hpmenu');
           await pg.waitForSelector('.hp-crs[data-ok="1"]', { timeout: 8000 });
-          const after = await pg.evaluate(() => document.querySelectorAll('.hp-crs[data-ok="1"]').length);
-          if (after !== 2) bad.push(at + 'menu after the flag: ' + after + ' courses open');
-          // the frame time while hopping at 6x CPU throttle (1024x600)
+          const after = await pg.evaluate(() => ({ open: document.querySelectorAll('.hp-crs[data-ok="1"]').length, goal: document.querySelector('#hpgoal').textContent }));
+          if (after.open !== 2 || after.goal !== 'Next goal: Finish Puffy Path to open Spring Garden.') bad.push(at + 'menu after the flag: ' + JSON.stringify(after));
+          // a costume by touch: 4 stars to spend are enough for the Leaf Cape (the stars found and a little bonus, set here)
+          await pg.evaluate(() => { const r = hopS(); r.bonus = Math.max(0, 4 - hopWallet(r) + r.bonus); save(); hopMenu(); });
+          await pg.waitForSelector('[data-wear="leaf"]', { timeout: 5000 });
+          const cash0 = await pg.evaluate(() => hopWallet(S.hop));
+          await touch('[data-wear="leaf"]');
+          await pg.waitForSelector('[data-wear="leaf"][aria-pressed="true"]', { timeout: 5000 });
+          const buy = await pg.evaluate(() => ({ own: !!S.hop.own.leaf, wear: S.hop.wear, spent: S.hop.spent, cash: hopWallet(S.hop), menuPet: !!document.querySelector('.hp-pet .hp-cos'),
+            saved: JSON.parse(localStorage.getItem('starschool-v2')).hop.wear }));
+          if (!buy.own || buy.wear !== 'leaf' || buy.spent !== 4 || buy.cash !== cash0 - 4 || !buy.menuPet || buy.saved !== 'leaf') bad.push(at + 'buying the Leaf Cape: ' + JSON.stringify(buy));
+          for (const o of await pg.evaluate(look)) bad.push(at + 'costumes: ' + o);
+          // season 2: with season 1 done, Golden Hour (clouds that crumble) by real touches; the pet wears its costume
+          await pg.evaluate(() => { const r = hopS(); for (const c of HOP_COURSES.slice(0, 24)) r.best[c.id] = r.best[c.id] || 60000; r.world = 4; save(); hopMenu(4); });
+          await pg.waitForSelector('[data-c="q1"][data-ok="1"]', { timeout: 5000 });
+          await touch('[data-c="q1"]');
+          await pg.waitForFunction(() => HP && HP.ready && !HP.st.wait && HP.st.p.gr, null, { timeout: 15000 });
+          const s2 = await pg.evaluate(() => ({ id: HP.c.id, cos: !!(HP.v.cos && HP.v.cos.c), crumble: HP.st.C.floors.some(f => f.k == 'q') }));
+          if (s2.id !== 'q1' || !s2.cos || !s2.crumble) bad.push(at + 'season 2 course ' + JSON.stringify(s2));
+          const n2 = await toFlag('Golden Hour');
+          const e2 = await pg.evaluate(() => ({ best: S.hop.best.q1, cur: S.hop.cur, crumbled: true }));
+          await touch('#hpmenu');
+          await pg.waitForSelector('#hpgoal', { timeout: 8000 });
+          const g2 = await pg.evaluate(() => ({ goal: document.querySelector('#hpgoal').textContent, q2: !!document.querySelector('[data-c="q2"][data-ok="1"]'),
+            q3: !!document.querySelector('[data-c="q3"][data-ok="1"]') }));
+          if (!(e2.best > 30000) || e2.cur !== 'q2' || !g2.q2 || g2.q3 || g2.goal !== 'Next goal: Finish Crumbly Clouds to open Peach Puffs.') bad.push(at + 'after Golden Hour ' + JSON.stringify([e2, g2]));
+          notes.push(`Golden Hour (season 2) in ${(e2.best / 1000).toFixed(1)} s, ${n2.taps} taps, ${n2.offers} lifts; Leaf Cape bought (${cash0} -> ${buy.cash} stars)`);
+          // the frame time while hopping at 6x CPU throttle (1024x600), with the ghost of the first run
           if (w == 1024) {
+            await pg.evaluate(() => hopMenu(0));
             await touch('[data-c="m1"]');
             await pg.waitForFunction(() => HP && HP.ready && !HP.st.wait, null, { timeout: 15000 });
+            if (!(await pg.evaluate(() => !!HP.gh))) bad.push(at + 'no ghost on the second run of First Hops');
             await pg.waitForTimeout(1200);
             let best = null, tries = 0, load = os.loadavg()[0];
             for (;;) {
@@ -9142,8 +10003,9 @@ async function main() {
         await ga.ctx.close();
       }
       if (bad.length) fail('G-04b Sky Hop:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
-      else step('G-04b: Sky Hop by real touch at 380x780 and 1024x600: hub card -> menu (One-touch) -> course 1 to the flag by real taps -> shared end card ' +
-        '-> time, stars and medal saved, course 2 open; game time spent, clock stopped; main controls 64 px, buttons 48 px, no sideways scroll; ' + notes.join('; '));
+      else step('G-04b: Sky Hop by real touch at 380x780 and 1024x600: hub card -> menu (One-touch, next goal, twist, costumes) -> course 1 to the flag by real taps -> ' +
+        'shared end card -> time, stars, medal and ghost saved, course 2 open, the next goal names it; a costume bought by touch; a season 2 course to the flag; ' +
+        'game time spent, clock stopped; main controls 64 px, buttons 48 px, no sideways scroll; ' + notes.join('; '));
     }
 
     // S-SPK: Spanish speaking practice ("Say it!", src/js/50-say.js) at 380x780 and 1024x600, with a fake microphone (getUserMedia
@@ -9305,6 +10167,196 @@ async function main() {
       else step('S-SPK: Say it! at 380x780 and 1024x600: after question 3 of a Spanish round, the model spoken, record (fake microphone), the model then the recording, ' +
         '"That sounded like ... ¡Muy bien!", Try again, I said it! (the round goes on, nothing scored, 1 said today); skip; a story character; ' +
         'the Grown-ups switch; a blocked microphone (grown-up note, goes on by itself, no second step); no microphone (no step); mic 64+ px, buttons 48+, no sideways scroll');
+    }
+
+    // S-SPK2: the speaking check of "Say it!" and the Grown-ups listening cards, at 380x780 and 1024x600, on the real clock.
+    //    The built files are served over http://127.0.0.1 by a tiny static server in this process (the sound check reads the app's own
+    //    recording of the line, which file:// cannot); every other request is refused and counted as a network request. A fake
+    //    microphone plays an audio file into the real MediaRecorder: the model recording of the line itself (judged "Great job!"),
+    //    a different line ("Close! Listen again"), and nothing ("I couldn't hear you"). No on-device recognition here, so the offline
+    //    sound check (B) is used; its time is measured at 6x CPU throttle. Then Grown-ups: Spanish listening (a stand-in recogniser
+    //    that can download Spanish: the button, the online note, the download), the Listening corner (the three recordings, Listen
+    //    plays the model then the child, a star, Keep 1 week, Delete all), Home shows the star message once with a sticker.
+    //    48 px buttons, mic 64+, no sideways scroll. SSPK2_SHOTS=<dir> saves screenshots at 2x.
+    {
+      const http = require('http'), fs = require('fs'), path = require('path'), { ROOT, loadFixture, SAVE_KEY } = require('./lib/browser');
+      const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.png': 'image/png', '.ogg': 'audio/ogg' };
+      const socks = new Set(), bad = [], notes = [], SH = process.env.SSPK2_SHOTS || '';
+      const srv = http.createServer((req, res) => {
+        const u = decodeURIComponent(req.url.split('?')[0]).replace(/^\/+/, '') || 'index.html', f = path.join(ROOT, u);
+        if (!f.startsWith(ROOT + path.sep) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404); return res.end(); }
+        res.writeHead(200, { 'Content-Type': TYPES[path.extname(f)] || 'application/octet-stream', 'Cache-Control': 'no-cache' });
+        fs.createReadStream(f).pipe(res);
+      });
+      srv.on('connection', s => { socks.add(s); s.on('close', () => socks.delete(s)); });
+      await new Promise(r => srv.listen(0, '127.0.0.1', r));
+      const base = 'http://127.0.0.1:' + srv.address().port + '/';
+      // the fake microphone: window.__mic names an audio file (or '' for silence) that plays into the stream once recording starts
+      const fakeMic = () => {
+        window.__lg = { played: [], inst: 0 };
+        const md = navigator.mediaDevices;
+        md.enumerateDevices = async () => [{ kind: 'audioinput', deviceId: 'fake', label: '' }];
+        md.getUserMedia = async () => {
+          const ac = new AudioContext(), d = ac.createMediaStreamDestination();
+          window.__micDone = false;
+          if (window.__mic) {
+            const ab = await ac.decodeAudioData(await (await fetch(window.__mic)).arrayBuffer()), s = ac.createBufferSource();
+            s.buffer = ab; s.connect(d); s.onended = () => { window.__micDone = true; }; setTimeout(() => s.start(), 300);
+          } else { const g = ac.createGain(), o = ac.createOscillator(); g.gain.value = 0; o.connect(g); g.connect(d); o.start(); setTimeout(() => { window.__micDone = true; }, 1200); }
+          return d.stream;
+        };
+        speechSynthesis.getVoices = () => [{ lang: 'es-MX', name: 'es' }, { lang: 'en-US', name: 'en' }];
+        window.SpeechSynthesisUtterance = function (t) { this.text = t; };
+        speechSynthesis.speak = u => setTimeout(() => u.onend && u.onend(), 50);
+        const play = HTMLMediaElement.prototype.play;
+        HTMLMediaElement.prototype.play = function () { window.__lg.played.push(String(this.src).replace(/^http:\/\/[^/]+\//, '').slice(0, 9)); return play.call(this); };
+        // no on-device Spanish here (the offline sound check is used); Grown-ups gets a recogniser that can download Spanish
+        window.SpeechRecognition = window.webkitSpeechRecognition = undefined;
+        window.__fakeSR = () => { function SR() {} let st = 'downloadable';
+          SR.available = async o => o && o.processLocally ? st : 'unavailable';
+          SR.install = async o => { window.__lg.inst++; if (!o.processLocally) return false; st = 'available'; return true; };
+          window.SpeechRecognition = SR; };
+      };
+      const sizes = async (pg, at) => {
+        const r = await pg.evaluate(() => ({ sw: document.documentElement.scrollWidth - innerWidth,
+          small: [...document.querySelectorAll('#app button, #app summary, #app input')].filter(b => b.offsetParent).map(b => { const r = (b.closest('label') || b).getBoundingClientRect(); return [b.id || b.className, Math.round(r.width), Math.round(r.height)]; }).filter(x => x[1] < 48 || x[2] < 48),
+          mic: (b => b ? Math.min(b.getBoundingClientRect().width, b.getBoundingClientRect().height) : 99)(document.querySelector('#spkmic')) }));
+        if (r.sw > 0) bad.push(at + 'sideways scroll ' + r.sw);
+        if (r.small.length) bad.push(at + 'buttons under 48 px: ' + JSON.stringify(r.small.slice(0, 6)));
+        if (r.mic < 64) bad.push(at + 'microphone ' + r.mic + ' px');
+      };
+      const shot = async (pg, n) => { if (SH) { await pg.waitForTimeout(300); await pg.screenshot({ path: path.join(SH, 'sspk2-' + n + '.png') }); } };
+      // record one try with the fake microphone playing file (or silence), then wait for the kind line
+      const tryOnce = async (pg, file) => {
+        await pg.evaluate(f => { window.__mic = f; }, file);
+        await pg.click('#spkmic');
+        await pg.waitForSelector('.spk-mic.on', { timeout: 5000 });
+        await pg.waitForFunction(() => window.__micDone, null, { timeout: 15000 });
+        await pg.waitForTimeout(250);
+        await pg.click('#spkmic'); // stop
+        await pg.waitForSelector('#spkok', { timeout: 20000 });
+        await pg.waitForSelector('#spkheard.on[data-k]', { timeout: 20000 });
+        return pg.evaluate(() => ({ k: document.querySelector('#spkheard').dataset.k, txt: document.querySelector('#spkheard').textContent, jd: SPK.jd }));
+      };
+      try {
+        for (const [w, h] of [[380, 780], [1024, 600]]) {
+          const at = `${w}x${h}: `, tag = `${w}x${h}`;
+          const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: SH ? 2 : 1, serviceWorkers: 'block' });
+          const errs = [];
+          await ctx.route(/^(https?|wss?|ftp):/, route => { const u = route.request().url(); if (u.startsWith(base)) return route.continue(); network.push(u); route.abort(); });
+          await ctx.addInitScript(([key, raw]) => { try { if (!localStorage.getItem(key)) localStorage.setItem(key, raw); } catch (e) {} }, [SAVE_KEY, JSON.stringify(loadFixture('midway'))]);
+          await ctx.addInitScript(fakeMic);
+          const pg = await ctx.newPage();
+          pg.on('pageerror', e => errs.push('exception: ' + e.message));
+          pg.on('console', m => { if (m.type() === 'error') errs.push('console: ' + m.text()); });
+          try {
+            await pg.goto(base + 'index.html');
+            await pg.waitForSelector('#groom', { timeout: 15000 });
+            await pg.evaluate(() => { S.grade = 1; S.spkKeep = 'day'; S.spkStars = []; save(); start('es', NODES.es.findIndex(n => n.sk == 'es_animal' && n.lv == 1)); });
+            for (let i = 0; i < 6 && !(await pg.$('.spk-card')); i++) {
+              await pg.waitForFunction(() => document.querySelector('.spk-card') || (G && G.q && !G.lock && document.querySelector('#prompt')), null, { timeout: 10000 });
+              if (await pg.$('.spk-card')) break;
+              await pg.evaluate(() => { window.__q = G.q; });
+              await answer(pg);
+              await pg.waitForFunction(() => document.querySelector('.spk-card') || (G && G.q !== window.__q), null, { timeout: 10000 });
+            }
+            if (!(await pg.$('.spk-card'))) throw new Error('no Say it! step');
+            const it = await pg.evaluate(() => { const me = esKey(SPK.it.say), k = Object.keys(ES_AUDIO.lines).filter(s => s == me || spkNorm(s).split(' ').length == 1 && !spkMatch(me, s)).sort(),
+                i = k.indexOf(me), fars = [2, 3, 5].map(q => k[(i + Math.floor(k.length / q)) % k.length]); // other single words, a half, a third and a fifth of the list away
+              return { es: SPK.it.es, say: SPK.it.say, file: ES_AUDIO.dir + ES_AUDIO.lines[me][0] + '.ogg', fars, farFiles: fars.map(f => ES_AUDIO.dir + ES_AUDIO.lines[f][0] + '.ogg') }; });
+            await sizes(pg, at + 'ready: ');
+            // 1. the model recording itself, at 6x CPU throttle: "Great job!"
+            const cdp = await ctx.newCDPSession(pg);
+            await cdp.send('Emulation.setCPUThrottlingRate', { rate: 6 });
+            const r1 = await tryOnce(pg, it.file);
+            await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+            if (r1.k !== 'great' || !/Great job/.test(r1.txt)) bad.push(at + 'the model itself: ' + JSON.stringify(r1));
+            notes.push(`${tag} "${it.say}": model ${r1.k} (d ${r1.jd && r1.jd.d.toFixed(2)}, nearest other ${r1.jd && r1.jd.dk.toFixed(2)}) in ${r1.jd && Math.round(r1.jd.ms)} ms at 6x throttle`);
+            if (r1.jd && r1.jd.ms > 2500) bad.push(at + 'the sound check took ' + Math.round(r1.jd.ms) + ' ms at 6x throttle');
+            await sizes(pg, at + 'great: ');
+            await shot(pg, 'great-' + tag);
+            // 2. another line: "Close! Listen again" (never "wrong"), the self-check buttons stay
+            await pg.click('#spkagain');
+            await pg.waitForSelector('#spkmic:not(.on)', { timeout: 5000 });
+            if (await pg.$('#spkheard.on')) bad.push(at + 'Try again kept the old line');
+            // the check passes about 3% of unrelated words (tools/spk-calib.js "other"): so up to 3 different words, one must be "Close! Listen again"
+            let r2, far, tries = [];
+            for (let j = 0; j < it.fars.length; j++) {
+              if (j) { await pg.click('#spkagain'); await pg.waitForSelector('#spkmic:not(.on)', { timeout: 5000 }); }
+              far = it.fars[j]; r2 = await tryOnce(pg, it.farFiles[j]); tries.push(far + ' ' + r2.k);
+              if (/wrong/i.test(r2.txt)) bad.push(at + 'a different word (' + far + ') said "wrong": ' + r2.txt);
+              if (r2.k === 'again') break;
+            }
+            if (r2.k !== 'again' || !/Close! Listen again/.test(r2.txt)) bad.push(at + 'different words (' + tries.join(', ') + '): ' + JSON.stringify(r2));
+            if (!(await pg.$('#spkok')) || !(await pg.$('#spkagain'))) bad.push(at + 'the self-check buttons went');
+            notes.push(`${tag} for "${it.say}": ${tries.join(', ')}`);
+            await shot(pg, 'again-' + tag);
+            // 3. silence: "I couldn't hear you"
+            await pg.click('#spkagain');
+            await pg.waitForSelector('#spkmic:not(.on)', { timeout: 5000 });
+            const r3 = await tryOnce(pg, '');
+            if (r3.k !== 'quiet' || !/couldn.t hear you/.test(r3.txt)) bad.push(at + 'silence: ' + JSON.stringify(r3));
+            await pg.click('#spkok');
+            await pg.waitForSelector('#prompt', { timeout: 5000 });
+            // 4. Grown-ups: Spanish listening (can download) and the Listening corner with the three recordings
+            await pg.evaluate(() => { __fakeSR(); grown(); });
+            await pg.waitForSelector('#lis-dl', { timeout: 5000 });
+            const lis = await pg.evaluate(() => ({ st: document.querySelector('#lis-st').textContent, note: (document.querySelector('#lis-dl').parentElement.querySelector('.online-note') || {}).textContent || '' }));
+            if (!/one-time download/.test(lis.st) || !/internet/.test(lis.note)) bad.push(at + 'Spanish listening card: ' + JSON.stringify(lis));
+            await pg.waitForFunction(() => document.querySelectorAll('#lc-list .lc-row').length >= 3, null, { timeout: 5000 }).catch(() => {});
+            const rows = await pg.evaluate(() => [...document.querySelectorAll('#lc-list .lc-row')].map(r => r.querySelector('.lc-w b').textContent));
+            if (rows.length !== 3 || rows.some(x => x !== it.es)) bad.push(at + 'corner rows: ' + JSON.stringify(rows));
+            await pg.evaluate(() => document.querySelector('#gw-corner').scrollIntoView());
+            await sizes(pg, at + 'grown-ups: ');
+            await shot(pg, 'corner-' + tag);
+            await pg.evaluate(() => { __lg.played = []; });
+            await pg.click('[data-lcp="0"]');
+            await pg.waitForFunction(() => __lg.played.some(p => p.startsWith('blob:')), null, { timeout: 8000 }).catch(() => {});
+            const pl = await pg.evaluate(() => __lg.played);
+            const bi = pl.findIndex(p => p.startsWith('blob:')), mi = pl.findIndex(p => p.startsWith('audio/es/'));
+            if (mi < 0 || bi < 0 || bi < mi) bad.push(at + 'Listen: not the model then the child ' + JSON.stringify(pl));
+            await pg.click('[data-lcs="0"]');
+            await pg.waitForSelector('[data-lcs="0"][aria-pressed="true"]', { timeout: 5000 }).catch(() => bad.push(at + 'the star was not given'));
+            await pg.click('[data-keep="week"]');
+            const kept = await pg.evaluate(() => [S.spkKeep, (S.spkStars || []).length, document.querySelector('[data-keep="week"]').getAttribute('aria-pressed')]);
+            if (kept.join() !== 'week,1,true') bad.push(at + 'keep 1 week and the star: ' + kept);
+            // the download (online): the button goes, the card says the tablet can listen
+            await pg.evaluate(() => document.querySelector('#gw-lis').scrollIntoView());
+            await shot(pg, 'listening-' + tag);
+            await pg.click('#lis-dl');
+            await pg.waitForFunction(() => /can listen to Spanish on the device\./.test(document.querySelector('#lis-st').textContent), null, { timeout: 5000 }).catch(() => {});
+            const dl = await pg.evaluate(() => ({ inst: __lg.inst, st: document.querySelector('#lis-st').textContent, btn: !!document.querySelector('#lis-dl') }));
+            if (dl.inst !== 1 || dl.btn || !/can listen to Spanish on the device\./.test(dl.st)) bad.push(at + 'download: ' + JSON.stringify(dl));
+            // the about line
+            const ab = await pg.textContent('#ab-spk');
+            if (!/stay on this tablet and are deleted automatically/.test(ab) || !/Nothing is sent/.test(ab)) bad.push(at + 'About line: ' + ab);
+            // 5. Home: the star message once, with a sticker
+            const st0 = await pg.evaluate(() => Object.values(S.stickers).reduce((a, b) => a + b, 0));
+            await pg.evaluate(() => home());
+            await pg.waitForSelector('#hmgstar', { timeout: 5000 }).catch(() => {});
+            const hm = await pg.evaluate(() => ({ t: (document.querySelector('#hmgstar') || {}).textContent || '', n: Object.values(S.stickers).reduce((a, b) => a + b, 0) }));
+            if (!hm.t.includes('Your grown-up gave you a star for ‘' + it.es + '’!') || hm.n !== st0 + 1) bad.push(at + 'Home star: ' + JSON.stringify(hm) + ' stickers before ' + st0);
+            await sizes(pg, at + 'home: ');
+            await shot(pg, 'home-star-' + tag);
+            await pg.evaluate(() => home());
+            if (await pg.$('#hmgstar')) bad.push(at + 'the star message showed twice');
+            // 6. Delete all (two taps)
+            await pg.evaluate(() => grown());
+            await pg.waitForSelector('#lc-list .lc-row', { timeout: 5000 });
+            await pg.click('#lc-del'); await pg.click('#lc-del');
+            await pg.waitForFunction(() => !document.querySelector('#lc-list .lc-row'), null, { timeout: 5000 }).catch(() => bad.push(at + 'Delete all left rows'));
+          } catch (x) { bad.push(at + x.message.split('\n')[0]); }
+          for (const e of errs) fail('S-SPK2 ' + at + e);
+          await ctx.close();
+        }
+      } finally {
+        for (const s of socks) s.destroy();
+        await new Promise(r => srv.close(r));
+      }
+      if (bad.length) fail('S-SPK2 speaking check:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('S-SPK2: Say it! with a fake microphone at 380x780 and 1024x600: the model recording is "Great job!", another line "Close! Listen again", silence ' +
+        '"I couldn\'t hear you" (self-check buttons stay); Grown-ups: Spanish listening download (online note), the Listening corner (3 recordings, Listen = model ' +
+        'then child, star, keep 1 week, delete all); Home star message once with a sticker; 48 px, mic 64+, no sideways scroll; ' + notes.join('; '));
     }
 
     for (const u of network) fail('network request: ' + u);

@@ -18,7 +18,11 @@
    and per world goals {goalId: 1}, n (blocks built) and kinds (block ids used) for the free-build goals.
    Colours: every colour on the canvas comes from an --ill-* or --sc-* token (bbCol); nothing here is a raw colour.
    Logic that needs no screen (bbMake: camera, drawing order, hit test, targets, blueprint layers, undo) is tested in Node
-   (tools/test.js "block builder G-01"); the play screen around it is blockBuilder(). */
+   (tools/test.js "block builder G-01"); the play screen around it is blockBuilder().
+   G-BB2 (R-03 B1-B3): the play screen draws in 3D with 61-bb-gl.js (bbGL, bbCam3) where WebGL works and S.bb.gl is not 0: the GL
+   canvas #bbgl under #bbc, which then only takes the touches and draws the overlay (outlines, effects, the magnifier); one finger
+   turns the view. This 2D drawing stays the fallback. Animals are drawn from the object art (bbAnimalImg); music (bbMusic); a change
+   is saved after the frame that shows it (bbSaveSoon). Both files (and the CSS) go into games3.<VER>.js. */
 
 const BW = 16, BD = 16, BH = 14;
 const bbI = (x, y, z) => (z * BD + y) * BW + x;
@@ -1278,19 +1282,35 @@ function blockBuilder(ci) {
   const chips = bp ? `<span class="stat gh-st bb-prog" aria-label="Blocks built">${ico('blocks', 28)}<b id="bbprog"></b></span>`
     : `<span class="stat gh-st bb-prog" aria-label="Goals done">${ico('target', 28)}<b id="bbgoal"></b></span>`;
   view(`${GH.top('blocks', { play: true, sub: bp ? bp.n : world.name, chips })}
-   <div class="bb-wrap${bp ? ' bb-isbp' : ''}"><div class="bb-cv" id="bbcv"><canvas id="bbc" role="img" aria-label="Your build"></canvas><div class="bb-msg" id="bbmsg" aria-live="polite"></div><div class="bb-tip" id="bbtip"></div>${task}</div>
+   <div class="bb-wrap${bp ? ' bb-isbp' : ''}"><div class="bb-cv" id="bbcv"><canvas id="bbgl" aria-hidden="true" hidden></canvas><canvas id="bbc" role="img" aria-label="Your build"></canvas><div class="bb-msg" id="bbmsg" aria-live="polite"></div><div class="bb-tip" id="bbtip"></div>${task}</div>
     <div class="bb-side"><div class="bb-bar">${bar}</div>
      <div class="bb-pal" id="bbpal"><div class="bb-ps">${pal}</div></div>${bp ? '' : `<div class="bb-pal" id="bbst" hidden><div class="bb-ps"><div class="bb-grp"><span class="bb-gh">Stamps</span><div class="bb-gb">${stamps}</div></div></div></div>`}</div></div>`);
-  const cv = $('#bbc'), x = cv.getContext('2d'), wrap = $('#bbcv');
+  const cv = $('#bbc'), x = cv.getContext('2d'), wrap = $('#bbcv'), glcv = $('#bbgl');
   const bg = bbCanvas(1), bgx = bg.getContext('2d');
   let dpr = Math.min(2, devicePixelRatio || 1);
-  const FX = { parts: [], fuses: [], lit: new Set(), shake: 0, dirty: 1, last: 0, flash: [], anim: null, hold: null };
+  const FX = { parts: [], fuses: [], lit: new Set(), shake: 0, dirty: 1, last: 0, flash: [], anim: null, hold: null, t0: performance.now(), key: '', ft: [], scale: 1 };
   E.animals = [];
   const pet = () => bbPetImg(() => { E.dirty = 1; });
   const redraw = () => { E.dirty = 1; };
+  /* G-BB2: the 3D look (61-bb-gl.js) when WebGL works and it is not turned off (S.bb.gl = 0); else the 2D drawing as before */
+  let G3 = null;
+  if (bbS().gl !== 0 && !BB_NOGL) {
+    try { G3 = bbGL(glcv); } catch (e) { G3 = null; try { logErr('Block Builder 3D: ' + e.message); } catch (er) {} }
+    if (G3) { glcv.hidden = false; bbCam3(E); E.gl = G3; } else BB_NOGL = 1;
+  }
+  E.look = G3 ? '3d' : '2d';
+  // the sky behind the 3D canvas: the scene tokens as a CSS gradient (drawn by the browser, not every frame), the sun or the moon
+  function sky3() {
+    const [a, b] = E.night ? ['night', 'night-1'] : E.sky;
+    const sun = E.night ? 'radial-gradient(circle at 86% 12%, var(--ill-yellow-1) 0 3.2%, transparent 3.5%)'
+      : 'radial-gradient(circle at 86% 12%, var(--ill-yellow) 0 4%, var(--ill-yellow-1) 4.3% 5.4%, transparent 5.8%)';
+    wrap.style.background = sun + ', linear-gradient(var(--sc-' + a + '), var(--sc-' + b + '))';
+  }
+  if (G3) sky3();
 
   // the whole scene into the back buffer (only when something changed); fast = flat colours while the view turns
   function scene(fast) {
+    if (G3) { FX.dirty = 1; return; }
     const W = cv.width, H = cv.height, A = E.a();
     const g = bgx.createLinearGradient(0, 0, 0, H);
     g.addColorStop(0, bbCol(E.night ? 'sc:night' : 'sc:' + E.sky[0]));
@@ -1333,11 +1353,12 @@ function blockBuilder(ci) {
   function size() {
     const r = wrap.getBoundingClientRect();
     if (!r.width || !r.height) return;
-    dpr = Math.min(2, devicePixelRatio || 1);
+    dpr = G3 ? Math.min(1, devicePixelRatio || 1) * FX.scale : Math.min(BB_DPR2, devicePixelRatio || 1);
     const W = Math.round(r.width * dpr), H = Math.round(r.height * dpr);
     if (E.sized && W == cv.width && H == cv.height) return;
-    cv.width = bg.width = W;
-    cv.height = bg.height = H;
+    cv.width = W;
+    cv.height = H;
+    if (G3) G3.resize(W, H); else { bg.width = W; bg.height = H; }
     const first = !E.sized;
     E.size(cv.width, cv.height, dpr);
     if (first) { E.home(); E.sized = 1; } else E.clamp();
@@ -1410,8 +1431,9 @@ function blockBuilder(ci) {
       const a = Math.floor(Math.random() * BW), b = Math.floor(Math.random() * BD), z = E.topZ(a, b);
       const under = z > 0 ? E.get(a, b, z - 1) : 0;
       if (z > 0 && z < BH && under != 10 && under != 21) {
-        const e = pick(['🐷', '🐔', '🐑', '🐄', '🐰', '🐱', '🐶', '🦆']);
-        E.animals.push({ e, x: a, y: b, z, fx: a, fy: b, fz: z, tx: a, ty: b, tz: z, hop: 1, t: .5, dir: 1 });
+        const k = pick(BB_AN);
+        bbAnimalImg(k, () => { FX.dirty = 1; });
+        E.animals.push({ k, x: a, y: b, z, fx: a, fy: b, fz: z, tx: a, ty: b, tz: z, hop: 1, t: .5, dir: 1, ph: Math.random() * 6 });
         tone(660, .08, 0, 'sine', .12); tone(990, .08, .08, 'sine', .12);
         if (E.animals.length >= 5) goal('zoo');
         return;
@@ -1474,7 +1496,7 @@ function blockBuilder(ci) {
     if (mode == 'count') { const [a, b, c] = E.box(E.mine()), t = $('#bbtaskt'); if (t) t.textContent = `Build it ${bbDimsSay(E.dims)}.` + (E.prog() ? ` Now: ${bbBoxSay(a, b, c, E.dims)}.` : ' Count as you go!'); }
   }
   function after() {
-    if (bp) bbProg(); else bbSave();
+    if (bp) bbProg(); else bbSaveSoon();
     for (const [id, ok] of [['#bbundo', E.undo.length], ['#bbredo', E.redo.length]]) { const b = $(id); if (b) b.setAttribute('aria-disabled', ok ? 'false' : 'true'); }
     E.dirty = 1;
   }
@@ -1504,6 +1526,7 @@ function blockBuilder(ci) {
       if (r.cells.length == 1) E.drop = { i: r.cells[0], t: performance.now(), dz: 1.2 };
       tone(300 + top * 50, .08, 0, 'square', .08); tone(600 + top * 50, .06, .04, 'sine', .1);
       if (r.cells.length > 3) { tone(800, .08, .08, 'sine', .1); tone(1000, .1, .14, 'sine', .1); }
+      if (typeof buzz == 'function') buzz(15); // R-03 A4: a short buzz on a block placed (Grown-ups "Buzz", never in Calm mode)
       flash(r.cells);
       after();
       if (bp) { if (r.win) setTimeout(bbWin, 450); else layerNote(); } else checkGoals(r.cells, r.tool);
@@ -1560,16 +1583,19 @@ function blockBuilder(ci) {
       if (an.hop < 1) {
         an.hop = Math.min(1, an.hop + dt / .32);
         const k = an.hop;
-        an.x = an.fx + (an.tx - an.fx) * k; an.y = an.fy + (an.ty - an.fy) * k; an.z = an.fz + (an.tz - an.fz) * k + Math.sin(k * Math.PI) * .45;
+        an.x = an.fx + (an.tx - an.fx) * k; an.y = an.fy + (an.ty - an.fy) * k; an.z = an.fz + (an.tz - an.fz) * k; // the hop's height: bbHopShape
+        an.gz = Math.max(an.fz, an.tz);
       } else {
         const cz = E.topZ(Math.round(an.x), Math.round(an.y));
         if (cz > 0 && cz != an.z) an.z = cz;
+        an.gz = an.z;
         an.t -= dt;
         if (an.t <= 0) {
           an.t = .5 + Math.random() * 1.4;
           const [dx, dy] = pick([[1, 0], [-1, 0], [0, 1], [0, -1]]), nx = Math.round(an.x) + dx, ny = Math.round(an.y) + dy, nz = E.topZ(nx, ny);
           if (nx >= 0 && ny >= 0 && nx < BW && ny < BD && nz > 0 && nz < BH && Math.abs(nz - Math.round(an.z)) <= 1 && E.get(nx, ny, nz - 1) != 10) {
-            Object.assign(an, { fx: an.x, fy: an.y, fz: Math.round(an.z), tx: nx, ty: ny, tz: nz, hop: 0, dir: dx - dy || an.dir });
+            const p0 = E.proj(an.x + .5, an.y + .5, an.z), p1 = E.proj(nx + .5, ny + .5, nz); // face the way it hops on the screen
+            Object.assign(an, { fx: an.x, fy: an.y, fz: Math.round(an.z), tx: nx, ty: ny, tz: nz, hop: 0, dir: Math.abs(p1[0] - p0[0]) > 1 ? Math.sign(p1[0] - p0[0]) : an.dir });
           }
         }
       }
@@ -1578,15 +1604,43 @@ function blockBuilder(ci) {
     FX.parts = FX.parts.filter(p => p.l > 0);
     FX.flash = FX.flash.filter(f => now - f.t < 900);
     if (FX.pulse && now - FX.pulse.t > 1200) FX.pulse = null;
+    if (G1.spin) { // G-BB2: a flicked turn slows down by itself
+      E.orbit(G1.spin * dt * 60, 0);
+      G1.spin *= Math.pow(.04, dt);
+      if (Math.abs(G1.spin) < .3) { G1.spin = 0; E.rot = Math.round(E.ang / (Math.PI / 2)); }
+      E.dirty = 1;
+    }
+    bbMusic(FX, world ? bbWType(world) : chap ? chap.world : 'island');
     if (E.dirty) { scene(fast); E.dirty = 0; }
-    const busy = FX.parts.length || FX.fuses.length || E.animals.length || FX.shake > 0 || FX.flash.length || FX.pulse || G1.aim || G1.hold;
-    if (!busy) { if (FX.dirty) { x.setTransform(1, 0, 0, 1, 0, 0); x.drawImage(bg, 0, 0); FX.dirty = 0; } return; }
-    FX.dirty = 1;
     const A = E.a();
-    let sh = 0;
-    if (FX.shake > 0) { FX.shake -= dt; sh = (Math.random() - .5) * A * .6 * FX.shake; }
-    x.setTransform(1, 0, 0, 1, 0, 0);
-    x.drawImage(bg, sh, sh * .7);
+    if (G3) { // G-BB2: the 3D frame (every frame: water moves, animals hop), then the overlay only when something on it changed
+      let sh = [0, 0];
+      if (FX.shake > 0) { FX.shake -= dt; if (!bbCalm()) sh = [(Math.random() - .5) * .5 * FX.shake, (Math.random() - .5) * .5 * FX.shake]; }
+      E.F[0] += sh[0]; E.F[1] += sh[1];
+      const fog = bbRgb(E.night ? 'sc:night-1' : 'sc:' + E.sky[1]).map(v => v / 255);
+      const ok = G3.draw(E, { t: (now - FX.t0) / 1000, night: E.night, fog, animals: E.animals, pet: pet() });
+      for (const an of E.animals) { const p = E.proj(an.x + .5, an.y + .5, an.z + .45); an.sx = p[0]; an.sy = p[1]; }
+      E.F[0] -= sh[0]; E.F[1] -= sh[1];
+      if (!ok) { bbLost(); return; }
+      bbAdapt(now);
+      const busy3 = FX.parts.length || FX.fuses.length || FX.flash.length || FX.pulse || G1.aim || G1.hold;
+      const gl = bp && E.ghosts() && E.layer() != null, key = gl ? [E.ang, E.tilt, E.zoom, E.F.join(), cv.width, cv.height, E.prog()].join() : '';
+      if (!busy3 && !FX.dirty && key === FX.key) return;
+      FX.key = key;
+      x.setTransform(1, 0, 0, 1, 0, 0);
+      x.clearRect(0, 0, cv.width, cv.height);
+      if (gl) ghostLines();
+      if (!busy3) { FX.dirty = 0; return; }
+      FX.dirty = 1;
+    } else {
+      const busy = FX.parts.length || FX.fuses.length || E.animals.length || FX.shake > 0 || FX.flash.length || FX.pulse || G1.aim || G1.hold;
+      if (!busy) { if (FX.dirty) { x.setTransform(1, 0, 0, 1, 0, 0); x.drawImage(bg, 0, 0); FX.dirty = 0; } return; }
+      FX.dirty = 1;
+      let sh = 0;
+      if (FX.shake > 0) { FX.shake -= dt; sh = (Math.random() - .5) * A * .6 * FX.shake; }
+      x.setTransform(1, 0, 0, 1, 0, 0);
+      x.drawImage(bg, sh, sh * .7);
+    }
     // a lit fuse blinks
     for (const f of FX.fuses) { x.globalAlpha = Math.sin(now / (f.t < .6 ? 40 : 90)) * .35 + .4; outline(f.i, f.j, f.k, bbCol('white'), null, true); x.globalAlpha = 1; }
     // just built: a bright outline that fades (stamps no longer vanish into the scene)
@@ -1621,14 +1675,20 @@ function blockBuilder(ci) {
       x.lineWidth = 5 * dpr; x.strokeStyle = bbA('white', .9);
       x.beginPath(); x.arc(G1.hold.x, G1.hold.y, r, -Math.PI / 2, -Math.PI / 2 + p * Math.PI * 2); x.stroke();
     }
-    // animals (emoji are content pictures here)
-    x.textAlign = 'center'; x.textBaseline = 'bottom'; x.font = `${Math.round(A * 1.3)}px sans-serif`;
-    const order = E.animals.map(an => { const c = Math.cos(E.ang), s = Math.sin(E.ang), dx = an.x - E.F[0], dy = an.y - E.F[1]; return [dx * c - dy * s + dx * s + dy * c, an]; }).sort((p, q) => p[0] - q[0]);
-    for (const [, an] of order) {
-      const p = E.proj(an.x + .5, an.y + .5, an.z), gd = E.proj(an.x + .5, an.y + .5, Math.floor(an.z + .01));
-      an.sx = p[0]; an.sy = p[1] - A * .4;
-      x.fillStyle = bbA('ink', .18); x.beginPath(); x.ellipse(gd[0], gd[1], A * .35, A * .15, 0, 0, 7); x.fill();
-      x.save(); x.translate(p[0], p[1] + A * .1); if (an.dir < 0) x.scale(-1, 1); x.fillStyle = bbCol('ink'); x.fillText(an.e, 0, 0); x.restore();
+    // animals (2D look; the 3D look draws them in the scene): drawn pictures with a hop (B2), a soft shadow under each
+    if (!G3) {
+      const order = E.animals.map(an => { const c = Math.cos(E.ang), s = Math.sin(E.ang), dx = an.x - E.F[0], dy = an.y - E.F[1]; return [dx * c - dy * s + dx * s + dy * c, an]; }).sort((p, q) => p[0] - q[0]);
+      for (const [, an] of order) {
+        const [up, sw, shh] = bbHopShape(an.hop, (now - FX.t0) / 1000 + (an.ph || 0));
+        const p = E.proj(an.x + .5, an.y + .5, an.z + up), gd = E.proj(an.x + .5, an.y + .5, an.gz != null ? an.gz : Math.floor(an.z + .01));
+        an.sx = p[0]; an.sy = p[1] - A * .4;
+        x.fillStyle = bbA('ink', .18 * (1 - up)); x.beginPath(); x.ellipse(gd[0], gd[1], A * .4 * (1 - up * .5), A * .17 * (1 - up * .5), 0, 0, 7); x.fill();
+        const img = bbAnimalImg(an.k), sz = A * 1.25;
+        x.save(); x.translate(p[0], p[1] + A * .12); if (an.dir < 0) x.scale(-1, 1);
+        if (img) x.drawImage(img, -sz * sw / 2, -sz * shh, sz * sw, sz * shh);
+        else { x.fillStyle = bbCol('pink'); x.beginPath(); x.arc(0, -A * .45, A * .38, 0, 7); x.fill(); }
+        x.restore();
+      }
     }
     for (const p of FX.parts) {
       x.globalAlpha = Math.min(1, p.l * 1.5);
@@ -1646,12 +1706,45 @@ function blockBuilder(ci) {
       const [fx, fy] = G1.fp, Rr = Math.min(cv.width, cv.height) * .16, src = Rr * .9;
       const ly = fy - Rr * 1.9 < Rr + 4 ? fy + Rr * 1.9 : fy - Rr * 1.9, lx = Math.max(Rr + 4, Math.min(cv.width - Rr - 4, fx));
       x.save(); x.beginPath(); x.arc(lx, ly, Rr, 0, 7); x.closePath(); x.fillStyle = bbCol('sc:sky'); x.fill(); x.clip();
-      x.imageSmoothingEnabled = false; x.drawImage(cv, fx - src / 2, fy - src / 2, src, src, lx - Rr, ly - Rr, Rr * 2, Rr * 2); x.restore();
+      x.imageSmoothingEnabled = false;
+      if (G3) x.drawImage(glcv, fx - src / 2, fy - src / 2, src, src, lx - Rr, ly - Rr, Rr * 2, Rr * 2); // the 3D scene, then what is drawn over it
+      x.drawImage(cv, fx - src / 2, fy - src / 2, src, src, lx - Rr, ly - Rr, Rr * 2, Rr * 2); x.restore();
       x.strokeStyle = bbCol('white'); x.lineWidth = 5 * dpr; x.beginPath(); x.arc(lx, ly, Rr, 0, 7); x.stroke();
       x.strokeStyle = bbA('ink', .45); x.lineWidth = 1.5 * dpr; x.beginPath(); x.arc(lx, ly, Rr + 3 * dpr, 0, 7); x.stroke();
       x.strokeStyle = bbCol('ink'); x.lineWidth = 2.5 * dpr; x.beginPath();
       x.moveTo(lx - 10 * dpr, ly); x.lineTo(lx + 10 * dpr, ly); x.moveTo(lx, ly - 10 * dpr); x.lineTo(lx, ly + 10 * dpr); x.stroke();
     }
+  }
+  // G-BB2: the outline of each see-through block of the layer to build (the 3D look draws them over the scene)
+  function ghostLines() {
+    const A = E.a();
+    for (const n of E.todo()) {
+      const [i, j, k] = cellXYZ(n);
+      outline(i, j, k, null, bbA('ink', .78), false, Math.max(2, A * .08));
+      x.setLineDash([A * .18, A * .1]);
+      outline(i, j, k, null, bbCol('white'), false, Math.max(1.2, A * .04));
+      x.setLineDash([]);
+    }
+  }
+  // the 3D canvas stopped (its context was lost): keep the world and open it again in the 2D look for this visit
+  function bbLost() {
+    BB_NOGL = 1;
+    try { logErr('Block Builder 3D: the WebGL context was lost; the 2D look is used'); } catch (e) {}
+    if (!bp) bbSave();
+    setTimeout(() => { if ($('#bbc') === cv) blockBuilder(ci); }, 0);
+  }
+  /* adaptive size (like Star Rally): when frames keep coming slowly, draw fewer pixels (85, 70, 60 %); back up when there is room */
+  function bbAdapt(now) {
+    const ft = FX.ft;
+    ft.push(now);
+    if (ft.length < 40) return;
+    const per = (ft[ft.length - 1] - ft[0]) / (ft.length - 1);
+    ft.length = 0;
+    const steps = [1, .85, .7, .6], i = steps.indexOf(FX.scale);
+    let n = i;
+    if (per > 45 && i < steps.length - 1) n = i + 1;
+    else if (per < 22 && i > 0) n = i - 1;
+    if (n != i) { FX.scale = steps[n]; E.scale = FX.scale; size(); }
   }
   function heart(px, py, s) {
     x.beginPath(); x.moveTo(px, py + s * .3);
@@ -1677,7 +1770,7 @@ function blockBuilder(ci) {
   }
 
   /* ---- touch: tap builds, one finger moves the view, hold then slide aims (or draws a shape), two fingers pinch ---- */
-  const G1 = { ptrs: new Map(), g: null, pinch: null, aim: false, prev: null, fp: null, hold: null };
+  const G1 = { ptrs: new Map(), g: null, pinch: null, aim: false, prev: null, fp: null, hold: null, spin: 0 };
   BB.gest = G1;
   const cpos = (cx, cy) => { const r = cv.getBoundingClientRect(); return [(cx - r.left) * dpr, (cy - r.top) * dpr]; };
   // the cells the aim shows: from where the hold started (t0) to under the finger now
@@ -1758,6 +1851,7 @@ function blockBuilder(ci) {
       return;
     }
     if (G1.ptrs.size > 2 || G1.pinch) return;
+    G1.spin = 0; // a finger stops a flicked turn
     const p = cpos(e.clientX, e.clientY);
     // an animal under the finger turns round with a heart; the tap still builds (R-02 #4: animals never get in the way)
     const an = E.animals.find(a => a.sx && Math.hypot(a.sx - p[0], a.sy - p[1]) < E.a() * .6);
@@ -1790,7 +1884,11 @@ function blockBuilder(ci) {
       g.mode = 'pan';
       G1.hold = null;
     }
-    if (g.mode == 'pan') { E.pan(p[0] - g.last[0], p[1] - g.last[1]); g.last = p; E.dirty = 1; }
+    if (g.mode == 'pan') { // 2D: the world follows the finger; 3D (G-BB2): one finger turns and tilts the view
+      const dx = p[0] - g.last[0], dy = p[1] - g.last[1];
+      if (G3) { E.orbit(dx, dy); g.vx = dx * .6 + (g.vx || 0) * .4; } else E.pan(dx, dy);
+      g.last = p; g.tm = performance.now(); E.dirty = 1;
+    }
     else if (g.mode == 'aim') aimAt(p);
   });
   const up = e => {
@@ -1802,6 +1900,10 @@ function blockBuilder(ci) {
     G1.g = null; G1.hold = null;
     if (g.mode == 'wait') result(E.tap(...g.p0));
     else if (g.mode == 'aim') endAim(true);
+    else if (g.mode == 'pan' && G3) { // a flick keeps turning a little (not in calm mode); the stamp's turn follows the view
+      if (!bbCalm() && performance.now() - (g.tm || 0) < 90 && Math.abs(g.vx || 0) > 2) G1.spin = Math.max(-40, Math.min(40, g.vx));
+      else E.rot = Math.round(E.ang / (Math.PI / 2));
+    }
     FX.dirty = 1;
   };
   cv.addEventListener('pointerup', up);
@@ -1815,7 +1917,7 @@ function blockBuilder(ci) {
 
   /* ---- the tool bar and the palette ---- */
   const TIPS = {
-    build: 'Tap to build. Drag to look around.',
+    build: G3 ? 'Tap to build. Drag to turn. Two fingers move and zoom.' : 'Tap to build. Drag to look around.',
     break: 'Tap a block to break it, one at a time.',
     stamp: 'Pick a stamp below, then tap where it goes.',
     boom: 'Tap a TNT block to light it. Undo puts everything back.',
@@ -1872,7 +1974,8 @@ function blockBuilder(ci) {
   $('#bbundo').onclick = () => { if (E.doUndo()) { SFX.del(); after(); if (bp) lastLayer = E.layer(); } else say1('Nothing to undo yet.', 'info', 1200); };
   $('#bbredo').onclick = () => { if (E.doRedo()) { SFX.pop(2); after(); if (bp) lastLayer = E.layer(); } else say1('Nothing to redo.', 'info', 1200); };
   const turn = d => {
-    E.rot = E.rot + d;
+    G1.spin = 0;
+    E.rot = Math.round(E.ang / (Math.PI / 2)) + d; // from where the view is now (3D: it may have been turned by a finger)
     FX.anim = { t0: performance.now(), ms: 360, ang0: E.ang, ang: E.rot * Math.PI / 2 };
     SFX.whoosh();
   };
@@ -1889,25 +1992,34 @@ function blockBuilder(ci) {
     const s = UI.sheet(`<div class="bb-sheet bb-more"><h2>More tools</h2>
       <div class="bb-mts">${t('line', 'line', 'Line', E.tool == 'line')}${t('wall', 'wall', 'Wall', E.tool == 'wall')}${t('floor', 'floor', 'Floor', E.tool == 'floor')}` +
       `${t('clear', 'trash', 'Clear area', E.tool == 'clear')}${t('night', E.night ? 'sparkle' : 'moon', E.night ? 'Day' : 'Night', false)}${t('pet', 'paw', 'Add animal', false)}</div>
-      ${UI.sw('Build on the sides of blocks', E.side, 'bbside')}
+      ${UI.sw('Build on the sides of blocks', E.side, 'bbside')}${bbGlOk() ? UI.sw('3D look', !!G3, 'bb3d') : ''}
       ${UI.btn('Save a picture to my gallery', { size: 'lg', icon: 'image', id: 'bbgal', wide: true })}
       <h3>Goals in this world <span class="bb-gn">${gn} of ${gt} done</span></h3>` +
       (nx.length ? `<ul class="bb-goals">${nx.map(([id, txt, ic]) => `<li>${bbIco(ic, 24)}<span>${esc(txt)}</span></li>`).join('')}</ul>` : `<p class="bb-alldone">${ico('check-circle', 24)}<span>Every goal in this world is done!</span></p>`) + `
       <div class="acts">${UI.btn('Done', { kind: 'primary', size: 'lg', icon: 'check', id: 'bbmdone', wide: true })}</div></div>`);
     s.el.querySelector('#bbmdone').onclick = () => s.close();
     s.el.querySelector('#bbgal').onclick = () => { s.close(); galSave(); };
+    const s3 = s.el.querySelector('#bb3d');
+    if (s3) s3.onchange = () => { // G-BB2: the 3D look or the 2D drawing (saved: S.bb.gl = 0 is the 2D look); the world opens again
+      s.close();
+      const b = bbS();
+      if (s3.checked) delete b.gl; else b.gl = 0;
+      bbSave(); save();
+      blockBuilder(ci);
+      if (BB) BB.api.say(s3.checked ? '3D look: drag to turn the island.' : '2D look: drag to move the island.', 'info', 2200);
+    };
     const sw = s.el.querySelector('#bbside');
     if (sw) sw.onchange = () => { E.side = !!sw.checked; say1(E.side ? 'Tap the side of a block to build next to it.' : 'Taps build on top again.', 'info'); };
     for (const b of s.el.querySelectorAll('[data-mt]')) b.onclick = () => {
       const k = b.dataset.mt;
       s.close();
-      if (k == 'night') { E.night = !E.night; E.dirty = 1; SFX.whoosh(); if (E.night && E.w.includes(22)) goal('night'); return; }
+      if (k == 'night') { E.night = !E.night; E.dirty = 1; if (G3) sky3(); SFX.whoosh(); if (E.night && E.w.includes(22)) goal('night'); return; }
       if (k == 'pet') { spawn(); return; }
       setTool(E.tool == k ? 'build' : k);
       SFX.pop(1);
     };
   }
-  E.setNight = on => { E.night = !!on; E.dirty = 1; };
+  E.setNight = on => { E.night = !!on; E.dirty = 1; if (G3) sky3(); };
   // G-01b: a picture of this world into the gallery (12 at most: a full gallery asks to delete one on the menu first)
   function galSave() {
     const gal = bbGal();
@@ -1922,6 +2034,7 @@ function blockBuilder(ci) {
   E.galSave = galSave;
 
   GH.wire({quit: () => { bbSave(); gtStop(); bbMenu(); }});
+  bbSaveHook();
   // the palette pictures, the stamp pictures
   for (const c of $$('[data-bc]')) bbIcon(c.getContext('2d'), +c.dataset.bc, c.width);
   for (const c of $$('[data-sc]')) bbMini(c, BBSTAMPS[+c.dataset.sc].c.map(([a, b, z, v]) => [a + 8, b + 8, z, v]));
@@ -1932,7 +2045,7 @@ function blockBuilder(ci) {
   }
   const selBtn = $(`[data-b="${E.sel}"]`);
   if (selBtn) selBtn.setAttribute('aria-pressed', 'true');
-  BB.api = { tap: E.tap, hit: E.hit, get faces() { return E.faces; }, proj: E.proj, size, scene: () => scene(false), say: say1 };
+  BB.api = { tap: E.tap, hit: E.hit, get faces() { return E.faces; }, proj: E.proj, size, scene: () => scene(false), say: say1, frame: () => G3 && G3.frames, gl: G3 };
   BB.resize = size;
   size();
   // the scene follows its box (the palette, the fonts and turning the tablet change it)
@@ -1954,9 +2067,52 @@ function blockBuilder(ci) {
   }
   gtStart('#gtm', () => { bbSave(); timeUpOverlay(); });
   if (!bp && !bbS().seen) { bbS().seen = 1; save(); setTimeout(() => tip(TIPS.build), 500); }
-  if (S.voice) setTimeout(() => say(bp ? `${bp.n}! ${bbTask(bp)}` : 'Tap to build! Drag to look around.'), 300);
+  if (S.voice) setTimeout(() => say(bp ? `${bp.n}! ${bbTask(bp)}` : G3 ? 'Tap to build! Drag to turn around.' : 'Tap to build! Drag to look around.'), 300);
 }
 const BB_HOLD = 300, BB_SLOP = 10; // ms a finger rests before aiming starts; CSS px a finger moves before it drags the view
+/* G-BB2 (R-03 B1): the world is saved once the frame that shows the tap is painted, not before it (a save writes the whole S);
+   a hidden page or Quit saves at once */
+let BB_SAVE_T = 0, BB_NOGL = 0;
+// the 2D look draws at most 1.25 canvas pixels a CSS pixel (it was 2): a software canvas paints every pixel of the scene again after a tap
+const BB_DPR2 = 1.25;
+function bbSaveSoon() {
+  if (BB_SAVE_T) return;
+  BB_SAVE_T = 1;
+  requestAnimationFrame(() => setTimeout(() => { BB_SAVE_T = 0; bbSave(); }, 0));
+}
+function bbSaveHook() {
+  if (window._bbsh) return;
+  window._bbsh = 1;
+  const now = () => { if (BB && $('#bbc')) bbSave(); };
+  document.addEventListener('visibilitychange', () => { if (document.hidden) now(); });
+  addEventListener('pagehide', now);
+}
+// WebGL can be made here (checked once; a tablet whose graphics chip Chrome blocks has none, R-03 4.2)
+let BB_GLOK = null;
+function bbGlOk() {
+  if (BB_GLOK == null) { try { const c = bbCanvas(2); BB_GLOK = !!(c.getContext('webgl')); } catch (e) { BB_GLOK = false; } }
+  return BB_GLOK && !BB_NOGL;
+}
+const bbCalm = () => !!S.calm || (typeof matchMedia == 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches);
+/* music (R-03 A1): a calm loop per kind of world, soft notes made with tone(); only with Sound effects and Music on, never in calm
+   mode; it waits while a sheet (Pause, More) is open or the page is hidden, and goes quiet under the voice (the shared duck) */
+const BB_TUNE = { island: [67, 0, 0, .3], mountain: [65, 1, 0, .32], desert: [64, 2, 1, .3], flat: [67, 1, 0, .3], snow: [69, 3, 0, .34], beach: [65, 0, 0, .3],
+  sky: [72, 3, 0, .32], meadow: [67, 0, 0, .3] };
+const BB_MEL = [[0, 2, 4, -1, 4, 2, 5, -1, 4, 2, 0, -1, 1, 2, 0, -1], [4, -1, 2, 0, 2, -1, 4, 5, 4, -1, 2, -1, 0, 2, 1, -1],
+  [0, 1, 2, -1, 4, 2, 1, -1, 2, 4, 5, 4, 2, -1, 0, -1], [5, 4, 2, -1, 4, 2, 0, -1, 2, 4, 5, 7, 5, -1, 4, -1]];
+const BB_SC = [[0, 2, 4, 7, 9, 12, 14, 16], [0, 3, 5, 7, 10, 12, 15, 17]];
+function bbMusic(M, kind) {
+  const a = typeof AC != 'undefined' && AC;
+  if (!S.sound || !S.music || bbCalm() || !a || a.state != 'running' || (typeof document != 'undefined' && (document.hidden || document.querySelector('.sheet-bg.on')))) { M.mb = 0; return; }
+  const [root, mi, minor, step] = BB_TUNE[kind] || BB_TUNE.island, sc = BB_SC[minor], mel = BB_MEL[mi];
+  if (!M.mb || M.mb < a.currentTime) M.mb = a.currentTime + .05;
+  while (M.mb < a.currentTime + .15) {
+    const i = M.mi = ((M.mi || 0) + 1) % 64, n = mel[i % 16], t = M.mb - a.currentTime;
+    if (n >= 0) tone(NOTE(root + sc[n]), step * 2, t, 'sine', .022);
+    if (i % 8 == 0) tone(NOTE(root - 24 + [0, 5, 3, 4][(i >> 3) % 4]), step * 7, t, 'sine', .03);
+    M.mb += step;
+  }
+}
 // convex hull of points (the outline of a cube on screen)
 function bbHull(pts) {
   const p = pts.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]), cr = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);

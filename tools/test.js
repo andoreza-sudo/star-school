@@ -23,10 +23,11 @@ const PART_WARN=400000,PART_FAIL=800000; // A11b: bytes of each built part file 
 // P6-02: bytes LOADED AT START, index.html + the part files it loads at start + data.<VER>.js (back to 3.0 MB: the games parts load on demand);
 // and bytes PRECACHED, every built file (G-04a raised the old all-files total from 3.0 to 3.3 MB for games2; that limit now holds the precache; ES-AUDIO 3.4 MB)
 // G-01b raised it to 3.6 MB for the Block Builder journey; ES-AUDIO had raised it from 3.3 to 3.4 MB for the recordings' manifest in the data file (src/data/d-es-audio.js, 28 KB); the start-up limit is unchanged
-const TOTAL_WARN=2000000,TOTAL_FAIL=3000000,CACHE_FAIL=3600000;
+const TOTAL_WARN=2000000,TOTAL_FAIL=3000000,CACHE_FAIL=4500000; // R-03: 4.5 MB for the game updates (games load on demand; the start-up limit stays 3.0 MB)
 // ES-AUDIO: the recorded Spanish, audio/es/*.ogg. Not loaded at start (say() fetches a file the first time its line is said) but
 // precached by sw.js in its own cache: all files together under AUDIO_FAIL, each file under AUDIO_FILE_FAIL
-const AUDIO_WARN=2500000,AUDIO_FAIL=3000000,AUDIO_FILE_FAIL=40000;
+// EN-PRAISE: the recorded English encouragement (audio/en, six voices) shares that cache and that budget: 3.0 -> 4.5 MB (warn 2.5 -> 4.0)
+const AUDIO_WARN=4000000,AUDIO_FAIL=4500000,AUDIO_FILE_FAIL=40000;
 const BUILD_VER=(BUILD_PY.match(/^VER = '(v\d+)'/m)||[])[1];
 const DATA_FILE='data.'+BUILD_VER+'.js'; // the built data file at the repo root (tools/build.py)
 const PART_FILES=PARTS.map(p=>p.stem+'.'+BUILD_VER+'.js'); // A11b: the built part files, in PARTS order
@@ -80,11 +81,16 @@ global.getComputedStyle=()=>({}); // P6-02: view() reads a computed style to res
 global.setTimeout=()=>{};
 
 const results=[]; // {name, problems, known, note}
+const PENDING=[]; // S-SPK2: a check may return a promise of {problems, note} (IndexedDB-style code); the report waits for it, in place
 const run=(name,fn)=>{
+  const put=(problems,note)=>{const kn=new Set(KNOWN[name]||[]),known=problems.filter(p=>kn.has(p));
+    return{name,problems:problems.filter(p=>!kn.has(p)),known,note,unusedKnown:[...kn].filter(k=>!problems.includes(k))}};
   let problems=[],note='';
-  try{const r=fn();problems=r.problems||[];note=r.note||''}catch(e){problems=['check crashed: '+(e&&e.stack||e)]}
-  const kn=new Set(KNOWN[name]||[]),known=problems.filter(p=>kn.has(p));
-  results.push({name,problems:problems.filter(p=>!kn.has(p)),known,note,unusedKnown:[...kn].filter(k=>!problems.includes(k))});
+  try{const r=fn();
+    if(r&&typeof r.then=='function'){const i=results.length;results.push(put(['check did not finish'],''));
+      PENDING.push(r.then(x=>{results[i]=put(x.problems||[],x.note||'')},e=>{results[i]=put(['check crashed: '+(e&&e.stack||e)],'')}));return}
+    problems=r.problems||[];note=r.note||''}catch(e){problems=['check crashed: '+(e&&e.stack||e)]}
+  results.push(put(problems,note));
 };
 const uniq=a=>[...new Set(a)];
 
@@ -2641,7 +2647,9 @@ run('profiles P5-10: every fixture round-trips byte for byte in the profile stor
   if(/#[0-9a-fA-F]{3,8}\b/.test(fs.readFileSync(path.join(SRC,'css','45-profiles.css'),'utf8')))p.push('45-profiles.css has a raw colour');
   if(!/PRF\.needPick\(\)\) PRF\.pick\(\)/.test(fs.readFileSync(path.join(SRC,'boot.js'),'utf8')))p.push('boot.js does not show the picker first');
   if(!/filter\(c=>PRF\.clipOf\(c\.id\)===PRF\.cur\)/.test(src('44-clips.js'))||!/id:PRF\.clipId\(\)/.test(src('80-grown.js')))p.push('voice clips are not kept per child');
-  if((src('70-art.js').match(/PRF\.k\('starschool-neon'\)/g)||[]).length!==3)p.push('Art Studio neon pictures are not kept per child');
+  // G-ART2: the old neon store is only read (once, by artNeonMigrate, into the child's own gallery), always by the child's key
+  {const a=src('70-art.js'),all=(a.match(/'starschool-neon'/g)||[]).length,per=(a.match(/PRF\.k\('starschool-neon'\)/g)||[]).length;
+    if(!per||per!==all||/localStorage\.setItem\([^)]*starschool-neon/.test(a))p.push('Art Studio neon pictures are not kept per child');}
   return{problems:[...p,...r.bad],note:r.notes.join(', ')};
 });
 
@@ -7812,7 +7820,7 @@ run('mazes P3-08',()=>{
 run('code split A11b (and data file split A11)',()=>{
   const p=[],rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8');
   if(!BUILD_VER)return{problems:['no VER in tools/build.py']};
-  if(PARTS.map(x=>x.stem).join()!=='gen,gen2,bt,games,games2')p.push('PARTS in tools/build.py read as '+JSON.stringify(PARTS.map(x=>x.stem))+' (one entry per line, like the others)');
+  if(PARTS.map(x=>x.stem).join()!=='gen,gen2,bt,games,rally,games2,games3')p.push('PARTS in tools/build.py read as '+JSON.stringify(PARTS.map(x=>x.stem))+' (one entry per line, like the others)');
   const FILES=[...PART_FILES,DATA_FILE];
   for(const f of ['index.html',...FILES,'sw.js'])if(!fs.existsSync(path.join(ROOT,f)))p.push(f+' not built; run python3 tools/build.py first');
   if(p.length)return{problems:p};
@@ -7821,7 +7829,7 @@ run('code split A11b (and data file split A11)',()=>{
   // P6-02: the LAZY parts (games, games2) have no tag: partsThen() loads them on demand (the check "performance P6-02")
   const tags=[...html.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/g)].map(m=>({attrs:m[1],src:(m[1].match(/src="([^"]*)"/)||[])[1],body:m[2]}));
   const srcs=tags.filter(t=>t.src!==undefined).map(t=>t.src),n=START_FILES.length+2;
-  if(JSON.stringify(LAZY)!=='["games","games2"]')p.push('LAZY in tools/build.py read as '+JSON.stringify(LAZY));
+  if(JSON.stringify(LAZY)!=='["games","rally","games2","games3"]')p.push('LAZY in tools/build.py read as '+JSON.stringify(LAZY));
   if(JSON.stringify(srcs)!==JSON.stringify(START_FILES))p.push('index.html loads '+JSON.stringify(srcs)+', expected exactly '+JSON.stringify(START_FILES));
   if(tags.length!==n||tags[0].src!==undefined||tags[n-1].src!==undefined||START_FILES.some((f,i)=>tags[i+1].src!==f))p.push('index.html scripts are not code, '+START_FILES.join(', ')+', boot');
   else if(!/dataReady\(\)/.test(tags[n-1].body)||!/home\(true\)/.test(tags[n-1].body))p.push('boot script does not check dataReady() before home(true)');
@@ -7989,7 +7997,7 @@ run('parts split A11c',()=>{
       for(const [k,sk,lv] of [['math','add',1],['math','mult',1],['math','frac',3],['read','abc',1],['read','sound',1],['es','es_color',1],['disc','sci_life',1]]){
         try{const q=genQ(sk,lv,7);qs[k+':'+sk]=!!(q&&q.html&&q.sk===sk)}catch(e){qs[k+':'+sk]=String(e)}}
       return{ready:dataReady(),files,qs}})()`,ctx);
-    const stems=['gen','gen2','bt','games','games2','data'];
+    const stems=['gen','gen2','bt','games','rally','games2','games3','data'];
     if(JSON.stringify(r.files.map(f=>f[0]))!==JSON.stringify(stems))p.push('appFiles() lists '+JSON.stringify(r.files.map(f=>f[0]))+', expected '+stems.join());
     if(!r.ready||r.files.some(f=>f[1]!==BUILD_VER))p.push('a part is not '+BUILD_VER+': '+JSON.stringify(r.files));
     for(const [k,v] of Object.entries(r.qs))if(v!==true)p.push('question '+k+' did not build from the loaded files: '+v);
@@ -8014,7 +8022,7 @@ run('performance P6-02',()=>{
   for(const f of ['index.html',...START_FILES,...LAZY_FILES,'sw.js'])if(!fs.existsSync(path.join(ROOT,f)))return{problems:[f+' not built; run python3 tools/build.py first']};
   const html=rd('index.html'),sw=rd('sw.js'),files=Object.fromEntries([...START_FILES,...LAZY_FILES].map(f=>[f,rd(f)]));
   // 1. what loads at start: index.html names only the start-up files; the games parts are LAZY, in build.py and in 90-app.js alike
-  if(JSON.stringify(LAZY)!=='["games","games2"]')p.push('LAZY in tools/build.py should be the games parts: '+JSON.stringify(LAZY));
+  if(JSON.stringify(LAZY)!=='["games","rally","games2","games3"]')p.push('LAZY in tools/build.py should be the games parts: '+JSON.stringify(LAZY));
   const srcs=[...html.matchAll(/<script src="([^"]*)"/g)].map(m=>m[1]);
   for(const f of LAZY_FILES)if(srcs.includes(f))p.push(f+' has a <script> tag in index.html: it must load only on demand');
   if(JSON.stringify(srcs)!==JSON.stringify(START_FILES))p.push('index.html loads '+srcs.join(', ')+', expected '+START_FILES.join(', '));
@@ -8053,12 +8061,12 @@ run('performance P6-02',()=>{
       serve:(mod=t=>t)=>{const s=scripts.shift();if(!s)return'';ctx.__cur=s;const t=files[s.src]==null?null:mod(files[s.src],s.src);
         if(t==null)run_('__cur.onerror()');else{run_(t);run_('__cur.onload()')}return s.src}};
   };
-  const VER=BUILD_VER,[GF,G2F]=LAZY_FILES,stale=(f,t)=>t.replace(new RegExp("var "+f.split('.')[0].toUpperCase()+"_VER='"+VER+"'"),"var "+f.split('.')[0].toUpperCase()+"_VER='v1'");
+  const VER=BUILD_VER,[GF,RF,G2F]=LAZY_FILES,stale=(f,t)=>t.replace(new RegExp("var "+f.split('.')[0].toUpperCase()+"_VER='"+VER+"'"),"var "+f.split('.')[0].toUpperCase()+"_VER='v1'");
   const state=pg=>pg.run('({ready:dataReady(),parts:LAZY_PARTS.map(partReady).join(),gh:typeof GH,err:(S.err||[]).map(e=>e.msg).pop()||""})');
   try{
     // a. a cold start: no games code, no games <style>; the app is ready
     let pg=page(),s=state(pg);
-    if(!s.ready||s.parts!=='false,false'||s.gh!=='undefined'||pg.styles.join()!=='css-bt'||pg.scripts.length)p.push('at start: '+JSON.stringify(s)+' styles '+pg.styles.join());
+    if(!s.ready||s.parts!=='false,false,false,false'||s.gh!=='undefined'||pg.styles.join()!=='css-bt'||pg.scripts.length)p.push('at start: '+JSON.stringify(s)+' styles '+pg.styles.join());
     // b. Home -> Game Room: "Getting the games ready..." with Back at once, nothing requested until that screen is painted, then games,
     //    then games2 (one at a time, in PARTS order), then the hub with every registered game, and a game's first screen opens
     pg.run('gameRoom()');
@@ -8070,9 +8078,9 @@ run('performance P6-02',()=>{
     if(asked.join()!==LAZY_FILES.join())p.push('the Game Room asked for '+asked.join(', ')+', expected '+LAZY_FILES.join(', ')+' one after the other');
     s=state(pg);
     const hub=pg.app.innerHTML,ids=pg.run('GH.games.map(g=>g.btn)');
-    if(s.parts!=='true,true'||!/class="gh-room"/.test(hub)||ids.length<5||ids.some(b=>!hub.includes('id="'+b+'"'))||pg.styles.join()!=='css-bt,css-games,css-games2')
+    if(s.parts!=='true,true,true,true'||!/class="gh-room"/.test(hub)||ids.length<5||ids.some(b=>!hub.includes('id="'+b+'"'))||pg.styles.join()!=='css-bt,css-games,css-rally,css-games2,css-games3')
       p.push('after the lazy load: '+JSON.stringify(s)+' hub '+/gh-room/.test(hub)+' cards '+ids+' styles '+pg.styles.join());
-    for(const [id,want] of [['snack','snopen'],['art','']]){ // a games2 game (Snack Stand) and a games one (Coloring), through their hub cards
+    for(const [id,want] of [['snack','snopen'],['art',''],['rally','rlgar']]){ // a games2 game (Snack Stand), a games one (Coloring), Star Rally (rally), through their hub cards
       try{const b=pg.run(`GH.get('${id}').btn`);pg.el(b).onclick();const h=pg.app.innerHTML;
         if(!h.includes('data-g="'+id+'"')||(want&&!h.includes('id="'+want+'"')))p.push('the '+id+' card did not open its first screen: '+h.slice(0,160));}
       catch(e){p.push('the '+id+' card threw after the lazy load: '+String(e).split('\n')[0])}
@@ -8084,11 +8092,11 @@ run('performance P6-02',()=>{
     pg=page();pg.run('gameRoom()');pg.flush();pg.run('view("<div id=\\"elsewhere\\"></div>")');
     while(pg.scripts.length)pg.serve();pg.flush();
     s=state(pg);
-    if(!pg.app.innerHTML.includes('elsewhere')||s.parts!=='true,true')p.push('Back while loading: '+pg.app.innerHTML.slice(0,80)+' '+JSON.stringify(s));
+    if(!pg.app.innerHTML.includes('elsewhere')||s.parts!=='true,true,true,true')p.push('Back while loading: '+pg.app.innerHTML.slice(0,80)+' '+JSON.stringify(s));
     pg.run('gameRoom()');if(!/gh-room/.test(pg.app.innerHTML))p.push('after Back while loading, the Game Room did not open at once');
     // d. a games or games2 file of another release is refused: Try again (it reloads), the App log line, games2 never asked for after a
     //    stale games file; asking again does not run the stale file twice; nothing else in the save changes
-    for(const [f,log] of [[GF,'games file v1 does not match'],[G2F,'games2 file v1 does not match']]){
+    for(const [f,log] of [[GF,'games file v1 does not match'],[RF,'rally file v1 does not match'],[G2F,'games2 file v1 does not match']]){
       pg=page();const before=pg.run('JSON.stringify({stars:S.stars,coins:S.coins,maps:S.maps})');
       pg.run('gameRoom()');pg.flush();const got=[];
       while(pg.scripts.length)got.push(pg.serve((t,src)=>src===f?stale(f,t):t));
@@ -8105,7 +8113,7 @@ run('performance P6-02',()=>{
     s=state(pg);
     if(!/id="datamiss"/.test(pg.app.innerHTML)||s.err!=='games file missing (app '+VER+')'||pg.scripts.length)p.push('missing games file: '+JSON.stringify(s));
     pg.run('gameRoom()');pg.flush();while(pg.scripts.length)pg.serve();
-    if(!/gh-room/.test(pg.app.innerHTML)||state(pg).parts!=='true,true')p.push('after a missing games file, the next open did not load the Game Room');
+    if(!/gh-room/.test(pg.app.innerHTML)||state(pg).parts!=='true,true,true,true')p.push('after a missing games file, the next open did not load the Game Room');
   }catch(e){p.push('the on-demand load could not be run: '+String(e.stack||e).split('\n').slice(0,3).join(' | '))}
   return{problems:p,note:'loaded at start '+Math.round(start/1000)+' KB (budget '+TOTAL_FAIL/1e6+' MB), on demand '+Math.round(lazy/1000)+' KB ('+LAZY_FILES.join(', ')+')'};
 });
@@ -14019,6 +14027,121 @@ run('Spanish speaking S-SPK',()=>{
   return{problems:errs,note:note.join('; ')};
 });
 
+// ---- S-SPK2: the speaking check of "Say it!" (A: the tablet's own on-device recognition, B: the offline sound check in
+// src/js/50-say-cmp.js, C: the grown-ups' listening corner in src/js/50-say-corner.js). The matcher, the MFCC + DTW pipeline on
+// synthetic sounds, the calibrated thresholds on a calibration set made from the recordings (tools/spk-calib.js; needs ffmpeg),
+// corner retention and deletion per child, the grown-up's star and the Home message once, privacy (no network in the new code,
+// on-device recognition only), old saves.
+run('Spanish speaking check S-SPK2',()=>{
+  const errs=[],bad=m=>{if(errs.length<60&&!errs.includes(m))errs.push(m)},note=[];
+  const rd=f=>fs.readFileSync(path.join(SRC,f),'utf8'),cmpS=rd('js/50-say-cmp.js'),corS=rd('js/50-say-corner.js'),sayS=rd('js/50-say.js'),css=rd('css/42-say.css');
+  // 1. privacy: nothing in the new code reaches the network; the only fetch is the app's own recording of the line; recognition is
+  //    on the device only (processLocally / ondevice-only, and install only for processLocally); the recordings stay in IndexedDB
+  const strip=s=>s.replace(/\/\*[\s\S]*?\*\//g,'').replace(/\/\/[^\n]*/g,'');
+  for(const [f,s] of [['50-say-cmp.js',cmpS],['50-say-corner.js',corS],['50-say.js',sayS]]){const c=strip(s);
+    if(/XMLHttpRequest|sendBeacon|WebSocket|EventSource|https?:\/\/|navigator\.share|\.src\s*=\s*['"`]http/.test(c))bad(f+' has a network call');
+    if(/\p{Extended_Pictographic}/u.test(s)||/#[0-9a-fA-F]{6}\b/.test(s))bad(f+' has an emoji or a raw colour')}
+  const fetches=strip(cmpS).match(/fetch\([^)]*\)/g)||[];
+  if(fetches.join()!=='fetch(ES_AUDIO.dir+f+ES_AUDIO.ext)')bad('50-say-cmp.js fetches something other than its own recording: '+fetches.join());
+  if(/fetch\(/.test(strip(corS))||/fetch\(/.test(strip(sayS)))bad('the corner or the step fetches something');
+  if(/localStorage|indexedDB\.open\('(?!starschool-say)/.test(strip(corS)))bad('the corner stores outside its IndexedDB database');
+  if(!/install\(\{langs:\[lang\],processLocally:true\}\)/.test(corS)||!/available\(\{langs:\[l\],processLocally:true\}\)/.test(corS))bad('Spanish listening does not ask for on-device recognition');
+  if(!/needOnline\(async\(\)=>/.test(corS)||!/onlineNote\('/.test(corS))bad('the download has no online note or needOnline');
+  if(/#[0-9a-fA-F]{3,8}\b/.test(css))bad('42-say.css has a raw colour');
+  // 2. the corner and the step are wired: each recording is kept, the check runs, Grown-ups shows both cards, Start over and a child's
+  //    removal delete the recordings, the About line says they stay on the tablet and go automatically
+  if(!/spkJudge\(b\);if\(typeof spkrAdd=='function'\)spkrAdd\(b,SPK\.it\);spkPlay\(\)/.test(sayS))bad('the step does not judge and keep the recording');
+  const gr=rd('js/80-grown.js');
+  if(!/\$\{spkLisCard\(\)\}\s*\$\{spkCornerCard\(\)\}/.test(gr)||!/spkLisBind\(\);spkCornerBind\(\)/.test(gr))bad('Grown-ups lacks the listening cards');
+  if(!/deleteDatabase\('starschool-say'\)/.test(gr))bad('Start over keeps the Say it! recordings');
+  if(!/spkrDrop\(id\)/.test(rd('js/01-profiles.js')))bad('removing a child keeps their recordings');
+  if(!/stay on this tablet and are deleted automatically/.test(gr)||!/Nothing is sent/.test(gr))bad('About: the privacy line');
+  if(!/\$\{spkStarHTML\(\)\}/.test(rd('js/46-home.js')))bad('Home does not show the star message');
+  const FX=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const body=function(){const out={bad:[],note:[]},B=m=>out.bad.push(m);
+    // 3. the matcher (A uses it on what the tablet heard)
+    for(const [t,h,w] of [['la mariposa','mariposa',1],['la mariposa','Mariposa.',1],['la mariposa','la mesa',0],['el gato','el pato',0],['Buenos días.','buenos dias',1]])
+      if(spkMatch(t,h)!==!!w)B('match '+t+' / '+h);
+    // 4. the pipeline on synthetic sounds: FFT, levels (silence, too short, too loud), MFCC + DTW (a sound matches itself, a slower
+    //    copy of it, a softer and noisier copy; not a different sound)
+    {const re=new Float32Array(64),im=new Float32Array(64);for(let i=0;i<64;i++)re[i]=Math.cos(2*Math.PI*5*i/64);spkcFFT(re,im);
+     let mx=0;for(let i=1;i<32;i++)if(Math.hypot(re[i],im[i])>Math.hypot(re[mx],im[mx]))mx=i;if(mx!==5||Math.abs(Math.hypot(re[5],im[5])-32)>1e-3)B('FFT peak '+mx)}
+    let z=7;const rnd0=()=>{z=(z*1103515245+12345)&0x7fffffff;return z/0x7fffffff-0.5};
+    // a "word": two vowel-like parts (harmonics shaped by formants) with a noisy consonant between them
+    const word=(f1,f2,f3,f4,sp=1,g=0.3,nz=0)=>{const n=Math.floor(16000*0.9*sp),x=new Float32Array(16000*0.3+n+8000);
+      for(let i=0;i<n;i++){const t=i/n,o=4800+i,v=t<0.4?[f1,f2]:t<0.55?null:[f3,f4];
+        if(!v){x[o]=g*0.6*rnd0();continue}
+        x[o]=g*Math.sin(Math.PI*t)*[...Array(30)].reduce((a,_,h)=>a+(Math.exp(-Math.pow((130*(h+1)-v[0])/150,2))+0.6*Math.exp(-Math.pow((130*(h+1)-v[1])/200,2))+0.05/(h+1))*Math.sin(2*Math.PI*130*(h+1)*i/16000),0)/4}
+      if(nz)for(let i=0;i<x.length;i++)x[i]+=nz*rnd0();return x};
+    const A=word(700,1200,300,2300),A2=word(700,1200,300,2300,1.25,0.12,0.004),Bw=word(300,2300,700,1200),Cw=word(500,900,400,800);
+    const fa=spkcFeat(A),fa2=spkcFeat(A2,true),fB=spkcFeat(Bw),fc=spkcFeat(Cw);
+    if([fa,fa2,fB,fc].some(f=>f.k!=='ok'))B('synthetic words not ok: '+[fa,fa2,fB,fc].map(f=>f.k));
+    else{const self=spkcDTW(fa.f,fa.f),same=spkcDist(fa2,fa),diff=Math.min(spkcDist(fa2,fB),spkcDist(fa2,fc));
+      if(self!==0)B('DTW of a sound with itself is '+self);
+      if(!(same<diff))B('a slower, softer, noisier copy is not closer than other sounds: '+same.toFixed(3)+' vs '+diff.toFixed(3));
+      if(spkcDecide(fa2,fa,[fB,fc]).k!=='great')B('the copy is not judged great '+JSON.stringify(spkcDecide(fa2,fa,[fB,fc])));
+      if(spkcDecide(spkcFeat(Bw,true),fa,[fc]).k!=='again')B('a different sound is not "listen again"');
+      if(fa2.fw.length!==SPKC.WARPS.length||fa.fw.length)B('warps: the child side only');
+      out.note.push('synthetic: itself 0, slower copy '+same.toFixed(2)+', other '+diff.toFixed(2))}
+    if(spkcFeat(new Float32Array(32000)).k!=='quiet')B('silence is not quiet');
+    {const x=new Float32Array(32000);for(let i=16000;i<16800;i++)x[i]=0.4*Math.sin(i/3);if(spkcFeat(x).k!=='quiet')B('a 0.05 s click is not too short')}
+    {const x=new Float32Array(32000);for(let i=0;i<x.length;i++)x[i]=Math.sin(i/9)>0?1:-1;if(spkcFeat(x).k!=='loud')B('a clipped sound is not too loud')}
+    if(spkcDecide({k:'quiet'},fa,[]).k!=='quiet')B('quiet passes through');
+    // the distractors: close spelling, never a line the matcher accepts, same voice first, deterministic
+    {const n=spkcNear('el gato');if(n.length!==3||n.some(s=>spkMatch('el gato',s))||JSON.stringify(n)!==JSON.stringify(spkcNear('el gato')))B('distractors of el gato: '+n);
+     out.note.push('el gato is compared with '+n.join(', '))}
+    // 5. the listening corner: an in-memory store stands in for IndexedDB (SPKR.all / put / del)
+    loadSave(null);migrate();S.name='Ava';let saved=0;const keep={save,fb,SFX:SFX.magic};save=()=>{saved++};fb=()=>{};
+    const mem=new Map();SPKR.all=async()=>[...mem.values()];SPKR.put=async v=>{mem.set(v.id,Object.assign({},v))};SPKR.del=async id=>{mem.delete(id)};
+    const blob={size:10},now=Date.now(),D=SPKR.DAY;
+    // the pure rule: older than the period or past the newest MAX go; 'never' keeps none
+    const recs=[0,0.5,1.5,3,8].map((d,i)=>({id:'spk:'+i,t:now-d*D}));
+    if(spkrGone(recs,now,'day').join()!=='spk:2,spk:3,spk:4')B('1 day keeps '+spkrGone(recs,now,'day'));
+    if(spkrGone(recs,now,'week').join()!=='spk:4')B('1 week: '+spkrGone(recs,now,'week'));
+    if(spkrGone(recs,now,'never').length!==5)B('never: something kept');
+    if(spkrGone([...Array(9)].map((_,i)=>({id:'spk:'+i,t:now-i*1000})),now,'week').join()!=='spk:6,spk:7,spk:8')B('more than MAX kept');
+    out.async=(async()=>{try{
+      if(spkKeep()!=='day')B('default keep is not 1 day');
+      PRF.cur='p1';await spkrAdd(blob,{es:'la mariposa',say:'la mariposa'});PRF.cur='p2';await spkrAdd(blob,{es:'el gato',say:'el gato'});
+      PRF.cur='p1';let l=await spkrList();if(l.length!==1||l[0].es!=='la mariposa'||!l[0].id.startsWith('spk:'))B('child 1 lists '+JSON.stringify(l.map(r=>r.id)));
+      PRF.cur='p2';l=await spkrList();if(l.length!==1||!l[0].id.startsWith('spk-p2:'))B('child 2 lists '+JSON.stringify(l.map(r=>r.id)));
+      // an old one goes when listed; 'never' keeps nothing new and deletes what there is
+      PRF.cur='p1';mem.set('spk:old',{id:'spk:old',t:now-2*D,es:'el sol'});l=await spkrList();if(mem.has('spk:old')||l.length!==1)B('a 2-day-old recording was not deleted');
+      S.spkKeep='never';await spkrAdd(blob,{es:'el sol',say:'el sol'});l=await spkrList();if(l.length||[...mem.keys()].some(k=>k.startsWith('spk:')))B('never: kept '+l.length);
+      S.spkKeep='week';await spkrAdd(blob,{es:'la luna',say:'la luna'});
+      // the star: on the recording and once on Home, with a sticker
+      l=await spkrList();const st0=Object.values(S.stickers||{}).reduce((a,b)=>a+b,0);await spkrStar(l[0]);await spkrStar(l[0]);
+      if(!mem.get(l[0].id).star||S.spkStars.length!==1||S.spkStars[0].es!=='la luna')B('star: '+JSON.stringify(S.spkStars));
+      const h=spkStarHTML();if(!/Your grown-up gave you a star for <span lang="es">‘la luna’<\/span>!/.test(h)||!/id="hmgstar" role="status"/.test(h))B('Home star message: '+h.slice(0,160));
+      if(Object.values(S.stickers).reduce((a,b)=>a+b,0)!==st0+1)B('the star gave no sticker');
+      if(spkStarHTML()!==''||S.spkStars.length)B('the Home star message showed twice');
+      // Delete all: this child's only; removing child 2 deletes theirs
+      await spkrDrop();if([...mem.keys()].some(k=>k.startsWith('spk:'))||!mem.size)B('Delete all: '+[...mem.keys()]);
+      await spkrDrop('p2');if(mem.size)B('child 2 removed, recordings left: '+[...mem.keys()]);
+      out.note.push('corner: per child, 1 day / 1 week / never, max '+SPKR.MAX+', delete all, star once on Home');
+    }catch(e){B('corner: '+String(e.stack||e).split('\n')[0])}finally{save=keep.save;fb=keep.fb;PRF.cur='p1'}})();
+    // 6. old saves load: 1 day, no stars, no message
+    for(const raw of [null,FX('legacy-single-map'),FX('midway'),FX('maxed')]){loadSave(raw);migrate();
+      if(spkKeep()!=='day'||'spkKeep' in S||'spkStars' in S)B('old save: new fields should be absent with defaults');
+      const sv=save;save=()=>{};const h=spkStarHTML();save=sv;if(h!=='')B('old save: a star message')}
+    return out};
+  const r=eval(js+';('+body.toString()+')()');
+  // the corner runs on promises (IndexedDB): the check finishes when they do (run() waits for a returned promise)
+  return Promise.resolve(r.async).then(()=>{r.bad.forEach(bad);note.push(...r.note);
+    // 7. the thresholds on the calibration set (tools/spk-calib.js, every 6th line as the target): the numbers in docs/PROGRESS.md
+    try{const C=require('./spk-calib.js'),ctx=C.app(),list=C.cases(ctx,{every:6,other2:false}),res=C.run(ctx,list),s=C.score(res,...require('vm').runInContext('[SPKC.ABS,SPKC.RATIO]',ctx));
+      const want={npos:236,nneg:230,voice:56,child:170,similar:25,other:4,silence:0};
+      const got={npos:s.npos,nneg:s.nneg,voice:s.by.voice.great,child:s.by.child.great,similar:s.by.similar.great,other:s.by.other.great,silence:s.by.silence.great};
+      if(JSON.stringify(got)!==JSON.stringify(want))bad('calibration set: '+JSON.stringify(got)+', PROGRESS reports '+JSON.stringify(want));
+      if(s.tmr<0.95)bad('true match rate '+s.tmr+' under 95%');if(s.by.silence.great)bad('silence or noise judged great');
+      note.push('calibration set (every 6th line): true match '+(100*s.tmr).toFixed(1)+'% of '+s.npos+', false accept '+(100*s.far).toFixed(1)+'% of '+s.nneg+
+        ' (other voice '+s.by.voice.great+'/'+s.by.voice.n+', similar word '+s.by.similar.great+'/'+s.by.similar.n+', other word '+s.by.other.great+'/'+s.by.other.n+')')}
+    catch(e){bad('calibration could not run (needs ffmpeg): '+String(e.message||e).split('\n')[0])}
+    const pr=fs.readFileSync(path.join(ROOT,'docs','PROGRESS.md'),'utf8');
+    if(!/S-SPK2[\s\S]{0,4000}true match 99\.1%[\s\S]{0,400}false accept 15\.0%/.test(pr))bad('PROGRESS.md does not report the calibration numbers');
+    return{problems:errs,note:note.join('; ')}});
+});
+
 run('game room P4-16',()=>{
   const p=[];
   const rd=f=>fs.readFileSync(path.join(SRC,f),'utf8');
@@ -14164,7 +14287,7 @@ run('game room P4-16',()=>{
   if(!/GH\.held/.test(o.src.gtStart))p.push('gtStart: the game-time clock must hold while the pause sheet is open');
   if(!/GH\.end\(/.test(o.src.timeUp))p.push('timeUpOverlay must use the shared end card');
   // every screen of every game file starts with GH.top; every play screen wires Pause / Quit; every end uses GH.end; no old chrome left
-  const GF=fs.readdirSync(path.join(SRC,'js')).filter(f=>/^games/.test(partOf(f)||'')&&f!=='59-game-hub.js'); // G-04a: games and games2
+  const GF=fs.readdirSync(path.join(SRC,'js')).filter(f=>/^(games|rally)/.test(partOf(f)||'')&&f!=='59-game-hub.js'); // G-04a: games and games2; G-RALLY2: rally
   let views=0,ends=0;
   for(const f of GF){
     const t=rd('js/'+f);
@@ -14770,7 +14893,7 @@ run('motion and sound P4-17',()=>{
   // no sound outside SFX, tone, noise and music: the countdown beeps go through SFX.tick
   for(const f of jsFiles){const t=rd('js/'+f);
     if(f!=='10-sfx.js'&&/\b(synth|hiss)\(/.test(t))p.push(f+': calls the unchecked synth()/hiss() (use SFX, tone or noise)');
-    if(/new Audio\(/.test(t)&&!['44-clips.js','80-grown.js','50-say.js','12-speech.js'].includes(f))p.push(f+': plays audio outside the clips'); // 12-speech.js: the recorded Spanish (ES-AUDIO), ducked like the voice
+    if(/new Audio\(/.test(t)&&!['44-clips.js','80-grown.js','50-say.js','12-speech.js','50-say-corner.js'].includes(f))p.push(f+': plays audio outside the clips'); // 12-speech.js: the recorded Spanish (ES-AUDIO), ducked like the voice; 50-say-corner.js: the Grown-ups listening corner (S-SPK2) plays a kept Say it! recording
     if(/^(52|54|57)-/.test(f)&&/\btone\(/.test(t))p.push(f+': a countdown beep outside SFX.tick');
   }
   if(!/function playClip\(kind\)\{const cs=CLIPS\.filter\(c=>c\.kind==kind\);if\(!cs\.length\|\|!S\.sound\)return false;/.test(rd('js/44-clips.js')))p.push('playClip must stay silent with Sound effects off');
@@ -14909,7 +15032,7 @@ run('Star Rally 2 G-02b',()=>{
     }
     out.note.push('4000 shop steps, '+owned+' items and '+ups+' upgrade levels bought, sparkles never below 0');
     // 6. tracks: valid data; 50-100 s at the speed the car keeps by itself; hazards, pick-ups and pads on the road; props off it
-    if(RL_PLACES.length!==4||RL_ORDER.length!==12)bad('expected 4 places with 3 tracks each');
+    if(RL_PLACES.length!==5||RL_ORDER.length!==15)bad('expected 5 places with 3 tracks each (G-RALLY2: Maple Woods is the fifth)');
     const secs=[],sh={};
     for(const id of RL_ORDER){
       const t=RL_TRK[id],T=rlTrack(id),w=id+': ',s=(sh[id]=rlShape(id));
@@ -14943,7 +15066,7 @@ run('Star Rally 2 G-02b',()=>{
       const kinds=(s.puddle?1:0)+(s.sand?1:0)+(s.ice?1:0)+(s.cones?1:0)+(s.movers?1:0);
       if(kinds<2)bad(w+'needs at least two kinds of hazard');
     }
-    out.note.push('12 tracks, '+Math.round(Math.min(...secs))+'-'+Math.round(Math.max(...secs))+' s at the cruising speed');
+    out.note.push(RL_ORDER.length+' tracks, '+Math.round(Math.min(...secs))+'-'+Math.round(Math.max(...secs))+' s at the cruising speed');
     // 7. twelve distinct layouts: no two tracks with the same curvature profile (the bend sequence resampled to 240 points, mirrored
     //    too, correlates under 0.85), and the shape numbers differ; the set covers hairpins, splits, tunnels, bridges, narrow roads
     const prof=id=>{const T=rlTrack(id),a=[];for(let k=0;k<240;k++)a.push(T.cv[Math.floor(k*T.n/240)]);return a};
@@ -14951,7 +15074,7 @@ run('Star Rally 2 G-02b',()=>{
       for(let i=0;i<a.length;i++){sab+=(a[i]-ma)*(b[i]-mb);saa+=(a[i]-ma)**2;sbb+=(b[i]-mb)**2}return sab/Math.sqrt(saa*sbb||1)};
     const vec=s=>[s.n/1000,s.mean,s.max/4,s.straight*2,s.tight*3,s.flips/6,s.hill/40,s.tunnel/60,s.bridge/80,s.narrow/150,s.forks,s.cones/4,s.movers/2,s.puddle/20,s.sand/30,s.ice/30];
     let maxC=0,minD=9,pair='';
-    for(let i=0;i<12;i++)for(let j=i+1;j<12;j++){
+    for(let i=0;i<RL_ORDER.length;i++)for(let j=i+1;j<RL_ORDER.length;j++){
       const a=RL_ORDER[i],b=RL_ORDER[j],c=Math.abs(corr(prof(a),prof(b)));
       if(c>maxC){maxC=c;pair=a+'/'+b}
       if(c>=.85)bad('tracks '+a+' and '+b+' have the same curvature profile (r='+c.toFixed(2)+')');
@@ -15073,7 +15196,7 @@ run('Star Rally 2 G-02b',()=>{
       if(!rlTrackOpen('beach-1',r)||rlTrackOpen('snow-1',r))bad('tracks open with their cup');
       const goals=new Set();
       for(const rr of [{cups:{},stars:{},ghost:{},upg:{},spk:0,races:0},{cups:{},stars:{},ghost:{},upg:{},spk:0,races:0,cup:{id:'sprout',i:1,pts:{}}},
-        {cups:{sprout:{best:1},wave:{best:1},frost:{best:1},star:{best:1}},stars:{},ghost:{},upg:{grip:3,turbo:3,bumper:3},spk:0,races:0},
+        {cups:Object.fromEntries(RL_CUPS.map(c=>[c.id,{best:1,runs:1}])),stars:{},ghost:{},upg:{grip:3,turbo:3,bumper:3},spk:0,races:0}, // G-RALLY2: every cup, gold
         {cups:{sprout:{best:1},wave:{best:2},frost:{best:1},star:{best:1}},stars:{},ghost:{},upg:{},spk:0,races:0}]){
         const gtx=rlGoal(rr);
         if(!gtx||PICT.test(gtx))bad('next goal '+gtx);
@@ -15082,7 +15205,7 @@ run('Star Rally 2 G-02b',()=>{
       if(goals.size<4)bad('the next goal should change with progress');
       const b0=rlNew('meadow-0',{mode:'easy',seed:1,tier:0}).cars.reduce((a,c)=>a+c.base,0),b3=rlNew('meadow-0',{mode:'easy',seed:1,tier:3}).cars.reduce((a,c)=>a+c.base,0);
       if(!(b3>b0*1.03))bad('rivals should be a little faster in later cups');
-      if(RL_CUPS.length!==4||RL_CUPS.some(c=>c.races.length!==3)||new Set(RL_CUPS.flatMap(c=>c.races.map(r=>r[0]))).size!==12)bad('4 cups of 3 races, each track once');
+      if(RL_CUPS.length!==10||RL_CUPS.some(c=>c.races.length!==3)||new Set(RL_CUPS.flatMap(c=>c.races.map(r=>r[0]))).size!==30)bad('10 cups of 3 races, each track once (G-RALLY2: the Maple Cup and 5 mirror cups)');
       if(RL_CUPS.some(c=>c.races.some(([t,w])=>!RL_TRK[t]||!RL_WX[w])))bad('cup races need a track and a weather');
       if(new Set(RL_CUPS.flatMap(c=>c.races.map(r=>r[1]))).size<4)bad('the cups should have several weathers');
     }
@@ -15161,7 +15284,7 @@ run('Star Rally 2 G-02b',()=>{
   }
   notes.push(o.svg.length+' drawings, '+shapes+' shapes, tokens only');
   // 16. plumbing: in games2 (G-02b moved it from games), stopped by view(), test hooks off, Fact Race renamed (save keys unchanged)
-  if(partOf('63-game-race.js')!=='games2'||partOf('49-game-race.css')!=='games2')p.push('the racing game must ship in games2.'+BUILD_VER+'.js');
+  if(partOf('63-game-race.js')!=='rally'||partOf('49-game-race.css')!=='rally')p.push('the racing game must ship in rally.'+BUILD_VER+'.js (G-RALLY2; games2 before)');
   if(!/if\(typeof rlStop=='function'\)rlStop\(\)/.test(rd('js/40-view.js')))p.push('view() must stop the race (rlStop)');
   if(o.dev!=='{"fast":1,"flush":false}')p.push('RL_DEV test hooks must be off: '+o.dev);
   if(!rd('js/46-home.js').includes("'Fact Race'")||!rd('js/54-race.js').includes('<span>Fact Race</span>'))p.push('the old Speed Race should be called Fact Race on Home and its menu');
@@ -15169,6 +15292,258 @@ run('Star Rally 2 G-02b',()=>{
   if(!/S\.race\[cat\]/.test(rd('js/54-race.js')))p.push('Fact Race must keep its save key S.race');
   // no screen shake in calm mode or with reduced motion
   if(!/const sh = !calm && R\.shake > 0/.test(src)||!/if \(!RL\.calm\) RL\.shake/.test(src)||!/prefers-reduced-motion/.test(src))p.push('the crash shake must be off in calm mode and with reduced motion');
+  return{problems:[...new Set(p)].slice(0,60),note:notes.join('; ')};
+});
+
+// ---- G-RALLY2: Star Rally's second season (R-03 R1, R2, A1, A2, A4, A5): mirror cups, the Maple Cup, garage level 2, what to save for,
+//      today's twist, music per place, the buzz ----
+run('Star Rally season 2 G-RALLY2',()=>{
+  const p=[],notes=[];
+  const src=fs.readFileSync(path.join(SRC,'js','63-game-race.js'),'utf8');
+  const body=function(){
+    const out={bad:[],note:[]},bad=m=>{if(out.bad.length<80)out.bad.push(m)};
+    const store={};
+    global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+    const D=global.document,app={style:{},innerHTML:''},dummy={style:{},classList:{add(){},remove(){},toggle(){},contains(){return false}},dataset:{},
+      querySelector(){return dummy},querySelectorAll(){return[]},getBoundingClientRect(){return{left:0,top:0,width:0,height:0}},appendChild(){},isConnected:false};
+    const shot=f=>{global.document=Object.assign({},D,{querySelector:s=>s=='#app'?app:dummy,querySelectorAll:()=>[],body:{appendChild(){}}});
+      try{app.innerHTML='';f();return app.innerHTML}catch(e){return 'ERR '+e.message}finally{global.document=D}};
+    S.sound=false;S.voice=false;S.pt={bank:600,day:today(),used:0};S.ptCfg={per:3,max:30,pause:false};
+    const prof=id=>{const T=rlTrack(id),a=[];for(let k=0;k<240;k++)a.push(T.cv[Math.floor(k*T.n/240)]);return a};
+    const corr=(a,b)=>{const m=v=>v.reduce((x,y)=>x+y,0)/v.length,ma=m(a),mb=m(b);let sab=0,saa=0,sbb=0;
+      for(let i=0;i<a.length;i++){sab+=(a[i]-ma)*(b[i]-mb);saa+=(a[i]-ma)**2;sbb+=(b[i]-mb)**2}return sab/Math.sqrt(saa*sbb||1)};
+    // 1. mirror tracks (R1): one for every track, raced the other way round: sections reversed, every bend and hill the other way,
+    //    the same length, laps and hazards; valid track data; a new profile to the child (not the same bends as the track forwards)
+    if(RL_MIRROR.length!==RL_ORDER.length||RL_ALL.length!==30)bad('a mirror track for every track: '+RL_MIRROR.length+' of '+RL_ORDER.length);
+    let maxC=0,secs=[];
+    for(const id of RL_MIRROR){
+      const m=RL_TRK[id],b=RL_TRK[m.mirror],w=id+': ',T=rlTrack(id),TB=rlTrack(b.id);
+      if(id!==b.id+'m'||m.place!==b.place||m.laps!==b.laps||m.name!=='Mirror '+b.name)bad(w+'id, place, laps or name');
+      const want=b.plan.slice().reverse().map(([a,h,l,c,dy,f])=>[l,h,a,-c||0,-dy||0,f]);
+      if(JSON.stringify(m.plan)!==JSON.stringify(want))bad(w+'the plan is not the track reversed with its bends and hills turned');
+      if(T.n!==TB.n)bad(w+'a different length '+T.n+' / '+TB.n);
+      const sum=a=>a.reduce((x,v)=>x+v,0);
+      if(Math.abs(sum(T.cv)+sum(TB.cv))>1e-3*T.n)bad(w+'the bends should turn the other way on the whole ('+sum(T.cv).toFixed(1)+' / '+sum(TB.cv).toFixed(1)+')');
+      const sh=rlShape(id),sb=rlShape(b.id);
+      if(Math.abs(sh.hill-sb.hill)>1||sh.tunnel!==sb.tunnel||sh.bridge!==sb.bridge||sh.forks!==sb.forks||sh.movers!==sb.movers)bad(w+'hills, tunnels, bridges, splits or movers differ from the track forwards');
+      const c=corr(prof(id),prof(b.id));maxC=Math.max(maxC,Math.abs(c));
+      if(Math.abs(c)>=.85)bad(w+'the same bends as the track forwards (r='+c.toFixed(2)+')');
+      if(T.hy[0]!==0||T.cv[0]!==0||T.fl[RL_START]||T.dv[RL_START])bad(w+'the start must be flat, straight and open');
+      let steep=0,bend=0,wj=0;
+      for(let i=0;i<T.n;i++){steep=Math.max(steep,Math.abs(T.hy[(i+1)%T.n]-T.hy[i]));bend=Math.max(bend,Math.abs(T.cv[i]));wj=Math.max(wj,Math.abs(T.rw[(i+1)%T.n]-T.rw[i]))}
+      if(steep>RL_SEG*.8||bend>7||wj>.06)bad(w+'too steep, too sharp or a width jump');
+      for(let i=0;i<T.n;i++)if(T.pr[i])for(let j=0;j<T.pr[i].length;j+=2){const k=T.pr[i][j],x=T.pr[i][j+1];
+        if(!RL_PROPS[k]||(k!=='arch'&&(Math.abs(x)-RL_PROPS[k].wr/2<T.rw[i]+.2||T.fl[i]&3)))bad(w+'a roadside thing on the road '+k+' at '+i)}
+      if(T.sp.some(([s,x])=>Math.abs(x)>.6)||T.pk.some(q=>Math.abs(q.x)>.5)||T.cv[T.gate]!==0)bad(w+'sparkles, pick-ups or the gate off the road');
+      if(JSON.stringify(T.pr)===JSON.stringify(TB.pr))bad(w+'the same scenery as the track forwards');
+      const st=rlNew(id,{}),q=(st.fin-st.P.d)/(RL_CRUISE*RL_VMAX);secs.push(q);
+      if(q<50||q>100)bad(w+'a race at the cruising speed takes '+q.toFixed(0)+' s');
+    }
+    out.note.push('15 mirror tracks, '+Math.round(Math.min(...secs))+'-'+Math.round(Math.max(...secs))+' s, largest profile correlation with the track forwards '+maxC.toFixed(2));
+    // 2. the bots finish every mirror track (Easy steering child, Easy good driver, Pro): in time, and a good driver wins often
+    // the same bots as the G-02b check (good: steers round hazards, aims at pads and pick-ups; kid: only steers back from the edge)
+    const bot=(kind,st,rnd)=>{
+      const P=st.P,T=st.T,seg=rlMod(Math.floor(P.d/RL_SEG),T.n),cur=T.cv[seg],sp=P.v/RL_VMAX,rw=T.rw[seg];
+      if(kind=='lazy')return{};
+      if(kind=='wild'){if(st.rt>=(st._wt||0)){st._w=Math.round(rnd()*2-1);st._wt=st.rt+.6}return{steer:st._w}}
+      if(kind=='kid')return{steer:Math.abs(P.x)>.5*rw?-Math.sign(P.x):0};
+      let tx=0;
+      for(let j=1;j<30;j++){const s=(seg+j)%T.n,px=T.padAt[s];if(px!=null){tx=px;break}if(T.pkAt[s]){tx=T.pk[T.pkAt[s][0]].x;break}}
+      const bd=[];
+      for(let j=1;j<16;j++){
+        const s=(seg+j)%T.n;
+        if(T.obAt[s])for(const i of T.obAt[s])bd.push(T.ob[i].x);
+        if(T.mvAt[s])for(const i of T.mvAt[s])bd.push(rlMvX(T.mv[i],st.rt+j*RL_SEG/Math.max(2000,P.v)));
+        if(T.sfAt[s])for(const [a,b] of T.sfAt[s])bd.push(b-a<1.2?(a+b)/2:a<0?Math.min(b,0)-.3:Math.max(a,0)+.3);
+        if(T.dv[s]){const f=T.forks.find(f=>rlMod(s-f[0],T.n)<f[1]-f[0]+1);tx=f?f[2]*.5:(P.x<0?-.55:.55)}
+      }
+      for(const b of bd)if(Math.abs(b-tx)<.4){const c=[-.6,0,.6].map(v=>v*rw).filter(v=>bd.every(q=>Math.abs(q-v)>.38));if(c.length)tx=c.reduce((a,v)=>Math.abs(v-P.x)<Math.abs(a-P.x)?v:a)}
+      let s=Math.max(-1,Math.min(1,(tx-P.x)*2.5+.35*cur*sp*sp*(st.mode=='easy'?.3:1)/(1.7*Math.max(.3,sp))));
+      if(kind=='pro'&&Math.abs(cur)>=3&&sp>.8&&Math.abs(P.x)<.6)s=Math.sign(cur);
+      return{steer:s,go:kind=='pro'?Math.abs(cur)<4.5||P.drifting:false};
+    };
+    const stats={};
+    for(const [mode,k] of [['easy','kid'],['easy','good'],['pro','pro']]){
+      const s=stats[mode+' '+k]={n:0,win:0,top3:0,tmax:0};
+      for(const id of RL_MIRROR){
+        const cup=RL_CUPS[RL_TRK[id].cup],st=rlNew(id,{mode,seed:7,tier:cup.tier}),rnd=rlRng(11);let n=0;
+        while(!st.done&&n<60*170){rlStep(st,bot(k,st,rnd));st.ev.length=0;n++}
+        s.n++;if(!st.done){bad(mode+' '+k+' '+id+': did not finish');continue}
+        if(st.P.place==1)s.win++;if(st.P.place<=3)s.top3++;s.tmax=Math.max(s.tmax,st.P.time);
+        if(st.P.time>120)bad(mode+' '+k+' '+id+': '+st.P.time.toFixed(0)+' s');
+      }
+      out.note.push('mirror '+mode+' '+k+': won '+s.win+'/'+s.n+', top 3 '+s.top3+', slowest '+s.tmax.toFixed(0)+' s');
+    }
+    if(stats['easy good'].win<stats['easy good'].n*.5)bad('Easy: a good driver should often win the mirror tracks ('+stats['easy good'].win+'/15)');
+    if(stats['easy kid'].top3<2)bad('Easy: a young child should sometimes reach the top 3 on the mirror tracks');
+    // 3. the fifth place and cup: three new layouts (not reskins: their plans differ from every other track's, forwards or mirrored)
+    const woods=RL_TRACKS.woods||[];
+    if(woods.length!==3||rlPl('woods').id!=='woods'||!RL_PROPS[rlPl('woods').roll]||!RL_CRIT[rlPl('woods').crit])bad('Maple Woods: 3 tracks, its own roller and crossing animal');
+    for(const t of woods)for(const o of RL_ORDER.filter(x=>x!==t.id)){
+      const a=JSON.stringify(t.plan.map(s=>s.slice(0,5))),b=RL_TRK[o];
+      if(a===JSON.stringify(b.plan.map(s=>s.slice(0,5)))||a===JSON.stringify(rlMirrorPlan(b.plan).map(s=>s.slice(0,5))))bad(t.id+' has the layout of '+o);
+    }
+    if(RL_CUPS[4].id!=='maple'||RL_CUPS[4].races.some(([t])=>RL_TRK[t].place!=='woods')||RL_CUPS[4].mirror)bad('the fifth cup is the Maple Cup with the three new tracks');
+    if(RL_CUPS.filter(c=>c.mirror).length!==5||RL_CUPS.slice(RL_M0).some(c=>!c.mirror||c.races.some(([t])=>!RL_TRK[t].mirror)))bad('five mirror cups of mirror tracks');
+    if(RL_CUPS.some(c=>!(c.tier>=0&&c.tier<=3)))bad('every cup a tier 0-3');
+    // 4. what opens what: the Maple Cup after the Star Cup; the mirror cups with the four trophies (or each of the four raced 3 times),
+    //    then in order; racing a mirror track (today's twist) never opens a mirror cup; the tracks follow their cups
+    {
+      const four={sprout:{best:1,runs:1},wave:{best:3,runs:1},frost:{best:2,runs:1},star:{best:1,runs:1}};
+      const o=cups=>({cups:JSON.parse(JSON.stringify(cups)),stars:{}});
+      if(rlCupOpen(4,o({sprout:{best:1},wave:{best:1},frost:{best:1}}))||!rlCupOpen(4,o({sprout:{best:1},wave:{best:1},frost:{best:1},star:{best:2}})))bad('the Maple Cup opens with a trophy in the Star Cup');
+      if(!rlCupOpen(4,o({star:{best:4,runs:2}})))bad('racing the Star Cup twice opens the Maple Cup (nobody is stuck)');
+      const three=o(four);delete three.cups.frost;
+      if(rlCupOpen(RL_M0,three)||rlMirrorOpen(three))bad('three trophies must not open the mirror cups');
+      three.cups.frost={best:4,runs:2};if(rlCupOpen(RL_M0,three))bad('a cup raced twice without a trophy must not open the mirror cups');
+      three.cups.frost.runs=3;if(!rlCupOpen(RL_M0,three))bad('a cup raced 3 times counts for the mirror cups (nobody is stuck)');
+      const all=o(four);
+      if(!rlCupOpen(RL_M0,all)||rlCupOpen(RL_M0+1,all)||!rlTrackOpen('meadow-0m',all)||rlTrackOpen('beach-1m',all))bad('the four trophies open the first mirror cup and its tracks only');
+      all.cups.msprout={best:3,runs:1};if(!rlCupOpen(RL_M0+1,all)||rlCupOpen(RL_M0+2,all))bad('a trophy in a mirror cup opens the next one');
+      const tw={cups:{},stars:{'meadow-0m':2,'city-2m':1}};
+      if(RL_CUPS.some((c,i)=>c.mirror&&rlCupOpen(i,tw))||rlCupOpen(4,tw))bad('racing a mirror track (today\'s twist) must not open a mirror cup or the Maple Cup');
+      if(!rlTrackOpen('meadow-0m',tw))bad('a track raced before stays open for single races');
+      if(rlTrophies({cups:Object.fromEntries(RL_CUPS.map(c=>[c.id,{best:2}]))})!==10)bad('ten trophies to win');
+    }
+    // 5. garage level 2 (R2): kits, wheels, horns and trails with fixed prices (7,250 in all), closed until a mirror cup is raced to the
+    //    end; buying never goes below 0, is refused when short or closed, and never loses what was bought; the first item is free
+    {
+      let tot=0;
+      for(const k of RL_T2){const [list,ownK,cur,tier]=RL_SHOP[k];if(tier!==2||list[0][2]!==0||list.length<5||list.slice(1).some(x=>!(x[2]>0)||!x[0]))bad('shop list '+k);
+        tot+=list.reduce((a,x)=>a+x[2],0)}
+      if(tot!==7250)bad('garage level 2 should cost 7,250 sparkles in all, not '+tot);
+      S.rally={spk:5000,cups:{sprout:{best:1,runs:1},wave:{best:1,runs:1},frost:{best:1,runs:1},star:{best:1,runs:1}}};
+      let r=rlS();
+      if(rlT2Open(r)||rlBuy('kit','spoiler')||r.spk!==5000)bad('level 2 must stay closed until a mirror cup is raced to the end');
+      r.cup={id:'msprout',i:2,pts:{}};if(rlT2Open(r))bad('a mirror cup still being raced does not open level 2');
+      delete r.cup;r.cups.msprout={best:4,runs:1};
+      if(!rlT2Open(r)||!rlBuy('kit','spoiler')||r.spk!==4700||!r.kits.spoiler||rlBuy('kit','spoiler'))bad('buying a kit once level 2 is open');
+      r.spk=100;if(rlBuy('whl','monster')||r.spk!==100||r.whls.monster)bad('a buy without enough sparkles must be refused');
+      if(rlBuy('horn','beep')||rlBuy('trail','')||rlBuy('kit','zz'))bad('free or unknown items are not bought');
+      const rnd=rlRng(4242);let owned=0;
+      for(let i=0;i<3000;i++){
+        r=rlS();if(rnd()<.35)r.spk+=Math.floor(rnd()*200);
+        const k=RL_T2[Math.floor(rnd()*4)],[list,ownK]=RL_SHOP[k],it=list[Math.floor(rnd()*list.length)],s0=r.spk,had=!!r[ownK][it[0]],ok=rlBuy(k,it[0]);
+        if(ok&&(had||!it[2]||s0<it[2]||r.spk!==s0-it[2]))bad('a level 2 buy that should have been refused: '+it[0]);
+        if(!ok&&r.spk!==s0)bad('a refused buy changed the sparkles');
+        if(r.spk<0)bad('sparkles below 0');
+        const n=RL_T2.reduce((a,k2)=>a+Object.keys(r[RL_SHOP[k2][1]]).length,0);if(n<owned)bad('a bought item was lost');owned=n;
+        if(rnd()<.2){r[RL_SHOP[k][2]]=it[0];}
+        S.rally=JSON.parse(JSON.stringify(S.rally)); // through the save as text
+      }
+      out.note.push('3000 level 2 shop steps, '+owned+' things bought');
+    }
+    // 6. the save: new fields by id with defaults (an old save loads unchanged); damaged values are cleaned
+    {
+      S.rally={spk:130,races:9,best:{'meadow-0':70000},stars:{'meadow-0':3,'meadow-1':3},paint:'b',paints:{r:1,b:1},stk:'star',stks:{star:1},body:'buggy',mode:'pro',
+        cups:{sprout:{best:2,runs:1}},lap:{},ghost:{},upg:{grip:1,turbo:0,bumper:0}};
+      const old=JSON.stringify(S.rally),r=rlS(),o=JSON.parse(old);
+      for(const k of Object.keys(o))if(JSON.stringify(r[k])!==JSON.stringify(o[k]))bad('a G-02b save: '+k+' changed');
+      if(r.kit!==''||r.whl!==''||r.horn!=='beep'||r.trail!==''||JSON.stringify([r.kits,r.whls,r.horns,r.trails])!=='[{},{},{},{}]'||'tw' in r)bad('level 2 defaults '+JSON.stringify(r));
+      for(const v of [{kit:'zz',kits:{spoiler:1,zz:1,'':1},whl:'gold',whls:[],horn:5,horns:'x',trail:'rainbow',trails:{rainbow:'x'},tw:{}},
+        {kit:'fins',kits:{fins:1},tw:'2026-11-15'},{kits:null,trail:null,tw:'x'.repeat(40)}]){
+        S.rally=v;const d=rlS();
+        for(const k of RL_T2){const [list,ownK,cur]=RL_SHOP[k];
+          if(typeof d[cur]!='string'||!list.some(x=>x[0]===d[cur])||(d[cur]!==list[0][0]&&!d[ownK][d[cur]]))bad('damaged save: '+cur+'='+d[cur]);
+          for(const id in d[ownK])if(!list.some(x=>x[0]===id&&x[2]>0)||d[ownK][id]!==1)bad('damaged save: '+ownK+' '+id)}
+        if('tw' in d&&(typeof d.tw!='string'||d.tw.length>12))bad('damaged save: tw '+d.tw);
+      }
+      if(S.rally.kit!=='fins'&&rlS().kit!=='')bad('an unowned kit must be dropped');
+    }
+    // 7. the next thing to save for (A2): the cheapest thing open to buy; "level 2" when only it is left; nothing when all is bought
+    {
+      const r={spk:10,paints:{r:1},stks:{},upg:{},cups:{}};
+      let s=rlSaveFor(r);if(!s||s.cost!==30||s.kind!=='stk')bad('save for on a new save: '+JSON.stringify(s));
+      for(const [id] of RL_PAINTS)r.paints[id]=1;for(const [id] of RL_STICKERS)if(id)r.stks[id]=1;r.upg={grip:3,turbo:3,bumper:3};
+      s=rlSaveFor(r);if(!s||!s.lock||!/mirror cup/.test(rlSaveLine(r)))bad('with the first garage bought, the line should point at level 2: '+JSON.stringify(s));
+      r.cups={msprout:{best:1,runs:1}};s=rlSaveFor(r);if(!s||s.cost!==150||s.id!=='quack')bad('level 2 open: the cheapest is the duck horn: '+JSON.stringify(s));
+      r.spk=200;if(!/can buy Duck quack/.test(rlSaveLine(r)))bad('enough sparkles: "you can buy" '+rlSaveLine(r));
+      r.spk=40;if(!/110 more to go/.test(rlSaveLine(r)))bad('short: how many more '+rlSaveLine(r));
+      for(const k of RL_T2){const [list,ownK]=RL_SHOP[k];r[ownK]={};for(const [id,,c] of list)if(c)r[ownK][id]=1}
+      if(rlSaveFor(r)!==null||!/Everything/.test(rlSaveLine(r)))bad('everything bought: '+rlSaveLine(r));
+    }
+    // 8. today's twist (A5): from the date only, the same all day, an open track forwards in a weather or the other way round; the
+    //    bonus once a day; a missed day loses nothing (no streak)
+    {
+      const r={cups:{},stars:{}},lab=new Set(),kinds=new Set();
+      for(let d=1;d<=40;d++){
+        const k='2026-'+(1+Math.floor(d/29))+'-'+(1+d%28),a=rlTwist(k,r),b=rlTwist(k,r);
+        if(JSON.stringify(a)!==JSON.stringify(b))bad('the twist changes within a day '+k);
+        if(!rlTrackOpen(a.base,r)||!RL_TRK[a.tid]||(a.rev?a.tid!==a.base+'m':a.tid!==a.base)||!RL_WX[a.wx]||!a.label||/undefined|NaN/.test(a.label))bad('twist '+JSON.stringify(a));
+        lab.add(a.label);kinds.add(a.rev?'rev':a.wx);
+      }
+      if(lab.size<10||kinds.size<4)bad('the twist should vary: '+lab.size+' twists, kinds '+[...kinds]);
+      const rr={},t1=rlTwist('2026-11-15',r),t2=rlTwist('2026-11-17',r);
+      if(rlTwistPay(rr,t1)!==RL_TW_BONUS||rlTwistPay(rr,t1)!==0||rr.tw!=='2026-11-15'||rlTwistPay(rr,t2)!==RL_TW_BONUS)bad('the twist bonus: once a day, again on another day after a missed one');
+      if(rlTwistPay(rr,null)!==0)bad('no bonus without a twist');
+      if(/streak/i.test(src.slice(src.indexOf('function rlTwist'),src.indexOf('function rlTwist')+1500)))bad('no streak in the twist');
+    }
+    // 9. music (A1): a loop for every place; on only with Sound effects and Music on, not in Calm mode, not while paused or finished;
+    //    scheduled with tone() (so it goes through the shared duck under the voice)
+    {
+      for(const pl of RL_PLACES){const t=RL_TUNE[pl.id];if(!t||t[0].length!==16||t[1].length!==4||!(t[2]>.15&&t[2]<.4))bad('music for '+pl.id)}
+      const st=rlNew('woods-0',{seed:1}),R={st,paused:false};const was=[S.sound,S.music,S.calm,AC,tone];
+      const notes=[];AC={state:'running',currentTime:10};tone=(...a)=>notes.push(a);
+      S.sound=true;S.music=true;S.calm=false;
+      if(!rlMusicOn(R))bad('music should play while racing with Music on');
+      rlMusic(R);const n1=notes.length;
+      S.calm=true;notes.length=0;rlMusic(R);if(notes.length||rlMusicOn(R))bad('music must be off in Calm mode');
+      S.calm=false;S.music=false;if(rlMusicOn(R))bad('music must follow the Music switch');
+      S.music=true;R.paused=true;if(rlMusicOn(R))bad('music waits while paused');R.paused=false;st.done=true;if(rlMusicOn(R))bad('music stops at the finish');
+      if(!(n1>=1))bad('rlMusic scheduled no notes');
+      [S.sound,S.music,S.calm]=was;AC=was[3];tone=was[4];
+      if(!/rlEngine\(\);\n\s*rlMusic\(RL\);/.test(src))bad('the race loop should run rlMusic');
+    }
+    // 10. the buzz (A4): navigator.vibrate on a crash and at the finish; off with the Grown-ups switch and in Calm mode
+    {
+      // Node's own navigator has only a getter: replace it for the test, then put it back
+      const got=[],nd=Object.getOwnPropertyDescriptor(globalThis,'navigator'),setNav=v=>Object.defineProperty(globalThis,'navigator',{value:v,configurable:true,writable:true});
+      setNav({vibrate:ms=>{got.push(ms);return true}});
+      const was=[S.buzz,S.calm];
+      delete S.buzz;S.calm=false;if(!buzz(25)||got.length!==1)bad('buzz should be on by default');
+      S.buzz=false;if(buzz(25)||got.length!==1)bad('the Buzz switch turns it off');
+      S.buzz=true;S.calm=true;if(buzz(25)||got.length!==1)bad('no buzz in Calm mode');
+      setNav({});S.calm=false;if(buzz(25))bad('a tablet without vibrate: nothing happens');
+      if(nd)Object.defineProperty(globalThis,'navigator',nd);[S.buzz,S.calm]=was;
+      if(!/RL\.shake = \.3;\n\s*buzz\(25\);/.test(src)||!/SFX\.fanfare\(\);\n\s*buzz\(40\);/.test(src))bad('Star Rally should buzz on a crash and at the finish');
+    }
+    // 11. the screens: the menu (twist, save for, 5 + 5 cups, 5 places, mirror tracks), the garage with level 2 locked or open
+    {
+      S.rally={spk:50};
+      const m=shot(()=>rlMenu());
+      if(/^ERR/.test(m)||!m.includes('id="rltwist"')||!m.includes("Today's twist")||!/id="rlsave"[\s\S]*Star/.test(m)||(m.match(/class="rl-cup[ "]/g)||[]).length!==10||
+        (m.match(/class="rl-cup[^"]*mir/g)||[]).length!==5||m.includes('data-cup="'+RL_M0+'" data-ok="1"')||(m.match(/data-pl=/g)||[]).length!==5||
+        !m.includes('data-trk="meadow-0m" data-ok="0"')||!m.includes('of 90 stars')||!m.includes('of 10 trophies')||/undefined|NaN/.test(m))bad('the menu on a new save: '+m.slice(0,200));
+      const g=shot(()=>rlGarage());
+      if(/^ERR/.test(g)||!g.includes('class="rl-t2 lock" id="rlt2"')||RL_T2.some(k=>RL_SHOP[k][0].slice(1).some(([id,n,c])=>!g.includes('data-k="'+k+'" data-id="'+id+'"')||!g.includes('</svg>'+c+'</span>'))))
+        bad('the garage should show level 2 locked with every price: '+g.slice(0,160));
+      S.rally={spk:900,cups:{sprout:{best:1,runs:1},wave:{best:1,runs:1},frost:{best:1,runs:1},star:{best:1,runs:1},msprout:{best:2,runs:1}},kits:{fins:1},kit:'fins',whls:{gold:1},whl:'gold',
+        trails:{star:1},trail:'star',horns:{moo:1},horn:'moo'};
+      const m2=shot(()=>rlMenu('woods')),g2=shot(()=>rlGarage({k:'trail',id:'rainbow'}));
+      if(/^ERR/.test(m2)||!m2.includes('data-cup="'+RL_M0+'" data-ok="1"')||!m2.includes('data-trk="woods-0" data-ok="1"')||!/Mirror Wave Cup/.test(m2))bad('the menu later: '+m2.slice(0,160));
+      if(/^ERR/.test(g2)||g2.includes('class="rl-t2 lock"')||!g2.includes('id="rlbuy"')||!g2.includes('Rainbow trail'))bad('the garage with level 2 open: '+g2.slice(0,160));
+      out.svg=[];
+      for(const b of ['kart','buggy','rocket'])for(const [k] of RL_KITS)for(const [w] of RL_WHEELS)out.svg.push(['car '+b+' '+k+' '+w,rlCarArt(b,'g',k?'star':'',
+        'you',false,{kit:k,whl:w})]);
+      for(const t in RL_TRAIL_ART)RL_TRAIL_ART[t]().forEach((a,i)=>out.svg.push(['trail '+t+i,a]));
+    }
+    return out;
+  };
+  const o=eval(js+';('+body.toString()+')()');
+  p.push(...o.bad);
+  notes.push(...o.note);
+  // 12. the new drawings: tokens only, object-art roles
+  for(const [w,d] of o.svg||[]){
+    if(/#[0-9a-f]{3,8}\b|rgba?\(|hsla?\(|NaN|undefined/i.test(d.replace(/var\(--[a-z0-9-]+\)/g,'')))p.push(w+': raw colour, NaN or undefined');
+    for(const a of d.matchAll(/\s(fill|stroke)="([^"]*)"/g))if(a[2]!=='none'&&!/^var\(--a-[a-z]\d?\)$/.test(a[2]))p.push(w+': colour '+a[2]);
+  }
+  // 13. cheap tablets: the trail is a fixed pool of typed arrays (nothing made per frame); the flashing-cars fix and wrecks are kept
+  const trail=src.slice(src.indexOf('function rlTrail('),src.indexOf('/* ---- the screens:'));
+  if(!trail||/\bnew [A-Z]|\[\]|=> \{|\.push\(|\.map\(/.test(trail.replace(/\/\/.*$/gm,'')))p.push('rlTrail should not make anything while racing');
+  if(!/R\.tr = \{ x: new Float32Array\(32\)/.test(src))p.push('the trail pool should be made once, in rlSize');
+  if(!/if \(car === P\) \{ rlDrawMe\(R\); meOK = 1; continue; \}/.test(src))p.push('the cars must still be drawn in the order of their distance (G-02b flashing fix)');
+  if(!/function rlCrash\(st, car, why, sev = 0\)/.test(src))p.push('crashes (G-02b) must stay');
+  if(!/UI\.sw\('Buzz: /.test(fs.readFileSync(path.join(SRC,'js','80-grown.js'),'utf8')))p.push('Grown-ups needs the Buzz switch');
   return{problems:[...new Set(p)].slice(0,60),note:notes.join('; ')};
 });
 
@@ -15708,12 +16083,127 @@ run('block builder G-01',()=>{
   for(const v of css.matchAll(/var\(--([a-z0-9-]+)/g))if(!tok.includes('--'+v[1]+':'))p.push('60-game-blocks.css: --'+v[1]+' is not a token');
   for(const m of src.matchAll(/bbCol\('([a-z0-9:-]+)'\)|bbA\('([a-z0-9-]+)'/g)){const t=m[1]||m[2],n=t.startsWith('sc:')?'--sc-'+t.slice(3):'--ill-'+t;if(!tok.includes(n+':'))p.push('60-blocks.js: '+t+' is not a token');}
   const em=[...src.matchAll(/\p{Extended_Pictographic}/gu)].map(m=>m[0]);
-  if(em.some(e=>!'🐷🐔🐑🐄🐰🐱🐶🦆'.includes(e)))p.push('60-blocks.js: emoji other than the animals: '+[...new Set(em)].join(''));
+  if(em.length)p.push('60-blocks.js: emoji (G-BB2: the animals are drawn): '+[...new Set(em)].join(''));
   if(/petE\(/.test(src))p.push('the emoji pet (petE) is still drawn');
   if(/(^|[;{\s])(-webkit-)?(backdrop-)?filter\s*:/.test(css))p.push('60-game-blocks.css: filter used');
-  if(partOf('60-game-blocks.css')!=='games')p.push('60-game-blocks.css must go into the games file');
+  if(partOf('60-game-blocks.css')!=='games3')p.push('60-game-blocks.css must go into the games3 file (G-BB2)');
   if(/\.bb(wrap|cv|tools|pal|k)\b/.test(fs.readFileSync(path.join(SRC,'css','40-games.css'),'utf8')))p.push('old Block Builder rules left in 40-games.css');
   return{problems:[...new Set(p)].slice(0,50),note:o.notes.join('; ')};
+});
+
+// ---- G-BB2: Block Builder in 3D (src/js/61-bb-gl.js; R-03 B1-B3): exact picking, meshes, chunks, camera, animals, music, plumbing ----
+run('block builder 3D G-BB2',()=>{
+  const p=[];
+  const o=(()=>eval(js+`;(()=>{
+  const r={bad:[],notes:[]},bad=m=>r.bad.push(m);
+  // a world with towers, an overhang, glass, water and flowers, so rays meet every kind of face
+  const W0=()=>{const w=bbGen('island',7);for(let k=1;k<6;k++)w[bbI(4,4,k)]=3;for(let a=3;a<7;a++)w[bbI(a,5,5)]=8;w[bbI(9,9,4)]=7;w[bbI(10,9,4)]=7;return w;};
+  // 1. exact picking: the cell E.hit returns is the nearest non-empty cell along the ray (checked against every cell's box), at many views
+  const slab=(o,d,i,j,k)=>{let t0=0,t1=1e9;const lo=[i,j,k];for(let a=0;a<3;a++){if(Math.abs(d[a])<1e-12){if(o[a]<lo[a]||o[a]>lo[a]+1)return null;continue;}let ta=(lo[a]-o[a])/d[a],tb=(lo[a]+1-o[a])/d[a];if(ta>tb)[ta,tb]=[tb,ta];t0=Math.max(t0,ta);t1=Math.min(t1,tb);}return t0<=t1?t0:null;};
+  let picks=0,wrongPick=0,miss=0;
+  const rnd=rng(77);
+  for(const [W,H] of [[353,440],[660,460],[1024,552]])for(let v=0;v<6;v++){
+    const E=bbCam3(bbMake(W0(),null));E.size(W,H,1);E.home();E.ang=v*1.1+.2;E.tilt=.3+v*.15;E.zoom*=.8+v*.12;E.clamp();
+    for(let n=0;n<60;n++){
+      const px=rnd()*W,py=rnd()*H,h=E.hit(px,py),[o,d]=E.ray(px,py);
+      let best=null;
+      for(let c=0;c<E.w.length;c++)if(E.w[c]){const i=c%BW,j=Math.floor(c/BW)%BD,k=Math.floor(c/(BW*BD)),t=slab(o,d,i,j,k);if(t!=null&&(!best||t<best.t-1e-9))best={t,i,j,k};}
+      picks++;
+      if(!best&&h)wrongPick++;else if(best&&!h)miss++;
+      else if(best&&h&&(best.i!=h.i||best.j!=h.j||best.k!=h.k)){const t2=slab(o,d,h.i,h.j,h.k);if(t2==null||Math.abs(t2-best.t)>1e-6)wrongPick++;}
+    }
+    // the middle of a visible top projects back onto itself
+    for(let c=0;c<E.w.length;c+=7)if(E.w[c]&&!BLOCKS[E.w[c]].deco){const i=c%BW,j=Math.floor(c/BW)%BD,k=Math.floor(c/(BW*BD));if(E.get(i,j,k+1))continue;
+      const q=E.proj(i+.5,j+.5,k+1),h=E.hit(q[0],q[1]);if(h&&h.i==i&&h.j==j&&h.k==k&&h.f!='top')bad('a top seen at its own middle is not hit as the top: '+[i,j,k,h.f]);}
+  }
+  if(wrongPick||miss)bad('picking: '+wrongPick+' wrong and '+miss+' missed cells of '+picks+' rays');
+  r.notes.push(picks+' rays picked exactly');
+  // 2. the projection is the shader's: proj(unproj(p)) = p on a plane; a tap builds on top of the cell under the finger
+  {const E=bbCam3(bbMake(bbFlat(),null));E.size(660,460,1);E.home();E.ang=.7;E.tilt=.8;
+    for(const [px,py] of [[100,300],[330,230],[600,400]]){const [X,Y]=E.unproj(px,py,1),q=E.proj(X,Y,1);if(Math.hypot(q[0]-px,q[1]-py)>.01)bad('unproj and proj disagree at '+[px,py]+': '+q.map(v=>v.toFixed(2)));}
+    const q=E.proj(5.5,6.5,1);E.sel=3;const t=E.tap(q[0],q[1]);
+    if(t.kind!='place'||E.get(5,6,1)!==3)bad('a 3D tap on the top of (5, 6) did not build there: '+JSON.stringify(t));
+    const s=E.proj(5.5,6.5,1.5),h=E.hit(s[0],s[1]);
+    if(!h||h.i!=5||h.j!=6||h.k!=1||h.f!='side')bad('the side of the new block is not hit: '+JSON.stringify(h&&{i:h.i,j:h.j,k:h.k,f:h.f}));
+  }
+  // 3. block tops near the middle are at least 48 px wide where it opens (perspective: the ones in front are bigger)
+  let minTop=1e9;
+  for(const [W,H] of [[353,440],[576,620],[660,460],[660,410]]){
+    const E=bbCam3(bbMake(bbGen('island',7),null));E.size(W,H,1);E.home();
+    const h=E.hit(W/2,H/2);if(!h){bad('nothing in the middle at '+W+'x'+H);continue;}
+    const t=E.topZ(h.i,h.j)-1,pl=E.facePoly(h.i,h.j,t,'top'),xs=pl.map(q=>q[0]);minTop=Math.min(minTop,Math.max(...xs)-Math.min(...xs));
+    for(const bp of BBP.slice(0,6)){const B=bbCam3(bbMake(bbFlat(),bbGoal(bp)));B.size(W,H,1);B.home();
+      const n=B.todo()[0],i=n%BW,j=Math.floor(n/BW)%BD,k=Math.floor(n/(BW*BD)),q=B.proj(i+.5,j+.5,k+1),g=B.hit(q[0],q[1],f=>f.ghost);
+      if(!g||g.i!=i||g.j!=j||g.k!=k)bad(bp.id+': a see-through block is not picked at its own top at '+W+'x'+H);
+      const r0=B.bpTap(q[0],q[1]);if(r0.kind!='place'&&r0.kind!='wrong')bad(bp.id+': a tap on a see-through block: '+r0.kind);}
+  }
+  if(minTop<48)bad('3D block tops in the middle '+minTop.toFixed(1)+' px wide (want 48+)');
+  r.notes.push('3D tops '+Math.round(minTop)+' px');
+  // 4. the camera: one finger turns and tilts (tilt kept in range), two fingers move the focus, zoom keeps the middle, never too close
+  {const E=bbCam3(bbMake(bbGen('island',7),null));E.size(660,460,1);E.home();const a0=E.ang,F0=E.F.slice();
+    E.orbit(120,0);if(!(E.ang<a0-.2))bad('one finger to the right did not turn the view: '+[a0,E.ang]);
+    E.orbit(0,5000);if(E.tilt!==BB3.tMax)bad('tilt not held at its top: '+E.tilt);E.orbit(0,-9000);if(E.tilt!==BB3.tMin)bad('tilt not held at its bottom: '+E.tilt);
+    if(E.F.join()!==F0.join())bad('turning moved the focus');
+    E.tilt=BB3.tilt;E.pan(-80,0);if(Math.hypot(E.F[0]-F0[0],E.F[1]-F0[1])<.5)bad('two fingers did not move the view');
+    const F1=E.F.slice();E.zoomAt(1.4);E.zoomAt(1/1.4);if(Math.hypot(E.F[0]-F1[0],E.F[1]-F1[1])>1e-6)bad('zoom moved the middle');
+    E.zoom=1e4;E.clamp();if(E.dist3()<BB3.dMin-1e-6)bad('the camera can come closer than '+BB3.dMin+' blocks: '+E.dist3());
+    E.F=[-50,90,2];E.clamp();if(E.F[0]<0||E.F[1]>BD)bad('the focus left the island');}
+  // 5. meshes: hidden faces left out, corner shade, sun shadow, see-through apart, water marked to move, glow
+  {const w=bbFlat(),m0=bbGlMesh(w,1,1);
+    if(m0.o.i.length/6!==16||m0.t.i.length)bad('a flat chunk should be 16 top faces: '+m0.o.i.length/6+' + '+m0.t.i.length/6);
+    const e=bbGlMesh(w,0,0);if(e.o.i.length/6!==16+8)bad('an edge chunk shows its 8 outside faces too: '+e.o.i.length/6);
+    // the light at corner (X, Y, Z) of the first flat face (a top) there
+    const lit=(m,X,Y,Z)=>{const v=m.o.v;for(let q=0;q<v.length;q+=32){let flat=true,at=-1;for(let c=0;c<4;c++){const n=q+c*8;if(v[n+2]!=Z)flat=false;if(v[n]==X&&v[n+1]==Y&&v[n+2]==Z)at=n;}if(flat&&at>=0)return v[at+5];}return null;};
+    const a=lit(m0,6,6,1);w[bbI(5,5,1)]=3;const m1=bbGlMesh(w,1,1),b=lit(m1,6,6,1);
+    if(!(b<a))bad('no corner shade next to a block: '+[a,b]);
+    if(m1.o.i.length/6!==16+5-1+0)bad('a block on the ground: '+m1.o.i.length/6+' faces (want 20: 15 ground tops, its top and 4 sides)');
+    const w2=bbFlat();for(let k=1;k<6;k++)w2[bbI(8,8,k)]=3;
+    const sh=bbGlMesh(w2,2,1),c1=lit(sh,9,7,1),c0=lit(bbGlMesh(bbFlat(),2,1),9,7,1);
+    if(!(c1<c0))bad('no sun shadow beside a tall tower: '+[c0,c1]);
+    const w3=bbFlat();w3[bbI(5,5,1)]=10;w3[bbI(6,5,1)]=10;w3[bbI(5,6,1)]=7;w3[bbI(6,6,1)]=22;
+    const m3=bbGlMesh(w3,1,1),kinds=new Set();for(let n=7;n<m3.t.v.length;n+=8)kinds.add(m3.t.v[n]);
+    if(!m3.t.i.length||!kinds.has(1))bad('water and glass are not see-through with moving water: '+[...kinds]);
+    let glow=0;for(let n=7;n<m3.o.v.length;n+=8)if(m3.o.v[n]==2)glow++;if(!glow)bad('a lamp does not glow');
+    const one=new Uint8Array(BW*BD*BH);one[bbI(3,3,2)]=4;if(bbGlMesh(one,0,0).o.i.length/6!==6)bad('a lone block in the air has 6 faces');
+    if(bbGlMesh(one,0,0,bbI(3,3,2)).o.i.length)bad('the dropping block is not left out of its chunk');
+    const gh=bbGlGhost(Object.assign(bbMake(bbFlat(),bbGoal(BBP[0])),{}));if(!gh.i.length)bad('no see-through blueprint blocks in 3D');}
+  // 6. only the chunks a change reaches are built again, and the others are exactly as before
+  {const w=W0(),before=[];for(let n=0;n<16;n++)before.push(JSON.stringify(bbGlMesh(w,n%4,n>>2)));
+    let maxD=0,stale=0;const rr=rng(5);
+    for(let t=0;t<40;t++){const i=Math.floor(rr()*BW),j=Math.floor(rr()*BD),k=1+Math.floor(rr()*8),c=bbI(i,j,k),old=w[c];w[c]=old?0:3;
+      const d=bbGlDirty([c]);maxD=Math.max(maxD,d.size);if(!d.has(Math.floor(j/4)*4+Math.floor(i/4)))bad('the changed cell\\'s own chunk is not rebuilt');
+      for(let n=0;n<16;n++){const now=JSON.stringify(bbGlMesh(w,n%4,n>>2));if(!d.has(n)&&now!==before[n])stale++;before[n]=now;}}
+    if(stale)bad(stale+' chunks changed without being marked to rebuild');
+    if(maxD>6)bad('one change rebuilds '+maxD+' of 16 chunks (want 6 at most)');
+    r.notes.push('a change rebuilds '+maxD+' of 16 chunks at most');}
+  // 7. animals: drawn kinds from the object art, the hop squashes and lands
+  for(const k of BB_AN)if(!ART[k])bad('no drawing for the animal '+k);
+  const s0=bbHopShape(0,0),s5=bbHopShape(.5,0),s1=bbHopShape(1,0);
+  if(!(s5[0]>.4&&s1[0]===0&&s0[0]===0&&s0[2]<1&&s5[2]>1))bad('the hop: '+JSON.stringify([s0,s5,s1]));
+  // 8. music: a loop only with Music and Sound effects on and not in calm mode
+  {const was=[S.sound,S.music,S.calm],calls=[],t0=tone,a0=AC;
+    tone=(...a)=>calls.push(a);AC={state:'running',currentTime:1};
+    const M={};S.sound=1;S.music=1;S.calm=0;bbMusic(M,'island');const on=!!M.mb;
+    const M2={};S.calm=1;bbMusic(M2,'island');const calm=!!M2.mb;
+    const M3={};S.calm=0;S.music=0;bbMusic(M3,'desert');const off=!!M3.mb;
+    [S.sound,S.music,S.calm]=was;tone=t0;AC=a0;
+    if(!calls.length)bad('the music played no note');
+    if(!on||calm||off)bad('music: on '+on+', in calm mode '+calm+', with Music off '+off);
+    for(const k of Object.keys(BB_TUNE))if(BB_TUNE[k].length!==4)bad('tune '+k);}
+  return r;
+  })()`))();
+  for(const m of o.bad)p.push(m);
+  // 9. plumbing: games3 holds Block Builder and the renderer; no raw colour; no three.js or other library; size of the renderer
+  const gl=fs.readFileSync(path.join(SRC,'js','61-bb-gl.js'),'utf8'),src=fs.readFileSync(path.join(SRC,'js','60-blocks.js'),'utf8');
+  if(partOf('60-blocks.js')!=='games3'||partOf('61-bb-gl.js')!=='games3'||partOf('60-game-blocks.css')!=='games3')p.push('Block Builder must ship in games3.'+BUILD_VER+'.js');
+  if(!LAZY.includes('games3'))p.push('games3 must load on demand (LAZY)');
+  if(/#[0-9a-fA-F]{3,8}\b(?![\w-])|rgba?\(\s*\d|hsla?\(/.test(gl))p.push('61-bb-gl.js: a raw colour');
+  if(/\bimport\b|require\(|THREE\./.test(gl))p.push('61-bb-gl.js: a library');
+  if(Buffer.byteLength(gl)>40000)p.push('61-bb-gl.js is '+Buffer.byteLength(gl)+' bytes (keep it small, R-03 4.3: 15-25 KB)');
+  if(!/bbS\(\)\.gl !== 0/.test(src)||!/b\.gl = 0/.test(src))p.push('the 3D look switch is not saved as S.bb.gl');
+  if(!/bbSaveSoon\(\)/.test(src))p.push('B1: a change must be saved after the frame is painted (bbSaveSoon)');
+  if(/fillText\(an\./.test(src))p.push('animals are still drawn as text');
+  return{problems:[...new Set(p)].slice(0,50),note:o.notes.join('; ')+'; 61-bb-gl.js '+Buffer.byteLength(gl)+' bytes'};
 });
 
 // ---- G-01b: Block Builder journey (src/js/60-blocks.js): chapters, challenge kinds, the build of the day, the gallery, old saves ----
@@ -15922,6 +16412,257 @@ run('Block Builder journey G-01b',()=>{
   const src=fs.readFileSync(path.join(SRC,'js','60-blocks.js'),'utf8');
   if(!/ptLeft\(\) <= 0\) \{ SFX\.wrong\(\); fb\(ptWhyNot\(\)/.test(src.slice(src.indexOf("$('#bbday').onclick"))))p.push('the build of the day does not check game time');
   return{problems:[...new Set(p)].slice(0,50),note:o.notes.join('; ')};
+});
+
+// ---- G-HC2: Hill Climb journey (src/js/62-hill.js, src/css/61-hill.css; games part) ----
+// Worlds of hand-shaped stages, missions and stars, the garage, easy driving. The simulation runs here without a page: bots drive
+// every stage (a young child holding the gas with easy driving on; a careful driver with it off, who levels the car in the air).
+run('Hill Climb journey G-HC2',()=>{
+  const p=[],rd=f=>fs.readFileSync(path.join(SRC,f),'utf8');
+  function T(){
+    const r={bad:[],notes:[]},bad=m=>{if(r.bad.length<60&&!r.bad.includes(m))r.bad.push(m)};
+    const keepG=S.garage,keepGr=S.grade;
+    // a bot drive: 'kid' easy driving on, always on the gas; 'driver' easy off, eases off on steep ground and levels in the air;
+    // 'naive' easy off, always on the gas (what a young child does without the helper)
+    const drive=(w,i,kind,o={})=>{const H=hcNew(w,i,Object.assign({easy:kind=='kid'},o));
+      while(!H.over&&H.t<(o.max||200)){
+        if(kind!='driver'){H.gas=true;H.brake=false}
+        else{const air=!H.w1.g&&!H.w2.g,cx=(H.w1.x+H.w2.x)/2,err=hcWrap(hcAng(H)-(air?hcSlopeL(H.C,cx):hcSlopeL(H.C,cx,20)));
+          if(air){H.gas=err<-.12;H.brake=err>.12}else{H.gas=err<.32;H.brake=err>.6}}
+        hcStep(H,1/120)}
+      return H};
+    // 1. the journey's data: 6 worlds of 5 stages, every piece known, a goal, two missions, weather, checkpoints, a finish
+    const KINDS=['bolts','time','flips','air','perfect','nocrash','crates','star'],WX=['day','dusk','night','rain','snow','ash','dust'];
+    if(HC_ST.length!==6||HC_ST.some(a=>a.length!==HC_SPW||HC_SPW!==5))bad('expected 6 worlds of 5 stages');
+    const ids=new Set(),strs=new Set(),wxs=new Set(),use={},profs=[];
+    HC_ST.forEach((ws,w)=>{const goals=new Set(),pcs=new Set();
+      ws.forEach((s,i)=>{const tag=s[0]+' '+s[1];
+        if(ids.has(s[0]))bad(tag+': id repeats');ids.add(s[0]);if(strs.has(s[5]))bad(tag+': same pieces as another stage');strs.add(s[5]);
+        const toks=s[5].trim().split(/\s+/);if(hcParse(s[5]).length!==toks.length)bad(tag+': a piece that is not known');
+        for(const t of toks){pcs.add(t[0]);use[t[0]]=(use[t[0]]||0)+1}
+        if(!['flag','coins','cargo'].includes(s[2][0]))bad(tag+': goal '+s[2]);goals.add(s[2][0]);
+        if(s[3].length!==2||s[3].some(m=>!KINDS.includes(m[0])||!hcMisText(m)))bad(tag+': two missions of known kinds');
+        if(s[3][0][0]===s[3][1][0])bad(tag+': the two missions are the same kind');
+        if(s[3].some(m=>m[0]=='crates')&&s[2][0]!='cargo')bad(tag+': a crates mission without cargo');
+        if(s[3].some(m=>m[0]=='star')&&!s[5].includes('S'))bad(tag+': a star mission with no hidden star');
+        if(!WX.includes(s[4]))bad(tag+': weather '+s[4]);wxs.add(s[4]);
+        const C=hcCourse(s,w);
+        if(!(C.fin>2000&&C.fin<12000))bad(tag+': length '+C.fin);if(C.cps.length<2)bad(tag+': no checkpoint');
+        if(C.h.some(v=>!isFinite(v)))bad(tag+': a height that is not a number');
+        for(let x=0;x<C.fin;x+=10){const a=hcSlope(C,x);if(!(C.fl[hcIx(C,x)]&1)&&!(C.fl[hcIx(C,x-20)]&1)&&!(C.fl[hcIx(C,x+20)]&1)&&C.rocks.concat(C.kicks).every(q=>x<q.x0-20||x>q.x1+20)&&Math.abs(a)>.75){bad(tag+': a slope too steep at '+Math.round(x/20)+' m ('+a.toFixed(2)+')');break}}
+        if(C.balloons.length&&C.balloons.some(b=>!C.pits.some(q=>q.x0>b&&q.x0-b<=320)))bad(tag+': a balloon that is not just before a gap');
+        if(C.coins.length<15)bad(tag+': only '+C.coins.length+' bolts');
+        if(s[2][0]=='coins'&&s[2][1]>C.coins.length*.8)bad(tag+': collect '+s[2][1]+' of only '+C.coins.length+' bolts on the road');
+        const pr=[];for(let k=0;k<=100;k++)pr.push(hcH(C,C.fin*k/100));profs.push([tag,pr])});
+      if(goals.size<3)bad(HCW[w].n+': every world has a flag, a bolts and a cargo stage');
+      if(pcs.size<9)bad(HCW[w].n+': only '+pcs.size+' kinds of piece');
+      if(HCW[w].id!==['meadow','desert','jungle','snow','volcano','moon'][w])bad('world order '+HCW[w].id)});
+    for(const k of 'fuhvwkpbormic$FAS')if(!use[k])bad('no stage uses the piece '+k);
+    if(wxs.size<6)bad('weathers: '+[...wxs]);
+    // stages differ in shape: the height profiles (101 points) of any two stages correlate under 0.97
+    const corr=(a,b)=>{const ma=a.reduce((s,v)=>s+v,0)/a.length,mb=b.reduce((s,v)=>s+v,0)/b.length;let n=0,da=0,db=0;for(let k=0;k<a.length;k++){n+=(a[k]-ma)*(b[k]-mb);da+=(a[k]-ma)**2;db+=(b[k]-mb)**2}return n/Math.sqrt(da*db||1)};
+    let mx=0;for(let a=0;a<profs.length;a++)for(let b=a+1;b<profs.length;b++){const c=corr(profs[a][1],profs[b][1]);if(c>mx)mx=c;if(c>.97)bad('stages too alike: '+profs[a][0]+' / '+profs[b][0]+' '+c.toFixed(3))}
+    r.notes.push('30 stages, largest profile correlation '+mx.toFixed(2));
+    // 2. deterministic terrain: building again gives the same heights and things; the distance drive too
+    const sig=C=>[C.n,Array.from(C.h).reduce((a,v,k)=>(a*31+Math.round(v)*(k%7+1))%1000000007,7),C.coins.length,C.pits.length,C.cps.length,C.fuel.join()].join('/');
+    const before=HC_ST.map((ws,w)=>ws.map(s=>sig(hcCourse(s,w)))).flat().concat(HCW.map((_,w)=>sig(hcEndless(w))));
+    for(const k in HC_CC)delete HC_CC[k];
+    const after=HC_ST.map((ws,w)=>ws.map(s=>sig(hcCourse(s,w)))).flat().concat(HCW.map((_,w)=>sig(hcEndless(w))));
+    if(before.join()!==after.join())bad('terrain is not the same when built again');
+    HCW.forEach((W,w)=>{const C=hcEndless(w);if(!(C.n*10>=70000)||C.fin!=null||C.cps.length<30||C.fuel.length<8)bad('distance drive '+W.id+': '+[C.n,C.cps.length,C.fuel.length])});
+    // 3. every stage driven to the flag by the young child with easy driving and by the careful driver without it; every mission won by one of them
+    let kidCr=0,naiveCr=0,naiveFail=0,tk=0,td=0;
+    HC_ST.forEach((ws,w)=>ws.forEach((s,i)=>{const tag=s[0]+' '+s[1];
+      const K=drive(w,i,'kid'),D=drive(w,i,'driver'),N=drive(w,i,'naive',{max:120});
+      if(K.result!=='win')bad(tag+': easy driving, always on the gas, did not reach the flag ('+Math.round((K.maxX-60)/20)+' m, '+K.crashes+' restarts)');
+      if(D.result!=='win')bad(tag+': the driver without easy driving did not reach the flag ('+Math.round((D.maxX-60)/20)+' m, '+D.crashes+' restarts)');
+      if(K.crashes>1)bad(tag+': easy driving restarted '+K.crashes+' times');
+      const b=hcBitsOf(K)|hcBitsOf(D);if(b!==7)bad(tag+': no bot won every star ('+b+')');
+      if(K.t>60||D.t>60)bad(tag+': longer than 60 s');
+      kidCr+=K.crashes;naiveCr+=N.crashes;naiveFail+=N.result!=='win';tk+=K.t;td+=D.t}));
+    if(naiveCr<kidCr*10+20)bad('easy driving should save many flips: '+kidCr+' restarts with it, '+naiveCr+' without');
+    r.notes.push('bots: easy driving '+kidCr+' restarts, '+Math.round(tk)+' s for 30 stages; driver '+Math.round(td)+' s; always-gas without easy driving '+naiveCr+' restarts, '+naiveFail+' stages not finished in 120 s');
+    // 4. stars and unlocks in order: a fresh garage, then every stage the menu's next goal names, won with just the goal's star
+    S.garage={};S.grade=1;const g=garageS();
+    if(!hcSOpen(0,0)||hcSOpen(0,1)||HC_ST.some((_,w)=>w&&hcWOpen(w)))bad('fresh: only the first stage open');
+    if(!hcEasy())bad('easy driving should be on for 1st grade');S.grade=4;if(hcEasy())bad('easy driving should be off for 4th grade');g.easy=true;if(!hcEasy())bad('the switch turns easy driving on');delete g.easy;
+    const hcBankAs=(H,bits)=>{H.result='win';H.over=true;const s=H.st;H.gotStar=false;H.bolts=s[2][0]=='coins'?s[2][1]:10;H.crates=H.crates0>1?1:H.crates0;H.t=999;H.crashes=1;H.flips=0;H.airs=0;H.perfect=0;return hcBank(H)};
+    const lines=new Set();let steps=0,stuck=null,openOrder=[0];
+    while(steps<40){const ng=hcNextGoal();lines.add(ng.t);if(ng.i==null||hcStars(HC_ST[ng.w][ng.i][0])){stuck=ng;break}
+      if(!hcSOpen(ng.w,ng.i))bad('the next goal names a locked stage '+HC_ST[ng.w][ng.i][0]);
+      for(let i=ng.i+1;i<HC_SPW;i++)if(hcSOpen(ng.w,i))bad(HC_ST[ng.w][i][0]+' open before '+HC_ST[ng.w][ng.i][0]+' is finished');
+      const res=hcBankAs(hcNew(ng.w,ng.i,{}),1);steps++;
+      if(!(res.bits&1))bad(HC_ST[ng.w][ng.i][0]+': the goal star was not won');
+      HC_ST.forEach((_,w)=>{if(hcWOpen(w)&&!openOrder.includes(w)){if(w!==openOrder.length)bad('world '+w+' opened before world '+openOrder.length);openOrder.push(w)}})}
+    if(hcTot()!==20||!stuck||!/more stars? to open Volcano Island/.test(stuck.t))bad('with only goal stars the journey should stop at Volcano Island (22 stars): '+hcTot()+' '+(stuck&&stuck.t));
+    if(!/Try this one: /.test(stuck&&stuck.t||''))bad('the next goal should suggest a mission when stars are needed');
+    // missions on finished stages open the next worlds
+    let guard=0;while(hcTot()<hcMax()&&guard++<200){const ng=hcNextGoal();if(ng.i==null)break;const s=HC_ST[ng.w][ng.i];const H=hcNew(ng.w,ng.i,{});H.result='win';H.over=true;H.bolts=999;H.t=1;H.crashes=0;H.flips=9;H.airs=9;H.perfect=9;H.gotStar=true;H.crates=H.crates0;hcBank(H);lines.add(ng.t);
+      HC_ST.forEach((_,w)=>{if(hcWOpen(w)&&!openOrder.includes(w)){if(w!==openOrder.length)bad('world '+w+' opened out of order');openOrder.push(w)}})}
+    if(hcTot()!==90||openOrder.length!==6)bad('all 90 stars and 6 worlds: '+hcTot()+' '+openOrder);
+    if(!/Every star won/.test(hcNextGoal().t))bad('the last next goal: '+hcNextGoal().t);
+    if(lines.size<40)bad('the next goal line should change as the child goes: '+lines.size+' lines');
+    r.notes.push('journey: '+steps+' stages with the goal star, then '+guard+' runs for missions; '+lines.size+' next-goal lines');
+    // new stars pay bolts once (a stage played again pays only for new stars)
+    S.garage={};const g2=garageS();const H1=hcNew(1,0,{});H1.result='win';H1.bolts=5;H1.t=999;H1.crashes=1;const r1=hcBank(H1),b1=g2.bolts;const H2=hcNew(1,0,{});H2.result='win';H2.bolts=5;H2.t=999;H2.crashes=1;const r2=hcBank(H2);
+    if(r1.gain!==12||r2.gain!==0||g2.bolts!==b1+5)bad('star bolts: '+[r1.gain,r2.gain,b1,g2.bolts]);
+    // 5. upgrades change the drive, measurably
+    const run=(w,i,up,veh,secs,easy)=>{const H=hcNew(w,i,{up,veh,easy});let vmax=0;while(H.t<secs&&!H.over){H.gas=true;hcStep(H,1/120);vmax=Math.max(vmax,H.speed)}return{x:(H.w1.x+H.w2.x)/2,v:vmax,fuel:H.fuel,H}};
+    const e0=run(0,0,{},'jeep',6,true),e5=run(0,0,{engine:5},'jeep',6,true);
+    if(!(e5.v>e0.v*1.4))bad('engine: top speed '+e0.v.toFixed(0)+' -> '+e5.v.toFixed(0));
+    const ice=w=>{const H=hcNew(3,0,{up:{tires:w}});const C=H.C,x0=C.soft[0].x0;Object.assign(H.w1,{x:x0,px:x0,y:hcH(C,x0)+H.R,py:hcH(C,x0)+H.R});Object.assign(H.w2,{x:x0+H.L,px:x0+H.L,y:hcH(C,x0+H.L)+H.R,py:hcH(C,x0+H.L)+H.R});while(H.t<.8){H.gas=true;hcStep(H,1/120)}return(H.w1.x-x0)/20};
+    const i0=ice(0),i5=ice(5);if(!(i5>i0*1.25))bad('tyres: metres on ice in 0.8 s '+i0.toFixed(1)+' -> '+i5.toFixed(1));
+    const drop=s=>{const H=hcNew(0,3,{up:{susp:s}});H.safeT=0;for(const q of[H.w1,H.w2]){q.y+=200;q.py=q.y+7}while(H.t<1.2){hcStep(H,1/120)}return H.crates};
+    const d0=drop(0),d5=drop(5);if(!(d5>d0))bad('suspension: crates after a 10 m drop '+d0+' -> '+d5);
+    const f0=run(0,0,{},'jeep',5,true).fuel,f5=run(0,0,{tank:5},'jeep',5,true).fuel;if(!(f5>f0+10))bad('fuel tank: fuel left after 5 s '+f0.toFixed(0)+' -> '+f5.toFixed(0));
+    const m=run(0,0,{},'monster',4,true),bk=run(0,0,{},'bike',4,true);if(Math.abs(m.v-bk.v)<40)bad('vehicles should handle differently');
+    r.notes.push('upgrades: top speed '+e0.v.toFixed(0)+' -> '+e5.v.toFixed(0)+' px/s, ice '+i0.toFixed(1)+' -> '+i5.toFixed(1)+' m, crates kept '+d0+' -> '+d5+', fuel left '+f0.toFixed(0)+' -> '+f5.toFixed(0));
+    // buying: never below 0 bolts, never above level 5
+    S.garage={bolts:100};let n=0;for(let k=0;k<20;k++)if(hcBuyUp('engine'))n++;const g3=garageS();
+    if(n!==2||g3.bolts!==10||g3.up.engine!==2)bad('buying upgrades: '+[n,g3.bolts,g3.up.engine]);
+    g3.bolts=99999;for(let k=0;k<9;k++)hcBuyUp('susp');if(g3.up.susp!==5||g3.bolts!==99999-UPCOST.reduce((a,b)=>a+b,0))bad('upgrade levels stop at 5: '+g3.up.susp);
+    // 6. old saves: v155 fields kept (bolts, best distances, vehicles, upgrades, paint, old level stars open their worlds)
+    S.garage={bolts:120,up:{engine:2,tires:1,tank:3},paint:'#3b82f6',paints:{'#ef4444':1,'#3b82f6':1},best:{meadow:170,desert:320,city:40},veh:'monster',vehs:{jeep:1,monster:1},
+      missions:[{k:'dist',goal:300,t:'Drive 300 m',r:40,p:300,done:true},{k:'flips',goal:1,t:'Do a flip',r:40,p:0,done:false}],mode:'night',rush:{meadow:30},lv:{snow:[2,1]}};
+    const o=garageS();
+    if(o.bolts!==160||o.up.engine!==2||o.up.tires!==1||o.up.tank!==3||o.up.susp!==0||o.paint!=='b'||!o.paints.b||!o.paints.r||o.best.meadow!==170||o.best.desert!==320||o.best.city!==40||o.veh!=='monster'||!o.vehs.monster)
+      bad('old save: '+JSON.stringify(o));
+    if(!hcWOpen(1)||!hcWOpen(3)||hcWOpen(2))bad('old save: desert (320 m) and snow (level stars) stay open, jungle not: '+[1,2,3].map(hcWOpen));
+    garageS();if(o.bolts!==160)bad('old missions pay only once');
+    S.garage={bolts:'x',up:null,best:[],st:{zz:3,m1:9,m2:'2'},veh:'rocket',paint:'#123456',paints:null,easy:'yes'};const q=garageS();
+    if(q.bolts!==0||q.up.engine!==0||q.st.m1!==1||q.st.m2!==2||q.st.zz||q.veh!=='jeep'||q.paint!=='r'||'easy' in q||q.best.meadow!==0)bad('damaged save: '+JSON.stringify(q));
+    S.garage=keepG;S.grade=keepGr;
+    return r}
+  const o=(()=>eval(js+';('+T.toString()+')()'))();
+  for(const m of o.bad)p.push(m);
+  // 7. tokens only, no emoji, the shared chrome
+  const src=rd('js/62-hill.js'),code=src.replace(/\/\*[\s\S]*?\*\//g,'').replace(/(^|[^:'"`])\/\/[^\n]*/g,'$1'),css=rd('css/61-hill.css').replace(/\/\*[\s\S]*?\*\//g,''),tok=rd('css/00-tokens.css');
+  if(/#[0-9a-fA-F]{3,8}\b/.test(code.replace(/HC_OLDPAINT=\{[^}]*\}/,'')))p.push('62-hill.js: a raw colour: '+(code.match(/.{20}#[0-9a-fA-F]{3,8}\b.{10}/)||[''])[0]);
+  if(/\b(rgb|rgba|hsl|hsla)\((?!\$\{)/.test(code))p.push('62-hill.js: a raw rgb()/hsl() colour');
+  if(/\p{Extended_Pictographic}|[◀▶✕]/u.test(src))p.push('62-hill.js: emoji');
+  for(const m of css.matchAll(/(?:color|background|fill|stroke|box-shadow|outline)[a-z-]*:([^;}]*)/g))if(/#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(|\b(white|black|red|green|blue)\b/.test(m[1].replace(/var\([^)]*\)/g,'')))p.push('61-hill.css: a raw colour: '+m[0]);
+  const roles=new Set([...code.matchAll(/\b(?:K|hcC|hcA)\('([a-z][a-z0-9-]*)'/g)].map(m=>m[1]));
+  for(const m of code.matchAll(/(?:top|top2|dirt|dirt2|far|far2|mid|water|c|c2):'([a-z]\d?)'/g))roles.add(m[1]);
+  for(const m of code.matchAll(/'(sc-[a-z0-9-]+)'/g))roles.add(m[1]);
+  for(const ro of roles){const t=ro.startsWith('sc-')?'--'+ro:'--ill-'+({r:'red',o:'orange',y:'yellow',g:'green',c:'aqua',b:'blue',v:'purple',p:'pink',n:'brown',t:'tan',s:'skin',m:'cream',e:'grey',w:'white',k:'ink'})[ro[0]]+(ro[1]?'-'+ro[1]:'');if(!tok.includes(t+':'))p.push('62-hill.js: colour role '+ro+' is not a token ('+t+')')}
+  if(roles.size<30)p.push('expected the drawing roles to be found: '+roles.size);
+  for(const m of css.matchAll(/var\((--[a-z0-9-]+)\)/g))if(!tok.includes(m[1]+':')&&!['--hc-a','--hc-b','--v'].includes(m[1]))p.push('61-hill.css: '+m[1]+' is not a token');
+  if(!/if\(landV>520&&!H\.calm\)H\.shake/.test(src)||!/H\.shake>0&&!H\.calm/.test(src)||!/H\.calm=hcCalm\(\)/.test(src))p.push('no shake in calm mode or with reduced motion');
+  if(/\.pedal\{[^}]*\b(width|height):clamp\((\d+)px/.test(css)&&+css.match(/\.pedal\{[^}]*width:clamp\((\d+)px/)[1]<64)p.push('pedals under 64 px');
+  // R-03 H1: the renderer draws cached images (sky and parallax strips, ground chunks, sprites), at most 1 million pixels with a lower
+  // pixel scale on a slow tablet; the driver is the child's drawn pet
+  if(!/function hcStrip\(/.test(src)||!/function hcChunk\(/.test(src)||!/Math\.sqrt\(1e6\/\(cw\*ch\)\)/.test(src)||!/H\.q=H\.q>\.9\?\.85:\.7/.test(src))p.push('the cached renderer, the pixel cap or the pixel scale steps are missing');
+  if(!/hopPetSprite\('happy'/.test(src))p.push('the driver should be the drawn pet');
+  if(/fillText\([^)]*\p{Extended_Pictographic}/u.test(src)||/petE\(\)/.test(src))p.push('emoji drawn on the canvas');
+  if(!/data-st="\$\{D\.id\}"/.test(src)||!/id:'hcgo'/.test(src))p.push('the menu needs the play button #hcgo and the distance drive buttons');
+  return{problems:[...new Set(p)].slice(0,50),note:o.notes.join('; ')};
+});
+
+// ---- G-ART2: Art Studio Done and one gallery, picture packs, better pixel art (src/js/70-art.js, 66-colornum.js, 72-shapes.js,
+//      src/css/49-game-art.css). Pure checks in the app's own code (no browser): the smoke step "// G-ART2" plays it by touch.
+run('Art Studio gallery and packs G-ART2',()=>{
+  const p=[];
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const FIX=['fresh','legacy-index-maps','legacy-single-map','maxed','midway','tricky'].map(n=>[n,fx(n)]);
+  const o=(()=>eval(js+`;(()=>{
+  const r={bad:[],notes:[]},bad=m=>{if(r.bad.length<60&&!r.bad.includes(m))r.bad.push(m)};
+  const store={};global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+  const load=raw=>{for(const k in store)if(k!=='__keep')delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
+  const PIC=/\\p{Extended_Pictographic}/u;
+  // 1. the data: every pack picture exists; packs open in order with a fixed, reachable number of stars; the new pixel pictures are well formed
+  const seen=new Set();
+  ART_PACKS.forEach((pk,i)=>{if(pk.pics.length!==6)bad(pk.id+': not 6 pictures');
+    if(i&&!(pk.need>ART_PACKS[i-1].need))bad(pk.id+': needs no more stars than the pack before');if(pk.need>i*6-(i?2:0))bad(pk.id+': needs more stars than the packs before can give');
+    for(const k of pk.pics){if(seen.has(k))bad('picture in two packs: '+k);seen.add(k);const[t,v]=k.split(':');
+      const ok=t=='px'?CB_PICS.some(x=>x[0]==v):t=='sh'?SHAPES.some(x=>x[0]==v):t=='p'?!!POLYART[v]:t=='m'||t=='g'?+v>0:false;if(!ok)bad('unknown pack picture '+k);
+      if(/^Picture$|undefined/.test(artName(k)))bad('no name for '+k)}});
+  if(ART_PACKS[0].need!==0)bad('the first pack must be open from the start');
+  if(CB_PICS.length<28)bad('pixel pictures: '+CB_PICS.length);
+  for(const [id,n] of CB_PICS){const d=cbData(id);if(d.G.length!==256||d.G.some(k=>!CB_COL[k]))bad(id+': not 256 squares of known colours');if(d.keys.length<3||d.keys.length>8)bad(id+': '+d.keys.length+' colours')}
+  CB_PICS.slice(12).forEach(([id])=>{if(!ART_ALL.includes('px:'+id))bad('new pixel picture '+id+' is in no pack')});
+  // 2. pixel squares at least 32 px on a phone (380 x 780) and a tablet (1024 x 600), whatever the palette
+  for(const [W,H] of [[380,780],[360,640],[1024,600],[800,1280]])for(const n of [3,6,8]){const c=pxCell(W,H,n);if(c<32)bad('pixel squares '+c+' px at '+W+'x'+H);}
+  r.notes.push('squares '+pxCell(380,780,6)+' px at 380x780, '+pxCell(1024,600,6)+' at 1024x600');
+  // 3. compact data: fills, pixel bits and neon strokes come back exactly
+  const regs=mandala(17),f={};regs.forEach((x,i)=>{if(i%3==0)f[i]=['c:#f97316','k:#3b82f6','s:#facc15','r:#22c55e','m:#a855f7','g:#ef4444'][i%6]});
+  const pk=artPack(f,regs.length);if(JSON.stringify(artUnpack(JSON.parse(JSON.stringify(pk))))!==JSON.stringify(f))bad('fills do not come back');
+  const many={};for(let i=0;i<300;i++)many[i]='c:#'+(i*4099%16777215).toString(16).padStart(6,'0');if(JSON.stringify(artUnpack(artPack(many,300)))!==JSON.stringify(many))bad('fills with more than 90 colours do not come back');
+  const bits=Array.from({length:256},(_,i)=>i%7==0||i>200?'1':'0');if(pxUnbits(pxBits(bits)).join('')!==bits.join('')||pxBits(Array(256).fill('1'))!=='all'||pxUnbits('all').some(c=>c!='1'))bad('pixel bits do not come back');
+  const st0=[{b:'stars',h:120,z:.015,y:8,m:1,r:77,P:[[0,0],[.5,.25],[1,1],[.1234,.9876]]}],dec=neonDec({s:JSON.parse(JSON.stringify(neonEnc(st0)))});
+  if(dec.length!==1||dec[0].P.some((q,i)=>Math.abs(q[0]-st0[0].P[i][0])>1/8000||Math.abs(q[1]-st0[0].P[i][1])>1/8000)||dec[0].b!=='stars'||dec[0].y!==8)bad('neon strokes do not come back');
+  if(JSON.stringify(pk).length>regs.length+400)bad('fills are not compact: '+JSON.stringify(pk).length);
+  // 4. Done keeps the picture in the gallery, gives the star once, and is saved
+  load(fx('midway'));S.coins=0;stS();
+  const c0=S.coins;let res=artDone({k:'v',key:'m:3',n:'Mandala',d:pk,star:true});
+  const sv=JSON.parse(store[KEY]);
+  if(!res.first||res.stars!==1||!sv.studio||!sv.studio.gal.length||sv.studio.gal[0].v!=='m:3'||sv.studio.gal[0].k!=='v'||!sv.studio.done['m:3'])bad('Done did not keep the picture and its star: '+JSON.stringify({res:{first:res.first,stars:res.stars},gal:sv.studio&&sv.studio.gal.length}));
+  if(JSON.stringify(artUnpack(sv.studio.gal[0].d))!==JSON.stringify(f))bad('the saved picture is not the one colored');
+  if(S.coins-c0<2)bad('the first star of a picture gives no coins');
+  res=artDone({k:'v',key:'m:3',n:'Mandala',d:pk,star:true});if(res.first||stS().gal.filter(e=>e.v=='m:3').length!==1)bad('the same picture again: a second star or a second copy');
+  res=artDone({k:'px',key:'px:cat',n:'Kitty',d:pxBits(bits),star:false});if(res.first||artIsDone('px:cat')||stS().gal[0].k!=='px')bad('an unfinished pixel picture won its star');
+  // 5. gallery cap, hearts and delete
+  load(fx('fresh'));let s=stS();for(let i=0;i<40;i++){const e=galAdd({k:'fp',n:'B'+i,d:'#'});if(i<3)e.h=1}
+  if(s.gal.length!==GAL_MAX||['B0','B1','B2'].some(n=>!s.gal.some(e=>e.n==n))||s.gal[0].n!=='B39'||s.gal.some(e=>/^B([3-9]|1[0-2])$/.test(e.n)))bad('gallery cap: '+s.gal.map(e=>e.n).join());
+  for(const e of s.gal)if(!e.h)galHeart(e.i);const hs=s.gal.filter(e=>e.h).length;if(hs!==GAL_HEARTS)bad('hearts are not capped: '+hs);
+  galAdd({k:'fp',n:'new',d:'#'});if(s.gal.length!==GAL_MAX||!s.gal.some(e=>e.n=='new')||s.gal.filter(e=>e.h).length!==GAL_HEARTS)bad('a full gallery of hearts did not make room for a new picture');
+  const one=s.gal[0].i;if(!galDel(one)||galGet(one))bad('delete');
+  // 6. Neon: the separate store moves in once, every drawing kept (with a heart) and in order, per child; the old store is untouched
+  for(const cur of ['p1','p2']){load(fx('midway'));PRF.cur=cur;const key=PRF.k('starschool-neon'),old=Array.from({length:8},(_,i)=>'data:image/jpeg;base64,'+'AB'.repeat(i+3)+i);
+    store[key]=JSON.stringify(old.concat([42,'junk']));const raw=store[key];const n=artNeonMigrate();s=stS();const ni=s.gal.filter(e=>e.k=='ni');
+    if(n!==8||ni.length!==8||ni.map(e=>e.d).join()!==old.join()||ni.some(e=>!e.h))bad(cur+': neon drawings not all moved in order: '+n+' '+ni.length);
+    if(store[key]!==raw)bad(cur+': the old neon store was changed');if(artNeonMigrate()!==0||stS().gal.filter(e=>e.k=='ni').length!==8)bad(cur+': moved twice');
+    const sv2=JSON.parse(store[SKEY]);if(!sv2.studio||sv2.studio.gal.filter(e=>e.k=='ni').length!==8)bad(cur+': moved drawings not saved');
+    for(let i=0;i<40;i++)galAdd({k:'fp',n:'x'+i,d:'#'});if(stS().gal.filter(e=>e.k=='ni').length!==8)bad(cur+': a moved neon drawing was trimmed');
+    PRF.cur='p1'}
+  load(fx('midway'));store['starschool-neon']='not json';if(artNeonMigrate()!==0||!stS().nm)bad('a damaged neon store breaks the move');
+  // 7. packs open in order, star by star; each opens once; the next-goal line follows
+  load(fx('fresh'));const goals=new Set();let opened=[];
+  for(const pk2 of ART_PACKS){if(!artPackOpen(pk2))bad(pk2.id+' is not open when the packs before it are full');
+    for(const k of pk2.pics){goals.add(artNextGoal());const st=artStars(),nxt=ART_PACKS.find(q=>!artPackOpen(q,st));
+      const d=artDone({k:'v',key:k,n:artName(k),d:{p:[],s:''},star:true});if(d.opened)opened.push(d.opened.id);
+      if(nxt&&artStars()<nxt.need&&artPackOpen(nxt))bad(nxt.id+' opened early')}}
+  if(opened.join()!==ART_PACKS.slice(1).map(q=>q.id).join())bad('packs opened out of order: '+opened.join());
+  if(artStars()!==ART_ALL.length||goals.size<ART_ALL.length-2)bad('stars '+artStars()+', goal lines '+goals.size);
+  if(!/Every pack is full/.test(artNextGoal()))bad('last goal line: '+artNextGoal());
+  // pictures finished before G-ART2 count; a new pixel picture shows once its pack is open
+  load(fx('fresh'));S.cbn={done:{truck:1,heart:1},prog:{},art:[]};S.cbs={done:{elephant:1},prog:{},free:{}};
+  if(!artIsDone('px:truck')||!artIsDone('sh:elephant')||artStars()!==2)bad('old finished pictures do not count: '+artStars());
+  if(!cbOpen('heart')||!cbOpen('cat')||cbOpen('planet'))bad('which pixel pictures are open');
+  // 8. today's picture: from the date only, the same all day, many different ones; its bonus once a day
+  const days=Array.from({length:60},(_,i)=>{const d=new Date(2026,10,1+i);return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()});
+  const ks=days.map(d=>artDaily(d).key);if(days.some((d,i)=>artDaily(d).key!==ks[i]))bad('today\\'s picture is not the same for a date');
+  if(new Set(ks).size<40)bad('today\\'s picture repeats: '+new Set(ks).size+' of 60');
+  if(!ks.some(k=>/^m:/.test(k))||!ks.some(k=>/^g:/.test(k))||!ks.some(k=>ART_ALL.includes(k)))bad('today\\'s picture uses only some kinds');
+  load(fx('fresh'));S.coins=0;const tk=artDaily(today()).key;const d1=artDone({k:'v',key:tk,n:'x',d:{p:[],s:''},star:true}),d2=artDone({k:'v',key:tk,n:'x',d:{p:[],s:''},star:true});
+  if(!d1.daily||d2.daily||d1.coins<3||d2.coins)bad('today\\'s bonus: '+JSON.stringify([d1.coins,d2.coins]));
+  // 9. old saves: every fixture loads, keeps its coloured pictures and progress, and every menu draws; damaged values are mended
+  const prog=()=>JSON.stringify([S.studio&&S.studio.items||{},S.studio&&S.studio.order||[],...['done','prog','art'].map(k=>(S.cbn||{})[k]||(k=='art'?[]:{})),...['done','prog','free'].map(k=>(S.cbs||{})[k]||{})]);
+  for(const [n,raw] of FIX){load(raw);const keep=prog();
+    try{stS();artStars();artNextGoal();for(const t of ART_TABS)artMenuHTML(t[0]);classicHTML('shape');classicHTML('pixel')}catch(e){bad(n+': '+e.message)}
+    if(prog()!==keep)bad(n+': coloured pictures or progress changed')}
+  load(fx('midway'));S.studio={items:{'m:17':{f:{0:'c:#f97316',3:'s:#22c55e'},t:1}},order:['m:17'],pal:String.fromCodePoint(0x1F30A)+' Ocean',gal:'x',done:[1]};
+  s=stS();if(palKey(s.pal)!=='Ocean'||!Array.isArray(s.gal)||Array.isArray(s.done)||s.items['m:17'].f[3]!=='s:#22c55e'||s.order[0]!=='m:17')bad('a v155 studio save: '+JSON.stringify(s));
+  if(palKey('Forest')!=='Forest'||palKey(undefined)!=='Sunset')bad('palette names');
+  S.studio.gal=[null,{k:'v',v:'m:3',d:null,i:1},'x'];if(stS().gal.length!==1)bad('damaged gallery entries are not dropped');
+  // 10. no emoji in the menus, tools and palettes (drawn icons; the pictures inside are SVG)
+  load(fx('midway'));S.cbn={done:{},prog:{},art:[]};artDone({k:'v',key:'m:3',n:'Mandala',d:pk,star:true});
+  const html=ART_TABS.map(t=>artMenuHTML(t[0])).concat(['shape','pixel','paint'].map(classicHTML),[artBarHTML('Sunset','c'),neonBarHTML(8,1,'neon',6),artHubLine(),Object.keys(AIC).map(k=>artIco(k)).join(''),NEON_SY.map(n=>artIco(n)).join('')]);
+  html.forEach((h,i)=>{const m=h.match(PIC);if(m)bad('emoji in menu/tools '+i+': '+m[0]);if(/undefined|NaN|\\[object /.test(h))bad('menu '+i+' has undefined/NaN')});
+  if(ART_TOOLS.length<7||!['k','m','s','r'].every(t=>ART_TOOLS.some(x=>x[0]==t)))bad('crayon, marker, glitter and rainbow tools');
+  const defs=new Set();defs.out=[];for(const t of ['k','m','s','r','g'])if(!/^url\\(#/.test(fillVal(t+':#3b82f6',defs)))bad('fill '+t+' is not a texture');if(defs.out.length!==5)bad('fill textures: '+defs.out.length);
+  r.notes.push(ART_PACKS.length+' packs, '+ART_ALL.length+' pictures, '+CB_PICS.length+' pixel pictures');
+  return r})()`))();
+  p.push(...o.bad);
+  // sources: no emoji in the Art Studio files, tokens only in its CSS, nothing that loops forever, calm and reduced motion stop the sparkles
+  for(const f of ['66-colornum.js','68-lowpoly.js','70-art.js','72-shapes.js']){const m=fs.readFileSync(path.join(SRC,'js',f),'utf8').match(/\p{Extended_Pictographic}/u);if(m)p.push(f+': emoji '+m[0])}
+  const css=fs.readFileSync(path.join(SRC,'css','49-game-art.css'),'utf8');
+  if(/#[0-9a-fA-F]{3,8}\b/.test(css))p.push('49-game-art.css has a raw colour');if(/infinite/.test(css))p.push('49-game-art.css loops forever');
+  if(!/html\.calm \.art-spk\{display:none\}/.test(css)||!/prefers-reduced-motion:reduce\)\{\.art-spk\{display:none\}\}/.test(css))p.push('sparkles show in calm mode or with reduced motion');
+  const a=fs.readFileSync(path.join(SRC,'js','70-art.js'),'utf8');
+  if(!/function artSparkle\(el,then\)\{if\(artCalm\(\)/.test(a))p.push('artSparkle must draw nothing in calm mode or with reduced motion');
+  if(!/function artMusicOk\(\)\{return S\.sound&&S\.music!==false&&!S\.calm\}/.test(a)||/\bsynth\(/.test(a))p.push('the music must follow Sound, Music and calm mode (tone(), never synth())');
+  if(partOf('49-game-art.css')!=='games2'||partOf('70-art.js')!=='games')p.push('Art Studio files are not in the games parts');
+  return{problems:p,note:o.notes.join('; ')};
 });
 
 // ---- G-04a: Snack Stand (src/js/65-game-snack.js, src/css/49-game-snack.css; games2 part) ----
@@ -16134,6 +16875,229 @@ run('snack stand G-04a',()=>{
     const g0=S.grade;
     for(const [gr,want] of [[null,false],[-1,false],[0,false],[1,false],[2,true],[3,true],[6,true]]){S.grade=gr;if(snTillOK()!==want)bad('give change for grade '+gr)}
     S.grade=g0;
+    // ---- G-04a2: kinds of days, recipes with steps, unlocks, the café journey, today's guest, old saves, one food per touch ----
+    // 12. the kinds of days open one after another with days played (never close again); Mix plays every open kind in turn; rush is Busy only
+    {
+      for(let i=1;i<SN_KINDS.length;i++)if(SN_KINDS[i].days<SN_KINDS[i-1].days)bad('G-04a2: kinds must open in order of days played');
+      let was=[];
+      for(let d=0;d<=14;d++){
+        const o=SN_KINDS.filter(k=>snKindOpen(k.id,{days:d,mode:'busy'})).map(k=>k.id);
+        if(was.some(x=>!o.includes(x)))bad('G-04a2: a kind of day closed again on day '+d);
+        if(o.join()!==SN_KINDS.slice(0,o.length).map(k=>k.id).join())bad('G-04a2: kinds open out of order on day '+d+': '+o);
+        was=o;
+      }
+      if(was.length!==SN_KINDS.length)bad('G-04a2: every kind of day should be open by day 14');
+      if(snKindOpen('rush',{days:30,mode:'calm'})||!snKindOpen('rush',{days:30,mode:'busy'}))bad('G-04a2: rush hour is for Busy days only');
+      const g0=S.grade;S.grade=0;
+      const seen=new Set();for(let d=20;d<20+SN_KINDS.length;d++)seen.add(snKindFor({days:d,mode:'busy',kind:'mix'}));
+      if(seen.size!==SN_KINDS.length)bad('G-04a2: Mix should play every open kind in turn: '+[...seen]);
+      if(snKindFor({days:0,kind:'mix'})!=='plain')bad('G-04a2: the very first day is an open day');
+      if(snKindFor({days:9,mode:'calm',kind:'party'})!=='party'||snKindFor({days:2,mode:'calm',kind:'party'})==='party')bad('G-04a2: a chosen kind plays only once it is open');
+      S.grade=g0;
+      out.note.push('kinds open on days '+SN_KINDS.map(k=>k.days).join('/'));
+    }
+    // places open in order of stars, all reachable with the stars there are
+    for(let i=1;i<SN_PLACES.length;i++)if(SN_PLACES[i].need<=SN_PLACES[i-1].need)bad('G-04a2: places must open in order');
+    if(SN_PLACES.length!==8||SN_PLACES[SN_PLACES.length-1].need>SN_MAXSTARS-3)bad('G-04a2: 8 places, the last one reachable with the stars of the others');
+    for(const pp of SN_PLACES){
+      if(!pp.day||!pp.day.name||!pp.day.how||!pp.day.st||pp.day.st.length>5)bad('G-04a2: '+pp.id+' needs its own kind of day (at most 5 stations)');
+      if(pp.who.some(w=>!SN_WHO[w]))bad('G-04a2: a customer without a name at '+pp.id);
+      if(pp.sp&&!SN_ING[pp.sp])bad('G-04a2: special food of '+pp.id);
+    }
+    // 13. every kind of day, at every place, in both modes, is played to the end by bots (perfect and sloppy): everyone is served,
+    // orders are makeable from that day's food, at most 5 station tabs, a perfect bot wins 3 stars and the kind's own goal
+    const play2=(o,kind2)=>{
+      const st=snNew(o),avail=snAvail(o.own,o.place,o.mode,o.kind),stn=new Set(avail.map(i=>SN_ING[i][1]));
+      if(stn.size>5)bad('G-04a2: '+o.kind+' at '+o.place+' has '+stn.size+' station tabs');
+      let steps=0;
+      while(!st.done&&steps<60*5*80){
+        snStep(st,.1);st.ev.length=0;steps++;
+        if(st.pay){let left=st.pay.change;const cs=[];for(const v of [10,5,2,1])while(left>=v){cs.push(v);left-=v}snChange(st,cs);continue}
+        const c=st.at.find(x=>x.state=='wait');
+        if(!c)continue;
+        st.sel=st.at.indexOf(c);
+        for(const id of c.order)if(!avail.includes(id)&&!c.any)bad('G-04a2: '+o.kind+' order needs '+id+' (not on the day\'s menu at '+o.place+')');
+        if(kind2=='sloppy'&&!c.tries){
+          if(c.steps&&c.order.length>1){if(snAdd(st,c.order[1])!=='step')bad('G-04a2: a recipe step out of order was taken')}
+          st.plate=['cookie','cookie','cookie','cookie','cookie','cookie','cookie'];if(snServe(st).ok)bad('G-04a2: a wrong plate was accepted');st.plate=[];st.pq=[];
+        }
+        const want=c.any?[c.any.find(x=>!st.tasted[x])||c.any[0]]:c.order;
+        for(const id of want){
+          if(id=='pancake'){snAdd(st,'pancake');const k=st.pans.findIndex(x=>x);st.pans[k].t=4;snPan(st,k)}
+          else if(snAdd(st,id)!==true)bad('G-04a2: could not add '+id+' for '+o.kind+' '+c.order);
+        }
+        const r=snServe(st);
+        if(!r.ok)bad('G-04a2: the right plate was refused ('+o.kind+' at '+o.place+'): '+c.order);
+      }
+      if(!st.done||st.served!==st.n)bad('G-04a2: '+o.kind+' at '+o.place+' '+o.mode+': the day did not end with everyone served ('+st.served+' of '+st.n+')');
+      return st;
+    };
+    const OWN2={};for(const [id] of SN_SHOP)OWN2[id]=1;
+    const kindTally={};
+    for(const pl2 of SN_PLACES)for(const k of SN_KINDS)for(const mode of ['calm','busy'])for(const seed of [3,8]){
+      if(k.busy&&mode!='busy')continue;
+      const own=seed==3?{}:OWN2;
+      const st=play2({seed:seed*97+pl2.need,mode,place:pl2.id,own,kind:k.id,slots:2+seed%2,till:seed==8},'perfect');
+      const how=snHow(k.id,pl2.id);
+      (kindTally[how]=kindTally[how]||[]).push(st.n);
+      if(snStarsFor(st.right,st.n)!==3)bad('G-04a2: a perfect '+how+' day should win 3 stars');
+      if(SN_KGOAL[how]&&st.goal.id===SN_KGOAL[how][0]&&!st.goal.done&&st.goal.id!=='hearts')bad('G-04a2: a perfect '+how+' day should reach its goal '+st.goal.text+' ('+st.goal.got+'/'+st.goal.need+')');
+      for(const c of st.list){
+        const lim=c.group?8:mode=='calm'?(how=='picnic'||c.req?4:3):6;
+        if(c.order.length<1||c.order.length>lim)bad('G-04a2: '+how+' '+mode+' order of '+c.order.length+': '+c.order);
+        if(c.order.includes('bread')){const s2=c.order.filter(i=>SN_ING[i][1]=='sand');if(s2[0]!=='bread'||s2[s2.length-1]!=='bread'||s2.length<3)bad('G-04a2: a sandwich without bread on both sides: '+c.order)}
+        if(c.req){
+          if(c.req.no==='bread')bad('G-04a2: a picky order without bread');
+          const exp=c.req.no?c.req.base.filter(i=>i!==c.req.no):null;
+          if(exp&&snKey(exp)!==snKey(c.order))bad('G-04a2: "no '+c.req.no+'" order is wrong: '+c.order);
+          if(c.req.extra&&snKey(c.req.base.concat([c.req.extra]))!==snKey(c.order))bad('G-04a2: "extra '+c.req.extra+'" order is wrong: '+c.order);
+        }
+        const t=snSayC(c);if(!/^[A-Z].*[.!?]$/.test(t)||/undefined|NaN|  /.test(t))bad('G-04a2: spoken order: '+t);
+      }
+      if(how=='special'&&st.list.filter(c=>c.special).length<3)bad('G-04a2: a special day needs the special 3 times or more');
+      if((how=='party'||how=='stars')&&st.list.filter(c=>c.group).length!==2)bad('G-04a2: a party day has two party orders');
+      if(how=='feast'&&!st.list.some(c=>c.group=='feast'))bad('G-04a2: a royal feast without the feast');
+      if(how=='recipe'&&st.list.filter(c=>c.steps).length<3)bad('G-04a2: a recipe day needs 3 recipes or more');
+      if(how=='taste'&&st.list.some(c=>!c.any||!c.any.length))bad('G-04a2: a taste test customer without a choice');
+    }
+    for(const how in kindTally)out.note.push(how+' '+Math.min(...kindTally[how])+'-'+Math.max(...kindTally[how])+' customers');
+    // a sloppy bot (every first try wrong, a recipe step out of order first) still serves everyone on every kind; 1 star
+    for(const k of SN_KINDS){const st=play2({seed:41,mode:'busy',place:'park',own:OWN2,kind:k.id,slots:3},'sloppy');if(st.right!==0)bad('G-04a2: sloppy '+k.id+': every first try was wrong')}
+    // 14. recipes with steps: valid foods, numbered steps, only the next step goes on the plate, the order on the plate is the order served
+    for(const d of SN_DISHES){
+      if(!d.items.length||d.items.some(i=>!SN_ING[i]))bad('G-04a2: dish '+d.id+' has an unknown food');
+      if(d.where&&!SN_PLACES.some(p=>p.id===d.where))bad('G-04a2: dish '+d.id+' at an unknown place');
+    }
+    if(new Set(SN_DISHES.map(d=>d.id)).size!==SN_DISHES.length)bad('G-04a2: dish ids must be unique');
+    const REC=SN_DISHES.filter(d=>d.steps);
+    if(REC.length<6)bad('G-04a2: at least 6 recipes with steps');
+    for(const d of REC){
+      if(d.items.length<3)bad('G-04a2: a recipe has 3 steps or more: '+d.id);
+      const st=snNew({seed:1,mode:'busy',place:d.where||'snow',own:OWN2,kind:'recipe'});
+      const c={i:0,who:'cat',name:'Mimi',order:d.items.slice(),steps:1,dish:d.id,state:'wait',tries:0,pat:30,patMax:30};
+      st.at=[c];st.sel=0;st.next=st.n;
+      const cells=snCells(c);if(cells.map(x=>x.step).join()!==d.items.map((x,j)=>j+1).join())bad('G-04a2: recipe '+d.id+' steps are not numbered 1, 2, 3');
+      // every wrong first step is refused; the right steps go on one by one
+      for(const id of new Set(d.items.slice(1)))if(id!==d.items[0]&&id!='pancake'&&snAdd(st,id)!=='step')bad('G-04a2: recipe '+d.id+': '+id+' before '+d.items[0]+' was taken');
+      if(st.plate.length)bad('G-04a2: a refused step changed the plate');
+      for(let j=0;j<d.items.length;j++){
+        const id=d.items[j];
+        if(id=='pancake'){snAdd(st,id);const k=st.pans.findIndex(x=>x);st.pans[k].t=4;snPan(st,k)}
+        else if(snAdd(st,id)!==true)bad('G-04a2: recipe '+d.id+' step '+(j+1)+' refused');
+        if(j==0){snUndo(st);if(st.plate.length!==0)bad('G-04a2: Undo in a recipe');if(id=='pancake'){snAdd(st,id);const k=st.pans.findIndex(x=>x);st.pans[k].t=4;snPan(st,k)}else snAdd(st,id)}
+      }
+      if(!snFits(c,d.items)||snFits(c,d.items.slice().reverse())&&d.items.join()!==d.items.slice().reverse().join())bad('G-04a2: recipe '+d.id+' must be served in its order');
+      const r=snServe(st);
+      if(!r.ok||r.dish!==d.id)bad('G-04a2: recipe '+d.id+' not served into the book: '+JSON.stringify(r.dish));
+    }
+    // taste test: any one food of the station fits, two do not, another station does not
+    {
+      const c={any:['van','straw'],ast:'ice',order:['van']};
+      if(!snFits(c,['straw'])||snFits(c,['straw','van'])||snFits(c,['apple']))bad('G-04a2: taste test matching');
+    }
+    // 15. the café journey: closed until 12 things or 8 days; each stage needs the one before; upgrades need their stage;
+    // coins never below 0; everything persists through save and load
+    for(const k in store)delete store[k];
+    loadSave(fx('midway'));migrate();
+    S.snack={coins:5000};
+    {
+      const r=snS();
+      if(snCafeOpen(r)||snBuyCafe('cart')||r.coins!==5000)bad('G-04a2: the café journey must be closed at first');
+      r.days=8;
+      if(!snCafeOpen(r))bad('G-04a2: 8 days open the café journey');
+      if(snBuyCafe('cafe')||snBuyCafe('tables')||snBuyCafe('diner'))bad('G-04a2: a café stage or upgrade before its stage');
+      if(!snBuyCafe('cart')||snBuyCafe('cart')||!snBuyCafe('lights')||snBuyCafe('booth')||!snBuyCafe('cafe')||!snBuyCafe('tables')||!snBuyCafe('diner')||!snBuyCafe('neon'))bad('G-04a2: café journey buys in order');
+      const spent=150+60+300+90+600+140;
+      if(r.coins!==5000-spent)bad('G-04a2: café prices: '+r.coins);
+      r.coins=10;if(snBuyCafe('booth')||r.coins!==10)bad('G-04a2: a café buy without the coins');
+      r.book={cheesy:3};r.kd={party:2};r.kind='party';r.tw='2026-11-15';
+      save();
+      loadSave(store['starschool-v2']);migrate();
+      const r2=snS();
+      if(snStage(r2)!==3||!r2.cafe.lights||!r2.cafe.neon||!r2.cafe.tables||r2.coins!==10||r2.book.cheesy!==3||r2.kd.party!==2||r2.kind!=='party'||r2.tw!=='2026-11-15')bad('G-04a2: the journey did not persist: '+JSON.stringify(r2));
+      const st2=new Set();for(let s2=0;s2<=3;s2++)st2.add(snStandArt({r:Object.assign({},r2),stage:s2,deco:true}));
+      if(st2.size!==4)bad('G-04a2: each café stage must look different');
+      const g=snNextGoal(r2);if(!g||/undefined|NaN/.test(g))bad('G-04a2: next goal '+g);
+    }
+    // the next goal line moves on and never breaks
+    {
+      const goals=new Set();
+      for(const r of [{},{days:1},{days:3},{days:5,stars:{park:3,beach:3}},{days:9,coins:40,own:Object.fromEntries(SN_SHOP.slice(0,12).map(x=>[x[0],1]))},
+        {days:20,coins:900,cafe:{cart:1,cafe:1}},{days:40,coins:9000,cafe:Object.fromEntries(SN_CAFE.map(x=>[x[0],1])),stars:Object.fromEntries(SN_PLACES.map(p=>[p.id,3]))}]){
+        const g=snNextGoal(r);
+        if(!g||/undefined|NaN|null/.test(g))bad('G-04a2: next goal for '+JSON.stringify(r)+': '+g);
+        goals.add(g);
+      }
+      if(goals.size<6)bad('G-04a2: the next goal should change as the child goes on: '+[...goals].join(' | '));
+    }
+    // 16. today's twist: the same for a date, different over days; the guest comes once a day until served and pays +5
+    {
+      const a=snTwist('2026-11-15'),b=snTwist('2026-11-15');
+      if(JSON.stringify(a)!==JSON.stringify(b))bad('G-04a2: today\'s guest must be the same all day');
+      const who=new Set(),fav=new Set();
+      for(let d=1;d<=60;d++){const t=snTwist('2026-'+(1+d%12)+'-'+(1+d%28));who.add(t.who);fav.add(t.fav);if(!SN_WHO[t.who]||!SN_ING[t.fav])bad('G-04a2: twist '+JSON.stringify(t))}
+      if(who.size<10||fav.size<5)bad('G-04a2: the guests should vary over 60 days: '+who.size+' guests, '+fav.size+' foods');
+      const st=snNew({seed:9,mode:'calm',place:'park',own:{},guest:a}),g=st.list.filter(c=>c.guest);
+      if(g.length!==1||g[0].who!==a.who)bad('G-04a2: today\'s guest should visit once');
+      if(snNew({seed:9,mode:'calm',place:'park',own:{}}).list.some(c=>c.guest))bad('G-04a2: no guest once served today');
+      const p=play2({seed:9,mode:'calm',place:'park',own:{},kind:'plain',guest:a},'perfect');
+      if(!p.guest)bad('G-04a2: serving the guest should be counted');
+    }
+    // 17. old saves keep coins, upgrades, places and stars; new fields come by id with defaults; damaged new fields are cleaned
+    {
+      S.snack={coins:812,days:31,served:290,stars:{park:3,beach:3,snow:2,fair:3,moon:1},combo:7,own:{tomato:1,'awn-b':1,bird:1},awn:'b',sign:'wood',ctr:'wood',place:'moon',mode:'busy',till:true};
+      const r=snS();
+      if(r.coins!==812||r.days!==31||r.stars.moon!==1||!r.own.bird||r.awn!=='b'||r.place!=='moon'||r.mode!=='busy'||!r.till)bad('G-04a2: an old save lost something: '+JSON.stringify(r));
+      if(r.kind!=='mix'||JSON.stringify(r.book)!=='{}'||JSON.stringify(r.cafe)!=='{}'||JSON.stringify(r.kd)!=='{}'||r.tw!=='')bad('G-04a2: new fields defaults: '+JSON.stringify(r));
+      S.snack={coins:5,book:'x',cafe:[1],kd:{party:9,zz:2},kind:'rush',tw:{a:1}};
+      const r3=snS();
+      if(JSON.stringify(r3.book)!=='{}'||JSON.stringify(r3.cafe)!=='{}'||r3.kd.party!==3||'zz' in r3.kd||r3.kind!=='mix'||r3.tw!=='')bad('G-04a2: damaged new fields: '+JSON.stringify(r3));
+      S.snack={book:{cheesy:'4',zz:1},cafe:{cart:1,zz:1}};
+      const r4=snS();
+      if(r4.book.cheesy!==4||'zz' in r4.book||!r4.cafe.cart||'zz' in r4.cafe)bad('G-04a2: unknown ids are dropped, known kept');
+    }
+    // 18. one touch adds one food (the 1024x600 smoke bug): the gesture rule and the real listeners with fake events
+    {
+      const run=evs=>{const g={},got=[];for(const e of evs){const id=snGest(g,e);if(id)got.push(id)}return got};
+      const D2=(id,t,pt='touch',pid=1,x=100,y=500)=>({type:'down',id,x,y,pid,pt,t}),U=(t,plate=false,pid=1)=>({type:'up',pid,t,plate}),C=(id,t,kbd=false)=>({type:'click',id,t,kbd});
+      const M=(x,y,pid=1)=>({type:'move',x,y,pid});
+      const cases=[
+        ['a tap',[D2('van',0),U(40),C('van',45)],1],
+        ['a tap with its click reported twice',[D2('van',0),U(40),C('van',45),C('van',46)],1],
+        ['a tap with a mouse-compatibility press',[D2('van',0),U(40),D2('van',42,'mouse',2),U(43,false,2),C('van',45)],1],
+        ['a press reported twice',[D2('van',0),D2('van',1),U(40),C('van',45)],1],
+        ['a drag onto the plate',[D2('van',0),M(100,450),M(100,300),U(300,true)],1],
+        ['a drag and its click',[D2('van',0),M(100,450),M(100,300),U(300,true),C('van',305),C('van',900)],1],
+        ['a drop reported twice',[D2('van',0),M(100,400),U(300,true),U(301,true),{type:'cancel',pid:1}],1],
+        ['a drag dropped off the plate',[D2('van',0),M(100,400),U(300,false),C('van',305)],0],
+        ['a press moved to another food',[D2('van',0),U(40),C('choc',45)],0],
+        ['a cancelled press',[D2('van',0),{type:'cancel',pid:1},C('van',45)],0],
+        ['two quick taps',[D2('van',0),U(40),C('van',41),D2('van',120),U(160),C('van',161)],2],
+        ['a keyboard press',[C('van',10,true),C('van',500,true)],2],
+        ['a pointer click with no press before it (a stray)',[C('van',10)],0],
+      ];
+      for(const [n,evs,want] of cases){const got=run(evs);if(got.length!==want)bad('G-04a2 one touch, one food: '+n+' added '+got.length+' (want '+want+')')}
+      // the real listeners, wired twice on purpose, fed fake events: exactly one food per gesture
+      const lis={},win={},box={addEventListener:(t,f)=>{(lis[t]=lis[t]||[]).push(f)}},btn={dataset:{ing:'van'},closest:s=>s=='.sn-ing'?btn:null};
+      const D=global.document,ae=global.addEventListener,re=global.removeEventListener;
+      global.document=Object.assign({},D,{querySelector:s=>s=='#snings'?box:s=='.sn-counter'?{getBoundingClientRect:()=>({bottom:400})}:dummy,querySelectorAll:()=>[],
+        createElement:()=>({style:{},remove(){}}),body:{appendChild(){}}});
+      global.addEventListener=(t,f)=>{(win[t]=win[t]||new Set()).add(f)};global.removeEventListener=(t,f)=>{if(win[t])win[t].delete(f)};
+      try{
+        SN={st:snNew({seed:2,mode:'calm',place:'park',own:{}}),r:{days:1,own:{},cafe:{}},pl:SN_PLACES[0],stations:SN_STATIONS,tab:'ice',gest:{}};
+        SN.st.at=[Object.assign({},SN.st.list[0],{state:'wait',tries:0,patMax:30,came:0})];
+        snDragWire();snDragWire();
+        const fire=(t,e)=>{for(const f of lis[t]||[])f(e);for(const f of win[t]||[])f(e)};
+        const ev=(o)=>Object.assign({target:btn,pointerId:1,pointerType:'touch',clientX:100,clientY:500,timeStamp:0,detail:1,type:''},o);
+        fire('pointerdown',ev({timeStamp:1}));fire('pointerup',ev({type:'pointerup',timeStamp:40}));fire('click',ev({timeStamp:42}));fire('click',ev({timeStamp:43}));
+        if(SN.st.plate.length!==1)bad('G-04a2 one touch, one food: a tap through the listeners added '+SN.st.plate.length);
+        fire('pointerdown',ev({timeStamp:300}));fire('pointermove',ev({type:'pointermove',clientY:420,timeStamp:320}));fire('pointermove',ev({type:'pointermove',clientY:300,timeStamp:340}));
+        fire('pointerup',ev({type:'pointerup',clientY:300,timeStamp:360}));fire('pointercancel',ev({type:'pointercancel',clientY:300,timeStamp:361}));fire('click',ev({timeStamp:365}));
+        if(SN.st.plate.length!==2)bad('G-04a2 one touch, one food: a drag through the listeners left '+SN.st.plate.length+' on the plate (want 2)');
+        if((win.pointerup||new Set()).size!==1)bad('G-04a2: the window listeners must not pile up');
+      }catch(e){bad('G-04a2 listener check crashed: '+e.message)}
+      finally{global.document=D;global.addEventListener=ae;global.removeEventListener=re;SN=null}
+    }
     // 10. drawings for the token check outside
     out.svg=[['hub',snHubArt()]];
     for(const id in SN_ING)out.svg.push(['food '+id,SN_ART[id]()]);
@@ -16145,6 +17109,11 @@ run('snack stand G-04a',()=>{
     out.svg.push(['plate empty',snPlateArt([],[])],['plate sandwich',snPlateArt(['bread','cheese','tomato','lettuce','egg','bread'],[])],
       ['plate all',snPlateArt(['bread','cheese','bread','van','choc','mint','apple','berry','cookie','cake','pancake','pancake'],['pale','toast'])]);
     for(const t of [null,{t:1},{t:4},{t:9}])out.svg.push(['pan '+JSON.stringify(t),snPanSVG(t)]);
+    // G-04a2: the café upgrades, the four stages, the plate with toast, a smoothie (before and after blending), ice cubes
+    for(const id in SN_CDECO)out.svg.push(['deco '+id,SN_CDECO[id]()]);
+    for(const stage of [0,1,2,3])out.svg.push(['stand stage '+stage,snStandArt({r:{awn:'b',sign:'star',ctr:'wood',own:OWN_ALL,cafe:Object.fromEntries(SN_CAFE.map(x=>[x[0],1]))},stage,deco:true})]);
+    out.svg.push(['plate toast',snPlateArt(['toast','jam','banana','cream','berries','mallow','honey'],[])],['plate smoothie',snPlateArt(['banana','berries','yogurt'],[])],
+      ['plate blended',snPlateArt(['berries','yogurt','blend','apple','icecube','icecube'],[])],['plate cocoa',snPlateArt(['cocoa','cream','mallow','corn','pie','jelly'],[])]);
     out.pic=GH.pic('snack');
     out.dev=JSON.stringify(SN_DEV);
     out.files=appFiles().map(f=>f[0]).join();
@@ -16162,6 +17131,9 @@ run('snack stand G-04a',()=>{
   if(/(^|[;{\s])(-webkit-)?(backdrop-)?filter\s*:/.test(css))p.push('49-game-snack.css: filter used');
   for(const m of css.matchAll(/transition:([^;}]*)/g))if(/\b(width|height|left|top|background|box-shadow|all)\b/.test(m[1]))p.push('49-game-snack.css: transition on '+m[1]);
   if(/infinite/.test(css))p.push('49-game-snack.css: an endless animation');
+  // G-04a2: the plate takes no touches: a tap on Undo or Serve next to it was taken by the plate's picture while it was redrawn and
+  // bumped (the 1024x600 smoke failures "Undo did not take one food off" and the extra food after it)
+  if(!/\.sn-plate\{[^}]*pointer-events:none/.test(css))p.push('49-game-snack.css: the plate must not take touches (pointer-events:none)');
   const ROLE=m=>new RegExp('--a-'+m+':var\\(--ill-').test(artCss);
   let shapes=0;
   for(const [w,d] of o.svg){
@@ -16185,7 +17157,7 @@ run('snack stand G-04a',()=>{
   notes.push(o.svg.length+' drawings, '+shapes+' shapes, tokens only');
   // 12. plumbing: the games2 part, stopped by view(), the test hook off, the game-time rules, the shared chrome
   if(partOf('65-game-snack.js')!=='games2'||partOf('49-game-snack.css')!=='games2')p.push('Snack Stand must ship in games2.'+BUILD_VER+'.js');
-  if(o.files!=='gen,gen2,bt,games,games2,data')p.push('appFiles() should list games2 after games: '+o.files);
+  if(o.files!=='gen,gen2,bt,games,rally,games2,games3,data')p.push('appFiles() should list games2 after games (and games3 after it, G-BB2): '+o.files);
   if(!/if\(typeof snStop=='function'\)snStop\(\)/.test(rd('js/40-view.js')))p.push('view() must stop the day (snStop)');
   if(o.dev!=='{"fast":1}')p.push('SN_DEV test hook must be off: '+o.dev);
   if(!/if \(ptLeft\(\) <= 0\) \{\s*SFX\.wrong\(\);\s*fb\(ptWhyNot\(\)/.test(src))p.push('a day must not start without game time (ptLeft, ptWhyNot)');
@@ -16535,6 +17507,8 @@ run('Brain Teasers and practice fixes R-01b',()=>{
   return{problems:pre.concat(r.bad),note:r.note.join('; ')};
 });
 
+// G-04b2 (R-03 K1-K3, A1, A5): season 2 (24 more courses: crumbling clouds, clouds that go round, keys and doors), the ghost of the best
+// run, today's twist from the date, costumes bought with stars, the next-goal line, the 2.5D renderer's rules and the music
 run('sky hop G-04b',()=>{
   const p=[],notes=[];
   const rd=f=>fs.readFileSync(path.join(SRC,f),'utf8');
@@ -16569,25 +17543,37 @@ run('sky hop G-04b',()=>{
       if(!/id="ghop" data-g="hop"/.test(hub)||!hub.includes('Hop through the clouds with your pet'))bad(name+': no Sky Hop card on the hub');
       if('hop' in S)bad(name+': showing the hub created S.hop');
       const menu=shot(()=>hopMenu());
-      if(/^ERR/.test(menu)||!/^<div class="top tbar gh-top/.test(menu.trim())||!menu.includes('id="hopgo"')||(menu.match(/data-c="/g)||[]).length!==6||(menu.match(/data-w="/g)||[]).length!==4)bad(name+': menu '+menu.slice(0,90));
+      if(/^ERR/.test(menu)||!/^<div class="top tbar gh-top/.test(menu.trim())||!menu.includes('id="hopgo"')||(menu.match(/data-c="/g)||[]).length!==6||(menu.match(/data-w="/g)||[]).length!==8)bad(name+': menu '+menu.slice(0,90));
+      if(!menu.includes('id="hpgoal"')||!menu.includes('Next goal:</b> Hop to the flag on First Hops.')||!menu.includes('id="hptw"')||(menu.match(/data-wear="/g)||[]).length!==HOP_WEAR.length+1)bad(name+': menu without the next goal, today\'s twist or the costumes');
+      if(!menu.includes('Season 1: Sky Trip')||!menu.includes('Season 2: Sky Remix')||!/of 144 stars found/.test(menu))bad(name+': menu without the two seasons');
       const r=S.hop,mode=(S.grade==null?0:+S.grade)<=2?'one':'free';
       if(!r||r.runs!==0||r.mode!==mode||r.cur!=='m1'||r.world!==0||r.trail!=='none'||JSON.stringify([r.best,r.stars,r.medal])!=='[{},{},{}]')bad(name+': defaults '+JSON.stringify(r));
+      if(JSON.stringify([r.ghost,r.own,r.wear,r.spent,r.bonus])!=='[{},{},"none",0,0]'||r.day.k!==today()||r.day.c!=='m1'||!HOP_TWB[r.day.tw]||r.day.done!==0)bad(name+': G-04b2 defaults '+JSON.stringify(r));
       if(Object.keys(S).filter(k=>k!=='hop'&&k!=='pt').sort().join()!==keys.split(',').filter(k=>k!=='pt').join())bad(name+': opening the game changed other save fields');
       if((menu.match(/data-ok="1"/g)||[]).length!==1)bad(name+': only the first course should be open');
     }
     // 3. damaged saves are read safely
     for(const v of ['x',[],5,null,{runs:-4,best:{m1:'40000',zz:5,m2:-3,m3:'abc'},stars:{m1:99,m2:'2',p1:-1},medal:{m1:7},mode:'fast',trail:'rainbow',cur:'r6',world:9},
-      {best:[]},{stars:'x'},{runs:1e99},{cur:'m2',world:2}]){
+      {best:[]},{stars:'x'},{runs:1e99},{cur:'m2',world:2},{cur:'c6',world:7,best:{c6:5000}},
+      {best:{m1:40000},ghost:{m1:'.AAAAA!!',m2:'.AAAAA',zz:'.AAAAA'},own:{cape:1,zz:1,jet:0},wear:'jet',spent:-5,bonus:'x',day:{k:5,c:'zz',tw:'moon'}},
+      {ghost:[],own:'x',wear:5,spent:1e99,day:[]},{day:{k:'2026-1-1',c:'m1',tw:'nope',done:1}}]){
       S.hop=v;
       const r=hopS();
+      for(const id in r.ghost)if(!r.best[id]||!hopGhostIn(r.ghost[id]))bad('damaged save: a ghost kept for '+id);
+      for(const id in r.own)if(!HOP_WEARB[id]||r.own[id]!==1)bad('damaged save: costume '+id);
+      if(r.wear!=='none'&&!r.own[r.wear])bad('damaged save: wearing '+r.wear+' without having it');
+      if(!(Number.isInteger(r.spent)&&r.spent>=0&&Number.isInteger(r.bonus)&&r.bonus>=0)||!(hopWallet(r)>=0))bad('damaged save: stars spent '+r.spent+', bonus '+r.bonus);
+      if(r.day.k!=null&&(!HOP_BY[r.day.c]||!HOP_TWB[r.day.tw]))bad('damaged save: today\'s twist '+JSON.stringify(r.day));
       if(!(r.runs>=0&&Number.isInteger(r.runs)))bad('damaged save '+JSON.stringify(v)+': runs '+r.runs);
       for(const [k,lo,hi] of [['best',1,36e5],['stars',1,7],['medal',1,3]])for(const id in r[k])if(!HOP_BY[id]||!(r[k][id]>=lo&&r[k][id]<=hi))bad('damaged save: '+k+' '+id+'='+r[k][id]);
       if(!['one','free'].includes(r.mode)||r.trail!=='none'||!hopOpen(HOP_BY[r.cur],r)||!hopOpen(HOP_COURSES[r.world*6],r))bad('damaged save '+JSON.stringify(v)+': '+JSON.stringify(r));
     }
     // 4. the courses: 24 in 4 worlds, each with 3 stars, checkpoints every few seconds, a flag; what each world adds
-    if(HOP_COURSES.length!==24||HOP_WORLDS.length!==4)bad('24 courses in 4 worlds expected');
-    if(new Set(HOP_COURSES.map(c=>c.id)).size!==24||new Set(HOP_COURSES.map(c=>c.name)).size!==24)bad('course ids and names must be unique');
-    const feat={springs:[],winds:[],lifts:[],movers:[],gates:[]};
+    if(HOP_COURSES.length!==48||HOP_WORLDS.length!==8)bad('48 courses in 8 worlds expected (season 2, G-04b2)');
+    if(new Set(HOP_COURSES.map(c=>c.id)).size!==48||new Set(HOP_COURSES.map(c=>c.name)).size!==48)bad('course ids and names must be unique');
+    if(HOP_WORLDS.map(w=>!!w.s2).join()!=='false,false,false,false,true,true,true,true'||JSON.stringify(HOP_SEASONS.map(x=>x[0]))!=='[0,4]')bad('worlds 5-8 are season 2');
+    for(const W of HOP_WORLDS)if(!HOP_SCENE[W.id]||!HOP_TUNE[W.id]||W.grad.length<2||W.cloud.length!==3)bad(W.id+': scenery, tune, sky and cloud colours');
+    const feat={springs:[],winds:[],lifts:[],movers:[],gates:[],crumble:[],round:[],keys:[]};
     for(const c of HOP_COURSES){
       const C=hopBuild(c.id),w=c.id+' ';
       if(c.w!==Math.floor(c.i/6))bad(w+'world');
@@ -16599,10 +17585,23 @@ run('sky hop G-04b',()=>{
       if(C.goal&&C.goal.x-C.cps[C.cps.length-1].x>60)bad(w+'the last checkpoint is far from the flag');
       if(C.dj!==(c.w>0))bad(w+'the second hop is for Windy Peaks on');
       if(c.gold<40||c.gold>90)bad(w+'gold target '+c.gold+' s (40-90)');
-      for(const k in feat)feat[k][c.w]=(feat[k][c.w]||0)+C[k].length;
-      for(const g of C.gates)if(!C.pads.some(d=>d.g===C.gates.indexOf(g)))bad(w+'a gate without a switch');
+      const cnt={crumble:C.floors.filter(f=>f.k=='q').length,round:C.movers.filter(m=>m.r).length,movers:C.movers.filter(m=>!m.r).length};
+      for(const k in feat)feat[k][c.w]=(feat[k][c.w]||0)+(k in cnt?cnt[k]:C[k].length);
+      C.gates.forEach((g,gi)=>{
+        const pad=C.pads.some(d=>d.g===gi),key=C.keys.some(q=>q.g===gi);
+        if(g.door?!key||pad:!pad||key)bad(w+'gate '+gi+': a gate needs its switch, a door its key');
+        const k=C.keys.find(q=>q.g===gi);
+        if(k&&!(k.x<g.x0&&k.x>g.back.x))bad(w+'the key of door '+gi+' must be between where the door bounces you back to and the door');
+      });
+      for(const q of C.cps){const f=C.floors.find(f=>q.x>=f.x0&&q.x<=f.x1&&Math.abs(f.y-q.y)<.01);if(!f||f.k=='q')bad(w+'a checkpoint must stand on a cloud that stays: '+q.x)}
+      for(const m of C.movers)if(m.r&&!(m.r>=1&&m.r<=3&&m.T>=3))bad(w+'a round cloud with radius '+m.r);
       if(C.floors.some(f=>!(f.x1>f.x0))||C.spk.some(q=>!isFinite(q.x+q.y)))bad(w+'bad geometry');
     }
+    for(let i=0;i<4;i++)if(feat.crumble[i]||feat.round[i]||feat.keys[i])bad('season 1 has no crumbling or round clouds or keys '+JSON.stringify(feat));
+    if(!feat.crumble[4]||feat.round[4]||feat.keys[4])bad('Sunset Isles adds clouds that crumble '+JSON.stringify(feat));
+    if(!feat.round[5]||feat.keys[5])bad('Whirly Heights adds clouds that go round '+JSON.stringify(feat));
+    if(!feat.keys[6])bad('Aurora Night adds keys and doors');
+    if(!feat.crumble[7]||!feat.round[7]||!feat.keys[7]||!feat.gates[7]||!feat.movers[7])bad('Star Castle has all the tricks '+JSON.stringify(feat));
     if(!feat.springs[0]||feat.winds[0]||feat.lifts[0]||feat.movers[0]||feat.gates[0])bad('Cloud Meadow: springs only '+JSON.stringify(feat));
     if(!feat.winds[1]||!feat.lifts[1]||feat.movers[1]||feat.gates[1])bad('Windy Peaks adds wind '+JSON.stringify(feat));
     if(!feat.movers[2]||feat.gates[2])bad('Starry Night adds kite clouds '+JSON.stringify(feat));
@@ -16610,19 +17609,20 @@ run('sky hop G-04b',()=>{
     // 5. bots play every course: one-touch (a press is the only input) with no falls, at or under the gold target; free move within 90 s;
     //    and each star is reached by a bot from the checkpoint before it (free move). A beam search over the input every 4 steps (1/15 s).
     const OPT={one:[{jump:false},{jump:true}],free:[[1,0],[1,1],[0,0],[0,1],[-1,0],[-1,1]].map(([d,j])=>({dir:d,jump:!!j}))};
-    const keyOf=n=>{const q=n.p;return Math.round(q.x*6)+','+Math.round(q.y*6)+','+Math.round(q.vx*2)+','+Math.round(q.vy)+','+q.gr+q.jl+n.stars+'.'+n.gates+n.wait+q.held};
+    const keyOf=n=>{const q=n.p;return Math.round(q.x*6)+','+Math.round(q.y*6)+','+Math.round(q.vx*2)+','+Math.round(q.vy)+','+q.gr+q.jl+n.stars+'.'+n.gates+n.wait+q.held+Object.keys(n.crum).join('')};
     const keep=(all,B,score)=>{
       all.sort((a,b)=>b.sc-a.sc);
       const beam=all.slice(0,B>>1),bins=new Map();
       for(const s of all.slice(B>>1)){const k=Math.floor(s.p.x)+','+Math.floor(s.p.y)+','+(s.p.gr?'g':Math.round(s.p.vy/4));if(!bins.has(k))bins.set(k,s)}
       return beam.concat([...bins.values()].slice(0,B));
     };
-    const bot=(id,mode,B)=>{
-      let beam=[hopNew(id,{mode})];
+    const bot=(id,mode,B,tw)=>{
+      let beam=[hopNew(id,{mode,tw})];
       for(let L=0;L<1400;L++){
         const next=new Map();
         for(const s of beam)for(const inp of OPT[mode]){
           const n=hopClone(s);
+          n.h=(s.h||'')+OPT[mode].indexOf(inp); // the presses so far (the ghost check replays them)
           for(let k=0;k<4&&!n.done;k++){hopStep(n,inp);if(n.wait=='offer')hopHelp(n,true)}
           n.sc=(n.anim?n.anim.x1:n.p.x)-n.falls*200-n.bumps*6+(n.done?1e6-n.t*100:0);
           const k=keyOf(n),o=next.get(k);
@@ -16675,12 +17675,25 @@ run('sky hop G-04b',()=>{
       for(let k=0;k<3;k++){if(reach(c.id,k))reached++;else bad(c.id+': star '+(k+1)+' cannot be reached')}
     }
     const mm=a=>a.length?Math.min(...a).toFixed(0)+'-'+Math.max(...a).toFixed(0)+' s':'-';
-    out.note.push('bots: one-touch '+times.one.length+'/24 courses, no falls, '+mm(times.one)+'; free move '+times.free.length+'/24, '+mm(times.free)+
-      (hard?' ('+hard+' with a fall at a kite cloud)':'')+'; '+reached+'/72 stars reached');
+    out.note.push('bots: one-touch '+times.one.length+'/48 courses, no falls, '+mm(times.one)+'; free move '+times.free.length+'/48, '+mm(times.free)+
+      (hard?' ('+hard+' with a fall)':'')+'; '+reached+'/144 stars reached');
+    // today's twists that change how the pet moves (Moon hops, Zoomy shoes): the one-touch bot reaches the flag with them on every third course
+    //    (all 48 passed with both while G-04b2 was built; this keeps the check's time down)
+    const tws={};
+    for(const tw of ['moon','zoom']){
+      tws[tw]=[];
+      for(const c of HOP_COURSES.filter(c=>c.i%3==0)){
+        let a=bot(c.id,'one',24,tw);
+        if(!a||a.falls)a=bot(c.id,'one',48,tw);
+        if(!a||a.t>95)bad(c.id+': the one-touch bot did not reach the flag with the twist '+tw);
+        else tws[tw].push(a.t);
+      }
+    }
+    out.note.push('twists: Moon hops '+tws.moon.length+'/16 '+mm(tws.moon)+', Zoomy shoes '+tws.zoom.length+'/16 '+mm(tws.zoom));
     // 6. deterministic: the same presses give the same course, another plan another one
     const play=(id,mode,seed)=>{const st=hopNew(id,{mode});let x=seed;for(let i=0;i<60*40&&!st.done;i++){x=(x*1103515245+12345)>>>0;hopStep(st,{jump:(x>>16)%9<2,dir:(x>>20)%5?1:-1});if(st.wait=='offer')hopHelp(st,(x>>8)%2==0)}
-      return JSON.stringify([st.t.toFixed(4),st.p.x.toFixed(4),st.p.y.toFixed(4),st.falls,st.bumps,st.stars,st.spk,st.cp,st.gates,st.helped])};
-    for(const [id,m] of [['m3','one'],['p2','free'],['n4','one'],['r5','free']]){
+      return JSON.stringify([st.t.toFixed(4),st.p.x.toFixed(4),st.p.y.toFixed(4),st.falls,st.bumps,st.stars,st.spk,st.cp,st.gates,st.helped,st.crum])};
+    for(const [id,m] of [['m3','one'],['p2','free'],['n4','one'],['r5','free'],['q4','one'],['t3','free'],['a2','one'],['c5','free']]){
       if(play(id,m,7)!==play(id,m,7))bad(id+': not deterministic');
       if(play(id,m,7)===play(id,m,8))bad(id+': another plan gave the same run');
     }
@@ -16746,15 +17759,141 @@ run('sky hop G-04b',()=>{
       r2.stars={m1:7,m2:7,m3:7};r2.trail='pink';
       if(hopS().trail!=='pink')bad('a trail with enough stars stays on');
       const hub=shot(()=>GH.hub());
-      if(!/<b>9<\/b> of 72 stars/.test(hub))bad('the hub card should show the stars found');
+      if(!/<b>9<\/b> of 144 stars/.test(hub)||!/<b>1<\/b> of 48/.test(hub))bad('the hub card should show the stars found and the courses');
+    }
+    // 9b. G-04b2 mechanics: a crumbling cloud, a cloud that goes round, keys and doors
+    {
+      const C=hopBuild('q2'),j=C.floors.findIndex(f=>f.k=='q'),f=C.floors[j],st=hopNew('q2',{mode:'free'});
+      Object.assign(st.p,{x:(f.x0+f.x1)/2,y:f.y,gr:true});st.wait=null;
+      let crum=0,fellAt=-1;
+      for(let i=0;i<60*2&&fellAt<0;i++){hopStep(st,{});if(st.ev.some(e=>e[0]=='crumble'))crum++;st.ev.length=0;if(!st.p.gr&&st.p.y<f.y-.2)fellAt=st.t}
+      if(crum!==1||!(fellAt>=HOP_CR.FALL&&fellAt<HOP_CR.FALL+.3))bad('standing on a crumbling cloud: it should crumble once and drop the pet after '+HOP_CR.FALL+' s: '+crum+' '+fellAt);
+      if(hopThere(st,j))bad('a crumbled cloud should be gone for a while');
+      const s2=hopClone(st);s2.t=st.crum[j]+HOP_CR.BACK+.01;
+      if(!hopThere(s2,j))bad('a crumbled cloud should come back');
+      hopStep(s2,{});if(s2.crum[j]!=null&&!(s2.p.gr&&s2.p.on===j))bad('a cloud that came back forgets that it crumbled');
+      const m=hopBuild('t1').movers.find(q=>q.r),a=hopMover(m,0),b=hopMover(m,m.T/2),c=hopMover(m,m.T/4),d=hopMover(m,m.T);
+      if(Math.abs(a.x-m.x)>1e-9||Math.abs(a.y-m.y)>1e-9||Math.abs(b.x-(m.x+2*m.r))>1e-9||Math.abs(b.y-m.y)>1e-9||Math.abs(c.y-(m.y+m.r))>1e-9||Math.abs(d.x-m.x)>1e-9)bad('a round cloud should start at its floor, go over the top to the far side and come back');
+      // a door: running past the key is fine, skipping it bounces back; the key opens the door
+      const K=hopBuild('a1'),g=K.gates[0],key=K.keys.find(q=>q.g===0);
+      const s3=hopNew('a1',{mode:'free'});Object.assign(s3.p,{x:g.x0-1.4,y:g.y0,gr:true});s3.wait=null;
+      let bounced=false;for(let i=0;i<60;i++){hopStep(s3,{dir:1});if(s3.ev.some(e=>e[0]=='gate'))bounced=true;s3.ev.length=0}
+      if(!bounced||s3.p.x>g.x0)bad('a closed door should bounce the pet back');
+      const s4=hopNew('a1',{mode:'free'});Object.assign(s4.p,{x:key.x,y:key.y-.6,gr:false,vy:0});s4.wait=null;hopStep(s4,{});
+      if(!(s4.gates&1)||!s4.ev.some(e=>e[0]=='key'))bad('touching the key should open the door');
+      Object.assign(s4.p,{x:g.x0-1.4,y:g.y0,gr:true,vy:0});for(let i=0;i<40;i++)hopStep(s4,{dir:1});
+      if(s4.p.x<g.x1||s4.bumps)bad('an open door should let the pet through');
+    }
+    // 9c. season 2 opens in order, after the last course of season 1; the next goal says so
+    {
+      S.hop={};const r=hopS();
+      for(const c of HOP_COURSES.slice(0,23))r.best[c.id]=50000;
+      if(hopOpen(HOP_BY.q1,r)||!hopOpen(HOP_BY.r6,r))bad('season 2 must wait for the last course of season 1');
+      if(hopGoal(r)!=='Finish Over the Rainbow to start Season 2!')bad('next goal before season 2: '+hopGoal(r));
+      if(!/data-w="4"[^>]*>/.test(shot(()=>hopMenu()))||!shot(()=>hopMenu(4)).includes('hp-world lock'))bad('season 2 worlds should show, locked');
+      const a=hopRecord(r,HOP_BY.r6,{t:60,stars:0});
+      if(!a.opening||a.next!==HOP_BY.q1||!hopOpen(HOP_BY.q1,r)||hopOpen(HOP_BY.q2,r)||r.cur!=='q1')bad('finishing Over the Rainbow opens Golden Hour and only it');
+      if(hopGoal(r)!=='Finish Golden Hour to open Crumbly Clouds.')bad('next goal in season 2: '+hopGoal(r));
+      for(const c of HOP_COURSES.slice(24))if(c.i>24&&hopOpen(c,r))bad(c.id+' open too early');
+      for(const c of HOP_COURSES.slice(24))r.best[c.id]=40000;
+      for(const c of HOP_COURSES)r.stars[c.id]=7;
+      if(!/^Win gold on |You have \d+ stars: get the /.test(hopGoal(r)))bad('next goal when every course is done: '+hopGoal(r));
+      for(const c of HOP_COURSES)r.medal[c.id]=3;
+      r.own={};for(const w of HOP_WEAR)r.own[w[0]]=1;
+      if(!/^Race your ghost on /.test(hopGoal(r)))bad('next goal at the very end: '+hopGoal(r));
+    }
+    // 9d. the ghost: the best run, two letters every 0.2 s; it follows the run, a slower run keeps it, a damaged one is dropped
+    {
+      S.hop={};const r=hopS(),c=HOP_BY.m2;
+      // the one-touch bot's run on Puffy Path, replayed press by press and recorded as it goes
+      const b0=bot('m2','one',30),s1=hopNew('m2',{mode:'one'}),R1=hopRecNew(),P1=[];hopRec(R1,s1);P1.push([s1.p.x,s1.p.y]);
+      for(const ch of (b0&&b0.h)||'')for(let k=0;k<4&&!s1.done;k++){
+        hopStep(s1,OPT.one[+ch]);if(s1.wait=='offer')hopHelp(s1,true);
+        hopRec(R1,s1);if(R1.k%12==1)P1.push([s1.p.x,s1.p.y]);
+      }
+      if(!b0||!s1.done||Math.abs(s1.t-b0.t)>1e-9)bad('replaying the bot\'s presses should give the same run');
+      const G=hopGhostIn(R1.s);
+      if(!G||G.x.length!==P1.length)bad('the ghost should have one place every 0.2 s: '+(G&&G.x.length)+' / '+P1.length);
+      else{
+        let worst=0;for(let i=0;i<P1.length;i++)worst=Math.max(worst,Math.abs(G.x[i]-P1[i][0]),Math.abs(G.y[i]-P1[i][1]));
+        if(worst>.07)bad('the ghost is '+worst.toFixed(3)+' tiles away from the run');
+        const at=hopGhostAt(G,1.1),u=.5;
+        if(!at||Math.abs(at.x-(G.x[5]+(G.x[6]-G.x[5])*u))>1e-9)bad('the ghost between two places');
+        if(hopGhostAt(G,G.x.length*.2+1))bad('the ghost stops after its run');
+      }
+      if(R1.s.length>HOP_GMAX)bad('the ghost text is too long: '+R1.s.length);
+      if(s1.done){
+        const a=hopRecord(r,c,s1,R1);
+        if(!a.rec||r.ghost.m2!==R1.s)bad('the first finish keeps its ghost');
+        const slow=Object.assign(hopClone(s1),{t:s1.t+5}),b=hopRecord(r,c,slow,hopRecNew());
+        if(b.rec||r.ghost.m2!==R1.s)bad('a slower run keeps the best ghost');
+        const tw=Object.assign(hopClone(s1),{t:s1.t-5,tw:'moon'});hopRecord(r,c,tw,R1);
+        if(r.best.m2!==Math.round(s1.t*1000))bad('a twist run is not a course record');
+        save();loadSave(store['starschool-v2']);migrate();
+        if(hopS().ghost.m2!==R1.s)bad('the ghost is saved');
+      }else bad('the ghost check run did not reach the flag');
+      for(const t of ['','x','.AAA','.AAAAA!','AAAA','.AAAAAA'+'A'.repeat(2000),'.AAAAAA!'])if(hopGhostIn(t))bad('a damaged ghost text should be refused: '+t.slice(0,12));
+    }
+    // 9e. costumes: a fixed list with prices, bought with stars to spend (found + gold medals + twist bonus - spent), never below 0
+    {
+      if(HOP_WEAR.length<8||new Set(HOP_WEAR.map(w=>w[0])).size!==HOP_WEAR.length||HOP_WEAR.some((w,i)=>i&&w[2]<=HOP_WEAR[i-1][2])||HOP_WEAR.some(w=>!HOP_COSTUME[w[0]]||!w[1]))bad('costumes: a fixed list, prices going up, each drawn');
+      S.hop={};const r=hopS();
+      r.stars={m1:7,m2:3};r.medal={m1:3,m2:2};r.bonus=2;
+      if(hopWallet(r)!==8)bad('stars to spend: 5 found + 1 gold + 2 bonus = 8, got '+hopWallet(r));
+      if(hopBuy(r,'cape')!==true||r.spent!==8||!r.own.cape||r.wear!=='cape'||hopWallet(r)!==0)bad('buying the Hero Cape for 8 '+JSON.stringify(r));
+      if(hopBuy(r,'leaf')||hopBuy(r,'cape')||hopBuy(r,'zz')||r.spent!==8)bad('no buying without enough stars, twice, or what is not on the list');
+      if(hopStarsAll(r)!==5)bad('buying never takes a found star away');
+      let x=7;
+      for(let i=0;i<3000;i++){
+        x=(x*1103515245+12345)>>>0;
+        const w=HOP_WEAR[(x>>>8)%HOP_WEAR.length],op=(x>>>4)%4;
+        if(op==0)r.bonus+=(x>>>12)%5;else if(op==1)hopBuy(r,w[0]);else if(op==2&&r.own[w[0]])r.wear=w[0];else{const id='p'+(1+(x>>>16)%6);r.stars[id]=(r.stars[id]||0)|(x>>>20)%8}
+        if(hopWallet(r)<0||hopStarsAll(r)+hopGolds(r)+r.bonus-r.spent<0)bad('stars to spend went below 0');
+      }
+      if(Object.keys(r.own).length<3)bad('the shop steps bought too little to mean anything');
+      save();loadSave(store['starschool-v2']);migrate();
+      const r2=hopS();
+      if(Object.keys(r2.own).sort().join()!==Object.keys(r.own).sort().join()||r2.spent!==r.spent||r2.bonus!==r.bonus)bad('costumes are saved');
+      const m=shot(()=>hopMenu());
+      if(!m.includes('data-wear="'+r2.wear+'" aria-pressed="true"')||!new RegExp('<b>'+hopWallet(r2)+'</b> stars to spend').test(m))bad('the menu shows the costume worn and the stars to spend');
+    }
+    // 9f. today's twist: from the date, the same all day, nothing lost on a missed day, the bonus once a day
+    {
+      const days=[];for(let i=1;i<=90;i++)days.push('2026-'+(1+(i>>5))+'-'+(1+i%28));
+      const tw=new Set(),cs=new Set();
+      for(const d of days){
+        const a=hopDaily(d,30),b=hopDaily(d,30);
+        if(JSON.stringify(a)!==JSON.stringify(b))bad('the twist must be the same for the same day');
+        if(HOP_BY[a.c].i>=30||!HOP_TWB[a.tw])bad('the twist course must be one already finished: '+JSON.stringify(a));
+        tw.add(a.tw);cs.add(a.c);
+        if(hopDaily(d,0).c!=='m1')bad('before any finish the twist course is the first');
+      }
+      if(tw.size!==HOP_TW.length||cs.size<12)bad('twists over 90 days: '+tw.size+' rules, '+cs.size+' courses');
+      S.hop={};const r=hopS();r.best.m1=50000;r.best.m2=50000;
+      const d0=hopToday(r);
+      r.best.m3=50000;r.best.m4=50000;
+      if(JSON.stringify(hopToday(r))!==JSON.stringify(d0))bad('finishing courses must not change today\'s twist');
+      const fin=(tw,spk)=>{const st=Object.assign(hopNew(d0.c,{tw}),{t:50,done:true,spk:spk==null?999:spk});return hopRecord(r,HOP_BY[d0.c],st)};
+      if(d0.tw=='spark'&&fin('spark',1).bonus)bad('Sparkle hunt needs its sparkles');
+      const a=fin(d0.tw),b=fin(d0.tw);
+      if(a.bonus!==2||b.bonus!==0||r.bonus!==2||!r.day.done)bad('the twist bonus is 2 stars once a day: '+JSON.stringify([a.bonus,b.bonus,r.bonus]));
+      if(fin(HOP_TW.find(t=>t[0]!=d0.tw)[0]).bonus)bad('another rule is not today\'s twist');
+      r.day.k='2000-1-1';
+      const d1=hopToday(r);
+      if(d1.k!==today()||d1.done||r.bonus!==2)bad('a new day: a new twist, nothing lost');
+      if(!(hopTwNeed('spark','m1')>=10&&hopTwNeed('spark','m1')<=hopBuild('m1').spk.length)||hopTwNeed('moon','m1'))bad('Sparkle hunt asks for about half the sparkles');
+      if(!src.includes('Nothing is lost on a')&&!/nothing lost/i.test(src))bad('the twist must say nothing is lost on a missed day');
     }
     // 10. drawings for the token check outside
     out.svg=[['hub',hopHubArt()]];
     for(const k in HOP_ART)out.svg.push(['art '+k,typeof HOP_ART[k]=='function'&&HOP_ART[k].length?HOP_ART[k](0)+HOP_ART[k](1):HOP_ART[k]()]);
     for(const W of HOP_WORLDS){
-      out.svg.push(['cloud '+W.id,hopCloudArt(5,1.2,W.cloud)],['cloud tall '+W.id,hopCloudArt(2,4.2,W.cloud)],['sky '+W.id,HOP_SKY[W.id]()],
-        ['far '+W.id,HOP_BACK[W.id].far()],['near '+W.id,HOP_BACK[W.id].near()],['world '+W.id,hopWorldPic(W)]);
+      const L=HOP_SCENE[W.id];
+      out.svg.push(['cloud '+W.id,hopCloudArt(5,1.2,W.cloud)],['cloud tall '+W.id,hopCloudArt(2,4.2,W.cloud)],['cloud crumble '+W.id,hopCloudArt(3,1.2,W.cloud,1)],
+        ['sky '+W.id,L.sky()],['bd '+W.id,L.bd()],['far '+W.id,L.far()],['near '+W.id,L.near()],['bank '+W.id,L.bank()],['world '+W.id,hopWorldPic(W)]);
     }
+    for(const k in HOP_DECO)out.svg.push([(/^(bird|shadow|glint|drift)/.test(k)?'sky deco ':'art ')+k,HOP_DECO[k].length?HOP_DECO[k](0)+HOP_DECO[k](1):HOP_DECO[k]()]);
+    for(const k in HOP_COSTUME)out.svg.push(['costume '+k,HOP_COSTUME[k]()],['shop '+k,hopShopPic(k)]);
     out.svg.push(['bridge',hopBridgeArt(6,false)],['rainbow bridge',hopBridgeArt(7,true)]);
     out.pic=GH.pic('hop');
     out.dev=JSON.stringify(HOP_DEV);
@@ -16793,6 +17932,20 @@ run('sky hop G-04b',()=>{
   }
   if(!/^<svg class="art gh-art"/.test(o.pic)||!/var\(--a-k\)" opacity="0?\.1\d?"/.test(o.pic))p.push('hub picture: not an svg.art with a soft ink shadow');
   notes.push(o.svg.length+' drawings, '+shapes+' shapes, tokens only');
+  // 11b. the 2.5D renderer (R-03 4.3): cached pictures only, nothing drawn path by path each frame, at most 1.2 M pixels, an adaptive
+  //      render scale; the music only with sound and music on and never in calm mode; frame time itself is measured by smoke.js
+  {
+    const fn=n=>{const i=src.indexOf('function '+n+'('),j=src.indexOf('\n}\n',i);return i<0?'':src.slice(i,j)};
+    const draw=fn('hopDraw');
+    if(!draw)p.push('hopDraw not found');
+    for(const w of ['shadowBlur','filter','createLinearGradient','createRadialGradient','.arc(','.fill()','.stroke()','getImageData','fillText','new Image','createElement'])
+      if(draw.includes(w))p.push('hopDraw draws '+w+' every frame: use a cached picture');
+    if((draw.match(/hopTile\(/g)||[]).length>3)p.push('more than three band layers copied a frame');
+    if(!/Math\.sqrt\(1\.2e6 \/ \(cw \* ch\)\)/.test(src)||!/HP\.q = Math\.max\(\.6, HP\.q - \.15\)/.test(src))p.push('the pixel cap and the adaptive render scale');
+    const mus=fn('hopMusic');
+    if(!/!S\.sound \|\| !S\.music \|\| hopCalm\(\)/.test(mus)||/Math\.random/.test(mus))p.push('the music: only with sound and music on, never in calm mode, nothing random');
+    if(/\bstreak/i.test(src.replace(/no streaks?|nothing counts days in a row/gi,'')))p.push('Sky Hop must not count streaks');
+  }
   // 12. plumbing: the games2 part, stopped by view(), the test hook off, the game-time rules, the shared chrome, no Math.random
   if(partOf('67-game-skyhop.js')!=='games2'||partOf('49-game-skyhop.css')!=='games2')p.push('Sky Hop must ship in games2.'+BUILD_VER+'.js');
   if(!/if\(typeof hopStop=='function'\)hopStop\(\)/.test(rd('js/40-view.js')))p.push('view() must stop the course (hopStop)');
@@ -16888,7 +18041,7 @@ run('recorded Spanish audio ES-AUDIO',()=>{
   // 4. the manifest is in the data part, not in index.html; sw.js precaches every file in its own cache, which activate keeps
   const html=rd('index.html'),data=rd(DATA_FILE),sw=rd('sw.js');
   if(!fs.existsSync(path.join(SRC,'data','d-es-audio.js'))||!data.includes('const ES_AUDIO=')||html.includes('const ES_AUDIO='))p.push('the manifest must be src/data/d-es-audio.js, in '+DATA_FILE+' and not in index.html');
-  const af=((sw.match(/const AF=\[([^\]]*)\]/)||[])[1]||'').split(',').filter(Boolean).map(s=>s.replace(/'/g,''));
+  const af=((sw.match(/const AF=\[([^\]]*)\]/)||[])[1]||'').split(',').filter(Boolean).map(s=>s.replace(/'/g,'')).filter(u=>u.startsWith('./'+E.DIR)); // EN-PRAISE: audio/en follows
   if(JSON.stringify(af)!==JSON.stringify(files.map(f=>'./'+E.DIR+f)))p.push('sw.js AF does not list exactly the '+files.length+' recordings ('+af.length+')');
   if(!/const A='starschool-audio'/.test(sw)||!/k!==C&&k!==A/.test(sw)||!/caches\.open\(A\)/.test(sw))p.push('sw.js: no audio cache kept across activate');
   if(/audio\/es\/[0-9a-f]/.test(html))p.push('index.html loads a recording at start');
@@ -16940,7 +18093,106 @@ run('recorded Spanish audio ES-AUDIO',()=>{
   return{problems:p,note:need.size+' lines (Leo '+nv.leo+', Eve '+nv.eve+'), '+files.length+' files, '+Math.round(total/1000)+' KB (budget '+AUDIO_FAIL/1e6+' MB), largest '+Math.round(big/100)/10+' KB'+(total>AUDIO_WARN?'  WARN: over '+AUDIO_WARN:'')};
 });
 
+// ---- EN-PRAISE: the fixed English encouragement lines are recorded in six voices (tools/en-audio.js); say() plays them in turn ----
+run('recorded encouragement EN-PRAISE',()=>{
+  const p=[],EA=require('./en-audio.js'),E=require('./es-audio.js'),vm=require('vm'),rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8'),dir=path.join(ROOT,EA.DIR);
+  // 1. every collected line has a manifest entry with its kind and one file per voice (the hash of its text and voice), each a mono
+  //    Ogg Opus file of a sensible size; the manifest has no other line, the folder no other file
+  const ctx=E.loadApp(),lines=EA.collect(ctx),M=vm.runInContext('EN_AUDIO',ctx),man=M.lines,files=fs.existsSync(dir)?fs.readdirSync(dir).sort():[];
+  if(M.dir!==EA.DIR||M.ext!==EA.EXT)p.push('EN_AUDIO dir/ext '+M.dir+' '+M.ext);
+  if(JSON.stringify(M.voices)!==JSON.stringify(EA.VOICES.map(v=>[v[0],v[1]])))p.push('EN_AUDIO voices '+JSON.stringify(M.voices));
+  const nf=M.voices.filter(v=>v[1]=='f').length,nm=M.voices.filter(v=>v[1]=='m').length;
+  if(M.voices.length!==6||nf!==3||nm!==3||new Set(M.voices.map(v=>v[0])).size!==6)p.push('wants 3 female and 3 male voices: '+JSON.stringify(M.voices));
+  let total=0,big=0;const used=new Set();
+  for(const [k,o] of lines){const m=man[k];
+    if(!m){p.push('no recording for "'+k+'" ('+o.from[0]+'): run node tools/en-audio.js');continue}
+    if(m[0]!==o.kind)p.push('"'+k+'" has kind '+m[0]+', the list says '+o.kind);
+    if(!Array.isArray(m[1])||m[1].length!==6)p.push('"'+k+'" has '+(m[1]||[]).length+' files, wants 6');
+    M.voices.forEach(([v],i)=>{const f=(m[1]||[])[i];if(f!==EA.fileOf(k,v))p.push('"'+k+'" '+v+': file '+f+' is not the hash of its text and voice');
+      else if(!files.includes(f+EA.EXT))p.push('"'+k+'" '+v+': '+EA.DIR+f+EA.EXT+' is missing');else used.add(f+EA.EXT)});}
+  for(const k in man)if(!lines.has(k))p.push('the manifest has a line the list does not: '+k);
+  for(const f of files){const b=fs.readFileSync(path.join(dir,f));total+=b.length;big=Math.max(big,b.length);
+    if(!used.has(f))p.push(EA.DIR+f+' is not in the manifest');
+    const h=b.indexOf('OpusHead');
+    if(b.slice(0,4).toString()!=='OggS'||h<0||h>80||b[h+9]!==1)p.push(EA.DIR+f+' is not mono Ogg Opus');
+    if(b.length<600||b.length>AUDIO_FILE_FAIL)p.push(EA.DIR+f+' is '+b.length+' bytes (600 to '+AUDIO_FILE_FAIL+')');}
+  const esDir=path.join(ROOT,E.DIR),esBytes=fs.existsSync(esDir)?fs.readdirSync(esDir).reduce((s,f)=>s+fs.statSync(path.join(esDir,f)).size,0):0;
+  if(esBytes+total>AUDIO_FAIL)p.push('the recordings (Spanish '+esBytes+' + English '+total+' bytes) are over the '+AUDIO_FAIL+' limit');
+  // 2. the lines are the app's: the right-answer list is CHEERS (PRAISE + PET_YAY), the misses PET_OOPS, and every other line is in
+  //    the source as written (a line changed in the app needs a new recording); kinds are the grown-up clip kinds or ''
+  const R=t=>vm.runInContext(t,ctx),src=fs.readdirSync(path.join(SRC,'js')).map(f=>fs.readFileSync(path.join(SRC,'js',f),'utf8')).join('\n');
+  for(const t of [...R('PRAISE'),...R('PET_YAY'),...R('PET_OOPS')])if(!man[E.esKey(t)])p.push('not recorded: "'+t+'"');
+  for(const [k,o] of lines)if(o.lit&&!src.includes(k))p.push('"'+k+'" ('+o.from[0]+') is no longer in src/js');
+  for(const k in man)if(!['cheer','oops','done',''].includes(man[k][0]))p.push('"'+k+'": kind '+man[k][0]);
+  for(const k of ['Great job!','Way to go!','Yay!','Almost!','Try again!','You got 7 stars!','5 in a row!','New record!','Perfect!'])if(!man[k])p.push('not recorded: '+k);
+  // 3. the build: the manifest is in the data file, not index.html; sw.js precaches every English file in the audio cache too
+  const html=rd('index.html'),data=rd(DATA_FILE),sw=rd('sw.js');
+  if(!fs.existsSync(path.join(SRC,'data','d-en-audio.js'))||!data.includes('const EN_AUDIO=')||html.includes('const EN_AUDIO='))p.push('the manifest must be src/data/d-en-audio.js, in '+DATA_FILE+' and not in index.html');
+  const af=((sw.match(/const AF=\[([^\]]*)\]/)||[])[1]||'').split(',').filter(Boolean).map(s=>s.replace(/'/g,'')).filter(u=>u.startsWith('./'+EA.DIR));
+  if(JSON.stringify(af)!==JSON.stringify(files.map(f=>'./'+EA.DIR+f)))p.push('sw.js AF does not list exactly the '+files.length+' English recordings ('+af.length+')');
+  if(!/audio\\\/e\[ns\]/.test(sw))p.push('sw.js: a Range request for an English recording is not answered from the cache');
+  if(/audio\/en\/[0-9a-f]/.test(html))p.push('index.html loads a recording at start');
+  // 4. say() in a stand-in browser
+  const log=[],audios=[],utt=[];let rnd=null;
+  class FakeAudio{constructor(u){this.dataset={};this.paused=true;if(u)this.src=u;audios.push(this)}canPlayType(t){return /opus/.test(t)?'probably':''}
+    play(){this.paused=false;this.used=1;log.push('play '+this.src);return Promise.resolve()}pause(){this.paused=true;log.push('pause')}}
+  const s=E.loadApp(null,{Audio:FakeAudio,window:{speechSynthesis:1},SpeechSynthesisUtterance:function(t){this.text=t},
+    speechSynthesis:{getVoices:()=>[{lang:'en-US'}],speak:u=>{utt.push(u);log.push('speak '+u.text)},cancel:()=>log.push('cancel'),speaking:false,pending:false}});
+  const S2=t=>vm.runInContext(t,s),cur=()=>S2('ESA.au'),end=()=>{const a=cur();if(a&&a.onended)a.onended()},clear=()=>{log.length=0;utt.length=0};
+  const vOf=src=>{const f=String(src||'').split('/').pop().replace(EA.EXT,'');for(const k in man){const i=man[k][1].indexOf(f);if(i>=0)return i}return -1};
+  const plays=()=>log.filter(x=>/^play audio\/en\//.test(x)),lastV=()=>vOf(plays().slice(-1)[0]);
+  try{
+    S2("S.voice=true;S.sound=true;delete S.cheerV;CLIPS=[];ENA.t=0");
+    // a cheer plays the file of its line in one of the six voices
+    clear();S2("say('Great job!')");const v0=lastV();
+    if(plays().length!==1||v0<0||plays()[0]!=='play '+M.dir+man['Great job!'][1][v0]+M.ext)p.push('say("Great job!"): '+log.join(' | '));end();
+    // rotation: 60 cheers in a row never use the same voice twice running, and every voice is heard
+    const seen=[];for(let i=0;i<60;i++){clear();S2("ENA.t=0;say(pick(CHEERS))");seen.push(lastV());end()}
+    if(seen.some((v,i)=>v<0||(i&&v===seen[i-1])))p.push('rotation: the same voice twice in a row: '+seen.join(','));
+    if(new Set(seen).size!==6)p.push('rotation: not every voice in 60 cheers: '+[...new Set(seen)]);
+    // one speaker per short sequence: a cheer queued right behind another keeps its voice; the next cheer changes it
+    clear();S2("ENA.t=0;say('Great job!');say('5 in a row!',null,null,1)");const a1=lastV();end();const a2=lastV();end();
+    if(plays().length!==2||a1!==a2)p.push('a queued cheer changed voice: '+log.join(' | '));
+    S2('ENA.t=0');clear();S2("say('Super!')");if(lastV()===a2)p.push('the next cheer used the same voice again');end();
+    // a line with a recorded first sentence: that file, then the rest in the tablet's voice; the cheer is not cut by a new line
+    clear();S2("ENA.t=0;say('New record! 120 meters!')");if(plays().length!==1||vOf(plays()[0])<0||log.some(x=>/^speak/.test(x)))p.push('New record + number: '+log.join(' | '));
+    end();if(log.pop()!=='speak 120 meters!')p.push('the number was not said after the recorded part: '+log.join(' | '));utt[0]&&utt[0].onend&&utt[0].onend();
+    clear();S2("say('Woo-hoo!');say('What is 2 + 3?')");if(log.slice(log.findIndex(x=>/^play/.test(x))).some(x=>x=='cancel'||x=='pause'||/^speak/.test(x)))p.push('a new line cut the cheer off: '+log.join(' | '));
+    end();if(log.pop()!=='speak What is 2 + 3?')p.push('the line after a cheer did not follow it: '+log.join(' | '));utt[0]&&utt[0].onend&&utt[0].onend();
+    // not a cheer: the tablet's voice as before
+    clear();S2("say('What is 4 + 4?')");if(plays().length||log.pop()!=='speak What is 4 + 4?')p.push('a question went to a recording: '+log.join(' | '));utt[0]&&utt[0].onend&&utt[0].onend();
+    // the Cheer voices choice: female only, male only, the tablet's voice
+    for(const [m,want] of [['f','f'],['m','m']]){S2("S.cheerV='"+m+"'");const vs=[];for(let i=0;i<20;i++){clear();S2("ENA.t=0;say(pick(CHEERS))");vs.push(lastV());end()}
+      if(vs.some(v=>v<0||M.voices[v][1]!==want)||vs.some((v,i)=>i&&v===vs[i-1]))p.push('Cheer voices '+m+': '+vs.join(','));}
+    S2("S.cheerV='tts'");clear();S2("say('Great job!')");if(plays().length||log.pop()!=='speak Great job!')p.push('Tablet voice: '+log.join(' | '));
+    if(S2('enCheerOn()')!==false)p.push('Tablet voice: enCheerOn');utt[0]&&utt[0].onend&&utt[0].onend();S2("S.cheerV='mix'");
+    if(S2("(S.cheerV='zzz',cheerMode())")!=='mix'||S2("(delete S.cheerV,cheerMode())")!=='mix')p.push('an unknown or missing choice is not Mixed');
+    // the grown-up's own clips win: a cheer line plays their clip (kind cheer), never a recorded default; a line of no kind does not
+    S2("CLIPS=[{id:'c1',kind:'cheer',url:'blob:mine'}]");clear();S2("say('Great job!')");
+    if(plays().length||!log.includes('play blob:mine'))p.push('a parent clip did not win over the recording: '+log.join(' | '));
+    clear();S2("ENA.t=0;say('New record!')");if(log.includes('play blob:mine')||plays().length!==1)p.push('a parent cheer clip replaced "New record!": '+log.join(' | '));end();
+    clear();rnd=S2('Math.random');S2('Math.random=()=>0');const r1=S2("cheerSay('cheer','Yay!',.3)");S2('Math.random=()=>0.9');const r2=S2("cheerSay('cheer','Yay!',.3)");s.__r0=rnd;S2('Math.random=__r0');
+    if(r1!=='clip'||r2!==false||plays().length)p.push('cheerSay with clips: '+r1+' '+r2+' '+log.join(' | '));
+    S2("CLIPS=[]");clear();if(S2("cheerSay('cheer','Yay!',.3)")!=='say'||plays().length!==1)p.push('cheerSay without clips does not say the line');end();
+    S2("S.voice=false");clear();if(S2("cheerSay('cheer','Yay!',.3)")!==false||log.length)p.push('cheerSay with the voice off still spoke');S2("S.voice=true");
+    // fallbacks: a file that fails -> the tablet's voice for that line, and that file is not tried again; recordings off -> the voice
+    clear();S2("ENA.t=0;say('Brilliant!')");const bf=cur().src;cur().onerror();if(log.pop()!=='speak Brilliant!')p.push('a failed file did not fall back to the voice: '+log.join(' | '));
+    utt.forEach(u=>u.onend&&u.onend());if(!S2('ESA.bad')[String(bf).split('/').pop().replace(EA.EXT,'')])p.push('the failed file is not marked bad');
+    S2('ENA.off=true');clear();S2("say('Brilliant!')");if(plays().length||log.pop()!=='speak Brilliant!')p.push('ENA.off: did not use the voice');utt.forEach(u=>u.onend&&u.onend());S2('ENA.off=false');
+  }catch(e){p.push('say() could not be run: '+String(e.stack||e).split('\n').slice(0,2).join(' | '))}
+  // a browser that cannot play Opus: the tablet's voice
+  const s3=E.loadApp(null,{Audio:class{canPlayType(){return''}}});if(vm.runInContext('enCheerOn()',s3)!==false)p.push('enCheerOn is true where Opus cannot play');
+  // 5. the round says the cheer it shows, through cheerSay (clips first); Grown-ups has the Cheer voices row
+  const rnd50=fs.readFileSync(path.join(SRC,'js','50-round.js'),'utf8'),gr=fs.readFileSync(path.join(SRC,'js','80-grown.js'),'utf8');
+  if(!/const pr=pick\(CHEERS\);fb\(pr\);[^\n]*cheerSay\('cheer',pr,\.3\)/.test(rnd50)||!/cheerSay\('oops',oo,\.5,300\)/.test(rnd50))p.push('50-round.js: a right answer / a miss does not say its cheer through cheerSay');
+  if(!/GW\.seg\('cheer',\['mix','f','m','tts'\],cheerMode\(\)/.test(gr)||!/S\.cheerV=b\.dataset\.cheer;save\(\)/.test(gr))p.push('Grown-ups: no Cheer voices choice saved per child');
+  if(vm.runInContext("PRF.SHARED.includes('cheerV')",ctx))p.push('cheerV must be per child');
+  const kb=Math.round(total/1000);
+  return{problems:p,note:lines.size+' lines x 6 voices ('+M.voices.map(v=>v[0]).join(', ')+'), '+files.length+' files, '+kb+' KB, largest '+Math.round(big/100)/10+' KB; all audio '+Math.round((esBytes+total)/1000)+' KB (budget '+AUDIO_FAIL/1e6+' MB)'+(esBytes+total>AUDIO_WARN?'  WARN: over '+AUDIO_WARN:'')};
+});
+
 // ---- report ----
+Promise.all(PENDING).then(()=>{
 let failed=0;
 for(const r of results){
   const ok=!r.problems.length;if(!ok)failed++;
@@ -16951,3 +18203,4 @@ for(const r of results){
 }
 console.log(failed?failed+' of '+results.length+' checks FAILED':'all '+results.length+' checks passed');
 process.exitCode=failed?1:0;
+});

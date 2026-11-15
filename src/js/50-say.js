@@ -11,13 +11,19 @@
    Microphone: probed once per session (spkProbe: the API, then a microphone in enumerateDevices, then a denied permission). No
    microphone: one note for the session and the step is skipped. Denied (or refused on the first tap): the step shows a grown-up how to
    allow it, then goes on by itself; later steps that session are skipped.
-   Recordings stay in memory for the step only (an object URL, revoked when the step ends): never saved, never sent.
-   Speech recognition (a gentle "That sounded like ..." hint, never needed to go on): only when the browser can say the Spanish
-   model runs ON THE DEVICE (SpeechRecognition.available({processLocally}) or the older availableOnDevice), and the recogniser is
-   then started with processLocally (or mode 'ondevice-only'), so no audio ever leaves the tablet. Anything else: no hint, no message.
+   Recordings never leave the tablet. In the step they are an object URL (revoked when the step ends); S-SPK2: each one is also kept
+   for the grown-ups' listening corner (spkrAdd, 50-say-corner.js: IndexedDB on this tablet, deleted after 1 day by default, or not
+   kept at all), never sent.
+   The speaking check (S-SPK2, a kind line under the buttons, never needed to go on; "I said it!" / "Try again" always stay):
+   A. when the tablet recognises Spanish ON THE DEVICE (SpeechRecognition.available({processLocally}) or the older
+      availableOnDevice; the recogniser is started with processLocally (or mode 'ondevice-only'), so no audio ever leaves the
+      tablet): "That sounded like ..." and whether it matches (the lenient matcher below);
+   B. otherwise (or when A heard nothing): the offline sound check (spkcJudge, 50-say-cmp.js) compares the recording with the
+      recorded model and a few similar words: "Great job!", "Close! Listen again", "I couldn't hear you" (or a softer voice).
+   Never a server recogniser, never "wrong".
    Saved: S.esSpk (Grown-ups switch "Spanish speaking practice", per child; absent = on), S.day.spk (Spanish things said today; the
    daily mission "Say 5 Spanish words", 55-missions.js). Styles: src/css/42-say.css. */
-const SPK={MAX:4,AT:3,GOAL:5,mic:'?',deny:0,sr:'',note:0,tok:0,state:'',url:'',st:null,mr:null,rec:null,au:null,iv:0,tm:[],heard:null,it:null,done:null};
+const SPK={MAX:4,AT:3,GOAL:5,mic:'?',deny:0,sr:'',note:0,tok:0,state:'',url:'',st:null,mr:null,rec:null,au:null,iv:0,tm:[],heard:null,jd:null,told:0,it:null,done:null};
 const spkOn=()=>S.esSpk!==false&&S.esSpk!==0;
 // once per session: is there a microphone? ('?' not asked, 'wait' asking, 'yes', 'no'); SPK.deny: the permission is blocked
 function spkProbe(){if(SPK.mic!='?')return;
@@ -120,7 +126,7 @@ async function spkRec(){if(SPK.state=='rec')return spkStop();if(SPK.state!='read
   mr.onstop=()=>{try{st.getTracks().forEach(x=>x.stop())}catch(e){}SPK.st=null;if(!spkLive(t))return;
     const b=new Blob(ch,{type:mr.mimeType||'audio/webm'});
     if(!b.size){spkReady(false);return spkTip('I didn’t hear anything. Tap the microphone and try again!',true)}
-    SPK.url=URL.createObjectURL(b);spkPlay()};
+    SPK.url=URL.createObjectURL(b);spkJudge(b);if(typeof spkrAdd=='function')spkrAdd(b,SPK.it);spkPlay()};
   try{mr.start()}catch(e){st.getTracks().forEach(x=>x.stop());SPK.st=null;return spkGU('none')}
   spkSR(st);SPK.state='rec';let s=SPK.MAX;
   const a=$('#spkact'),dots=n=>`<span class="spk-dots" role="img" aria-label="${n} seconds left">${Array.from({length:SPK.MAX},(_,i)=>`<i class="${i<n?'on':''}"></i>`).join('')}</span>`;
@@ -129,17 +135,27 @@ async function spkRec(){if(SPK.state=='rec')return spkStop();if(SPK.state!='read
   SPK.iv=setInterval(()=>{s--;const d=a.querySelector('.spk-dots');if(d)d.outerHTML=dots(Math.max(0,s));if(s<=0)spkStop()},1000)}
 function spkStop(){clearInterval(SPK.iv);try{if(SPK.mr&&SPK.mr.state=='recording')SPK.mr.stop()}catch(e){}try{if(SPK.rec)SPK.rec.stop()}catch(e){}}
 // on-device recognition alongside the recording (fed the same microphone track where the browser takes one)
-function spkSR(st){SPK.heard=null;SPK.rec=null;const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SPK.sr||!SR)return;
+function spkSR(st){SPK.heard=null;SPK.jd=null;SPK.told=0;SPK.rec=null;const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SPK.sr||!SR)return;
   try{const r=new SR(),t=SPK.tok;r.lang=SPK.sr;r.interimResults=false;r.maxAlternatives=3;r.continuous=false;
     if('processLocally' in r)r.processLocally=true;else if('mode' in r)r.mode='ondevice-only';
     if(r.processLocally!==true&&r.mode!=='ondevice-only')return; // cannot promise on-device: not used
     r.onresult=e=>{if(t!==SPK.tok)return;const a=[];for(const x of e.results)for(let i=0;i<x.length;i++)a.push(x[i].transcript);SPK.heard=a;spkHeard()};
     r.onerror=e=>{if(/network|not-allowed|service|language|unavailable/.test(e&&e.error||''))SPK.sr=''};
     SPK.rec=r;const tr=st.getAudioTracks?st.getAudioTracks()[0]:null;r.start(tr)}catch(e){SPK.rec=null}}
-// the gentle hint, once there is something heard and the comparison has played
-function spkHeard(){const e=$('#spkheard'),h=SPK.heard;if(!e||SPK.state!='check'||!h||!h.length)return;
-  const ok=spkMatch(SPK.it.es,h),said=(ok&&h.find(x=>spkMatch(SPK.it.es,x)))||h[0];
-  e.innerHTML=`${ico(ok?'check-circle':'ear',22,ok?'ic-good':'ic-brand')}<span>That sounded like “<span lang="es">${esc(said)}</span>”.${ok?' ¡Muy bien!':' Listen again and compare.'}</span>`;e.classList.add('on')}
+// B: the offline sound check of this recording (S-SPK2), in the background while the comparison plays
+function spkJudge(b){SPK.jd=null;if(typeof spkcJudge!='function'||SPK.nov)return;const t=SPK.tok;
+  spkcJudge(b,SPK.it.say).then(r=>{if(t!==SPK.tok||!r)return;SPK.jd=r;spkHeard()},()=>{})}
+const SPK_SAY={great:['check-circle','ic-good','Great job! That sounds like the Spanish. ¡Muy bien!','Great job!'],
+  again:['ear','ic-brand','Close! Listen again, then try once more.','Close! Listen again.'],
+  quiet:['mic','ic-brand','I couldn’t hear you. Hold the tablet close and say it again!','I couldn’t hear you.'],
+  loud:['mic','ic-brand','That was very loud! Try your normal voice.','Try your normal voice.']};
+// the kind line, once the comparison has played: A (what the tablet heard) when it heard something, else B (the sound check)
+function spkHeard(){const e=$('#spkheard'),h=SPK.heard;if(!e||SPK.state!='check')return;let k,txt;
+  if(h&&h.length){const ok=spkMatch(SPK.it.es,h),said=(ok&&h.find(x=>spkMatch(SPK.it.es,x)))||h[0];k=ok?'great':'again';
+    txt=`That sounded like “<span lang="es">${esc(said)}</span>”.${ok?' Great job! ¡Muy bien!':' Close! Listen again and compare.'}`}
+  else if(SPK.jd&&SPK_SAY[SPK.jd.k]){k=SPK.jd.k;txt=esc(SPK_SAY[k][2])}else return;
+  const s=SPK_SAY[k];e.innerHTML=`${ico(s[0],22,s[1])}<span>${txt}</span>`;e.dataset.k=k;e.classList.add('on');
+  if(!SPK.told&&(SPK.pk||S.voice)){SPK.told=1;say(s[3])}} // Pre-K and K hear it too (once per try)
 // the model, then the child's own recording, then the self-check
 function spkModel(cb){const t=SPK.tok;if(SPK.nov)return spkT(cb,200);say(SPK.it.say,null,'es');const t0=Date.now();
   const w=()=>{if(!spkLive(t))return;const busy=speakBusy(); // the voice or the recording (ES-AUDIO)
@@ -156,7 +172,7 @@ function spkCheck(){SPK.state='check';const a=$('#spkact');const cd=$('.spk-card
   if($('#spkm'))$('#spkm').onclick=e=>say(SPK.it.say,e.currentTarget,'es');
   $('#spkme').onclick=()=>{try{if(SPK.au)SPK.au.pause();SPK.au=new Audio(SPK.url);SPK.au.play().catch(()=>{})}catch(e){}};
   $('#spkok').onclick=()=>spkEnd(true);
-  $('#spkagain').onclick=()=>{const cd=$('.spk-card');if(cd)cd.classList.remove('chk');if(SPK.url)try{URL.revokeObjectURL(SPK.url)}catch(e){}SPK.url='';const h=$('#spkheard');if(h){h.innerHTML='';h.classList.remove('on')}spkReady(false)};
+  $('#spkagain').onclick=()=>{const cd=$('.spk-card');if(cd)cd.classList.remove('chk');if(SPK.url)try{URL.revokeObjectURL(SPK.url)}catch(e){}SPK.url='';const h=$('#spkheard');if(h){h.innerHTML='';h.classList.remove('on');delete h.dataset.k}SPK.jd=SPK.heard=null;spkReady(false)};
   spkTip(SPK.pk?'Did you say it? Tap the thumbs up, or try again!':'Did it sound the same? Tap “I said it!” or “Try again”.',true);
   spkHeard();spkT(spkHeard,1200)}
 // a grown-up note: how to allow the microphone (or that none was found); goes on by itself

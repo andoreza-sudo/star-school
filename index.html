@@ -1353,22 +1353,7 @@ html.notext .pktxt{display:none}
 .stage.dark{color:#fff}.stage.dark .htxt{color:#fde68a}
 .ptcard{display:flex;gap:14px;align-items:center;background:linear-gradient(135deg,#fef3c7,#fde68a);border-radius:22px;padding:14px 16px;margin:6px 0 14px}.ptcard.empty{background:#f5f5f4}
 .game.soon{opacity:.55;cursor:default}
-.upg{cursor:default}.upg .gi{gap:2px}
-.paints{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px}.paint{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:var(--fs-2);padding:8px 4px}
-.paint span{width:36px;height:36px;border-radius:50%;border:3px solid #0002}.paint.on{outline:4px solid #22c55e}
 .btn.xs.on{background:#3b82f6;color:#fff}
-.hc{position:fixed;inset:0;touch-action:none;background:#000}.hc canvas{position:absolute;inset:0;width:100%;height:100%}
-.hchud{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;gap:8px;padding:8px 10px;z-index:2}
-.hcfuel{flex:1;display:flex;align-items:center;gap:6px;max-width:260px;font-size:22px}.hcfuel>div{flex:1;height:16px;background:#fff9;border-radius:9px;overflow:hidden;border:2px solid #0003}.hcfuel>div>div{height:100%;transition:width .3s}
-.hchud .stars{font-size:clamp(14px,3.2vw,20px);padding:4px 9px}
-.pedal{position:absolute;bottom:14px;width:clamp(96px,16vw,140px);height:clamp(96px,16vw,140px);border-radius:28px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:44px;font-weight:700;color:#fff;box-shadow:0 6px 0 #0004;pointer-events:none;opacity:.9}
-.pedal small{font-size:var(--fs-2)}.pedal.brake{left:14px;background:#ef4444}.pedal.gas{right:14px;background:#16a34a}.pedal.on{transform:translateY(4px) scale(.96);box-shadow:0 2px 0 #0004;opacity:1}
-.hcmsg{position:absolute;left:50%;top:22%;transform:translateX(-50%);background:#fffe;border-radius:18px;padding:10px 18px;font-size:clamp(18px,4vw,26px);font-weight:700;opacity:0;transition:opacity .3s;pointer-events:none;text-align:center;max-width:90vw}.hcmsg.on{opacity:1}
-.hcpop{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%) scale(.4);font-size:clamp(26px,6vw,44px);font-weight:700;color:#fde047;text-shadow:0 3px 0 #b45309,0 0 12px #0008;opacity:0;pointer-events:none;white-space:nowrap}
-.hcpop.on{animation:hcpop 1.4s ease-out}@keyframes hcpop{15%{opacity:1;transform:translate(-50%,-50%) scale(1.15) rotate(-4deg)}70%{opacity:1;transform:translate(-50%,-60%) scale(1)}100%{opacity:0;transform:translate(-50%,-80%) scale(.9)}}
-.lvgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px;margin:10px 0}
-.lvb{display:flex;flex-direction:column;align-items:center;padding:10px 4px;background:linear-gradient(180deg,#fff,#fef3c7);border-radius:18px;min-height:96px}
-.lvb b{font-size:30px;line-height:1}.lvb .lvs{font-size:16px;letter-spacing:1px}.lvb small{font-size:var(--fs-2);color:#78716c}.lvb.lock{opacity:.5;background:#e7e5e4}.lvb.done{background:linear-gradient(180deg,#fff,#bbf7d0)}
 .lvhead{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-radius:18px;color:#fff;font-size:20px;text-shadow:0 2px 4px #0006;margin-top:8px}
 .lvstars{font-size:56px;margin:4px 0 8px}.lvstar{display:inline-block;filter:grayscale(1) opacity(.3);transform:scale(.6)}.lvstar.on{animation:lvpop .5s both;filter:none}
 @keyframes lvpop{0%{transform:scale(0) rotate(-60deg)}70%{transform:scale(1.3)}100%{transform:scale(1)}}
@@ -1383,7 +1368,6 @@ html.notext .pktxt{display:none}
 .stgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin:8px 0}.sttile{padding:5px;background:#fff;border-radius:16px;aspect-ratio:1;overflow:hidden}.sttile svg,.sttile img{width:100%;height:100%;display:block;border-radius:12px}
 .sttabs{flex-wrap:wrap}
 @media (orientation:landscape) and (max-height:700px){.stwrap{flex-direction:row;align-items:flex-start;justify-content:center}.stbar{width:230px;flex:none;overflow-y:auto;max-height:100%;padding:var(--s-2)}.stcols .stc{width:var(--tap);height:var(--tap)}}
-.hcmodes{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:6px 0 10px}.hcmode{display:flex;flex-direction:column;align-items:center;padding:10px 6px;background:#fff;border-radius:16px;text-align:center}.hcmode span{font-size:30px}.hcmode b{font-size:17px}.hcmode small{font-size:var(--fs-2);color:#78716c}.hcmode.on{background:#fde68a;box-shadow:0 0 0 3px #f59e0b inset}
 .ptlines{display:flex;flex-direction:column;font-size:var(--fs-2);font-weight:600;color:#57534e;margin-top:4px;gap:1px}.ptlines .neg{color:#b91c1c}.pthint{margin-top:6px;font-size:var(--fs-2);color:#7c3aed;font-weight:700}
 .ptrules{margin-top:14px;line-height:1.6}.ptrules b{color:#b45309}.ptrules div b{float:right}
 .tipcard{background:#fff;border-radius:16px;padding:10px 14px;margin:10px 0;font-size:var(--fs-2);box-shadow:0 2px 6px #0001;line-height:1.4}
@@ -1396,15 +1380,8 @@ html.notext .pktxt{display:none}
 .chip small{font-size:var(--fs-2);color:var(--ink-3)}.chip.on{outline:4px solid #3b82f6;transform:translateY(-3px)}
 .cbpal.fp .chip{min-width:52px;padding:6px}
 @media (orientation:landscape){.cbwrap{flex-direction:row;justify-content:center;align-items:center}.cbpal{flex-direction:column;flex-wrap:wrap;max-height:calc(100vh - 80px);max-width:240px;align-content:flex-start}.cbpal.fp{flex-direction:row;max-width:200px}}
-.hcprog{position:absolute;top:60px;left:50%;transform:translateX(-50%);width:min(320px,50vw);height:8px;background:#0004;border-radius:6px;z-index:2}.hcprog>div{height:100%;background:linear-gradient(90deg,#22c55e,#facc15);border-radius:6px}
-.hcprog span{position:absolute;top:-6px;width:4px;height:20px;background:#facc15;border-radius:2px;box-shadow:0 0 0 2px #713f12}
-.hccombo{position:absolute;right:14px;top:80px;font-size:clamp(20px,4vw,30px);font-weight:700;color:#fff;background:linear-gradient(135deg,#f97316,#ef4444);padding:4px 14px;border-radius:14px;opacity:0;transition:opacity .2s;transform:rotate(4deg)}.hccombo.on{opacity:1;animation:bump .4s}
-.hcfuel>div.low{animation:hc-low 1s infinite}
-@keyframes hc-low{50%{opacity:.55}}
 .endcard{background:#fff;color:var(--ink);border-radius:26px;padding:18px 22px;max-width:560px;width:92vw;text-align:center;box-shadow:0 10px 40px #0006;animation:spin .5s cubic-bezier(.5,1.6,.5,1)}
 .endstats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}.endstats div{background:#f5f5f4;border-radius:14px;padding:8px 4px;display:flex;flex-direction:column}.endstats b{font-size:22px}.endstats span{font-size:var(--fs-2);color:var(--ink-3)}
-.vehs{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}.veh{display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 6px;font-size:var(--fs-2)}.veh canvas{width:150px;height:90px}.veh.on{outline:4px solid #22c55e;background:#f0fdf4}
-.mis{cursor:default}
 .shthumb{width:100px;height:100px;border-radius:10px;box-shadow:0 2px 6px #0002;background:#fff}
 /* P6-02: the drop-shadow filter (0 4px 6px #0003) was repainted with every fill; the svg is an opaque rounded box, so it is the same shadow as a box-shadow */
 .shwrap svg{width:100%;height:100%;display:block;border-radius:12px;background:#fff;box-shadow:0 4px 6px #0003,0 4px 14px #0002;touch-action:none}
@@ -1971,6 +1948,22 @@ html.calm .rw-burst{display:none}
   .spk-card{padding:var(--s-3) var(--s-4);gap:var(--s-2)}
   .spk-pic{font-size:64px}
   .spk-mic,.spk-lis{width:80px;height:80px}}
+/* S-SPK2: the Grown-ups listening corner (50-say-corner.js) and the star message on Home. Tokens only. */
+.lc-list{display:flex;flex-direction:column;gap:var(--s-2)}
+.lc-row{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s-2) var(--s-3);padding:var(--s-2) var(--s-3);border-radius:var(--r-card);background:var(--surface-2)}
+.lc-w{display:flex;flex-direction:column;flex:1 1 160px;min-width:0}
+.lc-b{display:flex;flex-wrap:wrap;gap:var(--s-2)}
+.lc-w b{font-size:var(--fs-4);color:var(--es-shade);overflow-wrap:anywhere}
+.lc-w small{font-size:var(--fs-2);color:var(--ink-2)}
+.lc-star.on{background:var(--star-tint);color:var(--ink)}
+.lc-star.on .ic{color:var(--star-shade)}
+.hm-gstar{display:flex;align-items:center;gap:var(--s-3);margin-bottom:var(--s-4);padding:var(--s-3) var(--s-4);border-radius:var(--r-card);
+  background:var(--star-tint);color:var(--ink);box-shadow:inset 0 0 0 2px var(--star)}
+.hm-gstar p{margin:0;font-size:var(--fs-3);font-weight:700}
+.hm-gsi{flex:none;display:grid;place-items:center;width:56px;height:56px;border-radius:50%;background:var(--star);color:var(--ink)}
+.hm-gsi .ic{width:36px;height:36px}
+.hm-gsk{display:block;font-weight:400;color:var(--ink-2)}
+.hm-gse{font-size:var(--fs-5)}
 /* P2-24 sentences: story order (sent 5) puts whole sentences on the order tiles. A tile that holds a .sl span is a full-width row
    that wraps its words; the three slots above it become full-width rows too, so nothing runs off a 380 px screen. */
 .oslots:has(+ .otiles .sl){flex-direction:column;align-items:stretch;max-width:none;gap:var(--s-2)}
@@ -3070,7 +3063,7 @@ function save(){if(SAVE_HOLD||SAVE_OFF)return;try{localStorage.setItem(SKEY,JSON
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v155'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v165'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -3316,6 +3309,7 @@ const PRF = {
     try {
       for (const c of await DB.all()) if (PRF.clipOf(c.id) === id) await DB.del(c.id);
     } catch (e) {}
+    if (typeof spkrDrop == 'function') await spkrDrop(id); // S-SPK2: that child's Say it! recordings
   },
 
   // ---- screens ----
@@ -3514,6 +3508,9 @@ function sfxDuck(talking){if(!AC||!MG)return;clearInterval(DUCK);const t0=Date.n
   try{MG.gain.setTargetAtTime(MG_V*.3,AC.currentTime,.03)}catch(e){}
   DUCK=setInterval(()=>{if(Date.now()-t0<400||(talking()&&Date.now()-t0<30000))return;clearInterval(DUCK);DUCK=null;
     try{MG.gain.setTargetAtTime(MG_V,AC.currentTime,.08)}catch(e){}},200)}
+// R-03 A4: a short buzz on tablets that can vibrate (a crash, a finish in Star Rally). Grown-ups switch "Buzz" (S.buzz; on unless a
+// grown-up turns it off), never in Calm mode. Returns true when the tablet took it.
+function buzz(ms){if(S.buzz===false||S.calm)return false;try{return !!(navigator.vibrate&&navigator.vibrate(ms))}catch(e){return false}}
 let musT=null;
 function music(on){clearInterval(musT);musT=null;if(!on||!S.music)return;let i=0;const sc=[60,62,64,67,69,72,74,76,79],bass=[48,53,55,52];
   musT=setInterval(()=>{if(!AC||AC.state!='running')return;
@@ -3553,20 +3550,54 @@ const esHas=t=>!!esFiles(t);
 // something is talking or waiting to: a recording, our queue, or the speech engine
 function speakBusy(){if(ESA.cur||ESA.q.length||ESA.tts>0)return true;try{return !!(speechSynthesis.speaking||speechSynthesis.pending)}catch(e){return false}}
 // stop everything: the speech engine, the recording, and what was queued (say without q, and the Say it! microphone)
-function hush(){ESA.gen++;ESA.q=[];ESA.tts=0;try{speechSynthesis.cancel()}catch(e){}const c=ESA.cur;ESA.cur=null;
+function hush(){ESA.gen++;ESA.q=[];ESA.tts=0;ESA.tc=null;try{speechSynthesis.cancel()}catch(e){}const c=ESA.cur;ESA.cur=null;
   if(ESA.au){ESA.au.onended=ESA.au.onerror=null;try{ESA.au.pause()}catch(e){}}if(c&&c.btn)c.btn.classList.remove('talking')}
 // the next queued line, once nothing plays
 function esaPump(){if(ESA.cur||ESA.tts>0)return;const n=ESA.q.shift();if(!n)return;if(n.a)esaPlay(n);else ttsSay(...n.s)}
 function esaPlay(it){const a=ESA.au||(ESA.au=new Audio()),g=ESA.gen,f=it.a[it.i],r=it.slow>0&&it.slow<1?it.slow:1;ESA.cur=it;
-  a.onended=()=>{if(ESA.cur!==it)return;if(++it.i<it.a.length)return esaPlay(it);ESA.cur=null;if(it.btn)it.btn.classList.remove('talking');esaPump()};
+  a.onended=()=>{if(ESA.cur!==it)return;if(++it.i<it.a.length)return esaPlay(it);ESA.cur=null;if(it.en)ENA.t=Date.now();if(it.btn)it.btn.classList.remove('talking');esaPump()};
   a.onerror=()=>esaFail(it,g,f);
-  a.src=ES_AUDIO.dir+f[0]+ES_AUDIO.ext;a.dataset.say=it.t;a.defaultPlaybackRate=a.playbackRate=r; // slow (a hint replay): the same file, slower
+  const M=it.en?EN_AUDIO:ES_AUDIO;a.src=M.dir+f[0]+M.ext;a.dataset.say=it.t;a.defaultPlaybackRate=a.playbackRate=r; // slow (a hint replay): the same file, slower
   if(it.btn)it.btn.classList.add('talking');
   try{const p=a.play();if(p&&p.catch)p.catch(e=>{if(!(e&&e.name=='AbortError'))esaFail(it,g,f)})}catch(e){return esaFail(it,g,f)}
   sfxDuck(speakBusy)}
 // a file that does not load or play: never tried again this session; the line goes to the tablet's voice
 function esaFail(it,g,f){if(ESA.cur!==it||g!==ESA.gen)return;ESA.bad[f[0]]=1;ESA.cur=null;if(it.btn)it.btn.classList.remove('talking');
+  if(it.en){if(!canSpeak()){esaPump();return}return ttsSay(it.ts.slice(it.i).join(' '),it.btn,false,it.slow,1)} // EN-PRAISE: the rest of the cheer, tablet voice
   if(esVoice()=='no'||!canSpeak()){esNote();esaPump();return}ttsSay(it.t,it.btn,true,it.slow)}
+/* EN-PRAISE: recorded English encouragement. EN_AUDIO (src/data/d-en-audio.js, made by tools/en-audio.js) maps every fixed praise,
+   try-again and well-done line say() speaks ("Great job!", "Almost!", "You got 7 stars!", "New record!") to six recordings, one per
+   voice (three female, three male: EN_AUDIO.voices). say(t) in English plays the line in one voice, chosen so the same voice never
+   says two cheers in a row; a line queued (q) right behind a cheer, or within 0.8 s of its end, keeps that voice, so "Great job!" then
+   "5 in a row!" is one speaker. A line whose first sentences are recorded ("New record! 120 meters!") plays those, then the rest with
+   the tablet's voice. The grown-up's own clips (44-clips.js) win: a line of kind cheer / oops / done plays their clip when they have
+   one of that kind. Cheer voices (Grown-ups, S.cheerV per child): 'mix' (default, all six), 'f', 'm', or 'tts' (the tablet's voice).
+   A missing file, a browser that cannot play Opus, or a file that fails: the tablet's voice. A cheer is never cut off: a new line
+   waits for it to end. ENA.off (tests) turns the recordings off. */
+const ENA={off:false,last:-1,seq:-1,t:0};
+function cheerMode(){const m=typeof S!='undefined'&&S?S.cheerV:'';return m=='f'||m=='m'||m=='tts'?m:'mix'}
+// the voices the choice allows (indexes into EN_AUDIO.voices); none for the tablet's voice, or where the recordings cannot play
+function enVoices(){if(ENA.off||typeof EN_AUDIO=='undefined'||!esaOk())return[];const m=cheerMode();if(m=='tts')return[];
+  return EN_AUDIO.voices.map((v,i)=>m=='mix'||v[1]==m?i:-1).filter(i=>i>=0)}
+const enCheerOn=()=>enVoices().length>0;
+const enSplit=k=>(k.match(/[^.!?]+[.!?]+["”]?|[^.!?]+$/g)||[k]).map(x=>x.trim()).filter(Boolean);
+// enPlan(t): {kind, keys (the recorded lines, in order), rest (said with the tablet's voice)}, or null when nothing is recorded
+function enPlan(t){if(t==null||typeof EN_AUDIO=='undefined')return null;const m=EN_AUDIO.lines,k=esKey(t);if(m[k])return{kind:m[k][0],keys:[k],rest:''};
+  const ps=enSplit(k);let i=0;while(i<ps.length&&m[ps[i]])i++;
+  return i?{kind:i==ps.length?m[ps[0]][0]:'',keys:ps.slice(0,i),rest:ps.slice(i).join(' ')}:null}
+// the voice for a new cheer: never the last one (a random other one the choice allows); seq: keep the voice of the cheer just said
+function enPick(seq){const vs=enVoices();if(!vs.length)return -1;if(seq&&vs.includes(ENA.seq))return ENA.seq;
+  const c=vs.length>1?vs.filter(i=>i!==ENA.last):vs,v=c[Math.floor(Math.random()*c.length)];ENA.last=ENA.seq=v;return v}
+const cheerBusy=()=>!!((ESA.cur&&ESA.cur.en)||(ESA.tc&&ESA.tts>0));
+// say() in English: true when the line was taken (a clip, a recording, or a cheer in the tablet's voice)
+function enSay(t,btn,q,slow){const pl=enPlan(t);if(!pl)return false;
+  if(pl.kind&&typeof hasClips=='function'&&hasClips(pl.kind)&&playClip(pl.kind))return true;
+  const seq=q&&((ESA.cur&&ESA.cur.en)||ESA.q.some(x=>x.en)||Date.now()-ENA.t<800),v=enPick(seq);
+  const fs=[];if(v>=0)for(const k of pl.keys){const f=EN_AUDIO.lines[k][1][v];if(!f||ESA.bad[f])break;fs.push([f,v])}
+  if(!fs.length){if(!canSpeak())return false;if(!q)hush();if(q&&(ESA.cur||ESA.q.length))ESA.q.push({s:[t,btn,false,slow,1]});else ttsSay(t,btn,false,slow,1);return true}
+  if(!q)hush();const ts=pl.keys.slice(0,fs.length),rest=pl.keys.slice(fs.length).concat(pl.rest?[pl.rest]:[]).join(' ');
+  const it={a:fs,i:0,t:ts.join(' '),ts,btn,slow,en:1};if(q&&speakBusy())ESA.q.push(it);else esaPlay(it);
+  if(rest)ESA.q.push({s:[rest,btn,false,slow]});return true}
 /* the voice for a language: one stored on the tablet first (localService), because a network voice waits for the internet on
    every word (a long pause, and nothing at all offline); then es-MX / es-US, en-US, then any voice of that language. Kept per
    language, so a Spanish word after an English one does not search again. */
@@ -3580,15 +3611,17 @@ function warmVoices(){if(VOICE_WARM||!canSpeak())return;VOICE_WARM=1;
   try{for(const es of [true,false]){const u=new SpeechSynthesisUtterance(' ');u.volume=0;u.lang=es?'es-MX':'en-US';const v=pickVoice(es);if(v)u.voice=v;speechSynthesis.speak(u)}}catch(e){}}
 // slow (R-01s): a number under 1 slows the voice down (a hint replays a Spanish word at .75 of the normal speed)
 function say(t,btn,lang,q,slow){const es=lang=='es',fs=es?esFiles(t):null;
+  if(!q&&cheerBusy()){q=1;ESA.q=[]} // EN-PRAISE: a cheer is not cut off: the new line waits for it (what was queued goes, as with hush)
+  if(!es&&enSay(t,btn,q,slow))return; // EN-PRAISE: a recorded cheer (or the grown-up's clip)
   if(fs){if(!q)hush();const it={a:fs,i:0,t:String(t),btn,slow};if(q&&speakBusy())ESA.q.push(it);else esaPlay(it);return} // ES-AUDIO
   if(es&&esVoice()=='no'){esNote();if(btn)btn.classList.remove('talking');return}if(!canSpeak()){if(btn)noVoice(btn);return}
   if(!q)hush();if(q&&(ESA.cur||ESA.q.length))ESA.q.push({s:[t,btn,es,slow]});else ttsSay(t,btn,es,slow)}
 // the tablet's voice. ESA.tts counts our utterances still to end (a queued recording starts when it is 0); a slow poll stands in
 // for an end event that some engines never fire
-function ttsSay(t,btn,es,slow){
-  try{const u=new SpeechSynthesisUtterance(String(t).replace(/−/g,' minus '));u.rate=(es?.8:.88)*(slow>0&&slow<1?slow:1);u.pitch=1.1;u.lang=es?'es-MX':'en-US';
+function ttsSay(t,btn,es,slow,cheer){
+  try{const u=new SpeechSynthesisUtterance(String(t).replace(/−/g,' minus '));if(cheer)ESA.tc=u;u.rate=(es?.8:.88)*(slow>0&&slow<1?slow:1);u.pitch=1.1;u.lang=es?'es-MX':'en-US';
   const v=pickVoice(es);if(v)u.voice=v;
-  const g=ESA.gen;let fin=false;const end=()=>{if(fin)return;fin=true;ESA.us=ESA.us.filter(x=>x!==u);if(g!==ESA.gen)return;ESA.tts=Math.max(0,ESA.tts-1);esaPump()};
+  const g=ESA.gen;let fin=false;const end=()=>{if(fin)return;fin=true;ESA.us=ESA.us.filter(x=>x!==u);if(ESA.tc===u)ESA.tc=null;if(g!==ESA.gen)return;ESA.tts=Math.max(0,ESA.tts-1);esaPump()};
   ESA.tts++;ESA.us.push(u);ESA.t0=Date.now(); // ESA.us keeps the utterance alive until it ends (an engine may drop the end event of a collected one)
   if(btn){let started=false;btn.classList.add('talking');u.onstart=()=>{started=true};u.onend=u.onerror=()=>{btn.classList.remove('talking');end()};
     setTimeout(()=>{if(!started&&!speechSynthesis.speaking)noVoice(btn)},2500)}else u.onend=u.onerror=end;
@@ -7089,6 +7122,13 @@ function playClip(kind){const cs=CLIPS.filter(c=>c.kind==kind);if(!cs.length||!S
   if(!b.length){b=shuffle(cs.map(c=>c.id));if(b.length>1&&b[0]==BAG['last_'+kind])b.push(b.shift())}
   const id=b.shift();BAG[kind]=b;BAG['last_'+kind]=id;const c=cs.find(x=>x.id==id);
   try{hush();const a=new Audio(c.url);a.play().catch(()=>{});sfxDuck(()=>!a.ended&&!a.paused);return true}catch(e){return false}}
+/* EN-PRAISE: a cheer in the round (kind 'cheer' after a right answer, 'oops' after a first miss). The grown-up's own clips of that kind
+   win: when there are any, one plays at the old rate p (after ms), and the recorded default never plays instead. Without clips, with
+   "Read questions out loud" on, the line t is said: in a recorded voice (say() in 12-speech.js, the Cheer voices choice) or the tablet's.
+   Returns 'clip', 'say' or false. */
+const hasClips=kind=>CLIPS.some(c=>c.kind==kind);
+function cheerSay(kind,t,p,ms){if(hasClips(kind)){if(Math.random()>=p)return false;if(ms){setTimeout(()=>playClip(kind),ms);return 'clip'}return playClip(kind)?'clip':false}
+  if(!S.voice)return false;say(t);return 'say'}
 const CLIPKINDS=[
  ['cheer','Cheers','Played after right answers.',['Great job, {name}!','You\'re so smart!','Way to go!','Boom! You nailed it!','I\'m so proud of you!','High five!'],'party'],
  ['oops','Try again','Played sometimes after a miss.',['That\'s okay, try again!','Almost! Look again.','You can do it!','Mistakes help us learn!','Take your time, buddy.','Give it another try!'],'thumbs-up'],
@@ -7643,9 +7683,9 @@ function home(first){
     ${UI.ibtn(S.sound ? 'sound-on' : 'sound-off', S.sound ? 'Sound is on' : 'Sound is off', { id: 'snd', size: 'sm' })}
     ${PRF.homeBtn()}${UI.ibtn('gear', 'Grown-ups: hold', { id: 'gear', size: 'sm' })}</div>
   <div class="scroll hm" id="hs"><div class="hm-cols">
-   <div class="hm-col">${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('target', 26)}<span>Today's missions</span></h2>${hmMissions()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}${hmDaily()}</div>
+   <div class="hm-col">${spkStarHTML()}${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('target', 26)}<span>Today's missions</span></h2>${hmMissions()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}${hmDaily()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
-   <p class="hm-ver">${ico('star', 16)}<span>Star School ${RELEASE} (build v155)</span></p></div>`);
+   <p class="hm-ver">${ico('star', 16)}<span>Star School ${RELEASE} (build v165)</span></p></div>`);
   music(true);
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'heart');
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
@@ -9235,6 +9275,7 @@ function addMiss(q){const p=P(q.sk),m=p.miss[q.label]||{tot:0};m.tot=(m.tot||0)+
   const ks=Object.keys(p.miss);if(ks.length>40){ks.sort((a,b)=>p.miss[a].tot-p.miss[b].tot);delete p.miss[ks[0]]}
   revMiss(q)} // P5-02: the review item (59-review.js)
 const PRAISE=['Great job!','You got it!','Awesome!','Super!','Nice!','Yes!','Way to go!','Brilliant!','Boom!','Nailed it!'];
+const CHEERS=[...new Set([...PRAISE,...PET_YAY])]; // EN-PRAISE: a right answer shows and says one of these (recorded in six voices, tools/en-audio.js)
 function check(v,el){if(G.lock)return;const q=G.q,K=KIND[q.kind],p=P(q.sk),ok=K.same?K.same(q,v):String(v)===String(q.ans);
   if(G.tries==0&&!G.retry)mastTry(q,ok,null,G.hq); // P1-08: mastery record and in-round adaptation (R-01b: a right answer with the hint showing counts half)
   const src=el||$('#slot')||$('.lslots')||$('.inp');
@@ -9254,14 +9295,14 @@ function check(v,el){if(G.lock)return;const q=G.q,K=KIND[q.kind],p=P(q.sk),ok=K.
     let wait=q.after?1900:1200;
     if(ko){wait+=1500;setTimeout(bossKO,500)}
     else if([3,5,8,10].includes(G.streak)){setTimeout(SFX.streak,350);fb(`${G.streak} in a row!`,'streak');petSay("You're on fire!");
-      if(!q.after&&!playClip('cheer')&&S.voice)say(`${G.streak} in a row! ${pick(['Amazing','Wow','Incredible','Super'])}, ${S.name}!`);wait+=300}
+      if(!q.after&&!playClip('cheer')&&S.voice){const w=pick(['Amazing','Wow','Incredible','Super']);say(enCheerOn()?`${G.streak} in a row! ${w}!`:`${G.streak} in a row! ${w}, ${S.name}!`)}wait+=300} // EN-PRAISE: recorded, without the name
     else if(G.boss){fb(pick(['Zap!','Pow!','Bam!','Zing!']),'zap');petSay(pick(['Ouch!','Hey!','Oof!','No fair!']))}
-    else{fb(pick(PRAISE));petSay(pick(PET_YAY));if(!q.after&&Math.random()<.3&&playClip('cheer'))wait+=400}
+    else{const pr=pick(CHEERS);fb(pr);petSay(pick(PET_YAY));const cs=q.after&&hasClips('cheer')?false:cheerSay('cheer',pr,.3);if(cs=='clip')wait+=400;else if(cs&&q.after)wait+=700} // EN-PRAISE: said in a recorded voice (q.after waits for it)
     if(q.after)say(q.after,null,q.afterLang);save();setTimeout(next,wait);return}
   G.tries++;G.streak=0;qStreak();
   SFX.wrong();anim($('#runner'),'sad');if(G.boss){anim($('#bossE'),'jump');setTimeout(SFX.giggle,250)}const pr=$('#prompt');pr.classList.remove('shake');void pr.offsetWidth;pr.classList.add('shake');
   if(el){el.classList.add('wrong');el.disabled=true}
-  if(G.tries==1){addMiss(q);fb('Try again!','again');petSay(G.boss?pick(['Ha ha! Missed me!','Hee hee!','Try again!']):pick(PET_OOPS));if(Math.random()<.5)setTimeout(()=>playClip('oops'),300);$('#hint').innerHTML=hintHTML(q);fit();hintIn();
+  if(G.tries==1){addMiss(q);fb('Try again!','again');const oo=G.boss?pick(['Ha ha! Missed me!','Hee hee!','Try again!']):pick(PET_OOPS);petSay(oo);if(!G.boss)cheerSay('oops',oo,.5,300);else if(Math.random()<.5)setTimeout(()=>playClip('oops'),300);$('#hint').innerHTML=hintHTML(q);fit();hintIn();
     K.retry(q,G,()=>{$('#hint').innerHTML=hintHTML(q);fit();hintIn()});
     save();return}
   G.lock=true;
@@ -9320,7 +9361,7 @@ function finish(){
       $('#bonus').onclick=()=>balloons(g.mix||g.boss||g.test?(p||pick(['math','read','es'])):skArea(g.sk,g.lv),g);
       if($('#nxt'))$('#nxt').onclick=()=>{SFX.whoosh();open(p,nextI)};
       if($('#again'))$('#again').onclick=()=>{SFX.whoosh();g.mix?(g.daily?startReview():startMix()):g.test?testOut(p,g.test.wi):open(p,ni)};$('#menu').onclick=()=>g.mix?home():pathMap(p);
-      if(grew)setTimeout(()=>growShow(before),300);else if(!playClip('done')&&S.voice)say(`You got ${sc} stars!`+(newPass?' You unlocked the next stop!':''))},t);
+      if(grew)setTimeout(()=>growShow(before),300);else if(!playClip('done')&&S.voice)say((sc==1?'You got 1 star!':`You got ${sc} stars!`)+(newPass?' You unlocked the next stop!':''))},t);
     t+=300;
     // what the child earned (game time with its reasons, coins), then one card per message: [where, html, sound, burst]
     const why=`<ul class="rw-pl">${PT.lines.map(([v,l])=>`<li${v<0?' class="neg"':''}>${ico(v<0?'replay':RW.ptIcon(l),18)}<span>${v<0?'−':'+'}${fmtM(Math.abs(v))} ${esc(l)}</span></li>`).join('')}</ul>`+
@@ -9357,6 +9398,217 @@ function roundOops(){
   document.body.appendChild(o);
   $('#oops').onclick=()=>{o.remove();home(true)};
 }
+/* ---------- S-SPK2 B: the offline sound check of "Say it!" (every tablet; used when the tablet cannot recognise Spanish itself) ----------
+   The child's recording is compared with the recorded model of the same line (ES-AUDIO, audio/es/<file>.ogg) and with up to 3
+   recorded lines that are spelled and sound close to it (the distractors). Standard, documented method:
+     1. decode both with Web Audio (OfflineAudioContext at 16 kHz, mono; decodeAudioData resamples)
+     2. levels: silence or a whisper (no 0.15 s of voice) -> 'quiet'; clipped (over 6% of samples at full scale) -> 'loud'
+     3. trim the silence (frames 30 dB under the loudest frame, or under the floor), pre-emphasis 0.97
+     4. MFCC: 25 ms Hamming frames every 10 ms, 512-point FFT, 26 mel filters 80-6800 Hz, log, DCT, coefficients 1-12 (c0, the
+        loudness, is left out), minus their mean over the utterance (cepstral mean normalisation: another microphone, room or voice
+        shifts every frame the same way, and this takes it out). The child's recording is also measured with the filters moved
+        by 0.85, 0.92, 1.08 and 1.16 (vocal tract length normalisation by a small grid search: a child's voice has higher
+        formants than the grown-up model) and the closest of the five is used, for the model and the distractors alike
+     5. dynamic time warping (Sakoe-Chiba band, Euclidean frame distance, steps right / down / diagonal), the path cost divided by
+        n + m: the same word said faster or slower still lines up
+   Judgement (SPKC.judge): 'great' when the target is the best match by a clear margin (its distance at most RATIO times the
+   nearest distractor's) and under ABS; otherwise 'again' ("Close! Listen again"). A child is never told they were wrong.
+   Thresholds come from tools/spk-calib.js on the recordings themselves (docs/PROGRESS.md S-SPK2 has the numbers; tools/test.js
+   "Spanish speaking check S-SPK2" checks them again). Nothing here stores or sends anything: the only file read is the app's own
+   recording of the line (from the service worker's cache), and the child's recording is only decoded in memory.
+   It runs in small steps (a yield between the files) so a cheap tablet keeps drawing; about 1 s at 6x CPU throttle. */
+const SPKC={SR:16000,WIN:400,HOP:160,NFFT:512,NM:26,NC:12,LO:80,HI:6800,WARPS:[0.85,0.92,1.08,1.16],
+  ABS:1.6,RATIO:1.15, // calibrated (tools/spk-calib.js): see docs/PROGRESS.md S-SPK2
+  QUIET:0.004,MINV:15,CLIP:0.06,DROP:30,
+  mel:{},win:null,dct:null,cache:new Map()};
+// the mel filterbank (for a warp al: every filter's frequencies times al), made once each
+function spkcMel(al){if(SPKC.mel[al])return SPKC.mel[al];const {SR,NFFT,NM,LO,HI}=SPKC,hz=m=>700*(Math.pow(10,m/2595)-1),mel=h=>2595*Math.log10(1+h/700);
+  const m0=mel(LO),m1=mel(HI),pts=[];for(let i=0;i<NM+2;i++)pts.push(Math.min(NFFT/2,Math.floor((NFFT+1)*hz(m0+(m1-m0)*i/(NM+1))*al/SR)));
+  const B=[];for(let k=1;k<=NM;k++){const a=pts[k-1],b=pts[k],c=pts[k+1],f=[];
+    for(let j=a;j<=c;j++){const w=j<b?(j-a)/Math.max(1,b-a):(c-j)/Math.max(1,c-b);if(w>0)f.push([j,w])}if(!f.length)f.push([b,1]);B.push(f)}
+  return SPKC.mel[al]=B}
+// the Hamming window and the DCT matrix, made once
+function spkcInit(){if(SPKC.win)return;const {NM,NC,WIN}=SPKC;
+  SPKC.win=new Float32Array(WIN);for(let i=0;i<WIN;i++)SPKC.win[i]=0.54-0.46*Math.cos(2*Math.PI*i/(WIN-1));
+  SPKC.dct=[];for(let c=1;c<=NC;c++){const r=new Float32Array(NM);for(let k=0;k<NM;k++)r[k]=Math.cos(Math.PI*c*(k+0.5)/NM);SPKC.dct.push(r)}}
+// in-place radix-2 FFT
+function spkcFFT(re,im){const n=re.length;
+  for(let i=1,j=0;i<n;i++){let b=n>>1;for(;j&b;b>>=1)j^=b;j^=b;if(i<j){let t=re[i];re[i]=re[j];re[j]=t;t=im[i];im[i]=im[j];im[j]=t}}
+  for(let len=2;len<=n;len<<=1){const a=-2*Math.PI/len,wr=Math.cos(a),wi=Math.sin(a);
+    for(let i=0;i<n;i+=len){let cr=1,ci=0;for(let k=0;k<len/2;k++){const p=i+k,q=p+len/2,xr=re[q]*cr-im[q]*ci,xi=re[q]*ci+im[q]*cr;
+      re[q]=re[p]-xr;im[q]=im[p]-xi;re[p]+=xr;im[p]+=xi;const t=cr*wr-ci*wi;ci=cr*wi+ci*wr;cr=t}}}}
+// x: Float32Array at 16 kHz -> {k:'ok'|'quiet'|'loud', f:[Float32Array(NC)] (the trimmed, normalised MFCC frames), fw:[f, one per
+// warp in SPKC.WARPS] (only with warp true: the child's side), sec}
+function spkcFeat(x,warp){spkcInit();const {WIN,HOP,NFFT,NM,NC}=SPKC,n=x.length;
+  if(n<WIN)return{k:'quiet',f:[],sec:0};
+  let clip=0;for(let i=0;i<n;i++)if(Math.abs(x[i])>=0.985)clip++;
+  const nf=Math.floor((n-WIN)/HOP)+1,en=new Float32Array(nf);let emax=-1e9;
+  for(let t=0;t<nf;t++){let s=0;for(let i=0;i<WIN;i++){const v=x[t*HOP+i];s+=v*v}en[t]=10*Math.log10(s/WIN+1e-12);if(en[t]>emax)emax=en[t]}
+  const floor=20*Math.log10(SPKC.QUIET),cut=Math.max(emax-SPKC.DROP,floor);let a=-1,b=-1,voiced=0;
+  for(let t=0;t<nf;t++)if(en[t]>cut){voiced++;if(a<0)a=t;b=t}
+  if(a<0||voiced<SPKC.MINV)return{k:'quiet',f:[],sec:voiced*HOP/SPKC.SR};
+  if(clip/n>SPKC.CLIP)return{k:'loud',f:[],sec:(b-a+1)*HOP/SPKC.SR};
+  a=Math.max(0,a-2);b=Math.min(nf-1,b+2);
+  const re=new Float32Array(NFFT),im=new Float32Array(NFFT),lm=new Float32Array(NM),als=[1].concat(warp?SPKC.WARPS:[]),fs=als.map(()=>[]),pws=[];
+  for(let t=a;t<=b;t++){re.fill(0);im.fill(0);const o=t*HOP,pw=new Float32Array(NFFT/2+1);
+    for(let i=0;i<WIN;i++)re[i]=(x[o+i]-0.97*(o+i>0?x[o+i-1]:0))*SPKC.win[i];
+    spkcFFT(re,im);for(let j=0;j<=NFFT/2;j++)pw[j]=re[j]*re[j]+im[j]*im[j];
+    als.forEach((al,w)=>{const M=spkcMel(al);for(let k=0;k<NM;k++){let s=0;for(const [j,v] of M[k])s+=pw[j]*v;lm[k]=Math.log(s+1e-10)}
+      const c=new Float32Array(NC);for(let q=0;q<NC;q++){let s=0;const r=SPKC.dct[q];for(let k=0;k<NM;k++)s+=r[k]*lm[k];c[q]=s}fs[w].push(c)})}
+  for(const f of fs){const mu=new Float32Array(NC);for(const c of f)for(let q=0;q<NC;q++)mu[q]+=c[q]/f.length;
+    for(const c of f)for(let q=0;q<NC;q++)c[q]=(c[q]-mu[q])/10}
+  return{k:'ok',f:fs[0],fw:fs.slice(1),sec:fs[0].length*HOP/SPKC.SR}}
+// DTW distance between two frame lists (lower = closer); Infinity when one is more than 3 times as long as the other
+function spkcDTW(A,B){const n=A.length,m=B.length;if(!n||!m)return Infinity;if(n>3*m||m>3*n)return Infinity;
+  const w=Math.max(Math.abs(n-m),Math.ceil(0.25*Math.max(n,m)))+2,NC=A[0].length;let p=new Float64Array(m+1).fill(Infinity),c=new Float64Array(m+1);p[0]=0;
+  for(let i=1;i<=n;i++){c.fill(Infinity);const ci=i*m/n,a=A[i-1];
+    for(let j=Math.max(1,Math.floor(ci-w));j<=Math.min(m,Math.ceil(ci+w));j++){const b=B[j-1];let d=0;for(let q=0;q<NC;q++){const e=a[q]-b[q];d+=e*e}
+      c[j]=Math.sqrt(d)+Math.min(p[j],c[j-1],p[j-1])}
+    const t=p;p=c;c=t}
+  return p[m]/(n+m)}
+// the child's distance to a recorded line: the closest of the child's warps
+const spkcDist=(kid,ref)=>Math.min(spkcDTW(kid.f,ref.f),...(kid.fw||[]).map(f=>spkcDTW(f,ref.f)));
+// the decision from the child's features and the target's and distractors' (pure; tools/test.js and tools/spk-calib.js use it)
+function spkcDecide(kid,tgt,dis){if(kid.k!='ok')return{k:kid.k,d:Infinity,dk:Infinity};
+  const d=spkcDist(kid,tgt),dk=Math.min(Infinity,...dis.map(x=>spkcDist(kid,x)));
+  return{k:d<=SPKC.ABS&&d<=dk*SPKC.RATIO?'great':'again',d,dk}}
+/* the distractors of a line: up to 3 other recorded lines spelled most like it (letters, articles left out), each a different word, a
+   line the matcher would accept left out, lines of the same voice first (so the voice never decides), then by name; deterministic */
+function spkcNear(text,k=3){if(typeof ES_AUDIO=='undefined')return[];const L=ES_AUDIO.lines,key=esKey(text),me=L[key];if(!me)return[];
+  const t=spkNorm(text).replace(/ /g,''),out=[];
+  for(const s in L){if(s==key||L[s][0]==me[0])continue;const h=spkNorm(s).replace(/ /g,'');if(!h||spkMatch(text,s)||spkMatch(s,text))continue;
+    const sc=spkDist(t,h)/Math.max(t.length,h.length)+(L[s][1]==me[1]?0:0.15);out.push([sc,s])}
+  const seen=new Set(),pick=[];for(const [,s] of out.sort((a,b)=>a[0]-b[0]||(a[1]<b[1]?-1:1))){const w=spkNorm(s);if(seen.has(w))continue;seen.add(w);pick.push(s);if(pick.length>=k)break}
+  return pick} // one line per word: el pato, pato and un pato count once
+const spkcYield=()=>new Promise(r=>setTimeout(r,0));
+// decode an audio file's bytes to 16 kHz mono samples (Web Audio)
+async function spkcDecode(buf){const C=window.OfflineAudioContext||window.webkitOfflineAudioContext;if(!C)throw new Error('no Web Audio');
+  const ctx=new C(1,1,SPKC.SR),ab=await new Promise((res,rej)=>{const p=ctx.decodeAudioData(buf,res,rej);if(p&&p.then)p.then(res,rej)});
+  if(ab.numberOfChannels==1)return ab.getChannelData(0);const x=new Float32Array(ab.length);
+  for(let c=0;c<ab.numberOfChannels;c++){const d=ab.getChannelData(c);for(let i=0;i<x.length;i++)x[i]+=d[i]/ab.numberOfChannels}return x}
+// a recorded line's features (cached for the session): the app's own file, from the service worker's cache when offline
+async function spkcLine(text){const fs=esFiles(text);if(!fs||fs.length!=1||location.protocol=='file:')return null;const f=fs[0][0]; // file:// (a page opened from a file) cannot read its own files: no check
+  if(SPKC.cache.has(f))return SPKC.cache.get(f);
+  const r=await fetch(ES_AUDIO.dir+f+ES_AUDIO.ext);if(!r.ok)return null;
+  const ft=spkcFeat(await spkcDecode(await r.arrayBuffer()));if(SPKC.cache.size>40)SPKC.cache.delete(SPKC.cache.keys().next().value);
+  SPKC.cache.set(f,ft);return ft}
+// the whole check: the child's recording (a Blob) against the line -> {k:'great'|'again'|'quiet'|'loud', ms} or null (no check here)
+async function spkcJudge(blob,text){const t0=performance.now();let at='model';
+  try{const tg=await spkcLine(text);if(!tg||tg.k!='ok')return null;await spkcYield();at='recording '+blob.type+' '+blob.size;
+    let x;try{x=await spkcDecode(await blob.arrayBuffer())}catch(e){return{k:'quiet',ms:performance.now()-t0}} // no sound in it at all
+    const kid=spkcFeat(x,true);await spkcYield();
+    if(kid.k!='ok')return{k:kid.k,ms:performance.now()-t0};at='similar words';
+    const dis=[];for(const s of spkcNear(text)){const x=await spkcLine(s);if(x&&x.k=='ok')dis.push(x);await spkcYield()}
+    return Object.assign(spkcDecide(kid,tg,dis),{ms:performance.now()-t0})}catch(e){SPKC.err=at+': '+e;return null}} // SPKC.err: the last failure (no check then)
+/* ---------- S-SPK2 A and C: Spanish listening on the tablet itself, and the grown-ups' listening corner ----------
+   A. Spanish listening (Grown-ups card #gw-lis). Chrome can recognise speech ON THE DEVICE (Web Speech API: the static
+      SpeechRecognition.available({langs, processLocally: true}) says 'available', 'downloadable', 'downloading' or 'unavailable';
+      SpeechRecognition.install({langs, processLocally: true}) downloads the language once; a recogniser with processLocally = true
+      never sends audio away. Older Chrome: availableOnDevice(lang) / installOnDevice(lang) / mode 'ondevice-only'). The card says
+      what this tablet can do and, when Spanish can be downloaded, offers "Download Spanish listening" (needs internet once:
+      onlineNote and needOnline, 88-online.js). Then "Say it!" (50-say.js spkSR) says what it heard and whether it matches. A server
+      recogniser is never used: no on-device Spanish means the offline sound check (B, 50-say-cmp.js).
+   C. The listening corner (Grown-ups card #gw-corner). The child's last Say it! recordings (at most SPKR.MAX per child) stay ON THIS
+      TABLET in IndexedDB (database 'starschool-say', store 'rec': {id, kid, t, es, say, blob, star}; id is PRF.k('spk') + ':' + time,
+      so each child's are their own) and are deleted after the period the grown-up picks (S.spkKeep: 'day' (absent), 'week', or
+      'never': not kept at all). The card lists them with the word: Listen plays the model then the child, Give a star marks it and
+      queues "Your grown-up gave you a star for '<word>'!" for Home (S.spkStars, shown once, with a sticker), and "Delete all
+      recordings" removes them. Nothing is ever sent anywhere. */
+const SPKL={LANGS:['es-MX','es-US','es-ES'],busy:0};
+const spkSRC=()=>typeof window!='undefined'&&(window.SpeechRecognition||window.webkitSpeechRecognition)||null;
+// what this tablet can do on the device: {s:'available'|'downloadable'|'downloading'|'unavailable'|'none', lang}
+async function spkLisState(){const SR=spkSRC();if(!SR)return{s:'none',lang:''};const rank={unavailable:0,downloadable:1,downloading:2,available:3};
+  let best={s:'unavailable',lang:''};
+  try{for(const l of SPKL.LANGS){let a='';
+      if(typeof SR.available=='function')a=await SR.available({langs:[l],processLocally:true});
+      else if(typeof SR.availableOnDevice=='function')a=await SR.availableOnDevice(l);else return{s:'none',lang:''};
+      if((rank[a]|0)>rank[best.s])best={s:a,lang:l};if(a=='available')break}}catch(e){}
+  return best}
+// download a language for on-device use (true when it is installed)
+async function spkLisInstall(lang){const SR=spkSRC();if(!SR)return false;
+  try{if(typeof SR.install=='function')return !!(await SR.install({langs:[lang],processLocally:true}));
+    if(typeof SR.installOnDevice=='function')return !!(await SR.installOnDevice(lang))}catch(e){}
+  return false}
+const SPKL_TXT={available:'This tablet can listen to Spanish on the device. In “Say it!” it tells your child what it heard.',
+  downloadable:'This tablet can listen to Spanish on the device after a one-time download.',
+  downloading:'Spanish listening is downloading. It works once the download is done.',
+  unavailable:'This tablet cannot listen to Spanish on the device. “Say it!” compares your child’s voice with the recorded Spanish instead.',
+  none:'This browser cannot listen to Spanish on the device. “Say it!” compares your child’s voice with the recorded Spanish instead.'};
+function spkLisCard(){return GW.card('gw-lis','ear','Spanish listening',
+  `<p class="gw-note" id="lis-st" role="status">${ico('clock',22)}<span>Checking this tablet…</span></p><div id="lis-act"></div>
+  <p class="gw-sub">Listening happens on the tablet itself. Your child’s voice is never sent anywhere.</p>`)}
+async function spkLisBind(){const st=$('#lis-st');if(!st)return;const r=await spkLisState();if(!st.isConnected)return;
+  const ok=r.s=='available';st.innerHTML=`${ico(ok?'check-circle':r.s=='downloadable'||r.s=='downloading'?'download':'info',22,ok?'ic-good':'')}<span>${SPKL_TXT[r.s]||SPKL_TXT.none}</span>`;
+  const a=$('#lis-act');if(!a)return;
+  if(r.s!='downloadable'){a.innerHTML='';return}
+  a.innerHTML=`<div class="gw-bkrow">${UI.btn('Download Spanish listening',{size:'sm',icon:'download',id:'lis-dl'})}${onlineNote('Needs the internet once, for the download.')}</div>`;
+  $('#lis-dl').onclick=e=>needOnline(async()=>{if(SPKL.busy)return;SPKL.busy=1;const b=e.currentTarget;b.disabled=true;
+      st.innerHTML=`${ico('download',22)}<span>${SPKL_TXT.downloading}</span>`;
+      const ok=await spkLisInstall(r.lang);SPKL.busy=0;if(!st.isConnected)return;
+      if(ok){SPK.sr='';spkSrProbe();fb('Spanish listening is ready on this tablet.')}else fb('The download did not finish. Try again later.','warn');
+      spkLisBind()},{block:true,msg:'You’re offline. Connect to wifi to download Spanish listening.'})}
+
+/* ---- C: the listening corner ---- */
+const SPKR={MAX:6,DAY:864e5,KEEP:{day:1,week:7,never:0},db:null,
+  open(){return new Promise((res,rej)=>{if(this.db)return res(this.db);const r=indexedDB.open('starschool-say',1);
+    r.onupgradeneeded=()=>r.result.createObjectStore('rec',{keyPath:'id'});r.onsuccess=()=>{this.db=r.result;res(this.db)};r.onerror=()=>rej(r.error)})},
+  async all(){const d=await this.open();return new Promise(res=>{const out=[],c=d.transaction('rec').objectStore('rec').openCursor();
+    c.onsuccess=e=>{const x=e.target.result;if(x){out.push(x.value);x.continue()}else res(out)};c.onerror=()=>res(out)})},
+  async put(v){const d=await this.open();return new Promise((res,rej)=>{const t=d.transaction('rec','readwrite');t.objectStore('rec').put(v);t.oncomplete=()=>res();t.onerror=()=>rej(t.error)})},
+  async del(id){const d=await this.open();return new Promise(res=>{const t=d.transaction('rec','readwrite');t.objectStore('rec').delete(id);t.oncomplete=()=>res();t.onerror=()=>res()})}};
+const spkKeep=()=>SPKR.KEEP[S.spkKeep]!=null?S.spkKeep:'day';
+const spkKid=r=>r&&typeof r.id=='string'&&r.id.startsWith(PRF.k('spk')+':');
+// which of a child's recordings go (pure): older than the period, or past the newest MAX; 'never' keeps none
+function spkrGone(recs,now,keep){const days=SPKR.KEEP[keep]!=null?SPKR.KEEP[keep]:1,s=recs.slice().sort((a,b)=>b.t-a.t);
+  return s.filter((r,i)=>!days||i>=SPKR.MAX||!(now-r.t<days*SPKR.DAY)||r.t>now+SPKR.DAY).map(r=>r.id)}
+// this child's recordings, newest first, after deleting what is past its time
+async function spkrList(){try{const all=(await SPKR.all()).filter(spkKid),gone=new Set(spkrGone(all,Date.now(),spkKeep()));
+    for(const id of gone)await SPKR.del(id);return all.filter(r=>!gone.has(r.id)).sort((a,b)=>b.t-a.t)}catch(e){return[]}}
+// keep a Say it! recording (50-say.js, after each recording); nothing when the grown-up picked "Don't keep"
+async function spkrAdd(blob,it){if(!blob||!blob.size||!it||spkKeep()=='never')return;
+  try{await SPKR.put({id:PRF.k('spk')+':'+Date.now(),kid:PRF.cur,t:Date.now(),es:it.es,say:it.say,blob,star:0});await spkrList()}catch(e){}}
+// delete a child's recordings (this child: Delete all; another: when that child is removed or starts over, PRF.dropClips)
+async function spkrDrop(id=PRF.cur){try{const p=PRF.k('spk',id)+':';for(const r of await SPKR.all())if(String(r.id).startsWith(p))await SPKR.del(r.id)}catch(e){}}
+// a star from the grown-up: marked on the recording and queued for Home (once)
+async function spkrStar(r){if(!r||r.star)return;r.star=1;try{await SPKR.put(r)}catch(e){}
+  S.spkStars=(Array.isArray(S.spkStars)?S.spkStars:[]).concat([{es:String(r.es),t:Date.now()}]).slice(-10);save()}
+const SPKC_URLS=[];
+function spkrFree(){while(SPKC_URLS.length)try{URL.revokeObjectURL(SPKC_URLS.pop())}catch(e){}}
+function spkCornerCard(){const k=spkKeep();
+  return GW.card('gw-corner','ear','Listening corner',`<div id="lc-list" class="lc-list" aria-live="polite"><p class="gw-sub">Looking for recordings…</p></div>
+    <div class="gw-row"><span class="gw-rl">Keep recordings</span>${GW.seg('keep',['day','week','never'],k,'Keep Say it! recordings for',v=>({day:'1 day',week:'1 week',never:'Don’t keep'})[v])}</div>
+    ${UI.btn('Delete all recordings',{size:'sm',kind:'ghost',icon:'trash',id:'lc-del',cls:'gw-risk'})}`,
+    {sub:'Hear your child’s last “Say it!” tries: the Spanish first, then your child. Tap the star to cheer them on. Recordings stay on this tablet and are deleted automatically.'})}
+const spkWhen2=t=>{const d=new Date(t),n=new Date();const hm=d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+  return d.toDateString()==n.toDateString()?'Today '+hm:d.toLocaleDateString([],{weekday:'short'})+' '+hm};
+async function spkCornerBind(){
+  $$('[data-keep]').forEach(b=>b.onclick=async()=>{S.spkKeep=b.dataset.keep;save();
+    $$('[data-keep]').forEach(x=>{const on=x===b;x.classList.toggle('on',on);x.setAttribute('aria-pressed',String(on))});await spkCornerFill()});
+  const del=$('#lc-del');let armed=false;
+  if(del)del.onclick=async()=>{if(!armed){armed=true;del.querySelector('span').textContent='Tap again to delete them';return}
+    armed=false;del.querySelector('span').textContent='Delete all recordings';await spkrDrop();fb('Recordings deleted.');await spkCornerFill()};
+  await spkCornerFill()}
+async function spkCornerFill(){const L=$('#lc-list');if(!L)return;const rs=await spkrList();if(!L.isConnected)return;spkrFree();
+  if(!rs.length){L.innerHTML=`<p class="gw-note">${ico('mic',22)}<span>${spkKeep()=='never'?'Recordings are not kept. Pick 1 day or 1 week to hear them here.':'No recordings yet. They show here after your child uses “Say it!”.'}</span></p>`;return}
+  const nm=esc(S.name||'your child');
+  L.innerHTML=rs.map((r,i)=>`<div class="lc-row"><span class="lc-w"><b lang="es">${esc(r.es)}</b><small>${esc(spkWhen2(r.t))}</small></span>
+    <span class="lc-b">${UI.btn('Listen',{size:'sm',icon:'play',attrs:`data-lcp="${i}" aria-label="Listen: ${esc(r.es)}, the Spanish then ${nm}"`})}
+    <button class="btn soft sm lc-star${r.star?' on':''}" data-lcs="${i}" aria-pressed="${!!r.star}" aria-label="${r.star?'Star given for ':'Give a star for '}${esc(r.es)}">${ico('star',24,r.star?'ic-star':'')}<span>${r.star?'Star given':'Star'}</span></button></span></div>`).join('');
+  $$('[data-lcp]').forEach(b=>b.onclick=()=>spkCornerPlay(rs[+b.dataset.lcp],b));
+  $$('[data-lcs]').forEach(b=>b.onclick=async()=>{const r=rs[+b.dataset.lcs];if(r.star)return;await spkrStar(r);SFX.magic();
+    fb((S.name||'Your child')+' will see your star on Home.');spkCornerFill()})}
+// the model (the recording of the line, or the tablet's voice), then the child's recording
+function spkCornerPlay(r,btn){if(!r)return;hush();say(r.say||r.es,btn,'es');const t0=Date.now();
+  const w=()=>{if(speakBusy()&&Date.now()-t0<6000)return setTimeout(w,150);
+    try{const u=URL.createObjectURL(r.blob);SPKC_URLS.push(u);const a=new Audio(u);a.play().catch(()=>{})}catch(e){}};setTimeout(w,400)}
+
+/* ---- Home: "Your grown-up gave you a star for 'mariposa'!" once, with a sticker for each star (at most 3) ---- */
+function spkStarHTML(){const q=Array.isArray(S.spkStars)?S.spkStars.filter(x=>x&&x.es):[];if(!q.length)return'';
+  const ws=[...new Set(q.map(x=>String(x.es)))],st=[];for(let i=0;i<Math.min(3,q.length);i++)st.push(award().s);
+  S.spkStars=[];save();const said=`Your grown-up gave you a star for ${ws.join(' and ')}!`;
+  setTimeout(()=>{if($('#hmgstar')&&(S.voice||gradeOf()<=0))say(said,null,null,1)},600); // Pre-K and K hear it too
+  const list=ws.length==1?`‘${esc(ws[0])}’`:ws.slice(0,-1).map(w=>`‘${esc(w)}’`).join(', ')+` and ‘${esc(ws[ws.length-1])}’`;
+  return`<div class="hm-gstar" id="hmgstar" role="status"><span class="hm-gsi">${ico('star',36)}</span><p>Your grown-up gave you a star for <span lang="es">${list}</span>! <span class="hm-gsk">You got a sticker: <span class="hm-gse" role="img" aria-label="sticker">${st.join(' ')}</span></span></p></div>`}
 /* ---------- S-SPK: Spanish speaking practice, the "Say it!" step (docs/reviews/R-01-spanish.md Should 7) ----------
    One "Say it!" step per Spanish stop round (every level of every unit, Las Frases and Los Cuentos; not bosses, Test out or Tricky
    Mix), after the 3rd question, and one in Daily Review after its first Spanish question. It is a step between questions (next() in
@@ -9370,13 +9622,19 @@ function roundOops(){
    Microphone: probed once per session (spkProbe: the API, then a microphone in enumerateDevices, then a denied permission). No
    microphone: one note for the session and the step is skipped. Denied (or refused on the first tap): the step shows a grown-up how to
    allow it, then goes on by itself; later steps that session are skipped.
-   Recordings stay in memory for the step only (an object URL, revoked when the step ends): never saved, never sent.
-   Speech recognition (a gentle "That sounded like ..." hint, never needed to go on): only when the browser can say the Spanish
-   model runs ON THE DEVICE (SpeechRecognition.available({processLocally}) or the older availableOnDevice), and the recogniser is
-   then started with processLocally (or mode 'ondevice-only'), so no audio ever leaves the tablet. Anything else: no hint, no message.
+   Recordings never leave the tablet. In the step they are an object URL (revoked when the step ends); S-SPK2: each one is also kept
+   for the grown-ups' listening corner (spkrAdd, 50-say-corner.js: IndexedDB on this tablet, deleted after 1 day by default, or not
+   kept at all), never sent.
+   The speaking check (S-SPK2, a kind line under the buttons, never needed to go on; "I said it!" / "Try again" always stay):
+   A. when the tablet recognises Spanish ON THE DEVICE (SpeechRecognition.available({processLocally}) or the older
+      availableOnDevice; the recogniser is started with processLocally (or mode 'ondevice-only'), so no audio ever leaves the
+      tablet): "That sounded like ..." and whether it matches (the lenient matcher below);
+   B. otherwise (or when A heard nothing): the offline sound check (spkcJudge, 50-say-cmp.js) compares the recording with the
+      recorded model and a few similar words: "Great job!", "Close! Listen again", "I couldn't hear you" (or a softer voice).
+   Never a server recogniser, never "wrong".
    Saved: S.esSpk (Grown-ups switch "Spanish speaking practice", per child; absent = on), S.day.spk (Spanish things said today; the
    daily mission "Say 5 Spanish words", 55-missions.js). Styles: src/css/42-say.css. */
-const SPK={MAX:4,AT:3,GOAL:5,mic:'?',deny:0,sr:'',note:0,tok:0,state:'',url:'',st:null,mr:null,rec:null,au:null,iv:0,tm:[],heard:null,it:null,done:null};
+const SPK={MAX:4,AT:3,GOAL:5,mic:'?',deny:0,sr:'',note:0,tok:0,state:'',url:'',st:null,mr:null,rec:null,au:null,iv:0,tm:[],heard:null,jd:null,told:0,it:null,done:null};
 const spkOn=()=>S.esSpk!==false&&S.esSpk!==0;
 // once per session: is there a microphone? ('?' not asked, 'wait' asking, 'yes', 'no'); SPK.deny: the permission is blocked
 function spkProbe(){if(SPK.mic!='?')return;
@@ -9479,7 +9737,7 @@ async function spkRec(){if(SPK.state=='rec')return spkStop();if(SPK.state!='read
   mr.onstop=()=>{try{st.getTracks().forEach(x=>x.stop())}catch(e){}SPK.st=null;if(!spkLive(t))return;
     const b=new Blob(ch,{type:mr.mimeType||'audio/webm'});
     if(!b.size){spkReady(false);return spkTip('I didn’t hear anything. Tap the microphone and try again!',true)}
-    SPK.url=URL.createObjectURL(b);spkPlay()};
+    SPK.url=URL.createObjectURL(b);spkJudge(b);if(typeof spkrAdd=='function')spkrAdd(b,SPK.it);spkPlay()};
   try{mr.start()}catch(e){st.getTracks().forEach(x=>x.stop());SPK.st=null;return spkGU('none')}
   spkSR(st);SPK.state='rec';let s=SPK.MAX;
   const a=$('#spkact'),dots=n=>`<span class="spk-dots" role="img" aria-label="${n} seconds left">${Array.from({length:SPK.MAX},(_,i)=>`<i class="${i<n?'on':''}"></i>`).join('')}</span>`;
@@ -9488,17 +9746,27 @@ async function spkRec(){if(SPK.state=='rec')return spkStop();if(SPK.state!='read
   SPK.iv=setInterval(()=>{s--;const d=a.querySelector('.spk-dots');if(d)d.outerHTML=dots(Math.max(0,s));if(s<=0)spkStop()},1000)}
 function spkStop(){clearInterval(SPK.iv);try{if(SPK.mr&&SPK.mr.state=='recording')SPK.mr.stop()}catch(e){}try{if(SPK.rec)SPK.rec.stop()}catch(e){}}
 // on-device recognition alongside the recording (fed the same microphone track where the browser takes one)
-function spkSR(st){SPK.heard=null;SPK.rec=null;const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SPK.sr||!SR)return;
+function spkSR(st){SPK.heard=null;SPK.jd=null;SPK.told=0;SPK.rec=null;const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SPK.sr||!SR)return;
   try{const r=new SR(),t=SPK.tok;r.lang=SPK.sr;r.interimResults=false;r.maxAlternatives=3;r.continuous=false;
     if('processLocally' in r)r.processLocally=true;else if('mode' in r)r.mode='ondevice-only';
     if(r.processLocally!==true&&r.mode!=='ondevice-only')return; // cannot promise on-device: not used
     r.onresult=e=>{if(t!==SPK.tok)return;const a=[];for(const x of e.results)for(let i=0;i<x.length;i++)a.push(x[i].transcript);SPK.heard=a;spkHeard()};
     r.onerror=e=>{if(/network|not-allowed|service|language|unavailable/.test(e&&e.error||''))SPK.sr=''};
     SPK.rec=r;const tr=st.getAudioTracks?st.getAudioTracks()[0]:null;r.start(tr)}catch(e){SPK.rec=null}}
-// the gentle hint, once there is something heard and the comparison has played
-function spkHeard(){const e=$('#spkheard'),h=SPK.heard;if(!e||SPK.state!='check'||!h||!h.length)return;
-  const ok=spkMatch(SPK.it.es,h),said=(ok&&h.find(x=>spkMatch(SPK.it.es,x)))||h[0];
-  e.innerHTML=`${ico(ok?'check-circle':'ear',22,ok?'ic-good':'ic-brand')}<span>That sounded like “<span lang="es">${esc(said)}</span>”.${ok?' ¡Muy bien!':' Listen again and compare.'}</span>`;e.classList.add('on')}
+// B: the offline sound check of this recording (S-SPK2), in the background while the comparison plays
+function spkJudge(b){SPK.jd=null;if(typeof spkcJudge!='function'||SPK.nov)return;const t=SPK.tok;
+  spkcJudge(b,SPK.it.say).then(r=>{if(t!==SPK.tok||!r)return;SPK.jd=r;spkHeard()},()=>{})}
+const SPK_SAY={great:['check-circle','ic-good','Great job! That sounds like the Spanish. ¡Muy bien!','Great job!'],
+  again:['ear','ic-brand','Close! Listen again, then try once more.','Close! Listen again.'],
+  quiet:['mic','ic-brand','I couldn’t hear you. Hold the tablet close and say it again!','I couldn’t hear you.'],
+  loud:['mic','ic-brand','That was very loud! Try your normal voice.','Try your normal voice.']};
+// the kind line, once the comparison has played: A (what the tablet heard) when it heard something, else B (the sound check)
+function spkHeard(){const e=$('#spkheard'),h=SPK.heard;if(!e||SPK.state!='check')return;let k,txt;
+  if(h&&h.length){const ok=spkMatch(SPK.it.es,h),said=(ok&&h.find(x=>spkMatch(SPK.it.es,x)))||h[0];k=ok?'great':'again';
+    txt=`That sounded like “<span lang="es">${esc(said)}</span>”.${ok?' Great job! ¡Muy bien!':' Close! Listen again and compare.'}`}
+  else if(SPK.jd&&SPK_SAY[SPK.jd.k]){k=SPK.jd.k;txt=esc(SPK_SAY[k][2])}else return;
+  const s=SPK_SAY[k];e.innerHTML=`${ico(s[0],22,s[1])}<span>${txt}</span>`;e.dataset.k=k;e.classList.add('on');
+  if(!SPK.told&&(SPK.pk||S.voice)){SPK.told=1;say(s[3])}} // Pre-K and K hear it too (once per try)
 // the model, then the child's own recording, then the self-check
 function spkModel(cb){const t=SPK.tok;if(SPK.nov)return spkT(cb,200);say(SPK.it.say,null,'es');const t0=Date.now();
   const w=()=>{if(!spkLive(t))return;const busy=speakBusy(); // the voice or the recording (ES-AUDIO)
@@ -9515,7 +9783,7 @@ function spkCheck(){SPK.state='check';const a=$('#spkact');const cd=$('.spk-card
   if($('#spkm'))$('#spkm').onclick=e=>say(SPK.it.say,e.currentTarget,'es');
   $('#spkme').onclick=()=>{try{if(SPK.au)SPK.au.pause();SPK.au=new Audio(SPK.url);SPK.au.play().catch(()=>{})}catch(e){}};
   $('#spkok').onclick=()=>spkEnd(true);
-  $('#spkagain').onclick=()=>{const cd=$('.spk-card');if(cd)cd.classList.remove('chk');if(SPK.url)try{URL.revokeObjectURL(SPK.url)}catch(e){}SPK.url='';const h=$('#spkheard');if(h){h.innerHTML='';h.classList.remove('on')}spkReady(false)};
+  $('#spkagain').onclick=()=>{const cd=$('.spk-card');if(cd)cd.classList.remove('chk');if(SPK.url)try{URL.revokeObjectURL(SPK.url)}catch(e){}SPK.url='';const h=$('#spkheard');if(h){h.innerHTML='';h.classList.remove('on');delete h.dataset.k}SPK.jd=SPK.heard=null;spkReady(false)};
   spkTip(SPK.pk?'Did you say it? Tap the thumbs up, or try again!':'Did it sound the same? Tap “I said it!” or “Try again”.',true);
   spkHeard();spkT(spkHeard,1200)}
 // a grown-up note: how to allow the microphone (or that none was found); goes on by itself
@@ -11410,7 +11678,8 @@ const BT = {
    P4-12 (DESIGN_SYSTEM 9 row 6): a calm adult layout in the same system. Each section is a card with an icon header (GW.card);
    switches, segmented controls, fields and a readable table from the P4-04 components; two columns on a wide screen. Styles in
    src/css/48-setup-grown-care.css. Every id the code and the tests use is kept: #back, #nm, #pn, #bd, .gr[data-g], .pl-grown,
-   #ula, #rp-open, [data-rec], [data-play], [data-del], [data-per], [data-max], #pt5, #pt0, #ptp, #applog, #voice, #snd, #mus, #calm, #esspk (S-SPK),
+   #ula, #rp-open, [data-rec], [data-play], [data-del], [data-per], [data-max], #pt5, #pt0, #ptp, #applog, #voice, #snd, #mus, #calm, [data-cheer] (EN-PRAISE), #esspk (S-SPK),
+   #gw-lis, #lis-dl, #gw-corner, [data-keep], [data-lcp], [data-lcs], #lc-del (S-SPK2, 50-say-corner.js),
    #test, #reset. The report card's Print button (82-report.js) and the backup Save buttons (81-backup.js, P5-07) carry the online note.
    P5-10: the Children card (PRF.card in 01-profiles.js) comes right after the summary; with more than one child, Start over
    erases only the child who is playing (their place stays, with a fresh save) and recorded clips get the child's id prefix. */
@@ -11441,13 +11710,14 @@ function aboutCard(){
   return GW.card('gw-about','info','About Star School',
     `<p class="gw-p">Star School is offline practice in math, reading and Spanish for children, with game time earned by learning. It has no accounts, no ads and no tracking.</p>
     <p class="gw-note">${ico('lock',22)}<span>It works without internet once it has loaded. Progress is stored only on this device. Nothing is sent anywhere.</span></p>
-    <p class="gw-note" id="ab-spk">${ico('mic',22)}<span>Spanish “Say it!” recordings never leave the tablet and are not kept: each one is gone when the step ends. Speech recognition is used only when the tablet can do it on the device itself.</span></p>
-    <div class="gw-log ab-ver"><div><b>Version</b> <span id="ab-rel">${RELEASE}</span></div><div><b>Build</b> <span id="ab-build">v155</span></div></div>
+    <p class="gw-note" id="ab-spk">${ico('mic',22)}<span>Spanish “Say it!” recordings stay on this tablet and are deleted automatically (after 1 day, or as you choose in the Listening corner). Nothing is sent. Speech recognition is used only when the tablet can do it on the device itself.</span></p>
+    <div class="gw-log ab-ver"><div><b>Version</b> <span id="ab-rel">${RELEASE}</span></div><div><b>Build</b> <span id="ab-build">v165</span></div></div>
     <h3 class="gw-h3">${ico('doc',22,'ic-brand')}<span>Licences</span></h3>
     <p class="gw-p ab-lic-line"><b>Andika</b> (the lettering in the app), Copyright (c) 2004-2022 SIL International. Licensed under the SIL Open Font License 1.1 (openfontlicense.org).</p>
     <p class="gw-sub ab-lic-line">Everything else (pictures, icons, sounds, games and questions) was made for Star School. No other fonts, libraries or outside files are used.</p>
     <details class="ab-det" id="ab-ofl"><summary>${ico('doc',22)}<span>Read the Andika licence</span>${ico('chevron-right',22,'chev')}</summary><pre class="ab-ofl" tabindex="0" role="region" aria-label="SIL Open Font License 1.1 text">${esc(OFL_TEXT)}</pre></details>`);
 }
+const CHEER_NAMES={mix:'Mixed',f:'Female',m:'Male',tts:'Tablet voice'}; // EN-PRAISE: the Cheer voices choice (S.cheerV, cheerMode() in 12-speech.js)
 function grown(){let armed=false;
   const rows=[...new Set(Object.values(NODES).flat().map(n=>n.sk))].filter(id=>SK[id]).map(id=>{const p=P(id),s=SK[id],acc=p.t?Math.round(p.c/p.t*100)+'%':'–';
     const tricky=Object.values(p.miss).sort((a,b)=>b.tot-a.tot).slice(0,3).map(m=>esc(m.q.label)).join('<br>');
@@ -11485,16 +11755,19 @@ function grown(){let armed=false;
     <div class="gw-sw">${UI.sw('Open the Game Room today anyway',bank.open===today(),'pto')}</div>`:''}
     <div class="gw-row"><span class="gw-rl">Bank</span><span class="gw-btns">${UI.btn('+5 min',{size:'sm',icon:'plus',id:'pt5'})}${UI.btn('Empty bank',{size:'sm',kind:'ghost',icon:'trash',id:'pt0',cls:'gw-risk'})}</span></div>
     <div class="gw-sw">${UI.sw('Pause game time (games locked)',pc.pause,'ptp')}</div>`,{tone:'s-play',sub:'Each learning round earns game time, plus a bonus for 10 out of 10, bosses, tests, puzzles and the Daily Review.'})}
-  ${GW.card('gw-snd','sound-on','Sound and voice',`<div class="gw-sw">${UI.sw('Read questions out loud',S.voice,'voice')}${UI.sw('Sound effects',S.sound,'snd')}${UI.sw('Music on the home screen',S.music,'mus')}${UI.sw('Calm mode: less movement, no confetti',!!S.calm,'calm')}${UI.sw('Spanish speaking practice',spkOn(),'esspk')}</div>
-    <p class="gw-sub">Speaking practice: in Spanish rounds your child says a word or line, then hears the Spanish voice and their own recording. The recording stays on this tablet for that moment only.</p>
-    ${UI.btn('Test voice',{size:'sm',icon:'speak',id:'test'})}`)}
+  ${GW.card('gw-snd','sound-on','Sound and voice',`<div class="gw-sw">${UI.sw('Read questions out loud',S.voice,'voice')}${UI.sw('Sound effects',S.sound,'snd')}${UI.sw('Music on the home screen',S.music,'mus')}${UI.sw('Calm mode: less movement, no confetti',!!S.calm,'calm')}${UI.sw('Buzz: a short vibration in games (tablets that can)',S.buzz!==false,'buzz')}${UI.sw('Spanish speaking practice',spkOn(),'esspk')}</div>
+    <p class="gw-sub">Speaking practice: in Spanish rounds your child says a word or line, then hears the Spanish voice and their own recording, and the tablet says kindly how close it sounded. Recordings stay on this tablet (see the Listening corner).</p>
+    ${UI.btn('Test voice',{size:'sm',icon:'speak',id:'test'})}
+    <div class="gw-row" id="gw-cheer"><span class="gw-rl">Cheer voices</span>${GW.seg('cheer',['mix','f','m','tts'],cheerMode(),'Cheer voices: who says Great job',v=>CHEER_NAMES[v])}</div>`)}
+  ${spkLisCard()}
+  ${spkCornerCard()}
   ${GW.card('gw-rec','mic','Your voice',(inFrame?warn('Recording only works on the tablet app, not in this preview.'):!canRec?warn("Recording isn't available in this browser. Use Chrome or the installed app."):'')+clips,
     {sub:`Tap Record and say the line (up to 4 seconds). Record as many as you like; the app shuffles them so the same one doesn't play twice in a row.`})}
   ${GW.card('gw-skills','chart','Skills',`<div class="tblw gw-tbl"><table class="tbl"><thead><tr><th>Skill</th><th class="n">Rounds</th><th class="n">1st try</th><th>Tricky ones</th></tr></thead><tbody>${rows}</tbody></table></div>`,
     {sub:'Rounds played and first-try accuracy for every skill on the maps, with the questions missed most.'})}
   ${GW.card('gw-how','info','How it works',`<p class="gw-p">Each subject has its own map. Getting 7 of 10 right opens the next stop (8 earns 2 stars, 10 earns 3), and each world stretches further. Missed questions come back at the end of a round, in later rounds, in Daily Review and in the Tricky Mix. Each right answer earns a star (the pet grows) and a coin (spent in the shop). Everything is saved on this tablet only.</p>`)}
   <details class="gw-card gw-det" id="applog"><summary class="gw-h"><span class="gw-hi">${ico('doc',24)}</span><span>App log</span>${ico('chevron-right',22,'chev')}</summary><div class="gw-log">
-   <div><b>Version</b> ${RELEASE} (build v155)</div><div><b>Save size</b> ${(JSON.stringify(S).length/1024).toFixed(1)} KB</div>
+   <div><b>Version</b> ${RELEASE} (build v165)</div><div><b>Save size</b> ${(JSON.stringify(S).length/1024).toFixed(1)} KB</div>
    ${PRF.logLine()}<div><b>Storage</b> ${SAVE_FAILED?'<span class="gw-bad">could not save (device storage may be full)</span>':'saving OK'}</div>
    ${SAVE_CORRUPT?'<div class="gw-bad">The old save could not be read. A fresh start was made and the old data was kept on the device.</div>':''}
    <div><b>Last errors</b> ${(S.err||[]).length?'<ul class="gw-errs">'+(S.err||[]).slice().reverse().map(e=>'<li><span>'+esc(new Date(e.t).toLocaleString())+' '+esc(e.ver)+'</span> '+esc(e.msg)+'</li>').join('')+'</ul>':'none'}</div></div></details>
@@ -11521,8 +11794,12 @@ function grown(){let armed=false;
   $('#voice').onchange=e=>{S.voice=e.target.checked;save()};
   $('#snd').onchange=e=>{S.sound=e.target.checked;save()};
   $('#mus').onchange=e=>{S.music=e.target.checked;save()};
+  $('#buzz').onchange=e=>{S.buzz=e.target.checked;save()}; // R-03 A4 (10-sfx.js buzz)
   $('#calm').onchange=e=>{S.calm=e.target.checked;save();calmApply(true)}; // P4-17
   $('#esspk').onchange=e=>{S.esSpk=e.target.checked;save()}; // S-SPK: per child (absent = on)
+  spkLisBind();spkCornerBind(); // S-SPK2
+  // EN-PRAISE: who says "Great job!" (per child): the recorded voices, mixed, female or male, or the tablet's voice; a tap plays a sample
+  $$('[data-cheer]').forEach(b=>b.onclick=()=>{S.cheerV=b.dataset.cheer;save();$$('[data-cheer]').forEach(x=>{const on=x===b;x.classList.toggle('on',on);x.setAttribute('aria-pressed',on)});say(pick(CHEERS))});
   $('#test').onclick=e=>say(`Hello ${S.name}! I can read to you.`,e.currentTarget);
   $$('[data-play]').forEach(b=>b.onclick=()=>{const c=CLIPS.find(x=>x.id==b.dataset.play);if(c)new Audio(c.url).play().catch(()=>{})});
   $$('[data-del]').forEach(b=>b.onclick=async()=>{await DB.del(b.dataset.del);await loadClips();grown()});
@@ -11533,6 +11810,7 @@ function grown(){let armed=false;
     // the voice clips (IndexedDB) go too; the reload never waits on IndexedDB for long (an open that never finished on a busy
     // tablet left the old progress on screen): it comes when the delete is done, blocked or failed, or after 1.5 s at most
     let gone=false;const go=()=>{if(!gone){gone=true;reloadSaved()}};
+    try{if(SPKR.db){SPKR.db.close();SPKR.db=null}indexedDB.deleteDatabase('starschool-say')}catch(x){} // S-SPK2: the Say it! recordings
     try{if(DB.db){DB.db.close();DB.db=null}const r=indexedDB.deleteDatabase('starschool');r.onsuccess=r.onerror=r.onblocked=go}catch(x){go()}
     setTimeout(go,1500)}}
 async function record(kind,line,btn){if(inFrame)return micHelp('frame');if(!navigator.mediaDevices||!window.MediaRecorder)return micHelp('frame');
@@ -11566,12 +11844,12 @@ const BAK = {
   make(id) {
     const d = id && id !== PRF.cur ? PRF.up(PRF.get(PRF.key(id))) : S;
     if (!d) return '';
-    return JSON.stringify({app: BAK.APP, ver: 'v155', save: LATEST, date: new Date().toISOString(), name: d.name || '', data: d});
+    return JSON.stringify({app: BAK.APP, ver: 'v165', save: LATEST, date: new Date().toISOString(), name: d.name || '', data: d});
   },
   // Every child in one file (P5-10)
   makeAll() {
     const kids = PRF.ids.map(id => id === PRF.cur ? S : PRF.up(PRF.get(PRF.key(id)))).filter(Boolean);
-    return JSON.stringify({app: BAK.APP, ver: 'v155', save: LATEST, date: new Date().toISOString(), all: true,
+    return JSON.stringify({app: BAK.APP, ver: 'v165', save: LATEST, date: new Date().toISOString(), all: true,
       kids: kids.map(d => ({name: d.name || '', data: d}))});
   },
   fileName(name) {
@@ -12057,9 +12335,10 @@ function reportGrownBind() {
 const ONLINE_NOTE = 'Make sure the tablet is online to share or print.';
 const OFFLINE_MSG = "You're offline. Connect to wifi to share or print.";
 
-// The small note that sits under or beside a share / send / print button.
-function onlineNote() {
-  return `<div class="online-note">${esc(ONLINE_NOTE)}</div>`;
+// The small note that sits under or beside a share / send / print button. S-SPK2: t, another line for another kind of action
+// (the one-time download of Spanish listening, 50-say-corner.js).
+function onlineNote(t) {
+  return `<div class="online-note">${esc(t || ONLINE_NOTE)}</div>`;
 }
 
 // true when the browser says it is offline (navigator.onLine is only reliable when false).
@@ -12067,10 +12346,10 @@ function isOffline() {
   return typeof navigator != 'undefined' && navigator.onLine === false;
 }
 
-// Runs action() unless offline and blocked; returns true when the action ran.
+// Runs action() unless offline and blocked; returns true when the action ran. o.msg: the offline message for another kind of action.
 function needOnline(action, o = {}) {
   if (isOffline()) {
-    fb(OFFLINE_MSG, 'bad', 2600);
+    fb(o.msg || OFFLINE_MSG, 'bad', 2600);
     if (o.block !== false) return false;
   }
   action();
@@ -12089,9 +12368,9 @@ if('serviceWorker' in navigator&&navigator.serviceWorker.controller){let rl=0;na
 try{speechSynthesis.getVoices();speechSynthesis.onvoiceschanged=()=>{}}catch(e){}
 /* ---------- A11, A11b, A11c: data banks and on-demand code live in more files ----------
    tools/build.py writes the question generators (gen, gen2), the Brain Teaser puzzle types and the Game Room (PARTS in build.py)
-   to gen.<VER>.js, gen2.<VER>.js, bt.<VER>.js, games.<VER>.js and games2.<VER>.js (G-04a: the newer games),
-   and src/data/*.js to data.<VER>.js. index.html loads them with their own script tags after this code and before src/boot.js:
-   gen, gen2, bt, games, games2, then data. Each file's last line is `var <NAME>_VER='<VER>'`. src/boot.js starts the app only if dataReady():
+   to gen.<VER>.js, gen2.<VER>.js, bt.<VER>.js, games.<VER>.js, rally.<VER>.js (G-RALLY2: Star Rally), games2.<VER>.js (G-04a: the newer games)
+   and games3.<VER>.js (G-BB2: Block Builder), and src/data/*.js to data.<VER>.js. index.html loads them with their own script tags after this code and before src/boot.js:
+   gen, gen2, bt, then data (games, rally, games2, games3 on demand, P6-02). Each file's last line is `var <NAME>_VER='<VER>'`. src/boot.js starts the app only if dataReady():
    every file ran to the end and comes from the same release as this page. If not (one could not be downloaded, or a cache kept
    one half of an update), the app does not start, because a round or a puzzle would break on missing code or a missing bank.
    It asks to go online and try again. Nothing in the save changes except one line in the App log (S.err).
@@ -12102,46 +12381,48 @@ function appFiles() {
     ['gen2', typeof GEN2_VER === 'undefined' ? null : GEN2_VER],
     ['bt', typeof BT_VER === 'undefined' ? null : BT_VER],
     ['games', typeof GAMES_VER === 'undefined' ? null : GAMES_VER],
+    ['rally', typeof RALLY_VER === 'undefined' ? null : RALLY_VER],
     ['games2', typeof GAMES2_VER === 'undefined' ? null : GAMES2_VER],
+    ['games3', typeof GAMES3_VER === 'undefined' ? null : GAMES3_VER],
     ['data', typeof DATA_VER === 'undefined' ? null : DATA_VER],
   ];
 }
 // P6-02: the start-up files only; the parts in LAZY_PARTS load later (partsThen below)
 function dataReady() {
-  return appFiles().every(f => LAZY_PARTS.includes(f[0]) || f[1] === 'v155');
+  return appFiles().every(f => LAZY_PARTS.includes(f[0]) || f[1] === 'v165');
 }
 // the Try again screen and one line in the App log: for the start-up files, or (P6-02) for the parts in stems that did not load on demand
 function dataMissing(stems) {
-  logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0])) && f[1] !== 'v155')
-    .map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v155)');
+  logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0])) && f[1] !== 'v165')
+    .map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v165)');
   const again = UI.btn('Try again', { kind: 'primary', size: 'lg', icon: 'replay', id: 'dataretry' });
   view(`<div class="scroll" id="datamiss">${UI.empty('download', 'Star School needs to finish updating. Connect to the internet, then tap Try again.', again)}</div>`);
   $('#dataretry').onclick = () => location.reload();
 }
 /* ---------- P6-02: part files loaded on demand ----------
    The parts in LAZY_PARTS (the same list as LAZY in tools/build.py, in PARTS order) have no <script> tag in index.html, so a
-   cheap tablet does not read and parse them at every start: the Game Room (games, games2) loads the first time it opens.
+   cheap tablet does not read and parse them at every start: the Game Room (games, rally, games2, games3) loads the first time it opens.
    sw.js still precaches every part, so this works offline. Each one is the same file with the same stamp as before: partLoad(stem)
    adds one plain script element, src <stem>.<VER>.js (a classic script, so it shares the one global scope like the others) and resolves
    true once its stamp equals the page's VER. A file that cannot be loaded resolves false and may be tried again later; a file of
    another release has already run, so it stays refused (Try again reloads the page).
    partsThen(stems, go) is the way in: go() runs at once when those parts are in. Otherwise it draws "Getting the games ready..."
-   (with Back), loads the parts one after the other (games2 calls GH.reg from games while it loads), then runs go() only if that
+   (with Back), loads the parts one after the other (rally and games2 call GH.reg from games while they load), then runs go() only if that
    screen is still showing, so a child who tapped Back meanwhile is never pulled into the games. A part that does not load shows
    the Try again screen. Keep it generic: a new game in games2 needs nothing here. */
-const LAZY_PARTS = ['games', 'games2'];
+const LAZY_PARTS = ['games', 'rally', 'games2', 'games3'];
 const partsAsked = {};
 function partReady(stem) {
   const f = appFiles().find(x => x[0] === stem);
-  return !!f && f[1] === 'v155';
+  return !!f && f[1] === 'v165';
 }
 function partLoad(stem) {
   const f = appFiles().find(x => x[0] === stem);
-  if (!f || f[1] === 'v155') return Promise.resolve(!!f);
+  if (!f || f[1] === 'v165') return Promise.resolve(!!f);
   if (f[1] !== null) return Promise.resolve(false); // a file of another release ran: refused
   return partsAsked[stem] || (partsAsked[stem] = new Promise(res => {
     const s = document.createElement('script');
-    s.src = stem + '.v155.js';
+    s.src = stem + '.v165.js';
     s.onload = () => { delete partsAsked[stem]; res(partReady(stem)); };
     s.onerror = () => { delete partsAsked[stem]; s.remove(); res(false); };
     document.body.appendChild(s);
@@ -12166,10 +12447,10 @@ function partsThen(stems, go, o = {}) {
   }), 0));
 }
 </script>
-<script src="gen.v155.js"></script>
-<script src="gen2.v155.js"></script>
-<script src="bt.v155.js"></script>
-<script src="data.v155.js"></script>
+<script src="gen.v165.js"></script>
+<script src="gen2.v165.js"></script>
+<script src="bt.v165.js"></script>
+<script src="data.v165.js"></script>
 <script>
 if (dataReady()) {
   loadClips();

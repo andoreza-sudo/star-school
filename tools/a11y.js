@@ -107,6 +107,19 @@ const SCREENS = {
   'es-question': qScreen(() => start('es', 0)),
   // S-SPK: the Spanish "Say it!" step (src/js/50-say.js) over the first question of a Spanish round; the microphone is the main control (64 px)
   'say-it': { run: ev(() => { SPK.mic = 'yes'; start('es', NODES.es.findIndex(n => n.sk == 'es_animal' && n.lv == 1)); G.spk = 1; spkOpen(G.q, () => next()); }), main: '.spk-mic' },
+  // S-SPK2: Say it! after a try, with the kind line of the sound check ("Close! Listen again"); the Grown-ups Spanish listening card and
+  // Listening corner (one kept recording); Home with the grown-up's star message
+  'say-it-check': { run: ev(() => { SPK.mic = 'yes'; start('es', NODES.es.findIndex(n => n.sk == 'es_animal' && n.lv == 1)); G.spk = 1; spkOpen(G.q, () => next()); SPK.url = ''; SPK.jd = { k: 'again' }; spkCheck(); }) },
+  'grown-listen': {
+    adult: true,
+    run: async p => {
+      await p.evaluate(async () => { S.spkKeep = 'day'; await spkrAdd(new Blob([new Uint8Array(400)], { type: 'audio/webm' }), { es: 'el perro', say: 'el perro' }); grown(); });
+      await p.waitForSelector('#lc-list .lc-row', { timeout: 5000 });
+      await p.evaluate(() => document.querySelector('#gw-lis').scrollIntoView());
+      await p.waitForTimeout(400);
+    },
+  },
+  'home-star': { run: ev(() => { S.spkStars = [{ es: 'el perro', t: Date.now() }]; home(); }) },
   reward: { run: rwRun },
   shop: {
     run: ev(() => { S.coins = 5000; shop(); }),
@@ -142,10 +155,24 @@ const SCREENS = {
     run: async p => { await p.evaluate(() => { gtime(); hcStart('meadow'); }); await p.waitForTimeout(600); await p.evaluate(() => hcEnd('fuel')); await p.waitForTimeout(900); },
     sheet: async () => ({ close: 'enter' }), // the shared end card (an overlay) is already open
   },
+  // G-HC2: the garage (vehicles, upgrades, paint), a stage's drive in the rain and its end card with stars and missions
+  'hill-shop': { run: ev(() => { gtime(); garageS().bolts = 200; hcGarage(); }) },
+  'hill-stage': { run: ev(() => { gtime(); hcStart(2, 1); }), main: '.pedal', sheet: pauseSheet },
+  'hill-win': {
+    run: async p => { await p.evaluate(() => { gtime(); hcStart(0, 0); }); await p.waitForTimeout(600); await p.evaluate(() => { HC.t = 20; hcWin(); }); await p.waitForTimeout(900); },
+    sheet: async () => ({ close: 'enter' }),
+  },
   'art-menu': { run: ev(() => { gtime(); colorMenu('mandala'); }) },
   // colouring: the picture is the main control (tap a shape); the colour swatches are pickers (48 px)
   'art-page': { run: ev(() => { gtime(); artPage('m:17'); }), sheet: pauseSheet },
   'art-pixel': { run: ev(() => { gtime(); colorPic(CB_PICS[0][0], 'num'); }) },
+  // G-ART2: the picture packs (next goal, today's picture), the gallery with its big view, Neon with its Done (a main control, 64 px)
+  'art-packs': { run: ev(() => { gtime(); colorMenu('packs'); }) },
+  'art-gallery': {
+    run: ev(() => { gtime(); artDone({ k: 'v', key: 'm:3', n: 'Mandala', d: { p: ['c:#f97316'], s: '#' }, star: true }); colorMenu('gallery'); }),
+    sheet: async p => { await p.click('[data-gi]'); await p.waitForTimeout(500); return { close: 'escape' }; },
+  },
+  'art-neon': { run: ev(() => { gtime(); neonDraw(); }), main: '#adone', sheet: pauseSheet },
   'blocks-menu': { run: ev(() => { gtime(); bbMenu(); }) },
   'blocks-build': {
     run: ev(() => { gtime(); blockBuilder(); }),
@@ -157,10 +184,18 @@ const SCREENS = {
   'blocks-journey': { run: ev(() => { gtime(); for (let i = 0; i < 20; i++) bbBP()[BBP[i].id] = 3; const g = bbGal(); if (!g.length) g.push({ n: 'My Island', d: bbPack(bbGen('island', 7)), t: today() }); bbMenu(); }) },
   'rally-menu': { run: ev(() => { rlSave(); rlMenu(); }) },
   'rally-garage': { run: ev(() => { rlSave(); rlGarage({ k: 'paint', id: 'b' }); }) },
+  // G-RALLY2: the menu later (mirror cups open, today's twist, what to save for) and garage level 2 open with a kit tried on
+  'rally-menu2': { run: ev(() => { rlSave(); S.rally.cups = { sprout: { best: 1, runs: 1 }, wave: { best: 1, runs: 1 }, frost: { best: 2, runs: 1 }, star: { best: 3, runs: 1 },
+    msprout: { best: 2, runs: 1 } }; rlMenu(); }) },
+  'rally-garage2': { run: ev(() => { rlSave(); S.rally.spk = 900; S.rally.cups = { msprout: { best: 2, runs: 1 } }; S.rally.trails = { star: 1 }; S.rally.trail = 'star';
+    rlGarage({ k: 'kit', id: 'fins' }); }) },
   'rally-race': { run: async p => { await p.evaluate(() => rlSave()); await p.evaluate(() => rlRace('meadow-0')); await p.waitForTimeout(4500); }, main: '.rl-btn', sheet: pauseSheet },
   'snack-menu': { run: ev(() => { snSave(); snMenu(); }) },
   'snack-day': { run: async p => { await p.evaluate(() => snSave()); await p.evaluate(() => snDay()); await p.waitForTimeout(2500); }, main: '.sn-fb, .sn-serve, .sn-undo', sheet: pauseSheet },
   'snack-shop': { run: ev(() => { snSave(); snShop('lettuce'); }) },
+  // G-04a2: the recipe book and the café journey in the shop (8 days played opens it)
+  'snack-book': { run: ev(() => { snSave(); S.snack.book = { cheesy: 2, jamtoast: 1 }; snBook(); }) },
+  'snack-cafe': { run: ev(() => { snSave(); S.snack.days = 8; S.snack.coins = 400; S.snack.cafe = { cart: 1 }; snShop('c:lights'); }) },
   'game-timeup': {
     run: async p => { await p.evaluate(() => { gtime(); artPage('m:17'); }); await p.waitForTimeout(600); await p.evaluate(() => timeUpOverlay()); await p.waitForTimeout(900); },
     sheet: async () => ({ close: 'enter' }),
@@ -169,10 +204,10 @@ const SCREENS = {
 // Game screens: the games' part files may load only when the Game Room opens (P6-02's lazy parts). Open the Game Room first when
 // the game code is not there yet and wait for it (and for the hub); with the parts already loaded this does nothing.
 async function gamesReady(p) {
-  const need = await p.evaluate(() => typeof GH == 'undefined' || typeof rlS != 'function' || typeof snS != 'function');
+  const need = await p.evaluate(() => typeof GH == 'undefined' || !LAZY_PARTS.every(partReady));
   if (!need) return;
   await p.evaluate(() => { gtime(); gameRoom(); });
-  await p.waitForFunction(() => typeof GH != 'undefined' && typeof rlS == 'function' && typeof snS == 'function', null, { timeout: 30000 });
+  await p.waitForFunction(() => typeof GH != 'undefined' && LAZY_PARTS.every(partReady), null, { timeout: 30000 });
 }
 for (const [n, sc] of Object.entries(SCREENS)) {
   if (!/^(gameroom|hill-|art-|blocks-|rally-|snack-|game-)/.test(n)) continue;

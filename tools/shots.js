@@ -2211,6 +2211,29 @@ Object.assign(SCREENS, {
   'race-end': { run: async p => { await p.evaluate(rlSave); await p.evaluate(() => { rlRace('meadow-0'); RL_DEV.fast = 20; }); await p.waitForSelector('.gh-end', { timeout: 40000 }); } },
 });
 GROUPS.g02 = ['race-menu', 'race-garage', 'race-meadow', 'race-beach', 'race-snow', 'race-city', 'race-pro', 'race-pause', 'race-end'];
+// G-RALLY2: the second season: a later save (the four trophies, a mirror cup raced, garage level 2 open, a kit, wheels and a trail on),
+//    the menu (next goal, save for, today's twist, mirror cups), the locked level 2 garage, trying a kit on, Maple Woods, a mirror
+//    track with the rainbow trail, today's twist and its end card.   node tools/shots.js @rally2
+const rl2Save = (t2 = true) => { const r = S.rally; r.spk = 640;
+  r.cups = { sprout: { best: 1, runs: 1 }, wave: { best: 2, runs: 1 }, frost: { best: 1, runs: 2 }, star: { best: 3, runs: 1 } };
+  if (t2) { r.cups.msprout = { best: 2, runs: 1 }; r.kits = { spoiler: 1 }; r.kit = 'spoiler'; r.whls = { gold: 1 }; r.whl = 'gold'; r.trails = { rainbow: 1 }; r.trail = 'rainbow'; }
+  save(); };
+const rl2Shot = (fn, wait = 5500, t2 = true) => ({ run: async p => { await p.evaluate(rlSave); await p.evaluate(rl2Save, t2); await p.evaluate(fn); await p.waitForTimeout(wait); } });
+Object.assign(SCREENS, {
+  'rally2-menu': rl2Shot(() => rlMenu(), 600),
+  'rally2-mirror': rl2Shot(() => { rlMenu(); document.querySelector('#rlmnote').scrollIntoView(); }, 600),
+  'rally2-tracks': rl2Shot(() => { rlMenu('meadow'); document.querySelector('.rl-trks').scrollIntoView(); }, 600),
+  'rally2-garage-lock': rl2Shot(() => { rlGarage(); document.querySelector('#rlt2').scrollIntoView(); }, 600, false),
+  'rally2-garage': rl2Shot(() => { rlGarage({ k: 'kit', id: 'fins' }); }, 600),
+  'rally2-garage-t2': rl2Shot(() => { rlGarage(); document.querySelector('#rlt2').scrollIntoView(); }, 600),
+  'rally2-woods': rl2Shot(() => rlRace('woods-0')),
+  'rally2-mirror-race': rl2Shot(() => rlRace('meadow-0m'), 7000),
+  'rally2-twist': rl2Shot(() => { const tw = rlTwist(); rlRace(tw.tid, { twist: tw }); }),
+  'rally2-twist-end': { run: async p => { await p.evaluate(rlSave); await p.evaluate(rl2Save, true); await p.evaluate(() => { const tw = rlTwist(); rlRace(tw.tid, { twist: tw }); RL_DEV.fast = 20; });
+    await p.waitForSelector('.gh-end', { timeout: 40000 }); await p.evaluate(() => { RL_DEV.fast = 1; }); } },
+});
+GROUPS.rally2 = ['rally2-menu', 'rally2-mirror', 'rally2-tracks', 'rally2-garage-lock', 'rally2-garage', 'rally2-garage-t2', 'rally2-woods', 'rally2-mirror-race',
+  'rally2-twist', 'rally2-twist-end'];
 
 // G-01: Block Builder by touch: a blueprint (only the next layer), the stamps, the More sheet. node tools/shots.js @g01
 Object.assign(SCREENS, {
@@ -2234,6 +2257,32 @@ Object.assign(SCREENS, {
   'snack-end': snShot(() => snDay(), 1500, () => { SN.st.served = SN.st.n; SN.st.right = SN.st.n - 1; SN.st.best = 5; SN.st.coins = 44; snFinish(); }),
 });
 GROUPS.g04a = ['snack-menu', 'snack-day', 'snack-busy', 'snack-till', 'snack-shop', 'snack-end'];
+// G-04a2: the kinds of days, the café journey, the recipe book (a later save: 12 days, the stand shop bought, the café built to `stage`)
+const snLater = stage => { const r = snS(); r.days = 12; r.coins = 420; r.stars = { park: 3, beach: 3, snow: 2, fair: 2, moon: 1 };
+  r.book = { cheesy: 2, cone: 4, double: 1, jamtoast: 1, cookmilk: 3 }; r.kd = { plain: 3, taste: 3, special: 2 };
+  for (const x of SN_SHOP) if (x[1] != 'awn' || x[0] == 'awn-y') r.own[x[0]] = 1; r.awn = 'y';
+  r.cafe = {}; for (const x of SN_CAFE) if (SN_CAFE.indexOf(x) < stage || (x[1] != 'stage' && ['cart', 'cafe', 'diner'].indexOf(x[1]) < stage)) r.cafe[x[0]] = 1; save(); };
+const snL = (stage, fn, wait = 2600, then, arg) => ({ run: async p => { await p.evaluate(snSave); await p.evaluate(snLater, stage); await p.evaluate(fn, arg);
+  await p.waitForTimeout(wait); if (then) await p.evaluate(then); } });
+const snKindDay = ([kind, mode, place]) => { const r = S.snack; r.kind = kind; r.mode = mode; r.place = place; save(); snDay(); };
+Object.assign(SCREENS, {
+  'snack-menu2': snL(1, () => snMenu(), 600),
+  'snack-menu2-kinds': snL(1, () => { snMenu(); document.querySelector('.sn-kinds').scrollIntoView(); }, 600),
+  'snack-party': snL(3, snKindDay, 2600, null, ['party', 'calm', 'park']),
+  'snack-recipe': snL(3, snKindDay, 2600, () => { const c = SN.st.at[0]; snAddFood(c.order[0]); }, ['recipe', 'calm', 'park']),
+  'snack-picky': snL(2, snKindDay, 5200, null, ['picky', 'busy', 'beach']),
+  'snack-special': snL(2, snKindDay, 2600, null, ['special', 'calm', 'park']),
+  'snack-taste': snL(0, snKindDay, 2600, null, ['taste', 'calm', 'park']),
+  'snack-cocoa': snL(3, snKindDay, 2600, () => { const c = SN.st.at[0]; for (const i of c.order) snAddFood(i); }, ['place', 'calm', 'snow']),
+  'snack-farm': snL(3, () => { const r = S.snack; r.stars = { park: 3, beach: 3, snow: 3, fair: 3, moon: 3 }; r.place = 'farm'; r.kind = 'place'; save(); snDay(); }, 2600),
+  'snack-sea': snL(3, () => { const r = S.snack; for (const p of SN_PLACES) r.stars[p.id] = 3; r.place = 'sea'; r.kind = 'plain'; r.mode = 'busy'; save(); snDay(); }, 5200),
+  'snack-cafe-shop': snL(1, () => snShop('c:lights'), 600),
+  'snack-cafe-list': snL(1, () => { snShop(); document.querySelectorAll('.sn-h')[0].scrollIntoView(); }, 600),
+  'snack-book': snL(3, () => snBook(), 600),
+  'snack-end2': snL(3, snKindDay, 1500, () => { const st = SN.st; st.served = st.n; st.right = st.n; st.best = 4; st.coins = 61; st.goal.done = true; SN.newBook = ['jamtoast', 'berrysmoo']; snFinish(); }, ['recipe', 'calm', 'park']),
+});
+GROUPS.g04a2 = ['snack-menu2', 'snack-menu2-kinds', 'snack-party', 'snack-recipe', 'snack-picky', 'snack-special', 'snack-taste', 'snack-cocoa', 'snack-farm',
+  'snack-sea', 'snack-cafe-shop', 'snack-cafe-list', 'snack-book', 'snack-end2'];
 
 // G-04b: Sky Hop (menu, a course in each world, free move with its buttons, the helper balloon's question, the end card).
 //    node tools/shots.js @g04b   (the course shots move the pet along the course first and wait for the pictures)
@@ -2259,8 +2308,16 @@ Object.assign(SCREENS, {
   'skyhop-rainbow': hopShot(() => hopPlay('r1'), 20),
   'skyhop-offer': hopShot(() => hopPlay('m2'), null, () => { const st = HP.st; st.cpF[0] = 3; st.p.y = -6; }, 1500),
   'skyhop-end': hopShot(() => hopPlay('m4'), null, () => { HP.st.t = 47.3; HP.st.stars = 5; HP.st.spk = 31; hopFinish(); }, 1200),
+  // G-04b2: season 2 worlds, the costume shop, today's twist (Lantern night) with a costume on
+  'skyhop-sunset': hopShot(() => hopPlay('q2'), 0, null, 900),
+  'skyhop-whirl': hopShot(() => hopPlay('t2'), 30),
+  'skyhop-aurora': hopShot(() => hopPlay('a1'), 8),
+  'skyhop-castle': hopShot(() => { const r = hopS(); r.own.cape = 1; r.wear = 'cape'; hopPlay('c3'); }, 20),
+  'skyhop-shop': hopShot(() => { const r = hopS(); r.bonus = 20; r.own.leaf = 1; r.wear = 'leaf'; hopMenu(); document.querySelector('.hp-wears').scrollIntoView(); }, null, null, 600),
+  'skyhop-twist': hopShot(() => { const r = hopS(); r.own.fairy = 1; r.wear = 'fairy'; hopPlay('m3', 'lamp'); }, 0),
 });
-GROUPS.g04b = ['skyhop-menu', 'skyhop-meadow', 'skyhop-peaks', 'skyhop-night', 'skyhop-rainbow', 'skyhop-offer', 'skyhop-end'];
+GROUPS.g04b = ['skyhop-menu', 'skyhop-meadow', 'skyhop-peaks', 'skyhop-night', 'skyhop-rainbow', 'skyhop-offer', 'skyhop-end', 'skyhop-sunset', 'skyhop-whirl',
+  'skyhop-aurora', 'skyhop-castle', 'skyhop-shop', 'skyhop-twist'];
 
 async function main() {
   const args = process.argv.slice(2);
