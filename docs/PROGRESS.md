@@ -4,7 +4,7 @@ The running record of what has shipped. Newest entry first. Every chunk adds one
 
 **Next up:** P6-05 (wip/batch-N, map timing), the P5-07 flaky step; see Handoff notes
 
-**Current version:** v163
+**Current version:** v165
 
 ## Chunk status
 
@@ -146,6 +146,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - G-04b2 v159
 - G-ART2 v161
 - G-04a2 v160
+- G-BB2 v164
 - G-RALLY2 v163
 
 ## Handoff notes
@@ -498,6 +499,34 @@ Things noticed while working that are outside the current chunk. One line each, 
 
 ## Log
 
+### Merge v165: Star Rally season 2 (G-RALLY2) and Block Builder in 3D (G-BB2) (2026-11-15, Claude)
+- Both moved a game out of a full part: the parts are now gen, gen2, bt, then on demand games, rally, games2, games3 (PARTS, LAZY, `LAZY_PARTS`, `appFiles()`, test.js and smoke.js lists).
+- Block Builder now calls Star Rally's `buzz()` (15 ms) when a block is placed (R-03 A4).
+
+### G-BB2 Block Builder in 3D, fast taps, drawn animals, music (v164, 2026-11-15, Claude)
+- Why: R-03 B1 (Must: taps took 0.2-0.9 s to show at 6x, turning cost 56 ms of script a frame), B3 (a WebGL voxel look), B2 (emoji animals), A1 (music).
+- **3D look** (`src/js/61-bb-gl.js`, 30 KB, hand-written WebGL 1, no library): 16 chunks of 4 x 4 columns, each one buffer of the faces that can be seen; baked corner shade (ambient occlusion), one sun with a soft baked sun shadow, sky light, glowing lava / lamps / crystal / stars, water that moves in the shader, fog to the sky colour, night tint. Flowers, mushrooms, shells, pines, flags and the child's pet are camera-facing sprites with a soft round shadow. The camera circles the focus: one finger turns and tilts (a flick slows to a stop; whole quarters for stamps), two fingers move and pinch, Left / Right turn a quarter smoothly, Closer / Farther as before. Adaptive size (100/85/70/60 %) when frames run long; draws at CSS pixels.
+- **Exact picking**: `E.hit` walks the tapped pixel's ray through the cells (3D DDA) and returns the face in the 2D hit test's shape, so every tap rule in `bbMake` (build on top, side building, blueprints, aims, count builds) is unchanged. test.js compares it with a brute-force ray-box search on 1,080 rays: 0 differences.
+- **Only changed chunks rebuild**: each frame the world is compared with the last one; `bbGlDirty` gives the chunks a change reaches (neighbours for the shade, the cells its sun shadow falls on): at most 6 of 16; the block dropping in is drawn on its own. The 2D renderer stays the fallback when WebGL is missing, a shader fails or the context is lost (the screen reopens in 2D), and when a grown-up turns "3D look" off in More (`S.bb.gl = 0`).
+- **B1**: the world is saved after the frame that shows the tap is painted (`bbSaveSoon`; a hidden page, Quit and time up save at once); the 2D look draws at most 1.25 canvas pixels a CSS pixel (was 2).
+- **B2**: ten animals (pig, hen, sheep, cow, rabbit, cat, dog, chick, mouse, turtle) from the object art (`ART`) made into pictures once (`bbAnimalImg`), with a hop that squashes on take-off and landing, a breath when standing, facing the way they hop, and a soft shadow, in both looks. No emoji left in 60-blocks.js.
+- **A1**: a calm loop per kind of world with `tone()` (`bbMusic`), only with Music and Sound effects on, never in Calm mode, quiet while a sheet is open or the page hidden, ducked under the voice. A4 (vibrate) not done: there is no shared helper or Grown-ups switch yet.
+- Parts: Block Builder moved from `games` (was 419,346 bytes, over its 400 KB warning) to a new LAZY part **games3** with the renderer (tools/build.py PARTS and LAZY, `LAZY_PARTS` and `appFiles()` in 90-app.js, CONTRIBUTING 3.3).
+- Save: `S.bb.gl` (ROADMAP save table): 0 = 2D look chosen; absent = 3D where WebGL works. Worlds, blueprints and goals unchanged; old builds load as before.
+- Measured (R-03 method: the R-03 scratch scripts `r03-perf-games.js` and `r03-touch.js`, headless Chrome, 6x CPU, 2x pixels; this Chrome gives WebGL in software even with --disable-gpu):
+
+| | before (v162, 2D) | after, 3D look | after, 2D fallback |
+|---|---|---|---|
+| idle, frame / script (median, 90th) | 16.7 ms / 0.1, 0.8 ms | 33 ms (software GL fill) / 1.1, 3.1 ms | 16.7 ms / 0.1, 1.0 ms |
+| turning, frame / script | 50 / 83 ms; 30 / 66 ms | 33 / 33 ms; 1.4 / 4.1 ms | 16.7 / 33 ms; 2.9 / 30 ms |
+| tap to paint, phone 380x780 (median / max) | 200 / 384 ms | 88-104 / 176-192 ms | 120 / 240 ms |
+| tap to paint, tablet 1024x600 | 256 / 504 ms | 152 / 176-208 ms | 176 / 320 ms |
+
+- Tests: test.js new check "block builder 3D G-BB2" (exact picking vs brute force, proj/unproj agree, a 3D tap builds on the tapped top, 3D tops in the middle 59 px, camera limits, meshes: hidden faces, corner shade, sun shadow, see-through, moving water, glow, the dropping block; chunk rebuilds are exact and at most 6; animals have drawings; hop shape; music on / calm / off; games3 plumbing, no raw colour, no library); G-01 emoji check now "no emoji"; A11b / P6-02 checks expect games3. smoke.js: G-01 block runs on the 2D look (S.bb.gl = 0) and its turn step is no longer flaky (the angle is sampled every frame in the page instead of one look 120 ms after the tap); new `// G-BB2` block (3D by real touch at both sizes: drawing, exact taps, saved, tap time at 4x, one-finger turn and flick, pinch, Right, hold-and-slide, drawn animals, the 3D look switch, the first blueprint in 3D with 3 stars); P6-02 blocks expect games3.
+- Checks: test.js all 140 checks passed; smoke.js 1 failure, not Block Builder: "Sky City int3 (69 prime or composite)" (a math question's choices cut at 380 px; no generator or layout file changed here); both Block Builder blocks passed (G-BB2 tap to paint at 4x 64/72 ms phone, 88/96 ms tablet); perf.js OK (start 662 ms; Game Room first open 205 -> 287 ms: a third part file loads, Block Builder's).
+- Sizes: games 419,346 -> 263,321 bytes; games3 new 196,556 (Block Builder 141 KB + CSS + renderer 30 KB); games2 453,688 (unchanged, over its 400 KB warning before this chunk); loaded at start unchanged (2,737,014).
+- Left over: haptics (A4); a 3D model view of pixel art (Art Studio T5) could reuse 61-bb-gl.js; games2 is still 453,688 bytes (over its 400 KB warning, unchanged by this chunk); the 3D look was not tried on a real tablet (ROADMAP 7.2).
+- Merge: built on branch g-bb2 from 4b23141 (v162). VER v164 is provisional. Overlaps: tools/build.py (VER, PARTS games/games2/games3 lines, LAZY), src/js/90-app.js (appFiles, LAZY_PARTS), tools/test.js (A11b / P6-02 part lists, the G-01 emoji line, the new check before G-01b), tools/smoke.js (P6-02 lists, the G-01 block, the new G-BB2 block after it), docs.
 ### G-RALLY2 Star Rally: second season, garage level 2, today's twist, music (v163, 2026-11-15, Claude)
 - Why (the parent): the games feel "like you're on level one and stuck there"; R-03 rated Star Rally 3/5: all 12 tracks by visit 3, all trophies by visit 5, the garage bought by visit 7, 12,940 sparkles unspent by visit 50. This chunk does R-03 R1 and R2 and, for Star Rally, A1 (music), A2 (a second catalogue and "save for"), A4 (buzz) and A5 (today's twist).
 - **Mirror cups (R1)**: every track raced the other way round (`RL_MIRROR`, id + 'm'): its sections in reverse order, each bend and hill turned the other way, the same hazards per section, the scenery placed again; 5 mirror cups (Mirror Sprout ... Mirror Maple, rivals at tiers 1-3) that open when the Sprout, Wave, Frost and Star Cups each have a trophy (or were each raced 3 times, so nobody is stuck), then one after another. Mirror tracks show under each place with a turn-round badge; racing one in today's twist never opens a mirror cup.

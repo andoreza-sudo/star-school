@@ -7820,7 +7820,7 @@ run('mazes P3-08',()=>{
 run('code split A11b (and data file split A11)',()=>{
   const p=[],rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8');
   if(!BUILD_VER)return{problems:['no VER in tools/build.py']};
-  if(PARTS.map(x=>x.stem).join()!=='gen,gen2,bt,games,rally,games2')p.push('PARTS in tools/build.py read as '+JSON.stringify(PARTS.map(x=>x.stem))+' (one entry per line, like the others)');
+  if(PARTS.map(x=>x.stem).join()!=='gen,gen2,bt,games,rally,games2,games3')p.push('PARTS in tools/build.py read as '+JSON.stringify(PARTS.map(x=>x.stem))+' (one entry per line, like the others)');
   const FILES=[...PART_FILES,DATA_FILE];
   for(const f of ['index.html',...FILES,'sw.js'])if(!fs.existsSync(path.join(ROOT,f)))p.push(f+' not built; run python3 tools/build.py first');
   if(p.length)return{problems:p};
@@ -7829,7 +7829,7 @@ run('code split A11b (and data file split A11)',()=>{
   // P6-02: the LAZY parts (games, games2) have no tag: partsThen() loads them on demand (the check "performance P6-02")
   const tags=[...html.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/g)].map(m=>({attrs:m[1],src:(m[1].match(/src="([^"]*)"/)||[])[1],body:m[2]}));
   const srcs=tags.filter(t=>t.src!==undefined).map(t=>t.src),n=START_FILES.length+2;
-  if(JSON.stringify(LAZY)!=='["games","rally","games2"]')p.push('LAZY in tools/build.py read as '+JSON.stringify(LAZY)); // G-RALLY2: Star Rally's own part
+  if(JSON.stringify(LAZY)!=='["games","rally","games2","games3"]')p.push('LAZY in tools/build.py read as '+JSON.stringify(LAZY));
   if(JSON.stringify(srcs)!==JSON.stringify(START_FILES))p.push('index.html loads '+JSON.stringify(srcs)+', expected exactly '+JSON.stringify(START_FILES));
   if(tags.length!==n||tags[0].src!==undefined||tags[n-1].src!==undefined||START_FILES.some((f,i)=>tags[i+1].src!==f))p.push('index.html scripts are not code, '+START_FILES.join(', ')+', boot');
   else if(!/dataReady\(\)/.test(tags[n-1].body)||!/home\(true\)/.test(tags[n-1].body))p.push('boot script does not check dataReady() before home(true)');
@@ -7997,7 +7997,7 @@ run('parts split A11c',()=>{
       for(const [k,sk,lv] of [['math','add',1],['math','mult',1],['math','frac',3],['read','abc',1],['read','sound',1],['es','es_color',1],['disc','sci_life',1]]){
         try{const q=genQ(sk,lv,7);qs[k+':'+sk]=!!(q&&q.html&&q.sk===sk)}catch(e){qs[k+':'+sk]=String(e)}}
       return{ready:dataReady(),files,qs}})()`,ctx);
-    const stems=['gen','gen2','bt','games','rally','games2','data'];
+    const stems=['gen','gen2','bt','games','rally','games2','games3','data'];
     if(JSON.stringify(r.files.map(f=>f[0]))!==JSON.stringify(stems))p.push('appFiles() lists '+JSON.stringify(r.files.map(f=>f[0]))+', expected '+stems.join());
     if(!r.ready||r.files.some(f=>f[1]!==BUILD_VER))p.push('a part is not '+BUILD_VER+': '+JSON.stringify(r.files));
     for(const [k,v] of Object.entries(r.qs))if(v!==true)p.push('question '+k+' did not build from the loaded files: '+v);
@@ -8022,7 +8022,7 @@ run('performance P6-02',()=>{
   for(const f of ['index.html',...START_FILES,...LAZY_FILES,'sw.js'])if(!fs.existsSync(path.join(ROOT,f)))return{problems:[f+' not built; run python3 tools/build.py first']};
   const html=rd('index.html'),sw=rd('sw.js'),files=Object.fromEntries([...START_FILES,...LAZY_FILES].map(f=>[f,rd(f)]));
   // 1. what loads at start: index.html names only the start-up files; the games parts are LAZY, in build.py and in 90-app.js alike
-  if(JSON.stringify(LAZY)!=='["games","rally","games2"]')p.push('LAZY in tools/build.py should be the games parts: '+JSON.stringify(LAZY));
+  if(JSON.stringify(LAZY)!=='["games","rally","games2","games3"]')p.push('LAZY in tools/build.py should be the games parts: '+JSON.stringify(LAZY));
   const srcs=[...html.matchAll(/<script src="([^"]*)"/g)].map(m=>m[1]);
   for(const f of LAZY_FILES)if(srcs.includes(f))p.push(f+' has a <script> tag in index.html: it must load only on demand');
   if(JSON.stringify(srcs)!==JSON.stringify(START_FILES))p.push('index.html loads '+srcs.join(', ')+', expected '+START_FILES.join(', '));
@@ -8078,7 +8078,7 @@ run('performance P6-02',()=>{
     if(asked.join()!==LAZY_FILES.join())p.push('the Game Room asked for '+asked.join(', ')+', expected '+LAZY_FILES.join(', ')+' one after the other');
     s=state(pg);
     const hub=pg.app.innerHTML,ids=pg.run('GH.games.map(g=>g.btn)');
-    if(s.parts!=='true,true,true'||!/class="gh-room"/.test(hub)||ids.length<5||ids.some(b=>!hub.includes('id="'+b+'"'))||pg.styles.join()!=='css-bt,css-games,css-rally,css-games2')
+    if(s.parts!=='true,true,true'||!/class="gh-room"/.test(hub)||ids.length<5||ids.some(b=>!hub.includes('id="'+b+'"'))||pg.styles.join()!=='css-bt,css-games,css-rally,css-games2,css-games3')
       p.push('after the lazy load: '+JSON.stringify(s)+' hub '+/gh-room/.test(hub)+' cards '+ids+' styles '+pg.styles.join());
     for(const [id,want] of [['snack','snopen'],['art',''],['rally','rlgar']]){ // a games2 game (Snack Stand), a games one (Coloring), Star Rally (rally), through their hub cards
       try{const b=pg.run(`GH.get('${id}').btn`);pg.el(b).onclick();const h=pg.app.innerHTML;
@@ -16083,12 +16083,127 @@ run('block builder G-01',()=>{
   for(const v of css.matchAll(/var\(--([a-z0-9-]+)/g))if(!tok.includes('--'+v[1]+':'))p.push('60-game-blocks.css: --'+v[1]+' is not a token');
   for(const m of src.matchAll(/bbCol\('([a-z0-9:-]+)'\)|bbA\('([a-z0-9-]+)'/g)){const t=m[1]||m[2],n=t.startsWith('sc:')?'--sc-'+t.slice(3):'--ill-'+t;if(!tok.includes(n+':'))p.push('60-blocks.js: '+t+' is not a token');}
   const em=[...src.matchAll(/\p{Extended_Pictographic}/gu)].map(m=>m[0]);
-  if(em.some(e=>!'🐷🐔🐑🐄🐰🐱🐶🦆'.includes(e)))p.push('60-blocks.js: emoji other than the animals: '+[...new Set(em)].join(''));
+  if(em.length)p.push('60-blocks.js: emoji (G-BB2: the animals are drawn): '+[...new Set(em)].join(''));
   if(/petE\(/.test(src))p.push('the emoji pet (petE) is still drawn');
   if(/(^|[;{\s])(-webkit-)?(backdrop-)?filter\s*:/.test(css))p.push('60-game-blocks.css: filter used');
-  if(partOf('60-game-blocks.css')!=='games')p.push('60-game-blocks.css must go into the games file');
+  if(partOf('60-game-blocks.css')!=='games3')p.push('60-game-blocks.css must go into the games3 file (G-BB2)');
   if(/\.bb(wrap|cv|tools|pal|k)\b/.test(fs.readFileSync(path.join(SRC,'css','40-games.css'),'utf8')))p.push('old Block Builder rules left in 40-games.css');
   return{problems:[...new Set(p)].slice(0,50),note:o.notes.join('; ')};
+});
+
+// ---- G-BB2: Block Builder in 3D (src/js/61-bb-gl.js; R-03 B1-B3): exact picking, meshes, chunks, camera, animals, music, plumbing ----
+run('block builder 3D G-BB2',()=>{
+  const p=[];
+  const o=(()=>eval(js+`;(()=>{
+  const r={bad:[],notes:[]},bad=m=>r.bad.push(m);
+  // a world with towers, an overhang, glass, water and flowers, so rays meet every kind of face
+  const W0=()=>{const w=bbGen('island',7);for(let k=1;k<6;k++)w[bbI(4,4,k)]=3;for(let a=3;a<7;a++)w[bbI(a,5,5)]=8;w[bbI(9,9,4)]=7;w[bbI(10,9,4)]=7;return w;};
+  // 1. exact picking: the cell E.hit returns is the nearest non-empty cell along the ray (checked against every cell's box), at many views
+  const slab=(o,d,i,j,k)=>{let t0=0,t1=1e9;const lo=[i,j,k];for(let a=0;a<3;a++){if(Math.abs(d[a])<1e-12){if(o[a]<lo[a]||o[a]>lo[a]+1)return null;continue;}let ta=(lo[a]-o[a])/d[a],tb=(lo[a]+1-o[a])/d[a];if(ta>tb)[ta,tb]=[tb,ta];t0=Math.max(t0,ta);t1=Math.min(t1,tb);}return t0<=t1?t0:null;};
+  let picks=0,wrongPick=0,miss=0;
+  const rnd=rng(77);
+  for(const [W,H] of [[353,440],[660,460],[1024,552]])for(let v=0;v<6;v++){
+    const E=bbCam3(bbMake(W0(),null));E.size(W,H,1);E.home();E.ang=v*1.1+.2;E.tilt=.3+v*.15;E.zoom*=.8+v*.12;E.clamp();
+    for(let n=0;n<60;n++){
+      const px=rnd()*W,py=rnd()*H,h=E.hit(px,py),[o,d]=E.ray(px,py);
+      let best=null;
+      for(let c=0;c<E.w.length;c++)if(E.w[c]){const i=c%BW,j=Math.floor(c/BW)%BD,k=Math.floor(c/(BW*BD)),t=slab(o,d,i,j,k);if(t!=null&&(!best||t<best.t-1e-9))best={t,i,j,k};}
+      picks++;
+      if(!best&&h)wrongPick++;else if(best&&!h)miss++;
+      else if(best&&h&&(best.i!=h.i||best.j!=h.j||best.k!=h.k)){const t2=slab(o,d,h.i,h.j,h.k);if(t2==null||Math.abs(t2-best.t)>1e-6)wrongPick++;}
+    }
+    // the middle of a visible top projects back onto itself
+    for(let c=0;c<E.w.length;c+=7)if(E.w[c]&&!BLOCKS[E.w[c]].deco){const i=c%BW,j=Math.floor(c/BW)%BD,k=Math.floor(c/(BW*BD));if(E.get(i,j,k+1))continue;
+      const q=E.proj(i+.5,j+.5,k+1),h=E.hit(q[0],q[1]);if(h&&h.i==i&&h.j==j&&h.k==k&&h.f!='top')bad('a top seen at its own middle is not hit as the top: '+[i,j,k,h.f]);}
+  }
+  if(wrongPick||miss)bad('picking: '+wrongPick+' wrong and '+miss+' missed cells of '+picks+' rays');
+  r.notes.push(picks+' rays picked exactly');
+  // 2. the projection is the shader's: proj(unproj(p)) = p on a plane; a tap builds on top of the cell under the finger
+  {const E=bbCam3(bbMake(bbFlat(),null));E.size(660,460,1);E.home();E.ang=.7;E.tilt=.8;
+    for(const [px,py] of [[100,300],[330,230],[600,400]]){const [X,Y]=E.unproj(px,py,1),q=E.proj(X,Y,1);if(Math.hypot(q[0]-px,q[1]-py)>.01)bad('unproj and proj disagree at '+[px,py]+': '+q.map(v=>v.toFixed(2)));}
+    const q=E.proj(5.5,6.5,1);E.sel=3;const t=E.tap(q[0],q[1]);
+    if(t.kind!='place'||E.get(5,6,1)!==3)bad('a 3D tap on the top of (5, 6) did not build there: '+JSON.stringify(t));
+    const s=E.proj(5.5,6.5,1.5),h=E.hit(s[0],s[1]);
+    if(!h||h.i!=5||h.j!=6||h.k!=1||h.f!='side')bad('the side of the new block is not hit: '+JSON.stringify(h&&{i:h.i,j:h.j,k:h.k,f:h.f}));
+  }
+  // 3. block tops near the middle are at least 48 px wide where it opens (perspective: the ones in front are bigger)
+  let minTop=1e9;
+  for(const [W,H] of [[353,440],[576,620],[660,460],[660,410]]){
+    const E=bbCam3(bbMake(bbGen('island',7),null));E.size(W,H,1);E.home();
+    const h=E.hit(W/2,H/2);if(!h){bad('nothing in the middle at '+W+'x'+H);continue;}
+    const t=E.topZ(h.i,h.j)-1,pl=E.facePoly(h.i,h.j,t,'top'),xs=pl.map(q=>q[0]);minTop=Math.min(minTop,Math.max(...xs)-Math.min(...xs));
+    for(const bp of BBP.slice(0,6)){const B=bbCam3(bbMake(bbFlat(),bbGoal(bp)));B.size(W,H,1);B.home();
+      const n=B.todo()[0],i=n%BW,j=Math.floor(n/BW)%BD,k=Math.floor(n/(BW*BD)),q=B.proj(i+.5,j+.5,k+1),g=B.hit(q[0],q[1],f=>f.ghost);
+      if(!g||g.i!=i||g.j!=j||g.k!=k)bad(bp.id+': a see-through block is not picked at its own top at '+W+'x'+H);
+      const r0=B.bpTap(q[0],q[1]);if(r0.kind!='place'&&r0.kind!='wrong')bad(bp.id+': a tap on a see-through block: '+r0.kind);}
+  }
+  if(minTop<48)bad('3D block tops in the middle '+minTop.toFixed(1)+' px wide (want 48+)');
+  r.notes.push('3D tops '+Math.round(minTop)+' px');
+  // 4. the camera: one finger turns and tilts (tilt kept in range), two fingers move the focus, zoom keeps the middle, never too close
+  {const E=bbCam3(bbMake(bbGen('island',7),null));E.size(660,460,1);E.home();const a0=E.ang,F0=E.F.slice();
+    E.orbit(120,0);if(!(E.ang<a0-.2))bad('one finger to the right did not turn the view: '+[a0,E.ang]);
+    E.orbit(0,5000);if(E.tilt!==BB3.tMax)bad('tilt not held at its top: '+E.tilt);E.orbit(0,-9000);if(E.tilt!==BB3.tMin)bad('tilt not held at its bottom: '+E.tilt);
+    if(E.F.join()!==F0.join())bad('turning moved the focus');
+    E.tilt=BB3.tilt;E.pan(-80,0);if(Math.hypot(E.F[0]-F0[0],E.F[1]-F0[1])<.5)bad('two fingers did not move the view');
+    const F1=E.F.slice();E.zoomAt(1.4);E.zoomAt(1/1.4);if(Math.hypot(E.F[0]-F1[0],E.F[1]-F1[1])>1e-6)bad('zoom moved the middle');
+    E.zoom=1e4;E.clamp();if(E.dist3()<BB3.dMin-1e-6)bad('the camera can come closer than '+BB3.dMin+' blocks: '+E.dist3());
+    E.F=[-50,90,2];E.clamp();if(E.F[0]<0||E.F[1]>BD)bad('the focus left the island');}
+  // 5. meshes: hidden faces left out, corner shade, sun shadow, see-through apart, water marked to move, glow
+  {const w=bbFlat(),m0=bbGlMesh(w,1,1);
+    if(m0.o.i.length/6!==16||m0.t.i.length)bad('a flat chunk should be 16 top faces: '+m0.o.i.length/6+' + '+m0.t.i.length/6);
+    const e=bbGlMesh(w,0,0);if(e.o.i.length/6!==16+8)bad('an edge chunk shows its 8 outside faces too: '+e.o.i.length/6);
+    // the light at corner (X, Y, Z) of the first flat face (a top) there
+    const lit=(m,X,Y,Z)=>{const v=m.o.v;for(let q=0;q<v.length;q+=32){let flat=true,at=-1;for(let c=0;c<4;c++){const n=q+c*8;if(v[n+2]!=Z)flat=false;if(v[n]==X&&v[n+1]==Y&&v[n+2]==Z)at=n;}if(flat&&at>=0)return v[at+5];}return null;};
+    const a=lit(m0,6,6,1);w[bbI(5,5,1)]=3;const m1=bbGlMesh(w,1,1),b=lit(m1,6,6,1);
+    if(!(b<a))bad('no corner shade next to a block: '+[a,b]);
+    if(m1.o.i.length/6!==16+5-1+0)bad('a block on the ground: '+m1.o.i.length/6+' faces (want 20: 15 ground tops, its top and 4 sides)');
+    const w2=bbFlat();for(let k=1;k<6;k++)w2[bbI(8,8,k)]=3;
+    const sh=bbGlMesh(w2,2,1),c1=lit(sh,9,7,1),c0=lit(bbGlMesh(bbFlat(),2,1),9,7,1);
+    if(!(c1<c0))bad('no sun shadow beside a tall tower: '+[c0,c1]);
+    const w3=bbFlat();w3[bbI(5,5,1)]=10;w3[bbI(6,5,1)]=10;w3[bbI(5,6,1)]=7;w3[bbI(6,6,1)]=22;
+    const m3=bbGlMesh(w3,1,1),kinds=new Set();for(let n=7;n<m3.t.v.length;n+=8)kinds.add(m3.t.v[n]);
+    if(!m3.t.i.length||!kinds.has(1))bad('water and glass are not see-through with moving water: '+[...kinds]);
+    let glow=0;for(let n=7;n<m3.o.v.length;n+=8)if(m3.o.v[n]==2)glow++;if(!glow)bad('a lamp does not glow');
+    const one=new Uint8Array(BW*BD*BH);one[bbI(3,3,2)]=4;if(bbGlMesh(one,0,0).o.i.length/6!==6)bad('a lone block in the air has 6 faces');
+    if(bbGlMesh(one,0,0,bbI(3,3,2)).o.i.length)bad('the dropping block is not left out of its chunk');
+    const gh=bbGlGhost(Object.assign(bbMake(bbFlat(),bbGoal(BBP[0])),{}));if(!gh.i.length)bad('no see-through blueprint blocks in 3D');}
+  // 6. only the chunks a change reaches are built again, and the others are exactly as before
+  {const w=W0(),before=[];for(let n=0;n<16;n++)before.push(JSON.stringify(bbGlMesh(w,n%4,n>>2)));
+    let maxD=0,stale=0;const rr=rng(5);
+    for(let t=0;t<40;t++){const i=Math.floor(rr()*BW),j=Math.floor(rr()*BD),k=1+Math.floor(rr()*8),c=bbI(i,j,k),old=w[c];w[c]=old?0:3;
+      const d=bbGlDirty([c]);maxD=Math.max(maxD,d.size);if(!d.has(Math.floor(j/4)*4+Math.floor(i/4)))bad('the changed cell\\'s own chunk is not rebuilt');
+      for(let n=0;n<16;n++){const now=JSON.stringify(bbGlMesh(w,n%4,n>>2));if(!d.has(n)&&now!==before[n])stale++;before[n]=now;}}
+    if(stale)bad(stale+' chunks changed without being marked to rebuild');
+    if(maxD>6)bad('one change rebuilds '+maxD+' of 16 chunks (want 6 at most)');
+    r.notes.push('a change rebuilds '+maxD+' of 16 chunks at most');}
+  // 7. animals: drawn kinds from the object art, the hop squashes and lands
+  for(const k of BB_AN)if(!ART[k])bad('no drawing for the animal '+k);
+  const s0=bbHopShape(0,0),s5=bbHopShape(.5,0),s1=bbHopShape(1,0);
+  if(!(s5[0]>.4&&s1[0]===0&&s0[0]===0&&s0[2]<1&&s5[2]>1))bad('the hop: '+JSON.stringify([s0,s5,s1]));
+  // 8. music: a loop only with Music and Sound effects on and not in calm mode
+  {const was=[S.sound,S.music,S.calm],calls=[],t0=tone,a0=AC;
+    tone=(...a)=>calls.push(a);AC={state:'running',currentTime:1};
+    const M={};S.sound=1;S.music=1;S.calm=0;bbMusic(M,'island');const on=!!M.mb;
+    const M2={};S.calm=1;bbMusic(M2,'island');const calm=!!M2.mb;
+    const M3={};S.calm=0;S.music=0;bbMusic(M3,'desert');const off=!!M3.mb;
+    [S.sound,S.music,S.calm]=was;tone=t0;AC=a0;
+    if(!calls.length)bad('the music played no note');
+    if(!on||calm||off)bad('music: on '+on+', in calm mode '+calm+', with Music off '+off);
+    for(const k of Object.keys(BB_TUNE))if(BB_TUNE[k].length!==4)bad('tune '+k);}
+  return r;
+  })()`))();
+  for(const m of o.bad)p.push(m);
+  // 9. plumbing: games3 holds Block Builder and the renderer; no raw colour; no three.js or other library; size of the renderer
+  const gl=fs.readFileSync(path.join(SRC,'js','61-bb-gl.js'),'utf8'),src=fs.readFileSync(path.join(SRC,'js','60-blocks.js'),'utf8');
+  if(partOf('60-blocks.js')!=='games3'||partOf('61-bb-gl.js')!=='games3'||partOf('60-game-blocks.css')!=='games3')p.push('Block Builder must ship in games3.'+BUILD_VER+'.js');
+  if(!LAZY.includes('games3'))p.push('games3 must load on demand (LAZY)');
+  if(/#[0-9a-fA-F]{3,8}\b(?![\w-])|rgba?\(\s*\d|hsla?\(/.test(gl))p.push('61-bb-gl.js: a raw colour');
+  if(/\bimport\b|require\(|THREE\./.test(gl))p.push('61-bb-gl.js: a library');
+  if(Buffer.byteLength(gl)>40000)p.push('61-bb-gl.js is '+Buffer.byteLength(gl)+' bytes (keep it small, R-03 4.3: 15-25 KB)');
+  if(!/bbS\(\)\.gl !== 0/.test(src)||!/b\.gl = 0/.test(src))p.push('the 3D look switch is not saved as S.bb.gl');
+  if(!/bbSaveSoon\(\)/.test(src))p.push('B1: a change must be saved after the frame is painted (bbSaveSoon)');
+  if(/fillText\(an\./.test(src))p.push('animals are still drawn as text');
+  return{problems:[...new Set(p)].slice(0,50),note:o.notes.join('; ')+'; 61-bb-gl.js '+Buffer.byteLength(gl)+' bytes'};
 });
 
 // ---- G-01b: Block Builder journey (src/js/60-blocks.js): chapters, challenge kinds, the build of the day, the gallery, old saves ----
@@ -17042,7 +17157,7 @@ run('snack stand G-04a',()=>{
   notes.push(o.svg.length+' drawings, '+shapes+' shapes, tokens only');
   // 12. plumbing: the games2 part, stopped by view(), the test hook off, the game-time rules, the shared chrome
   if(partOf('65-game-snack.js')!=='games2'||partOf('49-game-snack.css')!=='games2')p.push('Snack Stand must ship in games2.'+BUILD_VER+'.js');
-  if(o.files!=='gen,gen2,bt,games,rally,games2,data')p.push('appFiles() should list games2 after games (and rally, G-RALLY2): '+o.files);
+  if(o.files!=='gen,gen2,bt,games,rally,games2,games3,data')p.push('appFiles() should list games2 after games (and games3 after it, G-BB2): '+o.files);
   if(!/if\(typeof snStop=='function'\)snStop\(\)/.test(rd('js/40-view.js')))p.push('view() must stop the day (snStop)');
   if(o.dev!=='{"fast":1}')p.push('SN_DEV test hook must be off: '+o.dev);
   if(!/if \(ptLeft\(\) <= 0\) \{\s*SFX\.wrong\(\);\s*fb\(ptWhyNot\(\)/.test(src))p.push('a day must not start without game time (ptLeft, ptWhyNot)');

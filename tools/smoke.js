@@ -237,7 +237,7 @@ async function main() {
       const files = g.files.map(f => f[0] + '.' + g.dv + '.js'), want = 'data.' + g.dv + '.js';
       const startFiles = g.files.filter(f => !g.lazy.includes(f[0])).map(f => f[0] + '.' + g.dv + '.js'); // P6-02: the <script> tags at start
       const btF = 'bt.' + g.dv + '.js', gamesF = 'games.' + g.dv + '.js'; // A11c: the order of the parts is build.py's, so name them
-      if (JSON.stringify(g.lazy) !== '["games","rally","games2"]' || JSON.stringify(g.src) !== JSON.stringify(startFiles) || files[files.length - 1] !== want || !g.ready || !(g.gram > 0 && g.vocab > 0 && g.comp > 0 && g.info > 0)
+      if (JSON.stringify(g.lazy) !== '["games","rally","games2","games3"]' || JSON.stringify(g.src) !== JSON.stringify(startFiles) || files[files.length - 1] !== want || !g.ready || !(g.gram > 0 && g.vocab > 0 && g.comp > 0 && g.info > 0)
         || g.spell !== 'function' || !g.vq || g.pz !== '3:16:16' || g.ix < 0) {
         fail('A11 data globals: ' + JSON.stringify(g));
       }
@@ -287,7 +287,7 @@ async function main() {
       if (room !== 3) fail('A11b: the Game Room did not open (' + room + ' of 3 games)');
       const lz = await d.page.evaluate(() => ({ css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(), games: [typeof garage, typeof blockBuilder, typeof colorMenu].join(),
         ready: LAZY_PARTS.map(partReady).join(), tags: [...document.scripts].filter(s => s.src).map(s => s.getAttribute('src')).join() }));
-      if (lz.css !== 'main,css-bt,css-games,css-rally,css-games2' || lz.games !== 'function,function,function' || lz.ready !== 'true,true,true'
+      if (lz.css !== 'main,css-bt,css-games,css-rally,css-games2,css-games3' || lz.games !== 'function,function,function' || lz.ready !== 'true,true,true'
         || lz.tags !== startFiles.concat(g.lazy.map(x => x + '.' + g.dv + '.js')).join()) fail('P6-02: the Game Room did not load the games parts: ' + JSON.stringify(lz));
       if (opened.length === 3 && room === 3) step('A11b: puzzle types ' + g.bt + ' registered from ' + btF + ', its <style> in, opened from the hub: '
         + opened.join(', ') + '; Game Room from ' + gamesF + ' opened');
@@ -8358,7 +8358,8 @@ async function main() {
             }
             return out;
           });
-          await pg.evaluate(() => { S.pt = { bank: 1500, day: today(), used: 0 }; save(); home(); });
+          // G-BB2: this block checks the 2D look (the fallback when WebGL is missing; S.bb.gl = 0); the 3D look is checked below
+          await pg.evaluate(() => { S.pt = { bank: 1500, day: today(), used: 0 }; S.bb = S.bb || {}; S.bb.gl = 0; save(); home(); });
           await tapSel('#groom');
           await pg.waitForSelector('#gbb');
           await pg.waitForTimeout(400);
@@ -8468,12 +8469,16 @@ async function main() {
           await pg.waitForTimeout(400);
           const v3 = await pg.evaluate(() => ({ F: BB.F.slice(), z: BB.zoom }));
           if (!(v3.z < v2.z) || Math.hypot(v3.F[0] - v2.F[0], v3.F[1] - v2.F[1]) > .01) bad.push(at + 'Farther (keeps the middle): ' + JSON.stringify([v2, v3]));
+          // G-BB2: the angle is sampled in the page every frame from before the tap (one look 120 ms after it was flaky on a busy
+          // machine: the 360 ms turn could already be over, or not started); an in-between angle must be seen, then exactly a quarter
+          await pg.evaluate(() => { window.__angs = []; const f = () => { if (!window.__angs) return; window.__angs.push(BB.ang); requestAnimationFrame(f); }; requestAnimationFrame(f); });
           await tapSel('#bbrr');
-          await pg.waitForTimeout(120);
-          const mid = await pg.evaluate(() => BB.ang);
-          await pg.waitForTimeout(500);
+          await pg.waitForFunction(() => Math.abs(BB.ang - Math.PI / 2) < 1e-9, null, { timeout: 5000 }).catch(() => {});
+          await pg.waitForTimeout(100);
+          const angs = await pg.evaluate(() => { const a = window.__angs; window.__angs = null; return a; });
+          const mid = angs.find(a => a > .05 && a < Math.PI / 2 - .05);
           const turned = await pg.evaluate(() => [BB.rot, BB.ang]);
-          if (!(mid > 0.05 && mid < Math.PI / 2 - .05) || turned[0] != 1 || Math.abs(turned[1] - Math.PI / 2) > 1e-6) bad.push(at + 'turn (animated): ' + [mid, turned]);
+          if (mid == null || turned[0] != 1 || Math.abs(turned[1] - Math.PI / 2) > 1e-6) bad.push(at + 'turn (animated): ' + [mid, angs.length, turned]);
           stage = 'hold, then slide';
           // hold, then slide: the magnifier aims and lifting builds there
           await tapSel('[data-b="4"]');
@@ -8597,11 +8602,204 @@ async function main() {
         await ga.ctx.close();
       }
       if (bad.length) fail('G-01 Block Builder:\n  ' + bad.slice(0, 40).join('\n  '));
-      else step('G-01 Block Builder by real touch at 380x780 and 1024x600 (' + notes.join(', ') + '): Game Room -> menu -> world; Stone tower and Brick ' +
+      else step('G-01 Block Builder (2D look) by real touch at 380x780 and 1024x600 (' + notes.join(', ') + '): Game Room -> menu -> world; Stone tower and Brick ' +
         'wall by taps; a Build tap on TNT builds on top; Boom lights it and Undo brings the blocks back; Undo / Redo of the wall; drag pans, pinch zooms, Farther keeps the middle, ' +
         'Right turns (animated), hold-and-slide aims and builds; 48 px targets, no sideways scroll, messages clear of Pause; Stone Tower and Stairs ' +
         'built by tapping see-through blocks: no mistakes, 3 stars, saved by id; G-01b: the end card names the next build, the Brick Wall count build ' +
         '(a 5th block refused with its size, 3 stars), the next goal moves on, Sunny Beach locked, a world saved to the gallery and shown on the menu');
+    }
+
+    // G-BB2 Block Builder in 3D by real touch (CDP touch events), midway save, the real clock. At 380x780 and 1024x600: Home ->
+    //    Game Room -> Block Builder -> My Island opens in the 3D look (WebGL; this Chrome draws it in software) and keeps drawing;
+    //    block tops in the middle at least 48 px; a tap on the top of a block builds on that very column, twice (exact picking), and
+    //    the world is saved; tap-to-paint time at 4x CPU slow-down; a one-finger drag turns the view (the focus stays, nothing built), a
+    //    flick keeps turning and stops by itself on whole quarters for stamps; a pinch zooms; Right turns a quarter (in-between angles
+    //    seen); hold then slide aims and builds; More -> Add animal: a drawn animal (no emoji) hops; More -> 3D look off: the 2D look
+    //    (saved as S.bb.gl = 0), on again: 3D; Pause -> Quit -> the first blueprint built by tapping its see-through blocks: 3 stars.
+    {
+      const bad = [], notes = [];
+      for (const [w, h] of [[380, 780], [1024, 600]]) {
+        const at = w + 'x' + h + ' ';
+        const ga = await openApp(browser, { fixture: 'midway', width: w, height: h, speed: 1 });
+        const pg = ga.page;
+        let stage = 'open';
+        try {
+          const cdp = await pg.context().newCDPSession(pg);
+          await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
+          const T = (x, y, id = 1) => ({ x: Math.round(x), y: Math.round(y), radiusX: 8, radiusY: 8, force: 1, id });
+          const send = (type, touchPoints) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints });
+          const tap = async ([x, y]) => { await send('touchStart', [T(x, y)]); await pg.waitForTimeout(40); await send('touchEnd', []); await pg.waitForTimeout(150); };
+          const tapSel = async sel => {
+            const r = await pg.evaluate(s => { const e = document.querySelector(s); if (!e) return null; e.scrollIntoView({ block: 'nearest', inline: 'nearest' }); const b = e.getBoundingClientRect(); return [b.left + b.width / 2, b.top + b.height / 2]; }, sel);
+            if (!r) throw new Error('no ' + sel);
+            await pg.waitForTimeout(80);
+            await tap(r);
+          };
+          const toCss = 'const r = $("#bbc").getBoundingClientRect(), d = BB.dpr; ';
+          const count = () => pg.evaluate(() => BB.w.filter(v => v).length);
+          await pg.evaluate(() => { S.pt = { bank: 1500, day: today(), used: 0 }; if (S.bb) delete S.bb.gl; save(); home(); });
+          await tapSel('#groom');
+          await pg.waitForSelector('#gbb');
+          await pg.waitForTimeout(400);
+          await tapSel('#gbb');
+          await pg.waitForSelector('.bb-menu [data-w="0"]');
+          await pg.waitForTimeout(400);
+          await tapSel('[data-w="0"]');
+          await pg.waitForSelector('#bbc');
+          await pg.waitForTimeout(900);
+          stage = '3D look';
+          const g0 = await pg.evaluate(() => ({ look: BB.look, f: BB.api.frame(), gl: !document.querySelector('#bbgl').hidden, faces: BB.gl ? BB.gl.ch.reduce((a, b) => a + b.no + b.nt, 0) / 6 : 0 }));
+          await pg.waitForTimeout(300);
+          const f1 = await pg.evaluate(() => BB.api.frame());
+          if (g0.look != '3d' || !g0.gl || !(g0.faces > 200) || !(f1 > g0.f)) { bad.push(at + 'the 3D look is not drawing: ' + JSON.stringify(g0) + ' ' + f1); throw new Error('skip'); }
+          // block tops near the middle, and a column to build on: its top is the face under its own middle
+          stage = 'targets';
+          const sp = await pg.evaluate(() => {
+            let best = null;
+            for (let j = 0; j < BD; j++) for (let i = 0; i < BW; i++) {
+              const k = BB.topZ(i, j) - 1, v = BB.get(i, j, k);
+              if (k < 0 || k > 8 || !v || BLOCKS[v].deco || BLOCKS[v].see) continue;
+              const p = BB.proj(i + .5, j + .5, k + 1), h = BB.hit(p[0], p[1]);
+              if (!h || h.i != i || h.j != j || h.k != k || h.f != 'top') continue;
+              const d = Math.hypot(p[0] - BB.W / 2, p[1] - BB.H * .55), xs = BB.facePoly(i, j, k, 'top').map(q => q[0]);
+              if (!best || d < best.d) best = { i, j, k, d, wd: (Math.max(...xs) - Math.min(...xs)) / BB.dpr };
+            }
+            return best;
+          });
+          if (!sp) { bad.push(at + 'no open column near the middle'); throw new Error('skip'); }
+          if (!(sp.wd >= 48)) bad.push(at + '3D block top in the middle ' + sp.wd.toFixed(1) + ' px wide');
+          const topAt = (i, j, k) => pg.evaluate(new Function('a', toCss + 'const p = BB.proj(a[0] + .5, a[1] + .5, a[2] + 1); return [r.left + p[0] / d, r.top + p[1] / d];'), [i, j, k]);
+          stage = 'exact taps';
+          await tapSel('[data-b="3"]');
+          await tap(await topAt(sp.i, sp.j, sp.k));
+          await pg.waitForTimeout(250);
+          await tap(await topAt(sp.i, sp.j, sp.k + 1));
+          await pg.waitForTimeout(400);
+          const col = await pg.evaluate(a => [BB.get(a[0], a[1], a[2] + 1), BB.get(a[0], a[1], a[2] + 2)], [sp.i, sp.j, sp.k]);
+          if (col.join() != '3,3') bad.push(at + 'taps on the top of (' + [sp.i, sp.j, sp.k] + ') built ' + col);
+          const saved = await pg.evaluate(() => bbDecode(bbS().worlds[bbS().cur].d).join() == BB.w.join());
+          if (!saved) bad.push(at + 'the world was not saved after the taps');
+          // tap to paint at 4x slow-down (Event Timing: from the touch to the next frame on the screen)
+          stage = 'tap time';
+          await pg.evaluate(() => { window.__ev = []; try { new PerformanceObserver(l => { for (const e of l.getEntries()) if (/pointerup|touchend/.test(e.name)) window.__ev.push(e.duration); }).observe({ type: 'event', durationThreshold: 16 }); } catch (e) {} });
+          await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
+          const n0 = await count();
+          for (let n = 0; n < 3; n++) { await tap(await topAt(sp.i, sp.j, sp.k + 2 + n)); await pg.waitForTimeout(300); }
+          await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+          await pg.waitForTimeout(300);
+          const ev = await pg.evaluate(() => window.__ev.slice().sort((a, b) => a - b));
+          const n1 = await count();
+          if (n1 != n0 + 3) bad.push(at + 'three taps at 4x built ' + (n1 - n0));
+          const tmax = ev.length ? ev[ev.length - 1] : 0;
+          if (tmax > 800) bad.push(at + 'a tap took ' + tmax + ' ms to show at 4x');
+          notes.push(at + 'tap to paint at 4x ' + (ev.length ? Math.round(ev[ev.length >> 1]) + '/' + Math.round(tmax) + ' ms' : 'under 16 ms'));
+          await tapSel('#bbundo'); await tapSel('#bbundo'); await tapSel('#bbundo');
+          // one finger turns; a flick keeps turning and stops on its own; nothing is built
+          stage = 'turn with one finger';
+          const cr = await pg.evaluate(() => { const r = $('#bbc').getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; });
+          const v0 = await pg.evaluate(() => ({ a: BB.ang, F: BB.F.join(), n: BB.w.filter(v => v).length }));
+          await send('touchStart', [T(cr[0], cr[1])]);
+          for (let s = 1; s <= 8; s++) { await send('touchMove', [T(cr[0] - s * 14, cr[1])]); await pg.waitForTimeout(30); }
+          await send('touchEnd', []);
+          await pg.waitForTimeout(250);
+          const v1 = await pg.evaluate(() => ({ a: BB.ang, F: BB.F.join(), n: BB.w.filter(v => v).length }));
+          if (!(Math.abs(v1.a - v0.a) > .2) || v1.F != v0.F || v1.n != v0.n) bad.push(at + 'one-finger drag: ' + JSON.stringify([v0, v1]));
+          await send('touchStart', [T(cr[0] - 80, cr[1])]);
+          for (let s = 1; s <= 4; s++) { await send('touchMove', [T(cr[0] - 80 + s * 40, cr[1])]); await pg.waitForTimeout(16); }
+          await send('touchEnd', []);
+          const fl = await pg.evaluate(() => BB.ang);
+          await pg.waitForFunction(() => !BB.gest.spin, null, { timeout: 6000 }).catch(() => {});
+          const v2 = await pg.evaluate(() => ({ a: BB.ang, spin: BB.gest.spin, rot: BB.rot }));
+          if (v2.spin || Math.abs(v2.a - fl) < .05 || !Number.isInteger(v2.rot)) bad.push(at + 'flick: ' + JSON.stringify([fl, v2]));
+          // pinch zooms
+          stage = 'pinch';
+          const z0 = await pg.evaluate(() => BB.zoom);
+          await send('touchStart', [T(cr[0] - 30, cr[1], 1), T(cr[0] + 30, cr[1], 2)]);
+          for (let s = 1; s <= 8; s++) { await send('touchMove', [T(cr[0] - 30 - s * 8, cr[1], 1), T(cr[0] + 30 + s * 8, cr[1], 2)]); await pg.waitForTimeout(16); }
+          await send('touchEnd', []);
+          await pg.waitForTimeout(200);
+          const z1 = await pg.evaluate(() => BB.zoom);
+          if (!(z1 > z0 * 1.3)) bad.push(at + 'pinch: ' + [z0, z1]);
+          await tapSel('#bbzo'); await pg.waitForTimeout(400);
+          // Right turns a quarter from where the view is, animated (angles sampled every frame)
+          stage = 'Right';
+          await pg.evaluate(() => { window.__angs = []; const f = () => { if (!window.__angs) return; window.__angs.push(BB.ang); requestAnimationFrame(f); }; requestAnimationFrame(f); });
+          const r0 = await pg.evaluate(() => Math.round(BB.ang / (Math.PI / 2)));
+          await tapSel('#bbrr');
+          await pg.waitForFunction(r0 => Math.abs(BB.ang - (r0 + 1) * Math.PI / 2) < 1e-9, r0, { timeout: 5000 }).catch(() => {});
+          const angs = await pg.evaluate(() => { const a = window.__angs; window.__angs = null; return a; });
+          const tr = await pg.evaluate(() => [BB.rot, BB.ang]);
+          const a0 = r0 * Math.PI / 2;
+          if (tr[0] != r0 + 1 || Math.abs(tr[1] - (r0 + 1) * Math.PI / 2) > 1e-6 || !angs.some(a => a > a0 + .05 && a < a0 + Math.PI / 2 - .05)) bad.push(at + 'Right: ' + JSON.stringify([r0, tr, angs.length]));
+          // hold, then slide: aims (magnifier) and lifting builds
+          stage = 'hold and slide';
+          await pg.waitForTimeout(300);
+          const sp2 = await pg.evaluate(new Function(toCss + 'for (let j = 0; j < BD; j++) for (let i = 0; i < BW; i++) { const k = BB.topZ(i, j) - 1, v = BB.get(i, j, k); if (k < 0 || !v || BLOCKS[v].deco || BLOCKS[v].see) continue; const p = BB.proj(i + .5, j + .5, k + 1), h = BB.hit(p[0], p[1]); if (h && h.i == i && h.j == j && h.f == "top" && p[0] > BB.W * .15 && p[0] < BB.W * .85 && p[1] > BB.H * .3 && p[1] < BB.H * .85) return [r.left + p[0] / d, r.top + p[1] / d]; } return null;'));
+          if (sp2) {
+            const m0 = await count();
+            await send('touchStart', [T(sp2[0], sp2[1] - 30)]);
+            await pg.waitForTimeout(450);
+            await send('touchMove', [T(sp2[0], sp2[1] - 15)]);
+            await send('touchMove', [T(sp2[0], sp2[1])]);
+            await pg.waitForTimeout(80);
+            const aim = await pg.evaluate(() => ({ aim: BB.gest.aim, prev: (BB.gest.prev || []).length, fp: !!BB.gest.fp }));
+            await send('touchEnd', []);
+            await pg.waitForTimeout(250);
+            const m1 = await count();
+            if (!aim.aim || !aim.prev || !aim.fp || m1 != m0 + 1) bad.push(at + 'hold and slide: ' + JSON.stringify(aim) + ' ' + [m0, m1]);
+          } else bad.push(at + 'no spot for hold and slide');
+          // More -> Add animal: a drawn animal hops (the picture is made from the object art)
+          stage = 'animals';
+          await tapSel('#bbmore');
+          await pg.waitForSelector('.sheet-bg.on [data-mt="pet"]');
+          await pg.waitForTimeout(400);
+          await tapSel('.sheet-bg.on [data-mt="pet"]');
+          await pg.waitForTimeout(1600);
+          const an = await pg.evaluate(() => ({ n: BB.animals.length, kinds: BB.animals.map(a => a.k).join(), drawn: BB.animals.filter(a => BB.gl.anOk[a.k]).length, hop: BB.animals.some(a => a.hop < 1) || BB.animals.some(a => a.fx != null && (a.fx != a.x || a.fy != a.y)), emoji: BB.animals.some(a => a.e), all: BB_AN.join() }));
+          if (an.n < 3 || an.drawn != an.n || an.emoji || an.kinds.split(',').some(k => !an.all.split(',').includes(k))) bad.push(at + 'animals: ' + JSON.stringify(an));
+          // More -> 3D look off: the 2D look, saved; on again: 3D
+          stage = '3D look switch';
+          await tapSel('#bbmore');
+          await pg.waitForSelector('.sheet-bg.on #bb3d');
+          await pg.waitForTimeout(400);
+          await pg.click('.sheet-bg.on label:has(#bb3d), .sheet-bg.on #bb3d', { force: true }).catch(async () => { await pg.evaluate(() => { const c = document.querySelector('.sheet-bg.on #bb3d'); c.checked = !c.checked; c.onchange(); }); });
+          await pg.waitForTimeout(600);
+          const l2 = await pg.evaluate(() => ({ look: BB.look, gl: bbS().gl, hidden: document.querySelector('#bbgl').hidden }));
+          if (l2.look != '2d' || l2.gl !== 0 || !l2.hidden) bad.push(at + '3D look off: ' + JSON.stringify(l2));
+          await pg.evaluate(() => { delete bbS().gl; save(); blockBuilder(); });
+          await pg.waitForTimeout(500);
+          if ((await pg.evaluate(() => BB.look)) != '3d') bad.push(at + '3D look on again: still 2D');
+          // the first blueprint, built by tapping its see-through blocks in 3D
+          stage = 'blueprint';
+          await tapSel('#gpause');
+          await pg.waitForSelector('.sheet-bg.on #gquit');
+          await pg.waitForTimeout(450);
+          await tapSel('#gquit');
+          await pg.waitForSelector('[data-ch="0"]');
+          await pg.waitForTimeout(400);
+          await tapSel('[data-ch="0"]');
+          await pg.waitForSelector('#bbprog');
+          await pg.waitForTimeout(800);
+          for (let n = 0; n < 40; n++) {
+            const t = await pg.evaluate(new Function(toCss + 'if (!BB || !BB.goal || BB.done()) return null; const c = BB.todo()[0]; if (c == null) return null; const i = c % BW, j = Math.floor(c / BW) % BD, k = Math.floor(c / (BW * BD)); const v = BB.goal.get(c); if (BB.sel != v) return { sel: v }; const p = BB.proj(i + .5, j + .5, k + 1); return { p: [r.left + p[0] / d, r.top + p[1] / d] };'));
+            if (!t) break;
+            if (t.sel) { await tapSel('[data-b="' + t.sel + '"]'); continue; }
+            await tap(t.p);
+            await pg.waitForTimeout(120);
+          }
+          await pg.waitForSelector('.gh-end', { timeout: 5000 });
+          const res = await pg.evaluate(() => ({ miss: BB.miss, st: bbBP()[BBP[0].id], look: BB.look }));
+          if (res.miss || res.st != 3 || res.look != '3d') bad.push(at + 'blueprint in 3D: ' + JSON.stringify(res));
+          notes.push(at + 'top ' + Math.round(sp.wd) + ' px');
+        } catch (e) { if (e.message != 'skip') bad.push(at + stage + ': ' + e.message.split('\n')[0]); }
+        network.push(...ga.network);
+        for (const e of ga.errors) fail(e);
+        await ga.ctx.close();
+      }
+      if (bad.length) fail('G-BB2 Block Builder 3D:\n  ' + bad.slice(0, 40).join('\n  '));
+      else step('G-BB2 Block Builder in 3D by real touch at 380x780 and 1024x600 (' + notes.join(', ') + '): the 3D look draws; exact taps build on the tapped ' +
+        'column and are saved; one finger turns (a flick slows to a stop on a whole quarter), pinch zooms, Right turns a quarter (animated); hold-and-slide ' +
+        'builds; drawn animals hop; the 3D look switch saves S.bb.gl; the first blueprint built in 3D with no mistakes, 3 stars');
     }
 
     // G-ART2 Art Studio by real touch (CDP touch events), midway save with 20 min of game time and two Neon pictures in the old
@@ -9509,7 +9707,7 @@ async function main() {
           const ver = DATA_VER, c = await caches.open('starschool-' + ver);
           return { ver, cached: (await c.keys()).map(r => r.url.split('/').pop()).sort(), tags: [...document.scripts].filter(s => s.src).map(s => s.getAttribute('src')) };
         });
-        const lazyF = ['games', 'rally', 'games2'].map(x => x + '.' + c1.ver + '.js');
+        const lazyF = ['games', 'rally', 'games2', 'games3'].map(x => x + '.' + c1.ver + '.js');
         if (!lazyF.every(f => c1.cached.includes(f)) || !c1.cached.includes('index.html')) bad.push('the service worker did not precache the games parts: ' + c1.cached.join(' '));
         if (lazyF.some(f => c1.tags.includes(f))) bad.push('index.html loaded a games part at start: ' + c1.tags.join(' '));
         // ES-AUDIO: the recordings are cached at install too, in their own cache (none of them was loaded by the page itself)
@@ -9551,7 +9749,7 @@ async function main() {
         const s3 = await p2.evaluate(() => ({ parts: LAZY_PARTS.map(partReady).join(), css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(),
           cards: document.querySelectorAll('.gh-card').length, games: GH.games.map(g => g.id).join() }));
         if (!wait || wait.line !== 'Getting the games ready...' || !wait.back || wait.hub) bad.push('no "Getting the games ready..." screen first: ' + JSON.stringify(wait));
-        if (s3.parts !== 'true,true,true' || s3.css !== 'main,css-bt,css-games,css-rally,css-games2' || s3.cards < 5 || !/snack/.test(s3.games)) bad.push('Game Room offline: ' + JSON.stringify(s3));
+        if (s3.parts !== 'true,true,true' || s3.css !== 'main,css-bt,css-games,css-rally,css-games2,css-games3' || s3.cards < 5 || !/snack/.test(s3.games)) bad.push('Game Room offline: ' + JSON.stringify(s3));
         // 4. a game from games2 starts: Snack Stand's card, then its Open button, then the day is on screen with the shared Pause
         await p2.click('#gsnack');
         await p2.click('#snopen', { timeout: 8000 });
