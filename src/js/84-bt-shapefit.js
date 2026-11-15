@@ -534,7 +534,7 @@ SF.mount = function (el, p, api) {
     sel = -1;
     st.h = -1;
     root.classList.add('won');
-    api.sfx.magic();
+    api.sfx.chime();
     tell('You filled the whole shape!', 'good', true);
     store();
     draw();

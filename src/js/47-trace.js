@@ -566,7 +566,7 @@ TR.passDone = c => {
   void dn.getBoundingClientRect();
   dn.classList.add('pop');
   if (c.pass + 1 < c.passes.length) {
-    SFX.magic();
+    SFX.chime();
     TR.later(c, () => TR.startPass(c, c.pass + 1), 1000);
   } else TR.later(c, () => TR.finish(c), 450);
 };

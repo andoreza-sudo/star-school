@@ -8206,7 +8206,7 @@ async function main() {
       await app.ctx.close();
     }
 
-    // R-01r reading review fixes at 380x780 (scale 2), midway save: a Picture Words question (Magic E, pic 3, the seed the review saw
+    // R-01r reading review fixes at 380x780 (scale 2), midway save: a Picture Words question (Silent E, pic 3, the seed the review saw
     //    with impossible spellings) and a Letter Teams question (sound 4), drawn by the real round engine (start, a seeded question in G.q,
     //    renderQ). Every word choice on screen is the answer or a real word from its checked set (PWC); the Letter Teams word is spoken
     //    (Hear it replays it), but is printed nowhere on the screen. No sideways scroll. With R01R_SHOTS=<dir> it saves both screens.

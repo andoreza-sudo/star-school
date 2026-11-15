@@ -47,7 +47,7 @@ const RAW={
   del:()=>synth(500,.1,0,'sine',.08,280),
   pop:(i=0)=>synth(420+i*90,.09,0,'sine',.12,900+i*120),
   streak:()=>{[0,4,7,11,14,19].forEach((x,i)=>synth(NOTE(79+x),.15,i*.045,'sine',.08));hiss(.3,0,.03,3000,9000)},
-  magic:()=>{for(let i=0;i<10;i++)synth(NOTE(72+i*2),.22,i*.06,'sine',.06);hiss(.6,.15,.03,4000,10000)},
+  chime:()=>{for(let i=0;i<10;i++)synth(NOTE(72+i*2),.22,i*.06,'sine',.06);hiss(.6,.15,.03,4000,10000)},
   rattle:()=>{for(let i=0;i<5;i++)synth(150+Math.random()*120,.05,i*.07,'triangle',.08)},
   giggle:()=>{for(let i=0;i<5;i++)synth(700+i*60+Math.random()*80,.07,i*.08,'sine',.09,900+i*60)},
   hatch:()=>{hiss(.15,0,.14,800,800);hiss(.15,.2,.14,900,900);hiss(.4,.45,.14,500,3000)},

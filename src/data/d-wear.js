@@ -6,7 +6,7 @@
 // item names, shown and spoken on the shop cards
 var WEAR_NAME = {
   '🧢': 'Cap', '🎀': 'Bow', '🎩': 'Top hat', '⛑️': 'Helmet', '🎓': 'Grad cap', '👑': 'Crown',
-  '🎈': 'Balloon', '🍭': 'Lollipop', '⚽': 'Ball', '🧸': 'Teddy', '🪁': 'Kite', '🪄': 'Magic wand', '🏆': 'Trophy',
+  '🎈': 'Balloon', '🍭': 'Lollipop', '⚽': 'Ball', '🧸': 'Teddy', '🪁': 'Kite', '🪀': 'Yo-yo', '🏆': 'Trophy',
   '🌼': 'Daisy badge', '⭐': 'Star badge', '🎉': 'Party badge', '🪐': 'Planet badge', '🌈': 'Rainbow badge', '🔥': 'Fire badge',
   '💎': 'Gem badge', '🍀': 'Clover badge', '🌙': 'Moon badge', '⚡': 'Lightning badge', '🍩': 'Donut badge', '🎵': 'Music badge',
 };
@@ -158,11 +158,10 @@ WEAR['🪁'] = (() => {
     wLn('M46 -21L46 15M31.5 -5L60.5 -5', 'n2', 1.6) + wLn('M38 -11.5L43.5 -17.5', 'y1', 2.2, .9);
 })();
 
-// magic wand: a purple wand with a gold star and sparkles
-WEAR['🪄'] = `<path ${wF('v3')} d="M23.6 46.4L36.6 9.6L40.4 11L27.4 47.8Q25 49.4 23.6 46.4Z"/>` +
-  `<path ${wF('v')} d="M23.6 45.6L36.6 9.6L38.8 10.4L26 46.6Q24.6 47.6 23.6 45.6Z"/>` +
-  wLn('M30.5 27L34.4 28.4M27.8 34.6L31.7 36', 'w', 2, .75) +
-  wStar(40, 2, 13.5) + rwSpark(55, 13, 4.4, 'y1') + rwSpark(23, -8, 3.6, 'y1') + rwSpark(53.5, -11, 3, 'y');
+// yo-yo: a red yo-yo on its string (the hand holds the string's loop)
+WEAR['🪀'] = wLn('M32 6L32 26', 'n2', 1.6) + `<circle cx="32" cy="5" r="3" fill="none" stroke-width="1.6" ${wF('n2').replace('fill=','stroke=')}/>` +
+  wBall(32, 38, 13, 'r') + `<circle cx="32" cy="38" r="8.5" ${wF('r3')}/>` + `<circle cx="32" cy="38" r="3.2" ${wF('n2')}/>` +
+  wLn('M23.5 32Q27 27.5 32 26.6', 'w', 2.2, .7) + rwSpark(50, 22, 3.6, 'y1');
 
 // trophy: a gold cup with handles on a brown base
 WEAR['🏆'] = wLn('M17.5 12Q6.5 11.5 8.5 20Q10.5 27 20 26.5M46.5 12Q57.5 11.5 55.5 20Q53.5 27 44 26.5', 'y2', 3.6) +

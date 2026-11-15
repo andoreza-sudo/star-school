@@ -1754,7 +1754,7 @@ function blockBuilder(ci) {
     const G = BB_GOALS.find(q => q[0] == id);
     // a goal of this world's list: say it (G-BB3: read aloud too), and the next one that comes in its place
     if (bbWGoals(world).includes(G)) setTimeout(() => {
-      SFX.magic();
+      SFX.chime();
       const nx = bbGoalNext(world, 3)[2], line = (G[4] ? `You finished the ${G[5]}!` : 'Goal done: ' + G[1] + '!') + (nx ? ' New goal: ' + bbGoalLine(world, nx) + '.' : '');
       say1(line, 'good', 3600);
       if (S.voice) say(line);
@@ -1773,7 +1773,7 @@ function blockBuilder(ci) {
       if (s >= G[4].length) { goal(G[0]); continue; }
       save();
       const line = `${G[5][0].toUpperCase() + G[5].slice(1)}: step ${s} of ${G[4].length} done! Next: ${G[4][s][0]}.`;
-      setTimeout(() => { SFX.magic(); say1(line, 'good', 3600); if (S.voice) say(line); }, 250);
+      setTimeout(() => { SFX.chime(); say1(line, 'good', 3600); if (S.voice) say(line); }, 250);
       pjChip();
     }
   }
@@ -2380,7 +2380,7 @@ function blockBuilder(ci) {
     bbSave();
     gal.push({ n: world.name, d: bbPack(E.w), t: today() });
     save();
-    SFX.magic();
+    SFX.chime();
     say1('Saved to your gallery! It is on the Block Builder menu.', 'good', 2800);
     goal('gal');
   }
@@ -2706,7 +2706,7 @@ function bbMenu() {
       bs.cur = bs.worlds.length - 1;
       save();
       s.close();
-      SFX.magic();
+      SFX.chime();
       if (ptLeft() > 0) blockBuilder(); else bbMenu();
     };
   };

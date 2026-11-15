@@ -172,7 +172,7 @@ const artCalm=()=>S.calm||(typeof matchMedia=='function'&&matchMedia('(prefers-r
 function artSparkle(el,then){if(artCalm()||!el){then();return}const r=el.getBoundingClientRect(),o=document.createElement('div');o.className='art-spk';o.setAttribute('aria-hidden','true');
   o.style.cssText=`left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px`;const C=['y','y1','p1','c1','w'];
   o.innerHTML=Array.from({length:14},(_,i)=>{const x=8+((i*37)%84),y=6+((i*53)%86),z=10+(i%4)*7;return`<svg class="art" viewBox="-10 -10 20 20" style="left:${x}%;top:${y}%;width:${z}px;height:${z}px;animation-delay:${(i%7)*60}ms">${aSp(0,0,9,C[i%5])}</svg>`}).join('');
-  document.body.appendChild(o);SFX.magic();setTimeout(()=>{o.remove();then()},900)}
+  document.body.appendChild(o);SFX.chime();setTimeout(()=>{o.remove();then()},900)}
 // the finished picture in a frame with a shine
 const artFrame=h=>`<div class="art-frame">${h}<span class="art-shine" aria-hidden="true"></span></div>`;
 function artEnd(res,o){const lines=[];if(res.opened)lines.push(['gift',`The <b>${esc(res.opened.n)}</b> pack is open!`]);
@@ -217,7 +217,7 @@ function artPage(key){const regs=artRegs(key),st=stS(),it=st.items[key]||{f:{}},
     p.classList.remove('popfill');void p.getBBox();p.classList.add('popfill')};
   const tap=(t,sw)=>{const i=+t.dataset.i,v=mode=='e'?null:mode+':'+col,grp=mirror?regs.map((r,j)=>r.g==regs[i].g?j:-1).filter(j=>j>=0):[i];
     undo.push(grp.map(j=>[j,fills[j]||null]));if(undo.length>60)undo.shift();grp.forEach(j=>paintOne(j,v));
-    if(sw){if(!tap.lt||performance.now()-tap.lt>60){tap.lt=performance.now();tone(500+((i*37)%9)*60,.05,0,'sine',.07)}}else if(mode=='s'||mode=='r'){SFX.magic()}else tone(380+((i*37)%9)*70,.09,0,'sine',.12);clearTimeout(tap.pt);tap.pt=setTimeout(persist,250)};
+    if(sw){if(!tap.lt||performance.now()-tap.lt>60){tap.lt=performance.now();tone(500+((i*37)%9)*60,.05,0,'sine',.07)}}else if(mode=='s'||mode=='r'){SFX.chime()}else tone(380+((i*37)%9)*70,.09,0,'sine',.12);clearTimeout(tap.pt);tap.pt=setTimeout(persist,250)};
   // pointer: tap = fill, drag = paint many, pinch = zoom
   const ptrs=new Map();let start=null,pinch=null;
   const toSvg=(cx,cy)=>{const b=svg.getBoundingClientRect();return[vb[0]+(cx-b.left)/b.width*vb[2],vb[1]+(cy-b.top)/b.height*vb[3]]};
@@ -370,8 +370,8 @@ function colorMenu(tab){if(tab&&['shape','pixel','paint'].includes(tab))return c
   $$('[data-gi]').forEach(b=>b.onclick=()=>galView(+b.dataset.gi));
   if($('#agnew'))$('#agnew').onclick=()=>{SFX.pop(2);colorMenu('packs')};
   $$('[data-c]').forEach(b=>b.onclick=()=>classicColor(b.dataset.c));
-  if($('#newm'))$('#newm').onclick=()=>{if(chk()){SFX.magic();ART_BACK=()=>colorMenu('mandala');artPage('m:'+R(1000,99999))}};
-  if($('#newg'))$('#newg').onclick=()=>{if(chk()){SFX.magic();ART_BACK=()=>colorMenu('glass');artPage('g:'+R(1000,99999))}};
+  if($('#newm'))$('#newm').onclick=()=>{if(chk()){SFX.chime();ART_BACK=()=>colorMenu('mandala');artPage('m:'+R(1000,99999))}};
+  if($('#newg'))$('#newg').onclick=()=>{if(chk()){SFX.chime();ART_BACK=()=>colorMenu('glass');artPage('g:'+R(1000,99999))}};
   if($('#newn'))$('#newn').onclick=()=>{if(chk()){SFX.whoosh();neonDraw()}};
   artThumbs()}
 // the big view of a gallery picture: a heart to keep it, Delete (tap twice), and the glow replay for Neon drawings

@@ -556,7 +556,7 @@ BT.reg({
       if (ik >= 0 && !(st.m >> ik & 1)) {
         st.m |= 1 << ik;
         if (p.stars) { api.sfx.coin(); tell(st.m == full ? 'All the stars! The gate is open.' : 'You found a star!'); }
-        else { api.sfx.magic(); tell(items.length > 1 ? `You found key ${ik + 1}!` : 'You found the key!'); }
+        else { api.sfx.chime(); tell(items.length > 1 ? `You found key ${ik + 1}!` : 'You found the key!'); }
       } else if (dk >= 0) { api.sfx.open(); tell('The door opens!'); }
       else if (MZ.pop(o[n]) == 1 && n != p.g && ik < 0 && !st.dead.includes(n)) {
         st.dead.push(n);

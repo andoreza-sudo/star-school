@@ -1,5 +1,5 @@
-/* Star School data banks v167. BUILT by tools/build.py from src/data/*.js (sorted): never edit by hand.
-   index.html v167 loads this file with <script src="data.v167.js"> between the code and the start-up script. */
+/* Star School data banks v168. BUILT by tools/build.py from src/data/*.js (sorted): never edit by hand.
+   index.html v168 loads this file with <script src="data.v168.js"> between the code and the start-up script. */
 /* ---------- object art set B: 40 pictures (P4-14; DESIGN_SYSTEM.md section 6.5) ----------
    The words children see most that set A (src/js/16-art-a.js) did not draw: picture words, Spanish units (animals, food, body,
    house, clothes, school, transport), riddles, Memory Match, Discover, vocabulary and counting. Same style, rules and limits
@@ -2871,13 +2871,12 @@ Which can slow erosion on a hillside?|planting grass and trees|cutting down all 
 A glacier is a slow-moving river of ___.|ice|sand;lava;mud|erosion||Think about a very cold place where snow piles up for years and slowly squeezes into something solid.
 Sand dunes in a desert are shaped by ___.|wind|volcanoes;glaciers;the Moon|erosion
 Resources that can be used again and again, like sunlight and wind, are ___.|renewable|nonrenewable;plastic;extinct|resources
-Coal, oil and natural gas take millions of years to form, so they are ___ resources.|nonrenewable|renewable;endless;new|resources
+Coal, oil and natural gas cannot be made again once they are used up, so they are ___ resources.|nonrenewable|renewable;endless;new|resources
 Which energy source is renewable?|wind|coal;oil;natural gas|resources
 Which of these is a natural resource?|water|a car;a phone;a bicycle|resources
 Using less and not wasting a resource is called ___.|conservation|pollution;erosion;evaporation|resources
 Trees cut for wood can be replaced by planting new ones, so wood can be a ___ resource.|renewable|nonrenewable;useless;endless|resources
 Reduce, reuse and ___ are three ways to help the Earth.|recycle|remove;replace;repeat|resources
-Oil and coal formed from plants and animals that lived ___.|millions of years ago|last year;last week;yesterday|resources
 Solar panels change sunlight into ___.|electricity|rain;rocks;sound|resources
 Dirty air, water or land is called ___.|pollution|conservation;erosion;weather|resources
 The Moon shines because it ___ light from the Sun.|reflects|makes;eats;hides|moonphase
@@ -7622,7 +7621,7 @@ across|The bridge goes across the river.
 tomorrow|We will visit grandma tomorrow.
 paragraph|Each paragraph has a main idea.
 conscience|Her conscience told her to tell the truth.
-disappear|Magicians make rabbits disappear.
+disappear|The sun will disappear behind the clouds.
 disappoint|I did not want to disappoint my coach.
 immediately|Please come immediately.
 independent|She is an independent girl.
@@ -7678,7 +7677,7 @@ function spellList(lv){
 }
 // A picture for words the reading lists already have an emoji for; picFor swaps in the drawing when one exists
 function spellPic(w){
-  for(const L of [CVC,BLEND,MAGICE,TEAMS])for(const [x,e] of L)if(x==w)return picFor(w,e);
+  for(const L of [CVC,BLEND,SILENTE,TEAMS])for(const [x,e] of L)if(x==w)return picFor(w,e);
   return '';
 }
 function genSpell(lv){
@@ -8458,8 +8457,8 @@ Please ___ for me by the door.|wait|weight|wet,white
 The ___ of the backpack surprised me.|weight|wait|wet,white
 The table is made of ___.|wood|would|hood,wouldn't
 I ___ like some juice, please.|would|wood|hood,wool
-A ___ rode across the sky on a broom.|witch|which|wish,watch
-___ coat is yours?|which|witch|wish,watch
+I ___ I could fly like a bird.|wish|which|watch,wash
+___ coat is yours?|which|wish|watch,with
 Be careful not to ___ the glass.|break|brake|bread,bleak
 Press the ___ to stop the bike.|brake|break|bark,bake
 A tiny red ___ carried a crumb up the leaf.|ant|aunt|and,at
@@ -8522,7 +8521,7 @@ The tiny puppy was *adorable*, and everyone smiled at it.|very cute|very loud,ve
 She gave a *brief* talk that lasted only one minute.|short|long,boring,loud
 The *rickety* bridge shook and creaked under our feet.|shaky and falling apart|strong and new,very long,very high
 My grandpa is *generous* and shares everything he has.|giving and kind|selfish,lazy,loud
-The magician's trick *baffled* us, and we could not figure it out.|confused|bored,frightened,pleased
+The tricky riddle *baffled* us, and we could not figure it out.|confused|bored,frightened,pleased
 It was *drizzling*, just a few light drops of rain.|raining lightly|pouring hard,snowing,thundering
 The *rowdy* crowd cheered and shouted all night long.|noisy and wild|calm and quiet,tired,hungry
 Tom was *furious* when his sister broke his model plane.|very angry|very sad,very surprised,very sleepy
@@ -8769,7 +8768,7 @@ BANK.vocab = vocBuild().concat(vocBuildB());
 // item names, shown and spoken on the shop cards
 var WEAR_NAME = {
   '🧢': 'Cap', '🎀': 'Bow', '🎩': 'Top hat', '⛑️': 'Helmet', '🎓': 'Grad cap', '👑': 'Crown',
-  '🎈': 'Balloon', '🍭': 'Lollipop', '⚽': 'Ball', '🧸': 'Teddy', '🪁': 'Kite', '🪄': 'Magic wand', '🏆': 'Trophy',
+  '🎈': 'Balloon', '🍭': 'Lollipop', '⚽': 'Ball', '🧸': 'Teddy', '🪁': 'Kite', '🪀': 'Yo-yo', '🏆': 'Trophy',
   '🌼': 'Daisy badge', '⭐': 'Star badge', '🎉': 'Party badge', '🪐': 'Planet badge', '🌈': 'Rainbow badge', '🔥': 'Fire badge',
   '💎': 'Gem badge', '🍀': 'Clover badge', '🌙': 'Moon badge', '⚡': 'Lightning badge', '🍩': 'Donut badge', '🎵': 'Music badge',
 };
@@ -8921,11 +8920,10 @@ WEAR['🪁'] = (() => {
     wLn('M46 -21L46 15M31.5 -5L60.5 -5', 'n2', 1.6) + wLn('M38 -11.5L43.5 -17.5', 'y1', 2.2, .9);
 })();
 
-// magic wand: a purple wand with a gold star and sparkles
-WEAR['🪄'] = `<path ${wF('v3')} d="M23.6 46.4L36.6 9.6L40.4 11L27.4 47.8Q25 49.4 23.6 46.4Z"/>` +
-  `<path ${wF('v')} d="M23.6 45.6L36.6 9.6L38.8 10.4L26 46.6Q24.6 47.6 23.6 45.6Z"/>` +
-  wLn('M30.5 27L34.4 28.4M27.8 34.6L31.7 36', 'w', 2, .75) +
-  wStar(40, 2, 13.5) + rwSpark(55, 13, 4.4, 'y1') + rwSpark(23, -8, 3.6, 'y1') + rwSpark(53.5, -11, 3, 'y');
+// yo-yo: a red yo-yo on its string (the hand holds the string's loop)
+WEAR['🪀'] = wLn('M32 6L32 26', 'n2', 1.6) + `<circle cx="32" cy="5" r="3" fill="none" stroke-width="1.6" ${wF('n2').replace('fill=','stroke=')}/>` +
+  wBall(32, 38, 13, 'r') + `<circle cx="32" cy="38" r="8.5" ${wF('r3')}/>` + `<circle cx="32" cy="38" r="3.2" ${wF('n2')}/>` +
+  wLn('M23.5 32Q27 27.5 32 26.6', 'w', 2.2, .7) + rwSpark(50, 22, 3.6, 'y1');
 
 // trophy: a gold cup with handles on a brown base
 WEAR['🏆'] = wLn('M17.5 12Q6.5 11.5 8.5 20Q10.5 27 20 26.5M46.5 12Q57.5 11.5 55.5 20Q53.5 27 44 26.5', 'y2', 3.6) +
@@ -9034,4 +9032,4 @@ var BTW = {
     'glean parts strap traps tea eat ate nip pin top pot opt tar art rat now own won tub but bus iced mono low flea',
 };
 
-var DATA_VER='v167'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var DATA_VER='v168'; // last line: the whole file ran (checked by dataReady() before the app starts)

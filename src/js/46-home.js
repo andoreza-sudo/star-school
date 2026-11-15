@@ -46,7 +46,7 @@ function setup() {
   $('#go').onclick = () => {
     const n = $('#nm').value.trim();
     if (!n) { fb('Type your name first!', 'warn'); SFX.wrong(); $('#nm').focus(); return; }
-    S.name = n; S.pet = pet; S.petName = $('#pn').value.trim(); setGrade(grade); SFX.magic(); home(true);
+    S.name = n; S.pet = pet; S.petName = $('#pn').value.trim(); setGrade(grade); SFX.chime(); home(true);
   };
 }
 

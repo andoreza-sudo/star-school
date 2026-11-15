@@ -38,7 +38,7 @@ function race(cat){S.race=S.race||{};const best=S.race[cat]||0;
   setTimeout(()=>{fb('Ready… GO!','zap');SFX.fanfare();rq()},300);
   RC.iv=setInterval(()=>{if(!RC||document.hidden)return;RC.left--; // R-01b: the clock stops while the app is hidden, like Fact Sprint'sGFX.bar($('#rbar'),RC.left/60);if(RC.left<=5&&RC.left>0)SFX.tick();
     if(RC.left<=0){const sc=RC.score,rec=sc>best;stopRace();if(rec)S.race[cat]=sc;const ps=ptRace(cat,sc),coins=raceCoins(sc,rec,ps);S.coins+=coins;if(ps)ptEarn(ps);save();
-      rec&&sc>0?(SFX.fanfare(),confetti(40)):SFX.magic();
+      rec&&sc>0?(SFX.fanfare(),confetti(40)):SFX.chime();
       const o=GFX.endCard({rec:rec&&sc>0,title:`${sc} in 60 seconds!`,best:`Your best: ${best}`,
         earn:ps?`${ico('coin',28,'ic-coin')}<span>+${coins}</span>${ico('ticket',28)}<span>+1 min of game time</span>`:sc>=5?`<span>Free practice: the first race each day pays</span>`:'<span>Get 5 right to earn coins and game time</span>',
         btns:UI.btn('Race again',{kind:'primary',size:'lg',wide:true,icon:'replay',id:'ragain'})+UI.btn('Home',{icon:'home',wide:true,id:'rhome'})});

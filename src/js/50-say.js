@@ -186,5 +186,5 @@ function spkGU(kind){SPK.state='gu';SPK.note=1;if(kind=='denied')SPK.deny=1;else
   spkT(()=>spkEnd(false),15000)}
 // leave the step: "I said it!" counts one Spanish thing said today (the mission); a skip counts nothing and is never a miss
 function spkEnd(said){const cb=SPK.done;spkLeave();
-  if(said){const d=day();d.spk=Math.min(99,(d.spk|0)+1);save();SFX.magic();fb(d.spk==SPK.GOAL?'¡Muy bien! 5 Spanish words said today!':'¡Muy bien!')}
+  if(said){const d=day();d.spk=Math.min(99,(d.spk|0)+1);save();SFX.chime();fb(d.spk==SPK.GOAL?'¡Muy bien! 5 Spanish words said today!':'¡Muy bien!')}
   SPK.done=null;if(cb)cb()}

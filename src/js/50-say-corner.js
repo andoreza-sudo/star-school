@@ -93,7 +93,7 @@ async function spkCornerFill(){const L=$('#lc-list');if(!L)return;const rs=await
     <span class="lc-b">${UI.btn('Listen',{size:'sm',icon:'play',attrs:`data-lcp="${i}" aria-label="Listen: ${esc(r.es)}, the Spanish then ${nm}"`})}
     <button class="btn soft sm lc-star${r.star?' on':''}" data-lcs="${i}" aria-pressed="${!!r.star}" aria-label="${r.star?'Star given for ':'Give a star for '}${esc(r.es)}">${ico('star',24,r.star?'ic-star':'')}<span>${r.star?'Star given':'Star'}</span></button></span></div>`).join('');
   $$('[data-lcp]').forEach(b=>b.onclick=()=>spkCornerPlay(rs[+b.dataset.lcp],b));
-  $$('[data-lcs]').forEach(b=>b.onclick=async()=>{const r=rs[+b.dataset.lcs];if(r.star)return;await spkrStar(r);SFX.magic();
+  $$('[data-lcs]').forEach(b=>b.onclick=async()=>{const r=rs[+b.dataset.lcs];if(r.star)return;await spkrStar(r);SFX.chime();
     fb((S.name||'Your child')+' will see your star on Home.');spkCornerFill()})}
 // the model (the recording of the line, or the tablet's voice), then the child's recording
 function spkCornerPlay(r,btn){if(!r)return;hush();say(r.say||r.es,btn,'es');const t0=Date.now();

@@ -361,7 +361,7 @@ across|The bridge goes across the river.
 tomorrow|We will visit grandma tomorrow.
 paragraph|Each paragraph has a main idea.
 conscience|Her conscience told her to tell the truth.
-disappear|Magicians make rabbits disappear.
+disappear|The sun will disappear behind the clouds.
 disappoint|I did not want to disappoint my coach.
 immediately|Please come immediately.
 independent|She is an independent girl.
@@ -417,7 +417,7 @@ function spellList(lv){
 }
 // A picture for words the reading lists already have an emoji for; picFor swaps in the drawing when one exists
 function spellPic(w){
-  for(const L of [CVC,BLEND,MAGICE,TEAMS])for(const [x,e] of L)if(x==w)return picFor(w,e);
+  for(const L of [CVC,BLEND,SILENTE,TEAMS])for(const [x,e] of L)if(x==w)return picFor(w,e);
   return '';
 }
 function genSpell(lv){

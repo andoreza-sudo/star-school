@@ -4,7 +4,7 @@ The running record of what has shipped. Newest entry first. Every chunk adds one
 
 **Next up:** P6-05 (wip/batch-N, map timing), the P5-07 flaky step; see Handoff notes
 
-**Current version:** v167
+**Current version:** v168
 
 ## Chunk status
 
@@ -500,6 +500,12 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-11) Icons wanted from P4-03: `balloon` (Bonus game, today `gamepad`), `sparkle` / `confetti`, `unlock` (open padlock for "Next stop unlocked", today `map`), `zap` (a lightning with a spark for boss hits; today `bolt`), `sticker` (single sticker for the prize row), `medal` (the prize rosette as an icon), `heart-half` (boss life bar), `chest` (the treasure chest at icon size, e.g. for the round track where renderQ shows the gift emoji).
 
 ## Log
+
+### CONTENT-01 No magic or spells theme, no evolution (v168, 2026-11-15, Claude)
+- The parent asked for no magic, spells or anything of that theme, and no evolution questions or themes. Dragons stay (asked).
+- Changed: the Magic wand toy is now a Yo-yo (same price; a save that owned or wore the wand gets the yo-yo, in `migrate()`); the unicorn sticker is a fish (saved counts move over); Sky Hop's Fairy Wings are Butterfly Wings (id `bfly`, old id moved in the save mend); "Magic E" reading stops are "Silent E"; the witch/which homophone items, the magician sentences, the unicorn picture word (now fork) and "which witch" are gone; the sound `SFX.magic` is `SFX.chime` and the word list `MAGICE` is `SILENTE`.
+- Science (asked: "millions of years" only): the coal/oil question is reworded ("cannot be made again once used up") and the "lived millions of years ago" question removed. There were no evolution questions; fossils, Pangaea and animal adaptations stay (the parent kept them).
+- Guard: tools/test.js **"content: no magic or evolution theme CONTENT-01"** searches every file in src/ (code, data, CSS, comments) for those words and emoji, and checks the old-save moves and the yo-yo in the shop.
 
 ### G-BB3 Block Builder: themed goals and big projects per world (v167, 2026-11-15, Claude)
 - Why: R-03 B4 (only 18 free-build goals, 9 the same in every world; the owner: "like you're on level one and stuck there").
