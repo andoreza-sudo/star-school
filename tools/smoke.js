@@ -9254,6 +9254,189 @@ async function main() {
         'the Grown-ups switch; a blocked microphone (grown-up note, goes on by itself, no second step); no microphone (no step); mic 64+ px, buttons 48+, no sideways scroll');
     }
 
+    // S-SPK2: the speaking check of "Say it!" and the Grown-ups listening cards, at 380x780 and 1024x600, on the real clock.
+    //    The built files are served over http://127.0.0.1 by a tiny static server in this process (the sound check reads the app's own
+    //    recording of the line, which file:// cannot); every other request is refused and counted as a network request. A fake
+    //    microphone plays an audio file into the real MediaRecorder: the model recording of the line itself (judged "Great job!"),
+    //    a different line ("Close! Listen again"), and nothing ("I couldn't hear you"). No on-device recognition here, so the offline
+    //    sound check (B) is used; its time is measured at 6x CPU throttle. Then Grown-ups: Spanish listening (a stand-in recogniser
+    //    that can download Spanish: the button, the online note, the download), the Listening corner (the three recordings, Listen
+    //    plays the model then the child, a star, Keep 1 week, Delete all), Home shows the star message once with a sticker.
+    //    48 px buttons, mic 64+, no sideways scroll. SSPK2_SHOTS=<dir> saves screenshots at 2x.
+    {
+      const http = require('http'), fs = require('fs'), path = require('path'), { ROOT, loadFixture, SAVE_KEY } = require('./lib/browser');
+      const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.png': 'image/png', '.ogg': 'audio/ogg' };
+      const socks = new Set(), bad = [], notes = [], SH = process.env.SSPK2_SHOTS || '';
+      const srv = http.createServer((req, res) => {
+        const u = decodeURIComponent(req.url.split('?')[0]).replace(/^\/+/, '') || 'index.html', f = path.join(ROOT, u);
+        if (!f.startsWith(ROOT + path.sep) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404); return res.end(); }
+        res.writeHead(200, { 'Content-Type': TYPES[path.extname(f)] || 'application/octet-stream', 'Cache-Control': 'no-cache' });
+        fs.createReadStream(f).pipe(res);
+      });
+      srv.on('connection', s => { socks.add(s); s.on('close', () => socks.delete(s)); });
+      await new Promise(r => srv.listen(0, '127.0.0.1', r));
+      const base = 'http://127.0.0.1:' + srv.address().port + '/';
+      // the fake microphone: window.__mic names an audio file (or '' for silence) that plays into the stream once recording starts
+      const fakeMic = () => {
+        window.__lg = { played: [], inst: 0 };
+        const md = navigator.mediaDevices;
+        md.enumerateDevices = async () => [{ kind: 'audioinput', deviceId: 'fake', label: '' }];
+        md.getUserMedia = async () => {
+          const ac = new AudioContext(), d = ac.createMediaStreamDestination();
+          window.__micDone = false;
+          if (window.__mic) {
+            const ab = await ac.decodeAudioData(await (await fetch(window.__mic)).arrayBuffer()), s = ac.createBufferSource();
+            s.buffer = ab; s.connect(d); s.onended = () => { window.__micDone = true; }; setTimeout(() => s.start(), 300);
+          } else { const g = ac.createGain(), o = ac.createOscillator(); g.gain.value = 0; o.connect(g); g.connect(d); o.start(); setTimeout(() => { window.__micDone = true; }, 1200); }
+          return d.stream;
+        };
+        speechSynthesis.getVoices = () => [{ lang: 'es-MX', name: 'es' }, { lang: 'en-US', name: 'en' }];
+        window.SpeechSynthesisUtterance = function (t) { this.text = t; };
+        speechSynthesis.speak = u => setTimeout(() => u.onend && u.onend(), 50);
+        const play = HTMLMediaElement.prototype.play;
+        HTMLMediaElement.prototype.play = function () { window.__lg.played.push(String(this.src).replace(/^http:\/\/[^/]+\//, '').slice(0, 9)); return play.call(this); };
+        // no on-device Spanish here (the offline sound check is used); Grown-ups gets a recogniser that can download Spanish
+        window.SpeechRecognition = window.webkitSpeechRecognition = undefined;
+        window.__fakeSR = () => { function SR() {} let st = 'downloadable';
+          SR.available = async o => o && o.processLocally ? st : 'unavailable';
+          SR.install = async o => { window.__lg.inst++; if (!o.processLocally) return false; st = 'available'; return true; };
+          window.SpeechRecognition = SR; };
+      };
+      const sizes = async (pg, at) => {
+        const r = await pg.evaluate(() => ({ sw: document.documentElement.scrollWidth - innerWidth,
+          small: [...document.querySelectorAll('#app button, #app summary, #app input')].filter(b => b.offsetParent).map(b => { const r = (b.closest('label') || b).getBoundingClientRect(); return [b.id || b.className, Math.round(r.width), Math.round(r.height)]; }).filter(x => x[1] < 48 || x[2] < 48),
+          mic: (b => b ? Math.min(b.getBoundingClientRect().width, b.getBoundingClientRect().height) : 99)(document.querySelector('#spkmic')) }));
+        if (r.sw > 0) bad.push(at + 'sideways scroll ' + r.sw);
+        if (r.small.length) bad.push(at + 'buttons under 48 px: ' + JSON.stringify(r.small.slice(0, 6)));
+        if (r.mic < 64) bad.push(at + 'microphone ' + r.mic + ' px');
+      };
+      const shot = async (pg, n) => { if (SH) { await pg.waitForTimeout(300); await pg.screenshot({ path: path.join(SH, 'sspk2-' + n + '.png') }); } };
+      // record one try with the fake microphone playing file (or silence), then wait for the kind line
+      const tryOnce = async (pg, file) => {
+        await pg.evaluate(f => { window.__mic = f; }, file);
+        await pg.click('#spkmic');
+        await pg.waitForSelector('.spk-mic.on', { timeout: 5000 });
+        await pg.waitForFunction(() => window.__micDone, null, { timeout: 15000 });
+        await pg.waitForTimeout(250);
+        await pg.click('#spkmic'); // stop
+        await pg.waitForSelector('#spkok', { timeout: 20000 });
+        await pg.waitForSelector('#spkheard.on[data-k]', { timeout: 20000 });
+        return pg.evaluate(() => ({ k: document.querySelector('#spkheard').dataset.k, txt: document.querySelector('#spkheard').textContent, jd: SPK.jd }));
+      };
+      try {
+        for (const [w, h] of [[380, 780], [1024, 600]]) {
+          const at = `${w}x${h}: `, tag = `${w}x${h}`;
+          const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: SH ? 2 : 1, serviceWorkers: 'block' });
+          const errs = [];
+          await ctx.route(/^(https?|wss?|ftp):/, route => { const u = route.request().url(); if (u.startsWith(base)) return route.continue(); network.push(u); route.abort(); });
+          await ctx.addInitScript(([key, raw]) => { try { if (!localStorage.getItem(key)) localStorage.setItem(key, raw); } catch (e) {} }, [SAVE_KEY, JSON.stringify(loadFixture('midway'))]);
+          await ctx.addInitScript(fakeMic);
+          const pg = await ctx.newPage();
+          pg.on('pageerror', e => errs.push('exception: ' + e.message));
+          pg.on('console', m => { if (m.type() === 'error') errs.push('console: ' + m.text()); });
+          try {
+            await pg.goto(base + 'index.html');
+            await pg.waitForSelector('#groom', { timeout: 15000 });
+            await pg.evaluate(() => { S.grade = 1; S.spkKeep = 'day'; S.spkStars = []; save(); start('es', NODES.es.findIndex(n => n.sk == 'es_animal' && n.lv == 1)); });
+            for (let i = 0; i < 6 && !(await pg.$('.spk-card')); i++) {
+              await pg.waitForFunction(() => document.querySelector('.spk-card') || (G && G.q && !G.lock && document.querySelector('#prompt')), null, { timeout: 10000 });
+              if (await pg.$('.spk-card')) break;
+              await pg.evaluate(() => { window.__q = G.q; });
+              await answer(pg);
+              await pg.waitForFunction(() => document.querySelector('.spk-card') || (G && G.q !== window.__q), null, { timeout: 10000 });
+            }
+            if (!(await pg.$('.spk-card'))) throw new Error('no Say it! step');
+            const it = await pg.evaluate(() => { const me = esKey(SPK.it.say), k = Object.keys(ES_AUDIO.lines).filter(s => s == me || spkNorm(s).split(' ').length == 1 && !spkMatch(me, s)).sort(),
+                i = k.indexOf(me), far = k[(i + Math.floor(k.length / 2)) % k.length]; // another single word, half the list away
+              return { es: SPK.it.es, say: SPK.it.say, file: ES_AUDIO.dir + ES_AUDIO.lines[me][0] + '.ogg', far, farFile: ES_AUDIO.dir + ES_AUDIO.lines[far][0] + '.ogg' }; });
+            await sizes(pg, at + 'ready: ');
+            // 1. the model recording itself, at 6x CPU throttle: "Great job!"
+            const cdp = await ctx.newCDPSession(pg);
+            await cdp.send('Emulation.setCPUThrottlingRate', { rate: 6 });
+            const r1 = await tryOnce(pg, it.file);
+            await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+            if (r1.k !== 'great' || !/Great job/.test(r1.txt)) bad.push(at + 'the model itself: ' + JSON.stringify(r1));
+            notes.push(`${tag} "${it.say}": model ${r1.k} (d ${r1.jd && r1.jd.d.toFixed(2)}, nearest other ${r1.jd && r1.jd.dk.toFixed(2)}) in ${r1.jd && Math.round(r1.jd.ms)} ms at 6x throttle`);
+            if (r1.jd && r1.jd.ms > 2500) bad.push(at + 'the sound check took ' + Math.round(r1.jd.ms) + ' ms at 6x throttle');
+            await sizes(pg, at + 'great: ');
+            await shot(pg, 'great-' + tag);
+            // 2. another line: "Close! Listen again" (never "wrong"), the self-check buttons stay
+            await pg.click('#spkagain');
+            await pg.waitForSelector('#spkmic:not(.on)', { timeout: 5000 });
+            if (await pg.$('#spkheard.on')) bad.push(at + 'Try again kept the old line');
+            const r2 = await tryOnce(pg, it.farFile);
+            if (r2.k !== 'again' || !/Close! Listen again/.test(r2.txt) || /wrong/i.test(r2.txt)) bad.push(at + 'a different word (' + it.far + '): ' + JSON.stringify(r2));
+            if (!(await pg.$('#spkok')) || !(await pg.$('#spkagain'))) bad.push(at + 'the self-check buttons went');
+            notes.push(`${tag} "${it.far}" for "${it.say}": ${r2.k}`);
+            await shot(pg, 'again-' + tag);
+            // 3. silence: "I couldn't hear you"
+            await pg.click('#spkagain');
+            await pg.waitForSelector('#spkmic:not(.on)', { timeout: 5000 });
+            const r3 = await tryOnce(pg, '');
+            if (r3.k !== 'quiet' || !/couldn.t hear you/.test(r3.txt)) bad.push(at + 'silence: ' + JSON.stringify(r3));
+            await pg.click('#spkok');
+            await pg.waitForSelector('#prompt', { timeout: 5000 });
+            // 4. Grown-ups: Spanish listening (can download) and the Listening corner with the three recordings
+            await pg.evaluate(() => { __fakeSR(); grown(); });
+            await pg.waitForSelector('#lis-dl', { timeout: 5000 });
+            const lis = await pg.evaluate(() => ({ st: document.querySelector('#lis-st').textContent, note: (document.querySelector('#lis-dl').parentElement.querySelector('.online-note') || {}).textContent || '' }));
+            if (!/one-time download/.test(lis.st) || !/internet/.test(lis.note)) bad.push(at + 'Spanish listening card: ' + JSON.stringify(lis));
+            await pg.waitForFunction(() => document.querySelectorAll('#lc-list .lc-row').length >= 3, null, { timeout: 5000 }).catch(() => {});
+            const rows = await pg.evaluate(() => [...document.querySelectorAll('#lc-list .lc-row')].map(r => r.querySelector('.lc-w b').textContent));
+            if (rows.length !== 3 || rows.some(x => x !== it.es)) bad.push(at + 'corner rows: ' + JSON.stringify(rows));
+            await pg.evaluate(() => document.querySelector('#gw-corner').scrollIntoView());
+            await sizes(pg, at + 'grown-ups: ');
+            await shot(pg, 'corner-' + tag);
+            await pg.evaluate(() => { __lg.played = []; });
+            await pg.click('[data-lcp="0"]');
+            await pg.waitForFunction(() => __lg.played.some(p => p.startsWith('blob:')), null, { timeout: 8000 }).catch(() => {});
+            const pl = await pg.evaluate(() => __lg.played);
+            const bi = pl.findIndex(p => p.startsWith('blob:')), mi = pl.findIndex(p => p.startsWith('audio/es/'));
+            if (mi < 0 || bi < 0 || bi < mi) bad.push(at + 'Listen: not the model then the child ' + JSON.stringify(pl));
+            await pg.click('[data-lcs="0"]');
+            await pg.waitForSelector('[data-lcs="0"][aria-pressed="true"]', { timeout: 5000 }).catch(() => bad.push(at + 'the star was not given'));
+            await pg.click('[data-keep="week"]');
+            const kept = await pg.evaluate(() => [S.spkKeep, (S.spkStars || []).length, document.querySelector('[data-keep="week"]').getAttribute('aria-pressed')]);
+            if (kept.join() !== 'week,1,true') bad.push(at + 'keep 1 week and the star: ' + kept);
+            // the download (online): the button goes, the card says the tablet can listen
+            await pg.evaluate(() => document.querySelector('#gw-lis').scrollIntoView());
+            await shot(pg, 'listening-' + tag);
+            await pg.click('#lis-dl');
+            await pg.waitForFunction(() => /can listen to Spanish on the device\./.test(document.querySelector('#lis-st').textContent), null, { timeout: 5000 }).catch(() => {});
+            const dl = await pg.evaluate(() => ({ inst: __lg.inst, st: document.querySelector('#lis-st').textContent, btn: !!document.querySelector('#lis-dl') }));
+            if (dl.inst !== 1 || dl.btn || !/can listen to Spanish on the device\./.test(dl.st)) bad.push(at + 'download: ' + JSON.stringify(dl));
+            // the about line
+            const ab = await pg.textContent('#ab-spk');
+            if (!/stay on this tablet and are deleted automatically/.test(ab) || !/Nothing is sent/.test(ab)) bad.push(at + 'About line: ' + ab);
+            // 5. Home: the star message once, with a sticker
+            const st0 = await pg.evaluate(() => Object.values(S.stickers).reduce((a, b) => a + b, 0));
+            await pg.evaluate(() => home());
+            await pg.waitForSelector('#hmgstar', { timeout: 5000 }).catch(() => {});
+            const hm = await pg.evaluate(() => ({ t: (document.querySelector('#hmgstar') || {}).textContent || '', n: Object.values(S.stickers).reduce((a, b) => a + b, 0) }));
+            if (!hm.t.includes('Your grown-up gave you a star for ‘' + it.es + '’!') || hm.n !== st0 + 1) bad.push(at + 'Home star: ' + JSON.stringify(hm) + ' stickers before ' + st0);
+            await sizes(pg, at + 'home: ');
+            await shot(pg, 'home-star-' + tag);
+            await pg.evaluate(() => home());
+            if (await pg.$('#hmgstar')) bad.push(at + 'the star message showed twice');
+            // 6. Delete all (two taps)
+            await pg.evaluate(() => grown());
+            await pg.waitForSelector('#lc-list .lc-row', { timeout: 5000 });
+            await pg.click('#lc-del'); await pg.click('#lc-del');
+            await pg.waitForFunction(() => !document.querySelector('#lc-list .lc-row'), null, { timeout: 5000 }).catch(() => bad.push(at + 'Delete all left rows'));
+          } catch (x) { bad.push(at + x.message.split('\n')[0]); }
+          for (const e of errs) fail('S-SPK2 ' + at + e);
+          await ctx.close();
+        }
+      } finally {
+        for (const s of socks) s.destroy();
+        await new Promise(r => srv.close(r));
+      }
+      if (bad.length) fail('S-SPK2 speaking check:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('S-SPK2: Say it! with a fake microphone at 380x780 and 1024x600: the model recording is "Great job!", another line "Close! Listen again", silence ' +
+        '"I couldn\'t hear you" (self-check buttons stay); Grown-ups: Spanish listening download (online note), the Listening corner (3 recordings, Listen = model ' +
+        'then child, star, keep 1 week, delete all); Home star message once with a sticker; 48 px, mic 64+, no sideways scroll; ' + notes.join('; '));
+    }
+
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');
   } catch (e) {

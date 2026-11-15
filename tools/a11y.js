@@ -107,6 +107,19 @@ const SCREENS = {
   'es-question': qScreen(() => start('es', 0)),
   // S-SPK: the Spanish "Say it!" step (src/js/50-say.js) over the first question of a Spanish round; the microphone is the main control (64 px)
   'say-it': { run: ev(() => { SPK.mic = 'yes'; start('es', NODES.es.findIndex(n => n.sk == 'es_animal' && n.lv == 1)); G.spk = 1; spkOpen(G.q, () => next()); }), main: '.spk-mic' },
+  // S-SPK2: Say it! after a try, with the kind line of the sound check ("Close! Listen again"); the Grown-ups Spanish listening card and
+  // Listening corner (one kept recording); Home with the grown-up's star message
+  'say-it-check': { run: ev(() => { SPK.mic = 'yes'; start('es', NODES.es.findIndex(n => n.sk == 'es_animal' && n.lv == 1)); G.spk = 1; spkOpen(G.q, () => next()); SPK.url = ''; SPK.jd = { k: 'again' }; spkCheck(); }) },
+  'grown-listen': {
+    adult: true,
+    run: async p => {
+      await p.evaluate(async () => { S.spkKeep = 'day'; await spkrAdd(new Blob([new Uint8Array(400)], { type: 'audio/webm' }), { es: 'el perro', say: 'el perro' }); grown(); });
+      await p.waitForSelector('#lc-list .lc-row', { timeout: 5000 });
+      await p.evaluate(() => document.querySelector('#gw-lis').scrollIntoView());
+      await p.waitForTimeout(400);
+    },
+  },
+  'home-star': { run: ev(() => { S.spkStars = [{ es: 'el perro', t: Date.now() }]; home(); }) },
   reward: { run: rwRun },
   shop: {
     run: ev(() => { S.coins = 5000; shop(); }),
