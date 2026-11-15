@@ -4,7 +4,7 @@ The running record of what has shipped. Newest entry first. Every chunk adds one
 
 **Next up:** P6-05 (wip/batch-N, map timing), the P5-07 flaky step; see Handoff notes
 
-**Current version:** v165
+**Current version:** v166
 
 ## Chunk status
 
@@ -148,6 +148,7 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - G-04a2 v160
 - G-BB2 v164
 - G-RALLY2 v163
+- G-HC3 v166
 
 ## Handoff notes
 
@@ -498,6 +499,22 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-11) Icons wanted from P4-03: `balloon` (Bonus game, today `gamepad`), `sparkle` / `confetti`, `unlock` (open padlock for "Next stop unlocked", today `map`), `zap` (a lightning with a spark for boss hits; today `bolt`), `sticker` (single sticker for the prize row), `medal` (the prize rosette as an icon), `heart-half` (boss life bar), `chest` (the treasure chest at icon size, e.g. for the round track where renderQ shows the gift emoji).
 
 ## Log
+
+### G-HC3 Hill Climb: game speed, depth, today's drive, music, garage level 2 (v166, 2026-11-15, Claude)
+- Why (the owner): the games feel "like you're on level one and stuck there"; more 3D-looking detail where cheap tablets allow (R-03 H1-H4, A1-A5).
+- Measured first (R-03 method, `hc3/fps.js` in the scratchpad: headless Chrome, software canvas, 6x CPU throttle, holding the gas, best of 2-3, load 1.5-2.5 on 4 cores): v165 already ran at 16.7 ms median at 1x at 1024x600 and 380x780 (First Hills, Log Bridges in the rain; 90th 16.7-33 ms, draw 1.7-2.5 ms) and 16.7-33 ms at 2x pixels, so the cached renderer stayed; but the game ran at 0.92-0.98 speed when frames were slow (dt capped at 50 ms, 8 steps). Now **fixed steps that catch up** (`hcAdvance`: a frame of up to 0.1 s runs up to 12 steps of 1/120 s): game speed 0.97-1.01 in every case; frames v166 16.7 ms at 1x (both sizes), 16.7-33 ms at 2x, the same as v165 measured back to back (33.3 ms both at 1024x600@2x in a busier moment); draw 1.6-3.5 ms.
+- **Depth (H2)**: the truck was already about 30 % of a phone's width (G-HC2). The sky's strip now holds a pale hazy range behind the far range, so 4 ranges sit behind the road on every screen; each fades into the sky colour near its foot and has a light rim on its ridge (baked into the cached strips, no cost per frame); a new foreground strip of tufts, stones and snow mounds passes in front of the earth at the bottom (parallax 1.25, a low band). Same number of full-width strips copied per frame as v165 plus the low band.
+- **Driver and garage (H3)**: the pet already drives (G-HC2, `hopPetSprite`) and no emoji is left; the new garage items are drawn on canvas.
+- **Today's drive and the daily road (H4, A5)**: `hcDay()` from the date: one open world, one of 7 twists (jump day: more ramps and gaps; bolt rain: twice the bolts; floaty: low gravity; fuel party; night with headlights; rain, or dust / ash / snow where rain does not fit; sunset), a gold "Today" flag at 250 m: +30 bolts the first time a day (`S.garage.day`); nothing lost on a missed day, no streak. A card on the menu under the Play button. Every distance drive gets a new road each day (`hcSeed`); bests are kept; the 30 stages are unchanged.
+- **Music (A1)**: `hcMusic`, a calm loop per world (7) with `tone()`, the Star Rally / Sky Hop way: only with Sound effects and Music on and the truck sounds not off, never in Calm mode, quiet when paused, under the Pause sheet, hidden or over.
+- **Next goal (A3)**: the line was there since G-HC2 (now `#hcnext`); a "save for" line (`#hcsave`) under it. **Buzz (A4)**: `buzz(25)` on a crash, `buzz(15)` on landing a flip (on screen only).
+- **Garage level 2 (A2)**: level 1 costs 4,710 bolts in all and is bought well before visit 50, so: 4 rims, 4 trails, 4 toppers (`HC_T2`, 6,500 bolts, looks only, never better driving), every price shown from the start, open from 30 stars; tap an owned one to use it, again to take it off.
+- Save (ROADMAP row `S.garage`): new fields by id with defaults, no migration: `own2 {}`, `rim`, `trail`, `top` (''), `day` (absent).
+- Sizes: games 263,321 -> 283,308 bytes (warn 400 KB); the other parts unchanged (gen 218,806, gen2 241,119, bt 583,558, rally 181,291, games2 302,596, games3 196,685, data 720,860, index.html 973,338).
+- Tests: test.js new check **"Hill Climb daily drive and garage level 2 G-HC3"**: fixed steps (1 s of play in 0.1 s frames = in 1/60 s frames, the same drive), today's drive the same all day, only open worlds, 5+ twists in 60 days, no weather on the Moon, a new road each day and the same road when built again, stages unchanged, twists change the road (bolts x2, more cans, more ramps, lower gravity), the easy-driving bot reaches the gold flag in all 49 world x twist pairs (12.9 s average), the bonus once a day and again the next, no streak; level 2: prices fixed and rising, closed before 30 stars, never below 0 bolts, save-for line through level 1, the closed level 2, level 2 and "Everything", use / take off, looks only; old (G-HC2) and damaged saves; music on / off rules; buzz on a crash and a flip; source checks. smoke.js new `// G-HC3` block (real touch at 380x780 and 1024x600).
+- Check (check.sh not run, as asked): build; test.js 140 of 142 checks passed: both new and old Hill Climb checks ok; "performance P6-02" failed (the known base break: it expects 3 on-demand parts, there are 4 since v165) and "code split A11b" failed only because 62-hill.js was edited after the build during the run (rebuilt, then A11b, A11c, both Hill Climb checks, emoji, motion P4-17 and graphics passed again, 11 of 11). smoke.js: 317 steps, every block passed (G-HC2 and the new G-HC3 at both sizes: the gold flag in 14 s of held gas, game speed 0.96-1.00 at 6x throttle; G-HC2 frame 16.7 ms median at 6x) except the 2 known P6-02 steps (the same 3-vs-4 part lists). perf.js: perf OK (start 683 ms best, loaded at start 2,737,681 bytes).
+- Shots (2x, looked at): /tmp/claude-0/-home-user-star-school/77e28198-f99e-5c3b-a61b-2fc79635f1f7/scratchpad/hc3/before/ (v165) and hc3/after/ (menu, today's drive card, garage and level 2, 7 drives, today's drive and its flag; both sizes). Fixed after looking: the foreground too tall and dark, the today card pushed the stages down (moved under Play) and was dark on night worlds (now a light token), the windsock's white stripe invisible, a sparkle trail far too thick, the extra parallax strip cost frames at 2x (the hazy range moved into the sky's strip).
+- Merge: built on branch g-hc3 from f79a8df (v165). Overlaps: tools/build.py (VER), tools/test.js (one check before `// ---- G-ART2`), tools/smoke.js (one block before `// P4-15`), docs/ROADMAP.md (`S.garage` row), docs/reviews/R-03-games.md (A1-A5, H1-H4), this file. Only 62-hill.js and 61-hill.css in src.
 
 ### Merge v165: Star Rally season 2 (G-RALLY2) and Block Builder in 3D (G-BB2) (2026-11-15, Claude)
 - Both moved a game out of a full part: the parts are now gen, gen2, bt, then on demand games, rally, games2, games3 (PARTS, LAZY, `LAZY_PARTS`, `appFiles()`, test.js and smoke.js lists).

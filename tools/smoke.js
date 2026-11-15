@@ -7492,6 +7492,118 @@ async function main() {
         '-> a flip past the first checkpoint started again there; 48 px buttons, 64 px pedals, the distance and fuel readable; ' + notes.join('; '));
     }
 
+    // G-HC3 Hill Climb today's drive, garage level 2, game speed (src/js/62-hill.js). Midway save, a fresh garage, 1st grade, 20 min of
+    //    game time, real touch (CDP touch events) at 380x780 and 1024x600: Home -> Game Room -> the Hill Climb card -> the menu (the next
+    //    goal, the save-for line, today's drive card) -> touch today's drive -> a held gas touch drives to the gold flag (+30 bolts the
+    //    first time today) -> the tank runs dry (test hook) -> the end card says today's drive is done -> Menu: the card shows done -> with 30 stars
+    //    (test hook) the garage's level 2 is open: touch Gold rims to buy and use them -> at 6x CPU throttle the drive keeps game speed
+    //    (simulated seconds per real second at least 0.85: a slow frame runs more fixed steps, no slow motion).
+    {
+      const bad = [], notes = [];
+      for (const [w, h] of [[380, 780], [1024, 600]]) {
+        const ga = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ga.page, at = 'G-HC3 ' + w + 'x' + h + ' ';
+        const cdp = await pg.context().newCDPSession(pg);
+        await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 2 });
+        const box = sel => pg.evaluate(s => {
+          const e = document.querySelector(s);
+          if (!e) return null;
+          if (!e.closest('.hc')) e.scrollIntoView({ block: 'center' });
+          const r = e.getBoundingClientRect();
+          return { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height };
+        }, sel);
+        const down = async (x, y) => cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y, id: 1, radiusX: 8, radiusY: 8, force: 1 }] });
+        const up = async () => cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+        const touch = async sel => { const b = await box(sel); if (!b) throw new Error('nothing to touch: ' + sel); await pg.waitForTimeout(150); const c = await box(sel); await down(c.x, c.y); await pg.waitForTimeout(60); await up(); return c; };
+        const look = () => {
+          const vw = document.documentElement.clientWidth, out = [];
+          for (const e of document.querySelectorAll('.gh-top button, .hc-menu button, .gh-end button')) {
+            const r = e.getBoundingClientRect();
+            if (!r.width || r.bottom < 0 || r.top > innerHeight) continue;
+            if (Math.min(r.width, r.height) < 47.5) out.push('small ' + (e.id || e.className) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
+            if (r.left < -1 || r.right > vw + 1) out.push('outside ' + (e.id || e.className));
+          }
+          if (document.documentElement.scrollWidth > vw) out.push('sideways scroll ' + document.documentElement.scrollWidth);
+          for (const s of document.querySelectorAll('.scroll, .gh-end')) if (s.scrollWidth > s.clientWidth + 1) out.push('sideways scroll in ' + s.className);
+          return out;
+        };
+        try {
+          await pg.evaluate(() => { S.pt = { bank: 1200, day: today(), used: 0 }; S.garage = {}; S.grade = 1; save(); home(); });
+          await touch('#groom');
+          await pg.waitForSelector('#g4x4', { timeout: 8000 });
+          await pg.waitForTimeout(450);
+          await touch('#g4x4');
+          await pg.waitForSelector('.hc-menu #hcday', { timeout: 8000 });
+          await pg.waitForTimeout(450);
+          const m0 = await pg.evaluate(() => ({ next: (document.querySelector('#hcnext') || {}).textContent || '', save: (document.querySelector('#hcsave') || {}).textContent || '',
+            day: document.querySelector('#hcday').textContent, done: document.querySelector('#hcday').classList.contains('done'), d: hcDay() }));
+          if (!/Next goal/.test(m0.next) || !/Save for|You can buy/.test(m0.save) || !/Today's drive: Green Meadow/.test(m0.day) || m0.done || m0.d.wi !== 0)
+            bad.push(at + 'menu: ' + JSON.stringify(m0));
+          for (const o of await pg.evaluate(look)) bad.push(at + 'menu: ' + o);
+          await touch('#hcday');
+          await pg.waitForSelector('.hc .pedal.gas', { timeout: 8000 });
+          await pg.waitForTimeout(700);
+          const d0 = await pg.evaluate(() => ({ day: !!(HC && HC.day), sub: document.querySelector('.gh-top').textContent, b: garageS().bolts }));
+          if (!d0.day || !/Today's drive/.test(d0.sub)) bad.push(at + 'today\'s drive did not start: ' + JSON.stringify(d0));
+          const gb = await box('#pg');
+          await down(gb.x, gb.y);
+          const t0 = Date.now();
+          let res = null;
+          while (Date.now() - t0 < 60000) { await pg.waitForTimeout(400); res = await pg.evaluate(() => !HC ? 'gone' : HC.dayHit ? 'flag' : HC.over ? 'over' : HC.gas ? 'gas' : 'no gas'); if (res !== 'gas') break; }
+          await up();
+          if (res !== 'flag') bad.push(at + 'the gold flag not reached by holding the gas: ' + res);
+          notes.push(w + 'x' + h + ': gold flag in ' + Math.round((Date.now() - t0) / 1000) + ' s of held gas (' + m0.d.label + ')');
+          await pg.evaluate(() => { if (HC) { HC.fuel = 0; HC.gas = false; HC.over = true; HC.result = 'fuel' } }); // the tank runs dry (test hook: the loop ends the drive as when it stops without fuel)
+          await pg.waitForSelector('.gh-end #hgar', { timeout: 20000 });
+          await pg.waitForTimeout(500);
+          const e1 = await pg.evaluate(() => ({ t: document.querySelector('.gh-end h1').textContent, txt: document.querySelector('.gh-end').textContent, day: garageS().day, today: today(), b: garageS().bolts }));
+          if (!/Today's drive done/.test(e1.t) || !/plus 30 bolts/.test(e1.txt) || e1.day !== e1.today || !(e1.b >= d0.b + 30)) bad.push(at + 'end card: ' + JSON.stringify([e1.t, e1.day, e1.today, d0.b, e1.b]));
+          for (const o of await pg.evaluate(look)) bad.push(at + 'end card: ' + o);
+          await touch('.gh-end #hgar');
+          await pg.waitForSelector('.hc-menu #hcday', { timeout: 8000 });
+          if (!await pg.evaluate(() => document.querySelector('#hcday').classList.contains('done'))) bad.push(at + 'today\'s drive should show done');
+          // garage level 2 (test hook: 30 stars and 300 bolts)
+          await pg.evaluate(() => { const g = garageS(); HC_ST.slice(0, 3).flat().forEach(s => { g.st[s[0]] = 7 }); g.bolts = 300; save(); garage(); });
+          await pg.waitForTimeout(300);
+          await touch('#hcgar');
+          await pg.waitForSelector('[data-t2="gold"]', { timeout: 8000 });
+          await pg.waitForTimeout(450);
+          for (const o of await pg.evaluate(look)) bad.push(at + 'garage: ' + o);
+          const u0 = await pg.evaluate(() => ({ n: hcTot(), b: garageS().bolts, lock: document.querySelector('[data-t2="gold"]').classList.contains('lock') }));
+          await touch('[data-t2="gold"]');
+          await pg.waitForTimeout(500);
+          const u1 = await pg.evaluate(() => ({ b: garageS().bolts, rim: garageS().rim, on: document.querySelector('[data-t2="gold"]').getAttribute('aria-pressed') }));
+          if (u0.n < 30 || u0.lock || u1.b !== u0.b - 250 || u1.rim !== 'gold' || u1.on !== 'true') bad.push(at + 'garage level 2: ' + JSON.stringify([u0, u1]));
+          // game speed at 6x CPU throttle: a slow frame runs more fixed steps
+          await pg.evaluate(() => { hcStart(2, 1); });
+          await pg.waitForSelector('.hc .pedal.gas', { timeout: 8000 });
+          await pg.waitForTimeout(600);
+          const gb2 = await box('#pg');
+          await down(gb2.x, gb2.y);
+          await cdp.send('Emulation.setCPUThrottlingRate', { rate: 6 });
+          await pg.waitForTimeout(2000);
+          const g0 = await pg.evaluate(() => [(window.__realNow || performance.now.bind(performance))(), HC.t]);
+          await pg.waitForTimeout(3000);
+          const g1 = await pg.evaluate(() => [(window.__realNow || performance.now.bind(performance))(), HC.t, HC.q]);
+          await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+          await up();
+          const speed = (g1[1] - g0[1]) / ((g1[0] - g0[0]) / 1000);
+          if (!(speed >= .85)) bad.push(at + 'game speed at 6x throttle ' + speed.toFixed(2) + ' (slow motion)');
+          notes.push(w + 'x' + h + ': game speed at 6x throttle ' + speed.toFixed(2) + ', pixel scale ' + g1[2]);
+          await pg.evaluate(() => { document.querySelectorAll('.ovl').forEach(o => o.remove()); if (HC) hcEnd('quit'); });
+        } catch (x) {
+          bad.push(at + 'taps: ' + x.message.split('\n')[0] + ' (on ' + await pg.evaluate(() => (document.querySelector('.gh-top') || {}).textContent + ' | ' + !!document.querySelector('.gh-end')).catch(() => '?') + ')');
+        }
+        network.push(...ga.network);
+        for (const e of ga.errors) fail(e);
+        await ga.ctx.close();
+      }
+      if (bad.length) fail('G-HC3 Hill Climb:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('G-HC3: Hill Climb by real touch at 380x780 and 1024x600: menu (next goal, save-for line, today\'s drive) -> today\'s drive to the gold ' +
+        'flag by a held gas touch -> end card "Today\'s drive done" with +30 bolts -> the card shows done -> garage level 2: Gold rims bought and in use ' +
+        '-> game speed kept at 6x CPU throttle; 48 px buttons; ' + notes.join('; '));
+    }
+
     // P4-15 Object art set C (src/data/d-art-c.js), midway save at 380x780: questions that use the new drawings, drawn by the real
     //    round engine (start, a seeded question in G.q, renderQ): a picture word (vowel teams), Spanish house (drawings as the answer
     //    choices), weather and places. Every drawing is inline SVG with its shapes, at least 16 px, no emoji in its place, no sideways scroll.
