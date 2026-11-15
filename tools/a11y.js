@@ -188,6 +188,9 @@ const SCREENS = {
   'snack-menu': { run: ev(() => { snSave(); snMenu(); }) },
   'snack-day': { run: async p => { await p.evaluate(() => snSave()); await p.evaluate(() => snDay()); await p.waitForTimeout(2500); }, main: '.sn-fb, .sn-serve, .sn-undo', sheet: pauseSheet },
   'snack-shop': { run: ev(() => { snSave(); snShop('lettuce'); }) },
+  // G-04a2: the recipe book and the café journey in the shop (8 days played opens it)
+  'snack-book': { run: ev(() => { snSave(); S.snack.book = { cheesy: 2, jamtoast: 1 }; snBook(); }) },
+  'snack-cafe': { run: ev(() => { snSave(); S.snack.days = 8; S.snack.coins = 400; S.snack.cafe = { cart: 1 }; snShop('c:lights'); }) },
   'game-timeup': {
     run: async p => { await p.evaluate(() => { gtime(); artPage('m:17'); }); await p.waitForTimeout(600); await p.evaluate(() => timeUpOverlay()); await p.waitForTimeout(900); },
     sheet: async () => ({ close: 'enter' }),
