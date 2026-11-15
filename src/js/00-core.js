@@ -141,7 +141,7 @@ const MIGRATIONS=[null,
 ];
 /* Run once at load, from 42-paths.js (needs NODES, which no code before it reads). Backs up the old string first. */
 function migrate(){
-  if(S.owned&&S.owned['\u{1FA84}']){S.owned['\u{1FA80}']=1;delete S.owned['\u{1FA84}']}if(S.wear&&S.wear.toy=='\u{1FA84}')S.wear.toy='\u{1FA80}';if(S.stickers&&S.stickers['\u{1F984}']){S.stickers['\u{1F420}']=(S.stickers['\u{1F420}']||0)+S.stickers['\u{1F984}'];delete S.stickers['\u{1F984}']} // an old toy (U+1FA84) became the yo-yo and an old sticker (U+1F984) the fish (the parent asked for none of that theme): same price, kept by whoever had it
+  if(S.owned&&S.owned['\u{1FA84}']){S.owned['\u{1FA80}']=1;delete S.owned['\u{1FA84}']}if(S.wear&&S.wear.toy=='\u{1FA84}')S.wear.toy='\u{1FA80}'; // an old toy (U+1FA84) became the yo-yo (the parent asked for none of that theme): same price, kept by whoever had it
   if(S.maps&&typeof PATHS!='undefined')for(const p in PATHS)S.maps[p]=S.maps[p]||{}; // a path added after the save was written starts empty (Discover, P2-36): a default, not a migration
   const from=Number.isInteger(S.v)&&S.v>=1?S.v:1;
   if(from>=LATEST)return; // current, or written by a newer app: leave it alone

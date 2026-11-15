@@ -12675,7 +12675,10 @@ run('word search and unscramble P3-15',()=>{
   const DATAB=fs.existsSync(path.join(ROOT,DATA_FILE))?fs.readFileSync(path.join(ROOT,DATA_FILE),'utf8'):'';
   // every word the app's lists hold: all the data files and the word lists of 20-words.js (sentences, passages, riddles too)
   // ES-AUDIO: not the recordings' manifest (its text is in d-es*.js already; its hex file names are not words)
-  const HARVEST=fs.readdirSync(path.join(SRC,'data')).filter(n=>n!=='d-es-audio.js').map(n=>fs.readFileSync(path.join(SRC,'data',n),'utf8')).join(' ')+fs.readFileSync(path.join(SRC,'js','20-words.js'),'utf8');
+  // CONTENT-01: the rude lists are kept in ROT13 in the source; harvest them decoded, as the words they were before
+  const unrotH=x=>x.replace(/[a-z]/g,c=>String.fromCharCode((c.charCodeAt(0)-84)%26+97));
+  const decRude=t=>t.replace(/unrot\('([^']*)'\)/g,(m,x)=>unrotH(x)).replace(/  rude: \(s =>[\s\S]*?\n  more:/,m=>m.replace(/'([^']*)'/g,(q,x)=>"'"+unrotH(x)+"'"));
+  const HARVEST=decRude(fs.readdirSync(path.join(SRC,'data')).filter(n=>n!=='d-es-audio.js').map(n=>fs.readFileSync(path.join(SRC,'data',n),'utf8')).join(' ')+fs.readFileSync(path.join(SRC,'js','20-words.js'),'utf8'));
   const body=function(HARVEST){
     const out=[],bad=m=>{if(out.length<40&&!out.includes(m))out.push(m)};
     const J=JSON.stringify,days=['2026-6-1','2026-6-2','2026-6-3','2026-6-4','2026-6-5'];
@@ -18453,7 +18456,8 @@ run('content: no magic or evolution theme CONTENT-01',()=>{
   // old saves: the wand toy and the unicorn sticker move to the yo-yo and the fish, kept by whoever had them
   try{const ctx=E.loadApp(null);const R=x=>vm.runInContext(x,ctx);
     R("loadSave(null);S.owned={'\u{1FA84}':1};S.wear.toy='\u{1FA84}';S.stickers={'\u{1F984}':2,'\u{1F420}':1};migrate()");
-    if(R("JSON.stringify([S.owned,S.wear.toy,S.stickers])")!==JSON.stringify([{'\u{1FA80}':1},'\u{1FA80}',{'\u{1F420}':3}]))p.push('old save not moved: '+R("JSON.stringify([S.owned,S.wear.toy,S.stickers])"));
+    if(R("JSON.stringify([S.owned,S.wear.toy])")!==JSON.stringify([{'\u{1FA80}':1},'\u{1FA80}']))p.push('old toy not moved: '+R("JSON.stringify([S.owned,S.wear.toy])"));
+    if(R("stkN('\u{1F420}')")!==3||R("STK.filter(s=>stkN(s)).length")!==1)p.push('the fish sticker does not count the old sticker: '+R("stkN('\u{1F420}')"));
     if(!R("SHOP.toy.some(t=>t[0]=='\u{1FA80}')&&!!WEAR['\u{1FA80}']&&WEAR_NAME['\u{1FA80}']=='Yo-yo'"))p.push('the yo-yo is not in the shop with its drawing and name');
   }catch(e){p.push('save check could not run: '+String(e.message||e).split('\n')[0])}
   // and no rude word or slur in plain text anywhere in the project (the app's filters keep theirs in ROT13); the list is in ROT13 too
