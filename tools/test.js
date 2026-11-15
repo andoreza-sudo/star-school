@@ -23,7 +23,7 @@ const PART_WARN=400000,PART_FAIL=800000; // A11b: bytes of each built part file 
 // P6-02: bytes LOADED AT START, index.html + the part files it loads at start + data.<VER>.js (back to 3.0 MB: the games parts load on demand);
 // and bytes PRECACHED, every built file (G-04a raised the old all-files total from 3.0 to 3.3 MB for games2; that limit now holds the precache; ES-AUDIO 3.4 MB)
 // G-01b raised it to 3.6 MB for the Block Builder journey; ES-AUDIO had raised it from 3.3 to 3.4 MB for the recordings' manifest in the data file (src/data/d-es-audio.js, 28 KB); the start-up limit is unchanged
-const TOTAL_WARN=2000000,TOTAL_FAIL=3000000,CACHE_FAIL=3600000;
+const TOTAL_WARN=2000000,TOTAL_FAIL=3000000,CACHE_FAIL=4500000; // R-03: 4.5 MB for the game updates (games load on demand; the start-up limit stays 3.0 MB)
 // ES-AUDIO: the recorded Spanish, audio/es/*.ogg. Not loaded at start (say() fetches a file the first time its line is said) but
 // precached by sw.js in its own cache: all files together under AUDIO_FAIL, each file under AUDIO_FILE_FAIL
 const AUDIO_WARN=2500000,AUDIO_FAIL=3000000,AUDIO_FILE_FAIL=40000;
