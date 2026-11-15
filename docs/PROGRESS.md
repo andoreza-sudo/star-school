@@ -630,6 +630,11 @@ Things noticed while working that are outside the current chunk. One line each, 
   `// ---- report ----`), smoke.js (new block before P6-02, one line in P6-02), build.py (VER, AUDIO list, sw Range regex), check.sh, sw.js.
   62-hill.js and 50-say.js are not touched (their lines are recorded and play through say()). After a merge that changes any listed line,
   run `node tools/en-audio.js` (needs the xAI proxy) and commit audio/en and the manifest.
+### S-SPK2b speaking check smoke step, measured again (v162, 2026-11-15, Claude)
+- The full check failed twice on "a different word (verde)" judged "Great job". Cause: the check passes about 3% of unrelated words (tools/spk-calib.js: "other" 17/521, a second unrelated word a third of the list away "other2" 16/522), and the smoke step took one fixed unrelated word as always rejected.
+- Tried 4 more far comparison lines per word: no real gain (16/521), so not kept. A lower ABS cuts false accepts but rejects too many right answers in another adult voice (56/66 -> 43/66 at ABS 1.5), and a child who said it right must not be told to listen again; the thresholds stay (ABS 1.6, RATIO 1.15).
+- tools/smoke.js now tries up to 3 unrelated words (a half, a third and a fifth of the list away) and needs one "Close! Listen again"; "wrong" is never allowed. tools/spk-calib.js has the second unrelated case.
+
 ### S-SPK2 Spanish speaking check, on-device listening, listening corner (v156, 2026-11-14, Claude)
 - Owner-approved additions to "Say it!" (S-SPK): A, B and C below; no online check, never a server recogniser. Order in the step: A when
   the tablet can recognise Spanish on the device, else B (also when A heard nothing); "I said it!" / "Try again" stay, and the line is
