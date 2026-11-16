@@ -10565,7 +10565,8 @@ async function main() {
             if (!/one-time download/.test(lis.st) || !/internet/.test(lis.note)) bad.push(at + 'Spanish listening card: ' + JSON.stringify(lis));
             await pg.waitForFunction(() => document.querySelectorAll('#lc-list .lc-row').length >= 3, null, { timeout: 5000 }).catch(() => {});
             const rows = await pg.evaluate(() => [...document.querySelectorAll('#lc-list .lc-row')].map(r => r.querySelector('.lc-w b').textContent));
-            if (rows.length !== 3 || rows.some(x => x !== it.es)) bad.push(at + 'corner rows: ' + JSON.stringify(rows));
+            const wantRows = Math.min(2 + tries.length, 6); // the right word, each different word tried, and the silence; SPKR.MAX keeps 6
+            if (rows.length !== wantRows || rows.some(x => x !== it.es)) bad.push(at + 'corner rows (want ' + wantRows + '): ' + JSON.stringify(rows));
             await pg.evaluate(() => document.querySelector('#gw-corner').scrollIntoView());
             await sizes(pg, at + 'grown-ups: ');
             await shot(pg, 'corner-' + tag);
