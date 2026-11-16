@@ -8,6 +8,15 @@ const { launch, openApp, envSpeed } = require('./lib/browser');
 // Waits that poll or wait for CSS animations stay real-time page.waitForTimeout.
 const vwait = (page, ms) => page.waitForTimeout(ms / envSpeed());
 
+// NAV-01: an end card's Home goes Home; tests that went on from a puzzle's level list open it again from there
+const HOME_ON = '#navbar .nb-home[aria-current="page"]';
+async function btLevelsAgain(pg) {
+  const run = await pg.evaluate(() => BT.act && [BT.act.run.id, BT.act.run.band]);
+  await pg.click('#bthome');
+  await pg.waitForSelector(HOME_ON);
+  await pg.evaluate(r => BT.levels(r[0], r[1]), run);
+}
+
 let failed = 0;
 const step = msg => console.log('- ' + msg);
 function fail(msg) { failed++; console.error('FAIL: ' + msg); }
@@ -162,7 +171,9 @@ async function main() {
       if (p === 'es') { await page.waitForSelector('#go'); await page.click('#go'); }
       await page.waitForSelector('#prompt');
       await playRound(page, p);
-      await page.click('#menu');
+      await page.click('#ehome'); // NAV-01: the end card's Home
+      await page.waitForSelector('#navbar .nb-home[aria-current="page"]');
+      await page.evaluate(() => pathMap(MAPP));
       await page.waitForSelector('#map');
     }
 
@@ -198,7 +209,7 @@ async function main() {
     const box = await (await page.$('#gear')).boundingBox();
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
     await page.mouse.down();
-    await vwait(page, 1500);
+    await vwait(page, 3400);
     await page.mouse.up();
     await page.waitForSelector('#ula', { timeout: 3000 });
     step('Grown-ups opened');
@@ -702,7 +713,7 @@ async function main() {
       const gb = await (await gp.$('#gear')).boundingBox();
       await gp.mouse.move(gb.x + gb.width / 2, gb.y + gb.height / 2);
       await gp.mouse.down();
-      await vwait(gp, 1500);
+      await vwait(gp, 3400);
       await gp.mouse.up();
       await gp.waitForSelector('.gr[data-g="3"]', { timeout: 3000 });
       await gp.click('.gr[data-g="3"]');
@@ -779,7 +790,9 @@ async function main() {
         stars: !!document.querySelector('#starc'), hint: !!document.querySelector('#hb'), quit: Math.min(...['#quit', '#spk'].map(s => document.querySelector(s)).filter(Boolean).map(b => Math.min(b.offsetHeight, b.offsetWidth))),
         wide: document.documentElement.scrollWidth }));
       if (ui.dots !== 4 || ui.stars || ui.hint || ui.quit < 48 || ui.wide > 380) fail('placement question screen: ' + JSON.stringify(ui));
-      await pp.click('#quit');
+      await pp.click('#quit'); // NAV-01: the corner house asks "Go Home?"
+      await pp.waitForSelector('.sheet-bg.on #gquit');
+      await pp.click('#gquit');
       await pp.waitForSelector('#plcard');
       const s1 = await snap();
       if (s1.mem !== s0.mem || s1.disk !== s0.disk) fail('quitting placement changed the save: ' + s1.mem);
@@ -1423,7 +1436,9 @@ async function main() {
       await cp.click('.node.cur');
       await cp.waitForSelector('#prompt');
       await playRound(cp, 'P2-03 Tens & Ones');
-      await cp.click('#menu');
+      await cp.click('#ehome'); // NAV-01: the end card's Home
+      await cp.waitForSelector('#navbar .nb-home[aria-current="page"]');
+      await cp.evaluate(() => pathMap(MAPP));
       await cp.waitForSelector('#map');
       const nx = await cp.evaluate(() => { const a = WR.math[PATHS.math.worlds.findIndex(w => w.id === 'm_clock')][0]; return { pv: passed('math', a), add5: unlocked('math', a + 1) }; });
       if (!nx.pv || !nx.add5) fail('Clock Tower: passing pv1 should unlock add5: ' + JSON.stringify(nx));
@@ -1584,7 +1599,9 @@ async function main() {
       await bp.click('.node.cur');
       await bp.waitForSelector('#prompt');
       await playRound(bp, 'P2-04 Place Value to 999');
-      await bp.click('#menu');
+      await bp.click('#ehome'); // NAV-01: the end card's Home
+      await bp.waitForSelector('#navbar .nb-home[aria-current="page"]');
+      await bp.evaluate(() => pathMap(MAPP));
       await bp.waitForSelector('#map');
       const bx = await bp.evaluate(() => { const a = WR.math[PATHS.math.worlds.findIndex(w => w.id === 'm_bay')][0]; return { pv: passed('math', a), next: unlocked('math', a + 1) }; });
       if (!bx.pv || !bx.next) fail('Treasure Bay: passing pv2 should unlock big5: ' + JSON.stringify(bx));
@@ -1672,7 +1689,7 @@ async function main() {
       const got = await rp.evaluate(n => {
         const T = s => (document.querySelector(s) || {}).textContent || '';
         return { on: document.querySelectorAll('.rw-rate .rw-st.on').length, stk: document.querySelectorAll('#prz .rw-stk').length,
-          earn: T('#earn'), prim: [...document.querySelectorAll('#btns .btn.primary')].map(b => b.id), menu: !!document.querySelector('#btns #menu'),
+          earn: T('#earn'), prim: [...document.querySelectorAll('#btns .btn.primary')].map(b => b.id), menu: !!document.querySelector('#btns .nv-end3 #ehome'),
           bonus: !!document.querySelector('#btns #bonus'), stars: S.stars, coins: S.coins, bank: pt().bank,
           stkN: Object.values(S.stickers).reduce((a, b) => a + b, 0), mission: day().done, md: MIS.count(), fmt: null };
       }, before.n);
@@ -1687,14 +1704,14 @@ async function main() {
       if (got.on !== 3 || got.stk !== 2 + mis + (mission ? 1 : 0) || got.prim.length !== 1 || !got.menu || !got.bonus) fail('P4-11 finish screen: ' + JSON.stringify(got));
       const postBad = await layout();
       for (const b of preBad.concat(postBad)) fail('P4-11 finish layout: ' + b);
-      // 2. a low score: no stars, the pet cheers, Try again is the primary button, and the tip says how many to get
+      // 2. a low score: no stars, the pet cheers, Play again is the primary button (NAV-01: no Next, the next stop is shut), and the tip says how many to get
       await rp.evaluate(() => { start('math', 0); G.score = Math.floor(G.n * .7 + .01) - 2; G.done = G.n; finish(); });
       await rp.click('#chest');
       await rp.waitForSelector('#btns', { state: 'visible', timeout: 10000 });
       await vwait(rp, 5000);
       const low = await rp.evaluate(() => ({ pet: !!document.querySelector('.rw-hero .rw-pet'), rate: !!document.querySelector('.rw-rate'),
         again: (document.querySelector('#again.primary') || {}).textContent, tip: (document.querySelector('.rw-hero .rw-tip') || {}).textContent || '' }));
-      if (!low.pet || low.rate || low.again !== 'Try again' || !/^Get \d+ right to open the next stop/.test(low.tip)) fail('P4-11 low score: ' + JSON.stringify(low));
+      if (!low.pet || low.rate || low.again !== 'Play again' || !/^Get \d+ right to open the next stop/.test(low.tip)) fail('P4-11 low score: ' + JSON.stringify(low));
       for (const b of await layout()) fail('P4-11 low score layout: ' + b);
       // 3. boss: intro, top bar with the hit face on a zap, then a win with its prize
       const bi = await rp.evaluate(() => NODES.math.indexOf(NODES.math.filter(n => n.sk == 'boss')[2]));
@@ -2295,7 +2312,9 @@ async function main() {
         await sp.evaluate(i => { start('read', i); }, i);
         await sp.waitForSelector('#prompt');
         await playRound(sp, 'P2-24 ' + id);
-        await sp.click('#menu');
+        await sp.click('#ehome'); // NAV-01: the end card's Home
+        await sp.waitForSelector('#navbar .nb-home[aria-current="page"]');
+        await sp.evaluate(() => pathMap(MAPP));
         await sp.waitForSelector('#map');
         await sp.evaluate(i => { start('read', i); }, i);
         await sp.waitForSelector('#prompt');
@@ -3216,7 +3235,7 @@ async function main() {
         const win = await pg.evaluate(b => ({ shown: document.querySelectorAll('.bt-win .rs.on').length, saved: S.bt.pattern && S.bt.pattern[b] && S.bt.pattern[b].stars[0],
           lvl: S.bt.pattern && S.bt.pattern[b].lvl, cur: !!S.bt.cur, stars: S.stars }), band);
         if (win.shown !== 1 || win.saved !== 1 || win.lvl !== 2 || win.cur || win.stars !== s0.stars + 1) bad.push('win: ' + JSON.stringify(win) + ' from ' + JSON.stringify(s0));
-        await pg.click('#btlvls');
+        await btLevelsAgain(pg);
         await pg.waitForSelector('.bt-lvs');
         const open = await pg.evaluate(() => document.querySelectorAll('.bt-lv:not(.lock)').length);
         if (open !== 2) bad.push('after level 1 the strip should have 2 open levels, got ' + open);
@@ -3331,14 +3350,14 @@ async function main() {
           // the rest by taps, then the win card
           const r2 = await rest(pg);
           for (const m of r2) await taps.move(pg, id, m);
-          try { await pg.waitForSelector('.bt-win #btlvls', { timeout: 8000 }); } catch (e) { bad.push(id + ': no win card after ' + JSON.stringify(r2)); continue; }
+          try { await pg.waitForSelector('.bt-win #bthome', { timeout: 8000 }); } catch (e) { bad.push(id + ': no win card after ' + JSON.stringify(r2)); continue; }
           await pg.waitForTimeout(700);
           await chk(id + ' win card');
           const saved = await pg.evaluate(([id, band]) => ({ stars: BT.rec(id, band).stars[0] || 0, lvl: BT.rec(id, band).lvl, cur: !!S.bt.cur,
             shown: document.querySelectorAll('.bt-win .rs.on').length }), [id, band]);
           if (saved.stars < 1 || saved.lvl !== 2 || saved.cur || saved.shown !== saved.stars) bad.push(id + ': stars not saved ' + JSON.stringify(saved));
           done.push(id + ' ' + band + ' (' + saved.stars + ' star' + (saved.stars > 1 ? 's' : '') + ')');
-          await pg.click('#btlvls');
+          await btLevelsAgain(pg);
           await pg.waitForSelector('.bt-lvs');
           await pg.click('#back');
           await pg.waitForSelector('.bt-hub .bt-type');
@@ -3515,7 +3534,7 @@ async function main() {
         let extra = '';
         if (!touch) {
           // band D, level 12: an 18x18 maze with two keys and two doors
-          await pg.click('#btlvls');
+          await btLevelsAgain(pg);
           await pg.waitForSelector('.bt-lvs');
           await pg.evaluate(() => { S.grade = 5; BT.start('maze', 'D', 12); });
           await pg.waitForSelector('.mz-cv');
@@ -4007,7 +4026,7 @@ async function main() {
         } else {
           // the rest by taps, then the win card with the stars saved
           for (const m of await taps.rest(pg)) await taps.move(pg, m);
-          try { await pg.waitForSelector('.bt-win #btlvls', { timeout: 8000 }); } catch (e) { bad.push('no win card'); }
+          try { await pg.waitForSelector('.bt-win #bthome', { timeout: 8000 }); } catch (e) { bad.push('no win card'); }
           await pg.waitForTimeout(700);
           await chk('win card');
           const saved = await pg.evaluate(b => ({ stars: BT.rec('sudoku', b).stars[0] || 0, lvl: BT.rec('sudoku', b).lvl, cur: !!S.bt.cur,
@@ -4332,7 +4351,7 @@ async function main() {
 
         // the rest by taps, then the win card with the stars saved (two hints: 1 star; the next level opens)
         for (const m of await taps.rest(pg)) await taps.move(pg, m);
-        try { await pg.waitForSelector('.bt-win #btlvls', { timeout: 8000 }); } catch (e) { bad.push('no win card'); }
+        try { await pg.waitForSelector('.bt-win #bthome', { timeout: 8000 }); } catch (e) { bad.push('no win card'); }
         await pg.waitForTimeout(700);
         await chk('win card');
         const saved = await pg.evaluate(([b, lv]) => ({ stars: BT.rec('mdoku', b).stars[lv - 1] || 0, lvl: BT.rec('mdoku', b).lvl, cur: !!S.bt.cur,
@@ -4460,7 +4479,9 @@ async function main() {
           next: unlocked('disc', 1), saved: JSON.parse(localStorage.getItem(KEY)).maps.disc.sci_life1 || 0 }));
         if (after.st < 1 || after.keys !== 'sci_life1' || after.saved !== after.st || !after.next || after.others !== JSON.stringify(JSON.parse(before).slice(0, 3))) fail(`${tag}: stars ${JSON.stringify(after)}`);
         else step(`${tag}: stop earned ${after.st} stars under sci_life1, the next stop opened, no other path changed`);
-        await dp.click('#menu');
+        await dp.click('#ehome'); // NAV-01: the end card's Home
+        await dp.waitForSelector('#navbar .nb-home[aria-current="page"]');
+        await dp.evaluate(() => pathMap(MAPP));
         await dp.waitForSelector('#map');
         const open2 = await dp.evaluate(() => [...document.querySelectorAll('.node')].map(n => n.classList.contains('lock')).join());
         if (open2.split(',').slice(0, 6).join() !== 'false,false,true,true,true,true') fail(`${tag}: map after the round: locks ${open2}`);
@@ -4587,7 +4608,7 @@ async function main() {
         if (!mid || (await cur(pg)) !== mid) bad.push('Keep going did not resume exactly');
         // the rest by taps, then the win card with the answer in words and the stars saved
         for (const c of await taps.rest(pg)) await taps.setTo(pg, c, '1');
-        try { await pg.waitForSelector('.bt-win #btlvls', { timeout: 8000 }); } catch (e) { bad.push('no win card'); }
+        try { await pg.waitForSelector('.bt-win #bthome', { timeout: 8000 }); } catch (e) { bad.push('no win card'); }
         await pg.waitForTimeout(700);
         await chk('win card');
         const saved = await pg.evaluate(b => ({ stars: BT.rec('logic', b).stars[0] || 0, lvl: BT.rec('logic', b).lvl, cur: !!S.bt.cur,
@@ -4807,7 +4828,9 @@ async function main() {
         const st = await dp.evaluate(i => ({ id: nid(NODES.disc[i]), stars: getSt('disc', i), saved: JSON.parse(localStorage.getItem(KEY)).maps.disc[nid(NODES.disc[i])] || 0 }), n);
         if (st.stars < 1 || st.saved !== st.stars) fail(`${tag} ${what}: stars ${JSON.stringify(st)}`);
         else step(`${tag} ${what}: ${st.stars} stars saved under ${st.id}`);
-        await dp.click('#menu');
+        await dp.click('#ehome'); // NAV-01: the end card's Home
+        await dp.waitForSelector('#navbar .nb-home[aria-current="page"]');
+        await dp.evaluate(() => pathMap(MAPP));
         await dp.waitForSelector('#map');
       };
       await playStop(6, 'Life Cycles & Food');
@@ -4893,7 +4916,7 @@ async function main() {
         const w = await pg.evaluate(([id, b]) => ({ shown: document.querySelectorAll('.bt-win .rs.on').length, note: document.querySelectorAll('.bt-win .bt-sum li').length,
           saved: S.bt[id] && S.bt[id][b] && S.bt[id][b].stars[0], lvl: S.bt[id] && S.bt[id][b].lvl, cur: !!S.bt.cur }), [id, band]);
         if (w.shown !== stars || w.saved !== stars || w.lvl !== 2 || w.cur || !w.note) bad.push(id + ' win: ' + JSON.stringify(w) + ' (want ' + stars + ' stars)');
-        await pg.click('#btlvls');
+        await btLevelsAgain(pg);
         await pg.waitForSelector('.bt-lvs');
         await pg.click('#back');
         await pg.waitForSelector('.bt-hub');
@@ -5541,7 +5564,7 @@ async function main() {
           requestAnimationFrame(f);
         });
         await pg.click('.rb-go');
-        try { await pg.waitForSelector('.bt-win #btlvls', { timeout: 30000 }); } catch (e) { bad.push('no win card'); }
+        try { await pg.waitForSelector('.bt-win #bthome', { timeout: 30000 }); } catch (e) { bad.push('no win card'); }
         const running = await pg.evaluate(() => window.__rbSeen);
         if (running.keys.length < 3 || !running.stop || !running.moved) bad.push('the run is not shown step by step: ' + JSON.stringify(running));
         notes.push(`the run lit ${running.keys.length} blocks in turn`);
@@ -5622,7 +5645,7 @@ async function main() {
         const w = await pg.evaluate(([id, b]) => ({ shown: document.querySelectorAll('.bt-win .rs.on').length, saved: S.bt[id] && S.bt[id][b] && S.bt[id][b].stars[0],
           lvl: S.bt[id] && S.bt[id][b].lvl, cur: !!S.bt.cur }), [id, band]);
         if (w.shown !== stars || w.saved !== stars || w.lvl !== 2 || w.cur) bad.push(id + ' win: ' + JSON.stringify(w) + ' (want ' + stars + ' stars)');
-        await pg.click('#btlvls');
+        await btLevelsAgain(pg);
         await pg.waitForSelector('.bt-lvs');
         await pg.click('#back');
         await pg.waitForSelector('.bt-hub');
@@ -5800,7 +5823,7 @@ async function main() {
       await pg.waitForSelector('#btstage .fkt');
       const lit2 = await pg.evaluate(() => S.bt.cur.puzzle.lit);
       for (let i = 0; i < 3; i++) await pg.click(`.fkt[data-i="${lit2}"]`);
-      await pg.waitForSelector('.bt-win #btlvls');
+      await pg.waitForSelector('.bt-win #bthome');
       const again = await pg.evaluate(() => ({ coins: S.coins, nb: !!document.querySelector('.bt-win .bt-nb') }));
       if (again.coins !== win.coins || again.nb) bad.push('second win paid again: ' + JSON.stringify(again));
       // Home and the hub show it done
@@ -6029,7 +6052,7 @@ async function main() {
         }
         const tw = await winOf('tangram', band);
         if (tw.stars !== 2 || tw.cur || !tw.saved || tw.saved[1] !== 2) bad.push('tangram win (1 hint = 2 stars): ' + JSON.stringify(tw));
-        await pg.click('#btlvls');
+        await btLevelsAgain(pg);
         await pg.waitForSelector('.bt-lvs');
 
         // ---- Shape Fit, level 3 ----
@@ -6163,7 +6186,7 @@ async function main() {
         const w = await pg.evaluate(([id, b]) => ({ shown: document.querySelectorAll('.bt-win .rs.on').length, saved: S.bt[id] && S.bt[id][b] && S.bt[id][b].stars[0],
           lvl: S.bt[id] && S.bt[id][b].lvl, cur: !!S.bt.cur }), [id, band]);
         if (w.shown !== stars || w.saved !== stars || w.lvl !== 2 || w.cur) bad.push(id + ' win: ' + JSON.stringify(w) + ' (want ' + stars + ' stars)');
-        await pg.click('#btlvls');
+        await btLevelsAgain(pg);
         await pg.waitForSelector('.bt-lvs');
         await pg.click('#back');
         await pg.waitForSelector('.bt-hub');
@@ -6545,7 +6568,7 @@ async function main() {
         const gb = await (await sp.$('#gear')).boundingBox();
         await sp.mouse.move(gb.x + gb.width / 2, gb.y + gb.height / 2);
         await sp.mouse.down();
-        await vwait(sp, 1500);
+        await vwait(sp, 3400);
         await sp.mouse.up();
         await sp.waitForSelector('.gw-card', { timeout: 3000 });
         await sp.waitForTimeout(400);
@@ -6685,7 +6708,9 @@ async function main() {
         if (!(earn.bank > bank0) || earn.why !== 'learn' || !/^You have \d+:\d\d saved\. Learn 1 more minute to open the Game Room today\.$/.test(earn.line))
           bad.push(tag + ' after the round: ' + JSON.stringify(earn));
         await chk(gp, 'round reward');
-        await gp.click('#menu');
+        await gp.click('#ehome'); // NAV-01: the end card's Home
+        await gp.waitForSelector('#navbar .nb-home[aria-current="page"]');
+        await gp.evaluate(() => pathMap(MAPP));
         await gp.waitForSelector('#map');
         await gp.evaluate(() => gameRoom());
         await gp.waitForSelector('#g4x4');
@@ -6705,8 +6730,8 @@ async function main() {
         await gp.waitForSelector('.ovl', { timeout: 20000 });
         const up = await gp.evaluate(() => ({ t: document.querySelector('.ovl h1').textContent, bank: pt().bank, left: ptLeft(), btn: !!document.querySelector('.ovl #tl') }));
         if (!/Game time's up/.test(up.t) || up.left !== 0 || up.bank !== 0 || !up.btn) bad.push(tag + ' time up: ' + JSON.stringify(up));
-        await gp.click('.ovl #tl');
-        await gp.waitForSelector('#groom');
+        await gp.click('.ovl #tl'); // NAV-01: Next on the time-up card goes to Learn, where game time is earned
+        await gp.waitForSelector('#navbar .nb-learn[aria-current="page"]');
         await gp.evaluate(() => gameRoom());
         await gp.waitForSelector('#g4x4');
         const room4 = await gp.evaluate((() => { const off = document.querySelector('.gh-hero').classList.contains('off'); return { t: off ? 'No game time yet' : document.querySelector('.gh-tkt b').textContent.trim() + ' of game time', s: document.querySelector('.gh-why p').textContent.trim(), empty: off, earn: !!document.querySelector('#learn') }; }));
@@ -6903,7 +6928,7 @@ async function main() {
       const bar = () => {
         const t = document.querySelector('.gh-top');
         return t ? { g: t.dataset.g, name: (t.querySelector('.gh-gn') || {}).textContent, time: !!t.querySelector('#gtm.stat.ticket, #hct.stat.ticket'),
-          back: !!t.querySelector('#back[aria-label="Back"]'), pause: !!t.querySelector('#gpause[aria-label="Pause"]') } : null;
+          back: !!t.querySelector('#back[aria-label="Back"]'), pause: !!t.querySelector('#gpause.nv-house[aria-label="Home"]') } : null; // NAV-01: the corner house
       };
       const bad = [];
       let played = 0, sizes = 0;
@@ -6941,22 +6966,22 @@ async function main() {
             const u0 = await pg.evaluate(() => pt().used);
             await vwait(pg, 4000);
             const s = await pg.evaluate(() => ({ used: pt().used, held: GH.held, hc: typeof HC != 'undefined' && HC ? !!HC.paused : null,
-              title: (document.querySelector('.gh-sheet h2') || {}).textContent, pic: !!document.querySelector('.gh-sheet svg.gh-art') }));
-            if (s.used !== u0 || !s.held || s.hc === false || s.title !== 'Paused' || !s.pic) bad.push(tag + 'pause: ' + JSON.stringify(Object.assign(s, { u0 })));
+              title: (document.querySelector('.nv-ask h2') || {}).textContent, pic: !!document.querySelector('.nv-ask #gquit') }));
+            if (s.used !== u0 || !s.held || s.hc === false || s.title !== 'Go Home?' || !s.pic) bad.push(tag + 'pause: ' + JSON.stringify(Object.assign(s, { u0 })));
             for (const o of await pg.evaluate(look)) bad.push(tag + 'pause sheet: ' + o);
             await pg.click('#gresume');
             await pg.waitForFunction(() => !document.querySelector('.sheet-bg'), null, { timeout: 5000 });
             await vwait(pg, 6000);
             const r = await pg.evaluate(() => ({ used: pt().used, held: GH.held, hc: typeof HC != 'undefined' && HC ? !!HC.paused : null, play: !!document.querySelector('#gpause') }));
             if (!(r.used > s.used) || r.held || r.hc === true || !r.play) bad.push(tag + 'keep playing: ' + JSON.stringify(Object.assign(r, { paused: s.used })));
-            // Pause -> Quit: back on the game's first screen, nothing running; Back: the hub
+            // NAV-01: the house -> the tick: Home, nothing running; the bar's Games button: the hub
             await pg.click('#gpause');
             await pg.waitForSelector('.sheet-bg.on #gquit', { timeout: 5000 });
             await pg.click('#gquit');
-            await pg.waitForSelector('.gh-top #back', { timeout: 8000 });
+            await pg.waitForSelector('#navbar .nb-home[aria-current="page"]', { timeout: 8000 });
             const q = await pg.evaluate(() => ({ bar: !!document.querySelector('#gpause'), gt: !!GT, hc: typeof HC != 'undefined' && !!HC, held: GH.held }));
             if (q.bar || q.gt || q.hc || q.held) bad.push(tag + 'quit: ' + JSON.stringify(q));
-            await pg.click('#back');
+            await pg.click('#navbar [data-nav="games"]');
             await pg.waitForSelector('.gh-room .gh-card', { timeout: 8000 });
             played++;
           } catch (e) {
@@ -6985,9 +7010,9 @@ async function main() {
         const end = await pg.evaluate(() => ({ stats: document.querySelectorAll('.gh-end .gh-stat').length, title: (document.querySelector('.gh-end h1') || {}).textContent }));
         if (end.stats !== 4 || end.title !== 'Out of gas!') bad.push(at + 'Hill Climb end card: ' + JSON.stringify(end));
         for (const o of await pg.evaluate(look)) bad.push(at + 'Hill Climb end card: ' + o);
-        await pg.click('#hgar');
-        await pg.waitForSelector('.gh-top #back', { timeout: 5000 });
-        if (await pg.evaluate(() => !!document.querySelector('.gh-ovl') || !!HC)) bad.push(at + 'Garage did not close the end card and stop the drive');
+        await pg.click('#hgar'); // NAV-01: the end card's Home
+        await pg.waitForSelector(HOME_ON, { timeout: 5000 });
+        if (await pg.evaluate(() => !!document.querySelector('.gh-ovl') || !!HC)) bad.push(at + 'Home did not close the end card and stop the drive');
         sizes++;
         network.push(...ga.network);
         for (const e of ga.errors) fail(e);
@@ -6997,6 +7022,232 @@ async function main() {
       else step(`P4-16: Game Room hub at ${sizes} sizes (380x780, 1024x600): scene, ticket and a drawn card per game; ${played} games opened, started, ` +
         'paused (clock held), resumed, quit and back to the hub with real taps on the shared top bar and sheet; time-up and end cards shared; ' +
         '48 px targets, no sideways scroll, no emoji chrome');
+    }
+
+    // NAV-01 one way Home (src/js/41-nav.js). Midway save with 15 min of game time, at 360x740 and 800x1280, real taps:
+    //    the picture bar on every hub (Home, Learn, a map, the Game Room, a game's menu, Brain Teasers, Pet Care, the sticker book): Home
+    //    first, the current area lit (aria-current), 48 px buttons, inside the screen, never covering the hub's last item; hidden in a round,
+    //    a Fact Race, a puzzle and a game. The corner house (Home, top-left) on each of those: it opens Go Home? and the activity holds
+    //    (the race clock, a game's game-time clock); Keep playing goes on, the tick goes Home with what was earned kept. Every end card met
+    //    (a round, a Fact Race, a puzzle, Hill Climb, game time up) has Play again / Next / Home in that order (Next only where something
+    //    comes next). Grown-ups: a tap asks a times-table question (a wrong answer keeps it shut, the right one opens it); holding 1 s does
+    //    not open it, holding 3 s does, with the ring filling.
+    {
+      const bad = [];
+      let checks = 0, nAsk = 0;
+      for (const [w, h] of [[360, 740], [800, 1280]]) {
+        const na = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = na.page, at = 'NAV-01 ' + w + 'x' + h + ' ';
+        const barOf = () => pg.evaluate(() => {
+          const b = document.querySelector('#navbar');
+          if (!b) return null;
+          const r = b.getBoundingClientRect(), vw = document.documentElement.clientWidth;
+          const btns = [...b.querySelectorAll('.nb')].map(x => { const q = x.getBoundingClientRect(); return { id: x.dataset.nav, t: x.textContent.trim(), cur: x.getAttribute('aria-current'),
+            w: q.width, h: q.height, out: q.left < -1 || q.right > vw + 1 || q.bottom > innerHeight + 1 }; });
+          // the hub's own scroller ends above the bar (the bar is in the page's flow, never over it)
+          const sc = [...document.querySelectorAll('#app .scroll')].pop(), sr = sc && sc.getBoundingClientRect();
+          return { top: r.top, bottom: r.bottom, btns, cover: sr ? sr.bottom > r.top + 1 : false, wide: document.documentElement.scrollWidth > vw };
+        });
+        const hub = async (what, fn, cur) => {
+          await pg.evaluate(fn);
+          await pg.waitForSelector('#navbar', { timeout: 8000 });
+          await pg.waitForTimeout(350);
+          const b = await barOf();
+          checks++;
+          if (!b) return bad.push(at + what + ': no picture bar');
+          const lit = b.btns.filter(x => x.cur === 'page').map(x => x.id);
+          if (b.btns[0].id !== 'home' || b.btns[0].t !== 'Home') bad.push(at + what + ': Home is not the first button: ' + b.btns.map(x => x.t).join());
+          if (b.btns.length < 4 || b.btns.length > 5) bad.push(at + what + ': ' + b.btns.length + ' buttons');
+          if (lit.join() !== (cur || '')) bad.push(at + what + ': lit ' + lit.join() + ', wanted ' + cur);
+          for (const x of b.btns) if (x.w < 48 || x.h < 48 || x.out) bad.push(at + what + ': button ' + x.id + ' ' + Math.round(x.w) + 'x' + Math.round(x.h) + (x.out ? ' outside the screen' : ''));
+          if (b.cover || b.wide || b.bottom > h + 1) bad.push(at + what + ': the bar covers the hub or the page scrolls sideways ' + JSON.stringify(b));
+        };
+        const noBar = async what => { checks++; if (await pg.$('#navbar')) bad.push(at + what + ': the picture bar shows during play'); };
+        const house = async (what, sel = '#quit') => {
+          const hb = await pg.evaluate(s => { const e = document.querySelector(s), r = e && e.getBoundingClientRect();
+            return e ? { name: e.getAttribute('aria-label'), house: !!e.querySelector('use[href="#i-home"]'), x: r.left, y: r.top, w: r.width } : null; }, sel);
+          if (!hb || hb.name !== 'Home' || !hb.house || hb.x > 40 || hb.y > 40 || hb.w < 48) bad.push(at + what + ': the corner house ' + JSON.stringify(hb));
+        };
+        const ask = async () => {
+          nAsk++; await pg.waitForSelector('.sheet-bg.on .nv-ask #gquit', { timeout: 5000 }).catch(async e => { throw new Error('ask ' + nAsk + ' ' + JSON.stringify(await pg.evaluate(() => ({ held: NAV.held, gh: typeof GH != 'undefined' && GH.held, s: !!document.querySelector('.sheet-bg'), h: location.hash, top: (document.querySelector('.top') || {}).className })))); });
+          await pg.waitForTimeout(350);
+          return pg.evaluate(() => ({ title: document.querySelector('.nv-ask h2').textContent, yes: !!document.querySelector('.nv-two #gquit .ic'), no: (document.querySelector('.nv-two #gresume') || {}).textContent }));
+        };
+        // the three choices in order; 'next?' = Next only when something comes next (left to the game's rules)
+        const ends = async (what, want) => {
+          await vwait(pg, 1500);
+          const yay = await pg.$('#yay'); // a pet growth card can come over it
+          if (yay) { await yay.click(); await pg.waitForTimeout(400); }
+          const got = await pg.evaluate(() => [...document.querySelectorAll('.nv-end3 .nv-eb')].map(b => b.dataset.go + ':' + b.textContent.trim() + ':' + (b.offsetHeight >= 48)));
+          const lab = { again: 'Play again', next: 'Next', home: 'Home' }, w = want.filter(k => k != 'next?' || got.some(g => g.startsWith('next:'))).map(k => k.replace('?', ''));
+          checks++;
+          if (got.join() !== w.map(k => k + ':' + lab[k] + ':true').join()) bad.push(at + what + ' end card: ' + got.join(' | '));
+        };
+        try {
+          await pg.evaluate(() => { S.pt = { bank: 900, day: today(), used: 0 }; save(); });
+          // ---- the bar on the hubs ----
+          await hub('Home', () => home(), 'home');
+          await hub('Learn', () => learnHub(), 'learn');
+          await hub('map', () => pathMap('math'), 'learn');
+          await hub('Pet Care', () => care(), 'pet');
+          await hub('stickers', () => book(), '');
+          await hub('Brain Teasers', () => BT.hub(), 'puzzles');
+          await pg.click('#navbar [data-nav="games"]'); // a real tap on the bar
+          await pg.waitForSelector('.gh-room .gh-card', { timeout: 8000 });
+          await hub('Game Room', () => 0, 'games');
+          await hub('Hill Climb menu', () => garage(), 'games');
+          await pg.click('#navbar [data-nav="home"]');
+          await pg.waitForSelector('#gear');
+          // the map's Back arrow goes one step back (to Learn when the child came from Learn)
+          await pg.evaluate(() => learnHub());
+          await pg.click('.lh-path[data-p="math"]');
+          await pg.waitForSelector('#map');
+          const bk = await pg.evaluate(() => { const b = document.querySelector('#back'); return { name: b.getAttribute('aria-label'), arrow: !!b.querySelector('use[href="#i-back"]') }; });
+          if (bk.name !== 'Back' || !bk.arrow) bad.push(at + 'the map\'s Back: ' + JSON.stringify(bk));
+          await pg.click('#back');
+          await pg.waitForSelector('#navbar .nb-learn[aria-current="page"]');
+          // ---- a round: no bar, the corner house, Keep playing, then the tick ----
+          await pg.evaluate(() => start('math', 0));
+          await pg.waitForSelector('#prompt');
+          await noBar('round');
+          await house('round');
+          const q0 = await pg.evaluate(() => G.q);
+          await pg.click('#quit');
+          const a1 = await ask();
+          if (a1.title !== 'Go Home?' || !a1.yes || a1.no !== 'Keep playing') bad.push(at + 'Go Home? sheet: ' + JSON.stringify(a1));
+          await pg.click('#gresume');
+          await pg.waitForFunction(() => !document.querySelector('.sheet-bg'), null, { timeout: 5000 });
+          const kept = await pg.evaluate(q => ({ same: G.q && G.q.label === q.label, dead: !!G.dead, prompt: !!document.querySelector('#prompt') }), q0);
+          if (!kept.same || kept.dead || !kept.prompt) bad.push(at + 'Keep playing did not go on with the round: ' + JSON.stringify(kept));
+          await answer(pg);
+          await vwait(pg, 1500);
+          const st0 = await pg.evaluate(() => S.stars);
+          await pg.click('#quit');
+          await ask();
+          await pg.click('#gquit');
+          await pg.waitForSelector(HOME_ON, { timeout: 5000 });
+          const left = await pg.evaluate(() => ({ dead: G.dead, stars: S.stars }));
+          if (!left.dead || left.stars !== st0) bad.push(at + 'the tick: ' + JSON.stringify(left));
+          // ---- a round's end card ----
+          await pg.evaluate(() => { start('math', 1); G.score = G.n; G.done = G.n; finish(); });
+          await pg.click('#chest');
+          await pg.waitForSelector('#btns', { state: 'visible', timeout: 10000 });
+          await vwait(pg, 800);
+          const yay = await pg.$('#yay');
+          if (yay) await yay.click();
+          await ends('round', ['again', 'next', 'home']);
+          await pg.click('#ehome');
+          await pg.waitForSelector(HOME_ON);
+          // ---- Fact Race: the clock holds while Go Home? is open ----
+          await pg.evaluate(() => race('math'));
+          await pg.waitForSelector('#rplay .prompt');
+          await noBar('Fact Race');
+          await house('Fact Race');
+          await pg.click('#quit');
+          await ask();
+          const r0 = await pg.evaluate(() => RC.left);
+          await vwait(pg, 3000);
+          const r1 = await pg.evaluate(() => RC.left);
+          if (r1 !== r0) bad.push(at + 'the race clock ran while Go Home? was open: ' + r0 + ' -> ' + r1);
+          await pg.click('#gresume');
+          await vwait(pg, 2500);
+          const r2 = await pg.evaluate(() => RC && RC.left);
+          if (!(r2 < r1)) bad.push(at + 'Keep playing: the race clock did not go on ' + r1 + ' -> ' + r2);
+          await pg.evaluate(() => { RC.left = 1; });
+          await pg.waitForSelector('.ovl #ragain', { timeout: 8000 });
+          await ends('Fact Race', ['again', 'home']);
+          await pg.click('.ovl #rhome');
+          await pg.waitForSelector(HOME_ON);
+          // ---- a puzzle: the house instead of Back; its win card ----
+          await pg.evaluate(() => { S.grade = 1; S.bt = {}; BT.start('sudoku', BT.band(), 1); });
+          await pg.waitForSelector('#btstage .sd');
+          await noBar('puzzle');
+          await house('puzzle');
+          await pg.evaluate(() => BT.win(BT.act, { mistakes: 0, hints: 0, sec: 20 }));
+          await pg.waitForSelector('.bt-win #bthome', { timeout: 8000 });
+          await ends('puzzle', ['again', 'next?', 'home']);
+          await pg.click('.bt-win #bthome');
+          await pg.waitForSelector(HOME_ON);
+          // ---- a game (Hill Climb): the house holds the drive and the game-time clock; the tick goes Home and stops it ----
+          await pg.evaluate(() => { gameRoom(); });
+          await pg.waitForSelector('.gh-room .gh-card');
+          await pg.evaluate(() => hcStart(0, 0));
+          await pg.waitForSelector('#gpause');
+          await noBar('Hill Climb');
+          await house('Hill Climb', '#gpause');
+          await pg.click('#gpause');
+          await ask();
+          const u0 = await pg.evaluate(() => ({ used: pt().used, paused: HC.paused, held: GH.held }));
+          await vwait(pg, 3000);
+          const u1 = await pg.evaluate(() => pt().used);
+          if (u1 !== u0.used || !u0.paused || !u0.held) bad.push(at + 'Hill Climb did not hold: ' + JSON.stringify(u0) + ' then used ' + u1);
+          await pg.click('#gresume');
+          await vwait(pg, 3000);
+          const u2 = await pg.evaluate(() => ({ used: pt().used, paused: HC && HC.paused, held: GH.held }));
+          if (!(u2.used > u1) || u2.paused || u2.held) bad.push(at + 'Hill Climb Keep playing: ' + JSON.stringify(u2));
+          await pg.evaluate(() => { HC.t = 20; hcWin(); });
+          await pg.waitForSelector('.gh-end .nv-end3', { timeout: 8000 });
+          await ends('Hill Climb stage', ['again', 'next?', 'home']);
+          await pg.click('.gh-end [data-go="again"]');
+          await pg.waitForSelector('#gpause');
+          await pg.click('#gpause');
+          await ask();
+          await pg.click('#gquit');
+          await pg.waitForSelector(HOME_ON);
+          const gone = await pg.evaluate(() => ({ hc: !!HC, gt: !!GT, held: GH.held, ovl: !!document.querySelector('.ovl') }));
+          if (gone.hc || gone.gt || gone.held || gone.ovl) bad.push(at + 'the tick in a game: ' + JSON.stringify(gone));
+          // ---- game time is up: no Play again; Next goes to Learn ----
+          await pg.evaluate(() => { gameRoom(); });
+          await pg.waitForSelector('.gh-room .gh-card');
+          await pg.evaluate(() => { artPage('m:17'); timeUpOverlay(); });
+          await pg.waitForSelector('.gh-end .nv-end3');
+          await ends('time up', ['next', 'home']);
+          await pg.click('.gh-end #tl');
+          await pg.waitForSelector('#navbar .nb-learn[aria-current="page"]');
+          // ---- Grown-ups: a tap asks, a wrong answer keeps it shut, the right one opens it; a 1 s hold does not, a 3 s hold does ----
+          await pg.evaluate(() => home());
+          await pg.waitForSelector('#gear');
+          const gl = await pg.evaluate(() => { const g = document.querySelector('#gear'); return { t: g.textContent.trim(), name: g.getAttribute('aria-label'), w: g.offsetWidth, h: g.offsetHeight }; });
+          if (gl.t !== 'Grown-ups' || !/^Grown-ups/.test(gl.name) || gl.h < 48) bad.push(at + 'the Grown-ups button: ' + JSON.stringify(gl));
+          await pg.click('#gear');
+          await pg.waitForSelector('.sheet-bg.on #gwans', { timeout: 5000 });
+          if (await pg.$('.gw-card')) bad.push(at + 'a tap opened Grown-ups');
+          const ans = await pg.evaluate(() => NAV.gateSheet.ans);
+          await pg.fill('#gwans', String(ans + 1));
+          await pg.click('#gwok');
+          await pg.waitForTimeout(400);
+          if (await pg.$('.gw-card')) bad.push(at + 'a wrong answer opened Grown-ups');
+          await pg.fill('#gwans', String(ans));
+          await pg.click('#gwok');
+          await pg.waitForSelector('.gw-card', { timeout: 5000 });
+          await pg.evaluate(() => home());
+          await pg.waitForSelector('#gear');
+          const gb = await (await pg.$('#gear')).boundingBox();
+          await pg.mouse.move(gb.x + gb.width / 2, gb.y + gb.height / 2);
+          await pg.mouse.down();
+          await vwait(pg, 1200);
+          const ring = await pg.evaluate(() => +getComputedStyle(document.querySelector('#gwring')).strokeDashoffset.replace('px', ''));
+          await pg.mouse.up();
+          await vwait(pg, 2500);
+          if (await pg.$('.gw-card')) bad.push(at + 'a 1 s hold opened Grown-ups');
+          if (!(ring > 40 && ring < 90)) bad.push(at + 'the ring did not fill while held: ' + ring);
+          if (await pg.$('.sheet-bg')) await pg.keyboard.press('Escape'); // the click at the end of a short hold asks the question
+          await pg.waitForTimeout(400);
+          await pg.mouse.move(gb.x + gb.width / 2, gb.y + gb.height / 2);
+          await pg.mouse.down();
+          await vwait(pg, 3400);
+          await pg.mouse.up();
+          await pg.waitForSelector('.gw-card', { timeout: 5000 });
+          checks += 6;
+        } catch (e) { bad.push(at + e.message.split('\n').slice(0, 3).join(' ')); }
+        network.push(...na.network);
+        for (const e of na.errors) fail(e);
+        await na.ctx.close();
+      }
+      if (bad.length) fail('NAV-01 navigation:\n  ' + [...new Set(bad)].slice(0, 40).join('\n  '));
+      else step(`NAV-01: ${checks} checks at 360x740 and 800x1280: the picture bar on 8 hubs (Home first, the current area lit, 48 px, never over the hub) and ` +
+        'not in a round, a race, a puzzle or a game; the corner house opens Go Home? (the race and game clocks hold), Keep playing goes on, the tick goes Home; ' +
+        'end cards of a round, a race, a puzzle, Hill Climb and time up show Play again / Next / Home; Grown-ups needs the answer or a 3 s hold');
     }
 
     // G-02 / G-02b Star Rally, the racing game (src/js/63-game-race.js). Midway save with 20 min of game time, real touch (CDP touch
@@ -7133,7 +7384,9 @@ async function main() {
           if (!/"sprout":\{"best":[1-4],"runs":1\}/.test(sv.cups) || sv.cup || sv.open !== won || sv.stars.some(s => !s) || !(sv.used > used0))
             bad.push(at + 'cup saved ' + JSON.stringify(sv) + ' after ' + titles.join(' / '));
           notes.push(w + 'x' + h + ' Sprout Cup: ' + titles.join(' / '));
-          await touch('#rlmenu');
+          await touch('#rlmenu'); // NAV-01: the end card's Home; then the Star Rally menu again
+          await pg.waitForSelector(HOME_ON, { timeout: 8000 });
+          await pg.evaluate(() => rlMenu('meadow'));
           await pg.waitForSelector('.rl-tt[data-tt="meadow-0"]', { timeout: 8000 });
           // a time trial: a best lap and a ghost are saved; the next trial shows the ghost
           await touch('.rl-tt[data-tt="meadow-0"]');
@@ -7271,7 +7524,9 @@ async function main() {
             vib: window.__vib.slice() }));
           if (!e.line || e.tw !== e.today || !(e.spk >= spk0 + 25) || !e.vib.includes(40)) bad.push(at + 'twist finish ' + JSON.stringify(e));
           for (const o of await pg.evaluate(look)) bad.push(at + 'end card: ' + o);
-          await touch('#rlmenu');
+          await touch('#rlmenu'); // NAV-01: the end card's Home; then the Star Rally menu again
+          await pg.waitForSelector(HOME_ON, { timeout: 8000 });
+          await pg.evaluate(() => rlMenu());
           await pg.waitForSelector('#rltwist', { timeout: 8000 });
           if (!/Done today/.test(await pg.evaluate(() => document.querySelector('#rltwist').textContent))) bad.push(at + 'the twist card should say Done today');
           // the garage: level 2 locked; a mirror cup raced opens it; a kit bought by touch
@@ -7400,14 +7655,16 @@ async function main() {
           while (Date.now() - t0 < 60000) { await pg.waitForTimeout(500); res = await pg.evaluate(() => document.querySelector('.gh-end') ? 'end' : HC && HC.gas ? 'gas' : 'no gas'); if (res !== 'gas') break; }
           await up();
           if (res !== 'end') bad.push(at + 'stage 1 not finished by holding the gas: ' + res);
-          await pg.waitForSelector('.gh-end [data-go="list"]', { timeout: 8000 });
+          await pg.waitForSelector('.gh-end [data-go="home"]', { timeout: 8000 });
           await pg.waitForTimeout(500);
           const e1 = await pg.evaluate(() => ({ title: document.querySelector('.gh-end h1').textContent, stars: document.querySelectorAll('.gh-end .rs.on').length,
             next: /Muddy Puddles is open/.test(document.querySelector('.gh-end').textContent), btn: !!document.querySelector('.gh-end [data-go="next"]'), bolts: garageS().bolts, st: garageS().st.m1 }));
           if (e1.title !== 'First Hills done!' || e1.stars < 1 || !e1.next || !e1.btn || !(e1.bolts >= 30) || !(e1.st & 1)) bad.push(at + 'end card: ' + JSON.stringify(e1));
           for (const o of await pg.evaluate(look)) bad.push(at + 'end card: ' + o);
           notes.push(w + 'x' + h + ': stage 1 in ' + Math.round((Date.now() - t0) / 1000) + ' s held gas, ' + e1.stars + ' stars, ' + e1.bolts + ' bolts');
-          await touch('.gh-end [data-go="list"]');
+          await touch('.gh-end [data-go="home"]'); // NAV-01: the end card's Home; then the Hill Climb menu again
+          await pg.waitForSelector(HOME_ON, { timeout: 8000 });
+          await pg.evaluate(() => garage());
           await pg.waitForSelector('.hc-menu #hcgo', { timeout: 8000 });
           await pg.waitForTimeout(450);
           const m1 = await pg.evaluate(() => ({ s2: document.querySelector('[data-stg="1"]').classList.contains('lock'), goal: document.querySelector('.hc-goal').textContent, go: document.querySelector('#hcgo').textContent }));
@@ -7559,7 +7816,9 @@ async function main() {
           const e1 = await pg.evaluate(() => ({ t: document.querySelector('.gh-end h1').textContent, txt: document.querySelector('.gh-end').textContent, day: garageS().day, today: today(), b: garageS().bolts }));
           if (!/Today's drive done/.test(e1.t) || !/plus 30 bolts/.test(e1.txt) || e1.day !== e1.today || !(e1.b >= d0.b + 30)) bad.push(at + 'end card: ' + JSON.stringify([e1.t, e1.day, e1.today, d0.b, e1.b]));
           for (const o of await pg.evaluate(look)) bad.push(at + 'end card: ' + o);
-          await touch('.gh-end #hgar');
+          await touch('.gh-end #hgar'); // NAV-01: the end card's Home; then the Hill Climb menu again
+          await pg.waitForSelector(HOME_ON, { timeout: 8000 });
+          await pg.evaluate(() => garage());
           await pg.waitForSelector('.hc-menu #hcday', { timeout: 8000 });
           if (!await pg.evaluate(() => document.querySelector('#hcday').classList.contains('done'))) bad.push(at + 'today\'s drive should show done');
           // garage level 2 (test hook: 30 stars and 300 bolts)
@@ -7762,7 +8021,7 @@ async function main() {
       await pg.waitForSelector('#btstage .fkt');
       const lit2 = await pg.evaluate(() => S.bt.cur.puzzle.lit);
       for (let i = 0; i < 3; i++) await pg.click(`.fkt[data-i="${lit2}"]`);
-      await pg.waitForSelector('.bt-win #btlvls');
+      await pg.waitForSelector('.bt-win #bthome');
       const again = await pg.evaluate(() => ({ lines: document.querySelectorAll('.bt-win .mis-win li').length, stars: S.stars, coins: S.coins }));
       if (again.lines !== 0 || again.coins !== r3.coins) bad.push('paid again: ' + JSON.stringify(again));
       await pg.evaluate(() => { document.querySelectorAll('.bt-win').forEach(e => e.remove()); home(); });
@@ -7988,7 +8247,7 @@ async function main() {
             const gr = await (await pg.$('#gear')).boundingBox();
             await pg.mouse.move(gr.x + gr.width / 2, gr.y + gr.height / 2);
             await pg.mouse.down();
-            await vwait(pg, 1500);
+            await vwait(pg, 3400);
             await pg.mouse.up();
             await pg.waitForSelector('#calm', { state: 'attached' });
             await pg.click('label.switch:has(#calm)');
@@ -8056,7 +8315,7 @@ async function main() {
         const gb = await (await bp.$('#gear')).boundingBox();
         await bp.mouse.move(gb.x + gb.width / 2, gb.y + gb.height / 2);
         await bp.mouse.down();
-        await vwait(bp, 1500);
+        await vwait(bp, 3400);
         await bp.mouse.up();
         await bp.waitForSelector('#gw-bak', { timeout: 3000 });
         await bp.waitForTimeout(400);
@@ -8623,6 +8882,8 @@ async function main() {
           stage = 'wait .sheet-bg.on #gquit'; await pg.waitForSelector('.sheet-bg.on #gquit');
           await pg.waitForTimeout(450);
           await tapSel('#gquit');
+          await pg.waitForSelector('#navbar .nb-home[aria-current="page"]'); // NAV-01: the tick goes Home; the game's menu again
+          await pg.evaluate(() => bbMenu());
           stage = 'wait [data-ch="0"]'; await pg.waitForSelector('[data-ch="0"]');
           await pg.waitForTimeout(400);
           await tapSel('[data-ch="0"]');
@@ -8681,7 +8942,9 @@ async function main() {
           const cres = await pg.evaluate(() => ({ miss: BB.miss, st: bbBP().wall, goal: bbNextGoal(), beach: bbChOpen(1) }));
           if (cres.miss != 1 || cres.st != 3 || !/Garden Gate/.test(cres.goal) || cres.beach) bad.push(at + 'G-01b count end: ' + JSON.stringify(cres));
           await pg.waitForTimeout(400);
-          await tapSel('#bbls');
+          await tapSel('#bbls'); // NAV-01: the end card's Home; then the Block Builder menu again
+          await pg.waitForSelector(HOME_ON);
+          await pg.evaluate(() => bbMenu());
           stage = 'G-01b menu'; await pg.waitForSelector('#bbnext');
           await pg.waitForTimeout(400);
           const mn = await pg.evaluate(() => ({ goal: $('#bbnext').textContent, beachLock: !!document.querySelector('.bb-chap.lock[data-chap="1"]'), day: !!$('#bbday'), gal: document.querySelectorAll('[data-gal]').length }));
@@ -8702,6 +8965,8 @@ async function main() {
           await pg.waitForSelector('.sheet-bg.on #gquit');
           await pg.waitForTimeout(450);
           await tapSel('#gquit');
+          await pg.waitForSelector('#navbar .nb-home[aria-current="page"]'); // NAV-01: the tick goes Home; the game's menu again
+          await pg.evaluate(() => bbMenu());
           await pg.waitForSelector('#bbnext');
           await pg.waitForTimeout(400);
           const gm = await pg.evaluate(() => document.querySelectorAll('[data-gal]').length);
@@ -8887,6 +9152,8 @@ async function main() {
           await pg.waitForSelector('.sheet-bg.on #gquit');
           await pg.waitForTimeout(450);
           await tapSel('#gquit');
+          await pg.waitForSelector('#navbar .nb-home[aria-current="page"]'); // NAV-01: the tick goes Home; the game's menu again
+          await pg.evaluate(() => bbMenu());
           await pg.waitForSelector('[data-ch="0"]');
           await pg.waitForTimeout(400);
           await tapSel('[data-ch="0"]');
@@ -9041,6 +9308,8 @@ async function main() {
           await pg.waitForSelector('.sheet-bg.on #gquit');
           await pg.waitForTimeout(450);
           await tapSel('#gquit');
+          await pg.waitForSelector('#navbar .nb-home[aria-current="page"]'); // NAV-01: the tick goes Home; the game's menu again
+          await pg.evaluate(() => bbMenu());
           await pg.waitForSelector('.bb-menu [data-w="0"]');
           await pg.waitForTimeout(400);
           const line = await pg.evaluate(() => $('#bbnext').textContent);
@@ -9138,6 +9407,8 @@ async function main() {
           await pg.waitForSelector('.sheet-bg.on #gquit');
           await pg.waitForTimeout(450);
           await tapSel('#gquit');
+          await pg.waitForSelector('#navbar .nb-home[aria-current="page"]'); // NAV-01: the tick goes Home; the game's menu again
+          await pg.evaluate(() => artBack());
           await pg.waitForSelector('.art-goal');
           stage = 'mandala';
           await tapSel('[data-t="mandala"]');
@@ -9408,7 +9679,9 @@ async function main() {
           if (e2.party !== 3 || e2.days !== 13 || !e2.lines.some(l => /^Next goal: /.test(l))) bad.push(at + 'after the party day ' + JSON.stringify(e2));
           notes.push(`party day ${d2.served} customers, ${d2.taps} touches`);
           // a Recipe day: a step out of order is refused, then every recipe made step by step
-          await touch('#snmenu');
+          await touch('#snmenu'); // NAV-01: the end card's Home; then the Snack Stand menu again
+          await pg.waitForSelector(HOME_ON, { timeout: 5000 });
+          await pg.evaluate(() => snMenu());
           await pg.waitForSelector('.sn-kind[data-k="recipe"]', { timeout: 5000 });
           await touch('.sn-kind[data-k="recipe"]');
           await pg.waitForSelector('.sn-kind[data-k="recipe"][aria-pressed="true"]', { timeout: 5000 });
@@ -9586,7 +9859,7 @@ async function main() {
           const b = await (await pg.$(sel)).boundingBox();
           await pg.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
           await pg.mouse.down();
-          await vwait(pg, 1600);
+          await vwait(pg, 3400);
           await pg.mouse.up();
         };
         const kid = () => pg.evaluate(() => ({ id: PRF.cur, name: S.name, stars: S.stars, coins: S.coins, pet: S.pet, n: PRF.count() }));
@@ -9599,7 +9872,9 @@ async function main() {
           await pg.click(`.node[data-n="${n}"]`);
           await pg.waitForSelector('#prompt');
           await playRound(pg, tag + ' ' + label);
-          await pg.click('#menu');
+          await pg.click('#ehome'); // NAV-01: the end card's Home
+          await pg.waitForSelector('#navbar .nb-home[aria-current="page"]');
+          await pg.evaluate(() => pathMap(MAPP));
           await pg.waitForSelector('#map');
           await pg.evaluate(() => home());
           await pg.waitForSelector('#gear');
@@ -9742,7 +10017,7 @@ async function main() {
             const b = await (await pg.$('#gear')).boundingBox();
             await pg.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
             await pg.mouse.down();
-            await vwait(pg, 1600);
+            await vwait(pg, 3400);
             await pg.mouse.up();
             await pg.waitForSelector('#gw-about', { timeout: 3000 });
             await pg.evaluate(() => document.querySelector('#gw-about').scrollIntoView({ block: 'start' }));
@@ -10196,7 +10471,9 @@ async function main() {
           if (!(e.best > 30000) || e.kept !== e.best || e.runs !== 1 || !(e.medal >= 1) || e.cur !== 'm2' || !(e.ghost > 100)) bad.push(at + 'saved after the course ' + JSON.stringify(e));
           for (const o of await pg.evaluate(look)) bad.push(at + 'end card: ' + o);
           notes.push(`${w}x${h}: flag in ${(e.best / 1000).toFixed(1)} s course time, ${n1.taps} taps, ${n1.holds} holds, ${n1.offers} balloon lifts, stars ${e.starBits.toString(2)}, medal ${e.medal}, ghost ${e.ghost} letters, game time ${used0} -> ${e.used} s`);
-          await touch('#hpmenu');
+          await touch('#hpmenu'); // NAV-01: the end card's Home; then the Sky Hop menu again
+          await pg.waitForSelector(HOME_ON, { timeout: 8000 });
+          await pg.evaluate(() => hopMenu());
           await pg.waitForSelector('.hp-crs[data-ok="1"]', { timeout: 8000 });
           const after = await pg.evaluate(() => ({ open: document.querySelectorAll('.hp-crs[data-ok="1"]').length, goal: document.querySelector('#hpgoal').textContent }));
           if (after.open !== 2 || after.goal !== 'Next goal: Finish Puffy Path to open Spring Garden.') bad.push(at + 'menu after the flag: ' + JSON.stringify(after));
@@ -10219,7 +10496,9 @@ async function main() {
           if (s2.id !== 'q1' || !s2.cos || !s2.crumble) bad.push(at + 'season 2 course ' + JSON.stringify(s2));
           const n2 = await toFlag('Golden Hour');
           const e2 = await pg.evaluate(() => ({ best: S.hop.best.q1, cur: S.hop.cur, crumbled: true }));
-          await touch('#hpmenu');
+          await touch('#hpmenu'); // NAV-01: the end card's Home; then the Sky Hop menu again
+          await pg.waitForSelector(HOME_ON, { timeout: 8000 });
+          await pg.evaluate(() => hopMenu());
           await pg.waitForSelector('#hpgoal', { timeout: 8000 });
           const g2 = await pg.evaluate(() => ({ goal: document.querySelector('#hpgoal').textContent, q2: !!document.querySelector('[data-c="q2"][data-ok="1"]'),
             q3: !!document.querySelector('[data-c="q3"][data-ok="1"]') }));

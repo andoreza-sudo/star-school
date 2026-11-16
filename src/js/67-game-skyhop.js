@@ -1899,17 +1899,15 @@ function hopFinish() {
   const time = ptLeft() > 0, nx = !twist && next;
   const o = GH.end('hop', { win: true, title: 'You reached the flag!', stars: gotNow, tag: rec && had ? 'New best time!' : '',
     stats: [[hopTime(ms), 'time', 'timer'], [String(st.spk), 'sparkles', 'sparkle'], twist ? [String(hopWallet(r)), 'stars to spend', 'star'] : [MED[md], 'medal', 'medal']], lines,
-    btns: (time ? (nx ? UI.btn('Next course', { kind: 'primary', size: 'lg', icon: 'play', id: 'hpnext', wide: true }) : '') +
-      UI.btn('Play again', { kind: nx ? 'soft' : 'primary', size: nx ? 'md' : 'lg', icon: 'replay', id: 'hpagain', wide: true }) :
-      UI.btn('Earn more game time', { kind: 'primary', size: 'lg', icon: 'path-read', id: 'hplearn', wide: true })) +
-      UI.btn('Courses', { icon: 'map', id: 'hpmenu', wide: true }) });
+    // NAV-01: Play again, Next (the next course), Home; with no game time left, Next goes to Learn
+    btns: time ? NAV.end3({ again: 'hpagain', next: nx ? 'hpnext' : '', home: 'hpmenu' }) : NAV.end3({ next: 'hplearn', home: 'hpmenu' }) });
   if (S.voice) say(`You reached the flag! ${gotNow ? `You found ${gotNow} ${gotNow == 1 ? 'star' : 'stars'}. ` : ''}Well done, ${S.name || 'friend'}!`);
   const go = f => { o.remove(); f(); };
   const again = (cid, t) => go(() => (ptLeft() > 0 ? hopPlay(cid, t) : hopMenu()));
   if (o.querySelector('#hpnext')) o.querySelector('#hpnext').onclick = () => again(next.id);
   if (o.querySelector('#hpagain')) o.querySelector('#hpagain').onclick = () => again(id, tw);
-  if (o.querySelector('#hplearn')) o.querySelector('#hplearn').onclick = () => go(() => home());
-  o.querySelector('#hpmenu').onclick = () => go(() => hopMenu());
+  if (o.querySelector('#hplearn')) o.querySelector('#hplearn').onclick = () => go(() => learnHub());
+  o.querySelector('#hpmenu').onclick = () => go(() => home());
 }
 
 // The Game Room card (59-game-hub.js shows it after the games file's games)

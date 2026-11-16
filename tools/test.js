@@ -3931,12 +3931,13 @@ run('rewards (P4-11): drawings follow the art rules, every boss is drawn, screen
   const ids=(h,list,w)=>{for(const i of list)if(!h.includes('id="'+i+'"'))p.push(w+': missing #'+i)};
   ids(out.pre,['fin','chest'],'before the tap');
   if(!/aria-label="Open the treasure chest"/.test(out.pre))p.push('chest button has no spoken name');
-  ids(out.doneA,['sc','prz','earn','msgs','btns','bonus','nxt','menu','rwst'],'after the tap');
-  ids(out.doneB,['sc','prz','earn','msgs','btns','bonus','again','menu'],'after the tap, no stars');
+  ids(out.doneA,['sc','prz','earn','msgs','btns','bonus','again','nxt','ehome','rwst'],'after the tap'); // NAV-01: Play again, Next, Home (NAV.end3)
+  ids(out.doneB,['sc','prz','earn','msgs','btns','bonus','again','ehome'],'after the tap, no stars');
+  if(out.doneB.includes('id="nxt"'))p.push('no next stop: Next must be hidden');
   if(out.doneB.includes('id="rwst"'))p.push('a round with no right answers shows a "+0 stars" row');
   if(!/style="visibility:hidden"/.test(out.doneA))p.push('#btns must start hidden (shown after the star count)');
   if(!out.doneA.includes('Fantastic &lt;work&gt;'))p.push('headline not escaped');
-  if(!/class="btn primary lg wide" id="nxt"/.test(out.doneA)||!/class="btn primary lg wide" id="again"/.test(out.doneB))p.push('the next step is not the one primary button');
+  if(!/class="btn primary nv-eb e-next" id="nxt"/.test(out.doneA)||!/class="btn primary nv-eb e-again" id="again"/.test(out.doneB)||(out.doneA.match(/btn primary/g)||[]).length!==1)p.push('the next step is not the one primary button');
   if((out.rate.match(/class="rw-st on"/g)||[]).length!==2||!out.rate.includes('aria-label="2 of 3 stars"'))p.push('rate(2): '+out.rate.slice(0,80));
   if(out.stk.includes('<b>')||!out.stk.includes('class="tag new"'))p.push('sticker: not escaped or no New tag');
   if(out.badge.includes('<i>'))p.push('badge: prize not escaped');
@@ -14191,7 +14192,7 @@ run('game room P4-16',()=>{
     r.screens={};
     for(const k in shots){app.innerHTML='';try{shots[k]()}catch(x){}r.screens[k]=app.innerHTML||'ERR not drawn'}
   }finally{global.document=D}
-  r.src={gameRoom:String(gameRoom),pause:String(GH.pause),wire:String(GH.wire),gtStart:String(gtStart),timeUp:String(timeUpOverlay)};
+  r.src={gameRoom:String(gameRoom),pause:String(GH.pause)+String(NAV.ask),wire:String(GH.wire),gtStart:String(gtStart),timeUp:String(timeUpOverlay)};
   return r})()`))();
   // 1. the registry: every game has what the hub, the top bar, the sheet and the card need
   const SUBJ=['play','read','es','math','disc','bt'],ids=new Set(),btns=new Set();
@@ -14268,7 +14269,7 @@ run('game room P4-16',()=>{
     const w='top bar '+id+' ('+k+')',g=o.games.find(x=>x.id===id);
     if(!/^<div class="top tbar gh-top s-/.test(h))p.push(w+': not the shared .gh-top bar');
     if(k=='menu'&&!/id="back" aria-label="Back"/.test(h))p.push(w+': no Back button');
-    if(k=='play'&&!/id="gpause" aria-label="Pause"/.test(h))p.push(w+': no Pause button');
+    if(k=='play'&&!/class="btn icon sm nv-house" id="gpause" aria-label="Home"/.test(h))p.push(w+': no corner house (NAV-01)');
     if(!h.includes('class="gh-gn">'+(g.short||g.name).replace(/&/g,'&amp;')+'<'))p.push(w+': no game name');
     if(!/class="stat ticket" id="gtm" aria-label="Game time left"/.test(h))p.push(w+': no game-time chip');
     if(k=='play'&&!/id="aundo" aria-label="Undo"/.test(h))p.push(w+': a tool lost its label');
@@ -14293,7 +14294,7 @@ run('game room P4-16',()=>{
     if(k=='time up'&&!h.includes('id="tl"'))p.push(w+': no "Earn more time" (#tl)');
     if(PICT.test(h.replace(/<svg[\s\S]*?<\/svg>/g,'')))p.push(w+': emoji');
   }
-  if(!/gresume/.test(o.src.pause)||!/gquit/.test(o.src.pause)||!/Paused/.test(o.src.pause)||!/GH\.held = true/.test(o.src.pause))p.push('GH.pause: Keep playing (#gresume), Quit (#gquit), and the clock hold');
+  if(!/gresume/.test(o.src.pause)||!/gquit/.test(o.src.pause)||!/Go Home?/.test(o.src.pause)||!/GH\.held = true/.test(o.src.pause))p.push('GH.pause: Keep playing (#gresume), Quit (#gquit), and the clock hold');
   if(!/GH\.held/.test(o.src.gtStart))p.push('gtStart: the game-time clock must hold while the pause sheet is open');
   if(!/GH\.end\(/.test(o.src.timeUp))p.push('timeUpOverlay must use the shared end card');
   // every screen of every game file starts with GH.top; every play screen wires Pause / Quit; every end uses GH.end; no old chrome left
@@ -17573,7 +17574,7 @@ run('Brain Teasers and practice fixes R-01b',()=>{
   if(!/\.pt-ch \.pt-t\{width:var\(--pt-ts,100%\);height:var\(--pt-ts,100%\)\}/.test(rd('css/49-bt-pattern.css')))pre.push('pattern choices are not drawn at the row scale (--pt-ts)');
   if(!/setProperty\('--pt-ts'/.test(rd('js/76-bt-pattern.js')))pre.push('76-bt-pattern.js does not measure the row picture (--pt-ts)');
   // Fact Race, Should 11: the clock skips its tick while the app is hidden
-  if(!/RC\.iv=setInterval\(\(\)=>\{if\(!RC\|\|document\.hidden\)return;/.test(rd('js/54-race.js')))pre.push('the Fact Race clock does not pause when the app is hidden');
+  if(!/RC\.iv=setInterval\(\(\)=>\{if\(!RC\|\|document\.hidden(\|\|RC\.held)?\)return;/.test(rd('js/54-race.js')))pre.push('the Fact Race clock does not pause when the app is hidden');
   // the review tile has no red count bubble
   if(/hm-cnt/.test(rd('css/46-home.css')+rd('js/46-home.js')))pre.push('the red review count bubble (.hm-cnt) is still there');
   const body=()=>{
@@ -18474,6 +18475,84 @@ run('content: no magic or evolution theme CONTENT-01',()=>{
     if(!/\.(js|css|html|md|py|sh|json|txt)$/.test(f))continue;m2++;fs.readFileSync(q,'utf8').split('\n').forEach((l,i)=>{if(RUDE.test(l))p.push(path.relative(ROOT,q)+':'+(i+1)+': a rude word in plain text')})}};
   walk3(ROOT);n+=m2;
   return{problems:p,note:n+' files searched'};
+});
+
+run('navigation: one way Home NAV-01',()=>{
+  const E=require('./es-audio.js'),vm=require('vm'),p=[];
+  const rd=f=>fs.readFileSync(path.join(SRC,f),'utf8');
+  const js=fs.readdirSync(path.join(SRC,'js')).filter(f=>f.endsWith('.js')).sort();
+  const SRCJ={};for(const f of js)SRCJ[f]=rd('js/'+f);
+  // 1. Back is the arrow named "Back"; Home is the house named "Home"; no other top-left close / stop / pause buttons are left
+  for(const f of js){const t=SRCJ[f];
+    for(const m of t.matchAll(/(?:UI\.)?ibtn\(\s*'(back|home|close|pause)'\s*,\s*'([^']*)'/g)){
+      if(m[1]=='back'&&m[2]!=='Back')p.push(f+': a Back arrow named "'+m[2]+'" (name it "Back")');
+      if(m[1]=='home'&&!(f=='41-nav.js'&&m[2]=='Home'))p.push(f+': a house button outside NAV.house()');
+      if(m[1]=='close'&&m[2]=='Stop')p.push(f+': a Stop (close) button: activities use the corner house, NAV.house()');
+      if(m[1]=='pause')p.push(f+': a Pause button: games use the corner house, NAV.house()');
+    }
+    if(/id:\s*'gear'/.test(t))p.push(f+': the old gear button (Home has the labelled Grown-ups button, NAV.gateHTML)');
+  }
+  // 2. every activity screen's corner house: rounds, placement, Say it, timed sprints, the bonus game, puzzles, games
+  const house=[['50-round.js',/NAV\.house\('quit'\)/,/NAV\.wire\('quit'/],['45-placement.js',/NAV\.house\('quit'\)/,/NAV\.wire\('quit'/],['50-say.js',/NAV\.house\('quit'\)/,/NAV\.wire\('quit'/],
+    ['19-gfx.js',/speedTop[\s\S]{0,200}NAV\.house\('quit'\)/,/./],['54-race.js',/./,/NAV\.wire\('quit'/],['57-fluency.js',/./,/NAV\.wire\('quit'/],['52-balloons.js',/NAV\.house\('quit'\)/,/NAV\.wire\('quit'/],
+    ['74-teasers.js',/NAV\.house\('quit'\)/,/NAV\.wire\('quit'/],['59-game-hub.js',/o\.play \? NAV\.house\('gpause'\)/,/NAV\.ask\(\{ hold: o\.hold, leave: o\.quit \}\)/]];
+  for(const [f,a,b] of house)if(!a.test(SRCJ[f])||!b.test(SRCJ[f]))p.push(f+': no corner house wired to Go Home?');
+  // 3. every end card ends with the three choices (NAV.end3): the round, placement and every btns: of GH.end / GFX.endCard
+  let ends=0;
+  for(const f of js){const t=SRCJ[f];
+    for(const m of t.matchAll(/(GH\.end\(|GFX\.endCard\()/g)){
+      if(f=='59-game-hub.js'||f=='19-gfx.js')continue;
+      const tail=t.slice(m.index,m.index+3000),bi=tail.search(/\bbtns\s*:/);ends++;
+      if(bi<0){if(!/hcCard\(H,c\)/.test(t.slice(m.index-40,m.index)))p.push(f+': an end card without btns');continue}
+      const bt=tail.slice(bi,bi+160),ie=bt.indexOf('NAV.end3('),iu=bt.indexOf('UI.btn(');
+      if(ie<0||(iu>=0&&iu<ie))p.push(f+': an end card whose choices are not NAV.end3(): '+tail.slice(bi,bi+80).replace(/\s+/g,' '));
+    }
+  }
+  for(const m of SRCJ['62-hill.js'].matchAll(/hcCard\(H,\{/g)){const tail=SRCJ['62-hill.js'].slice(m.index,m.index+2500),bi=tail.search(/btns:/);ends++;
+    if(bi<0||!/^btns:(ptLeft\(\)<=0\?)?NAV\.end3\(/.test(tail.slice(bi)))p.push('62-hill.js: a stage card whose choices are not NAV.end3()')}
+  if(!SRCJ['18-reward-art.js'].includes("NAV.end3({ again: 'again', next: o.next ? 'nxt' : '', home: 'ehome'"))p.push('the round end (RW.done) does not use NAV.end3');
+  if(!/NAV\.end3\(\{next:'plmap',home:'plhome'/.test(SRCJ['45-placement.js']))p.push('the placement end does not use NAV.end3');
+  if(ends<14)p.push('only '+ends+' end cards found (expected the rounds\', puzzles\', sprints\' and every game\'s)');
+  // 4. hub screens: the picture bar with the right button lit
+  const hubs=[['46-home.js',"NAV.bar('home')"],['46-home.js',"NAV.bar('learn')"],['41-nav.js',"NAV.bar('learn')"],['59-game-hub.js',"NAV.bar('games')"],['74-teasers.js',"NAV.bar('puzzles')"],
+    ['56-petcare.js',"NAV.bar('pet')"],['48-shop.js',"NAV.bar('pet')"],['54-race.js',"NAV.bar('learn')"],['57-fluency.js',"NAV.bar('learn')"],['55-streak.js',"NAV.bar('')"],['40-view.js',"NAV.bar('games')"]];
+  for(const [f,s] of hubs)if(!SRCJ[f].includes(s))p.push(f+': no '+s);
+  if(!/\.gh-top:not\(\.gh-play\)/.test(SRCJ['40-view.js']))p.push('view(): the game menus do not get the bar');
+  // 5. run the helpers in the app
+  try{const ctx=E.loadApp(null),R=x=>vm.runInContext(x,ctx);
+    const tabs=R("JSON.stringify(NAV.tabs().map(t=>t.slice(0,3)))");
+    const T=JSON.parse(tabs);
+    if(T[0][0]!=='home'||T[0][1]!=='home'||T[0][2]!=='Home')p.push('the bar does not start with Home (a house): '+tabs);
+    if(T.length<4||T.length>5)p.push('the bar has '+T.length+' buttons (4-5): '+tabs);
+    if(T.some(t=>t[2].length>8))p.push('a bar label is long for a pre-reader: '+tabs);
+    for(const id of ['learn','games','pet'])if(!T.some(t=>t[0]==id))p.push('the bar has no '+id);
+    const bar=R("NAV.barHTML('games')");
+    if((bar.match(/aria-current="page"/g)||[]).length!==1||!/data-nav="games" aria-current="page"/.test(bar))p.push('the lit button is not the current one: '+bar.slice(0,200));
+    if(!/<nav class="navbar" id="navbar" aria-label="Main">/.test(bar))p.push('the bar is not a named nav');
+    const ids=h=>[...h.matchAll(/id="([^"]+)" data-go="(\w+)"/g)].map(m=>m[2]+':'+m[1]).join();
+    const e3=R("NAV.end3({again:'a1',next:'n1',home:'h1'})"),e2=R("NAV.end3({again:'a1',home:'h1'})"),e1=R("NAV.end3({next:'n1',home:'h1'})");
+    if(ids(e3)!=='again:a1,next:n1,home:h1')p.push('the end choices out of order: '+ids(e3));
+    if(ids(e2)!=='again:a1,home:h1')p.push('Next is not hidden when nothing comes next: '+ids(e2));
+    if(ids(e1)!=='next:n1,home:h1')p.push('a card with no Play again: '+ids(e1));
+    if(!/class="btn primary nv-eb e-next"/.test(e3)||!/class="btn primary nv-eb e-again"/.test(e2))p.push('the main end choice is not Next (or Play again when there is no Next)');
+    for(const [k,ic] of [['e-again','replay'],['e-next','arrow-right'],['e-home','home']]){const b=(e3.match(new RegExp('<button[^>]*'+k+'[\\s\\S]*?</button>'))||[''])[0];
+      if(!b.includes('href="#i-'+ic+'"'))p.push('the '+k+' choice does not show its icon '+ic)}
+    const h=R("NAV.house('quit')");
+    if(!/aria-label="Home"/.test(h)||!/nv-house/.test(h))p.push('the corner house: '+h);
+    const g=R("NAV.gateHTML()");
+    if(!/>Grown-ups</.test(g.replace(/<span class="nw">|<\/span>/g,''))||!/aria-label="Grown-ups: hold for 3 seconds"/.test(g))p.push('the Grown-ups button is not labelled: '+g.slice(0,160));
+    if(R('NAV.HOLD_MS')!==3000)p.push('the Grown-ups hold is not 3 seconds');
+    // a tap never opens Grown-ups: the click handler opens the question, only the 3-second timer calls grown()
+    const gb=SRCJ['41-nav.js'].slice(SRCJ['41-nav.js'].indexOf('gateBind()'),SRCJ['41-nav.js'].indexOf('  quiz() {'));
+    if(!/setTimeout\(\(\) => \{ done = true; stop\(\); ring\(1\); SFX\.chime\(\); grown\(\); \}, NAV\.HOLD_MS\)/.test(gb)||!/g\.onclick = \(\) => \{\s*if \(done\) return;\s*NAV\.quiz\(\);/.test(gb))
+      p.push('the Grown-ups gate: a tap must ask the question, only a 3-second hold opens Grown-ups');
+    // the question: from 6 x 6 to 9 x 9, a wrong answer does not open Grown-ups
+    const qz=SRCJ['41-nav.js'].slice(SRCJ['41-nav.js'].indexOf('  quiz() {'));
+    if(!/R\(6, 9\), b = R\(6, 9\)/.test(qz)||!/inp\.value\.trim\(\) === String\(a \* b\)\) \{ s\.close\(\); grown\(\)/.test(qz))p.push('the grown-ups question');
+  }catch(e){p.push('the helpers could not run: '+String(e.message||e).split('\n')[0])}
+  // 6. no save field added: NAV keeps nothing in S
+  if(/\bS\.\w+\s*=/.test(SRCJ['41-nav.js']))p.push('41-nav.js writes to the save');
+  return{problems:p,note:ends+' end cards'};
 });
 
 // ---- report ----

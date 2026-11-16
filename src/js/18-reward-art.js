@@ -332,14 +332,12 @@ const RW = {
       `<p class="rw-sub rw-tap">${ico('gift', 26)}<span>Tap the treasure chest!</span></p></div></div>`;
   },
 
-  // after the tap. o: {sc, n, rate (stars or -1 for none), line, tip (the next step after a low score, or ''), again (label),
-  // next (true: Next stop), menu ('Map' | 'Home')}
+  // after the tap. o: {sc, n, rate (stars or -1 for none), line, tip (the next step after a low score, or ''),
+  // next (true: the next stop is open)}. NAV-01: the three end choices (Play again #again, Next #nxt, Home #ehome), the bonus game above
   done(o) {
     const art = o.rate >= 0 ? RW.rate(o.rate) : RW.pet();
-    const main = o.next ? UI.btn('Next stop', { kind: 'primary', size: 'lg', wide: true, icon: 'play', id: 'nxt' })
-      : UI.btn(o.again, { kind: 'primary', size: 'lg', wide: true, icon: 'replay', id: 'again' });
-    const btns = main + `<div class="rw-two">${UI.btn('Bonus game', { kind: 'subject', p: 'play', icon: 'gamepad', id: 'bonus' })}` +
-      `${UI.btn(o.menu, { icon: o.menu == 'Home' ? 'home' : 'map', id: 'menu' })}</div>`;
+    const btns = NAV.end3({ again: 'again', next: o.next ? 'nxt' : '', home: 'ehome',
+      extra: UI.btn('Bonus game', { kind: 'subject', p: 'play', icon: 'gamepad', id: 'bonus' }) });
     const stars = o.sc ? RW.row('star', 'star', `<b class="rw-num">+0</b> stars`, 'rwst') : '';
     return `<div class="rw-res"><section class="rw-a"><div class="rw-hero">${art}` +
       `<h1 class="rw-score" id="sc"><b>${o.sc}</b> out of ${o.n}</h1><p class="rw-line">${esc(o.line)}</p>` +
@@ -368,7 +366,7 @@ const RW = {
       `<h1 class="rw-h">${esc(name)} appears!</h1><p class="rw-sub">Every right answer zaps ${esc(name)}. Zap 7 times to win a prize:</p>` +
       `<div class="rw-zaps" aria-hidden="true">${zaps}</div>${RW.badge(prize)}` +
       `<div class="rw-acts">${UI.btn("Let's go!", { kind: 'subject', p, size: 'lg', icon: 'bolt', id: 'fight' })}` +
-      `${UI.btn('Map', { icon: 'map', id: 'nope' })}</div></div>`;
+      `${UI.btn('Back', { icon: 'back', id: 'nope' })}</div></div>`; // NAV-01: one step back (the map), the Back arrow
   },
 
   // drawn confetti: n pieces (at most 40) fly out of the middle of host and fade (about 1.2 s). Hidden in calm mode and with reduced

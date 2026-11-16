@@ -2160,18 +2160,17 @@ function snFinish() {
     tag: rec ? 'Best combo ever!' : '',
     stats: [[String(st.served), 'customers', 'users'], ['+' + (st.coins + goal), 'coins', 'coin'], [String(st.best), 'best combo', 'flame']],
     lines,
-    btns: (time ? UI.btn('Play another day', { kind: 'primary', size: 'lg', icon: 'replay', id: 'snagain', wide: true }) :
-      UI.btn('Earn more game time', { kind: 'primary', size: 'lg', icon: 'path-read', id: 'snlearn', wide: true })) +
-      UI.btn('Shop', { icon: 'bag', id: 'snendshop', wide: true }) + UI.btn('Menu', { icon: 'home', id: 'snmenu', wide: true }) });
+    // NAV-01: Play again (another day), Home; the shop is the smaller choice above; with no game time left, Next goes to Learn
+    btns: NAV.end3({ again: time ? 'snagain' : '', next: time ? '' : 'snlearn', home: 'snmenu', extra: UI.btn('Shop', { icon: 'bag', id: 'snendshop' }) }) });
   if (S.voice) say(`The ${['stand', 'cart', 'café', 'diner'][snStage(r)]} is closed! You served ${st.served} customers. Well done, ${S.name || 'friend'}!`);
   const go = f => { o.remove(); f(); };
   if (o.querySelector('#snagain')) o.querySelector('#snagain').onclick = () => go(() => {
     if (ptLeft() <= 0) return snMenu();
     snDay();
   });
-  if (o.querySelector('#snlearn')) o.querySelector('#snlearn').onclick = () => go(() => home());
+  if (o.querySelector('#snlearn')) o.querySelector('#snlearn').onclick = () => go(() => learnHub());
   o.querySelector('#snendshop').onclick = () => go(() => snShop());
-  o.querySelector('#snmenu').onclick = () => go(() => snMenu());
+  o.querySelector('#snmenu').onclick = () => go(() => home());
 }
 
 // The Game Room card (59-game-hub.js shows it after the games file's games)

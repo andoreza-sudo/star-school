@@ -179,9 +179,9 @@ function artEnd(res,o){const lines=[];if(res.opened)lines.push(['gift',`The <b>$
   if(!res.first&&o.star===false&&o.why)lines.push(['hint',esc(o.why)]);lines.push(['target',esc(artNextGoal())]);
   const c=GH.end('art',{win:true,made:true,pic:artFrame(o.pic),title:res.first?`You finished the ${o.n}!`:res.daily?`You made today's picture!`:'Into your gallery!',tag:res.first?'New star!':res.daily?"Today's picture":'',
     stats:[res.coins?['+'+res.coins,'coins','coin']:null,[res.stars+' / '+ART_ALL.length,'stars','star']],lines,
-    btns:(o.keep?UI.btn('Keep coloring',{icon:'palette',id:'akeep',wide:true}):'')+UI.btn('My gallery',{icon:'image',id:'agal',wide:true})+UI.btn('More pictures',{kind:'primary',size:'lg',icon:'play',id:'amore',wide:true})});
+    btns:NAV.end3({again:'amore',home:'ahome',extra:`<span class="art-ex">${o.keep?UI.btn('Keep coloring',{icon:'palette',id:'akeep'}):''}${UI.btn('My gallery',{icon:'image',id:'agal'})}</span>`})}); // NAV-01: Play again = color another picture
   if(S.voice)say(res.first?`Beautiful! You finished the ${o.n}!`:'Beautiful! It is in your gallery.');
-  c.querySelector('#amore').onclick=()=>{c.remove();gtStop();artMusic(false);artBack()};c.querySelector('#agal').onclick=()=>{c.remove();gtStop();artMusic(false);colorMenu('gallery')};
+  c.querySelector('#amore').onclick=()=>{c.remove();gtStop();artMusic(false);artBack()};c.querySelector('#agal').onclick=()=>{c.remove();gtStop();artMusic(false);colorMenu('gallery')};c.querySelector('#ahome').onclick=()=>{c.remove();gtStop();artMusic(false);home()};
   const k=c.querySelector('#akeep');if(k)k.onclick=()=>{c.remove();SFX.pop(2)};return c}
 // where Quit and More pictures go: the menu the picture was opened from
 let ART_BACK=null;const artBack=()=>{const b=ART_BACK;if(b)b();else colorMenu()};

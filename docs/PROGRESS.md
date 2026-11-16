@@ -4,7 +4,7 @@ The running record of what has shipped. Newest entry first. Every chunk adds one
 
 **Next up:** P6-05 (wip/batch-N, map timing), the P5-07 flaky step; see Handoff notes
 
-**Current version:** v168
+**Current version:** v169
 
 ## Chunk status
 
@@ -150,6 +150,8 @@ Mark a chunk here when it ships: `P0-01 v31`. Anything not listed is not done.
 - G-RALLY2 v163
 - G-HC3 v166
 - G-BB3 v167
+- CONTENT-01 v168
+- NAV-01 v169
 
 ## Handoff notes
 
@@ -500,6 +502,16 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-11) Icons wanted from P4-03: `balloon` (Bonus game, today `gamepad`), `sparkle` / `confetti`, `unlock` (open padlock for "Next stop unlocked", today `map`), `zap` (a lightning with a spark for boss hits; today `bolt`), `sticker` (single sticker for the prize row), `medal` (the prize rosette as an icon), `heart-half` (boss life bar), `chest` (the treasure chest at icon size, e.g. for the round track where renderQ shows the gift emoji).
 
 ## Log
+
+### NAV-01 One way Home: house, picture bar, end choices, Grown-ups gate (v169, 2026-11-16, Claude)
+- Why (parents): children could not find their way back Home or to where they wanted to go. New file `src/js/41-nav.js` (`NAV`, `learnHub()`) and `src/css/11-nav.css`; no save field added or changed.
+- **Home is one house, always in the same place.** Hubs: the first button of the new picture bar. Activities: a house in the top-left corner (`NAV.house()`, aria-label "Home"): question rounds, placement, Say it!, Fact Race, Fact Sprint, the balloon bonus, Brain Teasers puzzles (it replaces "Back to the levels") and every game's play screen (it replaces Pause, `#gpause` kept). Tapping it pauses and asks **Go Home?** (`NAV.ask`): a big tick (Home) and "Keep playing". The race, sprint, puzzle and balloon clocks and the games (`GH.held`, game-time clock) hold while it is open; a round's next question waits (`G.pend`, also placement). The tick runs the activity's own quit (which saves: bolts, sparkles, a drawing, a world, a puzzle's state), closes any card it left, then `home()`. Nothing earned is lost: stars and coins already paid stay.
+- **Back and Home look different.** Back is the arrow (`ico('back')`, aria-label "Back") and goes one step back; a map, Fact Race and Fact Sprint go back to Learn when the child came from Learn (`NAV.mapFrom`, `NAV.back()`). "Back to who is playing" (setup) is now "Back"; the boss intro's "Map" button is a Back arrow. The old close/Stop and Pause buttons are gone.
+- **Picture bar** (`NAV.bar(cur)`, `<nav>` in the screen's flow, so it never covers the hub; safe-area padding; 68 px buttons, 16 px labels): Home, Learn (a new hub of the four subject paths plus Mixed Practice, Fact Sprint and Fact Race), Games (Game Room), Puzzles (Brain Teasers), My Pet (Pet Care). The current area is lit (`aria-current="page"`). Shown on Home, Learn, the maps, Fact Race / Fact Sprint menus, the Game Room and every game's menus (view() adds it when the top bar is a game's non-play bar), Brain Teasers hub, levels and badges, Pet Care, Pet Shop, the sticker book and the streak calendar (nothing lit on the last two). Never in rounds or play. **Chose 5 buttons, not 6:** "Stickers" did not fit at 360 px with 16 px labels; the sticker book stays one tap away on Home.
+- **End cards** (`NAV.end3`): Play again, Next, Home, in that order, same icons and look (Next is the main button when shown, else Play again), on: the round reward (Bonus game kept as a smaller choice above), balloons (no Play again: a bonus), Fact Race, Fact Sprint, Brain Teasers win (Next level / Endless), placement (Next = the map; another subject above), Hill Climb (distance, stage, time up), Star Rally (Next = the cup's next race or the next track), Snack Stand (Shop above), Sky Hop (next course), Coloring (Play again = another picture; Keep coloring and My gallery above), Block Builder (next build) and the shared time-up card. With no game time left, Next goes to Learn (where time is earned). The old Map / Menu / Tracks / Courses / Stages / Levels / Sets buttons on end cards are gone (Home, then the bar, reaches them).
+- **Grown-ups**: a labelled "Grown-ups" button replaces the gear on Home (`#gear` kept): hold it 3 seconds (a ring fills, driven by a timer, not an animation), or a tap asks a times-table question (6x6 to 9x9) to type in. A tap alone never opens it. README updated.
+- Tests: test.js new check **"navigation: one way Home NAV-01"** (no Stop/Pause/gear buttons left, every Back named "Back", every house from `NAV.house`, every activity's house wired to Go Home?, every end card's choices from `NAV.end3` (14 found), hubs call the bar, the bar starts with Home and lights one button, the end choices' order and hiding, the gate's hold time and its tap-asks rule); the P4-11 reward check follows the new ids. smoke.js new `// NAV-01` block at 360x740 and 800x1280 (bar on 8 hubs and hidden in a round, race, puzzle and game; corner house, Keep playing, the tick; race and game clocks hold; end cards of a round, race, puzzle, Hill Climb and time up; the gate by answer and by a 3 s hold, a 1 s hold and a wrong answer do not open it). Smoke steps that quit to a game's menu or went to the map from an end card now go Home and open the menu again; gear holds are 3.4 s.
+- Shots: /tmp/nav01-shots (home, learn, map, game room, puzzles, pet, round, Go Home?, end card, Hill Climb, its end card, the gate; 800x1280 and 360x740).
 
 ### CONTENT-01 No magic or spells theme, no evolution (v168, 2026-11-15, Claude)
 - The parent asked for no magic, spells or anything of that theme, and no evolution questions or themes. Dragons stay (asked).

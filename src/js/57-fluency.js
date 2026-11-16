@@ -132,7 +132,8 @@ function fluMenu() {
   <div class="games">${sets.map(s => GFX.card({ cls: 'game', attrs: `data-s="${s.id}"`, p: 'math', icon: fluIco(s.id), tag: fluTag(s.id), title: s.t,
     sub: `<span class="gx-ln">${ico('timer', 18)}<span>60 s best: <b>${fluBest(s.id, false)}</b></span></span>` +
       `<span class="gx-ln">${ico('target', 18)}<span>20 facts best: <b>${fluBest(s.id + '-20', true)}</b></span></span>` })).join('')}</div></div>`);
-  $('#back').onclick = () => home();
+  NAV.bar('learn');
+  $('#back').onclick = () => NAV.back();
   $$('[data-s]').forEach(b => b.onclick = () => fluModes(b.dataset.s));
 }
 
@@ -143,6 +144,7 @@ function fluModes(set) {
    ${GFX.card({ cls: 'game', attrs: 'data-m="t60"', p: 'play', icon: 'timer', title: '60 seconds', sub: `How many can you get? Best: <b>${fluBest(set, false)}</b>` })}
    ${GFX.card({ cls: 'game', attrs: 'data-m="n20"', p: 'es', icon: 'target', title: '20 facts', sub: `Beat your time! Best: <b>${fluBest(set + '-20', true)}</b>` })}</div>
    <p class="gx-note">${ico('ticket', 24)}<span>A first sprint each day earns game time.</span></p></div>`);
+  NAV.bar('learn');
   $('#back').onclick = fluMenu;
   $$('[data-m]').forEach(b => b.onclick = () => fluPlay(set, b.dataset.m));
 }
@@ -154,7 +156,8 @@ function fluPlay(set, mode) {
     UI.chip('timer', timed ? '60 s' : '0.0 s', { id: 'ftm', aria: 'Time' }))}
    <div class="play qs s-math" id="fplay"></div>`);
   FL = {set, mode, key, timed, right: 0, typed: '', lock: true, clock: {ms: 0, last: Date.now()}, st: {set, last: '', redo: []}, f: null};
-  $('#quit').onclick = () => {stopFlu(); fluModes(set)};
+  // NAV-01: the corner house; the clock does not count while Go Home? is open
+  NAV.wire('quit', {hold: on => {if (!FL) return; FLU.tick(FL.clock, Date.now(), document.hidden || !on); FL.held = on}, leave: stopFlu});
   FL.vis = () => {if (FL) FLU.tick(FL.clock, Date.now(), document.hidden)};
   document.addEventListener('visibilitychange', FL.vis);
 
@@ -224,7 +227,7 @@ function fluPlay(set, mode) {
     show();
     FL.iv = setInterval(() => {
       if (!FL) return;
-      const ms = FLU.tick(FL.clock, Date.now(), document.hidden), left = FLU.SECS - ms / 1000;
+      const ms = FLU.tick(FL.clock, Date.now(), document.hidden || FL.held), left = FLU.SECS - ms / 1000;
       if (timed) {
         GFX.bar($('#fbar'), left / FLU.SECS);
         $('#ftm b').textContent = Math.max(0, Math.ceil(left)) + ' s';
@@ -256,11 +259,9 @@ function fluEnd(r) {
   const sp = fluSpark(FLU.week(e, lower), lower);
   const o = GFX.endCard({ rec: r.rec, title, best: `Your best: ${lower ? bestNow + ' s' : bestNow}`, extra: (sp ? `<div class="gx-week">${sp}</div>` : '') + (r.mis || ''),
     earn: r.earned ? `${ico('ticket', 28)}<span>+${r.earned / 60} min of game time</span>` : '<span>Free practice, no game time</span>',
-    btns: UI.btn('Again', { kind: 'primary', size: 'lg', wide: true, icon: 'replay', id: 'frepeat' }) +
-      `<div class="rw-two">${UI.btn('Sets', { icon: 'path-math', id: 'fsets' })}${UI.btn('Home', { icon: 'home', id: 'fhome' })}</div>` });
+    btns: NAV.end3({again: 'frepeat', home: 'fhome'}) }); // NAV-01
   document.body.appendChild(o);
   if (S.voice) say(r.rec ? 'New record!' : 'Good job!');
   o.querySelector('#frepeat').onclick = () => {o.remove(); fluPlay(r.set, r.mode)};
-  o.querySelector('#fsets').onclick = () => {o.remove(); fluMenu()};
   o.querySelector('#fhome').onclick = () => {o.remove(); home()};
 }

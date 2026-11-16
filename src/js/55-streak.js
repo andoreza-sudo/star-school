@@ -96,7 +96,7 @@ function streakCal(off){
     <div class="stc-grid">${['S','M','T','W','T','F','S'].map(x=>`<div class="stc-h">${x}</div>`).join('')}${cells}</div>
     <div class="stc-sub small stc-pzs"><span>Next prizes, days in a row:</span>${prizes}</div>
    </div></div>`);
-  $('#back').onclick=()=>home();
+  NAV.bar('');$('#back').onclick=()=>home();
   $('#stcp').onclick=()=>streakCal(off+1);
   $('#stcn').onclick=()=>streakCal(off-1);
 }

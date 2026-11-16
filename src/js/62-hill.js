@@ -501,26 +501,26 @@ function hcEnd(why){const H=HC;if(!H||H.shown)return;H.shown=true;H.over=true;co
   const o=hcGuard(GH.end('hill',{win,title:why=='time'?"Game time's up!":D&&H.dayHit?"Today's drive done!":'Out of gas!',tag:rec&&m>0?'New record!':'',
    stats:[[m+' m',D?(H.dayHit?'gold flag reached':'gold flag at '+D.goal+' m'):rec&&m>0?'new record':'best '+gs.best[H.w]+' m','ruler'],['+'+(H.bolts+pay),'bolts','nut'],[String(H.flips),'flips','rotate'],[String(H.perfect),'perfect landings','check-circle']],
    lines:[...dayLine,['drop','Fuel cans are further apart the farther you go. Ease off the gas in the air to save fuel.'],['target',esc(hcNextGoal().t)]],
-   btns:(why=='time'||ptLeft()<=0?UI.btn('Earn more game time',{kind:'primary',size:'lg',icon:'path-read',id:'hlearn',wide:true}):UI.btn('Drive again',{kind:'primary',size:'lg',icon:'replay',id:'hagain',wide:true}))+
-    UI.btn('Menu',{icon:'map',id:'hgar',wide:true})}));
+   btns:why=='time'||ptLeft()<=0?NAV.end3({next:'hlearn',home:'hgar'}):NAV.end3({again:'hagain',home:'hgar'})})); // NAV-01: with no game time left, Next goes to Learn
   if(S.voice)say(why=='time'?`Game time is up! Let's learn and earn more!`:rec&&m>0?`New record! ${m} meters!`:`You drove ${m} meters!`);
   const go=f=>{o.remove();stopHC();f()};
   if(o.querySelector('#hagain'))o.querySelector('#hagain').onclick=()=>go(()=>D?hcStart(H.wi,null,hcDay()):hcStart(H.wi));
-  if(o.querySelector('#hlearn'))o.querySelector('#hlearn').onclick=()=>go(()=>home());
-  o.querySelector('#hgar').onclick=()=>go(garage)}
+  if(o.querySelector('#hlearn'))o.querySelector('#hlearn').onclick=()=>go(()=>learnHub());
+  o.querySelector('#hgar').onclick=()=>go(home)}
 // game time ran out in a stage: bolts kept, no stars lost
 function hcStageCard(H,why){SFX.chime();const C=H.C,m=Math.min(Math.floor((H.maxX-60)/20),Math.floor((C.fin-60)/20)),L=Math.floor((C.fin-60)/20);
   if(S.voice)say(`Game time is up! Let's learn and earn more!`);
   hcCard(H,{title:"Game time's up!",extra:UI.meter(m/L,{lg:true,kind:'good',label:`${m} of ${L} m`}),lines:[['nut',`Your ${H.bolts} bolts are saved.`],['go',`Only <b>${Math.max(0,L-m)} m</b> to the flag next time!`]],
-   btns:UI.btn('Earn more game time',{kind:'primary',size:'lg',icon:'path-read',attrs:'data-go="learn"',wide:true})+UI.btn('Stages',{icon:'map',attrs:'data-go="list"',wide:true})})}
+   btns:NAV.end3({next:'hcnext',home:'hchome'})})} // NAV-01: no game time left: Next goes to Learn
 // the finger still on the gas when the card opens must not press its buttons when it lifts: a button works after a new press
 // on the card (a key press always works)
 const hcGuard=o=>{o.addEventListener('pointerdown',()=>{o._armed=1},true);o.addEventListener('click',e=>{if(e.detail&&!o._armed){e.stopPropagation();e.preventDefault()}},true);return o};
+// NAV-01: the end choices (NAV.end3, data-go again | next | home); Next with no game time left goes to Learn to earn more
 function hcCard(H,c){const o=hcGuard(GH.end('hill',c));const go=f=>{o.remove();stopHC();f()};
   o.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{const a=b.dataset.go;
-    if(a=='retry')go(()=>hcStart(H.wi,H.si));
-    else if(a=='next'){const n=hcAfter(H.wi,H.si);go(()=>n?hcStart(n[0],n[1]):hcLevels(H.wi))}
-    else if(a=='learn')go(home);else go(()=>hcLevels(hcAfter(H.wi,H.si)?hcAfter(H.wi,H.si)[0]:H.wi))});return o}
+    if(a=='again')go(()=>hcStart(H.wi,H.si));
+    else if(a=='next'){if(ptLeft()<=0)return go(learnHub);const n=hcAfter(H.wi,H.si);go(()=>n?hcStart(n[0],n[1]):hcLevels(H.wi))}
+    else go(home)});return o}
 // the stage after (w, i) if it is open: [w, i] or null
 function hcAfter(w,i){if(i+1<HC_SPW)return hcSOpen(w,i+1)?[w,i+1]:null;return w+1<HC_ST.length&&hcWOpen(w+1)?[w+1,0]:null}
 function hcWin(){const H=HC;if(!H||H.shown)return;H.shown=true;H.over=true;H.result='win';hcEngOff(H);
@@ -534,9 +534,7 @@ function hcWin(){const H=HC;if(!H||H.shown)return;H.shown=true;H.over=true;H.res
   hcCard(H,{win:!!ok,title:ok?`${s[1]} done!`:`So close! ${H.bolts} of ${g[1]} bolts`,stars,
    stats:[[tm+' s','time','timer'],['+'+(H.bolts+r.gain),'bolts','nut'],[String(H.crashes),'restarts','replay'],H.crates0?[`${H.crates}/${H.crates0}`,'crates','gift']:[String(H.flips),'flips','rotate']],
    lines,
-   btns:(ptLeft()<=0?UI.btn('Earn more game time',{kind:'primary',size:'lg',icon:'path-read',attrs:'data-go="learn"',wide:true}):
-     ok&&nx?UI.btn(nx[0]!=H.wi?`Go to ${HCW[nx[0]].n}`:'Next stage',{kind:'primary',size:'lg',icon:'go',attrs:'data-go="next"',wide:true})+UI.btn('Play again',{icon:'replay',attrs:'data-go="retry"',wide:true})
-     :UI.btn(ok?'Play again':'Try again',{kind:'primary',size:'lg',icon:'replay',attrs:'data-go="retry"',wide:true}))+UI.btn('Stages',{icon:'map',attrs:'data-go="list"',wide:true})})}
+   btns:ptLeft()<=0?NAV.end3({next:'hcnext',home:'hchome'}):NAV.end3({again:'hcagain',next:ok&&nx?'hcnext':'',home:'hchome'})})} // NAV-01
 
 /* ---- the menu: next goal, worlds and their stages, the distance drive, the garage, easy driving ---- */
 let hcMW=null; // the world shown on the menu

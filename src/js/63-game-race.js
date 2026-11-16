@@ -2712,11 +2712,9 @@ function rlFinish() {
   const time = ptLeft() > 0, nextC = cup && !final;
   const next = RL_ALL[RL_ALL.indexOf(tid) + 1], nextOk = !cup && !trial && !twist && next && rlTrackOpen(next, r) && !r.stars[next];
   const o = GH.end('rally', { win, title, stars: n, tag, pic: pic || undefined, stats, lines, extra,
-    btns: (time ? (nextC ? UI.btn(`Race ${r.cup.i + 1} of 3`, { kind: 'primary', size: 'lg', icon: 'arrow-right', id: 'rlnextc', wide: true }) :
-      UI.btn(final ? 'Race the cup again' : 'Race again', { kind: 'primary', size: 'lg', icon: 'replay', id: 'rlagain', wide: true })) +
-      (nextOk ? UI.btn('Next track', { icon: 'arrow-right', id: 'rlnext', wide: true }) : '') :
-      UI.btn('Earn more game time', { kind: 'primary', size: 'lg', icon: 'path-read', id: 'rllearn', wide: true })) +
-      UI.btn(cup ? 'Cups' : 'Tracks', { icon: 'map', id: 'rlmenu', wide: true }) });
+    // NAV-01: Play again, Next (the cup's next race, or the next track), Home; with no game time left, Next goes to Learn
+    btns: time ? NAV.end3({ again: nextC ? '' : 'rlagain', next: nextC ? 'rlnextc' : nextOk ? 'rlnext' : '', home: 'rlmenu' })
+      : NAV.end3({ next: 'rllearn', home: 'rlmenu' }) });
   if (S.voice) say(final && rank <= 3 ? `${RL_TROPHY[rank]} trophy! Well done, ${S.name}!` : trial ? (rec ? 'New best lap!' : 'Good driving!') :
     P.place == 1 ? `You won! Well done, ${S.name}!` : P.place <= 3 ? `${rlOrd(P.place)} place! Great racing!` : 'You finished the race! Well done!');
   const go = f => { o.remove(); f(); };
@@ -2724,8 +2722,8 @@ function rlFinish() {
   if (o.querySelector('#rlnextc')) o.querySelector('#rlnextc').onclick = () => go(() => (ptLeft() > 0 ? rlCupGo(ci) : rlMenu()));
   if (o.querySelector('#rlagain')) o.querySelector('#rlagain').onclick = () => go(() => (cup ? rlCupGo(ci) : rlRace(tid, { trial, twist })));
   if (o.querySelector('#rlnext')) o.querySelector('#rlnext').onclick = () => go(() => rlRace(next));
-  if (o.querySelector('#rllearn')) o.querySelector('#rllearn').onclick = () => go(() => home());
-  o.querySelector('#rlmenu').onclick = () => go(() => rlMenu(t.place));
+  if (o.querySelector('#rllearn')) o.querySelector('#rllearn').onclick = () => go(() => learnHub());
+  o.querySelector('#rlmenu').onclick = () => go(() => home());
 }
 
 // The Game Room card (59-game-hub.js shows it after the other three)
