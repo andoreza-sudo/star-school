@@ -28,6 +28,10 @@ async function btLeave(pg) {
   await pg.evaluate(r => BT.levels(r[0], r[1]), run);
 }
 
+// KINDS2 ("Old tests check old", the owner's decision): a block that checks the old content or layout of a stop that now mixes in
+// sort and mark questions turns the new kinds off in its page (K2.off: every generator and bank as before KINDS2) and back on after
+const k2Old = (pg, on = true) => pg.evaluate(v => { K2.off = v; }, on);
+
 let failed = 0;
 const step = msg => console.log('- ' + msg);
 function fail(msg) { failed++; console.error('FAIL: ' + msg); }
@@ -275,8 +279,9 @@ async function main() {
         || g.spell !== 'function' || !g.vq || g.pz !== '3:16:16' || g.ix < 0) {
         fail('A11 data globals: ' + JSON.stringify(g));
       }
+      // KINDS2: gen2 carries a stylesheet now (src/css/37b-kinds-c.css), in before bt's (the same change as test.js P6-02)
       // P6-02: at start only bt's <style> is in, and no game code (the games parts load when the Game Room opens, below)
-      if (!['maze', 'pattern', 'pyramid', 'balance', 'target'].every(id => g.bt.split(',').includes(id)) || g.css !== 'main,css-bt'
+      if (!['maze', 'pattern', 'pyramid', 'balance', 'target'].every(id => g.bt.split(',').includes(id)) || g.css !== 'main,css-gen2,css-bt'
         || g.games !== 'undefined,undefined,undefined') fail('A11b part files: ' + JSON.stringify(g));
       await d.page.evaluate(ix => start('read', ix), g.ix);
       await d.page.waitForSelector('.bctx-p .w', { timeout: 8000 });
@@ -321,7 +326,7 @@ async function main() {
       if (room !== 3) fail('A11b: the Game Room did not open (' + room + ' of 3 games)');
       const lz = await d.page.evaluate(() => ({ css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(), games: [typeof garage, typeof blockBuilder, typeof colorMenu].join(),
         ready: LAZY_PARTS.map(partReady).join(), tags: [...document.scripts].filter(s => s.src).map(s => s.getAttribute('src')).join() }));
-      if (lz.css !== 'main,css-bt,css-games,css-rally,css-games2,css-games3' || lz.games !== 'function,function,function' || lz.ready !== 'true,true,true,true'
+      if (lz.css !== 'main,css-gen2,css-bt,css-games,css-rally,css-games2,css-games3' || lz.games !== 'function,function,function' || lz.ready !== 'true,true,true,true'
         || lz.tags !== startFiles.concat(g.lazy.map(x => x + '.' + g.dv + '.js')).join()) fail('P6-02: the Game Room did not load the games parts: ' + JSON.stringify(lz));
       if (opened.length === 3 && room === 3) step('A11b: puzzle types ' + g.bt + ' registered from ' + btF + ', its <style> in, opened from the hub: '
         + opened.join(', ') + '; Game Room from ' + gamesF + ' opened');
@@ -1112,6 +1117,7 @@ async function main() {
       if (n6 !== 6) fail('Pre-K ABC Beach round length ' + n6); else step('ABC Beach: Pre-K map opens on abc1, the bot won the 6-question round by tapping');
       await pp.evaluate(() => { G.dead = true; home(); });
       await pp.waitForSelector('.game[data-p]');
+      await k2Old(pp); // KINDS2: syl 1-2 mix in sort questions; this checks their choice layout
       for (const id of ['abc1', 'abc2', 'abc3', 'abc4', 'syl1', 'syl2', 'sound3', 'sound4']) {
         await pp.evaluate(i => { start('read', NODES.read.findIndex(n => n.sk + n.lv === i)); }, id);
         await pp.waitForSelector('#prompt');
@@ -1126,6 +1132,7 @@ async function main() {
         await pp.waitForSelector('.game[data-p]');
         await vwait(pp, 2800); // let the old round's timers finish
       }
+      await k2Old(pp, false);
       step('ABC Beach: abc 1-4, syl 1-2, sound 3-4 show buttons of 48 px or more with a hint and spoken text, nothing wider than 380 px');
       network.push(...pa.network);
       for (const e of pa.errors) fail(e);
@@ -1192,6 +1199,7 @@ async function main() {
       // P2-16: the tracing stop (trace1) has no taps to answer; its own block (// P2-16 at the end) plays it
       const stops = await tp.evaluate(() => NODES.math.map((n, i) => [i, nid(n), n.wid]).filter(x => x[2] === 'm_tiny' && x[1] !== 'boss_m_tiny' && x[1] !== 'trace1'));
       const seen = [];
+      await k2Old(tp); // KINDS2: sort 2-3 mix in sort questions; this checks the choice and picture layout of every stop
       for (const [i, id] of stops) {
         await tp.evaluate(i => { start('math', i); }, i);
         await tp.waitForSelector('#prompt', { state: 'attached' }); // text hidden: a listening prompt can be empty
@@ -1208,6 +1216,7 @@ async function main() {
         seen.push(id);
         if (sz.n < 2 || sz.min < 48 || sz.wide > 380 || sz.tall || !hint.len || hint.letters) fail('Tiny Town stop ' + id + ': ' + JSON.stringify({ ...sz, ...hint }));
       }
+      await k2Old(tp, false);
       if (seen.length !== 9) fail('Tiny Town has ' + seen.length + ' stops, expected 9');
       else step('Tiny Town: all 9 stops open and are answered by taps; touch targets 48 px or more, no sideways scroll, picture hints without letters');
       await tp.evaluate(() => { G.dead = true; home(); });
@@ -1979,6 +1988,7 @@ async function main() {
         const qa = await openApp(browser, { fixture: 'midway', width: w, height: h });
         const qp = qa.page;
         await qp.evaluate(src => { window.__KS = eval(src)(); }, KS10);
+        await k2Old(qp); // KINDS2: the choice view is an Even or Odd stop (eo), which mixes in sort questions now
         const views = [['num', show.num], ['choice', show.choice], ['build', show.build], ['pk', show.pk]];
         for (const k of ['dec', 'frac', 'multi', 'order']) views.push([k, k]);
         for (const k of ['match', 'tapLine', 'spell', 'spellEs']) views.push([k, KB10[k]]);
@@ -2023,6 +2033,7 @@ async function main() {
           await qp.evaluate(() => { G.dead = true; });
           await vwait(qp, 3000); // the round's own timers fire into the dead round
         }
+        await k2Old(qp, false);
         network.push(...qa.network);
         for (const e of qa.errors) fail(e);
         await qa.ctx.close();
@@ -2093,6 +2104,7 @@ async function main() {
       }));
       if (gi.stops !== '1@r_reef 2@r_workshop 3@r_workshop 4@r_summit 5@r_summit') fail('grammar stops on the reading map: ' + gi.stops);
       const bad20 = [];
+      await k2Old(gp); // KINDS2: gram 2 and 4 mix in sort, gram 5 mark; this checks the choice layout and hints of every level
       for (let lv = 1; lv <= 5; lv++) {
         await gp.evaluate(lv => { start('read', NODES.read.findIndex(n => n.sk == 'gram' && n.lv == lv)); }, lv);
         await gp.waitForSelector('#prompt .bq');
@@ -2109,6 +2121,7 @@ async function main() {
         if (hint.t.length < 20 || (hint.ans.length > 2 && new RegExp('\\b' + hint.ans + '\\b', 'i').test(hint.t))) bad20.push('level ' + lv + ' hint: ' + hint.t);
         await gp.evaluate(() => { G.dead = true; home(); });
       }
+      await k2Old(gp, false); // the round below answers whatever comes, sort and mark too
       if (bad20.length) fail('P2-20 grammar:\n  ' + bad20.join('\n  '));
       else step('P2-20 grammar: five levels fit at 380x780, answer buttons 48 px or more, hints teach without the answer');
       const gj = await gp.evaluate(() => NODES.read.findIndex(n => n.sk == 'gram' && n.lv == 2));
@@ -2401,6 +2414,7 @@ async function main() {
       }));
       if (gi2.stops !== '6@r_library 7@r_library 8@r_island 9@r_legend') fail('grammar 6-9 stops on the reading map: ' + gi2.stops);
       const bad21 = [];
+      await k2Old(gq); // KINDS2: gram 6-7 mix in mark, gram 8 sort; this checks the choice and tap-a-word layout of every level
       for (let lv = 6; lv <= 9; lv++) {
         // the stop's own question, then (level 8) a forced tap-a-word question and a forced choice one, so every form is measured
         const forms = lv === 8 ? ['stop', 'tap', 'choice'] : ['stop'];
@@ -2426,6 +2440,7 @@ async function main() {
           await gq.evaluate(() => { G.dead = true; home(); });
         }
       }
+      await k2Old(gq, false); // the round below answers whatever comes, sort and mark too
       if (bad21.length) fail('P2-21 grammar:\n  ' + bad21.join('\n  '));
       else step('P2-21 grammar: levels 6-9 fit at 380x780, answer buttons 48 px or more, no sideways scroll, hints teach without the answer');
       const gk = await gq.evaluate(() => NODES.read.findIndex(n => n.sk == 'gram' && n.lv == 7));
@@ -2458,10 +2473,11 @@ async function main() {
       });
       if (bi.st !== '6@r_library 7@r_library 8@r_library 9@r_island 10@r_legend') fail('vocabulary B stops on the reading map: ' + bi.st);
       await bp.waitForSelector('#prompt');
+      await k2Old(bp); // KINDS2: vocab 7 mixes in mark, vocab 8 sort; this checks the choice layout and the hint
       const looks = [];
       for (const lv of [6, 7, 8, 9, 10]) {
         const rs = await bp.evaluate(lv => {
-          const L = BANK.vocab.map((it, i) => [it, i]).filter(([it]) => it.lv == lv);
+          const L = BANK.vocab.map((it, i) => [it, i]).filter(([it]) => it.lv == lv && it.d); // KINDS2: the new sort and mark items have no d
           const pick = f => L.reduce((a, b) => (f(b[0]) > f(a[0]) ? b : a))[1];
           const out = [];
           for (const bi of [...new Set([pick(it => it.q.length), pick(it => Math.max(...[it.a, ...it.d].map(x => x.length))), pick(it => it.a.length + it.d.join('').length)])]) {
@@ -2482,6 +2498,7 @@ async function main() {
       await bp.click('#hb');
       const hint = await bp.evaluate(() => document.querySelector('#hint').textContent);
       if (!/bold word/.test(hint)) fail('vocabulary B hint: ' + hint); else step('vocabulary B: hint shows');
+      await k2Old(bp, false); // the round below answers whatever comes, sort and mark too
       await playRound(bp, 'P2-23 vocabulary 7');
       const after = await bp.evaluate(i => ({ st: getSt('read', i), maps: JSON.stringify(S.maps.read) }), bi.i);
       const was = JSON.parse(bi.before), now = JSON.parse(after.maps);
@@ -2866,6 +2883,7 @@ async function main() {
     {
       const dd = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 });
       const dp = dd.page;
+      await k2Old(dp); // KINDS2: dec 2 and ang 1 mix in sort questions; this checks each stop's pad, choices, picture and step hint
       await dp.fill('#nm', 'Desert');
       await dp.click('.gr[data-g="4"]');
       await dp.click('#go');
@@ -2954,6 +2972,7 @@ async function main() {
       const starsAng = await dp.evaluate(() => ['ang1', 'dec1'].map(id => S.maps.math[id] || 0));
       if (starsAng.some(x => x < 1)) fail('Decimal Desert: stars not saved ' + JSON.stringify(starsAng));
       else step('P2-10: Decimal Desert opens for a 4th grader on its first stop; Unlike Fractions played with a step hint, an angle round and a decimal round by taps, 13 stops measured at 380x780 (48 px targets, no sideways scroll), stars saved');
+      await k2Old(dp, false);
       network.push(...dd.network);
       for (const e of dd.errors) fail(e);
       await dd.ctx.close();
@@ -4469,6 +4488,7 @@ async function main() {
         const da = await openApp(browser, { fixture: 'midway', width: dw, height: dh });
         const dp = da.page, tag = `Discover ${dw}x${dh}`;
         await dp.waitForSelector('.game[data-p="disc"]');
+        await k2Old(dp); // KINDS2: every Discover stop mixes in sort, match and order; this checks the choice layout of every question
         const card = await dp.evaluate(() => {
           const c = document.querySelector('.game[data-p="disc"]'), r = c.getBoundingClientRect();
           return { h: r.height, art: !!c.querySelector('.hm-svg'), txt: c.textContent.replace(/\s+/g, ' ') };
@@ -4508,6 +4528,7 @@ async function main() {
         await dp.waitForSelector('#map');
         const open2 = await dp.evaluate(() => [...document.querySelectorAll('.node')].map(n => n.classList.contains('lock')).join());
         if (open2.split(',').slice(0, 6).join() !== 'false,false,true,true,true,true') fail(`${tag}: map after the round: locks ${open2}`);
+        await k2Old(dp, false);
         network.push(...da.network);
         for (const e of da.errors) fail(e);
         await da.ctx.close();
@@ -4817,6 +4838,7 @@ async function main() {
     {
       const da = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
       const dp = da.page, tag = 'Discover 4th grade';
+      await k2Old(dp); // KINDS2: every Discover stop mixes in sort, match and order; this checks the choice layout of every question
       await dp.evaluate(() => { S.grade = 4; save(); home(true); });
       await dp.waitForSelector('.game[data-p="disc"]');
       await dp.click('.game[data-p="disc"]');
@@ -4876,6 +4898,7 @@ async function main() {
       const fin = await dp.evaluate(() => ({ g: S.grade, civ: S.maps.disc.civ1, geo: S.maps.disc.geo_us1, v: S.v, others: JSON.stringify([S.maps.math, S.maps.read, S.maps.es]) }));
       if (!(fin.civ >= 1) || !(fin.geo >= 1) || fin.g !== 4 || fin.others !== JSON.stringify(JSON.parse(before).slice(0, 3))) fail(`${tag}: end state ${JSON.stringify(fin)}`);
       else step(`${tag}: geography and civics stops saved, the other paths are unchanged`);
+      await k2Old(dp, false);
       network.push(...da.network);
       for (const e of da.errors) fail(e);
       await da.ctx.close();
@@ -5152,6 +5175,7 @@ async function main() {
     {
       const cx = await openApp(browser, { fixture: 'fresh', width: 380, height: 780 });
       const cp = cx.page;
+      await k2Old(cp); // KINDS2: a review question in these rounds can come from a stop that mixes in sort (Gran Repaso es_mix 2); every question is checked as a choice
       await cp.fill('#nm', 'Casa');
       await cp.click('#go');
       await cp.waitForSelector('.game[data-p="es"]');
@@ -5213,6 +5237,7 @@ async function main() {
       await playRound(cp, 'P2-31 es_clothes 1 with no voice', undefined, async () => { const l = await lay31('no voice'); if (l.hear || (l.kind === 'choice' && !l.big && (await cp.evaluate(() => G.q.sk === 'es_clothes' && G.q.lv === 1)))) fail('La Casa no voice: word not big or speaker still there ' + JSON.stringify(l)); });
       const stc = await cp.evaluate(() => S.maps.es.es_clothes1);
       if (!(stc > 0)) fail('La Casa: stars not saved for es_clothes1 with no voice');
+      await k2Old(cp, false);
       step('P2-31: La Casa opens after Gran Repaso; level 1 (listen), level 3 (spell, ñ key) and a no-voice round played with taps; stars saved; 48 px, no sideways scroll');
       network.push(...cx.network);
       for (const e of cx.errors) fail(e);
@@ -6330,6 +6355,7 @@ async function main() {
       const fx = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
       const fp = fx.page;
       await fp.evaluate(() => { S.unlockAll = true; save(); });
+      await k2Old(fp); // KINDS2: es_art 1 mixes in sort questions; this checks it as a choice stop
       const lay = sel => ({ w: document.documentElement.scrollWidth, n: document.querySelectorAll(sel).length,
         min: Math.min(...[...document.querySelectorAll(sel)].map(b => Math.min(b.getBoundingClientRect().height, b.getBoundingClientRect().width))) });
       for (const [id, sel] of [['es_art1', '.ch'], ['es_sent1', '.ot']]) {
@@ -6354,6 +6380,7 @@ async function main() {
         const st = await fp.evaluate(id => S.maps.es[id] || 0, id);
         if (st < 1) fail('P2-34 ' + id + ' did not save stars');
       }
+      await k2Old(fp, false);
       step('P2-34: Las Frases opened by id; articles (level 1) and sentence (level 1) rounds played with real taps, stars saved, 48 px targets, no sideways scroll');
       network.push(...fx.network);
       for (const e of fx.errors) fail(e);
@@ -6803,6 +6830,7 @@ async function main() {
     {
       const app = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
       const pg = app.page, bad = [], notes = [];
+      await k2Old(pg); // KINDS2: pic 4 mixes in sort questions; the picture word is checked as its choice question
       const B = ['balloon', 'book', 'moon', 'sock', 'cow', 'cheese', 'bell', 'bird', 'egg', 'pencil', 'tree', 'house', 'horse', 'bear'];
       const show = async (area, sk, lv, want) => pg.evaluate(([area, sk, lv, want]) => {
         for (let s = 1; s <= 400; s++) {
@@ -6838,6 +6866,7 @@ async function main() {
         for (const o of r.out) bad.push(sk + lv + ' seed ' + got.seed + ': ' + o);
         notes.push(sk + lv + ' ' + got.hit + ' (' + r.n + ' drawings)');
       }
+      await k2Old(pg, false);
       if (bad.length) fail('P4-14 object art set B:\n  ' + bad.join('\n  '));
       else step('P4-14 object art set B at 380x780: ' + notes.join(', ') + '; every drawing drawn, no emoji in its place, no sideways scroll');
       network.push(...app.network);
@@ -7919,6 +7948,7 @@ async function main() {
     {
       const app = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
       const pg = app.page, bad = [], notes = [];
+      await k2Old(pg); // KINDS2: pic 4 mixes in sort questions; the picture word is checked as its choice question
       const show = async (area, sk, lv, want) => pg.evaluate(([area, sk, lv, want]) => {
         for (let s = 1; s <= 400; s++) {
           const q = genQ(sk, lv, s), h = q.html + (q.choices || []).map(c => c.l).join('');
@@ -7955,6 +7985,7 @@ async function main() {
         for (const o of r.out) bad.push(sk + lv + ' seed ' + got.seed + ': ' + o);
         notes.push(sk + lv + ' ' + got.hit + ' (' + r.n + ' drawings)');
       }
+      await k2Old(pg, false);
       if (bad.length) fail('P4-15 object art set C:\n  ' + bad.join('\n  '));
       else step('P4-15 object art set C at 380x780: ' + notes.join(', ') + '; every drawing drawn, no emoji in its place, no sideways scroll');
       network.push(...app.network);
@@ -8522,6 +8553,7 @@ async function main() {
     {
       const app = await openApp(browser, { fixture: 'midway', width: 380, height: 780, scale: 2 });
       const pg = app.page, bad = [], notes = [];
+      await k2Old(pg); // KINDS2: pic 3 and sound 4's seeds are checked as the choice questions the review saw (those stops mix in sort now)
       const open = (sk, lv, seed) => pg.evaluate(([sk, lv, seed]) => {
         start('read', NODES.read.findIndex(n => n.sk == sk && n.lv == lv));
         const q = genQ(sk, lv, seed);
@@ -8559,6 +8591,7 @@ async function main() {
         notes.push('sound4 ' + w);
         if (seed == 1) await shot('r01r-sound4-380x780');
       }
+      await k2Old(pg, false);
       network.push(...app.network);
       for (const e of app.errors) fail(e);
       await app.ctx.close();
@@ -9788,6 +9821,7 @@ async function main() {
     {
       const dx = await openApp(browser, { fixture: 'midway', width: 380, height: 780, scale: 2 });
       const dp = dx.page, bad = [], notes = [];
+      await k2Old(dp); // KINDS2: the reviewed Discover items are checked as the choice questions their seeds gave (Discover stops mix in sort, match and order)
       const dir = process.env.R01D_SHOTS || require('path').join(__dirname, 'out');
       const shot = n => dp.screenshot({ path: require('path').join(dir, 'disc-r01d-' + n + '-380x780.png') }).catch(() => {});
       await dp.evaluate(() => {
@@ -9867,6 +9901,7 @@ async function main() {
       if (s.bq < 18 || s.wide || s.minH < 48 || !/frogs in a pond die/.test(await dp.evaluate(() => G.q.label))) bad.push('frogs with hint: ' + JSON.stringify(s));
       await shot('frogs-hint');
       notes.push('frogs question ' + s.bq + ' px with the hint open');
+      await k2Old(dp, false);
       if (bad.length) fail('R-01d Discover review fixes:\n  ' + bad.join('\n  '));
       else step('R-01d at 380x780: ' + notes.join('; ') + '; 48 px buttons, no sideways scroll');
       network.push(...dx.network);
@@ -10318,7 +10353,7 @@ async function main() {
           return { ready: dataReady(), games: typeof GH, parts: LAZY_PARTS.map(partReady).join(), css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(),
             tags: [...document.scripts].filter(s => s.src).map(s => s.getAttribute('src')).join() };
         });
-        if (!s2.ready || s2.games !== 'undefined' || s2.parts !== 'false,false,false,false' || s2.css !== 'main,css-bt' || lazyF.some(f => s2.tags.includes(f))) bad.push('offline cold start: ' + JSON.stringify(s2));
+        if (!s2.ready || s2.games !== 'undefined' || s2.parts !== 'false,false,false,false' || s2.css !== 'main,css-gen2,css-bt' || lazyF.some(f => s2.tags.includes(f))) bad.push('offline cold start: ' + JSON.stringify(s2));
         // 3. Home -> Game Room with real taps: the waiting screen, then the hub from the cached games parts
         // (the waiting screen is seen by an observer: from the cache it can be gone before the next look)
         await p2.evaluate(() => {
@@ -10334,7 +10369,7 @@ async function main() {
         const s3 = await p2.evaluate(() => ({ parts: LAZY_PARTS.map(partReady).join(), css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(),
           cards: document.querySelectorAll('.gh-card').length, games: GH.games.map(g => g.id).join() }));
         if (!wait || wait.line !== 'Getting the games ready...' || !wait.back || wait.hub) bad.push('no "Getting the games ready..." screen first: ' + JSON.stringify(wait));
-        if (s3.parts !== 'true,true,true,true' || s3.css !== 'main,css-bt,css-games,css-rally,css-games2,css-games3' || s3.cards < 5 || !/snack/.test(s3.games)) bad.push('Game Room offline: ' + JSON.stringify(s3));
+        if (s3.parts !== 'true,true,true,true' || s3.css !== 'main,css-gen2,css-bt,css-games,css-rally,css-games2,css-games3' || s3.cards < 5 || !/snack/.test(s3.games)) bad.push('Game Room offline: ' + JSON.stringify(s3));
         // 4. a game from games2 starts: Snack Stand's card, then its Open button, then the day is on screen with the shared Pause
         await p2.click('#gsnack');
         await p2.click('#snopen', { timeout: 8000 });
@@ -10655,6 +10690,9 @@ async function main() {
           await pg.reload();
           await pg.waitForSelector('#app *');
           await pg.evaluate(() => { S.grade = 1; save(); });
+          // KINDS2: the step comes after the first Spanish word question from question 3 on; a review question from a stop that mixes in
+          // sort (no Spanish word to say) would move it, so these rounds ask the old questions
+          await k2Old(pg);
           // 1. a vocabulary round: Say it! after question 3
           await sk(pg, 'es_animal', 1);
           if (!(await toStep(pg))) throw new Error('no Say it! step in a Spanish round');
@@ -10726,6 +10764,7 @@ async function main() {
             await pb.reload();
             await pb.waitForSelector('#app *');
             await pb.evaluate(() => { S.grade = 1; save(); });
+            await k2Old(pb); // KINDS2: as above, the old questions
             await sk(pb, 'es_animal', 1);
             if (mode == 'denied') {
               if (!(await toStep(pb))) throw new Error('denied: no step');

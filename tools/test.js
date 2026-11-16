@@ -100,6 +100,12 @@ const run=(name,fn)=>{
   results.push(put(problems,note));
 };
 const uniq=a=>[...new Set(a)];
+// KINDS2 ("Old tests check old", the owner's decision): a check written before KINDS2 that checks the content or format of a stop that
+// now mixes in the new kinds runs eval(js+K2OLD+...). K2.off makes every generator and bank draw exactly what it did before KINDS2
+// (checked against a fixture by "KINDS2 mix"), and the items of the new bank forms (BANKNEW: sort, mark, order, match, multi, all
+// appended at the end of their bank) are taken out, so a check that reads the bank arrays sees the items it was written for.
+// Hashes, thresholds and expected values stay as they were; the new kinds have their own KINDS2 checks.
+const K2OLD=';K2.off=true;for(const k in BANK){const a=BANK[k];for(let i=a.length-1;i>=0;i--)if(BANKNEW.includes(a[i].form))a.splice(i,1)};';
 
 // ---- 1-5: generators (fuzzed) ----
 let GEN=null;
@@ -1979,7 +1985,7 @@ run('art set A: 40 pictures present, size, allowed elements and attributes, toke
 // ---- P2-15: ABC Beach ----
 run('ABC Beach (P2-15): letters, middle vowels, digraphs, syllables; 3,000 samples per level',()=>{
   const out=[];
-  const r=eval(js+`
+  const r=eval(js+K2OLD+`
   S.name='Ava';S.buddy='Ben';G={built:[]};
   const bad=[];
   const AL='abcdefghijklmnopqrstuvwxyz';
@@ -2239,7 +2245,7 @@ run('Tiny Town (P2-01): CURRICULUM M-PK levels, audio-first, answers by rule, 3,
     if(!harder(nd('pk_count',1))||harder(nd('pk_count',1)).lv!==2||!easier(nd('pk_num',2))||easier(nd('pk_num',2)).lv!==1)b('harder/easier skip the Tiny Town levels');
     return out;
   };
-  const r=eval(js+';('+body.toString()+')()');
+  const r=eval(js+K2OLD+';('+body.toString()+')()');
   for(const m of r)bad.push(m);
   // 7. new files: no raw hex colours, no Math.random in the generators
   const css=fs.readFileSync(path.join(SRC,'css','31-pk.css'),'utf8'),gen=fs.readFileSync(path.join(SRC,'js','31-gen-math-early.js'),'utf8');
@@ -2668,7 +2674,7 @@ run('profiles P5-10: every fixture round-trips byte for byte in the profile stor
 
 // ---- P2-06 fractions core: frac 2-8 generators (math checked), Fraction Forest stops, saves ----
 run('fractions P2-06: frac 2-8 maths per level, hints, say, labels, 3,000 samples per level',()=>{
-  const out=eval(js+`
+  const out=eval(js+K2OLD+`
   S.name='Ava';S.buddy='Ben';G={built:[]};
   const bad=[],N=3000,gcd=(a,b)=>b?gcd(b,a%b):a;
   const cnt=(h,re)=>(h.match(re)||[]).length;
@@ -2946,7 +2952,7 @@ run('phonics P2-18: sight 4-5, r-controlled and vowel-team picture words, 3,000 
     PATHS.read.worlds=CUR;buildNodes('read');
     return {checked};
   };
-  const r=eval(js+';('+body.toString()+')()');
+  const r=eval(js+K2OLD+';('+body.toString()+')()');
   return{problems:[...new Set(serrs)],note:'6 levels x 3,000 samples, '+r.checked+' stop checks over 7 fixtures x 7 grades'};
 });
 
@@ -3169,7 +3175,7 @@ run('Shape Garden (P2-02): the 14 M-K levels, audio-first, answers by rule, 3,00
       for(let s=1;s<=10;s++){const q=genQ(sk,lv,s);if(!q||q.lv!==lv||q.sk!==old)b('old level '+sk+lv+' changed')}
     return out;
   };
-  const r=eval(js+';('+body.toString()+')()');
+  const r=eval(js+K2OLD+';('+body.toString()+')()');
   for(const m of r)bad.push(m);
   // new files: no raw hex colours, no Math.random, no px colours in the new CSS
   const css=fs.readFileSync(path.join(SRC,'css','31-sg.css'),'utf8'),gen=fs.readFileSync(path.join(SRC,'js','31-gen-math-early.js'),'utf8');
@@ -4516,7 +4522,7 @@ run('grammar P2-20: gram 1-5 bank, 3000 questions per level, one right answer, h
     PATHS.read.worlds=CUR;buildNodes('read');
     return {checked};
   };
-  const r=eval(js+';('+body.toString()+')()');
+  const r=eval(js+K2OLD+';('+body.toString()+')()');
   return{problems:gerrs,note:'255 items, 15000 questions, '+r.checked+' stop checks over 6 fixtures x 7 grades'};
 });
 
@@ -5219,7 +5225,7 @@ run('grammar B P2-21: gram 6-9 bank, 3000 questions per level, one right answer,
     PATHS.read.worlds=CUR;buildNodes('read');
     return {checked};
   };
-  const r=eval(js+';('+body.toString()+')()');
+  const r=eval(js+K2OLD+';('+body.toString()+')()');
   return{problems:gerrs,note:'219 items, 12000 questions, '+r.checked+' stop checks over 6 fixtures x 7 grades'};
 });
 
@@ -5381,7 +5387,7 @@ run('vocabulary P2-23: levels 6-10 bank validates, one right answer per item, 30
     PATHS.read.worlds=CUR;buildNodes('read');
     return {checked};
   };
-  const r=eval(js+';('+body.toString()+')()');
+  const r=eval(js+K2OLD+';('+body.toString()+')()');
   return{problems:serrs,note:'327 items, 15000 questions, '+r.checked+' stop checks over 8 fixtures x 9 grades'};
 });
 
@@ -6073,7 +6079,7 @@ run('Factor Factory P2-09: stops in CURRICULUM order, 3,000 samples per new leve
     if(!(tallies.round3.five>20))add('round3 never has a 5 just right of the place');
     return {bad,n:Object.keys(tallies).length};
   };
-  const r=eval(js+';('+body.toString()+')()');
+  const r=eval(js+K2OLD+';('+body.toString()+')()');
   return{problems:uniq(r.bad),note:r.n+' levels x 3,000'};
 });
 
@@ -6735,7 +6741,7 @@ run('Decimal Desert P2-10: stops in CURRICULUM order, 3,000 samples per new leve
     for(let lv=6;lv<=8;lv++)for(let i=0;i<300;i++){const q=genQ('frac',lv,i*7919+31);if(kindProblems(q).length||!q.hint)add('frac'+lv+': '+kindProblems(q)[0])}
     return bad;
   };
-  const r=eval(js+';('+body.toString()+')()');
+  const r=eval(js+K2OLD+';('+body.toString()+')()');
   // the block of this chunk: no Math.random, no raw colour
   const src=fs.readFileSync(path.join(SRC,'js','35-gen-math-upper.js'),'utf8'),i0=src.indexOf('// ---- P2-10 Decimal Desert ----'),i1=src.indexOf('\n// ---- P',i0+10),blk=src.slice(i0,i1<0?undefined:i1);
   if(i0<0)r.push('P2-10 block marker missing');
@@ -10154,7 +10160,7 @@ run('Discover science K-2 P2-36: banks validate, tags, one right answer, hints, 
     }
     return {items,questions,checked};
   };
-  const r=eval(js+';('+body.toString()+')()');
+  const r=eval(js+K2OLD+';('+body.toString()+')()');
   // the questions ship in the data file, not in index.html (A11)
   const dataF=path.join(ROOT,DATA_FILE),idx=path.join(ROOT,'index.html');
   if(!fs.existsSync(dataF))serrs.push(DATA_FILE+' is not built');
@@ -10457,7 +10463,7 @@ run('Spanish framework P2-30',()=>{
     ES_UNITS.pop();delete SPN.tst;delete SK.es_tst;
     return{n,checked};
   };
-  const r=eval(js+';('+body.toString()+')()');
+  const r=eval(js+K2OLD+';('+body.toString()+')()');
   return{problems:errs.concat([]).length?uniq(errs):[],note:r.n+' generated questions, '+r.checked+' stop checks'};
 });
 
@@ -10798,7 +10804,7 @@ run('Galaxy Core P2-14: stops in CURRICULUM order, 3,000 samples per new level w
     for(const [k,min] of [['ooo2',300],['ooo3',500],['alg1',500],['alg2',150],['alg3',200],['geo5',300],['coord2',150],['fact3',300],['data5',1500],['story9',500]])if(seen[k]<min)add(k+': only '+seen[k]+' different labels');
     return bad;
   };
-  const r=eval(js+';('+body.toString()+')()');
+  const r=eval(js+K2OLD+';('+body.toString()+')()');
   // the block of this chunk: no Math.random, no raw colour, every global starts with gal
   const src=fs.readFileSync(path.join(SRC,'js','35-gen-math-upper.js'),'utf8'),i0=src.indexOf('// ---- P2-14 Galaxy Core ----'),i1=src.indexOf('\n// ---- P',i0+10),blk=src.slice(i0,i1<0?undefined:i1);
   if(i0<0)r.push('P2-14 block marker missing');
@@ -11013,7 +11019,7 @@ run('Spanish La Casa P2-31',()=>{
     load(null);
     return{n,checked};
   };
-  const r=eval(js+';('+body.toString()+')('+JSON.stringify(GEN)+','+JSON.stringify(COUNT)+')');
+  const r=eval(js+K2OLD+';('+body.toString()+')('+JSON.stringify(GEN)+','+JSON.stringify(COUNT)+')');
   return{problems:uniq(errs),note:r.n+' generated questions, '+r.checked+' stop checks'};
 });
 
@@ -11255,7 +11261,7 @@ run('Spanish La Ciudad P2-33',()=>{
     PATHS.es.worlds=CUR;buildNodes('es');
     return{n,checked};
   };
-  const r=eval(js+';('+body.toString()+')()');
+  const r=eval(js+K2OLD+';('+body.toString()+')()');
   return{problems:errs.length?uniq(errs):[],note:r.n+' generated questions, '+r.checked+' stop checks'};
 });
 
@@ -11467,7 +11473,7 @@ run('Discover 3-6, geography and civics P2-37: banks validate, grade and topic t
     if(LATEST!==6)bad('this chunk adds no migration; LATEST is '+LATEST);
     return {items,questions,pics,levels,checked,per};
   };
-  const r=eval(js+';('+body.toString()+')()');
+  const r=eval(js+K2OLD+';('+body.toString()+')()');
   // the questions ship in the data file, not in index.html (A11)
   const dataF=path.join(ROOT,DATA_FILE),idx=path.join(ROOT,'index.html');
   if(!fs.existsSync(dataF))serrs.push(DATA_FILE+' is not built');
@@ -13089,7 +13095,7 @@ run('Spanish Las Frases P2-34',()=>{
     PATHS.es.worlds=FULL;buildNodes('es');
     return{n,checked,sentN};
   };
-  const r=eval(js+';('+body.toString()+')()');
+  const r=eval(js+K2OLD+';('+body.toString()+')()');
   return{problems:errs.length?uniq(errs):[],note:r.n+' generated questions, '+r.sentN+' sentences, '+r.checked+' stop checks'};
 });
 
@@ -13787,7 +13793,7 @@ run('Spanish Los Cuentos P2-35',()=>{
     PATHS.es.worlds=FULL;buildNodes('es');
     return{n,checked,rounds};
   };
-  const r=eval(js+';('+body.toString()+')()');
+  const r=eval(js+K2OLD+';('+body.toString()+')()');
   return{problems:errs.length?uniq(errs):[],note:r.n+' generated questions, '+r.rounds+' rounds, '+r.checked+' stop checks'};
 });
 
@@ -13951,7 +13957,7 @@ run('Spanish review fixes R-01s',()=>{
       const it={sk,lv,seed,label:q0.label.replace(/^(el|la|los|las) /,''),box:0,due:0,n:1},q=revQ(it);
       if(q.ans!==q0.ans||it.label!==q0.label||q.rvk!==revKey(it))bad('review item '+sk+' '+lv+' saved before R-01s: '+JSON.stringify([q.ans,q0.ans,it.label]))}
     return info};
-  const r=eval(js+';('+body.toString()+')()');
+  const r=eval(js+K2OLD+';('+body.toString()+')()');
   return{problems:uniq(errs),note:r.q+' questions scanned across every Spanish skill and level'};
 });
 
@@ -14040,7 +14046,7 @@ run('Spanish speaking S-SPK',()=>{
     if(!spkMatch('la casa',['la masa','casa']))B('match: an alternative list');
     out.note.push(T.length+' matcher examples');
     return out};
-  const r=eval(js+';('+body.toString()+')()');
+  const r=eval(js+K2OLD+';('+body.toString()+')()');
   r.bad.forEach(bad);note.push(...r.note);
   return{problems:errs,note:note.join('; ')};
 });
@@ -15922,7 +15928,7 @@ run('reading review fixes R-01r',()=>{
     finally{Object.assign(ART,artKeep)}
     note.same=OLD.length;
   };
-  eval(js+';('+body.toString()+')()');
+  eval(js+K2OLD+';('+body.toString()+')()');
   return{problems:uniq(p).slice(0,80),note:note.scan+'; middle vowels '+note.vowels+'; '+note.same+' untouched levels unchanged by seed'};
 });
 
@@ -17578,7 +17584,7 @@ run('Discover review fixes R-01d',()=>{
       if(h!=='d7726a821099')bad('sci_phys 3 changed by seed ('+h+'), but R-01d does not touch it')}
     finally{Object.assign(ART,artKeep)}
   };
-  eval(js+';('+body.toString()+')()');
+  eval(js+K2OLD+';('+body.toString()+')()');
   return{problems:uniq(p).slice(0,80),note:note.pics+' Nature Trail items with picture answers; longest-answer share '+(note.long||[]).join(', ')};
 });
 
@@ -18923,7 +18929,10 @@ run('KINDS2 kinds: sort and mark render and validate, same() tables, bank builde
   return{problems:p,note:`${r.n} bank items of the new forms (${Object.entries(r.forms).map(([k,v])=>k+' '+v).join(', ')}); index.html ${ih}, gen2 ${g2} bytes`};
 });
 run('KINDS2 mix: kind share per stop, Pre-K and K rules, seed stability, K2.off gives the v169 questions',()=>{
-  const r=eval(js+`;(()=>{const out={bad:[],rows:[],share:{}},bad=m=>{if(out.bad.length<60&&!out.bad.includes(m))out.bad.push(m)};
+  // the app starts on an empty store (as when the suite starts), not on whatever save an earlier check left in global.localStorage
+  // (a fixture with no pet chosen made genStory's pet name throw, so this check passed alone and crashed in the full run)
+  const keepLS=global.localStorage;global.localStorage={getItem:()=>null,setItem:()=>{}};
+  let r;try{r=eval(js+`;(()=>{const out={bad:[],rows:[],share:{}},bad=m=>{if(out.bad.length<60&&!out.bad.includes(m))out.bad.push(m)};
     const artKeep=Object.assign({},ART);for(const k in ART)delete ART[k];
     try{
       for(const p in NODES)NODES[p].forEach(n=>{if(n.sk=='boss'||!SK[n.sk]||SK[n.sk].round)return;const id=nid(n),c={},w=PATHS[p].worlds[n.wi];
@@ -18944,7 +18953,7 @@ run('KINDS2 mix: kind share per stop, Pre-K and K rules, seed stability, K2.off 
         const h=require('crypto').createHash('md5').update(a.join('\\n')).digest('hex').slice(0,12);if(h!==F.off[id])bad(id+' with K2.off is not the v169 stop ('+h+')')}}
       finally{K2.off=false}
     }finally{Object.assign(ART,artKeep)}
-    return out})()`);
+    return out})()`)}finally{global.localStorage=keepLS}
   const p=[...r.bad];
   for(const id of K2_SORT){const c=r.share[id];if(!c){p.push(id+': not a stop');continue}
     const [k,n]=Object.entries(c).sort((a,b)=>b[1]-a[1])[0];if(n/400>.65)p.push(id+': '+k+' is '+Math.round(n/4)+'% (over 65%)');
