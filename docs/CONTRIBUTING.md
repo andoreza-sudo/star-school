@@ -299,7 +299,7 @@ where X is a word from the name of the check you are changing (the check names a
 `--only` is not available for `smoke.js`: it is one long script on one shared page, so a block cannot be skipped without the later blocks losing their state.
 
 The full check, before you hand work in: `bash tools/check.sh`. Build, contrast and the hex guard run first and stop the run if they fail.
-Then `test.js`, `smoke.js` and `a11y.js` run at the same time (with 4 or more CPUs; fewer CPUs run fewer at once), then `perf.js` alone
+Then `test.js`, `smoke.js` and `a11y.js` run at the same time (all three with 8 or more CPUs; with 2 to 7, smoke runs beside test then a11y, because three at once crashed Chrome on 4 CPUs), then `perf.js` alone
 and last, because it measures timings. A failing step does not stop the others: each step writes its own log in a temp directory, and a
 table at the end gives step, pass or fail, minutes and the log path. The exit status is non-zero if any step failed.
 `KEEP_GOING=0 bash tools/check.sh` is the old behaviour: one step after another on the terminal, stop at the first failure.

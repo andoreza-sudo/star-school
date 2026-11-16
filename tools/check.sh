@@ -100,9 +100,10 @@ if [ "$KEEP_GOING" = 0 ]; then
     run_step "$st" node "tools/$st.js" || { summary; exit 1; }
   done
 else
-  A11Y_PAR_DEFAULT=$(( CPUS - 2 )); [ "$A11Y_PAR_DEFAULT" -gt 2 ] && A11Y_PAR_DEFAULT=2; [ "$A11Y_PAR_DEFAULT" -lt 1 ] && A11Y_PAR_DEFAULT=1
+  A11Y_PAR_DEFAULT=$(( CPUS / 4 )); [ "$A11Y_PAR_DEFAULT" -gt 2 ] && A11Y_PAR_DEFAULT=2; [ "$A11Y_PAR_DEFAULT" -lt 1 ] && A11Y_PAR_DEFAULT=1
   export A11Y_PAR=${A11Y_PAR:-$A11Y_PAR_DEFAULT}
-  if [ "$CPUS" -ge 4 ]; then
+  # all three at once crashed Chrome in smoke on a 4-CPU box (the browser-closed error in P2-07), so that needs 8 CPUs
+  if [ "$CPUS" -ge 8 ]; then
     run_step test node tools/test.js & p1=$!
     run_step smoke node tools/smoke.js & p2=$!
     run_step a11y node tools/a11y.js & p3=$!
