@@ -31,7 +31,7 @@ const US = (() => {
     const all = BTW.more.split(' ');
     for (const lv in SPELL_WORDS) for (const ln of SPELL_WORDS[lv].split('\n')) all.push(ln.split('|')[0]);
     for (const l of DOL) all.push(...l);
-    for (const L of [CVC, BLEND, MAGICE, TEAMS, DIGR, RVW, VTW, SYLP]) for (const x of L) all.push(x[0]);
+    for (const L of [CVC, BLEND, SILENTE, TEAMS, DIGR, RVW, VTW, SYLP]) for (const x of L) all.push(x[0]);
     for (const l of SYLW) all.push(...l);
     dictK = {};
     for (const w of all) if (/^[a-z]+$/.test(w)) (dictK[key(w)] = dictK[key(w)] || new Set()).add(w);
@@ -48,7 +48,7 @@ const US = (() => {
       if (dict()[key(w)] && alone(w)) out.push(c ? { w, c } : { w });
     };
     if (band == 'B') {
-      for (const L of [CVC, BLEND, MAGICE, TEAMS, DIGR, RVW, VTW]) for (const x of L) if (ART[x[0]]) add(x[0]);
+      for (const L of [CVC, BLEND, SILENTE, TEAMS, DIGR, RVW, VTW]) for (const x of L) if (ART[x[0]]) add(x[0]);
     } else {
       for (const lv of SRC[band]) for (const ln of SPELL_WORDS[lv].split('\n')) {
         const [w, s] = ln.split('|'), re = new RegExp('\\b' + w + '\\b', 'i');

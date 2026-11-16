@@ -276,7 +276,6 @@
 🥺  # face with pleading eyes
 🦀  # crab
 🦁  # lion face
-🦄  # unicorn face
 🦅  # eagle
 🦆  # duck
 🦇  # bat
@@ -305,7 +304,7 @@
 🧼  # bar of soap
 🧽  # sponge
 🪁  # risky: kite
-🪄  # risky: magic wand
+🪀  # risky: yo-yo
 🪅  # risky: pinata
 🪐  # risky: ringed planet
 🪙  # risky: coin
@@ -359,3 +358,5 @@
 🌽  # ear of maize (pic 5 corn, R-01r)
 🤡  # clown face (pic 6 clown, R-01r)
 🧹  # broom (pic 6 broom, R-01r)
+🍴  # fork and knife
+🔦  # flashlight (torch)

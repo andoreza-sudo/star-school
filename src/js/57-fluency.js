@@ -211,7 +211,7 @@ function fluPlay(set, mode) {
     if (earned) ptEarn(earned);
     const mis = MIS.pay(MIS.done({k: 'sprint'})); // P5-08
     save();
-    rec ? (SFX.fanfare(), confetti(40)) : SFX.magic();
+    rec ? (SFX.fanfare(), confetti(40)) : SFX.chime();
     fluEnd({set, mode, key, timed, sec, right, rec, earned, mis});
   };
 
@@ -256,11 +256,11 @@ function fluEnd(r) {
   const sp = fluSpark(FLU.week(e, lower), lower);
   const o = GFX.endCard({ rec: r.rec, title, best: `Your best: ${lower ? bestNow + ' s' : bestNow}`, extra: (sp ? `<div class="gx-week">${sp}</div>` : '') + (r.mis || ''),
     earn: r.earned ? `${ico('ticket', 28)}<span>+${r.earned / 60} min of game time</span>` : '<span>Free practice, no game time</span>',
-    btns: UI.btn('Again', { kind: 'primary', size: 'lg', wide: true, icon: 'replay', id: 'fagain' }) +
+    btns: UI.btn('Again', { kind: 'primary', size: 'lg', wide: true, icon: 'replay', id: 'frepeat' }) +
       `<div class="rw-two">${UI.btn('Sets', { icon: 'path-math', id: 'fsets' })}${UI.btn('Home', { icon: 'home', id: 'fhome' })}</div>` });
   document.body.appendChild(o);
   if (S.voice) say(r.rec ? 'New record!' : 'Good job!');
-  o.querySelector('#fagain').onclick = () => {o.remove(); fluPlay(r.set, r.mode)};
+  o.querySelector('#frepeat').onclick = () => {o.remove(); fluPlay(r.set, r.mode)};
   o.querySelector('#fsets').onclick = () => {o.remove(); fluMenu()};
   o.querySelector('#fhome').onclick = () => {o.remove(); home()};
 }

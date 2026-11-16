@@ -5,11 +5,13 @@ const DOL=[
 'after again an any as ask by could every fly from give going had has her him his how just know let live may of old once open over put round some stop take thank them then think walk were when'.split(' ')];
 const CVC=[['cat','🐱'],['dog','🐶'],['pig','🐷'],['sun','☀️'],['bus','🚌'],['hat','🎩'],['bed','🛏️'],['cup','🥤'],['fox','🦊'],['bat','🦇'],['bug','🐛'],['hen','🐔'],['box','📦'],['map','🗺️'],['pen','🖊️'],['web','🕸️'],['van','🚐'],['can','🥫'],['bag','👜'],['ant','🐜'],['rat','🐀'],['nut','🥜'],['leg','🦵'],['pin','📌'],['egg','🥚'],['man','👨'],['tub','🛁'],['mug','☕'],['ten','🔟'],['six','6️⃣']];
 const BLEND=[['frog','🐸'],['crab','🦀'],['drum','🥁'],['fish','🐟'],['duck','🦆'],['ship','🚢'],['star','⭐'],['milk','🥛'],['tent','⛺'],['hand','✋'],['gift','🎁'],['flag','🚩'],['sock','🧦'],['bell','🔔'],['clock','🕐'],['truck','🚚'],['chick','🐤'],['sled','🛷'],['plug','🔌'],['ring','💍'],['shell','🐚'],['dress','👗']];
-const MAGICE=[['cake','🎂'],['kite','🪁'],['bike','🚲'],['ice','🧊'],['rose','🌹'],['bone','🦴'],['note','🎵'],['nose','👃'],['frame','🖼️'],['five','5️⃣'],['nine','9️⃣'],['pine','🌲'],['plane','✈️'],['whale','🐳'],['snake','🐍'],['smile','😊'],['globe','🌍'],['skate','⛸️'],['dice','🎲'],['rice','🍚'],['phone','📱'],['grape','🍇'],['wave','🌊'],['fire','🔥'],['plate','🍽️']];
+const SILENTE=[['cake','🎂'],['kite','🪁'],['bike','🚲'],['ice','🧊'],['rose','🌹'],['bone','🦴'],['note','🎵'],['nose','👃'],['frame','🖼️'],['five','5️⃣'],['nine','9️⃣'],['pine','🌲'],['plane','✈️'],['whale','🐳'],['snake','🐍'],['smile','😊'],['globe','🌍'],['skate','⛸️'],['dice','🎲'],['rice','🍚'],['phone','📱'],['grape','🍇'],['wave','🌊'],['fire','🔥'],['plate','🍽️']];
 const TEAMS=[['rain','🌧️'],['boat','⛵'],['tree','🌳'],['bee','🐝'],['goat','🐐'],['coat','🧥'],['feet','🦶'],['sheep','🐑'],['leaf','🍃'],['beach','🏖️'],['train','🚂'],['snail','🐌'],['road','🛣️'],['soap','🧼'],['moon','🌙'],['book','📖'],['spoon','🥄'],['boot','👢'],['cheese','🧀'],['tooth','🦷'],['mail','📬'],['peach','🍑'],['seed','🌱'],['pie','🥧'],['tie','👔'],['cow','🐄'],['owl','🦉'],['mouse','🐭'],['cloud','☁️'],['bowl','🥣']];
-const WL=lv=>[CVC,BLEND,MAGICE,TEAMS][Math.min(lv,4)-1];
+const WL=lv=>[CVC,BLEND,SILENTE,TEAMS][Math.min(lv,4)-1];
 const NOUNS=[...CVC,...BLEND].filter(w=>!['ten','six','man','leg','pin'].includes(w[0]));
-const BAD=/^(shpx|shx|fuvg|qvpx|pbpx|suck|tit|tits|snt|cum|sex|ass|piss|crap|damn|dam|hell|hoe|fyhg|phag|gjng|avt|fap|jnax|cbea|poop|butt|pee|kill|gun)$/;
+// the lists below are stored with letters turned 13 places (ROT13) so the source has no rude word in plain text; unrot() turns them back
+const unrot=s=>s.replace(/[a-z]/g,c=>String.fromCharCode((c.charCodeAt(0)-84)%26+97));
+const BAD=new RegExp('^('+unrot('shpx|shx|fuvg|qvpx|pbpx|fhpx|gvg|gvgf|snt|phz|frk|nff|cvff|penc|qnza|qnz|uryy|ubr|fyhg|phag|gjng|avt|snc|jnax|cbea|cbbc|ohgg|crr|xvyy|tha')+')$');
 const art=w=>/^[aeiou]/.test(w)?'an':'a';
 
 
@@ -53,7 +55,7 @@ DOL.push(
 'about better bring carry clean cut done draw drink eight fall far full got grow hold hot hurt if keep kind laugh light long much myself never only own pick seven shall show six small start ten today together try warm'.split(' '));
 // pic 5 / build 5: r-controlled vowels. [word, emoji, the r-vowel]. Wrong choices swap the r-vowel (bird / bard / burd).
 const RVW=[['car','🚗','ar'],['star','⭐','ar'],['yarn','🧶','ar'],['shark','🦈','ar'],['scarf','🧣','ar'],['cart','🛒','ar'],['dart','🎯','ar'],
-  ['horse','🐴','or'],['unicorn','🦄','or'],['corn','🌽','or'],['forest','🌲','or'],['sword','⚔️','or'],
+  ['horse','🐴','or'],['corn','🌽','or'],['torch','🔦','or'],['forest','🌲','or'],['sword','⚔️','or'],
   ['hammer','🔨','er'],['monster','👾','er'],['flower','🌸','er'],['water','💧','er'],['tower','🗼','er'],
   ['bird','🐦','ir'],['girl','👧','ir'],['circle','⚪','ir'],['birthday','🎉','ir'],
   ['turtle','🐢','ur'],['purse','👜','ur'],['church','⛪','ur']];
@@ -66,7 +68,7 @@ const VTW=[['moon','🌙','oo'],['spoon','🥄','oo'],['book','📖','oo'],['foo
   ['screw','🔩','ew'],['broom','🧹','oo'],['jewel','💎','ew'],['dew','💧','ew']];
 const RVP=['ar','or','er','ir','ur'],VTP=['oo','ou','ow','oi','oy','aw','ew'];
 // Spellings that could look rude must never be offered as wrong choices.
-const PHBAD=/^(poo|shart|fark|furk|ferk|firk|sherk|shx|dik|dirk|cum|tit)$/;
+const PHBAD=new RegExp('^('+unrot('cbb|funeg|snex|shex|srex|svex|furex|shx|qvx|qvex|phz|gvg')+')$');
 
 /* ---------- R-01r: safe, real wrong choices ---------- */
 // Picture Words 1-4 (genPic): the wrong choices are real, everyday words that differ from the picture word by a letter or two, or by
@@ -183,7 +185,7 @@ cloud:loud cloth proud
 bowl:bow howl blow`.split('\n').map(r=>{const [w,d]=r.split(':');return [w,d.split(' ')]}));
 // Words that sound the same: a listening question never offers two of them together (hear "two", see "to" and "two").
 const SAMESOUND=['to two too','for four','right write','there their','no know','eight ate','by buy','red read','new knew','our hour','one won',
-  'blue blew','be bee','see sea','so sew','some sum','here hear','would wood','which witch','whole hole','its it\'s','your you\'re',
+  'blue blew','be bee','see sea','so sew','some sum','here hear','would wood','whole hole','its it\'s','your you\'re',
   'not knot','i eye','made maid','wait weight','been bin','sun son','tail tale','mail male','road rode','rain rein','feet feat',
   'meet meat','week weak','pair pear','flour flower','night knight','dear deer','where wear'].map(g=>g.split(' '));
 const sameSound=w=>{const k=String(w).toLowerCase();return SAMESOUND.filter(g=>g.includes(k)).flat().filter(x=>x!==k)};

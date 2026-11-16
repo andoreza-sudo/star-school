@@ -46,7 +46,7 @@ function setup() {
   $('#go').onclick = () => {
     const n = $('#nm').value.trim();
     if (!n) { fb('Type your name first!', 'warn'); SFX.wrong(); $('#nm').focus(); return; }
-    S.name = n; S.pet = pet; S.petName = $('#pn').value.trim(); setGrade(grade); SFX.magic(); home(true);
+    S.name = n; S.pet = pet; S.petName = $('#pn').value.trim(); setGrade(grade); SFX.chime(); home(true);
   };
 }
 
@@ -418,14 +418,14 @@ function learn(p,i){const n=NODES[p][i],items=SPN[n.sk.slice(3)],rec=items.every
 
 // P4-07 sticker book (DESIGN_SYSTEM 6.4; CSS 43-shop.css): pages of 12; a sticker is its emoji (content) cut out die-cut style;
 // empty slots show a faint star. S.stickers is only read.
-function book(){const have=STK.filter(s=>S.stickers[s]).length,per=12,pages=[];
+function book(){const have=STK.filter(s=>stkN(s)).length,per=12,pages=[];
   for(let i=0;i<STK.length;i+=per)pages.push(STK.slice(i,i+per));
   const turn=i=>[-6,4,-2,7,-4,3,-7,5,-3,6,-5,2][i%12];
-  const slot=(s,i)=>{const n=S.stickers[s]||0;
+  const slot=(s,i)=>{const n=stkN(s);
     return n?`<button class="sb-slot sb-stk" data-s="${esc(s)}" style="--r:${turn(i)}deg" aria-label="Sticker ${i+1}${n>1?', you have '+n:''}">`+
       `<span class="sb-e">${esc(s)}</span>${n>1?`<b class="sb-n">×${n}</b>`:''}</button>`
       :`<span class="sb-slot sb-no" aria-hidden="true">${ico('star',30)}</span>`};
-  const page=(p,k)=>{const got=p.filter(s=>S.stickers[s]).length;
+  const page=(p,k)=>{const got=p.filter(s=>stkN(s)).length;
     return`<section class="sb-page${got==p.length?' full':''}"><h2 class="sb-ph"><span>Page ${k+1}</span><span class="sb-pc">${got==p.length?ico('check',20):''}${got} of ${p.length}</span></h2>`+
       `<div class="sb-grid">${p.map((s,j)=>slot(s,k*per+j)).join('')}</div></section>`};
   view(`<div class="top tbar gx-mtop s-read">${UI.ibtn('back','Back',{size:'sm',id:'back'})}<div class="ttl gx-ttl"><span class="gx-tb">${ico('sticker-book',24)}</span><span>My Stickers</span></div>`+

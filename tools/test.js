@@ -1078,7 +1078,7 @@ run('pictures: picFor fallback and art swap; picture generators use picFor',()=>
   delete ART.zzz;
   const ART0={...ART}; // real drawings (P4-13+) must survive this test
   // the picture generators go through picFor: with a drawing for every word, no word emoji is left in their html
-  const PW=[...CVC,...BLEND,...MAGICE,...TEAMS,...RVW,...VTW];
+  const PW=[...CVC,...BLEND,...SILENTE,...TEAMS,...RVW,...VTW];
   for(const [w] of PW)ART[w]='<rect width="64" height="64"/>';
   for(const sk of ['pic','build'])for(let lv=1;lv<=SK[sk].max;lv++)for(let s=1;s<=60;s++){
     const q=genQ(sk,lv,s);
@@ -1946,7 +1946,7 @@ run('art set A: 40 pictures present, size, allowed elements and attributes, toke
   const css=${JSON.stringify(fs.readFileSync(path.join(SRC,'css','21-art.css'),'utf8'))};
   for(const n of ${JSON.stringify(NAMES)})for(const m of ART[n].match(/--a-[a-z0-9]+/g)||[])if(!css.includes(m+':'))bad.push(n+': '+m+' not defined in 21-art.css');
   // picture-word questions show the drawing, not the emoji, for set A words that are picture words
-  const PW=[...CVC,...BLEND,...MAGICE,...TEAMS,...RVW,...VTW].filter(([w])=>ART[w]&&${JSON.stringify(NAMES)}.includes(w)); // P4-14: set A's own words
+  const PW=[...CVC,...BLEND,...SILENTE,...TEAMS,...RVW,...VTW].filter(([w])=>ART[w]&&${JSON.stringify(NAMES)}.includes(w)); // P4-14: set A's own words
   let shown=0;
   for(const sk of ['pic','build'])for(let lv=1;lv<=SK[sk].max;lv++)for(let s=1;s<=60;s++){
     const q=genQ(sk,lv,s);
@@ -12675,7 +12675,10 @@ run('word search and unscramble P3-15',()=>{
   const DATAB=fs.existsSync(path.join(ROOT,DATA_FILE))?fs.readFileSync(path.join(ROOT,DATA_FILE),'utf8'):'';
   // every word the app's lists hold: all the data files and the word lists of 20-words.js (sentences, passages, riddles too)
   // ES-AUDIO: not the recordings' manifest (its text is in d-es*.js already; its hex file names are not words)
-  const HARVEST=fs.readdirSync(path.join(SRC,'data')).filter(n=>n!=='d-es-audio.js').map(n=>fs.readFileSync(path.join(SRC,'data',n),'utf8')).join(' ')+fs.readFileSync(path.join(SRC,'js','20-words.js'),'utf8');
+  // CONTENT-01: the rude lists are kept in ROT13 in the source; harvest them decoded, as the words they were before
+  const unrotH=x=>x.replace(/[a-z]/g,c=>String.fromCharCode((c.charCodeAt(0)-84)%26+97));
+  const decRude=t=>t.replace(/unrot\('([^']*)'\)/g,(m,x)=>unrotH(x)).replace(/  rude: \(s =>[\s\S]*?\n  more:/,m=>m.replace(/'([^']*)'/g,(q,x)=>"'"+unrotH(x)+"'"));
+  const HARVEST=decRude(fs.readdirSync(path.join(SRC,'data')).filter(n=>n!=='d-es-audio.js').map(n=>fs.readFileSync(path.join(SRC,'data',n),'utf8')).join(' ')+fs.readFileSync(path.join(SRC,'js','20-words.js'),'utf8'));
   const body=function(HARVEST){
     const out=[],bad=m=>{if(out.length<40&&!out.includes(m))out.push(m)};
     const J=JSON.stringify,days=['2026-6-1','2026-6-2','2026-6-3','2026-6-4','2026-6-5'];
@@ -13117,7 +13120,7 @@ run('wearables and shop P4-07: every item drawn (valid SVG, roles only), fits ev
       if(Object.keys(before).length)store[KEY]=raw;
       loadSave(Object.keys(before).length?raw:null);migrate();
       const f={name,before:[before.owned||null,before.wear||null],after:[JSON.parse(JSON.stringify(S.owned||{})),JSON.parse(JSON.stringify(S.wear||{}))],w:Object.assign({},S.wear)};
-      f.pet=petHTML();f.rw=RW.pet();f.nstk=STK.filter(s=>S.stickers[s]).length;
+      f.pet=petHTML();f.rw=RW.pet();f.nstk=STK.filter(s=>stkN(s)).length; // CONTENT-01: the fish counts an old sticker too
       const k0=keep();
       f.shop={};
       for(const t of ['hat','toy','scene']){shopTab=t;shopSel=null;shop();f.shop[t]=app.innerHTML}
@@ -13555,7 +13558,7 @@ run('object art set B P4-14',()=>{
   //    bank pictures (vocabulary, Discover), Spanish art names, riddle and Memory Match pictures, logic-grid pictures
   const used={};
   const use=(w,s)=>{(used[w]=used[w]||new Set()).add(s)};
-  for(const L of [CVC,BLEND,MAGICE,TEAMS,RVW,VTW])for(const x of L)use(x[0],'words');
+  for(const L of [CVC,BLEND,SILENTE,TEAMS,RVW,VTW])for(const x of L)use(x[0],'words');
   for(const o of PK.OBJ)use(o[0],'counting');
   for(const id in BANK)for(const it of BANK[id]||[])if(it&&it.em)use(it.em[0],'bank');
   for(const u of ES_UNITS)for(const it of u.items)if(it[4])use(it[4],'es');
@@ -13564,7 +13567,7 @@ run('object art set B P4-14',()=>{
   for(const c in PUZ.logic.cats)for(const w in PUZ.logic.cats[c].pics||{})use(w,'logic');
   for(const n of BN)if(!used[n])bad.push(n+': no content asks for this picture');
   // 4. the content shows the drawing: picture-word and build-a-word questions for these words
-  const PW=new Set([...CVC,...BLEND,...MAGICE,...TEAMS,...RVW,...VTW].map(x=>x[0]).filter(w=>BN.includes(w)));
+  const PW=new Set([...CVC,...BLEND,...SILENTE,...TEAMS,...RVW,...VTW].map(x=>x[0]).filter(w=>BN.includes(w)));
   let shown=0,asked=new Set();
   for(const sk of ['pic','build'])for(let lv=1;lv<=SK[sk].max;lv++)for(let s=1;s<=120;s++){
     const q=genQ(sk,lv,s),w=q.kind=='build'?q.word:q.ans;
@@ -14091,7 +14094,7 @@ run('Spanish speaking check S-SPK2',()=>{
     {const n=spkcNear('el gato');if(n.length!==3||n.some(s=>spkMatch('el gato',s))||JSON.stringify(n)!==JSON.stringify(spkcNear('el gato')))B('distractors of el gato: '+n);
      out.note.push('el gato is compared with '+n.join(', '))}
     // 5. the listening corner: an in-memory store stands in for IndexedDB (SPKR.all / put / del)
-    loadSave(null);migrate();S.name='Ava';let saved=0;const keep={save,fb,SFX:SFX.magic};save=()=>{saved++};fb=()=>{};
+    loadSave(null);migrate();S.name='Ava';let saved=0;const keep={save,fb,SFX:SFX.chime};save=()=>{saved++};fb=()=>{};
     const mem=new Map();SPKR.all=async()=>[...mem.values()];SPKR.put=async v=>{mem.set(v.id,Object.assign({},v))};SPKR.del=async id=>{mem.delete(id)};
     const blob={size:10},now=Date.now(),D=SPKR.DAY;
     // the pure rule: older than the period or past the newest MAX go; 'never' keeps none
@@ -14372,7 +14375,7 @@ run('object art set C P4-15',()=>{
   //    syllable lists), counting objects, bank pictures (vocabulary, Discover), Spanish art names, riddle, Memory Match and logic pictures
   const used={};
   const use=(w,s)=>{(used[w]=used[w]||new Set()).add(s)};
-  for(const L of [CVC,BLEND,MAGICE,TEAMS,RVW,VTW,DIGR,SYLP])for(const x of L)use(x[0],'words');
+  for(const L of [CVC,BLEND,SILENTE,TEAMS,RVW,VTW,DIGR,SYLP])for(const x of L)use(x[0],'words');
   for(const o of PK.OBJ)use(o[0],'counting');
   for(const id in BANK)for(const it of BANK[id]||[])if(it&&it.em)use(it.em[0],'bank');
   for(const u of ES_UNITS)for(const it of u.items)if(it[4])use(it[4],'es');
@@ -14384,7 +14387,7 @@ run('object art set C P4-15',()=>{
   for(const u of ES_UNITS)for(const it of u.items)if(it[4]&&!ART[it[4]])bad.push('es_'+u.id+' '+it[1]+': art name '+it[4]+' has no drawing');
   for(const id in BANK)for(const it of BANK[id]||[])if(it&&it.em&&CN.includes(it.em[0])&&picFor(it.em[0],it.em[1])!==picArt(it.em[0]))bad.push(id+': picture '+it.em[0]+' does not show the drawing');
   // 4. the content shows the drawing: picture-word, build-a-word, digraph and syllable questions for these words
-  const PW=new Set([...CVC,...BLEND,...MAGICE,...TEAMS,...RVW,...VTW,...DIGR,...SYLP].map(x=>x[0]).filter(w=>CN.includes(w)));
+  const PW=new Set([...CVC,...BLEND,...SILENTE,...TEAMS,...RVW,...VTW,...DIGR,...SYLP].map(x=>x[0]).filter(w=>CN.includes(w)));
   let shown=0,asked=new Set();
   for(const sk of ['pic','build','dig','syl'])if(SK[sk])for(let lv=1;lv<=SK[sk].max;lv++)for(let s=1;s<=120;s++){
     const q=genQ(sk,lv,s),w=q.kind=='build'?q.word:(q.after||q.ans);
@@ -15745,10 +15748,10 @@ run('reading review fixes R-01r',()=>{
     // 2. spelling rules for made-up strings
     for(const w of ['snakb','cnake','socb','bgg','pih','nuj','cnt','bpoon','cpoon','crah','vrab','pif'.replace('f','h'),'flowouo','tbe','oi'])
       if(ksLegal(w))bad('ksLegal accepts the impossible spelling '+w);
-    for(const L of [CVC,BLEND,MAGICE,TEAMS,RVW,VTW,DIGR,SYLP,CVCM])for(const x of L)if(!ksLegal(x[0]))bad('ksLegal refuses the real word '+x[0]);
+    for(const L of [CVC,BLEND,SILENTE,TEAMS,RVW,VTW,DIGR,SYLP,CVCM])for(const x of L)if(!ksLegal(x[0]))bad('ksLegal refuses the real word '+x[0]);
     for(const w of ['bird','bard','berd','burd','cake','kite','boat','boot','flowar','jewel'])if(!ksLegal(w))bad('ksLegal refuses '+w);
     // 3. picture words 1-4: wrong choices come from the checked real-word sets only
-    const PW=[CVC,BLEND,MAGICE,TEAMS];
+    const PW=[CVC,BLEND,SILENTE,TEAMS];
     for(const L of PW)for(const [w] of L){
       const d=PWC[w];
       if(!d||d.length<3||new Set(d).size!==d.length||d.includes(w)){bad('PWC '+w+': needs 3 or more different wrong words');continue}
@@ -15864,7 +15867,7 @@ run('reading review fixes R-01r',()=>{
       if(new RegExp('\\b'+w+'\\b').test(strip(q.html))){bad('sound4 seed '+s+': the word '+w+' is printed');break}
       if(!q.say.startsWith(w+'.')||q.auto!==true){bad('sound4 seed '+s+': the word is not spoken');break}}
     // picture words that named something else are gone from the lists (review 2.4 and Should 13)
-    const ALLW=[CVC,BLEND,MAGICE,TEAMS,RVW,VTW,DIGR].flat().map(x=>x[0]);
+    const ALLW=[CVC,BLEND,SILENTE,TEAMS,RVW,VTW,DIGR].flat().map(x=>x[0]);
     for(const w of ['queen','cube','cone','home','game','vase','farm','arm','chart','burn','morning','down','new','stew','king','moth'])
       if(ALLW.includes(w))bad('picture word '+w+' still shows a picture of something else');
     // 9. small fixes: passages, vocabulary wording, spelling, gram 2 positions, Middle Sounds
@@ -15889,7 +15892,7 @@ run('reading review fixes R-01r',()=>{
       'comp2:acfa177fed10 comp3:b70aa1dffd71 comp4:bfd8a77b0656 comp5:3c064be2d179 comp7:9ead20baae65 info1:c4031e7def5a info3:25ad998d9e5b '+
       'info4:8edd1307198b sight2:37ed72d3dc40 sight3:03216fa7fca5 sight5:7b324e4e7522 build1:4db265ad9f39 sent3:f0054eae04f3 sent4:06a31dd5bb11 '+
       'sent5:04c90646fac0 spell1:35ddedc8fd46 spell4:201a12f0db2d spell5:e6a4a11ef010 gram1:51ea83d72579 gram3:2ee838affdca gram5:98e3569be110 '+
-      'gram6:ef46db97c3e0 gram7:4d0a9714bf4a vocab1:3f264da86a43 vocab2:305b1d815e94 vocab3:8db3b2e3838c vocab4:7b71ef3d8a97 vocab7:a7bbbd9d0539 '+
+      'gram6:ef46db97c3e0 gram7:4d0a9714bf4a vocab1:3f264da86a43 vocab2:305b1d815e94 vocab3:8db3b2e3838c vocab4:7b71ef3d8a97 vocab7:7a8f9ffae5f2 '+
       'vocab8:e9c52e884e42 vocab9:b56f0001a6cb vocab10:c440a0af5eb4').split(' ').map(x=>x.split(':'));
     const artKeep=Object.assign({},ART);for(const k in ART)delete ART[k];
     try{for(const [k,h] of OLD){const [,id,lv]=k.match(/^([a-z]+)(\d+)$/),a=[];
@@ -16414,6 +16417,157 @@ run('Block Builder journey G-01b',()=>{
   return{problems:[...new Set(p)].slice(0,50),note:o.notes.join('; ')};
 });
 
+// ---- G-BB3: Block Builder themed goals and big projects (src/js/60-blocks.js; games3 part) ----
+// R-03 B4: every kind of world has 4 themed goals and 2 big projects of 3-4 steps (42 new, 60 in all). Each goal is checked by code
+// on the blocks the child built (the built mask): a scripted build meets it (each project step in order, and not before its turn),
+// an empty world and a world as it was made meet none; the blocks a script uses are open in that kind of world; every scripted
+// block stands on something (it can be built by taps on top). The three goals shown turn with the date (the same all day); a project
+// started comes first; old saves (no mask, no pj, damaged values) load; the mask survives save and load; the checks are fast.
+run('Block Builder goals G-BB3',()=>{
+  const o=(()=>eval(js+`;(()=>{
+  const r={bad:[],notes:[]},bad=m=>{if(r.bad.length<60&&!r.bad.includes(m))r.bad.push(m)};
+  const keep=S.bb;
+  const R=(x,y,z,n,v,ax)=>Array.from({length:n},(_,s)=>ax?[x,y+s,z,v]:[x+s,y,z,v]);
+  const COL=(x,y,z,vs)=>vs.map((v,q)=>[x,y,z+q,v]);
+  const FL=(x,y,z,a,b,v)=>{const o=[];for(let i=0;i<a;i++)for(let j=0;j<b;j++)o.push([x+i,y+j,z,typeof v=='function'?v(i,j):v]);return o};
+  const WALL=(x,y,n,h,v)=>{const o=[];for(let z=1;z<=h;z++)o.push(...R(x,y,z,n,v));return o};
+  const RING=(x,y,v)=>FL(x,y,1,3,3,v).filter(c=>!(c[0]==x+1&&c[1]==y+1));
+  const PLUS=(x,y,c,v)=>[[x,y,1,c],[x+1,y,1,v],[x-1,y,1,v],[x,y+1,1,v],[x,y-1,1,v]];
+  // the scripted builds: a themed goal's cells, or a project's cells step by step; o: animals / night for the check
+  const SC={
+    bridge:R(10,3,1,3,4), raft:[[12,3,1,4]], garden:R(2,2,1,4,17), pen:RING(2,2,4),
+    farm:[R(1,1,1,5,4),R(1,3,1,3,23),WALL(1,5,4,2,8),[[4,3,1,19]]],
+    harbour:[R(10,8,1,4,4),COL(2,8,1,[5,5,22]),[[13,12,1,4],[13,12,2,12]]],
+    stairs:[[1,1,1,4],[2,1,1,3],[2,1,2,4],...COL(3,1,1,[3,3,4]),...COL(4,1,1,[3,3,3,4])], peak:[[2,2,1,22]], cabin:WALL(1,1,4,2,5),
+    lavahut:[...PLUS(3,3,19,25),[7,3,1,21]],
+    mine:[R(1,1,1,6,4),[[3,1,2,8]],COL(1,4,1,[3,3,22])],
+    castle:[WALL(1,1,5,2,8),COL(1,4,1,[8,8,8,8,8]),[[1,7,1,8],[2,7,1,7],[3,7,1,8]],[[1,1,3,22]]],
+    pyramid:[...FL(2,2,1,3,3,9),[3,3,2,9]], well:PLUS(3,3,10,3), palm:COL(2,2,1,[5,5,5,6]), cactusrow:R(2,2,1,4,24),
+    oasis:[R(1,1,1,4,10),[...COL(1,4,1,[5,5,5,6]),...COL(4,4,1,[5,5,5,6])],[...R(1,7,1,3,12),...R(1,7,2,3,13)],[[4,7,1,22]]],
+    town:[R(1,1,1,6,3),WALL(1,3,4,2,8),COL(1,6,1,[5,5,22])],
+    pool:PLUS(3,3,10,8), longwall:WALL(1,1,8,2,8), rainbow:[3,4,8,12,13,9].map((v,s)=>[1+s,1,1,v]), checker:FL(2,2,1,3,3,(i,j)=>(i+j)%2?13:12),
+    playground:[[[1,1,1,13],[2,1,1,13],[2,1,2,13],...COL(3,1,1,[13,13,13])],FL(1,4,1,2,2,9),[...COL(1,8,1,[5,5,5]),...COL(3,8,1,[5,5,5])],[]],
+    bigcastle:[WALL(1,1,6,2,3),COL(1,4,1,[3,3,3,3,3]),R(1,7,1,4,10),[[1,1,3,22]]],
+    lighthouse:COL(2,2,1,[28,28,28,22]), sandcastle:[...FL(2,2,1,2,2,9),...FL(2,2,2,2,2,9)], umbrella:COL(2,2,1,[5,5,28]), pier:R(9,4,1,5,4),
+    beachhouse:[FL(1,1,1,3,3,4),WALL(1,5,3,2,12),[[1,8,1,12],[2,8,1,7],[3,8,1,12]],[[4,5,1,22]]],
+    ship:[R(11,2,1,5,4),COL(13,2,2,[5,5,5]),[[12,2,2,12]],[[13,2,5,22]]],
+    snowman:COL(2,2,1,[11,11,23]), snowfamily:[2,4,6].flatMap(x=>COL(x,2,1,[11,11,23])), igloo:RING(2,2,30),
+    skijump:[[1,1,1,11],...COL(2,1,1,[11,11]),...COL(3,1,1,[11,11,11]),...COL(4,1,1,[11,11,11,11])],
+    village:[WALL(1,1,4,2,5),R(1,1,3,4,31),[[5,1,1,22]]],
+    palace:[WALL(1,1,5,2,30),COL(1,4,1,[30,30,30,30,30]),[[1,7,1,30],[2,7,1,7],[3,7,1,30]],[[1,1,3,22]]],
+    cloudbridge:R(1,1,1,5,33), crystal:COL(2,2,1,[34,34,34,34,34]), balloon:COL(2,2,1,[4,12,13]), stars:[[2,2,1,22],[4,2,1,22],[6,2,1,22]],
+    skycastle:[WALL(1,1,5,2,33),[...COL(1,4,1,[34,34,34]),...COL(3,4,1,[34,34,34])],[[1,8,1,33],[2,8,1,7],[3,8,1,33]],[[1,4,4,22]]],
+    rocket:[FL(1,1,1,3,3,3),COL(2,2,2,[13,13,13,13]),[[2,2,6,12]],COL(6,6,1,[13,7,13])],
+  };
+  const OPT={stars:{night:true},playground:{an:3}};
+  // the ground for the scripts: grass, with the sea at x >= 10
+  const base=()=>{const w=bbFlat();for(let x=10;x<BW;x++)for(let y=0;y<BD;y++)w[bbI(x,y,0)]=10;return w};
+  const build=(cells)=>{const w=base(),mk=new Uint8Array(w.length);for(const [x,y,z,v] of cells){w[bbI(x,y,z)]=v;mk[bbI(x,y,z)]=1}return{w,mk}};
+  // 1. how many, and every world: 4 themed goals and 2 big projects of 3-4 steps, each with a short line to read aloud
+  const NEW=BB_GOALS.filter(G=>G[3]||G[4]);
+  if(NEW.length<42||BB_GOALS.length<60)bad('new goals '+NEW.length+', all '+BB_GOALS.length);
+  if(new Set(BB_GOALS.map(G=>G[0])).size!==BB_GOALS.length)bad('goal ids are not unique');
+  for(const G of BB_GOALS){
+    if(!G[1]||G[1].length>80||/[<>{}]/.test(G[1]))bad(G[0]+': its line "'+G[1]+'"');
+    if(!(BBI[G[2]]||ICONS[G[2]]))bad(G[0]+': no icon '+G[2]);
+    if(G[4]){if(G[4].length<3||G[4].length>4||!G[5])bad(G[0]+': '+G[4].length+' steps');for(const s of G[4])if(!s[0]||s[0].length>70||typeof s[1]!='function')bad(G[0]+': step "'+s[0]+'"')}
+  }
+  const owners={};
+  for(const t of BBWT){
+    const L=bbWGoals({t:t[0]}),th=L.filter(G=>G[3]),pj=L.filter(G=>G[4]);
+    if(th.length!==4||pj.length!==2||L.some(x=>!x)||new Set(L).size!==L.length)bad('world '+t[0]+': themed '+th.length+', projects '+pj.length);
+    for(const G of th.concat(pj))owners[G[0]]=t;
+  }
+  if(Object.keys(owners).length!==NEW.length)bad('a new goal is in no world, or in two: '+Object.keys(owners).length);
+  // 2. every goal reachable: its script meets it (a project: step by step, never a step early); an empty world meets nothing
+  const empty=build([]),gen={};
+  for(const t of BBWT)gen[t[0]]=[1,7,99].map(sd=>bbGen(t[0],sd));
+  for(const G of NEW){
+    const t=owners[G[0]],sc=SC[G[0]],opt=OPT[G[0]]||{},chap=t&&t[3]!=null?t[3]:0;
+    if(!sc){bad(G[0]+': no scripted build in the test');continue}
+    const W={t:t[0],goals:{}};
+    const met=(cells,w,last=1)=>{const b=build(cells);return bbGoalsMet(w||W,b.w,b.mk,last?opt:{}).find(m=>m[0]===G)};
+    if(bbGoalsMet(W,empty.w,empty.mk,Object.assign({an:10,night:true})).length)bad('an empty world meets goals: '+bbGoalsMet(W,empty.w,empty.mk,{an:10,night:true}).map(m=>m[0][0]));
+    for(const w of gen[t[0]])if(bbGoalsMet(W,w,new Uint8Array(w.length),{an:10,night:true}).length)bad(t[0]+': a world as it was made meets a goal');
+    const all=G[4]?sc.flat():sc;
+    // the blocks are open in this kind of world (no star blocks, no prize, no later chapter's set) and each stands on something
+    for(const [x,y,z,v] of all){
+      if(BLOCKS[v].need||BB_CHS.some((c,k)=>c.prize==v||(k>chap&&c.set.includes(v))))bad(G[0]+': uses '+BLOCKS[v].n+', not open in a '+t[0]+' world');
+      const b=build(all).w,under=z?b[bbI(x,y,z-1)]:1;
+      if(!under||BLOCKS[v].deco&&!bbOpaque(under)&&under!=10)bad(G[0]+': the '+BLOCKS[v].n+' at '+[x,y,z]+' stands on nothing');
+    }
+    if(G[3]){
+      const m=met(sc);
+      if(!m)bad(G[0]+': the scripted build does not meet it');
+      else if(!m[1].length)bad(G[0]+': no cells to sparkle');
+      if(sc.length>1&&met(sc.slice(0,-1)))bad(G[0]+': met one block early');
+    }else{
+      let cells=[];
+      for(let s=0;s<G[4].length;s++){
+        const last=s==G[4].length-1,before=met(cells,null,last),pjw={t:t[0],goals:{},pj:{[G[0]]:s}};
+        if(sc[s].length&&before&&before[2]>s)bad(G[0]+': step '+(s+1)+' met before it was built');
+        cells=cells.concat(sc[s]);
+        const m=met(cells,pjw,last);
+        if(!m||m[2]!==s+1)bad(G[0]+': step '+(s+1)+' "'+G[4][s][0]+'" not met by its script ('+(m?m[2]:'none')+')');
+      }
+      const m=met(cells);
+      if(!m||m[2]!==G[4].length)bad(G[0]+': the whole project from the start: '+(m?m[2]:'none'));
+      if(bbGoalLine({t:t[0]},G).indexOf('step 1 of '+G[4].length)<0)bad(G[0]+': its line '+bbGoalLine({t:t[0]},G));
+    }
+  }
+  // the sea and the top are there in the worlds that need them: a row of 5 open sea cells (pier, ship), any (bridge, raft, dock, boat);
+  // a mountain's top leaves room for a lamp
+  for(const [t,n] of [['beach',5],['island',4]])for(let sd=1;sd<=20;sd++){
+    const w=bbGen(t,sd),sea=(x,y)=>x>=0&&y>=0&&x<BW&&y<BD&&w[bbI(x,y,0)]==10&&!w[bbI(x,y,1)];
+    let ok=false;for(let x=0;x<BW&&!ok;x++)for(let y=0;y<BD&&!ok;y++)ok=[...Array(n).keys()].every(s=>sea(x+s,y))||[...Array(n).keys()].every(s=>sea(x,y+s));
+    if(!ok)bad(t+' world '+sd+': no '+n+' sea cells in a row');
+  }
+  for(let sd=1;sd<=20;sd++){const C=bbGC(bbGen('mountain',sd),new Uint8Array(BW*BD*BH));if(C.top>BH-2)bad('mountain '+sd+': no room for a lamp on top ('+C.top+')')}
+  // 3. the goals shown turn with the date: the same all day; over two weeks every themed goal and project of a world comes up
+  for(const t of BBWT){
+    const w={t:t[0],goals:{ten:1}},seen=new Set(),lists=new Set();
+    for(let d=1;d<=14;d++){
+      const key='2026-12-'+d,a=bbGoalNext(w,3,key),b=bbGoalNext(w,3,key);
+      if(a.map(G=>G[0]).join()!==b.map(G=>G[0]).join())bad(t[0]+': the goals shown change during a day');
+      if(a.length!==3||!a.some(G=>G[3]||G[4]))bad(t[0]+' '+key+': shown '+a.map(G=>G[0]));
+      a.forEach(G=>seen.add(G[0]));lists.add(a.map(G=>G[0]).join());
+    }
+    const own=bbWGoals(w).filter(G=>G[3]||G[4]).filter(G=>!seen.has(G[0]));
+    if(own.length)bad(t[0]+': not shown in two weeks: '+own.map(G=>G[0]));
+    if(lists.size<5)bad(t[0]+': only '+lists.size+' different lists in two weeks');
+    if(bbGoalNext({t:t[0]},1,'2026-12-3')[0][0]!=='ten')bad(t[0]+': Build 10 blocks should come first in a new world');
+    const P=bbWGoals(w).filter(G=>G[4])[1],w2={t:t[0],goals:{ten:1},pj:{[P[0]]:1}};
+    for(let d=1;d<=5;d++)if(bbGoalNext(w2,1,'2026-12-'+d)[0]!==P||bbPjCur(w2,'2026-12-'+d)!==P)bad(t[0]+': a project started should come first');
+    // a goal done: the next one in its place, the others stay where they were
+    const key='2026-12-9',a=bbGoalNext(w,3,key),w3={t:t[0],goals:{ten:1,[a[0][0]]:1}},b=bbGoalNext(w3,3,key);
+    if(!a.slice(1,3).every(G=>b.includes(G))||b.includes(a[0]))bad(t[0]+': a goal done: the other two should stay shown: '+a.map(G=>G[0])+' / '+b.map(G=>G[0]));
+  }
+  r.notes.push('island on 2026-12-1..3: '+[1,2,3].map(d=>bbGoalNext({t:'island',goals:{ten:1}},3,'2026-12-'+d).map(G=>G[0]).join(' ')).join(' | '));
+  // 4. old saves: no mask, no pj, damaged values; the goals done before count as before; the mask survives save and load
+  S.bb={worlds:[{name:'Mountains 2',d:bbEncode(bbGen('mountain',3)),goals:{ten:1,boom:1}}],cur:0};
+  const ow=bbS().worlds[0];
+  if(bbGoalN(ow)!==2||bbWGoals(ow).length!==19||JSON.stringify(bbPjOf(ow))!=='{}'||bbMaskDec(ow.mk).some(v=>v))bad('an old world: goals '+bbGoalN(ow)+' of '+bbWGoals(ow).length);
+  for(const [mk,pj] of [['zz!*',[1,2]],[42,'x'],['AAAA',{mine:99,castle:-3}],[null,null]]){
+    const w={t:'mountain',goals:{},mk,pj};
+    try{const m=bbMaskDec(w.mk);if(m.length!==BW*BD*BH||m.some(v=>v))bad('a damaged mask reads as '+m.filter(v=>v).length+' cells');
+      for(const G of bbWGoals(w).filter(G=>G[4])){const s=bbPjN(w,G);if(!(s>=0&&s<G[4].length))bad('damaged pj: '+G[0]+' '+s)}
+      bbGoalNext(w,3,'2026-12-1');bbPjCur(w);bbGoalLine(w,bbGoalId('mine'))}catch(e){bad('damaged mk / pj crashed: '+e.message)}
+  }
+  if(bbPjN({goals:{mine:1},pj:{}},bbGoalId('mine'))!==3)bad('a project done shows all its steps');
+  const mk=new Uint8Array(BW*BD*BH);[0,7,8,999,3583].forEach(n=>mk[n]=1);
+  const enc=bbMaskEnc(mk),back=JSON.parse(JSON.stringify({mk:enc})).mk;
+  if(bbMaskDec(back).join()!==mk.join()||enc.length>600||bbMaskEnc(new Uint8Array(BW*BD*BH))!=='')bad('the mask after save and load ('+enc.length+' letters)');
+  // 5. fast enough for every tap: a whole world marked as built, every goal of its kind checked
+  let worst=0;
+  for(const t of BBWT){const w=bbGen(t[0],5),m=new Uint8Array(w.length);for(let n=0;n<w.length;n++)if(w[n])m[n]=1;
+    const t0=Date.now();for(let q=0;q<10;q++)bbGoalsMet({t:t[0]},w,m,{});worst=Math.max(worst,(Date.now()-t0)/10)}
+  if(worst>20)bad('checking the goals takes '+worst+' ms on a full world');
+  r.notes.push(NEW.length+' new goals ('+BB_GOALS.length+' in all, '+bbWGoals({t:'island'}).length+' in an island), check on a full world '+worst.toFixed(1)+' ms');
+  S.bb=keep;
+  return r})()`))();
+  return{problems:o.bad,note:o.notes.join('; ')};
+});
+
 // ---- G-HC2: Hill Climb journey (src/js/62-hill.js, src/css/61-hill.css; games part) ----
 // Worlds of hand-shaped stages, missions and stars, the garage, easy driving. The simulation runs here without a page: bots drive
 // every stage (a young child holding the gas with easy driving on; a careful driver with it off, who levels the car in the air).
@@ -16556,6 +16710,103 @@ run('Hill Climb journey G-HC2',()=>{
   if(/fillText\([^)]*\p{Extended_Pictographic}/u.test(src)||/petE\(\)/.test(src))p.push('emoji drawn on the canvas');
   if(!/data-st="\$\{D\.id\}"/.test(src)||!/id:'hcgo'/.test(src))p.push('the menu needs the play button #hcgo and the distance drive buttons');
   return{problems:[...new Set(p)].slice(0,50),note:o.notes.join('; ')};
+});
+
+// ---- G-HC3: Hill Climb runs at game speed on a slow tablet, today's drive and the daily road, music, buzz, garage level 2
+//      (src/js/62-hill.js, src/css/61-hill.css). The smoke step "// G-HC3" plays it by touch.
+run('Hill Climb daily drive and garage level 2 G-HC3',()=>{
+  const p=[],rd=f=>fs.readFileSync(path.join(SRC,f),'utf8');
+  function T(){
+    const r={bad:[],notes:[]},bad=m=>{if(r.bad.length<60&&!r.bad.includes(m))r.bad.push(m)};
+    const keepG=S.garage,keepS=[S.sound,S.music,S.calm,S.hcSnd,S.voice,S.buzz];
+    const openAll=g=>{for(const ws of HC_ST)for(const s of ws)g.st[s[0]]=7};
+    // 1. fixed steps (R-03 H1): ten frames of 0.1 s move the game as far as sixty frames of 1/60 s; a frame never runs more than 0.1 s
+    const fr=(n,dt)=>{const H=hcNew(0,0,{easy:true});for(let i=0;i<n;i++){H.gas=true;hcAdvance(H,dt)}return H};
+    const a=fr(10,.1),b=fr(60,1/60),c=fr(4,.25);
+    if(Math.abs(a.t-1)>.01||Math.abs(b.t-1)>.01)bad('fixed steps: 1 s of play in slow frames is '+a.t.toFixed(3)+' s, in fast frames '+b.t.toFixed(3)+' s');
+    if(Math.abs(a.w1.x-b.w1.x)>.5)bad('slow and fast frames should drive the same way: '+a.w1.x.toFixed(1)+' / '+b.w1.x.toFixed(1));
+    if(c.t>.41)bad('a frame should run at most 0.1 s of play: '+c.t.toFixed(3));
+    r.notes.push('1 s of play: '+a.t.toFixed(3)+' s in 0.1 s frames, '+b.t.toFixed(3)+' s in 1/60 s frames');
+    // 2. today's drive from the date: the same all day; fresh garage: only Green Meadow; twists vary; a new distance road each day
+    S.garage={};let g=garageS();const keys=[];for(let d=1;d<=60;d++)keys.push('2026-'+(1+d%12)+'-'+(1+d%28)+'/'+d);
+    const tws=new Set();for(const k of keys){const D=hcDay(k),E=hcDay(k);if(JSON.stringify(D)!==JSON.stringify(E))bad('today\'s drive changes during the day');if(D.wi!==0)bad('fresh garage: today\'s drive in a closed world '+D.wi);tws.add(D.tw);
+      if(!D.label||D.goal!==HC_DAY_M||D.done)bad('today\'s drive: '+JSON.stringify(D))}
+    if(tws.size<5)bad('twists over 60 days: '+[...tws]);
+    const sig=C=>[C.n,Array.from(C.h).reduce((a,v,k)=>(a*31+Math.round(v)*(k%7+1))%1000000007,7),C.coins.length,C.pits.length,C.fuel.join()].join('/');
+    if(hcSeed(0,'2026-11-15')===hcSeed(0,'2026-11-16')||sig(hcEndless(0,hcSeed(0,'2026-11-15')))===sig(hcEndless(0,hcSeed(0,'2026-11-16'))))bad('the distance road should change from day to day');
+    const s1=sig(hcEndless(2,777)),cc=Object.keys(HC_CC).length;for(const k in HC_CC)if(k.startsWith('E2/777'))delete HC_CC[k];if(sig(hcEndless(2,777))!==s1)bad('a day\'s road is not the same when built again');
+    if(hcNew(0,0,{seed:123}).C!==hcCourse(HC_ST[0][0],0))bad('the stages must not change with the day');
+    openAll(g);const wis=new Set();for(const k of keys){const D=hcDay(k);wis.add(D.wi);if(HCW[D.wi].space&&D.wx)bad('no night or rain on the Moon: '+D.label);if(!hcWOpen(D.wi))bad('a closed world')}
+    if(wis.size<5)bad('today\'s drive should visit many worlds once they are open: '+[...wis]);
+    // twists change the road or the drive
+    const D0={key:'x',wi:0,tw:'',seed:4321,goal:HC_DAY_M,wx:null},cnt=(tw,f)=>f(hcEndless(0,4321,tw));
+    if(!(cnt('bolts',C=>C.coins.length)>=cnt('',C=>C.coins.length)*1.7))bad('bolt rain: '+cnt('bolts',C=>C.coins.length)+' bolts against '+cnt('',C=>C.coins.length));
+    if(!(cnt('fuel',C=>C.fuel.length)>cnt('',C=>C.fuel.length)*1.5))bad('fuel party: '+cnt('fuel',C=>C.fuel.length)+' cans against '+cnt('',C=>C.fuel.length));
+    if(!(cnt('jumps',C=>C.kicks.length+C.pits.length)>cnt('',C=>C.kicks.length+C.pits.length)*1.3))bad('jump day: more ramps and gaps');
+    if(!(hcNew(0,null,{day:Object.assign({},D0,{tw:'float'})}).gm<.8))bad('floaty day: lower gravity');
+    // 3. a young child (easy driving, always on the gas, the starter truck, no upgrades) reaches the gold flag in every world with every twist
+    let miss=0,tt=0,n=0;
+    HCW.forEach((W,wi)=>HC_TW.forEach(([tw])=>{const D=Object.assign({},D0,{wi,tw,seed:hcSeed(wi,'k'+tw)}),H=hcNew(wi,null,{easy:true,day:D});
+      while(!H.over&&H.t<90&&!H.dayHit){H.gas=true;hcStep(H,1/120)}n++;tt+=H.t;
+      if(!H.dayHit){miss++;bad(W.id+' '+tw+': the gold flag not reached ('+Math.round((H.maxX-60)/20)+' m, '+H.crashes+' restarts, '+(H.result||'')+')')}}));
+    r.notes.push('today\'s drive: '+(n-miss)+' of '+n+' world and twist pairs driven to the gold flag by the easy-driving bot, '+(tt/n).toFixed(1)+' s on average');
+    // 4. the bonus: once a day, again the next day; nothing lost on a missed day, no streak
+    S.garage={bolts:10};g=garageS();const Dk=Object.assign({},D0,{key:'2026-11-15'}),H1=hcNew(0,null,{day:Dk});
+    if(hcDayPay(H1)!==0)bad('no bonus before the gold flag');H1.dayHit=true;
+    const p1=hcDayPay(H1),p2=hcDayPay(H1),H2=hcNew(0,null,{day:Object.assign({},Dk,{key:'2026-11-18'})});H2.dayHit=true;const p3=hcDayPay(H2);
+    if(p1!==HC_DAY_BONUS||p2!==0||p3!==HC_DAY_BONUS||g.bolts!==10+2*HC_DAY_BONUS||g.day!=='2026-11-18')bad('today\'s bonus: '+[p1,p2,p3,g.bolts,g.day]);
+    if(!hcDay('2026-11-18').done||hcDay('2026-11-19').done)bad('done is for the day only');
+    if(Object.keys(g).some(k=>/streak|days/i.test(k)))bad('no streak in the save');
+    // 5. garage level 2 (R-03 A2): fixed prices shown, opens at HC_T2_NEED stars, the save-for line names the next thing
+    const kinds=new Set(HC_T2.map(t=>t[1]));if(kinds.size!==3||HC_T2.length!==12)bad('level 2: 3 kinds of 4');
+    for(const k of kinds){const cs=HC_T2.filter(t=>t[1]==k).map(t=>t[3]);if(cs.some((v,i)=>i&&v<=cs[i-1]))bad(k+': prices should go up')}
+    const t2sum=HC_T2.reduce((a,t)=>a+t[3],0),t1sum=Object.values(VEH).reduce((a,V)=>a+V.cost,0)+UPG.length*UPCOST.reduce((a,b)=>a+b,0)+PAINTS.reduce((a,q)=>a+q[2],0);
+    if(t2sum<5000)bad('level 2 should give something to save for: '+t2sum);
+    S.garage={};g=garageS();const sf0=hcSaveFor();if(!sf0||sf0.cost!==20||!/Save for/.test(hcSaveLine()))bad('fresh save-for: '+JSON.stringify(sf0)+' '+hcSaveLine());
+    if(hcBuy2('gold')!=='locked'||g.own2.gold)bad('level 2 is closed before '+HC_T2_NEED+' stars');
+    g.bolts=1e6;for(const k in VEH)g.vehs[k]=1;for(const [k] of UPG)while(hcBuyUp(k));for(const q of PAINTS)g.paints[q[0]]=1;
+    if(!(hcSaveFor()||{}).lock||!/opens at 30 stars/.test(hcSaveLine()))bad('level 1 bought, level 2 closed: '+hcSaveLine());
+    openAll(g);g.bolts=100;if(!hcT2Open())bad('level 2 opens with stars');
+    if(hcBuy2('gold')!=='short'||g.bolts!==100)bad('buying never goes below 0 bolts');
+    if(!/Save for Gold rims: 250 bolts, 150 more/.test(hcSaveLine()))bad('save-for line: '+hcSaveLine());
+    g.bolts=t2sum;for(const t of HC_T2)if(hcBuy2(t[0])!=='bought')bad('could not buy '+t[0]);
+    if(g.bolts!==0||hcSaveFor()!==null||!/Everything/.test(hcSaveLine()))bad('everything bought: '+[g.bolts,hcSaveLine()]);
+    if(g.rim!=='rainbow'||hcBuy2('rainbow')!=='off'||g.rim!==''||hcBuy2('gold')!=='on'||g.rim!=='gold')bad('using and taking off: '+g.rim);
+    const sp0=JSON.stringify(hcSpec('jeep',g.up));if(JSON.stringify(hcSpec('jeep',g.up))!==sp0)bad('level 2 changes the look only');
+    r.notes.push('garage level 1 '+t1sum+' bolts, level 2 '+t2sum+' bolts');
+    // 6. old saves load: a G-HC2 garage gets the new fields; damaged ones are mended
+    S.garage={bolts:500,up:{engine:3},st:{m1:7},veh:'jeep',vehs:{jeep:1},paint:'r',paints:{r:1}};g=garageS();
+    if(g.bolts!==500||JSON.stringify(g.own2)!=='{}'||g.rim!==''||g.trail!==''||g.top!==''||'day' in g||g.st.m1!==7)bad('G-HC2 save: '+JSON.stringify(g));
+    S.garage={own2:[1],rim:'zzz',trail:'gold',top:'sock',day:5};g=garageS();
+    if(Array.isArray(g.own2)||g.rim!==''||g.trail!==''||g.top!==''||'day' in g)bad('damaged save: '+JSON.stringify(g));
+    S.garage={own2:{sock:1,xx:1},top:'sock',rim:'sock'};g=garageS();if(g.top!=='sock'||g.rim!==''||g.own2.xx)bad('item kinds: '+JSON.stringify(g));
+    // 7. music (R-03 A1): a loop per world; only with Sound and Music on and the truck sounds not off; never in Calm mode; quiet when paused or over
+    for(const W of HCW){const t=HC_TUNE[W.id];if(!t||t[0].length!==16||t[1].length!==4||!(t[2]>.2))bad('no tune for '+W.id)}
+    Object.assign(S,{sound:true,music:true,calm:false,hcSnd:0});const on=H=>hcMusicOn(H);
+    if(!on({}))bad('music should play with Sound and Music on');
+    S.calm=true;if(on({}))bad('no music in Calm mode');S.calm=false;S.music=false;if(on({}))bad('no music with Music off');S.music=true;
+    S.sound=false;if(on({}))bad('no music with Sound effects off');S.sound=true;S.hcSnd=2;if(on({}))bad('no music with the truck sounds off');S.hcSnd=0;
+    if(on({paused:true})||on({over:true}))bad('music waits while paused and after the drive');
+    // 8. buzz (R-03 A4): on a crash and on landing a flip, only on screen (not for bots)
+    const bz=[];const keepBuzz=buzz;buzz=ms=>{bz.push(ms);return true};S.sound=false;S.voice=false;
+    try{const H=hcNew(0,0,{ui:true});hcCrash(H,'flip');const Hb=hcNew(0,0,{});hcCrash(Hb,'flip');
+      const Hf=hcNew(5,0,{ui:true});Hf.calm=true;Hf.safeT=5;for(const q of[Hf.w1,Hf.w2]){q.y+=600;q.py=q.y}let k=0;while(!Hf.flips&&k++<2400){Hf.brake=true;hcStep(Hf,1/120)}
+      if(bz[0]!==25)bad('a crash should buzz 25 ms: '+bz);if(bz.length>1&&bz[1]!==15)bad('a flip should buzz 15 ms: '+bz);
+      if(!Hf.flips)r.notes.push('flip buzz: no flip made by the test, checked in the source');
+    }finally{buzz=keepBuzz}
+    [S.sound,S.music,S.calm,S.hcSnd,S.voice,S.buzz]=keepS;S.garage=keepG;
+    return r}
+  const o=(()=>eval(js+';('+T.toString()+')()'))();
+  for(const m of o.bad)p.push(m);
+  const src=rd('js/62-hill.js'),css=rd('css/61-hill.css');
+  if(!/Math\.min\(\.1,\(ts-last\)\/1000\)/.test(src)||!/hcAdvance\(H,dt\)/.test(src))p.push('the drive loop should take frames up to 0.1 s in fixed steps');
+  if(!/hcMusic\(H\);/.test(src))p.push('the drive loop should play the music');
+  if(!/if\(ui\)\{hcBuzz\(15\)/.test(src)||!/if\(!H\.ui\)return;hcBuzz\(25\)/.test(src))p.push('buzz on a flip landing and a crash');
+  if(!/function hcFore\(/.test(src)||hcLayersN(src)<3||!/,1,0,\[portrait\?/.test(src))p.push('4 ranges behind the road (3 cached strips, the sky strip with two) and a foreground strip');
+  if(!/id="hcsave"/.test(src)||!/id="hcday"/.test(src)||!/id="hcnext"/.test(src))p.push('the menu needs the next goal, the save-for line and today\'s drive');
+  if(!/\.hc-day\{/.test(css)||!/\.hc-t2\{/.test(css))p.push('61-hill.css: today\'s drive and garage level 2');
+  return{problems:[...new Set(p)].slice(0,50),note:o.notes.join('; ')};
+  function hcLayersN(s){const m=s.match(/function hcLayers\([^)]*\)\{[\s\S]*?\]\]\}/);return m?(m[0].match(/\[\.\d+,Wd\./g)||[]).length:0}
 });
 
 // ---- G-ART2: Art Studio Done and one gallery, picture packs, better pixel art (src/js/70-art.js, 66-colornum.js, 72-shapes.js,
@@ -18189,6 +18440,33 @@ run('recorded encouragement EN-PRAISE',()=>{
   if(vm.runInContext("PRF.SHARED.includes('cheerV')",ctx))p.push('cheerV must be per child');
   const kb=Math.round(total/1000);
   return{problems:p,note:lines.size+' lines x 6 voices ('+M.voices.map(v=>v[0]).join(', ')+'), '+files.length+' files, '+kb+' KB, largest '+Math.round(big/100)/10+' KB; all audio '+Math.round((esBytes+total)/1000)+' KB (budget '+AUDIO_FAIL/1e6+' MB)'+(esBytes+total>AUDIO_WARN?'  WARN: over '+AUDIO_WARN:'')};
+});
+
+// CONTENT-01: the parent asked for no magic or spells theme and no evolution questions or themes. Every file in src/ (code,
+// data, CSS, comments) is searched, so nothing of either comes back. "Spell" as in spelling words is fine; "switch" is not "witch".
+run('content: no magic or evolution theme CONTENT-01',()=>{
+  const E=require('./es-audio.js'),vm=require('vm');
+  const BADW=/\b(magic\w*|wizards?|witch(es|craft)?|wands?|potions?|sorcer\w*|enchant\w*|spellbooks?|unicorns?|fairy|fairies|genies?|warlocks?|evolv\w*|evolution\w*|natural selection|common ancestors?|millions? of years|billions? of years)\b|cast(s|ing)? a spell|under a spell/i;
+  const p=[];let n=0;
+  const walk=d=>{for(const f of fs.readdirSync(d)){const q=path.join(d,f);if(fs.statSync(q).isDirectory()){walk(q);continue}if(!/\.(js|css|html)$/.test(f))continue;n++;
+    fs.readFileSync(q,'utf8').split('\n').forEach((l,i)=>{const m=l.match(BADW);if(m)p.push(path.relative(ROOT,q)+':'+(i+1)+' "'+m[0]+'"')})}};
+  walk(SRC);
+  const em=['\u{1FA84}','\u{1F984}','\u{1F9D9}','\u{1F9DA}','\u{1F52E}','\u{1F9DE}']; // wand, unicorn, mage, fairy, crystal ball, genie
+  for(const d of ['js','data'])for(const f of fs.readdirSync(path.join(SRC,d))){const x=fs.readFileSync(path.join(SRC,d,f),'utf8');for(const e of em)if(x.includes(e))p.push('src/'+d+'/'+f+': emoji U+'+e.codePointAt(0).toString(16).toUpperCase())}
+  // old saves: the wand toy and the unicorn sticker move to the yo-yo and the fish, kept by whoever had them
+  try{const ctx=E.loadApp(null);const R=x=>vm.runInContext(x,ctx);
+    R("loadSave(null);S.owned={'\u{1FA84}':1};S.wear.toy='\u{1FA84}';S.stickers={'\u{1F984}':2,'\u{1F420}':1};migrate()");
+    if(R("JSON.stringify([S.owned,S.wear.toy])")!==JSON.stringify([{'\u{1FA80}':1},'\u{1FA80}']))p.push('old toy not moved: '+R("JSON.stringify([S.owned,S.wear.toy])"));
+    if(R("stkN('\u{1F420}')")!==3||R("STK.filter(s=>stkN(s)).length")!==1)p.push('the fish sticker does not count the old sticker: '+R("stkN('\u{1F420}')"));
+    if(!R("SHOP.toy.some(t=>t[0]=='\u{1FA80}')&&!!WEAR['\u{1FA80}']&&WEAR_NAME['\u{1FA80}']=='Yo-yo'"))p.push('the yo-yo is not in the shop with its drawing and name');
+  }catch(e){p.push('save check could not run: '+String(e.message||e).split('\n')[0])}
+  // and no rude word or slur in plain text anywhere in the project (the app's filters keep theirs in ROT13); the list is in ROT13 too
+  const unrot=x=>x.replace(/[a-z]/g,c=>String.fromCharCode((c.charCodeAt(0)-84)%26+97));
+  const RUDE=new RegExp('\\b('+unrot('a[v1]tt?(re|n)|avt|shpx(vat|re|rq)?|shx|fuvg(gl)?|phag|gjng|fyhg|snt(tbg)?|pbpx|qvpx|jnax|cbea|juber|ovgpu|ergneq(rq)?|puvax|fcvp|xvxr|pbba')+')s?\\b','i');let m2=0;
+  const walk3=d=>{for(const f of fs.readdirSync(d)){if(f=='node_modules'||f[0]=='.'||f=='audio')continue;const q=path.join(d,f);if(fs.statSync(q).isDirectory()){walk3(q);continue}
+    if(!/\.(js|css|html|md|py|sh|json|txt)$/.test(f))continue;m2++;fs.readFileSync(q,'utf8').split('\n').forEach((l,i)=>{if(RUDE.test(l))p.push(path.relative(ROOT,q)+':'+(i+1)+': a rude word in plain text')})}};
+  walk3(ROOT);n+=m2;
+  return{problems:p,note:n+' files searched'};
 });
 
 // ---- report ----

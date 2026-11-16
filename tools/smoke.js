@@ -174,14 +174,14 @@ async function main() {
     await page.click('.game[data-s="add10"]');
     await page.click('.game[data-m="n20"]');
     for (let i = 0; i < 40; i++) {
-      await page.waitForFunction(() => document.querySelector('#fagain') || (FL && FL.f && !FL.lock), null, { timeout: 8000 });
-      if (await page.$('#fagain')) break;
+      await page.waitForFunction(() => document.querySelector('#frepeat') || (FL && FL.f && !FL.lock), null, { timeout: 8000 });
+      if (await page.$('#frepeat')) break;
       let c = await page.evaluate(() => String(FL.f.c));
       // one wrong answer with the same digit count (so it auto-submits): shown for 1 s, comes back later
       if (i === 0) c = String(+c + 1).length === c.length ? String(+c + 1) : String(+c - 1);
       for (const d of c) await page.click(`.k[data-k="${d}"]`);
     }
-    await page.waitForSelector('#fagain', { timeout: 8000 });
+    await page.waitForSelector('#frepeat', { timeout: 8000 });
     const flu = await page.evaluate(() => ({ best: S.flu['add10-20'].best, n: S.flu['add10-20'].hist.length, paid: !!S.flu.add10.paid }));
     if (!(flu.best > 0) || flu.n !== 1 || !flu.paid) fail('fact sprint not saved: ' + JSON.stringify(flu));
     else step('Fact Sprint 20 facts played, saved ' + JSON.stringify(flu));
@@ -1225,12 +1225,12 @@ async function main() {
       await mp.click('.game[data-s="mfact"]');
       await mp.click('.game[data-m="n20"]');
       for (let i = 0; i < 40; i++) {
-        await mp.waitForFunction(() => document.querySelector('#fagain') || (FL && FL.f && !FL.lock), null, { timeout: 8000 });
-        if (await mp.$('#fagain')) break;
+        await mp.waitForFunction(() => document.querySelector('#frepeat') || (FL && FL.f && !FL.lock), null, { timeout: 8000 });
+        if (await mp.$('#frepeat')) break;
         for (const d of await mp.evaluate(() => String(FL.f.c))) await mp.click(`.k[data-k="${d}"]`);
         if (await mp.$('.k[data-k="go"]')) await mp.click('.k[data-k="go"]'); // the Fact Sprint pad submits by itself; waiting for a missing key cost 30 s per fact
       }
-      await mp.waitForSelector('#fagain', { timeout: 8000 });
+      await mp.waitForSelector('#frepeat', { timeout: 8000 });
       const fl = await mp.evaluate(() => ({ n: S.flu['mfact-20'] && S.flu['mfact-20'].hist.length }));
       if (fl.n !== 1) fail('times sprint not saved: ' + JSON.stringify(fl));
       else step('P2-05: Multiply Mountain opens for a 3rd grader (12 stops), Arrays and Times facts rounds played, Fact Sprint lists Times facts and a sprint is saved');
@@ -6403,7 +6403,7 @@ async function main() {
         await pg.waitForSelector('.sb-page');
         await chk('book');
         const bk = await pg.evaluate(() => ({ pages: document.querySelectorAll('.sb-page').length, stk: document.querySelectorAll('.sb-stk').length,
-          want: STK.filter(s => S.stickers[s]).length, badges: !!document.querySelector('#bkbdg') == (BT.list().length > 0),
+          want: STK.filter(s => stkN(s)).length, badges: !!document.querySelector('#bkbdg') == (BT.list().length > 0),
           cut: (getComputedStyle(document.querySelector('.sb-e')).textShadow.match(/rgb/g) || []).length }));
         if (bk.pages !== 4 || bk.stk !== bk.want || !bk.stk || !bk.badges || bk.cut < 8) bad.push(sz + ' book: ' + JSON.stringify(bk));
         await pg.click('.sb-stk');
@@ -7492,6 +7492,118 @@ async function main() {
         '-> a flip past the first checkpoint started again there; 48 px buttons, 64 px pedals, the distance and fuel readable; ' + notes.join('; '));
     }
 
+    // G-HC3 Hill Climb today's drive, garage level 2, game speed (src/js/62-hill.js). Midway save, a fresh garage, 1st grade, 20 min of
+    //    game time, real touch (CDP touch events) at 380x780 and 1024x600: Home -> Game Room -> the Hill Climb card -> the menu (the next
+    //    goal, the save-for line, today's drive card) -> touch today's drive -> a held gas touch drives to the gold flag (+30 bolts the
+    //    first time today) -> the tank runs dry (test hook) -> the end card says today's drive is done -> Menu: the card shows done -> with 30 stars
+    //    (test hook) the garage's level 2 is open: touch Gold rims to buy and use them -> at 6x CPU throttle the drive keeps game speed
+    //    (simulated seconds per real second at least 0.85: a slow frame runs more fixed steps, no slow motion).
+    {
+      const bad = [], notes = [];
+      for (const [w, h] of [[380, 780], [1024, 600]]) {
+        const ga = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ga.page, at = 'G-HC3 ' + w + 'x' + h + ' ';
+        const cdp = await pg.context().newCDPSession(pg);
+        await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 2 });
+        const box = sel => pg.evaluate(s => {
+          const e = document.querySelector(s);
+          if (!e) return null;
+          if (!e.closest('.hc')) e.scrollIntoView({ block: 'center' });
+          const r = e.getBoundingClientRect();
+          return { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height };
+        }, sel);
+        const down = async (x, y) => cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y, id: 1, radiusX: 8, radiusY: 8, force: 1 }] });
+        const up = async () => cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+        const touch = async sel => { const b = await box(sel); if (!b) throw new Error('nothing to touch: ' + sel); await pg.waitForTimeout(150); const c = await box(sel); await down(c.x, c.y); await pg.waitForTimeout(60); await up(); return c; };
+        const look = () => {
+          const vw = document.documentElement.clientWidth, out = [];
+          for (const e of document.querySelectorAll('.gh-top button, .hc-menu button, .gh-end button')) {
+            const r = e.getBoundingClientRect();
+            if (!r.width || r.bottom < 0 || r.top > innerHeight) continue;
+            if (Math.min(r.width, r.height) < 47.5) out.push('small ' + (e.id || e.className) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
+            if (r.left < -1 || r.right > vw + 1) out.push('outside ' + (e.id || e.className));
+          }
+          if (document.documentElement.scrollWidth > vw) out.push('sideways scroll ' + document.documentElement.scrollWidth);
+          for (const s of document.querySelectorAll('.scroll, .gh-end')) if (s.scrollWidth > s.clientWidth + 1) out.push('sideways scroll in ' + s.className);
+          return out;
+        };
+        try {
+          await pg.evaluate(() => { S.pt = { bank: 1200, day: today(), used: 0 }; S.garage = {}; S.grade = 1; save(); home(); });
+          await touch('#groom');
+          await pg.waitForSelector('#g4x4', { timeout: 8000 });
+          await pg.waitForTimeout(450);
+          await touch('#g4x4');
+          await pg.waitForSelector('.hc-menu #hcday', { timeout: 8000 });
+          await pg.waitForTimeout(450);
+          const m0 = await pg.evaluate(() => ({ next: (document.querySelector('#hcnext') || {}).textContent || '', save: (document.querySelector('#hcsave') || {}).textContent || '',
+            day: document.querySelector('#hcday').textContent, done: document.querySelector('#hcday').classList.contains('done'), d: hcDay() }));
+          if (!/Next goal/.test(m0.next) || !/Save for|You can buy/.test(m0.save) || !/Today's drive: Green Meadow/.test(m0.day) || m0.done || m0.d.wi !== 0)
+            bad.push(at + 'menu: ' + JSON.stringify(m0));
+          for (const o of await pg.evaluate(look)) bad.push(at + 'menu: ' + o);
+          await touch('#hcday');
+          await pg.waitForSelector('.hc .pedal.gas', { timeout: 8000 });
+          await pg.waitForTimeout(700);
+          const d0 = await pg.evaluate(() => ({ day: !!(HC && HC.day), sub: document.querySelector('.gh-top').textContent, b: garageS().bolts }));
+          if (!d0.day || !/Today's drive/.test(d0.sub)) bad.push(at + 'today\'s drive did not start: ' + JSON.stringify(d0));
+          const gb = await box('#pg');
+          await down(gb.x, gb.y);
+          const t0 = Date.now();
+          let res = null;
+          while (Date.now() - t0 < 60000) { await pg.waitForTimeout(400); res = await pg.evaluate(() => !HC ? 'gone' : HC.dayHit ? 'flag' : HC.over ? 'over' : HC.gas ? 'gas' : 'no gas'); if (res !== 'gas') break; }
+          await up();
+          if (res !== 'flag') bad.push(at + 'the gold flag not reached by holding the gas: ' + res);
+          notes.push(w + 'x' + h + ': gold flag in ' + Math.round((Date.now() - t0) / 1000) + ' s of held gas (' + m0.d.label + ')');
+          await pg.evaluate(() => { if (HC) { HC.fuel = 0; HC.gas = false; HC.over = true; HC.result = 'fuel' } }); // the tank runs dry (test hook: the loop ends the drive as when it stops without fuel)
+          await pg.waitForSelector('.gh-end #hgar', { timeout: 20000 });
+          await pg.waitForTimeout(500);
+          const e1 = await pg.evaluate(() => ({ t: document.querySelector('.gh-end h1').textContent, txt: document.querySelector('.gh-end').textContent, day: garageS().day, today: today(), b: garageS().bolts }));
+          if (!/Today's drive done/.test(e1.t) || !/plus 30 bolts/.test(e1.txt) || e1.day !== e1.today || !(e1.b >= d0.b + 30)) bad.push(at + 'end card: ' + JSON.stringify([e1.t, e1.day, e1.today, d0.b, e1.b]));
+          for (const o of await pg.evaluate(look)) bad.push(at + 'end card: ' + o);
+          await touch('.gh-end #hgar');
+          await pg.waitForSelector('.hc-menu #hcday', { timeout: 8000 });
+          if (!await pg.evaluate(() => document.querySelector('#hcday').classList.contains('done'))) bad.push(at + 'today\'s drive should show done');
+          // garage level 2 (test hook: 30 stars and 300 bolts)
+          await pg.evaluate(() => { const g = garageS(); HC_ST.slice(0, 3).flat().forEach(s => { g.st[s[0]] = 7 }); g.bolts = 300; save(); garage(); });
+          await pg.waitForTimeout(300);
+          await touch('#hcgar');
+          await pg.waitForSelector('[data-t2="gold"]', { timeout: 8000 });
+          await pg.waitForTimeout(450);
+          for (const o of await pg.evaluate(look)) bad.push(at + 'garage: ' + o);
+          const u0 = await pg.evaluate(() => ({ n: hcTot(), b: garageS().bolts, lock: document.querySelector('[data-t2="gold"]').classList.contains('lock') }));
+          await touch('[data-t2="gold"]');
+          await pg.waitForTimeout(500);
+          const u1 = await pg.evaluate(() => ({ b: garageS().bolts, rim: garageS().rim, on: document.querySelector('[data-t2="gold"]').getAttribute('aria-pressed') }));
+          if (u0.n < 30 || u0.lock || u1.b !== u0.b - 250 || u1.rim !== 'gold' || u1.on !== 'true') bad.push(at + 'garage level 2: ' + JSON.stringify([u0, u1]));
+          // game speed at 6x CPU throttle: a slow frame runs more fixed steps
+          await pg.evaluate(() => { hcStart(2, 1); });
+          await pg.waitForSelector('.hc .pedal.gas', { timeout: 8000 });
+          await pg.waitForTimeout(600);
+          const gb2 = await box('#pg');
+          await down(gb2.x, gb2.y);
+          await cdp.send('Emulation.setCPUThrottlingRate', { rate: 6 });
+          await pg.waitForTimeout(2000);
+          const g0 = await pg.evaluate(() => [(window.__realNow || performance.now.bind(performance))(), HC.t]);
+          await pg.waitForTimeout(3000);
+          const g1 = await pg.evaluate(() => [(window.__realNow || performance.now.bind(performance))(), HC.t, HC.q]);
+          await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+          await up();
+          const speed = (g1[1] - g0[1]) / ((g1[0] - g0[0]) / 1000);
+          if (!(speed >= .85)) bad.push(at + 'game speed at 6x throttle ' + speed.toFixed(2) + ' (slow motion)');
+          notes.push(w + 'x' + h + ': game speed at 6x throttle ' + speed.toFixed(2) + ', pixel scale ' + g1[2]);
+          await pg.evaluate(() => { document.querySelectorAll('.ovl').forEach(o => o.remove()); if (HC) hcEnd('quit'); });
+        } catch (x) {
+          bad.push(at + 'taps: ' + x.message.split('\n')[0] + ' (on ' + await pg.evaluate(() => (document.querySelector('.gh-top') || {}).textContent + ' | ' + !!document.querySelector('.gh-end')).catch(() => '?') + ')');
+        }
+        network.push(...ga.network);
+        for (const e of ga.errors) fail(e);
+        await ga.ctx.close();
+      }
+      if (bad.length) fail('G-HC3 Hill Climb:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('G-HC3: Hill Climb by real touch at 380x780 and 1024x600: menu (next goal, save-for line, today\'s drive) -> today\'s drive to the gold ' +
+        'flag by a held gas touch -> end card "Today\'s drive done" with +30 bolts -> the card shows done -> garage level 2: Gold rims bought and in use ' +
+        '-> game speed kept at 6x CPU throttle; 48 px buttons; ' + notes.join('; '));
+    }
+
     // P4-15 Object art set C (src/data/d-art-c.js), midway save at 380x780: questions that use the new drawings, drawn by the real
     //    round engine (start, a seeded question in G.q, renderQ): a picture word (vowel teams), Spanish house (drawings as the answer
     //    choices), weather and places. Every drawing is inline SVG with its shapes, at least 16 px, no emoji in its place, no sideways scroll.
@@ -7615,17 +7727,17 @@ async function main() {
       await pg.click('#hmmis [data-mi="1"]');
       await pg.waitForSelector('#fplay');
       for (let i = 0; i < 400; i++) {
-        await pg.waitForFunction(() => document.querySelector('#fagain') || (FL && FL.f && !FL.lock), null, { timeout: 15000 });
-        if (await pg.$('#fagain')) break;
+        await pg.waitForFunction(() => document.querySelector('#frepeat') || (FL && FL.f && !FL.lock), null, { timeout: 15000 });
+        if (await pg.$('#frepeat')) break;
         const c = await pg.evaluate(() => String(FL.f.c));
         for (const d of c) await pg.click(`.k[data-k="${d}"]`, { timeout: 2000 }).catch(() => {}); // the 60 s may end between two digits
       }
-      await pg.waitForSelector('#fagain', { timeout: 15000 });
+      await pg.waitForSelector('#frepeat', { timeout: 15000 });
       const r2 = await pg.evaluate(() => ({ win: document.querySelectorAll('.gx-end .mis-win li').length, txt: (document.querySelector('.gx-end .mis-win') || {}).textContent || '',
         stk: document.querySelectorAll('.gx-end .mis-win .rw-stk').length, done: S.day.m.map(x => x.d).join(''), bonus: !!S.day.done }));
       if (r2.win !== 1 || !/Mission done! Do a Fact Sprint/.test(r2.txt) || r2.stk !== 1 || r2.done !== '110' || r2.bonus) bad.push('sprint mission reward: ' + JSON.stringify(r2));
       await chk('sprint end');
-      await pg.click('#fagain'); // a second sprint pays nothing more
+      await pg.click('#frepeat'); // a second sprint pays nothing more
       await pg.waitForSelector('#fplay');
       await pg.evaluate(() => { stopFlu(); home(); });
       await pg.waitForSelector('#hmmis');
@@ -8094,7 +8206,7 @@ async function main() {
       await app.ctx.close();
     }
 
-    // R-01r reading review fixes at 380x780 (scale 2), midway save: a Picture Words question (Magic E, pic 3, the seed the review saw
+    // R-01r reading review fixes at 380x780 (scale 2), midway save: a Picture Words question (Silent E, pic 3, the seed the review saw
     //    with impossible spellings) and a Letter Teams question (sound 4), drawn by the real round engine (start, a seeded question in G.q,
     //    renderQ). Every word choice on screen is the answer or a real word from its checked set (PWC); the Letter Teams word is spoken
     //    (Hear it replays it), but is printed nowhere on the screen. No sideways scroll. With R01R_SHOTS=<dir> it saves both screens.
@@ -8800,6 +8912,154 @@ async function main() {
       else step('G-BB2 Block Builder in 3D by real touch at 380x780 and 1024x600 (' + notes.join(', ') + '): the 3D look draws; exact taps build on the tapped ' +
         'column and are saved; one finger turns (a flick slows to a stop on a whole quarter), pinch zooms, Right turns a quarter (animated); hold-and-slide ' +
         'builds; drawn animals hop; the 3D look switch saves S.bb.gl; the first blueprint built in 3D with no mistakes, 3 stars');
+    }
+
+    // G-BB3 Block Builder themed goals and big projects by real touch (CDP touch events), midway save, the real clock. At 380x780 in
+    //    the 2D look and 1024x600 in the 3D look: Home -> Game Room -> Block Builder -> My Island -> Planks -> touch the top of a sea
+    //    cell: "Float a raft" is done (the message, the goal chip one up, saved in goals); three more Planks along the sea: the
+    //    harbour's first step (a dock of 4 over the water) is done, and the project in the scene shows 1/3 with its next step; More
+    //    lists the goals and the two big projects with a dot a step; Pause -> Quit -> the world again: the goals, the step and the
+    //    built blocks (the saved mask) are still there; 48 px buttons, no sideways scroll, the project and the messages clear of Pause.
+    {
+      const bad = [], notes = [];
+      for (const [w, h, look3] of [[380, 780, false], [1024, 600, true]]) {
+        const at = w + 'x' + h + (look3 ? ' 3D ' : ' 2D ');
+        const ga = await openApp(browser, { fixture: 'midway', width: w, height: h, speed: 1 });
+        const pg = ga.page;
+        let stage = 'open';
+        try {
+          const cdp = await pg.context().newCDPSession(pg);
+          await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
+          const T = (x, y) => ({ x: Math.round(x), y: Math.round(y), radiusX: 8, radiusY: 8, force: 1, id: 1 });
+          const send = (type, touchPoints) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints });
+          const tap = async ([x, y]) => { await send('touchStart', [T(x, y)]); await pg.waitForTimeout(40); await send('touchEnd', []); await pg.waitForTimeout(150); };
+          const tapSel = async sel => {
+            const r = await pg.evaluate(s => { const e = document.querySelector(s); if (!e) return null; e.scrollIntoView({ block: 'nearest', inline: 'nearest' }); const b = e.getBoundingClientRect(); return [b.left + b.width / 2, b.top + b.height / 2]; }, sel);
+            if (!r) throw new Error('no ' + sel);
+            await pg.waitForTimeout(80);
+            await tap(r);
+          };
+          const look = () => pg.evaluate(() => {
+            const out = [], vw = document.documentElement.clientWidth;
+            for (const e of document.querySelectorAll('.gh-top button, .bb-tb, .bb-pj, .sheet-bg.on .bb-gl')) {
+              const r = e.getBoundingClientRect();
+              if (!r.width || e.closest('[hidden]') || e.hidden) continue;
+              if (Math.min(r.width, r.height) < 47.5) out.push('small ' + (e.id || e.className) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
+              if (r.left < -1 || r.right > vw + 1) out.push('outside ' + (e.id || e.className));
+            }
+            if (document.documentElement.scrollWidth > vw) out.push('sideways scroll ' + document.documentElement.scrollWidth);
+            const p = document.querySelector('#gpause'), pr = p && p.getBoundingClientRect();
+            for (const s of ['#bbpj:not([hidden])', '#bbmsg.on']) {
+              const q = document.querySelector(s);
+              if (!q || !pr) continue;
+              const b = q.getBoundingClientRect();
+              if (b.left < pr.right && b.right > pr.left && b.top < pr.bottom && b.bottom > pr.top) out.push(s + ' covers Pause');
+            }
+            return out;
+          });
+          await pg.evaluate(l3 => { S.pt = { bank: 1500, day: today(), used: 0 }; S.bb = S.bb || {}; if (l3) delete S.bb.gl; else S.bb.gl = 0; save(); home(); }, look3);
+          await tapSel('#groom');
+          await pg.waitForSelector('#gbb');
+          await pg.waitForTimeout(400);
+          await tapSel('#gbb');
+          await pg.waitForSelector('.bb-menu [data-w="0"]');
+          await pg.waitForTimeout(400);
+          await tapSel('[data-w="0"]');
+          await pg.waitForSelector('#bbc');
+          await pg.waitForTimeout(900);
+          stage = 'look';
+          const lk = await pg.evaluate(() => ({ three: !!BB.three, gl: !document.querySelector('#bbgl').hidden, chip: $('#bbgoal').textContent, kind: bbWType(BB.world) }));
+          if (lk.three !== look3 || lk.gl !== look3 || lk.kind != 'island') { bad.push(at + 'the world opened as ' + JSON.stringify(lk)); throw new Error('skip'); }
+          // 4 sea cells in a row whose tops are open; the view looks at them (the focus only: every build below is a touch)
+          stage = 'find the sea';
+          const sea = await pg.evaluate(() => {
+            const open = (i, j) => i >= 0 && j >= 0 && i < BW && j < BD && BB.get(i, j, 0) == 10 && BB.topZ(i, j) == 1;
+            let best = null;
+            for (let j = 0; j < BD; j++) for (let i = 0; i < BW; i++) for (const [dx, dy] of [[1, 0], [0, 1]]) {
+              const c = [0, 1, 2, 3].map(s => [i + s * dx, j + s * dy]);
+              if (!c.every(q => open(...q))) continue;
+              const edge = Math.min(...c.map(q => Math.min(q[0], q[1], BW - 1 - q[0], BD - 1 - q[1]))); // away from the edge of the map
+              if (!best || edge > best.edge) best = { c, edge };
+            }
+            return best && best.c;
+          });
+          if (!sea) { bad.push(at + 'no 4 sea cells in a row in My Island'); throw new Error('skip'); }
+          await pg.evaluate(c => { BB.F[0] = (c[0][0] + c[3][0]) / 2 + .5; BB.F[1] = (c[0][1] + c[3][1]) / 2 + .5; BB.F[2] = 1; BB.dirty = 1; }, sea);
+          await pg.waitForTimeout(500);
+          // the middle of a sea cell's top on the screen, checked to pick that very cell
+          const seaAt = c => pg.evaluate(([i, j]) => {
+            const r = $('#bbc').getBoundingClientRect(), d = BB.dpr;
+            for (const [u, v] of [[.5, .5], [.3, .3], [.7, .7], [.3, .7], [.7, .3], [.2, .5], [.8, .5], [.5, .2], [.5, .8]]) {
+              const p = BB.proj(i + u, j + v, 1), h = BB.hit(p[0], p[1]);
+              if (h && h.i == i && h.j == j && h.k == 0 && h.f == 'top') return { xy: [r.left + p[0] / d, r.top + p[1] / d], ok: true };
+            }
+            const p = BB.proj(i + .5, j + .5, 1);
+            return { xy: [r.left + p[0] / d, r.top + p[1] / d], ok: false };
+          }, c);
+          stage = 'raft';
+          await tapSel('[data-b="4"]');
+          const g0 = await pg.evaluate(() => ({ n: bbGoalN(BB.world), raft: !!bbGoalsOf(BB.world).raft }));
+          const s0 = await seaAt(sea[0]);
+          if (!s0.ok) bad.push(at + 'the sea top at ' + sea[0] + ' is not where a touch picks it');
+          await tap(s0.xy);
+          await pg.waitForTimeout(700);
+          const g1 = await pg.evaluate(c => ({ v: BB.get(c[0], c[1], 1), n: bbGoalN(BB.world), raft: !!bbGoalsOf(BB.world).raft, msg: $('#bbmsg').textContent, chip: $('#bbgoal').textContent,
+            of: bbWGoals(BB.world).length }), sea[0]);
+          if (g1.v != 4 || !g1.raft || g0.raft || g1.n != g0.n + 1 || !/Goal done: Float a raft/.test(g1.msg) || g1.chip != g1.n + '/' + g1.of) bad.push(at + 'raft: ' + JSON.stringify([g0, g1]));
+          for (const o of await look()) bad.push(at + 'raft: ' + o);
+          stage = 'dock';
+          // the next sea cell a touch can pick (a plank already built may hide part of a cell behind it)
+          const left = sea.slice(1);
+          while (left.length) {
+            let k = 0, s = null;
+            for (; k < left.length; k++) { s = await seaAt(left[k]); if (s.ok) break; }
+            if (k == left.length) { bad.push(at + 'no touch picks the sea tops at ' + left.join(' ')); break; }
+            await tap(s.xy); await pg.waitForTimeout(250);
+            left.splice(k, 1);
+          }
+          await pg.waitForTimeout(800);
+          const g2 = await pg.evaluate(c => ({ row: c.map(([i, j]) => BB.get(i, j, 1)).join(), pj: bbPjOf(BB.world).harbour, bridge: !!bbGoalsOf(BB.world).bridge,
+            pill: !$('#bbpj').hidden && $('#bbpj').textContent, msg: $('#bbmsg').textContent }), sea);
+          if (g2.row != '4,4,4,4' || g2.pj != 1 || !/1\/3/.test(g2.pill || '') || !/lamp post/i.test(g2.pill || '')) bad.push(at + 'the harbour dock: ' + JSON.stringify(g2));
+          for (const o of await look()) bad.push(at + 'dock: ' + o);
+          if (process.env.BB3_SHOTS) await pg.screenshot({ path: require('path').join(process.env.BB3_SHOTS, 'bb3-' + w + '-dock.png') });
+          notes.push(at + 'raft by one touch, the harbour step 1 by three more' + (g2.bridge ? ' (the bridge goal too)' : ''));
+          stage = 'more';
+          await tapSel('#bbmore');
+          await pg.waitForSelector('.sheet-bg.on .bb-pjr');
+          await pg.waitForTimeout(450);
+          const mo = await pg.evaluate(() => ({ goals: [...document.querySelectorAll('.sheet-bg.on .bb-gl:not(.bb-pjr)')].map(e => e.textContent), pj: [...document.querySelectorAll('.sheet-bg.on .bb-pjr')].map(e => e.textContent + ' ' + e.querySelectorAll('.bb-pjd i.on').length + '/' + e.querySelectorAll('.bb-pjd i').length) }));
+          if (mo.pj.length != 2 || !mo.pj.some(t => /harbour/.test(t) && /1\/3$/.test(t)) || !mo.goals.length) bad.push(at + 'More: ' + JSON.stringify(mo));
+          for (const o of await look()) bad.push(at + 'More: ' + o);
+          if (process.env.BB3_SHOTS) await pg.screenshot({ path: require('path').join(process.env.BB3_SHOTS, 'bb3-' + w + '-more.png') });
+          await tapSel('.sheet-bg.on [data-gsay]');
+          await tapSel('#bbmdone');
+          await pg.waitForTimeout(450);
+          stage = 'again';
+          await pg.waitForTimeout(400);
+          await tapSel('#gpause');
+          await pg.waitForSelector('.sheet-bg.on #gquit');
+          await pg.waitForTimeout(450);
+          await tapSel('#gquit');
+          await pg.waitForSelector('.bb-menu [data-w="0"]');
+          await pg.waitForTimeout(400);
+          const line = await pg.evaluate(() => $('#bbnext').textContent);
+          await tapSel('[data-w="0"]');
+          await pg.waitForSelector('#bbc');
+          await pg.waitForTimeout(900);
+          const g3 = await pg.evaluate(c => ({ raft: !!bbGoalsOf(BB.world).raft, pj: bbPjOf(BB.world).harbour, built: c.filter(([i, j]) => BB.mk[bbI(i, j, 1)]).length,
+            saved: bbMaskDec(bbS().worlds[0].mk).filter(v => v).length, pill: !$('#bbpj').hidden && $('#bbpj').textContent }), sea);
+          if (!g3.raft || g3.pj != 1 || g3.built != 4 || g3.saved < 4 || !/1\/3/.test(g3.pill || '')) bad.push(at + 'after Quit and back: ' + JSON.stringify(g3));
+          notes.push(at + 'menu line: ' + line.replace(/^\s*Next goal:\s*/, '').slice(0, 60));
+        } catch (e) { if (e.message != 'skip') bad.push(at + stage + ': ' + e.message.split('\n')[0]); }
+        network.push(...ga.network);
+        for (const e of ga.errors) fail(e);
+        await ga.ctx.close();
+      }
+      if (bad.length) fail('G-BB3 Block Builder goals:\n  ' + bad.slice(0, 40).join('\n  '));
+      else step('G-BB3 Block Builder themed goals by real touch at 380x780 (2D look) and 1024x600 (3D look): My Island -> Planks on the sea: "Float a raft" ' +
+        'done (message, chip, saved) -> 3 more along the sea: the harbour\'s first step, the project in the scene shows 1/3 and the next step -> More lists ' +
+        'the goals and both big projects -> Quit and back: goals, step and built blocks kept; 48 px buttons, no sideways scroll; ' + notes.join('; '));
     }
 
     // G-ART2 Art Studio by real touch (CDP touch events), midway save with 20 min of game time and two Neon pictures in the old

@@ -58,7 +58,7 @@ function grown(){let armed=false;
       ${lines.map((t,i)=>row('“'+esc(t.replace('{name}',S.name))+'”',cs.find(c=>c.line==i),i)).join('')}
       ${extra.map((c,i)=>row('Your own #'+(i+1),c,null)).join('')}
       <div class="vline gw-vl"><span class="vtxt">${ico('plus',22,'ic-off')}<span>Say anything you like</span></span>${UI.btn('Record',{size:'sm',icon:'record',cls:'rec gw-rec',attrs:`data-rec="${k}|x"`})}</div></div>`}).join('');
-  const nstk=STK.filter(s=>S.stickers[s]).length;
+  const nstk=STK.filter(s=>stkN(s)).length;
   view(`<div class="top tbar adult gw-top">${UI.ibtn('back','Back',{size:'sm',id:'back'})}<div class="ttl gx-ttl"><span class="gx-tb gw-tb">${ico('gear',24)}</span><span><span class="nw">Grown-ups</span></span></div></div>
   <div class="scroll gw"><div class="gw-cols">
   ${GW.card('gw-sum','user',esc(S.name||'Your child')+' at a glance',

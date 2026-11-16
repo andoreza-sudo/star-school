@@ -423,8 +423,8 @@ Please ___ for me by the door.|wait|weight|wet,white
 The ___ of the backpack surprised me.|weight|wait|wet,white
 The table is made of ___.|wood|would|hood,wouldn't
 I ___ like some juice, please.|would|wood|hood,wool
-A ___ rode across the sky on a broom.|witch|which|wish,watch
-___ coat is yours?|which|witch|wish,watch
+I ___ I could fly like a bird.|wish|which|watch,wash
+___ coat is yours?|which|wish|watch,with
 Be careful not to ___ the glass.|break|brake|bread,bleak
 Press the ___ to stop the bike.|brake|break|bark,bake
 A tiny red ___ carried a crumb up the leaf.|ant|aunt|and,at
@@ -487,7 +487,7 @@ The tiny puppy was *adorable*, and everyone smiled at it.|very cute|very loud,ve
 She gave a *brief* talk that lasted only one minute.|short|long,boring,loud
 The *rickety* bridge shook and creaked under our feet.|shaky and falling apart|strong and new,very long,very high
 My grandpa is *generous* and shares everything he has.|giving and kind|selfish,lazy,loud
-The magician's trick *baffled* us, and we could not figure it out.|confused|bored,frightened,pleased
+The tricky riddle *baffled* us, and we could not figure it out.|confused|bored,frightened,pleased
 It was *drizzling*, just a few light drops of rain.|raining lightly|pouring hard,snowing,thundering
 The *rowdy* crowd cheered and shouted all night long.|noisy and wild|calm and quiet,tired,hungry
 Tom was *furious* when his sister broke his model plane.|very angry|very sad,very surprised,very sleepy

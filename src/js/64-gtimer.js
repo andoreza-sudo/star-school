@@ -10,4 +10,4 @@ function gtStart(el,onEnd){gtStop();GT={up:false,grace:0,iv:setInterval(()=>{if(
 function timeUpOverlay(){const g=GH.get(GH.cur)||{},said=g.saved||'Your game is saved.';
   const o=GH.end(g.id,{title:"Game time's up!",lines:[['check-circle',esc(said)],['path-read','Learn a little to earn more time!']],
     btns:UI.btn('Earn more time',{kind:'primary',size:'lg',icon:'path-read',id:'tl',wide:true})});
-  SFX.magic();if(S.voice)say('Game time is up! '+said);o.querySelector('#tl').onclick=()=>{o.remove();home()}}
+  SFX.chime();if(S.voice)say('Game time is up! '+said);o.querySelector('#tl').onclick=()=>{o.remove();home()}}

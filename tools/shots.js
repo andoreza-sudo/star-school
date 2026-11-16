@@ -1090,7 +1090,7 @@ function rwSheet() {
     ${bosses.map(b => row(b, [200, 96, 56].map(w => box(RW.boss(b, 'idle'), w, 'idle ' + w) + box(RW.boss(b, 'hit'), w, 'hit ' + w)).join(''))).join('')}
     <h3>Top bar size on a tint</h3><div class="rwr t">${bosses.map(b => box(RW.boss(b, 'idle'), 56, b) + box(RW.boss(b, 'hit'), 56, 'hit')).join('')}</div>
     ${row('Prizes and stickers', ['🌼', '🎉', '💎', '🍩'].map(e => box(RW.badge(e), 80, 'badge')).join('') +
-      `<div class="rw-tre" style="width:340px"><div class="rw-prz">${['🦄', '🚀', '🍩', '🐼'].map((e, i) => RW.sticker(e, i % 2 == 0, i)).join('')}</div></div>`)}
+      `<div class="rw-tre" style="width:340px"><div class="rw-prz">${['🐠', '🚀', '🍩', '🐼'].map((e, i) => RW.sticker(e, i % 2 == 0, i)).join('')}</div></div>`)}
     </div>`);
 }
 
@@ -2094,7 +2094,7 @@ Object.assign(SCREENS, {
   // the shop (midway: 64 coins, top hat and balloon on): trying on the crown (not owned), the buy sheet for the cap, toys, places
   'shop-try': { run: async p => { await p.evaluate(() => { shopTab = 'hat'; shopSel = null; shop(); }); await p.click('.item[data-id="👑"]'); } },
   'shop-buy': { run: async p => { await p.evaluate(() => { shopTab = 'hat'; shopSel = null; shop(); }); await p.click('.item[data-id="🎓"]'); await p.click('#psact'); } },
-  'shop-toys': { run: async p => { await p.evaluate(() => { S.owned['🧸'] = 1; S.owned['⭐'] = 1; shopSel = null; shopTab = 'toy'; shop(); }); await p.click('.item[data-id="🪄"]'); } },
+  'shop-toys': { run: async p => { await p.evaluate(() => { S.owned['🧸'] = 1; S.owned['⭐'] = 1; shopSel = null; shopTab = 'toy'; shop(); }); await p.click('.item[data-id="🪀"]'); } },
   'shop-places': { run: async p => { await p.evaluate(() => { shopTab = 'scene'; shopSel = null; shop(); }); await p.click('.item[data-id="candy"]'); } },
   // the sticker book with most stickers (some doubles) and one full page
   'stickers-many': { run: async p => { await p.evaluate(() => { STK.forEach((s, i) => { if (i < 12 || i % 3) S.stickers[s] = 1 + (i % 5 == 0); }); book(); }); } },
@@ -2314,7 +2314,7 @@ Object.assign(SCREENS, {
   'skyhop-aurora': hopShot(() => hopPlay('a1'), 8),
   'skyhop-castle': hopShot(() => { const r = hopS(); r.own.cape = 1; r.wear = 'cape'; hopPlay('c3'); }, 20),
   'skyhop-shop': hopShot(() => { const r = hopS(); r.bonus = 20; r.own.leaf = 1; r.wear = 'leaf'; hopMenu(); document.querySelector('.hp-wears').scrollIntoView(); }, null, null, 600),
-  'skyhop-twist': hopShot(() => { const r = hopS(); r.own.fairy = 1; r.wear = 'fairy'; hopPlay('m3', 'lamp'); }, 0),
+  'skyhop-twist': hopShot(() => { const r = hopS(); r.own.bfly = 1; r.wear = 'bfly'; hopPlay('m3', 'lamp'); }, 0),
 });
 GROUPS.g04b = ['skyhop-menu', 'skyhop-meadow', 'skyhop-peaks', 'skyhop-night', 'skyhop-rainbow', 'skyhop-offer', 'skyhop-end', 'skyhop-sunset', 'skyhop-whirl',
   'skyhop-aurora', 'skyhop-castle', 'skyhop-shop', 'skyhop-twist'];
