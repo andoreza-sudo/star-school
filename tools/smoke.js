@@ -6403,7 +6403,7 @@ async function main() {
         await pg.waitForSelector('.sb-page');
         await chk('book');
         const bk = await pg.evaluate(() => ({ pages: document.querySelectorAll('.sb-page').length, stk: document.querySelectorAll('.sb-stk').length,
-          want: STK.filter(s => S.stickers[s]).length, badges: !!document.querySelector('#bkbdg') == (BT.list().length > 0),
+          want: STK.filter(s => stkN(s)).length, badges: !!document.querySelector('#bkbdg') == (BT.list().length > 0),
           cut: (getComputedStyle(document.querySelector('.sb-e')).textShadow.match(/rgb/g) || []).length }));
         if (bk.pages !== 4 || bk.stk !== bk.want || !bk.stk || !bk.badges || bk.cut < 8) bad.push(sz + ' book: ' + JSON.stringify(bk));
         await pg.click('.sb-stk');
