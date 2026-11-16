@@ -279,11 +279,12 @@ Run from anywhere:
 ```bash
 python3 tools/build.py           # writes index.html, bt/games/data.<VER>.js, sw.js, manifest.json, icons to the repo root
 node tools/test.js               # generator fuzz + data checks; must exit 0
+node tools/test.js --only a,b    # only the checks whose name contains "a" or "b" (case-insensitive); the report says how many were skipped
 node tools/smoke.js              # bot plays through the app in headless Chrome; must exit 0   (after P0-01)
 node tools/perf.js               # timings at 6x CPU throttle and memory over 30 rounds; exit 1 only if start is over 2.5 s   (P6-02)
 node tools/shots.js home map question   # screenshots to tools/out/ at 600x960, 1024x600, 380x780   (after P0-01)
 node tools/a11y.js [screen...]   # accessibility scan, DESIGN_SYSTEM 10 (P6-01); must print zero failures
-bash tools/check.sh              # all of the above plus a11y and the size report                                (after P0-01)
+bash tools/check.sh              # all of the above plus a11y and the size report; see "The full check" below             (after P0-01)
 node tools/puzzles/build-banks.js [sudoku|mathdoku|logic|robot] # regenerate puzzle banks into src/data/d-puz-*.js from fixed seeds (after P3-02)
 node tools/puzzles/build-banks.js --check    # regenerate in memory, compare with the committed bank files byte for byte
 node tools/puzzles/verify-banks.js           # re-check every stored puzzle (also part of test.js)
@@ -292,6 +293,17 @@ node tools/puzzles/verify-banks.js           # re-check every stored puzzle (als
 Puzzle banks (`src/data/d-puz-*.js`) are generated, but committed so the build needs no Node step. Never edit them by hand:
 change the generator in `tools/puzzles/`, rerun `build-banks.js`, then `node tools/test.js`. The solver core (`csp.js`,
 `human.js`, `rng.js`) is documented in the header comment of each file; BRAIN_TEASERS.md section 6 lists the files.
+
+Inner loop while you work (seconds, not an hour): `python3 tools/build.py && node tools/contrast.js && node tools/test.js --only X`,
+where X is a word from the name of the check you are changing (the check names are the `run('...')` strings in `tools/test.js`).
+`--only` is not available for `smoke.js`: it is one long script on one shared page, so a block cannot be skipped without the later blocks losing their state.
+
+The full check, before you hand work in: `bash tools/check.sh`. Build, contrast and the hex guard run first and stop the run if they fail.
+Then `test.js`, `smoke.js` and `a11y.js` run at the same time (with 4 or more CPUs; fewer CPUs run fewer at once), then `perf.js` alone
+and last, because it measures timings. A failing step does not stop the others: each step writes its own log in a temp directory, and a
+table at the end gives step, pass or fail, minutes and the log path. The exit status is non-zero if any step failed.
+`KEEP_GOING=0 bash tools/check.sh` is the old behaviour: one step after another on the terminal, stop at the first failure.
+`A11Y_PAR=n` sets how many screens `a11y.js` scans at once.
 
 Smoke runs on a virtual clock (fixed day 2026-06-15 10:00, timers and `Date` run at `SMOKE_SPEED` times real time, default 8, see `tools/lib/browser.js`). Run `SMOKE_SPEED=1 node tools/smoke.js` for the real clock.
 
