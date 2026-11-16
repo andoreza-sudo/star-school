@@ -244,13 +244,28 @@ const SCREENS = {
   'kinds-mark': k2Shot('markm', 0),
   'kinds-mark-miss': k2Shot('markm', 1),
   'kinds-mark-rev': k2Shot('markm', 2),
-  // KINDS2-B: line, fresh, after a first miss (hint) and after the second miss (reveal), on real questions of the stops
+  // KINDS2-B, C: line and make, fresh, after a first miss (hint) and after the second miss (reveal), on real questions of the stops
   'kinds-line': k2Shot(['round', 2, 'line'], 0),
   'kinds-line-miss': k2Shot(['round', 2, 'line'], 1),
   'kinds-line-rev': k2Shot(['round', 2, 'line'], 2),
   'kinds-line-frac': k2Shot(['frac', 3, 'line'], 0),
   'kinds-line-int': k2Shot(['int', 2, 'line'], 0),
-
+  'kinds-make-frame': k2Shot(['tenf', 2, 'make'], 0),
+  'kinds-make-frame-miss': k2Shot(['tenf', 2, 'make'], 1),
+  'kinds-make-frame-rev': k2Shot(['tenf', 2, 'make'], 2),
+  'kinds-make-coins': k2Shot(['coins', 3, 'make'], 0),
+  'kinds-make-coins-miss': k2Shot(['coins', 3, 'make'], 1),
+  'kinds-make-coins-rev': k2Shot(['coins', 3, 'make'], 2),
+  'kinds-make-b10': k2Shot(['pv', 2, 'make'], 0),
+  'kinds-make-b10-miss': k2Shot(['pv', 2, 'make'], 1),
+  'kinds-make-clock': k2Shot(['time', 5, 'make'], 0),
+  'kinds-make-clock-rev': k2Shot(['time', 5, 'make'], 2),
+  'kinds-make-array': k2Shot(['mfact', 2, 'make'], 0),
+  'kinds-make-array-miss': k2Shot(['mfact', 2, 'make'], 1),
+  'kinds-make-parts': k2Shot(['frac', 2, 'make'], 0),
+  'kinds-make-parts-rev': k2Shot(['frac', 2, 'make'], 2),
+  'kinds-make-grid': k2Shot(['geo', 2, 'make'], 0),
+  'kinds-make-frame20': k2Shot(['tenf', 3, 'make'], 0),
 
   // ---- P4-02 icons ----
   care: { run: async p => { await p.evaluate(() => care()); } },

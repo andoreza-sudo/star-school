@@ -105,3 +105,40 @@
 .lnw.wrong g.vpin .vph{fill:var(--try-ink)}
 .lnw.wrong g.vpin .vps{stroke:var(--try-ink)}
 
+/* KINDS2-C make: the model (drawn again from VIZ on every change) in a card, its controls under it, Check below. The card shows a
+   tick or a cross (.k2mk) as well as its border colour; a shown answer has a dashed border and pulses once */
+.mmw{position:relative;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:var(--s-2);width:100%;max-width:640px;min-height:88px;
+  margin:0 auto var(--s-2);padding:var(--s-2);border-radius:var(--r-card);background:var(--surface-2);border:3px solid var(--surface-2)}
+.mmw>.k2mk{position:absolute;top:6px;right:6px}
+.mmw.right{border-color:var(--good-ink)}
+.mmw.wrong{border-color:var(--try-ink)}
+.mmw.rev{border:3px dashed var(--try-ink)}
+.mmv{display:flex;flex-direction:column;justify-content:center;align-items:center;max-width:100%;min-width:0}
+.mm-b10 .mmv .viz,.mm-array .mmv .viz{max-height:136px}
+.mm-clock .mmv .viz{max-height:150px}
+.mm-frame,.mm-parts{cursor:pointer}
+.k2pulse{animation:k-pop var(--t-xl) var(--ease)}
+.mmc{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:var(--s-2);max-width:100%;cursor:default}
+.mmcol{flex-direction:column;gap:var(--s-1)}
+.mms{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:var(--s-1)}
+.mml{min-width:5.4em;text-align:right;font-weight:700;font-size:var(--fs-3);color:var(--ink)}
+.mmn{min-width:2ch;text-align:center;font-weight:700;font-size:var(--fs-5);color:var(--ink)}
+.mmb{display:inline-flex;align-items:center;justify-content:center;gap:2px;min-width:var(--tap);min-height:var(--tap);padding:0 var(--s-2);
+  border-radius:var(--r-btn);border:3px solid var(--ink-3);background:var(--surface);color:var(--ink);font:inherit;font-weight:700;
+  font-size:var(--fs-3);cursor:pointer;touch-action:manipulation}
+.mmb:disabled,.mmp:disabled{opacity:1;cursor:default}
+/* coins: a tray of coins to put in, the purse of coins (tap one to take it out) */
+.mmpurse{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px;min-height:var(--tap)}
+.mmp{display:inline-flex;align-items:center;justify-content:center;min-width:var(--tap);min-height:var(--tap);padding:0;border:0;
+  border-radius:var(--r-pill);background:transparent;cursor:pointer;touch-action:manipulation}
+.mmp .cn{--k:.62;font-size:var(--fs-2)}
+.mmtray .mmb{padding:2px}
+.mmtray .cn{--k:.66;font-size:var(--fs-2)}
+.mmhint{color:var(--ink-2);font-size:var(--fs-2);text-align:center}
+
+@media (min-width:700px){
+  .mm-b10 .mmv .viz,.mm-array .mmv .viz,.mm-clock .mmv .viz{max-height:200px}
+  .mmp .cn,.mmtray .cn{font-size:var(--fs-3)}
+  .mmp .cn{--k:.75}
+  .mmtray .cn{--k:.85}
+}

@@ -379,7 +379,7 @@ const bankShare = (id, lv, f) => {
 
 // ---- mixed formats for generated stops (spec 3): the fact is made as before, then one last seeded draw picks the format ----
 // K2GEN[skill][level] = [share, converter(fact question, level) -> new question or null (keep the fact)], or a list of such pairs
-// (KINDS2-B: dec 2 has sort and line); one draw r, and the first pair whose summed shares pass r converts. A share may be a
+// (KINDS2-B/C: a stop with two new formats); one draw r, and the first pair whose summed shares pass r converts. A share may be a
 // function of the fact question (frac 3 converts every tap question).
 function k2Wrap(sk, g) {
   return lv => {
@@ -655,14 +655,20 @@ function k2EsMix(q0) {
     label: fu && k2Fact(q0.label) ? q0.label : k2Lab(bins, items)});
 }
 
-/* ---------- KINDS2 batch B: the line kind (docs/KINDS2-SPEC.md 2.3, 3) ----------
+/* ---------- KINDS2 batches B and C: the line and make kinds (docs/KINDS2-SPEC.md 2.3, 2.4, 3) ----------
    line   line {min, max, step, labels, marks, hide, den, hops} (the VIZ.numLine options); snap: the step between pin stops, at most
           10 of them (11 stops); start: the pin's first stop (default min, never the answer); ans: a stop as a string ('7', '0.3',
           '3/4'); ansSay. Tap the band of the line (the pin jumps to the nearest stop), drag the pin (it snaps on release), or the
           arrow keys, Home and End on the pin (role slider). Check submits the stop as a string. One stop away on the first try is
           still a miss: "So close! One step away." Reveal: the pin slides to the answer, with a tick on its head.
-   State on st (G, PL or RC): st.lnK (the pin's stop), st.lnK0, st.lnMoved, st.lnDrag, st.lnSkip.
-   Right and wrong also show a shape: a tick or a cross on the pin's head, as the a11y signal rule wants. */
+   make   model 'frame' | 'b10' | 'coins' | 'parts' | 'array' | 'clock'; m: the model's options (K2MM below); ans: the target as a
+          string; eq 'value' (totals compare as numbers; parts with m.whole give shaded/parts, so '1/2' takes 2 of 4) or 'exact'
+          (array: the state 'r×c' must be m.r×m.c, or c×r with m.comm, while ans stays the fact's product, so one label keeps one
+          answer; clock 'h:mm'). The state is a short vector of counts on st.mm;
+          every change draws the model again from VIZ. Check is on once the state has changed. First miss: the state stays, "Too many"
+          or "Not enough yet" (b10: swapped digits "Check your tens and ones."). Reveal: the answer drawn (.rev), the steppers show it.
+   State on st (G, PL or RC): st.lnK (the pin's stop), st.lnK0, st.lnMoved, st.lnDrag, st.lnSkip; st.mm, st.mm0, st.mmMoved.
+   Right and wrong also show a shape: a tick or a cross on the pin's head (line) or on the model (make), as the a11y signal rule wants. */
 
 // a value as a number: '3/4' -> 0.75, '-2' -> -2, '0.25' -> 0.25
 const k2Val = v => {
@@ -841,7 +847,242 @@ KIND.line = {
   },
 };
 
-// ---- the converters (spec 3): a fact question q0 of the stop becomes a line question about the same fact ----
+// ---- make: build a quantity with a model ----
+// a control button: an icon, or a signed number (t) for the clock's minute steps
+const mmBtn = (i, d, icon, al, t) => `<button class="mmb" data-i="${i}" data-d="${d}" aria-label="${al}">${t || ico(icon, 26)}</button>`;
+// a stepper row: name, minus, the number (or nothing), plus; ds: the steps (the clock's minutes: [5] or [1, 5], shown as −5 −1 +1 +5)
+const mmRow = (lab, i, show, ds = [1]) => `<div class="mms"><span class="mml">${lab}</span>`
+  + ds.slice().reverse().map(d => mmBtn(i, -d, 'minus', (d > 1 ? d + " " : "") + "less: " + lab, ds.length > 1 || d > 1 ? '−' + d : '')).join('')
+  + (show ? `<output class="mmn" data-o="${i}">0</output>` : '')
+  + ds.map(d => mmBtn(i, d, 'plus', (d > 1 ? d + " " : "") + "more: " + lab, ds.length > 1 || d > 1 ? '+' + d : '')).join('') + '</div>';
+const mmCoin = v => `<span class="cn" style="--c:${COIN[v][2]};--s:${COIN[v][3]}">${COIN[v][0]}</span>`;
+const mmSum = s => s.reduce((a, b) => a + b, 0);
+const mmTime = s => s[0] + ':' + String(s[1]).padStart(2, '0');
+const mmTimeSay = (h, m) => (m == 0 ? `${h} o'clock` : m == 30 ? `half past ${h}` : `${h} ${m < 10 ? 'oh ' + m : m}`);
+// coins of the given types (biggest first) that make t with the fewest coins
+const mmGreedy = (types, t) => types.map(c => {
+  const n = Math.floor(t / c);
+  t -= n * c;
+  return n;
+});
+// the models: start state, value, the answer's state, a step from a control (or null when it is out of range), the drawing, the controls
+const K2MM = {
+  frame: {
+    s0: () => [0],
+    val: (q, s) => s[0],
+    ans: q => [+q.ans],
+    step: (q, s, i, d) => (s[0] + d < 0 || s[0] + d > q.m.total - (q.m.fixed || 0) ? null : [s[0] + d]),
+    draw: (q, s) => VIZ.tenFrame((q.m.fixed || 0) + s[0], q.m.total, {b: q.m.fixed ? s[0] : 0, cells: 1}),
+    ctl: () => `<div class="mmc">${mmBtn(0, -1, 'minus', 'Take one away')}${mmBtn(0, 1, 'plus', 'Put one in')}</div>`,
+  },
+  b10: {
+    s0: q => (q.m.places == 3 ? [0, 0, 0] : [0, 0]),
+    val: (q, s) => s.reduce((a, x) => a * 10 + x, 0),
+    ans: q => String(+q.ans).padStart(q.m.places, '0').split('').map(Number),
+    step: (q, s, i, d) => (s[i] + d < 0 || s[i] + d > 9 ? null : s.map((x, j) => (j == i ? x + d : x))),
+    draw: (q, s) => VIZ.base10(K2MM.b10.val(q, s)),
+    ctl: q => `<div class="mmc mmcol">${['Hundreds', 'Tens', 'Ones'].slice(3 - q.m.places).map((l, i) => mmRow(l, i, true)).join('')}</div>`,
+  },
+  coins: {
+    s0: q => q.m.types.map(() => 0),
+    val: (q, s) => s.reduce((a, n, i) => a + n * q.m.types[i], 0),
+    ans: q => mmGreedy(q.m.types, +q.ans),
+    step: (q, s, i, d) => (s[i] + d < 0 || d > 0 && mmSum(s) >= 12 ? null : s.map((x, j) => (j == i ? x + d : x))),
+    // the purse: one button a coin (tap to take it out), biggest first
+    draw: (q, s) => `<div class="mmpurse">${s.map((n, i) => (`<button class="mmp" data-p="${i}" aria-label="Take out a ${COIN[q.m.types[i]][1]}">`
+      + `${mmCoin(q.m.types[i])}</button>`).repeat(n)).join('') || '<span class="mmhint">Tap a coin to put it in the purse.</span>'}</div>`,
+    ctl: q => `<div class="mmc mmtray">${q.m.types.map((c, i) => `<button class="mmb mmcoin" data-i="${i}" data-d="1" aria-label="Put in a ${COIN[c][1]}">`
+      + `${mmCoin(c)}</button>`).join('')}</div>`,
+  },
+  parts: {
+    s0: q => Array(q.m.shape == 'grid' ? q.m.w * q.m.h : q.m.d).fill(0),
+    val: (q, s) => (q.m.whole ? mmSum(s) + '/' + s.length : mmSum(s)),
+    // the answer: the first parts, or a rectangle (m.rect [w, h]) in the corner of a grid
+    ans: q => K2MM.parts.s0(q).map((x, i, a) => +(q.m.rect ? i % q.m.w < q.m.rect[0] && Math.floor(i / q.m.w) < q.m.rect[1]
+      : i < Math.round(k2Val(q.ans) * (q.m.whole ? a.length : 1)))),
+    // a part tapped (d left out) turns over; the keyboard's buttons shade the first clear part (+1) or clear the last shaded one (-1)
+    step: (q, s, i, d) => {
+      if (d != null) i = d > 0 ? s.indexOf(0) : s.lastIndexOf(1);
+      return i < 0 ? null : s.map((x, j) => (j == i ? 1 - x : x));
+    },
+    draw: (q, s) => q.m.shape == 'grid' ? VIZ.areaGrid(q.m.w, q.m.h, {tap: 1, on: s})
+      : (q.m.shape == 'circle' ? VIZ.fracCircle : VIZ.fracBar)(0, q.m.d, {tap: 1, on: s}),
+    ctl: () => `<div class="mmc">${mmBtn(0, -1, 'minus', 'Clear one part')}${mmBtn(0, 1, 'plus', 'Shade one more part')}</div>`,
+  },
+  array: {
+    s0: () => [1, 1],
+    val: (q, s) => s[0] + '×' + s[1],
+    ans: q => [q.m.r, q.m.c],
+    step: (q, s, i, d) => (s[i] + d < 1 || s[i] + d > 10 ? null : s.map((x, j) => (j == i ? x + d : x))),
+    draw: (q, s) => VIZ.array(s[0], s[1]),
+    ctl: () => `<div class="mmc mmcol">${mmRow('Rows', 0, true)}${mmRow('In each row', 1, true)}</div>`,
+  },
+  clock: {
+    s0: q => (q.ans == '12:00' ? [6, 0] : [12, 0]),
+    val: (q, s) => mmTime(s),
+    ans: q => q.ans.split(':').map(Number),
+    // the minutes carry into the hour, so the hour hand moves with them
+    step: (q, s, i, d) => {
+      let [h, m] = s;
+      if (i == 0) h = (h + d + 11) % 12 + 1;
+      else {
+        m += d;
+        if (m >= 60) { m -= 60; h = h % 12 + 1; }
+        if (m < 0) { m += 60; h = (h + 10) % 12 + 1; }
+      }
+      return [h, m];
+    },
+    draw: (q, s) => VIZ.clock(s[0], s[1]),
+    ctl: q => `<div class="mmc mmcol">${mmRow('Hour', 0, false)}${mmRow('Minutes', 1, false, q.m.one ? [1, 5] : [5])}</div>`,
+  },
+};
+// the value a state gives, as the kind compares it
+const mmOf = (q, s) => String(K2MM[q.model].val(q, s));
+KIND.make = {
+  render: q => `<div class="mmw mm-${q.model}"><div class="mmv"></div>${k2Marks()}${K2MM[q.model].ctl(q)}</div>`
+    + UI.btn('Check', {kind: 'primary', icon: 'check', id: 'mcheck', cls: 'mgo', off: true}),
+  bind(q, st, submit) {
+    const K = KIND.make, M = K2MM[q.model], w = $('.mmw');
+    st.mm = M.s0(q);
+    st.mm0 = st.mm.slice();
+    st.mmMoved = false;
+    const act = t => {
+      if (st.lock || !t) return;
+      let s = null;
+      if (t.dataset.d != null) s = M.step(q, st.mm, +t.dataset.i, +t.dataset.d);
+      else if (t.dataset.p != null) s = M.step(q, st.mm, +t.dataset.p, -1);
+      else if (t.dataset.v != null) s = M.step(q, st.mm, +t.dataset.v);
+      else if (t.dataset.c != null) { // a ten-frame cell: an empty one adds a counter, a filled one (not a fixed one) takes one away
+        const c = +t.dataset.c, f = q.m.fixed || 0;
+        if (c >= f) s = M.step(q, st.mm, 0, c < f + st.mm[0] ? -1 : 1);
+      }
+      if (!s) { // out of range: the model shakes
+        const v = $('.mmv');
+        if (v) k2Shake(v);
+        return;
+      }
+      st.mm = s;
+      st.mmMoved = true;
+      SFX.pop(t.dataset.d < 0 || t.dataset.p != null ? 1 : 2);
+      K.draw(q, st);
+    };
+    // one handler on the card: its buttons (steppers, the coin tray, purse coins) and the drawing's parts and ten-frame cells
+    if (w) w.onclick = e => act(e.target.closest('[data-d],[data-p],[data-v],[data-c]'));
+    $('#mcheck').onclick = () => {
+      if (!st.lock && st.mmMoved) submit(mmOf(q, st.mm), null);
+    };
+    K.draw(q, st);
+  },
+  // the model drawn at state s (DOM only: reveal has no st). The ten frame and the parts take taps on the drawing, and their buttons do
+  // the same for the keyboard, so their svg is a picture (aria-hidden; the tap targets drop the button role VIZ gives them). A focused
+  // purse coin hands the focus to the next one, or to the tray, when the purse is drawn again
+  paint(q, s) {
+    const v = $('.mmv');
+    if (!v) return;
+    const a = document.activeElement, at = a && v.contains(a) && a.dataset.p != null;
+    v.innerHTML = K2MM[q.model].draw(q, s);
+    if (q.model == 'frame' || q.model == 'parts') {
+      const g = v.querySelector('svg');
+      if (g) g.setAttribute('aria-hidden', 'true');
+      v.querySelectorAll('[data-v]').forEach(e => { e.removeAttribute('role'); e.removeAttribute('aria-label'); });
+    }
+    $$('.mmn').forEach(o => { o.textContent = s[+o.dataset.o]; });
+    if (at) {
+      const f = v.querySelector(`[data-p="${a.dataset.p}"]`) || v.querySelector('[data-p]') || $('.mmc button');
+      if (f) f.focus();
+    }
+    k2Fit();
+  },
+  draw(q, st) {
+    KIND.make.paint(q, st.mm);
+    const go = $('#mcheck');
+    if (go) go.disabled = !st.mmMoved;
+  },
+  same: (q, v) => {
+    if (q.model == 'array') return String(v) === q.ans || String(v) === q.m.r + '×' + q.m.c || !!(q.m.comm && String(v) === q.m.c + '×' + q.m.r);
+    if (q.eq == 'exact') return String(v) === q.ans;
+    return Math.abs(k2Val(v) - k2Val(q.ans)) < 1e-9;
+  },
+  done(cls) {
+    const w = $('.mmw');
+    if (w) w.classList.add(cls);
+    $$('.mmw button').forEach(b => { b.disabled = true; });
+  },
+  right() {
+    KIND.make.done('right');
+  },
+  // first miss: the state stays; the words say which way to go
+  retry(q, st) {
+    const v = mmOf(q, st.mm), w = $('.mmw');
+    let t;
+    if (q.model == 'clock') {
+      const [h, m] = st.mm, [ah, am] = K2MM.clock.ans(q);
+      t = h != ah && m == am ? 'Look at the short hour hand.' : h == ah ? 'Look at the long minute hand.' : 'Not yet. Set the minutes, then the hour.';
+    } else if (q.model == 'array') {
+      const [r, c] = st.mm, [ar, ac] = K2MM.array.ans(q);
+      t = r == ac && c == ar ? 'Rows go across. Check your rows and how many in each row.' : r * c > ar * ac ? 'Too many. Look at the rows and how many in each.' : 'Not enough yet. Look at the rows and how many in each.';
+    } else if (q.model == 'b10' && +v !== +q.ans && st.mm.slice(-2).reverse().join() === K2MM.b10.ans(q).slice(-2).join()) t = 'Check your tens and ones.';
+    else t = k2Val(v) > k2Val(q.ans) ? 'Too many. Take some away.' : 'Not enough yet. Put in some more.';
+    fb(t, 'again');
+    st.mmMoved = false;
+    KIND.make.draw(q, st);
+    if (!w) return;
+    w.classList.add('wrong');
+    k2Shake(w);
+    setTimeout(() => w.classList.remove('wrong'), 900);
+  },
+  // second miss: the answer drawn, the steppers show it, the model pulses once
+  reveal(q) {
+    const K = KIND.make, w = $('.mmw'), v = $('.mmv'), go = $('#mcheck');
+    if (w) w.classList.remove('wrong');
+    K.paint(q, K2MM[q.model].ans(q));
+    K.done('rev');
+    if (v) v.classList.add('k2pulse');
+    if (go) go.disabled = true;
+  },
+  spoken: q => q.ansSay || (q.model == 'coins' ? q.ans + ' cents' : String(q.ans)),
+  validate(q) {
+    const p = [], M = K2MM[q.model], m = q.m || {};
+    if (!M) return ['make: unknown model ' + q.model];
+    if (typeof q.ans != 'string' || !q.ans) return ['make: ans must be a non-empty string'];
+    if ((q.eq || 'value') != (['array', 'clock'].includes(q.model) ? 'exact' : 'value')) p.push('make: eq must be ' + (['array', 'clock'].includes(q.model) ? 'exact' : 'value') + ' for ' + q.model);
+    const a = k2Val(q.ans), int = Number.isInteger(a) && a > 0;
+    if (q.model == 'frame') {
+      if (![5, 10, 20].includes(m.total)) p.push('make frame: total must be 5, 10 or 20');
+      if (!int || a + (m.fixed || 0) > m.total) p.push('make frame: the target does not fit in the frame');
+    } else if (q.model == 'b10') {
+      if (![2, 3].includes(m.places)) p.push('make b10: places must be 2 or 3');
+      if (!int || a >= Math.pow(10, m.places)) p.push('make b10: the target needs more places than the steppers have');
+    } else if (q.model == 'coins') {
+      const T = m.types || [];
+      if (!T.length || T.some(c => !COIN[c]) || T.some((c, i) => i && c >= T[i - 1])) p.push('make coins: types must be coins, biggest first');
+      else if (!int || T[T.length - 1] != 1 && a % T[T.length - 1] || mmSum(mmGreedy(T, a)) > 12) p.push('make coins: the target needs more than 12 coins');
+    } else if (q.model == 'parts') {
+      const n = m.shape == 'grid' ? m.w * m.h : m.d;
+      if (!['bar', 'circle', 'grid'].includes(m.shape)) p.push('make parts: shape must be bar, circle or grid');
+      if (m.shape == 'bar' && !(m.d >= 2 && m.d <= 6)) p.push('make parts: a bar has 2 to 6 parts (48 px each)');
+      if (m.shape == 'circle' && !(m.d >= 2 && m.d <= 8)) p.push('make parts: a circle has 2 to 8 parts');
+      if (m.shape == 'grid' && !(m.w >= 1 && m.w <= 6 && m.h >= 1 && m.h <= 4)) p.push('make parts: a grid is at most 6 by 4');
+      if (m.whole ? !(a > 0 && a < 1 && Math.abs(a * n - Math.round(a * n)) < 1e-9) : !int || a > n) p.push('make parts: the target is not a number of the parts');
+      if (m.rect && (m.whole || m.rect[0] * m.rect[1] !== a || m.rect[0] > m.w || m.rect[1] > m.h)) p.push('make parts: rect is not the target');
+    } else if (q.model == 'array') {
+      if (!(m.r >= 1 && m.r <= 10 && m.c >= 1 && m.c <= 10 && Number.isInteger(m.r) && Number.isInteger(m.c))) p.push('make array: m.r and m.c must be 1 to 10');
+      else if (+q.ans !== m.r * m.c) p.push('make array: ans must be the product m.r × m.c');
+    } else if (q.model == 'clock') {
+      const r = /^(1[0-2]|[1-9]):([0-5]\d)$/.exec(q.ans);
+      if (!r) p.push('make clock: ans must be h:mm');
+      else if (!m.one && +r[2] % 5) p.push('make clock: minutes not a 5 need m.one (steps of 1)');
+    }
+    if (!p.length) {
+      if (!KIND.make.same(q, mmOf(q, M.ans(q)))) p.push('make: the answer state does not give ans');
+      if (KIND.make.same(q, mmOf(q, M.s0(q)))) p.push('make: the start state is the answer');
+    }
+    if (/data-v=|data-c=/.test(q.html || '')) p.push('make: the model belongs in the input area, not in html');
+    return p;
+  },
+};
+
+// ---- the converters (spec 3): a fact question q0 of the stop becomes a line or make question about the same fact ----
 // q0's label is kept wherever the new question asks the same fact (review asks it again), and its pk / auto flags (Kindergarten)
 function k2New(q0, o) {
   const q = Object.assign({html: o.html, say: o.say, label: o.label || q0.label}, o.q);
@@ -938,6 +1179,134 @@ function k2IntOpp(q0) {
     hint: `${k2Num(n)} is ${Math.abs(n)} steps from 0. Its opposite is ${Math.abs(n)} steps from 0 on the other side.`});
 }
 
+// a make question
+const k2Make = (q0, o) => k2New(q0, Object.assign({}, o, {q: {kind: 'make', model: o.model, m: o.m, ans: String(o.ans), eq: ['array', 'clock'].includes(o.model) ? 'exact' : 'value'}}));
+// tenf 1-3, pk_count 3 (K): the ten frame; "make ten" and "10 and" questions start with counters in place (m.fixed)
+function k2Frame(q0, lv) {
+  const l = String(q0.label);
+  let m;
+  if ((m = /^frame (\d+)$/.exec(l)) || (m = /^count (\d+) (\w+) \(frames\)$/.exec(l))) {
+    const n = +m[1], t = n > 10 ? 20 : 10;
+    if (!n) return null;
+    return k2Make(q0, {model: 'frame', m: {total: t}, ans: n, ansSay: String(n), speak: true,
+      html: `<div class="eq">${n}</div>${pkTxt(`Make ${n}. Tap to put in ${n} counters.`)}`, say: `Make ${n}. Tap the ten frame to put in ${n} counters.`,
+      hint: n > 5 ? 'Fill the top row first: that is 5. Then count on.' : 'Count as you tap: 1, 2, 3 ...'});
+  }
+  if ((m = /^(\d+) and \? make 10$/.exec(l))) {
+    const f = +m[1];
+    return k2Make(q0, {model: 'frame', m: {total: 10, fixed: f}, ans: 10 - f, ansSay: `${f} and ${10 - f} make 10`, speak: true,
+      html: pkTxt(`There are ${f}. Put in more to make 10.`), say: `There are ${f} counters. Put in more counters to make 10.`, hint: 'Fill every empty box. Count how many you put in.'});
+  }
+  if ((m = /^10 and (\d+)$/.exec(l)) || (m = /^10 \+ \? = (\d+)$/.exec(l))) {
+    const add = m[0].includes('?') ? +m[1] - 10 : +m[1], tot = 10 + add;
+    return k2Make(q0, {model: 'frame', m: {total: 20, fixed: 10}, ans: add, ansSay: `10 and ${add} make ${tot}`, speak: true,
+      label: m[0].includes('?') ? q0.label : `make ${tot} from 10`,
+      html: `<div class="eq">${tot}</div>${pkTxt(`Ten is in. Make ${tot}.`)}`, say: `Ten counters are in the frame. Put in more to make ${tot}.`,
+      hint: `${tot} is 10 and ${add} more.`});
+  }
+  return null;
+}
+// add 4 (K): a + b in the ten frame: put in a, then b more (the fact's answer is the counters in all)
+function k2AddFrame(q0) {
+  const m = /^(\d+) \+ (\d+) = \?$/.exec(q0.label);
+  if (!m || +m[1] + +m[2] < 1 || +m[1] + +m[2] > 10) return null;
+  const a = +m[1], b = +m[2], c = a + b;
+  return k2Make(q0, {model: 'frame', m: {total: c <= 5 ? 5 : 10}, ans: c, ansSay: `${a} and ${b} make ${c}`, speak: true,
+    html: `<div class="eq">${a} + ${b}</div>${pkTxt(`Put in ${a}, then ${b} more.`)}`,
+    say: `${a} plus ${b}. Tap the frame to put in ${a}, then ${b} more.`, hint: 'Count as you tap. Then count them all.'});
+}
+// pv 1, pv 2, big 1: the number of the fact with base-ten blocks
+function k2B10(q0, lv) {
+  const l = String(q0.label), m = /in (\d+)$/.exec(l) || /^pv picture (\d+)$/.exec(l), n = m ? +m[1] : +q0.ans;
+  if (!Number.isInteger(n) || n < 1 || n > 999) return null;
+  const pl = n > 99 || lv > 1 ? 3 : 2, ds = String(n).padStart(pl, '0').split('').map(Number);
+  const parts = [['hundred', 'hundreds'], ['ten', 'tens'], ['one', 'ones']].slice(3 - pl).map((w, i) => `${ds[i]} ${w[ds[i] == 1 ? 0 : 1]}`);
+  const sum = /^(\d+) \+ (\d+) = \?$/.exec(l);
+  return k2Make(q0, {model: 'b10', m: {places: pl}, ans: n, ansSay: `${n} is ${parts.join(' and ')}`, label: m && m[0][0] == 'i' ? `make ${n}` : q0.label,
+    html: sum ? `<div class="eq">${sum[1]} + ${sum[2]}</div>${k2Sub('Make the answer with blocks.')}` : `<div class="eq">${n}</div>${k2Sub(`Make ${n} with blocks.`)}`,
+    say: sum ? `${sum[1]} plus ${sum[2]}. Make the answer with blocks.` : `Make ${n} with blocks: ${pl == 3 ? 'hundreds, ' : ''}tens and ones.`,
+    hint: pl == 3 ? 'Each digit says how many: flats for the hundreds, rods for the tens, little cubes for the ones.' : 'The tens digit says how many rods. The ones digit says how many little cubes.'});
+}
+// coins 1-3, 5: the amount (or the change) in the purse, by any coins
+const K2COINS = {1: [5, 1], 2: [10, 5, 1], 3: [25, 10, 5, 1], 5: [25, 10, 5, 1]};
+function k2Coins(q0, lv) {
+  const t = +q0.ans, T = K2COINS[lv];
+  if (!Number.isInteger(t) || t < 1 || mmSum(mmGreedy(T, t)) > 12) return null;
+  const ch = /^change/.test(q0.label);
+  return k2Make(q0, {model: 'coins', m: {types: T}, ans: t, ansSay: `${t} cents`, label: ch ? q0.label : `make ${t}c`,
+    html: ch ? String(q0.html).replace(/<div class="eq" style="font-size:\.7em">[\s\S]*$/, '') + k2Sub('Put the change in the purse.')
+      : `<div class="eq">${t}¢</div>${k2Sub(`Put ${t}¢ in the purse.`)}`,
+    say: ch ? `${q0.say} Put the change in the purse.` : `Make ${t} cents. Tap the coins to put them in the purse.`,
+    hint: `Start with the biggest coin that fits, then count on to ${t}.`});
+}
+// time 1-5: set the clock; 5 minutes a step (and 1 minute in 3rd grade)
+function k2Clock(q0, lv) {
+  const m = /(\d+):(\d\d)$/.exec(q0.ans);
+  if (!m) return null;
+  const h = +m[1], mi = +m[2], one = lv >= 5, ts = mmTimeSay(h, mi);
+  if (!one && mi % 5) return null;
+  return k2Make(q0, {model: 'clock', m: {one}, ans: `${h}:${m[2]}`, ansSay: ts,
+    html: `<div class="eq">${h}:${m[2]}</div>${k2Sub('Show this time on the clock.')}`, say: `Show ${ts} on the clock.`,
+    hint: mi ? `The long hand shows the minutes: count by 5s from the 12 to ${mi - mi % 5}${mi % 5 ? ', then ' + (mi % 5) + ' more' : ''}. The short hand is just past the ${h}.`
+      : `The long hand points to the 12. The short hand points to the ${h}.`});
+}
+// arr 1-2, mult 1-2, mfact 1-3: the array of the fact (rows, then how many in each row)
+function k2Array(q0) {
+  const m = /^(?:array )?(\d+) (?:rows of|×) (\d+)/.exec(q0.label);
+  if (!m) return null;
+  const r = +m[1], c = +m[2];
+  if (r < 1 || r > 10 || c < 1 || c > 10 || r * c == 1) return null;
+  const fact = /^\d+ × \d+ = \?$/.test(q0.label), keep = String(r * c) === String(q0.ans);
+  return k2Make(q0, {model: 'array', m: {r, c}, ans: r * c, ansSay: `${r} rows of ${c}`, label: keep ? q0.label : `array ${r} rows of ${c}`,
+    html: (fact ? `<div class="eq">${r} × ${c}</div>` : '') + k2Sub(`Make an array: ${r} row${r == 1 ? '' : 's'} of ${c}.`),
+    say: `${fact ? `${r} times ${c}. ` : ''}Make an array with ${r} row${r == 1 ? '' : 's'} of ${c}.`,
+    hint: 'Rows go across. Set the number of rows, then how many dots in each row.'});
+}
+// frac 1 (1st): shade one half or one fourth of a shape cut in 2 or 4 equal parts
+function k2Halves(q0) {
+  const four = /fourths/.test(q0.label), d = four ? 4 : pick([2, 4]), sh = /circle/.test(q0.label) ? 'circle' : 'bar';
+  const n = four ? 1 : d / 2, w = four ? 'one fourth' : 'one half';
+  return k2Make(q0, {model: 'parts', m: {shape: sh, d, whole: 1}, ans: four ? '1/4' : '1/2', ansSay: `${n} of the ${d} parts`, label: `shade ${w} of ${d} ${sh}`,
+    html: k2Sub(`Shade ${w} of the ${sh == 'bar' ? 'bar' : 'circle'}.`), say: `Tap the parts to shade ${w} of the ${sh == 'bar' ? 'bar' : 'circle'}.`,
+    hint: four ? 'Fourths are 4 equal parts. One fourth is 1 of them.' : `Halves are 2 equal parts. ${d == 4 ? 'With 4 parts, one half is 2 of them.' : 'One half is 1 of them.'}`});
+}
+// frac 2 (3rd): shade n/d of the bar or circle of the fact
+function k2FracShade(q0) {
+  const m = /^frac (?:pic )?(\d+)\/(\d+)(?: (bar|circle))?$/.exec(q0.label);
+  if (!m) return null;
+  const n = +m[1], d = +m[2], sh = m[3] == 'circle' || d > 6 ? 'circle' : 'bar';
+  if (d > 8 || n >= d) return null;
+  return k2Make(q0, {model: 'parts', m: {shape: sh, d, whole: 1}, ans: q0.ans, ansSay: fcSay(n, d),
+    html: `${k2Sub('Shade')}<div class="eq">${fcFr(n, d)}</div>${k2Sub(`of the ${sh}.`)}`, say: `Tap the parts to shade ${fcSay(n, d)} of the ${sh}.`,
+    hint: `The bottom number ${d} says how many equal parts. The top number ${n} says how many to shade.`});
+}
+// geo 2: shade a rectangle of the fact's sides on a 6 by 4 grid (a new one when the fact's is bigger); the area is the squares shaded
+function k2Area(q0) {
+  const m = /(\d+)x(\d+)/.exec(q0.label);
+  let w = m ? +m[1] : 0, h = m ? +m[2] : 0, keep = true;
+  if (w > 6 || h > 4) [w, h] = [h, w];
+  if (!(w >= 1 && w <= 6 && h >= 1 && h <= 4) || w * h < 2) {
+    w = R(2, 6);
+    h = R(2, 4);
+    keep = false;
+  }
+  return k2Make(q0, {model: 'parts', m: {shape: 'grid', w: 6, h: 4, rect: [w, h]}, ans: keep ? q0.ans : w * h, ansSay: `${w * h} squares`,
+    label: keep ? q0.label : `geo2 shade ${w}x${h}`, html: k2Sub(`Shade a rectangle ${w} squares long and ${h} squares wide.`),
+    say: `Shade a rectangle ${w} squares long and ${h} squares wide. Its area is the squares you shade.`,
+    hint: `Shade ${h} row${h == 1 ? '' : 's'} of ${w} squares. Count them all: that is the area.`});
+}
+// dec 1 (4th): the 10 squares are one whole; shade the tenths of the fact (a new number when the fact is not tenths below 1)
+function k2DecShade(q0) {
+  let v = k2Val(q0.ans), keep = true;
+  if (!(v > 0 && v < 1 && Math.abs(v * 10 - Math.round(v * 10)) < 1e-9)) {
+    v = R(1, 9) / 10;
+    keep = false;
+  }
+  const k = Math.round(v * 10), vs = '0.' + k;
+  return k2Make(q0, {model: 'parts', m: {shape: 'grid', w: 5, h: 2, whole: 1}, ans: keep ? q0.ans : vs, ansSay: `${k} tenths`, label: keep ? q0.label : `dec1 shade ${vs}`,
+    html: `${k2Sub('The 10 squares are 1 whole. Shade')}<div class="eq">${vs}</div>`, say: `The 10 squares make 1 whole. Shade ${k2SayNum(v)}.`,
+    hint: 'Each square is one tenth. The digit after the point says how many to shade.'});
+}
 
 const K2GEN = {
   sort: {2: [.5, k2SortSize], 3: [.5, k2SortKinds]},
@@ -948,13 +1317,23 @@ const K2GEN = {
   pic: {3: [.4, k2Vowel], 4: [.4, k2Vowel]},
   fact: {1: [.4, k2Factor], 2: [.6, k2Prime]},
   ang: {1: [.5, k2Angle]},
-  // KINDS2-B line (spec 3; cnt 1 and 4 and dec 1 at 40%, not 30%: 30% leaves the number pad over 65%, see PROGRESS)
-  frac: {3: [q => (q.kind == 'tap' ? 1 : .22), k2FracLine], 4: [.4, k2Half]},
-  dec: {1: [.4, k2Dec1Line], 2: [[.4, k2Half], [.3, k2Dec2Line]]},
+  // KINDS2-B line and KINDS2-C make (spec 3; shares raised to 40% where 30% or 25% would leave the old kind over 65%, see PROGRESS)
+  frac: {1: [.4, k2Halves], 2: [.3, k2FracShade], 3: [q => (q.kind == 'tap' ? 1 : .22), k2FracLine], 4: [.4, k2Half]},
+  dec: {1: [[.3, k2Dec1Line], [.3, k2DecShade]], 2: [[.4, k2Half], [.3, k2Dec2Line]]},
   cnt: {1: [.4, k2Cnt], 4: [.4, k2Cnt]},
   round: {1: [.5, k2Round], 2: [.5, k2Round], 3: [.5, k2Round], 4: [.5, k2Round]},
-  pv: {5: [.3, k2Pv5Line]},
+  pv: {1: [.4, k2B10], 2: [.4, k2B10], 5: [.3, k2Pv5Line]},
   int: {1: [.4, k2IntLine], 2: [.45, k2IntOpp]},
+  tenf: {1: [.45, k2Frame], 2: [.45, k2Frame], 3: [.45, k2Frame]},
+  pk_count: {3: [.45, k2Frame]},
+  add: {4: [.45, k2AddFrame]},
+  big: {1: [.4, k2B10]},
+  coins: {1: [.45, k2Coins], 2: [.4, k2Coins], 3: [.4, k2Coins], 5: [.45, k2Coins]},
+  time: {1: [.4, k2Clock], 2: [.4, k2Clock], 3: [.4, k2Clock], 4: [.4, k2Clock], 5: [.4, k2Clock]},
+  arr: {1: [.4, k2Array], 2: [.25, k2Array]},
+  mult: {1: [.4, k2Array], 2: [.4, k2Array]},
+  mfact: {1: [.25, k2Array], 2: [.25, k2Array], 3: [.25, k2Array]},
+  geo: {2: [.4, k2Area]},
   es_art: {1: [.6, k2Art], 2: [.6, k2Art]},
   es_ser: {2: [.45, k2Ser]},
   es_gusta: {2: [.45, k2Gusta]},

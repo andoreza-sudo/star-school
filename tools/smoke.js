@@ -81,8 +81,8 @@ async function answer(page) {
     // KINDS2: tap the right word (one), or each right word and then Check
     for (const i of await page.evaluate(() => G.q.ans.map(Number))) await page.click(`.mkt[data-i="${i}"]`);
     if (!q.one) await page.click('#mcheck');
-  } else if (q.kind === 'line') {
-    await answerK2(page); // KINDS2-B: at the end of this file
+  } else if (q.kind === 'line' || q.kind === 'make') {
+    await answerK2(page); // KINDS2-B, C: at the end of this file
   } else if (q.kind === 'trace') {
     await traceGlyph(page);
   } else if (q.kind === 'match') {
@@ -11265,7 +11265,7 @@ async function main() {
         'Check on screen, real eo 2, gram 2 and sci_life 1 questions by the bot; no console errors, no network requests');
     }
 
-    // KINDS2 batch B (docs/KINDS2-SPEC.md 6, smoke): the line kind in one-question rounds of the real round engine at
+    // KINDS2 batches B and C (docs/KINDS2-SPEC.md 6, smoke): the line and make kinds in one-question rounds of the real round engine at
     // 360x740 and 800x1280. Fit everywhere: .qarea and .inp do not overflow sideways, every button in .inp, the pin's hit area, ten-frame
     // cells and shaded parts are 48 x 48 or more, Check is on screen without scrolling the page. No console errors, no requests.
     const KSM = require('./kinds-samples');
@@ -11412,6 +11412,125 @@ async function main() {
         'no console errors, no network requests');
     }
 
+    // KINDS2-C, the make kind: each of the six models right on the first try by taps (with the fit after the taps: a full purse, 20
+    // frame cells); the ten frame by its cells; too many then right ("Too many", the state kept, a cross); b10 digits swapped ("Check your
+    // tens and ones."); wrong twice (the answer drawn, dashed, a tick, the answer spoken, asked again at the end); the steppers and the
+    // parts' "shade one more" by the keyboard (Tab, Enter); real tenf, pk_count, pv, coins, time, mfact, frac, geo and dec questions by answer()
+    {
+      const bad = [], notes = [];
+      for (const [w, h] of [[360, 740], [800, 1280]]) {
+        const ka = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ka.page, at = 'KINDS2-C ' + w + 'x' + h + ' ', K = k2Kit(pg, at, bad), MK = '.inp .mmw';
+        try {
+          await pg.evaluate(() => { window.__said = []; const s0 = window.say; window.say = (t, ...a) => { window.__said.push(String(t)); return s0(t, ...a); }; });
+          const to = async spoil => {
+            for (let i = 0; i < 80; i++) {
+              const sel = await pg.evaluate(`(${KSM.makeStep.toString()})(false)`);
+              if (!sel) break;
+              await pg.click(sel);
+            }
+            if (spoil) await pg.click(await pg.evaluate(`(${KSM.makeStep.toString()})(true)`));
+          };
+          const shown = sel => pg.evaluate(s => { const e = document.querySelector(s); return !!e && getComputedStyle(e).display != 'none'; }, sel);
+          // 1. every model right on the first try by taps
+          for (const n of ['make', 'makec', 'makeb', 'makea', 'maket', 'makep']) {
+            await K.round(K.sample(n), MK);
+            await K.fitOk(n + ' fresh');
+            if (!(await pg.$('#mcheck[disabled]'))) bad.push(at + n + ': Check is on before a change');
+            await to(false);
+            await K.fitOk(n + ' at the answer');
+            await pg.click('#mcheck');
+            await vwait(pg, 300);
+            const r = await K.st();
+            if (r.s !== 1 || !r.lock || !(await pg.$('.mmw.right')) || !(await shown('.mmw.right .k2ok'))) bad.push(at + n + ' right first try: ' + JSON.stringify(r));
+            if (w === 360 && n == 'makec') await pg.screenshot({ path: '/tmp/kinds2bc-smoke-make-coins.png' }).catch(() => {});
+            await K.settle(n);
+          }
+          // 2. the ten frame by its cells: 6 taps on empty cells, one on a filled cell takes one away, one more empty cell
+          await K.round(K.sample('make'), MK);
+          for (let c = 0; c < 6; c++) await pg.click(`.mmv rect[data-c="${c + 2}"]`);
+          await pg.click('.mmv rect[data-c="0"]');
+          await pg.click('.mmv rect[data-c="9"]');
+          const f1 = await pg.evaluate(() => ({ mm: G.mm.join(), counters: document.querySelectorAll('.mmv .viz circle').length }));
+          if (f1.mm !== '6' || f1.counters !== 6) bad.push(at + 'frame cells: ' + JSON.stringify(f1));
+          await pg.click('#mcheck');
+          await vwait(pg, 300);
+          if ((await K.st()).s !== 1) bad.push(at + 'frame by cells was not right');
+          await K.settle('frame cells');
+          // 3. too many, then right: "Too many", the state stays (7), a cross, Check off until a change; one away, Check
+          await K.round(K.sample('make'), MK);
+          await to(true);
+          await pg.click('#mcheck');
+          await vwait(pg, 250);
+          const m1 = await K.st(), mm1 = await pg.evaluate(() => G.mm.join());
+          if (!/Too many/.test(m1.toast) || !m1.hint || mm1 !== '7' || !(await shown('.mmw.wrong .k2no')) || !(await pg.$('#mcheck[disabled]'))) bad.push(at + 'make too many: ' + JSON.stringify([m1, mm1]));
+          await K.fitOk('make after a miss');
+          if (w === 360) await pg.screenshot({ path: '/tmp/kinds2bc-smoke-make-miss.png' }).catch(() => {});
+          await vwait(pg, 900);
+          await pg.click('.mmb[data-d="-1"]');
+          await pg.click('#mcheck');
+          await vwait(pg, 300);
+          const m2 = await K.st();
+          if (m2.s !== 0 || m2.done !== 1 || !m2.lock) bad.push(at + 'make right on the second try: ' + JSON.stringify(m2));
+          await K.settle('make second try');
+          // 4. b10: 27 for 72, "Check your tens and ones."
+          await K.round(K.sample('makeb'), MK);
+          for (let k = 0; k < 2; k++) await pg.click('.mmb[data-i="0"][data-d="1"]');
+          for (let k = 0; k < 7; k++) await pg.click('.mmb[data-i="1"][data-d="1"]');
+          await pg.click('#mcheck');
+          await vwait(pg, 250);
+          const b1 = await K.st();
+          if (!/Check your tens and ones/.test(b1.toast)) bad.push(at + 'b10 swapped digits: ' + JSON.stringify(b1));
+          await vwait(pg, 900);
+          await to(false);
+          await pg.click('#mcheck');
+          await vwait(pg, 300);
+          await K.settle('b10 second try');
+          // 5. wrong twice (coins, 30¢): the answer drawn (a quarter and a nickel), dashed with a tick, "30 cents" said, asked again at the end
+          await K.round(K.sample('makec'), MK);
+          await to(true); await pg.click('#mcheck'); await vwait(pg, 1000);
+          await pg.evaluate(() => { window.__said = []; });
+          await pg.click('.mmb[data-i="3"]'); await pg.click('#mcheck'); await vwait(pg, 500);
+          const c1 = await pg.evaluate(() => ({ rev: !!document.querySelector('.mmw.rev'), purse: [...document.querySelectorAll('.mmpurse .mmp')].map(e => e.dataset.p).join(),
+            said: window.__said.join(' | '), missed: G.missed.length, off: [...document.querySelectorAll('.mmc button, .mmw button')].every(b => b.disabled) }));
+          if (!c1.rev || c1.purse !== '0,2' || !/30 cents/.test(c1.said) || c1.missed !== 1 || !c1.off || !(await shown('.mmw.rev .k2ok'))) bad.push(at + 'make reveal: ' + JSON.stringify(c1));
+          if (w === 360) await pg.screenshot({ path: '/tmp/kinds2bc-smoke-make-rev.png' }).catch(() => {});
+          await pg.waitForFunction(() => G.retry && G.q && G.q.kind === 'make' && !G.lock, null, { timeout: 8000 }).catch(() => bad.push(at + 'the missed make did not come back at the end of the round'));
+          // 6. keyboard: the array's steppers (Tab to a button, Enter), then the bar's "shade one more" button; Tab to Check, Enter
+          for (const [n, plan] of [['makea', [['.mmb[data-i="0"][data-d="1"]', 2], ['.mmb[data-i="1"][data-d="1"]', 3]]],
+            ['makep', [['.mmb[data-d="1"]', 3]]]]) {
+            await K.round(K.sample(n), MK);
+            let ok = true;
+            for (const [sel, times] of plan) {
+              ok = ok && await K.tabTo(sel);
+              for (let k = 0; k < times && ok; k++) await pg.keyboard.press('Enter');
+            }
+            ok = ok && await K.tabTo('#mcheck') && (await pg.keyboard.press('Enter'), true);
+            await vwait(pg, 300);
+            if (!ok || (await K.st()).s !== 1) bad.push(at + n + ' by keyboard: ' + ok + ' ' + await pg.evaluate(() => G.mm.join()));
+            await K.settle(n + ' by keyboard');
+          }
+          // 7. real stops answered by answer(), with the fit
+          for (const [sk, lv] of [['tenf', 2], ['tenf', 3], ['pk_count', 3], ['pv', 2], ['coins', 3], ['time', 5], ['mfact', 2], ['frac', 2], ['geo', 2], ['dec', 1]]) {
+            await K.round(K.real(sk, lv, 'make'), MK);
+            await K.fitOk(sk + lv);
+            await answer(pg);
+            await vwait(pg, 300);
+            if ((await K.st()).s !== 1) bad.push(at + sk + lv + ' make: answer() did not get it right');
+            await K.settle(sk + lv);
+          }
+        } catch (x) { bad.push(at + x.message.split('\n')[0]); }
+        for (const e of ka.errors) bad.push(at + e);
+        for (const u of ka.network) bad.push(at + 'network request: ' + u);
+        notes.push(w + 'x' + h);
+        await ka.ctx.close();
+      }
+      if (bad.length) fail('KINDS2-C make:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('KINDS2-C: make at ' + notes.join(' and ') + ': the six models right by taps, the ten frame by its cells, too many then right ' +
+        '(state kept, a cross), b10 digits swapped, wrong twice (the answer drawn, dashed, a tick, spoken, asked again), steppers and parts ' +
+        'by the keyboard, 48 px targets, Check on screen, real tenf, pk_count, pv, coins, time, mfact, frac, geo and dec questions by the bot; ' +
+        'no console errors, no network requests');
+    }
 
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');
@@ -11424,11 +11543,20 @@ async function main() {
   console.log(failed ? `smoke FAILED (${failed})` : 'smoke OK');
   process.exit(failed ? 1 : 0);
 }
-// KINDS2-B: answer() for line (a tap on the answer's stop of the line, then Check), by the helper of tools/kinds-samples.js
+// KINDS2-B, C: answer() for line (a tap on the answer's stop of the line, then Check) and make (the controls that bring the model to the
+// answer, then Check), by the helpers of tools/kinds-samples.js
 async function answerK2(page) {
   const KSM = require('./kinds-samples');
-  const p = await page.evaluate(`(${KSM.linePt.toString()})(null)`);
-  await page.mouse.click(p.x, p.y);
+  if (await page.evaluate(() => G.q.kind) === 'line') {
+    const p = await page.evaluate(`(${KSM.linePt.toString()})(null)`);
+    await page.mouse.click(p.x, p.y);
+  } else {
+    for (let i = 0; i < 80; i++) {
+      const sel = await page.evaluate(`(${KSM.makeStep.toString()})(false)`);
+      if (!sel) break;
+      await page.click(sel);
+    }
+  }
   await page.click('#mcheck');
 }
 main();

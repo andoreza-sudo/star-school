@@ -187,9 +187,13 @@ const SCREENS = {
   'sort-miss': k2Miss('eo', 2, 'sort'),
   'mark-question': k2Screen('gram', 7, 'mark'),
   'mark-miss': k2Miss('gram', 7, 'mark'),
-  // KINDS2-B: line (the rounding model, fourths), fresh and after a miss
+  // KINDS2-B, C: line (the rounding model, fourths) and make (clock, coins, shaded parts, the ten frame), fresh and after a miss
   'line-question': k2Screen('round', 1, 'line'),
   'line-miss': k2Miss('frac', 3, 'line'),
+  'make-question': k2Screen('time', 3, 'make'),
+  'make-miss': k2Miss('coins', 3, 'make'),
+  'make-parts': k2Screen('frac', 2, 'make'),
+  'make-frame': k2Screen('tenf', 2, 'make'),
   // S-SPK: the Spanish "Say it!" step (src/js/50-say.js) over the first question of a Spanish round; the microphone is the main control (64 px)
   'say-it': { run: ev(() => { SPK.mic = 'yes'; start('es', NODES.es.findIndex(n => n.sk == 'es_animal' && n.lv == 1)); G.spk = 1; spkOpen(G.q, () => next()); }), main: '.spk-mic' },
   // S-SPK2: Say it! after a try, with the kind line of the sound check ("Close! Listen again"); the Grown-ups Spanish listening card and

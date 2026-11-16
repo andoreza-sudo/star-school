@@ -130,7 +130,7 @@ for(const id in SK){for(let lv=1;lv<=SK[id].max;lv++){if(skLvEmpty(id,lv))contin
   for(const c of q.choices){if(BADHTML.test(c.l+' '+c.v))GEN.html.push(w+': choice has undefined/NaN');if(BAD.test(c.v))GEN.gen.push(w+': BAD word '+c.v)}
  }
  else if(q.kind=='build'){if(!q.tiles||q.tiles.length<q.word.length)GEN.gen.push(w+': too few tiles')}
- else if(q.kind=='tap'||q.kind=='order'||q.kind=='multi'||q.kind=='sort'||q.kind=='mark'||q.kind=='line'){for(const x of kindProblems(q))GEN.gen.push(w+': '+x)} // KINDS2: sort, mark; KINDS2-B: line
+ else if(q.kind=='tap'||q.kind=='order'||q.kind=='multi'||q.kind=='sort'||q.kind=='mark'||q.kind=='line'||q.kind=='make'){for(const x of kindProblems(q))GEN.gen.push(w+': '+x)} // KINDS2: sort, mark; KINDS2-B, C: line, make
  else if(q.kind=='match'){if(!q.items||!q.opts||q.items.length<3||q.items.length>5)GEN.gen.push(w+': bad match pairs')}
  else if(q.kind=='spell'||q.kind=='trace'){for(const x of kindProblems(q))GEN.gen.push(w+': '+x)}
  else GEN.gen.push(w+': unknown kind '+q.kind);
@@ -19006,10 +19006,10 @@ run('KINDS2 rounds: not three of one kind in a row, review round trip, Fact Race
 });
 
 // ---- KINDS2 batch B (docs/KINDS2-SPEC.md 2.3, 3, 6): the line kind ----
-// K2_LINE: the stops switched to line and the share planned (spec 3; cnt 1 and 4, and dec 1 until batch C adds make there, at 40%, not 30%: 30% leaves the number pad at 70%).
+// K2_LINE: the stops switched to line and the share planned (spec 3; cnt 1 and 4 at 40%, not 30%: 30% leaves the number pad at 70%).
 // K2_OFF0: md5 (12 hex) of JSON.stringify(genQ(sk, lv, s)) for s = 1..150, ART emptied, of the stops batches B and C switch, from the
 // generators of commit af3d449 (before them); with K2.off the stops must give these exactly.
-const K2_LINE={cnt1:.4,cnt4:.4,round1:.5,round2:.5,round3:.5,round4:.5,frac3:.5,dec1:.4,dec2:.3,pv5:.3,int1:.4,int2:.45};
+const K2_LINE={cnt1:.4,cnt4:.4,round1:.5,round2:.5,round3:.5,round4:.5,frac3:.5,dec1:.3,dec2:.3,pv5:.3,int1:.4,int2:.45};
 const K2_OFF0={cnt1:'f08a5be4a531',cnt4:'4f68bb54f1ad',round1:'765adf356ccb',round2:'f7aff9bb37e3',round3:'ed930021e130',round4:'af8199029acb',
   frac3:'dcc09984f3fc',dec1:'64320ec6e03e',dec2:'1dff579d1da1',pv5:'8bd698059bfe',int1:'ef33cdc118a9',int2:'9a9929656881',tenf1:'a5b30b2f84ca',
   tenf2:'09150b8c2953',tenf3:'0e2009bdefeb',pk_count3:'adc8acdfb356',add4:'8601004f4608',pv1:'fd3c65b75233',pv2:'e6baef1a2e76',big1:'abe19938414d',
@@ -19083,6 +19083,43 @@ run('KINDS2-B line: samples, same() table, VIZ pin, kind mix of the switched sto
     // the rounding model: the line between the two candidates, 11 stops, the number marked, the pin not on an end
     for(let s=1;s<=400;s++){const q=genQ('round',2,s);if(q.kind!=='line')continue;const L=q.line,n=+/^round (\\d+)/.exec(q.label)[1];
       if(L.max-L.min!==100||Math.round((L.max-L.min)/q.snap)!==10||!L.marks||L.marks[0]!==n||[L.min,L.max].includes(+q.start)||q.ans!==String(Math.round(n/100)*100))bad('round2 line: '+q.label+' '+JSON.stringify(L));break}
+  `);
+  return{problems:r.bad,note:`${r.n} samples; ${r.rt} review round trips; ${r.rows.join('; ')}`};
+});
+
+// ---- KINDS2 batch C (docs/KINDS2-SPEC.md 2.4, 3, 6): the make kind, six models ----
+// K2_MAKE: the stops switched to make and the share planned. Raised to 40% where the spec's 25-30% leaves the old kind over 65%
+// (arr 1, mult 1-2, frac 1, geo 2); mfact 1-3 stay at 25% and are exempt from the 65% rule (number facts: the pad stays the main way,
+// spec 3 "Expected result"); dec 1 is 30% make and 30% line.
+const K2_MAKE={tenf1:.45,tenf2:.45,tenf3:.45,pk_count3:.45,add4:.45,pv1:.4,pv2:.4,big1:.4,coins1:.45,coins2:.4,coins3:.4,coins5:.45,
+  time1:.4,time2:.4,time3:.4,time4:.4,time5:.4,arr1:.4,arr2:.25,mult1:.4,mult2:.4,mfact1:.25,mfact2:.25,mfact3:.25,frac1:.4,frac2:.3,geo2:.4,dec1:.3};
+run('KINDS2-C make: samples, same() tables, the six models, kind mix of the switched stops, K2.off, review round trip',()=>{
+  const r=k2BC('make',K2_MAKE,['mfact1','mfact2','mfact3'],`
+    // same(): value models by total (coins in any mix), parts as a share (2 of 4 is 1/2), array exact (3×4, not 4×3 unless m.comm), clock exact
+    const C={kind:'make',model:'coins',m:{types:[25,10,5,1]},ans:'30',eq:'value'},A={kind:'make',model:'array',m:{r:3,c:4},ans:'12',eq:'exact'};
+    const P={kind:'make',model:'parts',m:{shape:'bar',d:4,whole:1},ans:'1/2',eq:'value'},T={kind:'make',model:'clock',m:{},ans:'3:25',eq:'exact'};
+    for(const [q,v,want] of [[C,'30',true],[C,30,true],[C,'25',false],[C,'',false],[A,'3×4',true],[A,'4×3',false],[Object.assign({},A,{m:{r:3,c:4,comm:1}}),'4×3',true],
+      [A,'2×6',false],[P,'2/4',true],[P,'1/2',true],[P,'3/4',false],[T,'3:25',true],[T,'3:30',false],[T,'4:25',false]])
+      if(KIND.make.same(q,v)!==want)bad('make same('+JSON.stringify(v)+') for '+q.model+' should be '+want);
+    // the coins: 25 + 5 and 10 + 10 + 10 both make 30 (the state's value), the greedy answer state too
+    if(!KIND.make.same(C,mmOf(C,[1,0,1,0]))||!KIND.make.same(C,mmOf(C,[0,3,0,0]))||JSON.stringify(K2MM.coins.ans(C))!=='[1,0,1,0]')bad('make coins: any coins with the same total');
+    // every model: render (one Check, controls are buttons of their own), the answer state gives ans, the start state does not
+    for(const k of ['make','makec','makeb','makea','maket','makep']){const q=SM[k],M=K2MM[q.model],h=KIND.make.render(q);
+      if((h.match(/id="mcheck"/g)||[]).length!==1||!/class="mmw mm-/.test(h))bad(k+': render');
+      if(!KIND.make.same(q,mmOf(q,M.ans(q)))||KIND.make.same(q,mmOf(q,M.s0(q))))bad(k+': answer or start state');
+      if(!/viz|mmpurse/.test(M.draw(q,M.ans(q))))bad(k+': the model is not drawn')}
+    // steps stay in range: b10 digits 0-9, array 1-10, 12 coins at most, the clock's minutes carry into the hour
+    const B=SM.makeb;if(K2MM.b10.step(B,[9,0],0,1)!==null||K2MM.b10.step(B,[0,0],1,-1)!==null)bad('make b10: steps out of 0-9');
+    if(K2MM.array.step(SM.makea,[10,1],0,1)!==null||K2MM.array.step(SM.makea,[1,1],1,-1)!==null)bad('make array: steps out of 1-10');
+    if(K2MM.coins.step(C,[12,0,0,0],1,1)!==null)bad('make coins: a 13th coin');
+    if(JSON.stringify(K2MM.clock.step(T,[3,55],1,5))!=='[4,0]'||JSON.stringify(K2MM.clock.step(T,[12,0],1,-5))!=='[11,55]'||JSON.stringify(K2MM.clock.step(T,[12,0],0,1))!=='[1,0]')bad('make clock: the minutes do not carry');
+    // VIZ for the models: tenFrame cells, parts by index, a tappable grid (48 a square); without the new options the old markup
+    const tf=VIZ.tenFrame(3,10,{cells:1});if((tf.match(/data-c="/g)||[]).length!==10||!/viz-ten vi/.test(tf)||VIZ.tenFrame(3)!==VIZ.tenFrame(3,10,{}))bad('tenFrame cells');
+    const fb=VIZ.fracBar(0,4,{tap:1,on:[0,1,0,1]});if((fb.match(/class="vt vp vs"/g)||[]).length!==2)bad('fracBar o.on');
+    const ag=VIZ.areaGrid(6,4,{tap:1,on:[1]});if((ag.match(/data-v="/g)||[]).length!==24||!/width="48" height="48"/.test(ag)||(ag.match(/vp vs/g)||[]).length!==1)bad('areaGrid o.tap');
+    if(VIZ.areaGrid(3,2)!==VIZ.areaGrid(3,2,{})||/data-v/.test(VIZ.areaGrid(3,2)))bad('areaGrid without o.tap changed');
+    // the number-fact stops keep their labels in the array format (the seed fixture is checked in "KINDS2 mix")
+    for(let s=1;s<=200;s++){const q=genQ('mfact',2,s);if(q.kind=='make'&&!/^\\d+ × \\d+ = \\?$/.test(q.label))bad('mfact2: the array lost the fact label: '+q.label)}
   `);
   return{problems:r.bad,note:`${r.n} samples; ${r.rt} review round trips; ${r.rows.join('; ')}`};
 });

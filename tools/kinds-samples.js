@@ -38,6 +38,19 @@ exports.make = () => {
     linef: { ...base, kind: 'line', label: 'zz:linef', html: '<div class="sub">Put the pin on three fourths.</div>', say: 'Put the pin on 3 fourths.',
       line: { min: 0, max: 1, step: 0.25, den: 4, labels: [0, 1] }, snap: 0.25, ans: '3/4', start: '0', ansSay: '3 fourths',
       hint: { k: 'text', s: 'The line is cut into 4 equal jumps.' } },
+    // KINDS2-C (2.4): the make kind, one sample a model
+    make: { ...base, kind: 'make', label: 'zz:make', html: '<div class="sub">Make 6 in the ten frame.</div>', say: 'Make 6.', model: 'frame',
+      m: { total: 10 }, ans: '6', eq: 'value', ansSay: '6', hint: { k: 'text', s: 'Fill the top row first: that is 5.' } },
+    makec: { ...base, kind: 'make', label: 'zz:makec', html: '<div class="sub">Put 30¢ in the purse.</div>', say: 'Make 30 cents.', model: 'coins',
+      m: { types: [25, 10, 5, 1] }, ans: '30', eq: 'value', ansSay: '30 cents', hint: { k: 'text', s: 'Start with the biggest coin that fits.' } },
+    makeb: { ...base, kind: 'make', label: 'zz:makeb', html: '<div class="sub">Make 72 with blocks.</div>', say: 'Make 72 with blocks.', model: 'b10',
+      m: { places: 2 }, ans: '72', eq: 'value', ansSay: '72 is 7 tens and 2 ones', hint: { k: 'text', s: 'The tens digit says how many rods.' } },
+    makea: { ...base, kind: 'make', label: 'zz:makea', html: '<div class="sub">Make an array: 3 rows of 4.</div>', say: 'Make 3 rows of 4.',
+      model: 'array', m: { r: 3, c: 4 }, ans: '12', eq: 'exact', ansSay: '3 rows of 4', hint: { k: 'text', s: 'Rows go across.' } },
+    maket: { ...base, kind: 'make', label: 'zz:maket', html: '<div class="sub">Show 3:25 on the clock.</div>', say: 'Show 3 25 on the clock.',
+      model: 'clock', m: { one: false }, ans: '3:25', eq: 'exact', ansSay: '3 25', hint: { k: 'text', s: 'Count by 5s from the 12.' } },
+    makep: { ...base, kind: 'make', label: 'zz:makep', html: '<div class="sub">Shade three fourths.</div>', say: 'Shade 3 fourths of the bar.',
+      model: 'parts', m: { shape: 'bar', d: 4, whole: 1 }, ans: '3/4', eq: 'value', ansSay: '3 fourths', hint: { k: 'text', s: 'Shade 3 of the 4 parts.' } },
   };
 };
 // KINDS2: broken samples of the new kinds; each must fail validate (tools/test.js "kinds A"). S: the samples of make()
@@ -48,12 +61,35 @@ exports.broken = S => {
       ans: Array.from({ length: 12 }, (_, i) => i % 2 ? 'odd' : 'even').join('|') },
     'mark: index out of range': { ...S.mark, ans: ['9'] },
     'mark: two answers with one': { ...S.markm, one: true },
-    // KINDS2-B
+    // KINDS2-B, C
     'line: 12 stops': { ...S.line, line: { min: 0, max: 11, step: 1, labels: 'all' }, ans: '7' },
     'line: the answer is not a stop': { ...S.linef, ans: '1/3' },
+    'make: an unreachable target (13 coins)': { ...S.makec, m: { types: [10, 5, 1] }, ans: '134' },
+    'make: minutes off the 5s without steps of 1': { ...S.maket, ans: '3:07' },
   };
 };
-// KINDS2-B: runs IN the page (smoke, a11y and shots tap with it).
+// KINDS2-B, C: these two run IN the page (smoke, a11y and shots tap with them).
+// makeStep(spoil): the next control that brings the make question on screen (G.q, its state G.mm) to the answer, as a selector, or
+// null when the state is the answer; with spoil, the control that moves the answer state one step off it (a wrong answer).
+exports.makeStep = spoil => {
+  const q = G.q, s = G.mm, M = K2MM[q.model], t = M.ans(q), i = t.findIndex((x, j) => x !== s[j]);
+  if (spoil) {
+    if (q.model == 'parts') return '.mmv [data-v="0"]';
+    if (q.model == 'clock') return '.mmb[data-i="0"][data-d="1"]';
+    if (q.model == 'coins') return mmSum(s) < 12 ? '.mmb[data-i="' + (s.length - 1) + '"]' : '.mmp[data-p="0"]';
+    const j = s.length - 1, top = q.model == 'frame' ? q.m.total - (q.m.fixed || 0) : q.model == 'array' ? 10 : 9;
+    return `.mmb[data-i="${j}"][data-d="${s[j] < top ? 1 : -1}"]`;
+  }
+  if (i < 0) return null;
+  if (q.model == 'parts') return `.mmv [data-v="${i}"]`;
+  if (q.model == 'coins') return t[i] > s[i] ? `.mmb[data-i="${i}"]` : `.mmp[data-p="${i}"]`;
+  if (q.model == 'clock' && i == 1) {
+    const d = t[1] - s[1];
+    return `.mmb[data-i="1"][data-d="${Math.sign(d) * (Math.abs(d) >= 5 || !q.m.one ? 5 : 1)}"]`;
+  }
+  if (q.model == 'clock') return '.mmb[data-i="0"][data-d="1"]';
+  return `.mmb[data-i="${i}"][data-d="${t[i] > s[i] ? 1 : -1}"]`;
+};
 // linePt(k): the screen point of stop k of the line question on screen (the answer's stop when k is null), low on the band, under the
 // pin's own hit area
 exports.linePt = k => {
