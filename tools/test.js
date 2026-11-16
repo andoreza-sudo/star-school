@@ -7986,7 +7986,8 @@ run('parts split A11c',()=>{
   if(nh>=1000000)p.push('index.html is '+nh+' bytes, not under 1,000,000');
   parts.forEach((t,i)=>{const b=Buffer.byteLength(t);if(b>PART_FAIL)p.push(PART_FILES[i]+' is '+b+' bytes, over the '+PART_FAIL+' limit')});
   // the moved files: in gen / gen2, not in index.html
-  const want={gen:['23-viz','30-gen-math','31-gen-math-early','32-gen-read','33-gen-math-mid','34-gen-es'],
+  // ROOM: the Grown-ups screens (80-grown, 81-backup, 82-report, 88-online) moved to gen too, for room in index.html
+  const want={gen:['23-viz','30-gen-math','31-gen-math-early','32-gen-read','33-gen-math-mid','34-gen-es','80-grown','81-backup','82-report','88-online'],
     gen2:['35-gen-math-upper','36-gen-phonics','37-bank','37-comp','39b-steps']};
   for(const [stem,list] of Object.entries(want)){
     const i=PARTS.findIndex(x=>x.stem===stem);
@@ -18285,7 +18286,10 @@ run('release 1.0 P6-05',()=>{
   if((rs('js/00-core.js').match(/^const RELEASE=/gm)||[]).length!==1)p.push('RELEASE must be defined once, in src/js/00-core.js');
   if(/RELEASE\s*=\s*['"]/.test(rdf('tools/build.py')))p.push('build.py must not carry a second release number (VER is the build stamp)');
   if(!/\$\{RELEASE\} \(build __VER__\)/.test(rs('js/46-home.js')))p.push('the Home footer must show RELEASE and the build (VER)');
-  if(!/\$\{RELEASE\} \(build __VER__\)/.test(rs('js/80-grown.js')))p.push('the Grown-ups app log must show RELEASE and the build (VER)');
+  // ROOM: 80-grown.js is in the gen part now, and tools/build.py writes VER over __VER__ in index.html only, so it shows the build
+  // through BUILD ('__VER__' in 00-core.js, which stays in index.html); a literal __VER__ in a part file would reach the screen as is
+  if(!/^const BUILD='__VER__';/m.test(rs('js/00-core.js'))||partOf('00-core.js'))p.push("BUILD must be '__VER__' in src/js/00-core.js (index.html's own code)");
+  if(!/\$\{RELEASE\} \(build (__VER__|\$\{BUILD\})\)/.test(rs('js/80-grown.js')))p.push('the Grown-ups app log must show RELEASE and the build (VER)');
   if(!/\$\{aboutCard\(\)\}/.test(rs('js/80-grown.js')))p.push('grown() must show the About card');
   const ab=r.about.replace(/<[^>]*>/g,' ').replace(/&#39;/g,"'");
   for(const need of ['About Star School','Andika','SIL Open Font License 1.1','Copyright (c) 2004-2022 SIL International','Nothing is sent anywhere','only on this device','without internet','Version','Build'])

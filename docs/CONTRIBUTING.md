@@ -129,7 +129,8 @@ index.html        shell + CSS + fonts + <script>src/js</script>                 
                   + <script src="data.<VER>.js"></script> + <script>src/boot.js</script>
                   (P6-02: no tag for games.<VER>.js and games2.<VER>.js: they are LAZY, loaded the first time the Game Room opens)
 gen.<VER>.js      question generators, part 1 (A11c): src/js/23-viz, 30-gen-math, 31-gen-math-early, 32-gen-read, 33-gen-math-mid,
-                  34-gen-es, then  var GEN_VER='<VER>';
+                  34-gen-es; ROOM: the Grown-ups screens 80-grown, 81-backup, 82-report, 88-online (room in index.html, under its 1 MB
+                  limit; loaded at start, so every caller has them), then  var GEN_VER='<VER>';
 gen2.<VER>.js     question generators, part 2 (A11c): src/js/35-gen-math-upper, 36-gen-phonics, 37-bank, 37-comp, 39b-steps,
                   then  var GEN2_VER='<VER>';
 bt.<VER>.js       Brain Teaser puzzle types: a <style> with src/css/NN-bt-*.css, then src/js/NN-bt-*.js, then  var BT_VER='<VER>';
