@@ -3,15 +3,19 @@
    Journey: 6 worlds (HCW) of 5 hand-shaped stages each (HC_ST). A stage is a line of pieces (hcParse / hcCourse): flat, slopes,
    hills, rollers, kicker jumps, gaps over water / lava / craters, bridges, fords, rocks, mud / sand / ash / ice, checkpoints,
    bolts, fuel cans, balloons, a hidden star and boost pads; it ends at a finish flag. Each stage has a goal (reach the flag,
-   collect N bolts, or deliver crates) and two missions (bolts, time, flips, big air, no restarts, all crates, the hidden star):
+   collect N bolts, or deliver crates) and two missions (bolts, time, flips, big air, no restarts, all crates, the hidden star,
+   a stop at the lookout):
    1 star for the goal, 1 for each mission, kept for good (S.garage.st {stageId: bits}). A stage opens when the one before is
    finished; a world opens with stars (HC_NEED). The menu's "Next goal" line says what to do next.
    Distance drive (endless, for older children): a long seeded course per world that gets harder, fuel cans further apart,
    the personal best as a flag on the road (S.garage.best).
    Garage: vehicles (VEH) and four upgrades (engine, tyres, suspension, fuel tank; 5 levels) bought with bolts earned by playing.
-   Easy driving (on by default for Pre-K to 2nd grade, a switch on the menu): levels the car in the air, eases the gas when the
-   nose lifts, softer landings, balloons that float the car over gaps. A flip or an empty tank restarts at the last checkpoint:
-   no lives, nothing lost. Colours are tokens (hcC: --ill-* roles, --sc-* skies); no shake in calm mode or with reduced motion.
+   Driving help (G-FEEL1, a dial of 4 levels in place of the old Easy driving switch; HC_AS, Grown-ups picks Auto or a level, the
+   menu switch turns it on (Auto) or off): levels the car in the air, eases the gas when the nose lifts, softer landings, balloons
+   that float the car over gaps, a car tipping over set back on its wheels. A flip or an empty tank restarts at the last checkpoint:
+   no lives, nothing lost. G-FEEL1 missions need a decision, never just the gas: the hidden star sits low under a jump (ease off
+   before it), the lookout sign wants a stop (brake and wait); time targets come from a careful bot's drive. Colours are tokens
+   (hcC: --ill-* roles, --sc-* skies); no shake in calm mode or with reduced motion.
    The simulation (hcNew / hcStep) runs without the page, so tools/test.js drives every stage with bots.
    G-HC3 (R-03 H1-H4, A1-A5): fixed steps that catch up after a slow frame (hcAdvance: no slow motion on a slow tablet); 4 ranges
    behind the road that fade into the sky and a foreground strip; a new distance road every day (hcSeed) and today's drive
@@ -58,39 +62,40 @@ const HC_NEED=[0,4,9,15,22,30]; // stars to open each stage world (the Moon: 30 
 const SOFT={mud:{grip:.38,drag:.996,c:'n3',c2:'n2',label:'MUD'},sand:{grip:.5,drag:.997,c:'y2',c2:'y3',label:'SAND'},ice:{grip:.22,drag:1,c:'c1',c2:'w',label:'ICE'},
   ash:{grip:.45,drag:.996,c:'e3',c2:'e',label:'ASH'},oil:{grip:.24,drag:1,c:'k',c2:'v3',label:'OIL'}};
 // a stage: [id, name, goal, missions, weather, pieces]. goal: ['flag'] | ['coins', n] | ['cargo', crates]. missions: [kind, n]:
-// bolts n (in one run), time s (reach the flag in s), flips n, air n (big airs), nocrash (no restarts), crates (all crates), star (the hidden star).
+// bolts n (in one run), time s (reach the flag in s), flips n, air n (big airs), nocrash (no restarts), crates (all crates), star (the hidden star),
+// stop (G-FEEL1: stop at the lookout, piece L). A hidden star for the star mission sits low in a dip just past a jump (ease off to drop onto it).
 // weather: day | dusk | night | rain | snow | ash | dust. Pieces (metres; 1 m = 20 px), see hcCourse.
 const HC_ST=[
-  [['m1','First Hills',['flag'],[['bolts',20],['nocrash']],'day','f12 $5 h30,2.5 f6 $6 h36,3.5 f8 c w48,1,4 $8 f6 F h44,4.5 $5 f8 h30,2 $4 f12'],
-   ['m2','Muddy Puddles',['flag'],[['time',25],['bolts',24]],'day','f12 m18 $5 f22 h40,4 c f6 m26 v34,2 $6 f10 u22,4 $5 f12 d26,4 m18 $5 f20 F w42,1.2,3 $6 f12'],
-   ['m3','Over the Pond',['flag'],[['star'],['nocrash']],'day','f12 $5 h30,3 f8 b26 $8 f10 c o16 $4 f12 A f2 p4 $4 f10 h40,5 $6 f6 k2.5 S4 f20 $5 f12'],
-   ['m4','Farm Delivery',['cargo',3],[['crates'],['time',25]],'dusk','f14 $5 h40,3 f10 c w44,1,3 $6 f10 b22 $5 f8 h44,4 c F f12 v36,2.5 $6 f12 u22,3 $5 f16'],
-   ['m5','Rolling Rollers',['coins',30],[['air',1],['nocrash']],'day','f12 $8 w60,1.6,4 $8 c f8 k2.5 $5 f14 w60,2,4 $8 F f8 c h50,5 $6 f6 A f2 p5 $5 f12 w50,1.4,4 $8 f12']],
-  [['d1','Dune Sea',['flag'],[['bolts',25],['nocrash']],'day','f12 m30 $5 h50,5 $6 f8 h60,6 c m22 $6 f8 w60,2,3 F $6 h50,5 $5 f8 m20 h40,4 $5 f14'],
-   ['d2','Cactus Canyon',['flag'],[['time',25],['star']],'day','f12 r3 f10 $5 u26,5 f10 r2 $4 d26,5 c $6 f8 k3 S5 f16 r4 F $6 h44,4 f10 r2 $5 f14'],
-   ['d3','Oasis Jumps',['flag'],[['nocrash'],['air',1]],'dust','f12 $5 h32,3 f8 A f2 p5 $4 f12 c o18 $5 f12 k4.5 $5 f18 A f2 p6 $4 f12 c F $6 h50,5 f8 A f2 p4 $4 f14'],
-   ['d4','Camel Post',['cargo',2],[['crates'],['time',25]],'dusk','f14 m16 $5 h44,4 f10 c w50,1.4,3 $6 f8 r2 f10 b24 $5 c F h56,5 $6 f10 m20 v40,3 $5 f16'],
-   ['d5','Starry Dunes',['coins',30],[['perfect',1],['nocrash']],'night','f12 $6 h46,4 $6 f8 w56,1.8,3 $8 c k3 $5 f16 h60,6 $6 F f10 c w60,2,4 $8 f8 A f2 p5 $5 f10 h40,4 $6 f14']],
-  [['j1','River Fords',['flag'],[['bolts',25],['time',25]],'day','f12 $5 o14 f10 h40,4 $6 c o20 $5 f10 m20 h36,3.5 $5 f8 F o16 $5 f10 w44,1.4,3 $6 f14'],
-   ['j2','Log Bridges',['flag'],[['star'],['nocrash']],'rain','f12 $5 b20 f10 h40,4 c $6 b30 $6 f10 A f2 p5 $4 f12 k3 S5 f18 c F b24 $6 f10 h44,4.5 $5 f14'],
-   ['j3','Monkey Hills',['coins',30],[['air',1],['perfect',1]],'day','f12 $8 w70,2.4,4 $8 f8 c h60,7 $6 f8 F w70,2.6,4 $8 c k3.5 $5 f16 w60,2,4 $8 f14'],
-   ['j4','Banana Run',['cargo',3],[['crates'],['nocrash']],'dusk','f14 $5 m16 h40,3.5 f10 c o16 $5 f10 w50,1.2,4 $6 c F b26 $5 f10 u24,4 m14 $5 f10 d24,4 f16'],
-   ['j5','Waterfall Climb',['flag'],[['time',30],['star']],'rain','f12 $5 u30,6 f8 $5 u30,6 f6 c F $6 h40,4 f8 A f2 p6 $4 f12 c u34,7 $5 f10 k3 S5 f20 d40,8 $6 f8 o16 $5 f14']],
-  [['s1','Icy Slopes',['flag'],[['bolts',22],['nocrash']],'snow','f12 i14 $5 h40,4 f10 i20 $6 f10 c w50,1.2,3 $6 i16 f10 F h44,4.5 $5 f8 i22 $5 f14'],
-   ['s2','Frozen Lake',['flag'],[['time',20],['star']],'day','f12 $5 i40 f40 c $6 h40,4 f8 A f2 p5 $4 f10 i30 F f30 $6 c k3 S5 f18 i20 h36,3 $5 f14'],
-   ['s3','Snowball Jumps',['coins',30],[['perfect',1],['air',2]],'day','f12 $5 k3.5 $5 f18 k4 $5 f20 c h44,4 F $6 k4.5 $6 f22 c w50,1.6,3 $8 k4 $5 f18 h40,4 $6 f14'],
-   ['s4','Mountain Post',['cargo',3],[['crates'],['time',25]],'snow','f14 $5 u30,5 f10 i14 $5 c h40,4 f10 F w44,1.2,3 $6 c b24 $5 u30,5 f10 i16 d30,5 $6 f16'],
-   ['s5','Northern Lights',['flag'],[['nocrash'],['star']],'night','f12 $5 h44,4 i16 f10 c $6 o14 f10 A f2 p5 $4 f12 F w50,1.6,3 $6 c k3 S5 f18 i20 h50,5 $6 f14']],
-  [['v1','Ash Road',['flag'],[['bolts',25],['time',25]],'ash','f12 m20 $5 h44,4.5 f8 r3 $5 c m24 $6 w50,1.6,3 F f8 h50,5 $5 r2 f10 m20 $5 f14'],
-   ['v2','Lava Leaps',['flag'],[['nocrash'],['star']],'day','f12 $5 h30,3 f8 A f2 p5 $4 f12 c $5 h40,4 A f2 p6 $4 f12 F c k3 S5 f18 A f2 p5 $4 f10 h40,4 $5 f14'],
-   ['v3','Rumble Rocks',['coins',28],[['air',1],['perfect',1]],'day','f12 r4 $5 f8 h40,4 $6 c r3 f10 k3 $5 f16 F r4 $6 c w60,2,4 $8 f8 r3 $5 f14'],
-   ['v4','Hot Delivery',['cargo',2],[['crates'],['time',20]],'dusk','f14 $5 m16 h44,4 f10 c b26 $5 f8 r2 F f10 u30,5 $5 c d30,5 m18 f10 b20 $5 f16'],
-   ['v5','Crater Rim',['flag'],[['star'],['nocrash']],'ash','f12 $5 u36,7 f8 $5 h40,4 c F A f2 p6 $4 f12 u40,8 $6 f8 k3.5 S6 f20 c d40,8 r3 $5 F w50,1.8,3 $6 f14']],
-  [['o1','Moon Walk',['flag'],[['bolts',18],['nocrash']],'day','f12 $5 h50,4 $5 f10 w60,2,3 $6 c F h60,6 $6 f10 r3 $5 f14'],
-   ['o2','Crater Hops',['flag'],[['time',20],['star']],'day','f12 $5 f6 p6 $4 f14 c h50,5 $5 p7 $4 f14 F c k3 S7 f24 p6 $4 f14'],
-   ['o3','Space Rocks',['coins',25],[['air',2],['time',25]],'day','f12 r3 $5 f10 k3 $6 f24 c w70,2.4,3 $8 F r4 $5 c k4 $6 f26 h60,6 $6 f14'],
-   ['o4','Moon Base Post',['cargo',3],[['crates'],['nocrash']],'day','f14 $5 h50,4 f10 c p6 $4 f14 r3 F $5 c w60,2,3 $6 f10 p5 $4 f16'],
-   ['o5','Earthrise',['flag'],[['star'],['time',35]],'day','f12 $5 k3 $5 f22 c h60,7 $6 p7 $4 f14 F c u40,7 $5 k4 S8 f26 c d40,7 p6 $4 f10 w50,2,3 $6 f14']]];
+  [['m1','First Hills',['flag'],[['bolts',20],['stop']],'day','f12 $5 h30,2.5 f6 $6 h36,3.5 L6 f8 c w48,1,4 $8 f6 F h44,4.5 $5 f8 h30,2 $4 f12'],
+   ['m2','Muddy Puddles',['flag'],[['time',19],['stop']],'day','f12 m18 $5 f22 h40,4 c f6 m26 v34,2 $6 f10 u22,4 $5 L5 f12 d26,4 m18 $5 f20 F w42,1.2,3 $6 f12'],
+   ['m3','Over the Pond',['flag'],[['star'],['nocrash']],'day','f12 $5 h30,3 f8 b26 $8 f10 c o16 $4 f12 A f2 p4 $4 f10 h40,5 $6 f6 k2.5 d3,1.5 S0.5 d2,1 f1 u5,2.5 f9 $5 f12'],
+   ['m4','Farm Delivery',['cargo',3],[['crates'],['stop']],'dusk','f14 $5 h40,3 f10 c w44,1,3 $6 f10 b22 $5 f8 h44,4 c F L6 f12 v36,2.5 $6 f12 u22,3 $5 f16'],
+   ['m5','Rolling Rollers',['coins',30],[['air',1],['star']],'day','f12 $8 w60,1.6,4 $8 c f8 k2.5 d3,1.5 S0.5 d2,1 f1 u5,2.5 $5 f5 w60,2,4 $8 F f8 c h50,5 $6 f6 A f2 p5 $5 f12 w50,1.4,4 $8 f12']],
+  [['d1','Dune Sea',['flag'],[['bolts',25],['stop']],'day','f12 m30 $5 h50,5 $6 f8 h60,6 c m22 $6 f8 w60,2,3 F $6 h50,5 $5 L5 f8 m20 h40,4 $5 f14'],
+   ['d2','Cactus Canyon',['flag'],[['time',18],['star']],'day','f12 r3 f10 $5 u26,5 f10 r2 $4 d26,5 c $6 f8 k3 d3,1.5 S0.5 d2,1 f1 u5,2.5 f5 r4 F $6 h44,4 f10 r2 $5 f14'],
+   ['d3','Oasis Jumps',['flag'],[['stop'],['air',1]],'dust','f6 L5 f6 $5 h32,3 f8 A f2 p5 $4 f12 c o18 $5 f12 k4.5 $5 f18 A f2 p6 $4 f12 c F $6 h50,5 f8 A f2 p4 $4 f14'],
+   ['d4','Camel Post',['cargo',2],[['crates'],['stop']],'dusk','f14 m16 $5 h44,4 f10 c w50,1.4,3 $6 f8 r2 f10 b24 $5 c F h56,5 $6 L6 f10 m20 v40,3 $5 f16'],
+   ['d5','Starry Dunes',['coins',30],[['perfect',1],['star']],'night','f12 $6 h46,4 $6 f8 w56,1.8,3 $8 c k3 d3,1.5 S0.5 d2,1 f1 u5,2.5 $5 f7 h60,6 $6 F f10 c w60,2,4 $8 f8 A f2 p5 $5 f10 h40,4 $6 f14']],
+  [['j1','River Fords',['flag'],[['stop'],['time',18]],'day','f12 $5 o14 f10 h40,4 $6 c o20 $5 f10 m20 h36,3.5 $5 f8 F o16 $5 L5 f10 w44,1.4,3 $6 f14'],
+   ['j2','Log Bridges',['flag'],[['star'],['nocrash']],'rain','f12 $5 b20 f10 h40,4 c $6 b30 $6 f10 A f2 p5 $4 f40 k3.5 d3,1.5 S0.5 d2,1 f1 u5,2.5 f7 c F b24 $6 f10 h44,4.5 $5 f14'],
+   ['j3','Monkey Hills',['coins',30],[['air',1],['star']],'day','f12 $8 w70,2.4,4 $8 f8 c h60,7 $6 f8 F w70,2.6,4 $8 c k3.5 d3,1.5 S0.5 d2,1 f1 u5,2.5 $5 f7 w60,2,4 $8 f14'],
+   ['j4','Banana Run',['cargo',3],[['crates'],['stop']],'dusk','f14 $5 m16 h40,3.5 f10 c o16 $5 f10 w50,1.2,4 $6 c F b26 $5 f10 u24,4 m14 $5 L5 f10 d24,4 f16'],
+   ['j5','Waterfall Climb',['flag'],[['stop'],['star']],'rain','f12 $5 u30,6 f8 $5 u30,6 f6 c F $6 h40,4 f8 A f2 p6 $4 f12 c u34,7 $5 f10 k3 S5 f20 d40,8 $6 L5 f8 o16 $5 f14']],
+  [['s1','Icy Slopes',['flag'],[['bolts',22],['stop']],'snow','f12 i14 $5 h40,4 f10 i20 $6 f10 c w50,1.2,3 $6 i16 f10 F h44,4.5 $5 L5 f8 i22 $5 f14'],
+   ['s2','Frozen Lake',['flag'],[['time',17],['star']],'day','f12 $5 i40 f40 c $6 h40,4 f8 A f2 p5 $4 f10 i30 F f30 $6 c k3 d3,1.5 S0.5 d2,1 f1 u5,2.5 f7 i20 h36,3 $5 f14'],
+   ['s3','Snowball Jumps',['coins',30],[['star'],['air',2]],'day','f12 $5 k3.5 $5 f18 k4 $5 f20 c h44,4 F $6 k4.5 d3,1.5 S0.5 d2,1 f1 u5,2.5 $6 f13 c w50,1.6,3 $8 k4 $5 f18 h40,4 $6 f14'],
+   ['s4','Mountain Post',['cargo',3],[['crates'],['stop']],'snow','f14 $5 u30,5 f10 i14 $5 c h40,4 f10 F w44,1.2,3 $6 c b24 $5 u30,5 L5 f10 i16 d30,5 $6 f16'],
+   ['s5','Northern Lights',['flag'],[['nocrash'],['star']],'night','f12 $5 h44,4 i16 f10 c $6 o14 f10 A f2 p5 $4 f12 F w50,1.6,3 $6 c k3 d3,1.5 S0.5 d2,1 f1 u5,2.5 f7 i20 h50,5 $6 f14']],
+  [['v1','Ash Road',['flag'],[['stop'],['time',17]],'ash','f12 m20 $5 h44,4.5 f8 r3 $5 c m24 $6 w50,1.6,3 F f8 h50,5 $5 r2 f10 m20 $5 L5 f14'],
+   ['v2','Lava Leaps',['flag'],[['nocrash'],['star']],'day','f12 $5 h30,3 f8 A f2 p5 $4 f12 c $5 h40,4 A f2 p6 $4 f40 F c k3 d3,1.5 S0.5 d2,1 f1 u5,2.5 f7 A f2 p5 $4 f10 h40,4 $5 f14'],
+   ['v3','Rumble Rocks',['coins',28],[['air',1],['stop']],'day','f12 r4 $5 f8 h40,4 $6 c r3 f10 k3 $5 f16 F r4 $6 c w60,2,4 $8 L5 f8 r3 $5 f14'],
+   ['v4','Hot Delivery',['cargo',2],[['crates'],['stop']],'dusk','f14 $5 m16 h44,4 f10 c b26 $5 f8 r2 F f10 u30,5 $5 c d30,5 m18 L5 f10 b20 $5 f16'],
+   ['v5','Crater Rim',['flag'],[['star'],['nocrash']],'ash','f12 $5 u36,7 f8 $5 h40,4 c F A f2 p6 $4 f12 u40,8 $6 f8 k3.5 d3,1.5 S0.5 d2,1 f1 u5,2.5 f9 c d40,8 r3 $5 F w50,1.8,3 $6 f14']],
+  [['o1','Moon Walk',['flag'],[['bolts',18],['stop']],'day','f12 $5 h50,4 $5 f10 w60,2,3 $6 c F h60,6 $6 L5 f10 r3 $5 f14'],
+   ['o2','Crater Hops',['flag'],[['time',19],['star']],'day','f12 $5 f6 p6 $4 f14 c h50,5 $5 p7 $4 f30 F c k3 f1 d3,1.5 S0.5 d2,1 f1 u5,2.5 f12 p6 $4 f14'],
+   ['o3','Space Rocks',['coins',25],[['air',2],['stop']],'day','f6 L5 f6 r3 $5 f10 k3 $6 f24 c w70,2.4,3 $8 F r4 $5 c k4 $6 f26 h60,6 $6 f14'],
+   ['o4','Moon Base Post',['cargo',3],[['crates'],['stop']],'day','f14 $5 h50,4 L5 f10 c p6 $4 f14 r3 F $5 c w60,2,3 $6 f10 p5 $4 f16'],
+   ['o5','Earthrise',['flag'],[['star'],['time',27]],'day','f12 $5 k3 $5 f22 c h60,7 $6 p7 $4 f14 F c u40,7 $5 k4 f1 d3,1.5 S0.5 d2,1 f1 u5,2.5 f14 c d40,7 p6 $4 f10 w50,2,3 $6 f14']]];
 const HC_SPW=5; // stages per world
 const hcStage=id=>{for(let w=0;w<HC_ST.length;w++){const i=HC_ST[w].findIndex(s=>s[0]==id);if(i>=0)return{w,i,s:HC_ST[w][i]}}return null};
 
@@ -133,6 +138,10 @@ function garageS(){const g=S.garage||(S.garage={});
   // old missions (v155 and before): a mission done but not claimed pays its bolts once; missions are per stage now
   if(Array.isArray(g.missions)){for(const m of g.missions)if(m&&m.done&&m.r>0)g.bolts+=Math.floor(m.r);g.missions=[]}
   if(g.easy!==true&&g.easy!==false)delete g.easy;
+  // G-FEEL1: driving help ('auto' or 0-3), Auto's step up (0-3) and the struggle count on one stage
+  if(g.as!=='auto'&&!(g.as===0||g.as===1||g.as===2||g.as===3))delete g.as;
+  if(g.asu!=null&&!(g.asu===1||g.asu===2||g.asu===3))delete g.asu;
+  if(g.asf!=null&&!(g.asf&&typeof g.asf=='object'&&hcStage(g.asf.s)&&g.asf.n>=1&&g.asf.n<HC_AS_RS&&Number.isInteger(g.asf.n)))delete g.asf;
   // G-HC3: garage level 2 (own2 {itemId: 1}; rim, trail, top: the item in use or '') and day (the date today's drive paid its bonus)
   if(!g.own2||typeof g.own2!='object'||Array.isArray(g.own2))g.own2={};
   for(const k of Object.keys(g.own2))if(!HC_T2.some(t=>t[0]==k))delete g.own2[k];
@@ -148,8 +157,39 @@ const hcMax=()=>HC_ST.length*HC_SPW*3;
 function hcOldOpen(id){const g=garageS(),lv=g.lv&&g.lv[id];if(Array.isArray(lv)&&lv.some(v=>v>0))return true;const n=HC_OLDNEED[id];return n?Math.max(0,...HCW.map(W=>g.best[W.id]||0))>=n:false}
 function hcWOpen(w){if(w==0)return true;const W=HCW[w];if(!W)return false;if(W.dist)return hcWOpen(4);return hcTot()>=HC_NEED[w]||hcOldOpen(W.id)||HC_ST[w].some(s=>hcStars(s[0])>0)}
 function hcSOpen(w,i){return hcWOpen(w)&&(i==0||hcStars(HC_ST[w][i-1][0])>0||hcStars(HC_ST[w][i][0])>0)}
-// easy driving: the child's choice, else on for Pre-K to 2nd grade
-const hcEasy=()=>{const g=garageS();return g.easy!=null?g.easy:(S.grade==null?0:+S.grade)<=2};
+/* ---- G-FEEL1: driving help, a dial of 4 levels (HC_AS) in place of the old Easy driving switch. 3 is the old Easy driving, 0 the
+   old Easy off. Per level: air (how hard the pedals spin the car in the air), lift (how hard the gas lifts the nose), lvl (the
+   car turns itself level in the air; free: more of that while no pedal is held, so Little help rewards letting go in the air),
+   wh (a wheelie is eased down), tc (traction control: the gas eases when the nose lifts), soft (crates stay on after a harder
+   landing, px/s), ball (balloons float the car over gaps), save (a car tipping onto its back or side, not its roof, is set back
+   on its wheels, this many times between checkpoints; not a restart).
+   The grown-ups choice (S.garage.as): 'auto' (the default) or a fixed level. Old saves: Easy driving on is Most help (3), off is No
+   help (0), never set is Auto (hcAsPick; the old easy field is kept as it was). Auto starts from the grade (hcAsBase), steps down by
+   one for each world with HC_AS_DOWN stars or more, and steps up by one (S.garage.asu, at most 3) after HC_AS_CR crashes between two
+   checkpoints in a drive or after HC_AS_RS struggling drives in a row on a stage (quit without the flag, or 3 crashes or more,
+   S.garage.asf {s: stage id, n}); a clean win (at most one restart) steps it back down by one. ---- */
+const HC_AS=[{air:1,lift:1,lvl:0,free:0,wh:0,tc:0,soft:0,ball:0,save:0},
+  {air:1,lift:1,lvl:0,free:.07,wh:0,tc:0,soft:60,ball:0,save:1},
+  {air:.7,lift:.85,lvl:.02,free:.05,wh:.01,tc:.5,soft:130,ball:1,save:1},
+  {air:.35,lift:.6,lvl:.07,free:0,wh:.02,tc:1,soft:200,ball:1,save:1}];
+const HC_AS_DOWN=9,HC_AS_CR=3,HC_AS_RS=2;
+const hcAsN=v=>Math.max(0,Math.min(3,Math.round(+v||0)));
+// the grown-ups choice: 'auto' or 0-3
+const hcAsPick=()=>{const g=garageS();return g.as!=null?g.as:g.easy===true?3:g.easy===false?0:'auto'};
+// Auto's start: Most help for Pre-K to 2nd grade, Little help for 3rd, none from 4th
+const hcAsBase=()=>{const gr=S.grade==null?0:+S.grade;return gr<=2?3:gr==3?1:0};
+const hcAsAuto=()=>hcAsN(hcAsBase()-HC_ST.reduce((a,_,w)=>a+(hcWStars(w)>=HC_AS_DOWN),0)+(garageS().asu||0));
+const hcAsLevel=()=>{const p=hcAsPick();return p=='auto'?hcAsAuto():p};
+// any help on (the menu's switch; the old name kept)
+const hcEasy=()=>hcAsLevel()>0;
+// after a stage drive (won or quit): Auto's step up after struggling drives in a row on one stage, or down after a clean win; the
+// help a drive took on by itself (H.asUp) is kept too. Returns the new step (S.garage.asu).
+function hcAsNote(H){const g=garageS();if(!H.st)return g.asu||0;const id=H.st[0],win=H.result=='win';
+  let u=(g.asu||0)+(H.asUp||0);
+  if(!win||H.crashes>=3){const n=g.asf&&g.asf.s==id?g.asf.n+1:1;if(n>=HC_AS_RS){u++;delete g.asf}else g.asf={s:id,n}}
+  else{delete g.asf;if(H.crashes<=1&&!H.asUp)u--}
+  if(H.auto){u=Math.max(0,Math.min(3,u));if(u)g.asu=u;else delete g.asu}else delete g.asf;
+  return g.asu||0}
 // the next thing to do: {w, i (stage or null), t (the line)}
 function hcNextGoal(){
   for(let w=0;w<HC_ST.length;w++){if(!hcWOpen(w))continue;for(let i=0;i<HC_SPW;i++){const s=HC_ST[w][i];if(!hcStars(s[0]))return{w,i,t:`Finish ${s[1]} (${HCW[w].n}, stage ${i+1}): ${hcGoalText(s)}.`}}}
@@ -161,8 +201,8 @@ function hcNextGoal(){
   return{w:0,i:null,t:`Every star won! Try a distance drive and beat your best.`}}
 const hcGoalText=s=>s[2][0]=='coins'?`collect ${s[2][1]} bolts and reach the flag`:s[2][0]=='cargo'?`carry ${s[2][1]} crates to the flag`:'reach the flag';
 const hcMisText=m=>({bolts:`collect ${m[1]} bolts`,time:`reach the flag in ${m[1]} seconds`,flips:m[1]>1?`do ${m[1]} flips`:'do a flip',air:m[1]>1?`get big air ${m[1]} times`:'get big air',perfect:m[1]>1?`land ${m[1]} jumps on both wheels`:'land a jump on both wheels',
-  nocrash:'finish with no restarts',crates:'keep every crate on',star:'find the hidden star'})[m[0]]||'';
-const HC_MIC={bolts:'nut',time:'timer',flips:'rotate',air:'arrow-up',perfect:'check-circle',nocrash:'heart',crates:'gift',star:'star'};
+  nocrash:'finish with no restarts',crates:'keep every crate on',star:'find the hidden star',stop:'stop at the lookout sign'})[m[0]]||'';
+const HC_MIC={bolts:'nut',time:'timer',flips:'rotate',air:'arrow-up',perfect:'check-circle',nocrash:'heart',crates:'gift',star:'star',stop:'eye'};
 const HC_GIC={flag:'go',coins:'nut',cargo:'gift'};
 // G-HC3 (R-03 A2): garage level 2 opens with stars; the next thing to save for (the cheapest thing not bought yet: a vehicle, an
 // upgrade level, paint, then level 2), {name, cost} or {lock: true} when only the closed level 2 is left, or null when all is bought
@@ -225,12 +265,13 @@ function hcMusic(H){const a=typeof AC!='undefined'&&AC;
 /* ---- courses: a stage's pieces (or a seeded endless line of them) as heights every 10 px and lists of things ----
    f L flat | u L,H up (eased) | d L,H down | h L,H hill | v L,H dip | w L,H,N rollers | k H kicker jump | p W gap (with its lip)
    b W bridge | o W ford (shallow water) | r N rocks | m L soft ground (the world's mud, sand, ash) | i L ice (m and i do not move on)
-   c checkpoint | $N bolts | F fuel can | A balloon (easy driving) | S H the hidden star H m up | > boost pad. The finish follows the last piece. */
+   c checkpoint | $N bolts | F fuel can | A balloon (driving help) | S H the hidden star H m up | > boost pad | L W the lookout, a stop
+   zone W m long on the road ahead (G-FEEL1: the stop mission). The finish follows the last piece. */
 const HC_PX=20,HC_CC={};
 function rng(seed){return()=>{seed=(seed*16807)%2147483647;return(seed-1)/2147483646}}
 const hcParse=s=>s.trim().split(/\s+/).map(t=>{const m=t.match(/^([a-zA-Z$>])([\d.,]*)$/);return m?[m[1],...(m[2]?m[2].split(',').map(Number):[])]:null}).filter(Boolean);
 function hcCourse(st,wi,endless,ekey){const key=endless?ekey||'E'+wi:st[0];if(HC_CC[key])return HC_CC[key];
-  const W=HCW[wi],h=[0],C={key,w:wi,pits:[],fords:[],bridges:[],soft:[],rocks:[],kicks:[],cps:[60],coins:[],fuel:[],balloons:[],stars:[],pads:[],fin:null};let y=0;
+  const W=HCW[wi],h=[0],C={key,w:wi,pits:[],fords:[],bridges:[],soft:[],rocks:[],kicks:[],cps:[60],coins:[],fuel:[],balloons:[],stars:[],pads:[],looks:[],fin:null};let y=0;
   const X=()=>(h.length-1)*10,add=(n,f)=>{const y0=y;for(let i=1;i<=n;i++){y=f(i/n,y0);h.push(y)}y=h[h.length-1]};
   const cosE=t=>(1-Math.cos(Math.PI*t))/2;
   for(const [k,a=0,b=0,c=1] of hcParse(endless||st[5])){const n=Math.max(1,Math.round(a*2)),H=b*HC_PX;
@@ -252,7 +293,8 @@ function hcCourse(st,wi,endless,ekey){const key=endless?ekey||'E'+wi:st[0];if(HC
     else if(k=='F')C.fuel.push(X());
     else if(k=='A')C.balloons.push(X());
     else if(k=='S')C.stars.push({x:X(),hm:a});
-    else if(k=='>')C.pads.push(X())}
+    else if(k=='>')C.pads.push(X())
+    else if(k=='L')C.looks.push({x0:X(),x1:X()+(a||5)*HC_PX})}
   if(!endless){C.fin=X();add(80,(t,y0)=>y0)}
   C.n=h.length;C.h=Float32Array.from(h);
   // per sample: 1 gap, 2 ford, 4 bridge; soft kind index into HC_SK (0 none)
@@ -296,11 +338,11 @@ function hcEndless(wi,seed=0,tw=''){const key='E'+wi+(seed||tw?'/'+seed+'/'+tw:'
   const C=hcCourse(null,wi,p.join(' '),key);C.endless=1;return C}
 
 /* ---- the simulation (no page needed): hcNew makes a run, hcStep moves it 1/120 s ---- */
-// o: veh, up (upgrades), easy, ui (true: messages, sounds and the end card), paint; G-HC3: seed (the day's road of a distance
+// o: veh, up (upgrades), as (driving help 0-3; G-FEEL1) or easy (true: as 3, the old switch), auto (Auto may turn the help up during the drive), ui (true: messages, sounds and the end card), paint; G-HC3: seed (the day's road of a distance
 // drive), day (today's drive, hcDay: its road, twist and gold flag)
 function hcNew(wi,si,o={}){const st=si==null?null:HC_ST[wi][si],day=st?null:o.day||null,C=st?hcCourse(st,wi):day?hcEndless(wi,day.seed,day.tw):hcEndless(wi,o.seed||0),sp=hcSpec(o.veh||'jeep',o.up),x0=60,
-  y1=hcH(C,x0)+sp.R+2,y2=hcH(C,x0+sp.L)+sp.R+2,crates=st&&st[2][0]=='cargo'?st[2][1]:0;
-  return Object.assign(sp,{wi,w:HCW[wi].id,st,si,C,veh:o.veh||'jeep',easy:!!o.easy,ui:!!o.ui,tankSec:sp.tankSec*(st?1.5:1),fuel:100,
+  y1=hcH(C,x0)+sp.R+2,y2=hcH(C,x0+sp.L)+sp.R+2,crates=st&&st[2][0]=='cargo'?st[2][1]:0,as=hcAsN(o.as!=null?o.as:o.easy?3:0);
+  return Object.assign(sp,{wi,w:HCW[wi].id,st,si,C,veh:o.veh||'jeep',as,A:HC_AS[as],auto:!!o.auto,asUp:0,cpCr:0,saves:HC_AS[as].save,saved:0,stopT:0,stopped:false,easy:as>=2,ui:!!o.ui,tankSec:sp.tankSec*(st?1.5:1),fuel:100,
     w1:{x:x0,y:y1,px:x0,py:y1,rot:0,g:true},w2:{x:x0+sp.L,y:y2,px:x0+sp.L,py:y2,rot:0,g:true},gas:false,brake:false,
     bolts:0,maxX:x0,cp:x0,cpi:0,cpCrates:crates,crates,crates0:crates,crashT:0,safeT:0,stuckT:0,lockT:o.ui?1:0,over:false,result:null,
     took:new Set(),ci:0,t:0,air:0,airRot:0,lastAng:Math.atan2(y2-y1,sp.L),flips:0,perfect:0,airs:0,wheelieT:0,wheelies:0,crashes:0,
@@ -310,15 +352,15 @@ function rotPts(H,a){const c=Math.cos(a),s=Math.sin(a),cx=(H.w1.x+H.w2.x)/2,cy=(
 const hcAng=H=>Math.atan2(H.w2.y-H.w1.y,H.w2.x-H.w1.x);
 const hcAV=H=>{let d=hcAng(H)-Math.atan2(H.w2.py-H.w1.py,H.w2.px-H.w1.px);if(d>Math.PI)d-=2*Math.PI;if(d<-Math.PI)d+=2*Math.PI;return d};
 const hcWrap=a=>{while(a>Math.PI)a-=2*Math.PI;while(a<-Math.PI)a+=2*Math.PI;return a};
-function hcStep(H,dt){const C=H.C,Wd=HCW[H.wi],R=H.R,L=H.L,w=[H.w1,H.w2],easy=H.easy,ui=H.ui;
+function hcStep(H,dt){const C=H.C,Wd=HCW[H.wi],R=H.R,L=H.L,w=[H.w1,H.w2],A=H.A,ui=H.ui;
   H.t+=dt;H.bobV+=(-H.bob*260-H.bobV*(14+H.susp*4))*dt;H.bob+=H.bobV*dt;
   if(H.crashT>0){H.crashT-=dt;hcParts(H,dt);if(H.crashT<=0)hcRespawn(H);return}
   if(H.lockT>0)H.lockT-=dt;if(H.boostT>0)H.boostT-=dt;if(H.comboT>0){H.comboT-=dt;if(H.comboT<=0)H.combo=0}
   if(H.ballT>0){H.ballT-=dt;if(H.ballT<=0&&ui)hcPop('Pop!')}
   const ang0=hcAng(H),cx0=(H.w1.x+H.w2.x)/2,err0=hcWrap(ang0-hcSlopeL(C,cx0,20));
   let gas=H.gas&&H.fuel>0&&H.lockT<=0;const brk=H.brake||H.lockT>0;
-  // easy driving, traction control: the nose lifting off the ground eases the gas
-  let tc=1;if(easy&&gas&&H.w1.g&&err0>.2)tc=Math.max(.15,1-(err0-.2)*3.5);
+  // driving help (A, HC_AS), traction control: the nose lifting off the ground eases the gas
+  let tc=1;if(A.tc&&gas&&H.w1.g&&err0>.2)tc=1-(1-Math.max(.15,1-(err0-.2)*3.5))*A.tc;
   const g=Wd.g*(H.ballT>0?.3:1)*(H.gm||1),boost=H.boostT>0;
   if(H.ballT>0&&H.ballT<2&&H.w1.g&&H.w2.g&&!hcPitAt(C,cx0+H.L))H.ballT=.01; // the balloons pop once the car is down past the gap
   for(const p of w){const vx=(p.x-p.px)*.9994,vy=(p.y-p.py)*.9994;p.px=p.x;p.py=p.y;p.x+=vx+(H.ballT>0&&H.gas?60*dt*dt:0);p.y+=vy-g*dt*dt}
@@ -340,16 +382,16 @@ function hcStep(H,dt){const C=H.C,Wd=HCW[H.wi],R=H.R,L=H.L,w=[H.w1,H.w2],easy=H.
       p.px=p.x-tx*vt;p.py=p.y-ty*vt;p.rot+=vt/R*(gas&&H.acc>trac?1.6:1)}
     else p.rot+=(p.x-p.px)/R*.99}
   if(landV>200){H.bobV+=Math.min(landV,900)*.06/(1+H.susp*.15);if(landV>380&&ui)HSND.land(landV)}
-  if(H.crates&&landV>H.drop+(easy?200:0)&&H.safeT<=0)hcCrate(H);
+  if(H.crates&&landV>H.drop+A.soft&&H.safeT<=0)hcCrate(H);
   let tq=0;const ang=hcAng(H),cx=(H.w1.x+H.w2.x)/2,cy=(H.w1.y+H.w2.y)/2,slopeB=hcSlopeL(C,cx,20);
-  if(ground==0){tq=((gas?4.6:0)-(brk?4.6:0))*(easy?.35:1);H.air+=dt}
-  else{if(gas&&H.w1.g)tq+=H.lift*(H.w2.g?1:.8)*tc*(easy?.6:1);if(brk&&H.w2.g)tq-=3.2}
+  if(ground==0){tq=((gas?4.6:0)-(brk?4.6:0))*A.air;H.air+=dt}
+  else{if(gas&&H.w1.g)tq+=H.lift*(H.w2.g?1:.8)*tc*A.lift;if(brk&&H.w2.g)tq-=3.2}
   if(tq)rotPts(H,tq*dt*dt);
   const av=hcAV(H),err=hcWrap(ang-(ground?slopeB:hcSlopeL(C,cx)));
-  // in the air with no pedal the spin slows; easy driving turns the car to match the ground below
+  // in the air with no pedal the spin slows; driving help turns the car to match the ground below (and eases a wheelie down)
   if(ground==0&&!gas&&!brk)rotPts(H,-av*.012);
-  if(ground==0&&easy)rotPts(H,(-err*2.6*dt-av)*.07);
-  if(ground&&easy&&H.w1.g&&!H.w2.g&&err>.3)rotPts(H,-(err-.3)*.02);
+  const lv=A.lvl+(gas||brk?0:A.free);if(ground==0&&lv)rotPts(H,(-err*2.6*dt-av)*lv);
+  if(ground&&A.wh&&H.w1.g&&!H.w2.g&&err>.3)rotPts(H,-(err-.3)*A.wh);
   // suspension: a landing's bounce is soaked up (better suspension, less spin left after touching down)
   if(ground&&H.wasAir)rotPts(H,-av*(.25+H.susp*.1));
   let da=ang-H.lastAng;if(da>Math.PI)da-=2*Math.PI;if(da<-Math.PI)da+=2*Math.PI;H.lastAng=ang;
@@ -365,7 +407,10 @@ function hcStep(H,dt){const C=H.C,Wd=HCW[H.wi],R=H.R,L=H.L,w=[H.w1,H.w2],easy=H.
   const hr=48*(H.R/21)+(H.veh=='monster'?10:0),hx=cx-Math.sin(ang)*hr,hy=cy+Math.cos(ang)*hr,pit=hcPitAt(C,cx);
   if(H.safeT>0)H.safeT-=dt;
   else if(pit&&cy<pit.y-pit.d*.45)return hcCrash(H,'pit');
-  else if(hy<hcH(C,hx)+5||(Math.abs(err)>2.4&&ground))return hcCrash(H,hcPitAt(C,hx)||hcPitAt(C,cx+50)?'pit':'flip');
+  else if(hy<hcH(C,hx)+5||(Math.abs(err)>2.4&&ground)){const why=hcPitAt(C,hx)||hcPitAt(C,cx+50)?'pit':'flip';
+    // driving help: a car tipping onto its back or side (not on its roof) is set back on its wheels, once between checkpoints
+    if(why=='flip'&&H.saves>0&&Math.abs(err)<2.95)return hcSave(H,cx);
+    return hcCrash(H,why)}
   // stuck on its end (leaning on a wall, nose up or down): after 1.5 s it counts as a flip
   H.tiltT=ground<2&&Math.abs(err)>1.1&&H.speed<60?(H.tiltT||0)+dt:0;if(H.tiltT>1.5){H.tiltT=0;return hcCrash(H,'flip')}
   H.fuel=Math.max(0,H.fuel-dt*100/H.tankSec*(gas?1:.25));
@@ -374,11 +419,13 @@ function hcStep(H,dt){const C=H.C,Wd=HCW[H.wi],R=H.R,L=H.L,w=[H.w1,H.w2],easy=H.
   if(C.fin!=null&&cx>=C.fin){H.over=true;H.result='win';return}
   if(ui&&H.best>20&&!H.passedBest&&(cx-60)/20>H.best){H.passedBest=true;hcPop('New record!');SFX.fanfare()}
   // checkpoints: a flip or an empty tank starts again here (crates as they were)
-  while(H.cpi+1<C.cps.length&&cx>=C.cps[H.cpi+1]){H.cpi++;H.cp=C.cps[H.cpi];H.cpCrates=Math.max(1,H.crates);
+  while(H.cpi+1<C.cps.length&&cx>=C.cps[H.cpi+1]){H.cpi++;H.cp=C.cps[H.cpi];H.cpCrates=Math.max(1,H.crates);H.saves=A.save;H.cpCr=0;
     if(C.endless)H.bolts+=5;if(ui){HSND.cp(H.cpi);hcMsg(C.endless?`${Math.round((H.cp-60)/20)} m! Plus 5 bolts`:'Checkpoint! A flip starts again here.',1600)}}
   for(let k=0;k<C.fuel.length;k++){const fx=C.fuel[k];if(Math.abs(fx-cx)<60&&!H.took.has('f'+k)){H.took.add('f'+k);H.fuel=100;if(ui){HSND.fuel();hcPop('Full tank!')}}}
-  if(easy)for(let k=0;k<C.balloons.length;k++){const bx=C.balloons[k];if(Math.abs(bx-cx)<70&&!H.took.has('a'+k)&&H.crashT<=0){H.took.add('a'+k);H.ballT=2.6;if(ui){HSND.balloon();hcPop('Balloons! Float over!')}}}
-  for(let k=0;k<C.stars.length;k++){const s=C.stars[k];if(!H.took.has('s'+k)&&Math.abs(s.x-cx)<55&&Math.abs(s.y-cy)<75){H.took.add('s'+k);H.gotStar=true;H.bolts+=10;if(ui){HSND.star();hcPop('You found the star!')}}}
+  if(A.ball)for(let k=0;k<C.balloons.length;k++){const bx=C.balloons[k];if(Math.abs(bx-cx)<70&&!H.took.has('a'+k)&&H.crashT<=0){H.took.add('a'+k);H.ballT=2.6;if(ui){HSND.balloon();hcPop('Balloons! Float over!')}}}
+  for(let k=0;k<C.stars.length;k++){const s=C.stars[k];if(!H.took.has('s'+k)&&Math.abs(s.x-cx)<50&&Math.abs(s.y-cy)<45){H.took.add('s'+k);H.gotStar=true;H.bolts+=10;if(ui){HSND.star();hcPop('You found the star!')}}}
+  // the lookout: stopped on it (both wheels down, hardly moving) for 0.4 s
+  if(!H.stopped&&C.looks.length){const z=C.looks.find(q=>cx>=q.x0&&cx<=q.x1);if(z&&ground==2&&Math.hypot(H.w1.x-H.w1.px,H.w1.y-H.w1.py)/dt<15){H.stopT+=dt;if(H.stopT>=.4){H.stopped=true;H.bolts+=5;if(ui){HSND.star();hcPop('What a view! Plus 5')}}}else H.stopT=0}
   while(H.ci<C.coins.length&&C.coins[H.ci].x<cx-90)H.ci++;
   for(let j=H.ci;j<C.coins.length&&C.coins[j].x<cx+90;j++){const o=C.coins[j];if(H.took.has(j))continue;if(Math.abs(o.x-cx)<46&&Math.abs(o.y-cy)<62){H.took.add(j);H.bolts+=C.endless?1+Math.floor(o.x/10000):1;if(ui){HSND.coin(H);H.pops.push({x:o.x,y:o.y,l:.7})}}}
   const sp=Math.hypot(H.w1.x-H.w1.px,H.w1.y-H.w1.py)/dt;H.speed=sp;
@@ -402,7 +449,14 @@ function hcCrate(H){if(!H.crates)return;H.crates--;if(H.ui){const cx=(H.w1.x+H.w
   if(!H.crates&&H.crashT<=0){H.crashT=1.2;H.crashes++;H.why='cargo';if(H.ui)hcMsg('Back to the checkpoint to load up again. Land softly!',2400)}}
 // R-03 A4: a short buzz on a crash and on landing a flip (buzz() in 10-sfx.js: the Grown-ups Buzz switch, never in Calm mode)
 const hcBuzz=ms=>{try{if(typeof buzz=='function')buzz(ms)}catch(e){}};
-function hcCrash(H,why){if(H.crates)hcCrate(H);H.crashT=1.5;H.crashes++;H.why=why;H.combo=0;if(!H.calm)H.shake=.4;if(!H.ui)return;hcBuzz(25);
+// driving help: set back on the wheels where the car is, slowly (not a restart: no crash counted)
+function hcSave(H,cx){const C=H.C,x=Math.max(H.cp,cx-H.L/2),y=hcH(C,x)+H.R+2,y2=hcH(C,x+H.L)+H.R+2;H.saves--;H.saved++;
+  Object.assign(H.w1,{x,y,px:x,py:y,g:true});Object.assign(H.w2,{x:x+H.L,y:y2,px:x+H.L,py:y2,g:true});
+  H.safeT=.6;H.air=0;H.airRot=0;H.wasAir=false;H.lastAng=Math.atan2(y2-y,H.L);H.tiltT=0;H.combo=0;
+  if(H.ui){hcBuzz(15);hcMsg('Whoops! Back on the wheels. Ease off the gas on steep hills.',2000)}}
+function hcCrash(H,why){if(H.crates)hcCrate(H);H.crashT=1.5;H.crashes++;
+  // Auto driving help: several crashes between two checkpoints turn the help up by one for the rest of the drive
+  if(H.auto&&H.as<3&&++H.cpCr>=HC_AS_CR){H.as++;H.A=HC_AS[H.as];H.asUp++;H.cpCr=0;H.saves=Math.max(H.saves,H.A.save);if(H.ui)hcPop('More driving help on!')}H.why=why;H.combo=0;if(!H.calm)H.shake=.4;if(!H.ui)return;hcBuzz(25);
   const cx=(H.w1.x+H.w2.x)/2,cy=(H.w1.y+H.w2.y)/2,pk=HCW[H.wi].pit;
   if(why=='pit'&&pk!='crater'){pk=='lava'?(hs()&&(noise(.5,0,.3,400,100),tone(90,.4,0,'sawtooth',.1,40))):HSND.crash(1);for(let i=0;i<26;i++)H.parts.push({x:cx,y:cy,vx:(Math.random()-.5)*320,vy:150+Math.random()*260,l:1,c:pk=='lava'?['o','y','r'][i%3]:'c1',s:5+Math.random()*4,g:1})}
   else{HSND.crash();for(let i=0;i<12;i++)H.parts.push({x:cx,y:cy+20,vx:(Math.random()-.5)*260,vy:120+Math.random()*200,l:1,c:'y',s:5,g:.6,star:1})}
@@ -416,17 +470,19 @@ function hcRespawn(H){const R=H.R,x=H.cp,C=H.C,y=hcH(C,x)+R+4,y2=hcH(C,x+H.L)+R+
 // the result of a finished stage: bits (1 goal, 2 mission 1, 4 mission 2)
 function hcBitsOf(H){const s=H.st;if(!s||H.result!='win')return 0;const g=s[2];let b=0;
   if(g[0]=='flag'||(g[0]=='coins'&&H.bolts>=g[1])||(g[0]=='cargo'&&H.crates>=1))b|=1;
-  s[3].forEach((m,k)=>{const ok={bolts:H.bolts>=m[1],time:H.t<=m[1],flips:H.flips>=m[1],air:H.airs>=m[1],perfect:H.perfect>=m[1],nocrash:H.crashes==0,crates:H.crates0>0&&H.crates==H.crates0,star:H.gotStar}[m[0]];if(ok)b|=2<<k});
+  s[3].forEach((m,k)=>{const ok={bolts:H.bolts>=m[1],time:H.t<=m[1],flips:H.flips>=m[1],air:H.airs>=m[1],perfect:H.perfect>=m[1],nocrash:H.crashes==0,crates:H.crates0>0&&H.crates==H.crates0,star:H.gotStar,stop:H.stopped}[m[0]];if(ok)b|=2<<k});
   return b}
 // save a finished stage: new stars pay bolts (more in later worlds); returns {bits, old, gain, opened: [lines]}
 function hcBank(H){const gs=garageS(),id=H.st?H.st[0]:null,bits=hcBitsOf(H),old=id?gs.st[id]||0:0,wasW=HCW.map((_,w)=>hcWOpen(w)),nxt=H.st&&H.si+1<HC_SPW?hcSOpen(H.wi,H.si+1):true;
-  const fresh=bits&~old,gain=hcBits(fresh)*(8+4*H.wi);if(id&&bits)gs.st[id]=old|bits;gs.bolts+=H.bolts+gain;
+  const fresh=bits&~old,gain=hcBits(fresh)*(8+4*H.wi);if(id&&bits)gs.st[id]=old|bits;gs.bolts+=H.bolts+gain;if(id){H.noted=1;hcAsNote(H)}
   const opened=[];HCW.forEach((W,w)=>{if(!wasW[w]&&hcWOpen(w))opened.push(W.n)});
   const nextOpen=H.st&&H.si+1<HC_SPW&&!nxt&&hcSOpen(H.wi,H.si+1)?HC_ST[H.wi][H.si+1][1]:null;
   return{bits,old,gain,opened,nextOpen}}
 
 /* ---- playing: the screen, pedals, the loop, game time ---- */
-function stopHC(){if(!HC)return;cancelAnimationFrame(HC.raf);if(HC.eng){try{HC.eng.lfo&&HC.eng.lfo.stop();HC.eng.o.stop();HC.eng.o2.stop()}catch(e){}}removeEventListener('keydown',HC.kd);removeEventListener('keyup',HC.ku);HC=null}
+function stopHC(){if(!HC)return;
+  // G-FEEL1: a stage drive left without the flag after a while counts for Auto driving help (hcAsNote)
+  if(HC.st&&HC.result!='win'&&!HC.noted&&HC.t>=8){HC.noted=1;hcAsNote(HC);save()}cancelAnimationFrame(HC.raf);if(HC.eng){try{HC.eng.lfo&&HC.eng.lfo.stop();HC.eng.o.stop();HC.eng.o2.stop()}catch(e){}}removeEventListener('keydown',HC.kd);removeEventListener('keyup',HC.ku);HC=null}
 const HC_SNDI=['sound-on','music','sound-off']; // P4-16: the sound button's icon for S.hcSnd (all, no engine, off)
 const hcCalm=()=>{try{return document.documentElement.classList.contains('calm')||matchMedia('(prefers-reduced-motion: reduce)').matches}catch(e){return false}};
 // fixed steps of 1/120 s (G-HC3, R-03 H1): a slow frame (up to 0.1 s) runs more steps, so a slow tablet never plays in slow motion;
@@ -438,7 +494,7 @@ function hcAdvance(H,dt){H.acu=(H.acu||0)+Math.min(.1,Math.max(0,dt));let n=0;
 // road); day: today's drive (hcDay) instead of the distance drive
 function hcStart(world,si,day){const wi=typeof world=='number'?world:Math.max(0,HCW.findIndex(W=>W.id==world)),gs=garageS();
   if(si!=null&&!HC_ST[wi])si=null;if(si!=null)day=null;
-  const H=hcNew(wi,si,{veh:gs.veh,up:gs.up,easy:hcEasy(),ui:true,seed:hcSeed(wi),day}),st=H.st,C=H.C;H.calm=hcCalm();H.paint=hcC(gs.paint)||hcC('r');H.best=st||day?0:gs.best[H.w];
+  const H=hcNew(wi,si,{veh:gs.veh,up:gs.up,as:hcAsLevel(),auto:hcAsPick()=='auto',ui:true,seed:hcSeed(wi),day}),st=H.st,C=H.C;H.calm=hcCalm();H.paint=hcC(gs.paint)||hcC('r');H.best=st||day?0:gs.best[H.w];
   H.wx=st?st[4]:day&&day.wx||'day';H.rim=gs.rim;H.top=gs.top;H.trail=gs.trail;
   const ticks=st?C.cps.slice(1).map(x=>`<i class="hc-tick" style="left:${(x/C.fin*100).toFixed(1)}%"></i>`).join(''):'';
   view(`<div class="hc" id="hc"><canvas id="hcv"></canvas>
@@ -501,26 +557,26 @@ function hcEnd(why){const H=HC;if(!H||H.shown)return;H.shown=true;H.over=true;co
   const o=hcGuard(GH.end('hill',{win,title:why=='time'?"Game time's up!":D&&H.dayHit?"Today's drive done!":'Out of gas!',tag:rec&&m>0?'New record!':'',
    stats:[[m+' m',D?(H.dayHit?'gold flag reached':'gold flag at '+D.goal+' m'):rec&&m>0?'new record':'best '+gs.best[H.w]+' m','ruler'],['+'+(H.bolts+pay),'bolts','nut'],[String(H.flips),'flips','rotate'],[String(H.perfect),'perfect landings','check-circle']],
    lines:[...dayLine,['drop','Fuel cans are further apart the farther you go. Ease off the gas in the air to save fuel.'],['target',esc(hcNextGoal().t)]],
-   btns:(why=='time'||ptLeft()<=0?UI.btn('Earn more game time',{kind:'primary',size:'lg',icon:'path-read',id:'hlearn',wide:true}):UI.btn('Drive again',{kind:'primary',size:'lg',icon:'replay',id:'hagain',wide:true}))+
-    UI.btn('Menu',{icon:'map',id:'hgar',wide:true})}));
+   btns:why=='time'||ptLeft()<=0?NAV.end3({next:'hlearn',home:'hgar'}):NAV.end3({again:'hagain',home:'hgar'})})); // NAV-01: with no game time left, Next goes to Learn
   if(S.voice)say(why=='time'?`Game time is up! Let's learn and earn more!`:rec&&m>0?`New record! ${m} meters!`:`You drove ${m} meters!`);
   const go=f=>{o.remove();stopHC();f()};
   if(o.querySelector('#hagain'))o.querySelector('#hagain').onclick=()=>go(()=>D?hcStart(H.wi,null,hcDay()):hcStart(H.wi));
-  if(o.querySelector('#hlearn'))o.querySelector('#hlearn').onclick=()=>go(()=>home());
-  o.querySelector('#hgar').onclick=()=>go(garage)}
+  if(o.querySelector('#hlearn'))o.querySelector('#hlearn').onclick=()=>go(()=>learnHub());
+  o.querySelector('#hgar').onclick=()=>go(home)}
 // game time ran out in a stage: bolts kept, no stars lost
 function hcStageCard(H,why){SFX.chime();const C=H.C,m=Math.min(Math.floor((H.maxX-60)/20),Math.floor((C.fin-60)/20)),L=Math.floor((C.fin-60)/20);
   if(S.voice)say(`Game time is up! Let's learn and earn more!`);
   hcCard(H,{title:"Game time's up!",extra:UI.meter(m/L,{lg:true,kind:'good',label:`${m} of ${L} m`}),lines:[['nut',`Your ${H.bolts} bolts are saved.`],['go',`Only <b>${Math.max(0,L-m)} m</b> to the flag next time!`]],
-   btns:UI.btn('Earn more game time',{kind:'primary',size:'lg',icon:'path-read',attrs:'data-go="learn"',wide:true})+UI.btn('Stages',{icon:'map',attrs:'data-go="list"',wide:true})})}
+   btns:NAV.end3({next:'hcnext',home:'hchome'})})} // NAV-01: no game time left: Next goes to Learn
 // the finger still on the gas when the card opens must not press its buttons when it lifts: a button works after a new press
 // on the card (a key press always works)
 const hcGuard=o=>{o.addEventListener('pointerdown',()=>{o._armed=1},true);o.addEventListener('click',e=>{if(e.detail&&!o._armed){e.stopPropagation();e.preventDefault()}},true);return o};
+// NAV-01: the end choices (NAV.end3, data-go again | next | home); Next with no game time left goes to Learn to earn more
 function hcCard(H,c){const o=hcGuard(GH.end('hill',c));const go=f=>{o.remove();stopHC();f()};
   o.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{const a=b.dataset.go;
-    if(a=='retry')go(()=>hcStart(H.wi,H.si));
-    else if(a=='next'){const n=hcAfter(H.wi,H.si);go(()=>n?hcStart(n[0],n[1]):hcLevels(H.wi))}
-    else if(a=='learn')go(home);else go(()=>hcLevels(hcAfter(H.wi,H.si)?hcAfter(H.wi,H.si)[0]:H.wi))});return o}
+    if(a=='again')go(()=>hcStart(H.wi,H.si));
+    else if(a=='next'){if(ptLeft()<=0)return go(learnHub);const n=hcAfter(H.wi,H.si);go(()=>n?hcStart(n[0],n[1]):hcLevels(H.wi))}
+    else go(home)});return o}
 // the stage after (w, i) if it is open: [w, i] or null
 function hcAfter(w,i){if(i+1<HC_SPW)return hcSOpen(w,i+1)?[w,i+1]:null;return w+1<HC_ST.length&&hcWOpen(w+1)?[w+1,0]:null}
 function hcWin(){const H=HC;if(!H||H.shown)return;H.shown=true;H.over=true;H.result='win';hcEngOff(H);
@@ -534,11 +590,9 @@ function hcWin(){const H=HC;if(!H||H.shown)return;H.shown=true;H.over=true;H.res
   hcCard(H,{win:!!ok,title:ok?`${s[1]} done!`:`So close! ${H.bolts} of ${g[1]} bolts`,stars,
    stats:[[tm+' s','time','timer'],['+'+(H.bolts+r.gain),'bolts','nut'],[String(H.crashes),'restarts','replay'],H.crates0?[`${H.crates}/${H.crates0}`,'crates','gift']:[String(H.flips),'flips','rotate']],
    lines,
-   btns:(ptLeft()<=0?UI.btn('Earn more game time',{kind:'primary',size:'lg',icon:'path-read',attrs:'data-go="learn"',wide:true}):
-     ok&&nx?UI.btn(nx[0]!=H.wi?`Go to ${HCW[nx[0]].n}`:'Next stage',{kind:'primary',size:'lg',icon:'go',attrs:'data-go="next"',wide:true})+UI.btn('Play again',{icon:'replay',attrs:'data-go="retry"',wide:true})
-     :UI.btn(ok?'Play again':'Try again',{kind:'primary',size:'lg',icon:'replay',attrs:'data-go="retry"',wide:true}))+UI.btn('Stages',{icon:'map',attrs:'data-go="list"',wide:true})})}
+   btns:ptLeft()<=0?NAV.end3({next:'hcnext',home:'hchome'}):NAV.end3({again:'hcagain',next:ok&&nx?'hcnext':'',home:'hchome'})})} // NAV-01
 
-/* ---- the menu: next goal, worlds and their stages, the distance drive, the garage, easy driving ---- */
+/* ---- the menu: next goal, worlds and their stages, the distance drive, the garage, driving help (on: Auto, off: none) ---- */
 let hcMW=null; // the world shown on the menu
 function hcProfile(s,w){const C=hcCourse(s,w),W=HCW[w],N=60,ys=[];for(let i=0;i<=N;i++)ys.push(hcH(C,C.fin*i/N));const lo=Math.min(...ys),hi=Math.max(...ys,lo+60),
   Y=v=>(34-(v-lo)/(hi-lo)*26).toFixed(1),d='M0 40L'+ys.map((v,i)=>(i*120/N).toFixed(1)+' '+Y(v)).join('L')+'L120 40Z';
@@ -560,7 +614,7 @@ function garage(){const gs=garageS(),ng=hcNextGoal(),day=hcDay(),DW=HCW[day.wi];
     <span class="hc-ms">${s[3].map((m,k)=>`<span class="${b>>(k+1)&1?'ok':''}">${ico(b>>(k+1)&1?'check':HC_MIC[m[0]],18)}${esc(hcMisText(m))}</span>`).join('')}</span></span>
     ${UI.stars(n,3,22)}</button>`}).join('')}</div></section>
   ${UI.btn(`Play stage ${pi+1}: ${ps[1]}`,{kind:'primary',size:'lg',icon:'play',id:'hcgo',wide:true})}
-  ${UI.sw('Easy driving: keeps the car level and brings balloons',hcEasy(),'hceasy')}
+  ${UI.sw('Driving help: keeps the car level and brings balloons (how much: Grown-ups)',hcEasy(),'hceasy')}
   <button class="btn hc-day${day.done?' done':''}" id="hcday">
     <span class="hc-daydisc">${ico(day.done?'check-circle':'sparkle',32)}</span><span class="hc-dayt"><b>Today's drive: ${esc(DW.n)}</b><span>${esc(day.label)}</span>
     <small>${day.done?'Done today! A new drive comes tomorrow.':`Gold flag at ${day.goal} m: plus ${HC_DAY_BONUS} bolts the first time today.`}</small></span>${ico('play',32)}</button>
@@ -581,7 +635,7 @@ function garage(){const gs=garageS(),ng=hcNextGoal(),day=hcDay(),DW=HCW[day.wi];
   $$('[data-st]').forEach(b=>b.onclick=()=>play(HCW.findIndex(D=>D.id==b.dataset.st),null));
   $('#hcday').onclick=()=>{if(ptLeft()<=0){SFX.wrong();fb(ptWhyNot(),'warn long',3000);return}SFX.whoosh();hcStart(day.wi,null,day)};
   $('#hcgar').onclick=()=>{SFX.pop(2);hcGarage()};
-  $('#hceasy').onchange=e=>{gs.easy=e.target.checked;save();SFX.pop(2);fb(gs.easy?'Easy driving is on.':'Easy driving is off.','',1400)}}
+  $('#hceasy').onchange=e=>{gs.as=e.target.checked?'auto':0;save();SFX.pop(2);fb(e.target.checked?'Driving help is on.':'Driving help is off.','',1400)}}
 // the old levels screen: now the menu with a world picked
 function hcLevels(w=0){hcMW=typeof w=='number'?w:Math.max(0,HCW.findIndex(W=>W.id==w));if(hcMW>=HC_ST.length)hcMW=0;garage()}
 function hcVehPic(c){const x=c.getContext&&c.getContext('2d');if(!x)return;const P=hcPetSpr();if(P&&!P.c&&P.p&&!c._wait){c._wait=1;P.p.then(()=>{if(c.isConnected)hcVehPic(c)})}const V=VEH[c.dataset.vc],gs=garageS(),w=c.width,h=c.height,s=Math.min(.62*w/160,.62*h/96);x.clearRect(0,0,w,h);
@@ -862,7 +916,11 @@ function hcDraw(x,W,Hh,dpr){const H=HC,C=H.C,Wd=HCW[H.wi],wx=H.wx||'day',cx=(H.w
   const can=hcSpr(R,'fuel',56*sc,56*sc,(y,w,h)=>{const px=w/2,py=h/2,s=sc;y.fillStyle=hcA('y',.35);y.beginPath();y.arc(px,py,26*s,0,7);y.fill();y.fillStyle=hcC('r2');rr(y,px-12*s,py-14*s,24*s,30*s,4*s);y.fill();
     y.fillStyle=hcC('y');y.font=`bold ${14*s}px sans-serif`;y.textAlign='center';y.textBaseline='middle';y.fillText('F',px,py+2*s);y.strokeStyle=hcC('r3');y.lineWidth=3*s;y.beginPath();y.moveTo(px-6*s,py-14*s);y.lineTo(px-6*s,py-20*s);y.lineTo(px+6*s,py-20*s);y.stroke()});
   for(let k=0;k<C.fuel.length;k++){const fx=C.fuel[k];if(fx<left||fx>right||H.took.has('f'+k))continue;x.drawImage(can,Math.round(SX(fx)-can.width/2),Math.round(SY(hcH(C,fx)+H.R+22+Math.sin(T*3)*4)-can.height/2))}
-  if(H.easy)for(let k=0;k<C.balloons.length;k++){const bx=C.balloons[k];if(bx<left||bx>right||H.took.has('a'+k))continue;hcBalloons(x,SX(bx),SY(hcH(C,bx)+60+Math.sin(T*2)*6),sc)}
+  if(H.A.ball)for(let k=0;k<C.balloons.length;k++){const bx=C.balloons[k];if(bx<left||bx>right||H.took.has('a'+k))continue;hcBalloons(x,SX(bx),SY(hcH(C,bx)+60+Math.sin(T*2)*6),sc)}
+  for(const z of C.looks){if(z.x1<left||z.x0>right)continue;const on=H.stopped,lk=hcSpr(R,'look'+(on?1:0),120*sc,120*sc,(y,w,h)=>{const s=sc,px=w/2;y.fillStyle=hcC('n2');y.fillRect(px-4*s,h-70*s,8*s,70*s);
+      y.fillStyle=hcC(on?'g3':'b2');rr(y,px-52*s,h-112*s,104*s,44*s,8*s);y.fill();y.fillStyle=hcC('w');y.font=`bold ${16*s}px sans-serif`;y.textAlign='center';y.textBaseline='middle';y.fillText('LOOKOUT',px,h-90*s)});
+    x.fillStyle=hcA(on?'g':'b',.35);for(let q=z.x0;q<z.x1;q+=20){const a=SX(q),b=SY(hcH(C,q)),c=SX(q+12),d=SY(hcH(C,q+12));x.beginPath();x.moveTo(a,b);x.lineTo(c,d);x.lineTo(c,d+6*sc);x.lineTo(a,b+6*sc);x.fill()}
+    const mx=(z.x0+z.x1)/2;x.drawImage(lk,Math.round(SX(mx)-lk.width/2),Math.round(SY(hcH(C,mx))-lk.height))}
   for(let k=0;k<C.stars.length;k++){const s=C.stars[k];if(s.x<left||s.x>right||H.took.has('s'+k))continue;hcStarD(x,SX(s.x),SY(s.y),18*sc*(1+Math.sin(T*4)*.08))}
   for(const px of C.pads){if(px<left||px>right)continue;x.fillStyle=hcC('o');for(let j=0;j<3;j++){const ax=SX(px+j*20),ay=SY(hcH(C,px+j*20));x.beginPath();x.moveTo(ax,ay-14*sc);x.lineTo(ax+12*sc,ay-8*sc);x.lineTo(ax,ay-2*sc);x.fill()}}
   const nut=hcSpr(R,'nut',28*sc,28*sc,(y,w,h)=>{const px=w/2,py=h/2,s=sc;y.fillStyle=hcC('y');y.strokeStyle=hcC('y3');y.lineWidth=2.5*s;y.beginPath();for(let q=0;q<6;q++){const a=q*1.047+.5;y[q?'lineTo':'moveTo'](px+Math.cos(a)*11*s,py+Math.sin(a)*11*s)}y.closePath();y.fill();y.stroke();

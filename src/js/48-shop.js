@@ -50,6 +50,7 @@ function shop() {
   <div class="scroll ps-scroll"><div class="ps"><div class="ps-hold"><div class="ps-stage sc-${esc(pv.scene || 'meadow')}" id="stage">${hmScene(pv.scene)}` +
     `<div class="petbig rig" id="pet"><span class="petwrap">${pet}</span></div></div>${info}</div>` +
     `<div class="ps-shelf"><div class="tabs ps-tabs">${tabs}</div><div class="shopgrid ps-grid">${cards}</div></div></div></div>`);
+  NAV.bar('pet');
   $('#back').onclick = () => { shopSel = null; home(true); };
   $$('.tab').forEach(b => b.onclick = () => { shopTab = b.dataset.t; shopSel = null; SFX.pop(1); shop(); });
   $$('.item').forEach(b => b.onclick = () => shopTap(b));

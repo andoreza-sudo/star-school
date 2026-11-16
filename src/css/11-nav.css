@@ -1,0 +1,61 @@
+/* NAV-01: one way Home (src/js/41-nav.js). Tokens only; animates transform only (the press squash). */
+
+/* ---- the picture bar at the end of every hub screen: Home first; the current area lit ---- */
+.navbar{flex:none;display:flex;justify-content:center;gap:var(--s-1);padding:var(--s-2) var(--s-2) calc(var(--s-2) + env(safe-area-inset-bottom,0px));
+  background:var(--surface);border-top:2px solid var(--line)}
+#app:has(.navbar){padding-bottom:0}
+.nb{flex:1 1 0;min-width:var(--tap);max-width:128px;min-height:68px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  padding:var(--s-1) 2px;border:0;border-radius:var(--r-btn);background:transparent;color:var(--ink-2);font-family:var(--font-display);
+  font-size:var(--fs-2);font-weight:700;line-height:1.15;text-align:center;white-space:nowrap;cursor:pointer;transition:transform var(--t-fast) var(--ease)}
+.nb:active{transform:translateY(2px)}
+.nb-i{display:grid;place-items:center;width:44px;height:34px;border-radius:var(--r-pill)}
+.nb-i .ic{width:30px;height:30px;color:var(--brand)}
+.nb.on{color:var(--brand-shade);background:var(--brand-tint)}
+.nb.on .nb-i{color:var(--surface);background:var(--brand)}
+.nb.on .nb-i .ic{color:var(--surface)}
+.nb-home .nb-i .ic{color:var(--brand-shade)}
+.nb-home.on .nb-i .ic{color:var(--surface)}
+
+/* ---- the corner house of an activity screen ---- */
+.btn.icon.nv-house .ic{color:var(--brand-shade)}
+
+/* ---- Go Home? ---- */
+.nv-ask{text-align:center}
+.nv-ah{display:grid;place-items:center;width:88px;height:88px;margin:0 auto var(--s-2);border-radius:50%;color:var(--brand);background:var(--brand-tint)}
+.nv-ah .ic{width:56px;height:56px}
+.nv-ask h2{font-size:var(--fs-6);line-height:var(--lh-6);margin:0 0 var(--s-5)}
+.nv-two{display:grid;grid-template-columns:1fr 1fr;gap:var(--s-4)}
+.nv-two .btn{flex-direction:column;min-height:132px;padding:var(--s-3) var(--s-2);font-size:var(--fs-4)}
+.nv-two .btn .ic{width:48px;height:48px}
+
+/* ---- the three end-card choices: Play again, Next, Home ---- */
+.nv-end3{display:flex;gap:var(--s-3);width:100%;flex:1 1 100%}
+.nv-end3 .btn.nv-eb{flex:1 1 0;min-width:0;flex-direction:column;gap:var(--s-1);min-height:96px;padding:var(--s-2) var(--s-1);
+  font-size:var(--fs-3);white-space:normal}
+.nv-end3 .btn.nv-eb .nv-ei .ic{width:36px;height:36px}
+.nv-end3 .btn.soft.nv-eb .ic{color:var(--brand)}
+.nv-extra{display:flex;justify-content:center;width:100%;flex:1 1 100%}
+.nv-extra .btn{width:100%;min-height:var(--tap);font-size:var(--fs-3)}
+.nv-extra .art-ex{display:flex;gap:var(--s-3);width:100%}.nv-extra .art-ex .btn{flex:1 1 0}
+
+/* ---- Grown-ups on Home: a labelled button with the hold ring ---- */
+.btn.soft.nv-gw{padding:var(--s-1) var(--s-3) var(--s-1) var(--s-2);gap:var(--s-2);font-size:var(--fs-2);white-space:nowrap}
+.nv-ring{position:relative;display:grid;place-items:center;width:36px;height:36px;flex:none}
+.nv-ring .nv-rs{position:absolute;inset:0;width:36px;height:36px;transform:rotate(-90deg)}
+.nv-rt{fill:none;stroke:var(--line);stroke-width:3.5}
+.nv-rf{fill:none;stroke:var(--brand);stroke-width:3.5;stroke-linecap:round;stroke-dasharray:100;stroke-dashoffset:100}
+.btn.soft.nv-gw .nv-ring>.ic{width:22px;height:22px;color:var(--ink-2)}
+.nv-gw.hold{background:var(--brand-tint)}
+@media (max-width:480px){.hm-logo>span:last-child{display:none}}
+.nv-gate{text-align:center}
+.nv-q{display:flex;align-items:center;justify-content:center;gap:var(--s-3);margin:0 0 var(--s-2);font-family:var(--font-display);font-size:var(--fs-6);font-weight:700}
+.nv-q input{width:4.2ch;min-height:64px;padding:0 var(--s-2);border:3px solid var(--line);border-radius:var(--r-btn);font:inherit;text-align:center;
+  color:var(--ink);background:var(--surface)}
+.nv-msg{min-height:1.5em}
+
+/* ---- the light end (NAV.light): a banner at the bottom with the same three choices ---- */
+.nv-light{position:fixed;left:50%;bottom:calc(var(--s-3) + env(safe-area-inset-bottom,0px));z-index:55;transform:translateX(-50%);
+  width:calc(100% - 2 * var(--s-3));max-width:560px;padding:var(--s-3);border-radius:var(--r-card);background:var(--surface);color:var(--ink);
+  box-shadow:var(--shadow),0 4px 0 var(--ledge-soft)}
+.nv-lt{margin:0 0 var(--s-2);text-align:center;font-family:var(--font-display);font-size:var(--fs-4);font-weight:700}
+.nv-light .nv-end3 .btn.nv-eb{min-height:72px}

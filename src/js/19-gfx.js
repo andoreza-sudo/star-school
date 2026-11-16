@@ -14,9 +14,9 @@ const GFX = {
       `${o.sub ? `<span class="gx-sub">${o.sub}</span>` : ''}</span>${side}</button>`;
   },
 
-  // Top bar of a timed game: close (#quit), a time gauge (fill id), then chips (html). The gauge is set by GFX.bar(el, v 0..1).
+  // Top bar of a timed game: the corner house (#quit, NAV-01), a time gauge (fill id), then chips (html). The gauge is set by GFX.bar(el, v 0..1).
   speedTop(p, barId, v, chips) {
-    return `<div class="top tbar round qtop gx-top s-${p}">${UI.ibtn('close', 'Stop', { size: 'sm', id: 'quit' })}` +
+    return `<div class="top tbar round qtop gx-top s-${p}">${NAV.house('quit')}` +
       `<div class="gauge lg gx-bar" aria-hidden="true"><i id="${barId}" style="--v:${v}"></i></div>${chips}</div>`;
   },
   bar(el, v) {

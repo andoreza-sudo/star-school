@@ -52,7 +52,7 @@ function care(){const c=careTick();save();const pn=esc(petN()),sc=sceneOf();
   <div class="pc-card gx-care">${bar('Food','food',c.food,'k-food')}${bar('Clean','bath',c.clean,'k-clean')}${bar('Fun','ball',c.fun,'k-fun')}</div>
   <h2 class="gx-h">${ico('food',26)}<span>Snacks</span></h2><div class="shopgrid gx-snacks">${SNACKS.map(([e,cost,v],i)=>`<button class="btn item gx-snack" data-f="${i}" aria-label="${SNACK_W[i]}, ${cost} coins"><span class="gx-sp">${picFor(SNACK_W[i],e)}</span><div class="gx-price">${ico('coin',22,'ic-coin')}<b>${cost}</b></div></button>`).join('')}</div>
   <div class="actions gx-acts2"><button class="btn act gx-act" id="bath"><span class="gx-ai">${ico('bath',34)}</span>Bath time (free)</button><button class="btn act gx-act" id="play"><span class="gx-ai">${ico('ball',34)}</span>Play (free)</button></div></div></div>`);
-  $('#back').onclick=()=>home();
+  NAV.bar('pet');$('#back').onclick=()=>home();
   const pet=$('#pet');
   const done=()=>{c.t=Date.now();if(Math.min(c.food,c.clean,c.fun)>=80&&c.gift!==today()){c.gift=today();S.coins+=5;
     setTimeout(()=>{SFX.fanfare();RW.burst(document.body,28);UI.toast(`${petN()} gave you 5 coins!`,'good',2000,'gift')},900)}save();setTimeout(care,1300)};

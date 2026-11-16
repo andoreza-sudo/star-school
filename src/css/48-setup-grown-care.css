@@ -91,6 +91,7 @@
 .gw-row{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s-2) var(--s-3);margin:var(--s-3) 0}
 .gw-rl{flex:1 1 130px;font-weight:700;color:var(--ink-2)}
 .gw-seg>button{padding:0 var(--s-3);font-size:var(--fs-3);font-variant-numeric:tabular-nums}
+#gw-hcas .gw-seg{flex-wrap:wrap;border-radius:var(--r-card)}
 .gw-btns{display:flex;flex-wrap:wrap;gap:var(--s-2)}
 .gw .btn.ghost.gw-risk,.gw .btn.ghost.gw-risk .ic,.gw .btn.icon.gw-del .ic{color:var(--danger)}
 .gw-vr{margin-top:var(--s-3);padding-top:var(--s-1);border-top:2px solid var(--line)}

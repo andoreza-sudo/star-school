@@ -2520,13 +2520,12 @@ function bbWin() {
     win: true, title: `${P0.n} built!`, stars: st, pic: pic || undefined,
     stats: [[String(BB.miss), BB.miss == 1 ? 'mistake' : 'mistakes', 'blocks'], ['+' + coins, 'coins', 'coin']],
     lines,
-    btns: (nx > 0 ? UI.btn('Next build', { kind: 'primary', size: 'lg', icon: 'go', id: 'bbnx', wide: true }) : '') +
-      UI.btn('Again', { icon: 'replay', id: 'bbre', wide: true }) + UI.btn('All builds', { icon: 'blocks', id: 'bbls', wide: true }),
+    btns: NAV.end3({ again: 'bbre', next: nx > 0 ? 'bbnx' : '', home: 'bbls' }), // NAV-01
   });
   const go = f => { o.remove(); f(); };
   if (o.querySelector('#bbnx')) o.querySelector('#bbnx').onclick = () => go(() => blockBuilder(nx));
   o.querySelector('#bbre').onclick = () => go(() => blockBuilder(ci));
-  o.querySelector('#bbls').onclick = () => go(() => { gtStop(); bbMenu(); });
+  o.querySelector('#bbls').onclick = () => go(() => { gtStop(); home(); });
 }
 /* ---- the gallery (G-01b): S.bb.gal [{n, d, t}], a picture of a world saved by the child (d: the world packed in runs, bbPack) ---- */
 const BB_GAL_MAX = 12, BB_PK = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';

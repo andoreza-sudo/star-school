@@ -371,6 +371,7 @@ const BT = {
     }
     view(`<div class="top tbar gx-mtop s-bt">${UI.ibtn('back', 'Back', { size: 'sm', id: 'back' })}<div class="ttl gx-ttl"><span class="gx-tb">${ico('puzzle', 24)}</span>` +
       `<span>Brain Teasers</span></div>${UI.chip('star', BT.totalStars(), { aria: 'Puzzle stars' })}</div><div class="scroll gx-list bt-hub">${body}</div>`);
+    NAV.bar('puzzles');
     $('#back').onclick = () => home();
     $$('[data-t]').forEach(b => b.onclick = () => { SFX.whoosh(); BT.levels(b.dataset.t); });
     if ($('#btkeep')) $('#btkeep').onclick = () => { SFX.whoosh(); BT.start(cur.id, cur.band, cur.level); };
@@ -414,6 +415,7 @@ const BT = {
       `<span>My badges</span></div>${UI.chip('medal', got, { aria: 'Badges earned' })}</div><div class="scroll gx-list bd-view">` +
       `<p class="bd-sum">${got ? `You have ${got} of ${L.length} badges.` : 'Solve puzzles to win your first badge!'} Tap a badge to hear what it is for.</p>` +
       sec('Puzzles solved', 'puzzle', by('n').concat(by('day'))) + sec('First puzzles', 'star', by('first')) + sec('Every level', 'trophy', by('all')) + '</div>');
+    NAV.bar('puzzles');
     $('#back').onclick = () => { SFX.click(); (back || BT.hub)(); };
     $$('.bd-t').forEach(e => e.onclick = () => {
       const x = L.find(y => y.id == e.dataset.b);
@@ -457,6 +459,7 @@ const BT = {
       `<span>${esc(d.name)}</span></div>${UI.chip('star', BT.starsIn(id, band), { aria: 'Stars in this group' })}</div>` +
       `<div class="scroll gx-list bt-lvl">${seg}${rules}<div class="bt-lvs">${cells}</div>` +
       `<div class="bt-end">${UI.btn(endOpen ? 'Endless' : 'Endless: finish level ' + N, { kind: 'subject', p: 'bt', size: 'lg', wide: true, icon: endOpen ? 'replay' : 'lock', id: 'btend', off: !endOpen })}</div></div>`);
+    NAV.bar('puzzles');
     $('#back').onclick = () => BT.hub();
     UI.segOn($('#btband'), v => BT.levels(id, v));
     if ($('#btsay')) $('#btsay').onclick = () => say(d.rules);
@@ -493,7 +496,7 @@ const BT = {
     const d = BT.types[run.id], timed = run.band == 'C' || run.band == 'D'; // the timer is hidden in bands A and B
     BT.stop();
     // P3-17: the name is its own element and may wrap to two lines; on a phone with the timer the type icon steps aside (48-teasers.css)
-    view(`<div class="top tbar gx-mtop s-bt bt-bar${timed ? ' timed' : ''}">${UI.ibtn('back', 'Back to the levels', { size: 'sm', id: 'back' })}<div class="ttl gx-ttl"><span class="gx-tb">${ico(BT.icon(d), 24)}</span>` +
+    view(`<div class="top tbar gx-mtop s-bt bt-bar${timed ? ' timed' : ''}">${NAV.house('quit')}<div class="ttl gx-ttl"><span class="gx-tb">${ico(BT.icon(d), 24)}</span>` +
       `<span class="bt-tt"><span class="bt-nm">${esc(d.name)}</span><small>${run.level == 'E' ? 'Endless' : 'Level ' + run.level}</small></span></div>` +
       `${timed ? UI.chip('timer', fmtT(run.sec), { id: 'bttime', aria: 'Time' }) : ''}${UI.ibtn('replay', 'Start again', { size: 'sm', id: 'btredo' })}</div>` +
       `<div class="bt-play"><div class="bt-stage" id="btstage"></div><div class="bt-foot">${UI.btn('Hint', { icon: 'hint', p: 'bt', id: 'bthint' })}` +
@@ -537,7 +540,8 @@ const BT = {
       hb.disabled = true;
       label(`Hint ${a.cd}`);
     };
-    $('#back').onclick = () => { SFX.click(); BT.levels(run.id, run.band); };
+    // NAV-01: the corner house; the puzzle is saved as it is played (run.state), so Home keeps it for next time
+    NAV.wire('quit', { hold: on => { a.held = on; }, leave: () => save() });
     $('#btredo').onclick = () => {
       const sh = UI.sheet(`<h2>Start again?</h2><p>This puzzle goes back to the beginning.</p><div class="acts">` +
         UI.btn('Yes, start again', { kind: 'primary', size: 'lg', wide: true, icon: 'replay', id: 'btyes' }) + UI.btn('No, keep playing', { kind: 'ghost', wide: true, id: 'btno' }) + '</div>');
@@ -553,7 +557,7 @@ const BT = {
       };
     };
     a.iv = setInterval(() => { // one tick a second while the page is showing
-      if (document.hidden || a.won) return;
+      if (document.hidden || a.won || a.held) return;
       run.sec++;
       if (run.sec % 15 == 0) save();
       const t = $('#bttime');
@@ -598,8 +602,7 @@ const BT = {
       extra: (note && note.length ? `<ul class="bt-sum">${note.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : '') + `<div class="bt-wst">${UI.stars(o.stars, 3, 44, { arc: true })}</div>${o.unlocked && !endless ? `<p class="bt-new">${UI.tag(next === 'E' ? 'Endless is open!' : 'New level open!', 'new', 'sparkle')}</p>` : ''}` +
         (ls.length ? `<ul class="rw-pl bt-wl">${ls.join('')}</ul>` : '') + (o.mis || '') + nb,
       earn: gt,
-      btns: (next ? UI.btn(next === 'E' ? 'Endless' : 'Next level', { kind: 'primary', size: 'lg', wide: true, icon: 'go', id: 'btnext' }) : '') +
-        `<div class="rw-two">${UI.btn('Again', { icon: 'replay', id: 'btagain' })}${UI.btn('Levels', { icon: 'puzzle', id: 'btlvls' })}</div>` });
+      btns: NAV.end3({ again: 'btagain', next: next ? 'btnext' : '', home: 'bthome' }) }); // NAV-01 (Next: the next level, or Endless)
     card.classList.add('bt-win');
     document.body.appendChild(card);
     (o.stars == 3 ? SFX.fanfare : SFX.chime)();
@@ -609,7 +612,7 @@ const BT = {
     const go = f => () => { card.remove(); f(); };
     if ($('#btnext')) $('#btnext').onclick = go(() => BT.start(run.id, run.band, next));
     $('#btagain').onclick = go(() => BT.start(run.id, run.band, run.level));
-    $('#btlvls').onclick = go(() => BT.levels(run.id, run.band));
+    $('#bthome').onclick = go(() => home());
   },
   fmtSec(s) { return s < 60 ? `${s} sec` : s % 60 ? `${Math.floor(s / 60)} min ${s % 60} sec` : `${s / 60} min`; },
 };

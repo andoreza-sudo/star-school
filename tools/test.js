@@ -82,7 +82,14 @@ global.setTimeout=()=>{};
 
 const results=[]; // {name, problems, known, note}
 const PENDING=[]; // S-SPK2: a check may return a promise of {problems, note} (IndexedDB-style code); the report waits for it, in place
+// --only a,b : run only the checks whose name contains one of the substrings (case-insensitive); the rest are skipped and counted
+const ONLY=(()=>{const a=process.argv.slice(2),i=a.findIndex(x=>x=='--only'||x.startsWith('--only='));if(i<0)return null;
+  const v=a[i].startsWith('--only=')?a[i].slice(7):a[i+1];
+  const l=String(v||'').split(',').map(x=>x.trim().toLowerCase()).filter(Boolean);
+  if(!l.length){console.error('usage: node tools/test.js --only <substring>[,<substring>...]');process.exit(2)}return l})();
+let SKIPPED=0;
 const run=(name,fn)=>{
+  if(ONLY&&!ONLY.some(o=>name.toLowerCase().includes(o))){SKIPPED++;return}
   const put=(problems,note)=>{const kn=new Set(KNOWN[name]||[]),known=problems.filter(p=>kn.has(p));
     return{name,problems:problems.filter(p=>!kn.has(p)),known,note,unusedKnown:[...kn].filter(k=>!problems.includes(k))}};
   let problems=[],note='';
@@ -3924,12 +3931,13 @@ run('rewards (P4-11): drawings follow the art rules, every boss is drawn, screen
   const ids=(h,list,w)=>{for(const i of list)if(!h.includes('id="'+i+'"'))p.push(w+': missing #'+i)};
   ids(out.pre,['fin','chest'],'before the tap');
   if(!/aria-label="Open the treasure chest"/.test(out.pre))p.push('chest button has no spoken name');
-  ids(out.doneA,['sc','prz','earn','msgs','btns','bonus','nxt','menu','rwst'],'after the tap');
-  ids(out.doneB,['sc','prz','earn','msgs','btns','bonus','again','menu'],'after the tap, no stars');
+  ids(out.doneA,['sc','prz','earn','msgs','btns','bonus','again','nxt','ehome','rwst'],'after the tap'); // NAV-01: Play again, Next, Home (NAV.end3)
+  ids(out.doneB,['sc','prz','earn','msgs','btns','bonus','again','ehome'],'after the tap, no stars');
+  if(out.doneB.includes('id="nxt"'))p.push('no next stop: Next must be hidden');
   if(out.doneB.includes('id="rwst"'))p.push('a round with no right answers shows a "+0 stars" row');
   if(!/style="visibility:hidden"/.test(out.doneA))p.push('#btns must start hidden (shown after the star count)');
   if(!out.doneA.includes('Fantastic &lt;work&gt;'))p.push('headline not escaped');
-  if(!/class="btn primary lg wide" id="nxt"/.test(out.doneA)||!/class="btn primary lg wide" id="again"/.test(out.doneB))p.push('the next step is not the one primary button');
+  if(!/class="btn primary nv-eb e-next" id="nxt"/.test(out.doneA)||!/class="btn primary nv-eb e-again" id="again"/.test(out.doneB)||(out.doneA.match(/btn primary/g)||[]).length!==1)p.push('the next step is not the one primary button');
   if((out.rate.match(/class="rw-st on"/g)||[]).length!==2||!out.rate.includes('aria-label="2 of 3 stars"'))p.push('rate(2): '+out.rate.slice(0,80));
   if(out.stk.includes('<b>')||!out.stk.includes('class="tag new"'))p.push('sticker: not escaped or no New tag');
   if(out.badge.includes('<i>'))p.push('badge: prize not escaped');
@@ -14184,7 +14192,7 @@ run('game room P4-16',()=>{
     r.screens={};
     for(const k in shots){app.innerHTML='';try{shots[k]()}catch(x){}r.screens[k]=app.innerHTML||'ERR not drawn'}
   }finally{global.document=D}
-  r.src={gameRoom:String(gameRoom),pause:String(GH.pause),wire:String(GH.wire),gtStart:String(gtStart),timeUp:String(timeUpOverlay)};
+  r.src={gameRoom:String(gameRoom),pause:String(GH.pause)+String(NAV.ask),wire:String(GH.wire),gtStart:String(gtStart),timeUp:String(timeUpOverlay)};
   return r})()`))();
   // 1. the registry: every game has what the hub, the top bar, the sheet and the card need
   const SUBJ=['play','read','es','math','disc','bt'],ids=new Set(),btns=new Set();
@@ -14261,7 +14269,7 @@ run('game room P4-16',()=>{
     const w='top bar '+id+' ('+k+')',g=o.games.find(x=>x.id===id);
     if(!/^<div class="top tbar gh-top s-/.test(h))p.push(w+': not the shared .gh-top bar');
     if(k=='menu'&&!/id="back" aria-label="Back"/.test(h))p.push(w+': no Back button');
-    if(k=='play'&&!/id="gpause" aria-label="Pause"/.test(h))p.push(w+': no Pause button');
+    if(k=='play'&&!/class="btn icon sm nv-house" id="gpause" aria-label="Home"/.test(h))p.push(w+': no corner house (NAV-01)');
     if(!h.includes('class="gh-gn">'+(g.short||g.name).replace(/&/g,'&amp;')+'<'))p.push(w+': no game name');
     if(!/class="stat ticket" id="gtm" aria-label="Game time left"/.test(h))p.push(w+': no game-time chip');
     if(k=='play'&&!/id="aundo" aria-label="Undo"/.test(h))p.push(w+': a tool lost its label');
@@ -14286,7 +14294,7 @@ run('game room P4-16',()=>{
     if(k=='time up'&&!h.includes('id="tl"'))p.push(w+': no "Earn more time" (#tl)');
     if(PICT.test(h.replace(/<svg[\s\S]*?<\/svg>/g,'')))p.push(w+': emoji');
   }
-  if(!/gresume/.test(o.src.pause)||!/gquit/.test(o.src.pause)||!/Paused/.test(o.src.pause)||!/GH\.held = true/.test(o.src.pause))p.push('GH.pause: Keep playing (#gresume), Quit (#gquit), and the clock hold');
+  if(!/gresume/.test(o.src.pause)||!/gquit/.test(o.src.pause)||!/Go Home?/.test(o.src.pause)||!/GH\.held = true/.test(o.src.pause))p.push('GH.pause: Keep playing (#gresume), Quit (#gquit), and the clock hold');
   if(!/GH\.held/.test(o.src.gtStart))p.push('gtStart: the game-time clock must hold while the pause sheet is open');
   if(!/GH\.end\(/.test(o.src.timeUp))p.push('timeUpOverlay must use the shared end card');
   // every screen of every game file starts with GH.top; every play screen wires Pause / Quit; every end uses GH.end; no old chrome left
@@ -15094,10 +15102,11 @@ run('Star Rally 2 G-02b',()=>{
     //    worth mastering for older ones; mistakes cost time
     const stats={};
     for(const [mode,kind] of [['easy','good'],['easy','kid'],['easy','lazy'],['easy','wild'],['pro','pro'],['pro','good']]){
-      const s=stats[mode+' '+kind]={win:0,top3:0,n:0,slow:0,hits:0,tmax:0};
+      const s=stats[mode+' '+kind]={win:0,top3:0,n:0,slow:0,hits:0,tmax:0,c0:{n:0,win:0,top3:0}};
       for(const id of RL_ORDER)for(let seed=1;seed<=4;seed++){
         const r=race(id,mode,kind,seed);
         s.n++;
+        if(!RL_TRK[id].cup){s.c0.n++;if(r.place==1)s.c0.win++;if(r.place<=3)s.c0.top3++}
         if(!r.done){bad(mode+' '+kind+' '+id+' seed '+seed+': did not finish');continue}
         if(r.time>120)s.slow++;
         s.tmax=Math.max(s.tmax,r.time);
@@ -15105,14 +15114,16 @@ run('Star Rally 2 G-02b',()=>{
         if(r.place<=3)s.top3++;
         s.hits+=r.hits;
       }
-      out.note.push(mode+' '+kind+' won '+s.win+'/'+s.n+', top 3 '+s.top3+', '+(s.hits/s.n).toFixed(1)+' spins a race, slowest '+s.tmax.toFixed(0)+' s');
+      out.note.push(mode+' '+kind+' won '+s.win+'/'+s.n+', top 3 '+s.top3+' (first cup '+s.c0.win+' and '+s.c0.top3+' of '+s.c0.n+'), '+(s.hits/s.n).toFixed(1)+' spins a race, slowest '+s.tmax.toFixed(0)+' s');
       if(s.slow)bad(mode+' '+kind+': '+s.slow+' races took longer than 120 s');
     }
     const S_=k=>stats[k];
     if(S_('easy good').win<S_('easy good').n*.6)bad('Easy: a child who steers well should usually win ('+S_('easy good').win+'/48)');
+    // G-FEEL1: Easy helps fully only in the first cup (RL_EASY_HELP); from the second cup on not steering finishes 5th or 6th (the
+    // check "game feel: assist dial G-FEEL1"), so the young child's wins and podiums are counted on the first cup's tracks
+    if(S_('easy kid').c0.win+S_('easy lazy').c0.win<1)bad('Easy: a young child must be able to win sometimes in the first cup');
     for(const k of ['easy kid','easy lazy']){
-      if(S_(k).win<1)bad(k+': a young child must be able to win sometimes');
-      if(S_(k).top3<S_(k).n*.35)bad(k+': a young child should often finish in the top 3 ('+S_(k).top3+'/48)');
+      if(S_(k).c0.top3<S_(k).c0.n*.35)bad(k+': a young child should often finish in the top 3 of the first cup ('+S_(k).c0.top3+'/'+S_(k).c0.n+')');
       if(S_(k).win>S_(k).n*.5)bad(k+': winning without steering should not be the rule ('+S_(k).win+'/48)');
       if(S_(k).hits<=S_('easy good').hits)bad(k+': not steering should cost spins (mistakes matter)');
     }
@@ -15378,7 +15389,9 @@ run('Star Rally season 2 G-RALLY2',()=>{
       out.note.push('mirror '+mode+' '+k+': won '+s.win+'/'+s.n+', top 3 '+s.top3+', slowest '+s.tmax.toFixed(0)+' s');
     }
     if(stats['easy good'].win<stats['easy good'].n*.5)bad('Easy: a good driver should often win the mirror tracks ('+stats['easy good'].win+'/15)');
-    if(stats['easy kid'].top3<2)bad('Easy: a young child should sometimes reach the top 3 on the mirror tracks');
+    // G-FEEL1: the mirror cups come last and have the least Easy help, so steering well is worth places there (was: the young child
+    // bot, who steers only near the edge, sometimes reaches the top 3)
+    if(stats['easy good'].top3<stats['easy kid'].top3+5)bad('Easy: on the mirror tracks steering well should be worth places ('+stats['easy good'].top3+' against '+stats['easy kid'].top3+' top 3)');
     // 3. the fifth place and cup: three new layouts (not reskins: their plans differ from every other track's, forwards or mirrored)
     const woods=RL_TRACKS.woods||[];
     if(woods.length!==3||rlPl('woods').id!=='woods'||!RL_PROPS[rlPl('woods').roll]||!RL_CRIT[rlPl('woods').crit])bad('Maple Woods: 3 tracks, its own roller and crossing animal');
@@ -16577,16 +16590,20 @@ run('Hill Climb journey G-HC2',()=>{
     const r={bad:[],notes:[]},bad=m=>{if(r.bad.length<60&&!r.bad.includes(m))r.bad.push(m)};
     const keepG=S.garage,keepGr=S.grade;
     // a bot drive: 'kid' easy driving on, always on the gas; 'driver' easy off, eases off on steep ground and levels in the air;
-    // 'naive' easy off, always on the gas (what a young child does without the helper)
-    const drive=(w,i,kind,o={})=>{const H=hcNew(w,i,Object.assign({easy:kind=='kid'},o));
+    // 'naive' easy off, always on the gas (what a young child does without the helper); G-FEEL1: 'careful' the driver with
+    // easy driving on who also makes the missions' decisions: eases off before the jump over a hidden star, stops at the lookout
+    const drive=(w,i,kind,o={})=>{const H=hcNew(w,i,Object.assign({easy:kind=='kid'||kind=='careful'},o));
       while(!H.over&&H.t<(o.max||200)){
-        if(kind!='driver'){H.gas=true;H.brake=false}
+        if(kind!='driver'&&kind!='careful'){H.gas=true;H.brake=false}
         else{const air=!H.w1.g&&!H.w2.g,cx=(H.w1.x+H.w2.x)/2,err=hcWrap(hcAng(H)-(air?hcSlopeL(H.C,cx):hcSlopeL(H.C,cx,20)));
-          if(air){H.gas=err<-.12;H.brake=err>.12}else{H.gas=err<.32;H.brake=err>.6}}
+          let cap=1e9;const vx=(H.w1.x-H.w1.px)*120;
+          if(kind=='careful'){if(H.st[3].some(m=>m[0]=='star'))H.C.stars.forEach((q,k)=>{if(!H.took.has('s'+k)&&q.hm<2&&q.x-cx>-50&&q.x-cx<400)cap=130});
+            if(H.st[3].some(m=>m[0]=='stop')&&!H.stopped)for(const z of H.C.looks){const m=(z.x0+z.x1)/2-cx;if(m>-40&&m<400)cap=Math.min(cap,Math.max(0,m*.7))}}
+          if(air){H.gas=err<-.12;H.brake=err>.12}else{H.gas=err<.32&&vx<cap;H.brake=err>.6||(vx>cap+(cap<60?4:40)&&vx>0)}}
         hcStep(H,1/120)}
       return H};
     // 1. the journey's data: 6 worlds of 5 stages, every piece known, a goal, two missions, weather, checkpoints, a finish
-    const KINDS=['bolts','time','flips','air','perfect','nocrash','crates','star'],WX=['day','dusk','night','rain','snow','ash','dust'];
+    const KINDS=['bolts','time','flips','air','perfect','nocrash','crates','star','stop'],WX=['day','dusk','night','rain','snow','ash','dust'];
     if(HC_ST.length!==6||HC_ST.some(a=>a.length!==HC_SPW||HC_SPW!==5))bad('expected 6 worlds of 5 stages');
     const ids=new Set(),strs=new Set(),wxs=new Set(),use={},profs=[];
     HC_ST.forEach((ws,w)=>{const goals=new Set(),pcs=new Set();
@@ -16625,13 +16642,14 @@ run('Hill Climb journey G-HC2',()=>{
     if(before.join()!==after.join())bad('terrain is not the same when built again');
     HCW.forEach((W,w)=>{const C=hcEndless(w);if(!(C.n*10>=70000)||C.fin!=null||C.cps.length<30||C.fuel.length<8)bad('distance drive '+W.id+': '+[C.n,C.cps.length,C.fuel.length])});
     // 3. every stage driven to the flag by the young child with easy driving and by the careful driver without it; every mission won by one of them
+    //    (G-FEEL1: or by the driver who makes the missions' decisions, since holding the gas no longer wins them all)
     let kidCr=0,naiveCr=0,naiveFail=0,tk=0,td=0;
     HC_ST.forEach((ws,w)=>ws.forEach((s,i)=>{const tag=s[0]+' '+s[1];
       const K=drive(w,i,'kid'),D=drive(w,i,'driver'),N=drive(w,i,'naive',{max:120});
       if(K.result!=='win')bad(tag+': easy driving, always on the gas, did not reach the flag ('+Math.round((K.maxX-60)/20)+' m, '+K.crashes+' restarts)');
       if(D.result!=='win')bad(tag+': the driver without easy driving did not reach the flag ('+Math.round((D.maxX-60)/20)+' m, '+D.crashes+' restarts)');
       if(K.crashes>1)bad(tag+': easy driving restarted '+K.crashes+' times');
-      const b=hcBitsOf(K)|hcBitsOf(D);if(b!==7)bad(tag+': no bot won every star ('+b+')');
+      const b=hcBitsOf(K)|hcBitsOf(D)|hcBitsOf(drive(w,i,'careful'));if(b!==7)bad(tag+': no bot won every star ('+b+')');
       if(K.t>60||D.t>60)bad(tag+': longer than 60 s');
       kidCr+=K.crashes;naiveCr+=N.crashes;naiveFail+=N.result!=='win';tk+=K.t;td+=D.t}));
     if(naiveCr<kidCr*10+20)bad('easy driving should save many flips: '+kidCr+' restarts with it, '+naiveCr+' without');
@@ -16651,7 +16669,7 @@ run('Hill Climb journey G-HC2',()=>{
     if(hcTot()!==20||!stuck||!/more stars? to open Volcano Island/.test(stuck.t))bad('with only goal stars the journey should stop at Volcano Island (22 stars): '+hcTot()+' '+(stuck&&stuck.t));
     if(!/Try this one: /.test(stuck&&stuck.t||''))bad('the next goal should suggest a mission when stars are needed');
     // missions on finished stages open the next worlds
-    let guard=0;while(hcTot()<hcMax()&&guard++<200){const ng=hcNextGoal();if(ng.i==null)break;const s=HC_ST[ng.w][ng.i];const H=hcNew(ng.w,ng.i,{});H.result='win';H.over=true;H.bolts=999;H.t=1;H.crashes=0;H.flips=9;H.airs=9;H.perfect=9;H.gotStar=true;H.crates=H.crates0;hcBank(H);lines.add(ng.t);
+    let guard=0;while(hcTot()<hcMax()&&guard++<200){const ng=hcNextGoal();if(ng.i==null)break;const s=HC_ST[ng.w][ng.i];const H=hcNew(ng.w,ng.i,{});H.result='win';H.over=true;H.bolts=999;H.t=1;H.crashes=0;H.flips=9;H.airs=9;H.perfect=9;H.gotStar=true;H.stopped=true;H.crates=H.crates0;hcBank(H);lines.add(ng.t);
       HC_ST.forEach((_,w)=>{if(hcWOpen(w)&&!openOrder.includes(w)){if(w!==openOrder.length)bad('world '+w+' opened out of order');openOrder.push(w)}})}
     if(hcTot()!==90||openOrder.length!==6)bad('all 90 stars and 6 worlds: '+hcTot()+' '+openOrder);
     if(!/Every star won/.test(hcNextGoal().t))bad('the last next goal: '+hcNextGoal().t);
@@ -17566,7 +17584,7 @@ run('Brain Teasers and practice fixes R-01b',()=>{
   if(!/\.pt-ch \.pt-t\{width:var\(--pt-ts,100%\);height:var\(--pt-ts,100%\)\}/.test(rd('css/49-bt-pattern.css')))pre.push('pattern choices are not drawn at the row scale (--pt-ts)');
   if(!/setProperty\('--pt-ts'/.test(rd('js/76-bt-pattern.js')))pre.push('76-bt-pattern.js does not measure the row picture (--pt-ts)');
   // Fact Race, Should 11: the clock skips its tick while the app is hidden
-  if(!/RC\.iv=setInterval\(\(\)=>\{if\(!RC\|\|document\.hidden\)return;/.test(rd('js/54-race.js')))pre.push('the Fact Race clock does not pause when the app is hidden');
+  if(!/RC\.iv=setInterval\(\(\)=>\{if\(!RC\|\|document\.hidden(\|\|RC\.held)?\)return;/.test(rd('js/54-race.js')))pre.push('the Fact Race clock does not pause when the app is hidden');
   // the review tile has no red count bubble
   if(/hm-cnt/.test(rd('css/46-home.css')+rd('js/46-home.js')))pre.push('the red review count bubble (.hm-cnt) is still there');
   const body=()=>{
@@ -18469,6 +18487,201 @@ run('content: no magic or evolution theme CONTENT-01',()=>{
   return{problems:p,note:n+' files searched'};
 });
 
+run('navigation: one way Home NAV-01',()=>{
+  const E=require('./es-audio.js'),vm=require('vm'),p=[];
+  const rd=f=>fs.readFileSync(path.join(SRC,f),'utf8');
+  const js=fs.readdirSync(path.join(SRC,'js')).filter(f=>f.endsWith('.js')).sort();
+  const SRCJ={};for(const f of js)SRCJ[f]=rd('js/'+f);
+  // 1. Back is the arrow named "Back"; Home is the house named "Home"; no other top-left close / stop / pause buttons are left
+  for(const f of js){const t=SRCJ[f];
+    for(const m of t.matchAll(/(?:UI\.)?ibtn\(\s*'(back|home|close|pause)'\s*,\s*'([^']*)'/g)){
+      if(m[1]=='back'&&m[2]!=='Back')p.push(f+': a Back arrow named "'+m[2]+'" (name it "Back")');
+      if(m[1]=='home'&&!(f=='41-nav.js'&&m[2]=='Home'))p.push(f+': a house button outside NAV.house()');
+      if(m[1]=='close'&&m[2]=='Stop')p.push(f+': a Stop (close) button: activities use the corner house, NAV.house()');
+      if(m[1]=='pause')p.push(f+': a Pause button: games use the corner house, NAV.house()');
+    }
+    if(/id:\s*'gear'/.test(t))p.push(f+': the old gear button (Home has the labelled Grown-ups button, NAV.gateHTML)');
+  }
+  // 2. every activity screen's corner house: rounds, placement, Say it, timed sprints, the bonus game, puzzles, games
+  const house=[['50-round.js',/NAV\.house\('quit'\)/,/NAV\.wire\('quit'/],['45-placement.js',/NAV\.house\('quit'\)/,/NAV\.wire\('quit'/],['50-say.js',/NAV\.house\('quit'\)/,/NAV\.wire\('quit'/],
+    ['19-gfx.js',/speedTop[\s\S]{0,200}NAV\.house\('quit'\)/,/./],['54-race.js',/./,/NAV\.wire\('quit'/],['57-fluency.js',/./,/NAV\.wire\('quit'/],['52-balloons.js',/NAV\.house\('quit'\)/,/NAV\.wire\('quit'/],
+    ['74-teasers.js',/NAV\.house\('quit'\)/,/NAV\.wire\('quit'/],['59-game-hub.js',/o\.play \? NAV\.house\('gpause'\)/,/NAV\.ask\(\{ hold: o\.hold, leave: o\.quit \}\)/]];
+  for(const [f,a,b] of house)if(!a.test(SRCJ[f])||!b.test(SRCJ[f]))p.push(f+': no corner house wired to Go Home?');
+  // 3. every end card ends with the three choices (NAV.end3): the round, placement and every btns: of GH.end / GFX.endCard
+  let ends=0;
+  for(const f of js){const t=SRCJ[f];
+    for(const m of t.matchAll(/(GH\.end\(|GFX\.endCard\()/g)){
+      if(f=='59-game-hub.js'||f=='19-gfx.js')continue;
+      const tail=t.slice(m.index,m.index+3000),bi=tail.search(/\bbtns\s*:/);ends++;
+      if(bi<0){if(!/hcCard\(H,c\)/.test(t.slice(m.index-40,m.index)))p.push(f+': an end card without btns');continue}
+      const bt=tail.slice(bi,bi+160),ie=bt.indexOf('NAV.end3('),iu=bt.indexOf('UI.btn(');
+      if(ie<0||(iu>=0&&iu<ie))p.push(f+': an end card whose choices are not NAV.end3(): '+tail.slice(bi,bi+80).replace(/\s+/g,' '));
+    }
+  }
+  for(const m of SRCJ['62-hill.js'].matchAll(/hcCard\(H,\{/g)){const tail=SRCJ['62-hill.js'].slice(m.index,m.index+2500),bi=tail.search(/btns:/);ends++;
+    if(bi<0||!/^btns:(ptLeft\(\)<=0\?)?NAV\.end3\(/.test(tail.slice(bi)))p.push('62-hill.js: a stage card whose choices are not NAV.end3()')}
+  if(!SRCJ['18-reward-art.js'].includes("NAV.end3({ again: 'again', next: o.next ? 'nxt' : '', home: 'ehome'"))p.push('the round end (RW.done) does not use NAV.end3');
+  if(!/NAV\.end3\(\{next:'plmap',home:'plhome'/.test(SRCJ['45-placement.js']))p.push('the placement end does not use NAV.end3');
+  if(ends<14)p.push('only '+ends+' end cards found (expected the rounds\', puzzles\', sprints\' and every game\'s)');
+  // 4. hub screens: the picture bar with the right button lit
+  const hubs=[['46-home.js',"NAV.bar('home')"],['46-home.js',"NAV.bar('learn')"],['41-nav.js',"NAV.bar('learn')"],['59-game-hub.js',"NAV.bar('games')"],['74-teasers.js',"NAV.bar('puzzles')"],
+    ['56-petcare.js',"NAV.bar('pet')"],['48-shop.js',"NAV.bar('pet')"],['54-race.js',"NAV.bar('learn')"],['57-fluency.js',"NAV.bar('learn')"],['55-streak.js',"NAV.bar('')"],['40-view.js',"NAV.bar('games')"]];
+  for(const [f,s] of hubs)if(!SRCJ[f].includes(s))p.push(f+': no '+s);
+  if(!/\.gh-top:not\(\.gh-play\)/.test(SRCJ['40-view.js']))p.push('view(): the game menus do not get the bar');
+  // 5. run the helpers in the app
+  try{const ctx=E.loadApp(null),R=x=>vm.runInContext(x,ctx);
+    const tabs=R("JSON.stringify(NAV.tabs().map(t=>t.slice(0,3)))");
+    const T=JSON.parse(tabs);
+    if(T[0][0]!=='home'||T[0][1]!=='home'||T[0][2]!=='Home')p.push('the bar does not start with Home (a house): '+tabs);
+    if(T.length<4||T.length>5)p.push('the bar has '+T.length+' buttons (4-5): '+tabs);
+    if(T.some(t=>t[2].length>8))p.push('a bar label is long for a pre-reader: '+tabs);
+    for(const id of ['learn','games','pet'])if(!T.some(t=>t[0]==id))p.push('the bar has no '+id);
+    const bar=R("NAV.barHTML('games')");
+    if((bar.match(/aria-current="page"/g)||[]).length!==1||!/data-nav="games" aria-current="page"/.test(bar))p.push('the lit button is not the current one: '+bar.slice(0,200));
+    if(!/<nav class="navbar" id="navbar" aria-label="Main">/.test(bar))p.push('the bar is not a named nav');
+    const ids=h=>[...h.matchAll(/id="([^"]+)" data-go="(\w+)"/g)].map(m=>m[2]+':'+m[1]).join();
+    const e3=R("NAV.end3({again:'a1',next:'n1',home:'h1'})"),e2=R("NAV.end3({again:'a1',home:'h1'})"),e1=R("NAV.end3({next:'n1',home:'h1'})");
+    if(ids(e3)!=='again:a1,next:n1,home:h1')p.push('the end choices out of order: '+ids(e3));
+    if(ids(e2)!=='again:a1,home:h1')p.push('Next is not hidden when nothing comes next: '+ids(e2));
+    if(ids(e1)!=='next:n1,home:h1')p.push('a card with no Play again: '+ids(e1));
+    if(!/class="btn primary nv-eb e-next"/.test(e3)||!/class="btn primary nv-eb e-again"/.test(e2))p.push('the main end choice is not Next (or Play again when there is no Next)');
+    for(const [k,ic] of [['e-again','replay'],['e-next','arrow-right'],['e-home','home']]){const b=(e3.match(new RegExp('<button[^>]*'+k+'[\\s\\S]*?</button>'))||[''])[0];
+      if(!b.includes('href="#i-'+ic+'"'))p.push('the '+k+' choice does not show its icon '+ic)}
+    const h=R("NAV.house('quit')");
+    if(!/aria-label="Home"/.test(h)||!/nv-house/.test(h))p.push('the corner house: '+h);
+    const g=R("NAV.gateHTML()");
+    if(!/>Grown-ups</.test(g.replace(/<span class="nw">|<\/span>/g,''))||!/aria-label="Grown-ups: hold for 3 seconds"/.test(g))p.push('the Grown-ups button is not labelled: '+g.slice(0,160));
+    if(R('NAV.HOLD_MS')!==3000)p.push('the Grown-ups hold is not 3 seconds');
+    // a tap never opens Grown-ups: the click handler opens the question, only the 3-second timer calls grown()
+    const gb=SRCJ['41-nav.js'].slice(SRCJ['41-nav.js'].indexOf('gateBind()'),SRCJ['41-nav.js'].indexOf('  quiz() {'));
+    if(!/setTimeout\(\(\) => \{ done = true; stop\(\); ring\(1\); SFX\.chime\(\); grown\(\); \}, NAV\.HOLD_MS\)/.test(gb)||!/g\.onclick = \(\) => \{\s*if \(done\) return;\s*NAV\.quiz\(\);/.test(gb))
+      p.push('the Grown-ups gate: a tap must ask the question, only a 3-second hold opens Grown-ups');
+    // the question: from 6 x 6 to 9 x 9, a wrong answer does not open Grown-ups
+    const qz=SRCJ['41-nav.js'].slice(SRCJ['41-nav.js'].indexOf('  quiz() {'));
+    if(!/R\(6, 9\), b = R\(6, 9\)/.test(qz)||!/inp\.value\.trim\(\) === String\(a \* b\)\) \{ s\.close\(\); grown\(\)/.test(qz))p.push('the grown-ups question');
+  }catch(e){p.push('the helpers could not run: '+String(e.message||e).split('\n')[0])}
+  // the light end: GH.end({light: true}) is NAV.light, a banner (not an .ovl card) with the same three choices, Next by itself after 2 s
+  const lt=SRCJ['41-nav.js'].slice(SRCJ['41-nav.js'].indexOf('  light(o = {}) {'),SRCJ['41-nav.js'].indexOf('  // ---- Grown-ups gate'));
+  if(!/if \(o\.light\) return NAV\.light\(o\);/.test(SRCJ['59-game-hub.js'])||!/LIGHT_MS: 2000,/.test(SRCJ['41-nav.js'])||!/NAV\.end3\(\{ again: o\.again \? 'lagain' : '', next: o\.next \? 'lnext' : '', home: 'lhome' \}\)/.test(lt)
+    ||!/if \(o\.next\) t = setTimeout\(/.test(lt)||!/pointerdown', \(\) => \{ clearTimeout\(t\)/.test(lt)||/\bovl\b/.test(lt))p.push('the light end (GH.end {light: true}): a banner with NAV.end3, Next after 2 s unless touched');
+  if(/light:\s*true/.test(js.filter(f=>f!='59-game-hub.js'&&f!='41-nav.js').map(f=>SRCJ[f]).join('')))p.push('a game uses the light end already (the next batch switches games over)');
+  // 6. no save field added: NAV keeps nothing in S
+  if(/\bS\.\w+\s*=/.test(SRCJ['41-nav.js']))p.push('41-nav.js writes to the save');
+  return{problems:p,note:ends+' end cards'};
+});
+
+// ---- G-FEEL1: game feel, the assist dial (src/js/62-hill.js, src/js/63-game-race.js, src/js/80-grown.js) ----
+// An expert review measured with bots that holding the gas won every Hill Climb stage with 3 stars under Easy driving, and that a
+// Star Rally car nobody steers reached the podium in Easy. Hill Climb now has a driving-help dial (0-3, Auto by default) and missions
+// that need a decision (the hidden star sits low under a jump: ease off; the lookout wants a stop: brake and wait); Star Rally's Easy
+// helps less cup by cup. Simple, deterministic bots in the simulations, no browser:
+// Hill: 'gas' only holds the gas; 'careful' levels the car in the air, eases off on steep ground, slows to 130 px/s for the 20 m
+// before a hidden star and brakes to a stop at the lookout. Rally: 'idle' never steers; 'competent' is the G-02b 'good' bot (steers
+// round hazards ahead, aims at pads and pick-ups, keeps off a divider).
+run('game feel: assist dial G-FEEL1',()=>{
+  const p=[],rd=f=>fs.readFileSync(path.join(SRC,f),'utf8');
+  function T(){
+    const r={bad:[],notes:[]},bad=m=>{if(r.bad.length<60&&!r.bad.includes(m))r.bad.push(m)};
+    const keepG=S.garage,keepGr=S.grade,keepR=S.rally;
+    // ---- Hill Climb ----
+    const careful=H=>{const C=H.C,air=!H.w1.g&&!H.w2.g,cx=(H.w1.x+H.w2.x)/2,err=hcWrap(hcAng(H)-(air?hcSlopeL(C,cx):hcSlopeL(C,cx,20))),vx=(H.w1.x-H.w1.px)*120,ms=H.st[3].map(m=>m[0]);
+      let cap=1e9;
+      if(ms.includes('star'))C.stars.forEach((q,k)=>{if(!H.took.has('s'+k)&&q.hm<2&&q.x-cx>-50&&q.x-cx<400)cap=130});
+      if(ms.includes('stop')&&!H.stopped)for(const z of C.looks){const m=(z.x0+z.x1)/2-cx;if(m>-40&&m<400)cap=Math.min(cap,Math.max(0,m*.7))}
+      if(air){H.gas=err<-.12;H.brake=err>.12}else{H.gas=err<.32&&vx<cap;H.brake=err>.6||(vx>cap+(cap<60?4:40)&&vx>0)}};
+    const drive=(w,i,kind,as)=>{const H=hcNew(w,i,{as});while(!H.over&&H.t<120){if(kind=='gas'){H.gas=true;H.brake=false}else careful(H);hcStep(H,1/120)}return H};
+    // 1. every stage needs a decision: a hidden star low in a dip just past a jump, or a stop at the lookout; no loose time targets
+    HC_ST.forEach((ws,w)=>ws.forEach(s=>{const C=hcCourse(s,w),ks=s[3].map(m=>m[0]),tag=s[0]+' '+s[1];
+      const star=ks.includes('star')&&C.stars.length&&C.stars.every(q=>q.hm<=1&&C.kicks.some(k=>q.x>k.x1&&q.x-k.x1<=100)&&hcH(C,q.x)<hcH(C,q.x-100)-20);
+      const stop=ks.includes('stop')&&C.looks.length==1&&C.looks[0].x1-C.looks[0].x0>=100;
+      if(!star&&!stop)bad(tag+': no mission that needs a decision (a low hidden star past a jump, or the lookout)');
+      if(ks.includes('stop')&&!C.looks.length)bad(tag+': a stop mission with no lookout');
+      if(!ks.includes('stop')&&C.looks.length)bad(tag+': a lookout with no stop mission')}));
+    // 2. the dial: holding the gas finishes more stages with more help; no help is what Easy off was (17 of 30 not finished, R-review)
+    const lv=[0,1,2,3],G={},K={},rows=[];
+    for(const a of lv){G[a]={fin:0,s3:0,w3:[]};K[a]={fin:0,s3:0,miss:[]}}
+    HC_ST.forEach((ws,w)=>ws.forEach((s,i)=>{const row={id:s[0]};
+      for(const a of lv){const g=drive(w,i,'gas',a),c=drive(w,i,'careful',a),gb=hcBitsOf(g),cb=hcBitsOf(c);
+        G[a].fin+=g.result=='win';if(gb==7){G[a].s3++;G[a].w3.push(s[0])}
+        K[a].fin+=c.result=='win';if(cb==7)K[a].s3++;else K[a].miss.push(s[0]+':'+cb);
+        if(c.result!='win'&&a>=2)bad(s[0]+': the careful bot did not finish with driving help '+a);
+        row['g'+a]=hcBits(gb);row['c'+a]=c.result=='win'?hcBits(cb):'-';
+        if(a==3)row.t=c.t}
+      // a gas-only drive never wins 3 stars beyond the first world, whatever the help (Auto for a K child is one of these)
+      for(const a of lv)if(w>0&&row['g'+a]==3)bad(s[0]+': holding the gas won 3 stars with driving help '+a);
+      // time targets from the careful bot's drive with Most help: reachable, and at most a third over it (+2 s)
+      for(const m of s[3])if(m[0]=='time'&&!(m[1]>=row.t&&m[1]<=row.t*1.35+2))bad(s[0]+': time target '+m[1]+' s against the careful bot\'s '+row.t.toFixed(1)+' s');
+      rows.push(row)}));
+    for(const a of lv)if(K[a].s3<(a>=2?30:a==1?26:24))bad('careful bot, driving help '+a+': '+K[a].s3+' of 30 stages with 3 stars ('+K[a].miss.join(' ')+')');
+    if(K[1].fin<27)bad('careful bot, Little help: should finish most stages ('+K[1].fin+' of 30)');
+    if(!(G[3].fin==30&&G[3].fin>=G[2].fin&&G[2].fin>=G[1].fin&&G[1].fin>=G[0].fin&&G[0].fin<=20&&G[1].fin<G[2].fin))bad('the dial: gas-only finishes '+lv.map(a=>G[a].fin).join('/')+' stages at help 0/1/2/3');
+    r.notes.push('Hill gas-only finished '+lv.map(a=>G[a].fin).join('/')+' and 3 stars '+lv.map(a=>G[a].s3).join('/')+' at help 0/1/2/3; careful finished '+lv.map(a=>K[a].fin).join('/')+', 3 stars '+lv.map(a=>K[a].s3).join('/'));
+    r.notes.push('per world gas 3-star at help 3: '+HC_ST.map((_,w)=>rows.slice(w*5,w*5+5).filter(x=>x.g3==3).length).join(',')+'; careful 3-star at help 1: '+HC_ST.map((_,w)=>rows.slice(w*5,w*5+5).filter(x=>x.c1==3).length).join(','));
+    // 3. Auto: from the grade (K: Most help), one step down for each world with 9 stars, one up after struggling, back down after a clean win
+    S.garage={};S.grade=0;let g=garageS();
+    if(hcAsPick()!=='auto'||hcAsLevel()!==3)bad('a fresh K child: Auto at Most help, got '+hcAsPick()+' '+hcAsLevel());
+    S.grade=3;if(hcAsLevel()!==1)bad('3rd grade starts at Little help');S.grade=5;if(hcAsLevel()!==0)bad('5th grade starts with no help');S.grade=0;
+    for(const s of HC_ST[0])g.st[s[0]]=7;if(hcAsLevel()!==2)bad('15 stars in Green Meadow: one step down to Some help ('+hcAsLevel()+')');
+    for(const s of HC_ST[1])g.st[s[0]]=7;if(hcAsLevel()!==1)bad('two worlds won: Little help ('+hcAsLevel()+')');
+    const run1=(cr,win)=>{const H=hcNew(1,2,{as:hcAsLevel(),auto:true});H.crashes=cr;H.result=win?'win':null;H.over=true;return hcAsNote(H)};
+    run1(4,false);if(hcAsLevel()!==1)bad('one struggling drive does not change the help yet');run1(3,false);if(hcAsLevel()!==2||g.asu!==1)bad('two struggling drives on a stage: one step up ('+hcAsLevel()+')');
+    run1(0,true);if(hcAsLevel()!==1||g.asu)bad('a clean win: back down ('+hcAsLevel()+')');
+    // a drive's own step up: three crashes between two checkpoints with Auto
+    {const H=hcNew(0,0,{as:1,auto:true});for(let k=0;k<3;k++)hcCrash(H,'flip');if(H.as!==2||H.asUp!==1)bad('three crashes at one checkpoint: Auto turns the help up in the drive ('+H.as+')');
+     const F=hcNew(0,0,{as:1});for(let k=0;k<3;k++)hcCrash(F,'flip');if(F.as!==1)bad('a fixed level never changes in the drive')}
+    // 4. the save: by id with defaults, the old Easy switch read as a level, never rewritten
+    const old=(e)=>{S.garage=Object.assign({bolts:40,st:{m1:3}},e===undefined?{}:{easy:e});garageS();const keepEasy=S.garage.easy;return[hcAsPick(),keepEasy]};
+    let [a1,e1]=old(true);if(a1!==3||e1!==true)bad('old save with Easy driving on: Most help, easy kept ('+a1+')');
+    [a1,e1]=old(false);if(a1!==0||e1!==false)bad('old save with Easy driving off: No help, easy kept ('+a1+')');
+    [a1]=old();if(a1!=='auto'||'as' in S.garage||'asu' in S.garage||'asf' in S.garage)bad('old save without the switch: Auto, nothing added ('+a1+')');
+    S.garage={as:'x',asu:7,asf:{s:'zz',n:1},easy:true};garageS();if('as' in S.garage||'asu' in S.garage||'asf' in S.garage||hcAsPick()!==3)bad('damaged driving help fields: '+JSON.stringify(S.garage).slice(0,120));
+    S.garage={as:2,asu:1,asf:{s:'m2',n:1}};garageS();if(S.garage.as!==2||S.garage.asu!==1||S.garage.asf.s!=='m2'||hcAsLevel()!==2)bad('good driving help fields are kept');
+    // Grown-ups reads the choice without the game's code and without creating the garage
+    delete S.garage;if(hcAsGrown()!=='auto'||'garage' in S)bad('Grown-ups: Auto, and S.garage not created');S.garage={easy:false};if(hcAsGrown()!==0)bad('Grown-ups: an old Easy off is No help');
+    S.garage={as:'auto',easy:true};if(hcAsGrown()!=='auto')bad('Grown-ups: the new choice wins over the old switch');
+    S.garage=keepG;S.grade=keepGr;
+    // ---- Star Rally ----
+    const bot=(kind,st)=>{
+      if(kind=='idle')return{};
+      const P=st.P,T=st.T,seg=rlMod(Math.floor(P.d/RL_SEG),T.n),cur=T.cv[seg],sp=P.v/RL_VMAX,rw=T.rw[seg];let tx=0;
+      for(let j=1;j<30;j++){const s=(seg+j)%T.n,px=T.padAt[s];if(px!=null){tx=px;break}if(T.pkAt[s]){tx=T.pk[T.pkAt[s][0]].x;break}}
+      const bd=[];
+      for(let j=1;j<16;j++){const s=(seg+j)%T.n;
+        if(T.obAt[s])for(const i of T.obAt[s])bd.push(T.ob[i].x);
+        if(T.mvAt[s])for(const i of T.mvAt[s])bd.push(rlMvX(T.mv[i],st.rt+j*RL_SEG/Math.max(2000,P.v)));
+        if(T.sfAt[s])for(const [a,b] of T.sfAt[s])bd.push(b-a<1.2?(a+b)/2:a<0?Math.min(b,0)-.3:Math.max(a,0)+.3);
+        if(T.dv[s]){const f=T.forks.find(f=>rlMod(s-f[0],T.n)<f[1]-f[0]+1);tx=f?f[2]*.5:(P.x<0?-.55:.55)}}
+      for(const b of bd)if(Math.abs(b-tx)<.4){const c=[-.6,0,.6].map(v=>v*rw).filter(v=>bd.every(q=>Math.abs(q-v)>.38));if(c.length)tx=c.reduce((a,v)=>Math.abs(v-P.x)<Math.abs(a-P.x)?v:a)}
+      return{steer:Math.max(-1,Math.min(1,(tx-P.x)*2.5+.35*cur*sp*sp*(st.mode=='easy'?.3:1)/(1.7*Math.max(.3,sp))))}};
+    const race=(tid,mode,kind,seed,cup)=>{const st=rlNew(tid,{mode,seed,tier:cup.tier,wx:cup.races.find(q=>q[0]==tid)[1]});let n=0;
+      while(!st.done&&n<60*170){rlStep(st,bot(kind,st));st.ev.length=0;n++}return st.done?st.P.place:7};
+    const cupRow=[];let idleLate=[],gapSum=0,gapN=0;
+    RL_CUPS.forEach((cup,ci)=>{const pl={idle:[],competent:[]};
+      for(const [tid] of cup.races)for(const seed of [1,2])for(const k of ['idle','competent'])pl[k].push(race(tid,'easy',k,seed,cup));
+      const avg=a=>a.reduce((x,y)=>x+y,0)/a.length,pod=a=>a.filter(x=>x<=3).length;
+      cupRow.push(cup.id+' idle '+pl.idle.join('')+' competent '+pl.competent.join(''));
+      if(ci>0){idleLate.push(...pl.idle);gapSum+=avg(pl.idle)-avg(pl.competent);gapN++;
+        if(pl.idle.some(x=>x<5))bad('Easy, '+cup.name+': a car nobody steers finished '+pl.idle.join(',')+' (should be 5th or 6th from the second cup on)');
+        if(avg(pl.idle)-avg(pl.competent)<2.3)bad('Easy, '+cup.name+': steering well should be worth about 3 places ('+avg(pl.idle).toFixed(1)+' against '+avg(pl.competent).toFixed(1)+')')}
+      if(pod(pl.competent)<pl.competent.length/2)bad('Easy, '+cup.name+': a child who steers well should usually reach the podium ('+pl.competent.join(',')+')');
+      if(ci==0&&pod(pl.idle)<pl.idle.length/2)bad('Easy, first cup: the youngest still reach the podium without steering ('+pl.idle.join(',')+')')});
+    if(gapSum/gapN<3)bad('Easy from the second cup on: steering well is worth '+(gapSum/gapN).toFixed(1)+' places (3 or more)');
+    // Pro stays as it was: no Easy help, and nobody steering is last
+    const pc=RL_CUPS[1],pp=pc.races.map(([tid])=>race(tid,'pro','idle',1,pc));
+    if(rlNew('meadow-0',{mode:'pro'}).help!==0||pp.some(x=>x<6))bad('Pro: no Easy help, and a car nobody steers is last ('+pp.join(',')+')');
+    r.notes.push('Rally Easy places (2 seeds a race): '+cupRow.join('; ')+'; from cup 2 steering is worth '+(gapSum/gapN).toFixed(1)+' places');
+    S.rally=keepR;
+    return r}
+  const o=(()=>eval(js+';('+T.toString()+')()'))();
+  for(const m of o.bad)p.push(m);
+  // the Grown-ups row and the Hill menu switch: tokens only in the new CSS, the choice saved per child
+  const gr=rd('js/80-grown.js'),css=rd('css/48-setup-grown-care.css');
+  if(!/GW\.seg\('hcas',\['auto',3,2,1,0\],hcAsGrown\(\)/.test(gr)||!/S\.garage\.as=v=='auto'\?'auto':\+v;save\(\)/.test(gr))p.push('Grown-ups: no Hill Climb driving help choice saved');
+  for(const n of ['Auto','Most help','Some help','Little help','No help'])if(!gr.includes("'"+n+"'"))p.push('Grown-ups: the choice '+n+' is missing');
+  if(/#gw-hcas[^}]*#[0-9a-fA-F]{3,8}\b/.test(css))p.push('48-setup-grown-care.css: a raw colour in the driving help row');
+  return{problems:[...new Set(p)].slice(0,50),note:o.notes.join('; ')};
+});
+
 // ---- report ----
 Promise.all(PENDING).then(()=>{
 let failed=0;
@@ -18479,6 +18692,8 @@ for(const r of results){
   if(r.problems.length>10)console.log('        ... and '+(r.problems.length-10)+' more');
   for(const k of r.unusedKnown)console.log('        note: KNOWN exception no longer needed: '+k);
 }
-console.log(failed?failed+' of '+results.length+' checks FAILED':'all '+results.length+' checks passed');
+const skipNote=ONLY?' ('+SKIPPED+' skipped by --only '+ONLY.join(',')+')':'';
+if(ONLY&&!results.length){console.log('no check name contains '+ONLY.join(' or ')+'; '+SKIPPED+' skipped');process.exitCode=1;return}
+console.log((failed?failed+' of '+results.length+' checks FAILED':'all '+results.length+' checks passed')+skipNote);
 process.exitCode=failed?1:0;
 });

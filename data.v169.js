@@ -1,5 +1,5 @@
-/* Star School data banks v168. BUILT by tools/build.py from src/data/*.js (sorted): never edit by hand.
-   index.html v168 loads this file with <script src="data.v168.js"> between the code and the start-up script. */
+/* Star School data banks v169. BUILT by tools/build.py from src/data/*.js (sorted): never edit by hand.
+   index.html v169 loads this file with <script src="data.v169.js"> between the code and the start-up script. */
 /* ---------- object art set B: 40 pictures (P4-14; DESIGN_SYSTEM.md section 6.5) ----------
    The words children see most that set A (src/js/16-art-a.js) did not draw: picture words, Spanish units (animals, food, body,
    house, clothes, school, transport), riddles, Memory Match, Discover, vocabulary and counting. Same style, rules and limits
@@ -9033,4 +9033,4 @@ var BTW = {
     'glean parts strap traps tea eat ate nip pin top pot opt tar art rat now own won tub but bus iced mono low flea',
 };
 
-var DATA_VER='v168'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var DATA_VER='v169'; // last line: the whole file ran (checked by dataReady() before the app starts)

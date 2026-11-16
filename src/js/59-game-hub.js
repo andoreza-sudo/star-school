@@ -17,8 +17,9 @@
      lock     optional () => '' or a reason the game cannot be opened yet (shown on the card and said in a toast)
      tapToPlay  the selector of the button on the game's first screen that starts play (smoke taps it: P4-16 block)
      saved    optional line for the time-up card ('Your picture is saved.')
-   Each screen of the game draws its top bar with GH.top(id, o) and wires it with GH.wire(o) after view(); play screens get a Pause
-   button that opens the shared sheet (GH.pause); game ends use GH.end(id, o); time running out uses timeUpOverlay() (64-gtimer.js).
+   Each screen of the game draws its top bar with GH.top(id, o) and wires it with GH.wire(o) after view(); play screens get the
+   corner house (NAV-01, #gpause) that pauses and asks "Go Home?" (GH.pause, NAV.ask); the game's menus get the picture bar (view());
+   game ends use GH.end(id, o) with NAV.end3() choices; time running out uses timeUpOverlay() (64-gtimer.js).
 
    Drawings follow the object-art rules of DESIGN_SYSTEM 6.5: light from the top left, shade / base / highlight per area, a soft ink
    contact shadow, roles var(--a-x) only (class "art"), no ids, gradients, filters, <use>, text or raw colours. Decoration is aria-hidden.
@@ -220,6 +221,7 @@ const GH = {
   <section class="gh-earn"><h2>${ico('ticket', 26)}<span>How to earn more game time</span></h2>
    <ul>${earn.map(([i, t, v]) => `<li>${R_(i)}<span>${esc(t)}</span><b>${esc(v)}</b></li>`).join('')}</ul>
    <p>Replaying a stop you already mastered, or the same stop over and over, earns less.</p></section></div></div>`);
+    NAV.bar('games');
     $('#back').onclick = () => home();
     if ($('#learn')) $('#learn').onclick = () => home();
     for (const g of GH.games) {
@@ -338,13 +340,13 @@ const GH = {
   },
 
   /* ---- the shared top bar ---- */
-  // id: the registered game. o: {play: true for a play screen (Pause instead of Back), sub: text under the name (escaped here),
+  // id: the registered game. o: {play: true for a play screen (the corner house instead of Back, NAV-01), sub: text under the name (escaped here),
   //   chips: html before the time chip, tools: html of icon buttons (play screens), sound: html of the sound button, timeId: the time
   //   chip's id (default gtm), hud: true over a full-screen canvas}
   top(id, o = {}) {
     const g = GH.get(id) || { name: id, icon: 'gamepad', p: 'play' };
     GH.cur = g.id || null;
-    const lead = o.play ? UI.ibtn('pause', 'Pause', { size: 'sm', id: 'gpause', cls: 'gh-pz' }) : UI.ibtn('back', 'Back', { size: 'sm', id: 'back' });
+    const lead = o.play ? NAV.house('gpause') : UI.ibtn('back', 'Back', { size: 'sm', id: 'back' });
     const cls = 'top tbar gh-top s-' + g.p + (o.play ? ' gh-play' : '') + (o.hud ? ' gh-hud' : '') + (o.tools ? ' gh-hastools' : '') +
       ((o.tools || '').split('<button').length > 2 ? ' gh-wrap' : '');
     return `<div class="${cls}" data-g="${esc(g.id || id)}">${lead}<div class="ttl gh-ttl"><span class="gh-tb">${ico(g.icon || 'gamepad', 24)}</span>` +
@@ -352,7 +354,7 @@ const GH = {
       (o.tools ? `<span class="gh-tools">${o.tools}</span>` : '') + (o.chips || '') +
       UI.chip('ticket', fmtT(ptLeft()), { aria: 'Game time left', id: o.timeId || 'gtm' }) + (o.sound || '') + '</div>';
   },
-  // after view(): back runs o.back; Pause opens the sheet, whose Quit runs o.quit
+  // after view(): back runs o.back; the corner house opens Go Home?, whose tick runs o.quit (it saves) and then goes Home
   wire(o = {}) {
     const b = $('#back');
     if (b && o.back) b.onclick = o.back;
@@ -370,33 +372,11 @@ const GH = {
     UI.setChip(el, up != null ? Math.max(0, Math.ceil(up)) + 's' : fmtT(ptLeft()));
   },
 
-  /* ---- the pause sheet: Keep playing / Quit. The game-time clock holds while it is open; o.hold(true|false) pauses the game ---- */
+  /* ---- the corner house's sheet (NAV-01): Go Home? with the tick (o.quit, then Home) and Keep playing. The game-time clock holds
+     while it is open (GH.held, set by NAV.ask); o.hold(true|false) pauses the game ---- */
   pause(o = {}) {
     if (GH.held) return;
-    const g = GH.get(GH.cur) || { name: 'Game', p: 'play' };
-    GH.held = true;
-    if (o.hold) o.hold(true);
-    let quit = false;
-    const s = UI.sheet(`<div class="gh-sheet s-${g.p}"><div class="gh-scpic" style="${GH.sky(g)}">${GH.pic(g.id)}</div>` +
-      `<h2>Paused</h2><p>${UI.t(g.name)} is waiting for you. Your game time stops while you rest.</p>` +
-      `<div class="acts gh-acts">${UI.btn('Keep playing', { kind: 'primary', size: 'lg', icon: 'play', id: 'gresume', wide: true })}` +
-      `${UI.btn('Quit', { icon: 'close', id: 'gquit', wide: true })}</div></div>`, {
-      onClose: () => {
-        GH.held = false;
-        if (!quit && o.hold) o.hold(false);
-      },
-    });
-    s.el.querySelector('#gresume').onclick = () => {
-      SFX.pop(2);
-      s.close();
-    };
-    s.el.querySelector('#gquit').onclick = () => {
-      quit = true;
-      s.close();
-      SFX.whoosh();
-      if (o.quit) o.quit();
-    };
-    return s;
+    return NAV.ask({ hold: o.hold, leave: o.quit });
   },
 
   /* ---- the end-of-game card (over a dim backdrop; append is done here; returns the overlay so callers wire their buttons) ----
@@ -404,7 +384,10 @@ const GH = {
          stars (0-3 or null), tag (a "New record!" line), stats: [[value, label, icon]], extra (html, e.g. a gauge), lines: [[icon, html]],
          btns (html: buttons with the caller's ids)} */
   end(id, o = {}) {
-    const g = GH.get(id || GH.cur) || { name: 'Game', p: 'play' };
+    // NAV-01: {light: true, title, again, next, home} (functions) gives the light end instead: a banner with the same three choices
+    // that goes on to Next by itself after 2 s unless touched (NAV.light), for chaining short stages
+    if (o.light) return NAV.light(o);
+    const g =GH.get(id || GH.cur) || { name: 'Game', p: 'play' };
     const el = document.createElement('div');
     el.className = 'ovl rw-ovl gh-ovl';
     const stats = (o.stats || []).filter(Boolean);

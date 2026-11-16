@@ -6,6 +6,9 @@
    - Easy (default for Pre-K to 2nd grade): the car keeps its speed by itself; two big buttons (or a touch on the left or right
      half of the road) steer; a steering helper keeps the car near the road. Pro (default from 3rd grade, switchable): hold Go to
      go faster (but wide in tight bends), hold a turn through a bend at speed to drift, let go for a zoom.
+     G-FEEL1: Easy helps most in the first cup and less in each later one (RL_EASY_HELP): a weaker steering helper and catch-up,
+     longer spins, longer zooms from pads and boost stars, and a kart that eases off when nobody steers, so from the second cup on
+     a car that is never steered finishes 5th or 6th while a child who steers round hazards and over pads still reaches the podium.
    - G-02b: 12 tracks, each with its own layout and length (sweepers, S-bends, hairpins, city corners, big hills and drops, long
      straights, tunnels, bridges with rails, narrow piers, two-way splits with a faster side) and its own hazards (puddles, sand,
      ice, cones, rolling hay rolls / barrels / snowballs, crossing ducks / crabs / penguin chicks). Pick-ups: a boost star and a
@@ -1099,12 +1102,27 @@ const RL_CU = {
   easy: { base: [.73, .75, .77, .79, .82], ka: .2, kb: .07, lo: .56, hi: 1.12, miss: .4, tier: .015 },
   pro: { base: [.9, .92, .94, .96, .98], ka: .06, kb: .03, lo: .9, hi: 1.05, miss: .2, tier: .02 },
 };
+// G-FEEL1: Easy's help by cup (st.help, from the cup the track belongs to: cup races, single races and today's twist alike; the
+// rlNew option help overrides it). 1 is the full help of the first cup, where the youngest can still reach the podium without
+// steering; it is less in each later cup, so steering round hazards, pads and boost stars are worth 3-4 places. As the help goes
+// from 1 to 0, Easy moves to RL_EASY_LOOSE: the catch-up of a rival in the lead (ka, lo), the rivals' speeds (base, the same spread
+// as Easy's, a little closer together), the chance a rival misses a hazard (miss); the player's spins grow up to 1 + spin times
+// longer and the smaller Easy hit box grows back; pads and boost stars last up to 1 + zoom times longer; the slowdown near the
+// finish and the steering helper fade. With no steering at all for idleT seconds (hands off the wheel) the kart eases off by idle
+// (the first cup: never). Pro has none of it (help 0, its own catch-up). Tuned with the tools/test.js bots (G-FEEL1).
+const RL_EASY_HELP = [1, .35, .3, .25, .2, .2, .15, .1, .1, .1];
+const RL_EASY_LOOSE = { ka: .05, lo: .9, base: [.75, .765, .78, .795, .81], spin: .5, zoom: .6, miss: .2, idle: .1, idleT: 3 };
+// in Easy a boost pad or a boost star lasts longer in later cups (a clean line is worth more)
+const rlZoom = st => (st.mode == 'easy' ? 1 + RL_EASY_LOOSE.zoom * (1 - st.help) : 1);
 // o: {seed, mode, quiz, grade, tier (0-3; default the track's cup), wx (weather; default by seed), up (upgrades), trial (no
 // rivals, laps timed), ghost ({ms, g} of the best lap to race against)}
 function rlNew(tid, o = {}) {
   const T = rlTrack(tid), t = RL_TRK[tid], rnd = rlRng(o.seed || 1), mode = o.mode == 'pro' ? 'pro' : 'easy', pl = T.pl;
   const lane = k => (k % 2 ? .45 : -.45), row = k => (RL_START - 3 - Math.floor(k / 2) * 3.2) * RL_SEG;
-  const CU = RL_CU[mode], tier = o.tier != null ? rlNum(o.tier, 0, 3) : t.cup || 0, base = CU.base.map(b => b * (1 + tier * CU.tier));
+  const help = mode == 'easy' ? (o.help != null ? Math.max(0, Math.min(1, +o.help || 0)) : RL_EASY_HELP[Math.min(RL_EASY_HELP.length - 1, t.cup || 0)]) : 0;
+  const CU = RL_CU[mode], tier = o.tier != null ? rlNum(o.tier, 0, 3) : t.cup || 0;
+  // G-FEEL1: in Easy the rivals' speeds move from the first cup's spread towards RL_EASY_LOOSE.base as the help goes down
+  const base = CU.base.map((b, i) => b * (1 + tier * CU.tier) + (mode == 'easy' ? (RL_EASY_LOOSE.base[i] - b) * (1 - help) : 0));
   for (let i = base.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [base[i], base[j]] = [base[j], base[i]]; }
   const wx = RL_WX[o.wx] ? o.wx : rnd() < .4 && pl.wx.length > 1 ? pl.wx[1 + Math.floor(rnd() * (pl.wx.length - 1))] : pl.wx[0];
   const slots = [0, 1, 2, 3, 5];
@@ -1112,7 +1130,7 @@ function rlNew(tid, o = {}) {
     base: base[i], wob: 0, wobT: rnd() * 3, fin: 0, e: (rnd() - .5) * .05, spin: 0, dizzy: 0, miss: {}, fs: 0, hits: 0 }));
   const up = {};
   for (const [k] of RL_UPG) up[k] = rlNum((o.up || {})[k], 0, 3);
-  const st = { tid, T, laps: t.laps, mode, quiz: !!o.quiz && !o.trial, grade: o.grade, rnd, cd: 3, rt: 0, done: false, ev: [], cars, tier, wx, W: RL_WX[wx], up,
+  const st = { tid, T, laps: t.laps, mode, help, quiz: !!o.quiz && !o.trial, grade: o.grade, rnd, cd: 3, rt: 0, done: false, ev: [], cars, tier, wx, W: RL_WX[wx], up,
     trial: !!o.trial, fin: RL_START * RL_SEG + t.laps * T.L, taken: new Int16Array(T.sp.length), pkT: new Int16Array(T.pk.length),
     kn: new Float32Array(T.ob.length).fill(-9), knL: new Int16Array(T.ob.length), knS: new Int8Array(T.ob.length), padKey: -1, seen: {},
     P: { d: row(o.trial ? 1 : 4), x: o.trial ? 0 : lane(4), v: 0, s: 0, vx: 0, dh: 0, dsp: 0, drifting: false, boost: 0, bumpT: 0, spin: 0, spinD: 0,
@@ -1166,7 +1184,7 @@ function rlCrash(st, car, why, sev = 0) {
   }
   const bonk = why == 'bonk';
   let dur = easy ? (bonk ? .5 : .75) : (bonk ? .65 : .95 + .6 * Math.min(1, sev));
-  if (me) dur *= 1 - .15 * st.up.bumper;
+  if (me) dur *= (1 - .15 * st.up.bumper) * (easy ? 1 + RL_EASY_LOOSE.spin * (1 - st.help) : 1); // G-FEEL1: longer in later cups
   car.spin = car.spinD = dur;
   car.v *= easy ? .6 : bonk ? .55 : .42;
   car.hits = (car.hits || 0) + 1;
@@ -1197,7 +1215,7 @@ function rlWall(st, car, side, at, vin) {
 }
 // did a car at x hit a cone, a rolling thing or an animal while moving from d0 to d1? (the Easy hit box is a little smaller)
 function rlHits(st, car, d0, d1) {
-  const T = st.T, L = T.L, k = st.mode == 'easy' ? .78 : 1, me = car === st.P;
+  const T = st.T, L = T.L, me = car === st.P, k = st.mode == 'easy' ? (me ? 1 - .22 * st.help : .78) : 1; // G-FEEL1: the player's smaller box grows back in later cups
   const s0 = Math.floor(d0 / RL_SEG), s1 = Math.floor(d1 / RL_SEG);
   for (let s = s0; s <= s1; s++) {
     const seg = rlMod(s, T.n), oa = T.obAt[seg], ma = T.mvAt[seg];
@@ -1224,7 +1242,7 @@ function rlHits(st, car, d0, d1) {
       const lap = Math.floor(z / L) + 1;
       if (st.pkT[i] == lap || Math.abs(car.x - p.x) > .3) continue;
       st.pkT[i] = lap;
-      if (p.k == 'star') car.boost = Math.max(car.boost, 1.6 * (1 + .15 * st.up.turbo));
+      if (p.k == 'star') car.boost = Math.max(car.boost, 1.6 * (1 + .15 * st.up.turbo) * rlZoom(st));
       else car.shield = 14;
       st.ev.push(['get', p.k]);
     }
@@ -1240,7 +1258,7 @@ function rlLook(st, c) {
     if (T.sfAt[seg]) for (const [x0, x1, k] of T.sfAt[seg]) if (x1 - x0 < 1.2) xs.push([(x0 + x1) / 2, 's' + seg + k]);
     for (const [x, key] of xs) {
       if (Math.abs(x - c.tx) > .34) continue;
-      if (c.miss[key] == null) c.miss[key] = st.rnd() < CU.miss;
+      if (c.miss[key] == null) c.miss[key] = st.rnd() < (st.mode == 'easy' ? RL_EASY_LOOSE.miss + (CU.miss - RL_EASY_LOOSE.miss) * st.help : CU.miss);
       if (c.miss[key]) continue;
       const w = Math.max(.6, T.rw[seg]), alt = [-.5, 0, .5].map(v => v * w).filter(v => Math.abs(v - x) > .38);
       if (alt.length) c.tx = alt.reduce((b, v) => (Math.abs(v - c.x) < Math.abs(b - c.x) ? v : b));
@@ -1259,6 +1277,8 @@ function rlStep(st, inp = {}) {
   st.rt += dt;
   const seg = rlMod(Math.floor(P.d / RL_SEG), n), cur = T.cv[seg], sp = P.v / RL_VMAX, rw = T.rw[seg];
   let steer = Math.max(-1, Math.min(1, +inp.steer || 0));
+  // G-FEEL1: hands off the wheel for a while (Easy, later cups): the kart eases off a little until the child steers again
+  P.idle = steer ? 0 : (P.idle || 0) + dt;
   if (P.spin > 0) steer = 0;
   // the surface: puddles slip and slow, sand slows, ice slides; rain or snow makes it a little worse; grippy tyres help
   const sf = rlSurf(T, seg, P.x);
@@ -1271,7 +1291,7 @@ function rlStep(st, inp = {}) {
   if (sf && sf != P.surf && !st.seen[sf]) { st.seen[sf] = 1; st.ev.push(['surf', sf]); }
   P.surf = sf;
   // speed: Easy keeps its speed by itself; Pro has Go; the grass slows you; pads, stars and drifts zoom; a spin slows
-  let tgt = easy ? RL_CRUISE : inp.go ? 1 : .8;
+  let tgt = easy ? RL_CRUISE * (P.idle > RL_EASY_LOOSE.idleT ? 1 - RL_EASY_LOOSE.idle * Math.min(1, 3 * (1 - st.help)) : 1) : inp.go ? 1 : .8;
   P.off = Math.abs(P.x) > rw + .02;
   if (P.off) tgt = Math.min(tgt, easy ? .62 : .5);
   tgt = Math.min(tgt, cap);
@@ -1315,7 +1335,7 @@ function rlStep(st, inp = {}) {
   P.vx += (want - P.vx) * Math.min(1, grip * dt * 30);
   const x0 = P.x;
   P.x += P.vx * dt;
-  if (easy && !steer && P.spin <= 0 && Math.abs(P.x) > .7 * rw) P.x -= Math.sign(P.x) * .6 * dt; // the steering helper
+  if (easy && !steer && P.spin <= 0 && Math.abs(P.x) > .7 * rw) P.x -= Math.sign(P.x) * .6 * (.3 + .7 * st.help) * dt; // the steering helper (G-FEEL1: weaker in later cups)
   // rails, walls and the split's divider; off the road, hedges stop you at last
   const bar = T.fl[seg] & 4 ? rw + .1 - RL_CARW / 2 : 0, vin = Math.abs(P.x - x0) / dt;
   if (bar && Math.abs(P.x) > bar) rlWall(st, P, Math.sign(P.x), Math.sign(P.x) * bar, vin);
@@ -1330,7 +1350,7 @@ function rlStep(st, inp = {}) {
     else rlWall(st, P, -side, side * band, vin);
   }
   // Easy: before a split, the helper eases the car off the divider's nose
-  if (easy && !steer && Math.abs(P.x) < band + .1) for (let j = 1; j < 10; j++) if (T.dv[rlMod(seg + j, n)]) { P.x += (Math.sign(P.x) || 1) * .5 * dt; break; }
+  if (easy && !steer && Math.abs(P.x) < band + .1) for (let j = 1; j < 10; j++) if (T.dv[rlMod(seg + j, n)]) { P.x += (Math.sign(P.x) || 1) * .5 * (.3 + .7 * st.help) * dt; break; }
   const d0 = P.d;
   P.d += P.v * dt;
   rlHits(st, P, d0, P.d);
@@ -1354,7 +1374,7 @@ function rlStep(st, inp = {}) {
     const key = Math.floor(P.d / L) * 1000 + T.pads.findIndex(p => rlMod(seg - p[0], n) < 6);
     if (key != st.padKey) {
       st.padKey = key;
-      P.boost = Math.max(P.boost, 1.1 * (1 + .15 * U.turbo));
+      P.boost = Math.max(P.boost, 1.1 * (1 + .15 * U.turbo) * rlZoom(st));
       st.ev.push(['pad']);
     }
   }
@@ -1366,11 +1386,13 @@ function rlStep(st, inp = {}) {
     st.q = rlQuiz(st.grade, st.rnd);
   }
   // the rivals: gentle catch-up, a pace style, a wobble now and then, lanes, hazards, spins
-  const last = P.d > st.fin - L * .35, CU = RL_CU[st.mode], span = st.fin - RL_START * RL_SEG;
+  const last = P.d > st.fin - L * .35, CU = RL_CU[st.mode], span = st.fin - RL_START * RL_SEG, h = st.help;
+  // G-FEEL1: in Easy the catch-up of a rival that leads loosens as the help goes down (cup by cup)
+  const ka = easy ? RL_EASY_LOOSE.ka + (CU.ka - RL_EASY_LOOSE.ka) * h : CU.ka, lo = easy ? RL_EASY_LOOSE.lo + (CU.lo - RL_EASY_LOOSE.lo) * h : CU.lo;
   for (const c of st.cars) {
     const cs = rlMod(Math.floor(c.d / RL_SEG), n), crw = T.rw[cs], gap = (c.d - P.d) / (RL_VMAX * .8);
-    let f = Math.max(CU.lo, Math.min(CU.hi, 1 - (gap > 0 ? CU.ka : CU.kb) * gap));
-    if (easy && last && gap > 0 && gap < 2.5) f *= .97;
+    let f = Math.max(lo, Math.min(CU.hi, 1 - (gap > 0 ? ka : CU.kb) * gap));
+    if (easy && last && gap > 0 && gap < 2.5) f *= 1 - .03 * h;
     if ((c.wobT -= dt) <= 0) {
       c.wobT = 2 + st.rnd() * 3;
       c.wob = (st.rnd() - .5) * .06;
@@ -2712,11 +2734,9 @@ function rlFinish() {
   const time = ptLeft() > 0, nextC = cup && !final;
   const next = RL_ALL[RL_ALL.indexOf(tid) + 1], nextOk = !cup && !trial && !twist && next && rlTrackOpen(next, r) && !r.stars[next];
   const o = GH.end('rally', { win, title, stars: n, tag, pic: pic || undefined, stats, lines, extra,
-    btns: (time ? (nextC ? UI.btn(`Race ${r.cup.i + 1} of 3`, { kind: 'primary', size: 'lg', icon: 'arrow-right', id: 'rlnextc', wide: true }) :
-      UI.btn(final ? 'Race the cup again' : 'Race again', { kind: 'primary', size: 'lg', icon: 'replay', id: 'rlagain', wide: true })) +
-      (nextOk ? UI.btn('Next track', { icon: 'arrow-right', id: 'rlnext', wide: true }) : '') :
-      UI.btn('Earn more game time', { kind: 'primary', size: 'lg', icon: 'path-read', id: 'rllearn', wide: true })) +
-      UI.btn(cup ? 'Cups' : 'Tracks', { icon: 'map', id: 'rlmenu', wide: true }) });
+    // NAV-01: Play again, Next (the cup's next race, or the next track), Home; with no game time left, Next goes to Learn
+    btns: time ? NAV.end3({ again: nextC ? '' : 'rlagain', next: nextC ? 'rlnextc' : nextOk ? 'rlnext' : '', home: 'rlmenu' })
+      : NAV.end3({ next: 'rllearn', home: 'rlmenu' }) });
   if (S.voice) say(final && rank <= 3 ? `${RL_TROPHY[rank]} trophy! Well done, ${S.name}!` : trial ? (rec ? 'New best lap!' : 'Good driving!') :
     P.place == 1 ? `You won! Well done, ${S.name}!` : P.place <= 3 ? `${rlOrd(P.place)} place! Great racing!` : 'You finished the race! Well done!');
   const go = f => { o.remove(); f(); };
@@ -2724,8 +2744,8 @@ function rlFinish() {
   if (o.querySelector('#rlnextc')) o.querySelector('#rlnextc').onclick = () => go(() => (ptLeft() > 0 ? rlCupGo(ci) : rlMenu()));
   if (o.querySelector('#rlagain')) o.querySelector('#rlagain').onclick = () => go(() => (cup ? rlCupGo(ci) : rlRace(tid, { trial, twist })));
   if (o.querySelector('#rlnext')) o.querySelector('#rlnext').onclick = () => go(() => rlRace(next));
-  if (o.querySelector('#rllearn')) o.querySelector('#rllearn').onclick = () => go(() => home());
-  o.querySelector('#rlmenu').onclick = () => go(() => rlMenu(t.place));
+  if (o.querySelector('#rllearn')) o.querySelector('#rllearn').onclick = () => go(() => learnHub());
+  o.querySelector('#rlmenu').onclick = () => go(() => home());
 }
 
 // The Game Room card (59-game-hub.js shows it after the other three)

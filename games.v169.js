@@ -1,5 +1,5 @@
-/* Star School games v168. BUILT by tools/build.py from 48-game-hub.css, 61-hill.css, 59-game-hub.js, 62-hill.js, 64-gtimer.js, 66-colornum.js, 68-lowpoly.js, 70-art.js, 72-shapes.js: never edit by hand.
-   index.html v168 loads this file on demand (partsThen in src/js/90-app.js, P6-02), after data.v168.js. */
+/* Star School games v169. BUILT by tools/build.py from 48-game-hub.css, 61-hill.css, 59-game-hub.js, 62-hill.js, 64-gtimer.js, 66-colornum.js, 68-lowpoly.js, 70-art.js, 72-shapes.js: never edit by hand.
+   index.html v169 loads this file on demand (partsThen in src/js/90-app.js, P6-02), after data.v169.js. */
 (function(){var s=document.createElement('style');s.id='css-games';s.textContent="/* Game Room hub and shared game chrome (P4-16; src/js/59-game-hub.js; DESIGN_SYSTEM.md 9 row 8). Ships in games.<VER>.js (A11b),\n   after index.html's own CSS. Tokens only; motion is transform/opacity. The hub: a fair scene with the game-time ticket, a drawn\n   card per registered game, how to earn more. Every game screen: one top bar .gh-top (back or pause, badge and name, tools, chips,\n   the time chip, sound), the pause sheet .gh-sheet and the end card .gh-end. Game canvases are not restyled. */\n\n/* ---- the hub ---- */\n.gh-room{display:flex;flex-direction:column;flex:1;min-height:0}\n.gh-scroll{padding:var(--s-1) var(--s-4) var(--s-7)}\n.gh-hero{position:relative;height:220px;max-width:1040px;margin:0 auto var(--s-5);border-radius:var(--r-hero);overflow:hidden;\n  background:linear-gradient(var(--sc-sky-1),var(--sc-sky) 62%,var(--sc-green) 63%);box-shadow:inset 0 0 0 2px var(--wash),0 5px 0 var(--sc-green-2)}\n.gh-scene{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}\n.gh-tk{position:absolute;left:50%;bottom:14px;width:min(300px,82%);aspect-ratio:300/104;transform:translateX(-50%)}\n.gh-tks{position:absolute;inset:0;display:block;width:100%;height:100%}\n.gh-tkt{position:absolute;left:34%;right:5%;top:13%;bottom:18%;display:flex;flex-direction:column;align-items:center;justify-content:center;\n  text-align:center;line-height:1;color:var(--ink)}\n.gh-tkt b{font-family:var(--font-display);font-size:var(--fs-7);font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:.01em}\n.gh-tkt span{margin-top:var(--s-1);font-size:var(--fs-2);font-weight:700;color:var(--ink-2);white-space:nowrap}\n.gh-hero.off .gh-tkt b{color:var(--ink-3)}\n.gh-why{display:flex;flex-direction:column;align-items:center;gap:var(--s-3);margin:0 auto var(--s-6);text-align:center}\n.gh-why .btn.lg{padding-left:var(--s-5);padding-right:var(--s-5)}\n@media (max-width:480px){.gh-why .btn.lg{font-size:var(--fs-4)}}\n.gh-why.on{margin-bottom:var(--s-4)}\n.gh-why p{max-width:34ch;margin:0;font-size:var(--fs-3);font-weight:700;line-height:1.35;color:var(--ink-2)}\n\n/* a card per game: the drawn picture on its backdrop, the name and one line, the play disc */\n.gh-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,272px),1fr));gap:var(--s-5);max-width:1040px;margin:0 auto}\n.gh-card{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:var(--s-3);\n  padding:var(--s-3) var(--s-3) var(--s-4);border:0;border-radius:var(--r-hero);background:var(--surface);color:var(--ink);font:inherit;\n  text-align:left;cursor:pointer;touch-action:manipulation;box-shadow:inset 0 0 0 2px var(--line),0 6px 0 var(--ledge-soft),0 12px 18px var(--drop);\n  transition:transform var(--t-fast) var(--ease)}\n.gh-card:active,.gh-card.is-press{transform:translateY(4px)}\n.gh-card{--c-fill:var(--c);--c-ledge:var(--c-shade)}\n.gh-card.s-play{--c-fill:var(--play-shade);--c-ledge:var(--play-deep)}\n.gh-pic{position:relative;grid-column:1/-1;display:block;height:150px;border-radius:var(--r-card);overflow:hidden;\n  background:linear-gradient(var(--gh-a),var(--gh-b));box-shadow:inset 0 -4px 0 var(--shadow-ink)}\n.gh-art{display:block;width:100%;height:100%}\n.gh-info{min-width:0;padding:0 0 0 var(--s-2)}\n.gh-name{display:block;font-family:var(--font-display);font-size:var(--fs-5);font-weight:700;line-height:1.15;color:var(--ink)}\n.gh-sub{display:flex;flex-wrap:wrap;gap:2px var(--s-3);margin-top:var(--s-1);font-size:var(--fs-2);line-height:1.35;color:var(--ink-2)}\n.gh-sub>span{display:inline-flex;align-items:center;gap:var(--s-1)}\n.gh-sub b{color:var(--ink)}\n.gh-sub .ic{flex:none;color:var(--star-shade)}\n.gh-go{display:grid;place-items:center;width:64px;height:64px;margin-right:var(--s-1);border-radius:50%;color:var(--surface);\n  background:linear-gradient(var(--hi),var(--hi-0) 60%) var(--c-fill,var(--c));box-shadow:inset 0 2px 0 var(--hi),0 5px 0 var(--c-ledge,var(--c-shade))}\n.gh-go .ic{width:30px;height:30px;margin-left:3px}\n.gh-flag{position:absolute;left:var(--s-3);bottom:var(--s-3);display:inline-flex;align-items:center;gap:var(--s-1);padding:var(--s-1) var(--s-3) var(--s-1) var(--s-2);\n  border-radius:var(--r-pill);background:var(--surface);color:var(--ink);font-size:var(--fs-2);font-weight:700;line-height:1.2;\n  box-shadow:0 3px 0 var(--ledge-soft)}\n.gh-flag .ic{flex:none;color:var(--play)}\n.gh-card:is(.need,.lock) .gh-pic::after{content:'';position:absolute;inset:0;background:var(--wash)}\n.gh-card:is(.need,.lock) .gh-flag{z-index:1}\n.gh-card:is(.need,.lock) .gh-go{background:var(--surface-2);color:var(--ink-3);box-shadow:inset 0 0 0 2px var(--line),0 5px 0 var(--ledge-soft)}\n.gh-card.lock{cursor:default}\n.gh-card.lock .gh-go .ic{margin-left:0}\n\n/* how to earn more game time */\n.gh-earn{max-width:1040px;margin:var(--s-7) auto 0;padding:var(--s-5);border-radius:var(--r-card);background:var(--surface);\n  box-shadow:inset 0 0 0 2px var(--line),0 5px 0 var(--ledge-soft)}\n.gh-earn h2{display:flex;align-items:center;gap:var(--s-2);margin:0 0 var(--s-4);font-family:var(--font-display);font-size:var(--fs-4);line-height:1.2;color:var(--ink)}\n.gh-earn h2 .ic{flex:none;color:var(--play);--ic2:var(--surface)}\n.gh-earn ul{display:grid;gap:var(--s-2) var(--s-6);margin:0;padding:0;list-style:none}\n.gh-earn li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:var(--s-3);font-size:var(--fs-3);line-height:1.3;color:var(--ink)}\n.gh-ei{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:var(--play-tint);color:var(--play-shade);--ic2:var(--play-tint)}\n.gh-earn li b{color:var(--play-shade);text-align:right}\n.gh-earn p{margin:var(--s-4) 0 0;font-size:var(--fs-2);line-height:1.4;color:var(--ink-2)}\n@media (min-width:860px){.gh-earn ul{grid-template-columns:1fr 1fr}}\n\n/* ---- the shared top bar ---- */\n.gh-top .gh-ttl{display:flex;align-items:center;gap:var(--s-2)}\n.gh-tb{flex:none;display:grid;place-items:center;width:44px;height:44px;border-radius:14px;color:var(--surface);\n  background:linear-gradient(var(--hi),var(--hi-0) 60%) var(--c);box-shadow:inset 0 -3px 0 var(--c-shade)}\n.gh-tb .ic{width:26px;height:26px}\n.gh-tt{display:flex;flex-direction:column;min-width:0;line-height:1.15}\n.gh-gn,.gh-gs{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}\n.gh-tt.two .gh-gn{font-size:var(--fs-2);color:var(--c-shade)}\n.gh-tt.two .gh-gs{font-size:var(--fs-4);color:var(--ink)}\n.gh-tools{display:flex;flex:none;gap:var(--s-2)}\n.gh-top .btn.icon.on{background:var(--brand-tint);box-shadow:inset 0 0 0 2px var(--brand),0 4px 0 var(--brand-shade)}\n.gh-top #gpause .ic{color:var(--c-shade)}\n.gh-top .stat.gh-up{background:var(--try-tint);color:var(--try-ink);box-shadow:inset 0 0 0 2px var(--try),0 3px 0 var(--try)}\n.gh-top .stat.gh-up .ic{color:var(--try-ink);--ic2:var(--try-tint)}\n.gh-top .stat.gh-st .ic{color:var(--c-shade)}\n.gh-top .stat.gh-nut .ic{color:var(--star-shade);--ic2:var(--star-tint)}\n@media (max-width:480px){\n  .gh-tb{width:40px;height:40px;border-radius:12px}.gh-tb .ic{width:24px;height:24px}\n  .gh-top.gh-wrap{flex-wrap:wrap}.gh-wrap .gh-tools{order:9;flex-basis:100%;justify-content:flex-end}\n  .gh-top:not(.gh-mtop):not(.gh-hud) .gh-tb{display:none}\n  .gh-tt.two .gh-gs{font-size:var(--fs-3)}\n}\n/* over a full-screen canvas (Hill Climb): no paper behind; the name shows where there is room */\n.gh-top.gh-hud{position:absolute;left:0;right:0;top:0;z-index:2;min-height:0;padding:var(--s-2) var(--s-3);background:none}\n.gh-hud .gh-ttl{flex:0 1 auto;padding:var(--s-1) var(--s-3) var(--s-1) var(--s-1);border-radius:var(--r-pill);background:var(--surface);\n  box-shadow:inset 0 0 0 2px var(--line),0 3px 0 var(--ledge-soft)}\n.gh-hud .gh-ttl .gh-gn{font-size:var(--fs-4)}\n.gh-hud .stat{flex:none;min-height:44px;padding:0 var(--s-3) 0 var(--s-1);font-size:var(--fs-3)}\n.gh-hud .stat .ic{width:28px;height:28px}\n.gh-hud .stat.gh-dist{flex:0 1 auto;min-width:0;padding-left:var(--s-3)}\n.gh-hud .gh-dist b{overflow:hidden;text-overflow:ellipsis}\n@media (max-width:719px){.gh-hud .gh-ttl{display:none}}\n@media (max-width:480px){.gh-top.gh-hud{gap:var(--s-1);padding:var(--s-2)}.gh-hud .stat{padding:0 var(--s-2) 0 2px}.gh-hud .stat .ic{width:24px;height:24px}\n}\n\n/* ---- the pause sheet ---- */\n.gh-sheet{text-align:center}\n.gh-scpic{position:relative;height:128px;margin:0 0 var(--s-4);border-radius:var(--r-card);overflow:hidden;background:linear-gradient(var(--gh-a),var(--gh-b))}\n.gh-sheet .gh-acts{display:flex;flex-direction:column;gap:var(--s-3)}\n@media (max-height:520px){.gh-scpic{height:84px;margin-bottom:var(--s-2)}.sheet .gh-sheet p{margin-bottom:var(--s-3)}}\n\n/* ---- the end card ---- */\n.ovl.gh-ovl{z-index:65}\n.gh-end{max-width:480px;padding:var(--s-5);overflow-y:auto;overscroll-behavior:contain}\n.gh-epic{position:relative;height:clamp(88px,20vh,140px);border-radius:var(--r-card);overflow:hidden;background:linear-gradient(var(--gh-a),var(--gh-b));\n  box-shadow:inset 0 -4px 0 var(--shadow-ink)}\n.gh-epic.made{display:grid;place-items:center;height:clamp(120px,26vh,200px);background:var(--surface-2)}\n.gh-epic.made>*{width:auto;height:88%;max-width:88%;aspect-ratio:1;border-radius:var(--r-btn);background:var(--surface);\n  box-shadow:0 4px 0 var(--ledge-soft)}\n.gh-epic.made img{image-rendering:pixelated}\n.gh-end .rw-rays{top:-40px}\n.rw-card p.gh-ename{position:relative;margin:var(--s-3) 0 0;font-size:var(--fs-2);font-weight:700;color:var(--c-shade)}\n.rw-card.gh-end h1{margin-top:0}\n.gh-estars{position:relative;margin:0 0 var(--s-2)}\n.rw-card p.gh-etag{position:relative;margin:0 0 var(--s-2)}\n.gh-stats{position:relative;display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,1fr));gap:var(--s-2);margin:var(--s-2) 0 var(--s-3)}\n.gh-stat{display:flex;flex-direction:column;align-items:center;gap:2px;padding:var(--s-2) var(--s-1);border-radius:var(--r-btn);background:var(--surface-2)}\n.gh-stat .ic{color:var(--c-shade)}\n.gh-stat .ic.ic-coin{color:var(--star-shade);--ic2:var(--star-tint)}\n.gh-stat b{font-family:var(--font-display);font-size:var(--fs-4);line-height:1.1;color:var(--ink);font-variant-numeric:tabular-nums}\n.gh-stat span{font-size:var(--fs-2);line-height:1.2;color:var(--ink-2)}\n.gh-extra{position:relative;margin:var(--s-2) 0 var(--s-3)}\n.rw-card p.gh-line{position:relative;display:flex;align-items:center;justify-content:center;gap:var(--s-2);margin:var(--s-2) 0 0;\n  font-size:var(--fs-3);font-weight:700;line-height:1.3;color:var(--ink);text-align:left}\n.gh-line .ic{flex:none;color:var(--c-shade)}\n.gh-end .gh-acts{position:relative;display:flex;flex-direction:column;gap:var(--s-3);margin-top:var(--s-4)}\n.gh-acts .btn.lg{padding-left:var(--s-4);padding-right:var(--s-4)}\n@media (max-width:480px){.gh-stats.n4{grid-template-columns:repeat(2,minmax(0,1fr))}.gh-acts .btn.lg{font-size:var(--fs-4)}\n  .rw-card p.gh-line{font-size:var(--fs-2)}}\n@media (max-height:620px) and (orientation:landscape){\n  .gh-end{max-width:780px;display:grid;grid-template-columns:minmax(0,280px) minmax(0,1fr);column-gap:var(--s-5);align-content:start;padding:var(--s-4)}\n  .gh-end>*{grid-column:2}\n  .gh-end>.gh-epic{grid-column:1;grid-row:1/span 12;align-self:center;height:auto;min-height:0;aspect-ratio:240/120}\n  .gh-end>.gh-epic.made{height:auto;aspect-ratio:1}.gh-epic.made>*{height:auto;width:88%}\n  .gh-end .gh-acts{flex-direction:row;flex-wrap:wrap;justify-content:center}\n  .gh-end .gh-acts .btn{flex:1 1 150px;white-space:nowrap}.gh-end .gh-acts .btn.lg{flex-basis:100%;font-size:var(--fs-4)}\n}\n\n/* the hub on phones and in short landscape */\n@media (max-width:480px){\n  .gh-scroll{padding:var(--s-1) var(--s-3) var(--s-7)}\n  .gh-hero{height:196px}\n  .gh-tk{width:min(256px,76%);bottom:10px}\n  .gh-tkt b{font-size:var(--fs-6)}\n  .gh-pic{height:132px}\n  .gh-name{font-size:var(--fs-4)}\n  .gh-go{width:56px;height:56px}.gh-go .ic{width:26px;height:26px}\n  .gh-earn{padding:var(--s-4)}.gh-earn li{font-size:var(--fs-2)}\n}\n@media (max-height:620px) and (orientation:landscape){\n  .gh-hero{height:196px;margin-bottom:var(--s-4)}\n  .gh-tk{width:min(256px,40%);bottom:10px}\n  .gh-tkt b{font-size:var(--fs-6)}\n  .gh-pic{height:118px}\n}\n/* ---------- 4x4 Hill Climb (G-HC2): the drive's HUD and pedals, the menu (worlds, stages, distance drive), the garage. Tokens only. ---------- */\n.hc{position:fixed;inset:0;touch-action:none;background:var(--ill-ink)}.hc canvas{position:absolute;inset:0;width:100%;height:100%}\n/* second HUD row under the top bar: a thick fuel gauge and the distance (never cut) with a track to the flag */\n.hc-hud2{position:absolute;left:0;right:0;top:64px;z-index:2;display:flex;gap:var(--s-2);padding:0 var(--s-3);pointer-events:none;align-items:center}\n.hc-fuel{display:flex;align-items:center;gap:var(--s-1);flex:0 1 220px;min-width:132px;padding:var(--s-1) var(--s-3) var(--s-1) var(--s-1);border-radius:var(--r-pill);\n  background:var(--surface);box-shadow:inset 0 0 0 2px var(--line),0 3px 0 var(--ledge-soft)}\n.hc-fuel .ic{flex:none;color:var(--ill-red-2)}\n.hc-gauge{flex:1;height:20px;border-radius:var(--r-pill);background:var(--surface-2);box-shadow:inset 0 0 0 2px var(--line);overflow:hidden}\n.hc-gauge i{display:block;height:100%;transform-origin:left;background:linear-gradient(90deg,var(--ill-orange),var(--ill-green));transition:transform var(--t-fast) linear}\n.hc-fuel.low .hc-gauge i{background:var(--ill-red)}.hc-fuel.low{animation:hc-low 1s infinite}\n@keyframes hc-low{50%{opacity:.55}}\n.hc-prog{flex:1 1 auto;min-width:0;max-width:420px;display:flex;align-items:center;gap:var(--s-2);padding:var(--s-1) var(--s-3);border-radius:var(--r-pill);\n  background:var(--surface);color:var(--ink);box-shadow:inset 0 0 0 2px var(--line),0 3px 0 var(--ledge-soft)}\n.hc-prog b{flex:none;font-size:var(--fs-3);white-space:nowrap;font-variant-numeric:tabular-nums}\n.hc-track{position:relative;flex:1;min-width:24px;height:12px;border-radius:var(--r-pill);background:var(--surface-2);box-shadow:inset 0 0 0 2px var(--line)}\n.hc-track #hcpb{position:absolute;inset:0;border-radius:var(--r-pill);transform-origin:left;transform:scaleX(0);background:linear-gradient(90deg,var(--ill-green),var(--ill-yellow))}\n.hc-tick{position:absolute;top:-4px;width:4px;height:20px;margin-left:-2px;border-radius:2px;background:var(--ill-orange-2)}\n.hc-bestm{position:absolute;top:-5px;width:6px;height:22px;margin-left:-3px;border-radius:3px;background:var(--ill-yellow);box-shadow:0 0 0 2px var(--ill-brown-3);display:none}\n@media (max-width:480px){.hc-hud2{top:60px;padding:0 var(--s-2);gap:var(--s-1)}.hc-fuel{min-width:116px}.hc-prog{padding:var(--s-1) var(--s-2)}}\n.pedal{position:absolute;bottom:14px;width:clamp(96px,16vw,140px);height:clamp(96px,16vw,140px);border-radius:28px;display:flex;flex-direction:column;align-items:center;justify-content:center;\n  color:var(--surface);font-weight:700;box-shadow:0 6px 0 var(--shadow-ink);pointer-events:none;opacity:.92;transition:transform var(--t-fast) var(--ease)}\n.pedal .ic{width:52px;height:52px}.pedal small{font-size:var(--fs-3)}\n.pedal.brake{left:14px;background:var(--danger-shade)}.pedal.gas{right:14px;background:var(--good-ink)}.pedal.on{transform:translateY(4px) scale(.96);opacity:1}\n.hcmsg{position:absolute;left:50%;top:118px;transform:translateX(-50%);z-index:3;background:var(--surface);color:var(--ink);border-radius:var(--r-card);padding:var(--s-2) var(--s-4);\n  font-size:var(--fs-4);font-weight:700;text-align:center;width:max-content;max-width:min(92vw,560px);opacity:0;transition:opacity var(--t) linear;pointer-events:none;box-shadow:0 4px 0 var(--ledge-soft)}\n.hcmsg.on{opacity:1}\n.hcpop{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%) scale(.4);font-size:clamp(26px,6vw,44px);font-weight:700;color:var(--ill-yellow);\n  text-shadow:0 3px 0 var(--ill-brown-3),0 0 10px var(--shadow-ink);opacity:0;pointer-events:none;white-space:nowrap}\n.hcpop.on{animation:hcpop 1.4s ease-in-out}@keyframes hcpop{15%{opacity:1;transform:translate(-50%,-50%) scale(1.12)}70%{opacity:1;transform:translate(-50%,-60%) scale(1)}100%{opacity:0;transform:translate(-50%,-80%) scale(.9)}}\n.hccombo{position:absolute;right:14px;top:120px;font-size:var(--fs-4);font-weight:700;color:var(--surface);background:var(--danger-shade);padding:var(--s-1) var(--s-3);border-radius:var(--r-chip);opacity:0;transition:opacity var(--t-fast) linear}\n.hccombo.on{opacity:1}\n/* ---- the menu ---- */\n.hc-menu h2{margin:var(--s-5) 0 var(--s-2)}\n.hc-goal{display:flex;gap:var(--s-3);align-items:center;padding:var(--s-3) var(--s-4);border-radius:var(--r-card);background:var(--star-tint);color:var(--ink);box-shadow:inset 0 0 0 2px var(--star)}\n.hc-goal .ic{flex:none;color:var(--star-ink)}.hc-goal p{margin:0;font-size:var(--fs-3)}.hc-goal b{display:block;font-size:var(--fs-2);color:var(--star-ink)}\n.hc-wtabs{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s-2);margin:var(--s-3) 0}\n@media (min-width:760px){.hc-wtabs{grid-template-columns:repeat(6,1fr)}}\n.hc-wt{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-height:64px;padding:var(--s-2) var(--s-3);text-align:left;background:linear-gradient(160deg,var(--hc-a),var(--hc-b));color:var(--ink)}\n.hc-wt b{font-size:var(--fs-2);line-height:1.15}.hc-wt span{display:flex;align-items:center;gap:2px;font-size:var(--fs-2)}\n.hc-wt.on{box-shadow:inset 0 0 0 3px var(--brand),0 3px 0 var(--ledge-soft)}.hc-wt.lock{opacity:.7}.hc-wt .ic{color:var(--star-ink)}\n.hc-world{padding:var(--s-3);border-radius:var(--r-hero);background:linear-gradient(180deg,var(--hc-a),var(--hc-b))}\n.hc-wh{display:flex;align-items:center;justify-content:space-between;gap:var(--s-2);margin-bottom:var(--s-2)}.hc-wh h2{margin:0}\n.hc-stages{display:grid;grid-template-columns:1fr;gap:var(--s-2)}\n@media (min-width:700px){.hc-stages{grid-template-columns:1fr 1fr}}\n.hc-stg{display:grid;grid-template-columns:44px 1fr auto;gap:var(--s-2);align-items:center;padding:var(--s-2) var(--s-3);text-align:left;background:var(--surface);color:var(--ink)}\n.hc-stg.cur{box-shadow:inset 0 0 0 3px var(--play),0 3px 0 var(--ledge-soft)}.hc-stg.lock{opacity:.6}\n.hc-sn{display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:50%;background:var(--play-shade);color:var(--surface);font-size:var(--fs-4);font-weight:700}\n.hc-stg.lock .hc-sn{background:var(--surface-2);color:var(--ink-3)}\n.hc-sb{display:flex;flex-direction:column;gap:2px;min-width:0}.hc-sb>b{font-size:var(--fs-3)}\n.hc-prof{display:block;width:100%;max-width:220px;height:30px}\n.hc-gl,.hc-ms span{display:flex;align-items:center;gap:var(--s-1);font-size:var(--fs-2);color:var(--ink-2)}\n.hc-ms{display:flex;flex-direction:column;gap:0}.hc-ms .ok{color:var(--good-ink)}.hc-gl .ic,.hc-ms .ic{flex:none}\n.hc-menu #hcgo{margin:var(--s-4) 0 var(--s-3)}\n.hc-note{margin:0 0 var(--s-2);font-size:var(--fs-2);color:var(--ink-2)}\n.hc-dist{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:var(--s-2)}\n.hc-dw{display:flex;align-items:center;gap:var(--s-2);min-height:56px;padding:var(--s-2) var(--s-3);text-align:left;background:linear-gradient(160deg,var(--hc-a),var(--hc-b));color:var(--ink)}\n.hc-dw span{display:flex;flex-direction:column}.hc-dw small,.hc-gar small,.hc-veh small,.hc-up small{font-size:var(--fs-2);color:var(--ink-2)}\n.hc-gar{display:flex;align-items:center;gap:var(--s-3);width:100%;padding:var(--s-2) var(--s-3);text-align:left;background:var(--surface);color:var(--ink)}\n.hc-gar canvas{width:120px;height:72px;flex:none}.hc-gar>span{flex:1;display:flex;flex-direction:column}\n.hc-tips{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--s-2)}\n.hc-tips li{display:flex;gap:var(--s-2);align-items:flex-start;font-size:var(--fs-2)}.hc-tips .ic{flex:none;color:var(--play-shade)}\n/* ---- the garage ---- */\n.hc-show{display:flex;flex-direction:column;align-items:center;padding:var(--s-3);border-radius:var(--r-hero);background:linear-gradient(180deg,var(--sc-sky),var(--sc-sun))}\n.hc-show canvas{width:min(420px,88vw);height:auto}.hc-show b{font-size:var(--fs-5)}\n.hc-ups{display:flex;flex-direction:column;gap:var(--s-2)}\n.hc-up{display:grid;grid-template-columns:40px 1fr auto;gap:var(--s-3);align-items:center;padding:var(--s-3);border-radius:var(--r-card);background:var(--surface);box-shadow:inset 0 0 0 2px var(--line)}\n.hc-up>.ic{color:var(--play-shade)}.hc-up>span{display:flex;flex-direction:column;gap:2px;min-width:0}\n.hc-up .hc-num{display:flex;align-items:center;flex-wrap:wrap;gap:2px;color:var(--ink)}\n.hc-pips{display:flex;gap:4px;margin-top:2px}.hc-pips i{width:22px;height:8px;border-radius:4px;background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line)}.hc-pips i.on{background:var(--play)}\n.hc-max{font-size:var(--fs-2);color:var(--good-ink)}\n.hc-vehs{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:var(--s-2)}\n.hc-veh{display:flex;flex-direction:column;align-items:center;gap:2px;padding:var(--s-2);background:var(--surface);color:var(--ink);text-align:center}\n.hc-veh canvas{width:150px;height:90px}.hc-veh.on{box-shadow:inset 0 0 0 3px var(--good),0 3px 0 var(--ledge-soft)}\n.hc-vc{display:flex;align-items:center;gap:2px;font-size:var(--fs-2);font-weight:700}\n.hc-paints{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:var(--s-2)}\n.hc-paint{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:var(--fs-2);padding:var(--s-2) 4px;background:var(--surface);color:var(--ink)}\n.hc-paint>span{width:36px;height:36px;border-radius:50%;box-shadow:inset 0 0 0 3px var(--shadow-ink)}.hc-paint.on{box-shadow:inset 0 0 0 3px var(--good),0 3px 0 var(--ledge-soft)}\n/* ---- G-HC3: the save-for line, today's drive, garage level 2 ---- */\n.hc-save{display:flex;gap:var(--s-2);align-items:center;margin:var(--s-2) 0 0;padding:var(--s-2) var(--s-4);border-radius:var(--r-card);background:var(--surface);color:var(--ink);\n  font-size:var(--fs-2);box-shadow:inset 0 0 0 2px var(--star-tint),0 3px 0 var(--ledge-soft)}\n.hc-save .ic{flex:none;color:var(--star-ink)}\n.hc-day{display:grid;grid-template-columns:48px minmax(0,1fr) auto;gap:var(--s-3);align-items:center;width:100%;min-height:88px;margin-top:var(--s-3);padding:var(--s-3);\n  text-align:left;background:var(--star-tint);color:var(--ink);box-shadow:inset 0 0 0 3px var(--star),0 4px 0 var(--ledge-soft)}\n.hc-day:active{transform:translateY(4px)}\n.hc-daydisc{display:flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:50%;background:var(--star-tint);color:var(--star-ink);--ic2:var(--star-tint)}\n.hc-day.done .hc-daydisc{color:var(--good-ink)}.hc-day.done{box-shadow:inset 0 0 0 3px var(--good),0 4px 0 var(--ledge-soft)}\n.hc-dayt{display:flex;flex-direction:column;gap:2px;min-width:0}.hc-dayt b{font-size:var(--fs-3)}.hc-dayt span{font-size:var(--fs-2)}\n.hc-dayt small{font-size:var(--fs-2);color:var(--ink-2)}\n.hc-t2h{margin:var(--s-3) 0 var(--s-2);font-size:var(--fs-3)}\n.hc-t2s{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:var(--s-2)}\n.hc-t2{display:flex;flex-direction:column;align-items:center;gap:2px;padding:var(--s-2);background:var(--surface);color:var(--ink);text-align:center}\n.hc-t2 canvas{width:120px;height:72px}.hc-t2 b{font-size:var(--fs-2)}\n.hc-t2.on{box-shadow:inset 0 0 0 3px var(--good),0 3px 0 var(--ledge-soft)}.hc-t2.lock{opacity:.75}\n.hc-dayt span,.hc-dayt small{font-weight:400}.hc-menu .hc-day{margin:var(--s-3) 0 0}\n";document.head.appendChild(s)})(); // its src/css, after index.html's own CSS (the cascade order of a build without parts)
 /* ---------- Game Room hub and shared game chrome (P4-16; DESIGN_SYSTEM.md 9 row 8; CSS src/css/48-game-hub.css) ----------
    Lives in games.<VER>.js (A11b) and loads before the games (60-blocks ... 72-shapes, NN-game-*.js), so a game file may call GH.reg()
@@ -20,8 +20,9 @@
      lock     optional () => '' or a reason the game cannot be opened yet (shown on the card and said in a toast)
      tapToPlay  the selector of the button on the game's first screen that starts play (smoke taps it: P4-16 block)
      saved    optional line for the time-up card ('Your picture is saved.')
-   Each screen of the game draws its top bar with GH.top(id, o) and wires it with GH.wire(o) after view(); play screens get a Pause
-   button that opens the shared sheet (GH.pause); game ends use GH.end(id, o); time running out uses timeUpOverlay() (64-gtimer.js).
+   Each screen of the game draws its top bar with GH.top(id, o) and wires it with GH.wire(o) after view(); play screens get the
+   corner house (NAV-01, #gpause) that pauses and asks "Go Home?" (GH.pause, NAV.ask); the game's menus get the picture bar (view());
+   game ends use GH.end(id, o) with NAV.end3() choices; time running out uses timeUpOverlay() (64-gtimer.js).
 
    Drawings follow the object-art rules of DESIGN_SYSTEM 6.5: light from the top left, shade / base / highlight per area, a soft ink
    contact shadow, roles var(--a-x) only (class "art"), no ids, gradients, filters, <use>, text or raw colours. Decoration is aria-hidden.
@@ -223,6 +224,7 @@ const GH = {
   <section class="gh-earn"><h2>${ico('ticket', 26)}<span>How to earn more game time</span></h2>
    <ul>${earn.map(([i, t, v]) => `<li>${R_(i)}<span>${esc(t)}</span><b>${esc(v)}</b></li>`).join('')}</ul>
    <p>Replaying a stop you already mastered, or the same stop over and over, earns less.</p></section></div></div>`);
+    NAV.bar('games');
     $('#back').onclick = () => home();
     if ($('#learn')) $('#learn').onclick = () => home();
     for (const g of GH.games) {
@@ -341,13 +343,13 @@ const GH = {
   },
 
   /* ---- the shared top bar ---- */
-  // id: the registered game. o: {play: true for a play screen (Pause instead of Back), sub: text under the name (escaped here),
+  // id: the registered game. o: {play: true for a play screen (the corner house instead of Back, NAV-01), sub: text under the name (escaped here),
   //   chips: html before the time chip, tools: html of icon buttons (play screens), sound: html of the sound button, timeId: the time
   //   chip's id (default gtm), hud: true over a full-screen canvas}
   top(id, o = {}) {
     const g = GH.get(id) || { name: id, icon: 'gamepad', p: 'play' };
     GH.cur = g.id || null;
-    const lead = o.play ? UI.ibtn('pause', 'Pause', { size: 'sm', id: 'gpause', cls: 'gh-pz' }) : UI.ibtn('back', 'Back', { size: 'sm', id: 'back' });
+    const lead = o.play ? NAV.house('gpause') : UI.ibtn('back', 'Back', { size: 'sm', id: 'back' });
     const cls = 'top tbar gh-top s-' + g.p + (o.play ? ' gh-play' : '') + (o.hud ? ' gh-hud' : '') + (o.tools ? ' gh-hastools' : '') +
       ((o.tools || '').split('<button').length > 2 ? ' gh-wrap' : '');
     return `<div class="${cls}" data-g="${esc(g.id || id)}">${lead}<div class="ttl gh-ttl"><span class="gh-tb">${ico(g.icon || 'gamepad', 24)}</span>` +
@@ -355,7 +357,7 @@ const GH = {
       (o.tools ? `<span class="gh-tools">${o.tools}</span>` : '') + (o.chips || '') +
       UI.chip('ticket', fmtT(ptLeft()), { aria: 'Game time left', id: o.timeId || 'gtm' }) + (o.sound || '') + '</div>';
   },
-  // after view(): back runs o.back; Pause opens the sheet, whose Quit runs o.quit
+  // after view(): back runs o.back; the corner house opens Go Home?, whose tick runs o.quit (it saves) and then goes Home
   wire(o = {}) {
     const b = $('#back');
     if (b && o.back) b.onclick = o.back;
@@ -373,33 +375,11 @@ const GH = {
     UI.setChip(el, up != null ? Math.max(0, Math.ceil(up)) + 's' : fmtT(ptLeft()));
   },
 
-  /* ---- the pause sheet: Keep playing / Quit. The game-time clock holds while it is open; o.hold(true|false) pauses the game ---- */
+  /* ---- the corner house's sheet (NAV-01): Go Home? with the tick (o.quit, then Home) and Keep playing. The game-time clock holds
+     while it is open (GH.held, set by NAV.ask); o.hold(true|false) pauses the game ---- */
   pause(o = {}) {
     if (GH.held) return;
-    const g = GH.get(GH.cur) || { name: 'Game', p: 'play' };
-    GH.held = true;
-    if (o.hold) o.hold(true);
-    let quit = false;
-    const s = UI.sheet(`<div class="gh-sheet s-${g.p}"><div class="gh-scpic" style="${GH.sky(g)}">${GH.pic(g.id)}</div>` +
-      `<h2>Paused</h2><p>${UI.t(g.name)} is waiting for you. Your game time stops while you rest.</p>` +
-      `<div class="acts gh-acts">${UI.btn('Keep playing', { kind: 'primary', size: 'lg', icon: 'play', id: 'gresume', wide: true })}` +
-      `${UI.btn('Quit', { icon: 'close', id: 'gquit', wide: true })}</div></div>`, {
-      onClose: () => {
-        GH.held = false;
-        if (!quit && o.hold) o.hold(false);
-      },
-    });
-    s.el.querySelector('#gresume').onclick = () => {
-      SFX.pop(2);
-      s.close();
-    };
-    s.el.querySelector('#gquit').onclick = () => {
-      quit = true;
-      s.close();
-      SFX.whoosh();
-      if (o.quit) o.quit();
-    };
-    return s;
+    return NAV.ask({ hold: o.hold, leave: o.quit });
   },
 
   /* ---- the end-of-game card (over a dim backdrop; append is done here; returns the overlay so callers wire their buttons) ----
@@ -407,7 +387,10 @@ const GH = {
          stars (0-3 or null), tag (a "New record!" line), stats: [[value, label, icon]], extra (html, e.g. a gauge), lines: [[icon, html]],
          btns (html: buttons with the caller's ids)} */
   end(id, o = {}) {
-    const g = GH.get(id || GH.cur) || { name: 'Game', p: 'play' };
+    // NAV-01: {light: true, title, again, next, home} (functions) gives the light end instead: a banner with the same three choices
+    // that goes on to Next by itself after 2 s unless touched (NAV.light), for chaining short stages
+    if (o.light) return NAV.light(o);
+    const g =GH.get(id || GH.cur) || { name: 'Game', p: 'play' };
     const el = document.createElement('div');
     el.className = 'ovl rw-ovl gh-ovl';
     const stats = (o.stats || []).filter(Boolean);
@@ -448,15 +431,19 @@ GH.reg({
    Journey: 6 worlds (HCW) of 5 hand-shaped stages each (HC_ST). A stage is a line of pieces (hcParse / hcCourse): flat, slopes,
    hills, rollers, kicker jumps, gaps over water / lava / craters, bridges, fords, rocks, mud / sand / ash / ice, checkpoints,
    bolts, fuel cans, balloons, a hidden star and boost pads; it ends at a finish flag. Each stage has a goal (reach the flag,
-   collect N bolts, or deliver crates) and two missions (bolts, time, flips, big air, no restarts, all crates, the hidden star):
+   collect N bolts, or deliver crates) and two missions (bolts, time, flips, big air, no restarts, all crates, the hidden star,
+   a stop at the lookout):
    1 star for the goal, 1 for each mission, kept for good (S.garage.st {stageId: bits}). A stage opens when the one before is
    finished; a world opens with stars (HC_NEED). The menu's "Next goal" line says what to do next.
    Distance drive (endless, for older children): a long seeded course per world that gets harder, fuel cans further apart,
    the personal best as a flag on the road (S.garage.best).
    Garage: vehicles (VEH) and four upgrades (engine, tyres, suspension, fuel tank; 5 levels) bought with bolts earned by playing.
-   Easy driving (on by default for Pre-K to 2nd grade, a switch on the menu): levels the car in the air, eases the gas when the
-   nose lifts, softer landings, balloons that float the car over gaps. A flip or an empty tank restarts at the last checkpoint:
-   no lives, nothing lost. Colours are tokens (hcC: --ill-* roles, --sc-* skies); no shake in calm mode or with reduced motion.
+   Driving help (G-FEEL1, a dial of 4 levels in place of the old Easy driving switch; HC_AS, Grown-ups picks Auto or a level, the
+   menu switch turns it on (Auto) or off): levels the car in the air, eases the gas when the nose lifts, softer landings, balloons
+   that float the car over gaps, a car tipping over set back on its wheels. A flip or an empty tank restarts at the last checkpoint:
+   no lives, nothing lost. G-FEEL1 missions need a decision, never just the gas: the hidden star sits low under a jump (ease off
+   before it), the lookout sign wants a stop (brake and wait); time targets come from a careful bot's drive. Colours are tokens
+   (hcC: --ill-* roles, --sc-* skies); no shake in calm mode or with reduced motion.
    The simulation (hcNew / hcStep) runs without the page, so tools/test.js drives every stage with bots.
    G-HC3 (R-03 H1-H4, A1-A5): fixed steps that catch up after a slow frame (hcAdvance: no slow motion on a slow tablet); 4 ranges
    behind the road that fade into the sky and a foreground strip; a new distance road every day (hcSeed) and today's drive
@@ -503,39 +490,40 @@ const HC_NEED=[0,4,9,15,22,30]; // stars to open each stage world (the Moon: 30 
 const SOFT={mud:{grip:.38,drag:.996,c:'n3',c2:'n2',label:'MUD'},sand:{grip:.5,drag:.997,c:'y2',c2:'y3',label:'SAND'},ice:{grip:.22,drag:1,c:'c1',c2:'w',label:'ICE'},
   ash:{grip:.45,drag:.996,c:'e3',c2:'e',label:'ASH'},oil:{grip:.24,drag:1,c:'k',c2:'v3',label:'OIL'}};
 // a stage: [id, name, goal, missions, weather, pieces]. goal: ['flag'] | ['coins', n] | ['cargo', crates]. missions: [kind, n]:
-// bolts n (in one run), time s (reach the flag in s), flips n, air n (big airs), nocrash (no restarts), crates (all crates), star (the hidden star).
+// bolts n (in one run), time s (reach the flag in s), flips n, air n (big airs), nocrash (no restarts), crates (all crates), star (the hidden star),
+// stop (G-FEEL1: stop at the lookout, piece L). A hidden star for the star mission sits low in a dip just past a jump (ease off to drop onto it).
 // weather: day | dusk | night | rain | snow | ash | dust. Pieces (metres; 1 m = 20 px), see hcCourse.
 const HC_ST=[
-  [['m1','First Hills',['flag'],[['bolts',20],['nocrash']],'day','f12 $5 h30,2.5 f6 $6 h36,3.5 f8 c w48,1,4 $8 f6 F h44,4.5 $5 f8 h30,2 $4 f12'],
-   ['m2','Muddy Puddles',['flag'],[['time',25],['bolts',24]],'day','f12 m18 $5 f22 h40,4 c f6 m26 v34,2 $6 f10 u22,4 $5 f12 d26,4 m18 $5 f20 F w42,1.2,3 $6 f12'],
-   ['m3','Over the Pond',['flag'],[['star'],['nocrash']],'day','f12 $5 h30,3 f8 b26 $8 f10 c o16 $4 f12 A f2 p4 $4 f10 h40,5 $6 f6 k2.5 S4 f20 $5 f12'],
-   ['m4','Farm Delivery',['cargo',3],[['crates'],['time',25]],'dusk','f14 $5 h40,3 f10 c w44,1,3 $6 f10 b22 $5 f8 h44,4 c F f12 v36,2.5 $6 f12 u22,3 $5 f16'],
-   ['m5','Rolling Rollers',['coins',30],[['air',1],['nocrash']],'day','f12 $8 w60,1.6,4 $8 c f8 k2.5 $5 f14 w60,2,4 $8 F f8 c h50,5 $6 f6 A f2 p5 $5 f12 w50,1.4,4 $8 f12']],
-  [['d1','Dune Sea',['flag'],[['bolts',25],['nocrash']],'day','f12 m30 $5 h50,5 $6 f8 h60,6 c m22 $6 f8 w60,2,3 F $6 h50,5 $5 f8 m20 h40,4 $5 f14'],
-   ['d2','Cactus Canyon',['flag'],[['time',25],['star']],'day','f12 r3 f10 $5 u26,5 f10 r2 $4 d26,5 c $6 f8 k3 S5 f16 r4 F $6 h44,4 f10 r2 $5 f14'],
-   ['d3','Oasis Jumps',['flag'],[['nocrash'],['air',1]],'dust','f12 $5 h32,3 f8 A f2 p5 $4 f12 c o18 $5 f12 k4.5 $5 f18 A f2 p6 $4 f12 c F $6 h50,5 f8 A f2 p4 $4 f14'],
-   ['d4','Camel Post',['cargo',2],[['crates'],['time',25]],'dusk','f14 m16 $5 h44,4 f10 c w50,1.4,3 $6 f8 r2 f10 b24 $5 c F h56,5 $6 f10 m20 v40,3 $5 f16'],
-   ['d5','Starry Dunes',['coins',30],[['perfect',1],['nocrash']],'night','f12 $6 h46,4 $6 f8 w56,1.8,3 $8 c k3 $5 f16 h60,6 $6 F f10 c w60,2,4 $8 f8 A f2 p5 $5 f10 h40,4 $6 f14']],
-  [['j1','River Fords',['flag'],[['bolts',25],['time',25]],'day','f12 $5 o14 f10 h40,4 $6 c o20 $5 f10 m20 h36,3.5 $5 f8 F o16 $5 f10 w44,1.4,3 $6 f14'],
-   ['j2','Log Bridges',['flag'],[['star'],['nocrash']],'rain','f12 $5 b20 f10 h40,4 c $6 b30 $6 f10 A f2 p5 $4 f12 k3 S5 f18 c F b24 $6 f10 h44,4.5 $5 f14'],
-   ['j3','Monkey Hills',['coins',30],[['air',1],['perfect',1]],'day','f12 $8 w70,2.4,4 $8 f8 c h60,7 $6 f8 F w70,2.6,4 $8 c k3.5 $5 f16 w60,2,4 $8 f14'],
-   ['j4','Banana Run',['cargo',3],[['crates'],['nocrash']],'dusk','f14 $5 m16 h40,3.5 f10 c o16 $5 f10 w50,1.2,4 $6 c F b26 $5 f10 u24,4 m14 $5 f10 d24,4 f16'],
-   ['j5','Waterfall Climb',['flag'],[['time',30],['star']],'rain','f12 $5 u30,6 f8 $5 u30,6 f6 c F $6 h40,4 f8 A f2 p6 $4 f12 c u34,7 $5 f10 k3 S5 f20 d40,8 $6 f8 o16 $5 f14']],
-  [['s1','Icy Slopes',['flag'],[['bolts',22],['nocrash']],'snow','f12 i14 $5 h40,4 f10 i20 $6 f10 c w50,1.2,3 $6 i16 f10 F h44,4.5 $5 f8 i22 $5 f14'],
-   ['s2','Frozen Lake',['flag'],[['time',20],['star']],'day','f12 $5 i40 f40 c $6 h40,4 f8 A f2 p5 $4 f10 i30 F f30 $6 c k3 S5 f18 i20 h36,3 $5 f14'],
-   ['s3','Snowball Jumps',['coins',30],[['perfect',1],['air',2]],'day','f12 $5 k3.5 $5 f18 k4 $5 f20 c h44,4 F $6 k4.5 $6 f22 c w50,1.6,3 $8 k4 $5 f18 h40,4 $6 f14'],
-   ['s4','Mountain Post',['cargo',3],[['crates'],['time',25]],'snow','f14 $5 u30,5 f10 i14 $5 c h40,4 f10 F w44,1.2,3 $6 c b24 $5 u30,5 f10 i16 d30,5 $6 f16'],
-   ['s5','Northern Lights',['flag'],[['nocrash'],['star']],'night','f12 $5 h44,4 i16 f10 c $6 o14 f10 A f2 p5 $4 f12 F w50,1.6,3 $6 c k3 S5 f18 i20 h50,5 $6 f14']],
-  [['v1','Ash Road',['flag'],[['bolts',25],['time',25]],'ash','f12 m20 $5 h44,4.5 f8 r3 $5 c m24 $6 w50,1.6,3 F f8 h50,5 $5 r2 f10 m20 $5 f14'],
-   ['v2','Lava Leaps',['flag'],[['nocrash'],['star']],'day','f12 $5 h30,3 f8 A f2 p5 $4 f12 c $5 h40,4 A f2 p6 $4 f12 F c k3 S5 f18 A f2 p5 $4 f10 h40,4 $5 f14'],
-   ['v3','Rumble Rocks',['coins',28],[['air',1],['perfect',1]],'day','f12 r4 $5 f8 h40,4 $6 c r3 f10 k3 $5 f16 F r4 $6 c w60,2,4 $8 f8 r3 $5 f14'],
-   ['v4','Hot Delivery',['cargo',2],[['crates'],['time',20]],'dusk','f14 $5 m16 h44,4 f10 c b26 $5 f8 r2 F f10 u30,5 $5 c d30,5 m18 f10 b20 $5 f16'],
-   ['v5','Crater Rim',['flag'],[['star'],['nocrash']],'ash','f12 $5 u36,7 f8 $5 h40,4 c F A f2 p6 $4 f12 u40,8 $6 f8 k3.5 S6 f20 c d40,8 r3 $5 F w50,1.8,3 $6 f14']],
-  [['o1','Moon Walk',['flag'],[['bolts',18],['nocrash']],'day','f12 $5 h50,4 $5 f10 w60,2,3 $6 c F h60,6 $6 f10 r3 $5 f14'],
-   ['o2','Crater Hops',['flag'],[['time',20],['star']],'day','f12 $5 f6 p6 $4 f14 c h50,5 $5 p7 $4 f14 F c k3 S7 f24 p6 $4 f14'],
-   ['o3','Space Rocks',['coins',25],[['air',2],['time',25]],'day','f12 r3 $5 f10 k3 $6 f24 c w70,2.4,3 $8 F r4 $5 c k4 $6 f26 h60,6 $6 f14'],
-   ['o4','Moon Base Post',['cargo',3],[['crates'],['nocrash']],'day','f14 $5 h50,4 f10 c p6 $4 f14 r3 F $5 c w60,2,3 $6 f10 p5 $4 f16'],
-   ['o5','Earthrise',['flag'],[['star'],['time',35]],'day','f12 $5 k3 $5 f22 c h60,7 $6 p7 $4 f14 F c u40,7 $5 k4 S8 f26 c d40,7 p6 $4 f10 w50,2,3 $6 f14']]];
+  [['m1','First Hills',['flag'],[['bolts',20],['stop']],'day','f12 $5 h30,2.5 f6 $6 h36,3.5 L6 f8 c w48,1,4 $8 f6 F h44,4.5 $5 f8 h30,2 $4 f12'],
+   ['m2','Muddy Puddles',['flag'],[['time',19],['stop']],'day','f12 m18 $5 f22 h40,4 c f6 m26 v34,2 $6 f10 u22,4 $5 L5 f12 d26,4 m18 $5 f20 F w42,1.2,3 $6 f12'],
+   ['m3','Over the Pond',['flag'],[['star'],['nocrash']],'day','f12 $5 h30,3 f8 b26 $8 f10 c o16 $4 f12 A f2 p4 $4 f10 h40,5 $6 f6 k2.5 d3,1.5 S0.5 d2,1 f1 u5,2.5 f9 $5 f12'],
+   ['m4','Farm Delivery',['cargo',3],[['crates'],['stop']],'dusk','f14 $5 h40,3 f10 c w44,1,3 $6 f10 b22 $5 f8 h44,4 c F L6 f12 v36,2.5 $6 f12 u22,3 $5 f16'],
+   ['m5','Rolling Rollers',['coins',30],[['air',1],['star']],'day','f12 $8 w60,1.6,4 $8 c f8 k2.5 d3,1.5 S0.5 d2,1 f1 u5,2.5 $5 f5 w60,2,4 $8 F f8 c h50,5 $6 f6 A f2 p5 $5 f12 w50,1.4,4 $8 f12']],
+  [['d1','Dune Sea',['flag'],[['bolts',25],['stop']],'day','f12 m30 $5 h50,5 $6 f8 h60,6 c m22 $6 f8 w60,2,3 F $6 h50,5 $5 L5 f8 m20 h40,4 $5 f14'],
+   ['d2','Cactus Canyon',['flag'],[['time',18],['star']],'day','f12 r3 f10 $5 u26,5 f10 r2 $4 d26,5 c $6 f8 k3 d3,1.5 S0.5 d2,1 f1 u5,2.5 f5 r4 F $6 h44,4 f10 r2 $5 f14'],
+   ['d3','Oasis Jumps',['flag'],[['stop'],['air',1]],'dust','f6 L5 f6 $5 h32,3 f8 A f2 p5 $4 f12 c o18 $5 f12 k4.5 $5 f18 A f2 p6 $4 f12 c F $6 h50,5 f8 A f2 p4 $4 f14'],
+   ['d4','Camel Post',['cargo',2],[['crates'],['stop']],'dusk','f14 m16 $5 h44,4 f10 c w50,1.4,3 $6 f8 r2 f10 b24 $5 c F h56,5 $6 L6 f10 m20 v40,3 $5 f16'],
+   ['d5','Starry Dunes',['coins',30],[['perfect',1],['star']],'night','f12 $6 h46,4 $6 f8 w56,1.8,3 $8 c k3 d3,1.5 S0.5 d2,1 f1 u5,2.5 $5 f7 h60,6 $6 F f10 c w60,2,4 $8 f8 A f2 p5 $5 f10 h40,4 $6 f14']],
+  [['j1','River Fords',['flag'],[['stop'],['time',18]],'day','f12 $5 o14 f10 h40,4 $6 c o20 $5 f10 m20 h36,3.5 $5 f8 F o16 $5 L5 f10 w44,1.4,3 $6 f14'],
+   ['j2','Log Bridges',['flag'],[['star'],['nocrash']],'rain','f12 $5 b20 f10 h40,4 c $6 b30 $6 f10 A f2 p5 $4 f40 k3.5 d3,1.5 S0.5 d2,1 f1 u5,2.5 f7 c F b24 $6 f10 h44,4.5 $5 f14'],
+   ['j3','Monkey Hills',['coins',30],[['air',1],['star']],'day','f12 $8 w70,2.4,4 $8 f8 c h60,7 $6 f8 F w70,2.6,4 $8 c k3.5 d3,1.5 S0.5 d2,1 f1 u5,2.5 $5 f7 w60,2,4 $8 f14'],
+   ['j4','Banana Run',['cargo',3],[['crates'],['stop']],'dusk','f14 $5 m16 h40,3.5 f10 c o16 $5 f10 w50,1.2,4 $6 c F b26 $5 f10 u24,4 m14 $5 L5 f10 d24,4 f16'],
+   ['j5','Waterfall Climb',['flag'],[['stop'],['star']],'rain','f12 $5 u30,6 f8 $5 u30,6 f6 c F $6 h40,4 f8 A f2 p6 $4 f12 c u34,7 $5 f10 k3 S5 f20 d40,8 $6 L5 f8 o16 $5 f14']],
+  [['s1','Icy Slopes',['flag'],[['bolts',22],['stop']],'snow','f12 i14 $5 h40,4 f10 i20 $6 f10 c w50,1.2,3 $6 i16 f10 F h44,4.5 $5 L5 f8 i22 $5 f14'],
+   ['s2','Frozen Lake',['flag'],[['time',17],['star']],'day','f12 $5 i40 f40 c $6 h40,4 f8 A f2 p5 $4 f10 i30 F f30 $6 c k3 d3,1.5 S0.5 d2,1 f1 u5,2.5 f7 i20 h36,3 $5 f14'],
+   ['s3','Snowball Jumps',['coins',30],[['star'],['air',2]],'day','f12 $5 k3.5 $5 f18 k4 $5 f20 c h44,4 F $6 k4.5 d3,1.5 S0.5 d2,1 f1 u5,2.5 $6 f13 c w50,1.6,3 $8 k4 $5 f18 h40,4 $6 f14'],
+   ['s4','Mountain Post',['cargo',3],[['crates'],['stop']],'snow','f14 $5 u30,5 f10 i14 $5 c h40,4 f10 F w44,1.2,3 $6 c b24 $5 u30,5 L5 f10 i16 d30,5 $6 f16'],
+   ['s5','Northern Lights',['flag'],[['nocrash'],['star']],'night','f12 $5 h44,4 i16 f10 c $6 o14 f10 A f2 p5 $4 f12 F w50,1.6,3 $6 c k3 d3,1.5 S0.5 d2,1 f1 u5,2.5 f7 i20 h50,5 $6 f14']],
+  [['v1','Ash Road',['flag'],[['stop'],['time',17]],'ash','f12 m20 $5 h44,4.5 f8 r3 $5 c m24 $6 w50,1.6,3 F f8 h50,5 $5 r2 f10 m20 $5 L5 f14'],
+   ['v2','Lava Leaps',['flag'],[['nocrash'],['star']],'day','f12 $5 h30,3 f8 A f2 p5 $4 f12 c $5 h40,4 A f2 p6 $4 f40 F c k3 d3,1.5 S0.5 d2,1 f1 u5,2.5 f7 A f2 p5 $4 f10 h40,4 $5 f14'],
+   ['v3','Rumble Rocks',['coins',28],[['air',1],['stop']],'day','f12 r4 $5 f8 h40,4 $6 c r3 f10 k3 $5 f16 F r4 $6 c w60,2,4 $8 L5 f8 r3 $5 f14'],
+   ['v4','Hot Delivery',['cargo',2],[['crates'],['stop']],'dusk','f14 $5 m16 h44,4 f10 c b26 $5 f8 r2 F f10 u30,5 $5 c d30,5 m18 L5 f10 b20 $5 f16'],
+   ['v5','Crater Rim',['flag'],[['star'],['nocrash']],'ash','f12 $5 u36,7 f8 $5 h40,4 c F A f2 p6 $4 f12 u40,8 $6 f8 k3.5 d3,1.5 S0.5 d2,1 f1 u5,2.5 f9 c d40,8 r3 $5 F w50,1.8,3 $6 f14']],
+  [['o1','Moon Walk',['flag'],[['bolts',18],['stop']],'day','f12 $5 h50,4 $5 f10 w60,2,3 $6 c F h60,6 $6 L5 f10 r3 $5 f14'],
+   ['o2','Crater Hops',['flag'],[['time',19],['star']],'day','f12 $5 f6 p6 $4 f14 c h50,5 $5 p7 $4 f30 F c k3 f1 d3,1.5 S0.5 d2,1 f1 u5,2.5 f12 p6 $4 f14'],
+   ['o3','Space Rocks',['coins',25],[['air',2],['stop']],'day','f6 L5 f6 r3 $5 f10 k3 $6 f24 c w70,2.4,3 $8 F r4 $5 c k4 $6 f26 h60,6 $6 f14'],
+   ['o4','Moon Base Post',['cargo',3],[['crates'],['stop']],'day','f14 $5 h50,4 L5 f10 c p6 $4 f14 r3 F $5 c w60,2,3 $6 f10 p5 $4 f16'],
+   ['o5','Earthrise',['flag'],[['star'],['time',27]],'day','f12 $5 k3 $5 f22 c h60,7 $6 p7 $4 f14 F c u40,7 $5 k4 f1 d3,1.5 S0.5 d2,1 f1 u5,2.5 f14 c d40,7 p6 $4 f10 w50,2,3 $6 f14']]];
 const HC_SPW=5; // stages per world
 const hcStage=id=>{for(let w=0;w<HC_ST.length;w++){const i=HC_ST[w].findIndex(s=>s[0]==id);if(i>=0)return{w,i,s:HC_ST[w][i]}}return null};
 
@@ -578,6 +566,10 @@ function garageS(){const g=S.garage||(S.garage={});
   // old missions (v155 and before): a mission done but not claimed pays its bolts once; missions are per stage now
   if(Array.isArray(g.missions)){for(const m of g.missions)if(m&&m.done&&m.r>0)g.bolts+=Math.floor(m.r);g.missions=[]}
   if(g.easy!==true&&g.easy!==false)delete g.easy;
+  // G-FEEL1: driving help ('auto' or 0-3), Auto's step up (0-3) and the struggle count on one stage
+  if(g.as!=='auto'&&!(g.as===0||g.as===1||g.as===2||g.as===3))delete g.as;
+  if(g.asu!=null&&!(g.asu===1||g.asu===2||g.asu===3))delete g.asu;
+  if(g.asf!=null&&!(g.asf&&typeof g.asf=='object'&&hcStage(g.asf.s)&&g.asf.n>=1&&g.asf.n<HC_AS_RS&&Number.isInteger(g.asf.n)))delete g.asf;
   // G-HC3: garage level 2 (own2 {itemId: 1}; rim, trail, top: the item in use or '') and day (the date today's drive paid its bonus)
   if(!g.own2||typeof g.own2!='object'||Array.isArray(g.own2))g.own2={};
   for(const k of Object.keys(g.own2))if(!HC_T2.some(t=>t[0]==k))delete g.own2[k];
@@ -593,8 +585,39 @@ const hcMax=()=>HC_ST.length*HC_SPW*3;
 function hcOldOpen(id){const g=garageS(),lv=g.lv&&g.lv[id];if(Array.isArray(lv)&&lv.some(v=>v>0))return true;const n=HC_OLDNEED[id];return n?Math.max(0,...HCW.map(W=>g.best[W.id]||0))>=n:false}
 function hcWOpen(w){if(w==0)return true;const W=HCW[w];if(!W)return false;if(W.dist)return hcWOpen(4);return hcTot()>=HC_NEED[w]||hcOldOpen(W.id)||HC_ST[w].some(s=>hcStars(s[0])>0)}
 function hcSOpen(w,i){return hcWOpen(w)&&(i==0||hcStars(HC_ST[w][i-1][0])>0||hcStars(HC_ST[w][i][0])>0)}
-// easy driving: the child's choice, else on for Pre-K to 2nd grade
-const hcEasy=()=>{const g=garageS();return g.easy!=null?g.easy:(S.grade==null?0:+S.grade)<=2};
+/* ---- G-FEEL1: driving help, a dial of 4 levels (HC_AS) in place of the old Easy driving switch. 3 is the old Easy driving, 0 the
+   old Easy off. Per level: air (how hard the pedals spin the car in the air), lift (how hard the gas lifts the nose), lvl (the
+   car turns itself level in the air; free: more of that while no pedal is held, so Little help rewards letting go in the air),
+   wh (a wheelie is eased down), tc (traction control: the gas eases when the nose lifts), soft (crates stay on after a harder
+   landing, px/s), ball (balloons float the car over gaps), save (a car tipping onto its back or side, not its roof, is set back
+   on its wheels, this many times between checkpoints; not a restart).
+   The grown-ups choice (S.garage.as): 'auto' (the default) or a fixed level. Old saves: Easy driving on is Most help (3), off is No
+   help (0), never set is Auto (hcAsPick; the old easy field is kept as it was). Auto starts from the grade (hcAsBase), steps down by
+   one for each world with HC_AS_DOWN stars or more, and steps up by one (S.garage.asu, at most 3) after HC_AS_CR crashes between two
+   checkpoints in a drive or after HC_AS_RS struggling drives in a row on a stage (quit without the flag, or 3 crashes or more,
+   S.garage.asf {s: stage id, n}); a clean win (at most one restart) steps it back down by one. ---- */
+const HC_AS=[{air:1,lift:1,lvl:0,free:0,wh:0,tc:0,soft:0,ball:0,save:0},
+  {air:1,lift:1,lvl:0,free:.07,wh:0,tc:0,soft:60,ball:0,save:1},
+  {air:.7,lift:.85,lvl:.02,free:.05,wh:.01,tc:.5,soft:130,ball:1,save:1},
+  {air:.35,lift:.6,lvl:.07,free:0,wh:.02,tc:1,soft:200,ball:1,save:1}];
+const HC_AS_DOWN=9,HC_AS_CR=3,HC_AS_RS=2;
+const hcAsN=v=>Math.max(0,Math.min(3,Math.round(+v||0)));
+// the grown-ups choice: 'auto' or 0-3
+const hcAsPick=()=>{const g=garageS();return g.as!=null?g.as:g.easy===true?3:g.easy===false?0:'auto'};
+// Auto's start: Most help for Pre-K to 2nd grade, Little help for 3rd, none from 4th
+const hcAsBase=()=>{const gr=S.grade==null?0:+S.grade;return gr<=2?3:gr==3?1:0};
+const hcAsAuto=()=>hcAsN(hcAsBase()-HC_ST.reduce((a,_,w)=>a+(hcWStars(w)>=HC_AS_DOWN),0)+(garageS().asu||0));
+const hcAsLevel=()=>{const p=hcAsPick();return p=='auto'?hcAsAuto():p};
+// any help on (the menu's switch; the old name kept)
+const hcEasy=()=>hcAsLevel()>0;
+// after a stage drive (won or quit): Auto's step up after struggling drives in a row on one stage, or down after a clean win; the
+// help a drive took on by itself (H.asUp) is kept too. Returns the new step (S.garage.asu).
+function hcAsNote(H){const g=garageS();if(!H.st)return g.asu||0;const id=H.st[0],win=H.result=='win';
+  let u=(g.asu||0)+(H.asUp||0);
+  if(!win||H.crashes>=3){const n=g.asf&&g.asf.s==id?g.asf.n+1:1;if(n>=HC_AS_RS){u++;delete g.asf}else g.asf={s:id,n}}
+  else{delete g.asf;if(H.crashes<=1&&!H.asUp)u--}
+  if(H.auto){u=Math.max(0,Math.min(3,u));if(u)g.asu=u;else delete g.asu}else delete g.asf;
+  return g.asu||0}
 // the next thing to do: {w, i (stage or null), t (the line)}
 function hcNextGoal(){
   for(let w=0;w<HC_ST.length;w++){if(!hcWOpen(w))continue;for(let i=0;i<HC_SPW;i++){const s=HC_ST[w][i];if(!hcStars(s[0]))return{w,i,t:`Finish ${s[1]} (${HCW[w].n}, stage ${i+1}): ${hcGoalText(s)}.`}}}
@@ -606,8 +629,8 @@ function hcNextGoal(){
   return{w:0,i:null,t:`Every star won! Try a distance drive and beat your best.`}}
 const hcGoalText=s=>s[2][0]=='coins'?`collect ${s[2][1]} bolts and reach the flag`:s[2][0]=='cargo'?`carry ${s[2][1]} crates to the flag`:'reach the flag';
 const hcMisText=m=>({bolts:`collect ${m[1]} bolts`,time:`reach the flag in ${m[1]} seconds`,flips:m[1]>1?`do ${m[1]} flips`:'do a flip',air:m[1]>1?`get big air ${m[1]} times`:'get big air',perfect:m[1]>1?`land ${m[1]} jumps on both wheels`:'land a jump on both wheels',
-  nocrash:'finish with no restarts',crates:'keep every crate on',star:'find the hidden star'})[m[0]]||'';
-const HC_MIC={bolts:'nut',time:'timer',flips:'rotate',air:'arrow-up',perfect:'check-circle',nocrash:'heart',crates:'gift',star:'star'};
+  nocrash:'finish with no restarts',crates:'keep every crate on',star:'find the hidden star',stop:'stop at the lookout sign'})[m[0]]||'';
+const HC_MIC={bolts:'nut',time:'timer',flips:'rotate',air:'arrow-up',perfect:'check-circle',nocrash:'heart',crates:'gift',star:'star',stop:'eye'};
 const HC_GIC={flag:'go',coins:'nut',cargo:'gift'};
 // G-HC3 (R-03 A2): garage level 2 opens with stars; the next thing to save for (the cheapest thing not bought yet: a vehicle, an
 // upgrade level, paint, then level 2), {name, cost} or {lock: true} when only the closed level 2 is left, or null when all is bought
@@ -670,12 +693,13 @@ function hcMusic(H){const a=typeof AC!='undefined'&&AC;
 /* ---- courses: a stage's pieces (or a seeded endless line of them) as heights every 10 px and lists of things ----
    f L flat | u L,H up (eased) | d L,H down | h L,H hill | v L,H dip | w L,H,N rollers | k H kicker jump | p W gap (with its lip)
    b W bridge | o W ford (shallow water) | r N rocks | m L soft ground (the world's mud, sand, ash) | i L ice (m and i do not move on)
-   c checkpoint | $N bolts | F fuel can | A balloon (easy driving) | S H the hidden star H m up | > boost pad. The finish follows the last piece. */
+   c checkpoint | $N bolts | F fuel can | A balloon (driving help) | S H the hidden star H m up | > boost pad | L W the lookout, a stop
+   zone W m long on the road ahead (G-FEEL1: the stop mission). The finish follows the last piece. */
 const HC_PX=20,HC_CC={};
 function rng(seed){return()=>{seed=(seed*16807)%2147483647;return(seed-1)/2147483646}}
 const hcParse=s=>s.trim().split(/\s+/).map(t=>{const m=t.match(/^([a-zA-Z$>])([\d.,]*)$/);return m?[m[1],...(m[2]?m[2].split(',').map(Number):[])]:null}).filter(Boolean);
 function hcCourse(st,wi,endless,ekey){const key=endless?ekey||'E'+wi:st[0];if(HC_CC[key])return HC_CC[key];
-  const W=HCW[wi],h=[0],C={key,w:wi,pits:[],fords:[],bridges:[],soft:[],rocks:[],kicks:[],cps:[60],coins:[],fuel:[],balloons:[],stars:[],pads:[],fin:null};let y=0;
+  const W=HCW[wi],h=[0],C={key,w:wi,pits:[],fords:[],bridges:[],soft:[],rocks:[],kicks:[],cps:[60],coins:[],fuel:[],balloons:[],stars:[],pads:[],looks:[],fin:null};let y=0;
   const X=()=>(h.length-1)*10,add=(n,f)=>{const y0=y;for(let i=1;i<=n;i++){y=f(i/n,y0);h.push(y)}y=h[h.length-1]};
   const cosE=t=>(1-Math.cos(Math.PI*t))/2;
   for(const [k,a=0,b=0,c=1] of hcParse(endless||st[5])){const n=Math.max(1,Math.round(a*2)),H=b*HC_PX;
@@ -697,7 +721,8 @@ function hcCourse(st,wi,endless,ekey){const key=endless?ekey||'E'+wi:st[0];if(HC
     else if(k=='F')C.fuel.push(X());
     else if(k=='A')C.balloons.push(X());
     else if(k=='S')C.stars.push({x:X(),hm:a});
-    else if(k=='>')C.pads.push(X())}
+    else if(k=='>')C.pads.push(X())
+    else if(k=='L')C.looks.push({x0:X(),x1:X()+(a||5)*HC_PX})}
   if(!endless){C.fin=X();add(80,(t,y0)=>y0)}
   C.n=h.length;C.h=Float32Array.from(h);
   // per sample: 1 gap, 2 ford, 4 bridge; soft kind index into HC_SK (0 none)
@@ -741,11 +766,11 @@ function hcEndless(wi,seed=0,tw=''){const key='E'+wi+(seed||tw?'/'+seed+'/'+tw:'
   const C=hcCourse(null,wi,p.join(' '),key);C.endless=1;return C}
 
 /* ---- the simulation (no page needed): hcNew makes a run, hcStep moves it 1/120 s ---- */
-// o: veh, up (upgrades), easy, ui (true: messages, sounds and the end card), paint; G-HC3: seed (the day's road of a distance
+// o: veh, up (upgrades), as (driving help 0-3; G-FEEL1) or easy (true: as 3, the old switch), auto (Auto may turn the help up during the drive), ui (true: messages, sounds and the end card), paint; G-HC3: seed (the day's road of a distance
 // drive), day (today's drive, hcDay: its road, twist and gold flag)
 function hcNew(wi,si,o={}){const st=si==null?null:HC_ST[wi][si],day=st?null:o.day||null,C=st?hcCourse(st,wi):day?hcEndless(wi,day.seed,day.tw):hcEndless(wi,o.seed||0),sp=hcSpec(o.veh||'jeep',o.up),x0=60,
-  y1=hcH(C,x0)+sp.R+2,y2=hcH(C,x0+sp.L)+sp.R+2,crates=st&&st[2][0]=='cargo'?st[2][1]:0;
-  return Object.assign(sp,{wi,w:HCW[wi].id,st,si,C,veh:o.veh||'jeep',easy:!!o.easy,ui:!!o.ui,tankSec:sp.tankSec*(st?1.5:1),fuel:100,
+  y1=hcH(C,x0)+sp.R+2,y2=hcH(C,x0+sp.L)+sp.R+2,crates=st&&st[2][0]=='cargo'?st[2][1]:0,as=hcAsN(o.as!=null?o.as:o.easy?3:0);
+  return Object.assign(sp,{wi,w:HCW[wi].id,st,si,C,veh:o.veh||'jeep',as,A:HC_AS[as],auto:!!o.auto,asUp:0,cpCr:0,saves:HC_AS[as].save,saved:0,stopT:0,stopped:false,easy:as>=2,ui:!!o.ui,tankSec:sp.tankSec*(st?1.5:1),fuel:100,
     w1:{x:x0,y:y1,px:x0,py:y1,rot:0,g:true},w2:{x:x0+sp.L,y:y2,px:x0+sp.L,py:y2,rot:0,g:true},gas:false,brake:false,
     bolts:0,maxX:x0,cp:x0,cpi:0,cpCrates:crates,crates,crates0:crates,crashT:0,safeT:0,stuckT:0,lockT:o.ui?1:0,over:false,result:null,
     took:new Set(),ci:0,t:0,air:0,airRot:0,lastAng:Math.atan2(y2-y1,sp.L),flips:0,perfect:0,airs:0,wheelieT:0,wheelies:0,crashes:0,
@@ -755,15 +780,15 @@ function rotPts(H,a){const c=Math.cos(a),s=Math.sin(a),cx=(H.w1.x+H.w2.x)/2,cy=(
 const hcAng=H=>Math.atan2(H.w2.y-H.w1.y,H.w2.x-H.w1.x);
 const hcAV=H=>{let d=hcAng(H)-Math.atan2(H.w2.py-H.w1.py,H.w2.px-H.w1.px);if(d>Math.PI)d-=2*Math.PI;if(d<-Math.PI)d+=2*Math.PI;return d};
 const hcWrap=a=>{while(a>Math.PI)a-=2*Math.PI;while(a<-Math.PI)a+=2*Math.PI;return a};
-function hcStep(H,dt){const C=H.C,Wd=HCW[H.wi],R=H.R,L=H.L,w=[H.w1,H.w2],easy=H.easy,ui=H.ui;
+function hcStep(H,dt){const C=H.C,Wd=HCW[H.wi],R=H.R,L=H.L,w=[H.w1,H.w2],A=H.A,ui=H.ui;
   H.t+=dt;H.bobV+=(-H.bob*260-H.bobV*(14+H.susp*4))*dt;H.bob+=H.bobV*dt;
   if(H.crashT>0){H.crashT-=dt;hcParts(H,dt);if(H.crashT<=0)hcRespawn(H);return}
   if(H.lockT>0)H.lockT-=dt;if(H.boostT>0)H.boostT-=dt;if(H.comboT>0){H.comboT-=dt;if(H.comboT<=0)H.combo=0}
   if(H.ballT>0){H.ballT-=dt;if(H.ballT<=0&&ui)hcPop('Pop!')}
   const ang0=hcAng(H),cx0=(H.w1.x+H.w2.x)/2,err0=hcWrap(ang0-hcSlopeL(C,cx0,20));
   let gas=H.gas&&H.fuel>0&&H.lockT<=0;const brk=H.brake||H.lockT>0;
-  // easy driving, traction control: the nose lifting off the ground eases the gas
-  let tc=1;if(easy&&gas&&H.w1.g&&err0>.2)tc=Math.max(.15,1-(err0-.2)*3.5);
+  // driving help (A, HC_AS), traction control: the nose lifting off the ground eases the gas
+  let tc=1;if(A.tc&&gas&&H.w1.g&&err0>.2)tc=1-(1-Math.max(.15,1-(err0-.2)*3.5))*A.tc;
   const g=Wd.g*(H.ballT>0?.3:1)*(H.gm||1),boost=H.boostT>0;
   if(H.ballT>0&&H.ballT<2&&H.w1.g&&H.w2.g&&!hcPitAt(C,cx0+H.L))H.ballT=.01; // the balloons pop once the car is down past the gap
   for(const p of w){const vx=(p.x-p.px)*.9994,vy=(p.y-p.py)*.9994;p.px=p.x;p.py=p.y;p.x+=vx+(H.ballT>0&&H.gas?60*dt*dt:0);p.y+=vy-g*dt*dt}
@@ -785,16 +810,16 @@ function hcStep(H,dt){const C=H.C,Wd=HCW[H.wi],R=H.R,L=H.L,w=[H.w1,H.w2],easy=H.
       p.px=p.x-tx*vt;p.py=p.y-ty*vt;p.rot+=vt/R*(gas&&H.acc>trac?1.6:1)}
     else p.rot+=(p.x-p.px)/R*.99}
   if(landV>200){H.bobV+=Math.min(landV,900)*.06/(1+H.susp*.15);if(landV>380&&ui)HSND.land(landV)}
-  if(H.crates&&landV>H.drop+(easy?200:0)&&H.safeT<=0)hcCrate(H);
+  if(H.crates&&landV>H.drop+A.soft&&H.safeT<=0)hcCrate(H);
   let tq=0;const ang=hcAng(H),cx=(H.w1.x+H.w2.x)/2,cy=(H.w1.y+H.w2.y)/2,slopeB=hcSlopeL(C,cx,20);
-  if(ground==0){tq=((gas?4.6:0)-(brk?4.6:0))*(easy?.35:1);H.air+=dt}
-  else{if(gas&&H.w1.g)tq+=H.lift*(H.w2.g?1:.8)*tc*(easy?.6:1);if(brk&&H.w2.g)tq-=3.2}
+  if(ground==0){tq=((gas?4.6:0)-(brk?4.6:0))*A.air;H.air+=dt}
+  else{if(gas&&H.w1.g)tq+=H.lift*(H.w2.g?1:.8)*tc*A.lift;if(brk&&H.w2.g)tq-=3.2}
   if(tq)rotPts(H,tq*dt*dt);
   const av=hcAV(H),err=hcWrap(ang-(ground?slopeB:hcSlopeL(C,cx)));
-  // in the air with no pedal the spin slows; easy driving turns the car to match the ground below
+  // in the air with no pedal the spin slows; driving help turns the car to match the ground below (and eases a wheelie down)
   if(ground==0&&!gas&&!brk)rotPts(H,-av*.012);
-  if(ground==0&&easy)rotPts(H,(-err*2.6*dt-av)*.07);
-  if(ground&&easy&&H.w1.g&&!H.w2.g&&err>.3)rotPts(H,-(err-.3)*.02);
+  const lv=A.lvl+(gas||brk?0:A.free);if(ground==0&&lv)rotPts(H,(-err*2.6*dt-av)*lv);
+  if(ground&&A.wh&&H.w1.g&&!H.w2.g&&err>.3)rotPts(H,-(err-.3)*A.wh);
   // suspension: a landing's bounce is soaked up (better suspension, less spin left after touching down)
   if(ground&&H.wasAir)rotPts(H,-av*(.25+H.susp*.1));
   let da=ang-H.lastAng;if(da>Math.PI)da-=2*Math.PI;if(da<-Math.PI)da+=2*Math.PI;H.lastAng=ang;
@@ -810,7 +835,10 @@ function hcStep(H,dt){const C=H.C,Wd=HCW[H.wi],R=H.R,L=H.L,w=[H.w1,H.w2],easy=H.
   const hr=48*(H.R/21)+(H.veh=='monster'?10:0),hx=cx-Math.sin(ang)*hr,hy=cy+Math.cos(ang)*hr,pit=hcPitAt(C,cx);
   if(H.safeT>0)H.safeT-=dt;
   else if(pit&&cy<pit.y-pit.d*.45)return hcCrash(H,'pit');
-  else if(hy<hcH(C,hx)+5||(Math.abs(err)>2.4&&ground))return hcCrash(H,hcPitAt(C,hx)||hcPitAt(C,cx+50)?'pit':'flip');
+  else if(hy<hcH(C,hx)+5||(Math.abs(err)>2.4&&ground)){const why=hcPitAt(C,hx)||hcPitAt(C,cx+50)?'pit':'flip';
+    // driving help: a car tipping onto its back or side (not on its roof) is set back on its wheels, once between checkpoints
+    if(why=='flip'&&H.saves>0&&Math.abs(err)<2.95)return hcSave(H,cx);
+    return hcCrash(H,why)}
   // stuck on its end (leaning on a wall, nose up or down): after 1.5 s it counts as a flip
   H.tiltT=ground<2&&Math.abs(err)>1.1&&H.speed<60?(H.tiltT||0)+dt:0;if(H.tiltT>1.5){H.tiltT=0;return hcCrash(H,'flip')}
   H.fuel=Math.max(0,H.fuel-dt*100/H.tankSec*(gas?1:.25));
@@ -819,11 +847,13 @@ function hcStep(H,dt){const C=H.C,Wd=HCW[H.wi],R=H.R,L=H.L,w=[H.w1,H.w2],easy=H.
   if(C.fin!=null&&cx>=C.fin){H.over=true;H.result='win';return}
   if(ui&&H.best>20&&!H.passedBest&&(cx-60)/20>H.best){H.passedBest=true;hcPop('New record!');SFX.fanfare()}
   // checkpoints: a flip or an empty tank starts again here (crates as they were)
-  while(H.cpi+1<C.cps.length&&cx>=C.cps[H.cpi+1]){H.cpi++;H.cp=C.cps[H.cpi];H.cpCrates=Math.max(1,H.crates);
+  while(H.cpi+1<C.cps.length&&cx>=C.cps[H.cpi+1]){H.cpi++;H.cp=C.cps[H.cpi];H.cpCrates=Math.max(1,H.crates);H.saves=A.save;H.cpCr=0;
     if(C.endless)H.bolts+=5;if(ui){HSND.cp(H.cpi);hcMsg(C.endless?`${Math.round((H.cp-60)/20)} m! Plus 5 bolts`:'Checkpoint! A flip starts again here.',1600)}}
   for(let k=0;k<C.fuel.length;k++){const fx=C.fuel[k];if(Math.abs(fx-cx)<60&&!H.took.has('f'+k)){H.took.add('f'+k);H.fuel=100;if(ui){HSND.fuel();hcPop('Full tank!')}}}
-  if(easy)for(let k=0;k<C.balloons.length;k++){const bx=C.balloons[k];if(Math.abs(bx-cx)<70&&!H.took.has('a'+k)&&H.crashT<=0){H.took.add('a'+k);H.ballT=2.6;if(ui){HSND.balloon();hcPop('Balloons! Float over!')}}}
-  for(let k=0;k<C.stars.length;k++){const s=C.stars[k];if(!H.took.has('s'+k)&&Math.abs(s.x-cx)<55&&Math.abs(s.y-cy)<75){H.took.add('s'+k);H.gotStar=true;H.bolts+=10;if(ui){HSND.star();hcPop('You found the star!')}}}
+  if(A.ball)for(let k=0;k<C.balloons.length;k++){const bx=C.balloons[k];if(Math.abs(bx-cx)<70&&!H.took.has('a'+k)&&H.crashT<=0){H.took.add('a'+k);H.ballT=2.6;if(ui){HSND.balloon();hcPop('Balloons! Float over!')}}}
+  for(let k=0;k<C.stars.length;k++){const s=C.stars[k];if(!H.took.has('s'+k)&&Math.abs(s.x-cx)<50&&Math.abs(s.y-cy)<45){H.took.add('s'+k);H.gotStar=true;H.bolts+=10;if(ui){HSND.star();hcPop('You found the star!')}}}
+  // the lookout: stopped on it (both wheels down, hardly moving) for 0.4 s
+  if(!H.stopped&&C.looks.length){const z=C.looks.find(q=>cx>=q.x0&&cx<=q.x1);if(z&&ground==2&&Math.hypot(H.w1.x-H.w1.px,H.w1.y-H.w1.py)/dt<15){H.stopT+=dt;if(H.stopT>=.4){H.stopped=true;H.bolts+=5;if(ui){HSND.star();hcPop('What a view! Plus 5')}}}else H.stopT=0}
   while(H.ci<C.coins.length&&C.coins[H.ci].x<cx-90)H.ci++;
   for(let j=H.ci;j<C.coins.length&&C.coins[j].x<cx+90;j++){const o=C.coins[j];if(H.took.has(j))continue;if(Math.abs(o.x-cx)<46&&Math.abs(o.y-cy)<62){H.took.add(j);H.bolts+=C.endless?1+Math.floor(o.x/10000):1;if(ui){HSND.coin(H);H.pops.push({x:o.x,y:o.y,l:.7})}}}
   const sp=Math.hypot(H.w1.x-H.w1.px,H.w1.y-H.w1.py)/dt;H.speed=sp;
@@ -847,7 +877,14 @@ function hcCrate(H){if(!H.crates)return;H.crates--;if(H.ui){const cx=(H.w1.x+H.w
   if(!H.crates&&H.crashT<=0){H.crashT=1.2;H.crashes++;H.why='cargo';if(H.ui)hcMsg('Back to the checkpoint to load up again. Land softly!',2400)}}
 // R-03 A4: a short buzz on a crash and on landing a flip (buzz() in 10-sfx.js: the Grown-ups Buzz switch, never in Calm mode)
 const hcBuzz=ms=>{try{if(typeof buzz=='function')buzz(ms)}catch(e){}};
-function hcCrash(H,why){if(H.crates)hcCrate(H);H.crashT=1.5;H.crashes++;H.why=why;H.combo=0;if(!H.calm)H.shake=.4;if(!H.ui)return;hcBuzz(25);
+// driving help: set back on the wheels where the car is, slowly (not a restart: no crash counted)
+function hcSave(H,cx){const C=H.C,x=Math.max(H.cp,cx-H.L/2),y=hcH(C,x)+H.R+2,y2=hcH(C,x+H.L)+H.R+2;H.saves--;H.saved++;
+  Object.assign(H.w1,{x,y,px:x,py:y,g:true});Object.assign(H.w2,{x:x+H.L,y:y2,px:x+H.L,py:y2,g:true});
+  H.safeT=.6;H.air=0;H.airRot=0;H.wasAir=false;H.lastAng=Math.atan2(y2-y,H.L);H.tiltT=0;H.combo=0;
+  if(H.ui){hcBuzz(15);hcMsg('Whoops! Back on the wheels. Ease off the gas on steep hills.',2000)}}
+function hcCrash(H,why){if(H.crates)hcCrate(H);H.crashT=1.5;H.crashes++;
+  // Auto driving help: several crashes between two checkpoints turn the help up by one for the rest of the drive
+  if(H.auto&&H.as<3&&++H.cpCr>=HC_AS_CR){H.as++;H.A=HC_AS[H.as];H.asUp++;H.cpCr=0;H.saves=Math.max(H.saves,H.A.save);if(H.ui)hcPop('More driving help on!')}H.why=why;H.combo=0;if(!H.calm)H.shake=.4;if(!H.ui)return;hcBuzz(25);
   const cx=(H.w1.x+H.w2.x)/2,cy=(H.w1.y+H.w2.y)/2,pk=HCW[H.wi].pit;
   if(why=='pit'&&pk!='crater'){pk=='lava'?(hs()&&(noise(.5,0,.3,400,100),tone(90,.4,0,'sawtooth',.1,40))):HSND.crash(1);for(let i=0;i<26;i++)H.parts.push({x:cx,y:cy,vx:(Math.random()-.5)*320,vy:150+Math.random()*260,l:1,c:pk=='lava'?['o','y','r'][i%3]:'c1',s:5+Math.random()*4,g:1})}
   else{HSND.crash();for(let i=0;i<12;i++)H.parts.push({x:cx,y:cy+20,vx:(Math.random()-.5)*260,vy:120+Math.random()*200,l:1,c:'y',s:5,g:.6,star:1})}
@@ -861,17 +898,19 @@ function hcRespawn(H){const R=H.R,x=H.cp,C=H.C,y=hcH(C,x)+R+4,y2=hcH(C,x+H.L)+R+
 // the result of a finished stage: bits (1 goal, 2 mission 1, 4 mission 2)
 function hcBitsOf(H){const s=H.st;if(!s||H.result!='win')return 0;const g=s[2];let b=0;
   if(g[0]=='flag'||(g[0]=='coins'&&H.bolts>=g[1])||(g[0]=='cargo'&&H.crates>=1))b|=1;
-  s[3].forEach((m,k)=>{const ok={bolts:H.bolts>=m[1],time:H.t<=m[1],flips:H.flips>=m[1],air:H.airs>=m[1],perfect:H.perfect>=m[1],nocrash:H.crashes==0,crates:H.crates0>0&&H.crates==H.crates0,star:H.gotStar}[m[0]];if(ok)b|=2<<k});
+  s[3].forEach((m,k)=>{const ok={bolts:H.bolts>=m[1],time:H.t<=m[1],flips:H.flips>=m[1],air:H.airs>=m[1],perfect:H.perfect>=m[1],nocrash:H.crashes==0,crates:H.crates0>0&&H.crates==H.crates0,star:H.gotStar,stop:H.stopped}[m[0]];if(ok)b|=2<<k});
   return b}
 // save a finished stage: new stars pay bolts (more in later worlds); returns {bits, old, gain, opened: [lines]}
 function hcBank(H){const gs=garageS(),id=H.st?H.st[0]:null,bits=hcBitsOf(H),old=id?gs.st[id]||0:0,wasW=HCW.map((_,w)=>hcWOpen(w)),nxt=H.st&&H.si+1<HC_SPW?hcSOpen(H.wi,H.si+1):true;
-  const fresh=bits&~old,gain=hcBits(fresh)*(8+4*H.wi);if(id&&bits)gs.st[id]=old|bits;gs.bolts+=H.bolts+gain;
+  const fresh=bits&~old,gain=hcBits(fresh)*(8+4*H.wi);if(id&&bits)gs.st[id]=old|bits;gs.bolts+=H.bolts+gain;if(id){H.noted=1;hcAsNote(H)}
   const opened=[];HCW.forEach((W,w)=>{if(!wasW[w]&&hcWOpen(w))opened.push(W.n)});
   const nextOpen=H.st&&H.si+1<HC_SPW&&!nxt&&hcSOpen(H.wi,H.si+1)?HC_ST[H.wi][H.si+1][1]:null;
   return{bits,old,gain,opened,nextOpen}}
 
 /* ---- playing: the screen, pedals, the loop, game time ---- */
-function stopHC(){if(!HC)return;cancelAnimationFrame(HC.raf);if(HC.eng){try{HC.eng.lfo&&HC.eng.lfo.stop();HC.eng.o.stop();HC.eng.o2.stop()}catch(e){}}removeEventListener('keydown',HC.kd);removeEventListener('keyup',HC.ku);HC=null}
+function stopHC(){if(!HC)return;
+  // G-FEEL1: a stage drive left without the flag after a while counts for Auto driving help (hcAsNote)
+  if(HC.st&&HC.result!='win'&&!HC.noted&&HC.t>=8){HC.noted=1;hcAsNote(HC);save()}cancelAnimationFrame(HC.raf);if(HC.eng){try{HC.eng.lfo&&HC.eng.lfo.stop();HC.eng.o.stop();HC.eng.o2.stop()}catch(e){}}removeEventListener('keydown',HC.kd);removeEventListener('keyup',HC.ku);HC=null}
 const HC_SNDI=['sound-on','music','sound-off']; // P4-16: the sound button's icon for S.hcSnd (all, no engine, off)
 const hcCalm=()=>{try{return document.documentElement.classList.contains('calm')||matchMedia('(prefers-reduced-motion: reduce)').matches}catch(e){return false}};
 // fixed steps of 1/120 s (G-HC3, R-03 H1): a slow frame (up to 0.1 s) runs more steps, so a slow tablet never plays in slow motion;
@@ -883,7 +922,7 @@ function hcAdvance(H,dt){H.acu=(H.acu||0)+Math.min(.1,Math.max(0,dt));let n=0;
 // road); day: today's drive (hcDay) instead of the distance drive
 function hcStart(world,si,day){const wi=typeof world=='number'?world:Math.max(0,HCW.findIndex(W=>W.id==world)),gs=garageS();
   if(si!=null&&!HC_ST[wi])si=null;if(si!=null)day=null;
-  const H=hcNew(wi,si,{veh:gs.veh,up:gs.up,easy:hcEasy(),ui:true,seed:hcSeed(wi),day}),st=H.st,C=H.C;H.calm=hcCalm();H.paint=hcC(gs.paint)||hcC('r');H.best=st||day?0:gs.best[H.w];
+  const H=hcNew(wi,si,{veh:gs.veh,up:gs.up,as:hcAsLevel(),auto:hcAsPick()=='auto',ui:true,seed:hcSeed(wi),day}),st=H.st,C=H.C;H.calm=hcCalm();H.paint=hcC(gs.paint)||hcC('r');H.best=st||day?0:gs.best[H.w];
   H.wx=st?st[4]:day&&day.wx||'day';H.rim=gs.rim;H.top=gs.top;H.trail=gs.trail;
   const ticks=st?C.cps.slice(1).map(x=>`<i class="hc-tick" style="left:${(x/C.fin*100).toFixed(1)}%"></i>`).join(''):'';
   view(`<div class="hc" id="hc"><canvas id="hcv"></canvas>
@@ -946,26 +985,26 @@ function hcEnd(why){const H=HC;if(!H||H.shown)return;H.shown=true;H.over=true;co
   const o=hcGuard(GH.end('hill',{win,title:why=='time'?"Game time's up!":D&&H.dayHit?"Today's drive done!":'Out of gas!',tag:rec&&m>0?'New record!':'',
    stats:[[m+' m',D?(H.dayHit?'gold flag reached':'gold flag at '+D.goal+' m'):rec&&m>0?'new record':'best '+gs.best[H.w]+' m','ruler'],['+'+(H.bolts+pay),'bolts','nut'],[String(H.flips),'flips','rotate'],[String(H.perfect),'perfect landings','check-circle']],
    lines:[...dayLine,['drop','Fuel cans are further apart the farther you go. Ease off the gas in the air to save fuel.'],['target',esc(hcNextGoal().t)]],
-   btns:(why=='time'||ptLeft()<=0?UI.btn('Earn more game time',{kind:'primary',size:'lg',icon:'path-read',id:'hlearn',wide:true}):UI.btn('Drive again',{kind:'primary',size:'lg',icon:'replay',id:'hagain',wide:true}))+
-    UI.btn('Menu',{icon:'map',id:'hgar',wide:true})}));
+   btns:why=='time'||ptLeft()<=0?NAV.end3({next:'hlearn',home:'hgar'}):NAV.end3({again:'hagain',home:'hgar'})})); // NAV-01: with no game time left, Next goes to Learn
   if(S.voice)say(why=='time'?`Game time is up! Let's learn and earn more!`:rec&&m>0?`New record! ${m} meters!`:`You drove ${m} meters!`);
   const go=f=>{o.remove();stopHC();f()};
   if(o.querySelector('#hagain'))o.querySelector('#hagain').onclick=()=>go(()=>D?hcStart(H.wi,null,hcDay()):hcStart(H.wi));
-  if(o.querySelector('#hlearn'))o.querySelector('#hlearn').onclick=()=>go(()=>home());
-  o.querySelector('#hgar').onclick=()=>go(garage)}
+  if(o.querySelector('#hlearn'))o.querySelector('#hlearn').onclick=()=>go(()=>learnHub());
+  o.querySelector('#hgar').onclick=()=>go(home)}
 // game time ran out in a stage: bolts kept, no stars lost
 function hcStageCard(H,why){SFX.chime();const C=H.C,m=Math.min(Math.floor((H.maxX-60)/20),Math.floor((C.fin-60)/20)),L=Math.floor((C.fin-60)/20);
   if(S.voice)say(`Game time is up! Let's learn and earn more!`);
   hcCard(H,{title:"Game time's up!",extra:UI.meter(m/L,{lg:true,kind:'good',label:`${m} of ${L} m`}),lines:[['nut',`Your ${H.bolts} bolts are saved.`],['go',`Only <b>${Math.max(0,L-m)} m</b> to the flag next time!`]],
-   btns:UI.btn('Earn more game time',{kind:'primary',size:'lg',icon:'path-read',attrs:'data-go="learn"',wide:true})+UI.btn('Stages',{icon:'map',attrs:'data-go="list"',wide:true})})}
+   btns:NAV.end3({next:'hcnext',home:'hchome'})})} // NAV-01: no game time left: Next goes to Learn
 // the finger still on the gas when the card opens must not press its buttons when it lifts: a button works after a new press
 // on the card (a key press always works)
 const hcGuard=o=>{o.addEventListener('pointerdown',()=>{o._armed=1},true);o.addEventListener('click',e=>{if(e.detail&&!o._armed){e.stopPropagation();e.preventDefault()}},true);return o};
+// NAV-01: the end choices (NAV.end3, data-go again | next | home); Next with no game time left goes to Learn to earn more
 function hcCard(H,c){const o=hcGuard(GH.end('hill',c));const go=f=>{o.remove();stopHC();f()};
   o.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{const a=b.dataset.go;
-    if(a=='retry')go(()=>hcStart(H.wi,H.si));
-    else if(a=='next'){const n=hcAfter(H.wi,H.si);go(()=>n?hcStart(n[0],n[1]):hcLevels(H.wi))}
-    else if(a=='learn')go(home);else go(()=>hcLevels(hcAfter(H.wi,H.si)?hcAfter(H.wi,H.si)[0]:H.wi))});return o}
+    if(a=='again')go(()=>hcStart(H.wi,H.si));
+    else if(a=='next'){if(ptLeft()<=0)return go(learnHub);const n=hcAfter(H.wi,H.si);go(()=>n?hcStart(n[0],n[1]):hcLevels(H.wi))}
+    else go(home)});return o}
 // the stage after (w, i) if it is open: [w, i] or null
 function hcAfter(w,i){if(i+1<HC_SPW)return hcSOpen(w,i+1)?[w,i+1]:null;return w+1<HC_ST.length&&hcWOpen(w+1)?[w+1,0]:null}
 function hcWin(){const H=HC;if(!H||H.shown)return;H.shown=true;H.over=true;H.result='win';hcEngOff(H);
@@ -979,11 +1018,9 @@ function hcWin(){const H=HC;if(!H||H.shown)return;H.shown=true;H.over=true;H.res
   hcCard(H,{win:!!ok,title:ok?`${s[1]} done!`:`So close! ${H.bolts} of ${g[1]} bolts`,stars,
    stats:[[tm+' s','time','timer'],['+'+(H.bolts+r.gain),'bolts','nut'],[String(H.crashes),'restarts','replay'],H.crates0?[`${H.crates}/${H.crates0}`,'crates','gift']:[String(H.flips),'flips','rotate']],
    lines,
-   btns:(ptLeft()<=0?UI.btn('Earn more game time',{kind:'primary',size:'lg',icon:'path-read',attrs:'data-go="learn"',wide:true}):
-     ok&&nx?UI.btn(nx[0]!=H.wi?`Go to ${HCW[nx[0]].n}`:'Next stage',{kind:'primary',size:'lg',icon:'go',attrs:'data-go="next"',wide:true})+UI.btn('Play again',{icon:'replay',attrs:'data-go="retry"',wide:true})
-     :UI.btn(ok?'Play again':'Try again',{kind:'primary',size:'lg',icon:'replay',attrs:'data-go="retry"',wide:true}))+UI.btn('Stages',{icon:'map',attrs:'data-go="list"',wide:true})})}
+   btns:ptLeft()<=0?NAV.end3({next:'hcnext',home:'hchome'}):NAV.end3({again:'hcagain',next:ok&&nx?'hcnext':'',home:'hchome'})})} // NAV-01
 
-/* ---- the menu: next goal, worlds and their stages, the distance drive, the garage, easy driving ---- */
+/* ---- the menu: next goal, worlds and their stages, the distance drive, the garage, driving help (on: Auto, off: none) ---- */
 let hcMW=null; // the world shown on the menu
 function hcProfile(s,w){const C=hcCourse(s,w),W=HCW[w],N=60,ys=[];for(let i=0;i<=N;i++)ys.push(hcH(C,C.fin*i/N));const lo=Math.min(...ys),hi=Math.max(...ys,lo+60),
   Y=v=>(34-(v-lo)/(hi-lo)*26).toFixed(1),d='M0 40L'+ys.map((v,i)=>(i*120/N).toFixed(1)+' '+Y(v)).join('L')+'L120 40Z';
@@ -1005,7 +1042,7 @@ function garage(){const gs=garageS(),ng=hcNextGoal(),day=hcDay(),DW=HCW[day.wi];
     <span class="hc-ms">${s[3].map((m,k)=>`<span class="${b>>(k+1)&1?'ok':''}">${ico(b>>(k+1)&1?'check':HC_MIC[m[0]],18)}${esc(hcMisText(m))}</span>`).join('')}</span></span>
     ${UI.stars(n,3,22)}</button>`}).join('')}</div></section>
   ${UI.btn(`Play stage ${pi+1}: ${ps[1]}`,{kind:'primary',size:'lg',icon:'play',id:'hcgo',wide:true})}
-  ${UI.sw('Easy driving: keeps the car level and brings balloons',hcEasy(),'hceasy')}
+  ${UI.sw('Driving help: keeps the car level and brings balloons (how much: Grown-ups)',hcEasy(),'hceasy')}
   <button class="btn hc-day${day.done?' done':''}" id="hcday">
     <span class="hc-daydisc">${ico(day.done?'check-circle':'sparkle',32)}</span><span class="hc-dayt"><b>Today's drive: ${esc(DW.n)}</b><span>${esc(day.label)}</span>
     <small>${day.done?'Done today! A new drive comes tomorrow.':`Gold flag at ${day.goal} m: plus ${HC_DAY_BONUS} bolts the first time today.`}</small></span>${ico('play',32)}</button>
@@ -1026,7 +1063,7 @@ function garage(){const gs=garageS(),ng=hcNextGoal(),day=hcDay(),DW=HCW[day.wi];
   $$('[data-st]').forEach(b=>b.onclick=()=>play(HCW.findIndex(D=>D.id==b.dataset.st),null));
   $('#hcday').onclick=()=>{if(ptLeft()<=0){SFX.wrong();fb(ptWhyNot(),'warn long',3000);return}SFX.whoosh();hcStart(day.wi,null,day)};
   $('#hcgar').onclick=()=>{SFX.pop(2);hcGarage()};
-  $('#hceasy').onchange=e=>{gs.easy=e.target.checked;save();SFX.pop(2);fb(gs.easy?'Easy driving is on.':'Easy driving is off.','',1400)}}
+  $('#hceasy').onchange=e=>{gs.as=e.target.checked?'auto':0;save();SFX.pop(2);fb(e.target.checked?'Driving help is on.':'Driving help is off.','',1400)}}
 // the old levels screen: now the menu with a world picked
 function hcLevels(w=0){hcMW=typeof w=='number'?w:Math.max(0,HCW.findIndex(W=>W.id==w));if(hcMW>=HC_ST.length)hcMW=0;garage()}
 function hcVehPic(c){const x=c.getContext&&c.getContext('2d');if(!x)return;const P=hcPetSpr();if(P&&!P.c&&P.p&&!c._wait){c._wait=1;P.p.then(()=>{if(c.isConnected)hcVehPic(c)})}const V=VEH[c.dataset.vc],gs=garageS(),w=c.width,h=c.height,s=Math.min(.62*w/160,.62*h/96);x.clearRect(0,0,w,h);
@@ -1307,7 +1344,11 @@ function hcDraw(x,W,Hh,dpr){const H=HC,C=H.C,Wd=HCW[H.wi],wx=H.wx||'day',cx=(H.w
   const can=hcSpr(R,'fuel',56*sc,56*sc,(y,w,h)=>{const px=w/2,py=h/2,s=sc;y.fillStyle=hcA('y',.35);y.beginPath();y.arc(px,py,26*s,0,7);y.fill();y.fillStyle=hcC('r2');rr(y,px-12*s,py-14*s,24*s,30*s,4*s);y.fill();
     y.fillStyle=hcC('y');y.font=`bold ${14*s}px sans-serif`;y.textAlign='center';y.textBaseline='middle';y.fillText('F',px,py+2*s);y.strokeStyle=hcC('r3');y.lineWidth=3*s;y.beginPath();y.moveTo(px-6*s,py-14*s);y.lineTo(px-6*s,py-20*s);y.lineTo(px+6*s,py-20*s);y.stroke()});
   for(let k=0;k<C.fuel.length;k++){const fx=C.fuel[k];if(fx<left||fx>right||H.took.has('f'+k))continue;x.drawImage(can,Math.round(SX(fx)-can.width/2),Math.round(SY(hcH(C,fx)+H.R+22+Math.sin(T*3)*4)-can.height/2))}
-  if(H.easy)for(let k=0;k<C.balloons.length;k++){const bx=C.balloons[k];if(bx<left||bx>right||H.took.has('a'+k))continue;hcBalloons(x,SX(bx),SY(hcH(C,bx)+60+Math.sin(T*2)*6),sc)}
+  if(H.A.ball)for(let k=0;k<C.balloons.length;k++){const bx=C.balloons[k];if(bx<left||bx>right||H.took.has('a'+k))continue;hcBalloons(x,SX(bx),SY(hcH(C,bx)+60+Math.sin(T*2)*6),sc)}
+  for(const z of C.looks){if(z.x1<left||z.x0>right)continue;const on=H.stopped,lk=hcSpr(R,'look'+(on?1:0),120*sc,120*sc,(y,w,h)=>{const s=sc,px=w/2;y.fillStyle=hcC('n2');y.fillRect(px-4*s,h-70*s,8*s,70*s);
+      y.fillStyle=hcC(on?'g3':'b2');rr(y,px-52*s,h-112*s,104*s,44*s,8*s);y.fill();y.fillStyle=hcC('w');y.font=`bold ${16*s}px sans-serif`;y.textAlign='center';y.textBaseline='middle';y.fillText('LOOKOUT',px,h-90*s)});
+    x.fillStyle=hcA(on?'g':'b',.35);for(let q=z.x0;q<z.x1;q+=20){const a=SX(q),b=SY(hcH(C,q)),c=SX(q+12),d=SY(hcH(C,q+12));x.beginPath();x.moveTo(a,b);x.lineTo(c,d);x.lineTo(c,d+6*sc);x.lineTo(a,b+6*sc);x.fill()}
+    const mx=(z.x0+z.x1)/2;x.drawImage(lk,Math.round(SX(mx)-lk.width/2),Math.round(SY(hcH(C,mx))-lk.height))}
   for(let k=0;k<C.stars.length;k++){const s=C.stars[k];if(s.x<left||s.x>right||H.took.has('s'+k))continue;hcStarD(x,SX(s.x),SY(s.y),18*sc*(1+Math.sin(T*4)*.08))}
   for(const px of C.pads){if(px<left||px>right)continue;x.fillStyle=hcC('o');for(let j=0;j<3;j++){const ax=SX(px+j*20),ay=SY(hcH(C,px+j*20));x.beginPath();x.moveTo(ax,ay-14*sc);x.lineTo(ax+12*sc,ay-8*sc);x.lineTo(ax,ay-2*sc);x.fill()}}
   const nut=hcSpr(R,'nut',28*sc,28*sc,(y,w,h)=>{const px=w/2,py=h/2,s=sc;y.fillStyle=hcC('y');y.strokeStyle=hcC('y3');y.lineWidth=2.5*s;y.beginPath();for(let q=0;q<6;q++){const a=q*1.047+.5;y[q?'lineTo':'moveTo'](px+Math.cos(a)*11*s,py+Math.sin(a)*11*s)}y.closePath();y.fill();y.stroke();
@@ -1357,11 +1398,11 @@ function gtStart(el,onEnd){gtStop();GT={up:false,grace:0,iv:setInterval(()=>{if(
   if(!GT.up){p.bank=Math.max(0,p.bank-1);p.used+=1;if(ptLeft()<=0){GT.up=true;GT.grace=20;fb('Game time is almost up!','warn long',2500);SFX.rattle()}}
   else if(--GT.grace<=0){gtStop();save();return onEnd()}
   if(p.used%5==0)save();GH.setTime($(el),GT.up?GT.grace:null)},1000)}}
-// P4-16: the shared end card (GH.end) for the game on screen; "Earn more time" (#tl) goes home as before
+// P4-16: the shared end card (GH.end) for the game on screen; NAV-01: no Play again (no time), Next (#tl) goes to Learn, Home
 function timeUpOverlay(){const g=GH.get(GH.cur)||{},said=g.saved||'Your game is saved.';
   const o=GH.end(g.id,{title:"Game time's up!",lines:[['check-circle',esc(said)],['path-read','Learn a little to earn more time!']],
-    btns:UI.btn('Earn more time',{kind:'primary',size:'lg',icon:'path-read',id:'tl',wide:true})});
-  SFX.chime();if(S.voice)say('Game time is up! '+said);o.querySelector('#tl').onclick=()=>{o.remove();home()}}
+    btns:NAV.end3({next:'tl',home:'tlhome'})});
+  SFX.chime();if(S.voice)say('Game time is up! '+said);o.querySelector('#tl').onclick=()=>{o.remove();learnHub()};o.querySelector('#tlhome').onclick=()=>{o.remove();home()}}
 /* ---------- color by number ---------- */
 const CB_COL={rojo:['#ef4444','red'],azul:['#3b82f6','blue'],celeste:['#7dd3fc','light blue'],verde:['#22c55e','green'],'verde oscuro':['#15803d','dark green'],amarillo:['#facc15','yellow'],
   naranja:['#f97316','orange'],morado:['#a855f7','purple'],rosa:['#f9a8d4','pink'],negro:['#27272a','black'],blanco:['#ffffff','white'],'café':['#92400e','brown'],gris:['#a8a29e','gray']};
@@ -1691,9 +1732,9 @@ function artEnd(res,o){const lines=[];if(res.opened)lines.push(['gift',`The <b>$
   if(!res.first&&o.star===false&&o.why)lines.push(['hint',esc(o.why)]);lines.push(['target',esc(artNextGoal())]);
   const c=GH.end('art',{win:true,made:true,pic:artFrame(o.pic),title:res.first?`You finished the ${o.n}!`:res.daily?`You made today's picture!`:'Into your gallery!',tag:res.first?'New star!':res.daily?"Today's picture":'',
     stats:[res.coins?['+'+res.coins,'coins','coin']:null,[res.stars+' / '+ART_ALL.length,'stars','star']],lines,
-    btns:(o.keep?UI.btn('Keep coloring',{icon:'palette',id:'akeep',wide:true}):'')+UI.btn('My gallery',{icon:'image',id:'agal',wide:true})+UI.btn('More pictures',{kind:'primary',size:'lg',icon:'play',id:'amore',wide:true})});
+    btns:NAV.end3({again:'amore',home:'ahome',extra:`<span class="art-ex">${o.keep?UI.btn('Keep coloring',{icon:'palette',id:'akeep'}):''}${UI.btn('My gallery',{icon:'image',id:'agal'})}</span>`})}); // NAV-01: Play again = color another picture
   if(S.voice)say(res.first?`Beautiful! You finished the ${o.n}!`:'Beautiful! It is in your gallery.');
-  c.querySelector('#amore').onclick=()=>{c.remove();gtStop();artMusic(false);artBack()};c.querySelector('#agal').onclick=()=>{c.remove();gtStop();artMusic(false);colorMenu('gallery')};
+  c.querySelector('#amore').onclick=()=>{c.remove();gtStop();artMusic(false);artBack()};c.querySelector('#agal').onclick=()=>{c.remove();gtStop();artMusic(false);colorMenu('gallery')};c.querySelector('#ahome').onclick=()=>{c.remove();gtStop();artMusic(false);home()};
   const k=c.querySelector('#akeep');if(k)k.onclick=()=>{c.remove();SFX.pop(2)};return c}
 // where Quit and More pictures go: the menu the picture was opened from
 let ART_BACK=null;const artBack=()=>{const b=ART_BACK;if(b)b();else colorMenu()};
@@ -2169,4 +2210,4 @@ function freePaint(ai){const cs=cbS();const G=ai>=0?cs.art[ai].split(',').map(k=
   gtStart('#gtm',()=>{if(G.some(k=>k!='blanco'))doSave();timeUpOverlay()})}
 
 
-var GAMES_VER='v168'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var GAMES_VER='v169'; // last line: the whole file ran (checked by dataReady() before the app starts)

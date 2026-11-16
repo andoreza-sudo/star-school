@@ -167,17 +167,17 @@ function placeTestlet(){
   PL.qi=0;PL.right=0;
   placeQ();
 }
-function placeQ(){
+function placeQ(){if(NAV.held&&PL){PL.pend=true;return} // NAV-01: the next question waits while Go Home? is open
   const me=PL,q=PL.its[PL.qi],K=KIND[q.kind];
   PL.q=q;PL.lock=false;PL.typed='';PL.tries=0;PL.built=[];
   const dots=PL.its.map((_,i)=>`<span class="pl-dot ${i<PL.qi?'on':i==PL.qi?'now':''}"></span>`).join('');
-  view(`<div class="top tbar round qtop pl-top s-${PL.p}">${UI.ibtn('close','Stop',{size:'sm',id:'quit'})}
+  view(`<div class="top tbar round qtop pl-top s-${PL.p}">${NAV.house('quit')}
    <div class="pl-dots" aria-label="Question ${PL.qi+1} of ${PL.its.length}">${dots}</div><div class="sp"></div>
    <div class="pl-tag">${ico(UI.SUBJ_ICON[PL.p]||'map',24)}<span>Find my level</span></div></div>
   <div class="play qs s-${PL.p}"><div class="qarea">${q.ctx?bankCtx(q.ctx):''}<div class="prompt" id="prompt">${q.html}</div>
   <div class="tools">${q.say?UI.btn('Hear it',{size:'sm',icon:'speak',id:'spk'}):''}</div></div>
   <div class="inp">${K.render(q)}</div></div>`);
-  $('#quit').onclick=()=>{PL=null;SFX.click();placeBack(me.from)};
+  NAV.wire('quit',{hold:on=>{if(!on&&PL&&PL.pend){PL.pend=false;placeQ()}},leave:()=>{PL=null}}); // NAV-01: the corner house (nothing is saved until the end, as before)
   if($('#spk'))$('#spk').onclick=e=>say(q.say,e.currentTarget,q.lang=='es'&&q.auto=='must'?'es':null);
   UI.hear(); // P6-01
   $$('[data-sayes]').forEach(b=>b.onclick=()=>say(b.dataset.sayes,b,'es'));
@@ -214,12 +214,10 @@ function placeDone(){
    <p class="sub">${st.all?`You know a lot! Your ${esc(placeName(p))} map opens at the last world:`:`Your ${esc(placeName(p))} map starts here:`}</p>
    <div class="pl-res">${wBadge(p,st.at)}${esc(w.n)}</div>
    ${sk.length?`<p class="small pl-skip">${ico('check','1.2em')} Skipped: ${sk.map(x=>esc(x.n)).join(', ')}. You can still play ${sk.length>1?"them":"it"} any time.</p>`:''}
-   <div class="rowh">${UI.btn('Go to my map',{kind:'primary',size:'lg',icon:'map',id:'plmap'})}
-    ${other?UI.btn(placeName(other)+' next',{icon:UI.SUBJ_ICON[other]||'map',id:'plnext',attrs:`data-place="${other}"`}):''}
-    ${UI.btn(from=='grown'?'Grown-ups':'Home',{icon:from=='grown'?'gear':'home',id:'plhome'})}</div></div>`);
+   <div class="pl-end">${NAV.end3({next:'plmap',home:'plhome',extra:other?UI.btn(placeName(other)+' next',{icon:UI.SUBJ_ICON[other]||'map',id:'plnext',attrs:`data-place="${other}"`}):''})}</div></div>`); // NAV-01
   SFX.fanfare();
   if(S.voice)say(`All done! Great work! Your map starts at ${w.n}.`);
   $('#plmap').onclick=()=>{SFX.whoosh();pathMap(p,st.at)};
   if($('#plnext'))$('#plnext').onclick=()=>{SFX.whoosh();placeIntro(other,from)};
-  $('#plhome').onclick=()=>{SFX.click();placeBack(from)};
+  $('#plhome').onclick=()=>{SFX.click();home()};
 }

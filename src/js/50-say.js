@@ -88,7 +88,7 @@ const spkT=(f,ms)=>{const t=SPK.tok;SPK.tm.push(setTimeout(()=>{if(spkLive(t))f(
 // an English line on screen; spoken too for Pre-K and K (and with "Read questions out loud" on)
 function spkTip(t,speak){const e=$('#spktip');if(e)e.textContent=t;if(speak&&(SPK.pk||S.voice))say(t)}
 function spkOpen(q,done){spkLeave();const it=spkItem(q),nov=esVoice()=='no'&&!esHas(it.say);SPK.it=it;SPK.done=done;SPK.pk=gradeOf()<=0;SPK.nov=nov;SPK.heard=null;
-  view(`<div class="top tbar gx-mtop spk-top s-es">${UI.ibtn('close','Stop',{size:'sm',id:'quit'})}<div class="ttl gx-ttl"><span class="gx-tb">${ico('mic',24)}</span><span>Say it!</span></div></div>
+  view(`<div class="top tbar gx-mtop spk-top s-es">${NAV.house('quit')}<div class="ttl gx-ttl"><span class="gx-tb">${ico('mic',24)}</span><span>Say it!</span></div></div>
   <div class="play spk s-es"><div class="spk-card">
    ${it.who?`<p class="spk-role">You are <b>${esc(it.who)}</b>! Say ${esc(it.who)}’s line.</p>`:''}
    ${it.cue?`<p class="spk-cue" lang="es"><b>${esc(it.cue[0])}:</b> ${esc(it.cue[1])}</p>`:''}
@@ -99,7 +99,7 @@ function spkOpen(q,done){spkLeave();const it=spkItem(q),nov=esVoice()=='no'&&!es
    <div class="spk-act" id="spkact"></div>
    <p class="spk-heard" id="spkheard" role="status"></p></div>
   <div class="spk-foot">${UI.btn('Skip for now',{kind:'ghost',icon:'arrow-right',id:'spkskip'})}</div></div>`);
-  $('#quit').onclick=()=>{spkLeave();if(G)G.dead=true;back()};
+  NAV.wire('quit',{leave:()=>{spkLeave();if(G)G.dead=true}}); // NAV-01
   $('#spkskip').onclick=()=>spkEnd(false);
   if($('#spkhear'))$('#spkhear').onclick=e=>say(it.say,e.currentTarget,'es');
   if(nov)esNote();

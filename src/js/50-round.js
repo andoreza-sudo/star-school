@@ -42,7 +42,7 @@ function makeQ(){if(G.pool)return G.pool.shift();
   let q;
   for(let t=0;t<10&&(!q||q.label===G.last);t++)q=genQ(G.sk,G.lv);
   G.last=q.label;return q}
-function next(){if(!G||G.dead)return;
+function next(){if(!G||G.dead)return;if(NAV.held){G.pend=true;return} // NAV-01: Go Home? is open: go on when Keep playing closes it
   if(spkHook())return; // S-SPK: a "Say it!" step between two questions (50-say.js); not a question, never scored
   if(G.done<G.n){G.q=makeQ();G.retry=false}
   else if(G.missed.length){G.q=G.missed.shift();G.retry=true}
@@ -55,7 +55,7 @@ let rsT;addEventListener('resize',()=>{fit();clearTimeout(rsT);rsT=setTimeout(()
 // scrolls, and the hint sat below its fold). The Help button already does this (smoothly) in renderQ.
 function hintIn(){const h=$('#hint');if(h&&h.firstChild)h.scrollIntoView({block:'nearest'})}
 function petSay(t){const b=$('#bub');if(!b)return;b.textContent=t;const far=G&&G.done/G.n>.5;b.style.left=far?'auto':'0';b.style.right=far?'0':'auto';b.classList.add('on');clearTimeout(b._t);b._t=setTimeout(()=>b.classList.remove('on'),1400)}
-// P4-10: the question screen. Top bar: close, the track (one dot per question, the pet walks to the gift), streak and star chips.
+// P4-10: the question screen. Top bar: the corner house (NAV-01), the track (one dot per question, the pet walks to the gift), streak and star chips.
 // Then the prompt card (.qarea) and the input area (.inp) of the question's kind. Subject colour from the question's skill.
 const qSubj=q=>{const a=skArea(q.sk,q.lv)||G.path;return['math','read','es','disc','bt'].includes(a)?a:'math'};
 // the pet stands on the dot of the current question; after the last one it reaches the gift (column n+1 of the track)
@@ -76,13 +76,13 @@ function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;G.re
       +`<div class="qwalk" id="qwalk" style="transform:${qLeft()}"><div class="runner ${petAura()}" id="runner">${petHTML()}<div class="bubble" id="bub"></div></div></div></div>`;
   const spk=!q.say?'':q.pk?UI.ibtn('speak','Hear it again',{kind:'primary',size:'lg',id:'spk',cls:'pkspk'}):UI.btn('Hear it',{size:'sm',icon:'speak',id:'spk'});
   const help=q.pk?UI.ibtn('hint','Help',{size:'lg',id:'hb',cls:'pkhb'}):UI.btn('Help',{size:'sm',icon:'hint',id:'hb'});
-  view(`<div class="top tbar round qtop s-${ar}">${UI.ibtn('close','Stop',{size:'sm',id:'quit'})}${track}
+  view(`<div class="top tbar round qtop s-${ar}">${NAV.house('quit')}${track}
    ${UI.chip('flame',G.streak,{id:'stk',off:G.streak<2,aria:'In a row'})}${UI.chip('star',G.score,{id:'starc',aria:'Stars'})}</div>
   <div class="play qs s-${ar}"><div class="qarea">${q.review?UI.tag('Remember this one?','rtag','replay'):''}${q.ctx?bankCtx(q.ctx):''}<div class="prompt" id="prompt">${q.html}</div>
   <div class="tools">${spk}${help}</div><div class="qhint"><div id="hint" class="hint"></div><span class="hb" aria-hidden="true">${ico('hint')}</span></div></div>
   <div class="inp">${input}</div></div>`);
   UI.hear(); // P6-01: named speaker buttons in the prompt
-  $('#quit').onclick=()=>{G.dead=true;back()};
+  NAV.wire('quit',{hold:on=>{if(!on&&G&&G.pend){G.pend=false;next()}},leave:()=>{G.dead=true}}); // NAV-01: the corner house asks "Go Home?"; the next question waits while it is open (G.pend)
   if($('#spk'))$('#spk').onclick=e=>say(q.say,e.currentTarget,q.lang=='es'&&q.auto=='must'?'es':null);
   $$('[data-sayes]').forEach(b=>b.onclick=()=>say(b.dataset.sayes,b,'es'));
   $('#hb').onclick=()=>{if(G.tries==0&&!G.retry)G.hq=true;if(hintStep(q))return;const h=$('#hint');h.innerHTML=hintHTML(q);h.classList.remove('pop');void h.offsetWidth;h.classList.add('pop');SFX.pop(3);fit();h.scrollIntoView({block:'nearest',behavior:'smooth'})};
@@ -175,7 +175,7 @@ function finish(){
     // a low score is met kindly, with the next step right under the score (it was the last message line before)
     const need=Math.floor(n*.7+.01),half=hp>0&&(sc>=need||g.test&&sc>=9); // R-01b: say why when the hints are what kept it from passing
     const tip=g.test&&!testOk?(half?'So close! Answers with the hint showing count half. Get 9 right on your own to test out.':'So close! Get 9 right to test out. Or play the stops one by one.'):!g.mix&&!g.test&&!g.boss&&stars==0?(half?`Answers with the hint showing count half. Get ${need} right on your own to open the next stop. You can do it!`:`Get ${need} right to open the next stop. You can do it!`):'';
-    f.innerHTML=RW.done({sc,n,line,tip,rate:g.mix||g.test||!stars?-1:stars,next:nextI>=0&&newPass,again:low||(g.test&&!testOk)?'Try again':'Play again',menu:g.mix?'Home':'Map'});
+    f.innerHTML=RW.done({sc,n,line,tip,rate:g.mix||g.test||!stars?-1:stars,next:nextI>=0&&(!g.test||testOk)}); // NAV-01: Next whenever the next stop is open
     RW.burst(f.querySelector('.rw-chest-o'),sc>=7?28:14);
     const live=()=>f.isConnected;let t=0;
     // P4-17: every sticker, row and card goes in at once, hidden in its place (.rw-wait), and is shown in turn: nothing on the screen moves
@@ -185,7 +185,7 @@ function finish(){
     setTimeout(()=>{if(!live())return;const d=$('#btns');d.style.visibility='visible';d.classList.add('on');
       $('#bonus').onclick=()=>balloons(g.mix||g.boss||g.test?(p||pick(['math','read','es'])):skArea(g.sk,g.lv),g);
       if($('#nxt'))$('#nxt').onclick=()=>{SFX.whoosh();open(p,nextI)};
-      if($('#again'))$('#again').onclick=()=>{SFX.whoosh();g.mix?(g.daily?startReview():startMix()):g.test?testOut(p,g.test.wi):open(p,ni)};$('#menu').onclick=()=>g.mix?home():pathMap(p);
+      if($('#again'))$('#again').onclick=()=>{SFX.whoosh();g.mix?(g.daily?startReview():startMix()):g.test?testOut(p,g.test.wi):open(p,ni)};$('#ehome').onclick=()=>{SFX.whoosh();home()};
       if(grew)setTimeout(()=>growShow(before),300);else if(!playClip('done')&&S.voice)say((sc==1?'You got 1 star!':`You got ${sc} stars!`)+(newPass?' You unlocked the next stop!':''))},t);
     t+=300;
     // what the child earned (game time with its reasons, coins), then one card per message: [where, html, sound, burst]
