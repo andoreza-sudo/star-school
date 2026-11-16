@@ -101,6 +101,27 @@ const NAV = {
       b(o.home || 'ehome', 'e-home', 'home', 'Home', !o.again && !o.next) + '</div>';
   },
 
+  // The light end (for chaining short game stages; no game uses it yet): a banner at the bottom, not a full-screen card, with the
+  // same three choices. With a Next it goes on by itself after LIGHT_MS unless the child touches the banner first.
+  // o: {title, again, next, home: functions (next optional, hides Next; home defaults to home())}. Returns the banner (el.stop() takes it away).
+  LIGHT_MS: 2000,
+  light(o = {}) {
+    for (const e of document.querySelectorAll('.nv-light')) e.remove();
+    const el = document.createElement('div');
+    el.className = 'nv-light' + (o.next ? ' auto' : '');
+    el.setAttribute('role', 'status');
+    el.innerHTML = `<p class="nv-lt">${esc(o.title || '')}</p>` + NAV.end3({ again: o.again ? 'lagain' : '', next: o.next ? 'lnext' : '', home: 'lhome' });
+    document.body.appendChild(el);
+    let t = 0;
+    const done = f => { clearTimeout(t); el.remove(); if (f) f(); };
+    const go = { again: o.again, next: o.next, home: o.home || (() => home()) };
+    for (const b of el.querySelectorAll('[data-go]')) b.onclick = () => { SFX.whoosh(); done(go[b.dataset.go]); };
+    el.addEventListener('pointerdown', () => { clearTimeout(t); el.classList.remove('auto'); }, true); // a touch: the child chooses
+    if (o.next) t = setTimeout(() => { if (el.isConnected) done(o.next); }, NAV.LIGHT_MS);
+    el.stop = () => done();
+    return el;
+  },
+
   // ---- Grown-ups gate (Home): hold the button 3 seconds (the ring fills), or a tap opens a times-table question ----
   gateHTML() {
     return `<button class="btn soft sm nv-gw" id="gear" aria-label="Grown-ups: hold for 3 seconds"><span class="nv-ring" aria-hidden="true">` +

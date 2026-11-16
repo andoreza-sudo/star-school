@@ -18550,6 +18550,11 @@ run('navigation: one way Home NAV-01',()=>{
     const qz=SRCJ['41-nav.js'].slice(SRCJ['41-nav.js'].indexOf('  quiz() {'));
     if(!/R\(6, 9\), b = R\(6, 9\)/.test(qz)||!/inp\.value\.trim\(\) === String\(a \* b\)\) \{ s\.close\(\); grown\(\)/.test(qz))p.push('the grown-ups question');
   }catch(e){p.push('the helpers could not run: '+String(e.message||e).split('\n')[0])}
+  // the light end: GH.end({light: true}) is NAV.light, a banner (not an .ovl card) with the same three choices, Next by itself after 2 s
+  const lt=SRCJ['41-nav.js'].slice(SRCJ['41-nav.js'].indexOf('  light(o = {}) {'),SRCJ['41-nav.js'].indexOf('  // ---- Grown-ups gate'));
+  if(!/if \(o\.light\) return NAV\.light\(o\);/.test(SRCJ['59-game-hub.js'])||!/LIGHT_MS: 2000,/.test(SRCJ['41-nav.js'])||!/NAV\.end3\(\{ again: o\.again \? 'lagain' : '', next: o\.next \? 'lnext' : '', home: 'lhome' \}\)/.test(lt)
+    ||!/if \(o\.next\) t = setTimeout\(/.test(lt)||!/pointerdown', \(\) => \{ clearTimeout\(t\)/.test(lt)||/\bovl\b/.test(lt))p.push('the light end (GH.end {light: true}): a banner with NAV.end3, Next after 2 s unless touched');
+  if(/light:\s*true/.test(js.filter(f=>f!='59-game-hub.js'&&f!='41-nav.js').map(f=>SRCJ[f]).join('')))p.push('a game uses the light end already (the next batch switches games over)');
   // 6. no save field added: NAV keeps nothing in S
   if(/\bS\.\w+\s*=/.test(SRCJ['41-nav.js']))p.push('41-nav.js writes to the save');
   return{problems:p,note:ends+' end cards'};

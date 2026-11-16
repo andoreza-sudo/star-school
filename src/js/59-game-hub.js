@@ -384,7 +384,10 @@ const GH = {
          stars (0-3 or null), tag (a "New record!" line), stats: [[value, label, icon]], extra (html, e.g. a gauge), lines: [[icon, html]],
          btns (html: buttons with the caller's ids)} */
   end(id, o = {}) {
-    const g = GH.get(id || GH.cur) || { name: 'Game', p: 'play' };
+    // NAV-01: {light: true, title, again, next, home} (functions) gives the light end instead: a banner with the same three choices
+    // that goes on to Next by itself after 2 s unless touched (NAV.light), for chaining short stages
+    if (o.light) return NAV.light(o);
+    const g =GH.get(id || GH.cur) || { name: 'Game', p: 'play' };
     const el = document.createElement('div');
     el.className = 'ovl rw-ovl gh-ovl';
     const stats = (o.stats || []).filter(Boolean);

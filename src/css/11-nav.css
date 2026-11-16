@@ -52,3 +52,10 @@
 .nv-q input{width:4.2ch;min-height:64px;padding:0 var(--s-2);border:3px solid var(--line);border-radius:var(--r-btn);font:inherit;text-align:center;
   color:var(--ink);background:var(--surface)}
 .nv-msg{min-height:1.5em}
+
+/* ---- the light end (NAV.light): a banner at the bottom with the same three choices ---- */
+.nv-light{position:fixed;left:50%;bottom:calc(var(--s-3) + env(safe-area-inset-bottom,0px));z-index:55;transform:translateX(-50%);
+  width:calc(100% - 2 * var(--s-3));max-width:560px;padding:var(--s-3);border-radius:var(--r-card);background:var(--surface);color:var(--ink);
+  box-shadow:var(--shadow),0 4px 0 var(--ledge-soft)}
+.nv-lt{margin:0 0 var(--s-2);text-align:center;font-family:var(--font-display);font-size:var(--fs-4);font-weight:700}
+.nv-light .nv-end3 .btn.nv-eb{min-height:72px}

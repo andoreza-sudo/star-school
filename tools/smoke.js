@@ -17,6 +17,17 @@ async function btLevelsAgain(pg) {
   await pg.evaluate(r => BT.levels(r[0], r[1]), run);
 }
 
+// NAV-01: a puzzle's corner house (Go Home?, the tick) replaced its Back to the levels; tests that went on from the level list open it
+// again from Home (the puzzle stays saved as before)
+async function btLeave(pg) {
+  const run = await pg.evaluate(() => BT.act && [BT.act.run.id, BT.act.run.band]);
+  await pg.click('#quit');
+  await pg.waitForSelector('.sheet-bg.on #gquit');
+  await pg.click('#gquit');
+  await pg.waitForSelector(HOME_ON);
+  await pg.evaluate(r => BT.levels(r[0], r[1]), run);
+}
+
 let failed = 0;
 const step = msg => console.log('- ' + msg);
 function fail(msg) { failed++; console.error('FAIL: ' + msg); }
@@ -1704,13 +1715,13 @@ async function main() {
       if (got.on !== 3 || got.stk !== 2 + mis + (mission ? 1 : 0) || got.prim.length !== 1 || !got.menu || !got.bonus) fail('P4-11 finish screen: ' + JSON.stringify(got));
       const postBad = await layout();
       for (const b of preBad.concat(postBad)) fail('P4-11 finish layout: ' + b);
-      // 2. a low score: no stars, the pet cheers, Play again is the primary button (NAV-01: no Next, the next stop is shut), and the tip says how many to get
+      // 2. a low score: no stars, the pet cheers, Play again is there (NAV-01: Next too when the next stop is already open), and the tip says how many to get
       await rp.evaluate(() => { start('math', 0); G.score = Math.floor(G.n * .7 + .01) - 2; G.done = G.n; finish(); });
       await rp.click('#chest');
       await rp.waitForSelector('#btns', { state: 'visible', timeout: 10000 });
       await vwait(rp, 5000);
       const low = await rp.evaluate(() => ({ pet: !!document.querySelector('.rw-hero .rw-pet'), rate: !!document.querySelector('.rw-rate'),
-        again: (document.querySelector('#again.primary') || {}).textContent, tip: (document.querySelector('.rw-hero .rw-tip') || {}).textContent || '' }));
+        again: (document.querySelector('#btns .nv-end3 #again') || {}).textContent, tip: (document.querySelector('.rw-hero .rw-tip') || {}).textContent || '' }));
       if (!low.pet || low.rate || low.again !== 'Play again' || !/^Get \d+ right to open the next stop/.test(low.tip)) fail('P4-11 low score: ' + JSON.stringify(low));
       for (const b of await layout()) fail('P4-11 low score layout: ' + b);
       // 3. boss: intro, top bar with the hit face on a zap, then a win with its prize
@@ -3011,7 +3022,7 @@ async function main() {
         await pg.click(`.fkt[data-i="${lit}"]`);
         const sv = await pg.evaluate(() => ({ taps: S.bt.cur.state.taps, puzzle: JSON.stringify(S.bt.cur.puzzle) }));
         if (sv.taps !== 1) bad.push('state not saved: ' + JSON.stringify(sv));
-        await pg.click('#back');
+        await btLeave(pg);
         await pg.waitForSelector('.bt-lvs');
         await pg.click('#back');
         await pg.waitForSelector('#btkeep');
@@ -3047,7 +3058,7 @@ async function main() {
         await pg.click('#btnext');
         await pg.waitForSelector('#btstage .fkt');
         if ((await pg.evaluate(() => S.bt.cur.level)) !== 2) bad.push('Next level did not open level 2');
-        await pg.click('#back');
+        await btLeave(pg);
         await pg.waitForSelector('.bt-lvs');
         const open2 = await pg.evaluate(() => document.querySelectorAll('.bt-lv:not(.lock)').length);
         if (open2 !== 2) bad.push('after level 1 the strip should have 2 open levels, got ' + open2);
@@ -3339,7 +3350,7 @@ async function main() {
           if (r1.length > 1) await taps.move(pg, id, r1[0]); // a one-answer puzzle (band A) resumes with the wrong entry and hints only
           await vwait(pg, 300);
           const mid = await st(pg);
-          await pg.click('#back');
+          await btLeave(pg);
           await pg.waitForSelector('.bt-lvs');
           await pg.click('#back');
           await pg.waitForSelector('#btkeep');
@@ -3485,7 +3496,7 @@ async function main() {
         await chk('hint 3');
         // back, back, Keep going: the same maze, trail and hints
         const saved = await pg.evaluate(() => JSON.stringify([S.bt.cur.puzzle, S.bt.cur.state.t]));
-        await pg.click('#back');
+        await btLeave(pg);
         await pg.waitForSelector('.bt-lvs');
         await pg.click('#back');
         await pg.waitForSelector('#btkeep');
@@ -4006,7 +4017,7 @@ async function main() {
           await taps.move(pg, (await taps.rest(pg))[0]);
           await vwait(pg, 200);
           const mid = await cur(pg);
-          await pg.click('#back');
+          await btLeave(pg);
           await pg.waitForSelector('.bt-lvs');
           await pg.click('#back');
           await pg.waitForSelector('#btkeep');
@@ -4341,7 +4352,7 @@ async function main() {
         await taps.move(pg, (await taps.rest(pg))[0]);
         await vwait(pg, 200);
         const mid = await cur(pg);
-        await pg.click('#back');
+        await btLeave(pg);
         await pg.waitForSelector('.bt-lvs');
         await pg.click('#back');
         await pg.waitForSelector('#btkeep');
@@ -4599,7 +4610,7 @@ async function main() {
         await taps.setTo(pg, (await taps.rest(pg))[0], '1');
         await vwait(pg, 200);
         const mid = await cur(pg);
-        await pg.click('#back');
+        await btLeave(pg);
         await pg.waitForSelector('.bt-lvs');
         await pg.click('#back');
         await pg.waitForSelector('#btkeep');
@@ -4996,7 +5007,7 @@ async function main() {
           await vwait(pg, 2500);
           // back to the levels and the hub; Keep going resumes the same board
           const keep = await pg.evaluate(() => JSON.stringify([S.bt.cur.puzzle.cards, S.bt.cur.state.m, S.bt.cur.state.turns]));
-          await pg.click('#back');
+          await btLeave(pg);
           await pg.waitForSelector('.bt-lvs');
           await pg.click('#back');
           await pg.waitForSelector('#btkeep');
@@ -5412,7 +5423,7 @@ async function main() {
         await chk('hint 3');
         // back, back, Keep going: the same puzzle and pieces
         const saved = await pg.evaluate(() => JSON.stringify([S.bt.cur.puzzle, S.bt.cur.state]));
-        await pg.click('#back');
+        await btLeave(pg);
         await pg.waitForSelector('.bt-lvs');
         await pg.click('#back');
         await pg.waitForSelector('#btkeep');
@@ -5535,7 +5546,7 @@ async function main() {
 
         // back to the levels and the hub: Keep going brings back the same program
         const mid = await pg.evaluate(() => JSON.stringify(S.bt.cur.state));
-        await pg.click('#back');
+        await btLeave(pg);
         await pg.waitForSelector('.bt-lvs');
         await pg.click('#back');
         await pg.waitForSelector('#btkeep');
@@ -5711,7 +5722,7 @@ async function main() {
           const mh = await pg.evaluate(() => ({ glow: !!document.querySelector('.mr-line.glow'), hints: S.bt.cur.hints, on: S.bt.cur.state.on.length }));
           if (!mh.glow || mh.hints !== 1 || mh.on !== 2) bad.push('mirror hint 1: ' + JSON.stringify(mh));
           const keep = await pg.evaluate(() => JSON.stringify([S.bt.cur.puzzle, S.bt.cur.state.on]));
-          await pg.click('#back');
+          await btLeave(pg);
           await pg.waitForSelector('.bt-lvs');
           await pg.click('#back');
           await pg.waitForSelector('#btkeep');
@@ -5855,7 +5866,7 @@ async function main() {
       for (let i = 0; i < 3; i++) {
         await pg.click('.bt-lv[data-l="2"]');
         await pg.waitForSelector('#btstage .fkt');
-        await pg.click('#back');
+        await btLeave(pg);
         await pg.waitForSelector('.bt-lvs');
       }
       await pg.waitForSelector('#btlow');
@@ -6099,7 +6110,7 @@ async function main() {
         await chk('Shape Fit hint 3');
         // back, back, Keep going: the same puzzle and pieces
         const saved = await pg.evaluate(() => JSON.stringify([S.bt.cur.puzzle, S.bt.cur.state]));
-        await pg.click('#back');
+        await btLeave(pg);
         await pg.waitForSelector('.bt-lvs');
         await pg.click('#back');
         await pg.waitForSelector('#btkeep');
@@ -6235,7 +6246,7 @@ async function main() {
           await chk('word search C hint 3');
           // back to the hub, Keep going: the same words found
           const keep = await pg.evaluate(() => JSON.stringify([S.bt.cur.puzzle, S.bt.cur.state.f]));
-          await pg.click('#back');
+          await btLeave(pg);
           await pg.waitForSelector('.bt-lvs');
           await pg.click('#back');
           await pg.waitForSelector('#btkeep');
@@ -7204,6 +7215,23 @@ async function main() {
           await ends('time up', ['next', 'home']);
           await pg.click('.gh-end #tl');
           await pg.waitForSelector('#navbar .nb-learn[aria-current="page"]');
+          // ---- the light end (GH.end {light: true}, NAV.light): a banner with the three choices; Next by itself after 2 s unless touched ----
+          const mkLight = () => pg.evaluate(() => { window.__lt = []; GH.end('hill', { light: true, title: 'Stage done!', again: () => __lt.push('again'), next: () => __lt.push('next') }); });
+          await mkLight();
+          const lt0 = await pg.evaluate(() => { const e = document.querySelector('.nv-light'), r = e.getBoundingClientRect();
+            return { go: [...e.querySelectorAll('.nv-eb')].map(b => b.dataset.go + (b.offsetHeight >= 48 ? '' : ' small')).join(), tall: r.height > innerHeight * .5, ovl: !!document.querySelector('.ovl') }; });
+          await vwait(pg, 2600);
+          const lt1 = await pg.evaluate(() => ({ gone: !document.querySelector('.nv-light'), lt: __lt.join() }));
+          await mkLight();
+          const lb = await (await pg.$('.nv-light .nv-lt')).boundingBox();
+          await pg.mouse.click(lb.x + lb.width / 2, lb.y + lb.height / 2); // a touch on the banner stops the countdown
+          await vwait(pg, 2600);
+          const lt2 = await pg.evaluate(() => ({ there: !!document.querySelector('.nv-light'), lt: __lt.join() }));
+          await pg.click('.nv-light #lhome');
+          await pg.waitForSelector(HOME_ON);
+          checks++;
+          if (lt0.go !== 'again,next,home' || lt0.tall || lt0.ovl || !lt1.gone || lt1.lt !== 'next' || !lt2.there || lt2.lt !== '' || await pg.$('.nv-light'))
+            bad.push(at + 'the light end: ' + JSON.stringify({ lt0, lt1, lt2 }));
           // ---- Grown-ups: a tap asks, a wrong answer keeps it shut, the right one opens it; a 1 s hold does not, a 3 s hold does ----
           await pg.evaluate(() => home());
           await pg.waitForSelector('#gear');
@@ -7247,7 +7275,7 @@ async function main() {
       if (bad.length) fail('NAV-01 navigation:\n  ' + [...new Set(bad)].slice(0, 40).join('\n  '));
       else step(`NAV-01: ${checks} checks at 360x740 and 800x1280: the picture bar on 8 hubs (Home first, the current area lit, 48 px, never over the hub) and ` +
         'not in a round, a race, a puzzle or a game; the corner house opens Go Home? (the race and game clocks hold), Keep playing goes on, the tick goes Home; ' +
-        'end cards of a round, a race, a puzzle, Hill Climb and time up show Play again / Next / Home; Grown-ups needs the answer or a 3 s hold');
+        'end cards of a round, a race, a puzzle, Hill Climb and time up show Play again / Next / Home; the light end banner goes on to Next after 2 s unless touched; Grown-ups needs the answer or a 3 s hold');
     }
 
     // G-02 / G-02b Star Rally, the racing game (src/js/63-game-race.js). Midway save with 20 min of game time, real touch (CDP touch
@@ -7374,7 +7402,7 @@ async function main() {
             const e = await finish();
             titles.push(e.title);
             if (e.rows !== 6 || e.me !== 1 || e.stats !== 3 || e.red || e.gt || e.race) bad.push(at + 'cup race ' + k + ' end card ' + JSON.stringify(e));
-            if (k < 3 && !new RegExp('Race ' + (k + 1) + ' of 3').test(e.next)) bad.push(at + 'cup race ' + k + ': no next race button ' + JSON.stringify(e));
+            if (k < 3 && e.next !== 'Next') bad.push(at + 'cup race ' + k + ': no next race button ' + JSON.stringify(e));
             if (k == 3 && (!/^(Gold|Silver|Bronze) trophy!$|^You raced the whole Sprout Cup!$/.test(e.title) || !e.again)) bad.push(at + 'cup end ' + JSON.stringify(e));
             for (const o of await pg.evaluate(look)) bad.push(at + 'end card ' + k + ': ' + o);
           }
