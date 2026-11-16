@@ -7196,6 +7196,9 @@ async function main() {
           await vwait(pg, 3000);
           const u2 = await pg.evaluate(() => ({ used: pt().used, paused: HC && HC.paused, held: GH.held }));
           if (!(u2.used > u1) || u2.paused || u2.held) bad.push(at + 'Hill Climb Keep playing: ' + JSON.stringify(u2));
+          // G-FEEL2: a won stage with the next one open now ends on the light banner, so the full card is checked on the world's last stage
+          await pg.evaluate(() => { const H = HC; stopHC(); hcStart(H.wi, HC_SPW - 1); });
+          await pg.waitForSelector('#gpause');
           await pg.evaluate(() => { HC.t = 20; hcWin(); });
           await pg.waitForSelector('.gh-end .nv-end3', { timeout: 8000 });
           await ends('Hill Climb stage', ['again', 'next?', 'home']);
@@ -7679,18 +7682,25 @@ async function main() {
           const gb = await box('#pg');
           await down(gb.x, gb.y);
           const t0 = Date.now();
-          let res = null;
-          while (Date.now() - t0 < 60000) { await pg.waitForTimeout(500); res = await pg.evaluate(() => document.querySelector('.gh-end') ? 'end' : HC && HC.gas ? 'gas' : 'no gas'); if (res !== 'gas') break; }
+          // G-FEEL2: a won stage with the next one open ends on the light banner (Next by itself after 2 s; here held back with a
+          // test hook, NAV.LIGHT_MS, so the touches below reach it: the app's clock runs 8x). The G-FEEL2 block checks Next by itself.
+          await pg.evaluate(() => { NAV.LIGHT_MS = 600000; });
+          const res = await pg.waitForFunction(() => {
+            if (document.querySelector('.nv-light')) return 'banner';
+            if (document.querySelector('.gh-end')) return 'end';
+            return HC && HC.gas ? false : 'no gas';
+          }, null, { timeout: 60000, polling: 'raf' }).then(x => x.jsonValue(), () => 'timeout');
           await up();
-          if (res !== 'end') bad.push(at + 'stage 1 not finished by holding the gas: ' + res);
-          await pg.waitForSelector('.gh-end [data-go="home"]', { timeout: 8000 });
+          if (res !== 'banner') bad.push(at + 'stage 1 not finished by holding the gas (the light banner): ' + res);
+          await pg.waitForSelector('.nv-light #lhome', { timeout: 8000 });
           await pg.waitForTimeout(500);
-          const e1 = await pg.evaluate(() => ({ title: document.querySelector('.gh-end h1').textContent, stars: document.querySelectorAll('.gh-end .rs.on').length,
-            next: /Muddy Puddles is open/.test(document.querySelector('.gh-end').textContent), btn: !!document.querySelector('.gh-end [data-go="next"]'), bolts: garageS().bolts, st: garageS().st.m1 }));
-          if (e1.title !== 'First Hills done!' || e1.stars < 1 || !e1.next || !e1.btn || !(e1.bolts >= 30) || !(e1.st & 1)) bad.push(at + 'end card: ' + JSON.stringify(e1));
-          for (const o of await pg.evaluate(look)) bad.push(at + 'end card: ' + o);
+          const e1 = await pg.evaluate(() => ({ title: document.querySelector('.nv-light .nv-lt').textContent.trim(), stars: document.querySelectorAll('.nv-light .rs.on').length,
+            btn: !!document.querySelector('.nv-light [data-go="next"]'), card: !!document.querySelector('.gh-end'), bolts: garageS().bolts, st: garageS().st.m1 }));
+          if (e1.title !== 'First Hills done!' || e1.stars < 1 || !e1.btn || e1.card || !(e1.bolts >= 30) || !(e1.st & 1)) bad.push(at + 'end banner: ' + JSON.stringify(e1));
+          for (const o of await pg.evaluate(look)) bad.push(at + 'end banner: ' + o);
           notes.push(w + 'x' + h + ': stage 1 in ' + Math.round((Date.now() - t0) / 1000) + ' s held gas, ' + e1.stars + ' stars, ' + e1.bolts + ' bolts');
-          await touch('.gh-end [data-go="home"]'); // NAV-01: the end card's Home; then the Hill Climb menu again
+          await touch('.nv-light #lhome'); // NAV-01: Home; then the Hill Climb menu again (the lifted gas finger did not press the banner)
+          await pg.evaluate(() => { NAV.LIGHT_MS = 2000; });
           await pg.waitForSelector(HOME_ON, { timeout: 8000 });
           await pg.evaluate(() => garage());
           await pg.waitForSelector('.hc-menu #hcgo', { timeout: 8000 });
@@ -7773,7 +7783,7 @@ async function main() {
       }
       if (bad.length) fail('G-HC2 Hill Climb:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
       else step('G-HC2: Hill Climb by real touch at 380x780 and 1024x600: menu (next goal, 6 worlds, 1 open) -> stage 1 driven to the flag by a held ' +
-        'gas touch with easy driving -> end card with stars and the next stage open -> Stages: stage 2 open and named -> garage: engine bought with the bolts ' +
+        'gas touch with easy driving -> the light end banner with stars and Next (G-FEEL2) -> Stages: stage 2 open and named -> garage: engine bought with the bolts ' +
         '-> a flip past the first checkpoint started again there; 48 px buttons, 64 px pedals, the distance and fuel readable; ' + notes.join('; '));
     }
 
@@ -10925,6 +10935,100 @@ async function main() {
       else step('S-SPK2: Say it! with a fake microphone at 380x780 and 1024x600: the model recording is "Great job!", another line "Close! Listen again", silence ' +
         '"I couldn\'t hear you" (self-check buttons stay); Grown-ups: Spanish listening download (online note), the Listening corner (3 recordings, Listen = model ' +
         'then child, star, keep 1 week, delete all); Home star message once with a sticker; 48 px, mic 64+, no sideways scroll; ' + notes.join('; '));
+    }
+
+    // G-FEEL2 game feel 2, at 360x740 and 800x1280 (midway save): Hill Climb: a won stage with the next one open ends on the light
+    //    banner (its stars in the title, Play again / Next / Home at least 48 px, no full card) and goes on to the next stage by
+    //    itself after 2 s; the stage's stars are saved. Pet Care with Food at 12: friendly words ("could use a snack", never
+    //    "hungry"), no meter under 30%, the saved meter unchanged. The report card: one sentence per subject ("is solid on ... and
+    //    still working on ..."), "Practise this next" pins a stop (aria-pressed, S.pin), and on the next day it is the first
+    //    mission on Home, which opens that stop. No sideways scroll. FEEL2_SHOTS=<dir> saves screenshots (else tools/out).
+    {
+      const bad = [], notes = [];
+      const dir = process.env.FEEL2_SHOTS || require('path').join(__dirname, 'out');
+      try { require('fs').mkdirSync(dir, { recursive: true }); } catch (e) {}
+      for (const [w, h] of [[360, 740], [800, 1280]]) {
+        const cx = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = cx.page, at = w + 'x' + h + ' ', tag = w + 'x' + h;
+        const shot = n => pg.screenshot({ path: require('path').join(dir, n + '-' + tag + '.png') }).catch(() => {});
+        try {
+          // ---- Hill Climb: the light banner, then the next stage by itself ----
+          await pg.evaluate(() => { S.pt = { bank: 900, day: today(), used: 0 }; S.garage = { bolts: 0 }; save(); });
+          if (await pg.evaluate(() => partsLoad())) bad.push(at + 'the games parts did not load');
+          await pg.evaluate(() => hcStart(0, 0));
+          await pg.waitForSelector('#gpause');
+          await vwait(pg, 600);
+          await pg.evaluate(() => { HC.t = 20; hcWin(); });
+          await pg.waitForSelector('.nv-light', { timeout: 5000 });
+          const b0 = await pg.evaluate(() => {
+            const e = document.querySelector('.nv-light'), r = e.getBoundingClientRect();
+            return { title: e.querySelector('.nv-lt').textContent.trim(), stars: (e.querySelector('.rate') || { getAttribute: () => '' }).getAttribute('aria-label'),
+              go: [...e.querySelectorAll('.nv-eb')].map(b => b.dataset.go + (Math.min(b.offsetWidth, b.offsetHeight) >= 48 ? '' : ' small')).join(),
+              card: !!document.querySelector('.gh-end'), inside: r.left >= -1 && r.right <= innerWidth + 1 && r.bottom <= innerHeight + 1,
+              saved: (S.garage.st || {})[HC_ST[0][0][0]] | 0, name: HC_ST[0][0][1] };
+          });
+          await shot('hill-banner');
+          if (b0.title !== b0.name + ' done!' || !/^[123] of 3 stars$/.test(b0.stars || '') || b0.go !== 'again,next,home' || b0.card || !b0.inside || !b0.saved)
+            bad.push(at + 'Hill banner: ' + JSON.stringify(b0));
+          await vwait(pg, 2600);
+          const b1 = await pg.evaluate(() => ({ banner: !!document.querySelector('.nv-light'), wi: HC && HC.wi, si: HC && HC.si, play: !!document.querySelector('#gpause') }));
+          if (b1.banner || b1.wi !== 0 || b1.si !== 1 || !b1.play) bad.push(at + 'Hill banner did not go on to stage 2 by itself: ' + JSON.stringify(b1));
+          notes.push(tag + ' banner "' + b0.title + '" ' + b0.stars);
+          await pg.evaluate(() => { stopHC(); home(); });
+          await pg.waitForSelector(HOME_ON);
+          // ---- Pet Care: friendly words, no meter under 30%, the save unchanged ----
+          await pg.evaluate(() => { S.care = { food: 12, clean: 70, fun: 70, t: Date.now(), gift: '' }; save(); care(); });
+          await pg.waitForSelector('.gx-care');
+          await vwait(pg, 400);
+          const pc = await pg.evaluate(() => ({ text: document.querySelector('#app').innerText, pct: [...document.querySelectorAll('.gx-cbar b')].map(b => b.textContent),
+            food: Math.round(S.care.food), wide: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1 }));
+          await shot('pet-care');
+          if (/hungry/i.test(pc.text) || !/could use a snack/.test(pc.text) || pc.pct.some(x => parseInt(x) < 30) || pc.pct[0] !== '38%' || pc.food !== 12 || pc.wide)
+            bad.push(at + 'Pet Care: ' + JSON.stringify({ pct: pc.pct, food: pc.food, wide: pc.wide, line: (pc.text.match(/[^\n]*(snack|hungry)[^\n]*/i) || [''])[0] }));
+          // ---- the report card: sentences per subject, the pin, tomorrow's first mission ----
+          const st = await pg.evaluate(() => {
+            const s = mastStops('math').filter(x => unlocked('math', x.i)).slice(0, 2);
+            S.mast = S.mast || {};
+            S.mast[s[0].nid] = { n: 14, p: .95, ms: 3000, d: 3, last: mastDay() };
+            S.mast[s[1].nid] = { n: 10, p: .4, ms: 5000, d: 2, last: mastDay() };
+            S.pin = null;
+            save();
+            report();
+            return { solid: s[0].t, work: s[1].t, i: s[1].i };
+          });
+          await pg.waitForSelector('[data-pin]');
+          const k = await pg.evaluate(t => [...document.querySelectorAll('.rp-list li')].findIndex(li => li.querySelector('b').textContent === t), st.work);
+          const r0 = await pg.evaluate(() => ({ subj: (document.querySelector('.rp-subj') || {}).innerText || '', n: document.querySelectorAll('[data-pin]').length,
+            small: [...document.querySelectorAll('[data-pin]')].filter(b => b.offsetHeight < 48).length }));
+          if (!r0.subj.includes('is solid on ' + st.solid + ' and still working on ' + st.work) || k < 0 || r0.small) bad.push(at + 'report: ' + JSON.stringify({ r0, k, st }));
+          if (k >= 0) {
+            await pg.evaluate(() => document.querySelector('#rp-needs').scrollIntoView());
+            await pg.click(`[data-pin="${k}"]`);
+            await pg.waitForSelector(`[data-pin="${k}"][aria-pressed="true"]`, { timeout: 5000 }).catch(() => bad.push(at + 'the pin did not show as pinned'));
+            await pg.evaluate(() => document.querySelector('#rp-needs').scrollIntoView());
+            await pg.waitForTimeout(600); // the screen-in motion (real time, CSS)
+            await shot('report-pin');
+            const pn = await pg.evaluate(() => ({ pin: S.pin, today: today(), wide: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1 }));
+            if (!pn.pin || pn.pin.p !== 'math' || pn.pin.d !== pn.today || pn.pin.t !== st.work || pn.wide) bad.push(at + 'the pin saved: ' + JSON.stringify(pn));
+            // the next day: the pin is the first mission on Home, and it opens that stop
+            await pg.evaluate(() => { S.pin.d = '2000-1-1'; S.day = { d: today(), r: 0, done: false }; save(); home(); });
+            await pg.waitForSelector('#hmmis [data-mi="0"]');
+            const hm = await pg.evaluate(() => ({ t: document.querySelector('#hmmis .hm-mi b').textContent, pin: S.pin, m0: S.day.m[0] }));
+            if (hm.t !== 'Play ' + st.work || hm.pin !== null || !hm.m0.pin || hm.m0.i !== st.i) bad.push(at + 'tomorrow\'s first mission: ' + JSON.stringify(hm));
+            await pg.click('#hmmis [data-mi="0"]');
+            await pg.waitForFunction(() => typeof G != 'undefined' && G && G.path == 'math', null, { timeout: 8000 }).catch(() => {});
+            const g = await pg.evaluate(() => ({ p: G && G.path, node: G && G.node }));
+            if (g.p !== 'math' || g.node !== st.i) bad.push(at + 'the pinned mission did not open its stop: ' + JSON.stringify(g));
+          }
+        } catch (x) { bad.push(at + x.message.split('\n')[0]); }
+        for (const e of cx.errors) bad.push(at + e);
+        network.push(...cx.network);
+        await cx.ctx.close();
+      }
+      if (bad.length) fail('G-FEEL2 game feel 2:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('G-FEEL2: Hill Climb light banner (stars in the title, 48 px choices) goes on to the next stage after 2 s; Pet Care with Food 12 says ' +
+        '"could use a snack", no meter under 30%, save unchanged; report card sentence per subject, "Practise this next" pins a stop that is the next day\'s ' +
+        'first mission and opens it; at 360x740 and 800x1280; ' + notes.join('; '));
     }
 
     for (const u of network) fail('network request: ' + u);

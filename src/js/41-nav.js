@@ -81,6 +81,7 @@ const NAV = {
   leave(quit) {
     try { if (quit) quit(); } catch (e) { if (typeof logErr == 'function') logErr('nav leave: ' + e.message); }
     for (const e of document.querySelectorAll('body > .ovl')) e.remove();
+    for (const e of document.querySelectorAll('.nv-light')) (e.stop ? e.stop() : e.remove()); // a light end banner left open
     home();
   },
   // wire a corner house: el or #id; o as for ask()
@@ -101,23 +102,26 @@ const NAV = {
       b(o.home || 'ehome', 'e-home', 'home', 'Home', !o.again && !o.next) + '</div>';
   },
 
-  // The light end (for chaining short game stages; no game uses it yet): a banner at the bottom, not a full-screen card, with the
-  // same three choices. With a Next it goes on by itself after LIGHT_MS unless the child touches the banner first.
-  // o: {title, again, next, home: functions (next optional, hides Next; home defaults to home())}. Returns the banner (el.stop() takes it away).
+  // The light end (for chaining short game stages; Hill Climb stages use it, G-FEEL2): a banner at the bottom, not a full-screen card,
+  // with the same three choices. With a Next it goes on by itself after LIGHT_MS unless the child touches the banner first (or the
+  // Go Home? sheet is open then: the child is choosing).
+  // o: {title, stars (0-3, drawn after the title; optional), again, next, home: functions (next optional, hides Next; home defaults
+  // to home())}. Returns the banner (el.stop() takes it away).
   LIGHT_MS: 2000,
   light(o = {}) {
     for (const e of document.querySelectorAll('.nv-light')) e.remove();
     const el = document.createElement('div');
     el.className = 'nv-light' + (o.next ? ' auto' : '');
     el.setAttribute('role', 'status');
-    el.innerHTML = `<p class="nv-lt">${esc(o.title || '')}</p>` + NAV.end3({ again: o.again ? 'lagain' : '', next: o.next ? 'lnext' : '', home: 'lhome' });
+    const st = o.stars != null ? ` <span class="nv-ls">${UI.stars(o.stars, 3, 30)}</span>` : '';
+    el.innerHTML = `<p class="nv-lt">${esc(o.title || '')}${st}</p>` + NAV.end3({ again: o.again ? 'lagain' : '', next: o.next ? 'lnext' : '', home: 'lhome' });
     document.body.appendChild(el);
     let t = 0;
     const done = f => { clearTimeout(t); el.remove(); if (f) f(); };
     const go = { again: o.again, next: o.next, home: o.home || (() => home()) };
     for (const b of el.querySelectorAll('[data-go]')) b.onclick = () => { SFX.whoosh(); done(go[b.dataset.go]); };
     el.addEventListener('pointerdown', () => { clearTimeout(t); el.classList.remove('auto'); }, true); // a touch: the child chooses
-    if (o.next) t = setTimeout(() => { if (el.isConnected) done(o.next); }, NAV.LIGHT_MS);
+    if (o.next) t = setTimeout(() => { if (!el.isConnected) return; if (NAV.held) el.classList.remove('auto'); else done(o.next); }, NAV.LIGHT_MS);
     el.stop = () => done();
     return el;
   },

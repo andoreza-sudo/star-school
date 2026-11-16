@@ -18564,7 +18564,8 @@ run('navigation: one way Home NAV-01',()=>{
   const lt=SRCJ['41-nav.js'].slice(SRCJ['41-nav.js'].indexOf('  light(o = {}) {'),SRCJ['41-nav.js'].indexOf('  // ---- Grown-ups gate'));
   if(!/if \(o\.light\) return NAV\.light\(o\);/.test(SRCJ['59-game-hub.js'])||!/LIGHT_MS: 2000,/.test(SRCJ['41-nav.js'])||!/NAV\.end3\(\{ again: o\.again \? 'lagain' : '', next: o\.next \? 'lnext' : '', home: 'lhome' \}\)/.test(lt)
     ||!/if \(o\.next\) t = setTimeout\(/.test(lt)||!/pointerdown', \(\) => \{ clearTimeout\(t\)/.test(lt)||/\bovl\b/.test(lt))p.push('the light end (GH.end {light: true}): a banner with NAV.end3, Next after 2 s unless touched');
-  if(/light:\s*true/.test(js.filter(f=>f!='59-game-hub.js'&&f!='41-nav.js').map(f=>SRCJ[f]).join('')))p.push('a game uses the light end already (the next batch switches games over)');
+  // G-FEEL2 switched Hill Climb's stages over (its own check, "game feel 2 G-FEEL2", covers how); no other game uses it yet
+  if(/light:\s*true/.test(js.filter(f=>f!='59-game-hub.js'&&f!='41-nav.js'&&f!='62-hill.js').map(f=>SRCJ[f]).join('')))p.push('a game other than Hill Climb uses the light end already (the next batch switches games over)');
   // 6. no save field added: NAV keeps nothing in S
   if(/\bS\.\w+\s*=/.test(SRCJ['41-nav.js']))p.push('41-nav.js writes to the save');
   return{problems:p,note:ends+' end cards'};
@@ -18679,6 +18680,160 @@ run('game feel: assist dial G-FEEL1',()=>{
   if(!/GW\.seg\('hcas',\['auto',3,2,1,0\],hcAsGrown\(\)/.test(gr)||!/S\.garage\.as=v=='auto'\?'auto':\+v;save\(\)/.test(gr))p.push('Grown-ups: no Hill Climb driving help choice saved');
   for(const n of ['Auto','Most help','Some help','Little help','No help'])if(!gr.includes("'"+n+"'"))p.push('Grown-ups: the choice '+n+' is missing');
   if(/#gw-hcas[^}]*#[0-9a-fA-F]{3,8}\b/.test(css))p.push('48-setup-grown-care.css: a raw colour in the driving help row');
+  return{problems:[...new Set(p)].slice(0,50),note:o.notes.join('; ')};
+});
+
+// ---- G-FEEL2: game feel 2 (src/js/62-hill.js, 67-game-skyhop.js, 56-petcare.js, 63-game-race.js, 80-grown.js, 82-report.js,
+// 55-missions.js, 00-core.js) ----
+// 1. Hill Climb: a won stage with the next stage of the same world open ends on the light banner (stars in its title, Next by
+// itself), not the full card; the last stage of a world, a stage not won and no game time left keep the full card; what is saved is
+// what hcBank saves either way. 2. Sky Hop: the first decision (a spring, a star, wind, an updraft, a moving cloud, a switch, a
+// key, a crumbling cloud or a gap only the second hop clears) comes within 5 s on course 1 and 6 s on every course (one-touch run
+// speed, after the 0.8 s start); the bots still finish every course (check "sky hop G-04b"). 3. Pet Care: no "hungry" and no meter
+// under 30%; the save keeps its numbers. 4. Star Rally: boost gates on by default from 1st grade (the switches stay), a wrong gate
+// costs nothing, the child's own due number facts come first and the review is not changed. 5. The report's "Practise this next"
+// pin becomes tomorrow's first mission; one sentence per subject; S.pin added in migrate with a default.
+run('game feel 2 G-FEEL2',()=>{
+  const p=[],rd=f=>fs.readFileSync(path.join(SRC,f),'utf8'),fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const FIX=['fresh','midway','maxed','tricky','legacy-index-maps','legacy-single-map'].map(n=>[n,fx(n)]);
+  function T(FIX){
+    const r={bad:[],notes:[]},bad=m=>{if(r.bad.length<60&&!r.bad.includes(m))r.bad.push(m)};
+    const keepGlobals={cancelAnimationFrame:global.cancelAnimationFrame,removeEventListener:global.removeEventListener};
+    global.cancelAnimationFrame=()=>{};global.removeEventListener=()=>{};
+    const D=global.document,app={style:{},innerHTML:''},dummy={style:{},classList:{add(){},remove(){},toggle(){},contains(){return false}},dataset:{},
+      querySelector(){return dummy},querySelectorAll(){return[]},getBoundingClientRect(){return{left:0,top:0,width:0,height:0}},appendChild(){},isConnected:false};
+    const shot=f=>{global.document=Object.assign({},D,{querySelector:s=>s=='#app'?app:dummy,querySelectorAll:()=>[],body:{appendChild(){}}});
+      try{app.innerHTML='';f();return app.innerHTML}catch(e){return 'ERR '+e.message}finally{global.document=D}};
+    S.sound=false;S.voice=false;
+    // ---- 1. Hill Climb: the light end for a chained stage ----
+    const keepG=S.garage,keepPt=S.pt,keepEnd=GH.end,keepStart=hcStart;
+    const fake={addEventListener(){},querySelectorAll:()=>[],querySelector:()=>null,remove(){}};
+    let got=null,started=null;
+    GH.end=(id,o)=>{got={id,o};return fake};
+    hcStart=(w,i)=>{started=[w,i]};
+    // a stage won with the flag and every mission (the drive's numbers set by hand), or not won when its goal is bolts
+    const win=(w,i,o={})=>{
+      const H=hcNew(w,i,{as:3}),s=H.st;
+      Object.assign(H,{t:5,bolts:o.poor?0:99,flips:9,airs:9,perfect:9,crashes:0,crates:H.crates0,gotStar:true,stopped:true});
+      HC=H;got=null;hcWin();HC=null;return{H,s,o:got&&got.o}};
+    const fresh=()=>{S.garage={bolts:0};S.pt={bank:600,day:today(),used:0};S.ptCfg={per:3,max:30,pause:false}};
+    fresh();
+    let a=win(0,0);
+    const all=garageS().st[a.s[0]]||0;
+    if(!a.o||!a.o.light||!a.o.next||!a.o.again||!a.o.home||a.o.title!==a.s[1]+' done!'||a.o.stars!==hcBits(all)||a.o.stars<1)
+      bad('Hill: a won stage with the next one open should end on the light banner with its stars: '+JSON.stringify(a.o&&{light:a.o.light,title:a.o.title,stars:a.o.stars}));
+    else{a.o.next();if(JSON.stringify(started)!=='[0,1]')bad('Hill: Next on the banner should start stage 2 of the same world: '+JSON.stringify(started));
+      started=null;a.o.again();if(JSON.stringify(started)!=='[0,0]')bad('Hill: Play again on the banner: '+JSON.stringify(started))}
+    // the same win saves exactly what hcBank saves (what the full card saved): stars, bolts, the driving help note
+    fresh();const twin=hcNew(0,0,{as:3});Object.assign(twin,{t:5,bolts:99,flips:9,airs:9,perfect:9,crashes:0,crates:twin.crates0,gotStar:true,stopped:true,result:'win'});
+    hcBank(twin);const want=JSON.stringify(S.garage);fresh();win(0,0);
+    if(JSON.stringify(S.garage)!==want)bad('Hill: the banner win saved something else than hcBank: '+JSON.stringify(S.garage)+' / '+want);
+    // the full card: the last stage of a world, a stage not won, no game time left
+    fresh();for(let i=0;i<HC_SPW-1;i++)S.garage.st=Object.assign(S.garage.st||{},{[HC_ST[0][i][0]]:1});
+    a=win(0,HC_SPW-1);if(!a.o||a.o.light)bad('Hill: the last stage of a world keeps the full card');
+    const ci=HC_ST.findIndex(ws=>ws.some(s=>s[2][0]=='coins'));
+    if(ci>=0){fresh();S.garage.st={};HC_ST.forEach((ws,w)=>{if(w<=ci)ws.forEach(s=>{S.garage.st[s[0]]=1})});
+      const si=HC_ST[ci].findIndex(s=>s[2][0]=='coins');
+      if(si<HC_SPW-1){delete S.garage.st[HC_ST[ci][si][0]];a=win(ci,si,{poor:true});if(!a.o||a.o.light)bad('Hill: a stage not won keeps the full card')}}
+    fresh();S.pt.bank=0;S.ptCfg={per:3,max:30,pause:false};a=win(0,0);if(!a.o||a.o.light)bad('Hill: no game time left keeps the full card ('+ptLeft()+' s left)');
+    GH.end=keepEnd;hcStart=keepStart;S.garage=keepG;S.pt=keepPt;
+    // ---- 2. Sky Hop: the first decision comes early ----
+    const dec=C=>{const xs=[];const add=v=>{if(v!=null&&isFinite(v))xs.push(v)};
+      C.springs.forEach(q=>add(q.x));C.stars.forEach(q=>add(q.x));C.lifts.forEach(q=>add(q.x0));C.winds.forEach(q=>add(q.x0));
+      C.movers.forEach(q=>add(q.x0!=null?q.x0:q.x));C.pads.forEach(q=>add(q.x0));C.keys.forEach(q=>add(q.x));C.floors.forEach(f=>{if(f.k=='q')add(f.x0)});
+      const fl=C.floors.filter(f=>f.k!='q').sort((x,y)=>x.x0-y.x0);for(let i=1;i<fl.length;i++)if(fl[i].x0-fl[i-1].x1>=5)add(fl[i-1].x1);
+      return Math.min(...xs)};
+    const ts=[];
+    for(const c of HOP_COURSES){const C=hopBuild(c.id),t=.8+(dec(C)-C.cps[0].x)/HOP_P.RUN;ts.push(t);
+      if(t>(c.i==0?5:6))bad('Sky Hop '+c.id+': the first decision comes at '+t.toFixed(1)+' s (at most '+(c.i==0?5:6)+')');
+      if(C.stars.length!==3)bad('Sky Hop '+c.id+': 3 stars')}
+    r.notes.push('Sky Hop first decision '+Math.min(...ts).toFixed(1)+'-'+Math.max(...ts).toFixed(1)+' s (course 1 '+ts[0].toFixed(1)+' s)');
+    // ---- 3. Pet Care: friendly words, no meter under 30%, the save unchanged ----
+    if(pcShow(0)<30||pcShow(100)!==100||pcShow(-5)!==pcShow(0)||!(pcShow(40)>pcShow(15)))bad('Pet Care: the shown meter runs from 30% to 100% and still moves');
+    const keepC=S.care,keepPet=S.pet,keepPn=S.petName;
+    S.petName='Sparky';
+    for(const [f,cl,fu] of [[12,70,70],[70,5,70],[70,70,0],[0,0,0],[90,90,90],[50,50,50]]){
+      S.care={food:f,clean:cl,fun:fu,t:Date.now(),gift:''};
+      const h=shot(()=>care()),txt=h.replace(/<[^>]*>/g,' ');
+      if(/^ERR/.test(h))bad('Pet Care: '+h.slice(0,100));
+      if(/hungry|needs a bath|wants to play/i.test(txt))bad('Pet Care: unfriendly words with '+[f,cl,fu]+': '+(txt.match(/[^.!]*(hungry|needs|wants)[^.!]*/i)||[''])[0]);
+      for(const m of h.matchAll(/(\d+)%/g))if(+m[1]<30)bad('Pet Care: a meter shows '+m[0]+' with '+[f,cl,fu]);
+      if(Math.min(f,cl,fu)<30&&!/could use a snack|would love a bath|would like to play/.test(txt))bad('Pet Care: no friendly line with '+[f,cl,fu]);
+      if(Math.abs(S.care.food-f)>.01||Math.abs(S.care.clean-cl)>.01||Math.abs(S.care.fun-fu)>.01)bad('Pet Care: the saved meters changed');
+    }
+    S.care=keepC;S.pet=keepPet;S.petName=keepPn;
+    // ---- 4. Star Rally boost gates ----
+    const keepR=S.rally,keepGr=S.grade,keepRev=S.rev;
+    for(const [gr,rl,want] of [[-1,undefined,false],[0,undefined,false],[1,undefined,true],[6,undefined,true],[3,{quiz:false},true],[0,{quiz:true},true],
+      [3,{gates:'off'},false],[3,{gates:'off',quiz:true},false],[-1,{gates:'on'},true]]){
+      S.grade=gr;if(rl===undefined)delete S.rally;else S.rally=JSON.parse(JSON.stringify(rl));const b=JSON.stringify(S.rally);
+      if(rlGatesOn()!==want)bad('Rally: boost gates for grade '+gr+' and '+JSON.stringify(rl)+' should be '+(want?'on':'off'));
+      if(JSON.stringify(S.rally)!==b)bad('Rally: reading the gates choice changed the save')}
+    // the gate questions: the child's own due number facts first, read from the label, each once; then rlQuiz
+    const facts=[['7 + 5 = ?',12],['? + 6 = 14',8],['15 − ? = 9',6],['6 × 7 = ?',42],['? × 4 = 28',7],['32 ÷ ? = 4',8],['? ÷ 3 = 5',15]];
+    for(const [l,v] of facts){const m=REV_ARITH.exec(l);if(!m||rlFactAns(m[1],m[2],m[3],m[4])!==v)bad('Rally: the missing number of '+l)}
+    S.rev=[{sk:'add',lv:1,label:'7 + 5 = ?',box:0,due:0,n:2},{sk:'mfact',lv:1,label:'6 × 7 = ?',box:1,due:0,n:1},{sk:'add',lv:1,label:'Sam has 3 apples',box:0,due:0,n:1},
+      {sk:'add',lv:1,label:'9 + 9 = ?',box:2,due:mastDay()+5,n:1}];
+    const revB=JSON.stringify(S.rev),fs2=rlGateFacts();
+    if(fs2.map(f=>f.t+'='+f.a).join()!=='7 + 5 = ?=12,6 × 7 = ?=42')bad('Rally: the gate facts should be the due number facts only: '+JSON.stringify(fs2));
+    const st=rlNew('meadow-0',{seed:3,quiz:true,grade:2,facts:fs2}),q1=st.q;
+    if(q1.t!=='7 + 5 = ?'||q1.a!==12||q1.opts.length!==3||!q1.opts.includes(12)||new Set(q1.opts).size!==3)bad('Rally: the first gate asks the first due fact: '+JSON.stringify(q1));
+    if(rlGateQ(st).a!==42||!/^\d+ [+−×] \d+$/.test(rlGateQ(st).q))bad('Rally: each fact once, then rlQuiz');
+    if(JSON.stringify(S.rev)!==revB)bad('Rally: the gates changed the review items');
+    // a wrong gate: no boost and nothing else (the gate block only sets a boost when right)
+    const src=rd('js/63-game-race.js'),gb=src.slice(src.indexOf('if (st.quiz && rlCross('),src.indexOf('// the rivals: gentle catch-up'));
+    if(!/if \(ok\) P\.boost = Math\.max\(P\.boost, 1\.4\);/.test(gb)||(gb.match(/P\.\w+\s*=/g)||[]).length!==1||/spin|bump|hits|\.v\s*\*?=/.test(gb))bad('Rally: a wrong gate must cost nothing');
+    const st2=rlNew('meadow-0',{seed:3,quiz:true,grade:1,facts:[]});st2.q={q:'1 + 1',a:2,opts:[3,4,2]};
+    st2.P.x=-.62;st2.cd=0;st2.P.v=RL_VMAX*.6;st2.P.d=st2.T.gate*RL_SEG-20;const sp0=st2.P.spin,h0=st2.P.hits;
+    for(let i=0;i<120&&!st2.ev.some(e=>e[0]=='gate');i++)rlStep(st2,{});
+    const ge=st2.ev.find(e=>e[0]=='gate');
+    if(!ge||ge[1]!==false||st2.P.spin>sp0||st2.P.hits>h0)bad('Rally: a wrong gate: '+JSON.stringify({ge,spin:st2.P.spin,hits:st2.P.hits}));
+    if(!/UI\.sw\('Boost gates: drive through the right answer to zoom', rlGatesOn\(\), 'rlquiz'\)/.test(src)||!/const quiz = rlGatesOn\(\) && !trial;/.test(src)||!/r\.gates = e\.target\.checked \? 'on' : 'off'/.test(src))
+      bad('Rally: the menu switch and the race read rlGatesOn()');
+    const gr=rd('js/80-grown.js');
+    if(!/UI\.sw\('Star Rally boost gates: a quick number fact to zoom',rlGatesOn\(\),'rlgates'\)/.test(gr)||!/S\.rally\.gates=e\.target\.checked\?'on':'off';save\(\)/.test(gr))bad('Grown-ups: the boost gates switch');
+    S.rally=keepR;S.grade=keepGr;S.rev=keepRev;
+    // ---- 5. the report's pin and the sentence per subject; tomorrow's first mission ----
+    for(const [name,raw] of FIX){loadSave(raw);migrate();if(!('pin' in S)||S.pin!==null)bad(name+': S.pin should be added as null by migrate')}
+    loadSave(FIX[0][1]);migrate();S.name='Ava';S.grade=1;
+    const pin0={p:'math',sk:'x',lv:1,t:'X',d:'2000-1-1'};S.pin=JSON.parse(JSON.stringify(pin0));migrate();if(JSON.stringify(S.pin)!==JSON.stringify(pin0))bad('migrate rewrote S.pin');
+    S.pin=null;
+    const stops=mastStops('math').filter(s=>unlocked('math',s.i)).slice(0,3);
+    if(stops.length<2)bad('report: fewer than 2 open math stops in a fresh save');
+    else{
+      S.mast=S.mast||{};S.mast[stops[0].nid]={n:12,p:.95,ms:3000,d:3,last:mastDay()};S.mast[stops[1].nid]={n:10,p:.45,ms:5000,d:2,last:mastDay()};
+      const m=REP.data(),h=REP.html(m),w=stops[1],wn=NODES.math[w.i];
+      const sub=(m.subj||[]).find(x=>x.p=='math');
+      if(!sub||sub.solid!==stops[0].t||sub.work!==w.t)bad('report: the math sentence '+JSON.stringify(sub));
+      if(!h.includes('Ava is solid on <b>'+esc(stops[0].t)+'</b> and still working on <b>'+esc(w.t)+'</b>.'))bad('report: no "Ava is solid on X and still working on Y" sentence');
+      const k=m.needs.findIndex(x=>x.sk==wn.sk&&x.lv==wn.lv);
+      if(k<0||!h.includes('data-pin="'+k+'" aria-pressed="false"')||(h.match(/data-pin="/g)||[]).length!==m.needs.length||!h.includes('Practise this next'))bad('report: a "Practise this next" button for each item');
+      // pinned today: it waits for tomorrow; then it is the first mission, opens that stop, and is used up
+      S.pin={p:'math',sk:wn.sk,lv:wn.lv,t:w.t,d:today()};
+      const h2=REP.html(REP.data());if(!h2.includes('data-pin="'+k+'" aria-pressed="true"'))bad('report: the pinned item shows as pinned');
+      S.day={d:today(),r:0,done:false};let ms=MIS.get();
+      if(ms.some(x=>x.pin)||!S.pin)bad('missions: a pin made today must wait for tomorrow');
+      S.pin.d='2000-1-1';S.day={d:today(),r:0,done:false};ms=MIS.get();
+      const f=ms[0];
+      if(!f||f.k!=='round'||!f.pin||f.p!=='math'||f.i!==w.i||S.pin!==null||!MIS.valid(ms))bad('missions: the pin should be the first mission and used up: '+JSON.stringify(ms)+' pin '+JSON.stringify(S.pin));
+      else{if(MIS.title(f)!=='Play '+wn.t)bad('missions: the pinned mission title '+MIS.title(f));
+        const o=ms.find(x=>x.k=='other');if(o&&o.p=='math')bad('missions: "another subject" is the pinned subject')}
+      // a stop that is gone: dropped quietly
+      S.pin={p:'math',sk:'nope',lv:9,t:'Gone',d:'2000-1-1'};S.day={d:today(),r:0,done:false};ms=MIS.get();
+      if(ms.some(x=>x.pin)||S.pin!==null||!MIS.valid(ms))bad('missions: a pin of a stop that is gone is dropped');
+    }
+    global.cancelAnimationFrame=keepGlobals.cancelAnimationFrame;global.removeEventListener=keepGlobals.removeEventListener;
+    return r}
+  const o=(()=>eval(js+';('+T.toString()+')(FIX)'))();
+  for(const m of o.bad)p.push(m);
+  // sources: the banner is chained only from hcWin, after hcBank; the meters' words; the save rule
+  const hill=rd('js/62-hill.js'),core=rd('js/00-core.js'),pc=rd('js/56-petcare.js');
+  const hw=hill.slice(hill.indexOf('function hcWin(){'),hill.indexOf('/* ---- the menu'));
+  if(hw.indexOf('hcBank(H)')<0||hw.indexOf('hcBank(H)')>hw.indexOf('hcLight(H')||!/if\(ok&&nx&&nx\[0\]==H\.wi&&ptLeft\(\)>0&&!H\.timeUp\)return hcLight\(H,stars,nx\);/.test(hw))p.push('Hill: hcWin chains the banner only for a won stage of the same world with game time, after hcBank');
+  if((hill.match(/light:true/g)||[]).length!==1)p.push('Hill: one light end (hcLight)');
+  if(/is hungry|needs a bath|wants to play/.test(pc))p.push('56-petcare.js: an unfriendly line is left');
+  if(!/if\(!\('pin' in S\)\)S\.pin=null;/.test(core))p.push('00-core.js: S.pin needs its default in migrate');
+  for(const f of ['css/36-report.css','css/11-nav.css'])if(/(rp-pin|rp-subj|nv-ls)[^}]*#[0-9a-fA-F]{3,8}\b/.test(rd(f)))p.push(f+': a raw colour in the G-FEEL2 rules');
   return{problems:[...new Set(p)].slice(0,50),note:o.notes.join('; ')};
 });
 

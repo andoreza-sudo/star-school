@@ -47,7 +47,8 @@ also in Grown-ups, About Star School). Everything else was made for Star School.
 - **Pet and rewards.** A drawn pet that grows, a Pet Shop with wearables and scenes, Pet Care, a sticker book and a reward chest after each round.
 - **Game Room.** Six games paid for with game time: 4x4 Hill Climb, Coloring (Art Studio), Block Builder, Star Rally, Snack Stand and Sky Hop.
 - **Grown-ups.** Up to four children on one tablet, each with their own progress; grade and level; game-time rules (minutes per round, daily
-  maximum, learn first, pause); your own recorded voice lines; a skills table and a printable report card; Save a backup, Load a backup and
+  maximum, learn first, pause); your own recorded voice lines; a skills table and a printable report card (tap "Practise this next" on a stop that needs
+  practice to make it tomorrow's first mission); Star Rally boost gates (a quick number fact to zoom, on from 1st grade); Save a backup, Load a backup and
   Undo; Calm mode (less movement, no confetti) and sound switches; Start over; About Star School with the version, build and licences.
 - **Made to be gentle.** Works offline on cheap 7-inch tablets; large 48 px touch targets, readable type, visible focus, nothing relies on colour
   or sound alone; wrong answers are gentle and come back later for another try.

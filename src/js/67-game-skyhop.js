@@ -110,12 +110,12 @@ const HOP_PH = {
 };
 // [id, name, world, gold target in seconds (the one-touch bot of tools/test.js with no falls, plus 3 s), plan]
 const HOP_COURSES = [
-  ['m1', 'First Hops', 0, 48, 'F8 gap row gap3 up down puff gap stones row gap starHigh bridge gap3 starArc up down hole starNook E'],
-  ['m2', 'Puffy Path', 0, 48, 'F8 gap puff hole row stones up down gap3 starArc puffs gap bridge step starLow gap starHigh E'],
+  ['m1', 'First Hops', 0, 48, 'F8 starHigh gap row gap3 up down puff gap stones row gap bridge gap3 starArc up down hole starNook E'],
+  ['m2', 'Puffy Path', 0, 48, 'F8 starArc gap puff hole row stones up down gap3 puffs gap bridge step starLow gap starHigh E'],
   ['m3', 'Spring Garden', 0, 46, 'F8 spring gap puff springg row starSpring gap3 step stones spring puffs starArc hole starHigh E'],
-  ['m4', 'Sunny Steps', 0, 45, 'F8 ups gap3 springg starNook step puff spring stones row ledge starLow hole gap3 starSpring E'],
-  ['m5', 'Daisy Drops', 0, 53, 'F8 stones springg puffs ledge starHigh gap3 hole spring row ups starLow step gap3 springg puff starSpring E'],
-  ['m6', 'Meadow Run', 0, 56, 'F8 hole spring puffs stones ups starSpring gap3 springg ledge row starLow step puff spring hole gap3 starNook E'],
+  ['m4', 'Sunny Steps', 0, 45, 'F8 springg ups gap3 starNook step puff spring stones row ledge starLow hole gap3 starSpring E'],
+  ['m5', 'Daisy Drops', 0, 53, 'F8 springg stones puffs ledge starHigh gap3 hole spring row ups starLow step gap3 springg puff starSpring E'],
+  ['m6', 'Meadow Run', 0, 56, 'F8 spring hole puffs stones ups starSpring gap3 springg ledge row starLow step puff spring hole gap3 starNook E'],
   ['p1', 'Breezy Start', 1, 50, 'F8 wind dbl gap3 row lift starDbl up gust down stones starLift spring dbl starHigh lift gust dbl E'],
   ['p2', 'Updraft Hill', 1, 51, 'F8 lift dblUp windGap starLift puff liftHi row gust dbl starDbl stones lift spring starHigh lift gust dbl E'],
   ['p3', 'Gusty Gaps', 1, 53, 'F8 gust windGap dbl lift starDbl puffs liftHi wind hole springg starLift dblUp gust starSpring lift gust dbl E'],
@@ -128,7 +128,7 @@ const HOP_COURSES = [
   ['n4', 'Star Steps', 2, 59, 'F8 kiteHi kite starDbl gust kiteV lift kites starKite puffs dbl kiteV starKiteH springg kite kite lift kiteV dbl E'],
   ['n5', 'Comet Climb', 2, 63, 'F8 kiteV liftHi kites starKiteH dblUp kite gust starKite kiteHi puff lift kites starLift dbl kiteV kite lift kiteV dbl E'],
   ['n6', 'Night Sky High', 2, 61, 'F8 kites kiteHi starKite windGap kiteV dbl starKiteH liftHi kite puffs kiteHi gust kites starDbl kite lift kiteV dbl E'],
-  ['r1', 'Rainbow Start', 3, 59, 'F8 rbow gate gap3 row starGate dbl kite lift gateLow starHigh puff rbow gateHi starDbl gate kite liftHi gateLow rbow E'],
+  ['r1', 'Rainbow Start', 3, 59, 'F8 gate rbow gap3 row starGate dbl kite lift gateLow starHigh puff rbow gateHi starDbl gate kite liftHi gateLow rbow E'],
   ['r2', 'Candy Gates', 3, 62, 'F8 gate kite rbow starGate lift gateLow puffs dblUp starKite gateHi wind kites starDbl gate kite liftHi gateLow rbow E'],
   ['r3', 'Bridge of Colours', 3, 66, 'F8 rbow gateHi kiteV starGate liftHi gate dbl puffs starLift rbow kites gateLow kiteHi starKiteH gate kite liftHi gateLow rbow E'],
   ['r4', 'Twisty Rainbow', 3, 64, 'F8 gateLow kites starGate windGap gate liftHi rbow starKite kiteV gateHi dbl puffs springg starDbl gate kite liftHi gateLow rbow E'],

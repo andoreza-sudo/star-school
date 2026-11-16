@@ -2183,7 +2183,8 @@ Object.assign(SCREENS, {
   'game-hill-play': gameShot(() => hcStart('meadow')),
   'game-pause': { run: async p => { await p.evaluate(() => hcStart('meadow')); await p.waitForTimeout(600); await p.click('#gpause'); await p.waitForTimeout(600); } },
   'game-hill-end': gameShot(() => hcStart('meadow'), () => hcEnd('fuel')),
-  'game-hill-win': gameShot(() => hcStart('meadow', 0), () => { HC.t = 20; hcWin(); }),
+  'game-hill-win': gameShot(() => hcStart('meadow', HC_SPW - 1), () => { HC.t = 20; hcWin(); }), // G-FEEL2: the full card (last stage of a world)
+  'game-hill-chain': gameShot(() => hcStart('meadow', 0), () => { HC.t = 20; hcWin(); }), // G-FEEL2: the light banner (Next by itself after 2 s)
   'game-art-menu': gameShot(() => colorMenu('mandala')),
   'game-art-play': gameShot(() => artPage('m:17')),
   'game-pixel-play': gameShot(() => colorPic(CB_PICS[0][0], 'num')),

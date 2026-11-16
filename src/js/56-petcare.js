@@ -43,10 +43,22 @@ function careFx(kind, n = 9) {
   setTimeout(() => box.remove(), 1700);
 }
 
+// G-FEEL2: the meters never make a child feel guilty. What is shown runs from 30% (a saved 0) to 100% (a saved 100), so a pet left
+// for days shows about a third full, never empty, and every snack still moves the meter. The saved numbers are not changed (display
+// only): the decay, the snack sizes, "full" and the daily gift at 80 work exactly as before.
+const PC_LOW=30;
+const pcShow=v=>Math.round(PC_LOW+(100-PC_LOW)*Math.max(0,Math.min(100,+v||0))/100);
+// the line over the pet: friendly words, never "hungry" or "needs"
+function pcMood(c,pn){
+  if(c.food<30)return `${pn} could use a snack!`;
+  if(c.clean<30)return `${pn} would love a bath!`;
+  if(c.fun<30)return `${pn} would like to play!`;
+  return Math.min(c.food,c.clean,c.fun)>=80?`${pn} is super happy!`:`${pn} is doing great!`;
+}
 // Pet Care (P4-18 icons and meters; P4-12 drawn stage and feedback, card layout, two columns on a wide landscape screen)
 function care(){const c=careTick();save();const pn=esc(petN()),sc=sceneOf();
-  const mood=c.food<30?`${pn} is hungry!`:c.clean<30?`${pn} needs a bath!`:c.fun<30?`${pn} wants to play!`:Math.min(c.food,c.clean,c.fun)>=80?`${pn} is super happy!`:`${pn} is doing great!`;
-  const bar=(l,icon,v,k)=>`<div class="cbar gx-cbar ${k}"><span class="gx-ci">${ico(icon,26)}</span><span class="gx-cl">${l}</span>${UI.meter(v/100,{label:l+' '+Math.round(v)+'%'})}<b>${Math.round(v)}%</b></div>`;
+  const mood=pcMood(c,pn);
+  const bar=(l,icon,v,k)=>{const n=pcShow(v);return `<div class="cbar gx-cbar ${k}"><span class="gx-ci">${ico(icon,26)}</span><span class="gx-cl">${l}</span>${UI.meter(n/100,{label:l+' '+n+'%'})}<b>${n}%</b></div>`};
   view(`<div class="top tbar gx-mtop s-play">${UI.ibtn('back','Back',{size:'sm',id:'back'})}<div class="ttl gx-ttl"><span class="gx-tb">${ico('paw',24)}</span><span>Pet Care</span></div>${UI.chip('coin',S.coins,{id:'coinc',aria:'Coins'})}</div>
   <div class="scroll pc"><div class="pc-l">${stageHTML(sc,mood,'',false)}</div><div class="pc-r">
   <div class="pc-card gx-care">${bar('Food','food',c.food,'k-food')}${bar('Clean','bath',c.clean,'k-clean')}${bar('Fun','ball',c.fun,'k-fun')}</div>

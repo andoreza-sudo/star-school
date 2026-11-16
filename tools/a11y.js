@@ -149,6 +149,18 @@ const SCREENS = {
     run: async p => { await p.evaluate(() => { S.grade = 2; S.bt = {}; BT.start('maze', BT.band(), 3); }); await p.waitForTimeout(600); },
   },
   report: { adult: true, run: ev(() => report()) },
+  // G-FEEL2: the Needs practice list with its "Practise this next" buttons (one pinned) and the sentence per subject
+  'report-pin': { adult: true, run: ev(() => {
+    const s = mastStops('math').filter(x => unlocked('math', x.i)).slice(0, 3);
+    S.mast = S.mast || {};
+    S.mast[s[0].nid] = { n: 14, p: .95, ms: 3000, d: 3, last: mastDay() };
+    S.mast[s[1].nid] = { n: 10, p: .4, ms: 5000, d: 2, last: mastDay() };
+    S.mast[s[2].nid] = { n: 9, p: .55, ms: 5000, d: 2, last: mastDay() };
+    const n = NODES.math[s[1].i];
+    S.pin = { p: 'math', sk: n.sk, lv: n.lv, t: s[1].t, d: today() };
+    report();
+    document.querySelector('#rp-needs').scrollIntoView();
+  }) },
   'hill-garage': { run: ev(() => { gtime(); garage(); }) },
   'hill-drive': { run: ev(() => { gtime(); hcStart('meadow'); }), main: '.pedal', sheet: pauseSheet },
   'hill-end': {
@@ -158,9 +170,14 @@ const SCREENS = {
   // G-HC2: the garage (vehicles, upgrades, paint), a stage's drive in the rain and its end card with stars and missions
   'hill-shop': { run: ev(() => { gtime(); garageS().bolts = 200; hcGarage(); }) },
   'hill-stage': { run: ev(() => { gtime(); hcStart(2, 1); }), main: '.pedal', sheet: pauseSheet },
+  // G-FEEL2: a won stage with the next one open ends on the light banner (hill-chain); the full card is the last stage of a world
   'hill-win': {
-    run: async p => { await p.evaluate(() => { gtime(); hcStart(0, 0); }); await p.waitForTimeout(600); await p.evaluate(() => { HC.t = 20; hcWin(); }); await p.waitForTimeout(900); },
+    run: async p => { await p.evaluate(() => { gtime(); hcStart(0, HC_SPW - 1); }); await p.waitForTimeout(600); await p.evaluate(() => { HC.t = 20; hcWin(); }); await p.waitForTimeout(900); },
     sheet: async () => ({ close: 'enter' }),
+  },
+  'hill-chain': {
+    run: async p => { await p.evaluate(() => { gtime(); hcStart(0, 0); }); await p.waitForTimeout(600); await p.evaluate(() => { HC.t = 20; hcWin(); }); await p.waitForTimeout(400);
+      await p.evaluate(() => { const e = document.querySelector('.nv-light'); if (e) e.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); }); }, // stays (a touch stops Next)
   },
   'art-menu': { run: ev(() => { gtime(); colorMenu('mandala'); }) },
   // colouring: the picture is the main control (tap a shape); the colour swatches are pickers (48 px)
