@@ -8036,6 +8036,37 @@ run('parts split A11c',()=>{
   return{problems:p,note:'index.html '+Math.round(nh/1000)+' KB, '+PART_FILES.map((f,i)=>f+' '+Math.round(Buffer.byteLength(parts[i])/1000)+' KB').join(', ')};
 });
 
+// ---- P6-01 fix: Enter or Space on an SVG target drawn as a button (the tap kind's pictures, 23-viz.js tapAttr) ----
+// SVG elements have no click() method, so UI.modal.key used to throw on them. UI.press clicks an HTML element and dispatches a
+// bubbling click event on anything else. src/js/14-ui.js alone, in a fresh context with fake elements.
+run('keys: Enter or Space on an SVG button clicks it (UI.press)',()=>{
+  const p=[],vm=require('vm'),src=fs.readFileSync(path.join(SRC,'js','14-ui.js'),'utf8');
+  class MouseEvent{constructor(type,o={}){this.type=type;this.bubbles=!!o.bubbles;this.cancelable=!!o.cancelable}}
+  const ctx=vm.createContext({document:{querySelectorAll:()=>[],querySelector:()=>null,addEventListener:()=>{}},MouseEvent});
+  vm.runInContext(src+';this.UI=UI',ctx);
+  const UI=ctx.UI;
+  // an SVG <g role="button">: matches the selector, has no click(), records what is dispatched on it
+  const svg=()=>({tagName:'g',got:[],matches:s=>/\[role=button\]/.test(s),dispatchEvent(ev){this.got.push(ev.type+(ev.bubbles?' bubbles':''));return true}});
+  const html=()=>({tagName:'SPAN',n:0,matches:s=>/\[role=button\]/.test(s),click(){this.n++},dispatchEvent(){throw new Error('an HTML element should get click()')}});
+  const press=(t,key)=>{let prevented=false;const e={key,target:t,shiftKey:false,preventDefault:()=>{prevented=true}};
+    try{UI.modal.key(e)}catch(x){return 'threw '+x.message}return prevented};
+  for(const key of ['Enter',' ']){
+    const g=svg(),r=press(g,key);
+    if(r!==true||g.got.join()!=='click bubbles')p.push(JSON.stringify(key)+' on an SVG button: '+JSON.stringify({r,got:g.got}));
+    const s=html(),r2=press(s,key);
+    if(r2!==true||s.n!==1)p.push(JSON.stringify(key)+' on an HTML role=button: '+JSON.stringify({r:r2,n:s.n}));
+  }
+  // other keys do nothing to it
+  const g=svg();press(g,'a');if(g.got.length)p.push('a letter key pressed the SVG button');
+  // UI.press directly; and no key handler in src/js calls .click() on a key event's target (that throws on an SVG target)
+  const g2=svg();UI.press(g2);if(g2.got.join()!=='click bubbles')p.push('UI.press on an SVG element: '+g2.got.join());
+  for(const f of fs.readdirSync(path.join(SRC,'js')).filter(n=>n.endsWith('.js'))){
+    const t=fs.readFileSync(path.join(SRC,'js',f),'utf8');
+    for(const m of t.matchAll(/\b(e|ev|evt|event)\.(target|currentTarget)\.click\(\)|\bt\.click\(\)/g))p.push(f+': '+m[0]+' (use UI.press: an SVG target has no click())');
+  }
+  return{problems:p,note:'Enter and Space on an SVG and an HTML role=button'};
+});
+
 // ---- P6-02: the Game Room's part files load on demand (LAZY in tools/build.py, partsThen() in src/js/90-app.js); start-up bytes under 3.0 MB ----
 run('performance P6-02',()=>{
   const p=[],rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8'),vm=require('vm');

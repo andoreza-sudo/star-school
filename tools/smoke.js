@@ -11092,6 +11092,46 @@ async function main() {
         'first mission and opens it; at 360x740 and 800x1280; ' + notes.join('; '));
     }
 
+    // P6-01 fix (ROOM): Enter and Space on an SVG tap target. The tap kind's coordinate grid (coord level 1, 23-viz.js tapAttr) draws
+    // its points as <g role="button" tabindex="0">; an SVG element has no click(), so UI.modal.key threw on Enter. Now UI.press sends it a
+    // click event. One-question rounds of the real round engine: Enter on the right point, then Space on it; each is scored once and
+    // the round finishes. No console errors, no requests.
+    {
+      const ka = await openApp(browser, { fixture: 'midway', width: 1024, height: 600 });
+      const pg = ka.page, bad = [], tags = [];
+      try {
+        for (const key of ['Enter', 'Space']) {
+          const q = await pg.evaluate(() => {
+            let q = null;
+            for (let s = 1; s < 600; s++) { q = genQ('coord', 1, s); if (q.kind === 'tap' && /<g class="vt"/.test(q.html)) break; }
+            G = newG({ sk: q.sk, mix: true, n: 1, pool: [q] }); next();
+            return { kind: q.kind, ans: String(q.ans) };
+          });
+          if (q.kind !== 'tap') { bad.push(key + ': no tap question with SVG targets from coord 1'); break; }
+          await pg.waitForSelector('#prompt g.vt[tabindex="0"]', { timeout: 5000 });
+          await vwait(pg, 300);
+          const t = await pg.evaluate(a => {
+            const el = [...document.querySelectorAll('#prompt g.vt[data-v]')].find(e => e.dataset.v === a);
+            if (!el) return null;
+            el.focus();
+            return { tag: el.tagName, svg: el instanceof SVGElement, click: typeof el.click, role: el.getAttribute('role'), focused: document.activeElement === el };
+          }, q.ans);
+          if (!t || !t.svg || t.click !== 'undefined' || t.role !== 'button' || !t.focused) { bad.push(key + ': target ' + JSON.stringify(t)); continue; }
+          tags.push(t.tag);
+          await pg.keyboard.press(key);
+          await vwait(pg, 300);
+          const r = await pg.evaluate(() => ({ score: G.score, done: G.done, lock: G.lock, right: document.querySelectorAll('#prompt g.vt.right').length }));
+          if (r.score !== 1 || r.done !== 1 || !r.lock || r.right !== 1) bad.push(key + ' on the right point: ' + JSON.stringify(r));
+          await pg.waitForSelector('#chest', { timeout: 10000 }).catch(() => bad.push(key + ': the round did not finish'));
+        }
+      } catch (x) { bad.push(x.message.split('\n')[0]); }
+      for (const e of ka.errors) bad.push('console error: ' + e);
+      for (const u of ka.network) bad.push('network request: ' + u);
+      await ka.ctx.close();
+      if (bad.length) fail('P6-01 Enter on an SVG button:\n  ' + [...new Set(bad)].join('\n  '));
+      else step('P6-01: Enter and Space on an SVG tap target (' + tags.join(', ') + ' with no click() method, coord 1 grid) answer once, no console errors');
+    }
+
     // KINDS2 batch A (docs/KINDS2-SPEC.md 6, smoke): the sort and mark kinds in one-question rounds of the real round engine, at 360x740
     // and 800x1280. sort: right on the first try by taps; wrong then right (hint, the right chips stay locked, "n of m are home");
     // wrong twice (the chips move to their bins marked, the answer is spoken, the question comes back at the end of the round); one chip
