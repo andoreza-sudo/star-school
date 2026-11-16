@@ -41,6 +41,11 @@ function aboutCard(){
     <p class="gw-sub ab-lic-line">Everything else (pictures, icons, sounds, games and questions) was made for Star School. No other fonts, libraries or outside files are used.</p>
     <details class="ab-det" id="ab-ofl"><summary>${ico('doc',22)}<span>Read the Andika licence</span>${ico('chevron-right',22,'chev')}</summary><pre class="ab-ofl" tabindex="0" role="region" aria-label="SIL Open Font License 1.1 text">${esc(OFL_TEXT)}</pre></details>`);
 }
+// G-FEEL1: 4x4 Hill Climb driving help (S.garage.as: 'auto' or 0-3; src/js/62-hill.js, which loads with the Game Room). Read here
+// without the game's code and without changing the save: an old Easy driving switch on is Most help, off is No help, never set is Auto.
+const HCAS_NAMES={auto:'Auto',3:'Most help',2:'Some help',1:'Little help',0:'No help'};
+function hcAsGrown(){const g=S.garage&&typeof S.garage=='object'&&!Array.isArray(S.garage)?S.garage:{};
+  return g.as==='auto'||[0,1,2,3].includes(g.as)?g.as:g.easy===true?3:g.easy===false?0:'auto'}
 const CHEER_NAMES={mix:'Mixed',f:'Female',m:'Male',tts:'Tablet voice'}; // EN-PRAISE: the Cheer voices choice (S.cheerV, cheerMode() in 12-speech.js)
 function grown(){let armed=false;
   const rows=[...new Set(Object.values(NODES).flat().map(n=>n.sk))].filter(id=>SK[id]).map(id=>{const p=P(id),s=SK[id],acc=p.t?Math.round(p.c/p.t*100)+'%':'–';
@@ -78,7 +83,9 @@ function grown(){let armed=false;
     ${pc.need?`<p class="gw-note" id="ptneed">${ico('clock',22)}<span>${!gt.more?`Learning today: ${pc.need} of ${pc.need} minute${pc.need==1?'':'s'}. The Game Room is open.`:`Learning today: ${Math.floor(gt.done/60)} of ${pc.need} minute${pc.need==1?'':'s'}. The Game Room opens at ${pc.need}.`}</span></p>
     <div class="gw-sw">${UI.sw('Open the Game Room today anyway',bank.open===today(),'pto')}</div>`:''}
     <div class="gw-row"><span class="gw-rl">Bank</span><span class="gw-btns">${UI.btn('+5 min',{size:'sm',icon:'plus',id:'pt5'})}${UI.btn('Empty bank',{size:'sm',kind:'ghost',icon:'trash',id:'pt0',cls:'gw-risk'})}</span></div>
-    <div class="gw-sw">${UI.sw('Pause game time (games locked)',pc.pause,'ptp')}</div>`,{tone:'s-play',sub:'Each learning round earns game time, plus a bonus for 10 out of 10, bosses, tests, puzzles and the Daily Review.'})}
+    <div class="gw-sw">${UI.sw('Pause game time (games locked)',pc.pause,'ptp')}</div>
+    <div class="gw-row" id="gw-hcas"><span class="gw-rl">4x4 Hill Climb driving help</span>${GW.seg('hcas',['auto',3,2,1,0],hcAsGrown(),'4x4 Hill Climb driving help',v=>HCAS_NAMES[v])}</div>
+    <p class="gw-sub">Auto starts from the grade, gives a little less help as your child wins stars, and more after a few crashes in a row.</p>`,{tone:'s-play',sub:'Each learning round earns game time, plus a bonus for 10 out of 10, bosses, tests, puzzles and the Daily Review.'})}
   ${GW.card('gw-snd','sound-on','Sound and voice',`<div class="gw-sw">${UI.sw('Read questions out loud',S.voice,'voice')}${UI.sw('Sound effects',S.sound,'snd')}${UI.sw('Music on the home screen',S.music,'mus')}${UI.sw('Calm mode: less movement, no confetti',!!S.calm,'calm')}${UI.sw('Buzz: a short vibration in games (tablets that can)',S.buzz!==false,'buzz')}${UI.sw('Spanish speaking practice',spkOn(),'esspk')}</div>
     <p class="gw-sub">Speaking practice: in Spanish rounds your child says a word or line, then hears the Spanish voice and their own recording, and the tablet says kindly how close it sounded. Recordings stay on this tablet (see the Listening corner).</p>
     ${UI.btn('Test voice',{size:'sm',icon:'speak',id:'test'})}
@@ -114,6 +121,7 @@ function grown(){let armed=false;
   $('#pt5').onclick=()=>{ptEarn(300);grown()};$('#pt0').onclick=()=>{pt().bank=0;save();grown()};
   $('#ptp').onchange=e=>{ptCfg().pause=e.target.checked;save()};
   $$('[data-need]').forEach(b=>b.onclick=()=>{ptCfg().need=+b.dataset.need;save();grown()});
+  $$('[data-hcas]').forEach(b=>b.onclick=()=>{const v=b.dataset.hcas;if(!S.garage||typeof S.garage!='object'||Array.isArray(S.garage))S.garage={};S.garage.as=v=='auto'?'auto':+v;save();grown()});
   if($('#pto'))$('#pto').onchange=e=>{const p=pt();if(e.target.checked)p.open=today();else p.open='';save()};
   $('#voice').onchange=e=>{S.voice=e.target.checked;save()};
   $('#snd').onchange=e=>{S.sound=e.target.checked;save()};
