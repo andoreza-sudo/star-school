@@ -27,6 +27,58 @@ const discQ = (sk, stop, topic, lv = 1) => ({
   },
 });
 
+// KINDS2: a sort or mark question in a one-question round: a sample of tools/kinds-samples.js by name, or [skill, level, kind] for the
+// first generated question of that kind; misses = 0 (fresh), 1 (after a first miss: right chips locked, hint) or 2 (the reveal)
+const k2Shot = (src, misses) => ({
+  run: async p => {
+    await p.evaluate(([ks, src]) => {
+      let q;
+      if (Array.isArray(src)) { for (let s = 1; s < 400 && !q; s++) { const t = genQ(src[0], src[1], s); if (t.kind == src[2]) q = t; } }
+      else q = eval(ks)()[src];
+      G = newG({ sk: q.sk, mix: true, n: 1, pool: [q] });
+      next();
+    }, ['(' + KS.make.toString() + ')', src]);
+    await p.waitForTimeout(600);
+    for (let m = 0; m < misses; m++) {
+      if (m == 1) await p.evaluate(() => { window.next = () => {}; }); // the reveal stays on screen for the shot
+      const q = await p.evaluate(() => ({ kind: G.q.kind, one: !!G.q.one, n: G.q.bins ? G.q.bins.length : 0,
+        plan: G.q.kind == 'sort' ? G.q.items.map((c, i) => [i, G.q.bins.findIndex(b => String(b.v) === String(c.b))]) : null,
+        ans: G.q.ans }));
+      if (q.kind == 'line') {
+        // KINDS2-B: first miss one stop from the answer ("So close!"), second miss two stops from it (never where the pin already is)
+        const a = await p.evaluate(`(${KS.linePt.toString()})(null)`), at = await p.evaluate(() => G.lnK);
+        const k = [a.k + m + 1, a.k - m - 1, a.k + m + 2, a.k - m - 2].find(x => x >= 0 && x <= a.n && x !== at);
+        const pt = await p.evaluate(`(${KS.linePt.toString()})(${k})`);
+        await p.mouse.click(pt.x, pt.y);
+        await p.click('#mcheck');
+      } else if (q.kind == 'make') {
+        // KINDS2-C: first miss the answer one step off; second miss one more step off (a part cleared for the parts model)
+        if (m == 0) for (let i = 0; i < 80; i++) {
+          const sel = await p.evaluate(`(${KS.makeStep.toString()})(false)`);
+          if (!sel) break;
+          await p.click(sel);
+        }
+        const parts = await p.evaluate(() => G.q.model == 'parts');
+        await p.click(m && parts ? '.mmb[data-d="-1"]' : await p.evaluate(`(${KS.makeStep.toString()})(true)`));
+        await p.click('#mcheck');
+      } else if (q.kind == 'sort') {
+        // first miss: the first chip right, the rest in the next bin; second miss: everything still out in the next bin
+        for (const [i, b] of q.plan) {
+          if (await p.$(`.schip[data-i="${i}"].done`)) continue;
+          await p.click(`.schip[data-i="${i}"]`);
+          await p.click(`.sbt[data-b="${i || m ? (b + 1) % q.n : b}"]`, { position: { x: 16, y: 12 } });
+        }
+        await p.click('#mcheck');
+      } else {
+        await p.click(`.mkt[data-i="${m ? 2 : 1}"]`);
+        await p.click(`.mkt[data-i="${m ? 3 : 2}"]`);
+        if (!q.one) await p.click('#mcheck');
+      }
+      await p.waitForTimeout(m < misses - 1 ? 400 : misses > 1 ? 120 : 300); // virtual clock (8x): the reveal moves on after 2.6 s of app time
+    }
+  },
+});
+
 // P3-01 Brain Teasers: the framework screens with the fake type from tools/lib/bt-fake.js (no real puzzle type exists yet)
 const btShot = (fn, solved = 0) => async p => {
   await p.evaluate('(' + BTF.install.toString() + ')()');
@@ -184,6 +236,36 @@ const SCREENS = {
   'kinds-multi': kindShot('multi', ['.mc[data-i="1"]', '.mc[data-i="3"]']),
   'kinds-order': kindShot('order', ['.ot[data-i="1"]', '.ot[data-i="3"]']),
   'kinds-words': kindShot('words', ['.ot[data-i="2"]', '.ot[data-i="4"]']),
+  // KINDS2 batch A: sort and mark, fresh, after a first miss (hint, locked chips) and after the second miss (reveal)
+  'kinds-sort': k2Shot('sort3', 0),
+  'kinds-sort-miss': k2Shot('sort3', 1),
+  'kinds-sort-rev': k2Shot('sort3', 2),
+  'kinds-sort-pic': k2Shot(['sci_life', 1, 'sort'], 0),
+  'kinds-mark': k2Shot('markm', 0),
+  'kinds-mark-miss': k2Shot('markm', 1),
+  'kinds-mark-rev': k2Shot('markm', 2),
+  // KINDS2-B, C: line and make, fresh, after a first miss (hint) and after the second miss (reveal), on real questions of the stops
+  'kinds-line': k2Shot(['round', 2, 'line'], 0),
+  'kinds-line-miss': k2Shot(['round', 2, 'line'], 1),
+  'kinds-line-rev': k2Shot(['round', 2, 'line'], 2),
+  'kinds-line-frac': k2Shot(['frac', 3, 'line'], 0),
+  'kinds-line-int': k2Shot(['int', 2, 'line'], 0),
+  'kinds-make-frame': k2Shot(['tenf', 2, 'make'], 0),
+  'kinds-make-frame-miss': k2Shot(['tenf', 2, 'make'], 1),
+  'kinds-make-frame-rev': k2Shot(['tenf', 2, 'make'], 2),
+  'kinds-make-coins': k2Shot(['coins', 3, 'make'], 0),
+  'kinds-make-coins-miss': k2Shot(['coins', 3, 'make'], 1),
+  'kinds-make-coins-rev': k2Shot(['coins', 3, 'make'], 2),
+  'kinds-make-b10': k2Shot(['pv', 2, 'make'], 0),
+  'kinds-make-b10-miss': k2Shot(['pv', 2, 'make'], 1),
+  'kinds-make-clock': k2Shot(['time', 5, 'make'], 0),
+  'kinds-make-clock-rev': k2Shot(['time', 5, 'make'], 2),
+  'kinds-make-array': k2Shot(['mfact', 2, 'make'], 0),
+  'kinds-make-array-miss': k2Shot(['mfact', 2, 'make'], 1),
+  'kinds-make-parts': k2Shot(['frac', 2, 'make'], 0),
+  'kinds-make-parts-rev': k2Shot(['frac', 2, 'make'], 2),
+  'kinds-make-grid': k2Shot(['geo', 2, 'make'], 0),
+  'kinds-make-frame20': k2Shot(['tenf', 3, 'make'], 0),
 
   // ---- P4-02 icons ----
   care: { run: async p => { await p.evaluate(() => care()); } },
@@ -2183,7 +2265,8 @@ Object.assign(SCREENS, {
   'game-hill-play': gameShot(() => hcStart('meadow')),
   'game-pause': { run: async p => { await p.evaluate(() => hcStart('meadow')); await p.waitForTimeout(600); await p.click('#gpause'); await p.waitForTimeout(600); } },
   'game-hill-end': gameShot(() => hcStart('meadow'), () => hcEnd('fuel')),
-  'game-hill-win': gameShot(() => hcStart('meadow', 0), () => { HC.t = 20; hcWin(); }),
+  'game-hill-win': gameShot(() => hcStart('meadow', HC_SPW - 1), () => { HC.t = 20; hcWin(); }), // G-FEEL2: the full card (last stage of a world)
+  'game-hill-chain': gameShot(() => hcStart('meadow', 0), () => { HC.t = 20; hcWin(); }), // G-FEEL2: the light banner (Next by itself after 2 s)
   'game-art-menu': gameShot(() => colorMenu('mandala')),
   'game-art-play': gameShot(() => artPage('m:17')),
   'game-pixel-play': gameShot(() => colorPic(CB_PICS[0][0], 'num')),

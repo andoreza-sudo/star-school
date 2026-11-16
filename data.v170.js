@@ -1,5 +1,5 @@
-/* Star School data banks v169. BUILT by tools/build.py from src/data/*.js (sorted): never edit by hand.
-   index.html v169 loads this file with <script src="data.v169.js"> between the code and the start-up script. */
+/* Star School data banks v170. BUILT by tools/build.py from src/data/*.js (sorted): never edit by hand.
+   index.html v170 loads this file with <script src="data.v170.js"> between the code and the start-up script. */
 /* ---------- object art set B: 40 pictures (P4-14; DESIGN_SYSTEM.md section 6.5) ----------
    The words children see most that set A (src/js/16-art-a.js) did not draw: picture words, Spanish units (animals, food, body,
    house, clothes, school, transport), riddles, Memory Match, Discover, vocabulary and counting. Same style, rules and limits
@@ -3700,6 +3700,306 @@ Very few diamonds exist and many people want them. Their price is ___.|high|low;
 A shop has too many winter coats left in spring. It may ___ the price to sell them.|lower|raise;triple;hide|supply
 Which would make the price of gas go up?|less gas being supplied|more gas being made;fewer drivers;a new gas well opening nearby|supply
 `, '5-6'));
+/* ---------- KINDS2: Discover items for the new kinds (sort, match, order) ---------- */
+/* A first set per Discover stop: 5 sort items (form 'sort', bins {name: [items]}), 2 match and 1 order. A later content pass adds more.
+   Items go at the END of each bank, so a saved review item (q.bk.bi, an index into the bank) still finds the same item.
+   genBank (37-bank.js) draws these forms by share (BANKSHARE in 49b-kinds2.js: sort 25%, match 15%, order 10%), so a level keeps about
+   half of its questions as choice however many items it has. Level 1 is Kindergarten: aloud items, some with pictures (cp).
+   Format of each form: CURRICULUM section 8 and the header of 37-bank.js. */
+const DK2 = (id, lv, topic, list) => BANK[id].push(...list.map(it => Object.assign({lv, topic}, lv == 1 ? {aloud: true} : {}, it)));
+
+// ---- Living Things ----
+DK2('sci_life', 1, 'living', [
+  {form: 'sort', q: 'Sort them: living or not living?', hint: 'Living things grow, eat and breathe. Does it grow?',
+    bins: {living: ['dog', 'tree', 'fish'], 'not living': ['ball', 'car']},
+    cp: {dog: ['dog', '🐶'], tree: ['tree', '🌳'], fish: ['fish', '🐟'], ball: ['ball', '⚽'], car: ['car', '🚗']}},
+  {form: 'sort', q: 'Is it living or not living?', hint: 'Living things grow and need food and water. Does it need food?',
+    bins: {living: ['bird', 'flower'], 'not living': ['shoe', 'book', 'spoon']},
+    cp: {bird: ['bird', '🐦'], flower: ['flower', '🌸'], shoe: ['shoe', '👟'], book: ['book', '📖'], spoon: ['spoon', '🥄']}},
+  {form: 'sort', topic: 'covers', q: 'Sort the animals: fur, feathers or scales?', hint: 'Think about touching it. Is it fluffy, soft and light, or smooth and hard?',
+    bins: {fur: ['cat', 'bear'], feathers: ['duck', 'owl'], scales: ['fish', 'snake']},
+    cp: {cat: ['cat', '🐱'], bear: ['bear', '🐻'], duck: ['duck', '🦆'], owl: ['owl', '🦉'], fish: ['fish', '🐟'], snake: ['snake', '🐍']}},
+  {form: 'sort', topic: 'habitat', q: 'Where does it live: in water or on land?', hint: 'Can it breathe and swim under the water all day?',
+    bins: {water: ['fish', 'octopus', 'whale'], land: ['horse', 'cow']},
+    cp: {fish: ['fish', '🐟'], octopus: ['octopus', '🐙'], whale: ['whale', '🐳'], horse: ['horse', '🐴'], cow: ['cow', '🐄']}},
+  {form: 'sort', topic: 'needs', q: 'Sort them: does a plant need it, or not?', hint: 'A plant needs water, light and air to grow.',
+    bins: {'plant needs': ['water', 'sunlight', 'air'], 'not needed': ['candy', 'teddy bear']},
+    cp: {water: ['water', '💧'], sunlight: ['sun', '☀'], air: ['wind', '💨'], candy: ['candy', '🍬'], 'teddy bear': ['teddy', '🧸']}},
+  {form: 'match', topic: 'senses', q: 'Match each sense to the body part: see, hear, smell and taste.', hint: 'Which part of your face do you use?',
+    pairs: [['see', 'eyes'], ['hear', 'ears'], ['smell', 'nose'], ['taste', 'mouth']]},
+  {form: 'match', topic: 'habitat', q: 'Match each animal to its home: bird, bee and spider.', hint: 'Where does it sleep and keep its babies?',
+    pairs: [['bird', 'nest'], ['bee', 'hive'], ['spider', 'web']]},
+  {form: 'order', topic: 'babies', q: 'Put them in order: how does a hen grow up? Egg, chick, hen.', hint: 'What comes first? A hen lays it.',
+    order: ['egg', 'chick', 'hen']},
+]);
+DK2('sci_life', 2, 'classify', [
+  {form: 'sort', q: 'Sort the animals: mammal, bird or reptile?', hint: 'Mammals have hair and feed their babies milk. Birds have feathers. Reptiles have dry scales.',
+    bins: {mammal: ['whale', 'bat', 'dog'], bird: ['penguin', 'eagle'], reptile: ['snake']}},
+  {form: 'sort', q: 'Sort the animals: mammal, reptile or amphibian?', hint: 'Amphibians start life in water and have smooth, wet skin. Reptiles have dry scales.',
+    bins: {mammal: ['dolphin', 'bear'], reptile: ['lizard', 'turtle'], amphibian: ['frog']}},
+  {form: 'sort', topic: 'foodchain', q: 'Sort them: producer or consumer?', hint: 'A producer makes its own food from sunlight. A consumer eats other living things.',
+    bins: {producer: ['grass', 'oak tree'], consumer: ['rabbit', 'hawk', 'frog']}},
+  {form: 'sort', topic: 'foodchain', q: 'What does it eat? Sort them: herbivore, carnivore or omnivore.', hint: 'Herbivores eat plants, carnivores eat meat, omnivores eat both.',
+    bins: {herbivore: ['deer', 'cow'], carnivore: ['lion', 'shark'], omnivore: ['bear', 'raccoon']}},
+  {form: 'sort', topic: 'plantfn', q: 'Sort them: part of a plant, or not?', hint: 'Think of a sunflower from the ground up.',
+    bins: {'plant part': ['root', 'stem', 'leaf'], 'not a plant part': ['wing', 'fin']}},
+  {form: 'match', topic: 'adapt', q: 'Match each animal to the body part that helps it live where it lives.', hint: 'Think of where each animal lives and what it needs to do there.',
+    pairs: [['duck', 'webbed feet for swimming'], ['giraffe', 'long neck to reach leaves'], ['polar bear', 'thick fur to stay warm']]},
+  {form: 'match', topic: 'plantfn', q: 'Match each plant part to its job.', hint: 'Leaves face the sun. Roots are in the soil.',
+    pairs: [['roots', 'take in water'], ['leaves', 'make food from sunlight'], ['flower', 'makes seeds']]},
+  {form: 'order', topic: 'lifecycle', q: 'Put the life cycle of a butterfly in order.', hint: 'It starts very small, on a leaf.',
+    order: ['egg', 'caterpillar', 'chrysalis', 'butterfly']},
+]);
+DK2('sci_life', 3, 'cells', [
+  {form: 'sort', q: 'Which cells have it? Sort the cell parts.', hint: 'Only plant cells need a stiff wall and a part that makes food from sunlight.',
+    bins: {'plant cells only': ['cell wall', 'chloroplast'], 'plant and animal cells': ['nucleus', 'cell membrane']}},
+  {form: 'sort', topic: 'body', q: 'Sort the organs: digestive system or circulatory system?', hint: 'One system breaks down food. The other moves blood around the body.',
+    bins: {digestive: ['stomach', 'small intestine', 'esophagus'], circulatory: ['heart', 'blood vessels']}},
+  {form: 'sort', topic: 'traits', q: 'Sort them: inherited trait or learned behavior?', hint: 'An inherited trait comes from your parents. A learned behavior is something you practice.',
+    bins: {'inherited trait': ['eye color', 'freckles'], 'learned behavior': ['riding a bike', 'speaking Spanish', 'playing piano']}},
+  {form: 'sort', topic: 'photo', q: 'Photosynthesis: what goes in, and what comes out?', hint: 'A plant takes in water, carbon dioxide and light, and gives off a gas we breathe.',
+    bins: {'goes in': ['carbon dioxide', 'water', 'sunlight'], 'comes out': ['oxygen', 'sugar']}},
+  {form: 'sort', topic: 'ecosystem', q: 'Sort the parts of an ecosystem: living or nonliving?', hint: 'Living parts grow and reproduce, even tiny ones you cannot see.',
+    bins: {'living part': ['fungi', 'algae', 'bacteria'], 'nonliving part': ['sunlight', 'water', 'rocks']}},
+  {form: 'match', q: 'Match each cell part to its job.', hint: 'Think of the cell as a factory with a boss, a fence and a kitchen.',
+    pairs: [['nucleus', 'controls the cell'], ['cell membrane', 'lets things in and out'], ['chloroplast', 'makes food from sunlight']]},
+  {form: 'match', topic: 'body', q: 'Match each organ to its job.', hint: 'Which one beats? Which one fills with air?',
+    pairs: [['heart', 'pumps blood'], ['lungs', 'take in oxygen'], ['brain', 'controls the body']]},
+  {form: 'order', q: 'Put them in order from smallest to largest.', hint: 'Cells make tissues. Tissues make organs.',
+    order: ['cell', 'tissue', 'organ', 'organ system']},
+]);
+
+// ---- Sky & Earth ----
+DK2('sci_earth', 1, 'weather', [
+  {form: 'sort', q: 'Sort them: for a rainy day or a snowy day?', hint: 'Snow is cold and white. Rain is wet.',
+    bins: {'rainy day': ['umbrella', 'rain cloud'], 'snowy day': ['scarf', 'sled', 'snowman']},
+    cp: {umbrella: ['umbrella', '☔'], 'rain cloud': ['rain', '🌧'], scarf: ['scarf', '🧣'], sled: ['sled', '🛷'], snowman: ['snowman', '⛄']}},
+  {form: 'sort', topic: 'daynight', q: 'Sort them: do we see it in the day or at night?', hint: 'Which one lights up the day?',
+    bins: {day: ['sun', 'rainbow'], night: ['moon', 'stars']},
+    cp: {sun: ['sun', '☀'], rainbow: ['rainbow', '🌈'], moon: ['moon', '🌙'], stars: ['star', '⭐']}},
+  {form: 'sort', topic: 'landwater', q: 'Sort them: land or water?', hint: 'Can you walk on it, or do you need a boat?',
+    bins: {land: ['mountain', 'desert', 'hill'], water: ['ocean', 'river']}},
+  {form: 'sort', topic: 'seasons', q: 'Sort them: summer or winter?', hint: 'Summer is hot. Winter is cold.',
+    bins: {summer: ['swimming', 'beach'], winter: ['snowman', 'sled']},
+    cp: {swimming: ['swim', '🏊'], beach: ['beach', '🏖'], snowman: ['snowman', '⛄'], sled: ['sled', '🛷']}},
+  {form: 'sort', topic: 'sunmoon', q: 'Sort them: in the sky or on the ground?', hint: 'Look up. What do you see above you?',
+    bins: {'in the sky': ['cloud', 'sun', 'moon'], 'on the ground': ['tree', 'house']},
+    cp: {cloud: ['cloud', '☁'], sun: ['sun', '☀'], moon: ['moon', '🌙'], tree: ['tree', '🌳'], house: ['house', '🏠']}},
+  {form: 'match', q: 'Match the weather to what you wear: rainy, snowy and sunny.', hint: 'What keeps you dry? What keeps you warm?',
+    pairs: [['rainy', 'raincoat'], ['snowy', 'mittens'], ['sunny', 'sun hat']]},
+  {form: 'match', topic: 'daynight', q: 'Match each one to when you see it: sun, moon and snow.', hint: 'The sun is in the day sky.',
+    pairs: [['sun', 'day'], ['moon', 'night'], ['snow', 'winter']]},
+  {form: 'order', topic: 'daynight', q: 'Put the day in order: morning, afternoon, night.', hint: 'What comes when you wake up?',
+    order: ['morning', 'afternoon', 'night']},
+]);
+DK2('sci_earth', 2, 'planets', [
+  {form: 'sort', q: 'Sort the planets: rocky planet or gas giant?', hint: 'The four planets nearest the Sun are rocky. Jupiter and Saturn are huge balls of gas.',
+    bins: {'rocky planet': ['Mercury', 'Venus', 'Mars'], 'gas giant': ['Jupiter', 'Saturn']}},
+  {form: 'sort', topic: 'resources', q: 'Sort the resources: renewable or not renewable?', hint: 'A renewable resource comes back on its own. The others cannot be made again once used up.',
+    bins: {renewable: ['wind', 'sunlight', 'trees'], 'not renewable': ['coal', 'oil']}},
+  {form: 'sort', topic: 'rocks', q: 'Sort the rocks: igneous or sedimentary?', hint: 'Igneous rock forms when hot melted rock cools. Sedimentary rock forms from layers pressed together.',
+    bins: {igneous: ['granite', 'basalt', 'obsidian'], sedimentary: ['sandstone', 'limestone']}},
+  {form: 'sort', topic: 'moonphase', q: 'Sort the facts: the Moon or the Sun?', hint: 'The Sun makes its own light. The Moon goes around Earth.',
+    bins: {'the Moon': ['has no air', 'orbits Earth'], 'the Sun': ['is a star', 'gives off its own light']}},
+  {form: 'sort', q: 'Sort the planets: inner planet or outer planet?', hint: 'The inner planets are the four closest to the Sun.',
+    bins: {'inner planet': ['Earth', 'Mercury'], 'outer planet': ['Neptune', 'Saturn', 'Uranus']}},
+  {form: 'match', topic: 'watercycle', q: 'Match each step of the water cycle to what happens.', hint: 'Evaporation goes up. Precipitation comes down.',
+    pairs: [['evaporation', 'water turns into vapor'], ['condensation', 'vapor forms clouds'], ['precipitation', 'rain or snow falls']]},
+  {form: 'match', topic: 'erosion', q: 'Match each one to the way it wears away land.', hint: 'Think of what each one carries or pushes.',
+    pairs: [['wind', 'blows sand away'], ['river', 'carves a canyon'], ['glacier', 'scrapes rock as it moves']]},
+  {form: 'order', topic: 'moonphase', q: 'Put the Moon phases in order, starting with the new moon.', hint: 'The lit part grows until the whole Moon shows, then shrinks.',
+    order: ['new moon', 'first quarter', 'full moon', 'third quarter']},
+]);
+DK2('sci_earth', 3, 'rotrev', [
+  {form: 'sort', q: 'Sort the facts: rotation or revolution?', hint: 'Rotation is Earth spinning. Revolution is Earth going around the Sun.',
+    bins: {rotation: ['causes day and night', 'takes about 24 hours'], revolution: ['makes one year', 'takes about 365 days']}},
+  {form: 'sort', topic: 'rockcycle', q: 'Sort the rocks: igneous or metamorphic?', hint: 'Igneous rock cools from magma. Metamorphic rock is changed by heat and pressure.',
+    bins: {igneous: ['basalt', 'pumice', 'granite'], metamorphic: ['marble', 'slate']}},
+  {form: 'sort', topic: 'atmosphere', q: 'Which layer of the atmosphere is it in?', hint: 'The lowest layer holds the air we breathe and the weather.',
+    bins: {troposphere: ['clouds and weather', 'the air we breathe'], stratosphere: ['the ozone layer']}},
+  {form: 'sort', topic: 'solarscale', q: 'Sort them: bigger or smaller than Earth?', hint: 'The gas giants and the Sun are huge. Mars is about half as wide as Earth.',
+    bins: {'bigger than Earth': ['Jupiter', 'Saturn', 'the Sun'], 'smaller than Earth': ['Mars', 'the Moon', 'Mercury']}},
+  {form: 'sort', topic: 'plates', q: 'What causes it? Sort them.', hint: 'Plates move a few centimeters each year. The Moon pulls on the oceans.',
+    bins: {'moving plates': ['earthquakes', 'volcanoes', 'mountain ranges'], 'the Moon': ['ocean tides']}},
+  {form: 'match', topic: 'plates', q: 'Match each layer of Earth to what it is.', hint: 'The crust is the part we live on.',
+    pairs: [['crust', 'thin outer layer'], ['mantle', 'thick layer of hot rock'], ['core', 'center of Earth']]},
+  {form: 'match', q: 'Match each word to what it means.', hint: 'Earth does two motions at once: it spins and it travels.',
+    pairs: [['rotation', 'spinning on its axis'], ['revolution', 'one trip around the Sun'], ['axis', 'imaginary line through the poles']]},
+  {form: 'order', topic: 'solarscale', q: 'Put the planets in order, starting nearest the Sun.', hint: 'Earth is the third planet.',
+    order: ['Mercury', 'Venus', 'Earth', 'Mars']},
+]);
+
+// ---- Push, Pull & Stuff ----
+DK2('sci_phys', 1, 'push', [
+  {form: 'sort', q: 'Sort them: push or pull?', hint: 'A push moves a thing away from you. A pull brings it closer.',
+    bins: {push: ['kick a ball', 'press a button'], pull: ['pull a wagon', 'tug a rope', 'open a drawer']}},
+  {form: 'sort', topic: 'stuff', q: 'Sort them: floats or sinks?', hint: 'Light things like leaves stay on top of the water.',
+    bins: {floats: ['leaf', 'boat', 'rubber duck'], sinks: ['rock', 'key']}},
+  {form: 'sort', topic: 'solid', q: 'Sort them: solid or liquid?', hint: 'A solid keeps its shape. A liquid pours.',
+    bins: {solid: ['block', 'spoon', 'crayon'], liquid: ['milk', 'juice']}},
+  {form: 'sort', topic: 'soundlight', q: 'Sort them: loud or quiet?', hint: 'Which ones would make you cover your ears?',
+    bins: {loud: ['drum', 'trumpet', 'fire truck'], quiet: ['butterfly', 'snail']},
+    cp: {drum: ['drum', '🥁'], trumpet: ['trumpet', '🎺'], 'fire truck': ['fire-truck', '🚒'], butterfly: ['butterfly', '🦋'], snail: ['snail', '🐌']}},
+  {form: 'sort', topic: 'soundlight', q: 'Sort them: gives light or no light?', hint: 'Does it shine in a dark room?',
+    bins: {'gives light': ['sun', 'light bulb', 'fire'], 'no light': ['ball', 'book']},
+    cp: {sun: ['sun', '☀'], 'light bulb': ['bulb', '💡'], fire: ['fire', '🔥'], ball: ['ball', '⚽'], book: ['book', '📖']}},
+  {form: 'match', topic: 'soundlight', q: 'Match each one to its sound: drum, bell and dog.', hint: 'Say the sound out loud.',
+    pairs: [['drum', 'bang'], ['bell', 'ring'], ['dog', 'woof']]},
+  {form: 'match', topic: 'stuff', q: 'Match each one to how it feels: ice, fire and rock.', hint: 'Would you want to touch it?',
+    pairs: [['ice', 'cold'], ['fire', 'hot'], ['rock', 'hard']]},
+  {form: 'order', topic: 'solid', q: 'Heat it up! Put them in order: ice, water, steam.', hint: 'Ice melts first.',
+    order: ['ice', 'water', 'steam']},
+]);
+DK2('sci_phys', 2, 'states', [
+  {form: 'sort', q: 'Sort them: solid, liquid or gas?', hint: 'A solid keeps its shape, a liquid takes the shape of its cup, a gas spreads out.',
+    bins: {solid: ['ice', 'rock'], liquid: ['water', 'milk'], gas: ['steam', 'air']}},
+  {form: 'sort', q: 'Is it a solid, a liquid or a gas?', hint: 'Could you pour it? Could you hold it in your hand?',
+    bins: {solid: ['wood', 'coin'], liquid: ['juice', 'cooking oil'], gas: ['oxygen']}},
+  {form: 'sort', topic: 'circuits', q: 'Sort them: conductor or insulator?', hint: 'Metals let electricity flow. Rubber, plastic and wood block it.',
+    bins: {conductor: ['copper wire', 'iron nail'], insulator: ['rubber', 'plastic', 'wood']}},
+  {form: 'sort', topic: 'energy', q: 'Sort them: makes light or makes sound?', hint: 'Do you see it or hear it?',
+    bins: {'makes light': ['flashlight', 'lamp'], 'makes sound': ['drum', 'bell', 'whistle']}},
+  {form: 'sort', topic: 'forces', q: 'Sort them: sticks to a magnet, or not?', hint: 'Magnets pull on things made of iron or steel.',
+    bins: {'sticks to a magnet': ['paper clip', 'iron nail'], 'does not stick': ['penny', 'plastic spoon', 'eraser']}},
+  {form: 'match', topic: 'machines', q: 'Match each simple machine to an example.', hint: 'Think of how each one moves.',
+    pairs: [['lever', 'seesaw'], ['pulley', 'flagpole rope'], ['wheel and axle', 'wagon'], ['inclined plane', 'ramp']]},
+  {form: 'match', topic: 'energy', q: 'Match each one to what it does with energy.', hint: 'Follow the energy: where does it come from, and where does it go?',
+    pairs: [['battery', 'stores energy'], ['solar panel', 'turns sunlight into electricity'], ['light bulb', 'turns electricity into light']]},
+  {form: 'order', q: 'Heat some ice. Put the states in order.', hint: 'Ice melts, then the water boils.',
+    order: ['solid', 'liquid', 'gas']},
+]);
+DK2('sci_phys', 3, 'change', [
+  {form: 'sort', q: 'Sort them: physical change or chemical change?', hint: 'A chemical change makes a new substance. A physical change only changes shape or state.',
+    bins: {'physical change': ['ice melting', 'paper torn', 'glass breaking'], 'chemical change': ['wood burning', 'iron rusting']}},
+  {form: 'sort', q: 'Physical change or chemical change?', hint: 'Can you get the old stuff back? Then it is a physical change.',
+    bins: {'physical change': ['water boiling', 'chopping wood'], 'chemical change': ['baking a cake', 'an egg cooking', 'milk going sour']}},
+  {form: 'sort', topic: 'mixtures', q: 'Sort them: solution or other mixture?', hint: 'In a solution one thing dissolves and you cannot see it anymore.',
+    bins: {solution: ['salt water', 'sugar in tea'], 'other mixture': ['trail mix', 'salad', 'sand and water']}},
+  {form: 'sort', topic: 'transfer', q: 'How does the heat move? Sort them.', hint: 'Conduction needs touching. Radiation travels through space or air, like sunlight.',
+    bins: {conduction: ['a spoon heats up in hot soup', 'a hand warms on a hot mug'], radiation: ['sunlight warms your face', 'heat from a campfire']}},
+  {form: 'sort', topic: 'waves', q: 'Sort the facts: sound wave or light wave?', hint: 'Sound needs something to travel through. Light can cross empty space.',
+    bins: {'sound wave': ['needs air or water to travel', 'makes an echo'], 'light wave': ['can travel through space', 'makes a rainbow']}},
+  {form: 'match', topic: 'mixtures', q: 'Match each word to what it means.', hint: 'In salt water, the salt is the solute.',
+    pairs: [['solute', 'what dissolves'], ['solvent', 'what does the dissolving'], ['solution', 'the mixed result']]},
+  {form: 'match', topic: 'gravity', q: 'Match each force to what it does.', hint: 'Rub your hands together: that is friction.',
+    pairs: [['gravity', 'pulls things toward Earth'], ['friction', 'slows things that rub'], ['magnetism', 'pulls on iron']]},
+  {form: 'order', q: 'Put them in order: particles closest together first.', hint: 'In a solid the particles are packed tight.',
+    order: ['solid', 'liquid', 'gas']},
+]);
+
+// ---- Maps & World ----
+DK2('geo_world', 1, 'landforms', [
+  {form: 'sort', q: 'Sort them: land or water?', hint: 'Can you walk on it?',
+    bins: {land: ['mountain', 'hill', 'desert'], water: ['ocean', 'lake', 'river']}},
+  {form: 'sort', topic: 'continents', q: 'Sort them: continent or ocean?', hint: 'Continents are big pieces of land. Oceans are big bodies of salt water.',
+    bins: {continent: ['Africa', 'Asia', 'Europe'], ocean: ['Pacific', 'Atlantic']}},
+  {form: 'sort', topic: 'oceans', q: 'Is it a continent or an ocean?', hint: 'There are seven continents and five oceans.',
+    bins: {continent: ['North America', 'Australia'], ocean: ['Arctic', 'Indian']}},
+  {form: 'sort', topic: 'continents', q: 'Sort the places: hot place or cold place?', hint: 'The North and South Poles are icy all year.',
+    bins: {'hot place': ['desert', 'rain forest'], 'cold place': ['North Pole', 'Antarctica']}},
+  {form: 'sort', q: 'Is it land or water?', hint: 'Water you can swim in. Land you can stand on.',
+    bins: {land: ['island', 'beach', 'valley'], water: ['sea', 'pond']}},
+  {form: 'match', topic: 'mapwords', q: 'Match each letter on a compass to its direction.', hint: 'Each letter is the start of a word.',
+    pairs: [['N', 'north'], ['S', 'south'], ['E', 'east'], ['W', 'west']]},
+  {form: 'match', q: 'Match each place to what it is: ocean, lake and mountain.', hint: 'Which one is very tall? Which one is salty and huge?',
+    pairs: [['ocean', 'huge salty water'], ['lake', 'water with land all around'], ['mountain', 'very tall land']]},
+  {form: 'order', topic: 'mapwords', q: 'Put them in order from smallest to biggest: room, house, town, country.', hint: 'Your room is inside your house.',
+    order: ['my room', 'my house', 'my town', 'my country']},
+]);
+DK2('geo_world', 2, 'hemi', [
+  {form: 'sort', q: 'Sort the countries: Northern or Southern Hemisphere?', hint: 'The equator splits Earth into north and south.',
+    bins: {'Northern Hemisphere': ['Canada', 'Russia', 'Mexico'], 'Southern Hemisphere': ['Australia', 'Argentina']}},
+  {form: 'sort', topic: 'climate', q: 'Sort the places: hot climate or cold climate?', hint: 'Places near the equator are hot. Places near the poles are cold.',
+    bins: {hot: ['desert', 'rain forest', 'savanna'], cold: ['tundra', 'polar region']}},
+  {form: 'sort', topic: 'features', q: 'Sort them: landform or body of water?', hint: 'A landform is a shape of the land. A body of water holds water.',
+    bins: {landform: ['plateau', 'canyon', 'peninsula'], 'body of water': ['gulf', 'strait']}},
+  {form: 'sort', topic: 'key', q: 'Sort the map symbols: natural or made by people?', hint: 'People built some of these. Nature made the others.',
+    bins: {natural: ['river', 'mountain'], 'made by people': ['road', 'bridge', 'city']}},
+  {form: 'sort', q: 'Sort the countries: Eastern or Western Hemisphere?', hint: 'The Americas are in the Western Hemisphere.',
+    bins: {'Eastern Hemisphere': ['China', 'India'], 'Western Hemisphere': ['Brazil', 'Peru', 'Canada']}},
+  {form: 'match', topic: 'grid', q: 'Match each map word to what it means.', hint: 'The equator goes around the middle like a belt.',
+    pairs: [['equator', 'line around the middle of Earth'], ['prime meridian', 'line that splits east and west'], ['map key', 'tells what the symbols mean']]},
+  {form: 'match', topic: 'features', q: 'Match each landform to what it is.', hint: 'Count the sides with water.',
+    pairs: [['peninsula', 'land with water on three sides'], ['island', 'land with water all around'], ['delta', 'land at the mouth of a river']]},
+  {form: 'order', q: 'Put them in order from biggest to smallest.', hint: 'A country holds many states.',
+    order: ['continent', 'country', 'state', 'city']},
+]);
+
+// ---- United States ----
+DK2('geo_us', 1, 'regions', [
+  {form: 'sort', q: 'Sort the states by region: West, Northeast or Southeast.', hint: 'California is on the Pacific coast. Maine is in the far northeast corner.',
+    bins: {West: ['California', 'Nevada'], Northeast: ['Maine', 'New York'], Southeast: ['Florida', 'Georgia']}},
+  {form: 'sort', topic: 'borders', q: 'Sort the states: borders Canada or borders Mexico?', hint: 'Canada is north of the United States. Mexico is south.',
+    bins: {'borders Canada': ['Montana', 'Michigan', 'Maine'], 'borders Mexico': ['Texas', 'Arizona']}},
+  {form: 'sort', topic: 'borders', q: 'Sort the states: on the Pacific or on the Atlantic?', hint: 'The Pacific is on the west coast. The Atlantic is on the east coast.',
+    bins: {'on the Pacific': ['California', 'Washington'], 'on the Atlantic': ['Florida', 'Maine', 'New Jersey']}},
+  {form: 'sort', q: 'Sort the states: Midwest or Southwest?', hint: 'The Southwest is hot and dry, next to Mexico.',
+    bins: {Midwest: ['Ohio', 'Iowa', 'Kansas'], Southwest: ['Arizona', 'New Mexico']}},
+  {form: 'sort', topic: 'capitals', q: 'Sort the cities: a state capital, or not?', hint: 'The biggest city is not always the capital.',
+    bins: {'state capital': ['Austin', 'Boston', 'Denver'], 'not a capital': ['Chicago', 'Dallas']}},
+  {form: 'match', topic: 'capitals', q: 'Match each state to its capital.', hint: 'Sacramento is in California.',
+    pairs: [['Texas', 'Austin'], ['Florida', 'Tallahassee'], ['New York', 'Albany'], ['California', 'Sacramento']]},
+  {form: 'match', topic: 'capitals', q: 'Match each state to its capital city.', hint: 'Atlanta is in the Southeast.',
+    pairs: [['Ohio', 'Columbus'], ['Georgia', 'Atlanta'], ['Colorado', 'Denver']]},
+  {form: 'order', q: 'Put the states in order from west to east.', hint: 'California is on the Pacific coast.',
+    order: ['California', 'Colorado', 'Kansas', 'Ohio']},
+]);
+DK2('geo_us', 2, 'landmarks', [
+  {form: 'sort', q: 'Sort the states: east or west of the Mississippi River?', hint: 'The Mississippi runs from Minnesota down to Louisiana.',
+    bins: {'east of the Mississippi': ['Ohio', 'Georgia', 'Virginia'], 'west of the Mississippi': ['Utah', 'Oregon']}},
+  {form: 'sort', topic: 'mountains', q: 'Sort them: mountains or rivers?', hint: 'A range is a line of mountains.',
+    bins: {mountains: ['Rockies', 'Appalachians', 'Sierra Nevada'], rivers: ['Mississippi', 'Rio Grande']}},
+  {form: 'sort', q: 'Sort the landmarks: in the West or in the East?', hint: 'The Grand Canyon is in Arizona.',
+    bins: {'in the West': ['Golden Gate Bridge', 'Grand Canyon'], 'in the East': ['Statue of Liberty', 'Liberty Bell', 'White House']}},
+  {form: 'sort', topic: 'timezones', q: 'Sort the states by time zone.', hint: 'The east coast is in Eastern Time. The west coast is in Pacific Time.',
+    bins: {'Eastern Time': ['New York', 'Georgia'], 'Pacific Time': ['California', 'Washington']}},
+  {form: 'sort', topic: 'rivers', q: 'Sort the lakes: a Great Lake, or not?', hint: 'The five Great Lakes are Superior, Michigan, Huron, Erie and Ontario.',
+    bins: {'Great Lake': ['Lake Erie', 'Lake Superior', 'Lake Huron'], 'not a Great Lake': ['Lake Tahoe', 'Great Salt Lake']}},
+  {form: 'match', q: 'Match each landmark to its state.', hint: 'Mount Rushmore is in the Black Hills.',
+    pairs: [['Grand Canyon', 'Arizona'], ['Statue of Liberty', 'New York'], ['Mount Rushmore', 'South Dakota']]},
+  {form: 'match', topic: 'rivers', q: 'Match each river to a fact about it.', hint: 'The Rio Grande runs along Texas.',
+    pairs: [['Missouri River', 'longest river in the U.S.'], ['Rio Grande', 'part of the border with Mexico'], ['Columbia River', 'flows into the Pacific']]},
+  {form: 'order', topic: 'timezones', q: 'Put the time zones in order from west to east.', hint: 'Pacific Time is on the west coast.',
+    order: ['Pacific', 'Mountain', 'Central', 'Eastern']},
+]);
+
+// ---- Community & Citizens ----
+DK2('civ', 1, 'needswants', [
+  {form: 'sort', q: 'Sort them: needs or wants?', hint: 'A need is something you must have to live.',
+    bins: {needs: ['food', 'water', 'a home'], wants: ['toys', 'candy']}},
+  {form: 'sort', q: 'Is it a need or a want?', hint: 'Could you live without it?',
+    bins: {needs: ['clothes', 'sleep'], wants: ['video games', 'a pony', 'ice cream']}},
+  {form: 'sort', topic: 'helpers', q: 'Sort the helpers: keeps us safe, or keeps us healthy?', hint: 'Some helpers come in an emergency. Some help when you are sick.',
+    bins: {'keeps us safe': ['firefighter', 'police officer'], 'keeps us healthy': ['doctor', 'nurse', 'dentist']}},
+  {form: 'sort', topic: 'rules', q: 'Sort them: safe or not safe?', hint: 'A safe choice keeps you from getting hurt.',
+    bins: {safe: ['wear a helmet', 'look both ways'], 'not safe': ['run into the street', 'touch a hot stove']}},
+  {form: 'sort', topic: 'community', q: 'Sort the places: a place to learn, or a place to get well?', hint: 'Where do you go when you are sick?',
+    bins: {'to learn': ['school', 'library'], 'to get well': ['hospital', 'clinic']}},
+  {form: 'match', topic: 'helpers', q: 'Match each helper to the job: firefighter, mail carrier and farmer.', hint: 'Think of what each helper does all day.',
+    pairs: [['firefighter', 'puts out fires'], ['mail carrier', 'brings letters'], ['farmer', 'grows food']]},
+  {form: 'match', topic: 'community', q: 'Match each place to what you do there: library, park and store.', hint: 'Where are the books?',
+    pairs: [['library', 'borrow books'], ['park', 'play outside'], ['store', 'buy food']]},
+  {form: 'order', topic: 'rules', q: 'Crossing the street: put the steps in order.', hint: 'First you stop.',
+    order: ['stop at the curb', 'look left and right', 'cross when it is safe']},
+]);
+DK2('civ', 2, 'economy', [
+  {form: 'sort', topic: 'branches', q: 'Sort them: legislative branch or judicial branch?', hint: 'The legislative branch makes laws. The judicial branch decides what laws mean.',
+    bins: {legislative: ['Congress', 'the Senate'], judicial: ['the Supreme Court', 'federal judges']}},
+  {form: 'sort', topic: 'branches', q: 'Sort them: executive branch or legislative branch?', hint: 'The executive branch carries out the laws and is led by the President.',
+    bins: {executive: ['the President', 'the Vice President'], legislative: ['the House of Representatives']}},
+  {form: 'sort', q: 'Sort them: goods or services?', hint: 'Goods are things you can hold. Services are jobs people do for you.',
+    bins: {goods: ['a bike', 'a loaf of bread', 'shoes'], services: ['a haircut', 'a car wash']}},
+  {form: 'sort', topic: 'rights', q: 'Sort them: a right or a duty?', hint: 'A right is a freedom you have. A duty is something citizens are expected to do.',
+    bins: {'a right': ['freedom of speech', 'a fair trial', 'freedom of religion'], 'a duty': ['paying taxes', 'obeying laws']}},
+  {form: 'sort', topic: 'supply', q: 'What happens to the price? Sort them.', hint: 'When many people want something and there is little of it, the price rises.',
+    bins: {'price goes up': ['high demand and low supply', 'a sudden shortage'], 'price goes down': ['low demand and high supply', 'too many left over']}},
+  {form: 'match', topic: 'branches', q: 'Match each branch to its job.', hint: 'Legislative sounds like legislate: to make laws.',
+    pairs: [['legislative', 'makes laws'], ['executive', 'carries out laws'], ['judicial', 'decides what laws mean']]},
+  {form: 'match', q: 'Match each word to what it means.', hint: 'You are a consumer when you buy a snack.',
+    pairs: [['producer', 'makes goods or services'], ['consumer', 'buys and uses them'], ['scarcity', 'not enough for everyone']]},
+  {form: 'order', topic: 'constitution', q: 'How does a bill become a law? Put the steps in order.', hint: 'Someone has to write it first.',
+    order: ['a bill is written', 'Congress votes on it', 'the President signs it', 'it becomes a law']},
+]);
 /* ---------- EN-PRAISE: recorded English encouragement (BUILT by tools/en-audio.js: never edit by hand; run node tools/en-audio.js) ----------
    Every fixed praise / try-again / well-done line say() speaks -> [kind, [file per voice]]: the file is audio/en/<file>.ogg (xAI text to
    speech, English, speed 1, Opus 16 kbps mono). voices: [id, f|m] in the order of the files. kind: the grown-up clip kind that
@@ -5336,6 +5636,64 @@ GR(9,'clear pronouns','A pronoun must point to one clear noun. If it could mean 
  ['Which is clear?','The book says owls hunt at night.','They say owls hunt at night.','In the book, they say owls hunt.'],
  ['Which is clear?','The sign says to keep off.','It says to keep off.','They say to keep off.']])
 );
+
+// ---- KINDS2 (docs/KINDS2-SPEC.md 3): sort and mark items, appended at the END so saved review items (q.bk.bi) keep their item ----
+// genBank draws them by share (49b-kinds2.js BANKMIX, BANKSHARE): sort 40% at level 2 and 8, 50% at level 4; mark 25% at 5, 6 and 7.
+// The level 2 tap items above (Tap the noun / verb / adjective) are mark questions now (BANKF.tap); these add more.
+BANK.gram.push(...[].concat((()=>{
+  // level 2: the words of the level 2 sentences, two sentences a question; a sentence's noun, verb and adjective come from its tap items
+  const S={};
+  for(const it of BANK.gram)if(it.lv==2&&it.form=='tap')(S[it.sent]=S[it.sent]||{})[it.topic]=it.a.toLowerCase();
+  const rows=Object.values(S).filter(r=>r.noun&&r.verb&&r.adjective),out=[];
+  for(let i=0;i+1<rows.length;i+=2){const a=rows[i],b=rows[i+1],one=i%4?'adjective':'verb';
+    out.push({lv:2,topic:'parts of speech',form:'sort',q:'Sort the words: noun, verb or adjective?',
+      hint:'A noun names a person, place or thing. A verb is an action. An adjective describes a noun.',
+      bins:{noun:[a.noun,b.noun],verb:one=='verb'?[a.verb]:[a.verb,b.verb],adjective:one=='adjective'?[a.adjective]:[a.adjective,b.adjective]}})}
+  return out})(),
+[
+  {past:['jumped','ate'],now:['jumps','eats'],future:['will jump']},
+  {past:['played','swam'],now:['plays'],future:['will play','will swim']},
+  {past:['walked','was walking'],now:['walks','is walking'],future:['will walk']},
+  {past:['baked','sang'],now:['bakes','sings'],future:['will bake','will sing']},
+  {past:['wrote','went'],now:['writes','goes'],future:['will write']},
+  {past:['laughed','came'],now:['laughs','comes'],future:['will laugh','will come']},
+].map(bins=>({lv:4,topic:'tense',form:'sort',q:'Sort the verbs: past, now or future?',bins,
+  hint:'Past verbs often end in -ed or change their spelling. Future verbs use will. Now verbs tell what happens today.'})),
+[
+  {adverb:['quickly','softly'],preposition:['beneath','between','toward']},
+  {adverb:['slowly','bravely','proudly'],preposition:['across','during']},
+  {adverb:['happily','loudly','carefully'],conjunction:['because','although']},
+  {preposition:['among','beside'],conjunction:['and','but','because']},
+  {conjunction:['or','unless','although'],adverb:['gently','neatly']},
+].map(bins=>({lv:8,topic:'wordtypes',form:'sort',q:'Sort the words: '+Object.keys(bins).join(' or ')+'?',bins,
+  hint:'An adverb tells how, when or where. A preposition comes before a noun and shows where or when. A conjunction joins ideas.'})),
+GR(5,'agreement','Find the subject. Is it one or more than one? The verb has to match it.','tap',[
+  ['Tap the verb that does not match its subject.','The dogs barks at the mail truck.','barks'],
+  ['Tap the verb that does not match its subject.','My sister play the piano.','play'],
+  ['Tap the verb that does not match its subject.','The birds sings every morning.','sings'],
+  ['Tap the verb that does not match its subject.','He are my best friend.','are'],
+  ['Tap the verb that does not match its subject.','The kittens is very small.','is'],
+  ['Tap the verb that does not match its subject.','Tom and Ana walks to school.','walks'],
+  ['Tap the verb that does not match its subject.','The cake taste sweet.','taste'],
+  ['Tap the verb that does not match its subject.','We was at the park all day.','was']]),
+GR(6,'confusable','Say the sentence out loud. Try "they are", "it is", "you are" or "who is" in place of a word that sounds the same.','tap',[
+  ['Tap the word that is used the wrong way.','Their going to the zoo today.','Their'],
+  ['Tap the word that is used the wrong way.',"The dog wagged it's tail.","it's"],
+  ['Tap the word that is used the wrong way.','Your the fastest runner in class.','Your'],
+  ['Tap the word that is used the wrong way.','I left my coat over their.','their'],
+  ['Tap the word that is used the wrong way.','We ate to many cookies.','to'],
+  ['Tap the word that is used the wrong way.','Whose going to the party?','Whose']]),
+GR(7,'commas','A comma goes after yes or oh no, after a name you are talking to, and before so when it joins two sentences.','tap',[
+  ['Tap the word that needs a comma after it.','Yes I would like some milk.','Yes'],
+  ['Tap the word that needs a comma after it.','Ben can you help me?','Ben'],
+  ['Tap the word that needs a comma after it.','We were tired so we went home.','tired'],
+  ['Tap the word that needs a comma after it.','Oh no I lost my hat!','no'],
+  ['Tap the word that needs a comma after it.','Mom I finished my homework.','Mom']]),
+[['I packed socks shirts and shoes.',['socks','shirts']],['We saw cows pigs and goats.',['cows','pigs']],
+  ['Bring a pencil a ruler and glue.',['pencil','ruler']]].map(([sent,a])=>({lv:7,topic:'commas',sent,a,
+  q:'Tap every word that needs a comma after it.',say:'Tap every word that needs a comma after it. '+sent,
+  hint:'In a list of three or more things, put a comma after each one except the last.'}))
+).map(it=>it.form=='tap'||it.sent?Object.assign(it,{form:'mark'}):it));
 /* ---------- kid-safe text: the blocklist (R-01r) ---------- */
 /* Read by ksBad() in src/js/20-words.js, at run time only. Every entry is the ksHash (cyrb53, base 36) of one lower-case word, so the
    list itself is never readable or displayed anywhere: not in the app, not in the repo, not in a test log. To add a word, hash it with
@@ -8760,6 +9118,26 @@ function vocBuildB() {
 }
 
 BANK.vocab = vocBuild().concat(vocBuildB());
+
+// ---- KINDS2 (docs/KINDS2-SPEC.md 3): mark and sort items, appended at the END so saved review items (q.bk.bi) keep their item ----
+// level 7: tap the clue word (an "X, or Y," clue gives the meaning); level 8: literal or figurative (sort 40%, 49b-kinds2.js BANKMIX)
+BANK.vocab.push(
+  ...[['The room was cluttered, or messy, after the party.', 'cluttered', 'messy'],
+    ['The puppy was drowsy, or sleepy, after its long walk.', 'drowsy', 'sleepy'],
+    ['The colossal, or huge, whale swam past our boat.', 'colossal', 'huge'],
+    ['Sam felt anxious, or worried, before the test.', 'anxious', 'worried'],
+    ['The lake water was frigid, or cold, this morning.', 'frigid', 'cold'],
+    ['The lion was ferocious, or fierce, when it roared.', 'ferocious', 'fierce']]
+    .map(([sent, w, a]) => ({lv: 7, topic: 'context clues', form: 'mark', q: `Tap the clue word that tells what ${w} means.`, sent, a,
+      say: `Tap the clue word that tells what ${w} means. ${sent}`, hint: 'Look right after the hard word. The word after "or" can tell you what it means.'})),
+  ...[{literal: ['ate a piece of cake', 'a bee in the garden'], figurative: ['as busy as a bee', 'the test was a breeze']},
+    {literal: ['ice in my glass', 'slept in a bed'], figurative: ['slept like a log', 'as cold as ice']},
+    {literal: ['heavy rain today', 'the dog barked'], figurative: ['raining cats and dogs', 'the wind howled']},
+    {literal: ['a bright star', 'a long walk'], figurative: ['Mia is a shining star', 'time flies']},
+    {literal: ['a broken window', 'an old clock'], figurative: ['a heart of gold', 'the stars danced']}]
+    .map(bins => ({lv: 8, topic: 'figurative language', form: 'sort', q: 'Sort them: literal or figurative?', bins,
+      hint: 'Literal words mean just what they say. Figurative language compares, stretches the truth, or gives things human actions.'}))
+);
 /* Wearable drawings (P4-07; DESIGN_SYSTEM.md 6.4). Code and rules: src/js/17-wear.js (helpers wVol, wBall, wLn, wHi, wStar ...; rwStarD / rwSpark from 18-reward-art.js).
    WEAR[id] = markup on the 64 grid, keyed by the item id the save stores (the emoji in 42-paths.js SHOP and BPRIZE).
    Hats: bottom centre (32, 60) sits on the head. Toys: the hand holds (32, 32). WEAR_EMB[id] = a prize emblem on the 64 grid,
@@ -9033,4 +9411,4 @@ var BTW = {
     'glean parts strap traps tea eat ate nip pin top pot opt tar art rat now own won tub but bus iced mono low flea',
 };
 
-var DATA_VER='v169'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var DATA_VER='v170'; // last line: the whole file ran (checked by dataReady() before the app starts)

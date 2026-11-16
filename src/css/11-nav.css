@@ -59,3 +59,4 @@
   box-shadow:var(--shadow),0 4px 0 var(--ledge-soft)}
 .nv-lt{margin:0 0 var(--s-2);text-align:center;font-family:var(--font-display);font-size:var(--fs-4);font-weight:700}
 .nv-light .nv-end3 .btn.nv-eb{min-height:72px}
+.nv-ls{display:inline-flex;vertical-align:middle;margin-left:var(--s-1)}

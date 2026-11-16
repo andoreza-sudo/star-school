@@ -1084,11 +1084,54 @@ function rlQuiz(grade, rnd) {
     const x = R(2, g >= 5 ? 12 : 10), y = R(2, g >= 5 ? 12 : 9);
     q = x + ' × ' + y; a = x * y;
   }
+  return { q, a, opts: rlOpts(a, rnd) };
+}
+// three different answers, the right one among them, never below 0, shuffled
+function rlOpts(a, rnd) {
   const opts = [a];
   for (const d of [1, -1, 2, -2, 10, 3]) if (opts.length < 3 && a + d >= 0 && !opts.includes(a + d) && rnd() < .7) opts.push(a + d);
   for (let d = 1; opts.length < 3; d++) if (!opts.includes(a + d)) opts.push(a + d);
   for (let i = 2; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [opts[i], opts[j]] = [opts[j], opts[i]]; }
-  return { q, a, opts };
+  return opts;
+}
+/* G-FEEL2: the gates ask the child's own number facts first. The due Daily Review items (59-review.js) that are single number facts
+   (REV_ARITH: "7 + 5 = ?", "? + 6 = 14", "6 × 7 = ?", "32 ÷ ? = 4") become gate questions, read from the label (no generator runs);
+   after them, or with none due, rlQuiz as before. Read only: a gate does not move an item between boxes (a quick choice of three in
+   a moving car is not the careful answer the review counts) and a wrong gate books nothing. At most 6 a race.
+   Returns [{t: the label as shown, a: the missing number, say}] */
+function rlGateFacts() {
+  if (typeof dueItems != 'function' || typeof REV_ARITH == 'undefined') return [];
+  const out = [];
+  let items = [];
+  try { items = dueItems(); } catch (e) { return []; }
+  for (const it of items) {
+    const m = REV_ARITH.exec(String(it.label || ''));
+    if (!m || !revFact(it, null) || [m[1], m[3], m[4]].filter(x => x == '?').length != 1) continue;
+    const a = rlFactAns(m[1], m[2], m[3], m[4]);
+    if (a == null) continue;
+    const say = it.label.replace(/\?/g, 'what').replace('+', 'plus').replace(/[−-]/, 'minus').replace('×', 'times').replace('÷', 'divided by').replace('=', 'equals');
+    out.push({ t: it.label, a, say });
+    if (out.length >= 6) break;
+  }
+  return out;
+}
+// the missing number of "x op y = z" (one of them '?'), or null when it is not a whole number 0 or more
+function rlFactAns(x, op, y, z) {
+  const n = v => +v, add = op == '+', sub = op == '−' || op == '-', mul = op == '×';
+  let a;
+  if (z == '?') a = add ? n(x) + n(y) : sub ? n(x) - n(y) : mul ? n(x) * n(y) : n(y) ? n(x) / n(y) : NaN;
+  else if (x == '?') a = add ? n(z) - n(y) : sub ? n(z) + n(y) : mul ? (n(y) ? n(z) / n(y) : NaN) : n(z) * n(y);
+  else a = add ? n(z) - n(x) : sub ? n(x) - n(z) : mul ? (n(x) ? n(z) / n(x) : NaN) : n(z) ? n(x) / n(z) : NaN;
+  return Number.isInteger(a) && a >= 0 ? a : null;
+}
+// the next gate question: the child's own facts first (st.facts, each once), then rlQuiz
+function rlGateQ(st) {
+  const f = st.facts[st.fi];
+  if (f) {
+    st.fi++;
+    return { q: f.t, t: f.t, say: f.say, a: f.a, opts: rlOpts(f.a, st.rnd), own: 1 };
+  }
+  return rlQuiz(st.grade, st.rnd);
 }
 
 /* ---- the race: rlNew makes it, rlStep moves it on by one fixed step. No drawing, no DOM: the tests run whole races ----
@@ -1130,7 +1173,8 @@ function rlNew(tid, o = {}) {
     base: base[i], wob: 0, wobT: rnd() * 3, fin: 0, e: (rnd() - .5) * .05, spin: 0, dizzy: 0, miss: {}, fs: 0, hits: 0 }));
   const up = {};
   for (const [k] of RL_UPG) up[k] = rlNum((o.up || {})[k], 0, 3);
-  const st = { tid, T, laps: t.laps, mode, help, quiz: !!o.quiz && !o.trial, grade: o.grade, rnd, cd: 3, rt: 0, done: false, ev: [], cars, tier, wx, W: RL_WX[wx], up,
+  const st = { tid, T, laps: t.laps, mode, help, quiz: !!o.quiz && !o.trial, grade: o.grade, rnd,
+    facts: Array.isArray(o.facts) ? o.facts.slice(0, 6) : [], fi: 0, cd: 3, rt: 0, done: false, ev: [], cars, tier, wx, W: RL_WX[wx], up,
     trial: !!o.trial, fin: RL_START * RL_SEG + t.laps * T.L, taken: new Int16Array(T.sp.length), pkT: new Int16Array(T.pk.length),
     kn: new Float32Array(T.ob.length).fill(-9), knL: new Int16Array(T.ob.length), knS: new Int8Array(T.ob.length), padKey: -1, seen: {},
     P: { d: row(o.trial ? 1 : 4), x: o.trial ? 0 : lane(4), v: 0, s: 0, vx: 0, dh: 0, dsp: 0, drifting: false, boost: 0, bumpT: 0, spin: 0, spinD: 0,
@@ -1139,7 +1183,7 @@ function rlNew(tid, o = {}) {
     st.rec = { cur: '', n: 0, d0: 0, best: null };
     st.gh = rlGhostIn(o.ghost);
   }
-  if (st.quiz) st.q = rlQuiz(st.grade, rnd);
+  if (st.quiz) st.q = rlGateQ(st);
   return st;
 }
 const rlLap = (st, d) => Math.max(1, Math.floor((d - RL_START * RL_SEG) / st.T.L) + 1);
@@ -1383,7 +1427,7 @@ function rlStep(st, inp = {}) {
     const ok = st.q.opts[k] === st.q.a;
     if (ok) P.boost = Math.max(P.boost, 1.4);
     st.ev.push(['gate', ok, st.q.a]);
-    st.q = rlQuiz(st.grade, st.rnd);
+    st.q = rlGateQ(st); // G-FEEL2: a wrong gate costs nothing (no boost, no slow down); the next question comes
   }
   // the rivals: gentle catch-up, a pace style, a wobble now and then, lanes, hazards, spins
   const last = P.d > st.fin - L * .35, CU = RL_CU[st.mode], span = st.fin - RL_START * RL_SEG, h = st.help;
@@ -2178,7 +2222,7 @@ function rlMenu(place) {
    <div class="rl-mode">${UI.seg([['easy', 'Easy'], ['pro', 'Pro']], mode, { id: 'rlmode', label: 'Driving' })}
    <p>${mode == 'pro' ? 'Pro: hold Go to speed up, drift through bends; bumps cost more time and the animals race hard.' : 'Easy: the car drives by itself. You steer.'}</p></div>
    <ul class="rl-how">${how.map(([i, t]) => `<li><span class="rl-hi">${ico(i, 22)}</span><span>${esc(t)}</span></li>`).join('')}</ul>
-   ${UI.sw('Boost gates: drive through the right answer to zoom', r.quiz, 'rlquiz')}
+   ${UI.sw('Boost gates: drive through the right answer to zoom', rlGatesOn(), 'rlquiz')}
    ${rlTiltOK() ? UI.sw('Steer by tilting the tablet', r.tilt, 'rltilt') : ''}</section></div>`);
   GH.wire({ back: () => gameRoom() });
   const again = () => { const y = $('.scroll').scrollTop; rlMenu(); $('.scroll').scrollTop = y; };
@@ -2235,7 +2279,7 @@ function rlMenu(place) {
     rlRace(b.dataset.tt, { trial: true });
   });
   UI.segOn($('#rlmode'), v => { r.mode = v; save(); again(); });
-  $('#rlquiz').onchange = e => { r.quiz = e.target.checked; save(); };
+  $('#rlquiz').onchange = e => { r.gates = e.target.checked ? 'on' : 'off'; save(); }; // G-FEEL2: the choice (rlGatesOn, 80-grown.js)
   if ($('#rltilt')) $('#rltilt').onchange = e => {
     r.tilt = e.target.checked;
     save();
@@ -2414,7 +2458,8 @@ function rlRace(tid, o = {}) {
   const btn = (id, icon, aria, txt) => `<button class="rl-btn" id="${id}" data-k="${id.slice(2)}" aria-label="${aria}">${ico(icon, 48)}` +
     `${txt ? `<span>${txt}</span>` : ''}</button>`;
   const seed = ((Date.now() & 0xffffff) ^ (r.races * 7919)) >>> 0 || 1;
-  const st = rlNew(tid, { mode, quiz: r.quiz, grade: S.grade, seed, up: r.upg, trial, ghost: trial ? r.ghost[tid] : null,
+  const quiz = rlGatesOn() && !trial; // G-FEEL2: on by default from 1st grade; the child's own due number facts first
+  const st = rlNew(tid, { mode, quiz, facts: quiz ? rlGateFacts() : [], grade: S.grade, seed, up: r.upg, trial, ghost: trial ? r.ghost[tid] : null,
     tier: cup ? cup.tier : null, wx: cup ? cup.races[r.cup.i][1] : twist ? twist.wx : null });
   const wxn = st.W.name, sub = (cup ? `${cup.name} ${r.cup.i + 1}/3: ` : trial ? 'Time trial: ' : twist ? "Today's twist: " : '') + t.name + (wxn ? ', ' + wxn : '');
   view(`${GH.top('rally', { play: true, hud: true, sub, chips: (trial ? `<span class="stat rl-pos" id="rlpos" aria-label="Lap time">${ico('timer', 32)}<b>0:00.0</b></span>` :
@@ -2640,8 +2685,8 @@ function rlEvents() {
     if (show != !q.hidden || q.dataset.q != st.q.q) {
       q.hidden = !show;
       q.dataset.q = st.q.q;
-      q.textContent = st.q.q + ' = ?';
-      if (show && S.voice) say(st.q.q.replace('−', 'minus').replace('×', 'times') + '?');
+      q.textContent = st.q.t || st.q.q + ' = ?';
+      if (show && S.voice) say(st.q.say || st.q.q.replace('−', 'minus').replace('×', 'times') + '?');
     }
   }
 }

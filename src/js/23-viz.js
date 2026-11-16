@@ -27,15 +27,20 @@
 
    API (n, d, h, m, rows, cols are whole numbers; o is an optional options object):
      tenFrame(n, total = 10, o)   total 5, 10 or 20 cells; n counters fill row by row.  o.b: the last b counters
-                                  are the second colour; o.fade: the last `fade` counters are faded (taken away)
+                                  are the second colour; o.fade: the last `fade` counters are faded (taken away);
+                                  o.cells (KINDS2 make): a transparent .vh rect over each cell (data-c = 0..), shown 1.25x
      base10(n)                    flats, rods and units for 0..999 (bigger cells below 100)
      numLine(o)                   o.min = 0, o.max = 10, o.step = 1 (tick spacing), o.labels: values to label, 'all',
                                   or left out for automatic (every tick when it fits, else multiples of 2/5/10..);
                                   o.marks: values shown as a dot; o.hide: values whose label is a "?" box;
                                   o.tapValues: values that become tap targets; o.den: fraction labels in
-                                  denominator den (0, 1/4, 2/4 ... whole numbers stay whole); o.w: line length (290)
+                                  denominator den (0, 1/4, 2/4 ... whole numbers stay whole); o.w: line length (290);
+                                  o.pin (KINDS2 line): a pin at that value (<g class="vpin">: a 52 x 52 hit area (48 px on a phone), a stem, a head
+                                  with a tick .vpok and a cross .vpno) over a 56-unit band (.vband); the svg gets class vi and
+                                  data-min, data-max, data-x0, data-x1 (the ends in svg units), so the line kind can move the pin
      fracBar(n, d, o)             a bar in d equal parts, the first n shaded; n > d draws more bars.
                                   o.unit: write 1/d in each part; o.tap: every part is a target (data-v = 0..);
+                                  o.on (KINDS2 make, also fracCircle and areaGrid): shaded parts by index (o.on[i] truthy) instead of the first n;
                                   o.w: bar length (280; at least 48 per part when tap)
      fracCircle(n, d, o)          a circle in d equal parts from 12 o'clock clockwise; n > d draws more circles. o.tap
      clock(h, m, o)               analogue clock, short red hour hand, long blue minute hand. o.nums = false hides 1-12
@@ -57,7 +62,8 @@
      shape(name, o)               VIZ.shapeNames: circle oval square rectangle triangle rhombus trapezoid pentagon hexagon
                                   octagon, solids cube prism cylinder cone sphere. 100 x 100 always. o.c = 2 second colour,
                                   o.rot degrees, o.st stretch across (not circle or square), o.dots dots on corners
-     areaGrid(w, h, o)            w x h unit squares (max 12); o.n: only the first n are filled
+     areaGrid(w, h, o)            w x h unit squares (max 12); o.n: only the first n are filled; o.tap: each square is a
+                                  48-unit target (data-v = 0.., row by row) and o.on says which are filled
      rectSides(w, h, labels, o)   rectangle (not to scale); labels {w, h}: number, text, '?' (box) or null;
                                   o.all labels all four sides, o.unit adds a unit
      angle(deg, o)                a ray along +x and one deg counter-clockwise; o.rot turns it, o.label text or '?' on the
@@ -172,7 +178,12 @@ const VIZ = (() => {
       pts.push([P + (j % 5) * C + C / 2, P + fi * (fh + G) + Math.floor(j / 5) * C + C / 2]);
     }
     body += counters(pts, 15, o);
-    return svg('ten', 5 * C + 2 * P, frames * fh + (frames - 1) * G + 2 * P, body, 'ten frame');
+    const W = 5 * C + 2 * P, H = frames * fh + (frames - 1) * G + 2 * P;
+    if (o.cells) for (let i = 0; i < total; i++) {
+      const fi = Math.floor(i / 10), j = i % 10;
+      body += `<rect class="vh" data-c="${i}" x="${P + (j % 5) * C}" y="${P + fi * (fh + G) + Math.floor(j / 5) * C}" width="${C}" height="${C}"/>`;
+    }
+    return svg('ten', W, H, body, 'ten frame', !!o.cells, o.cells ? W * 1.25 : W);
   }
 
   // ---- base-ten blocks ----
@@ -236,7 +247,7 @@ const VIZ = (() => {
     let w = def(o.w, 290);
     // tap targets: at least 48 units between neighbouring values
     for (let i = 1; i < tap.length; i++) w = Math.max(w, 48 * (max - min) / Math.max(tap[i] - tap[i - 1], 1e-9));
-    const hops = o.hops || [], top = hops.length ? 34 : 0;
+    const hops = o.hops || [], pin = o.pin != null, top = (hops.length ? 34 : 0) + (pin ? 24 : 0);
     const P = 24, Y = 28 + top, den = o.den;
     const X = v => P + (v - min) / (max - min) * w;
     const W = w + 2 * P, Hh = (den ? 84 : 68) + top;
@@ -298,6 +309,12 @@ const VIZ = (() => {
       body += `<g ${tapAttr(v)}><rect class="vh" x="${f(X(v) - l)}" y="0" width="${f(l + r)}" height="${Hh}"/>` +
         `<circle class="vm" cx="${f(X(v))}" cy="${Y}" r="10"/></g>`;
     });
+    if (pin) {
+      body += `<rect class="vh vband" x="${P - 24}" y="${Y - 28}" width="${f(w + 48)}" height="56"/><g class="vpin" transform="translate(${f(X(o.pin))} 0)">` +
+        `<rect class="vh" x="-26" y="${Y - 48}" width="52" height="52"/><path class="vps" d="M0 ${Y - 12}V${Y - 2}"/><circle class="vph" cy="${Y - 24}" r="12"/>` +
+        `<path class="vpok" d="M-5.5 ${Y - 24}l3.5 3.5 7-7"/><path class="vpno" d="M-4.5 ${Y - 28.5}l9 9m0-9l-9 9"/></g>`;
+      return svg('nl', W, Hh, body, 'number line', true).replace('<svg ', `<svg data-min="${min}" data-max="${max}" data-x0="${P}" data-x1="${f(P + w)}" `);
+    }
     return svg('nl', W, Hh, body, 'number line', tap.length > 0);
   }
 
@@ -324,7 +341,7 @@ const VIZ = (() => {
       const y = P + b * (h + G);
       body += `<rect class="vld" x="${P}" y="${y + 3}" width="${f(w)}" height="${h}" rx="6"/>`;
       for (let i = 0; i < d; i++) {
-        const idx = b * d + i, on = idx < n;
+        const idx = b * d + i, on = o.on ? !!o.on[idx] : idx < n;
         const x0 = P + i * pw + (i ? 0 : 1.5), x1 = P + (i + 1) * pw - (i < d - 1 ? 0 : 1.5);
         const cls = 'vp' + (on ? ' vs' : '');
         const attr = o.tap ? tapAttr(idx, cls) : `class="${cls}"`;
@@ -349,7 +366,7 @@ const VIZ = (() => {
       const cx = P + r + k * (2 * r + G), cy = P + r;
       body += `<circle class="vld" cx="${cx}" cy="${cy + 3}" r="${r}"/>`;
       for (let i = 0; i < d; i++) {
-        const idx = k * d + i, on = idx < n;
+        const idx = k * d + i, on = o.on ? !!o.on[idx] : idx < n;
         const cls = `vp${on ? ' vs' : ''}`;
         const attr = o.tap ? tapAttr(idx, cls) : `class="${cls}"`;
         if (d == 1) body += `<circle ${attr} cx="${cx}" cy="${cy}" r="${r}"/>`;
@@ -637,6 +654,11 @@ const VIZ = (() => {
     w = clamp(Math.round(w) || 1, 1, 12);
     h = clamp(Math.round(h) || 1, 1, 12);
     const n = clamp(Math.round(def(o.n, w * h)), 0, w * h);
+    if (o.tap) {
+      let b = '';
+      for (let i = 0; i < w * h; i++) b += `<rect ${tapAttr(i, 'vp' + (o.on && o.on[i] ? ' vs' : ''))} x="${3 + (i % w) * 48}" y="${3 + Math.floor(i / w) * 48}" width="48" height="48"/>`;
+      return svg('area', w * 48 + 6, h * 48 + 6, b, 'grid of squares', true);
+    }
     const p = clamp(Math.floor(Math.min(300 / w, 240 / h)), 14, 34), c = p - 2, P = 3;
     let on = '', off = '';
     for (let r = 0; r < h; r++) {

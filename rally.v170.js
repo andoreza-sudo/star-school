@@ -1,5 +1,5 @@
-/* Star School rally v169. BUILT by tools/build.py from 49-game-race.css, 63-game-race.js: never edit by hand.
-   index.html v169 loads this file on demand (partsThen in src/js/90-app.js, P6-02), after data.v169.js. */
+/* Star School rally v170. BUILT by tools/build.py from 49-game-race.css, 63-game-race.js: never edit by hand.
+   index.html v170 loads this file on demand (partsThen in src/js/90-app.js, P6-02), after data.v170.js. */
 (function(){var s=document.createElement('style');s.id='css-rally';s.textContent="/* Star Rally, the racing game (G-02, G-02b; src/js/63-game-race.js). Ships in games2.<VER>.js. Tokens only; motion is\n   transform/opacity. The menu (next goal, cups, single races and time trials, rivals, how to drive), the garage with upgrades, the\n   race: a full-screen canvas under the shared top bar (.gh-hud), big steer buttons, a message bubble and the boost-gate question;\n   the cup standings on the end card. */\n\n/* ---- menu ---- */\n.rl-menu,.rl-gar{padding:var(--s-2) var(--s-4) var(--s-7)}\n.rl-menu>*,.rl-gar>*{max-width:1000px;margin-left:auto;margin-right:auto}\n.rl-h{margin:var(--s-5) auto var(--s-3);font-size:var(--fs-4);color:var(--ink)}\n.rl-hero{display:flex;align-items:center;gap:var(--s-4);padding:var(--s-3) var(--s-4);border-radius:var(--r-hero);\n  background:linear-gradient(var(--sc-sky-1),var(--sc-sky) 70%,var(--sc-green) 71%);box-shadow:inset 0 0 0 2px var(--wash),0 5px 0 var(--sc-green-2)}\n.rl-hcar{flex:1 1 50%;max-width:260px}.rl-hcar svg{display:block;width:100%;height:auto}\n.rl-hinfo{flex:1 1 50%;display:flex;flex-direction:column;gap:var(--s-3);align-items:stretch}\n.rl-hl{display:flex;align-items:center;gap:var(--s-2);margin:0;font-size:var(--fs-3);color:var(--ink)}\n.rl-hl .ic,.rl-psub .ic,.rl-iprice .ic.rs-f{color:var(--star-shade)}\n.rl-places{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s-3)}\n@media (min-width:760px){.rl-places{grid-template-columns:repeat(5,minmax(0,1fr))}}\n.rl-place{display:flex;flex-direction:column;gap:var(--s-1);min-height:var(--tap);padding:var(--s-2);border:0;border-radius:var(--r-card);\n  background:var(--surface);color:var(--ink);font:inherit;text-align:left;cursor:pointer;touch-action:manipulation;\n  box-shadow:inset 0 0 0 2px var(--line),0 4px 0 var(--ledge-soft);transition:transform var(--t-fast) var(--ease)}\n.rl-place:active{transform:translateY(3px)}\n.rl-place.on{box-shadow:inset 0 0 0 3px var(--math),0 4px 0 var(--math-shade)}\n.rl-ppic{position:relative;display:block;aspect-ratio:240/100;border-radius:var(--r-btn);overflow:hidden;background:linear-gradient(var(--gh-a),var(--gh-b))}\n.rl-ppic svg{position:absolute;inset:0;width:100%;height:100%;display:block}\n.rl-place.lock .rl-ppic svg{opacity:.45}\n.rl-plock{position:absolute;inset:0;display:grid;place-items:center;color:var(--ink-2)}\n.rl-pname{font-size:var(--fs-3);font-weight:700;line-height:1.2}\n.rl-psub{display:flex;align-items:center;gap:var(--s-1);font-size:var(--fs-2);color:var(--ink-2)}\n.rl-trks{display:grid;gap:var(--s-3)}\n@media (min-width:760px){.rl-trks{grid-template-columns:repeat(2,minmax(0,1fr))}}\n.rl-trk{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:var(--s-3);min-height:72px;padding:var(--s-3);\n  border:0;border-radius:var(--r-card);background:var(--surface);color:var(--ink);font:inherit;text-align:left;cursor:pointer;touch-action:manipulation;\n  box-shadow:inset 0 0 0 2px var(--line),0 5px 0 var(--ledge-soft);transition:transform var(--t-fast) var(--ease)}\n.rl-trk:active{transform:translateY(4px)}\n.rl-tn{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--math-tint);color:var(--math-shade);\n  font-family:var(--font-display);font-size:var(--fs-4);font-weight:700}\n.rl-ti{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:0;line-height:1.25}\n.rl-ti b{font-size:var(--fs-3)}.rl-ti span{font-size:var(--fs-2);color:var(--ink-2)}\n.rl-go{display:grid;place-items:center;width:48px;height:48px;border-radius:50%;background:var(--math);color:var(--surface);box-shadow:0 3px 0 var(--math-shade)}\n.rl-trk.lock{background:var(--surface-2)}.rl-trk.lock .rl-go{background:var(--surface);color:var(--ink-3);box-shadow:inset 0 0 0 2px var(--line)}\n.rl-trk.lock .rl-tn{background:var(--surface);color:var(--ink-3)}\n.rl-rivals{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:var(--s-2)}\n.rl-rv{display:flex;flex-direction:column;align-items:center;text-align:center;line-height:1.2}\n.rl-rv svg{width:min(76px,100%);height:auto}.rl-rv b{font-size:var(--fs-2)}.rl-rv span{font-size:var(--fs-2);color:var(--ink-2)}\n.rl-opts{margin-top:var(--s-2)}\n.rl-mode{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s-2) var(--s-4)}\n.rl-mode p{margin:0;flex:1 1 220px;font-size:var(--fs-2);color:var(--ink-2)}\n.rl-how{display:grid;gap:var(--s-2);margin:var(--s-4) 0;padding:0;list-style:none}\n@media (min-width:760px){.rl-how{grid-template-columns:1fr 1fr}}\n.rl-how li{display:flex;align-items:center;gap:var(--s-3);font-size:var(--fs-3);line-height:1.3;color:var(--ink)}\n.rl-hi{flex:none;display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:var(--math-tint);color:var(--math-shade)}\n.rl-opts .switch{margin-top:var(--s-3)}\n.stat.rl-spk .ic,.stat.rl-pos .ic{color:var(--star-shade);--ic2:var(--star-tint)}\n.stat.rl-lap .ic{color:var(--math-shade)}\n\n/* G-02b: the next goal, cups, time trial buttons, cup standings, upgrades */\n.rl-goal{display:flex;align-items:center;gap:var(--s-3);margin-top:var(--s-4);margin-bottom:0;padding:var(--s-3) var(--s-4);border-radius:var(--r-card);\n  background:var(--surface);color:var(--ink);font-size:var(--fs-3);line-height:1.3;box-shadow:inset 0 0 0 2px var(--math-tint),0 4px 0 var(--ledge-soft)}\n.rl-goal .rl-hi{width:44px;height:44px}\n.rl-cups{display:grid;gap:var(--s-3)}\n@media (min-width:760px){.rl-cups{grid-template-columns:repeat(2,minmax(0,1fr))}}\n.rl-cup{display:grid;grid-template-columns:76px minmax(0,1fr) auto;align-items:center;gap:var(--s-3);min-height:96px;padding:var(--s-3);border:0;\n  border-radius:var(--r-card);background:var(--surface);color:var(--ink);font:inherit;text-align:left;cursor:pointer;touch-action:manipulation;\n  box-shadow:inset 0 0 0 2px var(--line),0 5px 0 var(--ledge-soft);transition:transform var(--t-fast) var(--ease)}\n.rl-cup:active{transform:translateY(4px)}\n.rl-cup.won{box-shadow:inset 0 0 0 3px var(--star),0 5px 0 var(--star-shade)}\n.rl-cpic{position:relative;display:grid;place-items:center;width:76px;height:76px;border-radius:var(--r-btn);background:var(--surface-2)}\n.rl-cpic svg{width:64px;height:64px}\n.rl-cup.lock{background:var(--surface-2)}.rl-cup.lock .rl-cpic svg{opacity:.35}\n.rl-cup.lock .rl-go{background:var(--surface);color:var(--ink-3);box-shadow:inset 0 0 0 2px var(--line)}\n.rl-ci{display:flex;flex-direction:column;gap:2px;min-width:0;line-height:1.25}\n.rl-ci b{font-size:var(--fs-4)}.rl-ci span{font-size:var(--fs-2);color:var(--ink-2)}.rl-ci .rl-cs{color:var(--ink);font-weight:700}\n.rl-h3{margin:var(--s-4) auto var(--s-3);font-size:var(--fs-3);color:var(--ink)}\n.rl-trow{display:flex;gap:var(--s-2);min-width:0}.rl-trow .rl-trk{flex:1 1 auto;min-width:0}\n.rl-tt{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:84px;min-height:72px;padding:var(--s-1);border:0;\n  border-radius:var(--r-card);background:var(--surface);color:var(--math-shade);font:inherit;font-size:var(--fs-2);font-weight:700;line-height:1.1;text-align:center;\n  cursor:pointer;touch-action:manipulation;box-shadow:inset 0 0 0 2px var(--line),0 5px 0 var(--ledge-soft);transition:transform var(--t-fast) var(--ease)}\n.rl-tt:active{transform:translateY(4px)}\n.rl-sth{margin:var(--s-2) 0 var(--s-1);font-size:var(--fs-2);font-weight:700;color:var(--ink-2)}\n.rl-stand{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s-1) var(--s-2);margin:0;padding:0;list-style:none;text-align:left}\n.rl-stand li{display:grid;grid-template-columns:auto 30px minmax(0,1fr);grid-template-rows:auto auto;column-gap:var(--s-1);align-items:center;padding:2px var(--s-2);\n  border-radius:var(--r-btn);background:var(--surface-2);line-height:1.15}\n.rl-stand li.me{background:var(--star-tint);box-shadow:inset 0 0 0 2px var(--star)}\n.rl-stand .rl-sn{grid-row:1/span 2;font-family:var(--font-display);font-size:var(--fs-3);font-weight:700;color:var(--ink-2)}\n.rl-stand svg{grid-row:1/span 2;width:30px;height:32px}\n.rl-stand b{font-size:var(--fs-2);color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rl-stand span:last-child{font-size:var(--fs-2);color:var(--ink-2)}\n.rl-epic{display:grid;place-items:center;width:100%;height:100%}.rl-etro{height:90%;width:auto}\n.rl-ups{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}\n.rl-upic{display:grid;place-items:center;color:var(--math-shade)}.rl-upic .ic{width:36px;height:36px}\n.rl-pips{display:flex;gap:4px}.rl-pips i{width:14px;height:14px;border-radius:50%;background:var(--surface-2);box-shadow:inset 0 0 0 2px var(--line)}\n.rl-pips i.on{background:var(--good);box-shadow:none}\n.rl-iwhat{font-size:var(--fs-2);color:var(--ink-2);text-align:center;line-height:1.2}\n\n/* G-RALLY2: what to save for, today's twist, mirror cups and tracks, garage level 2 */\n.rl-save{margin-top:var(--s-3);box-shadow:inset 0 0 0 2px var(--star-tint),0 4px 0 var(--ledge-soft)}\n.rl-tw{display:grid;grid-template-columns:120px minmax(0,1fr) auto;align-items:center;gap:var(--s-3);width:100%;min-height:96px;margin-top:var(--s-3);\n  padding:var(--s-3);border:0;border-radius:var(--r-card);background:var(--surface);color:var(--ink);font:inherit;text-align:left;cursor:pointer;\n  touch-action:manipulation;box-shadow:inset 0 0 0 3px var(--play),0 5px 0 var(--play-shade);transition:transform var(--t-fast) var(--ease)}\n.rl-tw:active{transform:translateY(4px)}\n.rl-tw .rl-go{background:var(--play-shade)}\n@media (max-width:420px){.rl-tw{grid-template-columns:84px minmax(0,1fr) auto}}\n.rl-cup.mir .rl-cpic{background:var(--math-tint)}\n.rl-trk.mir .rl-tn{background:var(--bt-tint);color:var(--bt-shade)}.rl-trk.mir .rl-tn .ic{width:24px;height:24px}\n.rl-t2{margin-top:var(--s-5);padding:var(--s-1) var(--s-4) var(--s-4);border-radius:var(--r-hero);background:var(--surface-2);box-shadow:inset 0 0 0 2px var(--line)}\n.rl-t2>.rl-h{display:flex;align-items:center;gap:var(--s-2)}.rl-t2>.rl-h .ic{color:var(--star-shade)}\n.rl-t2.lock>.rl-h .ic{color:var(--ink-3)}\n.rl-item.lock .rl-ipic{opacity:.55}\n.rl-t2 .rl-ipic{width:72px;height:52px}\n\n/* ---- garage ---- */\n.rl-gcar{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:var(--s-3) var(--s-5);padding:var(--s-4);border-radius:var(--r-hero);\n  background:linear-gradient(var(--gh-a),var(--gh-b))}\n.rl-gcar .rl-big{width:min(300px,80%);height:auto}\n.rl-buy{flex:1 1 260px;max-width:420px;padding:var(--s-3) var(--s-4);border-radius:var(--r-card);background:var(--surface);box-shadow:inset 0 0 0 2px var(--line)}\n.rl-buy p{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s-1);margin:0 0 var(--s-2);font-size:var(--fs-3);color:var(--ink)}\n.rl-buy p+p{font-size:var(--fs-2);color:var(--ink-2)}\n.rl-buy .ic{color:var(--star-shade)}\n.rl-bacts{display:flex;flex-wrap:wrap;gap:var(--s-2)}\n.rl-items{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:var(--s-3)}\n.rl-item{display:flex;flex-direction:column;align-items:center;gap:2px;min-height:var(--tap);padding:var(--s-2);border:0;border-radius:var(--r-card);\n  background:var(--surface);color:var(--ink);font:inherit;cursor:pointer;touch-action:manipulation;box-shadow:inset 0 0 0 2px var(--line),0 4px 0 var(--ledge-soft);\n  transition:transform var(--t-fast) var(--ease)}\n.rl-item:active{transform:translateY(3px)}\n.rl-item.on{box-shadow:inset 0 0 0 3px var(--good),0 4px 0 var(--good-ink)}\n.rl-ipic{display:block;width:64px;height:48px}.rl-ipic svg{width:100%;height:100%}\n.rl-iname{font-size:var(--fs-2);font-weight:700;text-align:center;line-height:1.2}\n.rl-iprice{display:flex;align-items:center;gap:2px;font-size:var(--fs-2);color:var(--ink-2)}\n.rl-iprice .ic{color:var(--star-shade)}.rl-item.on .rl-iprice{color:var(--good-ink)}.rl-item.on .rl-iprice .ic{color:var(--good)}\n.rl-note{margin:var(--s-2) auto 0;font-size:var(--fs-2);color:var(--ink-2)}\n\n/* ---- the race ---- */\n.rl{position:fixed;inset:0;z-index:0;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;background:var(--sc-sky)}\n.rl canvas{position:absolute;inset:0;width:100%;height:100%;display:block}\n.rl-msg{position:absolute;left:50%;top:28%;padding:var(--s-2) var(--s-5);border-radius:var(--r-pill);background:var(--surface);color:var(--ink);\n  font-family:var(--font-display);font-size:var(--fs-5);font-weight:700;width:max-content;max-width:calc(100% - 32px);text-align:center;line-height:1.2;pointer-events:none;box-shadow:0 4px 0 var(--ledge-soft);\n  opacity:0;transform:translate(-50%,-12px) scale(.9);transition:opacity var(--t) var(--ease),transform var(--t) var(--spring)}\n.rl-msg.on{opacity:1;transform:translate(-50%,0) scale(1)}\n.rl-msg.big{font-size:var(--fs-7);padding:var(--s-2) var(--s-6)}\n.rl-q{position:absolute;left:50%;top:84px;transform:translateX(-50%);padding:var(--s-2) var(--s-5);border-radius:var(--r-pill);background:var(--bt);\n  color:var(--surface);font-family:var(--font-display);font-size:var(--fs-6);font-weight:700;white-space:nowrap;pointer-events:none;box-shadow:0 4px 0 var(--bt-shade)}\n.rl-q[hidden]{display:none}\n.rl-ctl{position:absolute;left:0;right:0;bottom:0;pointer-events:none}\n.rl-btn{position:absolute;bottom:calc(14px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;align-items:center;justify-content:center;\n  width:clamp(96px,15vw,132px);height:clamp(96px,15vw,132px);padding:0;border:0;border-radius:32px;background:var(--surface);color:var(--math-shade);\n  font:inherit;font-family:var(--font-display);font-size:var(--fs-4);font-weight:700;pointer-events:auto;touch-action:none;opacity:.92;\n  box-shadow:inset 0 0 0 3px var(--wash),0 6px 0 var(--math-shade);transition:transform var(--t-fast) var(--ease)}\n.rl-btn .ic{width:56px;height:56px}\n.rl-btn.on{transform:translateY(5px) scale(.96);opacity:1}\n#rll{left:14px}#rlr{right:14px}\n.rl-pro #rlr{left:calc(28px + clamp(96px,15vw,132px));right:auto}\n.rl-pro #rlgo{right:14px;background:var(--play-shade);color:var(--surface);box-shadow:inset 0 0 0 3px var(--wash),0 6px 0 var(--play-deep)}\n.rl-pro #rlgo .ic{width:44px;height:44px}\n@media (max-width:420px){.rl-pro .rl-btn{width:96px;height:96px}.rl-pro #rlr{left:118px}}\n";document.head.appendChild(s)})(); // its src/css, after index.html's own CSS (the cascade order of a build without parts)
 /* ---------- Star Rally: the racing game (G-02, G-02b, G-RALLY2; CSS src/css/49-game-race.css; both go into rally.<VER>.js) ----------
    An original Star School game. Races against five friendly animal drivers, seen from behind the car on a pseudo-3D road
@@ -1087,11 +1087,54 @@ function rlQuiz(grade, rnd) {
     const x = R(2, g >= 5 ? 12 : 10), y = R(2, g >= 5 ? 12 : 9);
     q = x + ' × ' + y; a = x * y;
   }
+  return { q, a, opts: rlOpts(a, rnd) };
+}
+// three different answers, the right one among them, never below 0, shuffled
+function rlOpts(a, rnd) {
   const opts = [a];
   for (const d of [1, -1, 2, -2, 10, 3]) if (opts.length < 3 && a + d >= 0 && !opts.includes(a + d) && rnd() < .7) opts.push(a + d);
   for (let d = 1; opts.length < 3; d++) if (!opts.includes(a + d)) opts.push(a + d);
   for (let i = 2; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [opts[i], opts[j]] = [opts[j], opts[i]]; }
-  return { q, a, opts };
+  return opts;
+}
+/* G-FEEL2: the gates ask the child's own number facts first. The due Daily Review items (59-review.js) that are single number facts
+   (REV_ARITH: "7 + 5 = ?", "? + 6 = 14", "6 × 7 = ?", "32 ÷ ? = 4") become gate questions, read from the label (no generator runs);
+   after them, or with none due, rlQuiz as before. Read only: a gate does not move an item between boxes (a quick choice of three in
+   a moving car is not the careful answer the review counts) and a wrong gate books nothing. At most 6 a race.
+   Returns [{t: the label as shown, a: the missing number, say}] */
+function rlGateFacts() {
+  if (typeof dueItems != 'function' || typeof REV_ARITH == 'undefined') return [];
+  const out = [];
+  let items = [];
+  try { items = dueItems(); } catch (e) { return []; }
+  for (const it of items) {
+    const m = REV_ARITH.exec(String(it.label || ''));
+    if (!m || !revFact(it, null) || [m[1], m[3], m[4]].filter(x => x == '?').length != 1) continue;
+    const a = rlFactAns(m[1], m[2], m[3], m[4]);
+    if (a == null) continue;
+    const say = it.label.replace(/\?/g, 'what').replace('+', 'plus').replace(/[−-]/, 'minus').replace('×', 'times').replace('÷', 'divided by').replace('=', 'equals');
+    out.push({ t: it.label, a, say });
+    if (out.length >= 6) break;
+  }
+  return out;
+}
+// the missing number of "x op y = z" (one of them '?'), or null when it is not a whole number 0 or more
+function rlFactAns(x, op, y, z) {
+  const n = v => +v, add = op == '+', sub = op == '−' || op == '-', mul = op == '×';
+  let a;
+  if (z == '?') a = add ? n(x) + n(y) : sub ? n(x) - n(y) : mul ? n(x) * n(y) : n(y) ? n(x) / n(y) : NaN;
+  else if (x == '?') a = add ? n(z) - n(y) : sub ? n(z) + n(y) : mul ? (n(y) ? n(z) / n(y) : NaN) : n(z) * n(y);
+  else a = add ? n(z) - n(x) : sub ? n(x) - n(z) : mul ? (n(x) ? n(z) / n(x) : NaN) : n(z) ? n(x) / n(z) : NaN;
+  return Number.isInteger(a) && a >= 0 ? a : null;
+}
+// the next gate question: the child's own facts first (st.facts, each once), then rlQuiz
+function rlGateQ(st) {
+  const f = st.facts[st.fi];
+  if (f) {
+    st.fi++;
+    return { q: f.t, t: f.t, say: f.say, a: f.a, opts: rlOpts(f.a, st.rnd), own: 1 };
+  }
+  return rlQuiz(st.grade, st.rnd);
 }
 
 /* ---- the race: rlNew makes it, rlStep moves it on by one fixed step. No drawing, no DOM: the tests run whole races ----
@@ -1133,7 +1176,8 @@ function rlNew(tid, o = {}) {
     base: base[i], wob: 0, wobT: rnd() * 3, fin: 0, e: (rnd() - .5) * .05, spin: 0, dizzy: 0, miss: {}, fs: 0, hits: 0 }));
   const up = {};
   for (const [k] of RL_UPG) up[k] = rlNum((o.up || {})[k], 0, 3);
-  const st = { tid, T, laps: t.laps, mode, help, quiz: !!o.quiz && !o.trial, grade: o.grade, rnd, cd: 3, rt: 0, done: false, ev: [], cars, tier, wx, W: RL_WX[wx], up,
+  const st = { tid, T, laps: t.laps, mode, help, quiz: !!o.quiz && !o.trial, grade: o.grade, rnd,
+    facts: Array.isArray(o.facts) ? o.facts.slice(0, 6) : [], fi: 0, cd: 3, rt: 0, done: false, ev: [], cars, tier, wx, W: RL_WX[wx], up,
     trial: !!o.trial, fin: RL_START * RL_SEG + t.laps * T.L, taken: new Int16Array(T.sp.length), pkT: new Int16Array(T.pk.length),
     kn: new Float32Array(T.ob.length).fill(-9), knL: new Int16Array(T.ob.length), knS: new Int8Array(T.ob.length), padKey: -1, seen: {},
     P: { d: row(o.trial ? 1 : 4), x: o.trial ? 0 : lane(4), v: 0, s: 0, vx: 0, dh: 0, dsp: 0, drifting: false, boost: 0, bumpT: 0, spin: 0, spinD: 0,
@@ -1142,7 +1186,7 @@ function rlNew(tid, o = {}) {
     st.rec = { cur: '', n: 0, d0: 0, best: null };
     st.gh = rlGhostIn(o.ghost);
   }
-  if (st.quiz) st.q = rlQuiz(st.grade, rnd);
+  if (st.quiz) st.q = rlGateQ(st);
   return st;
 }
 const rlLap = (st, d) => Math.max(1, Math.floor((d - RL_START * RL_SEG) / st.T.L) + 1);
@@ -1386,7 +1430,7 @@ function rlStep(st, inp = {}) {
     const ok = st.q.opts[k] === st.q.a;
     if (ok) P.boost = Math.max(P.boost, 1.4);
     st.ev.push(['gate', ok, st.q.a]);
-    st.q = rlQuiz(st.grade, st.rnd);
+    st.q = rlGateQ(st); // G-FEEL2: a wrong gate costs nothing (no boost, no slow down); the next question comes
   }
   // the rivals: gentle catch-up, a pace style, a wobble now and then, lanes, hazards, spins
   const last = P.d > st.fin - L * .35, CU = RL_CU[st.mode], span = st.fin - RL_START * RL_SEG, h = st.help;
@@ -2181,7 +2225,7 @@ function rlMenu(place) {
    <div class="rl-mode">${UI.seg([['easy', 'Easy'], ['pro', 'Pro']], mode, { id: 'rlmode', label: 'Driving' })}
    <p>${mode == 'pro' ? 'Pro: hold Go to speed up, drift through bends; bumps cost more time and the animals race hard.' : 'Easy: the car drives by itself. You steer.'}</p></div>
    <ul class="rl-how">${how.map(([i, t]) => `<li><span class="rl-hi">${ico(i, 22)}</span><span>${esc(t)}</span></li>`).join('')}</ul>
-   ${UI.sw('Boost gates: drive through the right answer to zoom', r.quiz, 'rlquiz')}
+   ${UI.sw('Boost gates: drive through the right answer to zoom', rlGatesOn(), 'rlquiz')}
    ${rlTiltOK() ? UI.sw('Steer by tilting the tablet', r.tilt, 'rltilt') : ''}</section></div>`);
   GH.wire({ back: () => gameRoom() });
   const again = () => { const y = $('.scroll').scrollTop; rlMenu(); $('.scroll').scrollTop = y; };
@@ -2238,7 +2282,7 @@ function rlMenu(place) {
     rlRace(b.dataset.tt, { trial: true });
   });
   UI.segOn($('#rlmode'), v => { r.mode = v; save(); again(); });
-  $('#rlquiz').onchange = e => { r.quiz = e.target.checked; save(); };
+  $('#rlquiz').onchange = e => { r.gates = e.target.checked ? 'on' : 'off'; save(); }; // G-FEEL2: the choice (rlGatesOn, 80-grown.js)
   if ($('#rltilt')) $('#rltilt').onchange = e => {
     r.tilt = e.target.checked;
     save();
@@ -2417,7 +2461,8 @@ function rlRace(tid, o = {}) {
   const btn = (id, icon, aria, txt) => `<button class="rl-btn" id="${id}" data-k="${id.slice(2)}" aria-label="${aria}">${ico(icon, 48)}` +
     `${txt ? `<span>${txt}</span>` : ''}</button>`;
   const seed = ((Date.now() & 0xffffff) ^ (r.races * 7919)) >>> 0 || 1;
-  const st = rlNew(tid, { mode, quiz: r.quiz, grade: S.grade, seed, up: r.upg, trial, ghost: trial ? r.ghost[tid] : null,
+  const quiz = rlGatesOn() && !trial; // G-FEEL2: on by default from 1st grade; the child's own due number facts first
+  const st = rlNew(tid, { mode, quiz, facts: quiz ? rlGateFacts() : [], grade: S.grade, seed, up: r.upg, trial, ghost: trial ? r.ghost[tid] : null,
     tier: cup ? cup.tier : null, wx: cup ? cup.races[r.cup.i][1] : twist ? twist.wx : null });
   const wxn = st.W.name, sub = (cup ? `${cup.name} ${r.cup.i + 1}/3: ` : trial ? 'Time trial: ' : twist ? "Today's twist: " : '') + t.name + (wxn ? ', ' + wxn : '');
   view(`${GH.top('rally', { play: true, hud: true, sub, chips: (trial ? `<span class="stat rl-pos" id="rlpos" aria-label="Lap time">${ico('timer', 32)}<b>0:00.0</b></span>` :
@@ -2643,8 +2688,8 @@ function rlEvents() {
     if (show != !q.hidden || q.dataset.q != st.q.q) {
       q.hidden = !show;
       q.dataset.q = st.q.q;
-      q.textContent = st.q.q + ' = ?';
-      if (show && S.voice) say(st.q.q.replace('−', 'minus').replace('×', 'times') + '?');
+      q.textContent = st.q.t || st.q.q + ' = ?';
+      if (show && S.voice) say(st.q.say || st.q.q.replace('−', 'minus').replace('×', 'times') + '?');
     }
   }
 }
@@ -2762,4 +2807,4 @@ GH.reg({
   open: () => rlMenu(), tapToPlay: '.rl-trk[data-ok="1"]', saved: 'Your sparkles are saved.',
 });
 
-var RALLY_VER='v169'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var RALLY_VER='v170'; // last line: the whole file ran (checked by dataReady() before the app starts)

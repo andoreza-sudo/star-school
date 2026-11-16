@@ -1,0 +1,144 @@
+/* KINDS2 batch A: the sort and mark kinds (src/js/49b-kinds2.js). In the gen2 part. Tokens only (00-tokens.css).
+   Every state shows a shape as well as a colour: a tick (.k2ok) on right, done and shown answers, a cross (.k2no) on wrong ones,
+   a solid outline when picked, a dashed border on an answer shown after two tries. */
+
+/* the marks inside a chip or a word: hidden until a state shows one */
+.k2mk{display:none;flex:none;align-items:center;justify-content:center;width:22px;height:22px;border-radius:var(--r-pill);
+  background:var(--surface);color:var(--good-ink)}
+.k2mk .ic{display:none}
+.right>.k2mk,.done>.k2mk,.rev>.k2mk,.wrong>.k2mk{display:inline-flex}
+.right>.k2mk .k2ok,.done>.k2mk .k2ok,.rev>.k2mk .k2ok{display:block}
+.wrong>.k2mk{color:var(--try-ink)}
+.wrong>.k2mk .k2no{display:block}
+.wrong>.k2mk .k2ok{display:none}
+.k2shake{animation:k-shake var(--t-shake) linear}
+
+/* sort: bins in one row on top, the tray of chips under them, Check below */
+.sbins{display:grid;grid-template-columns:1fr 1fr;gap:var(--s-2);width:100%;max-width:640px;margin:0 auto var(--s-3)}
+.sbins.sb3{grid-template-columns:1fr 1fr 1fr}
+.sbin{position:relative;min-height:96px;border-radius:var(--r-card);background:var(--surface-2);border:3px dashed var(--ink-3)}
+.sbin.has{border-style:solid}
+.sbin.ok{border-color:var(--good-ink);border-style:solid}
+/* the bin's button fills the bin; placed chips sit above it and take their own taps */
+.sbt{position:absolute;inset:0;width:100%;display:flex;align-items:flex-start;justify-content:center;gap:var(--s-1);
+  padding:var(--s-1) var(--s-1) 0;margin:0;border:0;border-radius:inherit;background:transparent;color:var(--ink);
+  font:inherit;font-weight:700;font-size:var(--fs-3);line-height:1.15;cursor:pointer;touch-action:manipulation}
+.sbl{display:inline-flex;align-items:center;gap:4px;min-width:0;overflow-wrap:anywhere;text-align:center}
+.sbc{flex:none;min-width:24px;height:24px;padding:0 6px;border-radius:var(--r-pill);background:var(--ink);color:var(--surface);
+  font-size:var(--fs-2);line-height:24px;text-align:center}
+.sbin:not(.has) .sbc{visibility:hidden}
+.sbz{position:relative;display:flex;flex-wrap:wrap;gap:4px;justify-content:center;padding:calc(var(--fs-3) * 1.5 + var(--s-2)) 4px 6px;
+  pointer-events:none}
+.sbz .schip{pointer-events:auto;font-size:var(--fs-2);padding:0 var(--s-1);min-height:var(--tap);min-width:var(--tap)}
+
+/* chips: at least 48 px; dragged by a finger (touch-action none on the chip only) */
+.stray{display:flex;flex-wrap:wrap;gap:var(--s-2);justify-content:center;align-items:center;min-height:var(--tap);
+  max-width:640px;margin:0 auto}
+.stray.empty{min-height:0}
+.schip{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-height:var(--tap);min-width:var(--tap);
+  padding:0 var(--s-3);border-radius:var(--r-btn);border:3px solid var(--line);background:var(--star-tint);color:var(--ink);
+  font:inherit;font-weight:700;font-size:var(--fs-4);line-height:1.1;cursor:pointer;touch-action:none;user-select:none}
+.schip .scl{display:inline-flex;align-items:center;gap:4px}
+.schip.sel{outline:4px solid var(--ink);outline-offset:2px;transform:translateY(-3px)}
+.schip.drag{position:relative;z-index:5;box-shadow:var(--ledge) var(--ink-3)}
+.schip.done,.schip.right{background:var(--good-tint);border-color:var(--good-ink);cursor:default}
+.schip.rev{background:var(--try-tint);border:3px dashed var(--try-ink)}
+.schip.wrong{background:var(--try-tint);border-color:var(--try-ink)}
+.schip:disabled{opacity:1}
+
+/* pictures in chips and bins */
+.k2pic{display:inline-flex;align-items:center;justify-content:center;line-height:1;font-size:36px}
+.k2pic .art{width:1em;height:1em}
+.k2pic.k2big{font-size:44px}
+.k2pic.k2small{font-size:22px}
+.k2pic.k2sm{font-size:24px}
+.sbz .k2pic{font-size:26px}
+.sbz .k2pic.k2big{font-size:32px}
+.sbz .k2pic.k2small{font-size:16px}
+.k2pic.k2bp{font-size:24px}
+.k2bb{font-size:var(--fs-5)}
+.k2bs{font-size:var(--fs-2)}
+.k2cl{display:inline-flex;color:var(--ink-2)}
+.k2ang{display:inline-flex}
+.k2ang svg{width:64px;height:auto}
+.sbz .k2ang svg{width:44px}
+.schip .pcap{display:inline-flex;flex-direction:column;align-items:center;line-height:1}
+.schip .pcap .art{width:32px;height:32px}
+.schip .pcap small{font-size:var(--fs-2)}
+
+/* mark: the words of the sentence as chips, a few lines */
+.mkw{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;max-width:640px;margin:0 auto}
+.mkt{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-height:var(--tap);min-width:var(--tap);
+  padding:0 var(--s-2);border-radius:var(--r-btn);border:3px solid var(--line);background:var(--surface);color:var(--ink);
+  font:inherit;font-weight:700;font-size:var(--fs-4);cursor:pointer;touch-action:manipulation}
+.mkt.on{background:var(--brand-tint);outline:4px solid var(--ink);outline-offset:-1px}
+.mkt.right{background:var(--good-tint);border-color:var(--good-ink);outline:0}
+.mkt.rev{border-style:dashed}
+.mkt.wrong{background:var(--try-tint);border-color:var(--try-ink)}
+.mkt:disabled{opacity:1;cursor:default}
+
+@media (min-width:700px){
+  .sbin{min-height:120px}
+  .schip{font-size:var(--fs-5)}
+  .sbz .schip{font-size:var(--fs-3)}
+  .mkt{font-size:var(--fs-5)}
+}
+
+/* KINDS2-B line: a number line with a pin (svg class vi: --k never shrinks it). The svg is the picture; .lnp, an HTML slider laid
+   over the drawn pin (.lnb is as big as the svg), takes the drag and the keys. The pin's head shows a tick (right, shown answer) or a
+   cross (wrong) as well as its colour; a shown answer has a dashed head */
+.lnw{position:relative;width:100%;max-width:640px;margin:0 auto var(--s-3)}
+.lnb{position:relative;width:fit-content;max-width:100%;margin:0 auto;cursor:pointer}
+.lnp{position:absolute;border-radius:var(--r-pill);cursor:grab;touch-action:none}
+.lnp.drag{cursor:grabbing}
+.lnp:focus{outline:none}
+.lnp:focus-visible{outline:4px solid var(--ink);outline-offset:2px}
+.lnw g.vpin{pointer-events:none;transition:transform var(--t-slow) var(--ease)}
+.lnw g.vpin.drag{transition:none}
+.lnw g.vpin .vph{fill:var(--ink);stroke:var(--surface);stroke-width:3}
+.lnw g.vpin .vps{fill:none;stroke:var(--ink);stroke-width:4}
+.lnw g.vpin .vpok,.lnw g.vpin .vpno{display:none;fill:none;stroke:var(--surface);stroke-width:3}
+.lnw.right g.vpin .vph,.lnw.rev g.vpin .vph{fill:var(--good-ink)}
+.lnw.right g.vpin .vps,.lnw.rev g.vpin .vps{stroke:var(--good-ink)}
+.lnw.rev g.vpin .vph{stroke:var(--ink);stroke-dasharray:4 3}
+.lnw.right g.vpin .vpok,.lnw.rev g.vpin .vpok,.lnw.wrong g.vpin .vpno{display:inline}
+.lnw.wrong g.vpin .vph{fill:var(--try-ink)}
+.lnw.wrong g.vpin .vps{stroke:var(--try-ink)}
+
+/* KINDS2-C make: the model (drawn again from VIZ on every change) in a card, its controls under it, Check below. The card shows a
+   tick or a cross (.k2mk) as well as its border colour; a shown answer has a dashed border and pulses once */
+.mmw{position:relative;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:var(--s-2);width:100%;max-width:640px;min-height:88px;
+  margin:0 auto var(--s-2);padding:var(--s-2);border-radius:var(--r-card);background:var(--surface-2);border:3px solid var(--surface-2)}
+.mmw>.k2mk{position:absolute;top:6px;right:6px}
+.mmw.right{border-color:var(--good-ink)}
+.mmw.wrong{border-color:var(--try-ink)}
+.mmw.rev{border:3px dashed var(--try-ink)}
+.mmv{display:flex;flex-direction:column;justify-content:center;align-items:center;max-width:100%;min-width:0}
+.mm-b10 .mmv .viz,.mm-array .mmv .viz{max-height:136px}
+.mm-clock .mmv .viz{max-height:150px}
+.mm-frame,.mm-parts{cursor:pointer}
+.k2pulse{animation:k-pop var(--t-xl) var(--ease)}
+.mmc{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:var(--s-2);max-width:100%;cursor:default}
+.mmcol{flex-direction:column;gap:var(--s-1)}
+.mms{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:var(--s-1)}
+.mml{min-width:5.4em;text-align:right;font-weight:700;font-size:var(--fs-3);color:var(--ink)}
+.mmn{min-width:2ch;text-align:center;font-weight:700;font-size:var(--fs-5);color:var(--ink)}
+.mmb{display:inline-flex;align-items:center;justify-content:center;gap:2px;min-width:var(--tap);min-height:var(--tap);padding:0 var(--s-2);
+  border-radius:var(--r-btn);border:3px solid var(--ink-3);background:var(--surface);color:var(--ink);font:inherit;font-weight:700;
+  font-size:var(--fs-3);cursor:pointer;touch-action:manipulation}
+.mmb:disabled,.mmp:disabled{opacity:1;cursor:default}
+/* coins: a tray of coins to put in, the purse of coins (tap one to take it out) */
+.mmpurse{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px;min-height:var(--tap)}
+.mmp{display:inline-flex;align-items:center;justify-content:center;min-width:var(--tap);min-height:var(--tap);padding:0;border:0;
+  border-radius:var(--r-pill);background:transparent;cursor:pointer;touch-action:manipulation}
+.mmp .cn{--k:.62;font-size:var(--fs-2)}
+.mmtray .mmb{padding:2px}
+.mmtray .cn{--k:.66;font-size:var(--fs-2)}
+.mmhint{color:var(--ink-2);font-size:var(--fs-2);text-align:center}
+
+@media (min-width:700px){
+  .mm-b10 .mmv .viz,.mm-array .mmv .viz,.mm-clock .mmv .viz{max-height:200px}
+  .mmp .cn,.mmtray .cn{font-size:var(--fs-3)}
+  .mmp .cn{--k:.75}
+  .mmtray .cn{--k:.85}
+}

@@ -480,7 +480,8 @@ function hcBank(H){const gs=garageS(),id=H.st?H.st[0]:null,bits=hcBitsOf(H),old=
   return{bits,old,gain,opened,nextOpen}}
 
 /* ---- playing: the screen, pedals, the loop, game time ---- */
-function stopHC(){if(!HC)return;
+function stopHC(){for(const e of document.querySelectorAll('.nv-light'))if(e.stop)e.stop(); // G-FEEL2: a light end banner left open
+  if(!HC)return;
   // G-FEEL1: a stage drive left without the flag after a while counts for Auto driving help (hcAsNote)
   if(HC.st&&HC.result!='win'&&!HC.noted&&HC.t>=8){HC.noted=1;hcAsNote(HC);save()}cancelAnimationFrame(HC.raf);if(HC.eng){try{HC.eng.lfo&&HC.eng.lfo.stop();HC.eng.o.stop();HC.eng.o2.stop()}catch(e){}}removeEventListener('keydown',HC.kd);removeEventListener('keyup',HC.ku);HC=null}
 const HC_SNDI=['sound-on','music','sound-off']; // P4-16: the sound button's icon for S.hcSnd (all, no engine, off)
@@ -577,6 +578,10 @@ function hcCard(H,c){const o=hcGuard(GH.end('hill',c));const go=f=>{o.remove();s
     if(a=='again')go(()=>hcStart(H.wi,H.si));
     else if(a=='next'){if(ptLeft()<=0)return go(learnHub);const n=hcAfter(H.wi,H.si);go(()=>n?hcStart(n[0],n[1]):hcLevels(H.wi))}
     else go(home)});return o}
+// G-FEEL2: the light end of a won stage (GH.end {light: true}, NAV.light); Next with no game time left goes to Learn, as on the card
+function hcLight(H,stars,nx){const go=f=>()=>{stopHC();f()};
+  return hcGuard(GH.end('hill',{light:true,title:`${H.st[1]} done!`,stars,again:go(()=>hcStart(H.wi,H.si)),
+    next:go(()=>ptLeft()<=0?learnHub():hcStart(nx[0],nx[1])),home:go(home)}))}
 // the stage after (w, i) if it is open: [w, i] or null
 function hcAfter(w,i){if(i+1<HC_SPW)return hcSOpen(w,i+1)?[w,i+1]:null;return w+1<HC_ST.length&&hcWOpen(w+1)?[w+1,0]:null}
 function hcWin(){const H=HC;if(!H||H.shown)return;H.shown=true;H.over=true;H.result='win';hcEngOff(H);
@@ -587,6 +592,10 @@ function hcWin(){const H=HC;if(!H||H.shown)return;H.shown=true;H.over=true;H.res
     ...s[3].map((m,k)=>{const now=r.bits>>(k+1)&1,was=r.old>>(k+1)&1;return[now||was?'check-circle':HC_MIC[m[0]],esc(hcMisText(m)[0].toUpperCase()+hcMisText(m).slice(1))+(now&&!was?' <b>New star!</b>':was?' (done before)':'')]}),
     ...(r.gain?[['nut',`Plus ${r.gain} bolts for new stars`]]:[]),...r.opened.map(n=>['sparkle',`${esc(n)} is open!`]),...(r.nextOpen?[['go',`Next: ${esc(r.nextOpen)} is open`]]:[]),
     ...(!r.opened.length&&!r.nextOpen?[['target',esc(hcNextGoal().t)]]:[])];
+  // G-FEEL2: a won stage with the next stage of the same world open chains on: the light banner (Play again / Next / Home, the
+  // stars in its title) goes to Next by itself after 2 s. The last stage of a world, a stage not won and no game time left keep the
+  // full card. hcBank above has saved the stars and paid the bolts either way.
+  if(ok&&nx&&nx[0]==H.wi&&ptLeft()>0&&!H.timeUp)return hcLight(H,stars,nx);
   hcCard(H,{win:!!ok,title:ok?`${s[1]} done!`:`So close! ${H.bolts} of ${g[1]} bolts`,stars,
    stats:[[tm+' s','time','timer'],['+'+(H.bolts+r.gain),'bolts','nut'],[String(H.crashes),'restarts','replay'],H.crates0?[`${H.crates}/${H.crates0}`,'crates','gift']:[String(H.flips),'flips','rotate']],
    lines,

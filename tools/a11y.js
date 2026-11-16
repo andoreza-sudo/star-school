@@ -53,6 +53,7 @@ const ev = (fn, arg) => async p => { await p.evaluate(fn, arg); await p.waitForT
 // a question of the real round engine, answered wrong then right by taps (choice, number keys or picture taps)
 async function answerAct(p) {
   const q = await p.evaluate(() => ({ kind: G.q.kind, ans: String(G.q.ans), vals: G.q.choices ? G.q.choices.map(c => String(c.v)) : null }));
+  if (['sort', 'mark', 'line', 'make'].includes(q.kind)) return k2Act(p);
   const wrongSel = await p.evaluate(() => {
     const q = G.q;
     if (q.choices) {
@@ -86,6 +87,82 @@ async function answerAct(p) {
 }
 const qScreen = fn => ({ run: ev(fn), act: answerAct });
 
+// KINDS2: the sort and mark kinds. k2Wrong taps a wrong answer: every chip into another bin, or a wrong word (then Check)
+const k2Bin = (p, b) => p.click(`.sbt[data-b="${b}"]`, { position: { x: 16, y: 12 } });
+// KINDS2-B, C: line (a tap on a stop of the line, then Check) and make (the controls to the answer, one more step off it for a wrong
+// answer, then Check), with the helpers of tools/kinds-samples.js
+const KSM = require('./kinds-samples');
+async function k2LineMake(p, wrong) {
+  if (await p.evaluate(() => G.q.kind) === 'line') {
+    const a = await p.evaluate(`(${KSM.linePt.toString()})(null)`);
+    let k = a.k;
+    if (wrong) for (k = a.n; k >= 0; k--) if (k !== a.k && k !== await p.evaluate(() => G.lnK)) break;
+    const pt = await p.evaluate(`(${KSM.linePt.toString()})(${k})`);
+    await p.mouse.click(pt.x, pt.y);
+  } else {
+    for (let i = 0; i < 80; i++) {
+      const sel = await p.evaluate(`(${KSM.makeStep.toString()})(false)`);
+      if (!sel) break;
+      await p.click(sel);
+    }
+    if (wrong) await p.click(await p.evaluate(`(${KSM.makeStep.toString()})(true)`));
+  }
+  await p.click('#mcheck');
+}
+async function k2Wrong(p) {
+  if (['line', 'make'].includes(await p.evaluate(() => G.q.kind))) return k2LineMake(p, true);
+  const q = await p.evaluate(() => ({ kind: G.q.kind, one: !!G.q.one, n: G.q.bins ? G.q.bins.length : 0,
+    plan: G.q.kind == 'sort' ? G.q.items.map((c, i) => [i, G.q.bins.findIndex(b => String(b.v) === String(c.b))]) : null,
+    w: G.q.words ? G.q.words.findIndex((_, i) => !G.q.ans.includes(String(i))) : -1 }));
+  if (q.kind === 'sort') {
+    for (const [i, b] of q.plan) { await p.click(`.schip[data-i="${i}"]`); await k2Bin(p, (b + 1) % q.n); }
+    await p.click('#mcheck');
+  } else {
+    await p.click(`.mkt[data-i="${q.w}"]`);
+    if (!q.one) await p.click('#mcheck');
+  }
+}
+// wrong then right, measuring the signal after each (as answerAct does for the older kinds)
+async function k2Act(p) {
+  await p.evaluate(() => { window.__a11y.mark('wrong'); });
+  await k2Wrong(p);
+  await p.waitForTimeout(250);
+  const wrong = await p.evaluate(() => window.__a11y.signal('wrong'));
+  await p.waitForTimeout(900);
+  await p.evaluate(() => { window.__a11y.mark('right'); });
+  const q = await p.evaluate(() => ({ kind: G.q.kind, one: !!G.q.one, ans: G.q.kind == 'mark' ? G.q.ans.map(Number) : null,
+    plan: G.q.kind == 'sort' ? G.q.items.map((c, i) => [i, G.q.bins.findIndex(b => String(b.v) === String(c.b))]) : null }));
+  if (q.kind === 'line' || q.kind === 'make') await k2LineMake(p, false);
+  else if (q.kind === 'sort') {
+    for (const [i, b] of q.plan) {
+      if (await p.$(`.schip[data-i="${i}"].done`)) continue;
+      await p.click(`.schip[data-i="${i}"]`);
+      await k2Bin(p, b);
+    }
+    await p.click('#mcheck');
+  } else {
+    for (const i of q.ans) if (!(await p.$(`.mkt[data-i="${i}"].right`))) await p.click(`.mkt[data-i="${i}"]`);
+    if (!q.one) await p.click('#mcheck');
+  }
+  await p.waitForTimeout(250);
+  const right = await p.evaluate(() => window.__a11y.signal('right'));
+  await p.waitForTimeout(900);
+  return [wrong, right];
+}
+// a two-question round of the first generated questions of that kind at a stop (real sort or mark questions); the second one keeps a
+// question screen (with its Hear it button) after the first is answered
+const k2Start = (sk, lv, kind) => async p => {
+  await p.evaluate(([sk, lv, kind]) => {
+    const qs = [];
+    for (let s = 1; s < 400 && qs.length < 2; s++) { const q = genQ(sk, lv, s); if (q.kind == kind && !qs.some(x => x.label == q.label)) qs.push(q); }
+    G = newG({ sk, mix: true, n: 2, pool: qs });
+    next();
+  }, [sk, lv, kind]);
+  await p.waitForTimeout(600);
+};
+const k2Screen = (sk, lv, kind) => ({ run: k2Start(sk, lv, kind), act: k2Act });
+const k2Miss = (sk, lv, kind) => ({ run: async p => { await k2Start(sk, lv, kind)(p); await k2Wrong(p); await p.waitForTimeout(1400); } });
+
 const rwRun = async p => {
   await p.evaluate(() => start('math', 0));
   await p.waitForTimeout(600); // the question's own spoken prompt (400 ms after it shows) belongs to the question screen
@@ -105,6 +182,18 @@ const SCREENS = {
   'math-question': qScreen(() => { window.say = window.__a11y.say; start('math', 0); }),
   'read-question': qScreen(() => start('read', NODES.read.findIndex(n => n.sk == 'pic'))),
   'es-question': qScreen(() => start('es', 0)),
+  // KINDS2: sort (a Kindergarten picture sort with three bins of Discover, and an even / odd sort) and mark, fresh and after a miss
+  'sort-question': k2Screen('sci_life', 1, 'sort'),
+  'sort-miss': k2Miss('eo', 2, 'sort'),
+  'mark-question': k2Screen('gram', 7, 'mark'),
+  'mark-miss': k2Miss('gram', 7, 'mark'),
+  // KINDS2-B, C: line (the rounding model, fourths) and make (clock, coins, shaded parts, the ten frame), fresh and after a miss
+  'line-question': k2Screen('round', 1, 'line'),
+  'line-miss': k2Miss('frac', 3, 'line'),
+  'make-question': k2Screen('time', 3, 'make'),
+  'make-miss': k2Miss('coins', 3, 'make'),
+  'make-parts': k2Screen('frac', 2, 'make'),
+  'make-frame': k2Screen('tenf', 2, 'make'),
   // S-SPK: the Spanish "Say it!" step (src/js/50-say.js) over the first question of a Spanish round; the microphone is the main control (64 px)
   'say-it': { run: ev(() => { SPK.mic = 'yes'; start('es', NODES.es.findIndex(n => n.sk == 'es_animal' && n.lv == 1)); G.spk = 1; spkOpen(G.q, () => next()); }), main: '.spk-mic' },
   // S-SPK2: Say it! after a try, with the kind line of the sound check ("Close! Listen again"); the Grown-ups Spanish listening card and
@@ -149,6 +238,18 @@ const SCREENS = {
     run: async p => { await p.evaluate(() => { S.grade = 2; S.bt = {}; BT.start('maze', BT.band(), 3); }); await p.waitForTimeout(600); },
   },
   report: { adult: true, run: ev(() => report()) },
+  // G-FEEL2: the Needs practice list with its "Practise this next" buttons (one pinned) and the sentence per subject
+  'report-pin': { adult: true, run: ev(() => {
+    const s = mastStops('math').filter(x => unlocked('math', x.i)).slice(0, 3);
+    S.mast = S.mast || {};
+    S.mast[s[0].nid] = { n: 14, p: .95, ms: 3000, d: 3, last: mastDay() };
+    S.mast[s[1].nid] = { n: 10, p: .4, ms: 5000, d: 2, last: mastDay() };
+    S.mast[s[2].nid] = { n: 9, p: .55, ms: 5000, d: 2, last: mastDay() };
+    const n = NODES.math[s[1].i];
+    S.pin = { p: 'math', sk: n.sk, lv: n.lv, t: s[1].t, d: today() };
+    report();
+    document.querySelector('#rp-needs').scrollIntoView();
+  }) },
   'hill-garage': { run: ev(() => { gtime(); garage(); }) },
   'hill-drive': { run: ev(() => { gtime(); hcStart('meadow'); }), main: '.pedal', sheet: pauseSheet },
   'hill-end': {
@@ -158,9 +259,14 @@ const SCREENS = {
   // G-HC2: the garage (vehicles, upgrades, paint), a stage's drive in the rain and its end card with stars and missions
   'hill-shop': { run: ev(() => { gtime(); garageS().bolts = 200; hcGarage(); }) },
   'hill-stage': { run: ev(() => { gtime(); hcStart(2, 1); }), main: '.pedal', sheet: pauseSheet },
+  // G-FEEL2: a won stage with the next one open ends on the light banner (hill-chain); the full card is the last stage of a world
   'hill-win': {
-    run: async p => { await p.evaluate(() => { gtime(); hcStart(0, 0); }); await p.waitForTimeout(600); await p.evaluate(() => { HC.t = 20; hcWin(); }); await p.waitForTimeout(900); },
+    run: async p => { await p.evaluate(() => { gtime(); hcStart(0, HC_SPW - 1); }); await p.waitForTimeout(600); await p.evaluate(() => { HC.t = 20; hcWin(); }); await p.waitForTimeout(900); },
     sheet: async () => ({ close: 'enter' }),
+  },
+  'hill-chain': {
+    run: async p => { await p.evaluate(() => { gtime(); hcStart(0, 0); }); await p.waitForTimeout(600); await p.evaluate(() => { HC.t = 20; hcWin(); }); await p.waitForTimeout(400);
+      await p.evaluate(() => { const e = document.querySelector('.nv-light'); if (e) e.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); }); }, // stays (a touch stops Next)
   },
   'art-menu': { run: ev(() => { gtime(); colorMenu('mandala'); }) },
   // colouring: the picture is the main control (tap a shape); the colour swatches are pickers (48 px)

@@ -34,13 +34,14 @@ function testOut(p,wi){const w=PATHS[p].worlds[wi],o=document.createElement('div
    <p>10 questions from this whole world. Get <b>9 right</b> and you skip all of its stops!</p><div class="rw-acts">${UI.btn("Let's do it!",{kind:'primary',size:'lg',wide:true,icon:'bolt',id:'tgo'})}${UI.btn('Not now',{kind:'ghost',wide:true,id:'tno'})}</div></div>`;
   document.body.appendChild(o);o.querySelector('#tno').onclick=()=>o.remove();
   o.querySelector('#tgo').onclick=()=>{o.remove();SFX.whoosh();const bi=NODES[p].findIndex(n=>n.sk=='boss'&&n.wi==wi);G=newG({path:p,node:bi,sk:'test',test:{wi},pool:worldPool(p,wi,10)});next()}}
-function makeQ(){if(G.pool)return G.pool.shift();
+// KINDS2: every question asked goes on G.kh (its kind), whatever its source; the stop's own questions come from pickQ (49b-kinds2.js)
+function makeQ(){const q=makeQ1();if(q)(G.kh||(G.kh=[])).push(q.kind);return q}
+function makeQ1(){if(G.pool)return G.pool.shift();
   {const aq=mastQ();if(aq)return aq} // P1-08: challenge / support / easier question (51-mastery.js)
   {const rq=revSlot();if(rq)return rq} // P5-02: a due review item at questions 2, 4, 6, 8 (59-review.js)
   if(G.path&&(G.done==3||G.done==7)){const N=NODES[G.path],old=N.filter((n,i)=>i<G.node&&n.sk!='boss'&&passed(G.path,i)&&!(n.sk==G.sk&&n.lv==G.lv));
     if(old.length){const n=pick(old),q=genQ(n.sk,n.lv);q.review=1;return q}}
-  let q;
-  for(let t=0;t<10&&(!q||q.label===G.last);t++)q=genQ(G.sk,G.lv);
+  const q=pickQ(G.sk,G.lv); // KINDS2: a new label, and never a third question of one kind in a row (49b-kinds2.js)
   G.last=q.label;return q}
 function next(){if(!G||G.dead)return;if(NAV.held){G.pend=true;return} // NAV-01: Go Home? is open: go on when Keep playing closes it
   if(spkHook())return; // S-SPK: a "Say it!" step between two questions (50-say.js); not a question, never scored

@@ -14,6 +14,10 @@
               can play Spanish, speaking practice is on and the tablet may have a microphone (ctx.spk). Done at the next finish().
    "round" is always one of the three; the other two are drawn from what is left. Finishing a mission gives a sticker, once (it is
    marked done first). All three together give the old mission bonus once a day: 5 stars, 5 coins and a sticker (S.day.done).
+   G-FEEL2: a grown-up can pin a stop from the report card's "Needs practice" list ("Practise this next", 82-report.js). The pin
+   (S.pin = {p, sk, lv, t, d: the day it was pinned}, null when none) waits for the first draw of a later day, then becomes that
+   day's first mission: the "round" mission in that subject, opening that stop (x.i, x.pin = 1); it is used up then (S.pin = null).
+   A stop that is gone or not open any more is dropped quietly and the missions stay as drawn.
    Hooks: finish() in 50-round.js (rounds, mixes, reviews), the sprint's finish in 57-fluency.js, BT.finish in 74-teasers.js. */
 const MIS = {
   N: 3,
@@ -91,11 +95,31 @@ const MIS = {
     return Array.isArray(m) && m.length == MIS.N && new Set(m.map(x => x && x.k)).size == MIS.N &&
       m.every(x => x && MIS.KINDS.includes(x.k) && (x.d === 0 || x.d === 1) && (['round', 'other', 'perfect'].includes(x.k) ? !!NODES[x.p] : true));
   },
+  // G-FEEL2: the stop index of a pin when it can be played now, else null
+  pinStop(pn) {
+    if (!pn || typeof pn != 'object' || !NODES[pn.p] || !SK[pn.sk]) return null;
+    const i = NODES[pn.p].findIndex(n => n.sk == pn.sk && n.lv == pn.lv);
+    return i >= 0 && unlocked(pn.p, i) ? i : null;
+  },
+  // G-FEEL2: a pin from an earlier day becomes the first mission of a new draw m (the "round" mission); used up either way
+  pinApply(m) {
+    const pn = S.pin;
+    if (!pn || typeof pn != 'object' || pn.d === today()) return; // pinned today: it is for tomorrow
+    S.pin = null;
+    const i = MIS.pinStop(pn), r = m.find(x => x.k == 'round');
+    if (i == null || !r) return;
+    const was = r.p, o = m.find(x => x.k == 'other');
+    r.p = pn.p;
+    r.i = i;
+    r.pin = 1;
+    if (o && o.p == pn.p) o.p = was; // "another subject" stays another subject
+  },
   // Today's three missions (drawn on the first call of the day and kept)
   get() {
     const d = day();
     if (!MIS.valid(d.m)) {
       d.m = MIS.draw(today(), S.name || '', MIS.ctx());
+      if (!d.done) MIS.pinApply(d.m);
       if (d.done) d.m.forEach(x => { x.d = 1; }); // an old save that finished the old mission today: nothing more to earn
       save();
     }
@@ -131,12 +155,16 @@ const MIS = {
     if (mi.bonus) { S.stars += MIS.BONUS_STARS; S.coins += MIS.BONUS_COINS; mi.bst = award(); }
     return MIS.winHTML(mi);
   },
+  // G-FEEL2: the pinned stop's node, or null
+  pinNode: x => (x.pin && NODES[x.p] && NODES[x.p][x.i]) || null,
   title(x) {
-    const s = MIS.SUBJ[x.p] || 'Math';
+    const s = MIS.SUBJ[x.p] || 'Math', pn = MIS.pinNode(x);
+    if (pn && x.k == 'round') return `Play ${pn.t}`;
     return { round: `Play a ${s} round`, other: `Try a ${s} round`, perfect: 'Get a perfect round', more: `Play ${MIS.MORE} rounds today`, sprint: 'Do a Fact Sprint', teaser: 'Solve a Brain Teaser',
       review: "Do today's review", mix: 'Play Mixed Practice', speak: `Say ${SPK.GOAL} Spanish words` }[x.k];
   },
   sub(x) {
+    if (MIS.pinNode(x) && x.k == 'round') return 'Picked for you today!';
     return { round: 'Make it stronger!', other: 'Visit another subject!', perfect: 'Every answer right!', more: 'Keep practicing!', sprint: 'Beat your best!', teaser: 'Think hard!',
       review: 'Practice what you learned', mix: 'A bit of everything!', speak: 'Say it out loud!' }[x.k];
   },
@@ -166,7 +194,7 @@ const MIS = {
     if (x.k == 'review') return startReview();
     if (x.k == 'mix') return startMix();
     if (x.k == 'speak') x = { k: 'round', p: 'es' }; // S-SPK: the open Spanish stop (its round has a "Say it!" step)
-    const st = MIS.stop(x.p) || MIS.stop('math');
+    const st = (MIS.pinNode(x) && unlocked(x.p, x.i) ? { p: x.p, i: x.i } : null) || MIS.stop(x.p) || MIS.stop('math'); // G-FEEL2: a pinned stop
     if (st) open(st.p, st.i); else startMix();
   },
 };

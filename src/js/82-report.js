@@ -1,5 +1,6 @@
 /* ---------- Grown-ups report card (P5-06) ----------
-   A read-only screen: it never changes S and never saves. It reads
+   A read-only screen: it never changes S and never saves, except G-FEEL2's "Practise this next" buttons on the Needs practice
+   list, which set or clear S.pin (one stop, tomorrow's first mission, 55-missions.js) and nothing else. It reads
      S.log   through ACT (53-activity.js)        minutes, rounds, accuracy, last 14 days
      S.mast  through mastStops (51-mastery.js)   mastery by strand, needs practice, recently mastered
      S.prog[sk].miss                             example questions for "Needs practice"
@@ -115,6 +116,16 @@ const REP = {
       for (const z of all) if (ex.length < 2) ex.push(z.q.label);
       return {...x, ex};
     });
+    // G-FEEL2: one plain sentence per subject: the stop they do best (85%+ right on the first try, or mastered) and the one that
+    // needs the most practice (under 70%), each over 5 or more questions
+    m.subj = Object.keys(PATHS).map(p => {
+      const t = tried.filter(x => x.p == p && x.n >= 5);
+      const best = t.filter(x => x.pr >= .85 || x.state == 'mastered').sort((a, b) => b.pr - a.pr || b.n - a.n)[0];
+      const work = t.filter(x => x.pr < .7).sort((a, b) => a.pr - b.pr || b.n - a.n)[0];
+      return best || work ? {p, label: REP.AREA[p] || p, solid: best ? best.t : '', work: work ? work.t : ''} : null;
+    }).filter(Boolean);
+    const pn = S.pin && typeof S.pin == 'object' ? S.pin : null;
+    m.pin = pn ? {p: pn.p, sk: pn.sk, lv: pn.lv, t: pn.t} : null;
     m.mastered = mastered.sort((a, b) => b.md - a.md).slice(0, 6).map(x => ({...x, when: REP.ago(x.md, now)}));
     m.masteredAll = mastered.length;
     // Fact Sprint bests
@@ -193,12 +204,28 @@ const REP = {
     }).join('') + `<div class="small rp-key">Mastered: 20 or more questions, 90% right on the first try, over 2 or more days. Practised: 10 or more questions, 70% right. `
       + `Learning: started. Not started: no questions yet.</div>`;
   },
+  // G-FEEL2: "{name} is solid on X and still working on Y", one line per subject
+  subj(m) {
+    const nm = esc(m.name || 'Your child');
+    if (!m.subj || !m.subj.length) return '';
+    return `<ul class="rp-subj">${m.subj.map(o => `<li><span class="rp-tag">${esc(o.label)}</span> ${nm} `
+      + (o.solid && o.work ? `is solid on <b>${esc(o.solid)}</b> and still working on <b>${esc(o.work)}</b>.`
+        : o.solid ? `is solid on <b>${esc(o.solid)}</b>. Nothing in ${esc(o.label)} needs extra practice right now.`
+        : `is still working on <b>${esc(o.work)}</b>.`) + '</li>').join('')}</ul>`;
+  },
+  pinned: (m, x) => !!m.pin && m.pin.p == x.p && m.pin.sk == x.sk && m.pin.lv == x.lv,
   needs(m) {
     if (!m.tried) return '<div class="rp-empty">This list fills in after a few rounds.</div>';
-    if (!m.needs.length) return '<div class="rp-empty">Nothing stands out. Every stop they have tried is going well.</div>';
-    return `<p class="small rp-p0">The stops with the lowest first-try scores. Playing one again from the map is the best help.</p><ol class="rp-list">${m.needs.map(x => `<li><b>${esc(x.t)}</b> <span class="rp-tag">${esc(x.label)}</span>`
+    if (!m.needs.length) return REP.subj(m) + '<div class="rp-empty">Nothing stands out. Every stop they have tried is going well.</div>';
+    return REP.subj(m) + `<p class="small rp-p0">The stops with the lowest first-try scores. Playing one again from the map is the best help. `
+      + `<span class="rp-noprint">"Practise this next" makes it tomorrow's first mission.</span></p><ol class="rp-list">${m.needs.map((x, k) => {
+      const on = REP.pinned(m, x);
+      return `<li><b>${esc(x.t)}</b> <span class="rp-tag">${esc(x.label)}</span>`
       + `<div class="small">${Math.round(x.pr * 100)}% right on the first try, over ${x.n} questions.</div>`
-      + (x.ex.length ? `<div class="small">Examples they missed: ${x.ex.map(e => `<span class="rp-ex">${esc(e)}</span>`).join(' ')}</div>` : '') + '</li>').join('')}</ol>`;
+      + (x.ex.length ? `<div class="small">Examples they missed: ${x.ex.map(e => `<span class="rp-ex">${esc(e)}</span>`).join(' ')}</div>` : '')
+      + `<button class="btn ${on ? 'primary' : 'soft'} sm rp-pin rp-noprint" data-pin="${k}" aria-pressed="${on}">${ico(on ? 'check' : 'pin', 22)}`
+      + `<span>${on ? "Tomorrow's first mission" : 'Practise this next'}</span></button></li>`;
+    }).join('')}</ol>`;
   },
   recent(m) {
     if (!m.mastered.length) return '<div class="rp-empty">No stop is mastered yet. That takes 20 or more questions with 90% right on the first try, over at least 2 days, so it is normal to see nothing at first.</div>';
@@ -239,6 +266,19 @@ function report() {
     + `<div class="rp-noprint rp-online">${onlineNote()}</div><div class="scroll rp-scroll gw">`
     + (m ? REP.html(m) : '<div class="gw-card rp-empty">The report card could not be drawn.</div>') + `</div>`);
   $('#back').onclick = () => grown();
+  // G-FEEL2: pin one stop as tomorrow's first mission (one pin at a time; the pinned one again takes it off)
+  $$('[data-pin]').forEach(b => b.onclick = () => {
+    const x = m && m.needs[+b.dataset.pin];
+    if (!x) return;
+    S.pin = REP.pinned(m, x) ? null : {p: x.p, sk: x.sk, lv: x.lv, t: String(x.t || '').slice(0, 60), d: today()};
+    save();
+    SFX.pop(2);
+    const sc = $('.rp-scroll'), y = sc ? sc.scrollTop : 0;
+    report();
+    if ($('.rp-scroll')) $('.rp-scroll').scrollTop = y;
+    const nb = $(`[data-pin="${b.dataset.pin}"]`);
+    if (nb) nb.focus();
+  });
   // printing can still save a PDF offline, so offline only warns (needOnline block:false)
   $('#rp-print').onclick = () => needOnline(() => {try {window.print()} catch (e) {}}, {block: false});
 }
