@@ -2550,6 +2550,7 @@ async function main() {
       for (const [w, h] of [[380, 780], [600, 960], [1024, 600]]) {
         const sa = await openApp(browser, { fixture: 'midway', width: w, height: h });
         const sp = sa.page;
+        await k2Old(sp); // KINDS2-D: big 5 mixes in find the mistake; this checks the step hint of its first question
         for (const [name, src] of CASES8) {
           const n = await sp.evaluate(src => {
             if (G) G.dead = true;
@@ -2699,6 +2700,7 @@ async function main() {
     {
       const fa = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
       const fp = fa.page;
+      await k2Old(fp); // KINDS2-D: mbig, dbig, sub and big mix in find the mistake; this checks each stop's pad layout and step hints
       await fp.evaluate(() => { setGrade(4); window.say = () => {}; save(); });
       const info = await fp.evaluate(() => {
         const wi = PATHS.math.worlds.findIndex(w => w.id === 'm_factory');
@@ -3122,6 +3124,7 @@ async function main() {
     {
       const vo = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
       const vp = vo.page;
+      await k2Old(vp); // KINDS2-D: dec 3-4, mbig 5, ooo 1 mix in find the mistake; this checks the pads (decimals typed) and step hints
       // every earlier world (Factor Factory, and Decimal Desert once it exists) is finished first, so Volcano Lab is open whatever sits before it
       await vp.evaluate(() => {
         setGrade(5); window.say = () => {};
@@ -11570,6 +11573,135 @@ async function main() {
         '(state kept, a cross), b10 digits swapped, wrong twice (the answer drawn, dashed, a tick, spoken, asked again), steppers and parts ' +
         'by the keyboard, 48 px targets, Check on screen, real tenf, pk_count, pv, coins, time, mfact, frac, geo and dec questions by the bot; ' +
         'no console errors, no network requests');
+    }
+
+    // KINDS2-D (docs/KINDS2-SPEC.md 2.5, 5, 6): find the mistake (kind tap, a worked example with one wrong step) and why. Find the
+    // mistake: right on the first tap; a wrong step then the right one (the wrong line crossed, the hint); wrong twice (the right line
+    // shown with a tick, the right step spoken, asked again at the end); by the keyboard (Tab, Enter); fit (every step 48 px high, the
+    // last step on screen without scrolling, nothing sideways); real big, sub, mbig, dbig, dec, fop, ooo and alg questions by answer().
+    // Why: the misconception value shows the sentence (bulb) above the hint and says it; another wrong value shows none; a right answer
+    // none; on a rounding line too; a why from a real sub 4 question.
+    {
+      const bad = [], notes = [];
+      for (const [w, h] of [[360, 740], [800, 1280]]) {
+        const ka = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ka.page, at = 'KINDS2-D ' + w + 'x' + h + ' ', K = k2Kit(pg, at, bad), FX = '#prompt .fxs .tp';
+        try {
+          await pg.evaluate(() => { S.voice = true; window.__said = []; const s0 = window.say; window.say = (t, ...a) => { window.__said.push(String(t)); return s0(t, ...a); }; });
+          const fixFit = async tag => {
+            const r = await pg.evaluate(() => {
+              const o = [], vw = document.documentElement.clientWidth, ls = [...document.querySelectorAll('#prompt .fxs .tp')];
+              for (const e of ls) { const b = e.getBoundingClientRect(); if (b.height < 47.5 || b.width < 47.5) o.push('small step ' + Math.round(b.width) + 'x' + Math.round(b.height)); if (b.left < -1 || b.right > vw + 1) o.push('step outside'); }
+              const last = ls[ls.length - 1];
+              if (last && document.scrollingElement.scrollTop === 0 && last.getBoundingClientRect().bottom > innerHeight + 1) o.push('the last step is below the screen');
+              const qa = document.querySelector('.qarea'); if (qa && qa.scrollWidth > qa.clientWidth + 1) o.push('.qarea overflows sideways');
+              if (document.documentElement.scrollWidth > vw) o.push('sideways scroll');
+              if (ls.some(e => e.getAttribute('role') !== 'button' || e.getAttribute('tabindex') !== '0')) o.push('a step is not a button for the keyboard');
+              return o;
+            });
+            r.forEach(x => bad.push(at + tag + ': ' + x));
+          };
+          const shownWhy = () => pg.evaluate(() => { const e = document.querySelector('#hint .why'); return e ? e.textContent.trim() : ''; });
+          // 1. find the mistake, right on the first tap
+          await K.round(K.sample('fix'), FX);
+          await fixFit('fix fresh');
+          await pg.click('#prompt [data-v="1"]');
+          await vwait(pg, 300);
+          const r1 = await K.st();
+          if (r1.s !== 1 || !r1.lock || !(await pg.$('#prompt [data-v="1"].right'))) bad.push(at + 'fix right first try: ' + JSON.stringify(r1));
+          await K.settle('fix right');
+          // 2. a wrong step, then the right one
+          await K.round(K.sample('fix'), FX);
+          await pg.click('#prompt [data-v="0"]');
+          await vwait(pg, 250);
+          const r2 = await K.st();
+          if (!r2.hint || !(await pg.$('#prompt [data-v="0"].wrong')) || r2.tries !== 1) bad.push(at + 'fix first miss: ' + JSON.stringify(r2));
+          await fixFit('fix after a miss');
+          if (w === 360) await pg.screenshot({ path: '/tmp/kinds2d-smoke-fix-miss.png' }).catch(() => {});
+          await pg.click('#prompt [data-v="1"]');
+          await vwait(pg, 300);
+          const r3 = await K.st();
+          if (r3.s !== 0 || r3.done !== 1 || !r3.lock) bad.push(at + 'fix second try: ' + JSON.stringify(r3));
+          await K.settle('fix second try');
+          // 3. wrong twice: the right line shown (tick, dashed), the right step said, asked again at the end of the round
+          await K.round(K.sample('fixs'), FX);
+          await pg.click('#prompt [data-v="1"]'); await vwait(pg, 900);
+          await pg.evaluate(() => { window.__said = []; });
+          await pg.click('#prompt [data-v="2"]'); await vwait(pg, 500);
+          const r4 = await pg.evaluate(() => ({ rev: [...document.querySelectorAll('#prompt .tp.rev')].map(e => e.dataset.v).join(), said: window.__said.join(' | '), missed: G.missed.length }));
+          if (r4.rev !== '0' || !/Step 1\. It should say: Ones, 12 minus 8 is 4/.test(r4.said) || r4.missed !== 1) bad.push(at + 'fix reveal: ' + JSON.stringify(r4));
+          if (w === 360) await pg.screenshot({ path: '/tmp/kinds2d-smoke-fix-rev.png' }).catch(() => {});
+          await pg.waitForFunction(() => G.retry && G.q && G.q.kind === 'tap' && !G.lock, null, { timeout: 8000 }).catch(() => bad.push(at + 'the missed fix question did not come back'));
+          // 4. the keyboard: Tab to the right step, Enter
+          await K.round(K.sample('fix'), FX);
+          const keys = await K.tabTo('#prompt [data-v="1"]') && (await pg.keyboard.press('Enter'), true);
+          await vwait(pg, 300);
+          if (!keys || (await K.st()).s !== 1) bad.push(at + 'fix by keyboard: ' + keys);
+          await K.settle('fix by keyboard');
+          // 5. why: 26 for 52 − 38 shows and says "Looks like 8 − 2 ..." above the hint; then the right answer
+          const type = async v => { for (const d of v) await pg.click(`.k[data-k="${d}"]`); await pg.click('.k[data-k="go"]'); await vwait(pg, 300); };
+          await K.round(K.sample('whyn'), '#slot');
+          await pg.evaluate(() => { window.__said = []; });
+          await type('26');
+          await vwait(pg, 300);
+          const y1 = await shownWhy(), said1 = await pg.evaluate(() => window.__said.join(' | ')), hint1 = (await K.st()).hint;
+          const order = await pg.evaluate(() => { const h = document.querySelector('#hint'); return h.firstElementChild && h.firstElementChild.classList.contains('why'); });
+          if (!/Looks like 8 − 2\. We can't flip them: trade a ten first\./.test(y1) || !/Looks like 8 − 2/.test(said1) || !order || !/Trade a ten/.test(hint1)) bad.push(at + 'why shown: ' + JSON.stringify([y1, said1, order, hint1]));
+          if (!(await pg.evaluate(() => { const i = document.querySelector('#hint .why .ic'); return !!i && i.getBoundingClientRect().width > 0; }))) bad.push(at + 'why has no bulb');
+          if (w === 360) await pg.screenshot({ path: '/tmp/kinds2d-smoke-why.png' }).catch(() => {});
+          await vwait(pg, 600);
+          await type('14');
+          if ((await K.st()).done !== 1) bad.push(at + 'why: the second try was not taken');
+          await K.settle('why second try');
+          // 6. another wrong value: no why (the hint alone); a right first answer: no hint at all
+          await K.round(K.sample('whyn'), '#slot');
+          await type('27');
+          if (await shownWhy() || !(await K.st()).hint) bad.push(at + 'a why for a value with no misconception');
+          await vwait(pg, 600);
+          await type('14');
+          await K.settle('why none');
+          await K.round(K.sample('whyn'), '#slot');
+          await type('14');
+          if (await shownWhy()) bad.push(at + 'a why on a right answer');
+          await K.settle('why right');
+          // 7. why on a rounding line: the pin on 40 for 46 to the nearest ten
+          await K.round(K.sample('whyl'), '.inp .lnw svg');
+          const p40 = await pg.evaluate(`(${KSM.linePt.toString()})(0)`);
+          await pg.mouse.click(p40.x, p40.y); await vwait(pg, 120);
+          await pg.click('#mcheck'); await vwait(pg, 300);
+          if (!/5 or more rounds up/.test(await shownWhy())) bad.push(at + 'why on the line: ' + await shownWhy());
+          await K.fitOk('why on the line');
+          await vwait(pg, 900);
+          await answer(pg);
+          await K.settle('why line');
+          // 8. a real sub 4 question with a why, answered with its misconception value
+          await K.round(`(()=>{for(let s=1;s<400;s++){const q=genQ('sub',4,s);if(q.kind=='num'&&q.why)return q}})()`, '#slot');
+          const wv = await pg.evaluate(() => Object.keys(G.q.why)[0]);
+          await type(wv);
+          if (!/We can't flip them/.test(await shownWhy())) bad.push(at + 'sub4 why: ' + await shownWhy());
+          await vwait(pg, 600);
+          await answer(pg);
+          await K.settle('sub4 why');
+          // 9. real find-the-mistake questions answered by answer() (the bot of every smoke round), with the fit
+          for (const [sk, lv] of [['big', 3], ['big', 6], ['sub', 7], ['mbig', 3], ['dbig', 3], ['dec', 4], ['fop', 3], ['ooo', 1], ['alg', 3]]) {
+            await K.round(K.real(sk, lv, 'tap'), FX);
+            await fixFit(sk + lv);
+            await answer(pg);
+            await vwait(pg, 300);
+            if ((await K.st()).s !== 1) bad.push(at + sk + lv + ' fix: answer() did not get it right');
+            await K.settle(sk + lv);
+          }
+        } catch (x) { bad.push(at + x.message.split('\n')[0]); }
+        for (const e of ka.errors) bad.push(at + e);
+        for (const u of ka.network) bad.push(at + 'network request: ' + u);
+        notes.push(w + 'x' + h);
+        await ka.ctx.close();
+      }
+      if (bad.length) fail('KINDS2-D find the mistake and why:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('KINDS2-D: find the mistake and why at ' + notes.join(' and ') + ': a step right on the first tap, a wrong step then the right one, ' +
+        'wrong twice (the right line shown, the right step spoken, asked again), by the keyboard, 48 px steps all on screen, real big, sub, mbig, ' +
+        'dbig, dec, fop, ooo and alg questions by the bot; why above the hint and said for its value only (not another wrong value, not a right ' +
+        'answer), on a rounding line and a real sub 4 question; no console errors, no network requests');
     }
 
     for (const u of network) fail('network request: ' + u);

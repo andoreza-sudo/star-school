@@ -142,3 +142,20 @@
   .mmp .cn{--k:.75}
   .mmtray .cn{--k:.85}
 }
+
+/* KINDS2-D find the mistake: the worked steps are .tp lines of the tap kind, a step number on the left; the size does not follow the
+   prompt's --k (fit() may shrink the problem above, never the steps), each line 52 px high at least (48 px even while the
+   prompt scales in). The tick and the cross of a right,
+   wrong or shown line come from .tp (42-question.css). */
+.fxs{display:flex;flex-direction:column;gap:var(--s-2);width:100%;max-width:560px;margin:var(--s-2) auto 0;
+  font-family:var(--font-body);font-size:var(--fs-3);line-height:1.25}
+.fxs .tp.fxl{justify-content:flex-start;gap:var(--s-2);width:100%;min-height:calc(var(--tap) + 4px);padding:var(--s-1) var(--s-3);text-align:left;
+  font-size:var(--fs-3);font-weight:700}
+.fxn{flex:none;display:inline-grid;place-items:center;width:28px;height:28px;border-radius:var(--r-pill);background:var(--surface-2);
+  color:var(--ink);font-size:var(--fs-2)}
+@media (min-width:700px){.fxs,.fxs .tp.fxl{font-size:var(--fs-4)}}
+
+/* KINDS2-D why: the sentence about the likely mistake, on a white card at the top of the hint panel, with the bulb */
+.why{display:flex;align-items:flex-start;gap:var(--s-2);width:100%;padding:var(--s-2) var(--s-3);border-radius:var(--r-btn);
+  background:var(--surface);color:var(--ink);text-align:left;line-height:1.3}
+.why .ic{flex:none;width:22px;height:22px;color:var(--try-ink)}

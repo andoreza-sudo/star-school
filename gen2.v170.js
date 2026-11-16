@@ -1,6 +1,6 @@
 /* Star School gen2 v170. BUILT by tools/build.py from 37b-kinds-c.css, 35-gen-math-upper.js, 36-gen-phonics.js, 37-bank.js, 37-comp.js, 39b-steps.js, 49b-kinds2.js: never edit by hand.
    index.html v170 loads this file with <script src="gen2.v170.js"> after its own code, before data.v170.js. */
-(function(){var s=document.createElement('style');s.id='css-gen2';s.textContent="/* KINDS2 batch A: the sort and mark kinds (src/js/49b-kinds2.js). In the gen2 part. Tokens only (00-tokens.css).\n   Every state shows a shape as well as a colour: a tick (.k2ok) on right, done and shown answers, a cross (.k2no) on wrong ones,\n   a solid outline when picked, a dashed border on an answer shown after two tries. */\n\n/* the marks inside a chip or a word: hidden until a state shows one */\n.k2mk{display:none;flex:none;align-items:center;justify-content:center;width:22px;height:22px;border-radius:var(--r-pill);\n  background:var(--surface);color:var(--good-ink)}\n.k2mk .ic{display:none}\n.right>.k2mk,.done>.k2mk,.rev>.k2mk,.wrong>.k2mk{display:inline-flex}\n.right>.k2mk .k2ok,.done>.k2mk .k2ok,.rev>.k2mk .k2ok{display:block}\n.wrong>.k2mk{color:var(--try-ink)}\n.wrong>.k2mk .k2no{display:block}\n.wrong>.k2mk .k2ok{display:none}\n.k2shake{animation:k-shake var(--t-shake) linear}\n\n/* sort: bins in one row on top, the tray of chips under them, Check below */\n.sbins{display:grid;grid-template-columns:1fr 1fr;gap:var(--s-2);width:100%;max-width:640px;margin:0 auto var(--s-3)}\n.sbins.sb3{grid-template-columns:1fr 1fr 1fr}\n.sbin{position:relative;min-height:96px;border-radius:var(--r-card);background:var(--surface-2);border:3px dashed var(--ink-3)}\n.sbin.has{border-style:solid}\n.sbin.ok{border-color:var(--good-ink);border-style:solid}\n/* the bin's button fills the bin; placed chips sit above it and take their own taps */\n.sbt{position:absolute;inset:0;width:100%;display:flex;align-items:flex-start;justify-content:center;gap:var(--s-1);\n  padding:var(--s-1) var(--s-1) 0;margin:0;border:0;border-radius:inherit;background:transparent;color:var(--ink);\n  font:inherit;font-weight:700;font-size:var(--fs-3);line-height:1.15;cursor:pointer;touch-action:manipulation}\n.sbl{display:inline-flex;align-items:center;gap:4px;min-width:0;overflow-wrap:anywhere;text-align:center}\n.sbc{flex:none;min-width:24px;height:24px;padding:0 6px;border-radius:var(--r-pill);background:var(--ink);color:var(--surface);\n  font-size:var(--fs-2);line-height:24px;text-align:center}\n.sbin:not(.has) .sbc{visibility:hidden}\n.sbz{position:relative;display:flex;flex-wrap:wrap;gap:4px;justify-content:center;padding:calc(var(--fs-3) * 1.5 + var(--s-2)) 4px 6px;\n  pointer-events:none}\n.sbz .schip{pointer-events:auto;font-size:var(--fs-2);padding:0 var(--s-1);min-height:var(--tap);min-width:var(--tap)}\n\n/* chips: at least 48 px; dragged by a finger (touch-action none on the chip only) */\n.stray{display:flex;flex-wrap:wrap;gap:var(--s-2);justify-content:center;align-items:center;min-height:var(--tap);\n  max-width:640px;margin:0 auto}\n.stray.empty{min-height:0}\n.schip{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-height:var(--tap);min-width:var(--tap);\n  padding:0 var(--s-3);border-radius:var(--r-btn);border:3px solid var(--line);background:var(--star-tint);color:var(--ink);\n  font:inherit;font-weight:700;font-size:var(--fs-4);line-height:1.1;cursor:pointer;touch-action:none;user-select:none}\n.schip .scl{display:inline-flex;align-items:center;gap:4px}\n.schip.sel{outline:4px solid var(--ink);outline-offset:2px;transform:translateY(-3px)}\n.schip.drag{position:relative;z-index:5;box-shadow:var(--ledge) var(--ink-3)}\n.schip.done,.schip.right{background:var(--good-tint);border-color:var(--good-ink);cursor:default}\n.schip.rev{background:var(--try-tint);border:3px dashed var(--try-ink)}\n.schip.wrong{background:var(--try-tint);border-color:var(--try-ink)}\n.schip:disabled{opacity:1}\n\n/* pictures in chips and bins */\n.k2pic{display:inline-flex;align-items:center;justify-content:center;line-height:1;font-size:36px}\n.k2pic .art{width:1em;height:1em}\n.k2pic.k2big{font-size:44px}\n.k2pic.k2small{font-size:22px}\n.k2pic.k2sm{font-size:24px}\n.sbz .k2pic{font-size:26px}\n.sbz .k2pic.k2big{font-size:32px}\n.sbz .k2pic.k2small{font-size:16px}\n.k2pic.k2bp{font-size:24px}\n.k2bb{font-size:var(--fs-5)}\n.k2bs{font-size:var(--fs-2)}\n.k2cl{display:inline-flex;color:var(--ink-2)}\n.k2ang{display:inline-flex}\n.k2ang svg{width:64px;height:auto}\n.sbz .k2ang svg{width:44px}\n.schip .pcap{display:inline-flex;flex-direction:column;align-items:center;line-height:1}\n.schip .pcap .art{width:32px;height:32px}\n.schip .pcap small{font-size:var(--fs-2)}\n\n/* mark: the words of the sentence as chips, a few lines */\n.mkw{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;max-width:640px;margin:0 auto}\n.mkt{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-height:var(--tap);min-width:var(--tap);\n  padding:0 var(--s-2);border-radius:var(--r-btn);border:3px solid var(--line);background:var(--surface);color:var(--ink);\n  font:inherit;font-weight:700;font-size:var(--fs-4);cursor:pointer;touch-action:manipulation}\n.mkt.on{background:var(--brand-tint);outline:4px solid var(--ink);outline-offset:-1px}\n.mkt.right{background:var(--good-tint);border-color:var(--good-ink);outline:0}\n.mkt.rev{border-style:dashed}\n.mkt.wrong{background:var(--try-tint);border-color:var(--try-ink)}\n.mkt:disabled{opacity:1;cursor:default}\n\n@media (min-width:700px){\n  .sbin{min-height:120px}\n  .schip{font-size:var(--fs-5)}\n  .sbz .schip{font-size:var(--fs-3)}\n  .mkt{font-size:var(--fs-5)}\n}\n\n/* KINDS2-B line: a number line with a pin (svg class vi: --k never shrinks it). The svg is the picture; .lnp, an HTML slider laid\n   over the drawn pin (.lnb is as big as the svg), takes the drag and the keys. The pin's head shows a tick (right, shown answer) or a\n   cross (wrong) as well as its colour; a shown answer has a dashed head */\n.lnw{position:relative;width:100%;max-width:640px;margin:0 auto var(--s-3)}\n.lnb{position:relative;width:fit-content;max-width:100%;margin:0 auto;cursor:pointer}\n.lnp{position:absolute;border-radius:var(--r-pill);cursor:grab;touch-action:none}\n.lnp.drag{cursor:grabbing}\n.lnp:focus{outline:none}\n.lnp:focus-visible{outline:4px solid var(--ink);outline-offset:2px}\n.lnw g.vpin{pointer-events:none;transition:transform var(--t-slow) var(--ease)}\n.lnw g.vpin.drag{transition:none}\n.lnw g.vpin .vph{fill:var(--ink);stroke:var(--surface);stroke-width:3}\n.lnw g.vpin .vps{fill:none;stroke:var(--ink);stroke-width:4}\n.lnw g.vpin .vpok,.lnw g.vpin .vpno{display:none;fill:none;stroke:var(--surface);stroke-width:3}\n.lnw.right g.vpin .vph,.lnw.rev g.vpin .vph{fill:var(--good-ink)}\n.lnw.right g.vpin .vps,.lnw.rev g.vpin .vps{stroke:var(--good-ink)}\n.lnw.rev g.vpin .vph{stroke:var(--ink);stroke-dasharray:4 3}\n.lnw.right g.vpin .vpok,.lnw.rev g.vpin .vpok,.lnw.wrong g.vpin .vpno{display:inline}\n.lnw.wrong g.vpin .vph{fill:var(--try-ink)}\n.lnw.wrong g.vpin .vps{stroke:var(--try-ink)}\n\n/* KINDS2-C make: the model (drawn again from VIZ on every change) in a card, its controls under it, Check below. The card shows a\n   tick or a cross (.k2mk) as well as its border colour; a shown answer has a dashed border and pulses once */\n.mmw{position:relative;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:var(--s-2);width:100%;max-width:640px;min-height:88px;\n  margin:0 auto var(--s-2);padding:var(--s-2);border-radius:var(--r-card);background:var(--surface-2);border:3px solid var(--surface-2)}\n.mmw>.k2mk{position:absolute;top:6px;right:6px}\n.mmw.right{border-color:var(--good-ink)}\n.mmw.wrong{border-color:var(--try-ink)}\n.mmw.rev{border:3px dashed var(--try-ink)}\n.mmv{display:flex;flex-direction:column;justify-content:center;align-items:center;max-width:100%;min-width:0}\n.mm-b10 .mmv .viz,.mm-array .mmv .viz{max-height:136px}\n.mm-clock .mmv .viz{max-height:150px}\n.mm-frame,.mm-parts{cursor:pointer}\n.k2pulse{animation:k-pop var(--t-xl) var(--ease)}\n.mmc{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:var(--s-2);max-width:100%;cursor:default}\n.mmcol{flex-direction:column;gap:var(--s-1)}\n.mms{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:var(--s-1)}\n.mml{min-width:5.4em;text-align:right;font-weight:700;font-size:var(--fs-3);color:var(--ink)}\n.mmn{min-width:2ch;text-align:center;font-weight:700;font-size:var(--fs-5);color:var(--ink)}\n.mmb{display:inline-flex;align-items:center;justify-content:center;gap:2px;min-width:var(--tap);min-height:var(--tap);padding:0 var(--s-2);\n  border-radius:var(--r-btn);border:3px solid var(--ink-3);background:var(--surface);color:var(--ink);font:inherit;font-weight:700;\n  font-size:var(--fs-3);cursor:pointer;touch-action:manipulation}\n.mmb:disabled,.mmp:disabled{opacity:1;cursor:default}\n/* coins: a tray of coins to put in, the purse of coins (tap one to take it out) */\n.mmpurse{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px;min-height:var(--tap)}\n.mmp{display:inline-flex;align-items:center;justify-content:center;min-width:var(--tap);min-height:var(--tap);padding:0;border:0;\n  border-radius:var(--r-pill);background:transparent;cursor:pointer;touch-action:manipulation}\n.mmp .cn{--k:.62;font-size:var(--fs-2)}\n.mmtray .mmb{padding:2px}\n.mmtray .cn{--k:.66;font-size:var(--fs-2)}\n.mmhint{color:var(--ink-2);font-size:var(--fs-2);text-align:center}\n\n@media (min-width:700px){\n  .mm-b10 .mmv .viz,.mm-array .mmv .viz,.mm-clock .mmv .viz{max-height:200px}\n  .mmp .cn,.mmtray .cn{font-size:var(--fs-3)}\n  .mmp .cn{--k:.75}\n  .mmtray .cn{--k:.85}\n}\n";document.head.appendChild(s)})(); // its src/css, after index.html's own CSS (the cascade order of a build without parts)
+(function(){var s=document.createElement('style');s.id='css-gen2';s.textContent="/* KINDS2 batch A: the sort and mark kinds (src/js/49b-kinds2.js). In the gen2 part. Tokens only (00-tokens.css).\n   Every state shows a shape as well as a colour: a tick (.k2ok) on right, done and shown answers, a cross (.k2no) on wrong ones,\n   a solid outline when picked, a dashed border on an answer shown after two tries. */\n\n/* the marks inside a chip or a word: hidden until a state shows one */\n.k2mk{display:none;flex:none;align-items:center;justify-content:center;width:22px;height:22px;border-radius:var(--r-pill);\n  background:var(--surface);color:var(--good-ink)}\n.k2mk .ic{display:none}\n.right>.k2mk,.done>.k2mk,.rev>.k2mk,.wrong>.k2mk{display:inline-flex}\n.right>.k2mk .k2ok,.done>.k2mk .k2ok,.rev>.k2mk .k2ok{display:block}\n.wrong>.k2mk{color:var(--try-ink)}\n.wrong>.k2mk .k2no{display:block}\n.wrong>.k2mk .k2ok{display:none}\n.k2shake{animation:k-shake var(--t-shake) linear}\n\n/* sort: bins in one row on top, the tray of chips under them, Check below */\n.sbins{display:grid;grid-template-columns:1fr 1fr;gap:var(--s-2);width:100%;max-width:640px;margin:0 auto var(--s-3)}\n.sbins.sb3{grid-template-columns:1fr 1fr 1fr}\n.sbin{position:relative;min-height:96px;border-radius:var(--r-card);background:var(--surface-2);border:3px dashed var(--ink-3)}\n.sbin.has{border-style:solid}\n.sbin.ok{border-color:var(--good-ink);border-style:solid}\n/* the bin's button fills the bin; placed chips sit above it and take their own taps */\n.sbt{position:absolute;inset:0;width:100%;display:flex;align-items:flex-start;justify-content:center;gap:var(--s-1);\n  padding:var(--s-1) var(--s-1) 0;margin:0;border:0;border-radius:inherit;background:transparent;color:var(--ink);\n  font:inherit;font-weight:700;font-size:var(--fs-3);line-height:1.15;cursor:pointer;touch-action:manipulation}\n.sbl{display:inline-flex;align-items:center;gap:4px;min-width:0;overflow-wrap:anywhere;text-align:center}\n.sbc{flex:none;min-width:24px;height:24px;padding:0 6px;border-radius:var(--r-pill);background:var(--ink);color:var(--surface);\n  font-size:var(--fs-2);line-height:24px;text-align:center}\n.sbin:not(.has) .sbc{visibility:hidden}\n.sbz{position:relative;display:flex;flex-wrap:wrap;gap:4px;justify-content:center;padding:calc(var(--fs-3) * 1.5 + var(--s-2)) 4px 6px;\n  pointer-events:none}\n.sbz .schip{pointer-events:auto;font-size:var(--fs-2);padding:0 var(--s-1);min-height:var(--tap);min-width:var(--tap)}\n\n/* chips: at least 48 px; dragged by a finger (touch-action none on the chip only) */\n.stray{display:flex;flex-wrap:wrap;gap:var(--s-2);justify-content:center;align-items:center;min-height:var(--tap);\n  max-width:640px;margin:0 auto}\n.stray.empty{min-height:0}\n.schip{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-height:var(--tap);min-width:var(--tap);\n  padding:0 var(--s-3);border-radius:var(--r-btn);border:3px solid var(--line);background:var(--star-tint);color:var(--ink);\n  font:inherit;font-weight:700;font-size:var(--fs-4);line-height:1.1;cursor:pointer;touch-action:none;user-select:none}\n.schip .scl{display:inline-flex;align-items:center;gap:4px}\n.schip.sel{outline:4px solid var(--ink);outline-offset:2px;transform:translateY(-3px)}\n.schip.drag{position:relative;z-index:5;box-shadow:var(--ledge) var(--ink-3)}\n.schip.done,.schip.right{background:var(--good-tint);border-color:var(--good-ink);cursor:default}\n.schip.rev{background:var(--try-tint);border:3px dashed var(--try-ink)}\n.schip.wrong{background:var(--try-tint);border-color:var(--try-ink)}\n.schip:disabled{opacity:1}\n\n/* pictures in chips and bins */\n.k2pic{display:inline-flex;align-items:center;justify-content:center;line-height:1;font-size:36px}\n.k2pic .art{width:1em;height:1em}\n.k2pic.k2big{font-size:44px}\n.k2pic.k2small{font-size:22px}\n.k2pic.k2sm{font-size:24px}\n.sbz .k2pic{font-size:26px}\n.sbz .k2pic.k2big{font-size:32px}\n.sbz .k2pic.k2small{font-size:16px}\n.k2pic.k2bp{font-size:24px}\n.k2bb{font-size:var(--fs-5)}\n.k2bs{font-size:var(--fs-2)}\n.k2cl{display:inline-flex;color:var(--ink-2)}\n.k2ang{display:inline-flex}\n.k2ang svg{width:64px;height:auto}\n.sbz .k2ang svg{width:44px}\n.schip .pcap{display:inline-flex;flex-direction:column;align-items:center;line-height:1}\n.schip .pcap .art{width:32px;height:32px}\n.schip .pcap small{font-size:var(--fs-2)}\n\n/* mark: the words of the sentence as chips, a few lines */\n.mkw{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;max-width:640px;margin:0 auto}\n.mkt{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-height:var(--tap);min-width:var(--tap);\n  padding:0 var(--s-2);border-radius:var(--r-btn);border:3px solid var(--line);background:var(--surface);color:var(--ink);\n  font:inherit;font-weight:700;font-size:var(--fs-4);cursor:pointer;touch-action:manipulation}\n.mkt.on{background:var(--brand-tint);outline:4px solid var(--ink);outline-offset:-1px}\n.mkt.right{background:var(--good-tint);border-color:var(--good-ink);outline:0}\n.mkt.rev{border-style:dashed}\n.mkt.wrong{background:var(--try-tint);border-color:var(--try-ink)}\n.mkt:disabled{opacity:1;cursor:default}\n\n@media (min-width:700px){\n  .sbin{min-height:120px}\n  .schip{font-size:var(--fs-5)}\n  .sbz .schip{font-size:var(--fs-3)}\n  .mkt{font-size:var(--fs-5)}\n}\n\n/* KINDS2-B line: a number line with a pin (svg class vi: --k never shrinks it). The svg is the picture; .lnp, an HTML slider laid\n   over the drawn pin (.lnb is as big as the svg), takes the drag and the keys. The pin's head shows a tick (right, shown answer) or a\n   cross (wrong) as well as its colour; a shown answer has a dashed head */\n.lnw{position:relative;width:100%;max-width:640px;margin:0 auto var(--s-3)}\n.lnb{position:relative;width:fit-content;max-width:100%;margin:0 auto;cursor:pointer}\n.lnp{position:absolute;border-radius:var(--r-pill);cursor:grab;touch-action:none}\n.lnp.drag{cursor:grabbing}\n.lnp:focus{outline:none}\n.lnp:focus-visible{outline:4px solid var(--ink);outline-offset:2px}\n.lnw g.vpin{pointer-events:none;transition:transform var(--t-slow) var(--ease)}\n.lnw g.vpin.drag{transition:none}\n.lnw g.vpin .vph{fill:var(--ink);stroke:var(--surface);stroke-width:3}\n.lnw g.vpin .vps{fill:none;stroke:var(--ink);stroke-width:4}\n.lnw g.vpin .vpok,.lnw g.vpin .vpno{display:none;fill:none;stroke:var(--surface);stroke-width:3}\n.lnw.right g.vpin .vph,.lnw.rev g.vpin .vph{fill:var(--good-ink)}\n.lnw.right g.vpin .vps,.lnw.rev g.vpin .vps{stroke:var(--good-ink)}\n.lnw.rev g.vpin .vph{stroke:var(--ink);stroke-dasharray:4 3}\n.lnw.right g.vpin .vpok,.lnw.rev g.vpin .vpok,.lnw.wrong g.vpin .vpno{display:inline}\n.lnw.wrong g.vpin .vph{fill:var(--try-ink)}\n.lnw.wrong g.vpin .vps{stroke:var(--try-ink)}\n\n/* KINDS2-C make: the model (drawn again from VIZ on every change) in a card, its controls under it, Check below. The card shows a\n   tick or a cross (.k2mk) as well as its border colour; a shown answer has a dashed border and pulses once */\n.mmw{position:relative;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:var(--s-2);width:100%;max-width:640px;min-height:88px;\n  margin:0 auto var(--s-2);padding:var(--s-2);border-radius:var(--r-card);background:var(--surface-2);border:3px solid var(--surface-2)}\n.mmw>.k2mk{position:absolute;top:6px;right:6px}\n.mmw.right{border-color:var(--good-ink)}\n.mmw.wrong{border-color:var(--try-ink)}\n.mmw.rev{border:3px dashed var(--try-ink)}\n.mmv{display:flex;flex-direction:column;justify-content:center;align-items:center;max-width:100%;min-width:0}\n.mm-b10 .mmv .viz,.mm-array .mmv .viz{max-height:136px}\n.mm-clock .mmv .viz{max-height:150px}\n.mm-frame,.mm-parts{cursor:pointer}\n.k2pulse{animation:k-pop var(--t-xl) var(--ease)}\n.mmc{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:var(--s-2);max-width:100%;cursor:default}\n.mmcol{flex-direction:column;gap:var(--s-1)}\n.mms{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:var(--s-1)}\n.mml{min-width:5.4em;text-align:right;font-weight:700;font-size:var(--fs-3);color:var(--ink)}\n.mmn{min-width:2ch;text-align:center;font-weight:700;font-size:var(--fs-5);color:var(--ink)}\n.mmb{display:inline-flex;align-items:center;justify-content:center;gap:2px;min-width:var(--tap);min-height:var(--tap);padding:0 var(--s-2);\n  border-radius:var(--r-btn);border:3px solid var(--ink-3);background:var(--surface);color:var(--ink);font:inherit;font-weight:700;\n  font-size:var(--fs-3);cursor:pointer;touch-action:manipulation}\n.mmb:disabled,.mmp:disabled{opacity:1;cursor:default}\n/* coins: a tray of coins to put in, the purse of coins (tap one to take it out) */\n.mmpurse{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px;min-height:var(--tap)}\n.mmp{display:inline-flex;align-items:center;justify-content:center;min-width:var(--tap);min-height:var(--tap);padding:0;border:0;\n  border-radius:var(--r-pill);background:transparent;cursor:pointer;touch-action:manipulation}\n.mmp .cn{--k:.62;font-size:var(--fs-2)}\n.mmtray .mmb{padding:2px}\n.mmtray .cn{--k:.66;font-size:var(--fs-2)}\n.mmhint{color:var(--ink-2);font-size:var(--fs-2);text-align:center}\n\n@media (min-width:700px){\n  .mm-b10 .mmv .viz,.mm-array .mmv .viz,.mm-clock .mmv .viz{max-height:200px}\n  .mmp .cn,.mmtray .cn{font-size:var(--fs-3)}\n  .mmp .cn{--k:.75}\n  .mmtray .cn{--k:.85}\n}\n\n/* KINDS2-D find the mistake: the worked steps are .tp lines of the tap kind, a step number on the left; the size does not follow the\n   prompt's --k (fit() may shrink the problem above, never the steps), each line 52 px high at least (48 px even while the\n   prompt scales in). The tick and the cross of a right,\n   wrong or shown line come from .tp (42-question.css). */\n.fxs{display:flex;flex-direction:column;gap:var(--s-2);width:100%;max-width:560px;margin:var(--s-2) auto 0;\n  font-family:var(--font-body);font-size:var(--fs-3);line-height:1.25}\n.fxs .tp.fxl{justify-content:flex-start;gap:var(--s-2);width:100%;min-height:calc(var(--tap) + 4px);padding:var(--s-1) var(--s-3);text-align:left;\n  font-size:var(--fs-3);font-weight:700}\n.fxn{flex:none;display:inline-grid;place-items:center;width:28px;height:28px;border-radius:var(--r-pill);background:var(--surface-2);\n  color:var(--ink);font-size:var(--fs-2)}\n@media (min-width:700px){.fxs,.fxs .tp.fxl{font-size:var(--fs-4)}}\n\n/* KINDS2-D why: the sentence about the likely mistake, on a white card at the top of the hint panel, with the bulb */\n.why{display:flex;align-items:flex-start;gap:var(--s-2);width:100%;padding:var(--s-2) var(--s-3);border-radius:var(--r-btn);\n  background:var(--surface);color:var(--ink);text-align:left;line-height:1.3}\n.why .ic{flex:none;width:22px;height:22px;color:var(--try-ink)}\n";document.head.appendChild(s)})(); // its src/css, after index.html's own CSS (the cascade order of a build without parts)
 /* Upper-grade math generators (4th grade and up). One marked block per chunk, so parallel chunks merge by appending.
    Seeded randomness only (R, pick, shuffle, coin, rnd). Step hints come from 39b-steps.js. */
 
@@ -2501,6 +2501,8 @@ const bankPicCh=(x,p)=>`<span class="pcap">${picFor(p[0],p[1])}<small>${esc(x)}<
 
 // One question from one item. Call it inside bankWith so shuffle() uses the item's own random stream.
 function bankBuild(id,it,pass){
+  let why=null; // KINDS2-D: [text, why] distractors (spec 5) build q.why; the item is used with plain texts
+  if(Array.isArray(it.d)&&it.d.some(Array.isArray)){why={};it=Object.assign({},it,{d:it.d.map(x=>Array.isArray(x)?(why[x[0]]=x[1],x[0]):x)})}
   const form=it.form||'choice';
   const pic=it.em?`<div class="bpic bem">${picFor(it.em[0],it.em[1])}</div>`:it.pic&&ICONS[it.pic]?`<div class="bpic">${ico(it.pic,64)}</div>`
     :it.grid?`<div class="bpic bgrid">${VIZ.coordGrid(it.grid)}</div>`:''; // R-01d: the grid the coordinate question talks about
@@ -2534,6 +2536,7 @@ function bankBuild(id,it,pass){
     const a=(Array.isArray(av)?av.join(','):av).slice(0,24);q.label=it.q.replace(/\*/g,'').slice(0,56-a.length)+' = '+a} // under 60 letters in all (P2-23)
   if(it.topic)q.topic=it.topic;
   if(pass)q.ctx={title:pass.title,text:pass.text};
+  if(why&&q.kind=='choice'&&typeof K2!='undefined'&&!K2.off)k2WhySet(q,why);
   return q;
 }
 
@@ -2616,6 +2619,12 @@ function bankItemProblems(it,where){
     for(const b of bankBadWords(v))p.push(w+name+' has a bad word: '+b);
     return true;
   };
+  // KINDS2-D: a distractor may be [text, why] (spec 5): the why is a short sentence (90 letters at most) shown after that wrong answer
+  if(Array.isArray(it.d)&&it.d.some(Array.isArray)){
+    for(const x of it.d)if(Array.isArray(x)&&(x.length!==2||typeof x[0]!=='string'||!str(x[1],90,'why of "'+x[0]+'"')))p.push(w+'a [text, why] distractor needs a text and a why');
+    if(form!=='choice'&&form!=='wide')p.push(w+'only choice items take [text, why] distractors');
+    it=Object.assign({},it,{d:it.d.map(x=>Array.isArray(x)?x[0]:x)});
+  }
   if(!Number.isInteger(it.lv)||it.lv<1)p.push(w+'lv must be a whole number from 1');
   if(!BANKFORMS.includes(form)){p.push(w+'unknown form '+form);return p}
   if(form!='match')str(it.q,BANKLIM.q,'q');
@@ -4798,6 +4807,330 @@ function k2DecShade(q0) {
     hint: 'Each square is one tenth. The digit after the point says how many to shade.'});
 }
 
+// ---- KINDS2-D find the mistake (spec 2.5): a worked example of the stop's fact with one wrong step; kind tap, each step a .tp line ----
+// A family gives the problem, its steps and the mistakes a child might make; build(mis) writes the steps with that one mistake (null:
+// none). Column sums (add, sub) keep every other step right; chains (multiply, divide, decimals, fractions, order of operations,
+// equations) go on from the wrong number, so every later step is right for what was written and only one step is wrong. The steps
+// before the mistake are the right ones (checked here), the answer is the wrong step's index, and the spoken answer reads the right step.
+// tap gets the same() the newer kinds have: the engine's own comparison (the tapped data-v is the answer)
+if (!KIND.tap.same) KIND.tap.same = (q, v) => String(v) === String(q.ans);
+const K2WHO = ['Sam', 'Mia', 'Leo', 'Ana', 'Kai', 'Zoe', 'Ben', 'Ivy'];
+const K2PL = ['Ones', 'Tens', 'Hundreds', 'Thousands'];
+const k2Speak = t => String(t).replace(/(\d) R(\d)/g, '$1 remainder $2').replace(/×/g, 'times').replace(/÷/g, 'divided by').replace(/\+/g, 'plus')
+  .replace(/−/g, 'minus').replace(/=/g, 'is').replace(/:/g, ',').replace(/\s+/g, ' ').trim();
+const k2Gcd = (x, y) => (y ? k2Gcd(y, x % y) : x);
+// f: {prob (the problem as printed), lab (its short form for the label), build(mis) -> [step text] or null, muts [[i, kind], ...], hint}
+function k2FixQ(q0, f) {
+  const ok = f.build(null);
+  if (!ok || ok.length < 3 || ok.length > 5) return null;
+  const cands = f.muts.filter(([i, k]) => {
+    const b = f.build({i, k});
+    return b && b.length == ok.length && b[i] !== ok[i] && b.every((t, j) => j >= i || t === ok[j]);
+  });
+  if (!cands.length) return null;
+  const [i, k] = pick(cands), lines = f.build({i, k}), who = pick(K2WHO);
+  return k2New(q0, {q: {kind: 'tap', ans: String(i)}, label: `fix: ${f.lab} ${k} ${i + 1}`,
+    html: k2Sub(`${who} worked it out. One step has a mistake. Tap it.`) + `<div class="eq">${esc(f.prob)}</div><div class="fxs">`
+      + lines.map((t, j) => `<div class="tp fxl" data-v="${j}"><b class="fxn" aria-hidden="true">${j + 1}</b><span>${esc(t)}</span></div>`).join('') + '</div>',
+    say: `${who} worked out ${k2Speak(f.prob)}. One step has a mistake. Find it and tap it.`,
+    ansSay: `Step ${i + 1}. It should say: ${k2Speak(ok[i])}.`, hint: f.hint});
+}
+// big 3-6: column addition (2 to 4 digits, the same length); the carry shows as "+ 1" in the next column
+function k2FixAdd(q0) {
+  const m = /^(\d+) \+ (\d+) = \?$/.exec(q0.label);
+  if (!m || m[1].length != m[2].length || m[1].length < 2 || m[1].length > 4) return null;
+  const n = m[1].length, da = [...m[1]].reverse().map(Number), db = [...m[2]].reverse().map(Number), muts = [];
+  const build = mis => {
+    const L = [];
+    let c = 0, out = '';
+    for (let j = 0; j < n; j++) {
+      const s = da[j] + db[j] + c;
+      let t = s, cs = c;
+      if (mis && mis.i == j) {
+        if (mis.k == 'carry') {
+          if (!c) return null;
+          cs = 0;
+          t = s - 1;
+        } else t = s + (mis.k == 'up' ? 1 : -1);
+      }
+      if (t < 0) return null;
+      L.push(`${K2PL[j]}: ${da[j]} + ${db[j]}${cs ? ' + 1' : ''} = ${t}`);
+      out = (j == n - 1 ? String(t) : String(t % 10)) + out;
+      c = s >= 10 ? 1 : 0;
+    }
+    return L.concat(`So ${m[1]} + ${m[2]} = ${+out}`);
+  };
+  for (let j = 0; j < n; j++) muts.push([j, 'carry'], [j, 'carry'], [j, 'up'], [j, 'down']); // the forgotten carry is the likely one
+  return k2FixQ(q0, {prob: `${m[1]} + ${m[2]}`, lab: `${m[1]}+${m[2]}`, build, muts,
+    hint: 'Check each column. When a column makes 10 or more, the next column gets 1 more.'});
+}
+// sub 4-8: column subtraction (2 to 4 digits, the same length); a trade shows as the bigger top number (12 − 8) and the smaller one next to it
+function k2FixSub(q0) {
+  const m = /^(\d+) [−-] (\d+) = \?$/.exec(q0.label);
+  if (!m || m[1].length != m[2].length || m[1].length < 2 || m[1].length > 4 || +m[2] > +m[1]) return null;
+  const n = m[1].length, ta = [...m[1]].reverse().map(Number), tb = [...m[2]].reverse().map(Number), muts = [];
+  const build = mis => {
+    const L = [];
+    let bin = 0, out = '';
+    for (let j = 0; j < n; j++) {
+      const t = ta[j], b = tb[j], eff = t - bin, tr = eff < b, top = eff + (tr ? 10 : 0), r = top - b;
+      let x = top, y = b, v = r;
+      if (mis && mis.i == j) {
+        if (mis.k == 'flip') { // the smaller digit from the bigger one (no trade)
+          if (!tr || bin) return null;
+          [x, y, v] = [b, t, b - t];
+        } else if (mis.k == 'trade') { // the trade to the column before is forgotten
+          if (!bin) return null;
+          x = top + 1;
+          v = r + 1;
+        } else v = r + (mis.k == 'up' ? 1 : -1);
+        if (v < 0 || v > 9) return null;
+      }
+      L.push(`${K2PL[j]}: ${x} − ${y} = ${v}`);
+      out = v + out;
+      bin = tr ? 1 : 0;
+    }
+    return L.concat(`So ${m[1]} − ${m[2]} = ${+out}`);
+  };
+  for (let j = 0; j < n; j++) muts.push([j, 'flip'], [j, 'flip'], [j, 'trade'], [j, 'trade'], [j, 'up'], [j, 'down']);
+  return k2FixQ(q0, {prob: `${m[1]} − ${m[2]}`, lab: `${m[1]}-${m[2]}`, build, muts,
+    hint: 'Check each column. When the top digit is too small, trade 1 from the next column: that column then has 1 less.'});
+}
+// mbig 2-5: times a one-digit number by places (2 × 7, 2 × 60, then the sum), or times a two-digit number (× ones, × tens, the sum)
+function k2FixMbig(q0) {
+  const m = /^(\d+) × (\d+) = \?$/.exec(q0.label);
+  if (!m) return null;
+  const a = +m[1], b = +m[2], muts = [];
+  let rows;
+  if (b < 10) rows = [...m[1]].reverse().map((d, k) => +d * 10 ** k).filter(x => x).map(p => [b, p]);
+  else if (b < 100 && b % 10) rows = [[a, b % 10], [a, b - b % 10]];
+  else return null;
+  if (rows.length < 2 || rows.length > 3) return null;
+  const build = mis => {
+    const L = [], ps = [];
+    for (let j = 0; j < rows.length; j++) {
+      const [x, y] = rows[j], big = Math.max(String(x).length, String(y).length) > 1 && (x % 10 == 0 || y % 10 == 0);
+      let r = x * y;
+      if (mis && mis.i == j) {
+        if (mis.k == 'zero') { // the tens worked as ones (2 × 60 = 12)
+          if (!big) return null;
+          r = r / 10;
+        } else r += (mis.k == 'up' ? 1 : -1) * (big ? 10 : 1);
+      }
+      ps.push(r);
+      L.push(`${x} × ${y} = ${r}`);
+    }
+    let s = ps.reduce((u, v) => u + v, 0);
+    if (mis && mis.i == rows.length) s += mis.k == 'up' ? 10 : -10;
+    return L.concat(`${ps.join(' + ')} = ${s}`);
+  };
+  rows.forEach((r, j) => muts.push([j, 'zero'], [j, 'zero'], [j, 'up'], [j, 'down']));
+  muts.push([rows.length, 'up'], [rows.length, 'down']);
+  return k2FixQ(q0, {prob: `${a} × ${b}`, lab: `${a}x${b}`, build, muts,
+    hint: 'Check each part. A tens part ends in 0: 2 × 60 is 2 × 6 tens, which is 12 tens, or 120.'});
+}
+// dbig 1-3: long division, one step a digit (36 ÷ 7 = 5 R1), then the answer
+function k2FixDiv(q0) {
+  const m = /^(\d+) ÷ (\d) = \?$/.exec(q0.label);
+  if (!m || +m[2] < 2) return null;
+  const a = m[1], d = +m[2];
+  const build = mis => {
+    let k = 1;
+    while (k < a.length && +a.slice(0, k) < d) k++;
+    let cur = +a.slice(0, k), r = 0, Q = '', j = 0;
+    const L = [];
+    for (;;) {
+      let q = Math.floor(cur / d), rr = cur - q * d;
+      if (mis && mis.i == j) {
+        if (mis.k == 'rem') { // a remainder as big as the divisor or bigger (one too few in the answer)
+          if (k < a.length || q < 1) return null;
+          q -= 1;
+          rr += d;
+        } else if (mis.k == 'zero') return null;
+        else {
+          rr += mis.k == 'up' ? 1 : -1;
+          if (rr < 0 || rr >= d) return null;
+        }
+      }
+      L.push(`${cur} ÷ ${d} = ${q}${rr ? ' R' + rr : ''}`);
+      Q += q;
+      r = rr;
+      j++;
+      if (k >= a.length) break;
+      cur = r * 10 + +a[k];
+      k++;
+    }
+    let qs = String(+Q);
+    if (mis && mis.i == j) { // the answer drops a 0 inside it (324 ÷ 3 = 18)
+      if (mis.k != 'zero' || !/\d0/.test(qs)) return null;
+      qs = qs.replace(/(\d)0/, '$1');
+    }
+    return L.concat(`So ${a} ÷ ${d} = ${qs}${r ? ' R' + r : ''}`);
+  };
+  const ok = build(null), muts = [];
+  if (!ok) return null;
+  for (let j = 0; j < ok.length - 1; j++) muts.push([j, 'up'], [j, 'down'], [j, 'rem'], [j, 'rem']);
+  muts.push([ok.length - 1, 'zero'], [ok.length - 1, 'zero']);
+  return k2FixQ(q0, {prob: `${a} ÷ ${d}`, lab: `${a}/${d}`, build, muts,
+    hint: `Check each step: ${d} times the answer plus the remainder gives the number. The remainder is always less than ${d}.`});
+}
+// dec 3: a whole number and a decimal, added or taken away: write the whole number with the same places, work it out, the answer
+const k2Dp = s => (String(s).split('.')[1] || '').length;
+const k2DecStr = (v, p) => (v < 0 ? '-' : '') + (Math.abs(v) / 10 ** p).toFixed(p);
+function k2FixDecAdd(q0) {
+  const m = /^([\d.]+) ([+−]) ([\d.]+) = \?$/.exec(q0.label);
+  if (!m) return null;
+  const [x, op, y] = [m[1], m[2], m[3]], P = Math.max(k2Dp(x), k2Dp(y));
+  if (Math.min(k2Dp(x), k2Dp(y)) > 0 || !P) return null;
+  const W = k2Dp(x) ? y : x, S = s => Math.round(+s * 10 ** P);
+  const build = mis => {
+    let w = W + '.' + '0'.repeat(P);
+    if (mis && mis.i == 0) w = (+W / 10 ** P).toFixed(P); // the digits lined up at the right, not the points (54 as 0.54)
+    const X = k2Dp(x) ? x : w, Y = k2Dp(x) ? w : y;
+    let v = op == '+' ? S(X) + S(Y) : S(X) - S(Y);
+    if (mis && mis.i == 1) v += (mis.k == 'up' ? 1 : -1) * 10 ** P;
+    if (v < 0) return null;
+    return [`Write ${W} as ${w}`, `${X} ${op} ${Y} = ${k2DecStr(v, P)}`, `So ${x} ${op} ${y} = ${+k2DecStr(v, P)}`];
+  };
+  return k2FixQ(q0, {prob: `${x} ${op} ${y}`, lab: `${x}${op == '+' ? '+' : '-'}${y}`, build, muts: [[0, 'point'], [0, 'point'], [1, 'up'], [1, 'down']],
+    hint: `Line up the points. A whole number has its point at the end: ${W} is ${W}.${'0'.repeat(P)}.`});
+}
+// dec 4: multiply without the points, count the digits after the points, put the point in
+function k2FixDecMul(q0) {
+  const m = /^([\d.]+) × ([\d.]+) = \?$/.exec(q0.label);
+  if (!m) return null;
+  const [x, y] = [m[1], m[2]], px = k2Dp(x), py = k2Dp(y), X = +x.replace('.', ''), Y = +y.replace('.', '');
+  if (!px && !py) return null;
+  const build = mis => {
+    let p = X * Y, n = px + py, at = n;
+    if (mis && mis.i == 0) p += mis.k == 'up' ? 10 : -10;
+    if (mis && mis.i == 1) n = mis.k == 'up' ? n + 1 : n - 1; // a factor's digits not counted, or one too many
+    at = n;
+    if (mis && mis.i == 2) at = mis.k == 'up' ? n + 1 : n - 1; // the point put in the wrong place
+    if (p < 1 || n < 1 || at < 1) return null;
+    return [`Without the points: ${X} × ${Y} = ${p}`, `Digits after the points: ${px} + ${py} = ${n}`,
+      `Point ${n} digit${n == 1 ? '' : 's'} from the right: ${k2DecStr(p, at)}`];
+  };
+  return k2FixQ(q0, {prob: `${x} × ${y}`, lab: `${x}x${y}`, build, muts: [[0, 'up'], [0, 'down'], [1, 'down'], [1, 'down'], [1, 'up'], [2, 'up'], [2, 'down']],
+    hint: 'Count the digits after the point in both numbers. The answer has that many digits after its point.'});
+}
+// fop 1: like fractions (the bottom stays), fop 3: unlike fractions (make the bottoms the same first)
+function k2FixFop(q0) {
+  let m = /^fop1 (\d+)\/(\d+) ([+−]) (\d+)\/(\d+)$/.exec(q0.label);
+  if (m) {
+    const [a, d, op, c] = [+m[1], +m[2], m[3], +m[4]];
+    if (+m[5] != d) return null;
+    const build = mis => {
+      let bot = d, top = op == '+' ? a + c : a - c;
+      let l0 = `Same size parts: the bottom stays ${d}`;
+      if (mis && mis.i == 0) { // the bottoms added too
+        if (op != '+') return null;
+        bot = d + d;
+        l0 = `Add the bottoms: ${d} + ${d} = ${bot}`;
+      }
+      if (mis && mis.i == 1) top += mis.k == 'up' ? 1 : -1;
+      if (top < 0) return null;
+      return [l0, `${op == '+' ? 'Add' : 'Take away'} the tops: ${a} ${op} ${c} = ${top}`, `So ${a}/${d} ${op} ${c}/${d} = ${top}/${bot}`];
+    };
+    return k2FixQ(q0, {prob: `${a}/${d} ${op} ${c}/${d}`, lab: `${a}/${d}${op == '+' ? '+' : '-'}${c}/${d}`, build,
+      muts: [[0, 'bottoms'], [0, 'bottoms'], [1, 'up'], [1, 'down']], hint: 'The parts are the same size, so the bottom number stays. Work with the tops.'});
+  }
+  m = /^fop3 (\d+)\/(\d+) ([+−]) (\d+)\/(\d+)( simplest)?$/.exec(q0.label);
+  if (!m) return null;
+  const [a, b, op, c, d] = [+m[1], +m[2], m[3], +m[4], +m[5]];
+  if (b == d) return null;
+  const L = b * d / k2Gcd(b, d), A = a * L / b, C = c * L / d;
+  const build = mis => {
+    let x = A, y = C, bot = L;
+    if (mis && mis.i == 1) {
+      if (mis.k == 'bottom') { // only the bottom changed (1/2 = 1/6)
+        if (a == A) return null;
+        x = a;
+      } else x += mis.k == 'up' ? 1 : -1;
+    }
+    let top = op == '+' ? x + y : x - y;
+    if (mis && mis.i == 2) {
+      if (mis.k == 'bottoms') { // the bottoms added too
+        if (op != '+') return null;
+        bot = 2 * L;
+      } else top += mis.k == 'up' ? 1 : -1;
+    }
+    if (x < 1 || top < 0) return null;
+    return [`${b} and ${d} both go into ${L}: make both bottoms ${L}`, `${a}/${b} = ${x}/${L} and ${c}/${d} = ${y}/${L}`, `${x}/${L} ${op} ${y}/${L} = ${top}/${bot}`];
+  };
+  return k2FixQ(q0, {prob: `${a}/${b} ${op} ${c}/${d}`, lab: `${a}/${b}${op == '+' ? '+' : '-'}${c}/${d}`, build,
+    muts: [[1, 'bottom'], [1, 'bottom'], [1, 'up'], [2, 'bottoms'], [2, 'bottoms'], [2, 'up'], [2, 'down']],
+    hint: 'Make the bottoms the same first. Whatever you do to the bottom, do to the top. Then add or take away only the tops.'});
+}
+// ooo 1: one operation a step (inside the brackets first, then × and ÷, then + and −); a wrong step can do + before ×
+const k2Op = (x, o, y) => (o == '+' ? x + y : o == '−' ? x - y : o == '×' ? x * y : x / y);
+// the next step of tokens t: [new tokens, x, op, y, value]; left: the leftmost operation of the innermost brackets (the order mistake)
+function k2OooStep(t, left, dv = 0) {
+  let s = 0, e = t.length;
+  const o = t.lastIndexOf('(');
+  if (o >= 0) [s, e] = [o + 1, t.indexOf(')', o)];
+  const ops = [];
+  for (let j = s; j < e; j++) if (/^[+−×÷]$/.test(t[j])) ops.push(j);
+  const md = ops.find(j => /[×÷]/.test(t[j])), j = left ? ops[0] : md != null ? md : ops[0];
+  const x = +t[j - 1], y = +t[j + 1], v = k2Op(x, t[j], y) + dv, n = t.slice(0, j - 1).concat(String(v), t.slice(j + 2));
+  if (o >= 0 && n[o + 2] == ')') n.splice(o, 3, n[o + 1]); // (8) -> 8
+  return [n, x, t[j], y, v, j != (md != null ? md : ops[0])];
+}
+function k2FixOoo(q0) {
+  const m = /^(.+) = \?$/.exec(q0.label);
+  if (!m || q0.kind != 'num' || !/^[\d +−×÷()]+$/.test(m[1])) return null;
+  const t0 = m[1].match(/\d+|[+−×÷()]/g), nOps = t0.filter(x => /[+−×÷]/.test(x)).length;
+  if (nOps < 2 || nOps > 4) return null;
+  const build = mis => {
+    let t = t0.slice();
+    const L = [];
+    for (let j = 0; j < nOps; j++) {
+      const w = mis && mis.i == j, [n, x, o, y, v, moved] = k2OooStep(t, w && mis.k == 'order', w && mis.k != 'order' ? (mis.k == 'up' ? 1 : -1) : 0);
+      if (w && mis.k == 'order' && !moved) return null;
+      if (!Number.isInteger(v) || v < 0) return null;
+      L.push(`${x} ${o} ${y} = ${v}`);
+      t = n;
+    }
+    return nOps < 3 ? L.concat(`So ${m[1]} = ${t[0]}`) : L;
+  };
+  const muts = [];
+  for (let j = 0; j < nOps; j++) muts.push([j, 'order'], [j, 'order'], [j, 'up'], [j, 'down']);
+  return k2FixQ(q0, {prob: m[1], lab: m[1].replace(/ /g, ''), build, muts,
+    hint: 'Work inside the brackets first. Then times and divide, from left to right. Then plus and minus.'});
+}
+// alg 1-3: undo each operation on both sides (the inverse operation), work it out; a wrong step can do the same operation again
+const K2UNDO = {'+': ['−', 'Take away {k} from both sides'], '−': ['+', 'Add {k} to both sides'], '×': ['÷', 'Divide both sides by {k}'], '÷': ['×', 'Multiply both sides by {k}']};
+const K2SAME = {'+': ['+', 'Add {k} to both sides'], '−': ['−', 'Take away {k} from both sides'], '×': ['−', 'Take away {k} from both sides'], '÷': ['÷', 'Divide both sides by {k}']};
+function k2FixAlg(q0) {
+  const m = /^alg\d (.+) = (\d+)$/.exec(q0.label);
+  if (!m || q0.kind != 'num') return null;
+  const s = m[1], c = +m[2];
+  let mm, v, ops; // ops: the operations to undo, outermost first: [op, k, what is left]
+  if ((mm = /^([a-z]) ([+−÷]) (\d+)$/.exec(s))) [v, ops] = [mm[1], [[mm[2], +mm[3], mm[1]]]];
+  else if ((mm = /^(\d+) \+ ([a-z])$/.exec(s))) [v, ops] = [mm[2], [['+', +mm[1], mm[2]]]];
+  else if ((mm = /^(\d+)([a-z])$/.exec(s))) [v, ops] = [mm[2], [['×', +mm[1], mm[2]]]];
+  else if ((mm = /^(\d+)([a-z]) ([+−]) (\d+)$/.exec(s))) [v, ops] = [mm[2], [[mm[3], +mm[4], mm[1] + mm[2]], ['×', +mm[1], mm[2]]]];
+  else return null;
+  const build = mis => {
+    const L = [];
+    let r = c;
+    ops.forEach(([o, k, rest], j) => {
+      const [inv, txt] = (mis && mis.i == 2 * j && mis.k == 'same' ? K2SAME : K2UNDO)[o];
+      L.push(`${txt.replace('{k}', k)}: ${rest} = ${r} ${inv} ${k}`);
+      let x = k2Op(r, inv, k);
+      if (mis && mis.i == 2 * j + 1) x += mis.k == 'up' ? 1 : -1;
+      L.push(`${r} ${inv} ${k} = ${x}`);
+      r = x;
+    });
+    if (L.some(x => /NaN|\./.test(x)) || !Number.isInteger(r) || r < 0) return null;
+    return ops.length == 1 ? L.concat(`So ${v} = ${r}`) : L;
+  };
+  const muts = [];
+  ops.forEach((o, j) => muts.push([2 * j, 'same'], [2 * j, 'same'], [2 * j + 1, 'up'], [2 * j + 1, 'down']));
+  return k2FixQ(q0, {prob: `${s} = ${c}`, lab: `${s.replace(/ /g, '')}=${c}`, build, muts,
+    hint: 'Undo each step with the opposite: take away undoes add, divide undoes times. Do the same to both sides.'});
+}
+
 const K2GEN = {
   sort: {2: [.5, k2SortSize], 3: [.5, k2SortKinds]},
   sound: {1: [.4, k2Sound], 2: [.4, k2Sound]},
@@ -4809,7 +5142,7 @@ const K2GEN = {
   ang: {1: [.5, k2Angle]},
   // KINDS2-B line and KINDS2-C make (spec 3; shares raised to 40% where 30% or 25% would leave the old kind over 65%, see PROGRESS)
   frac: {1: [.4, k2Halves], 2: [.3, k2FracShade], 3: [q => (q.kind == 'tap' ? 1 : .22), k2FracLine], 4: [.4, k2Half]},
-  dec: {1: [[.3, k2Dec1Line], [.3, k2DecShade]], 2: [[.4, k2Half], [.3, k2Dec2Line]]},
+  dec: {1: [[.3, k2Dec1Line], [.3, k2DecShade]], 2: [[.4, k2Half], [.3, k2Dec2Line]], 3: [.33, k2FixDecAdd], 4: [.2, k2FixDecMul]},
   cnt: {1: [.4, k2Cnt], 4: [.4, k2Cnt]},
   round: {1: [.5, k2Round], 2: [.5, k2Round], 3: [.5, k2Round], 4: [.5, k2Round]},
   pv: {1: [.4, k2B10], 2: [.4, k2B10], 5: [.3, k2Pv5Line]},
@@ -4817,7 +5150,7 @@ const K2GEN = {
   tenf: {1: [.45, k2Frame], 2: [.45, k2Frame], 3: [.45, k2Frame]},
   pk_count: {3: [.45, k2Frame]},
   add: {4: [.45, k2AddFrame]},
-  big: {1: [.4, k2B10]},
+  big: {1: [.4, k2B10], 3: [.2, k2FixAdd], 4: [.2, k2FixAdd], 5: [.2, k2FixAdd], 6: [.27, k2FixAdd]},
   coins: {1: [.45, k2Coins], 2: [.4, k2Coins], 3: [.4, k2Coins], 5: [.45, k2Coins]},
   time: {1: [.4, k2Clock], 2: [.4, k2Clock], 3: [.4, k2Clock], 4: [.4, k2Clock], 5: [.4, k2Clock]},
   arr: {1: [.4, k2Array], 2: [.25, k2Array]},
@@ -4828,6 +5161,15 @@ const K2GEN = {
   es_ser: {2: [.45, k2Ser]},
   es_gusta: {2: [.45, k2Gusta]},
   es_mix: {2: [.5, k2EsMix]},
+  // KINDS2-D find the mistake (spec 3: 20% of the computation stops). A converter gives no question for some facts (5 or more digits,
+  // mixed numbers, a one-step division ...), so a share is raised where that leaves the stop near 20%; ooo 1 and alg 3 convert only
+  // their number questions. big 7 (6-digit sums: 7 lines, too tall for a phone) has none; sub 8 converts its 4-digit facts only.
+  sub: {4: [.2, k2FixSub], 5: [.2, k2FixSub], 6: [.22, k2FixSub], 7: [.25, k2FixSub], 8: [.5, k2FixSub]},
+  mbig: {2: [.28, k2FixMbig], 3: [.33, k2FixMbig], 4: [.28, k2FixMbig], 5: [.25, k2FixMbig]},
+  dbig: {1: [.2, k2FixDiv], 2: [.4, k2FixDiv], 3: [.22, k2FixDiv]},
+  fop: {1: [.33, k2FixFop], 3: [.2, k2FixFop]},
+  ooo: {1: [q => (q.kind == 'num' ? .4 : 0), k2FixOoo]},
+  alg: {1: [.2, k2FixAlg], 2: [.2, k2FixAlg], 3: [q => (q.kind == 'num' ? .3 : 0), k2FixAlg]},
 };
 // the skills in SK now; es_art, es_ser and es_gusta are made by a data file (d-es-gram.js) that loads later and calls these functions
 for (const sk in K2GEN) if (SK[sk]) SK[sk].gen = k2Wrap(sk, SK[sk].gen);
@@ -4850,6 +5192,226 @@ function pickQ(sk, lv) {
   }
   if (alt) KMONO[id] = 1;
   return alt || q;
+}
+
+// ---- KINDS2-D why (spec 5): short, kind feedback on the likely misconception after a first wrong answer ----
+// q.why = {wrong value: one short sentence}; q.whySay (optional) the same keys with the words to say. A generator's question gets it
+// here, after it is made (no draw, so the question is the same with or without it); K2.off leaves it out. A key is a wrong value: one
+// the kind takes as right is dropped, and for choice a value that is not one of the choices. The sentence shows in the hint panel above
+// the hint on the first miss (and is said for Pre-K to 1st, or with "Read questions out loud" on); never on a Challenge question.
+const K2P1 = ['one', 'ten', 'hundred', 'thousand'];
+function k2WhySet(q, w) {
+  const K = KIND[q.kind], out = {};
+  for (const k in w) {
+    if (!w[k] || (K.same ? K.same(q, k) : k === String(q.ans))) continue;
+    if (q.kind == 'choice' && !q.choices.some(c => String(c.v) === k)) continue;
+    out[k] = w[k];
+  }
+  if (Object.keys(out).length) q.why = out;
+  return q;
+}
+// sub 4-6: the smaller digit taken from the bigger one in each column (52 − 38 gives 26)
+function k2WhySub(q) {
+  const m = /^(\d+) [−-] (\d+) = \?$/.exec(q.label);
+  if (!m || m[2].length > m[1].length) return null;
+  const n = m[1].length, a = m[1], b = m[2].padStart(n, '0');
+  let flip = '', first = null;
+  for (let j = n - 1; j >= 0; j--) {
+    flip = Math.abs(+a[j] - +b[j]) + flip;
+    if (!first && +a[j] < +b[j]) first = [n - 1 - j, +a[j], +b[j]];
+  }
+  return first && first[0] < 3 ? {[String(+flip)]: `Looks like ${first[2]} − ${first[1]}. We can't flip them: trade a ${K2P1[first[0] + 1]} first.`} : null;
+}
+// big 3-5: the carry forgotten (38 + 47 gives 75), or both digits written (715)
+function k2WhyAdd(q) {
+  const m = /^(\d+) \+ (\d+) = \?$/.exec(q.label);
+  if (!m) return null;
+  const n = Math.max(m[1].length, m[2].length), a = m[1].padStart(n, '0'), b = m[2].padStart(n, '0');
+  let nc = '', both = '', first = null;
+  for (let j = n - 1; j >= 0; j--) {
+    const s = +a[j] + +b[j];
+    nc = (s % 10) + nc;
+    both = s + both;
+    if (!first && s >= 10) first = [n - 1 - j, +a[j], +b[j], s];
+  }
+  if (!first || first[0] > 2) return null;
+  const [p, x, y, s] = first, t = p ? `${x} + ${y} ${K2P1[p]}s is ${s} ${K2P1[p]}s. Write the ${s % 10} and carry 1 ${K2P1[p + 1]}.`
+    : `${x} + ${y} is ${s}. Write the ${s % 10} and carry the 1 ten.`;
+  return {[String(+nc)]: t, [String(+both)]: t};
+}
+// miss 1-2, tenf 2: the two numbers shown added (4 + ? = 12 gives 16)
+function k2WhyMiss(q) {
+  const m = /^(\d+) \+ \? = (\d+)$/.exec(q.label) || /^\? \+ (\d+) = (\d+)$/.exec(q.label) || /^(\d+) and \? make (\d+)$/.exec(q.label);
+  return m ? {[String(+m[1] + +m[2])]: `${m[2]} is the total. How many more from ${m[1]} up to ${m[2]}?`} : null;
+}
+// pv 1-2: the digit for its value, tens and ones swapped, the blocks counted as ones
+function k2WhyPv(q) {
+  const l = String(q.label);
+  let m;
+  if ((m = /^pv tens in (\d)(\d)$/.exec(l))) return {[m[2]]: `The ${m[2]} is in the ones place. The tens digit is on the left.`, [m[1] + '0']: `${m[1]}0 is what the tens are worth. How many tens is that?`};
+  if ((m = /^pv picture (\d) tens (\d) ones$/.exec(l))) return {[String(+(m[2] + m[1]))]: 'Tens come first: write the tens digit, then the ones.', [String(+m[1] + +m[2])]: 'Each rod is 10. Count the rods by 10s: 10, 20, 30 ...'};
+  if ((m = /^pv picture (\d)(\d)(\d)$/.exec(l))) return {[String(+m[1] + +m[2] + +m[3])]: 'Each flat is 100 and each rod is 10. Count by 100s, then 10s, then 1s.'};
+  if ((m = /^(\d)0 \+ (\d) = \?$/.exec(l))) return {[`${m[1]}0${m[2]}`]: `${m[1]}0 is ${m[1]} tens. The ${m[2]} goes in the ones place.`};
+  if ((m = /^value of (\d) in (\d+)$/.exec(l))) {
+    const p = m[2].length - 1 - m[2].indexOf(m[1]), val = +m[1] * 10 ** p, w = {};
+    for (const c of q.choices) if (c.v !== q.ans) w[c.v] = c.v === m[1] ? `That ${m[1]} sits in the ${K2P1[p]}s place, so it is worth ${val}.` : 'Count the places from the right: ones, tens, hundreds.';
+    return w;
+  }
+  return null;
+}
+// frac 4, 6: "a bigger bottom number means a bigger fraction" (1/8 > 1/4)
+function k2WhyFrac(q) {
+  const m = /^frac cmp2? (\d+)\/(\d+) \? (\d+)\/(\d+)$/.exec(q.label);
+  if (!m) return null;
+  const [a, b, c, d] = m.slice(1).map(Number);
+  if (b == d) return null;
+  return {[b > d ? '>' : '<']: a == c && FC_NAMES[b] && FC_NAMES[d] ? `More parts means smaller parts. ${k2Cap(fcPl(Math.max(b, d)))} are smaller than ${fcPl(Math.min(b, d))}.`
+    : 'A bigger bottom number means smaller parts, not a bigger fraction.'};
+}
+// dec 2: "the longer decimal is bigger" (0.25 > 0.3)
+function k2WhyDec(q) {
+  const m = /^dec2 (\d+)\.?(\d*) \? (\d+)\.?(\d*)$/.exec(q.label);
+  if (!m || m[1] != m[3] || m[2].length == m[4].length) return null;
+  const x = m[2].padEnd(3, '0'), y = m[4].padEnd(3, '0'), k = [0, 1, 2].find(j => x[j] != y[j]), nm = ['tenth', 'hundredth', 'thousandth'];
+  if (k == null) return null;
+  const hi = Math.max(+x[k], +y[k]), lo = Math.min(+x[k], +y[k]), s = v => `${v} ${nm[k]}${v == 1 ? '' : 's'}`;
+  return {[m[2].length > m[4].length ? '>' : '<']: (k ? `The ${nm.slice(0, k).map(z => z + 's').join(' and ')} are the same. Then ` : 'Compare tenths first: ')
+    + `${s(hi)} beats ${s(lo)}.`};
+}
+// fop 1, 3: the tops added and the bottoms added (1/2 + 1/3 gives 2/5)
+function k2WhyFop(q) {
+  const m = /^fop([13]) (\d+)\/(\d+) \+ (\d+)\/(\d+)( simplest)?$/.exec(q.label);
+  if (!m) return null;
+  return {[`${+m[2] + +m[4]}/${+m[3] + +m[5]}`]: m[1] == '1' ? 'Keep the bottom number. The parts are the same size, so add only the tops.'
+    : "Don't add the bottoms. Make the parts the same size first."};
+}
+// round 1-4: rounded the wrong way (always down, or 5 rounded down)
+function k2WhyRound(q) {
+  const m = /^round ([\d.]+) to (.+)$/.exec(q.label);
+  if (!m) return null;
+  const n = +m[1], u = K2UNIT[m[2]] || +m[2], lo = k2Clean(Math.floor(n / u + 1e-9) * u), hi = k2Clean(lo + u), a = k2Val(q.ans);
+  if (!u || n == lo) return null;
+  return a == hi ? {[String(lo)]: 'Look at the digit to the right. 5 or more rounds up.'}
+    : a == lo ? {[String(hi)]: 'Look at the digit to the right. 4 or less rounds down.'} : null;
+}
+// ooo 1: worked from left to right (2 + 3 × 4 gives 20)
+function k2WhyOoo(q) {
+  const m = /^(.+) = \?$/.exec(q.label);
+  if (!m || !/^[\d +−×÷()]+$/.test(m[1])) return null;
+  const t = m[1].match(/\d+|[+−×÷()]/g);
+  let v = t.slice();
+  for (let g = 0; g < 9 && v.length > 1; g++) { // left to right: the brackets first, then each operation in order
+    const o = v.lastIndexOf('('), s = o >= 0 ? o + 1 : 0, j = v.findIndex((z, i) => i >= s && /^[+−×÷]$/.test(z));
+    const r = k2Op(+v[j - 1], v[j], +v[j + 1]);
+    v = v.slice(0, j - 1).concat(String(r), v.slice(j + 2));
+    if (o >= 0 && v[o + 2] == ')') v.splice(o, 3, v[o + 1]);
+  }
+  const ltr = +v[0];
+  let d = 0, k = -1, add = '';
+  for (let i = 0; i < t.length && k < 0; i++) {
+    d += t[i] == '(' ? 1 : t[i] == ')' ? -1 : 0;
+    if (d == 0 && /[+−]/.test(t[i]) && !add) add = t[i];
+    if (d == 0 && /[×÷]/.test(t[i]) && add) k = i;
+  }
+  if (k < 0 || !Number.isInteger(ltr) || ltr < 0) return null;
+  const side = (i, s) => { // the number or the bracket next to the operation at i, on side s (-1 or 1)
+    let e = i + s;
+    if (t[e] == (s < 0 ? ')' : '(')) for (let n = 0; ; e += s) { n += t[e] == '(' ? s : t[e] == ')' ? -s : 0; if (!n) break; }
+    return t.slice(Math.min(i + s, e), Math.max(i + s, e) + 1).join(' ').replace(/\( /g, '(').replace(/ \)/g, ')');
+  };
+  return {[String(ltr)]: `${t[k] == '×' ? 'Multiply' : 'Divide'} before you ${add == '+' ? 'add' : 'subtract'}: ${side(k, -1)} ${t[k]} ${side(k, 1)} first.`};
+}
+// es_art 1, 2: el or la (un or una) by the ending; a plural needs los or las and a plural ending too
+function k2WhyArt(q) {
+  if (typeof ES_GRAM == 'undefined') return null;
+  let m;
+  if ((m = /^(los|las) (\S+) \(plural\)$/.exec(q.label))) {
+    const n = ES_GRAM.nouns.find(x => x[4] == m[2]), w = {};
+    if (!n) return null;
+    w[`${m[1] == 'los' ? 'las' : 'los'} ${m[2]}`] = `${n[0]} is an ${n[3]} word, so more than one takes ${m[1]}.`;
+    for (const c of q.choices) if (c.v !== q.ans && c.v.startsWith(m[1] + ' ')) w[c.v] = c.v == `${m[1]} ${n[0]}` ? 'More than one: the word needs a new ending too.'
+      : /[aeiouáéíóú]$/.test(n[0]) ? `${n[0]} ends in a vowel: just add -s.` : `${n[0]} ends in a consonant: add -es.`;
+    return w;
+  }
+  if ((m = /^(el|la|un|una) (\S+[oa])$/.exec(q.label))) {
+    const e = m[2].slice(-1);
+    return {[{el: 'la', la: 'el', un: 'una', una: 'un'}[m[1]]]: `${m[2]} ends in -${e}. Most -${e} words take ${m[1]}.`};
+  }
+  return null;
+}
+const K2WHY = {
+  sub: {4: k2WhySub, 5: k2WhySub, 6: k2WhySub},
+  big: {3: k2WhyAdd, 4: k2WhyAdd, 5: k2WhyAdd},
+  miss: {1: k2WhyMiss, 2: k2WhyMiss},
+  tenf: {2: k2WhyMiss},
+  pv: {1: k2WhyPv, 2: k2WhyPv},
+  frac: {4: k2WhyFrac, 6: k2WhyFrac},
+  fop: {1: k2WhyFop, 3: k2WhyFop},
+  dec: {2: k2WhyDec},
+  round: {1: k2WhyRound, 2: k2WhyRound, 3: k2WhyRound, 4: k2WhyRound},
+  ooo: {1: k2WhyOoo},
+  es_art: {1: k2WhyArt, 2: k2WhyArt},
+};
+function k2WhyWrap(sk, g) {
+  return lv => {
+    const q = g(lv), f = K2WHY[sk] && K2WHY[sk][lv];
+    if (!f || K2.off || !q || !['num', 'choice', 'line'].includes(q.kind)) return q;
+    const w = f(q, lv);
+    return w ? k2WhySet(q, w) : q;
+  };
+}
+for (const sk in K2WHY) if (SK[sk] && sk != 'es_art') SK[sk].gen = k2WhyWrap(sk, SK[sk].gen);
+if (typeof genEsArt == 'function') genEsArt = k2WhyWrap('es_art', genEsArt);
+// the why of a value v given to q (null when it has none)
+function k2WhyOf(q, v) {
+  if (!q || !q.why || v == null || K2.off) return null;
+  const K = KIND[q.kind];
+  for (const k in q.why) if (K.same ? K.same(Object.assign({}, q, {ans: k}), v) : String(v) === k) return {q, s: q.why[k], w: (q.whySay && q.whySay[k]) || q.why[k]};
+  return null;
+}
+// what kindProblems (49-kinds.js) also finds in q.why: tools/test.js checks every generated question with it
+function k2WhyProblems(q) {
+  if (!q.why || typeof q.why != 'object' || Array.isArray(q.why)) return ['why: must be an object of value -> sentence'];
+  const p = [], K = KIND[q.kind];
+  if (!['num', 'choice', 'line'].includes(q.kind)) p.push('why: only num, choice and line questions have it');
+  for (const k in q.why) {
+    const t = q.why[k];
+    if (typeof t != 'string' || !t.trim() || t.length > 90) p.push('why ' + k + ': the sentence is empty or over 90 characters');
+    else if (t.split(/[^A-Za-z]+/).some(x => BAD.test(x.toLowerCase()))) p.push('why ' + k + ': a word is not kid-safe');
+    if (K && (K.same ? K.same(q, k) : k === String(q.ans))) p.push('why ' + k + ': the key is a right answer');
+    if (q.kind == 'choice' && Array.isArray(q.choices) && !q.choices.some(c => String(c.v) === k)) p.push('why ' + k + ': not one of the choices');
+    if (q.whySay && q.whySay[k] != null && (typeof q.whySay[k] != 'string' || !q.whySay[k].trim())) p.push('why ' + k + ': whySay is empty');
+  }
+  return p;
+}
+// the round engine (index.html: check in 50-round.js, hintHTML in 39-hints.js, kindProblems in 49-kinds.js) is wrapped from here, as
+// es_art's generator is above: index.html has no room (spec 0.2). check notes the why of a first wrong answer (G.why) and says it;
+// hintHTML puts it above the hint while that question is on its second try.
+if (typeof kindProblems == 'function') {
+  const k2KindProblems = kindProblems;
+  kindProblems = q => {
+    const p = k2KindProblems(q);
+    return q && q.why != null ? p.concat(k2WhyProblems(q)) : p;
+  };
+}
+if (typeof check == 'function') {
+  const k2Check = check;
+  check = function (v, el) {
+    const q = G && G.q, first = !!q && !G.lock && G.tries == 0;
+    if (first) G.why = mastTag(q) == 'ch' ? null : k2WhyOf(q, v);
+    k2Check(v, el);
+    if (first && G.why && G.q === q && G.tries == 1 && (gradeOf() <= 1 || S.voice)) {
+      const w = G.why.w;
+      setTimeout(() => { if (G && G.q === q && G.tries == 1) say(w, null, null, 1); }, 250); // after the hint's own words (said at 150 ms)
+    }
+  };
+}
+if (typeof hintHTML == 'function') {
+  const k2Hint = hintHTML;
+  hintHTML = q => {
+    const h = k2Hint(q), w = typeof G != 'undefined' && G && G.why;
+    return w && w.q === q && G.tries > 0 ? `<div class="why">${ico('hint', 22)}<span>${esc(w.s)}</span></div>${h}` : h;
+  };
 }
 
 var GEN2_VER='v170'; // last line: the whole file ran (checked by dataReady() before the app starts)

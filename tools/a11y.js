@@ -60,6 +60,7 @@ async function answerAct(p) {
       const i = q.choices.findIndex(c => String(c.v) !== String(q.ans));
       return [`.ch[data-i="${i}"]`];
     }
+    if (q.kind === 'tap') return [[...document.querySelectorAll('#prompt [data-v]')].map(e => `#prompt [data-v="${e.dataset.v}"]`).find(x => !x.includes(`"${q.ans}"`))]; // KINDS2-D
     if (q.kind === 'num') {
       const w = String(Math.abs(parseInt(q.ans, 10) || 0) + 1);
       return [...w].map(d => `.k[data-k="${d}"]`).concat('.k[data-k="go"]');
@@ -77,6 +78,8 @@ async function answerAct(p) {
     await p.evaluate(() => { const d = document.querySelector('.k[data-k="del"]'); for (let i = 0; i < 6 && d; i++) d.click(); });
     for (const d of q.ans) await p.click(`.k[data-k="${/\d|\./.test(d) ? d : d === '-' ? 'neg' : 'go'}"]`);
     await p.click('.k[data-k="go"]');
+  } else if (q.kind === 'tap') {
+    await p.click(`#prompt [data-v="${q.ans}"]`);
   } else {
     await p.click(`.ch[data-i="${q.vals.indexOf(q.ans)}"]`);
   }
@@ -194,6 +197,17 @@ const SCREENS = {
   'make-miss': k2Miss('coins', 3, 'make'),
   'make-parts': k2Screen('frac', 2, 'make'),
   'make-frame': k2Screen('tenf', 2, 'make'),
+  // KINDS2-D: find the mistake (kind tap: the steps of a worked example), fresh and after a wrong step; why (the sentence above the hint
+  // after the misconception value of a real sub 4 question)
+  'fix-question': { run: k2Start('big', 3, 'tap'), act: answerAct },
+  'fix-miss': { run: async p => { await k2Start('sub', 4, 'tap')(p); await p.evaluate(() => { const e = [...document.querySelectorAll('#prompt [data-v]')].find(x => x.dataset.v !== String(G.q.ans)); e.click(); }); await p.waitForTimeout(1400); } },
+  'why-miss': { run: async p => {
+    await p.evaluate(() => { let q = null; for (let s = 1; s < 400 && !q; s++) { const t = genQ('sub', 4, s); if (t.kind == 'num' && t.why) q = t; } G = newG({ sk: 'sub', mix: true, n: 2, pool: [q, genQ('sub', 4, 7)] }); next(); });
+    await p.waitForTimeout(600);
+    for (const d of await p.evaluate(() => Object.keys(G.q.why)[0])) await p.click(`.k[data-k="${d}"]`);
+    await p.click('.k[data-k="go"]');
+    await p.waitForTimeout(1400);
+  } },
   // S-SPK: the Spanish "Say it!" step (src/js/50-say.js) over the first question of a Spanish round; the microphone is the main control (64 px)
   'say-it': { run: ev(() => { SPK.mic = 'yes'; start('es', NODES.es.findIndex(n => n.sk == 'es_animal' && n.lv == 1)); G.spk = 1; spkOpen(G.q, () => next()); }), main: '.spk-mic' },
   // S-SPK2: Say it! after a try, with the kind line of the sound check ("Close! Listen again"); the Grown-ups Spanish listening card and

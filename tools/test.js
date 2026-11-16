@@ -5552,7 +5552,7 @@ run('step hints (P2-08): every step of 3,000 random problems per algorithm is ri
   HSTEP.set(q,9);if(!hintHTML(q).includes('data-hs="2"'))B('panel past the end');
   if(hintStep(q)!==false)B('hintStep without a panel on show should do nothing');
   if(!hintHTML({kind:'num',hint:stepsStory(['a','b'])}).includes('class="hs txt"'))B('text steps layout');
-  for(let s=1;s<=200;s++){const bq=genQ('big',5,s);if(bq.hint.k!=='steps'||bq.hint.steps.length!==3)B('big5 seed '+s+': hint '+bq.hint.k);}
+  K2.off=true;try{for(let s=1;s<=200;s++){const bq=genQ('big',5,s);if(bq.hint.k!=='steps'||bq.hint.steps.length!==3)B('big5 seed '+s+': hint '+bq.hint.k);}}finally{K2.off=false} // K2OLD (KINDS2-D): old tests check old (big 5 mixes in find the mistake), with K2.off
   bad;`);
   return{problems:p.concat(out),note:'3,000 problems each: add, sub, mul pp, mul std, div, equiv, common bottom'};
 });
@@ -19053,8 +19053,8 @@ const K2_OFF0={cnt1:'f08a5be4a531',cnt4:'4f68bb54f1ad',round1:'765adf356ccb',rou
   mfact1:'797010ed3912',mfact2:'5162d2f352dc',mfact3:'4d55a80c04f3',frac1:'7719e14f0399',frac2:'1cc20152a9de',geo2:'e96d9e5b3d06'};
 // one check body for both batches: the kind's samples, its stops' mix (share near the plan, no kind over 65% unless exempt), every new
 // question valid, K2.off gives the af3d449 questions, and the review round trip (seed path)
-const k2BC=(kind,plan,exempt,extra)=>eval(js+`;(()=>{const out={bad:[],rows:[],n:0,rt:0},bad=m=>{if(out.bad.length<60&&!out.bad.includes(m))out.bad.push(m)};
-  const KIND_=${JSON.stringify(kind)},PLAN=${JSON.stringify(plan)},EX=${JSON.stringify(exempt)},OFF=${JSON.stringify(K2_OFF0)};
+const k2BC=(kind,plan,exempt,extra,off)=>eval(js+`;(()=>{const out={bad:[],rows:[],n:0,rt:0},bad=m=>{if(out.bad.length<60&&!out.bad.includes(m))out.bad.push(m)};
+  const KIND_=${JSON.stringify(kind)},PLAN=${JSON.stringify(plan)},EX=${JSON.stringify(exempt)},OFF=${JSON.stringify(off||K2_OFF0)}; // KINDS2-D: its own hashes (off)
   const SM=(${require('./kinds-samples').make.toString()})(),BR=(${require('./kinds-samples').broken.toString()})(SM);
   // samples: two or more valid (validate, render, same(ans)), two broken (validate fails)
   const mine=Object.keys(SM).filter(k=>SM[k].kind==KIND_),br=Object.keys(BR).filter(k=>BR[k].kind==KIND_);
@@ -19157,6 +19157,91 @@ run('KINDS2-C make: samples, same() tables, the six models, kind mix of the swit
     for(let s=1;s<=200;s++){const q=genQ('mfact',2,s);if(q.kind=='make'&&!/^\\d+ × \\d+ = \\?$/.test(q.label))bad('mfact2: the array lost the fact label: '+q.label)}
   `);
   return{problems:r.bad,note:`${r.n} samples; ${r.rt} review round trips; ${r.rows.join('; ')}`};
+});
+
+// ---- KINDS2 batch D (docs/KINDS2-SPEC.md 2.5, 3, 5, 6): find the mistake and why ----
+// K2_FIXD: the computation stops that ask "find the mistake" (kind tap, a worked example with one wrong step) and the share planned
+// (spec 3: 20%; big 7 has none: its 6-digit sums need 7 lines; sub 8 converts only its 4-digit facts). They stay mostly number pad:
+// all are exempt from the 65% rule (spec 3 "Expected result": computation stops keep the pad).
+// K2_OFF_D: md5 (12 hex) of JSON.stringify(genQ(sk, lv, s)) for s = 1..150, ART emptied, of the stops batch D changes (find the mistake
+// and the why stops not in K2_OFF0 or the kinds2-seeds fixture), from the generators of commit cac486f (v170, before batch D).
+const K2_FIXD={big3:.2,big4:.2,big5:.2,big6:.2,sub4:.2,sub5:.2,sub6:.2,sub7:.2,sub8:.1,mbig2:.2,mbig3:.2,mbig4:.2,mbig5:.2,dbig1:.2,dbig2:.2,
+  dbig3:.2,dec3:.2,dec4:.2,fop1:.2,fop3:.2,ooo1:.2,alg1:.2,alg2:.2,alg3:.2};
+const K2_OFF_D={big3:'decb627d2e51',big4:'dbf6bb48f066',big5:'752f27cab24d',big6:'3f329ad2111f',sub4:'87d6fc297420',sub5:'bcc307bb56b5',
+  sub6:'75d9c8acc2f0',sub7:'3ed8cb858090',sub8:'cc81bee475ae',mbig2:'ffe9818ccc01',mbig3:'ef6c4a91812f',mbig4:'34f31f6d7d31',mbig5:'eba20cbe3d65',
+  dbig1:'461a3960184c',dbig2:'a68933808fbd',dbig3:'5ba20233e7a6',dec3:'37312d1ea683',dec4:'892d5ed2d323',fop1:'e97e0ae92a60',fop3:'605a9fe1b8e7',
+  ooo1:'07bd22d61a8a',alg1:'57608e756aef',alg2:'a93fce988824',alg3:'fabe2af83806',miss1:'b1f02653e332',miss2:'728e96437f83',frac6:'ba17f505b115'};
+// the stops with why sentences (spec 5, the first ten) and the share of their questions that carry one, at least
+const K2_WHY={sub4:.5,sub6:.5,big3:.5,big5:.5,miss1:.5,miss2:.5,tenf2:.3,pv1:.3,pv2:.3,frac4:.15,frac6:.3,fop1:.15,fop3:.3,dec2:.03,
+  round1:.9,round2:.9,round3:.9,round4:.9,ooo1:.02,es_art1:.25,es_art2:.25};
+run('KINDS2-D find the mistake and why: samples, worked examples, kind mix, K2.off, review round trip, why sentences, the hint panel, bank why',()=>{
+  const r=k2BC('tap',K2_FIXD,Object.keys(K2_FIXD),`
+    // every worked example: 3 to 5 steps, each a .tp line, the answer one of them, a fix label, the right step said on reveal (not the
+    // wrong one written), words a child can read
+    for(const id in PLAN){const [,sk,lv]=id.match(/^([a-z_]+)(\\d+)$/);
+      for(let s=1;s<=300;s++){const q=genQ(sk,+lv,s);if(q.kind!=='tap')continue;
+        const lines=[...q.html.matchAll(/<div class="tp fxl" data-v="(\\d+)"><b class="fxn" aria-hidden="true">\\d+<\\/b><span>([^<]*)<\\/span><\\/div>/g)];
+        if(lines.length<3||lines.length>5||lines.some((m,i)=>+m[1]!==i))bad(id+': '+lines.length+' steps in '+q.label);
+        if(!/^fix: /.test(q.label)||!/^Step \\d\\. It should say: .+\\.$/.test(q.ansSay||''))bad(id+': label or ansSay: '+q.label+' / '+q.ansSay);
+        const w=lines[+q.ans];if(!w||q.ansSay.includes('say: '+k2Speak(w[2])+'.'))bad(id+': the step said on reveal is the wrong one: '+q.label);
+        if(q.ansSay.slice(0,6)!=='Step '+(+q.ans+1))bad(id+': ansSay names another step: '+q.label);
+        if(/undefined|NaN|Infinity/.test(q.html+q.say+q.ansSay))bad(id+': '+q.label);
+        if((q.say+' '+q.html.replace(/<[^>]*>/g,' ')).split(/[^A-Za-z]+/).some(x=>BAD.test(x.toLowerCase())))bad(id+': a word is not kid-safe')}}
+    // one family by hand: 38 + 47, the carry forgotten in the tens (seeded, so the mistake is the same each run)
+    {let q=null;for(let s=1;s<=2000&&!q;s++){RNG=mulberry32(s);const t=k2FixAdd({label:'38 + 47 = ?',hint:{k:'text',s:'x'}});if(t&&/carry 2$/.test(t.label))q=t}
+     if(!q||q.ans!=='1'||!/Tens: 3 \\+ 4 = 7</.test(q.html)||!/Ones: 8 \\+ 7 = 15</.test(q.html)||!/So 38 \\+ 47 = 75</.test(q.html)||!/plus 1 is 8/.test(q.ansSay))bad('38 + 47 carry: '+(q&&q.html))}
+    // a mistake that does not change a step is never offered: 31 + 25 has no carry
+    {const L=[];for(let s=1;s<=200;s++){RNG=mulberry32(s);const t=k2FixAdd({label:'31 + 25 = ?',hint:{k:'text',s:'x'}});if(t)L.push(t.label)}
+     if(L.some(l=>/carry/.test(l))||!L.length)bad('31 + 25: a carry mistake with no carry')}
+  `,K2_OFF_D);
+  const p=[...r.bad];
+  // why: every sentence passes kindProblems (a wrong value as its key, a choice for choice, 90 letters at most, kid-safe words), the
+  // share of each stop's questions that carry one, the first ten misconceptions by hand, K2.off leaves them out, the hint panel shows it
+  // on the second try only, the bank's [text, why] distractors
+  const w=eval(js+`;(()=>{const out={bad:[],rows:[]},bad=m=>{if(out.bad.length<60&&!out.bad.includes(m))out.bad.push(m)};
+    const W=${JSON.stringify(K2_WHY)},keys={};
+    for(const id in W){const [,sk,lv]=id.match(/^([a-z_]+)(\\d+)$/);let n=0;
+      for(let s=1;s<=400;s++){const q=genQ(sk,+lv,s);if(!q.why)continue;n++;for(const x of kindProblems(q))bad(id+' '+q.label+': '+x);
+        for(const k in q.why){keys[q.why[k]]=1;if(KIND[q.kind].same?KIND[q.kind].same(q,k):k===String(q.ans))bad(id+': '+k+' is right')}}
+      if(n/400<W[id])bad(id+': why on '+Math.round(n/4)+'% of the questions, want '+Math.round(W[id]*100)+'% or more');
+      out.rows.push(id+' '+Math.round(n/4)+'%')}
+    out.n=Object.keys(keys).length;
+    // the first ten by hand: the misconception value gets its sentence; another wrong value gets none
+    const T=(q,f,v,re)=>{const x=k2WhySet(Object.assign({hint:{k:'text',s:'x'}},q),f(q)||{});const g=k2WhyOf(x,v);if(!g||!re.test(g.s))bad('why '+q.label+' '+v+': '+(g&&g.s))};
+    T({kind:'num',label:'52 − 38 = ?',ans:'14',html:SLOT},k2WhySub,'26',/^Looks like 8 − 2\\. .*trade a ten first\\.$/);
+    T({kind:'num',label:'38 + 47 = ?',ans:'85',html:SLOT},k2WhyAdd,'75',/^8 \\+ 7 is 15\\. Write the 5 and carry the 1 ten\\.$/);
+    T({kind:'num',label:'38 + 47 = ?',ans:'85',html:SLOT},k2WhyAdd,'715',/carry the 1 ten/);
+    T({kind:'num',label:'4 + ? = 12',ans:'8',html:SLOT},k2WhyMiss,'16',/^12 is the total\\. How many more from 4 up to 12\\?$/);
+    T({kind:'choice',label:'value of 7 in 736',ans:'700',choices:['7','70','700'].map(v=>({v,l:v}))},k2WhyPv,'7',/^That 7 sits in the hundreds place, so it is worth 700\\.$/);
+    T({kind:'choice',label:'frac cmp 1/8 ? 1/4',ans:'<',choices:['<','=','>'].map(v=>({v,l:v}))},k2WhyFrac,'>',/^More parts means smaller parts\\. Eighths are smaller than fourths\\.$/);
+    T({kind:'num',label:'fop3 1/2 + 1/3',ans:'5/6',pad:'frac',eq:'value',html:SLOT_FRAC},k2WhyFop,'4/10',/^Don't add the bottoms/);
+    T({kind:'choice',label:'dec2 0.25 ? 0.3',ans:'<',choices:['<','=','>'].map(v=>({v,l:v}))},k2WhyDec,'>',/^Compare tenths first: 3 tenths beats 2 tenths\\.$/);
+    T({kind:'num',label:'round 46 to 10',ans:'50',html:SLOT},k2WhyRound,'40',/5 or more rounds up/);
+    T({kind:'num',label:'2 + 3 × 4 = ?',ans:'14',html:SLOT},k2WhyOoo,'20',/^Multiply before you add: 3 × 4 first\\.$/);
+    T({kind:'choice',label:'el perro',ans:'el',choices:['el','la'].map(v=>({v,l:v}))},k2WhyArt,'la',/perro ends in -o/);
+    {const q=k2WhySet({kind:'num',label:'52 − 38 = ?',ans:'14',html:SLOT},k2WhySub(({label:'52 − 38 = ?'})));if(k2WhyOf(q,'27')||k2WhyOf(q,'14'))bad('why: a value with no sentence got one')}
+    // eq 'value' and line: looked up by the kind's own comparison (4/10 is 2/5; the rounding line by value)
+    {const q=k2WhySet({kind:'num',label:'fop3 1/2 + 1/3',ans:'5/6',pad:'frac',eq:'value',html:SLOT_FRAC},{'2/5':'s'});if(!k2WhyOf(q,'4/10'))bad('why: eq value lookup')}
+    // K2.off: no question carries a why
+    K2.off=true;try{for(const id in W){const [,sk,lv]=id.match(/^([a-z_]+)(\\d+)$/);for(let s=1;s<=60;s++)if(genQ(sk,+lv,s).why)bad(id+': a why with K2.off')}}finally{K2.off=false}
+    // the hint panel: the why (bulb, the sentence) above the hint on the second try of that question only
+    const q=k2WhySet({kind:'num',label:'52 − 38 = ?',ans:'14',html:SLOT,hint:{k:'text',s:'Trade a ten.'}},k2WhySub({label:'52 − 38 = ?'}));
+    const g0=typeof G!='undefined'?G:undefined;
+    try{G={q,tries:1,why:k2WhyOf(q,'26')};const h=hintHTML(q);
+      if(!/^<div class="why"><svg[^>]*>.*<\\/svg><span>Looks like 8 − 2\\. We can&#39;t flip them|^<div class="why"><svg[\\s\\S]*Looks like 8 − 2/.test(h)||!/Trade a ten\\.$/.test(h))bad('hint panel with why: '+h);
+      G.tries=0;if(/class="why"/.test(hintHTML(q)))bad('the why shows before a miss');
+      G.tries=1;G.why=null;if(/class="why"/.test(hintHTML(q)))bad('a why with no misconception value')}
+    finally{G=g0}
+    // the bank: [text, why] distractors build q.why (choice), the validator checks them, K2.off leaves them out
+    const it={lv:1,q:'Which one is a fruit?',a:'apple',d:[['carrot','A carrot is a vegetable. It grows under the ground.'],'rock']};
+    if(bankItemProblems(it,'it').length)bad('bank [text, why]: '+bankItemProblems(it,'it').join('; '));
+    if(!bankItemProblems(Object.assign({},it,{d:[['carrot','x'.repeat(91)],'rock']}),'it').length)bad('bank validator missed a long why');
+    if(!bankItemProblems(Object.assign({},it,{d:[['carrot'],'rock']}),'it').length)bad('bank validator missed a why with no sentence');
+    const bq=bankBuild('zz',it);if(bq.kind!=='choice'||!bq.why||!/vegetable/.test(bq.why.carrot)||bq.why.rock||kindProblems(bq).length||!bq.choices.some(c=>c.v==='carrot'))bad('bank why: '+JSON.stringify(bq.why));
+    K2.off=true;try{if(bankBuild('zz',it).why)bad('bank why with K2.off')}finally{K2.off=false}
+    return out})()`);
+  p.push(...w.bad);
+  return{problems:p,note:`${r.n} samples; ${r.rt} review round trips; find the mistake: ${r.rows.join('; ')}; why on: ${w.rows.join(', ')} (${w.n} sentences)`};
 });
 
 // ---- report ----

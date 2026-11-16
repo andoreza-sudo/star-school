@@ -51,7 +51,23 @@ exports.make = () => {
       model: 'clock', m: { one: false }, ans: '3:25', eq: 'exact', ansSay: '3 25', hint: { k: 'text', s: 'Count by 5s from the 12.' } },
     makep: { ...base, kind: 'make', label: 'zz:makep', html: '<div class="sub">Shade three fourths.</div>', say: 'Shade 3 fourths of the bar.',
       model: 'parts', m: { shape: 'bar', d: 4, whole: 1 }, ans: '3/4', eq: 'value', ansSay: '3 fourths', hint: { k: 'text', s: 'Shade 3 of the 4 parts.' } },
+    // KINDS2-D (2.5, 5): find the mistake (kind tap: a worked example, one step wrong) and why (a sentence for a likely wrong answer)
+    fix: { ...base, kind: 'tap', label: 'zz:fix', ans: '1', say: 'Sam worked out 38 plus 47. One step has a mistake. Find it and tap it.',
+      ansSay: 'Step 2. It should say: Tens, 3 plus 4 plus 1 is 8.', hint: { k: 'text', s: 'Check each column.' },
+      html: fixHTML('38 + 47', ['Ones: 8 + 7 = 15', 'Tens: 3 + 4 = 7', 'So 38 + 47 = 75']) },
+    fixs: { ...base, kind: 'tap', label: 'zz:fixs', ans: '0', say: 'Mia worked out 52 minus 38. One step has a mistake. Find it and tap it.',
+      ansSay: 'Step 1. It should say: Ones, 12 minus 8 is 4.', hint: { k: 'text', s: 'Check each column.' },
+      html: fixHTML('52 − 38', ['Ones: 8 − 2 = 6', 'Tens: 4 − 3 = 1', 'So 52 − 38 = 16']) },
+    whyn: { ...base, kind: 'num', label: 'zz:whyn', html: `<div class="eq">52 − 38 = ${SLOT}</div>`, ans: '14', say: '52 minus 38',
+      why: { 26: 'Looks like 8 − 2. We can\'t flip them: trade a ten first.' }, hint: { k: 'text', s: 'Trade a ten when the top digit is too small.' } },
+    whyl: { ...base, kind: 'line', label: 'zz:whyl', html: '<div class="sub">Round 46 to the nearest ten.</div>', say: 'Round 46 to the nearest ten.',
+      line: { min: 40, max: 50, step: 1, labels: [40, 45, 50], marks: [46] }, snap: 1, ans: '50', start: '46', ansSay: '50',
+      why: { 40: 'Look at the digit to the right. 5 or more rounds up.' }, hint: { k: 'text', s: 'Is 46 nearer to 40 or to 50?' } },
   };
+  function fixHTML(prob, lines) {
+    return `<div class="sub">One step has a mistake. Tap it.</div><div class="eq">${prob}</div><div class="fxs">`
+      + lines.map((t, i) => `<div class="tp fxl" data-v="${i}"><b class="fxn" aria-hidden="true">${i + 1}</b><span>${t}</span></div>`).join('') + '</div>';
+  }
 };
 // KINDS2: broken samples of the new kinds; each must fail validate (tools/test.js "kinds A"). S: the samples of make()
 exports.broken = S => {
@@ -66,6 +82,11 @@ exports.broken = S => {
     'line: the answer is not a stop': { ...S.linef, ans: '1/3' },
     'make: an unreachable target (13 coins)': { ...S.makec, m: { types: [10, 5, 1] }, ans: '134' },
     'make: minutes off the 5s without steps of 1': { ...S.maket, ans: '3:07' },
+    // KINDS2-D
+    'tap: the answer is not a step': { ...S.fix, ans: '5' },
+    'tap: only one step to tap': { ...S.fixs, html: S.fixs.html.replace(/data-v="[12]"/g, '') },
+    'why: the key is the right answer': { ...S.whyn, why: { 14: 'Look at the ones first.' } },
+    'why: a sentence over 90 letters': { ...S.whyl, why: { 40: 'Look at the digit just to the right of the place you round to. When it is 5 or more, round up.' } },
   };
 };
 // KINDS2-B, C: these two run IN the page (smoke, a11y and shots tap with them).
