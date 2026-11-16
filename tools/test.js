@@ -82,7 +82,14 @@ global.setTimeout=()=>{};
 
 const results=[]; // {name, problems, known, note}
 const PENDING=[]; // S-SPK2: a check may return a promise of {problems, note} (IndexedDB-style code); the report waits for it, in place
+// --only a,b : run only the checks whose name contains one of the substrings (case-insensitive); the rest are skipped and counted
+const ONLY=(()=>{const a=process.argv.slice(2),i=a.findIndex(x=>x=='--only'||x.startsWith('--only='));if(i<0)return null;
+  const v=a[i].startsWith('--only=')?a[i].slice(7):a[i+1];
+  const l=String(v||'').split(',').map(x=>x.trim().toLowerCase()).filter(Boolean);
+  if(!l.length){console.error('usage: node tools/test.js --only <substring>[,<substring>...]');process.exit(2)}return l})();
+let SKIPPED=0;
 const run=(name,fn)=>{
+  if(ONLY&&!ONLY.some(o=>name.toLowerCase().includes(o))){SKIPPED++;return}
   const put=(problems,note)=>{const kn=new Set(KNOWN[name]||[]),known=problems.filter(p=>kn.has(p));
     return{name,problems:problems.filter(p=>!kn.has(p)),known,note,unusedKnown:[...kn].filter(k=>!problems.includes(k))}};
   let problems=[],note='';
@@ -18479,6 +18486,8 @@ for(const r of results){
   if(r.problems.length>10)console.log('        ... and '+(r.problems.length-10)+' more');
   for(const k of r.unusedKnown)console.log('        note: KNOWN exception no longer needed: '+k);
 }
-console.log(failed?failed+' of '+results.length+' checks FAILED':'all '+results.length+' checks passed');
+const skipNote=ONLY?' ('+SKIPPED+' skipped by --only '+ONLY.join(',')+')':'';
+if(ONLY&&!results.length){console.log('no check name contains '+ONLY.join(' or ')+'; '+SKIPPED+' skipped');process.exitCode=1;return}
+console.log((failed?failed+' of '+results.length+' checks FAILED':'all '+results.length+' checks passed')+skipNote);
 process.exitCode=failed?1:0;
 });
