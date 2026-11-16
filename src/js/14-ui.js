@@ -208,6 +208,12 @@ const UI = {
    closes a sheet that a backdrop tap closes, and focus goes back to where it was when it closes. An element drawn as a button that is
    not a <button> (role="button" tabindex="0") is pressed with Enter or Space like one. Every screen has one h1: view() names the
    top bar's title the page heading, or adds one only screen readers see (UI.heading). */
+// press an element like a click: an SVG target (role="button" on a <g> or <rect>, the tap kind's pictures in 23-viz.js) has no
+// click() method, so it gets a click event that bubbles like a real one instead (Enter on it used to throw)
+UI.press = el => {
+  if (typeof el.click == 'function') el.click();
+  else el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+};
 UI.modal = {
   SEL: '.sheet-bg, .ovl',
   FOCUS: 'button:not([disabled]), a[href], input:not([disabled]):not([type=hidden]), select, textarea, summary, [tabindex]:not([tabindex="-1"])',
@@ -269,7 +275,7 @@ UI.modal = {
     // Enter or Space on something drawn as a button that is not a <button>
     if ((e.key == 'Enter' || e.key == ' ') && t && t.matches && t.matches('[role=button]:not(button):not(a), [role=switch]:not(input), [role=tab]:not(button)')) {
       e.preventDefault();
-      t.click();
+      UI.press(t);
       return;
     }
     const m = UI.modal.top();

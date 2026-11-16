@@ -90,6 +90,8 @@ const bankPicCh=(x,p)=>`<span class="pcap">${picFor(p[0],p[1])}<small>${esc(x)}<
 
 // One question from one item. Call it inside bankWith so shuffle() uses the item's own random stream.
 function bankBuild(id,it,pass){
+  let why=null; // KINDS2-D: [text, why] distractors (spec 5) build q.why; the item is used with plain texts
+  if(Array.isArray(it.d)&&it.d.some(Array.isArray)){why={};it=Object.assign({},it,{d:it.d.map(x=>Array.isArray(x)?(why[x[0]]=x[1],x[0]):x)})}
   const form=it.form||'choice';
   const pic=it.em?`<div class="bpic bem">${picFor(it.em[0],it.em[1])}</div>`:it.pic&&ICONS[it.pic]?`<div class="bpic">${ico(it.pic,64)}</div>`
     :it.grid?`<div class="bpic bgrid">${VIZ.coordGrid(it.grid)}</div>`:''; // R-01d: the grid the coordinate question talks about
@@ -123,6 +125,7 @@ function bankBuild(id,it,pass){
     const a=(Array.isArray(av)?av.join(','):av).slice(0,24);q.label=it.q.replace(/\*/g,'').slice(0,56-a.length)+' = '+a} // under 60 letters in all (P2-23)
   if(it.topic)q.topic=it.topic;
   if(pass)q.ctx={title:pass.title,text:pass.text};
+  if(why&&q.kind=='choice'&&typeof K2!='undefined'&&!K2.off)k2WhySet(q,why);
   return q;
 }
 
@@ -205,6 +208,12 @@ function bankItemProblems(it,where){
     for(const b of bankBadWords(v))p.push(w+name+' has a bad word: '+b);
     return true;
   };
+  // KINDS2-D: a distractor may be [text, why] (spec 5): the why is a short sentence (90 letters at most) shown after that wrong answer
+  if(Array.isArray(it.d)&&it.d.some(Array.isArray)){
+    for(const x of it.d)if(Array.isArray(x)&&(x.length!==2||typeof x[0]!=='string'||!str(x[1],90,'why of "'+x[0]+'"')))p.push(w+'a [text, why] distractor needs a text and a why');
+    if(form!=='choice'&&form!=='wide')p.push(w+'only choice items take [text, why] distractors');
+    it=Object.assign({},it,{d:it.d.map(x=>Array.isArray(x)?x[0]:x)});
+  }
   if(!Number.isInteger(it.lv)||it.lv<1)p.push(w+'lv must be a whole number from 1');
   if(!BANKFORMS.includes(form)){p.push(w+'unknown form '+form);return p}
   if(form!='match')str(it.q,BANKLIM.q,'q');

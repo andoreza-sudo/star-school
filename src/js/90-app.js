@@ -10,7 +10,7 @@ if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.
 if('serviceWorker' in navigator&&navigator.serviceWorker.controller){let rl=0;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(rl)return;rl=1;if(!document.querySelector('#hcv,#bbc,#stsvg,#ncv'))location.reload()})}
 try{speechSynthesis.getVoices();speechSynthesis.onvoiceschanged=()=>{}}catch(e){}
 /* ---------- A11, A11b, A11c: data banks and on-demand code live in more files ----------
-   tools/build.py writes the question generators (gen, gen2), the Brain Teaser puzzle types and the Game Room (PARTS in build.py)
+   tools/build.py writes the question generators (gen, gen2; gen also carries the Grown-ups screens, ROOM), the Brain Teaser puzzle types and the Game Room (PARTS in build.py)
    to gen.<VER>.js, gen2.<VER>.js, bt.<VER>.js, games.<VER>.js, rally.<VER>.js (G-RALLY2: Star Rally), games2.<VER>.js (G-04a: the newer games)
    and games3.<VER>.js (G-BB2: Block Builder), and src/data/*.js to data.<VER>.js. index.html loads them with their own script tags after this code and before src/boot.js:
    gen, gen2, bt, then data (games, rally, games2, games3 on demand, P6-02). Each file's last line is `var <NAME>_VER='<VER>'`. src/boot.js starts the app only if dataReady():
