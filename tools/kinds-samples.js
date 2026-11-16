@@ -32,6 +32,12 @@ exports.make = () => {
       words: ['The', 'tiny', 'frog', 'hops.'], ans: ['3'], hint: { k: 'text', s: 'A verb is an action word.' } },
     markm: { ...base, kind: 'mark', label: 'zz:markm', html: '<div class="bq">Tap the two nouns.</div>', say: 'Tap the two nouns.',
       words: ['My', 'dog', 'runs', 'in', 'the', 'park.'], ans: ['1', '5'], hint: { k: 'text', s: 'A noun names a person, place or thing.' } },
+    // KINDS2-B (docs/KINDS2-SPEC.md 2.3): the line kind, whole numbers and fourths
+    line: { ...base, kind: 'line', label: 'zz:line', html: '<div class="sub">Put the pin on 7.</div>', say: 'Put the pin on 7.',
+      line: { min: 0, max: 10, step: 1, labels: 'all' }, snap: 1, ans: '7', start: '0', ansSay: '7', hint: { k: 'text', s: 'Count the steps from 0.' } },
+    linef: { ...base, kind: 'line', label: 'zz:linef', html: '<div class="sub">Put the pin on three fourths.</div>', say: 'Put the pin on 3 fourths.',
+      line: { min: 0, max: 1, step: 0.25, den: 4, labels: [0, 1] }, snap: 0.25, ans: '3/4', start: '0', ansSay: '3 fourths',
+      hint: { k: 'text', s: 'The line is cut into 4 equal jumps.' } },
   };
 };
 // KINDS2: broken samples of the new kinds; each must fail validate (tools/test.js "kinds A"). S: the samples of make()
@@ -42,5 +48,18 @@ exports.broken = S => {
       ans: Array.from({ length: 12 }, (_, i) => i % 2 ? 'odd' : 'even').join('|') },
     'mark: index out of range': { ...S.mark, ans: ['9'] },
     'mark: two answers with one': { ...S.markm, one: true },
+    // KINDS2-B
+    'line: 12 stops': { ...S.line, line: { min: 0, max: 11, step: 1, labels: 'all' }, ans: '7' },
+    'line: the answer is not a stop': { ...S.linef, ans: '1/3' },
   };
+};
+// KINDS2-B: runs IN the page (smoke, a11y and shots tap with it).
+// linePt(k): the screen point of stop k of the line question on screen (the answer's stop when k is null), low on the band, under the
+// pin's own hit area
+exports.linePt = k => {
+  const q = G.q, sv = document.querySelector('.lnw svg'), r = sv.getBoundingClientRect(), vb = sv.viewBox.baseVal;
+  const n = Math.round((q.line.max - q.line.min) / q.snap), x0 = +sv.dataset.x0, x1 = +sv.dataset.x1;
+  if (k == null) k = Math.round((k2Val(q.ans) - q.line.min) / q.snap);
+  const b = sv.querySelector('.vband').getBoundingClientRect();
+  return { x: r.left + (x0 + k / n * (x1 - x0)) * r.width / vb.width, y: b.top + b.height * 0.8, k, n };
 };

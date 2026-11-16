@@ -83,3 +83,25 @@
   .sbz .schip{font-size:var(--fs-3)}
   .mkt{font-size:var(--fs-5)}
 }
+
+/* KINDS2-B line: a number line with a pin (svg class vi: --k never shrinks it). The svg is the picture; .lnp, an HTML slider laid
+   over the drawn pin (.lnb is as big as the svg), takes the drag and the keys. The pin's head shows a tick (right, shown answer) or a
+   cross (wrong) as well as its colour; a shown answer has a dashed head */
+.lnw{position:relative;width:100%;max-width:640px;margin:0 auto var(--s-3)}
+.lnb{position:relative;width:fit-content;max-width:100%;margin:0 auto;cursor:pointer}
+.lnp{position:absolute;border-radius:var(--r-pill);cursor:grab;touch-action:none}
+.lnp.drag{cursor:grabbing}
+.lnp:focus{outline:none}
+.lnp:focus-visible{outline:4px solid var(--ink);outline-offset:2px}
+.lnw g.vpin{pointer-events:none;transition:transform var(--t-slow) var(--ease)}
+.lnw g.vpin.drag{transition:none}
+.lnw g.vpin .vph{fill:var(--ink);stroke:var(--surface);stroke-width:3}
+.lnw g.vpin .vps{fill:none;stroke:var(--ink);stroke-width:4}
+.lnw g.vpin .vpok,.lnw g.vpin .vpno{display:none;fill:none;stroke:var(--surface);stroke-width:3}
+.lnw.right g.vpin .vph,.lnw.rev g.vpin .vph{fill:var(--good-ink)}
+.lnw.right g.vpin .vps,.lnw.rev g.vpin .vps{stroke:var(--good-ink)}
+.lnw.rev g.vpin .vph{stroke:var(--ink);stroke-dasharray:4 3}
+.lnw.right g.vpin .vpok,.lnw.rev g.vpin .vpok,.lnw.wrong g.vpin .vpno{display:inline}
+.lnw.wrong g.vpin .vph{fill:var(--try-ink)}
+.lnw.wrong g.vpin .vps{stroke:var(--try-ink)}
+

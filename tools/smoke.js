@@ -81,6 +81,8 @@ async function answer(page) {
     // KINDS2: tap the right word (one), or each right word and then Check
     for (const i of await page.evaluate(() => G.q.ans.map(Number))) await page.click(`.mkt[data-i="${i}"]`);
     if (!q.one) await page.click('#mcheck');
+  } else if (q.kind === 'line') {
+    await answerK2(page); // KINDS2-B: at the end of this file
   } else if (q.kind === 'trace') {
     await traceGlyph(page);
   } else if (q.kind === 'match') {
@@ -1252,6 +1254,7 @@ async function main() {
         boss: !!document.querySelector(`.node[data-n="${WR.math[PATHS.math.worlds.findIndex(w => w.id === 'm_mult')][1]}"]`),
         first: NODES.math[WR.math[PATHS.math.worlds.findIndex(w => w.id === 'm_mult')][0]].sk }));
       if (world.id !== 'm_mult' || world.stops !== 12 || !world.boss || world.first !== 'arr') fail('Multiply Mountain map: ' + JSON.stringify(world));
+      await mp.evaluate(() => { K2.off = true; }); // K2OLD (KINDS2-B/C): old tests check old, with K2.off
       await openMountain(0);
       await mp.waitForSelector('#prompt');
       const lay = await mp.evaluate(() => ({ n: G.n, sk: G.sk, w: document.documentElement.scrollWidth, art: !!document.querySelector('#prompt svg') }));
@@ -1410,6 +1413,7 @@ async function main() {
       await sp.waitForTimeout(500);
       const stops = await sp.evaluate(() => NODES.math.map((n, i) => [i, nid(n), n.wid]).filter(x => x[2] === 'm_shape' && x[1] !== 'boss_m_shape'));
       const seen = [];
+      await sp.evaluate(() => { K2.off = true; }); // K2OLD (KINDS2-B/C): old tests check old, with K2.off
       for (const [i, id] of stops) {
         await sp.evaluate(i => { start('math', i); }, i);
         // with all text hidden, a listening question's prompt can be empty (zero size), so wait for it to exist, not to be visible
@@ -1477,6 +1481,7 @@ async function main() {
       const stops = await cp.evaluate(() => NODES.math.map((n, i) => [i, nid(n), n.wid]).filter(x => x[2] === 'm_clock' && x[1] !== 'boss_m_clock'));
       const reefTime = await cp.evaluate(() => NODES.math.findIndex(n => n.sk === 'time' && n.lv === 1));
       const seen = [];
+      await cp.evaluate(() => { K2.off = true; }); // K2OLD (KINDS2-B/C): old tests check old, with K2.off
       for (const [i, id] of [...stops, [reefTime, 'time1']]) {
         await cp.evaluate(i => { start('math', i); }, i);
         await cp.waitForSelector('#prompt');
@@ -1639,6 +1644,7 @@ async function main() {
       if (!bx.pv || !bx.next) fail('Treasure Bay: passing pv2 should unlock big5: ' + JSON.stringify(bx));
       const bstops = await bp.evaluate(() => NODES.math.map((n, i) => [i, nid(n), n.wid]).filter(x => x[2] === 'm_bay' && x[1] !== 'boss_m_bay'));
       const bseen = [];
+      await bp.evaluate(() => { K2.off = true; }); // K2OLD (KINDS2-B/C): old tests check old, with K2.off
       for (const [i, id] of bstops) {
         await bp.evaluate(i => { start('math', i); }, i);
         await bp.waitForSelector('#prompt');
@@ -2056,6 +2062,7 @@ async function main() {
       if (stops.length !== 16) fail('Fraction Forest should have 16 stops plus the boss: ' + stops.join(' '));
       const fresh = stops.filter(s => !/^frac/.test(s));
       const pics = new Set(['time5', 'geo1', 'geo2', 'data3', 'shape5', 'meas4']);
+      await fq.evaluate(() => { K2.off = true; }); // K2OLD (KINDS2-B/C): old tests check old, with K2.off
       for (const id of fresh) {
         await fq.evaluate(() => home());
         await fq.click('.game[data-p="math"]');
@@ -2930,6 +2937,7 @@ async function main() {
       const full = new Set(['ang1', 'dec1']);
       const needArt = new Set(['fop2', 'ang1', 'ang2', 'geo3', 'pat4']);
       const seen10 = { dot: false, frac: false, sets: [] };
+      await dp.evaluate(() => { K2.off = true; }); // K2OLD (KINDS2-B/C): old tests check old, with K2.off
       for (const id of ['frac7', 'fop1', 'frac8', 'fop2', 'dec1', 'dec2', 'ang1', 'ang2', 'geo3', 'shape6', 'meas5', 'pat4', 'story7']) {
         await dp.evaluate(() => home());
         await dp.click('.game[data-p="math"]');
@@ -4099,6 +4107,7 @@ async function main() {
       await sp.click('#go');
       await sp.waitForSelector('.game[data-p="math"]');
       // every world before Sky City is finished first, so the map meets it without an unlock switch (Galaxy Core, after it, is not needed)
+      await sp.evaluate(() => { K2.off = true; }); // K2OLD (KINDS2-B/C): old tests check old, with K2.off
       await sp.evaluate(() => {
         const wi = PATHS.math.worlds.findIndex(w => w.id === 'm_sky');
         for (let i = 0; i < wi; i++) { for (let j = WR.math[i][0]; j <= WR.math[i][1]; j++) setSt('math', j, 2); S.wdone = S.wdone || {}; S.wdone[worldId('math', i)] = 1; }
@@ -8497,6 +8506,7 @@ async function main() {
     {
       const app = await openApp(browser, { fixture: 'midway', width: 380, height: 780 });
       const pg = app.page, bad = [], notes = [];
+      await pg.evaluate(() => { K2.off = true; }); // K2OLD (KINDS2-B/C): old tests check old, with K2.off
       const show = (sk, lv, seed) => pg.evaluate(([sk, lv, seed]) => {
         start('math', NODES.math.findIndex(n => n.sk == sk && n.lv == lv));
         G.q = genQ(sk, lv, seed);
@@ -11255,6 +11265,154 @@ async function main() {
         'Check on screen, real eo 2, gram 2 and sci_life 1 questions by the bot; no console errors, no network requests');
     }
 
+    // KINDS2 batch B (docs/KINDS2-SPEC.md 6, smoke): the line kind in one-question rounds of the real round engine at
+    // 360x740 and 800x1280. Fit everywhere: .qarea and .inp do not overflow sideways, every button in .inp, the pin's hit area, ten-frame
+    // cells and shaded parts are 48 x 48 or more, Check is on screen without scrolling the page. No console errors, no requests.
+    const KSM = require('./kinds-samples');
+    const k2Kit = (pg, at, bad) => {
+      const kit = {};
+      kit.round = async (src, sel) => {
+        await pg.evaluate(src => { const q = eval(src); G = newG({ sk: q.sk, mix: true, n: 1, pool: [q] }); next(); }, src);
+        await pg.waitForSelector(sel, { timeout: 5000 });
+        await vwait(pg, 300);
+      };
+      kit.sample = n => `(${KSM.make.toString()})()[${JSON.stringify(n)}]`;
+      kit.real = (sk, lv, kind) => `(()=>{for(let s=1;s<400;s++){const q=genQ(${JSON.stringify(sk)},${lv},s);if(q.kind==${JSON.stringify(kind)})return q}})()`;
+      kit.settle = tag => pg.waitForSelector('#chest', { timeout: 10000 }).catch(() => bad.push(at + tag + ': the round did not finish'));
+      kit.st = () => pg.evaluate(() => ({ s: G.score, done: G.done, lock: G.lock, tries: G.tries, missed: G.missed.length,
+        toast: (document.querySelector('#toast') || {}).textContent || '', hint: document.querySelector('#hint').textContent.trim() }));
+      kit.fitOk = async tag => {
+        const r = await pg.evaluate(() => {
+          const o = [], vw = document.documentElement.clientWidth;
+          for (const s of ['.qarea', '.inp']) { const e = document.querySelector(s); if (e && e.scrollWidth > e.clientWidth + 1) o.push(s + ' overflows sideways'); }
+          for (const e of document.querySelectorAll('.inp button, .lnw .lnp, .lnw .vband, .mmv [data-v], .mmv [data-c]')) {
+            const r = e.getBoundingClientRect();
+            if (r.width && (r.width < 47.5 || r.height < 47.5)) o.push('small ' + (e.getAttribute('class') || e.tagName) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
+            if (r.left < -1 || r.right > vw + 1) o.push('outside ' + (e.getAttribute('class') || e.tagName));
+          }
+          const c = document.querySelector('#mcheck');
+          if (c && document.scrollingElement.scrollTop === 0 && c.getBoundingClientRect().bottom > innerHeight + 1) o.push('Check below the screen');
+          if (document.documentElement.scrollWidth > vw) o.push('sideways scroll');
+          return o;
+        });
+        r.forEach(x => bad.push(at + tag + ': ' + x));
+      };
+      kit.tabTo = async (sel, back) => {
+        for (let k = 0; k < 60; k++) {
+          if (await pg.evaluate(s => document.activeElement && document.activeElement.matches(s), sel)) return true;
+          await pg.keyboard.press(back ? 'Shift+Tab' : 'Tab');
+        }
+        return false;
+      };
+      return kit;
+    };
+
+    // KINDS2-B, the line kind: right on the first try by a tap on the line; one stop away ("So close!", hint, a cross on the pin, Check
+    // waits for a move) then right; wrong twice (the pin slides to the answer with a tick, the answer spoken, asked again at the end);
+    // the pin dragged by the mouse; the pin's slider by the keyboard (Tab, arrows, Home, End; Tab to Check, Enter); real round, frac,
+    // int, dec, pv and cnt questions answered by answer()
+    {
+      const bad = [], notes = [];
+      for (const [w, h] of [[360, 740], [800, 1280]]) {
+        const ka = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ka.page, at = 'KINDS2-B ' + w + 'x' + h + ' ', K = k2Kit(pg, at, bad);
+        try {
+          await pg.evaluate(() => { window.__said = []; const s0 = window.say; window.say = (t, ...a) => { window.__said.push(String(t)); return s0(t, ...a); }; });
+          const pt = k => pg.evaluate(`(${KSM.linePt.toString()})(${k == null ? 'null' : k})`);
+          const tapStop = async k => { const p = await pt(k); await pg.mouse.click(p.x, p.y); await vwait(pg, 120); };
+          const pin = () => pg.evaluate(() => ({ k: G.lnK, now: document.querySelector('.lnw .lnp').getAttribute('aria-valuenow'),
+            text: document.querySelector('.lnw .lnp').getAttribute('aria-valuetext'), go: !document.querySelector('#mcheck').disabled }));
+          const LN = '.inp .lnw svg';
+          // 1. right first try: a tap on the line's band at 7, Check
+          await K.round(K.sample('line'), LN);
+          await K.fitOk('line fresh');
+          if ((await pin()).go) bad.push(at + 'Check is on before the pin moved');
+          await tapStop(null);
+          const p1 = await pin();
+          if (p1.k !== 7 || p1.now !== '7' || p1.text !== '7' || !p1.go) bad.push(at + 'line tap: ' + JSON.stringify(p1));
+          await pg.click('#mcheck');
+          await vwait(pg, 300);
+          const r1 = await K.st();
+          if (r1.s !== 1 || !r1.lock || !(await pg.$('.lnw.right'))) bad.push(at + 'line right first try: ' + JSON.stringify(r1));
+          await K.settle('line right');
+          // 2. one stop away: "So close! One step away.", the hint, a cross; Check off until the pin moves; then right
+          await K.round(K.sample('line'), LN);
+          await tapStop(6);
+          await pg.click('#mcheck');
+          await vwait(pg, 250);
+          const r2 = await K.st(), p2 = await pin(), cross = await pg.evaluate(() => { const e = document.querySelector('.lnw.wrong .vpno'); return !!e && getComputedStyle(e).display != 'none'; });
+          if (!/So close! One step away/.test(r2.toast) || !r2.hint || !cross || p2.go || p2.k !== 6) bad.push(at + 'line near miss: ' + JSON.stringify([r2, p2, cross]));
+          await K.fitOk('line after a miss');
+          if (w === 360) await pg.screenshot({ path: '/tmp/kinds2bc-smoke-line-miss.png' }).catch(() => {});
+          await vwait(pg, 900);
+          await tapStop(7);
+          await pg.click('#mcheck');
+          await vwait(pg, 300);
+          const r3 = await K.st();
+          if (r3.s !== 0 || r3.done !== 1 || !r3.lock) bad.push(at + 'line right on the second try: ' + JSON.stringify(r3));
+          await K.settle('line second try');
+          // 3. wrong twice (fourths): reveal at 3/4 with a tick, "3 fourths" said, asked again at the end of the round
+          await K.round(K.sample('linef'), LN);
+          await tapStop(1); await pg.click('#mcheck'); await vwait(pg, 1000);
+          await pg.evaluate(() => { window.__said = []; });
+          await tapStop(2); await pg.click('#mcheck'); await vwait(pg, 500);
+          const r4 = await pg.evaluate(() => ({ rev: !!document.querySelector('.lnw.rev'), now: document.querySelector('.lnw .lnp').getAttribute('aria-valuenow'),
+            tick: getComputedStyle(document.querySelector('.lnw .vpok')).display != 'none', said: window.__said.join(' | '), missed: G.missed.length }));
+          if (!r4.rev || r4.now !== '0.75' || !r4.tick || !/3 fourths/.test(r4.said) || r4.missed !== 1) bad.push(at + 'line reveal: ' + JSON.stringify(r4));
+          if (w === 360) await pg.screenshot({ path: '/tmp/kinds2bc-smoke-line-rev.png' }).catch(() => {});
+          await pg.waitForFunction(() => G.retry && G.q && G.q.kind === 'line' && !G.lock, null, { timeout: 8000 }).catch(() => bad.push(at + 'the missed line did not come back at the end of the round'));
+          // 4. drag: the pin by the mouse from 0 to 7 (it follows, then snaps); the same result as tapping
+          await K.round(K.sample('line'), LN);
+          const b = await (await pg.$('.lnw .lnp')).boundingBox(), p7 = await pt(7), y = b.y + b.height / 2;
+          await pg.mouse.move(b.x + b.width / 2, y);
+          await pg.mouse.down();
+          for (let k = 1; k <= 10; k++) await pg.mouse.move(b.x + b.width / 2 + (p7.x - b.x - b.width / 2) * k / 10 + (k == 10 ? 4 : 0), y);
+          await pg.mouse.up();
+          await vwait(pg, 150);
+          const r5 = await pg.evaluate(() => ({ k: G.lnK, drag: !!document.querySelector('.vpin.drag, .lnp.drag'), go: !document.querySelector('#mcheck').disabled }));
+          if (r5.k !== 7 || r5.drag || !r5.go) bad.push(at + 'line drag: ' + JSON.stringify(r5));
+          await pg.click('#mcheck');
+          await vwait(pg, 300);
+          if ((await K.st()).s !== 1) bad.push(at + 'line by drag was not right');
+          await K.settle('line by drag');
+          // 5. keyboard: Tab to the pin (a slider), End, Home, then ArrowRight 7 times and ArrowLeft once and ArrowUp once; Tab to Check, Enter
+          await K.round(K.sample('line'), LN);
+          let keys = await K.tabTo('.lnw .lnp');
+          const role = await pg.evaluate(() => document.activeElement.getAttribute('role'));
+          await pg.keyboard.press('End');
+          const kEnd = (await pin()).k;
+          await pg.keyboard.press('Home');
+          for (let k = 0; k < 7; k++) await pg.keyboard.press('ArrowRight');
+          await pg.keyboard.press('ArrowLeft');
+          await pg.keyboard.press('ArrowUp');
+          const p6 = await pin();
+          keys = keys && role === 'slider' && kEnd === 10 && p6.k === 7 && p6.go && await K.tabTo('#mcheck') && (await pg.keyboard.press('Enter'), true);
+          await vwait(pg, 300);
+          if (!keys || (await K.st()).s !== 1) bad.push(at + 'line by keyboard: ' + JSON.stringify({ keys, role, kEnd, p6 }));
+          await K.settle('line by keyboard');
+          // 6. real stops answered by answer() (the bot of every smoke round)
+          for (const [sk, lv] of [['round', 1], ['round', 4], ['frac', 3], ['int', 1], ['int', 2], ['dec', 1], ['pv', 5], ['cnt', 1]]) {
+            await K.round(K.real(sk, lv, 'line'), LN);
+            await K.fitOk(sk + lv);
+            await answer(pg);
+            await vwait(pg, 300);
+            if ((await K.st()).s !== 1) bad.push(at + sk + lv + ' line: answer() did not get it right');
+            await K.settle(sk + lv);
+          }
+        } catch (x) { bad.push(at + x.message.split('\n')[0]); }
+        for (const e of ka.errors) bad.push(at + e);
+        for (const u of ka.network) bad.push(at + 'network request: ' + u);
+        notes.push(w + 'x' + h);
+        await ka.ctx.close();
+      }
+      if (bad.length) fail('KINDS2-B line:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('KINDS2-B: line at ' + notes.join(' and ') + ': right by a tap on the line, one stop away ("So close!", hint, a cross) then right, ' +
+        'wrong twice (the pin moves to the answer with a tick, the answer spoken, asked again at the end), the pin by mouse drag and by the ' +
+        'keyboard (slider: arrows, Home, End), 48 px targets, Check on screen, real round, frac, int, dec, pv and cnt questions by the bot; ' +
+        'no console errors, no network requests');
+    }
+
+
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');
   } catch (e) {
@@ -11265,5 +11423,12 @@ async function main() {
   }
   console.log(failed ? `smoke FAILED (${failed})` : 'smoke OK');
   process.exit(failed ? 1 : 0);
+}
+// KINDS2-B: answer() for line (a tap on the answer's stop of the line, then Check), by the helper of tools/kinds-samples.js
+async function answerK2(page) {
+  const KSM = require('./kinds-samples');
+  const p = await page.evaluate(`(${KSM.linePt.toString()})(null)`);
+  await page.mouse.click(p.x, p.y);
+  await page.click('#mcheck');
 }
 main();

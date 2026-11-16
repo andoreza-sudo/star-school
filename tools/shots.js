@@ -44,7 +44,24 @@ const k2Shot = (src, misses) => ({
       const q = await p.evaluate(() => ({ kind: G.q.kind, one: !!G.q.one, n: G.q.bins ? G.q.bins.length : 0,
         plan: G.q.kind == 'sort' ? G.q.items.map((c, i) => [i, G.q.bins.findIndex(b => String(b.v) === String(c.b))]) : null,
         ans: G.q.ans }));
-      if (q.kind == 'sort') {
+      if (q.kind == 'line') {
+        // KINDS2-B: first miss one stop from the answer ("So close!"), second miss two stops from it (never where the pin already is)
+        const a = await p.evaluate(`(${KS.linePt.toString()})(null)`), at = await p.evaluate(() => G.lnK);
+        const k = [a.k + m + 1, a.k - m - 1, a.k + m + 2, a.k - m - 2].find(x => x >= 0 && x <= a.n && x !== at);
+        const pt = await p.evaluate(`(${KS.linePt.toString()})(${k})`);
+        await p.mouse.click(pt.x, pt.y);
+        await p.click('#mcheck');
+      } else if (q.kind == 'make') {
+        // KINDS2-C: first miss the answer one step off; second miss one more step off (a part cleared for the parts model)
+        if (m == 0) for (let i = 0; i < 80; i++) {
+          const sel = await p.evaluate(`(${KS.makeStep.toString()})(false)`);
+          if (!sel) break;
+          await p.click(sel);
+        }
+        const parts = await p.evaluate(() => G.q.model == 'parts');
+        await p.click(m && parts ? '.mmb[data-d="-1"]' : await p.evaluate(`(${KS.makeStep.toString()})(true)`));
+        await p.click('#mcheck');
+      } else if (q.kind == 'sort') {
         // first miss: the first chip right, the rest in the next bin; second miss: everything still out in the next bin
         for (const [i, b] of q.plan) {
           if (await p.$(`.schip[data-i="${i}"].done`)) continue;
@@ -227,6 +244,13 @@ const SCREENS = {
   'kinds-mark': k2Shot('markm', 0),
   'kinds-mark-miss': k2Shot('markm', 1),
   'kinds-mark-rev': k2Shot('markm', 2),
+  // KINDS2-B: line, fresh, after a first miss (hint) and after the second miss (reveal), on real questions of the stops
+  'kinds-line': k2Shot(['round', 2, 'line'], 0),
+  'kinds-line-miss': k2Shot(['round', 2, 'line'], 1),
+  'kinds-line-rev': k2Shot(['round', 2, 'line'], 2),
+  'kinds-line-frac': k2Shot(['frac', 3, 'line'], 0),
+  'kinds-line-int': k2Shot(['int', 2, 'line'], 0),
+
 
   // ---- P4-02 icons ----
   care: { run: async p => { await p.evaluate(() => care()); } },

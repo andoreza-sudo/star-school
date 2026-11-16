@@ -130,7 +130,7 @@ for(const id in SK){for(let lv=1;lv<=SK[id].max;lv++){if(skLvEmpty(id,lv))contin
   for(const c of q.choices){if(BADHTML.test(c.l+' '+c.v))GEN.html.push(w+': choice has undefined/NaN');if(BAD.test(c.v))GEN.gen.push(w+': BAD word '+c.v)}
  }
  else if(q.kind=='build'){if(!q.tiles||q.tiles.length<q.word.length)GEN.gen.push(w+': too few tiles')}
- else if(q.kind=='tap'||q.kind=='order'||q.kind=='multi'||q.kind=='sort'||q.kind=='mark'){for(const x of kindProblems(q))GEN.gen.push(w+': '+x)} // KINDS2: sort, mark
+ else if(q.kind=='tap'||q.kind=='order'||q.kind=='multi'||q.kind=='sort'||q.kind=='mark'||q.kind=='line'){for(const x of kindProblems(q))GEN.gen.push(w+': '+x)} // KINDS2: sort, mark; KINDS2-B: line
  else if(q.kind=='match'){if(!q.items||!q.opts||q.items.length<3||q.items.length>5)GEN.gen.push(w+': bad match pairs')}
  else if(q.kind=='spell'||q.kind=='trace'){for(const x of kindProblems(q))GEN.gen.push(w+': '+x)}
  else GEN.gen.push(w+': unknown kind '+q.kind);
@@ -2257,7 +2257,7 @@ run('Tiny Town (P2-01): CURRICULUM M-PK levels, audio-first, answers by rule, 3,
 
 // ---- P2-05 Multiply Mountain: facts, arrays, stories, world and Fact Sprint sets ----
 run('multiply mountain: stops, fact rules per level, answers, unique labels, arrays, stories, Fact Sprint sets',()=>{
-  const out=eval(js+`
+  const out=eval(js+';K2.off=true;'+` // K2OLD (KINDS2-B/C): old tests check old, with K2.off
   S.name='Ava';S.buddy='Ben';G={built:[]};
   const bad=[],N=3000,mf=[],rv=n=>n.replace(/[×÷−]/g,m=>m);
   // 1. the world: last math world, grade 3, exactly the CURRICULUM M-3a stops in order
@@ -3463,7 +3463,7 @@ run('Clock Tower (P2-03): CURRICULUM M-1 levels, answers by rule, 3,000 samples 
     adds.forEach((n,i)=>{if(harder(n)!==(adds[i+1]||null)||easier(n)!==(adds[i-1]||null))b('harder/easier must follow map order at add '+n.lv)});
     return {out,checked};
   };
-  const r=eval(js+';('+body.toString()+')()');
+  const r=eval(js+';K2.off=true;('+body.toString()+')()'); // K2OLD (KINDS2-B/C): old tests check old, with K2.off
   for(const m of r.out)bad.push(m);
   // 8. new code: no raw hex colours and no Math.random in this chunk's block
   const gen=fs.readFileSync(path.join(SRC,'js','31-gen-math-early.js'),'utf8'),blk=gen.slice(gen.indexOf('// ---- P2-03 Clock Tower (1st) ----'));
@@ -3895,7 +3895,7 @@ run('Treasure Bay (P2-04): CURRICULUM M-2 levels, old levels unchanged, answers 
       ns.forEach((n,i)=>{if(harder(n)!==(ns[i+1]||null)||easier(n)!==(ns[i-1]||null))b('harder/easier must follow map order at '+sk+n.lv)})}
     return {out,checked,moved};
   };
-  const r=eval(js+';('+body.toString()+')()');
+  const r=eval(js+';K2.off=true;('+body.toString()+')()'); // K2OLD (KINDS2-B/C): old tests check old, with K2.off
   for(const m of r.out)bad.push(m);
   // 8. new code: no raw hex colours and no Math.random in this chunk's block
   const gen=fs.readFileSync(path.join(SRC,'js','31-gen-math-early.js'),'utf8'),blk=gen.slice(gen.indexOf('// ---- P2-04 Treasure Bay (2nd) ----'));
@@ -4338,7 +4338,7 @@ run('Fraction Forest P2-07: stops in CURRICULUM order, 3,000 samples per new lev
     for(const k of ['round1','round2','sub6','sub7','time5','time6','geo1','geo2','shape5','data3','meas4','story6'])if(seen[k]<30)add(k+': only '+seen[k]+' different labels');
     return bad;
   };
-  const r=eval(js+';('+body.toString()+')()');
+  const r=eval(js+';K2.off=true;('+body.toString()+')()'); // K2OLD (KINDS2-B/C): old tests check old, with K2.off
   return{problems:r,note:'12 levels (+4 reserved) x 3,000'};
 });
 
@@ -7266,7 +7266,7 @@ run('Volcano Lab P2-11: stops in CURRICULUM order, 3,000 samples per new level w
     inr(frac('ooo1','eval'),.4,.6,'ooo eval share');inr(frac('ooo1','ops3'),.2,.8,'ooo three-operation share');
     return {bad,n:Object.keys(tallies).length};
   };
-  const r=eval(js+';('+body.toString()+')()');
+  const r=eval(js+';K2.off=true;('+body.toString()+')()'); // K2OLD (KINDS2-B/C): old tests check old, with K2.off
   return{problems:uniq(r.bad),note:r.n+' levels x 3,000, 2 step builders x 3,000'};
 });
 
@@ -8500,7 +8500,7 @@ run('Crystal Caves P2-12: stops in CURRICULUM order, 3,000 samples per new level
     for(const [k,min] of [['fop3',200],['fop4',200],['fop5',60],['fop6',40],['geo4',150],['coord1',100],['meas6',60],['data4',300],['pat5',100],['story8',300]])if(seen[k]<min)add(k+': only '+seen[k]+' different labels');
     return bad;
   };
-  const r=eval(js+';('+body.toString()+')()');
+  const r=eval(js+';K2.off=true;('+body.toString()+')()'); // K2OLD (KINDS2-B/C): old tests check old, with K2.off
   // the block of this chunk: no Math.random, no raw colour
   const src=fs.readFileSync(path.join(SRC,'js','35-gen-math-upper.js'),'utf8'),i0=src.indexOf('// ---- P2-12 Crystal Caves ----'),i1=src.indexOf('\n// ---- P',i0+10),blk=src.slice(i0,i1<0?undefined:i1);
   if(i0<0)r.push('P2-12 block marker missing');
@@ -9517,7 +9517,7 @@ run('Sky City P2-13: stops in CURRICULUM order, 3,000 samples per new level with
     for(const [k,min] of [['ratio1',150],['ratio2',300],['ratio3',200],['ratio4',250],['int1',100],['int2',100],['int3',300],['fop7',300]])if(seen[k]<min)add(k+': only '+seen[k]+' different labels');
     return bad;
   };
-  const r=eval(js+';('+body.toString()+')()');
+  const r=eval(js+';K2.off=true;('+body.toString()+')()'); // K2OLD (KINDS2-B/C): old tests check old, with K2.off
   // the block of this chunk: no Math.random, no raw colour, every global starts with sky
   const src=fs.readFileSync(path.join(SRC,'js','35-gen-math-upper.js'),'utf8'),i0=src.indexOf('// ---- P2-13 Sky City ----'),i1=src.indexOf('\n// ---- P',i0+10),blk=src.slice(i0,i1<0?undefined:i1);
   if(i0<0)r.push('P2-13 block marker missing');
@@ -15744,7 +15744,7 @@ run('math review fixes R-01m',()=>{
     }
     return{bad,note};
   };
-  const r=eval(js+';('+body.toString()+')()');
+  const r=eval(js+';K2.off=true;('+body.toString()+')()'); // K2OLD (KINDS2-B/C): old tests check old, with K2.off
   return{problems:r.bad,note:Object.entries(r.note).map(([k,v])=>k+': '+v).join('; ')};
 });
 
@@ -19003,6 +19003,88 @@ run('KINDS2 rounds: not three of one kind in a row, review round trip, Fact Race
       for(const c of ['math','sight','es'])for(let i=0;i<500;i++){const q=raceQ(c);if(q.kind!=='num'&&q.kind!=='choice')bad('Fact Race '+c+' ('+f+'): a '+q.kind+' question')}}
     return out})()`);
   return{problems:r.bad,note:`${r.n} questions in 200 rounds (${r.mono} triples on single-kind stops); ${r.rt} review round trips`};
+});
+
+// ---- KINDS2 batch B (docs/KINDS2-SPEC.md 2.3, 3, 6): the line kind ----
+// K2_LINE: the stops switched to line and the share planned (spec 3; cnt 1 and 4, and dec 1 until batch C adds make there, at 40%, not 30%: 30% leaves the number pad at 70%).
+// K2_OFF0: md5 (12 hex) of JSON.stringify(genQ(sk, lv, s)) for s = 1..150, ART emptied, of the stops batches B and C switch, from the
+// generators of commit af3d449 (before them); with K2.off the stops must give these exactly.
+const K2_LINE={cnt1:.4,cnt4:.4,round1:.5,round2:.5,round3:.5,round4:.5,frac3:.5,dec1:.4,dec2:.3,pv5:.3,int1:.4,int2:.45};
+const K2_OFF0={cnt1:'f08a5be4a531',cnt4:'4f68bb54f1ad',round1:'765adf356ccb',round2:'f7aff9bb37e3',round3:'ed930021e130',round4:'af8199029acb',
+  frac3:'dcc09984f3fc',dec1:'64320ec6e03e',dec2:'1dff579d1da1',pv5:'8bd698059bfe',int1:'ef33cdc118a9',int2:'9a9929656881',tenf1:'a5b30b2f84ca',
+  tenf2:'09150b8c2953',tenf3:'0e2009bdefeb',pk_count3:'adc8acdfb356',add4:'8601004f4608',pv1:'fd3c65b75233',pv2:'e6baef1a2e76',big1:'abe19938414d',
+  coins1:'c6223ca6725d',coins2:'79e47fb01235',coins3:'da823ebb199b',coins5:'83eb32d73172',time1:'2a8c8012a4e9',time2:'04c0ad9c8b15',
+  time3:'cf0a72347296',time4:'bff67461efdd',time5:'6ec67e6555e1',arr1:'cfae4b6d9120',arr2:'5b4f6969ed25',mult1:'e148ee775a9b',mult2:'2b17fd246572',
+  mfact1:'797010ed3912',mfact2:'5162d2f352dc',mfact3:'4d55a80c04f3',frac1:'7719e14f0399',frac2:'1cc20152a9de',geo2:'e96d9e5b3d06'};
+// one check body for both batches: the kind's samples, its stops' mix (share near the plan, no kind over 65% unless exempt), every new
+// question valid, K2.off gives the af3d449 questions, and the review round trip (seed path)
+const k2BC=(kind,plan,exempt,extra)=>eval(js+`;(()=>{const out={bad:[],rows:[],n:0,rt:0},bad=m=>{if(out.bad.length<60&&!out.bad.includes(m))out.bad.push(m)};
+  const KIND_=${JSON.stringify(kind)},PLAN=${JSON.stringify(plan)},EX=${JSON.stringify(exempt)},OFF=${JSON.stringify(K2_OFF0)};
+  const SM=(${require('./kinds-samples').make.toString()})(),BR=(${require('./kinds-samples').broken.toString()})(SM);
+  // samples: two or more valid (validate, render, same(ans)), two broken (validate fails)
+  const mine=Object.keys(SM).filter(k=>SM[k].kind==KIND_),br=Object.keys(BR).filter(k=>BR[k].kind==KIND_);
+  if(mine.length<2||br.length<2)bad(KIND_+': needs two valid and two broken samples');
+  for(const k of mine){for(const p of kindProblems(SM[k]))bad(k+': '+p);let h='';try{h=KIND[KIND_].render(SM[k])}catch(e){bad(k+': render threw '+e.message)}
+    if(/\\bid="(?!mcheck)/.test(h))bad(k+': an id in the input area');if(!KIND[KIND_].same(SM[k],SM[k].ans))bad(k+': same() rejects its own answer');out.n++}
+  for(const k of br)if(!kindProblems(BR[k]).length)bad('validator missed: '+k);
+  for(const f of ['render','bind','right','retry','reveal','spoken','validate','same'])if(typeof KIND[KIND_][f]!=='function')bad('KIND.'+KIND_+'.'+f+' missing');
+  const artKeep=Object.assign({},ART);for(const k in ART)delete ART[k];
+  try{
+    for(const id in PLAN){const [,sk,lv]=id.match(/^([a-z_]+)(\\d+)$/),c={};
+      for(let s=1;s<=400;s++){const q=genQ(sk,+lv,s);c[q.kind]=(c[q.kind]||0)+1;
+        if(q.kind!==KIND_)continue;
+        for(const p of kindProblems(q))bad(id+': '+p);
+        if(!q.say||!q.label||q.label.length>=60||/undefined|NaN|\\[object/.test(q.label+q.html+q.say+(q.ansSay||'')))bad(id+': say, label or html: '+q.label);
+        if(!KIND_ || !KIND[KIND_].same(q,q.ans))bad(id+': same() rejects ans');
+        if(KIND[KIND_].spoken(q)==='')bad(id+': nothing to say on reveal');
+        try{const h=KIND[KIND_].render(q);if(h!==KIND[KIND_].render(q))bad(id+': render is not deterministic');if(/\\bid="(?!mcheck)/.test(h))bad(id+': an id in the input area')}catch(e){bad(id+': render threw '+e.message)}}
+      const sh=(c[KIND_]||0)/400,[top,tn]=Object.entries(c).sort((a,b)=>b[1]-a[1])[0];
+      if(Math.abs(sh-PLAN[id])>.12)bad(id+': '+KIND_+' is '+Math.round(sh*100)+'%, planned '+Math.round(PLAN[id]*100)+'%');
+      if(tn/400>.65&&!EX.includes(id))bad(id+': '+top+' is '+Math.round(tn/4)+'% (over 65%)');
+      out.rows.push(id+' '+Object.entries(c).sort((a,b)=>b[1]-a[1]).map(([k,v])=>k+' '+Math.round(v/4)+'%').join(' '))}
+    // K2.off: the stops ask exactly the af3d449 questions (the format draw is the last one and is skipped)
+    K2.off=true;
+    try{for(const id in PLAN){const [,sk,lv]=id.match(/^([a-z_]+)(\\d+)$/),a=[];for(let s=1;s<=150;s++){const q=genQ(sk,+lv,s);a.push(JSON.stringify(q));if(q.kind==KIND_)bad(id+': a '+KIND_+' question with K2.off')}
+      const h=require('crypto').createHash('md5').update(a.join('\\n')).digest('hex').slice(0,12);if(h!==OFF[id])bad(id+' with K2.off is not the af3d449 stop ('+h+')')}}
+    finally{K2.off=false}
+  }finally{Object.assign(ART,artKeep)}
+  // review round trip (spec 6.6): a missed question becomes an item; its seed rebuilds the same question; revQ books to the item
+  const store={};global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+  loadSave(null);migrate();
+  for(const id in PLAN){const [,sk,lv]=id.match(/^([a-z_]+)(\\d+)$/);let q=null;for(let s=1;s<=400&&!q;s++){const t=genQ(sk,+lv,s);if(t.kind==KIND_)q=t}
+    if(!q){bad(id+': no '+KIND_+' question in 400 seeds');continue}
+    S.rev=[];const it=revMiss(q,1);if(!it){bad(id+': revMiss made no item');continue}
+    const b=genQ(it.sk,it.lv,it.seed),bare=x=>JSON.stringify(Object.assign({},x,{sk:0,lv:0,seed:0}));
+    if(b.label!==q.label||b.kind!==KIND_||bare(b)!==bare(q))bad(id+': the item does not rebuild the same question');
+    const rq=revQ(it);if(!rq||rq.rvk!==revKey(it)||rq.sk!==sk||rq.lv!==+lv)bad(id+': revQ does not book to the item');
+    if(revFact(it,b)&&(rq.label!==q.label||rq.kind!==KIND_))bad(id+': a fact item came back changed');
+    if(rq&&!kindProblems(rq).length)out.rt++}
+  ${extra||''}
+  return out})()`);
+run('KINDS2-B line: samples, same() table, VIZ pin, kind mix of the switched stops, K2.off, review round trip',()=>{
+  const r=k2BC('line',K2_LINE,[],`
+    // same(): numeric, fractions in any form ('2/4' is '1/2'), decimals with or without a trailing zero
+    const L=(ans,den)=>({kind:'line',ans,line:{min:0,max:1,step:.25,den},snap:.25});
+    for(const [q,v,want] of [[L('1/2',4),'2/4',true],[L('2/4',4),'1/2',true],[L('1/2',4),'0.5',true],[L('3/4',4),'1/2',false],[L('3/4',4),'',false],
+      [L('3/4',4),null,false],[{kind:'line',ans:'7'},'7',true],[{kind:'line',ans:'7'},'7.0',true],[{kind:'line',ans:'7'},'8',false],
+      [{kind:'line',ans:'-3'},'-3',true],[{kind:'line',ans:'-3'},'3',false],[{kind:'line',ans:'0.3'},'0.30',true],[{kind:'line',ans:'0.3'},'0.03',false]])
+      if(KIND.line.same(q,v)!==want)bad('line same('+JSON.stringify(v)+') with ans '+q.ans+' should be '+want);
+    // VIZ.numLine o.pin: class vi, the ends as data, one pin with a 52 x 52 hit area over a 56 band, deterministic, no ids,
+    // the label never the answer; without o.pin the markup is the old one
+    const o={min:0,max:10,step:1,labels:'all',marks:[3]},a=VIZ.numLine(Object.assign({pin:4},o)),b=VIZ.numLine(Object.assign({pin:4},o));
+    if(a!==b)bad('numLine with a pin is not deterministic');
+    if(!/^<svg class="viz viz-nl vi"/.test(a.replace(/data-[a-z0-9]+="[^"]*" /g,''))||!/data-min="0"/.test(a)||!/data-max="10"/.test(a)||!/data-x0="24"/.test(a)||!/data-x1="314"/.test(a))bad('numLine pin: class vi and data-min, data-max, data-x0, data-x1');
+    if((a.match(/<g class="vpin"/g)||[]).length!==1||!/width="52" height="52"/.test(a)||!/class="vh vband"[^>]*height="56"/.test(a))bad('numLine pin: one pin, a 52 hit area, a 56 band');
+    if(/ id=/.test(a)||!/aria-label="number line"/.test(a))bad('numLine pin: no ids, label "number line"');
+    if(/vpin|data-min/.test(VIZ.numLine(o)))bad('numLine without o.pin changed');
+    // render: the pin starts at start; Check off; nothing tappable in html
+    const h=KIND.line.render(SM.line);if(!/translate\\(24 0\\)/.test(h)||!/id="mcheck"[^>]*disabled/.test(h))bad('line render: the pin at 0, Check off');
+    if(KIND.line.spoken(SM.linef)!=='3 fourths')bad('line spoken: '+KIND.line.spoken(SM.linef));
+    // the rounding model: the line between the two candidates, 11 stops, the number marked, the pin not on an end
+    for(let s=1;s<=400;s++){const q=genQ('round',2,s);if(q.kind!=='line')continue;const L=q.line,n=+/^round (\\d+)/.exec(q.label)[1];
+      if(L.max-L.min!==100||Math.round((L.max-L.min)/q.snap)!==10||!L.marks||L.marks[0]!==n||[L.min,L.max].includes(+q.start)||q.ans!==String(Math.round(n/100)*100))bad('round2 line: '+q.label+' '+JSON.stringify(L));break}
+  `);
+  return{problems:r.bad,note:`${r.n} samples; ${r.rt} review round trips; ${r.rows.join('; ')}`};
 });
 
 // ---- report ----

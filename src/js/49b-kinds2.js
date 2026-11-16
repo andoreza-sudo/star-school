@@ -378,12 +378,20 @@ const bankShare = (id, lv, f) => {
 };
 
 // ---- mixed formats for generated stops (spec 3): the fact is made as before, then one last seeded draw picks the format ----
-// K2GEN[skill][level] = [share of sort questions, converter(fact question, level) -> sort question or null (keep the fact)]
+// K2GEN[skill][level] = [share, converter(fact question, level) -> new question or null (keep the fact)], or a list of such pairs
+// (KINDS2-B: dec 2 has sort and line); one draw r, and the first pair whose summed shares pass r converts. A share may be a
+// function of the fact question (frac 3 converts every tap question).
 function k2Wrap(sk, g) {
   return lv => {
     const q = g(lv), f = K2GEN[sk] && K2GEN[sk][lv];
-    if (!f || K2.off || rnd() >= f[0]) return q;
-    return f[1](q, lv) || q;
+    if (!f || K2.off) return q;
+    const r = rnd();
+    let a = 0;
+    for (const [s, c] of Array.isArray(f[0]) ? f : [f]) {
+      a += typeof s == 'function' ? s(q) : s;
+      if (r < a) return c(q, lv) || q;
+    }
+    return q;
   };
 }
 // a sort question; items {v?, l, h?, b, say?, al?, lang?}: v defaults to the plain label
@@ -647,6 +655,290 @@ function k2EsMix(q0) {
     label: fu && k2Fact(q0.label) ? q0.label : k2Lab(bins, items)});
 }
 
+/* ---------- KINDS2 batch B: the line kind (docs/KINDS2-SPEC.md 2.3, 3) ----------
+   line   line {min, max, step, labels, marks, hide, den, hops} (the VIZ.numLine options); snap: the step between pin stops, at most
+          10 of them (11 stops); start: the pin's first stop (default min, never the answer); ans: a stop as a string ('7', '0.3',
+          '3/4'); ansSay. Tap the band of the line (the pin jumps to the nearest stop), drag the pin (it snaps on release), or the
+          arrow keys, Home and End on the pin (role slider). Check submits the stop as a string. One stop away on the first try is
+          still a miss: "So close! One step away." Reveal: the pin slides to the answer, with a tick on its head.
+   State on st (G, PL or RC): st.lnK (the pin's stop), st.lnK0, st.lnMoved, st.lnDrag, st.lnSkip.
+   Right and wrong also show a shape: a tick or a cross on the pin's head, as the a11y signal rule wants. */
+
+// a value as a number: '3/4' -> 0.75, '-2' -> -2, '0.25' -> 0.25
+const k2Val = v => {
+  const m = /^\s*(-?\d+)\s*\/\s*(\d+)\s*$/.exec(String(v));
+  return m ? +m[1] / +m[2] : String(v).trim() === '' ? NaN : +v;
+};
+const k2Clean = v => Math.round(v * 1e6) / 1e6;
+const k2Num = v => (v < 0 ? '−' + -v : String(v)); // printed with a real minus sign
+const k2SayNum = v => (v < 0 ? 'negative ' + -v : String(v)).replace(/\.(\d+)$/, (_, d) => ' point ' + [...d].join(' '));
+
+// ---- line: place a pin on a number line ----
+const lnN = q => Math.round((q.line.max - q.line.min) / q.snap);
+const lnV = (q, k) => k2Clean(q.line.min + k * q.snap);
+const lnK = (q, v) => Math.round((k2Val(v) - q.line.min) / q.snap);
+const lnStr = (q, k) => {
+  const v = lnV(q, k), d = q.line.den;
+  if (!d) return String(v);
+  const n = Math.round(v * d);
+  return n % d ? n + '/' + d : String(n / d);
+};
+const lnSay = (q, k) => {
+  const v = lnV(q, k), d = q.line.den, n = d ? Math.round(v * d) : 0;
+  return d && n % d ? fcSay(n, d) : k2SayNum(v);
+};
+const lnStart = q => lnK(q, q.start != null ? q.start : q.line.min);
+KIND.line = {
+  // the svg draws the line and its pin (aria-hidden: a picture); the pin's control is an HTML slider (.lnp) laid over the drawn pin,
+  // so screen readers and the keyboard reach it as a slider and the svg stays a plain picture
+  render: q => `<div class="lnw"><div class="lnb">${VIZ.numLine(Object.assign({}, q.line, {pin: lnV(q, lnStart(q))})).replace('<svg ', '<svg aria-hidden="true" ')}`
+    + `<div class="lnp" role="slider" tabindex="0" aria-label="Pin on the number line" aria-valuemin="${q.line.min}" aria-valuemax="${q.line.max}"></div></div></div>`
+    + UI.btn('Check', {kind: 'primary', icon: 'check', id: 'mcheck', cls: 'mgo', off: true}),
+  bind(q, st, submit) {
+    const K = KIND.line, box = $('.lnb'), sv = $('.lnb svg'), pin = $('.lnb .lnp');
+    st.lnK = st.lnK0 = lnStart(q);
+    st.lnMoved = false;
+    st.lnDrag = null;
+    st.lnSkip = false;
+    if (!sv || !pin) return;
+    pin.onkeydown = e => {
+      const k = {ArrowRight: st.lnK + 1, ArrowUp: st.lnK + 1, ArrowLeft: st.lnK - 1, ArrowDown: st.lnK - 1, Home: 0, End: lnN(q)}[e.key];
+      if (k == null) return;
+      e.preventDefault();
+      K.to(q, st, k);
+    };
+    pin.onpointerdown = e => K.down(q, st, e, sv, pin);
+    // a tap on the band of the line (or on the pin) moves the pin to the nearest stop; the click that ends a drag is skipped
+    box.onclick = e => {
+      if (st.lnSkip) {
+        st.lnSkip = false;
+        return;
+      }
+      if (st.lock || !e.target.closest('.vband,.vpin,.lnp')) return;
+      K.to(q, st, K.at(q, sv, e.clientX));
+    };
+    $('#mcheck').onclick = () => {
+      if (!st.lock && st.lnMoved) submit(lnStr(q, st.lnK), null);
+    };
+    K.draw(q, st);
+  },
+  // a pointer's x in svg units (through the svg's box), and the stop nearest to it
+  ux(sv, cx) {
+    const r = sv.getBoundingClientRect();
+    return (cx - r.left) * sv.viewBox.baseVal.width / (r.width || 1);
+  },
+  at(q, sv, cx) {
+    const x0 = +sv.dataset.x0, x1 = +sv.dataset.x1;
+    return Math.max(0, Math.min(lnN(q), Math.round((KIND.line.ux(sv, cx) - x0) / (x1 - x0) * lnN(q))));
+  },
+  to(q, st, k) {
+    if (st.lock) return;
+    k = Math.max(0, Math.min(lnN(q), k));
+    if (k !== st.lnK) {
+      st.lnK = k;
+      st.lnMoved = true;
+      SFX.pop(1);
+    }
+    KIND.line.draw(q, st);
+  },
+  // drag (an extra to tapping): starts after 8 px; the pin follows the finger and snaps to the nearest stop when it is let go
+  down(q, st, e, sv, pin) {
+    const K = KIND.line;
+    if (st.lock || e.button > 0) return;
+    const d = {x: e.clientX, on: false, id: e.pointerId};
+    st.lnDrag = d;
+    try { pin.setPointerCapture(d.id); } catch (_) { /* the pointer is gone */ }
+    const end = ev => {
+      pin.onpointermove = pin.onpointerup = pin.onpointercancel = null;
+      pin.classList.remove('drag');
+      const g = $('.lnb .vpin');
+      if (g) g.classList.remove('drag');
+      try { if (pin.hasPointerCapture && pin.hasPointerCapture(d.id)) pin.releasePointerCapture(d.id); } catch (_) { /* gone */ }
+      if (st.lnDrag !== d) return;
+      st.lnDrag = null;
+      if (!d.on || !ev || !sv.isConnected) return K.draw(q, st);
+      st.lnSkip = true;
+      setTimeout(() => { st.lnSkip = false; }, 0);
+      K.to(q, st, K.at(q, sv, ev.clientX));
+    };
+    pin.onpointermove = ev => {
+      if (st.lnDrag !== d || st.lock) return;
+      if (!d.on) {
+        if (Math.abs(ev.clientX - d.x) < 8) return;
+        d.on = true;
+        pin.classList.add('drag');
+      }
+      K.place(Math.max(+sv.dataset.x0, Math.min(+sv.dataset.x1, K.ux(sv, ev.clientX))), true);
+    };
+    pin.onpointerup = end;
+    pin.onpointercancel = () => end(null);
+  },
+  // the drawn pin and its slider at x (svg units; the slider stays inside the svg's box at the ends); drag: no slide
+  place(x, drag) {
+    const sv = $('.lnb svg'), g = $('.lnb .vpin'), pin = $('.lnb .lnp'), hr = g && g.querySelector('rect');
+    if (!sv || !g || !pin || !hr) return;
+    const vb = sv.viewBox.baseVal, z = +hr.getAttribute('width'), pc = v => k2Clean(v * 100) + '%';
+    g.classList.toggle('drag', !!drag);
+    g.style.transform = `translate(${k2Clean(x)}px,0)`;
+    Object.assign(pin.style, {left: pc(Math.max(0, Math.min(vb.width - z, x - z / 2)) / vb.width), top: pc(+hr.getAttribute('y') / vb.height), width: pc(z / vb.width), height: pc(z / vb.height)});
+  },
+  // the pin at stop k (DOM only: reveal has no st)
+  pinTo(q, k) {
+    const sv = $('.lnb svg'), pin = $('.lnb .lnp');
+    if (!sv || !pin) return;
+    const x0 = +sv.dataset.x0, x1 = +sv.dataset.x1;
+    KIND.line.place(x0 + k / lnN(q) * (x1 - x0));
+    pin.setAttribute('aria-valuenow', lnV(q, k));
+    pin.setAttribute('aria-valuetext', lnSay(q, k));
+  },
+  draw(q, st) {
+    KIND.line.pinTo(q, st.lnK);
+    const go = $('#mcheck');
+    if (go) go.disabled = !st.lnMoved;
+  },
+  same: (q, v) => Math.abs(k2Val(v) - k2Val(q.ans)) < 1e-9,
+  right() {
+    const w = $('.lnw');
+    if (w) w.classList.add('right');
+  },
+  // first miss: the pin stays where it is with a cross (the prompt shakes; the line does not, it is as wide as the screen); one stop
+  // away is "So close!"; Check waits until the pin moves again
+  retry(q, st) {
+    const w = $('.lnw'), off = Math.abs(st.lnK - lnK(q, q.ans));
+    fb(off == 1 ? 'So close! One step away.' : 'Not there yet. Try again!', 'again');
+    st.lnMoved = false;
+    KIND.line.draw(q, st);
+    if (!w) return;
+    w.classList.add('wrong');
+    setTimeout(() => w.classList.remove('wrong'), 900);
+  },
+  reveal(q) {
+    const w = $('.lnw'), pin = $('.lnw .lnp'), go = $('#mcheck');
+    if (w) w.classList.remove('wrong');
+    if (w) w.classList.add('rev');
+    KIND.line.pinTo(q, lnK(q, q.ans));
+    if (pin) pin.setAttribute('tabindex', '-1');
+    if (go) go.disabled = true;
+  },
+  spoken: q => q.ansSay || String(q.ans),
+  validate(q) {
+    const p = [], L = q.line;
+    if (!L || typeof L.min != 'number' || typeof L.max != 'number' || !(L.max > L.min)) return ['line: needs line {min, max} with max above min'];
+    if (!(q.snap > 0)) return ['line: snap must be above 0'];
+    const n = (L.max - L.min) / q.snap, isStop = v => isFinite(v) && v >= L.min - 1e-9 && v <= L.max + 1e-9
+      && Math.abs((v - L.min) / q.snap - Math.round((v - L.min) / q.snap)) < 1e-6;
+    if (Math.abs(n - Math.round(n)) > 1e-6) p.push('line: snap does not divide the line');
+    if (Math.round(n) > 10) p.push('line: more than 11 stops (' + (Math.round(n) + 1) + ')');
+    if (Math.round(n) < 2) p.push('line: fewer than 3 stops');
+    if (typeof q.ans != 'string' || !isStop(k2Val(q.ans))) p.push('line: ans is not a stop of the line: ' + q.ans);
+    const s = q.start != null ? k2Val(q.start) : L.min;
+    if (!isStop(s)) p.push('line: start is not a stop');
+    if (Math.abs(s - k2Val(q.ans)) < 1e-9) p.push('line: the pin starts on the answer');
+    if (L.tapValues) p.push('line: tap targets do not belong on a pin line');
+    if (L.den && Math.abs(q.snap * L.den - Math.round(q.snap * L.den)) > 1e-6) p.push('line: snap is not a step of the fraction labels');
+    if (/data-v=/.test(q.html || '')) p.push('line: the line belongs in the input area, not in html');
+    return p;
+  },
+};
+
+// ---- the converters (spec 3): a fact question q0 of the stop becomes a line question about the same fact ----
+// q0's label is kept wherever the new question asks the same fact (review asks it again), and its pk / auto flags (Kindergarten)
+function k2New(q0, o) {
+  const q = Object.assign({html: o.html, say: o.say, label: o.label || q0.label}, o.q);
+  q.hint = o.hint == null ? q0.hint : typeof o.hint == 'string' ? {k: 'text', s: o.hint} : o.hint;
+  if (o.speak && q.hint.k == 'text') q.hint.w = q.hint.s;
+  if (o.ansSay) q.ansSay = o.ansSay;
+  if (q0.pk) Object.assign(q, {pk: true, auto: q0.auto});
+  return q;
+}
+// a line question; start: min, or max when the answer is min
+function k2Line(q0, o) {
+  const L = o.line, ans = String(o.ans);
+  const start = o.start != null ? o.start : Math.abs(k2Val(ans) - L.min) < 1e-9 ? L.max : L.min;
+  return k2New(q0, Object.assign({}, o, {q: {kind: 'line', line: L, snap: o.snap || L.step || 1, ans, start: String(start)}}));
+}
+const k2Sub = t => `<div class="sub">${t}</div>`;
+// cnt 1 and 4 (K): the missing number of the sequence, on a line of 10 steps that holds it
+function k2Cnt(q0) {
+  const s = String(q0.label).split(','), a = +q0.ans, ns = s.map(x => (x == '_' ? a : +x));
+  if (ns.some(isNaN)) return null;
+  const st = Math.abs(ns[1] - ns[0]), lo = Math.min(...ns), hi = Math.max(...ns);
+  let min = st == 10 ? 0 : Math.floor(lo / 10) * 10;
+  if (st == 1 && min + 10 < hi) min = Math.floor(lo / 5) * 5;
+  const max = min + 10 * st;
+  if (lo < min || hi > max || ![1, 10].includes(st)) return null;
+  return k2Line(q0, {line: {min, max, step: st, labels: 'all', marks: ns.filter(x => x != a)}, snap: st, ans: a,
+    html: `<div class="seq">${s.map(x => (x == '_' ? '<b class="k2q">?</b>' : x)).join(', ')}</div>${pkTxt('Put the pin on the missing number.')}`,
+    say: `${String(q0.say).replace(/\.?$/, '.')} Put the pin on the missing number.`, ansSay: String(a)});
+}
+// round 1 to 4: the rounding model. The line runs between the two candidates in 10 steps; the number is a dot at its exact place
+// (not snapped to a stop, which could put 1346 on the halfway tick); the pin starts on the stop nearest the number
+const K2UNIT = {tenth: .1, hundredth: .01, 'whole number': 1};
+function k2Round(q0) {
+  const m = /^round ([\d.]+) to (.+)$/.exec(q0.label);
+  if (!m) return null;
+  const n = +m[1], u = K2UNIT[m[2]] || +m[2], lo = k2Clean(Math.floor(n / u + 1e-9) * u), hi = k2Clean(lo + u), a = k2Val(q0.ans);
+  if (!u || n == lo || a != lo && a != hi) return null;
+  const snap = u / 10, k = Math.min(9, Math.max(1, Math.round((n - lo) / snap)));
+  const t = (/<div class="sub">([^<]*)<\/div>/.exec(q0.html) || [])[1] || `Round ${n}.`;
+  return k2Line(q0, {line: {min: lo, max: hi, step: snap, labels: [lo, k2Clean(lo + u / 2), hi], marks: [n]}, snap, ans: q0.ans,
+    start: k2Clean(lo + k * snap), html: k2Sub(t) + k2Sub(`The dot is ${ffComma(m[1])}. Slide the pin to the rounded number.`),
+    say: `${q0.say} The dot shows ${k2SayNum(n)}. Slide the pin to the rounded number.`, ansSay: k2SayNum(a)});
+}
+// frac 3: place n/d on the line from 0 to 1 (or 2). It replaces the stop's tap variant (spec 3) and some of its read questions
+function k2FracLine(q0) {
+  const m = /^frac (?:tap|read) (\d+)\/(\d+)( to 2)?$/.exec(q0.label);
+  if (!m) return null;
+  const n = +m[1], d = +m[2], max = m[3] ? 2 : 1;
+  return k2Line(q0, {line: {min: 0, max, step: 1 / d, den: d, labels: max == 2 ? [0, 1, 2] : [0, 1]}, snap: 1 / d, ans: q0.ans,
+    html: `${k2Sub('Put the pin on')}<div class="eq">${fcFr(n, d)}</div>`, say: `Put the pin on ${fcSay(n, d)}.`, ansSay: fcSay(n, d),
+    hint: `The line from 0 to 1 is cut into ${d} equal jumps. Start at 0 and count ${n} jump${n == 1 ? '' : 's'}.`});
+}
+// a decimal on a line of 10 steps: tenths on 0 to 1 (or n to n+1), hundredths on a zoomed tenth, thousandths on a zoomed hundredth.
+// The fact's label stays when its answer is this number (lab: a new label when it is not)
+function k2DecLine(q0, v, html, say, lab) {
+  const pl = [1, 2, 3].find(p => Math.abs(v * Math.pow(10, p) - Math.round(v * Math.pow(10, p))) < 1e-6);
+  if (!pl || !isFinite(v) || v < 0 || Number.isInteger(v)) return null;
+  const sz = Math.pow(10, 1 - pl), min = k2Clean(Math.floor(v / sz + 1e-9) * sz), max = k2Clean(min + sz), vs = String(k2Clean(v));
+  return k2Line(q0, {line: {min, max, step: sz / 10, labels: [min, max]}, snap: sz / 10, ans: lab ? vs : q0.ans, label: lab,
+    html: html || `${k2Sub('Put the pin on')}<div class="eq">${vs}</div>`, say: say || `Put the pin on ${k2SayNum(+vs)}.`, ansSay: k2SayNum(+vs),
+    hint: pl == 1 ? `The line from ${min} to ${max} is cut into 10 equal parts. Each part is one tenth.`
+      : `This line is one ${pl == 2 ? 'tenth' : 'hundredth'} long, from ${min} to ${max}. Each small step is one ${pl == 2 ? 'hundredth' : 'thousandth'}.`});
+}
+const k2Dec1Line = q0 => k2DecLine(q0, k2Val(q0.ans));
+const k2Dec2Line = q0 => {
+  const m = /^dec2 ([\d.]+) \?/.exec(q0.label);
+  return m ? k2DecLine(q0, +m[1], null, null, 'dec2 place ' + m[1]) : null;
+};
+// pv 5: the number of the fact (its sum, its words or the number a digit sits in) on a zoomed line
+function k2Pv5Line(q0) {
+  const l = String(q0.label), vin = /^value of \S+ in ([\d.]+)$/.exec(l), v = vin ? +vin[1] : k2Val(q0.ans);
+  const what = vin ? `<div class="eq">${vin[1]}</div>` : /^words/.test(l) ? `<div class="sub k2words">${esc(q0.say)}</div>` : `<div class="eq">${esc(l.replace(/ = \?$/, ''))}</div>`;
+  const spoken = vin ? k2SayNum(v) : /^words/.test(l) ? q0.say : l.replace(/ = \?$/, '').replace(/\+/g, 'plus');
+  return k2DecLine(q0, v, k2Sub('Put the pin on this number.') + what, `Put the pin on ${spoken}.`, vin ? 'pv5 place ' + vin[1] : null);
+}
+// int 1: an integer of the fact on a line of 10 steps from -5 to 5, -10 to 0 or 0 to 10
+function k2IntLine(q0) {
+  const m = /^int1 \w+ (-?\d+)/.exec(q0.label), n = m ? +m[1] : NaN;
+  if (isNaN(n) || Math.abs(n) > 10) return null;
+  const min = Math.abs(n) <= 5 ? -5 : n < 0 ? -10 : 0, max = min + 10;
+  return k2Line(q0, {line: {min, max, step: 1, labels: [min, 0, max, min + 5].filter((x, i, a) => a.indexOf(x) == i)}, snap: 1, ans: n,
+    start: n == 0 ? max : 0, label: /^int1 tap /.test(q0.label) ? q0.label : 'int1 place ' + n, html: `${k2Sub('Put the pin on')}<div class="eq">${k2Num(n)}</div>`, say: `Put the pin on ${k2SayNum(n)}.`,
+    ansSay: k2SayNum(n), hint: 'Numbers below 0 are to the left of 0. Count the steps from 0.'});
+}
+// int 2: the opposite of a number from -5 to 5 (the fact's number when it is that small, else a new one)
+function k2IntOpp(q0) {
+  const m = /^int2 (opp|abs) (-?\d+)$/.exec(q0.label);
+  let n = m && Math.abs(+m[2]) <= 5 && +m[2] ? +m[2] : 0;
+  if (!n) n = (coin() ? -1 : 1) * R(1, 5);
+  return k2Line(q0, {line: {min: -5, max: 5, step: 1, labels: [-5, 0, 5, n].filter((x, i, a) => a.indexOf(x) == i), marks: [n]}, snap: 1,
+    ans: -n, start: 0, label: m && m[1] == 'opp' && +m[2] == n ? q0.label : 'int2 opp ' + n,
+    html: `${k2Sub('The dot is')}<div class="eq">${k2Num(n)}</div>${k2Sub('Put the pin on its opposite.')}`,
+    say: `The dot is ${k2SayNum(n)}. Put the pin on its opposite: the same distance from 0, on the other side.`, ansSay: k2SayNum(-n),
+    hint: `${k2Num(n)} is ${Math.abs(n)} steps from 0. Its opposite is ${Math.abs(n)} steps from 0 on the other side.`});
+}
+
+
 const K2GEN = {
   sort: {2: [.5, k2SortSize], 3: [.5, k2SortKinds]},
   sound: {1: [.4, k2Sound], 2: [.4, k2Sound]},
@@ -656,8 +948,13 @@ const K2GEN = {
   pic: {3: [.4, k2Vowel], 4: [.4, k2Vowel]},
   fact: {1: [.4, k2Factor], 2: [.6, k2Prime]},
   ang: {1: [.5, k2Angle]},
-  frac: {4: [.4, k2Half]},
-  dec: {2: [.4, k2Half]},
+  // KINDS2-B line (spec 3; cnt 1 and 4 and dec 1 at 40%, not 30%: 30% leaves the number pad over 65%, see PROGRESS)
+  frac: {3: [q => (q.kind == 'tap' ? 1 : .22), k2FracLine], 4: [.4, k2Half]},
+  dec: {1: [.4, k2Dec1Line], 2: [[.4, k2Half], [.3, k2Dec2Line]]},
+  cnt: {1: [.4, k2Cnt], 4: [.4, k2Cnt]},
+  round: {1: [.5, k2Round], 2: [.5, k2Round], 3: [.5, k2Round], 4: [.5, k2Round]},
+  pv: {5: [.3, k2Pv5Line]},
+  int: {1: [.4, k2IntLine], 2: [.45, k2IntOpp]},
   es_art: {1: [.6, k2Art], 2: [.6, k2Art]},
   es_ser: {2: [.45, k2Ser]},
   es_gusta: {2: [.45, k2Gusta]},

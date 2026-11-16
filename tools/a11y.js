@@ -53,7 +53,7 @@ const ev = (fn, arg) => async p => { await p.evaluate(fn, arg); await p.waitForT
 // a question of the real round engine, answered wrong then right by taps (choice, number keys or picture taps)
 async function answerAct(p) {
   const q = await p.evaluate(() => ({ kind: G.q.kind, ans: String(G.q.ans), vals: G.q.choices ? G.q.choices.map(c => String(c.v)) : null }));
-  if (q.kind === 'sort' || q.kind === 'mark') return k2Act(p);
+  if (['sort', 'mark', 'line', 'make'].includes(q.kind)) return k2Act(p);
   const wrongSel = await p.evaluate(() => {
     const q = G.q;
     if (q.choices) {
@@ -89,7 +89,28 @@ const qScreen = fn => ({ run: ev(fn), act: answerAct });
 
 // KINDS2: the sort and mark kinds. k2Wrong taps a wrong answer: every chip into another bin, or a wrong word (then Check)
 const k2Bin = (p, b) => p.click(`.sbt[data-b="${b}"]`, { position: { x: 16, y: 12 } });
+// KINDS2-B, C: line (a tap on a stop of the line, then Check) and make (the controls to the answer, one more step off it for a wrong
+// answer, then Check), with the helpers of tools/kinds-samples.js
+const KSM = require('./kinds-samples');
+async function k2LineMake(p, wrong) {
+  if (await p.evaluate(() => G.q.kind) === 'line') {
+    const a = await p.evaluate(`(${KSM.linePt.toString()})(null)`);
+    let k = a.k;
+    if (wrong) for (k = a.n; k >= 0; k--) if (k !== a.k && k !== await p.evaluate(() => G.lnK)) break;
+    const pt = await p.evaluate(`(${KSM.linePt.toString()})(${k})`);
+    await p.mouse.click(pt.x, pt.y);
+  } else {
+    for (let i = 0; i < 80; i++) {
+      const sel = await p.evaluate(`(${KSM.makeStep.toString()})(false)`);
+      if (!sel) break;
+      await p.click(sel);
+    }
+    if (wrong) await p.click(await p.evaluate(`(${KSM.makeStep.toString()})(true)`));
+  }
+  await p.click('#mcheck');
+}
 async function k2Wrong(p) {
+  if (['line', 'make'].includes(await p.evaluate(() => G.q.kind))) return k2LineMake(p, true);
   const q = await p.evaluate(() => ({ kind: G.q.kind, one: !!G.q.one, n: G.q.bins ? G.q.bins.length : 0,
     plan: G.q.kind == 'sort' ? G.q.items.map((c, i) => [i, G.q.bins.findIndex(b => String(b.v) === String(c.b))]) : null,
     w: G.q.words ? G.q.words.findIndex((_, i) => !G.q.ans.includes(String(i))) : -1 }));
@@ -111,7 +132,8 @@ async function k2Act(p) {
   await p.evaluate(() => { window.__a11y.mark('right'); });
   const q = await p.evaluate(() => ({ kind: G.q.kind, one: !!G.q.one, ans: G.q.kind == 'mark' ? G.q.ans.map(Number) : null,
     plan: G.q.kind == 'sort' ? G.q.items.map((c, i) => [i, G.q.bins.findIndex(b => String(b.v) === String(c.b))]) : null }));
-  if (q.kind === 'sort') {
+  if (q.kind === 'line' || q.kind === 'make') await k2LineMake(p, false);
+  else if (q.kind === 'sort') {
     for (const [i, b] of q.plan) {
       if (await p.$(`.schip[data-i="${i}"].done`)) continue;
       await p.click(`.schip[data-i="${i}"]`);
@@ -165,6 +187,9 @@ const SCREENS = {
   'sort-miss': k2Miss('eo', 2, 'sort'),
   'mark-question': k2Screen('gram', 7, 'mark'),
   'mark-miss': k2Miss('gram', 7, 'mark'),
+  // KINDS2-B: line (the rounding model, fourths), fresh and after a miss
+  'line-question': k2Screen('round', 1, 'line'),
+  'line-miss': k2Miss('frac', 3, 'line'),
   // S-SPK: the Spanish "Say it!" step (src/js/50-say.js) over the first question of a Spanish round; the microphone is the main control (64 px)
   'say-it': { run: ev(() => { SPK.mic = 'yes'; start('es', NODES.es.findIndex(n => n.sk == 'es_animal' && n.lv == 1)); G.spk = 1; spkOpen(G.q, () => next()); }), main: '.spk-mic' },
   // S-SPK2: Say it! after a try, with the kind line of the sound check ("Close! Listen again"); the Grown-ups Spanish listening card and

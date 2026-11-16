@@ -35,7 +35,10 @@
                                   or left out for automatic (every tick when it fits, else multiples of 2/5/10..);
                                   o.marks: values shown as a dot; o.hide: values whose label is a "?" box;
                                   o.tapValues: values that become tap targets; o.den: fraction labels in
-                                  denominator den (0, 1/4, 2/4 ... whole numbers stay whole); o.w: line length (290)
+                                  denominator den (0, 1/4, 2/4 ... whole numbers stay whole); o.w: line length (290);
+                                  o.pin (KINDS2 line): a pin at that value (<g class="vpin">: a 52 x 52 hit area (48 px on a phone), a stem, a head
+                                  with a tick .vpok and a cross .vpno) over a 56-unit band (.vband); the svg gets class vi and
+                                  data-min, data-max, data-x0, data-x1 (the ends in svg units), so the line kind can move the pin
      fracBar(n, d, o)             a bar in d equal parts, the first n shaded; n > d draws more bars.
                                   o.unit: write 1/d in each part; o.tap: every part is a target (data-v = 0..);
                                   o.w: bar length (280; at least 48 per part when tap)
@@ -238,7 +241,7 @@ const VIZ = (() => {
     let w = def(o.w, 290);
     // tap targets: at least 48 units between neighbouring values
     for (let i = 1; i < tap.length; i++) w = Math.max(w, 48 * (max - min) / Math.max(tap[i] - tap[i - 1], 1e-9));
-    const hops = o.hops || [], top = hops.length ? 34 : 0;
+    const hops = o.hops || [], pin = o.pin != null, top = (hops.length ? 34 : 0) + (pin ? 24 : 0);
     const P = 24, Y = 28 + top, den = o.den;
     const X = v => P + (v - min) / (max - min) * w;
     const W = w + 2 * P, Hh = (den ? 84 : 68) + top;
@@ -300,6 +303,12 @@ const VIZ = (() => {
       body += `<g ${tapAttr(v)}><rect class="vh" x="${f(X(v) - l)}" y="0" width="${f(l + r)}" height="${Hh}"/>` +
         `<circle class="vm" cx="${f(X(v))}" cy="${Y}" r="10"/></g>`;
     });
+    if (pin) {
+      body += `<rect class="vh vband" x="${P - 24}" y="${Y - 28}" width="${f(w + 48)}" height="56"/><g class="vpin" transform="translate(${f(X(o.pin))} 0)">` +
+        `<rect class="vh" x="-26" y="${Y - 48}" width="52" height="52"/><path class="vps" d="M0 ${Y - 12}V${Y - 2}"/><circle class="vph" cy="${Y - 24}" r="12"/>` +
+        `<path class="vpok" d="M-5.5 ${Y - 24}l3.5 3.5 7-7"/><path class="vpno" d="M-4.5 ${Y - 28.5}l9 9m0-9l-9 9"/></g>`;
+      return svg('nl', W, Hh, body, 'number line', true).replace('<svg ', `<svg data-min="${min}" data-max="${max}" data-x0="${P}" data-x1="${f(P + w)}" `);
+    }
     return svg('nl', W, Hh, body, 'number line', tap.length > 0);
   }
 
