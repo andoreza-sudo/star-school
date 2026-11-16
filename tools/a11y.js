@@ -53,6 +53,7 @@ const ev = (fn, arg) => async p => { await p.evaluate(fn, arg); await p.waitForT
 // a question of the real round engine, answered wrong then right by taps (choice, number keys or picture taps)
 async function answerAct(p) {
   const q = await p.evaluate(() => ({ kind: G.q.kind, ans: String(G.q.ans), vals: G.q.choices ? G.q.choices.map(c => String(c.v)) : null }));
+  if (q.kind === 'sort' || q.kind === 'mark') return k2Act(p);
   const wrongSel = await p.evaluate(() => {
     const q = G.q;
     if (q.choices) {
@@ -86,6 +87,60 @@ async function answerAct(p) {
 }
 const qScreen = fn => ({ run: ev(fn), act: answerAct });
 
+// KINDS2: the sort and mark kinds. k2Wrong taps a wrong answer: every chip into another bin, or a wrong word (then Check)
+const k2Bin = (p, b) => p.click(`.sbt[data-b="${b}"]`, { position: { x: 16, y: 12 } });
+async function k2Wrong(p) {
+  const q = await p.evaluate(() => ({ kind: G.q.kind, one: !!G.q.one, n: G.q.bins ? G.q.bins.length : 0,
+    plan: G.q.kind == 'sort' ? G.q.items.map((c, i) => [i, G.q.bins.findIndex(b => String(b.v) === String(c.b))]) : null,
+    w: G.q.words ? G.q.words.findIndex((_, i) => !G.q.ans.includes(String(i))) : -1 }));
+  if (q.kind === 'sort') {
+    for (const [i, b] of q.plan) { await p.click(`.schip[data-i="${i}"]`); await k2Bin(p, (b + 1) % q.n); }
+    await p.click('#mcheck');
+  } else {
+    await p.click(`.mkt[data-i="${q.w}"]`);
+    if (!q.one) await p.click('#mcheck');
+  }
+}
+// wrong then right, measuring the signal after each (as answerAct does for the older kinds)
+async function k2Act(p) {
+  await p.evaluate(() => { window.__a11y.mark('wrong'); });
+  await k2Wrong(p);
+  await p.waitForTimeout(250);
+  const wrong = await p.evaluate(() => window.__a11y.signal('wrong'));
+  await p.waitForTimeout(900);
+  await p.evaluate(() => { window.__a11y.mark('right'); });
+  const q = await p.evaluate(() => ({ kind: G.q.kind, one: !!G.q.one, ans: G.q.kind == 'mark' ? G.q.ans.map(Number) : null,
+    plan: G.q.kind == 'sort' ? G.q.items.map((c, i) => [i, G.q.bins.findIndex(b => String(b.v) === String(c.b))]) : null }));
+  if (q.kind === 'sort') {
+    for (const [i, b] of q.plan) {
+      if (await p.$(`.schip[data-i="${i}"].done`)) continue;
+      await p.click(`.schip[data-i="${i}"]`);
+      await k2Bin(p, b);
+    }
+    await p.click('#mcheck');
+  } else {
+    for (const i of q.ans) if (!(await p.$(`.mkt[data-i="${i}"].right`))) await p.click(`.mkt[data-i="${i}"]`);
+    if (!q.one) await p.click('#mcheck');
+  }
+  await p.waitForTimeout(250);
+  const right = await p.evaluate(() => window.__a11y.signal('right'));
+  await p.waitForTimeout(900);
+  return [wrong, right];
+}
+// a two-question round of the first generated questions of that kind at a stop (real sort or mark questions); the second one keeps a
+// question screen (with its Hear it button) after the first is answered
+const k2Start = (sk, lv, kind) => async p => {
+  await p.evaluate(([sk, lv, kind]) => {
+    const qs = [];
+    for (let s = 1; s < 400 && qs.length < 2; s++) { const q = genQ(sk, lv, s); if (q.kind == kind && !qs.some(x => x.label == q.label)) qs.push(q); }
+    G = newG({ sk, mix: true, n: 2, pool: qs });
+    next();
+  }, [sk, lv, kind]);
+  await p.waitForTimeout(600);
+};
+const k2Screen = (sk, lv, kind) => ({ run: k2Start(sk, lv, kind), act: k2Act });
+const k2Miss = (sk, lv, kind) => ({ run: async p => { await k2Start(sk, lv, kind)(p); await k2Wrong(p); await p.waitForTimeout(1400); } });
+
 const rwRun = async p => {
   await p.evaluate(() => start('math', 0));
   await p.waitForTimeout(600); // the question's own spoken prompt (400 ms after it shows) belongs to the question screen
@@ -105,6 +160,11 @@ const SCREENS = {
   'math-question': qScreen(() => { window.say = window.__a11y.say; start('math', 0); }),
   'read-question': qScreen(() => start('read', NODES.read.findIndex(n => n.sk == 'pic'))),
   'es-question': qScreen(() => start('es', 0)),
+  // KINDS2: sort (a Kindergarten picture sort with three bins of Discover, and an even / odd sort) and mark, fresh and after a miss
+  'sort-question': k2Screen('sci_life', 1, 'sort'),
+  'sort-miss': k2Miss('eo', 2, 'sort'),
+  'mark-question': k2Screen('gram', 7, 'mark'),
+  'mark-miss': k2Miss('gram', 7, 'mark'),
   // S-SPK: the Spanish "Say it!" step (src/js/50-say.js) over the first question of a Spanish round; the microphone is the main control (64 px)
   'say-it': { run: ev(() => { SPK.mic = 'yes'; start('es', NODES.es.findIndex(n => n.sk == 'es_animal' && n.lv == 1)); G.spk = 1; spkOpen(G.q, () => next()); }), main: '.spk-mic' },
   // S-SPK2: Say it! after a try, with the kind line of the sound check ("Close! Listen again"); the Grown-ups Spanish listening card and

@@ -124,7 +124,7 @@ for(const id in SK){for(let lv=1;lv<=SK[id].max;lv++){if(skLvEmpty(id,lv))contin
   for(const c of q.choices){if(BADHTML.test(c.l+' '+c.v))GEN.html.push(w+': choice has undefined/NaN');if(BAD.test(c.v))GEN.gen.push(w+': BAD word '+c.v)}
  }
  else if(q.kind=='build'){if(!q.tiles||q.tiles.length<q.word.length)GEN.gen.push(w+': too few tiles')}
- else if(q.kind=='tap'||q.kind=='order'||q.kind=='multi'){for(const x of kindProblems(q))GEN.gen.push(w+': '+x)}
+ else if(q.kind=='tap'||q.kind=='order'||q.kind=='multi'||q.kind=='sort'||q.kind=='mark'){for(const x of kindProblems(q))GEN.gen.push(w+': '+x)} // KINDS2: sort, mark
  else if(q.kind=='match'){if(!q.items||!q.opts||q.items.length<3||q.items.length>5)GEN.gen.push(w+': bad match pairs')}
  else if(q.kind=='spell'||q.kind=='trace'){for(const x of kindProblems(q))GEN.gen.push(w+': '+x)}
  else GEN.gen.push(w+': unknown kind '+q.kind);
@@ -592,7 +592,9 @@ run('banks: demo bank and passage validate, seeded and reproducible, memory, rou
   if(!/<span class="w" data-w="red">/.test(h)||!h.includes('data-say="It is &quot;red&quot; &amp; big."'))bad('bankCtx words or hear button wrong: '+h.slice(0,200));
   // 6. forms without a registered kind are never drawn
   BANK.__t=[{lv:1,q:'Put in order.',form:'order',order:['a','b','c']},{lv:1,q:'Pick.',a:'x',d:['y','z']}];
+  const keepOrder=BANKF.order;delete BANKF.order; // KINDS2 registered BANKF.order (spec 2.2): the rule is checked with no builder again
   for(let s=1;s<=30;s++)if(genBank('__t',1,{s}).bk.bi!==1)bad('an order item was drawn without a builder');
+  BANKF.order=keepOrder;
   delete BANK.__t;
   // 7. the validator must catch seeded bad items (each one alone must give at least one problem)
   const base={lv:1,q:'Pick one.',a:'x',d:['y','z','w']};
@@ -733,6 +735,10 @@ run('kinds A: sample questions pass validate; numeric equality; validators catch
   must('order too few items',{kind:'order',items:it,ans:['a','b','a']});
   must('order ans of one',{kind:'order',items:it,ans:['a']});
   must('order item no label',{kind:'order',items:[{v:'a'},{v:'b',l:'b'}],ans:['a','b']});
+  // KINDS2: the broken samples of the new kinds (tools/kinds-samples.js broken) each fail, and render without the DOM
+  const BR=(${require('./kinds-samples').broken.toString()})(S2);
+  for(const w in BR){must(w,BR[w]);out.n++}
+  for(const k of ['sort','mark'])if(Object.values(S2).filter(q=>q.kind==k).length<2||Object.values(BR).filter(q=>q.kind==k).length<2)out.bad.push(k+': needs two valid and two broken samples');
   out;`);
   return{problems:uniq(out.bad),note:out.n+' samples'};
 });
@@ -8074,7 +8080,8 @@ run('performance P6-02',()=>{
   try{
     // a. a cold start: no games code, no games <style>; the app is ready
     let pg=page(),s=state(pg);
-    if(!s.ready||s.parts!=='false,false,false,false'||s.gh!=='undefined'||pg.styles.join()!=='css-bt'||pg.scripts.length)p.push('at start: '+JSON.stringify(s)+' styles '+pg.styles.join());
+    // KINDS2: gen2 carries a stylesheet now (src/css/37b-kinds-c.css, the sort and mark kinds), added at start before bt's
+    if(!s.ready||s.parts!=='false,false,false,false'||s.gh!=='undefined'||pg.styles.join()!=='css-gen2,css-bt'||pg.scripts.length)p.push('at start: '+JSON.stringify(s)+' styles '+pg.styles.join());
     // b. Home -> Game Room: "Getting the games ready..." with Back at once, nothing requested until that screen is painted, then games,
     //    then games2 (one at a time, in PARTS order), then the hub with every registered game, and a game's first screen opens
     pg.run('gameRoom()');
@@ -8086,7 +8093,7 @@ run('performance P6-02',()=>{
     if(asked.join()!==LAZY_FILES.join())p.push('the Game Room asked for '+asked.join(', ')+', expected '+LAZY_FILES.join(', ')+' one after the other');
     s=state(pg);
     const hub=pg.app.innerHTML,ids=pg.run('GH.games.map(g=>g.btn)');
-    if(s.parts!=='true,true,true,true'||!/class="gh-room"/.test(hub)||ids.length<5||ids.some(b=>!hub.includes('id="'+b+'"'))||pg.styles.join()!=='css-bt,css-games,css-rally,css-games2,css-games3')
+    if(s.parts!=='true,true,true,true'||!/class="gh-room"/.test(hub)||ids.length<5||ids.some(b=>!hub.includes('id="'+b+'"'))||pg.styles.join()!=='css-gen2,css-bt,css-games,css-rally,css-games2,css-games3')
       p.push('after the lazy load: '+JSON.stringify(s)+' hub '+/gh-room/.test(hub)+' cards '+ids+' styles '+pg.styles.join());
     for(const [id,want] of [['snack','snopen'],['art',''],['rally','rlgar']]){ // a games2 game (Snack Stand), a games one (Coloring), Star Rally (rally), through their hub cards
       try{const b=pg.run(`GH.get('${id}').btn`);pg.el(b).onclick();const h=pg.app.innerHTML;
@@ -18835,6 +18842,158 @@ run('game feel 2 G-FEEL2',()=>{
   if(!/if\(!\('pin' in S\)\)S\.pin=null;/.test(core))p.push('00-core.js: S.pin needs its default in migrate');
   for(const f of ['css/36-report.css','css/11-nav.css'])if(/(rp-pin|rp-subj|nv-ls)[^}]*#[0-9a-fA-F]{3,8}\b/.test(rd(f)))p.push(f+': a raw colour in the G-FEEL2 rules');
   return{problems:[...new Set(p)].slice(0,50),note:o.notes.join('; ')};
+});
+
+// ---- KINDS2 batch A (docs/KINDS2-SPEC.md section 6): the sort and mark kinds, bank builders, mixed formats, not three in a row ----
+// The stops switched to the new kinds (spec 3): sort stops have no kind above 65%; mark stops ask mark 15-35% of the time.
+const K2_SORT=['sort2','sort3','sound1','sound2','rhyme1','eo1','eo2','syl1','syl2','pic3','pic4','gram2','gram8','gram4','fact2','fact1','ang1',
+  'frac4','dec2','vocab8','es_art1','es_art2','es_ser2','es_gusta2','es_mix2','sci_life1','sci_life2','sci_life3','sci_earth1','sci_earth2',
+  'sci_earth3','sci_phys1','sci_phys2','sci_phys3','geo_world1','geo_world2','geo_us1','geo_us2','civ1','civ2'];
+const K2_MARK=['gram5','gram6','gram7','vocab7'];
+const K2_FIX=JSON.parse(fs.readFileSync(path.join(__dirname,'lib','kinds2-seeds.json'),'utf8'));
+run('KINDS2 kinds: sort and mark render and validate, same() tables, bank builders, sizes, CSS',()=>{
+  const p=[],bad=m=>{if(!p.includes(m))p.push(m)};
+  const r=eval(js+`;(()=>{const out={bad:[],n:0},bad=m=>out.bad.push(m);
+    // same() tables: sort takes the bins in item order (an array, or the ans text itself); mark takes indexes in any order
+    const so={kind:'sort',ans:'even|odd|even'},mk={kind:'mark',ans:['1','5']};
+    for(const [q,v,want] of [[so,['even','odd','even'],true],[so,'even|odd|even',true],[so,['even','even','odd'],false],[so,['even','odd'],false],
+      [so,['even','odd','even','odd'],false],[so,[],false],[so,null,false],[mk,['1','5'],true],[mk,['5','1'],true],[mk,[5,1],true],[mk,['1'],false],
+      [mk,['1','5','2'],false],[mk,'1|5',false],[mk,[],false],[{kind:'mark',ans:['3']},['3'],true],[{kind:'mark',ans:['3']},['2'],false]])
+      if(KIND[q.kind].same(q,v)!==want)bad(q.kind+' same('+JSON.stringify(v)+') should be '+want);
+    // every KIND has the whole contract
+    for(const k of ['sort','mark'])for(const f of ['render','bind','right','retry','reveal','spoken','validate','same'])if(typeof KIND[k][f]!=='function')bad('KIND.'+k+'.'+f+' missing');
+    // render: chips and bins are buttons in the input area, Check starts off; mark words are buttons; nothing tappable in html
+    const S=(${require('./kinds-samples').make.toString()})();
+    const h=KIND.sort.render(S.sort);
+    if((h.match(/<button class="schip"/g)||[]).length!==5||(h.match(/<button class="sbt"/g)||[]).length!==2||!/id="mcheck"[^>]*disabled/.test(h))bad('sort render: 5 chips, 2 bin buttons, Check off');
+    if(!/k2ok/.test(h)||!/k2no/.test(h))bad('sort chips carry a tick and a cross (the a11y signal rule)');
+    const hm=KIND.mark.render(S.markm),h1=KIND.mark.render(S.mark);
+    if((hm.match(/<button class="mkt"/g)||[]).length!==6||!/mcheck/.test(hm)||/mcheck/.test(h1))bad('mark render: one button a word; Check only when more than one word is right');
+    if(KIND.sort.spoken(S.sort)!=='Even: 4, 12, 8. Odd: 7, 9')bad('sort spoken: '+KIND.sort.spoken(S.sort));
+    if(KIND.mark.spoken(S.markm)!=='dog, park')bad('mark spoken: '+KIND.mark.spoken(S.markm));
+    // bank builders: the forms are registered and every item of those forms is drawn (bankCan) and builds a valid question
+    for(const f of ['tap','order','match','multi','sort','mark'])if(typeof BANKF[f]!=='function')bad('BANKF.'+f+' missing');
+    const forms={};
+    for(const id in BANK)BANK[id].forEach((it,bi)=>{const f=it.form||'choice';if(!['tap','sort','mark','order','match','multi'].includes(f))return;
+      forms[f]=(forms[f]||0)+1;out.n++;
+      if(!bankCan(it))bad(id+'['+bi+']: form '+f+' is not drawn');
+      for(let s=1;s<=3;s++){const q=genBank(id,it.lv,{bi,s});
+        for(const x of kindProblems(q))bad(id+'['+bi+'] '+f+': '+x);
+        if(f=='tap'&&q.kind!=='mark'||f=='sort'&&q.kind!=='sort'||KIND[q.kind].same&&!KIND[q.kind].same(q,q.ans))bad(id+'['+bi+'] '+f+': built as '+q.kind);
+        if(f=='tap'&&!q.one)bad(id+'['+bi+']: a tap item is a one-word mark');
+        if(!q.label||q.label.length>=60||!q.say)bad(id+'['+bi+']: label or say');
+        const b=bankRebuild(q.bk);if(b.label!==q.label||b.kind!==q.kind||JSON.stringify(b)!==JSON.stringify(q))bad(id+'['+bi+']: bankRebuild differs')}});
+    out.forms=forms;
+    // the validator catches broken sort and mark items
+    const must=(w,it)=>{if(!bankItemProblems(it,w).length)bad('bank validator missed: '+w)};
+    must('sort one bin',{lv:1,form:'sort',q:'Sort',bins:{a:['x','y','z']}});
+    must('sort empty bin',{lv:1,form:'sort',q:'Sort',bins:{a:['x','y','z'],b:[]}});
+    must('sort 7 items',{lv:1,form:'sort',q:'Sort',bins:{a:['1','2','3','4'],b:['5','6','7']}});
+    must('sort long names in 3 bins',{lv:1,form:'sort',q:'Sort',bins:{preposition:['in'],adverb:['fast'],noun:['dog']}});
+    must('sort duplicate items',{lv:1,form:'sort',q:'Sort',bins:{a:['x','y'],b:['x']}});
+    must('sort cp missing a picture',{lv:1,form:'sort',q:'Sort',bins:{a:['x','y'],b:['z']},cp:{x:['x','⭐']}});
+    must('mark word twice',{lv:1,form:'mark',q:'Tap',sent:'the dog and the cat',a:'the'});
+    must('mark word missing',{lv:1,form:'mark',q:'Tap',sent:'the dog and the cat',a:'cow'});
+    must('mark 15 words',{lv:1,form:'mark',q:'Tap',sent:'a b c d e f g h i j k l m n dog',a:'dog'});
+    // K2.off: tap items are choices again and no new form is drawn
+    K2.off=true;
+    try{const it=BANK.gram.findIndex(x=>x.form=='tap'),q=genBank('gram',BANK.gram[it].lv,{bi:it,s:1});if(q.kind!=='choice')bad('K2.off: a tap item should be a choice');
+      for(const id in BANK)for(const it of BANK[id])if(['sort','mark','order','match','multi'].includes(it.form)&&bankCan(it))bad('K2.off: '+id+' '+it.form+' still drawn')}
+    finally{K2.off=false}
+    return out})()`);
+  r.bad.forEach(bad);
+  // sizes (spec 6.10): index.html under 1,000,000 bytes, gen2 under its 400 KB warning
+  const ih=fs.statSync(path.join(ROOT,'index.html')).size,g2=fs.statSync(path.join(ROOT,'gen2.'+BUILD_VER+'.js')).size;
+  if(ih>=1000000)bad('index.html is '+ih+' bytes');
+  if(g2>=PART_WARN)bad('gen2 is '+g2+' bytes, over its '+PART_WARN+' warning');
+  // the new files are in gen2 (never in index.html), tokens only, no raw hex, motion is transform or opacity only
+  if(partOf('49b-kinds2.js')!=='gen2'||partOf('37b-kinds-c.css')!=='gen2')bad('49b-kinds2.js and 37b-kinds-c.css belong in gen2 (tools/build.py PARTS)');
+  const css=fs.readFileSync(path.join(SRC,'css','37b-kinds-c.css'),'utf8'),k2js=fs.readFileSync(path.join(SRC,'js','49b-kinds2.js'),'utf8');
+  if(/#[0-9a-fA-F]{3,8}\b/.test(css.replace(/\/\*[\s\S]*?\*\//g,'')))bad('37b-kinds-c.css has a raw hex colour');
+  if(/(color|background|border|outline|fill|stroke)[^;{}]*:[^;{}]*(rgb|hsl)\(/.test(css))bad('37b-kinds-c.css has a colour that is not a token');
+  if(/transition:[^;]*(width|height|top|left|margin|padding)/.test(css))bad('37b-kinds-c.css animates layout');
+  if(/Math\.random/.test(k2js))bad('49b-kinds2.js uses Math.random (generators use the seeded rnd, R, pick, shuffle)');
+  // selected chips at least 3:1 against the bin (the outline is --ink on --surface-2), chip text 4.5:1 on its fills
+  const T={};for(const m of fs.readFileSync(path.join(SRC,'css','00-tokens.css'),'utf8').matchAll(/--([a-z0-9-]+):(#[0-9a-fA-F]{6})\b/g))T[m[1]]=m[2];
+  const lum=h=>{const c=[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)/255).map(v=>v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4));return .2126*c[0]+.7152*c[1]+.0722*c[2]};
+  const ratio=(a,b)=>{const x=lum(T[a]),y=lum(T[b]);return(Math.max(x,y)+.05)/(Math.min(x,y)+.05)};
+  if(!/\.schip\.sel\{outline:4px solid var\(--ink\)/.test(css))bad('a selected chip is outlined in --ink');
+  if(!(ratio('ink','surface-2')>=3&&ratio('ink','star-tint')>=3))bad('selected chip outline under 3:1 against the bin or the chip');
+  for(const bg of ['star-tint','good-tint','try-tint','surface','surface-2','brand-tint'])if(!(ratio('ink',bg)>=4.5))bad('chip text on '+bg+' under 4.5:1');
+  return{problems:p,note:`${r.n} bank items of the new forms (${Object.entries(r.forms).map(([k,v])=>k+' '+v).join(', ')}); index.html ${ih}, gen2 ${g2} bytes`};
+});
+run('KINDS2 mix: kind share per stop, Pre-K and K rules, seed stability, K2.off gives the v169 questions',()=>{
+  const r=eval(js+`;(()=>{const out={bad:[],rows:[],share:{}},bad=m=>{if(out.bad.length<60&&!out.bad.includes(m))out.bad.push(m)};
+    const artKeep=Object.assign({},ART);for(const k in ART)delete ART[k];
+    try{
+      for(const p in NODES)NODES[p].forEach(n=>{if(n.sk=='boss'||!SK[n.sk]||SK[n.sk].round)return;const id=nid(n),c={},w=PATHS[p].worlds[n.wi];
+        for(let s=1;s<=400;s++){const q=genQ(n.sk,n.lv,s);c[q.kind]=(c[q.kind]||0)+1;
+          if(q.kind=='sort'||q.kind=='mark'){
+            const g=w?w.g:0;
+            if(q.kind=='sort'&&g<0&&(q.bins.length>2||q.items.length>4))bad(id+': Pre-K sort has '+q.bins.length+' bins and '+q.items.length+' items');
+            if(g<=0&&q.kind=='sort')for(const b of q.bins){const t=String(b.al||b.l).replace(/<[^>]*>/g,'').trim().toLowerCase().split(' ')[0].slice(0,4);
+              if(!String(q.say).toLowerCase().includes(t))bad(id+': the spoken prompt does not name the bin '+t)}
+            if(!q.say)bad(id+': no say')}}
+        out.share[id]=c;out.rows.push([w?w.g:'',p,id,c])});
+      // seed stability (spec 6.5): the number-fact stops give the v169 labels for the same seeds
+      const F=${JSON.stringify(K2_FIX)};
+      for(const id in F.labels){const [,sk,lv]=id.match(/^([a-z_]+)(\\d+)$/);for(const [s,l] of F.labels[id]){const g=genQ(sk,+lv,s).label;if(g!==l)bad(id+' seed '+s+': '+g+', v169 '+l)}}
+      // K2.off: every switched stop asks exactly the v169 questions (the new format draw is the last one, so the old draws are unchanged)
+      K2.off=true;
+      try{for(const id in F.off){const [,sk,lv]=id.match(/^([a-z_]+)(\\d+)$/),a=[];for(let s=1;s<=150;s++)a.push(JSON.stringify(genQ(sk,+lv,s)));
+        const h=require('crypto').createHash('md5').update(a.join('\\n')).digest('hex').slice(0,12);if(h!==F.off[id])bad(id+' with K2.off is not the v169 stop ('+h+')')}}
+      finally{K2.off=false}
+    }finally{Object.assign(ART,artKeep)}
+    return out})()`);
+  const p=[...r.bad];
+  for(const id of K2_SORT){const c=r.share[id];if(!c){p.push(id+': not a stop');continue}
+    const [k,n]=Object.entries(c).sort((a,b)=>b[1]-a[1])[0];if(n/400>.65)p.push(id+': '+k+' is '+Math.round(n/4)+'% (over 65%)');
+    if(!c.sort)p.push(id+': never asks a sort question')}
+  for(const id of K2_MARK){const m=(r.share[id]||{}).mark||0;if(m<60||m>140)p.push(id+': mark is '+Math.round(m/4)+'% (15-35% wanted)')}
+  // the per-grade table (a note): each grade's share of each kind over all its stops
+  const G={};for(const [g,pth,id,c] of r.rows){const k=g+' '+pth,t=G[k]||(G[k]={});for(const x in c)t[x]=(t[x]||0)+c[x]}
+  const note=Object.keys(G).sort((a,b)=>parseFloat(a)-parseFloat(b)||a.localeCompare(b)).map(k=>{const t=G[k],n=Object.values(t).reduce((a,b)=>a+b,0);
+    return 'g'+k+': '+Object.entries(t).sort((a,b)=>b[1]-a[1]).map(([x,v])=>x+' '+Math.round(100*v/n)+'%').join(' ')}).join('; ');
+  return{problems:p,note};
+});
+run('KINDS2 rounds: not three of one kind in a row, review round trip, Fact Race kinds',()=>{
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const r=eval(js+`;(()=>{const out={bad:[],n:0,mono:0,rt:0},bad=m=>{if(out.bad.length<60&&!out.bad.includes(m))out.bad.push(m)};
+    const store={};
+    global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+    const load=raw=>{for(const k in store)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate()};
+    // 1. 200 rounds without the DOM over 30 stops (the switched ones and some of one kind), fresh save: no review or older-stop slots
+    load(null);S.grade=3;
+    const want=${JSON.stringify(K2_SORT.concat(K2_MARK))}.slice(0,22).concat(['add1','sub2','mfact2','pic1','sight2','es_color1','time1','cnt1']);
+    const stops=[];for(const p in NODES)NODES[p].forEach((n,i)=>{if(want.includes(nid(n))&&!SK[n.sk].round)stops.push([p,i])});
+    if(stops.length<30)bad('only '+stops.length+' stops found for the rounds');
+    for(let k=0;k<200;k++){const [p,i]=stops[k%stops.length],nd=NODES[p][i];
+      G=newG({path:p,node:i,sk:nd.sk,lv:nd.lv,n:10});const ks=[];
+      while(G.done<G.n){const q=makeQ();G.q=q;ks.push([q.kind,nid(q),!!q.review]);G.done++;out.n++}
+      if(JSON.stringify(G.kh)!==JSON.stringify(ks.map(x=>x[0])))bad('G.kh is not the kinds asked');
+      for(let j=2;j<ks.length;j++)if(ks[j][0]==ks[j-1][0]&&ks[j][0]==ks[j-2][0]&&!ks[j][2]){
+        if(KMONO[ks[j][1]])out.mono++;else bad(nid(nd)+': three '+ks[j][0]+' questions in a row')}}
+    // 2. review round trip (spec 6.6): a missed sort or mark question becomes an item; its seed (or bk) rebuilds the same label and kind;
+    // revQ books the answer to the item (a fact label is asked again exactly, any other comes back as a fresh question of the stop)
+    load(null);
+    const trip=(sk,lv,kind)=>{let q=null;for(let s=1;s<=400&&!q;s++){const t=genQ(sk,lv,s);if(t.kind==kind)q=t}
+      if(!q)return bad(sk+lv+': no '+kind+' question in 400 seeds');
+      S.rev=[];const it=revMiss(q,1);if(!it)return bad(sk+lv+': revMiss made no item');
+      const b=it.bk?bankRebuild(it.bk):genQ(it.sk,it.lv,it.seed),bare=x=>JSON.stringify(Object.assign({},x,{sk:0,lv:0,seed:0}));
+      if(b.label!==q.label||b.kind!==kind||bare(b)!==bare(q))bad(sk+lv+': the '+kind+' item does not rebuild the same question');
+      const rq=revQ(it);if(!rq||rq.rvk!==revKey(it)||rq.sk!==sk||rq.lv!==lv)bad(sk+lv+': revQ does not book to the item');
+      if(revFact(it,b)&&(rq.label!==q.label||rq.kind!==kind))bad(sk+lv+': a fact item came back changed');
+      if(!kindProblems(rq).length)out.rt++};
+    for(const [sk,lv] of [['eo',1],['sort',2],['syl',2],['pic',3],['fact',2],['ang',1],['es_art',1],['es_mix',2]])trip(sk,lv,'sort');
+    for(const [sk,lv,k] of [['gram',2,'sort'],['gram',2,'mark'],['gram',7,'mark'],['vocab',8,'sort'],['sci_life',1,'sort'],['civ',2,'sort'],['geo_us',1,'match'],['sci_phys',2,'order']])trip(sk,lv,k);
+    // a pic 3 sort question keeps the fact's review label, so the review asks it again exactly
+    {let q=null;for(let s=1;s<=400&&!q;s++){const t=genQ('pic',3,s);if(t.kind=='sort'&&/^read /.test(t.label))q=t}
+     if(!q)bad('pic3: no sort question with a read label');else{S.rev=[];const it=revMiss(q,1),rq=revQ(it);if(rq.kind!=='sort'||rq.label!==q.label)bad('pic3: the fact did not come back exactly')}}
+    // 3. Fact Race (spec 6.11): only num or choice, fresh and maxed saves
+    for(const f of ['fresh','maxed']){load(f=='fresh'?null:${JSON.stringify(fx('maxed'))});
+      for(const c of ['math','sight','es'])for(let i=0;i<500;i++){const q=raceQ(c);if(q.kind!=='num'&&q.kind!=='choice')bad('Fact Race '+c+' ('+f+'): a '+q.kind+' question')}}
+    return out})()`);
+  return{problems:r.bad,note:`${r.n} questions in 200 rounds (${r.mono} triples on single-kind stops); ${r.rt} review round trips`};
 });
 
 // ---- report ----

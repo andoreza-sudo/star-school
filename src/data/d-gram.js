@@ -341,3 +341,61 @@ GR(9,'clear pronouns','A pronoun must point to one clear noun. If it could mean 
  ['Which is clear?','The book says owls hunt at night.','They say owls hunt at night.','In the book, they say owls hunt.'],
  ['Which is clear?','The sign says to keep off.','It says to keep off.','They say to keep off.']])
 );
+
+// ---- KINDS2 (docs/KINDS2-SPEC.md 3): sort and mark items, appended at the END so saved review items (q.bk.bi) keep their item ----
+// genBank draws them by share (49b-kinds2.js BANKMIX, BANKSHARE): sort 40% at level 2 and 8, 50% at level 4; mark 25% at 5, 6 and 7.
+// The level 2 tap items above (Tap the noun / verb / adjective) are mark questions now (BANKF.tap); these add more.
+BANK.gram.push(...[].concat((()=>{
+  // level 2: the words of the level 2 sentences, two sentences a question; a sentence's noun, verb and adjective come from its tap items
+  const S={};
+  for(const it of BANK.gram)if(it.lv==2&&it.form=='tap')(S[it.sent]=S[it.sent]||{})[it.topic]=it.a.toLowerCase();
+  const rows=Object.values(S).filter(r=>r.noun&&r.verb&&r.adjective),out=[];
+  for(let i=0;i+1<rows.length;i+=2){const a=rows[i],b=rows[i+1],one=i%4?'adjective':'verb';
+    out.push({lv:2,topic:'parts of speech',form:'sort',q:'Sort the words: noun, verb or adjective?',
+      hint:'A noun names a person, place or thing. A verb is an action. An adjective describes a noun.',
+      bins:{noun:[a.noun,b.noun],verb:one=='verb'?[a.verb]:[a.verb,b.verb],adjective:one=='adjective'?[a.adjective]:[a.adjective,b.adjective]}})}
+  return out})(),
+[
+  {past:['jumped','ate'],now:['jumps','eats'],future:['will jump']},
+  {past:['played','swam'],now:['plays'],future:['will play','will swim']},
+  {past:['walked','was walking'],now:['walks','is walking'],future:['will walk']},
+  {past:['baked','sang'],now:['bakes','sings'],future:['will bake','will sing']},
+  {past:['wrote','went'],now:['writes','goes'],future:['will write']},
+  {past:['laughed','came'],now:['laughs','comes'],future:['will laugh','will come']},
+].map(bins=>({lv:4,topic:'tense',form:'sort',q:'Sort the verbs: past, now or future?',bins,
+  hint:'Past verbs often end in -ed or change their spelling. Future verbs use will. Now verbs tell what happens today.'})),
+[
+  {adverb:['quickly','softly'],preposition:['beneath','between','toward']},
+  {adverb:['slowly','bravely','proudly'],preposition:['across','during']},
+  {adverb:['happily','loudly','carefully'],conjunction:['because','although']},
+  {preposition:['among','beside'],conjunction:['and','but','because']},
+  {conjunction:['or','unless','although'],adverb:['gently','neatly']},
+].map(bins=>({lv:8,topic:'wordtypes',form:'sort',q:'Sort the words: '+Object.keys(bins).join(' or ')+'?',bins,
+  hint:'An adverb tells how, when or where. A preposition comes before a noun and shows where or when. A conjunction joins ideas.'})),
+GR(5,'agreement','Find the subject. Is it one or more than one? The verb has to match it.','tap',[
+  ['Tap the verb that does not match its subject.','The dogs barks at the mail truck.','barks'],
+  ['Tap the verb that does not match its subject.','My sister play the piano.','play'],
+  ['Tap the verb that does not match its subject.','The birds sings every morning.','sings'],
+  ['Tap the verb that does not match its subject.','He are my best friend.','are'],
+  ['Tap the verb that does not match its subject.','The kittens is very small.','is'],
+  ['Tap the verb that does not match its subject.','Tom and Ana walks to school.','walks'],
+  ['Tap the verb that does not match its subject.','The cake taste sweet.','taste'],
+  ['Tap the verb that does not match its subject.','We was at the park all day.','was']]),
+GR(6,'confusable','Say the sentence out loud. Try "they are", "it is", "you are" or "who is" in place of a word that sounds the same.','tap',[
+  ['Tap the word that is used the wrong way.','Their going to the zoo today.','Their'],
+  ['Tap the word that is used the wrong way.',"The dog wagged it's tail.","it's"],
+  ['Tap the word that is used the wrong way.','Your the fastest runner in class.','Your'],
+  ['Tap the word that is used the wrong way.','I left my coat over their.','their'],
+  ['Tap the word that is used the wrong way.','We ate to many cookies.','to'],
+  ['Tap the word that is used the wrong way.','Whose going to the party?','Whose']]),
+GR(7,'commas','A comma goes after yes or oh no, after a name you are talking to, and before so when it joins two sentences.','tap',[
+  ['Tap the word that needs a comma after it.','Yes I would like some milk.','Yes'],
+  ['Tap the word that needs a comma after it.','Ben can you help me?','Ben'],
+  ['Tap the word that needs a comma after it.','We were tired so we went home.','tired'],
+  ['Tap the word that needs a comma after it.','Oh no I lost my hat!','no'],
+  ['Tap the word that needs a comma after it.','Mom I finished my homework.','Mom']]),
+[['I packed socks shirts and shoes.',['socks','shirts']],['We saw cows pigs and goats.',['cows','pigs']],
+  ['Bring a pencil a ruler and glue.',['pencil','ruler']]].map(([sent,a])=>({lv:7,topic:'commas',sent,a,
+  q:'Tap every word that needs a comma after it.',say:'Tap every word that needs a comma after it. '+sent,
+  hint:'In a list of three or more things, put a comma after each one except the last.'}))
+).map(it=>it.form=='tap'||it.sent?Object.assign(it,{form:'mark'}):it));

@@ -124,8 +124,7 @@ function mastPick(g){
 function mastQ(){
   const pk=mastPick(G);
   if(!pk)return null;
-  let q;
-  for(let t=0;t<10&&(!q||q.label===G.last);t++)q=genQ(pk.sk,pk.lv);
+  const q=pickQ(pk.sk,pk.lv); // KINDS2: a new label, not a third of one kind in a row
   G.last=q.label;
   (G.mq||(G.mq=new Map())).set(q,pk.tag);
   return q;

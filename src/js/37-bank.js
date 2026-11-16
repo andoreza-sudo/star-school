@@ -38,7 +38,7 @@
 const BANK={};
 const PASS={};
 const BANKF={}; // builders for forms that need another question kind: BANKF.order=(item, id)=>question
-const BANKFORMS=['choice','wide','tap','spell','order','match','multi'];
+const BANKFORMS=['choice','wide','tap','spell','order','match','multi','sort','mark'];
 let BANKLIVE=false; // set by bankRound() when a round starts
 let BANKTICK=0;
 const BANKMEM={}; // 'id' or 'P:id' -> {index: tick when last shown}; this session only, never saved
@@ -70,7 +70,8 @@ function bankChoose(key,cands,s){
   mem[i]=++BANKTICK;
   return i;
 }
-const bankCan=it=>it.form=='order'||it.form=='match'||it.form=='multi'?!!(BANKF[it.form]&&KIND[it.form]):true;
+// KINDS2: the forms in BANKNEW (49b-kinds2.js) need their builder, and are never drawn with K2.off (the bank as before KINDS2)
+const bankCan=it=>typeof BANKNEW=='undefined'||!BANKNEW.includes(it.form)?true:!K2.off&&!!BANKF[it.form];
 const bankTxt=t=>esc(t).replace(/\*([^*]+)\*/g,'<b>$1</b>').replace(/___/g,SLOT); // a word between * stars * prints in bold (P2-23)
 const bankSay=t=>String(t).replace(/\*/g,'').replace(/___/g,'blank');
 const bankWords=t=>String(t).split(/[^A-Za-z']+/).filter(Boolean);
@@ -99,13 +100,13 @@ function bankBuild(id,it,pass){
     q={kind:'build',word:w,tiles:shuffle([...w,...extra]),ans:w,hint:{k:'next'},
       html:`${pic}<div class="bq">${esc(it.q)}</div><div class="lslots">${[...w].map((_,i)=>`<span class="ls" id="ls${i}"></span>`).join('')}</div>`};
   }
-  else if(form=='tap'){
+  else if(form=='tap'&&(typeof K2=='undefined'||K2.off||!BANKF.tap)){ // KINDS2: BANKF.tap makes a mark question (49b-kinds2.js)
     const seen=new Set();
     const ws=bankWords(it.sent).filter(x=>!seen.has(x)&&seen.add(x));
     q={kind:'choice',cls:'bwords',ans:it.a,choices:ws.map(x=>({v:x,l:x})),
       html:`${pic}<div class="bq">${esc(it.q)}</div><div class="bsent">${esc(it.sent)}</div>`};
   }
-  else if(form!='choice'&&form!='wide')q=BANKF[form](it,id);
+  else if(form!='choice'&&form!='wide')q=BANKF[form](it,id,pic);
   // a word longer than 7 letters does not fit a half-width button at 380 px ("remember", "basketball"): such items get one choice per row
   // R-01d: picture answers (cp): a 2 x 2 grid of pictures (3 in a row when there are 3), each with its word under it
   else if(it.cp&&form=='choice'&&!pass){const xs=shuffle([it.a,...it.d]);
@@ -118,7 +119,8 @@ function bankBuild(id,it,pass){
   if(it.aloud&&q.hint.k=='text')q.hint.w=q.hint.s; // R-01d: Pre-K and K hear the hint (39-hints.js)
   q.say=it.say||(it.aloud&&(form=='choice'||form=='wide')?bankSayAll(it.q,q.choices.map(c=>c.v)):bankSay(it.q));
   if(it.label)q.label=it.label; // label: optional, for long prompts (passages)
-  else{const a=(Array.isArray(it.a)?it.a.join(','):it.a).slice(0,24);q.label=it.q.replace(/\*/g,'').slice(0,56-a.length)+' = '+a} // under 60 letters in all (P2-23)
+  else{const av=it.a!=null?it.a:it.bins?Object.values(it.bins).flat():it.order||(it.pairs||[]).map(x=>x[0]); // KINDS2: sort, order, match
+    const a=(Array.isArray(av)?av.join(','):av).slice(0,24);q.label=it.q.replace(/\*/g,'').slice(0,56-a.length)+' = '+a} // under 60 letters in all (P2-23)
   if(it.topic)q.topic=it.topic;
   if(pass)q.ctx={title:pass.title,text:pass.text};
   return q;
@@ -128,9 +130,16 @@ function bankBuild(id,it,pass){
 function genBank(id,lv,o={}){
   const items=BANK[id]||[];
   const s0=o.s!=null?o.s:bankSeed();
-  const cands=items.map((it,i)=>i).filter(i=>items[i].lv==lv&&bankCan(items[i]));
+  // KINDS2: items of the new forms (BANKNEW) are drawn by their share, with one more seeded draw after the usual choice
+  const nw=i=>typeof BANKNEW!='undefined'&&BANKNEW.includes(items[i].form);
+  const all=items.map((it,i)=>i).filter(i=>items[i].lv==lv&&bankCan(items[i])),old=all.filter(i=>!nw(i)),cands=old.length?old:all;
   if(!cands.length)throw new Error('bank '+id+' has no usable item at level '+lv);
-  const bi=o.bi!=null?o.bi:bankChoose(id,cands,s0);
+  let bi=o.bi!=null?o.bi:bankChoose(id,cands,s0);
+  if(o.bi==null&&old.length&&old.length<all.length){
+    const d=mulberry32(bankSub(s0,0x4b32))();let acc=0;
+    for(const f of BANKNEW){const fs=all.filter(i=>items[i].form==f);if(!fs.length)continue;acc+=bankShare(id,lv,f);
+      if(d<acc){bi=bankChoose(id+':'+f,fs,bankSub(s0,0x4b33));break}}
+  }
   const q=bankWith(bankSub(s0,bi),()=>bankBuild(id,items[bi]));
   q.bk={id,lv,bi,s:s0};
   return q;
@@ -207,7 +216,9 @@ function bankItemProblems(it,where){
   if(it.grid!=null&&!(it.grid&&Number.isInteger(it.grid.max)&&it.grid.max>=1&&it.grid.max<=10&&Array.isArray(it.grid.points)
     &&it.grid.points.every(q=>Array.isArray(q)&&q[0]>=0&&q[1]>=0&&q[0]<=it.grid.max&&q[1]<=it.grid.max)))p.push(w+'grid must be {max 1-10, points inside it}');
   if(it.aloud!=null&&it.aloud!==true)p.push(w+'aloud must be true or left out');
-  if(it.cp!=null&&(form!=='choice'||!Array.isArray(it.d)||![it.a,...it.d].every(x=>Array.isArray(it.cp[x])&&it.cp[x].length==2
+  if(it.cp!=null&&form=='sort'){const ws=it.bins&&typeof it.bins=='object'?Object.values(it.bins).flat():[];
+    if(!ws.every(x=>Array.isArray(it.cp[x])&&it.cp[x].length==2&&/^[a-z-]+$/.test(it.cp[x][0])&&typeof it.cp[x][1]=='string'&&it.cp[x][1]))p.push(w+'cp needs [art name, emoji] for every sort item')}
+  else if(it.cp!=null&&(form!=='choice'||!Array.isArray(it.d)||![it.a,...it.d].every(x=>Array.isArray(it.cp[x])&&it.cp[x].length==2
     &&/^[a-z-]+$/.test(it.cp[x][0])&&typeof it.cp[x][1]=='string'&&it.cp[x][1])))p.push(w+'cp needs [art name, emoji] for every choice');
   const distinct=(a,name)=>{if(new Set(a.map(x=>String(x).toLowerCase())).size!==a.length)p.push(w+name+' has duplicates')};
   if(form=='choice'||form=='wide'||form=='multi'){
@@ -227,6 +238,29 @@ function bankItemProblems(it,where){
       const n=bankWords(it.sent).filter(x=>x==it.a).length;
       if(n!==1)p.push(w+'a must be one word that appears exactly once in sent (found '+n+')');
       if(bankWords(it.sent).length<2)p.push(w+'sent needs at least 2 words');
+    }
+  }
+  else if(form=='mark'){ // KINDS2: tap the word or words (a: one word or a list of 1 to 4) in a sentence of at most 14 words
+    str(it.sent,90,'sent');
+    const as=Array.isArray(it.a)?it.a:[it.a];
+    if(typeof it.sent==='string'){
+      const toks=it.sent.trim().split(/\s+/);
+      if(toks.length<2||toks.length>14)p.push(w+'sent needs 2 to 14 words');
+      if(!as.length||as.length>4||as.some(x=>typeof x!=='string'))p.push(w+'mark a must be a word or a list of 1 to 4 words');
+      else{distinct(as,'a');for(const x of as){const n=toks.filter(t=>bankWords(t).includes(x)).length;
+        if(n!==1)p.push(w+'"'+x+'" must be in exactly one word of sent (found '+n+')')}}
+    }
+  }
+  else if(form=='sort'){ // KINDS2: bins {name: [item, ...]}, 2 or 3 bins, 3 to 6 items, every bin used
+    const ns=it.bins&&typeof it.bins=='object'&&!Array.isArray(it.bins)?Object.keys(it.bins):[];
+    if(ns.length<2||ns.length>3)p.push(w+'sort needs 2 or 3 bins');
+    else{
+      ns.forEach(n=>str(n,24,'bin name'));
+      if(ns.length==3&&ns.some(n=>n.length>9))p.push(w+'3 bins need names of 9 letters or fewer');
+      if(ns.some(n=>!Array.isArray(it.bins[n])||!it.bins[n].length))p.push(w+'every sort bin needs at least one item');
+      else{const all=ns.flatMap(n=>it.bins[n]);
+        if(all.length<3||all.length>6)p.push(w+'sort needs 3 to 6 items');
+        if(all.every(x=>str(x,40,'sort item')))distinct(all,'sort items')}
     }
   }
   else if(form=='spell'){
@@ -254,7 +288,7 @@ function bankProblems(id,o={}){
   const seen=new Set();
   items.forEach((it,i)=>{
     p.push(...bankItemProblems(it,'BANK.'+id+'['+i+']'));
-    const k=(it.q||'')+'|'+JSON.stringify(it.a!=null?it.a:it.pairs||it.order);
+    const k=(it.q||'')+'|'+JSON.stringify(it.a!=null?it.a:it.pairs||it.order||it.bins);
     if(seen.has(k))p.push('BANK.'+id+'['+i+']: same q and a as an earlier item');
     seen.add(k);
   });

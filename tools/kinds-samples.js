@@ -20,5 +20,27 @@ exports.make = () => {
       items: ['7', '2', '9', '4'].map(v => ({ v, l: v })), ans: ['2', '4', '7', '9'] },
     words: { ...base, kind: 'order', label: 'zz:words', html: '<div>Make a sentence</div>', say: 'Make a sentence',
       items: ['sat', 'blue', 'The', 'down', 'cat'].map(v => ({ v, l: v })), ans: ['The', 'cat', 'sat', 'down'] },
+    // KINDS2 batch A (docs/KINDS2-SPEC.md 2.1, 2.2): two of each new kind
+    sort: { ...base, kind: 'sort', label: 'zz:sort', html: '<div>Sort the numbers: even or odd?</div>', say: 'Sort the numbers: even or odd?',
+      bins: [{ v: 'even', l: 'Even' }, { v: 'odd', l: 'Odd' }], hint: { k: 'text', s: 'Look at the last digit.' },
+      items: [['7', 'odd'], ['4', 'even'], ['12', 'even'], ['9', 'odd'], ['8', 'even']].map(([v, b]) => ({ v, l: v, b })), ans: 'odd|even|even|odd|even' },
+    sort3: { ...base, kind: 'sort', label: 'zz:sort3', html: '<div>Solid, liquid or gas?</div>', say: 'Sort them: solid, liquid or gas.',
+      bins: [{ v: 'solid', l: 'Solid' }, { v: 'liquid', l: 'Liquid' }, { v: 'gas', l: 'Gas' }], hint: { k: 'text', s: 'Does it keep its shape?' },
+      items: [['rock', 'solid'], ['milk', 'liquid'], ['steam', 'gas'], ['ice', 'solid'], ['juice', 'liquid'], ['air', 'gas']].map(([v, b]) => ({ v, l: v, b })),
+      ans: 'solid|liquid|gas|solid|liquid|gas' },
+    mark: { ...base, kind: 'mark', label: 'zz:mark', html: '<div class="bq">Tap the verb.</div>', say: 'Tap the verb.', one: true,
+      words: ['The', 'tiny', 'frog', 'hops.'], ans: ['3'], hint: { k: 'text', s: 'A verb is an action word.' } },
+    markm: { ...base, kind: 'mark', label: 'zz:markm', html: '<div class="bq">Tap the two nouns.</div>', say: 'Tap the two nouns.',
+      words: ['My', 'dog', 'runs', 'in', 'the', 'park.'], ans: ['1', '5'], hint: { k: 'text', s: 'A noun names a person, place or thing.' } },
+  };
+};
+// KINDS2: broken samples of the new kinds; each must fail validate (tools/test.js "kinds A"). S: the samples of make()
+exports.broken = S => {
+  return {
+    'sort: a bin with no item': { ...S.sort, items: S.sort.items.map(c => ({ ...c, b: 'even' })), ans: 'even|even|even|even|even' },
+    'sort: 12 items': { ...S.sort, items: Array.from({ length: 12 }, (_, i) => ({ v: String(i), l: String(i), b: i % 2 ? 'odd' : 'even' })),
+      ans: Array.from({ length: 12 }, (_, i) => i % 2 ? 'odd' : 'even').join('|') },
+    'mark: index out of range': { ...S.mark, ans: ['9'] },
+    'mark: two answers with one': { ...S.markm, one: true },
   };
 };

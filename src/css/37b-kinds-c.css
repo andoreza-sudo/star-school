@@ -1,0 +1,85 @@
+/* KINDS2 batch A: the sort and mark kinds (src/js/49b-kinds2.js). In the gen2 part. Tokens only (00-tokens.css).
+   Every state shows a shape as well as a colour: a tick (.k2ok) on right, done and shown answers, a cross (.k2no) on wrong ones,
+   a solid outline when picked, a dashed border on an answer shown after two tries. */
+
+/* the marks inside a chip or a word: hidden until a state shows one */
+.k2mk{display:none;flex:none;align-items:center;justify-content:center;width:22px;height:22px;border-radius:var(--r-pill);
+  background:var(--surface);color:var(--good-ink)}
+.k2mk .ic{display:none}
+.right>.k2mk,.done>.k2mk,.rev>.k2mk,.wrong>.k2mk{display:inline-flex}
+.right>.k2mk .k2ok,.done>.k2mk .k2ok,.rev>.k2mk .k2ok{display:block}
+.wrong>.k2mk{color:var(--try-ink)}
+.wrong>.k2mk .k2no{display:block}
+.wrong>.k2mk .k2ok{display:none}
+.k2shake{animation:k-shake var(--t-shake) linear}
+
+/* sort: bins in one row on top, the tray of chips under them, Check below */
+.sbins{display:grid;grid-template-columns:1fr 1fr;gap:var(--s-2);width:100%;max-width:640px;margin:0 auto var(--s-3)}
+.sbins.sb3{grid-template-columns:1fr 1fr 1fr}
+.sbin{position:relative;min-height:96px;border-radius:var(--r-card);background:var(--surface-2);border:3px dashed var(--ink-3)}
+.sbin.has{border-style:solid}
+.sbin.ok{border-color:var(--good-ink);border-style:solid}
+/* the bin's button fills the bin; placed chips sit above it and take their own taps */
+.sbt{position:absolute;inset:0;width:100%;display:flex;align-items:flex-start;justify-content:center;gap:var(--s-1);
+  padding:var(--s-1) var(--s-1) 0;margin:0;border:0;border-radius:inherit;background:transparent;color:var(--ink);
+  font:inherit;font-weight:700;font-size:var(--fs-3);line-height:1.15;cursor:pointer;touch-action:manipulation}
+.sbl{display:inline-flex;align-items:center;gap:4px;min-width:0;overflow-wrap:anywhere;text-align:center}
+.sbc{flex:none;min-width:24px;height:24px;padding:0 6px;border-radius:var(--r-pill);background:var(--ink);color:var(--surface);
+  font-size:var(--fs-2);line-height:24px;text-align:center}
+.sbin:not(.has) .sbc{visibility:hidden}
+.sbz{position:relative;display:flex;flex-wrap:wrap;gap:4px;justify-content:center;padding:calc(var(--fs-3) * 1.5 + var(--s-2)) 4px 6px;
+  pointer-events:none}
+.sbz .schip{pointer-events:auto;font-size:var(--fs-2);padding:0 var(--s-1);min-height:var(--tap);min-width:var(--tap)}
+
+/* chips: at least 48 px; dragged by a finger (touch-action none on the chip only) */
+.stray{display:flex;flex-wrap:wrap;gap:var(--s-2);justify-content:center;align-items:center;min-height:var(--tap);
+  max-width:640px;margin:0 auto}
+.stray.empty{min-height:0}
+.schip{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-height:var(--tap);min-width:var(--tap);
+  padding:0 var(--s-3);border-radius:var(--r-btn);border:3px solid var(--line);background:var(--star-tint);color:var(--ink);
+  font:inherit;font-weight:700;font-size:var(--fs-4);line-height:1.1;cursor:pointer;touch-action:none;user-select:none}
+.schip .scl{display:inline-flex;align-items:center;gap:4px}
+.schip.sel{outline:4px solid var(--ink);outline-offset:2px;transform:translateY(-3px)}
+.schip.drag{position:relative;z-index:5;box-shadow:var(--ledge) var(--ink-3)}
+.schip.done,.schip.right{background:var(--good-tint);border-color:var(--good-ink);cursor:default}
+.schip.rev{background:var(--try-tint);border:3px dashed var(--try-ink)}
+.schip.wrong{background:var(--try-tint);border-color:var(--try-ink)}
+.schip:disabled{opacity:1}
+
+/* pictures in chips and bins */
+.k2pic{display:inline-flex;align-items:center;justify-content:center;line-height:1;font-size:36px}
+.k2pic .art{width:1em;height:1em}
+.k2pic.k2big{font-size:44px}
+.k2pic.k2small{font-size:22px}
+.k2pic.k2sm{font-size:24px}
+.sbz .k2pic{font-size:26px}
+.sbz .k2pic.k2big{font-size:32px}
+.sbz .k2pic.k2small{font-size:16px}
+.k2pic.k2bp{font-size:24px}
+.k2bb{font-size:var(--fs-5)}
+.k2bs{font-size:var(--fs-2)}
+.k2cl{display:inline-flex;color:var(--ink-2)}
+.k2ang{display:inline-flex}
+.k2ang svg{width:64px;height:auto}
+.sbz .k2ang svg{width:44px}
+.schip .pcap{display:inline-flex;flex-direction:column;align-items:center;line-height:1}
+.schip .pcap .art{width:32px;height:32px}
+.schip .pcap small{font-size:var(--fs-2)}
+
+/* mark: the words of the sentence as chips, a few lines */
+.mkw{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;max-width:640px;margin:0 auto}
+.mkt{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-height:var(--tap);min-width:var(--tap);
+  padding:0 var(--s-2);border-radius:var(--r-btn);border:3px solid var(--line);background:var(--surface);color:var(--ink);
+  font:inherit;font-weight:700;font-size:var(--fs-4);cursor:pointer;touch-action:manipulation}
+.mkt.on{background:var(--brand-tint);outline:4px solid var(--ink);outline-offset:-1px}
+.mkt.right{background:var(--good-tint);border-color:var(--good-ink);outline:0}
+.mkt.rev{border-style:dashed}
+.mkt.wrong{background:var(--try-tint);border-color:var(--try-ink)}
+.mkt:disabled{opacity:1;cursor:default}
+
+@media (min-width:700px){
+  .sbin{min-height:120px}
+  .schip{font-size:var(--fs-5)}
+  .sbz .schip{font-size:var(--fs-3)}
+  .mkt{font-size:var(--fs-5)}
+}

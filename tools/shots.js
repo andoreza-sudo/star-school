@@ -27,6 +27,41 @@ const discQ = (sk, stop, topic, lv = 1) => ({
   },
 });
 
+// KINDS2: a sort or mark question in a one-question round: a sample of tools/kinds-samples.js by name, or [skill, level, kind] for the
+// first generated question of that kind; misses = 0 (fresh), 1 (after a first miss: right chips locked, hint) or 2 (the reveal)
+const k2Shot = (src, misses) => ({
+  run: async p => {
+    await p.evaluate(([ks, src]) => {
+      let q;
+      if (Array.isArray(src)) { for (let s = 1; s < 400 && !q; s++) { const t = genQ(src[0], src[1], s); if (t.kind == src[2]) q = t; } }
+      else q = eval(ks)()[src];
+      G = newG({ sk: q.sk, mix: true, n: 1, pool: [q] });
+      next();
+    }, ['(' + KS.make.toString() + ')', src]);
+    await p.waitForTimeout(600);
+    for (let m = 0; m < misses; m++) {
+      if (m == 1) await p.evaluate(() => { window.next = () => {}; }); // the reveal stays on screen for the shot
+      const q = await p.evaluate(() => ({ kind: G.q.kind, one: !!G.q.one, n: G.q.bins ? G.q.bins.length : 0,
+        plan: G.q.kind == 'sort' ? G.q.items.map((c, i) => [i, G.q.bins.findIndex(b => String(b.v) === String(c.b))]) : null,
+        ans: G.q.ans }));
+      if (q.kind == 'sort') {
+        // first miss: the first chip right, the rest in the next bin; second miss: everything still out in the next bin
+        for (const [i, b] of q.plan) {
+          if (await p.$(`.schip[data-i="${i}"].done`)) continue;
+          await p.click(`.schip[data-i="${i}"]`);
+          await p.click(`.sbt[data-b="${i || m ? (b + 1) % q.n : b}"]`, { position: { x: 16, y: 12 } });
+        }
+        await p.click('#mcheck');
+      } else {
+        await p.click(`.mkt[data-i="${m ? 2 : 1}"]`);
+        await p.click(`.mkt[data-i="${m ? 3 : 2}"]`);
+        if (!q.one) await p.click('#mcheck');
+      }
+      await p.waitForTimeout(m < misses - 1 ? 400 : misses > 1 ? 120 : 300); // virtual clock (8x): the reveal moves on after 2.6 s of app time
+    }
+  },
+});
+
 // P3-01 Brain Teasers: the framework screens with the fake type from tools/lib/bt-fake.js (no real puzzle type exists yet)
 const btShot = (fn, solved = 0) => async p => {
   await p.evaluate('(' + BTF.install.toString() + ')()');
@@ -184,6 +219,14 @@ const SCREENS = {
   'kinds-multi': kindShot('multi', ['.mc[data-i="1"]', '.mc[data-i="3"]']),
   'kinds-order': kindShot('order', ['.ot[data-i="1"]', '.ot[data-i="3"]']),
   'kinds-words': kindShot('words', ['.ot[data-i="2"]', '.ot[data-i="4"]']),
+  // KINDS2 batch A: sort and mark, fresh, after a first miss (hint, locked chips) and after the second miss (reveal)
+  'kinds-sort': k2Shot('sort3', 0),
+  'kinds-sort-miss': k2Shot('sort3', 1),
+  'kinds-sort-rev': k2Shot('sort3', 2),
+  'kinds-sort-pic': k2Shot(['sci_life', 1, 'sort'], 0),
+  'kinds-mark': k2Shot('markm', 0),
+  'kinds-mark-miss': k2Shot('markm', 1),
+  'kinds-mark-rev': k2Shot('markm', 2),
 
   // ---- P4-02 icons ----
   care: { run: async p => { await p.evaluate(() => care()); } },

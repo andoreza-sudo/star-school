@@ -726,3 +726,23 @@ function vocBuildB() {
 }
 
 BANK.vocab = vocBuild().concat(vocBuildB());
+
+// ---- KINDS2 (docs/KINDS2-SPEC.md 3): mark and sort items, appended at the END so saved review items (q.bk.bi) keep their item ----
+// level 7: tap the clue word (an "X, or Y," clue gives the meaning); level 8: literal or figurative (sort 40%, 49b-kinds2.js BANKMIX)
+BANK.vocab.push(
+  ...[['The room was cluttered, or messy, after the party.', 'cluttered', 'messy'],
+    ['The puppy was drowsy, or sleepy, after its long walk.', 'drowsy', 'sleepy'],
+    ['The colossal, or huge, whale swam past our boat.', 'colossal', 'huge'],
+    ['Sam felt anxious, or worried, before the test.', 'anxious', 'worried'],
+    ['The lake water was frigid, or cold, this morning.', 'frigid', 'cold'],
+    ['The lion was ferocious, or fierce, when it roared.', 'ferocious', 'fierce']]
+    .map(([sent, w, a]) => ({lv: 7, topic: 'context clues', form: 'mark', q: `Tap the clue word that tells what ${w} means.`, sent, a,
+      say: `Tap the clue word that tells what ${w} means. ${sent}`, hint: 'Look right after the hard word. The word after "or" can tell you what it means.'})),
+  ...[{literal: ['ate a piece of cake', 'a bee in the garden'], figurative: ['as busy as a bee', 'the test was a breeze']},
+    {literal: ['ice in my glass', 'slept in a bed'], figurative: ['slept like a log', 'as cold as ice']},
+    {literal: ['heavy rain today', 'the dog barked'], figurative: ['raining cats and dogs', 'the wind howled']},
+    {literal: ['a bright star', 'a long walk'], figurative: ['Mia is a shining star', 'time flies']},
+    {literal: ['a broken window', 'an old clock'], figurative: ['a heart of gold', 'the stars danced']}]
+    .map(bins => ({lv: 8, topic: 'figurative language', form: 'sort', q: 'Sort them: literal or figurative?', bins,
+      hint: 'Literal words mean just what they say. Figurative language compares, stretches the truth, or gives things human actions.'}))
+);
