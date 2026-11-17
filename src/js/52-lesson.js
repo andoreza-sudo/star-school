@@ -269,7 +269,7 @@ const LS = {
       if (q.kind == 'make' && q.s0) { LS.u.mm = q.s0.slice(); LS.u.mm0 = q.s0.slice(); KIND.make.draw(q, LS.u); }
     }
     fit();
-    LS.talk(lines, wake, (it.lines || []).filter(Boolean).join(' ') || (it.m == 'say' ? '' : q.say));
+    LS.talk(lines, wake, it.m == 'say' ? it.lines[it.lines.length - 1] : (it.lines || []).filter(Boolean).join(' ') || q.say);
   },
   // the pet's answer drawn on the question, for Check me
   petWork(q, v) {

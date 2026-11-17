@@ -20,6 +20,7 @@ const lsRi = (r, a, b) => a + Math.floor(r() * (b - a + 1));
 const lsEq = t => `<div class="eq">${t}</div>`;
 const lsAsk = t => `<div class="sub pktxt">${t}</div>`;
 const lsQm = '<b class="ls-qm">?</b>';
+const lsTO = (t, o) => `${t} ten${t == 1 ? '' : 's'} and ${o} one${o == 1 ? '' : 's'}`; // 1 ten and 4 ones
 // a question object; o.say is required, o.bug the misconception values, pk: Kindergarten (spoken, big speaker)
 function lsQ(sk, lv, st, o) {
   const q = Object.assign({sk, lv, st, pk: true, auto: true, label: o.label || sk + lv + ' ' + o.ans}, o);
@@ -230,17 +231,17 @@ const LESSONS = {
   pv1: {sk: 'pv', lv: 1, t: 'Tens & Ones', test: 2, idea: 'A rod is ten. A little cube is one.', bugs: ['swap', 'off1'],
     q(st, r) {
       const t = lsRi(r, 1, 5), o = lsRi(r, 1, 9), n = t * 10 + o, sw = o * 10 + t, bug = {swap: sw != n && sw < 100 ? [sw] : [], given: [t, o, t + o]};
-      const hint = {k: 'html', html: `<div class="pkhint">${VIZ.base10(n)}<div>${t} tens and ${o} ones.</div></div>`, w: `Count the rods by tens. Then the cubes by ones.`};
+      const hint = {k: 'html', html: `<div class="pkhint">${VIZ.base10(n)}<div>${lsTO(t, o)}.</div></div>`, w: `Count the rods by tens. Then the cubes by ones.`};
       if (st == 0) return lsB10('pv', 1, 0, n, {html: lsEq(n) + lsAsk(`Make ${n} with blocks.`), say: `Make ${n} with blocks: tens and ones.`, hint, bug, pk: false});
       if (st == 1) return lsNum('pv', 1, 1, n, `<div class="pkq">${VIZ.base10(n)}</div>${SLOT}`, 'How many blocks in all? Count the rods by tens.', {hint, bug, pk: false});
-      return lsNum('pv', 1, 2, n, lsEq(`${t} tens and ${o} ones = ${SLOT}`), `${t} tens and ${o} ones make what number?`, {hint, bug, pk: false});
+      return lsNum('pv', 1, 2, n, lsEq(`${lsTO(t, o)} = ${SLOT}`), `${lsTO(t, o)} make what number?`, {hint, bug, pk: false});
     },
     exp: () => ({q: lsB10('pv', 1, 0, 99, {html: lsAsk('Make any number with blocks!'), say: 'Make any number you like with rods and cubes!', goal: 'any', pk: false}),
-      react: v => ({ctx: {n: +v}, lines: [`You made ${Math.floor(v / 10)} tens and ${v % 10} ones.`, `That is ${v}.`]})}),
+      react: v => ({ctx: {n: +v}, lines: [`You made ${lsTO(Math.floor(v / 10), v % 10)}.`, `That is ${v}.`]})}),
     name: c => {
       const n = c.n > 10 && c.n % 10 ? c.n : 34, t = Math.floor(n / 10), o = n % 10;
-      return {html: `<div class="pkq">${VIZ.base10(n)}</div>` + lsEq(`${t} tens and ${o} ones = ${n}`),
-        lines: ['A rod is ten. A little cube is one.', `${t} tens and ${o} ones make ${n}.`, 'The tens digit comes first.']};
+      return {html: `<div class="pkq">${VIZ.base10(n)}</div>` + lsEq(`${lsTO(t, o)} = ${n}`),
+        lines: ['A rod is ten. A little cube is one.', `${lsTO(t, o)} make ${n}.`, 'The tens digit comes first.']};
     },
     home: 'Ask {name}: "How many tens are in 34?"'},
 
@@ -252,7 +253,7 @@ const LESSONS = {
       const hint = {k: 'html', html: `<div class="pkhint">${VIZ.numLine({min: 0, max: 20, labels: [0, 5, 10, 15, 20], marks: [a, b]})}<div>Further along is bigger.</div></div>`, w: 'The number further along the line is bigger.'};
       if (st == 3) {
         if (a == b) b = a < 19 ? a + 1 : a - 1;
-        return lsNum('cmp', 1, 2, Math.max(a, b), lsEq(`${a} or ${b}?`) + k2Sub('Type the bigger number.'), `Which is bigger, ${a} or ${b}? Type the bigger number.`,
+        return lsNum('cmp', 1, 2, Math.max(a, b), lsEq(`${a} or ${b}?`) + k2Sub('Type the bigger number.') + SLOT, `Which is bigger, ${a} or ${b}? Type the bigger number.`,
           {hint, bug: {small: [Math.min(a, b)]}, pk: false});
       }
       if (st == 0) {

@@ -1,9 +1,9 @@
 /* TEACH-1: the lesson screen (52-lesson.js, part teach). It is the question screen (.play.qs, .qarea, .inp) with the pet on top of
    the prompt card: the pet, its caption bubble and "Hear it again". Tokens only. */
 .ls-pips{display:flex;gap:6px;align-items:center;flex:1;justify-content:center;min-width:0}
-.ls-pip{display:grid;place-items:center;width:30px;height:30px;border-radius:var(--r-pill);background:var(--surface-2);color:var(--ink-3);transition:transform var(--t) var(--ease)}
+.ls-pip{display:grid;place-items:center;width:30px;height:30px;border-radius:var(--r-pill);background:var(--surface-2);color:var(--ink-2);transition:transform var(--t) var(--ease)}
 .ls-pip .ic{width:18px;height:18px}
-.ls-pip.on{background:var(--math);color:var(--paper)}
+.ls-pip.on{background:var(--math);color:var(--surface)}
 .ls-pip.now{background:var(--math-tint);color:var(--math-shade);box-shadow:inset 0 0 0 3px var(--math);transform:scale(1.15)}
 .ls-tag span{max-width:9em;overflow:hidden;text-overflow:ellipsis}
 .ls-top .ls-tag{flex:none}

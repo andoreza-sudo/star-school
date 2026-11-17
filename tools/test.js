@@ -19577,7 +19577,7 @@ run('teach: lessons, beats, test-out, Check me, measure TEACH-1',()=>{
       if(PATHS.math.worlds[nd.wi].g>1)bad.push(id+': not a Kindergarten or 1st grade stop');
       const lines=[L.idea,L.home];
       for(let s=0;s<60;s++){const rr=mulberry32(s+1);
-        for(const st of [0,1,2]){const q=L.q(st,rr);if(q.st!==st)bad.push(id+' stage '+st+': q.st '+q.st);
+        for(const st of [0,1,2,L.test]){const q=L.q(st,rr);if(q.st!==Math.min(st,2))bad.push(id+' stage '+st+': q.st '+q.st);
           for(const x of kindProblems(q))if(!(q.goal&&/start state is the answer|answer state does not give/.test(x)))bad.push(id+' stage '+st+': '+x);
           if(!q.say)bad.push(id+' stage '+st+': no say');
           if(!q.goal&&!lsOk(q,q.ans))bad.push(id+' stage '+st+': ans is not right');
