@@ -20,7 +20,7 @@
 .ls-turn .ls-bub::before{border-right-color:var(--star)}
 .ls-pw{display:flex;justify-content:center;max-width:100%}
 .ls-pw .viz{max-width:100%}
-.slot.ls-pv{background:var(--star-tint);color:var(--star-ink)}
+.slot.ls-pv{background:var(--star-tint);color:var(--ink)}
 .ls-oops .ls-pw,.ls-oops .ls-pv{outline:4px dashed var(--try);outline-offset:4px;border-radius:var(--r-chip)}
 .ls-qm{color:var(--math-shade)}
 .ls-judge{display:flex;gap:var(--s-3);justify-content:center}
