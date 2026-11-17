@@ -13,7 +13,7 @@ try{speechSynthesis.getVoices();speechSynthesis.onvoiceschanged=()=>{}}catch(e){
    tools/build.py writes the question generators (gen, gen2; gen also carries the Grown-ups screens, ROOM), the Brain Teaser puzzle types and the Game Room (PARTS in build.py)
    to gen.<VER>.js, gen2.<VER>.js, bt.<VER>.js, games.<VER>.js, rally.<VER>.js (G-RALLY2: Star Rally), games2.<VER>.js (G-04a: the newer games)
    and games3.<VER>.js (G-BB2: Block Builder), and src/data/*.js to data.<VER>.js. index.html loads them with their own script tags after this code and before src/boot.js:
-   gen, gen2, bt, then data (games, rally, games2, games3 on demand, P6-02). Each file's last line is `var <NAME>_VER='<VER>'`. src/boot.js starts the app only if dataReady():
+   gen, gen2, then data (bt on demand, P6-03; games, rally, games2, games3 on demand, P6-02). Each file's last line is `var <NAME>_VER='<VER>'`. src/boot.js starts the app only if dataReady():
    every file ran to the end and comes from the same release as this page. If not (one could not be downloaded, or a cache kept
    one half of an update), the app does not start, because a round or a puzzle would break on missing code or a missing bank.
    It asks to go online and try again. Nothing in the save changes except one line in the App log (S.err).
@@ -27,6 +27,7 @@ function appFiles() {
     ['rally', typeof RALLY_VER === 'undefined' ? null : RALLY_VER],
     ['games2', typeof GAMES2_VER === 'undefined' ? null : GAMES2_VER],
     ['games3', typeof GAMES3_VER === 'undefined' ? null : GAMES3_VER],
+    ['teach', typeof TEACH_VER === 'undefined' ? null : TEACH_VER],
     ['data', typeof DATA_VER === 'undefined' ? null : DATA_VER],
   ];
 }
@@ -44,7 +45,8 @@ function dataMissing(stems) {
 }
 /* ---------- P6-02: part files loaded on demand ----------
    The parts in LAZY_PARTS (the same list as LAZY in tools/build.py, in PARTS order) have no <script> tag in index.html, so a
-   cheap tablet does not read and parse them at every start: the Game Room (games, rally, games2, games3) loads the first time it opens.
+   cheap tablet does not read and parse them at every start: the Game Room (games, rally, games2, games3: GAME_PARTS) loads the first time it opens,
+   and (P6-03) the Brain Teaser puzzle code (bt) the first time a puzzle opens (BT.start; the hub and level strip start it early, BT.warm).
    sw.js still precaches every part, so this works offline. Each one is the same file with the same stamp as before: partLoad(stem)
    adds one plain script element, src <stem>.<VER>.js (a classic script, so it shares the one global scope like the others) and resolves
    true once its stamp equals the page's VER. A file that cannot be loaded resolves false and may be tried again later; a file of
@@ -53,7 +55,8 @@ function dataMissing(stems) {
    (with Back), loads the parts one after the other (rally and games2 call GH.reg from games while they load), then runs go() only if that
    screen is still showing, so a child who tapped Back meanwhile is never pulled into the games. A part that does not load shows
    the Try again screen. Keep it generic: a new game in games2 needs nothing here. */
-const LAZY_PARTS = ['games', 'rally', 'games2', 'games3'];
+const LAZY_PARTS = ['bt', 'games', 'rally', 'games2', 'games3', 'teach']; // TEACH-1: teach, the lessons (loaded by the math map: teachWarm, 46-home.js)
+const GAME_PARTS = ['games', 'rally', 'games2', 'games3']; // the Game Room's parts (gameRoom in 58-playtime.js); bt is BT.start's (P6-03)
 const partsAsked = {};
 function partReady(stem) {
   const f = appFiles().find(x => x[0] === stem);

@@ -7840,7 +7840,7 @@ run('mazes P3-08',()=>{
 run('code split A11b (and data file split A11)',()=>{
   const p=[],rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8');
   if(!BUILD_VER)return{problems:['no VER in tools/build.py']};
-  if(PARTS.map(x=>x.stem).join()!=='gen,gen2,bt,games,rally,games2,games3')p.push('PARTS in tools/build.py read as '+JSON.stringify(PARTS.map(x=>x.stem))+' (one entry per line, like the others)');
+  if(PARTS.map(x=>x.stem).join()!=='gen,gen2,bt,games,rally,games2,games3,teach')p.push('PARTS in tools/build.py read as '+JSON.stringify(PARTS.map(x=>x.stem))+' (one entry per line, like the others)');
   const FILES=[...PART_FILES,DATA_FILE];
   for(const f of ['index.html',...FILES,'sw.js'])if(!fs.existsSync(path.join(ROOT,f)))p.push(f+' not built; run python3 tools/build.py first');
   if(p.length)return{problems:p};
@@ -7849,7 +7849,8 @@ run('code split A11b (and data file split A11)',()=>{
   // P6-02: the LAZY parts (games, games2) have no tag: partsThen() loads them on demand (the check "performance P6-02")
   const tags=[...html.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/g)].map(m=>({attrs:m[1],src:(m[1].match(/src="([^"]*)"/)||[])[1],body:m[2]}));
   const srcs=tags.filter(t=>t.src!==undefined).map(t=>t.src),n=START_FILES.length+2;
-  if(JSON.stringify(LAZY)!=='["games","rally","games2","games3"]')p.push('LAZY in tools/build.py read as '+JSON.stringify(LAZY));
+  // P6-03: bt joined the LAZY parts (the puzzle code loads when a puzzle opens; "performance P6-03")
+  if(JSON.stringify(LAZY)!=='["bt","games","rally","games2","games3","teach"]')p.push('LAZY in tools/build.py read as '+JSON.stringify(LAZY));
   if(JSON.stringify(srcs)!==JSON.stringify(START_FILES))p.push('index.html loads '+JSON.stringify(srcs)+', expected exactly '+JSON.stringify(START_FILES));
   if(tags.length!==n||tags[0].src!==undefined||tags[n-1].src!==undefined||START_FILES.some((f,i)=>tags[i+1].src!==f))p.push('index.html scripts are not code, '+START_FILES.join(', ')+', boot');
   else if(!/dataReady\(\)/.test(tags[n-1].body)||!/home\(true\)/.test(tags[n-1].body))p.push('boot script does not check dataReady() before home(true)');
@@ -7902,15 +7903,17 @@ run('code split A11b (and data file split A11)',()=>{
     const alone=load([code],'({ready:dataReady()})');
     if(alone.err)p.push('the code does not load without the other files (it must not use part code or data while loading): '+alone.err);
     else if(alone.ready)p.push('dataReady() is true without the other files');
-    const nop=load([code,...parts.filter((_,i)=>PARTS[i].stem.startsWith('gen')),data],'({ready:dataReady(),bt:BT.list().length,game:typeof garage})');
+    // P6-03: gen, gen2 and the data are every start-up file now, so the app is ready without bt and the games; the puzzle types are
+    // listed from BT.CAT (Home and the hub need them) but none has its code (make/mount/solve) until bt loads
+    const nop=load([code,...parts.filter((_,i)=>PARTS[i].stem.startsWith('gen')),data],'({ready:dataReady(),bt:BT.list().filter(BT.loaded).length,cat:BT.list().length===BT.CAT.length&&BT.CAT.length>0,game:typeof garage})');
     if(nop.err)p.push('code + gen parts + '+DATA_FILE+' do not load without the bt and games parts: '+nop.err);
-    else if(nop.ready||nop.bt||nop.game!=='undefined')p.push('without the part files: '+JSON.stringify(nop));
+    else if(!nop.ready||nop.bt||!nop.cat||nop.game!=='undefined')p.push('without the part files: '+JSON.stringify(nop));
     styles.length=0;
     const startParts=parts.filter((_,i)=>!LAZY.includes(PARTS[i].stem)),lazyParts=parts.filter((_,i)=>LAZY.includes(PARTS[i].stem));
     const g=load([code,...startParts,data,...lazyParts],`({ready:dataReady(),files:appFiles(),gram:BANK.gram.length,vocab:BANK.vocab.length,
       demo:BANK.demo.length,comp:PASS.comp.length,info:PASS.info.length,passages:COMP.length,spell:Object.keys(SPELL_WORDS).length,
       spellGen:typeof genSpell,sudoku:Object.keys(PUZ.sudoku).join(''),sudokuA:PUZ.sudoku.A.easy.length,
-      bt:['maze','pattern','pyramid','balance','target'].filter(id=>BT.get(id)).length,mz:typeof MZ,pat:typeof PAT,btn:typeof BTN,
+      bt:['maze','pattern','pyramid','balance','target'].filter(id=>BT.loaded(BT.get(id))).length,mz:typeof MZ,pat:typeof PAT,btn:typeof BTN,
       games:[typeof garage,typeof blockBuilder,typeof bbMenu,typeof colorMenu,typeof garageS,typeof gtStop,typeof stopHC,typeof shapePage,typeof polyArt,typeof rng].join()})`);
     if(g.err)p.push('code + '+FILES.join(' + ')+' do not load: '+g.err);
     else{
@@ -8018,7 +8021,7 @@ run('parts split A11c',()=>{
       for(const [k,sk,lv] of [['math','add',1],['math','mult',1],['math','frac',3],['read','abc',1],['read','sound',1],['es','es_color',1],['disc','sci_life',1]]){
         try{const q=genQ(sk,lv,7);qs[k+':'+sk]=!!(q&&q.html&&q.sk===sk)}catch(e){qs[k+':'+sk]=String(e)}}
       return{ready:dataReady(),files,qs}})()`,ctx);
-    const stems=['gen','gen2','bt','games','rally','games2','games3','data'];
+    const stems=['gen','gen2','bt','games','rally','games2','games3','teach','data'];
     if(JSON.stringify(r.files.map(f=>f[0]))!==JSON.stringify(stems))p.push('appFiles() lists '+JSON.stringify(r.files.map(f=>f[0]))+', expected '+stems.join());
     if(!r.ready||r.files.some(f=>f[1]!==BUILD_VER))p.push('a part is not '+BUILD_VER+': '+JSON.stringify(r.files));
     for(const [k,v] of Object.entries(r.qs))if(v!==true)p.push('question '+k+' did not build from the loaded files: '+v);
@@ -8341,13 +8344,40 @@ run('check-ins and stop badges CHECK-IN',()=>{
   return{problems:[...new Set(p)].slice(0,50),note:o.notes.join('; ')+'; index.html '+ih+', gen2 '+g2+' bytes'};
 });
 
+function lazyPage(code,files){ // P6-02, P6-03: a fresh page in a Node vm (see 4. in "performance P6-02")
+  const vm=require('vm');
+  const T=[],scripts=[],styles=[],els={},store={};let reloads=0;
+  const app={id:'app',style:{},innerHTML:'',isConnected:true};
+  const el=id=>els[id]||(els[id]={id,style:{},dataset:{},onclick:null,innerHTML:'',classList:{add(){},remove(){},toggle(){},contains(){return false}},
+    get isConnected(){return app.innerHTML.includes('id="'+id+'"')},querySelector:()=>null,querySelectorAll:()=>[],appendChild(){},remove(){},scrollIntoView(){},
+    getBoundingClientRect:()=>({left:0,top:0,right:0,bottom:0,width:0,height:0})});
+  const doc={documentElement:el("html"),hidden:false,addEventListener(){},querySelectorAll:()=>[],getElementById:()=>null,
+    querySelector:s=>{if(s==='#app')return app;const m=/^#([\w-]+)$/.exec(s);return m&&app.innerHTML.includes('id="'+m[1]+'"')?el(m[1]):null},
+    createElement:t=>({tag:t,style:{},remove(){this.removed=true}}),head:{appendChild:e=>styles.push(e.id)},body:{insertAdjacentHTML(){},appendChild:e=>{if(e.tag==="script")scripts.push(e)}}};
+  const ctx=vm.createContext({document:doc,navigator:{},location:{protocol:'file:',reload:()=>{reloads++}},addEventListener(){},console,innerWidth:380,innerHeight:780,
+    localStorage:{getItem:k=>store[k]||null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}},speechSynthesis:{getVoices:()=>[],cancel(){},speak(){}},
+    setTimeout:f=>T.push(f),clearTimeout(){},setInterval:()=>0,clearInterval(){},requestAnimationFrame:f=>T.push(f),cancelAnimationFrame(){},
+    getComputedStyle:()=>({}),btoa,atob,matchMedia:()=>({matches:false,addEventListener(){}}),__T:T},{microtaskMode:'afterEvaluate'});
+  const run_=t=>vm.runInContext(t,ctx);
+  run_(code);for(const f of START_FILES)run_(files[f]);
+  run_('loadSave(null);migrate();S.sound=false;S.voice=false;S.name="Ava";S.pt={bank:300,day:today(),used:0}');
+  return{ctx,run:run_,app,scripts,styles,el,reloads:()=>reloads,
+    flush:()=>run_('for(let i=0;i<40&&__T.length;i++)__T.shift()()'),
+    // serve the oldest script the page asked for: its file (mod changes it; null = not there), then its onload or onerror
+    serve:(mod=t=>t)=>{const s=scripts.shift();if(!s)return'';ctx.__cur=s;const t=files[s.src]==null?null:mod(files[s.src],s.src);
+      if(t==null)run_('__cur.onerror()');else{run_(t);run_('__cur.onload()')}return s.src}};
+}
 // ---- P6-02: the Game Room's part files load on demand (LAZY in tools/build.py, partsThen() in src/js/90-app.js); start-up bytes under 3.0 MB ----
 run('performance P6-02',()=>{
   const p=[],rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8'),vm=require('vm');
   for(const f of ['index.html',...START_FILES,...LAZY_FILES,'sw.js'])if(!fs.existsSync(path.join(ROOT,f)))return{problems:[f+' not built; run python3 tools/build.py first']};
   const html=rd('index.html'),sw=rd('sw.js'),files=Object.fromEntries([...START_FILES,...LAZY_FILES].map(f=>[f,rd(f)]));
   // 1. what loads at start: index.html names only the start-up files; the games parts are LAZY, in build.py and in 90-app.js alike
-  if(JSON.stringify(LAZY)!=='["games","rally","games2","games3"]')p.push('LAZY in tools/build.py should be the games parts: '+JSON.stringify(LAZY));
+  // P6-03: so is bt (the puzzle code, BT.start loads it: the check "performance P6-03"); the Game Room asks only for GAME_PARTS
+  if(JSON.stringify(LAZY)!=='["bt","games","rally","games2","games3","teach"]')p.push('LAZY in tools/build.py should be bt, the games parts and teach (TEACH-1): '+JSON.stringify(LAZY));
+  const GAME_FILES=LAZY_FILES.filter((f,i)=>LAZY[i]!=='bt'&&LAZY[i]!=='teach'),parts_=on=>LAZY.map(x=>String(x!=='bt'&&x!=='teach'&&on)).join(); // parts_(true): the games in, bt and teach (TEACH-1, the math map's) not
+  const gp=(fs.readFileSync(path.join(SRC,'js','90-app.js'),'utf8').match(/const GAME_PARTS = (\[[^\]]*\]);/)||[])[1];
+  if(!gp||gp.replace(/'/g,'"').replace(/\s/g,'')!==JSON.stringify(LAZY.filter(x=>x!=='bt'&&x!=='teach')))p.push('GAME_PARTS in 90-app.js ('+gp+') is not LAZY without bt and teach');
   const srcs=[...html.matchAll(/<script src="([^"]*)"/g)].map(m=>m[1]);
   for(const f of LAZY_FILES)if(srcs.includes(f))p.push(f+' has a <script> tag in index.html: it must load only on demand');
   if(JSON.stringify(srcs)!==JSON.stringify(START_FILES))p.push('index.html loads '+srcs.join(', ')+', expected '+START_FILES.join(', '));
@@ -8364,35 +8394,15 @@ run('performance P6-02',()=>{
   //    draws and the <script> elements partLoad() adds; the test then "serves" each one (runs the file, or fails it) and fires its
   //    onload / onerror. Timers and animation frames wait in a queue that the test runs (flush); promises settle after each step.
   const code=(html.match(/<script>([\s\S]*?)<\/script>/)||[])[1];
-  const page=()=>{
-    const T=[],scripts=[],styles=[],els={},store={};let reloads=0;
-    const app={id:'app',style:{},innerHTML:'',isConnected:true};
-    const el=id=>els[id]||(els[id]={id,style:{},dataset:{},onclick:null,innerHTML:'',classList:{add(){},remove(){},toggle(){},contains(){return false}},
-      get isConnected(){return app.innerHTML.includes('id="'+id+'"')},querySelector:()=>null,querySelectorAll:()=>[],appendChild(){},remove(){},scrollIntoView(){},
-      getBoundingClientRect:()=>({left:0,top:0,right:0,bottom:0,width:0,height:0})});
-    const doc={documentElement:el("html"),hidden:false,addEventListener(){},querySelectorAll:()=>[],getElementById:()=>null,
-      querySelector:s=>{if(s==='#app')return app;const m=/^#([\w-]+)$/.exec(s);return m&&app.innerHTML.includes('id="'+m[1]+'"')?el(m[1]):null},
-      createElement:t=>({tag:t,style:{},remove(){this.removed=true}}),head:{appendChild:e=>styles.push(e.id)},body:{insertAdjacentHTML(){},appendChild:e=>{if(e.tag==="script")scripts.push(e)}}};
-    const ctx=vm.createContext({document:doc,navigator:{},location:{protocol:'file:',reload:()=>{reloads++}},addEventListener(){},console,innerWidth:380,innerHeight:780,
-      localStorage:{getItem:k=>store[k]||null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}},speechSynthesis:{getVoices:()=>[],cancel(){},speak(){}},
-      setTimeout:f=>T.push(f),clearTimeout(){},setInterval:()=>0,clearInterval(){},requestAnimationFrame:f=>T.push(f),cancelAnimationFrame(){},
-      getComputedStyle:()=>({}),btoa,atob,matchMedia:()=>({matches:false,addEventListener(){}}),__T:T},{microtaskMode:'afterEvaluate'});
-    const run_=t=>vm.runInContext(t,ctx);
-    run_(code);for(const f of START_FILES)run_(files[f]);
-    run_('loadSave(null);migrate();S.sound=false;S.voice=false;S.name="Ava";S.pt={bank:300,day:today(),used:0}');
-    return{ctx,run:run_,app,scripts,styles,el,reloads:()=>reloads,
-      flush:()=>run_('for(let i=0;i<40&&__T.length;i++)__T.shift()()'),
-      // serve the oldest script the page asked for: its file (mod changes it; null = not there), then its onload or onerror
-      serve:(mod=t=>t)=>{const s=scripts.shift();if(!s)return'';ctx.__cur=s;const t=files[s.src]==null?null:mod(files[s.src],s.src);
-        if(t==null)run_('__cur.onerror()');else{run_(t);run_('__cur.onload()')}return s.src}};
-  };
-  const VER=BUILD_VER,[GF,RF,G2F]=LAZY_FILES,stale=(f,t)=>t.replace(new RegExp("var "+f.split('.')[0].toUpperCase()+"_VER='"+VER+"'"),"var "+f.split('.')[0].toUpperCase()+"_VER='v1'");
+  const page=()=>lazyPage(code,files);
+  const VER=BUILD_VER,[GF,RF,G2F]=GAME_FILES,stale=(f,t)=>t.replace(new RegExp("var "+f.split('.')[0].toUpperCase()+"_VER='"+VER+"'"),"var "+f.split('.')[0].toUpperCase()+"_VER='v1'");
   const state=pg=>pg.run('({ready:dataReady(),parts:LAZY_PARTS.map(partReady).join(),gh:typeof GH,err:(S.err||[]).map(e=>e.msg).pop()||""})');
   try{
     // a. a cold start: no games code, no games <style>; the app is ready
     let pg=page(),s=state(pg);
     // KINDS2: gen2 carries a stylesheet now (src/css/37b-kinds-c.css, the sort and mark kinds), added at start before bt's
-    if(!s.ready||s.parts!=='false,false,false,false'||s.gh!=='undefined'||pg.styles.join()!=='css-gen2,css-bt'||pg.scripts.length)p.push('at start: '+JSON.stringify(s)+' styles '+pg.styles.join());
+    // P6-03: bt's <style> comes with bt now, not at start
+    if(!s.ready||s.parts!==parts_(false)||s.gh!=='undefined'||pg.styles.join()!=='css-gen2'||pg.scripts.length)p.push('at start: '+JSON.stringify(s)+' styles '+pg.styles.join());
     // b. Home -> Game Room: "Getting the games ready..." with Back at once, nothing requested until that screen is painted, then games,
     //    then games2 (one at a time, in PARTS order), then the hub with every registered game, and a game's first screen opens
     pg.run('gameRoom()');
@@ -8401,10 +8411,10 @@ run('performance P6-02',()=>{
     pg.flush();
     const asked=[];
     for(let i=0;i<4&&pg.scripts.length;i++){asked.push(pg.scripts.map(x=>x.src).join('+'));pg.serve()}
-    if(asked.join()!==LAZY_FILES.join())p.push('the Game Room asked for '+asked.join(', ')+', expected '+LAZY_FILES.join(', ')+' one after the other');
+    if(asked.join()!==GAME_FILES.join())p.push('the Game Room asked for '+asked.join(', ')+', expected '+GAME_FILES.join(', ')+' one after the other');
     s=state(pg);
     const hub=pg.app.innerHTML,ids=pg.run('GH.games.map(g=>g.btn)');
-    if(s.parts!=='true,true,true,true'||!/class="gh-room"/.test(hub)||ids.length<5||ids.some(b=>!hub.includes('id="'+b+'"'))||pg.styles.join()!=='css-gen2,css-bt,css-games,css-rally,css-games2,css-games3')
+    if(s.parts!==parts_(true)||!/class="gh-room"/.test(hub)||ids.length<5||ids.some(b=>!hub.includes('id="'+b+'"'))||pg.styles.join()!=='css-gen2,css-games,css-rally,css-games2,css-games3')
       p.push('after the lazy load: '+JSON.stringify(s)+' hub '+/gh-room/.test(hub)+' cards '+ids+' styles '+pg.styles.join());
     for(const [id,want] of [['snack','snopen'],['art',''],['rally','rlgar']]){ // a games2 game (Snack Stand), a games one (Coloring), Star Rally (rally), through their hub cards
       try{const b=pg.run(`GH.get('${id}').btn`);pg.el(b).onclick();const h=pg.app.innerHTML;
@@ -8418,7 +8428,7 @@ run('performance P6-02',()=>{
     pg=page();pg.run('gameRoom()');pg.flush();pg.run('view("<div id=\\"elsewhere\\"></div>")');
     while(pg.scripts.length)pg.serve();pg.flush();
     s=state(pg);
-    if(!pg.app.innerHTML.includes('elsewhere')||s.parts!=='true,true,true,true')p.push('Back while loading: '+pg.app.innerHTML.slice(0,80)+' '+JSON.stringify(s));
+    if(!pg.app.innerHTML.includes('elsewhere')||s.parts!==parts_(true))p.push('Back while loading: '+pg.app.innerHTML.slice(0,80)+' '+JSON.stringify(s));
     pg.run('gameRoom()');if(!/gh-room/.test(pg.app.innerHTML))p.push('after Back while loading, the Game Room did not open at once');
     // d. a games or games2 file of another release is refused: Try again (it reloads), the App log line, games2 never asked for after a
     //    stale games file; asking again does not run the stale file twice; nothing else in the save changes
@@ -8427,7 +8437,7 @@ run('performance P6-02',()=>{
       pg.run('gameRoom()');pg.flush();const got=[];
       while(pg.scripts.length)got.push(pg.serve((t,src)=>src===f?stale(f,t):t));
       s=state(pg);
-      if(!/id="datamiss"/.test(pg.app.innerHTML)||/gh-room/.test(pg.app.innerHTML)||s.err!==log+' (app '+VER+')'||got.join()!==LAZY_FILES.slice(0,LAZY_FILES.indexOf(f)+1).join())
+      if(!/id="datamiss"/.test(pg.app.innerHTML)||/gh-room/.test(pg.app.innerHTML)||s.err!==log+' (app '+VER+')'||got.join()!==GAME_FILES.slice(0,GAME_FILES.indexOf(f)+1).join())
         p.push('stale '+f+': '+JSON.stringify(s)+' asked '+got.join()+' '+pg.app.innerHTML.slice(0,100));
       pg.run('gameRoom()');pg.flush();
       if(pg.scripts.length||!/id="datamiss"/.test(pg.app.innerHTML))p.push('stale '+f+': a second open asked again or did not refuse ('+pg.scripts.map(x=>x.src)+')');
@@ -8439,9 +8449,93 @@ run('performance P6-02',()=>{
     s=state(pg);
     if(!/id="datamiss"/.test(pg.app.innerHTML)||s.err!=='games file missing (app '+VER+')'||pg.scripts.length)p.push('missing games file: '+JSON.stringify(s));
     pg.run('gameRoom()');pg.flush();while(pg.scripts.length)pg.serve();
-    if(!/gh-room/.test(pg.app.innerHTML)||state(pg).parts!=='true,true,true,true')p.push('after a missing games file, the next open did not load the Game Room');
+    if(!/gh-room/.test(pg.app.innerHTML)||state(pg).parts!==parts_(true))p.push('after a missing games file, the next open did not load the Game Room');
   }catch(e){p.push('the on-demand load could not be run: '+String(e.stack||e).split('\n').slice(0,3).join(' | '))}
   return{problems:p,note:'loaded at start '+Math.round(start/1000)+' KB (budget '+TOTAL_FAIL/1e6+' MB), on demand '+Math.round(lazy/1000)+' KB ('+LAZY_FILES.join(', ')+')'};
+});
+
+// ---- P6-03: the Brain Teaser puzzle code (bt.<VER>.js, ~580 KB) loads on demand: BT.start() loads it the first time a puzzle opens
+// (the hub and the level strip start it early, BT.warm); Home, the hub, badges and the Puzzle of the Day work from BT.CAT before it ----
+run('performance P6-03',()=>{
+  const p=[],rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8');
+  const BTF=PART_FILES[PARTS.findIndex(x=>x.stem==='bt')];
+  for(const f of ['index.html',...START_FILES,...LAZY_FILES,'sw.js'])if(!fs.existsSync(path.join(ROOT,f)))return{problems:[f+' not built; run python3 tools/build.py first']};
+  const html=rd('index.html'),sw=rd('sw.js'),files=Object.fromEntries([...START_FILES,...LAZY_FILES].map(f=>[f,rd(f)]));
+  // 1. bt is not loaded at start: LAZY in build.py and LAZY_PARTS in 90-app.js, no <script> tag, still precached for offline
+  if(!BTF||!LAZY.includes('bt'))p.push('bt is not in LAZY (tools/build.py): '+JSON.stringify(LAZY));
+  const srcs=[...html.matchAll(/<script src="([^"]*)"/g)].map(m=>m[1]);
+  if(srcs.includes(BTF)||START_FILES.includes(BTF))p.push(BTF+' is loaded at start: '+srcs.join(', '));
+  if(!sw.includes("'./"+BTF+"'"))p.push('sw.js does not precache '+BTF+' (puzzles would not open offline)');
+  if(!/const LAZY_PARTS = \[[^\]]*'bt'/.test(fs.readFileSync(path.join(SRC,'js','90-app.js'),'utf8')))p.push('LAZY_PARTS in 90-app.js has no bt');
+  // 2. the start-up total dropped by the whole bt file: index.html + the start-up files, without bt. Keep at least 500 KB of the
+  //    3.0 MB start-up budget free (P6-03 freed about 580 KB), so the room is not quietly used up by moving bt back.
+  const nb=f=>Buffer.byteLength(files[f]),start=Buffer.byteLength(html)+START_FILES.reduce((a,f)=>a+nb(f),0),bt=nb(BTF),before=start+bt;
+  if(start>TOTAL_FAIL-500000)p.push('loaded at start: '+start+' bytes, less than 500 KB under the '+TOTAL_FAIL+' budget');
+  if(bt<400000)p.push(BTF+' is only '+bt+' bytes: is the puzzle code still in it?');
+  // 3. the catalog (BT.CAT, 74-teasers.js, in index.html) and the code (BT.reg in src/js/NN-bt-*.js): the same types, in BT.ORDER, each
+  //    registered once; a type file names only its id and code (its name, bands ... are in the catalog, which Home needs before bt)
+  const ids=f=>[...fs.readFileSync(path.join(SRC,'js',f),'utf8').matchAll(/^BT\.reg\(\{\n  id: '(\w+)',([\s\S]*?)\n\}\);/gm)].map(m=>[m[1],m[2].replace(/\/\/[^\n]*/g,'')]);
+  const regs=fs.readdirSync(path.join(SRC,'js')).filter(f=>/-bt-.*\.js$/.test(f)).sort().flatMap(f=>ids(f).map(([id,rest])=>{
+    const m=(','+rest).match(/(?:^,|\n  )\s*(name|icon|bands|allow|rules|levels)\s*:/);if(m)p.push(f+': BT.reg for '+id+' repeats the catalog field '+m[1]);return id}));
+  try{
+    const pg=lazyPage((html.match(/<script>([\s\S]*?)<\/script>/)||[])[1],files);
+    const cat=pg.run('JSON.stringify({cat:BT.CAT.map(c=>c.id),order:BT.ORDER,list:BT.list().map(t=>t.id),loaded:BT.list().filter(BT.loaded).length,'+
+      'ready:dataReady(),bt:partReady("bt"),stamp:typeof BT_VER,daily:BT.dailyInfo(),badges:BT.badgeList().length,total:BT.totalStars()})');
+    const c=JSON.parse(cat);
+    if(JSON.stringify(c.cat)!==JSON.stringify(c.order))p.push('BT.CAT is not in BT.ORDER: '+c.cat);
+    if(JSON.stringify([...regs].sort())!==JSON.stringify([...c.cat].sort())||new Set(regs).size!==regs.length)p.push('BT.reg in the bt files ('+regs+') and BT.CAT ('+c.cat+') differ');
+    // 4. a fresh start: ready without bt; no bt code, no bt <style>, nothing asked for; the catalog lists every type; the Puzzle of the
+    //    Day and the badges work (Home shows both)
+    if(!c.ready||c.bt||c.stamp!=='undefined'||c.loaded||JSON.stringify(c.list)!==JSON.stringify(c.cat)||!c.daily||!c.daily.id||!(c.badges>0)||pg.styles.length!==1||pg.scripts.length)
+      p.push('at start: '+cat+' styles '+pg.styles+' asked '+pg.scripts.map(s=>s.src));
+    // 5. the hub draws at once from the catalog and asks for bt once it is painted (BT.warm); the bt file then fills in every type
+    pg.run('S.grade=2;BT.hub()');
+    const hub=pg.app.innerHTML;
+    if(!/bt-hub/.test(hub)||!hub.includes('data-t="maze"')||pg.scripts.length)p.push('the hub did not draw from the catalog at once: '+hub.slice(0,160)+' asked '+pg.scripts.map(s=>s.src));
+    pg.flush();
+    if(pg.scripts.map(s=>s.src).join()!==BTF)p.push('the hub did not start loading '+BTF+': '+pg.scripts.map(s=>s.src));
+    pg.serve();
+    const full=JSON.parse(pg.run('JSON.stringify({bt:partReady("bt"),loaded:BT.list().filter(BT.loaded).length,n:BT.CAT.length,css:'+JSON.stringify('')+'})'));
+    if(!full.bt||full.loaded!==full.n||pg.styles.join()!=='css-gen2,css-bt')p.push('after the hub loaded bt: '+JSON.stringify(full)+' styles '+pg.styles);
+    pg.run('BT.hub()');pg.flush();if(pg.scripts.length)p.push('the hub asked for bt again once it was in');
+    // 6. a puzzle from Home (no hub first): "Getting the puzzles ready..." with Back at once, bt asked for after the paint, then the
+    //    puzzle is made and played (BT.play records it here); the second start plays at once with no request
+    const fresh=()=>{const q=lazyPage((html.match(/<script>([\s\S]*?)<\/script>/)||[])[1],files);q.run('S.grade=2;globalThis.__played=[];BT.play=r=>{__played.push(r.id+"|"+r.band+"|"+r.level+"|"+!!r.puzzle)}');return q};
+    const played=q=>q.run('__played.join()'),keep=q=>q.run('JSON.stringify({stars:S.stars,coins:S.coins,maps:S.maps,bt:S.bt})');
+    let q=fresh();
+    q.run('BT.start("maze","B",1)');
+    const wait=q.app.innerHTML;
+    if(!/id="partwait"/.test(wait)||!wait.includes('Getting the puzzles ready...')||!/id="back"/.test(wait)||q.scripts.length||played(q))p.push('a puzzle from Home: no waiting screen first: '+wait.slice(0,200));
+    q.flush();
+    if(q.scripts.map(s=>s.src).join()!==BTF)p.push('a puzzle from Home asked for '+q.scripts.map(s=>s.src)+', expected '+BTF);
+    q.serve();
+    if(played(q)!=='maze|B|1|true'||!q.run('!!(S.bt.cur&&S.bt.cur.id=="maze"&&S.bt.cur.puzzle)'))p.push('after loading bt the puzzle did not open: played '+played(q));
+    q.run('BT.start("sudoku","B",2)');
+    if(played(q)!=='maze|B|1|true,sudoku|B|2|true'||q.scripts.length)p.push('the second puzzle did not open at once: '+played(q)+' asked '+q.scripts.map(s=>s.src));
+    // 7. Back while bt loads: the child stays where they went, bt finishes loading, the next start is immediate
+    q=fresh();q.run('BT.start("maze","B",1)');q.flush();q.run('view("<div id=\\"elsewhere\\"></div>")');q.serve();
+    if(!q.app.innerHTML.includes('elsewhere')||played(q)||!q.run('partReady("bt")'))p.push('Back while bt loads: '+q.app.innerHTML.slice(0,80)+' played '+played(q));
+    q.run('BT.start("maze","B",1)');if(played(q)!=='maze|B|1|true')p.push('after Back while loading, the puzzle did not open at once: '+played(q));
+    // 8. a bt file of another release (half an update in the cache): Try again with the App log line, no puzzle, the save unchanged;
+    //    asking again does not run it twice
+    q=fresh();let was=keep(q);
+    q.run('BT.start("maze","B",1)');q.flush();q.serve(t=>t.replace("var BT_VER='"+BUILD_VER+"'","var BT_VER='v1'"));
+    let s=JSON.parse(q.run('JSON.stringify({err:(S.err||[]).map(e=>e.msg).pop()||"",bt:partReady("bt")})'));
+    if(!/id="datamiss"/.test(q.app.innerHTML)||played(q)||s.bt||s.err!=='bt file v1 does not match (app '+BUILD_VER+')'||keep(q)!==was)p.push('stale '+BTF+': '+JSON.stringify(s)+' played '+played(q)+' '+q.app.innerHTML.slice(0,100));
+    q.run('BT.start("maze","B",1)');q.flush();
+    if(q.scripts.length||played(q)||!/id="datamiss"/.test(q.app.innerHTML))p.push('stale '+BTF+': a second start asked again or played ('+q.scripts.map(x=>x.src)+')');
+    // 9. a bt file that cannot be read (offline before it was cached): Try again; once it is there, the next start loads and plays
+    q=fresh();was=keep(q);
+    q.run('BT.start("maze","B",1)');q.flush();q.serve(()=>null);
+    s=JSON.parse(q.run('JSON.stringify({err:(S.err||[]).map(e=>e.msg).pop()||"",bt:partReady("bt")})'));
+    if(!/id="datamiss"/.test(q.app.innerHTML)||played(q)||s.err!=='bt file missing (app '+BUILD_VER+')'||keep(q)!==was)p.push('missing '+BTF+': '+JSON.stringify(s));
+    q.run('BT.start("maze","B",1)');q.flush();while(q.scripts.length)q.serve();
+    if(played(q)!=='maze|B|1|true')p.push('after a missing '+BTF+', the next start did not load and open the puzzle: '+played(q));
+    // 10. the Game Room never asks for bt
+    q=fresh();q.run('gameRoom()');q.flush();
+    if(q.scripts.some(x=>x.src===BTF))p.push('the Game Room asked for '+BTF);
+  }catch(e){p.push('the on-demand load of bt could not be run: '+String(e.stack||e).split('\n').slice(0,3).join(' | '))}
+  return{problems:p,note:'start-up '+Math.round(before/1000)+' KB -> '+Math.round(start/1000)+' KB ('+BTF+' '+Math.round(bt/1000)+' KB on demand; '+regs.length+' puzzle types in BT.CAT)'};
 });
 
 run('Crystal Caves P2-12: stops in CURRICULUM order, 3,000 samples per new level with the maths recomputed, hints, say, labels, reproducible, old levels unchanged',()=>{
@@ -14541,7 +14635,8 @@ run('game room P4-16',()=>{
   if(!/id="gzz" data-g="zz"/.test(o.hub.extra)||!/gh-card s-math lock" id="gzz"/.test(o.hub.extra)||!o.hub.extra.includes('Soon'))p.push('registering one more game did not add its card (with its lock reason)');
   if(o.hub.back.includes('gzz'))p.push('a removed game kept its card');
   // P6-02: the games parts load on demand, so gameRoom() loads them first (partsThen, 90-app.js) and then only calls GH.hub()
-  if(!/^function gameRoom\(\)\{partsThen\(LAZY_PARTS,\(\)=>GH\.hub\(\)\)\}$/.test(o.src.gameRoom))p.push('gameRoom() (58-playtime.js) should only load the games parts and call GH.hub(): '+o.src.gameRoom.slice(0,80));
+  // P6-03: GAME_PARTS (LAZY_PARTS without bt: the puzzle code is not the Game Room's)
+  if(!/^function gameRoom\(\)\{partsThen\(GAME_PARTS,\(\)=>GH\.hub\(\)\)\}$/.test(o.src.gameRoom))p.push('gameRoom() (58-playtime.js) should only load the games parts and call GH.hub(): '+o.src.gameRoom.slice(0,80));
   for(const k of ['on','off'])if(PICT.test(o.hub[k].replace(/<svg[\s\S]*?<\/svg>/g,'')))p.push('hub ('+k+'): emoji in the chrome');
   for(const id of ['back','gtm'])if(!o.hub.on.includes('id="'+id+'"'))p.push('hub: no #'+id);
   // 2. every drawing follows the object-art rules (DESIGN_SYSTEM 6.5): tokens only, no ids/defs/gradients/filters/use/text/style
@@ -17744,7 +17839,7 @@ run('snack stand G-04a',()=>{
   notes.push(o.svg.length+' drawings, '+shapes+' shapes, tokens only');
   // 12. plumbing: the games2 part, stopped by view(), the test hook off, the game-time rules, the shared chrome
   if(partOf('65-game-snack.js')!=='games2'||partOf('49-game-snack.css')!=='games2')p.push('Snack Stand must ship in games2.'+BUILD_VER+'.js');
-  if(o.files!=='gen,gen2,bt,games,rally,games2,games3,data')p.push('appFiles() should list games2 after games (and games3 after it, G-BB2): '+o.files);
+  if(o.files!=='gen,gen2,bt,games,rally,games2,games3,teach,data')p.push('appFiles() should list games2 after games (and games3 after it, G-BB2): '+o.files);
   if(!/if\(typeof snStop=='function'\)snStop\(\)/.test(rd('js/40-view.js')))p.push('view() must stop the day (snStop)');
   if(o.dev!=='{"fast":1}')p.push('SN_DEV test hook must be off: '+o.dev);
   if(!/if \(ptLeft\(\) <= 0\) \{\s*SFX\.wrong\(\);\s*fb\(ptWhyNot\(\)/.test(src))p.push('a day must not start without game time (ptLeft, ptWhyNot)');
@@ -19515,6 +19610,184 @@ run('KINDS2-D find the mistake and why: samples, worked examples, kind mix, K2.o
     return out})()`);
   p.push(...w.bad);
   return{problems:p,note:`${r.n} samples; ${r.rt} review round trips; find the mistake: ${r.rows.join('; ')}; why on: ${w.rows.join(', ')} (${w.n} sentences)`};
+});
+
+// ---- TEACH-1: "Sparky teaches" (docs/TEACH-PLAN-2.md batch 1; src/js/52-lesson.js, 52b-know.js, 52c-scripts.js in the lazy part teach) ----
+// The lesson is a state machine with no DOM (LS.make, LS.cur, LS.answer, LS.next), so these checks run it in Node: every lesson through
+// all its beats, test-out, Check me (the pet is wrong only in its own announced turn), the measure and the stop record, the plan, and the
+// simulated children (TEACH-PLAN-2 section 2, owner addition 6) that show the before-and-after measure separates teaching from guessing.
+const teachApp=()=>{const E=require('./es-audio.js'),vm=require('vm'),ctx=E.loadApp(null);vm.runInContext("loadSave(null);S.name='Mia';S.grade=0;",ctx);return x=>vm.runInContext(x,ctx)};
+// a model child answers a lesson item: right with probability p, else a guess of the right shape (any choice, any count, any pin)
+const TEACH_KIDS=`(()=>{
+  const kid=(p0,gain,rr)=>({k:p0,gain,rr,
+    guess(q){const r=this.rr;if(q.kind=='choice')return q.choices[Math.floor(r()*q.choices.length)].v;
+      if(q.kind=='make'&&q.model=='frame2'){const a=Math.floor(r()*q.m.total);return[a,Math.floor(r()*(q.m.total-a+1))]}
+      if(q.kind=='make'&&q.model=='b10')return String(Math.floor(r()*60));
+      if(q.kind=='make')return String(Math.floor(r()*(q.m.total-(q.m.fixed||0)+1)));
+      if(q.kind=='line')return String(q.line.min+Math.floor(r()*(q.line.max-q.line.min+1)));
+      return String(Math.floor(r()*21))},
+    right(q){if(q.kind=='make'&&q.model=='frame2'){const t=q.m.target||q.m.total;return[t-1,1]}if(q.goal=='less')return String(q.s0[0]-1);return q.ans},
+    answer(it){if(it.m=='say')return'ok';if(it.m=='judge')return this.rr()<this.k?(it.petOk?'1':'0'):(this.rr()<.5?'1':'0');
+      if(it.m=='open')return this.right(it.q);return this.rr()<this.k?this.right(it.q):this.guess(it.q)},
+    // learning: the teaching beats (Together with its help, Name it, fixing the pet's work) raise what the learner knows
+    learn(it){if(this.gain&&(it.tog||it.m=='say'||it.fix||it.m=='open'))this.k=Math.min(.95,this.k+this.gain)}});
+  const run=(id,c,seed,o)=>{const st=LS.make(id,Object.assign({seed,day:100},o||{})),path=[];let n=0;
+    while(!st.done&&n++<80){const it=LS.cur(st);path.push(LSB[st.b]+':'+it.m);const res=LS.answer(st,c.answer(it));c.learn(it,res);if(res.act!='retry')LS.next(st)}
+    return{st,path,stuck:n>=80}};
+  return{kid,run}})()`;
+run('teach: the lazy part TEACH-1',()=>{
+  const p=[],rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8');
+  if(!LAZY.includes('teach'))p.push('teach is not in LAZY (tools/build.py): it must load on demand');
+  for(const f of ['52-lesson.js','52b-know.js','52c-scripts.js','52-lesson.css'])if(partOf(f)!=='teach')p.push(f+' is not in the teach part');
+  for(const f of fs.readdirSync(path.join(SRC,'js')))if(/^52[bc]?-(lesson|know|scripts)/.test(f)&&partOf(f)!=='teach')p.push(f+' should ship in teach');
+  const f='teach.'+BUILD_VER+'.js';
+  if(!fs.existsSync(path.join(ROOT,f)))return{problems:[f+' not built; run python3 tools/build.py first']};
+  const html=rd('index.html'),sw=rd('sw.js'),part=rd(f),app=rd('src/js/90-app.js'),srcs=[...html.matchAll(/<script src="([^"]*)"/g)].map(m=>m[1]);
+  if(srcs.includes(f))p.push('index.html has a <script> tag for '+f+': it must load on demand');
+  if(!sw.includes("'./"+f+"'"))p.push('sw.js does not precache '+f);
+  if(/const LESSONS = |const LS = \{|function planToday/.test(html))p.push('lesson code is in index.html');
+  if(!/const LAZY_PARTS = \[[^\]]*'teach'/.test(app))p.push('LAZY_PARTS in 90-app.js has no teach');
+  if(/const GAME_PARTS = \[[^\]]*'teach'/.test(app))p.push('GAME_PARTS has teach: the Game Room would load the lessons');
+  if(!/\['teach', typeof TEACH_VER === 'undefined' \? null : TEACH_VER\]/.test(app))p.push('appFiles() does not list teach');
+  if(!/function gameRoom\(\)\{partsThen\(GAME_PARTS,/.test(rd('src/js/58-playtime.js')))p.push('gameRoom() should load GAME_PARTS only');
+  if(!/if\(p=='math'\)teachWarm\(\)/.test(rd('src/js/46-home.js')))p.push('the math map does not load the lessons (teachWarm)');
+  const nh=Buffer.byteLength(html),np=Buffer.byteLength(part);
+  if(nh>=1000000)p.push('index.html is '+nh+' bytes');
+  if(np>PART_WARN)p.push(f+' is '+np+' bytes, over '+PART_WARN);
+  return{problems:p,note:'index.html '+nh+' bytes, '+f+' '+np+' bytes'};
+});
+run('teach: lessons, beats, test-out, Check me, measure TEACH-1',()=>{
+  const p=[],R=teachApp();
+  const r=(R(`(()=>{const K=${TEACH_KIDS},bad=[],rows=[],seen={},words=/\\b(magic\\w*|spells?|wizards?|wands?|evolv\\w*|evolution|millions? of years|charms?|potions?)\\b/i;
+    // 1. the scripts: twelve, each a real stop of the math map with the same name; every line short and on theme
+    if(LS_IDS.length!==12)bad.push('lessons: '+LS_IDS.length);
+    for(const id of LS_IDS){const L=LESSONS[id],i=NODES.math.findIndex(n=>nid(n)===id);
+      if(i<0){bad.push(id+': no such stop on the math map');continue}
+      const nd=NODES.math[i];if(nd.sk!==L.sk||nd.lv!==L.lv||nd.t!==L.t)bad.push(id+': script does not match the stop '+nd.t);
+      if(PATHS.math.worlds[nd.wi].g>1)bad.push(id+': not a Kindergarten or 1st grade stop');
+      const lines=[L.idea,L.home];
+      for(let s=0;s<60;s++){const rr=mulberry32(s+1);
+        for(const st of [0,1,2,L.test]){const q=L.q(st,rr);if(q.st!==Math.min(st,2))bad.push(id+' stage '+st+': q.st '+q.st);
+          for(const x of kindProblems(q))if(!(q.goal&&/start state is the answer|answer state does not give/.test(x)))bad.push(id+' stage '+st+': '+x);
+          if(!q.say)bad.push(id+' stage '+st+': no say');
+          if(!q.goal&&!lsOk(q,q.ans))bad.push(id+' stage '+st+': ans is not right');
+          for(const c in q.bug){if(!BUGS[c])bad.push(id+': unknown bug code '+c);for(const v of q.bug[c])if(lsOk(q,String(v)))bad.push(id+' '+c+': predicts a right answer '+v)}
+          if(q.s0&&lsOk(q,String(K2MM[q.model].val(q,q.s0))))bad.push(id+': the start state is the answer');}
+        const e=L.exp(rr),c=K.kid(1,0,rr),v=c.right(e.q);if(!lsOk(e.q,v))bad.push(id+': Explore: the right build is not accepted');
+        const re=e.react(v),nm=L.name(Object.assign({},re.ctx),rr);lines.push(...re.lines,...nm.lines,e.q.say);if(e.nudge)lines.push(e.nudge)}
+      for(const b of L.bugs)if(!BUGS[b])bad.push(id+': unknown pet bug '+b);
+      for(const t of lines){if(t.length>90||t.split(/\\s+/).length>14)bad.push(id+': a long line: '+t);if(words.test(t))bad.push(id+': a banned theme: '+t);if(/undefined|NaN/.test(t))bad.push(id+': '+t)}}
+    for(const a in LS_TONE)for(const k in LS_TONE[a]){const v=LS_TONE[a][k],t=[].concat(typeof v=='function'?v('Mia'):v).join(' ');if(words.test(t))bad.push('tone '+a+'.'+k+': '+t)}
+    if(lsAge(-1)!=='little'||lsAge(2)!=='little'||lsAge(3)!=='kid'||lsAge(4)!=='kid'||lsAge(5)!=='teen'||lsAge(6)!=='teen')bad.push('the pet ages: Pre-K to 2 little, 3-4 kid, 5-6 teen');
+    // 2. the six beats in order: a child who misses the first show-me item sees pre, Remember (when one is due), Explore, Name it,
+    //    Together, Check me, Show; the pet answers (it.pv) only in its own turn (chk), and is right there about a quarter of the time
+    let petRight=0,petN=0;
+    for(const id of LS_IDS){S.know={};S.know.add1={s:2,box:0,due:50,d:40,last:40,n:1,lv:[[0,0],[0,0],[0,0]],b:{}};
+      const c=K.kid(1,0,mulberry32(7));c.answer0=c.answer;let first=true;c.answer=function(it){if(first&&it.m=='ask'){first=false;return'999'}return this.answer0(it)};
+      const {st,path,stuck}=K.run(id,c,11,{rem:id=='add1'?[]:['add1']});if(stuck)bad.push(id+': the lesson did not end');
+      const beats=[...new Set(path.map(x=>x.split(':')[0]))].join(',');
+      if(beats!==(id=='add1'?'pre,exp,name,tog,chk,show':'pre,rem,exp,name,tog,chk,show'))bad.push(id+': beats '+beats);
+      if(path.filter(x=>x.startsWith('tog')).length<3)bad.push(id+': fewer than 3 Together items');
+      if(st.to||!st.done)bad.push(id+': tested out or not done');
+      rows.push(id+' '+path.length)}
+    for(let s=0;s<1200;s++){const id=LS_IDS[s%12],st=LS.make(id,{seed:s+1,day:100});st.pre=[false,false];
+      while(!st.done){const it=LS.cur(st);if(it.pv!=null&&LSB[st.b]!=='chk')bad.push(id+': the pet answers outside Check me ('+LSB[st.b]+')');
+        if(it.m=='judge'){petN++;if(it.petOk)petRight++;if(!it.petOk&&lsOk(it.q,it.pv))bad.push(id+': the pet is called wrong but is right');
+          if(!it.petOk&&!LS.fits(it.q,it.pv))bad.push(id+': the pet answer cannot be shown on the model '+it.pv);
+          if(!/Check me/.test(it.lines[0]))bad.push(id+': the pet turn is not announced: '+it.lines[0])}
+        const res=LS.answer(st,it.m=='judge'?(it.petOk?'1':'0'):it.m=='say'?'ok':K.kid(1,0,mulberry32(s)).right(it.q));
+        if(it.m=='judge'&&!it.petOk&&LS.cur(st)===it&&!(st.items[st.i+1]||{}).fix)bad.push(id+': no fix after the pet mistake');LS.next(st)}}
+    const share=petRight/petN;if(share<.2||share>.35)bad.push('the pet is right '+Math.round(share*100)+'% of the time in Check me (want 20 to 35%)');
+    // 3. Check me: marking a wrong pet "right" is not taken as right, and the child fixes the pet's build from the pet's state
+    {const st=LS.make('tenf2',{seed:3,day:100});st.pre=[1,0];LS.beat(st,LSB.indexOf('chk'));let it=LS.cur(st);for(let s=4;it.petOk;s++){st.r=mulberry32(s);LS.beat(st,LSB.indexOf('chk'));it=LS.cur(st)}
+      const res=LS.answer(st,'1');if(res.ok||!/mistake/i.test(res.lines.join(' ')))bad.push('Check me: a wrong pet marked right: '+JSON.stringify(res));
+      LS.next(st);const fx=LS.cur(st);if(!fx||!fx.fix||!fx.q.s0||String(fx.q.s0[0])!==String(it.pv))bad.push('Check me: the fix does not start from the pet build '+JSON.stringify(fx&&fx.q.s0));
+      if(st.chk.join()!=='0')bad.push('Check me: not recorded '+st.chk)}
+    // 4. test-out: both show-me items right skips straight to Show; Show passed marks the stop learned
+    {S.know={};const st=LS.make('tenf3',{seed:5,day:100});for(let k=0;k<2;k++){LS.answer(st,LS.cur(st).q.ans);LS.next(st)}
+      if(!st.to||LSB[st.b]!=='show')bad.push('test-out: both right does not go to Show ('+LSB[st.b]+')');
+      for(let k=0;k<2;k++){LS.answer(st,LS.cur(st).q.ans);LS.next(st)}
+      if(!st.done)bad.push('test-out: Show right does not end');
+      const f=LS.finish(st);if(!f.pass||S.know.tenf3.s!==2||S.know.tenf3.due!==102)bad.push('test-out: not learned '+JSON.stringify(S.know.tenf3));
+      const m=S.lm[S.lm.length-1];if(JSON.stringify(m)!==JSON.stringify(['tenf3',100,2,2,2,2,1]))bad.push('measure after a test-out: '+JSON.stringify(m))}
+    // one right and one wrong: no test-out; a missed Show item ends with the win item, and the lesson still ends
+    {const st=LS.make('add4',{seed:9,day:100});LS.answer(st,LS.cur(st).q.ans);LS.next(st);LS.answer(st,'0');LS.next(st);
+      if(st.to||LSB[st.b]==='show')bad.push('test-out with one miss');
+      LS.beat(st,LSB.indexOf('show'));LS.answer(st,'0');LS.next(st);LS.answer(st,LS.cur(st).q.ans);LS.next(st);
+      if(LSB[st.b]!=='win'||st.done)bad.push('a missed Show item does not end on the win item');
+      const w=LS.cur(st);for(let k=0;k<5&&!st.done;k++){const res=LS.answer(st,'0');if(res.act!=='retry')LS.next(st)}
+      if(!st.done)bad.push('the win item never ends');
+      S.know={};S.lm=[];const f=LS.finish(st);if(f.pass||S.know.add4.s!==1)bad.push('a missed Show is learned');
+      if(JSON.stringify(S.lm[0])!==JSON.stringify(['add4',100,1,2,1,2,0]))bad.push('measure: '+JSON.stringify(S.lm))}
+    // 5. the stop record, as finish() writes a round (50-round.js): stars on the map, skill tries, stars and coins, the day's rounds,
+    //    game time; a lesson left part way is kept in S.les and resumes at its beat; Remember moves the memory box
+    {loadSave(null);S.grade=0;const i=NODES.math.findIndex(n=>nid(n)==='tenf2');for(let j=0;j<i;j++)setSt('math',j,2);
+      const pr=Object.assign({},P('tenf')),s0=S.stars,c0=S.coins,d0=day().r,b0=(S.pt&&S.pt.bank)||0;
+      const st=LS.make('tenf2',{seed:4,day:STRK.idx(today())});st.pre=[true,false];LS.beat(st,LSB.indexOf('show'));
+      for(let k=0;k<2;k++){LS.answer(st,LS.cur(st).q.ans);LS.next(st)}
+      const rec=LS.record(st),pr1=P('tenf');
+      if(getSt('math',i)!==2||!rec.newPass||!unlocked('math',i+1))bad.push('record: the stop is not passed '+getSt('math',i));
+      if(pr1.t-(pr.t||0)!==2||pr1.c-(pr.c||0)!==2||S.stars<s0+2||S.coins<c0+2||day().r!==d0+1||!(pt().bank>b0))bad.push('record: '+JSON.stringify({pr:pr1,stars:S.stars-s0,coins:S.coins-c0,r:day().r-d0}));
+      if(S.les)bad.push('record: S.les left after the end');
+      setSt('math',i,3);const st2=LS.make('tenf2',{seed:4,day:1});st2.post=[true,false];st2.done=true;LS.record(st2);if(getSt('math',i)!==3)bad.push('record: a lesson lowered the stars');
+      const sv=LS.make('miss1',{seed:8,day:5,at:LSB.indexOf('tog'),pre:[true,false]});if(LSB[sv.b]!=='tog'||sv.pre.length!==2||LS.cur(sv).m!=='ask')bad.push('resume at Together: '+LSB[sv.b]);
+      S.know={};lsKnow('add1').s=2;Object.assign(S.know.add1,{d:10,last:10,due:12});S.lr=[];knowRemember('add1',true,12);
+      if(S.know.add1.s!==3||S.know.add1.box!==1||S.know.add1.due!==12+LS_GAP[1]||JSON.stringify(S.lr)!=='[["add1",2,1]]')bad.push('Remember: '+JSON.stringify([S.know.add1,S.lr]));
+      knowRemember('add1',false,20);if(S.know.add1.box!==0)bad.push('Remember: a miss does not move the box down')}
+    // 6. the plan: the first open lesson not learned; a lesson left part way first; one due lesson to remember, never today's
+    {loadSave(null);S.grade=0;const at=id=>NODES.math.findIndex(n=>nid(n)===id);
+      for(let j=0;j<at('pk_count3');j++)setSt('math',j,2);
+      let pl=planToday(S,100);if(!pl||pl.id!=='pk_count3'||pl.kind!=='new'||pl.remember.length)bad.push('plan, first: '+JSON.stringify(pl));
+      lsKnow('pk_count3').s=2;S.know.pk_count3.due=90;for(let j=0;j<at('tenf1');j++)setSt('math',j,2);
+      pl=planToday(S,100);if(!pl||pl.id!=='tenf1'||pl.remember.join()!=='pk_count3')bad.push('plan, next: '+JSON.stringify(pl));
+      S.les={n:'pk_count3',b:3,s:1};pl=planToday(S,100);if(!pl||pl.id!=='pk_count3'||pl.kind!=='again'||pl.remember.length)bad.push('plan, resume: '+JSON.stringify(pl));
+      if(planToday(S,100,'read')!==null)bad.push('plan: lessons outside math');
+      // a stop passed in Practice is not offered again as new; with nothing due it comes back in Remember
+      delete S.les;S.know={};for(let j=0;j<at('tenf2');j++)setSt('math',j,2);pl=planToday(S,100);
+      if(!pl||pl.id!=='tenf2'||pl.remember.join()!=='pk_more2')bad.push('plan, after Practice: '+JSON.stringify(pl));
+      // the grown-ups' report card: the measure and tonight's question
+      S.lm=[['tenf2',100,1,2,2,2,0],['tenf3',101,2,2,2,2,1]];S.tq='Ask Mia: "What is ten and three more?"';S.name='Mia';
+      const h=REP.html(REP.data());if(!h.includes("Tonight's question:</b> Ask Mia: &quot;What is ten and three more?&quot;")||!h.includes('2 lessons, 1 already known (tested out). Right on the first try before the lesson: 75%. After it: 100%'))bad.push('report: '+h.slice(h.indexOf('rp-teach'),h.indexOf('rp-teach')+400));
+      S.lm=[];if(/rp-teach/.test(REP.html(REP.data())))bad.push('report: a lessons section with no lessons')}
+    // 7. the misconception tally and the pet's mistake: a child who keeps answering "the number shown" gets that mistake in Check me
+    {S.know={};const st=LS.make('tenf2',{seed:21,day:1});for(let k=0;k<4;k++){const q=LESSONS.tenf2.q(2,mulberry32(k+1));knowAdd('tenf2',q,String(q.bug.given[0]),false)}
+      if(knowHeld('tenf2')!=='given'||S.know.tenf2.lv[2].join()!=='0,4')bad.push('tally: '+JSON.stringify(S.know.tenf2));
+      let n=0,g=0;for(let s=1;s<200;s++){const x=LS.make('tenf2',{seed:s,day:1});x.r=mulberry32(s);const it=LS.petItem(x);if(!it.petOk){n++;if(it.code==='given')g++}}
+      if(g<n*.9)bad.push('Check me does not use the held misconception: '+g+' of '+n)}
+    // 8. Practice: TEACH.off is false; twoWay() names the two-choice questions that now get one try
+    if(TEACH.off!==false)bad.push('TEACH.off should start false');
+    const two=[{kind:'choice',choices:[{v:'a'},{v:'b'}]},{kind:'tap',html:'<b data-v="l"></b><b data-v="r"></b>'}],more=[{kind:'choice',choices:[{v:'a'},{v:'b'},{v:'c'}]},{kind:'num',ans:'2'},{kind:'tap',html:'<b data-v="a"></b><b data-v="b"></b><b data-v="c"></b>'}];
+    if(!two.every(twoWay)||more.some(twoWay))bad.push('twoWay() is wrong');
+    let tw=0;for(const id in SK)for(let lv=1;lv<=SK[id].max;lv++){if(skLvEmpty(id,lv))continue;for(let i=0;i<40;i++)if(twoWay(SK[id].gen(lv))){tw++;break}}
+    return{bad,rows,tw}})()`));
+  p.push(...r.bad.slice(0,40));
+  return{problems:[...new Set(p)],note:'12 lessons; '+r.tw+' skill levels ask two-choice questions'};
+});
+run('teach: simulated children TEACH-1',()=>{
+  // four model children through every lesson, 150 runs each: a guesser (taps or types anything), a partial knower (right half the time,
+  // learns nothing), a learner (knows little, and the teaching beats raise it), a knower. The measure is first-try accuracy on the two
+  // show-me items before the teaching (pre) and the two Show items after it (post). It must separate teaching from guessing: the learner
+  // gains, the guesser and the partial knower do not, the knower tests out and a guesser almost never does.
+  const p=[],R=teachApp();
+  const r=(R(`(()=>{const K=${TEACH_KIDS},out={},N=150,KIDS=[['guesser',0,0],['partial',.5,0],['learner',.1,.25],['knower',.95,0]];
+    for(const [nm,p0,g] of KIDS){const t={pre:0,post:0,to:0,n:0,per:{}};
+      for(const id of LS_IDS){let a=0,b=0,to=0;for(let i=0;i<N;i++){S.know={};S.lm=[];const rr=mulberry32(1000+i*7+id.length),c=K.kid(p0,g,rr);
+        const {st}=K.run(id,c,i*31+5);a+=st.pre.filter(Boolean).length;b+=st.post.filter(Boolean).length;to+=st.to?1:0;
+        LS.finish(st);const m=S.lm[0];if(!m||m[3]!==2||m[5]!==2)t.bad=(t.bad||'')+id+' measure '+JSON.stringify(m)+'; '}
+        t.per[id]=[a/N/2,b/N/2,to/N];t.pre+=a/N/2;t.post+=b/N/2;t.to+=to/N;t.n++}
+      out[nm]={pre:t.pre/t.n,post:t.post/t.n,to:t.to/t.n,per:t.per,bad:t.bad}}
+    return out})()`));
+  const f=x=>Math.round(x*100);
+  for(const k in r)if(r[k].bad)p.push(k+': '+r[k].bad.slice(0,200));
+  const G=r.guesser,Pa=r.partial,L=r.learner,Kn=r.knower,gain=x=>x.post-x.pre;
+  if(!(gain(L)>=.5))p.push('the learner gains '+f(gain(L))+' points (want 50 or more)');
+  for(const id in L.per)if(L.per[id][1]-L.per[id][0]<.3)p.push(id+': the learner gains only '+f(L.per[id][1]-L.per[id][0])+' points');
+  if(Math.abs(gain(G))>.05)p.push('the guesser "gains" '+f(gain(G))+' points (want within 5)');
+  if(Math.abs(gain(Pa))>.08)p.push('the partial knower "gains" '+f(gain(Pa))+' points (want within 8)');
+  if(!(Kn.to>=.8))p.push('the knower tests out '+f(Kn.to)+'% of the time (want 80% or more)');
+  if(!(G.to<=.05))p.push('the guesser tests out '+f(G.to)+'% of the time (want 5% or less)');
+  for(const id in G.per)if(G.per[id][2]>.15)p.push(id+': the guesser tests out '+f(G.per[id][2])+'%');
+  return{problems:p,note:Object.entries(r).map(([k,x])=>k+' '+f(x.pre)+'% -> '+f(x.post)+'%, tests out '+f(x.to)+'%').join('; ')};
 });
 
 // ---- report ----

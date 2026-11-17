@@ -65,7 +65,7 @@ async function launch() {
 }
 
 // Opens a page. opts: { fixture: 'midway' | 'fresh' | 'maxed' | null, width, height, url (default: the built index.html),
-//   scale (device pixels per css pixel, default 1) }
+//   scale (device pixels per css pixel, default 1), lazy (true: do not load the on-demand bt part, P6-03) }
 // Returns { ctx, page, errors, network }. errors: console errors + uncaught exceptions.
 // network: any http(s) request the app tried to make (must stay empty, the app is offline).
 async function openApp(browser, opts = {}) {
@@ -100,6 +100,10 @@ async function openApp(browser, opts = {}) {
   await page.goto(opts.url || INDEX_URL);
   await page.waitForSelector('#app *', { timeout: 10000 });
   await page.waitForTimeout(300);
+  // P6-03: the app loads the Brain Teaser code (bt.<VER>.js) on demand (BT.start; the hub starts it early). Steps that drive BT.start,
+  // BT.make or a puzzle's globals (MZ, RB ...) straight from page.evaluate expect it in, so it is loaded here, as the hub would.
+  // opts.lazy: true keeps the cold start (steps that check what loads at start, and the on-demand load itself).
+  if (!opts.lazy) await page.evaluate(() => (typeof partLoad == 'function' && dataReady() ? partLoad('bt') : null)).catch(() => {});
   return { ctx, page, errors, network };
 }
 

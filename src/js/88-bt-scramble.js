@@ -264,7 +264,6 @@ const US = (() => {
 })();
 
 BT.reg({
-  id: 'scramble', name: 'Unscramble', icon: 'scramble', bands: 'BCD', allow: 2,
-  rules: 'Tap the letters in order to spell the word.',
+  id: 'scramble', // name, icon, bands, allow, rules: BT.CAT in 74-teasers.js (P6-03: Home and the hub need them before this file loads)
   make: US.make, mount: US.mount, solve: US.solve,
 });

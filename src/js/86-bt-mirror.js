@@ -227,7 +227,6 @@ const MRR = (() => {
 })();
 
 BT.reg({
-  id: 'mirror', name: 'Mirror', icon: 'flip', bands: 'BCD', allow: 2,
-  rules: 'Tap squares to finish the picture so it matches across the line.',
+  id: 'mirror', // name, icon, bands, allow, rules: BT.CAT in 74-teasers.js (P6-03: Home and the hub need them before this file loads)
   make: MRR.make, mount: MRR.mount, solve: MRR.solve,
 });

@@ -1,5 +1,5 @@
-/* Star School gen v172. BUILT by tools/build.py from 23-viz.js, 30-gen-math.js, 31-gen-math-early.js, 32-gen-read.js, 33-gen-math-mid.js, 34-gen-es.js, 80-grown.js, 81-backup.js, 82-report.js, 88-online.js: never edit by hand.
-   index.html v172 loads this file with <script src="gen.v172.js"> after its own code, before data.v172.js. */
+/* Star School gen v173. BUILT by tools/build.py from 23-viz.js, 30-gen-math.js, 31-gen-math-early.js, 32-gen-read.js, 33-gen-math-mid.js, 34-gen-es.js, 80-grown.js, 81-backup.js, 82-report.js, 88-online.js: never edit by hand.
+   index.html v173 loads this file with <script src="gen.v173.js"> after its own code, before data.v173.js. */
 /* ---------- math visuals (P1-10; P1-11 adds part 2 in this same file) ----------
    Every VIZ.* function returns one inline <svg> string for a question's html (or a hint). No ids, no defs, no filters,
    no Math.random: the same arguments always give the same markup, so a question rebuilt from its seed looks the same.
@@ -3520,6 +3520,9 @@ const REP = {
   data() {
     const today0 = today(), now = STRK.idx(today0);
     const m = {name: S.name || '', date: REP.dayText(now), year: new Date(now * 864e5).getUTCFullYear(), grade: gradeOf()};
+    // TEACH-1: the lessons' before-and-after measure (S.lm: [nid, day, pre right, pre n, post right, post n, tested out], 52b-know.js) and tonight's question
+    const lm = Array.isArray(S.lm) ? S.lm : [], sm = i => lm.reduce((t, x) => t + (+x[i] || 0), 0), pc = (a, b) => (b ? Math.round(100 * a / b) : 0);
+    m.teach = lm.length ? {n: lm.length, pre: pc(sm(2), sm(3)), post: pc(sm(4), sm(5)), to: lm.filter(x => x[6]).length, tq: typeof S.tq == 'string' ? S.tq : ''} : null;
     REP.keepLog(() => {
       m.cur = ACT.sum(today0, 7);
       m.prev = ACT.sum(ACT.shift(today0, -7), 7);
@@ -3732,7 +3735,10 @@ const REP = {
       + sec('rp-needs', 'target', 'Needs practice', REP.needs(m))
       + sec('rp-recent', 'medal', 'Recently mastered', REP.recent(m))
       + sec('rp-flu', 'bolt', 'Fact Sprint bests', REP.fluency(m))
-      + sec('rp-streak', 'flame', 'Streak', REP.streak(m));
+      + sec('rp-streak', 'flame', 'Streak', REP.streak(m))
+      + (m.teach ? sec('rp-teach', 'doc', 'Lessons with ' + esc(petN()), `${m.teach.tq ? `<p><b>Tonight's question:</b> ${esc(m.teach.tq)}</p>` : ''}<p>${m.teach.n} lesson${m.teach.n > 1 ? 's' : ''}`
+        + `${m.teach.to ? `, ${m.teach.to} already known (tested out)` : ''}. Right on the first try before the lesson: ${m.teach.pre}%. After it: ${m.teach.post}%.</p>`
+        + '<div class="small rp-key">Before: two questions at the start of a lesson, with no help. After: two at its end, with no help. All of it stays on this tablet.</div>') : '');
   },
 };
 function report() {
@@ -3800,4 +3806,4 @@ function needOnline(action, o = {}) {
   return true;
 }
 
-var GEN_VER='v172'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var GEN_VER='v173'; // last line: the whole file ran (checked by dataReady() before the app starts)

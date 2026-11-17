@@ -628,7 +628,6 @@ const PAT = (() => {
 })();
 
 BT.reg({
-  id: 'pattern', name: 'Patterns', icon: 'skill-pattern', bands: 'ABCD', allow: 1,
-  rules: 'Find the picture or number that fits the pattern.',
+  id: 'pattern', // name, icon, bands, allow, rules: BT.CAT in 74-teasers.js (P6-03: Home and the hub need them before this file loads)
   make: PAT.make, mount: PAT.mount, solve: PAT.solve,
 });

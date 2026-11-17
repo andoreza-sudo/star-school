@@ -267,7 +267,8 @@ const SCREENS = {
   stickers: { run: ev(() => book()) },
   'bt-hub': { run: ev(() => { S.grade = 2; BT.hub(); }) },
   'bt-maze': {
-    run: async p => { await p.evaluate(() => { S.grade = 2; S.bt = {}; BT.start('maze', BT.band(), 3); }); await p.waitForTimeout(600); },
+    // P6-03: after the reload the puzzle code is not in yet: BT.start loads it ("Getting the puzzles ready..."), so wait for the maze
+    run: async p => { await p.evaluate(() => { S.grade = 2; S.bt = {}; BT.start('maze', BT.band(), 3); }); await p.waitForSelector('#btstage .mz'); await p.waitForTimeout(600); },
   },
   report: { adult: true, run: ev(() => report()) },
   // G-FEEL2: the Needs practice list with its "Practise this next" buttons (one pinned) and the sentence per subject
@@ -355,11 +356,12 @@ const SCREENS = {
 };
 // Game screens: the games' part files may load only when the Game Room opens (P6-02's lazy parts). Open the Game Room first when
 // the game code is not there yet and wait for it (and for the hub); with the parts already loaded this does nothing.
+// P6-03: GAME_PARTS, not LAZY_PARTS: bt is lazy too but is not the Game Room's (gameRoom() never loads it)
 async function gamesReady(p) {
-  const need = await p.evaluate(() => typeof GH == 'undefined' || !LAZY_PARTS.every(partReady));
+  const need = await p.evaluate(() => typeof GH == 'undefined' || !GAME_PARTS.every(partReady));
   if (!need) return;
   await p.evaluate(() => { gtime(); gameRoom(); });
-  await p.waitForFunction(() => typeof GH != 'undefined' && LAZY_PARTS.every(partReady), null, { timeout: 30000 });
+  await p.waitForFunction(() => typeof GH != 'undefined' && GAME_PARTS.every(partReady), null, { timeout: 30000 });
 }
 for (const [n, sc] of Object.entries(SCREENS)) {
   if (!/^(gameroom|hill-|art-|blocks-|rally-|snack-|game-)/.test(n)) continue;

@@ -1,0 +1,52 @@
+/* TEACH-1: the lesson screen (52-lesson.js, part teach). It is the question screen (.play.qs, .qarea, .inp) with the pet on top of
+   the prompt card: the pet, its caption bubble and "Hear it again". Tokens only. */
+.ls-pips{display:flex;gap:6px;align-items:center;flex:1;justify-content:center;min-width:0}
+.ls-pip{display:grid;place-items:center;width:30px;height:30px;border-radius:var(--r-pill);background:var(--surface-2);color:var(--ink-2);transition:transform var(--t) var(--ease)}
+.ls-pip .ic{width:18px;height:18px}
+.ls-pip.on{background:var(--math);color:var(--surface)}
+.ls-pip.now{background:var(--math-tint);color:var(--math-shade);box-shadow:inset 0 0 0 3px var(--math);transform:scale(1.15)}
+.ls-tag span{max-width:9em;overflow:hidden;text-overflow:ellipsis}
+.ls-top .ls-tag{flex:none}
+.ls-pet{display:flex;align-items:center;gap:var(--s-2);width:100%;max-width:560px;text-align:left}
+.ls-art{flex:none;width:64px;height:64px}
+.ls-art .petwrap,.ls-art svg{width:100%;height:100%;display:block}
+.ls-bub{flex:1;min-width:0;min-height:48px;display:flex;align-items:center;position:relative;background:var(--surface-2);color:var(--ink);border-radius:var(--r-card);
+  padding:var(--s-1) var(--s-3);font-size:var(--fs-2);font-weight:700;line-height:var(--lh-2);opacity:.35;transition:opacity var(--t) var(--ease)}
+.ls-bub>span{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
+.ls-bub.on{opacity:1}
+.ls-bub::before{content:'';position:absolute;left:-9px;top:50%;margin-top:-9px;border:9px solid transparent;border-left:0;border-right-color:var(--surface-2)}
+.btn.ls-hear{flex:none}
+.ls-turn .ls-bub{background:var(--star-tint);box-shadow:inset 0 0 0 3px var(--star)}
+.ls-turn .ls-bub::before{border-right-color:var(--star)}
+.ls-pw{display:flex;justify-content:center;max-width:100%}
+.ls-pw .viz{max-width:100%}
+.slot.ls-pv{background:var(--star-tint);color:var(--ink)}
+.ls-oops .ls-pw,.ls-oops .ls-pv{outline:4px dashed var(--try);outline-offset:4px;border-radius:var(--r-chip)}
+.ls-qm{color:var(--math-shade)}
+.ls-judge{display:flex;gap:var(--s-3);justify-content:center}
+.ls-judge .btn{flex:1 1 0;min-width:0;max-width:220px;min-height:72px}
+.ls-judge .btn .ic{width:36px;height:36px}
+.ls-judge .btn.right{background:var(--good-tint);box-shadow:inset 0 0 0 3px var(--good),0 4px 0 var(--good)}
+.ls-judge .btn.ls-pk{outline:4px solid var(--brand);outline-offset:2px}
+.inp.ls-wait{opacity:.45;pointer-events:none;transition:opacity var(--t) var(--ease)}
+#lsinp>.btn.lg{margin:0 auto;display:flex}
+.ls-dot{display:inline-block;width:26px;height:26px;border-radius:50%;vertical-align:middle}
+.ls-dot.ls-d1{background:var(--math);box-shadow:inset 0 -3px 0 var(--math-shade)}
+.ls-dot.ls-d2{background:var(--play);box-shadow:inset 0 -3px 0 var(--play-shade)}
+/* the offer on the math map: a notebook in a bubble, by the stop the pet suggests */
+.btn.ls-go{position:absolute;width:56px;height:56px;min-height:56px;margin:-28px 0 0 -28px;padding:0;border-radius:50%;z-index:4;display:grid;place-items:center;
+  background:var(--surface);color:var(--math-shade);box-shadow:inset 0 0 0 3px var(--math),0 4px 0 var(--math-shade)}
+.btn.ls-go .ic{width:30px;height:30px}
+.btn.ls-go::after{content:'';position:absolute;inset:-7px;border:3px solid var(--math);border-radius:50%;opacity:0;animation:k-ring var(--t-loop) var(--ease) infinite;pointer-events:none}
+.btn.ls-go:active{transform:translateY(3px);box-shadow:inset 0 0 0 3px var(--math),0 1px 0 var(--math-shade)}
+/* the end card */
+.ls-end{display:flex;justify-content:center;padding:var(--s-4)}
+.ls-endc{display:flex;flex-direction:column;align-items:center;gap:var(--s-3);text-align:center;max-width:520px;width:100%}
+.ls-endc h1{margin:0}
+.ls-art.ls-big{width:150px;height:150px}
+.ls-idea{display:flex;align-items:center;gap:var(--s-2);margin:0;font-size:var(--fs-4);font-weight:700;color:var(--ink);background:var(--math-tint);border-radius:var(--r-card);padding:var(--s-2) var(--s-4)}
+.ls-idea .ic{flex:none;color:var(--math-shade)}
+.ls-earn{align-self:stretch}
+.ls-acts{display:flex;gap:var(--s-3);flex-wrap:wrap;justify-content:center}
+@media (min-width:700px) and (min-height:700px){.ls-art{width:120px;height:120px}.ls-bub{font-size:var(--fs-3);min-height:64px}.ls-pet{max-width:640px}}
+html.calm .btn.ls-go::after{animation:none}

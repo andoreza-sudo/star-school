@@ -262,14 +262,16 @@ async function main() {
     // P6-02: the games parts (LAZY_PARTS) are not loaded at start: index.html has no tag for them and their CSS is not in yet; the
     // Game Room loads them (and their CSS) when it opens. A games or games2 file that is stale or missing lets the app start, and
     // the Game Room shows Try again instead (with the App log line); with the file back, Try again opens the Game Room.
+    // P6-03: bt (the puzzle code) is LAZY too: not loaded at start (lazy: true keeps openApp from loading it), the types are listed
+    // from BT.CAT, and the puzzles below load it from the hub. A missing bt file lets the app start; a puzzle shows Try again.
     {
-      const d = await openApp(browser, { fixture: 'midway' });
+      const d = await openApp(browser, { fixture: 'midway', lazy: true });
       const g = await d.page.evaluate(() => {
         const src = [...document.scripts].filter(s => s.src).map(s => s.getAttribute('src'));
         const vq = genQ('vocab', 1, 4242);
         const pz = PUZ.sudoku.A.easy[0].split('|');
         const ix = NODES.read.findIndex(n => n.sk === 'info' && n.lv === 1);
-        return { src, files: appFiles(), lazy: LAZY_PARTS, dv: DATA_VER, ready: dataReady(), gram: BANK.gram.length, vocab: BANK.vocab.length, comp: PASS.comp.length,
+        return { src, files: appFiles(), lazy: LAZY_PARTS, btIn: partReady('bt') || typeof MZ != 'undefined', dv: DATA_VER, ready: dataReady(), gram: BANK.gram.length, vocab: BANK.vocab.length, comp: PASS.comp.length,
           info: PASS.info.length, spell: typeof genSpell, vq: !!(vq.kind && vq.ans && vq.html && vq.sk === 'vocab'),
           pz: pz.length + ':' + pz[0].length + ':' + pz[1].length, ix, bt: BT.list().map(t => t.id).join(),
           css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(), games: [typeof garage, typeof blockBuilder, typeof colorMenu].join() };
@@ -277,13 +279,14 @@ async function main() {
       const files = g.files.map(f => f[0] + '.' + g.dv + '.js'), want = 'data.' + g.dv + '.js';
       const startFiles = g.files.filter(f => !g.lazy.includes(f[0])).map(f => f[0] + '.' + g.dv + '.js'); // P6-02: the <script> tags at start
       const btF = 'bt.' + g.dv + '.js', gamesF = 'games.' + g.dv + '.js'; // A11c: the order of the parts is build.py's, so name them
-      if (JSON.stringify(g.lazy) !== '["games","rally","games2","games3"]' || JSON.stringify(g.src) !== JSON.stringify(startFiles) || files[files.length - 1] !== want || !g.ready || !(g.gram > 0 && g.vocab > 0 && g.comp > 0 && g.info > 0)
+      if (JSON.stringify(g.lazy) !== '["bt","games","rally","games2","games3","teach"]' || g.btIn || JSON.stringify(g.src) !== JSON.stringify(startFiles) || files[files.length - 1] !== want || !g.ready || !(g.gram > 0 && g.vocab > 0 && g.comp > 0 && g.info > 0)
         || g.spell !== 'function' || !g.vq || g.pz !== '3:16:16' || g.ix < 0) {
         fail('A11 data globals: ' + JSON.stringify(g));
       }
       // KINDS2: gen2 carries a stylesheet now (src/css/37b-kinds-c.css), in before bt's (the same change as test.js P6-02)
-      // P6-02: at start only bt's <style> is in, and no game code (the games parts load when the Game Room opens, below)
-      if (!['maze', 'pattern', 'pyramid', 'balance', 'target'].every(id => g.bt.split(',').includes(id)) || g.css !== 'main,css-gen2,css-bt'
+      // P6-02: no game code at start (the games parts load when the Game Room opens, below); P6-03: nor bt's code or <style> (the
+      // puzzle types are listed from BT.CAT; their code comes with the first puzzle, below)
+      if (!['maze', 'pattern', 'pyramid', 'balance', 'target'].every(id => g.bt.split(',').includes(id)) || g.css !== 'main,css-gen2'
         || g.games !== 'undefined,undefined,undefined') fail('A11b part files: ' + JSON.stringify(g));
       await d.page.evaluate(ix => start('read', ix), g.ix);
       await d.page.waitForSelector('.bctx-p .w', { timeout: 8000 });
@@ -328,8 +331,8 @@ async function main() {
       if (room !== 3) fail('A11b: the Game Room did not open (' + room + ' of 3 games)');
       const lz = await d.page.evaluate(() => ({ css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(), games: [typeof garage, typeof blockBuilder, typeof colorMenu].join(),
         ready: LAZY_PARTS.map(partReady).join(), tags: [...document.scripts].filter(s => s.src).map(s => s.getAttribute('src')).join() }));
-      if (lz.css !== 'main,css-gen2,css-bt,css-games,css-rally,css-games2,css-games3' || lz.games !== 'function,function,function' || lz.ready !== 'true,true,true,true'
-        || lz.tags !== startFiles.concat(g.lazy.map(x => x + '.' + g.dv + '.js')).join()) fail('P6-02: the Game Room did not load the games parts: ' + JSON.stringify(lz));
+      if (lz.css !== 'main,css-gen2,css-bt,css-games,css-rally,css-games2,css-games3' || lz.games !== 'function,function,function' || lz.ready !== g.lazy.map(x => String(x !== 'teach')).join() // TEACH-1: the lessons are the math map's, not the Game Room's
+        || lz.tags !== startFiles.concat(g.lazy.filter(x => x !== 'teach').map(x => x + '.' + g.dv + '.js')).join()) fail('P6-02: the Game Room did not load the games parts: ' + JSON.stringify(lz));
       if (opened.length === 3 && room === 3) step('A11b: puzzle types ' + g.bt + ' registered from ' + btF + ', its <style> in, opened from the hub: '
         + opened.join(', ') + '; Game Room from ' + gamesF + ' opened');
       await d.page.evaluate(() => home());
@@ -344,7 +347,7 @@ async function main() {
       const url = 'file://' + path.join(tmp, 'index.html');
       const NOFILE = /ERR_FILE_NOT_FOUND|Failed to load resource/;
       const guard = async (label, allowed, log) => {
-        const a = await openApp(browser, { fixture: 'midway', url });
+        const a = await openApp(browser, { fixture: 'midway', url, lazy: true });
         await a.page.waitForSelector('#dataretry', { timeout: 5000 }).catch(() => {});
         const r = await a.page.evaluate(() => ({ retry: !!document.querySelector('#datamiss #dataretry'), home: !!document.querySelector('.game[data-p]'),
           stars: S.stars, coins: S.coins, math: Object.keys(S.maps.math).length, err: (S.err || []).map(e => e.msg).pop() || '',
@@ -375,9 +378,29 @@ async function main() {
       const a2 = await guard('data file of another release', /^$/, 'data file v1 does not match');
       await a2.ctx.close();
       fs.copyFileSync(path.join(ROOT, want), path.join(tmp, want));
-      // 3. A11b: no puzzle file; with it back, Try again starts the app and a maze opens from the hub
+      // 3. A11b, P6-03: no puzzle file (offline before it was cached). bt loads on demand, so Home opens and the hub draws from BT.CAT;
+      //    the level shows Try again (after "Getting the puzzles ready...") with the App log line, progress unchanged. With the file
+      //    back, Try again starts the app and a maze opens from the hub.
       fs.rmSync(path.join(tmp, btF));
-      const a3 = await guard(btF + ' missing', NOFILE, 'bt file missing');
+      const a3 = await openApp(browser, { fixture: 'midway', url, lazy: true });
+      {
+        const home = await a3.page.evaluate(() => ({ home: !!document.querySelector('#btcard'), ready: dataReady() }));
+        let hub = false;
+        try {
+          await a3.page.evaluate(() => document.querySelector('#btcard').scrollIntoView({ block: 'center' }));
+          await a3.page.click('#btcard');
+          await a3.page.click('.bt-hub [data-t="maze"]', { timeout: 5000 });
+          hub = true;
+          await a3.page.click('.bt-lv[data-l="1"]', { timeout: 5000 });
+        } catch (e) {}
+        await a3.page.waitForSelector('#dataretry', { timeout: 8000 }).catch(() => {});
+        const r = await a3.page.evaluate(() => ({ retry: !!document.querySelector('#datamiss #dataretry'), maze: !!document.querySelector('.mz-cv'),
+          stars: S.stars, coins: S.coins, err: (S.err || []).map(e => e.msg).pop() || '', wide: document.documentElement.scrollWidth > innerWidth }));
+        const bad = a3.errors.filter(e => !NOFILE.test(e));
+        if (!home.home || !home.ready || !hub || !r.retry || r.maze || r.stars !== 85 || r.coins !== 64 || r.err !== 'bt file missing (app ' + g.dv + ')' || r.wide || bad.length || a3.network.length) {
+          fail('P6-03 guard (' + btF + ' missing): ' + JSON.stringify(home) + ' hub ' + hub + ' ' + JSON.stringify(r) + ' ' + bad.concat(a3.network).join(' | '));
+        } else step('P6-03 guard, ' + btF + ' missing: Home and the hub open, the puzzle shows Try again, progress unchanged, App log: ' + r.err);
+      }
       fs.copyFileSync(path.join(ROOT, btF), path.join(tmp, btF));
       await retry(a3, btF, async pg => {
         try {
@@ -392,7 +415,7 @@ async function main() {
       // P6-02: a games part is loaded on demand, so a bad one does not stop the start: Home opens, and the Game Room shows Try again
       // (after "Getting the games ready...") with the App log line, progress unchanged
       const lazyGuard = async (label, allowed, log) => {
-        const a = await openApp(browser, { fixture: 'midway', url });
+        const a = await openApp(browser, { fixture: 'midway', url, lazy: true });
         const home = await a.page.evaluate(() => ({ home: !!document.querySelector('#groom'), ready: dataReady() }));
         await a.page.click('#groom');
         await a.page.waitForSelector('#dataretry', { timeout: 8000 }).catch(() => {});
@@ -571,7 +594,9 @@ async function main() {
     }
     const shown = await page.evaluate(() => document.querySelectorAll('.mb.done').length);
     if (shown !== 8) fail('match: second miss should reveal all 8 buttons as paired, got ' + shown); else step('match: second miss reveals the pairs');
-    // tap: wrong tap marks it, right tap passes
+    // tap: wrong tap marks it, right tap passes. TEACH-1 ("old checks check old", as K2OLD): this sample has two words to tap, which now
+    // get one try in Practice; TEACH.off gives the kind's second try this step checks (the one-try rule has its own TEACH-1 step)
+    await page.evaluate(() => { TEACH.off = true; });
     await kbShow('tapWord');
     await page.click('.tp[data-v="mat"]');
     st = await kbState();
@@ -579,6 +604,7 @@ async function main() {
     await page.click('.tp[data-v="cat"]');
     st = await kbState();
     if (!st.lock || !st.ok) fail('tap: right tap did not pass ' + JSON.stringify(st)); else step('tap: wrong tap = miss, right tap passes');
+    await page.evaluate(() => { TEACH.off = false; });
     // spell: in-app keyboard only; wrong word keeps the right start; es keyboard has the accent row
     await kbShow('spell');
     for (const c of 'cut') await page.click(`.sk[data-ch="${c}"]`);
@@ -869,6 +895,9 @@ async function main() {
       const ma = await openApp(browser, { fixture: 'midway' });
       const mp = ma.page;
       const mi = await mp.evaluate(() => {
+        // TEACH-1 ("old checks check old", as K2OLD): this step's misses are second tries, and even-or-odd questions have two choices,
+        // which now get one try in Practice; TEACH.off gives the round as it was (the one-try rule has its own TEACH-1 step)
+        TEACH.off = true;
         const i = NODES.math.findIndex(n => n.sk == 'eo' && n.lv == 1);
         S.maps.math[nid(NODES.math[i])] = 0; // play it as a new stop so the star result is visible
         start('math', i);
@@ -2031,6 +2060,9 @@ async function main() {
             dot: document.querySelectorAll('#qtrack .dots > i.done').length, res: (G.res || []).join() }));
           if (!r1.ok || r1.badge === 'none' || !/^good:/.test(r1.toast) || r1.dot !== 1) bad10.push('right answer feedback: ' + JSON.stringify(r1));
           await qp.evaluate(() => { G.dead = true; next = __next; });
+          // TEACH-1 ("old checks check old", as K2OLD): this even-or-odd question has two choices, which now get one try in Practice;
+          // TEACH.off gives the try-again feedback this step checks (the one-try rule has its own TEACH-1 step)
+          await qp.evaluate(() => { TEACH.off = true; });
           await qp.evaluate('(' + show.choice.toString() + ')()');
           await qp.evaluate(() => { window.__toasts = []; });
           await qp.click(`.ch[data-i="${await qp.evaluate(() => G.q.choices.findIndex(c => String(c.v) !== String(G.q.ans)))}"]`);
@@ -2041,6 +2073,7 @@ async function main() {
               flame: document.querySelector('#stk').classList.contains('off') };
           });
           if (!r2.wrong || r2.bg !== 'rgb(255, 232, 184)' || !r2.badge || !/try:Try again/.test(r2.toast) || !r2.flame) bad10.push('wrong answer feedback: ' + JSON.stringify(r2));
+          await qp.evaluate(() => { TEACH.off = false; });
           // calm mode: no entrance animation on the prompt
           const calm = await qp.evaluate(() => { document.documentElement.classList.add('calm'); renderQ();
             const d = parseFloat(getComputedStyle(document.querySelector('#prompt')).animationDuration); document.documentElement.classList.remove('calm'); return d; });
@@ -9885,7 +9918,8 @@ async function main() {
       await dp.waitForTimeout(700);
       let s = await look();
       if (s.n !== 4 || s.pics !== 4 || s.caps.join() !== s.vs.join() || s.minH < 48 || s.wide) bad.push('Nature Trail pictures: ' + JSON.stringify(s));
-      const spoken = (s.said.find(t => /thick wool/i.test(t)) || '').toLowerCase();
+      // the round's own first question is spoken a moment after it is drawn and can land after show() cleared the log, so read the latest line for the item shown
+      const spoken = (s.said.filter(t => /thick wool/i.test(t)).pop() || '').toLowerCase();
       if (!/thick wool/.test(spoken) || s.vs.some(v => !spoken.includes(v)) || s.vs.map(v => spoken.lastIndexOf(v)).some((x, i, a) => i && x <= a[i - 1]))
         bad.push('Nature Trail prompt not spoken with its choices in order: ' + JSON.stringify(s.said));
       await shot('nature-pictures');
@@ -10351,9 +10385,9 @@ async function main() {
           const ver = DATA_VER, c = await caches.open('starschool-' + ver);
           return { ver, cached: (await c.keys()).map(r => r.url.split('/').pop()).sort(), tags: [...document.scripts].filter(s => s.src).map(s => s.getAttribute('src')) };
         });
-        const lazyF = ['games', 'rally', 'games2', 'games3'].map(x => x + '.' + c1.ver + '.js');
-        if (!lazyF.every(f => c1.cached.includes(f)) || !c1.cached.includes('index.html')) bad.push('the service worker did not precache the games parts: ' + c1.cached.join(' '));
-        if (lazyF.some(f => c1.tags.includes(f))) bad.push('index.html loaded a games part at start: ' + c1.tags.join(' '));
+        const lazyF = ['bt', 'games', 'rally', 'games2', 'games3', 'teach'].map(x => x + '.' + c1.ver + '.js'); // P6-03: bt is on demand too
+        if (!lazyF.every(f => c1.cached.includes(f)) || !c1.cached.includes('index.html')) bad.push('the service worker did not precache the on-demand parts: ' + c1.cached.join(' '));
+        if (lazyF.some(f => c1.tags.includes(f))) bad.push('index.html loaded an on-demand part at start: ' + c1.tags.join(' '));
         // ES-AUDIO: the recordings are cached at install too, in their own cache (none of them was loaded by the page itself)
         const a1 = await p1.evaluate(async () => {
           const want = [...new Set(Object.values(ES_AUDIO.lines).map(m => m[0] + ES_AUDIO.ext).concat(Object.values(EN_AUDIO.lines).flatMap(m => m[1].map(f => f + EN_AUDIO.ext))))], c = await caches.open('starschool-audio'); // EN-PRAISE: the English recordings too
@@ -10377,7 +10411,7 @@ async function main() {
           return { ready: dataReady(), games: typeof GH, parts: LAZY_PARTS.map(partReady).join(), css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(),
             tags: [...document.scripts].filter(s => s.src).map(s => s.getAttribute('src')).join() };
         });
-        if (!s2.ready || s2.games !== 'undefined' || s2.parts !== 'false,false,false,false' || s2.css !== 'main,css-gen2,css-bt' || lazyF.some(f => s2.tags.includes(f))) bad.push('offline cold start: ' + JSON.stringify(s2));
+        if (!s2.ready || s2.games !== 'undefined' || s2.parts !== 'false,false,false,false,false,false' || s2.css !== 'main,css-gen2' || lazyF.some(f => s2.tags.includes(f))) bad.push('offline cold start: ' + JSON.stringify(s2));
         // 3. Home -> Game Room with real taps: the waiting screen, then the hub from the cached games parts
         // (the waiting screen is seen by an observer: from the cache it can be gone before the next look)
         await p2.evaluate(() => {
@@ -10393,7 +10427,8 @@ async function main() {
         const s3 = await p2.evaluate(() => ({ parts: LAZY_PARTS.map(partReady).join(), css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(),
           cards: document.querySelectorAll('.gh-card').length, games: GH.games.map(g => g.id).join() }));
         if (!wait || wait.line !== 'Getting the games ready...' || !wait.back || wait.hub) bad.push('no "Getting the games ready..." screen first: ' + JSON.stringify(wait));
-        if (s3.parts !== 'true,true,true,true' || s3.css !== 'main,css-gen2,css-bt,css-games,css-rally,css-games2,css-games3' || s3.cards < 5 || !/snack/.test(s3.games)) bad.push('Game Room offline: ' + JSON.stringify(s3));
+        // P6-03: the Game Room loads only the games parts, not bt
+        if (s3.parts !== 'false,true,true,true,true,false' || s3.css !== 'main,css-gen2,css-games,css-rally,css-games2,css-games3' || s3.cards < 5 || !/snack/.test(s3.games)) bad.push('Game Room offline: ' + JSON.stringify(s3));
         // 4. a game from games2 starts: Snack Stand's card, then its Open button, then the day is on screen with the shared Pause
         await p2.click('#gsnack');
         await p2.click('#snopen', { timeout: 8000 });
@@ -10405,6 +10440,22 @@ async function main() {
         await p2.click('#groom');
         const again = await p2.evaluate(() => ({ hub: !!document.querySelector('.gh-room'), wait: !!document.querySelector('#partwait') }));
         if (!again.hub || again.wait) bad.push('the second Game Room open was not immediate: ' + JSON.stringify(again));
+        // P6-03: a puzzle offline, straight from Home (no hub first, so nothing loaded bt yet): "Getting the puzzles ready...", then the
+        // maze from the cached bt part, with bt's <style>
+        await p2.evaluate(() => {
+          home(); window.__w = null;
+          new MutationObserver(() => {
+            const w = document.querySelector('#partwait');
+            if (w && !window.__w) window.__w = { line: w.textContent.trim(), back: !!document.querySelector('.top #back') };
+          }).observe(document.querySelector('#app'), { childList: true });
+          S.grade = 2; save(); BT.start('maze', BT.band(), 1);
+        });
+        await p2.locator('#btstage .mz-cv').waitFor({ timeout: 15000 }).catch(() => {});
+        const s5 = await p2.evaluate(() => ({ wait: window.__w, maze: !!document.querySelector('#btstage .mz-cv'), bt: partReady('bt'), css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(),
+          cur: S.bt.cur && S.bt.cur.id }));
+        if (!s5.wait || s5.wait.line !== 'Getting the puzzles ready...' || !s5.wait.back || !s5.maze || !s5.bt || s5.cur !== 'maze' || !/css-bt$/.test(s5.css)) bad.push('a puzzle offline: ' + JSON.stringify(s5));
+        else notes.push('a maze opened offline from the cached ' + 'bt.' + c1.ver + '.js');
+        await p2.evaluate(() => { BT.stop(); home(); });
         // ES-AUDIO offline: say() plays a recorded Spanish line for real from the cache (no fallback to the tablet's voice)
         const a2 = await p2.evaluate(() => new Promise(res => {
           ESA.off = false; say('el perro', null, 'es');
@@ -11961,6 +12012,156 @@ async function main() {
         'wrong twice (the right line shown, the right step spoken, asked again), by the keyboard, 48 px steps all on screen, real big, sub, mbig, ' +
         'dbig, dec, fop, ooo and alg questions by the bot; why above the hint and said for its value only (not another wrong value, not a right ' +
         'answer), on a rounding line and a real sub 4 question; no console errors, no network requests');
+    }
+
+    // TEACH-1 "Sparky teaches" (src/js/52-lesson.js, 52b-know.js, 52c-scripts.js in the part teach; docs/TEACH-PLAN-2.md batch 1), at
+    // 360x740 and 800x1280 on the midway save as a Kindergartner. The part is not loaded at start; the math map loads it and shows the
+    // offer (a notebook by the stop the pet suggests: 48 px or more, on screen, covering no stop). Make Ten by its offer: the first
+    // "show me" item wrong (no test-out), then every beat in order (Explore, Name it, Together with one miss that shows the picture and
+    // lets the child try again, Check me where the pet announces its turn and the child marks and fixes it, Show), each screen fitting
+    // (no sideways scroll), the controls waking after the line; the end card, the stop passed, the record and the measure saved.
+    // Then a lesson left at Together resumes there; Ten and More tested out (both show-me items right: straight to Show); and in Practice
+    // a two-choice question gets one try (the answer shown with its picture), three choices keep their second try, TEACH.off keeps the
+    // old second try. No console errors, no network requests.
+    {
+      const bad = [], notes = [];
+      const lsAct = async (pg, wrong) => {
+        await pg.waitForFunction(() => !LS.st || (document.querySelector('#lsinp') && !document.querySelector('#lsinp.ls-wait') && !LS.u.lock), null, { timeout: 15000 });
+        const it = await pg.evaluate(() => { const it = LS.st && LS.cur(LS.st); if (!it) return null; const q = it.q || {};
+          return { m: it.m, petOk: it.petOk, kind: q.kind, model: q.model, ans: q.ans, s0: q.s0, total: q.m && q.m.total, target: q.m && q.m.target,
+            goal: q.goal, tgt: q.target, start: q.start, min: q.line && q.line.min, choices: q.choices && q.choices.map(c => c.v), beat: LSB[LS.st.b] }; });
+        if (!it) return null;
+        if (it.m == 'say') await pg.click('#lsnext');
+        else if (it.m == 'judge') await pg.click(it.petOk ? '#lsyes' : '#lsno');
+        else if (it.kind == 'num') { for (const d of wrong ? String(+it.ans + 1) : it.ans) await pg.click(`.k[data-k="${d}"]`); await pg.click('.k[data-k="go"]'); }
+        else if (it.kind == 'choice') await pg.click(`.ch[data-i="${it.choices.indexOf(wrong ? it.choices.find(c => c != it.ans) : it.ans)}"]`);
+        else if (it.kind == 'line') {
+          const k = (wrong ? +it.ans + 1 : it.goal ? +it.start + 3 : +it.ans) - it.min;
+          await pg.focus('.lnp'); await pg.keyboard.press('Home'); for (let i = 0; i < k; i++) await pg.keyboard.press('ArrowRight'); await pg.click('#mcheck');
+        } else if (it.kind == 'make') {
+          let want;
+          if (it.model == 'frame2') { const t = it.goal == 'sum' ? it.target : it.goal == 'fill' ? it.total : 3; want = [t - 1, 1]; }
+          else if (it.model == 'b10') { const n = it.goal == 'gt' ? it.tgt + 2 : it.goal == 'any' ? 34 : +it.ans + (wrong ? 1 : 0); want = [Math.floor(n / 10), n % 10]; }
+          else want = [it.goal == 'less' ? it.s0[0] - 2 : it.goal == 'any' ? 4 : +it.ans + (wrong ? -1 : 0)];
+          const cur = await pg.evaluate(() => LS.u.mm.slice());
+          // a wrong 0 from an empty frame (the answer is 1, and 2 would not fit): put one in first, so Check wakes
+          if (wrong && want.length == 1 && want[0] == 0 && cur[0] == 0) { await pg.click('.mmb[data-i="0"][data-d="1"]'); cur[0] = 1; }
+          for (let i = 0; i < want.length; i++) { const d = want[i] - cur[i]; for (let j = 0; j < Math.abs(d); j++) await pg.click(`.mmb[data-i="${i}"][data-d="${d > 0 ? 1 : -1}"]`); }
+          await pg.click('#mcheck');
+        } else throw new Error('lesson item ' + JSON.stringify(it));
+        return it;
+      };
+      // one item answered, then the next screen (LS.seq counts the screens shown) or the end
+      const lsStep = async (pg, wrong) => {
+        const s0 = await pg.evaluate(() => LS.seq), it = await lsAct(pg, wrong);
+        await pg.waitForFunction(x => !LS.st || LS.seq > x, s0, { timeout: 15000 });
+        return it;
+      };
+      const lsFit = (pg, at) => pg.evaluate(() => {
+        const o = [], vw = document.documentElement.clientWidth, qa = document.querySelector('.qarea');
+        if (document.documentElement.scrollWidth > vw) o.push('sideways scroll');
+        if (qa && qa.scrollWidth > qa.clientWidth + 1) o.push('.qarea overflows sideways');
+        for (const b of document.querySelectorAll('#lsinp button, #lsplay .ls-hear')) { const r = b.getBoundingClientRect(); if (r.width && (r.width < 47.5 || r.height < 47.5)) o.push('small button ' + (b.id || b.className)); if (r.right > vw + 1 || r.left < -1) o.push('button off screen ' + (b.id || b.className)); }
+        return o;
+      }).then(o => o.forEach(x => bad.push(at + x)));
+      for (const [w, h] of [[360, 740], [800, 1280]]) {
+        const ta = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ta.page, at = 'TEACH-1 ' + w + 'x' + h + ' ';
+        try {
+          // 1. the part is not in at start; the math map loads it and shows the offer by Make Ten
+          const s0 = await pg.evaluate(() => ({ ready: partReady('teach'), ls: typeof LS, css: !!document.querySelector('#css-teach') }));
+          if (s0.ready || s0.ls !== 'undefined' || s0.css) bad.push(at + 'the lessons are loaded at start: ' + JSON.stringify(s0));
+          await pg.evaluate(() => { S.grade = 0; S.know = {}; delete S.les; S.lm = []; const i = NODES.math.findIndex(n => nid(n) === 'tenf2');
+            for (let j = 0; j < NODES.math.length; j++) setSt('math', j, j < i ? 2 : 0); save(); pathMap('math', NODES.math[i].wi); });
+          await pg.waitForSelector('.ls-go', { timeout: 10000 });
+          const off = await pg.evaluate(() => { const b = document.querySelector('.ls-go'), r = b.getBoundingClientRect(), vw = document.documentElement.clientWidth;
+            const hit = [...document.querySelectorAll('#map .node')].filter(n => { const q = n.getBoundingClientRect(); return q.right > r.left && q.left < r.right && q.bottom > r.top && q.top < r.bottom; }).length;
+            return { w: r.width, h: r.height, in: r.left >= 0 && r.right <= vw, hit, label: b.getAttribute('aria-label'), plan: planToday(S, lsDay()).id, css: !!document.querySelector('#css-teach'), tag: [...document.scripts].some(s => /teach\./.test(s.src)) }; });
+          if (off.w < 48 || off.h < 48 || !off.in || off.hit || !/^Learn Make Ten with /.test(off.label) || off.plan !== 'tenf2' || !off.css) bad.push(at + 'the offer: ' + JSON.stringify(off));
+          await pg.evaluate(() => { LS.WAKE = 400; });
+          await pg.click('.ls-go');
+          await pg.waitForSelector('#lsplay', { timeout: 5000 });
+          const wait0 = await pg.evaluate(() => !!document.querySelector('#lsinp.ls-wait'));
+          if (!wait0) bad.push(at + 'the controls are awake before the line is said');
+          // 2. Make Ten through every beat
+          const path = [], beats = [];
+          let missedTog = false, sawHelp = false, petTurn = '';
+          for (let n = 0; n < 40; n++) {
+            const b = await pg.evaluate(() => LS.st ? LSB[LS.st.b] + ':' + LS.cur(LS.st).m : null);
+            if (!b) break;
+            await pg.waitForFunction(() => !LS.st || !document.querySelector('#lsinp.ls-wait'), null, { timeout: 15000 });
+            if (!beats.includes(b)) { beats.push(b); await lsFit(pg, at + b + ': '); }
+            if (b == 'chk:judge') petTurn = await pg.evaluate(() => document.querySelector('#lsbub').textContent + '|' + !!document.querySelector('.ls-pet.ls-turn'));
+            const wrong = (b == 'pre:ask' && !path.length) || (b == 'tog:ask' && !missedTog);
+            path.push(b);
+            if (wrong && b == 'tog:ask') {
+              missedTog = true;
+              const s0 = await pg.evaluate(() => LS.seq);
+              await lsAct(pg, true);
+              await pg.waitForFunction(() => document.querySelector('#hint').innerHTML.length > 0 && !LS.u.lock, null, { timeout: 5000 }).catch(() => {});
+              const r = await pg.evaluate(x => ({ hint: document.querySelector('#hint').innerHTML.length, lock: LS.u.lock, tries: LS.cur(LS.st).tries, same: LS.seq === x }), s0);
+              if (!r.hint || r.lock || r.tries !== 1 || !r.same) bad.push(at + 'a miss in Together: ' + JSON.stringify(r)); else sawHelp = true;
+            }
+            await lsStep(pg, wrong && b == 'pre:ask');
+          }
+          const order = [...new Set(path.map(x => x.split(':')[0]))].join();
+          if (order !== 'pre,rem,exp,name,tog,chk,show') bad.push(at + 'beats ' + order + ' (' + path.join(' ') + ')');
+          if (!sawHelp) bad.push(at + 'no help after a miss in Together');
+          if (!/Check me/.test(petTurn) || !/\|true$/.test(petTurn)) bad.push(at + 'the pet turn is not announced: ' + petTurn);
+          await pg.waitForSelector('#lsend', { timeout: 10000 });
+          const end = await pg.evaluate(() => { const i = NODES.math.findIndex(n => nid(n) === 'tenf2');
+            return { st: getSt('math', i), next: unlocked('math', i + 1), know: S.know.tenf2, lm: S.lm[S.lm.length - 1], les: S.les, saved: !!JSON.parse(localStorage.getItem(SKEY)).lm,
+              idea: (document.querySelector('.ls-idea') || {}).textContent, btns: [...document.querySelectorAll('.ls-acts .btn')].map(b => b.id).join() }; });
+          if (end.st !== 2 || !end.next || !end.know || end.know.s !== 2 || !end.lm || end.lm[0] !== 'tenf2' || end.lm[2] !== 1 || end.lm[3] !== 2 || end.lm[4] !== 2 || end.lm[6] !== 0 || end.les || !end.saved
+            || !/Two parts make ten/.test(end.idea) || end.btns !== 'lsprac,lsmap') bad.push(at + 'the end: ' + JSON.stringify(end));
+          await lsFit(pg, at + 'end: ');
+          // 3. a lesson left part way resumes at its beat
+          await pg.evaluate(() => { LS.start('miss1'); });
+          for (let n = 0; n < 12 && await pg.evaluate(() => LSB[LS.st.b] !== 'tog'); n++) await lsStep(pg, n == 0);
+          await pg.waitForSelector('#lsplay[data-beat="tog"]', { timeout: 10000 });
+          await pg.click('#quit'); await pg.click('#gquit');
+          const les = await pg.evaluate(() => JSON.stringify(S.les));
+          await pg.evaluate(() => { const i = NODES.math.findIndex(n => nid(n) === 'miss1'); for (let j = 0; j < i; j++) setSt('math', j, 2); LS.start('miss1'); });
+          const re = await pg.evaluate(() => ({ b: document.querySelector('#lsplay').dataset.beat, les: S.les && S.les.n }));
+          if (!/"n":"miss1","b":4/.test(les) || re.b !== 'tog' || re.les !== 'miss1') bad.push(at + 'resume: ' + les + ' ' + JSON.stringify(re));
+          // 4. test-out: Ten and More, both show-me items right
+          await pg.evaluate(() => { delete S.les; LS.start('tenf3'); });
+          for (let k = 0; k < 2; k++) await lsStep(pg, false);
+          await pg.waitForSelector('#lsplay[data-beat="show"]', { timeout: 10000 });
+          const to = await pg.evaluate(() => ({ to: LS.st.to, bub: document.querySelector('#lsbub').textContent }));
+          if (!to.to || !/know this/.test(to.bub)) bad.push(at + 'test-out: ' + JSON.stringify(to));
+          for (let k = 0; k < 2; k++) await lsStep(pg, false);
+          await pg.waitForSelector('#lsend', { timeout: 10000 });
+          const lm = await pg.evaluate(() => S.lm[S.lm.length - 1]);
+          if (JSON.stringify(lm.slice(2)) !== '[2,2,2,2,1]') bad.push(at + 'test-out measure ' + JSON.stringify(lm));
+          // 5. Practice: two choices get one try; three choices and TEACH.off keep the second try
+          const two = async (n, off) => {
+            await pg.evaluate(([n, off]) => { TEACH.off = off; const q = { kind: 'choice', html: '<div class="eq">Pick</div>', say: 'Pick', label: 'zz two', ans: 'a', sk: 'zz_demo', lv: 1,
+              choices: ['a', 'b', 'c'].slice(0, n).map(v => ({ v, l: v })), hint: { k: 'text', s: 'Look at the picture.' } }; if (G) G.dead = true; G = newG({ sk: 'zz_demo', n: 1, pool: [q] }); next(); }, [n, off]);
+            await pg.waitForSelector('.ch');
+            await pg.click('.ch[data-i="1"]');
+            await vwait(pg, 300);
+            const r = await pg.evaluate(() => ({ lock: G.lock, tries: G.tries, shown: !!document.querySelector('.ch.right'), hint: document.querySelector('#hint').textContent }));
+            await pg.evaluate(() => { G.dead = true; });
+            await vwait(pg, 3000); // the round's own timers end on the dead round
+            return r;
+          };
+          const t2 = await two(2, false), t3 = await two(3, false), t2off = await two(2, true);
+          await pg.evaluate(() => { TEACH.off = false; G.dead = true; });
+          if (!t2.lock || !t2.shown || !/picture/.test(t2.hint)) bad.push(at + 'two choices, one try: ' + JSON.stringify(t2));
+          if (t3.lock || t3.shown) bad.push(at + 'three choices lost their second try: ' + JSON.stringify(t3));
+          if (t2off.lock || t2off.shown) bad.push(at + 'TEACH.off: two choices lost their second try: ' + JSON.stringify(t2off));
+          notes.push(w + 'x' + h);
+        } catch (e) { bad.push(at + (e.stack || e).toString().split('\n').slice(0, 3).join(' ')); }
+        for (const e of ta.errors) bad.push(at + e);
+        for (const u of ta.network) bad.push(at + 'network request: ' + u);
+        await ta.ctx.close();
+      }
+      if (bad.length) fail('TEACH-1 Sparky teaches:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('TEACH-1: Sparky teaches at ' + notes.join(' and ') + ': the part loads with the math map (not at start), the offer by Make Ten; ' +
+        'the lesson through pre, Explore, Name it, Together (a miss shows the picture and keeps the item), Check me (announced, marked, fixed), Show; ' +
+        'the end card, the stop passed, the record and the measure saved; a lesson resumes at its beat; test-out goes straight to Show; ' +
+        'in Practice two choices get one try (three choices and TEACH.off keep the second); no console errors, no network requests');
     }
 
     for (const u of network) fail('network request: ' + u);

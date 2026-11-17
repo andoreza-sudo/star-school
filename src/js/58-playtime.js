@@ -69,5 +69,5 @@ function ptRules(R_){return ptEarnList().map(([i,t,v])=>`<div>${R_(i)} ${t} <b>$
 
 // P4-16: the Game Room hub (scene, game-time ticket, a drawn card per registered game) lives in games.<VER>.js with the games:
 // GH.hub() in src/js/59-game-hub.js. P6-02: those files load the first time the Game Room opens (partsThen, 90-app.js), so
-// gameRoom() is the one way into the games; a game is opened from the hub (or, later, partsThen(LAZY_PARTS, () => GH.get(id).open())).
-function gameRoom(){partsThen(LAZY_PARTS,()=>GH.hub())}
+// gameRoom() is the one way into the games; a game is opened from the hub (or, later, partsThen(GAME_PARTS, () => GH.get(id).open())).
+function gameRoom(){partsThen(GAME_PARTS,()=>GH.hub())}
