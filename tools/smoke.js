@@ -885,10 +885,19 @@ async function main() {
         if (st.tag === 'ch' && st.tries === 0) {
           tags++;
           tagH = Math.min(tagH, st.h);
-          if ((st.kind === 'choice' || st.kind === 'num') && tags % 2 === 1) {
-            // every other challenge question: one wrong first try, then the right answer (3 misses in a row would step the round down)
+          if (['choice', 'num', 'sort', 'mark'].includes(st.kind) && tags % 2 === 1) {
+            // every other challenge question: one wrong first try, then the right answer (3 misses in a row would step the round down).
+            // FIX3: eo 2 mixes in sort questions (KINDS2), so a sort (every chip in a wrong bin) or a mark (a wrong word) is missed too;
+            // with choice and num only, some runs drew no question to miss
             if (st.kind === 'choice') await mp.click(`.ch[data-i="${await mp.evaluate(() => G.q.choices.findIndex(c => String(c.v) !== String(G.q.ans)))}"]`);
-            else { for (const d of String(Number(await mp.evaluate(() => G.q.ans)) + 1)) await mp.click(`.k[data-k="${d}"]`); await mp.click('.k[data-k="go"]'); }
+            else if (st.kind === 'sort') {
+              const plan = await mp.evaluate(() => G.q.items.map((c, i) => [i, (G.q.bins.findIndex(b => String(b.v) === String(c.b)) + 1) % G.q.bins.length]));
+              for (const [i, b] of plan) { await mp.click(`.schip[data-i="${i}"]`); await mp.click(`.sbt[data-b="${b}"]`, { position: { x: 16, y: 12 } }); }
+              await mp.click('#mcheck');
+            } else if (st.kind === 'mark') {
+              await mp.click(`.mkt[data-i="${await mp.evaluate(() => G.q.words.findIndex((w, i) => !G.q.ans.includes(String(i))))}"]`);
+              if (!(await mp.evaluate(() => G.q.one))) await mp.click('#mcheck');
+            } else { for (const d of String(Number(await mp.evaluate(() => G.q.ans)) + 1)) await mp.click(`.k[data-k="${d}"]`); await mp.click('.k[data-k="go"]'); }
             await mp.waitForFunction(() => G.tries === 1 && !G.lock, null, { timeout: 4000 });
             missed++;
           }
@@ -3688,6 +3697,7 @@ async function main() {
       };
       // first stop by taps: Unlike Denominators, a step hint, then the full round
       const first = await cp.evaluate(() => NODES.math.findIndex(x => nid(x) === 'fop3'));
+      await k2Old(cp); // FIX3: fop3 mixes in find the mistake (KINDS2-D, about 1 in 5), which has no step hint; this checks the step hint
       await cp.click(`.node[data-n="${first}"]`);
       await cp.waitForSelector('#prompt');
       await cp.waitForTimeout(900);
@@ -3698,6 +3708,7 @@ async function main() {
       await cp.click('#hb');
       await vwait(cp, 300);
       const h2 = await cp.evaluate(() => document.querySelector('#hint .hs').dataset.hs);
+      await k2Old(cp, false); // the round below answers whatever comes
       if (h1.at !== '0' || !/Next step/.test(h1.label) || h2 !== '1' || h1.wide > 380 || h1.hb < 48) fail('Crystal Caves step hint: ' + JSON.stringify([h1, h2]));
       await playRound(cp, 'P2-12 fop3', 10, async () => { await cp.waitForTimeout(600); await meas12('fop3'); });
       await cp.evaluate(() => { G.dead = true; });
@@ -11133,6 +11144,254 @@ async function main() {
       await ka.ctx.close();
       if (bad.length) fail('P6-01 Enter on an SVG button:\n  ' + [...new Set(bad)].join('\n  '));
       else step('P6-01: Enter and Space on an SVG tap target (' + tags.join(', ') + ' with no click() method, coord 1 grid) answer once, no console errors');
+    }
+
+    // GL-01 Hill Climb's 3D look (src/js/60-gl.js, 62b-hill-gl.js) and the speed box (19b-fps.js), at 360x740 and 800x1280 (midway
+    // save). Headless Chrome draws WebGL with SwiftShader (on the CPU), where the drive picks the 2D look (checked first); then HGL.soft
+    // lets it draw in 3D there: the WebGL canvas under the 2D one, frames drawn, few draw calls, the speed box (Grown-ups switch)
+    // reading fps and "3D"; leaving gives the context back. With the 2D look chosen in Grown-ups, and with WebGL forced off in the
+    // browser, the drive is the 2D look (no WebGL canvas) and still drives.
+    // No console errors, no requests, nothing in the app log. GL_SHOTS=<dir> saves screenshots (else tools/out).
+    {
+      const bad = [], notes = [];
+      const dir = process.env.GL_SHOTS || require('path').join(__dirname, 'out');
+      try { require('fs').mkdirSync(dir, { recursive: true }); } catch (e) {}
+      const noGL = () => { const g = HTMLCanvasElement.prototype.getContext; HTMLCanvasElement.prototype.getContext = function (k, ...a) { return /webgl/.test(k) ? null : g.call(this, k, ...a); }; };
+      const drive = async (pg, at, want) => {
+        await pg.evaluate(() => { document.querySelectorAll('.ovl').forEach(o => o.remove()); if (typeof HC != 'undefined' && HC) stopHC(); hcStart(0, 0); });
+        await pg.waitForSelector('#gpause');
+        await pg.evaluate(() => { window.__gas = setInterval(() => { if (HC) HC.gas = true; }, 30); });
+        await pg.waitForTimeout(3000); // real time: the drive runs on animation frames
+        const s = await pg.evaluate(() => {
+          const H = HC, G = H.gl, c = document.querySelector('#hcgl'), v = document.querySelector('#hcv');
+          return { gl: !!(G && !G.off), canvas: !!c, under: !!(c && c.nextElementSibling === v), frames: G ? G.frames : 0, draws: G ? G.R.draws : 0, why: H.glWhy || '', t: H.t, x: Math.round((H.w1.x + H.w2.x) / 2),
+            size: c ? [c.width, c.height] : null, tag: FPS.tag, box: (document.querySelector('#fpsbox') || {}).textContent || '', lost: G ? G.R.gl.isContextLost() : null,
+            wide: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+            // a sky pixel of the 2D canvas: drawn and opaque in the 2D look, left clear in the 3D look (the WebGL canvas shows through)
+            sky: [...v.getContext('2d').getImageData(Math.round(v.width / 2), Math.round(v.height * .2), 1, 1).data] };
+        });
+        await pg.evaluate(() => clearInterval(window.__gas));
+        if (want === '3D') {
+          if (!s.gl || !s.canvas || !s.under || !(s.frames > 20) || !(s.draws > 8 && s.draws < 60) || s.lost || s.tag !== '3D' || s.sky[3] !== 0) bad.push(at + '3D look not drawing: ' + JSON.stringify(s));
+        } else if (s.gl || s.canvas || s.tag !== '2D' || s.sky[3] !== 255 || s.sky[0] + s.sky[1] + s.sky[2] < 200) bad.push(at + want + ': expected the 2D look: ' + JSON.stringify(s));
+        if (/error|lost/.test(s.why)) bad.push(at + want + ': the 3D look dropped: ' + s.why);
+        if (!(s.t > 1) || !(s.x > 150)) bad.push(at + want + ': the drive did not move: ' + JSON.stringify(s));
+        if (s.wide) bad.push(at + want + ': sideways scroll');
+        return s;
+      };
+      for (const [w, h] of [[360, 740], [800, 1280]]) {
+        const at = w + 'x' + h + ' ', tag = w + 'x' + h;
+        for (const forced of [false, true]) {
+          const cx = await openApp(browser, { fixture: 'midway', width: w, height: h });
+          const pg = cx.page, shot = n => pg.screenshot({ path: require('path').join(dir, 'gl-' + n + '-' + tag + '.png') }).catch(() => {});
+          try {
+            if (forced) { await pg.addInitScript(noGL); await pg.reload(); await pg.waitForSelector('#app *'); }
+            await pg.evaluate(() => { S.pt = { bank: 1800, day: today(), used: 0 }; S.sound = false; save(); });
+            if (await pg.evaluate(() => partsLoad())) bad.push(at + 'the games parts did not load');
+            await pg.waitForFunction(() => typeof hcStart == 'function' && typeof GLX == 'object', null, { timeout: 15000 });
+            const d0 = await pg.evaluate(() => ({ fps: S.fps, hcGl: S.hcGl, probe: GLX.probe() }));
+            if (d0.fps !== false || d0.hcGl !== true || d0.probe !== !forced) bad.push(at + (forced ? 'WebGL off' : 'WebGL') + ': defaults and probe ' + JSON.stringify(d0));
+            if (!forced) {
+              // Grown-ups: the speed box switch shows the box at once and saves; the 3D look switch saves
+              await pg.evaluate(() => grown());
+              await pg.waitForSelector('#fps');
+              await pg.evaluate(() => { const e = document.querySelector('#fps'); e.scrollIntoView(); e.click(); });
+              await vwait(pg, 1200);
+              const g1 = await pg.evaluate(() => ({ on: S.fps, box: (document.querySelector('#fpsbox') || {}).textContent || '', saved: JSON.parse(localStorage.getItem('starschool-v2') || '{}').fps,
+                hc3d: document.querySelector('#hc3d').checked }));
+              if (g1.on !== true || g1.saved !== true || !/^\d+ fps, worst \d+ ms/.test(g1.box) || !g1.hc3d) bad.push(at + 'Grown-ups speed box switch: ' + JSON.stringify(g1));
+              await shot('grown');
+              const sw = await drive(pg, at, 'software WebGL');
+              if (sw.why !== 'software') bad.push(at + 'WebGL drawn by the CPU should pick the 2D look: ' + JSON.stringify(sw));
+              await pg.evaluate(() => { HGL.soft = true; });
+              const s3 = await drive(pg, at, '3D');
+              await shot('3d');
+              notes.push(tag + ' 3D: ' + s3.draws + ' draw calls, canvas ' + (s3.size || []).join('x') + ', box "' + s3.box + '"');
+              const ended = await pg.evaluate(() => { const G = HC.gl; stopHC(); return { ended: !!G.R.ended, tag: FPS.tag }; });
+              if (!ended.ended || ended.tag !== '') bad.push(at + 'leaving the drive should give the WebGL context back: ' + JSON.stringify(ended));
+              // the 2D look chosen in Grown-ups
+              await pg.evaluate(() => { grown(); });
+              await pg.waitForSelector('#hc3d');
+              await pg.evaluate(() => { const e = document.querySelector('#hc3d'); e.scrollIntoView(); e.click(); });
+              const g2 = await pg.evaluate(() => ({ hcGl: S.hcGl, saved: JSON.parse(localStorage.getItem('starschool-v2') || '{}').hcGl }));
+              if (g2.hcGl !== false || g2.saved !== false) bad.push(at + 'Grown-ups 3D look switch: ' + JSON.stringify(g2));
+              const s2 = await drive(pg, at, '2D look chosen');
+              await shot('2d');
+              notes.push(tag + ' 2D look chosen: box "' + s2.box + '"');
+            } else {
+              await pg.evaluate(() => { S.fps = true; save(); fpsSet(true); });
+              const sf = await drive(pg, at, 'WebGL off');
+              await shot('nogl');
+              notes.push(tag + ' WebGL off: 2D look, box "' + sf.box + '"');
+            }
+            const log = await pg.evaluate(() => (S.err || []).map(e => e.msg).filter(m => /3D look/.test(m)));
+            if (log.length) bad.push(at + 'app log: ' + log.join('; '));
+            await pg.evaluate(() => { if (HC) stopHC(); home(); });
+          } catch (x) { bad.push(at + (forced ? 'WebGL off: ' : '') + x.message.split('\n')[0]); }
+          for (const e of cx.errors) bad.push(at + (forced ? 'WebGL off: ' : '') + 'console error: ' + e);
+          for (const u of cx.network) bad.push(at + 'network request: ' + u);
+          await cx.ctx.close();
+        }
+      }
+      if (bad.length) fail('GL-01 Hill Climb 3D look and speed box:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('GL-01: Hill Climb picks the 2D look on WebGL drawn by the CPU (SwiftShader) and, with HGL.soft, draws in 3D (canvas under the 2D layer, frames, under 60 draw calls, context given back on leaving), ' +
+        'the 2D look when chosen in Grown-ups and when WebGL is forced off, the speed box switch (off by default, saved) reads fps and the look; ' +
+        'at 360x740 and 800x1280, no console errors; ' + notes.join('; '));
+    }
+
+    // CHECK-IN (src/js/51b-checkin.js): mastery check-ins and stop badges, at 360x740 and 800x1280 on the midway save. A passed math stop
+    // with enough first tries shows a 52 px Check-in button by it on the map; it opens the "Badge check-in!" sheet (Let's go, Not now);
+    // the check-in is 5 questions of that stop with no Help button and a Check-in tag; a wrong first try shows the answer, no hint, and is
+    // not asked again at the end; 4 right wins the badge (the card with the badge, Next, My badges, Home; S.chk[stop].b set); the shelf
+    // shows it; the map shows the small medal by the stop. At 360x740 a check-in with every answer wrong ends on the gentle card (Good try,
+    // Play again, no badge). At 800x1280 a normal round of a ready stop ends with the Check-in card, which opens the sheet. The Grown-ups
+    // report card lists the stop with its badge. Controls 48 px or more, no sideways scroll, no console errors, no requests.
+    {
+      const bad = [], notes = [], shots = [];
+      const shot = async (pg, n) => { const f = require('path').join(__dirname, 'out', n + '.png'); await pg.screenshot({ path: f }).catch(() => {}); shots.push('tools/out/' + n + '.png'); };
+      for (const [w, h] of [[360, 740], [800, 1280]]) {
+        const ka = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ka.page, at = 'CHECK-IN ' + w + 'x' + h + ' ';
+        // controls in view are 48 x 48 or more, nothing sideways
+        const fit = async (sel, tag) => {
+          const r = await pg.evaluate(sel => {
+            const o = [], vw = document.documentElement.clientWidth;
+            for (const e of document.querySelectorAll(sel)) {
+              const b = e.getBoundingClientRect();
+              if (!b.width) continue;
+              if (b.width < 47.5 || b.height < 47.5) o.push('small ' + (e.id || e.className) + ' ' + Math.round(b.width) + 'x' + Math.round(b.height));
+              if (b.left < -1 || b.right > vw + 1) o.push('outside ' + (e.id || e.className));
+            }
+            if (document.documentElement.scrollWidth > vw) o.push('sideways scroll');
+            return o;
+          }, sel);
+          r.forEach(x => bad.push(at + tag + ': ' + x));
+        };
+        try {
+          // a passed math stop, ready: 14 first tries at 90%
+          const st = await pg.evaluate(() => {
+            const P = 'math', i = NODES[P].findIndex((n, j) => CHK.can(n) && passed(P, j) && harder(n)), nd = NODES[P][i], k = nid(nd);
+            S.sound = true; S.mast = S.mast || {}; S.mast[k] = { n: 14, p: .9, ms: 4000, d: 2, last: mastDay() }; save();
+            return { i, k, wi: nd.wi, t: nd.t, chk: JSON.stringify(S.chk), ready: CHK.ready(P, i) };
+          });
+          if (st.chk !== '{}' || !st.ready) bad.push(at + 'the midway save: S.chk ' + st.chk + ', ready ' + st.ready);
+          await pg.evaluate(wi => pathMap('math', wi), st.wi);
+          const go = `.ck-go[data-ck="${st.i}"]`;
+          await pg.waitForSelector(go, { timeout: 5000 });
+          await pg.evaluate(s => document.querySelector(s).scrollIntoView({ block: 'center' }), go);
+          await vwait(pg, 300);
+          await fit('.ck-go', 'map button');
+          const lab = await pg.evaluate(s => document.querySelector(s).getAttribute('aria-label'), go);
+          if (lab !== 'Badge check-in: ' + st.t) bad.push(at + 'the map button is named ' + lab);
+          await shot(pg, 'checkin-map-ready-' + w + 'x' + h);
+          await pg.click(go);
+          await pg.waitForSelector('.sheet-bg.on #ckgo', { timeout: 5000 });
+          await vwait(pg, 400);
+          // FIX3: the sheet's fade and slide are CSS transitions on the real clock (320 ms), longer than 400 ms of virtual time: the
+          // shot was taken mid-way (the sheet see-through and still low). Wait until they are done, then the sheet is opaque and whole
+          await pg.waitForFunction(() => document.getAnimations().every(a => { const t = a.effect && a.effect.target;
+            return !t || !t.closest || !t.closest('.sheet-bg') || a.playState !== 'running' || a.effect.getTiming().iterations === Infinity; }), null, { timeout: 5000 })
+            .catch(() => bad.push(at + 'the sheet is still moving after 5 s'));
+          const sht = await pg.evaluate(() => { const bg = document.querySelector('.sheet-bg.on'), s = bg.querySelector('.sheet'), r = s.getBoundingClientRect();
+            return { op: getComputedStyle(bg).opacity, bgc: getComputedStyle(s).backgroundColor, top: r.top, out: [...s.querySelectorAll('button')].filter(e => e.getBoundingClientRect().bottom > innerHeight + 1).map(e => e.id) }; });
+          if (sht.op !== '1' || !/^rgb\(/.test(sht.bgc) || sht.out.length) bad.push(at + 'the sheet once settled: ' + JSON.stringify(sht));
+          await fit('.sheet button', 'sheet');
+          await shot(pg, 'checkin-ask-' + w + 'x' + h);
+          await pg.click('#ckgo');
+          await pg.waitForSelector('#prompt', { timeout: 5000 });
+          await vwait(pg, 500);
+          const q0 = await pg.evaluate(() => ({ chk: !!G.chk, n: G.n, hb: !!document.querySelector('#hb'), tag: !!document.querySelector('.qarea .ck-tag'),
+            same: G.pool.every(q => q.sk == G.sk && q.lv == G.lv) && G.q.sk == G.sk && G.q.lv == G.lv }));
+          if (!q0.chk || q0.n !== 5 || q0.hb || !q0.tag || !q0.same) bad.push(at + 'the check-in round: ' + JSON.stringify(q0));
+          await shot(pg, 'checkin-question-' + w + 'x' + h);
+          // the first question wrong: the answer shows, no hint, not asked again at the end
+          await pg.evaluate(() => { window.__q = G.q; check('zz-not-it'); });
+          await vwait(pg, 300);
+          const m1 = await pg.evaluate(() => ({ hint: document.querySelector('#hint').textContent.trim(), tries: G.tries, done: G.done, missed: G.missed.length }));
+          if (m1.hint || m1.done !== 1 || m1.missed !== 0) bad.push(at + 'a wrong first try: ' + JSON.stringify(m1));
+          await pg.waitForFunction(() => G && G.q !== window.__q && !G.lock, null, { timeout: 8000 });
+          for (let n = 0; n < 4; n++) {
+            await pg.waitForFunction(() => G && G.q && !G.lock && document.querySelector('#prompt'), null, { timeout: 8000 });
+            await pg.evaluate(() => { window.__q = G.q; });
+            await answer(pg);
+            await pg.waitForFunction(() => document.querySelector('#ckend') || (G && G.q !== window.__q), null, { timeout: 8000 });
+          }
+          await pg.waitForSelector('#ckend', { timeout: 8000 });
+          await vwait(pg, 1200);
+          const won = await pg.evaluate(k => ({ h1: document.querySelector('#ckend h1').textContent, pop: !!document.querySelector('.ck-new .ck-m.on'), b: (S.chk[k] || {}).b === mastDay(),
+            next: !!document.querySelector('#cknext'), shelf: !!document.querySelector('#ckshelf'), again: !!document.querySelector('#ckagain'), home: !!document.querySelector('#ckhome'), sc: G.score }), st.k);
+          if (won.h1 !== 'You won a badge!' || !won.pop || !won.b || !won.shelf || won.again || !won.home || won.sc !== 4) bad.push(at + 'the win: ' + JSON.stringify(won));
+          await fit('#ckend button', 'win card');
+          await shot(pg, 'checkin-win-' + w + 'x' + h);
+          notes.push(w + 'x' + h + ' won "' + st.t + '"' + (won.next ? ' with Next' : ''));
+          await pg.click('#ckshelf');
+          await pg.waitForSelector('.ck-shelf .ck-t', { timeout: 5000 });
+          await vwait(pg, 300);
+          await fit('.ck-shelf button', 'shelf');
+          const sh = await pg.evaluate(() => ({ n: document.querySelectorAll('.ck-t').length, sum: document.querySelector('.ck-sum').textContent }));
+          if (sh.n !== 1 || sh.sum !== 'You have 1 badge!') bad.push(at + 'the shelf: ' + JSON.stringify(sh));
+          await shot(pg, 'badge-shelf-' + w + 'x' + h);
+          await pg.click('.ck-t');
+          await vwait(pg, 300);
+          await pg.click('#back');
+          await pg.waitForSelector('#map .node', { timeout: 5000 });
+          const mm = await pg.evaluate(i => { const b = document.querySelector(`.node[data-n="${i}"]`); return { m: !!document.querySelector('.ck-mapm .ck-m.on'), go: !!document.querySelector('.ck-go'), lab: b && b.getAttribute('aria-label') }; }, st.i);
+          if (!mm.m || mm.go || !/, badge won$/.test(mm.lab || '')) bad.push(at + 'the map after the win: ' + JSON.stringify(mm));
+          await pg.evaluate(() => document.querySelector('.ck-mapm').scrollIntoView({ block: 'center' }));
+          await vwait(pg, 400);
+          await shot(pg, 'checkin-map-badge-' + w + 'x' + h);
+          if (w == 360) {
+            // a check-in with every answer wrong: the gentle card, no badge, Play again
+            const k2 = await pg.evaluate(() => {
+              const P = 'math', i = NODES.math.findIndex((n, j) => CHK.can(n) && passed(P, j) && !CHK.has(nid(n))), k = nid(NODES[P][i]);
+              S.mast[k] = { n: 14, p: .9, ms: 4000, d: 2, last: mastDay() }; CHK.start(P, i); return k;
+            });
+            for (let n = 0; n < 5; n++) {
+              await pg.waitForFunction(() => G && G.q && !G.lock && document.querySelector('#prompt'), null, { timeout: 8000 });
+              await pg.evaluate(() => { window.__q = G.q; check('zz-not-it'); });
+              await pg.waitForFunction(() => document.querySelector('#ckend') || (G && G.q !== window.__q), null, { timeout: 8000 });
+            }
+            await pg.waitForSelector('#ckend', { timeout: 8000 });
+            await vwait(pg, 900);
+            const ms = await pg.evaluate(k => ({ h1: document.querySelector('#ckend h1').textContent, again: !!document.querySelector('#ckagain'), b: !!(S.chk[k] || {}).b, n: (S.chk[k] || {}).n,
+              line: document.querySelector('.ck-line').textContent }), k2);
+            if (ms.h1 !== 'Good try!' || !ms.again || ms.b || ms.n !== 1 || !/Keep practicing/.test(ms.line)) bad.push(at + 'a check-in with no right answers: ' + JSON.stringify(ms));
+            await fit('#ckend button', 'try card');
+            await shot(pg, 'checkin-try-' + w + 'x' + h);
+          } else {
+            // a normal round of a ready stop ends with the Check-in card, which opens the sheet
+            const i3 = await pg.evaluate(() => {
+              const P = 'math', i = NODES.math.findIndex((n, j) => CHK.can(n) && passed(P, j) && !CHK.has(nid(n)) && !SK[n.sk].round), k = nid(NODES[P][i]);
+              S.mast[k] = { n: 14, p: .9, ms: 4000, d: 2, last: mastDay() }; start(P, i); return i;
+            });
+            await playRound(pg, at + 'a ready stop', undefined);
+            await vwait(pg, 4000);
+            const off = await pg.waitForSelector('#ckoff', { state: 'visible', timeout: 8000 }).catch(() => null);
+            if (!off) bad.push(at + 'no Check-in card after a round of a ready stop (' + i3 + ')');
+            else {
+              await fit('#ckoff', 'offer');
+              await shot(pg, 'checkin-offer-' + w + 'x' + h);
+              await pg.click('#ckoff');
+              await pg.waitForSelector('.sheet-bg.on #ckno', { timeout: 5000 });
+              await pg.click('#ckno');
+              await vwait(pg, 500);
+            }
+          }
+          // the Grown-ups report card: the stop with its badge
+          await pg.evaluate(() => { report(); document.querySelector('#rp-badges').scrollIntoView(); });
+          await vwait(pg, 400);
+          const rp = await pg.evaluate(t => { const s = document.querySelector('#rp-badges'); return s ? { won: s.textContent.includes('Badge won today.'), stop: s.textContent.includes(t) } : null; }, st.t);
+          if (!rp || !rp.won || !rp.stop) bad.push(at + 'the report card: ' + JSON.stringify(rp));
+          await shot(pg, 'checkin-report-' + w + 'x' + h);
+        } catch (x) { bad.push(at + x.message.split('\n')[0]); }
+        for (const e of ka.errors) bad.push(at + 'console error: ' + e);
+        for (const u of ka.network) bad.push(at + 'network request: ' + u);
+        await ka.ctx.close();
+      }
+      if (bad.length) fail('CHECK-IN check-ins and stop badges:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('CHECK-IN: the map Check-in button, the sheet, a 5-question check-in with no Help (a wrong first try shows the answer, no hint, no retry), ' +
+        '4 right wins the badge (card, shelf, map medal, report card); every answer wrong ends kindly with no badge; a ready stop\'s round ends with the Check-in card; ' +
+        notes.join('; ') + '; screenshots ' + shots.join(', '));
     }
 
     // KINDS2 batch A (docs/KINDS2-SPEC.md 6, smoke): the sort and mark kinds in one-question rounds of the real round engine, at 360x740

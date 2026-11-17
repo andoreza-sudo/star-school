@@ -1,5 +1,5 @@
-/* Star School gen v171. BUILT by tools/build.py from 23-viz.js, 30-gen-math.js, 31-gen-math-early.js, 32-gen-read.js, 33-gen-math-mid.js, 34-gen-es.js, 80-grown.js, 81-backup.js, 82-report.js, 88-online.js: never edit by hand.
-   index.html v171 loads this file with <script src="gen.v171.js"> after its own code, before data.v171.js. */
+/* Star School gen v172. BUILT by tools/build.py from 23-viz.js, 30-gen-math.js, 31-gen-math-early.js, 32-gen-read.js, 33-gen-math-mid.js, 34-gen-es.js, 80-grown.js, 81-backup.js, 82-report.js, 88-online.js: never edit by hand.
+   index.html v172 loads this file with <script src="gen.v172.js"> after its own code, before data.v172.js. */
 /* ---------- math visuals (P1-10; P1-11 adds part 2 in this same file) ----------
    Every VIZ.* function returns one inline <svg> string for a question's html (or a hint). No ids, no defs, no filters,
    no Math.random: the same arguments always give the same markup, so a question rebuilt from its seed looks the same.
@@ -3038,7 +3038,7 @@ function esStoryRound(lv){const D=ES_STORY.dialogues,s0=bankSeed(),out=[];let po
    P4-12 (DESIGN_SYSTEM 9 row 6): a calm adult layout in the same system. Each section is a card with an icon header (GW.card);
    switches, segmented controls, fields and a readable table from the P4-04 components; two columns on a wide screen. Styles in
    src/css/48-setup-grown-care.css. Every id the code and the tests use is kept: #back, #nm, #pn, #bd, .gr[data-g], .pl-grown,
-   #ula, #rp-open, [data-rec], [data-play], [data-del], [data-per], [data-max], #pt5, #pt0, #ptp, #rlgates (G-FEEL2), #applog, #voice, #snd, #mus, #calm, [data-cheer] (EN-PRAISE), #esspk (S-SPK),
+   #ula, #rp-open, [data-rec], [data-play], [data-del], [data-per], [data-max], #pt5, #pt0, #ptp, #rlgates (G-FEEL2), #applog, #voice, #snd, #mus, #calm, [data-cheer] (EN-PRAISE), #esspk (S-SPK), #fps, #hc3d (GL-01),
    #gw-lis, #lis-dl, #gw-corner, [data-keep], [data-lcp], [data-lcs], #lc-del (S-SPK2, 50-say-corner.js),
    #test, #reset. The report card's Print button (82-report.js) and the backup Save buttons (81-backup.js, P5-07) carry the online note.
    P5-10: the Children card (PRF.card in 01-profiles.js) comes right after the summary; with more than one child, Start over
@@ -3135,6 +3135,8 @@ function grown(){let armed=false;
     <p class="gw-sub">Speaking practice: in Spanish rounds your child says a word or line, then hears the Spanish voice and their own recording, and the tablet says kindly how close it sounded. Recordings stay on this tablet (see the Listening corner).</p>
     ${UI.btn('Test voice',{size:'sm',icon:'speak',id:'test'})}
     <div class="gw-row" id="gw-cheer"><span class="gw-rl">Cheer voices</span>${GW.seg('cheer',['mix','f','m','tts'],cheerMode(),'Cheer voices: who says Great job',v=>CHEER_NAMES[v])}</div>`)}
+  ${GW.card('gw-speed','bolt','Tablet speed',`<div class="gw-sw">${UI.sw('Show the speed box: frames per second in a corner',!!S.fps,'fps')}${UI.sw('4x4 Hill Climb in 3D (off: the flat 2D look)',S.hcGl!==false,'hc3d')}</div>
+    <p class="gw-sub">The speed box shows how many pictures a second the tablet draws and its slowest one in the last 5 seconds. Hill Climb turns to the 2D look by itself on a tablet that is too slow for 3D.</p>`)}
   ${spkLisCard()}
   ${spkCornerCard()}
   ${GW.card('gw-rec','mic','Your voice',(inFrame?warn('Recording only works on the tablet app, not in this preview.'):!canRec?warn("Recording isn't available in this browser. Use Chrome or the installed app."):'')+clips,
@@ -3175,6 +3177,7 @@ function grown(){let armed=false;
   $('#buzz').onchange=e=>{S.buzz=e.target.checked;save()}; // R-03 A4 (10-sfx.js buzz)
   $('#calm').onchange=e=>{S.calm=e.target.checked;save();calmApply(true)}; // P4-17
   $('#esspk').onchange=e=>{S.esSpk=e.target.checked;save()}; // S-SPK: per child (absent = on)
+  $('#fps').onchange=e=>{S.fps=e.target.checked;save();fpsSet(S.fps)};$('#hc3d').onchange=e=>{S.hcGl=e.target.checked;if(typeof HC_GLOFF!='undefined')HC_GLOFF=false;save()}; // GL-01 (on again: 3D again, even after it was too slow this visit)
   spkLisBind();spkCornerBind(); // S-SPK2
   // EN-PRAISE: who says "Great job!" (per child): the recorded voices, mixed, female or male, or the tablet's voice; a tap plays a sample
   $$('[data-cheer]').forEach(b=>b.onclick=()=>{S.cheerV=b.dataset.cheer;save();$$('[data-cheer]').forEach(x=>{const on=x===b;x.classList.toggle('on',on);x.setAttribute('aria-pressed',on)});say(pick(CHEERS))});
@@ -3542,7 +3545,7 @@ const REP = {
       return o;
     });
     // mastery, by strand; needs practice; recently mastered
-    const strands = {}, tried = [], mastered = [];
+    const strands = {}, tried = [], mastered = [], stops = [];
     let any = 0;
     for (const p in PATHS) {
       for (const s of mastStops(p)) {
@@ -3553,6 +3556,11 @@ const REP = {
           any++;
           const item = {p, sk, lv: NODES[p][s.i].lv, t: s.t, label: REP.AREA[p] || '', n: s.rec.n, pr: s.rec.p, md: s.rec.md, state: s.state};
           tried.push(item);
+          // CHECK-IN (51b-checkin.js): the stop's badge and check-ins, read only
+          if (typeof CHK != 'undefined' && CHK.can(NODES[p][s.i])) {
+            const c = CHK.rec(s.nid);
+            stops.push({...item, b: CHK.won(c) ? c.b : 0, ck: c ? c.n | 0 : 0, best: c ? c.best | 0 : 0, ready: CHK.ready(p, s.i)});
+          }
           if (s.state == 'mastered' && s.rec.md >= 0) mastered.push(item);
         }
       }
@@ -3580,6 +3588,7 @@ const REP = {
     m.pin = pn ? {p: pn.p, sk: pn.sk, lv: pn.lv, t: pn.t} : null;
     m.mastered = mastered.sort((a, b) => b.md - a.md).slice(0, 6).map(x => ({...x, when: REP.ago(x.md, now)}));
     m.masteredAll = mastered.length;
+    m.stops = stops.map(x => ({...x, won: x.b ? REP.ago(x.b, now) : ''}));
     // Fact Sprint bests
     const flu = (S.flu && typeof S.flu == 'object') ? S.flu : {};
     m.flu = FLU.SETS.map(s => ({t: s.t, b60: (flu[s.id] || {}).best, b20: (flu[s.id + '-20'] || {}).best}))
@@ -3684,6 +3693,23 @@ const REP = {
     return `<ul class="rp-list">${m.mastered.map(x => `<li><b>${esc(x.t)}</b> <span class="rp-tag">${esc(x.label)}</span> <span class="small">${esc(x.when)}</span></li>`).join('')}</ul>`
       + (m.masteredAll > m.mastered.length ? `<div class="small">${m.masteredAll} stops mastered in all.</div>` : '');
   },
+  // CHECK-IN: every stop tried, by subject: its mastery, its badge or check-ins (51b-checkin.js)
+  badges(m) {
+    const st = m.stops || [];
+    if (!st.length) return '<div class="rp-empty">This list fills in after a few rounds.</div>';
+    const SN = {mastered: 'Mastered', practised: 'Practised', learning: 'Learning', new: 'Not started'};
+    const won = st.filter(x => x.b).length;
+    const line = x => x.b ? `Badge won ${esc(x.won)}.` : x.ck ? `${x.ck} check-in${x.ck == 1 ? '' : 's'}, best ${x.best} of ${CHK.Q}.${x.ready ? ' Ready to try again.' : ''}`
+      : x.ready ? 'Ready for a check-in.' : 'No check-in yet.';
+    return `<p class="small rp-p0">${won} badge${won == 1 ? '' : 's'} won. A check-in is ${CHK.Q} questions from one stop with no hints; ${CHK.PASS} right wins its badge. `
+      + `It is offered after ${CHK.MIN} or more questions at a stop with ${Math.round(CHK.ACC * 100)}% right on the first try.</p>`
+      + Object.keys(PATHS).map(p => {
+        const xs = st.filter(x => x.p == p);
+        return xs.length ? `<h4 class="rp-h3">${esc(REP.AREA[p] || PATHS[p].n)}</h4><ul class="rp-ck">${xs.map(x => `<li><b>${esc(x.t)}</b> `
+          + `<span class="rp-tag">${SN[x.state] || ''}</span>${x.b ? ' ' + ico('medal', 20, 'rp-ckm') : ''}<div class="small">`
+          + (+x.n > 0 && +x.pr >= 0 ? `${Math.round(x.pr * 100)}% right on the first try, over ${+x.n} questions. ` : '') + `${line(x)}</div></li>`).join('')}</ul>` : '';
+      }).join('');
+  },
   fluency(m) {
     if (!m.flu.length) return '<div class="rp-empty">No Fact Sprint scores yet.</div>';
     const v = (b, low) => b == null ? 'not yet' : low ? b + ' s' : b + ' right';
@@ -3702,7 +3728,7 @@ const REP = {
     return `<div class="rp-head"><div class="rp-t">Report card for ${nm}</div><div class="small">${esc(m.date)}, ${m.year} · grade ${esc(gradeLabel(m.grade))} · Star School</div></div>`
       + sec('rp-weeks', 'calendar', 'This week and last week', REP.weeks(m) + '<div class="small rp-key">A week is the last 7 days, ending today. Accuracy is the share of questions right on the first try. Only time with a question on screen counts.</div>')
       + sec('rp-level', 'map', 'Where ' + nm + ' is working', REP.level(m))
-      + sec('rp-top', 'chart', 'Skills by topic', REP.strands(m))
+      + sec('rp-top', 'chart', 'Skills by topic', REP.strands(m) + (typeof CHK != 'undefined' ? `<div id="rp-badges"><h3 class="rp-h3">${ico('medal', 22)} Badges and mastery by stop</h3>${REP.badges(m)}</div>` : ''))
       + sec('rp-needs', 'target', 'Needs practice', REP.needs(m))
       + sec('rp-recent', 'medal', 'Recently mastered', REP.recent(m))
       + sec('rp-flu', 'bolt', 'Fact Sprint bests', REP.fluency(m))
@@ -3774,4 +3800,4 @@ function needOnline(action, o = {}) {
   return true;
 }
 
-var GEN_VER='v171'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var GEN_VER='v172'; // last line: the whole file ran (checked by dataReady() before the app starts)

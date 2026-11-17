@@ -143,7 +143,9 @@ const MIGRATIONS=[null,
 /* Run once at load, from 42-paths.js (needs NODES, which no code before it reads). Backs up the old string first. */
 function migrate(){
   if(S.owned&&S.owned['\u{1FA84}']){S.owned['\u{1FA80}']=1;delete S.owned['\u{1FA84}']}if(S.wear&&S.wear.toy=='\u{1FA84}')S.wear.toy='\u{1FA80}'; // an old toy (U+1FA84) became the yo-yo (the parent asked for none of that theme): same price, kept by whoever had it
+  if(!('chk' in S))S.chk={}; // CHECK-IN: the stop check-ins and badges (51b-checkin.js): a default by id, nothing else changes
   if(!('pin' in S))S.pin=null; // G-FEEL2: the report card's "Practise this next" pin (55-missions.js): a default by id, nothing else changes
+  if(!('fps' in S))S.fps=false;if(!('hcGl' in S))S.hcGl=true; // GL-01: the speed box (19b-fps.js) off, Hill Climb's 3D look on (62b-hill-gl.js): defaults by id
   if(S.maps&&typeof PATHS!='undefined')for(const p in PATHS)S.maps[p]=S.maps[p]||{}; // a path added after the save was written starts empty (Discover, P2-36): a default, not a migration
   const from=Number.isInteger(S.v)&&S.v>=1?S.v:1;
   if(from>=LATEST)return; // current, or written by a newer app: leave it alone

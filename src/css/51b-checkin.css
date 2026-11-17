@@ -1,0 +1,47 @@
+/* ---- CHECK-IN: stop badges and check-ins (src/js/51b-checkin.js; in gen2). Tokens only; motion is transform and opacity ---- */
+/* the map: a won badge by its stop (not a control), and the Check-in button by a ready stop (52 px, a gold ring that pulses) */
+.ck-mapm{position:absolute;width:48px;height:54px;margin:-27px 0 0 -24px;z-index:3;pointer-events:none;animation:ck-in var(--t-slow) var(--ease) both}
+.ck-mapm .ck-m{display:block}
+.btn.ck-go{position:absolute;width:52px;height:52px;min-height:52px;margin:-26px 0 0 -26px;padding:0;border-radius:50%;z-index:3;display:grid;place-items:center;
+  background:var(--star-tint);color:var(--try-ink);box-shadow:inset 0 0 0 3px var(--star),0 4px 0 var(--star-shade)}
+.btn.ck-go .ic{width:30px;height:30px;color:var(--star-shade)}
+.btn.ck-go::after{content:'';position:absolute;inset:-7px;border:3px solid var(--star);border-radius:50%;opacity:0;animation:k-ring var(--t-loop) var(--ease) infinite;pointer-events:none}
+.btn.ck-go:active{transform:translateY(3px);box-shadow:inset 0 0 0 3px var(--star),0 1px 0 var(--star-shade)}
+/* the question card's tag; the sheet before it starts */
+.ck-tag{background:var(--star-tint);color:var(--try-ink)}
+.ck-ask{display:flex;flex-direction:column;align-items:center;text-align:center}
+.ck-ask h2{margin:var(--s-2) 0 var(--s-1)}
+.ck-ask p{margin:0 0 var(--s-1);font-size:var(--fs-3);font-weight:700;color:var(--ink-2)}
+.ck-ask .ck-rule{color:var(--ink)}
+.ck-ask .acts{width:100%;margin-top:var(--s-3)}
+.ck-am .ck-m{display:block}
+/* the end card: the badge pops in with rays behind it (one short animation), then the score, the next stop and the three choices */
+.ck-end{gap:var(--s-2)}
+.ck-hero{position:relative;display:grid;place-items:center;width:180px;height:170px}
+.ck-hero .rw-pet{width:150px;height:150px}
+.ck-hero .rw-rays{position:absolute;inset:-20px;width:220px;height:210px;opacity:.8;animation:rw-rays calc(var(--t-xl) * 1.5) var(--ease) both}
+.ck-big{position:relative;display:block}
+.ck-big .ck-m{display:block}
+.ck-new .ck-big{animation:ck-pop calc(var(--t-xl) * 1.2) var(--ease) both}
+.ck-name{margin:0;font-family:var(--font-display);font-size:var(--fs-4);line-height:var(--lh-4);color:var(--ink)}
+.ck-sc{margin:0;font-size:var(--fs-3);font-weight:700;color:var(--ink-2)}
+.ck-sc b{font-family:var(--font-display);font-size:var(--fs-4);color:var(--ink)}
+.ck-line{margin:0;font-size:var(--fs-3);font-weight:700;color:var(--ink);max-width:30ch}
+.ck-nx{display:flex;align-items:center;gap:var(--s-2);margin:0;padding:var(--s-1) var(--s-3);border-radius:var(--r-pill);background:var(--brand-tint);
+  font-size:var(--fs-3);font-weight:700;color:var(--ink)}
+.ck-nx .ic{color:var(--brand);flex:none}
+.ck-end .rw-er{width:min(100%,420px);text-align:left}
+.ck-dock{display:flex;flex-wrap:wrap;gap:var(--s-3);width:min(100%,520px);margin-top:var(--s-2)}
+/* the shelf: a grid of won badges, and the stops ready for a check-in */
+.ck-sum{margin:0 0 var(--s-3);font-size:var(--fs-3);font-weight:700;color:var(--ink);text-align:center}
+.ck-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:var(--s-3);margin-bottom:var(--s-4)}
+.ck-t{display:flex;flex-direction:column;align-items:center;gap:var(--s-1);min-width:0;min-height:var(--tap);padding:var(--s-3) var(--s-2);border:0;border-radius:var(--r-card);
+  background:var(--surface);color:var(--ink);box-shadow:inset 0 0 0 2px var(--line),var(--ledge) var(--ledge-soft);font:inherit;cursor:pointer}
+.ck-t:active{transform:translateY(3px)}
+.ck-t b{font-family:var(--font-display);font-size:var(--fs-2);line-height:1.25;text-align:center;overflow-wrap:anywhere}
+.ck-bk{display:flex;justify-content:center}
+@keyframes ck-pop{0%{opacity:0;transform:scale(.3) rotate(-18deg)}60%{opacity:1;transform:scale(1.15) rotate(6deg)}100%{transform:scale(1) rotate(0)}}
+@keyframes ck-in{0%{opacity:0;transform:scale(.5)}}
+/* the report card's badges and mastery by stop (82-report.js REP.badges): a list like .rp-list, with its own class */
+.rp-ck{margin:0;padding-left:var(--s-5)}
+.rp-ck li{margin-bottom:var(--s-3);line-height:var(--lh-2)}

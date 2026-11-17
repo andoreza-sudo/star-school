@@ -8068,6 +8068,279 @@ run('keys: Enter or Space on an SVG button clicks it (UI.press)',()=>{
   return{problems:p,note:'Enter and Space on an SVG and an HTML role=button'};
 });
 
+// ---- KINDS2-E: Discover bank items for sort and mark, and why on existing choice items ----
+// Every new item validates and builds; the new kinds are 30-60% of every Discover stop and level (sort and mark both asked); K2.off draws
+// exactly the questions of the bank without the new items and without the why texts (appended at the end, plain choice items unchanged).
+run('KINDS2-E Discover: new sort and mark items valid, kind share per stop, why on choice items, K2.off gives the old draws',()=>{
+  const r=eval(js+`;(()=>{const out={bad:[],rows:{},n:0,why:0,before:{},after:{}},bad=m=>{if(out.bad.length<60&&!out.bad.includes(m))out.bad.push(m)};
+    const IDS=['sci_life','sci_earth','sci_phys','geo_world','geo_us','civ'],LV={sci_life:3,sci_earth:3,sci_phys:3,geo_world:2,geo_us:2,civ:2};
+    const WANT={sci_life:9,sci_earth:9,sci_phys:9,geo_world:7,geo_us:8,civ:7}; // new items per stop (6 to 10)
+    const GR={sci_life:['K-2','3-4','5-6'],sci_earth:['K-2','3-4','5-6'],sci_phys:['K-2','3-4','5-6'],geo_world:['K-2','3-4'],geo_us:['3-4','5-6'],civ:['K-2','5-6']};
+    const keep={};
+    for(const id of IDS){
+      const B=BANK[id],first=B.findIndex(it=>(it.form||'choice')!=='choice'),mine=B.slice(first+8*LV[id]); // 8 items a level came first (d-disc3-kinds.js)
+      if(mine.length!==WANT[id])bad(id+': '+mine.length+' new items, expected '+WANT[id]);
+      mine.forEach(it=>{const w=id+' level '+it.lv+' "'+it.q+'": ';out.n++;
+        if(it.form!=='sort'&&it.form!=='mark')bad(w+'form '+it.form);
+        for(const x of bankItemProblems(it,w))bad(x);
+        if(BANKNEW.indexOf(it.form)<0)bad(w+'form is not in BANKNEW');
+        if(it.form=='mark'&&it.hint&&new RegExp('\\\\b'+[].concat(it.a)[0]+'\\\\b','i').test(it.hint))bad(w+'the hint names the answer');
+        if(it.form=='mark'&&[].concat(it.a).some(a=>new RegExp('\\\\b'+a+'\\\\b','i').test(it.q)))bad(w+'the prompt names the answer');
+        if(!it.topic)bad(w+'no topic');
+        const bi=B.indexOf(it);
+        for(let s=1;s<=3;s++){const q=genBank(id,it.lv,{bi,s});
+          for(const x of kindProblems(q))bad(w+x);
+          if(q.kind!==it.form||!q.say||q.label.length>=60||!KIND[q.kind].same(q,q.ans))bad(w+'built as '+q.kind);
+          const b=bankRebuild(q.bk);if(JSON.stringify(b)!==JSON.stringify(q))bad(w+'bankRebuild differs');
+          K2.off=true;try{if(bankCan(it))bad(w+'drawn with K2.off')}finally{K2.off=false}}});
+      for(let lv=1;lv<=LV[id];lv++){const m=mine.filter(it=>it.lv==lv);
+        if(m.filter(it=>it.form=='sort').length<2||m.filter(it=>it.form=='mark').length<1)bad(id+' level '+lv+': needs 2 sort and 1 mark items, has '+m.map(x=>x.form))}
+      keep[id]=B.slice();
+    }
+    // why: [text, why] distractors on existing choice items. Their draws do not change (a plain copy builds the same question) and
+    // with K2.off the why is not read at all.
+    const strip=it=>Object.assign({},it,{d:it.d.map(x=>Array.isArray(x)?x[0]:x)});
+    for(const id of IDS)BANK[id].forEach((it,bi)=>{
+      if(!Array.isArray(it.d)||!it.d.some(Array.isArray))return;
+      out.why++;const w=id+'['+bi+'] "'+it.q+'": ';
+      for(const x of bankItemProblems(it,w))bad(x);
+      for(const x of it.d)if(Array.isArray(x)&&(x[0]===it.a||!x[1]||x[1].length>90))bad(w+'why of "'+x[0]+'"');
+      const plain=BANK[id].slice();plain[bi]=strip(it);
+      for(let s=1;s<=12;s++){
+        K2.off=true;let a,b;try{a=JSON.stringify(genBank(id,it.lv,{bi,s}));const real=BANK[id];BANK[id]=plain;try{b=JSON.stringify(genBank(id,it.lv,{bi,s}))}finally{BANK[id]=real}}finally{K2.off=false}
+        if(a!==b)bad(w+'K2.off draw changed by the why (seed '+s+')');
+        const q=genBank(id,it.lv,{bi,s}),real=BANK[id];BANK[id]=plain;let p2;try{p2=genBank(id,it.lv,{bi,s})}finally{BANK[id]=real}
+        if(JSON.stringify(q.choices)!==JSON.stringify(p2.choices)||q.ans!==p2.ans||q.label!==p2.label)bad(w+'the why changed the draw (seed '+s+')');
+        if(!q.why||Object.keys(q.why).some(k=>String(k)===String(q.ans)||!q.choices.some(c=>c.v===k)))bad(w+'q.why keys');
+        if(a.includes('"why"'))bad(w+'K2.off question has a why')}});
+    if(out.why<20)bad('only '+out.why+' choice items have a why, expected 20 or more (KD4N '+KD4N+')');
+    // kind share per stop and level, 400 seeded draws; before = the bank without the new items and the default shares
+    const draw=(id,lv)=>{const c={};for(let s=1;s<=400;s++){const q=genBank(id,lv,{s});c[q.kind]=(c[q.kind]||0)+1}return c};
+    const add=(t,g,c)=>{const o=t[g]||(t[g]={});for(const k in c)o[k]=(o[k]||0)+c[k]};
+    for(const id of IDS)for(let lv=1;lv<=LV[id];lv++){
+      const c=draw(id,lv),n=Object.values(c).reduce((a,b)=>a+b,0),nw=n-(c.choice||0);
+      out.rows[id+lv]=Math.round(100*nw/n);
+      if(nw/n<.3||nw/n>.6)bad(id+' level '+lv+': the new kinds are '+Math.round(100*nw/n)+'% (30-60% wanted)');
+      if((c.sort||0)<.1*n||(c.mark||0)<.04*n||(c.choice||0)<.4*n)bad(id+' level '+lv+': mix '+JSON.stringify(c));
+      add(out.after,GR[id][lv-1],c);
+      const k=BANK[id],mx=BANKMIX[id];
+      BANK[id]=k.filter(it=>!(it.form=='mark'||k.indexOf(it)>=k.findIndex(x=>(x.form||'choice')!=='choice')+8*LV[id])); delete BANKMIX[id];
+      try{add(out.before,GR[id][lv-1],draw(id,lv))}finally{BANK[id]=k;BANKMIX[id]=mx}}
+    // K2.off: Discover asks the bank as it was: the choice items only, the same questions with or without the new items and the why texts
+    K2.off=true;
+    try{for(const id of IDS)for(let lv=1;lv<=LV[id];lv++){
+      const ref=keep[id].filter(it=>(it.form||'choice')=='choice').map(it=>Array.isArray(it.d)?strip(it):it),real=BANK[id];
+      for(let s=1;s<=60;s++){const a=JSON.stringify(genBank(id,lv,{s}));BANK[id]=ref;let b;try{b=JSON.stringify(genBank(id,lv,{s}))}finally{BANK[id]=real}
+        if(a!==b)bad(id+' level '+lv+' seed '+s+': K2.off is not the old draw');
+        if(JSON.parse(a).kind!=='choice')bad(id+' level '+lv+': K2.off drew a '+JSON.parse(a).kind)}}}
+    finally{K2.off=false}
+    return out})()`);
+  const tab=t=>Object.keys(t).sort().map(g=>{const o=t[g],n=Object.values(o).reduce((a,b)=>a+b,0);return g+': '+Object.entries(o).sort((a,b)=>b[1]-a[1]).map(([k,v])=>k+' '+Math.round(100*v/n)+'%').join(' ')}).join('; ');
+  return{problems:r.bad,note:`${r.n} new items, ${r.why} choice items with a why; new kinds per stop/level ${Object.entries(r.rows).map(([k,v])=>k+' '+v+'%').join(', ')}; before: ${tab(r.before)}; after: ${tab(r.after)}`};
+});
+
+// ---- GL-01: the shared WebGL layer (src/js/60-gl.js), Hill Climb's 3D look (62b-hill-gl.js) and the speed box (19b-fps.js) ----
+// The layer is in the games part (on demand) and loads here without a page; with no WebGL (no canvas, a context that cannot be made,
+// a shader that does not compile) it gives null and Hill Climb keeps its 2D look; the side-view camera puts z = 0 exactly where the
+// 2D look draws; the simulation never reads the renderer. The speed box is off by default and its switch saves (defaults in migrate).
+run('GL-01 WebGL layer, Hill 3D look, speed box',()=>{
+  const p=[],rd=f=>fs.readFileSync(path.join(SRC,f),'utf8'),fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const FIX=['fresh','midway','maxed','tricky','legacy-index-maps','legacy-single-map'].map(n=>[n,fx(n)]);
+  if(partOf('60-gl.js')!=='games'||partOf('62b-hill-gl.js')!=='games')p.push('60-gl.js and 62b-hill-gl.js should build into games.'+BUILD_VER+'.js (PARTS), on demand');
+  if(partOf('19b-fps.js')||partOf('20b-fps.css'))p.push('the speed box (19b-fps.js, 20b-fps.css) belongs in index.html: it works on every screen');
+  function T(FIX){
+    const r={bad:[],notes:[]},bad=m=>{if(r.bad.length<60&&!r.bad.includes(m))r.bad.push(m)};
+    // 1. the layer: no WebGL in Node, so the probe says no and init gives null, without throwing
+    if(typeof GLX!='object'||typeof GLX.init!='function'||typeof GLX.side!='function')bad('GLX is not loaded');
+    let pr;try{pr=GLX.probe()}catch(e){pr='threw '+e.message}
+    if(pr!==false)bad('GLX.probe() without a canvas should be false: '+pr);
+    const ev=()=>{},cv0={addEventListener:ev,getContext:()=>null},cv1={addEventListener:ev,getContext:()=>{throw new Error('no')}};
+    for(const [n,c] of [['no context',cv0],['getContext throws',cv1]]){let R;try{R=GLX.init(c)}catch(e){R='threw '+e.message}if(R!==null)bad('GLX.init with '+n+' should be null: '+R)}
+    // a context whose shaders do not compile: null, and the context is given back
+    let lost=0;const fg=new Proxy({},{get:(o,k)=>k=='getShaderParameter'||k=='getProgramParameter'?()=>false:k=='getExtension'?()=>({loseContext(){lost++}}):typeof k=='string'&&/^[A-Z_]+$/.test(k)?1:()=>({})});
+    let R2;try{R2=GLX.init({addEventListener:ev,getContext:()=>fg})}catch(e){R2='threw '+e.message}
+    if(R2!==null||lost!==1)bad('a shader that does not compile: init should be null and lose the context: '+R2+' '+lost);
+    for(const k in GLX.FS)if(!/^precision mediump float;/.test(GLX.FS[k])||/highp/.test(GLX.FS[k]+GLX.VS[k]))bad('fragment shader '+k+': mediump, no highp');
+    // 2. the side view: z = 0 lands where the 2D look draws (sc pixels a unit round the eye's point); nearer is bigger, farther moves to the eye's point
+    const W=800,Hh=1280,sc=1.3,D=700,M=GLX.side(W,Hh,sc,D,100,50,300,400,40,40000);
+    const scr=(x,y,z)=>{const c=[0,1,2,3].map(r=>M[r]*x+M[4+r]*y+M[8+r]*z+M[12+r]);return[(c[0]/c[3]+1)*W/2,(1-c[1]/c[3])*Hh/2,c[2]/c[3]]};
+    for(const [x,y] of [[100,50],[160,10],[-40,300]]){const s=scr(x,y,0),want=[300+(x-100)*sc,400-(y-50)*sc];if(Math.abs(s[0]-want[0])>1e-6||Math.abs(s[1]-want[1])>1e-6)bad('GLX.side: z = 0 at '+x+','+y+' is '+s.slice(0,2)+', the 2D look draws it at '+want)}
+    const a=scr(200,0,60),b=scr(200,0,-300),c0=scr(200,0,0);
+    if(!(a[0]>c0[0]&&b[0]<c0[0]&&b[0]>300)||!(a[2]<c0[2]&&c0[2]<b[2]))bad('GLX.side: near and far are not in perspective: '+[a,c0,b].map(v=>v.map(q=>q.toFixed(2))).join(' | '));
+    const m=new Float32Array(16),id=[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1];GLX.mul(m,M,id);if(m.some((v,i)=>Math.abs(v-Math.fround(M[i]))>1e-3))bad('GLX.mul by the identity changed the matrix');
+    const o=[];GLX.box(o,0,0,0,1,1,1,[1,0,0]);if(o.length!==36*9)bad('GLX.box: 36 lit vertices of 9 numbers, got '+o.length/9);
+    const e=[];GLX.extrude(e,[[0,0],[1,0],[1,1],[0,1]],-1,1,[1,1,1]);if(e.length!==(2*2*3+4*6)*9)bad('GLX.extrude of a square: 36 vertices, got '+e.length/9);
+    // 3. Hill Climb: the 3D look is wanted unless a grown-up turned it off; without WebGL hcGlStart gives null (the 2D look draws)
+    const keep=[S.hcGl,S.fps];
+    S.hcGl=true;if(!hcGlWant())bad('the 3D look should be wanted by default');
+    S.hcGl=false;if(hcGlWant())bad('S.hcGl = false (Grown-ups) should give the 2D look');
+    S.hcGl=true;const H=hcNew(0,0,{});let G;try{G=hcGlStart(H,cv0)}catch(x){G='threw '+x.message}if(G!==null)bad('hcGlStart without WebGL should be null: '+G);
+    HC_GLOFF=true;if(hcGlWant())bad('after a drop for speed the 3D look waits for the next visit');HC_GLOFF=false;
+    // the simulation and its steps never touch the renderer
+    for(const f of [hcNew,hcStep,hcAdvance,hcCourse,hcBank])if(/\bgl\b|GLX|hcGl|hgFrame/.test(f.toString()))bad(f.name+' reads the renderer');
+    // 4. saves: the defaults come in migrate by id, and what a grown-up chose is kept
+    for(const [name,raw] of FIX){loadSave(raw);migrate();if(S.fps!==false||S.hcGl!==true)bad(name+': migrate should add S.fps = false and S.hcGl = true, got '+S.fps+' '+S.hcGl)}
+    S.fps=true;S.hcGl=false;migrate();if(S.fps!==true||S.hcGl!==false)bad('migrate changed the speed box or the 3D look a grown-up set');
+    // 5. the speed box: frames in the last second, the worst frame of the last 5 s; off removes it
+    const kg={document:global.document,raf:global.requestAnimationFrame,caf:global.cancelAnimationFrame};let box=null,rafs=0;
+    global.document=Object.assign({},kg.document,{createElement:()=>({setAttribute(){},remove(){box.gone=true}}),body:{appendChild:x=>{box=x}}});
+    global.requestAnimationFrame=()=>++rafs;global.cancelAnimationFrame=()=>{};
+    try{
+      fpsSet(true);if(!box||box.className!=='fpsbox'||rafs!==1)bad('fpsSet(true): the box and one frame request');
+      let t=1000;fpsTick(t);for(let i=0;i<120;i++){t+=i==60?50:1000/60;fpsTick(t)}
+      const txt=box.textContent;
+      if(!/^\d+ fps, worst 50 ms$/.test(box.textContent)||!(+box.textContent.split(' ')[0]>=55))bad('the speed box reads '+JSON.stringify(box.textContent)+', expected about 60 fps, worst 50 ms');
+      fpsTick(t+3000);if(/worst 3000/.test(box.textContent))bad('a hidden tab is not a frame');
+      FPS.tag='3D';t+=3000+600;fpsTick(t);if(!/ 3D$/.test(box.textContent))bad('the speed box should show the tag of the game drawing: '+box.textContent);
+      fpsSet(false);if(!box.gone||FPS.el||FPS.on)bad('fpsSet(false) should remove the box');
+      r.notes.push('speed box after 120 frames with one of 50 ms: '+JSON.stringify(txt));
+    }finally{global.document=kg.document;global.requestAnimationFrame=kg.raf;global.cancelAnimationFrame=kg.caf;FPS.tag=''}
+    [S.hcGl,S.fps]=keep;
+    return r;
+  }
+  const o=(()=>eval(js+';('+T.toString()+')(FIX)'))();
+  p.push(...o.bad);
+  // 6. the sources: Grown-ups switches that save; the 2D renderer kept as the fallback; tokens only; no allocation in the frame's hot loop
+  const gr=rd('js/80-grown.js'),hill=rd('js/62-hill.js'),hg=rd('js/62b-hill-gl.js'),core=rd('js/00-core.js');
+  if(!/UI\.sw\('Show the speed box: frames per second in a corner',!!S\.fps,'fps'\)/.test(gr)||!/\$\('#fps'\)\.onchange=e=>\{S\.fps=e\.target\.checked;save\(\);fpsSet\(S\.fps\)\}/.test(gr))p.push('Grown-ups: the speed box switch #fps should save S.fps and turn the box on or off');
+  if(!/UI\.sw\('4x4 Hill Climb in 3D \(off: the flat 2D look\)',S\.hcGl!==false,'hc3d'\)/.test(gr)||!/\$\('#hc3d'\)\.onchange=e=>\{S\.hcGl=e\.target\.checked;/.test(gr))p.push('Grown-ups: the 3D look switch #hc3d should save S.hcGl');
+  if(!/if\(!\('fps' in S\)\)S\.fps=false;if\(!\('hcGl' in S\)\)S\.hcGl=true;/.test(core))p.push('00-core.js: S.fps and S.hcGl need their defaults in migrate');
+  const dr=hill.slice(hill.indexOf('function hcDraw('),hill.indexOf('function hcBalloons('));
+  if(!/const gl=!!\(H\.gl&&!H\.gl\.off&&hcGlFrame\(H,W,Hh,dpr,sh\)\)/.test(dr)||!/if\(gl\)x\.clearRect\(0,0,W,Hh\);\n  else\{\n  \/\/ sky, clouds, parallax strips\n  for\(const q of R\.lay\)\{const l=hcStrip/.test(dr)||!/if\(!gl\)\{const l=hcFore/.test(dr))p.push('hcDraw: the 2D look should draw whenever the 3D frame did not');
+  if(!/try \{ return hgFrame\(H, W, Hh, dpr, sh\); \} catch \(e\) \{ hcGlDrop\(H, 'error'\);/.test(hg))p.push('62b-hill-gl.js: a failing 3D frame should drop to the 2D look');
+  if(!/cv\.addEventListener\('webglcontextlost'/.test(rd('js/60-gl.js'))||!/if \(R\.lost \|\| gl\.isContextLost\(\)\) \{ hcGlDrop\(H, 'lost'\)/.test(hg))p.push('a lost context should drop to the 2D look');
+  const hgc=hg.replace(/\/\*[\s\S]*?\*\//g,'').replace(/(^|[^:'"`])\/\/[^\n]*/g,'$1');
+  if(/#[0-9a-fA-F]{3,8}\b|(?<!\.)\b(rgb|rgba|hsl|hsla)\(/.test(hgc))p.push('62b-hill-gl.js: a raw colour (use hcC / hcA roles)');
+  for(const m of hgc.matchAll(/\b(?:hgC\(G, |hcC\(|hcA\()'([a-z][a-z0-9-]*)'/g)){const ro=m[1],t=ro.startsWith('sc-')?'--'+ro:'--ill-'+({r:'red',o:'orange',y:'yellow',g:'green',c:'aqua',b:'blue',v:'purple',p:'pink',n:'brown',t:'tan',s:'skin',m:'cream',e:'grey',w:'white',k:'ink'})[ro[0]]+(ro[1]?'-'+ro[1]:'');if(!rd('css/00-tokens.css').includes(t+':'))p.push('62b-hill-gl.js: colour role '+ro+' is not a token')}
+  if(!/new Float32Array\(max \* 54\)/.test(rd('js/60-gl.js'))||!/G\.mvp\.set\(G\.tmp\)/.test(hg))p.push('the frame should reuse its sprite batch and matrices');
+  if(!/GLX\.end\(HC\.gl\.R\)/.test(hill))p.push('stopHC should give the WebGL context back');
+  if(!/R\.soft = \/swiftshader\|llvmpipe\|softpipe\|software\/i\.test\(R\.name\)/.test(rd('js/60-gl.js'))||!/if \(R\.soft && !HGL\.soft\) \{ GLX\.end\(R\); H\.glWhy = 'software'; return null; \}/.test(hg))p.push('WebGL drawn by the CPU (no GPU) should give the 2D look');
+  return{problems:[...new Set(p)].slice(0,50),note:o.notes.join('; ')};
+});
+
+// ---- CHECK-IN: mastery check-ins and stop badges (src/js/51b-checkin.js, src/css/51b-checkin.css, both in gen2) ----
+// When a check-in is offered (CHK.ready), its questions (the stop's own level, mixed kinds, no label twice), the badge award and the
+// gentle miss (S.chk), Next after a win, the map and report pieces, migrate on every fixture (S.chk added as {} by id; nothing else
+// changes; a save that has check-ins keeps them), and the hooks in index.html's code. Sizes: index.html under 1,000,000, gen2 under 400 KB.
+run('check-ins and stop badges CHECK-IN',()=>{
+  const p=[],rd=f=>fs.readFileSync(path.join(SRC,f),'utf8'),fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const FIX=['fresh','midway','maxed','tricky','legacy-index-maps','legacy-single-map'].map(n=>[n,fx(n)]);
+  function T(FIX){
+    const r={bad:[],notes:[]},bad=m=>{if(r.bad.length<60&&!r.bad.includes(m))r.bad.push(m)};
+    const D=global.document,app={style:{},innerHTML:''},dummy={style:{},classList:{add(){},remove(){},toggle(){},contains(){return false}},dataset:{},
+      querySelector(){return dummy},querySelectorAll(){return[]},getBoundingClientRect(){return{left:0,top:0,width:0,height:0}},appendChild(){},isConnected:false};
+    const shot=f=>{global.document=Object.assign({},D,{querySelector:s=>s=='#app'?app:dummy,querySelectorAll:()=>[],body:{appendChild(){}}});
+      let out;try{app.innerHTML='';out=f();return{h:app.innerHTML,out}}catch(e){return{h:'ERR '+e.message,out:null}}finally{global.document=D}};
+    // ---- 1. migrate: every fixture gets S.chk = {} and nothing else changes; a save with check-ins keeps them ----
+    const strip=o=>{const c=JSON.parse(JSON.stringify(o));delete c.chk;return JSON.stringify(c)};
+    for(const [name,raw] of FIX){
+      loadSave(raw);migrate();
+      if(JSON.stringify(S.chk)!=='{}')bad(name+': S.chk should be added as {} by migrate: '+JSON.stringify(S.chk));
+      const a=strip(S),saved=JSON.parse(JSON.stringify(S));delete saved.chk;
+      loadSave(JSON.stringify(saved));migrate();
+      if(strip(S)!==a)bad(name+': the default for S.chk changed something else in the save');
+      if(JSON.stringify(S.chk)!=='{}')bad(name+': S.chk default on a current save');
+      if(CHK.list().length)bad(name+': an old save has badges');
+      const old=JSON.parse(raw),keys=Object.keys(old).filter(k=>k!=='map'&&!(k in S)); // migration 1 moves S.map into S.maps
+      if(keys.length)bad(name+': fields lost on load: '+keys.join());
+    }
+    loadSave(FIX[1][1]);migrate();
+    const kept={add1:{n:2,best:5,last:3,at:20,b:3},cnt1:{n:1,best:2,last:4,at:14}};
+    S.chk=JSON.parse(JSON.stringify(kept));loadSave(JSON.stringify(S));migrate();
+    if(JSON.stringify(S.chk)!==JSON.stringify(kept))bad('migrate rewrote S.chk: '+JSON.stringify(S.chk));
+    // ---- 2. when a check-in is offered ----
+    loadSave(FIX[0][1]);migrate();S.name='Ava';S.grade=1;S.sound=false;S.voice=false;
+    const P='math',N=NODES[P],i=N.findIndex(n=>n.sk=='add'&&n.lv==2),nd=N[i],k=nid(nd);
+    const setM=(n,pr)=>{S.mast=S.mast||{};S.mast[k]={n,p:pr,ms:4000,d:2,last:mastDay()}};
+    if(CHK.ready(P,i))bad('ready on a fresh save');
+    setM(30,.95);if(CHK.ready(P,i))bad('ready on a stop that is not passed');
+    S.maps[P][k]=1;
+    setM(CHK.MIN,CHK.ACC);if(!CHK.ready(P,i))bad('not ready with '+CHK.MIN+' tries at '+CHK.ACC);
+    setM(CHK.MIN-1,1);if(CHK.ready(P,i))bad('ready with too few tries');
+    setM(40,CHK.ACC-.01);if(CHK.ready(P,i))bad('ready under the accuracy');
+    const bi=N.findIndex(n=>n.sk=='boss');S.maps[P][nid(N[bi])]=3;if(CHK.ready(P,bi)||CHK.can(N[bi]))bad('a boss stop can have a check-in');
+    const ti=N.findIndex(n=>n.sk=='trace');S.maps[P][nid(N[ti])]=3;S.mast[nid(N[ti])]={n:40,p:1,ms:1,d:3,last:1};if(CHK.ready(P,ti))bad('a tracing stop (side skill) can have a check-in');
+    if(CHK.Q!==5||CHK.PASS!==4)bad('a check-in is 5 questions, 4 right to win');
+    // ---- 3. the questions: the stop's own level, mixed kinds, no label twice, no third of one kind in a row ----
+    let kinds=new Set();
+    for(const [sk,lv] of [['add',2],['eo',2],['gram',2],['pic',4],['sci_life',1],['es_color',1],['comp',3]]){
+      const j=NODES[{add:'math',eo:'math',gram:'read',pic:'read',sci_life:'disc',es_color:'es',comp:'read'}[sk]].findIndex(n=>n.sk==sk&&n.lv==lv);
+      if(j<0){bad('no stop '+sk+lv);continue}
+      for(let t=0;t<20;t++){
+        G=newG({path:'math',node:-1,sk,lv,chk:true,kh:[]});
+        const qs=CHK.qs({sk,lv});
+        if(qs.length!==CHK.Q)bad(sk+lv+': '+qs.length+' questions');
+        if(qs.some(q=>q.sk!==sk||q.lv!==lv))bad(sk+lv+': a question from another stop');
+        if(new Set(qs.map(q=>q.label)).size!==qs.length)bad(sk+lv+': a label twice');
+        qs.forEach(q=>kinds.add(sk+':'+q.kind));
+      }
+    }
+    for(const sk of ['eo','gram'])if([...kinds].filter(x=>x.startsWith(sk+':')).length<2)bad(sk+': a check-in of a stop with mixed kinds should mix them: '+[...kinds].join());
+    r.notes.push('kinds drawn '+[...kinds].join(' '));
+    // ---- 4. the badge flow: a miss, the wait, then a win, Next, and a second win wins nothing new ----
+    setM(CHK.MIN,.9);S.coins=10;
+    const end=sc=>{G=newG({path:P,node:i,sk:nd.sk,lv:nd.lv,chk:true,kh:[]});G.n=CHK.Q;G.done=CHK.Q;G.score=sc;return shot(()=>finish())};
+    let e=end(3);
+    if(!e.out||e.out.ok||e.out.won||S.chk[k].b||S.chk[k].n!==1||S.chk[k].best!==3||S.chk[k].at!==CHK.MIN)bad('a miss: '+JSON.stringify({o:e.out,c:S.chk[k]}));
+    if(S.coins!==13)bad('a miss earns its right answers in coins and takes nothing: '+S.coins);
+    if(!/Good try!/.test(e.h)||!/Keep practicing/.test(e.h)||!/id="ckagain"/.test(e.h)||/id="cknext"/.test(e.h)||/ck-new/.test(e.h))bad('a miss: the gentle card with Play again: '+e.h.slice(0,300));
+    if(CHK.ready(P,i))bad('a miss: offered again at once');
+    setM(CHK.MIN+CHK.GAP-1,.9);if(CHK.ready(P,i))bad('a miss: offered again before '+CHK.GAP+' more tries');
+    setM(CHK.MIN+CHK.GAP,.9);if(!CHK.ready(P,i))bad('a miss: not offered again after '+CHK.GAP+' more tries');
+    const h=harder(nd),hj=N.indexOf(h);
+    e=end(4);
+    if(!e.out||!e.out.ok||!e.out.won||S.chk[k].b!==mastDay()||S.chk[k].n!==2||S.chk[k].best!==4)bad('a win: '+JSON.stringify({o:e.out,c:S.chk[k]}));
+    if(S.coins!==13+9)bad('a win earns its right answers and 5 more coins: '+S.coins);
+    if(!/You won a badge!/.test(e.h)||!/ck-new/.test(e.h)||!/class="ck-m on"/.test(e.h)||!/id="ckshelf"/.test(e.h)||/id="ckagain"/.test(e.h))bad('a win: the badge card '+e.h.slice(0,300));
+    if(!h||e.out.nx!==(unlocked(P,hj)&&!passed(P,hj)?hj:CHK.nextStop(P,i)))bad('a win: Next should be the next level of the skill: '+JSON.stringify({nx:e.out.nx,hj}));
+    if(e.out.nx>=0&&!e.h.includes('Next: '+esc(N[e.out.nx].t)))bad('a win: the Next line names the stop');
+    if(CHK.ready(P,i)||!CHK.has(k))bad('a won stop is still offered');
+    const b0=S.chk[k].b;S.chk[k].b=b0-3;e=end(5);
+    if(!e.out||!e.out.ok||e.out.won||S.chk[k].b!==b0-3||!/You did it again!/.test(e.h))bad('a second win keeps the first badge day: '+JSON.stringify(S.chk[k]));
+    S.chk[k].b=b0;
+    // Next: the next open stop that is not passed when the next level is passed
+    if(hj>=0){S.maps[P][nid(N[hj])]=2;const nx=CHK.nextStop(P,i);if(nx===hj||(nx>=0&&(passed(P,nx)||!unlocked(P,nx)||nx<=i)))bad('Next with the next level passed: '+nx);delete S.maps[P][nid(N[hj])]}
+    // ---- 5. the map, the shelf, the report ----
+    const mh=CHK.mapHTML(P,i,100,300,360);
+    if(!/class="ck-mapm"/.test(mh)||!/aria-hidden="true"/.test(mh)||/<button/.test(mh)||CHK.aria(P,i)!==', badge won')bad('map: a won stop shows its medal (not a control) '+mh);
+    const j2=N.findIndex(n=>n.sk=='cnt'&&n.lv==1),k2=nid(N[j2]);S.maps[P][k2]=2;S.mast[k2]={n:20,p:.9,ms:3000,d:2,last:mastDay()};
+    const mr=CHK.mapHTML(P,j2,300,300,360);
+    if(!/<button class="btn ck-go s-math" data-ck="\d+"/.test(mr)||!mr.includes('aria-label="Badge check-in: '+esc(N[j2].t)+'"')||!/left:234px/.test(mr))bad('map: a ready stop has a named Check-in button on the side toward the middle '+mr);
+    if(CHK.mapHTML(P,bi,100,300,360)!==''||CHK.mapHTML(P,0,100,300,360)!=='')bad('map: nothing by a boss or an untried stop');
+    // damaged data: a record that is not numbers is never ready, a badge day that is not a number is no badge
+    const keepM=S.mast[k2],keepC=S.chk[k2];S.mast[k2]={n:'a',p:NaN};if(CHK.ready(P,j2))bad('ready on a damaged mastery record');
+    S.mast[k2]=keepM;S.chk[k2]={b:'x',n:1};if(CHK.has(k2)||!CHK.ready(P,j2)||CHK.list().length!==1)bad('a damaged badge day counts as a badge');
+    if(keepC)S.chk[k2]=keepC;else delete S.chk[k2];
+    const sh=shot(()=>CHK.shelf()).h;
+    if(!/My badges/.test(sh)||!/You have 1 badge!/.test(sh)||!/class="ck-t"/.test(sh)||!sh.includes('aria-label="'+esc(nd.t)+', badge won"')||!/Ready for a check-in/.test(sh)||!/ck-rd/.test(sh))bad('shelf: '+sh.slice(0,300));
+    const sv=JSON.stringify(S),m=REP.data(),rh=REP.html(m);
+    if(JSON.stringify(S)!==sv)bad('report: drawing it changed the save');
+    const rs=(m.stops||[]).find(x=>x.p==P&&x.sk==nd.sk&&x.lv==nd.lv);
+    if(!rs||!rs.b||rs.ck!==3||rs.won!=='today')bad('report: the stop row '+JSON.stringify(rs));
+    if(!/id="rp-badges"/.test(rh)||!rh.includes('Badge won today.')||!rh.includes('Ready for a check-in.')||!/1 badge won\./.test(rh))bad('report: the Badges and mastery by stop card');
+    const fr=shot(()=>{loadSave(FIX[0][1]);migrate();return REP.html(REP.data())}).out||'';
+    if(!/id="rp-badges"[\s\S]*This list fills in after a few rounds/.test(fr))bad('report: the empty state on a fresh save');
+    return r}
+  const o=(()=>eval(js+';('+T.toString()+')(FIX)'))();
+  for(const m of o.bad)p.push(m);
+  // the hooks in index.html's code, the default in migrate, the part files and sizes, the CSS
+  const core=rd('js/00-core.js'),rnd=rd('js/50-round.js'),hm=rd('js/46-home.js'),nav=rd('js/41-nav.js'),css=rd('css/51b-checkin.css');
+  if(!/if\(!\('chk' in S\)\)S\.chk=\{\};/.test(core))p.push('00-core.js: S.chk needs its default in migrate');
+  if(!/if\(G\.chk&&typeof CHK!='undefined'\)CHK\.show\(q\);/.test(rnd))p.push('renderQ: no CHK.show (no Help button in a check-in)');
+  if(!/if\(G\.tries==1&&!G\.chk\)\{addMiss\(q\);fb\('Try again!'/.test(rnd)||!/if\(!G\.boss&&!G\.chk\)G\.missed\.push\(q\)/.test(rnd))p.push('check(): a check-in question gets one try, no hint, no retry at the end');
+  if(!/function finish\(\)\{if\(G&&G\.chk&&typeof CHK!='undefined'\)return CHK\.finish\(G\);/.test(rnd)||!/CHK\.ready\(p,ni\);if\(ck\)M\('medal',CHK\.offerHTML\(\)/.test(rnd))p.push('finish(): the check-in end and the offer card');
+  if(!/CHK\.mapHTML\(p,i,x,yy,W\)/.test(hm)||!/if\(ck\)CHK\.mapBind\(p\);/.test(hm)||!/id:'bkck'/.test(hm)||!/id: 'lhbdg'/.test(nav))p.push('the map, the sticker book and Learn: the badge hooks');
+  if(partOf('51b-checkin.js')!=='gen2'||partOf('51b-checkin.css')!=='gen2')p.push('51b-checkin.js and .css belong in gen2 (tools/build.py PARTS)');
+  const ih=fs.statSync(path.join(ROOT,'index.html')).size,g2=fs.statSync(path.join(ROOT,'gen2.'+BUILD_VER+'.js')).size;
+  if(ih>=1000000)p.push('index.html is '+ih+' bytes');
+  if(g2>=PART_WARN)p.push('gen2 is '+g2+' bytes, over its '+PART_WARN+' warning');
+  const nc=css.replace(/\/\*[\s\S]*?\*\//g,'');
+  if(/#[0-9a-fA-F]{3,8}\b/.test(nc)||/(rgb|hsl)a?\(/.test(nc))p.push('51b-checkin.css: a colour that is not a token');
+  if(/transition:[^;]*(width|height|top|left|margin|padding)/.test(nc)||/@keyframes[^{]*\{[^}]*(width|height|top|left|margin)/.test(nc))p.push('51b-checkin.css: motion that is not transform or opacity');
+  if(!/\.btn\.ck-go\{[^}]*width:52px;height:52px/.test(nc))p.push('the map Check-in button is 52 px (48 at least)');
+  return{problems:[...new Set(p)].slice(0,50),note:o.notes.join('; ')+'; index.html '+ih+', gen2 '+g2+' bytes'};
+});
+
 // ---- P6-02: the Game Room's part files load on demand (LAZY in tools/build.py, partsThen() in src/js/90-app.js); start-up bytes under 3.0 MB ----
 run('performance P6-02',()=>{
   const p=[],rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8'),vm=require('vm');

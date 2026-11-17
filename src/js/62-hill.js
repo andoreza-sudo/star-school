@@ -483,7 +483,8 @@ function hcBank(H){const gs=garageS(),id=H.st?H.st[0]:null,bits=hcBitsOf(H),old=
 function stopHC(){for(const e of document.querySelectorAll('.nv-light'))if(e.stop)e.stop(); // G-FEEL2: a light end banner left open
   if(!HC)return;
   // G-FEEL1: a stage drive left without the flag after a while counts for Auto driving help (hcAsNote)
-  if(HC.st&&HC.result!='win'&&!HC.noted&&HC.t>=8){HC.noted=1;hcAsNote(HC);save()}cancelAnimationFrame(HC.raf);if(HC.eng){try{HC.eng.lfo&&HC.eng.lfo.stop();HC.eng.o.stop();HC.eng.o2.stop()}catch(e){}}removeEventListener('keydown',HC.kd);removeEventListener('keyup',HC.ku);HC=null}
+  if(HC.st&&HC.result!='win'&&!HC.noted&&HC.t>=8){HC.noted=1;hcAsNote(HC);save()}cancelAnimationFrame(HC.raf);if(HC.eng){try{HC.eng.lfo&&HC.eng.lfo.stop();HC.eng.o.stop();HC.eng.o2.stop()}catch(e){}}removeEventListener('keydown',HC.kd);removeEventListener('keyup',HC.ku);if(HC.gl){GLX.end(HC.gl.R);HC.gl.off=true}if(typeof FPS!='undefined')FPS.tag=''; // GL-01: its WebGL context goes at once (a tablet keeps only a few)
+  HC=null}
 const HC_SNDI=['sound-on','music','sound-off']; // P4-16: the sound button's icon for S.hcSnd (all, no engine, off)
 const hcCalm=()=>{try{return document.documentElement.classList.contains('calm')||matchMedia('(prefers-reduced-motion: reduce)').matches}catch(e){return false}};
 // fixed steps of 1/120 s (G-HC3, R-03 H1): a slow frame (up to 0.1 s) runs more steps, so a slow tablet never plays in slow motion;
@@ -506,7 +507,11 @@ function hcStart(world,si,day){const wi=typeof world=='number'?world:Math.max(0,
    <div class="pedal brake" id="pb">${ico('chevron-left',48)}<small>Brake</small></div><div class="pedal gas" id="pg">${ico('chevron-right',48)}<small>Gas</small></div>
    <div class="hcmsg" id="hcm" role="status"></div><div class="hcpop" id="hcp" aria-hidden="true"></div><div class="hccombo" id="hcc" aria-hidden="true"></div></div>`);
   HC=H; // after view(): view() stops the drive before it
-  const cv=$('#hcv'),ctx=cv.getContext('2d',{alpha:false}),dpr=Math.min(2,devicePixelRatio||1);
+  const cv=$('#hcv'),dpr=Math.min(2,devicePixelRatio||1);
+  // GL-01: the 3D look (62b-hill-gl.js) draws the world on a WebGL canvas under #hcv, which then only carries the small things on
+  // top (so it keeps its alpha); without WebGL, or with the 3D look off, #hcv draws everything as before
+  let glc=null;if(typeof hcGlWant=='function'&&hcGlWant()){glc=document.createElement('canvas');glc.id='hcgl';glc.setAttribute('aria-hidden','true');cv.parentNode.insertBefore(glc,cv);H.gl=hcGlStart(H,glc);if(!H.gl){glc.remove();glc=null}}
+  const ctx=cv.getContext('2d',{alpha:!!H.gl});
   cv.setAttribute('role','img');cv.setAttribute('aria-label','The hill and your vehicle'); // P6-01
   // at most 1 million pixels; a slow tablet draws fewer (the canvas is stretched to the screen): 1, 0.85, 0.7 of them
   H.q=1;let slow=0,fast=0,k=dpr;const size=()=>{const cw=Math.max(1,cv.clientWidth),ch=Math.max(1,cv.clientHeight);k=Math.min(dpr,Math.sqrt(1e6/(cw*ch)))*H.q;cv.width=Math.round(cw*k);cv.height=Math.round(ch*k)};size();H.size=size;
@@ -526,7 +531,7 @@ function hcStart(world,si,day){const wi=typeof world=='number'?world:Math.max(0,
   let last=0;const loop=ts=>{if(HC!==H)return;const dt=last?Math.min(.1,(ts-last)/1000):0;last=ts;
     if(!document.hidden&&!H.over&&!H.paused){hcAdvance(H,dt);if(!H.over)hcTime(H,dt)}
     hcMusic(H);
-    if(dt>.026)slow++;else if(dt>0)fast++;if(slow+fast>=45){if(slow>30&&H.q>.71){H.q=H.q>.9?.85:.7;size()}slow=fast=0}
+    if(H.gl&&hcGlPace(H,dt))slow=fast=0;else if(dt>.026)slow++;else if(dt>0)fast++;if(slow+fast>=45){if(slow>30&&H.q>.71){H.q=H.q>.9?.85:.7;size()}else if(H.gl&&!H.gl.off&&slow>36){if(++H.gl.slow>=3)hcGlDrop(H,'slow')}else if(H.gl)H.gl.slow=0;slow=fast=0} // GL-01: still slow at the lowest scale: the 2D look
     if(H.result&&!H.shown){H.result=='win'?hcWin():hcEnd(H.result)}
     if(HC===H){hcDraw(ctx,cv.width,cv.height,k);H.raf=requestAnimationFrame(loop)}};H.raf=requestAnimationFrame(loop)}
 function hcMsg(t,ms=1500){const m=$('#hcm');if(!m)return;m.textContent=t;m.classList.add('on');clearTimeout(m._t);m._t=setTimeout(()=>m.classList.remove('on'),ms)}
@@ -906,13 +911,19 @@ function hcDraw(x,W,Hh,dpr){const H=HC,C=H.C,Wd=HCW[H.wi],wx=H.wx||'day',cx=(H.w
   H.camX+=(cx+W*.1/sc-H.camX)*.09;H.camY+=(cy+30-H.camY)*.07;if(H.shake>0)H.shake-=1/60;
   const sh=H.shake>0&&!H.calm?Math.round((Math.random()-.5)*14*H.shake*dpr):0;
   const SX=wxp=>(wxp-H.camX)*sc+W*.38+sh,SY=wy=>Hh*R.base-(wy-H.camY)*sc+sh,WX=sx=>(sx-W*.38)/sc+H.camX;
+  // GL-01: the 3D look draws the sky, ranges, ground and car on its own canvas; this one is cleared and carries the rest
+  const gl=!!(H.gl&&!H.gl.off&&hcGlFrame(H,W,Hh,dpr,sh)),left=WX(0)-80,right=WX(W)+80;
+  if(typeof FPS!='undefined')FPS.tag=gl?'3D':'2D'; // GL-01: the speed box says which look is drawing
+  if(gl)x.clearRect(0,0,W,Hh);
+  else{
   // sky, clouds, parallax strips
   for(const q of R.lay){const l=hcStrip(R,H,q,H.camX);x.drawImage(q.c,Math.round(l),q.top);if(q.sky)hcSun(x,R,wx,Wd)}
   // the ground: cached chunks, and plain earth under them
-  const left=WX(0)-80,right=WX(W)+80,dirt=hcC(Wd.dirt2);
+  const dirt=hcC(Wd.dirt2);
   for(let k=Math.floor(WX(0)/HC_CW);k<=Math.floor(WX(W)/HC_CW);k++){const ch=hcChunk(R,H,k),px=Math.round(SX(k*HC_CW)),py=Math.round(SY(ch.top));x.drawImage(ch.c,px,py);
-    const yb=py+ch.c.height;if(yb<Hh){x.fillStyle=dirt;x.fillRect(px,yb-1,ch.c.width,Hh-yb+1)}}
+    const yb=py+ch.c.height;if(yb<Hh){x.fillStyle=dirt;x.fillRect(px,yb-1,ch.c.width,Hh-yb+1)}}}
   x.textAlign='center';x.textBaseline='middle';
+  if(gl)hcGlLabels(x,H,SX,SY,left,right,sc);
   // checkpoints, the finish, the best
   C.cps.forEach((cpx,k)=>{if(!k||cpx<left||cpx>right)return;hcFlag(x,SX(cpx),SY(hcH(C,cpx)),sc,k<=H.cpi?'g':'o',C.endless?Math.round((cpx-60)/20)+' m':'')});
   if(H.best>5){const bx=60+H.best*20;if(bx>left&&bx<right)hcFlag(x,SX(bx),SY(hcH(C,bx)),sc*1.2,'y','Best')}
@@ -937,8 +948,9 @@ function hcDraw(x,W,Hh,dpr){const H=HC,C=H.C,Wd=HCW[H.wi],wx=H.wx||'day',cx=(H.w
   for(let j=Math.max(0,H.ci-3);j<C.coins.length;j++){const o=C.coins[j];if(o.x>right)break;if(o.x<left||H.took.has(j))continue;x.drawImage(nut,Math.round(SX(o.x)-nut.width/2),Math.round(SY(o.y)+Math.sin(T*4+j)*3*sc-nut.height/2))}
   if(H.pops.length){x.fillStyle=hcC('y');x.strokeStyle=hcC('n3');x.lineWidth=3*sc;x.font=`bold ${16*sc}px sans-serif`;for(const p of H.pops){x.globalAlpha=Math.min(1,p.l*2);x.strokeText('+1',SX(p.x),SY(p.y));x.fillText('+1',SX(p.x),SY(p.y))}x.globalAlpha=1}
   for(const d of H.parts){x.globalAlpha=Math.max(0,Math.min(1,d.l*1.4))*(d.smoke?.5:1);if(d.star)hcStarD(x,SX(d.x),SY(d.y),7*sc);else{const r=(d.smoke?d.s+(.8-d.l)*18:d.s)*sc;x.drawImage(hcDot(R,d.c),SX(d.x)-r,SY(d.y)-r,r*2,r*2)}}x.globalAlpha=1;
-  // the car from its sprites (it blinks while it starts again)
-  if(H.crashT<=0||Math.floor(H.crashT*8)%2){const dist=Math.max(0,(cy-hcH(C,cx))*sc);x.globalAlpha=Math.max(.05,.25-dist/600);x.drawImage(hcDot(R,'k'),SX(cx)-64*sc,SY(hcH(C,cx))-5*sc,128*sc,14*sc);x.globalAlpha=1;
+  // the car from its sprites (it blinks while it starts again); in the 3D look only its balloons are drawn here
+  if(gl){if(H.ballT>0&&(H.crashT<=0||Math.floor(H.crashT*8)%2)){const lift=H.R+6,bx=SX(cx)-Math.sin(ang)*lift*sc,by=SY(cy)-Math.cos(ang)*lift*sc;hcBalloons(x,bx,by-90*sc,sc,bx,by-40*sc)}}
+  else if(H.crashT<=0||Math.floor(H.crashT*8)%2){const dist=Math.max(0,(cy-hcH(C,cx))*sc);x.globalAlpha=Math.max(.05,.25-dist/600);x.drawImage(hcDot(R,'k'),SX(cx)-64*sc,SY(hcH(C,cx))-5*sc,128*sc,14*sc);x.globalAlpha=1;
     const lift=H.R+6,bx=SX(cx)-Math.sin(ang)*lift*sc,by=SY(cy)-Math.cos(ang)*lift*sc;
     if(H.ballT>0)hcBalloons(x,bx,by-90*sc,sc,bx,by-40*sc);
     const body=hcBody(R,H);x.save();x.translate(bx,by);x.rotate(-ang);x.translate(0,-H.bob*sc);x.drawImage(body,-body.ox,-body.oy);
@@ -948,7 +960,7 @@ function hcDraw(x,W,Hh,dpr){const H=HC,C=H.C,Wd=HCW[H.wi],wx=H.wx||'day',cx=(H.w
     const V=VEH[H.veh]||VEH.jeep,wr=V.R*sc,wh=hcSpr(R,'wh'+H.veh+H.paint+(H.rim||''),wr*2+8*sc,wr*2+8*sc,(y,w,h)=>wheel(y,w/2,h/2,0,sc,0,0,0,H.paint,V.R,H.rim)),c0=Math.cos(-ang),s0=Math.sin(-ang),wy=V.R+6;
     [[-V.L/2,H.w1.rot],[V.L/2,H.w2.rot]].forEach(([ox,rot])=>{const px=bx+(ox*c0-wy*s0)*sc,py=by+(ox*s0+wy*c0)*sc;x.save();x.translate(px,py);x.rotate(rot);x.drawImage(wh,-wh.width/2,-wh.height/2);x.restore()})}
   // the foreground strip (in front of the earth at the bottom)
-  {const l=hcFore(R,H,H.camX);x.drawImage(R.fore.c,Math.round(l),Hh-R.fore.c.height)}
+  if(!gl){const l=hcFore(R,H,H.camX);x.drawImage(R.fore.c,Math.round(l),Hh-R.fore.c.height)}
   // weather: one path a frame
   if(wx=='rain'||wx=='snow'||wx=='ash'||wx=='dust'){const n=wx=='rain'?70:50,fall=wx=='rain'?520:wx=='dust'?30:90,drift=wx=='dust'?-260:-40;x.fillStyle=x.strokeStyle=hcC(wx=='ash'?'e3':wx=='dust'?'t':'w');x.globalAlpha=wx=='rain'?.55:.8;x.lineWidth=1.5*dpr;x.beginPath();
     for(let i=0;i<n;i++){const px=(((i*97.3+T*drift*dpr-H.camX*sc*.6)%W)+W)%W,py=(((i*61.7+T*fall*dpr)%Hh)+Hh)%Hh;if(wx=='rain'){x.moveTo(px,py);x.lineTo(px-3*dpr,py+12*dpr)}else x.rect(px,py,3*dpr,3*dpr)}

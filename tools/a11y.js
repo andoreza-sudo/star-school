@@ -89,6 +89,24 @@ async function answerAct(p) {
   return [wrong, right];
 }
 const qScreen = fn => ({ run: ev(fn), act: answerAct });
+// CHECK-IN: a check-in question (add 1, typed) answered wrong: the answer shows and the round moves on (one try, no hint); the next one right
+async function chkAct(p) {
+  const key = d => p.click(`.k[data-k="${d}"]`);
+  await p.evaluate(() => { window.__a11y.mark('wrong'); window.__q = G.q; });
+  for (const d of await p.evaluate(() => String(+G.q.ans + 1))) await key(d);
+  await key('go');
+  await p.waitForTimeout(250);
+  const wrong = await p.evaluate(() => window.__a11y.signal('wrong'));
+  await p.waitForFunction(() => G && G.q !== window.__q && !G.lock, null, { timeout: 8000 });
+  await p.waitForTimeout(500);
+  await p.evaluate(() => { window.__a11y.mark('right'); });
+  for (const d of await p.evaluate(() => String(G.q.ans))) await key(d);
+  await key('go');
+  await p.waitForTimeout(250);
+  const right = await p.evaluate(() => window.__a11y.signal('right'));
+  await p.waitForTimeout(900);
+  return [wrong, right];
+}
 
 // KINDS2: the sort and mark kinds. k2Wrong taps a wrong answer: every chip into another bin, or a wrong word (then Check)
 const k2Bin = (p, b) => p.click(`.sbt[data-b="${b}"]`, { position: { x: 16, y: 12 } });
@@ -264,6 +282,20 @@ const SCREENS = {
     report();
     document.querySelector('#rp-needs').scrollIntoView();
   }) },
+  // CHECK-IN (src/js/51b-checkin.js): the map with a stop ready for a check-in (its 52 px button and the sheet it opens), a check-in
+  // question (no Help; a wrong answer shows the answer and moves on, so the right answer is the next question's), the badge card, the
+  // gentle card, the badge shelf, and the report card's badges by stop
+  'checkin-map': {
+    run: ev(() => { const i = chkReady(); pathMap('math', NODES.math[i].wi); document.querySelector('.ck-go').scrollIntoView({ block: 'center' }); }),
+    sheet: async p => { await p.click('.ck-go'); await p.waitForTimeout(500); return { close: 'escape' }; },
+  },
+  'checkin-question': { run: ev(() => { window.say = window.__a11y.say; CHK.start('math', chkReady()); }), act: chkAct },
+  'checkin-win': { run: async p => { await p.evaluate(() => { CHK.start('math', chkReady()); }); await p.waitForTimeout(600);
+    await p.evaluate(() => { G.score = G.n; G.done = G.n; finish(); }); await p.waitForTimeout(1600); } },
+  'checkin-try': { run: async p => { await p.evaluate(() => { CHK.start('math', chkReady()); }); await p.waitForTimeout(600);
+    await p.evaluate(() => { G.score = 2; G.done = G.n; finish(); }); await p.waitForTimeout(1200); } },
+  'badge-shelf': { run: ev(() => { for (const sk of ['add', 'cnt']) { const i = NODES.math.findIndex(n => n.sk == sk && n.lv == 1); (S.chk = S.chk || {})[nid(NODES.math[i])] = { n: 1, best: 5, last: mastDay(), at: 14, b: mastDay() }; } chkReady('eo'); CHK.shelf(); }) },
+  'report-badges': { adult: true, run: ev(() => { const i = chkReady(); S.chk[nid(NODES.math[i])] = { n: 2, best: 4, last: mastDay(), at: 20, b: mastDay() }; chkReady('cnt'); report(); document.querySelector('#rp-badges').scrollIntoView(); }) },
   'hill-garage': { run: ev(() => { gtime(); garage(); }) },
   'hill-drive': { run: ev(() => { gtime(); hcStart('meadow'); }), main: '.pedal', sheet: pauseSheet },
   'hill-end': {
@@ -355,6 +387,9 @@ function pageInit() {
   window.snSave = () => { gtime(); S.grade = 3; const r = snS(); r.coins = 80; r.days = 2; save(); };
   A.mark = k => { A.marks[k] = A.now(); };
   A.say = (t) => { A.said.push({ t: String(t || ''), at: A.now() }); };
+  // CHECK-IN: make a passed math stop (skill sk, level 1; add by default) ready for a check-in; returns its index on the math map
+  window.chkReady = (sk = 'add') => { const i = NODES.math.findIndex(n => n.sk == sk && n.lv == 1), k = nid(NODES.math[i]); S.maps.math[k] = Math.max(1, S.maps.math[k] || 0);
+    S.mast = S.mast || {}; S.mast[k] = { n: 14, p: .9, ms: 4000, d: 2, last: mastDay() }; return i; };
   // wrap the sound functions once the app has loaded (called from node)
   A.wrapSound = () => {
     const log = k => A.sounds.push({ k, at: A.now() });

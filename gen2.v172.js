@@ -1,6 +1,6 @@
-/* Star School gen2 v171. BUILT by tools/build.py from 37b-kinds-c.css, 35-gen-math-upper.js, 36-gen-phonics.js, 37-bank.js, 37-comp.js, 39b-steps.js, 49b-kinds2.js: never edit by hand.
-   index.html v171 loads this file with <script src="gen2.v171.js"> after its own code, before data.v171.js. */
-(function(){var s=document.createElement('style');s.id='css-gen2';s.textContent="/* KINDS2 batch A: the sort and mark kinds (src/js/49b-kinds2.js). In the gen2 part. Tokens only (00-tokens.css).\n   Every state shows a shape as well as a colour: a tick (.k2ok) on right, done and shown answers, a cross (.k2no) on wrong ones,\n   a solid outline when picked, a dashed border on an answer shown after two tries. */\n\n/* the marks inside a chip or a word: hidden until a state shows one */\n.k2mk{display:none;flex:none;align-items:center;justify-content:center;width:22px;height:22px;border-radius:var(--r-pill);\n  background:var(--surface);color:var(--good-ink)}\n.k2mk .ic{display:none}\n.right>.k2mk,.done>.k2mk,.rev>.k2mk,.wrong>.k2mk{display:inline-flex}\n.right>.k2mk .k2ok,.done>.k2mk .k2ok,.rev>.k2mk .k2ok{display:block}\n.wrong>.k2mk{color:var(--try-ink)}\n.wrong>.k2mk .k2no{display:block}\n.wrong>.k2mk .k2ok{display:none}\n.k2shake{animation:k-shake var(--t-shake) linear}\n\n/* sort: bins in one row on top, the tray of chips under them, Check below */\n.sbins{display:grid;grid-template-columns:1fr 1fr;gap:var(--s-2);width:100%;max-width:640px;margin:0 auto var(--s-3)}\n.sbins.sb3{grid-template-columns:1fr 1fr 1fr}\n.sbin{position:relative;min-height:96px;border-radius:var(--r-card);background:var(--surface-2);border:3px dashed var(--ink-3)}\n.sbin.has{border-style:solid}\n.sbin.ok{border-color:var(--good-ink);border-style:solid}\n/* the bin's button fills the bin; placed chips sit above it and take their own taps */\n.sbt{position:absolute;inset:0;width:100%;display:flex;align-items:flex-start;justify-content:center;gap:var(--s-1);\n  padding:var(--s-1) var(--s-1) 0;margin:0;border:0;border-radius:inherit;background:transparent;color:var(--ink);\n  font:inherit;font-weight:700;font-size:var(--fs-3);line-height:1.15;cursor:pointer;touch-action:manipulation}\n.sbl{display:inline-flex;align-items:center;gap:4px;min-width:0;overflow-wrap:anywhere;text-align:center}\n.sbc{flex:none;min-width:24px;height:24px;padding:0 6px;border-radius:var(--r-pill);background:var(--ink);color:var(--surface);\n  font-size:var(--fs-2);line-height:24px;text-align:center}\n.sbin:not(.has) .sbc{visibility:hidden}\n.sbz{position:relative;display:flex;flex-wrap:wrap;gap:4px;justify-content:center;padding:calc(var(--fs-3) * 1.5 + var(--s-2)) 4px 6px;\n  pointer-events:none}\n.sbz .schip{pointer-events:auto;font-size:var(--fs-2);padding:0 var(--s-1);min-height:var(--tap);min-width:var(--tap)}\n\n/* chips: at least 48 px; dragged by a finger (touch-action none on the chip only) */\n.stray{display:flex;flex-wrap:wrap;gap:var(--s-2);justify-content:center;align-items:center;min-height:var(--tap);\n  max-width:640px;margin:0 auto}\n.stray.empty{min-height:0}\n.schip{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-height:var(--tap);min-width:var(--tap);\n  padding:0 var(--s-3);border-radius:var(--r-btn);border:3px solid var(--line);background:var(--star-tint);color:var(--ink);\n  font:inherit;font-weight:700;font-size:var(--fs-4);line-height:1.1;cursor:pointer;touch-action:none;user-select:none}\n.schip .scl{display:inline-flex;align-items:center;gap:4px}\n.schip.sel{outline:4px solid var(--ink);outline-offset:2px;transform:translateY(-3px)}\n.schip.drag{position:relative;z-index:5;box-shadow:var(--ledge) var(--ink-3)}\n.schip.done,.schip.right{background:var(--good-tint);border-color:var(--good-ink);cursor:default}\n.schip.rev{background:var(--try-tint);border:3px dashed var(--try-ink)}\n.schip.wrong{background:var(--try-tint);border-color:var(--try-ink)}\n.schip:disabled{opacity:1}\n\n/* pictures in chips and bins */\n.k2pic{display:inline-flex;align-items:center;justify-content:center;line-height:1;font-size:36px}\n.k2pic .art{width:1em;height:1em}\n.k2pic.k2big{font-size:44px}\n.k2pic.k2small{font-size:22px}\n.k2pic.k2sm{font-size:24px}\n.sbz .k2pic{font-size:26px}\n.sbz .k2pic.k2big{font-size:32px}\n.sbz .k2pic.k2small{font-size:16px}\n.k2pic.k2bp{font-size:24px}\n.k2bb{font-size:var(--fs-5)}\n.k2bs{font-size:var(--fs-2)}\n.k2cl{display:inline-flex;color:var(--ink-2)}\n.k2ang{display:inline-flex}\n.k2ang svg{width:64px;height:auto}\n.sbz .k2ang svg{width:44px}\n.schip .pcap{display:inline-flex;flex-direction:column;align-items:center;line-height:1}\n.schip .pcap .art{width:32px;height:32px}\n.schip .pcap small{font-size:var(--fs-2)}\n\n/* mark: the words of the sentence as chips, a few lines */\n.mkw{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;max-width:640px;margin:0 auto}\n.mkt{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-height:var(--tap);min-width:var(--tap);\n  padding:0 var(--s-2);border-radius:var(--r-btn);border:3px solid var(--line);background:var(--surface);color:var(--ink);\n  font:inherit;font-weight:700;font-size:var(--fs-4);cursor:pointer;touch-action:manipulation}\n.mkt.on{background:var(--brand-tint);outline:4px solid var(--ink);outline-offset:-1px}\n.mkt.right{background:var(--good-tint);border-color:var(--good-ink);outline:0}\n.mkt.rev{border-style:dashed}\n.mkt.wrong{background:var(--try-tint);border-color:var(--try-ink)}\n.mkt:disabled{opacity:1;cursor:default}\n\n@media (min-width:700px){\n  .sbin{min-height:120px}\n  .schip{font-size:var(--fs-5)}\n  .sbz .schip{font-size:var(--fs-3)}\n  .mkt{font-size:var(--fs-5)}\n}\n\n/* KINDS2-B line: a number line with a pin (svg class vi: --k never shrinks it). The svg is the picture; .lnp, an HTML slider laid\n   over the drawn pin (.lnb is as big as the svg), takes the drag and the keys. The pin's head shows a tick (right, shown answer) or a\n   cross (wrong) as well as its colour; a shown answer has a dashed head */\n.lnw{position:relative;width:100%;max-width:640px;margin:0 auto var(--s-3)}\n.lnb{position:relative;width:fit-content;max-width:100%;margin:0 auto;cursor:pointer}\n.lnp{position:absolute;border-radius:var(--r-pill);cursor:grab;touch-action:none}\n.lnp.drag{cursor:grabbing}\n.lnp:focus{outline:none}\n.lnp:focus-visible{outline:4px solid var(--ink);outline-offset:2px}\n.lnw g.vpin{pointer-events:none;transition:transform var(--t-slow) var(--ease)}\n.lnw g.vpin.drag{transition:none}\n.lnw g.vpin .vph{fill:var(--ink);stroke:var(--surface);stroke-width:3}\n.lnw g.vpin .vps{fill:none;stroke:var(--ink);stroke-width:4}\n.lnw g.vpin .vpok,.lnw g.vpin .vpno{display:none;fill:none;stroke:var(--surface);stroke-width:3}\n.lnw.right g.vpin .vph,.lnw.rev g.vpin .vph{fill:var(--good-ink)}\n.lnw.right g.vpin .vps,.lnw.rev g.vpin .vps{stroke:var(--good-ink)}\n.lnw.rev g.vpin .vph{stroke:var(--ink);stroke-dasharray:4 3}\n.lnw.right g.vpin .vpok,.lnw.rev g.vpin .vpok,.lnw.wrong g.vpin .vpno{display:inline}\n.lnw.wrong g.vpin .vph{fill:var(--try-ink)}\n.lnw.wrong g.vpin .vps{stroke:var(--try-ink)}\n\n/* KINDS2-C make: the model (drawn again from VIZ on every change) in a card, its controls under it, Check below. The card shows a\n   tick or a cross (.k2mk) as well as its border colour; a shown answer has a dashed border and pulses once */\n.mmw{position:relative;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:var(--s-2);width:100%;max-width:640px;min-height:88px;\n  margin:0 auto var(--s-2);padding:var(--s-2);border-radius:var(--r-card);background:var(--surface-2);border:3px solid var(--surface-2)}\n.mmw>.k2mk{position:absolute;top:6px;right:6px}\n.mmw.right{border-color:var(--good-ink)}\n.mmw.wrong{border-color:var(--try-ink)}\n.mmw.rev{border:3px dashed var(--try-ink)}\n.mmv{display:flex;flex-direction:column;justify-content:center;align-items:center;max-width:100%;min-width:0}\n.mm-b10 .mmv .viz,.mm-array .mmv .viz{max-height:136px}\n.mm-clock .mmv .viz{max-height:150px}\n.mm-frame,.mm-parts{cursor:pointer}\n.k2pulse{animation:k-pop var(--t-xl) var(--ease)}\n.mmc{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:var(--s-2);max-width:100%;cursor:default}\n.mmcol{flex-direction:column;gap:var(--s-1)}\n.mms{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:var(--s-1)}\n.mml{min-width:5.4em;text-align:right;font-weight:700;font-size:var(--fs-3);color:var(--ink)}\n.mmn{min-width:2ch;text-align:center;font-weight:700;font-size:var(--fs-5);color:var(--ink)}\n.mmb{display:inline-flex;align-items:center;justify-content:center;gap:2px;min-width:var(--tap);min-height:var(--tap);padding:0 var(--s-2);\n  border-radius:var(--r-btn);border:3px solid var(--ink-3);background:var(--surface);color:var(--ink);font:inherit;font-weight:700;\n  font-size:var(--fs-3);cursor:pointer;touch-action:manipulation}\n.mmb:disabled,.mmp:disabled{opacity:1;cursor:default}\n/* coins: a tray of coins to put in, the purse of coins (tap one to take it out) */\n.mmpurse{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px;min-height:var(--tap)}\n.mmp{display:inline-flex;align-items:center;justify-content:center;min-width:var(--tap);min-height:var(--tap);padding:0;border:0;\n  border-radius:var(--r-pill);background:transparent;cursor:pointer;touch-action:manipulation}\n.mmp .cn{--k:.62;font-size:var(--fs-2)}\n.mmtray .mmb{padding:2px}\n.mmtray .cn{--k:.66;font-size:var(--fs-2)}\n.mmhint{color:var(--ink-2);font-size:var(--fs-2);text-align:center}\n\n@media (min-width:700px){\n  .mm-b10 .mmv .viz,.mm-array .mmv .viz,.mm-clock .mmv .viz{max-height:200px}\n  .mmp .cn,.mmtray .cn{font-size:var(--fs-3)}\n  .mmp .cn{--k:.75}\n  .mmtray .cn{--k:.85}\n}\n\n/* KINDS2-D find the mistake: the worked steps are .tp lines of the tap kind, a step number on the left; the size does not follow the\n   prompt's --k (fit() may shrink the problem above, never the steps), each line 52 px high at least (48 px even while the\n   prompt scales in). The tick and the cross of a right,\n   wrong or shown line come from .tp (42-question.css). */\n.fxs{display:flex;flex-direction:column;gap:var(--s-2);width:100%;max-width:560px;margin:var(--s-2) auto 0;\n  font-family:var(--font-body);font-size:var(--fs-3);line-height:1.25}\n.fxs .tp.fxl{justify-content:flex-start;gap:var(--s-2);width:100%;min-height:calc(var(--tap) + 4px);padding:var(--s-1) var(--s-3);text-align:left;\n  font-size:var(--fs-3);font-weight:700}\n.fxn{flex:none;display:inline-grid;place-items:center;width:28px;height:28px;border-radius:var(--r-pill);background:var(--surface-2);\n  color:var(--ink);font-size:var(--fs-2)}\n@media (min-width:700px){.fxs,.fxs .tp.fxl{font-size:var(--fs-4)}}\n\n/* KINDS2-D why: the sentence about the likely mistake, on a white card at the top of the hint panel, with the bulb */\n.why{display:flex;align-items:flex-start;gap:var(--s-2);width:100%;padding:var(--s-2) var(--s-3);border-radius:var(--r-btn);\n  background:var(--surface);color:var(--ink);text-align:left;line-height:1.3}\n.why .ic{flex:none;width:22px;height:22px;color:var(--try-ink)}\n";document.head.appendChild(s)})(); // its src/css, after index.html's own CSS (the cascade order of a build without parts)
+/* Star School gen2 v172. BUILT by tools/build.py from 37b-kinds-c.css, 51b-checkin.css, 35-gen-math-upper.js, 36-gen-phonics.js, 37-bank.js, 37-comp.js, 39b-steps.js, 49b-kinds2.js, 51b-checkin.js: never edit by hand.
+   index.html v172 loads this file with <script src="gen2.v172.js"> after its own code, before data.v172.js. */
+(function(){var s=document.createElement('style');s.id='css-gen2';s.textContent="/* KINDS2 batch A: the sort and mark kinds (src/js/49b-kinds2.js). In the gen2 part. Tokens only (00-tokens.css).\n   Every state shows a shape as well as a colour: a tick (.k2ok) on right, done and shown answers, a cross (.k2no) on wrong ones,\n   a solid outline when picked, a dashed border on an answer shown after two tries. */\n\n/* the marks inside a chip or a word: hidden until a state shows one */\n.k2mk{display:none;flex:none;align-items:center;justify-content:center;width:22px;height:22px;border-radius:var(--r-pill);\n  background:var(--surface);color:var(--good-ink)}\n/* FIX3: on a chip or a word the mark is a badge on its corner, so a chip keeps its size when the mark shows (no layout shift) */\n.schip,.mkt{position:relative}\n.schip>.k2mk,.mkt>.k2mk{position:absolute;top:-7px;right:-7px;z-index:1;box-shadow:0 0 0 2px currentColor}\n.k2mk .ic{display:none}\n.right>.k2mk,.done>.k2mk,.rev>.k2mk,.wrong>.k2mk{display:inline-flex}\n.right>.k2mk .k2ok,.done>.k2mk .k2ok,.rev>.k2mk .k2ok{display:block}\n.wrong>.k2mk{color:var(--try-ink)}\n.wrong>.k2mk .k2no{display:block}\n.wrong>.k2mk .k2ok{display:none}\n.k2shake{animation:k-shake var(--t-shake) linear}\n\n/* sort: bins in one row on top, the tray of chips under them, Check below */\n.sbins{display:grid;grid-template-columns:1fr 1fr;gap:var(--s-2);width:100%;max-width:640px;margin:0 auto var(--s-3)}\n.sbins.sb3{grid-template-columns:1fr 1fr 1fr}\n.sbin{position:relative;min-height:96px;border-radius:var(--r-card);background:var(--surface-2);border:3px dashed var(--ink-3)}\n.sbin.has{border-style:solid}\n.sbin.ok{border-color:var(--good-ink);border-style:solid}\n/* the bin's button fills the bin; placed chips sit above it and take their own taps */\n.sbt{position:absolute;inset:0;width:100%;display:flex;align-items:flex-start;justify-content:center;gap:var(--s-1);\n  padding:var(--s-1) var(--s-1) 0;margin:0;border:0;border-radius:inherit;background:transparent;color:var(--ink);\n  font:inherit;font-weight:700;font-size:var(--fs-3);line-height:1.15;cursor:pointer;touch-action:manipulation}\n.sbl{display:inline-flex;align-items:center;gap:4px;min-width:0;overflow-wrap:anywhere;text-align:center}\n.sbc{flex:none;min-width:24px;height:24px;padding:0 6px;border-radius:var(--r-pill);background:var(--ink);color:var(--surface);\n  font-size:var(--fs-2);line-height:24px;text-align:center}\n.sbin:not(.has) .sbc{visibility:hidden}\n.sbz{position:relative;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;padding:calc(var(--fs-3) * 1.5 + var(--s-2)) 4px 6px;\n  pointer-events:none}\n.sbz .schip{pointer-events:auto;font-size:var(--fs-2);padding:0 var(--s-1);min-height:var(--tap);min-width:var(--tap)}\n\n/* chips: at least 48 px; dragged by a finger (touch-action none on the chip only) */\n.stray{display:flex;flex-wrap:wrap;gap:var(--s-2);justify-content:center;align-items:center;min-height:var(--tap);\n  max-width:640px;margin:0 auto}\n.sslot{display:inline-flex;align-items:center;justify-content:center;border-radius:var(--r-btn)}\n.sslot:empty{outline:2px dashed var(--line);outline-offset:-2px}\n.schip{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-height:var(--tap);min-width:var(--tap);\n  padding:0 var(--s-3);border-radius:var(--r-btn);border:3px solid var(--line);background:var(--star-tint);color:var(--ink);\n  font:inherit;font-weight:700;font-size:var(--fs-4);line-height:1.1;cursor:pointer;touch-action:none;user-select:none}\n.schip .scl{display:inline-flex;align-items:center;gap:4px}\n.schip.sel{outline:4px solid var(--ink);outline-offset:2px;transform:translateY(-3px)}\n.schip.drag{position:relative;z-index:5;box-shadow:var(--ledge) var(--ink-3)}\n.schip.done,.schip.right{background:var(--good-tint);border-color:var(--good-ink);cursor:default}\n.schip.rev{background:var(--try-tint);border:3px dashed var(--try-ink)}\n.schip.wrong{background:var(--try-tint);border-color:var(--try-ink)}\n.schip:disabled{opacity:1}\n\n/* pictures in chips and bins */\n.k2pic{display:inline-flex;align-items:center;justify-content:center;line-height:1;font-size:36px}\n.k2pic .art{width:1em;height:1em}\n.k2pic.k2big{font-size:44px}\n.k2pic.k2small{font-size:22px}\n.k2pic.k2sm{font-size:24px}\n.sbz .k2pic{font-size:26px}\n.sbz .k2pic.k2big{font-size:32px}\n.sbz .k2pic.k2small{font-size:16px}\n.k2pic.k2bp{font-size:24px}\n.k2bb{font-size:var(--fs-5)}\n.k2bs{font-size:var(--fs-2)}\n.k2cl{display:inline-flex;color:var(--ink-2)}\n.k2ang{display:inline-flex}\n.k2ang svg{width:64px;height:auto}\n.sbz .k2ang svg{width:44px}\n.schip .pcap{display:inline-flex;flex-direction:column;align-items:center;line-height:1}\n.schip .pcap .art{width:32px;height:32px}\n.schip .pcap small{font-size:var(--fs-2)}\n\n/* mark: the words of the sentence as chips, a few lines */\n.mkw{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;max-width:640px;margin:0 auto}\n.mkt{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-height:var(--tap);min-width:var(--tap);\n  padding:0 var(--s-2);border-radius:var(--r-btn);border:3px solid var(--line);background:var(--surface);color:var(--ink);\n  font:inherit;font-weight:700;font-size:var(--fs-4);cursor:pointer;touch-action:manipulation}\n.mkt.on{background:var(--brand-tint);outline:4px solid var(--ink);outline-offset:-1px}\n.mkt.right{background:var(--good-tint);border-color:var(--good-ink);outline:0}\n.mkt.rev{border-style:dashed}\n.mkt.wrong{background:var(--try-tint);border-color:var(--try-ink)}\n.mkt:disabled{opacity:1;cursor:default}\n\n@media (min-width:700px){\n  .sbin{min-height:120px}\n  .schip{font-size:var(--fs-5)}\n  .sbz .schip{font-size:var(--fs-3)}\n  .mkt{font-size:var(--fs-5)}\n}\n\n/* KINDS2-B line: a number line with a pin (svg class vi: --k never shrinks it). The svg is the picture; .lnp, an HTML slider laid\n   over the drawn pin (.lnb is as big as the svg), takes the drag and the keys. The pin's head shows a tick (right, shown answer) or a\n   cross (wrong) as well as its colour; a shown answer has a dashed head */\n.lnw{position:relative;width:100%;max-width:640px;margin:0 auto var(--s-3)}\n.lnb{position:relative;width:fit-content;max-width:100%;margin:0 auto;cursor:pointer}\n.lnp{position:absolute;border-radius:var(--r-pill);cursor:grab;touch-action:none}\n.lnp.drag{cursor:grabbing}\n.lnp:focus{outline:none}\n.lnp:focus-visible{outline:4px solid var(--ink);outline-offset:2px}\n.lnw g.vpin{pointer-events:none;transition:transform var(--t-slow) var(--ease)}\n.lnw g.vpin.drag{transition:none}\n.lnw g.vpin .vph{fill:var(--ink);stroke:var(--surface);stroke-width:3}\n.lnw g.vpin .vps{fill:none;stroke:var(--ink);stroke-width:4}\n.lnw g.vpin .vpok,.lnw g.vpin .vpno{display:none;fill:none;stroke:var(--surface);stroke-width:3}\n.lnw.right g.vpin .vph,.lnw.rev g.vpin .vph{fill:var(--good-ink)}\n.lnw.right g.vpin .vps,.lnw.rev g.vpin .vps{stroke:var(--good-ink)}\n.lnw.rev g.vpin .vph{stroke:var(--ink);stroke-dasharray:4 3}\n.lnw.right g.vpin .vpok,.lnw.rev g.vpin .vpok,.lnw.wrong g.vpin .vpno{display:inline}\n.lnw.wrong g.vpin .vph{fill:var(--try-ink)}\n.lnw.wrong g.vpin .vps{stroke:var(--try-ink)}\n\n/* KINDS2-C make: the model (drawn again from VIZ on every change) in a card, its controls under it, Check below. The card shows a\n   tick or a cross (.k2mk) as well as its border colour; a shown answer has a dashed border and pulses once */\n.mmw{position:relative;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:var(--s-2);width:100%;max-width:640px;min-height:88px;\n  margin:0 auto var(--s-2);padding:var(--s-2);border-radius:var(--r-card);background:var(--surface-2);border:3px solid var(--surface-2)}\n.mmw>.k2mk{position:absolute;top:6px;right:6px}\n.mmw.right{border-color:var(--good-ink)}\n.mmw.wrong{border-color:var(--try-ink)}\n.mmw.rev{border:3px dashed var(--try-ink)}\n.mmv{display:flex;flex-direction:column;justify-content:center;align-items:center;max-width:100%;min-width:0}\n.mm-b10 .mmv .viz,.mm-array .mmv .viz{max-height:136px}\n.mm-clock .mmv .viz{max-height:150px}\n.mm-frame,.mm-parts{cursor:pointer}\n.k2pulse{animation:k-pop var(--t-xl) var(--ease)}\n.mmc{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:var(--s-2);max-width:100%;cursor:default}\n.mmcol{flex-direction:column;gap:var(--s-1)}\n.mms{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:var(--s-1)}\n.mml{min-width:5.4em;text-align:right;font-weight:700;font-size:var(--fs-3);color:var(--ink)}\n.mmn{min-width:2ch;text-align:center;font-weight:700;font-size:var(--fs-5);color:var(--ink)}\n.mmb{display:inline-flex;align-items:center;justify-content:center;gap:2px;min-width:var(--tap);min-height:var(--tap);padding:0 var(--s-2);\n  border-radius:var(--r-btn);border:3px solid var(--ink-3);background:var(--surface);color:var(--ink);font:inherit;font-weight:700;\n  font-size:var(--fs-3);cursor:pointer;touch-action:manipulation}\n.mmb:disabled,.mmp:disabled{opacity:1;cursor:default}\n/* coins: a tray of coins to put in, the purse of coins (tap one to take it out) */\n.mmpurse{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px;min-height:var(--tap)}\n.mmp{display:inline-flex;align-items:center;justify-content:center;min-width:var(--tap);min-height:var(--tap);padding:0;border:0;\n  border-radius:var(--r-pill);background:transparent;cursor:pointer;touch-action:manipulation}\n.mmp .cn{--k:.62;font-size:var(--fs-2)}\n.mmtray .mmb{padding:2px}\n.mmtray .cn{--k:.66;font-size:var(--fs-2)}\n.mmhint{color:var(--ink-2);font-size:var(--fs-2);text-align:center}\n\n@media (min-width:700px){\n  .mm-b10 .mmv .viz,.mm-array .mmv .viz,.mm-clock .mmv .viz{max-height:200px}\n  .mmp .cn,.mmtray .cn{font-size:var(--fs-3)}\n  .mmp .cn{--k:.75}\n  .mmtray .cn{--k:.85}\n}\n\n/* KINDS2-D find the mistake: the worked steps are .tp lines of the tap kind, a step number on the left; the size does not follow the\n   prompt's --k (fit() may shrink the problem above, never the steps), each line 52 px high at least (48 px even while the\n   prompt scales in). The tick and the cross of a right,\n   wrong or shown line come from .tp (42-question.css). */\n.fxs{display:flex;flex-direction:column;gap:var(--s-2);width:100%;max-width:560px;margin:var(--s-2) auto 0;\n  font-family:var(--font-body);font-size:var(--fs-3);line-height:1.25}\n.fxs .tp.fxl{justify-content:flex-start;gap:var(--s-2);width:100%;min-height:calc(var(--tap) + 4px);padding:var(--s-1) var(--s-3);text-align:left;\n  font-size:var(--fs-3);font-weight:700}\n.fxn{flex:none;display:inline-grid;place-items:center;width:28px;height:28px;border-radius:var(--r-pill);background:var(--surface-2);\n  color:var(--ink);font-size:var(--fs-2)}\n@media (min-width:700px){.fxs,.fxs .tp.fxl{font-size:var(--fs-4)}}\n\n/* KINDS2-D why: the sentence about the likely mistake, on a white card at the top of the hint panel, with the bulb */\n.why{display:flex;align-items:flex-start;gap:var(--s-2);width:100%;padding:var(--s-2) var(--s-3);border-radius:var(--r-btn);\n  background:var(--surface);color:var(--ink);text-align:left;line-height:1.3}\n.why .ic{flex:none;width:22px;height:22px;color:var(--try-ink)}\n/* ---- CHECK-IN: stop badges and check-ins (src/js/51b-checkin.js; in gen2). Tokens only; motion is transform and opacity ---- */\n/* the map: a won badge by its stop (not a control), and the Check-in button by a ready stop (52 px, a gold ring that pulses) */\n.ck-mapm{position:absolute;width:48px;height:54px;margin:-27px 0 0 -24px;z-index:3;pointer-events:none;animation:ck-in var(--t-slow) var(--ease) both}\n.ck-mapm .ck-m{display:block}\n.btn.ck-go{position:absolute;width:52px;height:52px;min-height:52px;margin:-26px 0 0 -26px;padding:0;border-radius:50%;z-index:3;display:grid;place-items:center;\n  background:var(--star-tint);color:var(--try-ink);box-shadow:inset 0 0 0 3px var(--star),0 4px 0 var(--star-shade)}\n.btn.ck-go .ic{width:30px;height:30px;color:var(--star-shade)}\n.btn.ck-go::after{content:'';position:absolute;inset:-7px;border:3px solid var(--star);border-radius:50%;opacity:0;animation:k-ring var(--t-loop) var(--ease) infinite;pointer-events:none}\n.btn.ck-go:active{transform:translateY(3px);box-shadow:inset 0 0 0 3px var(--star),0 1px 0 var(--star-shade)}\n/* the question card's tag; the sheet before it starts */\n.ck-tag{background:var(--star-tint);color:var(--try-ink)}\n.ck-ask{display:flex;flex-direction:column;align-items:center;text-align:center}\n.ck-ask h2{margin:var(--s-2) 0 var(--s-1)}\n.ck-ask p{margin:0 0 var(--s-1);font-size:var(--fs-3);font-weight:700;color:var(--ink-2)}\n.ck-ask .ck-rule{color:var(--ink)}\n.ck-ask .acts{width:100%;margin-top:var(--s-3)}\n.ck-am .ck-m{display:block}\n/* the end card: the badge pops in with rays behind it (one short animation), then the score, the next stop and the three choices */\n.ck-end{gap:var(--s-2)}\n.ck-hero{position:relative;display:grid;place-items:center;width:180px;height:170px}\n.ck-hero .rw-pet{width:150px;height:150px}\n.ck-hero .rw-rays{position:absolute;inset:-20px;width:220px;height:210px;opacity:.8;animation:rw-rays calc(var(--t-xl) * 1.5) var(--ease) both}\n.ck-big{position:relative;display:block}\n.ck-big .ck-m{display:block}\n.ck-new .ck-big{animation:ck-pop calc(var(--t-xl) * 1.2) var(--ease) both}\n.ck-name{margin:0;font-family:var(--font-display);font-size:var(--fs-4);line-height:var(--lh-4);color:var(--ink)}\n.ck-sc{margin:0;font-size:var(--fs-3);font-weight:700;color:var(--ink-2)}\n.ck-sc b{font-family:var(--font-display);font-size:var(--fs-4);color:var(--ink)}\n.ck-line{margin:0;font-size:var(--fs-3);font-weight:700;color:var(--ink);max-width:30ch}\n.ck-nx{display:flex;align-items:center;gap:var(--s-2);margin:0;padding:var(--s-1) var(--s-3);border-radius:var(--r-pill);background:var(--brand-tint);\n  font-size:var(--fs-3);font-weight:700;color:var(--ink)}\n.ck-nx .ic{color:var(--brand);flex:none}\n.ck-end .rw-er{width:min(100%,420px);text-align:left}\n.ck-dock{display:flex;flex-wrap:wrap;gap:var(--s-3);width:min(100%,520px);margin-top:var(--s-2)}\n/* the shelf: a grid of won badges, and the stops ready for a check-in */\n.ck-sum{margin:0 0 var(--s-3);font-size:var(--fs-3);font-weight:700;color:var(--ink);text-align:center}\n.ck-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:var(--s-3);margin-bottom:var(--s-4)}\n.ck-t{display:flex;flex-direction:column;align-items:center;gap:var(--s-1);min-width:0;min-height:var(--tap);padding:var(--s-3) var(--s-2);border:0;border-radius:var(--r-card);\n  background:var(--surface);color:var(--ink);box-shadow:inset 0 0 0 2px var(--line),var(--ledge) var(--ledge-soft);font:inherit;cursor:pointer}\n.ck-t:active{transform:translateY(3px)}\n.ck-t b{font-family:var(--font-display);font-size:var(--fs-2);line-height:1.25;text-align:center;overflow-wrap:anywhere}\n.ck-bk{display:flex;justify-content:center}\n@keyframes ck-pop{0%{opacity:0;transform:scale(.3) rotate(-18deg)}60%{opacity:1;transform:scale(1.15) rotate(6deg)}100%{transform:scale(1) rotate(0)}}\n@keyframes ck-in{0%{opacity:0;transform:scale(.5)}}\n/* the report card's badges and mastery by stop (82-report.js REP.badges): a list like .rp-list, with its own class */\n.rp-ck{margin:0;padding-left:var(--s-5)}\n.rp-ck li{margin-bottom:var(--s-3);line-height:var(--lh-2)}\n";document.head.appendChild(s)})(); // its src/css, after index.html's own CSS (the cascade order of a build without parts)
 /* Upper-grade math generators (4th grade and up). One marked block per chunk, so parallel chunks merge by appending.
    Seeded randomness only (R, pick, shuffle, coin, rnd). Step hints come from 39b-steps.js. */
 
@@ -3546,7 +3546,7 @@ KIND.sort = {
       + (c.say ? ` data-say="${esc(c.say)}"` : '') + (c.lang ? ` data-lang="${esc(c.lang)}"` : '') + (c.h ? ' data-pic="1"' : '')
       + (c.al ? ` aria-label="${esc(c.al)}"` : '') + `><span class="scl">${c.h ? c.l : esc(c.l)}</span>${k2Marks()}</button>`;
     return `<div class="sbins sb${q.bins.length}">${q.bins.map(bin).join('')}</div>`
-      + `<div class="stray">${q.items.map(chip).join('')}</div>`
+      + `<div class="stray">${q.items.map((c, i) => `<span class="sslot" data-s="${i}">${chip(c, i)}</span>`).join('')}</div>`
       + UI.btn('Check', {kind: 'primary', icon: 'check', id: 'mcheck', cls: 'mgo', off: true});
   },
   bind(q, st, submit) {
@@ -3556,6 +3556,8 @@ KIND.sort = {
     st.sortOk = [];
     st.sortDrag = null;
     st.sortSkip = false;
+    st.sortHeld = false;
+    K.cur = q;
     $$('.schip').forEach(b => {
       b.onclick = () => K.tapChip(q, st, +b.dataset.i);
       b.onpointerdown = e => K.down(q, st, e, b);
@@ -3568,6 +3570,39 @@ KIND.sort = {
     K.draw(q, st);
   },
   chip: i => $(`.schip[data-i="${i}"]`),
+  // a chip's own place in the tray: it keeps the chip's size while the chip is in a bin, so the tray never reflows
+  slot: i => $(`.sslot[data-s="${i}"]`),
+  // FIX3 (no layout shift): the tray keeps every chip's place, and the bins are as tall from the start as with every chip in its
+  // right bin (the answer) and never shrink during the question (keep), so placing chips, Check, the retry and the shown answer
+  // move nothing else on the screen (smoke P4-17, a sort in the boss). Measured once the question is drawn and again on a resize.
+  hold(q) {
+    const K = KIND.sort, bins = $$('.sbin'), zones = $$('.sbz');
+    if (!bins.length || !$('.stray')) return;
+    const f = document.activeElement;
+    q.items.forEach((c, i) => {
+      const s = K.slot(i), el = K.chip(i);
+      if (!s || !el || el.parentNode !== s) return;
+      s.style.minWidth = s.style.minHeight = '';
+      const r = el.getBoundingClientRect();
+      s.style.minWidth = r.width + 'px';
+      s.style.minHeight = r.height + 'px';
+    });
+    bins.forEach(b => { b.style.minHeight = ''; });
+    const home = q.items.map((c, i) => K.chip(i) && K.chip(i).parentNode);
+    q.items.forEach((c, i) => K.put(K.chip(i), zones[q.bins.findIndex(b => String(b.v) === String(c.b))]));
+    const h = Math.max(...bins.map(b => b.getBoundingClientRect().height));
+    q.items.forEach((c, i) => K.put(K.chip(i), home[i]));
+    bins.forEach(b => { b.style.minHeight = h + 'px'; });
+    if (f && f !== document.activeElement && f.isConnected) f.focus({preventScroll: true});
+    K.keep();
+  },
+  // a bin that grew (a wrong bin holding more chips than the answer) keeps that height until the next question
+  keep() {
+    const bins = $$('.sbin');
+    if (!bins.length) return;
+    const h = Math.max(...bins.map(b => b.getBoundingClientRect().height));
+    bins.forEach(b => { if ((parseFloat(b.style.minHeight) || 0) < h) b.style.minHeight = h + 'px'; });
+  },
   // a chip goes into a box (the tray or a bin) in item order, and is only moved when its box changes (moving keeps no focus)
   put(el, box) {
     if (!el || !box || el.parentNode === box) return;
@@ -3663,16 +3698,20 @@ KIND.sort = {
       const el = K.chip(i);
       if (!el) return;
       const at = st.sortAt[i], on = st.sortSel === i;
-      K.put(el, at == null ? tray : zones[at]);
+      K.put(el, at == null ? K.slot(i) : zones[at]);
       el.classList.toggle('sel', on);
       el.classList.toggle('in', at != null);
       el.classList.toggle('done', st.sortOk.includes(i));
       el.setAttribute('aria-pressed', on);
     });
     K.counts(q);
-    tray.classList.toggle('empty', !tray.children.length);
+    tray.classList.toggle('empty', !tray.querySelector('.schip'));
     const go = $('#mcheck');
     if (go) go.disabled = st.sortAt.some(x => x == null);
+    if (!st.sortHeld) { // the first draw of the question
+      st.sortHeld = true;
+      K.hold(q);
+    } else K.keep();
     k2Fit();
   },
   same: (q, v) => (Array.isArray(v) ? v.map(String).join('|') : String(v)) === q.ans,
@@ -3724,6 +3763,7 @@ KIND.sort = {
       el.disabled = true;
     });
     K.counts(q);
+    K.keep();
     const go = $('#mcheck');
     if (go) go.disabled = true;
     k2Fit();
@@ -3749,6 +3789,11 @@ KIND.sort = {
     return p;
   },
 };
+// a resize (a turned tablet) measures the tray places and the bins of the sort on screen again
+addEventListener('resize', () => {
+  const q = KIND.sort.cur;
+  if (q && q.kind === 'sort' && $('.stray')) KIND.sort.hold(q);
+});
 
 // ---- mark: tap word(s) in a sentence ----
 KIND.mark = {
@@ -5413,5 +5458,198 @@ if (typeof hintHTML == 'function') {
     return w && w.q === q && G.tries > 0 ? `<div class="why">${ico('hint', 22)}<span>${esc(w.s)}</span></div>${h}` : h;
   };
 }
+/* ---------- CHECK-IN: mastery check-ins and stop badges (gen2; CSS src/css/51b-checkin.css) ----------
+   A child who has played a stop enough is offered a short check-in: CHK.Q questions of that stop, mixed kinds (pickQ: never a third
+   of one kind in a row, no label twice), no hints and one try each. A stop is one skill level, the hardest level of its skill the child
+   has reached there, so every question is that level's: no easier support question, review item or older stop is mixed in.
+   CHK.PASS or more right wins the stop's badge (once) and the end card nudges the child on: Next is the next level of the same skill
+   when it is open and not passed yet, else the next open stop that is not passed. Fewer is gentle: no stars or coins taken, the
+   badge waits, "Keep practicing" and Play again (a normal round of the stop); the check-in comes back after CHK.GAP more first tries.
+   When a check-in is offered (CHK.ready): a stop of a map (not a boss, not a side skill such as tracing), passed (1+ stars), no badge
+   yet, and its mastery record (51-mastery.js) has CHK.MIN or more first tries at CHK.ACC or better.
+   Where: a "Check-in" button by the stop on the map (CHK.mapHTML), and a card on the round's end screen (50-round.js finish).
+   Badges show on the map stop (a small medal), in the badge shelf (CHK.shelf: Learn, the sticker book), and per stop in the
+   Grown-ups report card (82-report.js, REP.badges).
+   Saved data: S.chk = {nid: {n, best, last, at, b?}} (a default {} by id in migrate, 00-core.js; an old save gets it empty):
+     n     check-ins taken at this stop        best  most right in one check-in
+     last  day number of the last one          at    first tries at the stop (S.mast n) when it ended (the wait after a miss)
+     b     day number the badge was won (absent until then)
+   Hooks: 50-round.js renderQ calls CHK.show(q) (no Help button), check() gives a check-in question one try with no hint and no
+   retry at the end, finish() hands the end to CHK.finish(G); 46-home.js drawMap adds CHK.mapHTML and calls CHK.mapBind. */
+const CHK = {
+  Q: 5,      // questions in a check-in
+  PASS: 4,   // right on the first try to win the badge
+  MIN: 12,   // first tries at the stop before one is offered
+  ACC: .7,   // first-try accuracy at the stop before one is offered
+  GAP: 8,    // more first tries at the stop after a check-in that did not win
+  HUE: { math: ['blue', 'yellow'], read: ['pink', 'purple'], es: ['orange', 'red'], disc: ['green', 'yellow'] },
+  get() {
+    if (!S.chk || typeof S.chk != 'object' || Array.isArray(S.chk)) S.chk = {};
+    return S.chk;
+  },
+  rec: k => (S.chk && typeof S.chk == 'object' && S.chk[k]) || null,
+  won: c => !!(c && Number.isInteger(c.b) && c.b > 0), // a badge day (a damaged value is no badge)
+  has(k) { return CHK.won(CHK.rec(k)); },
+  can: nd => !!(nd && nd.sk != 'boss' && SK[nd.sk] && !SK[nd.sk].side),
+  ready(p, i) {
+    const nd = NODES[p] && NODES[p][i];
+    if (!CHK.can(nd) || !passed(p, i)) return false;
+    const k = nid(nd), c = CHK.rec(k), r = mastRec(k);
+    if (CHK.won(c)) return false;
+    if (!r || !(+r.n >= CHK.MIN && +r.p >= CHK.ACC)) return false; // a damaged record (not numbers) is never ready
+    return !(c && Number.isFinite(+c.at) && +r.n - +c.at < CHK.GAP);
+  },
+  // every stop with a badge, in map order: [{p, i, nd, b}]
+  list() {
+    const out = [];
+    for (const p in NODES) {
+      const seen = {};
+      NODES[p].forEach((nd, i) => { const k = nid(nd); if (seen[k] || !CHK.can(nd)) return; seen[k] = 1; const c = CHK.rec(k); if (CHK.won(c)) out.push({ p, i, nd, b: c.b }); });
+    }
+    return out;
+  },
+  readyList() {
+    const out = [];
+    for (const p in NODES) NODES[p].forEach((nd, i) => { if (CHK.ready(p, i) && !out.some(x => x.p == p && nid(x.nd) == nid(nd))) out.push({ p, i, nd }); });
+    return out;
+  },
+  // where Next goes after a won check-in: the next level of the same skill (open, not passed), else the next open stop not passed
+  nextStop(p, i) {
+    const N = NODES[p], h = harder(N[i]);
+    const j = h ? N.indexOf(h) : -1;
+    if (j >= 0 && unlocked(p, j) && !passed(p, j)) return j;
+    for (let k = i + 1; k < N.length; k++) if (unlocked(p, k) && !passed(p, k)) return k;
+    return -1;
+  },
+  // the questions: CHK.Q of the stop's own level, mixed kinds, no label twice (a small stop may repeat one after 6 tries each)
+  qs(nd) {
+    const out = [], seen = new Set();
+    for (let t = 0; out.length < CHK.Q && t < CHK.Q * 6; t++) {
+      const q = pickQ(nd.sk, nd.lv);
+      G.last = q.label;
+      if (seen.has(q.label)) continue;
+      seen.add(q.label);
+      G.kh.push(q.kind);
+      out.push(q);
+    }
+    while (out.length < CHK.Q) out.push(genQ(nd.sk, nd.lv));
+    return out;
+  },
+  start(p, i) {
+    const nd = NODES[p][i];
+    if (!CHK.can(nd)) return start(p, i);
+    G = newG({ path: p, node: i, sk: nd.sk, lv: nd.lv, chk: true, spk: 1, kh: [] }); // spk: no "Say it!" step in a check-in
+    G.pool = CHK.qs(nd);
+    G.n = G.pool.length;
+    G.kh = [];
+    G.last = null;
+    next();
+  },
+  // the sheet before it starts: what it is, Let's go / Not now
+  ask(p, i) {
+    const nd = NODES[p][i];
+    const s = UI.sheet(`<div class="ck-ask s-${p}"><span class="ck-am">${CHK.medal(p, nd, false, 96)}</span><h2>Badge check-in!</h2>` +
+      `<p>${esc(nd.t)}</p><p class="ck-rule">${CHK.Q} questions. No hints.</p><p class="ck-rule">Get ${CHK.PASS} right to win a badge!</p>` +
+      `<div class="acts">${UI.btn("Let's go!", { kind: 'primary', size: 'lg', wide: true, icon: 'medal', id: 'ckgo' })}${UI.btn('Not now', { kind: 'ghost', wide: true, id: 'ckno' })}</div></div>`);
+    s.el.querySelector('#ckno').onclick = () => { SFX.click(); s.close(); };
+    s.el.querySelector('#ckgo').onclick = () => { s.close(); SFX.whoosh(); for (const e of document.querySelectorAll('body > .ovl')) e.remove(); CHK.start(p, i); };
+    if (S.voice) say(`Get ${CHK.PASS} right to win a badge!`);
+    return s;
+  },
+  // renderQ hook: no Help button, a Check-in tag on the card
+  show(q) {
+    const hb = $('#hb'), qa = $('.qarea');
+    if (hb) hb.remove();
+    if (qa && !qa.querySelector('.ck-tag')) qa.insertAdjacentHTML('afterbegin', UI.tag('Badge check-in', 'ck-tag', 'medal'));
+  },
+  // the end of a check-in (finish() hands it over): save, then the badge card or the gentle one
+  finish(g) {
+    const p = g.path, i = g.node, nd = NODES[p][i], k = nid(nd), sc = g.score, n = g.n, ok = sc >= CHK.PASS;
+    const C = CHK.get(), c = C[k] || (C[k] = { n: 0, best: 0 }), r = mastRec(k), dn = mastDay();
+    c.n = (c.n | 0) + 1; c.best = Math.max(c.best | 0, sc); c.last = dn; c.at = r && +r.n >= 0 ? +r.n : 0;
+    const won = ok && !CHK.won(c);
+    if (won) c.b = dn;
+    const coins = sc + (won ? 5 : 0);
+    S.coins += coins;
+    actRound(); // P5-05: minutes and rounds for the report card
+    save();
+    const nx = ok ? CHK.nextStop(p, i) : -1;
+    const head = won ? 'You won a badge!' : ok ? 'You did it again!' : 'Good try!';
+    const line = ok ? 'You really know this one!' : 'Keep practicing. You will get it soon!';
+    const art = ok ? `<div class="ck-hero${won ? ' ck-new' : ''}">${won ? RW.rays() : ''}<span class="ck-big">${CHK.medal(p, nd, true, 132)}</span></div>` : `<div class="ck-hero">${RW.pet()}</div>`;
+    view(`<div class="center ck-end s-${p}" id="ckend">${art}<h1 class="rw-h">${esc(head)}</h1><p class="ck-name">${esc(nd.t)}</p>` +
+      `<p class="ck-sc"><b>${sc}</b> out of ${n} right</p><p class="ck-line">${esc(line)}</p>` +
+      (nx >= 0 ? `<p class="ck-nx">${ico('arrow-right', 22)}<span>Next: ${esc(NODES[p][nx].t)}</span></p>` : '') +
+      (coins ? RW.row('coin', 'coin', `+${coins} coins for the pet shop!`) : '') +
+      `<div class="ck-dock">${NAV.end3({ again: ok ? '' : 'ckagain', next: nx >= 0 ? 'cknext' : '', home: 'ckhome',
+        extra: ok ? UI.btn('My badges', { kind: 'subject', p, icon: 'medal', id: 'ckshelf' }) : '' })}</div></div>`);
+    if ($('#ckagain')) $('#ckagain').onclick = () => { SFX.whoosh(); start(p, i); };
+    if ($('#cknext')) $('#cknext').onclick = () => { SFX.whoosh(); open(p, nx); };
+    if ($('#ckshelf')) $('#ckshelf').onclick = () => { SFX.whoosh(); CHK.shelf(() => pathMap(p)); };
+    $('#ckhome').onclick = () => { SFX.whoosh(); home(); };
+    if (won) {
+      SFX.fanfare();
+      setTimeout(() => { const h = $('.ck-hero'); if (!h) return; RW.burst(h, 28); SFX.chime(); }, 500);
+    } else SFX.pop(2);
+    if (S.voice) setTimeout(() => { if ($('#ckend')) say(head + ' ' + line); }, 700);
+    return { ok, won, nx };
+  },
 
-var GEN2_VER='v171'; // last line: the whole file ran (checked by dataReady() before the app starts)
+  // a stop's badge, drawn: ribbon tails, a rim and face in the subject's colours (greys when not won), the skill's icon in the middle
+  medal(p, nd, on, size = 64) {
+    const c = h => `var(--ill-${h})`, hu = CHK.HUE[p] || CHK.HUE.math, m = on ? hu[0] : 'grey', rb = on ? hu[1] : 'white';
+    const rim = on ? c(m + '-2') : c('grey'), face = on ? c(m + '-1') : c('grey-1'), ink = on ? c(m + '-3') : c('grey-2');
+    return `<svg class="ck-m${on ? ' on' : ''}" width="${size}" height="${Math.round(size * 72 / 64)}" viewBox="0 0 64 72" aria-hidden="true" focusable="false">` +
+      `<path fill="${on ? c(rb + '-2') : c('white-3')}" d="M14 2H28L36.5 33H24.5Z"/><path fill="${on ? c(rb) : c('white-2')}" d="M50 2H36L27.5 33H39.5Z"/>` +
+      `<circle cx="33.5" cy="48.5" r="21" fill="var(--drop)"/><circle cx="32" cy="47" r="21" fill="${rim}"/><circle cx="32" cy="47" r="16.5" fill="${face}"/>` +
+      `<path fill="none" stroke="${c('white')}" stroke-width="2.6" stroke-linecap="round" opacity=".75" d="M15.6 40.5A17.5 17.5 0 0 1 25.5 30.6"/>` +
+      `<use href="#i-${icoSk(nd.sk)}" x="21" y="36" width="22" height="22" style="color:${ink}"/></svg>`;
+  },
+
+  // ---- the map: a small medal by a stop with a badge; a Check-in button by a stop that is ready ----
+  mapHTML(p, i, x, y, W) {
+    const nd = NODES[p][i];
+    if (!CHK.can(nd)) return '';
+    const L = x > W / 2, sx = L ? x - 66 : x + 66, sy = y - 4; // beside the stop, on the side toward the middle (the label is under it)
+    if (CHK.has(nid(nd))) return `<span class="ck-mapm" style="left:${sx}px;top:${sy}px" aria-hidden="true">${CHK.medal(p, nd, true, 48)}</span>`;
+    if (CHK.ready(p, i)) return `<button class="btn ck-go s-${p}" data-ck="${i}" style="left:${sx}px;top:${sy}px" aria-label="Badge check-in: ${esc(nd.t)}">${ico('medal', 30)}</button>`;
+    return '';
+  },
+  aria: (p, i) => CHK.can(NODES[p][i]) && CHK.has(nid(NODES[p][i])) ? ', badge won' : '',
+  mapBind(p) {
+    $$('.ck-go').forEach(b => b.onclick = () => { SFX.pop(2); CHK.ask(p, +b.dataset.ck); });
+  },
+  // the round's end card (finish in 50-round.js): a message with a Check-in button, when the stop is ready
+  offerHTML: () => `<span>Ready for a badge?</span> ${UI.btn('Check-in', { kind: 'primary', size: 'sm', icon: 'medal', id: 'ckoff' })}`,
+  offerBind(p, i) {
+    const b = $('#ckoff');
+    if (b) b.onclick = () => { SFX.click(); CHK.ask(p, i); };
+  },
+
+  // ---- the badge shelf: every badge won, by subject, and the stops ready for a check-in ----
+  shelf(back) {
+    const L = CHK.list(), rd = CHK.readyList().slice(0, 6), AREA = { math: 'Math', read: 'Reading', es: 'Spanish', disc: 'Discover' };
+    const tile = x => `<button class="ck-t" data-p="${x.p}" data-i="${x.i}" aria-label="${esc(x.nd.t)}, badge won">${CHK.medal(x.p, x.nd, true, 64)}<b>${esc(x.nd.t)}</b></button>`;
+    let h = `<p class="ck-sum">${L.length ? `You have ${L.length} ${L.length == 1 ? 'badge' : 'badges'}!` : 'No badges yet. Play a stop a few times. Then try a check-in!'}</p>`;
+    if (rd.length) h += `<h2 class="gx-h">${ico('medal', 26)}<span>Ready for a check-in</span></h2><div class="games">` +
+      rd.map(x => GFX.card({ cls: 'ck-rd', attrs: `data-p="${x.p}" data-i="${x.i}"`, p: x.p, icon: 'medal', title: x.nd.t, sub: esc(AREA[x.p] || ''), go: 'play' })).join('') + '</div>';
+    for (const p in AREA) {
+      const xs = L.filter(x => x.p == p);
+      if (xs.length) h += `<h2 class="gx-h">${ico(UI.SUBJ_ICON[p] || 'map', 26)}<span>${AREA[p]}</span></h2><div class="ck-grid">${xs.map(tile).join('')}</div>`;
+    }
+    view(`<div class="top tbar gx-mtop s-disc">${UI.ibtn('back', 'Back', { size: 'sm', id: 'back' })}<div class="ttl gx-ttl"><span class="gx-tb">${ico('medal', 24)}</span>` +
+      `<span>My badges</span></div>${UI.chip('medal', L.length, { aria: 'Badges won' })}</div><div class="scroll gx-list ck-shelf">${h}</div>`);
+    NAV.bar('learn');
+    $('#back').onclick = () => { SFX.click(); (back || learnHub)(); };
+    $$('.ck-rd').forEach(b => b.onclick = () => { SFX.pop(2); CHK.ask(b.dataset.p, +b.dataset.i); });
+    $$('.ck-t').forEach(b => b.onclick = () => {
+      const nd = NODES[b.dataset.p][+b.dataset.i];
+      SFX.pop(3);
+      anim(b, 'jump');
+      UI.toast(nd.t, 'good', 2000, 'medal');
+      if (S.voice) say(nd.t);
+    });
+  },
+};
+
+var GEN2_VER='v172'; // last line: the whole file ran (checked by dataReady() before the app starts)

@@ -1,0 +1,2 @@
+/* GL-01: the speed box (src/js/19b-fps.js), for grown-ups: small, in the bottom left corner, never in the way of a tap */
+.fpsbox{position:fixed;left:4px;bottom:4px;z-index:9999;pointer-events:none;background:var(--ink);color:var(--surface);font-size:12px;line-height:1.3;font-weight:700;padding:2px 6px;border-radius:6px;opacity:.88;font-variant-numeric:tabular-nums;white-space:nowrap}

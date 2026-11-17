@@ -380,8 +380,9 @@ function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],ws=PATHS[p].
     wb.push([wi,y0,y-y0-24,k0,pts.length,canTest]);
     bands+=`<div class="wtitle" data-w="${wi}" style="top:${y0+14}px">${wBadge(p,wi)}<span>${esc(w.n)}</span>${worldFinished(p,wi)?ico('check-circle',24,'ic-good'):''}</div>${canTest?`<button class="btn xs tobtn" data-w="${wi}" style="top:${y0+58}px">${ico('bolt',20)}<span>Already know it? Test out!</span></button>`:''}`;y+=4}
   const cur=curNode(p),allDone=N.every((n,i)=>passed(p,i)),end=w1==ws.length-1;
+  const ck=typeof CHK!='undefined'; // CHECK-IN: badges and Check-in buttons by the stops (51b-checkin.js)
   const nodes=pts.map(([x,yy,i])=>{const n=N[i],s=nInfo(n),st=getSt(p,i),lk=!unlocked(p,i);
-    return`<button class="btn node s-${p} ${s.area} ${lk?'lock':''} ${st?'done':''} ${i==cur&&!lk&&!allDone?'cur':''}" data-n="${i}" style="left:${x}px;top:${yy}px" aria-label="${esc(n.t)}${lk?', locked':''}">${nodeFace(n,lk)}</button>${stopNew(p,i)?`<div class="nnew" style="left:${x}px;top:${yy-50}px">New</div>`:''}<div class="nlab" style="left:${x}px;top:${yy+42}px;max-width:${Math.round(Math.max(140,Math.min(180,2*Math.min(x,W-x)-8)))}px">${esc(n.t)}<div class="nstar">${st?UI.stars(st,3,16):''}</div></div>`}).join('');
+    return`<button class="btn node s-${p} ${s.area} ${lk?'lock':''} ${st?'done':''} ${i==cur&&!lk&&!allDone?'cur':''}" data-n="${i}" style="left:${x}px;top:${yy}px" aria-label="${esc(n.t)}${lk?', locked':''}${ck?CHK.aria(p,i):''}">${nodeFace(n,lk)}</button>${ck?CHK.mapHTML(p,i,x,yy,W):''}${stopNew(p,i)?`<div class="nnew" style="left:${x}px;top:${yy-50}px">New</div>`:''}<div class="nlab" style="left:${x}px;top:${yy+42}px;max-width:${Math.round(Math.max(140,Math.min(180,2*Math.min(x,W-x)-8)))}px">${esc(n.t)}<div class="nstar">${st?UI.stars(st,3,16):''}</div></div>`}).join('');
   const cp=pts.find(q=>q[2]==cur),side=cp&&cp[0]>W/2?-66:66;
   let tail=end&&allDone?90:20;
   if(!end){y+=8;bands+=more(w1+1,false);tail=80}
@@ -395,6 +396,7 @@ function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],ws=PATHS[p].
     +(cp?`<div class="mappet ${petAura()}" style="left:${cp[0]+side}px;top:${cp[1]+18}px">${petHTML()}</div>`:'')+(end&&allDone?`<div class="wtitle mp-champ" style="top:${y+10}px">${ico('trophy',30)}<span>${esc(PATHS[p].n)} Champion!</span></div>`:'');
   $$('.node').forEach(b=>b.onclick=()=>{const i=+b.dataset.n;if(!unlocked(p,i)){SFX.wrong();anim(b,'sad');fb('Finish the stop before this one!','warn');return}SFX.whoosh();
     open(p,i)});
+  if(ck)CHK.mapBind(p);
   $$('.tobtn').forEach(b=>b.onclick=()=>testOut(p,+b.dataset.w));
   $$('.wmore').forEach(b=>b.onclick=()=>mapGo(p,+b.dataset.w));
   const on=st&&st.querySelector('.wchip.on');if(on)st.scrollLeft=Math.max(0,on.offsetLeft-(st.clientWidth-on.offsetWidth)/2)}
@@ -432,9 +434,10 @@ function book(){const have=STK.filter(s=>stkN(s)).length,per=12,pages=[];
     `<span class="stat sb-cnt" role="img" aria-label="${have} of ${STK.length} stickers">${ico('sticker-book',28)}<b>${have}/${STK.length}</b></span></div>
   <div class="scroll"><div class="sb"><div class="sb-head"><div class="sb-hl">${UI.meter(have/STK.length,{kind:'grow',label:have+' of '+STK.length+' stickers'})}`+
     `<p>Finish a round to win a sticker! Get 10 out of 10 for a bonus one.</p></div>`+
-    `${BT.list().length?`<div class="bk-bt">${UI.btn('Puzzle badges',{kind:'subject',p:'bt',icon:'medal',id:'bkbdg'})}</div>`:''}</div>
+    `${BT.list().length?`<div class="bk-bt">${UI.btn('Puzzle badges',{kind:'subject',p:'bt',icon:'medal',id:'bkbdg'})}</div>`:''}${typeof CHK!='undefined'?`<div class="ck-bk">${UI.btn('Stop badges',{kind:'subject',p:'disc',icon:'medal',id:'bkck'})}</div>`:''}</div>
   <div class="sgrid sb-pages">${pages.map(page).join('')}</div></div></div>`);
   NAV.bar('');$('#back').onclick=()=>home(true);
+  if($('#bkck'))$('#bkck').onclick=()=>{SFX.whoosh();CHK.shelf(book)}; // CHECK-IN: the stop badges (51b-checkin.js)
   if($('#bkbdg'))$('#bkbdg').onclick=()=>{SFX.whoosh();BT.badgeView(book)}; // P3-17: the puzzle badges are a page of the sticker book
   $$('.sb-stk').forEach(b=>b.onclick=()=>{anim(b,'jump');SFX.pop(R(0,5));RW.burst(b,12)})}
 
