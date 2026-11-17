@@ -5,6 +5,9 @@
 /* the marks inside a chip or a word: hidden until a state shows one */
 .k2mk{display:none;flex:none;align-items:center;justify-content:center;width:22px;height:22px;border-radius:var(--r-pill);
   background:var(--surface);color:var(--good-ink)}
+/* FIX3: on a chip or a word the mark is a badge on its corner, so a chip keeps its size when the mark shows (no layout shift) */
+.schip,.mkt{position:relative}
+.schip>.k2mk,.mkt>.k2mk{position:absolute;top:-7px;right:-7px;z-index:1;box-shadow:0 0 0 2px currentColor}
 .k2mk .ic{display:none}
 .right>.k2mk,.done>.k2mk,.rev>.k2mk,.wrong>.k2mk{display:inline-flex}
 .right>.k2mk .k2ok,.done>.k2mk .k2ok,.rev>.k2mk .k2ok{display:block}
@@ -27,14 +30,15 @@
 .sbc{flex:none;min-width:24px;height:24px;padding:0 6px;border-radius:var(--r-pill);background:var(--ink);color:var(--surface);
   font-size:var(--fs-2);line-height:24px;text-align:center}
 .sbin:not(.has) .sbc{visibility:hidden}
-.sbz{position:relative;display:flex;flex-wrap:wrap;gap:4px;justify-content:center;padding:calc(var(--fs-3) * 1.5 + var(--s-2)) 4px 6px;
+.sbz{position:relative;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;padding:calc(var(--fs-3) * 1.5 + var(--s-2)) 4px 6px;
   pointer-events:none}
 .sbz .schip{pointer-events:auto;font-size:var(--fs-2);padding:0 var(--s-1);min-height:var(--tap);min-width:var(--tap)}
 
 /* chips: at least 48 px; dragged by a finger (touch-action none on the chip only) */
 .stray{display:flex;flex-wrap:wrap;gap:var(--s-2);justify-content:center;align-items:center;min-height:var(--tap);
   max-width:640px;margin:0 auto}
-.stray.empty{min-height:0}
+.sslot{display:inline-flex;align-items:center;justify-content:center;border-radius:var(--r-btn)}
+.sslot:empty{outline:2px dashed var(--line);outline-offset:-2px}
 .schip{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-height:var(--tap);min-width:var(--tap);
   padding:0 var(--s-3);border-radius:var(--r-btn);border:3px solid var(--line);background:var(--star-tint);color:var(--ink);
   font:inherit;font-weight:700;font-size:var(--fs-4);line-height:1.1;cursor:pointer;touch-action:none;user-select:none}
@@ -67,7 +71,7 @@
 .schip .pcap small{font-size:var(--fs-2)}
 
 /* mark: the words of the sentence as chips, a few lines */
-.mkw{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;max-width:640px;margin:0 auto}
+.mkw{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;max-width:640px;margin:0 auto}
 .mkt{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-height:var(--tap);min-width:var(--tap);
   padding:0 var(--s-2);border-radius:var(--r-btn);border:3px solid var(--line);background:var(--surface);color:var(--ink);
   font:inherit;font-weight:700;font-size:var(--fs-4);cursor:pointer;touch-action:manipulation}

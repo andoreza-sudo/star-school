@@ -47,7 +47,7 @@ KIND.sort = {
       + (c.say ? ` data-say="${esc(c.say)}"` : '') + (c.lang ? ` data-lang="${esc(c.lang)}"` : '') + (c.h ? ' data-pic="1"' : '')
       + (c.al ? ` aria-label="${esc(c.al)}"` : '') + `><span class="scl">${c.h ? c.l : esc(c.l)}</span>${k2Marks()}</button>`;
     return `<div class="sbins sb${q.bins.length}">${q.bins.map(bin).join('')}</div>`
-      + `<div class="stray">${q.items.map(chip).join('')}</div>`
+      + `<div class="stray">${q.items.map((c, i) => `<span class="sslot" data-s="${i}">${chip(c, i)}</span>`).join('')}</div>`
       + UI.btn('Check', {kind: 'primary', icon: 'check', id: 'mcheck', cls: 'mgo', off: true});
   },
   bind(q, st, submit) {
@@ -57,6 +57,8 @@ KIND.sort = {
     st.sortOk = [];
     st.sortDrag = null;
     st.sortSkip = false;
+    st.sortHeld = false;
+    K.cur = q;
     $$('.schip').forEach(b => {
       b.onclick = () => K.tapChip(q, st, +b.dataset.i);
       b.onpointerdown = e => K.down(q, st, e, b);
@@ -69,6 +71,39 @@ KIND.sort = {
     K.draw(q, st);
   },
   chip: i => $(`.schip[data-i="${i}"]`),
+  // a chip's own place in the tray: it keeps the chip's size while the chip is in a bin, so the tray never reflows
+  slot: i => $(`.sslot[data-s="${i}"]`),
+  // FIX3 (no layout shift): the tray keeps every chip's place, and the bins are as tall from the start as with every chip in its
+  // right bin (the answer) and never shrink during the question (keep), so placing chips, Check, the retry and the shown answer
+  // move nothing else on the screen (smoke P4-17, a sort in the boss). Measured once the question is drawn and again on a resize.
+  hold(q) {
+    const K = KIND.sort, bins = $$('.sbin'), zones = $$('.sbz');
+    if (!bins.length || !$('.stray')) return;
+    const f = document.activeElement;
+    q.items.forEach((c, i) => {
+      const s = K.slot(i), el = K.chip(i);
+      if (!s || !el || el.parentNode !== s) return;
+      s.style.minWidth = s.style.minHeight = '';
+      const r = el.getBoundingClientRect();
+      s.style.minWidth = r.width + 'px';
+      s.style.minHeight = r.height + 'px';
+    });
+    bins.forEach(b => { b.style.minHeight = ''; });
+    const home = q.items.map((c, i) => K.chip(i) && K.chip(i).parentNode);
+    q.items.forEach((c, i) => K.put(K.chip(i), zones[q.bins.findIndex(b => String(b.v) === String(c.b))]));
+    const h = Math.max(...bins.map(b => b.getBoundingClientRect().height));
+    q.items.forEach((c, i) => K.put(K.chip(i), home[i]));
+    bins.forEach(b => { b.style.minHeight = h + 'px'; });
+    if (f && f !== document.activeElement && f.isConnected) f.focus({preventScroll: true});
+    K.keep();
+  },
+  // a bin that grew (a wrong bin holding more chips than the answer) keeps that height until the next question
+  keep() {
+    const bins = $$('.sbin');
+    if (!bins.length) return;
+    const h = Math.max(...bins.map(b => b.getBoundingClientRect().height));
+    bins.forEach(b => { if ((parseFloat(b.style.minHeight) || 0) < h) b.style.minHeight = h + 'px'; });
+  },
   // a chip goes into a box (the tray or a bin) in item order, and is only moved when its box changes (moving keeps no focus)
   put(el, box) {
     if (!el || !box || el.parentNode === box) return;
@@ -164,16 +199,20 @@ KIND.sort = {
       const el = K.chip(i);
       if (!el) return;
       const at = st.sortAt[i], on = st.sortSel === i;
-      K.put(el, at == null ? tray : zones[at]);
+      K.put(el, at == null ? K.slot(i) : zones[at]);
       el.classList.toggle('sel', on);
       el.classList.toggle('in', at != null);
       el.classList.toggle('done', st.sortOk.includes(i));
       el.setAttribute('aria-pressed', on);
     });
     K.counts(q);
-    tray.classList.toggle('empty', !tray.children.length);
+    tray.classList.toggle('empty', !tray.querySelector('.schip'));
     const go = $('#mcheck');
     if (go) go.disabled = st.sortAt.some(x => x == null);
+    if (!st.sortHeld) { // the first draw of the question
+      st.sortHeld = true;
+      K.hold(q);
+    } else K.keep();
     k2Fit();
   },
   same: (q, v) => (Array.isArray(v) ? v.map(String).join('|') : String(v)) === q.ans,
@@ -225,6 +264,7 @@ KIND.sort = {
       el.disabled = true;
     });
     K.counts(q);
+    K.keep();
     const go = $('#mcheck');
     if (go) go.disabled = true;
     k2Fit();
@@ -250,6 +290,11 @@ KIND.sort = {
     return p;
   },
 };
+// a resize (a turned tablet) measures the tray places and the bins of the sort on screen again
+addEventListener('resize', () => {
+  const q = KIND.sort.cur;
+  if (q && q.kind === 'sort' && $('.stray')) KIND.sort.hold(q);
+});
 
 // ---- mark: tap word(s) in a sentence ----
 KIND.mark = {
