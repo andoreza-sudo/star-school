@@ -269,13 +269,13 @@ async function main() {
         const vq = genQ('vocab', 1, 4242);
         const pz = PUZ.sudoku.A.easy[0].split('|');
         const ix = NODES.read.findIndex(n => n.sk === 'info' && n.lv === 1);
-        return { src, files: appFiles(), lazy: LAZY_PARTS, dv: DATA_VER, ready: dataReady(), gram: BANK.gram.length, vocab: BANK.vocab.length, comp: PASS.comp.length,
+        return { src, files: appFiles(), lazy: LAZY_PARTS, teach: TEACH_PARTS, dv: DATA_VER, ready: dataReady(), gram: BANK.gram.length, vocab: BANK.vocab.length, comp: PASS.comp.length,
           info: PASS.info.length, spell: typeof genSpell, vq: !!(vq.kind && vq.ans && vq.html && vq.sk === 'vocab'),
           pz: pz.length + ':' + pz[0].length + ':' + pz[1].length, ix, bt: BT.list().map(t => t.id).join(),
           css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(), games: [typeof garage, typeof blockBuilder, typeof colorMenu].join() };
       });
       const files = g.files.map(f => f[0] + '.' + g.dv + '.js'), want = 'data.' + g.dv + '.js';
-      const startFiles = g.files.filter(f => !g.lazy.includes(f[0])).map(f => f[0] + '.' + g.dv + '.js'); // P6-02: the <script> tags at start
+      const startFiles = g.files.filter(f => !g.lazy.includes(f[0]) && !g.teach.includes(f[0])).map(f => f[0] + '.' + g.dv + '.js'); // P6-02: the <script> tags at start (TEACH-1: not the lessons either)
       const btF = 'bt.' + g.dv + '.js', gamesF = 'games.' + g.dv + '.js'; // A11c: the order of the parts is build.py's, so name them
       if (JSON.stringify(g.lazy) !== '["games","rally","games2","games3"]' || JSON.stringify(g.src) !== JSON.stringify(startFiles) || files[files.length - 1] !== want || !g.ready || !(g.gram > 0 && g.vocab > 0 && g.comp > 0 && g.info > 0)
         || g.spell !== 'function' || !g.vq || g.pz !== '3:16:16' || g.ix < 0) {
@@ -571,7 +571,9 @@ async function main() {
     }
     const shown = await page.evaluate(() => document.querySelectorAll('.mb.done').length);
     if (shown !== 8) fail('match: second miss should reveal all 8 buttons as paired, got ' + shown); else step('match: second miss reveals the pairs');
-    // tap: wrong tap marks it, right tap passes
+    // tap: wrong tap marks it, right tap passes. TEACH-1 ("old checks check old", as K2OLD): this sample has two words to tap, which now
+    // get one try in Practice; TEACH.off gives the kind's second try this step checks (the one-try rule has its own TEACH-1 step)
+    await page.evaluate(() => { TEACH.off = true; });
     await kbShow('tapWord');
     await page.click('.tp[data-v="mat"]');
     st = await kbState();
@@ -579,6 +581,7 @@ async function main() {
     await page.click('.tp[data-v="cat"]');
     st = await kbState();
     if (!st.lock || !st.ok) fail('tap: right tap did not pass ' + JSON.stringify(st)); else step('tap: wrong tap = miss, right tap passes');
+    await page.evaluate(() => { TEACH.off = false; });
     // spell: in-app keyboard only; wrong word keeps the right start; es keyboard has the accent row
     await kbShow('spell');
     for (const c of 'cut') await page.click(`.sk[data-ch="${c}"]`);
@@ -2034,6 +2037,9 @@ async function main() {
             dot: document.querySelectorAll('#qtrack .dots > i.done').length, res: (G.res || []).join() }));
           if (!r1.ok || r1.badge === 'none' || !/^good:/.test(r1.toast) || r1.dot !== 1) bad10.push('right answer feedback: ' + JSON.stringify(r1));
           await qp.evaluate(() => { G.dead = true; next = __next; });
+          // TEACH-1 ("old checks check old", as K2OLD): this even-or-odd question has two choices, which now get one try in Practice;
+          // TEACH.off gives the try-again feedback this step checks (the one-try rule has its own TEACH-1 step)
+          await qp.evaluate(() => { TEACH.off = true; });
           await qp.evaluate('(' + show.choice.toString() + ')()');
           await qp.evaluate(() => { window.__toasts = []; });
           await qp.click(`.ch[data-i="${await qp.evaluate(() => G.q.choices.findIndex(c => String(c.v) !== String(G.q.ans)))}"]`);
@@ -2044,6 +2050,7 @@ async function main() {
               flame: document.querySelector('#stk').classList.contains('off') };
           });
           if (!r2.wrong || r2.bg !== 'rgb(255, 232, 184)' || !r2.badge || !/try:Try again/.test(r2.toast) || !r2.flame) bad10.push('wrong answer feedback: ' + JSON.stringify(r2));
+          await qp.evaluate(() => { TEACH.off = false; });
           // calm mode: no entrance animation on the prompt
           const calm = await qp.evaluate(() => { document.documentElement.classList.add('calm'); renderQ();
             const d = parseFloat(getComputedStyle(document.querySelector('#prompt')).animationDuration); document.documentElement.classList.remove('calm'); return d; });
