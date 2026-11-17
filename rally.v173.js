@@ -2882,7 +2882,7 @@ function rlGlStart(R, cv) {
   const f = new Float32Array(RGL.MAXF), D = 154;
   const G = { R: X, cv, off: false, q: 1, fq: 0, slow: 0, frames: 0, f, k: 0, gm: GLX.mesh(X, 'grad', f, 0, true), B: GLX.batch(X, 900),
     VP: new Float32Array(16), SCR: new Float32Array(16), ex: new Float64Array(D), ez: new Float64Array(D), ey: new Float64Array(D), ew: new Float64Array(D),
-    ys: new Float64Array(D), ei: new Int32Array(D), ok: new Uint8Array(D), cr: new Int8Array(8), cd: new Float64Array(8), L: [0, 1, 0], amb: .6, l0: 1,
+    ys: new Float64Array(D), bx: new Float64Array(8), by: new Float64Array(4), ei: new Int32Array(D), ok: new Uint8Array(D), cr: new Int8Array(8), cd: new Float64Array(8), L: [0, 1, 0], amb: .6, l0: 1,
     T: [1, 1, 1], F: [1, 1, 1], f0: 0, fk: 0, fm: 0, col: {}, tid: '', at: null, W: 0, H: 0, V: null, tex: null, gq: null, gate: null, O: {} };
   G.O = { gnd: { n: 0 }, lt: { n: 0, first: 0 }, spr: { tex: null }, me: { tex: null }, far: { tex: null }, near: { tex: null }, gate: { tex: null } };
   G.put = (k, x, y, sz, a) => rgTrailPut(G, k, x, y, sz, a);
@@ -3321,24 +3321,32 @@ function rgFrame(R) {
     n = a - 1;
   }
   const kg = G.k;
-  // headlights on the road ahead (night, tunnels, fog), drawn see-through over it
-  const dark = T.pl.night || wx.fog || T.fl[pi] & 1 || T.fl[rlMod(pi + 6, N)] & 1;
-  if (dark) {
-    const ly = rgC(G, 'y1'), lh = .02 * RW * AK, e5 = Math.min(D, eq + 12), m = e5 - eq - 1;
-    for (let e = eq + 1; e < e5; e++) {
-      const k0 = (e - eq - 1) / m, k1 = Math.min(1, (e - eq) / m), a0 = .22 * (1 - k0), a1 = .22 * (1 - k1), w0 = (.14 + .36 * k0) * RW, w1 = (.14 + .36 * k1) * RW;
-      const xa = ex[e] + P.x * RW, xb = ex[e + 1] + P.x * RW, ya = ey[e] + lh, yb = ey[e + 1] + lh, za = ez[e], zb = ez[e + 1];
-      for (let q = -1; q <= 1; q++) {
-        const u0 = q < 0 ? -1 : q > 0 ? .5 : -.5, u1 = q < 0 ? -.5 : q > 0 ? 1 : .5, b0 = q < 0 ? 0 : a0, c0 = q > 0 ? 0 : a0, b1 = q < 0 ? 0 : a1, c1 = q > 0 ? 0 : a1;
-        rgV(G, xa + u0 * w0, ya, za, ly, 1, b0); rgV(G, xa + u1 * w0, ya, za, ly, 1, c0); rgV(G, xb + u1 * w1, yb, zb, ly, 1, c1);
-        rgV(G, xa + u0 * w0, ya, za, ly, 1, b0); rgV(G, xb + u1 * w1, yb, zb, ly, 1, c1); rgV(G, xb + u0 * w1, yb, zb, ly, 1, b1);
+  // headlights (at night and in or near tunnels, never by day): two warm beams lying on the road from the car's lamps, widening
+  // ahead in the road's perspective and fading out, added to the light of the road (the sprites, rivals too, are drawn over them)
+  const dark = T.pl.night || wx.fog || T.fl[pi] & 1 || T.fl[rlMod(pi + 6, N)] & 1, lamps = T.pl.night || T.fl[pi] & 1 || T.fl[rlMod(pi + 6, N)] & 1;
+  if (lamps) {
+    const ly = rgC(G, 'y'), lh = .03 * RW * AK, fm = G.fm, NS = 9;
+    G.fm = 0; // light is not hazed
+    for (let q = -1; q <= 1; q += 2) for (let j = 0; j < NS; j++) {
+      const k0 = j / NS, k1 = (j + 1) / NS;
+      for (let h = 0; h < 2; h++) {
+        const kk = h ? k1 : k0, z = RL_PZ + 90 + kk * 1500, f = z / RL_SEG + frac, e = Math.min(D - 1, Math.floor(f)), t2 = f - e;
+        const cx = ex[e] + (ex[e + 1] - ex[e]) * t2 + P.x * RW + q * (.1 + .32 * kk) * RW, cy = ey[e] + (ey[e + 1] - ey[e]) * t2 + lh, w = (.06 + .62 * kk) * RW, al = .36 * (1 - kk) * (1 - kk);
+        G.bx[h * 4] = cx - w; G.bx[h * 4 + 1] = cx; G.bx[h * 4 + 2] = cx + w; G.bx[h * 4 + 3] = al; G.by[h * 2] = cy; G.by[h * 2 + 1] = z;
+      }
+      const B = G.bx, Y = G.by;
+      for (let c = 0; c < 2; c++) { // the bright middle to each soft edge
+        const o = c * 2;
+        rgV(G, B[o], Y[0], Y[1], ly, 1, c ? B[3] : 0); rgV(G, B[o + 1], Y[0], Y[1], ly, 1, c ? 0 : B[3]); rgV(G, B[4 + o + 1], Y[2], Y[3], ly, 1, c ? 0 : B[7]);
+        rgV(G, B[o], Y[0], Y[1], ly, 1, c ? B[3] : 0); rgV(G, B[4 + o + 1], Y[2], Y[3], ly, 1, c ? 0 : B[7]); rgV(G, B[4 + o], Y[2], Y[3], ly, 1, c ? B[7] : 0);
       }
     }
+    G.fm = fm;
   }
   gl.bindBuffer(gl.ARRAY_BUFFER, G.gm.b); gl.bufferSubData(gl.ARRAY_BUFFER, 0, G.f.subarray(0, G.k));
   gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.ALWAYS); gl.depthMask(true);
   O.gnd.n = kg / 7; GLX.draw(X, G.gm, VP, O.gnd);
-  if (G.k > kg) { gl.depthMask(false); gl.enable(gl.BLEND); O.lt.first = kg / 7; O.lt.n = (G.k - kg) / 7; GLX.draw(X, G.gm, VP, O.lt); }
+  if (G.k > kg) { gl.depthMask(false); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE); O.lt.first = kg / 7; O.lt.n = (G.k - kg) / 7; GLX.draw(X, G.gm, VP, O.lt); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); }
   // ---- sprites, far to near, against the ground's depth (a hill top or a wall hides what is behind it) ----
   gl.depthFunc(gl.LEQUAL); gl.depthMask(false); gl.enable(gl.BLEND);
   const tn = G.T, sp = T.spAt, prA = T.pr;
