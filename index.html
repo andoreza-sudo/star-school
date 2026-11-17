@@ -9600,8 +9600,9 @@ function addMiss(q){const p=P(q.sk),m=p.miss[q.label]||{tot:0};m.tot=(m.tot||0)+
   revMiss(q)} // P5-02: the review item (59-review.js)
 /* TEACH-1: the lessons' switch (part teach, 52-lesson.js). TEACH.off gives the app as it was before them: no lesson offer on the map, and in
    Practice (this round) a two-choice question keeps its second try. With lessons on, a question with only two answers to tap (two
-   choices, or two things to tap) gets one try: a second tap could only be right, so it is shown with its picture instead. */
-const TEACH={off:false};
+   choices, or two things to tap) gets one try: a second tap could only be right, so it is shown with its picture instead.
+   TEACH-2: the switch is the save's S.lsOff (Grown-ups, Grade and level: "Lessons with <pet>"), so it is per child and kept. */
+const TEACH={get off(){return!!(typeof S!='undefined'&&S&&S.lsOff)},set off(v){if(v)S.lsOff=1;else delete S.lsOff}};
 const twoWay=q=>q.kind=='choice'&&q.choices.length==2||q.kind=='tap'&&new Set(String(q.html).match(/data-v="[^"]*"/g)||[]).size==2;
 const PRAISE=['Great job!','You got it!','Awesome!','Super!','Nice!','Yes!','Way to go!','Brilliant!','Boom!','Nailed it!'];
 const CHEERS=[...new Set([...PRAISE,...PET_YAY])]; // EN-PRAISE: a right answer shows and says one of these (recorded in six voices, tools/en-audio.js)

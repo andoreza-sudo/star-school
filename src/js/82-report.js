@@ -67,6 +67,7 @@ const REP = {
     const m = {name: S.name || '', date: REP.dayText(now), year: new Date(now * 864e5).getUTCFullYear(), grade: gradeOf()};
     // TEACH-1: the lessons' before-and-after measure (S.lm: [nid, day, pre right, pre n, post right, post n, tested out], 52b-know.js) and tonight's question
     const lm = Array.isArray(S.lm) ? S.lm : [], sm = i => lm.reduce((t, x) => t + (+x[i] || 0), 0), pc = (a, b) => (b ? Math.round(100 * a / b) : 0);
+    m.ls = typeof LSREP != 'undefined' ? LSREP.data() : null; // TEACH-2: the lessons' card (52d-notebook.js, part teach)
     m.teach = lm.length ? {n: lm.length, pre: pc(sm(2), sm(3)), post: pc(sm(4), sm(5)), to: lm.filter(x => x[6]).length, tq: typeof S.tq == 'string' ? S.tq : ''} : null;
     REP.keepLog(() => {
       m.cur = ACT.sum(today0, 7);
@@ -281,7 +282,7 @@ const REP = {
       + sec('rp-recent', 'medal', 'Recently mastered', REP.recent(m))
       + sec('rp-flu', 'bolt', 'Fact Sprint bests', REP.fluency(m))
       + sec('rp-streak', 'flame', 'Streak', REP.streak(m))
-      + (m.teach ? sec('rp-teach', 'doc', 'Lessons with ' + esc(petN()), `${m.teach.tq ? `<p><b>Tonight's question:</b> ${esc(m.teach.tq)}</p>` : ''}<p>${m.teach.n} lesson${m.teach.n > 1 ? 's' : ''}`
+      + (m.ls && m.ls.any ? sec('rp-teach', 'doc', 'Lessons with ' + esc(petN()), LSREP.html(m)) : m.teach ? sec('rp-teach', 'doc', 'Lessons with ' + esc(petN()), `${m.teach.tq ? `<p><b>Tonight's question:</b> ${esc(m.teach.tq)}</p>` : ''}<p>${m.teach.n} lesson${m.teach.n > 1 ? 's' : ''}`
         + `${m.teach.to ? `, ${m.teach.to} already known (tested out)` : ''}. Right on the first try before the lesson: ${m.teach.pre}%. After it: ${m.teach.post}%.</p>`
         + '<div class="small rp-key">Before: two questions at the start of a lesson, with no help. After: two at its end, with no help. All of it stays on this tablet.</div>') : '');
   },
@@ -295,6 +296,9 @@ function report() {
     + `<div class="rp-noprint rp-online">${onlineNote()}</div><div class="scroll rp-scroll gw">`
     + (m ? REP.html(m) : '<div class="gw-card rp-empty">The report card could not be drawn.</div>') + `</div>`);
   $('#back').onclick = () => grown();
+  // TEACH-2: the lessons' card comes with the teach part: load it when the save has lessons, then draw again
+  if (m && m.ls) LSREP.bind(m, () => report());
+  else if (S.know && Object.keys(S.know).length && !partReady('teach')) partLoad('teach').then(ok => {if (ok && $('.rp-scroll')) report()});
   // G-FEEL2: pin one stop as tomorrow's first mission (one pin at a time; the pinned one again takes it off)
   $$('[data-pin]').forEach(b => b.onclick = () => {
     const x = m && m.needs[+b.dataset.pin];

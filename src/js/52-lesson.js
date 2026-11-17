@@ -30,7 +30,8 @@ const LS = {
   make(id, o = {}) {
     const L = LESSONS[id], seed = (o.seed >>> 0) || ((Math.random() * 4294967296) >>> 0);
     const st = {id, L, seed, r: mulberry32(seed + (o.at | 0)), b: -1, items: [], i: 0, pre: (o.pre || []).slice(), post: [], to: false, ctx: {}, chk: [],
-      rem: (o.rem || []).filter(x => LESSONS[x] && x !== id), day: o.day || 0, S: o.S || S, last: -1, drop: false, done: false};
+      rem: (o.rem || []).filter(x => LESSONS[x] && x !== id), day: o.day || 0, S: o.S || S, last: -1, drop: false, done: false,
+      repair: BUGS[o.repair] ? o.repair : null};
     if (o.at && st.pre.length == 2 && st.pre.every(Boolean) && o.at <= LSB.indexOf('show')) st.to = true;
     LS.beat(st, Math.max(0, Math.min(o.at | 0, LSB.indexOf('show'))));
     return st;
@@ -41,32 +42,48 @@ const LS = {
     st.b = b;
     st.i = 0;
     let it = [];
-    if (B == 'pre') it = [0, 1].slice(st.pre.length).map(k => ({m: 'ask', one: 1, q: L.q(L.test, r), lines: k ? [] : [T.hi(lsName()), 'First, show me what you know.']}));
+    if (B == 'pre') it = [0, 1].slice(st.pre.length).map(k => ({m: 'ask', one: 1, q: L.q(L.test, r), lines: k ? [] : [T.hi(lsName()), T.first]}));
     else if (B == 'rem') it = st.rem.slice(0, 1).map(x => ({m: 'ask', help: 1, rem: x, q: LESSONS[x].q(LESSONS[x].test, r), lines: [T.rem]}));
     else if (B == 'exp') {
       st.exp = L.exp(r);
-      it = [{m: 'open', q: st.exp.q, nudge: st.exp.nudge, lines: ["Let's play first."]}];
+      it = [{m: 'open', q: st.exp.q, nudge: st.exp.nudge, lines: [T.play]}];
+      // a repair (TEACH-PLAN-2 system C): the lesson opens with a contrast on the model, the right answer beside the held idea's
+      const c = st.repair && LS.contrast(st, st.repair);
+      if (c) it.unshift(c);
     } else if (B == 'name') {
       const n = L.name(st.ctx, r);
       it = [{m: 'say', html: n.html, lines: n.lines}];
-    } else if (B == 'tog') it = [LS.togItem(st, ["Now let's do some together."])];
+    } else if (B == 'tog') it = [LS.togItem(st, [T.tog])];
     else if (B == 'chk') it = [LS.petItem(st)];
     else if (B == 'show') it = [0, 1].map(k => ({m: 'ask', one: 1, q: L.q(L.test, r), lines: k ? [] : [st.to ? T.testOut : T.showMe]}));
-    else if (B == 'win') it = [{m: 'ask', help: 3, win: 1, q: L.q(0, r), lines: ['One more, together!']}];
+    else if (B == 'win') it = [{m: 'ask', help: 3, win: 1, q: L.q(0, r), lines: [T.more]}];
     st.items = it;
     return it.length ? st : LS.after(st);
   },
   // the next Together item: stage 0 first, then one up after a right first try, one down after a miss (the picture comes back)
+  // When two misconception codes fit the child's wrong answers equally, the item is the probe: a question on which they predict
+  // different answers (knowProbe, 52b-know.js), so one answer settles it.
   togItem(st, lines) {
-    const s = st.last < 0 ? 0 : st.drop ? Math.max(0, st.last - 1) : Math.min(2, st.last + 1);
+    const s = st.last < 0 ? 0 : st.drop ? Math.max(0, st.last - 1) : Math.min(2, st.last + 1), tie = knowTie(st.id, st.S, st.day);
     st.last = s;
     st.drop = false;
-    return {m: 'ask', help: 1, tog: 1, q: st.L.q(s, st.r), lines: lines || []};
+    const pq = tie && knowProbe(tie[0], tie[1], () => st.L.q(s, st.r));
+    return {m: 'ask', help: 1, tog: 1, probe: pq ? tie : null, q: pq || st.L.q(s, st.r), lines: lines || []};
+  },
+  // the contrast that opens a repair: one question with two answers on its picture, the right one and the one the held idea gives
+  contrast(st, code) {
+    for (let n = 0; n < 30; n++) {
+      const q = st.L.q(1, st.r), w = (knowPredict(q)[code] || []).find(v => LS.fits(q, v) && !lsOk(q, v));
+      if (w == null) continue;
+      const pane = (v, ok) => `<div class="ls-cpane ${ok ? 'ok' : 'no'}">${ico(ok ? 'check-circle' : 'close', 28)}<span class="a11y-h">${ok ? 'Right' : 'Not right'}</span>${LS.petWork(q, v)}</div>`;
+      return {m: 'say', con: code, html: `<div class="ls-con">${pane(q.ans, true)}${pane(w, false)}</div>`, lines: [lsTone().look, lsTone().isRight, BUGS[code].say]};
+    }
+    return null;
   },
   // Check me: one of the stop's questions (the build when it builds on a model, else the picture) and the pet's own answer: the
   // child's own misconception when the record shows one, else the script's first; right about PET_OK of the time
   petItem(st) {
-    const L = st.L, r = st.r, T = lsTone(), held = knowHeld(st.id, st.S), codes = held && L.bugs.includes(held) ? [held] : L.bugs;
+    const L = st.L, r = st.r, T = lsTone(), held = st.repair || knowHeld(st.id, st.S, st.day), codes = held && L.bugs.includes(held) ? [held] : L.bugs;
     const petOk = r() < LS.PET_OK;
     let q, pv, code = null;
     // up to 30 questions for the preferred mistake, then any of the stop's
@@ -125,13 +142,13 @@ const LS = {
     }
     const ok = lsOk(it.q, v), first = !it.tries;
     if (first && it.rem) knowRemember(it.rem, ok, st.day, st.S);
-    else if (first && !it.fix && !it.win) knowAdd(st.id, it.q, v, ok, st.S);
+    else if (first && !it.fix && !it.win) knowAdd(st.id, it.q, v, ok, st.S, st.day);
     if (it.one) {
       it.tries = 1;
       (B == 'pre' ? st.pre : st.post).push(ok);
       return {ok, act: ok ? 'next' : 'reveal', lines: ok ? yay() : [T.tryMore]};
     }
-    if (ok) return {ok, act: 'next', lines: it.tries ? ['You fixed it!'] : yay(), mood: 'happy'};
+    if (ok) return {ok, act: 'next', lines: it.tries ? [T.fixed] : yay(), mood: 'happy'};
     it.tries = (it.tries || 0) + 1;
     if (it.tog) st.drop = true;
     if (it.tries <= it.help) return {ok, act: 'retry', lines: [T.help]};
@@ -163,9 +180,15 @@ const LS = {
   // the learner record and the measure (52b-know.js); returns {pass, sc}
   finish(st) {
     const S0 = st.S, k = lsKnow(st.id, S0), pass = st.post.length == 2 && st.post.every(Boolean);
+    // TEACH-2: a lesson again on a stop already learned (a review, or a repair) is remembering it: Show moves its memory box
+    if (k.s >= 2 && st.post.length) knowRemember(st.id, pass, st.day, S0);
     k.n++;
     if (k.s < 1) k.s = 1;
     if (pass && k.s < 2) Object.assign(k, {s: 2, d: st.day, box: 0, due: st.day + LS_GAP[0], last: st.day});
+    // the notebook page (52d-notebook.js): what the child built in Explore, drawn again from it; a passed repair starts the page of
+    // wrong answers again (the tally stays, and fades)
+    if (pass && Object.keys(st.ctx).length) k.note = Object.assign({}, st.ctx);
+    if (pass && st.repair) k.w = [];
     lsMeasure(st.id, st.day, st.pre, st.post, st.to, S0);
     delete S0.les;
     return {pass, sc: st.post.filter(Boolean).length};
@@ -203,7 +226,7 @@ const LS = {
   start(id) {
     if (!LESSONS[id]) return;
     const day0 = lsDay(), pl = planToday(S, day0) || {}, les = S.les && S.les.n === id ? S.les : null;
-    LS.st = LS.make(id, les ? {seed: les.s, at: les.b, pre: les.pre, day: day0, rem: []} : {rem: pl.remember || [], day: day0});
+    LS.st = LS.make(id, les ? {seed: les.s, at: les.b, pre: les.pre, day: day0, rem: [], repair: les.r} : {rem: pl.remember || [], day: day0, repair: pl.id === id && pl.code});
     warmVoices();
     LS.show();
   },
@@ -232,6 +255,7 @@ const LS = {
     if (!st) return;
     if (!it) return LS.end();
     S.les = {n: st.id, b: st.b, s: st.seed, pre: st.pre.slice()};
+    if (st.repair) S.les.r = st.repair;
     save();
     LS.seq++; // screens shown (tests wait for the next one)
     const q = it.q, B = LSB[st.b], T = lsTone();
@@ -351,12 +375,13 @@ const LS = {
      ${rec.pass ? UI.stars(rec.stars, 3, 34) : ''}
      <ul class="rw-pl ls-earn"><li>${ico('star', 18)}<span>+${rec.sc} stars</span></li><li>${ico('coin', 18)}<span>+${rec.coins} coins</span></li>
       <li>${ico('ticket', 18)}<span>+${fmtM(rec.PT.sec)} of game time</span></li>${rec.newPass && rec.next >= 0 ? `<li>${ico('map', 18)}<span>Next stop unlocked: ${esc(NODES.math[rec.next].t)}!</span></li>` : ''}</ul>
-     <div class="ls-acts">${UI.btn('Practice', {kind: rec.pass ? 'soft' : 'primary', size: 'lg', icon: 'play', id: 'lsprac'})}${UI.btn('Map', {kind: rec.pass ? 'primary' : 'soft', size: 'lg', icon: 'map', id: 'lsmap'})}</div>
+     <div class="ls-acts">${UI.btn('Practice', {kind: rec.pass ? 'soft' : 'primary', size: 'lg', icon: 'play', id: 'lsprac'})}${UI.btn('Map', {kind: rec.pass ? 'primary' : 'soft', size: 'lg', icon: 'map', id: 'lsmap'})}${UI.btn('Notebook', {kind: 'soft', size: 'lg', icon: 'doc', id: 'lsnb'})}</div>
     </div></div>`);
     LS.mood('cheer');
     $('#lshome').onclick = () => { SFX.whoosh(); home(); };
     $('#lsprac').onclick = () => { SFX.whoosh(); start('math', rec.ni); };
     $('#lsmap').onclick = () => { SFX.whoosh(); pathMap('math'); };
+    $('#lsnb').onclick = () => { SFX.whoosh(); NB.open(() => pathMap('math')); };
     SFX.fanfare();
     if (rec.pass) confetti(24);
     if (LS.voice()) say(`${line} ${L.idea} ${T.bye(lsName())}`);
@@ -368,6 +393,7 @@ const LS = {
     if (!m || MAPP != 'math' || TEACH.off || gradeOf() > 2) return;
     const old = m.querySelector('.ls-go');
     if (old) old.remove();
+    NB.mapBtn();
     const pl = planToday(S, lsDay()), b = pl && m.querySelector(`.node[data-n="${pl.i}"]`);
     if (!b) return;
     const x = parseFloat(b.style.left), y = parseFloat(b.style.top), W = m.clientWidth || 360, sd = x > W / 2 ? -1 : 1;

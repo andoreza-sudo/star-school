@@ -290,16 +290,42 @@ const LS_TONE = {
   little: {hi: n => `Hi ${n}! Let's learn together.`, yay: ['Yes!', 'You got it!', 'Super!', 'Hooray!', 'Great job!'], help: 'Look! Let me help.',
     tryMore: "Let's look at it together.", testOut: 'You know this! Show me!', showMe: 'Your turn to show me!', myTurn: 'My turn. Check me!',
     caught: 'You caught my mistake!', fooled: 'Look again. I made a mistake!', rightMe: 'Yes, I got it right!', wrongMe: 'I was right this time!',
-    fixIt: 'Can you fix it?', win: 'We did it!', bye: n => `Great learning, ${n}!`, rem: 'Do you remember this?'},
+    fixIt: 'Can you fix it?', win: 'We did it!', bye: n => `Great learning, ${n}!`, rem: 'Do you remember this?',
+    nb: n => `Look! We learned ${n} big idea${n > 1 ? 's' : ''}!`, nb0: "Let's learn together and fill our notebook!", kept: 'And you still know it!',
+    first: 'First, show me what you know.', play: "Let's play first.", tog: "Now let's do some together.", more: 'One more, together!', fixed: 'You fixed it!',
+    look: 'Look at these two.', isRight: 'This one is right.'},
   kid: {hi: n => `Hey ${n}. New idea today.`, yay: ['Nice work.', 'You got it.', 'Right on.', 'Exactly.'], help: 'Here is a picture to help.',
     tryMore: 'Try it with the picture.', testOut: 'Looks like you know this. Prove it!', showMe: 'Show me what you know.',
     myTurn: 'My turn. Check my work.', caught: 'Good catch. I slipped there.', fooled: 'Look closer. I slipped.', rightMe: 'Yep, that one was right.',
-    wrongMe: 'Actually, I had it right.', fixIt: 'Fix it for me?', win: 'Nailed it.', bye: n => `Good work today, ${n}.`, rem: 'Remember this one?'},
+    wrongMe: 'Actually, I had it right.', fixIt: 'Fix it for me?', win: 'Nailed it.', bye: n => `Good work today, ${n}.`, rem: 'Remember this one?',
+    nb: n => `Your notebook has ${n} idea${n > 1 ? 's' : ''} in it.`, nb0: 'Your notebook fills up as we learn.', kept: 'You still know this one.',
+    first: 'First, show me what you already know.', play: 'Try this first. Any way works.', tog: 'Now a few with me.', more: 'One more, with the picture.',
+    fixed: 'You fixed it.', look: 'Compare these two.', isRight: 'This one is right.'},
   teen: {hi: n => `Hey ${n}. Here is today's idea.`, yay: ['Nice.', 'Correct.', 'That holds up.', 'Clean.'], help: 'Picture it first.',
     tryMore: 'Use the model.', testOut: 'You might know this already. Show me.', showMe: 'Your call.', myTurn: 'My turn. Check my work.',
     caught: 'Fair. I got that wrong.', fooled: 'Look again. That one was wrong.', rightMe: 'That one was fine.', wrongMe: 'That one was actually right.',
-    fixIt: 'Fix it.', win: 'Done.', bye: n => `Good session, ${n}.`, rem: 'Quick one from before.'},
+    fixIt: 'Fix it.', win: 'Done.', bye: n => `Good session, ${n}.`, rem: 'Quick one from before.',
+    nb: n => `Your notes: ${n} idea${n > 1 ? 's' : ''} so far.`, nb0: 'Your notes go here as we work.', kept: 'Still solid.',
+    first: 'Show me what you already know.', play: 'Try this first. There is no wrong way.', tog: 'A few to work through.', more: 'One more with the model.',
+    fixed: 'Fixed.', look: 'Compare these two.', isRight: 'This one holds up.'},
+};
+/* The rules each age's lines are checked against (tools/test.js on LS_TONE and every script; tools/author.js on drafts): the most
+   words in a line, and the words that age does not use. The little one may say anything kind; the older kid drops baby praise;
+   the teen-like partner also drops the little one's exclamations and never says "we did it" for the child's own work. */
+const LS_RULES = {
+  little: {words: 12, chars: 90, no: null},
+  kid: {words: 16, chars: 110, no: /\b(hooray|yay|super duper|good (boy|girl)|itty|bitty|teeny|tiny friend|sweetie)\b/i},
+  teen: {words: 20, chars: 130, no: /\b(hooray|yay|super|great job|good (boy|girl)|awesome|let's play|itty|bitty|teeny|sweetie|yummy|we did it)\b|!!/i},
 };
 // the pet's age for a grade: little one (Pre-K to 2), older kid (3, 4), teen-like (5, 6)
 const lsAge = g => g <= 2 ? 'little' : g <= 4 ? 'kid' : 'teen';
+// a line's problems under an age's rules ([] when it is fine)
+function lsToneBad(t, age) {
+  const R = LS_RULES[age], o = [], w = String(t).trim().split(/\s+/).length;
+  if (w > R.words) o.push(`${w} words (${age}: ${R.words} at most)`);
+  if (String(t).length > R.chars) o.push(`${String(t).length} characters (${age}: ${R.chars} at most)`);
+  const m = R.no && String(t).match(R.no);
+  if (m) o.push(`"${m[0]}" is not how the ${age} pet talks`);
+  return o;
+}
 const lsTone = () => LS_TONE[lsAge(typeof gradeOf == 'function' ? gradeOf() : 0)];

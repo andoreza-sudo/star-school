@@ -1,0 +1,20 @@
+{
+ "id": "tenf2",
+ "t": "Make Ten",
+ "grade": 0,
+ "age": "little",
+ "idea": "Different parts can make ten.",
+ "beats": {
+  "remember": ["Do you remember this? Show me {n}."],
+  "explore": ["Fill the whole frame. Use both colours. Any way you like!", "You made {a} and {b}."],
+  "name": ["You made {a} and {b}.", "{a} and {b} make ten.", "Different parts can make ten."],
+  "together": ["There are {a} counters. Put in more to make ten.", "How many more to make ten?", "{a} and how many make ten?"],
+  "check": ["My turn. Check me!", "I say {ans}! Am I right?"],
+  "show": ["The bridge needs ten planks. {a} are down. How many more?"]
+ },
+ "reasons": {
+  "given": ["I said the number I could see. Count the empty boxes!"],
+  "off1": ["Too many. One is left over.", "One box is still empty."]
+ },
+ "home": "Ask {name}: \"If I hold up 7 fingers, how many more make 10?\""
+}
