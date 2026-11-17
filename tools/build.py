@@ -16,7 +16,7 @@ PARTS = [
     ('gen2', r'(35-gen-math-upper|36-gen-phonics|37-bank|37-comp|39b-steps|49b-kinds2|51b-checkin)\.js|(37b-kinds-c|51b-checkin)\.css'),  # A11c: question generators, part 2 (35 is the big one); KINDS2: the sort and mark kinds; CHECK-IN: check-ins and stop badges
     ('bt', r'\d+-bt-[\w-]+\.(js|css)'),  # Brain Teaser puzzle types NN-bt-*.js and NN-bt-*.css (74-teasers.js, the framework, stays)
     ('games', r'(60-gl|62-hill|62b-hill-gl|64-gtimer|66-colornum|68-lowpoly|70-art|72-shapes|59-game-hub)\.js|(48-game-hub|61-hill)\.css'),  # the Game Room: hub (P4-16) and the first games (G-02b moved Star Rally to games2, G-RALLY2 to rally, G-BB2 Block Builder to games3); GL-01: the shared WebGL layer and Hill Climb's 3D look
-    ('rally', r'63-game-race\.js|49-game-race\.css'),  # G-RALLY2: Star Rally on its own (games2 had passed its 400 KB warning); loads after games, before games2
+    ('rally', r'(63-game-race|63b-rally-gl)\.js|49-game-race\.css'),  # G-RALLY2: Star Rally on its own (games2 had passed its 400 KB warning); loads after games, before games2; GL-02: its 3D look (on games' GLX)
     ('games2', r'(?!60-game-blocks)\d+-game-[\w-]+\.(js|css)'),  # G-04a: every newer Game Room game NN-game-*.js / .css (Snack Stand, Sky Hop ...)
     ('games3', r'(60-blocks|61-bb-gl)\.js|60-game-blocks\.css'),  # G-BB2: Block Builder and its WebGL renderer (games was over its 400 KB warning)
     ('teach', r'52-lesson\.css|(52-lesson|52b-know|52c-scripts)\.js'),  # TEACH-1: Sparky teaches (the lesson engine, the learner record and plan, the lesson scripts)

@@ -8221,6 +8221,87 @@ run('GL-01 WebGL layer, Hill 3D look, speed box',()=>{
   return{problems:[...new Set(p)].slice(0,50),note:o.notes.join('; ')};
 });
 
+// ---- GL-02: Star Rally's 3D look (src/js/63b-rally-gl.js, rally part, on the GLX layer of games) ----
+// Like GL-01: with no WebGL (no context, a throwing getContext) or WebGL drawn by the CPU the race keeps its 2D look; the 3D camera is
+// the 2D look's own projection (every car, hazard and pick-up where the 2D look puts it); the race never reads the renderer or the
+// race's light (rlMood: drawing only); slow frames step the pixels down, then give way to the 2D look; the switch lives in the Star
+// Rally menu (the rally part), so index.html and the start-up files do not grow; the child's car is drawn with the depth test off.
+run('GL-02 Star Rally 3D look',()=>{
+  const p=[],rd=f=>fs.readFileSync(path.join(SRC,f),'utf8');
+  if(partOf('63b-rally-gl.js')!=='rally')p.push('63b-rally-gl.js should build into rally.'+BUILD_VER+'.js (PARTS), on demand, after games (GLX)');
+  function T(){
+    const r={bad:[],notes:[]},bad=m=>{if(r.bad.length<60&&!r.bad.includes(m))r.bad.push(m)};
+    if(typeof rlGlStart!='function'||typeof rlGlFrame!='function'||typeof rgVP!='function'||typeof rlMood!='function')bad('the 3D look is not loaded');
+    // 1. wanted unless turned off or dropped for speed this visit; without WebGL, or with WebGL drawn by the CPU, no renderer
+    const keep=S.rlGl;
+    delete S.rlGl;if(!rlGlWant())bad('the 3D look should be wanted when S.rlGl was never set (no migrate default needed)');
+    S.rlGl=false;if(rlGlWant())bad('S.rlGl = false (the Star Rally menu) should give the 2D look');
+    S.rlGl=true;RL_GLOFF=true;if(rlGlWant())bad('after a drop for speed the 3D look waits for the next visit');RL_GLOFF=false;
+    const ev=()=>{},cv0={addEventListener:ev,getContext:()=>null},cv1={addEventListener:ev,getContext:()=>{throw new Error('no')}};
+    for(const [n,c] of [['no context',cv0],['getContext throws',cv1]]){const R0={};let G;try{G=rlGlStart(R0,c)}catch(e){G='threw '+e.message}if(G!==null)bad('rlGlStart with '+n+' should be null: '+G)}
+    const init=GLX.init,end=GLX.end;let ended=0;
+    try{
+      GLX.init=()=>({soft:true});GLX.end=()=>{ended++};
+      const R0={},G=rlGlStart(R0,cv0);
+      if(G!==null||R0.glWhy!=='software'||ended!==1)bad('WebGL drawn by the CPU: no renderer, the context given back, glWhy software: '+JSON.stringify([G,R0.glWhy,ended]));
+    }finally{GLX.init=init;GLX.end=end}
+    S.rlGl=keep;
+    // 2. the projection is the 2D look's: x at W / 2 + KX x / z, y at hz - KY y / z (rlDraw's E.X and E.Y), depth -1 near, 1 far
+    const W=540,H=1110,hz=333,KX=256.5,KY=573,M=rgVP(new Float32Array(16),W,H,hz,KX,KY,0);
+    const scr=(x,y,z)=>{const c=[0,1,2,3].map(q=>M[q]*x+M[4+q]*y+M[8+q]*z+M[12+q]);return[(c[0]/c[3]+1)*W/2,(1-c[1]/c[3])*H/2,c[2]/c[3]]};
+    for(const [x,y,z] of [[0,-1000,1000],[2400,-1000,3000],[-900,350,12000],[150,-40,600]]){const s=scr(x,y,z),want=[W/2+x*KX/z,hz-y*KY/z];
+      if(Math.abs(s[0]-want[0])>.05||Math.abs(s[1]-want[1])>.05)bad('rgVP: ('+[x,y,z]+') lands at '+s.slice(0,2).map(v=>v.toFixed(2))+', the 2D look draws it at '+want.map(v=>v.toFixed(2)))}
+    const dn=scr(0,0,RGL.near)[2],df=scr(0,0,RGL.far)[2];if(Math.abs(dn+1)>1e-3||Math.abs(df-1)>1e-3)bad('rgVP depth: near '+dn+', far '+df);
+    // the car on the road at RL_PZ lands on the 2D look's ground line (rlSize: KY = (ground - hz) RL_PZ / RL_CAMH)
+    const gr=hz+KY*RL_CAMH/RL_PZ;if(Math.abs(scr(0,-RL_CAMH,RL_PZ)[1]-gr)>.05)bad('the car on the road is not drawn on the ground line');
+    const ms=rgVP(new Float32Array(16),W,H,hz,KX,KY,10),s1=[0,1,2,3].map(q=>ms[q]*0+ms[4+q]*-1000+ms[8+q]*1000+ms[12+q]);
+    if(Math.abs((s1[0]/s1[3]+1)*W/2-(W/2+10))>.05||Math.abs((1-s1[1]/s1[3])*H/2-(gr+3))>.05)bad('rgVP: the shake should move the view as rlDraw moves its canvas');
+    // 3. the race's light: from its seed, the same each time, different between races, never the race's random numbers
+    const a=rlMood(1234),b=rlMood(1234),seen=new Set(),sides=new Set();
+    if(JSON.stringify(a)!==JSON.stringify(b))bad('rlMood should give the same light for the same seed');
+    for(let sd=1;sd<=40;sd++){const m=rlMood(sd*7919);seen.add(m.sx.toFixed(3)+':'+m.ph.toFixed(1));sides.add(m.side);
+      if(!(m.sx>=.05&&m.sx<=.75)||!(m.bg>=0&&m.bg<2)||Math.abs(Math.hypot(...m.L)-1)>1e-9||!(m.L[1]>.4)||m.tint.some(v=>v<.85||v>1.05))bad('rlMood('+sd*7919+') out of range: '+JSON.stringify(m))}
+    if(seen.size<36||sides.size<2)bad('rlMood should vary between races: '+seen.size+' different lights in 40, sun on '+sides.size+' sides');
+    const st1=rlNew('meadow-0',{seed:99,mode:'pro'}),st2=rlNew('meadow-0',{seed:99,mode:'pro'});rlMood(99);
+    for(let n=0;n<600;n++){rlStep(st1,{steer:n%120<60?.6:-.6,go:true});rlStep(st2,{steer:n%120<60?.6:-.6,go:true})}
+    if(st1.P.d!==st2.P.d||st1.P.x!==st2.P.x||st1.cars.some((c,i)=>c.d!==st2.cars[i].d))bad('two races with the same seed went differently');
+    for(const f of [rlNew,rlStep,rlTrack,rlHits,rlCrash,rlWall,rlLook,rlCupAdd])if(/\bgl\b|GLX|rlGl|rgFrame|mood|RGL/.test(f.toString()))bad(f.name+' reads the renderer or the race light');
+    // 4. pacing: slow frames lower the WebGL pixels (.8, .64, .5), then three slow checks more give the 2D look for the visit
+    const R={gl:{q:1,slow:0,off:false,cv:{style:{}}},ctx:{clearRect(){}},cv:{width:1,height:1}},qs=[];
+    for(let n=0;n<6;n++){const on=rlGlPace(R,30);qs.push(R.gl.q+(on?'':'/2D'))}
+    if(qs.join()!=='0.8,0.64,0.5,0.5,0.5,0.5/2D'||R.glWhy!=='slow'||!RL_GLOFF||R.gl.cv.style.display!=='none')bad('pacing: '+qs.join()+' '+R.glWhy+' '+RL_GLOFF);
+    RL_GLOFF=false;
+    const R2={gl:{q:.5,slow:2,off:false,cv:{style:{}}},ctx:{clearRect(){}},cv:{}};rlGlPace(R2,16);if(R2.gl.slow!==0||R2.gl.off)bad('a fast check should reset the slow count');
+    r.notes.push('moods '+seen.size+' of 40 different');
+    return r;
+  }
+  const o=(()=>eval(js+';('+T.toString()+')()'))();
+  p.push(...o.bad);
+  // 5. the sources: the 2D look draws whenever the 3D frame did not; failures drop to it; the context goes back; the car on top
+  const race=rd('js/63-game-race.js'),g=rd('js/63b-rally-gl.js'),idx=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
+  const dr=race.slice(race.indexOf('function rlDraw('),race.indexOf('function rlFall('));
+  if(!/const gl = !!\(R\.gl && !R\.gl\.off && rlGlFrame\(R\)\);/.test(dr)||!/if \(gl\) return rlGlTop\(R\);\n  const c = R\.ctx,/.test(dr))p.push('rlDraw: the 2D look should draw whenever the 3D frame did not');
+  if(!/try \{ return rgFrame\(R\); \} catch \(e\) \{ rlGlDrop\(R, 'error'\);/.test(g))p.push('63b-rally-gl.js: a failing 3D frame should drop to the 2D look');
+  if(!/if \(X\.lost \|\| gl\.isContextLost\(\)\) \{ rlGlDrop\(R, 'lost'\);/.test(g))p.push('a lost context should drop to the 2D look');
+  if(!/if \(X\.soft && !RGL\.soft\) \{ GLX\.end\(X\); R\.glWhy = 'software'; return null; \}/.test(g))p.push('WebGL drawn by the CPU (no GPU) should give the 2D look');
+  if(!/if \(RL\.gl\) \{ GLX\.end\(RL\.gl\.R\);/.test(race))p.push('rlStop should give the WebGL context back');
+  if(!/if \(rlGlPace\(RL, med\)\)/.test(race))p.push('the race loop should let the 3D look pace itself');
+  if(!/UI\.sw\('3D look \(off: the flat look, for slow tablets\)', S\.rlGl !== false, 'rl3d'\)/.test(race)||!/\$\('#rl3d'\)\.onchange = e => \{ S\.rlGl = e\.target\.checked; RL_GLOFF = false; save\(\); \}/.test(race))p.push('the Star Rally menu needs the 3D look switch #rl3d that saves S.rlGl');
+  if(/rlGl|RGL|rgFrame/.test(idx))p.push('the 3D look must stay out of index.html (start-up does not grow)');
+  // the child's car: drawn over the world with the depth test off (a hill top, a wall or a rail never hides it, FIX3), then the nearer sprites
+  const me=g.slice(g.indexOf('function rgMe('),g.indexOf('function rlGlTop('));
+  if(!/gl\.disable\(gl\.DEPTH_TEST\);[\s\S]*rgSQ\(G, x, y - h \/ 2, w, h, ang, RGL_FULL, 1\);[\s\S]*gl\.enable\(gl\.DEPTH_TEST\);/.test(me)||!/rgFlush\(G, VP, tex\);\n        rgMe\(G, R, sh\);/.test(g))p.push('the child\'s car should be drawn with the depth test off, in its place among the sprites');
+  // cheap tablets: one ground draw, no allocation in the vertex writers, a fixed buffer; tokens only
+  for(const f of ['rgV','rgQ','rgBB','rgFlat','rgSQ']){const b=g.slice(g.indexOf('function '+f+'('));const body=b.slice(0,b.indexOf('\n}\n'));if(/\bnew [A-Z]|\[\]|=>|\.push\(|\.map\(/.test(body))p.push(f+' should not make anything while racing')}
+  if(!/new Float32Array\(RGL\.MAXF\)/.test(g)||!/gl\.bufferSubData\(gl\.ARRAY_BUFFER, 0, G\.f\.subarray\(0, G\.k\)\)/.test(g))p.push('the ground should be one buffer made once and refilled');
+  const gc=g.replace(/\/\*[\s\S]*?\*\//g,'').replace(/(^|[^:'"`])\/\/[^\n]*/g,'$1');
+  if(/#[0-9a-fA-F]{3,8}\b|(?<!\.)\b(rgb|rgba|hsl|hsla)\(/.test(gc))p.push('63b-rally-gl.js: a raw colour (use rlCol / rgC roles)');
+  const tok=rd('css/00-tokens.css');
+  for(const m of gc.matchAll(/\b(?:rgC\(G, |rlCol\()'([a-z][a-z0-9-]*[a-z0-9])'/g)){const ro=m[1],t=ro.startsWith('sc-')?'--'+ro:'--ill-'+({r:'red',o:'orange',y:'yellow',g:'green',c:'aqua',b:'blue',v:'purple',p:'pink',n:'brown',t:'tan',s:'skin',m:'cream',e:'grey',w:'white',k:'ink'})[ro[0]]+(ro[1]?'-'+ro[1]:'');if(!tok.includes(t+':'))p.push('63b-rally-gl.js: colour role '+ro+' is not a token')}
+  const rb=fs.statSync(path.join(__dirname,'..','rally.'+BUILD_VER+'.js')).size;if(rb>=PART_WARN)p.push('rally is '+rb+' bytes, over its '+PART_WARN+' warning');
+  return{problems:[...new Set(p)].slice(0,50),note:o.notes.join('; ')+'; rally '+rb+' bytes'};
+});
+
 // ---- CHECK-IN: mastery check-ins and stop badges (src/js/51b-checkin.js, src/css/51b-checkin.css, both in gen2) ----
 // When a check-in is offered (CHK.ready), its questions (the stop's own level, mixed kinds, no label twice), the badge award and the
 // gentle miss (S.chk), Next after a win, the map and report pieces, migrate on every fixture (S.chk added as {} by id; nothing else
