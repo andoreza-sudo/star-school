@@ -1,4 +1,4 @@
-import base64, json, os, re
+import base64, json, os, re, sys
 from PIL import Image, ImageDraw
 # Build: python3 tools/build.py   (run from anywhere; writes index.html, bt/games/data.<VER>.js, sw.js, manifest.json, icons to the repo root)
 # Bump VER on every release so tablets pick up the update.
@@ -7,6 +7,27 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = ROOT
 F = os.path.join(ROOT, 'tools', 'fonts', 'andika-latin-%s-normal.woff2')
 S_DIR = os.path.join(ROOT, 'src')
+# TEACH-2: lesson wording may be drafted by tools/author.js (an AI drafts, the owner reads). A script in src/js that names its draft
+# (draft: '<path>.md') builds only when that draft's status line says "status: reviewed ..."; the build stops otherwise.
+# python3 tools/build.py --drafts-only <root> runs just this gate on another tree (tools/test.js "author" does).
+def draft_gate(root):
+    bad, d = [], os.path.join(root, 'src', 'js')
+    for n in sorted(os.listdir(d)):
+        if not n.endswith('.js'):
+            continue
+        for m in re.finditer(r"\bdraft:\s*'([^']+\.md)'", open(os.path.join(d, n), newline='').read()):
+            f = os.path.join(root, m.group(1))
+            st = re.search(r'^status:\s*(\w+)', open(f).read(), re.M) if os.path.isfile(f) else None
+            if not st or st.group(1).lower() != 'reviewed':
+                bad.append('%s names the draft %s, which is %s' % (n, m.group(1), st.group(1).lower() if st else 'missing or has no status line'))
+    return bad
+if '--drafts-only' in sys.argv:
+    _bad = draft_gate(sys.argv[sys.argv.index('--drafts-only') + 1])
+    print('\n'.join(_bad) or 'drafts: every named draft is reviewed')
+    sys.exit(1 if _bad else 0)
+_bad = draft_gate(ROOT)
+if _bad:
+    sys.exit('build refused: a lesson script uses words nobody has reviewed yet (tools/author.js):\n  ' + '\n  '.join(_bad))
 # A11b: code that is only needed once a child opens it lives in more precached files, one per entry of PARTS: the file stem, then a
 # regular expression for the file names (whole name) in src/js and src/css that go there instead of into index.html. Each part file
 # is <stem>.<VER>.js: a <style> it adds to <head> (its src/css files, if any), its src/js files (sorted), and a last line
@@ -19,7 +40,7 @@ PARTS = [
     ('rally', r'(63-game-race|63b-rally-gl)\.js|49-game-race\.css'),  # G-RALLY2: Star Rally on its own (games2 had passed its 400 KB warning); loads after games, before games2; GL-02: its 3D look (on games' GLX)
     ('games2', r'(?!60-game-blocks)\d+-game-[\w-]+\.(js|css)'),  # G-04a: every newer Game Room game NN-game-*.js / .css (Snack Stand, Sky Hop ...)
     ('games3', r'(60-blocks|61-bb-gl)\.js|60-game-blocks\.css'),  # G-BB2: Block Builder and its WebGL renderer (games was over its 400 KB warning)
-    ('teach', r'52-lesson\.css|(52-lesson|52b-know|52c-scripts)\.js'),  # TEACH-1: Sparky teaches (the lesson engine, the learner record and plan, the lesson scripts)
+    ('teach', r'52-lesson\.css|(52-lesson|52b-know|52c-scripts|52d-notebook)\.js'),  # TEACH-1: Sparky teaches (the lesson engine, the learner record and plan, the lesson scripts); TEACH-2: the notebook and the report's lessons card
 ]
 # P6-02: parts that index.html does NOT load at start (no <script> tag): partsThen() in src/js/90-app.js (LAZY_PARTS, the same list,
 # checked by tools/test.js) loads them the first time they are needed (the Game Room). sw.js still precaches every part, so they work offline.

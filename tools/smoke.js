@@ -12244,7 +12244,8 @@ async function main() {
             return { st: getSt('math', i), next: unlocked('math', i + 1), know: S.know.tenf2, lm: S.lm[S.lm.length - 1], les: S.les, saved: !!JSON.parse(localStorage.getItem(SKEY)).lm,
               idea: (document.querySelector('.ls-idea') || {}).textContent, btns: [...document.querySelectorAll('.ls-acts .btn')].map(b => b.id).join() }; });
           if (end.st !== 2 || !end.next || !end.know || end.know.s !== 2 || !end.lm || end.lm[0] !== 'tenf2' || end.lm[2] !== 1 || end.lm[3] !== 2 || end.lm[4] !== 2 || end.lm[6] !== 0 || end.les || !end.saved
-            || !/Two parts make ten/.test(end.idea) || end.btns !== 'lsprac,lsmap') bad.push(at + 'the end: ' + JSON.stringify(end));
+            // TEACH-2: the end card also opens the notebook (lsnb), on purpose
+            || !/Two parts make ten/.test(end.idea) || end.btns !== 'lsprac,lsmap,lsnb') bad.push(at + 'the end: ' + JSON.stringify(end));
           await lsFit(pg, at + 'end: ');
           // 3. a lesson left part way resumes at its beat
           await pg.evaluate(() => { LS.start('miss1'); });
@@ -12293,6 +12294,115 @@ async function main() {
         'the lesson through pre, Explore, Name it, Together (a miss shows the picture and keeps the item), Check me (announced, marked, fixed), Show; ' +
         'the end card, the stop passed, the record and the measure saved; a lesson resumes at its beat; test-out goes straight to Show; ' +
         'in Practice two choices get one try (three choices and TEACH.off keep the second); no console errors, no network requests');
+    }
+
+    // TEACH-2 "the tutor's brain" (52d-notebook.js, 52b-know.js, 52-lesson.js in the part teach; 82-report.js, 80-grown.js), at 360x740
+    // and 800x1280 on the midway save as a Kindergartner with two ideas learned (one kept) and a misconception held on Add to 5.
+    // The math map loads the part and puts the notebook button on its top bar (48 px, on screen); the notebook shows one page per
+    // learned idea, drawn from the child's own build (7 and 3), a star on the kept one, each page and the screen's line spoken, no
+    // sideways scroll; Back goes to the map. A repair lesson opens with the contrast (the right answer and the held idea's, side by side).
+    // The report card's lessons card: the four stages, "What we noticed" with its pin (S.pin set, pressed); the part loaded by the report
+    // itself. The Grown-ups switch turns lessons off (no offer, no notebook button on the map) and on. No console errors, no network.
+    {
+      const bad = [], notes = [], shots = process.env.TEACH2_SHOTS || require('path').join(__dirname, 'out');
+      const fits = (pg, at, sel) => pg.evaluate(sel => {
+        const o = [], vw = document.documentElement.clientWidth;
+        if (document.documentElement.scrollWidth > vw) o.push('sideways scroll');
+        for (const b of document.querySelectorAll(sel)) { const r = b.getBoundingClientRect(); if (!r.width) continue;
+          if (r.width < 47.5 || r.height < 47.5) o.push('small button ' + (b.id || b.getAttribute('aria-label') || b.className));
+          if (r.right > vw + 1 || r.left < -1) o.push('button off screen ' + (b.id || b.className)); }
+        return o;
+      }, sel).then(o => o.forEach(x => bad.push(at + x)));
+      for (const [w, h] of [[360, 740], [800, 1280]]) {
+        const ta = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ta.page, at = 'TEACH-2 ' + w + 'x' + h + ' ';
+        try {
+          await pg.evaluate(() => { window.__said = []; window.say = t => { window.__said.push(String(t)); };
+            S.grade = 0; S.name = 'Mia'; delete S.les; delete S.pin; const d = STRK.idx(today()), i = NODES.math.findIndex(n => nid(n) === 'tenf3');
+            for (let j = 0; j < NODES.math.length; j++) setSt('math', j, j <= i ? 2 : 0);
+            S.know = { tenf2: { s: 2, n: 1, lv: [[1, 1], [1, 1], [1, 1]], b: {}, box: 0, due: d + 2, d: d - 1, last: d - 1, note: { a: 7, b: 3 } },
+              tenf3: { s: 3, n: 1, lv: [[1, 1], [0, 0], [1, 1]], b: {}, box: 1, due: d + 5, d: d - 8, last: d - 3, k: d - 3 },
+              add4: { s: 1, n: 2, lv: [[1, 2], [0, 2], [0, 1]], b: { op: 3 }, box: 0, due: 0, w: [['op', 'add4 3', d], ['op', 'add4 4', d], ['op', 'add4 4', d]] } };
+            S.lm = [['tenf2', d - 1, 1, 2, 2, 2, 0], ['tenf3', d - 8, 2, 2, 2, 2, 1], ['add4', d, 0, 2, 1, 2, 0]]; S.tq = 'Ask Mia: "If I hold up 7 fingers, how many more make 10?"';
+            save(); pathMap('math'); });
+          // 1. the map: the part loads, the notebook button on the top bar
+          await pg.waitForSelector('#nbopen', { timeout: 10000 });
+          await fits(pg, at + 'map: ', '#nbopen');
+          await pg.click('#nbopen');
+          await pg.waitForSelector('#nb .nbk-pg', { timeout: 5000 });
+          await vwait(pg, 400);
+          const nb = await pg.evaluate(() => ({ pages: [...document.querySelectorAll('.nbk-pg')].map(p => p.dataset.nbp + (p.classList.contains('kept') ? '*' : '')).join(),
+            eq: (document.querySelector('.nbk-pg[data-nbp="tenf2"] .nbk-pic') || {}).textContent, said: __said.join('|'), title: document.querySelector('.nbk-top .ttl').textContent,
+            hidden: [...document.querySelectorAll('.nbk-pic svg')].every(s => s.getAttribute('aria-hidden') == 'true'), next: !!document.querySelector('#nbgo') }));
+          if (nb.pages !== 'tenf2,tenf3*' || !/7 \+ 3 = 10/.test(nb.eq || '') || !/learned 2 big ideas/.test(nb.said) || nb.title !== 'My notebook' || !nb.hidden)
+            bad.push(at + 'the notebook: ' + JSON.stringify(nb));
+          await fits(pg, at + 'notebook: ', '#nb button, .nbk-top button');
+          await pg.screenshot({ path: require('path').join(shots, 'notebook-' + w + 'x' + h + '.png') });
+          await pg.evaluate(() => { __said = []; });
+          await pg.click('.nbk-pg[data-nbp="tenf3"] [data-nb]');
+          const s1 = await pg.evaluate(() => __said.join('|'));
+          if (!/Ten and some more/i.test(s1) && !/still know/i.test(s1)) bad.push(at + 'a page does not say its idea: ' + s1);
+          await pg.click('#back');
+          await pg.waitForSelector('#map', { timeout: 5000 });
+          // 2. a repair lesson opens with the contrast
+          await pg.evaluate(() => { LS.WAKE = 400; const st = LS.make('tenf2', { seed: 3, day: lsDay(), repair: 'given' }); st.pre = [true, false]; LS.beat(st, LSB.indexOf('exp')); LS.st = st; LS.show(); });
+          await pg.waitForSelector('.ls-con', { timeout: 5000 });
+          await vwait(pg, 600);
+          const con = await pg.evaluate(() => ({ panes: document.querySelectorAll('.ls-cpane').length, ok: !!document.querySelector('.ls-cpane.ok'), no: !!document.querySelector('.ls-cpane.no'),
+            said: __said.join('|') }));
+          if (con.panes !== 2 || !con.ok || !con.no || !/The number we see is not the answer/.test(con.said)) bad.push(at + 'the repair contrast: ' + JSON.stringify(con));
+          await fits(pg, at + 'contrast: ', '#lsinp button, #lsplay .ls-hear');
+          await pg.screenshot({ path: require('path').join(shots, 'repair-contrast-' + w + 'x' + h + '.png') });
+          await pg.evaluate(() => { LS.st = null; });
+          // 3. the report card: the lessons card, what we noticed, the pin
+          await pg.evaluate(() => report());
+          await pg.waitForSelector('#rp-teach .rp-ls', { timeout: 10000 });
+          const rp = await pg.evaluate(() => { const c = document.querySelector('#rp-teach'); return { txt: c.textContent, pins: c.querySelectorAll('[data-npin]').length,
+            heads: [...c.querySelectorAll('[role=columnheader]')].map(x => x.textContent).join() }; });
+          if (!/What we noticed/.test(rp.txt) || !/Mia sometimes adds when the problem takes away/.test(rp.txt) || rp.pins !== 1 || rp.heads !== 'Topic,Taught,Practising,Learned,Still knows it'
+            || !/Tonight's question/.test(rp.txt)) bad.push(at + 'the report: ' + JSON.stringify(rp).slice(0, 400));
+          await pg.evaluate(() => document.querySelector('#rp-teach').scrollIntoView({ block: 'start' }));
+          await vwait(pg, 200);
+          await pg.screenshot({ path: require('path').join(shots, 'report-' + w + 'x' + h + '.png') });
+          await pg.locator('#rp-teach').screenshot({ path: require('path').join(shots, 'report-lessons-card-' + w + 'x' + h + '.png') });
+          await fits(pg, at + 'report: ', '#rp-teach button');
+          await pg.click('[data-npin="0"]');
+          await pg.waitForSelector('[data-npin="0"][aria-pressed="true"]', { timeout: 5000 });
+          const pin = await pg.evaluate(() => S.pin && S.pin.sk + S.pin.lv);
+          if (pin !== 'add4') bad.push(at + 'Practise this next: ' + pin);
+          // 4. the Grown-ups switch: off takes the offer and the notebook button off the map; on brings them back
+          await pg.evaluate(() => grown());
+          await pg.waitForSelector('#lson', { timeout: 5000 });
+          const on0 = await pg.evaluate(() => document.querySelector('#lson').checked);
+          await pg.evaluate(() => document.querySelector('#lson').click());
+          const off = await pg.evaluate(() => ({ off: TEACH.off, saved: JSON.parse(localStorage.getItem(SKEY)).lsOff }));
+          await pg.evaluate(() => pathMap('math'));
+          await vwait(pg, 600);
+          const mOff = await pg.evaluate(() => ({ go: !!document.querySelector('.ls-go'), nb: !!document.querySelector('#nbopen') }));
+          if (!on0 || !off.off || off.saved !== 1 || mOff.go || mOff.nb) bad.push(at + 'lessons off: ' + JSON.stringify([on0, off, mOff]));
+          await pg.evaluate(() => { grown(); document.querySelector('#lson').click(); pathMap('math'); });
+          await pg.waitForSelector('#nbopen', { timeout: 5000 }).catch(() => bad.push(at + 'lessons on again: no notebook button'));
+          notes.push(w + 'x' + h);
+        } catch (e) { bad.push(at + (e.stack || e).toString().split('\n').slice(0, 3).join(' ')); }
+        for (const e of ta.errors) bad.push(at + e);
+        for (const u of ta.network) bad.push(at + 'network request: ' + u);
+        await ta.ctx.close();
+      }
+      // the report card of a fresh tablet loads the part on its own when the save has lessons (here: none loaded before)
+      {
+        const ta = await openApp(browser, { fixture: 'midway', width: 360, height: 740, lazy: true }), pg = ta.page;
+        try {
+          await pg.evaluate(() => { S.name = 'Mia'; S.know = { tenf2: { s: 2, n: 1, lv: [[1, 1], [1, 1], [1, 1]], b: {}, box: 0, due: 0 } }; S.lm = [['tenf2', 1, 1, 2, 2, 2, 0]]; save(); report(); });
+          await pg.waitForSelector('#rp-teach .rp-ls', { timeout: 10000 });
+        } catch (e) { bad.push('TEACH-2 report on a cold start: ' + (e.message || e).split('\n')[0]); }
+        for (const e of ta.errors) bad.push('TEACH-2 cold report: ' + e);
+        for (const u of ta.network) bad.push('TEACH-2 cold report: network request: ' + u);
+        await ta.ctx.close();
+      }
+      if (bad.length) fail('TEACH-2 the tutor\'s brain:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('TEACH-2: the tutor\'s brain at ' + notes.join(' and ') + ': the notebook button on the math map, the notebook (a page per learned idea from ' +
+        'the child\'s own build, a star when kept, spoken); a repair opens with the contrast; the report card\'s lessons card (four stages, what we noticed, ' +
+        'Practise this next), loaded by the report on a cold start; the Grown-ups switch turns lessons off and on; no console errors, no network requests');
     }
 
     for (const u of network) fail('network request: ' + u);
