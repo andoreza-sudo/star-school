@@ -14,9 +14,6 @@
 .pet-k-ocean{--pc-b:var(--ill-aqua);--pc-b1:var(--ill-aqua-1);--pc-b2:var(--ill-aqua-2);--pc-b3:var(--ill-aqua-3);--pc-l:var(--ill-white);--pc-l2:var(--ill-white-2);
   --pc-p:var(--ill-blue);--pc-p2:var(--ill-blue-2);--pc-sh:var(--ill-aqua-1);--pc-sh2:var(--ill-aqua)}
 
-/* age gear (backpack, scarf): one colour pair for every pet */
-.pet-a-1{--pc-a:var(--ill-red);--pc-a2:var(--ill-red-2)}
-.pet-a-2{--pc-a:var(--ill-purple);--pc-a2:var(--ill-purple-2)}
 
 /* containers that hold a rig pet (petAura() gives them .rig): no box bob, no shadow; the drawing has its own */
 .rig{text-shadow:none}
@@ -65,4 +62,7 @@
 .rig.jump .pg-arm-l{transform:rotate(60deg)}
 .rig.jump .pg-arm-r{transform:rotate(-60deg)}
 .rig.sad .pg-fig{animation:pet-wobble .5s ease-in-out}
+/* pet age (17b-pet-age.js): the grown-up bird holds its wings spread, so a cheer lifts them a little instead of a full arm swing */
+.pet-a-2.pet-k-bird.pet-m-cheer .pg-arm-l,.rig.jump .pet-a-2.pet-k-bird .pg-arm-l{transform:rotate(14deg)}
+.pet-a-2.pet-k-bird.pet-m-cheer .pg-arm-r,.rig.jump .pet-a-2.pet-k-bird .pg-arm-r{transform:rotate(-14deg)}
 @keyframes pet-jump{35%{transform:translateY(-24px) scale(1.04,.98)}70%{transform:translateY(0) scale(1.05,.94)}}

@@ -104,6 +104,7 @@ Files added by later chunks (names are fixed by the roadmap so everyone agrees):
 | `01-profiles.js`, `src/css/45-profiles.css` | P5-10 | `PRF`: up to 4 children per tablet, one save each (keys in the file header); picks the child at load, the "Who is playing?" picker, Home's switch button, the Grown-ups Children card, add / rename / delete |
 | `14-ui.js` | P4-04 | `UI.*` helpers that return component markup (classes in `src/css/10-components.css`) |
 | `15-icons.js`, `15-pics.js`, `16-art-*.js`, `17-pets-svg.js` | P4-02, pre-wave 5, P4-13+, P4-05 | Icon sprite; `ART`/`picArt`/`picFor`; object art (`Object.assign(ART, {...})`; set A in `16-art-a.js`, sets B and C and later in `src/data/d-art-b.js`, `d-art-c.js` ...); pet rig |
+| `17b-pet-age.js` | PET-AGE2 | The pet grows up with the grade: `PET_AGED`, a body plan per species for the older kid (grades 3-4) and the grown-up (grades 5-6: T-Rex, majestic dragon, bird of prey, full-grown sea pal); in the lazy part `petage` |
 | `18-reward-art.js` | P4-11 | Reward art (chest, stars, bosses, prize rosette) and the reward screens' markup (`RW.*`); CSS in `src/css/42-rewards.css` |
 | `17-wear.js`, `src/data/d-wear.js` | P4-07 | Wearables: helpers, names, `wearOf` / `wearPic` / `wearBox` (code), and the drawings `WEAR` / `WEAR_EMB` keyed by the saved item ids (data file); Pet Shop and sticker book CSS in `src/css/43-shop.css` |
 | `59-game-hub.js`, `src/css/48-game-hub.css` | P4-16 | Game Room hub (`GH.hub`, called by `gameRoom()`), the game registry (`GH.reg`), the drawn hub scene, ticket and game pictures, and the shared game chrome: top bar `GH.top`/`GH.wire`, pause sheet `GH.pause`, end card `GH.end`. Both go into `games.<VER>.js` (section 3.3, "Adding a game") |
@@ -141,6 +142,8 @@ games.<VER>.js    the Game Room: src/js/62-hill, 64-gtimer, 66-colornum, 68-lowp
 rally.<VER>.js    G-RALLY2: Star Rally on its own (src/js/63-game-race.js, src/css/49-game-race.css), then  var RALLY_VER='<VER>'; loads after games, before games2
 games2.<VER>.js   the newer Game Room games (G-04a on): every other src/js/NN-game-*.js and src/css/NN-game-*.css (63-game-race since G-02b, 65-game-snack, 67-game-skyhop, 49-game-race, 49-game-snack, 49-game-skyhop),
                   then  var GAMES2_VER='<VER>';
+petage.<VER>.js   PET-AGE2: the older kid and grown-up pet drawings, src/js/17b-pet-age.js (PET_AGED), then  var PETAGE_VER='<VER>';
+                  LAZY: Home loads it for a grade 3+ child (petAgeWarm in 17-pets-svg.js), the little one is drawn until it is in
 data.<VER>.js     src/data/*.js in filename order, then the last line  var DATA_VER='<VER>';
 sw.js             cache 'starschool-<VER>', precaches ./, index.html, gen/gen2/bt/games/games2/data.<VER>.js (the LAZY ones too), manifest.json, icons;
                   ES-AUDIO: cache 'starschool-audio' (kept across releases) gets every audio/es/*.ogg and audio/en/*.ogg at install
@@ -172,7 +175,7 @@ The rule lives in one place, `PARTS` in `tools/build.py`: a file stem and a regu
 - `games3` (G-BB2, v164): Block Builder (`60-blocks.js`, `60-game-blocks.css`) and its WebGL renderer `61-bb-gl.js`, moved out of `games` when that
   file passed its 400 KB warning (games 419 -> 263 KB). LAZY like the other two, loaded after games2; the games2 rule skips `60-game-blocks.css` by name.
 
-Loaded on demand (P6-02): `LAZY` in `tools/build.py` (`('bt', 'games', 'rally', 'games2', 'games3')`) names the parts that index.html does not load at start, and
+Loaded on demand (P6-02): `LAZY` in `tools/build.py` (`('bt', 'games', 'rally', 'games2', 'games3', 'teach', 'petage')`) names the parts that index.html does not load at start, and
 `LAZY_PARTS` in `src/js/90-app.js` is the same list (the A11b and P6-02 checks compare them). They are built, stamped and precached like
 the others. `partsThen(stems, go)` (90-app.js) is the one way in: when those parts are in it runs `go()` at once; otherwise it draws
 "Getting the games ready..." (a Back button and a drawn disc; `#partwait`), adds one plain `<script src="<stem>.<VER>.js">` per part, one
