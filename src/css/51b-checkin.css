@@ -42,3 +42,6 @@
 .ck-bk{display:flex;justify-content:center}
 @keyframes ck-pop{0%{opacity:0;transform:scale(.3) rotate(-18deg)}60%{opacity:1;transform:scale(1.15) rotate(6deg)}100%{transform:scale(1) rotate(0)}}
 @keyframes ck-in{0%{opacity:0;transform:scale(.5)}}
+/* the report card's badges and mastery by stop (82-report.js REP.badges): a list like .rp-list, with its own class */
+.rp-ck{margin:0;padding-left:var(--s-5)}
+.rp-ck li{margin-bottom:var(--s-3);line-height:var(--lh-2)}

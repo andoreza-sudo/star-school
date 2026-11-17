@@ -250,7 +250,7 @@ const REP = {
       + `It is offered after ${CHK.MIN} or more questions at a stop with ${Math.round(CHK.ACC * 100)}% right on the first try.</p>`
       + Object.keys(PATHS).map(p => {
         const xs = st.filter(x => x.p == p);
-        return xs.length ? `<h4 class="rp-h3">${esc(REP.AREA[p] || PATHS[p].n)}</h4><ul class="rp-list rp-ck">${xs.map(x => `<li><b>${esc(x.t)}</b> `
+        return xs.length ? `<h4 class="rp-h3">${esc(REP.AREA[p] || PATHS[p].n)}</h4><ul class="rp-ck">${xs.map(x => `<li><b>${esc(x.t)}</b> `
           + `<span class="rp-tag">${SN[x.state] || ''}</span>${x.b ? ' ' + ico('medal', 20, 'rp-ckm') : ''}<div class="small">`
           + (+x.n > 0 && +x.pr >= 0 ? `${Math.round(x.pr * 100)}% right on the first try, over ${+x.n} questions. ` : '') + `${line(x)}</div></li>`).join('')}</ul>` : '';
       }).join('');
