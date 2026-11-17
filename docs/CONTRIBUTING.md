@@ -116,6 +116,7 @@ Files added by later chunks (names are fixed by the roadmap so everyone agrees):
 | `39b-steps.js` | P2-08 | Step-hint builders (`stepsAdd`, `stepsSub`, `stepsMul`, `stepsDiv`, `stepsEquivFrac`, `stepsCommonDen`, `stepsStory`) and prompt layouts `ST.vert`, `ST.ldiv`; the renderer is in `39-hints.js`, CSS in `src/css/39-steps.css` |
 | `src/data/d-*.js` (`d-spell`, `d-gram`, `d-vocab`, `d-comp`, `d-es`, `d-disc`, `d-trace`, `d-puz-*`) | P2, P3 | Data only. Built into `data.<VER>.js` (A11, section 3.3), which loads after all code, so code may read them only inside functions (at run time), never while the script is first loading |
 | `45-placement.js`, `47-trace.js`, `49-kinds.js`, `51-mastery.js`, `57-fluency.js`, `59-review.js` | P1, P2, P5 | Engines |
+| `51b-checkin.js`, `src/css/51b-checkin.css` | CHECK-IN | Mastery check-ins and stop badges (`CHK.*`; gen2 file): when one is offered, the 5-question check-in, the badge card, the map medal and Check-in button, the badge shelf; save `S.chk` (default `{}` in `migrate()`); hooks in 50-round.js, 46-home.js, 41-nav.js and the report card |
 | `74-teasers.js`, `NN-bt-*.js` | P3 | Brain Teasers: the framework (index.html) and one file per puzzle type (built into `bt.<VER>.js`, section 3.3) |
 
 Build order is: `src/js/*.js` sorted by name (minus the part files), then each part file (bt, games; their `src/js` sorted by name),

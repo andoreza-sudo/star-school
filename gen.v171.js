@@ -3545,7 +3545,7 @@ const REP = {
       return o;
     });
     // mastery, by strand; needs practice; recently mastered
-    const strands = {}, tried = [], mastered = [];
+    const strands = {}, tried = [], mastered = [], stops = [];
     let any = 0;
     for (const p in PATHS) {
       for (const s of mastStops(p)) {
@@ -3556,6 +3556,11 @@ const REP = {
           any++;
           const item = {p, sk, lv: NODES[p][s.i].lv, t: s.t, label: REP.AREA[p] || '', n: s.rec.n, pr: s.rec.p, md: s.rec.md, state: s.state};
           tried.push(item);
+          // CHECK-IN (51b-checkin.js): the stop's badge and check-ins, read only
+          if (typeof CHK != 'undefined' && CHK.can(NODES[p][s.i])) {
+            const c = CHK.rec(s.nid);
+            stops.push({...item, b: CHK.won(c) ? c.b : 0, ck: c ? c.n | 0 : 0, best: c ? c.best | 0 : 0, ready: CHK.ready(p, s.i)});
+          }
           if (s.state == 'mastered' && s.rec.md >= 0) mastered.push(item);
         }
       }
@@ -3583,6 +3588,7 @@ const REP = {
     m.pin = pn ? {p: pn.p, sk: pn.sk, lv: pn.lv, t: pn.t} : null;
     m.mastered = mastered.sort((a, b) => b.md - a.md).slice(0, 6).map(x => ({...x, when: REP.ago(x.md, now)}));
     m.masteredAll = mastered.length;
+    m.stops = stops.map(x => ({...x, won: x.b ? REP.ago(x.b, now) : ''}));
     // Fact Sprint bests
     const flu = (S.flu && typeof S.flu == 'object') ? S.flu : {};
     m.flu = FLU.SETS.map(s => ({t: s.t, b60: (flu[s.id] || {}).best, b20: (flu[s.id + '-20'] || {}).best}))
@@ -3687,6 +3693,23 @@ const REP = {
     return `<ul class="rp-list">${m.mastered.map(x => `<li><b>${esc(x.t)}</b> <span class="rp-tag">${esc(x.label)}</span> <span class="small">${esc(x.when)}</span></li>`).join('')}</ul>`
       + (m.masteredAll > m.mastered.length ? `<div class="small">${m.masteredAll} stops mastered in all.</div>` : '');
   },
+  // CHECK-IN: every stop tried, by subject: its mastery, its badge or check-ins (51b-checkin.js)
+  badges(m) {
+    const st = m.stops || [];
+    if (!st.length) return '<div class="rp-empty">This list fills in after a few rounds.</div>';
+    const SN = {mastered: 'Mastered', practised: 'Practised', learning: 'Learning', new: 'Not started'};
+    const won = st.filter(x => x.b).length;
+    const line = x => x.b ? `Badge won ${esc(x.won)}.` : x.ck ? `${x.ck} check-in${x.ck == 1 ? '' : 's'}, best ${x.best} of ${CHK.Q}.${x.ready ? ' Ready to try again.' : ''}`
+      : x.ready ? 'Ready for a check-in.' : 'No check-in yet.';
+    return `<p class="small rp-p0">${won} badge${won == 1 ? '' : 's'} won. A check-in is ${CHK.Q} questions from one stop with no hints; ${CHK.PASS} right wins its badge. `
+      + `It is offered after ${CHK.MIN} or more questions at a stop with ${Math.round(CHK.ACC * 100)}% right on the first try.</p>`
+      + Object.keys(PATHS).map(p => {
+        const xs = st.filter(x => x.p == p);
+        return xs.length ? `<h4 class="rp-h3">${esc(REP.AREA[p] || PATHS[p].n)}</h4><ul class="rp-list rp-ck">${xs.map(x => `<li><b>${esc(x.t)}</b> `
+          + `<span class="rp-tag">${SN[x.state] || ''}</span>${x.b ? ' ' + ico('medal', 20, 'rp-ckm') : ''}<div class="small">`
+          + (+x.n > 0 && +x.pr >= 0 ? `${Math.round(x.pr * 100)}% right on the first try, over ${+x.n} questions. ` : '') + `${line(x)}</div></li>`).join('')}</ul>` : '';
+      }).join('');
+  },
   fluency(m) {
     if (!m.flu.length) return '<div class="rp-empty">No Fact Sprint scores yet.</div>';
     const v = (b, low) => b == null ? 'not yet' : low ? b + ' s' : b + ' right';
@@ -3705,7 +3728,7 @@ const REP = {
     return `<div class="rp-head"><div class="rp-t">Report card for ${nm}</div><div class="small">${esc(m.date)}, ${m.year} · grade ${esc(gradeLabel(m.grade))} · Star School</div></div>`
       + sec('rp-weeks', 'calendar', 'This week and last week', REP.weeks(m) + '<div class="small rp-key">A week is the last 7 days, ending today. Accuracy is the share of questions right on the first try. Only time with a question on screen counts.</div>')
       + sec('rp-level', 'map', 'Where ' + nm + ' is working', REP.level(m))
-      + sec('rp-top', 'chart', 'Skills by topic', REP.strands(m))
+      + sec('rp-top', 'chart', 'Skills by topic', REP.strands(m) + (typeof CHK != 'undefined' ? `<div id="rp-badges"><h3 class="rp-h3">${ico('medal', 22)} Badges and mastery by stop</h3>${REP.badges(m)}</div>` : ''))
       + sec('rp-needs', 'target', 'Needs practice', REP.needs(m))
       + sec('rp-recent', 'medal', 'Recently mastered', REP.recent(m))
       + sec('rp-flu', 'bolt', 'Fact Sprint bests', REP.fluency(m))

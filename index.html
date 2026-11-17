@@ -3111,6 +3111,7 @@ const MIGRATIONS=[null,
 /* Run once at load, from 42-paths.js (needs NODES, which no code before it reads). Backs up the old string first. */
 function migrate(){
   if(S.owned&&S.owned['\u{1FA84}']){S.owned['\u{1FA80}']=1;delete S.owned['\u{1FA84}']}if(S.wear&&S.wear.toy=='\u{1FA84}')S.wear.toy='\u{1FA80}'; // an old toy (U+1FA84) became the yo-yo (the parent asked for none of that theme): same price, kept by whoever had it
+  if(!('chk' in S))S.chk={}; // CHECK-IN: the stop check-ins and badges (51b-checkin.js): a default by id, nothing else changes
   if(!('pin' in S))S.pin=null; // G-FEEL2: the report card's "Practise this next" pin (55-missions.js): a default by id, nothing else changes
   if(!('fps' in S))S.fps=false;if(!('hcGl' in S))S.hcGl=true; // GL-01: the speed box (19b-fps.js) off, Hill Climb's 3D look on (62b-hill-gl.js): defaults by id
   if(S.maps&&typeof PATHS!='undefined')for(const p in PATHS)S.maps[p]=S.maps[p]||{}; // a path added after the save was written starts empty (Discover, P2-36): a default, not a migration
@@ -6923,7 +6924,8 @@ function learnHub() {
   }).join('');
   const more = GFX.card({ id: 'lhmix', p: 'disc', icon: 'review', title: 'Mixed Practice', sub: 'A bit of everything you learned' }) +
     (FLU.on() ? GFX.card({ id: 'lhflu', p: 'math', icon: 'bolt', title: 'Fact Sprint', sub: 'Quick facts, beat your best' }) : '') +
-    GFX.card({ id: 'lhrace', p: 'play', icon: 'timer', title: 'Fact Race', sub: 'How many in 60 seconds?' });
+    GFX.card({ id: 'lhrace', p: 'play', icon: 'timer', title: 'Fact Race', sub: 'How many in 60 seconds?' }) +
+    (typeof CHK != 'undefined' ? GFX.card({ id: 'lhbdg', p: 'disc', icon: 'medal', title: 'My Badges', sub: 'Win a badge in a check-in' }) : ''); // CHECK-IN (51b-checkin.js)
   view(`<div class="top tbar gx-mtop s-read">${UI.ibtn('back', 'Back', { size: 'sm', id: 'back' })}<div class="ttl gx-ttl"><span class="gx-tb">${ico('map', 24)}</span><span>Learn</span></div>${UI.chip('star', S.stars, { aria: 'Stars' })}</div>
   <div class="scroll gx-list lh"><p class="gx-lead">Pick what to learn!</p><div class="games">${cards}</div>
   <h2 class="gx-h">${ico('bolt', 26)}<span>Practice</span></h2><div class="games">${more}</div></div>`);
@@ -6933,6 +6935,7 @@ function learnHub() {
   $('#lhmix').onclick = () => { SFX.whoosh(); startMix(); };
   if ($('#lhflu')) $('#lhflu').onclick = () => { SFX.whoosh(); fluMenu(); };
   $('#lhrace').onclick = () => { SFX.whoosh(); raceMenu(); };
+  if ($('#lhbdg')) $('#lhbdg').onclick = () => { SFX.whoosh(); CHK.shelf(learnHub); };
 }
 /* ---------- games (paths), maps ---------- */
 const PATHS={
@@ -8063,8 +8066,9 @@ function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],ws=PATHS[p].
     wb.push([wi,y0,y-y0-24,k0,pts.length,canTest]);
     bands+=`<div class="wtitle" data-w="${wi}" style="top:${y0+14}px">${wBadge(p,wi)}<span>${esc(w.n)}</span>${worldFinished(p,wi)?ico('check-circle',24,'ic-good'):''}</div>${canTest?`<button class="btn xs tobtn" data-w="${wi}" style="top:${y0+58}px">${ico('bolt',20)}<span>Already know it? Test out!</span></button>`:''}`;y+=4}
   const cur=curNode(p),allDone=N.every((n,i)=>passed(p,i)),end=w1==ws.length-1;
+  const ck=typeof CHK!='undefined'; // CHECK-IN: badges and Check-in buttons by the stops (51b-checkin.js)
   const nodes=pts.map(([x,yy,i])=>{const n=N[i],s=nInfo(n),st=getSt(p,i),lk=!unlocked(p,i);
-    return`<button class="btn node s-${p} ${s.area} ${lk?'lock':''} ${st?'done':''} ${i==cur&&!lk&&!allDone?'cur':''}" data-n="${i}" style="left:${x}px;top:${yy}px" aria-label="${esc(n.t)}${lk?', locked':''}">${nodeFace(n,lk)}</button>${stopNew(p,i)?`<div class="nnew" style="left:${x}px;top:${yy-50}px">New</div>`:''}<div class="nlab" style="left:${x}px;top:${yy+42}px;max-width:${Math.round(Math.max(140,Math.min(180,2*Math.min(x,W-x)-8)))}px">${esc(n.t)}<div class="nstar">${st?UI.stars(st,3,16):''}</div></div>`}).join('');
+    return`<button class="btn node s-${p} ${s.area} ${lk?'lock':''} ${st?'done':''} ${i==cur&&!lk&&!allDone?'cur':''}" data-n="${i}" style="left:${x}px;top:${yy}px" aria-label="${esc(n.t)}${lk?', locked':''}${ck?CHK.aria(p,i):''}">${nodeFace(n,lk)}</button>${ck?CHK.mapHTML(p,i,x,yy,W):''}${stopNew(p,i)?`<div class="nnew" style="left:${x}px;top:${yy-50}px">New</div>`:''}<div class="nlab" style="left:${x}px;top:${yy+42}px;max-width:${Math.round(Math.max(140,Math.min(180,2*Math.min(x,W-x)-8)))}px">${esc(n.t)}<div class="nstar">${st?UI.stars(st,3,16):''}</div></div>`}).join('');
   const cp=pts.find(q=>q[2]==cur),side=cp&&cp[0]>W/2?-66:66;
   let tail=end&&allDone?90:20;
   if(!end){y+=8;bands+=more(w1+1,false);tail=80}
@@ -8078,6 +8082,7 @@ function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],ws=PATHS[p].
     +(cp?`<div class="mappet ${petAura()}" style="left:${cp[0]+side}px;top:${cp[1]+18}px">${petHTML()}</div>`:'')+(end&&allDone?`<div class="wtitle mp-champ" style="top:${y+10}px">${ico('trophy',30)}<span>${esc(PATHS[p].n)} Champion!</span></div>`:'');
   $$('.node').forEach(b=>b.onclick=()=>{const i=+b.dataset.n;if(!unlocked(p,i)){SFX.wrong();anim(b,'sad');fb('Finish the stop before this one!','warn');return}SFX.whoosh();
     open(p,i)});
+  if(ck)CHK.mapBind(p);
   $$('.tobtn').forEach(b=>b.onclick=()=>testOut(p,+b.dataset.w));
   $$('.wmore').forEach(b=>b.onclick=()=>mapGo(p,+b.dataset.w));
   const on=st&&st.querySelector('.wchip.on');if(on)st.scrollLeft=Math.max(0,on.offsetLeft-(st.clientWidth-on.offsetWidth)/2)}
@@ -8115,9 +8120,10 @@ function book(){const have=STK.filter(s=>stkN(s)).length,per=12,pages=[];
     `<span class="stat sb-cnt" role="img" aria-label="${have} of ${STK.length} stickers">${ico('sticker-book',28)}<b>${have}/${STK.length}</b></span></div>
   <div class="scroll"><div class="sb"><div class="sb-head"><div class="sb-hl">${UI.meter(have/STK.length,{kind:'grow',label:have+' of '+STK.length+' stickers'})}`+
     `<p>Finish a round to win a sticker! Get 10 out of 10 for a bonus one.</p></div>`+
-    `${BT.list().length?`<div class="bk-bt">${UI.btn('Puzzle badges',{kind:'subject',p:'bt',icon:'medal',id:'bkbdg'})}</div>`:''}</div>
+    `${BT.list().length?`<div class="bk-bt">${UI.btn('Puzzle badges',{kind:'subject',p:'bt',icon:'medal',id:'bkbdg'})}</div>`:''}${typeof CHK!='undefined'?`<div class="ck-bk">${UI.btn('Stop badges',{kind:'subject',p:'disc',icon:'medal',id:'bkck'})}</div>`:''}</div>
   <div class="sgrid sb-pages">${pages.map(page).join('')}</div></div></div>`);
   NAV.bar('');$('#back').onclick=()=>home(true);
+  if($('#bkck'))$('#bkck').onclick=()=>{SFX.whoosh();CHK.shelf(book)}; // CHECK-IN: the stop badges (51b-checkin.js)
   if($('#bkbdg'))$('#bkbdg').onclick=()=>{SFX.whoosh();BT.badgeView(book)}; // P3-17: the puzzle badges are a page of the sticker book
   $$('.sb-stk').forEach(b=>b.onclick=()=>{anim(b,'jump');SFX.pop(R(0,5));RW.burst(b,12)})}
 
@@ -9583,6 +9589,7 @@ function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;G.re
   else if(G.done==0)petSay(G.mix?'Tricky mix!':"Let's go!");
   else if(G.done==G.n-1)petSay('Last one!');
   mastShow(q); // P1-08: Challenge tag, hint before the first try, answer clock
+  if(G.chk&&typeof CHK!='undefined')CHK.show(q); // CHECK-IN: no Help button (51b-checkin.js)
   fit();if(document.fonts)document.fonts.ready.then(fit);
   if(q.auto==='must'||q.pk||(q.auto&&S.voice)||(q.say&&gradeCfg().auto==='all'))setTimeout(()=>say(q.say,null,q.lang=='es'?'es':null),400)}
 function addMiss(q){const p=P(q.sk),m=p.miss[q.label]||{tot:0};m.tot=(m.tot||0)+1;m.q={label:q.label};delete m.n;p.miss[q.label]=m; // P5-02: a tally only
@@ -9616,12 +9623,13 @@ function check(v,el){if(G.lock)return;const q=G.q,K=KIND[q.kind],p=P(q.sk),ok=K.
   G.tries++;G.streak=0;qStreak();
   SFX.wrong();anim($('#runner'),'sad');if(G.boss){anim($('#bossE'),'jump');setTimeout(SFX.giggle,250)}const pr=$('#prompt');pr.classList.remove('shake');void pr.offsetWidth;pr.classList.add('shake');
   if(el){el.classList.add('wrong');el.disabled=true}
-  if(G.tries==1){addMiss(q);fb('Try again!','again');const oo=G.boss?pick(['Ha ha! Missed me!','Hee hee!','Try again!']):pick(PET_OOPS);petSay(oo);if(!G.boss)cheerSay('oops',oo,.5,300);else if(Math.random()<.5)setTimeout(()=>playClip('oops'),300);$('#hint').innerHTML=hintHTML(q);fit();hintIn();
+  if(G.tries==1&&G.chk)addMiss(q); // CHECK-IN: one try, no hint, no retry at the end (51b-checkin.js)
+  if(G.tries==1&&!G.chk){addMiss(q);fb('Try again!','again');const oo=G.boss?pick(['Ha ha! Missed me!','Hee hee!','Try again!']):pick(PET_OOPS);petSay(oo);if(!G.boss)cheerSay('oops',oo,.5,300);else if(Math.random()<.5)setTimeout(()=>playClip('oops'),300);$('#hint').innerHTML=hintHTML(q);fit();hintIn();
     K.retry(q,G,()=>{$('#hint').innerHTML=hintHTML(q);fit();hintIn()});
     save();return}
   G.lock=true;
   K.reveal(q);
-  if(!G.retry){G.done++;p.t++;if(!G.boss)G.missed.push(q);G.res[G.done-1]='try'}
+  if(!G.retry){G.done++;p.t++;if(!G.boss&&!G.chk)G.missed.push(q);G.res[G.done-1]='try'}
   qProg();
   fb("Here's the answer",'info');petSay("We'll get it next time!");say(q.after||K.spoken(q),null,q.afterLang);save();setTimeout(next,2600)}
 
@@ -9629,7 +9637,7 @@ function bossHit(){const b=$('#bossE'),f=$('#hpf'),h=$('#hpn');if(f)f.style.tran
   if(b){b.classList.remove('hit');void b.offsetWidth;b.classList.add('hit');const r=b.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'zap')}SFX.hit()}
 function bossKO(){const b=$('#bossE');if(b)b.classList.add('ko');SFX.ko();confetti(40);fb(`You beat ${G.boss.name}!`);if(S.voice)say(`You beat ${G.boss.name}!`)}
 function award(){const s=pick(STK),isNew=!stkN(s);S.stickers[s]=(S.stickers[s]||0)+1;return{s,isNew}}
-function finish(){
+function finish(){if(G&&G.chk&&typeof CHK!='undefined')return CHK.finish(G); // CHECK-IN: its own end card (51b-checkin.js)
   const g=G,sc=g.score,n=g.n,best=g.best,before=S.stars,d=day(),p=g.path,ni=g.node,nd=p?NODES[p][ni]:null;
   let stars=0,newPass=false,wDone=false;
   let testOk=false,prize=null;
@@ -9684,6 +9692,7 @@ function finish(){
     const M=(art,h,s,kind,x)=>msgs.push(['msgs',RW.msg(art,h,kind),s,x]);
     if(best>=3)M('flame',`Best streak: ${best} in a row!`,null);
     if(newPass&&nextI>=0)M('map',`Next stop unlocked: ${esc(NODES[p][nextI].t)}!`,'fanfare','win');
+    const ck=!g.mix&&!g.boss&&!g.test&&typeof CHK!='undefined'&&CHK.ready(p,ni);if(ck)M('medal',CHK.offerHTML(),'chime','win'); // CHECK-IN: the stop is ready for one
     if(wDone)M('trophy',`You finished ${esc(PATHS[p].worlds[nd.wi].n)}! +20 coins`,'fanfare','win',1);
     if(g.boss){const nm=esc(g.boss.name);g.won?M(RW.boss(g.boss.name,'hit')||'crown',`You beat ${nm}!`,'fanfare','win boss'):M(RW.boss(g.boss.name)||'heart',`${nm} got away! Try again, you can beat it!`,null,'boss')}
     if(prize)M('gift',`New costume for ${esc(petN())}: ${RW.badge(prize)}`,'chime','win');
@@ -9693,6 +9702,7 @@ function finish(){
     if(stk.msg)M('flame',esc(RW.clean(stk.msg)),'fanfare','win');
     if(g.mix)M('target','Great practice on the tricky ones!',null);
     msgs.forEach(([to,h,s,x])=>{const e=add(to,h);setTimeout(()=>{if(!live())return;e.classList.remove('rw-wait');if(s)SFX[s]();if(x)RW.burst(e,28)},t);t+=650});
+    if(ck)CHK.offerBind(p,ni);
     };
 }
 function growShow(before){const o=document.createElement('div');o.className='ovl rw-ovl';const hatch=stage(before)==0;

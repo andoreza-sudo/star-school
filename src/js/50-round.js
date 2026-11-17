@@ -95,6 +95,7 @@ function renderQ(){const q=G.q;G.typed='';G.tries=0;G.built=[];G.lock=false;G.re
   else if(G.done==0)petSay(G.mix?'Tricky mix!':"Let's go!");
   else if(G.done==G.n-1)petSay('Last one!');
   mastShow(q); // P1-08: Challenge tag, hint before the first try, answer clock
+  if(G.chk&&typeof CHK!='undefined')CHK.show(q); // CHECK-IN: no Help button (51b-checkin.js)
   fit();if(document.fonts)document.fonts.ready.then(fit);
   if(q.auto==='must'||q.pk||(q.auto&&S.voice)||(q.say&&gradeCfg().auto==='all'))setTimeout(()=>say(q.say,null,q.lang=='es'?'es':null),400)}
 function addMiss(q){const p=P(q.sk),m=p.miss[q.label]||{tot:0};m.tot=(m.tot||0)+1;m.q={label:q.label};delete m.n;p.miss[q.label]=m; // P5-02: a tally only
@@ -128,12 +129,13 @@ function check(v,el){if(G.lock)return;const q=G.q,K=KIND[q.kind],p=P(q.sk),ok=K.
   G.tries++;G.streak=0;qStreak();
   SFX.wrong();anim($('#runner'),'sad');if(G.boss){anim($('#bossE'),'jump');setTimeout(SFX.giggle,250)}const pr=$('#prompt');pr.classList.remove('shake');void pr.offsetWidth;pr.classList.add('shake');
   if(el){el.classList.add('wrong');el.disabled=true}
-  if(G.tries==1){addMiss(q);fb('Try again!','again');const oo=G.boss?pick(['Ha ha! Missed me!','Hee hee!','Try again!']):pick(PET_OOPS);petSay(oo);if(!G.boss)cheerSay('oops',oo,.5,300);else if(Math.random()<.5)setTimeout(()=>playClip('oops'),300);$('#hint').innerHTML=hintHTML(q);fit();hintIn();
+  if(G.tries==1&&G.chk)addMiss(q); // CHECK-IN: one try, no hint, no retry at the end (51b-checkin.js)
+  if(G.tries==1&&!G.chk){addMiss(q);fb('Try again!','again');const oo=G.boss?pick(['Ha ha! Missed me!','Hee hee!','Try again!']):pick(PET_OOPS);petSay(oo);if(!G.boss)cheerSay('oops',oo,.5,300);else if(Math.random()<.5)setTimeout(()=>playClip('oops'),300);$('#hint').innerHTML=hintHTML(q);fit();hintIn();
     K.retry(q,G,()=>{$('#hint').innerHTML=hintHTML(q);fit();hintIn()});
     save();return}
   G.lock=true;
   K.reveal(q);
-  if(!G.retry){G.done++;p.t++;if(!G.boss)G.missed.push(q);G.res[G.done-1]='try'}
+  if(!G.retry){G.done++;p.t++;if(!G.boss&&!G.chk)G.missed.push(q);G.res[G.done-1]='try'}
   qProg();
   fb("Here's the answer",'info');petSay("We'll get it next time!");say(q.after||K.spoken(q),null,q.afterLang);save();setTimeout(next,2600)}
 
@@ -141,7 +143,7 @@ function bossHit(){const b=$('#bossE'),f=$('#hpf'),h=$('#hpn');if(f)f.style.tran
   if(b){b.classList.remove('hit');void b.offsetWidth;b.classList.add('hit');const r=b.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'zap')}SFX.hit()}
 function bossKO(){const b=$('#bossE');if(b)b.classList.add('ko');SFX.ko();confetti(40);fb(`You beat ${G.boss.name}!`);if(S.voice)say(`You beat ${G.boss.name}!`)}
 function award(){const s=pick(STK),isNew=!stkN(s);S.stickers[s]=(S.stickers[s]||0)+1;return{s,isNew}}
-function finish(){
+function finish(){if(G&&G.chk&&typeof CHK!='undefined')return CHK.finish(G); // CHECK-IN: its own end card (51b-checkin.js)
   const g=G,sc=g.score,n=g.n,best=g.best,before=S.stars,d=day(),p=g.path,ni=g.node,nd=p?NODES[p][ni]:null;
   let stars=0,newPass=false,wDone=false;
   let testOk=false,prize=null;
@@ -196,6 +198,7 @@ function finish(){
     const M=(art,h,s,kind,x)=>msgs.push(['msgs',RW.msg(art,h,kind),s,x]);
     if(best>=3)M('flame',`Best streak: ${best} in a row!`,null);
     if(newPass&&nextI>=0)M('map',`Next stop unlocked: ${esc(NODES[p][nextI].t)}!`,'fanfare','win');
+    const ck=!g.mix&&!g.boss&&!g.test&&typeof CHK!='undefined'&&CHK.ready(p,ni);if(ck)M('medal',CHK.offerHTML(),'chime','win'); // CHECK-IN: the stop is ready for one
     if(wDone)M('trophy',`You finished ${esc(PATHS[p].worlds[nd.wi].n)}! +20 coins`,'fanfare','win',1);
     if(g.boss){const nm=esc(g.boss.name);g.won?M(RW.boss(g.boss.name,'hit')||'crown',`You beat ${nm}!`,'fanfare','win boss'):M(RW.boss(g.boss.name)||'heart',`${nm} got away! Try again, you can beat it!`,null,'boss')}
     if(prize)M('gift',`New costume for ${esc(petN())}: ${RW.badge(prize)}`,'chime','win');
@@ -205,6 +208,7 @@ function finish(){
     if(stk.msg)M('flame',esc(RW.clean(stk.msg)),'fanfare','win');
     if(g.mix)M('target','Great practice on the tricky ones!',null);
     msgs.forEach(([to,h,s,x])=>{const e=add(to,h);setTimeout(()=>{if(!live())return;e.classList.remove('rw-wait');if(s)SFX[s]();if(x)RW.burst(e,28)},t);t+=650});
+    if(ck)CHK.offerBind(p,ni);
     };
 }
 function growShow(before){const o=document.createElement('div');o.className='ovl rw-ovl';const hatch=stage(before)==0;

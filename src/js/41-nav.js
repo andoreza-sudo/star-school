@@ -188,7 +188,8 @@ function learnHub() {
   }).join('');
   const more = GFX.card({ id: 'lhmix', p: 'disc', icon: 'review', title: 'Mixed Practice', sub: 'A bit of everything you learned' }) +
     (FLU.on() ? GFX.card({ id: 'lhflu', p: 'math', icon: 'bolt', title: 'Fact Sprint', sub: 'Quick facts, beat your best' }) : '') +
-    GFX.card({ id: 'lhrace', p: 'play', icon: 'timer', title: 'Fact Race', sub: 'How many in 60 seconds?' });
+    GFX.card({ id: 'lhrace', p: 'play', icon: 'timer', title: 'Fact Race', sub: 'How many in 60 seconds?' }) +
+    (typeof CHK != 'undefined' ? GFX.card({ id: 'lhbdg', p: 'disc', icon: 'medal', title: 'My Badges', sub: 'Win a badge in a check-in' }) : ''); // CHECK-IN (51b-checkin.js)
   view(`<div class="top tbar gx-mtop s-read">${UI.ibtn('back', 'Back', { size: 'sm', id: 'back' })}<div class="ttl gx-ttl"><span class="gx-tb">${ico('map', 24)}</span><span>Learn</span></div>${UI.chip('star', S.stars, { aria: 'Stars' })}</div>
   <div class="scroll gx-list lh"><p class="gx-lead">Pick what to learn!</p><div class="games">${cards}</div>
   <h2 class="gx-h">${ico('bolt', 26)}<span>Practice</span></h2><div class="games">${more}</div></div>`);
@@ -198,4 +199,5 @@ function learnHub() {
   $('#lhmix').onclick = () => { SFX.whoosh(); startMix(); };
   if ($('#lhflu')) $('#lhflu').onclick = () => { SFX.whoosh(); fluMenu(); };
   $('#lhrace').onclick = () => { SFX.whoosh(); raceMenu(); };
+  if ($('#lhbdg')) $('#lhbdg').onclick = () => { SFX.whoosh(); CHK.shelf(learnHub); };
 }

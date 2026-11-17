@@ -8218,6 +8218,129 @@ run('GL-01 WebGL layer, Hill 3D look, speed box',()=>{
   return{problems:[...new Set(p)].slice(0,50),note:o.notes.join('; ')};
 });
 
+// ---- CHECK-IN: mastery check-ins and stop badges (src/js/51b-checkin.js, src/css/51b-checkin.css, both in gen2) ----
+// When a check-in is offered (CHK.ready), its questions (the stop's own level, mixed kinds, no label twice), the badge award and the
+// gentle miss (S.chk), Next after a win, the map and report pieces, migrate on every fixture (S.chk added as {} by id; nothing else
+// changes; a save that has check-ins keeps them), and the hooks in index.html's code. Sizes: index.html under 1,000,000, gen2 under 400 KB.
+run('check-ins and stop badges CHECK-IN',()=>{
+  const p=[],rd=f=>fs.readFileSync(path.join(SRC,f),'utf8'),fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const FIX=['fresh','midway','maxed','tricky','legacy-index-maps','legacy-single-map'].map(n=>[n,fx(n)]);
+  function T(FIX){
+    const r={bad:[],notes:[]},bad=m=>{if(r.bad.length<60&&!r.bad.includes(m))r.bad.push(m)};
+    const D=global.document,app={style:{},innerHTML:''},dummy={style:{},classList:{add(){},remove(){},toggle(){},contains(){return false}},dataset:{},
+      querySelector(){return dummy},querySelectorAll(){return[]},getBoundingClientRect(){return{left:0,top:0,width:0,height:0}},appendChild(){},isConnected:false};
+    const shot=f=>{global.document=Object.assign({},D,{querySelector:s=>s=='#app'?app:dummy,querySelectorAll:()=>[],body:{appendChild(){}}});
+      let out;try{app.innerHTML='';out=f();return{h:app.innerHTML,out}}catch(e){return{h:'ERR '+e.message,out:null}}finally{global.document=D}};
+    // ---- 1. migrate: every fixture gets S.chk = {} and nothing else changes; a save with check-ins keeps them ----
+    const strip=o=>{const c=JSON.parse(JSON.stringify(o));delete c.chk;return JSON.stringify(c)};
+    for(const [name,raw] of FIX){
+      loadSave(raw);migrate();
+      if(JSON.stringify(S.chk)!=='{}')bad(name+': S.chk should be added as {} by migrate: '+JSON.stringify(S.chk));
+      const a=strip(S),saved=JSON.parse(JSON.stringify(S));delete saved.chk;
+      loadSave(JSON.stringify(saved));migrate();
+      if(strip(S)!==a)bad(name+': the default for S.chk changed something else in the save');
+      if(JSON.stringify(S.chk)!=='{}')bad(name+': S.chk default on a current save');
+      if(CHK.list().length)bad(name+': an old save has badges');
+      const old=JSON.parse(raw),keys=Object.keys(old).filter(k=>k!=='map'&&!(k in S)); // migration 1 moves S.map into S.maps
+      if(keys.length)bad(name+': fields lost on load: '+keys.join());
+    }
+    loadSave(FIX[1][1]);migrate();
+    const kept={add1:{n:2,best:5,last:3,at:20,b:3},cnt1:{n:1,best:2,last:4,at:14}};
+    S.chk=JSON.parse(JSON.stringify(kept));loadSave(JSON.stringify(S));migrate();
+    if(JSON.stringify(S.chk)!==JSON.stringify(kept))bad('migrate rewrote S.chk: '+JSON.stringify(S.chk));
+    // ---- 2. when a check-in is offered ----
+    loadSave(FIX[0][1]);migrate();S.name='Ava';S.grade=1;S.sound=false;S.voice=false;
+    const P='math',N=NODES[P],i=N.findIndex(n=>n.sk=='add'&&n.lv==2),nd=N[i],k=nid(nd);
+    const setM=(n,pr)=>{S.mast=S.mast||{};S.mast[k]={n,p:pr,ms:4000,d:2,last:mastDay()}};
+    if(CHK.ready(P,i))bad('ready on a fresh save');
+    setM(30,.95);if(CHK.ready(P,i))bad('ready on a stop that is not passed');
+    S.maps[P][k]=1;
+    setM(CHK.MIN,CHK.ACC);if(!CHK.ready(P,i))bad('not ready with '+CHK.MIN+' tries at '+CHK.ACC);
+    setM(CHK.MIN-1,1);if(CHK.ready(P,i))bad('ready with too few tries');
+    setM(40,CHK.ACC-.01);if(CHK.ready(P,i))bad('ready under the accuracy');
+    const bi=N.findIndex(n=>n.sk=='boss');S.maps[P][nid(N[bi])]=3;if(CHK.ready(P,bi)||CHK.can(N[bi]))bad('a boss stop can have a check-in');
+    const ti=N.findIndex(n=>n.sk=='trace');S.maps[P][nid(N[ti])]=3;S.mast[nid(N[ti])]={n:40,p:1,ms:1,d:3,last:1};if(CHK.ready(P,ti))bad('a tracing stop (side skill) can have a check-in');
+    if(CHK.Q!==5||CHK.PASS!==4)bad('a check-in is 5 questions, 4 right to win');
+    // ---- 3. the questions: the stop's own level, mixed kinds, no label twice, no third of one kind in a row ----
+    let kinds=new Set();
+    for(const [sk,lv] of [['add',2],['eo',2],['gram',2],['pic',4],['sci_life',1],['es_color',1],['comp',3]]){
+      const j=NODES[{add:'math',eo:'math',gram:'read',pic:'read',sci_life:'disc',es_color:'es',comp:'read'}[sk]].findIndex(n=>n.sk==sk&&n.lv==lv);
+      if(j<0){bad('no stop '+sk+lv);continue}
+      for(let t=0;t<20;t++){
+        G=newG({path:'math',node:-1,sk,lv,chk:true,kh:[]});
+        const qs=CHK.qs({sk,lv});
+        if(qs.length!==CHK.Q)bad(sk+lv+': '+qs.length+' questions');
+        if(qs.some(q=>q.sk!==sk||q.lv!==lv))bad(sk+lv+': a question from another stop');
+        if(new Set(qs.map(q=>q.label)).size!==qs.length)bad(sk+lv+': a label twice');
+        qs.forEach(q=>kinds.add(sk+':'+q.kind));
+      }
+    }
+    for(const sk of ['eo','gram'])if([...kinds].filter(x=>x.startsWith(sk+':')).length<2)bad(sk+': a check-in of a stop with mixed kinds should mix them: '+[...kinds].join());
+    r.notes.push('kinds drawn '+[...kinds].join(' '));
+    // ---- 4. the badge flow: a miss, the wait, then a win, Next, and a second win wins nothing new ----
+    setM(CHK.MIN,.9);S.coins=10;
+    const end=sc=>{G=newG({path:P,node:i,sk:nd.sk,lv:nd.lv,chk:true,kh:[]});G.n=CHK.Q;G.done=CHK.Q;G.score=sc;return shot(()=>finish())};
+    let e=end(3);
+    if(!e.out||e.out.ok||e.out.won||S.chk[k].b||S.chk[k].n!==1||S.chk[k].best!==3||S.chk[k].at!==CHK.MIN)bad('a miss: '+JSON.stringify({o:e.out,c:S.chk[k]}));
+    if(S.coins!==13)bad('a miss earns its right answers in coins and takes nothing: '+S.coins);
+    if(!/Good try!/.test(e.h)||!/Keep practicing/.test(e.h)||!/id="ckagain"/.test(e.h)||/id="cknext"/.test(e.h)||/ck-new/.test(e.h))bad('a miss: the gentle card with Play again: '+e.h.slice(0,300));
+    if(CHK.ready(P,i))bad('a miss: offered again at once');
+    setM(CHK.MIN+CHK.GAP-1,.9);if(CHK.ready(P,i))bad('a miss: offered again before '+CHK.GAP+' more tries');
+    setM(CHK.MIN+CHK.GAP,.9);if(!CHK.ready(P,i))bad('a miss: not offered again after '+CHK.GAP+' more tries');
+    const h=harder(nd),hj=N.indexOf(h);
+    e=end(4);
+    if(!e.out||!e.out.ok||!e.out.won||S.chk[k].b!==mastDay()||S.chk[k].n!==2||S.chk[k].best!==4)bad('a win: '+JSON.stringify({o:e.out,c:S.chk[k]}));
+    if(S.coins!==13+9)bad('a win earns its right answers and 5 more coins: '+S.coins);
+    if(!/You won a badge!/.test(e.h)||!/ck-new/.test(e.h)||!/class="ck-m on"/.test(e.h)||!/id="ckshelf"/.test(e.h)||/id="ckagain"/.test(e.h))bad('a win: the badge card '+e.h.slice(0,300));
+    if(!h||e.out.nx!==(unlocked(P,hj)&&!passed(P,hj)?hj:CHK.nextStop(P,i)))bad('a win: Next should be the next level of the skill: '+JSON.stringify({nx:e.out.nx,hj}));
+    if(e.out.nx>=0&&!e.h.includes('Next: '+esc(N[e.out.nx].t)))bad('a win: the Next line names the stop');
+    if(CHK.ready(P,i)||!CHK.has(k))bad('a won stop is still offered');
+    const b0=S.chk[k].b;S.chk[k].b=b0-3;e=end(5);
+    if(!e.out||!e.out.ok||e.out.won||S.chk[k].b!==b0-3||!/You did it again!/.test(e.h))bad('a second win keeps the first badge day: '+JSON.stringify(S.chk[k]));
+    S.chk[k].b=b0;
+    // Next: the next open stop that is not passed when the next level is passed
+    if(hj>=0){S.maps[P][nid(N[hj])]=2;const nx=CHK.nextStop(P,i);if(nx===hj||(nx>=0&&(passed(P,nx)||!unlocked(P,nx)||nx<=i)))bad('Next with the next level passed: '+nx);delete S.maps[P][nid(N[hj])]}
+    // ---- 5. the map, the shelf, the report ----
+    const mh=CHK.mapHTML(P,i,100,300,360);
+    if(!/class="ck-mapm"/.test(mh)||!/aria-hidden="true"/.test(mh)||/<button/.test(mh)||CHK.aria(P,i)!==', badge won')bad('map: a won stop shows its medal (not a control) '+mh);
+    const j2=N.findIndex(n=>n.sk=='cnt'&&n.lv==1),k2=nid(N[j2]);S.maps[P][k2]=2;S.mast[k2]={n:20,p:.9,ms:3000,d:2,last:mastDay()};
+    const mr=CHK.mapHTML(P,j2,300,300,360);
+    if(!/<button class="btn ck-go s-math" data-ck="\d+"/.test(mr)||!mr.includes('aria-label="Badge check-in: '+esc(N[j2].t)+'"')||!/left:234px/.test(mr))bad('map: a ready stop has a named Check-in button on the side toward the middle '+mr);
+    if(CHK.mapHTML(P,bi,100,300,360)!==''||CHK.mapHTML(P,0,100,300,360)!=='')bad('map: nothing by a boss or an untried stop');
+    // damaged data: a record that is not numbers is never ready, a badge day that is not a number is no badge
+    const keepM=S.mast[k2],keepC=S.chk[k2];S.mast[k2]={n:'a',p:NaN};if(CHK.ready(P,j2))bad('ready on a damaged mastery record');
+    S.mast[k2]=keepM;S.chk[k2]={b:'x',n:1};if(CHK.has(k2)||!CHK.ready(P,j2)||CHK.list().length!==1)bad('a damaged badge day counts as a badge');
+    if(keepC)S.chk[k2]=keepC;else delete S.chk[k2];
+    const sh=shot(()=>CHK.shelf()).h;
+    if(!/My badges/.test(sh)||!/You have 1 badge!/.test(sh)||!/class="ck-t"/.test(sh)||!sh.includes('aria-label="'+esc(nd.t)+', badge won"')||!/Ready for a check-in/.test(sh)||!/ck-rd/.test(sh))bad('shelf: '+sh.slice(0,300));
+    const sv=JSON.stringify(S),m=REP.data(),rh=REP.html(m);
+    if(JSON.stringify(S)!==sv)bad('report: drawing it changed the save');
+    const rs=(m.stops||[]).find(x=>x.p==P&&x.sk==nd.sk&&x.lv==nd.lv);
+    if(!rs||!rs.b||rs.ck!==3||rs.won!=='today')bad('report: the stop row '+JSON.stringify(rs));
+    if(!/id="rp-badges"/.test(rh)||!rh.includes('Badge won today.')||!rh.includes('Ready for a check-in.')||!/1 badge won\./.test(rh))bad('report: the Badges and mastery by stop card');
+    const fr=shot(()=>{loadSave(FIX[0][1]);migrate();return REP.html(REP.data())}).out||'';
+    if(!/id="rp-badges"[\s\S]*This list fills in after a few rounds/.test(fr))bad('report: the empty state on a fresh save');
+    return r}
+  const o=(()=>eval(js+';('+T.toString()+')(FIX)'))();
+  for(const m of o.bad)p.push(m);
+  // the hooks in index.html's code, the default in migrate, the part files and sizes, the CSS
+  const core=rd('js/00-core.js'),rnd=rd('js/50-round.js'),hm=rd('js/46-home.js'),nav=rd('js/41-nav.js'),css=rd('css/51b-checkin.css');
+  if(!/if\(!\('chk' in S\)\)S\.chk=\{\};/.test(core))p.push('00-core.js: S.chk needs its default in migrate');
+  if(!/if\(G\.chk&&typeof CHK!='undefined'\)CHK\.show\(q\);/.test(rnd))p.push('renderQ: no CHK.show (no Help button in a check-in)');
+  if(!/if\(G\.tries==1&&!G\.chk\)\{addMiss\(q\);fb\('Try again!'/.test(rnd)||!/if\(!G\.boss&&!G\.chk\)G\.missed\.push\(q\)/.test(rnd))p.push('check(): a check-in question gets one try, no hint, no retry at the end');
+  if(!/function finish\(\)\{if\(G&&G\.chk&&typeof CHK!='undefined'\)return CHK\.finish\(G\);/.test(rnd)||!/CHK\.ready\(p,ni\);if\(ck\)M\('medal',CHK\.offerHTML\(\)/.test(rnd))p.push('finish(): the check-in end and the offer card');
+  if(!/CHK\.mapHTML\(p,i,x,yy,W\)/.test(hm)||!/if\(ck\)CHK\.mapBind\(p\);/.test(hm)||!/id:'bkck'/.test(hm)||!/id: 'lhbdg'/.test(nav))p.push('the map, the sticker book and Learn: the badge hooks');
+  if(partOf('51b-checkin.js')!=='gen2'||partOf('51b-checkin.css')!=='gen2')p.push('51b-checkin.js and .css belong in gen2 (tools/build.py PARTS)');
+  const ih=fs.statSync(path.join(ROOT,'index.html')).size,g2=fs.statSync(path.join(ROOT,'gen2.'+BUILD_VER+'.js')).size;
+  if(ih>=1000000)p.push('index.html is '+ih+' bytes');
+  if(g2>=PART_WARN)p.push('gen2 is '+g2+' bytes, over its '+PART_WARN+' warning');
+  const nc=css.replace(/\/\*[\s\S]*?\*\//g,'');
+  if(/#[0-9a-fA-F]{3,8}\b/.test(nc)||/(rgb|hsl)a?\(/.test(nc))p.push('51b-checkin.css: a colour that is not a token');
+  if(/transition:[^;]*(width|height|top|left|margin|padding)/.test(nc)||/@keyframes[^{]*\{[^}]*(width|height|top|left|margin)/.test(nc))p.push('51b-checkin.css: motion that is not transform or opacity');
+  if(!/\.btn\.ck-go\{[^}]*width:52px;height:52px/.test(nc))p.push('the map Check-in button is 52 px (48 at least)');
+  return{problems:[...new Set(p)].slice(0,50),note:o.notes.join('; ')+'; index.html '+ih+', gen2 '+g2+' bytes'};
+});
+
 // ---- P6-02: the Game Room's part files load on demand (LAZY in tools/build.py, partsThen() in src/js/90-app.js); start-up bytes under 3.0 MB ----
 run('performance P6-02',()=>{
   const p=[],rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8'),vm=require('vm');
