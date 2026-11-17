@@ -4,7 +4,7 @@ The running record of what has shipped. Newest entry first. Every chunk adds one
 
 **Next up:** P6-05 (wip/batch-N, map timing), the P5-07 flaky step; see Handoff notes
 
-**Current version:** v169
+**Current version:** v176
 
 ## Chunk status
 
@@ -508,6 +508,12 @@ Things noticed while working that are outside the current chunk. One line each, 
 - (P4-11) Icons wanted from P4-03: `balloon` (Bonus game, today `gamepad`), `sparkle` / `confetti`, `unlock` (open padlock for "Next stop unlocked", today `map`), `zap` (a lightning with a spark for boss hits; today `bolt`), `sticker` (single sticker for the prize row), `medal` (the prize rosette as an icon), `heart-half` (boss life bar), `chest` (the treasure chest at icon size, e.g. for the round track where renderQ shows the gift emoji).
 
 ## Log
+
+### MERGE-176 TEACH-2b merged onto PET-AGE2, and long choice words fit at phone width (v176, 2026-11-17, Claude)
+- **Merge**: branch teach2b (TEACH-2b, lazy part teach12, based on c7b1f90) merged into v175 (PET-AGE2, lazy part petage). Both parts kept, in the order ..., teach, teach12, petage: tools/build.py PARTS and LAZY, src/js/90-app.js appFiles() and LAZY_PARTS, and the lists in tools/test.js and tools/smoke.js that name them. Special cases from both sides combined: teach and teach12 are the math map's (TEACH-2b's /^teach/ filters in smoke P6-02), petage is Home's (PET-AGE2's petage filters: not a Game Room part, and Home may load it at start for grade 3+); test.js "performance P6-02" NOT_GAME is now bt, teach, teach12, petage; the offline cold start precache list lazyF names all eight lazy parts, and its parts check (petage left out, as PET-AGE2 had it) reads seven false. Generated files (index.html, sw.js, the part files) rebuilt, not hand-merged; VER v175 -> v176.
+- **CH-FIT, the fix**: a two-choice question at 380x780 cut the word "Composite" (fact 2 "prime or composite", which Sky City int3 reviews): the label is 182 px wide at the choice font (35.9 px, 4.6vh) and the half-width tile holds 144 px. New `fitCh()` in src/js/50-round.js, called first by `fit()` (so after every renderQ, at fonts ready, on resize, and when a hint opens): for each `.choices` group whose button text overflows (measured with a Range on the label, since a centered flex button hides half the overflow), the whole group's font shrinks by the same factor, not below 60%; buttons keep their grid size (64 px tall), so targets stay >= 48 px, and other choices are untouched. Before: 14 cut labels over 1,657 distinct choice questions at 380x780 and 15 at 360x740 (Composite, Quadrilateral, Spanish words like septiembre, el helicóptero, los pantalones, the Wednesday picture tile); after: 0 at 380x780, 360x740 and 320x640. "Composite" now shows at 27.6 px (380) and 25.7 px (360).
+- Check (one at a time): `node tools/test.js` all 173 checks passed (also passed on the merge alone, before the fix); `node tools/smoke.js` smoke OK, 334 steps, first run (Sky City and P6-02's offline steps included); `node tools/a11y.js` 76 screens x 2 sizes, zero failures; `node tools/contrast.js` all 585 pairs pass; `node tools/perf.js` perf OK (start to interactive 769 ms). Bytes: index.html 959,047 (merge) -> 960,060 (fitCh); start load 2,403,197; teach.v176.js 96,008, teach12.v176.js 51,469, petage.v176.js 23,528.
+- No PROGRESS entry was found for PET-AGE2 (v175) itself.
 
 ### TEACH-2b "the grade 1-2 lessons": 31 lessons in code, 30 drafted for the owner, Carry the 1 live, Practice evidence, author --approve (v174, no version bump, 2026-11-17, Claude)
 - **What**: docs/TEACH-PLAN-2.md batch 2's lessons (the leftovers TEACH-2a listed), under the owner decisions of 2026-11-17. The code of 31 grade 1-2 math lessons is written; their words are drafts. The owner read the two sample drafts ("I think those will work fine"): **Carry the 1 (big3) is live**; Compare Fractions (frac4) is reviewed but unused (grade 3 has no lessons yet: the lesson offer is Pre-K to 2nd, and there is no two-bar fraction workbench; batch 3).
