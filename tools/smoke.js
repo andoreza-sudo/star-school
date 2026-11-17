@@ -9918,7 +9918,8 @@ async function main() {
       await dp.waitForTimeout(700);
       let s = await look();
       if (s.n !== 4 || s.pics !== 4 || s.caps.join() !== s.vs.join() || s.minH < 48 || s.wide) bad.push('Nature Trail pictures: ' + JSON.stringify(s));
-      const spoken = (s.said.find(t => /thick wool/i.test(t)) || '').toLowerCase();
+      // the round's own first question is spoken a moment after it is drawn and can land after show() cleared the log, so read the latest line for the item shown
+      const spoken = (s.said.filter(t => /thick wool/i.test(t)).pop() || '').toLowerCase();
       if (!/thick wool/.test(spoken) || s.vs.some(v => !spoken.includes(v)) || s.vs.map(v => spoken.lastIndexOf(v)).some((x, i, a) => i && x <= a[i - 1]))
         bad.push('Nature Trail prompt not spoken with its choices in order: ' + JSON.stringify(s.said));
       await shot('nature-pictures');

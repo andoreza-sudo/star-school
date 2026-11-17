@@ -1,5 +1,5 @@
-/* Star School gen v172. BUILT by tools/build.py from 23-viz.js, 30-gen-math.js, 31-gen-math-early.js, 32-gen-read.js, 33-gen-math-mid.js, 34-gen-es.js, 80-grown.js, 81-backup.js, 82-report.js, 88-online.js: never edit by hand.
-   index.html v172 loads this file with <script src="gen.v172.js"> after its own code, before data.v172.js. */
+/* Star School gen v173. BUILT by tools/build.py from 23-viz.js, 30-gen-math.js, 31-gen-math-early.js, 32-gen-read.js, 33-gen-math-mid.js, 34-gen-es.js, 80-grown.js, 81-backup.js, 82-report.js, 88-online.js: never edit by hand.
+   index.html v173 loads this file with <script src="gen.v173.js"> after its own code, before data.v173.js. */
 /* ---------- math visuals (P1-10; P1-11 adds part 2 in this same file) ----------
    Every VIZ.* function returns one inline <svg> string for a question's html (or a hint). No ids, no defs, no filters,
    no Math.random: the same arguments always give the same markup, so a question rebuilt from its seed looks the same.
@@ -3806,4 +3806,4 @@ function needOnline(action, o = {}) {
   return true;
 }
 
-var GEN_VER='v172'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var GEN_VER='v173'; // last line: the whole file ran (checked by dataReady() before the app starts)
