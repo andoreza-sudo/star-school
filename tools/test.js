@@ -3472,6 +3472,41 @@ run('Clock Tower (P2-03): CURRICULUM M-1 levels, answers by rule, 3,000 samples 
   return{problems:bad,note:r.checked+' stop checks against a path without Clock Tower'};
 });
 
+// ---- pet age: the pet grows up with the grade (little one Pre-K..2, older kid 3-4, teen-like 5-6) ----
+run('pet age: the stage follows S.grade (Pre-K..6), every species renders at all three ages x growth stages x moods, gear and proportions differ',()=>{
+  const p=[];
+  const o=(()=>eval(js+`
+  const r={age:{},svg:{},bad:[]};
+  for(const g of [-1,0,1,2,3,4,5,6]){S.grade=g;r.age[g]=petAge();}
+  S.grade=null;r.none=petAge();
+  for(const k of Object.keys(PET_RIG))for(const g of [1,3,6])for(const st of [0,1,2,3,4])for(const m of PET_MOODS){
+    S.grade=g;let s;try{s=petSVG(k,st,m,{hat:'🎩',toy:'🎈',react:true})}catch(e){r.bad.push(k+g+st+m+' '+e.message);continue}
+    r.svg[k+'|'+g+'|'+st+'|'+m]=s;}
+  S.grade=1;r.viaHome=petRigHTML(500);S.grade=6;r.viaHome6=petRigHTML(500);S.grade=1;r.over=petSVG('dragon',2,'idle',{age:2});
+  r;`))();
+  const want={'-1':0,0:0,1:0,2:0,3:1,4:1,5:2,6:2};
+  for(const g in want)if(o.age[g]!==want[g])p.push('grade '+g+' gives age '+o.age[g]+', expected '+want[g]);
+  if(o.none!==0)p.push('no grade gives age '+o.none+', expected 0');
+  for(const b of o.bad)p.push('petSVG threw: '+b);
+  for(const k of ['dragon','dino','bird','ocean'])for(const st of [0,1,2,3,4])for(const m of ['idle','happy','cheer','oops','sleepy','hungry']){
+    const a=o.svg[k+'|1|'+st+'|'+m],b=o.svg[k+'|3|'+st+'|'+m],c=o.svg[k+'|6|'+st+'|'+m];
+    if(!a||!b||!c){p.push(k+' stage '+st+' '+m+': missing');continue}
+    if(/NaN|undefined|Infinity/.test(a+b+c))p.push(k+' stage '+st+' '+m+': NaN or undefined in the drawing');
+    if(/ pet-a-/.test(a))p.push(k+' stage '+st+': little one has age gear');
+    if(st>0){if(!/ pet-a-1/.test(b))p.push(k+' stage '+st+': older kid has no pet-a-1');if(!/ pet-a-2/.test(c))p.push(k+' stage '+st+': teen-like has no pet-a-2');}
+    if(st>0&&(a===b||b===c||a===c))p.push(k+' stage '+st+' '+m+': ages look the same');
+    if(/filter|<image|<use|<mask|<clipPath/.test(b+c))p.push(k+' stage '+st+': age drawing uses a filter, image, use, mask or clip');
+    if(/(fill|stroke)="(?!var\(--pc-|none)/.test(b+c))p.push(k+' stage '+st+': age drawing has a raw colour');
+    if(m=='idle'&&b.length-a.length>1800)p.push(k+' stage '+st+': age 1 adds '+(b.length-a.length)+' bytes (budget 1,800)');
+    if(m=='idle'&&c.length-a.length>1800)p.push(k+' stage '+st+': age 2 adds '+(c.length-a.length)+' bytes (budget 1,800)');
+  }
+  if(/pet-a-1/.test(o.viaHome6)||!/pet-a-2/.test(o.viaHome6)||/pet-a-/.test(o.viaHome))p.push('petRigHTML does not follow the grade');
+  if(!/pet-a-2/.test(o.over))p.push('opts.age does not override the grade');
+  const css=fs.readFileSync(path.join(SRC,'css','41-pet.css'),'utf8');
+  if(!/\.pet-a-1\{[^}]*--pc-a:/.test(css)||!/\.pet-a-2\{[^}]*--pc-a2:/.test(css))p.push('41-pet.css has no gear colours for .pet-a-1 / .pet-a-2');
+  return{problems:p};
+});
+
 // ---- P4-05: pet rig and dragon ----
 run('pet rig (P4-05): dragon stages x moods, named groups, anchors, tokens only, budget, saves unchanged (other pets drawn since P4-06)',()=>{
   const p=[];

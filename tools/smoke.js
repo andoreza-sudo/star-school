@@ -1589,6 +1589,21 @@ async function main() {
       await pp.waitForTimeout(700);
       const after = await opa('#pet .pf-base');
       if (cheer !== 1 || base !== 0 || after !== 1) fail('P4-05 tap: cheer face ' + [cheer, base, after]);
+      // pet age: the home pet follows the grade (Grown-ups sets it with setGrade); screenshots of Home at each age in tools/out/petage
+      {
+        const dir = require('path').join(__dirname, 'out', 'petage');
+        require('fs').mkdirSync(dir, { recursive: true });
+        const was = await pp.evaluate(() => S.grade);
+        for (const [g, want] of [[1, 0], [4, 1], [6, 2]]) {
+          await pp.evaluate(g => { setGrade(g); home(); }, g);
+          const cls = await pp.evaluate(() => (document.querySelector('#pet .pet-svg') || {}).className.baseVal);
+          const age = (/pet-a-(\d)/.exec(cls) || [0, 0])[1] | 0;
+          if (age !== want) fail('pet age: grade ' + g + ' shows age ' + age + ' (' + cls + ')');
+          await pp.screenshot({ path: require('path').join(dir, 'home-grade' + g + '.png') }).catch(() => {});
+        }
+        await pp.evaluate(g => { if (g == null) delete S.grade; else S.grade = g; save(); home(); }, was);
+        step('pet age: Home pet follows the grade (little one, older kid, teen-like)');
+      }
       // Pet Care: hungry face; a snack makes it idle again; the bath shows the oops face
       await pp.evaluate(() => { S.care = { food: 10, clean: 90, fun: 90, t: Date.now(), gift: '' }; home(); });
       await pp.click('#care');
