@@ -321,3 +321,12 @@ These override anything above that disagrees.
    - The pet ages with the grade setting. It is not an evolution or transformation theme: it is the same friend, growing up.
    - Older kids get less hand-holding and more challenge from the same pet.
 4. **Not yet answered:** whether the child's own pet may be wrong in its announced "Check me" turn, and whether an AI may draft lesson wording from batch 2 for the owner to read through. The default is the plan's recommendation; the owner can veto it.
+
+### Additions agreed with the owner (2026-11-17, "do them all")
+
+1. **Test-out.** A lesson opens with 2 "show me" items. A child who gets both right with no help skips the teaching beats and goes straight to Show; the stop is marked "learned" once Show passes. Strong kids are never made to sit through a lesson they don't need. Batch 1.
+2. **Light guessing guard in Practice.** The old rounds stay as Practice, so give two-choice questions one try only: the second try is no longer a forced right answer. Reveal the answer with the picture instead. Keep it under `TEACH.off`. Batch 1.
+3. **Teaching voice.** For Pre-K to 2, record about 70 fixed teacher lines, about 500 KB of the free audio, once the owner settles the voice question. The tablet voice fills in until then. Batch 4, or earlier if the voice is chosen sooner.
+4. **The pet grows up, cheaply first.** Older stages start with changes to scale, proportions, outfit or accessory, voice pitch, and tone of wording. More detailed art comes later. Batch 1 ships the little-one stage, plus the tone and wording rules for all three stages. Batch 2 adds the visuals for the older stages.
+5. **Words at scale.** The pet makes real kid mistakes in its own announced "Check me" turn, never while teaching. An AI drafts lesson wording from batch 2, at authoring time only, never on the tablet. Every script is gated by tests and the owner's read-through. Batch 1's 12 lessons are hand-written.
+6. **Prove it teaches.** Keep the before-and-after measure: first-try accuracy on a stop before and after its lesson, and retention by day gap. Store it in the save, and add a short summary for grown-ups. Simulated children in `tools/test.js` must show a gain before a batch ships. The measure itself is in batch 1.
