@@ -279,7 +279,7 @@ async function main() {
       const files = g.files.map(f => f[0] + '.' + g.dv + '.js'), want = 'data.' + g.dv + '.js';
       const startFiles = g.files.filter(f => !g.lazy.includes(f[0])).map(f => f[0] + '.' + g.dv + '.js'); // P6-02: the <script> tags at start
       const btF = 'bt.' + g.dv + '.js', gamesF = 'games.' + g.dv + '.js'; // A11c: the order of the parts is build.py's, so name them
-      if (JSON.stringify(g.lazy) !== '["bt","games","rally","games2","games3","teach"]' || g.btIn || JSON.stringify(g.src) !== JSON.stringify(startFiles) || files[files.length - 1] !== want || !g.ready || !(g.gram > 0 && g.vocab > 0 && g.comp > 0 && g.info > 0)
+      if (JSON.stringify(g.lazy) !== '["bt","games","rally","games2","games3","teach","petage"]' || g.btIn || JSON.stringify(g.src) !== JSON.stringify(startFiles) || files[files.length - 1] !== want || !g.ready || !(g.gram > 0 && g.vocab > 0 && g.comp > 0 && g.info > 0)
         || g.spell !== 'function' || !g.vq || g.pz !== '3:16:16' || g.ix < 0) {
         fail('A11 data globals: ' + JSON.stringify(g));
       }
@@ -330,9 +330,9 @@ async function main() {
       const room = await d.page.evaluate(() => ['#g4x4', '#gcbn', '#gbb'].filter(s => document.querySelector(s)).length);
       if (room !== 3) fail('A11b: the Game Room did not open (' + room + ' of 3 games)');
       const lz = await d.page.evaluate(() => ({ css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(), games: [typeof garage, typeof blockBuilder, typeof colorMenu].join(),
-        ready: LAZY_PARTS.map(partReady).join(), tags: [...document.scripts].filter(s => s.src).map(s => s.getAttribute('src')).join() }));
-      if (lz.css !== 'main,css-gen2,css-bt,css-games,css-rally,css-games2,css-games3' || lz.games !== 'function,function,function' || lz.ready !== g.lazy.map(x => String(x !== 'teach')).join() // TEACH-1: the lessons are the math map's, not the Game Room's
-        || lz.tags !== startFiles.concat(g.lazy.filter(x => x !== 'teach').map(x => x + '.' + g.dv + '.js')).join()) fail('P6-02: the Game Room did not load the games parts: ' + JSON.stringify(lz));
+        ready: LAZY_PARTS.filter(x => x !== 'petage').map(partReady).join(), tags: [...document.scripts].filter(s => s.src && !/^petage\./.test(s.getAttribute('src'))).map(s => s.getAttribute('src')).join() })); // PET-AGE2: petage is Home's (grade 3+), not the Game Room's
+      if (lz.css !== 'main,css-gen2,css-bt,css-games,css-rally,css-games2,css-games3' || lz.games !== 'function,function,function' || lz.ready !== g.lazy.filter(x => x !== 'petage').map(x => String(x !== 'teach')).join() // TEACH-1: the lessons are the math map's, not the Game Room's
+        || lz.tags !== startFiles.concat(g.lazy.filter(x => x !== 'teach' && x !== 'petage').map(x => x + '.' + g.dv + '.js')).join()) fail('P6-02: the Game Room did not load the games parts: ' + JSON.stringify(lz));
       if (opened.length === 3 && room === 3) step('A11b: puzzle types ' + g.bt + ' registered from ' + btF + ', its <style> in, opened from the hub: '
         + opened.join(', ') + '; Game Room from ' + gamesF + ' opened');
       await d.page.evaluate(() => home());
@@ -1596,13 +1596,15 @@ async function main() {
         const was = await pp.evaluate(() => S.grade);
         for (const [g, want] of [[1, 0], [4, 1], [6, 2]]) {
           await pp.evaluate(g => { setGrade(g); home(); }, g);
+          // PET-AGE2: the older drawings are the lazy part petage: Home loads it (petAgeWarm) and redraws its pet once it is in
+          if (want) await pp.waitForFunction(w => new RegExp('pet-a-' + w).test((document.querySelector('#pet .pet-svg') || {}).className.baseVal || ''), want, { timeout: 8000 }).catch(() => {});
           const cls = await pp.evaluate(() => (document.querySelector('#pet .pet-svg') || {}).className.baseVal);
           const age = (/pet-a-(\d)/.exec(cls) || [0, 0])[1] | 0;
           if (age !== want) fail('pet age: grade ' + g + ' shows age ' + age + ' (' + cls + ')');
           await pp.screenshot({ path: require('path').join(dir, 'home-grade' + g + '.png') }).catch(() => {});
         }
         await pp.evaluate(g => { if (g == null) delete S.grade; else S.grade = g; save(); home(); }, was);
-        step('pet age: Home pet follows the grade (little one, older kid, teen-like)');
+        step('pet age: Home pet follows the grade (little one, older kid, grown-up; the older drawings load on demand)');
       }
       // Pet Care: hungry face; a snack makes it idle again; the bath shows the oops face
       await pp.evaluate(() => { S.care = { food: 10, clean: 90, fun: 90, t: Date.now(), gift: '' }; home(); });
@@ -10400,9 +10402,10 @@ async function main() {
           const ver = DATA_VER, c = await caches.open('starschool-' + ver);
           return { ver, cached: (await c.keys()).map(r => r.url.split('/').pop()).sort(), tags: [...document.scripts].filter(s => s.src).map(s => s.getAttribute('src')) };
         });
-        const lazyF = ['bt', 'games', 'rally', 'games2', 'games3', 'teach'].map(x => x + '.' + c1.ver + '.js'); // P6-03: bt is on demand too
+        const lazyF = ['bt', 'games', 'rally', 'games2', 'games3', 'teach', 'petage'].map(x => x + '.' + c1.ver + '.js'); // P6-03: bt is on demand too
         if (!lazyF.every(f => c1.cached.includes(f)) || !c1.cached.includes('index.html')) bad.push('the service worker did not precache the on-demand parts: ' + c1.cached.join(' '));
-        if (lazyF.some(f => c1.tags.includes(f))) bad.push('index.html loaded an on-demand part at start: ' + c1.tags.join(' '));
+        // PET-AGE2: Home itself loads petage for a grade 3+ child (petAgeWarm), so its tag may be there; the others may not
+        if (lazyF.filter(f => !/^petage\./.test(f)).some(f => c1.tags.includes(f))) bad.push('index.html loaded an on-demand part at start: ' + c1.tags.join(' '));
         // ES-AUDIO: the recordings are cached at install too, in their own cache (none of them was loaded by the page itself)
         const a1 = await p1.evaluate(async () => {
           const want = [...new Set(Object.values(ES_AUDIO.lines).map(m => m[0] + ES_AUDIO.ext).concat(Object.values(EN_AUDIO.lines).flatMap(m => m[1].map(f => f + EN_AUDIO.ext))))], c = await caches.open('starschool-audio'); // EN-PRAISE: the English recordings too
@@ -10413,6 +10416,7 @@ async function main() {
         if (served.some(u => /^audio\//.test(u) && served.indexOf(u) < served.indexOf('sw.js'))) bad.push('ES-AUDIO: a recording was loaded before the service worker (at start)');
         await p1.close();
         // 2. offline: the server stops and the context is offline; a cold start comes from the cache
+        // PET-AGE2: petage is left out of the parts below: Home loads it for a grade 3+ child (petAgeWarm), not the Game Room
         await ctx.setOffline(true);
         await new Promise(r => { srv.close(r); for (const s of socks) s.destroy(); });
         const n0 = served.length;
@@ -10423,7 +10427,7 @@ async function main() {
         await p2.locator('#groom').waitFor({ timeout: 15000 });
         const s2 = await p2.evaluate(() => {
           S.pt = { bank: 900, day: today(), used: 0 }; save(); home();
-          return { ready: dataReady(), games: typeof GH, parts: LAZY_PARTS.map(partReady).join(), css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(),
+          return { ready: dataReady(), games: typeof GH, parts: LAZY_PARTS.filter(x => x !== 'petage').map(partReady).join(), css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(),
             tags: [...document.scripts].filter(s => s.src).map(s => s.getAttribute('src')).join() };
         });
         if (!s2.ready || s2.games !== 'undefined' || s2.parts !== 'false,false,false,false,false,false' || s2.css !== 'main,css-gen2' || lazyF.some(f => s2.tags.includes(f))) bad.push('offline cold start: ' + JSON.stringify(s2));
@@ -10439,7 +10443,7 @@ async function main() {
         await p2.click('#groom');
         await p2.locator('.gh-room .gh-card').first().waitFor({ timeout: 15000 });
         const wait = await p2.evaluate(() => window.__w);
-        const s3 = await p2.evaluate(() => ({ parts: LAZY_PARTS.map(partReady).join(), css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(),
+        const s3 = await p2.evaluate(() => ({ parts: LAZY_PARTS.filter(x => x !== 'petage').map(partReady).join(), css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(),
           cards: document.querySelectorAll('.gh-card').length, games: GH.games.map(g => g.id).join() }));
         if (!wait || wait.line !== 'Getting the games ready...' || !wait.back || wait.hub) bad.push('no "Getting the games ready..." screen first: ' + JSON.stringify(wait));
         // P6-03: the Game Room loads only the games parts, not bt

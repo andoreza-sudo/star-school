@@ -3472,39 +3472,103 @@ run('Clock Tower (P2-03): CURRICULUM M-1 levels, answers by rule, 3,000 samples 
   return{problems:bad,note:r.checked+' stop checks against a path without Clock Tower'};
 });
 
-// ---- pet age: the pet grows up with the grade (little one Pre-K..2, older kid 3-4, teen-like 5-6) ----
-run('pet age: the stage follows S.grade (Pre-K..6), every species renders at all three ages x growth stages x moods, gear and proportions differ',()=>{
-  const p=[];
-  const o=(()=>eval(js+`
-  const r={age:{},svg:{},bad:[]};
+// ---- pet age: the pet grows up with the grade (little one Pre-K..2, older kid 3-4, grown-up 5-6) ----
+// PET-AGE2 (owner: "by sixth grade that dinosaur should be a full-grown T-Rex"): ages 1 and 2 are body plans of their own (PET_AGED,
+// src/js/17b-pet-age.js, the lazy part petage); age 0 is the P4-05 / P4-06 little one, unchanged. Budget: a grown-up drawing may add
+// up to AGE_ADD bytes over the little one. PET-AGE2 raised it from 1,800 (the old re-proportioning plus a scarf) to 4,000: a new body
+// plan is new paths (the eagle's spread wings are 9 flight feathers each, the T-Rex's jaw a row of teeth), measured at most 3.4 KB.
+run('pet age: the stage follows S.grade (Pre-K..6), every species x age x growth stage x mood is a valid drawing of its own; the little one is unchanged; petage loads on demand',()=>{
+  const p=[],AGE_ADD=4000,KINDS=['dragon','dino','bird','ocean'];
+  const css=fs.readFileSync(path.join(SRC,'css','41-pet.css'),'utf8').replace(/\/\*[\s\S]*?\*\//g,'');
+  const block=sel=>(css.match(new RegExp('\\'+sel+'\\{([^}]*)\\}'))||['',''])[1];
+  const prog=`
+  const r={age:{},svg:{},react:{},bad:[]};
   for(const g of [-1,0,1,2,3,4,5,6]){S.grade=g;r.age[g]=petAge();}
   S.grade=null;r.none=petAge();
-  for(const k of Object.keys(PET_RIG))for(const g of [1,3,6])for(const st of [0,1,2,3,4])for(const m of PET_MOODS){
-    S.grade=g;let s;try{s=petSVG(k,st,m,{hat:'🎩',toy:'🎈',react:true})}catch(e){r.bad.push(k+g+st+m+' '+e.message);continue}
-    r.svg[k+'|'+g+'|'+st+'|'+m]=s;}
+  for(const k of Object.keys(PET_RIG))for(const g of [1,3,6])for(const st of [0,1,2,3,4]){S.grade=g;
+    for(const m of PET_MOODS){try{r.svg[k+'|'+g+'|'+st+'|'+m]=petSVG(k,st,m)}catch(e){r.bad.push(k+g+st+m+' '+e.message)}}
+    try{r.react[k+'|'+g+'|'+st]=petSVG(k,st,'idle',{hat:'🎩',toy:'🎈',react:true})}catch(e){r.bad.push(k+g+st+' react '+e.message)}}
   S.grade=1;r.viaHome=petRigHTML(500);S.grade=6;r.viaHome6=petRigHTML(500);S.grade=1;r.over=petSVG('dragon',2,'idle',{age:2});
-  r;`))();
+  r.warm=typeof petAgeWarm;r.aged=typeof PET_AGED;r;`;
+  const o=(()=>eval(js+prog))();
+  // the page as it starts, before the lazy part petage is in: the little one is drawn at every age
+  const js0=cat('js')+PARTS.filter(x=>x.stem!=='petage').map(x=>cat('js',x.stem)).join('')+cat('data');
+  const o0=(()=>eval(js0+prog))();
+  // the little one as 7de3ff0 drew it, from the git history (skipped when there is no history)
+  let old=null;
+  try{const cp=require('child_process'),show=f=>cp.execSync('git show 7de3ff0:src/js/'+f,{cwd:ROOT,encoding:'utf8',stdio:['ignore','pipe','ignore']});
+    const oldJs=cat('js').replace(fs.readFileSync(path.join(SRC,'js','17-pets-svg.js'),'utf8'),show('17-pets-svg.js'))+PARTS.filter(x=>x.stem!=='petage').map(x=>cat('js',x.stem)).join('')+cat('data');
+    old=(()=>eval(oldJs+prog))();}catch(e){}
   const want={'-1':0,0:0,1:0,2:0,3:1,4:1,5:2,6:2};
   for(const g in want)if(o.age[g]!==want[g])p.push('grade '+g+' gives age '+o.age[g]+', expected '+want[g]);
   if(o.none!==0)p.push('no grade gives age '+o.none+', expected 0');
-  for(const b of o.bad)p.push('petSVG threw: '+b);
-  for(const k of ['dragon','dino','bird','ocean'])for(const st of [0,1,2,3,4])for(const m of ['idle','happy','cheer','oops','sleepy','hungry']){
-    const a=o.svg[k+'|1|'+st+'|'+m],b=o.svg[k+'|3|'+st+'|'+m],c=o.svg[k+'|6|'+st+'|'+m];
-    if(!a||!b||!c){p.push(k+' stage '+st+' '+m+': missing');continue}
-    if(/NaN|undefined|Infinity/.test(a+b+c))p.push(k+' stage '+st+' '+m+': NaN or undefined in the drawing');
-    if(/ pet-a-/.test(a))p.push(k+' stage '+st+': little one has age gear');
-    if(st>0){if(!/ pet-a-1/.test(b))p.push(k+' stage '+st+': older kid has no pet-a-1');if(!/ pet-a-2/.test(c))p.push(k+' stage '+st+': teen-like has no pet-a-2');}
-    if(st>0&&(a===b||b===c||a===c))p.push(k+' stage '+st+' '+m+': ages look the same');
-    if(/filter|<image|<use|<mask|<clipPath/.test(b+c))p.push(k+' stage '+st+': age drawing uses a filter, image, use, mask or clip');
-    if(/(fill|stroke)="(?!var\(--pc-|none)/.test(b+c))p.push(k+' stage '+st+': age drawing has a raw colour');
-    if(m=='idle'&&b.length-a.length>1800)p.push(k+' stage '+st+': age 1 adds '+(b.length-a.length)+' bytes (budget 1,800)');
-    if(m=='idle'&&c.length-a.length>1800)p.push(k+' stage '+st+': age 2 adds '+(c.length-a.length)+' bytes (budget 1,800)');
+  for(const b of o.bad.concat(o0.bad))p.push('petSVG threw: '+b);
+  if(o.aged!=='object'||o0.aged!=='undefined')p.push('PET_AGED should come only with the petage part: '+o.aged+' / '+o0.aged);
+  if(o.warm!=='function')p.push('no petAgeWarm()');
+  const GROUPS=['shadow','fig','extra','xl','xr','tail','body','belly','arm-l','arm-r','head','cheeks','eyes','mouth'];
+  const face=/<g class="pf pf-base"><g class="pg-eyes">([^]*?)<\/g><g class="pg-mouth">([^]*?)<\/g><\/g>/;
+  const valid=(key,d,k)=>{
+    const stack=[];
+    for(const t of d.matchAll(/<(\/?)([a-z]+)\b[^>]*?(\/?)>/g)){
+      if(!/^(svg|g|path|circle|ellipse|rect|text)$/.test(t[2]))p.push(key+': element <'+t[2]+'> not allowed');
+      if(t[1]){if(stack.pop()!==t[2])p.push(key+': tag </'+t[2]+'> out of order')}else if(!t[3])stack.push(t[2]);
+    }
+    if(stack.length)p.push(key+': unclosed '+stack.join(','));
+    if(/NaN|undefined|Infinity|null/.test(d))p.push(key+': NaN or undefined in the drawing');
+    if(/\sid=|<defs|gradient|filter|url\(|<animate|<style|<script|<image|<use|<mask|<clipPath|\son[a-z]+=/i.test(d))p.push(key+': a filter, image, use, mask, clip, id or script');
+    for(const a of d.match(/\s(fill|stroke)="[^"]*"/g)||[]){
+      const v=a.match(/="([^"]*)"/)[1];
+      if(v==='none')continue;
+      if(!/^var\(--pc-[a-z0-9]+\)$/.test(v)){p.push(key+': raw colour '+a.trim());continue}
+      const role=v.slice(4,-1);
+      if(!block('.pet-svg').includes(role+':')&&!block('.pet-k-'+k).includes(role+':'))p.push(key+': role '+role+' is not defined for .pet-k-'+k);
+    }
+    const co=(d.match(/\s(d|cx|cy|r|rx|ry|x|y)="[^"]*"/g)||[]).join(' ').match(/\d*\.\d{2,}/g);
+    if(co)p.push(key+': coordinates to one decimal ('+co[0]+')');
+    for(const g of GROUPS)if(!d.includes('class="pg-'+g+'"'))p.push(key+': group pg-'+g+' missing');
+  };
+  for(const k of KINDS){
+    for(const st of [0,1,2,3,4]){
+      const rest={};
+      for(const m of ['idle','happy','cheer','oops','sleepy','hungry']){
+        const a=o.svg[k+'|1|'+st+'|'+m],b=o.svg[k+'|3|'+st+'|'+m],c=o.svg[k+'|6|'+st+'|'+m],key=k+' stage '+st+' '+m;
+        if(!a||!b||!c){p.push(key+': missing');continue}
+        if(/ pet-a-/.test(a))p.push(key+': the little one is marked with an age');
+        // the little one is exactly the P4-06 drawing, and the start-up page (no petage yet) draws it at every age
+        if(old&&old.svg[k+'|1|'+st+'|'+m]!==a)p.push(key+': the little one changed');
+        if(o0.svg[k+'|6|'+st+'|'+m]!==a||o0.svg[k+'|3|'+st+'|'+m]!==a)p.push(key+': without petage the older ages are not the little one');
+        if(st==0){if(a!==b||a!==c)p.push(key+': the egg has no age');continue}
+        if(!/ pet-a-1 /.test(b))p.push(key+': older kid has no pet-a-1');
+        if(!/ pet-a-2 /.test(c))p.push(key+': grown-up has no pet-a-2');
+        if(a===b||b===c||a===c)p.push(key+': ages look the same');
+        for(const [age,d] of [[1,b],[2,c]]){
+          valid(key+' age '+age,d,k);
+          const f=d.match(face);
+          if(!f){p.push(key+' age '+age+': no pf-base face');continue}
+          if(/<g\b/.test(f[1]+f[2]))p.push(key+' age '+age+': a face may not hold groups');
+          // a mood swaps only the eyes and the mouth
+          const r=d.replace(face,'').replace(/ pet-m-[a-z]+/,'');
+          if(rest[age]==null)rest[age]=r;else if(r!==rest[age])p.push(key+' age '+age+': mood changes more than the eyes and mouth');
+          if(m=='idle'&&d.length-a.length>AGE_ADD)p.push(key+': age '+age+' adds '+(d.length-a.length)+' bytes (budget '+AGE_ADD+')');
+        }
+      }
+      if(st)for(const g of [3,6]){const d=o.react[k+'|'+g+'|'+st];
+        if(!d||!d.includes('pf-cheer')||!d.includes('pf-oops')||!/class="pw-hat"/.test(d)||!/class="pw-toy"/.test(d))p.push(k+' stage '+st+' grade '+g+': reaction faces, hat or toy missing');}
+    }
+    // the star stage scales a body plan about the ground point: baby < kid < grown, same drawing inside
+    const sc=d=>+((d.match(/<g class="pg-fig"><g transform="translate\([^)]*\) scale\(([\d.]+)\)"/)||[0,1])[1]);
+    const [b1,k1,g1]=[1,2,3].map(st=>sc(o.svg[k+'|6|'+st+'|idle']));
+    if(!(b1<k1&&k1<g1&&g1===1))p.push(k+': grown-up stage scales '+[b1,k1,g1]+', expected baby < kid < grown = 1');
   }
   if(/pet-a-1/.test(o.viaHome6)||!/pet-a-2/.test(o.viaHome6)||/pet-a-/.test(o.viaHome))p.push('petRigHTML does not follow the grade');
   if(!/pet-a-2/.test(o.over))p.push('opts.age does not override the grade');
-  const css=fs.readFileSync(path.join(SRC,'css','41-pet.css'),'utf8');
-  if(!/\.pet-a-1\{[^}]*--pc-a:/.test(css)||!/\.pet-a-2\{[^}]*--pc-a2:/.test(css))p.push('41-pet.css has no gear colours for .pet-a-1 / .pet-a-2');
-  return{problems:p};
+  // Home loads the part (petAgeWarm); the profile picker draws each child at that child's own age
+  if(!/petAgeWarm\(\)/.test(fs.readFileSync(path.join(SRC,'js','46-home.js'),'utf8')))p.push('home() does not call petAgeWarm()');
+  if(!/age: petAge\(/.test(fs.readFileSync(path.join(SRC,'js','01-profiles.js'),'utf8')))p.push('PRF.pet does not draw each child at their own age');
+  if(partOf('17b-pet-age.js')!=='petage'||!LAZY.includes('petage'))p.push('17b-pet-age.js should ship in the lazy part petage');
+  // the grown-up bird holds its wings spread: a cheer lifts them a little (not the 60 degree arm swing)
+  if(!/\.pet-a-2\.pet-k-bird\.pet-m-cheer \.pg-arm-l[^{]*\{transform:rotate\(14deg\)\}/.test(css))p.push('41-pet.css: no gentle cheer for the grown-up bird');
+  return{problems:uniq(p),note:old?'little one compared with 7de3ff0':'no git history: little one not compared'};
 });
 
 // ---- P4-05: pet rig and dragon ----
@@ -7875,7 +7939,7 @@ run('mazes P3-08',()=>{
 run('code split A11b (and data file split A11)',()=>{
   const p=[],rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8');
   if(!BUILD_VER)return{problems:['no VER in tools/build.py']};
-  if(PARTS.map(x=>x.stem).join()!=='gen,gen2,bt,games,rally,games2,games3,teach')p.push('PARTS in tools/build.py read as '+JSON.stringify(PARTS.map(x=>x.stem))+' (one entry per line, like the others)');
+  if(PARTS.map(x=>x.stem).join()!=='gen,gen2,bt,games,rally,games2,games3,teach,petage')p.push('PARTS in tools/build.py read as '+JSON.stringify(PARTS.map(x=>x.stem))+' (one entry per line, like the others)');
   const FILES=[...PART_FILES,DATA_FILE];
   for(const f of ['index.html',...FILES,'sw.js'])if(!fs.existsSync(path.join(ROOT,f)))p.push(f+' not built; run python3 tools/build.py first');
   if(p.length)return{problems:p};
@@ -7885,7 +7949,7 @@ run('code split A11b (and data file split A11)',()=>{
   const tags=[...html.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/g)].map(m=>({attrs:m[1],src:(m[1].match(/src="([^"]*)"/)||[])[1],body:m[2]}));
   const srcs=tags.filter(t=>t.src!==undefined).map(t=>t.src),n=START_FILES.length+2;
   // P6-03: bt joined the LAZY parts (the puzzle code loads when a puzzle opens; "performance P6-03")
-  if(JSON.stringify(LAZY)!=='["bt","games","rally","games2","games3","teach"]')p.push('LAZY in tools/build.py read as '+JSON.stringify(LAZY));
+  if(JSON.stringify(LAZY)!=='["bt","games","rally","games2","games3","teach","petage"]')p.push('LAZY in tools/build.py read as '+JSON.stringify(LAZY)); // PET-AGE2: petage, the older pet drawings
   if(JSON.stringify(srcs)!==JSON.stringify(START_FILES))p.push('index.html loads '+JSON.stringify(srcs)+', expected exactly '+JSON.stringify(START_FILES));
   if(tags.length!==n||tags[0].src!==undefined||tags[n-1].src!==undefined||START_FILES.some((f,i)=>tags[i+1].src!==f))p.push('index.html scripts are not code, '+START_FILES.join(', ')+', boot');
   else if(!/dataReady\(\)/.test(tags[n-1].body)||!/home\(true\)/.test(tags[n-1].body))p.push('boot script does not check dataReady() before home(true)');
@@ -8056,7 +8120,7 @@ run('parts split A11c',()=>{
       for(const [k,sk,lv] of [['math','add',1],['math','mult',1],['math','frac',3],['read','abc',1],['read','sound',1],['es','es_color',1],['disc','sci_life',1]]){
         try{const q=genQ(sk,lv,7);qs[k+':'+sk]=!!(q&&q.html&&q.sk===sk)}catch(e){qs[k+':'+sk]=String(e)}}
       return{ready:dataReady(),files,qs}})()`,ctx);
-    const stems=['gen','gen2','bt','games','rally','games2','games3','teach','data'];
+    const stems=['gen','gen2','bt','games','rally','games2','games3','teach','petage','data'];
     if(JSON.stringify(r.files.map(f=>f[0]))!==JSON.stringify(stems))p.push('appFiles() lists '+JSON.stringify(r.files.map(f=>f[0]))+', expected '+stems.join());
     if(!r.ready||r.files.some(f=>f[1]!==BUILD_VER))p.push('a part is not '+BUILD_VER+': '+JSON.stringify(r.files));
     for(const [k,v] of Object.entries(r.qs))if(v!==true)p.push('question '+k+' did not build from the loaded files: '+v);
@@ -8490,10 +8554,11 @@ run('performance P6-02',()=>{
   const html=rd('index.html'),sw=rd('sw.js'),files=Object.fromEntries([...START_FILES,...LAZY_FILES].map(f=>[f,rd(f)]));
   // 1. what loads at start: index.html names only the start-up files; the games parts are LAZY, in build.py and in 90-app.js alike
   // P6-03: so is bt (the puzzle code, BT.start loads it: the check "performance P6-03"); the Game Room asks only for GAME_PARTS
-  if(JSON.stringify(LAZY)!=='["bt","games","rally","games2","games3","teach"]')p.push('LAZY in tools/build.py should be bt, the games parts and teach (TEACH-1): '+JSON.stringify(LAZY));
-  const GAME_FILES=LAZY_FILES.filter((f,i)=>LAZY[i]!=='bt'&&LAZY[i]!=='teach'),parts_=on=>LAZY.map(x=>String(x!=='bt'&&x!=='teach'&&on)).join(); // parts_(true): the games in, bt and teach (TEACH-1, the math map's) not
+  if(JSON.stringify(LAZY)!=='["bt","games","rally","games2","games3","teach","petage"]')p.push('LAZY in tools/build.py should be bt, the games parts, teach (TEACH-1) and petage (PET-AGE2): '+JSON.stringify(LAZY));
+  const NOT_GAME=['bt','teach','petage']; // PET-AGE2: petage is Home's (petAgeWarm), not the Game Room's
+  const GAME_FILES=LAZY_FILES.filter((f,i)=>!NOT_GAME.includes(LAZY[i])),parts_=on=>LAZY.map(x=>String(!NOT_GAME.includes(x)&&on)).join(); // parts_(true): the games in, bt, teach (TEACH-1, the math map's) and petage not
   const gp=(fs.readFileSync(path.join(SRC,'js','90-app.js'),'utf8').match(/const GAME_PARTS = (\[[^\]]*\]);/)||[])[1];
-  if(!gp||gp.replace(/'/g,'"').replace(/\s/g,'')!==JSON.stringify(LAZY.filter(x=>x!=='bt'&&x!=='teach')))p.push('GAME_PARTS in 90-app.js ('+gp+') is not LAZY without bt and teach');
+  if(!gp||gp.replace(/'/g,'"').replace(/\s/g,'')!==JSON.stringify(LAZY.filter(x=>!NOT_GAME.includes(x))))p.push('GAME_PARTS in 90-app.js ('+gp+') is not LAZY without bt, teach and petage');
   const srcs=[...html.matchAll(/<script src="([^"]*)"/g)].map(m=>m[1]);
   for(const f of LAZY_FILES)if(srcs.includes(f))p.push(f+' has a <script> tag in index.html: it must load only on demand');
   if(JSON.stringify(srcs)!==JSON.stringify(START_FILES))p.push('index.html loads '+srcs.join(', ')+', expected '+START_FILES.join(', '));
@@ -17955,7 +18020,7 @@ run('snack stand G-04a',()=>{
   notes.push(o.svg.length+' drawings, '+shapes+' shapes, tokens only');
   // 12. plumbing: the games2 part, stopped by view(), the test hook off, the game-time rules, the shared chrome
   if(partOf('65-game-snack.js')!=='games2'||partOf('49-game-snack.css')!=='games2')p.push('Snack Stand must ship in games2.'+BUILD_VER+'.js');
-  if(o.files!=='gen,gen2,bt,games,rally,games2,games3,teach,data')p.push('appFiles() should list games2 after games (and games3 after it, G-BB2): '+o.files);
+  if(o.files!=='gen,gen2,bt,games,rally,games2,games3,teach,petage,data')p.push('appFiles() should list games2 after games (and games3 after it, G-BB2): '+o.files);
   if(!/if\(typeof snStop=='function'\)snStop\(\)/.test(rd('js/40-view.js')))p.push('view() must stop the day (snStop)');
   if(o.dev!=='{"fast":1}')p.push('SN_DEV test hook must be off: '+o.dev);
   if(!/if \(ptLeft\(\) <= 0\) \{\s*SFX\.wrong\(\);\s*fb\(ptWhyNot\(\)/.test(src))p.push('a day must not start without game time (ptLeft, ptWhyNot)');

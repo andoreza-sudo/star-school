@@ -1470,9 +1470,6 @@ html.notext .pktxt{display:none}
 .pet-k-ocean{--pc-b:var(--ill-aqua);--pc-b1:var(--ill-aqua-1);--pc-b2:var(--ill-aqua-2);--pc-b3:var(--ill-aqua-3);--pc-l:var(--ill-white);--pc-l2:var(--ill-white-2);
   --pc-p:var(--ill-blue);--pc-p2:var(--ill-blue-2);--pc-sh:var(--ill-aqua-1);--pc-sh2:var(--ill-aqua)}
 
-/* age gear (backpack, scarf): one colour pair for every pet */
-.pet-a-1{--pc-a:var(--ill-red);--pc-a2:var(--ill-red-2)}
-.pet-a-2{--pc-a:var(--ill-purple);--pc-a2:var(--ill-purple-2)}
 
 /* containers that hold a rig pet (petAura() gives them .rig): no box bob, no shadow; the drawing has its own */
 .rig{text-shadow:none}
@@ -1521,6 +1518,9 @@ html.notext .pktxt{display:none}
 .rig.jump .pg-arm-l{transform:rotate(60deg)}
 .rig.jump .pg-arm-r{transform:rotate(-60deg)}
 .rig.sad .pg-fig{animation:pet-wobble .5s ease-in-out}
+/* pet age (17b-pet-age.js): the grown-up bird holds its wings spread, so a cheer lifts them a little instead of a full arm swing */
+.pet-a-2.pet-k-bird.pet-m-cheer .pg-arm-l,.rig.jump .pet-a-2.pet-k-bird .pg-arm-l{transform:rotate(14deg)}
+.pet-a-2.pet-k-bird.pet-m-cheer .pg-arm-r,.rig.jump .pet-a-2.pet-k-bird .pg-arm-r{transform:rotate(-14deg)}
 @keyframes pet-jump{35%{transform:translateY(-24px) scale(1.04,.98)}70%{transform:translateY(0) scale(1.05,.94)}}
 /* Question screen (P4-10; DESIGN_SYSTEM 9 row 4). Tokens only; animate transform and opacity only; no filter.
    Round markup is in 50-round.js renderQ: .top.tbar.round.qtop (close, track with dots and the pet runner, flame and star chips),
@@ -2980,7 +2980,7 @@ const pick=a=>a[Math.floor(rnd()*a.length)];
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KEY='starschool-v2';
-const BUILD='v174'; // ROOM: the build stamp for code in part files (tools/build.py writes VER over v174 in index.html only; the Grown-ups screens are in gen)
+const BUILD='v175'; // ROOM: the build stamp for code in part files (tools/build.py writes VER over v175 in index.html only; the Grown-ups screens are in gen)
 const RELEASE='1.0.0'; // P6-05: the release number parents see (Home footer, Grown-ups > About). VER (tools/build.py) stays the build stamp and bumps every chunk.
 const LATEST=6; // newest save schema version = MIGRATIONS.length (ROADMAP section 9)
 let S,SAVE_RAW=null,SAVE_CORRUPT=false,SAVE_FAILED=false;
@@ -3140,7 +3140,7 @@ function save(){if(SAVE_HOLD||SAVE_OFF)return;try{localStorage.setItem(SKEY,JSON
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v174'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v175'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -3241,13 +3241,14 @@ const PRF = {
     return {
       id, ok, name: str(s.name, '').trim(), pet: typeof PETS != 'undefined' && PETS[s.pet] ? s.pet : 'dragon',
       stars: Number.isFinite(s.stars) && s.stars > 0 ? Math.floor(s.stars) : 0,
-      hat: str(w.hat, ''), toy: str(w.toy, ''), scene: str(w.scene, 'meadow'),
+      hat: str(w.hat, ''), toy: str(w.toy, ''), scene: str(w.scene, 'meadow'), grade: s.grade,
       kb: (id === PRF.cur ? JSON.stringify(S) : raw || '').length / 1024,
     };
   },
   label(i) { return i.name || (i.ok ? 'New child' : 'Child ' + (PRF.SLOTS.indexOf(i.id) + 1)); },
   pet(i) {
-    return petSVG(i.pet, stage(i.stars), 'happy', { hat: wearOf(i.hat), toy: wearOf(i.toy) });
+    // PET-AGE2: each child's pet at that child's age (grade), not the age of the child playing now
+    return petSVG(i.pet, stage(i.stars), 'happy', { hat: wearOf(i.hat), toy: wearOf(i.toy), age: petAge(typeof GRADES != 'undefined' && GRADES.includes(i.grade) ? i.grade : 0) });
   },
 
   // a copy of a save string loaded and migrated the way it would be if that child played now (null when it cannot be read)
@@ -5646,58 +5647,50 @@ function petWear(slot, item, a) {
     `text-anchor="middle" dominant-baseline="central">${esc(item)}</text>`;
 }
 
-// ---- pet age (grade): the pet grows up with the child. 0 little one (Pre-K to 2nd), 1 older kid (3rd, 4th), 2 teen-like (5th, 6th).
-// Not a growth stage (that is the stars: egg / baby / kid / grown): a cheap re-proportioning of any stage's numbers plus one accessory
-// (older kid: backpack and straps, teen-like: scarf). Pre-K is grade -1, so it is 0. opts.age overrides (tests, previews).
+// ---- pet age (grade): the pet grows up with the child. 0 little one (Pre-K to 2nd), 1 older kid (3rd, 4th), 2 grown-up (5th, 6th).
+// Not a growth stage (that is the stars: egg / baby / kid / grown, the size): ages 1 and 2 are body plans of their own (PET_AGED in
+// 17b-pet-age.js: a lanky young theropod then a T-Rex, a young then a majestic dragon, a fledgling then a bird of prey, a sleeker then a
+// full-grown sea pal). Pre-K is grade -1, so it is 0. opts.age overrides (tests, previews); without PET_AGED the little one is drawn.
 const petAge = g => { g = g == null ? (typeof gradeOf == 'function' ? gradeOf() : 0) : +g; return g <= 2 ? 0 : g <= 4 ? 1 : 2; };
-const PET_AGE = [{ f: 1, hs: 1, as: 1, es: 1 }, { f: 1.09, hs: .93, as: 1.12, es: .92 }, { f: 1.17, hs: .86, as: 1.25, es: .84 }];
-function petAgeP(P, age) {
-  const A = PET_AGE[age], [bx, by, brx, bry] = P.body, [lx, ly, lrx, lry] = P.belly, dy = bry * (A.f - 1), r = petR1, hs = P.head[2];
-  const hy = P.head[1] - 2 * dy + 30 * hs * (1 - A.hs), up = hy - P.head[1] + 44 * hs * (1 - A.hs), sh = 1.2 * dy;
-  return Object.assign({}, P, { body: [bx, r(by - dy), brx, r(bry * A.f)], belly: [lx, r(ly - lry * (A.f - 1)), lrx, r(lry * A.f)],
-    head: [P.head[0], r(hy), r(hs * A.hs)], arm: [P.arm[0], r(P.arm[1] - sh), r(P.arm[2] * A.as)], wing: [P.wing[0], r(P.wing[1] - sh), P.wing[2]],
-    hat: [P.hat[0], r(P.hat[1] + up), P.hat[2], P.hat[3]], toy: [P.toy[0], r(P.toy[1] - sh), P.toy[2], P.toy[3]] });
-}
-// the accessory: [behind the body, in front of the body]
-function petAgeGear(P, age) {
-  const [bx, by, rx, ry] = P.body, r = petR1;
-  if (age == 1) {
-    const sx = rx * .5, y0 = by - ry * .85, y1 = by + ry * .5;
-    return [`<rect x="${r(bx + rx * .74)}" y="${r(by - ry * .5)}" width="${r(rx * .5)}" height="${r(ry * .95)}" rx="5" fill="var(--pc-a2)"/>`,
-      `<path d="M${r(bx - sx)} ${r(y0)}L${r(bx - sx * .8)} ${r(y1)}M${r(bx + sx)} ${r(y0)}L${r(bx + sx * .8)} ${r(y1)}" stroke="var(--pc-a)" stroke-width="4.2" stroke-linecap="round" fill="none"/>`];
-  }
-  const w = rx * .78, y = by - ry * .92, hx = P.head[0];
-  return ['', `<path d="M${r(hx - w)} ${r(y)}q${r(w)} 9 ${r(2 * w)} 0v8q${r(-w)} 9 ${r(-2 * w)} 0z" fill="var(--pc-a)"/>` +
-    `<path d="M${r(hx + w * .35)} ${r(y + 9)}h${r(w * .5)}l3 ${r(ry * .5)}h${r(-w * .55)}z" fill="var(--pc-a2)"/>`];
-}
 
 function petSVG(kind, st = 2, mood = 'idle', o = {}) {
   const k = PET_RIG[kind] ? kind : 'dragon', K = PET_RIG[k], sn = petStageName(st), age = o.age != null ? o.age : petAge();
-  let P = K.stages[sn];
-  const gear = age && !P.egg ? petAgeGear(P = petAgeP(P, age), age) : ['', ''];
-  const sup = o.super != null ? !!o.super : st === 4, md = PET_FACE[mood] ? mood : 'idle', F = K.face || PET_FACE;
-  const eg = age && !P.egg && PET_AGE[age].es, ex = e => eg ? `<g transform="translate(0 -4) scale(${eg}) translate(0 4)">${e}</g>` : e;
-  const face = (m, c) => `<g class="pf ${c}"><g class="pg-eyes">${ex(F[m][0])}</g><g class="pg-mouth">${F[m][1]}</g></g>`;
+  const D = age && sn != 'egg' && typeof PET_AGED != 'undefined' && (PET_AGED[k] || [])[age - 1], P = D ? D.P : K.stages[sn], sc = D ? PET_AGE_SC[sn] : 1;
+  const sup = o.super != null ? !!o.super : st === 4, md = PET_FACE[mood] ? mood : 'idle', F = (D || K).face || PET_FACE;
+  const face = (m, c) => `<g class="pf ${c}"><g class="pg-eyes">${F[m][0]}</g><g class="pg-mouth">${F[m][1]}</g></g>`;
   const at = (a, flip) => `translate(${a[0]} ${a[1]}) scale(${flip ? -a[2] : a[2]} ${a[2]})`;
   const org = a => `style="transform-origin:${a[0]}px ${a[1]}px"`;
-  const head = `<g class="pg-head" ${org(P.head)}><g transform="${at(P.head)}">${P.egg ? '' : K.head(P)}<g class="pg-cheeks">${K.cheeks}</g>` +
+  const grp = (c, a, m, x = '') => `<g class="pg-${c}" ${org(a)}><g transform="${at(a, a[3] < 0)}">${m}</g>${x}</g>`;
+  const head = `<g class="pg-head" ${org(P.head)}><g transform="${at(P.head)}">${P.egg ? '' : D ? D.head : K.head(P)}<g class="pg-cheeks">${(D || K).cheeks}</g>` +
     face(md, 'pf-base') + (o.react ? face('cheer', 'pf-cheer') + face('oops', 'pf-oops') : '') + `</g>${petWear('hat', o.hat, P.hat)}</g>`;
   const toy = petWear('toy', o.toy, P.toy);
   let fig;
   if (P.egg) fig = `<g class="pg-body">${K.egg}</g>${head}<g class="pg-arm-r">${toy}</g>`;
-  else {
+  else if (D) {
+    const xr = grp('xr', P.wing2, D.xr);
+    fig = `<g class="pg-extra">${grp('xl', P.wing, D.xl)}${D.front ? '' : xr}</g>${grp('tail', P.tail, D.tail)}${grp('arm-l', P.arm, D.arm)}` +
+      `<g class="pg-body">${D.body}</g><g class="pg-belly">${D.belly}</g>${D.front ? xr : ''}${head}${grp('arm-r', P.arm2, D.arm2 || D.arm, toy)}`;
+    if (sc != 1) fig = `<g transform="translate(${petR1(100 - 100 * sc)} ${petR1(184 - 184 * sc)}) scale(${sc})">${fig}</g>`;
+  } else {
     const R = [200 - P.arm[0], P.arm[1], P.arm[2]], W = [200 - P.wing[0], P.wing[1], P.wing[2]];
-    fig = `${gear[0]}<g class="pg-extra"><g class="pg-xl" ${org(P.wing)}><g transform="${at(P.wing)}">${K.wing}</g></g>` +
+    fig = `<g class="pg-extra"><g class="pg-xl" ${org(P.wing)}><g transform="${at(P.wing)}">${K.wing}</g></g>` +
       `<g class="pg-xr" ${org(W)}><g transform="${at(W, 1)}">${K.wing}</g></g></g>` +
       `<g class="pg-tail" ${org(P.tail)}><g transform="${at(P.tail)}">${K.tail}</g></g>` +
-      `<g class="pg-body">${K.body(P)}</g><g class="pg-belly">${K.belly(P)}</g>${gear[1]}` +
+      `<g class="pg-body">${K.body(P)}</g><g class="pg-belly">${K.belly(P)}</g>` +
       `<g class="pg-arm-l" ${org(P.arm)}><g transform="${at(P.arm)}">${K.arm}</g></g>` +
       `<g class="pg-arm-r" ${org(R)}><g transform="${at(R, 1)}">${K.arm}</g>${toy}</g>` + head;
   }
   const label = typeof PETS != 'undefined' && PETS[k] ? PETS[k].n : k;
-  return `<svg class="pet-svg pet-k-${k} pet-s-${sn}${age && !P.egg ? ' pet-a-' + age : ''} pet-m-${md}${sup ? ' pet-super' : ''}${o.cls ? ' ' + o.cls : ''}" viewBox="0 0 200 200" ` +
-    `role="img" aria-label="${label}">${sup ? PET_GLOW : ''}<ellipse class="pg-shadow" cx="100" cy="185" rx="${P.sh}" ry="6" fill="var(--pc-sd)"/>` +
+  return `<svg class="pet-svg pet-k-${k} pet-s-${sn}${D ? ' pet-a-' + age : ''} pet-m-${md}${sup ? ' pet-super' : ''}${o.cls ? ' ' + o.cls : ''}" viewBox="0 0 200 200" ` +
+    `role="img" aria-label="${label}">${sup ? PET_GLOW : ''}<ellipse class="pg-shadow" cx="100" cy="185" rx="${petR1(P.sh * sc)}" ry="6" fill="var(--pc-sd)"/>` +
     `<g class="pg-fig">${fig}</g></svg>`;
+}
+
+// PET-AGE2: the age 1 and 2 drawings are the lazy part petage (17b-pet-age.js, 23 KB a grade 0-2 child never needs). Home calls this:
+// for a grade 3+ child it loads the part, then redraws the Home pet (#pet), drawn as the little one until then.
+function petAgeWarm() {
+  if (!petAge() || typeof PET_AGED != 'undefined' || typeof partLoad != 'function') return;
+  partLoad('petage').then(ok => { const p = ok && $('#pet'); if (p) p.innerHTML = petHTML(); });
 }
 
 // ---- hooks used by the screens (05-pets.js petAura, 42-paths.js petHTML, 46-home.js setup, 50-round.js growShow) ----
@@ -8032,8 +8025,8 @@ function home(first){
   <div class="scroll hm" id="hs"><div class="hm-cols">
    <div class="hm-col">${spkStarHTML()}${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('target', 26)}<span>Today's missions</span></h2>${hmMissions()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}${hmDaily()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
-   <p class="hm-ver">${ico('star', 16)}<span>Star School ${RELEASE} (build v174)</span></p></div>`);
-  NAV.bar('home');NAV.mapFrom='home';music(true); // NAV-01: the picture bar (Home lit); a map's Back comes back here
+   <p class="hm-ver">${ico('star', 16)}<span>Star School ${RELEASE} (build v175)</span></p></div>`);
+  NAV.bar('home');NAV.mapFrom='home';music(true);petAgeWarm(); // NAV-01: the picture bar (Home lit); a map's Back comes back here. PET-AGE2: grade 3+ loads the grown-up pet drawings
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'heart');
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
   $$('.game').forEach(b=>b.onclick=()=>{SFX.whoosh();pathMap(b.dataset.p)});
@@ -11598,7 +11591,7 @@ const BT = {
   },
   // P6-03: the type's code is in (BT.reg checked make/mount/solve), and no bt file of another release ran (that one is refused, see
   // partLoad). In tools/test.js the source runs without the built stamps, so there a type with its code counts as loaded.
-  loaded(d) { return !!d && typeof d.make == 'function' && (typeof BT_VER == 'undefined' || BT_VER === 'v174'); },
+  loaded(d) { return !!d && typeof d.make == 'function' && (typeof BT_VER == 'undefined' || BT_VER === 'v175'); },
   // P6-03: start reading bt.<VER>.js once the screen on show is painted (the hub, a level strip), so the tap that opens a puzzle
   // seldom waits. Nothing happens when it is in, or while it loads; a file that cannot be read is tried again by BT.start.
   warm() {
@@ -12192,17 +12185,18 @@ function appFiles() {
     ['games2', typeof GAMES2_VER === 'undefined' ? null : GAMES2_VER],
     ['games3', typeof GAMES3_VER === 'undefined' ? null : GAMES3_VER],
     ['teach', typeof TEACH_VER === 'undefined' ? null : TEACH_VER],
+    ['petage', typeof PETAGE_VER === 'undefined' ? null : PETAGE_VER],
     ['data', typeof DATA_VER === 'undefined' ? null : DATA_VER],
   ];
 }
 // P6-02: the start-up files only; the parts in LAZY_PARTS load later (partsThen below)
 function dataReady() {
-  return appFiles().every(f => LAZY_PARTS.includes(f[0]) || f[1] === 'v174');
+  return appFiles().every(f => LAZY_PARTS.includes(f[0]) || f[1] === 'v175');
 }
 // the Try again screen and one line in the App log: for the start-up files, or (P6-02) for the parts in stems that did not load on demand
 function dataMissing(stems) {
-  logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0])) && f[1] !== 'v174')
-    .map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v174)');
+  logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0])) && f[1] !== 'v175')
+    .map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v175)');
   const again = UI.btn('Try again', { kind: 'primary', size: 'lg', icon: 'replay', id: 'dataretry' });
   view(`<div class="scroll" id="datamiss">${UI.empty('download', 'Star School needs to finish updating. Connect to the internet, then tap Try again.', again)}</div>`);
   $('#dataretry').onclick = () => location.reload();
@@ -12219,20 +12213,20 @@ function dataMissing(stems) {
    (with Back), loads the parts one after the other (rally and games2 call GH.reg from games while they load), then runs go() only if that
    screen is still showing, so a child who tapped Back meanwhile is never pulled into the games. A part that does not load shows
    the Try again screen. Keep it generic: a new game in games2 needs nothing here. */
-const LAZY_PARTS = ['bt', 'games', 'rally', 'games2', 'games3', 'teach']; // TEACH-1: teach, the lessons (loaded by the math map: teachWarm, 46-home.js)
+const LAZY_PARTS = ['bt', 'games', 'rally', 'games2', 'games3', 'teach', 'petage']; // TEACH-1: teach, the lessons (loaded by the math map: teachWarm, 46-home.js); PET-AGE2: petage (petAgeWarm, 17-pets-svg.js)
 const GAME_PARTS = ['games', 'rally', 'games2', 'games3']; // the Game Room's parts (gameRoom in 58-playtime.js); bt is BT.start's (P6-03)
 const partsAsked = {};
 function partReady(stem) {
   const f = appFiles().find(x => x[0] === stem);
-  return !!f && f[1] === 'v174';
+  return !!f && f[1] === 'v175';
 }
 function partLoad(stem) {
   const f = appFiles().find(x => x[0] === stem);
-  if (!f || f[1] === 'v174') return Promise.resolve(!!f);
+  if (!f || f[1] === 'v175') return Promise.resolve(!!f);
   if (f[1] !== null) return Promise.resolve(false); // a file of another release ran: refused
   return partsAsked[stem] || (partsAsked[stem] = new Promise(res => {
     const s = document.createElement('script');
-    s.src = stem + '.v174.js';
+    s.src = stem + '.v175.js';
     s.onload = () => { delete partsAsked[stem]; res(partReady(stem)); };
     s.onerror = () => { delete partsAsked[stem]; s.remove(); res(false); };
     document.body.appendChild(s);
@@ -12257,9 +12251,9 @@ function partsThen(stems, go, o = {}) {
   }), 0));
 }
 </script>
-<script src="gen.v174.js"></script>
-<script src="gen2.v174.js"></script>
-<script src="data.v174.js"></script>
+<script src="gen.v175.js"></script>
+<script src="gen2.v175.js"></script>
+<script src="data.v175.js"></script>
 <script>
 if (dataReady()) {
   loadClips();
