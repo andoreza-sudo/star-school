@@ -14,6 +14,10 @@
 .pet-k-ocean{--pc-b:var(--ill-aqua);--pc-b1:var(--ill-aqua-1);--pc-b2:var(--ill-aqua-2);--pc-b3:var(--ill-aqua-3);--pc-l:var(--ill-white);--pc-l2:var(--ill-white-2);
   --pc-p:var(--ill-blue);--pc-p2:var(--ill-blue-2);--pc-sh:var(--ill-aqua-1);--pc-sh2:var(--ill-aqua)}
 
+/* age gear (backpack, scarf): one colour pair for every pet */
+.pet-a-1{--pc-a:var(--ill-red);--pc-a2:var(--ill-red-2)}
+.pet-a-2{--pc-a:var(--ill-purple);--pc-a2:var(--ill-purple-2)}
+
 /* containers that hold a rig pet (petAura() gives them .rig): no box bob, no shadow; the drawing has its own */
 .rig{text-shadow:none}
 .petbig.rig,.mappet.rig{animation:none}

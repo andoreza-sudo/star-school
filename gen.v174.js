@@ -1,5 +1,5 @@
-/* Star School gen v173. BUILT by tools/build.py from 23-viz.js, 30-gen-math.js, 31-gen-math-early.js, 32-gen-read.js, 33-gen-math-mid.js, 34-gen-es.js, 80-grown.js, 81-backup.js, 82-report.js, 88-online.js: never edit by hand.
-   index.html v173 loads this file with <script src="gen.v173.js"> after its own code, before data.v173.js. */
+/* Star School gen v174. BUILT by tools/build.py from 23-viz.js, 30-gen-math.js, 31-gen-math-early.js, 32-gen-read.js, 33-gen-math-mid.js, 34-gen-es.js, 80-grown.js, 81-backup.js, 82-report.js, 88-online.js: never edit by hand.
+   index.html v174 loads this file with <script src="gen.v174.js"> after its own code, before data.v174.js. */
 /* ---------- math visuals (P1-10; P1-11 adds part 2 in this same file) ----------
    Every VIZ.* function returns one inline <svg> string for a question's html (or a hint). No ids, no defs, no filters,
    no Math.random: the same arguments always give the same markup, so a question rebuilt from its seed looks the same.
@@ -3038,7 +3038,7 @@ function esStoryRound(lv){const D=ES_STORY.dialogues,s0=bankSeed(),out=[];let po
    P4-12 (DESIGN_SYSTEM 9 row 6): a calm adult layout in the same system. Each section is a card with an icon header (GW.card);
    switches, segmented controls, fields and a readable table from the P4-04 components; two columns on a wide screen. Styles in
    src/css/48-setup-grown-care.css. Every id the code and the tests use is kept: #back, #nm, #pn, #bd, .gr[data-g], .pl-grown,
-   #ula, #rp-open, [data-rec], [data-play], [data-del], [data-per], [data-max], #pt5, #pt0, #ptp, #rlgates (G-FEEL2), #applog, #voice, #snd, #mus, #calm, [data-cheer] (EN-PRAISE), #esspk (S-SPK), #fps, #hc3d (GL-01),
+   #ula, #lson (TEACH-2), #rp-open, [data-rec], [data-play], [data-del], [data-per], [data-max], #pt5, #pt0, #ptp, #rlgates (G-FEEL2), #applog, #voice, #snd, #mus, #calm, [data-cheer] (EN-PRAISE), #esspk (S-SPK), #fps, #hc3d (GL-01),
    #gw-lis, #lis-dl, #gw-corner, [data-keep], [data-lcp], [data-lcs], #lc-del (S-SPK2, 50-say-corner.js),
    #test, #reset. The report card's Print button (82-report.js) and the backup Save buttons (81-backup.js, P5-07) carry the online note.
    P5-10: the Children card (PRF.card in 01-profiles.js) comes right after the summary; with more than one child, Start over
@@ -3117,7 +3117,7 @@ function grown(){let armed=false;
   ${reportGrownHTML()}
   ${GW.card('gw-kid','edit','Names',GW.field('Child','user',`id="nm" value="${esc(S.name)}"`)+GW.field('Pet name','paw',`id="pn" value="${esc(S.petName)}" placeholder="${PETS[S.pet].def}"`)+
     GW.field('Buddy','users',`id="bd" value="${esc(S.buddy)}" placeholder="A sibling or friend"`,'Used in story problems.'))}
-  ${GW.card('gw-grade','map','Grade and level',gradePickHTML(gradeOf())+placeGrownHTML()+`<div class="gw-sw">${UI.sw('Unlock every stop on the map (let them jump ahead)',S.unlockAll,'ula')}</div>`,
+  ${GW.card('gw-grade','map','Grade and level',gradePickHTML(gradeOf())+placeGrownHTML()+`<div class="gw-sw">${UI.sw('Unlock every stop on the map (let them jump ahead)',S.unlockAll,'ula')}${UI.sw('Lessons with '+petN()+' (Pre-K to 2nd; off: practice rounds only)',!TEACH.off,'lson')}</div>`,
     {sub:'Picks where the maps start. Nothing is ever locked or removed when you change it.'})}
   ${GW.card('gw-time','gamepad','Game time',`<div class="gw-stats two">${GW.stat('ticket','ic-play',fmtT(bank.bank),'in the bank')}${GW.stat('timer','ic-brand',fmtT(bank.used),'used today')}</div>
     <div class="gw-row"><span class="gw-rl">Minutes per round</span>${GW.seg('per',[2,3,5],pc.per,'Minutes per round',v=>v)}</div>
@@ -3163,6 +3163,7 @@ function grown(){let armed=false;
   BAK.bind();
   PRF.bind();
   $('#ula').onchange=e=>{S.unlockAll=e.target.checked;save()};
+  $('#lson').onchange=e=>{TEACH.off=!e.target.checked;save()}; // TEACH-2: lessons on or off (50-round.js)
   $$('[data-per]').forEach(b=>b.onclick=()=>{ptCfg().per=+b.dataset.per;save();grown()});
   $$('[data-max]').forEach(b=>b.onclick=()=>{ptCfg().max=+b.dataset.max;save();grown()});
   $('#pt5').onclick=()=>{ptEarn(300);grown()};$('#pt0').onclick=()=>{pt().bank=0;save();grown()};
@@ -3522,6 +3523,7 @@ const REP = {
     const m = {name: S.name || '', date: REP.dayText(now), year: new Date(now * 864e5).getUTCFullYear(), grade: gradeOf()};
     // TEACH-1: the lessons' before-and-after measure (S.lm: [nid, day, pre right, pre n, post right, post n, tested out], 52b-know.js) and tonight's question
     const lm = Array.isArray(S.lm) ? S.lm : [], sm = i => lm.reduce((t, x) => t + (+x[i] || 0), 0), pc = (a, b) => (b ? Math.round(100 * a / b) : 0);
+    m.ls = typeof LSREP != 'undefined' ? LSREP.data() : null; // TEACH-2: the lessons' card (52d-notebook.js, part teach)
     m.teach = lm.length ? {n: lm.length, pre: pc(sm(2), sm(3)), post: pc(sm(4), sm(5)), to: lm.filter(x => x[6]).length, tq: typeof S.tq == 'string' ? S.tq : ''} : null;
     REP.keepLog(() => {
       m.cur = ACT.sum(today0, 7);
@@ -3736,7 +3738,7 @@ const REP = {
       + sec('rp-recent', 'medal', 'Recently mastered', REP.recent(m))
       + sec('rp-flu', 'bolt', 'Fact Sprint bests', REP.fluency(m))
       + sec('rp-streak', 'flame', 'Streak', REP.streak(m))
-      + (m.teach ? sec('rp-teach', 'doc', 'Lessons with ' + esc(petN()), `${m.teach.tq ? `<p><b>Tonight's question:</b> ${esc(m.teach.tq)}</p>` : ''}<p>${m.teach.n} lesson${m.teach.n > 1 ? 's' : ''}`
+      + (m.ls && m.ls.any ? sec('rp-teach', 'doc', 'Lessons with ' + esc(petN()), LSREP.html(m)) : m.teach ? sec('rp-teach', 'doc', 'Lessons with ' + esc(petN()), `${m.teach.tq ? `<p><b>Tonight's question:</b> ${esc(m.teach.tq)}</p>` : ''}<p>${m.teach.n} lesson${m.teach.n > 1 ? 's' : ''}`
         + `${m.teach.to ? `, ${m.teach.to} already known (tested out)` : ''}. Right on the first try before the lesson: ${m.teach.pre}%. After it: ${m.teach.post}%.</p>`
         + '<div class="small rp-key">Before: two questions at the start of a lesson, with no help. After: two at its end, with no help. All of it stays on this tablet.</div>') : '');
   },
@@ -3750,6 +3752,9 @@ function report() {
     + `<div class="rp-noprint rp-online">${onlineNote()}</div><div class="scroll rp-scroll gw">`
     + (m ? REP.html(m) : '<div class="gw-card rp-empty">The report card could not be drawn.</div>') + `</div>`);
   $('#back').onclick = () => grown();
+  // TEACH-2: the lessons' card comes with the teach part: load it when the save has lessons, then draw again
+  if (m && m.ls) LSREP.bind(m, () => report());
+  else if (S.know && Object.keys(S.know).length && !partReady('teach')) partLoad('teach').then(ok => {if (ok && $('.rp-scroll')) report()});
   // G-FEEL2: pin one stop as tomorrow's first mission (one pin at a time; the pinned one again takes it off)
   $$('[data-pin]').forEach(b => b.onclick = () => {
     const x = m && m.needs[+b.dataset.pin];
@@ -3806,4 +3811,4 @@ function needOnline(action, o = {}) {
   return true;
 }
 
-var GEN_VER='v173'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var GEN_VER='v174'; // last line: the whole file ran (checked by dataReady() before the app starts)

@@ -1,6 +1,6 @@
-/* Star School teach v173. BUILT by tools/build.py from 52-lesson.css, 52-lesson.js, 52b-know.js, 52c-scripts.js: never edit by hand.
-   index.html v173 loads this file on demand (partsThen in src/js/90-app.js, P6-02), after data.v173.js. */
-(function(){var s=document.createElement('style');s.id='css-teach';s.textContent="/* TEACH-1: the lesson screen (52-lesson.js, part teach). It is the question screen (.play.qs, .qarea, .inp) with the pet on top of\n   the prompt card: the pet, its caption bubble and \"Hear it again\". Tokens only. */\n.ls-pips{display:flex;gap:6px;align-items:center;flex:1;justify-content:center;min-width:0}\n.ls-pip{display:grid;place-items:center;width:30px;height:30px;border-radius:var(--r-pill);background:var(--surface-2);color:var(--ink-2);transition:transform var(--t) var(--ease)}\n.ls-pip .ic{width:18px;height:18px}\n.ls-pip.on{background:var(--math);color:var(--surface)}\n.ls-pip.now{background:var(--math-tint);color:var(--math-shade);box-shadow:inset 0 0 0 3px var(--math);transform:scale(1.15)}\n.ls-tag span{max-width:9em;overflow:hidden;text-overflow:ellipsis}\n.ls-top .ls-tag{flex:none}\n.ls-pet{display:flex;align-items:center;gap:var(--s-2);width:100%;max-width:560px;text-align:left}\n.ls-art{flex:none;width:64px;height:64px}\n.ls-art .petwrap,.ls-art svg{width:100%;height:100%;display:block}\n.ls-bub{flex:1;min-width:0;min-height:48px;display:flex;align-items:center;position:relative;background:var(--surface-2);color:var(--ink);border-radius:var(--r-card);\n  padding:var(--s-1) var(--s-3);font-size:var(--fs-2);font-weight:700;line-height:var(--lh-2);opacity:.35;transition:opacity var(--t) var(--ease)}\n.ls-bub>span{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}\n.ls-bub.on{opacity:1}\n.ls-bub::before{content:'';position:absolute;left:-9px;top:50%;margin-top:-9px;border:9px solid transparent;border-left:0;border-right-color:var(--surface-2)}\n.btn.ls-hear{flex:none}\n.ls-turn .ls-bub{background:var(--star-tint);box-shadow:inset 0 0 0 3px var(--star)}\n.ls-turn .ls-bub::before{border-right-color:var(--star)}\n.ls-pw{display:flex;justify-content:center;max-width:100%}\n.ls-pw .viz{max-width:100%}\n.slot.ls-pv{background:var(--star-tint);color:var(--ink)}\n.ls-oops .ls-pw,.ls-oops .ls-pv{outline:4px dashed var(--try);outline-offset:4px;border-radius:var(--r-chip)}\n.ls-qm{color:var(--math-shade)}\n.ls-judge{display:flex;gap:var(--s-3);justify-content:center}\n.ls-judge .btn{flex:1 1 0;min-width:0;max-width:220px;min-height:72px}\n.ls-judge .btn .ic{width:36px;height:36px}\n.ls-judge .btn.right{background:var(--good-tint);box-shadow:inset 0 0 0 3px var(--good),0 4px 0 var(--good)}\n.ls-judge .btn.ls-pk{outline:4px solid var(--brand);outline-offset:2px}\n.inp.ls-wait{opacity:.45;pointer-events:none;transition:opacity var(--t) var(--ease)}\n#lsinp>.btn.lg{margin:0 auto;display:flex}\n.ls-dot{display:inline-block;width:26px;height:26px;border-radius:50%;vertical-align:middle}\n.ls-dot.ls-d1{background:var(--math);box-shadow:inset 0 -3px 0 var(--math-shade)}\n.ls-dot.ls-d2{background:var(--play);box-shadow:inset 0 -3px 0 var(--play-shade)}\n/* the offer on the math map: a notebook in a bubble, by the stop the pet suggests */\n.btn.ls-go{position:absolute;width:56px;height:56px;min-height:56px;margin:-28px 0 0 -28px;padding:0;border-radius:50%;z-index:4;display:grid;place-items:center;\n  background:var(--surface);color:var(--math-shade);box-shadow:inset 0 0 0 3px var(--math),0 4px 0 var(--math-shade)}\n.btn.ls-go .ic{width:30px;height:30px}\n.btn.ls-go::after{content:'';position:absolute;inset:-7px;border:3px solid var(--math);border-radius:50%;opacity:0;animation:k-ring var(--t-loop) var(--ease) infinite;pointer-events:none}\n.btn.ls-go:active{transform:translateY(3px);box-shadow:inset 0 0 0 3px var(--math),0 1px 0 var(--math-shade)}\n/* the end card */\n.ls-end{display:flex;justify-content:center;padding:var(--s-4)}\n.ls-endc{display:flex;flex-direction:column;align-items:center;gap:var(--s-3);text-align:center;max-width:520px;width:100%}\n.ls-endc h1{margin:0}\n.ls-art.ls-big{width:150px;height:150px}\n.ls-idea{display:flex;align-items:center;gap:var(--s-2);margin:0;font-size:var(--fs-4);font-weight:700;color:var(--ink);background:var(--math-tint);border-radius:var(--r-card);padding:var(--s-2) var(--s-4)}\n.ls-idea .ic{flex:none;color:var(--math-shade)}\n.ls-earn{align-self:stretch}\n.ls-acts{display:flex;gap:var(--s-3);flex-wrap:wrap;justify-content:center}\n@media (min-width:700px) and (min-height:700px){.ls-art{width:120px;height:120px}.ls-bub{font-size:var(--fs-3);min-height:64px}.ls-pet{max-width:640px}}\nhtml.calm .btn.ls-go::after{animation:none}\n";document.head.appendChild(s)})(); // its src/css, after index.html's own CSS (the cascade order of a build without parts)
+/* Star School teach v174. BUILT by tools/build.py from 52-lesson.css, 52-lesson.js, 52b-know.js, 52c-scripts.js, 52d-notebook.js: never edit by hand.
+   index.html v174 loads this file on demand (partsThen in src/js/90-app.js, P6-02), after data.v174.js. */
+(function(){var s=document.createElement('style');s.id='css-teach';s.textContent="/* TEACH-1: the lesson screen (52-lesson.js, part teach). It is the question screen (.play.qs, .qarea, .inp) with the pet on top of\n   the prompt card: the pet, its caption bubble and \"Hear it again\". Tokens only. */\n.ls-pips{display:flex;gap:6px;align-items:center;flex:1;justify-content:center;min-width:0}\n.ls-pip{display:grid;place-items:center;width:30px;height:30px;border-radius:var(--r-pill);background:var(--surface-2);color:var(--ink-2);transition:transform var(--t) var(--ease)}\n.ls-pip .ic{width:18px;height:18px}\n.ls-pip.on{background:var(--math);color:var(--surface)}\n.ls-pip.now{background:var(--math-tint);color:var(--math-shade);box-shadow:inset 0 0 0 3px var(--math);transform:scale(1.15)}\n.ls-tag span{max-width:9em;overflow:hidden;text-overflow:ellipsis}\n.ls-top .ls-tag{flex:none}\n.ls-pet{display:flex;align-items:center;gap:var(--s-2);width:100%;max-width:560px;text-align:left}\n.ls-art{flex:none;width:64px;height:64px}\n.ls-art .petwrap,.ls-art svg{width:100%;height:100%;display:block}\n.ls-bub{flex:1;min-width:0;min-height:48px;display:flex;align-items:center;position:relative;background:var(--surface-2);color:var(--ink);border-radius:var(--r-card);\n  padding:var(--s-1) var(--s-3);font-size:var(--fs-2);font-weight:700;line-height:var(--lh-2);opacity:.35;transition:opacity var(--t) var(--ease)}\n.ls-bub>span{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}\n.ls-bub.on{opacity:1}\n.ls-bub::before{content:'';position:absolute;left:-9px;top:50%;margin-top:-9px;border:9px solid transparent;border-left:0;border-right-color:var(--surface-2)}\n.btn.ls-hear{flex:none}\n.ls-turn .ls-bub{background:var(--star-tint);box-shadow:inset 0 0 0 3px var(--star)}\n.ls-turn .ls-bub::before{border-right-color:var(--star)}\n.ls-pw{display:flex;justify-content:center;max-width:100%}\n.ls-pw .viz{max-width:100%}\n.slot.ls-pv{background:var(--star-tint);color:var(--ink)}\n.ls-oops .ls-pw,.ls-oops .ls-pv{outline:4px dashed var(--try);outline-offset:4px;border-radius:var(--r-chip)}\n.ls-qm{color:var(--math-shade)}\n.ls-judge{display:flex;gap:var(--s-3);justify-content:center}\n.ls-judge .btn{flex:1 1 0;min-width:0;max-width:220px;min-height:72px}\n.ls-judge .btn .ic{width:36px;height:36px}\n.ls-judge .btn.right{background:var(--good-tint);box-shadow:inset 0 0 0 3px var(--good),0 4px 0 var(--good)}\n.ls-judge .btn.ls-pk{outline:4px solid var(--brand);outline-offset:2px}\n.inp.ls-wait{opacity:.45;pointer-events:none;transition:opacity var(--t) var(--ease)}\n#lsinp>.btn.lg{margin:0 auto;display:flex}\n.ls-dot{display:inline-block;width:26px;height:26px;border-radius:50%;vertical-align:middle}\n.ls-dot.ls-d1{background:var(--math);box-shadow:inset 0 -3px 0 var(--math-shade)}\n.ls-dot.ls-d2{background:var(--play);box-shadow:inset 0 -3px 0 var(--play-shade)}\n/* the offer on the math map: a notebook in a bubble, by the stop the pet suggests */\n.btn.ls-go{position:absolute;width:56px;height:56px;min-height:56px;margin:-28px 0 0 -28px;padding:0;border-radius:50%;z-index:4;display:grid;place-items:center;\n  background:var(--surface);color:var(--math-shade);box-shadow:inset 0 0 0 3px var(--math),0 4px 0 var(--math-shade)}\n.btn.ls-go .ic{width:30px;height:30px}\n.btn.ls-go::after{content:'';position:absolute;inset:-7px;border:3px solid var(--math);border-radius:50%;opacity:0;animation:k-ring var(--t-loop) var(--ease) infinite;pointer-events:none}\n.btn.ls-go:active{transform:translateY(3px);box-shadow:inset 0 0 0 3px var(--math),0 1px 0 var(--math-shade)}\n/* the end card */\n.ls-end{display:flex;justify-content:center;padding:var(--s-4)}\n.ls-endc{display:flex;flex-direction:column;align-items:center;gap:var(--s-3);text-align:center;max-width:520px;width:100%}\n.ls-endc h1{margin:0}\n.ls-art.ls-big{width:150px;height:150px}\n.ls-idea{display:flex;align-items:center;gap:var(--s-2);margin:0;font-size:var(--fs-4);font-weight:700;color:var(--ink);background:var(--math-tint);border-radius:var(--r-card);padding:var(--s-2) var(--s-4)}\n.ls-idea .ic{flex:none;color:var(--math-shade)}\n.ls-earn{align-self:stretch}\n.ls-acts{display:flex;gap:var(--s-3);flex-wrap:wrap;justify-content:center}\n@media (min-width:700px) and (min-height:700px){.ls-art{width:120px;height:120px}.ls-bub{font-size:var(--fs-3);min-height:64px}.ls-pet{max-width:640px}}\nhtml.calm .btn.ls-go::after{animation:none}\n/* TEACH-2: a repair's contrast (the right answer beside the held idea's, on one picture each) */\n.ls-con{display:flex;gap:var(--s-3);justify-content:center;flex-wrap:wrap;width:100%}\n.ls-cpane{flex:1 1 140px;max-width:300px;min-width:0;display:flex;flex-direction:column;align-items:center;gap:var(--s-1);padding:var(--s-2);border-radius:var(--r-card);background:var(--surface)}\n.ls-cpane.ok{box-shadow:inset 0 0 0 3px var(--good)}.ls-cpane.ok>.ic{color:var(--good-ink)}\n.ls-cpane.no{box-shadow:inset 0 0 0 3px var(--try)}.ls-cpane.no>.ic{color:var(--ink-2)}\n.ls-cpane .viz,.ls-cpane svg{max-width:100%;height:auto}\n/* TEACH-2: the notebook (52d-notebook.js) */\n.nbk{padding:var(--s-3) var(--s-4) var(--s-6)}\n.nbk-in{max-width:880px;margin:0 auto;display:flex;flex-direction:column;gap:var(--s-4);align-items:center}\n.nbk-top .chip{flex:none}\n.nbk-pages{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:var(--s-3);width:100%;align-items:start}\n.nbk-pg{display:flex;flex-direction:column;gap:var(--s-2);padding:var(--s-3);background:var(--surface);border-radius:var(--r-card);box-shadow:inset 0 0 0 2px var(--line),0 4px 0 var(--line);cursor:pointer;min-width:0}\n.nbk-pg.kept{box-shadow:inset 0 0 0 3px var(--star),0 4px 0 var(--star-shade)}\n.nbk-pic{display:flex;flex-direction:column;align-items:center;gap:var(--s-1);min-height:120px;background:var(--math-tint);border-radius:var(--r-chip);padding:var(--s-2);overflow:hidden}\n.nbk-pic .pkq,.nbk-pic .viz,.nbk-pic svg{max-width:100%;height:auto}\n.nbk-pic .eq{font-size:var(--fs-4)}\n.nbk-idea{margin:0;font-size:var(--fs-3);font-weight:700;color:var(--ink);line-height:var(--lh-2)}\n.nbk-foot{display:flex;align-items:center;justify-content:space-between;gap:var(--s-2)}\n.nbk-t{display:flex;align-items:center;gap:var(--s-1);color:var(--ink-2);font-weight:700;min-width:0}\n.nbk-star{color:var(--star-ink);flex:none}\n.nbk-empty{display:grid;place-items:center;width:160px;height:160px;border-radius:50%;background:var(--math-tint);color:var(--math-shade)}\n.nbk-next .btn{min-width:220px}\n/* TEACH-2: the report card's lessons by stage (82-report.js calls LSREP) */\n.rp-ls{display:grid;gap:2px;margin:var(--s-2) 0;font-size:var(--fs-1)}\n.rp-lsr{display:grid;grid-template-columns:minmax(0,2.2fr) repeat(4,minmax(0,1fr));gap:var(--s-1);align-items:center;padding:var(--s-1) 0;border-bottom:1px solid var(--line)}\n.rp-lsh{font-weight:700;color:var(--ink-2);align-items:end;overflow-wrap:anywhere}.rp-lsh>span+span{text-align:center}\n.rp-lsn{text-align:center;font-weight:700;color:var(--ink-2)}\n.rp-lsn.on{color:var(--ink);background:var(--good-tint);border-radius:var(--r-chip)}\n.rp-noticed .rp-pin{display:flex;margin-top:var(--s-2)}\n@media (max-width:560px){.rp-lsr{grid-template-columns:repeat(4,minmax(0,1fr));row-gap:2px}.rp-lsr>[role=rowheader]{grid-column:1/-1;font-weight:700}\n  .rp-lsh>span:first-child{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}.rp-lsh{text-align:center}}\n";document.head.appendChild(s)})(); // its src/css, after index.html's own CSS (the cascade order of a build without parts)
 /* ---------- TEACH-1: "Sparky teaches", the lesson (part teach; docs/TEACH-PLAN-2.md, batch 1) ----------
    A lesson is a short class the child's pet runs, about 3 minutes (owner decision 2): it always opens with two "show me" items and
    always ends on a win.
@@ -33,7 +33,8 @@ const LS = {
   make(id, o = {}) {
     const L = LESSONS[id], seed = (o.seed >>> 0) || ((Math.random() * 4294967296) >>> 0);
     const st = {id, L, seed, r: mulberry32(seed + (o.at | 0)), b: -1, items: [], i: 0, pre: (o.pre || []).slice(), post: [], to: false, ctx: {}, chk: [],
-      rem: (o.rem || []).filter(x => LESSONS[x] && x !== id), day: o.day || 0, S: o.S || S, last: -1, drop: false, done: false};
+      rem: (o.rem || []).filter(x => LESSONS[x] && x !== id), day: o.day || 0, S: o.S || S, last: -1, drop: false, done: false,
+      repair: BUGS[o.repair] ? o.repair : null};
     if (o.at && st.pre.length == 2 && st.pre.every(Boolean) && o.at <= LSB.indexOf('show')) st.to = true;
     LS.beat(st, Math.max(0, Math.min(o.at | 0, LSB.indexOf('show'))));
     return st;
@@ -44,32 +45,48 @@ const LS = {
     st.b = b;
     st.i = 0;
     let it = [];
-    if (B == 'pre') it = [0, 1].slice(st.pre.length).map(k => ({m: 'ask', one: 1, q: L.q(L.test, r), lines: k ? [] : [T.hi(lsName()), 'First, show me what you know.']}));
+    if (B == 'pre') it = [0, 1].slice(st.pre.length).map(k => ({m: 'ask', one: 1, q: L.q(L.test, r), lines: k ? [] : [T.hi(lsName()), T.first]}));
     else if (B == 'rem') it = st.rem.slice(0, 1).map(x => ({m: 'ask', help: 1, rem: x, q: LESSONS[x].q(LESSONS[x].test, r), lines: [T.rem]}));
     else if (B == 'exp') {
       st.exp = L.exp(r);
-      it = [{m: 'open', q: st.exp.q, nudge: st.exp.nudge, lines: ["Let's play first."]}];
+      it = [{m: 'open', q: st.exp.q, nudge: st.exp.nudge, lines: [T.play]}];
+      // a repair (TEACH-PLAN-2 system C): the lesson opens with a contrast on the model, the right answer beside the held idea's
+      const c = st.repair && LS.contrast(st, st.repair);
+      if (c) it.unshift(c);
     } else if (B == 'name') {
       const n = L.name(st.ctx, r);
       it = [{m: 'say', html: n.html, lines: n.lines}];
-    } else if (B == 'tog') it = [LS.togItem(st, ["Now let's do some together."])];
+    } else if (B == 'tog') it = [LS.togItem(st, [T.tog])];
     else if (B == 'chk') it = [LS.petItem(st)];
     else if (B == 'show') it = [0, 1].map(k => ({m: 'ask', one: 1, q: L.q(L.test, r), lines: k ? [] : [st.to ? T.testOut : T.showMe]}));
-    else if (B == 'win') it = [{m: 'ask', help: 3, win: 1, q: L.q(0, r), lines: ['One more, together!']}];
+    else if (B == 'win') it = [{m: 'ask', help: 3, win: 1, q: L.q(0, r), lines: [T.more]}];
     st.items = it;
     return it.length ? st : LS.after(st);
   },
   // the next Together item: stage 0 first, then one up after a right first try, one down after a miss (the picture comes back)
+  // When two misconception codes fit the child's wrong answers equally, the item is the probe: a question on which they predict
+  // different answers (knowProbe, 52b-know.js), so one answer settles it.
   togItem(st, lines) {
-    const s = st.last < 0 ? 0 : st.drop ? Math.max(0, st.last - 1) : Math.min(2, st.last + 1);
+    const s = st.last < 0 ? 0 : st.drop ? Math.max(0, st.last - 1) : Math.min(2, st.last + 1), tie = knowTie(st.id, st.S, st.day);
     st.last = s;
     st.drop = false;
-    return {m: 'ask', help: 1, tog: 1, q: st.L.q(s, st.r), lines: lines || []};
+    const pq = tie && knowProbe(tie[0], tie[1], () => st.L.q(s, st.r));
+    return {m: 'ask', help: 1, tog: 1, probe: pq ? tie : null, q: pq || st.L.q(s, st.r), lines: lines || []};
+  },
+  // the contrast that opens a repair: one question with two answers on its picture, the right one and the one the held idea gives
+  contrast(st, code) {
+    for (let n = 0; n < 30; n++) {
+      const q = st.L.q(1, st.r), w = (knowPredict(q)[code] || []).find(v => LS.fits(q, v) && !lsOk(q, v));
+      if (w == null) continue;
+      const pane = (v, ok) => `<div class="ls-cpane ${ok ? 'ok' : 'no'}">${ico(ok ? 'check-circle' : 'close', 28)}<span class="a11y-h">${ok ? 'Right' : 'Not right'}</span>${LS.petWork(q, v)}</div>`;
+      return {m: 'say', con: code, html: `<div class="ls-con">${pane(q.ans, true)}${pane(w, false)}</div>`, lines: [lsTone().look, lsTone().isRight, BUGS[code].say]};
+    }
+    return null;
   },
   // Check me: one of the stop's questions (the build when it builds on a model, else the picture) and the pet's own answer: the
   // child's own misconception when the record shows one, else the script's first; right about PET_OK of the time
   petItem(st) {
-    const L = st.L, r = st.r, T = lsTone(), held = knowHeld(st.id, st.S), codes = held && L.bugs.includes(held) ? [held] : L.bugs;
+    const L = st.L, r = st.r, T = lsTone(), held = st.repair || knowHeld(st.id, st.S, st.day), codes = held && L.bugs.includes(held) ? [held] : L.bugs;
     const petOk = r() < LS.PET_OK;
     let q, pv, code = null;
     // up to 30 questions for the preferred mistake, then any of the stop's
@@ -78,7 +95,7 @@ const LS = {
       q = q0.kind == 'make' && !q0.goal || q0.kind == 'line' ? q0 : L.q(1, r);
       if (petOk) { pv = q.ans; break; }
       for (const c of n < 30 ? codes : L.bugs) {
-        const v = ((q.bug || {})[c] || []).find(x => String(x) !== q.ans && !lsOk(q, String(x)) && LS.fits(q, x));
+        const v = (knowPredict(q)[c] || []).find(x => String(x) !== q.ans && !lsOk(q, String(x)) && LS.fits(q, x));
         if (v != null) { pv = String(v); code = c; break; }
       }
     }
@@ -128,13 +145,13 @@ const LS = {
     }
     const ok = lsOk(it.q, v), first = !it.tries;
     if (first && it.rem) knowRemember(it.rem, ok, st.day, st.S);
-    else if (first && !it.fix && !it.win) knowAdd(st.id, it.q, v, ok, st.S);
+    else if (first && !it.fix && !it.win) knowAdd(st.id, it.q, v, ok, st.S, st.day);
     if (it.one) {
       it.tries = 1;
       (B == 'pre' ? st.pre : st.post).push(ok);
       return {ok, act: ok ? 'next' : 'reveal', lines: ok ? yay() : [T.tryMore]};
     }
-    if (ok) return {ok, act: 'next', lines: it.tries ? ['You fixed it!'] : yay(), mood: 'happy'};
+    if (ok) return {ok, act: 'next', lines: it.tries ? [T.fixed] : yay(), mood: 'happy'};
     it.tries = (it.tries || 0) + 1;
     if (it.tog) st.drop = true;
     if (it.tries <= it.help) return {ok, act: 'retry', lines: [T.help]};
@@ -166,9 +183,15 @@ const LS = {
   // the learner record and the measure (52b-know.js); returns {pass, sc}
   finish(st) {
     const S0 = st.S, k = lsKnow(st.id, S0), pass = st.post.length == 2 && st.post.every(Boolean);
+    // TEACH-2: a lesson again on a stop already learned (a review, or a repair) is remembering it: Show moves its memory box
+    if (k.s >= 2 && st.post.length) knowRemember(st.id, pass, st.day, S0);
     k.n++;
     if (k.s < 1) k.s = 1;
     if (pass && k.s < 2) Object.assign(k, {s: 2, d: st.day, box: 0, due: st.day + LS_GAP[0], last: st.day});
+    // the notebook page (52d-notebook.js): what the child built in Explore, drawn again from it; a passed repair starts the page of
+    // wrong answers again (the tally stays, and fades)
+    if (pass && Object.keys(st.ctx).length) k.note = Object.assign({}, st.ctx);
+    if (pass && st.repair) k.w = [];
     lsMeasure(st.id, st.day, st.pre, st.post, st.to, S0);
     delete S0.les;
     return {pass, sc: st.post.filter(Boolean).length};
@@ -206,7 +229,7 @@ const LS = {
   start(id) {
     if (!LESSONS[id]) return;
     const day0 = lsDay(), pl = planToday(S, day0) || {}, les = S.les && S.les.n === id ? S.les : null;
-    LS.st = LS.make(id, les ? {seed: les.s, at: les.b, pre: les.pre, day: day0, rem: []} : {rem: pl.remember || [], day: day0});
+    LS.st = LS.make(id, les ? {seed: les.s, at: les.b, pre: les.pre, day: day0, rem: [], repair: les.r} : {rem: pl.remember || [], day: day0, repair: pl.id === id && pl.code});
     warmVoices();
     LS.show();
   },
@@ -235,6 +258,7 @@ const LS = {
     if (!st) return;
     if (!it) return LS.end();
     S.les = {n: st.id, b: st.b, s: st.seed, pre: st.pre.slice()};
+    if (st.repair) S.les.r = st.repair;
     save();
     LS.seq++; // screens shown (tests wait for the next one)
     const q = it.q, B = LSB[st.b], T = lsTone();
@@ -354,12 +378,13 @@ const LS = {
      ${rec.pass ? UI.stars(rec.stars, 3, 34) : ''}
      <ul class="rw-pl ls-earn"><li>${ico('star', 18)}<span>+${rec.sc} stars</span></li><li>${ico('coin', 18)}<span>+${rec.coins} coins</span></li>
       <li>${ico('ticket', 18)}<span>+${fmtM(rec.PT.sec)} of game time</span></li>${rec.newPass && rec.next >= 0 ? `<li>${ico('map', 18)}<span>Next stop unlocked: ${esc(NODES.math[rec.next].t)}!</span></li>` : ''}</ul>
-     <div class="ls-acts">${UI.btn('Practice', {kind: rec.pass ? 'soft' : 'primary', size: 'lg', icon: 'play', id: 'lsprac'})}${UI.btn('Map', {kind: rec.pass ? 'primary' : 'soft', size: 'lg', icon: 'map', id: 'lsmap'})}</div>
+     <div class="ls-acts">${UI.btn('Practice', {kind: rec.pass ? 'soft' : 'primary', size: 'lg', icon: 'play', id: 'lsprac'})}${UI.btn('Map', {kind: rec.pass ? 'primary' : 'soft', size: 'lg', icon: 'map', id: 'lsmap'})}${UI.btn('Notebook', {kind: 'soft', size: 'lg', icon: 'doc', id: 'lsnb'})}</div>
     </div></div>`);
     LS.mood('cheer');
     $('#lshome').onclick = () => { SFX.whoosh(); home(); };
     $('#lsprac').onclick = () => { SFX.whoosh(); start('math', rec.ni); };
     $('#lsmap').onclick = () => { SFX.whoosh(); pathMap('math'); };
+    $('#lsnb').onclick = () => { SFX.whoosh(); NB.open(() => pathMap('math')); };
     SFX.fanfare();
     if (rec.pass) confetti(24);
     if (LS.voice()) say(`${line} ${L.idea} ${T.bye(lsName())}`);
@@ -371,6 +396,7 @@ const LS = {
     if (!m || MAPP != 'math' || TEACH.off || gradeOf() > 2) return;
     const old = m.querySelector('.ls-go');
     if (old) old.remove();
+    NB.mapBtn();
     const pl = planToday(S, lsDay()), b = pl && m.querySelector(`.node[data-n="${pl.i}"]`);
     if (!b) return;
     const x = parseFloat(b.style.left), y = parseFloat(b.style.top), W = m.clientWidth || 360, sd = x > W / 2 ? -1 : 1;
@@ -405,32 +431,103 @@ function lsKnow(id, S0 = S) {
   if (!S0.know || typeof S0.know != 'object' || Array.isArray(S0.know)) S0.know = {};
   return S0.know[id] || (S0.know[id] = {s: 0, n: 0, lv: [[0, 0], [0, 0], [0, 0]], b: {}, box: 0, due: 0});
 }
-// The misconception codes for batch 1 (eight). A question carries q.bug {code: [values]}: the answers a child who holds that idea
-// would give. A wrong answer adds one to each code that predicts it.
+/* The misconception codes (TEACH-PLAN-2 system C). An entry: d what a child holding that idea does (for code and tests), f(q) the
+   answers that idea gives to a question (only for questions that carry their numbers: q.ab [a, b, '+' | '-'], q.coins [values],
+   q.hm [hour, minute]), and say: the pet's spoken line when a lesson repairs it (12 words or fewer). A question also carries
+   q.bug {code: [values]} written by its script. A wrong answer adds one to each code that predicts it. */
+const lsDig = n => String(n).split('').reverse().map(Number); // ones first
+const lsCols = (a, b, fn) => { const x = lsDig(a), y = lsDig(b), o = []; for (let i = 0; i < Math.max(x.length, y.length); i++) o.push(fn(x[i] || 0, y[i] || 0, i)); return o; };
+const lsAB = (q, op) => (Array.isArray(q.ab) && q.ab[2] == op && q.ab[1] >= 0 && q.ab[0] >= (op == '-' ? q.ab[1] : 0) ? q.ab : null);
 const BUGS = {
-  off1: 'one too many or one too few (a counter counted twice, or one missed)',
-  given: 'answers with a number that is already shown',
-  op: 'adds instead of taking away (or the other way round)',
-  all: 'counts them all and forgets to take away',
-  ten: 'forgets the ten (or counts it as one)',
-  swap: 'reads the tens and ones the wrong way round (14 as 41)',
-  small: 'picks the smaller one as bigger (the sign turned round)',
-  back: 'counts the wrong way (on instead of back)',
+  off1: {d: 'one too many or one too few (a counter counted twice, or one missed)', say: 'Count each one once. Touch it as you count.'},
+  given: {d: 'answers with a number that is already shown', f: q => (Array.isArray(q.ab) ? q.ab.slice(0, 2) : []), say: 'The number we see is not the answer.'},
+  op: {d: 'adds instead of taking away (or the other way round)', f: q => (lsAB(q, '-') ? [q.ab[0] + q.ab[1]] : lsAB(q, '+') && q.ab[0] >= q.ab[1] ? [q.ab[0] - q.ab[1]] : []),
+    say: 'Look at the sign. Are we adding or taking away?'},
+  all: {d: 'counts them all and forgets to take away', say: 'Some went away. Count only the ones left.'},
+  ten: {d: 'forgets the ten (or counts it as one)', say: 'A full frame is ten. Count the ten first.'},
+  swap: {d: 'reads the tens and ones the wrong way round (14 as 41)', f: q => (Array.isArray(q.ab) && /^\d\d$/.test(q.ans) && q.ans[0] != q.ans[1] ? [+(q.ans[1] + q.ans[0])] : []),
+    say: 'The tens come first. Then the ones.'},
+  small: {d: 'picks the smaller one as bigger (the sign turned round)', say: 'The open side faces the bigger number.'},
+  back: {d: 'counts the wrong way (on instead of back)', say: 'Back means smaller numbers. Count down.'},
+  // grade 1 and 2 ideas (place value, carrying, borrowing, clocks, coins): every one computed from the question's own numbers
+  col: {d: 'takes the smaller digit from the bigger one in each column', f: q => (lsAB(q, '-') ? [+lsCols(q.ab[0], q.ab[1], (x, y) => Math.abs(x - y)).reverse().join('')] : []),
+    say: 'Top take away bottom. Not the small from the big.'},
+  keep: {d: 'borrows a ten for the ones but does not take it from the tens', f: q => {
+    if (!lsAB(q, '-')) return [];
+    const o = lsCols(q.ab[0], q.ab[1], (x, y) => (x < y ? x + 10 - y : x - y));
+    return [+o.reverse().join('')];
+  }, say: 'We took a ten. Now the tens have one less.'},
+  nocarry: {d: 'adds each column and drops the extra ten', f: q => (lsAB(q, '+') ? [+lsCols(q.ab[0], q.ab[1], (x, y) => (x + y) % 10).reverse().join('')] : []),
+    say: 'Ten ones make a ten. Carry it over.'},
+  cat: {d: 'writes each column total side by side (27 + 15 as 312)', f: q => (lsAB(q, '+') ? [+lsCols(q.ab[0], q.ab[1], (x, y) => x + y).reverse().join('')] : []),
+    say: 'Only one digit fits in each place.'},
+  count: {d: 'counts the coins instead of adding their values', f: q => (Array.isArray(q.coins) ? [q.coins.length] : []), say: 'Each coin has a value. Add the values.'},
+  hands: {d: 'reads the long hand as the hour and the short hand as the minutes', f: q => {
+    if (!Array.isArray(q.hm)) return [];
+    const [h, m] = q.hm;
+    return m % 5 == 0 ? [`${m ? m / 5 : 12}:${String((h % 12) * 5).padStart(2, '0')}`] : [];
+  }, say: 'The short hand tells the hour.'},
 };
-const lsBugsOf = (q, v) => Object.keys(q.bug || {}).filter(c => BUGS[c] && (q.bug[c] || []).some(x => String(x) === String(v)));
-// one first try in a lesson: stage level, and a misconception tally for a wrong value
-function knowAdd(id, q, v, ok, S0 = S) {
-  const k = lsKnow(id, S0), l = k.lv[Math.max(0, Math.min(2, q.st | 0))];
-  l[1]++;
-  if (ok) l[0]++;
-  else for (const c of lsBugsOf(q, v)) k.b[c] = (k.b[c] || 0) + 1;
+// the wrong answers each code predicts for q: the script's q.bug, then the code's own function; never the right answer
+function knowPredict(q) {
+  const o = {};
+  for (const c in BUGS) {
+    const v = [].concat((q.bug || {})[c] || [], BUGS[c].f ? BUGS[c].f(q) : []).map(String).filter(x => x !== String(q.ans));
+    if (v.length) o[c] = [...new Set(v)];
+  }
+  return o;
 }
-// the code the child shows most (2 or more wrong answers), else null: the pet makes that mistake in Check me
-function knowHeld(id, S0 = S) {
-  const b = (S0.know && S0.know[id] && S0.know[id].b) || {};
-  let best = null;
-  for (const c in b) if (b[c] >= 2 && (!best || b[c] > b[best])) best = c;
-  return best;
+const lsBugsOf = (q, v) => { const P = knowPredict(q); return Object.keys(P).filter(c => P[c].includes(String(v))); };
+// tallies halve every LS_FADE days (k.f: the day of the last halving), so an old slip stops counting
+const LS_FADE = 14, LS_WRONG = 8;
+function knowFade(k, day) {
+  if (day == null) return k;
+  if (k.f == null) k.f = day;
+  while (day - k.f >= LS_FADE) {
+    for (const c in k.b) if (!(k.b[c] = k.b[c] >> 1)) delete k.b[c];
+    k.f += LS_FADE;
+  }
+  return k;
+}
+// one first try in a lesson: stage level, a misconception tally, and the last LS_WRONG wrong answers [codes, problem, day]
+function knowAdd(id, q, v, ok, S0 = S, day = lsDay()) {
+  const k = knowFade(lsKnow(id, S0), day), l = k.lv[Math.max(0, Math.min(2, q.st | 0))];
+  l[1]++;
+  if (ok) return void l[0]++;
+  const cs = lsBugsOf(q, v);
+  for (const c of cs) k.b[c] = (k.b[c] || 0) + 1;
+  (k.w = k.w || []).push([cs.join(','), String(q.label || q.ans).slice(0, 16), day]);
+  if (k.w.length > LS_WRONG) k.w.splice(0, k.w.length - LS_WRONG);
+}
+/* How a teacher reads a page of work, not one answer: each code's weight over the last LS_WRONG wrong answers (an answer counts half
+   after LS_FADE days, a quarter after twice that) and the problems it explains. day: today (default: the newest answer's day). */
+function knowScore(id, S0 = S, day) {
+  const k = (S0.know && S0.know[id]) || {}, w = Array.isArray(k.w) ? k.w : [], o = {};
+  if (day == null) day = w.reduce((m, e) => Math.max(m, e[2] | 0), 0);
+  for (const [cs, pr, d] of w) for (const c of String(cs).split(',').filter(x => BUGS[x])) {
+    const x = o[c] || (o[c] = {c, n: 0, pr: new Set()});
+    x.n += Math.pow(.5, Math.floor(Math.max(0, day - d) / LS_FADE));
+    x.pr.add(pr);
+  }
+  return Object.values(o).sort((a, b) => b.n - a.n);
+}
+// the code the child holds: it explains 3 or more of the last 8 wrong answers, across 2 or more problems, and no other code as many
+function knowHeld(id, S0 = S, day) {
+  const s = knowScore(id, S0, day), a = s[0];
+  return a && a.n >= 3 && a.pr.size >= 2 && !(s[1] && s[1].n >= a.n) ? a.c : null;
+}
+// two codes that fit the same wrong answers equally (2 or more each, nothing held): the probe tells them apart
+function knowTie(id, S0 = S, day) {
+  const s = knowScore(id, S0, day);
+  return s.length > 1 && s[0].n >= 2 && s[1].n == s[0].n && !knowHeld(id, S0, day) ? [s[0].c, s[1].c] : null;
+}
+// the probe: up to 20 questions from gen(), the first on which codes a and b predict different answers (null if none does)
+function knowProbe(a, b, gen) {
+  for (let n = 0; n < 20; n++) {
+    const q = gen(), P = knowPredict(q);
+    if (P[a] && P[b] && !P[a].some(v => P[b].includes(v))) return q;
+  }
+  return null;
 }
 // Remember answered on day `day`: a right answer moves the box up (and keeps a learned stop), a miss moves it down
 function knowRemember(id, ok, day, S0 = S) {
@@ -442,24 +539,75 @@ function knowRemember(id, ok, day, S0 = S) {
   k.last = day;
   if (ok && k.s == 2 && k.d != null && day > k.d) { k.s = 3; k.k = day; }
 }
-/* planToday(S, day, p): the next lesson in the chosen subject (owner decision 1: the child picks the subject; only math has lessons in
-   batch 1), the pure function of TEACH-PLAN-2 system D at batch 1 size:
-     1. a lesson left part way (S.les) whose stop is open;   2. else the first of the twelve, in map order, that is open, not passed
-        and not learned (a stop passed in Practice is not offered again as new; it comes back in Remember).
+/* PRE: what each math stop builds on (TEACH-PLAN-2 system D), planning data only: the planner sends a child back to an earlier
+   lesson, it never changes what the map opens. Every link is a real stop that sits earlier on the path or in a lower grade, and
+   there are no loops (tools/test.js). Pre-K to 2nd grade for now. */
+const PRE = {
+  pk_count3: ['pk_count2'], pk_num3: ['pk_num2'], tenf1: ['pk_count2'], pk_more2: ['pk_more1'], add4: ['pk_count2', 'pk_more1'],
+  tenf2: ['tenf1'], cnt4: ['pk_count3'], tenf3: ['tenf2', 'pk_count3'], add1: ['add4', 'tenf2'], cnt1: ['pk_count3'], eo1: ['cnt1'],
+  miss1: ['add1'], sub1: ['add4'], story1: ['add1', 'sub1'], add2: ['add1'], big1: ['cnt1'], cnt2: ['cnt1'], cmp1: ['pk_more2', 'tenf3'],
+  miss2: ['miss1', 'add2'], sub2: ['sub1', 'add2'], story2: ['story1', 'sub2'], pv1: ['tenf3', 'big1'], add5: ['add2'], add6: ['add2', 'pv1'],
+  add3: ['add2', 'sub2'], big2: ['pv1', 'add3'], coins1: ['cnt2'], eo2: ['eo1', 'pv1'], cmp2: ['cmp1', 'pv1'], time2: ['time1'],
+  sub3: ['pv1', 'sub2'], story3: ['story2', 'big2', 'sub3'], big3: ['big2'], mult1: ['cnt2', 'add5'], coins2: ['coins1', 'cnt1'],
+  sub4: ['sub3'], time3: ['time2'], big4: ['big3'], mult2: ['mult1'], cmp3: ['cmp2'], coins3: ['coins2'], pv2: ['pv1'],
+  big5: ['big4', 'pv2'], pv3: ['pv2'], sub5: ['sub4', 'pv2'], time4: ['time3'], coins4: ['coins3'], arr1: ['mult2'], cnt5: ['cnt3'],
+  coins5: ['coins4', 'sub3'], story4: ['story3', 'big3', 'sub4'],
+};
+// the stops id builds on, nearest first, down to two links
+const lsPreOf = id => { const o = []; for (const x of PRE[id] || []) for (const y of [x, ...(PRE[x] || [])]) if (!o.includes(y)) o.push(y); return o; };
+// a lesson's strand ("Counting and number sense", "Addition and subtraction", ...): the report card's (82-report.js)
+const lsStrand = id => (typeof REP != 'undefined' && LESSONS[id] ? REP.strandOf(LESSONS[id].sk) : String(id).replace(/\d+$/, ''));
+// the subjects with lessons (owner decision 1: the child picks the subject; the planner plans inside it)
+const LS_SUBJ = ['math'];
+/* planToday(S, day, p): the next lesson in the chosen subject p, the pure function of TEACH-PLAN-2 system D. In order:
+     1. a lesson left part way (S.les) whose stop is open (kind 'again');
+     2. a repair: a misconception held (knowHeld) on a lesson stop the next new stop builds on, or on the last one taught (kind 'repair');
+     3. a prerequisite: the next new stop builds on a lesson stop the child has not learned, and either that stop is not passed at all
+        or the next stop's lesson has run twice without its Show passed (kind 'again');
+     4. the next lesson stop that is open, not passed and not learned, in map order; but when the last lesson (S.lm) was on an earlier
+        day and in the same strand, a stop of another strand whose prerequisites are passed or learned comes first (alternating by
+        day; kind 'new');
+     5. with nothing new open, the most overdue learned lesson, as a review (kind 'again').
+     A stop passed in Practice is not offered again as new; it comes back in Remember.
    remember: the most overdue learned lesson, never today's (one item: owner decision 2); with none due, the last stop passed in
    Practice that no lesson has taught; or none.
-   Returns {id, i (the stop's index on the map), kind 'new' | 'again', remember: [ids]} or null. */
+   Returns {id, i (the stop's index on the map), kind 'new' | 'again' | 'repair', code (repair), remember: [ids]} or null. */
 function planToday(S0, day, p = 'math') {
-  if (p != 'math') return null;
+  if (!LS_SUBJ.includes(p)) return null;
   const at = id => NODES.math.findIndex(n => nid(n) === id), open = id => { const i = at(id); return i >= 0 && unlocked('math', i); };
-  const K = S0.know || {};
-  let id = S0.les && LESSONS[S0.les.n] && open(S0.les.n) ? S0.les.n : null, kind = id ? 'again' : 'new';
-  if (!id) id = LS_IDS.filter(x => at(x) >= 0).sort((a, b) => at(a) - at(b)).find(x => open(x) && !passed('math', at(x)) && !((K[x] || {}).s >= 2)) || null;
+  const K = S0.know || {}, ps = id => at(id) >= 0 && passed('math', at(id)), learned = id => (K[id] || {}).s >= 2;
+  let id = S0.les && LESSONS[S0.les.n] && open(S0.les.n) ? S0.les.n : null, kind = id ? 'again' : 'new', code = null;
+  if (!id) {
+    const cand = LS_IDS.filter(x => at(x) >= 0).sort((a, b) => at(a) - at(b)).filter(x => open(x) && !ps(x) && !learned(x));
+    const ready = x => (PRE[x] || []).every(y => ps(y) || learned(y));
+    let nx = cand[0] || null;
+    const lm = Array.isArray(S0.lm) ? S0.lm : [], last = lm[lm.length - 1];
+    if (nx && last && last[1] < day && lsStrand(last[0]) == lsStrand(nx)) nx = cand.find(x => lsStrand(x) != lsStrand(nx) && ready(x)) || nx;
+    if (nx) {
+      const pre = lsPreOf(nx).filter(y => LESSONS[y] && open(y));
+      const rep = pre.concat(last && LESSONS[last[0]] && open(last[0]) ? [last[0]] : []).find(y => (K[y] || {}).s >= 1 && knowHeld(y, S0, day));
+      const k = K[nx] || {}, back = (PRE[nx] || []).find(y => LESSONS[y] && open(y) && !learned(y) && (!ps(y) || k.n >= 2 && k.s < 2));
+      if (rep) { id = rep; kind = 'repair'; code = knowHeld(rep, S0, day); }
+      else if (back) { id = back; kind = 'again'; }
+      else id = nx;
+    }
+  }
+  // 5. nothing new is open: the most overdue learned lesson again, as a review (its Show counts as remembering it, LS.finish)
+  const due0 = LS_IDS.filter(x => K[x] && K[x].s >= 2 && K[x].due <= day && open(x)).sort((a, b) => K[a].due - K[b].due);
+  if (!id && due0.length) { id = due0[0]; kind = 'again'; }
   if (!id) return null;
-  const due = LS_IDS.filter(x => x !== id && K[x] && K[x].s >= 2 && K[x].due <= day).sort((a, b) => K[a].due - K[b].due);
+  const due = due0.filter(x => x !== id);
   // nothing due: a stop passed in Practice that no lesson has taught yet (the tutor has not seen it: TEACH-PLAN-2 system D)
-  const seen = LS_IDS.filter(x => x !== id && at(x) >= 0 && passed('math', at(x)) && !((K[x] || {}).s >= 2));
-  return {id, i: at(id), kind, remember: (due.length ? due : seen.slice(-1)).slice(0, 1)};
+  const seen = LS_IDS.filter(x => x !== id && ps(x) && !learned(x));
+  return {id, i: at(id), kind, code, remember: (due.length ? due : seen.slice(-1)).slice(0, 1)};
+}
+// what the pet suggests today (owner decision 1: a suggestion only, the child still picks): of the subjects with a lesson ready,
+// the one not used for the last lesson, by day; {p, plan} or null
+function planSuggest(S0, day) {
+  const ok = LS_SUBJ.map(p => ({p, plan: planToday(S0, day, p)})).filter(x => x.plan);
+  if (!ok.length) return null;
+  const lm = Array.isArray(S0.lm) ? S0.lm : [], last = lm[lm.length - 1], lp = last && LESSONS[last[0]] ? (LESSONS[last[0]].p || 'math') : null;
+  return ok.find(x => x.p != lp || !last || last[1] == day) || ok[day % ok.length];
 }
 // the measure: the record of one lesson; and the summary for grown-ups (first-try accuracy before and after, retention by gap)
 function lsMeasure(id, day, pre, post, to, S0 = S) {
@@ -791,18 +939,189 @@ const LS_TONE = {
   little: {hi: n => `Hi ${n}! Let's learn together.`, yay: ['Yes!', 'You got it!', 'Super!', 'Hooray!', 'Great job!'], help: 'Look! Let me help.',
     tryMore: "Let's look at it together.", testOut: 'You know this! Show me!', showMe: 'Your turn to show me!', myTurn: 'My turn. Check me!',
     caught: 'You caught my mistake!', fooled: 'Look again. I made a mistake!', rightMe: 'Yes, I got it right!', wrongMe: 'I was right this time!',
-    fixIt: 'Can you fix it?', win: 'We did it!', bye: n => `Great learning, ${n}!`, rem: 'Do you remember this?'},
+    fixIt: 'Can you fix it?', win: 'We did it!', bye: n => `Great learning, ${n}!`, rem: 'Do you remember this?',
+    nb: n => `Look! We learned ${n} big idea${n > 1 ? 's' : ''}!`, nb0: "Let's learn together and fill our notebook!", kept: 'And you still know it!',
+    first: 'First, show me what you know.', play: "Let's play first.", tog: "Now let's do some together.", more: 'One more, together!', fixed: 'You fixed it!',
+    look: 'Look at these two.', isRight: 'This one is right.'},
   kid: {hi: n => `Hey ${n}. New idea today.`, yay: ['Nice work.', 'You got it.', 'Right on.', 'Exactly.'], help: 'Here is a picture to help.',
     tryMore: 'Try it with the picture.', testOut: 'Looks like you know this. Prove it!', showMe: 'Show me what you know.',
     myTurn: 'My turn. Check my work.', caught: 'Good catch. I slipped there.', fooled: 'Look closer. I slipped.', rightMe: 'Yep, that one was right.',
-    wrongMe: 'Actually, I had it right.', fixIt: 'Fix it for me?', win: 'Nailed it.', bye: n => `Good work today, ${n}.`, rem: 'Remember this one?'},
+    wrongMe: 'Actually, I had it right.', fixIt: 'Fix it for me?', win: 'Nailed it.', bye: n => `Good work today, ${n}.`, rem: 'Remember this one?',
+    nb: n => `Your notebook has ${n} idea${n > 1 ? 's' : ''} in it.`, nb0: 'Your notebook fills up as we learn.', kept: 'You still know this one.',
+    first: 'First, show me what you already know.', play: 'Try this first. Any way works.', tog: 'Now a few with me.', more: 'One more, with the picture.',
+    fixed: 'You fixed it.', look: 'Compare these two.', isRight: 'This one is right.'},
   teen: {hi: n => `Hey ${n}. Here is today's idea.`, yay: ['Nice.', 'Correct.', 'That holds up.', 'Clean.'], help: 'Picture it first.',
     tryMore: 'Use the model.', testOut: 'You might know this already. Show me.', showMe: 'Your call.', myTurn: 'My turn. Check my work.',
     caught: 'Fair. I got that wrong.', fooled: 'Look again. That one was wrong.', rightMe: 'That one was fine.', wrongMe: 'That one was actually right.',
-    fixIt: 'Fix it.', win: 'Done.', bye: n => `Good session, ${n}.`, rem: 'Quick one from before.'},
+    fixIt: 'Fix it.', win: 'Done.', bye: n => `Good session, ${n}.`, rem: 'Quick one from before.',
+    nb: n => `Your notes: ${n} idea${n > 1 ? 's' : ''} so far.`, nb0: 'Your notes go here as we work.', kept: 'Still solid.',
+    first: 'Show me what you already know.', play: 'Try this first. There is no wrong way.', tog: 'A few to work through.', more: 'One more with the model.',
+    fixed: 'Fixed.', look: 'Compare these two.', isRight: 'This one holds up.'},
+};
+/* The rules each age's lines are checked against (tools/test.js on LS_TONE and every script; tools/author.js on drafts): the most
+   words in a line, and the words that age does not use. The little one may say anything kind; the older kid drops baby praise;
+   the teen-like partner also drops the little one's exclamations and never says "we did it" for the child's own work. */
+const LS_RULES = {
+  little: {words: 12, chars: 90, no: null},
+  kid: {words: 16, chars: 110, no: /\b(hooray|yay|super duper|good (boy|girl)|itty|bitty|teeny|tiny friend|sweetie)\b/i},
+  teen: {words: 20, chars: 130, no: /\b(hooray|yay|super|great job|good (boy|girl)|awesome|let's play|itty|bitty|teeny|sweetie|yummy|we did it)\b|!!/i},
 };
 // the pet's age for a grade: little one (Pre-K to 2), older kid (3, 4), teen-like (5, 6)
 const lsAge = g => g <= 2 ? 'little' : g <= 4 ? 'kid' : 'teen';
+// a line's problems under an age's rules ([] when it is fine)
+function lsToneBad(t, age) {
+  const R = LS_RULES[age], o = [], w = String(t).trim().split(/\s+/).length;
+  if (w > R.words) o.push(`${w} words (${age}: ${R.words} at most)`);
+  if (String(t).length > R.chars) o.push(`${String(t).length} characters (${age}: ${R.chars} at most)`);
+  const m = R.no && String(t).match(R.no);
+  if (m) o.push(`"${m[0]}" is not how the ${age} pet talks`);
+  return o;
+}
 const lsTone = () => LS_TONE[lsAge(typeof gradeOf == 'function' ? gradeOf() : 0)];
+/* ---------- TEACH-2: the notebook (TEACH-PLAN-2 system E) and the lessons' part of the report card (system I) (part teach) ----------
+   The notebook is the child's own view of "learned": one page per idea the child learned in a lesson, each with the picture of
+   something they built in that lesson (drawn again from S.know[id].note, the few numbers of their Explore build; nothing else is
+   stored) and the idea in one sentence. A page gains a star when the idea is kept (right again in Remember on a later day).
+   Nothing needs reading: the pet says the screen's line when it opens, and each page has a speaker that says its idea.
+   It opens from the lesson's end card and from a button on the math map's top bar (once there is a page).
+   LSREP builds the lessons' card of the grown-ups' report card (REP in 82-report.js calls it when this part is loaded):
+   four stages per strand (taught, practising, learned, still knows it), what we noticed (a misconception held, knowHeld) with the
+   "Practise this next" pin, the before-and-after measure and tonight's question. */
+// the right build or answer of an Explore task (any build is fine there; this is one the checker takes)
+const lsRight = q => (q.kind == 'make' && q.model == 'frame2' ? [(q.m.target || q.m.total) - 1, 1] : q.goal == 'less' ? String(q.s0[0] - 1) : q.ans);
+const lsAt = id => NODES.math.findIndex(n => nid(n) === id);
+const NB = {
+  // the pages, in map order: {id, t, idea, kept, html (the picture)}
+  pages(S0 = S) {
+    const K = S0.know || {};
+    return LS_IDS.filter(id => K[id] && K[id].s >= 2 && lsAt(id) >= 0).sort((a, b) => lsAt(a) - lsAt(b))
+      .map(id => ({id, t: LESSONS[id].t, idea: LESSONS[id].idea, kept: K[id].s >= 3, html: NB.pic(id, K[id].note)}));
+  },
+  // the page's picture: the Name it picture of the lesson, on what the child built (a test-out has no build: a build the lesson takes)
+  pic(id, note) {
+    const L = LESSONS[id], r = mulberry32(id.length * 7 + 1);
+    let c = note && typeof note == 'object' && Object.keys(note).length ? note : null;
+    try {
+      if (!c) { const e = L.exp(r); c = e.react(NB.build(e.q)).ctx; }
+      return L.name(Object.assign({}, c), r).html.replace(/<svg /g, '<svg aria-hidden="true" ');
+    } catch (e) { return ''; }
+  },
+  // a build for a page with no Explore build of its own: an "any way" task gets a small middling one, others the one the checker takes
+  build(q) {
+    if (q.goal != 'any') return lsRight(q);
+    if (q.kind == 'line') return String(Math.round((q.line.min + q.line.max) * .6));
+    if (q.model == 'b10') return '34';
+    return String(Math.max(1, Math.ceil((q.m.total - (q.m.fixed || 0)) * .35)));
+  },
+  back: null,
+  open(back) {
+    NB.back = back || (() => pathMap('math'));
+    const pg = NB.pages(), T = lsTone(), sg = planSuggest(S, lsDay()), nx = sg && LESSONS[sg.plan.id];
+    const line = pg.length ? T.nb(pg.length) : T.nb0;
+    view(`<div class="top tbar s-math nbk-top">${UI.ibtn('back', 'Back', {size: 'sm', id: 'back'})}<div class="ttl">${ico('doc', 30)}<span>My notebook</span></div>
+      ${UI.chip('star', pg.filter(p => p.kept).length, {aria: 'Ideas you still know'})}</div>
+    <div class="scroll nbk" id="nb"><div class="nbk-in">
+     <div class="ls-pet nbk-pet"><div class="ls-art" id="lsart" aria-hidden="true"></div><div class="ls-bub on" id="lsbub" role="status"><span>${esc(line)}</span></div>
+      ${UI.ibtn('speak', 'Hear it again', {size: 'sm', id: 'nbhear', cls: 'ls-hear'})}</div>
+     ${pg.length ? `<ul class="nbk-pages">${pg.map(p => `<li class="nbk-pg${p.kept ? ' kept' : ''}" data-nbp="${p.id}"><div class="nbk-pic" aria-hidden="true">${p.html}</div>`
+      + `<p class="nbk-idea">${esc(p.idea)}</p><div class="nbk-foot"><span class="nbk-t">${p.kept ? ico('star', 22, 'nbk-star') : ''}<span>${esc(p.t)}</span></span>`
+      + `${UI.ibtn('speak', 'Hear: ' + p.idea, {size: 'sm', attrs: `data-nb="${p.id}"`})}</div></li>`).join('')}</ul>`
+      : `<div class="nbk-empty" aria-hidden="true">${ico('doc', 64)}</div>`}
+     ${nx ? `<div class="nbk-next">${UI.btn(nx.t, {kind: 'primary', size: 'lg', icon: 'go', id: 'nbgo', attrs: `aria-label="Learn ${esc(nx.t)} with ${esc(petN())}"`})}</div>` : ''}
+    </div></div>`);
+    LS.mood('happy');
+    $('#back').onclick = () => { SFX.whoosh(); NB.back(); };
+    $('#nbhear').onclick = () => say(line);
+    const hear = id => { const p = pg.find(x => x.id == id); if (p) { say(p.kept ? `${p.idea} ${T.kept}` : p.idea); LS.mood('happy'); } };
+    $$('[data-nb]').forEach(b => b.onclick = e => { e.stopPropagation(); hear(b.dataset.nb); });
+    $$('[data-nbp]').forEach(li => li.onclick = () => hear(li.dataset.nbp));
+    if ($('#nbgo')) $('#nbgo').onclick = () => { SFX.whoosh(); LS.start(sg.plan.id); };
+    if (LS.voice()) say(line);
+  },
+  // the button on the math map's top bar, beside the stars (only once there is a page)
+  mapBtn() {
+    const t = $('.mp-top');
+    if (!t || $('#nbopen') || !NB.pages().length) return;
+    const b = UI.ibtn('doc', 'My notebook', {size: 'sm', id: 'nbopen', cls: 'nbk-open'}), c = t.querySelector('.chip');
+    if (c) c.insertAdjacentHTML('beforebegin', b); else t.insertAdjacentHTML('beforeend', b);
+    $('#nbopen').onclick = () => { SFX.whoosh(); NB.open(() => pathMap('math')); };
+  },
+};
 
-var TEACH_VER='v173'; // last line: the whole file ran (checked by dataReady() before the app starts)
+const LSREP = {
+  ST: ['Taught', 'Practising', 'Learned', 'Still knows it'],
+  // what we noticed, one per misconception code: "{name} ..." (the idea, never the child)
+  NOTE: {
+    off1: 'often ends one away from the answer, counting one thing twice or missing one',
+    given: 'often answers with a number that is already shown',
+    op: 'sometimes adds when the problem takes away, or the other way round',
+    all: 'often counts everything and forgets to take some away',
+    ten: 'sometimes forgets the full ten when counting past ten',
+    swap: 'sometimes swaps the tens and the ones (41 for 14)',
+    small: 'sometimes picks the smaller number as the bigger one',
+    back: 'often counts on when the problem counts back',
+    col: 'often takes the smaller digit from the bigger one in each column',
+    keep: 'borrows a ten for the ones but leaves the tens as they were',
+    nocarry: 'adds each column but drops the extra ten',
+    cat: 'writes each column total side by side (27 + 15 as 312)',
+    count: 'counts the coins instead of adding what they are worth',
+    hands: 'mixes up the hour hand and the minute hand',
+  },
+  // the stage of a lesson stop: 0 taught (a lesson ran), 1 practising (more lessons or practice rounds since, not yet without help),
+  // 2 learned (Show with no help), 3 still knows it (right again on a later day); -1 not taught
+  stage(id, k) {
+    if (!k || !(k.s >= 1)) return -1;
+    if (k.s >= 2) return k.s >= 3 ? 3 : 2;
+    const i = lsAt(id);
+    return k.n >= 2 || i >= 0 && passed('math', i) ? 1 : 0;
+  },
+  data(S0 = S) {
+    const K = S0.know && typeof S0.know == 'object' ? S0.know : {}, day = lsDay(), rows = {}, noticed = [];
+    for (const id in K) {
+      const st = LSREP.stage(id, K[id]), i = lsAt(id);
+      if (st < 0 || i < 0) continue;
+      const nd = NODES.math[i], nm = REP.strandOf(nd.sk), r = rows[nm] || (rows[nm] = {name: nm, c: [0, 0, 0, 0], t: [[], [], [], []]});
+      r.c[st]++;
+      r.t[st].push(nd.t);
+      const h = knowHeld(id, S0, day);
+      if (h && LSREP.NOTE[h]) noticed.push({p: 'math', sk: nd.sk, lv: nd.lv, t: nd.t, code: h, i});
+    }
+    const order = REP.STRANDS.map(x => x[0]);
+    const lm = Array.isArray(S0.lm) ? S0.lm : [];
+    return {any: lm.length > 0 || Object.keys(rows).length > 0, rows: Object.values(rows).sort((a, b) => order.indexOf(a.name) - order.indexOf(b.name)),
+      noticed: noticed.sort((a, b) => a.i - b.i).slice(0, 4), off: TEACH.off};
+  },
+  html(m) {
+    const L = m.ls, nm = esc(m.name || 'Your child'), pet = esc(petN()), t = m.teach;
+    const cols = L.rows.length ? `<div class="rp-ls" role="table" aria-label="Lessons by stage"><div class="rp-lsr rp-lsh" role="row"><span role="columnheader">Topic</span>`
+      + LSREP.ST.map(s => `<span role="columnheader">${s}</span>`).join('') + '</div>'
+      + L.rows.map(r => `<div class="rp-lsr" role="row"><span role="rowheader">${esc(r.name)}</span>`
+        + r.c.map((n, j) => `<span role="cell" class="rp-lsn${n ? ' on' : ''}" title="${esc(r.t[j].join(', '))}">${n}</span>`).join('') + '</div>').join('') + '</div>'
+      + '<div class="small rp-key">Learned means your child did it with no help. Still knows it means they did it again days later. '
+      + 'Taught: a lesson ran. Practising: more lessons or rounds since, not yet with no help.</div>' : '';
+    const pin = REP.pinned || (() => false);
+    const seen = L.noticed.length ? `<h3 class="rp-h3">What we noticed</h3><ul class="rp-list rp-noticed">${L.noticed.map((x, k) => {
+      const on = pin(m, x);
+      return `<li>In <b>${esc(x.t)}</b>, ${nm} ${esc(LSREP.NOTE[x.code])}. We are working on it: the next lesson starts with the picture of both answers, `
+        + `and ${pet} makes that mistake for ${nm} to fix.`
+        + `<button class="btn ${on ? 'primary' : 'soft'} sm rp-pin rp-noprint" data-npin="${k}" aria-pressed="${on}">${ico(on ? 'check' : 'pin', 22)}`
+        + `<span>${on ? "Tomorrow's first mission" : 'Practise this next'}</span></button></li>`;
+    }).join('')}</ul>` : '';
+    const meas = t ? `<p>${t.n} lesson${t.n > 1 ? 's' : ''}${t.to ? `, ${t.to} already known (tested out)` : ''}. Right on the first try before the lesson: ${t.pre}%. After it: ${t.post}%.</p>`
+      + '<div class="small rp-key">Before: two questions at the start of a lesson, with no help. After: two at its end, with no help. All of it stays on this tablet.</div>' : '';
+    return `${t && t.tq ? `<p><b>Tonight's question:</b> ${esc(t.tq)}</p>` : ''}${L.off ? `<p class="small">Lessons are off (Grown-ups, Grade and level).</p>` : ''}${cols}${seen}${meas}`;
+  },
+  // "Practise this next" on a noticed stop: the report card's pin (S.pin, one stop, tomorrow's first mission)
+  bind(m, redraw) {
+    $$('[data-npin]').forEach(b => b.onclick = () => {
+      const x = m.ls.noticed[+b.dataset.npin];
+      if (!x) return;
+      S.pin = REP.pinned(m, x) ? null : {p: x.p, sk: x.sk, lv: x.lv, t: String(x.t || '').slice(0, 60), d: today()};
+      save();
+      SFX.pop(2);
+      redraw();
+    });
+  },
+};
+
+var TEACH_VER='v174'; // last line: the whole file ran (checked by dataReady() before the app starts)

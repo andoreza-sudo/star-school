@@ -3472,6 +3472,41 @@ run('Clock Tower (P2-03): CURRICULUM M-1 levels, answers by rule, 3,000 samples 
   return{problems:bad,note:r.checked+' stop checks against a path without Clock Tower'};
 });
 
+// ---- pet age: the pet grows up with the grade (little one Pre-K..2, older kid 3-4, teen-like 5-6) ----
+run('pet age: the stage follows S.grade (Pre-K..6), every species renders at all three ages x growth stages x moods, gear and proportions differ',()=>{
+  const p=[];
+  const o=(()=>eval(js+`
+  const r={age:{},svg:{},bad:[]};
+  for(const g of [-1,0,1,2,3,4,5,6]){S.grade=g;r.age[g]=petAge();}
+  S.grade=null;r.none=petAge();
+  for(const k of Object.keys(PET_RIG))for(const g of [1,3,6])for(const st of [0,1,2,3,4])for(const m of PET_MOODS){
+    S.grade=g;let s;try{s=petSVG(k,st,m,{hat:'🎩',toy:'🎈',react:true})}catch(e){r.bad.push(k+g+st+m+' '+e.message);continue}
+    r.svg[k+'|'+g+'|'+st+'|'+m]=s;}
+  S.grade=1;r.viaHome=petRigHTML(500);S.grade=6;r.viaHome6=petRigHTML(500);S.grade=1;r.over=petSVG('dragon',2,'idle',{age:2});
+  r;`))();
+  const want={'-1':0,0:0,1:0,2:0,3:1,4:1,5:2,6:2};
+  for(const g in want)if(o.age[g]!==want[g])p.push('grade '+g+' gives age '+o.age[g]+', expected '+want[g]);
+  if(o.none!==0)p.push('no grade gives age '+o.none+', expected 0');
+  for(const b of o.bad)p.push('petSVG threw: '+b);
+  for(const k of ['dragon','dino','bird','ocean'])for(const st of [0,1,2,3,4])for(const m of ['idle','happy','cheer','oops','sleepy','hungry']){
+    const a=o.svg[k+'|1|'+st+'|'+m],b=o.svg[k+'|3|'+st+'|'+m],c=o.svg[k+'|6|'+st+'|'+m];
+    if(!a||!b||!c){p.push(k+' stage '+st+' '+m+': missing');continue}
+    if(/NaN|undefined|Infinity/.test(a+b+c))p.push(k+' stage '+st+' '+m+': NaN or undefined in the drawing');
+    if(/ pet-a-/.test(a))p.push(k+' stage '+st+': little one has age gear');
+    if(st>0){if(!/ pet-a-1/.test(b))p.push(k+' stage '+st+': older kid has no pet-a-1');if(!/ pet-a-2/.test(c))p.push(k+' stage '+st+': teen-like has no pet-a-2');}
+    if(st>0&&(a===b||b===c||a===c))p.push(k+' stage '+st+' '+m+': ages look the same');
+    if(/filter|<image|<use|<mask|<clipPath/.test(b+c))p.push(k+' stage '+st+': age drawing uses a filter, image, use, mask or clip');
+    if(/(fill|stroke)="(?!var\(--pc-|none)/.test(b+c))p.push(k+' stage '+st+': age drawing has a raw colour');
+    if(m=='idle'&&b.length-a.length>1800)p.push(k+' stage '+st+': age 1 adds '+(b.length-a.length)+' bytes (budget 1,800)');
+    if(m=='idle'&&c.length-a.length>1800)p.push(k+' stage '+st+': age 2 adds '+(c.length-a.length)+' bytes (budget 1,800)');
+  }
+  if(/pet-a-1/.test(o.viaHome6)||!/pet-a-2/.test(o.viaHome6)||/pet-a-/.test(o.viaHome))p.push('petRigHTML does not follow the grade');
+  if(!/pet-a-2/.test(o.over))p.push('opts.age does not override the grade');
+  const css=fs.readFileSync(path.join(SRC,'css','41-pet.css'),'utf8');
+  if(!/\.pet-a-1\{[^}]*--pc-a:/.test(css)||!/\.pet-a-2\{[^}]*--pc-a2:/.test(css))p.push('41-pet.css has no gear colours for .pet-a-1 / .pet-a-2');
+  return{problems:p};
+});
+
 // ---- P4-05: pet rig and dragon ----
 run('pet rig (P4-05): dragon stages x moods, named groups, anchors, tokens only, budget, saves unchanged (other pets drawn since P4-06)',()=>{
   const p=[];
@@ -8219,6 +8254,87 @@ run('GL-01 WebGL layer, Hill 3D look, speed box',()=>{
   if(!/GLX\.end\(HC\.gl\.R\)/.test(hill))p.push('stopHC should give the WebGL context back');
   if(!/R\.soft = \/swiftshader\|llvmpipe\|softpipe\|software\/i\.test\(R\.name\)/.test(rd('js/60-gl.js'))||!/if \(R\.soft && !HGL\.soft\) \{ GLX\.end\(R\); H\.glWhy = 'software'; return null; \}/.test(hg))p.push('WebGL drawn by the CPU (no GPU) should give the 2D look');
   return{problems:[...new Set(p)].slice(0,50),note:o.notes.join('; ')};
+});
+
+// ---- GL-02: Star Rally's 3D look (src/js/63b-rally-gl.js, rally part, on the GLX layer of games) ----
+// Like GL-01: with no WebGL (no context, a throwing getContext) or WebGL drawn by the CPU the race keeps its 2D look; the 3D camera is
+// the 2D look's own projection (every car, hazard and pick-up where the 2D look puts it); the race never reads the renderer or the
+// race's light (rlMood: drawing only); slow frames step the pixels down, then give way to the 2D look; the switch lives in the Star
+// Rally menu (the rally part), so index.html and the start-up files do not grow; the child's car is drawn with the depth test off.
+run('GL-02 Star Rally 3D look',()=>{
+  const p=[],rd=f=>fs.readFileSync(path.join(SRC,f),'utf8');
+  if(partOf('63b-rally-gl.js')!=='rally')p.push('63b-rally-gl.js should build into rally.'+BUILD_VER+'.js (PARTS), on demand, after games (GLX)');
+  function T(){
+    const r={bad:[],notes:[]},bad=m=>{if(r.bad.length<60&&!r.bad.includes(m))r.bad.push(m)};
+    if(typeof rlGlStart!='function'||typeof rlGlFrame!='function'||typeof rgVP!='function'||typeof rlMood!='function')bad('the 3D look is not loaded');
+    // 1. wanted unless turned off or dropped for speed this visit; without WebGL, or with WebGL drawn by the CPU, no renderer
+    const keep=S.rlGl;
+    delete S.rlGl;if(!rlGlWant())bad('the 3D look should be wanted when S.rlGl was never set (no migrate default needed)');
+    S.rlGl=false;if(rlGlWant())bad('S.rlGl = false (the Star Rally menu) should give the 2D look');
+    S.rlGl=true;RL_GLOFF=true;if(rlGlWant())bad('after a drop for speed the 3D look waits for the next visit');RL_GLOFF=false;
+    const ev=()=>{},cv0={addEventListener:ev,getContext:()=>null},cv1={addEventListener:ev,getContext:()=>{throw new Error('no')}};
+    for(const [n,c] of [['no context',cv0],['getContext throws',cv1]]){const R0={};let G;try{G=rlGlStart(R0,c)}catch(e){G='threw '+e.message}if(G!==null)bad('rlGlStart with '+n+' should be null: '+G)}
+    const init=GLX.init,end=GLX.end;let ended=0;
+    try{
+      GLX.init=()=>({soft:true});GLX.end=()=>{ended++};
+      const R0={},G=rlGlStart(R0,cv0);
+      if(G!==null||R0.glWhy!=='software'||ended!==1)bad('WebGL drawn by the CPU: no renderer, the context given back, glWhy software: '+JSON.stringify([G,R0.glWhy,ended]));
+    }finally{GLX.init=init;GLX.end=end}
+    S.rlGl=keep;
+    // 2. the projection is the 2D look's: x at W / 2 + KX x / z, y at hz - KY y / z (rlDraw's E.X and E.Y), depth -1 near, 1 far
+    const W=540,H=1110,hz=333,KX=256.5,KY=573,M=rgVP(new Float32Array(16),W,H,hz,KX,KY,0);
+    const scr=(x,y,z)=>{const c=[0,1,2,3].map(q=>M[q]*x+M[4+q]*y+M[8+q]*z+M[12+q]);return[(c[0]/c[3]+1)*W/2,(1-c[1]/c[3])*H/2,c[2]/c[3]]};
+    for(const [x,y,z] of [[0,-1000,1000],[2400,-1000,3000],[-900,350,12000],[150,-40,600]]){const s=scr(x,y,z),want=[W/2+x*KX/z,hz-y*KY/z];
+      if(Math.abs(s[0]-want[0])>.05||Math.abs(s[1]-want[1])>.05)bad('rgVP: ('+[x,y,z]+') lands at '+s.slice(0,2).map(v=>v.toFixed(2))+', the 2D look draws it at '+want.map(v=>v.toFixed(2)))}
+    const dn=scr(0,0,RGL.near)[2],df=scr(0,0,RGL.far)[2];if(Math.abs(dn+1)>1e-3||Math.abs(df-1)>1e-3)bad('rgVP depth: near '+dn+', far '+df);
+    // the car on the road at RL_PZ lands on the 2D look's ground line (rlSize: KY = (ground - hz) RL_PZ / RL_CAMH)
+    const gr=hz+KY*RL_CAMH/RL_PZ;if(Math.abs(scr(0,-RL_CAMH,RL_PZ)[1]-gr)>.05)bad('the car on the road is not drawn on the ground line');
+    const ms=rgVP(new Float32Array(16),W,H,hz,KX,KY,10),s1=[0,1,2,3].map(q=>ms[q]*0+ms[4+q]*-1000+ms[8+q]*1000+ms[12+q]);
+    if(Math.abs((s1[0]/s1[3]+1)*W/2-(W/2+10))>.05||Math.abs((1-s1[1]/s1[3])*H/2-(gr+3))>.05)bad('rgVP: the shake should move the view as rlDraw moves its canvas');
+    // 3. the race's light: from its seed, the same each time, different between races, never the race's random numbers
+    const a=rlMood(1234),b=rlMood(1234),seen=new Set(),sides=new Set();
+    if(JSON.stringify(a)!==JSON.stringify(b))bad('rlMood should give the same light for the same seed');
+    for(let sd=1;sd<=40;sd++){const m=rlMood(sd*7919);seen.add(m.sx.toFixed(3)+':'+m.ph.toFixed(1));sides.add(m.side);
+      if(!(m.sx>=.05&&m.sx<=.75)||!(m.bg>=0&&m.bg<2)||Math.abs(Math.hypot(...m.L)-1)>1e-9||!(m.L[1]>.4)||m.tint.some(v=>v<.85||v>1.05))bad('rlMood('+sd*7919+') out of range: '+JSON.stringify(m))}
+    if(seen.size<36||sides.size<2)bad('rlMood should vary between races: '+seen.size+' different lights in 40, sun on '+sides.size+' sides');
+    const st1=rlNew('meadow-0',{seed:99,mode:'pro'}),st2=rlNew('meadow-0',{seed:99,mode:'pro'});rlMood(99);
+    for(let n=0;n<600;n++){rlStep(st1,{steer:n%120<60?.6:-.6,go:true});rlStep(st2,{steer:n%120<60?.6:-.6,go:true})}
+    if(st1.P.d!==st2.P.d||st1.P.x!==st2.P.x||st1.cars.some((c,i)=>c.d!==st2.cars[i].d))bad('two races with the same seed went differently');
+    for(const f of [rlNew,rlStep,rlTrack,rlHits,rlCrash,rlWall,rlLook,rlCupAdd])if(/\bgl\b|GLX|rlGl|rgFrame|mood|RGL/.test(f.toString()))bad(f.name+' reads the renderer or the race light');
+    // 4. pacing: slow frames lower the WebGL pixels (.8, .64, .5), then three slow checks more give the 2D look for the visit
+    const R={gl:{q:1,slow:0,off:false,cv:{style:{}}},ctx:{clearRect(){}},cv:{width:1,height:1}},qs=[];
+    for(let n=0;n<6;n++){const on=rlGlPace(R,30);qs.push(R.gl.q+(on?'':'/2D'))}
+    if(qs.join()!=='0.8,0.64,0.5,0.5,0.5,0.5/2D'||R.glWhy!=='slow'||!RL_GLOFF||R.gl.cv.style.display!=='none')bad('pacing: '+qs.join()+' '+R.glWhy+' '+RL_GLOFF);
+    RL_GLOFF=false;
+    const R2={gl:{q:.5,slow:2,off:false,cv:{style:{}}},ctx:{clearRect(){}},cv:{}};rlGlPace(R2,16);if(R2.gl.slow!==0||R2.gl.off)bad('a fast check should reset the slow count');
+    r.notes.push('moods '+seen.size+' of 40 different');
+    return r;
+  }
+  const o=(()=>eval(js+';('+T.toString()+')()'))();
+  p.push(...o.bad);
+  // 5. the sources: the 2D look draws whenever the 3D frame did not; failures drop to it; the context goes back; the car on top
+  const race=rd('js/63-game-race.js'),g=rd('js/63b-rally-gl.js'),idx=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
+  const dr=race.slice(race.indexOf('function rlDraw('),race.indexOf('function rlFall('));
+  if(!/const gl = !!\(R\.gl && !R\.gl\.off && rlGlFrame\(R\)\);/.test(dr)||!/if \(gl\) return rlGlTop\(R\);\n  const c = R\.ctx,/.test(dr))p.push('rlDraw: the 2D look should draw whenever the 3D frame did not');
+  if(!/try \{ return rgFrame\(R\); \} catch \(e\) \{ rlGlDrop\(R, 'error'\);/.test(g))p.push('63b-rally-gl.js: a failing 3D frame should drop to the 2D look');
+  if(!/if \(X\.lost \|\| gl\.isContextLost\(\)\) \{ rlGlDrop\(R, 'lost'\);/.test(g))p.push('a lost context should drop to the 2D look');
+  if(!/if \(X\.soft && !RGL\.soft\) \{ GLX\.end\(X\); R\.glWhy = 'software'; return null; \}/.test(g))p.push('WebGL drawn by the CPU (no GPU) should give the 2D look');
+  if(!/if \(RL\.gl\) \{ GLX\.end\(RL\.gl\.R\);/.test(race))p.push('rlStop should give the WebGL context back');
+  if(!/if \(rlGlPace\(RL, med\)\)/.test(race))p.push('the race loop should let the 3D look pace itself');
+  if(!/UI\.sw\('3D look \(off: the flat look, for slow tablets\)', S\.rlGl !== false, 'rl3d'\)/.test(race)||!/\$\('#rl3d'\)\.onchange = e => \{ S\.rlGl = e\.target\.checked; RL_GLOFF = false; save\(\); \}/.test(race))p.push('the Star Rally menu needs the 3D look switch #rl3d that saves S.rlGl');
+  if(/rlGl|RGL|rgFrame/.test(idx))p.push('the 3D look must stay out of index.html (start-up does not grow)');
+  // the child's car: drawn over the world with the depth test off (a hill top, a wall or a rail never hides it, FIX3), then the nearer sprites
+  const me=g.slice(g.indexOf('function rgMe('),g.indexOf('function rlGlTop('));
+  if(!/gl\.disable\(gl\.DEPTH_TEST\);[\s\S]*rgSQ\(G, x, y - h \/ 2, w, h, ang, RGL_FULL, 1\);[\s\S]*gl\.enable\(gl\.DEPTH_TEST\);/.test(me)||!/rgFlush\(G, VP, tex\);\n        rgMe\(G, R, sh\);/.test(g))p.push('the child\'s car should be drawn with the depth test off, in its place among the sprites');
+  // cheap tablets: one ground draw, no allocation in the vertex writers, a fixed buffer; tokens only
+  for(const f of ['rgV','rgQ','rgBB','rgFlat','rgSQ']){const b=g.slice(g.indexOf('function '+f+'('));const body=b.slice(0,b.indexOf('\n}\n'));if(/\bnew [A-Z]|\[\]|=>|\.push\(|\.map\(/.test(body))p.push(f+' should not make anything while racing')}
+  if(!/new Float32Array\(RGL\.MAXF\)/.test(g)||!/gl\.bufferSubData\(gl\.ARRAY_BUFFER, 0, G\.f\.subarray\(0, G\.k\)\)/.test(g))p.push('the ground should be one buffer made once and refilled');
+  const gc=g.replace(/\/\*[\s\S]*?\*\//g,'').replace(/(^|[^:'"`])\/\/[^\n]*/g,'$1');
+  if(/#[0-9a-fA-F]{3,8}\b|(?<!\.)\b(rgb|rgba|hsl|hsla)\(/.test(gc))p.push('63b-rally-gl.js: a raw colour (use rlCol / rgC roles)');
+  const tok=rd('css/00-tokens.css');
+  for(const m of gc.matchAll(/\b(?:rgC\(G, |rlCol\()'([a-z][a-z0-9-]*[a-z0-9])'/g)){const ro=m[1],t=ro.startsWith('sc-')?'--'+ro:'--ill-'+({r:'red',o:'orange',y:'yellow',g:'green',c:'aqua',b:'blue',v:'purple',p:'pink',n:'brown',t:'tan',s:'skin',m:'cream',e:'grey',w:'white',k:'ink'})[ro[0]]+(ro[1]?'-'+ro[1]:'');if(!tok.includes(t+':'))p.push('63b-rally-gl.js: colour role '+ro+' is not a token')}
+  const rb=fs.statSync(path.join(__dirname,'..','rally.'+BUILD_VER+'.js')).size;if(rb>=PART_WARN)p.push('rally is '+rb+' bytes, over its '+PART_WARN+' warning');
+  return{problems:[...new Set(p)].slice(0,50),note:o.notes.join('; ')+'; rally '+rb+' bytes'};
 });
 
 // ---- CHECK-IN: mastery check-ins and stop badges (src/js/51b-checkin.js, src/css/51b-checkin.css, both in gen2) ----
@@ -19788,6 +19904,208 @@ run('teach: simulated children TEACH-1',()=>{
   if(!(G.to<=.05))p.push('the guesser tests out '+f(G.to)+'% of the time (want 5% or less)');
   for(const id in G.per)if(G.per[id][2]>.15)p.push(id+': the guesser tests out '+f(G.per[id][2])+'%');
   return{problems:p,note:Object.entries(r).map(([k,x])=>k+' '+f(x.pre)+'% -> '+f(x.post)+'%, tests out '+f(x.to)+'%').join('; ')};
+});
+
+// ---- TEACH-2: "the tutor's brain" (docs/TEACH-PLAN-2.md batch 2a; 52b-know.js, 52d-notebook.js, 52-lesson.js in the part teach;
+// tools/author.js). Diagnosis with the probe, repairs and fading (system C); the planner with PRE and alternation (D); the notebook (E);
+// the report's four stages and "what we noticed", and the lessons switch (I); the authoring tool and its review gate (F); the pet's
+// tone at three ages, checked on every line. ----
+run('teach: the notebook part TEACH-2',()=>{
+  const p=[],rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8');
+  if(partOf('52d-notebook.js')!=='teach')p.push('52d-notebook.js is not in the teach part');
+  const html=rd('index.html');
+  if(/const NB = \{|const LSREP = |const PRE = \{|function knowProbe/.test(html))p.push('TEACH-2 code is in index.html');
+  const gen=rd('gen.'+BUILD_VER+'.js');
+  if(/const LSREP = |NOTE: \{/.test(gen))p.push('the lessons card is in gen: it belongs in the teach part');
+  // the report loads the part when the save has lessons; the switch is in Grown-ups and is the save's
+  if(!/partLoad\('teach'\)\.then\(ok => \{if \(ok && \$\('\.rp-scroll'\)\) report\(\)\}\)/.test(rd('src/js/82-report.js')))p.push('report() does not load the lessons card');
+  if(!/UI\.sw\('Lessons with '\+petN\(\)/.test(rd('src/js/80-grown.js'))||!/\$\('#lson'\)\.onchange=e=>\{TEACH\.off=!e\.target\.checked;save\(\)\}/.test(rd('src/js/80-grown.js')))p.push('Grown-ups has no lessons switch (#lson)');
+  return{problems:p};
+});
+run('teach: diagnosis, the probe, repairs, fading TEACH-2',()=>{
+  const R=teachApp();
+  const r=R(`(()=>{const bad=[],rows=[],words=/\\b(magic\\w*|spells?|wizards?|wands?|evolv\\w*|evolution|millions? of years|charms?|potions?)\\b/i;
+    // 1. the codes: more than the first eight, each with what it is, the pet's repair line (little one's rules) and the grown-ups' sentence
+    const codes=Object.keys(BUGS);if(codes.length<14)bad.push('only '+codes.length+' misconception codes');
+    for(const c of codes){const b=BUGS[c];if(!b.d||!b.say)bad.push(c+': no description or repair line');
+      if(lsToneBad(b.say,'little').length||words.test(b.say))bad.push(c+': repair line '+b.say);
+      if(!LSREP.NOTE[c])bad.push(c+': no "what we noticed" sentence')}
+    for(const c in LSREP.NOTE)if(!BUGS[c])bad.push('a noticed sentence for no code: '+c);
+    // 2. what each code predicts, by hand
+    const P=q=>knowPredict(q),eq=(a,b,m)=>{if(JSON.stringify(a)!==JSON.stringify(b))bad.push(m+': '+JSON.stringify(a)+' (want '+JSON.stringify(b)+')')};
+    eq(P({ab:[42,17,'-'],ans:'25'}).col,['35'],'col 42-17');eq(P({ab:[42,17,'-'],ans:'25'}).keep,['35'],'keep 42-17');
+    eq(P({ab:[52,38,'-'],ans:'14'}).col,['26'],'col 52-38');eq(P({ab:[52,38,'-'],ans:'14'}).keep,['24'],'keep 52-38');
+    eq(P({ab:[27,15,'+'],ans:'42'}).nocarry,['32'],'nocarry 27+15');eq(P({ab:[27,15,'+'],ans:'42'}).cat,['312'],'cat 27+15');
+    eq(P({coins:[25,10,1],ans:'36'}).count,['3'],'count coins');eq(P({hm:[3,0],ans:'3:00'}).hands,['12:15'],'hands 3:00');
+    eq(P({ab:[23,14,'+'],ans:'37'}).nocarry,undefined,'nocarry with nothing to carry');
+    // 3. every code's function on 3,000 questions with numbers: what it predicts is never the right answer, and it predicts often
+    const rr=mulberry32(5),ri=(a,b)=>a+Math.floor(rr()*(b-a+1)),seen={};
+    for(let i=0;i<3000;i++){let q;const k=i%4;
+      if(k==0){const a=ri(10,999),b=ri(1,a);q={ab:[a,b,'-'],ans:String(a-b)}}
+      else if(k==1){const a=ri(1,999),b=ri(1,999);q={ab:[a,b,'+'],ans:String(a+b)}}
+      else if(k==2){const c=Array.from({length:ri(1,6)},()=>[1,5,10,25][ri(0,3)]);q={coins:c,ans:String(c.reduce((s,x)=>s+x,0))}}
+      else{const h=ri(1,12),m=5*ri(0,11);q={hm:[h,m],ans:h+':'+String(m).padStart(2,'0')}}
+      const pr=P(q);for(const c in pr){seen[c]=(seen[c]||0)+1;for(const v of pr[c])if(v===q.ans)bad.push(c+' predicts the right answer '+JSON.stringify(q))}}
+    for(const c of codes)if(BUGS[c].f&&!(seen[c]>=100))bad.push(c+': predicts on only '+(seen[c]||0)+' of 3000 questions');
+    // 4. simulated children on two-digit taking away (4 in 5 need a ten moved): one wrong idea, random slips, two ideas that fit alike
+    const gen=r=>()=>{let a,b;do{a=10+Math.floor(r()*90);b=1+Math.floor(r()*(a-1))}while(r()<.8&&a%10>=b%10);return{ab:[a,b,'-'],ans:String(a-b),label:a+'-'+b,st:2}};
+    const sim=(code,slip,seed,n)=>{S.know={};const r=mulberry32(seed),g=gen(r);let named=null,at=-1;
+      for(let i=0;i<n;i++){const q=g(),pr=P(q);let v=q.ans;
+        if(code&&pr[code])v=pr[code][0];else if(r()<slip)v=String(+q.ans+(r()<.5?-1:1)*(1+Math.floor(r()*12)));
+        knowAdd('sub4',q,v,v===q.ans,S,100);const h=knowHeld('sub4',S,100);if(h&&!named){named=h;at=i+1}}
+      return{named,at}};
+    let one=0,wrongName=0,slips=0;for(let s=0;s<300;s++){const x=sim('col',.05,s+1,10);if(x.named==='col')one++;else if(x.named)wrongName++;if(sim(null,.15,s+1001,10).named)slips++}
+    rows.push('one idea named in 10 answers '+Math.round(one/3)+'%, random slips named '+Math.round(slips/3)+'%');
+    if(one<270)bad.push('a child with one idea (col) is named within 10 answers in '+Math.round(one/3)+'% of runs (want 90%)');
+    if(wrongName)bad.push('a child with col was named as another idea '+wrongName+' times');
+    if(slips>=15)bad.push('a child with 15% random slips is named in '+Math.round(slips/3)+'% of runs (want under 5%)');
+    // the 3-of-8 rule: one problem three times is not enough; two ideas with the same count are a tie, not held; the probe tells them apart
+    S.know={};const q0={ab:[52,38,'-'],ans:'14',label:'52-38',st:2};for(let i=0;i<3;i++)knowAdd('sub4',q0,'26',false,S,100);
+    if(knowHeld('sub4',S,100))bad.push('held on one problem only');
+    S.know={};const q1={ab:[42,17,'-'],ans:'25',label:'42-17',st:2};for(let i=0;i<3;i++)knowAdd('sub4',q1,'35',false,S,100);
+    if(knowHeld('sub4',S,100))bad.push('held while two ideas fit alike');
+    const tie=knowTie('sub4',S,100);if(!tie||tie.slice().sort().join()!=='col,keep')bad.push('a tie of col and keep not seen: '+JSON.stringify(tie));
+    let probes=0,settled=0;for(let s=0;s<200;s++){const pq=knowProbe('col','keep',gen(mulberry32(s+7)));if(!pq)continue;probes++;const pr=P(pq);
+      if(pr.col.some(v=>pr.keep.includes(v)))bad.push('the probe does not separate col and keep: '+pq.label);
+      const S1={know:JSON.parse(JSON.stringify(S.know))};knowAdd('sub4',pq,pr.keep[0],false,S1,100);if(knowHeld('sub4',S1,100)==='keep')settled++}
+    if(probes<198)bad.push('the probe found a separating question in '+probes+' of 200');
+    if(settled<probes)bad.push('one answer to the probe settled it in '+settled+' of '+probes);
+    if(knowProbe('col','keep',()=>({ab:[42,17,'-'],ans:'25'}))!==null)bad.push('the probe kept a question that does not separate');
+    // in a lesson: with a tie on Make Ten (the number shown, or adding), the next symbols item in Together is the probe
+    {S.know={};lsKnow('tenf2').w=[['given,op','a',100],['given,op','b',100]];const st=LS.make('tenf2',{seed:4,day:100});st.last=1;
+      const it=LS.togItem(st),pr=P(it.q);if(!it.probe||!pr.given||!pr.op||pr.given.some(v=>pr.op.includes(v)))bad.push('Together does not probe a tie: '+JSON.stringify([it.probe,pr]))}
+    // 5. fading: halved every 14 days; three slips this week hold, the same three 15 days later do not; the tally halves
+    {S.know={};const qs=[{ab:[52,38,'-'],ans:'14',label:'a'},{ab:[61,27,'-'],ans:'34',label:'b'},{ab:[83,19,'-'],ans:'64',label:'c'}];
+      for(const q of qs)knowAdd('sub4',q,P(q).col.find(v=>!(P(q).keep||[]).includes(v))||P(q).col[0],false,S,100);
+      if(knowHeld('sub4',S,100)!=='col')bad.push('three col answers on three problems not held: '+JSON.stringify(knowScore('sub4',S,100).map(x=>[x.c,x.n])));
+      if(knowHeld('sub4',S,115))bad.push('still held 15 days later');
+      const b0=S.know.sub4.b.col;knowFade(S.know.sub4,114);if(b0!==3||S.know.sub4.b.col!==b0>>1)bad.push('the tally does not halve after 14 days: '+b0+' -> '+S.know.sub4.b.col)}
+    // 6. a repair: held on a stop the next one builds on, the plan picks it; the lesson opens with the contrast; Check me shows that
+    //    mistake; a passed repair starts the wrong answers again
+    {loadSave(null);S.grade=0;S.name='Mia';const at=id=>NODES.math.findIndex(n=>nid(n)===id);for(let j=0;j<at('tenf3');j++)setSt('math',j,2);
+      const k=lsKnow('tenf2');k.s=2;k.d=90;k.due=200;k.w=[['given','tenf2 3',99],['given','tenf2 6',99],['given','tenf2 6',99]];
+      const pl=planToday(S,100);if(!pl||pl.id!=='tenf2'||pl.kind!=='repair'||pl.code!=='given')bad.push('plan, repair: '+JSON.stringify(pl));
+      const st=LS.make('tenf2',{seed:2,day:100,repair:'given'});st.pre=[true,false];LS.beat(st,LSB.indexOf('exp'));const c=LS.cur(st);
+      if(!c||c.m!=='say'||c.con!=='given'||(c.html.match(/ls-cpane/g)||[]).length!==2||!c.lines.includes(BUGS.given.say))bad.push('repair: no contrast first: '+JSON.stringify(c&&c.lines));
+      let pn=0,pg=0;for(let s=1;s<80;s++){const x=LS.make('tenf2',{seed:s,day:100,repair:'given'});const it=LS.petItem(x);if(!it.petOk){pn++;if(it.code==='given')pg++}}
+      if(pg<pn)bad.push('Check me in a repair shows another mistake: '+pg+' of '+pn);
+      LS.beat(st,LSB.indexOf('show'));for(let i=0;i<2;i++){LS.answer(st,LS.cur(st).q.ans);LS.next(st)}LS.finish(st);
+      if(S.know.tenf2.w.length||knowHeld('tenf2',S,100))bad.push('a passed repair keeps the old wrong answers');
+      if(planToday(S,100).kind==='repair')bad.push('repair offered again after it passed')}
+    return{bad,rows}})()`);
+  return{problems:r.bad.slice(0,40),note:r.rows.join('; ')};
+});
+run('teach: the planner, PRE, alternation, a year of lessons TEACH-2',()=>{
+  const R=teachApp();
+  const r=R(`(()=>{const bad=[],rows=[],K=${TEACH_KIDS},at=id=>NODES.math.findIndex(n=>nid(n)===id),g=id=>PATHS.math.worlds[NODES.math[at(id)].wi].g;
+    // 1. PRE: real stops, earlier on the path or in a lower grade, no loops, 40 or more links
+    let links=0;for(const id in PRE){if(at(id)<0)bad.push('PRE: no stop '+id);for(const x of PRE[id]){links++;if(at(x)<0){bad.push('PRE '+id+': no stop '+x);continue}
+      if(!(at(x)<at(id)||g(x)<g(id)))bad.push('PRE '+id+' <- '+x+': not earlier and not a lower grade')}}
+    const seen={},loop=(id,st)=>{if(st.includes(id))return true;return(PRE[id]||[]).some(x=>loop(x,st.concat(id)))};for(const id in PRE)if(loop(id,[]))bad.push('PRE: a loop through '+id);
+    if(links<40)bad.push('PRE has '+links+' links');
+    // 2. rule 3: two lessons on a stop with Show not passed send the child back to what it builds on
+    loadSave(null);S.grade=0;for(let j=0;j<at('tenf2');j++)setSt('math',j,2);
+    let pl=planToday(S,100);if(!pl||pl.id!=='tenf2')bad.push('plan: '+JSON.stringify(pl));
+    Object.assign(lsKnow('tenf2'),{s:1,n:2});pl=planToday(S,100);if(!pl||pl.id!=='tenf1'||pl.kind!=='again')bad.push('plan, back to the prerequisite: '+JSON.stringify(pl));
+    lsKnow('tenf1').s=2;pl=planToday(S,100);if(!pl||pl.id!=='tenf2')bad.push('plan, prerequisite learned: '+JSON.stringify(pl));
+    // 3. alternation by day: yesterday's lesson was counting, so today a ready lesson of another strand comes first; not on the same day,
+    //    and not one whose prerequisites are not passed
+    loadSave(null);S.grade=0;S.know={};for(let j=0;j<at('tenf1');j++)setSt('math',j,2);S.lm=[['pk_count3',99,1,2,2,2,0]];
+    pl=planToday(S,100);if(!pl||pl.id!=='tenf1')bad.push('alternation: add1 is not ready (add4, tenf2 not passed): '+JSON.stringify(pl));
+    lsKnow('add4').s=2;lsKnow('tenf2').s=2;pl=planToday(S,100);if(!pl||pl.id!=='add1')bad.push('alternation: '+JSON.stringify(pl)+' (want add1, another strand)');
+    S.lm=[['pk_count3',100,1,2,2,2,0]];pl=planToday(S,100);if(!pl||pl.id!=='tenf1')bad.push('alternation on the same day: '+JSON.stringify(pl));
+    const sg=planSuggest(S,100);if(!sg||sg.p!=='math'||!sg.plan)bad.push('suggest: '+JSON.stringify(sg));
+    if(planToday(S,100,'read')!==null||planToday(S,100,'es')!==null)bad.push('lessons outside math');
+    // 4. a year of daily lessons for a Kindergartner and a 1st grader who learn: never a learned stop as new, Remember one item at most,
+    //    never today's, every due stop comes back within 30 days of its day, every lesson of the grade reached
+    for(const gr of [0,1]){loadSave(null);S.grade=gr;S.name='Mia';let fail=0,maxLate=0;const did=new Set(),rem={};
+      for(let d=100;d<465;d++){NODES.math.forEach((n,i)=>{if(!LESSONS[nid(n)]&&!passed('math',i)&&unlocked('math',i))setSt('math',i,2)}); // the rest of the map, played in Practice
+        pl=planToday(S,d);if(!pl)continue;if(pl.kind==='new'&&((S.know||{})[pl.id]||{}).s>=2){fail++;bad.push('day '+d+': learned '+pl.id+' as new')}
+        if(pl.remember.length>1||pl.remember.includes(pl.id))bad.push('day '+d+': remember '+pl.remember);
+        for(const x of pl.remember){const k=(S.know||{})[x];if(k&&k.s>=2)maxLate=Math.max(maxLate,d-k.due)}
+        const c=K.kid(.97,0,mulberry32(d)),{st}=K.run(pl.id,c,d,{day:d,rem:pl.remember,repair:pl.code});const f=LS.finish(st);did.add(pl.id);
+        if(f.pass)setSt('math',pl.i,2);if(fail>3)break}
+      const due=LS_IDS.filter(x=>S.know[x]&&S.know[x].s>=2&&S.know[x].due<465-30);
+      const want=LS_IDS.filter(x=>g(x)<=gr);
+      for(const x of want)if(!did.has(x))bad.push('grade '+gr+': never reached '+x);
+      if(due.length)bad.push('grade '+gr+': due and never remembered: '+due.join());
+      rows.push('grade '+gr+': '+did.size+' lessons reached, latest Remember '+maxLate+' days after due')}
+    return{bad,rows}})()`);
+  return{problems:r.bad.slice(0,40),note:r.rows.join('; ')};
+});
+run('teach: the notebook, the report card, the switch TEACH-2',()=>{
+  const R=teachApp();
+  const r=R(`(()=>{const bad=[],rows=[];
+    // 1. the notebook: a page per learned idea, its picture from what the child built, a star when kept; nothing for an old save
+    loadSave(null);S.name='Mia';if(NB.pages().length)bad.push('pages in a new save');
+    delete S.know;if(NB.pages().length)bad.push('pages with no S.know');
+    S.know={};const st=LS.make('tenf2',{seed:6,day:100});LS.beat(st,LSB.indexOf('exp'));LS.answer(st,[7,3]);
+    LS.beat(st,LSB.indexOf('show'));for(let i=0;i<2;i++){LS.answer(st,LS.cur(st).q.ans);LS.next(st)}LS.finish(st);
+    if(JSON.stringify(S.know.tenf2.note)!=='{"a":7,"b":3}')bad.push('the note: '+JSON.stringify(S.know.tenf2.note));
+    Object.assign(lsKnow('tenf3'),{s:3});Object.assign(lsKnow('add1'),{s:1});
+    const pg=NB.pages();if(pg.map(x=>x.id+(x.kept?'*':'')).join()!=='tenf2,tenf3*')bad.push('pages: '+pg.map(x=>x.id+(x.kept?'*':'')).join());
+    if(!/7 \\+ 3 = 10/.test(pg[0].html))bad.push('the page is not drawn from the child build: '+pg[0].html.slice(-80));
+    for(const id of LS_IDS){const h=NB.pic(id,null);if(!h||/undefined|NaN/.test(h)||/<svg (?!aria-hidden)/.test(h))bad.push(id+': page picture '+h.slice(0,80))}
+    // 2. the report card: four stages per strand, "what we noticed" with its pin, the measure and tonight's question kept
+    const K=S.know;Object.assign(lsKnow('add4'),{s:1,n:2});K.add4.w=[['op','x',lsDay()],['op','y',lsDay()],['op','y',lsDay()]];
+    S.lm=[['tenf2',100,1,2,2,2,0]];S.tq='Ask Mia: "What is 7 and 3?"';
+    const m=REP.data(),h=REP.html(m);rows.push(m.ls.rows.map(x=>x.name+' '+x.c.join('/')).join(', '));
+    const num=m.ls.rows.find(x=>x.name==='Counting and number sense'),ops=m.ls.rows.find(x=>x.name==='Addition and subtraction');
+    if(!num||num.c.join()!=='0,0,1,1'||!ops||ops.c.join()!=='1,1,0,0')bad.push('stages: '+JSON.stringify(m.ls.rows.map(x=>[x.name,x.c])));
+    for(const t of ['Taught','Practising','Learned','Still knows it','Learned means your child did it with no help. Still knows it means they did it again days later.',
+      'What we noticed','In <b>Add to 5</b>, Mia sometimes adds when the problem takes away, or the other way round.','data-npin="0"',"Tonight's question:</b> Ask Mia",'Right on the first try before the lesson: 50%. After it: 100%'])
+      if(!h.includes(t))bad.push('report: no "'+t+'"');
+    if(/undefined|NaN/.test(h.slice(h.indexOf('rp-teach'))))bad.push('report: undefined in the lessons card');
+    loadSave(null);if(/rp-teach/.test(REP.html(REP.data())))bad.push('report: a lessons card for a save with no lessons');
+    delete S.know;delete S.lm;try{if(/rp-teach/.test(REP.html(REP.data())))bad.push('report: a lessons card for an old save')}catch(e){bad.push('report on an old save: '+e.message)}
+    // 3. the switch: TEACH.off is the save's (per child, kept); off gives the old app (no offer, two choices keep their second try)
+    loadSave(null);if(TEACH.off!==false)bad.push('lessons start off');TEACH.off=true;if(S.lsOff!==1||TEACH.off!==true)bad.push('switch off not saved');
+    TEACH.off=false;if('lsOff' in S)bad.push('switch on leaves S.lsOff');S.lsOff=1;if(!TEACH.off)bad.push('S.lsOff does not turn lessons off');
+    if(!LSREP.data().off)bad.push('the report does not say lessons are off');delete S.lsOff;
+    // 4. the pet's tone at three ages: every line of each age keeps its own rules; the little one's praise would break the teen's
+    for(const a in LS_TONE)for(const k in LS_TONE[a]){const v=LS_TONE[a][k];for(const t of [].concat(typeof v=='function'?v(k=='nb'?3:'Mia'):v)){const p=lsToneBad(t,a);if(p.length)bad.push('tone '+a+'.'+k+': '+p.join('; '))}}
+    if(Object.keys(LS_TONE.little).join()!==Object.keys(LS_TONE.kid).join()||Object.keys(LS_TONE.little).join()!==Object.keys(LS_TONE.teen).join())bad.push('the three ages do not have the same lines');
+    if(!lsToneBad('Hooray! Great job!','teen').length||!lsToneBad('Yay, super duper!','kid').length||lsToneBad('Hooray! Great job!','little').length)bad.push('the age rules do not bite');
+    if(!lsToneBad('one two three four five six seven eight nine ten eleven twelve thirteen','little').length)bad.push('a 13-word line passes for the little one');
+    const g0=S.grade;S.grade=5;if(lsTone()!==LS_TONE.teen)bad.push('a 5th grader does not get the teen tone');S.grade=3;if(lsTone()!==LS_TONE.kid)bad.push('a 3rd grader does not get the kid tone');S.grade=g0;
+    {const st=LS.make('tenf2',{seed:1,day:100});S.grade=5;LS.beat(st,LSB.indexOf('tog'));const t=LS.cur(st).lines.join(' ');S.grade=g0;if(t!==LS_TONE.teen.tog)bad.push('the lesson does not speak in the teen tone: '+t)}
+    return{bad,rows}})()`);
+  return{problems:r.bad.slice(0,40),note:r.rows.join('; ')};
+});
+run('author: checks, drafts, the review gate TEACH-2',()=>{
+  const p=[],A=require('./author.js'),os=require('os'),cpx=require('child_process');
+  // 1. the line checks
+  const bites=[['A wizard made it','little','theme'],['It took millions of years','little','theme'],['They evolved','kid','theme'],['Put in 3 more','little','number'],
+    ['Add seven more','little','number word'],['Make {zz} now','little','slot'],['Hooray! You did it!','teen','teen'],['Super duper job','kid','kid'],
+    ['one two three four five six seven eight nine ten eleven twelve thirteen','little','words']];
+  for(const [t,a,why] of bites)if(!A.checkLine(t,a).length)p.push('checkLine passes "'+t+'" ('+why+')');
+  for(const [t,a] of [['A dragon guards the bridge. Count the planks!','little'],['You made {a} and {b}.','little'],['Compare both to one half.','teen'],['Fix my build.','kid']])
+    if(A.checkLine(t,a).length)p.push('checkLine stops "'+t+'": '+A.checkLine(t,a).join('; '));
+  // 2. drafts: the example passes; a draft missing a beat, too long, with a wrong code or no {name} fails
+  const ex=JSON.parse(fs.readFileSync(path.join(ROOT,'docs/drafts/EXAMPLE.json'),'utf8'));
+  if(A.checkDraft(ex).length)p.push('the example draft: '+A.checkDraft(ex).join('; '));
+  const mut=(f,why)=>{const d=JSON.parse(JSON.stringify(ex));f(d);if(!A.checkDraft(d).length)p.push('checkDraft passes a draft with '+why)};
+  mut(d=>delete d.beats.check,'no Check me');mut(d=>{d.beats.together=Array(40).fill('Now we put in some more counters and count them all again slowly.')},'ten minutes of lines');
+  mut(d=>{d.reasons={nope:['x']}},'an unknown code');mut(d=>{d.home='Ask your child something.'},'no {name}');mut(d=>{d.grade=5},'the little tone for a teen');
+  mut(d=>{d.beats.name.push('Hooray! Hooray!');d.grade=5;d.age='teen'},'baby praise for a teen');
+  // 3. the sample drafts parse, pass and are unreviewed (the owner reads them first)
+  const ds=A.drafts();if(ds.length<2)p.push('fewer than 2 sample drafts in docs/drafts');
+  for(const x of ds){if(!x.d||x.problems.length)p.push(path.relative(ROOT,x.file)+': '+x.problems.join('; '));else if(x.d.status!=='unreviewed'&&x.d.status!=='reviewed')p.push(path.relative(ROOT,x.file)+': status '+x.d.status)}
+  // 4. the hand-written scripts pass the same theme, kid-safe and tone rules
+  for(const s of A.checkScripts())if(s.problems.length)p.push(s.id+': '+s.problems.slice(0,3).join('; '));
+  // 5. the gate: tools/build.py refuses a script that names an unreviewed draft, and builds once it is reviewed
+  const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'author-'));fs.mkdirSync(path.join(tmp,'src/js'),{recursive:true});fs.mkdirSync(path.join(tmp,'docs/drafts'),{recursive:true});
+  fs.writeFileSync(path.join(tmp,'src/js/52e-x.js'),"const X={pv9:{t:'X', draft: 'docs/drafts/pv9.md'}};\n");
+  const gate=()=>{try{cpx.execFileSync('python3',[path.join(__dirname,'build.py'),'--drafts-only',tmp],{stdio:'pipe'});return 0}catch(e){return e.status||1}};
+  fs.writeFileSync(path.join(tmp,'docs/drafts/pv9.md'),'# Draft\n\nstatus: unreviewed\n');if(gate()!==1)p.push('the build does not refuse an unreviewed draft');
+  fs.unlinkSync(path.join(tmp,'docs/drafts/pv9.md'));if(gate()!==1)p.push('the build does not refuse a missing draft');
+  fs.writeFileSync(path.join(tmp,'docs/drafts/pv9.md'),'# Draft\n\nstatus: reviewed (the owner) 2026-11-17\n');if(gate()!==0)p.push('the build refuses a reviewed draft');
+  fs.rmSync(tmp,{recursive:true,force:true});
+  // 6. the key is never in the tool: the proxy adds it
+  const src=fs.readFileSync(path.join(__dirname,'author.js'),'utf8');
+  if(!/Authorization: Bearer proxy-injected/.test(src)||/xai-[A-Za-z0-9]{20,}|process\.env\.(XAI|GROK)\w*KEY/.test(src))p.push('author.js must send "Bearer proxy-injected" and hold no key');
+  if(!/^status: unreviewed$/m.test(A.draftFile(ex,[],'')))p.push('a new draft is not marked unreviewed');
+  return{problems:p,note:ds.length+' drafts ('+ds.map(x=>x.d&&x.d.id+' '+x.d.status).join(', ')+'), '+A.checkScripts().length+' scripts'};
 });
 
 // ---- report ----

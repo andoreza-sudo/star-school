@@ -1589,6 +1589,21 @@ async function main() {
       await pp.waitForTimeout(700);
       const after = await opa('#pet .pf-base');
       if (cheer !== 1 || base !== 0 || after !== 1) fail('P4-05 tap: cheer face ' + [cheer, base, after]);
+      // pet age: the home pet follows the grade (Grown-ups sets it with setGrade); screenshots of Home at each age in tools/out/petage
+      {
+        const dir = require('path').join(__dirname, 'out', 'petage');
+        require('fs').mkdirSync(dir, { recursive: true });
+        const was = await pp.evaluate(() => S.grade);
+        for (const [g, want] of [[1, 0], [4, 1], [6, 2]]) {
+          await pp.evaluate(g => { setGrade(g); home(); }, g);
+          const cls = await pp.evaluate(() => (document.querySelector('#pet .pet-svg') || {}).className.baseVal);
+          const age = (/pet-a-(\d)/.exec(cls) || [0, 0])[1] | 0;
+          if (age !== want) fail('pet age: grade ' + g + ' shows age ' + age + ' (' + cls + ')');
+          await pp.screenshot({ path: require('path').join(dir, 'home-grade' + g + '.png') }).catch(() => {});
+        }
+        await pp.evaluate(g => { if (g == null) delete S.grade; else S.grade = g; save(); home(); }, was);
+        step('pet age: Home pet follows the grade (little one, older kid, teen-like)');
+      }
       // Pet Care: hungry face; a snack makes it idle again; the bath shows the oops face
       await pp.evaluate(() => { S.care = { food: 10, clean: 90, fun: 90, t: Date.now(), gift: '' }; home(); });
       await pp.click('#care');
@@ -11290,6 +11305,122 @@ async function main() {
         'at 360x740 and 800x1280, no console errors; ' + notes.join('; '));
     }
 
+    // GL-02 Star Rally's 3D look (src/js/63b-rally-gl.js), at 360x740 and 800x1280 (midway save). Headless Chrome draws WebGL with
+    // SwiftShader, where a race picks the 2D look (checked first); then RGL.soft lets it draw in 3D there: the WebGL canvas under the
+    // 2D one, frames drawn, few draw calls, the 2D canvas clear over the sky, the speed box's tag. The child's car stays readable: at
+    // a tunnel's mouth and on a bridge between its rails, every sampled pixel well inside the car's drawing is the car's own colour in
+    // the WebGL picture (nothing of the world drawn over it). The Star Rally menu's 3D switch (saved) gives the 2D look; WebGL forced off
+    // gives the 2D look; leaving gives the context back. No console errors, no requests, nothing in the app log. GL_SHOTS=<dir> as GL-01.
+    {
+      const bad = [], notes = [];
+      const dir = process.env.GL_SHOTS || require('path').join(__dirname, 'out');
+      try { require('fs').mkdirSync(dir, { recursive: true }); } catch (e) {}
+      const noGL = () => { const g = HTMLCanvasElement.prototype.getContext; HTMLCanvasElement.prototype.getContext = function (k, ...a) { return /webgl/.test(k) ? null : g.call(this, k, ...a); }; };
+      const race = async (pg, at, want) => {
+        await pg.evaluate(() => { document.querySelectorAll('.ovl').forEach(o => o.remove()); if (RL) rlStop(); rlRace('meadow-1'); });
+        await pg.waitForFunction(() => RL && RL.st.cd <= 0 && RL.st.P.v > 2000, null, { timeout: 20000 });
+        const d0 = await pg.evaluate(() => RL.st.P.d);
+        await pg.waitForTimeout(2500); // real time: the race runs on animation frames
+        const s = await pg.evaluate(() => {
+          const G = RL.gl, c = document.querySelector('#rlgl'), v = document.querySelector('#rlcv');
+          return { gl: !!(G && !G.off), canvas: !!c, under: !!(c && c.nextElementSibling === v), frames: G ? G.frames : 0, draws: G ? G.R.draws : 0, why: RL.glWhy || '', d: RL.st.P.d,
+            tag: FPS.tag, lost: G ? G.R.gl.isContextLost() : null, wide: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+            sky: [...v.getContext('2d').getImageData(Math.round(v.width / 2), Math.round(RL.v.hz * .5), 1, 1).data] };
+        });
+        if (want === '3D') {
+          if (!s.gl || !s.canvas || !s.under || !(s.frames > 20) || !(s.draws >= 5 && s.draws <= 30) || s.lost || s.tag !== '3D' || s.sky[3] !== 0) bad.push(at + '3D look not drawing: ' + JSON.stringify(s));
+        } else if (s.gl || s.canvas || s.tag !== '2D' || s.sky[3] !== 255) bad.push(at + want + ': expected the 2D look: ' + JSON.stringify(s));
+        if (/error|lost|slow/.test(s.why)) bad.push(at + want + ': the 3D look dropped: ' + s.why);
+        if (!(s.d > d0 + 2000)) bad.push(at + want + ': the race did not move: ' + JSON.stringify(s));
+        if (s.wide) bad.push(at + want + ': sideways scroll');
+        return s;
+      };
+      // the child's car in the WebGL picture, placed where kind ('t' a tunnel, 'b' a bridge) starts, plus k segments; the rivals far ahead
+      const carSeen = (pg, kind, k) => pg.evaluate(([kind, k]) => {
+        const st = RL.st, T = st.T, P = st.P, bit = kind == 't' ? 1 : 2;
+        let i = 1;
+        while (!(T.fl[i] & bit) || T.fl[i - 1] & bit) i++;
+        RL.paused = true;
+        P.d = (i + k) * RL_SEG + 50; P.x = 0; P.s = 0; P.vx = 0; P.drifting = false; P.spin = 0; P.dizzy = 0; P.shield = 0; P.boost = 0; RL.shake = 0;
+        for (const c of st.cars) c.d = P.d + 40000;
+        rlDraw(RL); rlDraw(RL);
+        const G = RL.gl, gl = G.R.gl, V = RL.v, s = V.me, sc = s.c, w = RL_CARW * V.rw, h = w * s.ar, x = V.W / 2, y = V.ground + Math.sin((RL.t || 0) * 9) * .6 * V.k;
+        const sd = sc.getContext('2d').getImageData(0, 0, sc.width, sc.height).data, px = new Uint8Array(4);
+        let n = 0, ok = 0;
+        const miss = [];
+        for (let v = .3; v <= .86; v += .05) for (let u = .18; u <= .82; u += .05) {
+          const ix = Math.floor(u * sc.width), iy = Math.floor(v * sc.height), at = (a, b) => ((iy + b) * sc.width + ix + a) * 4;
+          if ([[0, 0], [-4, 0], [4, 0], [0, -4], [0, 4]].some(([a, b]) => sd[at(a, b) + 3] < 255)) continue;
+          // the colour must be the same round the point too (not an outline), so a pixel off does not matter
+          if ([[-4, 0], [4, 0], [0, -4], [0, 4]].some(([a, b]) => Math.abs(sd[at(a, b)] - sd[at(0, 0)]) + Math.abs(sd[at(a, b) + 1] - sd[at(0, 0) + 1]) + Math.abs(sd[at(a, b) + 2] - sd[at(0, 0) + 2]) > 30)) continue;
+          gl.readPixels(Math.floor((x - w / 2 + u * w) * G.cv.width / V.W), Math.floor(G.cv.height - (y - h + v * h) * G.cv.height / V.H), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+          const q = at(0, 0), d = Math.abs(px[0] - sd[q]) + Math.abs(px[1] - sd[q + 1]) + Math.abs(px[2] - sd[q + 2]);
+          n++;
+          if (d <= 45) ok++; else if (miss.length < 4) miss.push([u.toFixed(2), v.toFixed(2), [...px.slice(0, 3)], [sd[q], sd[q + 1], sd[q + 2]]]);
+        }
+        const near = T.fl[(Math.floor(P.d / RL_SEG) + T.n - 2) % T.n];
+        RL.paused = false;
+        return { n, ok, miss, near };
+      }, [kind, k]);
+      for (const [w, h] of [[360, 740], [800, 1280]]) {
+        const at = w + 'x' + h + ' ', tag = w + 'x' + h;
+        for (const forced of [false, true]) {
+          const cx = await openApp(browser, { fixture: 'midway', width: w, height: h });
+          const pg = cx.page, shot = n => pg.screenshot({ path: require('path').join(dir, 'gl-rally-' + n + '-' + tag + '.png') }).catch(() => {});
+          try {
+            if (forced) { await pg.addInitScript(noGL); await pg.reload(); await pg.waitForSelector('#app *'); }
+            await pg.evaluate(() => { S.pt = { bank: 1800, day: today(), used: 0 }; S.sound = false; S.voice = false; save(); });
+            if (await pg.evaluate(() => partsLoad())) bad.push(at + 'the game parts did not load');
+            await pg.waitForFunction(() => typeof rlRace == 'function' && typeof RGL == 'object' && typeof GLX == 'object', null, { timeout: 15000 });
+            const d0 = await pg.evaluate(() => ({ rlGl: S.rlGl, probe: GLX.probe(), want: rlGlWant() }));
+            if (d0.rlGl !== undefined || d0.probe !== !forced || !d0.want) bad.push(at + (forced ? 'WebGL off' : 'WebGL') + ': defaults and probe ' + JSON.stringify(d0));
+            if (!forced) {
+              const sw = await race(pg, at, 'software WebGL');
+              if (sw.why !== 'software') bad.push(at + 'WebGL drawn by the CPU should pick the 2D look: ' + JSON.stringify(sw));
+              await shot('2d');
+              await pg.evaluate(() => { RGL.soft = true; });
+              const s3 = await race(pg, at, '3D');
+              await shot('3d');
+              for (const [kind, k, name] of [['t', 2, 'tunnel mouth'], ['t', 9, 'in a tunnel'], ['b', 4, 'bridge']]) {
+                const c = await carSeen(pg, kind, k);
+                if (!(c.n >= 10) || c.ok !== c.n) bad.push(at + 'the car is not fully seen at the ' + name + ': ' + JSON.stringify(c));
+                notes.push(tag + ' ' + name + ' ' + c.ok + '/' + c.n);
+                if (kind == 'b') await shot('3d-bridge');
+              }
+              notes.push(tag + ' 3D: ' + s3.draws + ' draw calls');
+              const ended = await pg.evaluate(() => { const G = RL.gl; rlStop(); return { ended: !!G.R.ended, tag: FPS.tag }; });
+              if (!ended.ended || ended.tag !== '') bad.push(at + 'leaving the race should give the WebGL context back: ' + JSON.stringify(ended));
+              // the 3D switch in the Star Rally menu: off gives the 2D look (saved), on again gives 3D
+              await pg.evaluate(() => rlMenu());
+              await pg.waitForSelector('#rl3d');
+              const m0 = await pg.evaluate(() => document.querySelector('#rl3d').checked);
+              await pg.evaluate(() => { const e = document.querySelector('#rl3d'); e.scrollIntoView(); e.click(); });
+              const g2 = await pg.evaluate(() => ({ rlGl: S.rlGl, saved: JSON.parse(localStorage.getItem('starschool-v2') || '{}').rlGl }));
+              if (!m0 || g2.rlGl !== false || g2.saved !== false) bad.push(at + 'Star Rally menu 3D switch: ' + JSON.stringify([m0, g2]));
+              await race(pg, at, '2D look chosen');
+              await pg.evaluate(() => { rlStop(); rlMenu(); });
+              await pg.waitForSelector('#rl3d');
+              await pg.evaluate(() => { const e = document.querySelector('#rl3d'); e.scrollIntoView(); e.click(); });
+              if ((await pg.evaluate(() => S.rlGl)) !== true) bad.push(at + 'the 3D switch should turn the 3D look on again');
+            } else {
+              await race(pg, at, 'WebGL off');
+              await shot('nogl');
+            }
+            const log = await pg.evaluate(() => (S.err || []).map(e => e.msg).filter(m => /3D look/.test(m)));
+            if (log.length) bad.push(at + 'app log: ' + log.join('; '));
+            await pg.evaluate(() => { if (RL) rlStop(); home(); });
+          } catch (x) { bad.push(at + (forced ? 'WebGL off: ' : '') + x.message.split('\n')[0]); }
+          for (const e of cx.errors) bad.push(at + (forced ? 'WebGL off: ' : '') + 'console error: ' + e);
+          for (const u of cx.network) bad.push(at + 'network request: ' + u);
+          await cx.ctx.close();
+        }
+      }
+      if (bad.length) fail('GL-02 Star Rally 3D look:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('GL-02: Star Rally picks the 2D look on WebGL drawn by the CPU (SwiftShader) and, with RGL.soft, draws in 3D (canvas under the 2D layer, frames, ' +
+        '5-30 draw calls, context given back on leaving), the child\'s car fully seen at a tunnel mouth, in a tunnel and on a bridge, the 2D look when the menu\'s 3D switch is off ' +
+        'and when WebGL is forced off; at 360x740 and 800x1280, no console errors; ' + notes.join('; '));
+    }
+
     // CHECK-IN (src/js/51b-checkin.js): mastery check-ins and stop badges, at 360x740 and 800x1280 on the midway save. A passed math stop
     // with enough first tries shows a 52 px Check-in button by it on the map; it opens the "Badge check-in!" sheet (Let's go, Not now);
     // the check-in is 5 questions of that stop with no Help button and a Check-in tag; a wrong first try shows the answer, no hint, and is
@@ -12113,7 +12244,8 @@ async function main() {
             return { st: getSt('math', i), next: unlocked('math', i + 1), know: S.know.tenf2, lm: S.lm[S.lm.length - 1], les: S.les, saved: !!JSON.parse(localStorage.getItem(SKEY)).lm,
               idea: (document.querySelector('.ls-idea') || {}).textContent, btns: [...document.querySelectorAll('.ls-acts .btn')].map(b => b.id).join() }; });
           if (end.st !== 2 || !end.next || !end.know || end.know.s !== 2 || !end.lm || end.lm[0] !== 'tenf2' || end.lm[2] !== 1 || end.lm[3] !== 2 || end.lm[4] !== 2 || end.lm[6] !== 0 || end.les || !end.saved
-            || !/Two parts make ten/.test(end.idea) || end.btns !== 'lsprac,lsmap') bad.push(at + 'the end: ' + JSON.stringify(end));
+            // TEACH-2: the end card also opens the notebook (lsnb), on purpose
+            || !/Two parts make ten/.test(end.idea) || end.btns !== 'lsprac,lsmap,lsnb') bad.push(at + 'the end: ' + JSON.stringify(end));
           await lsFit(pg, at + 'end: ');
           // 3. a lesson left part way resumes at its beat
           await pg.evaluate(() => { LS.start('miss1'); });
@@ -12162,6 +12294,115 @@ async function main() {
         'the lesson through pre, Explore, Name it, Together (a miss shows the picture and keeps the item), Check me (announced, marked, fixed), Show; ' +
         'the end card, the stop passed, the record and the measure saved; a lesson resumes at its beat; test-out goes straight to Show; ' +
         'in Practice two choices get one try (three choices and TEACH.off keep the second); no console errors, no network requests');
+    }
+
+    // TEACH-2 "the tutor's brain" (52d-notebook.js, 52b-know.js, 52-lesson.js in the part teach; 82-report.js, 80-grown.js), at 360x740
+    // and 800x1280 on the midway save as a Kindergartner with two ideas learned (one kept) and a misconception held on Add to 5.
+    // The math map loads the part and puts the notebook button on its top bar (48 px, on screen); the notebook shows one page per
+    // learned idea, drawn from the child's own build (7 and 3), a star on the kept one, each page and the screen's line spoken, no
+    // sideways scroll; Back goes to the map. A repair lesson opens with the contrast (the right answer and the held idea's, side by side).
+    // The report card's lessons card: the four stages, "What we noticed" with its pin (S.pin set, pressed); the part loaded by the report
+    // itself. The Grown-ups switch turns lessons off (no offer, no notebook button on the map) and on. No console errors, no network.
+    {
+      const bad = [], notes = [], shots = process.env.TEACH2_SHOTS || require('path').join(__dirname, 'out');
+      const fits = (pg, at, sel) => pg.evaluate(sel => {
+        const o = [], vw = document.documentElement.clientWidth;
+        if (document.documentElement.scrollWidth > vw) o.push('sideways scroll');
+        for (const b of document.querySelectorAll(sel)) { const r = b.getBoundingClientRect(); if (!r.width) continue;
+          if (r.width < 47.5 || r.height < 47.5) o.push('small button ' + (b.id || b.getAttribute('aria-label') || b.className));
+          if (r.right > vw + 1 || r.left < -1) o.push('button off screen ' + (b.id || b.className)); }
+        return o;
+      }, sel).then(o => o.forEach(x => bad.push(at + x)));
+      for (const [w, h] of [[360, 740], [800, 1280]]) {
+        const ta = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ta.page, at = 'TEACH-2 ' + w + 'x' + h + ' ';
+        try {
+          await pg.evaluate(() => { window.__said = []; window.say = t => { window.__said.push(String(t)); };
+            S.grade = 0; S.name = 'Mia'; delete S.les; delete S.pin; const d = STRK.idx(today()), i = NODES.math.findIndex(n => nid(n) === 'tenf3');
+            for (let j = 0; j < NODES.math.length; j++) setSt('math', j, j <= i ? 2 : 0);
+            S.know = { tenf2: { s: 2, n: 1, lv: [[1, 1], [1, 1], [1, 1]], b: {}, box: 0, due: d + 2, d: d - 1, last: d - 1, note: { a: 7, b: 3 } },
+              tenf3: { s: 3, n: 1, lv: [[1, 1], [0, 0], [1, 1]], b: {}, box: 1, due: d + 5, d: d - 8, last: d - 3, k: d - 3 },
+              add4: { s: 1, n: 2, lv: [[1, 2], [0, 2], [0, 1]], b: { op: 3 }, box: 0, due: 0, w: [['op', 'add4 3', d], ['op', 'add4 4', d], ['op', 'add4 4', d]] } };
+            S.lm = [['tenf2', d - 1, 1, 2, 2, 2, 0], ['tenf3', d - 8, 2, 2, 2, 2, 1], ['add4', d, 0, 2, 1, 2, 0]]; S.tq = 'Ask Mia: "If I hold up 7 fingers, how many more make 10?"';
+            save(); pathMap('math'); });
+          // 1. the map: the part loads, the notebook button on the top bar
+          await pg.waitForSelector('#nbopen', { timeout: 10000 });
+          await fits(pg, at + 'map: ', '#nbopen');
+          await pg.click('#nbopen');
+          await pg.waitForSelector('#nb .nbk-pg', { timeout: 5000 });
+          await vwait(pg, 400);
+          const nb = await pg.evaluate(() => ({ pages: [...document.querySelectorAll('.nbk-pg')].map(p => p.dataset.nbp + (p.classList.contains('kept') ? '*' : '')).join(),
+            eq: (document.querySelector('.nbk-pg[data-nbp="tenf2"] .nbk-pic') || {}).textContent, said: __said.join('|'), title: document.querySelector('.nbk-top .ttl').textContent,
+            hidden: [...document.querySelectorAll('.nbk-pic svg')].every(s => s.getAttribute('aria-hidden') == 'true'), next: !!document.querySelector('#nbgo') }));
+          if (nb.pages !== 'tenf2,tenf3*' || !/7 \+ 3 = 10/.test(nb.eq || '') || !/learned 2 big ideas/.test(nb.said) || nb.title !== 'My notebook' || !nb.hidden)
+            bad.push(at + 'the notebook: ' + JSON.stringify(nb));
+          await fits(pg, at + 'notebook: ', '#nb button, .nbk-top button');
+          await pg.screenshot({ path: require('path').join(shots, 'notebook-' + w + 'x' + h + '.png') });
+          await pg.evaluate(() => { __said = []; });
+          await pg.click('.nbk-pg[data-nbp="tenf3"] [data-nb]');
+          const s1 = await pg.evaluate(() => __said.join('|'));
+          if (!/Ten and some more/i.test(s1) && !/still know/i.test(s1)) bad.push(at + 'a page does not say its idea: ' + s1);
+          await pg.click('#back');
+          await pg.waitForSelector('#map', { timeout: 5000 });
+          // 2. a repair lesson opens with the contrast
+          await pg.evaluate(() => { LS.WAKE = 400; const st = LS.make('tenf2', { seed: 3, day: lsDay(), repair: 'given' }); st.pre = [true, false]; LS.beat(st, LSB.indexOf('exp')); LS.st = st; LS.show(); });
+          await pg.waitForSelector('.ls-con', { timeout: 5000 });
+          await vwait(pg, 600);
+          const con = await pg.evaluate(() => ({ panes: document.querySelectorAll('.ls-cpane').length, ok: !!document.querySelector('.ls-cpane.ok'), no: !!document.querySelector('.ls-cpane.no'),
+            said: __said.join('|') }));
+          if (con.panes !== 2 || !con.ok || !con.no || !/The number we see is not the answer/.test(con.said)) bad.push(at + 'the repair contrast: ' + JSON.stringify(con));
+          await fits(pg, at + 'contrast: ', '#lsinp button, #lsplay .ls-hear');
+          await pg.screenshot({ path: require('path').join(shots, 'repair-contrast-' + w + 'x' + h + '.png') });
+          await pg.evaluate(() => { LS.st = null; });
+          // 3. the report card: the lessons card, what we noticed, the pin
+          await pg.evaluate(() => report());
+          await pg.waitForSelector('#rp-teach .rp-ls', { timeout: 10000 });
+          const rp = await pg.evaluate(() => { const c = document.querySelector('#rp-teach'); return { txt: c.textContent, pins: c.querySelectorAll('[data-npin]').length,
+            heads: [...c.querySelectorAll('[role=columnheader]')].map(x => x.textContent).join() }; });
+          if (!/What we noticed/.test(rp.txt) || !/Mia sometimes adds when the problem takes away/.test(rp.txt) || rp.pins !== 1 || rp.heads !== 'Topic,Taught,Practising,Learned,Still knows it'
+            || !/Tonight's question/.test(rp.txt)) bad.push(at + 'the report: ' + JSON.stringify(rp).slice(0, 400));
+          await pg.evaluate(() => document.querySelector('#rp-teach').scrollIntoView({ block: 'start' }));
+          await vwait(pg, 200);
+          await pg.screenshot({ path: require('path').join(shots, 'report-' + w + 'x' + h + '.png') });
+          await pg.locator('#rp-teach').screenshot({ path: require('path').join(shots, 'report-lessons-card-' + w + 'x' + h + '.png') });
+          await fits(pg, at + 'report: ', '#rp-teach button');
+          await pg.click('[data-npin="0"]');
+          await pg.waitForSelector('[data-npin="0"][aria-pressed="true"]', { timeout: 5000 });
+          const pin = await pg.evaluate(() => S.pin && S.pin.sk + S.pin.lv);
+          if (pin !== 'add4') bad.push(at + 'Practise this next: ' + pin);
+          // 4. the Grown-ups switch: off takes the offer and the notebook button off the map; on brings them back
+          await pg.evaluate(() => grown());
+          await pg.waitForSelector('#lson', { timeout: 5000 });
+          const on0 = await pg.evaluate(() => document.querySelector('#lson').checked);
+          await pg.evaluate(() => document.querySelector('#lson').click());
+          const off = await pg.evaluate(() => ({ off: TEACH.off, saved: JSON.parse(localStorage.getItem(SKEY)).lsOff }));
+          await pg.evaluate(() => pathMap('math'));
+          await vwait(pg, 600);
+          const mOff = await pg.evaluate(() => ({ go: !!document.querySelector('.ls-go'), nb: !!document.querySelector('#nbopen') }));
+          if (!on0 || !off.off || off.saved !== 1 || mOff.go || mOff.nb) bad.push(at + 'lessons off: ' + JSON.stringify([on0, off, mOff]));
+          await pg.evaluate(() => { grown(); document.querySelector('#lson').click(); pathMap('math'); });
+          await pg.waitForSelector('#nbopen', { timeout: 5000 }).catch(() => bad.push(at + 'lessons on again: no notebook button'));
+          notes.push(w + 'x' + h);
+        } catch (e) { bad.push(at + (e.stack || e).toString().split('\n').slice(0, 3).join(' ')); }
+        for (const e of ta.errors) bad.push(at + e);
+        for (const u of ta.network) bad.push(at + 'network request: ' + u);
+        await ta.ctx.close();
+      }
+      // the report card of a fresh tablet loads the part on its own when the save has lessons (here: none loaded before)
+      {
+        const ta = await openApp(browser, { fixture: 'midway', width: 360, height: 740, lazy: true }), pg = ta.page;
+        try {
+          await pg.evaluate(() => { S.name = 'Mia'; S.know = { tenf2: { s: 2, n: 1, lv: [[1, 1], [1, 1], [1, 1]], b: {}, box: 0, due: 0 } }; S.lm = [['tenf2', 1, 1, 2, 2, 2, 0]]; save(); report(); });
+          await pg.waitForSelector('#rp-teach .rp-ls', { timeout: 10000 });
+        } catch (e) { bad.push('TEACH-2 report on a cold start: ' + (e.message || e).split('\n')[0]); }
+        for (const e of ta.errors) bad.push('TEACH-2 cold report: ' + e);
+        for (const u of ta.network) bad.push('TEACH-2 cold report: network request: ' + u);
+        await ta.ctx.close();
+      }
+      if (bad.length) fail('TEACH-2 the tutor\'s brain:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('TEACH-2: the tutor\'s brain at ' + notes.join(' and ') + ': the notebook button on the math map, the notebook (a page per learned idea from ' +
+        'the child\'s own build, a star when kept, spoken); a repair opens with the contrast; the report card\'s lessons card (four stages, what we noticed, ' +
+        'Practise this next), loaded by the report on a cold start; the Grown-ups switch turns lessons off and on; no console errors, no network requests');
     }
 
     for (const u of network) fail('network request: ' + u);
