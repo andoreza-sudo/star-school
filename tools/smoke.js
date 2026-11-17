@@ -12041,8 +12041,10 @@ async function main() {
           let want;
           if (it.model == 'frame2') { const t = it.goal == 'sum' ? it.target : it.goal == 'fill' ? it.total : 3; want = [t - 1, 1]; }
           else if (it.model == 'b10') { const n = it.goal == 'gt' ? it.tgt + 2 : it.goal == 'any' ? 34 : +it.ans + (wrong ? 1 : 0); want = [Math.floor(n / 10), n % 10]; }
-          else want = [it.goal == 'less' ? it.s0[0] - 2 : it.goal == 'any' ? 4 : +it.ans + (wrong ? (+it.ans > 1 ? -1 : 1) : 0)];
+          else want = [it.goal == 'less' ? it.s0[0] - 2 : it.goal == 'any' ? 4 : +it.ans + (wrong ? -1 : 0)];
           const cur = await pg.evaluate(() => LS.u.mm.slice());
+          // a wrong 0 from an empty frame (the answer is 1, and 2 would not fit): put one in first, so Check wakes
+          if (wrong && want.length == 1 && want[0] == 0 && cur[0] == 0) { await pg.click('.mmb[data-i="0"][data-d="1"]'); cur[0] = 1; }
           for (let i = 0; i < want.length; i++) { const d = want[i] - cur[i]; for (let j = 0; j < Math.abs(d); j++) await pg.click(`.mmb[data-i="${i}"][data-d="${d > 0 ? 1 : -1}"]`); }
           await pg.click('#mcheck');
         } else throw new Error('lesson item ' + JSON.stringify(it));
@@ -12082,7 +12084,7 @@ async function main() {
           if (!wait0) bad.push(at + 'the controls are awake before the line is said');
           // 2. Make Ten through every beat
           const path = [], beats = [];
-          let missedTog = false, sawHelp = false, petTurn = '', fixed = false;
+          let missedTog = false, sawHelp = false, petTurn = '';
           for (let n = 0; n < 40; n++) {
             const b = await pg.evaluate(() => LS.st ? LSB[LS.st.b] + ':' + LS.cur(LS.st).m : null);
             if (!b) break;
@@ -12091,7 +12093,6 @@ async function main() {
             if (b == 'chk:judge') petTurn = await pg.evaluate(() => document.querySelector('#lsbub').textContent + '|' + !!document.querySelector('.ls-pet.ls-turn'));
             const wrong = (b == 'pre:ask' && !path.length) || (b == 'tog:ask' && !missedTog);
             path.push(b);
-            if (b == 'chk:ask') fixed = true;
             if (wrong && b == 'tog:ask') {
               missedTog = true;
               const s0 = await pg.evaluate(() => LS.seq);
@@ -12113,7 +12114,6 @@ async function main() {
           if (end.st !== 2 || !end.next || !end.know || end.know.s !== 2 || !end.lm || end.lm[0] !== 'tenf2' || end.lm[2] !== 1 || end.lm[3] !== 2 || end.lm[4] !== 2 || end.lm[6] !== 0 || end.les || !end.saved
             || !/Two parts make ten/.test(end.idea) || end.btns !== 'lsprac,lsmap') bad.push(at + 'the end: ' + JSON.stringify(end));
           await lsFit(pg, at + 'end: ');
-          if (w == 360 && !fixed) notes.push('the pet was right in Check me');
           // 3. a lesson left part way resumes at its beat
           await pg.evaluate(() => { LS.start('miss1'); });
           for (let n = 0; n < 12 && await pg.evaluate(() => LSB[LS.st.b] !== 'tog'); n++) await lsStep(pg, n == 0);
