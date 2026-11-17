@@ -19844,8 +19844,10 @@ run('teach: diagnosis, the probe, repairs, fading TEACH-2',()=>{
     if(wrongName)bad.push('a child with col was named as another idea '+wrongName+' times');
     if(slips>=15)bad.push('a child with 15% random slips is named in '+Math.round(slips/3)+'% of runs (want under 5%)');
     // the 3-of-8 rule: one problem three times is not enough; two ideas with the same count are a tie, not held; the probe tells them apart
-    S.know={};const q1={ab:[42,17,'-'],ans:'25',label:'42-17',st:2};for(let i=0;i<3;i++)knowAdd('sub4',q1,'35',false,S,100);
+    S.know={};const q0={ab:[52,38,'-'],ans:'14',label:'52-38',st:2};for(let i=0;i<3;i++)knowAdd('sub4',q0,'26',false,S,100);
     if(knowHeld('sub4',S,100))bad.push('held on one problem only');
+    S.know={};const q1={ab:[42,17,'-'],ans:'25',label:'42-17',st:2};for(let i=0;i<3;i++)knowAdd('sub4',q1,'35',false,S,100);
+    if(knowHeld('sub4',S,100))bad.push('held while two ideas fit alike');
     const tie=knowTie('sub4',S,100);if(!tie||tie.slice().sort().join()!=='col,keep')bad.push('a tie of col and keep not seen: '+JSON.stringify(tie));
     let probes=0,settled=0;for(let s=0;s<200;s++){const pq=knowProbe('col','keep',gen(mulberry32(s+7)));if(!pq)continue;probes++;const pr=P(pq);
       if(pr.col.some(v=>pr.keep.includes(v)))bad.push('the probe does not separate col and keep: '+pq.label);

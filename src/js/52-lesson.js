@@ -92,7 +92,7 @@ const LS = {
       q = q0.kind == 'make' && !q0.goal || q0.kind == 'line' ? q0 : L.q(1, r);
       if (petOk) { pv = q.ans; break; }
       for (const c of n < 30 ? codes : L.bugs) {
-        const v = ((q.bug || {})[c] || []).find(x => String(x) !== q.ans && !lsOk(q, String(x)) && LS.fits(q, x));
+        const v = (knowPredict(q)[c] || []).find(x => String(x) !== q.ans && !lsOk(q, String(x)) && LS.fits(q, x));
         if (v != null) { pv = String(v); code = c; break; }
       }
     }
