@@ -370,7 +370,6 @@ const WS = (() => {
 })();
 
 BT.reg({
-  id: 'wsearch', name: 'Word Search', icon: 'wsearch', bands: 'BCD', allow: 3,
-  rules: 'Find every word in the grid. Drag across it, or tap its first and last letter.',
+  id: 'wsearch', // name, icon, bands, allow, rules: BT.CAT in 74-teasers.js (P6-03: Home and the hub need them before this file loads)
   make: WS.make, mount: WS.mount, solve: WS.solve,
 });

@@ -735,8 +735,7 @@ const MD = (() => {
 })();
 
 BT.reg({
-  id: 'mdoku', name: 'MathDoku', icon: 'mdoku', bands: 'BCD',
-  rules: 'Every row and every column has each number once. The numbers in each cage make the cage\'s number with its sign.',
+  id: 'mdoku', // name, icon, bands, allow, rules: BT.CAT in 74-teasers.js (P6-03: Home and the hub need them before this file loads)
   make: (band, level, rnd) => MD.make(band, level, rnd),
   mount: (el, p, api) => MD.mount(el, p, api),
   solve: p => MD.solve(p),

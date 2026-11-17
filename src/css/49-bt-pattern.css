@@ -1,5 +1,6 @@
-/* Brain Teasers: Patterns, matrices, odd one out (P3-09; 76-bt-pattern.js). Tokens only; motion is transform and opacity. */
-.pt{display:flex;flex-direction:column;gap:var(--s-3);max-width:980px;min-height:100%;margin:0 auto}
+/* Brain Teasers: Patterns, matrices, odd one out (P3-09; 76-bt-pattern.js). Tokens only; motion is transform and opacity.
+   P6-03: div.pt, not .pt: the long division board's decimal point cells are i.pt (39-steps.css), and this file loads on demand. */
+div.pt{display:flex;flex-direction:column;gap:var(--s-3);max-width:980px;min-height:100%;margin:0 auto}
 .pt-head{display:flex;align-items:center;justify-content:center;gap:var(--s-3);min-height:var(--tap)}
 .pt-dots{display:flex;gap:6px;flex:none}
 .pt-dots i{width:12px;height:12px;border-radius:50%;background:var(--surface);box-shadow:inset 0 0 0 3px var(--bt-tint)}

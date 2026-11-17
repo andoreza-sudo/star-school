@@ -288,7 +288,6 @@ const CUB = (() => {
 })();
 
 BT.reg({
-  id: 'cubes', name: 'Cubes', icon: 'cubes', bands: 'BCD', allow: 1,
-  rules: 'Count every cube in the stack, even the ones hiding underneath.',
+  id: 'cubes', // name, icon, bands, allow, rules: BT.CAT in 74-teasers.js (P6-03: Home and the hub need them before this file loads)
   make: CUB.make, mount: CUB.mount, solve: CUB.solve,
 });

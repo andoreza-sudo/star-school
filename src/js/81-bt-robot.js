@@ -44,7 +44,7 @@ const RB = {
   STEPS: { A: [3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5], B: [6, 6, 7, 7, 8, 8, 9, 9, 9, 10, 10, 10] },
   SIZE: { A: 4, B: 5, C: 6, D: 8 },
   EXTRA: { A: 2, B: 3, C: 2, D: 1 }, // slots = par + EXTRA (5.8: C intended + 2, D tight)
-  UW_CAP: 40, MAX_STEPS: 1000, FN_MAX: 4, HIST: 40, ALLOW: 3,
+  UW_CAP: 40, MAX_STEPS: 1000, FN_MAX: 4, HIST: 40, ALLOW: 3, // ALLOW: the same as allow of robot in BT.CAT (74-teasers.js)
   WORD: { up: 'Up', dn: 'Down', lf: 'Left', rt: 'Right', fw: 'Forward', tl: 'Turn left', tr: 'Turn right', rep: 'Repeat',
     uw: 'Until wall', fn: 'Function', en: 'End' },
   cur: null, // the puzzle on screen, for the smoke bot: {p, st(), busy(), inst}
@@ -867,8 +867,7 @@ RB.mount = (el, p, api) => {
 };
 
 BT.reg({
-  id: 'robot', name: 'Robot Path', icon: 'robot', bands: 'ABCD', allow: RB.ALLOW,
-  rules: 'Tap blocks to build a program. Press Go and the robot follows it to the flag.',
+  id: 'robot', // name, icon, bands, allow, rules: BT.CAT in 74-teasers.js (P6-03: Home and the hub need them before this file loads)
   make(band, level, rnd) { return RB.make(band, level, rnd); },
   solve(p) { return { m: p.ref.m.slice(), f: p.ref.f.slice() }; },
   mount(el, p, api) { return RB.mount(el, p, api); },

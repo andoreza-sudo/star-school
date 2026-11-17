@@ -665,8 +665,7 @@ const SD = (() => {
 })();
 
 BT.reg({
-  id: 'sudoku', name: 'Sudoku', icon: 'sudoku', bands: 'ABCD',
-  rules: 'Fill the grid so every row, every column and every box has each number (or animal) just once.',
+  id: 'sudoku', // name, icon, bands, allow, rules: BT.CAT in 74-teasers.js (P6-03: Home and the hub need them before this file loads)
   make: (band, level, rnd) => SD.make(band, level, rnd),
   mount: (el, p, api) => SD.mount(el, p, api),
   solve: p => SD.solve(p),

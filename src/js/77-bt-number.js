@@ -1017,22 +1017,19 @@ const BTN = (() => {
 })();
 
 BT.reg({
-  id: 'pyramid', name: 'Number Pyramid', icon: 'blocks', bands: 'BCD',
-  rules: 'Each brick is the two bricks under it added together. Find the missing bricks.',
+  id: 'pyramid', // name, icon, bands, allow, rules: BT.CAT in 74-teasers.js (P6-03: Home and the hub need them before this file loads)
   make: (band, level, rnd) => BTN.PYR.make(band, level, rnd),
   mount: (el, p, api) => BTN.mountPyr(el, p, api),
   solve: p => BTN.PYR.solve(p),
 });
 BT.reg({
-  id: 'balance', name: 'Balance', icon: 'scale', bands: 'ABCD',
-  rules: 'The scales are level, so both sides weigh the same. Find what each picture weighs.',
+  id: 'balance', // name, icon, bands, allow, rules: BT.CAT in 74-teasers.js (P6-03: Home and the hub need them before this file loads)
   make: (band, level, rnd) => BTN.BAL.make(band, level, rnd),
   mount: (el, p, api) => BTN.mountBal(el, p, api),
   solve: p => BTN.BAL.solve(p),
 });
 BT.reg({
-  id: 'target', name: 'Make the Number', icon: 'target', bands: 'BCD',
-  rules: 'Join the numbers with the signs to make the number in the circle.',
+  id: 'target', // name, icon, bands, allow, rules: BT.CAT in 74-teasers.js (P6-03: Home and the hub need them before this file loads)
   make: (band, level, rnd) => BTN.TGT.make(band, level, rnd),
   mount: (el, p, api) => BTN.mountTgt(el, p, api),
   solve: p => BTN.TGT.solve(p),
