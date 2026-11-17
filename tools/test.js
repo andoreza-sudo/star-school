@@ -8068,6 +8068,77 @@ run('keys: Enter or Space on an SVG button clicks it (UI.press)',()=>{
   return{problems:p,note:'Enter and Space on an SVG and an HTML role=button'};
 });
 
+// ---- KINDS2-E: Discover bank items for sort and mark, and why on existing choice items ----
+// Every new item validates and builds; the new kinds are 30-60% of every Discover stop and level (sort and mark both asked); K2.off draws
+// exactly the questions of the bank without the new items and without the why texts (appended at the end, plain choice items unchanged).
+run('KINDS2-E Discover: new sort and mark items valid, kind share per stop, why on choice items, K2.off gives the old draws',()=>{
+  const r=eval(js+`;(()=>{const out={bad:[],rows:{},n:0,why:0,before:{},after:{}},bad=m=>{if(out.bad.length<60&&!out.bad.includes(m))out.bad.push(m)};
+    const IDS=['sci_life','sci_earth','sci_phys','geo_world','geo_us','civ'],LV={sci_life:3,sci_earth:3,sci_phys:3,geo_world:2,geo_us:2,civ:2};
+    const WANT={sci_life:9,sci_earth:9,sci_phys:9,geo_world:7,geo_us:8,civ:7}; // new items per stop (6 to 10)
+    const GR={sci_life:['K-2','3-4','5-6'],sci_earth:['K-2','3-4','5-6'],sci_phys:['K-2','3-4','5-6'],geo_world:['K-2','3-4'],geo_us:['3-4','5-6'],civ:['K-2','5-6']};
+    const keep={};
+    for(const id of IDS){
+      const B=BANK[id],first=B.findIndex(it=>(it.form||'choice')!=='choice'),mine=B.slice(first+8*LV[id]); // 8 items a level came first (d-disc3-kinds.js)
+      if(mine.length!==WANT[id])bad(id+': '+mine.length+' new items, expected '+WANT[id]);
+      mine.forEach(it=>{const w=id+' level '+it.lv+' "'+it.q+'": ';out.n++;
+        if(it.form!=='sort'&&it.form!=='mark')bad(w+'form '+it.form);
+        for(const x of bankItemProblems(it,w))bad(x);
+        if(BANKNEW.indexOf(it.form)<0)bad(w+'form is not in BANKNEW');
+        if(it.form=='mark'&&it.hint&&new RegExp('\\\\b'+[].concat(it.a)[0]+'\\\\b','i').test(it.hint))bad(w+'the hint names the answer');
+        if(it.form=='mark'&&[].concat(it.a).some(a=>new RegExp('\\\\b'+a+'\\\\b','i').test(it.q)))bad(w+'the prompt names the answer');
+        if(!it.topic)bad(w+'no topic');
+        const bi=B.indexOf(it);
+        for(let s=1;s<=3;s++){const q=genBank(id,it.lv,{bi,s});
+          for(const x of kindProblems(q))bad(w+x);
+          if(q.kind!==it.form||!q.say||q.label.length>=60||!KIND[q.kind].same(q,q.ans))bad(w+'built as '+q.kind);
+          const b=bankRebuild(q.bk);if(JSON.stringify(b)!==JSON.stringify(q))bad(w+'bankRebuild differs');
+          K2.off=true;try{if(bankCan(it))bad(w+'drawn with K2.off')}finally{K2.off=false}}});
+      for(let lv=1;lv<=LV[id];lv++){const m=mine.filter(it=>it.lv==lv);
+        if(m.filter(it=>it.form=='sort').length<2||m.filter(it=>it.form=='mark').length<1)bad(id+' level '+lv+': needs 2 sort and 1 mark items, has '+m.map(x=>x.form))}
+      keep[id]=B.slice();
+    }
+    // why: [text, why] distractors on existing choice items. Their draws do not change (a plain copy builds the same question) and
+    // with K2.off the why is not read at all.
+    const strip=it=>Object.assign({},it,{d:it.d.map(x=>Array.isArray(x)?x[0]:x)});
+    for(const id of IDS)BANK[id].forEach((it,bi)=>{
+      if(!Array.isArray(it.d)||!it.d.some(Array.isArray))return;
+      out.why++;const w=id+'['+bi+'] "'+it.q+'": ';
+      for(const x of bankItemProblems(it,w))bad(x);
+      for(const x of it.d)if(Array.isArray(x)&&(x[0]===it.a||!x[1]||x[1].length>90))bad(w+'why of "'+x[0]+'"');
+      const plain=BANK[id].slice();plain[bi]=strip(it);
+      for(let s=1;s<=12;s++){
+        K2.off=true;let a,b;try{a=JSON.stringify(genBank(id,it.lv,{bi,s}));const real=BANK[id];BANK[id]=plain;try{b=JSON.stringify(genBank(id,it.lv,{bi,s}))}finally{BANK[id]=real}}finally{K2.off=false}
+        if(a!==b)bad(w+'K2.off draw changed by the why (seed '+s+')');
+        const q=genBank(id,it.lv,{bi,s}),real=BANK[id];BANK[id]=plain;let p2;try{p2=genBank(id,it.lv,{bi,s})}finally{BANK[id]=real}
+        if(JSON.stringify(q.choices)!==JSON.stringify(p2.choices)||q.ans!==p2.ans||q.label!==p2.label)bad(w+'the why changed the draw (seed '+s+')');
+        if(!q.why||Object.keys(q.why).some(k=>String(k)===String(q.ans)||!q.choices.some(c=>c.v===k)))bad(w+'q.why keys');
+        if(a.includes('"why"'))bad(w+'K2.off question has a why')}});
+    if(out.why<20)bad('only '+out.why+' choice items have a why, expected 20 or more (KD4N '+KD4N+')');
+    // kind share per stop and level, 400 seeded draws; before = the bank without the new items and the default shares
+    const draw=(id,lv)=>{const c={};for(let s=1;s<=400;s++){const q=genBank(id,lv,{s});c[q.kind]=(c[q.kind]||0)+1}return c};
+    const add=(t,g,c)=>{const o=t[g]||(t[g]={});for(const k in c)o[k]=(o[k]||0)+c[k]};
+    for(const id of IDS)for(let lv=1;lv<=LV[id];lv++){
+      const c=draw(id,lv),n=Object.values(c).reduce((a,b)=>a+b,0),nw=n-(c.choice||0);
+      out.rows[id+lv]=Math.round(100*nw/n);
+      if(nw/n<.3||nw/n>.6)bad(id+' level '+lv+': the new kinds are '+Math.round(100*nw/n)+'% (30-60% wanted)');
+      if((c.sort||0)<.1*n||(c.mark||0)<.04*n||(c.choice||0)<.4*n)bad(id+' level '+lv+': mix '+JSON.stringify(c));
+      add(out.after,GR[id][lv-1],c);
+      const k=BANK[id],mx=BANKMIX[id];
+      BANK[id]=k.filter(it=>!(it.form=='mark'||k.indexOf(it)>=k.findIndex(x=>(x.form||'choice')!=='choice')+8*LV[id])); delete BANKMIX[id];
+      try{add(out.before,GR[id][lv-1],draw(id,lv))}finally{BANK[id]=k;BANKMIX[id]=mx}}
+    // K2.off: Discover asks the bank as it was: the choice items only, the same questions with or without the new items and the why texts
+    K2.off=true;
+    try{for(const id of IDS)for(let lv=1;lv<=LV[id];lv++){
+      const ref=keep[id].filter(it=>(it.form||'choice')=='choice').map(it=>Array.isArray(it.d)?strip(it):it),real=BANK[id];
+      for(let s=1;s<=60;s++){const a=JSON.stringify(genBank(id,lv,{s}));BANK[id]=ref;let b;try{b=JSON.stringify(genBank(id,lv,{s}))}finally{BANK[id]=real}
+        if(a!==b)bad(id+' level '+lv+' seed '+s+': K2.off is not the old draw');
+        if(JSON.parse(a).kind!=='choice')bad(id+' level '+lv+': K2.off drew a '+JSON.parse(a).kind)}}}
+    finally{K2.off=false}
+    return out})()`);
+  const tab=t=>Object.keys(t).sort().map(g=>{const o=t[g],n=Object.values(o).reduce((a,b)=>a+b,0);return g+': '+Object.entries(o).sort((a,b)=>b[1]-a[1]).map(([k,v])=>k+' '+Math.round(100*v/n)+'%').join(' ')}).join('; ');
+  return{problems:r.bad,note:`${r.n} new items, ${r.why} choice items with a why; new kinds per stop/level ${Object.entries(r.rows).map(([k,v])=>k+' '+v+'%').join(', ')}; before: ${tab(r.before)}; after: ${tab(r.after)}`};
+});
+
 // ---- P6-02: the Game Room's part files load on demand (LAZY in tools/build.py, partsThen() in src/js/90-app.js); start-up bytes under 3.0 MB ----
 run('performance P6-02',()=>{
   const p=[],rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8'),vm=require('vm');
