@@ -3697,6 +3697,7 @@ async function main() {
       };
       // first stop by taps: Unlike Denominators, a step hint, then the full round
       const first = await cp.evaluate(() => NODES.math.findIndex(x => nid(x) === 'fop3'));
+      await k2Old(cp); // FIX3: fop3 mixes in find the mistake (KINDS2-D, about 1 in 5), which has no step hint; this checks the step hint
       await cp.click(`.node[data-n="${first}"]`);
       await cp.waitForSelector('#prompt');
       await cp.waitForTimeout(900);
@@ -3707,6 +3708,7 @@ async function main() {
       await cp.click('#hb');
       await vwait(cp, 300);
       const h2 = await cp.evaluate(() => document.querySelector('#hint .hs').dataset.hs);
+      await k2Old(cp, false); // the round below answers whatever comes
       if (h1.at !== '0' || !/Next step/.test(h1.label) || h2 !== '1' || h1.wide > 380 || h1.hb < 48) fail('Crystal Caves step hint: ' + JSON.stringify([h1, h2]));
       await playRound(cp, 'P2-12 fop3', 10, async () => { await cp.waitForTimeout(600); await meas12('fop3'); });
       await cp.evaluate(() => { G.dead = true; });
