@@ -8375,7 +8375,7 @@ run('performance P6-02',()=>{
   // 1. what loads at start: index.html names only the start-up files; the games parts are LAZY, in build.py and in 90-app.js alike
   // P6-03: so is bt (the puzzle code, BT.start loads it: the check "performance P6-03"); the Game Room asks only for GAME_PARTS
   if(JSON.stringify(LAZY)!=='["bt","games","rally","games2","games3","teach"]')p.push('LAZY in tools/build.py should be bt, the games parts and teach (TEACH-1): '+JSON.stringify(LAZY));
-  const GAME_FILES=LAZY_FILES.filter((f,i)=>LAZY[i]!=='bt'),parts_=on=>LAZY.map(x=>String(x!=='bt'&&x!=='teach'&&on)).join(); // parts_(true): the games in, bt and teach (TEACH-1, the math map's) not
+  const GAME_FILES=LAZY_FILES.filter((f,i)=>LAZY[i]!=='bt'&&LAZY[i]!=='teach'),parts_=on=>LAZY.map(x=>String(x!=='bt'&&x!=='teach'&&on)).join(); // parts_(true): the games in, bt and teach (TEACH-1, the math map's) not
   const gp=(fs.readFileSync(path.join(SRC,'js','90-app.js'),'utf8').match(/const GAME_PARTS = (\[[^\]]*\]);/)||[])[1];
   if(!gp||gp.replace(/'/g,'"').replace(/\s/g,'')!==JSON.stringify(LAZY.filter(x=>x!=='bt'&&x!=='teach')))p.push('GAME_PARTS in 90-app.js ('+gp+') is not LAZY without bt and teach');
   const srcs=[...html.matchAll(/<script src="([^"]*)"/g)].map(m=>m[1]);
