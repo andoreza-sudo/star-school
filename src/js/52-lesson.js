@@ -43,10 +43,14 @@ const LS = {
     st.i = 0;
     let it = [];
     if (B == 'pre') it = [0, 1].slice(st.pre.length).map(k => ({m: 'ask', one: 1, q: L.q(L.test, r), lines: k ? [] : [T.hi(lsName()), T.first]}));
-    else if (B == 'rem') it = st.rem.slice(0, 1).map(x => ({m: 'ask', help: 1, rem: x, q: LESSONS[x].q(LESSONS[x].test, r), lines: [T.rem]}));
+    else if (B == 'rem') {
+      it = st.rem.slice(0, 1).map(x => ({m: 'ask', help: 1, rem: x, q: LESSONS[x].q(LESSONS[x].test, r), lines: [T.rem]}));
+      // TEACH-2b: nothing due, and the script has a warm-up on the idea it builds on: that, with the script's Remember line
+      if (!it.length && L.warm) { const q = L.warm(r); it = [{m: 'ask', help: 1, warm: 1, q, lines: L.w ? lsW(L.w.beats.remember, 0, q.sl) : [T.rem]}]; }
+    }
     else if (B == 'exp') {
       st.exp = L.exp(r);
-      it = [{m: 'open', q: st.exp.q, nudge: st.exp.nudge, lines: [T.play]}];
+      it = [{m: 'open', q: st.exp.q, nudge: st.exp.nudge, lines: [T.play].concat(st.exp.lines || [])}];
       // a repair (TEACH-PLAN-2 system C): the lesson opens with a contrast on the model, the right answer beside the held idea's
       const c = st.repair && LS.contrast(st, st.repair);
       if (c) it.unshift(c);
@@ -55,7 +59,11 @@ const LS = {
       it = [{m: 'say', html: n.html, lines: n.lines}];
     } else if (B == 'tog') it = [LS.togItem(st, [T.tog])];
     else if (B == 'chk') it = [LS.petItem(st)];
-    else if (B == 'show') it = [0, 1].map(k => ({m: 'ask', one: 1, q: L.q(L.test, r), lines: k ? [] : [st.to ? T.testOut : T.showMe]}));
+    else if (B == 'show') it = [0, 1].map(k => {
+      // TEACH-2b: a drafted script frames Show as its job in the world (its Show lines), unless the child tested out
+      const q = L.q(L.test, r), w = L.w && !st.to ? lsW(L.w.beats.show, k, q.sl) : [];
+      return {m: 'ask', one: 1, q, lines: k ? (L.w && L.w.beats.show.length > 1 ? w : []) : [st.to ? T.testOut : w[0] || T.showMe]};
+    });
     else if (B == 'win') it = [{m: 'ask', help: 3, win: 1, q: L.q(0, r), lines: [T.more]}];
     st.items = it;
     return it.length ? st : LS.after(st);
@@ -67,8 +75,10 @@ const LS = {
     const s = st.last < 0 ? 0 : st.drop ? Math.max(0, st.last - 1) : Math.min(2, st.last + 1), tie = knowTie(st.id, st.S, st.day);
     st.last = s;
     st.drop = false;
-    const pq = tie && knowProbe(tie[0], tie[1], () => st.L.q(s, st.r));
-    return {m: 'ask', help: 1, tog: 1, probe: pq ? tie : null, q: pq || st.L.q(s, st.r), lines: lines || []};
+    const pq = tie && knowProbe(tie[0], tie[1], () => st.L.q(s, st.r)), q = pq || st.L.q(s, st.r);
+    // TEACH-2b: a drafted script's Together line for this item's stage (1 build, 2 picture, 3 symbols; the stage can drop after a miss),
+    // its numbers from the item
+    return {m: 'ask', help: 1, tog: 1, probe: pq ? tie : null, q, lines: (lines || []).concat(st.L.w ? lsW(st.L.w.beats.together, q.st | 0, q.sl) : [])};
   },
   // the contrast that opens a repair: one question with two answers on its picture, the right one and the one the held idea gives
   contrast(st, code) {
@@ -88,8 +98,8 @@ const LS = {
     let q, pv, code = null;
     // up to 30 questions for the preferred mistake, then any of the stop's
     for (let n = 0; n < 40 && pv == null; n++) {
-      const q0 = L.q(0, r);
-      q = q0.kind == 'make' && !q0.goal || q0.kind == 'line' ? q0 : L.q(1, r);
+      const q0 = L.q(L.petSt | 0, r);
+      q = L.petSt != null || q0.kind == 'make' && !q0.goal || q0.kind == 'line' ? q0 : L.q(1, r);
       if (petOk) { pv = q.ans; break; }
       for (const c of n < 30 ? codes : L.bugs) {
         const v = (knowPredict(q)[c] || []).find(x => String(x) !== q.ans && !lsOk(q, String(x)) && LS.fits(q, x));
@@ -98,11 +108,12 @@ const LS = {
     }
     if (pv == null) pv = q.ans; // never reached with these scripts (tools/test.js checks every pet item)
     const ok = lsOk(q, pv);
-    return {m: 'judge', q, pv, petOk: ok, code, lines: [T.myTurn, LS.petSays(q, pv)]};
+    return {m: 'judge', q, pv, petOk: ok, code, lines: [T.myTurn, (L.w && lsW(L.w.beats.check.filter(t => /\{ans\}/.test(t)), 0, Object.assign({}, q.sl, {ans: lsSayV(q, pv)}))[0]) || LS.petSays(q, pv)]};
   },
   // can the pet's answer be shown on this question's model?
   fits(q, v) {
-    const n = +v;
+    const n = +v, M = q.kind == 'make' && K2MM[q.model];
+    if (M && M.fits) return M.fits(q, v);
     if (q.kind == 'make' && q.model == 'frame') return Number.isInteger(n) && n >= 0 && n <= q.m.total - (q.m.fixed || 0) && !(q.s0 && n > q.s0[0]);
     if (q.kind == 'make' && q.model == 'b10') return Number.isInteger(n) && n > 0 && n < 100;
     if (q.kind == 'line') return Number.isInteger(n) && n >= q.line.min && n <= q.line.max && String(n) !== String(q.start);
@@ -117,7 +128,7 @@ const LS = {
   // the pet's answer as a start state the child fixes (make: the pet's build; line: the pet's pin; num and choice start empty)
   fixItem(it) {
     const q = Object.assign({}, it.q), v = +it.pv;
-    if (q.kind == 'make') q.s0 = q.model == 'b10' ? [Math.floor(v / 10), v % 10] : [v];
+    if (q.kind == 'make') q.s0 = lsOf(q, it.pv);
     if (q.kind == 'line') q.start = String(v);
     return {m: 'ask', help: 1, fix: 1, q, lines: [lsTone().fixIt]};
   },
@@ -137,12 +148,14 @@ const LS = {
       const yes = String(v) === '1', ok = yes === it.petOk;
       st.chk.push(ok ? 1 : 0);
       if (!it.petOk) st.items.splice(st.i + 1, 0, LS.fixItem(it));
+      // TEACH-2b: a drafted script's reason for the pet's mistake (its misconception code), after it is caught
+      const why = !it.petOk && it.code && st.L.w ? lsW((st.L.w.reasons || {})[it.code], 0, it.q.sl) : [];
       return {ok, act: 'next', mood: it.petOk ? 'happy' : 'oops',
-        lines: it.petOk ? [yes ? T.rightMe : T.wrongMe] : [yes ? T.fooled : T.caught]};
+        lines: it.petOk ? [yes ? T.rightMe : T.wrongMe] : [yes ? T.fooled : T.caught].concat(why)};
     }
-    const ok = lsOk(it.q, v), first = !it.tries;
+    const ok = lsOk(it.q, v), first = !it.tries, M = it.q.kind == 'make' && K2MM[it.q.model];
     if (first && it.rem) knowRemember(it.rem, ok, st.day, st.S);
-    else if (first && !it.fix && !it.win) knowAdd(st.id, it.q, v, ok, st.S, st.day);
+    else if (first && !it.fix && !it.win && !it.warm) knowAdd(st.id, it.q, M && M.raw && Array.isArray(v) ? String(M.val(it.q, v)) : v, ok, st.S, st.day);
     if (it.one) {
       it.tries = 1;
       (B == 'pre' ? st.pre : st.post).push(ok);
@@ -298,7 +311,7 @@ const LS = {
   // the pet's answer drawn on the question, for Check me
   petWork(q, v) {
     if (q.kind == 'make') {
-      const s = q.model == 'b10' ? [Math.floor(v / 10), v % 10] : [+v];
+      const s = lsOf(q, v);
       return q.html + `<div class="ls-pw">${K2MM[q.model].draw(q, s).replace('<svg ', '<svg aria-hidden="true" ')}</div>`;
     }
     if (q.kind == 'line') return q.html + `<div class="ls-pw">${VIZ.numLine(Object.assign({}, q.line, {pin: +v})).replace('<svg ', '<svg aria-hidden="true" ')}</div>`;
@@ -321,7 +334,7 @@ const LS = {
     const u = LS.u, st = LS.st, it = st && LS.cur(st);
     if (!u || u.lock || !it) return;
     const q = it.q, K = KIND[q.kind];
-    if (q.kind == 'make' && q.model == 'frame2') v = u.mm.slice();
+    if (q.kind == 'make' && (q.model == 'frame2' || K2MM[q.model].raw || q.raw)) v = u.mm.slice();
     const res = LS.answer(st, v);
     u.lock = true;
     if (res.ok) {
@@ -410,3 +423,18 @@ const LS = {
   },
 };
 const lsName = () => (S.name || 'friend');
+// the state that shows value v on a make question's model (the pet's build, the child's fix)
+const lsOf = (q, v) => (K2MM[q.model].of ? K2MM[q.model].of(q, v) : q.model == 'b10' ? [Math.floor(v / 10), v % 10] : [+v]);
+/* TEACH-2b: the words of a drafted script (docs/drafts, reviewed; 52e-words.js) are lines with {slots}: lsFill fills them from a
+   question's or a build's numbers (q.sl, ctx), {name} and {pet} from the save. A line with a slot the moment has no number for is left
+   out (null), never said with a hole; tools/test.js checks every drafted line fills. lsW(lines, k, sl): line k (round the list), filled. */
+function lsFill(t, sl) {
+  let ok = true;
+  const o = String(t).replace(/\{(\w+)\}/g, (m, k) => (k == 'name' ? lsName() : k == 'pet' ? petN() : sl && sl[k] != null ? String(sl[k]) : (ok = false, m)));
+  return ok ? o : null;
+}
+const lsW = (a, k, sl) => { a = [].concat(a || []); const t = a.length ? lsFill(a[k % a.length], sl) : null; return t ? [t] : []; };
+// an answer as the pet says it: a time as words, cents with their unit
+const LS_SIGN = {'<': 'is less than', '>': 'is greater than', '=': 'is equal to'};
+const lsSayV = (q, v) => (q.kind == 'make' && /^(clock|hands)$/.test(q.model) && /:/.test(v) ? mmTimeSay(...String(v).split(':').map(Number))
+  : LS_SIGN[v] && q.sl ? `${q.sl.a} ${LS_SIGN[v]} ${q.sl.b}` : q.cents ? v + ' cents' : String(v));

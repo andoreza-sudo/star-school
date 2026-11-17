@@ -21,6 +21,43 @@ def draft_gate(root):
             if not st or st.group(1).lower() != 'reviewed':
                 bad.append('%s names the draft %s, which is %s' % (n, m.group(1), st.group(1).lower() if st else 'missing or has no status line'))
     return bad
+# TEACH-2b: a drafted lesson (lsDraft('<stop>', ...) in src/js) takes its words from its draft, docs/drafts/<stop>.md. This writes
+# src/js/52e-words.js (LSW) with the words of every draft that a script names AND whose status line says "reviewed"; an unreviewed draft
+# is left out, so its lesson is not live (52g-drafted.js) and its words cannot ship. Marking a draft reviewed (by hand, or with
+# node tools/author.js --approve) makes its lesson live at the next build. --words-only writes just this file; --words-check exits 1
+# when the file on disk is not what the drafts say (tools/test.js).
+WORDS_KEYS = ('idea', 'beats', 'reasons', 'home')
+def words_js(root):
+    d, out = os.path.join(root, 'src', 'js'), {}
+    named = set()
+    for n in sorted(os.listdir(d)):
+        if n.endswith('.js') and n != '52e-words.js':
+            named.update(re.findall(r"\blsDraft\('(\w+)'", open(os.path.join(d, n), newline='').read()))
+    dd = os.path.join(root, 'docs', 'drafts')
+    for n in sorted(os.listdir(dd)) if os.path.isdir(dd) else []:
+        if not n.endswith('.md') or n[:-3] not in named:
+            continue
+        t = open(os.path.join(dd, n), encoding='utf-8').read()
+        st, js = re.search(r'^status:\s*(\w+)', t, re.M), re.search(r'```json\n([\s\S]*?)\n```', t)
+        if st and st.group(1).lower() == 'reviewed' and js:
+            w = json.loads(js.group(1))
+            out[n[:-3]] = {k: w[k] for k in WORDS_KEYS if k in w}
+    body = ''.join('  %s: %s,\n' % (json.dumps(k), json.dumps(out[k], ensure_ascii=False, separators=(',', ':'))) for k in sorted(out))
+    return ('/* ---------- TEACH-2b: the words of the drafted lessons the owner has reviewed (part teach12) ----------\n'
+            '   BUILT by tools/build.py from docs/drafts/<stop>.md ("status: reviewed ...") for the scripts that name them (lsDraft, 52g-drafted.js):\n'
+            '   never edit by hand. A draft that is not reviewed is never here, so its lesson is not live. */\n'
+            'const LSW = {\n' + body + '};\n')
+WORDS_FILE = os.path.join(ROOT, 'src', 'js', '52e-words.js')
+if '--words-check' in sys.argv:
+    _w = sys.argv[sys.argv.index('--words-check') + 1] if len(sys.argv) > sys.argv.index('--words-check') + 1 else ROOT
+    _f = os.path.join(_w, 'src', 'js', '52e-words.js')
+    _ok = os.path.isfile(_f) and open(_f, encoding='utf-8', newline='').read() == words_js(_w)
+    print('words: 52e-words.js matches the reviewed drafts' if _ok else 'words: 52e-words.js is not what the reviewed drafts say (run python3 tools/build.py)')
+    sys.exit(0 if _ok else 1)
+if '--words-only' in sys.argv:
+    open(WORDS_FILE, 'w', encoding='utf-8', newline='').write(words_js(ROOT))
+    print('wrote src/js/52e-words.js')
+    sys.exit(0)
 if '--drafts-only' in sys.argv:
     _bad = draft_gate(sys.argv[sys.argv.index('--drafts-only') + 1])
     print('\n'.join(_bad) or 'drafts: every named draft is reviewed')
@@ -28,6 +65,7 @@ if '--drafts-only' in sys.argv:
 _bad = draft_gate(ROOT)
 if _bad:
     sys.exit('build refused: a lesson script uses words nobody has reviewed yet (tools/author.js):\n  ' + '\n  '.join(_bad))
+open(WORDS_FILE, 'w', encoding='utf-8', newline='').write(words_js(ROOT))  # TEACH-2b: the reviewed words, before the parts are read
 # A11b: code that is only needed once a child opens it lives in more precached files, one per entry of PARTS: the file stem, then a
 # regular expression for the file names (whole name) in src/js and src/css that go there instead of into index.html. Each part file
 # is <stem>.<VER>.js: a <style> it adds to <head> (its src/css files, if any), its src/js files (sorted), and a last line
@@ -41,12 +79,14 @@ PARTS = [
     ('games2', r'(?!60-game-blocks)\d+-game-[\w-]+\.(js|css)'),  # G-04a: every newer Game Room game NN-game-*.js / .css (Snack Stand, Sky Hop ...)
     ('games3', r'(60-blocks|61-bb-gl)\.js|60-game-blocks\.css'),  # G-BB2: Block Builder and its WebGL renderer (games was over its 400 KB warning)
     ('teach', r'52-lesson\.css|(52-lesson|52b-know|52c-scripts|52d-notebook)\.js'),  # TEACH-1: Sparky teaches (the lesson engine, the learner record and plan, the lesson scripts); TEACH-2: the notebook and the report's lessons card
+    ('teach12', r'(52e-words|52f-bench|52g-drafted)\.js'),  # TEACH-2b: the grade 1-2 lessons (drafted words, their workbench pieces, their scripts): after teach, so the teach part stays under 150 KB
 ]
 # P6-02: parts that index.html does NOT load at start (no <script> tag): partsThen() in src/js/90-app.js (LAZY_PARTS, the same list,
 # checked by tools/test.js) loads them the first time they are needed (the Game Room). sw.js still precaches every part, so they work offline.
 # P6-03: bt too (580 KB of puzzle code): BT.start() loads it the first time a puzzle opens; Home and the hub use BT.CAT (74-teasers.js).
 # TEACH-1: and the lessons, teach: the math map loads them (teachWarm in 46-home.js); not a Game Room part (GAME_PARTS in 90-app.js).
-LAZY = ('bt', 'games', 'rally', 'games2', 'games3', 'teach')
+# TEACH-2b: teach12 too (the grade 1-2 lessons), loaded with teach by the math map.
+LAZY = ('bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12')
 def part_of(name):
     return next((stem for stem, rx in PARTS if re.fullmatch(rx, name)), None)
 def cat(sub, ext, part=None):

@@ -28,6 +28,7 @@ function appFiles() {
     ['games2', typeof GAMES2_VER === 'undefined' ? null : GAMES2_VER],
     ['games3', typeof GAMES3_VER === 'undefined' ? null : GAMES3_VER],
     ['teach', typeof TEACH_VER === 'undefined' ? null : TEACH_VER],
+    ['teach12', typeof TEACH12_VER === 'undefined' ? null : TEACH12_VER],
     ['data', typeof DATA_VER === 'undefined' ? null : DATA_VER],
   ];
 }
@@ -55,7 +56,7 @@ function dataMissing(stems) {
    (with Back), loads the parts one after the other (rally and games2 call GH.reg from games while they load), then runs go() only if that
    screen is still showing, so a child who tapped Back meanwhile is never pulled into the games. A part that does not load shows
    the Try again screen. Keep it generic: a new game in games2 needs nothing here. */
-const LAZY_PARTS = ['bt', 'games', 'rally', 'games2', 'games3', 'teach']; // TEACH-1: teach, the lessons (loaded by the math map: teachWarm, 46-home.js)
+const LAZY_PARTS = ['bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12']; // TEACH-1: teach, the lessons (loaded by the math map: teachWarm, 46-home.js); TEACH-2b: teach12, the grade 1-2 lessons, with it
 const GAME_PARTS = ['games', 'rally', 'games2', 'games3']; // the Game Room's parts (gameRoom in 58-playtime.js); bt is BT.start's (P6-03)
 const partsAsked = {};
 function partReady(stem) {

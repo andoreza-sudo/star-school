@@ -8120,7 +8120,7 @@ function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],ws=PATHS[p].
   const on=st&&st.querySelector('.wchip.on');if(on)st.scrollLeft=Math.max(0,on.offsetLeft-(st.clientWidth-on.offsetWidth)/2);
   if(p=='math'&&typeof LS!='undefined')setTimeout(()=>LS.mapAdd(),0)} // TEACH-1: the lesson offer by a stop (52-lesson.js), after the draw (it reads the layout)
 // TEACH-1: the lessons' part loads once the math map is drawn (Pre-K to 2nd), then adds its offer; a part that does not load just shows no offer
-function teachWarm(){if(TEACH.off||gradeOf()>2||partReady('teach'))return;partLoad('teach').then(ok=>{if(ok&&MAPP=='math'&&$('#map'))LS.mapAdd()})}
+function teachWarm(){if(TEACH.off||gradeOf()>2||partReady('teach12'))return;partsLoad(['teach','teach12']).then(bad=>{if(!bad&&MAPP=='math'&&$('#map'))LS.mapAdd()})} // TEACH-2b: and the grade 1-2 lessons
 function open(p,i){const n=NODES[p][i];if(n.sk=='boss')bossIntro(p,i);else if(n.sk.startsWith('es_')&&SPN[n.sk.slice(3)]&&n.lv==1)learn(p,i);else start(p,i)}
 
 function learn(p,i){const n=NODES[p][i],items=SPN[n.sk.slice(3)],rec=items.every(it=>esHas(it[5]||esFull(it))); // ES-AUDIO: every card recorded
@@ -12192,6 +12192,7 @@ function appFiles() {
     ['games2', typeof GAMES2_VER === 'undefined' ? null : GAMES2_VER],
     ['games3', typeof GAMES3_VER === 'undefined' ? null : GAMES3_VER],
     ['teach', typeof TEACH_VER === 'undefined' ? null : TEACH_VER],
+    ['teach12', typeof TEACH12_VER === 'undefined' ? null : TEACH12_VER],
     ['data', typeof DATA_VER === 'undefined' ? null : DATA_VER],
   ];
 }
@@ -12219,7 +12220,7 @@ function dataMissing(stems) {
    (with Back), loads the parts one after the other (rally and games2 call GH.reg from games while they load), then runs go() only if that
    screen is still showing, so a child who tapped Back meanwhile is never pulled into the games. A part that does not load shows
    the Try again screen. Keep it generic: a new game in games2 needs nothing here. */
-const LAZY_PARTS = ['bt', 'games', 'rally', 'games2', 'games3', 'teach']; // TEACH-1: teach, the lessons (loaded by the math map: teachWarm, 46-home.js)
+const LAZY_PARTS = ['bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12']; // TEACH-1: teach, the lessons (loaded by the math map: teachWarm, 46-home.js); TEACH-2b: teach12, the grade 1-2 lessons, with it
 const GAME_PARTS = ['games', 'rally', 'games2', 'games3']; // the Game Room's parts (gameRoom in 58-playtime.js); bt is BT.start's (P6-03)
 const partsAsked = {};
 function partReady(stem) {

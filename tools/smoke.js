@@ -279,7 +279,7 @@ async function main() {
       const files = g.files.map(f => f[0] + '.' + g.dv + '.js'), want = 'data.' + g.dv + '.js';
       const startFiles = g.files.filter(f => !g.lazy.includes(f[0])).map(f => f[0] + '.' + g.dv + '.js'); // P6-02: the <script> tags at start
       const btF = 'bt.' + g.dv + '.js', gamesF = 'games.' + g.dv + '.js'; // A11c: the order of the parts is build.py's, so name them
-      if (JSON.stringify(g.lazy) !== '["bt","games","rally","games2","games3","teach"]' || g.btIn || JSON.stringify(g.src) !== JSON.stringify(startFiles) || files[files.length - 1] !== want || !g.ready || !(g.gram > 0 && g.vocab > 0 && g.comp > 0 && g.info > 0)
+      if (JSON.stringify(g.lazy) !== '["bt","games","rally","games2","games3","teach","teach12"]' || g.btIn || JSON.stringify(g.src) !== JSON.stringify(startFiles) || files[files.length - 1] !== want || !g.ready || !(g.gram > 0 && g.vocab > 0 && g.comp > 0 && g.info > 0)
         || g.spell !== 'function' || !g.vq || g.pz !== '3:16:16' || g.ix < 0) {
         fail('A11 data globals: ' + JSON.stringify(g));
       }
@@ -331,8 +331,8 @@ async function main() {
       if (room !== 3) fail('A11b: the Game Room did not open (' + room + ' of 3 games)');
       const lz = await d.page.evaluate(() => ({ css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(), games: [typeof garage, typeof blockBuilder, typeof colorMenu].join(),
         ready: LAZY_PARTS.map(partReady).join(), tags: [...document.scripts].filter(s => s.src).map(s => s.getAttribute('src')).join() }));
-      if (lz.css !== 'main,css-gen2,css-bt,css-games,css-rally,css-games2,css-games3' || lz.games !== 'function,function,function' || lz.ready !== g.lazy.map(x => String(x !== 'teach')).join() // TEACH-1: the lessons are the math map's, not the Game Room's
-        || lz.tags !== startFiles.concat(g.lazy.filter(x => x !== 'teach').map(x => x + '.' + g.dv + '.js')).join()) fail('P6-02: the Game Room did not load the games parts: ' + JSON.stringify(lz));
+      if (lz.css !== 'main,css-gen2,css-bt,css-games,css-rally,css-games2,css-games3' || lz.games !== 'function,function,function' || lz.ready !== g.lazy.map(x => String(!/^teach/.test(x))).join() // TEACH-1: the lessons are the math map's, not the Game Room's (TEACH-2b: both parts)
+        || lz.tags !== startFiles.concat(g.lazy.filter(x => !/^teach/.test(x)).map(x => x + '.' + g.dv + '.js')).join()) fail('P6-02: the Game Room did not load the games parts: ' + JSON.stringify(lz));
       if (opened.length === 3 && room === 3) step('A11b: puzzle types ' + g.bt + ' registered from ' + btF + ', its <style> in, opened from the hub: '
         + opened.join(', ') + '; Game Room from ' + gamesF + ' opened');
       await d.page.evaluate(() => home());
@@ -10400,7 +10400,7 @@ async function main() {
           const ver = DATA_VER, c = await caches.open('starschool-' + ver);
           return { ver, cached: (await c.keys()).map(r => r.url.split('/').pop()).sort(), tags: [...document.scripts].filter(s => s.src).map(s => s.getAttribute('src')) };
         });
-        const lazyF = ['bt', 'games', 'rally', 'games2', 'games3', 'teach'].map(x => x + '.' + c1.ver + '.js'); // P6-03: bt is on demand too
+        const lazyF = ['bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12'].map(x => x + '.' + c1.ver + '.js'); // P6-03: bt is on demand too
         if (!lazyF.every(f => c1.cached.includes(f)) || !c1.cached.includes('index.html')) bad.push('the service worker did not precache the on-demand parts: ' + c1.cached.join(' '));
         if (lazyF.some(f => c1.tags.includes(f))) bad.push('index.html loaded an on-demand part at start: ' + c1.tags.join(' '));
         // ES-AUDIO: the recordings are cached at install too, in their own cache (none of them was loaded by the page itself)
@@ -12404,6 +12404,154 @@ async function main() {
         'the child\'s own build, a star when kept, spoken); a repair opens with the contrast; the report card\'s lessons card (four stages, what we noticed, ' +
         'Practise this next), loaded by the report on a cold start; the Grown-ups switch turns lessons off and on; no console errors, no network requests');
     }
+
+    // TEACH-2b the grade 1-2 lessons (52g-drafted.js, 52f-bench.js, 52e-words.js in the part teach12; docs/drafts), at 360x740 and 800x1280
+    // on the midway save as a 2nd grader. teach12 is not loaded at start; the math map loads it with teach. Carry the 1 (reviewed by the owner)
+    // is live; an unreviewed lesson is not. Three lessons, each turned on in the page with its draft's words (lsEnable, as tools/test.js
+    // does: they need not be live), played through every beat by the real controls: Carry the 1 (the regrouping blocks: the trade button),
+    // Half Past (the clock with named hands), Dimes Too (the coin purse); each screen fits. The workbench pieces by their buttons. A Practice
+    // round on Carry the 1 scores the same with and without the record's check() wrap, and only the wrap writes the misconception page.
+    // Screenshots (TEACH2B_SHOTS, default tools/out): each beat of the three lessons. No console errors, no network requests.
+    {
+      const bad = [], notes = [], shots = process.env.TEACH2B_SHOTS || require('path').join(__dirname, 'out'), A = require('./author.js');
+      const W = Object.fromEntries(A.drafts().filter(x => x.d).map(x => [x.d.id, { idea: x.d.idea, beats: x.d.beats, reasons: x.d.reasons, home: x.d.home }]));
+      require('fs').mkdirSync(shots, { recursive: true });
+      // one item answered by the real controls: a raw model is brought to lsRight(q) (52d-notebook.js), ten ones traded for a ten by its button
+      const act2 = async (pg, wrong) => {
+        await pg.waitForFunction(() => !LS.st || (document.querySelector('#lsinp') && !document.querySelector('#lsinp.ls-wait') && !LS.u.lock), null, { timeout: 15000 });
+        const it = await pg.evaluate(() => { const it = LS.st && LS.cur(LS.st); if (!it) return null; const q = it.q || {}, r = q.kind ? lsRight(q) : null;
+          return { m: it.m, petOk: it.petOk, kind: q.kind, model: q.model, ans: q.ans, right: r, types: q.m && q.m.types, goal: q.goal, choices: q.choices && q.choices.map(c => c.v), beat: LSB[LS.st.b] }; });
+        if (!it) return null;
+        if (it.m == 'say') await pg.click('#lsnext');
+        else if (it.m == 'judge') await pg.click(it.petOk ? '#lsyes' : '#lsno');
+        else if (it.kind == 'num') { for (const d of wrong ? String(+it.ans + 1) : String(it.ans)) await pg.click(`.k[data-k="${d}"]`); await pg.click('.k[data-k="go"]'); }
+        else if (it.kind == 'choice') await pg.click(`.ch[data-i="${it.choices.indexOf(wrong ? it.choices.find(c => c != it.ans) : it.ans)}"]`);
+        else if (it.kind == 'make') {
+          let want = it.right;
+          if (it.model == 'hands' || it.model == 'clock') want = String(want).split(':').map(Number);
+          else if (it.model == 'coins') want = Array.isArray(want) ? want : await pg.evaluate(v => mmGreedy(LS.cur(LS.st).q.m.types, +v), want);
+          else if (it.model == 'array') want = it.goal == 'any' ? [3, 4] : await pg.evaluate(() => K2MM.array.ans(LS.cur(LS.st).q));
+          else if (!Array.isArray(want)) want = [+want];
+          if (wrong) want = it.model == 'hands' || it.model == 'clock' ? [want[0] % 12 + 1, want[1]] : want.map((x, i) => (i == want.length - 1 ? (x > 0 ? x - 1 : x + 1) : x));
+          if (it.model == 'b10r') for (let k = 1; k < 3; k++) for (let n = 0; n < 3; n++) { // trade first, by the button
+            const c = await pg.evaluate(() => LS.u.mm.slice()), j = c.length - k; if (j < 1 || c[j] < 10) break;
+            await pg.click(`.ls-tr[data-i="${10 + j}"][data-d="1"]`); }
+          if (it.model == 'coins') { for (let i = 0; i < want.length; i++) for (let j = 0; j < want[i]; j++) await pg.click(`.mmcoin[data-i="${i}"]`); }
+          else if (it.model == 'hands' || it.model == 'clock') {
+            for (let n = 0; n < 12 && await pg.evaluate(w => LS.u.mm[1] != w, want[1]); n++) await pg.click('.mmb[data-i="1"][data-d="5"]');
+            for (let n = 0; n < 12 && await pg.evaluate(w => LS.u.mm[0] != w, want[0]); n++) await pg.click('.mmb[data-i="0"][data-d="1"]');
+          } else {
+            const cur = await pg.evaluate(() => LS.u.mm.slice());
+            for (let i = 0; i < want.length; i++) { const d = want[i] - cur[i]; for (let j = 0; j < Math.abs(d); j++) await pg.click(`.mmb[data-i="${i}"][data-d="${d > 0 ? 1 : -1}"]`); }
+          }
+          if (await pg.evaluate(() => document.querySelector('#mcheck').disabled)) await pg.click('.mmb[data-i="0"][data-d="1"]'); // nothing moved yet (a wrong try that equals the start)
+          await pg.click('#mcheck');
+        } else throw new Error('lesson item ' + JSON.stringify(it));
+        return it;
+      };
+      const step2 = async (pg, wrong) => { const s0 = await pg.evaluate(() => LS.seq), it = await act2(pg, wrong); await pg.waitForFunction(x => !LS.st || LS.seq > x, s0, { timeout: 15000 }); return it; };
+      const fit2 = (pg, at) => pg.evaluate(() => {
+        const o = [], vw = document.documentElement.clientWidth, qa = document.querySelector('.qarea');
+        if (document.documentElement.scrollWidth > vw) o.push('sideways scroll');
+        if (qa && qa.scrollWidth > qa.clientWidth + 1) o.push('.qarea overflows sideways');
+        for (const b of document.querySelectorAll('#lsinp button, #lsplay .ls-hear')) { const r = b.getBoundingClientRect(); if (r.width && (r.width < 47.5 || r.height < 47.5)) o.push('small button ' + (b.id || b.className)); if (r.right > vw + 1 || r.left < -1) o.push('button off screen ' + (b.id || b.className + ' ' + b.textContent)); }
+        if (/undefined|NaN|\{[a-z]+\}/.test(document.querySelector('#lsplay').textContent)) o.push('a hole in the words: ' + document.querySelector('#lsbub').textContent);
+        return o;
+      }).then(o => o.forEach(x => bad.push(at + x)));
+      for (const [w, h] of [[360, 740], [800, 1280]]) {
+        const ta = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ta.page, at = 'TEACH-2b ' + w + 'x' + h + ' ';
+        try {
+          // 1. teach12 loads with the math map, after teach; only reviewed words are live
+          const s0 = await pg.evaluate(() => ({ ready: partReady('teach12'), d: typeof LS_DRAFTED, tag: [...document.scripts].some(s => /teach12\./.test(s.src)) }));
+          if (s0.ready || s0.d !== 'undefined' || s0.tag) bad.push(at + 'teach12 is loaded at start: ' + JSON.stringify(s0));
+          await pg.evaluate(() => { S.grade = 2; S.know = {}; delete S.les; S.lm = []; const i = NODES.math.findIndex(n => nid(n) === 'big3'); for (let j = 0; j < NODES.math.length; j++) setSt('math', j, j < i ? 2 : 0); save(); pathMap('math', NODES.math[i].wi); });
+          await pg.waitForFunction(() => partReady('teach12') && typeof LS != 'undefined', null, { timeout: 15000 });
+          await pg.waitForSelector('.ls-go', { timeout: 10000 });
+          const live = await pg.evaluate(() => ({ big3: !!LESSONS.big3, time2: !!LESSONS.time2, plan: planToday(S, lsDay()).id, n: Object.keys(LS_DRAFTED).length, label: document.querySelector('.ls-go').getAttribute('aria-label') }));
+          if (!live.big3 || live.time2 || live.plan !== 'big3' || live.n < 30 || !/^Learn Carry the 1 with /.test(live.label)) bad.push(at + 'live lessons: ' + JSON.stringify(live));
+          // 2. three lessons through every beat, the first show-me item and one Together item wrong; screenshots of each beat
+          await pg.evaluate(d => { LS.WAKE = 400; for (const id of ['time2', 'coins2']) lsEnable(id, d[id]); }, { time2: W.time2, coins2: W.coins2 });
+          for (const id of ['big3', 'time2', 'coins2']) {
+            await pg.evaluate(id => { delete S.les; S.know = {}; const i = NODES.math.findIndex(n => nid(n) === id); for (let j = 0; j <= i; j++) setSt('math', j, j < i ? 2 : 0); LS.start(id); }, id);
+            await pg.waitForSelector('#lsplay', { timeout: 5000 });
+            const path = [], seen = [];
+            let missed = false, traded = false;
+            for (let n = 0; n < 40; n++) {
+              const b = await pg.evaluate(() => LS.st ? LSB[LS.st.b] + ':' + LS.cur(LS.st).m + ':' + (LS.cur(LS.st).q && LS.cur(LS.st).q.st) : null);
+              if (!b) break;
+              await pg.waitForFunction(() => !LS.st || !document.querySelector('#lsinp.ls-wait'), null, { timeout: 15000 });
+              const k = b.split(':').slice(0, 2).join(':') + (b.startsWith('tog') ? ':' + b.split(':')[2] : '');
+              if (!seen.includes(k)) { seen.push(k); await fit2(pg, at + id + ' ' + k + ': ');
+                if (w == 360) await pg.screenshot({ path: require('path').join(shots, `teach2b-${id}-${seen.length}-${k.replace(/:/g, '-')}-${w}x${h}.png`) }); }
+              if (id == 'big3' && b == 'tog:ask:0' && !traded) traded = await pg.evaluate(() => LS.u.mm[1] >= 10 && !!document.querySelector('.ls-tr[data-i="11"][data-d="1"]'));
+              const wrong = (b.startsWith('pre:ask') && !path.length) || (b.startsWith('tog:ask') && !missed && n > 2);
+              if (wrong && b.startsWith('tog')) missed = true;
+              path.push(b.split(':').slice(0, 2).join(':'));
+              if (wrong && b.startsWith('tog')) {
+                const sq = await pg.evaluate(() => LS.seq); await act2(pg, true);
+                await pg.waitForFunction(() => !LS.u.lock, null, { timeout: 5000 }).catch(() => {});
+                const r = await pg.evaluate(x => ({ hint: document.querySelector('#hint').innerHTML.length, same: LS.seq === x }), sq);
+                if (!r.hint || !r.same) bad.push(at + id + ' a miss in Together: ' + JSON.stringify(r));
+              }
+              await step2(pg, wrong && b.startsWith('pre'));
+            }
+            const order = [...new Set(path.map(x => x.split(':')[0]))].join();
+            if (order !== 'pre,rem,exp,name,tog,chk,show' && order !== 'pre,rem,exp,name,tog,chk,show,win') bad.push(at + id + ' beats ' + order);
+            if (id == 'big3' && !traded) bad.push(at + 'Carry the 1: the build did not start with both numbers\' blocks and a trade button');
+            await pg.waitForSelector('#lsend', { timeout: 10000 });
+            if (w == 360) await pg.screenshot({ path: require('path').join(shots, `teach2b-${id}-end-${w}x${h}.png`) });
+            const end = await pg.evaluate(id => ({ k: S.know[id] && S.know[id].s, lm: S.lm[S.lm.length - 1], idea: document.querySelector('.ls-idea').textContent, tq: S.tq }), id);
+            if (!end.k || !end.lm || end.lm[0] !== id || !end.idea || /\{/.test(end.tq) || !/Ask /.test(end.tq)) bad.push(at + id + ' the end: ' + JSON.stringify(end));
+          }
+          // 3. the workbench pieces by their buttons: trade and break on the blocks, the groups steppers, the hands' named rows
+          const wb = await pg.evaluate(async () => {
+            const o = {}, show = q => { LS.st = null; view(`<div class="play qs" id="lsplay"><div class="inp" id="lsinp">${KIND.make.render(q)}</div></div>`); LS.u = { lock: false }; KIND.make.bind(q, LS.u, () => {}); if (q.s0) { LS.u.mm = q.s0.slice(); KIND.make.draw(q, LS.u); } };
+            show({ kind: 'make', model: 'b10r', m: { places: 2, target: 85 }, goal: 'regroup', ans: '85', s0: [7, 15], html: '' });
+            document.querySelector('.ls-tr[data-i="11"][data-d="1"]').click(); o.trade = LS.u.mm.join();
+            document.querySelector('.ls-tr[data-i="11"][data-d="-1"]').click(); o.brk = LS.u.mm.join();
+            o.btns = [...document.querySelectorAll('.mmw button')].map(b => { const r = b.getBoundingClientRect(); return Math.round(Math.min(r.width, r.height)); });
+            show({ kind: 'make', model: 'groups', m: { g: 3, n: 4, target: 12 }, goal: 'groups', ans: '12', html: '' });
+            for (let i = 0; i < 2; i++) document.querySelector('.mmb[data-i="0"][data-d="1"]').click(); for (let i = 0; i < 3; i++) document.querySelector('.mmb[data-i="1"][data-d="1"]').click();
+            o.grp = LS.u.mm.join() + ' ' + document.querySelectorAll('.mmv circle').length;
+            show({ kind: 'make', model: 'hands', m: { one: false }, eq: 'exact', ans: '4:30', html: '' });
+            o.hands = [...document.querySelectorAll('.mml')].map(x => x.textContent).join('|');
+            return o;
+          });
+          if (wb.trade !== '8,5' || wb.brk !== '7,15' || wb.btns.some(x => x < 47) || wb.grp !== '3,4 3' || wb.hands !== 'Short hand: hour|Long hand: minutes') bad.push(at + 'workbench: ' + JSON.stringify(wb));
+          // 4. Practice on Carry the 1: the same answers score the same with and without the wrap; only the wrap writes the page of wrong answers
+          const prac = async wrap => {
+            await pg.evaluate(wrap => {
+              const qs = []; for (let s = 1; qs.length < 3; s++) { const q = genQ('big', 3, s); if (q.kind == 'num' && /^\d+ \+ \d+ = \?$/.test(q.label)) qs.push(q); }
+              window.__c0 = check; if (!wrap) check = check.lsKnow; S.know = {};
+              if (G) G.dead = true; G = newG({ sk: 'big', n: 3, pool: qs }); next();
+            }, wrap);
+            const out = [];
+            for (let i = 0; i < 3; i++) {
+              await pg.waitForFunction(i => G.q && !G.lock && G.done == i && document.querySelector('#slot'), i, { timeout: 10000 });
+              out.push(await pg.evaluate(i => { const q = G.q, nc = knowPredict(lsNums(q)).nocarry; if (i == 1 && nc) check(nc[0], null); const t = G.tries; check(q.ans, null);
+                return [q.label, t, G.score, G.done]; }, i));
+            }
+            const r = await pg.evaluate(() => { const r = { score: G.score, done: G.done, res: G.res.join(), w: ((S.know.big3 || {}).w || []).length }; G.dead = true; check = window.__c0; return r; });
+            await vwait(pg, 3000);
+            return Object.assign(r, { out });
+          };
+          const pw = await prac(true), po = await prac(false);
+          const same = r => JSON.stringify([r.out.map(x => x.slice(1)), r.out.map(x => x[0]).sort()]); // newG may order the pool its own way
+          if (same(pw) !== same(po) || pw.score !== po.score || pw.res !== po.res || pw.w !== 1 || po.w !== 0) bad.push(at + 'Practice with and without the wrap: ' + JSON.stringify([pw, po]));
+          await pg.evaluate(() => home());
+          notes.push(w + 'x' + h);
+        } catch (e) { bad.push(at + (e.stack || e).toString().split('\n').slice(0, 3).join(' ')); }
+        for (const e of ta.errors) bad.push(at + e);
+        for (const u of ta.network) bad.push(at + 'network request: ' + u);
+        await ta.ctx.close();
+      }
+      if (bad.length) fail('TEACH-2b the grade 1-2 lessons:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('TEACH-2b: the grade 1-2 lessons at ' + notes.join(' and ') + ': teach12 loads with the math map; Carry the 1 is live and offered, unreviewed lessons are not; ' +
+        'Carry the 1, Half Past and Dimes Too (turned on with their drafts) through every beat by the real controls (trade, clock hands, coin purse), every screen fitting with no ' +
+        'hole in the words; the workbench buttons; a Practice round scores the same with and without the record\'s wrap; no console errors, no network requests');
+    }
+    // end TEACH-2b
 
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');

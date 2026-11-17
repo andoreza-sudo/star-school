@@ -302,6 +302,11 @@ const SCREENS = {
   'teach-notebook': { run: async p => { await teachReady(p); await p.evaluate(() => { window.say = window.__a11y.say; teachSave(); NB.open(); }); await p.waitForTimeout(600); } },
   'teach-contrast': { run: async p => { await teachReady(p); await p.evaluate(() => { window.say = window.__a11y.say; teachSave(); LS.WAKE = 400;
     const st = LS.make('tenf2', { seed: 3, day: lsDay(), repair: 'given' }); st.pre = [true, false]; LS.beat(st, LSB.indexOf('exp')); LS.st = st; LS.show(); }); await p.waitForTimeout(1500); } },
+  // TEACH-2b: the workbench pieces of the grade 1-2 lessons (teach12), each as a Together build: the blocks with trade buttons (Carry the 1,
+  // live), the clock with named hands and equal groups (Half Past, Equal Groups: turned on with their drafts' words, as tools/test.js does)
+  'teach12-blocks': { run: async p => teach12Tog(p, 'big3') },
+  'teach12-clock': { run: async p => teach12Tog(p, 'time2') },
+  'teach12-groups': { run: async p => teach12Tog(p, 'mult1') },
   'report-lessons': { adult: true, run: async p => { await teachReady(p); await p.evaluate(() => { teachSave(); report(); document.querySelector('#rp-teach').scrollIntoView(); }); await p.waitForTimeout(500); } },
   'hill-garage': { run: ev(() => { gtime(); garage(); }) },
   'hill-drive': { run: ev(() => { gtime(); hcStart('meadow'); }), main: '.pedal', sheet: pauseSheet },
@@ -366,6 +371,14 @@ const SCREENS = {
 async function teachReady(p) {
   await p.evaluate(() => partLoad('teach'));
   await p.waitForFunction(() => typeof NB != 'undefined', null, { timeout: 30000 });
+}
+async function teach12Tog(p, id) {
+  const W = Object.fromEntries(require('./author.js').drafts().filter(x => x.d).map(x => [x.d.id, { idea: x.d.idea, beats: x.d.beats, reasons: x.d.reasons, home: x.d.home }]));
+  await p.evaluate(() => partsLoad(['teach', 'teach12']));
+  await p.waitForFunction(() => typeof LS_DRAFTED != 'undefined', null, { timeout: 30000 });
+  await p.evaluate(([id, w]) => { window.say = window.__a11y.say; teachSave(); if (!LESSONS[id]) lsEnable(id, w); LS.WAKE = 400;
+    const st = LS.make(id, { seed: 5, day: lsDay() }); st.pre = [true, false]; LS.beat(st, LSB.indexOf('tog')); LS.st = st; LS.show(); }, [id, W[id]]);
+  await p.waitForTimeout(1500);
 }
 async function gamesReady(p) {
   const need = await p.evaluate(() => typeof GH == 'undefined' || !GAME_PARTS.every(partReady));
