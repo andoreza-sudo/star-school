@@ -11305,6 +11305,122 @@ async function main() {
         'at 360x740 and 800x1280, no console errors; ' + notes.join('; '));
     }
 
+    // GL-02 Star Rally's 3D look (src/js/63b-rally-gl.js), at 360x740 and 800x1280 (midway save). Headless Chrome draws WebGL with
+    // SwiftShader, where a race picks the 2D look (checked first); then RGL.soft lets it draw in 3D there: the WebGL canvas under the
+    // 2D one, frames drawn, few draw calls, the 2D canvas clear over the sky, the speed box's tag. The child's car stays readable: at
+    // a tunnel's mouth and on a bridge between its rails, every sampled pixel well inside the car's drawing is the car's own colour in
+    // the WebGL picture (nothing of the world drawn over it). The Star Rally menu's 3D switch (saved) gives the 2D look; WebGL forced off
+    // gives the 2D look; leaving gives the context back. No console errors, no requests, nothing in the app log. GL_SHOTS=<dir> as GL-01.
+    {
+      const bad = [], notes = [];
+      const dir = process.env.GL_SHOTS || require('path').join(__dirname, 'out');
+      try { require('fs').mkdirSync(dir, { recursive: true }); } catch (e) {}
+      const noGL = () => { const g = HTMLCanvasElement.prototype.getContext; HTMLCanvasElement.prototype.getContext = function (k, ...a) { return /webgl/.test(k) ? null : g.call(this, k, ...a); }; };
+      const race = async (pg, at, want) => {
+        await pg.evaluate(() => { document.querySelectorAll('.ovl').forEach(o => o.remove()); if (RL) rlStop(); rlRace('meadow-1'); });
+        await pg.waitForFunction(() => RL && RL.st.cd <= 0 && RL.st.P.v > 2000, null, { timeout: 20000 });
+        const d0 = await pg.evaluate(() => RL.st.P.d);
+        await pg.waitForTimeout(2500); // real time: the race runs on animation frames
+        const s = await pg.evaluate(() => {
+          const G = RL.gl, c = document.querySelector('#rlgl'), v = document.querySelector('#rlcv');
+          return { gl: !!(G && !G.off), canvas: !!c, under: !!(c && c.nextElementSibling === v), frames: G ? G.frames : 0, draws: G ? G.R.draws : 0, why: RL.glWhy || '', d: RL.st.P.d,
+            tag: FPS.tag, lost: G ? G.R.gl.isContextLost() : null, wide: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+            sky: [...v.getContext('2d').getImageData(Math.round(v.width / 2), Math.round(RL.v.hz * .5), 1, 1).data] };
+        });
+        if (want === '3D') {
+          if (!s.gl || !s.canvas || !s.under || !(s.frames > 20) || !(s.draws >= 5 && s.draws <= 30) || s.lost || s.tag !== '3D' || s.sky[3] !== 0) bad.push(at + '3D look not drawing: ' + JSON.stringify(s));
+        } else if (s.gl || s.canvas || s.tag !== '2D' || s.sky[3] !== 255) bad.push(at + want + ': expected the 2D look: ' + JSON.stringify(s));
+        if (/error|lost|slow/.test(s.why)) bad.push(at + want + ': the 3D look dropped: ' + s.why);
+        if (!(s.d > d0 + 2000)) bad.push(at + want + ': the race did not move: ' + JSON.stringify(s));
+        if (s.wide) bad.push(at + want + ': sideways scroll');
+        return s;
+      };
+      // the child's car in the WebGL picture, placed where kind ('t' a tunnel, 'b' a bridge) starts, plus k segments; the rivals far ahead
+      const carSeen = (pg, kind, k) => pg.evaluate(([kind, k]) => {
+        const st = RL.st, T = st.T, P = st.P, bit = kind == 't' ? 1 : 2;
+        let i = 1;
+        while (!(T.fl[i] & bit) || T.fl[i - 1] & bit) i++;
+        RL.paused = true;
+        P.d = (i + k) * RL_SEG + 50; P.x = 0; P.s = 0; P.vx = 0; P.drifting = false; P.spin = 0; P.dizzy = 0; P.shield = 0; P.boost = 0; RL.shake = 0;
+        for (const c of st.cars) c.d = P.d + 40000;
+        rlDraw(RL); rlDraw(RL);
+        const G = RL.gl, gl = G.R.gl, V = RL.v, s = V.me, sc = s.c, w = RL_CARW * V.rw, h = w * s.ar, x = V.W / 2, y = V.ground + Math.sin((RL.t || 0) * 9) * .6 * V.k;
+        const sd = sc.getContext('2d').getImageData(0, 0, sc.width, sc.height).data, px = new Uint8Array(4);
+        let n = 0, ok = 0;
+        const miss = [];
+        for (let v = .3; v <= .86; v += .05) for (let u = .18; u <= .82; u += .05) {
+          const ix = Math.floor(u * sc.width), iy = Math.floor(v * sc.height), at = (a, b) => ((iy + b) * sc.width + ix + a) * 4;
+          if ([[0, 0], [-4, 0], [4, 0], [0, -4], [0, 4]].some(([a, b]) => sd[at(a, b) + 3] < 255)) continue;
+          // the colour must be the same round the point too (not an outline), so a pixel off does not matter
+          if ([[-4, 0], [4, 0], [0, -4], [0, 4]].some(([a, b]) => Math.abs(sd[at(a, b)] - sd[at(0, 0)]) + Math.abs(sd[at(a, b) + 1] - sd[at(0, 0) + 1]) + Math.abs(sd[at(a, b) + 2] - sd[at(0, 0) + 2]) > 30)) continue;
+          gl.readPixels(Math.floor((x - w / 2 + u * w) * G.cv.width / V.W), Math.floor(G.cv.height - (y - h + v * h) * G.cv.height / V.H), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+          const q = at(0, 0), d = Math.abs(px[0] - sd[q]) + Math.abs(px[1] - sd[q + 1]) + Math.abs(px[2] - sd[q + 2]);
+          n++;
+          if (d <= 45) ok++; else if (miss.length < 4) miss.push([u.toFixed(2), v.toFixed(2), [...px.slice(0, 3)], [sd[q], sd[q + 1], sd[q + 2]]]);
+        }
+        const near = T.fl[(Math.floor(P.d / RL_SEG) + T.n - 2) % T.n];
+        RL.paused = false;
+        return { n, ok, miss, near };
+      }, [kind, k]);
+      for (const [w, h] of [[360, 740], [800, 1280]]) {
+        const at = w + 'x' + h + ' ', tag = w + 'x' + h;
+        for (const forced of [false, true]) {
+          const cx = await openApp(browser, { fixture: 'midway', width: w, height: h });
+          const pg = cx.page, shot = n => pg.screenshot({ path: require('path').join(dir, 'gl-rally-' + n + '-' + tag + '.png') }).catch(() => {});
+          try {
+            if (forced) { await pg.addInitScript(noGL); await pg.reload(); await pg.waitForSelector('#app *'); }
+            await pg.evaluate(() => { S.pt = { bank: 1800, day: today(), used: 0 }; S.sound = false; S.voice = false; save(); });
+            if (await pg.evaluate(() => partsLoad())) bad.push(at + 'the game parts did not load');
+            await pg.waitForFunction(() => typeof rlRace == 'function' && typeof RGL == 'object' && typeof GLX == 'object', null, { timeout: 15000 });
+            const d0 = await pg.evaluate(() => ({ rlGl: S.rlGl, probe: GLX.probe(), want: rlGlWant() }));
+            if (d0.rlGl !== undefined || d0.probe !== !forced || !d0.want) bad.push(at + (forced ? 'WebGL off' : 'WebGL') + ': defaults and probe ' + JSON.stringify(d0));
+            if (!forced) {
+              const sw = await race(pg, at, 'software WebGL');
+              if (sw.why !== 'software') bad.push(at + 'WebGL drawn by the CPU should pick the 2D look: ' + JSON.stringify(sw));
+              await shot('2d');
+              await pg.evaluate(() => { RGL.soft = true; });
+              const s3 = await race(pg, at, '3D');
+              await shot('3d');
+              for (const [kind, k, name] of [['t', 2, 'tunnel mouth'], ['t', 9, 'in a tunnel'], ['b', 4, 'bridge']]) {
+                const c = await carSeen(pg, kind, k);
+                if (!(c.n >= 10) || c.ok !== c.n) bad.push(at + 'the car is not fully seen at the ' + name + ': ' + JSON.stringify(c));
+                notes.push(tag + ' ' + name + ' ' + c.ok + '/' + c.n);
+                if (kind == 'b') await shot('3d-bridge');
+              }
+              notes.push(tag + ' 3D: ' + s3.draws + ' draw calls');
+              const ended = await pg.evaluate(() => { const G = RL.gl; rlStop(); return { ended: !!G.R.ended, tag: FPS.tag }; });
+              if (!ended.ended || ended.tag !== '') bad.push(at + 'leaving the race should give the WebGL context back: ' + JSON.stringify(ended));
+              // the 3D switch in the Star Rally menu: off gives the 2D look (saved), on again gives 3D
+              await pg.evaluate(() => rlMenu());
+              await pg.waitForSelector('#rl3d');
+              const m0 = await pg.evaluate(() => document.querySelector('#rl3d').checked);
+              await pg.evaluate(() => { const e = document.querySelector('#rl3d'); e.scrollIntoView(); e.click(); });
+              const g2 = await pg.evaluate(() => ({ rlGl: S.rlGl, saved: JSON.parse(localStorage.getItem('starschool-v2') || '{}').rlGl }));
+              if (!m0 || g2.rlGl !== false || g2.saved !== false) bad.push(at + 'Star Rally menu 3D switch: ' + JSON.stringify([m0, g2]));
+              await race(pg, at, '2D look chosen');
+              await pg.evaluate(() => { rlStop(); rlMenu(); });
+              await pg.waitForSelector('#rl3d');
+              await pg.evaluate(() => { const e = document.querySelector('#rl3d'); e.scrollIntoView(); e.click(); });
+              if ((await pg.evaluate(() => S.rlGl)) !== true) bad.push(at + 'the 3D switch should turn the 3D look on again');
+            } else {
+              await race(pg, at, 'WebGL off');
+              await shot('nogl');
+            }
+            const log = await pg.evaluate(() => (S.err || []).map(e => e.msg).filter(m => /3D look/.test(m)));
+            if (log.length) bad.push(at + 'app log: ' + log.join('; '));
+            await pg.evaluate(() => { if (RL) rlStop(); home(); });
+          } catch (x) { bad.push(at + (forced ? 'WebGL off: ' : '') + x.message.split('\n')[0]); }
+          for (const e of cx.errors) bad.push(at + (forced ? 'WebGL off: ' : '') + 'console error: ' + e);
+          for (const u of cx.network) bad.push(at + 'network request: ' + u);
+          await cx.ctx.close();
+        }
+      }
+      if (bad.length) fail('GL-02 Star Rally 3D look:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('GL-02: Star Rally picks the 2D look on WebGL drawn by the CPU (SwiftShader) and, with RGL.soft, draws in 3D (canvas under the 2D layer, frames, ' +
+        '5-30 draw calls, context given back on leaving), the child\'s car fully seen at a tunnel mouth, in a tunnel and on a bridge, the 2D look when the menu\'s 3D switch is off ' +
+        'and when WebGL is forced off; at 360x740 and 800x1280, no console errors; ' + notes.join('; '));
+    }
+
     // CHECK-IN (src/js/51b-checkin.js): mastery check-ins and stop badges, at 360x740 and 800x1280 on the midway save. A passed math stop
     // with enough first tries shows a 52 px Check-in button by it on the map; it opens the "Badge check-in!" sheet (Let's go, Not now);
     // the check-in is 5 questions of that stop with no Help button and a Check-in tag; a wrong first try shows the answer, no hint, and is

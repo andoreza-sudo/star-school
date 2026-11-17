@@ -1718,6 +1718,10 @@ function rlDizzy(R, x, y, w) {
   }
 }
 function rlDraw(R) {
+  // GL-02: the 3D look (63b-rally-gl.js) draws the world on #rlgl under this canvas, which then carries only what is over the car
+  const gl = !!(R.gl && !R.gl.off && rlGlFrame(R));
+  if (typeof FPS != 'undefined') FPS.tag = gl ? '3D' : '2D'; // the speed box says which look is drawing
+  if (gl) return rlGlTop(R);
   const c = R.ctx, V = R.v, st = R.st, T = st.T, N = T.n, P = st.P, W = V.W, H = V.H, hz = V.hz, col = V.col, E = V.e, wx = st.W;
   const D = wx.fog ? 80 : RL_DRAW, calm = R.calm, t = R.t || 0;
   // a short shake after a crash (none in calm mode or with reduced motion)
@@ -1726,7 +1730,7 @@ function rlDraw(R) {
   if (sh) c.translate(sh, sh * .3);
   c.fillStyle = V.sky;
   c.fillRect(-30, -30, W + 60, hz + 32);
-  if (V.sun.c && !wx.fall && !wx.fog) c.drawImage(V.sun.c, W * .1, hz * .12, V.sun.w * V.sc, V.sun.h * V.sc);
+  if (V.sun.c && !wx.fall && !wx.fog) c.drawImage(V.sun.c, W * (R.mood ? R.mood.sx : .1), hz * .12, V.sun.w * V.sc, V.sun.h * V.sc);
   rlTile(c, V.far, R.bgx * V.far.w * V.sc * .5, hz + 2, W, V.sc);
   rlTile(c, V.near, R.bgx * V.near.w * V.sc, hz + 2, W, V.sc);
   // edges of the segments ahead: x of the bending road, then projection (camera RL_PZ behind the player, following the car)
@@ -1946,7 +1950,12 @@ function rlDraw(R) {
   }
   flush();
   if (!meOK) rlDrawMe(R);
-  // rain or snow falling
+  rlFall(R);
+  c.restore();
+}
+// rain or snow falling (both looks)
+function rlFall(R) {
+  const c = R.ctx, V = R.v, wx = R.st.W, W = V.W, H = V.H, col = V.col, calm = R.calm, t = R.t || 0;
   if (wx.fall) {
     const p = new Path2D(), nf = calm ? 40 : 90, rain = wx.fall == 'rain', k = V.k;
     for (let j = 0; j < nf; j++) {
@@ -1966,7 +1975,6 @@ function rlDraw(R) {
     }
     c.globalAlpha = 1;
   }
-  c.restore();
 }
 // the boost gate: the sprite, then the three answers written on its boards
 function rlDrawGate(R, X, Y, Wd, clip) {
@@ -1981,17 +1989,20 @@ function rlDrawGate(R, X, Y, Wd, clip) {
 }
 // the player's car: centred near the bottom, leaning into turns, shaking a little on the grass, spinning after a crash;
 // drift sparks, the shield bubble, dizzy stars and speed lines
-function rlDrawMe(R) {
+// (top: the 3D look has drawn the car and its trail; only what is over the car is drawn here)
+function rlDrawMe(R, top) {
   const c = R.ctx, V = R.v, P = R.st.P, s = V.me, w = RL_CARW * V.rw, t = R.t || 0, calm = R.calm;
   if (!s.c) return;
   const h = w * s.ar, bob = P.off && !calm ? Math.sin(t * 40) * 2 * V.k : Math.sin(t * 9) * .6 * V.k;
   const ang = P.s * .05 + (P.drifting ? Math.sign(P.s) * .12 : 0) + rlSpinA(P, t, calm), x = V.W / 2 + P.s * w * .06, y = V.ground + bob;
-  if (V.trail) rlTrail(R, x, y, w, h);
-  c.save();
-  c.translate(x, y - h / 2);
-  c.rotate(ang);
-  c.drawImage(s.c, -w / 2, -h / 2, w, h);
-  c.restore();
+  if (!top) {
+    if (V.trail) rlTrail(R, x, y, w, h);
+    c.save();
+    c.translate(x, y - h / 2);
+    c.rotate(ang);
+    c.drawImage(s.c, -w / 2, -h / 2, w, h);
+    c.restore();
+  }
   if (P.shield > 0) {
     const p = new Path2D(), a = P.shield < 2 && !calm ? .35 + .25 * Math.sin(t * 12) : .55;
     p.ellipse(x, y - h * .5, w * .66, h * .78, 0, 0, Math.PI * 2);
@@ -2038,7 +2049,8 @@ const RL_TRAIL_ART = {
   star: () => [rlNest(0, 0, 40, 40, 48, 48, RL_PROPS.pstar.art())],
   rainbow: () => ['r', 'o', 'y', 'g', 'b', 'v'].map(h => ghBall(20, 20, 13, h)),
 };
-function rlTrail(R, x, y, w, h) {
+// (put: the 3D look's drawing of a piece, put(piece, x, y, size, alpha); else it is drawn on the 2D canvas)
+function rlTrail(R, x, y, w, h, put) {
   const c = R.ctx, V = R.v, tr = R.tr, P = R.st.P, pcs = V.trail, dt = Math.max(0, Math.min(.1, (R.t || 0) - (tr.t || 0)));
   tr.t = R.t || 0;
   // new pieces: up to 18 a second at speed (8 in calm mode), only while the race runs
@@ -2063,6 +2075,7 @@ function rlTrail(R, x, y, w, h) {
     const sp = pcs[tr.k[i]], L = tr.life[i];
     if (L <= 0 || !sp.c) continue;
     const sz = w * (.12 + (1 - L) * .14);
+    if (put) { put(tr.k[i], tr.x[i], tr.y[i], sz, Math.min(1, L * 1.4) * .9); continue; }
     c.globalAlpha = Math.min(1, L * 1.4) * .9;
     c.drawImage(rlMip(sp, sz), tr.x[i] - sz / 2, tr.y[i] - sz / 2, sz, sz);
   }
@@ -2223,7 +2236,8 @@ function rlMenu(place) {
    <p>${mode == 'pro' ? 'Pro: hold Go to speed up, drift through bends; bumps cost more time and the animals race hard.' : 'Easy: the car drives by itself. You steer.'}</p></div>
    <ul class="rl-how">${how.map(([i, t]) => `<li><span class="rl-hi">${ico(i, 22)}</span><span>${esc(t)}</span></li>`).join('')}</ul>
    ${UI.sw('Boost gates: drive through the right answer to zoom', rlGatesOn(), 'rlquiz')}
-   ${rlTiltOK() ? UI.sw('Steer by tilting the tablet', r.tilt, 'rltilt') : ''}</section></div>`);
+   ${rlTiltOK() ? UI.sw('Steer by tilting the tablet', r.tilt, 'rltilt') : ''}
+   ${UI.sw('3D look (off: the flat look, for slow tablets)', S.rlGl !== false, 'rl3d')}</section></div>`);
   GH.wire({ back: () => gameRoom() });
   const again = () => { const y = $('.scroll').scrollTop; rlMenu(); $('.scroll').scrollTop = y; };
   const gt = () => {
@@ -2279,6 +2293,7 @@ function rlMenu(place) {
     rlRace(b.dataset.tt, { trial: true });
   });
   UI.segOn($('#rlmode'), v => { r.mode = v; save(); again(); });
+  $('#rl3d').onchange = e => { S.rlGl = e.target.checked; RL_GLOFF = false; save(); }; // GL-02 (on again: 3D again, even after it was too slow)
   $('#rlquiz').onchange = e => { r.gates = e.target.checked ? 'on' : 'off'; save(); }; // G-FEEL2: the choice (rlGatesOn, 80-grown.js)
   if ($('#rltilt')) $('#rltilt').onchange = e => {
     r.tilt = e.target.checked;
@@ -2440,6 +2455,8 @@ function rlStop() {
   removeEventListener('keydown', RL.kd);
   removeEventListener('keyup', RL.ku);
   removeEventListener('deviceorientation', RL.ori);
+  if (RL.gl) { GLX.end(RL.gl.R); RL.gl.off = true; } // GL-02: its WebGL context goes at once (a tablet keeps only a few)
+  if (typeof FPS != 'undefined') FPS.tag = '';
   RL = null;
 }
 function rlMsg(t, ms = 1200, cls = '') {
@@ -2468,8 +2485,19 @@ function rlRace(tid, o = {}) {
   <div class="rl rl-${mode}" id="rl"><canvas id="rlcv" role="img" aria-label="The race track"></canvas><div class="rl-msg" id="rlmsg" aria-live="polite"></div>
   <div class="rl-q" id="rlq" hidden></div><div class="rl-ctl">${btn('rll', 'arrow-left', 'Steer left')}${btn('rlr', 'arrow-right', 'Steer right')}` +
     `${mode == 'pro' ? btn('rlgo', 'bolt', 'Go faster', 'Go') : ''}</div></div>`);
-  const cv = $('#rlcv');
-  RL = { st, cv, ctx: cv.getContext('2d', { alpha: false }), ptr: {}, key: {}, tilt: 0, bgx: 0, t: 0, acc: 0, last: 0, raf: 0, paused: false, ft: [], fi: [],
+  const cv = $('#rlcv'), mood = rlMood(seed), R0 = {};
+  // GL-02: the 3D look (63b-rally-gl.js) draws the world on a WebGL canvas under #rlcv, which then keeps its alpha; without WebGL,
+  // or with the 3D look off, #rlcv draws everything as before. mood: the race's own light and scenery (drawing only, both looks)
+  let glc = null, glr = null;
+  if (rlGlWant()) {
+    glc = document.createElement('canvas');
+    glc.id = 'rlgl';
+    glc.setAttribute('aria-hidden', 'true');
+    cv.parentNode.insertBefore(glc, cv);
+    glr = rlGlStart(R0, glc);
+    if (!glr) glc.remove();
+  }
+  RL = { st, cv, ctx: cv.getContext('2d', { alpha: !!glr }), gl: glr, glWhy: R0.glWhy || '', mood, ptr: {}, key: {}, tilt: 0, bgx: mood.bg, t: 0, acc: 0, last: 0, raf: 0, paused: false, ft: [], fi: [],
     cd: 4, chips: {}, q: 1, fc: 0, qAt: 0, cup, trial, twist, shake: 0, calm: rlCalm(), msgT: 0, hornT: 0, horn: r.horn || 'beep' };
   rlSize(RL);
   RL.rs = () => { if (RL) rlSize(RL); };
@@ -2563,7 +2591,8 @@ function rlRace(tid, o = {}) {
     // a slow tablet: fewer pixels (down to 60 %) when frames take long; back up when there is time to spare
     if (++RL.fc % 90 == 0 && RL.fi.length >= 60) {
       const med = RL.fi.slice(-60).sort((a, b) => a - b)[30], q = RL.q;
-      if (med > 26 && RL.q > .6) RL.q = Math.max(.6, RL.q - .15);
+      if (rlGlPace(RL, med)) {} // GL-02: the 3D look first draws fewer of its own pixels, then gives way to the 2D look
+      else if (med > 26 && RL.q > .6) RL.q = Math.max(.6, RL.q - .15);
       else if (med < 18 && RL.q < 1 && RL.fc - RL.qAt > 300) RL.q = Math.min(1, RL.q + .1);
       if (RL.q != q) {
         RL.qAt = RL.fc;
