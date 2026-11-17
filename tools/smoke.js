@@ -262,28 +262,31 @@ async function main() {
     // P6-02: the games parts (LAZY_PARTS) are not loaded at start: index.html has no tag for them and their CSS is not in yet; the
     // Game Room loads them (and their CSS) when it opens. A games or games2 file that is stale or missing lets the app start, and
     // the Game Room shows Try again instead (with the App log line); with the file back, Try again opens the Game Room.
+    // P6-03: bt (the puzzle code) is LAZY too: not loaded at start (lazy: true keeps openApp from loading it), the types are listed
+    // from BT.CAT, and the puzzles below load it from the hub. A missing bt file lets the app start; a puzzle shows Try again.
     {
-      const d = await openApp(browser, { fixture: 'midway' });
+      const d = await openApp(browser, { fixture: 'midway', lazy: true });
       const g = await d.page.evaluate(() => {
         const src = [...document.scripts].filter(s => s.src).map(s => s.getAttribute('src'));
         const vq = genQ('vocab', 1, 4242);
         const pz = PUZ.sudoku.A.easy[0].split('|');
         const ix = NODES.read.findIndex(n => n.sk === 'info' && n.lv === 1);
-        return { src, files: appFiles(), lazy: LAZY_PARTS, teach: TEACH_PARTS, dv: DATA_VER, ready: dataReady(), gram: BANK.gram.length, vocab: BANK.vocab.length, comp: PASS.comp.length,
+        return { src, files: appFiles(), lazy: LAZY_PARTS, btIn: partReady('bt') || typeof MZ != 'undefined', dv: DATA_VER, ready: dataReady(), gram: BANK.gram.length, vocab: BANK.vocab.length, comp: PASS.comp.length,
           info: PASS.info.length, spell: typeof genSpell, vq: !!(vq.kind && vq.ans && vq.html && vq.sk === 'vocab'),
           pz: pz.length + ':' + pz[0].length + ':' + pz[1].length, ix, bt: BT.list().map(t => t.id).join(),
           css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(), games: [typeof garage, typeof blockBuilder, typeof colorMenu].join() };
       });
       const files = g.files.map(f => f[0] + '.' + g.dv + '.js'), want = 'data.' + g.dv + '.js';
-      const startFiles = g.files.filter(f => !g.lazy.includes(f[0]) && !g.teach.includes(f[0])).map(f => f[0] + '.' + g.dv + '.js'); // P6-02: the <script> tags at start (TEACH-1: not the lessons either)
+      const startFiles = g.files.filter(f => !g.lazy.includes(f[0])).map(f => f[0] + '.' + g.dv + '.js'); // P6-02: the <script> tags at start
       const btF = 'bt.' + g.dv + '.js', gamesF = 'games.' + g.dv + '.js'; // A11c: the order of the parts is build.py's, so name them
-      if (JSON.stringify(g.lazy) !== '["games","rally","games2","games3"]' || JSON.stringify(g.src) !== JSON.stringify(startFiles) || files[files.length - 1] !== want || !g.ready || !(g.gram > 0 && g.vocab > 0 && g.comp > 0 && g.info > 0)
+      if (JSON.stringify(g.lazy) !== '["bt","games","rally","games2","games3","teach"]' || g.btIn || JSON.stringify(g.src) !== JSON.stringify(startFiles) || files[files.length - 1] !== want || !g.ready || !(g.gram > 0 && g.vocab > 0 && g.comp > 0 && g.info > 0)
         || g.spell !== 'function' || !g.vq || g.pz !== '3:16:16' || g.ix < 0) {
         fail('A11 data globals: ' + JSON.stringify(g));
       }
       // KINDS2: gen2 carries a stylesheet now (src/css/37b-kinds-c.css), in before bt's (the same change as test.js P6-02)
-      // P6-02: at start only bt's <style> is in, and no game code (the games parts load when the Game Room opens, below)
-      if (!['maze', 'pattern', 'pyramid', 'balance', 'target'].every(id => g.bt.split(',').includes(id)) || g.css !== 'main,css-gen2,css-bt'
+      // P6-02: no game code at start (the games parts load when the Game Room opens, below); P6-03: nor bt's code or <style> (the
+      // puzzle types are listed from BT.CAT; their code comes with the first puzzle, below)
+      if (!['maze', 'pattern', 'pyramid', 'balance', 'target'].every(id => g.bt.split(',').includes(id)) || g.css !== 'main,css-gen2'
         || g.games !== 'undefined,undefined,undefined') fail('A11b part files: ' + JSON.stringify(g));
       await d.page.evaluate(ix => start('read', ix), g.ix);
       await d.page.waitForSelector('.bctx-p .w', { timeout: 8000 });
@@ -328,8 +331,8 @@ async function main() {
       if (room !== 3) fail('A11b: the Game Room did not open (' + room + ' of 3 games)');
       const lz = await d.page.evaluate(() => ({ css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(), games: [typeof garage, typeof blockBuilder, typeof colorMenu].join(),
         ready: LAZY_PARTS.map(partReady).join(), tags: [...document.scripts].filter(s => s.src).map(s => s.getAttribute('src')).join() }));
-      if (lz.css !== 'main,css-gen2,css-bt,css-games,css-rally,css-games2,css-games3' || lz.games !== 'function,function,function' || lz.ready !== 'true,true,true,true'
-        || lz.tags !== startFiles.concat(g.lazy.map(x => x + '.' + g.dv + '.js')).join()) fail('P6-02: the Game Room did not load the games parts: ' + JSON.stringify(lz));
+      if (lz.css !== 'main,css-gen2,css-bt,css-games,css-rally,css-games2,css-games3' || lz.games !== 'function,function,function' || lz.ready !== g.lazy.map(x => String(x !== 'teach')).join() // TEACH-1: the lessons are the math map's, not the Game Room's
+        || lz.tags !== startFiles.concat(g.lazy.filter(x => x !== 'teach').map(x => x + '.' + g.dv + '.js')).join()) fail('P6-02: the Game Room did not load the games parts: ' + JSON.stringify(lz));
       if (opened.length === 3 && room === 3) step('A11b: puzzle types ' + g.bt + ' registered from ' + btF + ', its <style> in, opened from the hub: '
         + opened.join(', ') + '; Game Room from ' + gamesF + ' opened');
       await d.page.evaluate(() => home());
@@ -344,7 +347,7 @@ async function main() {
       const url = 'file://' + path.join(tmp, 'index.html');
       const NOFILE = /ERR_FILE_NOT_FOUND|Failed to load resource/;
       const guard = async (label, allowed, log) => {
-        const a = await openApp(browser, { fixture: 'midway', url });
+        const a = await openApp(browser, { fixture: 'midway', url, lazy: true });
         await a.page.waitForSelector('#dataretry', { timeout: 5000 }).catch(() => {});
         const r = await a.page.evaluate(() => ({ retry: !!document.querySelector('#datamiss #dataretry'), home: !!document.querySelector('.game[data-p]'),
           stars: S.stars, coins: S.coins, math: Object.keys(S.maps.math).length, err: (S.err || []).map(e => e.msg).pop() || '',
@@ -375,9 +378,29 @@ async function main() {
       const a2 = await guard('data file of another release', /^$/, 'data file v1 does not match');
       await a2.ctx.close();
       fs.copyFileSync(path.join(ROOT, want), path.join(tmp, want));
-      // 3. A11b: no puzzle file; with it back, Try again starts the app and a maze opens from the hub
+      // 3. A11b, P6-03: no puzzle file (offline before it was cached). bt loads on demand, so Home opens and the hub draws from BT.CAT;
+      //    the level shows Try again (after "Getting the puzzles ready...") with the App log line, progress unchanged. With the file
+      //    back, Try again starts the app and a maze opens from the hub.
       fs.rmSync(path.join(tmp, btF));
-      const a3 = await guard(btF + ' missing', NOFILE, 'bt file missing');
+      const a3 = await openApp(browser, { fixture: 'midway', url, lazy: true });
+      {
+        const home = await a3.page.evaluate(() => ({ home: !!document.querySelector('#btcard'), ready: dataReady() }));
+        let hub = false;
+        try {
+          await a3.page.evaluate(() => document.querySelector('#btcard').scrollIntoView({ block: 'center' }));
+          await a3.page.click('#btcard');
+          await a3.page.click('.bt-hub [data-t="maze"]', { timeout: 5000 });
+          hub = true;
+          await a3.page.click('.bt-lv[data-l="1"]', { timeout: 5000 });
+        } catch (e) {}
+        await a3.page.waitForSelector('#dataretry', { timeout: 8000 }).catch(() => {});
+        const r = await a3.page.evaluate(() => ({ retry: !!document.querySelector('#datamiss #dataretry'), maze: !!document.querySelector('.mz-cv'),
+          stars: S.stars, coins: S.coins, err: (S.err || []).map(e => e.msg).pop() || '', wide: document.documentElement.scrollWidth > innerWidth }));
+        const bad = a3.errors.filter(e => !NOFILE.test(e));
+        if (!home.home || !home.ready || !hub || !r.retry || r.maze || r.stars !== 85 || r.coins !== 64 || r.err !== 'bt file missing (app ' + g.dv + ')' || r.wide || bad.length || a3.network.length) {
+          fail('P6-03 guard (' + btF + ' missing): ' + JSON.stringify(home) + ' hub ' + hub + ' ' + JSON.stringify(r) + ' ' + bad.concat(a3.network).join(' | '));
+        } else step('P6-03 guard, ' + btF + ' missing: Home and the hub open, the puzzle shows Try again, progress unchanged, App log: ' + r.err);
+      }
       fs.copyFileSync(path.join(ROOT, btF), path.join(tmp, btF));
       await retry(a3, btF, async pg => {
         try {
@@ -392,7 +415,7 @@ async function main() {
       // P6-02: a games part is loaded on demand, so a bad one does not stop the start: Home opens, and the Game Room shows Try again
       // (after "Getting the games ready...") with the App log line, progress unchanged
       const lazyGuard = async (label, allowed, log) => {
-        const a = await openApp(browser, { fixture: 'midway', url });
+        const a = await openApp(browser, { fixture: 'midway', url, lazy: true });
         const home = await a.page.evaluate(() => ({ home: !!document.querySelector('#groom'), ready: dataReady() }));
         await a.page.click('#groom');
         await a.page.waitForSelector('#dataretry', { timeout: 8000 }).catch(() => {});
@@ -10361,9 +10384,9 @@ async function main() {
           const ver = DATA_VER, c = await caches.open('starschool-' + ver);
           return { ver, cached: (await c.keys()).map(r => r.url.split('/').pop()).sort(), tags: [...document.scripts].filter(s => s.src).map(s => s.getAttribute('src')) };
         });
-        const lazyF = ['games', 'rally', 'games2', 'games3'].map(x => x + '.' + c1.ver + '.js');
-        if (!lazyF.every(f => c1.cached.includes(f)) || !c1.cached.includes('index.html')) bad.push('the service worker did not precache the games parts: ' + c1.cached.join(' '));
-        if (lazyF.some(f => c1.tags.includes(f))) bad.push('index.html loaded a games part at start: ' + c1.tags.join(' '));
+        const lazyF = ['bt', 'games', 'rally', 'games2', 'games3', 'teach'].map(x => x + '.' + c1.ver + '.js'); // P6-03: bt is on demand too
+        if (!lazyF.every(f => c1.cached.includes(f)) || !c1.cached.includes('index.html')) bad.push('the service worker did not precache the on-demand parts: ' + c1.cached.join(' '));
+        if (lazyF.some(f => c1.tags.includes(f))) bad.push('index.html loaded an on-demand part at start: ' + c1.tags.join(' '));
         // ES-AUDIO: the recordings are cached at install too, in their own cache (none of them was loaded by the page itself)
         const a1 = await p1.evaluate(async () => {
           const want = [...new Set(Object.values(ES_AUDIO.lines).map(m => m[0] + ES_AUDIO.ext).concat(Object.values(EN_AUDIO.lines).flatMap(m => m[1].map(f => f + EN_AUDIO.ext))))], c = await caches.open('starschool-audio'); // EN-PRAISE: the English recordings too
@@ -10387,7 +10410,7 @@ async function main() {
           return { ready: dataReady(), games: typeof GH, parts: LAZY_PARTS.map(partReady).join(), css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(),
             tags: [...document.scripts].filter(s => s.src).map(s => s.getAttribute('src')).join() };
         });
-        if (!s2.ready || s2.games !== 'undefined' || s2.parts !== 'false,false,false,false' || s2.css !== 'main,css-gen2,css-bt' || lazyF.some(f => s2.tags.includes(f))) bad.push('offline cold start: ' + JSON.stringify(s2));
+        if (!s2.ready || s2.games !== 'undefined' || s2.parts !== 'false,false,false,false,false,false' || s2.css !== 'main,css-gen2' || lazyF.some(f => s2.tags.includes(f))) bad.push('offline cold start: ' + JSON.stringify(s2));
         // 3. Home -> Game Room with real taps: the waiting screen, then the hub from the cached games parts
         // (the waiting screen is seen by an observer: from the cache it can be gone before the next look)
         await p2.evaluate(() => {
@@ -10403,7 +10426,8 @@ async function main() {
         const s3 = await p2.evaluate(() => ({ parts: LAZY_PARTS.map(partReady).join(), css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(),
           cards: document.querySelectorAll('.gh-card').length, games: GH.games.map(g => g.id).join() }));
         if (!wait || wait.line !== 'Getting the games ready...' || !wait.back || wait.hub) bad.push('no "Getting the games ready..." screen first: ' + JSON.stringify(wait));
-        if (s3.parts !== 'true,true,true,true' || s3.css !== 'main,css-gen2,css-bt,css-games,css-rally,css-games2,css-games3' || s3.cards < 5 || !/snack/.test(s3.games)) bad.push('Game Room offline: ' + JSON.stringify(s3));
+        // P6-03: the Game Room loads only the games parts, not bt
+        if (s3.parts !== 'false,true,true,true,true,false' || s3.css !== 'main,css-gen2,css-games,css-rally,css-games2,css-games3' || s3.cards < 5 || !/snack/.test(s3.games)) bad.push('Game Room offline: ' + JSON.stringify(s3));
         // 4. a game from games2 starts: Snack Stand's card, then its Open button, then the day is on screen with the shared Pause
         await p2.click('#gsnack');
         await p2.click('#snopen', { timeout: 8000 });
@@ -10415,6 +10439,22 @@ async function main() {
         await p2.click('#groom');
         const again = await p2.evaluate(() => ({ hub: !!document.querySelector('.gh-room'), wait: !!document.querySelector('#partwait') }));
         if (!again.hub || again.wait) bad.push('the second Game Room open was not immediate: ' + JSON.stringify(again));
+        // P6-03: a puzzle offline, straight from Home (no hub first, so nothing loaded bt yet): "Getting the puzzles ready...", then the
+        // maze from the cached bt part, with bt's <style>
+        await p2.evaluate(() => {
+          home(); window.__w = null;
+          new MutationObserver(() => {
+            const w = document.querySelector('#partwait');
+            if (w && !window.__w) window.__w = { line: w.textContent.trim(), back: !!document.querySelector('.top #back') };
+          }).observe(document.querySelector('#app'), { childList: true });
+          S.grade = 2; save(); BT.start('maze', BT.band(), 1);
+        });
+        await p2.locator('#btstage .mz-cv').waitFor({ timeout: 15000 }).catch(() => {});
+        const s5 = await p2.evaluate(() => ({ wait: window.__w, maze: !!document.querySelector('#btstage .mz-cv'), bt: partReady('bt'), css: [...document.querySelectorAll('head style')].map(s => s.id || 'main').join(),
+          cur: S.bt.cur && S.bt.cur.id }));
+        if (!s5.wait || s5.wait.line !== 'Getting the puzzles ready...' || !s5.wait.back || !s5.maze || !s5.bt || s5.cur !== 'maze' || !/css-bt$/.test(s5.css)) bad.push('a puzzle offline: ' + JSON.stringify(s5));
+        else notes.push('a maze opened offline from the cached ' + 'bt.' + c1.ver + '.js');
+        await p2.evaluate(() => { BT.stop(); home(); });
         // ES-AUDIO offline: say() plays a recorded Spanish line for real from the cache (no fallback to the tablet's voice)
         const a2 = await p2.evaluate(() => new Promise(res => {
           ESA.off = false; say('el perro', null, 'es');

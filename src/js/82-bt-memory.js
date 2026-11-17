@@ -352,7 +352,6 @@ const MM = (() => {
 })();
 
 BT.reg({
-  id: 'memory', name: 'Memory Match', icon: 'memory', bands: 'ABCD', allow: 1,
-  rules: 'Turn over two cards at a time. Find all the pairs.',
+  id: 'memory', // name, icon, bands, allow, rules: BT.CAT in 74-teasers.js (P6-03: Home and the hub need them before this file loads)
   make: MM.make, mount: MM.mount, solve: MM.solve,
 });

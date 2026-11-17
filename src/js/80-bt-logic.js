@@ -751,8 +751,7 @@ const LG = (() => {
 })();
 
 BT.reg({
-  id: 'logic', name: 'Logic Grid', icon: 'logic', bands: 'BCD',
-  rules: 'Read the clues. Tick who has what, and cross what cannot be.',
+  id: 'logic', // name, icon, bands, allow, rules: BT.CAT in 74-teasers.js (P6-03: Home and the hub need them before this file loads)
   make: (band, level, rnd) => LG.make(band, level, rnd),
   mount: (el, p, api) => LG.mount(el, p, api),
   solve: p => LG.solve(p),

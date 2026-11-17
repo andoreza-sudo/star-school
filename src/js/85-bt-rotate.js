@@ -295,7 +295,6 @@ const ROT = (() => {
 })();
 
 BT.reg({
-  id: 'rotate', name: 'Turn It', icon: 'rotate', bands: 'ABCD', allow: 1,
-  rules: 'Find the same shape, turned. A flipped shape is not the same!',
+  id: 'rotate', // name, icon, bands, allow, rules: BT.CAT in 74-teasers.js (P6-03: Home and the hub need them before this file loads)
   make: ROT.make, mount: ROT.mount, solve: ROT.solve,
 });

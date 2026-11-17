@@ -763,8 +763,7 @@ TG.mount = function (el, p, api) {
 };
 
 BT.reg({
-  id: 'tangram', name: 'Tangram', icon: 'tangram', bands: 'ABCD',
-  rules: 'Fill the shape with the pieces. Drag a piece in; tap a piece twice to turn it.',
+  id: 'tangram', // name, icon, bands, allow, rules: BT.CAT in 74-teasers.js (P6-03: Home and the hub need them before this file loads)
   make: (band, level, rnd) => TG.make(band, level, rnd),
   mount: (el, p, api) => TG.mount(el, p, api),
   solve: p => TG.solve(p),

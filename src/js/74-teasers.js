@@ -3,9 +3,16 @@
    the hub, the level strip, the play frame (top bar, timer, hint button with tiers and a cooldown, restart), the win card, stars,
    game time, saving, level unlocking and the seeded random numbers.
 
+   P6-03: the puzzle types' code is in bt.<VER>.js, which index.html does NOT load at start (LAZY in tools/build.py): Home, the hub,
+   the level strip, badges and the Puzzle of the Day only need each type's name, icon, bands, allow and rules, so those live here in
+   BT.CAT and every catalog type is in BT.types from the start, without its make/mount/solve. BT.start() loads bt.<VER>.js the first
+   time a puzzle opens ("Getting the puzzles ready...", partsThen in 90-app.js); the hub and the level strip start loading it as soon
+   as they are drawn (BT.warm), so a tap on a level is usually instant. A file of another release is refused (BT.loaded).
    REGISTER A TYPE (in 75-bt-<id>.js, at load time; BT is defined before any 75- file runs):
+     a new type gets its line in BT.CAT (below) with these fields; its file then registers only the code:
      BT.reg({
        id: 'maze',                 // lowercase letters and digits, unique; never 'cur', 'daily', 'badges', 'earn', 'rnd'
+                                   // in BT.CAT, or in BT.reg for a type that is not in the catalog (tests):
        name: 'Mazes',              // shown on the hub card and in the top bar
        icon: 'maze',               // a name from ICONS (15-icons.js); an unknown name shows the 'puzzle' icon
        bands: 'ABCD',              // the bands the type is offered in (A PK-K, B grades 1-2, C 3-4, D 5-6)
@@ -63,17 +70,72 @@ const BT = {
   offer: null, // the band-below offer waiting to be shown (noteQuit), not saved
 
   /* ---------- registry ---------- */
+  // P6-03: the catalog, in BT.ORDER. Everything about a type that Home, the hub, the level strip and the badges show, so they work
+  // before bt.<VER>.js is loaded. BT.reg() in a type's file adds make, mount and solve to its entry (tools/test.js checks both lists).
+  CAT: [
+    { id: 'sudoku', name: 'Sudoku', icon: 'sudoku', bands: 'ABCD', allow: 2,
+      rules: 'Fill the grid so every row, every column and every box has each number (or animal) just once.' },
+    { id: 'mdoku', name: 'MathDoku', icon: 'mdoku', bands: 'BCD', allow: 2,
+      rules: 'Every row and every column has each number once. The numbers in each cage make the cage\'s number with its sign.' },
+    { id: 'logic', name: 'Logic Grid', icon: 'logic', bands: 'BCD', allow: 2,
+      rules: 'Read the clues. Tick who has what, and cross what cannot be.' },
+    { id: 'maze', name: 'Mazes', icon: 'maze', bands: 'ABCD', allow: 2,
+      rules: 'Drag the bear along the paths to the flag. Walls block the way.' },
+    { id: 'pattern', name: 'Patterns', icon: 'skill-pattern', bands: 'ABCD', allow: 1,
+      rules: 'Find the picture or number that fits the pattern.' },
+    { id: 'pyramid', name: 'Number Pyramid', icon: 'blocks', bands: 'BCD', allow: 2,
+      rules: 'Each brick is the two bricks under it added together. Find the missing bricks.' },
+    { id: 'balance', name: 'Balance', icon: 'scale', bands: 'ABCD', allow: 2,
+      rules: 'The scales are level, so both sides weigh the same. Find what each picture weighs.' },
+    { id: 'target', name: 'Make the Number', icon: 'target', bands: 'BCD', allow: 2,
+      rules: 'Join the numbers with the signs to make the number in the circle.' },
+    { id: 'tangram', name: 'Tangram', icon: 'tangram', bands: 'ABCD', allow: 2,
+      rules: 'Fill the shape with the pieces. Drag a piece in; tap a piece twice to turn it.' },
+    { id: 'fit', name: 'Shape Fit', icon: 'fit', bands: 'ABCD', allow: 2,
+      rules: 'Fill the shape with all the pieces. Drag a piece in; tap a piece twice to turn it.' },
+    { id: 'robot', name: 'Robot Path', icon: 'robot', bands: 'ABCD', allow: 3, // RB.ALLOW in 81-bt-robot.js
+      rules: 'Tap blocks to build a program. Press Go and the robot follows it to the flag.' },
+    { id: 'riddle', name: 'Riddles', icon: 'riddle', bands: 'ABCD', allow: 1,
+      rules: 'Listen to the riddle, then tap the answer.' },
+    { id: 'memory', name: 'Memory Match', icon: 'memory', bands: 'ABCD', allow: 1,
+      rules: 'Turn over two cards at a time. Find all the pairs.' },
+    { id: 'copycat', name: 'Copy Cat', icon: 'copycat', bands: 'ABCD', allow: 2,
+      rules: 'Watch the pads light up, then tap them in the same order.' },
+    { id: 'wsearch', name: 'Word Search', icon: 'wsearch', bands: 'BCD', allow: 3,
+      rules: 'Find every word in the grid. Drag across it, or tap its first and last letter.' },
+    { id: 'scramble', name: 'Unscramble', icon: 'scramble', bands: 'BCD', allow: 2,
+      rules: 'Tap the letters in order to spell the word.' },
+    { id: 'cubes', name: 'Cubes', icon: 'cubes', bands: 'BCD', allow: 1,
+      rules: 'Count every cube in the stack, even the ones hiding underneath.' },
+    { id: 'rotate', name: 'Turn It', icon: 'rotate', bands: 'ABCD', allow: 1,
+      rules: 'Find the same shape, turned. A flipped shape is not the same!' },
+    { id: 'mirror', name: 'Mirror', icon: 'flip', bands: 'BCD', allow: 2,
+      rules: 'Tap squares to finish the picture so it matches across the line.' },
+  ],
+  // the defaults of a type, then its fields (a catalog entry, or what BT.reg was given)
+  entry: d => Object.assign({ icon: 'puzzle', levels: () => BT.LEVELS, allow: BT.ALLOW, rules: '' }, d),
   reg(d) {
     const bad = m => { throw new Error('BT.reg ' + (d && d.id) + ': ' + m); };
     if (!d || typeof d != 'object') bad('needs an object');
     if (!/^[a-z][a-z0-9]{0,15}$/.test(d.id || '')) bad('id must be lowercase letters and digits');
     if (BT.RESERVED.includes(d.id)) bad('id is reserved');
-    if (BT.types[d.id]) bad('already registered');
+    const was = BT.types[d.id], c = BT.CAT.find(x => x.id === d.id);
+    if (was && typeof was.make == 'function') bad('already registered'); // a catalog entry without its code yet is filled in (P6-03)
+    if (c) d = Object.assign({}, c, d);
     if (typeof d.name != 'string' || !d.name) bad('name is required');
     if (!/^[ABCD]{1,4}$/.test(d.bands || '')) bad('bands must be letters of ABCD');
     for (const f of ['make', 'mount', 'solve']) if (typeof d[f] != 'function') bad(f + ' must be a function');
     if (d.levels != null && typeof d.levels != 'function') bad('levels must be a function');
-    return BT.types[d.id] = Object.assign({ icon: 'puzzle', levels: () => BT.LEVELS, allow: BT.ALLOW, rules: '' }, d);
+    return BT.types[d.id] = BT.entry(d);
+  },
+  // P6-03: the type's code is in (BT.reg checked make/mount/solve), and no bt file of another release ran (that one is refused, see
+  // partLoad). In tools/test.js the source runs without the built stamps, so there a type with its code counts as loaded.
+  loaded(d) { return !!d && typeof d.make == 'function' && (typeof BT_VER == 'undefined' || BT_VER === '__VER__'); },
+  // P6-03: start reading bt.<VER>.js once the screen on show is painted (the hub, a level strip), so the tap that opens a puzzle
+  // seldom waits. Nothing happens when it is in, or while it loads; a file that cannot be read is tried again by BT.start.
+  warm() {
+    if (typeof partLoad != 'function' || typeof requestAnimationFrame != 'function' || partReady('bt')) return;
+    requestAnimationFrame(() => setTimeout(() => partLoad('bt'), 0));
   },
   unreg(id) { delete BT.types[id]; }, // for tests
   get(id) { return BT.types[id] || null; },
@@ -138,6 +200,7 @@ const BT = {
   make(id, band, level, o = {}) {
     const d = BT.types[id];
     if (!d) throw new Error('BT.make: no type ' + id);
+    if (typeof d.make != 'function') throw new Error('BT.make: the code of ' + id + ' is not loaded (bt part)');
     const r = BT.rng(BT.seedStr(id, band, level, o.day, o.salt)), old = RNG;
     let p;
     RNG = r;
@@ -379,6 +442,7 @@ const BT = {
     if ($('#btbdg')) $('#btbdg').onclick = () => { SFX.whoosh(); BT.badgeView(() => BT.hub()); };
     if (fresh.length) BT.badgeSheet(fresh);
     else if (BT.offer) BT.offerLower();
+    BT.warm(); // P6-03
   },
 
   /* ---------- badges: the medal drawing, the badges view, the reveal (P3-17) ---------- */
@@ -469,12 +533,24 @@ const BT = {
     });
     if ($('#btend')) $('#btend').onclick = () => { SFX.whoosh(); BT.start(id, band, 'E'); };
     if (BT.offer && BT.offer.id == id) BT.offerLower(); // the third time this level was left unsolved
+    BT.warm(); // P6-03
   },
 
   // Start (or resume) a level. level: 1..N or 'E' (Endless).
   start(id, band, level) {
     const d = BT.types[id];
     if (!d) return BT.hub();
+    // P6-03: the puzzle code loads on demand. Not in yet: "Getting the puzzles ready..." (with Back), then this start again, only if
+    // that screen still shows; a bt file that cannot be read or is of another release shows Try again (partsThen, 90-app.js).
+    if (!BT.loaded(d)) {
+      if (typeof partsThen != 'function' || (partReady('bt') && typeof d.make != 'function')) { // in, but without this type: never loop
+        logErr('bt start ' + id + ': no puzzle code');
+        UI.toast('That puzzle would not load. Try another one!', 'try');
+        return BT.hub();
+      }
+      BT.stop();
+      return partsThen(['bt'], () => BT.start(id, band, level), { title: 'Brain Teasers', icon: 'puzzle', line: 'Getting the puzzles ready...' });
+    }
     BT.stop();
     const s = BT.st();
     let c = s.cur;
@@ -494,6 +570,7 @@ const BT = {
 
   play(run) {
     const d = BT.types[run.id], timed = run.band == 'C' || run.band == 'D'; // the timer is hidden in bands A and B
+    if (!BT.loaded(d)) return BT.start(run.id, run.band, run.level); // P6-03: through the loader (it resumes this run)
     BT.stop();
     // P3-17: the name is its own element and may wrap to two lines; on a phone with the timer the type icon steps aside (48-teasers.css)
     view(`<div class="top tbar gx-mtop s-bt bt-bar${timed ? ' timed' : ''}">${NAV.house('quit')}<div class="ttl gx-ttl"><span class="gx-tb">${ico(BT.icon(d), 24)}</span>` +
@@ -616,3 +693,4 @@ const BT = {
   },
   fmtSec(s) { return s < 60 ? `${s} sec` : s % 60 ? `${Math.floor(s / 60)} min ${s % 60} sec` : `${s / 60} min`; },
 };
+for (const c of BT.CAT) BT.types[c.id] = BT.entry(c); // P6-03: every catalog type, its code still to come (bt.<VER>.js)

@@ -23,10 +23,9 @@ PARTS = [
 ]
 # P6-02: parts that index.html does NOT load at start (no <script> tag): partsThen() in src/js/90-app.js (LAZY_PARTS, the same list,
 # checked by tools/test.js) loads them the first time they are needed (the Game Room). sw.js still precaches every part, so they work offline.
-LAZY = ('games', 'rally', 'games2', 'games3')
-# TEACH-1: the lessons load on demand too (no <script> tag; partLoad('teach') in src/js/90-app.js, TEACH_PARTS there). Kept apart from
-# LAZY, the Game Room's own list, so opening the Game Room does not parse the lessons and a lesson does not load the games.
-LAZY_TEACH = ('teach',)
+# P6-03: bt too (580 KB of puzzle code): BT.start() loads it the first time a puzzle opens; Home and the hub use BT.CAT (74-teasers.js).
+# TEACH-1: and the lessons, teach: the math map loads them (teachWarm in 46-home.js); not a Game Room part (GAME_PARTS in 90-app.js).
+LAZY = ('bt', 'games', 'rally', 'games2', 'games3', 'teach')
 def part_of(name):
     return next((stem for stem, rx in PARTS if re.fullmatch(rx, name)), None)
 def cat(sub, ext, part=None):
@@ -39,7 +38,7 @@ def cat(sub, ext, part=None):
 # file's stamp matches the VER compiled into index.html (dataReady() in src/js/90-app.js).
 DATA = 'data.%s.js' % VER
 FILES = ['%s.%s.js' % (stem, VER) for stem, _ in PARTS] + [DATA]
-START = ['%s.%s.js' % (stem, VER) for stem, _ in PARTS if stem not in LAZY + LAZY_TEACH] + [DATA]  # P6-02: the files index.html loads at start
+START = ['%s.%s.js' % (stem, VER) for stem, _ in PARTS if stem not in LAZY] + [DATA]  # P6-02: the files index.html loads at start
 src = open(os.path.join(S_DIR, 'shell.html'), newline='').read()
 src = src.replace('/*@@CSS@@*/\n', cat('css', '.css')).replace('/*@@JS@@*/\n', cat('js', '.js'))
 src = src.replace('<!--@@PARTS@@-->\n', ''.join('<script src="%s"></script>\n' % f for f in START[:-1]))
@@ -52,7 +51,7 @@ for stem, _ in PARTS:
     names = [n for sub in ('css', 'js') for n in sorted(os.listdir(os.path.join(S_DIR, sub))) if part_of(n) == stem]
     css = cat('css', '.css', stem)
     part = ('/* Star School ' + stem + ' ' + VER + '. BUILT by tools/build.py from ' + ', '.join(names) + ': never edit by hand.\n'
-            + ('   index.html ' + VER + ' loads this file on demand (partsThen in src/js/90-app.js, P6-02), after ' + DATA + '. */\n' if stem in LAZY + LAZY_TEACH else
+            + ('   index.html ' + VER + ' loads this file on demand (partsThen in src/js/90-app.js, P6-02), after ' + DATA + '. */\n' if stem in LAZY else
                '   index.html ' + VER + ' loads this file with <script src="' + stem + '.' + VER + '.js"> after its own code, before ' + DATA + '. */\n')
             + ("(function(){var s=document.createElement('style');s.id='css-" + stem + "';s.textContent=" + json.dumps(css, ensure_ascii=False)
                + ";document.head.appendChild(s)})(); // its src/css, after index.html's own CSS (the cascade order of a build without parts)\n" if css else '')

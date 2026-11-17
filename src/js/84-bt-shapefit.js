@@ -671,8 +671,7 @@ SF.mount = function (el, p, api) {
 };
 
 BT.reg({
-  id: 'fit', name: 'Shape Fit', icon: 'fit', bands: 'ABCD',
-  rules: 'Fill the shape with all the pieces. Drag a piece in; tap a piece twice to turn it.',
+  id: 'fit', // name, icon, bands, allow, rules: BT.CAT in 74-teasers.js (P6-03: Home and the hub need them before this file loads)
   make: (band, level, rnd) => SF.make(band, level, rnd),
   mount: (el, p, api) => SF.mount(el, p, api),
   solve: p => SF.solve(p),
