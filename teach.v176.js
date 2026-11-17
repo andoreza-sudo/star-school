@@ -1,6 +1,6 @@
-/* Star School teach v175. BUILT by tools/build.py from 52-lesson.css, 52-lesson.js, 52b-know.js, 52c-scripts.js, 52d-notebook.js: never edit by hand.
-   index.html v175 loads this file on demand (partsThen in src/js/90-app.js, P6-02), after data.v175.js. */
-(function(){var s=document.createElement('style');s.id='css-teach';s.textContent="/* TEACH-1: the lesson screen (52-lesson.js, part teach). It is the question screen (.play.qs, .qarea, .inp) with the pet on top of\n   the prompt card: the pet, its caption bubble and \"Hear it again\". Tokens only. */\n.ls-pips{display:flex;gap:6px;align-items:center;flex:1;justify-content:center;min-width:0}\n.ls-pip{display:grid;place-items:center;width:30px;height:30px;border-radius:var(--r-pill);background:var(--surface-2);color:var(--ink-2);transition:transform var(--t) var(--ease)}\n.ls-pip .ic{width:18px;height:18px}\n.ls-pip.on{background:var(--math);color:var(--surface)}\n.ls-pip.now{background:var(--math-tint);color:var(--math-shade);box-shadow:inset 0 0 0 3px var(--math);transform:scale(1.15)}\n.ls-tag span{max-width:9em;overflow:hidden;text-overflow:ellipsis}\n.ls-top .ls-tag{flex:none}\n.ls-pet{display:flex;align-items:center;gap:var(--s-2);width:100%;max-width:560px;text-align:left}\n.ls-art{flex:none;width:64px;height:64px}\n.ls-art .petwrap,.ls-art svg{width:100%;height:100%;display:block}\n.ls-bub{flex:1;min-width:0;min-height:48px;display:flex;align-items:center;position:relative;background:var(--surface-2);color:var(--ink);border-radius:var(--r-card);\n  padding:var(--s-1) var(--s-3);font-size:var(--fs-2);font-weight:700;line-height:var(--lh-2);opacity:.35;transition:opacity var(--t) var(--ease)}\n.ls-bub>span{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}\n.ls-bub.on{opacity:1}\n.ls-bub::before{content:'';position:absolute;left:-9px;top:50%;margin-top:-9px;border:9px solid transparent;border-left:0;border-right-color:var(--surface-2)}\n.btn.ls-hear{flex:none}\n.ls-turn .ls-bub{background:var(--star-tint);box-shadow:inset 0 0 0 3px var(--star)}\n.ls-turn .ls-bub::before{border-right-color:var(--star)}\n.ls-pw{display:flex;justify-content:center;max-width:100%}\n.ls-pw .viz{max-width:100%}\n.slot.ls-pv{background:var(--star-tint);color:var(--ink)}\n.ls-oops .ls-pw,.ls-oops .ls-pv{outline:4px dashed var(--try);outline-offset:4px;border-radius:var(--r-chip)}\n.ls-qm{color:var(--math-shade)}\n.ls-judge{display:flex;gap:var(--s-3);justify-content:center}\n.ls-judge .btn{flex:1 1 0;min-width:0;max-width:220px;min-height:72px}\n.ls-judge .btn .ic{width:36px;height:36px}\n.ls-judge .btn.right{background:var(--good-tint);box-shadow:inset 0 0 0 3px var(--good),0 4px 0 var(--good)}\n.ls-judge .btn.ls-pk{outline:4px solid var(--brand);outline-offset:2px}\n.inp.ls-wait{opacity:.45;pointer-events:none;transition:opacity var(--t) var(--ease)}\n#lsinp>.btn.lg{margin:0 auto;display:flex}\n.ls-dot{display:inline-block;width:26px;height:26px;border-radius:50%;vertical-align:middle}\n.ls-dot.ls-d1{background:var(--math);box-shadow:inset 0 -3px 0 var(--math-shade)}\n.ls-dot.ls-d2{background:var(--play);box-shadow:inset 0 -3px 0 var(--play-shade)}\n/* the offer on the math map: a notebook in a bubble, by the stop the pet suggests */\n.btn.ls-go{position:absolute;width:56px;height:56px;min-height:56px;margin:-28px 0 0 -28px;padding:0;border-radius:50%;z-index:4;display:grid;place-items:center;\n  background:var(--surface);color:var(--math-shade);box-shadow:inset 0 0 0 3px var(--math),0 4px 0 var(--math-shade)}\n.btn.ls-go .ic{width:30px;height:30px}\n.btn.ls-go::after{content:'';position:absolute;inset:-7px;border:3px solid var(--math);border-radius:50%;opacity:0;animation:k-ring var(--t-loop) var(--ease) infinite;pointer-events:none}\n.btn.ls-go:active{transform:translateY(3px);box-shadow:inset 0 0 0 3px var(--math),0 1px 0 var(--math-shade)}\n/* the end card */\n.ls-end{display:flex;justify-content:center;padding:var(--s-4)}\n.ls-endc{display:flex;flex-direction:column;align-items:center;gap:var(--s-3);text-align:center;max-width:520px;width:100%}\n.ls-endc h1{margin:0}\n.ls-art.ls-big{width:150px;height:150px}\n.ls-idea{display:flex;align-items:center;gap:var(--s-2);margin:0;font-size:var(--fs-4);font-weight:700;color:var(--ink);background:var(--math-tint);border-radius:var(--r-card);padding:var(--s-2) var(--s-4)}\n.ls-idea .ic{flex:none;color:var(--math-shade)}\n.ls-earn{align-self:stretch}\n.ls-acts{display:flex;gap:var(--s-3);flex-wrap:wrap;justify-content:center}\n@media (min-width:700px) and (min-height:700px){.ls-art{width:120px;height:120px}.ls-bub{font-size:var(--fs-3);min-height:64px}.ls-pet{max-width:640px}}\nhtml.calm .btn.ls-go::after{animation:none}\n/* TEACH-2: a repair's contrast (the right answer beside the held idea's, on one picture each) */\n.ls-con{display:flex;gap:var(--s-3);justify-content:center;flex-wrap:wrap;width:100%}\n.ls-cpane{flex:1 1 140px;max-width:300px;min-width:0;display:flex;flex-direction:column;align-items:center;gap:var(--s-1);padding:var(--s-2);border-radius:var(--r-card);background:var(--surface)}\n.ls-cpane.ok{box-shadow:inset 0 0 0 3px var(--good)}.ls-cpane.ok>.ic{color:var(--good-ink)}\n.ls-cpane.no{box-shadow:inset 0 0 0 3px var(--try)}.ls-cpane.no>.ic{color:var(--ink-2)}\n.ls-cpane .viz,.ls-cpane svg{max-width:100%;height:auto}\n/* TEACH-2: the notebook (52d-notebook.js) */\n.nbk{padding:var(--s-3) var(--s-4) var(--s-6)}\n.nbk-in{max-width:880px;margin:0 auto;display:flex;flex-direction:column;gap:var(--s-4);align-items:center}\n.nbk-top .chip{flex:none}\n.nbk-pages{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:var(--s-3);width:100%;align-items:start}\n.nbk-pg{display:flex;flex-direction:column;gap:var(--s-2);padding:var(--s-3);background:var(--surface);border-radius:var(--r-card);box-shadow:inset 0 0 0 2px var(--line),0 4px 0 var(--line);cursor:pointer;min-width:0}\n.nbk-pg.kept{box-shadow:inset 0 0 0 3px var(--star),0 4px 0 var(--star-shade)}\n.nbk-pic{display:flex;flex-direction:column;align-items:center;gap:var(--s-1);min-height:120px;background:var(--math-tint);border-radius:var(--r-chip);padding:var(--s-2);overflow:hidden}\n.nbk-pic .pkq,.nbk-pic .viz,.nbk-pic svg{max-width:100%;height:auto}\n.nbk-pic .eq{font-size:var(--fs-4)}\n.nbk-idea{margin:0;font-size:var(--fs-3);font-weight:700;color:var(--ink);line-height:var(--lh-2)}\n.nbk-foot{display:flex;align-items:center;justify-content:space-between;gap:var(--s-2)}\n.nbk-t{display:flex;align-items:center;gap:var(--s-1);color:var(--ink-2);font-weight:700;min-width:0}\n.nbk-star{color:var(--star-ink);flex:none}\n.nbk-empty{display:grid;place-items:center;width:160px;height:160px;border-radius:50%;background:var(--math-tint);color:var(--math-shade)}\n.nbk-next .btn{min-width:220px}\n/* TEACH-2: the report card's lessons by stage (82-report.js calls LSREP) */\n.rp-ls{display:grid;gap:2px;margin:var(--s-2) 0;font-size:var(--fs-1)}\n.rp-lsr{display:grid;grid-template-columns:minmax(0,2.2fr) repeat(4,minmax(0,1fr));gap:var(--s-1);align-items:center;padding:var(--s-1) 0;border-bottom:1px solid var(--line)}\n.rp-lsh{font-weight:700;color:var(--ink-2);align-items:end;overflow-wrap:anywhere}.rp-lsh>span+span{text-align:center}\n.rp-lsn{text-align:center;font-weight:700;color:var(--ink-2)}\n.rp-lsn.on{color:var(--ink);background:var(--good-tint);border-radius:var(--r-chip)}\n.rp-noticed .rp-pin{display:flex;margin-top:var(--s-2)}\n@media (max-width:560px){.rp-lsr{grid-template-columns:repeat(4,minmax(0,1fr));row-gap:2px}.rp-lsr>[role=rowheader]{grid-column:1/-1;font-weight:700}\n  .rp-lsh>span:first-child{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}.rp-lsh{text-align:center}}\n";document.head.appendChild(s)})(); // its src/css, after index.html's own CSS (the cascade order of a build without parts)
+/* Star School teach v176. BUILT by tools/build.py from 52-lesson.css, 52-lesson.js, 52b-know.js, 52c-scripts.js, 52d-notebook.js: never edit by hand.
+   index.html v176 loads this file on demand (partsThen in src/js/90-app.js, P6-02), after data.v176.js. */
+(function(){var s=document.createElement('style');s.id='css-teach';s.textContent="/* TEACH-1: the lesson screen (52-lesson.js, part teach). It is the question screen (.play.qs, .qarea, .inp) with the pet on top of\n   the prompt card: the pet, its caption bubble and \"Hear it again\". Tokens only. */\n.ls-pips{display:flex;gap:6px;align-items:center;flex:1;justify-content:center;min-width:0}\n.ls-pip{display:grid;place-items:center;width:30px;height:30px;border-radius:var(--r-pill);background:var(--surface-2);color:var(--ink-2);transition:transform var(--t) var(--ease)}\n.ls-pip .ic{width:18px;height:18px}\n.ls-pip.on{background:var(--math);color:var(--surface)}\n.ls-pip.now{background:var(--math-tint);color:var(--math-shade);box-shadow:inset 0 0 0 3px var(--math);transform:scale(1.15)}\n.ls-tag span{max-width:9em;overflow:hidden;text-overflow:ellipsis}\n.ls-top .ls-tag{flex:none}\n.ls-pet{display:flex;align-items:center;gap:var(--s-2);width:100%;max-width:560px;text-align:left}\n.ls-art{flex:none;width:64px;height:64px}\n.ls-art .petwrap,.ls-art svg{width:100%;height:100%;display:block}\n.ls-bub{flex:1;min-width:0;min-height:48px;display:flex;align-items:center;position:relative;background:var(--surface-2);color:var(--ink);border-radius:var(--r-card);\n  padding:var(--s-1) var(--s-3);font-size:var(--fs-2);font-weight:700;line-height:var(--lh-2);opacity:.35;transition:opacity var(--t) var(--ease)}\n.ls-bub>span{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}\n.ls-bub.on{opacity:1}\n.ls-bub::before{content:'';position:absolute;left:-9px;top:50%;margin-top:-9px;border:9px solid transparent;border-left:0;border-right-color:var(--surface-2)}\n.btn.ls-hear{flex:none}\n.ls-turn .ls-bub{background:var(--star-tint);box-shadow:inset 0 0 0 3px var(--star)}\n.ls-turn .ls-bub::before{border-right-color:var(--star)}\n.ls-pw{display:flex;justify-content:center;max-width:100%}\n.ls-pw .viz{max-width:100%}\n.slot.ls-pv{background:var(--star-tint);color:var(--ink)}\n.ls-oops .ls-pw,.ls-oops .ls-pv{outline:4px dashed var(--try);outline-offset:4px;border-radius:var(--r-chip)}\n.ls-qm{color:var(--math-shade)}\n.ls-judge{display:flex;gap:var(--s-3);justify-content:center}\n.ls-judge .btn{flex:1 1 0;min-width:0;max-width:220px;min-height:72px}\n.ls-judge .btn .ic{width:36px;height:36px}\n.ls-judge .btn.right{background:var(--good-tint);box-shadow:inset 0 0 0 3px var(--good),0 4px 0 var(--good)}\n.ls-judge .btn.ls-pk{outline:4px solid var(--brand);outline-offset:2px}\n.inp.ls-wait{opacity:.45;pointer-events:none;transition:opacity var(--t) var(--ease)}\n#lsinp>.btn.lg{margin:0 auto;display:flex}\n.ls-dot{display:inline-block;width:26px;height:26px;border-radius:50%;vertical-align:middle}\n.ls-dot.ls-d1{background:var(--math);box-shadow:inset 0 -3px 0 var(--math-shade)}\n.ls-dot.ls-d2{background:var(--play);box-shadow:inset 0 -3px 0 var(--play-shade)}\n/* the offer on the math map: a notebook in a bubble, by the stop the pet suggests */\n.btn.ls-go{position:absolute;width:56px;height:56px;min-height:56px;margin:-28px 0 0 -28px;padding:0;border-radius:50%;z-index:4;display:grid;place-items:center;\n  background:var(--surface);color:var(--math-shade);box-shadow:inset 0 0 0 3px var(--math),0 4px 0 var(--math-shade)}\n.btn.ls-go .ic{width:30px;height:30px}\n.btn.ls-go::after{content:'';position:absolute;inset:-7px;border:3px solid var(--math);border-radius:50%;opacity:0;animation:k-ring var(--t-loop) var(--ease) infinite;pointer-events:none}\n.btn.ls-go:active{transform:translateY(3px);box-shadow:inset 0 0 0 3px var(--math),0 1px 0 var(--math-shade)}\n/* the end card */\n.ls-end{display:flex;justify-content:center;padding:var(--s-4)}\n.ls-endc{display:flex;flex-direction:column;align-items:center;gap:var(--s-3);text-align:center;max-width:520px;width:100%}\n.ls-endc h1{margin:0}\n.ls-art.ls-big{width:150px;height:150px}\n.ls-idea{display:flex;align-items:center;gap:var(--s-2);margin:0;font-size:var(--fs-4);font-weight:700;color:var(--ink);background:var(--math-tint);border-radius:var(--r-card);padding:var(--s-2) var(--s-4)}\n.ls-idea .ic{flex:none;color:var(--math-shade)}\n.ls-earn{align-self:stretch}\n.ls-acts{display:flex;gap:var(--s-3);flex-wrap:wrap;justify-content:center}\n@media (min-width:700px) and (min-height:700px){.ls-art{width:120px;height:120px}.ls-bub{font-size:var(--fs-3);min-height:64px}.ls-pet{max-width:640px}}\nhtml.calm .btn.ls-go::after{animation:none}\n/* TEACH-2: a repair's contrast (the right answer beside the held idea's, on one picture each) */\n.ls-con{display:flex;gap:var(--s-3);justify-content:center;flex-wrap:wrap;width:100%}\n.ls-cpane{flex:1 1 140px;max-width:300px;min-width:0;display:flex;flex-direction:column;align-items:center;gap:var(--s-1);padding:var(--s-2);border-radius:var(--r-card);background:var(--surface)}\n.ls-cpane.ok{box-shadow:inset 0 0 0 3px var(--good)}.ls-cpane.ok>.ic{color:var(--good-ink)}\n.ls-cpane.no{box-shadow:inset 0 0 0 3px var(--try)}.ls-cpane.no>.ic{color:var(--ink-2)}\n.ls-cpane .viz,.ls-cpane svg{max-width:100%;height:auto}\n/* TEACH-2: the notebook (52d-notebook.js) */\n.nbk{padding:var(--s-3) var(--s-4) var(--s-6)}\n.nbk-in{max-width:880px;margin:0 auto;display:flex;flex-direction:column;gap:var(--s-4);align-items:center}\n.nbk-top .chip{flex:none}\n.nbk-pages{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:var(--s-3);width:100%;align-items:start}\n.nbk-pg{display:flex;flex-direction:column;gap:var(--s-2);padding:var(--s-3);background:var(--surface);border-radius:var(--r-card);box-shadow:inset 0 0 0 2px var(--line),0 4px 0 var(--line);cursor:pointer;min-width:0}\n.nbk-pg.kept{box-shadow:inset 0 0 0 3px var(--star),0 4px 0 var(--star-shade)}\n.nbk-pic{display:flex;flex-direction:column;align-items:center;gap:var(--s-1);min-height:120px;background:var(--math-tint);border-radius:var(--r-chip);padding:var(--s-2);overflow:hidden}\n.nbk-pic .pkq,.nbk-pic .viz,.nbk-pic svg{max-width:100%;height:auto}\n.nbk-pic .eq{font-size:var(--fs-4)}\n.nbk-idea{margin:0;font-size:var(--fs-3);font-weight:700;color:var(--ink);line-height:var(--lh-2)}\n.nbk-foot{display:flex;align-items:center;justify-content:space-between;gap:var(--s-2)}\n.nbk-t{display:flex;align-items:center;gap:var(--s-1);color:var(--ink-2);font-weight:700;min-width:0}\n.nbk-star{color:var(--star-ink);flex:none}\n.nbk-empty{display:grid;place-items:center;width:160px;height:160px;border-radius:50%;background:var(--math-tint);color:var(--math-shade)}\n.nbk-next .btn{min-width:220px}\n/* TEACH-2: the report card's lessons by stage (82-report.js calls LSREP) */\n.rp-ls{display:grid;gap:2px;margin:var(--s-2) 0;font-size:var(--fs-1)}\n.rp-lsr{display:grid;grid-template-columns:minmax(0,2.2fr) repeat(4,minmax(0,1fr));gap:var(--s-1);align-items:center;padding:var(--s-1) 0;border-bottom:1px solid var(--line)}\n.rp-lsh{font-weight:700;color:var(--ink-2);align-items:end;overflow-wrap:anywhere}.rp-lsh>span+span{text-align:center}\n.rp-lsn{text-align:center;font-weight:700;color:var(--ink-2)}\n.rp-lsn.on{color:var(--ink);background:var(--good-tint);border-radius:var(--r-chip)}\n.rp-noticed .rp-pin{display:flex;margin-top:var(--s-2)}\n@media (max-width:560px){.rp-lsr{grid-template-columns:repeat(4,minmax(0,1fr));row-gap:2px}.rp-lsr>[role=rowheader]{grid-column:1/-1;font-weight:700}\n  .rp-lsh>span:first-child{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}.rp-lsh{text-align:center}}\n/* TEACH-2b: the workbench pieces of the grade 1 and 2 lessons (52f-bench.js): blocks in a second colour, the trade buttons, groups,\n   the named clock hands */\n.viz .ls-b2{fill:var(--play-shade)}\n.viz .ls-gd{fill:none;stroke:var(--math)}\n.ls-trs{gap:var(--s-2)}\n.mmb.ls-tr{font-size:var(--fs-2);font-weight:700;padding:0 var(--s-3);white-space:nowrap}\n.ls-hh,.ls-mh{display:inline-block;vertical-align:middle;width:22px;height:6px;border-radius:3px;margin-right:6px;background:var(--read)}\n.ls-mh{width:30px;height:4px;background:var(--math)}\n.mm-hands .mms{column-gap:var(--s-2);row-gap:2px}\n.mm-hands .mml{min-width:0;flex-basis:100%;text-align:center}\n";document.head.appendChild(s)})(); // its src/css, after index.html's own CSS (the cascade order of a build without parts)
 /* ---------- TEACH-1: "Sparky teaches", the lesson (part teach; docs/TEACH-PLAN-2.md, batch 1) ----------
    A lesson is a short class the child's pet runs, about 3 minutes (owner decision 2): it always opens with two "show me" items and
    always ends on a win.
@@ -46,10 +46,14 @@ const LS = {
     st.i = 0;
     let it = [];
     if (B == 'pre') it = [0, 1].slice(st.pre.length).map(k => ({m: 'ask', one: 1, q: L.q(L.test, r), lines: k ? [] : [T.hi(lsName()), T.first]}));
-    else if (B == 'rem') it = st.rem.slice(0, 1).map(x => ({m: 'ask', help: 1, rem: x, q: LESSONS[x].q(LESSONS[x].test, r), lines: [T.rem]}));
+    else if (B == 'rem') {
+      it = st.rem.slice(0, 1).map(x => ({m: 'ask', help: 1, rem: x, q: LESSONS[x].q(LESSONS[x].test, r), lines: [T.rem]}));
+      // TEACH-2b: nothing due, and the script has a warm-up on the idea it builds on: that, with the script's Remember line
+      if (!it.length && L.warm) { const q = L.warm(r); it = [{m: 'ask', help: 1, warm: 1, q, lines: L.w ? lsW(L.w.beats.remember, 0, q.sl) : [T.rem]}]; }
+    }
     else if (B == 'exp') {
       st.exp = L.exp(r);
-      it = [{m: 'open', q: st.exp.q, nudge: st.exp.nudge, lines: [T.play]}];
+      it = [{m: 'open', q: st.exp.q, nudge: st.exp.nudge, lines: [T.play].concat(st.exp.lines || [])}];
       // a repair (TEACH-PLAN-2 system C): the lesson opens with a contrast on the model, the right answer beside the held idea's
       const c = st.repair && LS.contrast(st, st.repair);
       if (c) it.unshift(c);
@@ -58,7 +62,11 @@ const LS = {
       it = [{m: 'say', html: n.html, lines: n.lines}];
     } else if (B == 'tog') it = [LS.togItem(st, [T.tog])];
     else if (B == 'chk') it = [LS.petItem(st)];
-    else if (B == 'show') it = [0, 1].map(k => ({m: 'ask', one: 1, q: L.q(L.test, r), lines: k ? [] : [st.to ? T.testOut : T.showMe]}));
+    else if (B == 'show') it = [0, 1].map(k => {
+      // TEACH-2b: a drafted script frames Show as its job in the world (its Show lines), unless the child tested out
+      const q = L.q(L.test, r), w = L.w && !st.to ? lsW(L.w.beats.show, k, q.sl) : [];
+      return {m: 'ask', one: 1, q, lines: k ? (L.w && L.w.beats.show.length > 1 ? w : []) : [st.to ? T.testOut : w[0] || T.showMe]};
+    });
     else if (B == 'win') it = [{m: 'ask', help: 3, win: 1, q: L.q(0, r), lines: [T.more]}];
     st.items = it;
     return it.length ? st : LS.after(st);
@@ -70,8 +78,10 @@ const LS = {
     const s = st.last < 0 ? 0 : st.drop ? Math.max(0, st.last - 1) : Math.min(2, st.last + 1), tie = knowTie(st.id, st.S, st.day);
     st.last = s;
     st.drop = false;
-    const pq = tie && knowProbe(tie[0], tie[1], () => st.L.q(s, st.r));
-    return {m: 'ask', help: 1, tog: 1, probe: pq ? tie : null, q: pq || st.L.q(s, st.r), lines: lines || []};
+    const pq = tie && knowProbe(tie[0], tie[1], () => st.L.q(s, st.r)), q = pq || st.L.q(s, st.r);
+    // TEACH-2b: a drafted script's Together line for this item's stage (1 build, 2 picture, 3 symbols; the stage can drop after a miss),
+    // its numbers from the item
+    return {m: 'ask', help: 1, tog: 1, probe: pq ? tie : null, q, lines: (lines || []).concat(st.L.w ? lsW(st.L.w.beats.together, q.st | 0, q.sl) : [])};
   },
   // the contrast that opens a repair: one question with two answers on its picture, the right one and the one the held idea gives
   contrast(st, code) {
@@ -91,8 +101,8 @@ const LS = {
     let q, pv, code = null;
     // up to 30 questions for the preferred mistake, then any of the stop's
     for (let n = 0; n < 40 && pv == null; n++) {
-      const q0 = L.q(0, r);
-      q = q0.kind == 'make' && !q0.goal || q0.kind == 'line' ? q0 : L.q(1, r);
+      const q0 = L.q(L.petSt | 0, r);
+      q = L.petSt != null || q0.kind == 'make' && !q0.goal || q0.kind == 'line' ? q0 : L.q(1, r);
       if (petOk) { pv = q.ans; break; }
       for (const c of n < 30 ? codes : L.bugs) {
         const v = (knowPredict(q)[c] || []).find(x => String(x) !== q.ans && !lsOk(q, String(x)) && LS.fits(q, x));
@@ -101,11 +111,12 @@ const LS = {
     }
     if (pv == null) pv = q.ans; // never reached with these scripts (tools/test.js checks every pet item)
     const ok = lsOk(q, pv);
-    return {m: 'judge', q, pv, petOk: ok, code, lines: [T.myTurn, LS.petSays(q, pv)]};
+    return {m: 'judge', q, pv, petOk: ok, code, lines: [T.myTurn, (L.w && lsW(L.w.beats.check.filter(t => /\{ans\}/.test(t)), 0, Object.assign({}, q.sl, {ans: lsSayV(q, pv)}))[0]) || LS.petSays(q, pv)]};
   },
   // can the pet's answer be shown on this question's model?
   fits(q, v) {
-    const n = +v;
+    const n = +v, M = q.kind == 'make' && K2MM[q.model];
+    if (M && M.fits) return M.fits(q, v);
     if (q.kind == 'make' && q.model == 'frame') return Number.isInteger(n) && n >= 0 && n <= q.m.total - (q.m.fixed || 0) && !(q.s0 && n > q.s0[0]);
     if (q.kind == 'make' && q.model == 'b10') return Number.isInteger(n) && n > 0 && n < 100;
     if (q.kind == 'line') return Number.isInteger(n) && n >= q.line.min && n <= q.line.max && String(n) !== String(q.start);
@@ -120,7 +131,7 @@ const LS = {
   // the pet's answer as a start state the child fixes (make: the pet's build; line: the pet's pin; num and choice start empty)
   fixItem(it) {
     const q = Object.assign({}, it.q), v = +it.pv;
-    if (q.kind == 'make') q.s0 = q.model == 'b10' ? [Math.floor(v / 10), v % 10] : [v];
+    if (q.kind == 'make') q.s0 = lsOf(q, it.pv);
     if (q.kind == 'line') q.start = String(v);
     return {m: 'ask', help: 1, fix: 1, q, lines: [lsTone().fixIt]};
   },
@@ -140,12 +151,14 @@ const LS = {
       const yes = String(v) === '1', ok = yes === it.petOk;
       st.chk.push(ok ? 1 : 0);
       if (!it.petOk) st.items.splice(st.i + 1, 0, LS.fixItem(it));
+      // TEACH-2b: a drafted script's reason for the pet's mistake (its misconception code), after it is caught
+      const why = !it.petOk && it.code && st.L.w ? lsW((st.L.w.reasons || {})[it.code], 0, it.q.sl) : [];
       return {ok, act: 'next', mood: it.petOk ? 'happy' : 'oops',
-        lines: it.petOk ? [yes ? T.rightMe : T.wrongMe] : [yes ? T.fooled : T.caught]};
+        lines: it.petOk ? [yes ? T.rightMe : T.wrongMe] : [yes ? T.fooled : T.caught].concat(why)};
     }
-    const ok = lsOk(it.q, v), first = !it.tries;
+    const ok = lsOk(it.q, v), first = !it.tries, M = it.q.kind == 'make' && K2MM[it.q.model];
     if (first && it.rem) knowRemember(it.rem, ok, st.day, st.S);
-    else if (first && !it.fix && !it.win) knowAdd(st.id, it.q, v, ok, st.S, st.day);
+    else if (first && !it.fix && !it.win && !it.warm) knowAdd(st.id, it.q, M && M.raw && Array.isArray(v) ? String(M.val(it.q, v)) : v, ok, st.S, st.day);
     if (it.one) {
       it.tries = 1;
       (B == 'pre' ? st.pre : st.post).push(ok);
@@ -301,7 +314,7 @@ const LS = {
   // the pet's answer drawn on the question, for Check me
   petWork(q, v) {
     if (q.kind == 'make') {
-      const s = q.model == 'b10' ? [Math.floor(v / 10), v % 10] : [+v];
+      const s = lsOf(q, v);
       return q.html + `<div class="ls-pw">${K2MM[q.model].draw(q, s).replace('<svg ', '<svg aria-hidden="true" ')}</div>`;
     }
     if (q.kind == 'line') return q.html + `<div class="ls-pw">${VIZ.numLine(Object.assign({}, q.line, {pin: +v})).replace('<svg ', '<svg aria-hidden="true" ')}</div>`;
@@ -324,7 +337,7 @@ const LS = {
     const u = LS.u, st = LS.st, it = st && LS.cur(st);
     if (!u || u.lock || !it) return;
     const q = it.q, K = KIND[q.kind];
-    if (q.kind == 'make' && q.model == 'frame2') v = u.mm.slice();
+    if (q.kind == 'make' && (q.model == 'frame2' || K2MM[q.model].raw || q.raw)) v = u.mm.slice();
     const res = LS.answer(st, v);
     u.lock = true;
     if (res.ok) {
@@ -413,6 +426,21 @@ const LS = {
   },
 };
 const lsName = () => (S.name || 'friend');
+// the state that shows value v on a make question's model (the pet's build, the child's fix)
+const lsOf = (q, v) => (K2MM[q.model].of ? K2MM[q.model].of(q, v) : q.model == 'b10' ? [Math.floor(v / 10), v % 10] : [+v]);
+/* TEACH-2b: the words of a drafted script (docs/drafts, reviewed; 52e-words.js) are lines with {slots}: lsFill fills them from a
+   question's or a build's numbers (q.sl, ctx), {name} and {pet} from the save. A line with a slot the moment has no number for is left
+   out (null), never said with a hole; tools/test.js checks every drafted line fills. lsW(lines, k, sl): line k (round the list), filled. */
+function lsFill(t, sl) {
+  let ok = true;
+  const o = String(t).replace(/\{(\w+)\}/g, (m, k) => (k == 'name' ? lsName() : k == 'pet' ? petN() : sl && sl[k] != null ? String(sl[k]) : (ok = false, m)));
+  return ok ? o : null;
+}
+const lsW = (a, k, sl) => { a = [].concat(a || []); const t = a.length ? lsFill(a[k % a.length], sl) : null; return t ? [t] : []; };
+// an answer as the pet says it: a time as words, cents with their unit
+const LS_SIGN = {'<': 'is less than', '>': 'is greater than', '=': 'is equal to'};
+const lsSayV = (q, v) => (q.kind == 'make' && /^(clock|hands)$/.test(q.model) && /:/.test(v) ? mmTimeSay(...String(v).split(':').map(Number))
+  : LS_SIGN[v] && q.sl ? `${q.sl.a} ${LS_SIGN[v]} ${q.sl.b}` : q.cents ? v + ' cents' : String(v));
 /* ---------- TEACH-1: what the tutor knows, the plan, the before-and-after measure (part teach) ----------
    Saved data (all of it stays on the tablet; a backup file carries it like the rest of S):
      S.know[nid] = {s, n, lv, b, box, due, d, k}   the learner record of one lesson stop (TEACH-PLAN-2 system C, batch 1 size)
@@ -494,10 +522,46 @@ function knowAdd(id, q, v, ok, S0 = S, day = lsDay()) {
   const k = knowFade(lsKnow(id, S0), day), l = k.lv[Math.max(0, Math.min(2, q.st | 0))];
   l[1]++;
   if (ok) return void l[0]++;
+  knowWrong(k, q, v, day);
+}
+// a wrong first try on the record k: a tally for each code that predicts it, and the page of the last LS_WRONG wrong answers
+function knowWrong(k, q, v, day) {
   const cs = lsBugsOf(q, v);
   for (const c of cs) k.b[c] = (k.b[c] || 0) + 1;
   (k.w = k.w || []).push([cs.join(','), String(q.label || q.ans).slice(0, 16), day]);
   if (k.w.length > LS_WRONG) k.w.splice(0, k.w.length - LS_WRONG);
+}
+/* TEACH-2b: Practice rounds feed the record too (TEACH-PLAN-2 system C), through one wrap of check() (50-round.js) installed when this
+   part loads. Only a wrong FIRST try on a stop that has a lesson script (live or drafted) is written, and only its misconception page
+   (knowWrong: the tallies and the last wrong answers), never the lesson levels, the stage or the memory box: Practice is evidence of
+   what the child thinks, not a lesson. It reads the round and never changes it: the wrap computes right or wrong the way check()
+   does, writes, then calls check() itself with the same arguments, so what Practice asks and how it scores are the same (tools/test.js
+   plays seeded rounds with and without the wrap). A Practice question carries its numbers in its label; lsNums reads them onto a copy
+   (q.ab from "38 + 47 = ?", q.coins from "coins 10+5+1", q.hm from "clock 4:30"), so the computed codes work on it. Lessons off: nothing. */
+function lsNums(q) {
+  const o = Object.assign({}, q), l = String(q.label || '');
+  let m;
+  if (!o.ab && (m = /^(\d+) ([+−-]) (\d+) = \?$/.exec(l))) o.ab = [+m[1], +m[3], m[2] == '+' ? '+' : '-'];
+  if (!o.coins && (m = /^coins ([\d+]+)$/.exec(l))) o.coins = m[1].split('+').map(Number);
+  if (!o.hm && (m = /^clock (?:to 5 min )?(\d+):(\d\d)$/.exec(l))) o.hm = [+m[1], +m[2]];
+  return o;
+}
+const lsHasScript = id => !!(LESSONS[id] || typeof LS_DRAFTED != 'undefined' && LS_DRAFTED[id]);
+function knowPractice(q, v, S0 = S, day = lsDay()) {
+  const id = q && q.sk + q.lv;
+  if (!id || !lsHasScript(id) || TEACH.off) return false;
+  const K = KIND[q.kind], ok = K && K.same ? K.same(q, v) : String(v) === String(q.ans);
+  if (ok) return false;
+  knowWrong(knowFade(lsKnow(id, S0), day), lsNums(q), v, day);
+  return true;
+}
+if (typeof check == 'function' && !check.lsKnow) {
+  const check0 = check;
+  check = function (v) {
+    try { if (typeof G != 'undefined' && G && G.q && !G.lock && !G.tries && !G.retry) knowPractice(G.q, v); } catch (e) { /* evidence only: never in the round's way */ }
+    return check0.apply(this, arguments);
+  };
+  check.lsKnow = check0;
 }
 /* How a teacher reads a page of work, not one answer: each code's weight over the last LS_WRONG wrong answers (an answer counts half
    after LS_FADE days, a quarter after twice that) and the problems it explains. day: today (default: the newest answer's day). */
@@ -988,7 +1052,8 @@ const lsTone = () => LS_TONE[lsAge(typeof gradeOf == 'function' ? gradeOf() : 0)
    four stages per strand (taught, practising, learned, still knows it), what we noticed (a misconception held, knowHeld) with the
    "Practise this next" pin, the before-and-after measure and tonight's question. */
 // the right build or answer of an Explore task (any build is fine there; this is one the checker takes)
-const lsRight = q => (q.kind == 'make' && q.model == 'frame2' ? [(q.m.target || q.m.total) - 1, 1] : q.goal == 'less' ? String(q.s0[0] - 1) : q.ans);
+const lsRight = q => (q.kind == 'make' && q.model == 'frame2' ? [(q.m.target || q.m.total) - 1, 1] : q.goal == 'less' ? String(q.s0[0] - 1)
+  : q.kind == 'make' && (K2MM[q.model].raw || q.raw) ? K2MM[q.model].ans(q) : q.ans); // TEACH-2b: a raw model's right build is its state
 const lsAt = id => NODES.math.findIndex(n => nid(n) === id);
 const NB = {
   // the pages, in map order: {id, t, idea, kept, html (the picture)}
@@ -1008,6 +1073,7 @@ const NB = {
   },
   // a build for a page with no Explore build of its own: an "any way" task gets a small middling one, others the one the checker takes
   build(q) {
+    if (q.demo != null) return q.demo; // TEACH-2b: a script's own middling build
     if (q.goal != 'any') return lsRight(q);
     if (q.kind == 'line') return String(Math.round((q.line.min + q.line.max) * .6));
     if (q.model == 'b10') return '34';
@@ -1124,4 +1190,4 @@ const LSREP = {
   },
 };
 
-var TEACH_VER='v175'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var TEACH_VER='v176'; // last line: the whole file ran (checked by dataReady() before the app starts)

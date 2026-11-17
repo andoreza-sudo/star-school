@@ -7,12 +7,21 @@
    node tools/author.js --draft <stop> [--grade N] [--dry]
                                            ask the xAI API for a first draft of a stop's words and write docs/drafts/<stop>.md,
                                            marked "status: unreviewed" (--dry: print the request and write nothing)
+   node tools/author.js --approve <stop ...|all> [--by NAME] [--date YYYY-MM-DD] [--note TEXT]
+                                           TEACH-2b: the owner's one step: mark drafts "status: reviewed NAME DATE (NOTE)" (only drafts
+                                           that pass every check), then write src/js/52e-words.js, so their lessons go live at the next build
+   node tools/author.js --read <file> [stop ...]
+                                           TEACH-2b: one read-through file of the unreviewed drafts (or the stops named), in map order
 
    What a draft is. Only words: the lines each of the six beats says (Remember, Explore, Name it, Together, Check me, Show), the
    pet's reasons for each misconception code, and tonight's question for a grown-up. Numbers are never written: a number is a
    {slot} the lesson's code fills from the question or from what the child built, so a draft cannot state a wrong fact. Question
    choices, checkers and misconception functions are code, never drafted. A developer turns a reviewed draft into a script in
    src/js/52c-scripts.js and names the draft there (draft: 'docs/drafts/<stop>.md').
+   TEACH-2b: or the developer writes the lesson's code first (lsDraft('<stop>', ...) in src/js/52g-drafted.js: the questions, the models,
+   the codes, what each beat's words are for (brief) and the {slots} each beat may use (slots)); --draft gives that brief to the model and
+   --check holds the draft to those slots and codes. tools/build.py copies the words of REVIEWED drafts only into src/js/52e-words.js,
+   and the lesson is live only when its words are there.
 
    The gate. The owner reads every draft (--sheet, or the draft file itself), fixes the wording, and changes its status line to
    "status: reviewed <name> <date>". tools/build.py refuses to build while any script names a draft that is not reviewed, and this
@@ -42,7 +51,7 @@ const WPM = 150, MIN_SEC = 120, MAX_SEC = 270;
 // CONTENT-01 (the parent's rule): the same words tools/test.js keeps out of src/. "Spell" as in spelling is fine; dragons are fine.
 const BANNED = /\b(magic\w*|wizards?|witch(es|craft)?|wands?|potions?|sorcer\w*|enchant\w*|spellbooks?|spells?|charms?|unicorns?|fairy|fairies|genies?|warlocks?|evolv\w*|evolution\w*|natural selection|common ancestors?|millions? of years|billions? of years)\b|cast(s|ing)? a spell|under a spell/i;
 const NUMWORDS = /\b(two|three|four|five|six|seven|eight|nine|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|thousand|million|billion|fourths?|fifths?|sixths?|sevenths?|eighths?|ninths?|twelfths?)\b/i;
-const SLOTS = ['name', 'pet', 'a', 'b', 'n', 'k', 't', 'sum', 'diff', 'ans', 'top', 'bottom', 'tens', 'ones', 'hour', 'min', 'coin', 'value', 'x', 'y'];
+const SLOTS = ['name', 'pet', 'a', 'b', 'n', 'k', 't', 'sum', 'diff', 'ans', 'top', 'bottom', 'tens', 'ones', 'hour', 'min', 'coin', 'value', 'x', 'y', 'time'];
 
 // ---- the app, for its rules (LS_RULES, lsAge, lsToneBad, BUGS, ksBad) and its lessons ----
 let APP = null;
@@ -104,7 +113,30 @@ function checkDraft(d) {
   else if (d.home.length > 160) p.push('home: longer than 160 characters');
   const sec = lessonSecs(d);
   if (sec < MIN_SEC || sec > MAX_SEC) p.push(`about ${Math.round(sec / 6) / 10} minutes (want ${MIN_SEC / 60} to ${MAX_SEC / 60})`);
+  // TEACH-2b: a draft for a script written in code (lsDraft) uses only the slots each beat has numbers for, gives reasons only for the
+  // codes that lesson's pet can show, and says the pet's answer ({ans}) in Check me
+  const C = contract(d.id);
+  if (C) {
+    for (const b of BEATS) [].concat((d.beats || {})[b] || []).forEach((t, i) => {
+      const ok = slotsOf(C, b, i);
+      for (const m of String(t).matchAll(/\{([a-z]+)\}/g)) if (!['name', 'pet'].includes(m[1]) && !ok.includes(m[1]))
+        p.push(`${b} ${i + 1}: {${m[1]}} has no number ${Array.isArray((C.slots[b] || [])[0]) ? 'in this line' : 'in this beat'} (it has ${ok.map(x => '{' + x + '}').join(' ') || 'none'}) — "${t}"`);
+    });
+    for (const c in d.reasons || {}) if (!C.bugs.includes(c)) p.push(`reasons: ${c} is not a mistake this lesson's pet makes (it makes ${C.bugs.join(', ')})`);
+    if (![].concat((d.beats || {}).check || []).some(t => /\{ans\}/.test(t))) p.push('check: no line says the pet\'s answer ({ans})');
+    if (/\{/.test(d.idea || '')) p.push('idea: a slot in the idea (it is one sentence for every day, with no numbers)');
+    if ([].concat((d.beats || {}).together || []).length != 3) p.push('together: one line for each of the three items (3 lines)');
+    if (![1, 2].includes([].concat((d.beats || {}).show || []).length)) p.push('show: one or two lines');
+    if (d.home && (d.home.length > 90 || d.home.split(/\s+/).length > 14)) p.push('home: longer than 90 characters or 14 words (as the hand-written lessons)');
+  }
   return p;
+}
+// the slots line i of beat b may use: one list for the beat, or one list per line (Together: build, picture, symbols)
+const slotsOf = (C, b, i) => { const x = C.slots[b] || []; return Array.isArray(x[0]) ? x[Math.min(i, x.length - 1)] || [] : x; };
+// the code's side of a drafted lesson (52g-drafted.js): the stop, its slots per beat, its codes, what the words are for; null for none
+function contract(id) {
+  if (!id) return null;
+  return app()(`(()=>{const D=typeof LS_DRAFTED!='undefined'&&LS_DRAFTED[${JSON.stringify(String(id))}];return D?{t:D.t,slots:D.slots,bugs:D.bugs,brief:D.brief}:null})()`);
 }
 // the hand-written scripts (code: each line comes from a function with numbers filled in): every line they can say, checked
 // for the age of the stop's grade; and a script that names a draft must name a reviewed one
@@ -153,14 +185,15 @@ function draftFile(d, problems, model) {
   delete clean.status;
   return `# Draft: ${d.t || d.id} (${d.id})\n\nstatus: unreviewed\nmade: ${new Date().toISOString().slice(0, 10)} by tools/author.js --draft (xAI API)\n\n`
     + '<!-- For the owner: read the sheet below, change any wording in the JSON, then replace "unreviewed" above with\n'
-    + '     "reviewed <your name> <date>". Until then tools/build.py refuses any script that names this draft. -->\n\n'
+    + '     "reviewed <your name> <date>" (or run: node tools/author.js --approve <stop> --by <your name>). Until then the lesson\n'
+    + '     is not live: tools/build.py leaves its words out (52e-words.js) and refuses any script that names this draft. -->\n\n'
     + '## Read-through\n\n```text\n' + sheet(d) + '\n```\n\n## Checks\n\n'
     + (problems.length ? problems.map(x => '- ' + x).join('\n') : '- All checks pass (beats, length, themes, numbers, slots, kid-safe, tone).') + '\n\n'
     + '## Words (the draft itself)\n\n```json\n' + JSON.stringify(clean, null, 1) + '\n```\n';
 }
 function drafts() {
   if (!fs.existsSync(DRAFTS)) return [];
-  return fs.readdirSync(DRAFTS).filter(f => f.endsWith('.md')).sort().map(f => {
+  return fs.readdirSync(DRAFTS).filter(f => /^[a-z_]+\d+\.md$/.test(f)).sort().map(f => { // a stop's draft (not BATCH2-READ.md)
     const file = path.join(DRAFTS, f);
     try { const d = parseDraft(fs.readFileSync(file, 'utf8')); return {file, d, problems: checkDraft(d)}; }
     catch (e) { return {file, d: null, problems: ['cannot read: ' + e.message]}; }
@@ -189,7 +222,14 @@ function draftPrompt(id, grade) {
   if (!stop) throw new Error('no math stop ' + id);
   const g = grade != null ? +grade : stop.g, age = ageOf(g), rules = R(`(()=>{const r=LS_RULES[${JSON.stringify(age)}];return{words:r.words,chars:r.chars,no:r.no?String(r.no):''}})()`);
   const tone = R(`JSON.stringify(LS_TONE[${JSON.stringify(age)}],(k,v)=>typeof v=='function'?v(k=='nb'?'{n}':'{name}'):v)`), codes = R('Object.keys(BUGS).map(c=>c+": "+BUGS[c].d).join("\\n")');
-  const example = fs.readFileSync(path.join(DRAFTS, 'EXAMPLE.json'), 'utf8');
+  const example = fs.readFileSync(path.join(DRAFTS, 'EXAMPLE.json'), 'utf8'), C = contract(id);
+  const code = C ? `\nThis lesson's code is written already. What each beat's words are for, and which numbers it has:\n${C.brief}
+Slots each beat may use (no others; a slot is never the answer the child has to find): ${BEATS.map(b => b + ': ' + (Array.isArray((C.slots[b] || [])[0]) ? C.slots[b].map((x, i) => 'line ' + (i + 1) + ' ' + (x.map(y => '{' + y + '}').join(' ') || 'none')).join(', ') : (C.slots[b] || []).map(x => '{' + x + '}').join(' ') || 'none')).join('; ')}. {name} (the child) may be used anywhere.
+Explore lines are only the task, said before the child starts (no lines about what they made: the app reacts itself).
+After each Together and Show line the app says the problem itself, with its numbers, so a line coaches or sets the scene and never repeats the problem.
+check: exactly two lines: "My turn. Check me!" and the pet's claim, which must use {ans}: the pet's whole answer as the app says it (a number, a time such as "half past 4" or "4 15", or "35 cents"), e.g. "I think it is {ans}. Am I right?".
+together: exactly three lines: line 1 is said before a build item, line 2 before a picture item, line 3 before a symbols-only item (the app says "Now let's do some together." itself, and a miss can bring a build back, so each line fits its kind of item on its own). The idea has no slots and no numbers. Never a number word: "eighteen", "nine", "hundreds of" are all written as slots or left out.
+reasons: only for these codes (the mistakes this lesson's pet makes): ${C.bugs.join(', ')}.\n` : '';
   const sys = 'You write the spoken words of short lessons in a children\'s learning app for Pre-K to 6th grade. The child\'s pet runs each lesson. '
     + 'You write only words; the app\'s code fills every number. Reply with one JSON object and nothing else.';
   const user = `Write the words of one lesson.
@@ -205,7 +245,7 @@ The six beats: remember (bring back an earlier idea), explore (hands on a model,
 reasons: for one or two of these misconception codes that fit this stop, one or two short lines the pet says when the child catches that mistake:
 ${codes}
 home: tonight's question for a grown-up to ask the child, starting "Ask {name}" (a real number is fine here, it is for the grown-up).
-The JSON has exactly these keys: id, t, grade, age, idea, beats {remember, explore, name, together, check, show} (arrays of lines), reasons {code: [lines]}, home.
+The JSON has exactly these keys: id, t, grade, age, idea, beats {remember, explore, name, together, check, show} (arrays of lines), reasons {code: [lines]}, home.${code}
 An example from another stop (hand-written, Kindergarten):
 ${example}`;
   return {stop, g, age, messages: [{role: 'system', content: sys}, {role: 'user', content: user}]};
@@ -231,11 +271,50 @@ function draft(id, o = {}) {
   return {file, d, problems, model: m};
 }
 
-module.exports = {BEATS, BANNED, SLOTS, LS_SECS, checkLine, checkDraft, checkScripts, lessonSecs, parseDraft, draftStatus, sheet, draftFile, drafts, draftPrompt, ageOf};
+// ---- TEACH-2b: the owner's one step, and one read-through for a batch ----
+// mark drafts reviewed (only those that pass every check), then write src/js/52e-words.js (tools/build.py --words-only)
+function approve(ids, o = {}) {
+  const by = String(o.by || 'owner').replace(/\s+/g, ' ').trim(), date = o.date || new Date().toISOString().slice(0, 10), done = [], bad = [];
+  if (!/^\d{4}-\d\d-\d\d$/.test(date)) throw new Error('--date must be YYYY-MM-DD');
+  for (const x of drafts()) {
+    if (!x.d || !(ids.includes('all') ? x.d.status === 'unreviewed' : ids.includes(x.d.id))) continue;
+    if (x.problems.length) { bad.push(`${x.d.id}: ${x.problems.length} problems (fix them first: node tools/author.js --check)`); continue; }
+    const t = fs.readFileSync(x.file, 'utf8'), line = `status: reviewed ${by} ${date}${o.note ? ' (' + o.note + ')' : ''}`;
+    fs.writeFileSync(x.file, t.replace(/^status:.*$/m, line));
+    done.push(x.d.id);
+  }
+  for (const id of ids) if (id !== 'all' && !done.includes(id) && !bad.some(b => b.startsWith(id + ':'))) bad.push(`${id}: no such draft`);
+  if (done.length) cp.execFileSync('python3', [path.join(ROOT, 'tools', 'build.py'), '--words-only'], {stdio: 'pipe'});
+  return {done, bad};
+}
+// the read-through: every lesson's sheet in map order, short enough to read on a phone
+function readThrough(ids) {
+  const R = app(), at = id => R(`NODES.math.findIndex(n=>nid(n)===${JSON.stringify(id)})`);
+  const xs = drafts().filter(x => x.d && (ids.length ? ids.includes(x.d.id) : x.d.status === 'unreviewed')).sort((a, b) => at(a.d.id) - at(b.d.id));
+  const head = ['# Batch 2 read-through: grade 1 and 2 math lessons', '',
+    `${xs.length} lessons, in map order. Each is what the child hears:`, 'the six beats, the pet\'s reasons when it is caught, and tonight\'s question for you.', '',
+    'The app fills in each {slot} from the problem on screen, so numbers are always right.',
+    'The app also says each problem itself, after the Together and Show lines.', '',
+    'To change a word: edit the JSON in that lesson\'s file in docs/drafts/.', 'When you are happy, say so, or run:', '',
+    '`node tools/author.js --approve all --by <your name>`', '', '(or name the lessons instead of all). Approved lessons go live at the next build.', ''];
+  return head.concat(xs.map((x, i) => `## ${i + 1}. ${x.d.t} (${x.d.id})\n\n\`\`\`text\n${sheet(x.d).split('\n').slice(1).join('\n')}\n\`\`\`\n`)).join('\n');
+}
+
+module.exports = {approve, readThrough, contract, BEATS, BANNED, SLOTS, LS_SECS, checkLine, checkDraft, checkScripts, lessonSecs, parseDraft, draftStatus, sheet, draftFile, drafts, draftPrompt, ageOf};
 
 if (require.main === module) {
   const a = process.argv.slice(2), has = f => a.includes(f), val = f => (a.indexOf(f) >= 0 ? a[a.indexOf(f) + 1] : null);
-  if (has('--draft')) {
+  if (has('--approve')) {
+    const ids = a.slice(a.indexOf('--approve') + 1).filter((x, i, all) => !x.startsWith('--') && !['--by', '--date', '--note'].includes(all[i - 1]));
+    const r = approve(ids, {by: val('--by'), date: val('--date'), note: val('--note')});
+    console.log((r.done.length ? 'reviewed: ' + r.done.join(', ') + '\nwrote src/js/52e-words.js: these lessons go live at the next build (python3 tools/build.py)' : 'nothing marked reviewed')
+      + (r.bad.length ? '\nnot marked:\n  ' + r.bad.join('\n  ') : ''));
+    process.exitCode = r.bad.length ? 1 : 0;
+  } else if (has('--read')) {
+    const f = val('--read'), ids = a.filter((x, i) => !x.startsWith('--') && a[i - 1] !== '--read');
+    fs.writeFileSync(path.resolve(f), readThrough(ids));
+    console.log('wrote ' + f);
+  } else if (has('--draft')) {
     const r = draft(val('--draft'), {grade: val('--grade'), dry: has('--dry')});
     if (r.prompt) console.log(JSON.stringify(r.prompt.messages, null, 1));
     else console.log(`${path.relative(ROOT, r.file)}: status unreviewed, ${r.problems.length ? r.problems.length + ' problems:\n  ' + r.problems.join('\n  ') : 'all checks pass'}`);
