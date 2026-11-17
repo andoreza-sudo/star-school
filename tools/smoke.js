@@ -11285,6 +11285,14 @@ async function main() {
           await pg.click(go);
           await pg.waitForSelector('.sheet-bg.on #ckgo', { timeout: 5000 });
           await vwait(pg, 400);
+          // FIX3: the sheet's fade and slide are CSS transitions on the real clock (320 ms), longer than 400 ms of virtual time: the
+          // shot was taken mid-way (the sheet see-through and still low). Wait until they are done, then the sheet is opaque and whole
+          await pg.waitForFunction(() => document.getAnimations().every(a => { const t = a.effect && a.effect.target;
+            return !t || !t.closest || !t.closest('.sheet-bg') || a.playState !== 'running' || a.effect.getTiming().iterations === Infinity; }), null, { timeout: 5000 })
+            .catch(() => bad.push(at + 'the sheet is still moving after 5 s'));
+          const sht = await pg.evaluate(() => { const bg = document.querySelector('.sheet-bg.on'), s = bg.querySelector('.sheet'), r = s.getBoundingClientRect();
+            return { op: getComputedStyle(bg).opacity, bgc: getComputedStyle(s).backgroundColor, top: r.top, out: [...s.querySelectorAll('button')].filter(e => e.getBoundingClientRect().bottom > innerHeight + 1).map(e => e.id) }; });
+          if (sht.op !== '1' || !/^rgb\(/.test(sht.bgc) || sht.out.length) bad.push(at + 'the sheet once settled: ' + JSON.stringify(sht));
           await fit('.sheet button', 'sheet');
           await shot(pg, 'checkin-ask-' + w + 'x' + h);
           await pg.click('#ckgo');
