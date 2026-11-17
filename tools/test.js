@@ -19935,7 +19935,7 @@ run('teach: the notebook, the report card, the switch TEACH-2',()=>{
     const num=m.ls.rows.find(x=>x.name==='Counting and number sense'),ops=m.ls.rows.find(x=>x.name==='Addition and subtraction');
     if(!num||num.c.join()!=='0,0,1,1'||!ops||ops.c.join()!=='1,1,0,0')bad.push('stages: '+JSON.stringify(m.ls.rows.map(x=>[x.name,x.c])));
     for(const t of ['Taught','Practising','Learned','Still knows it','Learned means your child did it with no help. Still knows it means they did it again days later.',
-      'What we noticed','Mia sometimes adds when the problem takes away, or the other way round in <b>Add to 5</b>','data-npin="0"',"Tonight's question:</b> Ask Mia",'Right on the first try before the lesson: 50%. After it: 100%'])
+      'What we noticed','In <b>Add to 5</b>, Mia sometimes adds when the problem takes away, or the other way round.','data-npin="0"',"Tonight's question:</b> Ask Mia",'Right on the first try before the lesson: 50%. After it: 100%'])
       if(!h.includes(t))bad.push('report: no "'+t+'"');
     if(/undefined|NaN/.test(h.slice(h.indexOf('rp-teach'))))bad.push('report: undefined in the lessons card');
     loadSave(null);if(/rp-teach/.test(REP.html(REP.data())))bad.push('report: a lessons card for a save with no lessons');

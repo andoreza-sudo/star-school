@@ -297,6 +297,12 @@ const SCREENS = {
     await p.evaluate(() => { G.score = 2; G.done = G.n; finish(); }); await p.waitForTimeout(1200); } },
   'badge-shelf': { run: ev(() => { for (const sk of ['add', 'cnt']) { const i = NODES.math.findIndex(n => n.sk == sk && n.lv == 1); (S.chk = S.chk || {})[nid(NODES.math[i])] = { n: 1, best: 5, last: mastDay(), at: 14, b: mastDay() }; } chkReady('eo'); CHK.shelf(); }) },
   'report-badges': { adult: true, run: ev(() => { const i = chkReady(); S.chk[nid(NODES.math[i])] = { n: 2, best: 4, last: mastDay(), at: 20, b: mastDay() }; chkReady('cnt'); report(); document.querySelector('#rp-badges').scrollIntoView(); }) },
+  // TEACH-2: the notebook (two pages, one kept), a repair lesson's contrast, and the report card's lessons card (the four stages, what we
+  // noticed with its pin); the lessons' part is loaded first, as the math map and the report card load it
+  'teach-notebook': { run: async p => { await teachReady(p); await p.evaluate(() => { window.say = window.__a11y.say; teachSave(); NB.open(); }); await p.waitForTimeout(600); } },
+  'teach-contrast': { run: async p => { await teachReady(p); await p.evaluate(() => { window.say = window.__a11y.say; teachSave(); LS.WAKE = 400;
+    const st = LS.make('tenf2', { seed: 3, day: lsDay(), repair: 'given' }); st.pre = [true, false]; LS.beat(st, LSB.indexOf('exp')); LS.st = st; LS.show(); }); await p.waitForTimeout(1500); } },
+  'report-lessons': { adult: true, run: async p => { await teachReady(p); await p.evaluate(() => { teachSave(); report(); document.querySelector('#rp-teach').scrollIntoView(); }); await p.waitForTimeout(500); } },
   'hill-garage': { run: ev(() => { gtime(); garage(); }) },
   'hill-drive': { run: ev(() => { gtime(); hcStart('meadow'); }), main: '.pedal', sheet: pauseSheet },
   'hill-end': {
@@ -357,6 +363,10 @@ const SCREENS = {
 // Game screens: the games' part files may load only when the Game Room opens (P6-02's lazy parts). Open the Game Room first when
 // the game code is not there yet and wait for it (and for the hub); with the parts already loaded this does nothing.
 // P6-03: GAME_PARTS, not LAZY_PARTS: bt is lazy too but is not the Game Room's (gameRoom() never loads it)
+async function teachReady(p) {
+  await p.evaluate(() => partLoad('teach'));
+  await p.waitForFunction(() => typeof NB != 'undefined', null, { timeout: 30000 });
+}
 async function gamesReady(p) {
   const need = await p.evaluate(() => typeof GH == 'undefined' || !GAME_PARTS.every(partReady));
   if (!need) return;
@@ -388,6 +398,12 @@ function pageInit() {
   window.rlSave = () => { gtime(); const r = rlS(); r.spk = 130; r.stars = { 'meadow-0': 3 }; save(); };
   window.snSave = () => { gtime(); S.grade = 3; const r = snS(); r.coins = 80; r.days = 2; save(); };
   A.mark = k => { A.marks[k] = A.now(); };
+  // TEACH-2: a Kindergartner with two ideas learned (one kept) and a misconception held on Add to 5, for the notebook and the report
+  window.teachSave = () => { const d = STRK.idx(today()); S.grade = 0;
+    S.know = { tenf2: { s: 2, n: 1, lv: [[1, 1], [1, 1], [1, 1]], b: {}, box: 0, due: d + 2, d: d - 1, last: d - 1, note: { a: 7, b: 3 } },
+      tenf3: { s: 3, n: 1, lv: [[1, 1], [0, 0], [1, 1]], b: {}, box: 1, due: d + 5, d: d - 8, last: d - 3, k: d - 3 },
+      add4: { s: 1, n: 2, lv: [[1, 2], [0, 2], [0, 1]], b: { op: 3 }, box: 0, due: 0, w: [['op', 'add4 3', d], ['op', 'add4 4', d], ['op', 'add4 4', d]] } };
+    S.lm = [['tenf2', d - 1, 1, 2, 2, 2, 0], ['add4', d, 0, 2, 1, 2, 0]]; S.tq = 'Ask them: "How many more make 10?"'; save(); };
   A.say = (t) => { A.said.push({ t: String(t || ''), at: A.now() }); };
   // CHECK-IN: make a passed math stop (skill sk, level 1; add by default) ready for a check-in; returns its index on the math map
   window.chkReady = (sk = 'add') => { const i = NODES.math.findIndex(n => n.sk == sk && n.lv == 1), k = nid(NODES.math[i]); S.maps.math[k] = Math.max(1, S.maps.math[k] || 0);

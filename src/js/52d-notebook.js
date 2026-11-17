@@ -22,25 +22,32 @@ const NB = {
     const L = LESSONS[id], r = mulberry32(id.length * 7 + 1);
     let c = note && typeof note == 'object' && Object.keys(note).length ? note : null;
     try {
-      if (!c) { const e = L.exp(r); c = e.react(lsRight(e.q)).ctx; }
+      if (!c) { const e = L.exp(r); c = e.react(NB.build(e.q)).ctx; }
       return L.name(Object.assign({}, c), r).html.replace(/<svg /g, '<svg aria-hidden="true" ');
     } catch (e) { return ''; }
+  },
+  // a build for a page with no Explore build of its own: an "any way" task gets a small middling one, others the one the checker takes
+  build(q) {
+    if (q.goal != 'any') return lsRight(q);
+    if (q.kind == 'line') return String(Math.round((q.line.min + q.line.max) * .6));
+    if (q.model == 'b10') return '34';
+    return String(Math.max(1, Math.ceil((q.m.total - (q.m.fixed || 0)) * .35)));
   },
   back: null,
   open(back) {
     NB.back = back || (() => pathMap('math'));
     const pg = NB.pages(), T = lsTone(), sg = planSuggest(S, lsDay()), nx = sg && LESSONS[sg.plan.id];
     const line = pg.length ? T.nb(pg.length) : T.nb0;
-    view(`<div class="top tbar s-math nb-top">${UI.ibtn('back', 'Back', {size: 'sm', id: 'back'})}<div class="ttl">${ico('doc', 30)}<span>My notebook</span></div>
+    view(`<div class="top tbar s-math nbk-top">${UI.ibtn('back', 'Back', {size: 'sm', id: 'back'})}<div class="ttl">${ico('doc', 30)}<span>My notebook</span></div>
       ${UI.chip('star', pg.filter(p => p.kept).length, {aria: 'Ideas you still know'})}</div>
-    <div class="scroll nb" id="nb"><div class="nb-in">
-     <div class="ls-pet nb-pet"><div class="ls-art" id="lsart" aria-hidden="true"></div><div class="ls-bub on" id="lsbub" role="status"><span>${esc(line)}</span></div>
+    <div class="scroll nbk" id="nb"><div class="nbk-in">
+     <div class="ls-pet nbk-pet"><div class="ls-art" id="lsart" aria-hidden="true"></div><div class="ls-bub on" id="lsbub" role="status"><span>${esc(line)}</span></div>
       ${UI.ibtn('speak', 'Hear it again', {size: 'sm', id: 'nbhear', cls: 'ls-hear'})}</div>
-     ${pg.length ? `<ul class="nb-pages">${pg.map(p => `<li class="nb-pg${p.kept ? ' kept' : ''}" data-nbp="${p.id}"><div class="nb-pic" aria-hidden="true">${p.html}</div>`
-      + `<p class="nb-idea">${esc(p.idea)}</p><div class="nb-foot"><span class="nb-t">${p.kept ? ico('star', 22, 'nb-star') : ''}<span>${esc(p.t)}</span></span>`
+     ${pg.length ? `<ul class="nbk-pages">${pg.map(p => `<li class="nbk-pg${p.kept ? ' kept' : ''}" data-nbp="${p.id}"><div class="nbk-pic" aria-hidden="true">${p.html}</div>`
+      + `<p class="nbk-idea">${esc(p.idea)}</p><div class="nbk-foot"><span class="nbk-t">${p.kept ? ico('star', 22, 'nbk-star') : ''}<span>${esc(p.t)}</span></span>`
       + `${UI.ibtn('speak', 'Hear: ' + p.idea, {size: 'sm', attrs: `data-nb="${p.id}"`})}</div></li>`).join('')}</ul>`
-      : `<div class="nb-empty" aria-hidden="true">${ico('doc', 64)}</div>`}
-     ${nx ? `<div class="nb-next">${UI.btn(nx.t, {kind: 'primary', size: 'lg', icon: 'go', id: 'nbgo', attrs: `aria-label="Learn ${esc(nx.t)} with ${esc(petN())}"`})}</div>` : ''}
+      : `<div class="nbk-empty" aria-hidden="true">${ico('doc', 64)}</div>`}
+     ${nx ? `<div class="nbk-next">${UI.btn(nx.t, {kind: 'primary', size: 'lg', icon: 'go', id: 'nbgo', attrs: `aria-label="Learn ${esc(nx.t)} with ${esc(petN())}"`})}</div>` : ''}
     </div></div>`);
     LS.mood('happy');
     $('#back').onclick = () => { SFX.whoosh(); NB.back(); };
@@ -55,7 +62,7 @@ const NB = {
   mapBtn() {
     const t = $('.mp-top');
     if (!t || $('#nbopen') || !NB.pages().length) return;
-    const b = UI.ibtn('doc', 'My notebook', {size: 'sm', id: 'nbopen', cls: 'nb-open'}), c = t.querySelector('.chip');
+    const b = UI.ibtn('doc', 'My notebook', {size: 'sm', id: 'nbopen', cls: 'nbk-open'}), c = t.querySelector('.chip');
     if (c) c.insertAdjacentHTML('beforebegin', b); else t.insertAdjacentHTML('beforeend', b);
     $('#nbopen').onclick = () => { SFX.whoosh(); NB.open(() => pathMap('math')); };
   },
@@ -115,7 +122,7 @@ const LSREP = {
     const pin = REP.pinned || (() => false);
     const seen = L.noticed.length ? `<h3 class="rp-h3">What we noticed</h3><ul class="rp-list rp-noticed">${L.noticed.map((x, k) => {
       const on = pin(m, x);
-      return `<li>${nm} ${esc(LSREP.NOTE[x.code])} in <b>${esc(x.t)}</b>. We are working on it: the next lesson starts with the picture of both answers, `
+      return `<li>In <b>${esc(x.t)}</b>, ${nm} ${esc(LSREP.NOTE[x.code])}. We are working on it: the next lesson starts with the picture of both answers, `
         + `and ${pet} makes that mistake for ${nm} to fix.`
         + `<button class="btn ${on ? 'primary' : 'soft'} sm rp-pin rp-noprint" data-npin="${k}" aria-pressed="${on}">${ico(on ? 'check' : 'pin', 22)}`
         + `<span>${on ? "Tomorrow's first mission" : 'Practise this next'}</span></button></li>`;
