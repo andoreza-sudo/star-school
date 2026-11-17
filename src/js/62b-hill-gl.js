@@ -35,7 +35,7 @@ function hcGlStart(H, cv) {
     tmp: new Array(16).fill(0), y0: null, slow: 0, off: false, frames: 0, q: 1, fq: 0, ps: 0, pf: 0,
     VP: new Array(16).fill(0), VP32: new Float32Array(16), SCR: new Float32Array(16), SCR2: new Float32Array(16) };
   // the draw options, made once and reused every frame (M is the model matrix hgMVP keeps)
-  G.O = { dirt: { tex: null }, lit: { M: G.M }, cut: { tex: null, cut: .5 }, tyre: { M: G.M, A: .5 }, crates: { M: G.M, n: 0 }, sh: { tex: null, T: [1, 1, 1, 1] },
+  G.O = { dirt: { tex: null }, lit: { M: G.M }, cut: { tex: null, cut: .5 }, sil: { tex: null, cut: .5 }, tyre: { M: G.M, A: .5 }, crates: { M: G.M, n: 0 }, sh: { tex: null, T: [1, 1, 1, 1] },
     far: [.62, .62, .62, 1], tn: [1, 1, 1, 1], cloud: [1, 1, 1, .9] };
   return G;
 }
@@ -143,7 +143,7 @@ function hgChunk(G, H, k) {
   const R = G.R, C = H.C, Wd = HCW[H.wi], x0 = k * HGL.CW, x1 = x0 + HGL.CW, ZF = HGL.ZF, ZB = HGL.ZB, ZV = HGL.ZV, L = GLX.SUN;
   const gH = w0 => { const i = hcIx(C, w0); if (C.fl[i] & 4) { const b = C.bridges.find(q => w0 >= q.x0 && w0 <= q.x1); if (b) { const u = Math.min(1, (w0 - b.x0) / 40, (b.x1 - w0) / 40); return b.y - 90 * Math.max(0, u); } } return hcH(C, w0); };
   const top = hgC(G, Wd.top), top2 = hgC(G, Wd.top2), dirt = hgC(G, Wd.dirt), sky = hgC(G, G.skyCols[1]), wh = hgC(G, 'w');
-  const g = [], f = [], l = [], sp = [], xs = [], ys = [], cs = [], lit = [];
+  const g = [], f = [], l = [], nr = [], sp = [], xs = [], ys = [], cs = [], lit = [];
   let lo = 1e9;
   for (let w0 = x0 - 10; w0 <= x1 + 10; w0 += 10) {
     const y = gH(w0), i = hcIx(C, w0), sl = (gH(w0 + 10) - gH(w0 - 10)) / 20, nl = Math.hypot(sl, 1), d = Math.max(0, (-sl * L[0] + L[1]) / nl);
@@ -202,7 +202,8 @@ function hgChunk(G, H, k) {
   if (Wd.pit != 'crater') for (const p of C.pits) pool(p.x0 + 4, p.x1 - 4, p.y - p.d * .5);
   for (const b of C.bridges) pool(b.x0 + 20, b.x1 - 20, b.y - 60);
   for (const fd of C.fords) pool(fd.x0, fd.x1, fd.y);
-  // bridges: planks on a deck, posts and rails on both sides
+  // bridges: planks on a deck, posts and rails on both sides. The near side's posts and rail go in their own mesh (nr), drawn after
+  // the car so the car stays in front of them (FIX3: the near rail at z = ZF - 10 is nearer than the car and drew over its lower body)
   const n2 = hgC(G, 'n2'), nn = hgC(G, 'n'), n3 = hgC(G, 'n3');
   for (const b of C.bridges) {
     if (b.x1 < x0 - 30 || b.x0 > x1 + 30) continue;
@@ -211,8 +212,9 @@ function hgChunk(G, H, k) {
     for (let w0 = a; w0 < e; w0 += 24) GLX.box(l, w0 + 1, b.y - 4, -ZB + 8, Math.min(e, w0 + 23), b.y, ZF - 8, nn, n2);
     const m = Math.max(1, Math.round((b.x1 - b.x0) / 120));
     for (const z of [ZF - 10, -ZB + 10]) {
-      for (let j = 0; j <= m; j++) { const w0 = a + (e - a) * j / m; GLX.box(l, w0 - 3, b.y - 40, z - 3, w0 + 3, b.y + 46, z + 3, n3); }
-      GLX.box(l, a, b.y + 38, z - 1.5, e, b.y + 42, z + 1.5, n3);
+      const o = z > 0 ? nr : l;
+      for (let j = 0; j <= m; j++) { const w0 = a + (e - a) * j / m; GLX.box(o, w0 - 3, b.y - 40, z - 3, w0 + 3, b.y + 46, z + 3, n3); }
+      GLX.box(o, a, b.y + 38, z - 1.5, e, b.y + 42, z + 1.5, n3);
     }
   }
   // rocks: the 2D look's half ellipse as a lit slab
@@ -243,9 +245,9 @@ function hgChunk(G, H, k) {
       put(w0, -ZV + 70 + ((i * 29) % 90), ((i % 4) + 4) % 4, 1.1);
     }
   }
-  ch = { k, x0, g: GLX.arr(R, 'grad', g), f: GLX.arr(R, 'spr', f), l: GLX.arr(R, 'lit', l), sp: GLX.arr(R, 'spr', sp) };
+  ch = { k, x0, g: GLX.arr(R, 'grad', g), f: GLX.arr(R, 'spr', f), l: GLX.arr(R, 'lit', l), nr: GLX.arr(R, 'lit', nr), sp: GLX.arr(R, 'spr', sp) };
   G.ch.set(k, ch);
-  for (const [kk, c] of G.ch) if (kk < k - 4 || kk > k + 4) { for (const m of [c.g, c.f, c.l, c.sp]) GLX.free(R, m); G.ch.delete(kk); }
+  for (const [kk, c] of G.ch) if (kk < k - 4 || kk > k + 4) { for (const m of [c.g, c.f, c.l, c.nr, c.sp]) GLX.free(R, m); G.ch.delete(kk); }
   return ch;
 }
 // the car's parts that do not change during a drive: a wheel (a lit cylinder), the crate boxes, the shadow
@@ -333,9 +335,11 @@ function hgFrame(H, W, Hh, dpr, sh) {
   // ---- the ground (depth on) ----
   gl.enable(gl.DEPTH_TEST); gl.depthMask(true); gl.disable(gl.BLEND);
   const s0 = D / (D + HGL.ZV), xa = ex - px / (sc * s0) - 20, xb = ex + (W - px) / (sc * s0) + 20, dirt = GLX.tex(R, 'dirt' + H.wi, texFor(H.wi), true);
-  const PT = hgPropTex(G, Wd), ptex = PT && GLX.tex(R, 'props', PT.c);
-  for (let k = Math.floor(xa / HGL.CW); k <= Math.floor(xb / HGL.CW); k++) {
+  const PT = hgPropTex(G, Wd), ptex = PT && GLX.tex(R, 'props', PT.c), ka = Math.floor(xa / HGL.CW), kb = Math.floor(xb / HGL.CW);
+  let near = false; // a bridge's near rail in view (drawn after the car)
+  for (let k = ka; k <= kb; k++) {
     const ch = hgChunk(G, H, k), mvp = hgMVP(G, ch.x0 - ex, -ey, 0);
+    if (ch.nr) near = true;
     GLX.draw(R, ch.g, mvp);
     O.dirt.tex = dirt; GLX.draw(R, ch.f, mvp, O.dirt);
     if (ch.l) GLX.draw(R, ch.l, mvp, O.lit);
@@ -372,7 +376,19 @@ function hgFrame(H, W, Hh, dpr, sh) {
     gl.depthMask(true); gl.disable(gl.BLEND);
     if (H.crates) { O.crates.n = H.crates * 36; GLX.draw(R, K.c, hgMVP(G, bx - ex, by - ey, 0, ang), O.crates); }
     wheelsAt(K.wz);
+    if (near) {
+      // FIX3: the car's outline (body slices, wheels, crates) into the depth buffer at the nearest depth, no colour, so the near rail
+      // drawn next stays behind the car whatever its z (the body slices are see-through and write no depth when they are drawn)
+      gl.colorMask(false, false, false, false); gl.depthRange(0, 0);
+      for (let i = 0; i < NS; i++) { const u = i / (NS - 1), z = -K.body + 2 * K.body * u; GLX.bq(B, bxc, byc, z, bw, bh, 0, cr[0] / W0, cr[1] / H0, cr[2] / W0, cr[3] / H0, GLX.ONE); }
+      O.sil.tex = btex; GLX.bflush(R, B, hgMVP(G, bx - ex, by - ey, 0, ang), btex, O.sil);
+      if (H.crates) GLX.draw(R, K.c, hgMVP(G, bx - ex, by - ey, 0, ang), O.crates);
+      for (const z of K.wz ? [-K.wz, K.wz] : [0]) for (let j = 0; j < 2; j++) { const ox = j ? V.L / 2 : -V.L / 2, rot = j ? H.w2.rot : H.w1.rot; GLX.draw(R, K.w, hgMVP(G, bx + ox * c0 + wyo * s0b - ex, by + ox * s0b - wyo * c0 - ey, z, -rot), O.tyre); }
+      gl.depthRange(0, 1); gl.colorMask(true, true, true, true);
+    }
   }
+  // the bridges' near posts and rails: in front of the deck and the water, behind the car
+  if (near) for (let k = ka; k <= kb; k++) { const ch = hgChunk(G, H, k); if (ch.nr) GLX.draw(R, ch.nr, hgMVP(G, ch.x0 - ex, -ey, 0), O.lit); }
   // ---- behind, drawn after the ground and the car so the depth test skips what they hide (a cheap GPU pays per pixel):
   //      the ranges near to far, the sky (at the far end of the depth range), then the sun and the clouds just in front of it ----
   gl.enable(gl.DEPTH_TEST); gl.depthMask(true); gl.disable(gl.BLEND);
