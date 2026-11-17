@@ -885,10 +885,19 @@ async function main() {
         if (st.tag === 'ch' && st.tries === 0) {
           tags++;
           tagH = Math.min(tagH, st.h);
-          if ((st.kind === 'choice' || st.kind === 'num') && tags % 2 === 1) {
-            // every other challenge question: one wrong first try, then the right answer (3 misses in a row would step the round down)
+          if (['choice', 'num', 'sort', 'mark'].includes(st.kind) && tags % 2 === 1) {
+            // every other challenge question: one wrong first try, then the right answer (3 misses in a row would step the round down).
+            // FIX3: eo 2 mixes in sort questions (KINDS2), so a sort (every chip in a wrong bin) or a mark (a wrong word) is missed too;
+            // with choice and num only, some runs drew no question to miss
             if (st.kind === 'choice') await mp.click(`.ch[data-i="${await mp.evaluate(() => G.q.choices.findIndex(c => String(c.v) !== String(G.q.ans)))}"]`);
-            else { for (const d of String(Number(await mp.evaluate(() => G.q.ans)) + 1)) await mp.click(`.k[data-k="${d}"]`); await mp.click('.k[data-k="go"]'); }
+            else if (st.kind === 'sort') {
+              const plan = await mp.evaluate(() => G.q.items.map((c, i) => [i, (G.q.bins.findIndex(b => String(b.v) === String(c.b)) + 1) % G.q.bins.length]));
+              for (const [i, b] of plan) { await mp.click(`.schip[data-i="${i}"]`); await mp.click(`.sbt[data-b="${b}"]`, { position: { x: 16, y: 12 } }); }
+              await mp.click('#mcheck');
+            } else if (st.kind === 'mark') {
+              await mp.click(`.mkt[data-i="${await mp.evaluate(() => G.q.words.findIndex((w, i) => !G.q.ans.includes(String(i))))}"]`);
+              if (!(await mp.evaluate(() => G.q.one))) await mp.click('#mcheck');
+            } else { for (const d of String(Number(await mp.evaluate(() => G.q.ans)) + 1)) await mp.click(`.k[data-k="${d}"]`); await mp.click('.k[data-k="go"]'); }
             await mp.waitForFunction(() => G.tries === 1 && !G.lock, null, { timeout: 4000 });
             missed++;
           }
