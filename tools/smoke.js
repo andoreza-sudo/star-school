@@ -11135,6 +11135,99 @@ async function main() {
       else step('P6-01: Enter and Space on an SVG tap target (' + tags.join(', ') + ' with no click() method, coord 1 grid) answer once, no console errors');
     }
 
+    // GL-01 Hill Climb's 3D look (src/js/60-gl.js, 62b-hill-gl.js) and the speed box (19b-fps.js), at 360x740 and 800x1280 (midway
+    // save). Headless Chrome draws WebGL with SwiftShader (on the CPU), where the drive picks the 2D look (checked first); then HGL.soft
+    // lets it draw in 3D there: the WebGL canvas under the 2D one, frames drawn, few draw calls, the speed box (Grown-ups switch)
+    // reading fps and "3D"; leaving gives the context back. With the 2D look chosen in Grown-ups, and with WebGL forced off in the
+    // browser, the drive is the 2D look (no WebGL canvas) and still drives.
+    // No console errors, no requests, nothing in the app log. GL_SHOTS=<dir> saves screenshots (else tools/out).
+    {
+      const bad = [], notes = [];
+      const dir = process.env.GL_SHOTS || require('path').join(__dirname, 'out');
+      try { require('fs').mkdirSync(dir, { recursive: true }); } catch (e) {}
+      const noGL = () => { const g = HTMLCanvasElement.prototype.getContext; HTMLCanvasElement.prototype.getContext = function (k, ...a) { return /webgl/.test(k) ? null : g.call(this, k, ...a); }; };
+      const drive = async (pg, at, want) => {
+        await pg.evaluate(() => { document.querySelectorAll('.ovl').forEach(o => o.remove()); if (typeof HC != 'undefined' && HC) stopHC(); hcStart(0, 0); });
+        await pg.waitForSelector('#gpause');
+        await pg.evaluate(() => { window.__gas = setInterval(() => { if (HC) HC.gas = true; }, 30); });
+        await pg.waitForTimeout(3000); // real time: the drive runs on animation frames
+        const s = await pg.evaluate(() => {
+          const H = HC, G = H.gl, c = document.querySelector('#hcgl'), v = document.querySelector('#hcv');
+          return { gl: !!(G && !G.off), canvas: !!c, under: !!(c && c.nextElementSibling === v), frames: G ? G.frames : 0, draws: G ? G.R.draws : 0, why: H.glWhy || '', t: H.t, x: Math.round((H.w1.x + H.w2.x) / 2),
+            size: c ? [c.width, c.height] : null, tag: FPS.tag, box: (document.querySelector('#fpsbox') || {}).textContent || '', lost: G ? G.R.gl.isContextLost() : null,
+            wide: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+            // a sky pixel of the 2D canvas: drawn and opaque in the 2D look, left clear in the 3D look (the WebGL canvas shows through)
+            sky: [...v.getContext('2d').getImageData(Math.round(v.width / 2), Math.round(v.height * .2), 1, 1).data] };
+        });
+        await pg.evaluate(() => clearInterval(window.__gas));
+        if (want === '3D') {
+          if (!s.gl || !s.canvas || !s.under || !(s.frames > 20) || !(s.draws > 8 && s.draws < 60) || s.lost || s.tag !== '3D' || s.sky[3] !== 0) bad.push(at + '3D look not drawing: ' + JSON.stringify(s));
+        } else if (s.gl || s.canvas || s.tag !== '2D' || s.sky[3] !== 255 || s.sky[0] + s.sky[1] + s.sky[2] < 200) bad.push(at + want + ': expected the 2D look: ' + JSON.stringify(s));
+        if (/error|lost/.test(s.why)) bad.push(at + want + ': the 3D look dropped: ' + s.why);
+        if (!(s.t > 1) || !(s.x > 150)) bad.push(at + want + ': the drive did not move: ' + JSON.stringify(s));
+        if (s.wide) bad.push(at + want + ': sideways scroll');
+        return s;
+      };
+      for (const [w, h] of [[360, 740], [800, 1280]]) {
+        const at = w + 'x' + h + ' ', tag = w + 'x' + h;
+        for (const forced of [false, true]) {
+          const cx = await openApp(browser, { fixture: 'midway', width: w, height: h });
+          const pg = cx.page, shot = n => pg.screenshot({ path: require('path').join(dir, 'gl-' + n + '-' + tag + '.png') }).catch(() => {});
+          try {
+            if (forced) { await pg.addInitScript(noGL); await pg.reload(); await pg.waitForSelector('#app *'); }
+            await pg.evaluate(() => { S.pt = { bank: 1800, day: today(), used: 0 }; S.sound = false; save(); });
+            if (await pg.evaluate(() => partsLoad())) bad.push(at + 'the games parts did not load');
+            await pg.waitForFunction(() => typeof hcStart == 'function' && typeof GLX == 'object', null, { timeout: 15000 });
+            const d0 = await pg.evaluate(() => ({ fps: S.fps, hcGl: S.hcGl, probe: GLX.probe() }));
+            if (d0.fps !== false || d0.hcGl !== true || d0.probe !== !forced) bad.push(at + (forced ? 'WebGL off' : 'WebGL') + ': defaults and probe ' + JSON.stringify(d0));
+            if (!forced) {
+              // Grown-ups: the speed box switch shows the box at once and saves; the 3D look switch saves
+              await pg.evaluate(() => grown());
+              await pg.waitForSelector('#fps');
+              await pg.evaluate(() => { const e = document.querySelector('#fps'); e.scrollIntoView(); e.click(); });
+              await vwait(pg, 1200);
+              const g1 = await pg.evaluate(() => ({ on: S.fps, box: (document.querySelector('#fpsbox') || {}).textContent || '', saved: JSON.parse(localStorage.getItem('starschool-v2') || '{}').fps,
+                hc3d: document.querySelector('#hc3d').checked }));
+              if (g1.on !== true || g1.saved !== true || !/^\d+ fps, worst \d+ ms/.test(g1.box) || !g1.hc3d) bad.push(at + 'Grown-ups speed box switch: ' + JSON.stringify(g1));
+              await shot('grown');
+              const sw = await drive(pg, at, 'software WebGL');
+              if (sw.why !== 'software') bad.push(at + 'WebGL drawn by the CPU should pick the 2D look: ' + JSON.stringify(sw));
+              await pg.evaluate(() => { HGL.soft = true; });
+              const s3 = await drive(pg, at, '3D');
+              await shot('3d');
+              notes.push(tag + ' 3D: ' + s3.draws + ' draw calls, canvas ' + (s3.size || []).join('x') + ', box "' + s3.box + '"');
+              const ended = await pg.evaluate(() => { const G = HC.gl; stopHC(); return { ended: !!G.R.ended, tag: FPS.tag }; });
+              if (!ended.ended || ended.tag !== '') bad.push(at + 'leaving the drive should give the WebGL context back: ' + JSON.stringify(ended));
+              // the 2D look chosen in Grown-ups
+              await pg.evaluate(() => { grown(); });
+              await pg.waitForSelector('#hc3d');
+              await pg.evaluate(() => { const e = document.querySelector('#hc3d'); e.scrollIntoView(); e.click(); });
+              const g2 = await pg.evaluate(() => ({ hcGl: S.hcGl, saved: JSON.parse(localStorage.getItem('starschool-v2') || '{}').hcGl }));
+              if (g2.hcGl !== false || g2.saved !== false) bad.push(at + 'Grown-ups 3D look switch: ' + JSON.stringify(g2));
+              const s2 = await drive(pg, at, '2D look chosen');
+              await shot('2d');
+              notes.push(tag + ' 2D look chosen: box "' + s2.box + '"');
+            } else {
+              await pg.evaluate(() => { S.fps = true; save(); fpsSet(true); });
+              const sf = await drive(pg, at, 'WebGL off');
+              await shot('nogl');
+              notes.push(tag + ' WebGL off: 2D look, box "' + sf.box + '"');
+            }
+            const log = await pg.evaluate(() => (S.err || []).map(e => e.msg).filter(m => /3D look/.test(m)));
+            if (log.length) bad.push(at + 'app log: ' + log.join('; '));
+            await pg.evaluate(() => { if (HC) stopHC(); home(); });
+          } catch (x) { bad.push(at + (forced ? 'WebGL off: ' : '') + x.message.split('\n')[0]); }
+          for (const e of cx.errors) bad.push(at + (forced ? 'WebGL off: ' : '') + 'console error: ' + e);
+          for (const u of cx.network) bad.push(at + 'network request: ' + u);
+          await cx.ctx.close();
+        }
+      }
+      if (bad.length) fail('GL-01 Hill Climb 3D look and speed box:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('GL-01: Hill Climb picks the 2D look on WebGL drawn by the CPU (SwiftShader) and, with HGL.soft, draws in 3D (canvas under the 2D layer, frames, under 60 draw calls, context given back on leaving), ' +
+        'the 2D look when chosen in Grown-ups and when WebGL is forced off, the speed box switch (off by default, saved) reads fps and the look; ' +
+        'at 360x740 and 800x1280, no console errors; ' + notes.join('; '));
+    }
+
     // KINDS2 batch A (docs/KINDS2-SPEC.md 6, smoke): the sort and mark kinds in one-question rounds of the real round engine, at 360x740
     // and 800x1280. sort: right on the first try by taps; wrong then right (hint, the right chips stay locked, "n of m are home");
     // wrong twice (the chips move to their bins marked, the answer is spoken, the question comes back at the end of the round); one chip

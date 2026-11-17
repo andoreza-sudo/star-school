@@ -1,4 +1,4 @@
-/* Star School games v171. BUILT by tools/build.py from 48-game-hub.css, 61-hill.css, 59-game-hub.js, 62-hill.js, 64-gtimer.js, 66-colornum.js, 68-lowpoly.js, 70-art.js, 72-shapes.js: never edit by hand.
+/* Star School games v171. BUILT by tools/build.py from 48-game-hub.css, 61-hill.css, 59-game-hub.js, 60-gl.js, 62-hill.js, 62b-hill-gl.js, 64-gtimer.js, 66-colornum.js, 68-lowpoly.js, 70-art.js, 72-shapes.js: never edit by hand.
    index.html v171 loads this file on demand (partsThen in src/js/90-app.js, P6-02), after data.v171.js. */
 (function(){var s=document.createElement('style');s.id='css-games';s.textContent="/* Game Room hub and shared game chrome (P4-16; src/js/59-game-hub.js; DESIGN_SYSTEM.md 9 row 8). Ships in games.<VER>.js (A11b),\n   after index.html's own CSS. Tokens only; motion is transform/opacity. The hub: a fair scene with the game-time ticket, a drawn\n   card per registered game, how to earn more. Every game screen: one top bar .gh-top (back or pause, badge and name, tools, chips,\n   the time chip, sound), the pause sheet .gh-sheet and the end card .gh-end. Game canvases are not restyled. */\n\n/* ---- the hub ---- */\n.gh-room{display:flex;flex-direction:column;flex:1;min-height:0}\n.gh-scroll{padding:var(--s-1) var(--s-4) var(--s-7)}\n.gh-hero{position:relative;height:220px;max-width:1040px;margin:0 auto var(--s-5);border-radius:var(--r-hero);overflow:hidden;\n  background:linear-gradient(var(--sc-sky-1),var(--sc-sky) 62%,var(--sc-green) 63%);box-shadow:inset 0 0 0 2px var(--wash),0 5px 0 var(--sc-green-2)}\n.gh-scene{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}\n.gh-tk{position:absolute;left:50%;bottom:14px;width:min(300px,82%);aspect-ratio:300/104;transform:translateX(-50%)}\n.gh-tks{position:absolute;inset:0;display:block;width:100%;height:100%}\n.gh-tkt{position:absolute;left:34%;right:5%;top:13%;bottom:18%;display:flex;flex-direction:column;align-items:center;justify-content:center;\n  text-align:center;line-height:1;color:var(--ink)}\n.gh-tkt b{font-family:var(--font-display);font-size:var(--fs-7);font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:.01em}\n.gh-tkt span{margin-top:var(--s-1);font-size:var(--fs-2);font-weight:700;color:var(--ink-2);white-space:nowrap}\n.gh-hero.off .gh-tkt b{color:var(--ink-3)}\n.gh-why{display:flex;flex-direction:column;align-items:center;gap:var(--s-3);margin:0 auto var(--s-6);text-align:center}\n.gh-why .btn.lg{padding-left:var(--s-5);padding-right:var(--s-5)}\n@media (max-width:480px){.gh-why .btn.lg{font-size:var(--fs-4)}}\n.gh-why.on{margin-bottom:var(--s-4)}\n.gh-why p{max-width:34ch;margin:0;font-size:var(--fs-3);font-weight:700;line-height:1.35;color:var(--ink-2)}\n\n/* a card per game: the drawn picture on its backdrop, the name and one line, the play disc */\n.gh-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,272px),1fr));gap:var(--s-5);max-width:1040px;margin:0 auto}\n.gh-card{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:var(--s-3);\n  padding:var(--s-3) var(--s-3) var(--s-4);border:0;border-radius:var(--r-hero);background:var(--surface);color:var(--ink);font:inherit;\n  text-align:left;cursor:pointer;touch-action:manipulation;box-shadow:inset 0 0 0 2px var(--line),0 6px 0 var(--ledge-soft),0 12px 18px var(--drop);\n  transition:transform var(--t-fast) var(--ease)}\n.gh-card:active,.gh-card.is-press{transform:translateY(4px)}\n.gh-card{--c-fill:var(--c);--c-ledge:var(--c-shade)}\n.gh-card.s-play{--c-fill:var(--play-shade);--c-ledge:var(--play-deep)}\n.gh-pic{position:relative;grid-column:1/-1;display:block;height:150px;border-radius:var(--r-card);overflow:hidden;\n  background:linear-gradient(var(--gh-a),var(--gh-b));box-shadow:inset 0 -4px 0 var(--shadow-ink)}\n.gh-art{display:block;width:100%;height:100%}\n.gh-info{min-width:0;padding:0 0 0 var(--s-2)}\n.gh-name{display:block;font-family:var(--font-display);font-size:var(--fs-5);font-weight:700;line-height:1.15;color:var(--ink)}\n.gh-sub{display:flex;flex-wrap:wrap;gap:2px var(--s-3);margin-top:var(--s-1);font-size:var(--fs-2);line-height:1.35;color:var(--ink-2)}\n.gh-sub>span{display:inline-flex;align-items:center;gap:var(--s-1)}\n.gh-sub b{color:var(--ink)}\n.gh-sub .ic{flex:none;color:var(--star-shade)}\n.gh-go{display:grid;place-items:center;width:64px;height:64px;margin-right:var(--s-1);border-radius:50%;color:var(--surface);\n  background:linear-gradient(var(--hi),var(--hi-0) 60%) var(--c-fill,var(--c));box-shadow:inset 0 2px 0 var(--hi),0 5px 0 var(--c-ledge,var(--c-shade))}\n.gh-go .ic{width:30px;height:30px;margin-left:3px}\n.gh-flag{position:absolute;left:var(--s-3);bottom:var(--s-3);display:inline-flex;align-items:center;gap:var(--s-1);padding:var(--s-1) var(--s-3) var(--s-1) var(--s-2);\n  border-radius:var(--r-pill);background:var(--surface);color:var(--ink);font-size:var(--fs-2);font-weight:700;line-height:1.2;\n  box-shadow:0 3px 0 var(--ledge-soft)}\n.gh-flag .ic{flex:none;color:var(--play)}\n.gh-card:is(.need,.lock) .gh-pic::after{content:'';position:absolute;inset:0;background:var(--wash)}\n.gh-card:is(.need,.lock) .gh-flag{z-index:1}\n.gh-card:is(.need,.lock) .gh-go{background:var(--surface-2);color:var(--ink-3);box-shadow:inset 0 0 0 2px var(--line),0 5px 0 var(--ledge-soft)}\n.gh-card.lock{cursor:default}\n.gh-card.lock .gh-go .ic{margin-left:0}\n\n/* how to earn more game time */\n.gh-earn{max-width:1040px;margin:var(--s-7) auto 0;padding:var(--s-5);border-radius:var(--r-card);background:var(--surface);\n  box-shadow:inset 0 0 0 2px var(--line),0 5px 0 var(--ledge-soft)}\n.gh-earn h2{display:flex;align-items:center;gap:var(--s-2);margin:0 0 var(--s-4);font-family:var(--font-display);font-size:var(--fs-4);line-height:1.2;color:var(--ink)}\n.gh-earn h2 .ic{flex:none;color:var(--play);--ic2:var(--surface)}\n.gh-earn ul{display:grid;gap:var(--s-2) var(--s-6);margin:0;padding:0;list-style:none}\n.gh-earn li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:var(--s-3);font-size:var(--fs-3);line-height:1.3;color:var(--ink)}\n.gh-ei{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:var(--play-tint);color:var(--play-shade);--ic2:var(--play-tint)}\n.gh-earn li b{color:var(--play-shade);text-align:right}\n.gh-earn p{margin:var(--s-4) 0 0;font-size:var(--fs-2);line-height:1.4;color:var(--ink-2)}\n@media (min-width:860px){.gh-earn ul{grid-template-columns:1fr 1fr}}\n\n/* ---- the shared top bar ---- */\n.gh-top .gh-ttl{display:flex;align-items:center;gap:var(--s-2)}\n.gh-tb{flex:none;display:grid;place-items:center;width:44px;height:44px;border-radius:14px;color:var(--surface);\n  background:linear-gradient(var(--hi),var(--hi-0) 60%) var(--c);box-shadow:inset 0 -3px 0 var(--c-shade)}\n.gh-tb .ic{width:26px;height:26px}\n.gh-tt{display:flex;flex-direction:column;min-width:0;line-height:1.15}\n.gh-gn,.gh-gs{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}\n.gh-tt.two .gh-gn{font-size:var(--fs-2);color:var(--c-shade)}\n.gh-tt.two .gh-gs{font-size:var(--fs-4);color:var(--ink)}\n.gh-tools{display:flex;flex:none;gap:var(--s-2)}\n.gh-top .btn.icon.on{background:var(--brand-tint);box-shadow:inset 0 0 0 2px var(--brand),0 4px 0 var(--brand-shade)}\n.gh-top #gpause .ic{color:var(--c-shade)}\n.gh-top .stat.gh-up{background:var(--try-tint);color:var(--try-ink);box-shadow:inset 0 0 0 2px var(--try),0 3px 0 var(--try)}\n.gh-top .stat.gh-up .ic{color:var(--try-ink);--ic2:var(--try-tint)}\n.gh-top .stat.gh-st .ic{color:var(--c-shade)}\n.gh-top .stat.gh-nut .ic{color:var(--star-shade);--ic2:var(--star-tint)}\n@media (max-width:480px){\n  .gh-tb{width:40px;height:40px;border-radius:12px}.gh-tb .ic{width:24px;height:24px}\n  .gh-top.gh-wrap{flex-wrap:wrap}.gh-wrap .gh-tools{order:9;flex-basis:100%;justify-content:flex-end}\n  .gh-top:not(.gh-mtop):not(.gh-hud) .gh-tb{display:none}\n  .gh-tt.two .gh-gs{font-size:var(--fs-3)}\n}\n/* over a full-screen canvas (Hill Climb): no paper behind; the name shows where there is room */\n.gh-top.gh-hud{position:absolute;left:0;right:0;top:0;z-index:2;min-height:0;padding:var(--s-2) var(--s-3);background:none}\n.gh-hud .gh-ttl{flex:0 1 auto;padding:var(--s-1) var(--s-3) var(--s-1) var(--s-1);border-radius:var(--r-pill);background:var(--surface);\n  box-shadow:inset 0 0 0 2px var(--line),0 3px 0 var(--ledge-soft)}\n.gh-hud .gh-ttl .gh-gn{font-size:var(--fs-4)}\n.gh-hud .stat{flex:none;min-height:44px;padding:0 var(--s-3) 0 var(--s-1);font-size:var(--fs-3)}\n.gh-hud .stat .ic{width:28px;height:28px}\n.gh-hud .stat.gh-dist{flex:0 1 auto;min-width:0;padding-left:var(--s-3)}\n.gh-hud .gh-dist b{overflow:hidden;text-overflow:ellipsis}\n@media (max-width:719px){.gh-hud .gh-ttl{display:none}}\n@media (max-width:480px){.gh-top.gh-hud{gap:var(--s-1);padding:var(--s-2)}.gh-hud .stat{padding:0 var(--s-2) 0 2px}.gh-hud .stat .ic{width:24px;height:24px}\n}\n\n/* ---- the pause sheet ---- */\n.gh-sheet{text-align:center}\n.gh-scpic{position:relative;height:128px;margin:0 0 var(--s-4);border-radius:var(--r-card);overflow:hidden;background:linear-gradient(var(--gh-a),var(--gh-b))}\n.gh-sheet .gh-acts{display:flex;flex-direction:column;gap:var(--s-3)}\n@media (max-height:520px){.gh-scpic{height:84px;margin-bottom:var(--s-2)}.sheet .gh-sheet p{margin-bottom:var(--s-3)}}\n\n/* ---- the end card ---- */\n.ovl.gh-ovl{z-index:65}\n.gh-end{max-width:480px;padding:var(--s-5);overflow-y:auto;overscroll-behavior:contain}\n.gh-epic{position:relative;height:clamp(88px,20vh,140px);border-radius:var(--r-card);overflow:hidden;background:linear-gradient(var(--gh-a),var(--gh-b));\n  box-shadow:inset 0 -4px 0 var(--shadow-ink)}\n.gh-epic.made{display:grid;place-items:center;height:clamp(120px,26vh,200px);background:var(--surface-2)}\n.gh-epic.made>*{width:auto;height:88%;max-width:88%;aspect-ratio:1;border-radius:var(--r-btn);background:var(--surface);\n  box-shadow:0 4px 0 var(--ledge-soft)}\n.gh-epic.made img{image-rendering:pixelated}\n.gh-end .rw-rays{top:-40px}\n.rw-card p.gh-ename{position:relative;margin:var(--s-3) 0 0;font-size:var(--fs-2);font-weight:700;color:var(--c-shade)}\n.rw-card.gh-end h1{margin-top:0}\n.gh-estars{position:relative;margin:0 0 var(--s-2)}\n.rw-card p.gh-etag{position:relative;margin:0 0 var(--s-2)}\n.gh-stats{position:relative;display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,1fr));gap:var(--s-2);margin:var(--s-2) 0 var(--s-3)}\n.gh-stat{display:flex;flex-direction:column;align-items:center;gap:2px;padding:var(--s-2) var(--s-1);border-radius:var(--r-btn);background:var(--surface-2)}\n.gh-stat .ic{color:var(--c-shade)}\n.gh-stat .ic.ic-coin{color:var(--star-shade);--ic2:var(--star-tint)}\n.gh-stat b{font-family:var(--font-display);font-size:var(--fs-4);line-height:1.1;color:var(--ink);font-variant-numeric:tabular-nums}\n.gh-stat span{font-size:var(--fs-2);line-height:1.2;color:var(--ink-2)}\n.gh-extra{position:relative;margin:var(--s-2) 0 var(--s-3)}\n.rw-card p.gh-line{position:relative;display:flex;align-items:center;justify-content:center;gap:var(--s-2);margin:var(--s-2) 0 0;\n  font-size:var(--fs-3);font-weight:700;line-height:1.3;color:var(--ink);text-align:left}\n.gh-line .ic{flex:none;color:var(--c-shade)}\n.gh-end .gh-acts{position:relative;display:flex;flex-direction:column;gap:var(--s-3);margin-top:var(--s-4)}\n.gh-acts .btn.lg{padding-left:var(--s-4);padding-right:var(--s-4)}\n@media (max-width:480px){.gh-stats.n4{grid-template-columns:repeat(2,minmax(0,1fr))}.gh-acts .btn.lg{font-size:var(--fs-4)}\n  .rw-card p.gh-line{font-size:var(--fs-2)}}\n@media (max-height:620px) and (orientation:landscape){\n  .gh-end{max-width:780px;display:grid;grid-template-columns:minmax(0,280px) minmax(0,1fr);column-gap:var(--s-5);align-content:start;padding:var(--s-4)}\n  .gh-end>*{grid-column:2}\n  .gh-end>.gh-epic{grid-column:1;grid-row:1/span 12;align-self:center;height:auto;min-height:0;aspect-ratio:240/120}\n  .gh-end>.gh-epic.made{height:auto;aspect-ratio:1}.gh-epic.made>*{height:auto;width:88%}\n  .gh-end .gh-acts{flex-direction:row;flex-wrap:wrap;justify-content:center}\n  .gh-end .gh-acts .btn{flex:1 1 150px;white-space:nowrap}.gh-end .gh-acts .btn.lg{flex-basis:100%;font-size:var(--fs-4)}\n}\n\n/* the hub on phones and in short landscape */\n@media (max-width:480px){\n  .gh-scroll{padding:var(--s-1) var(--s-3) var(--s-7)}\n  .gh-hero{height:196px}\n  .gh-tk{width:min(256px,76%);bottom:10px}\n  .gh-tkt b{font-size:var(--fs-6)}\n  .gh-pic{height:132px}\n  .gh-name{font-size:var(--fs-4)}\n  .gh-go{width:56px;height:56px}.gh-go .ic{width:26px;height:26px}\n  .gh-earn{padding:var(--s-4)}.gh-earn li{font-size:var(--fs-2)}\n}\n@media (max-height:620px) and (orientation:landscape){\n  .gh-hero{height:196px;margin-bottom:var(--s-4)}\n  .gh-tk{width:min(256px,40%);bottom:10px}\n  .gh-tkt b{font-size:var(--fs-6)}\n  .gh-pic{height:118px}\n}\n/* ---------- 4x4 Hill Climb (G-HC2): the drive's HUD and pedals, the menu (worlds, stages, distance drive), the garage. Tokens only. ---------- */\n.hc{position:fixed;inset:0;touch-action:none;background:var(--ill-ink)}.hc canvas{position:absolute;inset:0;width:100%;height:100%}\n/* second HUD row under the top bar: a thick fuel gauge and the distance (never cut) with a track to the flag */\n.hc-hud2{position:absolute;left:0;right:0;top:64px;z-index:2;display:flex;gap:var(--s-2);padding:0 var(--s-3);pointer-events:none;align-items:center}\n.hc-fuel{display:flex;align-items:center;gap:var(--s-1);flex:0 1 220px;min-width:132px;padding:var(--s-1) var(--s-3) var(--s-1) var(--s-1);border-radius:var(--r-pill);\n  background:var(--surface);box-shadow:inset 0 0 0 2px var(--line),0 3px 0 var(--ledge-soft)}\n.hc-fuel .ic{flex:none;color:var(--ill-red-2)}\n.hc-gauge{flex:1;height:20px;border-radius:var(--r-pill);background:var(--surface-2);box-shadow:inset 0 0 0 2px var(--line);overflow:hidden}\n.hc-gauge i{display:block;height:100%;transform-origin:left;background:linear-gradient(90deg,var(--ill-orange),var(--ill-green));transition:transform var(--t-fast) linear}\n.hc-fuel.low .hc-gauge i{background:var(--ill-red)}.hc-fuel.low{animation:hc-low 1s infinite}\n@keyframes hc-low{50%{opacity:.55}}\n.hc-prog{flex:1 1 auto;min-width:0;max-width:420px;display:flex;align-items:center;gap:var(--s-2);padding:var(--s-1) var(--s-3);border-radius:var(--r-pill);\n  background:var(--surface);color:var(--ink);box-shadow:inset 0 0 0 2px var(--line),0 3px 0 var(--ledge-soft)}\n.hc-prog b{flex:none;font-size:var(--fs-3);white-space:nowrap;font-variant-numeric:tabular-nums}\n.hc-track{position:relative;flex:1;min-width:24px;height:12px;border-radius:var(--r-pill);background:var(--surface-2);box-shadow:inset 0 0 0 2px var(--line)}\n.hc-track #hcpb{position:absolute;inset:0;border-radius:var(--r-pill);transform-origin:left;transform:scaleX(0);background:linear-gradient(90deg,var(--ill-green),var(--ill-yellow))}\n.hc-tick{position:absolute;top:-4px;width:4px;height:20px;margin-left:-2px;border-radius:2px;background:var(--ill-orange-2)}\n.hc-bestm{position:absolute;top:-5px;width:6px;height:22px;margin-left:-3px;border-radius:3px;background:var(--ill-yellow);box-shadow:0 0 0 2px var(--ill-brown-3);display:none}\n@media (max-width:480px){.hc-hud2{top:60px;padding:0 var(--s-2);gap:var(--s-1)}.hc-fuel{min-width:116px}.hc-prog{padding:var(--s-1) var(--s-2)}}\n.pedal{position:absolute;bottom:14px;width:clamp(96px,16vw,140px);height:clamp(96px,16vw,140px);border-radius:28px;display:flex;flex-direction:column;align-items:center;justify-content:center;\n  color:var(--surface);font-weight:700;box-shadow:0 6px 0 var(--shadow-ink);pointer-events:none;opacity:.92;transition:transform var(--t-fast) var(--ease)}\n.pedal .ic{width:52px;height:52px}.pedal small{font-size:var(--fs-3)}\n.pedal.brake{left:14px;background:var(--danger-shade)}.pedal.gas{right:14px;background:var(--good-ink)}.pedal.on{transform:translateY(4px) scale(.96);opacity:1}\n.hcmsg{position:absolute;left:50%;top:118px;transform:translateX(-50%);z-index:3;background:var(--surface);color:var(--ink);border-radius:var(--r-card);padding:var(--s-2) var(--s-4);\n  font-size:var(--fs-4);font-weight:700;text-align:center;width:max-content;max-width:min(92vw,560px);opacity:0;transition:opacity var(--t) linear;pointer-events:none;box-shadow:0 4px 0 var(--ledge-soft)}\n.hcmsg.on{opacity:1}\n.hcpop{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%) scale(.4);font-size:clamp(26px,6vw,44px);font-weight:700;color:var(--ill-yellow);\n  text-shadow:0 3px 0 var(--ill-brown-3),0 0 10px var(--shadow-ink);opacity:0;pointer-events:none;white-space:nowrap}\n.hcpop.on{animation:hcpop 1.4s ease-in-out}@keyframes hcpop{15%{opacity:1;transform:translate(-50%,-50%) scale(1.12)}70%{opacity:1;transform:translate(-50%,-60%) scale(1)}100%{opacity:0;transform:translate(-50%,-80%) scale(.9)}}\n.hccombo{position:absolute;right:14px;top:120px;font-size:var(--fs-4);font-weight:700;color:var(--surface);background:var(--danger-shade);padding:var(--s-1) var(--s-3);border-radius:var(--r-chip);opacity:0;transition:opacity var(--t-fast) linear}\n.hccombo.on{opacity:1}\n/* ---- the menu ---- */\n.hc-menu h2{margin:var(--s-5) 0 var(--s-2)}\n.hc-goal{display:flex;gap:var(--s-3);align-items:center;padding:var(--s-3) var(--s-4);border-radius:var(--r-card);background:var(--star-tint);color:var(--ink);box-shadow:inset 0 0 0 2px var(--star)}\n.hc-goal .ic{flex:none;color:var(--star-ink)}.hc-goal p{margin:0;font-size:var(--fs-3)}.hc-goal b{display:block;font-size:var(--fs-2);color:var(--star-ink)}\n.hc-wtabs{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s-2);margin:var(--s-3) 0}\n@media (min-width:760px){.hc-wtabs{grid-template-columns:repeat(6,1fr)}}\n.hc-wt{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-height:64px;padding:var(--s-2) var(--s-3);text-align:left;background:linear-gradient(160deg,var(--hc-a),var(--hc-b));color:var(--ink)}\n.hc-wt b{font-size:var(--fs-2);line-height:1.15}.hc-wt span{display:flex;align-items:center;gap:2px;font-size:var(--fs-2)}\n.hc-wt.on{box-shadow:inset 0 0 0 3px var(--brand),0 3px 0 var(--ledge-soft)}.hc-wt.lock{opacity:.7}.hc-wt .ic{color:var(--star-ink)}\n.hc-world{padding:var(--s-3);border-radius:var(--r-hero);background:linear-gradient(180deg,var(--hc-a),var(--hc-b))}\n.hc-wh{display:flex;align-items:center;justify-content:space-between;gap:var(--s-2);margin-bottom:var(--s-2)}.hc-wh h2{margin:0}\n.hc-stages{display:grid;grid-template-columns:1fr;gap:var(--s-2)}\n@media (min-width:700px){.hc-stages{grid-template-columns:1fr 1fr}}\n.hc-stg{display:grid;grid-template-columns:44px 1fr auto;gap:var(--s-2);align-items:center;padding:var(--s-2) var(--s-3);text-align:left;background:var(--surface);color:var(--ink)}\n.hc-stg.cur{box-shadow:inset 0 0 0 3px var(--play),0 3px 0 var(--ledge-soft)}.hc-stg.lock{opacity:.6}\n.hc-sn{display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:50%;background:var(--play-shade);color:var(--surface);font-size:var(--fs-4);font-weight:700}\n.hc-stg.lock .hc-sn{background:var(--surface-2);color:var(--ink-3)}\n.hc-sb{display:flex;flex-direction:column;gap:2px;min-width:0}.hc-sb>b{font-size:var(--fs-3)}\n.hc-prof{display:block;width:100%;max-width:220px;height:30px}\n.hc-gl,.hc-ms span{display:flex;align-items:center;gap:var(--s-1);font-size:var(--fs-2);color:var(--ink-2)}\n.hc-ms{display:flex;flex-direction:column;gap:0}.hc-ms .ok{color:var(--good-ink)}.hc-gl .ic,.hc-ms .ic{flex:none}\n.hc-menu #hcgo{margin:var(--s-4) 0 var(--s-3)}\n.hc-note{margin:0 0 var(--s-2);font-size:var(--fs-2);color:var(--ink-2)}\n.hc-dist{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:var(--s-2)}\n.hc-dw{display:flex;align-items:center;gap:var(--s-2);min-height:56px;padding:var(--s-2) var(--s-3);text-align:left;background:linear-gradient(160deg,var(--hc-a),var(--hc-b));color:var(--ink)}\n.hc-dw span{display:flex;flex-direction:column}.hc-dw small,.hc-gar small,.hc-veh small,.hc-up small{font-size:var(--fs-2);color:var(--ink-2)}\n.hc-gar{display:flex;align-items:center;gap:var(--s-3);width:100%;padding:var(--s-2) var(--s-3);text-align:left;background:var(--surface);color:var(--ink)}\n.hc-gar canvas{width:120px;height:72px;flex:none}.hc-gar>span{flex:1;display:flex;flex-direction:column}\n.hc-tips{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--s-2)}\n.hc-tips li{display:flex;gap:var(--s-2);align-items:flex-start;font-size:var(--fs-2)}.hc-tips .ic{flex:none;color:var(--play-shade)}\n/* ---- the garage ---- */\n.hc-show{display:flex;flex-direction:column;align-items:center;padding:var(--s-3);border-radius:var(--r-hero);background:linear-gradient(180deg,var(--sc-sky),var(--sc-sun))}\n.hc-show canvas{width:min(420px,88vw);height:auto}.hc-show b{font-size:var(--fs-5)}\n.hc-ups{display:flex;flex-direction:column;gap:var(--s-2)}\n.hc-up{display:grid;grid-template-columns:40px 1fr auto;gap:var(--s-3);align-items:center;padding:var(--s-3);border-radius:var(--r-card);background:var(--surface);box-shadow:inset 0 0 0 2px var(--line)}\n.hc-up>.ic{color:var(--play-shade)}.hc-up>span{display:flex;flex-direction:column;gap:2px;min-width:0}\n.hc-up .hc-num{display:flex;align-items:center;flex-wrap:wrap;gap:2px;color:var(--ink)}\n.hc-pips{display:flex;gap:4px;margin-top:2px}.hc-pips i{width:22px;height:8px;border-radius:4px;background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line)}.hc-pips i.on{background:var(--play)}\n.hc-max{font-size:var(--fs-2);color:var(--good-ink)}\n.hc-vehs{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:var(--s-2)}\n.hc-veh{display:flex;flex-direction:column;align-items:center;gap:2px;padding:var(--s-2);background:var(--surface);color:var(--ink);text-align:center}\n.hc-veh canvas{width:150px;height:90px}.hc-veh.on{box-shadow:inset 0 0 0 3px var(--good),0 3px 0 var(--ledge-soft)}\n.hc-vc{display:flex;align-items:center;gap:2px;font-size:var(--fs-2);font-weight:700}\n.hc-paints{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:var(--s-2)}\n.hc-paint{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:var(--fs-2);padding:var(--s-2) 4px;background:var(--surface);color:var(--ink)}\n.hc-paint>span{width:36px;height:36px;border-radius:50%;box-shadow:inset 0 0 0 3px var(--shadow-ink)}.hc-paint.on{box-shadow:inset 0 0 0 3px var(--good),0 3px 0 var(--ledge-soft)}\n/* ---- G-HC3: the save-for line, today's drive, garage level 2 ---- */\n.hc-save{display:flex;gap:var(--s-2);align-items:center;margin:var(--s-2) 0 0;padding:var(--s-2) var(--s-4);border-radius:var(--r-card);background:var(--surface);color:var(--ink);\n  font-size:var(--fs-2);box-shadow:inset 0 0 0 2px var(--star-tint),0 3px 0 var(--ledge-soft)}\n.hc-save .ic{flex:none;color:var(--star-ink)}\n.hc-day{display:grid;grid-template-columns:48px minmax(0,1fr) auto;gap:var(--s-3);align-items:center;width:100%;min-height:88px;margin-top:var(--s-3);padding:var(--s-3);\n  text-align:left;background:var(--star-tint);color:var(--ink);box-shadow:inset 0 0 0 3px var(--star),0 4px 0 var(--ledge-soft)}\n.hc-day:active{transform:translateY(4px)}\n.hc-daydisc{display:flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:50%;background:var(--star-tint);color:var(--star-ink);--ic2:var(--star-tint)}\n.hc-day.done .hc-daydisc{color:var(--good-ink)}.hc-day.done{box-shadow:inset 0 0 0 3px var(--good),0 4px 0 var(--ledge-soft)}\n.hc-dayt{display:flex;flex-direction:column;gap:2px;min-width:0}.hc-dayt b{font-size:var(--fs-3)}.hc-dayt span{font-size:var(--fs-2)}\n.hc-dayt small{font-size:var(--fs-2);color:var(--ink-2)}\n.hc-t2h{margin:var(--s-3) 0 var(--s-2);font-size:var(--fs-3)}\n.hc-t2s{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:var(--s-2)}\n.hc-t2{display:flex;flex-direction:column;align-items:center;gap:2px;padding:var(--s-2);background:var(--surface);color:var(--ink);text-align:center}\n.hc-t2 canvas{width:120px;height:72px}.hc-t2 b{font-size:var(--fs-2)}\n.hc-t2.on{box-shadow:inset 0 0 0 3px var(--good),0 3px 0 var(--ledge-soft)}.hc-t2.lock{opacity:.75}\n.hc-dayt span,.hc-dayt small{font-weight:400}.hc-menu .hc-day{margin:var(--s-3) 0 0}\n";document.head.appendChild(s)})(); // its src/css, after index.html's own CSS (the cascade order of a build without parts)
 /* ---------- Game Room hub and shared game chrome (P4-16; DESIGN_SYSTEM.md 9 row 8; CSS src/css/48-game-hub.css) ----------
@@ -426,6 +426,207 @@ GH.reg({
   sub: () => bbHubLine(), // G-01: blueprints done (60-blocks.js)
   open: () => bbMenu(), tapToPlay: '[data-w="0"]', saved: 'Your world is saved.',
 });
+/* ---------- GLX: a small shared WebGL 1 layer for the Game Room (GL-01) ----------
+   Plain WebGL 1, no library, works offline. It goes into games.<VER>.js (tools/build.py PARTS) before 62-hill.js, which uses it
+   for the 2.5D look of 4x4 Hill Climb (62b-hill-gl.js). Block Builder (61-bb-gl.js) keeps its own renderer for now.
+   - GLX.init(canvas) makes a context and three shader programs; it returns null when WebGL is missing, the context cannot be made
+     or a shader does not compile (the fallback signal: the game then draws with canvas 2D, exactly as before). GLX.probe() asks
+     once per page whether WebGL works at all. A lost context sets R.lost; the game drops to 2D for the rest of the drive. R.soft
+     says the WebGL is drawn by the CPU (SwiftShader, llvmpipe): a game should prefer its 2D drawing there.
+   - Shaders (all mediump-safe in the fragment stage, lighting per vertex so a cheap Mali GPU does almost nothing per pixel):
+       lit  position, normal, colour; one sun and an ambient term (uL, uA), the model matrix turns the normals (uM)
+       grad position, colour with alpha (gradients, baked shading, see-through parts); colours are blended premultiplied
+       spr  position, texture uv, a tint per vertex (sprites, textured faces); texels under uCut alpha are discarded
+   - Meshes: GLX.mesh(R, kind, data, n) puts a Float32Array of interleaved vertices in a buffer (kind: 'lit' 9 floats a vertex,
+     'grad' 7, 'spr' 9); GLX.box, GLX.extrude (a convex 2D profile made into a slab), GLX.quad push vertices onto a plain array
+     while a mesh is built (never per frame). GLX.batch is a fixed buffer of sprite quads refilled each frame without allocating.
+   - Camera: GLX.side() is the side-view perspective the 2.5D games use: the plane z = 0 maps to the screen exactly as the game's
+     2D drawing does (sc pixels a world unit around a vanishing point), so a 2D layer drawn on top lines up; nearer things
+     (z > 0) grow, farther ones shrink and slide toward the vanishing point (parallax for free).
+   - GLX.fit sizes the canvas: device pixels capped at dpr (1.5 by default: cheap tablets) and at px pixels in all, times q.
+   Matrices are column-major Float32Arrays; products are made in doubles first (world x reaches 60 000), so nothing jitters. */
+const GLX = {
+  ok: null,
+  probe() {
+    if (GLX.ok != null) return GLX.ok;
+    try { const c = document.createElement('canvas'), g = c.getContext && (c.getContext('webgl') || c.getContext('experimental-webgl')); GLX.ok = !!g; if (g) { const e = g.getExtension('WEBGL_lose_context'); if (e) e.loseContext(); } } catch (e) { GLX.ok = false; }
+    return GLX.ok;
+  },
+  VS: {
+    lit: 'attribute vec3 aP;attribute vec3 aN;attribute vec3 aC;uniform mat4 uMVP;uniform mat4 uM;uniform vec3 uL;uniform float uA;uniform vec3 uT;varying vec3 vC;' +
+      'void main(){vec3 n=normalize((uM*vec4(aN,0.)).xyz);float d=max(dot(n,uL),0.);vC=aC*uT*(uA+(1.-uA)*d+.12*max(n.y,0.));gl_Position=uMVP*vec4(aP,1.);}',
+    grad: 'attribute vec3 aP;attribute vec4 aC;uniform mat4 uMVP;uniform vec4 uT;varying vec4 vC;void main(){vC=aC*uT;gl_Position=uMVP*vec4(aP,1.);}',
+    spr: 'attribute vec3 aP;attribute vec2 aU;attribute vec4 aC;uniform mat4 uMVP;uniform vec4 uT;varying vec2 vU;varying vec4 vC;void main(){vU=aU;vC=aC*uT;gl_Position=uMVP*vec4(aP,1.);}',
+  },
+  FS: {
+    lit: 'precision mediump float;varying vec3 vC;void main(){gl_FragColor=vec4(vC,1.);}',
+    grad: 'precision mediump float;varying vec4 vC;void main(){gl_FragColor=vec4(vC.rgb*vC.a,vC.a);}',
+    spr: 'precision mediump float;uniform sampler2D uS;uniform float uCut;varying vec2 vU;varying vec4 vC;void main(){vec4 t=texture2D(uS,vU);float a=t.a*vC.a;if(a<uCut)discard;gl_FragColor=vec4(t.rgb*vC.rgb*vC.a,a);}',
+  },
+  LAY: { lit: [['aP', 3], ['aN', 3], ['aC', 3]], grad: [['aP', 3], ['aC', 4]], spr: [['aP', 3], ['aU', 2], ['aC', 4]] },
+  init(cv, o = {}) {
+    let gl = null;
+    try { gl = cv.getContext('webgl', { alpha: false, antialias: !!o.aa, depth: true, premultipliedAlpha: true, powerPreference: 'low-power' }); } catch (e) { gl = null; }
+    if (!gl) return null;
+    const R = { gl, cv, lost: false, P: {}, cur: null, tex: new Map(), m: new Float32Array(16), id: new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]), draws: 0 };
+    try {
+      const sh = (t, s) => { const x = gl.createShader(t); gl.shaderSource(x, s); gl.compileShader(x); if (!gl.getShaderParameter(x, gl.COMPILE_STATUS)) throw new Error('shader: ' + gl.getShaderInfoLog(x)); return x; };
+      for (const k in GLX.VS) {
+        const p = gl.createProgram(), lay = GLX.LAY[k];
+        gl.attachShader(p, sh(gl.VERTEX_SHADER, GLX.VS[k])); gl.attachShader(p, sh(gl.FRAGMENT_SHADER, GLX.FS[k]));
+        lay.forEach(([a], n) => gl.bindAttribLocation(p, n, a));
+        gl.linkProgram(p);
+        if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error('link: ' + gl.getProgramInfoLog(p));
+        const u = {}, nu = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
+        for (let n = 0; n < nu; n++) { const a = gl.getActiveUniform(p, n); u[a.name] = gl.getUniformLocation(p, a.name); }
+        R.P[k] = { p, u, lay, st: lay.reduce((s, [, n]) => s + n, 0) * 4 };
+      }
+    } catch (e) { try { const x = gl.getExtension('WEBGL_lose_context'); if (x) x.loseContext(); } catch (_) {} return null; }
+    // a WebGL drawn by the CPU (SwiftShader, llvmpipe: no GPU, or one the browser does not trust) is slower than canvas 2D
+    try { const x = gl.getExtension('WEBGL_debug_renderer_info'); R.name = String(gl.getParameter(x ? x.UNMASKED_RENDERER_WEBGL : gl.RENDERER) || ''); } catch (e) { R.name = ''; }
+    R.soft = /swiftshader|llvmpipe|softpipe|software/i.test(R.name);
+    cv.addEventListener('webglcontextlost', e => { e.preventDefault(); R.lost = true; });
+    gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL);
+    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+    return R;
+  },
+  // the context is given back at once (a browser keeps only a few alive; a new one is made for each drive)
+  end(R) { if (!R || R.ended) return; R.ended = true; try { const x = R.gl.getExtension('WEBGL_lose_context'); if (x) x.loseContext(); } catch (e) {} },
+  // size the canvas to its box: at most dpr device pixels a css pixel and px pixels in all, times q (a slow tablet lowers q)
+  fit(cv, o = {}) {
+    const cw = Math.max(1, cv.clientWidth), ch = Math.max(1, cv.clientHeight), d = typeof devicePixelRatio == 'number' ? devicePixelRatio : 1;
+    const k = Math.min(d, o.dpr || 1.5, Math.sqrt((o.px || 1e6) / (cw * ch))) * (o.q || 1), w = Math.max(1, Math.round(cw * k)), h = Math.max(1, Math.round(ch * k));
+    if (cv.width !== w) cv.width = w;
+    if (cv.height !== h) cv.height = h;
+    return k;
+  },
+  // ---- meshes ----
+  mesh(R, kind, data, n, dyn) {
+    const gl = R.gl, b = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, data, dyn ? gl.DYNAMIC_DRAW : gl.STATIC_DRAW);
+    return { b, kind, n: n == null ? data.length / (R.P[kind].st / 4) : n };
+  },
+  free(R, m) { if (m && m.b) { R.gl.deleteBuffer(m.b); m.b = null; } },
+  // a mesh from a plain array of numbers (null when it is empty)
+  arr(R, kind, a) { return a.length ? GLX.mesh(R, kind, new Float32Array(a)) : null; },
+  // lit vertices: p position, n normal, c [r, g, b]
+  v9(o, x, y, z, nx, ny, nz, c) { o.push(x, y, z, nx, ny, nz, c[0], c[1], c[2]); },
+  // a lit box from (x0, y0, z0) to (x1, y1, z1): 12 triangles; c the colour, cs the sides (default c)
+  box(o, x0, y0, z0, x1, y1, z1, c, cs) {
+    cs = cs || c;
+    const F = (a, b, d, e, n, col) => { for (const p of [a, b, d, a, d, e]) GLX.v9(o, p[0], p[1], p[2], n[0], n[1], n[2], col); };
+    F([x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1], [0, 0, 1], c);
+    F([x1, y0, z0], [x0, y0, z0], [x0, y1, z0], [x1, y1, z0], [0, 0, -1], cs);
+    F([x0, y1, z1], [x1, y1, z1], [x1, y1, z0], [x0, y1, z0], [0, 1, 0], c);
+    F([x0, y0, z0], [x1, y0, z0], [x1, y0, z1], [x0, y0, z1], [0, -1, 0], cs);
+    F([x1, y0, z1], [x1, y0, z0], [x1, y1, z0], [x1, y1, z1], [1, 0, 0], cs);
+    F([x0, y0, z0], [x0, y0, z1], [x0, y1, z1], [x0, y1, z0], [-1, 0, 0], cs);
+  },
+  // a convex 2D profile pts [[x, y], ...] (counter-clockwise) made into a slab from z0 to z1: the caps (front c, back cb) and the
+  // sides (cs) with their own normals, so it is lit like a solid
+  extrude(o, pts, z0, z1, c, cs, cb) {
+    cs = cs || c; cb = cb || c;
+    const n = pts.length;
+    for (let i = 1; i < n - 1; i++) {
+      for (const p of [pts[0], pts[i], pts[i + 1]]) GLX.v9(o, p[0], p[1], z1, 0, 0, 1, c);
+      for (const p of [pts[0], pts[i + 1], pts[i]]) GLX.v9(o, p[0], p[1], z0, 0, 0, -1, cb);
+    }
+    for (let i = 0; i < n; i++) {
+      const a = pts[i], b = pts[(i + 1) % n], dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1, nx = dy / l, ny = -dx / l;
+      for (const [p, z] of [[a, z1], [a, z0], [b, z0], [a, z1], [b, z0], [b, z1]]) GLX.v9(o, p[0], p[1], z, nx, ny, 0, cs);
+    }
+  },
+  // a flat quad for the grad or spr programs: corners a, b, c, d (each [x, y, z]), colours ca..cd ([r, g, b, a]), uvs (spr only)
+  quad(o, kind, a, b, c, d, ca, cb, cc, cd, uv) {
+    const P = [a, b, c, a, c, d], C = [ca, cb || ca, cc || ca, ca, cc || ca, cd || ca], U = uv ? [uv[0], uv[1], uv[2], uv[0], uv[2], uv[3]] : null;
+    for (let i = 0; i < 6; i++) { const p = P[i], q = C[i]; o.push(p[0], p[1], p[2]); if (kind == 'spr') o.push(U[i][0], U[i][1]); o.push(q[0], q[1], q[2], q[3]); }
+  },
+  // ---- a reusable buffer of sprite quads, refilled each frame (no allocation) ----
+  batch(R, max) { const f = new Float32Array(max * 54); return { f, n: 0, max, m: GLX.mesh(R, 'spr', f, 0, true) }; },
+  // a quad of w x h centred on (x, y) at depth z, turned by a (radians), texture rectangle u0, v0, u1, v1, tint t [r, g, b, a]
+  bq(B, x, y, z, w, h, a, u0, v0, u1, v1, t) {
+    if (B.n >= B.max) return;
+    const c = Math.cos(a), s = Math.sin(a), hw = w / 2, hh = h / 2, f = B.f;
+    let i = B.n * 54;
+    const P = [[-hw, -hh, u0, v1], [hw, -hh, u1, v1], [hw, hh, u1, v0], [-hw, -hh, u0, v1], [hw, hh, u1, v0], [-hw, hh, u0, v0]];
+    for (const [px, py, u, v] of P) { f[i++] = x + px * c - py * s; f[i++] = y + px * s + py * c; f[i++] = z; f[i++] = u; f[i++] = v; f[i++] = t[0]; f[i++] = t[1]; f[i++] = t[2]; f[i++] = t[3]; }
+    B.n++;
+  },
+  // draw the quads in the batch with texture tex (o: the draw options, such as cut; reused, not copied)
+  bflush(R, B, mvp, tex, o) {
+    if (!B.n) return;
+    const gl = R.gl, q = o || B.o || (B.o = {});
+    gl.bindBuffer(gl.ARRAY_BUFFER, B.m.b); gl.bufferSubData(gl.ARRAY_BUFFER, 0, B.f.subarray(0, B.n * 54));
+    B.m.n = B.n * 6;
+    q.tex = tex;
+    GLX.draw(R, B.m, mvp, q);
+    B.n = 0;
+  },
+  // ---- textures: one per canvas (made again when the canvas object changes) ----
+  tex(R, key, cv, rep) {
+    const gl = R.gl, old = R.tex.get(key);
+    if (old && old.cv === cv && !cv._dirty) return old.t;
+    const t = old ? old.t : gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, t);
+    try { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, cv); } catch (e) {}
+    const w = rep ? gl.REPEAT : gl.CLAMP_TO_EDGE;
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, w); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, w);
+    cv._dirty = false;
+    R.tex.set(key, { t, cv });
+    return t;
+  },
+  // ---- drawing: one mesh with one program; o: {M model matrix (lit), L sun, A ambient, T tint, tex, cut, n vertex count, first} ----
+  draw(R, m, mvp, o) {
+    if (!m || !m.b) return;
+    o = o || GLX.NONE;
+    const gl = R.gl, P = R.P[m.kind], u = P.u;
+    if (R.cur !== P) { gl.useProgram(P.p); R.cur = P; }
+    gl.bindBuffer(gl.ARRAY_BUFFER, m.b);
+    let off = 0;
+    P.lay.forEach(([, n], i) => { gl.enableVertexAttribArray(i); gl.vertexAttribPointer(i, n, gl.FLOAT, false, P.st, off); off += n * 4; });
+    for (let i = P.lay.length; i < 3; i++) gl.disableVertexAttribArray(i);
+    gl.uniformMatrix4fv(u.uMVP, false, mvp);
+    if (m.kind == 'lit') {
+      gl.uniformMatrix4fv(u.uM, false, o.M || R.id);
+      const L = o.L || GLX.SUN; gl.uniform3f(u.uL, L[0], L[1], L[2]); gl.uniform1f(u.uA, o.A == null ? .55 : o.A);
+      const T = o.T || GLX.ONE; gl.uniform3f(u.uT, T[0], T[1], T[2]);
+    } else {
+      const T = o.T || GLX.ONE; gl.uniform4f(u.uT, T[0], T[1], T[2], T[3] == null ? 1 : T[3]);
+      if (m.kind == 'spr') { gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, o.tex); gl.uniform1i(u.uS, 0); gl.uniform1f(u.uCut, o.cut == null ? .004 : o.cut); }
+    }
+    gl.drawArrays(gl.TRIANGLES, o.first || 0, o.n == null ? m.n : o.n);
+    R.draws++;
+  },
+  SUN: (() => { const v = [-.42, .74, .52], l = Math.hypot(...v); return v.map(q => q / l); })(),
+  ONE: [1, 1, 1, 1],
+  NONE: {},
+  // ---- matrices ----
+  // the side view: eye at (ex, ey, D) looking down -z; the plane z = 0 is drawn at f / D (= sc) pixels a unit with the eye's point at
+  // pixel (cx, cy) on a W x H screen of the game's own pixels. Returns a plain array (doubles) to multiply with a model matrix.
+  side(W, H, sc, D, ex, ey, cx, cy, near, far, out) {
+    const f = sc * D, a = 2 * cx / W - 1, b = 1 - 2 * cy / H, c = -(far + near) / (far - near), d = -2 * far * near / (far - near);
+    // rows: [2f/W, 0, -a, -2f/W ex + a D], [0, 2f/H, -b, -2f/H ey + b D], [0, 0, c, -c D + d], [0, 0, -1, D]
+    const o = out || new Array(16);
+    o[0] = 2 * f / W; o[1] = o[2] = o[3] = o[4] = 0; o[5] = 2 * f / H; o[6] = o[7] = 0; o[8] = -a; o[9] = -b; o[10] = c; o[11] = -1;
+    o[12] = -2 * f / W * ex + a * D; o[13] = -2 * f / H * ey + b * D; o[14] = -c * D + d; o[15] = D;
+    return o;
+  },
+  // screen pixels (W x H, y down) at a depth: a flat 2D layer under or over the 3D (sky, clouds)
+  screen(W, H, z) { return [2 / W, 0, 0, 0, 0, -2 / H, 0, 0, 0, 0, 0, 0, -1, 1, z == null ? .9999 : z, 1]; },
+  // out = a x b (column-major), written into the Float32Array out
+  mul(out, a, b) {
+    for (let c = 0; c < 4; c++) for (let r = 0; r < 4; r++) out[c * 4 + r] = a[r] * b[c * 4] + a[4 + r] * b[c * 4 + 1] + a[8 + r] * b[c * 4 + 2] + a[12 + r] * b[c * 4 + 3];
+    return out;
+  },
+  // a model matrix: translate (x, y, z), turn by a about z, scale s (plain array)
+  model(o, x, y, z, a = 0, s = 1) { const c = Math.cos(a) * s, n = Math.sin(a) * s; o[0] = c; o[1] = n; o[2] = 0; o[3] = 0; o[4] = -n; o[5] = c; o[6] = 0; o[7] = 0; o[8] = 0; o[9] = 0; o[10] = s; o[11] = 0; o[12] = x; o[13] = y; o[14] = z; o[15] = 1; return o; },
+  // a token colour '#rrggbb' as [r, g, b] in 0..1 (anything else: grey)
+  rgb(hex) { if (!/^#[0-9a-f]{6}$/i.test(hex || '')) return [.6, .6, .6]; const n = parseInt(hex.slice(1), 16); return [(n >> 16) / 255, (n >> 8 & 255) / 255, (n & 255) / 255]; },
+  mix(a, b, t) { return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]; },
+  mulc(a, k) { return [a[0] * k, a[1] * k, a[2] * k]; },
+};
 /* ---------- 4x4 Hill Climb (G-HC2: worlds of hand-shaped stages, missions, a garage that matters) ----------
    A side-view drive: two wheels on a stiff bar (Verlet), gas and brake pedals, the car tips in the air.
    Journey: 6 worlds (HCW) of 5 hand-shaped stages each (HC_ST). A stage is a line of pieces (hcParse / hcCourse): flat, slopes,
@@ -911,7 +1112,8 @@ function hcBank(H){const gs=garageS(),id=H.st?H.st[0]:null,bits=hcBitsOf(H),old=
 function stopHC(){for(const e of document.querySelectorAll('.nv-light'))if(e.stop)e.stop(); // G-FEEL2: a light end banner left open
   if(!HC)return;
   // G-FEEL1: a stage drive left without the flag after a while counts for Auto driving help (hcAsNote)
-  if(HC.st&&HC.result!='win'&&!HC.noted&&HC.t>=8){HC.noted=1;hcAsNote(HC);save()}cancelAnimationFrame(HC.raf);if(HC.eng){try{HC.eng.lfo&&HC.eng.lfo.stop();HC.eng.o.stop();HC.eng.o2.stop()}catch(e){}}removeEventListener('keydown',HC.kd);removeEventListener('keyup',HC.ku);HC=null}
+  if(HC.st&&HC.result!='win'&&!HC.noted&&HC.t>=8){HC.noted=1;hcAsNote(HC);save()}cancelAnimationFrame(HC.raf);if(HC.eng){try{HC.eng.lfo&&HC.eng.lfo.stop();HC.eng.o.stop();HC.eng.o2.stop()}catch(e){}}removeEventListener('keydown',HC.kd);removeEventListener('keyup',HC.ku);if(HC.gl){GLX.end(HC.gl.R);HC.gl.off=true}if(typeof FPS!='undefined')FPS.tag=''; // GL-01: its WebGL context goes at once (a tablet keeps only a few)
+  HC=null}
 const HC_SNDI=['sound-on','music','sound-off']; // P4-16: the sound button's icon for S.hcSnd (all, no engine, off)
 const hcCalm=()=>{try{return document.documentElement.classList.contains('calm')||matchMedia('(prefers-reduced-motion: reduce)').matches}catch(e){return false}};
 // fixed steps of 1/120 s (G-HC3, R-03 H1): a slow frame (up to 0.1 s) runs more steps, so a slow tablet never plays in slow motion;
@@ -934,7 +1136,11 @@ function hcStart(world,si,day){const wi=typeof world=='number'?world:Math.max(0,
    <div class="pedal brake" id="pb">${ico('chevron-left',48)}<small>Brake</small></div><div class="pedal gas" id="pg">${ico('chevron-right',48)}<small>Gas</small></div>
    <div class="hcmsg" id="hcm" role="status"></div><div class="hcpop" id="hcp" aria-hidden="true"></div><div class="hccombo" id="hcc" aria-hidden="true"></div></div>`);
   HC=H; // after view(): view() stops the drive before it
-  const cv=$('#hcv'),ctx=cv.getContext('2d',{alpha:false}),dpr=Math.min(2,devicePixelRatio||1);
+  const cv=$('#hcv'),dpr=Math.min(2,devicePixelRatio||1);
+  // GL-01: the 3D look (62b-hill-gl.js) draws the world on a WebGL canvas under #hcv, which then only carries the small things on
+  // top (so it keeps its alpha); without WebGL, or with the 3D look off, #hcv draws everything as before
+  let glc=null;if(typeof hcGlWant=='function'&&hcGlWant()){glc=document.createElement('canvas');glc.id='hcgl';glc.setAttribute('aria-hidden','true');cv.parentNode.insertBefore(glc,cv);H.gl=hcGlStart(H,glc);if(!H.gl){glc.remove();glc=null}}
+  const ctx=cv.getContext('2d',{alpha:!!H.gl});
   cv.setAttribute('role','img');cv.setAttribute('aria-label','The hill and your vehicle'); // P6-01
   // at most 1 million pixels; a slow tablet draws fewer (the canvas is stretched to the screen): 1, 0.85, 0.7 of them
   H.q=1;let slow=0,fast=0,k=dpr;const size=()=>{const cw=Math.max(1,cv.clientWidth),ch=Math.max(1,cv.clientHeight);k=Math.min(dpr,Math.sqrt(1e6/(cw*ch)))*H.q;cv.width=Math.round(cw*k);cv.height=Math.round(ch*k)};size();H.size=size;
@@ -954,7 +1160,7 @@ function hcStart(world,si,day){const wi=typeof world=='number'?world:Math.max(0,
   let last=0;const loop=ts=>{if(HC!==H)return;const dt=last?Math.min(.1,(ts-last)/1000):0;last=ts;
     if(!document.hidden&&!H.over&&!H.paused){hcAdvance(H,dt);if(!H.over)hcTime(H,dt)}
     hcMusic(H);
-    if(dt>.026)slow++;else if(dt>0)fast++;if(slow+fast>=45){if(slow>30&&H.q>.71){H.q=H.q>.9?.85:.7;size()}slow=fast=0}
+    if(H.gl&&hcGlPace(H,dt))slow=fast=0;else if(dt>.026)slow++;else if(dt>0)fast++;if(slow+fast>=45){if(slow>30&&H.q>.71){H.q=H.q>.9?.85:.7;size()}else if(H.gl&&!H.gl.off&&slow>36){if(++H.gl.slow>=3)hcGlDrop(H,'slow')}else if(H.gl)H.gl.slow=0;slow=fast=0} // GL-01: still slow at the lowest scale: the 2D look
     if(H.result&&!H.shown){H.result=='win'?hcWin():hcEnd(H.result)}
     if(HC===H){hcDraw(ctx,cv.width,cv.height,k);H.raf=requestAnimationFrame(loop)}};H.raf=requestAnimationFrame(loop)}
 function hcMsg(t,ms=1500){const m=$('#hcm');if(!m)return;m.textContent=t;m.classList.add('on');clearTimeout(m._t);m._t=setTimeout(()=>m.classList.remove('on'),ms)}
@@ -1334,13 +1540,19 @@ function hcDraw(x,W,Hh,dpr){const H=HC,C=H.C,Wd=HCW[H.wi],wx=H.wx||'day',cx=(H.w
   H.camX+=(cx+W*.1/sc-H.camX)*.09;H.camY+=(cy+30-H.camY)*.07;if(H.shake>0)H.shake-=1/60;
   const sh=H.shake>0&&!H.calm?Math.round((Math.random()-.5)*14*H.shake*dpr):0;
   const SX=wxp=>(wxp-H.camX)*sc+W*.38+sh,SY=wy=>Hh*R.base-(wy-H.camY)*sc+sh,WX=sx=>(sx-W*.38)/sc+H.camX;
+  // GL-01: the 3D look draws the sky, ranges, ground and car on its own canvas; this one is cleared and carries the rest
+  const gl=!!(H.gl&&!H.gl.off&&hcGlFrame(H,W,Hh,dpr,sh)),left=WX(0)-80,right=WX(W)+80;
+  if(typeof FPS!='undefined')FPS.tag=gl?'3D':'2D'; // GL-01: the speed box says which look is drawing
+  if(gl)x.clearRect(0,0,W,Hh);
+  else{
   // sky, clouds, parallax strips
   for(const q of R.lay){const l=hcStrip(R,H,q,H.camX);x.drawImage(q.c,Math.round(l),q.top);if(q.sky)hcSun(x,R,wx,Wd)}
   // the ground: cached chunks, and plain earth under them
-  const left=WX(0)-80,right=WX(W)+80,dirt=hcC(Wd.dirt2);
+  const dirt=hcC(Wd.dirt2);
   for(let k=Math.floor(WX(0)/HC_CW);k<=Math.floor(WX(W)/HC_CW);k++){const ch=hcChunk(R,H,k),px=Math.round(SX(k*HC_CW)),py=Math.round(SY(ch.top));x.drawImage(ch.c,px,py);
-    const yb=py+ch.c.height;if(yb<Hh){x.fillStyle=dirt;x.fillRect(px,yb-1,ch.c.width,Hh-yb+1)}}
+    const yb=py+ch.c.height;if(yb<Hh){x.fillStyle=dirt;x.fillRect(px,yb-1,ch.c.width,Hh-yb+1)}}}
   x.textAlign='center';x.textBaseline='middle';
+  if(gl)hcGlLabels(x,H,SX,SY,left,right,sc);
   // checkpoints, the finish, the best
   C.cps.forEach((cpx,k)=>{if(!k||cpx<left||cpx>right)return;hcFlag(x,SX(cpx),SY(hcH(C,cpx)),sc,k<=H.cpi?'g':'o',C.endless?Math.round((cpx-60)/20)+' m':'')});
   if(H.best>5){const bx=60+H.best*20;if(bx>left&&bx<right)hcFlag(x,SX(bx),SY(hcH(C,bx)),sc*1.2,'y','Best')}
@@ -1365,8 +1577,9 @@ function hcDraw(x,W,Hh,dpr){const H=HC,C=H.C,Wd=HCW[H.wi],wx=H.wx||'day',cx=(H.w
   for(let j=Math.max(0,H.ci-3);j<C.coins.length;j++){const o=C.coins[j];if(o.x>right)break;if(o.x<left||H.took.has(j))continue;x.drawImage(nut,Math.round(SX(o.x)-nut.width/2),Math.round(SY(o.y)+Math.sin(T*4+j)*3*sc-nut.height/2))}
   if(H.pops.length){x.fillStyle=hcC('y');x.strokeStyle=hcC('n3');x.lineWidth=3*sc;x.font=`bold ${16*sc}px sans-serif`;for(const p of H.pops){x.globalAlpha=Math.min(1,p.l*2);x.strokeText('+1',SX(p.x),SY(p.y));x.fillText('+1',SX(p.x),SY(p.y))}x.globalAlpha=1}
   for(const d of H.parts){x.globalAlpha=Math.max(0,Math.min(1,d.l*1.4))*(d.smoke?.5:1);if(d.star)hcStarD(x,SX(d.x),SY(d.y),7*sc);else{const r=(d.smoke?d.s+(.8-d.l)*18:d.s)*sc;x.drawImage(hcDot(R,d.c),SX(d.x)-r,SY(d.y)-r,r*2,r*2)}}x.globalAlpha=1;
-  // the car from its sprites (it blinks while it starts again)
-  if(H.crashT<=0||Math.floor(H.crashT*8)%2){const dist=Math.max(0,(cy-hcH(C,cx))*sc);x.globalAlpha=Math.max(.05,.25-dist/600);x.drawImage(hcDot(R,'k'),SX(cx)-64*sc,SY(hcH(C,cx))-5*sc,128*sc,14*sc);x.globalAlpha=1;
+  // the car from its sprites (it blinks while it starts again); in the 3D look only its balloons are drawn here
+  if(gl){if(H.ballT>0&&(H.crashT<=0||Math.floor(H.crashT*8)%2)){const lift=H.R+6,bx=SX(cx)-Math.sin(ang)*lift*sc,by=SY(cy)-Math.cos(ang)*lift*sc;hcBalloons(x,bx,by-90*sc,sc,bx,by-40*sc)}}
+  else if(H.crashT<=0||Math.floor(H.crashT*8)%2){const dist=Math.max(0,(cy-hcH(C,cx))*sc);x.globalAlpha=Math.max(.05,.25-dist/600);x.drawImage(hcDot(R,'k'),SX(cx)-64*sc,SY(hcH(C,cx))-5*sc,128*sc,14*sc);x.globalAlpha=1;
     const lift=H.R+6,bx=SX(cx)-Math.sin(ang)*lift*sc,by=SY(cy)-Math.cos(ang)*lift*sc;
     if(H.ballT>0)hcBalloons(x,bx,by-90*sc,sc,bx,by-40*sc);
     const body=hcBody(R,H);x.save();x.translate(bx,by);x.rotate(-ang);x.translate(0,-H.bob*sc);x.drawImage(body,-body.ox,-body.oy);
@@ -1376,7 +1589,7 @@ function hcDraw(x,W,Hh,dpr){const H=HC,C=H.C,Wd=HCW[H.wi],wx=H.wx||'day',cx=(H.w
     const V=VEH[H.veh]||VEH.jeep,wr=V.R*sc,wh=hcSpr(R,'wh'+H.veh+H.paint+(H.rim||''),wr*2+8*sc,wr*2+8*sc,(y,w,h)=>wheel(y,w/2,h/2,0,sc,0,0,0,H.paint,V.R,H.rim)),c0=Math.cos(-ang),s0=Math.sin(-ang),wy=V.R+6;
     [[-V.L/2,H.w1.rot],[V.L/2,H.w2.rot]].forEach(([ox,rot])=>{const px=bx+(ox*c0-wy*s0)*sc,py=by+(ox*s0+wy*c0)*sc;x.save();x.translate(px,py);x.rotate(rot);x.drawImage(wh,-wh.width/2,-wh.height/2);x.restore()})}
   // the foreground strip (in front of the earth at the bottom)
-  {const l=hcFore(R,H,H.camX);x.drawImage(R.fore.c,Math.round(l),Hh-R.fore.c.height)}
+  if(!gl){const l=hcFore(R,H,H.camX);x.drawImage(R.fore.c,Math.round(l),Hh-R.fore.c.height)}
   // weather: one path a frame
   if(wx=='rain'||wx=='snow'||wx=='ash'||wx=='dust'){const n=wx=='rain'?70:50,fall=wx=='rain'?520:wx=='dust'?30:90,drift=wx=='dust'?-260:-40;x.fillStyle=x.strokeStyle=hcC(wx=='ash'?'e3':wx=='dust'?'t':'w');x.globalAlpha=wx=='rain'?.55:.8;x.lineWidth=1.5*dpr;x.beginPath();
     for(let i=0;i<n;i++){const px=(((i*97.3+T*drift*dpr-H.camX*sc*.6)%W)+W)%W,py=(((i*61.7+T*fall*dpr)%Hh)+Hh)%Hh;if(wx=='rain'){x.moveTo(px,py);x.lineTo(px-3*dpr,py+12*dpr)}else x.rect(px,py,3*dpr,3*dpr)}
@@ -1399,6 +1612,424 @@ function hcHud(H){const f=$('#hcf');if(f){const v=Math.round(H.fuel);if(v!==H._f
   if(d){const L=C.fin!=null?Math.floor((C.fin-60)/20):0,txt=C.fin!=null?`${Math.min(m,L)} / ${L} m`:`${m} m`;if(txt!==H._dt){H._dt=txt;d.textContent=txt;const pb=$('#hcpb'),goal=C.fin!=null?L:Math.max(H.best,100)*1.05;if(pb)pb.style.transform=`scaleX(${Math.min(1,m/goal).toFixed(3)})`;
     const bs=$('#hcbest');if(bs){bs.style.left=Math.min(100,H.best/goal*100)+'%';bs.style.display=C.fin==null&&H.best>5?'block':'none'}}}
   const b=$('#hcb');if(b&&b.textContent!=String(H.bolts))b.textContent=H.bolts}
+/* ---------- 4x4 Hill Climb in 2.5D (GL-01): the WebGL look, on the GLX layer (60-gl.js) ----------
+   Only the drawing changes: hcNew / hcStep, the controls, stages, stars and saves are the same code as the 2D look. hcStart puts a
+   WebGL canvas (#hcgl) under the 2D canvas (#hcv); each frame hcDraw moves the camera as before, then hcGlFrame draws the world
+   in 3D and the 2D canvas, cleared, carries only the small things on top (flags, bolts, fuel, stars, dust, rain, the night, the
+   speedometer, the patch names). The 2D look (62-hill.js) stays and is used when WebGL is missing or fails or is drawn by the CPU
+   (no GPU: HGL.soft), when the context is lost, when a grown-up turns the 3D look off (Grown-ups, Tablet speed: S.hcGl = false), and for the rest of the visit when the
+   frame rate stays low even at the lowest pixel scale (hcGlDrop).
+   The scene (world units = the simulation's pixels; x along the road, y up, z toward the viewer):
+   - The camera (GLX.side) sits HGL.E above and HGL.EX ahead of the 2D camera, HGL.D back. The plane z = 0, where the car and every
+     pick-up live, lands on the screen exactly where the 2D look draws it, so the 2D layer on top lines up.
+   - The ground in chunks of HGL.CW: the road's top from z = ZF (front) to -ZB (back), lit by its slope; a grass edge and the earth
+     on the front face (z = ZF, the world's dirt texture, darker further down); a verge behind the road to -ZV with the world's
+     roadside things (trees, cacti, pines ...) standing on it in two rows; water or lava in gaps, fords and under bridges; bridges
+     as plank boxes on posts; rocks as lit slabs. One mesh per chunk and kind, made once.
+   - Behind: the sky (a screen gradient, stars at night), the sun, moon or Earth and the clouds, then the ranges of the 2D look as
+     meshes far back in z (real parallax), shaded by their slopes with a light rim and haze toward the sky at their feet; snow on
+     the peaks; trees on the near hills. In front: the foreground tufts and stones (z > ZF).
+   - The car: its 2D body art (the paint, toppers and the child's pet) as a stack of slices through the body's depth, darker
+     inside, so it has sides; four wheels as lit cylinders with the rim art on their caps; crates as lit boxes; a soft shadow.
+   Draw calls stay low (about 25), nothing is allocated per frame (one sprite batch refilled; matrices reused). Colours are the
+   --ill-* and --sc-* tokens (hcC). */
+// soft: also draw in 3D when WebGL is drawn by the CPU (GLX R.soft: no GPU). Off: there the 2D look is faster. tools/smoke.js and
+// the screenshots turn it on, because headless Chrome draws WebGL with SwiftShader.
+const HGL = { D: 700, E: 250, EX: 80, ZF: 60, ZB: 60, ZV: 360, CW: 640, near: 40, far: 40000, LAY: 60, soft: false };
+let HC_GLOFF = false; // set for the rest of the visit when the 3D look was too slow (hcGlDrop)
+// the 3D look is wanted: not turned off by a grown-up, not dropped for speed this visit
+const hcGlWant = () => S.hcGl !== false && !HC_GLOFF;
+// make the renderer on canvas cv for drive H; null when WebGL is missing or fails (the drive then draws in 2D)
+function hcGlStart(H, cv) {
+  if (!hcGlWant()) return null;
+  const R = GLX.init(cv);
+  if (!R) return null;
+  if (R.soft && !HGL.soft) { GLX.end(R); H.glWhy = 'software'; return null; }
+  const G = { R, cv, ch: new Map(), lays: null, W: 0, Hh: 0, col: {}, B: GLX.batch(R, 64), VP: null, mvp: new Float32Array(16), M: new Float32Array(16), mm: new Array(16).fill(0),
+    tmp: new Array(16).fill(0), y0: null, slow: 0, off: false, frames: 0, q: 1, fq: 0, ps: 0, pf: 0,
+    VP: new Array(16).fill(0), VP32: new Float32Array(16), SCR: new Float32Array(16), SCR2: new Float32Array(16) };
+  // the draw options, made once and reused every frame (M is the model matrix hgMVP keeps)
+  G.O = { dirt: { tex: null }, lit: { M: G.M }, cut: { tex: null, cut: .5 }, tyre: { M: G.M, A: .5 }, crates: { M: G.M, n: 0 }, sh: { tex: null, T: [1, 1, 1, 1] },
+    far: [.62, .62, .62, 1], tn: [1, 1, 1, 1], cloud: [1, 1, 1, .9] };
+  return G;
+}
+// the 3D look stops for this drive (and for the rest of the visit when it was too slow); the 2D look takes over at once
+function hcGlDrop(H, why) {
+  const G = H.gl;
+  if (!G) return;
+  G.off = true;
+  if (why == 'slow') HC_GLOFF = true;
+  try { G.cv.style.display = 'none'; } catch (e) {}
+  H.glWhy = why;
+}
+// frames running long: the 3D canvas first draws fewer pixels (.8, .64, then .5 of them a side, stretched to the screen), before
+// the drive's own pixel steps (hcStart) and, last, the 2D look (hcGlDrop). True when it stepped (the drive's counters start again).
+function hcGlPace(H, dt) {
+  const G = H.gl;
+  if (!G || G.off) return false;
+  if (dt > .026) G.ps++; else if (dt > 0) G.pf++;
+  if (G.ps + G.pf < 20) return false;
+  const slow = G.ps > 10;
+  G.ps = G.pf = 0;
+  if (slow && G.q > .51) { G.q = G.q > .9 ? .8 : G.q > .7 ? .64 : .5; return true; }
+  return false;
+}
+const hgC = (G, role) => G.col[role] || (G.col[role] = GLX.rgb(hcC(role)));
+// mvp = VP x (translate (x, y, z), turn a about z); M keeps the model matrix (for the lit program's normals)
+function hgMVP(G, x, y, z, a) { GLX.model(G.mm, x, y, z, a || 0); for (let i = 0; i < 16; i++) G.M[i] = G.mm[i]; GLX.mul(G.tmp, G.VP, G.mm); G.mvp.set(G.tmp); return G.mvp; }
+// the screen height of the 2D look's range at layer position t (hcStrip's ridge)
+const hgRidge = (L, t, Hh, sc) => L.props ? Hh * L.yb - (Math.sin(t * L.f1) * 55 + Math.sin(t * L.f2 + 1) * 25) * sc : Hh * L.yb - (Math.abs(Math.sin(t * L.f1)) * L.amp + Math.sin(t * L.f2) * L.amp * .25) * sc;
+// the layers of the 2D look (hcLayers) and the hazy range behind them, far to near
+function hgLayers(Wd, portrait) {
+  const ls = hcLayers(Wd, portrait), out = [], pre = ls[0][9];
+  if (pre) out.push({ par: .042, col: ls[0][1], yb: pre[0], amp: pre[1], f1: pre[2], f2: pre[3], alpha: pre[4], haze: [.15, .55] });
+  for (const [par, col, yb, amp, f1, f2, cap, alpha, props] of ls) out.push({ par, col, yb, amp, f1, f2, cap, alpha, props, haze: par < .1 ? [.12, .5] : par < .3 ? [0, .35] : [0, .12] });
+  return out;
+}
+// the roadside things of a world as a texture: four variants side by side (cells of 140 x 170 units at 1.6 pixels a unit)
+function hgPropTex(G, Wd) {
+  if (G.props !== undefined) return G.props;
+  if (!Wd.prop) return G.props = null;
+  const A = 1.6, cw = 140, chh = 170, c = hcCan(cw * A * 4, chh * A), x = c.getContext('2d');
+  for (let v = 0; v < 4; v++) hcProp(x, Wd.prop, (v + .5) * cw * A, chh * A - 3, 1.15 * A, v);
+  return G.props = { c, cw, chh };
+}
+// a range as a mesh: rows from the ridge (light rim) down past the screen's foot, haze toward the sky colour at the foot
+function hgLayerMesh(G, H, L, t0, t1) {
+  const R = G.R, sc = G.sc, Hh = G.Hh, cy0 = Hh * G.base - HGL.E * sc + HGL.LAY * sc, par = L.par, Z = HGL.D - HGL.D / par, X0 = t0 / par, o = [], sp = [];
+  const col = hgC(G, L.col), sky = hgC(G, G.skyCols[1]), wh = hgC(G, 'w'), rim = G.dark ? .1 : .3, a = L.alpha;
+  // the foot: as low as the 2D look's strip (the nearest range reaches the bottom of the screen)
+  const P = (t, sy, z = 0) => [t / par - X0, (cy0 - sy) / (sc * par), Z + z], foot = L.props ? Hh * 1.25 : Math.min(Hh * 1.25, Hh * L.yb + L.amp * .25 * sc + 60 * sc + HGL.LAY * sc), dt = 8 / sc;
+  const C4 = (c, al) => [c[0], c[1], c[2], al];
+  let prev = null;
+  for (let t = t0; t <= t1 + dt; t += dt) {
+    const sy = hgRidge(L, t, Hh, sc), sl = (hgRidge(L, t + dt, Hh, sc) - hgRidge(L, t - dt, Hh, sc)) / 16, lit = 1 + Math.max(-1, Math.min(1, -sl)) * .2;
+    const base = GLX.mulc(col, lit), top0 = Hh * L.yb - L.amp * sc, hz = y => L.haze[0] + (L.haze[1] - L.haze[0]) * Math.max(0, Math.min(1, (y - top0) / Math.max(1, foot - top0)));
+    const rows = [[sy, C4(GLX.mix(base, wh, rim), a)], [sy + 3 * sc, C4(base, a)], [sy + (foot - sy) * .4, C4(GLX.mix(col, sky, hz(sy + (foot - sy) * .4)), a)], [foot, C4(GLX.mix(col, sky, L.haze[1]), a)]].map(([y, c]) => [P(t, y), c]);
+    if (prev) for (let r = 0; r < 3; r++) GLX.quad(o, 'grad', prev[r + 1][0], rows[r + 1][0], rows[r][0], prev[r][0], prev[r + 1][1], rows[r + 1][1], rows[r][1], prev[r][1]);
+    prev = rows;
+  }
+  // snow on the peaks (the 2D look's caps)
+  if (L.cap) for (let t = t0 + dt; t < t1; t += dt) {
+    const y = hgRidge(L, t, Hh, sc);
+    if (y < hgRidge(L, t - dt, Hh, sc) && y <= hgRidge(L, t + dt, Hh, sc) && y < Hh * L.yb - L.amp * .75 * sc) {
+      const w = [wh[0], wh[1], wh[2], 1];
+      o.push(...P(t - 20, y + 18 * sc, .5), ...w, ...P(t + 20, y + 18 * sc, .5), ...w, ...P(t, y, .5), ...w);
+    }
+  }
+  // trees on the near hills
+  const PT = L.props && hgPropTex(G, HCW[H.wi]);
+  if (PT) for (let i = Math.floor(t0 / 150) - 1; i < t1 / 150 + 1; i++) {
+    const t = i * 150 + ((i * 73) % 60);
+    if ((i * 7) % 3 == 0) continue;
+    const sy = hgRidge(L, t, Hh, sc), v = ((i % 4) + 4) % 4, s = .8 / par, w = PT.cw * s, h = PT.chh * s, b = P(t, sy, 1), x = b[0], y = b[1] - 4 * s;
+    GLX.quad(sp, 'spr', [x - w / 2, y, b[2]], [x + w / 2, y, b[2]], [x + w / 2, y + h, b[2]], [x - w / 2, y + h, b[2]], [.85, .85, .9, 1], 0, 0, 0, [[v / 4, 1], [(v + 1) / 4, 1], [(v + 1) / 4, 0], [v / 4, 0]]);
+  }
+  if (L.m) GLX.free(R, L.m);
+  if (L.sp) GLX.free(R, L.sp);
+  L.m = GLX.arr(R, 'grad', o); L.sp = GLX.arr(R, 'spr', sp); L.t0 = t0; L.t1 = t1; L.X0 = X0; L.Z = Z;
+}
+// the foreground strip (hcFore): stones and tufts at the foot of the screen, nearer than the road (z > ZF)
+function hgForeMesh(G, H, L, t0, t1) {
+  const R = G.R, sc = G.sc, Hh = G.Hh, cy0 = Hh * G.base - HGL.E * sc - 0, par = 1.25, Z = HGL.D - HGL.D / par, X0 = t0 / par, o = [], Wd = HCW[H.wi];
+  const P = (t, sy) => [t / par - X0, (cy0 - sy) / (sc * par), Z], k = hgC(G, 'k'), dk = [k[0], k[1], k[2], G.dark ? .35 : .2], tuft = hgC(G, Wd.id == 'snow' ? 'w2' : Wd.top2), wh = hgC(G, 'w');
+  const grass = Wd.id == 'meadow' || Wd.id == 'jungle' || Wd.id == 'snow', bot = Hh + 2;
+  for (let i = Math.floor(t0 / 90) - 1; i < t1 / 90 + 1; i++) {
+    const hsh = Math.abs(Math.sin(i * 12.9898) * 43758.5453) % 1;
+    if (hsh < .3) continue;
+    const t = i * 90 + hsh * 50, r = (14 + hsh * 20) * sc, c = P(t, bot + r * .2);
+    for (let s = 0; s < 8; s++) {
+      const a0 = Math.PI * s / 8, a1 = Math.PI * (s + 1) / 8, p0 = P(t + Math.cos(a0) * r * 1.4 / sc, bot + r * .2 - Math.sin(a0) * r), p1 = P(t + Math.cos(a1) * r * 1.4 / sc, bot + r * .2 - Math.sin(a1) * r);
+      o.push(...c, ...dk, ...p0, ...dk, ...p1, ...dk);
+    }
+    if (grass) for (let q = -2; q <= 2; q++) {
+      const bx = t + q * r * .45 / sc, ty = bot - r * (.7 - Math.abs(q) * .14) - 0, w = [tuft[0], tuft[1], tuft[2], 1];
+      o.push(...P(bx - 3, bot - r * .25), ...w, ...P(bx + 3, bot - r * .25), ...w, ...P(bx + q * 2, ty), ...w);
+    } else { const w = [wh[0], wh[1], wh[2], .18], cx = t - r * .4 / sc, cyy = bot - r * .55; for (let s = 0; s < 6; s++) { const a0 = s / 6 * 6.283, a1 = (s + 1) / 6 * 6.283; o.push(...P(cx, cyy), ...w, ...P(cx + Math.cos(a0) * r * .35 / sc, cyy + Math.sin(a0) * r * .18), ...w, ...P(cx + Math.cos(a1) * r * .35 / sc, cyy + Math.sin(a1) * r * .18), ...w); } }
+  }
+  if (L.m) GLX.free(R, L.m);
+  L.m = GLX.arr(R, 'grad', o); L.t0 = t0; L.t1 = t1; L.X0 = X0; L.Z = Z; L.par = par;
+}
+// a ground chunk (HGL.CW units from x0 = k CW): road, front face, verge, water, bridges, rocks, roadside things
+function hgChunk(G, H, k) {
+  let ch = G.ch.get(k);
+  if (ch) return ch;
+  const R = G.R, C = H.C, Wd = HCW[H.wi], x0 = k * HGL.CW, x1 = x0 + HGL.CW, ZF = HGL.ZF, ZB = HGL.ZB, ZV = HGL.ZV, L = GLX.SUN;
+  const gH = w0 => { const i = hcIx(C, w0); if (C.fl[i] & 4) { const b = C.bridges.find(q => w0 >= q.x0 && w0 <= q.x1); if (b) { const u = Math.min(1, (w0 - b.x0) / 40, (b.x1 - w0) / 40); return b.y - 90 * Math.max(0, u); } } return hcH(C, w0); };
+  const top = hgC(G, Wd.top), top2 = hgC(G, Wd.top2), dirt = hgC(G, Wd.dirt), sky = hgC(G, G.skyCols[1]), wh = hgC(G, 'w');
+  const g = [], f = [], l = [], sp = [], xs = [], ys = [], cs = [], lit = [];
+  let lo = 1e9;
+  for (let w0 = x0 - 10; w0 <= x1 + 10; w0 += 10) {
+    const y = gH(w0), i = hcIx(C, w0), sl = (gH(w0 + 10) - gH(w0 - 10)) / 20, nl = Math.hypot(sl, 1), d = Math.max(0, (-sl * L[0] + L[1]) / nl);
+    const so = C.sk[i] && !(C.fl[i] & 1) ? SOFT[HC_SK[C.sk[i]]] : null;
+    xs.push(w0 - x0); ys.push(y); lit.push((.7 + .3 * d) / .92);
+    cs.push(C.fl[i] & 5 ? GLX.mulc(dirt, 1.05) : so ? hgC(G, so.c) : top);
+    lo = Math.min(lo, y);
+  }
+  const n = xs.length, A1 = c => [c[0], c[1], c[2], 1];
+  const bot = lo - 1500;
+  for (let i = 0; i < n - 1; i++) {
+    const xa = xs[i], xb = xs[i + 1], ya = ys[i], yb = ys[i + 1], ca = GLX.mulc(cs[i], lit[i]), cb = GLX.mulc(cs[i + 1], lit[i + 1]);
+    // the road's top, front to back: a light lip, the road, a darker back edge
+    const rows = [[ZF, .28, 1], [ZF - 5, 0, 1], [-ZB + 8, 0, .94], [-ZB, 0, .86]];
+    for (let r = 0; r < 3; r++) {
+      const [z0, w0, k0] = rows[r], [z1, w1, k1] = rows[r + 1];
+      GLX.quad(g, 'grad', [xa, ya, z0], [xb, yb, z0], [xb, yb, z1], [xa, ya, z1], A1(GLX.mulc(GLX.mix(ca, wh, w0), k0)), A1(GLX.mulc(GLX.mix(cb, wh, w0), k0)), A1(GLX.mulc(GLX.mix(cb, wh, w1), k1)), A1(GLX.mulc(GLX.mix(ca, wh, w1), k1)));
+    }
+    // the verge behind the road, fading toward the sky colour at the back
+    const va = GLX.mulc(top2, lit[i] * .92), vb = GLX.mulc(top2, lit[i + 1] * .92), vr = [[-ZB, 0], [-ZB - 60, .08], [-ZV, .32]];
+    for (let r = 0; r < 2; r++) {
+      const [z0, h0] = vr[r], [z1, h1] = vr[r + 1];
+      GLX.quad(g, 'grad', [xa, ya, z0], [xb, yb, z0], [xb, yb, z1], [xa, ya, z1], A1(GLX.mix(va, sky, h0)), A1(GLX.mix(vb, sky, h0)), A1(GLX.mix(vb, sky, h1)), A1(GLX.mix(va, sky, h1)));
+    }
+    // the front face: the grass edge, a dark line, then the earth (textured), darker further down
+    const ea = GLX.mulc(cs[i], .8), eb = GLX.mulc(cs[i + 1], .8), ln = GLX.mulc(top2, .8);
+    GLX.quad(g, 'grad', [xa, ya - 14, ZF], [xb, yb - 14, ZF], [xb, yb, ZF], [xa, ya, ZF], A1(ea), A1(eb), A1(eb), A1(ea));
+    GLX.quad(g, 'grad', [xa, ya - 18, ZF], [xb, yb - 18, ZF], [xb, yb - 14, ZF], [xa, ya - 14, ZF], A1(ln));
+    const U = x => (x + x0) / 154, V = y => -y / 154, fr = [[0, 18, .98], [1, 120, .8], [2, 700, .55]];
+    for (let r = 0; r < 3; r++) {
+      const ta = ya - fr[r][1], tb = yb - fr[r][1], ba = r < 2 ? ya - fr[r + 1][1] : bot, bb = r < 2 ? yb - fr[r + 1][1] : bot, k0 = fr[r][2], k1 = r < 2 ? fr[r + 1][2] : .45;
+      GLX.quad(f, 'spr', [xa, ba, ZF], [xb, bb, ZF], [xb, tb, ZF], [xa, ta, ZF], [k1, k1, k1, 1], [k1, k1, k1, 1], [k0, k0, k0, 1], [k0, k0, k0, 1], [[U(xa), V(ba)], [U(xb), V(bb)], [U(xb), V(tb)], [U(xa), V(ta)]]);
+    }
+    // grass blades along the front edge
+    if ((Wd.id == 'meadow' || Wd.id == 'jungle') && !(C.fl[hcIx(C, xa + x0)]) && !C.sk[hcIx(C, xa + x0)] && i % 2 == 0) {
+      const t2 = A1(top2), bx = xa + 5, by = ya + (yb - ya) * .5;
+      g.push(bx - 3, by - 2, ZF + .6, ...t2, bx + 3, by - 2, ZF + .6, ...t2, bx + ((i / 2) % 2 ? 2 : -2), by + 9, ZF + .6, ...t2);
+    }
+  }
+  // water (or lava) in the gaps, fords and under bridges: a top face and a front face down to the ground
+  const wcol = hgC(G, Wd.water), wtop = hgC(G, Wd.pit == 'lava' ? 'y' : Wd.pit == 'crater' ? 'e3' : 'c1'), wt = GLX.mix(wcol, wtop, .3);
+  const pool = (a, b, lvl) => {
+    if (b < x0 - 20 || a > x1 + 20) return;
+    const xa = Math.max(a, x0 - 10) - x0, xb = Math.min(b, x1 + 10) - x0;
+    if (xb <= xa) return;
+    GLX.quad(g, 'grad', [xa, lvl, ZF + .4], [xb, lvl, ZF + .4], [xb, lvl, -ZV], [xa, lvl, -ZV], A1(wt), A1(wt), A1(GLX.mix(wt, sky, .3)), A1(GLX.mix(wt, sky, .3)));
+    for (let w0 = Math.ceil((xa + x0) / 10) * 10 - x0 - 10; w0 < xb; w0 += 10) {
+      const p = Math.max(xa, w0), q = Math.min(xb, w0 + 10);
+      if (q <= p) continue;
+      const yp = Math.min(lvl, gH(p + x0)), yq = Math.min(lvl, gH(q + x0));
+      if (yp >= lvl && yq >= lvl) continue;
+      GLX.quad(g, 'grad', [p, yp, ZF + .5], [q, yq, ZF + .5], [q, lvl, ZF + .5], [p, lvl, ZF + .5], A1(GLX.mulc(wcol, .82)), A1(GLX.mulc(wcol, .82)), A1(wcol), A1(wcol));
+      GLX.quad(g, 'grad', [p, lvl - 3, ZF + .6], [q, lvl - 3, ZF + .6], [q, lvl, ZF + .6], [p, lvl, ZF + .6], A1(wtop));
+    }
+  };
+  if (Wd.pit != 'crater') for (const p of C.pits) pool(p.x0 + 4, p.x1 - 4, p.y - p.d * .5);
+  for (const b of C.bridges) pool(b.x0 + 20, b.x1 - 20, b.y - 60);
+  for (const fd of C.fords) pool(fd.x0, fd.x1, fd.y);
+  // bridges: planks on a deck, posts and rails on both sides
+  const n2 = hgC(G, 'n2'), nn = hgC(G, 'n'), n3 = hgC(G, 'n3');
+  for (const b of C.bridges) {
+    if (b.x1 < x0 - 30 || b.x0 > x1 + 30) continue;
+    const a = b.x0 - x0, e = b.x1 - x0;
+    GLX.box(l, a, b.y - 10, -ZB + 6, e, b.y - 4, ZF - 6, n2);
+    for (let w0 = a; w0 < e; w0 += 24) GLX.box(l, w0 + 1, b.y - 4, -ZB + 8, Math.min(e, w0 + 23), b.y, ZF - 8, nn, n2);
+    const m = Math.max(1, Math.round((b.x1 - b.x0) / 120));
+    for (const z of [ZF - 10, -ZB + 10]) {
+      for (let j = 0; j <= m; j++) { const w0 = a + (e - a) * j / m; GLX.box(l, w0 - 3, b.y - 40, z - 3, w0 + 3, b.y + 46, z + 3, n3); }
+      GLX.box(l, a, b.y + 38, z - 1.5, e, b.y + 42, z + 1.5, n3);
+    }
+  }
+  // rocks: the 2D look's half ellipse as a lit slab
+  const rk = hgC(G, Wd.space ? 'e' : 'e2'), rk2 = hgC(G, Wd.space ? 'e1' : 'e');
+  for (const r of C.rocks) {
+    if (r.x1 < x0 - 40 || r.x0 > x1 + 40) continue;
+    const bx = (r.x0 + r.x1) / 2 - x0, rw = (r.x1 - r.x0) / 2 * 1.05, rh = r.h + 3, pts = [];
+    for (let s = 0; s <= 10; s++) { const a = Math.PI * s / 10; pts.push([bx + Math.cos(a) * rw, r.y - 12 + Math.sin(a) * (rh + 12)]); }
+    GLX.extrude(l, pts, -ZB + 14, ZF - 14, rk, rk2, rk);
+  }
+  // roadside things on the verge, in two rows
+  const PT = hgPropTex(G, Wd);
+  if (PT) {
+    const put = (w0, z, v, s) => {
+      const y = gH(w0) - 3, w = PT.cw * s, h = PT.chh * s, x = w0 - x0, tint = GLX.mix([1, 1, 1], sky, Math.min(.4, -z / ZV * .25));
+      GLX.quad(sp, 'spr', [x - w / 2, y, z], [x + w / 2, y, z], [x + w / 2, y + h, z], [x - w / 2, y + h, z], [tint[0], tint[1], tint[2], 1], 0, 0, 0, [[v / 4, 1], [(v + 1) / 4, 1], [(v + 1) / 4, 0], [v / 4, 0]]);
+    };
+    for (let i = Math.floor((x0 - 120) / 230); i < (x1 + 120) / 230; i++) {
+      if ((i * 13) % 5 < 2) continue;
+      const w0 = i * 230 + ((i * 57) % 90);
+      if (w0 < x0 || w0 >= x1 || w0 < 200 || C.fl[hcIx(C, w0)] || C.fl[hcIx(C, w0 + 60)] || C.fl[hcIx(C, w0 - 60)]) continue;
+      put(w0, -ZB - 45, (((i + 3) % 4) + 4) % 4, 1);
+    }
+    for (let i = Math.floor(x0 / 170); i < x1 / 170; i++) {
+      if ((i * 7) % 3 == 0) continue;
+      const w0 = i * 170 + ((i * 41) % 70);
+      if (w0 < x0 || w0 >= x1 || C.fl[hcIx(C, w0)] & 1) continue;
+      put(w0, -ZV + 70 + ((i * 29) % 90), ((i % 4) + 4) % 4, 1.1);
+    }
+  }
+  ch = { k, x0, g: GLX.arr(R, 'grad', g), f: GLX.arr(R, 'spr', f), l: GLX.arr(R, 'lit', l), sp: GLX.arr(R, 'spr', sp) };
+  G.ch.set(k, ch);
+  for (const [kk, c] of G.ch) if (kk < k - 4 || kk > k + 4) { for (const m of [c.g, c.f, c.l, c.sp]) GLX.free(R, m); G.ch.delete(kk); }
+  return ch;
+}
+// the car's parts that do not change during a drive: a wheel (a lit cylinder), the crate boxes, the shadow
+function hgCar(G, H) {
+  if (G.car && G.car.veh === H.veh) return G.car;
+  const R = G.R, V = VEH[H.veh] || VEH.jeep, bike = H.veh == 'bike', w = [], c = [], s = [], tyre = hgC(G, 'k2'), tread = GLX.mulc(hgC(G, 'k2'), .8), half = bike ? 4 : 7;
+  const pts = []; for (let i = 0; i < 18; i++) { const a = i / 18 * Math.PI * 2; pts.push([Math.cos(a) * V.R, Math.sin(a) * V.R]); }
+  GLX.extrude(w, pts, -half, half, tyre, tread, tyre);
+  const cn = hgC(G, 'n'), cn3 = hgC(G, 'n3'), cp = { jeep: [-44, -18], buggy: [-30, -12], monster: [-50, -30], bike: [-26, -20], tractor: [14, -26], bus: [-30, -50] }[H.veh] || [-40, -18];
+  for (let i = 0; i < 3; i++) { const ox = cp[0] + (i == 2 ? 9 : i * 18), oy = cp[1] - (i == 2 ? 17 : 0) - 17; GLX.box(c, ox, -(oy + 17), -9, ox + 17, -oy, 9, cn, GLX.mix(cn, cn3, .5)); }
+  GLX.quad(s, 'spr', [-58, 0, -36], [58, 0, -36], [58, 0, 36], [-58, 0, 36], [1, 1, 1, 1], 0, 0, 0, [[0, 0], [1, 0], [1, 1], [0, 1]]);
+  if (G.car) for (const m of [G.car.w, G.car.c, G.car.s]) GLX.free(R, m);
+  return G.car = { veh: H.veh, w: GLX.arr(R, 'lit', w), c: GLX.arr(R, 'lit', c), s: GLX.arr(R, 'spr', s), half, body: bike ? 5 : 15, wz: bike ? 0 : 26 };
+}
+// the box round the drawn pixels of a sprite canvas [x0, y0, x1, y1] (the slices of the car cover only its art: a cheap GPU
+// pays for every pixel a quad touches, drawn or not)
+function hgCrop(c) {
+  if (c._crop) return c._crop;
+  let b = [0, 0, c.width, c.height];
+  try {
+    const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data, w = c.width, h = c.height;
+    let x0 = w, y0 = h, x1 = 0, y1 = 0;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (d[(y * w + x) * 4 + 3] > 8) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+    if (x1 >= x0 && y1 >= y0) b = [Math.max(0, x0 - 1), Math.max(0, y0 - 1), Math.min(w, x1 + 2), Math.min(h, y1 + 2)];
+  } catch (e) {}
+  return c._crop = b;
+}
+// the sun (or the moon, or the Earth) as a small texture: the 2D look's shapes (hcSun) round the middle of the canvas
+function hgSunTex(G, R2, wx, Wd) {
+  if (G.sun !== undefined) return G.sun;
+  const sc = R2.sc, r = 40 * sc * 1.6, c = hcCan(r * 2 + 4, r * 2 + 4), x = c.getContext('2d'), m = c.width / 2;
+  if (Wd.space) { const er = 34 * sc; x.fillStyle = hcC('b'); x.beginPath(); x.arc(m, m, er, 0, 7); x.fill(); x.fillStyle = hcC('g'); x.beginPath(); x.ellipse(m - er * .3, m - er * .2, er * .35, er * .5, .4, 0, 7); x.ellipse(m + er * .4, m + er * .3, er * .3, er * .25, 0, 0, 7); x.fill(); return G.sun = { c, x: .8, y: .17 }; }
+  if (R2.dark) { x.fillStyle = hcC('m'); x.beginPath(); x.arc(m, m, 26 * sc, 0, 7); x.fill(); x.fillStyle = hcC(R2.skyCols[0]); x.beginPath(); x.arc(m + 10 * sc, m - 6 * sc, 24 * sc, 0, 7); x.fill(); return G.sun = { c, x: .82, y: .15 }; }
+  if (wx == 'rain' || wx == 'ash') return G.sun = null;
+  const r0 = 40 * sc; x.fillStyle = hcA(wx == 'dusk' ? 'o1' : 'y1', .5); x.beginPath(); x.arc(m, m, r0 * 1.6, 0, 7); x.fill(); x.fillStyle = hcC(wx == 'dusk' ? 'o' : 'y'); x.beginPath(); x.arc(m, m, r0, 0, 7); x.fill();
+  return G.sun = { c, x: .84, y: .14 };
+}
+// a soft round shadow (darkest in the middle)
+function hgShadow(G) {
+  if (G.shc) return G.shc;
+  const c = hcCan(64, 64), x = c.getContext('2d'), g = x.createRadialGradient(32, 32, 2, 32, 32, 31);
+  g.addColorStop(0, hcA('k', .9)); g.addColorStop(.6, hcA('k', .5)); g.addColorStop(1, hcA('k', 0));
+  x.fillStyle = g; x.fillRect(0, 0, 64, 64);
+  return G.shc = c;
+}
+// the sky as a screen mesh: the gradient and, at night or in space, the stars
+function hgSky(G) {
+  const R = G.R, W = G.W, Hh = G.Hh, o = [], a = hgC(G, G.skyCols[0]), b = hgC(G, G.skyCols[1]), A = c => [c[0], c[1], c[2], 1];
+  GLX.quad(o, 'grad', [0, 0, 0], [W, 0, 0], [W, Hh, 0], [0, Hh, 0], A(a), A(a), A(b), A(b));
+  if (G.dark) { const w = hgC(G, 'w'); for (let t = 0; t < W * 2; t += 23) { const h = Math.abs(Math.sin(t * 12.9898) * 43758.5453) % 1; if (h > .5) continue; const x = t / 2, y = h * 2 * Hh * .55, z = (1 + (h * 6 | 0) % 3 * .5) * G.dpr, c = [w[0], w[1], w[2], Math.min(1, .4 + h)]; GLX.quad(o, 'grad', [x, y, 0], [x + z, y, 0], [x + z, y + z, 0], [x, y + z, 0], c); } }
+  if (G.sky) GLX.free(R, G.sky);
+  G.sky = GLX.arr(R, 'grad', o);
+}
+// one frame of the 3D look; false when it cannot draw (the 2D look draws this frame instead). A failure drops to the 2D look for
+// the drive and is kept in the app log (Grown-ups), never shown to the child.
+function hcGlFrame(H, W, Hh, dpr, sh) {
+  try { return hgFrame(H, W, Hh, dpr, sh); } catch (e) { hcGlDrop(H, 'error'); logErr('Hill Climb 3D look: ' + (e && e.message)); return false; }
+}
+function hgFrame(H, W, Hh, dpr, sh) {
+  const G = H.gl;
+  if (!G || G.off) return false;
+  const R = G.R, gl = R.gl;
+  if (R.lost || gl.isContextLost()) { hcGlDrop(H, 'lost'); return false; }
+  const Wd = HCW[H.wi], wx = H.wx || 'day', R2 = hcRC(H, W, Hh, dpr), sc = R2.sc, D = HGL.D, T = H.calm ? 0 : H.t;
+  if (G.W !== W || G.Hh !== Hh || !G.lays) {
+    // a new screen size: new layers, sky and textures (the chunks are in world units and stay)
+    G.W = W; G.Hh = Hh; G.sc = sc; G.base = R2.base; G.dark = R2.dark; G.skyCols = R2.skyCols; G.dpr = dpr;
+    if (G.lays) for (const L of G.lays.concat(G.fore || [])) { GLX.free(R, L.m); GLX.free(R, L.sp); }
+    G.lays = hgLayers(Wd, R2.portrait); G.fore = [{}]; G.sun = undefined;
+    hgSky(G);
+    G.fq = 0;
+    G.SCR.set(GLX.screen(W, Hh, .99995)); G.SCR2.set(GLX.screen(W, Hh, .9999));
+  }
+  if (G.fq !== G.q) { GLX.fit(G.cv, { dpr: 1.5, px: 1e6, q: G.q }); G.fq = G.q; }
+  const cv = G.cv;
+  gl.viewport(0, 0, cv.width, cv.height);
+  const cx = (H.w1.x + H.w2.x) / 2, cy = (H.w1.y + H.w2.y) / 2, ang = hcAng(H), ex = H.camX + HGL.EX, ey = H.camY + HGL.E;
+  const px = W * .38 + HGL.EX * sc + sh, py = Hh * R2.base - HGL.E * sc + sh;
+  GLX.side(W, Hh, sc, D, 0, 0, px, py, HGL.near, HGL.far, G.VP); G.VP32.set(G.VP);
+  const B = G.B, O = G.O;
+  if (G.y0 == null) G.y0 = H.camY;
+  R.draws = 0;
+  const sk = hgC(G, G.skyCols[1]);
+  gl.clearColor(sk[0], sk[1], sk[2], 1); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  // ---- the ground (depth on) ----
+  gl.enable(gl.DEPTH_TEST); gl.depthMask(true); gl.disable(gl.BLEND);
+  const s0 = D / (D + HGL.ZV), xa = ex - px / (sc * s0) - 20, xb = ex + (W - px) / (sc * s0) + 20, dirt = GLX.tex(R, 'dirt' + H.wi, texFor(H.wi), true);
+  const PT = hgPropTex(G, Wd), ptex = PT && GLX.tex(R, 'props', PT.c);
+  for (let k = Math.floor(xa / HGL.CW); k <= Math.floor(xb / HGL.CW); k++) {
+    const ch = hgChunk(G, H, k), mvp = hgMVP(G, ch.x0 - ex, -ey, 0);
+    GLX.draw(R, ch.g, mvp);
+    O.dirt.tex = dirt; GLX.draw(R, ch.f, mvp, O.dirt);
+    if (ch.l) GLX.draw(R, ch.l, mvp, O.lit);
+    if (ch.sp) { gl.enable(gl.BLEND); O.cut.tex = ptex; GLX.draw(R, ch.sp, mvp, O.cut); gl.disable(gl.BLEND); }
+  }
+  // ---- the car (it blinks while it starts again) ----
+  if (H.crashT <= 0 || Math.floor(H.crashT * 8) % 2) {
+    const K = hgCar(G, H), V = VEH[H.veh] || VEH.jeep, lift = H.R + 6, bx = cx - Math.sin(ang) * lift, by = cy + Math.cos(ang) * lift, gy = hcH(H.C, cx);
+    // the shadow on the road
+    gl.enable(gl.BLEND); gl.depthMask(false);
+    const dist = Math.max(0, (cy - gy) * sc), al = Math.max(.08, .5 - dist / 400);
+    O.sh.tex = GLX.tex(R, 'shadow', hgShadow(G)); O.sh.T[3] = al;
+    GLX.draw(R, K.s, hgMVP(G, cx - ex, gy + 2 - ey, 0, hcSlope(H.C, cx)), O.sh);
+    gl.depthMask(true); gl.disable(gl.BLEND);
+    const wh = hcSpr(R2, 'wh' + H.veh + H.paint + (H.rim || ''), V.R * sc * 2 + 8 * sc, V.R * sc * 2 + 8 * sc, (y, w, h) => wheel(y, w / 2, h / 2, 0, sc, 0, 0, 0, H.paint, V.R, H.rim)), wtex = GLX.tex(R, 'wheel', wh), ws = wh.width / sc;
+    const c0 = Math.cos(ang), s0b = Math.sin(ang), wyo = V.R + 6;
+    // the wheels on one side (z): lit cylinders, then the rim art on their caps (darker on the far side)
+    const wheelsAt = z => {
+      gl.disable(gl.BLEND);
+      for (let j = 0; j < 2; j++) { const ox = j ? V.L / 2 : -V.L / 2, rot = j ? H.w2.rot : H.w1.rot; GLX.draw(R, K.w, hgMVP(G, bx + ox * c0 + wyo * s0b - ex, by + ox * s0b - wyo * c0 - ey, z, -rot), O.tyre); }
+      gl.enable(gl.BLEND);
+      const t = z < 0 ? O.far : GLX.ONE;
+      for (let j = 0; j < 2; j++) { const ox = j ? V.L / 2 : -V.L / 2, rot = j ? H.w2.rot : H.w1.rot; GLX.bq(B, bx + ox * c0 + wyo * s0b - ex, by + ox * s0b - wyo * c0 - ey, z + K.half + .3, ws, ws, -rot, 0, 0, 1, 1, t); }
+      GLX.bflush(R, B, G.VP32, wtex, O.cut);
+    };
+    if (K.wz) wheelsAt(-K.wz);
+    // the body: slices of its art through its depth, back (darker) to front, in the car's frame
+    const body = hcBody(R2, H), cr = hgCrop(body), btex = GLX.tex(R, 'body', body), W0 = body.width, H0 = body.height;
+    const bw = (cr[2] - cr[0]) / sc, bh = (cr[3] - cr[1]) / sc, bxc = ((cr[0] + cr[2]) / 2 - body.ox) / sc, byc = (body.oy - (cr[1] + cr[3]) / 2) / sc + H.bob;
+    gl.enable(gl.BLEND); gl.depthMask(false);
+    const NS = H.veh == 'bike' ? 3 : 7, tn = O.tn;
+    for (let i = 0; i < NS; i++) { const u = i / (NS - 1), z = -K.body + 2 * K.body * u; tn[0] = tn[1] = tn[2] = i == NS - 1 ? 1 : .5 + .25 * u; GLX.bq(B, bxc, byc, z, bw, bh, 0, cr[0] / W0, cr[1] / H0, cr[2] / W0, cr[3] / H0, tn); }
+    GLX.bflush(R, B, hgMVP(G, bx - ex, by - ey, 0, ang), btex);
+    gl.depthMask(true); gl.disable(gl.BLEND);
+    if (H.crates) { O.crates.n = H.crates * 36; GLX.draw(R, K.c, hgMVP(G, bx - ex, by - ey, 0, ang), O.crates); }
+    wheelsAt(K.wz);
+  }
+  // ---- behind, drawn after the ground and the car so the depth test skips what they hide (a cheap GPU pays per pixel):
+  //      the ranges near to far, the sky (at the far end of the depth range), then the sun and the clouds just in front of it ----
+  gl.enable(gl.DEPTH_TEST); gl.depthMask(true); gl.disable(gl.BLEND);
+  const vs = Math.max(-Hh * .08, Math.min(Hh * .08, (H.camY - G.y0) * sc * .12));
+  for (let i = G.lays.length - 1; i >= 0; i--) if (G.lays[i].alpha >= 1) hgRange(G, H, G.lays[i], ex, px, vs);
+  const SCR = G.SCR, SCR2 = G.SCR2;
+  GLX.draw(R, G.sky, SCR);
+  // the see-through hazy range over the sky, then the sun and clouds over both
+  gl.enable(gl.BLEND); gl.depthMask(false);
+  for (const L of G.lays) if (L.alpha < 1) hgRange(G, H, L, ex, px, vs);
+  gl.enable(gl.BLEND);
+  const sun = hgSunTex(G, R2, wx, Wd);
+  if (sun) { const s = sun.c.width; GLX.bq(B, W * sun.x, Hh * sun.y, 0, s, s, 0, 0, 1, 1, 0, GLX.ONE); GLX.bflush(R, B, SCR2, GLX.tex(R, 'sun', sun.c)); }
+  const ct = O.cloud, cl = R2.cloud;
+  ct[3] = wx == 'night' ? .25 : .9;
+  if (!Wd.space) for (let i = 0; i < 5; i++) { const x = ((i * 420 - H.camX * .08 * sc - T * 12 * dpr) % (W + 300) + W + 300) % (W + 300) - 150, y = Hh * (.06 + (i % 3) * .08); GLX.bq(B, x + cl.width / 2, y + cl.height / 2, 0, cl.width, cl.height, 0, 0, 1, 1, 0, ct); }
+  GLX.bflush(R, B, SCR2, GLX.tex(R, 'cloud', cl));
+  gl.depthMask(true);
+  // ---- in front: the foreground tufts and stones ----
+  gl.disable(gl.DEPTH_TEST); gl.enable(gl.BLEND);
+  const F = G.fore[0], ftl = ex * 1.25 - px / sc, ftr = ex * 1.25 + (W - px) / sc;
+  if (!F.m || ftl < F.t0 || ftr > F.t1) hgForeMesh(G, H, F, ftl - W * .6 / sc, ftr + W * .6 / sc);
+  GLX.draw(R, F.m, hgMVP(G, F.X0 - ex, 0, 0));
+  gl.disable(gl.BLEND);
+  G.frames++;
+  return true;
+}
+// a range: its mesh (made again when the view has moved past it) and the trees on it
+function hgRange(G, H, L, ex, px, vs) {
+  const R = G.R, gl = R.gl, sc = G.sc, W = G.W, tl = ex * L.par - px / sc, tr = ex * L.par + (W - px) / sc;
+  if (!L.m && !L.sp || tl < L.t0 || tr > L.t1) hgLayerMesh(G, H, L, tl - W * .6 / sc, tr + W * .6 / sc);
+  GLX.draw(R, L.m, hgMVP(G, L.X0 - ex, -vs * (L.par / .35) / (sc * L.par), 0));
+  if (L.sp) { const was = gl.isEnabled(gl.BLEND); gl.enable(gl.BLEND); G.O.cut.tex = GLX.tex(R, 'props', G.props.c); GLX.draw(R, L.sp, G.mvp, G.O.cut); if (!was) gl.disable(gl.BLEND); }
+}
+// in the 3D look the 2D layer names the soft patches (the 2D look paints the names into its ground chunks)
+function hcGlLabels(x, H, SX, SY, left, right, sc) {
+  const C = H.C;
+  for (const s of C.soft) {
+    const mx = (s.x0 + s.x1) / 2;
+    if (mx < left || mx > right) continue;
+    x.fillStyle = hcC(s.k == 'ice' ? 'b3' : 'w'); x.font = `bold ${13 * sc}px sans-serif`; x.fillText(SOFT[s.k].label, SX(mx), SY(hcH(C, mx) + 46));
+  }
+}
 /* ---------- game timer shared by pure games ---------- */
 // P4-16: the time chip is the shared top bar's (GH.top, 59-game-hub.js); the clock holds while the pause sheet is open (GH.held).
 let GT=null;

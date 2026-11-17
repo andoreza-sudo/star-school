@@ -3038,7 +3038,7 @@ function esStoryRound(lv){const D=ES_STORY.dialogues,s0=bankSeed(),out=[];let po
    P4-12 (DESIGN_SYSTEM 9 row 6): a calm adult layout in the same system. Each section is a card with an icon header (GW.card);
    switches, segmented controls, fields and a readable table from the P4-04 components; two columns on a wide screen. Styles in
    src/css/48-setup-grown-care.css. Every id the code and the tests use is kept: #back, #nm, #pn, #bd, .gr[data-g], .pl-grown,
-   #ula, #rp-open, [data-rec], [data-play], [data-del], [data-per], [data-max], #pt5, #pt0, #ptp, #rlgates (G-FEEL2), #applog, #voice, #snd, #mus, #calm, [data-cheer] (EN-PRAISE), #esspk (S-SPK),
+   #ula, #rp-open, [data-rec], [data-play], [data-del], [data-per], [data-max], #pt5, #pt0, #ptp, #rlgates (G-FEEL2), #applog, #voice, #snd, #mus, #calm, [data-cheer] (EN-PRAISE), #esspk (S-SPK), #fps, #hc3d (GL-01),
    #gw-lis, #lis-dl, #gw-corner, [data-keep], [data-lcp], [data-lcs], #lc-del (S-SPK2, 50-say-corner.js),
    #test, #reset. The report card's Print button (82-report.js) and the backup Save buttons (81-backup.js, P5-07) carry the online note.
    P5-10: the Children card (PRF.card in 01-profiles.js) comes right after the summary; with more than one child, Start over
@@ -3135,6 +3135,8 @@ function grown(){let armed=false;
     <p class="gw-sub">Speaking practice: in Spanish rounds your child says a word or line, then hears the Spanish voice and their own recording, and the tablet says kindly how close it sounded. Recordings stay on this tablet (see the Listening corner).</p>
     ${UI.btn('Test voice',{size:'sm',icon:'speak',id:'test'})}
     <div class="gw-row" id="gw-cheer"><span class="gw-rl">Cheer voices</span>${GW.seg('cheer',['mix','f','m','tts'],cheerMode(),'Cheer voices: who says Great job',v=>CHEER_NAMES[v])}</div>`)}
+  ${GW.card('gw-speed','bolt','Tablet speed',`<div class="gw-sw">${UI.sw('Show the speed box: frames per second in a corner',!!S.fps,'fps')}${UI.sw('4x4 Hill Climb in 3D (off: the flat 2D look)',S.hcGl!==false,'hc3d')}</div>
+    <p class="gw-sub">The speed box shows how many pictures a second the tablet draws and its slowest one in the last 5 seconds. Hill Climb turns to the 2D look by itself on a tablet that is too slow for 3D.</p>`)}
   ${spkLisCard()}
   ${spkCornerCard()}
   ${GW.card('gw-rec','mic','Your voice',(inFrame?warn('Recording only works on the tablet app, not in this preview.'):!canRec?warn("Recording isn't available in this browser. Use Chrome or the installed app."):'')+clips,
@@ -3175,6 +3177,7 @@ function grown(){let armed=false;
   $('#buzz').onchange=e=>{S.buzz=e.target.checked;save()}; // R-03 A4 (10-sfx.js buzz)
   $('#calm').onchange=e=>{S.calm=e.target.checked;save();calmApply(true)}; // P4-17
   $('#esspk').onchange=e=>{S.esSpk=e.target.checked;save()}; // S-SPK: per child (absent = on)
+  $('#fps').onchange=e=>{S.fps=e.target.checked;save();fpsSet(S.fps)};$('#hc3d').onchange=e=>{S.hcGl=e.target.checked;if(typeof HC_GLOFF!='undefined')HC_GLOFF=false;save()}; // GL-01 (on again: 3D again, even after it was too slow this visit)
   spkLisBind();spkCornerBind(); // S-SPK2
   // EN-PRAISE: who says "Great job!" (per child): the recorded voices, mixed, female or male, or the tablet's voice; a tap plays a sample
   $$('[data-cheer]').forEach(b=>b.onclick=()=>{S.cheerV=b.dataset.cheer;save();$$('[data-cheer]').forEach(x=>{const on=x===b;x.classList.toggle('on',on);x.setAttribute('aria-pressed',on)});say(pick(CHEERS))});

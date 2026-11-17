@@ -15,7 +15,7 @@ PARTS = [
     ('gen', r'(23-viz|30-gen-math|31-gen-math-early|32-gen-read|33-gen-math-mid|34-gen-es|80-grown|81-backup|82-report|88-online)\.js'),  # A11c: math visuals and the question generators, part 1; ROOM: the Grown-ups screens (settings, backup, report, online note)
     ('gen2', r'(35-gen-math-upper|36-gen-phonics|37-bank|37-comp|39b-steps|49b-kinds2)\.js|37b-kinds-c\.css'),  # A11c: question generators, part 2 (35 is the big one); KINDS2: the sort and mark kinds
     ('bt', r'\d+-bt-[\w-]+\.(js|css)'),  # Brain Teaser puzzle types NN-bt-*.js and NN-bt-*.css (74-teasers.js, the framework, stays)
-    ('games', r'(62-hill|64-gtimer|66-colornum|68-lowpoly|70-art|72-shapes|59-game-hub)\.js|(48-game-hub|61-hill)\.css'),  # the Game Room: hub (P4-16) and the first games (G-02b moved Star Rally to games2, G-RALLY2 to rally, G-BB2 Block Builder to games3)
+    ('games', r'(60-gl|62-hill|62b-hill-gl|64-gtimer|66-colornum|68-lowpoly|70-art|72-shapes|59-game-hub)\.js|(48-game-hub|61-hill)\.css'),  # the Game Room: hub (P4-16) and the first games (G-02b moved Star Rally to games2, G-RALLY2 to rally, G-BB2 Block Builder to games3); GL-01: the shared WebGL layer and Hill Climb's 3D look
     ('rally', r'63-game-race\.js|49-game-race\.css'),  # G-RALLY2: Star Rally on its own (games2 had passed its 400 KB warning); loads after games, before games2
     ('games2', r'(?!60-game-blocks)\d+-game-[\w-]+\.(js|css)'),  # G-04a: every newer Game Room game NN-game-*.js / .css (Snack Stand, Sky Hop ...)
     ('games3', r'(60-blocks|61-bb-gl)\.js|60-game-blocks\.css'),  # G-BB2: Block Builder and its WebGL renderer (games was over its 400 KB warning)

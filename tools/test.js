@@ -8139,6 +8139,85 @@ run('KINDS2-E Discover: new sort and mark items valid, kind share per stop, why 
   return{problems:r.bad,note:`${r.n} new items, ${r.why} choice items with a why; new kinds per stop/level ${Object.entries(r.rows).map(([k,v])=>k+' '+v+'%').join(', ')}; before: ${tab(r.before)}; after: ${tab(r.after)}`};
 });
 
+// ---- GL-01: the shared WebGL layer (src/js/60-gl.js), Hill Climb's 3D look (62b-hill-gl.js) and the speed box (19b-fps.js) ----
+// The layer is in the games part (on demand) and loads here without a page; with no WebGL (no canvas, a context that cannot be made,
+// a shader that does not compile) it gives null and Hill Climb keeps its 2D look; the side-view camera puts z = 0 exactly where the
+// 2D look draws; the simulation never reads the renderer. The speed box is off by default and its switch saves (defaults in migrate).
+run('GL-01 WebGL layer, Hill 3D look, speed box',()=>{
+  const p=[],rd=f=>fs.readFileSync(path.join(SRC,f),'utf8'),fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const FIX=['fresh','midway','maxed','tricky','legacy-index-maps','legacy-single-map'].map(n=>[n,fx(n)]);
+  if(partOf('60-gl.js')!=='games'||partOf('62b-hill-gl.js')!=='games')p.push('60-gl.js and 62b-hill-gl.js should build into games.'+BUILD_VER+'.js (PARTS), on demand');
+  if(partOf('19b-fps.js')||partOf('20b-fps.css'))p.push('the speed box (19b-fps.js, 20b-fps.css) belongs in index.html: it works on every screen');
+  function T(FIX){
+    const r={bad:[],notes:[]},bad=m=>{if(r.bad.length<60&&!r.bad.includes(m))r.bad.push(m)};
+    // 1. the layer: no WebGL in Node, so the probe says no and init gives null, without throwing
+    if(typeof GLX!='object'||typeof GLX.init!='function'||typeof GLX.side!='function')bad('GLX is not loaded');
+    let pr;try{pr=GLX.probe()}catch(e){pr='threw '+e.message}
+    if(pr!==false)bad('GLX.probe() without a canvas should be false: '+pr);
+    const ev=()=>{},cv0={addEventListener:ev,getContext:()=>null},cv1={addEventListener:ev,getContext:()=>{throw new Error('no')}};
+    for(const [n,c] of [['no context',cv0],['getContext throws',cv1]]){let R;try{R=GLX.init(c)}catch(e){R='threw '+e.message}if(R!==null)bad('GLX.init with '+n+' should be null: '+R)}
+    // a context whose shaders do not compile: null, and the context is given back
+    let lost=0;const fg=new Proxy({},{get:(o,k)=>k=='getShaderParameter'||k=='getProgramParameter'?()=>false:k=='getExtension'?()=>({loseContext(){lost++}}):typeof k=='string'&&/^[A-Z_]+$/.test(k)?1:()=>({})});
+    let R2;try{R2=GLX.init({addEventListener:ev,getContext:()=>fg})}catch(e){R2='threw '+e.message}
+    if(R2!==null||lost!==1)bad('a shader that does not compile: init should be null and lose the context: '+R2+' '+lost);
+    for(const k in GLX.FS)if(!/^precision mediump float;/.test(GLX.FS[k])||/highp/.test(GLX.FS[k]+GLX.VS[k]))bad('fragment shader '+k+': mediump, no highp');
+    // 2. the side view: z = 0 lands where the 2D look draws (sc pixels a unit round the eye's point); nearer is bigger, farther moves to the eye's point
+    const W=800,Hh=1280,sc=1.3,D=700,M=GLX.side(W,Hh,sc,D,100,50,300,400,40,40000);
+    const scr=(x,y,z)=>{const c=[0,1,2,3].map(r=>M[r]*x+M[4+r]*y+M[8+r]*z+M[12+r]);return[(c[0]/c[3]+1)*W/2,(1-c[1]/c[3])*Hh/2,c[2]/c[3]]};
+    for(const [x,y] of [[100,50],[160,10],[-40,300]]){const s=scr(x,y,0),want=[300+(x-100)*sc,400-(y-50)*sc];if(Math.abs(s[0]-want[0])>1e-6||Math.abs(s[1]-want[1])>1e-6)bad('GLX.side: z = 0 at '+x+','+y+' is '+s.slice(0,2)+', the 2D look draws it at '+want)}
+    const a=scr(200,0,60),b=scr(200,0,-300),c0=scr(200,0,0);
+    if(!(a[0]>c0[0]&&b[0]<c0[0]&&b[0]>300)||!(a[2]<c0[2]&&c0[2]<b[2]))bad('GLX.side: near and far are not in perspective: '+[a,c0,b].map(v=>v.map(q=>q.toFixed(2))).join(' | '));
+    const m=new Float32Array(16),id=[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1];GLX.mul(m,M,id);if(m.some((v,i)=>Math.abs(v-Math.fround(M[i]))>1e-3))bad('GLX.mul by the identity changed the matrix');
+    const o=[];GLX.box(o,0,0,0,1,1,1,[1,0,0]);if(o.length!==36*9)bad('GLX.box: 36 lit vertices of 9 numbers, got '+o.length/9);
+    const e=[];GLX.extrude(e,[[0,0],[1,0],[1,1],[0,1]],-1,1,[1,1,1]);if(e.length!==(2*2*3+4*6)*9)bad('GLX.extrude of a square: 36 vertices, got '+e.length/9);
+    // 3. Hill Climb: the 3D look is wanted unless a grown-up turned it off; without WebGL hcGlStart gives null (the 2D look draws)
+    const keep=[S.hcGl,S.fps];
+    S.hcGl=true;if(!hcGlWant())bad('the 3D look should be wanted by default');
+    S.hcGl=false;if(hcGlWant())bad('S.hcGl = false (Grown-ups) should give the 2D look');
+    S.hcGl=true;const H=hcNew(0,0,{});let G;try{G=hcGlStart(H,cv0)}catch(x){G='threw '+x.message}if(G!==null)bad('hcGlStart without WebGL should be null: '+G);
+    HC_GLOFF=true;if(hcGlWant())bad('after a drop for speed the 3D look waits for the next visit');HC_GLOFF=false;
+    // the simulation and its steps never touch the renderer
+    for(const f of [hcNew,hcStep,hcAdvance,hcCourse,hcBank])if(/\bgl\b|GLX|hcGl|hgFrame/.test(f.toString()))bad(f.name+' reads the renderer');
+    // 4. saves: the defaults come in migrate by id, and what a grown-up chose is kept
+    for(const [name,raw] of FIX){loadSave(raw);migrate();if(S.fps!==false||S.hcGl!==true)bad(name+': migrate should add S.fps = false and S.hcGl = true, got '+S.fps+' '+S.hcGl)}
+    S.fps=true;S.hcGl=false;migrate();if(S.fps!==true||S.hcGl!==false)bad('migrate changed the speed box or the 3D look a grown-up set');
+    // 5. the speed box: frames in the last second, the worst frame of the last 5 s; off removes it
+    const kg={document:global.document,raf:global.requestAnimationFrame,caf:global.cancelAnimationFrame};let box=null,rafs=0;
+    global.document=Object.assign({},kg.document,{createElement:()=>({setAttribute(){},remove(){box.gone=true}}),body:{appendChild:x=>{box=x}}});
+    global.requestAnimationFrame=()=>++rafs;global.cancelAnimationFrame=()=>{};
+    try{
+      fpsSet(true);if(!box||box.className!=='fpsbox'||rafs!==1)bad('fpsSet(true): the box and one frame request');
+      let t=1000;fpsTick(t);for(let i=0;i<120;i++){t+=i==60?50:1000/60;fpsTick(t)}
+      const txt=box.textContent;
+      if(!/^\d+ fps, worst 50 ms$/.test(box.textContent)||!(+box.textContent.split(' ')[0]>=55))bad('the speed box reads '+JSON.stringify(box.textContent)+', expected about 60 fps, worst 50 ms');
+      fpsTick(t+3000);if(/worst 3000/.test(box.textContent))bad('a hidden tab is not a frame');
+      FPS.tag='3D';t+=3000+600;fpsTick(t);if(!/ 3D$/.test(box.textContent))bad('the speed box should show the tag of the game drawing: '+box.textContent);
+      fpsSet(false);if(!box.gone||FPS.el||FPS.on)bad('fpsSet(false) should remove the box');
+      r.notes.push('speed box after 120 frames with one of 50 ms: '+JSON.stringify(txt));
+    }finally{global.document=kg.document;global.requestAnimationFrame=kg.raf;global.cancelAnimationFrame=kg.caf;FPS.tag=''}
+    [S.hcGl,S.fps]=keep;
+    return r;
+  }
+  const o=(()=>eval(js+';('+T.toString()+')(FIX)'))();
+  p.push(...o.bad);
+  // 6. the sources: Grown-ups switches that save; the 2D renderer kept as the fallback; tokens only; no allocation in the frame's hot loop
+  const gr=rd('js/80-grown.js'),hill=rd('js/62-hill.js'),hg=rd('js/62b-hill-gl.js'),core=rd('js/00-core.js');
+  if(!/UI\.sw\('Show the speed box: frames per second in a corner',!!S\.fps,'fps'\)/.test(gr)||!/\$\('#fps'\)\.onchange=e=>\{S\.fps=e\.target\.checked;save\(\);fpsSet\(S\.fps\)\}/.test(gr))p.push('Grown-ups: the speed box switch #fps should save S.fps and turn the box on or off');
+  if(!/UI\.sw\('4x4 Hill Climb in 3D \(off: the flat 2D look\)',S\.hcGl!==false,'hc3d'\)/.test(gr)||!/\$\('#hc3d'\)\.onchange=e=>\{S\.hcGl=e\.target\.checked;/.test(gr))p.push('Grown-ups: the 3D look switch #hc3d should save S.hcGl');
+  if(!/if\(!\('fps' in S\)\)S\.fps=false;if\(!\('hcGl' in S\)\)S\.hcGl=true;/.test(core))p.push('00-core.js: S.fps and S.hcGl need their defaults in migrate');
+  const dr=hill.slice(hill.indexOf('function hcDraw('),hill.indexOf('function hcBalloons('));
+  if(!/const gl=!!\(H\.gl&&!H\.gl\.off&&hcGlFrame\(H,W,Hh,dpr,sh\)\)/.test(dr)||!/if\(gl\)x\.clearRect\(0,0,W,Hh\);\n  else\{\n  \/\/ sky, clouds, parallax strips\n  for\(const q of R\.lay\)\{const l=hcStrip/.test(dr)||!/if\(!gl\)\{const l=hcFore/.test(dr))p.push('hcDraw: the 2D look should draw whenever the 3D frame did not');
+  if(!/try \{ return hgFrame\(H, W, Hh, dpr, sh\); \} catch \(e\) \{ hcGlDrop\(H, 'error'\);/.test(hg))p.push('62b-hill-gl.js: a failing 3D frame should drop to the 2D look');
+  if(!/cv\.addEventListener\('webglcontextlost'/.test(rd('js/60-gl.js'))||!/if \(R\.lost \|\| gl\.isContextLost\(\)\) \{ hcGlDrop\(H, 'lost'\)/.test(hg))p.push('a lost context should drop to the 2D look');
+  const hgc=hg.replace(/\/\*[\s\S]*?\*\//g,'').replace(/(^|[^:'"`])\/\/[^\n]*/g,'$1');
+  if(/#[0-9a-fA-F]{3,8}\b|(?<!\.)\b(rgb|rgba|hsl|hsla)\(/.test(hgc))p.push('62b-hill-gl.js: a raw colour (use hcC / hcA roles)');
+  for(const m of hgc.matchAll(/\b(?:hgC\(G, |hcC\(|hcA\()'([a-z][a-z0-9-]*)'/g)){const ro=m[1],t=ro.startsWith('sc-')?'--'+ro:'--ill-'+({r:'red',o:'orange',y:'yellow',g:'green',c:'aqua',b:'blue',v:'purple',p:'pink',n:'brown',t:'tan',s:'skin',m:'cream',e:'grey',w:'white',k:'ink'})[ro[0]]+(ro[1]?'-'+ro[1]:'');if(!rd('css/00-tokens.css').includes(t+':'))p.push('62b-hill-gl.js: colour role '+ro+' is not a token')}
+  if(!/new Float32Array\(max \* 54\)/.test(rd('js/60-gl.js'))||!/G\.mvp\.set\(G\.tmp\)/.test(hg))p.push('the frame should reuse its sprite batch and matrices');
+  if(!/GLX\.end\(HC\.gl\.R\)/.test(hill))p.push('stopHC should give the WebGL context back');
+  if(!/R\.soft = \/swiftshader\|llvmpipe\|softpipe\|software\/i\.test\(R\.name\)/.test(rd('js/60-gl.js'))||!/if \(R\.soft && !HGL\.soft\) \{ GLX\.end\(R\); H\.glWhy = 'software'; return null; \}/.test(hg))p.push('WebGL drawn by the CPU (no GPU) should give the 2D look');
+  return{problems:[...new Set(p)].slice(0,50),note:o.notes.join('; ')};
+});
+
 // ---- P6-02: the Game Room's part files load on demand (LAZY in tools/build.py, partsThen() in src/js/90-app.js); start-up bytes under 3.0 MB ----
 run('performance P6-02',()=>{
   const p=[],rd=f=>fs.readFileSync(path.join(ROOT,f),'utf8'),vm=require('vm');
