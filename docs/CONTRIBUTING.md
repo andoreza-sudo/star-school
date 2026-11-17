@@ -122,13 +122,14 @@ Files added by later chunks (names are fixed by the roadmap so everyone agrees):
 Build order is: `src/js/*.js` sorted by name (minus the part files), then each part file (bt, games; their `src/js` sorted by name),
 then `src/data/*.js` sorted by name, then `src/boot.js`.
 
-### 3.3 Built output: index.html and six more files (A11 since v97, A11b since v105, A11c since v126, games2 since G-04a, games on demand since P6-02)
+### 3.3 Built output: index.html and six more files (A11 since v97, A11b since v105, A11c since v126, games2 since G-04a, games on demand since P6-02, bt on demand since P6-03)
 
 ```
 index.html        shell + CSS + fonts + <script>src/js</script>                      (src minus the PARTS files below)
-                  + <script src="gen.<VER>.js"></script> + <script src="gen2.<VER>.js"></script> + <script src="bt.<VER>.js"></script>
+                  + <script src="gen.<VER>.js"></script> + <script src="gen2.<VER>.js"></script>
                   + <script src="data.<VER>.js"></script> + <script>src/boot.js</script>
-                  (P6-02: no tag for games.<VER>.js and games2.<VER>.js: they are LAZY, loaded the first time the Game Room opens)
+                  (P6-02: no tag for games, rally, games2, games3: they are LAZY, loaded the first time the Game Room opens;
+                   P6-03: nor for bt.<VER>.js, LAZY too, loaded the first time a puzzle opens)
 gen.<VER>.js      question generators, part 1 (A11c): src/js/23-viz, 30-gen-math, 31-gen-math-early, 32-gen-read, 33-gen-math-mid,
                   34-gen-es; ROOM: the Grown-ups screens 80-grown, 81-backup, 82-report, 88-online (room in index.html, under its 1 MB
                   limit; loaded at start, so every caller has them), then  var GEN_VER='<VER>';
@@ -148,12 +149,15 @@ audio/en/*.ogg    EN-PRAISE: the recorded English encouragement, six voices (too
 ```
 
 (The text below says "part" for gen, gen2, bt, games and games2 alike. Load order at start is the order of PARTS without the LAZY ones:
-gen, gen2, bt, then data; the LAZY parts games, games2 follow on demand, in PARTS order.)
+gen, gen2, then data; the LAZY parts bt, games, rally, games2, games3 follow on demand.)
 
 The rule lives in one place, `PARTS` in `tools/build.py`: a file stem and a regular expression on whole file names in `src/js` and
 `src/css`. A matching file goes into `<stem>.<VER>.js` (in filename order) instead of into index.html:
 - `bt`: every `src/js/NN-bt-*.js` and `src/css/NN-bt-*.css`. The framework `74-teasers.js` and `48-teasers.css` stay in index.html
-  (Home needs `BT.list()` for its card, and `view()` calls `BT.stop()`).
+  (Home needs `BT.list()` for its card, and `view()` calls `BT.stop()`). P6-03: bt is LAZY; each type's name, icon, bands, allow and
+  rules are in `BT.CAT` (74-teasers.js), so Home, the hub, the level strip, badges and the Puzzle of the Day work before bt loads; a
+  type's file registers only `id`, `make`, `mount` and `solve` (a new type adds its line to `BT.CAT`; the check "performance P6-03"
+  compares both lists). bt's CSS must not style anything outside a puzzle (it is in only once bt has loaded).
 - `gen`, `gen2` (A11c): the question generators and their helpers (`genAdd`, `genEs`, `genBank`, `genPassage`, the `VIZ` visuals, step hints ...).
   They load first, because bt, games and data may use them while loading (`d-es.js` calls `esReg`, `d-comp.js` writes `COMPSPEC`).
   Index.html's own code may call them only inside functions that run after start-up. The one table that named them at load time, `SK`
@@ -168,24 +172,27 @@ The rule lives in one place, `PARTS` in `tools/build.py`: a file stem and a regu
 - `games3` (G-BB2, v164): Block Builder (`60-blocks.js`, `60-game-blocks.css`) and its WebGL renderer `61-bb-gl.js`, moved out of `games` when that
   file passed its 400 KB warning (games 419 -> 263 KB). LAZY like the other two, loaded after games2; the games2 rule skips `60-game-blocks.css` by name.
 
-Loaded on demand (P6-02): `LAZY` in `tools/build.py` (`('games', 'rally', 'games2')`) names the parts that index.html does not load at start, and
+Loaded on demand (P6-02): `LAZY` in `tools/build.py` (`('bt', 'games', 'rally', 'games2', 'games3')`) names the parts that index.html does not load at start, and
 `LAZY_PARTS` in `src/js/90-app.js` is the same list (the A11b and P6-02 checks compare them). They are built, stamped and precached like
 the others. `partsThen(stems, go)` (90-app.js) is the one way in: when those parts are in it runs `go()` at once; otherwise it draws
 "Getting the games ready..." (a Back button and a drawn disc; `#partwait`), adds one plain `<script src="<stem>.<VER>.js">` per part, one
 after the other (games2 needs games), and runs `go()` only if that screen is still showing (a child who tapped Back is never pulled into
 the games). A part that cannot be read (offline before it was cached), or whose stamp is from another release, shows the Try again
 screen (`dataMissing([stem])`, one App log line such as `games file v1 does not match (app v146)`); a stale file stays refused until the
-reload. `gameRoom()` is `partsThen(LAZY_PARTS, () => GH.hub())`; every game is opened from the hub, so a new game in games2 needs nothing
-here. Code that opens a game from elsewhere (a mission, a test hook) goes through `partsThen(LAZY_PARTS, ...)` too, never straight to a
+reload. `gameRoom()` is `partsThen(GAME_PARTS, () => GH.hub())` (GAME_PARTS: LAZY_PARTS without bt); every game is opened from the hub, so a new game in games2 needs nothing
+here. Code that opens a game from elsewhere (a mission, a test hook) goes through `partsThen(GAME_PARTS, ...)` too, never straight to a
 game's function: index.html's code must not call LAZY code outside `partsThen`. Tests and smoke steps that call game functions directly
 first `await partsLoad()` in the page (smoke P4-03 and P4-18, tools/shots.js); `node tools/test.js` evaluates every source together, so
-its checks see the games as before. Making `bt` LAZY too was looked at and left: Home's Brain Teasers card and the daily puzzle read the
-registered puzzle types (`BT.list()`, from bt) at start.
+its checks see the games as before. P6-03 (v172): `bt` is LAZY too (start-up 2.98 -> 2.40 MB). `BT.start()` is its way in: when the
+type's code is not in, it shows "Getting the puzzles ready..." through `partsThen(['bt'], ...)` and starts again once loaded; the hub
+and the level strip call `BT.warm()`, which starts loading bt once they are painted, so a level tap rarely waits. `BT.loaded(d)` is
+false for a catalog type without its code, or after a bt file of another release ran. `openApp()` in tools/lib/browser.js loads bt
+right after start for steps that call `BT.start`, `BT.make` or a puzzle's globals from `page.evaluate`; `lazy: true` keeps the cold start.
 
 How it fits together:
 - All scripts are plain classic scripts: they run in this order, synchronously, and share one global scope (a `const` in one file is
   visible to the others the same way as before). This works over `file://` too, so open `index.html` directly as always.
-- Load order: index.html's own code, gen, gen2, bt, data, boot (then, on demand, games and games2). So a part file may use anything in index.html's code while it loads
+- Load order: index.html's own code, gen, gen2, data, boot (then, on demand, bt and the games). So a part file may use anything in index.html's code while it loads
   (`BT.reg`, `padHTML`, `ICONS`, `UI` ...), and the data file still loads after all code. index.html's code may call
   part code only inside functions that run after start-up (opening a puzzle or a game), never while loading: a `function` in a part
   file is not hoisted into index.html's script. Part code must not read data while loading either.

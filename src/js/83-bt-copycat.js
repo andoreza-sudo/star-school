@@ -223,7 +223,6 @@ const CC = (() => {
 })();
 
 BT.reg({
-  id: 'copycat', name: 'Copy Cat', icon: 'copycat', bands: 'ABCD', allow: 2,
-  rules: 'Watch the pads light up, then tap them in the same order.',
+  id: 'copycat', // name, icon, bands, allow, rules: BT.CAT in 74-teasers.js (P6-03: Home and the hub need them before this file loads)
   make: CC.make, mount: CC.mount, solve: CC.solve,
 });

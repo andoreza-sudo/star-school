@@ -150,7 +150,6 @@ const RDL = (() => {
 })();
 
 BT.reg({
-  id: 'riddle', name: 'Riddles', icon: 'riddle', bands: 'ABCD', allow: 1,
-  rules: 'Listen to the riddle, then tap the answer.',
+  id: 'riddle', // name, icon, bands, allow, rules: BT.CAT in 74-teasers.js (P6-03: Home and the hub need them before this file loads)
   make: RDL.make, mount: RDL.mount, solve: RDL.solve,
 });

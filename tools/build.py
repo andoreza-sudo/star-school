@@ -22,7 +22,8 @@ PARTS = [
 ]
 # P6-02: parts that index.html does NOT load at start (no <script> tag): partsThen() in src/js/90-app.js (LAZY_PARTS, the same list,
 # checked by tools/test.js) loads them the first time they are needed (the Game Room). sw.js still precaches every part, so they work offline.
-LAZY = ('games', 'rally', 'games2', 'games3')
+# P6-03: bt too (580 KB of puzzle code): BT.start() loads it the first time a puzzle opens; Home and the hub use BT.CAT (74-teasers.js).
+LAZY = ('bt', 'games', 'rally', 'games2', 'games3')
 def part_of(name):
     return next((stem for stem, rx in PARTS if re.fullmatch(rx, name)), None)
 def cat(sub, ext, part=None):

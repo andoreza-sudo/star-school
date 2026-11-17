@@ -233,8 +233,7 @@ const MZ = {
 };
 
 BT.reg({
-  id: 'maze', name: 'Mazes', icon: 'maze', bands: 'ABCD', allow: 2,
-  rules: 'Drag the bear along the paths to the flag. Walls block the way.',
+  id: 'maze', // name, icon, bands, allow, rules: BT.CAT in 74-teasers.js (P6-03: Home and the hub need them before this file loads)
   make(band, level, rnd) {
     for (let t = 0; t < 40; t++) {
       const p = MZ.build(band, level, rnd);
