@@ -27,16 +27,17 @@ function appFiles() {
     ['rally', typeof RALLY_VER === 'undefined' ? null : RALLY_VER],
     ['games2', typeof GAMES2_VER === 'undefined' ? null : GAMES2_VER],
     ['games3', typeof GAMES3_VER === 'undefined' ? null : GAMES3_VER],
+    ['teach', typeof TEACH_VER === 'undefined' ? null : TEACH_VER],
     ['data', typeof DATA_VER === 'undefined' ? null : DATA_VER],
   ];
 }
 // P6-02: the start-up files only; the parts in LAZY_PARTS load later (partsThen below)
 function dataReady() {
-  return appFiles().every(f => LAZY_PARTS.includes(f[0]) || f[1] === '__VER__');
+  return appFiles().every(f => LAZY_PARTS.includes(f[0]) || TEACH_PARTS.includes(f[0]) || f[1] === '__VER__');
 }
 // the Try again screen and one line in the App log: for the start-up files, or (P6-02) for the parts in stems that did not load on demand
 function dataMissing(stems) {
-  logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0])) && f[1] !== '__VER__')
+  logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0]) && !TEACH_PARTS.includes(f[0])) && f[1] !== '__VER__')
     .map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app __VER__)');
   const again = UI.btn('Try again', { kind: 'primary', size: 'lg', icon: 'replay', id: 'dataretry' });
   view(`<div class="scroll" id="datamiss">${UI.empty('download', 'Star School needs to finish updating. Connect to the internet, then tap Try again.', again)}</div>`);
@@ -54,6 +55,8 @@ function dataMissing(stems) {
    screen is still showing, so a child who tapped Back meanwhile is never pulled into the games. A part that does not load shows
    the Try again screen. Keep it generic: a new game in games2 needs nothing here. */
 const LAZY_PARTS = ['games', 'rally', 'games2', 'games3'];
+// TEACH-1: the lessons (LAZY_TEACH in tools/build.py): loaded when the math map opens (teachWarm, 46-home.js), never by the Game Room
+const TEACH_PARTS = ['teach'];
 const partsAsked = {};
 function partReady(stem) {
   const f = appFiles().find(x => x[0] === stem);

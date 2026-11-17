@@ -869,6 +869,9 @@ async function main() {
       const ma = await openApp(browser, { fixture: 'midway' });
       const mp = ma.page;
       const mi = await mp.evaluate(() => {
+        // TEACH-1 ("old checks check old", as K2OLD): this step's misses are second tries, and even-or-odd questions have two choices,
+        // which now get one try in Practice; TEACH.off gives the round as it was (the one-try rule has its own TEACH-1 step)
+        TEACH.off = true;
         const i = NODES.math.findIndex(n => n.sk == 'eo' && n.lv == 1);
         S.maps.math[nid(NODES.math[i])] = 0; // play it as a new stop so the star result is visible
         start('math', i);
@@ -11961,6 +11964,156 @@ async function main() {
         'wrong twice (the right line shown, the right step spoken, asked again), by the keyboard, 48 px steps all on screen, real big, sub, mbig, ' +
         'dbig, dec, fop, ooo and alg questions by the bot; why above the hint and said for its value only (not another wrong value, not a right ' +
         'answer), on a rounding line and a real sub 4 question; no console errors, no network requests');
+    }
+
+    // TEACH-1 "Sparky teaches" (src/js/52-lesson.js, 52b-know.js, 52c-scripts.js in the part teach; docs/TEACH-PLAN-2.md batch 1), at
+    // 360x740 and 800x1280 on the midway save as a Kindergartner. The part is not loaded at start; the math map loads it and shows the
+    // offer (a notebook by the stop the pet suggests: 48 px or more, on screen, covering no stop). Make Ten by its offer: the first
+    // "show me" item wrong (no test-out), then every beat in order (Explore, Name it, Together with one miss that shows the picture and
+    // lets the child try again, Check me where the pet announces its turn and the child marks and fixes it, Show), each screen fitting
+    // (no sideways scroll), the controls waking after the line; the end card, the stop passed, the record and the measure saved.
+    // Then a lesson left at Together resumes there; Ten and More tested out (both show-me items right: straight to Show); and in Practice
+    // a two-choice question gets one try (the answer shown with its picture), three choices keep their second try, TEACH.off keeps the
+    // old second try. No console errors, no network requests.
+    {
+      const bad = [], notes = [];
+      const lsAct = async (pg, wrong) => {
+        await pg.waitForFunction(() => !LS.st || (document.querySelector('#lsinp') && !document.querySelector('#lsinp.ls-wait') && !LS.u.lock), null, { timeout: 15000 });
+        const it = await pg.evaluate(() => { const it = LS.st && LS.cur(LS.st); if (!it) return null; const q = it.q || {};
+          return { m: it.m, petOk: it.petOk, kind: q.kind, model: q.model, ans: q.ans, s0: q.s0, total: q.m && q.m.total, target: q.m && q.m.target,
+            goal: q.goal, tgt: q.target, start: q.start, min: q.line && q.line.min, choices: q.choices && q.choices.map(c => c.v), beat: LSB[LS.st.b] }; });
+        if (!it) return null;
+        if (it.m == 'say') await pg.click('#lsnext');
+        else if (it.m == 'judge') await pg.click(it.petOk ? '#lsyes' : '#lsno');
+        else if (it.kind == 'num') { for (const d of wrong ? String(+it.ans + 1) : it.ans) await pg.click(`.k[data-k="${d}"]`); await pg.click('.k[data-k="go"]'); }
+        else if (it.kind == 'choice') await pg.click(`.ch[data-i="${it.choices.indexOf(wrong ? it.choices.find(c => c != it.ans) : it.ans)}"]`);
+        else if (it.kind == 'line') {
+          const k = (wrong ? +it.ans + 1 : it.goal ? +it.start + 3 : +it.ans) - it.min;
+          await pg.focus('.lnp'); await pg.keyboard.press('Home'); for (let i = 0; i < k; i++) await pg.keyboard.press('ArrowRight'); await pg.click('#mcheck');
+        } else if (it.kind == 'make') {
+          let want;
+          if (it.model == 'frame2') { const t = it.goal == 'sum' ? it.target : it.goal == 'fill' ? it.total : 3; want = [t - 1, 1]; }
+          else if (it.model == 'b10') { const n = it.goal == 'gt' ? it.tgt + 2 : it.goal == 'any' ? 34 : +it.ans + (wrong ? 1 : 0); want = [Math.floor(n / 10), n % 10]; }
+          else want = [it.goal == 'less' ? it.s0[0] - 2 : it.goal == 'any' ? 4 : +it.ans + (wrong ? (+it.ans > 1 ? -1 : 1) : 0)];
+          const cur = await pg.evaluate(() => LS.u.mm.slice());
+          for (let i = 0; i < want.length; i++) { const d = want[i] - cur[i]; for (let j = 0; j < Math.abs(d); j++) await pg.click(`.mmb[data-i="${i}"][data-d="${d > 0 ? 1 : -1}"]`); }
+          await pg.click('#mcheck');
+        } else throw new Error('lesson item ' + JSON.stringify(it));
+        return it;
+      };
+      // one item answered, then the next screen (LS.seq counts the screens shown) or the end
+      const lsStep = async (pg, wrong) => {
+        const s0 = await pg.evaluate(() => LS.seq), it = await lsAct(pg, wrong);
+        await pg.waitForFunction(x => !LS.st || LS.seq > x, s0, { timeout: 15000 });
+        return it;
+      };
+      const lsFit = (pg, at) => pg.evaluate(() => {
+        const o = [], vw = document.documentElement.clientWidth, qa = document.querySelector('.qarea');
+        if (document.documentElement.scrollWidth > vw) o.push('sideways scroll');
+        if (qa && qa.scrollWidth > qa.clientWidth + 1) o.push('.qarea overflows sideways');
+        for (const b of document.querySelectorAll('#lsinp button, #lsplay .ls-hear')) { const r = b.getBoundingClientRect(); if (r.width && (r.width < 47.5 || r.height < 47.5)) o.push('small button ' + (b.id || b.className)); if (r.right > vw + 1 || r.left < -1) o.push('button off screen ' + (b.id || b.className)); }
+        return o;
+      }).then(o => o.forEach(x => bad.push(at + x)));
+      for (const [w, h] of [[360, 740], [800, 1280]]) {
+        const ta = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ta.page, at = 'TEACH-1 ' + w + 'x' + h + ' ';
+        try {
+          // 1. the part is not in at start; the math map loads it and shows the offer by Make Ten
+          const s0 = await pg.evaluate(() => ({ ready: partReady('teach'), ls: typeof LS, css: !!document.querySelector('#css-teach') }));
+          if (s0.ready || s0.ls !== 'undefined' || s0.css) bad.push(at + 'the lessons are loaded at start: ' + JSON.stringify(s0));
+          await pg.evaluate(() => { S.grade = 0; S.know = {}; delete S.les; S.lm = []; const i = NODES.math.findIndex(n => nid(n) === 'tenf2');
+            for (let j = 0; j < NODES.math.length; j++) setSt('math', j, j < i ? 2 : 0); save(); pathMap('math', NODES.math[i].wi); });
+          await pg.waitForSelector('.ls-go', { timeout: 10000 });
+          const off = await pg.evaluate(() => { const b = document.querySelector('.ls-go'), r = b.getBoundingClientRect(), vw = document.documentElement.clientWidth;
+            const hit = [...document.querySelectorAll('#map .node')].filter(n => { const q = n.getBoundingClientRect(); return q.right > r.left && q.left < r.right && q.bottom > r.top && q.top < r.bottom; }).length;
+            return { w: r.width, h: r.height, in: r.left >= 0 && r.right <= vw, hit, label: b.getAttribute('aria-label'), plan: planToday(S, lsDay()).id, css: !!document.querySelector('#css-teach'), tag: [...document.scripts].some(s => /teach\./.test(s.src)) }; });
+          if (off.w < 48 || off.h < 48 || !off.in || off.hit || !/^Learn Make Ten with /.test(off.label) || off.plan !== 'tenf2' || !off.css) bad.push(at + 'the offer: ' + JSON.stringify(off));
+          await pg.evaluate(() => { LS.WAKE = 400; });
+          await pg.click('.ls-go');
+          await pg.waitForSelector('#lsplay', { timeout: 5000 });
+          const wait0 = await pg.evaluate(() => !!document.querySelector('#lsinp.ls-wait'));
+          if (!wait0) bad.push(at + 'the controls are awake before the line is said');
+          // 2. Make Ten through every beat
+          const path = [], beats = [];
+          let missedTog = false, sawHelp = false, petTurn = '', fixed = false;
+          for (let n = 0; n < 40; n++) {
+            const b = await pg.evaluate(() => LS.st ? LSB[LS.st.b] + ':' + LS.cur(LS.st).m : null);
+            if (!b) break;
+            await pg.waitForFunction(() => !LS.st || !document.querySelector('#lsinp.ls-wait'), null, { timeout: 15000 });
+            if (!beats.includes(b)) { beats.push(b); await lsFit(pg, at + b + ': '); }
+            if (b == 'chk:judge') petTurn = await pg.evaluate(() => document.querySelector('#lsbub').textContent + '|' + !!document.querySelector('.ls-pet.ls-turn'));
+            const wrong = (b == 'pre:ask' && !path.length) || (b == 'tog:ask' && !missedTog);
+            path.push(b);
+            if (b == 'chk:ask') fixed = true;
+            if (wrong && b == 'tog:ask') {
+              missedTog = true;
+              const s0 = await pg.evaluate(() => LS.seq);
+              await lsAct(pg, true);
+              await pg.waitForFunction(() => document.querySelector('#hint').innerHTML.length > 0 && !LS.u.lock, null, { timeout: 5000 }).catch(() => {});
+              const r = await pg.evaluate(x => ({ hint: document.querySelector('#hint').innerHTML.length, lock: LS.u.lock, tries: LS.cur(LS.st).tries, same: LS.seq === x }), s0);
+              if (!r.hint || r.lock || r.tries !== 1 || !r.same) bad.push(at + 'a miss in Together: ' + JSON.stringify(r)); else sawHelp = true;
+            }
+            await lsStep(pg, wrong && b == 'pre:ask');
+          }
+          const order = [...new Set(path.map(x => x.split(':')[0]))].join();
+          if (order !== 'pre,rem,exp,name,tog,chk,show') bad.push(at + 'beats ' + order + ' (' + path.join(' ') + ')');
+          if (!sawHelp) bad.push(at + 'no help after a miss in Together');
+          if (!/Check me/.test(petTurn) || !/\|true$/.test(petTurn)) bad.push(at + 'the pet turn is not announced: ' + petTurn);
+          await pg.waitForSelector('#lsend', { timeout: 10000 });
+          const end = await pg.evaluate(() => { const i = NODES.math.findIndex(n => nid(n) === 'tenf2');
+            return { st: getSt('math', i), next: unlocked('math', i + 1), know: S.know.tenf2, lm: S.lm[S.lm.length - 1], les: S.les, saved: !!JSON.parse(localStorage.getItem(SKEY)).lm,
+              idea: (document.querySelector('.ls-idea') || {}).textContent, btns: [...document.querySelectorAll('.ls-acts .btn')].map(b => b.id).join() }; });
+          if (end.st !== 2 || !end.next || !end.know || end.know.s !== 2 || !end.lm || end.lm[0] !== 'tenf2' || end.lm[2] !== 1 || end.lm[3] !== 2 || end.lm[4] !== 2 || end.lm[6] !== 0 || end.les || !end.saved
+            || !/Two parts make ten/.test(end.idea) || end.btns !== 'lsprac,lsmap') bad.push(at + 'the end: ' + JSON.stringify(end));
+          await lsFit(pg, at + 'end: ');
+          if (w == 360 && !fixed) notes.push('the pet was right in Check me');
+          // 3. a lesson left part way resumes at its beat
+          await pg.evaluate(() => { LS.start('miss1'); });
+          for (let n = 0; n < 12 && await pg.evaluate(() => LSB[LS.st.b] !== 'tog'); n++) await lsStep(pg, n == 0);
+          await pg.waitForSelector('#lsplay[data-beat="tog"]', { timeout: 10000 });
+          await pg.click('#quit'); await pg.click('#gquit');
+          const les = await pg.evaluate(() => JSON.stringify(S.les));
+          await pg.evaluate(() => { const i = NODES.math.findIndex(n => nid(n) === 'miss1'); for (let j = 0; j < i; j++) setSt('math', j, 2); LS.start('miss1'); });
+          const re = await pg.evaluate(() => ({ b: document.querySelector('#lsplay').dataset.beat, les: S.les && S.les.n }));
+          if (!/"n":"miss1","b":4/.test(les) || re.b !== 'tog' || re.les !== 'miss1') bad.push(at + 'resume: ' + les + ' ' + JSON.stringify(re));
+          // 4. test-out: Ten and More, both show-me items right
+          await pg.evaluate(() => { delete S.les; LS.start('tenf3'); });
+          for (let k = 0; k < 2; k++) await lsStep(pg, false);
+          await pg.waitForSelector('#lsplay[data-beat="show"]', { timeout: 10000 });
+          const to = await pg.evaluate(() => ({ to: LS.st.to, bub: document.querySelector('#lsbub').textContent }));
+          if (!to.to || !/know this/.test(to.bub)) bad.push(at + 'test-out: ' + JSON.stringify(to));
+          for (let k = 0; k < 2; k++) await lsStep(pg, false);
+          await pg.waitForSelector('#lsend', { timeout: 10000 });
+          const lm = await pg.evaluate(() => S.lm[S.lm.length - 1]);
+          if (JSON.stringify(lm.slice(2)) !== '[2,2,2,2,1]') bad.push(at + 'test-out measure ' + JSON.stringify(lm));
+          // 5. Practice: two choices get one try; three choices and TEACH.off keep the second try
+          const two = async (n, off) => {
+            await pg.evaluate(([n, off]) => { TEACH.off = off; const q = { kind: 'choice', html: '<div class="eq">Pick</div>', say: 'Pick', label: 'zz two', ans: 'a', sk: 'zz_demo', lv: 1,
+              choices: ['a', 'b', 'c'].slice(0, n).map(v => ({ v, l: v })), hint: { k: 'text', s: 'Look at the picture.' } }; if (G) G.dead = true; G = newG({ sk: 'zz_demo', n: 1, pool: [q] }); next(); }, [n, off]);
+            await pg.waitForSelector('.ch');
+            await pg.click('.ch[data-i="1"]');
+            await vwait(pg, 300);
+            const r = await pg.evaluate(() => ({ lock: G.lock, tries: G.tries, shown: !!document.querySelector('.ch.right'), hint: document.querySelector('#hint').textContent }));
+            await pg.evaluate(() => { G.dead = true; });
+            await vwait(pg, 3000); // the round's own timers end on the dead round
+            return r;
+          };
+          const t2 = await two(2, false), t3 = await two(3, false), t2off = await two(2, true);
+          await pg.evaluate(() => { TEACH.off = false; G.dead = true; });
+          if (!t2.lock || !t2.shown || !/picture/.test(t2.hint)) bad.push(at + 'two choices, one try: ' + JSON.stringify(t2));
+          if (t3.lock || t3.shown) bad.push(at + 'three choices lost their second try: ' + JSON.stringify(t3));
+          if (t2off.lock || t2off.shown) bad.push(at + 'TEACH.off: two choices lost their second try: ' + JSON.stringify(t2off));
+          notes.push(w + 'x' + h);
+        } catch (e) { bad.push(at + (e.stack || e).toString().split('\n').slice(0, 3).join(' ')); }
+        for (const e of ta.errors) bad.push(at + e);
+        for (const u of ta.network) bad.push(at + 'network request: ' + u);
+        await ta.ctx.close();
+      }
+      if (bad.length) fail('TEACH-1 Sparky teaches:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('TEACH-1: Sparky teaches at ' + notes.join(' and ') + ': the part loads with the math map (not at start), the offer by Make Ten; ' +
+        'the lesson through pre, Explore, Name it, Together (a miss shows the picture and keeps the item), Check me (announced, marked, fixed), Show; ' +
+        'the end card, the stop passed, the record and the measure saved; a lesson resumes at its beat; test-out goes straight to Show; ' +
+        'in Practice two choices get one try (three choices and TEACH.off keep the second); no console errors, no network requests');
     }
 
     for (const u of network) fail('network request: ' + u);

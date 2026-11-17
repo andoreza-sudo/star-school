@@ -3520,6 +3520,9 @@ const REP = {
   data() {
     const today0 = today(), now = STRK.idx(today0);
     const m = {name: S.name || '', date: REP.dayText(now), year: new Date(now * 864e5).getUTCFullYear(), grade: gradeOf()};
+    // TEACH-1: the lessons' before-and-after measure (S.lm: [nid, day, pre right, pre n, post right, post n, tested out], 52b-know.js) and tonight's question
+    const lm = Array.isArray(S.lm) ? S.lm : [], sm = i => lm.reduce((t, x) => t + (+x[i] || 0), 0), pc = (a, b) => (b ? Math.round(100 * a / b) : 0);
+    m.teach = lm.length ? {n: lm.length, pre: pc(sm(2), sm(3)), post: pc(sm(4), sm(5)), to: lm.filter(x => x[6]).length, tq: typeof S.tq == 'string' ? S.tq : ''} : null;
     REP.keepLog(() => {
       m.cur = ACT.sum(today0, 7);
       m.prev = ACT.sum(ACT.shift(today0, -7), 7);
@@ -3732,7 +3735,10 @@ const REP = {
       + sec('rp-needs', 'target', 'Needs practice', REP.needs(m))
       + sec('rp-recent', 'medal', 'Recently mastered', REP.recent(m))
       + sec('rp-flu', 'bolt', 'Fact Sprint bests', REP.fluency(m))
-      + sec('rp-streak', 'flame', 'Streak', REP.streak(m));
+      + sec('rp-streak', 'flame', 'Streak', REP.streak(m))
+      + (m.teach ? sec('rp-teach', 'doc', 'Lessons with ' + esc(petN()), `${m.teach.tq ? `<p><b>Tonight's question:</b> ${esc(m.teach.tq)}</p>` : ''}<p>${m.teach.n} lesson${m.teach.n > 1 ? 's' : ''}`
+        + `${m.teach.to ? `, ${m.teach.to} already known (tested out)` : ''}. Right on the first try before the lesson: ${m.teach.pre}%. After it: ${m.teach.post}%.</p>`
+        + '<div class="small rp-key">Before: two questions at the start of a lesson, with no help. After: two at its end, with no help. All of it stays on this tablet.</div>') : '');
   },
 };
 function report() {
