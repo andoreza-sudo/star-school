@@ -305,3 +305,19 @@ Lesson shapes for Spanish (listen, sort, say with me, fix the pet's "el" or "la"
 1. **Is "Today's lesson" the front door?** Recommended: yes. One large card on home, chosen by the pet, with the map and Practice beside it. The alternative is to keep the map as the main way in and offer lessons per stop, which is safer but will look like an add-on again.
 2. **May the child's pet be wrong?** Recommended: yes, under the rule in system E (never wrong while teaching; wrong only in its own announced turn; always corrected). The alternative is a second, younger character who makes the mistakes, which keeps the pet "always right" but costs art and splits the child's affection.
 3. **May lesson wording be drafted with an LLM at authoring time, with tests and your read-through as the gate?** Recommended: yes from batch 2. Without it the plan still works, but batches 2 to 5 take several times longer or cover fewer stops. No child data is involved either way, and nothing runs on the tablet.
+
+---
+
+## Owner decisions (2026-11-17)
+
+These override anything above that disagrees.
+
+1. **Kids still choose the subject.** There is no single "Today's lesson" front door. The child picks a subject (Math, Reading, Spanish, Discover), as now. Inside that subject, the pet suggests the next lesson and the map stays one tap away. `planToday()` plans within the chosen subject.
+2. **Short sessions first.** A first lesson is about 3 minutes, not 10. The six beats shrink to fit: Remember is 1 item, Together is 2–3 items and Show is 2 items. Explore and Check me are one short task each. Lessons grow longer only as the child keeps coming back, and the app always ends on a win while the child still wants more. The goal is that kids want to use the app.
+3. **The pet teaches the younger kids, and the pet grows up with the child.**
+   - Pre-K to grade 2: the pet is a little one who teaches warmly and plays.
+   - Grades 3–4: an older kid.
+   - Grades 5–6: a teen-like partner, with a cooler look, a more grown-up voice and tone, less babyish praise, and more "check my work" and "give me a hard one".
+   - The pet ages with the grade setting. It is not an evolution or transformation theme: it is the same friend, growing up.
+   - Older kids get less hand-holding and more challenge from the same pet.
+4. **Not yet answered:** whether the child's own pet may be wrong in its announced "Check me" turn, and whether an AI may draft lesson wording from batch 2 for the owner to read through. The default is the plan's recommendation; the owner can veto it.
