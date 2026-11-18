@@ -6566,6 +6566,75 @@ async function main() {
       else step('P4-07: shop -> try on -> Buy -> Yes for 4 items on 4 pets (coins, owned, on), drawn on the pet in the shop, on Home and in Pet Care; not enough coins opens no sheet; sticker book pages and die-cut stickers; 380x780 and 1024x600, 48 px targets, no sideways scroll, no emoji chrome');
     }
 
+    // STK-2: the sticker book and the doubles swap at 380x780 and 600x960, with real taps. A save with doubles: the book shows "Page 1 of 4",
+    //    a count that fits, and Swap doubles; Swap opens the missing stickers, a tap picks one, Swap gives it and takes two doubles
+    //    (no sticker lost); 48 px targets, no sideways scroll, no emoji chrome. Screenshots: tools/out/stickers/.
+    {
+      const bad = [];
+      const dir = require('path').join(__dirname, 'out', 'stickers');
+      require('fs').mkdirSync(dir, { recursive: true });
+      for (const [W, H] of [[380, 780], [600, 960]]) {
+        const sz = W + 'x' + H;
+        const sa = await openApp(browser, { fixture: 'midway', width: W, height: H });
+        const pg = sa.page;
+        const look = () => {
+          const vw = document.documentElement.clientWidth, out = [];
+          for (const e of document.querySelectorAll('button, [role="button"]')) {
+            const r = e.getBoundingClientRect();
+            if (!r.width || e.closest('svg') || e.closest('#toast')) continue;
+            if (Math.min(r.width, r.height) < 47.5) out.push('small ' + (e.id || e.className) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
+            if (r.left < -1 || r.right > vw + 1) out.push('outside ' + (e.id || e.className));
+          }
+          if (document.documentElement.scrollWidth > vw) out.push('sideways scroll ' + document.documentElement.scrollWidth);
+          for (const s of document.querySelectorAll('.scroll')) if (s.scrollWidth > s.clientWidth + 1) out.push('sideways scroll in ' + s.className);
+          const c = document.querySelector('.sb-cnt');
+          if (c) { const r = c.getBoundingClientRect(); if (r.right > vw + 1 || r.width < 40) out.push('count box ' + Math.round(r.left) + '..' + Math.round(r.right)); }
+          const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+          for (let n; (n = w.nextNode());) {
+            const el = n.parentElement;
+            if (!el || el.closest('script,style,svg,#ico-sprite,.rw-burst,#pet,.sb-e,.rw-stk') || !el.getClientRects().length) continue;
+            const m = n.textContent.match(/\p{Extended_Pictographic}|[◀▶✕]/u);
+            if (m) out.push('emoji chrome ' + m[0]);
+          }
+          return out;
+        };
+        const chk = async what => { await pg.waitForTimeout(350); for (const o of await pg.evaluate('(' + look.toString() + ')()')) bad.push(sz + ' ' + what + ': ' + o); };
+        // 5 stickers, two of them doubles (4 extra copies), so one swap is possible
+        await pg.evaluate(() => { S.stickers = {}; STK.slice(0, 5).forEach(s => { S.stickers[s] = 1; }); S.stickers[STK[0]] = 3; S.stickers[STK[1]] = 2; S.stkDry = 0; save(); home(); });
+        await pg.click('#book');
+        await pg.waitForSelector('.sb-page');
+        await chk('book');
+        const b = await pg.evaluate(() => ({ cnt: (document.querySelector('.sb-cnt b') || {}).textContent, pc: (document.querySelector('.sb-pc') || {}).textContent,
+          ph: (document.querySelector('.sb-ph') || {}).textContent, swap: !!document.querySelector('#bkswap') }));
+        if (b.cnt !== '5/48' || !/Page 1 of 4/.test(b.ph) || !b.swap) bad.push(sz + ' book: ' + JSON.stringify(b));
+        await pg.screenshot({ path: require('path').join(dir, 'book-' + sz + '.png') }).catch(() => {});
+        await pg.click('#bkswap');
+        await pg.waitForSelector('.sb-pk');
+        await chk('swap');
+        const n0 = await pg.evaluate(() => document.querySelectorAll('.sb-pk').length);
+        if (n0 !== 43) bad.push(sz + ' swap: ' + n0 + ' missing stickers shown, want 43');
+        await pg.click('#swgo'); // nothing picked: a hint, no change
+        if (await pg.evaluate(() => stkDoubles()) !== 3) bad.push(sz + ' swap: Swap with nothing picked changed the doubles');
+        await pg.click('.sb-pk:nth-child(3)');
+        await pg.waitForSelector('.sb-pk.on');
+        await pg.screenshot({ path: require('path').join(dir, 'swap-' + sz + '.png') }).catch(() => {});
+        await pg.click('#swgo');
+        await pg.waitForSelector('.sb-won');
+        await chk('swap done');
+        const r = await pg.evaluate(() => ({ d: stkDoubles(), have: STK.filter(s => stkN(s)).length, kept: STK.slice(0, 5).every(s => stkN(s) >= 1) }));
+        if (r.d !== 1 || r.have !== 6 || !r.kept) bad.push(sz + ' swap result: ' + JSON.stringify(r));
+        await pg.screenshot({ path: require('path').join(dir, 'swap-done-' + sz + '.png') }).catch(() => {});
+        await pg.click('#swbk');
+        await pg.waitForSelector('.sb-page');
+        if (await pg.evaluate(() => document.querySelector('.sb-cnt b').textContent) !== '6/48') bad.push(sz + ' book: count after the swap');
+        network.push(...sa.network);
+        for (const e of sa.errors) fail(e);
+        await sa.ctx.close();
+      }
+      if (bad.length) fail('STK-2:\n  ' + bad.join('\n  '));
+      else step('STK-2: sticker book pages and count, Swap doubles -> pick a missing sticker -> Swap (2 doubles, no sticker lost); 380x780 and 600x960, 48 px targets, no sideways scroll, no emoji chrome');
+    }
+
     // P4-09: map and world scenes. Every world of every path picked in turn at 380x780 and 1024x600: each drawn world band holds its
     // scene (one SVG the size of the band, aria-hidden, no taps), drawn behind the map: with the scenes made hit-testable for the
     // check, the point at every stop's centre is the stop, at its label the label, at the title the title and at the Test out
@@ -9525,7 +9594,7 @@ async function main() {
             if (document.documentElement.scrollWidth > vw + 1) out.push(what + ': sideways scroll');
             for (const s of document.querySelectorAll('#app .scroll')) if (s.scrollWidth > s.clientWidth + 1) out.push(what + ': sideways scroll in ' + s.className);
             const tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-            for (let n; (n = tw.nextNode());) { const el = n.parentElement; if (!el || el.closest('svg') || !el.getClientRects().length) continue; const m = n.textContent.match(/\p{Extended_Pictographic}/u); if (m) out.push(what + ': emoji ' + m[0] + ' in ' + (el.id || el.className)); }
+            for (let n; (n = tw.nextNode());) { const el = n.parentElement; if (!el || el.closest('svg, .rw-stk') || !el.getClientRects().length) continue; const m = n.textContent.match(/\p{Extended_Pictographic}/u); if (m) out.push(what + ': emoji ' + m[0] + ' in ' + (el.id || el.className)); }
             return out;
           }, [what, main || '']);
           stage = 'seed';

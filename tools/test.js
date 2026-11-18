@@ -13845,6 +13845,69 @@ run('wearables and shop P4-07: every item drawn (valid SVG, roles only), fits ev
   return{problems:[...new Set(p)],note:o.items.length+' items, '+bytes+' bytes of drawings (largest '+biggest+'), '+fits+' item x pet x stage fits, '+Object.keys(o.fix).length+' fixtures'};
 });
 
+// ---- STK-2: fair sticker draws, swapping doubles, the book, a sticker for each finished picture ----
+run('stickers STK-2: a new sticker at least every second draw, doubles swap for a chosen sticker (never losing one), art pictures give one, book and swap screens',()=>{
+  const p=[];
+  const o=eval(js+`;(()=>{
+  const r={};const store={};
+  global.localStorage={getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};
+  const D=global.document,app={style:{},innerHTML:''},dummy={style:{},classList:{add(){},remove(){},contains(){return false}},dataset:{},
+    querySelector(){return dummy},querySelectorAll(){return[]},getBoundingClientRect(){return{left:0,top:0,width:0,height:0}},appendChild(){},isConnected:false};
+  global.document=Object.assign({},D,{querySelector:s=>s=='#app'?app:dummy,querySelectorAll:()=>[],createElement:()=>Object.assign({},dummy)});
+  try{
+    // 1. draws: with an old save (6 of 48, doubles), a long run never has two doubles in a row, and the book fills in far fewer than 200 draws
+    S.stickers={};STK.slice(0,6).forEach((s,i)=>S.stickers[s]=1+(i%3));S.stkDry=undefined;
+    let run=0,maxRun=0,n=0;const before={...S.stickers};
+    while(STK.some(s=>!stkN(s))&&n<500){const a=award();n++;if(a.isNew)run=0;else{run++;maxRun=Math.max(maxRun,run)}}
+    r.draws=n;r.maxRun=maxRun;r.full=STK.every(s=>stkN(s));
+    r.kept=Object.keys(before).every(s=>S.stickers[s]>=before[s]);
+    // after a double the next draw is new; once full, draws are doubles and never throw
+    S.stkDry=1;const miss=STK.filter(s=>!stkN(s));r.fullOk=award().s&&true;
+    S.stickers={};S.stkDry=1;STK.slice(0,47).forEach(s=>S.stickers[s]=1);r.last=STK.filter(s=>!S.stickers[s])[0];r.lastGot=award().s;
+    // damaged counter
+    for(const v of [null,'x',-3,NaN,{},[]]){S.stickers={};S.stkDry=v;const a=award();if(!a.s||!a.isNew)r.badDry=String(v)}
+    // 2. swap: 2 doubles for the chosen sticker; refused without enough doubles or for one already owned; a sticker is never lost
+    S.stickers={};STK.slice(0,5).forEach(s=>S.stickers[s]=1);S.stickers[STK[0]]=3;S.stickers[STK[1]]=2;S.stkDry=0;
+    r.d0=stkDoubles();const t=STK[20],tot=()=>Object.values(S.stickers).reduce((a,b)=>a+b,0);
+    r.t20=t;r.refOwned=stkSwap(STK[2]);r.refBad=stkSwap('zz');
+    const sw=stkSwap(t);r.sw=sw;r.d1=stkDoubles();r.has=stkN(t);r.kinds=STK.filter(s=>stkN(s)).length;r.allKept=STK.slice(0,5).every(s=>S.stickers[s]>=1);
+    S.stickers={};STK.slice(0,5).forEach(s=>S.stickers[s]=1);S.stickers[STK[0]]=2;
+    r.refPoor=stkSwap(t);r.poorKept=!S.stickers[t]&&S.stickers[STK[0]]==2;
+    // 3. screens
+    S.stickers={};STK.slice(0,9).forEach(s=>S.stickers[s]=1);S.stickers[STK[0]]=4;
+    book();r.bookH=app.innerHTML;
+    stkSwapView(null,null);r.swapH=app.innerHTML;stkSwapView(STK[30],null);r.swapPick=app.innerHTML;stkSwapView(null,{s:STK[30],isNew:true});r.swapGot=app.innerHTML;
+    S.stickers={};STK.slice(0,9).forEach(s=>S.stickers[s]=1);book();r.bookNo=app.innerHTML;
+    STK.forEach(s=>S.stickers[s]=1);S.stickers[STK[0]]=3;stkSwapView(null,null);r.swapFull=app.innerHTML;
+    // 4. art: first finish of a picture gives one sticker, a repeat none
+    loadSave(JSON.stringify({stars:0,coins:0,stickers:{}}));migrate();
+    const k=ART_ALL[0],a1=artDone({k:'v',key:k,n:'x',d:{p:[],s:''},star:true}),a2=artDone({k:'v',key:k,n:'x',d:{p:[],s:''},star:true}),a3=artDone({k:'v',key:'px:cat',n:'x',d:{},star:false});
+    r.art=[!!a1.stk,!!a2.stk,!!a3.stk,Object.values(S.stickers).reduce((a,b)=>a+b,0)];
+  }finally{global.document=D}
+  return r})()`);
+  if(o.draws>=200||!o.full)p.push('book not filled quickly: '+o.draws+' draws, full '+o.full);
+  if(o.maxRun>1)p.push('two doubles in a row: run of '+o.maxRun);
+  if(!o.kept)p.push('a draw took a sticker away');
+  if(o.lastGot!==o.last)p.push('the last missing sticker was not given');
+  if(o.badDry)p.push('damaged S.stkDry '+o.badDry+' broke the draw');
+  if(o.d0!==3)p.push('doubles counted '+o.d0+', want 3');
+  if(o.refOwned||o.refBad)p.push('swap accepted an owned or unknown sticker');
+  if(!o.sw||o.sw.s!==o.t20||o.has!==1||o.d1!==1||o.kinds!==6||!o.allKept)p.push('swap result '+JSON.stringify([o.sw,o.d1,o.has,o.kinds,o.allKept]));
+  if(o.refPoor||!o.poorKept)p.push('swap with 1 double was not refused cleanly');
+  const PICT=/\p{Extended_Pictographic}|[◀▶✕]/u,text=h=>h.replace(/<span class="(sb-e|rw-se)">[^<]*<\/span>/g,'').replace(/<[^>]*>/g,' ');
+  for(const [n,h] of Object.entries({book:o.bookH,swap:o.swapH,swapPick:o.swapPick,swapGot:o.swapGot,bookNo:o.bookNo,swapFull:o.swapFull}))if(PICT.test(text(h)))p.push(n+': emoji chrome');
+  if(!/id="bkswap"/.test(o.bookH)||/id="bkswap"/.test(o.bookNo))p.push('Swap button: shown with doubles, hidden without');
+  if(!/Page 1 of 4/.test(o.bookH))p.push('book pages: no "Page 1 of 4"');
+  if(!/class="sb-slot sb-pk/.test(o.swapH)||(o.swapH.match(/class="sb-slot sb-pk/g)||[]).length!==39)p.push('swap screen: wrong number of missing stickers');
+  if(!/aria-pressed="true"/.test(o.swapPick)||!/Swap 2 doubles/.test(o.swapPick))p.push('swap screen: pick not shown');
+  if(!/You got a new sticker/.test(o.swapGot)||!/class="tag new"/.test(o.swapGot))p.push('swap screen: no new sticker shown');
+  if(/sb-pk/.test(o.swapFull)||!/book is full/.test(o.swapFull))p.push('swap screen: full book');
+  if(o.art.join()!=='true,false,false,1')p.push('art stickers '+o.art.join());
+  const css=fs.readFileSync(path.join(SRC,'css','43-shop.css'),'utf8').replace(/\/\*[\s\S]*?\*\//g,'');
+  if(/#[0-9a-fA-F]{3,8}\b|rgba?\(/.test(css))p.push('43-shop.css: raw colour');
+  return{problems:p,note:'48 stickers filled in '+o.draws+' draws, longest run of doubles '+o.maxRun};
+});
+
 // ---- P4-09: map and world scenes (DESIGN_SYSTEM 7) ----
 // Every world of every path drawn as the picked world (with its neighbours) at a phone (352) and a tablet (996) map width, with
 // and without the Test out banner, through the same geometry as drawMap: a scene per world, valid SVG, tokens only, no ids /

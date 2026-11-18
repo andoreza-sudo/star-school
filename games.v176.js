@@ -2373,8 +2373,9 @@ const artHubLine=()=>`<span>${ico('star',18)}<b>${artStars()}</b> of ${ART_ALL.l
 function artDone(o){const s=stS(),st0=artStars(),first=!!(o.star&&o.key&&ART_ALL.includes(o.key)&&!artIsDone(o.key));let daily=false;
   if(o.star&&o.key)s.done[o.key]=1;const e=galAdd({k:o.k,v:o.key||'',n:o.n||'My picture',d:o.d});
   let coins=o.coins||0;const day=today();if(o.star&&o.key&&o.key==artDaily(day).key&&s.day!=day){s.day=day;coins+=3;daily=true}
-  if(first&&!o.coins)coins+=2;S.coins+=coins;const st=artStars(),opened=ART_PACKS.find(p=>p.need>st0&&p.need<=st)||null;save();
-  return{e,first,daily,coins,stars:st,opened}}
+  if(first&&!o.coins)coins+=2;S.coins+=coins;const stk=first?award():null; // STK-2 (R-03 T4): each picture finished for the first time gives one sticker
+  const st=artStars(),opened=ART_PACKS.find(p=>p.need>st0&&p.need<=st)||null;save();
+  return{e,first,daily,coins,stars:st,opened,stk}}
 
 /* ---- celebration: drawn sparkles over the picture (none in calm mode or with reduced motion), then the shared end card ---- */
 const artCalm=()=>S.calm||(typeof matchMedia=='function'&&matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -2385,7 +2386,7 @@ function artSparkle(el,then){if(artCalm()||!el){then();return}const r=el.getBoun
 // the finished picture in a frame with a shine
 const artFrame=h=>`<div class="art-frame">${h}<span class="art-shine" aria-hidden="true"></span></div>`;
 function artEnd(res,o){const lines=[];if(res.opened)lines.push(['gift',`The <b>${esc(res.opened.n)}</b> pack is open!`]);
-  if(!res.first&&o.star===false&&o.why)lines.push(['hint',esc(o.why)]);lines.push(['target',esc(artNextGoal())]);
+  if(!res.first&&o.star===false&&o.why)lines.push(['hint',esc(o.why)]);if(res.stk)lines.push(['sticker-book',`A sticker for your picture! ${RW.sticker(res.stk.s,res.stk.isNew,1)}`]);lines.push(['target',esc(artNextGoal())]);
   const c=GH.end('art',{win:true,made:true,pic:artFrame(o.pic),title:res.first?`You finished the ${o.n}!`:res.daily?`You made today's picture!`:'Into your gallery!',tag:res.first?'New star!':res.daily?"Today's picture":'',
     stats:[res.coins?['+'+res.coins,'coins','coin']:null,[res.stars+' / '+ART_ALL.length,'stars','star']],lines,
     btns:NAV.end3({again:'amore',home:'ahome',extra:`<span class="art-ex">${o.keep?UI.btn('Keep coloring',{icon:'palette',id:'akeep'}):''}${UI.btn('My gallery',{icon:'image',id:'agal'})}</span>`})}); // NAV-01: Play again = color another picture

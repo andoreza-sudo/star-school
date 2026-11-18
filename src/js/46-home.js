@@ -421,6 +421,22 @@ function learn(p,i){const n=NODES[p][i],items=SPN[n.sk.slice(3)],rec=items.every
     if($$('.lcard').every(x=>x.classList.contains('heard'))){bump('#go');fb('¡Muy bien! Tap ¡Vamos!')}});
   if(S.voice)setTimeout(()=>say(rec?'Tap each card to hear it in English and Spanish!':'Tap a card to hear it in Spanish. Tap it again for English!'),300)}
 
+// STK-2 swap screen: SWAP_COST doubles for one sticker the child picks from the missing ones. pick = the chosen one, got = the sticker just won.
+function stkSwapView(pick,got){const miss=STK.filter(s=>!stkN(s)),d=stkDoubles(),ok=d>=SWAP_COST;
+  const sl=STK.map((s,i)=>[s,i]).filter(x=>miss.includes(x[0]));
+  view(`<div class="top tbar gx-mtop s-read">${UI.ibtn('back','Back',{size:'sm',id:'back'})}<div class="ttl gx-ttl"><span class="gx-tb">${ico('sticker-book',24)}</span><span>Swap doubles</span></div>`+
+    `<span class="stat sb-cnt" role="img" aria-label="${d} doubles">${ico('plus',28)}<b>${d}</b></span></div>
+  <div class="scroll"><div class="sb"><div class="sb-head"><div class="sb-hl"><p>${got?`<span class="sb-won">You got a new sticker!</span> ${RW.sticker(got.s,true,1)}`:
+    miss.length?(ok?`Swap ${SWAP_COST} doubles for a sticker you pick. Tap one, then tap Swap.`:`You need ${SWAP_COST} doubles to swap. You have ${d}.`):'Your book is full!'}</p>`+
+    `<p>${d} double${d==1?'':'s'} left.</p></div></div>`+
+    `<div class="sb-act">${UI.btn(pick?'Swap '+SWAP_COST+' doubles':'Pick a sticker',{kind:'primary',size:'lg',icon:'check',id:'swgo'})}${UI.btn('Back to my stickers',{icon:'sticker-book',id:'swbk'})}</div></div>`+
+    (miss.length?`<section class="sb-page"><h2 class="sb-ph"><span>Stickers you do not have</span><span class="sb-pc">${miss.length}</span></h2>`+
+      `<div class="sb-grid">${sl.map(([s,i])=>`<button class="sb-slot sb-pk${s==pick?' on':''}" data-s="${esc(s)}" aria-pressed="${s==pick}" aria-label="Sticker ${i+1}"${ok?'':' disabled'}><span class="sb-e">${esc(s)}</span></button>`).join('')}</div></section>`:'')+`</div></div>`);
+  NAV.bar('');$('#back').onclick=$('#swbk').onclick=()=>book();
+  $$('.sb-pk').forEach(b=>b.onclick=()=>{SFX.pop(R(0,5));stkSwapView(b.dataset.s,null)});
+  $('#swgo').onclick=()=>{if(!pick||!ok){fb(ok?'Tap a sticker first.':'You need '+SWAP_COST+' doubles.','warn',1800);return}
+    const r=stkSwap(pick);if(r){SFX.chime();stkSwapView(null,r);RW.burst($('.rw-stk'),12)}}}
+
 // P4-07 sticker book (DESIGN_SYSTEM 6.4; CSS 43-shop.css): pages of 12; a sticker is its emoji (content) cut out die-cut style;
 // empty slots show a faint star. S.stickers is only read.
 function book(){const have=STK.filter(s=>stkN(s)).length,per=12,pages=[];
@@ -431,15 +447,17 @@ function book(){const have=STK.filter(s=>stkN(s)).length,per=12,pages=[];
       `<span class="sb-e">${esc(s)}</span>${n>1?`<b class="sb-n">×${n}</b>`:''}</button>`
       :`<span class="sb-slot sb-no" aria-hidden="true">${ico('star',30)}</span>`};
   const page=(p,k)=>{const got=p.filter(s=>stkN(s)).length;
-    return`<section class="sb-page${got==p.length?' full':''}"><h2 class="sb-ph"><span>Page ${k+1}</span><span class="sb-pc">${got==p.length?ico('check',20):''}${got} of ${p.length}</span></h2>`+
+    return`<section class="sb-page${got==p.length?' full':''}"><h2 class="sb-ph"><span>Page ${k+1} of ${pages.length}</span><span class="sb-pc">${got==p.length?ico('check',20):''}${got} of ${p.length}</span></h2>`+
       `<div class="sb-grid">${p.map((s,j)=>slot(s,k*per+j)).join('')}</div></section>`};
   view(`<div class="top tbar gx-mtop s-read">${UI.ibtn('back','Back',{size:'sm',id:'back'})}<div class="ttl gx-ttl"><span class="gx-tb">${ico('sticker-book',24)}</span><span>My Stickers</span></div>`+
     `<span class="stat sb-cnt" role="img" aria-label="${have} of ${STK.length} stickers">${ico('sticker-book',28)}<b>${have}/${STK.length}</b></span></div>
   <div class="scroll"><div class="sb"><div class="sb-head"><div class="sb-hl">${UI.meter(have/STK.length,{kind:'grow',label:have+' of '+STK.length+' stickers'})}`+
-    `<p>Finish a round to win a sticker! Get 10 out of 10 for a bonus one.</p></div>`+
+    `<p>Finish a round or a picture to win a sticker! Get 10 out of 10 for a bonus one.</p>${stkDoubles()?`<p class="sb-dbl">${ico('plus',18)}<span>You have <b>${stkDoubles()}</b> double${stkDoubles()==1?'':'s'}.</span></p>`:''}</div>`+
+    `${stkDoubles()&&have<STK.length?`<div class="bk-bt">${UI.btn(stkDoubles()>=SWAP_COST?'Swap doubles':'Swap doubles ('+SWAP_COST+' needed)',{kind:'subject',p:'disc',icon:'replay',id:'bkswap'})}</div>`:''}`+
     `${BT.list().length?`<div class="bk-bt">${UI.btn('Puzzle badges',{kind:'subject',p:'bt',icon:'medal',id:'bkbdg'})}</div>`:''}${typeof CHK!='undefined'?`<div class="ck-bk">${UI.btn('Stop badges',{kind:'subject',p:'disc',icon:'medal',id:'bkck'})}</div>`:''}</div>
   <div class="sgrid sb-pages">${pages.map(page).join('')}</div></div></div>`);
   NAV.bar('');$('#back').onclick=()=>home(true);
+  if($('#bkswap'))$('#bkswap').onclick=()=>{SFX.whoosh();stkSwapView(null,null)};
   if($('#bkck'))$('#bkck').onclick=()=>{SFX.whoosh();CHK.shelf(book)}; // CHECK-IN: the stop badges (51b-checkin.js)
   if($('#bkbdg'))$('#bkbdg').onclick=()=>{SFX.whoosh();BT.badgeView(book)}; // P3-17: the puzzle badges are a page of the sticker book
   $$('.sb-stk').forEach(b=>b.onclick=()=>{anim(b,'jump');SFX.pop(R(0,5));RW.burst(b,12)})}
