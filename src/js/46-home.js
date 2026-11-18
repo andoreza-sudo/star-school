@@ -402,7 +402,7 @@ function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],ws=PATHS[p].
   const on=st&&st.querySelector('.wchip.on');if(on)st.scrollLeft=Math.max(0,on.offsetLeft-(st.clientWidth-on.offsetWidth)/2);
   if(p=='math'&&typeof LS!='undefined')setTimeout(()=>LS.mapAdd(),0)} // TEACH-1: the lesson offer by a stop (52-lesson.js), after the draw (it reads the layout)
 // TEACH-1: the lessons' part loads once the math map is drawn (Pre-K to 2nd), then adds its offer; a part that does not load just shows no offer
-function teachWarm(){if(TEACH.off||gradeOf()>2||partReady('teach12'))return;partsLoad(['teach','teach12']).then(bad=>{if(!bad&&MAPP=='math'&&$('#map'))LS.mapAdd()})} // TEACH-2b: and the grade 1-2 lessons
+function teachWarm(){const up=gradeOf()>2;if(TEACH.off||partReady(up?'teach35':'teach12'))return;(up?partsLoad(['teach','teach12','teach35']):partsLoad(['teach','teach12'])).then(bad=>{if(!bad&&MAPP=='math'&&$('#map'))LS.mapAdd()})} // TEACH-2b: and the grade 1-2 lessons; TEACH-3: 3rd grade up, the grade 3-5 lessons (teach35) too
 function open(p,i){const n=NODES[p][i];if(n.sk=='boss')bossIntro(p,i);else if(n.sk.startsWith('es_')&&SPN[n.sk.slice(3)]&&n.lv==1)learn(p,i);else start(p,i)}
 
 function learn(p,i){const n=NODES[p][i],items=SPN[n.sk.slice(3)],rec=items.every(it=>esHas(it[5]||esFull(it))); // ES-AUDIO: every card recorded

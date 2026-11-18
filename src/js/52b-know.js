@@ -199,7 +199,9 @@ function planToday(S0, day, p = 'math') {
   const K = S0.know || {}, ps = id => at(id) >= 0 && passed('math', at(id)), learned = id => (K[id] || {}).s >= 2;
   let id = S0.les && LESSONS[S0.les.n] && open(S0.les.n) ? S0.les.n : null, kind = id ? 'again' : 'new', code = null;
   if (!id) {
-    const cand = LS_IDS.filter(x => at(x) >= 0).sort((a, b) => at(a) - at(b)).filter(x => open(x) && !ps(x) && !learned(x));
+    // TEACH-3: a child in 3rd grade or up is offered the grade 3-5 lessons only, their own grade's first (6th grade: 5th grade's)
+    const g0 = GRADES.includes(S0.grade) ? S0.grade : 0, wg = x => PATHS.math.worlds[NODES.math[at(x)].wi].g, mine = x => (g0 >= 3 && wg(x) != Math.min(g0, 5) ? 1 : 0);
+    const cand = LS_IDS.filter(x => at(x) >= 0 && (g0 < 3 || wg(x) >= 3)).sort((a, b) => mine(a) - mine(b) || at(a) - at(b)).filter(x => open(x) && !ps(x) && !learned(x));
     const ready = x => (PRE[x] || []).every(y => ps(y) || learned(y));
     let nx = cand[0] || null;
     const lm = Array.isArray(S0.lm) ? S0.lm : [], last = lm[lm.length - 1];

@@ -2,7 +2,7 @@ import base64, json, os, re, sys
 from PIL import Image, ImageDraw
 # Build: python3 tools/build.py   (run from anywhere; writes index.html, bt/games/data.<VER>.js, sw.js, manifest.json, icons to the repo root)
 # Bump VER on every release so tablets pick up the update.
-VER = 'v176'
+VER = 'v177'
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = ROOT
 F = os.path.join(ROOT, 'tools', 'fonts', 'andika-latin-%s-normal.woff2')
@@ -27,12 +27,17 @@ def draft_gate(root):
 # node tools/author.js --approve) makes its lesson live at the next build. --words-only writes just this file; --words-check exits 1
 # when the file on disk is not what the drafts say (tools/test.js).
 WORDS_KEYS = ('idea', 'beats', 'reasons', 'home')
-def words_js(root):
+# TEACH-3: the grade 3-5 lessons (lsDraft3('<stop>', ...) in src/js, part teach35) take their reviewed words from their own file,
+# src/js/52h-words.js (LSW3), so the grade 1-2 part does not carry them. One entry per words file: (file, const, the call that names a draft).
+WORDS = (('52e-words.js', 'LSW', r"\blsDraft\('(\w+)'", 'TEACH-2b', 'teach12', '52g-drafted.js'),
+         ('52h-words.js', 'LSW3', r"\blsDraft3\('(\w+)'", 'TEACH-3', 'teach35', '52j-lessons35.js'))
+def words_js(root, w=WORDS[0]):
+    fn, const, rx, chunk, part, src = w
     d, out = os.path.join(root, 'src', 'js'), {}
     named = set()
     for n in sorted(os.listdir(d)):
-        if n.endswith('.js') and n != '52e-words.js':
-            named.update(re.findall(r"\blsDraft\('(\w+)'", open(os.path.join(d, n), newline='').read()))
+        if n.endswith('.js') and n not in [x[0] for x in WORDS]:
+            named.update(re.findall(rx, open(os.path.join(d, n), newline='').read()))
     dd = os.path.join(root, 'docs', 'drafts')
     for n in sorted(os.listdir(dd)) if os.path.isdir(dd) else []:
         if not n.endswith('.md') or n[:-3] not in named:
@@ -43,20 +48,24 @@ def words_js(root):
             w = json.loads(js.group(1))
             out[n[:-3]] = {k: w[k] for k in WORDS_KEYS if k in w}
     body = ''.join('  %s: %s,\n' % (json.dumps(k), json.dumps(out[k], ensure_ascii=False, separators=(',', ':'))) for k in sorted(out))
-    return ('/* ---------- TEACH-2b: the words of the drafted lessons the owner has reviewed (part teach12) ----------\n'
-            '   BUILT by tools/build.py from docs/drafts/<stop>.md ("status: reviewed ...") for the scripts that name them (lsDraft, 52g-drafted.js):\n'
-            '   never edit by hand. A draft that is not reviewed is never here, so its lesson is not live. */\n'
-            'const LSW = {\n' + body + '};\n')
+    return ('/* ---------- %s: the words of the drafted lessons the owner has reviewed (part %s) ----------\n'
+            '   BUILT by tools/build.py from docs/drafts/<stop>.md ("status: reviewed ...") for the scripts that name them (%s, %s):\n'
+            '   never edit by hand. A draft that is not reviewed is never here, so its lesson is not live%s. */\n'
+            'const %s = {\n' % (chunk, part, 'lsDraft' if const == 'LSW' else 'lsDraft3', src,
+                                 '' if const == 'LSW' else ' with its words (it runs on its hand-written fallback words)', const) + body + '};\n')
 WORDS_FILE = os.path.join(ROOT, 'src', 'js', '52e-words.js')
+def write_words(root):
+    for w in WORDS:
+        open(os.path.join(root, 'src', 'js', w[0]), 'w', encoding='utf-8', newline='').write(words_js(root, w))
 if '--words-check' in sys.argv:
     _w = sys.argv[sys.argv.index('--words-check') + 1] if len(sys.argv) > sys.argv.index('--words-check') + 1 else ROOT
-    _f = os.path.join(_w, 'src', 'js', '52e-words.js')
-    _ok = os.path.isfile(_f) and open(_f, encoding='utf-8', newline='').read() == words_js(_w)
-    print('words: 52e-words.js matches the reviewed drafts' if _ok else 'words: 52e-words.js is not what the reviewed drafts say (run python3 tools/build.py)')
-    sys.exit(0 if _ok else 1)
+    _bad = [w[0] for w in WORDS if (os.path.isfile(os.path.join(_w, 'src', 'js', w[0])) or w[0] == '52e-words.js')
+            and not (os.path.isfile(os.path.join(_w, 'src', 'js', w[0])) and open(os.path.join(_w, 'src', 'js', w[0]), encoding='utf-8', newline='').read() == words_js(_w, w))]
+    print('words: the words files match the reviewed drafts' if not _bad else 'words: %s is not what the reviewed drafts say (run python3 tools/build.py)' % ', '.join(_bad))
+    sys.exit(0 if not _bad else 1)
 if '--words-only' in sys.argv:
-    open(WORDS_FILE, 'w', encoding='utf-8', newline='').write(words_js(ROOT))
-    print('wrote src/js/52e-words.js')
+    write_words(ROOT)
+    print('wrote src/js/52e-words.js and src/js/52h-words.js')
     sys.exit(0)
 if '--drafts-only' in sys.argv:
     _bad = draft_gate(sys.argv[sys.argv.index('--drafts-only') + 1])
@@ -65,7 +74,7 @@ if '--drafts-only' in sys.argv:
 _bad = draft_gate(ROOT)
 if _bad:
     sys.exit('build refused: a lesson script uses words nobody has reviewed yet (tools/author.js):\n  ' + '\n  '.join(_bad))
-open(WORDS_FILE, 'w', encoding='utf-8', newline='').write(words_js(ROOT))  # TEACH-2b: the reviewed words, before the parts are read
+write_words(ROOT)  # TEACH-2b: the reviewed words, before the parts are read (TEACH-3: and the grade 3-5 ones)
 # A11b: code that is only needed once a child opens it lives in more precached files, one per entry of PARTS: the file stem, then a
 # regular expression for the file names (whole name) in src/js and src/css that go there instead of into index.html. Each part file
 # is <stem>.<VER>.js: a <style> it adds to <head> (its src/css files, if any), its src/js files (sorted), and a last line
@@ -80,6 +89,7 @@ PARTS = [
     ('games3', r'(60-blocks|61-bb-gl)\.js|60-game-blocks\.css'),  # G-BB2: Block Builder and its WebGL renderer (games was over its 400 KB warning)
     ('teach', r'52-lesson\.css|(52-lesson|52b-know|52c-scripts|52d-notebook)\.js'),  # TEACH-1: Sparky teaches (the lesson engine, the learner record and plan, the lesson scripts); TEACH-2: the notebook and the report's lessons card
     ('teach12', r'(52e-words|52f-bench|52g-drafted)\.js'),  # TEACH-2b: the grade 1-2 lessons (drafted words, their workbench pieces, their scripts): after teach, so the teach part stays under 150 KB
+    ('teach35', r'(52h-words|52i-bench35|52j-lessons35)\.js|52h-teach35\.css'),  # TEACH-3: the grade 3-5 lessons (their reviewed words, workbench, Check me, scripts): after teach12, which they build on
     ('petage', r'17b-pet-age\.js'),  # PET-AGE2: the older kid and grown-up pet drawings (grades 3-6); petAgeWarm loads it, the little one is drawn until then
 ]
 # P6-02: parts that index.html does NOT load at start (no <script> tag): partsThen() in src/js/90-app.js (LAZY_PARTS, the same list,
@@ -87,7 +97,8 @@ PARTS = [
 # P6-03: bt too (580 KB of puzzle code): BT.start() loads it the first time a puzzle opens; Home and the hub use BT.CAT (74-teasers.js).
 # TEACH-1: and the lessons, teach: the math map loads them (teachWarm in 46-home.js); not a Game Room part (GAME_PARTS in 90-app.js).
 # TEACH-2b: teach12 too (the grade 1-2 lessons), loaded with teach by the math map. PET-AGE2: petage (Home's: petAgeWarm, 17-pets-svg.js).
-LAZY = ('bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12', 'petage')
+# TEACH-3: teach35 (the grade 3-5 lessons), loaded with teach and teach12 by the math map for a child in 3rd grade or up.
+LAZY = ('bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12', 'teach35', 'petage')
 def part_of(name):
     return next((stem for stem, rx in PARTS if re.fullmatch(rx, name)), None)
 def cat(sub, ext, part=None):

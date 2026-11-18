@@ -1,0 +1,23 @@
+/* TEACH-3: the grade 3-5 lessons' workbench (52i-bench35.js): two fraction bars, the place-value chart, the area model, "your problem",
+   the pet's written steps in Check me and the reason built from tiles */
+.ls-bars{display:flex;flex-direction:column;gap:var(--s-2);align-items:center;max-width:100%}
+.ls-bar{display:flex;align-items:center;gap:var(--s-2);max-width:100%}
+.ls-bar .viz{max-width:min(240px,62vw);height:auto}
+.ls-barl{font-size:var(--fs-3);font-weight:700;color:var(--ink);min-width:2.2em;text-align:center}
+.ls-copies{display:flex;flex-wrap:wrap;gap:var(--s-1);justify-content:center;max-width:100%}
+.ls-copies .viz{max-width:min(150px,40vw);height:auto}
+.ls-pvc{border-collapse:separate;border-spacing:2px;margin:0 auto;font-weight:700;max-width:100%}
+.ls-pvc th{font-size:var(--fs-2);min-width:1.6em;color:var(--ink-2);padding:2px 4px;background:var(--surface-2);border-radius:var(--r-chip);white-space:nowrap}
+.ls-pvc td{font-size:var(--fs-4);color:var(--ink);background:var(--surface);box-shadow:inset 0 0 0 2px var(--line);border-radius:var(--r-chip);text-align:center;min-width:1.6em;padding:2px 6px}
+.ls-pvc td.ls-pvm{background:var(--math-tint);box-shadow:inset 0 0 0 3px var(--math-shade)}
+.ls-pvc td.ls-pvo{box-shadow:inset -6px 0 0 -3px var(--ink),inset 0 0 0 2px var(--line)}
+.ls-area{border-collapse:separate;border-spacing:3px;margin:0 auto;font-weight:700}
+.ls-area th{font-size:var(--fs-2);color:var(--ink-2);padding:2px 6px}
+.ls-area td{font-size:var(--fs-3);color:var(--ink);background:var(--math-tint);border-radius:var(--r-chip);text-align:center;min-width:3.2em;padding:var(--s-2) var(--s-1)}
+.ls-mine{font-size:var(--fs-4);font-weight:700;color:var(--ink);background:var(--surface);border-radius:var(--r-card);padding:var(--s-2) var(--s-3);box-shadow:inset 0 0 0 2px var(--line)}
+.fxs.ls-fx .fxl{display:flex;align-items:center;gap:var(--s-2);padding:var(--s-1) var(--s-3);background:var(--surface);border-radius:var(--r-chip);box-shadow:inset 0 0 0 2px var(--line);color:var(--ink);text-align:left}
+.fxs.ls-fx .fxl.ls-fixd{box-shadow:inset 0 0 0 3px var(--good);background:var(--good-tint)}
+.ls-fixtop{display:flex;flex-direction:column;align-items:center;gap:var(--s-1);width:100%}
+.ls-fixtop .eq{font-size:var(--fs-4)}
+.ls-why{font-weight:700;color:var(--ink)}
+@media (max-width:420px){.ls-pvc th{padding:2px}.ls-pvc td{font-size:var(--fs-3);padding:2px 3px;min-width:1.2em}}
