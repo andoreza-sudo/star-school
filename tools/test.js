@@ -20759,7 +20759,7 @@ run('recorded teacher lines TEACH-4',()=>{
   if(JSON.stringify(af)!==JSON.stringify(files.map(f=>'./'+EA.TEACH_DIR+f)))p.push('sw.js AF does not list exactly the '+files.length+' teacher recordings ('+af.length+')');
   if(!/\\\/audio\\\/teach\\\//.test(sw))p.push('sw.js: a Range request for a teacher recording is not answered from the cache');
   // 4. say() in a stand-in browser: a recorded line plays its file; a line with a sentence not recorded plays the recorded one and speaks the rest,
-  //    in order; the tablet's voice when recordings are off, for "Tablet voice", or when a file fails; the lesson says its lines one by one
+  //    in order; the tablet's voice when recordings are off, for "Tablet voice", or when a file fails; the lesson's lines go through say()
   const log=[];class FakeAudio{constructor(){this.dataset={}}canPlayType(t){return/opus/.test(t)?'probably':''}play(){log.push('play '+this.src);return Promise.resolve()}pause(){}}
   const s=E.loadApp(null,{Audio:FakeAudio,window:{speechSynthesis:1},SpeechSynthesisUtterance:function(t){this.text=t},speechSynthesis:{getVoices:()=>[{lang:'en-US'}],speak:u=>{log.push('speak '+u.text);setTimeout(()=>u.onend&&u.onend(),0)},cancel(){},speaking:false,pending:false}});
   const S2=t=>vm.runInContext(t,s),end=()=>{const a=S2('ESA.au');if(a&&a.onended)a.onended()};
@@ -20771,7 +20771,7 @@ run('recorded teacher lines TEACH-4',()=>{
     S2("S.cheerV='tts';hush()");log.length=0;S2("say('Can you fix it?')");if(log.join()!=='speak Can you fix it?')p.push('Tablet voice: '+log.join(' | '));S2("S.cheerV='mix'");
     S2('hush()');log.length=0;S2("say('Can you fix it?')");const a=S2('ESA.au');a.onerror();if(log.pop()!=='speak Can you fix it?')p.push('a failed file did not fall back to the voice: '+log.join(' | '));
   }catch(e){p.push('say() could not be run: '+String(e.stack||e).split('\n').slice(0,2).join(' | '))}
-  if(!/ls\.forEach\(\(x, i\) => say\(x, null, null, i > 0\)\)/.test(rd('src/js/52-lesson.js')))p.push('the lesson does not say its lines one by one (LS.talk)');
+  if(!/if \(t && LS\.voice\(\)\) say\(t\);/.test(rd('src/js/52-lesson.js')))p.push('the lesson does not say its lines through say() (LS.talk), where recorded sentences are found');
   return{problems:p,note:lines.size+' lines in the voice '+M.voice+', '+files.length+' files, '+Math.round(total/1000)+' KB, largest '+Math.round(big/100)/10+' KB; all audio '+Math.round(all/1000)+' KB (budget '+AUDIO_FAIL/1e6+' MB)'};
 });
 run('teach: simulated children on reading and Pre-K lessons TEACH-4',()=>{

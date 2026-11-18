@@ -251,11 +251,10 @@ const LS = {
   voice: () => !!S.voice || gradeCfg().auto != 'tap',
   // say lines (and show cap, or the lines, in the pet's bubble); then() once they have been said
   talk(lines, then, cap0) {
-    const ls = lines.filter(Boolean), t = ls.join(' '), b = $('#lsbub'), me = LS.st, c = cap0 || t;
+    const t = lines.filter(Boolean).join(' '), b = $('#lsbub'), me = LS.st, c = cap0 || t;
     if (b) { b.firstChild.textContent = c; b.classList.toggle('on', !!c); }
-    // TEACH-4: one line at a time, each queued behind the one before, so a line the pet has recorded (EN_TEACH, 12-speech.js) is
-    // played wherever it falls, and the rest is the tablet's voice
-    if (t && LS.voice()) ls.forEach((x, i) => say(x, null, null, i > 0));
+    // TEACH-4: a recorded line (EN_TEACH, 12-speech.js) plays wherever its sentence falls in the lines; the rest is the tablet's voice
+    if (t && LS.voice()) say(t);
     if (!then) return;
     // the controls wake once the line has been said (TEACH-PLAN-2 system H): poll the speech, at most WAKE ms (no voice: a short pause)
     const t0 = Date.now(), cap = t && LS.voice() && canSpeak() ? LS.WAKE : 600;
