@@ -1,0 +1,7 @@
+# Vercel serves only the built app: index.html, sw.js, manifest.json, the *.v<N>.js parts, icons, audio/, LICENSES/ and .well-known/.
+# The sources, tools, docs and lesson drafts stay in the (private) repository and are never published.
+src
+tools
+docs
+README.md
+.claude
