@@ -328,6 +328,15 @@ const SCREENS = {
   'teach4-sent': { run: async p => teach4Beat(p, 'pic1', 'show', 0) },
   'teach4-plates': { run: async p => teach4Beat(p, 'pk_more1', 'show', 0) },
   'report-lessons': { adult: true, run: async p => { await teachReady(p); await p.evaluate(() => { teachSave(); report(); document.querySelector('#rp-teach').scrollIntoView(); }); await p.waitForTimeout(500); } },
+  // LS-STOP: the lesson stop on the map (its ticket, Make Ten's practice locked behind it), the start card, the top bar's ticket meter, the
+  // end card with its game time
+  'lstop-map': { run: async p => { await teachReady(p); await p.evaluate(() => { window.say = window.__a11y.say; lstopSave(); pathMap('math', NODES.math[lstopI()].wi); });
+    await p.waitForTimeout(800); await p.evaluate(() => document.querySelector(`.lsn[data-ls="${lstopI()}"]`).scrollIntoView({ block: 'center' })); await p.waitForTimeout(300); } },
+  'lstop-start': { run: async p => { await teachReady(p); await p.evaluate(() => { window.say = window.__a11y.say; lstopSave(); LS.open('tenf2'); }); await p.waitForTimeout(600); } },
+  'lstop-meter': { run: async p => { await teachReady(p); await p.evaluate(() => { window.say = window.__a11y.say; lstopSave(); LS.WAKE = 400; LS.start('tenf2', { learn: 1 }); }); await p.waitForTimeout(1500); } },
+  'lstop-end': { run: async p => { await teachReady(p); await p.evaluate(() => { window.say = window.__a11y.say; lstopSave();
+    const st = LS.make('tenf2', { seed: 4, day: lsDay(), proof: true }); st.caught = true; LS.beat(st, LSB.indexOf('show'));
+    for (let k = 0; k < 2; k++) { LS.answer(st, LS.cur(st).q.ans); LS.next(st); } LS.st = st; LS.end(); }); await p.waitForTimeout(2500); } },
   'hill-garage': { run: ev(() => { gtime(); garage(); }) },
   'hill-drive': { run: ev(() => { gtime(); hcStart('meadow'); }), main: '.pedal', sheet: pauseSheet },
   'hill-end': {
@@ -454,6 +463,8 @@ function pageInit() {
   window.snSave = () => { gtime(); S.grade = 3; const r = snS(); r.coins = 80; r.days = 2; save(); };
   A.mark = k => { A.marks[k] = A.now(); };
   // TEACH-2: a Kindergartner with two ideas learned (one kept) and a misconception held on Add to 5, for the notebook and the report
+  window.lstopI = () => NODES.math.findIndex(n => nid(n) === 'tenf2');
+  window.lstopSave = () => { S.grade = 0; S.know = {}; S.lsPay = {}; delete S.lsOpen; delete S.les; const i = lstopI(); for (let j = 0; j < NODES.math.length; j++) setSt('math', j, j < i ? 2 : 0); save(); };
   window.teachSave = () => { const d = STRK.idx(today()); S.grade = 0;
     S.know = { tenf2: { s: 2, n: 1, lv: [[1, 1], [1, 1], [1, 1]], b: {}, box: 0, due: d + 2, d: d - 1, last: d - 1, note: { a: 7, b: 3 } },
       tenf3: { s: 3, n: 1, lv: [[1, 1], [0, 0], [1, 1]], b: {}, box: 1, due: d + 5, d: d - 8, last: d - 3, k: d - 3 },

@@ -1,5 +1,5 @@
-/* Star School teach35 v178. BUILT by tools/build.py from 52h-teach35.css, 52h-words.js, 52i-bench35.js, 52j-lessons35.js: never edit by hand.
-   index.html v178 loads this file on demand (partsThen in src/js/90-app.js, P6-02), after data.v178.js. */
+/* Star School teach35 v179. BUILT by tools/build.py from 52h-teach35.css, 52h-words.js, 52i-bench35.js, 52j-lessons35.js: never edit by hand.
+   index.html v179 loads this file on demand (partsThen in src/js/90-app.js, P6-02), after data.v179.js. */
 (function(){var s=document.createElement('style');s.id='css-teach35';s.textContent="/* TEACH-3: the grade 3-5 lessons' workbench (52i-bench35.js): two fraction bars, the place-value chart, the area model, \"your problem\",\n   the pet's written steps in Check me and the reason built from tiles */\n.ls-bars{display:flex;flex-direction:column;gap:var(--s-2);align-items:center;max-width:100%}\n.ls-bar{display:flex;align-items:center;gap:var(--s-2);max-width:100%}\n.ls-bar .viz{max-width:min(240px,62vw);height:auto}\n.ls-barl{font-size:var(--fs-3);font-weight:700;color:var(--ink);min-width:2.2em;text-align:center}\n.ls-copies{display:flex;flex-wrap:wrap;gap:var(--s-1);justify-content:center;max-width:100%}\n.ls-copies .viz{max-width:min(150px,40vw);height:auto}\n.ls-pvc{border-collapse:separate;border-spacing:2px;margin:0 auto;font-weight:700;max-width:100%}\n.ls-pvc th{font-size:var(--fs-2);min-width:1.6em;color:var(--ink-2);padding:2px 4px;background:var(--surface-2);border-radius:var(--r-chip);white-space:nowrap}\n.ls-pvc td{font-size:var(--fs-4);color:var(--ink);background:var(--surface);box-shadow:inset 0 0 0 2px var(--line);border-radius:var(--r-chip);text-align:center;min-width:1.6em;padding:2px 6px}\n.ls-pvc td.ls-pvm{background:var(--math-tint);box-shadow:inset 0 0 0 3px var(--math-shade)}\n.ls-pvc td.ls-pvo{box-shadow:inset -6px 0 0 -3px var(--ink),inset 0 0 0 2px var(--line)}\n.ls-area{border-collapse:separate;border-spacing:3px;margin:0 auto;font-weight:700}\n.ls-area th{font-size:var(--fs-2);color:var(--ink-2);padding:2px 6px}\n.ls-area td{font-size:var(--fs-3);color:var(--ink);background:var(--math-tint);border-radius:var(--r-chip);text-align:center;min-width:3.2em;padding:var(--s-2) var(--s-1)}\n.ls-mine{font-size:var(--fs-4);font-weight:700;color:var(--ink);background:var(--surface);border-radius:var(--r-card);padding:var(--s-2) var(--s-3);box-shadow:inset 0 0 0 2px var(--line)}\n.fxs.ls-fx .fxl{display:flex;align-items:center;gap:var(--s-2);padding:var(--s-1) var(--s-3);background:var(--surface);border-radius:var(--r-chip);box-shadow:inset 0 0 0 2px var(--line);color:var(--ink);text-align:left}\n.fxs.ls-fx .fxl.ls-fixd{box-shadow:inset 0 0 0 3px var(--good);background:var(--good-tint)}\n.ls-fixtop{display:flex;flex-direction:column;align-items:center;gap:var(--s-1);width:100%}\n.ls-fixtop .eq{font-size:var(--fs-4)}\n.ls-why{font-weight:700;color:var(--ink)}\n@media (max-width:420px){.ls-pvc th{padding:2px}.ls-pvc td{font-size:var(--fs-3);padding:2px 3px;min-width:1.2em}}\n";document.head.appendChild(s)})(); // its src/css, after index.html's own CSS (the cascade order of a build without parts)
 /* ---------- TEACH-3: the words of the drafted lessons the owner has reviewed (part teach35) ----------
    BUILT by tools/build.py from docs/drafts/<stop>.md ("status: reviewed ...") for the scripts that name them (lsDraft3, 52j-lessons35.js):
@@ -188,9 +188,12 @@ function lsEnable3(id, W) {
 }
 
 /* ---- Check me for grades 3 to 5 ---- */
+// fix179: in the extra turns of Check me (st.chkN, the pet always wrong) there is no "your problem" (the child's numbers may allow no
+// slip): the pet works numbers of its own that have a real slip (up to 20 draws), else a question with a wrong answer of its codes
 function lsChk35(st) {
   const D = LS_DRAFTED[st.id];
-  if (D.fix && D.mine && (lsAge(gradeOf()) == 'teen' || st.r() < .5)) return [lsMineItem(st, D)];
+  if (!st.chkN && D.fix && D.mine && (lsAge(gradeOf()) == 'teen' || st.r() < .5)) return [lsMineItem(st, D)];
+  if (st.chkN && D.fix) for (let n = 0; n < 20; n++) { const it = lsStepsItem(st, D, D.fix.nums(st.r)); if (it && !it.petOk) return [it]; }
   return [(D.fix && lsStepsItem(st, D, D.fix.nums(st.r))) || lsPetItem35(st)];
 }
 // the find-the-mistake question's parts (k2Fix* in 49b-kinds2.js) for a label: {prob, lab, build(mis), muts, hint}, or null. The k2Fix
@@ -217,7 +220,8 @@ function lsStepsItem(st, D, nums) {
   if (!ok || ok.length < 3 || ok.length > 5) return null;
   const held = st.repair || knowHeld(st.id, st.S, st.day), codes = held && L.bugs.includes(held) ? [held] : L.bugs;
   const cands = f.muts.filter(([i, k]) => { const b = f.build({i, k}); return b && b.length == ok.length && b[i] !== ok[i] && b.every((t, j) => j >= i || t === ok[j]); });
-  const petOk = st.r() < LS.PET_OK || !cands.length;
+  if (st.chkN && !cands.length) return null; // fix179: an extra Check me turn needs a slip these numbers allow
+  const petOk = LS.petRight(st) || !cands.length;
   let mis = null;
   if (!petOk) {
     const pref = codes.map(c => cands.filter(m => lsFixCode(D, m) == c)).find(a => a.length) || cands;
@@ -255,7 +259,7 @@ function lsFits35(q, v) {
 // Check me on the model or the question (no written steps): the pet's answer by the child's idea, else the lesson's codes in order
 function lsPetItem35(st) {
   const L = st.L, r = st.r, T = lsTone(), held = st.repair || knowHeld(st.id, st.S, st.day), codes = held && L.bugs.includes(held) ? [held] : L.bugs;
-  const petOk = r() < LS.PET_OK;
+  const petOk = LS.petRight(st);
   let q, pv = null, code = null;
   for (let n = 0; n < 40 && pv == null; n++) {
     q = L.q(L.petSt != null ? L.petSt : 1, r);
@@ -1322,4 +1326,4 @@ lsDraft3('fop3', ls3Fop('fop3', 'Unlike Denominators', 5, 'unlike', ['addBot', '
 lsDraft3('geo4', ls3Geo('geo4', 'Volume of a Box', 5, 'vol', ['layer', 'mulAdd'], 'Volume is one layer of cubes times the layers.', 'Ask {name} how many cubes fill a box 3 by 2 by 2.'));
 lsDraft3('fop5', ls3Fop('fop5', 'Multiply Fractions', 5, 'mul', ['mixAdd', 'topOnly'], 'Part of a part: multiply the tops and the bottoms.', 'Ask {name}: "What is half of a half?"'));
 
-var TEACH35_VER='v178'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var TEACH35_VER='v179'; // last line: the whole file ran (checked by dataReady() before the app starts)

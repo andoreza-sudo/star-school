@@ -10,7 +10,7 @@ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 const KEY='starschool-v2';
 const BUILD='__VER__'; // ROOM: the build stamp for code in part files (tools/build.py writes VER over __VER__ in index.html only; the Grown-ups screens are in gen)
 const RELEASE='1.0.0'; // P6-05: the release number parents see (Home footer, Grown-ups > About). VER (tools/build.py) stays the build stamp and bumps every chunk.
-const LATEST=6; // newest save schema version = MIGRATIONS.length (ROADMAP section 9)
+const LATEST=7; // newest save schema version = MIGRATIONS.length (ROADMAP section 9)
 let S,SAVE_RAW=null,SAVE_CORRUPT=false,SAVE_FAILED=false;
 /* P5-10: the key of the child who is playing. Child 1 is KEY itself (unchanged since v30); 01-profiles.js picks another child's
    key at load. SAVE_OFF stops save() while the page reloads after a child was deleted. */
@@ -138,6 +138,24 @@ const MIGRATIONS=[null,
     }
     add.sort((a,b)=>b.n-a.n); // stable: equal n keep save order
     if(add.length)S.rev=rev.concat(add).slice(0,150);
+  },
+  /* 6: LS-STOP (v179). Lessons became stops on the map, and a stop with a lesson waits for its lesson (lsGate, 42b-lstop.js). Nothing a
+     child had open is taken away: every lesson stop this save could already play because of its own progress and has not passed yet is
+     kept open in S.lsOpen {nid: 1}. Its own progress: the stop before it passed; the stop before it a side stop (tracing) that was open
+     by the same progress (unlocked() opens the stop after an open side stop: abc3, abc4 after the tracing stops); it is the first stop
+     after a world that placement or Test out skipped; or a later stop of its world passed. Stops opened only by the grade setting (the
+     first stop of a world opened by the grade) are not progress and are not kept. The lesson stops are read from this frozen list (the
+     lessons of v179), never from LESSONS, so lessons added later cannot change what an old save means. Idempotent; never throws; removes
+     nothing. */
+  ()=>{
+    const L='pk_count1 shape1 pk_num1 sort1 pk_more1 pk_count2 pat1 pk_num2 sort2 pk_count3 tenf1 pk_more2 add4 tenf2 cnt4 tenf3 add1 miss1 sub1 add2 big1 cnt2 cmp1 miss2 sub2 pv1 add5 add6 add3 time1 big2 coins1 cmp2 time2 sub3 big3 mult1 coins2 sub4 time3 big4 mult2 cmp3 coins3 pv2 big5 pv3 sub5 time4 coins4 arr1 coins5 arr2 mfact1 mfact2 dfact1 mfact3 dfact2 mfact4 dfact3 dfact4 mbig1 frac2 round1 frac3 sub6 geo1 frac4 round2 time5 geo2 frac5 sub7 mfact5 pv4 mbig2 big6 dbig1 mbig3 sub8 dbig2 fact1 mbig4 big7 dbig3 fact2 round3 frac6 frac7 fop1 frac8 fop2 dec1 dec2 geo3 meas5 pv5 mbig5 dec3 pv6 dec4 round4 ooo1 dec5 fop3 geo4 fop5|abc1 abc2 abc3 syl1 abc4 sound1 sound3 pic1 sound2 build1 sent1 pic2 build2 sent2 sound4 pic3 build3 pic4 build4'.split('|');
+    const o=S.lsOpen&&typeof S.lsOpen=='object'&&!Array.isArray(S.lsOpen)?S.lsOpen:{};
+    // reached(p,i): open because of the child's own progress (see above); a run of side stops is followed back (bounded by i)
+    const reached=(p,i)=>{if(!(i>0))return false;const a=NODES[p][i-1],b=NODES[p][i];
+      return passed(p,i-1)||a.wi!==b.wi&&worldSkipped(p,a.wi)||!!(SK[a.sk]||{}).side&&unlocked(p,i-1)&&(reached(p,i-1)||stopBehind(p,i-1))};
+    ['math','read'].forEach((p,k)=>{const ids=new Set(L[k].split(' '));if(!NODES[p]||!S.maps||!S.maps[p])return;
+      NODES[p].forEach((n,i)=>{try{const id=nid(n);if(ids.has(id)&&!passed(p,i)&&unlocked(p,i)&&(reached(p,i)||stopBehind(p,i)))o[id]=1}catch(e){}})}); // never throws (a map that does not fit the save keeps nothing)
+    if(Object.keys(o).length)S.lsOpen=o;
   }
 ];
 /* Run once at load, from 42-paths.js (needs NODES, which no code before it reads). Backs up the old string first. */

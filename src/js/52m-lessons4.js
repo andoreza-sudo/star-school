@@ -270,7 +270,9 @@ function ls4Size(id, t, o) {
 }
 // patterns
 function ls4Pat(id, t, o) {
-  const D = ls4(id, t, 'math', -1, Object.assign({bugs: ['rep'], petSt: 2, claim: 'Next comes the {ans}!',
+  // fix179: the pet's turn is an A B A B A pattern (stage 1), where saying the last shape again (rep) is wrong; in stage 2's A B B A B
+  // the last shape IS what comes next, so the pet could never be wrong there
+  const D = ls4(id, t, 'math', -1, Object.assign({bugs: ['rep'], petSt: 1, claim: 'Next comes the {ans}!',
     fam: 'pat', slots: ls4Sl([], [], [], [], [])}, o));
   const mk = (r, k, abb) => {
     const sh = ls4Shuf(r, ['circle', 'square', 'triangle', 'star', 'diamond']), cs = PK.cols(), A = {s: sh[0], c: cs[0]}, B = {s: sh[1], c: cs[1]}, C = {s: sh[2], c: cs[2]}, E = {s: sh[3], c: cs[3]};

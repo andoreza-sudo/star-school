@@ -23,8 +23,9 @@ const PART_WARN=400000,PART_FAIL=800000; // A11b: bytes of each built part file 
 // P6-02: bytes LOADED AT START, index.html + the part files it loads at start + data.<VER>.js (back to 3.0 MB: the games parts load on demand);
 // and bytes PRECACHED, every built file (G-04a raised the old all-files total from 3.0 to 3.3 MB for games2; that limit now holds the precache; ES-AUDIO 3.4 MB)
 // G-01b raised it to 3.6 MB for the Block Builder journey; ES-AUDIO had raised it from 3.3 to 3.4 MB for the recordings' manifest in the data file (src/data/d-es-audio.js, 28 KB); the start-up limit is unchanged
-const TOTAL_WARN=2000000,TOTAL_FAIL=3000000,CACHE_FAIL=8000000; // R-03: 4.5 MB for the game updates (games load on demand; the start-up limit stays 3.0 MB).
-// TEACH-4 (2026-11-18): the owner raised the precache limit to 8 MB ("we can do 8 mb and be fine") for the lesson parts; the start-up limit stays 3.0 MB.
+const TOTAL_WARN=2000000,TOTAL_FAIL=3000000,CACHE_FAIL=15000000; // R-03: 4.5 MB for the game updates (games load on demand; the start-up limit stays 3.0 MB).
+// TEACH-4 (2026-11-18): the owner raised the precache limit to 8 MB, then allowed 20 MB for the whole offline app ("this app size can go 20mb"):
+// code 15 MB here + audio 4.5 MB (AUDIO_FAIL) stays under 20 MB; the start-up limit stays 3.0 MB.
 // ES-AUDIO: the recorded Spanish, audio/es/*.ogg. Not loaded at start (say() fetches a file the first time its line is said) but
 // precached by sw.js in its own cache: all files together under AUDIO_FAIL, each file under AUDIO_FILE_FAIL
 // EN-PRAISE: the recorded English encouragement (audio/en, six voices) shares that cache and that budget: 3.0 -> 4.5 MB (warn 2.5 -> 4.0)
@@ -1596,7 +1597,7 @@ run('review: migration 5 keeps progress and shrinks the save, exact rebuilds, 60
     const D0=20400; // a day number (2025-11-07); every scheduling call below passes its day
     const info={};
     // 1. migration 5 on every fixture: progress unchanged, same number of tricky items on home, no html left, smaller, idempotent
-    if(LATEST!==6||MIGRATIONS.length!==6)bad('P5-02 adds migration 5: LATEST should be 6, MIGRATIONS '+MIGRATIONS.length);
+    if(LATEST!==7||MIGRATIONS.length!==7)bad('P5-02 adds migration 5 (LS-STOP: and migration 6): LATEST should be 7, MIGRATIONS '+MIGRATIONS.length); // LS-STOP: migration 6 (lesson stops already reached stay open) raised LATEST from 6 to 7
     for(const name of ['tricky','midway','maxed','fresh','legacy-single-map','legacy-index-maps']){
       const raw=fx(name),before=JSON.parse(raw),empty=!Object.keys(before).length;
       if(empty){load(null);if(S.rev!==undefined)bad(name+': a new save got S.rev');continue}
@@ -10750,7 +10751,7 @@ run('Discover science K-2 P2-36: banks validate, tags, one right answer, hints, 
       if(JSON.parse(store[KEY]).maps.disc.sci_life1!==2)bad(w+'Discover stars did not save');
       if(S.v!==LATEST)bad(w+'S.v '+S.v);
     }
-    if(LATEST!==6)bad('this chunk adds no migration; LATEST is '+LATEST);
+    if(LATEST!==7)bad('this chunk adds no migration; LATEST is '+LATEST); // LS-STOP: migration 6 (lesson stops) raised LATEST from 6 to 7; this chunk still adds none
     // Home shows the card
     load(null);S.name='Kid';
     const h=hmPaths(),m=h.match(/<button class="hm-path game s-disc" data-p="disc">[\s\S]*?<\/button>/);
@@ -12071,7 +12072,7 @@ run('Discover 3-6, geography and civics P2-37: banks validate, grade and topic t
       if(!S.maps||typeof S.maps.disc!=='object'||Object.keys(S.maps.disc).length)bad(name+': S.maps.disc is not an empty map');
       checked++;
     }
-    if(LATEST!==6)bad('this chunk adds no migration; LATEST is '+LATEST);
+    if(LATEST!==7)bad('this chunk adds no migration; LATEST is '+LATEST); // LS-STOP: migration 6 (lesson stops) raised LATEST from 6 to 7; this chunk still adds none
     return {items,questions,pics,levels,checked,per};
   };
   const r=eval(js+K2OLD+';('+body.toString()+')()');
@@ -19995,7 +19996,8 @@ run('teach: lessons, beats, test-out, Check me, measure TEACH-1',()=>{
       const st=LS.make('tenf2',{seed:4,day:STRK.idx(today())});st.pre=[true,false];LS.beat(st,LSB.indexOf('show'));
       for(let k=0;k<2;k++){LS.answer(st,LS.cur(st).q.ans);LS.next(st)}
       const rec=LS.record(st),pr1=P('tenf');
-      if(getSt('math',i)!==2||!rec.newPass||!unlocked('math',i+1))bad.push('record: the stop is not passed '+getSt('math',i));
+      // fix179 (owner: practice is still required): a passed lesson opens its practice stop but does not pass it (was: 2 stars, newPass, the next stop open)
+      if(getSt('math',i)!==0||rec.newPass||!unlocked('math',i)||lsGate('math',i)||unlocked('math',i+1)||rec.next!==-1)bad.push('record: the lesson passed its practice stop, or did not open it '+getSt('math',i));
       if(pr1.t-(pr.t||0)!==2||pr1.c-(pr.c||0)!==2||S.stars<s0+2||S.coins<c0+2||day().r!==d0+1||!(pt().bank>b0))bad.push('record: '+JSON.stringify({pr:pr1,stars:S.stars-s0,coins:S.coins-c0,r:day().r-d0}));
       if(S.les)bad.push('record: S.les left after the end');
       setSt('math',i,3);const st2=LS.make('tenf2',{seed:4,day:1});st2.post=[true,false];st2.done=true;LS.record(st2);if(getSt('math',i)!==3)bad.push('record: a lesson lowered the stars');
@@ -20530,6 +20532,9 @@ run('teach: grade 3-5 lessons run, Check me, your problem, word tiles TEACH-3',(
           else if(it.steps&&JSON.stringify(it.q.sl)!==JSON.stringify(D.fix.sl(v)))bad.push(id+': the pet did not work the child\\'s numbers '+it.q.label+' '+v)}
         if(!it||it.m!=='judge'){bad.push(id+': no judge item');continue}
         petN++;if(it.petOk)petOk++;if(D.fix){fixN++;if(it.steps)steps++}
+        // fix179: every pet turn: the same lesson's extra Check me turn (st.chkN) always has the pet wrong, with a real slip ("your problem" too)
+        {const y=LS.make(id,{seed:s,day:100,proof:true});y.chkN=1;LS.beat(y,LSB.indexOf('chk'));const f=LS.cur(y);
+          if(!f||f.m!=='judge'||f.petOk||(f.steps?f.code==null:lsOk(f.q,String(f.pv))))bad.push(id+': the pet is not wrong in an extra Check me turn '+(f&&[f.m,f.petOk,f.pv]))}
         if(!it.lines.join(' ').includes(lsSayV(it.q,it.pv)))bad.push(id+': the pet does not say its answer '+it.pv+' '+it.lines);
         if(it.steps&&it.pw&&/data-v=/.test(it.pw))bad.push(id+': the pet steps can be tapped before the child judges');
         if(!it.petOk){wrong++;
@@ -20698,6 +20703,9 @@ run('teach: reading and Pre-K lessons run, Check me, the pet reads cat as cap TE
         if(!it||it.m!=='judge'){bad.push(id+': no judge item');continue}
         if(!/Check me/.test(it.lines.join(' ')))bad.push(id+': the pet turn is not announced: '+it.lines);
         petN++;if(it.petOk)petOk++;
+        // fix179: every pet turn: the forced-wrong turn (an extra Check me turn, st.chkN) gives an answer that is not the right one (pat1's never was)
+        {const y=LS.make(id,{seed:s,day:100,proof:true});y.chkN=1;LS.beat(y,LSB.indexOf('chk'));const f=LS.cur(y);
+          if(!f||f.petOk||lsOk(f.q,String(f.pv))||String(f.pv)===String(f.q.ans))bad.push(id+': the pet cannot be wrong in its turn '+(f&&[f.pv,f.q.ans]))}
         if(!it.lines.join(' ').includes(lsSayV(it.q,it.pv)))bad.push(id+': the pet does not say its answer '+it.pv+' '+it.lines);
         if(!it.pw||/id="ls\\d/.test(it.pw)||/undefined|NaN/.test(it.pw))bad.push(id+': the pet\\'s work on the card '+String(it.pw).slice(0,80));
         if(!it.petOk){wrong++;if(lsOk(it.q,it.pv))bad.push(id+': the pet is called wrong but is right '+it.pv);if(!lsFits4(it.q,it.pv))bad.push(id+': the pet answer cannot be shown '+it.pv);
@@ -20744,7 +20752,8 @@ run('teach: the reading and Pre-K planner, the stop record, the notebook TEACH-4
     // 3. the stop record of a reading lesson is the reading map's: its stars, the next stop, the end card's map
     {loadSave(null);S.grade=0;const i=at('read','sound3');for(let j=0;j<i;j++)setSt('read',j,2);const st=LS.make('sound3',{seed:4,day:STRK.idx(today())});st.pre=[true,false];
       LS.beat(st,LSB.indexOf('show'));for(let k=0;k<2;k++){LS.answer(st,lsRight(LS.cur(st).q));LS.next(st)}
-      const rec=LS.record(st);if(getSt('read',i)!==2||!rec.newPass||!unlocked('read',i+1)||S.maps.math.sound3)bad.push('record: a reading lesson '+JSON.stringify({st:getSt('read',i),rec:rec.newPass}))}
+      // fix179 (owner: practice is still required): the reading stop is opened by the lesson, not passed (was: 2 stars, newPass, the next stop open)
+      const rec=LS.record(st);if(getSt('read',i)!==0||rec.newPass||!unlocked('read',i)||lsGate('read',i)||unlocked('read',i+1)||!(S.know.sound3.s>=2)||S.maps.math.sound3)bad.push('record: a reading lesson '+JSON.stringify({st:getSt('read',i),rec:rec.newPass}))}
     // 4. the notebook and the report card take reading pages and rows
     {loadSave(null);S.name='Mia';S.know={};for(const id of ['tenf2','sound1','abc1'])Object.assign(lsKnow(id),{s:2,n:1});
       const pg=NB.pages().map(x=>x.id).join();if(pg!=='tenf2,abc1,sound1')bad.push('notebook pages: '+pg);
@@ -20822,6 +20831,250 @@ run('teach: simulated children on reading and Pre-K lessons TEACH-4',()=>{
 run('smoke shards: every smoke step in exactly one shard',()=>{
   const SH=require('./lib/smoke-shards'),c=SH.check(8);
   return{problems:c.problems,note:c.ids.length+' segments'+(c.unmeasured.length?', '+c.unmeasured.length+' not measured yet (counted by length)':'')};
+});
+
+// ---- LS-STOP: lessons are required, paid stops on the map (owner, 2026-11-18; src/js/42b-lstop.js, 58-playtime.js lsPay, 52-lesson.js) ----
+run('lesson stops: the list, the gate, lessons off, the migration LS-STOP',()=>{
+  const p=[],R=teachApp(),fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  const r=R(`(()=>{const bad=[],at=(p,id)=>NODES[p].findIndex(n=>nid(n)===id);
+    // 1. LS_STOPS (in index.html, so the map draws lesson stops before a lesson part loads) is exactly the live lessons, by map
+    for(const p of['math','read']){const want=LS_IDS.filter(id=>(LESSONS[id].p||'math')==p).sort().join(),have=[...LS_STOPS[p]].sort().join();
+      if(want!==have)bad.push('LS_STOPS.'+p+' is not the live lessons of that map: '+have.length+' vs '+want.length)}
+    // 2. the gate, as a Kindergartner: Make Ten reached (every stop before it passed) waits for its lesson; learned, it opens
+    loadSave(null);migrate();S.grade=0;const i=at('math','tenf2');for(let j=0;j<i;j++)setSt('math',j,2);
+    if(!lsStopAt('math',i)||!unlocked('math',i)||!lsGate('math',i))bad.push('Make Ten reached and its lesson not done is not locked behind the lesson');
+    if(lsGate('math',i+1)||unlocked('math',i+1))bad.push('the stop after it is open or gated before Make Ten is passed');
+    lsKnow('tenf2').s=1;if(!lsGate('math',i))bad.push('a lesson started but not passed opened the stop');
+    S.know.tenf2.s=2;if(lsGate('math',i))bad.push('Show passed did not open the stop');
+    S.know={};setSt('math',i,1);if(lsGate('math',i))bad.push('a passed stop is locked');setSt('math',i,0);
+    S.unlockAll=true;if(lsGate('math',i))bad.push('Unlock every stop does not open it');S.unlockAll=false;
+    S.skip={[NODES.math[i].wid]:1};if(lsGate('math',i))bad.push('a skipped world (placement or Test out) is locked');S.skip={};
+    S.lsOpen={tenf2:1};if(lsGate('math',i))bad.push('a stop kept open by the migration is locked');delete S.lsOpen;
+    setSt('math',i+1,2);if(lsGate('math',i))bad.push('a stop with a later stop passed is locked');setSt('math',i+1,0);
+    // 3. lessons off: no lesson stops, no locks, anywhere
+    TEACH.off=true;const offAny=['math','read'].some(p=>NODES[p].some((n,k)=>lsStopAt(p,k)||lsGate(p,k)));TEACH.off=false;
+    if(offAny)bad.push('TEACH.off still has lesson stops or locks');
+    // 4. the band: a Kindergartner has no Pre-K or grade 3-5 lesson stops; a Pre-K child has Tiny Town's; a 3rd grader the grade 3-5 ones only;
+    //    every map has its lesson stops for a child of their grade (all grades)
+    if(lsStopAt('math',at('math','pk_count1'))||lsStopAt('math',at('math','mfact1'))||!lsStopAt('read',at('read','sound1')))bad.push('the band of a Kindergartner');
+    S.grade=-1;if(!lsStopAt('math',at('math','pk_count1'))||!lsStopAt('read',at('read','abc1')))bad.push('a Pre-K child has no Pre-K lesson stops');
+    S.grade=3;if(lsStopAt('math',i)||!lsStopAt('math',at('math','mfact1'))||lsStopAt('read',at('read','sound1')))bad.push('the band of a 3rd grader');
+    S.grade=6;if(!lsStopAt('math',at('math','fop5')))bad.push('a 6th grader has no lesson stops');
+    if(JSON.stringify(lsParts('math',at('math','mfact1')))!=='["teach","teach12","teach35"]'||JSON.stringify(lsParts('read',at('read','sound1')))!=='["teach","teach12","teachrd"]'
+      ||JSON.stringify(lsParts('math',at('math','pk_count1')))!=='["teach","teach12","teachrd"]'||JSON.stringify(lsParts('math',i))!=='["teach","teach12"]')bad.push('the parts a lesson stop loads');
+    // 5. the map's lesson stop: its button, its ticket, its label; locked before the path reaches it
+    S.grade=0;const h=lsNodeHTML('math',i,100,200,380);
+    if(!/class="btn lsn s-math cur"/.test(h)||!/aria-label="Learn Make Ten with [^"]*, earns 5 minutes of game time"/.test(h)||!/lsn-tk[^>]*><svg[\\s\\S]*<span>\\+5 min<\\/span>/.test(h)||!/Learn with /.test(h))bad.push('the lesson stop: '+h.slice(0,300));
+    const h2=lsNodeHTML('math',i+3,100,200,380);if(!/btn lsn s-math lock/.test(h2)||/lsn-tk/.test(h2))bad.push('a lesson stop the path has not reached: '+h2.slice(0,200));
+    S.grade=4;if(!/Challenge/.test(lsNodeHTML('math',at('math','mbig1'),100,200,380)))bad.push('grade 3-6: the lesson stop is not a challenge');S.grade=0;
+    return bad})()`);
+  p.push(...r);
+  // 6. the migration (save v6 -> v7): a save with passed stops keeps every stop it could play; the frozen list is the lessons of v179
+  const m=R(`(()=>{const bad=[],at=id=>NODES.math.findIndex(n=>nid(n)===id);
+    loadSave(${JSON.stringify(fx('midway'))});for(let n=1;n<6;n++)MIGRATIONS[n]();const before=JSON.stringify(S.maps);loadSave(${JSON.stringify(fx('midway'))});migrate();
+    if(S.v!==LATEST||LATEST!==7)bad.push('v '+S.v);
+    {const B=JSON.parse(before);for(const p in B)for(const k in B[p])if(S.maps[p][k]!==B[p][k])bad.push('the migration changed the map progress: '+p+' '+k)}
+    const open0=[];for(const p of['math','read'])NODES[p].forEach((n,k)=>{if(passed(p,k)&&(!unlocked(p,k)||lsGate(p,k)))bad.push('a passed stop is locked: '+nid(n));if(lsGate(p,k))open0.push(nid(n))});
+    if(!S.lsOpen||!S.lsOpen.cnt2||!S.lsOpen.sound3)bad.push('the stops the child had reached were not kept open: '+JSON.stringify(S.lsOpen));
+    const c=curNode('math');if(lsGate('math',c))bad.push('the stop the map opens on is locked after the migration: '+nid(NODES.math[c]));
+    const keep=JSON.stringify(S.lsOpen);MIGRATIONS[6]();if(JSON.stringify(S.lsOpen)!==keep)bad.push('migration 6 is not idempotent');
+    // the next stop after the kept one still waits for its lesson once the kept one is passed
+    const k=at('cnt2');setSt('math',k,2);if(!lsGate('math',k+1)&&lsStopAt('math',k+1))bad.push('the stop after the kept one does not wait for its lesson');
+    loadSave(null);migrate();if(S.lsOpen)bad.push('a new save has kept stops');
+    return bad})()`);
+  p.push(...m);
+  const src=fs.readFileSync(path.join(SRC,'js','00-core.js'),'utf8'),fl=(src.match(/LS-STOP \(v179\)[\s\S]*?const L='([^']+)'/)||[])[1]||'';
+  const live=R(`JSON.stringify([LS_IDS.filter(id=>(LESSONS[id].p||'math')=='math').sort(),LS_IDS.filter(id=>LESSONS[id].p=='read').sort()])`);
+  if(JSON.stringify(fl.split('|').map(x=>x.split(' ').sort()))!==live)p.push('migration 6 does not freeze the lessons of v179');
+  const idx=fs.readFileSync(path.join(ROOT,'index.html'),'utf8');
+  if(!/const LS_STOPS = /.test(idx)||!/\.btn\.lsn/.test(idx))p.push('the lesson stops are not in index.html');
+  return{problems:p,note:'LS_STOPS = the live lessons; gate, exemptions, lessons off, bands, the map stop; migration keeps reached stops'};
+});
+run('lesson stops: the pay, its settings, once a day LS-STOP',()=>{
+  const p=[],R=teachApp();
+  const r=R(`(()=>{const bad=[],eq=(a,b,m)=>{if(JSON.stringify(a)!==JSON.stringify(b))bad.push(m+': '+JSON.stringify(a)+' (want '+JSON.stringify(b)+')')};
+    loadSave(null);migrate();
+    eq(lsPayCfg(),{ls1:5,ls2:2,ls3:1,lsT:1},'defaults');
+    S.ptCfg={ls1:10,ls2:0,ls3:3,lsT:2};eq(lsPayCfg(),{ls1:10,ls2:0,ls3:3,lsT:2},'grown-up settings');
+    S.ptCfg={ls1:-1,ls2:'x',ls3:11,lsT:null};eq(lsPayCfg(),{ls1:5,ls2:2,ls3:1,lsT:1},'damaged settings');delete S.ptCfg;
+    eq(LS_PAY_OPT,[0,1,2,3,5,10],'the choices');
+    // passes: first 5, second 2, later 1 at most once a day; the price shown is the price paid
+    const seq=[];for(let k=0;k<5;k++){const t=lsPriceTag('tenf2'),x=lsPay('tenf2',true,true,false);seq.push([t,x.min,x.kind])}
+    eq(seq,[['+5 min',5,'pass'],['+2 min',2,'pass'],['+1 min',1,'pass'],['done today',0,'pass'],['done today',0,'pass']],'passes');
+    S.lsPay.tenf2.d3='2000-1-1';eq([lsPriceTag('tenf2'),lsPay('tenf2',true,true).sec],['+1 min',60],'a later pass on another day');
+    // guessing: a pass not proven pays nothing and is not a pass
+    eq([lsPay('add4',true,false,true).sec,lsPay('add4',true,false,true).kind,lsPriceTag('add4')],[0,'guess','+5 min'],'a pass not proven');
+    // a good try: 1 min, once a day, only before the first pass, never more than the first pass in all; the first pass still pays 5
+    eq([lsPay('miss1',false,false,false).sec,lsPay('miss1',false,true,false).sec],[0,0],'a failed try with no effort');
+    const tries=[];for(let d=0;d<7;d++){tries.push(lsPay('miss1',false,false,true).min,lsPay('miss1',false,false,true).min);S.lsPay.miss1.td='2000-1-'+(d+1)}
+    eq(tries,[1,0,1,0,1,0,1,0,1,0,0,0,0,0],'good tries over 7 days (cap 5)');
+    eq(lsPay('miss1',true,true).min,5,'the first pass after good tries');
+    S.lsPay.miss1.td='2000-1-1';eq(lsPay('miss1',false,false,true).min,0,'a good try after a pass');
+    S.ptCfg={ls1:5,lsT:3};const t3=[lsPay('sub1',false,false,true).min];S.lsPay.sub1.td='x';t3.push(lsPay('sub1',false,false,true).min);eq(t3,[3,0],'good tries never pass the first pass');
+    S.ptCfg={ls1:10,ls2:4,ls3:0,lsT:0};eq([lsPay('cnt4',true,true).min,lsPay('cnt4',true,true).min,lsPriceTag('cnt4'),lsPay('cnt4',true,true).min,lsPay('cmp1',false,false,true).min],[10,4,'',0,0],'set amounts');
+    S.ptCfg={ls1:0};eq([lsPriceTag('add1'),lsPay('add1',true,true).sec],['',0],'first pass set to none');delete S.ptCfg;
+    // into the bank like other earned time: the daily limit and learn first still hold; lesson time counts as learning
+    loadSave(null);migrate();S.grade=0;const i=NODES.math.findIndex(n=>nid(n)==='tenf2');for(let j=0;j<i;j++)setSt('math',j,2);
+    const b0=pt().bank,st=LS.make('tenf2',{seed:4,day:STRK.idx(today()),proof:true});st.caught=true;st.pre=[];LS.beat(st,LSB.indexOf('show'));
+    for(let k=0;k<2;k++){LS.answer(st,LS.cur(st).q.ans);LS.next(st)}
+    const rec=LS.record(st);eq([rec.PT.sec,pt().bank-b0,rec.bank1-rec.bank0,rec.PT.lines[0]],[300,300,300,[300,'Lesson learned']],'a lesson pays into the bank');
+    if(RW.ptIcon('Lesson learned')!=='doc'||RW.ptIcon('Good try on the lesson')!=='heart')bad.push('the end card icons of the lesson lines');
+    const st2=LS.make('tenf2',{seed:5,day:STRK.idx(today()),proof:true});st2.caught=true;LS.beat(st2,LSB.indexOf('show'));for(let k=0;k<2;k++){LS.answer(st2,LS.cur(st2).q.ans);LS.next(st2)}
+    eq(LS.record(st2).PT.sec,120,'the same lesson again pays the second pass');
+    S.ptCfg={max:30,need:10};pt().used=30*60;if(ptLeft()!==0||ptState().why=='ok')bad.push('the daily limit does not hold after a lesson paid');pt().used=0;
+    const g0=ptGate().done;LS.st=st2;LS.t0=Date.now()-40000;LS.tick();LS.st=null;if(ptGate().done-g0!==40)bad.push('lesson time is not learning time: '+(ptGate().done-g0));
+    if(!ptEarnList().some(x=>/lesson/.test(x[1])&&x[2]=='+5 min'))bad.push('How to earn game time does not list lessons');
+    return bad})()`);
+  p.push(...r);
+  const gw=fs.readFileSync(path.join(SRC,'js','80-grown.js'),'utf8');
+  for(const k of['First pass','Second pass','Later passes','Good try, not passed'])if(!gw.includes("'"+k))p.push('Grown-ups Game time has no setting '+k);
+  if(!/GW\.seg\(k,LS_PAY_OPT,lsPayCfg\(\)\[k\]/.test(gw)||!/ptCfg\(\)\[k\]=\+b\.dataset\[k\.toLowerCase\(\)\]/.test(gw))p.push('the lesson pay settings are not wired');
+  return{problems:p,note:'5 / 2 / 1 a day; a good try 1 a day up to the first pass; guessing 0; settings 0-10; bank, limit, learn first'};
+});
+run('lesson stops: the skip, the proof, no pay for a failed Show LS-STOP',()=>{
+  const p=[],R=teachApp();
+  const r=R(`(()=>{const K=${TEACH_KIDS},bad=[];loadSave(null);migrate();S.grade=0;
+    // 1. no lesson can be skipped on two-choice items: the show-me items (and Show) are never two-choice
+    for(const id of LS_IDS){S.grade=LESSONS[id].g!=null?LESSONS[id].g:0;for(let s=1;s<25;s++){const q=LESSONS[id].q(LESSONS[id].test,mulberry32(s));if(twoWay(q)){bad.push(id+': a two-choice show-me item');break}}}
+    S.grade=0;
+    // 2. "Let's learn": no show-me items, straight into teaching
+    {const st=LS.make('tenf2',{seed:3,day:100,learn:1,proof:true});if(st.pre.length||LSB[st.b]=='pre'||st.to)bad.push('learn: '+LSB[st.b])}
+    // 3. "I already know this!": both right -> Show (and paid on passing); one miss -> straight into the lesson, no reveal, no penalty
+    {const st=LS.make('tenf2',{seed:3,day:100,know:1,proof:true});for(let k=0;k<2;k++){LS.answer(st,LS.cur(st).q.ans);LS.next(st)}
+      if(!st.to||LSB[st.b]!=='show')bad.push('know, both right: '+LSB[st.b])}
+    {const st=LS.make('tenf2',{seed:3,day:100,know:1,proof:true}),q=LS.cur(st).q,res=LS.answer(st,q.ans=='0'?'1':'0');LS.next(st);
+      if(!res.slide||res.act!=='next'||res.lines[0]!==LS_TONE2.little.slide||LSB[st.b]=='pre'||st.to||st.pre.length!==1)bad.push('know, one miss: '+JSON.stringify([res,LSB[st.b],st.pre]))}
+    // 4. Check me goes on until the pet's mistake is found (at most two more turns, the pet always wrong in them)
+    {let st,s=1;for(;s<200;s++){st=LS.make('tenf2',{seed:s,day:100,proof:true});st.pre=[1,0];LS.beat(st,LSB.indexOf('chk'));if(LS.cur(st).petOk)break}
+      LS.answer(st,'1');LS.next(st);if(LSB[st.b]!=='chk'||LS.cur(st).petOk||LS.cur(st).lines[0]!==LS_TONE2.little.findIt)bad.push('a right pet marked right: no turn with a mistake to find');
+      LS.answer(st,'0');if(!st.caught)bad.push('the mistake found is not counted')}
+    {let ok=0;for(let s=1;s<60;s++){const st=LS.make('tenf2',{seed:s,day:100,proof:true});st.pre=[1,0];LS.beat(st,LSB.indexOf('chk'));let n=0;
+      while(LSB[st.b]=='chk'&&n++<30){const it=LS.cur(st);LS.answer(st,it.m=='judge'?'1':lsRight(it.q));LS.next(st)}if(!st.caught&&st.chkN==2&&LSB[st.b]=='show')ok++}
+      if(ok<55)bad.push('a child who always says Right is not moved on after two more turns: '+ok+' of 59')}
+    // 5. a failed Show pays no pass (a good try at most), a guessed pass pays nothing, a proven pass pays; repeating pays less
+    const day=STRK.idx(today()),fin=(id,o,post,f)=>{const st=LS.make(id,Object.assign({seed:7,day},o));if(f)f(st);LS.beat(st,LSB.indexOf('show'));
+      for(const ok of post){const q=LS.cur(st).q;LS.answer(st,ok?q.ans:String(+q.ans+1));LS.next(st)}while(!st.done){const it=LS.cur(st);LS.answer(st,lsRight(it.q));LS.next(st)}return LS.record(st)};
+    const a=fin('add4',{proof:true},[true,false],st=>{st.caught=true});if(a.pass||a.PT.pay.kind!=='try'||a.PT.sec!==60)bad.push('a failed Show after a good try: '+JSON.stringify(a.PT));
+    const b=fin('add4',{proof:true},[false,false],st=>{st.caught=true});if(b.PT.sec!==0)bad.push('a second failed Show the same day pays');
+    const c=fin('add1',{proof:true},[true,false],st=>{st.caught=true;st.rush=3});if(c.PT.sec!==0)bad.push('a rushed failed Show pays');
+    const d=fin('sub1',{proof:true},[true,true]);if(!d.pass||d.PT.sec!==0||d.PT.pay.kind!=='guess')bad.push('a pass without finding the mistake pays: '+JSON.stringify(d.PT));
+    const e=fin('add4',{proof:true},[true,true],st=>{st.caught=true});if(e.PT.sec!==300||e.PT.pay.kind!=='pass')bad.push('the first pass after a good try: '+JSON.stringify(e.PT));
+    const f=fin('miss1',{proof:true,know:1},[true,true],st=>{st.pre=[true,true];st.to=true});if(f.PT.sec!==300)bad.push('a proven skip then Show passed does not pay: '+f.PT.sec);
+    // 6. simulated children through the screen's own way in ("I already know this!", proof): guessing never pays, knowing does
+    const pay={};for(const [nm,p0] of [['guesser',0],['knower',.95]]){let n=0,paid=0;
+      for(const id of LS_IDS.slice(0,40))for(let s=0;s<6;s++){S.grade=LESSONS[id].g!=null?LESSONS[id].g:0;S.know={};S.lsPay={};const c=K.kid(p0,0,mulberry32(900+s*13+id.length));
+        const {st}=K.run(id,c,s*17+3,{know:1,proof:true});n++;if(LS.record(st).PT.pay.kind=='pass')paid++}
+      pay[nm]=paid/n}
+    S.grade=0;if(pay.guesser>.05)bad.push('a guesser is paid for '+Math.round(pay.guesser*100)+'% of lessons');if(pay.knower<.75)bad.push('a knower is paid for '+Math.round(pay.knower*100)+'%');
+    // 7. the pet's lines for lesson stops keep each age's rules, and every age has the same lines
+    for(const a in LS_TONE2){if(Object.keys(LS_TONE2[a]).join()!==Object.keys(LS_TONE2.little).join())bad.push(a+': not the same lines');
+      for(const v of Object.values(LS_TONE2[a])){const t=typeof v=="function"?v("Mia"):v,w=lsToneBad(t,a);if(w.length)bad.push(a+': '+t+' '+w)}}
+    return bad.concat(['paid '+JSON.stringify(pay)])})()`);
+  const note=r.pop();p.push(...r);
+  return{problems:p,note:'no two-choice show-me items; learn and know ways in; Check me until a mistake is found; failed, guessed, proven pays; '+note};
+});
+
+// fix179 (review of v179): the pet can be wrong in every lesson, the extra Check me turns always are; a lesson resumed draws fresh
+// one-try items (no pass by memory); a lesson part that does not load opens the practice stop; active lesson time only; the end card's
+// reason; migration 6 keeps stops open by side stops and skipped worlds; the copy
+run('lesson stops: every pet turn, the extra turns, resume, a part that does not load, practice still required fix179',()=>{
+  const p=[],R=teachApp(),FS=JSON.stringify(['sub6','sub7','mbig2','mbig3','mbig4','mbig5','dbig1','dbig2','dbig3','fop1','ooo1']);
+  const r=R(`(()=>{const K=${TEACH_KIDS},bad=[],cnt={forced:0,extra:0,mine:0,fs:{}};loadSave(null);migrate();S.grade=0;
+    const gr=id=>LESSONS[id].g!=null?LESSONS[id].g:0,wrongPet=it=>it&&it.m=='judge'&&!it.petOk&&(it.steps?it.code!=null:!lsOk(it.q,String(it.pv))&&String(it.pv)!==String(it.q.ans));
+    // 1. every pet turn: in EVERY lesson, a turn where the pet must be wrong (an extra Check me turn, st.chkN) is the pet's turn, and its
+    //    answer is not the right one (pat1 had no wrong answer to give; a pet that cannot be wrong makes "find my mistake" impossible)
+    for(const id of LS_IDS){S.grade=gr(id);
+      for(let s=1;s<=30;s++){S.know={};const st=LS.make(id,{seed:s,day:100,proof:true});st.pre=[1,0];st.chkN=1;LS.beat(st,LSB.indexOf('chk'));const it=LS.cur(st);cnt.forced++;
+        if(!wrongPet(it)){bad.push(id+' seed '+s+': the pet is not wrong in a turn where it must be ('+(it&&[it.m,it.petOk,it.pv,it.q&&it.q.ans])+')');break}}
+      // and in its normal turn it is wrong most of the time (pat1: never was)
+      let w=0;for(let s=1;s<=40;s++){S.know={};const st=LS.make(id,{seed:s,day:100});st.pre=[1,0];LS.beat(st,LSB.indexOf('chk'));let it=LS.cur(st);
+        if(it&&it.m=='open'){it.on(st,lsRight(it.q));it=st.items[st.i+1]}if(wrongPet(it))w++}
+      if(w<20)bad.push(id+': the pet is wrong in only '+w+' of 40 Check me turns')}
+    // 2. the extra turns through the state machine: a child who always says "Right" gets two more turns, the pet wrong in each, and
+    //    "find my mistake" is never said over a right pet (grades 3-5 "your problem" lessons included: the pet was right there)
+    for(const id of LS_IDS){S.grade=gr(id);
+      for(let s=1;s<=12;s++){S.know={};const st=LS.make(id,{seed:s,day:100,proof:true});st.pre=[1,0];LS.beat(st,LSB.indexOf('chk'));let n=0;
+        while(LSB[st.b]=='chk'&&n++<40){const it=LS.cur(st);
+          if(it.m=='open'&&it.mine){cnt.mine++;if(st.chkN)bad.push(id+': "your problem" in an extra turn')}
+          if(it.m=='judge'&&st.chkN){cnt.extra++;if(${FS}.includes(id))cnt.fs[id]=(cnt.fs[id]||0)+1;if(!wrongPet(it))bad.push(id+' seed '+s+': an extra turn with the pet right')}
+          if((it.lines||[]).some(t=>Object.values(LS_TONE2).some(a=>a.findIt===t))&&!wrongPet(it))bad.push(id+': "find my mistake" over a right pet');
+          const v=it.m=='judge'?'1':it.m=='say'?'ok':lsRight(it.q),res=LS.answer(st,v);if(res.act!='retry')LS.next(st)}
+        if(st.caught||LSB[st.b]!=='show'||st.chkN!==2)bad.push(id+' seed '+s+': not moved on after two extra turns ('+LSB[st.b]+' '+st.chkN+')')}}
+    for(const id of ${FS})if(!(cnt.fs[id]>=12))bad.push(id+': too few extra turns seen '+cnt.fs[id]);
+    S.grade=0;
+    // 3. resume: Show answered once, left during its line: the answer is kept, the next Show item is fresh (another seed), and it is never
+    //    the item just answered; Show answered twice and left: straight on (win), never Show again
+    {let diff=0;for(let s=1;s<=20;s++){S.know={};delete S.les;const st=LS.make('tenf2',{seed:s,day:100,proof:true});st.caught=true;LS.beat(st,LSB.indexOf('show'));
+      const seen=st.items.map(x=>x.q.label),q=LS.cur(st).q;LS.answer(st,q.ans=='0'?'1':String(+q.ans+1));LS.keep(st);
+      const les=JSON.parse(JSON.stringify(S.les));if(JSON.stringify(les.post)!=='[false]'||les.b!==LSB.indexOf('show')||!les.c){bad.push('Show answer not kept: '+JSON.stringify(les));break}
+      const o=LS.resume(les,100),st2=LS.make('tenf2',o);if(LSB[st2.b]!=='show'||st2.items.length!==1||JSON.stringify(st2.post)!=='[false]'||st2.seed===st.seed||!st2.caught){bad.push('Show resumed: '+[LSB[st2.b],st2.items.length,st2.post,st2.seed===st.seed]);break}
+      if(!seen.includes(LS.cur(st2).q.label))diff++;
+      LS.answer(st2,LS.cur(st2).q.ans);LS.keep(st2);const st3=LS.make('tenf2',LS.resume(JSON.parse(JSON.stringify(S.les)),100));
+      if(LSB[st3.b]!=='win'||JSON.stringify(st3.post)!=='[false,true]')bad.push('Show answered and left: resumed at '+LSB[st3.b]+' '+st3.post)}
+      if(diff<16)bad.push('a resumed Show asks an item already seen in '+(20-diff)+' of 20 lessons')}
+    // 4. resume: the test-out missed after "I already know this!" and left during the slide line goes on into the lesson; one right
+    //    show-me item and left: the other one is fresh; the teaching beats keep their seed (the child loses nothing); Check me's extra turn
+    {S.know={};const st=LS.make('tenf2',{seed:9,day:100,know:1,proof:true}),q=LS.cur(st).q;LS.answer(st,q.ans=='0'?'1':'0');LS.keep(st);
+      const st2=LS.make('tenf2',LS.resume(JSON.parse(JSON.stringify(S.les)),100));if(LSB[st2.b]=='pre'||st2.to||JSON.stringify(st2.pre)!=='[false]')bad.push('left during the slide line: resumed at '+LSB[st2.b]+' '+st2.pre)}
+    {S.know={};const st=LS.make('tenf2',{seed:9,day:100,know:1,proof:true}),l0=LS.cur(st).q.label;LS.answer(st,LS.cur(st).q.ans);LS.keep(st);
+      const st2=LS.make('tenf2',LS.resume(JSON.parse(JSON.stringify(S.les)),100));if(LSB[st2.b]!=='pre'||st2.items.length!==1||st2.seed===st.seed||JSON.stringify(st2.pre)!=='[true]')bad.push('a show-me item answered and left: '+[LSB[st2.b],st2.items.length,st2.pre])}
+    {S.know={};const st=LS.make('tenf2',{seed:9,day:100,learn:1,proof:true});LS.beat(st,LSB.indexOf('tog'));LS.keep(st);const o=LS.resume(S.les,100);
+      if(o.seed!==st.seed||LSB[LS.make('tenf2',o).b]!=='tog')bad.push('a teaching beat resumed with another seed or beat')}
+    {S.know={};const st=LS.make('tenf2',{seed:9,day:100,proof:true});st.pre=[1,0];st.chkN=1;LS.beat(st,LSB.indexOf('chk'));LS.keep(st);
+      const st2=LS.make('tenf2',LS.resume(JSON.parse(JSON.stringify(S.les)),100));if(st2.chkN!==1||!wrongPet(LS.cur(st2)))bad.push('Check me resumed in an extra turn: '+st2.chkN)}
+    delete S.les;
+    // 5. lesson time: only active time (from the screen to the answer, at most 60 s, never while hidden); a screen left idle counts nothing
+    {const st=LS.make('tenf2',{seed:4,day:100}),t=Date.now(),sec=()=>ACT.sum(today(),1).sec;LS.st=st;
+      let a=sec();LS.screen(t-200000);LS.tick(t);if(sec()-a!==60)bad.push('a screen counts more than 60 s: '+(sec()-a));
+      a=sec();LS.screen(t-50000);LS.vis(true,t-40000);LS.vis(false,t-10000);LS.tick(t);if(sec()-a!==20)bad.push('hidden time counts: '+(sec()-a));
+      a=sec();LS.screen(t-50000);LS.screen(t);LS.t0=0;LS.tick(t+1000);if(sec()-a!==0)bad.push('an idle screen counts: '+(sec()-a));LS.st=null}
+    // 6. the end card says why the lesson paid nothing even when the daily mission's minute was paid
+    if(LS.why('tenf2',{sec:0,kind:'guess'})!==LS_TONE2.little.noProof||LS.why('tenf2',{sec:300,kind:'pass'})!=='')bad.push('LS.why');
+    // 7. owner (2026-11-18): practice is still required. A passed lesson opens its practice stop but does not pass it; the next stop stays
+    //    locked until the practice round is passed; a stop an old save had passed keeps its stars (a lesson never lowers them)
+    {loadSave(null);migrate();S.grade=0;const i=NODES.math.findIndex(n=>nid(n)==='tenf2');for(let j=0;j<i;j++)setSt('math',j,2);
+      if(!lsGate('math',i))bad.push('practice: not gated before the lesson');
+      const st=LS.make('tenf2',{seed:4,day:STRK.idx(today()),proof:true});st.caught=true;LS.beat(st,LSB.indexOf('show'));for(let k=0;k<2;k++){LS.answer(st,LS.cur(st).q.ans);LS.next(st)}
+      const rec=LS.record(st);if(!rec.pass||!(S.know.tenf2.s>=2))bad.push('practice: the lesson was not passed and recorded in S.know');
+      if(getSt('math',i)||passed('math',i)||rec.newPass||rec.wDone)bad.push('practice: a passed lesson passed its practice stop ('+getSt('math',i)+')');
+      if(!unlocked('math',i)||lsGate('math',i))bad.push('practice: the practice stop is not open after the lesson');
+      if(unlocked('math',i+1)||rec.next!==-1)bad.push('practice: the next stop opened on the lesson alone');
+      setSt('math',i,2);if(!unlocked('math',i+1))bad.push('practice: the practice round passed does not open the next stop');
+      setSt('math',i,3);const st2=LS.make('tenf2',{seed:5,day:STRK.idx(today()),proof:true});st2.caught=true;LS.beat(st2,LSB.indexOf('show'));for(let k=0;k<2;k++){LS.answer(st2,LS.cur(st2).q.ans);LS.next(st2)}
+      LS.record(st2);if(getSt('math',i)!==3)bad.push('practice: a lesson on a passed stop changed its stars '+getSt('math',i))}
+    return bad.concat([JSON.stringify(cnt)])})()`);
+  const note=r.pop();p.push(...r);
+  const src=fs.readFileSync(path.join(SRC,'js','52-lesson.js'),'utf8');
+  if(!/if \(it\.one\) \{ LS\.keep\(st\); save\(\); \}/.test(src)||!/LS\.answer\(st, v\), b = [^\n]*\n\s*LS\.keep\(st\);/.test(src))p.push('the screen does not keep a one-try or Check me answer in the save at once');
+  if(!/const why = LS\.why\(st\.id, PT\.pay\)/.test(src))p.push('the end card does not read why from the lesson\'s own pay');
+  if(/LS\.tick\(\)/.test((src.match(/\n  show\(\) \{([\s\S]*?)\n    view\(/)||[])[1]||'LS.tick()'))p.push('a new screen counts the time before it (LS.tick in show)');
+  // 7. the part that does not load (async: lsOpen resolves after partsLoad)
+  const R2=teachApp();
+  return R2(`(async()=>{const bad=[],seen=[];loadSave(null);migrate();S.grade=0;const i=NODES.math.findIndex(n=>nid(n)==='tenf2');for(let j=0;j<i;j++)setSt('math',j,2);
+    const pl=partsLoad,op=open,lo=LS.open,fb0=fb;fb=()=>{};open=(p,k)=>seen.push(['practice',p,k,lsGate(p,k)]);LS.open=id=>seen.push(['card',id]);
+    try{partsLoad=()=>Promise.resolve('teach');if(!lsGate('math',i))bad.push('not gated');await lsOpen('math',i);
+      if(JSON.stringify(seen)!==JSON.stringify([['practice','math',i,false]]))bad.push('a part that does not load: '+JSON.stringify(seen));
+      if(!(S.err||[]).some(e=>/teach did not load for tenf2/.test(e.msg)))bad.push('no App log line');
+      if(JSON.stringify(S.lsOpen||{})!=='{}'||(S.know||{}).tenf2)bad.push('the session pass was saved');
+      delete LS_PASS.tenf2;if(!lsGate('math',i))bad.push('the session pass did not go');
+      seen.length=0;partsLoad=()=>Promise.resolve(null);await lsOpen('math',i);if(JSON.stringify(seen)!==JSON.stringify([['card','tenf2']]))bad.push('a part that loads: '+JSON.stringify(seen))}
+    finally{partsLoad=pl;open=op;LS.open=lo;fb=fb0}
+    return bad})()`).then(b=>{p.push(...b);
+    // 8. migration 6 keeps stops opened by an open side stop (tracing) and the first stop after a skipped world; not grade-only stops
+    const m=R(`(()=>{const bad=[],at=(p,id)=>NODES[p].findIndex(n=>nid(n)===id);loadSave(null);migrate();S.grade=-1;
+      setSt('read',at('read','abc1'),2);setSt('read',at('read','abc2'),2);setSt('read',at('read','abc3'),2);setSt('read',at('read','syl1'),2);
+      S.skip={m_shape:1};delete S.lsOpen;MIGRATIONS[6]();const o=S.lsOpen||{};
+      if(!unlocked('read',at('read','abc4'))||!o.abc4)bad.push('abc4 after an open tracing stop not kept: '+JSON.stringify(o));
+      if(!o.add1)bad.push('the first stop after a skipped world not kept: '+JSON.stringify(o));
+      if(o.sound1||o.pk_count1)bad.push('a stop opened only by the grade (or the first stop) was kept: '+JSON.stringify(o));
+      const k=JSON.stringify(S.lsOpen);MIGRATIONS[6]();if(JSON.stringify(S.lsOpen)!==k)bad.push('not idempotent');
+      loadSave(null);migrate();S.grade=-1;setSt('read',at('read','abc1'),2);setSt('read',at('read','abc2'),2);delete S.lsOpen;MIGRATIONS[6]();
+      if(!(S.lsOpen||{}).abc3)bad.push('abc3 after the first tracing stop not kept: '+JSON.stringify(S.lsOpen));
+      return bad})()`);
+    p.push(...m);
+    const gw=fs.readFileSync(path.join(SRC,'js','80-grown.js'),'utf8');if(/Nothing is ever locked/.test(gw))p.push('Grown-ups still says nothing is ever locked');
+    const t2=R(`JSON.stringify(Object.values(LS_TONE2).map(a=>a.open('Mia')))`);if(/give me/i.test(t2))p.push('the start card line asks for a problem: '+t2);
+    return{problems:p,note:'every lesson\'s pet can be wrong, the extra turns are; resume fresh; the part that does not load; '+note}});
 });
 
 // ---- report ----

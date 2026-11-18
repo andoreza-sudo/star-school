@@ -2434,6 +2434,28 @@ button.hm-tile:active{transform:translateY(3px);box-shadow:inset 0 0 0 2px var(-
 .mis-win .rw-stk{width:48px;height:48px;border-radius:16px}
 .mis-win .rw-se{font-size:30px}
 @media (min-width:900px){.hm-mis{gap:var(--s-3)}}
+/* LS-STOP: the lesson stop on the map (42b-lstop.js), its ticket (what the next try pays) and label. In index.html: the map draws it
+   before the lesson part loads. Tokens only. */
+.btn.lsn,.btn.lsn.ls-go{position:absolute;width:60px;height:60px;min-height:60px;margin:-30px 0 0 -30px;padding:0;border-radius:var(--r-card);z-index:2;
+  display:grid;place-items:center;background:var(--surface);color:var(--c,var(--brand));
+  box-shadow:inset 0 0 0 4px var(--c,var(--brand)),0 5px 0 var(--c-shade,var(--brand-shade))}
+.btn.lsn .ic{width:30px;height:30px}
+.btn.lsn.done{background:var(--c-tint,var(--brand-tint));color:var(--c-shade,var(--brand-shade))}
+.btn.lsn.cur{background:linear-gradient(var(--hi),var(--hi-0) 55%) var(--c,var(--brand));color:var(--surface);
+  box-shadow:inset 0 3px 0 var(--hi),inset 0 0 0 4px var(--surface),0 5px 0 var(--c-shade,var(--brand-shade))}
+.btn.lsn.cur::after{content:'';position:absolute;inset:-9px;border:4px solid var(--c,var(--brand));border-radius:var(--r-card);opacity:0;
+  animation:k-ring var(--t-loop) var(--ease) infinite;pointer-events:none}
+.btn.lsn.lock{background:var(--surface-2);color:var(--ink-3);box-shadow:inset 0 0 0 3px var(--line),0 3px 0 var(--line)}
+.btn.lsn:active{transform:translateY(3px)}
+.btn.lsn.lock:active{transform:none}
+.lsn-tk{position:absolute;transform:translate(-50%,-50%);z-index:3;pointer-events:none;display:inline-flex;align-items:center;gap:2px;
+  padding:2px var(--s-2) 2px var(--s-1);border-radius:var(--r-pill);background:var(--play-tint);color:var(--ink);font-family:var(--font-display);
+  font-size:var(--fs-2);font-weight:700;white-space:nowrap;box-shadow:inset 0 0 0 2px var(--play),0 2px 0 var(--drop)}
+.lsn-tk .ic{color:var(--play-shade);flex:none}
+.lsn-tk.dn{background:var(--surface);box-shadow:inset 0 0 0 2px var(--line),0 2px 0 var(--drop)}
+.lsn-tk.dn .ic{color:var(--good)}
+.nlab.lsn-lab{color:var(--ink-2)}
+html.calm .btn.lsn.cur::after{animation:none}
 /* P4-18 graphics quality pass: drawn chrome for the screens that still had emoji or flat looks (map stops and world badges,
    Fact Sprint, Speed Race, streak calendar, placement, Pet Care, setup, Game Room). Tokens only; motion is transform/opacity
    (calm mode and reduced motion stop it in 20-base.css). Markup ids and classes are the ones the screens always had. */
@@ -2991,9 +3013,9 @@ const pick=a=>a[Math.floor(rnd()*a.length)];
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KEY='starschool-v2';
-const BUILD='v178'; // ROOM: the build stamp for code in part files (tools/build.py writes VER over v178 in index.html only; the Grown-ups screens are in gen)
+const BUILD='v179'; // ROOM: the build stamp for code in part files (tools/build.py writes VER over v179 in index.html only; the Grown-ups screens are in gen)
 const RELEASE='1.0.0'; // P6-05: the release number parents see (Home footer, Grown-ups > About). VER (tools/build.py) stays the build stamp and bumps every chunk.
-const LATEST=6; // newest save schema version = MIGRATIONS.length (ROADMAP section 9)
+const LATEST=7; // newest save schema version = MIGRATIONS.length (ROADMAP section 9)
 let S,SAVE_RAW=null,SAVE_CORRUPT=false,SAVE_FAILED=false;
 /* P5-10: the key of the child who is playing. Child 1 is KEY itself (unchanged since v30); 01-profiles.js picks another child's
    key at load. SAVE_OFF stops save() while the page reloads after a child was deleted. */
@@ -3121,6 +3143,24 @@ const MIGRATIONS=[null,
     }
     add.sort((a,b)=>b.n-a.n); // stable: equal n keep save order
     if(add.length)S.rev=rev.concat(add).slice(0,150);
+  },
+  /* 6: LS-STOP (v179). Lessons became stops on the map, and a stop with a lesson waits for its lesson (lsGate, 42b-lstop.js). Nothing a
+     child had open is taken away: every lesson stop this save could already play because of its own progress and has not passed yet is
+     kept open in S.lsOpen {nid: 1}. Its own progress: the stop before it passed; the stop before it a side stop (tracing) that was open
+     by the same progress (unlocked() opens the stop after an open side stop: abc3, abc4 after the tracing stops); it is the first stop
+     after a world that placement or Test out skipped; or a later stop of its world passed. Stops opened only by the grade setting (the
+     first stop of a world opened by the grade) are not progress and are not kept. The lesson stops are read from this frozen list (the
+     lessons of v179), never from LESSONS, so lessons added later cannot change what an old save means. Idempotent; never throws; removes
+     nothing. */
+  ()=>{
+    const L='pk_count1 shape1 pk_num1 sort1 pk_more1 pk_count2 pat1 pk_num2 sort2 pk_count3 tenf1 pk_more2 add4 tenf2 cnt4 tenf3 add1 miss1 sub1 add2 big1 cnt2 cmp1 miss2 sub2 pv1 add5 add6 add3 time1 big2 coins1 cmp2 time2 sub3 big3 mult1 coins2 sub4 time3 big4 mult2 cmp3 coins3 pv2 big5 pv3 sub5 time4 coins4 arr1 coins5 arr2 mfact1 mfact2 dfact1 mfact3 dfact2 mfact4 dfact3 dfact4 mbig1 frac2 round1 frac3 sub6 geo1 frac4 round2 time5 geo2 frac5 sub7 mfact5 pv4 mbig2 big6 dbig1 mbig3 sub8 dbig2 fact1 mbig4 big7 dbig3 fact2 round3 frac6 frac7 fop1 frac8 fop2 dec1 dec2 geo3 meas5 pv5 mbig5 dec3 pv6 dec4 round4 ooo1 dec5 fop3 geo4 fop5|abc1 abc2 abc3 syl1 abc4 sound1 sound3 pic1 sound2 build1 sent1 pic2 build2 sent2 sound4 pic3 build3 pic4 build4'.split('|');
+    const o=S.lsOpen&&typeof S.lsOpen=='object'&&!Array.isArray(S.lsOpen)?S.lsOpen:{};
+    // reached(p,i): open because of the child's own progress (see above); a run of side stops is followed back (bounded by i)
+    const reached=(p,i)=>{if(!(i>0))return false;const a=NODES[p][i-1],b=NODES[p][i];
+      return passed(p,i-1)||a.wi!==b.wi&&worldSkipped(p,a.wi)||!!(SK[a.sk]||{}).side&&unlocked(p,i-1)&&(reached(p,i-1)||stopBehind(p,i-1))};
+    ['math','read'].forEach((p,k)=>{const ids=new Set(L[k].split(' '));if(!NODES[p]||!S.maps||!S.maps[p])return;
+      NODES[p].forEach((n,i)=>{try{const id=nid(n);if(ids.has(id)&&!passed(p,i)&&unlocked(p,i)&&(reached(p,i)||stopBehind(p,i)))o[id]=1}catch(e){}})}); // never throws (a map that does not fit the save keeps nothing)
+    if(Object.keys(o).length)S.lsOpen=o;
   }
 ];
 /* Run once at load, from 42-paths.js (needs NODES, which no code before it reads). Backs up the old string first. */
@@ -3151,7 +3191,7 @@ function save(){if(SAVE_HOLD||SAVE_OFF)return;try{localStorage.setItem(SKEY,JSON
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v178'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v179'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -6150,7 +6190,7 @@ const RW = {
     const L = [[/^Round done/, 'check'], [/^Keep trying|^Good try/, 'heart'], [/^New stop/, 'map'], [/^Beat your old/, 'trophy'],
       [/^Harder world/, 'bolt'], [/^Perfect/, 'star'], [/^Beat the boss/, 'crown'], [/^Fixed/, 'replay'], [/^Already mastered/, 'crown'],
       [/^Tested out/, 'bolt'], [/^Practice round/, 'target'], [/^Played/, 'replay'], [/^Daily review/, 'review'],
-      [/^Daily mission/, 'calendar'], [/^Puzzle/, 'puzzle']];
+      [/^Daily mission/, 'calendar'], [/^Puzzle/, 'puzzle'], [/^Lesson/, 'doc']];
     for (const [re, ic] of L) if (re.test(label)) return ic;
     return 'plus';
   },
@@ -7149,6 +7189,65 @@ const sceneOf=()=>SHOP.scene.find(x=>x[0]==S.wear.scene)||SHOP.scene[0];
 function petHTML(st=S.stars){return petRigHTML(st)} // P4-06: every pet is drawn on the rig (17-pets-svg.js)
 const allMiss=()=>dueItems(); // P5-02: review items due today, most urgent first (59-review.js); home shows the count
 
+/* ---------- LS-STOP: lessons are stops on the map (owner, 2026-11-18) ----------
+   Kids skipped the lessons and guessed through practice, so a stop that has a lesson now has a lesson stop in front of it on the path
+   ("Learn with <pet>"; for 3rd grade up "Challenge", the same lesson in the older pet's tone), and its practice waits until the lesson
+   is done (Show passed: S.know[nid].s >= 2, written by the teach part). fix179 (owner): the lesson opens the practice stop but does not
+   pass it (LS.STOP_STARS 0): the practice round still passes the stop and opens the next one. The lessons pay game time (lsPay, 58-playtime.js); the map
+   shows what the next try pays.
+     LS_STOPS            the stops with a lesson, per map (the live lessons of the teach parts; tools/test.js checks it equals LESSONS)
+     lsStopAt(p, i)      stop i of map p has a lesson stop for this child: lessons on (TEACH.off off), a lesson, the child's band
+                         (as planToday, 52b-know.js: Pre-K to 2nd below 3rd grade, 3rd to 5th from 3rd grade; a Pre-K world's
+                         lessons for a Pre-K child only)
+     lsGate(p, i)        its practice is locked behind the lesson. Never for a passed stop, a stop open before lessons were stops
+                         (S.lsOpen, migration 6 in 00-core.js), a skipped world (placement or Test out proved it), a stop with a later
+                         stop of its world passed, "Unlock every stop", or a stop the path has not reached (that one is locked anyway)
+     lsOpen(p, i)        loads the lesson's parts and opens its start card (LS.open, 52-lesson.js), only if the screen the child tapped
+                         from is still showing (fix179: a part that loads late never replaces a round the child has started). A part
+                         that does not load is never a dead end: the practice stop opens for this session (LS_PASS), and the child
+                         goes straight into its practice round, with a line in the App log.
+   Nothing here is saved; open(p, i) (46-home.js) sends a locked stop to its lesson, so missions and pins cannot go round it. */
+const LS_STOPS = {
+  math: new Set(('pk_count1 shape1 pk_num1 sort1 pk_more1 pk_count2 pat1 pk_num2 sort2 pk_count3 tenf1 pk_more2 add4 tenf2 cnt4 tenf3 add1 miss1 sub1 '
+    + 'add2 big1 cnt2 cmp1 miss2 sub2 pv1 add5 add6 add3 time1 big2 coins1 cmp2 time2 sub3 big3 mult1 coins2 sub4 time3 big4 mult2 cmp3 coins3 pv2 big5 pv3 '
+    + 'sub5 time4 coins4 arr1 coins5 arr2 mfact1 mfact2 dfact1 mfact3 dfact2 mfact4 dfact3 dfact4 mbig1 frac2 round1 frac3 sub6 geo1 frac4 round2 time5 geo2 '
+    + 'frac5 sub7 mfact5 pv4 mbig2 big6 dbig1 mbig3 sub8 dbig2 fact1 mbig4 big7 dbig3 fact2 round3 frac6 frac7 fop1 frac8 fop2 dec1 dec2 geo3 meas5 pv5 mbig5 '
+    + 'dec3 pv6 dec4 round4 ooo1 dec5 fop3 geo4 fop5').split(' ')),
+  read: new Set('abc1 abc2 abc3 syl1 abc4 sound1 sound3 pic1 sound2 build1 sent1 pic2 build2 sent2 sound4 pic3 build3 pic4 build4'.split(' ')),
+};
+const lsWorldG = (p, i) => PATHS[p].worlds[NODES[p][i].wi].g;
+function lsBand(p, i) { const g0 = gradeOf(), wg = lsWorldG(p, i); return (g0 < 3) === (wg < 3) && (wg >= 0 || g0 < 0); }
+function lsStopAt(p, i) { const n = NODES[p] && NODES[p][i]; return !!(n && !TEACH.off && LS_STOPS[p] && LS_STOPS[p].has(nid(n)) && lsBand(p, i)); }
+const lsLearned = id => !!(S.know && S.know[id] && S.know[id].s >= 2);
+const LS_PASS = {}; // fix179: stops whose lesson could not load, open for this session (not saved: the next start tries the lesson again)
+function lsGate(p, i) {
+  if (!lsStopAt(p, i) || S.unlockAll || passed(p, i) || !unlocked(p, i)) return false;
+  const id = nid(NODES[p][i]);
+  return !lsLearned(id) && !LS_PASS[id] && !(S.lsOpen && S.lsOpen[id]) && !worldSkipped(p, NODES[p][i].wi) && !stopBehind(p, i);
+}
+// the parts a lesson lives in (teachWarm's lists): reading and Pre-K lessons in teachrd, grade 3-5 lessons in teach35
+const lsParts = (p, i) => ['teach', 'teach12'].concat(p == 'read' || lsWorldG(p, i) < 0 ? ['teachrd'] : lsWorldG(p, i) >= 3 ? ['teach35'] : []);
+function lsOpen(p, i) {
+  const id = nid(NODES[p][i]), a = typeof $ == 'function' && $('#app'), scr = a && a.firstElementChild, here = () => !scr || scr.isConnected;
+  SFX.whoosh();
+  return partsLoad(lsParts(p, i)).then(bad => {
+    if (!bad && typeof LS != 'undefined' && LESSONS[id]) { if (here()) LS.open(id); return; }
+    LS_PASS[id] = 1;
+    if (!here()) return;
+    try { logErr('lesson part ' + (bad || 'teach') + ' did not load for ' + id + ': its practice opened'); } catch (e) {}
+    fb("The lesson isn't ready yet. Let's practice!", 'warn long', 3000);
+    open(p, i); // the gate is open now (LS_PASS): the stop's own way in (46-home.js)
+  });
+}
+// the lesson stop on the map: its button, its ticket (what the next try pays) and its label. x, y: map px; W: map width
+function lsNodeHTML(p, i, x, y, W) {
+  const n = NODES[p][i], id = nid(n), lk = !unlocked(p, i), dn = lsLearned(id), up = gradeOf() > 2, tag = lk ? '' : lsPriceTag(id), cur = !lk && lsGate(p, i);
+  const said = tag == 'done today' ? ', game time done today' : tag ? `, earns ${tag.slice(1).replace('min', 'minutes')} of game time` : '';
+  return `<button class="btn lsn s-${p}${lk ? ' lock' : ''}${dn ? ' done' : ''}${cur ? ' cur' : ''}" data-ls="${i}" style="left:${x}px;top:${y}px"`
+    + ` aria-label="${esc(`Learn ${n.t} with ${petN()}`)}${lk ? ', locked' : dn ? ', learned' : ''}${said}">${ico(lk ? 'lock' : dn ? 'check' : up ? 'bolt' : 'doc', 30)}</button>`
+    + (tag ? `<div class="lsn-tk${tag == 'done today' ? ' dn' : ''}" style="left:${x + (x > W / 2 ? -78 : 78)}px;top:${y}px" aria-hidden="true">${ico(tag == 'done today' ? 'check' : 'ticket', 18)}<span>${tag}</span></div>` : '')
+    + `<div class="nlab lsn-lab" style="left:${x}px;top:${y + 34}px;max-width:150px">${esc(up ? 'Challenge' : 'Learn with ' + petN())}</div>`;
+}
 /* ---------- Map and world scenes (P4-09, DESIGN_SYSTEM 7; CSS 47-scenes.css; props, themes, world table: src/data/d-scenes.js) ----------
    A world band = a sky-to-ground CSS gradient (scene tokens) + one SVG: sun or moon, clouds, stars, rays, garland, horizon ridges,
    rolling ground, a landmark, props down the sides, ground marks. Props go only where the band's stops, labels, title, Test out
@@ -8049,7 +8148,7 @@ function home(first){
   <div class="scroll hm" id="hs"><div class="hm-cols">
    <div class="hm-col">${spkStarHTML()}${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('target', 26)}<span>Today's missions</span></h2>${hmMissions()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}${hmDaily()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
-   <p class="hm-ver">${ico('star', 16)}<span>Star School ${RELEASE} (build v178)</span></p></div>`);
+   <p class="hm-ver">${ico('star', 16)}<span>Star School ${RELEASE} (build v179)</span></p></div>`);
   NAV.bar('home');NAV.mapFrom='home';music(true);petAgeWarm(); // NAV-01: the picture bar (Home lit); a map's Back comes back here. PET-AGE2: grade 3+ loads the grown-up pet drawings
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'heart');
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
@@ -8084,7 +8183,7 @@ function pathMap(p,wi){MAPP=p;const P=PATHS[p];if(p=="es")warmVoices(); // wake 
   <div class="scroll" id="ms"><div class="map" id="map"></div></div>`);
   NAV.bar('learn');$('#back').onclick=()=>NAV.back();drawMap(p);music(true);if(p=='math')teachWarm();if(p=='read')teachWarm('read'); // NAV-01: Back goes one step back
   if(wi!=null)return mapTop(p);
-  const c=$('.node.cur')||$(`.node[data-n="${last>=0?last:curNode(p)}"]`);if(c)c.scrollIntoView({block:'center'})}
+  const c=$('.node.cur')||$('.lsn.cur')||$(`.node[data-n="${last>=0?last:curNode(p)}"]`);if(c)c.scrollIntoView({block:'center'})}
 /* Pick a world from the strip or a "more worlds" button: redraw in place (no new screen, music keeps playing). */
 function mapGo(p,wi){if(!$('#map'))return pathMap(p,wi);SFX.click();MAPW[p]=wi;drawMap(p);mapTop(p)}
 function mapTop(p){const t=$(`.wtitle[data-w="${MAPW[p]}"]`);if(t)t.scrollIntoView({block:"start"})}
@@ -8111,26 +8210,28 @@ function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],ws=PATHS[p].
   const wb=[]; // P4-09: [world, top, height, first and end index in pts, Test out shown]; scenes are drawn once every stop is placed
   for(let wi=w0;wi<=w1;wi++){const w=ws[wi],y0=y,[a,b]=WR[p][wi],canTest=worldOpen(p,wi)&&!worldFinished(p,wi);y+=canTest?160:86; // room under the Test out banner so the first stop, its ring and the pet never cover it
     const k0=pts.length;
-    for(let i=a;i<=b;i++){pts.push([W/2+Math.sin(i*1.15)*amp,y,i]);y+=106}
+    for(let i=a;i<=b;i++){if(lsStopAt(p,i)){y+=16;pts.push([W/2+Math.sin((i-.5)*1.15)*amp,y,i,1]);y+=114}pts.push([W/2+Math.sin(i*1.15)*amp,y,i]);y+=106} // LS-STOP: a lesson stop before a stop with a lesson (42b-lstop.js)
     wb.push([wi,y0,y-y0-24,k0,pts.length,canTest]);
     bands+=`<div class="wtitle" data-w="${wi}" style="top:${y0+14}px">${wBadge(p,wi)}<span>${esc(w.n)}</span>${worldFinished(p,wi)?ico('check-circle',24,'ic-good'):''}</div>${canTest?`<button class="btn xs tobtn" data-w="${wi}" style="top:${y0+58}px">${ico('bolt',20)}<span>Already know it? Test out!</span></button>`:''}`;y+=4}
   const cur=curNode(p),allDone=N.every((n,i)=>passed(p,i)),end=w1==ws.length-1;
   const ck=typeof CHK!='undefined'; // CHECK-IN: badges and Check-in buttons by the stops (51b-checkin.js)
-  const nodes=pts.map(([x,yy,i])=>{const n=N[i],s=nInfo(n),st=getSt(p,i),lk=!unlocked(p,i);
-    return`<button class="btn node s-${p} ${s.area} ${lk?'lock':''} ${st?'done':''} ${i==cur&&!lk&&!allDone?'cur':''}" data-n="${i}" style="left:${x}px;top:${yy}px" aria-label="${esc(n.t)}${lk?', locked':''}${ck?CHK.aria(p,i):''}">${nodeFace(n,lk)}</button>${ck?CHK.mapHTML(p,i,x,yy,W):''}${stopNew(p,i)?`<div class="nnew" style="left:${x}px;top:${yy-50}px">New</div>`:''}<div class="nlab" style="left:${x}px;top:${yy+42}px;max-width:${Math.round(Math.max(140,Math.min(180,2*Math.min(x,W-x)-8)))}px">${esc(n.t)}<div class="nstar">${st?UI.stars(st,3,16):''}</div></div>`}).join('');
-  const cp=pts.find(q=>q[2]==cur),side=cp&&cp[0]>W/2?-66:66;
+  const nodes=pts.map(([x,yy,i,ls])=>{if(ls)return lsNodeHTML(p,i,x,yy,W);const n=N[i],s=nInfo(n),st=getSt(p,i),gt=lsGate(p,i),lk=!unlocked(p,i)||gt;
+    return`<button class="btn node s-${p} ${s.area} ${lk?'lock':''} ${st?'done':''} ${i==cur&&!lk&&!allDone?'cur':''}" data-n="${i}" style="left:${x}px;top:${yy}px" aria-label="${esc(n.t)}${lk?', locked':''}${gt?', learn it first':''}${ck?CHK.aria(p,i):''}">${nodeFace(n,lk)}</button>${ck?CHK.mapHTML(p,i,x,yy,W):''}${stopNew(p,i)?`<div class="nnew" style="left:${x}px;top:${yy-50}px">New</div>`:''}<div class="nlab" style="left:${x}px;top:${yy+42}px;max-width:${Math.round(Math.max(140,Math.min(180,2*Math.min(x,W-x)-8)))}px">${esc(n.t)}<div class="nstar">${st?UI.stars(st,3,16):''}</div></div>`}).join('');
+  const cp=pts.find(q=>q[2]==cur&&!q[3]),side=cp&&cp[0]>W/2?-66:66;
   let tail=end&&allDone?90:20;
   if(!end){y+=8;bands+=more(w1+1,false);tail=80}
   m.style.height=(y+tail)+'px';
   // P4-09: every world band gets its drawn scene (kept clear of the stops, labels, trail and pet); the trail gets stones and bridges
   const tp=SCN.trailPts(pts),pet=cp?[cp[0]+side,cp[1]+18]:null;
   const scenes=wb.map(([wi,top,h,k0,k1,test])=>SCN.band(ws[wi],W,top,h,{test,trail:tp,pet,
-    stops:pts.slice(k0,k1).map(([x,yy,i])=>[x,yy,N[i].t,N[i].sk=='boss',stopNew(p,i)])})).join('');
+    stops:pts.slice(k0,k1).map(([x,yy,i,ls])=>ls?[x,yy,'Learn with '+petN(),false,false]:[x,yy,N[i].t,N[i].sk=='boss',stopNew(p,i)])})).join('');
   const kw=allDone?pts.length:pts.filter(q=>q[2]<=cur).length;
   m.innerHTML=scenes+bands+SCN.trail(W,y+20,pts,kw,wb.slice(1).map(([,top])=>top-14))+nodes
     +(cp?`<div class="mappet ${petAura()}" style="left:${cp[0]+side}px;top:${cp[1]+18}px">${petHTML()}</div>`:'')+(end&&allDone?`<div class="wtitle mp-champ" style="top:${y+10}px">${ico('trophy',30)}<span>${esc(PATHS[p].n)} Champion!</span></div>`:'');
-  $$('.node').forEach(b=>b.onclick=()=>{const i=+b.dataset.n;if(!unlocked(p,i)){SFX.wrong();anim(b,'sad');fb('Finish the stop before this one!','warn');return}SFX.whoosh();
-    open(p,i)});
+  $$('.node').forEach(b=>b.onclick=()=>{const i=+b.dataset.n;if(!unlocked(p,i)){SFX.wrong();anim(b,'sad');fb('Finish the stop before this one!','warn');return}
+    if(lsGate(p,i)){SFX.pop();anim($(`.lsn[data-ls="${i}"]`),'jump');fb(`Learn it with ${petN()} first!`,'warn');return} // LS-STOP: practice waits for the lesson
+    SFX.whoosh();open(p,i)});
+  $$('.lsn').forEach(b=>b.onclick=()=>{const i=+b.dataset.ls;if(!unlocked(p,i)){SFX.wrong();anim(b,'sad');fb('Finish the stop before this one!','warn');return}lsOpen(p,i)});
   if(ck)CHK.mapBind(p);
   $$('.tobtn').forEach(b=>b.onclick=()=>testOut(p,+b.dataset.w));
   $$('.wmore').forEach(b=>b.onclick=()=>mapGo(p,+b.dataset.w));
@@ -8138,7 +8239,7 @@ function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],ws=PATHS[p].
   if((p=='math'||p=='read')&&typeof LS!='undefined')setTimeout(()=>LS.mapAdd(),0)} // TEACH-1: the lesson offer by a stop (52-lesson.js), after the draw (it reads the layout)
 // TEACH-1: the lessons' part loads once the math map is drawn (Pre-K to 2nd), then adds its offer; a part that does not load just shows no offer
 function teachWarm(p='math'){const up=gradeOf()>2,rd=p=='read'||gradeOf()<0;if(TEACH.off||p=='read'&&up||partReady(up?'teach35':rd?'teachrd':'teach12'))return;(up?partsLoad(['teach','teach12','teach35']):rd?partsLoad(['teach','teach12','teachrd']):partsLoad(['teach','teach12'])).then(bad=>{if(!bad&&MAPP==p&&$('#map'))LS.mapAdd()})} // TEACH-2b: and the grade 1-2 lessons; TEACH-3: 3rd grade up, the grade 3-5 lessons too (teach35); TEACH-4: the reading map (Pre-K to 2nd), and the math map of a Pre-K child, load the reading and Pre-K lessons (teachrd)
-function open(p,i){const n=NODES[p][i];if(n.sk=='boss')bossIntro(p,i);else if(n.sk.startsWith('es_')&&SPN[n.sk.slice(3)]&&n.lv==1)learn(p,i);else start(p,i)}
+function open(p,i){const n=NODES[p][i];if(lsGate(p,i))return lsOpen(p,i);if(n.sk=='boss')bossIntro(p,i);else if(n.sk.startsWith('es_')&&SPN[n.sk.slice(3)]&&n.lv==1)learn(p,i);else start(p,i)}
 
 function learn(p,i){const n=NODES[p][i],items=SPN[n.sk.slice(3)],rec=items.every(it=>esHas(it[5]||esFull(it))); // ES-AUDIO: every card recorded
   view(`<div class="top tbar gx-mtop gx-learn s-es">${UI.ibtn('back','Back',{size:'sm',id:'back'})}<div class="ttl gx-ttl"><span class="gx-tb">${ico('path-es',24)}</span><span>Let's learn!</span></div>${UI.btn('¡Vamos!',{kind:'subject',p:'es',icon:'play',id:'go'})}</div>
@@ -11305,11 +11406,37 @@ function ptCalc(g,sc,n,stars,prev,newPass,testOk,nd,x){const mis=!!(x&&x.mission
   if(r>0){const k=r==1?.6:.35,cut=Math.round(t*(1-k));t-=cut;L.push([-cut,`Played ${r+1} times today`])}
   if(mis){t+=60;L.push([60,'Daily mission done'])} // after the repeat cut: the mission is paid once a day, in full
   t=Math.max(30,Math.round(t/30)*30);return{sec:t,lines:L,mast:!g.test&&!g.mix&&prev>=3&&!g.boss,rep:r}}
+/* LS-STOP (owner, 2026-11-18): what a lesson pays, in minutes, each a grown-up setting in the Game time card (S.ptCfg; absent = the
+   default): ls1 the first pass (5), ls2 the second pass (2), ls3 each later pass (1, at most once a day per lesson: no farming), lsT a
+   good try that did not pass (1: only before the first pass, at most once a day per lesson, and never more in all than the first pass
+   pays, which the child still gets when they pass). A pass is Show passed with no help; it pays only when it was proven (tested out with
+   the two show-me items, or the pet's mistake found in Check me), so guessing never pays. A good try went through every beat, found the
+   pet's mistake and did not rush. The pay goes into the bank like any earned time (ptEarn): learn first, the daily limit and the bank
+   rules are the same. Pay history per lesson: S.lsPay[nid] = {n passes, d day key of the last pass, d3 day key of the last paid later pass,
+   t minutes paid for tries, td day key of the last paid try} (optional; absent = never passed or paid). */
+const LS_PAY_D = {ls1: 5, ls2: 2, ls3: 1, lsT: 1}, LS_PAY_OPT = [0, 1, 2, 3, 5, 10];
+function lsPayCfg(){const c=S.ptCfg||{},o={};for(const k in LS_PAY_D){const v=Math.floor(+c[k]);o[k]=c[k]!=null&&v>=0&&v<=10?v:LS_PAY_D[k]}return o}
+const lsPayRec=id=>(S.lsPay&&typeof S.lsPay=='object'&&S.lsPay[id])||{};
+// minutes the next pass of lesson id pays now
+function lsPrice(id){const c=lsPayCfg(),r=lsPayRec(id),n=r.n|0;return n<1?c.ls1:n<2?c.ls2:r.d3===today()?0:c.ls3}
+// what the map ticket and the lesson meter say: '+5 min', 'done today' (later passes already paid today), or '' (the settings pay nothing)
+function lsPriceTag(id){const m=lsPrice(id),r=lsPayRec(id);return m>0?`+${m} min`:(r.n|0)>=2&&r.d3===today()&&lsPayCfg().ls3>0?'done today':''}
+// minutes a good try that did not pass pays now
+function lsTryPrice(id){const c=lsPayCfg(),r=lsPayRec(id);return(r.n|0)<1&&r.td!==today()&&(r.t|0)+c.lsT<=c.ls1?c.lsT:0}
+// pay a finished lesson: pass (Show passed), proof (tested out or found the pet's mistake), effort (a good try). Writes S.lsPay.
+// Returns {sec, lines, kind: 'pass' | 'try' | 'guess' (passed, not proven) | 'none', min}
+function lsPay(id,pass,proof,effort){const P=S.lsPay=S.lsPay&&typeof S.lsPay=='object'&&!Array.isArray(S.lsPay)?S.lsPay:{},r=Object.assign({},lsPayRec(id));
+  let m=0,kind='none',l='';
+  if(pass&&proof){const n0=r.n|0;m=lsPrice(id);r.n=n0+1;r.d=today();if(n0>=2&&m)r.d3=today();kind='pass';l=r.n==1?'Lesson learned':'Lesson passed again'}
+  else if(pass)kind='guess';
+  else if(effort){m=lsTryPrice(id);if(m){r.t=(r.t|0)+m;r.td=today();kind='try';l='Good try on the lesson'}}
+  if(kind=='pass'||kind=='try')P[id]=r;
+  return{sec:m*60,min:m,kind,lines:m?[[m*60,l]]:[]}}
 // Fact Race (54-race.js, once Speed Race): the first race a day in each category that scores 5 or more pays 1 min; more races are free practice. Returns seconds.
 function ptRace(cat,sc){if(sc<5)return 0;const rp=S.ptRep&&S.ptRep.day==today()?S.ptRep:(S.ptRep={day:today(),n:{}}),k='race_'+cat;if(rp.n[k])return 0;rp.n[k]=1;return 60}
 // the lines of "How to earn more game time" (Game Room); R_ draws a small icon
 // the lines of "How to earn more game time": [icon, what, how much]; the Game Room hub (59-game-hub.js) shows them, ptRules as HTML
-function ptEarnList(){return[['sparkle','Unlock a new stop','+1 min'],['star','Get a perfect score','+1 min'],['globe','Play a harder world','up to +1½ min'],['crown','Beat a boss','+2 min'],['review','Do your Daily Review','a full round'],['review','Fix an old mistake','bonus seconds'],['chart','Beat your old score','+½ min'],['puzzle','Solve a Brain Teaser','up to 2 min'],['calendar',"Finish all three of today's missions",'+1 min'],['timer','Fact Sprint or Fact Race, first one of the day','+1 min']]}
+function ptEarnList(){return[['doc','Pass a lesson with your pet',`+${lsPayCfg().ls1} min`],['sparkle','Unlock a new stop','+1 min'],['star','Get a perfect score','+1 min'],['globe','Play a harder world','up to +1½ min'],['crown','Beat a boss','+2 min'],['review','Do your Daily Review','a full round'],['review','Fix an old mistake','bonus seconds'],['chart','Beat your old score','+½ min'],['puzzle','Solve a Brain Teaser','up to 2 min'],['calendar',"Finish all three of today's missions",'+1 min'],['timer','Fact Sprint or Fact Race, first one of the day','+1 min']]}
 function ptRules(R_){return ptEarnList().map(([i,t,v])=>`<div>${R_(i)} ${t} <b>${v}</b></div>`).join('')+'<div class="small">Replaying a stop you already mastered, or the same stop over and over, earns less.</div>'}
 
 // P4-16: the Game Room hub (scene, game-time ticket, a drawn card per registered game) lives in games.<VER>.js with the games:
@@ -11652,7 +11779,7 @@ const BT = {
   },
   // P6-03: the type's code is in (BT.reg checked make/mount/solve), and no bt file of another release ran (that one is refused, see
   // partLoad). In tools/test.js the source runs without the built stamps, so there a type with its code counts as loaded.
-  loaded(d) { return !!d && typeof d.make == 'function' && (typeof BT_VER == 'undefined' || BT_VER === 'v178'); },
+  loaded(d) { return !!d && typeof d.make == 'function' && (typeof BT_VER == 'undefined' || BT_VER === 'v179'); },
   // P6-03: start reading bt.<VER>.js once the screen on show is painted (the hub, a level strip), so the tap that opens a puzzle
   // seldom waits. Nothing happens when it is in, or while it loads; a file that cannot be read is tried again by BT.start.
   warm() {
@@ -12255,12 +12382,12 @@ function appFiles() {
 }
 // P6-02: the start-up files only; the parts in LAZY_PARTS load later (partsThen below)
 function dataReady() {
-  return appFiles().every(f => LAZY_PARTS.includes(f[0]) || f[1] === 'v178');
+  return appFiles().every(f => LAZY_PARTS.includes(f[0]) || f[1] === 'v179');
 }
 // the Try again screen and one line in the App log: for the start-up files, or (P6-02) for the parts in stems that did not load on demand
 function dataMissing(stems) {
-  logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0])) && f[1] !== 'v178')
-    .map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v178)');
+  logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0])) && f[1] !== 'v179')
+    .map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v179)');
   const again = UI.btn('Try again', { kind: 'primary', size: 'lg', icon: 'replay', id: 'dataretry' });
   view(`<div class="scroll" id="datamiss">${UI.empty('download', 'Star School needs to finish updating. Connect to the internet, then tap Try again.', again)}</div>`);
   $('#dataretry').onclick = () => location.reload();
@@ -12282,15 +12409,15 @@ const GAME_PARTS = ['games', 'rally', 'games2', 'games3']; // the Game Room's pa
 const partsAsked = {};
 function partReady(stem) {
   const f = appFiles().find(x => x[0] === stem);
-  return !!f && f[1] === 'v178';
+  return !!f && f[1] === 'v179';
 }
 function partLoad(stem) {
   const f = appFiles().find(x => x[0] === stem);
-  if (!f || f[1] === 'v178') return Promise.resolve(!!f);
+  if (!f || f[1] === 'v179') return Promise.resolve(!!f);
   if (f[1] !== null) return Promise.resolve(false); // a file of another release ran: refused
   return partsAsked[stem] || (partsAsked[stem] = new Promise(res => {
     const s = document.createElement('script');
-    s.src = stem + '.v178.js';
+    s.src = stem + '.v179.js';
     s.onload = () => { delete partsAsked[stem]; res(partReady(stem)); };
     s.onerror = () => { delete partsAsked[stem]; s.remove(); res(false); };
     document.body.appendChild(s);
@@ -12315,9 +12442,9 @@ function partsThen(stems, go, o = {}) {
   }), 0));
 }
 </script>
-<script src="gen.v178.js"></script>
-<script src="gen2.v178.js"></script>
-<script src="data.v178.js"></script>
+<script src="gen.v179.js"></script>
+<script src="gen2.v179.js"></script>
+<script src="data.v179.js"></script>
 <script>
 if (dataReady()) {
   loadClips();

@@ -1,5 +1,5 @@
-/* Star School gen v178. BUILT by tools/build.py from 23-viz.js, 30-gen-math.js, 31-gen-math-early.js, 32-gen-read.js, 33-gen-math-mid.js, 34-gen-es.js, 80-grown.js, 81-backup.js, 82-report.js, 88-online.js: never edit by hand.
-   index.html v178 loads this file with <script src="gen.v178.js"> after its own code, before data.v178.js. */
+/* Star School gen v179. BUILT by tools/build.py from 23-viz.js, 30-gen-math.js, 31-gen-math-early.js, 32-gen-read.js, 33-gen-math-mid.js, 34-gen-es.js, 80-grown.js, 81-backup.js, 82-report.js, 88-online.js: never edit by hand.
+   index.html v179 loads this file with <script src="gen.v179.js"> after its own code, before data.v179.js. */
 /* ---------- math visuals (P1-10; P1-11 adds part 2 in this same file) ----------
    Every VIZ.* function returns one inline <svg> string for a question's html (or a hint). No ids, no defs, no filters,
    no Math.random: the same arguments always give the same markup, so a question rebuilt from its seed looks the same.
@@ -3067,7 +3067,8 @@ const GW = {
 };
 /* P6-05: About Star School (Grown-ups): what the app is, privacy, the release and build, and the licences of what it bundles.
    Only Andika is third-party (embedded by tools/build.py; the text is OFL_TEXT in src/data/d-licences.js = LICENSES/OFL-Andika.txt).
-   The art, icons, sounds and games are made for Star School; speech comes from the tablet's own voices; no libraries are bundled. */
+   The art, icons, sounds and games are made for Star School; speech is the tablet's own voice and recordings made with xAI
+   text-to-speech (audio/, ES-AUDIO, EN-PRAISE, TEACH-4; the About card says so); no libraries are bundled. */
 function aboutCard(){
   return GW.card('gw-about','info','About Star School',
     `<p class="gw-p">Star School is offline practice in math, reading and Spanish for children, with game time earned by learning. It has no accounts, no ads and no tracking.</p>
@@ -3077,6 +3078,7 @@ function aboutCard(){
     <h3 class="gw-h3">${ico('doc',22,'ic-brand')}<span>Licences</span></h3>
     <p class="gw-p ab-lic-line"><b>Andika</b> (the lettering in the app), Copyright (c) 2004-2022 SIL International. Licensed under the SIL Open Font License 1.1 (openfontlicense.org).</p>
     <p class="gw-sub ab-lic-line">Everything else (pictures, icons, sounds, games and questions) was made for Star School. No other fonts, libraries or outside files are used.</p>
+    <p class="gw-sub ab-lic-line" id="ab-tts">The recorded voices were made with AI text-to-speech (xAI).</p>
     <details class="ab-det" id="ab-ofl"><summary>${ico('doc',22)}<span>Read the Andika licence</span>${ico('chevron-right',22,'chev')}</summary><pre class="ab-ofl" tabindex="0" role="region" aria-label="SIL Open Font License 1.1 text">${esc(OFL_TEXT)}</pre></details>`);
 }
 // G-FEEL1: 4x4 Hill Climb driving help (S.garage.as: 'auto' or 0-3; src/js/62-hill.js, which loads with the Game Room). Read here
@@ -3117,14 +3119,16 @@ function grown(){let armed=false;
   ${reportGrownHTML()}
   ${GW.card('gw-kid','edit','Names',GW.field('Child','user',`id="nm" value="${esc(S.name)}"`)+GW.field('Pet name','paw',`id="pn" value="${esc(S.petName)}" placeholder="${PETS[S.pet].def}"`)+
     GW.field('Buddy','users',`id="bd" value="${esc(S.buddy)}" placeholder="A sibling or friend"`,'Used in story problems.'))}
-  ${GW.card('gw-grade','map','Grade and level',gradePickHTML(gradeOf())+placeGrownHTML()+`<div class="gw-sw">${UI.sw('Unlock every stop on the map (let them jump ahead)',S.unlockAll,'ula')}${UI.sw('Lessons with '+petN()+' (Pre-K to 2nd; off: practice rounds only)',!TEACH.off,'lson')}</div>`,
-    {sub:'Picks where the maps start. Nothing is ever locked or removed when you change it.'})}
+  ${GW.card('gw-grade','map','Grade and level',gradePickHTML(gradeOf())+placeGrownHTML()+`<div class="gw-sw">${UI.sw('Unlock every stop on the map (let them jump ahead)',S.unlockAll,'ula')}${UI.sw('Lessons with '+petN()+' (lesson stops on the math and reading maps; off: practice rounds only)',!TEACH.off,'lson')}</div>`,
+    {sub:'Picks where the maps start. Progress is never removed when you change it, but a new grade can put stops behind a lesson.'})}
   ${GW.card('gw-time','gamepad','Game time',`<div class="gw-stats two">${GW.stat('ticket','ic-play',fmtT(bank.bank),'in the bank')}${GW.stat('timer','ic-brand',fmtT(bank.used),'used today')}</div>
     <div class="gw-row"><span class="gw-rl">Minutes per round</span>${GW.seg('per',[2,3,5],pc.per,'Minutes per round',v=>v)}</div>
     <div class="gw-row"><span class="gw-rl">Daily max</span>${GW.seg('max',[15,30,45,60,0],pc.max,'Daily max in minutes',v=>v||'No limit')}</div>
     <div class="gw-row"><span class="gw-rl">Learn first, minutes</span>${GW.seg('need',[0,5,10,15,20,30],pc.need,'Minutes of learning needed each day before the Game Room opens',v=>v||'None')}</div>
     ${pc.need?`<p class="gw-note" id="ptneed">${ico('clock',22)}<span>${!gt.more?`Learning today: ${pc.need} of ${pc.need} minute${pc.need==1?'':'s'}. The Game Room is open.`:`Learning today: ${Math.floor(gt.done/60)} of ${pc.need} minute${pc.need==1?'':'s'}. The Game Room opens at ${pc.need}.`}</span></p>
     <div class="gw-sw">${UI.sw('Open the Game Room today anyway',bank.open===today(),'pto')}</div>`:''}
+    <p class="gw-sub" id="lspayh">Lessons with ${esc(petN())} pay game time when Show is passed with no help (guessing pays nothing). Minutes:</p>
+    ${[['ls1','First pass'],['ls2','Second pass'],['ls3','Later passes (once a day)'],['lsT','Good try, not passed (once a day)']].map(([k,l])=>`<div class="gw-row"><span class="gw-rl">${l}</span>${GW.seg(k,LS_PAY_OPT,lsPayCfg()[k],'Lesson game time, '+l+', minutes',v=>v||'None')}</div>`).join('')}
     <div class="gw-row"><span class="gw-rl">Bank</span><span class="gw-btns">${UI.btn('+5 min',{size:'sm',icon:'plus',id:'pt5'})}${UI.btn('Empty bank',{size:'sm',kind:'ghost',icon:'trash',id:'pt0',cls:'gw-risk'})}</span></div>
     <div class="gw-sw">${UI.sw('Pause game time (games locked)',pc.pause,'ptp')}</div>
     <div class="gw-row" id="gw-hcas"><span class="gw-rl">4x4 Hill Climb driving help</span>${GW.seg('hcas',['auto',3,2,1,0],hcAsGrown(),'4x4 Hill Climb driving help',v=>HCAS_NAMES[v])}</div>
@@ -3169,6 +3173,7 @@ function grown(){let armed=false;
   $('#pt5').onclick=()=>{ptEarn(300);grown()};$('#pt0').onclick=()=>{pt().bank=0;save();grown()};
   $('#ptp').onchange=e=>{ptCfg().pause=e.target.checked;save()};
   $$('[data-need]').forEach(b=>b.onclick=()=>{ptCfg().need=+b.dataset.need;save();grown()});
+  for(const k in LS_PAY_D)$$(`[data-${k.toLowerCase()}]`).forEach(b=>b.onclick=()=>{ptCfg()[k]=+b.dataset[k.toLowerCase()];save();grown()}); // LS-STOP: what lessons pay
   $$('[data-hcas]').forEach(b=>b.onclick=()=>{const v=b.dataset.hcas;if(!S.garage||typeof S.garage!='object'||Array.isArray(S.garage))S.garage={};S.garage.as=v=='auto'?'auto':+v;save();grown()});
   $('#rlgates').onchange=e=>{if(!S.rally||typeof S.rally!='object'||Array.isArray(S.rally))S.rally={};S.rally.gates=e.target.checked?'on':'off';save()}; // G-FEEL2
   if($('#pto'))$('#pto').onchange=e=>{const p=pt();if(e.target.checked)p.open=today();else p.open='';save()};
@@ -3811,4 +3816,4 @@ function needOnline(action, o = {}) {
   return true;
 }
 
-var GEN_VER='v178'; // last line: the whole file ran (checked by dataReady() before the app starts)
+var GEN_VER='v179'; // last line: the whole file ran (checked by dataReady() before the app starts)

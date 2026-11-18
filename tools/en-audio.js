@@ -70,6 +70,10 @@ const TEACH_MANIFEST = path.join(SRC, 'data', 'd-teach-audio.js');
 const TEACH_GROUPS = [
   ['the little pet\'s own lines (LS_TONE.little, 52c-scripts.js)', R => R("Object.values(LS_TONE.little).filter(v=>typeof v!='function').flat()")],
   ['the little pet\'s hello (LS_TONE.little.hi, after the name)', ["Let's learn together."], 1],
+  // LS-STOP: the little pet's lesson stop lines (LS_TONE2.little: the slide into the lesson, "Find my mistake!", the pay lines) and the
+  // start card's question after the name (LS_TONE2.little.open); the older ages' lines stay the tablet's voice, as LS_TONE's do
+  ['the little pet\'s lesson stop lines (LS_TONE2.little, 52c-scripts.js)', R => R("Object.values(LS_TONE2.little).filter(v=>typeof v!='function')")],
+  ['the little pet\'s lesson stop card (LS_TONE2.little.open, after the name)', ['Want to learn this with me?'], 1],
   ['the lesson end card (52-lesson.js)', ['You learned it!', 'You already knew it!', 'Great learning today!'], 1],
   ['the pet\'s reasons and repairs, Pre-K to 2nd grade (BUGS)', R => R("[...new Set(LS_IDS.filter(id=>LESSONS[id].band!='35').flatMap(id=>LESSONS[id].bugs))].map(c=>BUGS[c].say)")],
   ['the batch 4 lessons\' fixed instructions (52m-lessons4.js)', ['Which one is different?', 'Which one is a different colour?', 'Put the animals together and the food together.',

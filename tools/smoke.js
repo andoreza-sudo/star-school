@@ -93,6 +93,17 @@ async function btLeave(pg) {
 // sort and mark questions turns the new kinds off in its page (K2.off: every generator and bank as before KINDS2) and back on after
 const k2Old = (pg, on = true) => pg.evaluate(v => { K2.off = v; }, on);
 
+// LS-STOP: a stop with a lesson waits until its lesson is done (lsGate, 42b-lstop.js). The steps written before it test PRACTICE rounds (a
+// stop's questions, sizes, sounds), so where the stop they tap is locked behind its lesson they mark that lesson learned first (as
+// passing its Show does) and tap the stop as before; a stop that is not locked is left alone. The LS-STOP step tests the lock itself.
+async function lsLearnAt(pg, i) {
+  await pg.waitForSelector('#map .node', { timeout: 15000 });
+  await pg.evaluate(i => { const p = MAPP; if (i === 'cur') i = curNode(p); if (typeof lsGate != 'function' || !lsGate(p, i)) return;
+    (S.know = S.know || {})[nid(NODES[p][i])] = { s: 2, n: 1, lv: [[0, 0], [0, 0], [0, 0]], b: {}, box: 0, due: 0 }; save(); drawMap(p); }, i);
+}
+const lsLearnCur = pg => lsLearnAt(pg, 'cur');
+const lsLearnSel = async (pg, sel) => { await pg.waitForSelector(sel, { timeout: 15000 }).catch(() => {}); const i = await pg.evaluate(sel => { const b = document.querySelector(sel); return b ? +b.dataset.n : null; }, sel); if (i != null) await lsLearnAt(pg, i); };
+
 let failed = 0;
 const step = msg => console.log('- ' + msg);
 function fail(msg) { failed++; console.error('FAIL: ' + msg); }
@@ -365,6 +376,7 @@ async function main() {
       await page.evaluate(() => home());
       await page.click('.game[data-p="math"]');
       await page.waitForSelector('.node[data-n="0"]');
+      await lsLearnSel(page, '.node[data-n="0"]'); // LS-STOP: as above
       await page.click('.node[data-n="0"]');
       await page.waitForSelector('#prompt');
       await page.evaluate(m => setTimeout(() => { throw new Error(m); }, 0), MARK);
@@ -402,6 +414,7 @@ async function main() {
       await page.waitForSelector('.wchip.on');
       await page.click(`.wchip[data-w="${meadowW}"]`);
       await page.waitForSelector(`.node[data-n="${meadow0}"]`);
+      await lsLearnSel(page, `.node[data-n="${meadow0}"]`); // LS-STOP: as above
       await page.click(`.node[data-n="${meadow0}"]`);
       let numSeen = false;
       for (let i = 0; i < 10 && !numSeen; i++) {
@@ -869,6 +882,7 @@ async function main() {
       await gp.waitForSelector('.game[data-p]');
       if ((await gp.evaluate(() => S.grade)) !== -1) fail('Pre-K tap on setup not saved');
       await gp.click('.game[data-p="math"]');
+      await lsLearnCur(gp); // LS-STOP: a practice round's stop, its lesson done first if it is locked
       await gp.waitForSelector('.node.cur');
       await gp.click('.node.cur');
       await gp.waitForSelector('#prompt');
@@ -888,6 +902,7 @@ async function main() {
       const sel = await gp.evaluate(() => document.querySelector('.gr.sel').dataset.g);
       await gp.click('#back');
       await gp.click('.game[data-p="math"]');
+      await lsLearnCur(gp); // LS-STOP: a practice round's stop, its lesson done first if it is locked
       await gp.waitForSelector('.node.cur');
       const cw = await gp.evaluate(() => worldOpen('math', PATHS.math.worlds.findIndex(w => w.id === 'm_frac'))); // the last grade-3 world (P2-09: Factor Factory, grade 4, is now last)
       await gp.click('.node.cur');
@@ -908,6 +923,7 @@ async function main() {
       await ap.waitForSelector('.game[data-p="math"]');
       await ap.evaluate(() => { S.log = []; });
       await ap.click('.game[data-p="math"]');
+      await lsLearnCur(ap); // LS-STOP: a practice round's stop, its lesson done first if it is locked
       await ap.waitForSelector('.node.cur');
       await ap.click('.node.cur');
       await ap.waitForSelector('#prompt');
@@ -1127,7 +1143,8 @@ async function main() {
         return { v: S.v, items: REV.get().length, due: dueItems().length, stars: S.stars, coins: S.coins, html: /class=|"html"/.test(raw),
           rev: JSON.stringify(S.rev).length, mix: document.querySelector('#mix').textContent.trim() };
       });
-      if (r0.v !== 6 || r0.items !== 21 || r0.due !== 21 || r0.stars !== 85 || r0.coins !== 64 || r0.html || !/Mixed Practice/.test(r0.mix))
+      if (r0.v !== 7 || // LS-STOP: migration 6 raised the save version from 6 to 7
+         r0.items !== 21 || r0.due !== 21 || r0.stars !== 85 || r0.coins !== 64 || r0.html || !/Mixed Practice/.test(r0.mix))
         fail('tricky fixture after migration: ' + JSON.stringify(r0));
       else step(`tricky fixture migrated: ${r0.items} review items (${r0.rev} bytes), no html in the save, home shows "${r0.mix}"`);
       // a math stop round: log every question as it is drawn (G.q.rvk = the review item it came from)
@@ -1258,6 +1275,7 @@ async function main() {
       await pp.click('#go');
       await pp.waitForSelector('.game[data-p]');
       await pp.click('.game[data-p="read"]');
+      await lsLearnCur(pp); // LS-STOP: a practice round's stop, its lesson done first if it is locked
       await pp.waitForSelector('.node.cur');
       const cur0 = await pp.evaluate(() => ({ id: nid(NODES.read[curNode('read')]), w: NODES.read[curNode('read')].wid, n: +document.querySelector('.node.cur').dataset.n }));
       if (cur0.id !== 'abc1' || cur0.w !== 'r_abc' || cur0.n !== 0) fail('Pre-K reading map should open on abc1: ' + JSON.stringify(cur0));
@@ -1294,6 +1312,7 @@ async function main() {
       await kp.click('#go');
       await kp.waitForSelector('.game[data-p]');
       await kp.click('.game[data-p="read"]');
+      await lsLearnCur(kp); // LS-STOP: a practice round's stop, its lesson done first if it is locked
       await kp.waitForSelector('.node.cur');
       const cur1 = await kp.evaluate(() => ({ id: nid(NODES.read[curNode('read')]), w: curWorld('read'), g: S.grade }));
       if (cur1.id !== 'sound1' || cur1.w !== 1) fail('K reading map should open on Letter Meadow sound1: ' + JSON.stringify(cur1));
@@ -1315,6 +1334,7 @@ async function main() {
       await tp.click('#go');
       await tp.waitForSelector('.game[data-p="math"]');
       await tp.click('.game[data-p="math"]');
+      await lsLearnCur(tp); // LS-STOP: a practice round's stop, its lesson done first if it is locked
       await tp.waitForSelector('.node.cur');
       const mp0 = await tp.evaluate(() => ({ on: +document.querySelector('.wchip.on').dataset.w, wid: NODES.math[curNode('math')].wid,
         sk: nid(NODES.math[curNode('math')]), chips: document.querySelectorAll('.wchip').length, n: PATHS.math.worlds.length }));
@@ -1339,6 +1359,7 @@ async function main() {
           }, 700);
         };
       });
+      await lsLearnCur(tp); // LS-STOP: as above
       await tp.click('.node.cur');
       await tp.waitForSelector('#prompt', { state: 'attached' }); // text hidden: a listening prompt can be empty
       await playRound(tp, 'P2-01 Tiny Town round, text hidden', 6);
@@ -1391,6 +1412,7 @@ async function main() {
         await mp.click(`.wchip[data-w="${lastW}"]`);
         await mp.waitForSelector(`.wchip.on[data-w="${lastW}"]`);
         const n = await mp.evaluate(k => WR.math[PATHS.math.worlds.findIndex(w => w.id === 'm_mult')][0] + k, k);
+        await lsLearnSel(mp, `.node[data-n="${n}"]`); // LS-STOP: as above
         await mp.click(`.node[data-n="${n}"]`);
         await mp.waitForSelector('#prompt');
       };
@@ -1451,6 +1473,7 @@ async function main() {
         await fp.click(`.wchip[data-w="${forest}"]`);
         await fp.waitForSelector(`.wchip.on[data-w="${forest}"]`);
         const n = await fp.evaluate(k => NODES.math.findIndex(x => nid(x) === 'frac' + (k + 2)), k);
+        await lsLearnSel(fp, `.node[data-n="${n}"]`); // LS-STOP: as above
         await fp.click(`.node[data-n="${n}"]`);
         await fp.waitForSelector('#prompt');
       };
@@ -1498,6 +1521,7 @@ async function main() {
         await pp.waitForSelector('.wchip.on');
         await pp.click(`.wchip[data-w="${at.w}"]`);
         await pp.waitForSelector(`.wchip.on[data-w="${at.w}"]`);
+        await lsLearnSel(pp, `.node[data-n="${at.i}"]`); // LS-STOP: as above
         await pp.click(`.node[data-n="${at.i}"]`);
         await pp.waitForSelector('#prompt');
       };
@@ -1534,6 +1558,7 @@ async function main() {
       await sp.click('#go');
       await sp.waitForSelector('.game[data-p="math"]');
       await sp.click('.game[data-p="math"]');
+      await lsLearnCur(sp); // LS-STOP: a practice round's stop, its lesson done first if it is locked
       await sp.waitForSelector('.node.cur');
       const g0 = await sp.evaluate(() => ({ wid: NODES.math[curNode('math')].wid, sk: nid(NODES.math[curNode('math')]),
         on: PATHS.math.worlds[+document.querySelector('.wchip.on').dataset.w].id, chips: document.querySelectorAll('.wchip').length, n: PATHS.math.worlds.length }));
@@ -1550,6 +1575,7 @@ async function main() {
           setTimeout(() => { window.__rec.push({ sk: q.sk + q.lv, said: window.__said.includes(q.say), pk: !!document.querySelector('#spk.pkspk') }); }, 700);
         };
       });
+      await lsLearnCur(sp); // LS-STOP: as above
       await sp.click('.node.cur');
       await sp.waitForSelector('#prompt');
       await playRound(sp, 'P2-02 Count to 20', 8);
@@ -1586,6 +1612,7 @@ async function main() {
       else step('Shape Garden: all 14 stops open and are answered by taps with the text hidden; touch targets 48 px or more, no sideways scroll, a hint on each');
       await sp.evaluate(() => { G.dead = true; home(); });
       await sp.click('.game[data-p="math"]');
+      await lsLearnCur(sp); // LS-STOP: a practice round's stop, its lesson done first if it is locked
       await sp.waitForSelector('.node.cur');
       const mp = await sp.evaluate(() => {
         const [a, b] = WR.math[PATHS.math.worlds.findIndex(w => w.id === 'm_shape')];
@@ -1612,12 +1639,14 @@ async function main() {
       await cp.waitForSelector('.game[data-p="math"]');
       await cp.evaluate(() => { NODES.math.filter(n => n.wid === 'm_candy').forEach(n => { S.maps.math[nid(n)] = 1; }); save(); home(); }); // Candy Canyon finished
       await cp.click('.game[data-p="math"]');
+      await lsLearnCur(cp); // LS-STOP: a practice round's stop, its lesson done first if it is locked
       await cp.waitForSelector('.node.cur');
       const cm = await cp.evaluate(() => { const ids = PATHS.math.worlds.map(w => w.id), c = ids.indexOf('m_clock');
         return { c, near: ids[c - 1] + ' ' + ids[c + 1], on: +document.querySelector('.wchip.on').dataset.w, wid: NODES.math[curNode('math')].wid,
           sk: nid(NODES.math[curNode('math')]), chips: document.querySelectorAll('.wchip').length, n: ids.length }; });
       if (cm.c < 0 || cm.near !== 'm_candy m_reef' || cm.on !== cm.c || cm.wid !== 'm_clock' || cm.sk !== 'pv1' || cm.chips !== cm.n) fail('Clock Tower map: ' + JSON.stringify(cm));
       else step('Clock Tower: sits between Candy Canyon and Ocean Reef, the map opens on it at stop pv1 after Candy Canyon');
+      await lsLearnCur(cp); // LS-STOP: as above
       await cp.click('.node.cur');
       await cp.waitForSelector('#prompt');
       await playRound(cp, 'P2-03 Tens & Ones');
@@ -1793,12 +1822,14 @@ async function main() {
       await bp.waitForSelector('.game[data-p="math"]');
       await bp.evaluate(() => { NODES.math.filter(n => n.wid === 'm_space').forEach(n => { S.maps.math[nid(n)] = 1; }); save(); home(); }); // Space Station finished
       await bp.click('.game[data-p="math"]');
+      await lsLearnCur(bp); // LS-STOP: a practice round's stop, its lesson done first if it is locked
       await bp.waitForSelector('.node.cur');
       const bm = await bp.evaluate(() => { const ids = PATHS.math.worlds.map(w => w.id), c = ids.indexOf('m_bay');
         return { c, near: ids[c - 1] + ' ' + ids[c + 1], on: +document.querySelector('.wchip.on').dataset.w, wid: NODES.math[curNode('math')].wid,
           sk: nid(NODES.math[curNode('math')]), chips: document.querySelectorAll('.wchip').length, n: ids.length }; });
       if (bm.c < 0 || bm.near !== 'm_space m_mult' || bm.on !== bm.c || bm.wid !== 'm_bay' || bm.sk !== 'pv2' || bm.chips !== bm.n) fail('Treasure Bay map: ' + JSON.stringify(bm));
       else step('Treasure Bay: sits between Space Station and Multiply Mountain, the map opens on it at stop pv2 after Space Station');
+      await lsLearnCur(bp); // LS-STOP: as above
       await bp.click('.node.cur');
       await bp.waitForSelector('#prompt');
       await playRound(bp, 'P2-04 Place Value to 999');
@@ -2240,6 +2271,7 @@ async function main() {
         await fq.click(`.wchip[data-w="${forest}"]`);
         await fq.waitForSelector(`.wchip.on[data-w="${forest}"]`);
         const n = await fq.evaluate(id => NODES.math.findIndex(x => nid(x) === id), id);
+        await lsLearnSel(fq, `.node[data-n="${n}"]`); // LS-STOP: as above
         await fq.click(`.node[data-n="${n}"]`);
         await fq.waitForSelector('#prompt');
         await fq.waitForTimeout(900); // the prompt pops in with a scale animation; sizes are measured once it has settled
@@ -2464,6 +2496,7 @@ async function main() {
         await pg.waitForSelector('.wchip.on');
         await pg.click(`.wchip[data-w="${at.w}"]`);
         await pg.waitForSelector(`.wchip.on[data-w="${at.w}"]`);
+        await lsLearnSel(pg, `.node[data-n="${at.i}"]`); // LS-STOP: as above
         await pg.click(`.node[data-n="${at.i}"]`);
         await pg.waitForSelector('#prompt');
       };
@@ -2792,6 +2825,7 @@ async function main() {
         await pg.waitForSelector('.wchip.on');
         await pg.click(`.wchip[data-w="${at.w}"]`);
         await pg.waitForSelector(`.wchip.on[data-w="${at.w}"]`);
+        await lsLearnSel(pg, `.node[data-n="${at.i}"]`); // LS-STOP: as above
         await pg.click(`.node[data-n="${at.i}"]`);
         await pg.waitForSelector('#prompt');
         // every question of the round: question line and the four buttons inside the screen, panel open, no sideways scroll
@@ -2837,6 +2871,7 @@ async function main() {
         await pg.click(`.wchip[data-w="${at.w}"]`);
         await pg.waitForSelector(`.wchip.on[data-w="${at.w}"]`);
         if (at.w !== lw) fail('P2-29 ' + id + ' is not in Legend Lab');
+        await lsLearnSel(pg, `.node[data-n="${at.i}"]`); // LS-STOP: as above
         await pg.click(`.node[data-n="${at.i}"]`);
         await pg.waitForSelector('#prompt');
         const bad = [];
@@ -2886,6 +2921,7 @@ async function main() {
         await fp.click(`.wchip[data-w="${info.wi}"]`);
         await fp.waitForSelector(`.wchip.on[data-w="${info.wi}"]`);
         const n = await fp.evaluate(id => NODES.math.findIndex(x => nid(x) === id), id);
+        await lsLearnSel(fp, `.node[data-n="${n}"]`); // LS-STOP: as above
         await fp.click(`.node[data-n="${n}"]`);
         await fp.waitForSelector('#prompt');
         await fp.waitForTimeout(900);
@@ -2956,6 +2992,7 @@ async function main() {
         await pg.waitForSelector('.wchip.on');
         await pg.click(`.wchip[data-w="${at.w}"]`);
         await pg.waitForSelector(`.wchip.on[data-w="${at.w}"]`);
+        await lsLearnSel(pg, `.node[data-n="${at.i}"]`); // LS-STOP: as above
         await pg.click(`.node[data-n="${at.i}"]`);
         await pg.waitForSelector('#prompt');
       };
@@ -3018,6 +3055,7 @@ async function main() {
         await pg.waitForSelector('.wchip.on');
         await pg.click(`.wchip[data-w="${at.w}"]`);
         await pg.waitForSelector(`.wchip.on[data-w="${at.w}"]`);
+        await lsLearnSel(pg, `.node[data-n="${at.i}"]`); // LS-STOP: as above
         await pg.click(`.node[data-n="${at.i}"]`);
         await pg.waitForSelector('#prompt');
       };
@@ -3083,6 +3121,7 @@ async function main() {
       await dp.click('.game[data-p="math"]');
       await dp.waitForSelector(`.wchip.on[data-w="${w10.wi}"]`);
       const first = await dp.evaluate(() => NODES.math.findIndex(x => nid(x) === 'frac6'));
+      await lsLearnSel(dp, `.node[data-n="${first}"]`); // LS-STOP: as above
       const nodeOn = await dp.evaluate(n => !!document.querySelector(`.node[data-n="${n}"]`) && !document.querySelector(`.node[data-n="${n}"]`).classList.contains('lock'), first);
       await dp.click(`.node[data-n="${first}"]`);
       await dp.waitForSelector('#prompt');
@@ -3117,6 +3156,7 @@ async function main() {
         await dp.click(`.wchip[data-w="${w10.wi}"]`);
         await dp.waitForSelector(`.wchip.on[data-w="${w10.wi}"]`);
         const n = await dp.evaluate(id => NODES.math.findIndex(x => nid(x) === id), id);
+        await lsLearnSel(dp, `.node[data-n="${n}"]`); // LS-STOP: as above
         await dp.click(`.node[data-n="${n}"]`);
         await dp.waitForSelector('#prompt');
         const most = full.has(id) ? 1 : 3;
@@ -3315,6 +3355,7 @@ async function main() {
         await vp.click(`.wchip[data-w="${info.wi}"]`);
         await vp.waitForSelector(`.wchip.on[data-w="${info.wi}"]`);
         const n = await vp.evaluate(id => NODES.math.findIndex(x => nid(x) === id), id);
+        await lsLearnSel(vp, `.node[data-n="${n}"]`); // LS-STOP: as above
         await vp.click(`.node[data-n="${n}"]`);
         await vp.waitForSelector('#prompt');
         await vp.waitForTimeout(900);
@@ -3859,6 +3900,7 @@ async function main() {
       // first stop by taps: Unlike Denominators, a step hint, then the full round
       const first = await cp.evaluate(() => NODES.math.findIndex(x => nid(x) === 'fop3'));
       await k2Old(cp); // FIX3: fop3 mixes in find the mistake (KINDS2-D, about 1 in 5), which has no step hint; this checks the step hint
+      await lsLearnSel(cp, `.node[data-n="${first}"]`); // LS-STOP: as above
       await cp.click(`.node[data-n="${first}"]`);
       await cp.waitForSelector('#prompt');
       await cp.waitForTimeout(900);
@@ -3887,6 +3929,7 @@ async function main() {
         await cp.click(`.wchip[data-w="${w12.wi}"]`);
         await cp.waitForSelector(`.wchip.on[data-w="${w12.wi}"]`);
         const n = await cp.evaluate(id => NODES.math.findIndex(x => nid(x) === id), id);
+        await lsLearnSel(cp, `.node[data-n="${n}"]`); // LS-STOP: as above
         await cp.click(`.node[data-n="${n}"]`);
         await cp.waitForSelector('#prompt');
         if (full.has(id)) {
@@ -3915,6 +3958,7 @@ async function main() {
         await cp.waitForSelector('.wchip.on');
         await cp.click(`.wchip[data-w="${w12.wi}"]`);
         const n = await cp.evaluate(([sk, lv]) => NODES.math.findIndex(x => x.sk === sk && x.lv === lv), [sk, lv]);
+        await lsLearnSel(cp, `.node[data-n="${n}"]`); // LS-STOP: as above
         await cp.click(`.node[data-n="${n}"]`);
         await cp.waitForSelector('#prompt');
         await cp.evaluate(([sk, lv, re]) => { for (let i = 1; i < 900; i++) { const q = genQ(sk, lv, i); if (new RegExp(re).test(q.label)) { G.q = q; renderQ(); break; } } }, [sk, lv, re]);
@@ -3972,6 +4016,7 @@ async function main() {
         await pg.waitForSelector('#map');
         await pg.evaluate(() => { const c = document.querySelector('.wchip[data-w="0"]'); if (c) c.click(); });
         await pg.waitForSelector(`.node[data-n="${ti}"]`);
+        await lsLearnSel(pg, `.node[data-n="${ti}"]`); // LS-STOP: as above
         await pg.click(`.node[data-n="${ti}"]`);
         await pg.waitForSelector('#trb');
         const look = () => {
@@ -4356,6 +4401,7 @@ async function main() {
       const answer13 = async () => (await sp.evaluate(() => G.q.kind)) === 'match' ? answerMatch() : answer(sp);
       // first stop by taps: Ratios and Tables, a step hint, then the full round
       const first = await sp.evaluate(() => NODES.math.findIndex(x => nid(x) === 'ratio1'));
+      await lsLearnSel(sp, `.node[data-n="${first}"]`); // LS-STOP: as above
       await sp.click(`.node[data-n="${first}"]`);
       await sp.waitForSelector('#prompt');
       await sp.waitForTimeout(900);
@@ -4383,6 +4429,7 @@ async function main() {
         await sp.click(`.wchip[data-w="${w13.wi}"]`);
         await sp.waitForSelector(`.wchip.on[data-w="${w13.wi}"]`);
         const n = await sp.evaluate(id => NODES.math.findIndex(x => nid(x) === id), id);
+        await lsLearnSel(sp, `.node[data-n="${n}"]`); // LS-STOP: as above
         await sp.click(`.node[data-n="${n}"]`);
         await sp.waitForSelector('#prompt');
         if (full.has(id)) {
@@ -4411,6 +4458,7 @@ async function main() {
         await sp.waitForSelector('.wchip.on');
         await sp.click(`.wchip[data-w="${w13.wi}"]`);
         const n = await sp.evaluate(([sk, lv]) => NODES.math.findIndex(x => x.sk === sk && x.lv === lv), [sk, lv]);
+        await lsLearnSel(sp, `.node[data-n="${n}"]`); // LS-STOP: as above
         await sp.click(`.node[data-n="${n}"]`);
         await sp.waitForSelector('#prompt');
         const found = await sp.evaluate(([sk, lv, re, flag]) => {
@@ -4628,6 +4676,7 @@ async function main() {
       await pg.waitForSelector(`.node[data-n="${ti}"]`);
       const map = await pg.evaluate(ti => [ti - 3, ti].map(i => document.querySelector(`.node[data-n="${i}"]`).className), ti);
       if (!map.every(c => / read\b/.test(c) && !/\bmath\b/.test(c))) bad.push('tracing stops on the map are not in the reading colour: ' + map.join(' | '));
+      await lsLearnSel(pg, `.node[data-n="${ti}"]`); // LS-STOP: as above
       await pg.click(`.node[data-n="${ti}"]`);
       await pg.waitForSelector('#trb');
       const chrome = await pg.evaluate(() => {
@@ -4692,6 +4741,7 @@ async function main() {
         if (map.n !== 12 || map.lock.slice(0, 6).join() !== 'false,true,true,true,true,true' || map.minH < 48 || map.minW < 48 || map.over > 0 || !/Discover/.test(map.title)) fail(`${tag}: map ${JSON.stringify(map)}`);
         else step(`${tag}: Home card, then the map (Nature Trail and the world after it, 12 stops; the first is open), 48 px stops, no sideways scroll`);
         const before = await dp.evaluate(() => JSON.stringify([S.maps.math, S.maps.read, S.maps.es, S.stars]));
+        await lsLearnSel(dp, '.node[data-n="0"]'); // LS-STOP: as above
         await dp.click('.node[data-n="0"]');
         await dp.waitForSelector('#prompt');
         const bad = [];
@@ -4939,6 +4989,7 @@ async function main() {
       };
       // first stop by taps: Exponents, a step hint, then the full round
       const first = await gp.evaluate(() => NODES.math.findIndex(x => nid(x) === 'ooo2'));
+      await lsLearnSel(gp, `.node[data-n="${first}"]`); // LS-STOP: as above
       await gp.click(`.node[data-n="${first}"]`);
       await gp.waitForSelector('#prompt');
       await gp.waitForTimeout(900);
@@ -4966,6 +5017,7 @@ async function main() {
         await gp.click(`.wchip[data-w="${w14.wi}"]`);
         await gp.waitForSelector(`.wchip.on[data-w="${w14.wi}"]`);
         const n = await gp.evaluate(id => NODES.math.findIndex(x => nid(x) === id), id);
+        await lsLearnSel(gp, `.node[data-n="${n}"]`); // LS-STOP: as above
         await gp.click(`.node[data-n="${n}"]`);
         await gp.waitForSelector('#prompt');
         if (full.has(id)) {
@@ -4995,6 +5047,7 @@ async function main() {
         await gp.waitForSelector('.wchip.on');
         await gp.click(`.wchip[data-w="${w14.wi}"]`);
         const n = await gp.evaluate(([sk, lv]) => NODES.math.findIndex(x => x.sk === sk && x.lv === lv), [sk, lv]);
+        await lsLearnSel(gp, `.node[data-n="${n}"]`); // LS-STOP: as above
         await gp.click(`.node[data-n="${n}"]`);
         await gp.waitForSelector('#prompt');
         const found = await gp.evaluate(([sk, lv, re]) => {
@@ -5042,6 +5095,7 @@ async function main() {
       // one real round on a stop: opens it by its map button, plays, checks every question, and returns to the map
       const playStop = async (n, what) => {
         await dp.evaluate(i => document.querySelector(`.node[data-n="${i}"]`).scrollIntoView({ block: 'center' }), n);
+        await lsLearnSel(dp, `.node[data-n="${n}"]`); // LS-STOP: as above
         const nb = await dp.evaluate(i => { const b = document.querySelector(`.node[data-n="${i}"]`).getBoundingClientRect(); return { w: b.width, h: b.height, lock: document.querySelector(`.node[data-n="${i}"]`).classList.contains('lock') }; }, n);
         if (nb.w < 48 || nb.h < 48 || nb.lock) fail(`${tag}: ${what} stop button ${JSON.stringify(nb)}`);
         await dp.click(`.node[data-n="${n}"]`);
@@ -5391,6 +5445,7 @@ async function main() {
       };
       // level 1 (listen): a real tap on the first stop, the learn screen, then the round
       const n0 = await cp.evaluate(() => WR.es[3][0]);
+      await lsLearnSel(cp, '.node[data-n="' + n0 + '"]'); // LS-STOP: as above
       await cp.click('.node[data-n="' + n0 + '"]');
       await cp.waitForSelector('#go');
       await cp.click('#go');
@@ -5404,6 +5459,7 @@ async function main() {
       await cp.evaluate(() => { for (let i = WR.es[3][0]; i < WR.es[3][0] + 8; i++) setSt('es', i, 2); save(); pathMap('es', 3); });
       await cp.waitForSelector('.wchip.on[data-w="3"]');
       const n3 = await cp.evaluate(() => NODES.es.findIndex(x => x.sk === 'es_house' && x.lv === 3));
+      await lsLearnSel(cp, '.node[data-n="' + n3 + '"]'); // LS-STOP: as above
       await cp.click('.node[data-n="' + n3 + '"]'); // levels 2 and 3 start the round at once (only level 1 has the learn screen)
       await cp.waitForSelector('.lslots .ls');
       await cp.evaluate(() => { for (let s = 1; s < 400; s++) { const q = genQ('es_house', 3, s); if (q.word === 'baño') { G.q = q; renderQ(); return; } } });
@@ -5417,6 +5473,7 @@ async function main() {
       await cp.evaluate(() => { speechSynthesis.getVoices = () => [{ lang: 'en-US', name: 'en-US' }]; ESNOTE = 0; ESA.off = true; S.maps.es.es_clothes1 = 0; save(); pathMap('es', 3); }); // ES-AUDIO: lines without a recording
       await cp.waitForSelector('.wchip.on[data-w="3"]');
       const nc = await cp.evaluate(() => NODES.es.findIndex(x => x.sk === 'es_clothes' && x.lv === 1));
+      await lsLearnSel(cp, '.node[data-n="' + nc + '"]'); // LS-STOP: as above
       await cp.click('.node[data-n="' + nc + '"]');
       await cp.waitForSelector('#go');
       await cp.click('#go');
@@ -5477,6 +5534,7 @@ async function main() {
         if (at.wid !== 'e_ciudad') fail('P2-33 ' + id + ' is not in La Ciudad: ' + JSON.stringify(at));
         await cp.click(`.wchip[data-w="${at.w}"]`);
         await cp.waitForSelector(`.wchip.on[data-w="${at.w}"]`);
+        await lsLearnSel(cp, `.node[data-n="${at.i}"]`); // LS-STOP: as above
         await cp.click(`.node[data-n="${at.i}"]`);
         await cp.waitForSelector('#go, .ch'); // the learn screen comes first on a level 1 stop
         if (await cp.$('#go')) await cp.click('#go');
@@ -6554,6 +6612,7 @@ async function main() {
         if (at.wid !== 'e_frases') fail('P2-34 ' + id + ' is not in Las Frases: ' + JSON.stringify(at));
         await fp.click(`.wchip[data-w="${at.w}"]`);
         await fp.waitForSelector(`.wchip.on[data-w="${at.w}"]`);
+        await lsLearnSel(fp, `.node[data-n="${at.i}"]`); // LS-STOP: as above
         await fp.click(`.node[data-n="${at.i}"]`);
         await fp.waitForSelector('.ch, .ot'); // a grammar stop opens straight on the question (no word-card learn screen)
         const l = await fp.evaluate(lay, sel);
@@ -7005,6 +7064,7 @@ async function main() {
         await gp.waitForSelector('.wchip.on');
         await gp.click(`.wchip[data-w="${mw}"]`);
         await gp.waitForSelector(`.node[data-n="${m0}"]`);
+        await lsLearnSel(gp, `.node[data-n="${m0}"]`); // LS-STOP: as above
         await gp.click(`.node[data-n="${m0}"]`);
         await gp.waitForSelector('#prompt');
         const bank0 = await gp.evaluate(() => pt().bank);
@@ -7161,6 +7221,7 @@ async function main() {
       if (at.wid !== 'e_cuentos' || at.last !== 'e_cuentos') fail('P2-35 es_story1 is not in Los Cuentos: ' + JSON.stringify(at));
       await cp.click(`.wchip[data-w="${at.w}"]`);
       await cp.waitForSelector(`.wchip.on[data-w="${at.w}"]`);
+      await lsLearnSel(cp, `.node[data-n="${at.i}"]`); // LS-STOP: as above
       await cp.click(`.node[data-n="${at.i}"]`);
       await cp.waitForSelector('.bctx.dlg .dl-b'); // a story stop opens straight on the question (no word-card learn screen)
       await vwait(cp, 800);
@@ -8514,6 +8575,7 @@ async function main() {
           at = 'round';
           // a round: first stop of math, one wrong answer, then right answers; the chest; the reward cards
           await pg.click('.game[data-p="math"]');
+          await lsLearnCur(pg); // LS-STOP: a practice round's stop, its lesson done first if it is locked
           await pg.waitForSelector('.node.cur');
           await pg.click('.node.cur'); // the child's current stop
           await pg.waitForSelector('#prompt');
@@ -8685,7 +8747,7 @@ async function main() {
         await bp.click('#bk-save');
         await bp.waitForFunction(() => window.__shared);
         const sh = await bp.evaluate(() => ({ n: window.__shared.n, h: JSON.parse(window.__shared.t) }));
-        if (!/^starschool-.+-\d{4}-\d\d-\d\d\.json$/.test(sh.n) || sh.h.app !== 'Star School' || sh.h.save !== 6 || sh.h.data.stars !== s0.stars || sh.h.name !== s0.name)
+        if (!/^starschool-.+-\d{4}-\d\d-\d\d\.json$/.test(sh.n) || sh.h.app !== 'Star School' || sh.h.save !== 7 /* LS-STOP: save version 7 (migration 6) */ || sh.h.data.stars !== s0.stars || sh.h.name !== s0.name)
           bad.push(tag + ' shared backup: ' + sh.n + ' ' + JSON.stringify(Object.assign({}, sh.h, { data: 0 })));
         // no share sheet: a download, and it still works offline (with the friendly offline message)
         await bp.evaluate(() => { navigator.canShare = undefined; navigator.share = undefined; });
@@ -8894,6 +8956,7 @@ async function main() {
         if (at.wid !== wid) bad.push(id + ' is not in ' + wid + ': ' + JSON.stringify(at));
         await rp.click(`.wchip[data-w="${at.w}"]`);
         await rp.waitForSelector(`.wchip.on[data-w="${at.w}"]`);
+        await lsLearnSel(rp, `.node[data-n="${at.i}"]`); // LS-STOP: as above
         await rp.click(`.node[data-n="${at.i}"]`);
         await rp.waitForSelector('#go'); // level 1 opens on the learn cards
         const cards = await rp.evaluate(() => [...document.querySelectorAll('.lcard b')].map(b => b.textContent));
@@ -10247,6 +10310,7 @@ async function main() {
           await pg.waitForSelector('.node');
           // the first open stop on the world the map shows (not a boss)
           const n = await pg.evaluate(() => [...document.querySelectorAll('.node:not(.lock)')].map(e => +e.dataset.n).find(i => NODES.math[i].sk != 'boss'));
+          await lsLearnSel(pg, `.node[data-n="${n}"]`); // LS-STOP: as above
           await pg.click(`.node[data-n="${n}"]`);
           await pg.waitForSelector('#prompt');
           await playRound(pg, tag + ' ' + label);
@@ -11381,6 +11445,8 @@ async function main() {
             await pg.waitForSelector('#hmmis [data-mi="0"]');
             const hm = await pg.evaluate(() => ({ t: document.querySelector('#hmmis .hm-mi b').textContent, pin: S.pin, m0: S.day.m[0] }));
             if (hm.t !== 'Play ' + st.work || hm.pin !== null || !hm.m0.pin || hm.m0.i !== st.i) bad.push(at + 'tomorrow\'s first mission: ' + JSON.stringify(hm));
+            // LS-STOP: a pinned stop locked behind its lesson opens the lesson; this step is about the pin opening the stop's round
+            await pg.evaluate(i => { if (lsGate('math', i)) { (S.know = S.know || {})[nid(NODES.math[i])] = { s: 2, n: 1, lv: [[0, 0], [0, 0], [0, 0]], b: {}, box: 0, due: 0 }; save(); } }, st.i);
             await pg.click('#hmmis [data-mi="0"]');
             await pg.waitForFunction(() => typeof G != 'undefined' && G && G.path == 'math', null, { timeout: 8000 }).catch(() => {});
             const g = await pg.evaluate(() => ({ p: G && G.path, node: G && G.node }));
@@ -12422,6 +12488,10 @@ async function main() {
           // CHK-FAST: the controls as the lesson screen shows (LS.WAKE is 50 ms of real time at the 8x clock)
           await armShow(pg, '#lsplay', () => !!document.querySelector('#lsinp.ls-wait'));
           await pg.click('.ls-go');
+          // LS-STOP: the offer is the lesson stop on the path, which opens the lesson's start card; "I already know this!" gives the
+          // show-me items (the first one missed below, so the lesson slides into teaching at once: one show-me item, not two)
+          await pg.waitForSelector('#lsknow', { timeout: 10000 });
+          await pg.click('#lsknow');
           await pg.waitForSelector('#lsplay', { timeout: 5000 });
           const [wait0] = await snaps(pg);
           if (!wait0) bad.push(at + 'the controls are awake before the line is said');
@@ -12456,7 +12526,9 @@ async function main() {
           const end = await pg.evaluate(() => { const i = NODES.math.findIndex(n => nid(n) === 'tenf2');
             return { st: getSt('math', i), next: unlocked('math', i + 1), know: S.know.tenf2, lm: S.lm[S.lm.length - 1], les: S.les, saved: !!JSON.parse(localStorage.getItem(SKEY)).lm,
               idea: (document.querySelector('.ls-idea') || {}).textContent, btns: [...document.querySelectorAll('.ls-acts .btn')].map(b => b.id).join() }; });
-          if (end.st !== 2 || !end.next || !end.know || end.know.s !== 2 || !end.lm || end.lm[0] !== 'tenf2' || end.lm[2] !== 1 || end.lm[3] !== 2 || end.lm[4] !== 2 || end.lm[6] !== 0 || end.les || !end.saved
+          // fix179 (owner, 2026-11-18: practice is still required): the passed lesson opens Make Ten but does not pass it (was 2 stars, the next stop open)
+          if (end.st !== 0 || end.next || !end.know || end.know.s !== 2 || !end.lm || end.lm[0] !== 'tenf2' || end.lm[2] !== 0 || end.lm[3] !== 1 || // LS-STOP: a missed show-me item after "I already know this!" ends the test-out at once (0 of 1, was 1 of 2)
+             end.lm[4] !== 2 || end.lm[6] !== 0 || end.les || !end.saved
             // TEACH-2: the end card also opens the notebook (lsnb), on purpose
             || !/Two parts make ten/.test(end.idea) || end.btns !== 'lsprac,lsmap,lsnb') bad.push(at + 'the end: ' + JSON.stringify(end));
           await lsFit(pg, at + 'end: ');
@@ -12982,6 +13054,188 @@ async function main() {
         'letter tiles, the pet\'s word read wrong and built right, a sentence matched to a picture), every screen fitting with no hole in the words; no console errors, no network requests');
     }
     // end TEACH-4
+
+    // LS-STOP lessons are required, paid stops on the map (42b-lstop.js, 46-home.js drawMap, 58-playtime.js lsPay, 52-lesson.js LS.open,
+    // the meter and the end card), at 380x780 and 600x960 on the midway save as a Kindergartner with every stop before Make Ten passed.
+    // The map has a "Learn with <pet>" stop before Make Ten with its "+5 min" ticket (48 px, on screen, covering no stop); Make Ten's practice
+    // is locked (tapping it says to learn first and starts nothing). The lesson stop opens the start card (the price, "Let's learn",
+    // "I already know this!"); the skip with a missed show-me item slides into the lesson with no "wrong" sound; the top bar's ticket meter
+    // shows "+5 min" and fills beat by beat; the end card lists "+5:00 game time" and the bank chip counts up by 5:00; the stop opens and the
+    // lesson stop then shows "+2 min". Ten and More by a proven skip (both show-me items right, Show passed) pays its 5 minutes too.
+    // Lessons off: no lesson stops and no locks. Screenshots (LSTOP_SHOTS, default tools/out/lstop). No console errors, no network.
+    if (seg('LS-STOP')) {
+      const bad = [], notes = [], shots = process.env.LSTOP_SHOTS || require('path').join(__dirname, 'out', 'lstop');
+      require('fs').mkdirSync(shots, { recursive: true });
+      const actS = async (pg, wrong) => {
+        await pg.waitForFunction(() => !LS.st || (document.querySelector('#lsinp') && !document.querySelector('#lsinp.ls-wait') && !LS.u.lock), null, { timeout: 15000 });
+        const it = await pg.evaluate(() => { const it = LS.st && LS.cur(LS.st); if (!it) return null; const q = it.q || {};
+          return { m: it.m, petOk: it.petOk, kind: q.kind, model: q.model, ans: q.ans, s0: q.s0, total: q.m && q.m.total, target: q.m && q.m.target,
+            goal: q.goal, tgt: q.target, start: q.start, min: q.line && q.line.min, choices: q.choices && q.choices.map(c => c.v) }; });
+        if (!it) return null;
+        if (it.m == 'say') await pg.click('#lsnext');
+        else if (it.m == 'judge') await pg.click(it.petOk ? '#lsyes' : '#lsno');
+        else if (it.kind == 'num') { for (const d of wrong ? String(+it.ans + 1) : it.ans) await pg.click(`.k[data-k="${d}"]`); await pg.click('.k[data-k="go"]'); }
+        else if (it.kind == 'choice') await pg.click(`.ch[data-i="${it.choices.indexOf(wrong ? it.choices.find(c => c != it.ans) : it.ans)}"]`);
+        else if (it.kind == 'line') {
+          const k = (wrong ? +it.ans + 1 : it.goal ? +it.start + 3 : +it.ans) - it.min;
+          await pg.focus('.lnp'); await pg.keyboard.press('Home'); for (let i = 0; i < k; i++) await pg.keyboard.press('ArrowRight'); await pg.click('#mcheck');
+        } else if (it.kind == 'make') {
+          let want;
+          if (it.model == 'frame2') { const t = it.goal == 'sum' ? it.target : it.goal == 'fill' ? it.total : 3; want = [t - 1, 1]; }
+          else if (it.model == 'b10') { const n = it.goal == 'gt' ? it.tgt + 2 : it.goal == 'any' ? 34 : +it.ans + (wrong ? 1 : 0); want = [Math.floor(n / 10), n % 10]; }
+          else want = [it.goal == 'less' ? it.s0[0] - 2 : it.goal == 'any' ? 4 : +it.ans + (wrong ? (+it.ans > 1 ? -1 : 1) : 0)];
+          const cur = await pg.evaluate(() => LS.u.mm.slice());
+          for (let i = 0; i < want.length; i++) { const d = want[i] - cur[i]; for (let j = 0; j < Math.abs(d); j++) await pg.click(`.mmb[data-i="${i}"][data-d="${d > 0 ? 1 : -1}"]`); }
+          await pg.click('#mcheck');
+        } else throw new Error('lesson item ' + JSON.stringify(it));
+        return it;
+      };
+      const stepS = async (pg, wrong) => { const s0 = await pg.evaluate(() => LS.seq), it = await actS(pg, wrong); await pg.waitForFunction(x => !LS.st || LS.seq > x, s0, { timeout: 15000 }); return it; };
+      const fitS = (pg, at, sel) => pg.evaluate(sel => {
+        const o = [], vw = document.documentElement.clientWidth;
+        if (document.documentElement.scrollWidth > vw) o.push('sideways scroll');
+        for (const b of document.querySelectorAll(sel)) { const r = b.getBoundingClientRect(); if (!r.width) continue;
+          if (r.width < 47.5 || r.height < 47.5) o.push('small target ' + (b.id || b.className));
+          if (r.right > vw + 1 || r.left < -1) o.push('off screen ' + (b.id || b.className)); }
+        return o;
+      }, sel).then(o => o.forEach(x => bad.push(at + x)));
+      for (const [w, h] of [[380, 780], [600, 960]]) {
+        const ta = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ta.page, at = 'LS-STOP ' + w + 'x' + h + ' ', sz = w + 'x' + h;
+        try {
+          // 1. the map: a lesson stop with its ticket before Make Ten, Make Ten's practice locked
+          await pg.evaluate(() => { S.grade = 0; S.know = {}; S.lsPay = {}; delete S.lsOpen; delete S.les; S.lm = []; S.pt = { bank: 120, day: today(), used: 0 }; S.ptCfg = { per: 3, max: 30, pause: false, need: 0 };
+            const i = NODES.math.findIndex(n => nid(n) === 'tenf2'); for (let j = 0; j < NODES.math.length; j++) setSt('math', j, j < i ? 2 : 0);
+            window.__wrong = 0; const w0 = SFX.wrong; SFX.wrong = (...a) => { window.__wrong++; return w0(...a); }; save(); pathMap('math', NODES.math[i].wi); });
+          const ti = await pg.evaluate(() => NODES.math.findIndex(n => nid(n) === 'tenf2'));
+          await pg.waitForSelector(`.lsn[data-ls="${ti}"]`, { timeout: 5000 });
+          await pg.evaluate(i => document.querySelector(`.lsn[data-ls="${i}"]`).scrollIntoView({ block: 'center' }), ti);
+          await pg.waitForSelector('.lsn.ls-go', { timeout: 10000 }).catch(() => bad.push(at + 'the planner did not mark the lesson stop'));
+          const mp = await pg.evaluate(i => { const b = document.querySelector(`.lsn[data-ls="${i}"]`), r = b.getBoundingClientRect(), vw = document.documentElement.clientWidth,
+              tk = b.nextElementSibling, tr = tk && tk.getBoundingClientRect(), nd = document.querySelector(`.node[data-n="${i}"]`);
+            const hit = [...document.querySelectorAll('#map .node')].filter(n => { const q = n.getBoundingClientRect(); return q.right > r.left && q.left < r.right && q.bottom > r.top && q.top < r.bottom; }).length;
+            return { w: r.width, h: r.height, in: r.left >= 0 && r.right <= vw, hit, label: b.getAttribute('aria-label'), go: b.classList.contains('ls-go'), cur: b.classList.contains('cur'),
+              tk: tk && tk.classList.contains('lsn-tk') ? tk.textContent : '', tkIn: tr && tr.left >= 0 && tr.right <= vw, lab: (tk && tk.nextElementSibling || {}).textContent,
+              lock: nd.classList.contains('lock'), nlabel: nd.getAttribute('aria-label'), before: !!(b.compareDocumentPosition(nd) & Node.DOCUMENT_POSITION_FOLLOWING), above: r.top < nd.getBoundingClientRect().top }; }, ti);
+          if (mp.w < 48 || mp.h < 48 || !mp.in || mp.hit || !/^Learn Make Ten with .*earns 5 minutes of game time/.test(mp.label) || !mp.go || !mp.cur || mp.tk !== '+5 min' || !mp.tkIn
+            || !/^Learn with /.test(mp.lab) || !mp.lock || !/learn it first/.test(mp.nlabel) || !mp.before || !mp.above) bad.push(at + 'the map: ' + JSON.stringify(mp));
+          await pg.screenshot({ path: require('path').join(shots, `lstop-map-${sz}.png`) });
+          // 2. the locked practice stop: a message, nothing starts
+          await pg.click(`.node[data-n="${ti}"]`);
+          await vwait(pg, 400);
+          const lk = await pg.evaluate(() => ({ map: !!document.querySelector('#map'), play: !!document.querySelector('.play.qs'), fb: (document.querySelector('#toast') || {}).textContent || '' }));
+          if (!lk.map || lk.play || !/first/i.test(lk.fb)) bad.push(at + 'the locked stop: ' + JSON.stringify(lk));
+          // 3. the start card
+          await pg.click(`.lsn[data-ls="${ti}"]`);
+          await pg.waitForSelector('#lsopen', { timeout: 15000 });
+          const op = await pg.evaluate(() => ({ price: (document.querySelector('#lsprice') || {}).textContent, h1: document.querySelector('#lsopen h1').textContent }));
+          if (!/earn \+5 min of game time/.test(op.price || '') || !/^Learn Make Ten with /.test(op.h1)) bad.push(at + 'the start card: ' + JSON.stringify(op));
+          await fitS(pg, at + 'start card: ', '#lsopen .btn, .ls-top .btn');
+          if (w == 380) await pg.screenshot({ path: require('path').join(shots, `lstop-start-${sz}.png`) });
+          // 4. "I already know this!" with the first show-me item missed: straight into the lesson, no reveal, no wrong sound
+          await pg.evaluate(() => { LS.WAKE = 400; });
+          await pg.click('#lsknow');
+          await pg.waitForSelector('#lsplay[data-beat="pre"]', { timeout: 10000 });
+          const m0 = await pg.evaluate(() => { const m = document.querySelector('#lsmeter'), r = m && m.getBoundingClientRect(), vw = document.documentElement.clientWidth;
+            return { t: m && m.textContent, in: r && r.left >= 0 && r.right <= vw, h: r && r.height, f: m && m.style.getPropertyValue('--f') }; });
+          if (m0.t !== '+5 min' || !m0.in || m0.f !== '0.000') bad.push(at + 'the meter at the start: ' + JSON.stringify(m0));
+          await stepS(pg, true);
+          const sl = await pg.evaluate(() => ({ b: LS.st && LSB[LS.st.b], pre: LS.st && LS.st.pre, wrong: window.__wrong, to: LS.st && LS.st.to }));
+          if (sl.b == 'pre' || JSON.stringify(sl.pre) !== '[false]' || sl.wrong || sl.to) bad.push(at + 'a missed show-me item after "I already know this!": ' + JSON.stringify(sl));
+          // 5. through every beat: the meter fills, each screen fits
+          const fs0 = [], beats = [];
+          for (let n = 0; n < 50; n++) {
+            const b = await pg.evaluate(() => (LS.st ? LSB[LS.st.b] : null));
+            if (!b) break;
+            await pg.waitForFunction(() => !LS.st || !document.querySelector('#lsinp.ls-wait'), null, { timeout: 15000 });
+            const f = await pg.evaluate(() => { const m = document.querySelector('#lsmeter'); return m ? +m.style.getPropertyValue('--f') : -1; });
+            fs0.push(f);
+            if (!beats.includes(b)) { beats.push(b); await fitS(pg, at + b + ': ', '#lsinp button, #lsplay .ls-hear, .ls-top .btn');
+              if (b == 'tog' && w == 380) await pg.screenshot({ path: require('path').join(shots, `lstop-meter-${sz}.png`) }); }
+            await stepS(pg, false);
+          }
+          if (fs0.some((f, k) => f < 0 || k && f < fs0[k - 1] - 1e-9) || !(fs0[fs0.length - 1] > .8)) bad.push(at + 'the meter does not fill: ' + fs0.join(' '));
+          // 6. the end card: +5:00 game time, and the bank chip counts up by 5:00
+          await pg.waitForSelector('#lsend', { timeout: 10000 });
+          const e0 = await pg.evaluate(() => ({ gt: [...document.querySelectorAll('.ls-earn .ls-gt')].map(x => x.textContent).join('|'), bank: document.querySelector('#lsbank b').textContent, tk: !!document.querySelector('#lstk') }));
+          await pg.waitForFunction(() => document.querySelector('#lsbank b').textContent === '7:00', null, { timeout: 8000 }).catch(() => {});
+          const e1 = await pg.evaluate(() => ({ bank: document.querySelector('#lsbank b').textContent, pt: pt().bank, pay: S.lsPay.tenf2, btns: [...document.querySelectorAll('.ls-acts .btn')].map(b => b.id).join() }));
+          if (!/^\+5:00 game time Lesson learned/.test(e0.gt) || e0.bank !== '2:00' || !e0.tk || e1.bank !== '7:00' || e1.pt !== 420 || !e1.pay || e1.pay.n !== 1 || e1.btns !== 'lsprac,lsmap,lsnb')
+            bad.push(at + 'the end card: ' + JSON.stringify([e0, e1]));
+          await fitS(pg, at + 'end: ', '.ls-acts .btn, #lsend .ls-top .btn, #lshome');
+          await pg.screenshot({ path: require('path').join(shots, `lstop-end-${sz}.png`) });
+          // 7. back on the map: Make Ten open, its lesson stop learned and now worth +2 min
+          await pg.click('#lsmap');
+          await pg.waitForSelector(`.lsn[data-ls="${ti}"]`, { timeout: 5000 });
+          const m2 = await pg.evaluate(i => { const b = document.querySelector(`.lsn[data-ls="${i}"]`); return { done: b.classList.contains('done'), tk: b.nextElementSibling.textContent,
+            lock: document.querySelector(`.node[data-n="${i}"]`).classList.contains('lock') }; }, ti);
+          if (!m2.done || m2.tk !== '+2 min' || m2.lock) bad.push(at + 'the map after the lesson: ' + JSON.stringify(m2));
+          // 8. a proven skip: Ten and More, both show-me items right, then Show passed: paid 5 minutes
+          await pg.evaluate(() => { LS.open('tenf3'); });
+          await pg.waitForSelector('#lsknow', { timeout: 5000 });
+          await pg.click('#lsknow');
+          await pg.waitForSelector('#lsplay[data-beat="pre"]', { timeout: 10000 });
+          for (let k = 0; k < 2; k++) await stepS(pg, false);
+          await pg.waitForSelector('#lsplay[data-beat="show"]', { timeout: 10000 });
+          for (let k = 0; k < 2; k++) await stepS(pg, false);
+          await pg.waitForSelector('#lsend', { timeout: 10000 });
+          const sk = await pg.evaluate(() => ({ gt: (document.querySelector('.ls-earn .ls-gt') || {}).textContent, pay: S.lsPay.tenf3, lm: S.lm[S.lm.length - 1] }));
+          if (!/^\+5:00 game time/.test(sk.gt || '') || !sk.pay || sk.pay.n !== 1 || sk.lm[6] !== 1) bad.push(at + 'the proven skip: ' + JSON.stringify(sk));
+          // 9. lessons off: no lesson stops, no locks
+          await pg.evaluate(() => { TEACH.off = true; const i = NODES.math.findIndex(n => nid(n) === 'add1'); for (let j = 0; j < NODES.math.length; j++) setSt('math', j, j < i ? 2 : 0); pathMap('math', NODES.math[i].wi); });
+          await vwait(pg, 300);
+          const off = await pg.evaluate(() => ({ lsn: document.querySelectorAll('.lsn').length, lock: document.querySelector(`.node[data-n="${NODES.math.findIndex(n => nid(n) === 'add1')}"]`).classList.contains('lock') }));
+          await pg.evaluate(() => { TEACH.off = false; });
+          if (off.lsn || off.lock) bad.push(at + 'lessons off: ' + JSON.stringify(off));
+          if (w == 380) {
+            // 10. fix179: a missed show-me item after "I already know this!" is in the save at once; leaving during the slide line and
+            //     coming back goes on into the lesson (never the same show-me item again)
+            await pg.evaluate(() => { delete S.les; LS.open('tenf3'); });
+            await pg.waitForSelector('#lsknow', { timeout: 5000 });
+            await pg.click('#lsknow');
+            await pg.waitForSelector('#lsplay[data-beat="pre"]', { timeout: 10000 });
+            const l0 = await pg.evaluate(() => LS.cur(LS.st).q.label);
+            await actS(pg, true);
+            const kept = await pg.evaluate(() => { const l = JSON.parse(localStorage.getItem(SKEY)).les; LS.st = null; home(); return l; });
+            await pg.evaluate(() => { LS.open('tenf3'); });
+            await pg.waitForSelector('#lsplay', { timeout: 10000 });
+            const rs = await pg.evaluate(() => ({ b: document.querySelector('#lsplay').dataset.beat, l: LS.st && LS.cur(LS.st).q && LS.cur(LS.st).q.label, pre: LS.st && LS.st.pre }));
+            if (!kept || JSON.stringify(kept.pre) !== '[false]' || rs.b == 'pre' || rs.l === l0 || JSON.stringify(rs.pre) !== '[false]') bad.push(at + 'left during the slide line: ' + JSON.stringify([kept, rs]));
+            await pg.evaluate(() => { LS.st = null; delete S.les; home(); });
+            // 11. fix179: a lesson part that does not load opens the practice stop (never a dead end); a part that loads after the child
+            //     has gone on never replaces the screen
+            await pg.evaluate(() => { const i = NODES.math.findIndex(n => nid(n) === 'add1'); for (let j = 0; j < NODES.math.length; j++) setSt('math', j, j < i ? 2 : 0); delete S.know.add1; delete LS_PASS.add1;
+              window.__pl = partsLoad; partsLoad = () => Promise.resolve('teach'); pathMap('math', NODES.math[i].wi); });
+            const ai = await pg.evaluate(() => NODES.math.findIndex(n => nid(n) === 'add1'));
+            await pg.waitForSelector(`.lsn[data-ls="${ai}"]`, { timeout: 5000 });
+            await pg.evaluate(i => document.querySelector(`.lsn[data-ls="${i}"]`).scrollIntoView({ block: 'center' }), ai);
+            await pg.click(`.lsn[data-ls="${ai}"]`);
+            await pg.waitForSelector('.play.qs', { timeout: 8000 }).catch(() => {});
+            const pf = await pg.evaluate(() => ({ play: !!document.querySelector('.play.qs'), node: typeof G != 'undefined' && G && G.node, path: G && G.path, gate: lsGate('math', G ? G.node : 0), card: !!document.querySelector('#lsopen') }));
+            if (!pf.play || pf.node !== ai || pf.path !== 'math' || pf.gate || pf.card) bad.push(at + 'a lesson part that does not load: ' + JSON.stringify(pf));
+            await pg.evaluate(() => { delete LS_PASS.add1; let go; partsLoad = () => new Promise(r => { go = r; }); window.__go = () => go(null); pathMap('math', NODES.math[NODES.math.findIndex(n => nid(n) === 'add1')].wi); });
+            await pg.waitForSelector(`.lsn[data-ls="${ai}"]`, { timeout: 5000 });
+            await pg.evaluate(i => document.querySelector(`.lsn[data-ls="${i}"]`).scrollIntoView({ block: 'center' }), ai);
+            await pg.click(`.lsn[data-ls="${ai}"]`);
+            await pg.evaluate(() => { home(); window.__go(); });
+            await vwait(pg, 500);
+            const lt = await pg.evaluate(() => ({ card: !!document.querySelector('#lsopen'), map: !!document.querySelector('#map') }));
+            await pg.evaluate(() => { partsLoad = window.__pl; });
+            if (lt.card || lt.map) bad.push(at + 'a part that loaded late replaced the screen: ' + JSON.stringify(lt));
+          }
+          notes.push(sz);
+        } catch (e) { bad.push(at + (e.stack || e).toString().split('\n').slice(0, 3).join(' ')); }
+        for (const e of ta.errors) bad.push(at + e);
+        for (const u of ta.network) bad.push(at + 'network request: ' + u);
+        await ta.ctx.close();
+      }
+      if (bad.length) fail('LS-STOP lesson stops:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('LS-STOP: lesson stops at ' + notes.join(' and ') + ': the lesson stop before Make Ten with its +5 min ticket, practice locked behind it; the start card; ' +
+        '"I already know this!" with a miss slides into the lesson with no wrong sound; the top bar meter fills; the end card lists +5:00 game time and the bank chip counts ' +
+        'up by 5:00; the stop opens and its lesson stop shows +2 min; a proven skip pays; lessons off has no lesson stops or locks; (fix179) a show-me item missed and left ' +
+        'during the slide line resumes in the lesson; a lesson part that does not load opens the practice round, one that loads late changes no screen; no console errors, no network requests');
+    }
+    // end LS-STOP
 
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');

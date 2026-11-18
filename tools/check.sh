@@ -112,7 +112,7 @@ token_guard() {
 }
 sizes() {
   echo "== sizes (bytes; budgets in tools/test.js: index.html warn 1.2 MB / fail 1.5 MB, each part file warn 400 KB / fail 800 KB,"
-  echo "   data warn 1 MB / fail 2 MB, loaded at start warn 2 MB / fail 3.0 MB, precached (every file) fail 8 MB; audio fail 4.5 MB)"
+  echo "   data warn 1 MB / fail 2 MB, loaded at start warn 2 MB / fail 3.0 MB, precached (every file) fail 15 MB; audio fail 4.5 MB)"
   # the files index.html loads at start, in its order (A11, A11b, A11c): gen.<VER>.js, gen2.<VER>.js, bt.<VER>.js, data.<VER>.js;
   # P6-02: games.<VER>.js, rally.<VER>.js (G-RALLY2) and games2.<VER>.js load on demand (the Game Room) and are precached by sw.js
   local files lazy total cache f

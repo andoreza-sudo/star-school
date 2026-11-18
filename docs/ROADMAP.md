@@ -117,6 +117,9 @@ open-ended writing grading, any generative AI at runtime.
 | `S.bt` | P3-01 | `{type: {lvl, stars, seen: [], best}}`, plus `S.bt.daily` |
 | `S.ptCfg.need` | P5-09 | integer 0-120, minutes of learning needed each day before the Game Room opens (absent = 0) |
 | `S.pt.open`, `S.pt.met` | P5-09 | `open`: day key the grown-up opened the Game Room anyway; `met`: `{day, min}` learn-first already done today (both absent = none) |
+| `S.ptCfg.ls1`, `.ls2`, `.ls3`, `.lsT` | LS-STOP | integers 0-10, minutes of game time a lesson pays: first pass (absent = 5), second pass (2), each later pass, once a day per lesson (1), a good try that did not pass, once a day, before the first pass, never more in all than the first pass (1); Grown-ups, Game time; read with `lsPayCfg()` |
+| `S.lsPay` | LS-STOP | `{nid: {n, d, d3, t, td}}` lesson pay history: proven passes, day key of the last pass, of the last paid later pass, minutes paid for good tries, day key of the last paid try; optional, absent = never passed or paid; no migration |
+| `S.lsOpen` | LS-STOP (migration 6, save v7) | `{nid: 1}` lesson stops an old save had already reached (the stop before passed, or a later stop of its world passed) and not passed: kept open, not locked behind their lesson; absent = none |
 | `S.rally` | G-02, G-02b | Star Rally: `{spk, races, best: {track: ms}, stars: {track: 0-3}, paint, paints: {hue: 1}, stk, stks: {id: 1}, body, mode, quiz, tilt, place}`; G-02b added by id with defaults: `cups: {cupId: {best: 1-4 (gold, silver, bronze, no trophy), runs}}`, `cup: {id, i: 0-2, pts: {you, fox, bunny, bear, penguin, frog}}` (a cup being raced; dropped if its cup is not open), `lap: {track: ms}` (best time-trial lap), `ghost: {track: {ms, g}}` (that lap, two letters per 0.1 s, at most 2400), `upg: {grip, turbo, bumper: 0-3}`; created when the game is first opened (absent = a new player); every field read with a default and checked (`rlS()`), sparkles never below 0; no migration (a G-02 save keeps its sparkles, stars, best times and purchases; cups with a raced track count as open). `S.race` stays Fact Race's bests. G-RALLY2 (v163) added by id with defaults, no migration: `kit` (`''` or a body kit id), `kits: {id: 1}`, `whl` (`''` or a wheels id), `whls`, `horn` (`'beep'` free, or a horn id), `horns`, `trail` (`''` or a trail id), `trails`, `tw` (the `today()` date the day's twist paid its bonus); a chosen item that is not owned falls back to the free one, unknown ids are dropped. The new tracks use the existing maps under their own ids (`stars`, `best`, `lap`, `ghost`: `'woods-0'`, mirror `'meadow-0m'`), the new cups `cups` (`maple`, `msprout`, `mwave`, `mfrost`, `mstar`, `mmaple`) |
 | `S.buzz` | G-RALLY2 (R-03 A4) | Grown-ups switch "Buzz: a short vibration in games", per child: `false` = off; absent (or `true`) = on; never buzzes in Calm mode (`buzz()` in 10-sfx.js) |
 | `S.garage` | G-HC2, G-HC3 (Hill Climb, older fields from the first versions) | `{bolts, up: {engine, tires, susp, tank: 0-5}, best: {world: m}, veh, vehs: {id: 1}, paint (a colour role: r b g o p v k2 y), paints: {role: 1}, st: {stageId: bits 1 goal, 2 mission 1, 4 mission 2}, easy (true / false; absent = on for Pre-K to 2nd grade), own2: {itemId: 1} (G-HC3 garage level 2), rim, trail, top (the level 2 item in use of each kind, or ''), day (today() of the last day today's drive paid its bonus; absent = never)}`; kept from older saves and still read: `lv` (old level stars open their world), `best` (old free-drive distances open their world and stay the distance-drive bests), `mode`, `rush`; `missions` (old random missions) pay their bolts once if done, then become `[]`. Every field read with a default and checked by `garageS()` (bolts an integer >= 0, levels 0-5, unknown stage ids dropped, old raw paint colours mapped to roles, a vehicle not owned falls back to the jeep); `susp`, `st` and `easy` added by id with defaults, no migration G-HC3: new fields by id with defaults, no migration: a G-HC2 save gets `own2 {}`, empty `rim`/`trail`/`top` and no `day`; an unknown item, an item not owned or of the wrong kind is dropped; no streak is kept. |
@@ -656,6 +659,26 @@ genres and the mechanics that keep children playing in a healthy way, check them
 with a one-page design each; Andy picks or the merger picks if no answer.
 
 **G-04 · New games** · Opus: one chunk per game picked in G-03, same rules as G-02.
+
+## 10d. Queued after the paid lesson stops (added 2026-11-18 at Andy's request)
+
+Andy decided (2026-11-18): no AI model on the tablet. Words a child sees are written at authoring time and approved by the owner;
+the tablet only picks among approved sentences with simple rules. Size budget: the owner allows up to 20 MB for the whole offline
+app (code plus audio); the start-up limit stays 3 MB.
+
+**HINT-01 · A hint for each common mistake, in every practice question** · Opus: extend the lesson misconception codes
+(`BUGS`, `q.bug`, the TEACH-3 and TEACH-4 codes) to every Practice question kind. For each question the app computes what each
+known mistake would answer (forgot to carry, wrote 15 in the ones place, added instead of took away, read "cap" for "cat", ...)
+and, when the child's wrong answer matches one, shows that mistake's approved hint with the real numbers filled in. Hints are
+drafted with tools/author.js and go live only after the owner's read-through. Accept: every Practice skill has its common
+mistakes coded; simulated children show the hint fires on the matching mistake and never on a right answer or a random guess.
+
+**PERS-01 · Problems about the child's interests** · Sonnet: a grown-up or child picks a few interests (soccer, dinosaurs,
+horses, space, cooking, ...); approved word lists per interest fill approved templates in word problems and stories. No sentence
+is invented on the tablet. Accept: every template and word list reviewed; kid-safe list and content rules checked by test.js.
+
+**ASK-01 · "Ask the pet"** · Sonnet: a short menu of questions per lesson or stop ("Why do we carry?", "What is a fraction?");
+each answer written ahead of time and approved; spoken by the pet in its age tone. Accept: no free text; every answer reviewed.
 
 ## 11. Later ideas (not planned)
 
