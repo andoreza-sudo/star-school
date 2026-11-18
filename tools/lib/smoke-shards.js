@@ -23,15 +23,16 @@ const ALLOWED = [
   /^    if \(!errors\.length && !network\.length\) step\('no console errors, no network requests'\);$/,
 ];
 
-// TIMED segments must not share the CPU with the side-by-side shards, test.js and a11y.js. Two kinds: steps that measure real time
-// against a limit (frame times and drawing at a CPU throttle, tap-to-answer, game speed, sound gaps), and steps that read the screen
-// inside one of the app's short feedback windows (a right answer's tick shows for 1.2 s, 150 ms at the bot's 8x clock, then the
-// round moves on), where a busy CPU lets the round move on first (KINDS2, P6-01: "#hint" gone, the tick gone;
-// TEACH-1: the controls asleep for the first 50 ms of a lesson); the WebGL 3D looks
-// (GL-01, GL-02) draw in software and fail to draw or move on a busy CPU. They run in M timed shards
-// (`--shard tI/M`) that check.sh runs with nothing else beside them, like perf.js. A new step of either kind belongs in TIMED.
+// TIMED segments must not share the CPU with the side-by-side shards, test.js and a11y.js: the steps that MEASURE real time against
+// a limit (frame times and drawing at a CPU throttle: P1-05, P3-08, G-02, G-RALLY2, G-HC2, G-HC3, G-04b, S-SPK2, G-BB2; tap-to-answer
+// within 100 ms: P4-17; the gap between sounds: ES-AUDIO) and the WebGL 3D looks (GL-01, GL-02), which draw in software and fail
+// to draw or move on a busy CPU. They run in M timed shards (`--shard tI/M`) that check.sh runs after the others, with nothing beside
+// them but the timed test.js shard, like perf.js. A new step that measures time belongs in TIMED.
+// A step that only READS the screen inside one of the app's short windows (a right answer's tick shows for 1.2 s, 150 ms at the bot's
+// 8x clock, then the round moves on) does not: it reads at the right moment instead, in the page (arm(), armShow(), a wait that
+// returns what it saw: tools/smoke.js, CHK-FAST), so it holds on a busy CPU (KINDS2, P6-01, TEACH-1 were TIMED for that before).
 const TIMED = ['P1-05', 'P3-08', 'G-02', 'G-RALLY2', 'G-HC2', 'G-HC3', 'P4-17', 'G-BB2', 'ES-AUDIO', 'G-04b', 'S-SPK2',
-  'KINDS2-A', 'KINDS2-B', 'KINDS2-C', 'KINDS2-D', 'P6-01', 'GL-01', 'GL-02', 'TEACH-1'];
+  'GL-01', 'GL-02'];
 
 // seconds per segment, measured (tools/smoke.js with SMOKE_SEG_TIMES) on the 4-CPU box with the shards of tools/check.sh running
 const WEIGHTS = {
@@ -47,7 +48,7 @@ const WEIGHTS = {
   'R-01m': 5, 'R-01r': 2, 'R-01s': 5, 'R-01b': 16, 'G-01': 69, 'G-BB2': 52, 'G-BB3': 27, 'G-ART2': 30, 'G-04a': 51, 'R-01d': 7,
   'P5-10': 64, 'P6-05': 15, 'ES-AUDIO': 3, 'EN-PRAISE': 5, 'P6-02': 6, 'G-04b': 106, 'S-SPK': 59, 'S-SPK2': 47, 'G-FEEL2': 7,
   'P6-01': 2, 'GL-01': 32, 'GL-02': 54, 'CHECK-IN': 27, 'KINDS2-A': 26, 'KINDS2-B': 21, 'KINDS2-C': 46, 'KINDS2-D': 29,
-  'TEACH-1': 37, 'TEACH-2': 6,
+  'TEACH-1': 37, 'TEACH-2': 6, 'STK-2': 6, 'TEACH-2b': 57, 'TEACH-3': 54,
 };
 
 // Reads smoke.js: { ids (segments in source order), lines (id -> source lines), problems }
