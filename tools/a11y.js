@@ -317,6 +317,21 @@ const SCREENS = {
   'teach35-fix': { run: async p => teach35Beat(p, 'mbig2', 'chk', 1, 'steps') },
   'teach35-tiles': { run: async p => teach35Beat(p, 'mbig2', 'chk', 2, 'steps') },
   'teach35-mine': { run: async p => teach35Beat(p, 'mbig2', 'chk', 0, 'mine') },
+  // TEACH-3b: the models of the stops TEACH-3 left out, each at its first Together item (a build)
+  'teach3b-graph': { run: async p => teach35Beat(p, 'data3', 'tog', 0) },
+  'teach3b-plot': { run: async p => teach35Beat(p, 'data4', 'tog', 0) },
+  'teach3b-angle': { run: async p => teach35Beat(p, 'ang1', 'tog', 0) },
+  'teach3b-proto': { run: async p => teach35Beat(p, 'ang2', 'tog', 0) },
+  'teach3b-xy': { run: async p => teach35Beat(p, 'coord1', 'tog', 0) },
+  'teach3b-dial': { run: async p => teach35Beat(p, 'meas4', 'tog', 0) },
+  'teach3b-tape': { run: async p => teach35Beat(p, 'story5', 'tog', 0) },
+  'teach3b-left': { run: async p => teach35Beat(p, 'story7', 'tog', 0) },
+  'teach3b-rule': { run: async p => teach35Beat(p, 'pat4', 'tog', 0) },
+  'teach3b-props': { run: async p => teach35Beat(p, 'shape5', 'tog', 0) },
+  'teach3b-sym': { run: async p => teach35Beat(p, 'shape6', 'tog', 0) },
+  'teach3b-qtry': { run: async p => teach35Beat(p, 'dbig4', 'tog', 0) },
+  'teach3b-mixb': { run: async p => teach35Beat(p, 'fop4', 'tog', 0) },
+  'teach3b-cut': { run: async p => teach35Beat(p, 'fop6', 'tog', 0) },
   // TEACH-4: the reading and Pre-K lessons (teachrd): the sound sort with pictures (First Sounds), the letter named (Name it), building a word
   // from letter tiles (Build a Word), the pet's letters in Check me and its fix, the sentence matched to a picture (Picture Words), a Pre-K
   // picture choice (Which Has More)

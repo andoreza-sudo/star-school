@@ -10,10 +10,14 @@
    node tools/author.js --approve <stop ...|all> [--by NAME] [--date YYYY-MM-DD] [--note TEXT]
                                            TEACH-2b: the owner's one step: mark drafts "status: reviewed NAME DATE (NOTE)" (only drafts
                                            that pass every check), then write src/js/52e-words.js, so their lessons go live at the next build
-   node tools/author.js --read <file> [--batch 3|4] [stop ...]
+   node tools/author.js --read <file> [--batch 3|4|3b] [stop ...]
                                            TEACH-2b: one read-through file of the unreviewed drafts (or the stops named), in map order;
                                            TEACH-3: --batch 3, the grade 3-5 drafts not yet reviewed (docs/drafts/BATCH3-READ.md);
-                                           TEACH-4: --batch 4, the reading and Pre-K drafts not yet reviewed (docs/drafts/BATCH4-READ.md)
+                                           TEACH-4: --batch 4, the reading and Pre-K drafts not yet reviewed (docs/drafts/BATCH4-READ.md);
+                                           TEACH-3b: --batch 3b, the lessons of the stops TEACH-3 and TEACH-4 left out (LS_DRAFTED[id].b3b;
+                                           docs/drafts/BATCH3B-READ.md); batches 3 and 4 leave them out
+   node tools/author.js --approve all --batch 3b   TEACH-3b: approve every waiting draft of one batch only (2, 3, 4 or 3b); "all" with no
+                                           --batch approves every batch and lists each lesson it approved under its batch
 
    What a draft is. Only words: the lines each of the six beats says (Remember, Explore, Name it, Together, Check me, Show), the
    pet's reasons for each misconception code, and tonight's question for a grown-up. Numbers are never written: a number is a
@@ -285,7 +289,7 @@ function approve(ids, o = {}) {
   const by = String(o.by || 'owner').replace(/\s+/g, ' ').trim(), date = o.date || new Date().toISOString().slice(0, 10), done = [], bad = [];
   if (!/^\d{4}-\d\d-\d\d$/.test(date)) throw new Error('--date must be YYYY-MM-DD');
   for (const x of drafts()) {
-    if (!x.d || !(ids.includes('all') ? x.d.status === 'unreviewed' : ids.includes(x.d.id))) continue;
+    if (!x.d || !(ids.includes('all') ? x.d.status === 'unreviewed' && (o.batch == null || batchOf(x.d.id) === String(o.batch)) : ids.includes(x.d.id))) continue;
     if (x.problems.length) { bad.push(`${x.d.id}: ${x.problems.length} problems (fix them first: node tools/author.js --check)`); continue; }
     const t = fs.readFileSync(x.file, 'utf8'), line = `status: reviewed ${by} ${date}${o.note ? ' (' + o.note + ')' : ''}`;
     fs.writeFileSync(x.file, t.replace(/^status:.*$/m, line));
@@ -293,20 +297,41 @@ function approve(ids, o = {}) {
   }
   for (const id of ids) if (id !== 'all' && !done.includes(id) && !bad.some(b => b.startsWith(id + ':'))) bad.push(`${id}: no such draft`);
   if (done.length) cp.execFileSync('python3', [path.join(ROOT, 'tools', 'build.py'), '--words-only'], {stdio: 'pipe'});
-  return {done, bad};
+  // TEACH-3b: what was approved, by batch, so "all" never covers a batch without saying so
+  const byBatch = {};
+  for (const id of done) (byBatch[batchOf(id)] = byBatch[batchOf(id)] || []).push(id);
+  return {done, bad, byBatch};
+}
+// TEACH-3b: the read-through batch of a lesson: '3b' (D.b3b), 4 (LS_B4), 3 (LS_B35) or 2 (the rest)
+function batchOf(id) {
+  return app()(`(()=>{const D=typeof LS_DRAFTED!='undefined'&&LS_DRAFTED[${JSON.stringify(String(id))}];if(D&&D.b3b)return'3b';if(typeof LS_B4!='undefined'&&LS_B4.includes(${JSON.stringify(String(id))}))return'4';return D&&D.band=='35'?'3':'2'})()`);
 }
 // the read-through: every lesson's sheet in map order, short enough to read on a phone
 // TEACH-3: o.batch 3 reads the grade 3-5 drafts (LS_B35) that are not reviewed, under the batch 3 heading
 function readThrough(ids, o = {}) {
   // TEACH-4: the reading map's stops come after the math map's (Tiny Town, then ABC Beach and the reading worlds)
   const R = app(), at = id => R(`(()=>{const i=NODES.math.findIndex(n=>nid(n)===${JSON.stringify(id)});return i>=0?i:1e4+NODES.read.findIndex(n=>nid(n)===${JSON.stringify(id)})})()`);
-  const b3 = o.batch == 3, b4 = o.batch == 4, B35 = R('LS_B35'), B4 = R('typeof LS_B4=="undefined"?[]:LS_B4');
+  const b3b = String(o.batch) == '3b', b3 = !b3b && o.batch == 3, b4 = !b3b && o.batch == 4, B35 = R('LS_B35'), B4 = R('typeof LS_B4=="undefined"?[]:LS_B4');
+  const B3B = R('Object.keys(LS_DRAFTED).filter(id=>LS_DRAFTED[id].b3b)'); // TEACH-3b: its own batch; batches 2, 3 and 4 leave it out
   // no stops named: every unreviewed draft of this batch's band (batch 4 the reading and Pre-K lessons, batch 3 the grade 3-5 lessons,
   // batch 2 the rest); none waiting reads as none, never as every draft (v177: with batch 2 all reviewed, an empty list used to pull in the batch 3 drafts)
-  if (!ids.length) ids = drafts().filter(x => x.d && x.d.status === 'unreviewed' && (b4 ? B4.includes(x.d.id) : !B4.includes(x.d.id) && B35.includes(x.d.id) === b3)).map(x => x.d.id);
+  if (!ids.length) ids = drafts().filter(x => x.d && x.d.status === 'unreviewed' && (b3b ? B3B.includes(x.d.id) : !B3B.includes(x.d.id) && (b4 ? B4.includes(x.d.id) : !B4.includes(x.d.id) && B35.includes(x.d.id) === b3))).map(x => x.d.id);
   const xs = drafts().filter(x => x.d && ids.includes(x.d.id)).sort((a, b) => at(a.d.id) - at(b.d.id));
-  if (!xs.length) return [`# Batch ${b4 ? 4 : b3 ? 3 : 2} read-through`, '', 'Nothing is waiting: every lesson of this batch is reviewed.', ''].join('\n');
-  const head = b4 ? ['# Batch 4 read-through: reading for K to 2nd grade, and Pre-K', '',
+  if (!xs.length) return [`# Batch ${b3b ? '3b' : b4 ? 4 : b3 ? 3 : 2} read-through`, '', 'Nothing is waiting: every lesson of this batch is reviewed.', ''].join('\n');
+  // TEACH-3b: what "all" would approve besides this batch, named, so it is never a surprise
+  const others = b3b ? drafts().filter(x => x.d && x.d.status === 'unreviewed' && !B3B.includes(x.d.id)).map(x => x.d.id) : [];
+  const head = b3b ? ['# Batch 3b read-through: the stops batches 3 and 4 left out', '',
+    `${xs.length} lessons, in map order. Each is what the child hears:`, 'the six beats, the pet\'s reasons when it is caught, and tonight\'s question for you.', '',
+    'Grades 3 and 4 hear the older kid pet; grade 5 hears the teen-like partner.', 'The last two (Word Workshop, 2nd grade reading) hear the little one.', '',
+    'The app fills in each {slot} from the problem on screen, so numbers are always right.',
+    'The app also says each problem or story itself, after the Together and Show lines.', '',
+    'Until you approve a lesson, it runs on short hand-written lines', '(its idea, a Name it line, the pet\'s reasons), so it works now.', '',
+    'New models in this batch: bar models for story problems, a bar graph to build,', 'a line plot, angles and a protractor with two scales, a coordinate grid,',
+    'a kitchen scale and a jug, an in and out rule, shape facts and fold lines,', 'try-how-many-fit for dividing by 2-digit numbers, mixed-number bars, cut bars.', '',
+    'To change a word: edit the JSON in that lesson\'s file in docs/drafts/.', 'When you are happy, say so, or run:', '',
+    '`node tools/author.js --approve all --batch 3b --by <your name>`', '', '(or name the lessons instead of all). Approved lessons use their words at the next build.',
+    others.length ? `Note: --approve all WITHOUT --batch 3b also approves ${others.length} lessons of other batches still waiting.` : 'No lesson of another batch is waiting.', '']
+    : b4 ? ['# Batch 4 read-through: reading for K to 2nd grade, and Pre-K', '',
     `${xs.length} lessons, in map order: Tiny Town (Pre-K math), ABC Beach (Pre-K reading),`, 'then the reading worlds of Kindergarten, 1st and 2nd grade.',
     'Each is what the child hears: the six beats, the pet\'s reasons when it is caught,', 'and tonight\'s question for you. All of them hear the little one pet.', '',
     'The app fills in each {slot} from the question on screen: {word} is the picture\'s word,', '{letter} the letter or letter team being learned, {other} the second one of a sort,',
@@ -316,7 +341,7 @@ function readThrough(ids, o = {}) {
     'The reading lessons: Explore sorts pictures by a sound, Name it shows the letter,', 'Together builds words from letter tiles, Check me has the pet read "cat" as "cap"',
     'for the child to fix, and Show is a short sentence to read and match to a picture.', '',
     'To change a word: edit the JSON in that lesson\'s file in docs/drafts/.', 'When you are happy, say so, or run:', '',
-    '`node tools/author.js --approve <stop ...> --by <your name>`', '', '(or all, which also approves any lesson of batches 2 and 3 still waiting).', 'Approved lessons use their words at the next build.', '']
+    '`node tools/author.js --approve <stop ...> --by <your name>`', '', '(or all --batch 4 for this batch only; all alone also approves every other batch still waiting).', 'Approved lessons use their words at the next build.', '']
     : b3 ? ['# Batch 3 read-through: grade 3 to 5 math lessons', '',
     `${xs.length} lessons, in map order. Each is what the child hears:`, 'the six beats, the pet\'s reasons when it is caught, and tonight\'s question for you.', '',
     'Grades 3 and 4 hear the older kid pet; grade 5 hears the teen-like partner.', '',
@@ -325,7 +350,7 @@ function readThrough(ids, o = {}) {
     'Until you approve a lesson, it runs on short hand-written lines', '(its idea, a Name it line, the pet\'s reasons), so it works now.', '',
     'In Check me the pet shows its own working (or works out a problem the child sets),', 'and the child finds the slip and builds the reason from word tiles.', '',
     'To change a word: edit the JSON in that lesson\'s file in docs/drafts/.', 'When you are happy, say so, or run:', '',
-    '`node tools/author.js --approve <stop ...> --by <your name>`', '', '(or all, which also approves any batch 2 lesson still waiting).', 'Approved lessons use their words at the next build.', '']
+    '`node tools/author.js --approve <stop ...> --by <your name>`', '', '(or all --batch 3 for this batch only; all alone also approves every other batch still waiting).', 'Approved lessons use their words at the next build.', '']
     : ['# Batch 2 read-through: grade 1 and 2 math lessons', '',
     `${xs.length} lessons, in map order. Each is what the child hears:`, 'the six beats, the pet\'s reasons when it is caught, and tonight\'s question for you.', '',
     'The app fills in each {slot} from the problem on screen, so numbers are always right.',
@@ -335,19 +360,19 @@ function readThrough(ids, o = {}) {
   return head.concat(xs.map((x, i) => `## ${i + 1}. ${x.d.t} (${x.d.id})\n\n\`\`\`text\n${sheet(x.d).split('\n').slice(1).join('\n')}\n\`\`\`\n`)).join('\n');
 }
 
-module.exports = {approve, readThrough, contract, BEATS, BANNED, SLOTS, LS_SECS, checkLine, checkDraft, checkScripts, lessonSecs, parseDraft, draftStatus, sheet, draftFile, drafts, draftPrompt, ageOf};
+module.exports = {approve, batchOf, readThrough, contract, BEATS, BANNED, SLOTS, LS_SECS, checkLine, checkDraft, checkScripts, lessonSecs, parseDraft, draftStatus, sheet, draftFile, drafts, draftPrompt, ageOf};
 
 if (require.main === module) {
   const a = process.argv.slice(2), has = f => a.includes(f), val = f => (a.indexOf(f) >= 0 ? a[a.indexOf(f) + 1] : null);
   if (has('--approve')) {
-    const ids = a.slice(a.indexOf('--approve') + 1).filter((x, i, all) => !x.startsWith('--') && !['--by', '--date', '--note'].includes(all[i - 1]));
-    const r = approve(ids, {by: val('--by'), date: val('--date'), note: val('--note')});
-    console.log((r.done.length ? 'reviewed: ' + r.done.join(', ') + '\nwrote src/js/52e-words.js: these lessons go live at the next build (python3 tools/build.py)' : 'nothing marked reviewed')
+    const ids = a.slice(a.indexOf('--approve') + 1).filter((x, i, all) => !x.startsWith('--') && !['--by', '--date', '--note', '--batch'].includes(all[i - 1]));
+    const r = approve(ids, {by: val('--by'), date: val('--date'), note: val('--note'), batch: val('--batch')});
+    console.log((r.done.length ? 'reviewed, by batch:\n' + Object.keys(r.byBatch).sort().map(b => `  batch ${b}: ${r.byBatch[b].length} (${r.byBatch[b].join(', ')})`).join('\n') + '\nwrote src/js/52e-words.js: these lessons go live at the next build (python3 tools/build.py)' : 'nothing marked reviewed')
       + (r.bad.length ? '\nnot marked:\n  ' + r.bad.join('\n  ') : ''));
     process.exitCode = r.bad.length ? 1 : 0;
   } else if (has('--read')) {
     const f = val('--read'), ids = a.filter((x, i) => !x.startsWith('--') && a[i - 1] !== '--read' && a[i - 1] !== '--batch');
-    fs.writeFileSync(path.resolve(f), readThrough(ids, {batch: +val('--batch') || 2}));
+    fs.writeFileSync(path.resolve(f), readThrough(ids, {batch: val('--batch') == '3b' ? '3b' : +val('--batch') || 2}));
     console.log('wrote ' + f);
   } else if (has('--draft')) {
     const r = draft(val('--draft'), {grade: val('--grade'), dry: has('--dry')});

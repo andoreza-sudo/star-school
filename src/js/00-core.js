@@ -10,7 +10,7 @@ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 const KEY='starschool-v2';
 const BUILD='__VER__'; // ROOM: the build stamp for code in part files (tools/build.py writes VER over __VER__ in index.html only; the Grown-ups screens are in gen)
 const RELEASE='1.0.0'; // P6-05: the release number parents see (Home footer, Grown-ups > About). VER (tools/build.py) stays the build stamp and bumps every chunk.
-const LATEST=7; // newest save schema version = MIGRATIONS.length (ROADMAP section 9)
+const LATEST=8; // newest save schema version = MIGRATIONS.length (ROADMAP section 9)
 let S,SAVE_RAW=null,SAVE_CORRUPT=false,SAVE_FAILED=false;
 /* P5-10: the key of the child who is playing. Child 1 is KEY itself (unchanged since v30); 01-profiles.js picks another child's
    key at load. SAVE_OFF stops save() while the page reloads after a child was deleted. */
@@ -155,6 +155,17 @@ const MIGRATIONS=[null,
       return passed(p,i-1)||a.wi!==b.wi&&worldSkipped(p,a.wi)||!!(SK[a.sk]||{}).side&&unlocked(p,i-1)&&(reached(p,i-1)||stopBehind(p,i-1))};
     ['math','read'].forEach((p,k)=>{const ids=new Set(L[k].split(' '));if(!NODES[p]||!S.maps||!S.maps[p])return;
       NODES[p].forEach((n,i)=>{try{const id=nid(n);if(ids.has(id)&&!passed(p,i)&&unlocked(p,i)&&(reached(p,i)||stopBehind(p,i)))o[id]=1}catch(e){}})}); // never throws (a map that does not fit the save keeps nothing)
+    if(Object.keys(o).length)S.lsOpen=o;
+  },
+  /* 7: TEACH-3b (v182). Nineteen more math stops and two reading stops (Vowel Teams 2, Build Vowel Teams 2) got lessons (and so lesson stops in front of them). As migration 6: every one of THESE
+     stops this save could already play because of its own progress (the stop before it passed, the first stop after a skipped world,
+     or a later stop of its world passed) and has not passed is kept open in S.lsOpen. Frozen list of the v182 additions (never LESSONS);
+     idempotent; never throws; removes nothing. */
+  ()=>{
+    const ids=new Set('story5 data3 shape5 time6 meas4 story6 ang1 ang2 shape6 pat4 story7 dbig4 fop4 coord1 fop6 meas6 data4 pat5 story8 pic6 build6'.split(' '));
+    const o=S.lsOpen&&typeof S.lsOpen=='object'&&!Array.isArray(S.lsOpen)?S.lsOpen:{};
+    for(const p of['math','read'])if(NODES[p]&&S.maps&&S.maps[p])NODES[p].forEach((n,i)=>{try{const a=NODES[p][i-1];
+      if(ids.has(nid(n))&&!passed(p,i)&&unlocked(p,i)&&(a&&(passed(p,i-1)||a.wi!==n.wi&&worldSkipped(p,a.wi))||stopBehind(p,i)))o[nid(n)]=1}catch(e){}});
     if(Object.keys(o).length)S.lsOpen=o;
   }
 ];
