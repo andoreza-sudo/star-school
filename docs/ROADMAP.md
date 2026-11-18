@@ -679,6 +679,15 @@ is invented on the tablet. Accept: every template and word list reviewed; kid-sa
 
 **ASK-01 · "Ask the pet"** · Sonnet: a short menu of questions per lesson or stop ("Why do we carry?", "What is a fraction?");
 each answer written ahead of time and approved; spoken by the pet in its age tone. Accept: no free text; every answer reviewed.
+Later steps, only after the menu version ships (owner will look again then, 2026-11-18): (1) typed questions for grades 3-6,
+matched to the approved list with simple spelling-tolerant matching, the list shown when unsure; (2) "ask out loud" for younger
+kids with the on-device speech recognition "Say it!" already uses (processLocally only; never a server; tap fallback where the
+tablet can't), and every approved answer recorded in the pet's voice (tools/en-audio.js --teach); (3) only if real use shows simple
+matching misses too often, a bench test of a small on-device matching model: a proven sentence-matching model (e.g. the MiniLM
+family) against TinyDecide (huggingface.co/TheREZOR/TinyDecide, 6.2 MB, Apache-2.0, English only, ~82% on known question types,
+self-scored, published Oct 2026). Pass bar: 90%+ right when confident on 200 kid-style questions with real misspellings, under
+0.5 s on the cheapest tablet, list fallback when unsure. The model only picks among approved answers; it never writes words and
+never marks a child wrong.
 
 ## 11. Later ideas (not planned)
 
