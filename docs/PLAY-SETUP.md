@@ -43,11 +43,15 @@ Set it up once:
 3. Vercel > the project > Settings > Environment Variables:
    - `PLAY_SERVICE_ACCOUNT`: the whole contents of the JSON key file, as one value.
    - `PLAY_PACKAGE`: the package name.
-   Redeploy. Do not add an `api` line to a `.vercelignore` (there is none now).
+   Redeploy. Never add `api` to `.vercelignore` (it leaves out only src, tools, docs, README.md and .claude; test.js checks this).
 4. Test it: install from an internal test track with a **licence tester** account (Setup > License testing), buy the unlock,
    then wait **5 minutes**: test purchases that are not acknowledged are refunded after about 3 minutes. In Order management
    the order must still be there, not refunded, and the Vercel function log shows `200`. If it was refunded, check the two
-   variables and the service account's permissions.
+   variables and the service account's permissions. A wrong package name shows as `502 get 404` in the log: the app then keeps the
+   unlock and asks again at every start, so fix the variable within 3 days.
+5. Recommended: Vercel > the project > Firewall > add a rate-limit rule for the path `/api/ack` (for example 30 requests a minute
+   per IP). Each request costs one Play Developer API call, and a flood could use up the API quota. The function already
+   reuses its Google sign-in for an hour and gives up on Google after 8 seconds.
 
 ## 4. Play Console
 

@@ -21078,6 +21078,13 @@ run('lesson stops: every pet turn, the extra turns, resume, a part that does not
 });
 
 // ---- PLAY-01: the Google Play app: the free sample, Play mode, the grown-up gate, the purchase (mocked Google Play), saves ----
+// ---- PLAY-01c: api/ack.js answers (Fable re-review): a 400/404 or an unknown purchaseState must never read as "cancelled" ----
+run('play PLAY-01c: the acknowledgement endpoint never reads an error as cancelled, acknowledges only a paid purchase once, caches the OAuth token',()=>{
+  const out=require('child_process').execFileSync(process.execPath,[path.join(__dirname,'lib','ack-check.js')],{encoding:'utf8'});
+  const r=JSON.parse(out.trim().split('\n').pop()),want={nf:'502 get 404',br:'502 get 400',p0:'200 purchased',acks0:1,p0a:'200 purchased',acks1:1,
+    p1:'200 cancelled',p2:'200 pending',none:'502 unexpected purchaseState',sku:'400 unknown product',get:'405 POST only',long:'200 purchased',oauth:1,acks:1};
+  return{problems:Object.keys(want).filter(k=>r[k]!==want[k]).map(k=>k+': '+r[k]+' (want '+want[k]+')')};
+});
 run('play PLAY-01: free sample (5 stops of the grade\'s start world), Play mode, nothing locked on the web, the grown-up gate, purchase and acknowledgement with mocked Google Play v1 and v2, saves keep everything',()=>{
   const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
   // only 89-play.js talks to Google Play billing or opens the unlock sheet; nothing is consumed; no price in the code
