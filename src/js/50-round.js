@@ -157,7 +157,18 @@ function check(v,el){if(G.lock)return;const q=G.q,K=KIND[q.kind],p=P(q.sk),ok=K.
 function bossHit(){const b=$('#bossE'),f=$('#hpf'),h=$('#hpn');if(f)f.style.transform=`scaleX(${G.hp/7})`;if(h){h.innerHTML=GFX.hearts(G.hp);h.setAttribute('aria-label',G.hp+' hearts')}
   if(b){b.classList.remove('hit');void b.offsetWidth;b.classList.add('hit');const r=b.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'zap')}SFX.hit()}
 function bossKO(){const b=$('#bossE');if(b)b.classList.add('ko');SFX.ko();confetti(40);fb(`You beat ${G.boss.name}!`);if(S.voice)say(`You beat ${G.boss.name}!`)}
-function award(){const s=pick(STK),isNew=!stkN(s);S.stickers[s]=(S.stickers[s]||0)+1;return{s,isNew}}
+// STK-2 fair draws: a draw is random, but right after a double the next one is a sticker the child does not have yet (while any are missing),
+// so at least one draw in two is new and the book fills. S.stkDry counts the doubles since the last new sticker.
+function award(){if(!S.stickers||typeof S.stickers!="object")S.stickers={};const miss=STK.filter(x=>!stkN(x));let s=pick(STK);
+  if(miss.length&&stkN(s)&&(S.stkDry|0)>=1)s=pick(miss);
+  const isNew=!stkN(s);S.stkDry=isNew?0:(S.stkDry|0)+1;S.stickers[s]=(S.stickers[s]||0)+1;return{s,isNew}}
+// STK-2 swap: doubles are extra copies (a sticker is never taken away: one copy always stays). SWAP_COST doubles buy one missing sticker.
+const SWAP_COST=2;
+const stkDup=s=>Math.max(0,(S.stickers[s]||0)-1);
+const stkDoubles=()=>STK.reduce((a,s)=>a+stkDup(s),0);
+function stkSwap(t){if(!STK.includes(t)||stkN(t)||stkDoubles()<SWAP_COST)return null;
+  let k=SWAP_COST;for(const s of STK){while(k&&stkDup(s)){S.stickers[s]--;k--}}
+  S.stickers[t]=1;S.stkDry=0;save();return{s:t,isNew:true}}
 function finish(){if(G&&G.chk&&typeof CHK!='undefined')return CHK.finish(G); // CHECK-IN: its own end card (51b-checkin.js)
   const g=G,sc=g.score,n=g.n,best=g.best,before=S.stars,d=day(),p=g.path,ni=g.node,nd=p?NODES[p][ni]:null;
   let stars=0,newPass=false,wDone=false;
