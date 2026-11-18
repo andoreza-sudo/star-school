@@ -12,7 +12,7 @@ edited: 2026-11-18 by Claude after reading every line (words only; see "After re
 
 ```text
 Round to 10 (round1), grade 3, the kid pet
-Idea: Find the nearer ten on the number line.
+Idea: Find the nearer ten on the number line. Halfway rounds up.
 
 Remember:
   - Do you remember this one? What comes next counting by tens from {k}?
@@ -32,7 +32,7 @@ Check me:
 Show:
   - The path needs a round number of steps. How many for this one?
 Reasons the pet gives when it is caught:
-  trunc: Look closer. It is past halfway so round up.
+  trunc: Look closer. At halfway or past it, we round up.
   rup: Look closer. It is not halfway yet so round down.
 Tonight's question: Ask {name}: "What is thirty four rounded to the nearest ten?"
 About 3.3 minutes.
@@ -55,7 +55,7 @@ About 3.3 minutes.
  "t": "Round to 10",
  "grade": 3,
  "age": "kid",
- "idea": "Find the nearer ten on the number line.",
+ "idea": "Find the nearer ten on the number line. Halfway rounds up.",
  "beats": {
   "remember": [
    "Do you remember this one? What comes next counting by tens from {k}?"
@@ -83,7 +83,7 @@ About 3.3 minutes.
  },
  "reasons": {
   "trunc": [
-   "Look closer. It is past halfway so round up."
+   "Look closer. At halfway or past it, we round up."
   ],
   "rup": [
    "Look closer. It is not halfway yet so round down."
@@ -123,3 +123,5 @@ Tonight's question: Ask {name}: "What is thirty four rounded to the nearest ten?
 About 3.4 minutes.
 ```
 </details>
+
+Fixed after review (2026-11-18): rounding lines now say halfway rounds up; the owner had approved this lesson, these are factual corrections only.

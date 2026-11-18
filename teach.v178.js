@@ -361,7 +361,10 @@ const LS = {
         K.retry(q, u, () => {});
       }
       LS.talk(res.lines);
-      if (it.m != 'open' || q.kind == 'make') u.lock = false; // TEACH-4: an open sort unlocks itself once its pictures go back (KIND.sort.retry)
+      // TEACH-4: an open sort, order or build unlocks itself after its short animation (their retry() sets lock, then clears it on a timer);
+      // every other open kind (make, line, ...) is unlocked here, or an open number line (round1-4, frac3 Explore) would freeze when a pin
+      // left at its start is checked (review of v178)
+      if (it.m != 'open' || !['sort', 'order', 'build'].includes(q.kind)) u.lock = false;
       fit();
       return;
     }

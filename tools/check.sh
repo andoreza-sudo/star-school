@@ -112,7 +112,7 @@ token_guard() {
 }
 sizes() {
   echo "== sizes (bytes; budgets in tools/test.js: index.html warn 1.2 MB / fail 1.5 MB, each part file warn 400 KB / fail 800 KB,"
-  echo "   data warn 1 MB / fail 2 MB, loaded at start warn 2 MB / fail 3.0 MB, precached (every file) fail 4.5 MB; audio fail 4.5 MB)"
+  echo "   data warn 1 MB / fail 2 MB, loaded at start warn 2 MB / fail 3.0 MB, precached (every file) fail 8 MB; audio fail 4.5 MB)"
   # the files index.html loads at start, in its order (A11, A11b, A11c): gen.<VER>.js, gen2.<VER>.js, bt.<VER>.js, data.<VER>.js;
   # P6-02: games.<VER>.js, rally.<VER>.js (G-RALLY2) and games2.<VER>.js load on demand (the Game Room) and are precached by sw.js
   local files lazy total cache f
@@ -129,6 +129,7 @@ sizes() {
   printf '%10d  %s\n' "$cache" "precached: the above + $(echo $lazy | sed 's/ / + /g') (loaded on demand, P6-02)"
   printf '%10d  %s\n' "$(cat audio/es/*.ogg | wc -c)" "audio: $(ls audio/es | wc -l) recordings in audio/es (ES-AUDIO; precached, never loaded at start)"
   printf '%10d  %s\n' "$(cat audio/en/*.ogg | wc -c)" "audio: $(ls audio/en | wc -l) recordings in audio/en (EN-PRAISE, 6 voices; precached, never loaded at start)"
+  printf '%10d  %s\n' "$(cat audio/teach/*.ogg | wc -c)" "audio: $(ls audio/teach | wc -l) recordings in audio/teach (TEACH-4 teacher lines; precached, never loaded at start)"
 }
 
 # ---- stage 1: everything else depends on these, so a failure here always stops the run ----

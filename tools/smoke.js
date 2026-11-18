@@ -12730,7 +12730,7 @@ async function main() {
             o.hands = [...document.querySelectorAll('.mml')].map(x => x.textContent).join('|');
             return o;
           });
-          if (wb.trade !== '8,5' || wb.brk !== '7,15' || wb.btns.some(x => x < 47) || wb.grp !== '3,4 3' || wb.hands !== 'Short hand: hour|Long hand: minutes') bad.push(at + 'workbench: ' + JSON.stringify(wb));
+          if (wb.trade !== '8,5' || wb.brk !== '7,15' || wb.btns.some(x => x < 47.5) || wb.grp !== '3,4 3' || wb.hands !== 'Short hand: hour|Long hand: minutes') bad.push(at + 'workbench: ' + JSON.stringify(wb));
           // 4. Practice on Carry the 1: the same answers score the same with and without the wrap; only the wrap writes the page of wrong answers
           const prac = async wrap => {
             await pg.evaluate(wrap => {
