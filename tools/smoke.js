@@ -12468,14 +12468,14 @@ async function main() {
         const ta = await openApp(browser, { fixture: 'midway', width: w, height: h });
         const pg = ta.page, at = 'TEACH-2b ' + w + 'x' + h + ' ';
         try {
-          // 1. teach12 loads with the math map, after teach; only reviewed words are live
+          // 1. teach12 loads with the math map, after teach; only reviewed words are live (the owner approved all 30 batch 2 lessons on 2026-11-18, so time2 is live)
           const s0 = await pg.evaluate(() => ({ ready: partReady('teach12'), d: typeof LS_DRAFTED, tag: [...document.scripts].some(s => /teach12\./.test(s.src)) }));
           if (s0.ready || s0.d !== 'undefined' || s0.tag) bad.push(at + 'teach12 is loaded at start: ' + JSON.stringify(s0));
           await pg.evaluate(() => { S.grade = 2; S.know = {}; delete S.les; S.lm = []; const i = NODES.math.findIndex(n => nid(n) === 'big3'); for (let j = 0; j < NODES.math.length; j++) setSt('math', j, j < i ? 2 : 0); save(); pathMap('math', NODES.math[i].wi); });
           await pg.waitForFunction(() => partReady('teach12') && typeof LS != 'undefined', null, { timeout: 15000 });
           await pg.waitForSelector('.ls-go', { timeout: 10000 });
           const live = await pg.evaluate(() => ({ big3: !!LESSONS.big3, time2: !!LESSONS.time2, plan: planToday(S, lsDay()).id, n: Object.keys(LS_DRAFTED).length, label: document.querySelector('.ls-go').getAttribute('aria-label') }));
-          if (!live.big3 || live.time2 || live.plan !== 'big3' || live.n < 30 || !/^Learn Carry the 1 with /.test(live.label)) bad.push(at + 'live lessons: ' + JSON.stringify(live));
+          if (!live.big3 || !live.time2 || live.plan !== 'big3' || live.n < 30 || !/^Learn Carry the 1 with /.test(live.label)) bad.push(at + 'live lessons: ' + JSON.stringify(live));
           // 2. three lessons through every beat, the first show-me item and one Together item wrong; screenshots of each beat
           await pg.evaluate(d => { LS.WAKE = 400; for (const id of ['time2', 'coins2']) lsEnable(id, d[id]); }, { time2: W.time2, coins2: W.coins2 });
           for (const id of ['big3', 'time2', 'coins2']) {
