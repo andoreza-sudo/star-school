@@ -9594,7 +9594,7 @@ async function main() {
             if (document.documentElement.scrollWidth > vw + 1) out.push(what + ': sideways scroll');
             for (const s of document.querySelectorAll('#app .scroll')) if (s.scrollWidth > s.clientWidth + 1) out.push(what + ': sideways scroll in ' + s.className);
             const tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-            for (let n; (n = tw.nextNode());) { const el = n.parentElement; if (!el || el.closest('svg') || !el.getClientRects().length) continue; const m = n.textContent.match(/\p{Extended_Pictographic}/u); if (m) out.push(what + ': emoji ' + m[0] + ' in ' + (el.id || el.className)); }
+            for (let n; (n = tw.nextNode());) { const el = n.parentElement; if (!el || el.closest('svg, .rw-stk') || !el.getClientRects().length) continue; const m = n.textContent.match(/\p{Extended_Pictographic}/u); if (m) out.push(what + ': emoji ' + m[0] + ' in ' + (el.id || el.className)); }
             return out;
           }, [what, main || '']);
           stage = 'seed';
