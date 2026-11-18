@@ -312,6 +312,18 @@ const LS_TONE = {
 /* The rules each age's lines are checked against (tools/test.js on LS_TONE and every script; tools/author.js on drafts): the most
    words in a line, and the words that age does not use. The little one may say anything kind; the older kid drops baby praise;
    the teen-like partner also drops the little one's exclamations and never says "we did it" for the child's own work. */
+/* LS-STOP: the lines of a lesson stop at each age (the start card, a test-out that slides into the lesson, Check me once more, the pay).
+   Kept apart from LS_TONE so the recorded teacher lines (tools/en-audio.js reads LS_TONE.little) stay as recorded: these are the tablet's
+   voice until a rerun of en-audio --teach records them. Checked against LS_RULES like LS_TONE (tools/test.js LS-STOP). */
+const LS_TONE2 = {
+  little: {open: n => `Hi ${n}! Want to learn this with me?`, slide: "That's okay. Let's learn it together!", findIt: 'One more. Find my mistake!',
+    paid: 'You earned game time!', noProof: 'Find my mistake next time to earn game time.'},
+  kid: {open: n => `Hey ${n}. Quick challenge. Give me a hard one?`, slide: 'No problem. We will work through it.', findIt: 'Another one. Find my slip.',
+    paid: 'Game time earned.', noProof: 'Catch my slip next time to earn game time.'},
+  teen: {open: n => `Hey ${n}. Short challenge. Give me a hard one.`, slide: 'Fine. We will work through it.', findIt: 'Another one. Find the error.',
+    paid: 'Game time earned.', noProof: 'Find the error next time to earn game time.'},
+};
+const lsTone2 = () => LS_TONE2[lsAge(typeof gradeOf == 'function' ? gradeOf() : 0)];
 const LS_RULES = {
   little: {words: 12, chars: 90, no: null},
   kid: {words: 16, chars: 110, no: /\b(hooray|yay|super duper|good (boy|girl)|itty|bitty|teeny|tiny friend|sweetie)\b/i},

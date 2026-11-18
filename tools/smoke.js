@@ -12287,6 +12287,10 @@ async function main() {
           if (off.w < 48 || off.h < 48 || !off.in || off.hit || !/^Learn Make Ten with /.test(off.label) || off.plan !== 'tenf2' || !off.css) bad.push(at + 'the offer: ' + JSON.stringify(off));
           await pg.evaluate(() => { LS.WAKE = 400; });
           await pg.click('.ls-go');
+          // LS-STOP: the offer is the lesson stop on the path, which opens the lesson's start card; "I already know this!" gives the
+          // show-me items (the first one missed below, so the lesson slides into teaching at once: one show-me item, not two)
+          await pg.waitForSelector('#lsknow', { timeout: 10000 });
+          await pg.click('#lsknow');
           await pg.waitForSelector('#lsplay', { timeout: 5000 });
           const wait0 = await pg.evaluate(() => !!document.querySelector('#lsinp.ls-wait'));
           if (!wait0) bad.push(at + 'the controls are awake before the line is said');
@@ -12319,7 +12323,8 @@ async function main() {
           const end = await pg.evaluate(() => { const i = NODES.math.findIndex(n => nid(n) === 'tenf2');
             return { st: getSt('math', i), next: unlocked('math', i + 1), know: S.know.tenf2, lm: S.lm[S.lm.length - 1], les: S.les, saved: !!JSON.parse(localStorage.getItem(SKEY)).lm,
               idea: (document.querySelector('.ls-idea') || {}).textContent, btns: [...document.querySelectorAll('.ls-acts .btn')].map(b => b.id).join() }; });
-          if (end.st !== 2 || !end.next || !end.know || end.know.s !== 2 || !end.lm || end.lm[0] !== 'tenf2' || end.lm[2] !== 1 || end.lm[3] !== 2 || end.lm[4] !== 2 || end.lm[6] !== 0 || end.les || !end.saved
+          if (end.st !== 2 || !end.next || !end.know || end.know.s !== 2 || !end.lm || end.lm[0] !== 'tenf2' || end.lm[2] !== 0 || end.lm[3] !== 1 || // LS-STOP: a missed show-me item after "I already know this!" ends the test-out at once (0 of 1, was 1 of 2)
+             end.lm[4] !== 2 || end.lm[6] !== 0 || end.les || !end.saved
             // TEACH-2: the end card also opens the notebook (lsnb), on purpose
             || !/Two parts make ten/.test(end.idea) || end.btns !== 'lsprac,lsmap,lsnb') bad.push(at + 'the end: ' + JSON.stringify(end));
           await lsFit(pg, at + 'end: ');
@@ -12846,6 +12851,151 @@ async function main() {
         'letter tiles, the pet\'s word read wrong and built right, a sentence matched to a picture), every screen fitting with no hole in the words; no console errors, no network requests');
     }
     // end TEACH-4
+
+    // LS-STOP lessons are required, paid stops on the map (42b-lstop.js, 46-home.js drawMap, 58-playtime.js lsPay, 52-lesson.js LS.open,
+    // the meter and the end card), at 380x780 and 600x960 on the midway save as a Kindergartner with every stop before Make Ten passed.
+    // The map has a "Learn with <pet>" stop before Make Ten with its "+5 min" ticket (48 px, on screen, covering no stop); Make Ten's practice
+    // is locked (tapping it says to learn first and starts nothing). The lesson stop opens the start card (the price, "Let's learn",
+    // "I already know this!"); the skip with a missed show-me item slides into the lesson with no "wrong" sound; the top bar's ticket meter
+    // shows "+5 min" and fills beat by beat; the end card lists "+5:00 game time" and the bank chip counts up by 5:00; the stop opens and the
+    // lesson stop then shows "+2 min". Ten and More by a proven skip (both show-me items right, Show passed) pays its 5 minutes too.
+    // Lessons off: no lesson stops and no locks. Screenshots (LSTOP_SHOTS, default tools/out/lstop). No console errors, no network.
+    {
+      const bad = [], notes = [], shots = process.env.LSTOP_SHOTS || require('path').join(__dirname, 'out', 'lstop');
+      require('fs').mkdirSync(shots, { recursive: true });
+      const actS = async (pg, wrong) => {
+        await pg.waitForFunction(() => !LS.st || (document.querySelector('#lsinp') && !document.querySelector('#lsinp.ls-wait') && !LS.u.lock), null, { timeout: 15000 });
+        const it = await pg.evaluate(() => { const it = LS.st && LS.cur(LS.st); if (!it) return null; const q = it.q || {};
+          return { m: it.m, petOk: it.petOk, kind: q.kind, model: q.model, ans: q.ans, s0: q.s0, total: q.m && q.m.total, target: q.m && q.m.target,
+            goal: q.goal, tgt: q.target, start: q.start, min: q.line && q.line.min, choices: q.choices && q.choices.map(c => c.v) }; });
+        if (!it) return null;
+        if (it.m == 'say') await pg.click('#lsnext');
+        else if (it.m == 'judge') await pg.click(it.petOk ? '#lsyes' : '#lsno');
+        else if (it.kind == 'num') { for (const d of wrong ? String(+it.ans + 1) : it.ans) await pg.click(`.k[data-k="${d}"]`); await pg.click('.k[data-k="go"]'); }
+        else if (it.kind == 'choice') await pg.click(`.ch[data-i="${it.choices.indexOf(wrong ? it.choices.find(c => c != it.ans) : it.ans)}"]`);
+        else if (it.kind == 'line') {
+          const k = (wrong ? +it.ans + 1 : it.goal ? +it.start + 3 : +it.ans) - it.min;
+          await pg.focus('.lnp'); await pg.keyboard.press('Home'); for (let i = 0; i < k; i++) await pg.keyboard.press('ArrowRight'); await pg.click('#mcheck');
+        } else if (it.kind == 'make') {
+          let want;
+          if (it.model == 'frame2') { const t = it.goal == 'sum' ? it.target : it.goal == 'fill' ? it.total : 3; want = [t - 1, 1]; }
+          else if (it.model == 'b10') { const n = it.goal == 'gt' ? it.tgt + 2 : it.goal == 'any' ? 34 : +it.ans + (wrong ? 1 : 0); want = [Math.floor(n / 10), n % 10]; }
+          else want = [it.goal == 'less' ? it.s0[0] - 2 : it.goal == 'any' ? 4 : +it.ans + (wrong ? (+it.ans > 1 ? -1 : 1) : 0)];
+          const cur = await pg.evaluate(() => LS.u.mm.slice());
+          for (let i = 0; i < want.length; i++) { const d = want[i] - cur[i]; for (let j = 0; j < Math.abs(d); j++) await pg.click(`.mmb[data-i="${i}"][data-d="${d > 0 ? 1 : -1}"]`); }
+          await pg.click('#mcheck');
+        } else throw new Error('lesson item ' + JSON.stringify(it));
+        return it;
+      };
+      const stepS = async (pg, wrong) => { const s0 = await pg.evaluate(() => LS.seq), it = await actS(pg, wrong); await pg.waitForFunction(x => !LS.st || LS.seq > x, s0, { timeout: 15000 }); return it; };
+      const fitS = (pg, at, sel) => pg.evaluate(sel => {
+        const o = [], vw = document.documentElement.clientWidth;
+        if (document.documentElement.scrollWidth > vw) o.push('sideways scroll');
+        for (const b of document.querySelectorAll(sel)) { const r = b.getBoundingClientRect(); if (!r.width) continue;
+          if (r.width < 47.5 || r.height < 47.5) o.push('small target ' + (b.id || b.className));
+          if (r.right > vw + 1 || r.left < -1) o.push('off screen ' + (b.id || b.className)); }
+        return o;
+      }, sel).then(o => o.forEach(x => bad.push(at + x)));
+      for (const [w, h] of [[380, 780], [600, 960]]) {
+        const ta = await openApp(browser, { fixture: 'midway', width: w, height: h });
+        const pg = ta.page, at = 'LS-STOP ' + w + 'x' + h + ' ', sz = w + 'x' + h;
+        try {
+          // 1. the map: a lesson stop with its ticket before Make Ten, Make Ten's practice locked
+          await pg.evaluate(() => { S.grade = 0; S.know = {}; S.lsPay = {}; delete S.lsOpen; delete S.les; S.lm = []; S.pt = { bank: 120, day: today(), used: 0 }; S.ptCfg = { per: 3, max: 30, pause: false, need: 0 };
+            const i = NODES.math.findIndex(n => nid(n) === 'tenf2'); for (let j = 0; j < NODES.math.length; j++) setSt('math', j, j < i ? 2 : 0);
+            window.__wrong = 0; const w0 = SFX.wrong; SFX.wrong = (...a) => { window.__wrong++; return w0(...a); }; save(); pathMap('math', NODES.math[i].wi); });
+          const ti = await pg.evaluate(() => NODES.math.findIndex(n => nid(n) === 'tenf2'));
+          await pg.waitForSelector(`.lsn[data-ls="${ti}"]`, { timeout: 5000 });
+          await pg.evaluate(i => document.querySelector(`.lsn[data-ls="${i}"]`).scrollIntoView({ block: 'center' }), ti);
+          await pg.waitForSelector('.lsn.ls-go', { timeout: 10000 }).catch(() => bad.push(at + 'the planner did not mark the lesson stop'));
+          const mp = await pg.evaluate(i => { const b = document.querySelector(`.lsn[data-ls="${i}"]`), r = b.getBoundingClientRect(), vw = document.documentElement.clientWidth,
+              tk = b.nextElementSibling, tr = tk && tk.getBoundingClientRect(), nd = document.querySelector(`.node[data-n="${i}"]`);
+            const hit = [...document.querySelectorAll('#map .node')].filter(n => { const q = n.getBoundingClientRect(); return q.right > r.left && q.left < r.right && q.bottom > r.top && q.top < r.bottom; }).length;
+            return { w: r.width, h: r.height, in: r.left >= 0 && r.right <= vw, hit, label: b.getAttribute('aria-label'), go: b.classList.contains('ls-go'), cur: b.classList.contains('cur'),
+              tk: tk && tk.classList.contains('lsn-tk') ? tk.textContent : '', tkIn: tr && tr.left >= 0 && tr.right <= vw, lab: (tk && tk.nextElementSibling || {}).textContent,
+              lock: nd.classList.contains('lock'), nlabel: nd.getAttribute('aria-label'), before: !!(b.compareDocumentPosition(nd) & Node.DOCUMENT_POSITION_FOLLOWING), above: r.top < nd.getBoundingClientRect().top }; }, ti);
+          if (mp.w < 48 || mp.h < 48 || !mp.in || mp.hit || !/^Learn Make Ten with .*earns 5 minutes of game time/.test(mp.label) || !mp.go || !mp.cur || mp.tk !== '+5 min' || !mp.tkIn
+            || !/^Learn with /.test(mp.lab) || !mp.lock || !/learn it first/.test(mp.nlabel) || !mp.before || !mp.above) bad.push(at + 'the map: ' + JSON.stringify(mp));
+          await pg.screenshot({ path: require('path').join(shots, `lstop-map-${sz}.png`) });
+          // 2. the locked practice stop: a message, nothing starts
+          await pg.click(`.node[data-n="${ti}"]`);
+          await vwait(pg, 400);
+          const lk = await pg.evaluate(() => ({ map: !!document.querySelector('#map'), play: !!document.querySelector('.play.qs'), fb: (document.querySelector('#toast') || {}).textContent || '' }));
+          if (!lk.map || lk.play || !/first/i.test(lk.fb)) bad.push(at + 'the locked stop: ' + JSON.stringify(lk));
+          // 3. the start card
+          await pg.click(`.lsn[data-ls="${ti}"]`);
+          await pg.waitForSelector('#lsopen', { timeout: 15000 });
+          const op = await pg.evaluate(() => ({ price: (document.querySelector('#lsprice') || {}).textContent, h1: document.querySelector('#lsopen h1').textContent }));
+          if (!/earn \+5 min of game time/.test(op.price || '') || !/^Learn Make Ten with /.test(op.h1)) bad.push(at + 'the start card: ' + JSON.stringify(op));
+          await fitS(pg, at + 'start card: ', '#lsopen .btn, .ls-top .btn');
+          if (w == 380) await pg.screenshot({ path: require('path').join(shots, `lstop-start-${sz}.png`) });
+          // 4. "I already know this!" with the first show-me item missed: straight into the lesson, no reveal, no wrong sound
+          await pg.evaluate(() => { LS.WAKE = 400; });
+          await pg.click('#lsknow');
+          await pg.waitForSelector('#lsplay[data-beat="pre"]', { timeout: 10000 });
+          const m0 = await pg.evaluate(() => { const m = document.querySelector('#lsmeter'), r = m && m.getBoundingClientRect(), vw = document.documentElement.clientWidth;
+            return { t: m && m.textContent, in: r && r.left >= 0 && r.right <= vw, h: r && r.height, f: m && m.style.getPropertyValue('--f') }; });
+          if (m0.t !== '+5 min' || !m0.in || m0.f !== '0.000') bad.push(at + 'the meter at the start: ' + JSON.stringify(m0));
+          await stepS(pg, true);
+          const sl = await pg.evaluate(() => ({ b: LS.st && LSB[LS.st.b], pre: LS.st && LS.st.pre, wrong: window.__wrong, to: LS.st && LS.st.to }));
+          if (sl.b == 'pre' || JSON.stringify(sl.pre) !== '[false]' || sl.wrong || sl.to) bad.push(at + 'a missed show-me item after "I already know this!": ' + JSON.stringify(sl));
+          // 5. through every beat: the meter fills, each screen fits
+          const fs0 = [], beats = [];
+          for (let n = 0; n < 50; n++) {
+            const b = await pg.evaluate(() => (LS.st ? LSB[LS.st.b] : null));
+            if (!b) break;
+            await pg.waitForFunction(() => !LS.st || !document.querySelector('#lsinp.ls-wait'), null, { timeout: 15000 });
+            const f = await pg.evaluate(() => { const m = document.querySelector('#lsmeter'); return m ? +m.style.getPropertyValue('--f') : -1; });
+            fs0.push(f);
+            if (!beats.includes(b)) { beats.push(b); await fitS(pg, at + b + ': ', '#lsinp button, #lsplay .ls-hear, .ls-top .btn');
+              if (b == 'tog' && w == 380) await pg.screenshot({ path: require('path').join(shots, `lstop-meter-${sz}.png`) }); }
+            await stepS(pg, false);
+          }
+          if (fs0.some((f, k) => f < 0 || k && f < fs0[k - 1] - 1e-9) || !(fs0[fs0.length - 1] > .8)) bad.push(at + 'the meter does not fill: ' + fs0.join(' '));
+          // 6. the end card: +5:00 game time, and the bank chip counts up by 5:00
+          await pg.waitForSelector('#lsend', { timeout: 10000 });
+          const e0 = await pg.evaluate(() => ({ gt: [...document.querySelectorAll('.ls-earn .ls-gt')].map(x => x.textContent).join('|'), bank: document.querySelector('#lsbank b').textContent, tk: !!document.querySelector('#lstk') }));
+          await pg.waitForFunction(() => document.querySelector('#lsbank b').textContent === '7:00', null, { timeout: 8000 }).catch(() => {});
+          const e1 = await pg.evaluate(() => ({ bank: document.querySelector('#lsbank b').textContent, pt: pt().bank, pay: S.lsPay.tenf2, btns: [...document.querySelectorAll('.ls-acts .btn')].map(b => b.id).join() }));
+          if (!/^\+5:00 game time Lesson learned/.test(e0.gt) || e0.bank !== '2:00' || !e0.tk || e1.bank !== '7:00' || e1.pt !== 420 || !e1.pay || e1.pay.n !== 1 || e1.btns !== 'lsprac,lsmap,lsnb')
+            bad.push(at + 'the end card: ' + JSON.stringify([e0, e1]));
+          await fitS(pg, at + 'end: ', '.ls-acts .btn, #lsend .ls-top .btn, #lshome');
+          await pg.screenshot({ path: require('path').join(shots, `lstop-end-${sz}.png`) });
+          // 7. back on the map: Make Ten open, its lesson stop learned and now worth +2 min
+          await pg.click('#lsmap');
+          await pg.waitForSelector(`.lsn[data-ls="${ti}"]`, { timeout: 5000 });
+          const m2 = await pg.evaluate(i => { const b = document.querySelector(`.lsn[data-ls="${i}"]`); return { done: b.classList.contains('done'), tk: b.nextElementSibling.textContent,
+            lock: document.querySelector(`.node[data-n="${i}"]`).classList.contains('lock') }; }, ti);
+          if (!m2.done || m2.tk !== '+2 min' || m2.lock) bad.push(at + 'the map after the lesson: ' + JSON.stringify(m2));
+          // 8. a proven skip: Ten and More, both show-me items right, then Show passed: paid 5 minutes
+          await pg.evaluate(() => { LS.open('tenf3'); });
+          await pg.waitForSelector('#lsknow', { timeout: 5000 });
+          await pg.click('#lsknow');
+          await pg.waitForSelector('#lsplay[data-beat="pre"]', { timeout: 10000 });
+          for (let k = 0; k < 2; k++) await stepS(pg, false);
+          await pg.waitForSelector('#lsplay[data-beat="show"]', { timeout: 10000 });
+          for (let k = 0; k < 2; k++) await stepS(pg, false);
+          await pg.waitForSelector('#lsend', { timeout: 10000 });
+          const sk = await pg.evaluate(() => ({ gt: (document.querySelector('.ls-earn .ls-gt') || {}).textContent, pay: S.lsPay.tenf3, lm: S.lm[S.lm.length - 1] }));
+          if (!/^\+5:00 game time/.test(sk.gt || '') || !sk.pay || sk.pay.n !== 1 || sk.lm[6] !== 1) bad.push(at + 'the proven skip: ' + JSON.stringify(sk));
+          // 9. lessons off: no lesson stops, no locks
+          await pg.evaluate(() => { TEACH.off = true; const i = NODES.math.findIndex(n => nid(n) === 'add1'); for (let j = 0; j < NODES.math.length; j++) setSt('math', j, j < i ? 2 : 0); pathMap('math', NODES.math[i].wi); });
+          await vwait(pg, 300);
+          const off = await pg.evaluate(() => ({ lsn: document.querySelectorAll('.lsn').length, lock: document.querySelector(`.node[data-n="${NODES.math.findIndex(n => nid(n) === 'add1')}"]`).classList.contains('lock') }));
+          await pg.evaluate(() => { TEACH.off = false; });
+          if (off.lsn || off.lock) bad.push(at + 'lessons off: ' + JSON.stringify(off));
+          notes.push(sz);
+        } catch (e) { bad.push(at + (e.stack || e).toString().split('\n').slice(0, 3).join(' ')); }
+        for (const e of ta.errors) bad.push(at + e);
+        for (const u of ta.network) bad.push(at + 'network request: ' + u);
+        await ta.ctx.close();
+      }
+      if (bad.length) fail('LS-STOP lesson stops:\n  ' + [...new Set(bad)].slice(0, 30).join('\n  '));
+      else step('LS-STOP: lesson stops at ' + notes.join(' and ') + ': the lesson stop before Make Ten with its +5 min ticket, practice locked behind it; the start card; ' +
+        '"I already know this!" with a miss slides into the lesson with no wrong sound; the top bar meter fills; the end card lists +5:00 game time and the bank chip counts ' +
+        'up by 5:00; the stop opens and its lesson stop shows +2 min; a proven skip pays; lessons off has no lesson stops or locks; no console errors, no network requests');
+    }
+    // end LS-STOP
 
     for (const u of network) fail('network request: ' + u);
     if (!errors.length && !network.length) step('no console errors, no network requests');

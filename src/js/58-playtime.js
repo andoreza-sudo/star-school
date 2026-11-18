@@ -60,11 +60,37 @@ function ptCalc(g,sc,n,stars,prev,newPass,testOk,nd,x){const mis=!!(x&&x.mission
   if(r>0){const k=r==1?.6:.35,cut=Math.round(t*(1-k));t-=cut;L.push([-cut,`Played ${r+1} times today`])}
   if(mis){t+=60;L.push([60,'Daily mission done'])} // after the repeat cut: the mission is paid once a day, in full
   t=Math.max(30,Math.round(t/30)*30);return{sec:t,lines:L,mast:!g.test&&!g.mix&&prev>=3&&!g.boss,rep:r}}
+/* LS-STOP (owner, 2026-11-18): what a lesson pays, in minutes, each a grown-up setting in the Game time card (S.ptCfg; absent = the
+   default): ls1 the first pass (5), ls2 the second pass (2), ls3 each later pass (1, at most once a day per lesson: no farming), lsT a
+   good try that did not pass (1: only before the first pass, at most once a day per lesson, and never more in all than the first pass
+   pays, which the child still gets when they pass). A pass is Show passed with no help; it pays only when it was proven (tested out with
+   the two show-me items, or the pet's mistake found in Check me), so guessing never pays. A good try went through every beat, found the
+   pet's mistake and did not rush. The pay goes into the bank like any earned time (ptEarn): learn first, the daily limit and the bank
+   rules are the same. Pay history per lesson: S.lsPay[nid] = {n passes, d day key of the last pass, d3 day key of the last paid later pass,
+   t minutes paid for tries, td day key of the last paid try} (optional; absent = never passed or paid). */
+const LS_PAY_D = {ls1: 5, ls2: 2, ls3: 1, lsT: 1}, LS_PAY_OPT = [0, 1, 2, 3, 5, 10];
+function lsPayCfg(){const c=S.ptCfg||{},o={};for(const k in LS_PAY_D){const v=Math.floor(+c[k]);o[k]=c[k]!=null&&v>=0&&v<=10?v:LS_PAY_D[k]}return o}
+const lsPayRec=id=>(S.lsPay&&typeof S.lsPay=='object'&&S.lsPay[id])||{};
+// minutes the next pass of lesson id pays now
+function lsPrice(id){const c=lsPayCfg(),r=lsPayRec(id),n=r.n|0;return n<1?c.ls1:n<2?c.ls2:r.d3===today()?0:c.ls3}
+// what the map ticket and the lesson meter say: '+5 min', 'done today' (later passes already paid today), or '' (the settings pay nothing)
+function lsPriceTag(id){const m=lsPrice(id),r=lsPayRec(id);return m>0?`+${m} min`:(r.n|0)>=2&&r.d3===today()&&lsPayCfg().ls3>0?'done today':''}
+// minutes a good try that did not pass pays now
+function lsTryPrice(id){const c=lsPayCfg(),r=lsPayRec(id);return(r.n|0)<1&&r.td!==today()&&(r.t|0)+c.lsT<=c.ls1?c.lsT:0}
+// pay a finished lesson: pass (Show passed), proof (tested out or found the pet's mistake), effort (a good try). Writes S.lsPay.
+// Returns {sec, lines, kind: 'pass' | 'try' | 'guess' (passed, not proven) | 'none', min}
+function lsPay(id,pass,proof,effort){const P=S.lsPay=S.lsPay&&typeof S.lsPay=='object'&&!Array.isArray(S.lsPay)?S.lsPay:{},r=Object.assign({},lsPayRec(id));
+  let m=0,kind='none',l='';
+  if(pass&&proof){const n0=r.n|0;m=lsPrice(id);r.n=n0+1;r.d=today();if(n0>=2&&m)r.d3=today();kind='pass';l=r.n==1?'Lesson learned':'Lesson passed again'}
+  else if(pass)kind='guess';
+  else if(effort){m=lsTryPrice(id);if(m){r.t=(r.t|0)+m;r.td=today();kind='try';l='Good try on the lesson'}}
+  if(kind=='pass'||kind=='try')P[id]=r;
+  return{sec:m*60,min:m,kind,lines:m?[[m*60,l]]:[]}}
 // Fact Race (54-race.js, once Speed Race): the first race a day in each category that scores 5 or more pays 1 min; more races are free practice. Returns seconds.
 function ptRace(cat,sc){if(sc<5)return 0;const rp=S.ptRep&&S.ptRep.day==today()?S.ptRep:(S.ptRep={day:today(),n:{}}),k='race_'+cat;if(rp.n[k])return 0;rp.n[k]=1;return 60}
 // the lines of "How to earn more game time" (Game Room); R_ draws a small icon
 // the lines of "How to earn more game time": [icon, what, how much]; the Game Room hub (59-game-hub.js) shows them, ptRules as HTML
-function ptEarnList(){return[['sparkle','Unlock a new stop','+1 min'],['star','Get a perfect score','+1 min'],['globe','Play a harder world','up to +1½ min'],['crown','Beat a boss','+2 min'],['review','Do your Daily Review','a full round'],['review','Fix an old mistake','bonus seconds'],['chart','Beat your old score','+½ min'],['puzzle','Solve a Brain Teaser','up to 2 min'],['calendar',"Finish all three of today's missions",'+1 min'],['timer','Fact Sprint or Fact Race, first one of the day','+1 min']]}
+function ptEarnList(){return[['doc','Pass a lesson with your pet',`+${lsPayCfg().ls1} min`],['sparkle','Unlock a new stop','+1 min'],['star','Get a perfect score','+1 min'],['globe','Play a harder world','up to +1½ min'],['crown','Beat a boss','+2 min'],['review','Do your Daily Review','a full round'],['review','Fix an old mistake','bonus seconds'],['chart','Beat your old score','+½ min'],['puzzle','Solve a Brain Teaser','up to 2 min'],['calendar',"Finish all three of today's missions",'+1 min'],['timer','Fact Sprint or Fact Race, first one of the day','+1 min']]}
 function ptRules(R_){return ptEarnList().map(([i,t,v])=>`<div>${R_(i)} ${t} <b>${v}</b></div>`).join('')+'<div class="small">Replaying a stop you already mastered, or the same stop over and over, earns less.</div>'}
 
 // P4-16: the Game Room hub (scene, game-time ticket, a drawn card per registered game) lives in games.<VER>.js with the games:
