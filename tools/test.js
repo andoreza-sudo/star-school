@@ -20478,7 +20478,7 @@ run('teach: grade 3-5 workbench, the pet\'s steps, the planner by grade TEACH-3'
     // the place-value chart: digits by place, decimals too, and its stepper model
     eq(ls3Digit(352104,4),5,'the ten thousands digit');eq(ls3Digit(3.47,-1),4,'the tenths digit');eq(ls3Digit(3.47,-2),7,'the hundredths digit');
     const C={kind:'make',model:'pvc',m:{pl:[0,-1,-2],target:3.47},goal:'value',ans:'3.47'};eq(K2MM.pvc.val(C,[3,4,7]),3.47,'chart value');eq(K2MM.pvc.ans(C),[3,4,7],'chart answer');
-    if(!/<th scope="col">0.1s<\\/th>/.test(lsPvChart(3.47,[0,-1,-2])))bad.push('chart heads');
+    if(!/<th scope="col" aria-label="Tenths"[^>]*>t<\\/th>/.test(lsPvChart(3.47,[0,-1,-2])))bad.push('chart heads: each a short head with its full name');
     // the pet's steps: the k2Fix parts are borrowed without changing k2FixQ, and its right steps are right
     const k0=k2FixQ,f=lsFixF(k2FixMbig,{kind:'num',label:'24 × 3 = ?'});if(k2FixQ!==k0)bad.push('k2FixQ was not put back');
     if(!f||lsLast(f.build(null))!=='72')bad.push('steps of 24 × 3: '+(f&&f.build(null)));

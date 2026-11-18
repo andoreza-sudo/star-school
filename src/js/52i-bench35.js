@@ -234,11 +234,11 @@ function ls3Bars(s, d, o = {}) {
 // a place-value chart: the digits of a number under their places (o.pl: the places, biggest first, as powers of ten; o.mark: the place
 // to circle)
 const LS_PVN = {5: 'Hundred thousands', 4: 'Ten thousands', 3: 'Thousands', 2: 'Hundreds', 1: 'Tens', 0: 'Ones', '-1': 'Tenths', '-2': 'Hundredths'};
-const LS_PVS = {5: '100,000s', 4: '10,000s', 3: '1,000s', 2: '100s', 1: '10s', 0: '1s', '-1': '0.1s', '-2': '0.01s'};
+const LS_PVS = {5: 'HTh', 4: 'TTh', 3: 'Th', 2: 'H', 1: 'T', 0: 'O', '-1': 't', '-2': 'h'}; // the chart's short heads (as on a classroom chart); each says its full name
 function ls3Digit(v, p) { return Math.floor(Math.round(Math.abs(v) * 100) / Math.round(Math.pow(10, p + 2)) + 1e-9) % 10; }
 function lsPvChart(v, pl, o = {}) {
   const rows = (o.rows || [v]).map(x => `<tr>${pl.map(p => `<td class="${p === o.mark ? 'ls-pvm' : ''}${p == 0 && pl.includes(-1) ? ' ls-pvo' : ''}">${o.blank ? '' : ls3Digit(x, p)}</td>`).join('')}</tr>`).join('');
-  return `<table class="ls-pvc" aria-label="place value chart"><thead><tr>${pl.map(p => `<th scope="col">${LS_PVS[p]}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table>`;
+  return `<table class="ls-pvc" aria-label="place value chart"><thead><tr>${pl.map(p => `<th scope="col" aria-label="${LS_PVN[p]}" title="${LS_PVN[p]}">${LS_PVS[p]}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table>`;
 }
 // the area model of a × b: a rectangle cut by b's tens and ones (and a's hundreds, tens and ones when o.split), each part's product
 // shown (o.parts) or not
