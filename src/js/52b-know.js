@@ -79,10 +79,46 @@ function knowAdd(id, q, v, ok, S0 = S, day = lsDay()) {
   const k = knowFade(lsKnow(id, S0), day), l = k.lv[Math.max(0, Math.min(2, q.st | 0))];
   l[1]++;
   if (ok) return void l[0]++;
+  knowWrong(k, q, v, day);
+}
+// a wrong first try on the record k: a tally for each code that predicts it, and the page of the last LS_WRONG wrong answers
+function knowWrong(k, q, v, day) {
   const cs = lsBugsOf(q, v);
   for (const c of cs) k.b[c] = (k.b[c] || 0) + 1;
   (k.w = k.w || []).push([cs.join(','), String(q.label || q.ans).slice(0, 16), day]);
   if (k.w.length > LS_WRONG) k.w.splice(0, k.w.length - LS_WRONG);
+}
+/* TEACH-2b: Practice rounds feed the record too (TEACH-PLAN-2 system C), through one wrap of check() (50-round.js) installed when this
+   part loads. Only a wrong FIRST try on a stop that has a lesson script (live or drafted) is written, and only its misconception page
+   (knowWrong: the tallies and the last wrong answers), never the lesson levels, the stage or the memory box: Practice is evidence of
+   what the child thinks, not a lesson. It reads the round and never changes it: the wrap computes right or wrong the way check()
+   does, writes, then calls check() itself with the same arguments, so what Practice asks and how it scores are the same (tools/test.js
+   plays seeded rounds with and without the wrap). A Practice question carries its numbers in its label; lsNums reads them onto a copy
+   (q.ab from "38 + 47 = ?", q.coins from "coins 10+5+1", q.hm from "clock 4:30"), so the computed codes work on it. Lessons off: nothing. */
+function lsNums(q) {
+  const o = Object.assign({}, q), l = String(q.label || '');
+  let m;
+  if (!o.ab && (m = /^(\d+) ([+−-]) (\d+) = \?$/.exec(l))) o.ab = [+m[1], +m[3], m[2] == '+' ? '+' : '-'];
+  if (!o.coins && (m = /^coins ([\d+]+)$/.exec(l))) o.coins = m[1].split('+').map(Number);
+  if (!o.hm && (m = /^clock (?:to 5 min )?(\d+):(\d\d)$/.exec(l))) o.hm = [+m[1], +m[2]];
+  return o;
+}
+const lsHasScript = id => !!(LESSONS[id] || typeof LS_DRAFTED != 'undefined' && LS_DRAFTED[id]);
+function knowPractice(q, v, S0 = S, day = lsDay()) {
+  const id = q && q.sk + q.lv;
+  if (!id || !lsHasScript(id) || TEACH.off) return false;
+  const K = KIND[q.kind], ok = K && K.same ? K.same(q, v) : String(v) === String(q.ans);
+  if (ok) return false;
+  knowWrong(knowFade(lsKnow(id, S0), day), lsNums(q), v, day);
+  return true;
+}
+if (typeof check == 'function' && !check.lsKnow) {
+  const check0 = check;
+  check = function (v) {
+    try { if (typeof G != 'undefined' && G && G.q && !G.lock && !G.tries && !G.retry) knowPractice(G.q, v); } catch (e) { /* evidence only: never in the round's way */ }
+    return check0.apply(this, arguments);
+  };
+  check.lsKnow = check0;
 }
 /* How a teacher reads a page of work, not one answer: each code's weight over the last LS_WRONG wrong answers (an answer counts half
    after LS_FADE days, a quarter after twice that) and the problems it explains. day: today (default: the newest answer's day). */

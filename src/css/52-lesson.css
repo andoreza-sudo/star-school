@@ -81,3 +81,13 @@ html.calm .btn.ls-go::after{animation:none}
 .rp-noticed .rp-pin{display:flex;margin-top:var(--s-2)}
 @media (max-width:560px){.rp-lsr{grid-template-columns:repeat(4,minmax(0,1fr));row-gap:2px}.rp-lsr>[role=rowheader]{grid-column:1/-1;font-weight:700}
   .rp-lsh>span:first-child{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}.rp-lsh{text-align:center}}
+/* TEACH-2b: the workbench pieces of the grade 1 and 2 lessons (52f-bench.js): blocks in a second colour, the trade buttons, groups,
+   the named clock hands */
+.viz .ls-b2{fill:var(--play-shade)}
+.viz .ls-gd{fill:none;stroke:var(--math)}
+.ls-trs{gap:var(--s-2)}
+.mmb.ls-tr{font-size:var(--fs-2);font-weight:700;padding:0 var(--s-3);white-space:nowrap}
+.ls-hh,.ls-mh{display:inline-block;vertical-align:middle;width:22px;height:6px;border-radius:3px;margin-right:6px;background:var(--read)}
+.ls-mh{width:30px;height:4px;background:var(--math)}
+.mm-hands .mms{column-gap:var(--s-2);row-gap:2px}
+.mm-hands .mml{min-width:0;flex-basis:100%;text-align:center}

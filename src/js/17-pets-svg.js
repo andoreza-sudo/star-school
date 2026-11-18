@@ -353,58 +353,50 @@ function petWear(slot, item, a) {
     `text-anchor="middle" dominant-baseline="central">${esc(item)}</text>`;
 }
 
-// ---- pet age (grade): the pet grows up with the child. 0 little one (Pre-K to 2nd), 1 older kid (3rd, 4th), 2 teen-like (5th, 6th).
-// Not a growth stage (that is the stars: egg / baby / kid / grown): a cheap re-proportioning of any stage's numbers plus one accessory
-// (older kid: backpack and straps, teen-like: scarf). Pre-K is grade -1, so it is 0. opts.age overrides (tests, previews).
+// ---- pet age (grade): the pet grows up with the child. 0 little one (Pre-K to 2nd), 1 older kid (3rd, 4th), 2 grown-up (5th, 6th).
+// Not a growth stage (that is the stars: egg / baby / kid / grown, the size): ages 1 and 2 are body plans of their own (PET_AGED in
+// 17b-pet-age.js: a lanky young theropod then a T-Rex, a young then a majestic dragon, a fledgling then a bird of prey, a sleeker then a
+// full-grown sea pal). Pre-K is grade -1, so it is 0. opts.age overrides (tests, previews); without PET_AGED the little one is drawn.
 const petAge = g => { g = g == null ? (typeof gradeOf == 'function' ? gradeOf() : 0) : +g; return g <= 2 ? 0 : g <= 4 ? 1 : 2; };
-const PET_AGE = [{ f: 1, hs: 1, as: 1, es: 1 }, { f: 1.09, hs: .93, as: 1.12, es: .92 }, { f: 1.17, hs: .86, as: 1.25, es: .84 }];
-function petAgeP(P, age) {
-  const A = PET_AGE[age], [bx, by, brx, bry] = P.body, [lx, ly, lrx, lry] = P.belly, dy = bry * (A.f - 1), r = petR1, hs = P.head[2];
-  const hy = P.head[1] - 2 * dy + 30 * hs * (1 - A.hs), up = hy - P.head[1] + 44 * hs * (1 - A.hs), sh = 1.2 * dy;
-  return Object.assign({}, P, { body: [bx, r(by - dy), brx, r(bry * A.f)], belly: [lx, r(ly - lry * (A.f - 1)), lrx, r(lry * A.f)],
-    head: [P.head[0], r(hy), r(hs * A.hs)], arm: [P.arm[0], r(P.arm[1] - sh), r(P.arm[2] * A.as)], wing: [P.wing[0], r(P.wing[1] - sh), P.wing[2]],
-    hat: [P.hat[0], r(P.hat[1] + up), P.hat[2], P.hat[3]], toy: [P.toy[0], r(P.toy[1] - sh), P.toy[2], P.toy[3]] });
-}
-// the accessory: [behind the body, in front of the body]
-function petAgeGear(P, age) {
-  const [bx, by, rx, ry] = P.body, r = petR1;
-  if (age == 1) {
-    const sx = rx * .5, y0 = by - ry * .85, y1 = by + ry * .5;
-    return [`<rect x="${r(bx + rx * .74)}" y="${r(by - ry * .5)}" width="${r(rx * .5)}" height="${r(ry * .95)}" rx="5" fill="var(--pc-a2)"/>`,
-      `<path d="M${r(bx - sx)} ${r(y0)}L${r(bx - sx * .8)} ${r(y1)}M${r(bx + sx)} ${r(y0)}L${r(bx + sx * .8)} ${r(y1)}" stroke="var(--pc-a)" stroke-width="4.2" stroke-linecap="round" fill="none"/>`];
-  }
-  const w = rx * .78, y = by - ry * .92, hx = P.head[0];
-  return ['', `<path d="M${r(hx - w)} ${r(y)}q${r(w)} 9 ${r(2 * w)} 0v8q${r(-w)} 9 ${r(-2 * w)} 0z" fill="var(--pc-a)"/>` +
-    `<path d="M${r(hx + w * .35)} ${r(y + 9)}h${r(w * .5)}l3 ${r(ry * .5)}h${r(-w * .55)}z" fill="var(--pc-a2)"/>`];
-}
 
 function petSVG(kind, st = 2, mood = 'idle', o = {}) {
   const k = PET_RIG[kind] ? kind : 'dragon', K = PET_RIG[k], sn = petStageName(st), age = o.age != null ? o.age : petAge();
-  let P = K.stages[sn];
-  const gear = age && !P.egg ? petAgeGear(P = petAgeP(P, age), age) : ['', ''];
-  const sup = o.super != null ? !!o.super : st === 4, md = PET_FACE[mood] ? mood : 'idle', F = K.face || PET_FACE;
-  const eg = age && !P.egg && PET_AGE[age].es, ex = e => eg ? `<g transform="translate(0 -4) scale(${eg}) translate(0 4)">${e}</g>` : e;
-  const face = (m, c) => `<g class="pf ${c}"><g class="pg-eyes">${ex(F[m][0])}</g><g class="pg-mouth">${F[m][1]}</g></g>`;
+  const D = age && sn != 'egg' && typeof PET_AGED != 'undefined' && (PET_AGED[k] || [])[age - 1], P = D ? D.P : K.stages[sn], sc = D ? PET_AGE_SC[sn] : 1;
+  const sup = o.super != null ? !!o.super : st === 4, md = PET_FACE[mood] ? mood : 'idle', F = (D || K).face || PET_FACE;
+  const face = (m, c) => `<g class="pf ${c}"><g class="pg-eyes">${F[m][0]}</g><g class="pg-mouth">${F[m][1]}</g></g>`;
   const at = (a, flip) => `translate(${a[0]} ${a[1]}) scale(${flip ? -a[2] : a[2]} ${a[2]})`;
   const org = a => `style="transform-origin:${a[0]}px ${a[1]}px"`;
-  const head = `<g class="pg-head" ${org(P.head)}><g transform="${at(P.head)}">${P.egg ? '' : K.head(P)}<g class="pg-cheeks">${K.cheeks}</g>` +
+  const grp = (c, a, m, x = '') => `<g class="pg-${c}" ${org(a)}><g transform="${at(a, a[3] < 0)}">${m}</g>${x}</g>`;
+  const head = `<g class="pg-head" ${org(P.head)}><g transform="${at(P.head)}">${P.egg ? '' : D ? D.head : K.head(P)}<g class="pg-cheeks">${(D || K).cheeks}</g>` +
     face(md, 'pf-base') + (o.react ? face('cheer', 'pf-cheer') + face('oops', 'pf-oops') : '') + `</g>${petWear('hat', o.hat, P.hat)}</g>`;
   const toy = petWear('toy', o.toy, P.toy);
   let fig;
   if (P.egg) fig = `<g class="pg-body">${K.egg}</g>${head}<g class="pg-arm-r">${toy}</g>`;
-  else {
+  else if (D) {
+    const xr = grp('xr', P.wing2, D.xr);
+    fig = `<g class="pg-extra">${grp('xl', P.wing, D.xl)}${D.front ? '' : xr}</g>${grp('tail', P.tail, D.tail)}${grp('arm-l', P.arm, D.arm)}` +
+      `<g class="pg-body">${D.body}</g><g class="pg-belly">${D.belly}</g>${D.front ? xr : ''}${head}${grp('arm-r', P.arm2, D.arm2 || D.arm, toy)}`;
+    if (sc != 1) fig = `<g transform="translate(${petR1(100 - 100 * sc)} ${petR1(184 - 184 * sc)}) scale(${sc})">${fig}</g>`;
+  } else {
     const R = [200 - P.arm[0], P.arm[1], P.arm[2]], W = [200 - P.wing[0], P.wing[1], P.wing[2]];
-    fig = `${gear[0]}<g class="pg-extra"><g class="pg-xl" ${org(P.wing)}><g transform="${at(P.wing)}">${K.wing}</g></g>` +
+    fig = `<g class="pg-extra"><g class="pg-xl" ${org(P.wing)}><g transform="${at(P.wing)}">${K.wing}</g></g>` +
       `<g class="pg-xr" ${org(W)}><g transform="${at(W, 1)}">${K.wing}</g></g></g>` +
       `<g class="pg-tail" ${org(P.tail)}><g transform="${at(P.tail)}">${K.tail}</g></g>` +
-      `<g class="pg-body">${K.body(P)}</g><g class="pg-belly">${K.belly(P)}</g>${gear[1]}` +
+      `<g class="pg-body">${K.body(P)}</g><g class="pg-belly">${K.belly(P)}</g>` +
       `<g class="pg-arm-l" ${org(P.arm)}><g transform="${at(P.arm)}">${K.arm}</g></g>` +
       `<g class="pg-arm-r" ${org(R)}><g transform="${at(R, 1)}">${K.arm}</g>${toy}</g>` + head;
   }
   const label = typeof PETS != 'undefined' && PETS[k] ? PETS[k].n : k;
-  return `<svg class="pet-svg pet-k-${k} pet-s-${sn}${age && !P.egg ? ' pet-a-' + age : ''} pet-m-${md}${sup ? ' pet-super' : ''}${o.cls ? ' ' + o.cls : ''}" viewBox="0 0 200 200" ` +
-    `role="img" aria-label="${label}">${sup ? PET_GLOW : ''}<ellipse class="pg-shadow" cx="100" cy="185" rx="${P.sh}" ry="6" fill="var(--pc-sd)"/>` +
+  return `<svg class="pet-svg pet-k-${k} pet-s-${sn}${D ? ' pet-a-' + age : ''} pet-m-${md}${sup ? ' pet-super' : ''}${o.cls ? ' ' + o.cls : ''}" viewBox="0 0 200 200" ` +
+    `role="img" aria-label="${label}">${sup ? PET_GLOW : ''}<ellipse class="pg-shadow" cx="100" cy="185" rx="${petR1(P.sh * sc)}" ry="6" fill="var(--pc-sd)"/>` +
     `<g class="pg-fig">${fig}</g></svg>`;
+}
+
+// PET-AGE2: the age 1 and 2 drawings are the lazy part petage (17b-pet-age.js, 23 KB a grade 0-2 child never needs). Home calls this:
+// for a grade 3+ child it loads the part, then redraws the Home pet (#pet), drawn as the little one until then.
+function petAgeWarm() {
+  if (!petAge() || typeof PET_AGED != 'undefined' || typeof partLoad != 'function') return;
+  partLoad('petage').then(ok => { const p = ok && $('#pet'); if (p) p.innerHTML = petHTML(); });
 }
 
 // ---- hooks used by the screens (05-pets.js petAura, 42-paths.js petHTML, 46-home.js setup, 50-round.js growShow) ----

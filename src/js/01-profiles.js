@@ -87,13 +87,14 @@ const PRF = {
     return {
       id, ok, name: str(s.name, '').trim(), pet: typeof PETS != 'undefined' && PETS[s.pet] ? s.pet : 'dragon',
       stars: Number.isFinite(s.stars) && s.stars > 0 ? Math.floor(s.stars) : 0,
-      hat: str(w.hat, ''), toy: str(w.toy, ''), scene: str(w.scene, 'meadow'),
+      hat: str(w.hat, ''), toy: str(w.toy, ''), scene: str(w.scene, 'meadow'), grade: s.grade,
       kb: (id === PRF.cur ? JSON.stringify(S) : raw || '').length / 1024,
     };
   },
   label(i) { return i.name || (i.ok ? 'New child' : 'Child ' + (PRF.SLOTS.indexOf(i.id) + 1)); },
   pet(i) {
-    return petSVG(i.pet, stage(i.stars), 'happy', { hat: wearOf(i.hat), toy: wearOf(i.toy) });
+    // PET-AGE2: each child's pet at that child's age (grade), not the age of the child playing now
+    return petSVG(i.pet, stage(i.stars), 'happy', { hat: wearOf(i.hat), toy: wearOf(i.toy), age: petAge(typeof GRADES != 'undefined' && GRADES.includes(i.grade) ? i.grade : 0) });
   },
 
   // a copy of a save string loaded and migrated the way it would be if that child played now (null when it cannot be read)

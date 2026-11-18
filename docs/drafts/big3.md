@@ -1,6 +1,6 @@
 # Draft: Carry the 1 (big3)
 
-status: unreviewed
+status: reviewed owner 2026-11-17 (approved in chat)
 made: 2026-11-17 by tools/author.js --draft (xAI API)
 
 <!-- For the owner: read the sheet below, change any wording in the JSON, then replace "unreviewed" above with
@@ -32,7 +32,7 @@ Show:
   - Now add these big loads. Show me!
 Reasons the pet gives when it is caught:
   nocarry: Look again. I forgot to carry the ten from the ones.
-  col: I took the smaller from the bigger in each column.
+  cat: Oops. I wrote both column totals side by side.
 Tonight's question: Ask {name}: "What is 38 plus 47?"
 About 3.4 minutes.
 ```
@@ -80,8 +80,8 @@ About 3.4 minutes.
   "nocarry": [
    "Look again. I forgot to carry the ten from the ones."
   ],
-  "col": [
-   "I took the smaller from the bigger in each column."
+  "cat": [
+   "Oops. I wrote both column totals side by side."
   ]
  },
  "home": "Ask {name}: \"What is 38 plus 47?\""

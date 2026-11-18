@@ -49,7 +49,15 @@ function next(){if(!G||G.dead)return;if(NAV.held){G.pend=true;return} // NAV-01:
   else if(G.missed.length){G.q=G.missed.shift();G.retry=true}
   else return finish();
   renderQ()}
-function fit(){const qa=$('.qarea'),pr=$('#prompt');if(!qa||!pr)return;let k=1;pr.style.setProperty('--k',1);
+// CH-FIT: a choice whose one long word does not fit its button ("Composite" in a half-width tile at 380 px) shrinks the font of its
+// whole row of choices just enough (not below 60%), instead of being cut off; the buttons keep their size, so taps stay >= 48 px.
+// Measured on the label itself (a Range), since a centered flex button hides the overflow on both sides. Only ever shrinks.
+function fitCh(){for(const g of document.querySelectorAll('.choices')){const bs=[...g.querySelectorAll('.choice.ch')];if(!bs.length)continue;
+  bs.forEach(b=>b.style.fontSize='');let k=1;
+  for(const b of bs){if(b.scrollWidth<=b.clientWidth+1)continue;const cs=getComputedStyle(b),av=b.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight);
+    const r=document.createRange();r.selectNodeContents(b);const w=r.getBoundingClientRect().width;if(w>av+1)k=Math.min(k,av/w)}
+  if(k<1){const f=Math.max(.6,k*.97);bs.forEach(b=>b.style.fontSize=(parseFloat(getComputedStyle(b).fontSize)*f).toFixed(1)+'px')}}}
+function fit(){fitCh();const qa=$('.qarea'),pr=$('#prompt');if(!qa||!pr)return;let k=1;pr.style.setProperty('--k',1);
   while(k>.42&&(qa.scrollHeight>qa.clientHeight+1||pr.scrollWidth>pr.clientWidth+1)){k-=.05;pr.style.setProperty('--k',k)}}
 let rsT;addEventListener('resize',()=>{fit();clearTimeout(rsT);rsT=setTimeout(()=>{if($('#map'))drawMap(MAPP)},150)});
 // R-01m: after a miss opens the hint, scroll the prompt card so the whole hint shows above the answer pad (on a phone the card

@@ -8,7 +8,8 @@
    four stages per strand (taught, practising, learned, still knows it), what we noticed (a misconception held, knowHeld) with the
    "Practise this next" pin, the before-and-after measure and tonight's question. */
 // the right build or answer of an Explore task (any build is fine there; this is one the checker takes)
-const lsRight = q => (q.kind == 'make' && q.model == 'frame2' ? [(q.m.target || q.m.total) - 1, 1] : q.goal == 'less' ? String(q.s0[0] - 1) : q.ans);
+const lsRight = q => (q.kind == 'make' && q.model == 'frame2' ? [(q.m.target || q.m.total) - 1, 1] : q.goal == 'less' ? String(q.s0[0] - 1)
+  : q.kind == 'make' && (K2MM[q.model].raw || q.raw) ? K2MM[q.model].ans(q) : q.ans); // TEACH-2b: a raw model's right build is its state
 const lsAt = id => NODES.math.findIndex(n => nid(n) === id);
 const NB = {
   // the pages, in map order: {id, t, idea, kept, html (the picture)}
@@ -28,6 +29,7 @@ const NB = {
   },
   // a build for a page with no Explore build of its own: an "any way" task gets a small middling one, others the one the checker takes
   build(q) {
+    if (q.demo != null) return q.demo; // TEACH-2b: a script's own middling build
     if (q.goal != 'any') return lsRight(q);
     if (q.kind == 'line') return String(Math.round((q.line.min + q.line.max) * .6));
     if (q.model == 'b10') return '34';
