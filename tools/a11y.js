@@ -317,6 +317,16 @@ const SCREENS = {
   'teach35-fix': { run: async p => teach35Beat(p, 'mbig2', 'chk', 1, 'steps') },
   'teach35-tiles': { run: async p => teach35Beat(p, 'mbig2', 'chk', 2, 'steps') },
   'teach35-mine': { run: async p => teach35Beat(p, 'mbig2', 'chk', 0, 'mine') },
+  // TEACH-4: the reading and Pre-K lessons (teachrd): the sound sort with pictures (First Sounds), the letter named (Name it), building a word
+  // from letter tiles (Build a Word), the pet's letters in Check me and its fix, the sentence matched to a picture (Picture Words), a Pre-K
+  // picture choice (Which Has More)
+  'teach4-sort': { run: async p => teach4Beat(p, 'sound1', 'exp', 0) },
+  'teach4-name': { run: async p => teach4Beat(p, 'sound1', 'name', 0) },
+  'teach4-build': { run: async p => teach4Beat(p, 'build1', 'tog', 0) },
+  'teach4-pet': { run: async p => teach4Beat(p, 'build1', 'chk', 0) },
+  'teach4-fix': { run: async p => teach4Beat(p, 'build1', 'chk', 1) },
+  'teach4-sent': { run: async p => teach4Beat(p, 'pic1', 'show', 0) },
+  'teach4-plates': { run: async p => teach4Beat(p, 'pk_more1', 'show', 0) },
   'report-lessons': { adult: true, run: async p => { await teachReady(p); await p.evaluate(() => { teachSave(); report(); document.querySelector('#rp-teach').scrollIntoView(); }); await p.waitForTimeout(500); } },
   'hill-garage': { run: ev(() => { gtime(); garage(); }) },
   'hill-drive': { run: ev(() => { gtime(); hcStart('meadow'); }), main: '.pedal', sheet: pauseSheet },
@@ -400,6 +410,16 @@ async function teach35Beat(p, id, beat, k, form) {
       if (!form || (form == 'mine' ? it.mine : it.steps)) break; }
     for (let i = 0; i < k; i++) { const it = LS.cur(st); LS.answer(st, it.m == 'judge' ? '0' : lsRight(it.q)); LS.next(st); }
     LS.PET_OK = .25; LS.st = st; LS.show(); }, [id, beat, k, form]);
+  await p.waitForTimeout(1500);
+}
+// TEACH-4: a reading or Pre-K lesson at a beat (k: the item; in Check me, 1 is the fix after the pet's mistake)
+async function teach4Beat(p, id, beat, k) {
+  await p.evaluate(() => partsLoad(['teach', 'teach12', 'teachrd']));
+  await p.waitForFunction(() => typeof LS_B4 != 'undefined', null, { timeout: 30000 });
+  await p.evaluate(([id, beat, k]) => { window.say = window.__a11y.say; teachSave(); S.grade = LESSONS[id].g; LS.WAKE = 400; LS.PET_OK = 0;
+    const st = LS.make(id, { seed: 3, day: lsDay() }); st.pre = [true, false]; LS.beat(st, LSB.indexOf(beat));
+    for (let i = 0; i < k; i++) { const it = LS.cur(st); LS.answer(st, it.m == 'judge' ? '0' : lsRight(it.q)); LS.next(st); }
+    LS.PET_OK = .25; LS.st = st; LS.show(); }, [id, beat, k]);
   await p.waitForTimeout(1500);
 }
 async function gamesReady(p) {

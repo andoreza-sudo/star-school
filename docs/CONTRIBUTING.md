@@ -142,6 +142,9 @@ games.<VER>.js    the Game Room: src/js/62-hill, 64-gtimer, 66-colornum, 68-lowp
 rally.<VER>.js    G-RALLY2: Star Rally on its own (src/js/63-game-race.js, src/css/49-game-race.css), then  var RALLY_VER='<VER>'; loads after games, before games2
 games2.<VER>.js   the newer Game Room games (G-04a on): every other src/js/NN-game-*.js and src/css/NN-game-*.css (63-game-race since G-02b, 65-game-snack, 67-game-skyhop, 49-game-race, 49-game-snack, 49-game-skyhop),
                   then  var GAMES2_VER='<VER>';
+teachrd.<VER>.js  TEACH-4: the reading lessons (K to 2nd) and the Pre-K lessons of Tiny Town and ABC Beach, src/js/52k-words4, 52l-bench4,
+                  52m-lessons4 and src/css/52k-teach4.css; LAZY: the reading map loads it with teach and teach12 (Pre-K to 2nd), the math map too
+                  for a Pre-K child (teachWarm in 46-home.js)
 petage.<VER>.js   PET-AGE2: the older kid and grown-up pet drawings, src/js/17b-pet-age.js (PET_AGED), then  var PETAGE_VER='<VER>';
                   LAZY: Home loads it for a grade 3+ child (petAgeWarm in 17-pets-svg.js), the little one is drawn until it is in
 data.<VER>.js     src/data/*.js in filename order, then the last line  var DATA_VER='<VER>';
@@ -149,6 +152,8 @@ sw.js             cache 'starschool-<VER>', precaches ./, index.html, gen/gen2/b
                   ES-AUDIO: cache 'starschool-audio' (kept across releases) gets every audio/es/*.ogg and audio/en/*.ogg at install
 audio/es/*.ogg    ES-AUDIO: the recorded Spanish (tools/es-audio.js); not loaded at start, fetched the first time a line is said
 audio/en/*.ogg    EN-PRAISE: the recorded English encouragement, six voices (tools/en-audio.js); the same way
+audio/teach/*.ogg TEACH-4: the pet's recorded teacher lines for the Pre-K to 2nd grade lessons, one voice (node tools/en-audio.js --teach;
+                  manifest src/data/d-teach-audio.js, EN_TEACH); the same way and cache, inside the same audio budget
 ```
 
 (The text below says "part" for gen, gen2, bt, games and games2 alike. Load order at start is the order of PARTS without the LAZY ones:

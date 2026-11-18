@@ -2,7 +2,7 @@ import base64, json, os, re, sys
 from PIL import Image, ImageDraw
 # Build: python3 tools/build.py   (run from anywhere; writes index.html, bt/games/data.<VER>.js, sw.js, manifest.json, icons to the repo root)
 # Bump VER on every release so tablets pick up the update.
-VER = 'v177'
+VER = 'v178'
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = ROOT
 F = os.path.join(ROOT, 'tools', 'fonts', 'andika-latin-%s-normal.woff2')
@@ -30,7 +30,8 @@ WORDS_KEYS = ('idea', 'beats', 'reasons', 'home')
 # TEACH-3: the grade 3-5 lessons (lsDraft3('<stop>', ...) in src/js, part teach35) take their reviewed words from their own file,
 # src/js/52h-words.js (LSW3), so the grade 1-2 part does not carry them. One entry per words file: (file, const, the call that names a draft).
 WORDS = (('52e-words.js', 'LSW', r"\blsDraft\('(\w+)'", 'TEACH-2b', 'teach12', '52g-drafted.js'),
-         ('52h-words.js', 'LSW3', r"\blsDraft3\('(\w+)'", 'TEACH-3', 'teach35', '52j-lessons35.js'))
+         ('52h-words.js', 'LSW3', r"\blsDraft3\('(\w+)'", 'TEACH-3', 'teach35', '52j-lessons35.js'),
+         ('52k-words4.js', 'LSW4', r"\blsDraft4\('(\w+)'", 'TEACH-4', 'teachrd', '52m-lessons4.js'))  # TEACH-4: the reading and Pre-K lessons
 def words_js(root, w=WORDS[0]):
     fn, const, rx, chunk, part, src = w
     d, out = os.path.join(root, 'src', 'js'), {}
@@ -51,7 +52,7 @@ def words_js(root, w=WORDS[0]):
     return ('/* ---------- %s: the words of the drafted lessons the owner has reviewed (part %s) ----------\n'
             '   BUILT by tools/build.py from docs/drafts/<stop>.md ("status: reviewed ...") for the scripts that name them (%s, %s):\n'
             '   never edit by hand. A draft that is not reviewed is never here, so its lesson is not live%s. */\n'
-            'const %s = {\n' % (chunk, part, 'lsDraft' if const == 'LSW' else 'lsDraft3', src,
+            'const %s = {\n' % (chunk, part, {'LSW': 'lsDraft', 'LSW3': 'lsDraft3'}.get(const, 'lsDraft4'), src,
                                  '' if const == 'LSW' else ' with its words (it runs on its hand-written fallback words)', const) + body + '};\n')
 WORDS_FILE = os.path.join(ROOT, 'src', 'js', '52e-words.js')
 def write_words(root):
@@ -65,7 +66,7 @@ if '--words-check' in sys.argv:
     sys.exit(0 if not _bad else 1)
 if '--words-only' in sys.argv:
     write_words(ROOT)
-    print('wrote src/js/52e-words.js and src/js/52h-words.js')
+    print('wrote src/js/52e-words.js, src/js/52h-words.js and src/js/52k-words4.js')
     sys.exit(0)
 if '--drafts-only' in sys.argv:
     _bad = draft_gate(sys.argv[sys.argv.index('--drafts-only') + 1])
@@ -90,6 +91,7 @@ PARTS = [
     ('teach', r'52-lesson\.css|(52-lesson|52b-know|52c-scripts|52d-notebook)\.js'),  # TEACH-1: Sparky teaches (the lesson engine, the learner record and plan, the lesson scripts); TEACH-2: the notebook and the report's lessons card
     ('teach12', r'(52e-words|52f-bench|52g-drafted)\.js'),  # TEACH-2b: the grade 1-2 lessons (drafted words, their workbench pieces, their scripts): after teach, so the teach part stays under 150 KB
     ('teach35', r'(52h-words|52i-bench35|52j-lessons35)\.js|52h-teach35\.css'),  # TEACH-3: the grade 3-5 lessons (their reviewed words, workbench, Check me, scripts): after teach12, which they build on
+    ('teachrd', r'(52k-words4|52l-bench4|52m-lessons4)\.js|52k-teach4\.css'),  # TEACH-4: the reading lessons (K to 2) and the Pre-K lessons of Tiny Town and ABC Beach (their reviewed words, workbench, Check me, scripts): after teach35; the reading map loads it with teach and teach12, the math map too for a Pre-K child
     ('petage', r'17b-pet-age\.js'),  # PET-AGE2: the older kid and grown-up pet drawings (grades 3-6); petAgeWarm loads it, the little one is drawn until then
 ]
 # P6-02: parts that index.html does NOT load at start (no <script> tag): partsThen() in src/js/90-app.js (LAZY_PARTS, the same list,
@@ -98,7 +100,8 @@ PARTS = [
 # TEACH-1: and the lessons, teach: the math map loads them (teachWarm in 46-home.js); not a Game Room part (GAME_PARTS in 90-app.js).
 # TEACH-2b: teach12 too (the grade 1-2 lessons), loaded with teach by the math map. PET-AGE2: petage (Home's: petAgeWarm, 17-pets-svg.js).
 # TEACH-3: teach35 (the grade 3-5 lessons), loaded with teach and teach12 by the math map for a child in 3rd grade or up.
-LAZY = ('bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12', 'teach35', 'petage')
+# TEACH-4: teachrd (the reading lessons and the Pre-K lessons), loaded with teach and teach12 by the reading map (Pre-K to 2nd), and by the math map for a Pre-K child.
+LAZY = ('bt', 'games', 'rally', 'games2', 'games3', 'teach', 'teach12', 'teach35', 'teachrd', 'petage')
 def part_of(name):
     return next((stem for stem, rx in PARTS if re.fullmatch(rx, name)), None)
 def cat(sub, ext, part=None):
@@ -153,7 +156,8 @@ json.dump({"name": "Star School", "short_name": "Star School", "start_url": "./"
 # the new ones (activate drops the ones no release lists any more). Budget: tools/test.js AUDIO_FAIL (CONTRIBUTING 3.3).
 # EN-PRAISE: the recorded English encouragement, audio/en/*.ogg (tools/en-audio.js; src/data/d-en-audio.js), the same way and cache.
 # AUDIO lists 'es/<file>' then 'en/<file>' (file names are hashes that differ between the two: each recipe is part of its hash).
-AUDIO = [d + '/' + n for d in ('es', 'en') if os.path.isdir(os.path.join(ROOT, 'audio', d))
+# TEACH-4: and the pet's recorded teacher lines, audio/teach/*.ogg (tools/en-audio.js; src/data/d-teach-audio.js), the same way and cache.
+AUDIO = [d + '/' + n for d in ('es', 'en', 'teach') if os.path.isdir(os.path.join(ROOT, 'audio', d))
          for n in sorted(os.listdir(os.path.join(ROOT, 'audio', d))) if n.endswith('.ogg')]
 AUDIO_BYTES = sum(os.path.getsize(os.path.join(ROOT, 'audio', n)) for n in AUDIO)
 # Service worker. Cache name and precache list carry VER, so one release's index.html, part files and data file are cached and replaced together.
@@ -169,7 +173,7 @@ self.addEventListener('activate',e=>{const keep=new Set(AF.map(aName));e.waitUnt
  .then(()=>caches.open(A)).then(c=>c.keys().then(ks=>Promise.all(ks.filter(r=>!keep.has(aName(r.url))).map(r=>c.delete(r))))).then(()=>self.clients.claim()))});
 self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;
  const rg=e.request.headers.get('range');
- if(rg&&/\\/audio\\/e[ns]\\//.test(e.request.url)){e.respondWith(caches.match(e.request.url,{ignoreSearch:true}).then(r=>r?r.arrayBuffer().then(b=>{const m=/bytes=(\\d*)-(\\d*)/.exec(rg)||[],n=b.byteLength,s=m[1]?+m[1]:0,t=m[2]?Math.min(+m[2],n-1):n-1;
+ if(rg&&/\\/audio\\/e[ns]\\/|\\/audio\\/teach\\//.test(e.request.url)){e.respondWith(caches.match(e.request.url,{ignoreSearch:true}).then(r=>r?r.arrayBuffer().then(b=>{const m=/bytes=(\\d*)-(\\d*)/.exec(rg)||[],n=b.byteLength,s=m[1]?+m[1]:0,t=m[2]?Math.min(+m[2],n-1):n-1;
   return new Response(b.slice(s,t+1),{status:206,headers:{'Content-Type':r.headers.get('Content-Type')||'audio/ogg','Content-Range':'bytes '+s+'-'+t+'/'+n,'Content-Length':String(t-s+1)}})}):fetch(e.request)));return}
  if(e.request.mode==='navigate'){e.respondWith(fetch(e.request,{cache:'no-store'}).then(res=>{if(res.ok){const cp=res.clone();caches.open(C).then(c=>c.put('./index.html',cp))}return res}).catch(()=>caches.match('./index.html')));return}
  e.respondWith(caches.match(e.request,{ignoreSearch:true}).then(r=>r||fetch(e.request).then(res=>{if(res.ok){const cp=res.clone();caches.open(C).then(c=>c.put(e.request,cp))}return res}).catch(()=>e.request.destination==='script'?Response.error():caches.match('./index.html'))))});
@@ -232,4 +236,4 @@ def app_icon(size):
 for s in (192, 512):
     app_icon(s).save(OUT + '/icon-%d.png' % s, optimize=True)
 print(os.listdir(OUT), os.path.getsize(OUT + '/index.html'), [os.path.getsize(OUT + '/' + f) for f in FILES])
-print('audio (ES-AUDIO and EN-PRAISE, not loaded at start, precached by sw.js): %d files, %d bytes (budget: tools/test.js AUDIO_FAIL)' % (len(AUDIO), AUDIO_BYTES))
+print('audio (ES-AUDIO, EN-PRAISE and TEACH-4, not loaded at start, precached by sw.js): %d files, %d bytes (budget: tools/test.js AUDIO_FAIL)' % (len(AUDIO), AUDIO_BYTES))

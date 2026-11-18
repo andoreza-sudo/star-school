@@ -185,7 +185,8 @@ const LS_SUBJ = ['math'];
      2. a repair: a misconception held (knowHeld) on a lesson stop the next new stop builds on, or on the last one taught (kind 'repair');
      3. a prerequisite: the next new stop builds on a lesson stop the child has not learned, and either that stop is not passed at all
         or the next stop's lesson has run twice without its Show passed (kind 'again');
-     4. the next lesson stop of the child's grade band (Pre-K to 2nd, or 3rd to 5th with their own grade first) that is open, not
+     4. the next lesson stop of the child's grade band (Pre-K to 2nd, or 3rd to 5th with their own grade first; TEACH-4: a Pre-K world's
+        lessons for a Pre-K child only) that is open, not
         passed and not learned, in map order; but when the last lesson (S.lm) was on an earlier
         day and in the same strand, a stop of another strand whose prerequisites are passed or learned comes first (alternating by
         day; kind 'new');
@@ -195,16 +196,20 @@ const LS_SUBJ = ['math'];
    Practice that no lesson has taught; or none.
    Returns {id, i (the stop's index on the map), kind 'new' | 'again' | 'repair', code (repair), remember: [ids]} or null. */
 function planToday(S0, day, p = 'math') {
-  if (!LS_SUBJ.includes(p)) return null;
-  const at = id => NODES.math.findIndex(n => nid(n) === id), open = id => { const i = at(id); return i >= 0 && unlocked('math', i); };
-  const K = S0.know || {}, ps = id => at(id) >= 0 && passed('math', at(id)), learned = id => (K[id] || {}).s >= 2;
+  if (!LS_SUBJ.includes(p) || !NODES[p]) return null;
+  // TEACH-4: the subject's own map (math, or reading): a lesson of another subject is never found on it
+  const at = id => NODES[p].findIndex(n => nid(n) === id), open = id => { const i = at(id); return i >= 0 && unlocked(p, i); };
+  const K = S0.know || {}, ps = id => at(id) >= 0 && passed(p, at(id)), learned = id => (K[id] || {}).s >= 2;
+  // TEACH-4: a Pre-K world's lessons (Tiny Town, ABC Beach) are a Pre-K child's only (a Kindergartner starts above them, as the map does)
+  const g0 = GRADES.includes(S0.grade) ? S0.grade : 0, wg = x => PATHS[p].worlds[NODES[p][at(x)].wi].g;
+  const band = x => (g0 < 3) === (wg(x) < 3) && (wg(x) >= 0 || g0 < 0);
   let id = S0.les && LESSONS[S0.les.n] && open(S0.les.n) ? S0.les.n : null, kind = id ? 'again' : 'new', code = null;
   if (!id) {
     // TEACH-3: a child in 3rd grade or up is offered the grade 3-5 lessons only, their own grade's first (6th grade: 5th grade's);
     // a child below 3rd grade the Pre-K to 2nd grade lessons only (the app loads teach35 for 3rd grade up, teachWarm; this keeps the
     // plan the same when the part is in from an earlier grade setting, and a little one is never handed word-tile reasons to read)
-    const g0 = GRADES.includes(S0.grade) ? S0.grade : 0, wg = x => PATHS.math.worlds[NODES.math[at(x)].wi].g, mine = x => (g0 >= 3 && wg(x) != Math.min(g0, 5) ? 1 : 0);
-    const cand = LS_IDS.filter(x => at(x) >= 0 && (g0 < 3) === (wg(x) < 3)).sort((a, b) => mine(a) - mine(b) || at(a) - at(b)).filter(x => open(x) && !ps(x) && !learned(x));
+    const mine = x => (g0 >= 3 && wg(x) != Math.min(g0, 5) ? 1 : 0);
+    const cand = LS_IDS.filter(x => at(x) >= 0 && band(x)).sort((a, b) => mine(a) - mine(b) || at(a) - at(b)).filter(x => open(x) && !ps(x) && !learned(x));
     const ready = x => (PRE[x] || []).every(y => ps(y) || learned(y));
     let nx = cand[0] || null;
     const lm = Array.isArray(S0.lm) ? S0.lm : [], last = lm[lm.length - 1];
@@ -212,7 +217,7 @@ function planToday(S0, day, p = 'math') {
     if (nx) {
       const pre = lsPreOf(nx).filter(y => LESSONS[y] && open(y));
       const rep = pre.concat(last && LESSONS[last[0]] && open(last[0]) ? [last[0]] : []).find(y => (K[y] || {}).s >= 1 && knowHeld(y, S0, day));
-      const k = K[nx] || {}, back = (PRE[nx] || []).find(y => LESSONS[y] && open(y) && !learned(y) && (!ps(y) || k.n >= 2 && k.s < 2));
+      const k = K[nx] || {}, back = (PRE[nx] || []).find(y => LESSONS[y] && open(y) && band(y) && !learned(y) && (!ps(y) || k.n >= 2 && k.s < 2));
       if (rep) { id = rep; kind = 'repair'; code = knowHeld(rep, S0, day); }
       else if (back) { id = back; kind = 'again'; }
       else id = nx;
@@ -224,7 +229,7 @@ function planToday(S0, day, p = 'math') {
   if (!id) return null;
   const due = due0.filter(x => x !== id);
   // nothing due: a stop passed in Practice that no lesson has taught yet (the tutor has not seen it: TEACH-PLAN-2 system D)
-  const seen = LS_IDS.filter(x => x !== id && ps(x) && !learned(x));
+  const seen = LS_IDS.filter(x => x !== id && ps(x) && !learned(x) && band(x)); // TEACH-4: in the child's band (a Kindergartner is not sent back to Pre-K)
   return {id, i: at(id), kind, code, remember: (due.length ? due : seen.slice(-1)).slice(0, 1)};
 }
 // what the pet suggests today (owner decision 1: a suggestion only, the child still picks): of the subjects with a lesson ready,

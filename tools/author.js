@@ -10,9 +10,10 @@
    node tools/author.js --approve <stop ...|all> [--by NAME] [--date YYYY-MM-DD] [--note TEXT]
                                            TEACH-2b: the owner's one step: mark drafts "status: reviewed NAME DATE (NOTE)" (only drafts
                                            that pass every check), then write src/js/52e-words.js, so their lessons go live at the next build
-   node tools/author.js --read <file> [--batch 3] [stop ...]
+   node tools/author.js --read <file> [--batch 3|4] [stop ...]
                                            TEACH-2b: one read-through file of the unreviewed drafts (or the stops named), in map order;
-                                           TEACH-3: --batch 3, the grade 3-5 drafts not yet reviewed (docs/drafts/BATCH3-READ.md)
+                                           TEACH-3: --batch 3, the grade 3-5 drafts not yet reviewed (docs/drafts/BATCH3-READ.md);
+                                           TEACH-4: --batch 4, the reading and Pre-K drafts not yet reviewed (docs/drafts/BATCH4-READ.md)
 
    What a draft is. Only words: the lines each of the six beats says (Remember, Explore, Name it, Together, Check me, Show), the
    pet's reasons for each misconception code, and tonight's question for a grown-up. Numbers are never written: a number is a
@@ -52,7 +53,8 @@ const WPM = 150, MIN_SEC = 120, MAX_SEC = 270;
 // CONTENT-01 (the parent's rule): the same words tools/test.js keeps out of src/. "Spell" as in spelling is fine; dragons are fine.
 const BANNED = /\b(magic\w*|wizards?|witch(es|craft)?|wands?|potions?|sorcer\w*|enchant\w*|spellbooks?|spells?|charms?|unicorns?|fairy|fairies|genies?|warlocks?|evolv\w*|evolution\w*|natural selection|common ancestors?|millions? of years|billions? of years)\b|cast(s|ing)? a spell|under a spell/i;
 const NUMWORDS = /\b(two|three|four|five|six|seven|eight|nine|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|thousand|million|billion|fourths?|fifths?|sixths?|sevenths?|eighths?|ninths?|twelfths?)\b/i;
-const SLOTS = ['name', 'pet', 'a', 'b', 'n', 'k', 't', 'sum', 'diff', 'ans', 'top', 'bottom', 'tens', 'ones', 'hour', 'min', 'coin', 'value', 'x', 'y', 'time'];
+const SLOTS = ['name', 'pet', 'a', 'b', 'n', 'k', 't', 'sum', 'diff', 'ans', 'top', 'bottom', 'tens', 'ones', 'hour', 'min', 'coin', 'value', 'x', 'y', 'time',
+  'word', 'letter', 'other']; // TEACH-4: reading lessons: the picture's word, the letter or pattern taught, the other bin of a sort
 
 // ---- the app, for its rules (LS_RULES, lsAge, lsToneBad, BUGS, ksBad) and its lessons ----
 let APP = null;
@@ -137,13 +139,17 @@ const slotsOf = (C, b, i) => { const x = C.slots[b] || []; return Array.isArray(
 // the code's side of a drafted lesson (52g-drafted.js): the stop, its slots per beat, its codes, what the words are for; null for none
 function contract(id) {
   if (!id) return null;
-  return app()(`(()=>{const D=typeof LS_DRAFTED!='undefined'&&LS_DRAFTED[${JSON.stringify(String(id))}];return D?{t:D.t,slots:D.slots,bugs:D.bugs,brief:D.brief}:null})()`);
+  // TEACH-4: a batch 4 lesson's brief is kept out of the app (tools/briefs4.js), made from its family and fields
+  const C = app()(`(()=>{const D=typeof LS_DRAFTED!='undefined'&&LS_DRAFTED[${JSON.stringify(String(id))}];return D?{t:D.t,slots:D.slots,bugs:D.bugs,brief:D.brief,band:D.band||'',p:D.p||'math',claim:D.claim||'',
+    fam:D.fam,key:D.key,show:D.show,what:D.what,top:D.top,up:D.up}:null})()`);
+  if (C && !C.brief && C.fam) C.brief = require('./briefs4.js').brief(C);
+  return C;
 }
 // the hand-written scripts (code: each line comes from a function with numbers filled in): every line they can say, checked
 // for the age of the stop's grade; and a script that names a draft must name a reviewed one
 function checkScripts() {
   const R = app();
-  return R(`(()=>{const o=[];for(const id of LS_IDS){const L=LESSONS[id],i=NODES.math.findIndex(n=>nid(n)===id),g=i<0?0:PATHS.math.worlds[NODES.math[i].wi].g,age=lsAge(g),lines=[L.idea];
+  return R(`(()=>{const o=[];for(const id of LS_IDS){const L=LESSONS[id],p=L.p||'math',i=NODES[p].findIndex(n=>nid(n)===id),g=i<0?0:PATHS[p].worlds[NODES[p][i].wi].g,age=lsAge(g),lines=[L.idea];
     for(let s=0;s<30;s++){const r=mulberry32(s+1);for(const st of [0,1,2])lines.push(L.q(st,r).say);const e=L.exp(r);lines.push(e.q.say);if(e.nudge)lines.push(e.nudge)}
     o.push({id,t:L.t,g,age,lines:[...new Set(lines)],home:L.home,draft:L.draft||null})}return o})()`).map(s => {
     // the scripts' own lines have their numbers filled in by code, so only the theme, kid-safe and tone rules apply to them
@@ -218,27 +224,28 @@ function model() {
 }
 // what the model is asked: the stop, the age's tone, the rules, and one hand-written lesson as the example
 function draftPrompt(id, grade) {
-  const R = app(), stop = R(`(()=>{const n=NODES.math.find(x=>nid(x)===${JSON.stringify(id)});if(!n)return null;const w=PATHS.math.worlds[n.wi];
-    return{t:n.t,sk:n.sk,lv:n.lv,world:w.n,g:w.g,skill:(SK[n.sk]||{}).n||''}})()`);
-  if (!stop) throw new Error('no math stop ' + id);
+  // TEACH-4: a stop of the math map or the reading map
+  const R = app(), stop = R(`(()=>{for(const p of ['math','read']){const n=NODES[p].find(x=>nid(x)===${JSON.stringify(id)});if(!n)continue;const w=PATHS[p].worlds[n.wi];
+    return{t:n.t,sk:n.sk,lv:n.lv,world:w.n,g:w.g,p,skill:(SK[n.sk]||{}).n||''}}return null})()`);
+  if (!stop) throw new Error('no math or reading stop ' + id);
   const g = grade != null ? +grade : stop.g, age = ageOf(g), rules = R(`(()=>{const r=LS_RULES[${JSON.stringify(age)}];return{words:r.words,chars:r.chars,no:r.no?String(r.no):''}})()`);
   const tone = R(`JSON.stringify(LS_TONE[${JSON.stringify(age)}],(k,v)=>typeof v=='function'?v(k=='nb'?'{n}':'{name}'):v)`), codes = R('Object.keys(BUGS).map(c=>c+": "+BUGS[c].d).join("\\n")');
-  const example = fs.readFileSync(path.join(DRAFTS, 'EXAMPLE.json'), 'utf8'), C = contract(id);
+  const C = contract(id), b4 = C && C.band == '4', example = fs.readFileSync(path.join(DRAFTS, b4 && C.p == 'read' ? 'EXAMPLE-READ.json' : 'EXAMPLE.json'), 'utf8');
   const code = C ? `\nThis lesson's code is written already. What each beat's words are for, and which numbers it has:\n${C.brief}
 Slots each beat may use (no others; a slot is never the answer the child has to find): ${BEATS.map(b => b + ': ' + (Array.isArray((C.slots[b] || [])[0]) ? C.slots[b].map((x, i) => 'line ' + (i + 1) + ' ' + (x.map(y => '{' + y + '}').join(' ') || 'none')).join(', ') : (C.slots[b] || []).map(x => '{' + x + '}').join(' ') || 'none')).join('; ')}. {name} (the child) may be used anywhere.
 Explore lines are only the task, said before the child starts (no lines about what they made: the app reacts itself).
 After each Together and Show line the app says the problem itself, with its numbers, so a line coaches or sets the scene and never repeats the problem.
-check: exactly two lines: "My turn. Check me!" and the pet's claim, which must use {ans}: the pet's whole answer as the app says it (a number, a time such as "half past 4" or "4 15", or "35 cents"), e.g. "I think it is {ans}. Am I right?".
+check: exactly two lines: "My turn. Check me!" and the pet's claim, which must use {ans}: the pet's whole answer as the app says it (${b4 ? 'here: ' + (C.p == 'read' ? 'a letter or a word, ' : '') + 'as in "' + C.claim + '"' : 'a number, a time such as "half past 4" or "4 15", or "35 cents"'}), e.g. "${b4 ? C.claim : 'I think it is {ans}. Am I right?'}".${b4 ? '\nThe child does not read yet (or is just starting): every line is heard. Never spell a sound with slashes; name a letter by its slot, and a sound by a word that has it ("the first sound of {word}").' : ''}
 together: exactly three lines: line 1 is said before a build item, line 2 before a picture item, line 3 before a symbols-only item (the app says "Now let's do some together." itself, and a miss can bring a build back, so each line fits its kind of item on its own). The idea has no slots and no numbers. Never a number word: "eighteen", "nine", "hundreds of" are all written as slots or left out.
 reasons: only for these codes (the mistakes this lesson's pet makes): ${C.bugs.join(', ')}.\n` : '';
   const sys = 'You write the spoken words of short lessons in a children\'s learning app for Pre-K to 6th grade. The child\'s pet runs each lesson. '
     + 'You write only words; the app\'s code fills every number. Reply with one JSON object and nothing else.';
   const user = `Write the words of one lesson.
-Stop: "${stop.t}" (id ${id}) in the world "${stop.world}", grade ${g === -1 ? 'Pre-K' : g === 0 ? 'Kindergarten' : g}.
+Stop: "${stop.t}" (id ${id}) in the world "${stop.world}" (${stop.p == 'read' ? 'reading' : 'math'}), grade ${g === -1 ? 'Pre-K' : g === 0 ? 'Kindergarten' : g}.
 The pet's age for this grade: ${age}. How that pet talks (its fixed lines): ${tone}
 Rules for every line:
 - At most ${rules.words} words and ${rules.chars} characters.${rules.no ? ' Never use: ' + rules.no : ''}
-- NEVER write a digit or a number word (two, three, ... twenty, thirty, ...). Every number is a slot the code fills: ${SLOTS.map(s => '{' + s + '}').join(' ')}. "one", "ten" and "hundred" are allowed only as words for places and pieces ("the ones", "a ten").
+- NEVER write a digit or a number word (two, three, ... twenty, thirty, ...). Every number is a slot the code fills: ${SLOTS.map(s => '{' + s + '}').join(' ')}. "one", "ten" and "hundred" are allowed only as words for places and pieces ("the ones", "a ten").${stop.p == 'read' ? '\n- NEVER write a word, a letter or a sound of the lesson\'s own questions (cat, m, sh): the code chooses them and fills the slots {word} {letter} {other}. Write "both" instead of "two".' : ''}
 - No magic, spells, wizards, wands, potions, fairies, unicorns, evolution or "millions of years". Dragons, animals, space, the sea and building things are fine.
 - Warm, plain, kind words a child hears once and understands. The pet is never wrong while it teaches; it is wrong only in its own announced turn ("Check me").
 - About 3 minutes in all: remember 1 line, explore 1 or 2, name 2 or 3, together 2 or 3, check 2 (the pet's turn and a question), show 1 or 2.
@@ -291,13 +298,26 @@ function approve(ids, o = {}) {
 // the read-through: every lesson's sheet in map order, short enough to read on a phone
 // TEACH-3: o.batch 3 reads the grade 3-5 drafts (LS_B35) that are not reviewed, under the batch 3 heading
 function readThrough(ids, o = {}) {
-  const R = app(), at = id => R(`NODES.math.findIndex(n=>nid(n)===${JSON.stringify(id)})`), b3 = o.batch == 3, B35 = R('LS_B35');
-  // no stops named: every unreviewed draft of this batch's band (batch 3 the grade 3-5 lessons, batch 2 the rest); none waiting reads as none,
-  // never as every draft (v177: with batch 2 all reviewed, an empty list used to pull in the batch 3 drafts)
-  if (!ids.length) ids = drafts().filter(x => x.d && x.d.status === 'unreviewed' && B35.includes(x.d.id) === b3).map(x => x.d.id);
+  // TEACH-4: the reading map's stops come after the math map's (Tiny Town, then ABC Beach and the reading worlds)
+  const R = app(), at = id => R(`(()=>{const i=NODES.math.findIndex(n=>nid(n)===${JSON.stringify(id)});return i>=0?i:1e4+NODES.read.findIndex(n=>nid(n)===${JSON.stringify(id)})})()`);
+  const b3 = o.batch == 3, b4 = o.batch == 4, B35 = R('LS_B35'), B4 = R('typeof LS_B4=="undefined"?[]:LS_B4');
+  // no stops named: every unreviewed draft of this batch's band (batch 4 the reading and Pre-K lessons, batch 3 the grade 3-5 lessons,
+  // batch 2 the rest); none waiting reads as none, never as every draft (v177: with batch 2 all reviewed, an empty list used to pull in the batch 3 drafts)
+  if (!ids.length) ids = drafts().filter(x => x.d && x.d.status === 'unreviewed' && (b4 ? B4.includes(x.d.id) : !B4.includes(x.d.id) && B35.includes(x.d.id) === b3)).map(x => x.d.id);
   const xs = drafts().filter(x => x.d && ids.includes(x.d.id)).sort((a, b) => at(a.d.id) - at(b.d.id));
-  if (!xs.length) return [`# Batch ${b3 ? 3 : 2} read-through`, '', 'Nothing is waiting: every lesson of this batch is reviewed.', ''].join('\n');
-  const head = b3 ? ['# Batch 3 read-through: grade 3 to 5 math lessons', '',
+  if (!xs.length) return [`# Batch ${b4 ? 4 : b3 ? 3 : 2} read-through`, '', 'Nothing is waiting: every lesson of this batch is reviewed.', ''].join('\n');
+  const head = b4 ? ['# Batch 4 read-through: reading for K to 2nd grade, and Pre-K', '',
+    `${xs.length} lessons, in map order: Tiny Town (Pre-K math), ABC Beach (Pre-K reading),`, 'then the reading worlds of Kindergarten, 1st and 2nd grade.',
+    'Each is what the child hears: the six beats, the pet\'s reasons when it is caught,', 'and tonight\'s question for you. All of them hear the little one pet.', '',
+    'The app fills in each {slot} from the question on screen: {word} is the picture\'s word,', '{letter} the letter or letter team being learned, {other} the second one of a sort,',
+    '{n} a number, {ans} the pet\'s answer. So words, letters and numbers are always right.',
+    'The app also says each question itself, after the Together and Show lines.', '',
+    'Until you approve a lesson, it runs on short hand-written lines', '(its idea, a Name it line, the pet\'s reasons), so it works now.', '',
+    'The reading lessons: Explore sorts pictures by a sound, Name it shows the letter,', 'Together builds words from letter tiles, Check me has the pet read "cat" as "cap"',
+    'for the child to fix, and Show is a short sentence to read and match to a picture.', '',
+    'To change a word: edit the JSON in that lesson\'s file in docs/drafts/.', 'When you are happy, say so, or run:', '',
+    '`node tools/author.js --approve <stop ...> --by <your name>`', '', '(or all, which also approves any lesson of batches 2 and 3 still waiting).', 'Approved lessons use their words at the next build.', '']
+    : b3 ? ['# Batch 3 read-through: grade 3 to 5 math lessons', '',
     `${xs.length} lessons, in map order. Each is what the child hears:`, 'the six beats, the pet\'s reasons when it is caught, and tonight\'s question for you.', '',
     'Grades 3 and 4 hear the older kid pet; grade 5 hears the teen-like partner.', '',
     'The app fills in each {slot} from the problem on screen, so numbers are always right.',
