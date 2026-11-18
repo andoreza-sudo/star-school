@@ -199,7 +199,7 @@ const GH = {
     const left = ptLeft(), on = left > 0;
     GH.cur = null;
     const card = g => {
-      const lock = g.lock ? g.lock() : '', need = !lock && !on;
+      const lock = PLAY.gameLocked(g.id) ? PLAY.LINE.game : g.lock ? g.lock() : '', need = !lock && !on; // PLAY-01: the free sample's two games
       const state = lock ? ' lock' : need ? ' need' : '';
       const flag = lock ? `<span class="gh-flag">${ico('lock', 20)}<span>${esc(lock)}</span></span>`
         : need ? `<span class="gh-flag">${ico('ticket', 20)}<span>Needs game time</span></span>` : '';
@@ -217,16 +217,18 @@ const GH = {
     <div class="gh-tk" role="img" aria-label="${on ? esc(fmtT(left) + ' of game time left') : 'No game time yet'}">${GH.ticket(on)}
       <span class="gh-tkt"><b>${on ? fmtT(left) : '0:00'}</b><span>${on ? 'game time left' : 'No game time yet'}</span></span></div></section>
   <div class="gh-why${on ? ' on' : ''}"><p>${esc(ptWhyNot())}</p>${on ? '' : UI.btn('Go earn game time', { kind: 'primary', size: 'lg', icon: 'path-read', id: 'learn' })}</div>
-  <div class="gh-grid">${GH.games.map(card).join('')}</div>
+  <div class="gh-grid">${GH.games.map(card).join('')}</div>${PLAY.locked() ? PLAY.rowHTML() : ''}
   <section class="gh-earn"><h2>${ico('ticket', 26)}<span>How to earn more game time</span></h2>
    <ul>${earn.map(([i, t, v]) => `<li>${R_(i)}<span>${esc(t)}</span><b>${esc(v)}</b></li>`).join('')}</ul>
    <p>Replaying a stop you already mastered, or the same stop over and over, earns less.</p></section></div></div>`);
     NAV.bar('games');
     $('#back').onclick = () => home();
     if ($('#learn')) $('#learn').onclick = () => home();
+    if ($('.plgu')) $('.plgu').onclick = () => PLAY.grown(() => GH.hub()); // PLAY-01: the grown-ups' Unlock everything
     for (const g of GH.games) {
       const b = $('#' + g.btn);
       if (b) b.onclick = () => {
+        if (PLAY.gameLocked(g.id)) return PLAY.kid('game'); // PLAY-01
         const why = g.lock ? g.lock() : '';
         if (why) {
           SFX.wrong();

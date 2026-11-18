@@ -38,7 +38,7 @@ function aboutCard(){
     `<p class="gw-p">Star School is offline practice in math, reading and Spanish for children, with game time earned by learning. It has no accounts, no ads and no tracking.</p>
     <p class="gw-note">${ico('lock',22)}<span>It works without internet once it has loaded. Progress is stored only on this device. Nothing is sent anywhere.</span></p>
     <p class="gw-note" id="ab-spk">${ico('mic',22)}<span>Spanish “Say it!” recordings stay on this tablet and are deleted automatically (after 1 day, or as you choose in the Listening corner). Nothing is sent. Speech recognition is used only when the tablet can do it on the device itself.</span></p>
-    <div class="gw-log ab-ver"><div><b>Version</b> <span id="ab-rel">${RELEASE}</span></div><div><b>Build</b> <span id="ab-build">${BUILD}</span></div></div>
+    <div class="gw-log ab-ver"><div><b>Version</b> <span id="ab-rel">${RELEASE}</span></div><div><b>Build</b> <span id="ab-build">${BUILD}</span></div><div><b>Edition</b> <span id="ab-ed">${PLAY.edition()}</span></div></div>
     <h3 class="gw-h3">${ico('doc',22,'ic-brand')}<span>Licences</span></h3>
     <p class="gw-p ab-lic-line"><b>Andika</b> (the lettering in the app), Copyright (c) 2004-2022 SIL International. Licensed under the SIL Open Font License 1.1 (openfontlicense.org).</p>
     <p class="gw-sub ab-lic-line">Everything else (pictures, icons, sounds, games and questions) was made for Star School. No other fonts, libraries or outside files are used.</p>
@@ -80,6 +80,7 @@ function grown(){let armed=false;
     <h3 class="gw-h3">${ico('map',22,'ic-brand')}<span>Stops passed</span></h3><div class="gw-paths">${paths}</div>
     ${SAVE_FAILED?warn('Could not save progress: the device storage may be full.'):''}`,{sub:esc(gradeSpoken(gradeOf()))+'. Everything is saved on this tablet only.'})}
   ${PRF.card()}
+  ${PLAY.on?PLAY.card():''}
   ${reportGrownHTML()}
   ${GW.card('gw-kid','edit','Names',GW.field('Child','user',`id="nm" value="${esc(S.name)}"`)+GW.field('Pet name','paw',`id="pn" value="${esc(S.petName)}" placeholder="${PETS[S.pet].def}"`)+
     GW.field('Buddy','users',`id="bd" value="${esc(S.buddy)}" placeholder="A sibling or friend"`,'Used in story problems.'))}
@@ -130,6 +131,7 @@ function grown(){let armed=false;
   reportGrownBind();
   BAK.bind();
   PRF.bind();
+  if(PLAY.on)PLAY.bind($('#gw-play'),()=>grown()); // PLAY-01: Unlock Star School (89-play.js)
   $('#ula').onchange=e=>{S.unlockAll=e.target.checked;save()};
   $('#lson').onchange=e=>{TEACH.off=!e.target.checked;save()}; // TEACH-2: lessons on or off (50-round.js)
   $$('[data-per]').forEach(b=>b.onclick=()=>{ptCfg().per=+b.dataset.per;save();grown()});

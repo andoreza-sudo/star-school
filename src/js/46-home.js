@@ -374,11 +374,11 @@ function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],ws=PATHS[p].
   const more=(wi,up)=>`<button class="btn wmore" data-w="${wi}" style="top:${y}px">${ico(up?'arrow-up':'arrow-down',20)}${wBadge(p,wi)}${esc(ws[wi].n)}</button>`;
   if(w0>0){bands+=more(w0-1,true);y+=72}
   const wb=[]; // P4-09: [world, top, height, first and end index in pts, Test out shown]; scenes are drawn once every stop is placed
-  for(let wi=w0;wi<=w1;wi++){const w=ws[wi],y0=y,[a,b]=WR[p][wi],canTest=worldOpen(p,wi)&&!worldFinished(p,wi);y+=canTest?160:86; // room under the Test out banner so the first stop, its ring and the pet never cover it
+  for(let wi=w0;wi<=w1;wi++){const w=ws[wi],y0=y,[a,b]=WR[p][wi],canTest=worldOpen(p,wi)&&!worldFinished(p,wi),pl=PLAY.lockedW(p,wi);y+=canTest||pl?160:86; // room under the Test out banner so the first stop, its ring and the pet never cover it
     const k0=pts.length;
     for(let i=a;i<=b;i++){if(lsStopAt(p,i)){y+=16;pts.push([W/2+Math.sin((i-.5)*1.15)*amp,y,i,1]);y+=114}pts.push([W/2+Math.sin(i*1.15)*amp,y,i]);y+=106} // LS-STOP: a lesson stop before a stop with a lesson (42b-lstop.js)
-    wb.push([wi,y0,y-y0-24,k0,pts.length,canTest]);
-    bands+=`<div class="wtitle" data-w="${wi}" style="top:${y0+14}px">${wBadge(p,wi)}<span>${esc(w.n)}</span>${worldFinished(p,wi)?ico('check-circle',24,'ic-good'):''}</div>${canTest?`<button class="btn xs tobtn" data-w="${wi}" style="top:${y0+58}px">${ico('bolt',20)}<span>Already know it? Test out!</span></button>`:''}`;y+=4}
+    wb.push([wi,y0,y-y0-24,k0,pts.length,canTest||pl]);
+    bands+=`<div class="wtitle" data-w="${wi}" style="top:${y0+14}px">${wBadge(p,wi)}<span>${esc(w.n)}</span>${worldFinished(p,wi)?ico('check-circle',24,'ic-good'):''}</div>${canTest?`<button class="btn xs tobtn" data-w="${wi}" style="top:${y0+58}px">${ico('bolt',20)}<span>Already know it? Test out!</span></button>`:''}${pl?PLAY.bandHTML(y0+58):''}`;y+=4}
   const cur=curNode(p),allDone=N.every((n,i)=>passed(p,i)),end=w1==ws.length-1;
   const ck=typeof CHK!='undefined'; // CHECK-IN: badges and Check-in buttons by the stops (51b-checkin.js)
   const nodes=pts.map(([x,yy,i,ls])=>{if(ls)return lsNodeHTML(p,i,x,yy,W);const n=N[i],s=nInfo(n),st=getSt(p,i),gt=lsGate(p,i),lk=!unlocked(p,i)||gt;
@@ -394,12 +394,13 @@ function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],ws=PATHS[p].
   const kw=allDone?pts.length:pts.filter(q=>q[2]<=cur).length;
   m.innerHTML=scenes+bands+SCN.trail(W,y+20,pts,kw,wb.slice(1).map(([,top])=>top-14))+nodes
     +(cp?`<div class="mappet ${petAura()}" style="left:${cp[0]+side}px;top:${cp[1]+18}px">${petHTML()}</div>`:'')+(end&&allDone?`<div class="wtitle mp-champ" style="top:${y+10}px">${ico('trophy',30)}<span>${esc(PATHS[p].n)} Champion!</span></div>`:'');
-  $$('.node').forEach(b=>b.onclick=()=>{const i=+b.dataset.n;if(!unlocked(p,i)){SFX.wrong();anim(b,'sad');fb('Finish the stop before this one!','warn');return}
+  $$('.node').forEach(b=>b.onclick=()=>{const i=+b.dataset.n;if(PLAY.lockedW(p,N[i].wi))return PLAY.kid('world',p);if(!unlocked(p,i)){SFX.wrong();anim(b,'sad');fb('Finish the stop before this one!','warn');return}
     if(lsGate(p,i)){SFX.pop();anim($(`.lsn[data-ls="${i}"]`),'jump');fb(`Learn it with ${petN()} first!`,'warn');return} // LS-STOP: practice waits for the lesson
     SFX.whoosh();open(p,i)});
-  $$('.lsn').forEach(b=>b.onclick=()=>{const i=+b.dataset.ls;if(!unlocked(p,i)){SFX.wrong();anim(b,'sad');fb('Finish the stop before this one!','warn');return}lsOpen(p,i)});
+  $$('.lsn').forEach(b=>b.onclick=()=>{const i=+b.dataset.ls;if(PLAY.lockedW(p,N[i].wi))return PLAY.kid('world',p);if(!unlocked(p,i)){SFX.wrong();anim(b,'sad');fb('Finish the stop before this one!','warn');return}lsOpen(p,i)});
   if(ck)CHK.mapBind(p);
   $$('.tobtn').forEach(b=>b.onclick=()=>testOut(p,+b.dataset.w));
+  $$('.plgu').forEach(b=>b.onclick=()=>PLAY.grown(()=>pathMap(p,MAPW[p]))); // PLAY-01: the grown-ups' Unlock everything (89-play.js)
   $$('.wmore').forEach(b=>b.onclick=()=>mapGo(p,+b.dataset.w));
   const on=st&&st.querySelector('.wchip.on');if(on)st.scrollLeft=Math.max(0,on.offsetLeft-(st.clientWidth-on.offsetWidth)/2);
   if((p=='math'||p=='read')&&typeof LS!='undefined')setTimeout(()=>LS.mapAdd(),0)} // TEACH-1: the lesson offer by a stop (52-lesson.js), after the draw (it reads the layout)

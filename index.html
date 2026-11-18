@@ -2998,6 +2998,27 @@ html.calm .burst,html.calm .rw-burst,html.calm .fly,html.calm .pc-fx{display:non
 
 /* the question's streak and star chips keep their width from 9 to 10, so the track beside them does not jump */
 .qtop .stat b{display:inline-block;min-width:2ch;text-align:center}
+/* PLAY-01: the free sample's locked content and the Unlock Star School card (src/js/89-play.js). Tokens only; 48 px targets. */
+.pl-kid{text-align:center}
+.pl-kid p{margin:0 0 var(--s-4);font-size:var(--fs-4);line-height:var(--lh-4);color:var(--ink)}
+.pl-lk{display:inline-grid;place-items:center;width:72px;height:72px;margin:var(--s-2) 0;border-radius:50%;background:var(--surface-2);color:var(--ink-3);
+  box-shadow:inset 0 0 0 3px var(--line)}
+.btn.plgu{display:flex;align-items:center;gap:var(--s-2);min-height:var(--tap);padding:0 var(--s-4) 0 var(--s-3);font-size:var(--fs-2);
+  background:var(--surface);color:var(--ink-2);box-shadow:inset 0 0 0 2px var(--line),0 4px 0 var(--ledge-soft)}
+.btn.plgu .ic{color:var(--ink-3)}
+.btn.plgu.pl-band{position:absolute;left:50%;transform:translateX(-50%);z-index:2;white-space:nowrap}
+.btn.plgu.pl-band:active{transform:translateX(-50%) translateY(3px)}
+.pl-row{display:flex;justify-content:center;margin:var(--s-5) var(--s-4) var(--s-2)}
+.pl-sh{text-align:left}
+.pl-sh h2{text-align:center}
+.sheet .pl-sh .gw-sub{margin:0 0 var(--s-2);font-size:var(--fs-2)}
+.pl-price,.sheet .pl-price{margin:0 0 var(--s-1);font-family:var(--font-display);font-size:var(--fs-5);font-weight:700;line-height:var(--lh-5);color:var(--ink)}
+.pl-inc{list-style:none;margin:var(--s-3) 0;padding:0;display:grid;gap:var(--s-2)}
+.pl-inc li{display:flex;align-items:flex-start;gap:var(--s-2);color:var(--ink-2);font-weight:700}
+.pl-inc .ic{flex:none}
+.pl-msg,.sheet .pl-msg{min-height:1.45em;margin:var(--s-2) 0;color:var(--ink);font-weight:700}
+.pl-btns .btn{min-height:var(--tap)}
+.pl-sh .pl-btns{margin-bottom:var(--s-2)}
 </style>
 </head>
 <body>
@@ -3013,7 +3034,7 @@ const pick=a=>a[Math.floor(rnd()*a.length)];
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KEY='starschool-v2';
-const BUILD='v179'; // ROOM: the build stamp for code in part files (tools/build.py writes VER over v179 in index.html only; the Grown-ups screens are in gen)
+const BUILD='v180'; // ROOM: the build stamp for code in part files (tools/build.py writes VER over v180 in index.html only; the Grown-ups screens are in gen)
 const RELEASE='1.0.0'; // P6-05: the release number parents see (Home footer, Grown-ups > About). VER (tools/build.py) stays the build stamp and bumps every chunk.
 const LATEST=7; // newest save schema version = MIGRATIONS.length (ROADMAP section 9)
 let S,SAVE_RAW=null,SAVE_CORRUPT=false,SAVE_FAILED=false;
@@ -3173,7 +3194,8 @@ function migrate(){
   const from=Number.isInteger(S.v)&&S.v>=1?S.v:1;
   if(from>=LATEST)return; // current, or written by a newer app: leave it alone
   if(SAVE_RAW!==null)try{localStorage.setItem(SKEY+'-bak',SAVE_RAW)}catch(e){}
-  for(let n=from;n<LATEST;n++)MIGRATIONS[n]();
+  const pl=typeof PLAY!='undefined'?PLAY:{};pl.mig=(pl.mig||0)+1; // PLAY-01: migrations see every stop as in the web version (nothing locked)
+  try{for(let n=from;n<LATEST;n++)MIGRATIONS[n]()}finally{pl.mig--}
   S.v=LATEST;
   save();
 }
@@ -3191,7 +3213,7 @@ function save(){if(SAVE_HOLD||SAVE_OFF)return;try{localStorage.setItem(SKEY,JSON
 function logErr(msg){
   try{
     const a=Array.isArray(S.err)?S.err:(S.err=[]);
-    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v179'});
+    a.push({t:Date.now(),msg:String(msg).slice(0,200),ver:'v180'});
     if(a.length>20)a.splice(0,a.length-20);
     save();
   }catch(e){}
@@ -3347,6 +3369,7 @@ const PRF = {
   // Play as child id. Returns '' (the app starts again for them, or Home for the same child) or a message; then nothing changed.
   go(id) {
     if (!PRF.ids.includes(id)) return 'That child is not on this tablet.';
+    if (PLAY.kidLocked(id)) return PLAY.LINE.kid; // PLAY-01: one child in the free sample (89-play.js)
     if (id === PRF.cur) {
       PRF.setWho(id);
       home(true);
@@ -3365,6 +3388,7 @@ const PRF = {
   // Returns {id} or {msg}; with a message nothing was changed.
   add(data, playNow) {
     if (PRF.ids.length >= PRF.MAX) return { msg: 'There are already 4 children on this tablet. Delete one to make room.' };
+    if (PLAY.locked()) return { msg: PLAY.LINE.add }; // PLAY-01: more children come with the unlock (Grown-ups, Unlock Star School)
     save();
     if (SAVE_FAILED || !PRF.has(PRF.cur)) return { msg: PRF.FULL };
     const id = PRF.SLOTS.find(s => !PRF.ids.includes(s)), k = PRF.key(id);
@@ -3560,6 +3584,100 @@ const PRF = {
   },
 };
 PRF.boot();
+/* ---------- PLAY-01: the Google Play app: a free sample and a one-time unlock (core; the screens and the purchase are 89-play.js) ----------
+   Star School on Google Play is a free download with one in-app product (PLAY.SKU) that unlocks everything for every child on the
+   tablet. The web version (github.io, or any page not opened by the Play app) is never locked: PLAY.on stays false there.
+
+   Play mode (PLAY.on) is set once and kept on this tablet (localStorage PLAY.KEY) when the page is opened by the Play app, a Trusted
+   Web Activity: its launch URL carries ?src=play (the TWA's start URL) or the referrer is android-app://<PLAY.PKG>, AND the page can
+   reach Google Play billing (window.getDigitalGoodsService, which only the Play app's Chrome tab offers). Never on *.github.io. A child
+   cannot turn it off (there is no switch, and a TWA has no address bar); typing ?src=play into a normal browser does nothing there.
+
+   The device store PLAY.KEY = {v: 1, on: 1, own: 0|1, at: ms of the last check with Google Play, miss: checks in a row that found no
+   purchase}. The unlock belongs to the tablet (the family bought it), not to one child's save S: every child on the tablet is unlocked,
+   a backup file never carries it to another tablet, and "Start over" keeps it. It is the last state Google Play confirmed: offline,
+   or when Google Play cannot be asked, it stays as it was, so a family that paid is never locked out. It is re-checked with
+   listPurchases() at every start when online (89-play.js PLAY.verify); a paid unlock is only taken back when two checks in a row
+   find no purchase (a refund).
+
+   The free sample (PLAY.free): in each subject, the world a child of each grade starts in on a fresh save (defStart(p, g) in
+   42-paths.js, the same rule startWorld uses, without placement), for every grade Pre-K to 6th: so every grade has a free world in
+   every subject, and changing the grade never locks a world the child could play. Lessons and practice stops inside those worlds,
+   the pet, stickers, missions, streak, the report card, Mixed Practice, Fact Race and Fact Sprint, the check-ins and the Puzzle of
+   the Day are free; in the Game Room, game time is earned and spent as usual on PLAY.FREE_GAMES; one child (the first) can play.
+   Locking never changes a save: stars and progress in a locked world stay in S, and come back the moment the app is unlocked (and
+   always in the web version). Migrations run as if unlocked (PLAY.mig), so what a save means never depends on the mode. */
+const PLAY = {
+  SKU: 'unlock_all', // the in-app product id in Play Console (a one-time, non-consumable product)
+  PKG: '', // the Android package name of the Play app, once the owner has one (docs/PLAY-SETUP.md); '' = only ?src=play is used
+  BILLING: 'https://play.google.com/billing',
+  LAUNCH: 'Launch price until January 31, 2027.', // a line under the price; the owner may change it (no amount here: the price comes from Play)
+  LAUNCH_END: '2027-02-01', // the launch line is not shown from this day on
+  FREE_GAMES: ['art', 'snack'], // Coloring and Snack Stand: the two lightest games (2D, no WebGL)
+  KEY: KEY + '-play',
+  on: false, // running as the Play app
+  own: false, // the unlock is bought (the last state Google Play confirmed)
+  mig: 0, // > 0 while migrations run: nothing is locked
+  st: { v: 1 },
+  read() {
+    let o = null;
+    try { o = JSON.parse(localStorage.getItem(PLAY.KEY)); } catch (e) {}
+    PLAY.st = o && typeof o == 'object' && !Array.isArray(o) ? o : { v: 1 };
+    PLAY.on = PLAY.st.on === 1;
+    PLAY.own = PLAY.on && PLAY.st.own === 1;
+  },
+  write() {
+    try { localStorage.setItem(PLAY.KEY, JSON.stringify(PLAY.st)); } catch (e) {}
+  },
+  // At load: keep Play mode once it was set; set it when the Play app opened this page (see the header)
+  detect() {
+    PLAY.read();
+    if (PLAY.on) return;
+    try {
+      const g = globalThis, loc = g.location || {}, host = String(loc.hostname || '');
+      if (/(^|\.)github\.io$/i.test(host)) return; // the web version is always fully open
+      const ref = String((g.document && g.document.referrer) || ''), q = String(loc.search || '');
+      const app = !!PLAY.PKG && ref.indexOf('android-app://' + PLAY.PKG) === 0, param = /[?&]src=play(&|$)/.test(q);
+      if ((app || param) && typeof g.getDigitalGoodsService == 'function') {
+        PLAY.st.on = 1;
+        PLAY.st.own = PLAY.st.own === 1 ? 1 : 0;
+        PLAY.write();
+        PLAY.read();
+      }
+    } catch (e) {}
+  },
+  // the bought state, as Google Play confirmed it (89-play.js); a change is kept on the tablet at once
+  setOwn(v) {
+    PLAY.st.own = v ? 1 : 0;
+    PLAY.st.at = Date.now();
+    PLAY.st.miss = 0;
+    PLAY.write();
+    PLAY.read();
+  },
+  locked() { return PLAY.on && !PLAY.own && !PLAY.mig; },
+  // the ids of the free worlds of path p (cached per path and world list)
+  ids: {},
+  freeIds(p) {
+    const ws = PATHS[p].worlds, k = ws.map(w => w.id).join();
+    const c = PLAY.ids[p];
+    if (c && c.k === k) return c.s;
+    const s = new Set(GRADES.map(g => ws[defStart(p, g)].id));
+    PLAY.ids[p] = { k, s };
+    return s;
+  },
+  free(p, wi) { return PLAY.freeIds(p).has(PATHS[p].worlds[wi].id); },
+  lockedW(p, wi) { return PLAY.locked() && !PLAY.free(p, wi); },
+  gameLocked(id) { return PLAY.locked() && !PLAY.FREE_GAMES.includes(id); },
+  // Brain Teasers: only the Puzzle of the Day is free (it changes type every day)
+  btLocked(id, band, level) {
+    if (!PLAY.locked()) return false;
+    const d = BT.dailyInfo();
+    return !(d && d.id === id && d.band === band && String(d.level) === String(level));
+  },
+  // more children than one: only the first child on the tablet plays in the free sample
+  kidLocked(id) { return PLAY.locked() && id !== PRF.ids[0]; },
+};
+PLAY.detect();
 /* ---------- pets ---------- */
 const PETS={dragon:{n:'Dragon',s:['🥚','🐍','🐲','🐉'],def:'Sparky'},dino:{n:'Dino',s:['🥚','🦎','🦕','🦖'],def:'Rex'},
   bird:{n:'Bird',s:['🥚','🐣','🐥','🦅'],def:'Tweety'},ocean:{n:'Sea pal',s:['🥚','🐟','🐬','🐳'],def:'Bubbles'}};
@@ -6979,16 +7097,17 @@ const NAV = {
       NAV.quiz();
     };
   },
-  // a question a child that young cannot answer: a times-table fact from 6 x 6 to 9 x 9, typed in
-  quiz() {
-    const a = R(6, 9), b = R(6, 9);
-    const s = UI.sheet(`<div class="nv-gate"><h2>For grown-ups</h2><p>Hold the Grown-ups button for 3 seconds, or answer:</p>` +
+  // a question a child that young cannot answer: a times-table fact from 6 x 6 to 9 x 9, typed in. then: what a right answer opens
+  // (default Grown-ups; PLAY-01: the Unlock Star School sheet, which is only ever reached through this question)
+  quiz(then) {
+    const a = R(6, 9), b = R(6, 9), go2 = typeof then == 'function' ? then : grown;
+    const s = UI.sheet(`<div class="nv-gate"><h2>For grown-ups</h2><p>${then ? 'This part is for grown-ups. Answer to go on:' : 'Hold the Grown-ups button for 3 seconds, or answer:'}</p>` +
       `<label class="nv-q"><span>${a} × ${b} =</span><input id="gwans" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="3" autocomplete="off" aria-label="${a} times ${b}"></label>` +
       `<p class="nv-msg" id="gwmsg" role="status"></p><div class="acts">${UI.btn('Open', { kind: 'primary', size: 'lg', wide: true, icon: 'check', id: 'gwok' })}` +
       `${UI.btn('Cancel', { kind: 'ghost', wide: true, id: 'gwno' })}</div></div>`);
     const inp = s.el.querySelector('#gwans');
     const go = () => {
-      if (inp.value.trim() === String(a * b)) { s.close(); grown(); return; }
+      if (inp.value.trim() === String(a * b)) { s.close(); go2(); return; }
       SFX.wrong();
       s.el.querySelector('#gwmsg').textContent = 'Not quite. Ask a grown-up!';
       inp.value = '';
@@ -7128,6 +7247,7 @@ const worldSkipped=(p,wi)=>!!(S.skip&&S.skip[worldId(p,wi)]);
 function worldHasProgress(p,wi){const[a,b]=WR[p][wi];for(let i=a;i<=b;i++)if(passed(p,i))return true;return false}
 const worldFinished=(p,wi)=>passed(p,WR[p][wi][1])||worldSkipped(p,wi)||worldDone(p,wi);
 function worldOpen(p,wi){
+  if(PLAY.lockedW(p,wi))return false; // PLAY-01: outside the free sample of the Play app, until a grown-up unlocks it (03-play.js)
   if(S.unlockAll||wi==0)return true;
   if(!PATHS[p].byLevel&&PATHS[p].worlds[wi].g<=gradeOf())return true; // nothing at or below the child's grade is locked
   return worldSkipped(p,wi)||worldFinished(p,wi-1)||worldHasProgress(p,wi); // skipped worlds stay playable
@@ -7135,6 +7255,7 @@ function worldOpen(p,wi){
 /* Some later stop of the same world is passed (it was added later, or an old save skipped it): it stays open. */
 function stopBehind(p,i){const b=WR[p][NODES[p][i].wi][1];for(let j=i+1;j<=b;j++)if(passed(p,j))return true;return false}
 function unlocked(p,i){
+  if(PLAY.lockedW(p,NODES[p][i].wi))return false; // PLAY-01: the Play app's free sample (the stars stay saved; 03-play.js)
   if(S.unlockAll||passed(p,i))return true; // passed stops are always replayable
   const wi=NODES[p][i].wi;
   if(!worldOpen(p,wi))return false;
@@ -7147,8 +7268,14 @@ const stopNew=(p,i)=>!passed(p,i)&&passed(p,WR[p][NODES[p][i].wi][1]);
 /* The world where a child starts: the first one at or above their grade (the last world if none is). byLevel paths start at 0. */
 function startWorld(p){
   if(PATHS[p].byLevel)return 0;
-  const pw=placeWorld(p);if(pw>=0)return pw; // P1-07: a placement result taken at the current grade
-  const ws=PATHS[p].worlds,g0=gradeOf(),k=ws.findIndex(w=>w.g>=g0);
+  const pw=placeWorld(p);if(pw>=0&&!PLAY.lockedW(p,pw))return pw; // P1-07: a placement result taken at the current grade (PLAY-01: in the free sample)
+  return defStart(p,gradeOf());
+}
+/* PLAY-01: the world a child of grade g0 starts in on a fresh save (no placement). startWorld uses it; so does the Play app's free
+   sample (PLAY.free, 03-play.js: the start world of every grade), so the two can never disagree. */
+function defStart(p,g0){
+  if(PATHS[p].byLevel)return 0;
+  const ws=PATHS[p].worlds,k=ws.findIndex(w=>w.g>=g0);
   // P2-37: Discover has worlds only for K, 3 and 5, so the first world at or above a 1st, 2nd or 4th grader's grade is still locked.
   // startBelow paths start such a child at the last world at or below their grade (Nature Trail for K-2, Science Lab for 4th grade).
   if(PATHS[p].startBelow&&k>=0&&ws[k].g>g0){let j=-1;ws.forEach((w,i)=>{if(w.g<=g0)j=i});if(j>=0)return j}
@@ -7166,6 +7293,7 @@ function curNode(p){
     if(stopNew(p,i)||below)continue; // skipped by placement: start above it
     return i;
   }
+  if(any<0&&PLAY.locked()){let w=startWorld(p);PATHS[p].worlds.forEach((x,j)=>{if(!PLAY.lockedW(p,j)&&worldHasProgress(p,j))w=j});return WR[p][w][1]} // PLAY-01: the free sample is all done here: open on the last free world played, never a locked one
   return any>=0?any:N.length-1;
 }
 const curWorld=p=>NODES[p][curNode(p)].wi;
@@ -8148,7 +8276,7 @@ function home(first){
   <div class="scroll hm" id="hs"><div class="hm-cols">
    <div class="hm-col">${spkStarHTML()}${hmHero()}${hmPlace()}<h2 class="hm-h">${ico('target', 26)}<span>Today's missions</span></h2>${hmMissions()}<h2 class="hm-h">${ico('calendar', 26)}<span>Today</span></h2>${hmToday()}${hmDaily()}</div>
    <div class="hm-col"><h2 class="hm-h">${ico('map', 26)}<span>Pick a game!</span></h2>${hmPaths()}${hmActs()}</div></div>
-   <p class="hm-ver">${ico('star', 16)}<span>Star School ${RELEASE} (build v179)</span></p></div>`);
+   <p class="hm-ver">${ico('star', 16)}<span>Star School ${RELEASE} (build v180)</span></p></div>`);
   NAV.bar('home');NAV.mapFrom='home';music(true);petAgeWarm(); // NAV-01: the picture bar (Home lit); a map's Back comes back here. PET-AGE2: grade 3+ loads the grown-up pet drawings
   const pet=$('#pet');pet.onclick=()=>{anim(pet,'jump');SFX.giggle();const r=pet.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'heart');
     if(S.voice)say(pick(stage()==0?['Crack crack! Earn stars to hatch me!','I am almost ready to hatch!']:[`Hi ${S.name}!`,`Let's go on an adventure!`,`I love stars!`,`You're my best friend!`,`Pick a game!`]))};
@@ -8208,11 +8336,11 @@ function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],ws=PATHS[p].
   const more=(wi,up)=>`<button class="btn wmore" data-w="${wi}" style="top:${y}px">${ico(up?'arrow-up':'arrow-down',20)}${wBadge(p,wi)}${esc(ws[wi].n)}</button>`;
   if(w0>0){bands+=more(w0-1,true);y+=72}
   const wb=[]; // P4-09: [world, top, height, first and end index in pts, Test out shown]; scenes are drawn once every stop is placed
-  for(let wi=w0;wi<=w1;wi++){const w=ws[wi],y0=y,[a,b]=WR[p][wi],canTest=worldOpen(p,wi)&&!worldFinished(p,wi);y+=canTest?160:86; // room under the Test out banner so the first stop, its ring and the pet never cover it
+  for(let wi=w0;wi<=w1;wi++){const w=ws[wi],y0=y,[a,b]=WR[p][wi],canTest=worldOpen(p,wi)&&!worldFinished(p,wi),pl=PLAY.lockedW(p,wi);y+=canTest||pl?160:86; // room under the Test out banner so the first stop, its ring and the pet never cover it
     const k0=pts.length;
     for(let i=a;i<=b;i++){if(lsStopAt(p,i)){y+=16;pts.push([W/2+Math.sin((i-.5)*1.15)*amp,y,i,1]);y+=114}pts.push([W/2+Math.sin(i*1.15)*amp,y,i]);y+=106} // LS-STOP: a lesson stop before a stop with a lesson (42b-lstop.js)
-    wb.push([wi,y0,y-y0-24,k0,pts.length,canTest]);
-    bands+=`<div class="wtitle" data-w="${wi}" style="top:${y0+14}px">${wBadge(p,wi)}<span>${esc(w.n)}</span>${worldFinished(p,wi)?ico('check-circle',24,'ic-good'):''}</div>${canTest?`<button class="btn xs tobtn" data-w="${wi}" style="top:${y0+58}px">${ico('bolt',20)}<span>Already know it? Test out!</span></button>`:''}`;y+=4}
+    wb.push([wi,y0,y-y0-24,k0,pts.length,canTest||pl]);
+    bands+=`<div class="wtitle" data-w="${wi}" style="top:${y0+14}px">${wBadge(p,wi)}<span>${esc(w.n)}</span>${worldFinished(p,wi)?ico('check-circle',24,'ic-good'):''}</div>${canTest?`<button class="btn xs tobtn" data-w="${wi}" style="top:${y0+58}px">${ico('bolt',20)}<span>Already know it? Test out!</span></button>`:''}${pl?PLAY.bandHTML(y0+58):''}`;y+=4}
   const cur=curNode(p),allDone=N.every((n,i)=>passed(p,i)),end=w1==ws.length-1;
   const ck=typeof CHK!='undefined'; // CHECK-IN: badges and Check-in buttons by the stops (51b-checkin.js)
   const nodes=pts.map(([x,yy,i,ls])=>{if(ls)return lsNodeHTML(p,i,x,yy,W);const n=N[i],s=nInfo(n),st=getSt(p,i),gt=lsGate(p,i),lk=!unlocked(p,i)||gt;
@@ -8228,12 +8356,13 @@ function drawMap(p){const m=$('#map');if(!m)return;const N=NODES[p],ws=PATHS[p].
   const kw=allDone?pts.length:pts.filter(q=>q[2]<=cur).length;
   m.innerHTML=scenes+bands+SCN.trail(W,y+20,pts,kw,wb.slice(1).map(([,top])=>top-14))+nodes
     +(cp?`<div class="mappet ${petAura()}" style="left:${cp[0]+side}px;top:${cp[1]+18}px">${petHTML()}</div>`:'')+(end&&allDone?`<div class="wtitle mp-champ" style="top:${y+10}px">${ico('trophy',30)}<span>${esc(PATHS[p].n)} Champion!</span></div>`:'');
-  $$('.node').forEach(b=>b.onclick=()=>{const i=+b.dataset.n;if(!unlocked(p,i)){SFX.wrong();anim(b,'sad');fb('Finish the stop before this one!','warn');return}
+  $$('.node').forEach(b=>b.onclick=()=>{const i=+b.dataset.n;if(PLAY.lockedW(p,N[i].wi))return PLAY.kid('world',p);if(!unlocked(p,i)){SFX.wrong();anim(b,'sad');fb('Finish the stop before this one!','warn');return}
     if(lsGate(p,i)){SFX.pop();anim($(`.lsn[data-ls="${i}"]`),'jump');fb(`Learn it with ${petN()} first!`,'warn');return} // LS-STOP: practice waits for the lesson
     SFX.whoosh();open(p,i)});
-  $$('.lsn').forEach(b=>b.onclick=()=>{const i=+b.dataset.ls;if(!unlocked(p,i)){SFX.wrong();anim(b,'sad');fb('Finish the stop before this one!','warn');return}lsOpen(p,i)});
+  $$('.lsn').forEach(b=>b.onclick=()=>{const i=+b.dataset.ls;if(PLAY.lockedW(p,N[i].wi))return PLAY.kid('world',p);if(!unlocked(p,i)){SFX.wrong();anim(b,'sad');fb('Finish the stop before this one!','warn');return}lsOpen(p,i)});
   if(ck)CHK.mapBind(p);
   $$('.tobtn').forEach(b=>b.onclick=()=>testOut(p,+b.dataset.w));
+  $$('.plgu').forEach(b=>b.onclick=()=>PLAY.grown(()=>pathMap(p,MAPW[p]))); // PLAY-01: the grown-ups' Unlock everything (89-play.js)
   $$('.wmore').forEach(b=>b.onclick=()=>mapGo(p,+b.dataset.w));
   const on=st&&st.querySelector('.wchip.on');if(on)st.scrollLeft=Math.max(0,on.offsetLeft-(st.clientWidth-on.offsetWidth)/2);
   if((p=='math'||p=='read')&&typeof LS!='undefined')setTimeout(()=>LS.mapAdd(),0)} // TEACH-1: the lesson offer by a stop (52-lesson.js), after the draw (it reads the layout)
@@ -11779,7 +11908,7 @@ const BT = {
   },
   // P6-03: the type's code is in (BT.reg checked make/mount/solve), and no bt file of another release ran (that one is refused, see
   // partLoad). In tools/test.js the source runs without the built stamps, so there a type with its code counts as loaded.
-  loaded(d) { return !!d && typeof d.make == 'function' && (typeof BT_VER == 'undefined' || BT_VER === 'v179'); },
+  loaded(d) { return !!d && typeof d.make == 'function' && (typeof BT_VER == 'undefined' || BT_VER === 'v180'); },
   // P6-03: start reading bt.<VER>.js once the screen on show is painted (the hub, a level strip), so the tap that opens a puzzle
   // seldom waits. Nothing happens when it is in, or while it loads; a file that cannot be read is tried again by BT.start.
   warm() {
@@ -12066,7 +12195,7 @@ const BT = {
     else {
       const cards = L.map(t => {
         const b = BT.band(), n = BT.starsOf(t.id), lv = BT.nowLevel(t, b);
-        return GFX.card({ cls: 'bt-type', attrs: `data-t="${t.id}"`, p: 'bt', icon: BT.icon(t), title: t.name,
+        return GFX.card({ cls: 'bt-type', attrs: `data-t="${t.id}"`, p: 'bt', icon: BT.icon(t), title: t.name, go: PLAY.locked() ? 'lock' : undefined, // PLAY-01: only the Puzzle of the Day in the free sample
           sub: `<span class="gx-ln">${ico('star', 18)}<b>${n}</b><span>${n == 1 ? 'star' : 'stars'}</span>${UI.tag('Level ' + lv, '', '')}</span>` });
       }).join('');
       const keep = ct ? GFX.card({ id: 'btkeep', cls: 'bt-keep', p: 'bt', icon: BT.icon(ct), title: 'Keep going!',
@@ -12079,13 +12208,14 @@ const BT = {
       const bdg = GFX.card({ id: 'btbdg', cls: 'bt-bdgc', p: 'bt', icon: 'medal', title: 'My badges', go: 'go',
         sub: `<span class="gx-ln">${got.length ? `<span class="bt-mini">${last.map(x => BT.medal(x, 30)).join('')}</span><span>${got.length} ${got.length == 1 ? 'badge' : 'badges'}</span>`
           : '<span>Solve puzzles to win badges!</span>'}</span>` });
-      body = `<div class="games bt-top3">${keep}${day_}${bdg}</div><h2 class="bt-h">${ico('puzzle', 26)}<span>Pick a puzzle</span></h2><div class="games">${cards}</div>`;
+      body = `<div class="games bt-top3">${keep}${day_}${bdg}</div><h2 class="bt-h">${ico('puzzle', 26)}<span>Pick a puzzle</span></h2><div class="games">${cards}</div>${PLAY.locked() ? PLAY.rowHTML() : ''}`;
     }
     view(`<div class="top tbar gx-mtop s-bt">${UI.ibtn('back', 'Back', { size: 'sm', id: 'back' })}<div class="ttl gx-ttl"><span class="gx-tb">${ico('puzzle', 24)}</span>` +
       `<span>Brain Teasers</span></div>${UI.chip('star', BT.totalStars(), { aria: 'Puzzle stars' })}</div><div class="scroll gx-list bt-hub">${body}</div>`);
     NAV.bar('puzzles');
     $('#back').onclick = () => home();
-    $$('[data-t]').forEach(b => b.onclick = () => { SFX.whoosh(); BT.levels(b.dataset.t); });
+    $$('[data-t]').forEach(b => b.onclick = () => { if (PLAY.locked()) return PLAY.kid('puzzle'); SFX.whoosh(); BT.levels(b.dataset.t); });
+    if ($('.plgu')) $('.plgu').onclick = () => PLAY.grown(() => BT.hub()); // PLAY-01
     if ($('#btkeep')) $('#btkeep').onclick = () => { SFX.whoosh(); BT.start(cur.id, cur.band, cur.level); };
     if ($('#btday')) $('#btday').onclick = () => { SFX.whoosh(); BT.start(dl.id, dl.band, dl.level); };
     if ($('#btbdg')) $('#btbdg').onclick = () => { SFX.whoosh(); BT.badgeView(() => BT.hub()); };
@@ -12154,6 +12284,7 @@ const BT = {
 
   // Level strip of a type in a band: 12 levels (one unlocks after the other), then Endless
   levels(id, band) {
+    if (PLAY.locked()) return PLAY.kid('puzzle'); // PLAY-01
     const d = BT.types[id];
     if (!d) return BT.hub();
     BT.stop();
@@ -12189,6 +12320,7 @@ const BT = {
   start(id, band, level) {
     const d = BT.types[id];
     if (!d) return BT.hub();
+    if (PLAY.btLocked(id, band, level)) return PLAY.kid('puzzle'); // PLAY-01: the free sample has the Puzzle of the Day only
     // P6-03: the puzzle code loads on demand. Not in yet: "Getting the puzzles ready..." (with Back), then this start again, only if
     // that screen still shows; a bt file that cannot be read or is of another release shows Try again (partsThen, 90-app.js).
     if (!BT.loaded(d)) {
@@ -12382,12 +12514,12 @@ function appFiles() {
 }
 // P6-02: the start-up files only; the parts in LAZY_PARTS load later (partsThen below)
 function dataReady() {
-  return appFiles().every(f => LAZY_PARTS.includes(f[0]) || f[1] === 'v179');
+  return appFiles().every(f => LAZY_PARTS.includes(f[0]) || f[1] === 'v180');
 }
 // the Try again screen and one line in the App log: for the start-up files, or (P6-02) for the parts in stems that did not load on demand
 function dataMissing(stems) {
-  logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0])) && f[1] !== 'v179')
-    .map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v179)');
+  logErr(appFiles().filter(f => (stems ? stems.includes(f[0]) : !LAZY_PARTS.includes(f[0])) && f[1] !== 'v180')
+    .map(([n, v]) => n + ' file ' + (v === null ? 'missing' : v + ' does not match')).join(', ') + ' (app v180)');
   const again = UI.btn('Try again', { kind: 'primary', size: 'lg', icon: 'replay', id: 'dataretry' });
   view(`<div class="scroll" id="datamiss">${UI.empty('download', 'Star School needs to finish updating. Connect to the internet, then tap Try again.', again)}</div>`);
   $('#dataretry').onclick = () => location.reload();
@@ -12409,15 +12541,15 @@ const GAME_PARTS = ['games', 'rally', 'games2', 'games3']; // the Game Room's pa
 const partsAsked = {};
 function partReady(stem) {
   const f = appFiles().find(x => x[0] === stem);
-  return !!f && f[1] === 'v179';
+  return !!f && f[1] === 'v180';
 }
 function partLoad(stem) {
   const f = appFiles().find(x => x[0] === stem);
-  if (!f || f[1] === 'v179') return Promise.resolve(!!f);
+  if (!f || f[1] === 'v180') return Promise.resolve(!!f);
   if (f[1] !== null) return Promise.resolve(false); // a file of another release ran: refused
   return partsAsked[stem] || (partsAsked[stem] = new Promise(res => {
     const s = document.createElement('script');
-    s.src = stem + '.v179.js';
+    s.src = stem + '.v180.js';
     s.onload = () => { delete partsAsked[stem]; res(partReady(stem)); };
     s.onerror = () => { delete partsAsked[stem]; s.remove(); res(false); };
     document.body.appendChild(s);
@@ -12442,9 +12574,9 @@ function partsThen(stems, go, o = {}) {
   }), 0));
 }
 </script>
-<script src="gen.v179.js"></script>
-<script src="gen2.v179.js"></script>
-<script src="data.v179.js"></script>
+<script src="gen.v180.js"></script>
+<script src="gen2.v180.js"></script>
+<script src="data.v180.js"></script>
 <script>
 if (dataReady()) {
   loadClips();

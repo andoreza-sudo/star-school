@@ -168,7 +168,8 @@ function migrate(){
   const from=Number.isInteger(S.v)&&S.v>=1?S.v:1;
   if(from>=LATEST)return; // current, or written by a newer app: leave it alone
   if(SAVE_RAW!==null)try{localStorage.setItem(SKEY+'-bak',SAVE_RAW)}catch(e){}
-  for(let n=from;n<LATEST;n++)MIGRATIONS[n]();
+  const pl=typeof PLAY!='undefined'?PLAY:{};pl.mig=(pl.mig||0)+1; // PLAY-01: migrations see every stop as in the web version (nothing locked)
+  try{for(let n=from;n<LATEST;n++)MIGRATIONS[n]()}finally{pl.mig--}
   S.v=LATEST;
   save();
 }

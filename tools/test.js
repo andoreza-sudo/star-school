@@ -19235,12 +19235,12 @@ run('navigation: one way Home NAV-01',()=>{
     if(!/>Grown-ups</.test(g.replace(/<span class="nw">|<\/span>/g,''))||!/aria-label="Grown-ups: hold for 3 seconds"/.test(g))p.push('the Grown-ups button is not labelled: '+g.slice(0,160));
     if(R('NAV.HOLD_MS')!==3000)p.push('the Grown-ups hold is not 3 seconds');
     // a tap never opens Grown-ups: the click handler opens the question, only the 3-second timer calls grown()
-    const gb=SRCJ['41-nav.js'].slice(SRCJ['41-nav.js'].indexOf('gateBind()'),SRCJ['41-nav.js'].indexOf('  quiz() {'));
+    const gb=SRCJ['41-nav.js'].slice(SRCJ['41-nav.js'].indexOf('gateBind()'),SRCJ['41-nav.js'].indexOf('  quiz(then) {'));
     if(!/setTimeout\(\(\) => \{ done = true; stop\(\); ring\(1\); SFX\.chime\(\); grown\(\); \}, NAV\.HOLD_MS\)/.test(gb)||!/g\.onclick = \(\) => \{\s*if \(done\) return;\s*NAV\.quiz\(\);/.test(gb))
       p.push('the Grown-ups gate: a tap must ask the question, only a 3-second hold opens Grown-ups');
     // the question: from 6 x 6 to 9 x 9, a wrong answer does not open Grown-ups
-    const qz=SRCJ['41-nav.js'].slice(SRCJ['41-nav.js'].indexOf('  quiz() {'));
-    if(!/R\(6, 9\), b = R\(6, 9\)/.test(qz)||!/inp\.value\.trim\(\) === String\(a \* b\)\) \{ s\.close\(\); grown\(\)/.test(qz))p.push('the grown-ups question');
+    const qz=SRCJ['41-nav.js'].slice(SRCJ['41-nav.js'].indexOf('  quiz(then) {'));
+    if(!/R\(6, 9\), b = R\(6, 9\)/.test(qz)||!/inp\.value\.trim\(\) === String\(a \* b\)\) \{ s\.close\(\); go2\(\)/.test(qz)||!/go2 = typeof then == 'function' \? then : grown/.test(qz))p.push('the grown-ups question'); // PLAY-01: a right answer opens go2, Grown-ups unless the caller (the unlock sheet) names another
   }catch(e){p.push('the helpers could not run: '+String(e.message||e).split('\n')[0])}
   // the light end: GH.end({light: true}) is NAV.light, a banner (not an .ovl card) with the same three choices, Next by itself after 2 s
   const lt=SRCJ['41-nav.js'].slice(SRCJ['41-nav.js'].indexOf('  light(o = {}) {'),SRCJ['41-nav.js'].indexOf('  // ---- Grown-ups gate'));
@@ -21075,6 +21075,146 @@ run('lesson stops: every pet turn, the extra turns, resume, a part that does not
     const gw=fs.readFileSync(path.join(SRC,'js','80-grown.js'),'utf8');if(/Nothing is ever locked/.test(gw))p.push('Grown-ups still says nothing is ever locked');
     const t2=R(`JSON.stringify(Object.values(LS_TONE2).map(a=>a.open('Mia')))`);if(/give me/i.test(t2))p.push('the start card line asks for a problem: '+t2);
     return{problems:p,note:'every lesson\'s pet can be wrong, the extra turns are; resume fresh; the part that does not load; '+note}});
+});
+
+// ---- PLAY-01: the Google Play app: the free sample, Play mode, the grown-up gate, the purchase (mocked Google Play), saves ----
+run('play PLAY-01: free sample in every grade and subject, Play mode, nothing locked on the web, children never see a price, purchase with a mocked Google Play, saves keep everything',()=>{
+  const fx=n=>fs.readFileSync(path.join(__dirname,'fixtures',n+'.json'),'utf8');
+  // the gate: only 89-play.js asks Google Play for a price or a payment, the sheet is opened only behind the grown-up question
+  const src={};for(const n of fs.readdirSync(path.join(SRC,'js')))src[n]=fs.readFileSync(path.join(SRC,'js',n),'utf8');
+  const p0=[];
+  for(const [n,t0] of Object.entries(src)){
+    const t=t0.replace(/\/\*[\s\S]*?\*\//g,'').replace(/\/\/.*$/gm,''); // code only, not comments
+    if(n!=='89-play.js'&&/PaymentRequest|getDetails|listPurchases|PLAY\.buy\b|PLAY\.price\(|PLAY\.restore\(/.test(t))p0.push(n+' talks to Google Play billing (only 89-play.js may)');
+    if(n!=='89-play.js'&&/PLAY\.sheet\(/.test(t))p0.push(n+' opens the unlock sheet (only PLAY.grown, behind the grown-up question, may)');
+    if(n!=='89-play.js'&&n!=='80-grown.js'&&/PLAY\.(bind|card)\(/.test(t))p0.push(n+' shows the unlock card (only Grown-ups and the gated sheet may)');
+    if(/play|grown|nav|hub|teasers/.test(n)&&/9\.99/.test(t))p0.push(n+' has a hard-coded price');
+  }
+  const pl=src['89-play.js'];
+  if(!/grown\(back\) \{\s*SFX\.click\(\);\s*return NAV\.quiz\(\(\) => PLAY\.sheet\(back\)\);/.test(pl))p0.push('PLAY.grown does not ask the grown-up question before the sheet');
+  if((pl.match(/PLAY\.sheet\(/g)||[]).length!==1)p0.push('PLAY.sheet is opened somewhere other than PLAY.grown');
+  if(/\.consume\(/.test(pl))p0.push('the unlock is a one-time product: it must never be consumed');
+  // this check awaits (the purchase), so other checks run between its steps: the app code gets a localStorage of its own (a const of
+  // this eval, which every function of js sees), never the shared global one
+  const r=eval('const __store={},localStorage={getItem:k=>k in __store?__store[k]:null,setItem:(k,v)=>{__store[k]=String(v)},removeItem:k=>{delete __store[k]}};'+js+`
+  (async()=>{
+  const store=__store,bad=${JSON.stringify(p0)},notes=[];
+  const ls=()=>{};
+  ls();RELOAD_WAIT=0;
+  const load=raw=>{ls();for(const k of Object.keys(store))if(k!==PLAY.KEY)delete store[k];if(raw!=null)store[KEY]=raw;loadSave(raw);migrate();for(const p in PATHS)S.maps[p]=S.maps[p]||{}};
+  const mode=(on,own)=>{ls();if(on)store[PLAY.KEY]=JSON.stringify({v:1,on:1,own:own?1:0});else delete store[PLAY.KEY];PLAY.read()};
+  const G0=globalThis,keep={location:G0.location,document:G0.document,navigator:G0.navigator,gds:G0.getDigitalGoodsService,pr:G0.PaymentRequest};
+  const setNav=v=>Object.defineProperty(G0,'navigator',{value:v,configurable:true,writable:true}); // Node's own navigator is a getter
+  const restoreG=()=>{G0.location=keep.location;G0.document=keep.document;setNav(keep.navigator);G0.getDigitalGoodsService=keep.gds;G0.PaymentRequest=keep.pr};
+  // 1. the free sample: every grade has a free world in every subject (the world a fresh child of that grade starts in)
+  const freeN={};
+  for(const p in PATHS){const ws=PATHS[p].worlds,ids=PLAY.freeIds(p);freeN[p]=ws.filter(w=>ids.has(w.id)).map(w=>w.id);
+    for(const g of GRADES){const wi=defStart(p,g);if(!PLAY.free(p,wi))bad.push(p+' grade '+g+': its start world '+ws[wi].id+' is not free')}
+    if(!ids.size||ids.size===ws.length&&p!=='disc')bad.push(p+': '+ids.size+' free worlds of '+ws.length)}
+  if(freeN.es.join()!=='e_plaza')bad.push('Spanish (by level) should be free in its first world only: '+freeN.es);
+  notes.push(Object.entries(freeN).map(([p,a])=>p+' '+a.length+'/'+PATHS[p].worlds.length).join(', '));
+  // 2. reachable without the unlock: a fresh child of every grade starts in a free world with an open first stop; placement into a locked world starts them in the free one
+  mode(true,false);
+  for(const g of GRADES){load(null);S.grade=g;
+    for(const p in PATHS){const c=curNode(p),wi=NODES[p][c].wi;
+      if(!PLAY.free(p,wi)||!unlocked(p,c))bad.push(p+' grade '+g+': the map opens on '+NODES[p][c].wid+' stop '+c+' (free '+PLAY.free(p,wi)+', open '+unlocked(p,c)+')');
+      if(!worldOpen(p,startWorld(p)))bad.push(p+' grade '+g+': the start world is not open')}}
+  load(null);S.grade=1;S.place={math:{g:1,world:'m_clock'}};
+  if(PATHS.math.worlds[startWorld('math')].id!=='m_candy')bad.push('placement into a locked world: the map starts in '+PATHS.math.worlds[startWorld('math')].id);
+  mode(false);if(PATHS.math.worlds[startWorld('math')].id!=='m_clock')bad.push('placement on the web changed');
+  // 3. Play mode: never on github.io, never without Google Play billing, kept once set, never on by a param alone in a normal browser
+  const det=(loc,ref,gds)=>{ls();delete store[PLAY.KEY];G0.location=loc;G0.document={referrer:ref};G0.getDigitalGoodsService=gds;PLAY.detect();const on=PLAY.on;restoreG();return on};
+  const fake=()=>Promise.resolve(null),pk=PLAY.PKG;
+  if(det({hostname:'andoreza-sudo.github.io',search:'?src=play'},'',fake))bad.push('Play mode on github.io');
+  if(det({hostname:'star.example',search:'?src=play'},'',undefined))bad.push('Play mode without Google Play billing (a normal browser)');
+  if(det({hostname:'star.example',search:''},'',fake))bad.push('Play mode with no launch sign');
+  if(!det({hostname:'star.example',search:'?src=play'},'',fake))bad.push('no Play mode for the Play app start URL');
+  PLAY.PKG='com.example.star';
+  if(!det({hostname:'star.example',search:''},'android-app://com.example.star/',fake))bad.push('no Play mode for the Play app referrer');
+  if(det({hostname:'star.example',search:''},'android-app://com.other.app/',fake))bad.push('Play mode for another app');
+  PLAY.PKG=pk;
+  ls();store[PLAY.KEY]=JSON.stringify({v:1,on:1,own:0});G0.location={hostname:'star.example',search:''};G0.document={referrer:''};PLAY.detect();restoreG();
+  if(!PLAY.on||PLAY.own)bad.push('Play mode is not kept on the tablet');
+  // 4. the web version: nothing locked, every fixture opens exactly what it did, the save is never changed by the mode
+  const games=GH.games.map(g=>g.id);
+  if(games.length!==6||!PLAY.FREE_GAMES.every(id=>games.includes(id)))bad.push('the free games are not Game Room games: '+games);
+  let checked=0;
+  for(const name of ['fresh','midway','maxed','tricky','legacy-single-map','legacy-index-maps']){
+    const raw=fx(name);
+    mode(false);load(raw);const web=JSON.stringify(S),wOpen={};
+    if(PLAY.locked()||games.some(g=>PLAY.gameLocked(g))||PLAY.kidLocked('p2')||PLAY.btLocked('maze',1,5))bad.push(name+': something is locked on the web');
+    for(const p in PATHS)wOpen[p]=NODES[p].map((n,i)=>unlocked(p,i));
+    mode(true,false);load(raw);const play=JSON.stringify(S);
+    if(play!==web)bad.push(name+': the save after loading differs between the web and the free sample');
+    for(const p in PATHS)NODES[p].forEach((n,i)=>{unlocked(p,i);worldOpen(p,n.wi)});curNode('math');startWorld('read');
+    if(JSON.stringify(S)!==web)bad.push(name+': the free sample changed the save');
+    for(const p in PATHS)NODES[p].forEach((n,i)=>{const u=unlocked(p,i);if(u&&!wOpen[p][i])bad.push(name+': '+p+' '+nid(n)+' open in the free sample but not on the web');
+      if(PLAY.free(p,n.wi)&&u!==wOpen[p][i])bad.push(name+': '+p+' '+nid(n)+' in a free world differs from the web');if(!PLAY.free(p,n.wi)&&u)bad.push(name+': '+p+' '+nid(n)+' outside the free sample is open')});
+    mode(true,true);load(raw);
+    for(const p in PATHS)NODES[p].forEach((n,i)=>{checked++;if(unlocked(p,i)!==wOpen[p][i])bad.push(name+': unlocked, '+p+' '+nid(n)+' differs from the web')});
+    if(JSON.stringify(S)!==web)bad.push(name+': the unlocked app changed the save');
+  }
+  notes.push(checked+' stops x 6 fixtures');
+  // 5. what children see: no price, no way to pay, no pressure words
+  mode(true,false);
+  const kidT=[PLAY.LINE.world,PLAY.LINE.gameKid,PLAY.LINE.puzzle,PLAY.LINE.game,PLAY.LINE.kid,PLAY.bandHTML(10),PLAY.rowHTML()].join(' | ').replace(/<[^>]*>/g,' ');
+  if(/[$€£¥]|\\d+[.,]\\d\\d|price|buy|pay|hurry|now|today|only|ask your/i.test(kidT))bad.push('a child sees a price or pressure: '+kidT);
+  if(!/[Gg]rown-up/.test(PLAY.bandHTML(10)))bad.push('the unlock button is not marked for grown-ups');
+  // 6. the purchase, with a mocked Google Play (Digital Goods + Payment Request)
+  const log=[];let owned=[],listFail=false,pay='ok';
+  const svc={getDetails:async ids=>{log.push('details');return ids.includes(PLAY.SKU)?[{itemId:PLAY.SKU,title:'Unlock',price:{currency:'USD',value:'9.99'}}]:[]},
+    listPurchases:async()=>{log.push('list');if(listFail)throw new Error('no');return owned.slice()},acknowledge:async(t,k)=>{log.push('ack '+t+' '+k)},consume:async()=>{log.push('consume')}};
+  class PR{constructor(m,d){log.push('pr '+m[0].supportedMethods+' '+m[0].data.sku);this.m=m}
+    async show(){log.push('show');if(pay=='cancel'){const e=new Error('cancel');e.name='AbortError';throw e}
+      if(pay=='owned-error'){owned=[{itemId:PLAY.SKU,purchaseToken:'t0'}];throw new Error('already owned')}
+      return{details:{purchaseToken:'t1',purchaseState:pay=='pending'?'pending':undefined},complete:async r=>{log.push('complete '+r)}}}}
+  const net=v=>setNav(v?keep.navigator:Object.assign({},keep.navigator,{onLine:false}));
+  const go=async(f,want,what)=>{ls();log.length=0;const r=await f();if(r!==want)bad.push(what+': '+r+' (want '+want+'), log '+log.join(','));return r};
+  // unavailable (the web, another store): no purchase, no price, nothing changes
+  mode(true,false);G0.getDigitalGoodsService=undefined;G0.PaymentRequest=PR;
+  await go(PLAY.buy,'unavailable','no billing: buy');await go(PLAY.restore,'unavailable','no billing: restore');
+  if(await PLAY.price())bad.push('a price without Google Play');if(log.length||PLAY.own)bad.push('no billing: '+log);
+  G0.getDigitalGoodsService=async m=>m===PLAY.BILLING?svc:null;
+  // offline at purchase time
+  net(false);await go(PLAY.buy,'offline','offline: buy');if(log.some(x=>/^pr|show/.test(x))||PLAY.own)bad.push('offline: a payment was started');
+  const st0=store[PLAY.KEY];await PLAY.verify();if(store[PLAY.KEY]!==st0)bad.push('offline: the check changed the state');net(true);
+  // the price comes from Google Play
+  PLAY.priceT='';const pt=await PLAY.price();if(!/9\\.99/.test(pt))bad.push('the price from getDetails: '+pt);
+  // cancelled
+  pay='cancel';await go(PLAY.buy,'cancel','cancel');if(PLAY.own)bad.push('cancel unlocked');
+  // pending: not unlocked; a later restore while pending, then once paid
+  pay='pending';await go(PLAY.buy,'pending','pending');if(PLAY.own||log.some(x=>/^ack/.test(x)))bad.push('pending unlocked or acknowledged: '+log);
+  owned=[{itemId:PLAY.SKU,purchaseToken:'t1',purchaseState:'pending'}];await go(PLAY.restore,'pending','pending restore');if(PLAY.own)bad.push('pending restore unlocked');
+  owned=[];
+  // success: acknowledged once as a one-time product, never consumed, kept on the tablet (not in a child's save)
+  mode(true,false);load(fx('midway'));const sv=JSON.stringify(S);pay='ok';
+  await go(PLAY.buy,'ok','success');
+  if(!PLAY.own||JSON.parse(store[PLAY.KEY]).own!==1)bad.push('success: not kept');
+  if(log.join()!=='list,pr https://play.google.com/billing unlock_all,show,ack t1 onetime,complete success')bad.push('success: the calls were '+log.join());
+  if(JSON.stringify(S)!==sv)bad.push('success: the child save changed');
+  if(PLAY.locked()||games.some(g=>PLAY.gameLocked(g))||PLAY.kidLocked('p3')||PLAY.btLocked('maze',1,5))bad.push('success: something is still locked');
+  await go(PLAY.buy,'owned','buy again');if(log.length)bad.push('buy again asked Google Play: '+log);
+  // already owned (bought on another tablet or before a reinstall): restored, no second payment
+  mode(true,false);owned=[{itemId:PLAY.SKU,purchaseToken:'t0'}];
+  await go(PLAY.buy,'owned','already owned');if(!PLAY.own||log.some(x=>/^pr|show/.test(x)))bad.push('already owned: '+log);
+  mode(true,false);owned=[];pay='owned-error';await go(PLAY.buy,'owned','already owned (Play answers with an error)');
+  // restore on a new tablet, and nothing found
+  mode(true,false);owned=[{itemId:PLAY.SKU,purchaseToken:'t0'}];await go(PLAY.restore,'owned','restore');if(!PLAY.own)bad.push('restore did not unlock');
+  mode(true,false);owned=[];await go(PLAY.restore,'none','restore with nothing bought');if(PLAY.own)bad.push('restore with nothing bought unlocked');
+  // the check at start: never locks a paying family out on an error or offline; a refund takes two checks in a row
+  mode(true,true);listFail=true;await PLAY.verify();if(!PLAY.own)bad.push('verify: an error locked a paid tablet');listFail=false;
+  owned=[];await PLAY.verify();if(!PLAY.own)bad.push('verify: one empty check locked a paid tablet');
+  owned=[{itemId:PLAY.SKU,purchaseToken:'t0'}];await PLAY.verify();if(!PLAY.own||JSON.parse(store[PLAY.KEY]).miss)bad.push('verify: a found purchase did not reset the count');
+  owned=[];await PLAY.verify();await PLAY.verify();if(PLAY.own)bad.push('verify: two empty checks in a row (a refund) kept the unlock');
+  // one child in the free sample, every child once unlocked
+  mode(true,false);load(fx('midway'));PRF.ids=['p1'];PRF.cur='p1';
+  const a=PRF.add(null,false);if(!a.msg||PRF.ids.length!==1)bad.push('the free sample added a second child');
+  mode(true,true);const b=PRF.add(null,false);if(b.msg||PRF.ids.length!==2)bad.push('unlocked: a second child could not be added: '+b.msg);
+  mode(true,false);if(PRF.go('p2')!==PLAY.LINE.kid)bad.push('the free sample let the second child play');
+  restoreG();mode(false);PRF.ids=['p1'];PRF.cur='p1';
+  return{bad,notes};
+  })()`);
+  return r.then(x=>({problems:uniq(x.bad),note:x.notes.join('; ')}));
 });
 
 // ---- report ----

@@ -220,6 +220,11 @@ const SCREENS = {
   },
   gameroom: { run: async p => { await p.evaluate(() => gameRoom()); } },
   grown: { run: async p => { await p.evaluate(() => grown()); } },
+  // PLAY-01: the Play app's free sample with a mocked Google Play billing: a locked world, the child's line, the unlock sheet, the Grown-ups card
+  'play-map': { run: async p => { await p.evaluate(PLAY_MOCK); await p.evaluate(() => { S.grade = 0; pathMap('math', PATHS.math.worlds.findIndex(w => w.id == 'm_meadow')); }); } },
+  'play-kid': { run: async p => { await p.evaluate(PLAY_MOCK); await p.evaluate(() => { S.grade = 0; pathMap('math', PATHS.math.worlds.findIndex(w => w.id == 'm_meadow')); PLAY.kid('world', 'math'); }); await p.waitForTimeout(600); } },
+  'play-unlock': { run: async p => { await p.evaluate(PLAY_MOCK); await p.evaluate(() => { grown(); PLAY.sheet(); }); await p.waitForTimeout(800); } },
+  'grown-play': { run: async p => { await p.evaluate(PLAY_MOCK); await p.evaluate(() => { grown(); document.querySelector('#gw-play').scrollIntoView(); }); await p.waitForTimeout(500); } },
   shop: { run: async p => { await p.evaluate(() => shop()); } },
   stickers: { run: async p => { await p.evaluate(() => book()); } },
   // P5-04: a 5-day streak with one rest day, then the month grid (and the home flame)
@@ -1229,6 +1234,12 @@ Object.assign(SCREENS, {
   'balloons-end': { run: async p => { await p.evaluate(() => balloons('math', { path: 'math', node: 0 })); await p.waitForSelector('#bnext', { timeout: 15000 }); } },
   'learn-es': { run: async p => { await p.evaluate(() => learn('es', 0)); } },
 });
+// PLAY-01: the Play app's free sample in the page, with a mocked Google Play billing (the price comes from getDetails)
+function PLAY_MOCK() {
+  const svc = { getDetails: async ids => ids.map(id => ({ itemId: id, price: { currency: 'USD', value: '9.99' } })), listPurchases: async () => [], acknowledge: async () => {} };
+  window.getDigitalGoodsService = async () => svc;
+  PLAY.st = { v: 1, on: 1, own: 0 }; PLAY.write(); PLAY.read(); PLAY.priceT = '';
+}
 const GROUPS = {
   p418: ['map', 'map-read', 'map-worlds', 'map-boss', 'fluency', 'fluency-modes', 'sprint', 'sprint-end', 'race-menu', 'q-race', 'race-end', 'streak',
     'place-intro', 'place-q', 'place-done', 'place-grown', 'report-top', 'care', 'setup', 'gameroom', 'balloons', 'balloons-end', 'learn-es', 'q-boss',
