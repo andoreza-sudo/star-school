@@ -185,7 +185,8 @@ const LS_SUBJ = ['math'];
      2. a repair: a misconception held (knowHeld) on a lesson stop the next new stop builds on, or on the last one taught (kind 'repair');
      3. a prerequisite: the next new stop builds on a lesson stop the child has not learned, and either that stop is not passed at all
         or the next stop's lesson has run twice without its Show passed (kind 'again');
-     4. the next lesson stop that is open, not passed and not learned, in map order; but when the last lesson (S.lm) was on an earlier
+     4. the next lesson stop of the child's grade band (Pre-K to 2nd, or 3rd to 5th with their own grade first) that is open, not
+        passed and not learned, in map order; but when the last lesson (S.lm) was on an earlier
         day and in the same strand, a stop of another strand whose prerequisites are passed or learned comes first (alternating by
         day; kind 'new');
      5. with nothing new open, the most overdue learned lesson, as a review (kind 'again').
@@ -199,7 +200,11 @@ function planToday(S0, day, p = 'math') {
   const K = S0.know || {}, ps = id => at(id) >= 0 && passed('math', at(id)), learned = id => (K[id] || {}).s >= 2;
   let id = S0.les && LESSONS[S0.les.n] && open(S0.les.n) ? S0.les.n : null, kind = id ? 'again' : 'new', code = null;
   if (!id) {
-    const cand = LS_IDS.filter(x => at(x) >= 0).sort((a, b) => at(a) - at(b)).filter(x => open(x) && !ps(x) && !learned(x));
+    // TEACH-3: a child in 3rd grade or up is offered the grade 3-5 lessons only, their own grade's first (6th grade: 5th grade's);
+    // a child below 3rd grade the Pre-K to 2nd grade lessons only (the app loads teach35 for 3rd grade up, teachWarm; this keeps the
+    // plan the same when the part is in from an earlier grade setting, and a little one is never handed word-tile reasons to read)
+    const g0 = GRADES.includes(S0.grade) ? S0.grade : 0, wg = x => PATHS.math.worlds[NODES.math[at(x)].wi].g, mine = x => (g0 >= 3 && wg(x) != Math.min(g0, 5) ? 1 : 0);
+    const cand = LS_IDS.filter(x => at(x) >= 0 && (g0 < 3) === (wg(x) < 3)).sort((a, b) => mine(a) - mine(b) || at(a) - at(b)).filter(x => open(x) && !ps(x) && !learned(x));
     const ready = x => (PRE[x] || []).every(y => ps(y) || learned(y));
     let nx = cand[0] || null;
     const lm = Array.isArray(S0.lm) ? S0.lm : [], last = lm[lm.length - 1];

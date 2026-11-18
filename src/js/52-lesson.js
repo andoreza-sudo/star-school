@@ -58,7 +58,7 @@ const LS = {
       const n = L.name(st.ctx, r);
       it = [{m: 'say', html: n.html, lines: n.lines}];
     } else if (B == 'tog') it = [LS.togItem(st, [T.tog])];
-    else if (B == 'chk') it = [LS.petItem(st)];
+    else if (B == 'chk') it = L.chk ? L.chk(st) : [LS.petItem(st)]; // TEACH-3: grades 3-5 have their own Check me (52i-bench35.js)
     else if (B == 'show') it = [0, 1].map(k => {
       // TEACH-2b: a drafted script frames Show as its job in the world (its Show lines), unless the child tested out
       const q = L.q(L.test, r), w = L.w && !st.to ? lsW(L.w.beats.show, k, q.sl) : [];
@@ -136,6 +136,7 @@ const LS = {
   answer(st, v) {
     const it = LS.cur(st), T = lsTone(), B = LSB[st.b];
     if (!it) return null;
+    if (it.on) return it.on(st, v); // TEACH-3: an item that answers for itself ("your problem", 52i-bench35.js)
     const yay = () => [T.yay[(st.r() * T.yay.length) | 0]];
     if (it.m == 'say') return {ok: true, act: 'next', lines: []};
     if (it.m == 'open') {
@@ -147,7 +148,7 @@ const LS = {
     if (it.m == 'judge') {
       const yes = String(v) === '1', ok = yes === it.petOk;
       st.chk.push(ok ? 1 : 0);
-      if (!it.petOk) st.items.splice(st.i + 1, 0, LS.fixItem(it));
+      if (!it.petOk) st.items.splice(st.i + 1, 0, ...(it.after ? it.after(st) : [LS.fixItem(it)])); // TEACH-3: the fix, then the reason from tiles
       // TEACH-2b: a drafted script's reason for the pet's mistake (its misconception code), after it is caught
       const why = !it.petOk && it.code && st.L.w ? lsW((st.L.w.reasons || {})[it.code], 0, it.q.sl) : [];
       return {ok, act: 'next', mood: it.petOk ? 'happy' : 'oops',
@@ -279,7 +280,7 @@ const LS = {
       prompt = it.html;
       input = UI.btn('Next', {kind: 'primary', size: 'lg', icon: 'go', id: 'lsnext'});
     } else if (it.m == 'judge') {
-      prompt = LS.petWork(q, it.pv);
+      prompt = it.pw || LS.petWork(q, it.pv); // TEACH-3: the pet's written steps
       input = `<div class="ls-judge">${UI.btn('Right', {kind: 'soft', size: 'lg', icon: 'thumbs-up', id: 'lsyes'})}${UI.btn('Not right', {kind: 'soft', size: 'lg', icon: 'close', id: 'lsno'})}</div>`;
     } else {
       prompt = q.html;
@@ -315,8 +316,8 @@ const LS = {
       return q.html + `<div class="ls-pw">${K2MM[q.model].draw(q, s).replace('<svg ', '<svg aria-hidden="true" ')}</div>`;
     }
     if (q.kind == 'line') return q.html + `<div class="ls-pw">${VIZ.numLine(Object.assign({}, q.line, {pin: +v})).replace('<svg ', '<svg aria-hidden="true" ')}</div>`;
-    const c = q.kind == 'choice' ? q.choices.find(x => x.v === String(v)) : null;
-    return q.html.replace(SLOT, `<span class="slot ls-pv">${esc(c ? c.l : v)}</span>`);
+    const c = q.kind == 'choice' ? q.choices.find(x => x.v === String(v)) : null, sl = [SLOT_MIX, SLOT_FRAC, SLOT_R].find(x => q.html.includes(x)) || SLOT;
+    return q.html.replace(sl, `<span class="slot ls-pv">${esc(c ? c.l : v)}</span>`); // TEACH-3: a fraction or remainder answer fills its slots as one
   },
   judge(v) {
     const st = LS.st;
@@ -403,7 +404,7 @@ const LS = {
   // never a front door). Placed above the stop, or beside it, wherever it covers nothing; no button when nothing is free.
   mapAdd() {
     const m = $('#map');
-    if (!m || MAPP != 'math' || TEACH.off || gradeOf() > 2) return;
+    if (!m || MAPP != 'math' || TEACH.off || gradeOf() > 2 && !partReady('teach35')) return; // TEACH-3: grades 3 up once their lessons are in
     const old = m.querySelector('.ls-go');
     if (old) old.remove();
     NB.mapBtn();
@@ -436,5 +437,5 @@ function lsFill(t, sl) {
 const lsW = (a, k, sl) => { a = [].concat(a || []); const t = a.length ? lsFill(a[k % a.length], sl) : null; return t ? [t] : []; };
 // an answer as the pet says it: a time as words, cents with their unit
 const LS_SIGN = {'<': 'is less than', '>': 'is greater than', '=': 'is equal to'};
-const lsSayV = (q, v) => (q.kind == 'make' && /^(clock|hands)$/.test(q.model) && /:/.test(v) ? mmTimeSay(...String(v).split(':').map(Number))
+const lsSayV = (q, v) => (q.vsay ? q.vsay(String(v)) : q.kind == 'make' && /^(clock|hands)$/.test(q.model) && /:/.test(v) ? mmTimeSay(...String(v).split(':').map(Number))
   : LS_SIGN[v] && q.sl ? `${q.sl.a} ${LS_SIGN[v]} ${q.sl.b}` : q.cents ? v + ' cents' : String(v));

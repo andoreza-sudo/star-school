@@ -10,8 +10,9 @@
    node tools/author.js --approve <stop ...|all> [--by NAME] [--date YYYY-MM-DD] [--note TEXT]
                                            TEACH-2b: the owner's one step: mark drafts "status: reviewed NAME DATE (NOTE)" (only drafts
                                            that pass every check), then write src/js/52e-words.js, so their lessons go live at the next build
-   node tools/author.js --read <file> [stop ...]
-                                           TEACH-2b: one read-through file of the unreviewed drafts (or the stops named), in map order
+   node tools/author.js --read <file> [--batch 3] [stop ...]
+                                           TEACH-2b: one read-through file of the unreviewed drafts (or the stops named), in map order;
+                                           TEACH-3: --batch 3, the grade 3-5 drafts not yet reviewed (docs/drafts/BATCH3-READ.md)
 
    What a draft is. Only words: the lines each of the six beats says (Remember, Explore, Name it, Together, Check me, Show), the
    pet's reasons for each misconception code, and tonight's question for a grown-up. Numbers are never written: a number is a
@@ -288,10 +289,24 @@ function approve(ids, o = {}) {
   return {done, bad};
 }
 // the read-through: every lesson's sheet in map order, short enough to read on a phone
-function readThrough(ids) {
-  const R = app(), at = id => R(`NODES.math.findIndex(n=>nid(n)===${JSON.stringify(id)})`);
-  const xs = drafts().filter(x => x.d && (ids.length ? ids.includes(x.d.id) : x.d.status === 'unreviewed')).sort((a, b) => at(a.d.id) - at(b.d.id));
-  const head = ['# Batch 2 read-through: grade 1 and 2 math lessons', '',
+// TEACH-3: o.batch 3 reads the grade 3-5 drafts (LS_B35) that are not reviewed, under the batch 3 heading
+function readThrough(ids, o = {}) {
+  const R = app(), at = id => R(`NODES.math.findIndex(n=>nid(n)===${JSON.stringify(id)})`), b3 = o.batch == 3, B35 = R('LS_B35');
+  // no stops named: every unreviewed draft of this batch's band (batch 3 the grade 3-5 lessons, batch 2 the rest); none waiting reads as none,
+  // never as every draft (v177: with batch 2 all reviewed, an empty list used to pull in the batch 3 drafts)
+  if (!ids.length) ids = drafts().filter(x => x.d && x.d.status === 'unreviewed' && B35.includes(x.d.id) === b3).map(x => x.d.id);
+  const xs = drafts().filter(x => x.d && ids.includes(x.d.id)).sort((a, b) => at(a.d.id) - at(b.d.id));
+  if (!xs.length) return [`# Batch ${b3 ? 3 : 2} read-through`, '', 'Nothing is waiting: every lesson of this batch is reviewed.', ''].join('\n');
+  const head = b3 ? ['# Batch 3 read-through: grade 3 to 5 math lessons', '',
+    `${xs.length} lessons, in map order. Each is what the child hears:`, 'the six beats, the pet\'s reasons when it is caught, and tonight\'s question for you.', '',
+    'Grades 3 and 4 hear the older kid pet; grade 5 hears the teen-like partner.', '',
+    'The app fills in each {slot} from the problem on screen, so numbers are always right.',
+    'The app also says each problem itself, after the Together and Show lines.', '',
+    'Until you approve a lesson, it runs on short hand-written lines', '(its idea, a Name it line, the pet\'s reasons), so it works now.', '',
+    'In Check me the pet shows its own working (or works out a problem the child sets),', 'and the child finds the slip and builds the reason from word tiles.', '',
+    'To change a word: edit the JSON in that lesson\'s file in docs/drafts/.', 'When you are happy, say so, or run:', '',
+    '`node tools/author.js --approve <stop ...> --by <your name>`', '', '(or all, which also approves any batch 2 lesson still waiting).', 'Approved lessons use their words at the next build.', '']
+    : ['# Batch 2 read-through: grade 1 and 2 math lessons', '',
     `${xs.length} lessons, in map order. Each is what the child hears:`, 'the six beats, the pet\'s reasons when it is caught, and tonight\'s question for you.', '',
     'The app fills in each {slot} from the problem on screen, so numbers are always right.',
     'The app also says each problem itself, after the Together and Show lines.', '',
@@ -311,8 +326,8 @@ if (require.main === module) {
       + (r.bad.length ? '\nnot marked:\n  ' + r.bad.join('\n  ') : ''));
     process.exitCode = r.bad.length ? 1 : 0;
   } else if (has('--read')) {
-    const f = val('--read'), ids = a.filter((x, i) => !x.startsWith('--') && a[i - 1] !== '--read');
-    fs.writeFileSync(path.resolve(f), readThrough(ids));
+    const f = val('--read'), ids = a.filter((x, i) => !x.startsWith('--') && a[i - 1] !== '--read' && a[i - 1] !== '--batch');
+    fs.writeFileSync(path.resolve(f), readThrough(ids, {batch: +val('--batch') || 2}));
     console.log('wrote ' + f);
   } else if (has('--draft')) {
     const r = draft(val('--draft'), {grade: val('--grade'), dry: has('--dry')});
